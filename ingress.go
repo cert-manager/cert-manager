@@ -2,18 +2,22 @@ package main
 
 import (
 	"fmt"
-	"strings"
 	"log"
+	"reflect"
 	"sort"
+	"strings"
 
+	"github.com/simonswine/kube-lego/acme"
+	"k8s.io/kubernetes/pkg/api"
 	"k8s.io/kubernetes/pkg/apis/extensions"
 )
 
 const annotationIngressEnabled = "kubernetes.io/lego-enabled"
-const annotationIngressHash = "kubernetes.io/lego-domain-hash"
+const annotationIngressExpiryDatetime = "kubernetes.io/expiry-datetime"
 
 type Ingress struct {
 	extensions.Ingress
+	KubeLego *KubeLego
 }
 
 func (i *Ingress) Ignore() bool {
@@ -37,7 +41,7 @@ func (i *Ingress) String() string {
 func (i *Ingress) Domains() []string {
 	domainsMap := make(map[string]bool)
 
-	for _,rule := range i.Spec.Rules{
+	for _, rule := range i.Spec.Rules {
 		domainsMap[rule.Host] = true
 	}
 
@@ -51,17 +55,96 @@ func (i *Ingress) Domains() []string {
 	return domainsList
 }
 
-func (i *Ingress) Process(kl *KubeLego) {
+// returns ordered list of tls domains
+// * only first tls specification is used,
+// * no duplicates alllowed
+func (i *Ingress) TlsDomains() []string {
+	for _, tls := range i.Spec.TLS {
+		return tls.Hosts
+		break
+	}
+	return []string{}
+}
+
+func (i *Ingress) RequestCert() error {
+
+	// request full bundle
+	bundle := true
+
+	// domains to certify
 	domains := i.Domains()
 
-	log.Printf("%s has the domains %v", i.String(), domains)
-
-	certificates, err := kl.LegoClient.ObtainCertificate(domains, true, nil)
+	certificates, err := i.KubeLego.LegoClient.ObtainCertificate(domains, bundle, nil)
 	if err != nil {
 		log.Print(err)
 	}
 
-	log.Printf("%+v\n", certificates)
-
+	return i.StoreCert(&certificates, domains)
 }
 
+func (i *Ingress) SecretName() string {
+	return fmt.Sprintf("%s-tls", i.ObjectMeta.Name)
+}
+
+func (i *Ingress) StoreCert(certs *acme.CertificateResource, domains []string) error {
+
+	// create secret
+	secret := api.Secret{
+		ObjectMeta: api.ObjectMeta{
+			Name:      i.SecretName(),
+			Namespace: i.Namespace,
+		},
+		Type: api.SecretTypeTLS,
+	}
+	secret.Data = make(map[string][]byte)
+	secret.Data[api.TLSPrivateKeyKey] = certs.PrivateKey
+	secret.Data[api.TLSCertKey] = certs.Certificate
+	i.KubeLego.CreateSecret(
+		i.Namespace,
+		&secret,
+	)
+
+	// retrieve expiry date from cert
+
+	// update ingress
+	i.Spec.TLS = []extensions.IngressTLS{
+		extensions.IngressTLS{
+			Hosts:      domains,
+			SecretName: i.SecretName(),
+		},
+	}
+
+	expiryDate, err := pemExpiryDate(certs.Certificate)
+	if err != nil {
+		return err
+	}
+
+	expiryDateBytes, err := expiryDate.MarshalJSON()
+	if err != nil {
+		return err
+	}
+
+	i.Annotations[annotationIngressExpiryDatetime] = string(expiryDateBytes)
+
+	ingClient := i.KubeLego.KubeClient.Extensions().Ingress(api.NamespaceAll)
+	_, err = ingClient.Update(&i.Ingress)
+
+	return err
+}
+
+func (i *Ingress) Process() {
+	domains := i.Domains()
+	tlsDomains := i.TlsDomains()
+
+	if !reflect.DeepEqual(domains, tlsDomains) {
+		log.Printf(
+			"%s needs certificate update. current tls domains: %v, required domains: %v",
+			tlsDomains,
+			domains,
+		)
+		err := i.RequestCert()
+		log.Printf("Error during processing certificate requiest for %s: %s", i.String(), err)
+
+	}
+
+}

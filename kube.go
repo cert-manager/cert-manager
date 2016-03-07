@@ -42,6 +42,11 @@ func (kl *KubeLego) CreateSecret(namespace string, secret *api.Secret) (*api.Sec
 	return secretClient.Create(secret)
 }
 
+func (kl *KubeLego) UpdateSecret(namespace string, secret *api.Secret) (*api.Secret, error) {
+	secretClient := kl.KubeClient.Secrets(namespace)
+	return secretClient.Update(secret)
+}
+
 func (kl *KubeLego) Namespace() string {
 	return api.NamespaceDefault
 }
@@ -51,7 +56,6 @@ func (kl *KubeLego) ListIngress() (*extensions.IngressList, error) {
 	return ingClient.List(api.ListOptions{})
 }
 
-
 func (kl *KubeLego) ProcessIngress() error {
 	list, err := kl.ListIngress()
 	if err != nil {
@@ -59,12 +63,15 @@ func (kl *KubeLego) ProcessIngress() error {
 	}
 
 	for _, ingress := range list.Items {
-		ing := Ingress{ingress}
+		ing := Ingress{
+			Ingress:  ingress,
+			KubeLego: kl,
+		}
 		if ing.Ignore() {
 			log.Printf("ignoring %s as it has no annotations", ing.String())
 			continue
 		}
-		ing.Process(kl)
+		ing.Process()
 	}
 
 	return nil
