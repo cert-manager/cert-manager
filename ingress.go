@@ -66,7 +66,58 @@ func (i *Ingress) TlsDomains() []string {
 	return []string{}
 }
 
+func (i *Ingress) EnsureChallengeEndpoint() error {
+
+	hasChanged := false
+
+	// loop through domains
+	for _, rule := range i.Spec.Rules {
+
+		hasChallenge := false
+
+		// ensure there is a acme challenge endpoint
+		for _, path := range rule.IngressRuleValue.HTTP.Paths {
+			if path.Path == acmeHttpChallengePath {
+				hasChallenge = true
+				break
+			}
+		}
+
+		if !hasChallenge {
+			rule.IngressRuleValue.HTTP.Paths = append(
+				rule.IngressRuleValue.HTTP.Paths,
+				extensions.HTTPIngressPath{
+					Path: acmeHttpChallengePath,
+					Backend: extensions.IngressBackend{
+						ServiceName: i.KubeLego.LegoServiceName,
+						ServicePort: i.KubeLego.LegoHTTPPort,
+					},
+				},
+			)
+
+			hasChanged = true
+		}
+
+	}
+
+	if hasChanged {
+		log.Printf("Updating %s with acme http challenge endpoints", i.String())
+		ingClient := i.KubeLego.KubeClient.Extensions().Ingress(i.Namespace)
+		_, err := ingClient.Update(&i.Ingress)
+		return err
+	}
+
+	return nil
+
+}
+
 func (i *Ingress) RequestCert() error {
+
+	// update challenge endpoints
+	err := i.EnsureChallengeEndpoint()
+	if err != nil {
+		return err
+	}
 
 	// request full bundle
 	bundle := true
@@ -74,9 +125,9 @@ func (i *Ingress) RequestCert() error {
 	// domains to certify
 	domains := i.Domains()
 
-	certificates, err := i.KubeLego.LegoClient.ObtainCertificate(domains, bundle, nil)
-	if err != nil {
-		log.Print(err)
+	certificates, errs := i.KubeLego.LegoClient.ObtainCertificate(domains, bundle, nil)
+	if len(errs) != 0 {
+		log.Print(errs)
 	}
 
 	return i.StoreCert(&certificates, domains)
@@ -125,8 +176,7 @@ func (i *Ingress) StoreCert(certs *acme.CertificateResource, domains []string) e
 	}
 
 	i.Annotations[annotationIngressExpiryDatetime] = string(expiryDateBytes)
-
-	ingClient := i.KubeLego.KubeClient.Extensions().Ingress(api.NamespaceAll)
+	ingClient := i.KubeLego.KubeClient.Extensions().Ingress(i.Namespace)
 	_, err = ingClient.Update(&i.Ingress)
 
 	return err
@@ -139,11 +189,12 @@ func (i *Ingress) Process() {
 	if !reflect.DeepEqual(domains, tlsDomains) {
 		log.Printf(
 			"%s needs certificate update. current tls domains: %v, required domains: %v",
+			i.String(),
 			tlsDomains,
 			domains,
 		)
 		err := i.RequestCert()
-		log.Printf("Error during processing certificate requiest for %s: %s", i.String(), err)
+		log.Printf("Error during processing certificate request for %s: %s", i.String(), err)
 
 	}
 

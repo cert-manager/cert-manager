@@ -3,10 +3,12 @@ package main
 import (
 	"errors"
 	"log"
+	"reflect"
 
 	"k8s.io/kubernetes/pkg/api"
 	"k8s.io/kubernetes/pkg/apis/extensions"
 	client "k8s.io/kubernetes/pkg/client/unversioned"
+	"k8s.io/kubernetes/pkg/util"
 )
 
 func (kl *KubeLego) InitKube() error {
@@ -51,17 +53,36 @@ func (kl *KubeLego) Namespace() string {
 	return api.NamespaceDefault
 }
 
-func (kl *KubeLego) ListIngress() (*extensions.IngressList, error) {
-	ingClient := kl.KubeClient.Extensions().Ingress(api.NamespaceAll)
-	return ingClient.List(api.ListOptions{})
-}
+func (kl *KubeLego) WatchConfig() {
 
-func (kl *KubeLego) ProcessIngress() error {
-	list, err := kl.ListIngress()
-	if err != nil {
-		return err
+	oldList := &extensions.IngressList{}
+
+	rateLimiter := util.NewTokenBucketRateLimiter(0.1, 1)
+
+	ingClient := kl.KubeClient.Extensions().Ingress(api.NamespaceAll)
+
+	for {
+		rateLimiter.Accept()
+
+		list, err := ingClient.List(api.ListOptions{})
+		if err != nil {
+			log.Printf("Error while retrieving ingress list: ", err)
+			continue
+		}
+
+		if reflect.DeepEqual(oldList, list) {
+			continue
+		}
+		oldList = list
+
+		kl.ProcessIngress(list)
+
 	}
 
+}
+
+func (kl *KubeLego) ProcessIngress(list *extensions.IngressList) error {
+	log.Printf("Processing ingress list")
 	for _, ingress := range list.Items {
 		ing := Ingress{
 			Ingress:  ingress,
@@ -73,6 +94,5 @@ func (kl *KubeLego) ProcessIngress() error {
 		}
 		ing.Process()
 	}
-
 	return nil
 }

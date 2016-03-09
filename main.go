@@ -5,6 +5,7 @@ import (
 
 	"github.com/simonswine/kube-lego/acme"
 	client "k8s.io/kubernetes/pkg/client/unversioned"
+	"k8s.io/kubernetes/pkg/util/intstr"
 )
 
 type KubeLego struct {
@@ -13,7 +14,7 @@ type KubeLego struct {
 	LegoEmail       string
 	LegoSecretName  string
 	LegoServiceName string
-	LegoHTTPPort    int
+	LegoHTTPPort    intstr.IntOrString
 	legoUser        *LegoUser
 	KubeClient      *client.Client
 }
@@ -39,9 +40,5 @@ func main() {
 		log.Fatal(err)
 	}
 
-	err = kl.ProcessIngress()
-	if err != nil {
-		log.Fatal(err)
-
-	}
+	kl.WatchConfig()
 }

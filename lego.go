@@ -15,11 +15,14 @@ import (
 
 	"github.com/simonswine/kube-lego/acme"
 	"k8s.io/kubernetes/pkg/api"
+	"k8s.io/kubernetes/pkg/apis/extensions"
+	"k8s.io/kubernetes/pkg/util/intstr"
 )
 
 const rsaKeySize = 2048
 const TLSRegistration = "registration.json"
 const acmeKeyType = acme.RSA2048
+const acmeHttpChallengePath = "/.well-known/acme-challenge/"
 
 type LegoUser struct {
 	kubeLego     *KubeLego
@@ -104,6 +107,10 @@ func (kl *KubeLego) createUser() (*LegoUser, error) {
 	return &user, nil
 }
 
+func (kl *KubeLego) ensureChallengeBackend() {
+
+}
+
 func (kl *KubeLego) getUser() (*LegoUser, error) {
 
 	secret, err := kl.GetSecret(kl.LegoSecretName, kl.Namespace())
@@ -137,6 +144,13 @@ func (kl *KubeLego) getUser() (*LegoUser, error) {
 	return &user, nil
 }
 
+func (kl *KubeLego) Backend() extensions.IngressBackend {
+	return extensions.IngressBackend{
+		ServiceName: kl.LegoServiceName,
+		ServicePort: kl.LegoHTTPPort,
+	}
+}
+
 func (kl *KubeLego) paramsLego() error {
 
 	kl.LegoEmail = os.Getenv("LEGO_EMAIL")
@@ -156,16 +170,16 @@ func (kl *KubeLego) paramsLego() error {
 
 	httpPortStr := os.Getenv("LEGO_PORT")
 	if len(httpPortStr) == 0 {
-		kl.LegoHTTPPort = 8080
+		kl.LegoHTTPPort = intstr.FromInt(8080)
 	} else {
-		i, err := strconv.Atoi("-42")
+		i, err := strconv.Atoi(httpPortStr)
 		if err != nil {
 			return err
 		}
 		if i <= 0 || i >= 65535 {
 			return fmt.Errorf("Wrong port: %d", i)
 		}
-		kl.LegoHTTPPort = i
+		kl.LegoHTTPPort = intstr.FromInt(i)
 
 	}
 
@@ -192,7 +206,7 @@ func (kl *KubeLego) InitLego() error {
 	}
 	kl.LegoClient = legoClient
 
-	kl.LegoClient.SetHTTPAddress(":8008")
+	kl.LegoClient.SetHTTPAddress(fmt.Sprintf(":%d", kl.LegoHTTPPort.IntValue()))
 
 	return nil
 }
