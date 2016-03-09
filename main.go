@@ -8,12 +8,14 @@ import (
 )
 
 type KubeLego struct {
-	LegoClient     *acme.Client
-	LegoURL        string
-	LegoEmail      string
-	LegoSecretName string
-	legoUser       *LegoUser
-	KubeClient     *client.Client
+	LegoClient      *acme.Client
+	LegoURL         string
+	LegoEmail       string
+	LegoSecretName  string
+	LegoServiceName string
+	LegoHTTPPort    int
+	legoUser        *LegoUser
+	KubeClient      *client.Client
 }
 
 func NewKubeLego() *KubeLego {

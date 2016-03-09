@@ -8,8 +8,10 @@ import (
 	"encoding/json"
 	"encoding/pem"
 	"errors"
+	"fmt"
 	"log"
 	"os"
+	"strconv"
 
 	"github.com/simonswine/kube-lego/acme"
 	"k8s.io/kubernetes/pkg/api"
@@ -137,18 +139,35 @@ func (kl *KubeLego) getUser() (*LegoUser, error) {
 
 func (kl *KubeLego) paramsLego() error {
 
-	legoEmail := os.Getenv("LEGO_EMAIL")
-	if len(legoEmail) == 0 {
+	kl.LegoEmail = os.Getenv("LEGO_EMAIL")
+	if len(kl.LegoEmail) == 0 {
 		return errors.New("Please provide an email address for cert recovery in LEGO_EMAIL")
 	}
 
-	legoSecretName := os.Getenv("LEGO_SECRET_NAME")
-	if len(legoSecretName) == 0 {
-		return errors.New("Please provide an secret name in LEGO_SECRET_NAME")
+	kl.LegoSecretName = os.Getenv("LEGO_SECRET_NAME")
+	if len(kl.LegoSecretName) == 0 {
+		kl.LegoSecretName = "kube-lego-account"
 	}
 
-	kl.LegoEmail = legoEmail
-	kl.LegoSecretName = legoSecretName
+	kl.LegoServiceName = os.Getenv("LEGO_SERVICE_NAME")
+	if len(kl.LegoServiceName) == 0 {
+		kl.LegoServiceName = "kube-lego"
+	}
+
+	httpPortStr := os.Getenv("LEGO_PORT")
+	if len(httpPortStr) == 0 {
+		kl.LegoHTTPPort = 8080
+	} else {
+		i, err := strconv.Atoi("-42")
+		if err != nil {
+			return err
+		}
+		if i <= 0 || i >= 65535 {
+			return fmt.Errorf("Wrong port: %d", i)
+		}
+		kl.LegoHTTPPort = i
+
+	}
 
 	return nil
 }

@@ -4,13 +4,13 @@ Kube-Lego automatically requests certificates for Kubernetes Ingress resources f
 
 ## Environment variables
 
-```
-# Specify the admin email address to recover a lost key
-export LEGO_EMAIL=mail@example.com
+| Name | Required | Default | Description |
+|------|----------|---------|-------------|
+| `LEGO_EMAIL` | y | `-` | E-Mail address for the ACME account, used to recover from lost secrets |
+| `LEGO_SECRET_NAME` | n | `kube-lego-account` | Name of the secret in the same namespace that contains ACME account secret |
+| `LEGO_SERVICE_NAME` | n | `kube-lego` | Service name that connects to this pod
+| `LEGO_PORT` | n | `8080` | Port where this daemon is listening for verifcation calls (HTTP method)|
 
-# Name of the kubernetes secret where to store the Let's Encrypt account information
-export LEGO_SECRET_NAME=
-```
 
 ## Usage
 
