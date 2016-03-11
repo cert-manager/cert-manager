@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"testing"
 )
 
@@ -37,9 +36,9 @@ func TestPemExpiryDate(t *testing.T) {
 	if err != nil {
 		t.Error("pemExpiryDate failed")
 	}
-	dateBytes, _ := date.MarshalJSON()
+	dateBytes, err := date.MarshalText()
 
-	if string(dateBytes) != "2015-04-04T15:15:55Z" {
-		t.Error("Returned wrong date")
+	if string(dateBytes) != "2015-04-04T15:15:55Z" || err != nil {
+		t.Error("Returned wrong date: ", string(dateBytes), err)
 	}
 }

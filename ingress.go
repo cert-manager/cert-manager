@@ -139,23 +139,40 @@ func (i *Ingress) SecretName() string {
 
 func (i *Ingress) StoreCert(certs *acme.CertificateResource, domains []string) error {
 
-	// create secret
-	secret := api.Secret{
-		ObjectMeta: api.ObjectMeta{
-			Name:      i.SecretName(),
-			Namespace: i.Namespace,
-		},
-		Type: api.SecretTypeTLS,
+	// get secret if exists
+	updateSecret := true
+	secret, err := i.KubeLego.GetSecret(i.SecretName(), i.Namespace)
+	if err != nil {
+		updateSecret = false
+		secret = &api.Secret{
+			ObjectMeta: api.ObjectMeta{
+				Name:      i.SecretName(),
+				Namespace: i.Namespace,
+			},
+			Type: api.SecretTypeTLS,
+		}
 	}
+
 	secret.Data = make(map[string][]byte)
 	secret.Data[api.TLSPrivateKeyKey] = certs.PrivateKey
 	secret.Data[api.TLSCertKey] = certs.Certificate
-	i.KubeLego.CreateSecret(
-		i.Namespace,
-		&secret,
-	)
 
-	// retrieve expiry date from cert
+	if updateSecret {
+		_, err = i.KubeLego.UpdateSecret(
+			i.Namespace,
+			secret,
+		)
+
+	} else {
+		_, err = i.KubeLego.CreateSecret(
+			i.Namespace,
+			secret,
+		)
+
+	}
+	if err != nil {
+		return err
+	}
 
 	// update ingress
 	i.Spec.TLS = []extensions.IngressTLS{
@@ -165,12 +182,13 @@ func (i *Ingress) StoreCert(certs *acme.CertificateResource, domains []string) e
 		},
 	}
 
+	// retrieve expiry date from cert
 	expiryDate, err := pemExpiryDate(certs.Certificate)
 	if err != nil {
 		return err
 	}
 
-	expiryDateBytes, err := expiryDate.MarshalJSON()
+	expiryDateBytes, err := expiryDate.MarshalText()
 	if err != nil {
 		return err
 	}
