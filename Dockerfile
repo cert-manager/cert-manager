@@ -7,6 +7,6 @@ ADD *.go ./
 ADD Godeps ./Godeps/
 ADD acme ./acme/
 
-RUN godep go build
+RUN godep go test && godep go build
 
 CMD ./kube-lego
