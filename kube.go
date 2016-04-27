@@ -50,7 +50,7 @@ func (kl *KubeLego) UpdateSecret(namespace string, secret *api.Secret) (*api.Sec
 }
 
 func (kl *KubeLego) Namespace() string {
-	return api.NamespaceDefault
+	return kl.LegoNamespace
 }
 
 func (kl *KubeLego) WatchConfig() {

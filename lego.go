@@ -115,7 +115,7 @@ func (kl *KubeLego) getUser() (*LegoUser, error) {
 
 	secret, err := kl.GetSecret(kl.LegoSecretName, kl.Namespace())
 	if err != nil {
-		log.Printf("No secret '%s' found in namespace '%s'", kl.LegoSecretName, kl.Namespace())
+		log.Printf("No account secret '%s' found in namespace '%s'", kl.LegoSecretName, kl.Namespace())
 
 		return kl.createUser()
 	}
@@ -156,6 +156,11 @@ func (kl *KubeLego) paramsLego() error {
 	kl.LegoEmail = os.Getenv("LEGO_EMAIL")
 	if len(kl.LegoEmail) == 0 {
 		return errors.New("Please provide an email address for cert recovery in LEGO_EMAIL")
+	}
+
+	kl.LegoNamespace = os.Getenv("LEGO_NAMESPACE")
+	if len(kl.LegoNamespace) == 0 {
+		kl.LegoNamespace = api.NamespaceDefault
 	}
 
 	kl.LegoURL = os.Getenv("LEGO_URL")

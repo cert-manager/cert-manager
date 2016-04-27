@@ -14,15 +14,17 @@ var AppGitCommit = ""
 var AppGitState = ""
 
 type KubeLego struct {
-	LegoClient      *acme.Client
-	LegoURL         string
-	LegoEmail       string
-	LegoSecretName  string
-	LegoServiceName string
-	LegoIngressName string
-	LegoHTTPPort    intstr.IntOrString
-	legoUser        *LegoUser
-	KubeClient      *client.Client
+	LegoClient       *acme.Client
+	LegoURL          string
+	LegoEmail        string
+	LegoSecretName   string
+	LegoServiceName  string
+	LegoIngressName  string
+	LegoNamespace    string
+	LegoHTTPPort     intstr.IntOrString
+	legoUser         *LegoUser
+	KubeClient       *client.Client
+	legoIngressSlice []*Ingress
 }
 
 func NewKubeLego() *KubeLego {
