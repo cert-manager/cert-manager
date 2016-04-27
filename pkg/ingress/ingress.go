@@ -2,9 +2,9 @@ package ingress
 
 import (
 	"fmt"
-	"reflect"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/simonswine/kube-lego/pkg/secret"
 	"github.com/simonswine/kube-lego/pkg/kubelego_const"
@@ -20,6 +20,7 @@ import (
 func New(client kubelego.KubeLego, namespace string, name string) *Ingress {
 	ingress := &Ingress{
 		exists: true,
+		kubelego: client,
 	}
 
 	var err error
@@ -45,15 +46,17 @@ func New(client kubelego.KubeLego, namespace string, name string) *Ingress {
 
 func All(client kubelego.KubeLego) (ingresses []*Ingress, err error){
 	ingSlice, err := client.KubeClient().Extensions().Ingress(k8sApi.NamespaceAll).List(k8sApi.ListOptions{})
+
+
 	if err != nil {
 		return
 	}
 
-	for _,ing := range ingSlice.Items {
+	for i, _ := range ingSlice.Items {
 		ingresses = append(
 			ingresses,
 			&Ingress{
-				IngressApi: &ing,
+				IngressApi: &ingSlice.Items[i],
 				exists: true,
 				kubelego: client,
 			},
@@ -130,17 +133,6 @@ func (i *Ingress) Domains() []string {
 	return domainsList
 }
 
-// returns ordered list of tls domains
-// * only first tls specification is used,
-// * no duplicates alllowed
-func (i *Ingress) TlsDomains() []string {
-	for _, tls := range i.IngressApi.Spec.TLS {
-		return tls.Hosts
-		break
-	}
-	return []string{}
-}
-
 func (i *Ingress) RequestCert() error {
 
 	// request full bundle
@@ -161,10 +153,13 @@ func (i *Ingress) SecretName() string {
 	return fmt.Sprintf("%s-tls", i.IngressApi.Name)
 }
 
+func (i *Ingress) Secret() *secret.Secret {
+	return secret.New(i.kubelego, i.IngressApi.Namespace, i.SecretName())
+}
+
 func (i *Ingress) StoreCert(certs *acme.CertificateResource, domains []string) error {
 
-	s := secret.New(i.kubelego, i.SecretName(), i.IngressApi.Namespace)
-
+	s := i.Secret()
 	s.SecretApi.Annotations = map[string]string{
 		kubelego.AnnotationEnabled: "true",
 	}
@@ -192,22 +187,51 @@ func (i *Ingress) StoreCert(certs *acme.CertificateResource, domains []string) e
 	return s.Save()
 }
 
-func (i *Ingress) Process() error {
+func (i *Ingress) newCertNeeded() bool {
 	domains := i.Domains()
-	tlsDomains := i.TlsDomains()
 
-	if !reflect.DeepEqual(domains, tlsDomains) {
-		i.Log().Infof(
-			"%s needs certificate update. current tls domains: %v, required domains: %v",
-			i.String(),
-			tlsDomains,
-			domains,
-		)
-		err := i.RequestCert()
-		i.Log().Warnf("Error during processing certificate request for %s: %s", i.String(), err)
-
+	if len(domains) == 0 {
+		i.Log().Info("no host associated with ingress")
+		return false
 	}
 
-	return nil
+	tlsSecret := i.Secret()
+	if ! tlsSecret.Exists(){
+		tlsSecret.Log().Infof("this is a test")
+		i.Log().Info("no cert associated with ingress")
+		return true
+	}
 
+	if ! tlsSecret.TlsDomainsInclude(domains){
+		i.Log().WithField("domains", domains).Info("cert does not cover all domains")
+		return true
+	}
+
+	expireTime, err := tlsSecret.TlsExpireTime()
+	if err != nil {
+		i.Log().Warn("error while reading expiry time: ", err)
+		return true
+	}
+
+	timeLeft := expireTime.Sub(time.Now())
+	logger := i.Log().WithField("expire_time", expireTime)
+	if timeLeft < 48 * time.Hour {
+		logger.Infof("cert expires within the next 48 hours")
+		return true
+	} else {
+		logger.Infof("cert expires in %.1f days, no renewal needed", timeLeft.Hours()/24)
+	}
+
+	return false
+}
+
+func (i *Ingress) Process() error {
+
+	if ! i.newCertNeeded() {
+		i.Log().Infof("no cert request needed")
+		return nil
+	}
+
+
+	return i.RequestCert()
 }

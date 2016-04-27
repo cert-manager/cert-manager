@@ -20,6 +20,7 @@ func New(version string) *KubeLego {
 }
 
 func (kl *KubeLego) Log() *log.Entry {
+	log.SetLevel(log.DebugLevel)
 	return log.WithField("context", "kubelego")
 }
 

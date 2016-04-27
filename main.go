@@ -8,7 +8,6 @@ var AppVersion = "unknown"
 var AppGitCommit = ""
 var AppGitState = ""
 
-
 func Version() string {
 	version := AppVersion
 	if len(AppGitCommit) > 0 {

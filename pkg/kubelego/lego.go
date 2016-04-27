@@ -8,11 +8,11 @@ import (
 	"encoding/json"
 	"encoding/pem"
 	"fmt"
-	"log"
 
 	"github.com/simonswine/kube-lego/pkg/kubelego_const"
 	"github.com/simonswine/kube-lego/pkg/secret"
 
+	log "github.com/Sirupsen/logrus"
 	"github.com/xenolf/lego/acme"
 	k8sApi "k8s.io/kubernetes/pkg/api"
 )

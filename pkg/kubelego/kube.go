@@ -153,6 +153,7 @@ func (kl *KubeLego) Reconfigure() error {
 		return err
 	}
 
+	kl.legoIngressSlice = []*ingress.Ingress{}
 	for _, ing := range ingressesAll{
 		if ing.Ignore() {
 			continue
@@ -160,13 +161,13 @@ func (kl *KubeLego) Reconfigure() error {
 		kl.legoIngressSlice = append(kl.legoIngressSlice, ing)
 	}
 
-	kl.Log().Info("Update challenge endpoint ingress, if needed")
+	kl.Log().Info("update challenge endpoint ingress, if needed")
 	err = kl.UpdateChallengeEndpoints()
 	if err != nil {
 		kl.Log().Fatal("Error while updating challenge endpoints ingress: ", err)
 	}
 
-	kl.Log().Info("Process certificates requests for ingresses")
+	kl.Log().Info("process certificates requests for ingresses")
 	errs := kl.IngressProcess()
 	if len(errs) > 0 {
 		errsStr := []string{}

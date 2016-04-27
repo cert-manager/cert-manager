@@ -4,18 +4,20 @@ import (
 	"fmt"
 	"encoding/pem"
 	"crypto/x509"
+	"time"
 
 	"github.com/simonswine/kube-lego/pkg/kubelego_const"
 
+	"github.com/Sirupsen/logrus"
 	k8sErrors "k8s.io/kubernetes/pkg/api/errors"
 	k8sApi "k8s.io/kubernetes/pkg/api"
 	k8sClient "k8s.io/kubernetes/pkg/client/unversioned"
-	"time"
 )
 
 func New(client kubelego.KubeLego, namespace string, name string) *Secret {
 	secret := &Secret{
 		exists: true,
+		kubelego: client,
 	}
 
 	var err error
@@ -28,15 +30,26 @@ func New(client kubelego.KubeLego, namespace string, name string) *Secret {
 					Name: name,
 				},
 			}
+			secret.Log().Info("creating new secret")
 			secret.exists = false
-
-
 		} else {
 			client.Log().Warn("Error during getting secret: ", err)
 		}
 	}
 
 	return secret
+}
+
+func (o *Secret) Log() *logrus.Entry {
+	log := o.kubelego.Log().WithField("context", "secret")
+
+	if o.SecretApi != nil && o.SecretApi.Name != "" {
+		log = log.WithField("name", o.SecretApi.Name)
+	}
+	if o.SecretApi != nil && o.SecretApi.Namespace != "" {
+		log = log.WithField("namespace", o.SecretApi.Namespace)
+	}
+	return log
 }
 
 func (o *Secret) client() k8sClient.SecretsInterface {
