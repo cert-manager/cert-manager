@@ -8,25 +8,42 @@ import (
 	"k8s.io/kubernetes/pkg/util/intstr"
 )
 
+var AppName = "kube-lego"
+var AppVersion = "unknown"
+var AppGitCommit = ""
+var AppGitState = ""
+
 type KubeLego struct {
 	LegoClient      *acme.Client
 	LegoURL         string
 	LegoEmail       string
 	LegoSecretName  string
 	LegoServiceName string
+	LegoIngressName string
 	LegoHTTPPort    intstr.IntOrString
 	legoUser        *LegoUser
 	KubeClient      *client.Client
 }
 
 func NewKubeLego() *KubeLego {
-	return &KubeLego{
-		LegoURL: "https://acme-v01.api.letsencrypt.org/directory",
+	return &KubeLego{}
+}
+
+func Version() string {
+	version := AppVersion
+	if len(AppGitCommit) > 0 {
+		version += "-"
+		version += AppGitCommit[0:8]
 	}
+	if len(AppGitState) > 0 && AppGitState != "clean" {
+		version += "-"
+		version += AppGitState
+	}
+	return version
 }
 
 func main() {
-	log.Print("kube-lego starting")
+	log.Printf("%s %s starting", AppName, Version())
 
 	kl := NewKubeLego()
 
