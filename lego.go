@@ -158,6 +158,11 @@ func (kl *KubeLego) paramsLego() error {
 		return errors.New("Please provide an email address for cert recovery in LEGO_EMAIL")
 	}
 
+	kl.LegoURL = os.Getenv("LEGO_URL")
+	if len(kl.LegoURL) == 0 {
+		kl.LegoURL = "https://acme-staging.api.letsencrypt.org/directory"
+	}
+
 	kl.LegoSecretName = os.Getenv("LEGO_SECRET_NAME")
 	if len(kl.LegoSecretName) == 0 {
 		kl.LegoSecretName = "kube-lego-account"
@@ -166,6 +171,11 @@ func (kl *KubeLego) paramsLego() error {
 	kl.LegoServiceName = os.Getenv("LEGO_SERVICE_NAME")
 	if len(kl.LegoServiceName) == 0 {
 		kl.LegoServiceName = "kube-lego"
+	}
+
+	kl.LegoIngressName = os.Getenv("LEGO_INGRESS_NAME")
+	if len(kl.LegoIngressName) == 0 {
+		kl.LegoIngressName = "kube-lego"
 	}
 
 	httpPortStr := os.Getenv("LEGO_PORT")

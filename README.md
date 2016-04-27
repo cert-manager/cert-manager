@@ -7,8 +7,10 @@ Kube-Lego automatically requests certificates for Kubernetes Ingress resources f
 | Name | Required | Default | Description |
 |------|----------|---------|-------------|
 | `LEGO_EMAIL` | y | `-` | E-Mail address for the ACME account, used to recover from lost secrets |
+| `LEGO_URL` | n | `https://acme-staging.api.letsencrypt.org/directory` | URL for the ACME server |
 | `LEGO_SECRET_NAME` | n | `kube-lego-account` | Name of the secret in the same namespace that contains ACME account secret |
-| `LEGO_SERVICE_NAME` | n | `kube-lego` | Service name that connects to this pod
+| `LEGO_SERVICE_NAME` | n | `kube-lego` | Service name that connects to this pod |
+| `LEGO_INGRESS_NAME` | n | `kube-lego` | Ingress name which contains the routing for HTTP verification |
 | `LEGO_PORT` | n | `8080` | Port where this daemon is listening for verifcation calls (HTTP method)|
 
 
