@@ -13,7 +13,7 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/simonswine/kube-lego/acme"
+	"github.com/xenolf/lego/acme"
 	"k8s.io/kubernetes/pkg/api"
 	"k8s.io/kubernetes/pkg/apis/extensions"
 	"k8s.io/kubernetes/pkg/util/intstr"
@@ -214,8 +214,10 @@ func (kl *KubeLego) InitLego() error {
 	if err != nil {
 		return err
 	}
-	kl.LegoClient = legoClient
 
+	legoClient.ExcludeChallenges([]acme.Challenge{acme.TLSSNI01, acme.DNS01})
+
+	kl.LegoClient = legoClient
 	kl.LegoClient.SetHTTPAddress(fmt.Sprintf(":%d", kl.LegoHTTPPort.IntValue()))
 
 	return nil

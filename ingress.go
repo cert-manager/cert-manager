@@ -7,7 +7,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/simonswine/kube-lego/acme"
+	"github.com/xenolf/lego/acme"
 	"k8s.io/kubernetes/pkg/api"
 	"k8s.io/kubernetes/pkg/apis/extensions"
 )

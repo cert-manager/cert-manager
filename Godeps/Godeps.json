@@ -1,6 +1,6 @@
 {
 	"ImportPath": "github.com/simonswine/kube-lego",
-	"GoVersion": "go1.5.1",
+	"GoVersion": "go1.6.1",
 	"Deps": [
 		{
 			"ImportPath": "bitbucket.org/ww/goautoneg",
@@ -74,14 +74,6 @@
 			"Rev": "4adf880b0237527fe9e86701c412d6906e5fcf9c"
 		},
 		{
-			"ImportPath": "github.com/mitchellh/goamz/aws",
-			"Rev": "caaaea8b30ee15616494ee68abd5d8ebbbef05cf"
-		},
-		{
-			"ImportPath": "github.com/mitchellh/goamz/route53",
-			"Rev": "caaaea8b30ee15616494ee68abd5d8ebbbef05cf"
-		},
-		{
 			"ImportPath": "github.com/opencontainers/runc/libcontainer/cgroups",
 			"Comment": "v0.0.7",
 			"Rev": "7ca2aa4873aea7cb4265b1726acb24b90d8726c6"
@@ -127,20 +119,13 @@
 			"Rev": "08b1a584251b5b62f458943640fc8ebd4d50aaa5"
 		},
 		{
-			"ImportPath": "github.com/square/go-jose",
-			"Rev": "7465d2baefd097ef32054b46be7d9c41185869a1"
-		},
-		{
 			"ImportPath": "github.com/ugorji/go/codec",
 			"Rev": "f1f1a805ed361a0e078bb537e4ea78cd37dcf065"
 		},
 		{
-			"ImportPath": "github.com/vaughan0/go-ini",
-			"Rev": "a98ad7ee00ec53921f08832bc06ecf7fd600e6a1"
-		},
-		{
-			"ImportPath": "github.com/weppos/dnsimple-go/dnsimple",
-			"Rev": "65c1ca73cb19baf0f8b2b33219b7f57595a3ccb0"
+			"ImportPath": "github.com/xenolf/lego/acme",
+			"Comment": "v0.3.1-3-g06124e0",
+			"Rev": "06124e09544be1c492ea00e976de218530f9072e"
 		},
 		{
 			"ImportPath": "golang.org/x/crypto/ocsp",
@@ -153,6 +138,11 @@
 		{
 			"ImportPath": "golang.org/x/net/publicsuffix",
 			"Rev": "c2528b2dd8352441850638a8bb678c2ad056fd3e"
+		},
+		{
+			"ImportPath": "gopkg.in/square/go-jose.v1",
+			"Comment": "v1.0.1",
+			"Rev": "40d457b439244b546f023d056628e5184136899b"
 		},
 		{
 			"ImportPath": "gopkg.in/yaml.v2",

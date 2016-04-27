@@ -3,7 +3,7 @@ package main
 import (
 	"log"
 
-	"github.com/simonswine/kube-lego/acme"
+	"github.com/xenolf/lego/acme"
 	client "k8s.io/kubernetes/pkg/client/unversioned"
 	"k8s.io/kubernetes/pkg/util/intstr"
 )
