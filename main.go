@@ -1,35 +1,13 @@
 package main
 
 import (
-	"log"
-
-	"github.com/xenolf/lego/acme"
-	client "k8s.io/kubernetes/pkg/client/unversioned"
-	"k8s.io/kubernetes/pkg/util/intstr"
+	"github.com/simonswine/kube-lego/pkg/kubelego"
 )
 
-var AppName = "kube-lego"
 var AppVersion = "unknown"
 var AppGitCommit = ""
 var AppGitState = ""
 
-type KubeLego struct {
-	LegoClient       *acme.Client
-	LegoURL          string
-	LegoEmail        string
-	LegoSecretName   string
-	LegoServiceName  string
-	LegoIngressName  string
-	LegoNamespace    string
-	LegoHTTPPort     intstr.IntOrString
-	legoUser         *LegoUser
-	KubeClient       *client.Client
-	legoIngressSlice []*Ingress
-}
-
-func NewKubeLego() *KubeLego {
-	return &KubeLego{}
-}
 
 func Version() string {
 	version := AppVersion
@@ -45,19 +23,6 @@ func Version() string {
 }
 
 func main() {
-	log.Printf("%s %s starting", AppName, Version())
-
-	kl := NewKubeLego()
-
-	err := kl.InitKube()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	err = kl.InitLego()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	kl.WatchConfig()
+	kl := kubelego.New(Version())
+	kl.Init()
 }
