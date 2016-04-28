@@ -11,3 +11,8 @@ type Ingress struct {
 	exists    bool
 	kubelego  kubelego.KubeLego
 }
+
+type Tls struct {
+	*k8sExtensions.IngressTLS
+	ingress *Ingress
+}

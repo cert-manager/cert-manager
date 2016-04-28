@@ -70,65 +70,23 @@ func (kl *KubeLego) WatchConfig() {
 
 }
 
-// provides a distinct list of managed domains
-func (kl *KubeLego) IngressDomains() []string {
-	domainMap := map[string]bool{}
-
-	for _, ing := range kl.legoIngressSlice {
-		for _, domain := range ing.Domains() {
-			domainMap[strings.ToLower(domain)] = true
-		}
-	}
-
-	domains := []string{}
-	for domain, _ := range domainMap {
-		domains = append(domains, domain)
-	}
-
-	return domains
-}
 
 func (kl *KubeLego) IngressProcess() []error {
 	errs := []error{}
-	for _, ing := range kl.legoIngressSlice {
+	/*for _, ing := range kl.legoIngressSlice {
 		err := ing.Process()
 		if err != nil {
 			errs = append(errs, err)
 		}
 	}
+	*/
 	return errs
 }
 
-func (kl *KubeLego) challengeIngressSpec(domains []string) k8sExtensions.IngressSpec{
-	rules := []k8sExtensions.IngressRule{}
-	paths := []k8sExtensions.HTTPIngressPath{
-		k8sExtensions.HTTPIngressPath{
-			Path: kubelego.AcmeHttpChallengePath,
-			Backend: k8sExtensions.IngressBackend{
-				ServiceName: kl.LegoServiceName,
-				ServicePort: kl.LegoHTTPPort,
-			},
-		},
-	}
-	ruleValue := k8sExtensions.IngressRuleValue{
-		&k8sExtensions.HTTPIngressRuleValue{
-			Paths: paths,
-		},
-	}
-	for _, hostName := range domains {
-		rules = append(rules, k8sExtensions.IngressRule{
-			Host:             hostName,
-			IngressRuleValue: ruleValue,
-		})
-	}
-	return k8sExtensions.IngressSpec{
-		Rules: rules,
-	}
-
-}
 
 func (kl *KubeLego) UpdateChallengeEndpoints() error {
 
+	/*
 	domains := kl.IngressDomains()
 	if len(domains) == 0 {
 		kl.Log().Info("No update of challenge endpoints needed: no domains found")
@@ -145,6 +103,8 @@ func (kl *KubeLego) UpdateChallengeEndpoints() error {
 
 	// persist ingress rules in k8s
 	return ing.Save()
+	*/
+	return nil
 }
 
 func (kl *KubeLego) Reconfigure() error {
