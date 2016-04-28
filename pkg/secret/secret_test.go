@@ -106,9 +106,5 @@ func TestSecret_TlsExpireTime(t *testing.T) {
 	expireTime, err := s.TlsExpireTime()
 
 	assert.Nil(t, err)
-	assert.Equal(t,  1469530320, expireTime.Unix())
+	assert.EqualValues(t,  1469530320, expireTime.Unix())
 }
-
-//func TestExpiry(t *testing.T){
-//
-//}
