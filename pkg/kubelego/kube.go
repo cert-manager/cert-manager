@@ -3,15 +3,11 @@ package kubelego
 import (
 	"errors"
 	"reflect"
-	"strings"
-
-	"github.com/simonswine/kube-lego/pkg/ingress"
 
 	k8sApi "k8s.io/kubernetes/pkg/api"
 	k8sExtensions "k8s.io/kubernetes/pkg/apis/extensions"
 	client "k8s.io/kubernetes/pkg/client/unversioned"
 	"k8s.io/kubernetes/pkg/util"
-	"fmt"
 )
 
 func (kl *KubeLego) InitKube() error {
@@ -32,6 +28,12 @@ func (kl *KubeLego) InitKube() error {
 			return errors.New("kube init failed as both in-cluster and dev connection unavailable")
 		}
 	}
+
+	version, err := kubeClient.ServerVersion()
+	if err != nil {
+		return err
+	}
+	kl.Log().Infof("connected to kubernetes api %s", version.String())
 
 	kl.kubeClient = kubeClient
 	return nil
@@ -70,71 +72,3 @@ func (kl *KubeLego) WatchConfig() {
 }
 
 
-func (kl *KubeLego) IngressProcess() []error {
-	errs := []error{}
-	/*for _, ing := range kl.legoIngressSlice {
-		err := ing.Process()
-		if err != nil {
-			errs = append(errs, err)
-		}
-	}
-	*/
-	return errs
-}
-
-
-func (kl *KubeLego) UpdateChallengeEndpoints() error {
-
-	/*
-	domains := kl.IngressDomains()
-	if len(domains) == 0 {
-		kl.Log().Info("No update of challenge endpoints needed: no domains found")
-		return nil
-	}
-
-	ing := ingress.New(kl, kl.LegoNamespace, kl.LegoIngressName)
-	ing.IngressApi.Annotations = map[string]string{
-		kubelego.AnnotationIngressChallengeEndpoints: "true",
-	}
-
-	// build ingress rules
-	ing.IngressApi.Spec = kl.challengeIngressSpec(domains)
-
-	// persist ingress rules in k8s
-	return ing.Save()
-	*/
-	return nil
-}
-
-func (kl *KubeLego) Reconfigure() error {
-	ingressesAll, err :=ingress.All(kl)
-	if err != nil {
-		return err
-	}
-
-	kl.legoIngressSlice = []*ingress.Ingress{}
-	for _, ing := range ingressesAll{
-		if ing.Ignore() {
-			continue
-		}
-		kl.legoIngressSlice = append(kl.legoIngressSlice, ing)
-	}
-
-	kl.Log().Info("update challenge endpoint ingress, if needed")
-	err = kl.UpdateChallengeEndpoints()
-	if err != nil {
-		kl.Log().Fatal("Error while updating challenge endpoints ingress: ", err)
-	}
-
-	kl.Log().Info("process certificates requests for ingresses")
-	errs := kl.IngressProcess()
-	if len(errs) > 0 {
-		errsStr := []string{}
-		for _, err := range errs {
-			errsStr = append(errsStr, fmt.Sprintf("%s", err))
-		}
-		kl.Log().Fatal("Error while process certificate requests: ", strings.Join(errsStr, ", "))
-	}
-
-	return nil
-}

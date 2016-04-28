@@ -21,7 +21,7 @@ func IgnoreIngress(ing *k8sExtensions.Ingress) error {
 	val, ok := ing.Annotations[key]
 
 	if ! ok {
-		return fmt.Errorf("has not annotiation '%s'", key)
+		return fmt.Errorf("has no annotiation '%s'", key)
 	}
 
 	if strings.ToLower(val) != "true" {
@@ -113,7 +113,7 @@ func (o *Ingress) Save() (err error) {
 func (i *Ingress) Ignore() bool {
 	err := IgnoreIngress(i.IngressApi)
 	if err != nil {
-		i.Log().Infof("ignoring as ", err)
+		i.Log().Info("ignoring as ", err)
 		return true
 
 	}

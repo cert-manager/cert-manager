@@ -1,7 +1,6 @@
 package kubelego
 
 import(
-	"fmt"
 	"reflect"
 	"time"
 
@@ -34,35 +33,26 @@ func (kl * KubeLego) requestReconfigure(){
 
 func (kl * KubeLego) WatchReconfigure(){
 
-	w := workqueue.New()
-
-	go func() {
-		kl.waitGroup.Add(1)
-		defer kl.waitGroup.Done()
-		for j := 0; j < 10; j++ {
-			w.Add(fmt.Sprintf("work %d", j))
-			time.Sleep(time.Millisecond * 500)
-		}
-	}()
+	kl.workQueue = workqueue.New()
 
 	// handle worker shutdown
 	go func() {
 		<- kl.stopCh
-		w.ShutDown()
+		kl.workQueue.ShutDown()
 	}()
 
 	go func() {
 		kl.waitGroup.Add(1)
 		defer kl.waitGroup.Done()
 		for {
-			item, quit := w.Get()
+			item, quit := kl.workQueue.Get()
 			if quit {
 				return
 			}
 			kl.Log().Infof("Worker: begin processing %v", item)
-			time.Sleep(900 * time.Millisecond)
+			kl.Reconfigure()
 			kl.Log().Infof("Worker: done processing %v", item)
-			w.Done(item)
+			kl.workQueue.Done(item)
 		}
 	}()
 }
@@ -80,6 +70,7 @@ func (kl * KubeLego) WatchEvents() {
 				return
 			}
 			kl.Log().Infof("CREATE %s/%s", addIng.Namespace, addIng.Name)
+			kl.workQueue.Add(true)
 		},
 		DeleteFunc: func(obj interface{}) {
 			delIng := obj.(*extensions.Ingress)
@@ -87,6 +78,7 @@ func (kl * KubeLego) WatchEvents() {
 				return
 			}
 			kl.Log().Infof("DELETE %s/%s", delIng.Namespace, delIng.Name)
+			kl.workQueue.Add(true)
 		},
 		UpdateFunc: func(old, cur interface{}) {
 			if !reflect.DeepEqual(old, cur) {
@@ -95,6 +87,7 @@ func (kl * KubeLego) WatchEvents() {
 					return
 				}
 				kl.Log().Infof("UPDATE %s/%s", upIng.Namespace, upIng.Name)
+				kl.workQueue.Add(true)
 			}
 		},
 	}

@@ -23,11 +23,18 @@ func(t *Tls) Validate() error{
 	return nil
 }
 
-func (t Tls) SecretMetadata() (meta k8sApi.ObjectMeta) {
-	meta.Namespace = t.ingress.IngressApi.Namespace
-	meta.Name = t.SecretName
-	return
+func (t Tls) SecretMetadata() (meta *k8sApi.ObjectMeta) {
+	return &k8sApi.ObjectMeta{
+		Namespace: t.ingress.IngressApi.Namespace,
+		Name: t.SecretName,
+	}
+}
 
+func (t Tls) IngressMetadata() (meta *k8sApi.ObjectMeta) {
+	return &k8sApi.ObjectMeta{
+		Namespace: t.ingress.IngressApi.Namespace,
+		Name: t.ingress.IngressApi.Name,
+	}
 }
 
 func (t *Tls) Secret() *secret.Secret {
