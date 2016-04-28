@@ -1,6 +1,7 @@
 package utils_test
 
 import (
+	"sort"
 	"testing"
 
 	"github.com/simonswine/kube-lego/pkg/utils"
@@ -27,10 +28,12 @@ func TestStringSliceDistinct(t *testing.T) {
 		[]string{"abc", "def"},
 		utils.StringSliceDistinct([]string{"abc", "def"}),
 	)
+	output := utils.StringSliceDistinct([]string{"abc", "def", "def"})
+	sort.Strings(output)
 	assert.Equal(
 		t,
 		[]string{"abc", "def"},
-		utils.StringSliceDistinct([]string{"abc", "def", "def"}),
+		output,
 	)
 	assert.Equal(
 		t,
