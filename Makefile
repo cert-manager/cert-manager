@@ -30,13 +30,15 @@ build: depend version
 
 all: test build
 
-docker:
+docker: docker_all
+
+docker_%:
 	# create a container
 	$(eval CONTAINER_ID := $(shell docker create \
 		-i \
 		-w $(CONTAINER_DIR) \
 		golang:${GO_VERSION} \
-		/bin/bash -c "tar xf - && make all" \
+		/bin/bash -c "tar xf - && make $*" \
 	))
 	
 	# run build inside container
@@ -49,9 +51,8 @@ docker:
 	# remove container
 	docker rm $(CONTAINER_ID)
 
-docker_image: test build
+image: docker_all
 	docker build -t $(ACCOUNT)/$(APP_NAME):latest .
 	
-push: docker_image
+push: image
 	docker push $(ACCOUNT)/$(APP_NAME):latest
-
