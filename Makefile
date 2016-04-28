@@ -19,7 +19,7 @@ version:
 	$(eval APP_VERSION := $(shell cat VERSION))
 
 test: depend
-	godep go test
+	godep go test ./...
 
 build: depend version
 	mkdir -p ${BUILD_DIR}
@@ -49,7 +49,7 @@ docker:
 	# remove container
 	docker rm $(CONTAINER_ID)
 
-docker_image: build
+docker_image: test build
 	docker build -t $(ACCOUNT)/$(APP_NAME):latest .
 	
 push: docker_image
