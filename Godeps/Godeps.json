@@ -46,6 +46,10 @@
 			"Rev": "777bb3f19bcafe2575ffb2a3e46af92509ae9594"
 		},
 		{
+			"ImportPath": "github.com/etix/stoppableListener",
+			"Rev": "0346fe88acd7ec2c93cc77641624f51c1dd52d93"
+		},
+		{
 			"ImportPath": "github.com/ghodss/yaml",
 			"Rev": "73d445a93680fa1a78ae23a5839bad48f32ba1ee"
 		},
@@ -199,6 +203,11 @@
 			"Rev": "1ce188e557769353063dc2233c89f4fa02133ecc"
 		},
 		{
+			"ImportPath": "k8s.io/kubernetes/pkg/client/cache",
+			"Comment": "v1.2.0-alpha.8-71-g1ce188e",
+			"Rev": "1ce188e557769353063dc2233c89f4fa02133ecc"
+		},
+		{
 			"ImportPath": "k8s.io/kubernetes/pkg/client/metrics",
 			"Comment": "v1.2.0-alpha.8-71-g1ce188e",
 			"Rev": "1ce188e557769353063dc2233c89f4fa02133ecc"
@@ -210,6 +219,11 @@
 		},
 		{
 			"ImportPath": "k8s.io/kubernetes/pkg/client/unversioned",
+			"Comment": "v1.2.0-alpha.8-71-g1ce188e",
+			"Rev": "1ce188e557769353063dc2233c89f4fa02133ecc"
+		},
+		{
+			"ImportPath": "k8s.io/kubernetes/pkg/controller/framework",
 			"Comment": "v1.2.0-alpha.8-71-g1ce188e",
 			"Rev": "1ce188e557769353063dc2233c89f4fa02133ecc"
 		},
