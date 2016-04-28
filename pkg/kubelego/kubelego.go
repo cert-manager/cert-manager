@@ -1,21 +1,29 @@
 package kubelego
 
 import (
-	"os"
 	"errors"
 	"fmt"
+	"os"
+	"os/signal"
 	"strconv"
+	"syscall"
+	"sync"
 
-	"k8s.io/kubernetes/pkg/util/intstr"
+	"github.com/simonswine/kube-lego/pkg/acme"
+
 	log "github.com/Sirupsen/logrus"
+	legoAcme "github.com/xenolf/lego/acme"
 	k8sApi "k8s.io/kubernetes/pkg/api"
 	k8sClient "k8s.io/kubernetes/pkg/client/unversioned"
-	"github.com/xenolf/lego/acme"
+	"k8s.io/kubernetes/pkg/util/intstr"
+	"github.com/simonswine/kube-lego/pkg/kubelego_const"
 )
 
 func New(version string) *KubeLego {
 	return &KubeLego{
 		version: version,
+		stopCh:  make(chan struct{}),
+		waitGroup: sync.WaitGroup{},
 	}
 }
 
@@ -24,8 +32,23 @@ func (kl *KubeLego) Log() *log.Entry {
 	return log.WithField("context", "kubelego")
 }
 
+func (kl *KubeLego) Stop(){
+	kl.Log().Info("shuting things down")
+	close(kl.stopCh)
+}
+
 func (kl *KubeLego) Init() {
 	kl.Log().Infof("kube-lego %s starting", kl.version)
+
+	// handle sigterm correctly
+	k := make(chan os.Signal, 1)
+	signal.Notify(k, syscall.SIGINT, syscall.SIGTERM)
+	go func() {
+		s := <-k
+		logger := kl.Log().WithField("signal", s.String())
+		logger.Debug("received signal")
+		kl.Stop()
+	}()
 
 	// parse env vars
 	err := kl.paramsLego()
@@ -33,6 +56,10 @@ func (kl *KubeLego) Init() {
 		kl.Log().Fatal(err)
 	}
 
+	// start workers
+	kl.WatchReconfigure()
+
+	// intialize kube api
 	err = kl.InitKube()
 	if err != nil {
 		kl.Log().Fatal(err)
@@ -43,22 +70,62 @@ func (kl *KubeLego) Init() {
 		kl.Log().Fatal(err)
 	}
 
-	kl.WatchConfig()
+	// run acme http server
+	myAcme := acme.New(kl)
+	go func() {
+		kl.waitGroup.Add(1)
+		defer kl.waitGroup.Done()
+		myAcme.RunServer(kl.stopCh)
+	}()
+
+	// watch for ingress controller events
+	kl.WatchEvents()
+
+	<-kl.stopCh
+	kl.Log().Infof("exiting")
+	kl.waitGroup.Wait()
 }
 
 func (kl *KubeLego) KubeClient() *k8sClient.Client {
 	return kl.kubeClient
 }
 
-func (kl *KubeLego) LegoClient() *acme.Client  {
+func (kl *KubeLego) LegoClient() *legoAcme.Client {
 	return kl.legoClient
+}
+
+func (kl *KubeLego) Version() string {
+	return kl.version
+}
+
+func (kl *KubeLego) LegoHTTPPort() string {
+	return fmt.Sprintf(":%d", kl.legoHTTPPort.IntValue())
+}
+
+func (kl *KubeLego) LegoURL() string {
+	return kl.legoURL
+}
+
+func (kl *KubeLego) LegoEmail() string {
+	return kl.legoEmail
+}
+
+type mockAcme struct {
+
+}
+func (mA *mockAcme) ObtainCertificate([]string) (data map[string][]byte,err error){
+	return
+}
+
+func (kl *KubeLego) AcmeClient() kubelego.Acme{
+	return &mockAcme{}
 }
 
 // read config parameters from ENV vars
 func (kl *KubeLego) paramsLego() error {
 
-	kl.LegoEmail = os.Getenv("LEGO_EMAIL")
-	if len(kl.LegoEmail) == 0 {
+	kl.legoEmail = os.Getenv("LEGO_EMAIL")
+	if len(kl.legoEmail) == 0 {
 		return errors.New("Please provide an email address for cert recovery in LEGO_EMAIL")
 	}
 
@@ -67,9 +134,9 @@ func (kl *KubeLego) paramsLego() error {
 		kl.LegoNamespace = k8sApi.NamespaceDefault
 	}
 
-	kl.LegoURL = os.Getenv("LEGO_URL")
-	if len(kl.LegoURL) == 0 {
-		kl.LegoURL = "https://acme-staging.api.letsencrypt.org/directory"
+	kl.legoURL = os.Getenv("LEGO_URL")
+	if len(kl.legoURL) == 0 {
+		kl.legoURL = "https://acme-staging.api.letsencrypt.org/directory"
 	}
 
 	kl.LegoSecretName = os.Getenv("LEGO_SECRET_NAME")
@@ -89,7 +156,7 @@ func (kl *KubeLego) paramsLego() error {
 
 	httpPortStr := os.Getenv("LEGO_PORT")
 	if len(httpPortStr) == 0 {
-		kl.LegoHTTPPort = intstr.FromInt(8080)
+		kl.legoHTTPPort = intstr.FromInt(8080)
 	} else {
 		i, err := strconv.Atoi(httpPortStr)
 		if err != nil {
@@ -98,11 +165,9 @@ func (kl *KubeLego) paramsLego() error {
 		if i <= 0 || i >= 65535 {
 			return fmt.Errorf("Wrong port: %d", i)
 		}
-		kl.LegoHTTPPort = intstr.FromInt(i)
+		kl.legoHTTPPort = intstr.FromInt(i)
 
 	}
 
 	return nil
 }
-
-

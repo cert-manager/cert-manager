@@ -9,5 +9,14 @@ import (
 type KubeLego interface {
 	KubeClient() *k8sClient.Client
 	Log() *logrus.Entry
+	AcmeClient() Acme
 	LegoClient() *acme.Client
+	LegoHTTPPort() string
+	LegoEmail() string
+	LegoURL() string
+	Version() string
+}
+
+type Acme interface {
+	ObtainCertificate(domains []string) (map[string][]byte, error)
 }

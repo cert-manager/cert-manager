@@ -5,7 +5,6 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/simonswine/kube-lego/pkg/kubelego_const"
 	"github.com/simonswine/kube-lego/pkg/ingress"
 
 	k8sApi "k8s.io/kubernetes/pkg/api"

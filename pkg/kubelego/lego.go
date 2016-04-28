@@ -25,7 +25,7 @@ type LegoUser struct {
 }
 
 func (u LegoUser) GetEmail() string {
-	return u.kubeLego.LegoEmail
+	return u.kubeLego.legoEmail
 }
 
 func (u LegoUser) GetRegistration() *acme.RegistrationResource {
@@ -60,7 +60,7 @@ func (kl *KubeLego) createUser() (*LegoUser, error) {
 		kubeLego: kl,
 	}
 
-	legoClient, err := acme.NewClient(kl.LegoURL, &user, kubelego.AcmeKeyType)
+	legoClient, err := acme.NewClient(kl.legoURL, &user, kubelego.AcmeKeyType)
 	if err != nil {
 		return nil, err
 	}
@@ -146,7 +146,7 @@ func (kl *KubeLego) InitLego() error {
 	}
 	kl.legoUser = user
 
-	legoClient, err := acme.NewClient(kl.LegoURL, kl.legoUser, kubelego.AcmeKeyType)
+	legoClient, err := acme.NewClient(kl.legoURL, kl.legoUser, kubelego.AcmeKeyType)
 	if err != nil {
 		return err
 	}
@@ -154,7 +154,7 @@ func (kl *KubeLego) InitLego() error {
 	legoClient.ExcludeChallenges([]acme.Challenge{acme.TLSSNI01, acme.DNS01})
 
 	kl.legoClient = legoClient
-	kl.LegoClient().SetHTTPAddress(fmt.Sprintf(":%d", kl.LegoHTTPPort.IntValue()))
+	kl.LegoClient().SetHTTPAddress(fmt.Sprintf(":%d", kl.legoHTTPPort.IntValue()))
 
 	return nil
 }
