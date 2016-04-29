@@ -31,5 +31,6 @@ node('docker'){
         }
     } finally {
         step([$class: 'Mailer', recipients: 'christian@jetstack.io'])
+        echo: 'Finally executed'
     }
 }
