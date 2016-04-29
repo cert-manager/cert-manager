@@ -30,17 +30,6 @@ node('docker'){
             }
         }
     } finally {
-        // notify slack
-        def buildColor = currentBuild.result == null? "good": "warning"
-        def buildStatus = currentBuild.result == null? "Success": currentBuild.result
-        def buildEmoji = currentBuild.result == null? ":smirk:":":cold_sweat:"
-        slackSend(
-            color: buildColor,
-            title: "${env.JOB_NAME} build ${env.BUILD_NUMBER}",
-            text: """${buildEmoji} Build ${buildStatus}
-                |${env.BUILD_URL}
-                |branch: ${env.BRANCH_NAME}""".stripMargin()
-        )
-        step([$class: 'SlackNotifier'])
-   }
+        step([$class: 'Mailer', recipients: 'christian@jetstack.io'])
+    }
 }
