@@ -1,6 +1,6 @@
 // vim: et:ts=4:sw=4:ft=groovy
 node('docker'){
-    try {
+    catchError {
         def imageName = 'simonswine/kube-lego'
         def imageTags = ['latest']
 
@@ -29,8 +29,6 @@ node('docker'){
                 sh 'rm -rf .dockercfg'
             }
         }
-    } finally {
-        step([$class: 'Mailer', recipients: 'christian@jetstack.io'])
-        echo: 'Finally executed'
     }
+    step([$class: 'Mailer', recipients: 'christian@jetstack.io', notifyEveryUnstableBuild: true])
 }
