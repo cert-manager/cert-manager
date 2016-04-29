@@ -19,18 +19,22 @@ version:
 	$(eval GIT_COMMIT := $(shell git rev-parse HEAD))
 	$(eval APP_VERSION := $(shell cat VERSION))
 
-test: test_root test_pkg_acme test_pkg_ingress test_pkg_kubelego test_pkg_kubelego_const test_pkg_secret test_pkg_utils
+test: test_root test_pkg_acme test_pkg_ingress test_pkg_kubelego test_pkg_secret test_pkg_utils
 
-test_root: depend
+test_prepare: depend
 	which gocover-cobertura || go get github.com/t-yuki/gocover-cobertura
 	which go2xunit || go get bitbucket.org/tebeka/go2xunit
 	rm -rf $(TEST_DIR)/
 	mkdir $(TEST_DIR)/
-	godep go test -v -coverprofile=$(TEST_DIR)/coverage.txt -covermode count $* | go2xunit > $(TEST_DIR)/test.xml
+	godep go build -i
+
+test_root: test_prepare
+	godep go test -v -coverprofile=$(TEST_DIR)/coverage.txt -covermode count . | go2xunit > $(TEST_DIR)/test.xml
 	gocover-cobertura < $(TEST_DIR)/coverage.txt > $(TEST_DIR)/coverage.xml
 
-test_pkg_%: depend
-	godep go test -coverprofile=$(TEST_DIR)/coverage.$*.txt -covermode count $(PACKAGE_NAME)/pkg/$*
+test_pkg_%: test_prepare
+	godep go test -v -coverprofile=$(TEST_DIR)/coverage.$*.txt -covermode count ./pkg/$* | go2xunit > $(TEST_DIR)/test.$*.xml
+	gocover-cobertura < $(TEST_DIR)/coverage.$*.txt > $(TEST_DIR)/coverage.$*.xml
 
 build: depend version
 	mkdir -p ${BUILD_DIR}
