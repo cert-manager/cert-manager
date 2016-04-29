@@ -1,4 +1,5 @@
 _build/
+_test/
 kube-lego
 .idea
 *.iml
