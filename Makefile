@@ -30,10 +30,12 @@ test_prepare: depend
 
 test_root: test_prepare
 	godep go test -v -coverprofile=$(TEST_DIR)/coverage.txt -covermode count . | go2xunit > $(TEST_DIR)/test.xml
+	sed -i "s#$(PACKAGE_NAME)/##g" $(TEST_DIR)/coverage.txt
 	gocover-cobertura < $(TEST_DIR)/coverage.txt > $(TEST_DIR)/coverage.xml
 
 test_pkg_%: test_prepare
 	godep go test -v -coverprofile=$(TEST_DIR)/coverage.$*.txt -covermode count ./pkg/$* | go2xunit > $(TEST_DIR)/test.$*.xml
+	sed -i "s#$(PACKAGE_NAME)/##g" $(TEST_DIR)/coverage.$*.txt
 	gocover-cobertura < $(TEST_DIR)/coverage.$*.txt > $(TEST_DIR)/coverage.$*.xml
 
 build: depend version
