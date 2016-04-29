@@ -12,6 +12,10 @@ TEST_DIR=_test
 CONTAINER_DIR=/go/src/${PACKAGE_NAME}
 
 depend:
+	rm -rf $(TEST_DIR)/
+	rm -rf ${BUILD_DIR}/
+	mkdir $(TEST_DIR)/
+	mkdir $(BUILD_DIR)/
 	which godep || go get github.com/tools/godep
 
 version:
@@ -24,8 +28,6 @@ test: test_root test_pkg_acme test_pkg_ingress test_pkg_kubelego test_pkg_secret
 test_prepare: depend
 	which gocover-cobertura || go get github.com/t-yuki/gocover-cobertura
 	which go2xunit || go get bitbucket.org/tebeka/go2xunit
-	rm -rf $(TEST_DIR)/
-	mkdir $(TEST_DIR)/
 	godep go build -i
 
 test_root: test_prepare
@@ -39,7 +41,6 @@ test_pkg_%: test_prepare
 	sed -i "s#filename=\"$(PACKAGE_NAME)/#filename=\"#g" $(TEST_DIR)/coverage.$*.xml
 
 build: depend version
-	mkdir -p ${BUILD_DIR}
 	CGO_ENABLED=0 GOOS=linux godep go build \
 		-a -tags netgo \
 		-o ${BUILD_DIR}/${APP_NAME} \
