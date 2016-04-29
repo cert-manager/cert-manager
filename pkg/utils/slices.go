@@ -5,8 +5,7 @@ import (
 	"sort"
 	"crypto/md5"
 	"fmt"
-	"encoding/binary"
-	"bytes"
+	"io"
 )
 
 func StringSliceLowerCase(in []string)[]string{
@@ -33,8 +32,11 @@ func StringSliceDistinct(in []string) []string{
 func HashStringSlice(in []string) string{
 	sort.Strings(in)
 
-	buf := new(bytes.Buffer)
-	binary.Write(buf, binary.LittleEndian, in)
+	h := md5.New()
 
-	return fmt.Sprintf("%x", md5.Sum(buf.Bytes()))
+	for _, str := range in {
+		io.WriteString(h, str)
+	}
+
+	return fmt.Sprintf("%x", h.Sum(nil))
 }

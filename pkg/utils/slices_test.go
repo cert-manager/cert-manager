@@ -45,12 +45,17 @@ func TestStringSliceDistinct(t *testing.T) {
 func TestHashStringSlice(t *testing.T) {
 	assert.Equal(
 		t,
-		"d41d8cd98f00b204e9800998ecf8427e",
+		"e80b5017098950fc58aad83c8c14978e",
 		utils.HashStringSlice([]string{"abc", "def"}),
 	)
 	assert.Equal(
 		t,
 		utils.HashStringSlice([]string{"def", "abc"}),
+		utils.HashStringSlice([]string{"abc", "def"}),
+	)
+	assert.NotEqual(
+		t,
+		utils.HashStringSlice([]string{"123"}),
 		utils.HashStringSlice([]string{"abc", "def"}),
 	)
 }
