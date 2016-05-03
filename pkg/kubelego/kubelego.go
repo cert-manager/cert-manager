@@ -110,15 +110,22 @@ func (kl *KubeLego) LegoEmail() string {
 	return kl.legoEmail
 }
 
-type mockAcme struct {
-
-}
-func (mA *mockAcme) ObtainCertificate([]string) (data map[string][]byte,err error){
-	return
+func (kl *KubeLego) acmeSecret() *secret.Secret {
+	return secret.New(kl, kl.LegoNamespace, kl.LegoSecretName)
 }
 
-func (kl *KubeLego) AcmeClient() kubelego.Acme{
-	return &mockAcme{}
+func (kl *KubeLego) AcmeUser() (map[string][]byte, error) {
+	s := kl.acmeSecret()
+	if !s.Exists() {
+		return map[string][]byte{}, fmt.Errorf("no acme user found %s/%s", kl.LegoNamespace, kl.LegoSecretName)
+	}
+	return s.SecretApi.Data, nil
+}
+
+func (kl *KubeLego) SaveAcmeUser(data map[string][]byte) error {
+	s := kl.acmeSecret()
+	s.SecretApi.Data = data
+	return s.Save()
 }
 
 // read config parameters from ENV vars

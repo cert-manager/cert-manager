@@ -2,34 +2,120 @@ package acme
 
 import (
 	"fmt"
-	"net/http"
 	"net"
+	"net/http"
+	"path"
+	"strings"
 
 	"github.com/simonswine/kube-lego/pkg/kubelego_const"
+	"github.com/simonswine/kube-lego/pkg/utils"
 
 	"github.com/Sirupsen/logrus"
-	"github.com/etix/stoppableListener"
 )
 
-func New(kubeleg kubelego.KubeLego) *Acme {
+func New(kubeLego kubelego.KubeLego) *Acme {
 	a := &Acme{
-		kubelego: kubeleg,
+		kubelego:              kubeLego,
+		challengesHostToToken: map[string]string{},
+		challengesTokenToKey:  map[string]string{},
+		id:                    utils.RandomToken(16),
+	}
+	if kubeLego != nil {
+		a.log = a.kubelego.Log().WithField("context", "acme")
+		a.notFound = fmt.Sprintf("kube-lego (version %s) - 404 not found", kubeLego.Version())
+	} else {
+		a.log = logrus.WithField("context", "acme")
 	}
 	return a
 }
 
-func (a *Acme) Log() *logrus.Entry {
-	return a.kubelego.Log().WithField("context", "acme")
+func (a *Acme) Log() (log *logrus.Entry) {
+	return a.log
+}
+
+func (a *Acme) Mux() *http.ServeMux {
+
+	mux := http.NewServeMux()
+
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/plain")
+		w.WriteHeader(http.StatusNotFound)
+		fmt.Fprintf(w, a.notFound)
+	})
+
+	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/plain")
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprint(w, "ok")
+	})
+
+	mux.HandleFunc(kubelego.AcmeHttpChallengePath+"/", a.handleChallenge)
+
+	mux.HandleFunc(kubelego.AcmeHttpSelfTest, func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/plain")
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprint(w, a.id)
+	})
+
+	return mux
 }
 
 func (a *Acme) handleChallenge(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusInternalServerError)
-	fmt.Fprint(w, "unimplemented - 500")
+	w.Header().Set("Content-Type", "text/plain")
+
+	host := strings.Split(r.Host, ":")[0]
+	basePath := path.Dir(r.URL.EscapedPath())
+	token := path.Base(r.URL.EscapedPath())
+
+	log := a.Log().WithFields(logrus.Fields{
+		"host":     host,
+		"basePath": basePath,
+		"token":    token,
+	})
+
+	// wrong base path
+	if basePath != path.Clean(kubelego.AcmeHttpChallengePath) {
+		log.Debugf("base path not matching '%s'", kubelego.AcmeHttpChallengePath)
+		w.WriteHeader(http.StatusNotFound)
+		fmt.Fprintf(w, a.notFound)
+		return
+	}
+
+	// read shared storage
+	a.challengesMutex.RLock()
+	tokenExpected, okHost := a.challengesHostToToken[host]
+	key, okToken := a.challengesTokenToKey[token]
+	a.challengesMutex.RUnlock()
+
+	if !okHost {
+		log.Debugf("host not found")
+		w.WriteHeader(http.StatusNotFound)
+		fmt.Fprintf(w, a.notFound)
+		return
+	}
+
+	if !okToken {
+		log.Debugf("token not found")
+		w.WriteHeader(http.StatusNotFound)
+		fmt.Fprintf(w, a.notFound)
+		return
+	}
+
+	if tokenExpected != token {
+		log.Debugf("token not matching expected token")
+		w.WriteHeader(http.StatusNotFound)
+		fmt.Fprintf(w, a.notFound)
+		return
+	}
+
+	log.Infof("responding to challenge request")
+	w.WriteHeader(http.StatusOK)
+	fmt.Fprint(w, key)
 }
 
 func (a *Acme) RunServer(stopCh <-chan struct{}) {
+
 	port := a.kubelego.LegoHTTPPort()
-	version := a.kubelego.Version()
 
 	// listen on port
 	listener, err := net.Listen("tcp", port)
@@ -37,29 +123,16 @@ func (a *Acme) RunServer(stopCh <-chan struct{}) {
 		a.Log().Fatalf("error starting http server on %s: %s", port, err)
 	}
 
-	a.Log().Infof("server listening on http://%s/", port)
+	mux := a.Mux()
 
-	stoppable := stoppableListener.Handle(listener)
+	a.Log().Infof("server listening on http://%s/", port)
 
 	// handle stop signal
 	go func() {
 		<-stopCh
 		a.Log().Infof("stopping server listening on http://%s/", port)
-		stoppable.Stop <- true
+		listener.Close()
 	}()
 
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusNotFound)
-		fmt.Fprintf(w, "kube-lego %s backend - 404", version)
-	})
-
-	http.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		fmt.Fprint(w, "ok")
-	})
-
-	http.HandleFunc(kubelego.AcmeHttpChallengePath, a.handleChallenge)
-
-	http.Serve(stoppable, nil)
+	http.Serve(listener, mux)
 }
-

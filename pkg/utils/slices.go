@@ -1,14 +1,14 @@
 package utils
 
 import (
-	"strings"
-	"sort"
 	"crypto/md5"
 	"fmt"
 	"io"
+	"sort"
+	"strings"
 )
 
-func StringSliceLowerCase(in []string)[]string{
+func StringSliceLowerCase(in []string) []string {
 	out := []string{}
 	for _, elem := range in {
 		out = append(out, strings.ToLower(elem))
@@ -16,20 +16,20 @@ func StringSliceLowerCase(in []string)[]string{
 	return out
 }
 
-func StringSliceDistinct(in []string) []string{
+func StringSliceDistinct(in []string) []string {
 	elemMap := map[string]bool{}
 	for _, elem := range in {
 		elemMap[elem] = true
 	}
 
-	out:= []string{}
+	out := []string{}
 	for elem, _ := range elemMap {
 		out = append(out, elem)
 	}
 	return out
 }
 
-func HashStringSlice(in []string) string{
+func HashStringSlice(in []string) string {
 	sort.Strings(in)
 
 	h := md5.New()
