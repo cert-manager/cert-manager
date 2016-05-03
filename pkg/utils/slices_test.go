@@ -29,10 +29,14 @@ func TestStringSliceDistinct(t *testing.T) {
 		utils.StringSliceDistinct([]string{"abc", "def"}),
 	)
 	output := utils.StringSliceDistinct([]string{"abc", "def", "def"})
+	expected := []string{"abc", "def"}
+
 	sort.Strings(output)
+	sort.Strings(expected)
+
 	assert.Equal(
 		t,
-		[]string{"abc", "def"},
+		expected,
 		output,
 	)
 	assert.Equal(
