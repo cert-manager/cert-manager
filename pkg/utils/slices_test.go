@@ -23,13 +23,18 @@ func TestStringSliceLowerCase(t *testing.T) {
 }
 
 func TestStringSliceDistinct(t *testing.T) {
+	output := utils.StringSliceDistinct([]string{"abc", "def"})
+	expected := []string{"abc", "def"}
+	sort.Strings(output)
+	sort.Strings(expected)
+
 	assert.Equal(
 		t,
-		[]string{"abc", "def"},
-		utils.StringSliceDistinct([]string{"abc", "def"}),
+		expected,
+		output,
 	)
-	output := utils.StringSliceDistinct([]string{"abc", "def", "def"})
-	expected := []string{"abc", "def"}
+
+	output = utils.StringSliceDistinct([]string{"abc", "def", "def"})
 
 	sort.Strings(output)
 	sort.Strings(expected)
