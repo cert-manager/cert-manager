@@ -1,18 +1,18 @@
 package kubelego
 
-import(
+import (
 	"reflect"
 	"time"
 
-	"k8s.io/kubernetes/pkg/client/cache"
-	"k8s.io/kubernetes/pkg/controller/framework"
+	"github.com/simonswine/kube-lego/pkg/ingress"
 	"k8s.io/kubernetes/pkg/api"
-	"k8s.io/kubernetes/pkg/watch"
 	"k8s.io/kubernetes/pkg/apis/extensions"
+	"k8s.io/kubernetes/pkg/client/cache"
+	client "k8s.io/kubernetes/pkg/client/unversioned"
+	"k8s.io/kubernetes/pkg/controller/framework"
 	"k8s.io/kubernetes/pkg/runtime"
 	"k8s.io/kubernetes/pkg/util/workqueue"
-	client "k8s.io/kubernetes/pkg/client/unversioned"
-	"github.com/simonswine/kube-lego/pkg/ingress"
+	"k8s.io/kubernetes/pkg/watch"
 )
 
 func ingressListFunc(c *client.Client, ns string) func(api.ListOptions) (runtime.Object, error) {
@@ -27,17 +27,17 @@ func ingressWatchFunc(c *client.Client, ns string) func(options api.ListOptions)
 	}
 }
 
-func (kl * KubeLego) requestReconfigure(){
+func (kl *KubeLego) requestReconfigure() {
 
 }
 
-func (kl * KubeLego) WatchReconfigure(){
+func (kl *KubeLego) WatchReconfigure() {
 
 	kl.workQueue = workqueue.New()
 
 	// handle worker shutdown
 	go func() {
-		<- kl.stopCh
+		<-kl.stopCh
 		kl.workQueue.ShutDown()
 	}()
 
@@ -57,7 +57,7 @@ func (kl * KubeLego) WatchReconfigure(){
 	}()
 }
 
-func (kl * KubeLego) WatchEvents() {
+func (kl *KubeLego) WatchEvents() {
 
 	kl.Log().Infof("start event watcher")
 

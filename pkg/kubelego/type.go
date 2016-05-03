@@ -4,15 +4,14 @@ import (
 	"sync"
 
 	"github.com/simonswine/kube-lego/pkg/ingress"
+	"github.com/simonswine/kube-lego/pkg/kubelego_const"
 
-	"github.com/xenolf/lego/acme"
 	k8sClient "k8s.io/kubernetes/pkg/client/unversioned"
 	"k8s.io/kubernetes/pkg/util/intstr"
 	"k8s.io/kubernetes/pkg/util/workqueue"
 )
 
 type KubeLego struct {
-	legoClient       *acme.Client
 	legoURL          string
 	legoEmail        string
 	LegoSecretName   string
@@ -20,10 +19,10 @@ type KubeLego struct {
 	LegoIngressName  string
 	LegoNamespace    string
 	legoHTTPPort     intstr.IntOrString
-	legoUser         *LegoUser
 	kubeClient       *k8sClient.Client
 	legoIngressSlice []*ingress.Ingress
 	version          string
+	acmeClient       kubelego.Acme
 
 	// stop channel for services
 	stopCh chan struct{}

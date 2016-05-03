@@ -5,16 +5,15 @@ import (
 	"github.com/simonswine/kube-lego/pkg/utils"
 
 	"fmt"
-	"strings"
 	"github.com/simonswine/kube-lego/pkg/ingress"
+	"strings"
 )
-
 
 func (kl *KubeLego) TlsIgnoreDuplicatedSecrets(tlsSlice []kubelego.Tls) []kubelego.Tls {
 
 	tlsBySecert := map[string][]kubelego.Tls{}
 
-	for _, elm := range tlsSlice{
+	for _, elm := range tlsSlice {
 		key := fmt.Sprintf(
 			"%s/%s",
 			elm.SecretMetadata().Name,
@@ -62,24 +61,19 @@ func (kl *KubeLego) TlsAggregateHosts(tlsSlice []kubelego.Tls) []string {
 	}
 
 	return utils.StringSliceDistinct(
-	utils.StringSliceLowerCase(
-		domains,
-	),
+		utils.StringSliceLowerCase(
+			domains,
+		),
 	)
 }
 
-func (kl *KubeLego) Reconfigure() error {
-	ingressesAll, err :=ingress.All(kl)
-	if err != nil {
-		return err
-	}
-
+func (kl *KubeLego) reconfigure(ingressesAll []kubelego.Ingress) error {
 	tlsSlice := []kubelego.Tls{}
-	for _, ing := range ingressesAll{
+	for _, ing := range ingressesAll {
 		if ing.Ignore() {
 			continue
 		}
-		tlsSlice = append(tlsSlice, ing.Tls()[0])
+		tlsSlice = append(tlsSlice, ing.Tls()...)
 	}
 
 	// normify tls config
@@ -89,7 +83,7 @@ func (kl *KubeLego) Reconfigure() error {
 	tlsHosts := kl.TlsAggregateHosts(tlsSlice)
 
 	kl.Log().Info("update challenge endpoint ingress, if needed")
-	err = kl.UpdateChallengeEndpoints(tlsHosts)
+	err := kl.UpdateChallengeEndpoints(tlsHosts)
 	if err != nil {
 		kl.Log().Fatal("Error while updating challenge endpoints ingress: ", err)
 	}
@@ -107,32 +101,23 @@ func (kl *KubeLego) Reconfigure() error {
 	return nil
 }
 
-func (kl *KubeLego) UpdateChallengeEndpoints(tlsHosts []string) error {
-
-	hashNew := utils.HashStringSlice(tlsHosts)
-
-	ing := ingress.New(kl, kl.LegoNamespace, kl.LegoIngressName)
-	hashOld, ok := ing.IngressApi.Annotations[kubelego.AnnotationIngressChallengeEndpointsHash]
-
-	if ok && hashNew == hashOld {
-		kl.Log().Infof("challenge endpoints don't need a update")
-		return nil
+func (kl *KubeLego) Reconfigure() error {
+	ingressesAll, err := ingress.All(kl)
+	if err != nil {
+		return err
 	}
 
-	// build ingress rules
-	ing.SetChallengeEndpoints(
+	return kl.reconfigure(ingressesAll)
+}
+
+func (kl *KubeLego) UpdateChallengeEndpoints(tlsHosts []string) error {
+	ing := ingress.New(kl, kl.LegoNamespace, kl.LegoIngressName)
+	return ing.UpdateChallengeEndpoints(
 		tlsHosts,
 		kl.LegoServiceName,
 		kl.legoHTTPPort,
 	)
-
-	// store hash
-	ing.IngressApi.Annotations[kubelego.AnnotationIngressChallengeEndpointsHash] = hashNew
-
-	// persist ingress rules in k8s
-	return ing.Save()
 }
-
 
 func (kl *KubeLego) TlsProcessHosts(tlsSlice []kubelego.Tls) []error {
 	errs := []error{}
@@ -144,5 +129,3 @@ func (kl *KubeLego) TlsProcessHosts(tlsSlice []kubelego.Tls) []error {
 	}
 	return errs
 }
-
-

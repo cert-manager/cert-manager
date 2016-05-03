@@ -66,8 +66,7 @@ KOqkqm57TH2H3eDJAkSnh6/DNFu0Qg==
 -----END CERTIFICATE-----
 `
 
-
-func TestSecret_TlsDomains(t *testing.T){
+func TestSecret_TlsDomains(t *testing.T) {
 	s := &Secret{
 		SecretApi: &api.Secret{
 			Data: map[string][]byte{
@@ -106,5 +105,5 @@ func TestSecret_TlsExpireTime(t *testing.T) {
 	expireTime, err := s.TlsExpireTime()
 
 	assert.Nil(t, err)
-	assert.EqualValues(t,  1469530320, expireTime.Unix())
+	assert.EqualValues(t, 1469530320, expireTime.Unix())
 }

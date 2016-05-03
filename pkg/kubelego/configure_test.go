@@ -5,16 +5,16 @@ import (
 
 	"github.com/simonswine/kube-lego/pkg/kubelego_const"
 
-	k8sApi "k8s.io/kubernetes/pkg/api"
 	"github.com/stretchr/testify/assert"
+	k8sApi "k8s.io/kubernetes/pkg/api"
 	"sort"
 )
 
 type mockTls struct {
-	SecretName string
+	SecretName  string
 	IngressName string
-	Namespace string
-	hosts []string
+	Namespace   string
+	hosts       []string
 }
 
 func (m *mockTls) Hosts() []string {
@@ -23,14 +23,14 @@ func (m *mockTls) Hosts() []string {
 
 func (m *mockTls) SecretMetadata() *k8sApi.ObjectMeta {
 	return &k8sApi.ObjectMeta{
-		Name: m.SecretName,
+		Name:      m.SecretName,
 		Namespace: m.Namespace,
 	}
 }
 
 func (m *mockTls) IngressMetadata() *k8sApi.ObjectMeta {
 	return &k8sApi.ObjectMeta{
-		Name: m.IngressName,
+		Name:      m.IngressName,
 		Namespace: m.Namespace,
 	}
 }
@@ -43,28 +43,28 @@ func (m *mockTls) Process() error {
 func getTlsExample() []kubelego.Tls {
 	return []kubelego.Tls{
 		&mockTls{
-			SecretName: "secret1",
+			SecretName:  "secret1",
 			IngressName: "ingress1",
-			Namespace: "namespace1",
-			hosts: []string{"domain1"},
+			Namespace:   "namespace1",
+			hosts:       []string{"domain1"},
 		},
 		&mockTls{
-			SecretName: "secret2",
+			SecretName:  "secret2",
 			IngressName: "ingress2",
-			Namespace: "namespace1",
-			hosts: []string{"domain2"},
+			Namespace:   "namespace1",
+			hosts:       []string{"domain2"},
 		},
 		&mockTls{
-			SecretName: "secret1",
+			SecretName:  "secret1",
 			IngressName: "ingress3",
-			Namespace: "namespace2",
-			hosts: []string{"domain3", "domain4"},
+			Namespace:   "namespace2",
+			hosts:       []string{"domain3", "domain4"},
 		},
 		&mockTls{
-			SecretName: "secret1",
+			SecretName:  "secret1",
 			IngressName: "ingress4",
-			Namespace: "namespace1",
-			hosts: []string{"domain1"},
+			Namespace:   "namespace1",
+			hosts:       []string{"domain1"},
 		},
 	}
 }
@@ -75,7 +75,6 @@ func TestKubeLego_TlsIgnoreDuplicatedSecrets(t *testing.T) {
 	output := k.TlsIgnoreDuplicatedSecrets(input)
 	assert.EqualValues(t, 2, len(output))
 }
-
 
 func TestKubeLego_TlsAggregateHosts(t *testing.T) {
 	k := KubeLego{}

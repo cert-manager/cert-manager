@@ -70,5 +70,3 @@ func (kl *KubeLego) WatchConfig() {
 	}
 
 }
-
-

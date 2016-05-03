@@ -1,33 +1,33 @@
 package secret
 
 import (
-	"fmt"
-	"encoding/pem"
 	"crypto/x509"
+	"encoding/pem"
+	"fmt"
 	"time"
 
 	"github.com/simonswine/kube-lego/pkg/kubelego_const"
 
 	"github.com/Sirupsen/logrus"
-	k8sErrors "k8s.io/kubernetes/pkg/api/errors"
 	k8sApi "k8s.io/kubernetes/pkg/api"
+	k8sErrors "k8s.io/kubernetes/pkg/api/errors"
 	k8sClient "k8s.io/kubernetes/pkg/client/unversioned"
 )
 
 func New(client kubelego.KubeLego, namespace string, name string) *Secret {
 	secret := &Secret{
-		exists: true,
+		exists:   true,
 		kubelego: client,
 	}
 
 	var err error
 	secret.SecretApi, err = client.KubeClient().Secrets(namespace).Get(name)
 	if err != nil {
-		if k8sErrors.IsNotFound(err){
+		if k8sErrors.IsNotFound(err) {
 			secret.SecretApi = &k8sApi.Secret{
 				ObjectMeta: k8sApi.ObjectMeta{
 					Namespace: namespace,
-					Name: name,
+					Name:      name,
 				},
 			}
 			secret.Log().Info("creating new secret")
@@ -84,7 +84,7 @@ func (o *Secret) TlsDomains() ([]string, error) {
 	return cert.DNSNames, nil
 }
 
-func (o *Secret) TlsExpireTime() (time.Time, error){
+func (o *Secret) TlsExpireTime() (time.Time, error) {
 	cert, err := o.tlsCertPem()
 	if err != nil {
 		return time.Time{}, err
@@ -105,7 +105,7 @@ func (o *Secret) TlsDomainsInclude(domains []string) bool {
 	}
 
 	for _, domain := range domains {
-		if val, ok := tlsDomainsMap[domain]; ! ok || ! val {
+		if val, ok := tlsDomainsMap[domain]; !ok || !val {
 			return false
 		}
 	}
@@ -114,10 +114,10 @@ func (o *Secret) TlsDomainsInclude(domains []string) bool {
 }
 
 func (o *Secret) tlsCertPem() (cert *x509.Certificate, err error) {
-	key := k8sApi.TLSCertKey
+	key := kubelego.TLSCertKey
 
 	certBytes, ok := o.SecretApi.Data[key]
-	if ! ok {
+	if !ok {
 		err = fmt.Errorf("Data field '%s' not found", key)
 		return
 	}
@@ -130,4 +130,3 @@ func (o *Secret) tlsCertPem() (cert *x509.Certificate, err error) {
 
 	return x509.ParseCertificate(block.Bytes)
 }
-

@@ -6,23 +6,23 @@ import (
 	"os"
 	"os/signal"
 	"strconv"
-	"syscall"
 	"sync"
+	"syscall"
 
 	"github.com/simonswine/kube-lego/pkg/acme"
+	"github.com/simonswine/kube-lego/pkg/kubelego_const"
+	"github.com/simonswine/kube-lego/pkg/secret"
 
 	log "github.com/Sirupsen/logrus"
-	legoAcme "github.com/xenolf/lego/acme"
 	k8sApi "k8s.io/kubernetes/pkg/api"
 	k8sClient "k8s.io/kubernetes/pkg/client/unversioned"
 	"k8s.io/kubernetes/pkg/util/intstr"
-	"github.com/simonswine/kube-lego/pkg/kubelego_const"
 )
 
 func New(version string) *KubeLego {
 	return &KubeLego{
-		version: version,
-		stopCh:  make(chan struct{}),
+		version:   version,
+		stopCh:    make(chan struct{}),
 		waitGroup: sync.WaitGroup{},
 	}
 }
@@ -32,7 +32,7 @@ func (kl *KubeLego) Log() *log.Entry {
 	return log.WithField("context", "kubelego")
 }
 
-func (kl *KubeLego) Stop(){
+func (kl *KubeLego) Stop() {
 	kl.Log().Info("shuting things down")
 	close(kl.stopCh)
 }
@@ -65,11 +65,6 @@ func (kl *KubeLego) Init() {
 		kl.Log().Fatal(err)
 	}
 
-	err = kl.InitLego()
-	if err != nil {
-		kl.Log().Fatal(err)
-	}
-
 	// run acme http server
 	myAcme := acme.New(kl)
 	go func() {
@@ -77,21 +72,23 @@ func (kl *KubeLego) Init() {
 		defer kl.waitGroup.Done()
 		myAcme.RunServer(kl.stopCh)
 	}()
+	kl.acmeClient = myAcme
 
 	// watch for ingress controller events
 	kl.WatchEvents()
 
+	// wait for stop signal
 	<-kl.stopCh
 	kl.Log().Infof("exiting")
 	kl.waitGroup.Wait()
 }
 
-func (kl *KubeLego) KubeClient() *k8sClient.Client {
-	return kl.kubeClient
+func (kl *KubeLego) AcmeClient() kubelego.Acme {
+	return kl.acmeClient
 }
 
-func (kl *KubeLego) LegoClient() *legoAcme.Client {
-	return kl.legoClient
+func (kl *KubeLego) KubeClient() *k8sClient.Client {
+	return kl.kubeClient
 }
 
 func (kl *KubeLego) Version() string {
