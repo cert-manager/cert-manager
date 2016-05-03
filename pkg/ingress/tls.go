@@ -3,16 +3,17 @@ package ingress
 import (
 	"time"
 
+	"github.com/simonswine/kube-lego/pkg/kubelego_const"
 	"github.com/simonswine/kube-lego/pkg/secret"
 	"github.com/simonswine/kube-lego/pkg/utils"
-	"github.com/simonswine/kube-lego/pkg/kubelego_const"
 
+	"fmt"
 	"github.com/Sirupsen/logrus"
 	k8sApi "k8s.io/kubernetes/pkg/api"
-	"fmt"
+	"strings"
 )
 
-func(t *Tls) Validate() error{
+func (t *Tls) Validate() error {
 	if len(t.Hosts()) == 0 {
 		return fmt.Errorf("No hosts specified")
 	}
@@ -26,14 +27,14 @@ func(t *Tls) Validate() error{
 func (t Tls) SecretMetadata() (meta *k8sApi.ObjectMeta) {
 	return &k8sApi.ObjectMeta{
 		Namespace: t.ingress.IngressApi.Namespace,
-		Name: t.SecretName,
+		Name:      t.SecretName,
 	}
 }
 
 func (t Tls) IngressMetadata() (meta *k8sApi.ObjectMeta) {
 	return &k8sApi.ObjectMeta{
 		Namespace: t.ingress.IngressApi.Namespace,
-		Name: t.ingress.IngressApi.Name,
+		Name:      t.ingress.IngressApi.Name,
 	}
 }
 
@@ -42,7 +43,7 @@ func (t *Tls) Secret() *secret.Secret {
 	return secret.New(t.ingress.kubelego, meta.Namespace, meta.Name)
 }
 
-func (t *Tls) Hosts() []string{
+func (t *Tls) Hosts() []string {
 	return utils.StringSliceLowerCase(t.IngressTLS.Hosts)
 }
 
@@ -57,13 +58,12 @@ func (i *Tls) newCertNeeded() bool {
 	}
 
 	tlsSecret := i.Secret()
-	if ! tlsSecret.Exists(){
-		tlsSecret.Log().Infof("this is a test")
+	if !tlsSecret.Exists() {
 		i.Log().Info("no cert associated with ingress")
 		return true
 	}
 
-	if ! tlsSecret.TlsDomainsInclude(i.Hosts()){
+	if !tlsSecret.TlsDomainsInclude(i.Hosts()) {
 		i.Log().WithField("domains", i.Hosts()).Info("cert does not cover all domains")
 		return true
 	}
@@ -76,7 +76,7 @@ func (i *Tls) newCertNeeded() bool {
 
 	timeLeft := expireTime.Sub(time.Now())
 	logger := i.Log().WithField("expire_time", expireTime)
-	if timeLeft < 48 * time.Hour {
+	if timeLeft < 48*time.Hour {
 		logger.Infof("cert expires within the next 48 hours")
 		return true
 	} else {
@@ -88,16 +88,17 @@ func (i *Tls) newCertNeeded() bool {
 
 func (i *Tls) Process() error {
 
-	if ! i.newCertNeeded() {
+	if !i.newCertNeeded() {
 		i.Log().Infof("no cert request needed")
 		return nil
 	}
-
 
 	return i.RequestCert()
 }
 
 func (i *Tls) RequestCert() error {
+
+	i.Log().Infof("requesting certificate for %s", strings.Join(i.Hosts(), ","))
 
 	certData, err := i.ingress.kubelego.AcmeClient().ObtainCertificate(
 		i.Hosts(),

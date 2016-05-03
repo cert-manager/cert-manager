@@ -7,9 +7,11 @@ import (
 )
 
 type Ingress struct {
+	kubelego.Ingress
+
 	IngressApi *k8sExtensions.Ingress
-	exists    bool
-	kubelego  kubelego.KubeLego
+	exists     bool
+	kubelego   kubelego.KubeLego
 }
 
 type Tls struct {

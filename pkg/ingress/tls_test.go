@@ -3,8 +3,8 @@ package ingress
 import (
 	"testing"
 
-	k8sExtensions "k8s.io/kubernetes/pkg/apis/extensions"
 	"github.com/stretchr/testify/assert"
+	k8sExtensions "k8s.io/kubernetes/pkg/apis/extensions"
 )
 
 func TestTls_Validate(t *testing.T) {
@@ -25,7 +25,7 @@ func TestTls_Validate(t *testing.T) {
 
 	tls := &Tls{
 		IngressTLS: &k8sExtensions.IngressTLS{
-			Hosts: []string{"das.de.de", "k8s.io"},
+			Hosts:      []string{"das.de.de", "k8s.io"},
 			SecretName: "my-secret",
 		},
 		ingress: ing,
@@ -41,5 +41,3 @@ func TestTls_Validate(t *testing.T) {
 	assert.Nil(t, err, "validates correct tls")
 
 }
-
-

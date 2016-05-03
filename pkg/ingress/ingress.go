@@ -8,10 +8,11 @@ import (
 
 	"github.com/Sirupsen/logrus"
 	k8sApi "k8s.io/kubernetes/pkg/api"
-	k8sExtensions "k8s.io/kubernetes/pkg/apis/extensions"
 	k8sErrors "k8s.io/kubernetes/pkg/api/errors"
+	k8sExtensions "k8s.io/kubernetes/pkg/apis/extensions"
 	k8sClient "k8s.io/kubernetes/pkg/client/unversioned"
 	"k8s.io/kubernetes/pkg/util/intstr"
+	"reflect"
 )
 
 func IgnoreIngress(ing *k8sExtensions.Ingress) error {
@@ -20,7 +21,7 @@ func IgnoreIngress(ing *k8sExtensions.Ingress) error {
 
 	val, ok := ing.Annotations[key]
 
-	if ! ok {
+	if !ok {
 		return fmt.Errorf("has no annotiation '%s'", key)
 	}
 
@@ -33,22 +34,21 @@ func IgnoreIngress(ing *k8sExtensions.Ingress) error {
 
 func New(client kubelego.KubeLego, namespace string, name string) *Ingress {
 	ingress := &Ingress{
-		exists: true,
+		exists:   true,
 		kubelego: client,
 	}
 
 	var err error
 	ingress.IngressApi, err = client.KubeClient().Ingress(namespace).Get(name)
 	if err != nil {
-		if k8sErrors.IsNotFound(err){
+		if k8sErrors.IsNotFound(err) {
 			ingress.IngressApi = &k8sExtensions.Ingress{
 				ObjectMeta: k8sApi.ObjectMeta{
 					Namespace: namespace,
-					Name: name,
+					Name:      name,
 				},
 			}
 			ingress.exists = false
-
 
 		} else {
 			client.Log().Warn("Error during getting secret: ", err)
@@ -58,9 +58,8 @@ func New(client kubelego.KubeLego, namespace string, name string) *Ingress {
 	return ingress
 }
 
-func All(client kubelego.KubeLego) (ingresses []*Ingress, err error){
+func All(client kubelego.KubeLego) (ingresses []kubelego.Ingress, err error) {
 	ingSlice, err := client.KubeClient().Extensions().Ingress(k8sApi.NamespaceAll).List(k8sApi.ListOptions{})
-
 
 	if err != nil {
 		return
@@ -71,8 +70,8 @@ func All(client kubelego.KubeLego) (ingresses []*Ingress, err error){
 			ingresses,
 			&Ingress{
 				IngressApi: &ingSlice.Items[i],
-				exists: true,
-				kubelego: client,
+				exists:     true,
+				kubelego:   client,
 			},
 		)
 	}
@@ -91,7 +90,7 @@ func (i *Ingress) Log() *logrus.Entry {
 	return log
 }
 
-func (o *Ingress) client() k8sClient.IngressInterface{
+func (o *Ingress) client() k8sClient.IngressInterface {
 	return o.kubelego.KubeClient().Extensions().Ingress(o.IngressApi.Namespace)
 }
 
@@ -108,7 +107,6 @@ func (o *Ingress) Save() (err error) {
 	o.IngressApi = obj
 	return
 }
-
 
 func (i *Ingress) Ignore() bool {
 	err := IgnoreIngress(i.IngressApi)
@@ -153,11 +151,35 @@ func (i *Ingress) SetChallengeEndpoints(domains []string, serviceName string, ht
 
 }
 
-func (i *Ingress) Tls() (out []*Tls) {
+func (i *Ingress) UpdateChallengeEndpoints(domains []string, serviceName string, httpPort intstr.IntOrString) error {
+
+	oldRules := i.IngressApi.Spec.Rules
+	i.SetChallengeEndpoints(domains, serviceName, httpPort)
+
+	if reflect.DeepEqual(oldRules, i.IngressApi.Spec.Rules) {
+		i.Log().Infof("challenge endpoints don't need an update")
+		return nil
+	}
+
+	return i.Save()
+}
+
+func (i *Ingress) GetChallengeEndpoints() (tlsHosts []string) {
+	for _, rules := range i.IngressApi.Spec.Rules {
+		for _, path := range rules.HTTP.Paths {
+			if path.Path == kubelego.AcmeHttpChallengePath {
+				tlsHosts = append(tlsHosts, rules.Host)
+			}
+		}
+	}
+	return
+}
+
+func (i *Ingress) Tls() (out []kubelego.Tls) {
 	for count, _ := range i.IngressApi.Spec.TLS {
-	 	out = append(out, &Tls{
+		out = append(out, &Tls{
 			IngressTLS: &i.IngressApi.Spec.TLS[count],
-			ingress: i,
+			ingress:    i,
 		})
 	}
 	return
