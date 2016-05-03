@@ -23,6 +23,11 @@
 			"Rev": "31b736133b98f26d5e078ec9eb591666edfd091f"
 		},
 		{
+			"ImportPath": "github.com/cenk/backoff",
+			"Comment": "v1.0.0-1-gc29158a",
+			"Rev": "c29158af31815ccc31ca29c86c121bc39e00d3d8"
+		},
+		{
 			"ImportPath": "github.com/davecgh/go-spew/spew",
 			"Rev": "3e6e67c4dcea3ac2f25fd4731abc0e1deaf36216"
 		},
@@ -55,10 +60,6 @@
 			"ImportPath": "github.com/emicklei/go-restful/swagger",
 			"Comment": "v1.2",
 			"Rev": "777bb3f19bcafe2575ffb2a3e46af92509ae9594"
-		},
-		{
-			"ImportPath": "github.com/etix/stoppableListener",
-			"Rev": "0346fe88acd7ec2c93cc77641624f51c1dd52d93"
 		},
 		{
 			"ImportPath": "github.com/ghodss/yaml",
