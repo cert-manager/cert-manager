@@ -10,7 +10,7 @@ spec:
         app: nginx
     spec:
       containers:
-      - image: simonswine/nginx-ingress-controller:0.5.5
+      - image: simonswine/nginx-ingress-controller:0.0.1
         name: nginx
         imagePullPolicy: Always
         env:
