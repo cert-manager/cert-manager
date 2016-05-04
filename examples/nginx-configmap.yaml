@@ -1,0 +1,11 @@
+apiVersion: v1
+data:
+  proxy-connect-timeout: "15"
+  proxy-read-timeout: "600"
+  proxy-send-imeout: "600"
+  hts-include-subdomains: "false"
+  ssl-redirect: "false"
+  body-size: "64m"
+kind: ConfigMap
+metadata:
+  name: nginx
