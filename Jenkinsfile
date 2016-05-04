@@ -59,8 +59,8 @@ node('docker'){
         checkout scm
 
         stage 'Test kube-lego'
-        //sh "make docker_test"
-        //step([$class: 'JUnitResultArchiver', testResults: '_test/test*.xml'])
+        sh "make docker_test"
+        step([$class: 'JUnitResultArchiver', testResults: '_test/test*.xml'])
 
         stage 'Build kube-lego'
         sh "make docker_build"
