@@ -2,6 +2,9 @@
 	"ImportPath": "github.com/simonswine/kube-lego",
 	"GoVersion": "go1.6",
 	"GodepVersion": "v62",
+	"Packages": [
+		"./pkg/..."
+	],
 	"Deps": [
 		{
 			"ImportPath": "bitbucket.org/ww/goautoneg",
@@ -68,6 +71,10 @@
 		{
 			"ImportPath": "github.com/golang/glog",
 			"Rev": "44145f04b68cf362d9c4df2182967c2275eaefed"
+		},
+		{
+			"ImportPath": "github.com/golang/mock/gomock",
+			"Rev": "bd3c8e81be01eef76d4b503f5e687d2d1354d2d9"
 		},
 		{
 			"ImportPath": "github.com/golang/protobuf/proto",
