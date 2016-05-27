@@ -2,6 +2,8 @@
 
 *kube-lego* automatically requests certificates for Kubernetes Ingress resources from Let's Encrypt
 
+[![Build Status](https://travis-ci.org/simonswine/kube-lego.svg?branch=master)](https://travis-ci.org/simonswine/kube-lego)
+
 ## Features
 
 - Recognizes the need of new certificates for this cases
@@ -71,8 +73,8 @@ spec:
 
 #### modifications
 
-- allow disabling of the SSL redirect
-- try to get it merged upstream [#850](https://github.com/kubernetes/contrib/pull/850)
+- allow disabling of the SSL redirect per nginx Location (upstream merge request [#850](https://github.com/kubernetes/contrib/pull/850))
+- watch secrets and reload nginx if TLS secret changes (upstream merge request [#1063](https://github.com/kubernetes/contrib/pull/1063))
 
 ## Environment variables
 
