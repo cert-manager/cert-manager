@@ -15,7 +15,7 @@ kubectl create -f nginx-svc.yaml
 kubectl create -f nginx-deployment.yaml
 ```
 
-- The nginx service uses a LoadBalancer to publish the service 
+- The nginx service uses a LoadBalancer to publish the service
 
 # Create an example app (echoserver)
 
@@ -41,7 +41,7 @@ kubectl create -f kube-lego-deployment.yaml
 # Enable tls for echoserver ingress
 
 ```
-kubectl apply -f echoserver-ingress-notls.yaml
+kubectl apply -f echoserver-ingress-tls.yaml
 ```
 
 # Get debug information
@@ -50,4 +50,3 @@ kubectl apply -f echoserver-ingress-notls.yaml
 - Look at the log output of the ingress pods
 - Sometimes after acquiring a new certifiacte nginx needs to be restarted (as
   it's not watching change events for secrets)
-
