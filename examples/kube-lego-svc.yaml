@@ -2,6 +2,8 @@ apiVersion: v1
 kind: Service
 metadata:
   name: kube-lego
+  annotations:
+    ingress-nginx.kubernetes.io/ssl-redirect: "false"
 spec:
   ports:
   - port: 8080
