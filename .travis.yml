@@ -1,0 +1,14 @@
+language: go
+go:
+- 1.5.4
+- 1.6.2
+before_install:
+- curl -Ls https://bin.equinox.io/c/4VmDzA7iaHb/ngrok-stable-linux-amd64.zip > ngrok.zip
+- unzip ngrok.zip
+- rm ngrok.zip
+- export PATH=$(pwd):$PATH
+- export GO15VENDOREXPERIMENT=1
+install:
+- make depend
+script:
+- make all
