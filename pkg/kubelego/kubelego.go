@@ -9,9 +9,9 @@ import (
 	"sync"
 	"syscall"
 
-	"github.com/simonswine/kube-lego/pkg/acme"
-	"github.com/simonswine/kube-lego/pkg/kubelego_const"
-	"github.com/simonswine/kube-lego/pkg/secret"
+	"github.com/jetstack/kube-lego/pkg/acme"
+	"github.com/jetstack/kube-lego/pkg/kubelego_const"
+	"github.com/jetstack/kube-lego/pkg/secret"
 
 	log "github.com/Sirupsen/logrus"
 	k8sApi "k8s.io/kubernetes/pkg/api"

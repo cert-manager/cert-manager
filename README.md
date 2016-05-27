@@ -2,7 +2,7 @@
 
 *kube-lego* automatically requests certificates for Kubernetes Ingress resources from Let's Encrypt
 
-[![Build Status](https://travis-ci.org/simonswine/kube-lego.svg?branch=master)](https://travis-ci.org/simonswine/kube-lego)
+[![Build Status](https://travis-ci.org/jetstack/kube-lego.svg?branch=master)](https://travis-ci.org/jetstack/kube-lego)
 
 ## Features
 

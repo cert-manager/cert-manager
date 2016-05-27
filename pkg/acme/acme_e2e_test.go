@@ -11,7 +11,7 @@ import (
 
 	"github.com/Sirupsen/logrus"
 	"github.com/golang/mock/gomock"
-	"github.com/simonswine/kube-lego/pkg/mocks"
+	"github.com/jetstack/kube-lego/pkg/mocks"
 	//"github.com/stretchr/testify/assert"
 )
 

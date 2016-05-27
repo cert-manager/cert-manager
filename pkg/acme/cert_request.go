@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/simonswine/kube-lego/pkg/kubelego_const"
+	"github.com/jetstack/kube-lego/pkg/kubelego_const"
 
 	"github.com/cenk/backoff"
 	"github.com/xenolf/lego/acme"

@@ -4,7 +4,7 @@ import (
 	"crypto"
 	"sync"
 
-	"github.com/simonswine/kube-lego/pkg/kubelego_const"
+	"github.com/jetstack/kube-lego/pkg/kubelego_const"
 
 	"github.com/Sirupsen/logrus"
 	"github.com/xenolf/lego/acme"

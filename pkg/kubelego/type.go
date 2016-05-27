@@ -3,8 +3,8 @@ package kubelego
 import (
 	"sync"
 
-	"github.com/simonswine/kube-lego/pkg/ingress"
-	"github.com/simonswine/kube-lego/pkg/kubelego_const"
+	"github.com/jetstack/kube-lego/pkg/ingress"
+	"github.com/jetstack/kube-lego/pkg/kubelego_const"
 
 	k8sClient "k8s.io/kubernetes/pkg/client/unversioned"
 	"k8s.io/kubernetes/pkg/util/intstr"

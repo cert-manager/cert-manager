@@ -1,5 +1,5 @@
 {
-	"ImportPath": "github.com/simonswine/kube-lego",
+	"ImportPath": "github.com/jetstack/kube-lego",
 	"GoVersion": "go1.6",
 	"GodepVersion": "v62",
 	"Packages": [

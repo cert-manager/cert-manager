@@ -9,7 +9,7 @@ import (
 	"encoding/pem"
 	"fmt"
 
-	"github.com/simonswine/kube-lego/pkg/kubelego_const"
+	"github.com/jetstack/kube-lego/pkg/kubelego_const"
 
 	"github.com/xenolf/lego/acme"
 )

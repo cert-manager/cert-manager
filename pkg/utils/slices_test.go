@@ -4,7 +4,7 @@ import (
 	"sort"
 	"testing"
 
-	"github.com/simonswine/kube-lego/pkg/utils"
+	"github.com/jetstack/kube-lego/pkg/utils"
 
 	"github.com/stretchr/testify/assert"
 )

@@ -1,7 +1,7 @@
 package secret
 
 import (
-	"github.com/simonswine/kube-lego/pkg/kubelego_const"
+	"github.com/jetstack/kube-lego/pkg/kubelego_const"
 
 	k8sApi "k8s.io/kubernetes/pkg/api"
 )

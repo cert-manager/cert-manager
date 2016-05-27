@@ -3,9 +3,9 @@ package ingress
 import (
 	"time"
 
-	"github.com/simonswine/kube-lego/pkg/kubelego_const"
-	"github.com/simonswine/kube-lego/pkg/secret"
-	"github.com/simonswine/kube-lego/pkg/utils"
+	"github.com/jetstack/kube-lego/pkg/kubelego_const"
+	"github.com/jetstack/kube-lego/pkg/secret"
+	"github.com/jetstack/kube-lego/pkg/utils"
 
 	"fmt"
 	"github.com/Sirupsen/logrus"

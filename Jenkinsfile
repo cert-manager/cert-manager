@@ -50,7 +50,7 @@ def imageTags(){
 
 node('docker'){
     catchError {
-        def imageName = 'simonswine/kube-lego'
+        def imageName = 'jetstack/kube-lego'
         def imageTag = 'jenkins-build'
 
         jenkinsSlack('start')

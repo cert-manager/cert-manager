@@ -6,7 +6,7 @@ package mocks
 import (
 	logrus "github.com/Sirupsen/logrus"
 	gomock "github.com/golang/mock/gomock"
-	kubelego "github.com/simonswine/kube-lego/pkg/kubelego_const"
+	kubelego "github.com/jetstack/kube-lego/pkg/kubelego_const"
 	api "k8s.io/kubernetes/pkg/api"
 	unversioned "k8s.io/kubernetes/pkg/client/unversioned"
 )
