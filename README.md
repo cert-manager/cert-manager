@@ -4,6 +4,10 @@
 
 [![Build Status](https://travis-ci.org/jetstack/kube-lego.svg?branch=master)](https://travis-ci.org/jetstack/kube-lego)
 
+## Screencast
+
+[![Kube Lego screencast](https://asciinema.org/a/47444.png)](https://asciinema.org/a/47444)
+
 ## Features
 
 - Recognizes the need of new certificates for this cases
