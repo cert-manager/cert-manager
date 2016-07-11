@@ -78,7 +78,8 @@ func (kl *KubeLego) Init() {
 	// run ticker to check certificates periodically
 	ticker := time.NewTicker(kl.legoCheckInterval)
 	go func() {
-		for _ = range ticker.C {
+		for timestamp := range ticker.C {
+			kl.Log().Infof("Periodically check certificates at %s", timestamp)
 			kl.requestReconfigure()
 		}
 	}()
