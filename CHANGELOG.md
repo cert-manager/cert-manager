@@ -2,6 +2,11 @@
 All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 
+
+## [0.0.4] -
+
+- Check for expired certificates periodically (default config every 8 hours)
+
 ## [0.0.3] - 2016-05-27
 ### Added
 - E2E test for receiving a cert from Let's Encrypt Staging

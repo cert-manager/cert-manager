@@ -85,6 +85,8 @@ spec:
 | `LEGO_SERVICE_NAME` | n | `kube-lego` | Service name that connects to this pod |
 | `LEGO_INGRESS_NAME` | n | `kube-lego` | Ingress name which contains the routing for HTTP verification |
 | `LEGO_PORT` | n | `8080` | Port where this daemon is listening for verifcation calls (HTTP method)|
+| `LEGO_CHECK_INTERVAL` | n | `8h` | Interval for periodically certificate checks (to find expired certs)|
+
 
 ## Full example
 

@@ -28,7 +28,7 @@ func ingressWatchFunc(c *client.Client, ns string) func(options api.ListOptions)
 }
 
 func (kl *KubeLego) requestReconfigure() {
-
+	kl.workQueue.Add(true)
 }
 
 func (kl *KubeLego) WatchReconfigure() {

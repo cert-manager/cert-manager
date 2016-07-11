@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"sync"
 	"syscall"
+	"time"
 
 	"github.com/jetstack/kube-lego/pkg/acme"
 	"github.com/jetstack/kube-lego/pkg/kubelego_const"
@@ -74,11 +75,20 @@ func (kl *KubeLego) Init() {
 	}()
 	kl.acmeClient = myAcme
 
+	// run ticker to check certificates periodically
+	ticker := time.NewTicker(kl.legoCheckInterval)
+	go func() {
+		for _ = range ticker.C {
+			kl.requestReconfigure()
+		}
+	}()
+
 	// watch for ingress controller events
 	kl.WatchEvents()
 
 	// wait for stop signal
 	<-kl.stopCh
+	ticker.Stop()
 	kl.Log().Infof("exiting")
 	kl.waitGroup.Wait()
 }
@@ -158,6 +168,20 @@ func (kl *KubeLego) paramsLego() error {
 		kl.LegoIngressName = "kube-lego"
 	}
 
+	checkIntervalString := os.Getenv("LEGO_CHECK_INTERVAL")
+	if len(checkIntervalString) == 0 {
+		kl.legoCheckInterval = 8 * time.Hour
+	} else {
+		d, err := time.ParseDuration(checkIntervalString)
+		if err != nil {
+			return err
+		}
+		if d < 5*time.Minute {
+			return fmt.Errorf("Minimum check interval is 5 minutes: %s", d)
+		}
+		kl.legoCheckInterval = d
+	}
+
 	httpPortStr := os.Getenv("LEGO_PORT")
 	if len(httpPortStr) == 0 {
 		kl.legoHTTPPort = intstr.FromInt(8080)
@@ -170,7 +194,6 @@ func (kl *KubeLego) paramsLego() error {
 			return fmt.Errorf("Wrong port: %d", i)
 		}
 		kl.legoHTTPPort = intstr.FromInt(i)
-
 	}
 
 	return nil

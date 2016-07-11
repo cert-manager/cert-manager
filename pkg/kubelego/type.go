@@ -2,6 +2,7 @@ package kubelego
 
 import (
 	"sync"
+	"time"
 
 	"github.com/jetstack/kube-lego/pkg/ingress"
 	"github.com/jetstack/kube-lego/pkg/kubelego_const"
@@ -12,17 +13,18 @@ import (
 )
 
 type KubeLego struct {
-	legoURL          string
-	legoEmail        string
-	LegoSecretName   string
-	LegoServiceName  string
-	LegoIngressName  string
-	LegoNamespace    string
-	legoHTTPPort     intstr.IntOrString
-	kubeClient       *k8sClient.Client
-	legoIngressSlice []*ingress.Ingress
-	version          string
-	acmeClient       kubelego.Acme
+	legoURL           string
+	legoEmail         string
+	LegoSecretName    string
+	LegoServiceName   string
+	LegoIngressName   string
+	LegoNamespace     string
+	legoHTTPPort      intstr.IntOrString
+	legoCheckInterval time.Duration
+	kubeClient        *k8sClient.Client
+	legoIngressSlice  []*ingress.Ingress
+	version           string
+	acmeClient        kubelego.Acme
 
 	// stop channel for services
 	stopCh chan struct{}
