@@ -21,7 +21,7 @@
 
 ## Requirements
 
-- Kubernetes 1.2.x
+- Kubernetes 1.2+
 - Compatible ingress controller (cf. [here](#ingress))
 - Non-production use case :laughing:
 

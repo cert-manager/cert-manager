@@ -2,10 +2,13 @@
 All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 
-
-## [0.0.4] -
-
+## [0.0.4] - 2016-07-11
+### Added
 - Check for expired certificates periodically (default config every 8 hours)
+- Use upstream nginx-ingress-controller (from k8s-contrib)
+
+### Fixed
+- Fix bug for empty kube-lego ingress resource
 
 ## [0.0.3] - 2016-05-27
 ### Added
