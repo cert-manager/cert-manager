@@ -167,7 +167,7 @@ func (i *Ingress) UpdateChallengeEndpoints(domains []string, serviceName string,
 	oldAnnotations := i.IngressApi.Annotations
 	i.SetChallengeEndpoints(domains, serviceName, httpPort)
 
-	if reflect.DeepEqual(oldRules, i.IngressApi.Spec.Rules) || reflect.DeepEqual(oldAnnotations, i.IngressApi.Annotations) {
+	if reflect.DeepEqual(oldRules, i.IngressApi.Spec.Rules) && reflect.DeepEqual(oldAnnotations, i.IngressApi.Annotations) {
 		i.Log().Infof("challenge endpoints don't need an update")
 		return nil
 	}
