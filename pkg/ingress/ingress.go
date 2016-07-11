@@ -96,10 +96,19 @@ func (o *Ingress) client() k8sClient.IngressInterface {
 
 func (o *Ingress) Save() (err error) {
 	var obj *k8sExtensions.Ingress
-	if o.exists {
-		obj, err = o.client().Update(o.IngressApi)
+
+	// check if it contians rules
+	if len(o.IngressApi.Spec.Rules) > 0 {
+		if o.exists {
+			obj, err = o.client().Update(o.IngressApi)
+		} else {
+			obj, err = o.client().Create(o.IngressApi)
+		}
 	} else {
-		obj, err = o.client().Create(o.IngressApi)
+		if o.exists {
+			err = o.client().Delete(o.IngressApi.Namespace, &k8sApi.DeleteOptions{})
+			obj = nil
+		}
 	}
 	if err != nil {
 		return
