@@ -143,6 +143,7 @@ func (i *Ingress) SetChallengeEndpoints(domains []string, serviceName string, ht
 
 	i.IngressApi.Annotations = map[string]string{
 		kubelego.AnnotationIngressChallengeEndpoints: "true",
+		kubelego.AnnotationSslRedirect:               "false",
 	}
 
 	i.IngressApi.Spec = k8sExtensions.IngressSpec{
@@ -154,9 +155,10 @@ func (i *Ingress) SetChallengeEndpoints(domains []string, serviceName string, ht
 func (i *Ingress) UpdateChallengeEndpoints(domains []string, serviceName string, httpPort intstr.IntOrString) error {
 
 	oldRules := i.IngressApi.Spec.Rules
+	oldAnnotations := i.IngressApi.Annotations
 	i.SetChallengeEndpoints(domains, serviceName, httpPort)
 
-	if reflect.DeepEqual(oldRules, i.IngressApi.Spec.Rules) {
+	if reflect.DeepEqual(oldRules, i.IngressApi.Spec.Rules) || reflect.DeepEqual(oldAnnotations, i.IngressApi.Annotations) {
 		i.Log().Infof("challenge endpoints don't need an update")
 		return nil
 	}

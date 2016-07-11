@@ -69,16 +69,10 @@ spec:
 
 ##<a name="ingress"></a>Ingress controllers
 
-### `simonswine/nginx-ingress-controller`
+### [Nginx Ingress Controoler](https://github.com/kubernetes/contrib/tree/master/ingress/controllers/nginx)
 
-- modified version of the nginx ingress controller from [contrib](https://github.com/kubernetes/contrib/tree/master/ingress/controllers/nginx)
-  - modified sources: https://github.com/simonswine/kubernetes-contrib/tree/master/ingress/controllers/nginx
-- builds available here: [simonswine/nginx-ingress-controller](https://hub.docker.com/r/simonswine/nginx-ingress-controller/)
-
-#### modifications
-
-- allow disabling of the SSL redirect per nginx Location (upstream merge request [#850](https://github.com/kubernetes/contrib/pull/850))
-- watch secrets and reload nginx if TLS secret changes (upstream merge request [#1063](https://github.com/kubernetes/contrib/pull/1063))
+- available through image `gcr.io/google_containers/nginx-ingress-controller`
+- fully supports kube-lego from version 0.8
 
 ## Environment variables
 
