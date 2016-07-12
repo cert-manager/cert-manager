@@ -11,6 +11,8 @@ TEST_DIR=_test
 
 CONTAINER_DIR=/go/src/${PACKAGE_NAME}
 
+.PHONY: version
+
 depend:
 	rm -rf $(TEST_DIR)/
 	rm -rf ${BUILD_DIR}/
@@ -18,8 +20,8 @@ depend:
 	mkdir $(BUILD_DIR)/
 	which godep || go get github.com/tools/godep
 
-version:
-	$(eval GIT_STATE := $(shell if test -z "`git status --porcelain 2> /dev/null`"; then echo -n "clean"; else echo -n "dirty"; fi))
+version: 
+	$(eval GIT_STATE := $(shell if test -z "`git status --porcelain 2> /dev/null`"; then echo "clean"; else echo "dirty"; fi))
 	$(eval GIT_COMMIT := $(shell git rev-parse HEAD))
 	$(eval APP_VERSION := $(shell cat VERSION))
 
@@ -70,8 +72,8 @@ docker_%:
 	# remove container
 	docker rm $(CONTAINER_ID)
 
-image: docker_all
-	docker build -t $(ACCOUNT)/$(APP_NAME):latest .
+image: docker_all version
+	docker build --build-arg VCS_REF=$(GIT_COMMIT) -t $(ACCOUNT)/$(APP_NAME):latest .
 	
 push: image
 	docker push $(ACCOUNT)/$(APP_NAME):latest

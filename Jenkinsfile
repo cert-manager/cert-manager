@@ -66,7 +66,7 @@ node('docker'){
         sh "make docker_build"
 
         stage 'Build docker image'
-        sh "docker build -t ${imageName}:${imageTag} ."
+        sh "docker build --build-arg VCS_REF=${gitCommit().take(8)} -t ${imageName}:${imageTag} ."
 
         if (onMasterBranch()) {
             stage 'Push docker image'
