@@ -69,7 +69,7 @@ spec:
 
 ##<a name="ingress"></a>Ingress controllers
 
-### [Nginx Ingress Controoler](https://github.com/kubernetes/contrib/tree/master/ingress/controllers/nginx)
+### [Nginx Ingress Controller](https://github.com/kubernetes/contrib/tree/master/ingress/controllers/nginx)
 
 - available through image `gcr.io/google_containers/nginx-ingress-controller`
 - fully supports kube-lego from version 0.8
@@ -90,7 +90,7 @@ spec:
 
 ## Full example
 
-see [examples](examples/README.md)
+See the [examples](examples/README.md) directory.
 
 ## Authors
 
