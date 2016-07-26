@@ -9,6 +9,7 @@ import (
 	kubelego "github.com/jetstack/kube-lego/pkg/kubelego_const"
 	api "k8s.io/kubernetes/pkg/api"
 	unversioned "k8s.io/kubernetes/pkg/client/unversioned"
+	time "time"
 )
 
 // Mock of KubeLego interface
@@ -206,14 +207,14 @@ func (_mr *_MockTlsRecorder) IngressMetadata() *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "IngressMetadata")
 }
 
-func (_m *MockTls) Process() error {
-	ret := _m.ctrl.Call(_m, "Process")
+func (_m *MockTls) Process(minimumValidity time.Duration) error {
+	ret := _m.ctrl.Call(_m, "Process", minimumValidity)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-func (_mr *_MockTlsRecorder) Process() *gomock.Call {
-	return _mr.mock.ctrl.RecordCall(_mr.mock, "Process")
+func (_mr *_MockTlsRecorder) Process(arg0 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "Process", arg0)
 }
 
 // Mock of Ingress interface
