@@ -183,6 +183,20 @@ func (kl *KubeLego) paramsLego() error {
 		kl.legoCheckInterval = d
 	}
 
+	minimumValidity := os.Getenv("LEGO_MINIMUM_VALIDITY")
+	if len(minimumValidity) == 0 {
+		kl.legoMinimumValidity = time.Hour * 24 * 30
+	} else {
+		d, err := time.ParseDuration(minimumValidity)
+		if err != nil {
+			return err
+		}
+		if d < 24*time.Hour {
+			return fmt.Errorf("Smallest allowed minimum validity is 24 hours: %s", d)
+		}
+		kl.legoMinimumValidity = d
+	}
+
 	httpPortStr := os.Getenv("LEGO_PORT")
 	if len(httpPortStr) == 0 {
 		kl.legoHTTPPort = intstr.FromInt(8080)

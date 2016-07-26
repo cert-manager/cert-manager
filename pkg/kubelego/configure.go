@@ -122,7 +122,7 @@ func (kl *KubeLego) UpdateChallengeEndpoints(tlsHosts []string) error {
 func (kl *KubeLego) TlsProcessHosts(tlsSlice []kubelego.Tls) []error {
 	errs := []error{}
 	for _, tlsElem := range tlsSlice {
-		err := tlsElem.Process()
+		err := tlsElem.Process(kl.legoMinimumValidity)
 		if err != nil {
 			errs = append(errs, err)
 		}

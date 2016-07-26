@@ -1,6 +1,8 @@
 package kubelego
 
 import (
+	"time"
+
 	"github.com/Sirupsen/logrus"
 	k8sApi "k8s.io/kubernetes/pkg/api"
 	k8sClient "k8s.io/kubernetes/pkg/client/unversioned"
@@ -26,7 +28,7 @@ type Tls interface {
 	Hosts() []string
 	SecretMetadata() *k8sApi.ObjectMeta
 	IngressMetadata() *k8sApi.ObjectMeta
-	Process() error
+	Process(minimumValidity time.Duration) error
 }
 
 type Ingress interface {

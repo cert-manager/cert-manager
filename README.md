@@ -87,6 +87,7 @@ spec:
 | `LEGO_INGRESS_NAME` | n | `kube-lego` | Ingress name which contains the routing for HTTP verification |
 | `LEGO_PORT` | n | `8080` | Port where this daemon is listening for verifcation calls (HTTP method)|
 | `LEGO_CHECK_INTERVAL` | n | `8h` | Interval for periodically certificate checks (to find expired certs)|
+| `LEGO_MINIMUM_VALIDITY` | n | `720h` (30 days) | Request a renewal when the remaining certificate validitiy falls below that value|
 
 
 ## Full example

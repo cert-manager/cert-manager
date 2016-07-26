@@ -51,7 +51,7 @@ func (t *Tls) Log() *logrus.Entry {
 	return t.ingress.Log().WithField("context", "ingress_tls")
 }
 
-func (i *Tls) newCertNeeded() bool {
+func (i *Tls) newCertNeeded(minimumValidity time.Duration) bool {
 	if len(i.Hosts()) == 0 {
 		i.Log().Info("no host associated with ingress")
 		return false
@@ -76,8 +76,8 @@ func (i *Tls) newCertNeeded() bool {
 
 	timeLeft := expireTime.Sub(time.Now())
 	logger := i.Log().WithField("expire_time", expireTime)
-	if timeLeft < 48*time.Hour {
-		logger.Infof("cert expires within the next 48 hours")
+	if timeLeft < minimumValidity {
+		logger.Infof("cert expires soon > renew")
 		return true
 	} else {
 		logger.Infof("cert expires in %.1f days, no renewal needed", timeLeft.Hours()/24)
@@ -86,9 +86,9 @@ func (i *Tls) newCertNeeded() bool {
 	return false
 }
 
-func (i *Tls) Process() error {
+func (i *Tls) Process(minimumValidity time.Duration) error {
 
-	if !i.newCertNeeded() {
+	if !i.newCertNeeded(minimumValidity) {
 		i.Log().Infof("no cert request needed")
 		return nil
 	}
