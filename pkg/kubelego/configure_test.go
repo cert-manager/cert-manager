@@ -2,6 +2,7 @@ package kubelego
 
 import (
 	"testing"
+	"time"
 
 	"github.com/jetstack/kube-lego/pkg/kubelego_const"
 
@@ -35,7 +36,7 @@ func (m *mockTls) IngressMetadata() *k8sApi.ObjectMeta {
 	}
 }
 
-func (m *mockTls) Process() error {
+func (m *mockTls) Process(mV time.Duration) error {
 	// process a lot
 	return nil
 }
