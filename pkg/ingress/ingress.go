@@ -15,6 +15,16 @@ import (
 	"reflect"
 )
 
+func IsSupportedIngressClass(in string) (out string, err error) {
+	out = strings.ToLower(in)
+	for _, ingClass := range kubelego.SupportedIngressClasses {
+		if ingClass == out {
+			return out, nil
+		}
+	}
+	return "", fmt.Errorf("unsupported ingress class '%s'", in)
+}
+
 func IgnoreIngress(ing *k8sExtensions.Ingress) error {
 
 	key := kubelego.AnnotationEnabled

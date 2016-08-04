@@ -20,3 +20,5 @@ const AnnotationIngressChallengeEndpoints = "kubernetes.io/tls-acme-challenge-en
 const AnnotationIngressChallengeEndpointsHash = "kubernetes.io/tls-acme-challenge-endpoints-hash"
 const AnnotationEnabled = "kubernetes.io/tls-acme"
 const AnnotationSslRedirect = "ingress.kubernetes.io/ssl-redirect"
+
+var SupportedIngressClasses = []string{"nginx", "gce"}

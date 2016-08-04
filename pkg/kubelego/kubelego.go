@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/jetstack/kube-lego/pkg/acme"
+	"github.com/jetstack/kube-lego/pkg/ingress"
 	"github.com/jetstack/kube-lego/pkg/kubelego_const"
 	"github.com/jetstack/kube-lego/pkg/secret"
 
@@ -19,6 +20,8 @@ import (
 	k8sClient "k8s.io/kubernetes/pkg/client/unversioned"
 	"k8s.io/kubernetes/pkg/util/intstr"
 )
+
+var _ kubelego.KubeLego = &KubeLego{}
 
 func New(version string) *KubeLego {
 	return &KubeLego{
@@ -118,6 +121,10 @@ func (kl *KubeLego) LegoEmail() string {
 	return kl.legoEmail
 }
 
+func (kl *KubeLego) LegoDefaultIngressClass() string {
+	return kl.legoDefaultIngressClass
+}
+
 func (kl *KubeLego) acmeSecret() *secret.Secret {
 	return secret.New(kl, kl.LegoNamespace, kl.LegoSecretName)
 }
@@ -162,6 +169,17 @@ func (kl *KubeLego) paramsLego() error {
 	kl.LegoServiceName = os.Getenv("LEGO_SERVICE_NAME")
 	if len(kl.LegoServiceName) == 0 {
 		kl.LegoServiceName = "kube-lego"
+	}
+
+	legoDefaultIngressClass := os.Getenv("LEGO_DEFAULT_INGRESS_CLASS")
+	if len(legoDefaultIngressClass) == 0 {
+		kl.legoDefaultIngressClass = "nginx"
+	} else {
+		var err error = nil
+		kl.legoDefaultIngressClass, err = ingress.IsSupportedIngressClass(legoDefaultIngressClass)
+		if err != nil {
+			return fmt.Errorf("Unsupported default ingress class: '%s'", legoDefaultIngressClass)
+		}
 	}
 
 	kl.LegoIngressName = os.Getenv("LEGO_INGRESS_NAME")

@@ -9,6 +9,19 @@ import (
 	"k8s.io/kubernetes/pkg/util/intstr"
 )
 
+func TestIsSupportedIngressClass(t *testing.T) {
+	out, err := IsSupportedIngressClass("Nginx")
+	assert.Equal(t, "nginx", out)
+	assert.Nil(t, err)
+
+	out, err = IsSupportedIngressClass("customlb")
+	assert.NotNil(t, err)
+
+	out, err = IsSupportedIngressClass("gce")
+	assert.Equal(t, "gce", out)
+	assert.Nil(t, err)
+}
+
 func TestIngress_SetGetChallengeEndpoints(t *testing.T) {
 	ing := &Ingress{
 		IngressApi: &k8sExtensions.Ingress{},

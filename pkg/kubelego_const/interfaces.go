@@ -15,6 +15,7 @@ type KubeLego interface {
 	LegoHTTPPort() string
 	LegoEmail() string
 	LegoURL() string
+	LegoDefaultIngressClass() string
 	Version() string
 	AcmeUser() (map[string][]byte, error)
 	SaveAcmeUser(map[string][]byte) error
