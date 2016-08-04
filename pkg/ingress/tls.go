@@ -86,9 +86,9 @@ func (i *Tls) newCertNeeded(minimumValidity time.Duration) bool {
 	return false
 }
 
-func (i *Tls) Process(minimumValidity time.Duration) error {
+func (i *Tls) Process() error {
 
-	if !i.newCertNeeded(minimumValidity) {
+	if !i.newCertNeeded(i.ingress.kubelego.LegoCheckInterval()) {
 		i.Log().Infof("no cert request needed")
 		return nil
 	}

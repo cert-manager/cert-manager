@@ -125,6 +125,10 @@ func (kl *KubeLego) LegoDefaultIngressClass() string {
 	return kl.legoDefaultIngressClass
 }
 
+func (kl *KubeLego) LegoCheckInterval() time.Duration {
+	return kl.legoCheckInterval
+}
+
 func (kl *KubeLego) acmeSecret() *secret.Secret {
 	return secret.New(kl, kl.LegoNamespace, kl.LegoSecretName)
 }

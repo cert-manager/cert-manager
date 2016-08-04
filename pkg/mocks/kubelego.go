@@ -93,6 +93,26 @@ func (_mr *_MockKubeLegoRecorder) LegoURL() *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "LegoURL")
 }
 
+func (_m *MockKubeLego) LegoDefaultIngressClass() string {
+	ret := _m.ctrl.Call(_m, "LegoDefaultIngressClass")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+func (_mr *_MockKubeLegoRecorder) LegoDefaultIngressClass() *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "LegoDefaultIngressClass")
+}
+
+func (_m *MockKubeLego) LegoCheckInterval() time.Duration {
+	ret := _m.ctrl.Call(_m, "LegoCheckInterval")
+	ret0, _ := ret[0].(time.Duration)
+	return ret0
+}
+
+func (_mr *_MockKubeLegoRecorder) LegoCheckInterval() *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "LegoCheckInterval")
+}
+
 func (_m *MockKubeLego) Version() string {
 	ret := _m.ctrl.Call(_m, "Version")
 	ret0, _ := ret[0].(string)
@@ -207,14 +227,14 @@ func (_mr *_MockTlsRecorder) IngressMetadata() *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "IngressMetadata")
 }
 
-func (_m *MockTls) Process(minimumValidity time.Duration) error {
-	ret := _m.ctrl.Call(_m, "Process", minimumValidity)
+func (_m *MockTls) Process() error {
+	ret := _m.ctrl.Call(_m, "Process")
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-func (_mr *_MockTlsRecorder) Process(arg0 interface{}) *gomock.Call {
-	return _mr.mock.ctrl.RecordCall(_mr.mock, "Process", arg0)
+func (_mr *_MockTlsRecorder) Process() *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "Process")
 }
 
 // Mock of Ingress interface

@@ -16,6 +16,7 @@ type KubeLego interface {
 	LegoEmail() string
 	LegoURL() string
 	LegoDefaultIngressClass() string
+	LegoCheckInterval() time.Duration
 	Version() string
 	AcmeUser() (map[string][]byte, error)
 	SaveAcmeUser(map[string][]byte) error
@@ -29,7 +30,7 @@ type Tls interface {
 	Hosts() []string
 	SecretMetadata() *k8sApi.ObjectMeta
 	IngressMetadata() *k8sApi.ObjectMeta
-	Process(minimumValidity time.Duration) error
+	Process() error
 }
 
 type Ingress interface {
