@@ -127,17 +127,31 @@ func (o *Ingress) Save() (err error) {
 	return
 }
 
+func (i *Ingress) IngressClass() string {
+	val, ok := i.IngressApi.Annotations[kubelego.AnnotationIngressClass]
+	if !ok {
+		return i.kubelego.LegoDefaultIngressClass()
+	}
+	return strings.ToLower(val)
+}
+
 func (i *Ingress) Ignore() bool {
 	err := IgnoreIngress(i.IngressApi)
 	if err != nil {
 		i.Log().Info("ignoring as ", err)
 		return true
-
 	}
+
+	_, err = IsSupportedIngressClass(i.IngressClass())
+	if err != nil {
+		i.Log().Info("ignoring as ", err)
+		return true
+	}
+
 	return false
 }
 
-func (i *Ingress) SetChallengeEndpoints(domains []string, serviceName string, httpPort intstr.IntOrString) {
+func (i *Ingress) SetNginxChallengeEndpoints(domains []string, serviceName string, httpPort intstr.IntOrString) {
 	rules := []k8sExtensions.IngressRule{}
 	paths := []k8sExtensions.HTTPIngressPath{
 		k8sExtensions.HTTPIngressPath{
@@ -163,6 +177,7 @@ func (i *Ingress) SetChallengeEndpoints(domains []string, serviceName string, ht
 	i.IngressApi.Annotations = map[string]string{
 		kubelego.AnnotationIngressChallengeEndpoints: "true",
 		kubelego.AnnotationSslRedirect:               "false",
+		kubelego.AnnotationIngressClass:              "nginx",
 	}
 
 	i.IngressApi.Spec = k8sExtensions.IngressSpec{
@@ -171,11 +186,11 @@ func (i *Ingress) SetChallengeEndpoints(domains []string, serviceName string, ht
 
 }
 
-func (i *Ingress) UpdateChallengeEndpoints(domains []string, serviceName string, httpPort intstr.IntOrString) error {
+func (i *Ingress) UpdateNginxChallengeEndpoints(domains []string, serviceName string, httpPort intstr.IntOrString) error {
 
 	oldRules := i.IngressApi.Spec.Rules
 	oldAnnotations := i.IngressApi.Annotations
-	i.SetChallengeEndpoints(domains, serviceName, httpPort)
+	i.SetNginxChallengeEndpoints(domains, serviceName, httpPort)
 
 	if reflect.DeepEqual(oldRules, i.IngressApi.Spec.Rules) && reflect.DeepEqual(oldAnnotations, i.IngressApi.Annotations) {
 		i.Log().Infof("challenge endpoints don't need an update")
@@ -185,7 +200,7 @@ func (i *Ingress) UpdateChallengeEndpoints(domains []string, serviceName string,
 	return i.Save()
 }
 
-func (i *Ingress) GetChallengeEndpoints() (tlsHosts []string) {
+func (i *Ingress) GetNginxChallengeEndpoints() (tlsHosts []string) {
 	for _, rules := range i.IngressApi.Spec.Rules {
 		for _, path := range rules.HTTP.Paths {
 			if path.Path == kubelego.AcmeHttpChallengePath {

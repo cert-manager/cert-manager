@@ -112,7 +112,7 @@ func (kl *KubeLego) Reconfigure() error {
 
 func (kl *KubeLego) UpdateChallengeEndpoints(tlsHosts []string) error {
 	ing := ingress.New(kl, kl.LegoNamespace, kl.LegoIngressName)
-	return ing.UpdateChallengeEndpoints(
+	return ing.UpdateNginxChallengeEndpoints(
 		tlsHosts,
 		kl.LegoServiceName,
 		kl.legoHTTPPort,

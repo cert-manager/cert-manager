@@ -18,6 +18,7 @@ const TLSCaKey = "ca.crt"
 
 const AnnotationIngressChallengeEndpoints = "kubernetes.io/tls-acme-challenge-endpoints"
 const AnnotationIngressChallengeEndpointsHash = "kubernetes.io/tls-acme-challenge-endpoints-hash"
+const AnnotationIngressClass = "kubernetes.io/ingress.class"
 const AnnotationEnabled = "kubernetes.io/tls-acme"
 const AnnotationSslRedirect = "ingress.kubernetes.io/ssl-redirect"
 

@@ -22,20 +22,21 @@ func TestIsSupportedIngressClass(t *testing.T) {
 	assert.Nil(t, err)
 }
 
-func TestIngress_SetGetChallengeEndpoints(t *testing.T) {
+func TestIngress_SetGetNginxChallengeEndpoints(t *testing.T) {
+
 	ing := &Ingress{
 		IngressApi: &k8sExtensions.Ingress{},
 	}
 
 	port := intstr.FromInt(5)
 
-	ing.SetChallengeEndpoints(
+	ing.SetNginxChallengeEndpoints(
 		[]string{"test123.com", "456.com"},
 		"my-service",
 		port,
 	)
 
-	domains := ing.GetChallengeEndpoints()
+	domains := ing.GetNginxChallengeEndpoints()
 
 	sort.Strings(domains)
 
