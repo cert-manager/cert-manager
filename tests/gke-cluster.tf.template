@@ -1,0 +1,85 @@
+provider "google" {
+  project     = "jetstack-gke"
+  region      = "europe-west1"
+  credentials = "${file("~/.gcloud/jetstack-gke.json")}"
+}
+
+variable "master_auth_username" {
+  type    = "string"
+  default = "admin"
+}
+
+variable "master_auth_password" {
+  type    = "string"
+  default = "insecure"
+}
+
+variable "cluster_name" {
+  default = "kube-lego-e2e-test"
+}
+
+variable "cluster_ips" {
+  default = ""
+}
+
+variable "zone_name" {
+  default = "gke-jetstack-net"
+}
+
+variable "zone_domain" {
+  default = "gke.jetstack.net."
+}
+
+variable "default_zone" {
+  type    = "string"
+  default = "europe-west1-b"
+}
+
+resource "google_container_cluster" "e2e-test" {
+  name               = "${var.cluster_name}"
+  zone               = "${var.default_zone}"
+  initial_node_count = 1
+
+  description = "e2e test for kube-lego"
+
+  master_auth {
+    username = "${var.master_auth_username}"
+    password = "${var.master_auth_password}"
+  }
+
+  node_config {
+    machine_type = "n1-standard-1"
+
+    oauth_scopes = [
+      "https://www.googleapis.com/auth/compute",
+      "https://www.googleapis.com/auth/devstorage.read_only",
+      "https://www.googleapis.com/auth/service.management",
+      "https://www.googleapis.com/auth/servicecontrol",
+      "https://www.googleapis.com/auth/logging.write",
+      "https://www.googleapis.com/auth/monitoring",
+    ]
+  }
+}
+
+resource "google_dns_record_set" "ingress" {
+  name = "*.${var.cluster_name}.${var.zone_domain}"
+  type = "A"
+  ttl  = 60
+
+  managed_zone = "${var.zone_name}"
+
+  rrdatas = ["${element(split(",", var.cluster_ips), count.index)}"]
+  count   = "${length(compact(split(",", var.cluster_ips)))}"
+}
+
+output "cluster_name" {
+  value = "${var.cluster_name}"
+}
+
+output "default_zone" {
+  value = "${var.default_zone}"
+}
+
+output "dns_name" {
+  value = "${var.cluster_name}.${var.zone_domain}"
+}

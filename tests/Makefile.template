@@ -1,0 +1,76 @@
+DEFAULT_ZONE := europe-west1-b
+EXAMPLE_DIR := examples
+DOMAIN := gke.jetstack.net
+
+.terraform_general.tfvars:
+	echo 'cluster_name = "$(shell date +%s | sha256sum | head -c 8 | xargs printf kube-lego-e2e-%s)"' > $@
+	echo 'master_admin_password = "$(shell date +%s | sha256sum | base64 | head -c 16)"' >> $@
+	echo 'default_zone = "${DEFAULT_ZONE}"' >> $@
+
+.terraform_init: .terraform_general.tfvars
+	terraform apply -var-file=.terraform_general.tfvars
+
+.terraform_cluster_ips: .terraform_cluster_ips.tfvars
+	terraform apply -var-file=.terraform_general.tfvars -var-file=.terraform_cluster_ips.tfvars
+
+.terraform_destroy:
+	terraform destroy -var-file=.terraform_general.tfvars --force
+	rm -f .terraform_cluster_ips.tfvars .terraform_general.tfvars .kubeconfig
+
+.kubeconfig: export KUBECONFIG = $(CURDIR)/.kubeconfig
+.kubeconfig:
+	gcloud container clusters get-credentials --zone ${DEFAULT_ZONE} $(shell terraform output cluster_name)
+	kubectl get nodes > /dev/null
+
+.terraform_cluster_ips.tfvars: export KUBECONFIG = $(CURDIR)/.kubeconfig
+.terraform_cluster_ips.tfvars: .kubeconfig
+	@echo "wait for loadbalancer service to be come available"
+	@while true; do \
+		CLUSTER_IP=`kubectl get --namespace=nginx-ingress svc/nginx -o json | jq -r '.status.loadBalancer.ingress[0].ip'`; \
+		if [ "$$CLUSTER_IP" != "null" ]; then \
+			echo "cluster_ips = \"$${CLUSTER_IP}\"" > $@; \
+			cat $@; \
+			break; \
+		fi; \
+		echo "loadbalancer not ready yet" >&2; \
+		sleep 2; \
+	done;
+
+logs: export KUBECONFIG = $(CURDIR)/.kubeconfig
+logs: .kubeconfig
+	kubectl logs --namespace kube-lego $(shell kubectl get pods --namespace kube-lego -L app=kube-lego --output template  --template="{{(index .items 0).metadata.name}}") -f
+
+pods: export KUBECONFIG = $(CURDIR)/.kubeconfig
+pods: .kubeconfig
+	watch kubectl get pods --all-namespaces
+
+ui: export KUBECONFIG = $(CURDIR)/.kubeconfig
+ui: .kubeconfig
+	x-www-browser http://localhost:8001/ui
+	kubectl proxy
+
+show_cert: .terraform_general.tfvars
+	cfssl-certinfo -domain echo.$(shell terraform output cluster_name).$(DOMAIN)
+
+kube_lego_prepare: export KUBECONFIG = $(CURDIR)/.kubeconfig
+kube_lego_prepare: .kubeconfig
+	git ls-files "${EXAMPLE_DIR}/*.yaml" | grep -v 'ingress.yaml' | grep -v '50-kube-lego-deployment.yaml' | sort | xargs -n 1 kubectl apply -f
+	sed 's,image:.*,image: jetstack/kube-lego:test-e2e,g' ${EXAMPLE_DIR}/50-kube-lego-deployment.yaml | kubectl apply -f -
+
+kube_lego_enable: export KUBECONFIG = $(CURDIR)/.kubeconfig
+kube_lego_enable: .terraform_cluster_ips .kubeconfig
+	for ingress in `git ls-files "${EXAMPLE_DIR}/*.yaml" | grep 'ingress.yaml' | sort`; do \
+		sed "s/example\.com/$(shell terraform output cluster_name).gke.jetstack.net/g" $$ingress | kubectl apply -f - ;\
+	done
+
+kube_lego_destroy: export KUBECONFIG = $(CURDIR)/.kubeconfig
+kube_lego_destroy: .kubeconfig
+	git ls-files "${EXAMPLE_DIR}/*.yaml" | sort -r | timeout 30 xargs -n 1 kubectl delete -f || true
+
+test: .terraform_init kube_lego_prepare kube_lego_enable
+
+clean:
+	test -e .kubeconfig && $(MAKE) kube_lego_destroy; true
+	test -e .terraform_general.tfvars && $(MAKE) .terraform_destroy; true
+	rm -f .terraform_cluster_ips.tfvars .terraform_general.tfvars .kubeconfig
+	@echo everything clean
