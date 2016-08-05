@@ -13,6 +13,9 @@ CONTAINER_DIR=/go/src/${PACKAGE_NAME}
 
 .PHONY: version
 
+codegen:
+	mockgen -imports .=github.com/jetstack/kube-lego/pkg/kubelego_const -package=mocks -source=pkg/kubelego_const/interfaces.go > pkg/mocks/mocks.go
+
 depend:
 	rm -rf $(TEST_DIR)/
 	rm -rf ${BUILD_DIR}/
