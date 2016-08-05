@@ -16,9 +16,10 @@ type KubeLego struct {
 	legoURL                 string
 	legoEmail               string
 	LegoSecretName          string
-	LegoServiceName         string
 	LegoIngressName         string
 	LegoNamespace           string
+	legoServiceName         string
+	legoServiceNameGce      string
 	legoHTTPPort            intstr.IntOrString
 	legoCheckInterval       time.Duration
 	legoMinimumValidity     time.Duration

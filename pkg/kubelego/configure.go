@@ -1,11 +1,11 @@
 package kubelego
 
 import (
+	"github.com/jetstack/kube-lego/pkg/ingress"
 	"github.com/jetstack/kube-lego/pkg/kubelego_const"
 	"github.com/jetstack/kube-lego/pkg/utils"
 
 	"fmt"
-	"github.com/jetstack/kube-lego/pkg/ingress"
 	"strings"
 )
 
@@ -114,7 +114,7 @@ func (kl *KubeLego) UpdateChallengeEndpoints(tlsHosts []string) error {
 	ing := ingress.New(kl, kl.LegoNamespace, kl.LegoIngressName)
 	return ing.UpdateNginxChallengeEndpoints(
 		tlsHosts,
-		kl.LegoServiceName,
+		kl.LegoServiceName(),
 		kl.legoHTTPPort,
 	)
 }

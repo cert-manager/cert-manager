@@ -15,6 +15,8 @@ type KubeLego interface {
 	LegoHTTPPort() string
 	LegoEmail() string
 	LegoURL() string
+	LegoServiceName() string
+	LegoServiceNameGce() string
 	LegoDefaultIngressClass() string
 	LegoCheckInterval() time.Duration
 	Version() string
@@ -36,4 +38,9 @@ type Tls interface {
 type Ingress interface {
 	Tls() []Tls
 	Ignore() bool
+}
+
+type IngressProvider interface {
+	Init() error
+	Update(Ingress) error
 }

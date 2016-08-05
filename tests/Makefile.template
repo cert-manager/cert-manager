@@ -1,5 +1,5 @@
 DEFAULT_ZONE := europe-west1-b
-EXAMPLE_DIR := examples
+EXAMPLE_DIR := $(shell readlink examples)
 DOMAIN := gke.jetstack.net
 
 .terraform_general.tfvars:

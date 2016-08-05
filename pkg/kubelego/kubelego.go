@@ -125,6 +125,14 @@ func (kl *KubeLego) LegoDefaultIngressClass() string {
 	return kl.legoDefaultIngressClass
 }
 
+func (kl *KubeLego) LegoServiceName() string {
+	return kl.legoServiceName
+}
+
+func (kl *KubeLego) LegoServiceNameGce() string {
+	return kl.legoServiceNameGce
+}
+
 func (kl *KubeLego) LegoCheckInterval() time.Duration {
 	return kl.legoCheckInterval
 }
@@ -170,9 +178,14 @@ func (kl *KubeLego) paramsLego() error {
 		kl.LegoSecretName = "kube-lego-account"
 	}
 
-	kl.LegoServiceName = os.Getenv("LEGO_SERVICE_NAME")
-	if len(kl.LegoServiceName) == 0 {
-		kl.LegoServiceName = "kube-lego"
+	kl.legoServiceName = os.Getenv("LEGO_SERVICE_NAME")
+	if len(kl.legoServiceName) == 0 {
+		kl.legoServiceName = "kube-lego"
+	}
+
+	kl.legoServiceNameGce = os.Getenv("LEGO_SERVICE_NAME_GCE")
+	if len(kl.legoServiceNameGce) == 0 {
+		kl.legoServiceNameGce = "kube-lego-gce"
 	}
 
 	legoDefaultIngressClass := os.Getenv("LEGO_DEFAULT_INGRESS_CLASS")
