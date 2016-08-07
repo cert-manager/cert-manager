@@ -21,5 +21,6 @@ const AnnotationIngressChallengeEndpointsHash = "kubernetes.io/tls-acme-challeng
 const AnnotationIngressClass = "kubernetes.io/ingress.class"
 const AnnotationEnabled = "kubernetes.io/tls-acme"
 const AnnotationSslRedirect = "ingress.kubernetes.io/ssl-redirect"
+const AnnotationKubeLegoManaged = "kubernetes.io/kube-lego-managed"
 
 var SupportedIngressClasses = []string{"nginx", "gce"}

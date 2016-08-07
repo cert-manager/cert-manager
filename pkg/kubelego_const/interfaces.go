@@ -2,23 +2,30 @@ package kubelego
 
 import (
 	"time"
+	"net"
 
 	"github.com/Sirupsen/logrus"
 	k8sApi "k8s.io/kubernetes/pkg/api"
+	k8sExtensions "k8s.io/kubernetes/pkg/apis/extensions"
 	k8sClient "k8s.io/kubernetes/pkg/client/unversioned"
+	"k8s.io/kubernetes/pkg/util/intstr"
 )
 
 type KubeLego interface {
 	KubeClient() *k8sClient.Client
 	Log() *logrus.Entry
 	AcmeClient() Acme
-	LegoHTTPPort() string
+	LegoHTTPPort() intstr.IntOrString
 	LegoEmail() string
 	LegoURL() string
-	LegoServiceName() string
+	LegoNamespace() string
+	LegoIngressNameNginx() string
+	LegoServiceNameNginx() string
 	LegoServiceNameGce() string
 	LegoDefaultIngressClass() string
 	LegoCheckInterval() time.Duration
+	LegoPodIP() net.IP
+	IngressProvider(string) (IngressProvider, error)
 	Version() string
 	AcmeUser() (map[string][]byte, error)
 	SaveAcmeUser(map[string][]byte) error
@@ -35,12 +42,25 @@ type Tls interface {
 	Process() error
 }
 
+type Service interface {
+	Object() *k8sApi.Service
+	SetKubeLegoSpec()
+	SetEndpoints([]string) error
+	Save() error
+	Delete() error
+}
+
 type Ingress interface {
+	Object() *k8sExtensions.Ingress
+	Save() error
+	Delete() error
+	IngressClass() string
 	Tls() []Tls
 	Ignore() bool
 }
 
 type IngressProvider interface {
-	Init() error
-	Update(Ingress) error
+	Process(Ingress) error
+	Reset() error
+	Finalize() error
 }

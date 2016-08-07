@@ -14,6 +14,7 @@ CONTAINER_DIR=/go/src/${PACKAGE_NAME}
 .PHONY: version
 
 codegen:
+	which mockgen
 	mockgen -imports .=github.com/jetstack/kube-lego/pkg/kubelego_const -package=mocks -source=pkg/kubelego_const/interfaces.go > pkg/mocks/mocks.go
 
 depend:
@@ -28,7 +29,7 @@ version:
 	$(eval GIT_COMMIT := $(shell git rev-parse HEAD))
 	$(eval APP_VERSION := $(shell cat VERSION))
 
-test: test_root test_pkg_acme test_pkg_ingress test_pkg_kubelego test_pkg_secret test_pkg_utils
+test: test_root test_pkg_acme test_pkg_ingress test_pkg_kubelego test_pkg_secret test_pkg_utils test_pkg_provider_gce test_pkg_provider_nginx
 
 test_prepare: depend
 	which gocover-cobertura || go get github.com/t-yuki/gocover-cobertura
@@ -40,10 +41,16 @@ test_root: test_prepare
 	gocover-cobertura < $(TEST_DIR)/coverage.txt > $(TEST_DIR)/coverage.xml
 	sed -i "s#filename=\"$(PACKAGE_NAME)/#filename=\"#g" $(TEST_DIR)/coverage.xml
 
+test_pkg_provider_%: test_prepare
+	godep go test -v -coverprofile=$(TEST_DIR)/coverage.$*.txt -covermode count ./pkg/provider/$* | go2xunit > $(TEST_DIR)/test.$*.xml
+	gocover-cobertura < $(TEST_DIR)/coverage.$*.txt > $(TEST_DIR)/coverage.$*.xml
+	sed -i "s#filename=\"$(PACKAGE_NAME)/#filename=\"#g" $(TEST_DIR)/coverage.$*.xml
+
 test_pkg_%: test_prepare
 	godep go test -v -coverprofile=$(TEST_DIR)/coverage.$*.txt -covermode count ./pkg/$* | go2xunit > $(TEST_DIR)/test.$*.xml
 	gocover-cobertura < $(TEST_DIR)/coverage.$*.txt > $(TEST_DIR)/coverage.$*.xml
 	sed -i "s#filename=\"$(PACKAGE_NAME)/#filename=\"#g" $(TEST_DIR)/coverage.$*.xml
+
 
 build: depend version
 	CGO_ENABLED=0 GOOS=linux godep go build \

@@ -11,8 +11,6 @@ import (
 	k8sErrors "k8s.io/kubernetes/pkg/api/errors"
 	k8sExtensions "k8s.io/kubernetes/pkg/apis/extensions"
 	k8sClient "k8s.io/kubernetes/pkg/client/unversioned"
-	"k8s.io/kubernetes/pkg/util/intstr"
-	"reflect"
 )
 
 func IsSupportedIngressClass(in string) (out string, err error) {
@@ -127,6 +125,10 @@ func (o *Ingress) Save() (err error) {
 	return
 }
 
+func (i *Ingress) Object() *k8sExtensions.Ingress {
+	return i.IngressApi
+}
+
 func (i *Ingress) IngressClass() string {
 	val, ok := i.IngressApi.Annotations[kubelego.AnnotationIngressClass]
 	if !ok {
@@ -149,66 +151,6 @@ func (i *Ingress) Ignore() bool {
 	}
 
 	return false
-}
-
-func (i *Ingress) SetNginxChallengeEndpoints(domains []string, serviceName string, httpPort intstr.IntOrString) {
-	rules := []k8sExtensions.IngressRule{}
-	paths := []k8sExtensions.HTTPIngressPath{
-		k8sExtensions.HTTPIngressPath{
-			Path: kubelego.AcmeHttpChallengePath,
-			Backend: k8sExtensions.IngressBackend{
-				ServiceName: serviceName,
-				ServicePort: httpPort,
-			},
-		},
-	}
-	ruleValue := k8sExtensions.IngressRuleValue{
-		&k8sExtensions.HTTPIngressRuleValue{
-			Paths: paths,
-		},
-	}
-	for _, hostName := range domains {
-		rules = append(rules, k8sExtensions.IngressRule{
-			Host:             hostName,
-			IngressRuleValue: ruleValue,
-		})
-	}
-
-	i.IngressApi.Annotations = map[string]string{
-		kubelego.AnnotationIngressChallengeEndpoints: "true",
-		kubelego.AnnotationSslRedirect:               "false",
-		kubelego.AnnotationIngressClass:              "nginx",
-	}
-
-	i.IngressApi.Spec = k8sExtensions.IngressSpec{
-		Rules: rules,
-	}
-
-}
-
-func (i *Ingress) UpdateNginxChallengeEndpoints(domains []string, serviceName string, httpPort intstr.IntOrString) error {
-
-	oldRules := i.IngressApi.Spec.Rules
-	oldAnnotations := i.IngressApi.Annotations
-	i.SetNginxChallengeEndpoints(domains, serviceName, httpPort)
-
-	if reflect.DeepEqual(oldRules, i.IngressApi.Spec.Rules) && reflect.DeepEqual(oldAnnotations, i.IngressApi.Annotations) {
-		i.Log().Infof("challenge endpoints don't need an update")
-		return nil
-	}
-
-	return i.Save()
-}
-
-func (i *Ingress) GetNginxChallengeEndpoints() (tlsHosts []string) {
-	for _, rules := range i.IngressApi.Spec.Rules {
-		for _, path := range rules.HTTP.Paths {
-			if path.Path == kubelego.AcmeHttpChallengePath {
-				tlsHosts = append(tlsHosts, rules.Host)
-			}
-		}
-	}
-	return
 }
 
 func (i *Ingress) Tls() (out []kubelego.Tls) {

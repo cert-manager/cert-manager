@@ -13,12 +13,15 @@ import (
 	"github.com/jetstack/kube-lego/pkg/acme"
 	"github.com/jetstack/kube-lego/pkg/ingress"
 	"github.com/jetstack/kube-lego/pkg/kubelego_const"
+	"github.com/jetstack/kube-lego/pkg/provider/gce"
+	"github.com/jetstack/kube-lego/pkg/provider/nginx"
 	"github.com/jetstack/kube-lego/pkg/secret"
 
 	log "github.com/Sirupsen/logrus"
 	k8sApi "k8s.io/kubernetes/pkg/api"
 	k8sClient "k8s.io/kubernetes/pkg/client/unversioned"
 	"k8s.io/kubernetes/pkg/util/intstr"
+	"net"
 )
 
 var _ kubelego.KubeLego = &KubeLego{}
@@ -41,6 +44,14 @@ func (kl *KubeLego) Stop() {
 	close(kl.stopCh)
 }
 
+func (kl *KubeLego) IngressProvider(name string) (provider kubelego.IngressProvider, err error) {
+	provider, ok := kl.legoIngressProvider[name]
+	if !ok {
+		return nil, fmt.Errorf("Ingress provider '%s' not found", name)
+	}
+	return
+}
+
 func (kl *KubeLego) Init() {
 	kl.Log().Infof("kube-lego %s starting", kl.version)
 
@@ -58,6 +69,12 @@ func (kl *KubeLego) Init() {
 	err := kl.paramsLego()
 	if err != nil {
 		kl.Log().Fatal(err)
+	}
+
+	// initialising ingress providers
+	kl.legoIngressProvider = map[string]kubelego.IngressProvider{
+		"gce":   gce.New(kl),
+		"nginx": nginx.New(kl),
 	}
 
 	// start workers
@@ -109,8 +126,8 @@ func (kl *KubeLego) Version() string {
 	return kl.version
 }
 
-func (kl *KubeLego) LegoHTTPPort() string {
-	return fmt.Sprintf(":%d", kl.legoHTTPPort.IntValue())
+func (kl *KubeLego) LegoHTTPPort() intstr.IntOrString {
+	return kl.legoHTTPPort
 }
 
 func (kl *KubeLego) LegoURL() string {
@@ -121,12 +138,24 @@ func (kl *KubeLego) LegoEmail() string {
 	return kl.legoEmail
 }
 
+func (kl *KubeLego) LegoNamespace() string {
+	return kl.legoNamespace
+}
+
+func (kl *KubeLego) LegoPodIP() net.IP{
+	return kl.legoPodIP
+}
+
 func (kl *KubeLego) LegoDefaultIngressClass() string {
 	return kl.legoDefaultIngressClass
 }
 
-func (kl *KubeLego) LegoServiceName() string {
-	return kl.legoServiceName
+func (kl *KubeLego) LegoIngressNameNginx() string {
+	return kl.legoIngressNameNginx
+}
+
+func (kl *KubeLego) LegoServiceNameNginx() string {
+	return kl.legoServiceNameNginx
 }
 
 func (kl *KubeLego) LegoServiceNameGce() string {
@@ -138,13 +167,13 @@ func (kl *KubeLego) LegoCheckInterval() time.Duration {
 }
 
 func (kl *KubeLego) acmeSecret() *secret.Secret {
-	return secret.New(kl, kl.LegoNamespace, kl.LegoSecretName)
+	return secret.New(kl, kl.LegoNamespace(), kl.legoSecretName)
 }
 
 func (kl *KubeLego) AcmeUser() (map[string][]byte, error) {
 	s := kl.acmeSecret()
 	if !s.Exists() {
-		return map[string][]byte{}, fmt.Errorf("no acme user found %s/%s", kl.LegoNamespace, kl.LegoSecretName)
+		return map[string][]byte{}, fmt.Errorf("no acme user found %s/%s", kl.LegoNamespace(), kl.legoSecretName)
 	}
 	return s.SecretApi.Data, nil
 }
@@ -163,9 +192,14 @@ func (kl *KubeLego) paramsLego() error {
 		return errors.New("Please provide an email address for cert recovery in LEGO_EMAIL")
 	}
 
-	kl.LegoNamespace = os.Getenv("LEGO_NAMESPACE")
-	if len(kl.LegoNamespace) == 0 {
-		kl.LegoNamespace = k8sApi.NamespaceDefault
+	kl.legoPodIP = net.ParseIP(os.Getenv("LEGO_POD_IP"))
+	if kl.legoPodIP == nil {
+		return errors.New("Please provide the pod's IP via environment variable LEGO_POD_IP using the downward API (http://kubernetes.io/docs/user-guide/downward-api/)")
+	}
+
+	kl.legoNamespace = os.Getenv("LEGO_NAMESPACE")
+	if len(kl.legoNamespace) == 0 {
+		kl.legoNamespace = k8sApi.NamespaceDefault
 	}
 
 	kl.legoURL = os.Getenv("LEGO_URL")
@@ -173,14 +207,17 @@ func (kl *KubeLego) paramsLego() error {
 		kl.legoURL = "https://acme-staging.api.letsencrypt.org/directory"
 	}
 
-	kl.LegoSecretName = os.Getenv("LEGO_SECRET_NAME")
-	if len(kl.LegoSecretName) == 0 {
-		kl.LegoSecretName = "kube-lego-account"
+	kl.legoSecretName = os.Getenv("LEGO_SECRET_NAME")
+	if len(kl.legoSecretName) == 0 {
+		kl.legoSecretName = "kube-lego-account"
 	}
 
-	kl.legoServiceName = os.Getenv("LEGO_SERVICE_NAME")
-	if len(kl.legoServiceName) == 0 {
-		kl.legoServiceName = "kube-lego"
+	kl.legoServiceNameNginx = os.Getenv("LEGO_SERVICE_NAME_NGINX")
+	if len(kl.legoServiceNameNginx) == 0 {
+		kl.legoServiceNameNginx = os.Getenv("LEGO_SERVICE_NAME")
+		if len(kl.legoServiceNameNginx) == 0 {
+			kl.legoServiceNameNginx = "kube-lego-nginx"
+		}
 	}
 
 	kl.legoServiceNameGce = os.Getenv("LEGO_SERVICE_NAME_GCE")
@@ -198,10 +235,12 @@ func (kl *KubeLego) paramsLego() error {
 			return fmt.Errorf("Unsupported default ingress class: '%s'", legoDefaultIngressClass)
 		}
 	}
-
-	kl.LegoIngressName = os.Getenv("LEGO_INGRESS_NAME")
-	if len(kl.LegoIngressName) == 0 {
-		kl.LegoIngressName = "kube-lego"
+	kl.legoIngressNameNginx = os.Getenv("LEGO_INGRESS_NAME_NGINX")
+	if len(kl.legoIngressNameNginx) == 0 {
+		kl.legoIngressNameNginx = os.Getenv("LEGO_INGRESS_NAME")
+		if len(kl.legoIngressNameNginx) == 0 {
+			kl.legoIngressNameNginx = "kube-lego-nginx"
+		}
 	}
 
 	checkIntervalString := os.Getenv("LEGO_CHECK_INTERVAL")

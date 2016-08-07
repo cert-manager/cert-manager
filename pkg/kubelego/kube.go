@@ -40,7 +40,7 @@ func (kl *KubeLego) InitKube() error {
 }
 
 func (kl *KubeLego) Namespace() string {
-	return kl.LegoNamespace
+	return kl.legoNamespace
 }
 
 func (kl *KubeLego) WatchConfig() {

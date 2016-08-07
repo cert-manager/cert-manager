@@ -18,7 +18,7 @@
 - Obtains certificates per TLS object in ingress resources and stores it in Kubernetes secrets using `HTTP-01` challenge
 - Creates a user account (incl. private key) for Let's Encrypt and stores it in Kubernetes secrets (secret name is configurable via `LEGO_SECRET_NAME`)
 - Watches changes of ingress resources and reevaluate certificates
-- Configures endpoints for `HTTP-01` challenge in a separate ingress resource (ingress name is configurable in `LEGO_INGRESS_NAME`)
+- Configures endpoints for `HTTP-01` challenge in a separate ingress resource (ingress name is configurable in `LEGO_INGRESS_NAME_NGINX`)
 
 ## Requirements
 
@@ -80,11 +80,13 @@ spec:
 | Name | Required | Default | Description |
 |------|----------|---------|-------------|
 | `LEGO_EMAIL` | y | `-` | E-Mail address for the ACME account, used to recover from lost secrets |
+| `LEGO_POD_IP` | y | `-` | Pod IP address (use the [downward API](http://kubernetes.io/docs/user-guide/downward-api/))|
 | `LEGO_NAMESPACE` | n | `default` | Namespace where kube-lego is running in |
 | `LEGO_URL` | n | `https://acme-staging.api.letsencrypt.org/directory` | URL for the ACME server |
 | `LEGO_SECRET_NAME` | n | `kube-lego-account` | Name of the secret in the same namespace that contains ACME account secret |
-| `LEGO_SERVICE_NAME` | n | `kube-lego` | Service name that connects to this pod |
-| `LEGO_INGRESS_NAME` | n | `kube-lego` | Ingress name which contains the routing for HTTP verification for nginx ingress |
+| `LEGO_SERVICE_NAME_NGINX` | n | `kube-lego-nginx` | Service name for NGINX ingress |
+| `LEGO_SERVICE_NAME_GCE` | n | `kube-lego-gce` | Service name for GCE ingress |
+| `LEGO_INGRESS_NAME_NGINX` | n | `kube-lego-nginx` | Ingress name which contains the routing for HTTP verification for nginx ingress |
 | `LEGO_PORT` | n | `8080` | Port where this daemon is listening for verifcation calls (HTTP method)|
 | `LEGO_CHECK_INTERVAL` | n | `8h` | Interval for periodically certificate checks (to find expired certs)|
 | `LEGO_MINIMUM_VALIDITY` | n | `720h` (30 days) | Request a renewal when the remaining certificate validitiy falls below that value|

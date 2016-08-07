@@ -10,15 +10,17 @@ import (
 	k8sClient "k8s.io/kubernetes/pkg/client/unversioned"
 	"k8s.io/kubernetes/pkg/util/intstr"
 	"k8s.io/kubernetes/pkg/util/workqueue"
+	"net"
 )
 
 type KubeLego struct {
 	legoURL                 string
 	legoEmail               string
-	LegoSecretName          string
-	LegoIngressName         string
-	LegoNamespace           string
-	legoServiceName         string
+	legoSecretName          string
+	legoIngressNameNginx    string
+	legoNamespace           string
+	legoPodIP               net.IP
+	legoServiceNameNginx    string
 	legoServiceNameGce      string
 	legoHTTPPort            intstr.IntOrString
 	legoCheckInterval       time.Duration
@@ -26,6 +28,7 @@ type KubeLego struct {
 	legoDefaultIngressClass string
 	kubeClient              *k8sClient.Client
 	legoIngressSlice        []*ingress.Ingress
+	legoIngressProvider     map[string]kubelego.IngressProvider
 	version                 string
 	acmeClient              kubelego.Acme
 

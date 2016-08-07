@@ -1,12 +1,10 @@
 package ingress
 
 import (
-	"sort"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	k8sExtensions "k8s.io/kubernetes/pkg/apis/extensions"
-	"k8s.io/kubernetes/pkg/util/intstr"
 )
 
 func TestIsSupportedIngressClass(t *testing.T) {
@@ -20,28 +18,6 @@ func TestIsSupportedIngressClass(t *testing.T) {
 	out, err = IsSupportedIngressClass("gce")
 	assert.Equal(t, "gce", out)
 	assert.Nil(t, err)
-}
-
-func TestIngress_SetGetNginxChallengeEndpoints(t *testing.T) {
-
-	ing := &Ingress{
-		IngressApi: &k8sExtensions.Ingress{},
-	}
-
-	port := intstr.FromInt(5)
-
-	ing.SetNginxChallengeEndpoints(
-		[]string{"test123.com", "456.com"},
-		"my-service",
-		port,
-	)
-
-	domains := ing.GetNginxChallengeEndpoints()
-
-	sort.Strings(domains)
-
-	assert.Equal(t, []string{"456.com", "test123.com"}, domains)
-
 }
 
 func TestIngress_Tls(t *testing.T) {

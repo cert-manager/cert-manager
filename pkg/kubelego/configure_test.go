@@ -7,7 +7,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	k8sApi "k8s.io/kubernetes/pkg/api"
-	"sort"
 )
 
 type mockTls struct {
@@ -74,18 +73,4 @@ func TestKubeLego_TlsIgnoreDuplicatedSecrets(t *testing.T) {
 	input := getTlsExample()
 	output := k.TlsIgnoreDuplicatedSecrets(input)
 	assert.EqualValues(t, 2, len(output))
-}
-
-func TestKubeLego_TlsAggregateHosts(t *testing.T) {
-	k := KubeLego{}
-	input := getTlsExample()
-	output := k.TlsAggregateHosts(input)
-	expected := []string{"domain1", "domain2", "domain3", "domain4"}
-	sort.Strings(output)
-	sort.Strings(expected)
-	assert.EqualValues(
-		t,
-		expected,
-		output,
-	)
 }
