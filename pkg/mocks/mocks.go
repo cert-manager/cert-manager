@@ -11,6 +11,7 @@ import (
 	extensions "k8s.io/kubernetes/pkg/apis/extensions"
 	unversioned "k8s.io/kubernetes/pkg/client/unversioned"
 	intstr "k8s.io/kubernetes/pkg/util/intstr"
+	net "net"
 	time "time"
 )
 
@@ -95,14 +96,34 @@ func (_mr *_MockKubeLegoRecorder) LegoURL() *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "LegoURL")
 }
 
-func (_m *MockKubeLego) LegoServiceName() string {
-	ret := _m.ctrl.Call(_m, "LegoServiceName")
+func (_m *MockKubeLego) LegoNamespace() string {
+	ret := _m.ctrl.Call(_m, "LegoNamespace")
 	ret0, _ := ret[0].(string)
 	return ret0
 }
 
-func (_mr *_MockKubeLegoRecorder) LegoServiceName() *gomock.Call {
-	return _mr.mock.ctrl.RecordCall(_mr.mock, "LegoServiceName")
+func (_mr *_MockKubeLegoRecorder) LegoNamespace() *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "LegoNamespace")
+}
+
+func (_m *MockKubeLego) LegoIngressNameNginx() string {
+	ret := _m.ctrl.Call(_m, "LegoIngressNameNginx")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+func (_mr *_MockKubeLegoRecorder) LegoIngressNameNginx() *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "LegoIngressNameNginx")
+}
+
+func (_m *MockKubeLego) LegoServiceNameNginx() string {
+	ret := _m.ctrl.Call(_m, "LegoServiceNameNginx")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+func (_mr *_MockKubeLegoRecorder) LegoServiceNameNginx() *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "LegoServiceNameNginx")
 }
 
 func (_m *MockKubeLego) LegoServiceNameGce() string {
@@ -133,6 +154,16 @@ func (_m *MockKubeLego) LegoCheckInterval() time.Duration {
 
 func (_mr *_MockKubeLegoRecorder) LegoCheckInterval() *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "LegoCheckInterval")
+}
+
+func (_m *MockKubeLego) LegoPodIP() net.IP {
+	ret := _m.ctrl.Call(_m, "LegoPodIP")
+	ret0, _ := ret[0].(net.IP)
+	return ret0
+}
+
+func (_mr *_MockKubeLegoRecorder) LegoPodIP() *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "LegoPodIP")
 }
 
 func (_m *MockKubeLego) IngressProvider(_param0 string) (IngressProvider, error) {
@@ -270,6 +301,75 @@ func (_mr *_MockTlsRecorder) Process() *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "Process")
 }
 
+// Mock of Service interface
+type MockService struct {
+	ctrl     *gomock.Controller
+	recorder *_MockServiceRecorder
+}
+
+// Recorder for MockService (not exported)
+type _MockServiceRecorder struct {
+	mock *MockService
+}
+
+func NewMockService(ctrl *gomock.Controller) *MockService {
+	mock := &MockService{ctrl: ctrl}
+	mock.recorder = &_MockServiceRecorder{mock}
+	return mock
+}
+
+func (_m *MockService) EXPECT() *_MockServiceRecorder {
+	return _m.recorder
+}
+
+func (_m *MockService) Object() *api.Service {
+	ret := _m.ctrl.Call(_m, "Object")
+	ret0, _ := ret[0].(*api.Service)
+	return ret0
+}
+
+func (_mr *_MockServiceRecorder) Object() *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "Object")
+}
+
+func (_m *MockService) SetKubeLegoSpec() {
+	_m.ctrl.Call(_m, "SetKubeLegoSpec")
+}
+
+func (_mr *_MockServiceRecorder) SetKubeLegoSpec() *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "SetKubeLegoSpec")
+}
+
+func (_m *MockService) SetEndpoints(_param0 []string) error {
+	ret := _m.ctrl.Call(_m, "SetEndpoints", _param0)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+func (_mr *_MockServiceRecorder) SetEndpoints(arg0 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "SetEndpoints", arg0)
+}
+
+func (_m *MockService) Save() error {
+	ret := _m.ctrl.Call(_m, "Save")
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+func (_mr *_MockServiceRecorder) Save() *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "Save")
+}
+
+func (_m *MockService) Delete() error {
+	ret := _m.ctrl.Call(_m, "Delete")
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+func (_mr *_MockServiceRecorder) Delete() *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "Delete")
+}
+
 // Mock of Ingress interface
 type MockIngress struct {
 	ctrl     *gomock.Controller
@@ -291,24 +391,34 @@ func (_m *MockIngress) EXPECT() *_MockIngressRecorder {
 	return _m.recorder
 }
 
-func (_m *MockIngress) Ingress() *extensions.Ingress {
-	ret := _m.ctrl.Call(_m, "Ingress")
+func (_m *MockIngress) Object() *extensions.Ingress {
+	ret := _m.ctrl.Call(_m, "Object")
 	ret0, _ := ret[0].(*extensions.Ingress)
 	return ret0
 }
 
-func (_mr *_MockIngressRecorder) Ingress() *gomock.Call {
-	return _mr.mock.ctrl.RecordCall(_mr.mock, "Ingress")
+func (_mr *_MockIngressRecorder) Object() *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "Object")
 }
 
-func (_m *MockIngress) Update() error {
-	ret := _m.ctrl.Call(_m, "Update")
+func (_m *MockIngress) Save() error {
+	ret := _m.ctrl.Call(_m, "Save")
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-func (_mr *_MockIngressRecorder) Update() *gomock.Call {
-	return _mr.mock.ctrl.RecordCall(_mr.mock, "Update")
+func (_mr *_MockIngressRecorder) Save() *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "Save")
+}
+
+func (_m *MockIngress) Delete() error {
+	ret := _m.ctrl.Call(_m, "Delete")
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+func (_mr *_MockIngressRecorder) Delete() *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "Delete")
 }
 
 func (_m *MockIngress) IngressClass() string {
@@ -362,22 +472,32 @@ func (_m *MockIngressProvider) EXPECT() *_MockIngressProviderRecorder {
 	return _m.recorder
 }
 
-func (_m *MockIngressProvider) Init() error {
-	ret := _m.ctrl.Call(_m, "Init")
+func (_m *MockIngressProvider) Process(_param0 Ingress) error {
+	ret := _m.ctrl.Call(_m, "Process", _param0)
 	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-func (_mr *_MockIngressProviderRecorder) Init() *gomock.Call {
-	return _mr.mock.ctrl.RecordCall(_mr.mock, "Init")
-}
-
-func (_m *MockIngressProvider) Process(ings []Ingress) []error {
-	ret := _m.ctrl.Call(_m, "Process", ings)
-	ret0, _ := ret[0].([]error)
 	return ret0
 }
 
 func (_mr *_MockIngressProviderRecorder) Process(arg0 interface{}) *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "Process", arg0)
+}
+
+func (_m *MockIngressProvider) Reset() error {
+	ret := _m.ctrl.Call(_m, "Reset")
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+func (_mr *_MockIngressProviderRecorder) Reset() *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "Reset")
+}
+
+func (_m *MockIngressProvider) Finalize() error {
+	ret := _m.ctrl.Call(_m, "Finalize")
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+func (_mr *_MockIngressProviderRecorder) Finalize() *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "Finalize")
 }

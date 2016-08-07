@@ -70,8 +70,10 @@ func BasicIngressDomain12Challenge12() *k8sExtensions.Ingress {
 
 func DummyIngress(c *gomock.Controller, tls []Tls, ingress *k8sExtensions.Ingress) *MockIngress {
 	mockIng := NewMockIngress(c)
-	mockIng.EXPECT().Ingress().MinTimes(1).Return(ingress)
-	mockIng.EXPECT().Tls().MinTimes(1).Return(tls)
+	mockIng.EXPECT().Object().AnyTimes().Return(ingress)
+	mockIng.EXPECT().Tls().AnyTimes().Return(tls)
+	mockIng.EXPECT().Save().AnyTimes().Return(nil)
+	mockIng.EXPECT().Delete().AnyTimes().Return(nil)
 	return mockIng
 }
 

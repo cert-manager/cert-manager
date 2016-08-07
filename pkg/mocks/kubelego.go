@@ -6,6 +6,7 @@ import (
 	"github.com/Sirupsen/logrus"
 	"github.com/golang/mock/gomock"
 	"k8s.io/kubernetes/pkg/util/intstr"
+	"net"
 )
 
 func DummyKubeLego(c *gomock.Controller) *MockKubeLego {
@@ -15,7 +16,10 @@ func DummyKubeLego(c *gomock.Controller) *MockKubeLego {
 	kl := NewMockKubeLego(c)
 	kl.EXPECT().Log().AnyTimes().Return(log)
 	kl.EXPECT().LegoHTTPPort().AnyTimes().Return(intstr.FromInt(8080))
-	kl.EXPECT().LegoServiceName().AnyTimes().Return("kube-lego")
+	kl.EXPECT().LegoNamespace().AnyTimes().Return("kube-lego")
+	kl.EXPECT().LegoPodIP().AnyTimes().Return(net.ParseIP("1.2.3.4"))
+	kl.EXPECT().LegoIngressNameNginx().AnyTimes().Return("kube-lego-nginx")
+	kl.EXPECT().LegoServiceNameNginx().AnyTimes().Return("kube-lego-nginx")
 	kl.EXPECT().LegoServiceNameGce().AnyTimes().Return("kube-lego-gce")
 	kl.EXPECT().Log().AnyTimes().Return(log)
 	kl.EXPECT().Version().AnyTimes().Return("mocked-version")
