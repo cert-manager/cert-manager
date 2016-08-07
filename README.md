@@ -11,29 +11,30 @@
 
 ## Features
 
-- Recognizes the need of new certificates for this cases
-  - domain name missing
-  - certificate expired
-  - certificate unparseable
-- Obtains certificates per TLS object in ingress resources and stores it in Kubernetes secrets using `HTTP-01` challenge
+- Recognizes the need of a new certificate for this cases:
+  - No certificate existing
+  - Existing certificate is not containing all domain names
+  - Existing certificate is expired or near to it's expiry date (cf. option `LEGO_MINIMUM_VALIDITY`)
+  - Existing certificate is unparseable, invalid or not matching the secret key
 - Creates a user account (incl. private key) for Let's Encrypt and stores it in Kubernetes secrets (secret name is configurable via `LEGO_SECRET_NAME`)
-- Watches changes of ingress resources and reevaluate certificates
-- Configures endpoints for `HTTP-01` challenge in a separate ingress resource (ingress name is configurable in `LEGO_INGRESS_NAME_NGINX`)
+- Obtains the missing certificates from Let's Encrypt and authorizes the request with the `HTTP-01` challenge
+- Makes sure that the specific Kubernetes objects (Services, Ingress) contain the rights configuration for the `HTTP-01` challenge to succeed
 
 ## Requirements
 
 - Kubernetes 1.2+
-- Compatible ingress controller (cf. [here](#ingress))
+- Compatible ingress controller (nginx or GCE see [here](#ingress))
 - Non-production use case :laughing:
 
 ## Usage
 
 ### run kube-lego
 
-- [deployment](examples/kube-lego-deployment.yaml) for *kube-lego*
-  - don't forget to configure `LEGO_EMAIL` with your mail address
-  - the default value of `LEGO_URL` is the Let's Encrypt staging environment. If you want to get "real" certificates you have to configure their production env.
-- [service](examples/kube-lego-svc.yaml) pointing to *kube-lego* pods
+- [deployment](examples/gce/50-kube-lego-deployment.yaml) for *kube-lego*
+  - don't forget to configure
+     - `LEGO_EMAIL` with your mail address
+     - `LEGO_POD_IP` with the pod IP address using the downward API
+  - the default value of `LEGO_URL` is the Let's Encrypt **staging environment**. If you want to get "real" certificates you have to configure their production env.
 
 ### how kube-lego works
 
@@ -47,7 +48,7 @@ metadata:
 
 Every ingress resource that has this annotations will be monitored by *kube-lego* (cluster-wide in all namespaces). The only part that is watched is the list `spec.tls`. Every element will get their own certificate through Let's encrypt.
 
-Let's take a look at this ingress controller:
+Let's take a look at this ingress resource:
 
 ```yaml
 spec:
@@ -66,14 +67,19 @@ spec:
 - The `secretName` statements have to be unique per namespace
 - `secretName` is required (even if no secret exists with that name, as it will be created by *kube-lego*)
 
-###
 
 ##<a name="ingress"></a>Ingress controllers
 
 ### [Nginx Ingress Controller](https://github.com/kubernetes/contrib/tree/master/ingress/controllers/nginx)
 
 - available through image `gcr.io/google_containers/nginx-ingress-controller`
-- fully supports kube-lego from version 0.8
+- fully supports kube-lego from version 0.8 onwards
+
+### [GCE Loadbalancers](https://github.com/kubernetes/contrib/tree/master/ingress/controllers/gce)
+
+- you don't have to maintain the ingress controller yourself, you pay GCE to do that for you
+- every ingress resource creates one GCE load balancer
+- all service that you want to expose, have to be `Type=NodePort`
 
 ## Environment variables
 
@@ -93,9 +99,10 @@ spec:
 | `LEGO_DEFAULT_INGRESS_CLASS` | n | `nginx` | Default ingress class for resources without specification|
 
 
-## Full example
+## Full deployment examples
 
-See the [examples](examples/README.md) directory.
+- [Nginx Ingress Controller](examples/nginx/README.md)
+- [GCE Load Balancers](examples/gce/README.md)
 
 ## Authors
 

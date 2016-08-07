@@ -15,10 +15,6 @@ spec:
   - host: echo.example.com
     http:
       paths:
-      - path: /.well-known/acme-challenge/*
-        backend:
-          serviceName: kube-lego-gce
-          servicePort: 8080
       - path: /*
         backend:
           serviceName: echoserver
