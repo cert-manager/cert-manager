@@ -5,7 +5,9 @@ import (
 	"fmt"
 
 	"github.com/jetstack/kube-lego/pkg/kubelego_const"
+	"github.com/jetstack/kube-lego/pkg/service"
 
+	"github.com/Sirupsen/logrus"
 	k8sExtensions "k8s.io/kubernetes/pkg/apis/extensions"
 )
 
@@ -29,6 +31,7 @@ func getHostMap(ing kubelego.Ingress) map[string]bool {
 
 type Gce struct {
 	kubelego        kubelego.KubeLego
+	service kubelego.Service
 	usedByNamespace map[string]bool
 }
 
@@ -39,34 +42,62 @@ func New(kl kubelego.KubeLego) *Gce {
 	}
 }
 
-func (p *Gce) Init() error {
+func (p *Gce) Log() (log *logrus.Entry) {
+	return p.kubelego.Log().WithField("context", "provider").WithField("provider", "gce")
+}
+
+func (p *Gce) Reset() (err error) {
+	p.Log().Debug("reset")
 	p.usedByNamespace = map[string]bool{}
+	p.service = nil
 	return nil
 }
 
-func (p *Gce) Process(ings []kubelego.Ingress) (errors []error) {
-	for _, ing := range ings {
-		var err error
-		if ing.IngressClass() == ClassName {
-			err = p.ProcessIngress(ing)
+func (p *Gce) Finalize() (err error) {
+	p.Log().Debug("finialize")
+
+	err = p.updateServices()
+	if err != nil {
+		return err
+	}
+
+	err = p.removeServices()
+	return
+}
+
+func (p *Gce) removeServices() (err error) {
+	// TODO implement me
+	return nil
+}
+
+func (p *Gce) updateServices() (err error) {
+	for namespace, enabled := range p.usedByNamespace {
+		if enabled {
+			err = p.updateService(namespace)
+			if err != nil {
+				return err
+			}
 		}
-		errors = append(errors, err)
 	}
 	return nil
 }
 
-func (p *Gce) getHTTPIngressPath() k8sExtensions.HTTPIngressPath {
-	return k8sExtensions.HTTPIngressPath{
-		Path: challengePath,
-		Backend: k8sExtensions.IngressBackend{
-			ServiceName: p.kubelego.LegoServiceNameGce(),
-			ServicePort: p.kubelego.LegoHTTPPort(),
-		},
+func (p *Gce) updateService(namespace string) (err error) {
+	var svc kubelego.Service = service.New(p.kubelego, namespace, p.kubelego.LegoServiceNameGce())
+
+	svc.SetKubeLegoSpec()
+	svc.Object().Spec.Type = "NodePort"
+
+	err = svc.SetEndpoints([]string{"1.2.3.4:8080"})
+	if err != nil{
+		return err
 	}
+
+	return svc.Save()
 }
 
-func (p *Gce) ProcessIngress(ingObj kubelego.Ingress) (err error) {
-	ingApi := ingObj.Ingress()
+func (p *Gce) Process(ingObj kubelego.Ingress) (err error) {
+	ingApi := ingObj.Object()
 	hostsEnabled := getHostMap(ingObj)
 	hostsNotConfigured := getHostMap(ingObj)
 
@@ -118,5 +149,15 @@ func (p *Gce) ProcessIngress(ingObj kubelego.Ingress) (err error) {
 		p.usedByNamespace[ingApi.Namespace] = true
 	}
 
-	return nil
+	return ingObj.Save()
+}
+
+func (p *Gce) getHTTPIngressPath() k8sExtensions.HTTPIngressPath {
+	return k8sExtensions.HTTPIngressPath{
+		Path: challengePath,
+		Backend: k8sExtensions.IngressBackend{
+			ServiceName: p.kubelego.LegoServiceNameGce(),
+			ServicePort: p.kubelego.LegoHTTPPort(),
+		},
+	}
 }
