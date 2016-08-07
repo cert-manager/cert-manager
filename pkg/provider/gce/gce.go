@@ -31,7 +31,7 @@ func getHostMap(ing kubelego.Ingress) map[string]bool {
 
 type Gce struct {
 	kubelego        kubelego.KubeLego
-	service kubelego.Service
+	service         kubelego.Service
 	usedByNamespace map[string]bool
 }
 

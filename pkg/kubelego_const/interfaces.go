@@ -1,8 +1,8 @@
 package kubelego
 
 import (
-	"time"
 	"net"
+	"time"
 
 	"github.com/Sirupsen/logrus"
 	k8sApi "k8s.io/kubernetes/pkg/api"
@@ -60,6 +60,7 @@ type Ingress interface {
 }
 
 type IngressProvider interface {
+	Log() *logrus.Entry
 	Process(Ingress) error
 	Reset() error
 	Finalize() error

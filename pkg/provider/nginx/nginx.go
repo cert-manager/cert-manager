@@ -1,12 +1,12 @@
 package nginx
 
 import (
-	"github.com/jetstack/kube-lego/pkg/kubelego_const"
 	"github.com/jetstack/kube-lego/pkg/ingress"
+	"github.com/jetstack/kube-lego/pkg/kubelego_const"
 	"github.com/jetstack/kube-lego/pkg/service"
 
-	k8sExtensions "k8s.io/kubernetes/pkg/apis/extensions"
 	"github.com/Sirupsen/logrus"
+	k8sExtensions "k8s.io/kubernetes/pkg/apis/extensions"
 	"sort"
 )
 
@@ -15,8 +15,8 @@ var _ kubelego.IngressProvider = &Nginx{}
 type Nginx struct {
 	kubelego kubelego.KubeLego
 	hosts    map[string]bool
-	ingress kubelego.Ingress
-	service kubelego.Service
+	ingress  kubelego.Ingress
+	service  kubelego.Service
 }
 
 func New(kl kubelego.KubeLego) *Nginx {
@@ -73,8 +73,8 @@ func (p *Nginx) Finalize() error {
 	return nil
 }
 
-func (p *Nginx) getHosts() (hosts []string){
-	for host, enabled:= range p.hosts {
+func (p *Nginx) getHosts() (hosts []string) {
+	for host, enabled := range p.hosts {
 		if enabled {
 			hosts = append(hosts, host)
 		}
@@ -83,14 +83,14 @@ func (p *Nginx) getHosts() (hosts []string){
 	return
 }
 
-func (p *Nginx) updateService() error{
+func (p *Nginx) updateService() error {
 
 	p.service.SetKubeLegoSpec()
 	return p.service.Save()
 
 }
 
-func (p *Nginx) updateIngress() error{
+func (p *Nginx) updateIngress() error {
 
 	ing := p.ingress.Object()
 	rules := []k8sExtensions.IngressRule{}
@@ -127,7 +127,6 @@ func (p *Nginx) updateIngress() error{
 
 	return p.ingress.Save()
 }
-
 
 func (p *Nginx) Process(ing kubelego.Ingress) error {
 	for _, tls := range ing.Tls() {
