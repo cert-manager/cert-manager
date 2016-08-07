@@ -50,21 +50,23 @@ func (s *Service) client() k8sClient.ServiceInterface {
 
 func (s *Service) Delete() error {
 
+	if s.ServiceApi == nil || ! s.exists {
+		return nil
+	}
+
 	val, ok := s.ServiceApi.Annotations[kubelego.AnnotationKubeLegoManaged]
 	if !ok || val != "true" {
 		return fmt.Errorf(
-			"Do not delete service '%s/%s' as it has no %s annotiation",
+			"do not delete service '%s/%s' as it has no %s annotiation",
 			s.ServiceApi.Namespace,
 			s.ServiceApi.Name,
 			kubelego.AnnotationKubeLegoManaged,
 		)
 	}
 
-	if s.exists {
-		err := s.client().Delete(s.ServiceApi.Name)
-		if err != nil {
-			return err
-		}
+	err := s.client().Delete(s.ServiceApi.Name)
+	if err != nil {
+		return err
 	}
 
 	s.ServiceApi = nil
@@ -81,7 +83,7 @@ func (s *Service) Save() error {
 	} else {
 		obj, err = s.client().Create(s.ServiceApi)
 	}
-	if err !=  nil {
+	if err != nil {
 		return nil
 	}
 
@@ -109,7 +111,7 @@ func (s *Service) SetKubeLegoSpec() {
 	svc.Spec.Type = "ClusterIP"
 }
 
-func (s *Service)SetEndpoints(endpointsList []string) (err error) {
+func (s *Service) SetEndpoints(endpointsList []string) (err error) {
 	namespace := s.ServiceApi.Namespace
 	client := s.kubelego.KubeClient().Endpoints(s.ServiceApi.Namespace)
 	name := s.ServiceApi.Name
@@ -132,7 +134,7 @@ func (s *Service)SetEndpoints(endpointsList []string) (err error) {
 
 	port := s.kubelego.LegoHTTPPort()
 	addr := make([]k8sApi.EndpointAddress, len(endpointsList))
-	for i, endpoint := range endpointsList{
+	for i, endpoint := range endpointsList {
 		addr[i] = k8sApi.EndpointAddress{
 			IP: endpoint,
 		}
