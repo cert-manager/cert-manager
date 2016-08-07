@@ -53,37 +53,30 @@ func (kl *KubeLego) TlsIgnoreDuplicatedSecrets(tlsSlice []kubelego.Tls) []kubele
 	return output
 }
 
-func (kl *KubeLego) processProvider(ings []kubelego.Ingress) (errors []error) {
+func (kl *KubeLego) processProvider(ings []kubelego.Ingress) (err error) {
 
-	for _, provider := range kl.legoIngressProvider {
+	for providerName, provider := range kl.legoIngressProvider {
 		err := provider.Reset()
 		if err != nil {
-			errors = append(errors, err)
-		}
-	}
-
-	for _, ing := range ings {
-		var err error
-
-		if provider, ok := kl.legoIngressProvider[ing.IngressClass()]; ok {
-			err = provider.Process(ing)
-		} else {
-			err = fmt.Errorf("Ingress provider '%s' not found", ing.IngressClass())
+			provider.Log().Error(err)
+			continue
 		}
 
+		for _, ing := range ings {
+			if providerName == ing.IngressClass() {
+				err = provider.Process(ing)
+				if err != nil {
+					provider.Log().Error(err)
+				}
+			}
+		}
+
+		err = provider.Finalize()
 		if err != nil {
-			errors = append(errors, err)
+			provider.Log().Error(err)
 		}
 	}
-
-	for _, provider := range kl.legoIngressProvider {
-		err := provider.Finalize()
-		if err != nil {
-			errors = append(errors, err)
-		}
-	}
-
-	return
+	return nil
 }
 
 func (kl *KubeLego) reconfigure(ingressesAll []kubelego.Ingress) error {
