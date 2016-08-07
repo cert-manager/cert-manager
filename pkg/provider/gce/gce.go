@@ -88,8 +88,10 @@ func (p *Gce) updateService(namespace string) (err error) {
 	svc.SetKubeLegoSpec()
 	svc.Object().Spec.Type = "NodePort"
 
-	err = svc.SetEndpoints([]string{"1.2.3.4:8080"})
-	if err != nil{
+	podIP := p.kubelego.LegoPodIP().String()
+	p.Log().WithField("pod_ip", podIP).WithField("namespace", namespace).Debug("setting up svc endpoint")
+	err = svc.SetEndpoints([]string{podIP})
+	if err != nil {
 		return err
 	}
 
