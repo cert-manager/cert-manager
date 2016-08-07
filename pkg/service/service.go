@@ -50,7 +50,7 @@ func (s *Service) client() k8sClient.ServiceInterface {
 
 func (s *Service) Delete() error {
 
-	if s.ServiceApi == nil || ! s.exists {
+	if s.ServiceApi == nil || !s.exists {
 		return nil
 	}
 
@@ -99,15 +99,23 @@ func (s *Service) SetKubeLegoSpec() {
 	svc.Annotations = map[string]string{
 		kubelego.AnnotationKubeLegoManaged: "true",
 	}
+
 	svc.Spec.Selector = map[string]string{
 		"app": "kube-lego",
 	}
-	svc.Spec.Ports = []k8sApi.ServicePort{
-		k8sApi.ServicePort{
-			Port:       port.IntValue(),
-			TargetPort: port,
-		},
+
+	if len(svc.Spec.Ports) != 1 ||
+		svc.Spec.Ports[0].Port != port.IntValue() ||
+		svc.Spec.Ports[0].TargetPort.IntValue() != port.IntValue() {
+		svc.Spec.Ports = []k8sApi.ServicePort{
+			k8sApi.ServicePort{
+				Port:       port.IntValue(),
+				TargetPort: port,
+				Protocol:   "TCP",
+			},
+		}
 	}
+
 	svc.Spec.Type = "ClusterIP"
 }
 
@@ -132,7 +140,9 @@ func (s *Service) SetEndpoints(endpointsList []string) (err error) {
 		}
 	}
 
-	port := s.kubelego.LegoHTTPPort()
+	portIntStr := s.kubelego.LegoHTTPPort()
+	port := portIntStr.IntValue()
+
 	addr := make([]k8sApi.EndpointAddress, len(endpointsList))
 	for i, endpoint := range endpointsList {
 		addr[i] = k8sApi.EndpointAddress{
@@ -145,7 +155,8 @@ func (s *Service) SetEndpoints(endpointsList []string) (err error) {
 			Addresses: addr,
 			Ports: []k8sApi.EndpointPort{
 				k8sApi.EndpointPort{
-					Port: port.IntValue(),
+					Port:     port,
+					Protocol: "TCP",
 				},
 			},
 		},
