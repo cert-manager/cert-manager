@@ -86,6 +86,15 @@ func All(client kubelego.KubeLego) (ingresses []kubelego.Ingress, err error) {
 	return ingresses, nil
 }
 
+var _ kubelego.Ingress = &Ingress{}
+
+type Ingress struct {
+	IngressApi *k8sExtensions.Ingress
+	exists     bool
+	kubelego   kubelego.KubeLego
+}
+
+
 func (i *Ingress) Log() *logrus.Entry {
 	log := i.kubelego.Log().WithField("context", "ingress")
 
@@ -123,6 +132,22 @@ func (o *Ingress) Save() (err error) {
 	}
 	o.IngressApi = obj
 	return
+}
+
+func (i *Ingress) Delete() error {
+
+	if i.IngressApi == nil || ! i.exists {
+		return nil
+	}
+
+	err := i.client().Delete(i.IngressApi.Namespace, &k8sApi.DeleteOptions{})
+	if err != nil {
+		return err
+	}
+
+	i.IngressApi = nil
+
+	return nil
 }
 
 func (i *Ingress) Object() *k8sExtensions.Ingress {

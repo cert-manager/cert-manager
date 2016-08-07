@@ -10,8 +10,16 @@ import (
 	"fmt"
 	"github.com/Sirupsen/logrus"
 	k8sApi "k8s.io/kubernetes/pkg/api"
+	k8sExtensions "k8s.io/kubernetes/pkg/apis/extensions"
 	"strings"
 )
+
+var _ kubelego.Tls = &Tls{}
+
+type Tls struct {
+	*k8sExtensions.IngressTLS
+	ingress *Ingress
+}
 
 func (t *Tls) Validate() error {
 	if len(t.Hosts()) == 0 {
