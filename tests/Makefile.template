@@ -57,7 +57,7 @@ TEST_NAME := $(shell pwd | xargs basename)
 
 logs: export KUBECONFIG = $(CURDIR)/.kubeconfig
 logs: .kubeconfig
-	kubectl logs --namespace kube-lego $(shell kubectl get pods --namespace kube-lego -L app=kube-lego --output template  --template="{{(index .items 0).metadata.name}}") -f
+	kubectl logs --namespace kube-lego $(shell kubectl --kubeconfig=.kubeconfig get pods --namespace kube-lego -L app=kube-lego --output template  --template="{{(index .items 0).metadata.name}}") -f
 
 pods: export KUBECONFIG = $(CURDIR)/.kubeconfig
 pods: .kubeconfig
