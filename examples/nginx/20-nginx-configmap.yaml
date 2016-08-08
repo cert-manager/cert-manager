@@ -5,6 +5,7 @@ data:
   proxy-send-imeout: "600"
   hsts-include-subdomains: "false"
   body-size: "64m"
+  server-name-hash-bucket-size: "256"
 kind: ConfigMap
 metadata:
   namespace: nginx-ingress
