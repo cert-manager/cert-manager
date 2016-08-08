@@ -107,6 +107,9 @@ func (kl *KubeLego) reconfigure(ingressesAll []kubelego.Ingress) error {
 			errsStr = append(errsStr, fmt.Sprintf("%s", err))
 		}
 		kl.Log().Error("Error while process certificate requests: ", strings.Join(errsStr, ", "))
+
+		// request a rerun of reconfigure
+		kl.workQueue.Add(true)
 	}
 
 	return nil
