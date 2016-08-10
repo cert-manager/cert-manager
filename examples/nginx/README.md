@@ -15,7 +15,16 @@ kubectl create -f nginx-svc.yaml
 kubectl create -f nginx-deployment.yaml
 ```
 
-- The nginx service uses a LoadBalancer to publish the service
+The nginx service uses a LoadBalancer to publish the service. A few minutes after you have added the nginx service, you will get it's public IP address or domain via kubectl:
+
+```
+kubectl describe svc nginx
+[...]
+LoadBalancer Ingress:   1.2.3.4
+[...]
+```
+
+This is the IP address where you have to point your domains to. IN AWS you will get a domain, use a CNAME record in this case.
 
 # Create an example app (echoserver)
 
