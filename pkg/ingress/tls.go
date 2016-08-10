@@ -10,8 +10,16 @@ import (
 	"fmt"
 	"github.com/Sirupsen/logrus"
 	k8sApi "k8s.io/kubernetes/pkg/api"
+	k8sExtensions "k8s.io/kubernetes/pkg/apis/extensions"
 	"strings"
 )
+
+var _ kubelego.Tls = &Tls{}
+
+type Tls struct {
+	*k8sExtensions.IngressTLS
+	ingress *Ingress
+}
 
 func (t *Tls) Validate() error {
 	if len(t.Hosts()) == 0 {
@@ -86,9 +94,9 @@ func (i *Tls) newCertNeeded(minimumValidity time.Duration) bool {
 	return false
 }
 
-func (i *Tls) Process(minimumValidity time.Duration) error {
+func (i *Tls) Process() error {
 
-	if !i.newCertNeeded(minimumValidity) {
+	if !i.newCertNeeded(i.ingress.kubelego.LegoCheckInterval()) {
 		i.Log().Infof("no cert request needed")
 		return nil
 	}

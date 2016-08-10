@@ -1,0 +1,1 @@
+../gke-cluster.tf.template

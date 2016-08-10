@@ -2,6 +2,21 @@
 All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 
+## [0.1.0] - *not released yet*
+
+### Added
+
+- Support for GCE load balancer ingress controller
+- E2E automation scripts for GCE/NGINX ingress controllers on GKE
+- Support for ingress-class annotations to distinguish between GCE/NGINX ingress
+- Abstracted the ingress controller specific code into separate packages
+- Deployment of kube-lego uses readiness checks
+
+### Fixed
+
+- Handle failed certificate request without exiting kube-lego
+
+
 ## [0.0.4] - 2016-07-11
 ### Added
 - Check for expired certificates periodically (default config every 8 hours)

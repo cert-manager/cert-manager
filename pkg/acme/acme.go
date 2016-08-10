@@ -115,7 +115,8 @@ func (a *Acme) handleChallenge(w http.ResponseWriter, r *http.Request) {
 
 func (a *Acme) RunServer(stopCh <-chan struct{}) {
 
-	port := a.kubelego.LegoHTTPPort()
+	portIntStr := a.kubelego.LegoHTTPPort()
+	port := fmt.Sprintf(":%d", portIntStr.IntValue())
 
 	// listen on port
 	listener, err := net.Listen("tcp", port)

@@ -11,9 +11,17 @@ import (
 	k8sErrors "k8s.io/kubernetes/pkg/api/errors"
 	k8sExtensions "k8s.io/kubernetes/pkg/apis/extensions"
 	k8sClient "k8s.io/kubernetes/pkg/client/unversioned"
-	"k8s.io/kubernetes/pkg/util/intstr"
-	"reflect"
 )
+
+func IsSupportedIngressClass(in string) (out string, err error) {
+	out = strings.ToLower(in)
+	for _, ingClass := range kubelego.SupportedIngressClasses {
+		if ingClass == out {
+			return out, nil
+		}
+	}
+	return "", fmt.Errorf("unsupported ingress class '%s'", in)
+}
 
 func IgnoreIngress(ing *k8sExtensions.Ingress) error {
 
@@ -78,6 +86,15 @@ func All(client kubelego.KubeLego) (ingresses []kubelego.Ingress, err error) {
 	return ingresses, nil
 }
 
+var _ kubelego.Ingress = &Ingress{}
+
+type Ingress struct {
+	IngressApi *k8sExtensions.Ingress
+	exists     bool
+	kubelego   kubelego.KubeLego
+}
+
+
 func (i *Ingress) Log() *logrus.Entry {
 	log := i.kubelego.Log().WithField("context", "ingress")
 
@@ -117,73 +134,48 @@ func (o *Ingress) Save() (err error) {
 	return
 }
 
+func (i *Ingress) Delete() error {
+
+	if i.IngressApi == nil || ! i.exists {
+		return nil
+	}
+
+	err := i.client().Delete(i.IngressApi.Namespace, &k8sApi.DeleteOptions{})
+	if err != nil {
+		return err
+	}
+
+	i.IngressApi = nil
+
+	return nil
+}
+
+func (i *Ingress) Object() *k8sExtensions.Ingress {
+	return i.IngressApi
+}
+
+func (i *Ingress) IngressClass() string {
+	val, ok := i.IngressApi.Annotations[kubelego.AnnotationIngressClass]
+	if !ok {
+		return i.kubelego.LegoDefaultIngressClass()
+	}
+	return strings.ToLower(val)
+}
+
 func (i *Ingress) Ignore() bool {
 	err := IgnoreIngress(i.IngressApi)
 	if err != nil {
 		i.Log().Info("ignoring as ", err)
 		return true
-
 	}
+
+	_, err = IsSupportedIngressClass(i.IngressClass())
+	if err != nil {
+		i.Log().Info("ignoring as ", err)
+		return true
+	}
+
 	return false
-}
-
-func (i *Ingress) SetChallengeEndpoints(domains []string, serviceName string, httpPort intstr.IntOrString) {
-	rules := []k8sExtensions.IngressRule{}
-	paths := []k8sExtensions.HTTPIngressPath{
-		k8sExtensions.HTTPIngressPath{
-			Path: kubelego.AcmeHttpChallengePath,
-			Backend: k8sExtensions.IngressBackend{
-				ServiceName: serviceName,
-				ServicePort: httpPort,
-			},
-		},
-	}
-	ruleValue := k8sExtensions.IngressRuleValue{
-		&k8sExtensions.HTTPIngressRuleValue{
-			Paths: paths,
-		},
-	}
-	for _, hostName := range domains {
-		rules = append(rules, k8sExtensions.IngressRule{
-			Host:             hostName,
-			IngressRuleValue: ruleValue,
-		})
-	}
-
-	i.IngressApi.Annotations = map[string]string{
-		kubelego.AnnotationIngressChallengeEndpoints: "true",
-		kubelego.AnnotationSslRedirect:               "false",
-	}
-
-	i.IngressApi.Spec = k8sExtensions.IngressSpec{
-		Rules: rules,
-	}
-
-}
-
-func (i *Ingress) UpdateChallengeEndpoints(domains []string, serviceName string, httpPort intstr.IntOrString) error {
-
-	oldRules := i.IngressApi.Spec.Rules
-	oldAnnotations := i.IngressApi.Annotations
-	i.SetChallengeEndpoints(domains, serviceName, httpPort)
-
-	if reflect.DeepEqual(oldRules, i.IngressApi.Spec.Rules) && reflect.DeepEqual(oldAnnotations, i.IngressApi.Annotations) {
-		i.Log().Infof("challenge endpoints don't need an update")
-		return nil
-	}
-
-	return i.Save()
-}
-
-func (i *Ingress) GetChallengeEndpoints() (tlsHosts []string) {
-	for _, rules := range i.IngressApi.Spec.Rules {
-		for _, path := range rules.HTTP.Paths {
-			if path.Path == kubelego.AcmeHttpChallengePath {
-				tlsHosts = append(tlsHosts, rules.Host)
-			}
-		}
-	}
-	return
 }
 
 func (i *Ingress) Tls() (out []kubelego.Tls) {

@@ -1,11 +1,10 @@
 package kubelego
 
 import (
+	"github.com/jetstack/kube-lego/pkg/ingress"
 	"github.com/jetstack/kube-lego/pkg/kubelego_const"
-	"github.com/jetstack/kube-lego/pkg/utils"
 
 	"fmt"
-	"github.com/jetstack/kube-lego/pkg/ingress"
 	"strings"
 )
 
@@ -54,40 +53,52 @@ func (kl *KubeLego) TlsIgnoreDuplicatedSecrets(tlsSlice []kubelego.Tls) []kubele
 	return output
 }
 
-func (kl *KubeLego) TlsAggregateHosts(tlsSlice []kubelego.Tls) []string {
-	domains := []string{}
-	for _, elem := range tlsSlice {
-		domains = append(domains, elem.Hosts()...)
-	}
+func (kl *KubeLego) processProvider(ings []kubelego.Ingress) (err error) {
 
-	return utils.StringSliceDistinct(
-		utils.StringSliceLowerCase(
-			domains,
-		),
-	)
+	for providerName, provider := range kl.legoIngressProvider {
+		err := provider.Reset()
+		if err != nil {
+			provider.Log().Error(err)
+			continue
+		}
+
+		for _, ing := range ings {
+			if providerName == ing.IngressClass() {
+				err = provider.Process(ing)
+				if err != nil {
+					provider.Log().Error(err)
+				}
+			}
+		}
+
+		err = provider.Finalize()
+		if err != nil {
+			provider.Log().Error(err)
+		}
+	}
+	return nil
 }
 
 func (kl *KubeLego) reconfigure(ingressesAll []kubelego.Ingress) error {
 	tlsSlice := []kubelego.Tls{}
+	ingresses := []kubelego.Ingress{}
+
+	// filter ingresses, collect tls names
 	for _, ing := range ingressesAll {
 		if ing.Ignore() {
 			continue
 		}
 		tlsSlice = append(tlsSlice, ing.Tls()...)
+		ingresses = append(ingresses, ing)
 	}
+
+	// setup providers
+	kl.processProvider(ingresses)
 
 	// normify tls config
 	tlsSlice = kl.TlsIgnoreDuplicatedSecrets(tlsSlice)
 
-	// get tls hostnames
-	tlsHosts := kl.TlsAggregateHosts(tlsSlice)
-
-	kl.Log().Info("update challenge endpoint ingress, if needed")
-	err := kl.UpdateChallengeEndpoints(tlsHosts)
-	if err != nil {
-		kl.Log().Fatal("Error while updating challenge endpoints ingress: ", err)
-	}
-
+	// process certificate validity
 	kl.Log().Info("process certificates requests for ingresses")
 	errs := kl.TlsProcessHosts(tlsSlice)
 	if len(errs) > 0 {
@@ -95,7 +106,10 @@ func (kl *KubeLego) reconfigure(ingressesAll []kubelego.Ingress) error {
 		for _, err := range errs {
 			errsStr = append(errsStr, fmt.Sprintf("%s", err))
 		}
-		kl.Log().Fatal("Error while process certificate requests: ", strings.Join(errsStr, ", "))
+		kl.Log().Error("Error while process certificate requests: ", strings.Join(errsStr, ", "))
+
+		// request a rerun of reconfigure
+		kl.workQueue.Add(true)
 	}
 
 	return nil
@@ -110,19 +124,10 @@ func (kl *KubeLego) Reconfigure() error {
 	return kl.reconfigure(ingressesAll)
 }
 
-func (kl *KubeLego) UpdateChallengeEndpoints(tlsHosts []string) error {
-	ing := ingress.New(kl, kl.LegoNamespace, kl.LegoIngressName)
-	return ing.UpdateChallengeEndpoints(
-		tlsHosts,
-		kl.LegoServiceName,
-		kl.legoHTTPPort,
-	)
-}
-
 func (kl *KubeLego) TlsProcessHosts(tlsSlice []kubelego.Tls) []error {
 	errs := []error{}
 	for _, tlsElem := range tlsSlice {
-		err := tlsElem.Process(kl.legoMinimumValidity)
+		err := tlsElem.Process()
 		if err != nil {
 			errs = append(errs, err)
 		}

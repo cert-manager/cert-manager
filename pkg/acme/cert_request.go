@@ -117,7 +117,8 @@ func (a *Acme) obtainCertificate(domains []string) (data map[string][]byte, err 
 		nil,
 	)
 	if len(failures) > 0 {
-		a.Log().Fatal(failures)
+		err = fmt.Errorf("Errors while obtaining cert: %s", failures)
+		return
 	}
 
 	a.Log().Printf("Got certs=%s", certificates)
