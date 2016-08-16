@@ -88,6 +88,11 @@ func (a *Acme) ObtainCertificate(domains []string) (data map[string][]byte, err 
 
 	op := func() error {
 		data, err = a.obtainCertificate(domains)
+		
+		if err != nil {
+			a.Log().Warn("Error while obtaining certificate: ", err)
+		}
+		
 		return err
 	}
 
