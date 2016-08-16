@@ -87,3 +87,11 @@ image: docker_all version
 	
 push: image
 	docker push $(ACCOUNT)/$(APP_NAME):latest
+
+release:
+ifndef VERSION
+	$(error VERSION is not set)
+endif
+	@echo "Preparing release of version $(VERSION)"
+	echo $(VERSION) > VERSION
+	find examples -name '*.yaml' -type f -exec sed -i 's/kube-lego:[0-9\.]*$$/kube-lego:$(VERSION)/g' {} \;
