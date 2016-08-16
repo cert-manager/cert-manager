@@ -12,7 +12,7 @@ spec:
     spec:
       containers:
       - name: kube-lego
-        image: jetstack/kube-lego:0.0.4
+        image: jetstack/kube-lego:0.1.1
         imagePullPolicy: Always
         ports:
         - containerPort: 8080
