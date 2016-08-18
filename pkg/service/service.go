@@ -82,6 +82,7 @@ func (s *Service) Save() error {
 		obj, err = s.client().Update(s.ServiceApi)
 	} else {
 		obj, err = s.client().Create(s.ServiceApi)
+		s.exists = true
 	}
 	if err != nil {
 		return nil
@@ -166,6 +167,7 @@ func (s *Service) SetEndpoints(endpointsList []string) (err error) {
 		_, err = client.Update(endpoints)
 	} else {
 		_, err = client.Create(endpoints)
+		exists = true
 	}
 	return
 }

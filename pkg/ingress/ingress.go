@@ -120,6 +120,7 @@ func (o *Ingress) Save() (err error) {
 			obj, err = o.client().Update(o.IngressApi)
 		} else {
 			obj, err = o.client().Create(o.IngressApi)
+			o.exists = true
 		}
 	} else {
 		if o.exists {

@@ -53,13 +53,11 @@ func (p *Nginx) Finalize() error {
 		if err != nil {
 			p.Log().Error(err)
 		}
-		p.service = nil
 
 		err = p.ingress.Delete()
 		if err != nil {
 			p.Log().Error(err)
 		}
-		p.ingress = nil
 	} else {
 		err := p.updateService()
 		if err != nil {
@@ -70,6 +68,9 @@ func (p *Nginx) Finalize() error {
 			p.Log().Error(err)
 		}
 	}
+
+	p.service = nil
+	p.ingress = nil
 	return nil
 }
 
