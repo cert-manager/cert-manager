@@ -33,7 +33,7 @@ test: test_root test_pkg_acme test_pkg_ingress test_pkg_kubelego test_pkg_secret
 
 test_prepare: depend
 	which gocover-cobertura || go get github.com/t-yuki/gocover-cobertura
-	which go2xunit || go get bitbucket.org/tebeka/go2xunit
+	which go2xunit || go get github.com/tebeka/go2xunit
 	godep go build -i
 
 test_root: test_prepare

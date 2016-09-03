@@ -166,6 +166,10 @@ func (kl *KubeLego) LegoCheckInterval() time.Duration {
 	return kl.legoCheckInterval
 }
 
+func (kl *KubeLego) LegoKubeApiURL() string {
+	return kl.legoKubeApiURL
+}
+
 func (kl *KubeLego) acmeSecret() *secret.Secret {
 	return secret.New(kl, kl.LegoNamespace(), kl.legoSecretName)
 }
@@ -255,6 +259,11 @@ func (kl *KubeLego) paramsLego() error {
 			return fmt.Errorf("Minimum check interval is 5 minutes: %s", d)
 		}
 		kl.legoCheckInterval = d
+	}
+
+	kl.legoKubeApiURL = os.Getenv("LEGO_KUBE_API_URL")
+	if len(kl.legoKubeApiURL) == 0 {
+		kl.legoKubeApiURL = "http://127.0.0.1:8080"
 	}
 
 	minimumValidity := os.Getenv("LEGO_MINIMUM_VALIDITY")
