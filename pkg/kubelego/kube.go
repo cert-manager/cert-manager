@@ -17,10 +17,10 @@ func (kl *KubeLego) InitKube() error {
 	if err != nil {
 		kl.Log().Warnf("failed to create in-cluster client: %v.", err)
 
-		// fall back to 127.0.0.1:8080 for dev
+		// fall back to LEGO_KUBE_API_URL (default 127.0.0.1:8080)
 		kubeClient, err = client.New(
 			&client.Config{
-				Host: "127.0.0.1:8080",
+				Host: kl.LegoKubeApiURL(),
 			},
 		)
 		if err != nil {

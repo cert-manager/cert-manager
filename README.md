@@ -97,6 +97,7 @@ spec:
 | `LEGO_CHECK_INTERVAL` | n | `8h` | Interval for periodically certificate checks (to find expired certs)|
 | `LEGO_MINIMUM_VALIDITY` | n | `720h` (30 days) | Request a renewal when the remaining certificate validitiy falls below that value|
 | `LEGO_DEFAULT_INGRESS_CLASS` | n | `nginx` | Default ingress class for resources without specification|
+| `LEGO_KUBE_API_URL` | n | `http://127.0.0.1:8080` | API server URL |
 
 
 ## Full deployment examples
