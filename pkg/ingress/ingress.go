@@ -94,7 +94,6 @@ type Ingress struct {
 	kubelego   kubelego.KubeLego
 }
 
-
 func (i *Ingress) Log() *logrus.Entry {
 	log := i.kubelego.Log().WithField("context", "ingress")
 
@@ -137,7 +136,7 @@ func (o *Ingress) Save() (err error) {
 
 func (i *Ingress) Delete() error {
 
-	if i.IngressApi == nil || ! i.exists {
+	if i.IngressApi == nil || !i.exists {
 		return nil
 	}
 
@@ -177,6 +176,10 @@ func (i *Ingress) Ignore() bool {
 	}
 
 	return false
+}
+
+func (i *Ingress) KubeLego() kubelego.KubeLego {
+	return i.kubelego
 }
 
 func (i *Ingress) Tls() (out []kubelego.Tls) {

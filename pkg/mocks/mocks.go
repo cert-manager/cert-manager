@@ -370,6 +370,99 @@ func (_mr *_MockServiceRecorder) Delete() *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "Delete")
 }
 
+// Mock of Secret interface
+type MockSecret struct {
+	ctrl     *gomock.Controller
+	recorder *_MockSecretRecorder
+}
+
+// Recorder for MockSecret (not exported)
+type _MockSecretRecorder struct {
+	mock *MockSecret
+}
+
+func NewMockSecret(ctrl *gomock.Controller) *MockSecret {
+	mock := &MockSecret{ctrl: ctrl}
+	mock.recorder = &_MockSecretRecorder{mock}
+	return mock
+}
+
+func (_m *MockSecret) EXPECT() *_MockSecretRecorder {
+	return _m.recorder
+}
+
+func (_m *MockSecret) Object() *api.Secret {
+	ret := _m.ctrl.Call(_m, "Object")
+	ret0, _ := ret[0].(*api.Secret)
+	return ret0
+}
+
+func (_mr *_MockSecretRecorder) Object() *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "Object")
+}
+
+func (_m *MockSecret) KubeLego() KubeLego {
+	ret := _m.ctrl.Call(_m, "KubeLego")
+	ret0, _ := ret[0].(KubeLego)
+	return ret0
+}
+
+func (_mr *_MockSecretRecorder) KubeLego() *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "KubeLego")
+}
+
+func (_m *MockSecret) Exists() bool {
+	ret := _m.ctrl.Call(_m, "Exists")
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+func (_mr *_MockSecretRecorder) Exists() *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "Exists")
+}
+
+func (_m *MockSecret) Save() error {
+	ret := _m.ctrl.Call(_m, "Save")
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+func (_mr *_MockSecretRecorder) Save() *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "Save")
+}
+
+func (_m *MockSecret) TlsDomains() ([]string, error) {
+	ret := _m.ctrl.Call(_m, "TlsDomains")
+	ret0, _ := ret[0].([]string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+func (_mr *_MockSecretRecorder) TlsDomains() *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "TlsDomains")
+}
+
+func (_m *MockSecret) TlsDomainsInclude(domains []string) bool {
+	ret := _m.ctrl.Call(_m, "TlsDomainsInclude", domains)
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+func (_mr *_MockSecretRecorder) TlsDomainsInclude(arg0 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "TlsDomainsInclude", arg0)
+}
+
+func (_m *MockSecret) TlsExpireTime() (time.Time, error) {
+	ret := _m.ctrl.Call(_m, "TlsExpireTime")
+	ret0, _ := ret[0].(time.Time)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+func (_mr *_MockSecretRecorder) TlsExpireTime() *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "TlsExpireTime")
+}
+
 // Mock of Ingress interface
 type MockIngress struct {
 	ctrl     *gomock.Controller
@@ -399,6 +492,26 @@ func (_m *MockIngress) Object() *extensions.Ingress {
 
 func (_mr *_MockIngressRecorder) Object() *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "Object")
+}
+
+func (_m *MockIngress) KubeLego() KubeLego {
+	ret := _m.ctrl.Call(_m, "KubeLego")
+	ret0, _ := ret[0].(KubeLego)
+	return ret0
+}
+
+func (_mr *_MockIngressRecorder) KubeLego() *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "KubeLego")
+}
+
+func (_m *MockIngress) Log() *logrus.Entry {
+	ret := _m.ctrl.Call(_m, "Log")
+	ret0, _ := ret[0].(*logrus.Entry)
+	return ret0
+}
+
+func (_mr *_MockIngressRecorder) Log() *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "Log")
 }
 
 func (_m *MockIngress) Save() error {
@@ -470,6 +583,16 @@ func NewMockIngressProvider(ctrl *gomock.Controller) *MockIngressProvider {
 
 func (_m *MockIngressProvider) EXPECT() *_MockIngressProviderRecorder {
 	return _m.recorder
+}
+
+func (_m *MockIngressProvider) Log() *logrus.Entry {
+	ret := _m.ctrl.Call(_m, "Log")
+	ret0, _ := ret[0].(*logrus.Entry)
+	return ret0
+}
+
+func (_mr *_MockIngressProviderRecorder) Log() *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "Log")
 }
 
 func (_m *MockIngressProvider) Process(_param0 Ingress) error {

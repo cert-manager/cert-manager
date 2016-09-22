@@ -50,8 +50,20 @@ type Service interface {
 	Delete() error
 }
 
+type Secret interface {
+	Object() *k8sApi.Secret
+	KubeLego() KubeLego
+	Exists() bool
+	Save() error
+	TlsDomains() ([]string, error)
+	TlsDomainsInclude(domains []string) bool
+	TlsExpireTime() (time.Time, error)
+}
+
 type Ingress interface {
 	Object() *k8sExtensions.Ingress
+	KubeLego() KubeLego
+	Log() *logrus.Entry
 	Save() error
 	Delete() error
 	IngressClass() string

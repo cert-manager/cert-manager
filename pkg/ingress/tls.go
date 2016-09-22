@@ -18,7 +18,8 @@ var _ kubelego.Tls = &Tls{}
 
 type Tls struct {
 	*k8sExtensions.IngressTLS
-	ingress *Ingress
+	ingress kubelego.Ingress
+	secret  kubelego.Secret
 }
 
 func (t *Tls) Validate() error {
@@ -34,21 +35,24 @@ func (t *Tls) Validate() error {
 
 func (t Tls) SecretMetadata() (meta *k8sApi.ObjectMeta) {
 	return &k8sApi.ObjectMeta{
-		Namespace: t.ingress.IngressApi.Namespace,
+		Namespace: t.ingress.Object().Namespace,
 		Name:      t.SecretName,
 	}
 }
 
 func (t Tls) IngressMetadata() (meta *k8sApi.ObjectMeta) {
 	return &k8sApi.ObjectMeta{
-		Namespace: t.ingress.IngressApi.Namespace,
-		Name:      t.ingress.IngressApi.Name,
+		Namespace: t.ingress.Object().Namespace,
+		Name:      t.ingress.Object().Name,
 	}
 }
 
-func (t *Tls) Secret() *secret.Secret {
+func (t *Tls) Secret() kubelego.Secret {
+	if t.secret != nil {
+		return t.secret
+	}
 	meta := t.SecretMetadata()
-	return secret.New(t.ingress.kubelego, meta.Namespace, meta.Name)
+	return secret.New(t.ingress.KubeLego(), meta.Namespace, meta.Name)
 }
 
 func (t *Tls) Hosts() []string {
@@ -59,7 +63,7 @@ func (t *Tls) Log() *logrus.Entry {
 	return t.ingress.Log().WithField("context", "ingress_tls")
 }
 
-func (i *Tls) newCertNeeded(minimumValidity time.Duration) bool {
+func (i *Tls) newCertNeeded() bool {
 	if len(i.Hosts()) == 0 {
 		i.Log().Info("no host associated with ingress")
 		return false
@@ -82,10 +86,11 @@ func (i *Tls) newCertNeeded(minimumValidity time.Duration) bool {
 		return true
 	}
 
+	minimumValidity := i.ingress.KubeLego().LegoCheckInterval()
 	timeLeft := expireTime.Sub(time.Now())
 	logger := i.Log().WithField("expire_time", expireTime)
 	if timeLeft < minimumValidity {
-		logger.Infof("cert expires soon > renew")
+		logger.Infof("cert expires soon so renew")
 		return true
 	} else {
 		logger.Infof("cert expires in %.1f days, no renewal needed", timeLeft.Hours()/24)
@@ -96,7 +101,7 @@ func (i *Tls) newCertNeeded(minimumValidity time.Duration) bool {
 
 func (i *Tls) Process() error {
 
-	if !i.newCertNeeded(i.ingress.kubelego.LegoCheckInterval()) {
+	if !i.newCertNeeded() {
 		i.Log().Infof("no cert request needed")
 		return nil
 	}
@@ -108,7 +113,7 @@ func (i *Tls) RequestCert() error {
 
 	i.Log().Infof("requesting certificate for %s", strings.Join(i.Hosts(), ","))
 
-	certData, err := i.ingress.kubelego.AcmeClient().ObtainCertificate(
+	certData, err := i.ingress.KubeLego().AcmeClient().ObtainCertificate(
 		i.Hosts(),
 	)
 	if err != nil {
@@ -116,12 +121,12 @@ func (i *Tls) RequestCert() error {
 	}
 
 	s := i.Secret()
-	s.SecretApi.Annotations = map[string]string{
+	s.Object().Annotations = map[string]string{
 		kubelego.AnnotationEnabled: "true",
 	}
-	s.SecretApi.Type = k8sApi.SecretTypeTLS
+	s.Object().Type = k8sApi.SecretTypeTLS
 
-	s.SecretApi.Data = certData
+	s.Object().Data = certData
 
 	return s.Save()
 }

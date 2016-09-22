@@ -93,6 +93,14 @@ func (o *Secret) TlsExpireTime() (time.Time, error) {
 	return cert.NotAfter, nil
 }
 
+func (o *Secret) KubeLego() kubelego.KubeLego {
+	return o.kubelego
+}
+
+func (o *Secret) Object() *k8sApi.Secret {
+	return o.SecretApi
+}
+
 func (o *Secret) TlsDomainsInclude(domains []string) bool {
 
 	tlsDomainsMap := make(map[string]bool)
