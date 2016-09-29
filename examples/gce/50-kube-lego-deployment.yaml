@@ -8,6 +8,7 @@ spec:
   template:
     metadata:
       labels:
+        # Required for the auto-create kube-lego-nginx service to work.
         app: kube-lego
     spec:
       containers:
