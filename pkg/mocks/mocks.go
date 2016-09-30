@@ -156,6 +156,16 @@ func (_mr *_MockKubeLegoRecorder) LegoCheckInterval() *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "LegoCheckInterval")
 }
 
+func (_m *MockKubeLego) LegoMinimumValidity() time.Duration {
+	ret := _m.ctrl.Call(_m, "LegoMinimumValidity")
+	ret0, _ := ret[0].(time.Duration)
+	return ret0
+}
+
+func (_mr *_MockKubeLegoRecorder) LegoMinimumValidity() *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "LegoMinimumValidity")
+}
+
 func (_m *MockKubeLego) LegoPodIP() net.IP {
 	ret := _m.ctrl.Call(_m, "LegoPodIP")
 	ret0, _ := ret[0].(net.IP)

@@ -162,6 +162,10 @@ func (kl *KubeLego) LegoServiceNameGce() string {
 	return kl.legoServiceNameGce
 }
 
+func (kl *KubeLego) LegoMinimumValidity() time.Duration {
+	return kl.legoMinimumValidity
+}
+
 func (kl *KubeLego) LegoCheckInterval() time.Duration {
 	return kl.legoCheckInterval
 }

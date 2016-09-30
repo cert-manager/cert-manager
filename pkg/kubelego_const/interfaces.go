@@ -24,6 +24,7 @@ type KubeLego interface {
 	LegoServiceNameGce() string
 	LegoDefaultIngressClass() string
 	LegoCheckInterval() time.Duration
+	LegoMinimumValidity() time.Duration
 	LegoPodIP() net.IP
 	IngressProvider(string) (IngressProvider, error)
 	Version() string

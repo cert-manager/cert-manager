@@ -86,7 +86,7 @@ func (i *Tls) newCertNeeded() bool {
 		return true
 	}
 
-	minimumValidity := i.ingress.KubeLego().LegoCheckInterval()
+	minimumValidity := i.ingress.KubeLego().LegoMinimumValidity()
 	timeLeft := expireTime.Sub(time.Now())
 	logger := i.Log().WithField("expire_time", expireTime)
 	if timeLeft < minimumValidity {
