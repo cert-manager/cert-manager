@@ -98,10 +98,6 @@
 			"Rev": "fc2b8d3a73c4867e51861bbdd5ae3c1f0869dd6a"
 		},
 		{
-			"ImportPath": "github.com/miekg/dns",
-			"Rev": "4adf880b0237527fe9e86701c412d6906e5fcf9c"
-		},
-		{
 			"ImportPath": "github.com/onsi/ginkgo",
 			"Comment": "v1.2.0-66-g74c678d",
 			"Rev": "74c678d97c305753605c338c6c78c49ec104b5e7"
@@ -300,40 +296,20 @@
 			"Rev": "f1f1a805ed361a0e078bb537e4ea78cd37dcf065"
 		},
 		{
-			"ImportPath": "github.com/xenolf/lego/acme",
-			"Comment": "v0.3.1-3-g06124e0",
-			"Rev": "06124e09544be1c492ea00e976de218530f9072e"
-		},
-		{
-			"ImportPath": "golang.org/x/crypto/ocsp",
-			"Rev": "c84e1f8e3a7e322d497cd16c0e8a13c7e127baf3"
+			"ImportPath": "golang.org/x/crypto/acme",
+			"Rev": "a20de3fa94e069ec699987416679230d72e030a3"
 		},
 		{
 			"ImportPath": "golang.org/x/net/context",
 			"Rev": "c2528b2dd8352441850638a8bb678c2ad056fd3e"
 		},
 		{
-			"ImportPath": "golang.org/x/net/publicsuffix",
+			"ImportPath": "golang.org/x/net/context/ctxhttp",
 			"Rev": "c2528b2dd8352441850638a8bb678c2ad056fd3e"
 		},
 		{
 			"ImportPath": "golang.org/x/sys/unix",
 			"Rev": "c8bc69bc2db9c57ccf979550bc69655df5039a8a"
-		},
-		{
-			"ImportPath": "gopkg.in/square/go-jose.v1",
-			"Comment": "v1.0.1",
-			"Rev": "40d457b439244b546f023d056628e5184136899b"
-		},
-		{
-			"ImportPath": "gopkg.in/square/go-jose.v1/cipher",
-			"Comment": "v1.0.1",
-			"Rev": "40d457b439244b546f023d056628e5184136899b"
-		},
-		{
-			"ImportPath": "gopkg.in/square/go-jose.v1/json",
-			"Comment": "v1.0.1",
-			"Rev": "40d457b439244b546f023d056628e5184136899b"
 		},
 		{
 			"ImportPath": "gopkg.in/yaml.v2",

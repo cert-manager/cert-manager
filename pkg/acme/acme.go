@@ -108,7 +108,7 @@ func (a *Acme) handleChallenge(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Infof("responding to challenge request")
+	log.Debugf("responding to challenge request")
 	w.WriteHeader(http.StatusOK)
 	fmt.Fprint(w, key)
 }

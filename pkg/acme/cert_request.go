@@ -1,54 +1,55 @@
 package acme
 
 import (
+	"bytes"
+	"crypto/rand"
+	"crypto/x509"
+	"crypto/x509/pkix"
+	"encoding/pem"
 	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/url"
-
-	"github.com/jetstack/kube-lego/pkg/kubelego_const"
+	"sync"
 
 	"github.com/cenk/backoff"
-	"github.com/xenolf/lego/acme"
+	"github.com/jetstack/kube-lego/pkg/kubelego_const"
+	"golang.org/x/crypto/acme"
+	"golang.org/x/net/context"
 	"time"
 )
 
-func (a *Acme) client() (*acme.Client, error) {
-	if a.acmeClient != nil {
-		return a.acmeClient, nil
-	}
+func (a *Acme) ensureAcmeClient() error {
 
-	a.Log().Infof("initialize lego acme connection")
-
-	err := a.getUser()
+	// get existing user or create new one
+	client, accountURI, err := a.getUser()
 	if err != nil {
-		err := a.createUser()
+		client, account, err := a.createUser()
 		if err != nil {
-			return nil, err
+			return err
 		}
+		a.acmeAccount = account
+		a.acmeClient = client
+		return nil
 	}
 
-	acmeClient, err := acme.NewClient(a.kubelego.LegoURL(), a, kubelego.AcmeKeyType)
+	account, err := a.validateUser(client, accountURI)
 	if err != nil {
-		return nil, err
+		a.Log().Fatalf("fatal error verifying existing user: %s", err)
 	}
-	a.acmeClient = acmeClient
-
-	a.acmeClient.ExcludeChallenges([]acme.Challenge{acme.TLSSNI01, acme.DNS01})
-
-	a.acmeClient.SetChallengeProvider(acme.HTTP01, a)
-
-	return a.acmeClient, nil
+	a.acmeAccount = account
+	a.acmeClient = client
+	return nil
 }
 
-func (a *Acme) testReachabliltyHost(host string) error {
+func (a *Acme) testReachablilty(domain string) error {
 	url := &url.URL{}
 	url.Scheme = "http"
-	url.Host = host
+	url.Host = domain
 	url.Path = kubelego.AcmeHttpSelfTest
 
-	a.Log().WithField("host", host).Debugf("testing reachablity of %s", url.String())
+	a.Log().WithField("domain", domain).Debugf("testing reachablity of %s", url.String())
 	response, err := http.Get(url.String())
 	if err != nil {
 		return err
@@ -70,87 +71,177 @@ func (a *Acme) testReachabliltyHost(host string) error {
 		}
 	}
 	return nil
-
 }
 
-func (a *Acme) TestReachability(hosts []string) (errs []error) {
-	for _, host := range hosts {
-		err := a.testReachabliltyHost(host)
-		if err != nil {
-			a.Log().WithField("host", host).Warn(err)
-			errs = append(errs, err)
+func (a *Acme) verifyDomain(domain string) (auth *acme.Authorization, err error) {
+	err = a.testReachablilty(domain)
+	if err != nil {
+		return nil, fmt.Errorf("reachabily test failed: %s", err)
+	}
+
+	auth, err = a.acmeClient.Authorize(context.Background(), domain)
+	if err != nil {
+		return nil, fmt.Errorf("getting authorization failed: %s", err)
+	}
+
+	var challenge *acme.Challenge
+	for _, ch := range auth.Challenges {
+		if ch.Type == "http-01" {
+			challenge = ch
+			break
 		}
 	}
-	return errs
+
+	if challenge == nil {
+		return nil, fmt.Errorf("no http-01 challege was offered")
+	}
+
+	token := challenge.Token
+	key, err := a.acmeClient.HTTP01ChallengeResponse(token)
+	if err != nil {
+		return nil, fmt.Errorf("error generating http-01 repsonse: %s", err)
+	}
+
+	a.Present(domain, token, key)
+
+	challenge, err = a.acmeClient.Accept(context.Background(), challenge)
+	if err != nil {
+		return nil, fmt.Errorf("requesting challenge failed: %s", err)
+	}
+
+	auth, err = a.acmeClient.WaitAuthorization(context.Background(), challenge.URI)
+	if err != nil {
+		return nil, fmt.Errorf("waiting for authorization failed: %s", err)
+	}
+	return auth, nil
 }
 
 func (a *Acme) ObtainCertificate(domains []string) (data map[string][]byte, err error) {
+	if a.ensureAcmeClient() != nil {
+		return data, err
+	}
 
-	op := func() error {
-		data, err = a.obtainCertificate(domains)
-		
-		if err != nil {
-			a.Log().Warn("Error while obtaining certificate: ", err)
+	var wg sync.WaitGroup
+	results := make([]error, len(domains))
+
+	// authorize all domains in parallel
+	for pos, domain := range domains {
+		wg.Add(1)
+		go func(pos int, domain string) {
+			defer wg.Done()
+			log := a.Log().WithField("domain", domain)
+
+			op := func() error {
+				auth, err := a.verifyDomain(domain)
+				if err != nil {
+					log.Debugf("error while authorizing: %s", err)
+					return err
+				}
+				log.Debugf("got authorization: %+v", auth)
+				return nil
+			}
+
+			b := backoff.NewExponentialBackOff()
+			b.MaxElapsedTime = time.Duration(time.Second * 60)
+
+			err = backoff.Retry(op, b)
+			if err != nil {
+				log.Warnf("authorization failed after %s: %s", b.MaxElapsedTime, err)
+			}
+
+			results[pos] = err
+
+			log.Infof("authorization successful")
+		}(pos, domain)
+	}
+
+	// wait for all authorizations to complete
+	wg.Wait()
+
+	// check if all the domains are authorized correctly
+	successfulDomains := make([]string, len(domains))
+	failedDomains := make([]string, len(domains))
+	for pos, domain := range domains {
+		res := results[pos]
+		if res != nil {
+			successfulDomains = append(successfulDomains, domain)
+		} else {
+			failedDomains = append(failedDomains, domain)
 		}
-		
-		return err
 	}
 
-	b := backoff.NewExponentialBackOff()
-	b.MaxElapsedTime = time.Duration(time.Second * 30)
-
-	err = backoff.Retry(op, b)
-	return
-}
-
-func (a *Acme) obtainCertificate(domains []string) (data map[string][]byte, err error) {
-
-	errs := a.TestReachability(domains)
-	if len(errs) > 0 {
-		err = errors.New("reachabily test failed for this cert")
-		return
+	if len(successfulDomains) == 0 {
+		return data, fmt.Errorf("no domain could be authorized successfully")
 	}
 
-	client, err := a.client()
+	if len(failedDomains) > 0 {
+		a.Log().WithField("failed_domains", failedDomains).Warnf("authorization failed for some domains")
+	}
+	// TODO: Mark failed domains as failed in ingress
+
+	domains = successfulDomains
+
+	template := x509.CertificateRequest{
+		Subject: pkix.Name{
+			CommonName: domains[0],
+		},
+	}
+
+	if len(domains) > 1 {
+		template.DNSNames = domains
+	}
+
+	privateKeyPem, privateKey, err := a.generatePrivateKey()
 	if err != nil {
-		return
+		return data, fmt.Errorf("error generating private key: %s", err)
 	}
 
-	certificates, failures := client.ObtainCertificate(
-		domains,
-		true, // always get bundle
-		nil,
+	csr, err := x509.CreateCertificateRequest(rand.Reader, &template, privateKey)
+	if err != nil {
+		return data, fmt.Errorf("error certificate request: %s", err)
+	}
+
+	certSlice, certUrl, err := a.acmeClient.CreateCert(
+		context.Background(),
+		csr,
+		0,
+		true,
 	)
-	if len(failures) > 0 {
-		err = fmt.Errorf("Errors while obtaining cert: %s", failures)
-		return
+	if err != nil {
+		return data, fmt.Errorf("error getting certificate: %s", err)
 	}
 
-	a.Log().Printf("Got certs=%s", certificates)
+	certBuffer := bytes.NewBuffer([]byte{})
+	for _, cert := range certSlice {
+		pem.Encode(certBuffer, &pem.Block{Type: "CERTIFICATE", Bytes: cert})
+	}
+
+	a.Log().Infof("successfully got certificate: domains=%+v url=%s", domains, certUrl)
+	a.Log().Debugf("certificate pem data:\n%s", certBuffer.String())
 
 	data = map[string][]byte{
-		kubelego.TLSCertKey:       certificates.Certificate,
-		kubelego.TLSPrivateKeyKey: certificates.PrivateKey,
+		kubelego.TLSCertKey:       certBuffer.Bytes(),
+		kubelego.TLSPrivateKeyKey: privateKeyPem,
 	}
 
 	return
 }
 
-func (a *Acme) CleanUp(host, token, _ string) error {
+func (a *Acme) CleanUp(domain, token, _ string) error {
 	a.challengesMutex.Lock()
 	if _, ok := a.challengesTokenToKey[token]; ok {
 		delete(a.challengesTokenToKey, token)
 	}
-	if _, ok := a.challengesHostToToken[host]; ok {
-		delete(a.challengesHostToToken, host)
+	if _, ok := a.challengesHostToToken[domain]; ok {
+		delete(a.challengesHostToToken, domain)
 	}
 	a.challengesMutex.Unlock()
 	return nil
 }
 
-func (a *Acme) Present(host, token, key string) error {
+func (a *Acme) Present(domain, token, key string) error {
 	a.challengesMutex.Lock()
-	a.challengesHostToToken[host] = token
+	a.challengesHostToToken[domain] = token
 	a.challengesTokenToKey[token] = key
 	a.challengesMutex.Unlock()
 	return nil

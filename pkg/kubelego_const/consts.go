@@ -1,14 +1,13 @@
 package kubelego
 
 import (
-	"github.com/xenolf/lego/acme"
 	k8sApi "k8s.io/kubernetes/pkg/api"
 )
 
 const RsaKeySize = 2048
 const AcmeRegistration = "acme-registration.json"
+const AcmeRegistrationUrl = "acme-registration-url"
 const AcmePrivateKey = k8sApi.TLSPrivateKeyKey
-const AcmeKeyType = acme.RSA2048
 const AcmeHttpChallengePath = "/.well-known/acme-challenge"
 const AcmeHttpSelfTest = "/.well-known/acme-challenge/_selftest"
 

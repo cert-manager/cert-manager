@@ -12,7 +12,7 @@ import (
 	"github.com/Sirupsen/logrus"
 	"github.com/golang/mock/gomock"
 	"github.com/jetstack/kube-lego/pkg/mocks"
-	//"github.com/stretchr/testify/assert"
+	"k8s.io/kubernetes/pkg/util/intstr"
 )
 
 func TestAcme_E2E(t *testing.T) {
@@ -24,8 +24,8 @@ func TestAcme_E2E(t *testing.T) {
 	// mock kube lego
 	mockKL := mocks.NewMockKubeLego(ctrl)
 	mockKL.EXPECT().Log().AnyTimes().Return(log)
-	mockKL.EXPECT().Version().MinTimes(1).Return("mocked-version")
-	mockKL.EXPECT().LegoHTTPPort().MinTimes(1).Return(":8181")
+	mockKL.EXPECT().Version().AnyTimes().Return("mocked-version")
+	mockKL.EXPECT().LegoHTTPPort().AnyTimes().Return(intstr.FromInt(8181))
 	mockKL.EXPECT().AcmeUser().MinTimes(1).Return(nil, errors.New("I am only mocked"))
 	mockKL.EXPECT().LegoURL().MinTimes(1).Return("https://acme-staging.api.letsencrypt.org/directory")
 	mockKL.EXPECT().LegoEmail().MinTimes(1).Return("kube-lego-e2e@example.com")
