@@ -88,7 +88,7 @@ spec:
 | `LEGO_EMAIL` | y | `-` | E-Mail address for the ACME account, used to recover from lost secrets |
 | `LEGO_POD_IP` | y | `-` | Pod IP address (use the [downward API](http://kubernetes.io/docs/user-guide/downward-api/))|
 | `LEGO_NAMESPACE` | n | `default` | Namespace where kube-lego is running in |
-| `LEGO_URL` | n | `https://acme-staging.api.letsencrypt.org/directory` | URL for the ACME server |
+| `LEGO_URL` | n | `https://acme-staging.api.letsencrypt.org/directory` | URL for the ACME server. To get "real" certificates set to the production API of Let's Encrypt: `https://acme-v01.api.letsencrypt.org/directory` |
 | `LEGO_SECRET_NAME` | n | `kube-lego-account` | Name of the secret in the same namespace that contains ACME account secret |
 | `LEGO_SERVICE_NAME_NGINX` | n | `kube-lego-nginx` | Service name for NGINX ingress |
 | `LEGO_SERVICE_NAME_GCE` | n | `kube-lego-gce` | Service name for GCE ingress |
