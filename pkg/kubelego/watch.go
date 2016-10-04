@@ -49,9 +49,9 @@ func (kl *KubeLego) WatchReconfigure() {
 			if quit {
 				return
 			}
-			kl.Log().Infof("Worker: begin processing %v", item)
+			kl.Log().Debugf("worker: begin processing %v", item)
 			kl.Reconfigure()
-			kl.Log().Infof("Worker: done processing %v", item)
+			kl.Log().Debugf("worker: done processing %v", item)
 			kl.workQueue.Done(item)
 		}
 	}()
@@ -59,7 +59,7 @@ func (kl *KubeLego) WatchReconfigure() {
 
 func (kl *KubeLego) WatchEvents() {
 
-	kl.Log().Infof("start event watcher")
+	kl.Log().Debugf("start watching ingress objects")
 
 	resyncPeriod := 10 * time.Second
 
@@ -69,7 +69,7 @@ func (kl *KubeLego) WatchEvents() {
 			if ingress.IgnoreIngress(addIng) != nil {
 				return
 			}
-			kl.Log().Infof("CREATE %s/%s", addIng.Namespace, addIng.Name)
+			kl.Log().Debugf("CREATE ingress/%s/%s", addIng.Namespace, addIng.Name)
 			kl.workQueue.Add(true)
 		},
 		DeleteFunc: func(obj interface{}) {
@@ -77,7 +77,7 @@ func (kl *KubeLego) WatchEvents() {
 			if ingress.IgnoreIngress(delIng) != nil {
 				return
 			}
-			kl.Log().Infof("DELETE %s/%s", delIng.Namespace, delIng.Name)
+			kl.Log().Debugf("DELETE ingress/%s/%s", delIng.Namespace, delIng.Name)
 			kl.workQueue.Add(true)
 		},
 		UpdateFunc: func(old, cur interface{}) {
@@ -86,7 +86,7 @@ func (kl *KubeLego) WatchEvents() {
 				if ingress.IgnoreIngress(upIng) != nil {
 					return
 				}
-				kl.Log().Infof("UPDATE %s/%s", upIng.Namespace, upIng.Name)
+				kl.Log().Debugf("UPDATE ingress/%s/%s", upIng.Namespace, upIng.Name)
 				kl.workQueue.Add(true)
 			}
 		},

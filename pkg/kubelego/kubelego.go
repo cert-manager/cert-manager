@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/signal"
 	"strconv"
+	"strings"
 	"sync"
 	"syscall"
 	"time"
@@ -35,7 +36,20 @@ func New(version string) *KubeLego {
 }
 
 func (kl *KubeLego) Log() *log.Entry {
-	log.SetLevel(log.DebugLevel)
+	loglevel := strings.ToLower(os.Getenv("LEGO_LOG_LEVEL"))
+	if len(loglevel) == 0 {
+		log.SetLevel(log.InfoLevel)
+	} else if loglevel == "debug" {
+		log.SetLevel(log.DebugLevel)
+	} else if loglevel == "info" {
+		log.SetLevel(log.InfoLevel)
+	} else if loglevel == "warn" {
+		log.SetLevel(log.WarnLevel)
+	} else if loglevel == "error" {
+		log.SetLevel(log.ErrorLevel)
+	} else {
+		log.SetLevel(log.InfoLevel)
+	}
 	return log.WithField("context", "kubelego")
 }
 

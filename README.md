@@ -98,6 +98,7 @@ spec:
 | `LEGO_MINIMUM_VALIDITY` | n | `720h` (30 days) | Request a renewal when the remaining certificate validitiy falls below that value|
 | `LEGO_DEFAULT_INGRESS_CLASS` | n | `nginx` | Default ingress class for resources without specification|
 | `LEGO_KUBE_API_URL` | n | `http://127.0.0.1:8080` | API server URL |
+| `LEGO_LOG_LEVEL` | n | `info` | Set log level (`debug|info|warn|error`) |
 
 
 ## Full deployment examples
