@@ -1,5 +1,5 @@
 /*
-Copyright 2014 The Kubernetes Authors All rights reserved.
+Copyright 2014 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -17,68 +17,17 @@ limitations under the License.
 package unversioned
 
 import (
-	"time"
+	"fmt"
 
 	"k8s.io/kubernetes/pkg/api"
 	"k8s.io/kubernetes/pkg/api/errors"
+	"k8s.io/kubernetes/pkg/api/unversioned"
+	"k8s.io/kubernetes/pkg/apis/apps"
+	"k8s.io/kubernetes/pkg/apis/batch"
 	"k8s.io/kubernetes/pkg/apis/extensions"
 	"k8s.io/kubernetes/pkg/util/wait"
+	"k8s.io/kubernetes/pkg/watch"
 )
-
-// DefaultRetry is the recommended retry for a conflict where multiple clients
-// are making changes to the same resource.
-var DefaultRetry = wait.Backoff{
-	Steps:    5,
-	Duration: 10 * time.Millisecond,
-	Factor:   1.0,
-	Jitter:   0.1,
-}
-
-// DefaultBackoff is the recommended backoff for a conflict where a client
-// may be attempting to make an unrelated modification to a resource under
-// active management by one or more controllers.
-var DefaultBackoff = wait.Backoff{
-	Steps:    4,
-	Duration: 10 * time.Millisecond,
-	Factor:   5.0,
-	Jitter:   0.1,
-}
-
-// RetryConflict executes the provided function repeatedly, retrying if the server returns a conflicting
-// write. Callers should preserve previous executions if they wish to retry changes. It performs an
-// exponential backoff.
-//
-//     var pod *api.Pod
-//     err := RetryOnConflict(DefaultBackoff, func() (err error) {
-//       pod, err = c.Pods("mynamespace").UpdateStatus(podStatus)
-//       return
-//     })
-//     if err != nil {
-//       // may be conflict if max retries were hit
-//       return err
-//     }
-//     ...
-//
-// TODO: Make Backoff an interface?
-func RetryOnConflict(backoff wait.Backoff, fn func() error) error {
-	var lastConflictErr error
-	err := wait.ExponentialBackoff(backoff, func() (bool, error) {
-		err := fn()
-		switch {
-		case err == nil:
-			return true, nil
-		case errors.IsConflict(err):
-			lastConflictErr = err
-			return false, nil
-		default:
-			return false, err
-		}
-	})
-	if err == wait.ErrWaitTimeout {
-		err = lastConflictErr
-	}
-	return err
-}
 
 // ControllerHasDesiredReplicas returns a condition that will be true if and only if
 // the desired replica count for a controller's ReplicaSelector equals the Replicas count.
@@ -124,9 +73,20 @@ func ReplicaSetHasDesiredReplicas(c ExtensionsInterface, replicaSet *extensions.
 	}
 }
 
+func PetSetHasDesiredPets(c AppsInterface, petset *apps.PetSet) wait.ConditionFunc {
+	// TODO: Differentiate between 0 pets and a really quick scale down using generation.
+	return func() (bool, error) {
+		ps, err := c.PetSets(petset.Namespace).Get(petset.Name)
+		if err != nil {
+			return false, err
+		}
+		return ps.Status.Replicas == ps.Spec.Replicas, nil
+	}
+}
+
 // JobHasDesiredParallelism returns a condition that will be true if the desired parallelism count
 // for a job equals the current active counts or is less by an appropriate successful/unsuccessful count.
-func JobHasDesiredParallelism(c ExtensionsInterface, job *extensions.Job) wait.ConditionFunc {
+func JobHasDesiredParallelism(c BatchInterface, job *batch.Job) wait.ConditionFunc {
 
 	return func() (bool, error) {
 		job, err := c.Jobs(job.Namespace).Get(job.Name)
@@ -153,12 +113,147 @@ func JobHasDesiredParallelism(c ExtensionsInterface, job *extensions.Job) wait.C
 // the desired replica count for a deployment equals its updated replicas count.
 // (non-terminated pods that have the desired template spec).
 func DeploymentHasDesiredReplicas(c ExtensionsInterface, deployment *extensions.Deployment) wait.ConditionFunc {
+	// If we're given a deployment where the status lags the spec, it either
+	// means that the deployment is stale, or that the deployment manager hasn't
+	// noticed the update yet. Polling status.Replicas is not safe in the latter
+	// case.
+	desiredGeneration := deployment.Generation
 
 	return func() (bool, error) {
 		deployment, err := c.Deployments(deployment.Namespace).Get(deployment.Name)
 		if err != nil {
 			return false, err
 		}
-		return deployment.Status.UpdatedReplicas == deployment.Spec.Replicas, nil
+		return deployment.Status.ObservedGeneration >= desiredGeneration &&
+			deployment.Status.UpdatedReplicas == deployment.Spec.Replicas, nil
 	}
+}
+
+// ErrPodCompleted is returned by PodRunning or PodContainerRunning to indicate that
+// the pod has already reached completed state.
+var ErrPodCompleted = fmt.Errorf("pod ran to completion")
+
+// ErrContainerTerminated is returned by PodContainerRunning in the intermediate
+// state where the pod indicates it's still running, but its container is already terminated
+var ErrContainerTerminated = fmt.Errorf("container terminated")
+
+// PodRunning returns true if the pod is running, false if the pod has not yet reached running state,
+// returns ErrPodCompleted if the pod has run to completion, or an error in any other case.
+func PodRunning(event watch.Event) (bool, error) {
+	switch event.Type {
+	case watch.Deleted:
+		return false, errors.NewNotFound(unversioned.GroupResource{Resource: "pods"}, "")
+	}
+	switch t := event.Object.(type) {
+	case *api.Pod:
+		switch t.Status.Phase {
+		case api.PodRunning:
+			return true, nil
+		case api.PodFailed, api.PodSucceeded:
+			return false, ErrPodCompleted
+		}
+	}
+	return false, nil
+}
+
+// PodCompleted returns true if the pod has run to completion, false if the pod has not yet
+// reached running state, or an error in any other case.
+func PodCompleted(event watch.Event) (bool, error) {
+	switch event.Type {
+	case watch.Deleted:
+		return false, errors.NewNotFound(unversioned.GroupResource{Resource: "pods"}, "")
+	}
+	switch t := event.Object.(type) {
+	case *api.Pod:
+		switch t.Status.Phase {
+		case api.PodFailed, api.PodSucceeded:
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+// PodRunningAndReady returns true if the pod is running and ready, false if the pod has not
+// yet reached those states, returns ErrPodCompleted if the pod has run to completion, or
+// an error in any other case.
+func PodRunningAndReady(event watch.Event) (bool, error) {
+	switch event.Type {
+	case watch.Deleted:
+		return false, errors.NewNotFound(unversioned.GroupResource{Resource: "pods"}, "")
+	}
+	switch t := event.Object.(type) {
+	case *api.Pod:
+		switch t.Status.Phase {
+		case api.PodFailed, api.PodSucceeded:
+			return false, ErrPodCompleted
+		case api.PodRunning:
+			return api.IsPodReady(t), nil
+		}
+	}
+	return false, nil
+}
+
+// PodNotPending returns true if the pod has left the pending state, false if it has not,
+// or an error in any other case (such as if the pod was deleted).
+func PodNotPending(event watch.Event) (bool, error) {
+	switch event.Type {
+	case watch.Deleted:
+		return false, errors.NewNotFound(unversioned.GroupResource{Resource: "pods"}, "")
+	}
+	switch t := event.Object.(type) {
+	case *api.Pod:
+		switch t.Status.Phase {
+		case api.PodPending:
+			return false, nil
+		default:
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+// PodContainerRunning returns false until the named container has ContainerStatus running (at least once),
+// and will return an error if the pod is deleted, runs to completion, or the container pod is not available.
+func PodContainerRunning(containerName string) watch.ConditionFunc {
+	return func(event watch.Event) (bool, error) {
+		switch event.Type {
+		case watch.Deleted:
+			return false, errors.NewNotFound(unversioned.GroupResource{Resource: "pods"}, "")
+		}
+		switch t := event.Object.(type) {
+		case *api.Pod:
+			switch t.Status.Phase {
+			case api.PodRunning, api.PodPending:
+			case api.PodFailed, api.PodSucceeded:
+				return false, ErrPodCompleted
+			default:
+				return false, nil
+			}
+			for _, s := range t.Status.ContainerStatuses {
+				if s.Name != containerName {
+					continue
+				}
+				if s.State.Terminated != nil {
+					return false, ErrContainerTerminated
+				}
+				return s.State.Running != nil, nil
+			}
+			return false, nil
+		}
+		return false, nil
+	}
+}
+
+// ServiceAccountHasSecrets returns true if the service account has at least one secret,
+// false if it does not, or an error.
+func ServiceAccountHasSecrets(event watch.Event) (bool, error) {
+	switch event.Type {
+	case watch.Deleted:
+		return false, errors.NewNotFound(unversioned.GroupResource{Resource: "serviceaccounts"}, "")
+	}
+	switch t := event.Object.(type) {
+	case *api.ServiceAccount:
+		return len(t.Secrets) > 0, nil
+	}
+	return false, nil
 }

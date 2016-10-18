@@ -1,5 +1,5 @@
 /*
-Copyright 2015 The Kubernetes Authors All rights reserved.
+Copyright 2015 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -21,18 +21,19 @@ import (
 )
 
 // SetGroupVersionKind satisfies the ObjectKind interface for all objects that embed TypeMeta
-func (obj *TypeMeta) SetGroupVersionKind(gvk *unversioned.GroupVersionKind) {
+func (obj *TypeMeta) SetGroupVersionKind(gvk unversioned.GroupVersionKind) {
 	obj.APIVersion, obj.Kind = gvk.ToAPIVersionAndKind()
 }
 
 // GroupVersionKind satisfies the ObjectKind interface for all objects that embed TypeMeta
-func (obj *TypeMeta) GroupVersionKind() *unversioned.GroupVersionKind {
+func (obj *TypeMeta) GroupVersionKind() unversioned.GroupVersionKind {
 	return unversioned.FromAPIVersionAndKind(obj.APIVersion, obj.Kind)
 }
 
-func (obj *Unknown) GetObjectKind() unversioned.ObjectKind          { return &obj.TypeMeta }
-func (obj *Unstructured) GetObjectKind() unversioned.ObjectKind     { return &obj.TypeMeta }
-func (obj *UnstructuredList) GetObjectKind() unversioned.ObjectKind { return &obj.TypeMeta }
+func (obj *Unknown) GetObjectKind() unversioned.ObjectKind { return &obj.TypeMeta }
+
+func (obj *Unstructured) GetObjectKind() unversioned.ObjectKind     { return obj }
+func (obj *UnstructuredList) GetObjectKind() unversioned.ObjectKind { return obj }
 
 // GetObjectKind implements Object for VersionedObjects, returning an empty ObjectKind
 // interface if no objects are provided, or the ObjectKind interface of the object in the

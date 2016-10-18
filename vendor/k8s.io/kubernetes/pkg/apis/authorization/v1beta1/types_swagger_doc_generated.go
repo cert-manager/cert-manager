@@ -1,5 +1,5 @@
 /*
-Copyright 2015 The Kubernetes Authors All rights reserved.
+Copyright 2016 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@ limitations under the License.
 
 package v1beta1
 
-// This file contains a collection of methods that can be used from go-resful to
+// This file contains a collection of methods that can be used from go-restful to
 // generate Swagger API documentation for its models. Please read this PR for more
 // information on the implementation: https://github.com/emicklei/go-restful/pull/215
 //
@@ -98,6 +98,7 @@ var map_SubjectAccessReviewSpec = map[string]string{
 	"nonResourceAttributes": "NonResourceAttributes describes information for a non-resource access request",
 	"user":                  "User is the user you're testing for. If you specify \"User\" but not \"Group\", then is it interpreted as \"What if User were not a member of any groups",
 	"group":                 "Groups is the groups you're testing for.",
+	"extra":                 "Extra corresponds to the user.Info.GetExtra() method from the authenticator.  Since that is input to the authorizer it needs a reflection here.",
 }
 
 func (SubjectAccessReviewSpec) SwaggerDoc() map[string]string {
@@ -105,9 +106,10 @@ func (SubjectAccessReviewSpec) SwaggerDoc() map[string]string {
 }
 
 var map_SubjectAccessReviewStatus = map[string]string{
-	"":        "SubjectAccessReviewStatus",
-	"allowed": "Allowed is required.  True if the action would be allowed, false otherwise.",
-	"reason":  "Reason is optional.  It indicates why a request was allowed or denied.",
+	"":                "SubjectAccessReviewStatus",
+	"allowed":         "Allowed is required.  True if the action would be allowed, false otherwise.",
+	"reason":          "Reason is optional.  It indicates why a request was allowed or denied.",
+	"evaluationError": "EvaluationError is an indication that some error occurred during the authorization check. It is entirely possible to get an error and be able to continue determine authorization status in spite of it. For instance, RBAC can be missing a role, but enough roles are still present and bound to reason about the request.",
 }
 
 func (SubjectAccessReviewStatus) SwaggerDoc() map[string]string {

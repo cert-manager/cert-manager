@@ -181,28 +181,6 @@ func indentMessageLines(message string, tabs int) string {
 	return outBuf.String()
 }
 
-type failNower interface {
-	FailNow()
-}
-
-// FailNow fails test
-func FailNow(t TestingT, failureMessage string, msgAndArgs ...interface{}) bool {
-	Fail(t, failureMessage, msgAndArgs...)
-
-	// We cannot extend TestingT with FailNow() and
-	// maintain backwards compatibility, so we fallback
-	// to panicking when FailNow is not available in
-	// TestingT.
-	// See issue #263
-
-	if t, ok := t.(failNower); ok {
-		t.FailNow()
-	} else {
-		panic("test failed and t is missing `FailNow()`")
-	}
-	return false
-}
-
 // Fail reports a failure through
 func Fail(t TestingT, failureMessage string, msgAndArgs ...interface{}) bool {
 
@@ -384,11 +362,6 @@ func isEmpty(object interface{}) bool {
 	case reflect.Slice, reflect.Chan:
 		{
 			return (objValue.Len() == 0)
-		}
-	case reflect.Struct:
-		switch object.(type) {
-		case time.Time:
-			return object.(time.Time).IsZero()
 		}
 	case reflect.Ptr:
 		{
@@ -766,40 +739,42 @@ func InDeltaSlice(t TestingT, expected, actual interface{}, delta float64, msgAn
 	return true
 }
 
-func calcRelativeError(expected, actual interface{}) (float64, error) {
+// min(|expected|, |actual|) * epsilon
+func calcEpsilonDelta(expected, actual interface{}, epsilon float64) float64 {
 	af, aok := toFloat(expected)
-	if !aok {
-		return 0, fmt.Errorf("expected value %q cannot be converted to float", expected)
-	}
-	if af == 0 {
-		return 0, fmt.Errorf("expected value must have a value other than zero to calculate the relative error")
-	}
 	bf, bok := toFloat(actual)
-	if !bok {
-		return 0, fmt.Errorf("expected value %q cannot be converted to float", actual)
+
+	if !aok || !bok {
+		// invalid input
+		return 0
 	}
 
-	return math.Abs(af-bf) / math.Abs(af), nil
+	if af < 0 {
+		af = -af
+	}
+	if bf < 0 {
+		bf = -bf
+	}
+	var delta float64
+	if af < bf {
+		delta = af * epsilon
+	} else {
+		delta = bf * epsilon
+	}
+	return delta
 }
 
 // InEpsilon asserts that expected and actual have a relative error less than epsilon
 //
 // Returns whether the assertion was successful (true) or not (false).
 func InEpsilon(t TestingT, expected, actual interface{}, epsilon float64, msgAndArgs ...interface{}) bool {
-	actualEpsilon, err := calcRelativeError(expected, actual)
-	if err != nil {
-		return Fail(t, err.Error(), msgAndArgs...)
-	}
-	if actualEpsilon > epsilon {
-		return Fail(t, fmt.Sprintf("Relative error is too high: %#v (expected)\n"+
-			"        < %#v (actual)", actualEpsilon, epsilon), msgAndArgs...)
-	}
+	delta := calcEpsilonDelta(expected, actual, epsilon)
 
-	return true
+	return InDelta(t, expected, actual, delta, msgAndArgs...)
 }
 
-// InEpsilonSlice is the same as InEpsilon, except it compares each value from two slices.
-func InEpsilonSlice(t TestingT, expected, actual interface{}, epsilon float64, msgAndArgs ...interface{}) bool {
+// InEpsilonSlice is the same as InEpsilon, except it compares two slices.
+func InEpsilonSlice(t TestingT, expected, actual interface{}, delta float64, msgAndArgs ...interface{}) bool {
 	if expected == nil || actual == nil ||
 		reflect.TypeOf(actual).Kind() != reflect.Slice ||
 		reflect.TypeOf(expected).Kind() != reflect.Slice {
@@ -810,7 +785,7 @@ func InEpsilonSlice(t TestingT, expected, actual interface{}, epsilon float64, m
 	expectedSlice := reflect.ValueOf(expected)
 
 	for i := 0; i < actualSlice.Len(); i++ {
-		result := InEpsilon(t, actualSlice.Index(i).Interface(), expectedSlice.Index(i).Interface(), epsilon)
+		result := InEpsilon(t, actualSlice.Index(i).Interface(), expectedSlice.Index(i).Interface(), delta)
 		if !result {
 			return result
 		}

@@ -1,5 +1,5 @@
 /*
-Copyright 2014 The Kubernetes Authors All rights reserved.
+Copyright 2014 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -45,35 +45,37 @@ func GetReference(obj runtime.Object) (*ObjectReference, error) {
 		// Don't make a reference to a reference.
 		return ref, nil
 	}
-	meta, err := meta.Accessor(obj)
-	if err != nil {
-		return nil, err
-	}
 
 	gvk := obj.GetObjectKind().GroupVersionKind()
 
 	// if the object referenced is actually persisted, we can just get kind from meta
 	// if we are building an object reference to something not yet persisted, we should fallback to scheme
-	var kind string
-	if gvk != nil {
-		kind = gvk.Kind
-	}
+	kind := gvk.Kind
 	if len(kind) == 0 {
 		// TODO: this is wrong
-		gvk, err := Scheme.ObjectKind(obj)
+		gvks, _, err := Scheme.ObjectKinds(obj)
 		if err != nil {
 			return nil, err
 		}
-		kind = gvk.Kind
+		kind = gvks[0].Kind
+	}
+
+	// An object that implements only List has enough metadata to build a reference
+	var listMeta meta.List
+	objectMeta, err := meta.Accessor(obj)
+	if err != nil {
+		listMeta, err = meta.ListAccessor(obj)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		listMeta = objectMeta
 	}
 
 	// if the object referenced is actually persisted, we can also get version from meta
-	var version string
-	if gvk != nil {
-		version = gvk.GroupVersion().String()
-	}
+	version := gvk.GroupVersion().String()
 	if len(version) == 0 {
-		selfLink := meta.GetSelfLink()
+		selfLink := listMeta.GetSelfLink()
 		if len(selfLink) == 0 {
 			return nil, ErrNoSelfLink
 		}
@@ -89,13 +91,22 @@ func GetReference(obj runtime.Object) (*ObjectReference, error) {
 		version = parts[2]
 	}
 
+	// only has list metadata
+	if objectMeta == nil {
+		return &ObjectReference{
+			Kind:            kind,
+			APIVersion:      version,
+			ResourceVersion: listMeta.GetResourceVersion(),
+		}, nil
+	}
+
 	return &ObjectReference{
 		Kind:            kind,
 		APIVersion:      version,
-		Name:            meta.GetName(),
-		Namespace:       meta.GetNamespace(),
-		UID:             meta.GetUID(),
-		ResourceVersion: meta.GetResourceVersion(),
+		Name:            objectMeta.GetName(),
+		Namespace:       objectMeta.GetNamespace(),
+		UID:             objectMeta.GetUID(),
+		ResourceVersion: objectMeta.GetResourceVersion(),
 	}, nil
 }
 
@@ -111,9 +122,11 @@ func GetPartialReference(obj runtime.Object, fieldPath string) (*ObjectReference
 
 // IsAnAPIObject allows clients to preemptively get a reference to an API object and pass it to places that
 // intend only to get a reference to that object. This simplifies the event recording interface.
-func (obj *ObjectReference) SetGroupVersionKind(gvk *unversioned.GroupVersionKind) {
+func (obj *ObjectReference) SetGroupVersionKind(gvk unversioned.GroupVersionKind) {
 	obj.APIVersion, obj.Kind = gvk.ToAPIVersionAndKind()
 }
-func (obj *ObjectReference) GroupVersionKind() *unversioned.GroupVersionKind {
+func (obj *ObjectReference) GroupVersionKind() unversioned.GroupVersionKind {
 	return unversioned.FromAPIVersionAndKind(obj.APIVersion, obj.Kind)
 }
+
+func (obj *ObjectReference) GetObjectKind() unversioned.ObjectKind { return obj }
