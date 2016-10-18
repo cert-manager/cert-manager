@@ -61,7 +61,7 @@ func (kl *KubeLego) WatchEvents() {
 
 	kl.Log().Debugf("start watching ingress objects")
 
-	resyncPeriod := 10 * time.Second
+	resyncPeriod := 60 * time.Second
 
 	ingEventHandler := framework.ResourceEventHandlerFuncs{
 		AddFunc: func(obj interface{}) {
