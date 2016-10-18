@@ -9,7 +9,6 @@ import (
 	"k8s.io/kubernetes/pkg/apis/extensions"
 	"k8s.io/kubernetes/pkg/client/cache"
 	client "k8s.io/kubernetes/pkg/client/unversioned"
-	"k8s.io/kubernetes/pkg/controller/framework"
 	"k8s.io/kubernetes/pkg/runtime"
 	"k8s.io/kubernetes/pkg/util/workqueue"
 	"k8s.io/kubernetes/pkg/watch"
@@ -63,7 +62,7 @@ func (kl *KubeLego) WatchEvents() {
 
 	resyncPeriod := 60 * time.Second
 
-	ingEventHandler := framework.ResourceEventHandlerFuncs{
+	ingEventHandler := cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj interface{}) {
 			addIng := obj.(*extensions.Ingress)
 			if ingress.IgnoreIngress(addIng) != nil {
@@ -92,7 +91,7 @@ func (kl *KubeLego) WatchEvents() {
 		},
 	}
 
-	_, controller := framework.NewInformer(
+	_, controller := cache.NewInformer(
 		&cache.ListWatch{
 			ListFunc:  ingressListFunc(kl.kubeClient, api.NamespaceAll),
 			WatchFunc: ingressWatchFunc(kl.kubeClient, api.NamespaceAll),

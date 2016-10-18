@@ -106,11 +106,11 @@ func (s *Service) SetKubeLegoSpec() {
 	}
 
 	if len(svc.Spec.Ports) != 1 ||
-		svc.Spec.Ports[0].Port != port.IntValue() ||
-		svc.Spec.Ports[0].TargetPort.IntValue() != port.IntValue() {
+		svc.Spec.Ports[0].Port != int32(port.IntValue()) ||
+		svc.Spec.Ports[0].TargetPort.IntValue() != int(port.IntValue()) {
 		svc.Spec.Ports = []k8sApi.ServicePort{
 			k8sApi.ServicePort{
-				Port:       port.IntValue(),
+				Port:       int32(port.IntValue()),
 				TargetPort: port,
 				Protocol:   "TCP",
 			},
@@ -156,7 +156,7 @@ func (s *Service) SetEndpoints(endpointsList []string) (err error) {
 			Addresses: addr,
 			Ports: []k8sApi.EndpointPort{
 				k8sApi.EndpointPort{
-					Port:     port,
+					Port:     int32(port),
 					Protocol: "TCP",
 				},
 			},

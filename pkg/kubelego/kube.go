@@ -6,8 +6,9 @@ import (
 
 	k8sApi "k8s.io/kubernetes/pkg/api"
 	k8sExtensions "k8s.io/kubernetes/pkg/apis/extensions"
+	"k8s.io/kubernetes/pkg/client/restclient"
 	client "k8s.io/kubernetes/pkg/client/unversioned"
-	"k8s.io/kubernetes/pkg/util"
+	"k8s.io/kubernetes/pkg/util/flowcontrol"
 )
 
 func (kl *KubeLego) InitKube() error {
@@ -19,7 +20,7 @@ func (kl *KubeLego) InitKube() error {
 
 		// fall back to LEGO_KUBE_API_URL (default 127.0.0.1:8080)
 		kubeClient, err = client.New(
-			&client.Config{
+			&restclient.Config{
 				Host: kl.LegoKubeApiURL(),
 			},
 		)
@@ -47,7 +48,7 @@ func (kl *KubeLego) WatchConfig() {
 
 	oldList := &k8sExtensions.IngressList{}
 
-	rateLimiter := util.NewTokenBucketRateLimiter(0.1, 1)
+	rateLimiter := flowcontrol.NewTokenBucketRateLimiter(0.1, 1)
 
 	ingClient := kl.kubeClient.Extensions().Ingress(k8sApi.NamespaceAll)
 
