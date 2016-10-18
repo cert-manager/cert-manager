@@ -9,6 +9,8 @@ This examples runs kube-lego in a separate namespace
 ```bash
 # Namespace
 kubectl create -f 05-kube-lego-namespace.yaml
+# ConfigMap
+kubectl create -f 20-kube-lego-configmap.yaml
 # Deployment
 kubectl create -f 50-kube-lego-deployment.yaml
 ```
