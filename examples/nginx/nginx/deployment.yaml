@@ -11,7 +11,7 @@ spec:
         app: nginx
     spec:
       containers:
-      - image: gcr.io/google_containers/nginx-ingress-controller:0.8.2
+      - image: gcr.io/google_containers/nginx-ingress-controller:0.8.3
         name: nginx
         imagePullPolicy: Always
         env:
@@ -26,7 +26,7 @@ spec:
         livenessProbe:
           httpGet:
             path: /healthz
-            port: 10249
+            port: 10254
             scheme: HTTP
           initialDelaySeconds: 30
           timeoutSeconds: 5
