@@ -33,6 +33,7 @@ test: test_root test_pkg_acme test_pkg_ingress test_pkg_kubelego test_pkg_secret
 test_prepare: depend
 	which gocover-cobertura || go get github.com/t-yuki/gocover-cobertura
 	which go2xunit || go get github.com/tebeka/go2xunit
+	which ngrok || curl -sL "https://bin.equinox.io/a/mU8jSiqMekT/ngrok-2.1.14-linux-amd64.tar.gz" | tar xvzf - -C "${GOPATH}/bin"
 	go build -i
 
 test_root: test_prepare
