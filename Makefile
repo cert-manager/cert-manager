@@ -11,6 +11,8 @@ TEST_DIR=_test
 
 CONTAINER_DIR=/go/src/${PACKAGE_NAME}
 
+PACKAGES=$(shell find . -name "*_test.go" | xargs -n1 dirname | sort -u | xargs -n1 printf "%s.test_pkg ")
+
 .PHONY: version
 
 codegen:
@@ -28,7 +30,6 @@ version:
 	$(eval GIT_COMMIT := $(shell git rev-parse HEAD))
 	$(eval APP_VERSION := $(shell cat VERSION))
 
-test: test_root test_pkg_acme test_pkg_ingress test_pkg_kubelego test_pkg_secret test_pkg_utils test_pkg_provider_gce test_pkg_provider_nginx
 
 test_prepare: depend
 	which gocover-cobertura || go get github.com/t-yuki/gocover-cobertura
@@ -36,21 +37,16 @@ test_prepare: depend
 	which ngrok || curl -sL "https://bin.equinox.io/a/mU8jSiqMekT/ngrok-2.1.14-linux-amd64.tar.gz" | tar xvzf - -C "${GOPATH}/bin"
 	go build -i
 
-test_root: test_prepare
-	go test -v -coverprofile=$(TEST_DIR)/coverage.txt -covermode count . | go2xunit > $(TEST_DIR)/test.xml
-	gocover-cobertura < $(TEST_DIR)/coverage.txt > $(TEST_DIR)/coverage.xml
-	sed -i "s#filename=\"$(PACKAGE_NAME)/#filename=\"#g" $(TEST_DIR)/coverage.xml
+test: test_prepare $(PACKAGES)
+	echo $(PACKAGES)
 
-test_pkg_provider_%: test_prepare
-	go test -v -coverprofile=$(TEST_DIR)/coverage.$*.txt -covermode count ./pkg/provider/$* | go2xunit > $(TEST_DIR)/test.$*.xml
-	gocover-cobertura < $(TEST_DIR)/coverage.$*.txt > $(TEST_DIR)/coverage.$*.xml
-	sed -i "s#filename=\"$(PACKAGE_NAME)/#filename=\"#g" $(TEST_DIR)/coverage.$*.xml
-
-test_pkg_%: test_prepare
-	go test -v -coverprofile=$(TEST_DIR)/coverage.$*.txt -covermode count ./pkg/$* | go2xunit > $(TEST_DIR)/test.$*.xml
-	gocover-cobertura < $(TEST_DIR)/coverage.$*.txt > $(TEST_DIR)/coverage.$*.xml
-	sed -i "s#filename=\"$(PACKAGE_NAME)/#filename=\"#g" $(TEST_DIR)/coverage.$*.xml
-
+%.test_pkg: test_prepare
+	$(eval PKG := ./$*)
+	$(eval PKG_CLEAN := $(shell echo "$*" | sed "s#^p#.p#" | sed "s#/#-#g"))
+	@echo "test $(PKG_CLEAN) ($(PKG))"
+	bash -o pipefail -c "go test -v -coverprofile=$(TEST_DIR)/coverage$(PKG_CLEAN).txt -covermode count $(PKG) | tee $(TEST_DIR)/test$(PKG_CLEAN).out"
+	cat $(TEST_DIR)/test$(PKG_CLEAN).out | go2xunit > $(TEST_DIR)/test$(PKG_CLEAN).xml
+	gocover-cobertura < $(TEST_DIR)/coverage$(PKG_CLEAN).txt > coverage$(PKG_CLEAN).xml
 
 build: depend version
 	CGO_ENABLED=0 GOOS=linux go build \
