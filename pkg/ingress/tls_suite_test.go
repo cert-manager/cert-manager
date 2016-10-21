@@ -49,7 +49,7 @@ var _ = Describe("Tls", func() {
 	Describe("newCertNeeded", func() {
 		Context("Tls with matching certificate", func() {
 			BeforeEach(func() {
-				mockKl.EXPECT().LegoCheckInterval().AnyTimes().Return(
+				mockKl.EXPECT().LegoMinimumValidity().AnyTimes().Return(
 					20 * 24 * time.Hour,
 				)
 
