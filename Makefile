@@ -46,7 +46,7 @@ test: test_prepare $(PACKAGES)
 	@echo "test $(PKG_CLEAN) ($(PKG))"
 	bash -o pipefail -c "go test -v -coverprofile=$(TEST_DIR)/coverage$(PKG_CLEAN).txt -covermode count $(PKG) | tee $(TEST_DIR)/test$(PKG_CLEAN).out"
 	cat $(TEST_DIR)/test$(PKG_CLEAN).out | go2xunit > $(TEST_DIR)/test$(PKG_CLEAN).xml
-	gocover-cobertura < $(TEST_DIR)/coverage$(PKG_CLEAN).txt > coverage$(PKG_CLEAN).xml
+	gocover-cobertura < $(TEST_DIR)/coverage$(PKG_CLEAN).txt > $(TEST_DIR)/coverage$(PKG_CLEAN).xml
 
 build: depend version
 	CGO_ENABLED=0 GOOS=linux go build \
