@@ -2,6 +2,23 @@
 All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 
+## [0.1.3] - 2016-11-03
+
+### Fixed
+
+- Workaround for GLBC health check detection bug
+- Raise resync period to 60 seconds
+- Use correct minimum validity config (used the `LEGO_CHECK_INTERVAL` before)
+
+### Added
+
+* Replace lego with the acme library
+* Increase tests coverage and automation
+* Improved log output, no secrets default log level is debug
+* Upgrade dependencies
+* Upgrade to go 1.7.3
+* Possibility to change api server url [Pavel Sorejs]
+
 ## [0.1.2] - 2016-08-19
 
 ### Fixed
