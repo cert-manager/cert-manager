@@ -147,11 +147,11 @@ func (a *Acme) ObtainCertificate(domains []string) (data map[string][]byte, err 
 			err = backoff.Retry(op, b)
 			if err != nil {
 				log.Warnf("authorization failed after %s: %s", b.MaxElapsedTime, err)
+			} else {
+				log.Infof("authorization successful")
 			}
-
 			results[pos] = err
 
-			log.Infof("authorization successful")
 		}(pos, domain)
 	}
 
@@ -159,11 +159,11 @@ func (a *Acme) ObtainCertificate(domains []string) (data map[string][]byte, err 
 	wg.Wait()
 
 	// check if all the domains are authorized correctly
-	successfulDomains := make([]string, len(domains))
-	failedDomains := make([]string, len(domains))
+	successfulDomains := []string{}
+	failedDomains := []string{}
 	for pos, domain := range domains {
 		res := results[pos]
-		if res != nil {
+		if res == nil {
 			successfulDomains = append(successfulDomains, domain)
 		} else {
 			failedDomains = append(failedDomains, domain)
