@@ -8,27 +8,33 @@ This examples runs kube-lego in a separate namespace
 
 ```bash
 # Namespace
-kubectl create -f 05-kube-lego-namespace.yaml
+kubectl apply -f lego/00-namespace.yaml
 # ConfigMap
-kubectl create -f 20-kube-lego-configmap.yaml
+kubectl apply -f lego/configmap.yaml
 # Deployment
-kubectl create -f 50-kube-lego-deployment.yaml
+kubectl apply -f lego/deployment.yaml
+# Service is created by kube-lego in every used namespace
 ```
 
 # Create an example application `echoserver` in a separate namespace 
 
 ```bash
 # Namespace
-kubectl create -f 05-echoserver-namespace.yaml
+kubectl apply -f 05-echoserver/00-namespace.yaml
 # Service (has to be Type=NodePort)
-kubectl create -f 20-echoserver-svc.yaml
-kubectl create -f 50-echoserver-deployment.yaml
-kubectl create -f 70-echoserver-ingress.yaml
+kubectl apply -f echoserver/svc.yaml
+kubectl apply -f echoserver/deployment.yaml
+kubectl apply -f echoserver/ingress-tls.yaml
 ```
 
-As soon as the `ingress/echoserver` resource is added to the cluster, kube-lego will be aware of that and try to get a certificate for the domain `echo.example.com` specified in the ingress resource. Please be aware that you have to manually point the DNS record for `echo.example.com` to the the load balancer created.
+As soon as the `ingress/echoserver` resource is added to the cluster, kube-lego
+will be aware of that and try to get a certificate for the domain
+`echo.example.com` specified in the ingress resource. Please be aware that you
+have to manually point the DNS record for `echo.example.com` to the the load
+balancer created.
 
-You get the right IP address by using kubectl. (It can take a minute until your load balancer is created):
+You get the right IP address by using kubectl. (It can take a minute until your
+load balancer is created):
 
 ```bash
 kubectl get ingress --namespace echoserver echoserver

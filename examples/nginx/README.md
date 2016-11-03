@@ -4,11 +4,11 @@
 
 ```
 # echoserver
-kubectl apply -f echoserver/namespace.yaml
+kubectl apply -f echoserver/00-namespace.yaml
 # kube-lego
-kubectl apply -f lego/namespace.yaml
+kubectl apply -f lego/00-namespace.yaml
 # nginx-ingress
-kubectl apply -f nginx/namespace.yaml 
+kubectl apply -f nginx/00-namespace.yaml
 ```
 
 # Create a default http backend
