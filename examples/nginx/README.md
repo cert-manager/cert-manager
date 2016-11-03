@@ -51,11 +51,11 @@ kubectl apply -f echoserver/ingress-notls.yaml
 
 ```
 kubectl apply -f lego/configmap.yaml
-kubectl apply -f lego/service.yaml
 kubectl apply -f lego/deployment.yaml
 ```
 - Change the email address in `kube-lego-configmap.yaml` before creating the
   kubernetes resource
+- Please be aware that kube-lego creates it's related service on its own
 
 
 # Enable tls for echoserver ingress
