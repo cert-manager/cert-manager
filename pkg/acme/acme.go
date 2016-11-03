@@ -39,8 +39,8 @@ func (a *Acme) Mux() *http.ServeMux {
 
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/plain")
-		w.WriteHeader(http.StatusNotFound)
-		fmt.Fprintf(w, a.notFound)
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprint(w, "ok")
 	})
 
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
