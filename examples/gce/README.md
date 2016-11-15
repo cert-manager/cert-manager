@@ -1,7 +1,7 @@
 # kube-lego with GCE ingress controller
 
 With using GKE/GCE ingress controller you hand off the HTTP routing to GCE
- 
+
 This examples runs kube-lego in a separate namespace
 
 # Create the kube-lego related objects
@@ -16,13 +16,13 @@ kubectl apply -f lego/deployment.yaml
 # Service is created by kube-lego in every used namespace
 ```
 
-# Create an example application `echoserver` in a separate namespace 
+# Create an example application `echoserver` in a separate namespace
 
 ```bash
 # Namespace
 kubectl apply -f 05-echoserver/00-namespace.yaml
 # Service (has to be Type=NodePort)
-kubectl apply -f echoserver/svc.yaml
+kubectl apply -f echoserver/service.yaml
 kubectl apply -f echoserver/deployment.yaml
 kubectl apply -f echoserver/ingress-tls.yaml
 ```
