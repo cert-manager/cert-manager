@@ -54,7 +54,7 @@ func (kl *KubeLego) Log() *log.Entry {
 }
 
 func (kl *KubeLego) Stop() {
-	kl.Log().Info("shuting things down")
+	kl.Log().Info("shutting things down")
 	close(kl.stopCh)
 }
 

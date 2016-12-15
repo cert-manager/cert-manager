@@ -37,7 +37,7 @@ func New(client kubelego.KubeLego, namespace string, name string) *Service {
 			service.exists = false
 
 		} else {
-			client.Log().Warn("Error during getting service: ", err)
+			client.Log().Warn("Error while getting service: ", err)
 		}
 	}
 
@@ -57,7 +57,7 @@ func (s *Service) Delete() error {
 	val, ok := s.ServiceApi.Annotations[kubelego.AnnotationKubeLegoManaged]
 	if !ok || val != "true" {
 		return fmt.Errorf(
-			"do not delete service '%s/%s' as it has no %s annotiation",
+			"do not delete service '%s/%s' as it has no %s annotation",
 			s.ServiceApi.Namespace,
 			s.ServiceApi.Name,
 			kubelego.AnnotationKubeLegoManaged,

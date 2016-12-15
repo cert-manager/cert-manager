@@ -49,7 +49,7 @@ func (a *Acme) testReachablilty(domain string) error {
 	url.Host = domain
 	url.Path = kubelego.AcmeHttpSelfTest
 
-	a.Log().WithField("domain", domain).Debugf("testing reachablity of %s", url.String())
+	a.Log().WithField("domain", domain).Debugf("testing reachability of %s", url.String())
 	response, err := http.Get(url.String())
 	if err != nil {
 		return err
@@ -76,7 +76,7 @@ func (a *Acme) testReachablilty(domain string) error {
 func (a *Acme) verifyDomain(domain string) (auth *acme.Authorization, err error) {
 	err = a.testReachablilty(domain)
 	if err != nil {
-		return nil, fmt.Errorf("reachabily test failed: %s", err)
+		return nil, fmt.Errorf("reachability test failed: %s", err)
 	}
 
 	auth, err = a.acmeClient.Authorize(context.Background(), domain)
@@ -93,13 +93,13 @@ func (a *Acme) verifyDomain(domain string) (auth *acme.Authorization, err error)
 	}
 
 	if challenge == nil {
-		return nil, fmt.Errorf("no http-01 challege was offered")
+		return nil, fmt.Errorf("no http-01 challenge was offered")
 	}
 
 	token := challenge.Token
 	key, err := a.acmeClient.HTTP01ChallengeResponse(token)
 	if err != nil {
-		return nil, fmt.Errorf("error generating http-01 repsonse: %s", err)
+		return nil, fmt.Errorf("error generating http-01 response: %s", err)
 	}
 
 	a.Present(domain, token, key)

@@ -99,14 +99,14 @@ func (kl *KubeLego) reconfigure(ingressesAll []kubelego.Ingress) error {
 	tlsSlice = kl.TlsIgnoreDuplicatedSecrets(tlsSlice)
 
 	// process certificate validity
-	kl.Log().Info("process certificates requests for ingresses")
+	kl.Log().Info("process certificate requests for ingresses")
 	errs := kl.TlsProcessHosts(tlsSlice)
 	if len(errs) > 0 {
 		errsStr := []string{}
 		for _, err := range errs {
 			errsStr = append(errsStr, fmt.Sprintf("%s", err))
 		}
-		kl.Log().Error("Error while process certificate requests: ", strings.Join(errsStr, ", "))
+		kl.Log().Error("Error while processing certificate requests: ", strings.Join(errsStr, ", "))
 
 		// request a rerun of reconfigure
 		kl.workQueue.Add(true)

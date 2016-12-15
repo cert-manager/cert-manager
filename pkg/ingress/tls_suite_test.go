@@ -71,7 +71,7 @@ var _ = Describe("Tls", func() {
 					tls.newCertNeeded(),
 				).To(Equal(true))
 			})
-			It("should be true for validity below minium validity", func() {
+			It("should be true for validity below minimum validity", func() {
 				mockSec.EXPECT().TlsExpireTime().AnyTimes().Return(
 					time.Now().Add(48*time.Hour),
 					nil,
