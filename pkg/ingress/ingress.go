@@ -30,11 +30,11 @@ func IgnoreIngress(ing *k8sExtensions.Ingress) error {
 	val, ok := ing.Annotations[key]
 
 	if !ok {
-		return fmt.Errorf("has no annotiation '%s'", key)
+		return fmt.Errorf("has no annotation '%s'", key)
 	}
 
 	if strings.ToLower(val) != "true" {
-		return fmt.Errorf("annotiation '%s' is not true", key)
+		return fmt.Errorf("annotation '%s' is not true", key)
 	}
 
 	return nil
@@ -59,7 +59,7 @@ func New(client kubelego.KubeLego, namespace string, name string) *Ingress {
 			ingress.exists = false
 
 		} else {
-			client.Log().Warn("Error during getting secret: ", err)
+			client.Log().Warn("Error while getting secret: ", err)
 		}
 	}
 

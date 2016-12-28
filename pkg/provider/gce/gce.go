@@ -54,7 +54,7 @@ func (p *Gce) Reset() (err error) {
 }
 
 func (p *Gce) Finalize() (err error) {
-	p.Log().Debug("finialize")
+	p.Log().Debug("finalize")
 
 	err = p.updateServices()
 	if err != nil {

@@ -63,7 +63,7 @@ var _ = Describe("Gce", func() {
 				Expect(provider.usedByNamespace).To(HaveKeyWithValue(ing.ObjectMeta.Namespace, true))
 			})
 		})
-		Context("Ingress with with challenge rules domain12 and no tls", func() {
+		Context("Ingress with challenge rules domain12 and no tls", func() {
 			BeforeEach(func() {
 				mockIng = mocks.DummyIngressDomain12Challenge12(ctrlMock, mocks.DummyTlsEmpty(ctrlMock))
 				ing = mockIng.Object()

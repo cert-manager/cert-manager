@@ -37,7 +37,7 @@ func (p *Nginx) Reset() error {
 }
 
 func (p *Nginx) Finalize() error {
-	p.Log().Debug("finialize")
+	p.Log().Debug("finalize")
 
 	if p.ingress == nil {
 		p.ingress = ingress.New(p.kubelego, p.kubelego.LegoNamespace(), p.kubelego.LegoIngressNameNginx())

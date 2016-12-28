@@ -60,7 +60,7 @@ func BasicIngressDomain12Challenge12() *k8sExtensions.Ingress {
 	ing := BasicIngressDomain12()
 	ing.Name = "ingress-domain12-challenge12"
 
-	challengeRule := BasicIngressRule("unused", "/.well-known/acme-challenge/*", BasicIngressBackend("kube-lege-gce", 8080))
+	challengeRule := BasicIngressRule("unused", "/.well-known/acme-challenge/*", BasicIngressBackend("kube-lego-gce", 8080))
 
 	ing.Spec.Rules[0].HTTP.Paths = append(challengeRule.HTTP.Paths, ing.Spec.Rules[0].HTTP.Paths...)
 	ing.Spec.Rules[1].HTTP.Paths = append(challengeRule.HTTP.Paths, ing.Spec.Rules[1].HTTP.Paths...)
