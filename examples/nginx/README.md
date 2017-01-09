@@ -68,5 +68,5 @@ kubectl apply -f echoserver/ingress-tls.yaml
 
 - Look at the log output of the nginx pod
 - Look at the log output of the ingress pods
-- Sometimes after acquiring a new certifiacte nginx needs to be restarted (as
+- Sometimes after acquiring a new certificate nginx needs to be restarted (as
   it's not watching change events for secrets)
