@@ -14,7 +14,7 @@
 - Recognizes the need of a new certificate for this cases:
   - No certificate existing
   - Existing certificate is not containing all domain names
-  - Existing certificate is expired or near to it's expiry date (cf. option `LEGO_MINIMUM_VALIDITY`)
+  - Existing certificate is expired or near to its expiry date (cf. option `LEGO_MINIMUM_VALIDITY`)
   - Existing certificate is unparseable, invalid or not matching the secret key
 - Creates a user account (incl. private key) for Let's Encrypt and stores it in Kubernetes secrets (secret name is configurable via `LEGO_SECRET_NAME`)
 - Obtains the missing certificates from Let's Encrypt and authorizes the request with the `HTTP-01` challenge
@@ -38,7 +38,7 @@
 
 ### how kube-lego works
 
-As soon as the kube-lego daemon is running, it will look for ingress resources that have this annotations:
+As soon as the kube-lego daemon is running, it will look for ingress resources that have this annotation:
 
 ```yaml
 metadata:
@@ -46,7 +46,7 @@ metadata:
     kubernetes.io/tls-acme: "true"
 ```
 
-Every ingress resource that has this annotations will be monitored by *kube-lego* (cluster-wide in all namespaces). The only part that is watched is the list `spec.tls`. Every element will get their own certificate through Let's encrypt.
+Every ingress resource that has this annotation will be monitored by *kube-lego* (cluster-wide in all namespaces). The only part that is watched is the list `spec.tls`. Every element will get its own certificate through Let's Encrypt.
 
 Let's take a look at this ingress resource:
 
@@ -62,7 +62,7 @@ spec:
     - postgres.example.com
 ```
 
-*kube-lego* will obtain two certificates (one with phpmyadmin.example.com and mysql.example.com, the other with postgers.example.com). Please note:
+*kube-lego* will obtain two certificates (one with phpmyadmin.example.com and mysql.example.com, the other with postgres.example.com). Please note:
 
 - The `secretName` statements have to be unique per namespace
 - `secretName` is required (even if no secret exists with that name, as it will be created by *kube-lego*)
