@@ -20,7 +20,7 @@ kubectl apply -f lego/deployment.yaml
 
 ```bash
 # Namespace
-kubectl apply -f 05-echoserver/00-namespace.yaml
+kubectl apply -f echoserver/00-namespace.yaml
 # Service (has to be Type=NodePort)
 kubectl apply -f echoserver/service.yaml
 kubectl apply -f echoserver/deployment.yaml
