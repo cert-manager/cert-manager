@@ -103,8 +103,8 @@ spec:
 
 ## Full deployment examples
 
-- [Nginx Ingress Controller](examples/nginx/README.md)
-- [GCE Load Balancers](examples/gce/README.md)
+- [Nginx Ingress Controller](examples/nginx/)
+- [GCE Load Balancers](examples/gce/)
 
 ## Authors
 
