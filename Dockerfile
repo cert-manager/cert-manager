@@ -1,5 +1,5 @@
-FROM scratch
-ADD dist/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
+FROM alpine:3.5
+RUN apk --update add ca-certificates && rm -rf /var/cache/apk/*
 COPY _build/kube-lego /kube-lego
 COPY README.md /README.md
 CMD ["/kube-lego"]
