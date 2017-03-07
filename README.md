@@ -19,6 +19,7 @@
 - Creates a user account (incl. private key) for Let's Encrypt and stores it in Kubernetes secrets (secret name is configurable via `LEGO_SECRET_NAME`)
 - Obtains the missing certificates from Let's Encrypt and authorizes the request with the `HTTP-01` challenge
 - Makes sure that the specific Kubernetes objects (Services, Ingress) contain the rights configuration for the `HTTP-01` challenge to succeed
+- Official Kubernetes Helm [chart](https://github.com/kubernetes/charts/tree/master/stable/kube-lego) for simplistic deployment.
 
 ## Requirements
 
@@ -38,7 +39,7 @@
 
 ### how kube-lego works
 
-As soon as the kube-lego daemon is running, it will look for ingress resources that have this annotation:
+As soon as the kube-lego daemon is running, it will create a user account with LetsEncrypt, make a service resource, and look for ingress resources that have this annotation:
 
 ```yaml
 metadata:
@@ -62,12 +63,21 @@ spec:
     - postgres.example.com
 ```
 
-*kube-lego* will then perform its own check for `http://mysql.example.com/.well-known/acme-challenge/_selftest` to ensure all is well before reaching out to letsencrypt.
+On finding the above resource, the following happens:
 
-*kube-lego* will obtain two certificates (one with phpmyadmin.example.com and mysql.example.com, the other with postgres.example.com). Please note:
+1. An ingress resource is created coordinating where to send acme challenges for the said domains.
+
+2. *kube-lego* will then perform its own check for i.e. `http://mysql.example.com/.well-known/acme-challenge/_selftest` to ensure all is well before reaching out to letsencrypt.
+
+3. *kube-lego* will obtain two certificates (one with phpmyadmin.example.com and mysql.example.com, the other with postgres.example.com).
+
+
+Please note:
 
 - The `secretName` statements have to be unique per namespace
 - `secretName` is required (even if no secret exists with that name, as it will be created by *kube-lego*)
+- Setups which utilize 1:1 NAT need to ensure internal resources can reach gateway controlled public addresses.
+    - Additionally, your domain must point to your externally available Load Balancer (either directly or via 1:1 NAT)
 
 
 ##<a name="ingress"></a>Ingress controllers
@@ -102,11 +112,22 @@ spec:
 | `LEGO_KUBE_API_URL` | n | `http://127.0.0.1:8080` | API server URL |
 | `LEGO_LOG_LEVEL` | n | `info` | Set log level (`debug|info|warn|error`) |
 
-
 ## Full deployment examples
 
 - [Nginx Ingress Controller](examples/nginx/)
 - [GCE Load Balancers](examples/gce/)
+
+## Troubleshooting
+
+When interacting with *kube-lego*, its a good idea to run with `LEGO_LOG_LEVEL=debug` for more verbose details.
+Additionally, be aware of the automatically created resources (see environment variables) when cleaning up or testing.
+
+Possible resources for *help*:
+
+* `#coreos` on freenode
+* Slack channels like `#kubernetes-users` or `#kubernetes-novice` on `kubernetes.slack.com`
+* If you absolutely just can't figure out your problem, file an issue.
+
 
 ## Authors
 
