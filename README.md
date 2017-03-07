@@ -62,6 +62,8 @@ spec:
     - postgres.example.com
 ```
 
+*kube-lego* will then perform its own check for `http://mysql.example.com/.well-known/acme-challenge/_selftest` to ensure all is well before reaching out to letsencrypt.
+
 *kube-lego* will obtain two certificates (one with phpmyadmin.example.com and mysql.example.com, the other with postgres.example.com). Please note:
 
 - The `secretName` statements have to be unique per namespace
