@@ -4,30 +4,34 @@ import (
 	"errors"
 	"reflect"
 
-	k8sApi "k8s.io/kubernetes/pkg/api"
-	k8sExtensions "k8s.io/kubernetes/pkg/apis/extensions"
-	"k8s.io/kubernetes/pkg/client/restclient"
-	client "k8s.io/kubernetes/pkg/client/unversioned"
-	"k8s.io/kubernetes/pkg/util/flowcontrol"
+	k8sMeta "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
+	k8sApi "k8s.io/client-go/pkg/api/v1"
+	k8sExtensions "k8s.io/client-go/pkg/apis/extensions/v1beta1"
+	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/client-go/util/flowcontrol"
 )
 
 func (kl *KubeLego) InitKube() error {
 
 	// Try in cluster client first
-	kubeClient, err := client.NewInCluster()
+	config, err := rest.InClusterConfig()
 	if err != nil {
 		kl.Log().Warnf("failed to create in-cluster client: %v.", err)
 
-		// fall back to LEGO_KUBE_API_URL (default 127.0.0.1:8080)
-		kubeClient, err = client.New(
-			&restclient.Config{
-				Host: kl.LegoKubeApiURL(),
-			},
-		)
+		// fall back to kubeconfig
+		// TODO: Link to kubeconfig
+		config, err = clientcmd.BuildConfigFromFlags("", "kubeconfig")
 		if err != nil {
-			kl.Log().Warnf("failed to create test cluster client: %v.", err)
+			kl.Log().Warnf("failed to create kubeconfig client: %v.", err)
 			return errors.New("kube init failed as both in-cluster and dev connection unavailable")
 		}
+	}
+
+	kubeClient, err := kubernetes.NewForConfig(config)
+	if err != nil {
+		return err
 	}
 
 	version, err := kubeClient.ServerVersion()
@@ -50,12 +54,12 @@ func (kl *KubeLego) WatchConfig() {
 
 	rateLimiter := flowcontrol.NewTokenBucketRateLimiter(0.1, 1)
 
-	ingClient := kl.kubeClient.Extensions().Ingress(k8sApi.NamespaceAll)
+	ingClient := kl.kubeClient.Ingresses(k8sApi.NamespaceAll)
 
 	for {
 		rateLimiter.Accept()
 
-		list, err := ingClient.List(k8sApi.ListOptions{})
+		list, err := ingClient.List(k8sMeta.ListOptions{})
 		if err != nil {
 			kl.Log().Warn("Error while retrieving ingress list: ", err)
 			continue

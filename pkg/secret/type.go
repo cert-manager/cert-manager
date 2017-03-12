@@ -3,7 +3,7 @@ package secret
 import (
 	"github.com/jetstack/kube-lego/pkg/kubelego_const"
 
-	k8sApi "k8s.io/kubernetes/pkg/api"
+	k8sApi "k8s.io/client-go/pkg/api/v1"
 )
 
 type Secret struct {

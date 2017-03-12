@@ -1,16 +1,16 @@
 package kubelego
 
 import (
+	"net"
 	"sync"
 	"time"
 
 	"github.com/jetstack/kube-lego/pkg/ingress"
 	"github.com/jetstack/kube-lego/pkg/kubelego_const"
 
-	k8sClient "k8s.io/kubernetes/pkg/client/unversioned"
-	"k8s.io/kubernetes/pkg/util/intstr"
-	"k8s.io/kubernetes/pkg/util/workqueue"
-	"net"
+	"k8s.io/apimachinery/pkg/util/intstr"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/util/workqueue"
 )
 
 type KubeLego struct {
@@ -27,7 +27,7 @@ type KubeLego struct {
 	legoMinimumValidity     time.Duration
 	legoDefaultIngressClass string
 	legoKubeApiURL          string
-	kubeClient              *k8sClient.Client
+	kubeClient              *kubernetes.Clientset
 	legoIngressSlice        []*ingress.Ingress
 	legoIngressProvider     map[string]kubelego.IngressProvider
 	version                 string

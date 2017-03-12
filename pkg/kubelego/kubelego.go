@@ -3,6 +3,7 @@ package kubelego
 import (
 	"errors"
 	"fmt"
+	"net"
 	"os"
 	"os/signal"
 	"strconv"
@@ -19,10 +20,9 @@ import (
 	"github.com/jetstack/kube-lego/pkg/secret"
 
 	log "github.com/Sirupsen/logrus"
-	k8sApi "k8s.io/kubernetes/pkg/api"
-	k8sClient "k8s.io/kubernetes/pkg/client/unversioned"
-	"k8s.io/kubernetes/pkg/util/intstr"
-	"net"
+	"k8s.io/apimachinery/pkg/util/intstr"
+	"k8s.io/client-go/kubernetes"
+	k8sApi "k8s.io/client-go/pkg/api/v1"
 )
 
 var _ kubelego.KubeLego = &KubeLego{}
@@ -132,7 +132,7 @@ func (kl *KubeLego) AcmeClient() kubelego.Acme {
 	return kl.acmeClient
 }
 
-func (kl *KubeLego) KubeClient() *k8sClient.Client {
+func (kl *KubeLego) KubeClient() *kubernetes.Clientset {
 	return kl.kubeClient
 }
 

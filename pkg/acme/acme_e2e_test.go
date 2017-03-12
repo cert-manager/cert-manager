@@ -12,7 +12,7 @@ import (
 	"github.com/Sirupsen/logrus"
 	"github.com/golang/mock/gomock"
 	"github.com/jetstack/kube-lego/pkg/mocks"
-	"k8s.io/kubernetes/pkg/util/intstr"
+	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
 func TestAcme_E2E(t *testing.T) {

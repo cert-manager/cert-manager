@@ -1,7 +1,7 @@
 package kubelego
 
 import (
-	k8sApi "k8s.io/kubernetes/pkg/api"
+	k8sApi "k8s.io/client-go/pkg/api/v1"
 )
 
 const RsaKeySize = 2048

@@ -5,9 +5,10 @@ import (
 
 	"github.com/jetstack/kube-lego/pkg/kubelego_const"
 
-	k8sApi "k8s.io/kubernetes/pkg/api"
-	k8sErrors "k8s.io/kubernetes/pkg/api/errors"
-	k8sClient "k8s.io/kubernetes/pkg/client/unversioned"
+	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
+	k8sMeta "k8s.io/apimachinery/pkg/apis/meta/v1"
+	k8sApiTyped "k8s.io/client-go/kubernetes/typed/core/v1"
+	k8sApi "k8s.io/client-go/pkg/api/v1"
 )
 
 var _ kubelego.Service = &Service{}
@@ -25,11 +26,11 @@ func New(client kubelego.KubeLego, namespace string, name string) *Service {
 	}
 
 	var err error
-	service.ServiceApi, err = client.KubeClient().Services(namespace).Get(name)
+	service.ServiceApi, err = client.KubeClient().Services(namespace).Get(name, k8sMeta.GetOptions{})
 	if err != nil {
 		if k8sErrors.IsNotFound(err) {
 			service.ServiceApi = &k8sApi.Service{
-				ObjectMeta: k8sApi.ObjectMeta{
+				ObjectMeta: k8sMeta.ObjectMeta{
 					Namespace: namespace,
 					Name:      name,
 				},
@@ -44,7 +45,7 @@ func New(client kubelego.KubeLego, namespace string, name string) *Service {
 	return service
 }
 
-func (s *Service) client() k8sClient.ServiceInterface {
+func (s *Service) client() k8sApiTyped.ServiceInterface {
 	return s.kubelego.KubeClient().Services(s.ServiceApi.Namespace)
 }
 
@@ -64,7 +65,7 @@ func (s *Service) Delete() error {
 		)
 	}
 
-	err := s.client().Delete(s.ServiceApi.Name)
+	err := s.client().Delete(s.ServiceApi.Name, &k8sMeta.DeleteOptions{})
 	if err != nil {
 		return err
 	}
@@ -126,11 +127,11 @@ func (s *Service) SetEndpoints(endpointsList []string) (err error) {
 	name := s.ServiceApi.Name
 
 	exists := true
-	endpoints, err := client.Get(name)
+	endpoints, err := client.Get(name, k8sMeta.GetOptions{})
 	if err != nil {
 		if k8sErrors.IsNotFound(err) {
 			endpoints = &k8sApi.Endpoints{
-				ObjectMeta: k8sApi.ObjectMeta{
+				ObjectMeta: k8sMeta.ObjectMeta{
 					Namespace: namespace,
 					Name:      name,
 				},

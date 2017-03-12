@@ -8,7 +8,7 @@ import (
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	k8sExtensions "k8s.io/kubernetes/pkg/apis/extensions"
+	k8sExtensions "k8s.io/client-go/pkg/apis/extensions/v1beta1"
 )
 
 func TestGce(t *testing.T) {

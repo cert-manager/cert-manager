@@ -9,9 +9,10 @@ import (
 	"github.com/jetstack/kube-lego/pkg/kubelego_const"
 
 	"github.com/Sirupsen/logrus"
-	k8sApi "k8s.io/kubernetes/pkg/api"
-	k8sErrors "k8s.io/kubernetes/pkg/api/errors"
-	k8sClient "k8s.io/kubernetes/pkg/client/unversioned"
+	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
+	k8sMeta "k8s.io/apimachinery/pkg/apis/meta/v1"
+	k8sApiTyped "k8s.io/client-go/kubernetes/typed/core/v1"
+	k8sApi "k8s.io/client-go/pkg/api/v1"
 )
 
 func New(client kubelego.KubeLego, namespace string, name string) *Secret {
@@ -21,11 +22,11 @@ func New(client kubelego.KubeLego, namespace string, name string) *Secret {
 	}
 
 	var err error
-	secret.SecretApi, err = client.KubeClient().Secrets(namespace).Get(name)
+	secret.SecretApi, err = client.KubeClient().Secrets(namespace).Get(name, k8sMeta.GetOptions{})
 	if err != nil {
 		if k8sErrors.IsNotFound(err) {
 			secret.SecretApi = &k8sApi.Secret{
-				ObjectMeta: k8sApi.ObjectMeta{
+				ObjectMeta: k8sMeta.ObjectMeta{
 					Namespace: namespace,
 					Name:      name,
 				},
@@ -52,7 +53,7 @@ func (o *Secret) Log() *logrus.Entry {
 	return log
 }
 
-func (o *Secret) client() k8sClient.SecretsInterface {
+func (o *Secret) client() k8sApiTyped.SecretInterface {
 	return o.kubelego.KubeClient().Secrets(o.SecretApi.Namespace)
 }
 

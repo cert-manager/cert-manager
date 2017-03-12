@@ -4,9 +4,9 @@ import (
 	. "github.com/jetstack/kube-lego/pkg/kubelego_const"
 
 	"github.com/golang/mock/gomock"
-	k8sApi "k8s.io/kubernetes/pkg/api"
-	k8sExtensions "k8s.io/kubernetes/pkg/apis/extensions"
-	"k8s.io/kubernetes/pkg/util/intstr"
+	k8sMeta "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
+	k8sExtensions "k8s.io/client-go/pkg/apis/extensions/v1beta1"
 )
 
 func BasicIngressBackend(service string, port int) k8sExtensions.IngressBackend {
@@ -34,7 +34,7 @@ func BasicIngressRule(host string, path string, backend k8sExtensions.IngressBac
 
 func BasicIngress(name string, namespace string) *k8sExtensions.Ingress {
 	return &k8sExtensions.Ingress{
-		ObjectMeta: k8sApi.ObjectMeta{
+		ObjectMeta: k8sMeta.ObjectMeta{
 			Name:      name,
 			Namespace: namespace,
 		},

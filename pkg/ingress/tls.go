@@ -9,8 +9,8 @@ import (
 
 	"fmt"
 	"github.com/Sirupsen/logrus"
-	k8sApi "k8s.io/kubernetes/pkg/api"
-	k8sExtensions "k8s.io/kubernetes/pkg/apis/extensions"
+	k8sApi "k8s.io/client-go/pkg/api/v1"
+	k8sExtensions "k8s.io/client-go/pkg/apis/extensions/v1beta1"
 	"strings"
 )
 

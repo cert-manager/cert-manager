@@ -7,10 +7,10 @@ import (
 	logrus "github.com/Sirupsen/logrus"
 	gomock "github.com/golang/mock/gomock"
 	. "github.com/jetstack/kube-lego/pkg/kubelego_const"
-	api "k8s.io/kubernetes/pkg/api"
-	extensions "k8s.io/kubernetes/pkg/apis/extensions"
-	unversioned "k8s.io/kubernetes/pkg/client/unversioned"
-	intstr "k8s.io/kubernetes/pkg/util/intstr"
+	intstr "k8s.io/apimachinery/pkg/util/intstr"
+	kubernetes "k8s.io/client-go/kubernetes"
+	v1 "k8s.io/client-go/pkg/api/v1"
+	v1beta1 "k8s.io/client-go/pkg/apis/extensions/v1beta1"
 	net "net"
 	time "time"
 )
@@ -36,9 +36,9 @@ func (_m *MockKubeLego) EXPECT() *_MockKubeLegoRecorder {
 	return _m.recorder
 }
 
-func (_m *MockKubeLego) KubeClient() *unversioned.Client {
+func (_m *MockKubeLego) KubeClient() *kubernetes.Clientset {
 	ret := _m.ctrl.Call(_m, "KubeClient")
-	ret0, _ := ret[0].(*unversioned.Client)
+	ret0, _ := ret[0].(*kubernetes.Clientset)
 	return ret0
 }
 
@@ -281,9 +281,9 @@ func (_mr *_MockTlsRecorder) Hosts() *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "Hosts")
 }
 
-func (_m *MockTls) SecretMetadata() *api.ObjectMeta {
+func (_m *MockTls) SecretMetadata() *v1.ObjectMeta {
 	ret := _m.ctrl.Call(_m, "SecretMetadata")
-	ret0, _ := ret[0].(*api.ObjectMeta)
+	ret0, _ := ret[0].(*v1.ObjectMeta)
 	return ret0
 }
 
@@ -291,9 +291,9 @@ func (_mr *_MockTlsRecorder) SecretMetadata() *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "SecretMetadata")
 }
 
-func (_m *MockTls) IngressMetadata() *api.ObjectMeta {
+func (_m *MockTls) IngressMetadata() *v1.ObjectMeta {
 	ret := _m.ctrl.Call(_m, "IngressMetadata")
-	ret0, _ := ret[0].(*api.ObjectMeta)
+	ret0, _ := ret[0].(*v1.ObjectMeta)
 	return ret0
 }
 
@@ -332,9 +332,9 @@ func (_m *MockService) EXPECT() *_MockServiceRecorder {
 	return _m.recorder
 }
 
-func (_m *MockService) Object() *api.Service {
+func (_m *MockService) Object() *v1.Service {
 	ret := _m.ctrl.Call(_m, "Object")
-	ret0, _ := ret[0].(*api.Service)
+	ret0, _ := ret[0].(*v1.Service)
 	return ret0
 }
 
@@ -401,9 +401,9 @@ func (_m *MockSecret) EXPECT() *_MockSecretRecorder {
 	return _m.recorder
 }
 
-func (_m *MockSecret) Object() *api.Secret {
+func (_m *MockSecret) Object() *v1.Secret {
 	ret := _m.ctrl.Call(_m, "Object")
-	ret0, _ := ret[0].(*api.Secret)
+	ret0, _ := ret[0].(*v1.Secret)
 	return ret0
 }
 
@@ -494,9 +494,9 @@ func (_m *MockIngress) EXPECT() *_MockIngressRecorder {
 	return _m.recorder
 }
 
-func (_m *MockIngress) Object() *extensions.Ingress {
+func (_m *MockIngress) Object() *v1beta1.Ingress {
 	ret := _m.ctrl.Call(_m, "Object")
-	ret0, _ := ret[0].(*extensions.Ingress)
+	ret0, _ := ret[0].(*v1beta1.Ingress)
 	return ret0
 }
 

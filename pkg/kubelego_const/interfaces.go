@@ -5,14 +5,14 @@ import (
 	"time"
 
 	"github.com/Sirupsen/logrus"
-	k8sApi "k8s.io/kubernetes/pkg/api"
-	k8sExtensions "k8s.io/kubernetes/pkg/apis/extensions"
-	k8sClient "k8s.io/kubernetes/pkg/client/unversioned"
-	"k8s.io/kubernetes/pkg/util/intstr"
+	"k8s.io/apimachinery/pkg/util/intstr"
+	"k8s.io/client-go/kubernetes"
+	k8sApi "k8s.io/client-go/pkg/api/v1"
+	k8sExtensions "k8s.io/client-go/pkg/apis/extensions/v1beta1"
 )
 
 type KubeLego interface {
-	KubeClient() *k8sClient.Client
+	KubeClient() *kubernetes.Clientset
 	Log() *logrus.Entry
 	AcmeClient() Acme
 	LegoHTTPPort() intstr.IntOrString

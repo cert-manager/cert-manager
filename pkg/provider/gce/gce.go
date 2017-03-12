@@ -8,7 +8,7 @@ import (
 	"github.com/jetstack/kube-lego/pkg/service"
 
 	"github.com/Sirupsen/logrus"
-	k8sExtensions "k8s.io/kubernetes/pkg/apis/extensions"
+	k8sExtensions "k8s.io/client-go/pkg/apis/extensions/v1beta1"
 )
 
 const ClassName = "gce"

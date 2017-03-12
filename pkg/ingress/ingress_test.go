@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	k8sExtensions "k8s.io/kubernetes/pkg/apis/extensions"
+	k8sExtensions "k8s.io/client-go/pkg/apis/extensions/v1beta1"
 )
 
 func TestIsSupportedIngressClass(t *testing.T) {

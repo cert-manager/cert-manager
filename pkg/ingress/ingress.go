@@ -7,10 +7,11 @@ import (
 	"github.com/jetstack/kube-lego/pkg/kubelego_const"
 
 	"github.com/Sirupsen/logrus"
-	k8sApi "k8s.io/kubernetes/pkg/api"
-	k8sErrors "k8s.io/kubernetes/pkg/api/errors"
-	k8sExtensions "k8s.io/kubernetes/pkg/apis/extensions"
-	k8sClient "k8s.io/kubernetes/pkg/client/unversioned"
+	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
+	k8sMeta "k8s.io/apimachinery/pkg/apis/meta/v1"
+	k8sExtensionsTyped "k8s.io/client-go/kubernetes/typed/extensions/v1beta1"
+	k8sApi "k8s.io/client-go/pkg/api/v1"
+	k8sExtensions "k8s.io/client-go/pkg/apis/extensions/v1beta1"
 )
 
 func IsSupportedIngressClass(in string) (out string, err error) {
@@ -47,11 +48,11 @@ func New(client kubelego.KubeLego, namespace string, name string) *Ingress {
 	}
 
 	var err error
-	ingress.IngressApi, err = client.KubeClient().Ingress(namespace).Get(name)
+	ingress.IngressApi, err = client.KubeClient().ExtensionsV1beta1().Ingresses(namespace).Get(name, k8sMeta.GetOptions{})
 	if err != nil {
 		if k8sErrors.IsNotFound(err) {
 			ingress.IngressApi = &k8sExtensions.Ingress{
-				ObjectMeta: k8sApi.ObjectMeta{
+				ObjectMeta: k8sMeta.ObjectMeta{
 					Namespace: namespace,
 					Name:      name,
 				},
@@ -67,7 +68,7 @@ func New(client kubelego.KubeLego, namespace string, name string) *Ingress {
 }
 
 func All(client kubelego.KubeLego) (ingresses []kubelego.Ingress, err error) {
-	ingSlice, err := client.KubeClient().Extensions().Ingress(k8sApi.NamespaceAll).List(k8sApi.ListOptions{})
+	ingSlice, err := client.KubeClient().Extensions().Ingresses(k8sApi.NamespaceAll).List(k8sMeta.ListOptions{})
 
 	if err != nil {
 		return
@@ -106,8 +107,8 @@ func (i *Ingress) Log() *logrus.Entry {
 	return log
 }
 
-func (o *Ingress) client() k8sClient.IngressInterface {
-	return o.kubelego.KubeClient().Extensions().Ingress(o.IngressApi.Namespace)
+func (o *Ingress) client() k8sExtensionsTyped.IngressInterface {
+	return o.kubelego.KubeClient().Extensions().Ingresses(o.IngressApi.Namespace)
 }
 
 func (o *Ingress) Save() (err error) {
@@ -123,7 +124,7 @@ func (o *Ingress) Save() (err error) {
 		}
 	} else {
 		if o.exists {
-			err = o.client().Delete(o.IngressApi.Namespace, &k8sApi.DeleteOptions{})
+			err = o.client().Delete(o.IngressApi.Namespace, &k8sMeta.DeleteOptions{})
 			obj = nil
 		}
 	}
@@ -140,7 +141,7 @@ func (i *Ingress) Delete() error {
 		return nil
 	}
 
-	err := i.client().Delete(i.IngressApi.Namespace, &k8sApi.DeleteOptions{})
+	err := i.client().Delete(i.IngressApi.Namespace, &k8sMeta.DeleteOptions{})
 	if err != nil {
 		return err
 	}

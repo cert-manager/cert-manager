@@ -5,24 +5,26 @@ import (
 	"time"
 
 	"github.com/jetstack/kube-lego/pkg/ingress"
-	"k8s.io/kubernetes/pkg/api"
-	"k8s.io/kubernetes/pkg/apis/extensions"
-	"k8s.io/kubernetes/pkg/client/cache"
-	client "k8s.io/kubernetes/pkg/client/unversioned"
-	"k8s.io/kubernetes/pkg/runtime"
-	"k8s.io/kubernetes/pkg/util/workqueue"
-	"k8s.io/kubernetes/pkg/watch"
+
+	k8sMeta "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	watch "k8s.io/apimachinery/pkg/watch"
+	"k8s.io/client-go/kubernetes"
+	k8sApi "k8s.io/client-go/pkg/api/v1"
+	k8sExtensions "k8s.io/client-go/pkg/apis/extensions/v1beta1"
+	"k8s.io/client-go/tools/cache"
+	"k8s.io/client-go/util/workqueue"
 )
 
-func ingressListFunc(c *client.Client, ns string) func(api.ListOptions) (runtime.Object, error) {
-	return func(opts api.ListOptions) (runtime.Object, error) {
-		return c.Extensions().Ingress(ns).List(opts)
+func ingressListFunc(c *kubernetes.Clientset, ns string) func(k8sMeta.ListOptions) (runtime.Object, error) {
+	return func(opts k8sMeta.ListOptions) (runtime.Object, error) {
+		return c.Extensions().Ingresses(ns).List(opts)
 	}
 }
 
-func ingressWatchFunc(c *client.Client, ns string) func(options api.ListOptions) (watch.Interface, error) {
-	return func(options api.ListOptions) (watch.Interface, error) {
-		return c.Extensions().Ingress(ns).Watch(options)
+func ingressWatchFunc(c *kubernetes.Clientset, ns string) func(options k8sMeta.ListOptions) (watch.Interface, error) {
+	return func(options k8sMeta.ListOptions) (watch.Interface, error) {
+		return c.Extensions().Ingresses(ns).Watch(options)
 	}
 }
 
@@ -64,7 +66,7 @@ func (kl *KubeLego) WatchEvents() {
 
 	ingEventHandler := cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj interface{}) {
-			addIng := obj.(*extensions.Ingress)
+			addIng := obj.(*k8sExtensions.Ingress)
 			if ingress.IgnoreIngress(addIng) != nil {
 				return
 			}
@@ -72,7 +74,7 @@ func (kl *KubeLego) WatchEvents() {
 			kl.workQueue.Add(true)
 		},
 		DeleteFunc: func(obj interface{}) {
-			delIng := obj.(*extensions.Ingress)
+			delIng := obj.(*k8sExtensions.Ingress)
 			if ingress.IgnoreIngress(delIng) != nil {
 				return
 			}
@@ -81,7 +83,7 @@ func (kl *KubeLego) WatchEvents() {
 		},
 		UpdateFunc: func(old, cur interface{}) {
 			if !reflect.DeepEqual(old, cur) {
-				upIng := cur.(*extensions.Ingress)
+				upIng := cur.(*k8sExtensions.Ingress)
 				if ingress.IgnoreIngress(upIng) != nil {
 					return
 				}
@@ -93,10 +95,10 @@ func (kl *KubeLego) WatchEvents() {
 
 	_, controller := cache.NewInformer(
 		&cache.ListWatch{
-			ListFunc:  ingressListFunc(kl.kubeClient, api.NamespaceAll),
-			WatchFunc: ingressWatchFunc(kl.kubeClient, api.NamespaceAll),
+			ListFunc:  ingressListFunc(kl.kubeClient, k8sApi.NamespaceAll),
+			WatchFunc: ingressWatchFunc(kl.kubeClient, k8sApi.NamespaceAll),
 		},
-		&extensions.Ingress{},
+		&k8sExtensions.Ingress{},
 		resyncPeriod,
 		ingEventHandler,
 	)

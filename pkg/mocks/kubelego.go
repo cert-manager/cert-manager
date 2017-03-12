@@ -2,11 +2,11 @@ package mocks
 
 import (
 	"errors"
+	"net"
 
 	"github.com/Sirupsen/logrus"
 	"github.com/golang/mock/gomock"
-	"k8s.io/kubernetes/pkg/util/intstr"
-	"net"
+	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
 func DummyKubeLego(c *gomock.Controller) *MockKubeLego {

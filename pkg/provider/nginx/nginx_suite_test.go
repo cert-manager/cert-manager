@@ -9,8 +9,8 @@ import (
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	k8sApi "k8s.io/kubernetes/pkg/api"
-	k8sExtensions "k8s.io/kubernetes/pkg/apis/extensions"
+	k8sMeta "k8s.io/apimachinery/pkg/apis/meta/v1"
+	k8sExtensions "k8s.io/client-go/pkg/apis/extensions/v1beta1"
 )
 
 func TestNginx(t *testing.T) {
@@ -87,7 +87,7 @@ var _ = Describe("Nginx", func() {
 	Describe("Finalize", func() {
 		BeforeEach(func() {
 			ing = &k8sExtensions.Ingress{
-				ObjectMeta: k8sApi.ObjectMeta{
+				ObjectMeta: k8sMeta.ObjectMeta{
 					Name:      "kube-lego-nginx",
 					Namespace: "kube-lego",
 				},
