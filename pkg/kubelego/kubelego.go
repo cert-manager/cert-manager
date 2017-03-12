@@ -312,5 +312,10 @@ func (kl *KubeLego) paramsLego() error {
 		kl.legoHTTPPort = intstr.FromInt(i)
 	}
 
+	annotationEnabled := os.Getenv("LEGO_KUBE_ANNOTATION")
+	if len(annotationEnabled) == 0 {
+		kubelego.AnnotationEnabled = annotationEnabled
+	}
+
 	return nil
 }
