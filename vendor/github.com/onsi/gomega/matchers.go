@@ -176,7 +176,7 @@ func MatchRegexp(regexp string, args ...interface{}) types.GomegaMatcher {
 }
 
 //ContainSubstring succeeds if actual is a string or stringer that contains the
-//passed-in regexp.  Optional arguments can be provided to construct the substring
+//passed-in substring.  Optional arguments can be provided to construct the substring
 //via fmt.Sprintf().
 func ContainSubstring(substr string, args ...interface{}) types.GomegaMatcher {
 	return &matchers.ContainSubstringMatcher{

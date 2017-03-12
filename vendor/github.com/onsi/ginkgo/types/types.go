@@ -1,9 +1,6 @@
 package types
 
-import (
-	"strconv"
-	"time"
-)
+import "time"
 
 const GINKGO_FOCUS_EXIT_CODE = 197
 
@@ -19,10 +16,7 @@ type SuiteSummary struct {
 	NumberOfSkippedSpecs               int
 	NumberOfPassedSpecs                int
 	NumberOfFailedSpecs                int
-	// Flaked specs are those that failed initially, but then passed on a
-	// subsequent try.
-	NumberOfFlakedSpecs int
-	RunTime             time.Duration
+	RunTime                            time.Duration
 }
 
 type SpecSummary struct {
@@ -106,17 +100,6 @@ type SpecMeasurement struct {
 	LargestLabel  string
 	AverageLabel  string
 	Units         string
-	Precision     int
-}
-
-func (s SpecMeasurement) PrecisionFmt() string {
-	if s.Precision == 0 {
-		return "%f"
-	}
-
-	str := strconv.Itoa(s.Precision)
-
-	return "%." + str + "f"
 }
 
 type SpecState uint

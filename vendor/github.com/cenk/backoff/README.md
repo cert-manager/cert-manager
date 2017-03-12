@@ -9,7 +9,7 @@ The retries exponentially increase and stop increasing when a certain threshold 
 
 ## Usage
 
-See https://godoc.org/github.com/cenk/backoff#pkg-examples
+See https://godoc.org/github.com/cenkalti/backoff#pkg-examples
 
 ## Contributing
 
@@ -17,14 +17,14 @@ See https://godoc.org/github.com/cenk/backoff#pkg-examples
 * Please don't send a PR without opening an issue and discussing it first.
 * If proposed change is not a common use case, I will probably not accept it.
 
-[godoc]: https://godoc.org/github.com/cenk/backoff
-[godoc image]: https://godoc.org/github.com/cenk/backoff?status.png
-[travis]: https://travis-ci.org/cenk/backoff
-[travis image]: https://travis-ci.org/cenk/backoff.png?branch=master
-[coveralls]: https://coveralls.io/github/cenk/backoff?branch=master
-[coveralls image]: https://coveralls.io/repos/github/cenk/backoff/badge.svg?branch=master
+[godoc]: https://godoc.org/github.com/cenkalti/backoff
+[godoc image]: https://godoc.org/github.com/cenkalti/backoff?status.png
+[travis]: https://travis-ci.org/cenkalti/backoff
+[travis image]: https://travis-ci.org/cenkalti/backoff.png?branch=master
+[coveralls]: https://coveralls.io/github/cenkalti/backoff?branch=master
+[coveralls image]: https://coveralls.io/repos/github/cenkalti/backoff/badge.svg?branch=master
 
 [google-http-java-client]: https://github.com/google/google-http-java-client
 [exponential backoff wiki]: http://en.wikipedia.org/wiki/Exponential_backoff
 
-[advanced example]: https://godoc.org/github.com/cenk/backoff#example_
+[advanced example]: https://godoc.org/github.com/cenkalti/backoff#example_

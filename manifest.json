@@ -1,0 +1,34 @@
+{
+    "dependencies": {
+        "github.com/Sirupsen/logrus": {
+            "revision": "3f603f494d61c73457fb234161d8982b9f0f0b71"
+        },
+        "github.com/cenk/backoff": {
+            "branch": "master"
+        },
+        "github.com/golang/mock": {
+            "branch": "master"
+        },
+        "github.com/onsi/ginkgo": {
+            "revision": "07d85e6b10c4289c7d612f9b13f45ba36f66d55b"
+        },
+        "github.com/onsi/gomega": {
+            "branch": "master"
+        },
+        "github.com/stretchr/testify": {
+            "revision": "e3a8ff8ce36581f87a15341206f205b1da467059"
+        },
+        "golang.org/x/crypto": {
+            "branch": "master"
+        },
+        "golang.org/x/net": {
+            "branch": "master"
+        },
+        "k8s.io/apimachinery": {
+            "branch": "master"
+        },
+        "k8s.io/client-go": {
+            "branch": "master"
+        }
+    }
+}

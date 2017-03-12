@@ -1,0 +1,411 @@
+{
+    "memo": "b625c14493cf06df0295cd8f48b1661292a5fa34f59273c8c9b2065ca44093f2",
+    "projects": [
+        {
+            "name": "github.com/PuerkitoBio/purell",
+            "version": "v1.1.0",
+            "revision": "0bcb03f4b4d0a9428594752bd2a3b9aa0a9d4bd4",
+            "packages": [
+                "."
+            ]
+        },
+        {
+            "name": "github.com/PuerkitoBio/urlesc",
+            "revision": "5bd2802263f21d8788851d5305584c82a5c75d7e",
+            "packages": [
+                "."
+            ]
+        },
+        {
+            "name": "github.com/Sirupsen/logrus",
+            "revision": "3f603f494d61c73457fb234161d8982b9f0f0b71",
+            "packages": [
+                "."
+            ]
+        },
+        {
+            "name": "github.com/cenk/backoff",
+            "branch": "master",
+            "revision": "3db60c813733fce657c114634171689bbf1f8dee",
+            "packages": [
+                "."
+            ]
+        },
+        {
+            "name": "github.com/davecgh/go-spew",
+            "version": "v1.1.0",
+            "revision": "346938d642f2ec3594ed81d874461961cd0faa76",
+            "packages": [
+                "spew"
+            ]
+        },
+        {
+            "name": "github.com/docker/distribution",
+            "version": "v2.6.0",
+            "revision": "325b0804fef3a66309d962357aac3c2ce3f4d329",
+            "packages": [
+                "digest",
+                "reference"
+            ]
+        },
+        {
+            "name": "github.com/emicklei/go-restful",
+            "version": "v1.2",
+            "revision": "777bb3f19bcafe2575ffb2a3e46af92509ae9594",
+            "packages": [
+                ".",
+                "log",
+                "swagger"
+            ]
+        },
+        {
+            "name": "github.com/ghodss/yaml",
+            "revision": "04f313413ffd65ce25f2541bfd2b2ceec5c0908c",
+            "packages": [
+                "."
+            ]
+        },
+        {
+            "name": "github.com/go-openapi/jsonpointer",
+            "revision": "779f45308c19820f1a69e9a4cd965f496e0da10f",
+            "packages": [
+                "."
+            ]
+        },
+        {
+            "name": "github.com/go-openapi/jsonreference",
+            "revision": "36d33bfe519efae5632669801b180bf1a245da3b",
+            "packages": [
+                "."
+            ]
+        },
+        {
+            "name": "github.com/go-openapi/spec",
+            "revision": "02fb9cd3430ed0581e0ceb4804d5d4b3cc702694",
+            "packages": [
+                "."
+            ]
+        },
+        {
+            "name": "github.com/go-openapi/swag",
+            "revision": "d5f8ebc3b1c55a4cf6489eeae7354f338cfe299e",
+            "packages": [
+                "."
+            ]
+        },
+        {
+            "name": "github.com/gogo/protobuf",
+            "revision": "9c5b7bafbfccf2b40d274e0496f3a09418a87af4",
+            "packages": [
+                "proto",
+                "sortkeys"
+            ]
+        },
+        {
+            "name": "github.com/golang/glog",
+            "revision": "23def4e6c14b4da8ac2ed8007337bc5eb5007998",
+            "packages": [
+                "."
+            ]
+        },
+        {
+            "name": "github.com/golang/mock",
+            "branch": "master",
+            "revision": "bd3c8e81be01eef76d4b503f5e687d2d1354d2d9",
+            "packages": [
+                "gomock"
+            ]
+        },
+        {
+            "name": "github.com/google/gofuzz",
+            "revision": "44d81051d367757e1c7c6a5a86423ece9afcf63c",
+            "packages": [
+                "."
+            ]
+        },
+        {
+            "name": "github.com/howeyc/gopass",
+            "revision": "bf9dde6d0d2c004a008c27aaee91170c786f6db8",
+            "packages": [
+                "."
+            ]
+        },
+        {
+            "name": "github.com/imdario/mergo",
+            "revision": "50d4dbd4eb0e84778abe37cefef140271d96fade",
+            "packages": [
+                "."
+            ]
+        },
+        {
+            "name": "github.com/juju/ratelimit",
+            "revision": "77ed1c8a01217656d2080ad51981f6e99adaa177",
+            "packages": [
+                "."
+            ]
+        },
+        {
+            "name": "github.com/mailru/easyjson",
+            "revision": "99e922cf9de1bc0ab38310c277cff32c2147e747",
+            "packages": [
+                "buffer",
+                "jlexer",
+                "jwriter"
+            ]
+        },
+        {
+            "name": "github.com/onsi/ginkgo",
+            "revision": "07d85e6b10c4289c7d612f9b13f45ba36f66d55b",
+            "packages": [
+                ".",
+                "config",
+                "internal/codelocation",
+                "internal/containernode",
+                "internal/failer",
+                "internal/leafnodes",
+                "internal/remote",
+                "internal/spec",
+                "internal/specrunner",
+                "internal/suite",
+                "internal/testingtproxy",
+                "internal/writer",
+                "reporters",
+                "reporters/stenographer",
+                "types"
+            ]
+        },
+        {
+            "name": "github.com/onsi/gomega",
+            "branch": "master",
+            "revision": "1de7ab2df9105aa5c15c4d7e14a8a514e3cb8d4b",
+            "packages": [
+                ".",
+                "format",
+                "internal/assertion",
+                "internal/asyncassertion",
+                "internal/oraclematcher",
+                "internal/testingtsupport",
+                "matchers",
+                "matchers/support/goraph/bipartitegraph",
+                "matchers/support/goraph/edge",
+                "matchers/support/goraph/node",
+                "matchers/support/goraph/util",
+                "types"
+            ]
+        },
+        {
+            "name": "github.com/pmezard/go-difflib",
+            "revision": "d8ed2627bdf02c080bf22230dbb337003b7aba2d",
+            "packages": [
+                "difflib"
+            ]
+        },
+        {
+            "name": "github.com/spf13/pflag",
+            "revision": "25f8b5b07aece3207895bf19f7ab517eb3b22a40",
+            "packages": [
+                "."
+            ]
+        },
+        {
+            "name": "github.com/stretchr/testify",
+            "revision": "e3a8ff8ce36581f87a15341206f205b1da467059",
+            "packages": [
+                "assert"
+            ]
+        },
+        {
+            "name": "github.com/ugorji/go",
+            "revision": "d23841a297e5489e787e72fceffabf9d2994b52a",
+            "packages": [
+                "codec"
+            ]
+        },
+        {
+            "name": "golang.org/x/crypto",
+            "branch": "master",
+            "revision": "728b753d0135da6801d45a38e6f43ff55779c5c2",
+            "packages": [
+                "acme",
+                "ssh/terminal"
+            ]
+        },
+        {
+            "name": "golang.org/x/net",
+            "branch": "master",
+            "revision": "a6577fac2d73be281a500b310739095313165611",
+            "packages": [
+                "context",
+                "context/ctxhttp",
+                "http2",
+                "http2/hpack",
+                "idna",
+                "lex/httplex"
+            ]
+        },
+        {
+            "name": "golang.org/x/sys",
+            "revision": "d75a52659825e75fff6158388dddc6a5b04f9ba5",
+            "packages": [
+                "unix"
+            ]
+        },
+        {
+            "name": "golang.org/x/text",
+            "revision": "06d6eba81293389cafdff7fca90d75592194b2d9",
+            "packages": [
+                "internal/gen",
+                "internal/triegen",
+                "internal/ucd",
+                "transform",
+                "unicode/cldr",
+                "unicode/norm",
+                "width"
+            ]
+        },
+        {
+            "name": "gopkg.in/inf.v0",
+            "version": "v0.9.0",
+            "revision": "3887ee99ecf07df5b447e9b00d9c0b2adaa9f3e4",
+            "packages": [
+                "."
+            ]
+        },
+        {
+            "name": "gopkg.in/yaml.v2",
+            "revision": "a5b47d31c556af34a302ce5d659e6fea44d90de0",
+            "packages": [
+                "."
+            ]
+        },
+        {
+            "name": "k8s.io/apimachinery",
+            "branch": "master",
+            "revision": "c810e4931f2cf80a6f0a007f8ba9c05ef0165cee",
+            "packages": [
+                "pkg/api/errors",
+                "pkg/api/meta",
+                "pkg/api/resource",
+                "pkg/apimachinery",
+                "pkg/apimachinery/announced",
+                "pkg/apimachinery/registered",
+                "pkg/apis/meta/v1",
+                "pkg/apis/meta/v1/unstructured",
+                "pkg/conversion",
+                "pkg/conversion/queryparams",
+                "pkg/fields",
+                "pkg/labels",
+                "pkg/openapi",
+                "pkg/runtime",
+                "pkg/runtime/schema",
+                "pkg/runtime/serializer",
+                "pkg/runtime/serializer/json",
+                "pkg/runtime/serializer/protobuf",
+                "pkg/runtime/serializer/recognizer",
+                "pkg/runtime/serializer/streaming",
+                "pkg/runtime/serializer/versioning",
+                "pkg/selection",
+                "pkg/types",
+                "pkg/util/diff",
+                "pkg/util/errors",
+                "pkg/util/framer",
+                "pkg/util/intstr",
+                "pkg/util/json",
+                "pkg/util/net",
+                "pkg/util/rand",
+                "pkg/util/runtime",
+                "pkg/util/sets",
+                "pkg/util/validation",
+                "pkg/util/validation/field",
+                "pkg/util/wait",
+                "pkg/util/yaml",
+                "pkg/version",
+                "pkg/watch",
+                "third_party/forked/golang/reflect"
+            ]
+        },
+        {
+            "name": "k8s.io/client-go",
+            "branch": "master",
+            "revision": "8147f564dfb11a02e282c4e468919b6db0080d95",
+            "packages": [
+                "discovery",
+                "kubernetes",
+                "kubernetes/typed/apps/v1beta1",
+                "kubernetes/typed/authentication/v1",
+                "kubernetes/typed/authentication/v1beta1",
+                "kubernetes/typed/authorization/v1",
+                "kubernetes/typed/authorization/v1beta1",
+                "kubernetes/typed/autoscaling/v1",
+                "kubernetes/typed/autoscaling/v2alpha1",
+                "kubernetes/typed/batch/v1",
+                "kubernetes/typed/batch/v2alpha1",
+                "kubernetes/typed/certificates/v1beta1",
+                "kubernetes/typed/core/v1",
+                "kubernetes/typed/extensions/v1beta1",
+                "kubernetes/typed/policy/v1beta1",
+                "kubernetes/typed/rbac/v1alpha1",
+                "kubernetes/typed/rbac/v1beta1",
+                "kubernetes/typed/storage/v1beta1",
+                "pkg/api",
+                "pkg/api/install",
+                "pkg/api/v1",
+                "pkg/apis/apps",
+                "pkg/apis/apps/install",
+                "pkg/apis/apps/v1beta1",
+                "pkg/apis/authentication",
+                "pkg/apis/authentication/install",
+                "pkg/apis/authentication/v1",
+                "pkg/apis/authentication/v1beta1",
+                "pkg/apis/authorization",
+                "pkg/apis/authorization/install",
+                "pkg/apis/authorization/v1",
+                "pkg/apis/authorization/v1beta1",
+                "pkg/apis/autoscaling",
+                "pkg/apis/autoscaling/install",
+                "pkg/apis/autoscaling/v1",
+                "pkg/apis/autoscaling/v2alpha1",
+                "pkg/apis/batch",
+                "pkg/apis/batch/install",
+                "pkg/apis/batch/v1",
+                "pkg/apis/batch/v2alpha1",
+                "pkg/apis/certificates",
+                "pkg/apis/certificates/install",
+                "pkg/apis/certificates/v1beta1",
+                "pkg/apis/extensions",
+                "pkg/apis/extensions/install",
+                "pkg/apis/extensions/v1beta1",
+                "pkg/apis/policy",
+                "pkg/apis/policy/install",
+                "pkg/apis/policy/v1beta1",
+                "pkg/apis/rbac",
+                "pkg/apis/rbac/install",
+                "pkg/apis/rbac/v1alpha1",
+                "pkg/apis/rbac/v1beta1",
+                "pkg/apis/storage",
+                "pkg/apis/storage/install",
+                "pkg/apis/storage/v1beta1",
+                "pkg/util",
+                "pkg/util/labels",
+                "pkg/util/parsers",
+                "pkg/version",
+                "rest",
+                "rest/watch",
+                "tools/auth",
+                "tools/cache",
+                "tools/clientcmd",
+                "tools/clientcmd/api",
+                "tools/clientcmd/api/latest",
+                "tools/clientcmd/api/v1",
+                "tools/metrics",
+                "transport",
+                "util/cert",
+                "util/clock",
+                "util/flowcontrol",
+                "util/homedir",
+                "util/integer",
+                "util/workqueue"
+            ]
+        }
+    ]
+}

@@ -17,10 +17,9 @@ type Spec struct {
 
 	containers []*containernode.ContainerNode
 
-	state            types.SpecState
-	runTime          time.Duration
-	failure          types.SpecFailure
-	previousFailures bool
+	state   types.SpecState
+	runTime time.Duration
+	failure types.SpecFailure
 }
 
 func New(subject leafnodes.SubjectNode, containers []*containernode.ContainerNode, announceProgress bool) *Spec {
@@ -57,10 +56,6 @@ func (spec *Spec) Failed() bool {
 
 func (spec *Spec) Passed() bool {
 	return spec.state == types.SpecStatePassed
-}
-
-func (spec *Spec) Flaked() bool {
-	return spec.state == types.SpecStatePassed && spec.previousFailures
 }
 
 func (spec *Spec) Pending() bool {
@@ -114,10 +109,6 @@ func (spec *Spec) ConcatenatedString() string {
 }
 
 func (spec *Spec) Run(writer io.Writer) {
-	if spec.state == types.SpecStateFailed {
-		spec.previousFailures = true
-	}
-
 	startTime := time.Now()
 	defer func() {
 		spec.runTime = time.Since(startTime)

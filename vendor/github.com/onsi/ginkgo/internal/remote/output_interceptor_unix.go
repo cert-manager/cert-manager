@@ -1,4 +1,4 @@
-// +build freebsd openbsd netbsd dragonfly darwin linux solaris
+// +build freebsd openbsd netbsd dragonfly darwin linux
 
 package remote
 
