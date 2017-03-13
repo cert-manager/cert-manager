@@ -124,6 +124,9 @@ Additionally, be aware of the automatically created resources (see environment v
 
 Possible resources for *help*:
 
+> These are not official support channels for *kube-lego* but rather
+> general kubernetes discussion channels.
+
 * `#coreos` on freenode
 * Slack channels like `#kubernetes-users` or `#kubernetes-novice` on `kubernetes.slack.com`
 * If you absolutely just can't figure out your problem, file an issue.
