@@ -77,17 +77,17 @@ Please note:
 - The `secretName` statements have to be unique per namespace
 - `secretName` is required (even if no secret exists with that name, as it will be created by *kube-lego*)
 - Setups which utilize 1:1 NAT need to ensure internal resources can reach gateway controlled public addresses.
-    - Additionally, your domain must point to your externally available Load Balancer (either directly or via 1:1 NAT)
+- Additionally, your domain must point to your externally available Load Balancer (either directly or via 1:1 NAT)
 
 
 ##<a name="ingress"></a>Ingress controllers
 
-### [Nginx Ingress Controller](https://github.com/kubernetes/contrib/tree/master/ingress/controllers/nginx)
+### [Nginx Ingress Controller](https://github.com/kubernetes/ingress/tree/master/controllers/nginx)
 
 - available through image `gcr.io/google_containers/nginx-ingress-controller`
 - fully supports kube-lego from version 0.8 onwards
 
-### [GCE Loadbalancers](https://github.com/kubernetes/contrib/tree/master/ingress/controllers/gce)
+### [GCE Loadbalancers](https://github.com/kubernetes/ingress/tree/master/controllers/gce)
 
 - you don't have to maintain the ingress controller yourself, you pay GCE to do that for you
 - every ingress resource creates one GCE load balancer
