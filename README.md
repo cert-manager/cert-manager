@@ -104,6 +104,7 @@ Please note:
 | `LEGO_SECRET_NAME` | n | `kube-lego-account` | Name of the secret in the same namespace that contains ACME account secret |
 | `LEGO_SERVICE_NAME_NGINX` | n | `kube-lego-nginx` | Service name for NGINX ingress |
 | `LEGO_SERVICE_NAME_GCE` | n | `kube-lego-gce` | Service name for GCE ingress |
+| `LEGO_SUPPORTED_INGRESS_CLASS` | n | `nginx,gce` | Specify the supported ingress class |
 | `LEGO_INGRESS_NAME_NGINX` | n | `kube-lego-nginx` | Ingress name which contains the routing for HTTP verification for nginx ingress |
 | `LEGO_PORT` | n | `8080` | Port where this daemon is listening for verifcation calls (HTTP method)|
 | `LEGO_CHECK_INTERVAL` | n | `8h` | Interval for periodically certificate checks (to find expired certs)|

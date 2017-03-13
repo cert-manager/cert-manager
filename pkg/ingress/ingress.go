@@ -14,14 +14,14 @@ import (
 	k8sExtensions "k8s.io/client-go/pkg/apis/extensions/v1beta1"
 )
 
-func IsSupportedIngressClass(in string) (out string, err error) {
+func IsSupportedIngressClass(supportedClass []string, in string) (out string, err error) {
 	out = strings.ToLower(in)
-	for _, ingClass := range kubelego.SupportedIngressClasses {
+	for _, ingClass := range supportedClass {
 		if ingClass == out {
 			return out, nil
 		}
 	}
-	return "", fmt.Errorf("unsupported ingress class '%s'", in)
+	return "", fmt.Errorf("unsupported ingress class '%s'. Did you you forget to specify LEGO_DEFAULT_INGRESS_CLASS ?", in)
 }
 
 func IgnoreIngress(ing *k8sExtensions.Ingress) error {
@@ -170,7 +170,7 @@ func (i *Ingress) Ignore() bool {
 		return true
 	}
 
-	_, err = IsSupportedIngressClass(i.IngressClass())
+	_, err = IsSupportedIngressClass(i.kubelego.LegoSupportedIngressClass(), i.IngressClass())
 	if err != nil {
 		i.Log().Info("ignoring as ", err)
 		return true

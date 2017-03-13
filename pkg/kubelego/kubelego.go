@@ -167,6 +167,9 @@ func (kl *KubeLego) LegoDefaultIngressClass() string {
 func (kl *KubeLego) LegoIngressNameNginx() string {
 	return kl.legoIngressNameNginx
 }
+func (kl *KubeLego) LegoSupportedIngressClass() []string {
+	return kl.legoSupportedIngressClass
+}
 
 func (kl *KubeLego) LegoServiceNameNginx() string {
 	return kl.legoServiceNameNginx
@@ -247,12 +250,17 @@ func (kl *KubeLego) paramsLego() error {
 		kl.legoServiceNameGce = "kube-lego-gce"
 	}
 
+	kl.legoSupportedIngressClass = strings.Split(os.Getenv("LEGO_SUPPORTED_INGRESS_CLASS"),",")
+	if len(kl.legoSupportedIngressClass) == 1 {
+		kl.legoSupportedIngressClass = kubelego.SupportedIngressClasses
+	}
+
 	legoDefaultIngressClass := os.Getenv("LEGO_DEFAULT_INGRESS_CLASS")
 	if len(legoDefaultIngressClass) == 0 {
 		kl.legoDefaultIngressClass = "nginx"
 	} else {
 		var err error = nil
-		kl.legoDefaultIngressClass, err = ingress.IsSupportedIngressClass(legoDefaultIngressClass)
+		kl.legoDefaultIngressClass, err = ingress.IsSupportedIngressClass(kl.legoSupportedIngressClass, legoDefaultIngressClass)
 		if err != nil {
 			return fmt.Errorf("Unsupported default ingress class: '%s'", legoDefaultIngressClass)
 		}

@@ -8,16 +8,18 @@ import (
 )
 
 func TestIsSupportedIngressClass(t *testing.T) {
-	out, err := IsSupportedIngressClass("Nginx")
+	supportedClass := []string{"nginx","gce","custom"}
+	out, err := IsSupportedIngressClass(supportedClass,"Nginx")
 	assert.Equal(t, "nginx", out)
 	assert.Nil(t, err)
 
-	out, err = IsSupportedIngressClass("customlb")
+	out, err = IsSupportedIngressClass(supportedClass,"customlb")
 	assert.NotNil(t, err)
 
-	out, err = IsSupportedIngressClass("gce")
+	out, err = IsSupportedIngressClass(supportedClass,"gce")
 	assert.Equal(t, "gce", out)
 	assert.Nil(t, err)
+
 }
 
 func TestIngress_Tls(t *testing.T) {
