@@ -142,14 +142,18 @@ func (_m *MockKubeLego) LegoDefaultIngressClass() string {
 	return ret0
 }
 
+func (_mr *_MockKubeLegoRecorder) LegoDefaultIngressClass() *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "LegoDefaultIngressClass")
+}
+
 func (_m *MockKubeLego) LegoSupportedIngressClass() []string {
 	ret := _m.ctrl.Call(_m, "LegoSupportedIngressClass")
 	ret0, _ := ret[0].([]string)
 	return ret0
 }
 
-func (_mr *_MockKubeLegoRecorder) LegoDefaultIngressClass() *gomock.Call {
-	return _mr.mock.ctrl.RecordCall(_mr.mock, "LegoDefaultIngressClass")
+func (_mr *_MockKubeLegoRecorder) LegoSupportedIngressClass() *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "LegoSupportedIngressClass")
 }
 
 func (_m *MockKubeLego) LegoCheckInterval() time.Duration {

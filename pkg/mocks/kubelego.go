@@ -21,6 +21,7 @@ func DummyKubeLego(c *gomock.Controller) *MockKubeLego {
 	kl.EXPECT().LegoIngressNameNginx().AnyTimes().Return("kube-lego-nginx")
 	kl.EXPECT().LegoServiceNameNginx().AnyTimes().Return("kube-lego-nginx")
 	kl.EXPECT().LegoServiceNameGce().AnyTimes().Return("kube-lego-gce")
+	kl.EXPECT().LegoDefaultIngressClass().AnyTimes().Return("nginx")
 	kl.EXPECT().Log().AnyTimes().Return(log)
 	kl.EXPECT().Version().AnyTimes().Return("mocked-version")
 	kl.EXPECT().AcmeUser().AnyTimes().Return(nil, errors.New("I am only mocked"))
