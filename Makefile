@@ -11,7 +11,7 @@ TEST_DIR=_test
 
 CONTAINER_DIR=/go/src/${PACKAGE_NAME}
 
-PACKAGES=$(shell find . -name "*_test.go" | xargs -n1 dirname | sort -u | xargs -n1 printf "%s.test_pkg ")
+PACKAGES=$(shell find . -name "*_test.go" | xargs -n1 dirname | grep -v 'vendor/' | sort -u | xargs -n1 printf "%s.test_pkg ")
 
 .PHONY: version
 
