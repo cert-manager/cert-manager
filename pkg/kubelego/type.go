@@ -28,6 +28,7 @@ type KubeLego struct {
 	legoMinimumValidity       time.Duration
 	legoDefaultIngressClass   string
 	legoKubeApiURL            string
+	legoWatchNamespace        string
 	kubeClient                *kubernetes.Clientset
 	legoIngressSlice          []*ingress.Ingress
 	legoIngressProvider       map[string]kubelego.IngressProvider

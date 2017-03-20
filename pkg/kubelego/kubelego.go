@@ -325,5 +325,11 @@ func (kl *KubeLego) paramsLego() error {
 		kubelego.AnnotationEnabled = annotationEnabled
 	}
 
+	watchNamespace := os.Getenv("LEGO_WATCH_NAMESPACE")
+	if len(watchNamespace) == 0 {
+		kl.legoWatchNamespace = k8sApi.NamespaceAll
+	} else {
+		kl.legoWatchNamespace = watchNamespace
+	}
 	return nil
 }
