@@ -79,10 +79,10 @@ docker_%:
 	docker rm $(CONTAINER_ID)
 
 image: docker_all version
-	docker build --build-arg VCS_REF=$(GIT_COMMIT) -t $(ACCOUNT)/$(APP_NAME):latest .
+	docker build --build-arg VCS_REF=$(GIT_COMMIT) -t $(DOCKER_IMAGE):latest .
 	
 push: image
-	docker push $(ACCOUNT)/$(APP_NAME):latest
+	docker push $(DOCKER_IMAGE):latest
 
 release:
 ifndef VERSION
