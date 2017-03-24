@@ -19,6 +19,7 @@ type KubeLego interface {
 	LegoEmail() string
 	LegoURL() string
 	LegoNamespace() string
+	LegoWatchNamespace() string
 	LegoIngressNameNginx() string
 	LegoServiceNameNginx() string
 	LegoServiceNameGce() string

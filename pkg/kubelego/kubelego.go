@@ -156,6 +156,10 @@ func (kl *KubeLego) LegoNamespace() string {
 	return kl.legoNamespace
 }
 
+func (kl *KubeLego) LegoWatchNamespace() string {
+	return kl.legoWatchNamespace
+}
+
 func (kl *KubeLego) LegoPodIP() net.IP {
 	return kl.legoPodIP
 }

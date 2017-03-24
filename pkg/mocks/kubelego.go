@@ -7,6 +7,7 @@ import (
 	"github.com/Sirupsen/logrus"
 	"github.com/golang/mock/gomock"
 	"k8s.io/apimachinery/pkg/util/intstr"
+	k8sApi "k8s.io/client-go/pkg/api/v1"
 )
 
 func DummyKubeLego(c *gomock.Controller) *MockKubeLego {
@@ -17,6 +18,7 @@ func DummyKubeLego(c *gomock.Controller) *MockKubeLego {
 	kl.EXPECT().Log().AnyTimes().Return(log)
 	kl.EXPECT().LegoHTTPPort().AnyTimes().Return(intstr.FromInt(8080))
 	kl.EXPECT().LegoNamespace().AnyTimes().Return("kube-lego")
+	kl.EXPECT().LegoWatchNamespace().AnyTimes().Return(k8sApi.NamespaceAll)
 	kl.EXPECT().LegoPodIP().AnyTimes().Return(net.ParseIP("1.2.3.4"))
 	kl.EXPECT().LegoIngressNameNginx().AnyTimes().Return("kube-lego-nginx")
 	kl.EXPECT().LegoServiceNameNginx().AnyTimes().Return("kube-lego-nginx")

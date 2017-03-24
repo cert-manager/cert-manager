@@ -10,7 +10,6 @@ import (
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	k8sMeta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8sExtensionsTyped "k8s.io/client-go/kubernetes/typed/extensions/v1beta1"
-	k8sApi "k8s.io/client-go/pkg/api/v1"
 	k8sExtensions "k8s.io/client-go/pkg/apis/extensions/v1beta1"
 )
 
@@ -68,7 +67,7 @@ func New(client kubelego.KubeLego, namespace string, name string) *Ingress {
 }
 
 func All(client kubelego.KubeLego) (ingresses []kubelego.Ingress, err error) {
-	ingSlice, err := client.KubeClient().Extensions().Ingresses(k8sApi.NamespaceAll).List(k8sMeta.ListOptions{})
+	ingSlice, err := client.KubeClient().Extensions().Ingresses(client.LegoWatchNamespace()).List(k8sMeta.ListOptions{})
 
 	if err != nil {
 		return
