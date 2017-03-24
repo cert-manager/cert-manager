@@ -1,6 +1,8 @@
 package main
 
 import (
+	"flag"
+
 	"github.com/jetstack/kube-lego/pkg/kubelego"
 )
 
@@ -22,6 +24,9 @@ func Version() string {
 }
 
 func main() {
+	// parse standard command line arguments
+	flag.Parse()
+
 	kl := kubelego.New(Version())
 	kl.Init()
 }
