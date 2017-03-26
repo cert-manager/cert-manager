@@ -24,7 +24,7 @@
 ## Requirements
 
 - Kubernetes 1.2+
-- Compatible ingress controller (nginx or GCE see [here](#ingress))
+- Compatible ingress controller (nginx or GCE see [here](#ingress-controllers))
 - Non-production use case :laughing:
 
 ## Usage
@@ -80,7 +80,7 @@ Please note:
 - Additionally, your domain must point to your externally available Load Balancer (either directly or via 1:1 NAT)
 
 
-##<a name="ingress"></a>Ingress controllers
+## Ingress controllers
 
 ### [Nginx Ingress Controller](https://github.com/kubernetes/ingress/tree/master/controllers/nginx)
 
@@ -98,7 +98,7 @@ Please note:
 | Name | Required | Default | Description |
 |------|----------|---------|-------------|
 | `LEGO_EMAIL` | y | `-` | E-Mail address for the ACME account, used to recover from lost secrets |
-| `LEGO_POD_IP` | y | `-` | Pod IP address (use the [downward API](http://kubernetes.io/docs/user-guide/downward-api/))|
+| `LEGO_POD_IP` | y | `-` | Pod IP address (use the [downward API](https://kubernetes.io/docs/tasks/configure-pod-container/environment-variable-expose-pod-information/#the-downward-api))|
 | `LEGO_NAMESPACE` | n | `default` | Namespace where kube-lego is running in |
 | `LEGO_URL` | n | `https://acme-staging.api.letsencrypt.org/directory` | URL for the ACME server. To get "real" certificates set to the production API of Let's Encrypt: `https://acme-v01.api.letsencrypt.org/directory` |
 | `LEGO_SECRET_NAME` | n | `kube-lego-account` | Name of the secret in the same namespace that contains ACME account secret |
@@ -111,7 +111,7 @@ Please note:
 | `LEGO_MINIMUM_VALIDITY` | n | `720h` (30 days) | Request a renewal when the remaining certificate validity falls below that value|
 | `LEGO_DEFAULT_INGRESS_CLASS` | n | `nginx` | Default ingress class for resources without specification|
 | `LEGO_KUBE_API_URL` | n | `http://127.0.0.1:8080` | API server URL |
-| `LEGO_LOG_LEVEL` | n | `info` | Set log level (`debug|info|warn|error`) |
+| `LEGO_LOG_LEVEL` | n | `info` | Set log level (`debug`, `info`, `warn` or `error`) |
 | `LEGO_KUBE_ANNOTATION` | n | `kubernetes.io/tls-acme` | Set the ingress annotation used by this instance of kube-lego to get certificate for from Let's Encrypt. Allows you to run kube-lego against staging and production LE |
 | `LEGO_WATCH_NAMESPACE` | n | `` | Namespace that kube-lego should watch for ingresses and services |
 
@@ -127,14 +127,17 @@ Additionally, be aware of the automatically created resources (see environment v
 
 Possible resources for *help*:
 
-> These are not official support channels for *kube-lego* but rather
-> general kubernetes discussion channels.
+* The official channel `#kube-lego` on `kubernetes.slack.com`
+
+> There is also a good chance to get some support on non-official support
+> channels for *kube-lego*, but be aware that these are rather general
+> kubernetes discussion channels.
 
 * `#coreos` on freenode
 * Slack channels like `#kubernetes-users` or `#kubernetes-novice` on `kubernetes.slack.com`
 * If you absolutely just can't figure out your problem, file an issue.
 
-
 ## Authors
 
-Christian Simon for [Jetstack Ltd](http://www.jetstack.io)
+* Christian Simon for [Jetstack Ltd](http://www.jetstack.io)
+* [PR contributors](https://github.com/jetstack/kube-lego/graphs/contributors)
