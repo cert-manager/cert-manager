@@ -27,15 +27,7 @@ import (
 
 var _ kubelego.KubeLego = &KubeLego{}
 
-func New(version string) *KubeLego {
-	return &KubeLego{
-		version:   version,
-		stopCh:    make(chan struct{}),
-		waitGroup: sync.WaitGroup{},
-	}
-}
-
-func (kl *KubeLego) Log() *log.Entry {
+func makeLog() *log.Entry {
 	loglevel := strings.ToLower(os.Getenv("LEGO_LOG_LEVEL"))
 	if len(loglevel) == 0 {
 		log.SetLevel(log.InfoLevel)
@@ -51,6 +43,19 @@ func (kl *KubeLego) Log() *log.Entry {
 		log.SetLevel(log.InfoLevel)
 	}
 	return log.WithField("context", "kubelego")
+}
+
+func New(version string) *KubeLego {
+	return &KubeLego{
+		version:   version,
+		log:       makeLog(),
+		stopCh:    make(chan struct{}),
+		waitGroup: sync.WaitGroup{},
+	}
+}
+
+func (kl *KubeLego) Log() *log.Entry {
+	return kl.log
 }
 
 func (kl *KubeLego) Stop() {
