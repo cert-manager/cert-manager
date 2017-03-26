@@ -325,7 +325,7 @@ func (kl *KubeLego) paramsLego() error {
 	}
 
 	annotationEnabled := os.Getenv("LEGO_KUBE_ANNOTATION")
-	if len(annotationEnabled) == 0 {
+	if len(annotationEnabled) != 0 {
 		kubelego.AnnotationEnabled = annotationEnabled
 	}
 
