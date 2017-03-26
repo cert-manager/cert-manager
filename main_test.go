@@ -6,6 +6,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestVesion(t *testing.T) {
+func TestVersion(t *testing.T) {
 	assert.Equal(t, "unknown", Version())
 }
