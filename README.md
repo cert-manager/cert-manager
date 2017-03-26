@@ -24,7 +24,7 @@
 ## Requirements
 
 - Kubernetes 1.2+
-- Compatible ingress controller (nginx or GCE see [here](#ingress))
+- Compatible ingress controller (nginx or GCE see [here](#ingress-controllers))
 - Non-production use case :laughing:
 
 ## Usage
@@ -80,7 +80,7 @@ Please note:
 - Additionally, your domain must point to your externally available Load Balancer (either directly or via 1:1 NAT)
 
 
-##<a name="ingress"></a>Ingress controllers
+## Ingress controllers
 
 ### [Nginx Ingress Controller](https://github.com/kubernetes/ingress/tree/master/controllers/nginx)
 
