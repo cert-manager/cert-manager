@@ -91,7 +91,7 @@ image: docker_all version
 push: image
 	set -e; \
 	for tag in $(IMAGE_TAGS); do \
-		docker ta g $(DOCKER_IMAGE):$(BUILD_TAG) $(DOCKER_IMAGE):$${tag} ; \
+		docker tag  $(DOCKER_IMAGE):$(BUILD_TAG) $(DOCKER_IMAGE):$${tag} ; \
 		docker push $(DOCKER_IMAGE):$${tag}; \
 	done
 
