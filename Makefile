@@ -14,6 +14,9 @@ TEST_DIR=_test
 
 CONTAINER_DIR=/go/src/${PACKAGE_NAME}
 
+BUILD_TAG := build
+IMAGE_TAGS := canary
+
 PACKAGES=$(shell find . -name "*_test.go" | xargs -n1 dirname | grep -v 'vendor/' | sort -u | xargs -n1 printf "%s.test_pkg ")
 
 .PHONY: version
@@ -30,10 +33,11 @@ depend:
 	mkdir $(TEST_DIR)/
 	mkdir $(BUILD_DIR)/
 
-version: 
+version:
 	$(eval GIT_STATE := $(shell if test -z "`git status --porcelain 2> /dev/null`"; then echo "clean"; else echo "dirty"; fi))
 	$(eval GIT_COMMIT := $(shell git rev-parse HEAD))
-	$(eval APP_VERSION := $(shell cat VERSION))
+	$(eval APP_VERSION ?= $(shell cat VERSION))
+	echo $(APP_VERSION)
 
 
 test_prepare: depend
@@ -82,10 +86,14 @@ docker_%:
 	docker rm $(CONTAINER_ID)
 
 image: docker_all version
-	docker build --build-arg VCS_REF=$(GIT_COMMIT) -t $(DOCKER_IMAGE):latest .
+	docker build --build-arg VCS_REF=$(GIT_COMMIT) -t $(DOCKER_IMAGE):$(BUILD_TAG) .
 	
 push: image
-	docker push $(DOCKER_IMAGE):latest
+	set -e; \
+	for tag in $(IMAGE_TAGS); do \
+		docker ta g $(DOCKER_IMAGE):$(BUILD_TAG) $(DOCKER_IMAGE):$${tag} ; \
+		docker push $(DOCKER_IMAGE):$${tag}; \
+	done
 
 release:
 ifndef VERSION

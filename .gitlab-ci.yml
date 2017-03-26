@@ -1,0 +1,38 @@
+image: docker:latest
+
+variables:
+  DOCKER_DRIVER: overlay
+
+services:
+- docker:dind
+
+before_script:
+- docker info > /dev/null
+- apk --update add make
+
+build:
+  tags:
+  - docker
+  script:
+  - make image
+  except:
+  - master
+  - tags
+
+master_push:
+  tags:
+  - docker
+  script:
+  - mkdir -p ~/.docker && echo "${DOCKER_AUTH_CONFIG}" > ~/.docker/config.json && chmod 600 ~/.docker/config.json
+  - make push IMAGE_TAGS="${CI_BUILD_REF_SLUG}-${CI_PIPELINE_ID} canary"
+  only:
+  - master
+
+release_push:
+  tags:
+  - docker
+  script:
+  - mkdir -p ~/.docker && echo "${DOCKER_AUTH_CONFIG}" > ~/.docker/config.json && chmod 600 ~/.docker/config.json
+  - make push APP_VERSION=${CI_COMMIT_TAG} IMAGE_TAGS="${CI_COMMIT_TAG} latest"
+  only:
+  - tags
