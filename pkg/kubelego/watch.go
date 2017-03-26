@@ -10,7 +10,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	watch "k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
-	k8sApi "k8s.io/client-go/pkg/api/v1"
 	k8sExtensions "k8s.io/client-go/pkg/apis/extensions/v1beta1"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
@@ -95,8 +94,8 @@ func (kl *KubeLego) WatchEvents() {
 
 	_, controller := cache.NewInformer(
 		&cache.ListWatch{
-			ListFunc:  ingressListFunc(kl.kubeClient, k8sApi.NamespaceAll),
-			WatchFunc: ingressWatchFunc(kl.kubeClient, k8sApi.NamespaceAll),
+			ListFunc:  ingressListFunc(kl.kubeClient, kl.legoWatchNamespace),
+			WatchFunc: ingressWatchFunc(kl.kubeClient, kl.legoWatchNamespace),
 		},
 		&k8sExtensions.Ingress{},
 		resyncPeriod,

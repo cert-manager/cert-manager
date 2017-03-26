@@ -156,6 +156,10 @@ func (kl *KubeLego) LegoNamespace() string {
 	return kl.legoNamespace
 }
 
+func (kl *KubeLego) LegoWatchNamespace() string {
+	return kl.legoWatchNamespace
+}
+
 func (kl *KubeLego) LegoPodIP() net.IP {
 	return kl.legoPodIP
 }
@@ -325,5 +329,11 @@ func (kl *KubeLego) paramsLego() error {
 		kubelego.AnnotationEnabled = annotationEnabled
 	}
 
+	watchNamespace := os.Getenv("LEGO_WATCH_NAMESPACE")
+	if len(watchNamespace) == 0 {
+		kl.legoWatchNamespace = k8sApi.NamespaceAll
+	} else {
+		kl.legoWatchNamespace = watchNamespace
+	}
 	return nil
 }
