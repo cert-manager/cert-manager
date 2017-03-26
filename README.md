@@ -111,7 +111,7 @@ Please note:
 | `LEGO_MINIMUM_VALIDITY` | n | `720h` (30 days) | Request a renewal when the remaining certificate validity falls below that value|
 | `LEGO_DEFAULT_INGRESS_CLASS` | n | `nginx` | Default ingress class for resources without specification|
 | `LEGO_KUBE_API_URL` | n | `http://127.0.0.1:8080` | API server URL |
-| `LEGO_LOG_LEVEL` | n | `info` | Set log level (`debug|info|warn|error`) |
+| `LEGO_LOG_LEVEL` | n | `info` | Set log level (`debug`, `info`, `warn` or `error`) |
 | `LEGO_KUBE_ANNOTATION` | n | `kubernetes.io/tls-acme` | Set the ingress annotation used by this instance of kube-lego to get certificate for from Let's Encrypt. Allows you to run kube-lego against staging and production LE |
 | `LEGO_WATCH_NAMESPACE` | n | `` | Namespace that kube-lego should watch for ingresses and services |
 
