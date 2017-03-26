@@ -2,15 +2,10 @@ package kubelego
 
 import (
 	"errors"
-	"reflect"
 
-	k8sMeta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
-	k8sApi "k8s.io/client-go/pkg/api/v1"
-	k8sExtensions "k8s.io/client-go/pkg/apis/extensions/v1beta1"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
-	"k8s.io/client-go/util/flowcontrol"
 )
 
 func (kl *KubeLego) InitKube() error {
@@ -46,32 +41,4 @@ func (kl *KubeLego) InitKube() error {
 
 func (kl *KubeLego) Namespace() string {
 	return kl.legoNamespace
-}
-
-func (kl *KubeLego) WatchConfig() {
-
-	oldList := &k8sExtensions.IngressList{}
-
-	rateLimiter := flowcontrol.NewTokenBucketRateLimiter(0.1, 1)
-
-	ingClient := kl.kubeClient.Ingresses(k8sApi.NamespaceAll)
-
-	for {
-		rateLimiter.Accept()
-
-		list, err := ingClient.List(k8sMeta.ListOptions{})
-		if err != nil {
-			kl.Log().Warn("Error while retrieving ingress list: ", err)
-			continue
-		}
-
-		if reflect.DeepEqual(oldList, list) {
-			continue
-		}
-		oldList = list
-
-		kl.Reconfigure()
-
-	}
-
 }
