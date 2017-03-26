@@ -4,6 +4,9 @@ APP_NAME=kube-lego
 PACKAGE_NAME=github.com/${ACCOUNT}/${APP_NAME}
 GO_VERSION=1.7.3
 
+GOOS := linux
+GOARCH := amd64
+
 DOCKER_IMAGE=${ACCOUNT}/${APP_NAME}
 
 BUILD_DIR=_build
@@ -14,6 +17,8 @@ CONTAINER_DIR=/go/src/${PACKAGE_NAME}
 PACKAGES=$(shell find . -name "*_test.go" | xargs -n1 dirname | grep -v 'vendor/' | sort -u | xargs -n1 printf "%s.test_pkg ")
 
 .PHONY: version
+
+all: test build
 
 codegen:
 	which mockgen
@@ -49,12 +54,10 @@ test: test_prepare $(PACKAGES)
 	gocover-cobertura < $(TEST_DIR)/coverage$(PKG_CLEAN).txt > $(TEST_DIR)/coverage$(PKG_CLEAN).xml
 
 build: depend version
-	CGO_ENABLED=0 GOOS=linux go build \
+	CGO_ENABLED=0 GOOS=$(GOOS) GOARCH=$(GOARCH) go build \
 		-a -tags netgo \
-		-o ${BUILD_DIR}/${APP_NAME} \
+		-o ${BUILD_DIR}/${APP_NAME}-$(GOOS)-$(GOARCH) \
 		-ldflags "-X main.AppGitState=${GIT_STATE} -X main.AppGitCommit=${GIT_COMMIT} -X main.AppVersion=${APP_VERSION}"
-
-all: test build
 
 docker: docker_all
 
