@@ -15,7 +15,7 @@ spec:
   - host: echo.example.com
     http:
       paths:
-      - path: /
+      - path: /*
         backend:
           serviceName: echoserver
           servicePort: 80
