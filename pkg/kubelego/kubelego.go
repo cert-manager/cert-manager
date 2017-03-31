@@ -223,7 +223,7 @@ func (kl *KubeLego) paramsLego() error {
 
 	kl.legoEmail = os.Getenv("LEGO_EMAIL")
 	if len(kl.legoEmail) == 0 {
-		return errors.New("Please provide an email address for cert recovery in LEGO_EMAIL")
+		return errors.New("Please provide an email address for certificate expiration notifications in LEGO_EMAIL (https://letsencrypt.org/docs/expiration-emails/)")
 	}
 
 	kl.legoPodIP = net.ParseIP(os.Getenv("LEGO_POD_IP"))
