@@ -5,6 +5,6 @@ metadata:
 data:
   # modify this to specify your address
   lego.email: "cert@example.com"
-  # configure letencrypt's production api
+  # configure letsencrypt's production api
   lego.url: "https://acme-v01.api.letsencrypt.org/directory"
 kind: ConfigMap
