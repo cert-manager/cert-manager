@@ -10,7 +10,7 @@ import (
 
 func (kl *KubeLego) TlsIgnoreDuplicatedSecrets(tlsSlice []kubelego.Tls) []kubelego.Tls {
 
-	tlsBySecert := map[string][]kubelego.Tls{}
+	tlsBySecret := map[string][]kubelego.Tls{}
 
 	for _, elm := range tlsSlice {
 		key := fmt.Sprintf(
@@ -18,14 +18,14 @@ func (kl *KubeLego) TlsIgnoreDuplicatedSecrets(tlsSlice []kubelego.Tls) []kubele
 			elm.SecretMetadata().Namespace,
 			elm.SecretMetadata().Name,
 		)
-		tlsBySecert[key] = append(
-			tlsBySecert[key],
+		tlsBySecret[key] = append(
+			tlsBySecret[key],
 			elm,
 		)
 	}
 
 	output := []kubelego.Tls{}
-	for key, slice := range tlsBySecert {
+	for key, slice := range tlsBySecret {
 		if len(slice) == 1 {
 			output = append(output, slice...)
 			continue
