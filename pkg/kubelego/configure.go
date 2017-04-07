@@ -15,8 +15,8 @@ func (kl *KubeLego) TlsIgnoreDuplicatedSecrets(tlsSlice []kubelego.Tls) []kubele
 	for _, elm := range tlsSlice {
 		key := fmt.Sprintf(
 			"%s/%s",
-			elm.SecretMetadata().Name,
 			elm.SecretMetadata().Namespace,
+			elm.SecretMetadata().Name,
 		)
 		tlsBySecert[key] = append(
 			tlsBySecert[key],
