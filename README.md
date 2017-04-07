@@ -138,6 +138,20 @@ Possible resources for *help*:
 * Slack channels like `#kubernetes-users` or `#kubernetes-novice` on `kubernetes.slack.com`
 * If you absolutely just can't figure out your problem, file an issue.
 
+
+### Enable the pprof tool
+
+To enable the [pprof tool](https://golang.org/pkg/net/http/pprof/) run kube-lego with environment `LEGO_LOG_LEVEL=debug`.
+
+Capture 20 seconds of the execution trace:
+
+`$ wget http://localhost:8080/debug/pprof/trace?seconds=20 -O kube-lego.trace`
+
+You can inspect the trace sample running 
+
+`$ go tool trace kube-lego.trace`
+
+
 ## Authors
 
 * Christian Simon for [Jetstack Ltd](http://www.jetstack.io)

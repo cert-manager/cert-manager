@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"net/http/pprof"
 	"path"
 	"strings"
 
@@ -61,6 +62,14 @@ func (a *Acme) Mux() *http.ServeMux {
 		w.WriteHeader(http.StatusOK)
 		fmt.Fprint(w, a.id)
 	})
+
+	// enable pprof in debug mode
+	if logrus.GetLevel() == logrus.DebugLevel {
+		mux.HandleFunc("/debug/pprof/", pprof.Index)
+		mux.HandleFunc("/debug/pprof/profile", pprof.Profile)
+		mux.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
+		mux.HandleFunc("/debug/pprof/trace", pprof.Trace)
+	}
 
 	return mux
 }
