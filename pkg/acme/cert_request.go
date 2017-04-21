@@ -117,7 +117,8 @@ func (a *Acme) verifyDomain(domain string) (auth *acme.Authorization, err error)
 }
 
 func (a *Acme) ObtainCertificate(domains []string) (data map[string][]byte, err error) {
-	if a.ensureAcmeClient() != nil {
+	err = a.ensureAcmeClient()
+	if err != nil {
 		return data, err
 	}
 
