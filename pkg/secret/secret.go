@@ -31,7 +31,7 @@ func New(client kubelego.KubeLego, namespace string, name string) *Secret {
 					Name:      name,
 				},
 			}
-			secret.Log().Info("creating new secret")
+			secret.Log().Info("Attempting to create new secret")
 			secret.exists = false
 		} else {
 			client.Log().Warn("Error while getting secret: ", err)
@@ -65,8 +65,10 @@ func (o *Secret) Save() (err error) {
 		obj, err = o.client().Create(o.SecretApi)
 	}
 	if err != nil {
+		o.Log().Warn("Error while storing secret: ", err)
 		return
 	}
+	o.Log().Info("Secret successfully stored")
 	o.SecretApi = obj
 	return
 }
