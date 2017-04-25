@@ -36,6 +36,8 @@
 
 The default value of `LEGO_URL` is the Let's Encrypt **staging environment**. If you want to get "real" certificates you have to configure their production env.
 
+If you change the `LEGO_URL`, it is required that you delete the existing secret `kube-lego-account` and all certificates you want to request from the new URL.
+
 ### how kube-lego works
 
 As soon as the kube-lego daemon is running, it will create a user account with LetsEncrypt, make a service resource, and look for ingress resources that have this annotation:
