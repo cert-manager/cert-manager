@@ -2,6 +2,29 @@
 All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 
+
+## [0.1.4] - 2017-05-12
+
+### Fixed
+
+- Set the ENTRYPOINT instead of the CMD [#117](https://github.com/jetstack/kube-lego/pull/117)
+- Fix suppressed error while ACME client creation [#155](https://github.com/jetstack/kube-lego/pull/155)
+- Fix the order of namespace/name in the secret names [#141](https://github.com/jetstack/kube-lego/pull/141)
+- fix logic typo #110
+
+### Added 
+
+* Add support for pprof [#139](https://github.com/jetstack/kube-lego/pull/139)
+* bump ingress version [#172](https://github.com/jetstack/kube-lego/pull/72)
+* Update godeps and k8s method signatures [#48](https://github.com/jetstack/kube-lego/pull/48)
+* Upgrade docker golang to v1.8 [#127](https://github.com/jetstack/kube-lego/pull/127)
+* Add support for running multiple instance of kube-lego in the cluster [#105](https://github.com/jetstack/kube-lego/pull/105)
+* Add ability to customize ingress class [#101](https://github.com/jetstack/kube-lego/pull/101)
+* Change docker image from scratch to alpine [#87](https://github.com/jetstack/kube-lego/pull/87)
+* Add ability to only monitor a single namespace [#123](https://github.com/jetstack/kube-lego/pull/123)
+
+[View](https://github.com/jetstack/kube-lego/pulls?utf8=✓&q=is%3Apr%20is%3Aclosed%20merged%3A2016-11-03..2017-05-12%20%20fix) all the changes
+
 ## [0.1.3] - 2016-11-03
 
 ### Fixed
