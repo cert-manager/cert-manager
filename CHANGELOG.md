@@ -12,10 +12,9 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 - Fix the order of namespace/name in the secret names [#141](https://github.com/jetstack/kube-lego/pull/141)
 - fix logic typo #110
 
-### Added 
+### Added
 
 * Add support for pprof [#139](https://github.com/jetstack/kube-lego/pull/139)
-* bump ingress version [#172](https://github.com/jetstack/kube-lego/pull/72)
 * Update godeps and k8s method signatures [#48](https://github.com/jetstack/kube-lego/pull/48)
 * Upgrade docker golang to v1.8 [#127](https://github.com/jetstack/kube-lego/pull/127)
 * Add support for running multiple instance of kube-lego in the cluster [#105](https://github.com/jetstack/kube-lego/pull/105)
