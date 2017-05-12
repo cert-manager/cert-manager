@@ -271,7 +271,7 @@ func (kl *KubeLego) paramsLego() error {
 		var err error = nil
 		kl.legoDefaultIngressClass, err = ingress.IsSupportedIngressClass(kl.legoSupportedIngressClass, legoDefaultIngressClass)
 		if err != nil {
-			return fmt.Errorf("Unsupported default ingress class: '%s'", legoDefaultIngressClass)
+			return fmt.Errorf("Unsupported default ingress class: '%s'. You can set the ingress class with 'LEGO_DEFAULT_INGRESS_CLASS'", legoDefaultIngressClass)
 		}
 	}
 	kl.legoIngressNameNginx = os.Getenv("LEGO_INGRESS_NAME_NGINX")

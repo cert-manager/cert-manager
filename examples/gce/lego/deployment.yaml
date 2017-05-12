@@ -18,6 +18,8 @@ spec:
         ports:
         - containerPort: 8080
         env:
+        - name: LEGO_LOG_LEVEL
+          value: debug
         - name: LEGO_EMAIL
           valueFrom:
             configMapKeyRef:

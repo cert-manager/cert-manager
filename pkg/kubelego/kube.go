@@ -23,6 +23,7 @@ func (kl *KubeLego) InitKube() error {
 			return errors.New("kube init failed as both in-cluster and dev connection unavailable")
 		}
 	}
+	kl.Log().Info("connecting to kubernetes api: ", config.Host)
 
 	kubeClient, err := kubernetes.NewForConfig(config)
 	if err != nil {
@@ -33,7 +34,7 @@ func (kl *KubeLego) InitKube() error {
 	if err != nil {
 		return err
 	}
-	kl.Log().Infof("connected to kubernetes api %s", version.String())
+	kl.Log().Infof("successfully connected to kubernetes api %s", version.String())
 
 	kl.kubeClient = kubeClient
 	return nil
