@@ -15,5 +15,5 @@ COPY _build/kube-lego-linux-amd64 /kube-lego
 ENTRYPOINT ["/kube-lego"]
 ARG VCS_REF
 LABEL org.label-schema.vcs-ref=$VCS_REF \
-      org.label-schema.vcs-url="https://github.com/jetstack/kube-lego" \
+      org.label-schema.vcs-url="https://github.com/munnerz/cert-manager" \
       org.label-schema.license="Apache-2.0"

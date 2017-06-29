@@ -8,8 +8,8 @@ import (
 	"path"
 	"strings"
 
-	"github.com/jetstack/kube-lego/pkg/kubelego_const"
-	"github.com/jetstack/kube-lego/pkg/utils"
+	"github.com/munnerz/cert-manager/pkg/kubelego_const"
+	"github.com/munnerz/cert-manager/pkg/utils"
 
 	"github.com/Sirupsen/logrus"
 )

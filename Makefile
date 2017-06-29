@@ -1,5 +1,5 @@
-ACCOUNT=jetstack
-APP_NAME=kube-lego
+ACCOUNT=munnerz
+APP_NAME=cert-manager
 
 PACKAGE_NAME=github.com/${ACCOUNT}/${APP_NAME}
 GO_VERSION=1.8
@@ -25,7 +25,7 @@ all: test build
 
 codegen:
 	which mockgen
-	mockgen -imports .=github.com/jetstack/kube-lego/pkg/kubelego_const -package=mocks -source=pkg/kubelego_const/interfaces.go > pkg/mocks/mocks.go
+	mockgen -imports .=github.com/munnerz/cert-manager/pkg/kubelego_const -package=mocks -source=pkg/kubelego_const/interfaces.go > pkg/mocks/mocks.go
 
 depend:
 	rm -rf $(TEST_DIR)/

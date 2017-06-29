@@ -1,7 +1,7 @@
 package mocks
 
 import (
-	. "github.com/jetstack/kube-lego/pkg/kubelego_const"
+	. "github.com/munnerz/cert-manager/pkg/kubelego_const"
 
 	"github.com/golang/mock/gomock"
 	k8sMeta "k8s.io/apimachinery/pkg/apis/meta/v1"
