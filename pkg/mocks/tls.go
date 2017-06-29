@@ -2,7 +2,7 @@ package mocks
 
 import (
 	"github.com/golang/mock/gomock"
-	. "github.com/jetstack/kube-lego/pkg/kubelego_const"
+	. "github.com/munnerz/cert-manager/pkg/kubelego_const"
 )
 
 func DummyTls(c *gomock.Controller, domainsSlice [][]string) (mockTlsSlice []Tls) {

@@ -155,4 +155,4 @@ You can inspect the trace sample running
 ## Authors
 
 * Christian Simon for [Jetstack Ltd](http://www.jetstack.io)
-* [PR contributors](https://github.com/jetstack/kube-lego/graphs/contributors)
+* [PR contributors](https://github.com/munnerz/cert-manager/graphs/contributors)

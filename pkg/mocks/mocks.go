@@ -4,15 +4,16 @@
 package mocks
 
 import (
+	net "net"
+	time "time"
+
 	logrus "github.com/Sirupsen/logrus"
 	gomock "github.com/golang/mock/gomock"
-	. "github.com/jetstack/kube-lego/pkg/kubelego_const"
+	. "github.com/munnerz/cert-manager/pkg/kubelego_const"
 	intstr "k8s.io/apimachinery/pkg/util/intstr"
 	kubernetes "k8s.io/client-go/kubernetes"
 	v1 "k8s.io/client-go/pkg/api/v1"
 	v1beta1 "k8s.io/client-go/pkg/apis/extensions/v1beta1"
-	net "net"
-	time "time"
 )
 
 // Mock of KubeLego interface

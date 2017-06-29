@@ -13,11 +13,12 @@ import (
 	"net/url"
 	"sync"
 
+	"time"
+
 	"github.com/cenk/backoff"
-	"github.com/jetstack/kube-lego/pkg/kubelego_const"
+	"github.com/munnerz/cert-manager/pkg/kubelego_const"
 	"golang.org/x/crypto/acme"
 	"golang.org/x/net/context"
-	"time"
 )
 
 func (a *Acme) ensureAcmeClient() error {

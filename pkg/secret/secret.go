@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/jetstack/kube-lego/pkg/kubelego_const"
+	"github.com/munnerz/cert-manager/pkg/kubelego_const"
 
 	"github.com/Sirupsen/logrus"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"

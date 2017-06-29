@@ -4,13 +4,14 @@ import (
 	"reflect"
 	"time"
 
-	"github.com/jetstack/kube-lego/pkg/ingress"
+	"github.com/munnerz/cert-manager/pkg/ingress"
 
 	k8sMeta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	watch "k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
 	k8sExtensions "k8s.io/client-go/pkg/apis/extensions/v1beta1"
+
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
 )

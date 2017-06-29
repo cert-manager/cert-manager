@@ -3,15 +3,16 @@ package ingress
 import (
 	"time"
 
-	"github.com/jetstack/kube-lego/pkg/kubelego_const"
-	"github.com/jetstack/kube-lego/pkg/secret"
-	"github.com/jetstack/kube-lego/pkg/utils"
+	"github.com/munnerz/cert-manager/pkg/kubelego_const"
+	"github.com/munnerz/cert-manager/pkg/secret"
+	"github.com/munnerz/cert-manager/pkg/utils"
 
 	"fmt"
+	"strings"
+
 	"github.com/Sirupsen/logrus"
 	k8sApi "k8s.io/client-go/pkg/api/v1"
 	k8sExtensions "k8s.io/client-go/pkg/apis/extensions/v1beta1"
-	"strings"
 )
 
 var _ kubelego.Tls = &Tls{}

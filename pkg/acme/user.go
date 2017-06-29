@@ -10,7 +10,7 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/jetstack/kube-lego/pkg/kubelego_const"
+	"github.com/munnerz/cert-manager/pkg/kubelego_const"
 
 	"golang.org/x/crypto/acme"
 	"golang.org/x/net/context"

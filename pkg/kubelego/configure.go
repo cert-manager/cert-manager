@@ -1,8 +1,8 @@
 package kubelego
 
 import (
-	"github.com/jetstack/kube-lego/pkg/ingress"
-	"github.com/jetstack/kube-lego/pkg/kubelego_const"
+	"github.com/munnerz/cert-manager/pkg/ingress"
+	"github.com/munnerz/cert-manager/pkg/kubelego_const"
 
 	"fmt"
 	"strings"

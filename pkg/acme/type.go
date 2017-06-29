@@ -3,7 +3,7 @@ package acme
 import (
 	"sync"
 
-	"github.com/jetstack/kube-lego/pkg/kubelego_const"
+	"github.com/munnerz/cert-manager/pkg/kubelego_const"
 
 	"github.com/Sirupsen/logrus"
 	"golang.org/x/crypto/acme"
