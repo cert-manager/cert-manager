@@ -6,12 +6,13 @@ import (
 	"time"
 
 	log "github.com/Sirupsen/logrus"
-	"github.com/munnerz/cert-manager/pkg/ingress"
-	"github.com/munnerz/cert-manager/pkg/kubelego_const"
-
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/util/workqueue"
+
+	certmanager "github.com/munnerz/cert-manager/pkg/client/clientset_generated/clientset"
+	"github.com/munnerz/cert-manager/pkg/ingress"
+	"github.com/munnerz/cert-manager/pkg/kubelego_const"
 )
 
 type KubeLego struct {
@@ -31,6 +32,7 @@ type KubeLego struct {
 	legoKubeApiURL            string
 	legoWatchNamespace        string
 	kubeClient                *kubernetes.Clientset
+	tprKubeClient             *certmanager.Clientset
 	legoIngressSlice          []*ingress.Ingress
 	legoIngressProvider       map[string]kubelego.IngressProvider
 	log                       *log.Entry

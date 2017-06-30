@@ -3,3 +3,4 @@ _test/
 kube-lego
 .idea
 *.iml
+bin/

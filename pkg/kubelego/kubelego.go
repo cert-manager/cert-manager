@@ -126,6 +126,8 @@ func (kl *KubeLego) Init() {
 	// watch for ingress controller events
 	kl.WatchEvents()
 
+	kl.WatchCertificateEvents()
+
 	// wait for stop signal
 	<-kl.stopCh
 	ticker.Stop()
