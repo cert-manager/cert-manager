@@ -1,1 +1,3 @@
 .DS_Store
+.get_deps
+.generate_exes
