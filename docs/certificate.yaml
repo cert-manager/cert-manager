@@ -1,5 +1,5 @@
 # Example ACME certificate using DNS
-apiVersion: certmanager.kubernetes.io/v1
+apiVersion: certmanager.k8s.io/v1alpha1
 kind: Certificate
 metadata:
   name: my-certificate
