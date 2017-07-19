@@ -33,6 +33,13 @@ type Certificate struct {
 	Status CertificateStatus `json:"status,omitempty"`
 }
 
+type CertificateList struct {
+	metav1.TypeMeta `json:",inline"`
+	metav1.ListMeta `json:"metadata"`
+
+	Items []Certificate `json:"items"`
+}
+
 // CertificateSpec defines the desired state of Certificate
 type CertificateSpec struct {
 	Domains []string `json:"domains"`

@@ -32,7 +32,7 @@ type FakeCertificates struct {
 	ns   string
 }
 
-var certificatesResource = schema.GroupVersionResource{Group: "certmanager", Version: "v1alpha1", Resource: "certificates"}
+var certificatesResource = schema.GroupVersionResource{Group: "certmanager.k8s.io", Version: "v1alpha1", Resource: "certificates"}
 
 func (c *FakeCertificates) Create(certificate *v1alpha1.Certificate) (result *v1alpha1.Certificate, err error) {
 	obj, err := c.Fake.

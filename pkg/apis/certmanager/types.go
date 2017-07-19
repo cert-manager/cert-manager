@@ -29,6 +29,13 @@ type Certificate struct {
 	Status CertificateStatus
 }
 
+type CertificateList struct {
+	metav1.TypeMeta
+	metav1.ListMeta
+
+	Items []Certificate
+}
+
 // CertificateSpec defines the desired state of Certificate
 type CertificateSpec struct {
 	Domains []string

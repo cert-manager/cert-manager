@@ -15,6 +15,6 @@ limitations under the License.
 */
 
 //
-// +domain=kubernetes.io
+// +domain=k8s.io
 
 package apis
