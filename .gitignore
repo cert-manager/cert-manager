@@ -1,3 +1,5 @@
 .DS_Store
 .get_deps
 .generate_exes
+bin/
+_build/
