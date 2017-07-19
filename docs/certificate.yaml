@@ -1,0 +1,33 @@
+# Example ACME certificate using DNS
+apiVersion: certmanager.kubernetes.io/v1
+kind: Certificate
+metadata:
+  name: my-certificate
+spec:
+  domains:
+  - www.google.com
+  acme:
+    challenge: dns-01
+    url:  https://...
+    email: test@example.com
+    dns:
+      clouddns: {}
+status:
+  state: Pending
+---
+# Example ACME certificate using Ingress
+apiVersion: certmanager.kubernetes.io/v1
+kind: Certificate
+metadata:
+  name: my-certificate
+spec:
+  domains:
+  - www.google.com
+  acme:
+    challenge: http-01
+    url:  https://...
+    email: test@example.com
+    ingressRef:
+      name: something
+status:
+  state: Pending
