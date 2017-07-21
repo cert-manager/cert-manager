@@ -26,10 +26,10 @@ import (
 	rest "k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 
+	_ "github.com/jetstack/cert-manager/pkg/apis/certmanager/install"
 	"github.com/jetstack/cert-manager/pkg/client"
 	"github.com/jetstack/cert-manager/pkg/controller"
-	"github.com/jetstack/cert-manager/pkg/controller/certificates"
-	"github.com/jetstack/cert-manager/pkg/controller/ingress"
+	"github.com/jetstack/cert-manager/pkg/controller/issuers"
 	"github.com/jetstack/cert-manager/pkg/informers/externalversions"
 	logpkg "github.com/jetstack/cert-manager/pkg/log"
 )
@@ -74,23 +74,17 @@ func main() {
 		Logger:                     log,
 	}
 
-	ingressCtrl, err := ingress.New(ctx)
-
-	if err != nil {
-		log.Fatalf("error creating ingress control loop: %s", err.Error())
-	}
-
-	certificatesCtrl, err := certificates.New(ctx)
-
-	if err != nil {
-		log.Fatalf("error creating certificates control loop: %s", err.Error())
-	}
+	issuerCtrl := issuers.New(ctx)
+	// certificatesCtrl := certificates.New(ctx)
 
 	stopCh := make(chan struct{})
 	factory.Start(stopCh)
 	cmFactory.Start(stopCh)
-	ingressCtrl.Run(5, stopCh)
-	certificatesCtrl.Run(5, stopCh)
+
+	go issuerCtrl.Run(5, stopCh)
+	// go certificatesCtrl.Run(5, stopCh)
+
+	<-stopCh
 }
 
 // kubeConfig will return a rest.Config for communicating with the Kubernetes API server.
