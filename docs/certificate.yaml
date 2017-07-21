@@ -1,33 +1,63 @@
-# Example ACME certificate using DNS
+# certificate resource request for google.com using letsencrypt issuer
 apiVersion: certmanager.k8s.io/v1alpha1
 kind: Certificate
 metadata:
-  name: my-certificate
+  name: production-crt
 spec:
+  secret: production-crt
+  issuer: letsencrypt-prod
   domains:
   - www.google.com
   acme:
-    challenge: dns-01
-    url:  https://...
-    email: test@example.com
-    dns:
-      clouddns: {}
+    http-01:
+      # if the ingress resource already exists, we modify it to add our path
+      # instead of creating our own ingress resource (to support gce). if this
+      # is blank, a temporary ingress resource will be used
+      ingress: google-com
+      # only required when
+      ingressClass: nginx
 status:
   state: Pending
 ---
-# Example ACME certificate using Ingress
-apiVersion: certmanager.kubernetes.io/v1
+# letsencrypt issuer resource
+apiVersion: certmanager.k8s.io/v1alpha1
+kind: Issuer
+metadata:
+  name: letsencrypt-prod
+spec:
+  acme:
+    url: https://letsencrypt-prod.org
+    email: james@jetstack.io
+    privateKey: james-letsencrypt-prod
+status:
+  ready: true
+---
+# certificate resource request for google.com using letsencrypt issuer
+apiVersion: certmanager.k8s.io/v1alpha1
 kind: Certificate
 metadata:
-  name: my-certificate
+  name: vault-crt
 spec:
+  secret: vault-crt
+  issuer: vault-prod
   domains:
-  - www.google.com
-  acme:
-    challenge: http-01
-    url:  https://...
-    email: test@example.com
-    ingressRef:
-      name: something
+  - www.yahoo.com
+  vault:
+    role: serving
 status:
   state: Pending
+---
+# vault issuer resource
+apiVersion: certmanager.k8s.io/v1alpha1
+kind: Issuer
+metadata:
+  name: vault-prod
+spec:
+  vault:
+    url: https://vault.service.svc.cluster.local
+    path: pki/prod-ca/
+    credentials:
+      token:
+        secretName: vault-token
+status:
+  ready: true
