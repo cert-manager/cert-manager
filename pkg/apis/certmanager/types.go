@@ -20,6 +20,43 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+type Issuer struct {
+	metav1.TypeMeta
+	metav1.ObjectMeta
+
+	Spec   IssuerSpec
+	Status IssuerStatus
+}
+
+// IssuerList is a list of Issuers
+type IssuerList struct {
+	metav1.TypeMeta
+	metav1.ListMeta
+
+	Items []Issuer
+}
+
+type IssuerSpec struct {
+	ACME *ACMEIssuer
+}
+
+type IssuerStatus struct {
+	Ready bool
+}
+
+type ACMEIssuer struct {
+	// Email is the email for this account
+	Email string
+	// Server is the ACME server URL
+	Server string
+	// PrivateKey is the name of a secret containing the private key for this
+	// user account.
+	PrivateKey string
+	// URI is the unique account identifier, which can also be used to retrieve
+	// account details from the CA
+	URI string
+}
+
 // Certificate is a type to represent a Certificate from ACME
 type Certificate struct {
 	metav1.TypeMeta
@@ -29,6 +66,7 @@ type Certificate struct {
 	Status CertificateStatus
 }
 
+// CertificateList is a list of certificates
 type CertificateList struct {
 	metav1.TypeMeta
 	metav1.ListMeta
@@ -38,24 +76,18 @@ type CertificateList struct {
 
 // CertificateSpec defines the desired state of Certificate
 type CertificateSpec struct {
+	// Domains is a list of domains to obtain a certificate for
 	Domains []string
+	// SecretName is the name of the secret resource to store this secret in
+	SecretName string
 
-	ProviderConfig
-}
-
-// ProviderConfig is a wrapping struct for the different types of supported
-// providers configuration. In future, additional providers may be added here
-// (eg. cfssl, AWS etc)
-type ProviderConfig struct {
-	ACME *ACME
+	Issuer string
+	ACME   *ACMEConfig
 }
 
 // ACME contains the configuration for the ACME certificate provider
-type ACME struct {
+type ACMEConfig struct {
 	Challenge ACMEChallengeType
-	URL       string
-	Email     string
-	DNS       *ACMEDNSConfig
 }
 
 // ACMEChallengeType is the challenge type that should be used for ACME

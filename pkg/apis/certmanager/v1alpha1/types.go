@@ -22,7 +22,48 @@ import (
 
 // +genclient=true
 // +k8s:openapi-gen=true
-// +resource:path=certificates,strategy=CertificateStrategy
+// +resource:path=issuers
+
+type Issuer struct {
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
+
+	Spec   IssuerSpec   `json:"spec,omitempty"`
+	Status IssuerStatus `json:"status,omitempty"`
+}
+
+// IssuerList is a list of Issuers
+type IssuerList struct {
+	metav1.TypeMeta `json:",inline"`
+	metav1.ListMeta `json:"metadata"`
+
+	Items []Issuer `json:"items"`
+}
+
+type IssuerSpec struct {
+	ACME *ACMEIssuer `json:"acme,omitempty"`
+}
+
+type IssuerStatus struct {
+	Ready bool `json:"ready"`
+}
+
+type ACMEIssuer struct {
+	// Email is the email for this account
+	Email string `json:"email"`
+	// Server is the ACME server URL
+	Server string `json:"server"`
+	// PrivateKey is the name of a secret containing the private key for this
+	// user account.
+	PrivateKey string `json:"privateKey"`
+	// URI is the unique account identifier, which can also be used to retrieve
+	// account details from the CA
+	URI string `json:"uri"`
+}
+
+// +genclient=true
+// +k8s:openapi-gen=true
+// +resource:path=certificates
 
 // Certificate is a type to represent a Certificate from ACME
 type Certificate struct {
@@ -33,6 +74,7 @@ type Certificate struct {
 	Status CertificateStatus `json:"status,omitempty"`
 }
 
+// CertificateList is a list of Certificates
 type CertificateList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata"`
@@ -42,24 +84,20 @@ type CertificateList struct {
 
 // CertificateSpec defines the desired state of Certificate
 type CertificateSpec struct {
+	// Domains is a list of domains to obtain a certificate for
 	Domains []string `json:"domains"`
+	// Secret is the name of the secret resource to store this secret in
+	SecretName string `json:"secretName"`
+	// Issuer is the name of the issuer resource to use to obtain this
+	// certificate
+	Issuer string `json:"issuer"`
 
-	ProviderConfig
-}
-
-// ProviderConfig is a wrapping struct for the different types of supported
-// providers configuration. In future, additional providers may be added here
-// (eg. cfssl, AWS etc)
-type ProviderConfig struct {
-	ACME *ACME `json:"acme"`
+	ACME *ACMEConfig `json:"acme"`
 }
 
 // ACME contains the configuration for the ACME certificate provider
-type ACME struct {
+type ACMEConfig struct {
 	Challenge ACMEChallengeType `json:"challenge"`
-	URL       string            `json:"url"`
-	Email     string            `json:"email"`
-	DNS       *ACMEDNSConfig    `json:"dns"`
 }
 
 // ACMEChallengeType is the challenge type that should be used for ACME

@@ -30,6 +30,10 @@ func (c *FakeCertmanagerV1alpha1) Certificates(namespace string) v1alpha1.Certif
 	return &FakeCertificates{c, namespace}
 }
 
+func (c *FakeCertmanagerV1alpha1) Issuers(namespace string) v1alpha1.IssuerInterface {
+	return &FakeIssuers{c, namespace}
+}
+
 // RESTClient returns a RESTClient that is used to communicate
 // with API server by this client implementation.
 func (c *FakeCertmanagerV1alpha1) RESTClient() rest.Interface {

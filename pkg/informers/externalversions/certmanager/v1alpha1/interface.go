@@ -26,6 +26,8 @@ import (
 type Interface interface {
 	// Certificates returns a CertificateInformer.
 	Certificates() CertificateInformer
+	// Issuers returns a IssuerInformer.
+	Issuers() IssuerInformer
 }
 
 type version struct {
@@ -40,4 +42,9 @@ func New(f internalinterfaces.SharedInformerFactory) Interface {
 // Certificates returns a CertificateInformer.
 func (v *version) Certificates() CertificateInformer {
 	return &certificateInformer{factory: v.SharedInformerFactory}
+}
+
+// Issuers returns a IssuerInformer.
+func (v *version) Issuers() IssuerInformer {
+	return &issuerInformer{factory: v.SharedInformerFactory}
 }

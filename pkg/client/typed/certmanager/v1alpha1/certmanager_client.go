@@ -26,6 +26,7 @@ import (
 type CertmanagerV1alpha1Interface interface {
 	RESTClient() rest.Interface
 	CertificatesGetter
+	IssuersGetter
 }
 
 // CertmanagerV1alpha1Client is used to interact with features provided by the certmanager.k8s.io group.
@@ -35,6 +36,10 @@ type CertmanagerV1alpha1Client struct {
 
 func (c *CertmanagerV1alpha1Client) Certificates(namespace string) CertificateInterface {
 	return newCertificates(c, namespace)
+}
+
+func (c *CertmanagerV1alpha1Client) Issuers(namespace string) IssuerInterface {
+	return newIssuers(c, namespace)
 }
 
 // NewForConfig creates a new CertmanagerV1alpha1Client for the given config.

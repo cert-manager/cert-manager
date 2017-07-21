@@ -21,10 +21,11 @@ limitations under the License.
 package certmanager
 
 import (
+	reflect "reflect"
+
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	conversion "k8s.io/apimachinery/pkg/conversion"
 	runtime "k8s.io/apimachinery/pkg/runtime"
-	reflect "reflect"
 )
 
 func init() {
@@ -35,30 +36,26 @@ func init() {
 // to allow building arbitrary schemes.
 func RegisterDeepCopies(scheme *runtime.Scheme) error {
 	return scheme.AddGeneratedDeepCopyFuncs(
-		conversion.GeneratedDeepCopyFunc{Fn: DeepCopy_certmanager_ACME, InType: reflect.TypeOf(&ACME{})},
+		conversion.GeneratedDeepCopyFunc{Fn: DeepCopy_certmanager_ACMEConfig, InType: reflect.TypeOf(&ACMEConfig{})},
 		conversion.GeneratedDeepCopyFunc{Fn: DeepCopy_certmanager_ACMEDNSConfig, InType: reflect.TypeOf(&ACMEDNSConfig{})},
 		conversion.GeneratedDeepCopyFunc{Fn: DeepCopy_certmanager_ACMEDNSConfigCloudDNS, InType: reflect.TypeOf(&ACMEDNSConfigCloudDNS{})},
+		conversion.GeneratedDeepCopyFunc{Fn: DeepCopy_certmanager_ACMEIssuer, InType: reflect.TypeOf(&ACMEIssuer{})},
 		conversion.GeneratedDeepCopyFunc{Fn: DeepCopy_certmanager_Certificate, InType: reflect.TypeOf(&Certificate{})},
 		conversion.GeneratedDeepCopyFunc{Fn: DeepCopy_certmanager_CertificateList, InType: reflect.TypeOf(&CertificateList{})},
 		conversion.GeneratedDeepCopyFunc{Fn: DeepCopy_certmanager_CertificateSpec, InType: reflect.TypeOf(&CertificateSpec{})},
 		conversion.GeneratedDeepCopyFunc{Fn: DeepCopy_certmanager_CertificateStatus, InType: reflect.TypeOf(&CertificateStatus{})},
-		conversion.GeneratedDeepCopyFunc{Fn: DeepCopy_certmanager_ProviderConfig, InType: reflect.TypeOf(&ProviderConfig{})},
+		conversion.GeneratedDeepCopyFunc{Fn: DeepCopy_certmanager_Issuer, InType: reflect.TypeOf(&Issuer{})},
+		conversion.GeneratedDeepCopyFunc{Fn: DeepCopy_certmanager_IssuerList, InType: reflect.TypeOf(&IssuerList{})},
+		conversion.GeneratedDeepCopyFunc{Fn: DeepCopy_certmanager_IssuerSpec, InType: reflect.TypeOf(&IssuerSpec{})},
+		conversion.GeneratedDeepCopyFunc{Fn: DeepCopy_certmanager_IssuerStatus, InType: reflect.TypeOf(&IssuerStatus{})},
 	)
 }
 
-func DeepCopy_certmanager_ACME(in interface{}, out interface{}, c *conversion.Cloner) error {
+func DeepCopy_certmanager_ACMEConfig(in interface{}, out interface{}, c *conversion.Cloner) error {
 	{
-		in := in.(*ACME)
-		out := out.(*ACME)
+		in := in.(*ACMEConfig)
+		out := out.(*ACMEConfig)
 		*out = *in
-		if in.DNS != nil {
-			in, out := &in.DNS, &out.DNS
-			if newVal, err := c.DeepCopy(*in); err != nil {
-				return err
-			} else {
-				*out = newVal.(*ACMEDNSConfig)
-			}
-		}
 		return nil
 	}
 }
@@ -81,6 +78,15 @@ func DeepCopy_certmanager_ACMEDNSConfigCloudDNS(in interface{}, out interface{},
 	{
 		in := in.(*ACMEDNSConfigCloudDNS)
 		out := out.(*ACMEDNSConfigCloudDNS)
+		*out = *in
+		return nil
+	}
+}
+
+func DeepCopy_certmanager_ACMEIssuer(in interface{}, out interface{}, c *conversion.Cloner) error {
+	{
+		in := in.(*ACMEIssuer)
+		out := out.(*ACMEIssuer)
 		*out = *in
 		return nil
 	}
@@ -135,10 +141,10 @@ func DeepCopy_certmanager_CertificateSpec(in interface{}, out interface{}, c *co
 			*out = make([]string, len(*in))
 			copy(*out, *in)
 		}
-		if newVal, err := c.DeepCopy(&in.ProviderConfig); err != nil {
-			return err
-		} else {
-			out.ProviderConfig = *newVal.(*ProviderConfig)
+		if in.ACME != nil {
+			in, out := &in.ACME, &out.ACME
+			*out = new(ACMEConfig)
+			**out = **in
 		}
 		return nil
 	}
@@ -153,19 +159,64 @@ func DeepCopy_certmanager_CertificateStatus(in interface{}, out interface{}, c *
 	}
 }
 
-func DeepCopy_certmanager_ProviderConfig(in interface{}, out interface{}, c *conversion.Cloner) error {
+func DeepCopy_certmanager_Issuer(in interface{}, out interface{}, c *conversion.Cloner) error {
 	{
-		in := in.(*ProviderConfig)
-		out := out.(*ProviderConfig)
+		in := in.(*Issuer)
+		out := out.(*Issuer)
+		*out = *in
+		if newVal, err := c.DeepCopy(&in.ObjectMeta); err != nil {
+			return err
+		} else {
+			out.ObjectMeta = *newVal.(*v1.ObjectMeta)
+		}
+		if newVal, err := c.DeepCopy(&in.Spec); err != nil {
+			return err
+		} else {
+			out.Spec = *newVal.(*IssuerSpec)
+		}
+		return nil
+	}
+}
+
+func DeepCopy_certmanager_IssuerList(in interface{}, out interface{}, c *conversion.Cloner) error {
+	{
+		in := in.(*IssuerList)
+		out := out.(*IssuerList)
+		*out = *in
+		if in.Items != nil {
+			in, out := &in.Items, &out.Items
+			*out = make([]Issuer, len(*in))
+			for i := range *in {
+				if newVal, err := c.DeepCopy(&(*in)[i]); err != nil {
+					return err
+				} else {
+					(*out)[i] = *newVal.(*Issuer)
+				}
+			}
+		}
+		return nil
+	}
+}
+
+func DeepCopy_certmanager_IssuerSpec(in interface{}, out interface{}, c *conversion.Cloner) error {
+	{
+		in := in.(*IssuerSpec)
+		out := out.(*IssuerSpec)
 		*out = *in
 		if in.ACME != nil {
 			in, out := &in.ACME, &out.ACME
-			if newVal, err := c.DeepCopy(*in); err != nil {
-				return err
-			} else {
-				*out = newVal.(*ACME)
-			}
+			*out = new(ACMEIssuer)
+			**out = **in
 		}
+		return nil
+	}
+}
+
+func DeepCopy_certmanager_IssuerStatus(in interface{}, out interface{}, c *conversion.Cloner) error {
+	{
+		in := in.(*IssuerStatus)
+		out := out.(*IssuerStatus)
+		*out = *in
 		return nil
 	}
 }
