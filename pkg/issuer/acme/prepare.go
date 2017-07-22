@@ -174,7 +174,7 @@ func (a *Acme) prepare(crt *v1alpha1.Certificate) error {
 		crt, err = a.ctx.CertManagerClient.Certificates(crt.Namespace).Update(crt)
 
 		if err != nil {
-			return fmt.Errorf("error updating certificate resource with authorization details")
+			return fmt.Errorf("error updating certificate resource with authorization details: %s", err.Error())
 		}
 	}
 

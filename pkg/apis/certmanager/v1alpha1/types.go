@@ -17,6 +17,8 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"fmt"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -74,6 +76,15 @@ type ACMEIssuerDNS01Config struct {
 	Providers []ACMEIssuerDNS01Provider `json:"providers"`
 }
 
+func (a *ACMEIssuerDNS01Config) Provider(name string) (*ACMEIssuerDNS01Provider, error) {
+	for _, p := range a.Providers {
+		if p.Name == name {
+			return &(*&p), nil
+		}
+	}
+	return nil, fmt.Errorf("provider '%s' not found", name)
+}
+
 type ACMEIssuerDNS01Provider struct {
 	Name string `json:"name"`
 
@@ -124,6 +135,17 @@ type CertificateSpec struct {
 // ACMEConfig contains the configuration for the ACME certificate provider
 type ACMECertificateConfig struct {
 	Config []ACMECertificateDomainConfig `json:"config"`
+}
+
+func (a *ACMECertificateConfig) ConfigForDomain(domain string) ACMECertificateDomainConfig {
+	for _, cfg := range a.Config {
+		for _, d := range cfg.Domains {
+			if d == domain {
+				return cfg
+			}
+		}
+	}
+	return ACMECertificateDomainConfig{}
 }
 
 type ACMECertificateDomainConfig struct {

@@ -10,11 +10,40 @@ import (
 	"fmt"
 
 	"golang.org/x/crypto/acme"
+	api "k8s.io/api/core/v1"
+	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
+
+	"crypto"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 )
 
-func (a *Acme) Issue(crt *v1alpha1.Certificate) ([]byte, []byte, error) {
+func (a *Acme) getCertificatePrivateKey(crt *v1alpha1.Certificate) ([]byte, crypto.Signer, error) {
+	crtSecret, err := a.ctx.InformerFactory.Core().V1().Secrets().Lister().Secrets(crt.Namespace).Get(crt.Spec.SecretName)
+	if err != nil {
+		if !k8sErrors.IsNotFound(err) {
+			return nil, nil, fmt.Errorf("error reading certificate private key for certificate '%s': %s", crt.Name, err.Error())
+		}
+		return generatePrivateKey(2048)
+	}
+	var keyBytes []byte
+	var ok bool
+	if keyBytes, ok = crtSecret.Data[api.TLSPrivateKeyKey]; !ok {
+		return generatePrivateKey(2048)
+	}
+	block, _ := pem.Decode(keyBytes)
+	der, err := x509.DecryptPEMBlock(block, nil)
+	if err != nil {
+		return generatePrivateKey(2048)
+	}
+	privKey, err := x509.ParsePKCS1PrivateKey(der)
+	if err != nil {
+		return generatePrivateKey(2048)
+	}
+	return keyBytes, privKey, nil
+}
+
+func (a *Acme) obtainCertificate(crt *v1alpha1.Certificate) (privateKeyPem []byte, certPem []byte, err error) {
 	if crt.Spec.ACME == nil {
 		return nil, nil, fmt.Errorf("acme config must be specified")
 	}
@@ -45,7 +74,7 @@ func (a *Acme) Issue(crt *v1alpha1.Certificate) ([]byte, []byte, error) {
 		template.DNSNames = domains
 	}
 
-	privateKeyPem, privateKey, err := generatePrivateKey(2048)
+	privateKeyPem, privateKey, err := a.getCertificatePrivateKey(crt)
 	if err != nil {
 		return nil, nil, fmt.Errorf("error generating private key for certificiate '%s': %s", crt.Name, err)
 	}
@@ -73,4 +102,8 @@ func (a *Acme) Issue(crt *v1alpha1.Certificate) ([]byte, []byte, error) {
 	a.ctx.Logger.Printf("successfully got certificate: domains=%+v url=%s", domains, certUrl)
 
 	return privateKeyPem, certBuffer.Bytes(), nil
+}
+
+func (a *Acme) Issue(crt *v1alpha1.Certificate) ([]byte, []byte, error) {
+	return a.obtainCertificate(crt)
 }

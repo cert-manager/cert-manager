@@ -75,5 +75,5 @@ func (a *Acme) ensureSetup() error {
 }
 
 func (a *Acme) Renew(crt *v1alpha1.Certificate) ([]byte, []byte, error) {
-	return nil, nil, nil
+	return a.obtainCertificate(crt)
 }

@@ -4,7 +4,6 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
-	"sort"
 
 	api "k8s.io/api/core/v1"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
@@ -13,6 +12,7 @@ import (
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	"github.com/jetstack/cert-manager/pkg/controller"
 	"github.com/jetstack/cert-manager/pkg/issuer"
+	"github.com/jetstack/cert-manager/pkg/util"
 )
 
 func sync(ctx *controller.Context, crt *v1alpha1.Certificate) error {
@@ -33,6 +33,7 @@ func sync(ctx *controller.Context, crt *v1alpha1.Certificate) error {
 		return fmt.Errorf("error getting issuer implementation for issuer '%s': %s", issuerObj.Name, err.Error())
 	}
 
+	// TODO: move this to after the certificate check to avoid unneeded authorization checks
 	err = i.Prepare(crt)
 
 	if err != nil {
@@ -86,7 +87,7 @@ func sync(ctx *controller.Context, crt *v1alpha1.Certificate) error {
 		return issue(ctx, i, crt)
 	}
 	// step two: check if referenced secret is valid for listed domains. if not, return failure
-	if !equalUnsorted(crt.Spec.Domains, cert.DNSNames) {
+	if !util.EqualUnsorted(crt.Spec.Domains, cert.DNSNames) {
 		ctx.Logger.Printf("list of domains on certificate do not match domains in spec")
 		return issue(ctx, i, crt)
 	}
@@ -102,13 +103,12 @@ func sync(ctx *controller.Context, crt *v1alpha1.Certificate) error {
 // return an error on failure. If retrieval is succesful, the certificate data
 // and private key will be stored in the named secret
 func issue(ctx *controller.Context, issuer issuer.Interface, crt *v1alpha1.Certificate) error {
-	cert, key, err := issuer.Issue(crt)
+	key, cert, err := issuer.Issue(crt)
 	if err != nil {
 		return fmt.Errorf("error issuing certificate: %s", err.Error())
 	}
 
-	// TODO: support updating resources
-	_, err = ctx.Client.Secrets(crt.Namespace).Create(&api.Secret{
+	_, err = util.EnsureSecret(ctx.Client, &api.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      crt.Spec.SecretName,
 			Namespace: crt.Namespace,
@@ -126,49 +126,29 @@ func issue(ctx *controller.Context, issuer issuer.Interface, crt *v1alpha1.Certi
 	return nil
 }
 
-// // renew will attempt to renew a certificate from the specified issuer, or
-// // return an error on failure. If renewal is succesful, the certificate data
-// // and private key will be stored in the named secret
-// func (c *Controller) renew(crt *v1alpha1.Certificate) error {
-// 	i, err := issuer.IssuerFor(crt)
-// 	if err != nil {
-// 		return err
-// 	}
-
-// 	cert, key, err := i.Renew(&ctx, crt)
-// 	if err != nil {
-// 		return fmt.Errorf("error renewing certificate: %s", err.Error())
-// 	}
-
-// 	_, err = ctx.Client.Secrets(crt.Namespace).Update(&api.Secret{
-// 		ObjectMeta: metav1.ObjectMeta{
-// 			Name:      crt.Spec.SecretName,
-// 			Namespace: crt.Namespace,
-// 		},
-// 		Data: map[string][]byte{
-// 			api.TLSCertKey:       cert,
-// 			api.TLSPrivateKeyKey: key,
-// 		},
-// 	})
-
-// 	if err != nil {
-// 		return fmt.Errorf("error saving certificate: %s", err.Error())
-// 	}
-
-// 	return nil
-// }
-
-func equalUnsorted(s1 []string, s2 []string) bool {
-	if len(s1) != len(s2) {
-		return false
+// renew will attempt to renew a certificate from the specified issuer, or
+// return an error on failure. If renewal is succesful, the certificate data
+// and private key will be stored in the named secret
+func renew(ctx *controller.Context, issuer issuer.Interface, crt *v1alpha1.Certificate) error {
+	key, cert, err := issuer.Renew(crt)
+	if err != nil {
+		return fmt.Errorf("error renewing certificate: %s", err.Error())
 	}
-	s1_2, s2_2 := make([]string, len(s1)), make([]string, len(s2))
-	sort.Strings(s1)
-	sort.Strings(s2)
-	for i, s := range s1_2 {
-		if s != s2_2[i] {
-			return false
-		}
+
+	_, err = util.EnsureSecret(ctx.Client, &api.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      crt.Spec.SecretName,
+			Namespace: crt.Namespace,
+		},
+		Data: map[string][]byte{
+			api.TLSCertKey:       cert,
+			api.TLSPrivateKeyKey: key,
+		},
+	})
+
+	if err != nil {
+		return fmt.Errorf("error saving certificate: %s", err.Error())
 	}
-	return true
+
+	return nil
 }
