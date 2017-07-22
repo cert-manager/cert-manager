@@ -1,0 +1,18 @@
+apiVersion: certmanager.k8s.io/v1alpha1
+kind: Issuer
+metadata:
+  name: letsencrypt-staging
+spec:
+  acme:
+    server: https://acme-staging.api.letsencrypt.org/directory
+    email: james@jetstack.io
+    privateKey: le-staging
+    # dns-01 config options
+    dns-01:
+      providers:
+      - name: clouddns-staging
+        clouddns:
+          serviceAccount: service-account-secret-staging
+          project: googles-corp-project
+status:
+  ready: true
