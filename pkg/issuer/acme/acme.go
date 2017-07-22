@@ -3,7 +3,6 @@ package acme
 import (
 	"fmt"
 	"reflect"
-	"strings"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	"github.com/jetstack/cert-manager/pkg/client/scheme"
@@ -73,25 +72,6 @@ func (a *Acme) ensureSetup() error {
 	a.issuer.Status.Ready = true
 
 	return nil
-}
-
-func (a *Acme) Issue(crt *v1alpha1.Certificate) ([]byte, []byte, error) {
-	if crt.Spec.ACME == nil {
-		return nil, nil, fmt.Errorf("acme config must be specified")
-	}
-
-	// TODO (@munnerz): tidy this weird horrible line up
-	switch v1alpha1.ACMEChallengeType(strings.ToUpper(string(crt.Spec.ACME.Challenge))) {
-	case v1alpha1.ACMEChallengeTypeHTTP01:
-		a.ctx.Logger.Printf("Obtaining certificates for %+v", crt.Spec.Domains)
-		// todo: use acme library to obtain challenge details and pass them to the solver
-	case v1alpha1.ACMEChallengeTypeTLSSNI01:
-	case v1alpha1.ACMEChallengeTypeDNS01:
-	default:
-		return nil, nil, fmt.Errorf("invalid acme challenge type '%s'", crt.Spec.ACME.Challenge)
-	}
-
-	return nil, nil, nil
 }
 
 func (a *Acme) Renew(crt *v1alpha1.Certificate) ([]byte, []byte, error) {

@@ -29,6 +29,7 @@ import (
 	_ "github.com/jetstack/cert-manager/pkg/apis/certmanager/install"
 	"github.com/jetstack/cert-manager/pkg/client"
 	"github.com/jetstack/cert-manager/pkg/controller"
+	"github.com/jetstack/cert-manager/pkg/controller/certificates"
 	"github.com/jetstack/cert-manager/pkg/controller/issuers"
 	"github.com/jetstack/cert-manager/pkg/informers/externalversions"
 	logpkg "github.com/jetstack/cert-manager/pkg/log"
@@ -75,14 +76,14 @@ func main() {
 	}
 
 	issuerCtrl := issuers.New(ctx)
-	// certificatesCtrl := certificates.New(ctx)
+	certificatesCtrl := certificates.New(ctx)
 
 	stopCh := make(chan struct{})
 	factory.Start(stopCh)
 	cmFactory.Start(stopCh)
 
 	go issuerCtrl.Run(5, stopCh)
-	// go certificatesCtrl.Run(5, stopCh)
+	go certificatesCtrl.Run(5, stopCh)
 
 	<-stopCh
 }

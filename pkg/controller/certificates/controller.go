@@ -38,7 +38,6 @@ func processNextWorkItem(ctx controller.Context, obj interface{}) error {
 			return err
 		}
 	case *api.Secret:
-		ctx.Logger.Printf("unhandled change to Secret resource: %+v", v)
 	default:
 		ctx.Logger.Errorf("unexpected resource type (%T) in work queue", obj)
 	}

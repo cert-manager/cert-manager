@@ -13,6 +13,8 @@ type Interface interface {
 	// a service, creating a CA and storing it somewhere, or verifying
 	// credentials and authorization with a remote server.
 	Setup() error
+	// Prepare
+	Prepare(*v1alpha1.Certificate) error
 	// Issue attempts to issue a certificate as described by the certificate
 	// resource given
 	Issue(*v1alpha1.Certificate) ([]byte, []byte, error)

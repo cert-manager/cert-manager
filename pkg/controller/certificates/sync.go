@@ -1,17 +1,36 @@
 package certificates
 
 import (
+	"fmt"
+
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	"github.com/jetstack/cert-manager/pkg/controller"
+	"github.com/jetstack/cert-manager/pkg/issuer"
 )
 
 func sync(ctx *controller.Context, crt *v1alpha1.Certificate) error {
-	// // step zero: check if the referenced issuer exists and is ready
-	// issuer, err := ctx.CertManagerInformerFactory.Certmanager().V1alpha1().Issuers().Lister().Issuers(crt.Namespace).Get(crt.Spec.Issuer)
+	// step zero: check if the referenced issuer exists and is ready
+	issuerObj, err := ctx.CertManagerInformerFactory.Certmanager().V1alpha1().Issuers().Lister().Issuers(crt.Namespace).Get(crt.Spec.Issuer)
 
-	// if err != nil {
-	// 	return fmt.Errorf("issuer '%s' for certificate '%s' does not exist", crt.Spec.Issuer, crt.Name)
-	// }
+	if err != nil {
+		return fmt.Errorf("issuer '%s' for certificate '%s' does not exist", crt.Spec.Issuer, crt.Name)
+	}
+
+	if !issuerObj.Status.Ready {
+		return fmt.Errorf("issuer '%s/%s' for certificate '%s' not ready", issuerObj.Namespace, issuerObj.Name, crt.Name)
+	}
+
+	i, err := issuer.IssuerFor(*ctx, issuerObj)
+
+	if err != nil {
+		return fmt.Errorf("error getting issuer implementation for issuer '%s': %s", issuerObj.Name, err.Error())
+	}
+
+	err = i.Prepare(crt)
+
+	if err != nil {
+		return err
+	}
 
 	// // step one: check if referenced secret exists, if not, trigger issue event
 	// secret, err := ctx.InformerFactory.Core().V1().Secrets().Lister().Secrets(crt.Namespace).Get(crt.Spec.SecretName)
