@@ -15,7 +15,7 @@ import (
 
 	"crypto"
 
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	"github.com/munnerz/cert-manager/pkg/apis/certmanager/v1alpha1"
 )
 
 func (a *Acme) getCertificatePrivateKey(crt *v1alpha1.Certificate) ([]byte, crypto.Signer, error) {

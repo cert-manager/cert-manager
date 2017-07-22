@@ -7,8 +7,8 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
 
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
-	"github.com/jetstack/cert-manager/pkg/controller"
+	"github.com/munnerz/cert-manager/pkg/apis/certmanager/v1alpha1"
+	"github.com/munnerz/cert-manager/pkg/controller"
 	"github.com/juju/ratelimit"
 )
 

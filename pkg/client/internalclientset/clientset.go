@@ -18,7 +18,7 @@ package internalclientset
 
 import (
 	glog "github.com/golang/glog"
-	certmanagerinternalversion "github.com/jetstack/cert-manager/pkg/client/internalclientset/typed/certmanager/internalversion"
+	certmanagerinternalversion "github.com/munnerz/cert-manager/pkg/client/internalclientset/typed/certmanager/internalversion"
 	discovery "k8s.io/client-go/discovery"
 	rest "k8s.io/client-go/rest"
 	flowcontrol "k8s.io/client-go/util/flowcontrol"

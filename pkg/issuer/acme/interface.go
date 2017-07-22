@@ -3,9 +3,9 @@ package acme
 import (
 	"fmt"
 
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
-	"github.com/jetstack/cert-manager/pkg/controller"
-	http01 "github.com/jetstack/cert-manager/pkg/issuer/acme/http"
+	"github.com/munnerz/cert-manager/pkg/apis/certmanager/v1alpha1"
+	"github.com/munnerz/cert-manager/pkg/controller"
+	http01 "github.com/munnerz/cert-manager/pkg/issuer/acme/http"
 )
 
 type solver interface {

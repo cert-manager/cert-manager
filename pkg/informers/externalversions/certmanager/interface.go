@@ -19,8 +19,8 @@ limitations under the License.
 package certmanager
 
 import (
-	v1alpha1 "github.com/jetstack/cert-manager/pkg/informers/externalversions/certmanager/v1alpha1"
-	internalinterfaces "github.com/jetstack/cert-manager/pkg/informers/externalversions/internalinterfaces"
+	v1alpha1 "github.com/munnerz/cert-manager/pkg/informers/externalversions/certmanager/v1alpha1"
+	internalinterfaces "github.com/munnerz/cert-manager/pkg/informers/externalversions/internalinterfaces"
 )
 
 // Interface provides access to each of this group's versions.

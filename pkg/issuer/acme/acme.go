@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
-	"github.com/jetstack/cert-manager/pkg/client/scheme"
-	"github.com/jetstack/cert-manager/pkg/controller"
+	"github.com/munnerz/cert-manager/pkg/apis/certmanager/v1alpha1"
+	"github.com/munnerz/cert-manager/pkg/client/scheme"
+	"github.com/munnerz/cert-manager/pkg/controller"
 )
 
 type Acme struct {

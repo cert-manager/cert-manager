@@ -9,8 +9,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
-	"github.com/jetstack/cert-manager/pkg/controller"
+	"github.com/munnerz/cert-manager/pkg/apis/certmanager/v1alpha1"
+	"github.com/munnerz/cert-manager/pkg/controller"
 )
 
 // Solver is an implementation of the acme http-01 challenge solver protocol

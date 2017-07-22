@@ -17,5 +17,5 @@ limitations under the License.
 package internalversion
 
 import (
-	"github.com/jetstack/cert-manager/pkg/client/internalclientset/scheme"
+	"github.com/munnerz/cert-manager/pkg/client/internalclientset/scheme"
 )

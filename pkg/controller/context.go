@@ -4,9 +4,9 @@ import (
 	"k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 
-	"github.com/jetstack/cert-manager/pkg/client"
-	"github.com/jetstack/cert-manager/pkg/informers/externalversions"
-	"github.com/jetstack/cert-manager/pkg/log"
+	"github.com/munnerz/cert-manager/pkg/client"
+	"github.com/munnerz/cert-manager/pkg/informers/externalversions"
+	"github.com/munnerz/cert-manager/pkg/log"
 )
 
 type Context struct {

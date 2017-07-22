@@ -3,9 +3,9 @@ package issuer
 import (
 	"fmt"
 
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
-	"github.com/jetstack/cert-manager/pkg/controller"
-	"github.com/jetstack/cert-manager/pkg/issuer/acme"
+	"github.com/munnerz/cert-manager/pkg/apis/certmanager/v1alpha1"
+	"github.com/munnerz/cert-manager/pkg/controller"
+	"github.com/munnerz/cert-manager/pkg/issuer/acme"
 )
 
 type Interface interface {

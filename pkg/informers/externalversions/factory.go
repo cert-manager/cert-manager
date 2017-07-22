@@ -19,9 +19,9 @@ limitations under the License.
 package externalversions
 
 import (
-	client "github.com/jetstack/cert-manager/pkg/client"
-	certmanager "github.com/jetstack/cert-manager/pkg/informers/externalversions/certmanager"
-	internalinterfaces "github.com/jetstack/cert-manager/pkg/informers/externalversions/internalinterfaces"
+	client "github.com/munnerz/cert-manager/pkg/client"
+	certmanager "github.com/munnerz/cert-manager/pkg/informers/externalversions/certmanager"
+	internalinterfaces "github.com/munnerz/cert-manager/pkg/informers/externalversions/internalinterfaces"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	cache "k8s.io/client-go/tools/cache"

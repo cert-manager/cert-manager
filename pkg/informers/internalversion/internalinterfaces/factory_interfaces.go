@@ -19,7 +19,7 @@ limitations under the License.
 package internalinterfaces
 
 import (
-	internalclientset "github.com/jetstack/cert-manager/pkg/client/internalclientset"
+	internalclientset "github.com/munnerz/cert-manager/pkg/client/internalclientset"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	cache "k8s.io/client-go/tools/cache"
 	time "time"

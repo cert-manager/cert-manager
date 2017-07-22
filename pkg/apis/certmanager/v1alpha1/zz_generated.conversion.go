@@ -21,7 +21,7 @@ limitations under the License.
 package v1alpha1
 
 import (
-	certmanager "github.com/jetstack/cert-manager/pkg/apis/certmanager"
+	certmanager "github.com/munnerz/cert-manager/pkg/apis/certmanager"
 	conversion "k8s.io/apimachinery/pkg/conversion"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	unsafe "unsafe"

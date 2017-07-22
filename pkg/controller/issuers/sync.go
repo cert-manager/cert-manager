@@ -5,8 +5,8 @@ import (
 
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 
-	"github.com/jetstack/cert-manager/pkg/controller"
-	"github.com/jetstack/cert-manager/pkg/issuer"
+	"github.com/munnerz/cert-manager/pkg/controller"
+	"github.com/munnerz/cert-manager/pkg/issuer"
 )
 
 func sync(ctx *controller.Context, namespace, name string) error {

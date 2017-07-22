@@ -17,9 +17,9 @@ limitations under the License.
 package fake
 
 import (
-	clientset "github.com/jetstack/cert-manager/pkg/client/internalclientset"
-	certmanagerinternalversion "github.com/jetstack/cert-manager/pkg/client/internalclientset/typed/certmanager/internalversion"
-	fakecertmanagerinternalversion "github.com/jetstack/cert-manager/pkg/client/internalclientset/typed/certmanager/internalversion/fake"
+	clientset "github.com/munnerz/cert-manager/pkg/client/internalclientset"
+	certmanagerinternalversion "github.com/munnerz/cert-manager/pkg/client/internalclientset/typed/certmanager/internalversion"
+	fakecertmanagerinternalversion "github.com/munnerz/cert-manager/pkg/client/internalclientset/typed/certmanager/internalversion/fake"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/discovery"

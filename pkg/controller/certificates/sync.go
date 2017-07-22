@@ -9,10 +9,10 @@ import (
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
-	"github.com/jetstack/cert-manager/pkg/controller"
-	"github.com/jetstack/cert-manager/pkg/issuer"
-	"github.com/jetstack/cert-manager/pkg/util"
+	"github.com/munnerz/cert-manager/pkg/apis/certmanager/v1alpha1"
+	"github.com/munnerz/cert-manager/pkg/controller"
+	"github.com/munnerz/cert-manager/pkg/issuer"
+	"github.com/munnerz/cert-manager/pkg/util"
 )
 
 func sync(ctx *controller.Context, crt *v1alpha1.Certificate) error {
