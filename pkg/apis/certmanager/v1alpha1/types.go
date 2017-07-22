@@ -40,14 +40,18 @@ type IssuerList struct {
 	Items []Issuer `json:"items"`
 }
 
+// IssuerSpec is the specification of an Issuer. This includes any
+// configuration required for the issuer.
 type IssuerSpec struct {
 	ACME *ACMEIssuer `json:"acme,omitempty"`
 }
 
+// IssuerStatus contains status information about an Issuer
 type IssuerStatus struct {
 	Ready bool `json:"ready"`
 }
 
+// ACMEIssuer contains the specification for an ACME issuer
 type ACMEIssuer struct {
 	// Email is the email for this account
 	Email string `json:"email"`
@@ -59,6 +63,28 @@ type ACMEIssuer struct {
 	// URI is the unique account identifier, which can also be used to retrieve
 	// account details from the CA
 	URI string `json:"uri"`
+	// DNS-01 config
+	DNS01 *ACMEIssuerDNS01Config `json:"dns-01"`
+}
+
+// ACMEIssuerDNS01Config is a structure containing the ACME DNS configuration
+// option. One and only one of the fields within it should be set, when the
+// ACME challenge type is set to dns-01
+type ACMEIssuerDNS01Config struct {
+	Providers []ACMEIssuerDNS01Provider `json:"providers"`
+}
+
+type ACMEIssuerDNS01Provider struct {
+	Name string `json:"name"`
+
+	CloudDNS *ACMEIssuerDNS01ProviderCloudDNS `json:"clouddns"`
+}
+
+// ACMEIssuerDNS01ProviderCloudDNS is a structure containing the DNS
+// configuration for Google Cloud DNS
+type ACMEIssuerDNS01ProviderCloudDNS struct {
+	ServiceAccount string `json:"serviceAccount"`
+	Project        string `json:"project"`
 }
 
 // +genclient=true
@@ -92,38 +118,52 @@ type CertificateSpec struct {
 	// certificate
 	Issuer string `json:"issuer"`
 
-	ACME *ACMEConfig `json:"acme"`
+	ACME *ACMECertificateConfig `json:"acme"`
 }
 
-// ACME contains the configuration for the ACME certificate provider
-type ACMEConfig struct {
-	Challenge ACMEChallengeType `json:"challenge"`
+// ACMEConfig contains the configuration for the ACME certificate provider
+type ACMECertificateConfig struct {
+	Config []ACMECertificateDomainConfig `json:"config"`
 }
 
-// ACMEChallengeType is the challenge type that should be used for ACME
-// challenge verifications
-type ACMEChallengeType string
-
-var (
-	// ACMEChallengeTypeHTTP01 is the ACME http-01 challenge type
-	ACMEChallengeTypeHTTP01 ACMEChallengeType = "HTTP-01"
-	// ACMEChallengeTypeDNS01 is the ACME dns-01 challenge type
-	ACMEChallengeTypeDNS01 ACMEChallengeType = "DNS-01"
-	// ACMEChallengeTypeTLSSNI01 is the ACME tls-sni-01 challenge type
-	ACMEChallengeTypeTLSSNI01 ACMEChallengeType = "TLS-SNI-01"
-)
-
-// ACMEDNSConfig is a structure containing the ACME DNS configuration option.
-// One and only one of the fields within it should be set, when the ACME
-// challenge type is set to dns-01
-type ACMEDNSConfig struct {
-	CloudDNS *ACMEDNSConfigCloudDNS `json:"clouddns"`
+type ACMECertificateDomainConfig struct {
+	Domains []string                     `json:"domains"`
+	HTTP01  *ACMECertificateHTTP01Config `json:"http-01"`
+	DNS01   *ACMECertificateDNS01Config  `json:"dns-01"`
 }
 
-// ACMEDNSConfigCloudDNS is a structure containing the DNS configuration for
-// Google Cloud DNS
-type ACMEDNSConfigCloudDNS struct{}
+type ACMECertificateHTTP01Config struct {
+	Ingress      string  `json:"ingress"`
+	IngressClass *string `json:"ingressClass"`
+}
+
+type ACMECertificateDNS01Config struct {
+	Provider string `json:"provider"`
+}
 
 // CertificateStatus defines the observed state of Certificate
 type CertificateStatus struct {
+	ACME *CertificateACMEStatus `json:"acme"`
+}
+
+// CertificateACMEStatus holds the status for an ACME issuer
+type CertificateACMEStatus struct {
+	Authorizations []ACMEDomainAuthorization `json:"acme"`
+}
+
+func (c *CertificateACMEStatus) SaveAuthorization(a ACMEDomainAuthorization) {
+	for i, auth := range c.Authorizations {
+		if auth.Domain == a.Domain {
+			c.Authorizations[i] = a
+			return
+		}
+	}
+	c.Authorizations = append(c.Authorizations, a)
+}
+
+// ACMEDomainAuthorization holds information about an ACME issuers domain
+// authorization
+type ACMEDomainAuthorization struct {
+	Domain string `json:"domain"`
+	URI    string `json:"uri"`
 }

@@ -35,11 +35,17 @@ func init() {
 // to allow building arbitrary schemes.
 func RegisterDeepCopies(scheme *runtime.Scheme) error {
 	return scheme.AddGeneratedDeepCopyFuncs(
-		conversion.GeneratedDeepCopyFunc{Fn: DeepCopy_v1alpha1_ACMEConfig, InType: reflect.TypeOf(&ACMEConfig{})},
-		conversion.GeneratedDeepCopyFunc{Fn: DeepCopy_v1alpha1_ACMEDNSConfig, InType: reflect.TypeOf(&ACMEDNSConfig{})},
-		conversion.GeneratedDeepCopyFunc{Fn: DeepCopy_v1alpha1_ACMEDNSConfigCloudDNS, InType: reflect.TypeOf(&ACMEDNSConfigCloudDNS{})},
+		conversion.GeneratedDeepCopyFunc{Fn: DeepCopy_v1alpha1_ACMECertificateConfig, InType: reflect.TypeOf(&ACMECertificateConfig{})},
+		conversion.GeneratedDeepCopyFunc{Fn: DeepCopy_v1alpha1_ACMECertificateDNS01Config, InType: reflect.TypeOf(&ACMECertificateDNS01Config{})},
+		conversion.GeneratedDeepCopyFunc{Fn: DeepCopy_v1alpha1_ACMECertificateDomainConfig, InType: reflect.TypeOf(&ACMECertificateDomainConfig{})},
+		conversion.GeneratedDeepCopyFunc{Fn: DeepCopy_v1alpha1_ACMECertificateHTTP01Config, InType: reflect.TypeOf(&ACMECertificateHTTP01Config{})},
+		conversion.GeneratedDeepCopyFunc{Fn: DeepCopy_v1alpha1_ACMEDomainAuthorization, InType: reflect.TypeOf(&ACMEDomainAuthorization{})},
 		conversion.GeneratedDeepCopyFunc{Fn: DeepCopy_v1alpha1_ACMEIssuer, InType: reflect.TypeOf(&ACMEIssuer{})},
+		conversion.GeneratedDeepCopyFunc{Fn: DeepCopy_v1alpha1_ACMEIssuerDNS01Config, InType: reflect.TypeOf(&ACMEIssuerDNS01Config{})},
+		conversion.GeneratedDeepCopyFunc{Fn: DeepCopy_v1alpha1_ACMEIssuerDNS01Provider, InType: reflect.TypeOf(&ACMEIssuerDNS01Provider{})},
+		conversion.GeneratedDeepCopyFunc{Fn: DeepCopy_v1alpha1_ACMEIssuerDNS01ProviderCloudDNS, InType: reflect.TypeOf(&ACMEIssuerDNS01ProviderCloudDNS{})},
 		conversion.GeneratedDeepCopyFunc{Fn: DeepCopy_v1alpha1_Certificate, InType: reflect.TypeOf(&Certificate{})},
+		conversion.GeneratedDeepCopyFunc{Fn: DeepCopy_v1alpha1_CertificateACMEStatus, InType: reflect.TypeOf(&CertificateACMEStatus{})},
 		conversion.GeneratedDeepCopyFunc{Fn: DeepCopy_v1alpha1_CertificateList, InType: reflect.TypeOf(&CertificateList{})},
 		conversion.GeneratedDeepCopyFunc{Fn: DeepCopy_v1alpha1_CertificateSpec, InType: reflect.TypeOf(&CertificateSpec{})},
 		conversion.GeneratedDeepCopyFunc{Fn: DeepCopy_v1alpha1_CertificateStatus, InType: reflect.TypeOf(&CertificateStatus{})},
@@ -50,33 +56,80 @@ func RegisterDeepCopies(scheme *runtime.Scheme) error {
 	)
 }
 
-func DeepCopy_v1alpha1_ACMEConfig(in interface{}, out interface{}, c *conversion.Cloner) error {
+func DeepCopy_v1alpha1_ACMECertificateConfig(in interface{}, out interface{}, c *conversion.Cloner) error {
 	{
-		in := in.(*ACMEConfig)
-		out := out.(*ACMEConfig)
+		in := in.(*ACMECertificateConfig)
+		out := out.(*ACMECertificateConfig)
+		*out = *in
+		if in.Config != nil {
+			in, out := &in.Config, &out.Config
+			*out = make([]ACMECertificateDomainConfig, len(*in))
+			for i := range *in {
+				if newVal, err := c.DeepCopy(&(*in)[i]); err != nil {
+					return err
+				} else {
+					(*out)[i] = *newVal.(*ACMECertificateDomainConfig)
+				}
+			}
+		}
+		return nil
+	}
+}
+
+func DeepCopy_v1alpha1_ACMECertificateDNS01Config(in interface{}, out interface{}, c *conversion.Cloner) error {
+	{
+		in := in.(*ACMECertificateDNS01Config)
+		out := out.(*ACMECertificateDNS01Config)
 		*out = *in
 		return nil
 	}
 }
 
-func DeepCopy_v1alpha1_ACMEDNSConfig(in interface{}, out interface{}, c *conversion.Cloner) error {
+func DeepCopy_v1alpha1_ACMECertificateDomainConfig(in interface{}, out interface{}, c *conversion.Cloner) error {
 	{
-		in := in.(*ACMEDNSConfig)
-		out := out.(*ACMEDNSConfig)
+		in := in.(*ACMECertificateDomainConfig)
+		out := out.(*ACMECertificateDomainConfig)
 		*out = *in
-		if in.CloudDNS != nil {
-			in, out := &in.CloudDNS, &out.CloudDNS
-			*out = new(ACMEDNSConfigCloudDNS)
+		if in.Domains != nil {
+			in, out := &in.Domains, &out.Domains
+			*out = make([]string, len(*in))
+			copy(*out, *in)
+		}
+		if in.HTTP01 != nil {
+			in, out := &in.HTTP01, &out.HTTP01
+			if newVal, err := c.DeepCopy(*in); err != nil {
+				return err
+			} else {
+				*out = newVal.(*ACMECertificateHTTP01Config)
+			}
+		}
+		if in.DNS01 != nil {
+			in, out := &in.DNS01, &out.DNS01
+			*out = new(ACMECertificateDNS01Config)
 			**out = **in
 		}
 		return nil
 	}
 }
 
-func DeepCopy_v1alpha1_ACMEDNSConfigCloudDNS(in interface{}, out interface{}, c *conversion.Cloner) error {
+func DeepCopy_v1alpha1_ACMECertificateHTTP01Config(in interface{}, out interface{}, c *conversion.Cloner) error {
 	{
-		in := in.(*ACMEDNSConfigCloudDNS)
-		out := out.(*ACMEDNSConfigCloudDNS)
+		in := in.(*ACMECertificateHTTP01Config)
+		out := out.(*ACMECertificateHTTP01Config)
+		*out = *in
+		if in.IngressClass != nil {
+			in, out := &in.IngressClass, &out.IngressClass
+			*out = new(string)
+			**out = **in
+		}
+		return nil
+	}
+}
+
+func DeepCopy_v1alpha1_ACMEDomainAuthorization(in interface{}, out interface{}, c *conversion.Cloner) error {
+	{
+		in := in.(*ACMEDomainAuthorization)
+		out := out.(*ACMEDomainAuthorization)
 		*out = *in
 		return nil
 	}
@@ -86,6 +139,57 @@ func DeepCopy_v1alpha1_ACMEIssuer(in interface{}, out interface{}, c *conversion
 	{
 		in := in.(*ACMEIssuer)
 		out := out.(*ACMEIssuer)
+		*out = *in
+		if in.DNS01 != nil {
+			in, out := &in.DNS01, &out.DNS01
+			if newVal, err := c.DeepCopy(*in); err != nil {
+				return err
+			} else {
+				*out = newVal.(*ACMEIssuerDNS01Config)
+			}
+		}
+		return nil
+	}
+}
+
+func DeepCopy_v1alpha1_ACMEIssuerDNS01Config(in interface{}, out interface{}, c *conversion.Cloner) error {
+	{
+		in := in.(*ACMEIssuerDNS01Config)
+		out := out.(*ACMEIssuerDNS01Config)
+		*out = *in
+		if in.Providers != nil {
+			in, out := &in.Providers, &out.Providers
+			*out = make([]ACMEIssuerDNS01Provider, len(*in))
+			for i := range *in {
+				if newVal, err := c.DeepCopy(&(*in)[i]); err != nil {
+					return err
+				} else {
+					(*out)[i] = *newVal.(*ACMEIssuerDNS01Provider)
+				}
+			}
+		}
+		return nil
+	}
+}
+
+func DeepCopy_v1alpha1_ACMEIssuerDNS01Provider(in interface{}, out interface{}, c *conversion.Cloner) error {
+	{
+		in := in.(*ACMEIssuerDNS01Provider)
+		out := out.(*ACMEIssuerDNS01Provider)
+		*out = *in
+		if in.CloudDNS != nil {
+			in, out := &in.CloudDNS, &out.CloudDNS
+			*out = new(ACMEIssuerDNS01ProviderCloudDNS)
+			**out = **in
+		}
+		return nil
+	}
+}
+
+func DeepCopy_v1alpha1_ACMEIssuerDNS01ProviderCloudDNS(in interface{}, out interface{}, c *conversion.Cloner) error {
+	{
+		in := in.(*ACMEIssuerDNS01ProviderCloudDNS)
+		out := out.(*ACMEIssuerDNS01ProviderCloudDNS)
 		*out = *in
 		return nil
 	}
@@ -105,6 +209,25 @@ func DeepCopy_v1alpha1_Certificate(in interface{}, out interface{}, c *conversio
 			return err
 		} else {
 			out.Spec = *newVal.(*CertificateSpec)
+		}
+		if newVal, err := c.DeepCopy(&in.Status); err != nil {
+			return err
+		} else {
+			out.Status = *newVal.(*CertificateStatus)
+		}
+		return nil
+	}
+}
+
+func DeepCopy_v1alpha1_CertificateACMEStatus(in interface{}, out interface{}, c *conversion.Cloner) error {
+	{
+		in := in.(*CertificateACMEStatus)
+		out := out.(*CertificateACMEStatus)
+		*out = *in
+		if in.Authorizations != nil {
+			in, out := &in.Authorizations, &out.Authorizations
+			*out = make([]ACMEDomainAuthorization, len(*in))
+			copy(*out, *in)
 		}
 		return nil
 	}
@@ -142,8 +265,11 @@ func DeepCopy_v1alpha1_CertificateSpec(in interface{}, out interface{}, c *conve
 		}
 		if in.ACME != nil {
 			in, out := &in.ACME, &out.ACME
-			*out = new(ACMEConfig)
-			**out = **in
+			if newVal, err := c.DeepCopy(*in); err != nil {
+				return err
+			} else {
+				*out = newVal.(*ACMECertificateConfig)
+			}
 		}
 		return nil
 	}
@@ -154,6 +280,14 @@ func DeepCopy_v1alpha1_CertificateStatus(in interface{}, out interface{}, c *con
 		in := in.(*CertificateStatus)
 		out := out.(*CertificateStatus)
 		*out = *in
+		if in.ACME != nil {
+			in, out := &in.ACME, &out.ACME
+			if newVal, err := c.DeepCopy(*in); err != nil {
+				return err
+			} else {
+				*out = newVal.(*CertificateACMEStatus)
+			}
+		}
 		return nil
 	}
 }
@@ -204,8 +338,11 @@ func DeepCopy_v1alpha1_IssuerSpec(in interface{}, out interface{}, c *conversion
 		*out = *in
 		if in.ACME != nil {
 			in, out := &in.ACME, &out.ACME
-			*out = new(ACMEIssuer)
-			**out = **in
+			if newVal, err := c.DeepCopy(*in); err != nil {
+				return err
+			} else {
+				*out = newVal.(*ACMEIssuer)
+			}
 		}
 		return nil
 	}

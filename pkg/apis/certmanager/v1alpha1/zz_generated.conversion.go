@@ -35,16 +35,28 @@ func init() {
 // Public to allow building arbitrary schemes.
 func RegisterConversions(scheme *runtime.Scheme) error {
 	return scheme.AddGeneratedConversionFuncs(
-		Convert_v1alpha1_ACMEConfig_To_certmanager_ACMEConfig,
-		Convert_certmanager_ACMEConfig_To_v1alpha1_ACMEConfig,
-		Convert_v1alpha1_ACMEDNSConfig_To_certmanager_ACMEDNSConfig,
-		Convert_certmanager_ACMEDNSConfig_To_v1alpha1_ACMEDNSConfig,
-		Convert_v1alpha1_ACMEDNSConfigCloudDNS_To_certmanager_ACMEDNSConfigCloudDNS,
-		Convert_certmanager_ACMEDNSConfigCloudDNS_To_v1alpha1_ACMEDNSConfigCloudDNS,
+		Convert_v1alpha1_ACMECertificateConfig_To_certmanager_ACMECertificateConfig,
+		Convert_certmanager_ACMECertificateConfig_To_v1alpha1_ACMECertificateConfig,
+		Convert_v1alpha1_ACMECertificateDNS01Config_To_certmanager_ACMECertificateDNS01Config,
+		Convert_certmanager_ACMECertificateDNS01Config_To_v1alpha1_ACMECertificateDNS01Config,
+		Convert_v1alpha1_ACMECertificateDomainConfig_To_certmanager_ACMECertificateDomainConfig,
+		Convert_certmanager_ACMECertificateDomainConfig_To_v1alpha1_ACMECertificateDomainConfig,
+		Convert_v1alpha1_ACMECertificateHTTP01Config_To_certmanager_ACMECertificateHTTP01Config,
+		Convert_certmanager_ACMECertificateHTTP01Config_To_v1alpha1_ACMECertificateHTTP01Config,
+		Convert_v1alpha1_ACMEDomainAuthorization_To_certmanager_ACMEDomainAuthorization,
+		Convert_certmanager_ACMEDomainAuthorization_To_v1alpha1_ACMEDomainAuthorization,
 		Convert_v1alpha1_ACMEIssuer_To_certmanager_ACMEIssuer,
 		Convert_certmanager_ACMEIssuer_To_v1alpha1_ACMEIssuer,
+		Convert_v1alpha1_ACMEIssuerDNS01Config_To_certmanager_ACMEIssuerDNS01Config,
+		Convert_certmanager_ACMEIssuerDNS01Config_To_v1alpha1_ACMEIssuerDNS01Config,
+		Convert_v1alpha1_ACMEIssuerDNS01Provider_To_certmanager_ACMEIssuerDNS01Provider,
+		Convert_certmanager_ACMEIssuerDNS01Provider_To_v1alpha1_ACMEIssuerDNS01Provider,
+		Convert_v1alpha1_ACMEIssuerDNS01ProviderCloudDNS_To_certmanager_ACMEIssuerDNS01ProviderCloudDNS,
+		Convert_certmanager_ACMEIssuerDNS01ProviderCloudDNS_To_v1alpha1_ACMEIssuerDNS01ProviderCloudDNS,
 		Convert_v1alpha1_Certificate_To_certmanager_Certificate,
 		Convert_certmanager_Certificate_To_v1alpha1_Certificate,
+		Convert_v1alpha1_CertificateACMEStatus_To_certmanager_CertificateACMEStatus,
+		Convert_certmanager_CertificateACMEStatus_To_v1alpha1_CertificateACMEStatus,
 		Convert_v1alpha1_CertificateList_To_certmanager_CertificateList,
 		Convert_certmanager_CertificateList_To_v1alpha1_CertificateList,
 		Convert_v1alpha1_CertificateSpec_To_certmanager_CertificateSpec,
@@ -62,56 +74,110 @@ func RegisterConversions(scheme *runtime.Scheme) error {
 	)
 }
 
-func autoConvert_v1alpha1_ACMEConfig_To_certmanager_ACMEConfig(in *ACMEConfig, out *certmanager.ACMEConfig, s conversion.Scope) error {
-	out.Challenge = certmanager.ACMEChallengeType(in.Challenge)
+func autoConvert_v1alpha1_ACMECertificateConfig_To_certmanager_ACMECertificateConfig(in *ACMECertificateConfig, out *certmanager.ACMECertificateConfig, s conversion.Scope) error {
+	out.Config = *(*[]certmanager.ACMECertificateDomainConfig)(unsafe.Pointer(&in.Config))
 	return nil
 }
 
-func Convert_v1alpha1_ACMEConfig_To_certmanager_ACMEConfig(in *ACMEConfig, out *certmanager.ACMEConfig, s conversion.Scope) error {
-	return autoConvert_v1alpha1_ACMEConfig_To_certmanager_ACMEConfig(in, out, s)
+func Convert_v1alpha1_ACMECertificateConfig_To_certmanager_ACMECertificateConfig(in *ACMECertificateConfig, out *certmanager.ACMECertificateConfig, s conversion.Scope) error {
+	return autoConvert_v1alpha1_ACMECertificateConfig_To_certmanager_ACMECertificateConfig(in, out, s)
 }
 
-func autoConvert_certmanager_ACMEConfig_To_v1alpha1_ACMEConfig(in *certmanager.ACMEConfig, out *ACMEConfig, s conversion.Scope) error {
-	out.Challenge = ACMEChallengeType(in.Challenge)
+func autoConvert_certmanager_ACMECertificateConfig_To_v1alpha1_ACMECertificateConfig(in *certmanager.ACMECertificateConfig, out *ACMECertificateConfig, s conversion.Scope) error {
+	if in.Config == nil {
+		out.Config = make([]ACMECertificateDomainConfig, 0)
+	} else {
+		out.Config = *(*[]ACMECertificateDomainConfig)(unsafe.Pointer(&in.Config))
+	}
 	return nil
 }
 
-func Convert_certmanager_ACMEConfig_To_v1alpha1_ACMEConfig(in *certmanager.ACMEConfig, out *ACMEConfig, s conversion.Scope) error {
-	return autoConvert_certmanager_ACMEConfig_To_v1alpha1_ACMEConfig(in, out, s)
+func Convert_certmanager_ACMECertificateConfig_To_v1alpha1_ACMECertificateConfig(in *certmanager.ACMECertificateConfig, out *ACMECertificateConfig, s conversion.Scope) error {
+	return autoConvert_certmanager_ACMECertificateConfig_To_v1alpha1_ACMECertificateConfig(in, out, s)
 }
 
-func autoConvert_v1alpha1_ACMEDNSConfig_To_certmanager_ACMEDNSConfig(in *ACMEDNSConfig, out *certmanager.ACMEDNSConfig, s conversion.Scope) error {
-	out.CloudDNS = (*certmanager.ACMEDNSConfigCloudDNS)(unsafe.Pointer(in.CloudDNS))
+func autoConvert_v1alpha1_ACMECertificateDNS01Config_To_certmanager_ACMECertificateDNS01Config(in *ACMECertificateDNS01Config, out *certmanager.ACMECertificateDNS01Config, s conversion.Scope) error {
+	out.Provider = in.Provider
 	return nil
 }
 
-func Convert_v1alpha1_ACMEDNSConfig_To_certmanager_ACMEDNSConfig(in *ACMEDNSConfig, out *certmanager.ACMEDNSConfig, s conversion.Scope) error {
-	return autoConvert_v1alpha1_ACMEDNSConfig_To_certmanager_ACMEDNSConfig(in, out, s)
+func Convert_v1alpha1_ACMECertificateDNS01Config_To_certmanager_ACMECertificateDNS01Config(in *ACMECertificateDNS01Config, out *certmanager.ACMECertificateDNS01Config, s conversion.Scope) error {
+	return autoConvert_v1alpha1_ACMECertificateDNS01Config_To_certmanager_ACMECertificateDNS01Config(in, out, s)
 }
 
-func autoConvert_certmanager_ACMEDNSConfig_To_v1alpha1_ACMEDNSConfig(in *certmanager.ACMEDNSConfig, out *ACMEDNSConfig, s conversion.Scope) error {
-	out.CloudDNS = (*ACMEDNSConfigCloudDNS)(unsafe.Pointer(in.CloudDNS))
+func autoConvert_certmanager_ACMECertificateDNS01Config_To_v1alpha1_ACMECertificateDNS01Config(in *certmanager.ACMECertificateDNS01Config, out *ACMECertificateDNS01Config, s conversion.Scope) error {
+	out.Provider = in.Provider
 	return nil
 }
 
-func Convert_certmanager_ACMEDNSConfig_To_v1alpha1_ACMEDNSConfig(in *certmanager.ACMEDNSConfig, out *ACMEDNSConfig, s conversion.Scope) error {
-	return autoConvert_certmanager_ACMEDNSConfig_To_v1alpha1_ACMEDNSConfig(in, out, s)
+func Convert_certmanager_ACMECertificateDNS01Config_To_v1alpha1_ACMECertificateDNS01Config(in *certmanager.ACMECertificateDNS01Config, out *ACMECertificateDNS01Config, s conversion.Scope) error {
+	return autoConvert_certmanager_ACMECertificateDNS01Config_To_v1alpha1_ACMECertificateDNS01Config(in, out, s)
 }
 
-func autoConvert_v1alpha1_ACMEDNSConfigCloudDNS_To_certmanager_ACMEDNSConfigCloudDNS(in *ACMEDNSConfigCloudDNS, out *certmanager.ACMEDNSConfigCloudDNS, s conversion.Scope) error {
+func autoConvert_v1alpha1_ACMECertificateDomainConfig_To_certmanager_ACMECertificateDomainConfig(in *ACMECertificateDomainConfig, out *certmanager.ACMECertificateDomainConfig, s conversion.Scope) error {
+	out.Domains = *(*[]string)(unsafe.Pointer(&in.Domains))
+	out.HTTP01 = (*certmanager.ACMECertificateHTTP01Config)(unsafe.Pointer(in.HTTP01))
+	out.DNS01 = (*certmanager.ACMECertificateDNS01Config)(unsafe.Pointer(in.DNS01))
 	return nil
 }
 
-func Convert_v1alpha1_ACMEDNSConfigCloudDNS_To_certmanager_ACMEDNSConfigCloudDNS(in *ACMEDNSConfigCloudDNS, out *certmanager.ACMEDNSConfigCloudDNS, s conversion.Scope) error {
-	return autoConvert_v1alpha1_ACMEDNSConfigCloudDNS_To_certmanager_ACMEDNSConfigCloudDNS(in, out, s)
+func Convert_v1alpha1_ACMECertificateDomainConfig_To_certmanager_ACMECertificateDomainConfig(in *ACMECertificateDomainConfig, out *certmanager.ACMECertificateDomainConfig, s conversion.Scope) error {
+	return autoConvert_v1alpha1_ACMECertificateDomainConfig_To_certmanager_ACMECertificateDomainConfig(in, out, s)
 }
 
-func autoConvert_certmanager_ACMEDNSConfigCloudDNS_To_v1alpha1_ACMEDNSConfigCloudDNS(in *certmanager.ACMEDNSConfigCloudDNS, out *ACMEDNSConfigCloudDNS, s conversion.Scope) error {
+func autoConvert_certmanager_ACMECertificateDomainConfig_To_v1alpha1_ACMECertificateDomainConfig(in *certmanager.ACMECertificateDomainConfig, out *ACMECertificateDomainConfig, s conversion.Scope) error {
+	if in.Domains == nil {
+		out.Domains = make([]string, 0)
+	} else {
+		out.Domains = *(*[]string)(unsafe.Pointer(&in.Domains))
+	}
+	out.HTTP01 = (*ACMECertificateHTTP01Config)(unsafe.Pointer(in.HTTP01))
+	out.DNS01 = (*ACMECertificateDNS01Config)(unsafe.Pointer(in.DNS01))
 	return nil
 }
 
-func Convert_certmanager_ACMEDNSConfigCloudDNS_To_v1alpha1_ACMEDNSConfigCloudDNS(in *certmanager.ACMEDNSConfigCloudDNS, out *ACMEDNSConfigCloudDNS, s conversion.Scope) error {
-	return autoConvert_certmanager_ACMEDNSConfigCloudDNS_To_v1alpha1_ACMEDNSConfigCloudDNS(in, out, s)
+func Convert_certmanager_ACMECertificateDomainConfig_To_v1alpha1_ACMECertificateDomainConfig(in *certmanager.ACMECertificateDomainConfig, out *ACMECertificateDomainConfig, s conversion.Scope) error {
+	return autoConvert_certmanager_ACMECertificateDomainConfig_To_v1alpha1_ACMECertificateDomainConfig(in, out, s)
+}
+
+func autoConvert_v1alpha1_ACMECertificateHTTP01Config_To_certmanager_ACMECertificateHTTP01Config(in *ACMECertificateHTTP01Config, out *certmanager.ACMECertificateHTTP01Config, s conversion.Scope) error {
+	out.Ingress = in.Ingress
+	out.IngressClass = (*string)(unsafe.Pointer(in.IngressClass))
+	return nil
+}
+
+func Convert_v1alpha1_ACMECertificateHTTP01Config_To_certmanager_ACMECertificateHTTP01Config(in *ACMECertificateHTTP01Config, out *certmanager.ACMECertificateHTTP01Config, s conversion.Scope) error {
+	return autoConvert_v1alpha1_ACMECertificateHTTP01Config_To_certmanager_ACMECertificateHTTP01Config(in, out, s)
+}
+
+func autoConvert_certmanager_ACMECertificateHTTP01Config_To_v1alpha1_ACMECertificateHTTP01Config(in *certmanager.ACMECertificateHTTP01Config, out *ACMECertificateHTTP01Config, s conversion.Scope) error {
+	out.Ingress = in.Ingress
+	out.IngressClass = (*string)(unsafe.Pointer(in.IngressClass))
+	return nil
+}
+
+func Convert_certmanager_ACMECertificateHTTP01Config_To_v1alpha1_ACMECertificateHTTP01Config(in *certmanager.ACMECertificateHTTP01Config, out *ACMECertificateHTTP01Config, s conversion.Scope) error {
+	return autoConvert_certmanager_ACMECertificateHTTP01Config_To_v1alpha1_ACMECertificateHTTP01Config(in, out, s)
+}
+
+func autoConvert_v1alpha1_ACMEDomainAuthorization_To_certmanager_ACMEDomainAuthorization(in *ACMEDomainAuthorization, out *certmanager.ACMEDomainAuthorization, s conversion.Scope) error {
+	out.Domain = in.Domain
+	out.URI = in.URI
+	return nil
+}
+
+func Convert_v1alpha1_ACMEDomainAuthorization_To_certmanager_ACMEDomainAuthorization(in *ACMEDomainAuthorization, out *certmanager.ACMEDomainAuthorization, s conversion.Scope) error {
+	return autoConvert_v1alpha1_ACMEDomainAuthorization_To_certmanager_ACMEDomainAuthorization(in, out, s)
+}
+
+func autoConvert_certmanager_ACMEDomainAuthorization_To_v1alpha1_ACMEDomainAuthorization(in *certmanager.ACMEDomainAuthorization, out *ACMEDomainAuthorization, s conversion.Scope) error {
+	out.Domain = in.Domain
+	out.URI = in.URI
+	return nil
+}
+
+func Convert_certmanager_ACMEDomainAuthorization_To_v1alpha1_ACMEDomainAuthorization(in *certmanager.ACMEDomainAuthorization, out *ACMEDomainAuthorization, s conversion.Scope) error {
+	return autoConvert_certmanager_ACMEDomainAuthorization_To_v1alpha1_ACMEDomainAuthorization(in, out, s)
 }
 
 func autoConvert_v1alpha1_ACMEIssuer_To_certmanager_ACMEIssuer(in *ACMEIssuer, out *certmanager.ACMEIssuer, s conversion.Scope) error {
@@ -119,6 +185,7 @@ func autoConvert_v1alpha1_ACMEIssuer_To_certmanager_ACMEIssuer(in *ACMEIssuer, o
 	out.Server = in.Server
 	out.PrivateKey = in.PrivateKey
 	out.URI = in.URI
+	out.DNS01 = (*certmanager.ACMEIssuerDNS01Config)(unsafe.Pointer(in.DNS01))
 	return nil
 }
 
@@ -131,11 +198,74 @@ func autoConvert_certmanager_ACMEIssuer_To_v1alpha1_ACMEIssuer(in *certmanager.A
 	out.Server = in.Server
 	out.PrivateKey = in.PrivateKey
 	out.URI = in.URI
+	out.DNS01 = (*ACMEIssuerDNS01Config)(unsafe.Pointer(in.DNS01))
 	return nil
 }
 
 func Convert_certmanager_ACMEIssuer_To_v1alpha1_ACMEIssuer(in *certmanager.ACMEIssuer, out *ACMEIssuer, s conversion.Scope) error {
 	return autoConvert_certmanager_ACMEIssuer_To_v1alpha1_ACMEIssuer(in, out, s)
+}
+
+func autoConvert_v1alpha1_ACMEIssuerDNS01Config_To_certmanager_ACMEIssuerDNS01Config(in *ACMEIssuerDNS01Config, out *certmanager.ACMEIssuerDNS01Config, s conversion.Scope) error {
+	out.Providers = *(*[]certmanager.ACMEIssuerDNS01Provider)(unsafe.Pointer(&in.Providers))
+	return nil
+}
+
+func Convert_v1alpha1_ACMEIssuerDNS01Config_To_certmanager_ACMEIssuerDNS01Config(in *ACMEIssuerDNS01Config, out *certmanager.ACMEIssuerDNS01Config, s conversion.Scope) error {
+	return autoConvert_v1alpha1_ACMEIssuerDNS01Config_To_certmanager_ACMEIssuerDNS01Config(in, out, s)
+}
+
+func autoConvert_certmanager_ACMEIssuerDNS01Config_To_v1alpha1_ACMEIssuerDNS01Config(in *certmanager.ACMEIssuerDNS01Config, out *ACMEIssuerDNS01Config, s conversion.Scope) error {
+	if in.Providers == nil {
+		out.Providers = make([]ACMEIssuerDNS01Provider, 0)
+	} else {
+		out.Providers = *(*[]ACMEIssuerDNS01Provider)(unsafe.Pointer(&in.Providers))
+	}
+	return nil
+}
+
+func Convert_certmanager_ACMEIssuerDNS01Config_To_v1alpha1_ACMEIssuerDNS01Config(in *certmanager.ACMEIssuerDNS01Config, out *ACMEIssuerDNS01Config, s conversion.Scope) error {
+	return autoConvert_certmanager_ACMEIssuerDNS01Config_To_v1alpha1_ACMEIssuerDNS01Config(in, out, s)
+}
+
+func autoConvert_v1alpha1_ACMEIssuerDNS01Provider_To_certmanager_ACMEIssuerDNS01Provider(in *ACMEIssuerDNS01Provider, out *certmanager.ACMEIssuerDNS01Provider, s conversion.Scope) error {
+	out.Name = in.Name
+	out.CloudDNS = (*certmanager.ACMEIssuerDNS01ProviderCloudDNS)(unsafe.Pointer(in.CloudDNS))
+	return nil
+}
+
+func Convert_v1alpha1_ACMEIssuerDNS01Provider_To_certmanager_ACMEIssuerDNS01Provider(in *ACMEIssuerDNS01Provider, out *certmanager.ACMEIssuerDNS01Provider, s conversion.Scope) error {
+	return autoConvert_v1alpha1_ACMEIssuerDNS01Provider_To_certmanager_ACMEIssuerDNS01Provider(in, out, s)
+}
+
+func autoConvert_certmanager_ACMEIssuerDNS01Provider_To_v1alpha1_ACMEIssuerDNS01Provider(in *certmanager.ACMEIssuerDNS01Provider, out *ACMEIssuerDNS01Provider, s conversion.Scope) error {
+	out.Name = in.Name
+	out.CloudDNS = (*ACMEIssuerDNS01ProviderCloudDNS)(unsafe.Pointer(in.CloudDNS))
+	return nil
+}
+
+func Convert_certmanager_ACMEIssuerDNS01Provider_To_v1alpha1_ACMEIssuerDNS01Provider(in *certmanager.ACMEIssuerDNS01Provider, out *ACMEIssuerDNS01Provider, s conversion.Scope) error {
+	return autoConvert_certmanager_ACMEIssuerDNS01Provider_To_v1alpha1_ACMEIssuerDNS01Provider(in, out, s)
+}
+
+func autoConvert_v1alpha1_ACMEIssuerDNS01ProviderCloudDNS_To_certmanager_ACMEIssuerDNS01ProviderCloudDNS(in *ACMEIssuerDNS01ProviderCloudDNS, out *certmanager.ACMEIssuerDNS01ProviderCloudDNS, s conversion.Scope) error {
+	out.ServiceAccount = in.ServiceAccount
+	out.Project = in.Project
+	return nil
+}
+
+func Convert_v1alpha1_ACMEIssuerDNS01ProviderCloudDNS_To_certmanager_ACMEIssuerDNS01ProviderCloudDNS(in *ACMEIssuerDNS01ProviderCloudDNS, out *certmanager.ACMEIssuerDNS01ProviderCloudDNS, s conversion.Scope) error {
+	return autoConvert_v1alpha1_ACMEIssuerDNS01ProviderCloudDNS_To_certmanager_ACMEIssuerDNS01ProviderCloudDNS(in, out, s)
+}
+
+func autoConvert_certmanager_ACMEIssuerDNS01ProviderCloudDNS_To_v1alpha1_ACMEIssuerDNS01ProviderCloudDNS(in *certmanager.ACMEIssuerDNS01ProviderCloudDNS, out *ACMEIssuerDNS01ProviderCloudDNS, s conversion.Scope) error {
+	out.ServiceAccount = in.ServiceAccount
+	out.Project = in.Project
+	return nil
+}
+
+func Convert_certmanager_ACMEIssuerDNS01ProviderCloudDNS_To_v1alpha1_ACMEIssuerDNS01ProviderCloudDNS(in *certmanager.ACMEIssuerDNS01ProviderCloudDNS, out *ACMEIssuerDNS01ProviderCloudDNS, s conversion.Scope) error {
+	return autoConvert_certmanager_ACMEIssuerDNS01ProviderCloudDNS_To_v1alpha1_ACMEIssuerDNS01ProviderCloudDNS(in, out, s)
 }
 
 func autoConvert_v1alpha1_Certificate_To_certmanager_Certificate(in *Certificate, out *certmanager.Certificate, s conversion.Scope) error {
@@ -168,6 +298,28 @@ func Convert_certmanager_Certificate_To_v1alpha1_Certificate(in *certmanager.Cer
 	return autoConvert_certmanager_Certificate_To_v1alpha1_Certificate(in, out, s)
 }
 
+func autoConvert_v1alpha1_CertificateACMEStatus_To_certmanager_CertificateACMEStatus(in *CertificateACMEStatus, out *certmanager.CertificateACMEStatus, s conversion.Scope) error {
+	out.Authorizations = *(*[]certmanager.ACMEDomainAuthorization)(unsafe.Pointer(&in.Authorizations))
+	return nil
+}
+
+func Convert_v1alpha1_CertificateACMEStatus_To_certmanager_CertificateACMEStatus(in *CertificateACMEStatus, out *certmanager.CertificateACMEStatus, s conversion.Scope) error {
+	return autoConvert_v1alpha1_CertificateACMEStatus_To_certmanager_CertificateACMEStatus(in, out, s)
+}
+
+func autoConvert_certmanager_CertificateACMEStatus_To_v1alpha1_CertificateACMEStatus(in *certmanager.CertificateACMEStatus, out *CertificateACMEStatus, s conversion.Scope) error {
+	if in.Authorizations == nil {
+		out.Authorizations = make([]ACMEDomainAuthorization, 0)
+	} else {
+		out.Authorizations = *(*[]ACMEDomainAuthorization)(unsafe.Pointer(&in.Authorizations))
+	}
+	return nil
+}
+
+func Convert_certmanager_CertificateACMEStatus_To_v1alpha1_CertificateACMEStatus(in *certmanager.CertificateACMEStatus, out *CertificateACMEStatus, s conversion.Scope) error {
+	return autoConvert_certmanager_CertificateACMEStatus_To_v1alpha1_CertificateACMEStatus(in, out, s)
+}
+
 func autoConvert_v1alpha1_CertificateList_To_certmanager_CertificateList(in *CertificateList, out *certmanager.CertificateList, s conversion.Scope) error {
 	out.ListMeta = in.ListMeta
 	out.Items = *(*[]certmanager.Certificate)(unsafe.Pointer(&in.Items))
@@ -196,7 +348,7 @@ func autoConvert_v1alpha1_CertificateSpec_To_certmanager_CertificateSpec(in *Cer
 	out.Domains = *(*[]string)(unsafe.Pointer(&in.Domains))
 	out.SecretName = in.SecretName
 	out.Issuer = in.Issuer
-	out.ACME = (*certmanager.ACMEConfig)(unsafe.Pointer(in.ACME))
+	out.ACME = (*certmanager.ACMECertificateConfig)(unsafe.Pointer(in.ACME))
 	return nil
 }
 
@@ -212,7 +364,7 @@ func autoConvert_certmanager_CertificateSpec_To_v1alpha1_CertificateSpec(in *cer
 	}
 	out.SecretName = in.SecretName
 	out.Issuer = in.Issuer
-	out.ACME = (*ACMEConfig)(unsafe.Pointer(in.ACME))
+	out.ACME = (*ACMECertificateConfig)(unsafe.Pointer(in.ACME))
 	return nil
 }
 
@@ -221,6 +373,7 @@ func Convert_certmanager_CertificateSpec_To_v1alpha1_CertificateSpec(in *certman
 }
 
 func autoConvert_v1alpha1_CertificateStatus_To_certmanager_CertificateStatus(in *CertificateStatus, out *certmanager.CertificateStatus, s conversion.Scope) error {
+	out.ACME = (*certmanager.CertificateACMEStatus)(unsafe.Pointer(in.ACME))
 	return nil
 }
 
@@ -229,6 +382,7 @@ func Convert_v1alpha1_CertificateStatus_To_certmanager_CertificateStatus(in *Cer
 }
 
 func autoConvert_certmanager_CertificateStatus_To_v1alpha1_CertificateStatus(in *certmanager.CertificateStatus, out *CertificateStatus, s conversion.Scope) error {
+	out.ACME = (*CertificateACMEStatus)(unsafe.Pointer(in.ACME))
 	return nil
 }
 

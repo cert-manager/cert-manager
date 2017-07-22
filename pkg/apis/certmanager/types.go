@@ -55,6 +55,28 @@ type ACMEIssuer struct {
 	// URI is the unique account identifier, which can also be used to retrieve
 	// account details from the CA
 	URI string
+	// DNS-01 config
+	DNS01 *ACMEIssuerDNS01Config
+}
+
+// ACMEIssuerDNS01Config is a structure containing the ACME DNS configuration
+// option. One and only one of the fields within it should be set, when the
+// ACME challenge type is set to dns-01
+type ACMEIssuerDNS01Config struct {
+	Providers []ACMEIssuerDNS01Provider
+}
+
+type ACMEIssuerDNS01Provider struct {
+	Name string
+
+	CloudDNS *ACMEIssuerDNS01ProviderCloudDNS
+}
+
+// ACMEIssuerDNS01ProviderCloudDNS is a structure containing the DNS
+// configuration for Google Cloud DNS
+type ACMEIssuerDNS01ProviderCloudDNS struct {
+	ServiceAccount string
+	Project        string
 }
 
 // Certificate is a type to represent a Certificate from ACME
@@ -80,40 +102,46 @@ type CertificateSpec struct {
 	Domains []string
 	// SecretName is the name of the secret resource to store this secret in
 	SecretName string
-
+	// Issuer is the name of the issuer resource to use to obtain this
+	// certificate
 	Issuer string
-	ACME   *ACMEConfig
+
+	ACME *ACMECertificateConfig
 }
 
-// ACME contains the configuration for the ACME certificate provider
-type ACMEConfig struct {
-	Challenge ACMEChallengeType
+// ACMEConfig contains the configuration for the ACME certificate provider
+type ACMECertificateConfig struct {
+	Config []ACMECertificateDomainConfig
 }
 
-// ACMEChallengeType is the challenge type that should be used for ACME
-// challenge verifications
-type ACMEChallengeType string
-
-var (
-	// ACMEChallengeTypeHTTP01 is the ACME http-01 challenge type
-	ACMEChallengeTypeHTTP01 ACMEChallengeType = "HTTP-01"
-	// ACMEChallengeTypeDNS01 is the ACME dns-01 challenge type
-	ACMEChallengeTypeDNS01 ACMEChallengeType = "DNS-01"
-	// ACMEChallengeTypeTLSSNI01 is the ACME tls-sni-01 challenge type
-	ACMEChallengeTypeTLSSNI01 ACMEChallengeType = "TLS-SNI-01"
-)
-
-// ACMEDNSConfig is a structure containing the ACME DNS configuration option.
-// One and only one of the fields within it should be set, when the ACME
-// challenge type is set to dns-01
-type ACMEDNSConfig struct {
-	CloudDNS *ACMEDNSConfigCloudDNS
+type ACMECertificateDomainConfig struct {
+	Domains []string
+	HTTP01  *ACMECertificateHTTP01Config
+	DNS01   *ACMECertificateDNS01Config
 }
 
-// ACMEDNSConfigCloudDNS is a structure containing the DNS configuration for
-// Google Cloud DNS
-type ACMEDNSConfigCloudDNS struct{}
+type ACMECertificateHTTP01Config struct {
+	Ingress      string
+	IngressClass *string
+}
+
+type ACMECertificateDNS01Config struct {
+	Provider string
+}
 
 // CertificateStatus defines the observed state of Certificate
 type CertificateStatus struct {
+	ACME *CertificateACMEStatus
+}
+
+// CertificateACMEStatus holds the status for an ACME issuer
+type CertificateACMEStatus struct {
+	Authorizations []ACMEDomainAuthorization
+}
+
+// ACMEDomainAuthorization holds information about an ACME issuers domain
+// authorization
+type ACMEDomainAuthorization struct {
+	Domain string
+	URI    string
 }
