@@ -118,14 +118,14 @@ func (a *account) register() error {
 	}
 
 	privateKey, err := a.privateKey()
-
+	var privateKeyPem []byte
 	if err != nil {
 		if !k8sErrors.IsNotFound(err) {
 			return fmt.Errorf("error getting private key: %s", err.Error())
 		}
 
 		// TODO (@munnerz): allow changing the keysize
-		privateKey, err = a.generatePrivateKey(2048)
+		privateKeyPem, privateKey, err = generatePrivateKey(2048)
 
 		if err != nil {
 			return fmt.Errorf("error generating private key: %s", err.Error())
@@ -137,9 +137,7 @@ func (a *account) register() error {
 				Namespace: a.issuer.Namespace,
 			},
 			Data: map[string][]byte{
-				acmeAccountPrivateKeyKey: pem.EncodeToMemory(
-					&pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(privateKey)},
-				),
+				acmeAccountPrivateKeyKey: privateKeyPem,
 			},
 		})
 
@@ -181,6 +179,13 @@ func (a *account) register() error {
 	return nil
 }
 
-func (a *account) generatePrivateKey(bits int) (*rsa.PrivateKey, error) {
-	return rsa.GenerateKey(rand.Reader, bits)
+func generatePrivateKey(keySize int) ([]byte, *rsa.PrivateKey, error) {
+	privateKey, err := rsa.GenerateKey(rand.Reader, keySize)
+	if err != nil {
+		return []byte{}, nil, err
+	}
+
+	block := &pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(privateKey)}
+
+	return pem.EncodeToMemory(block), privateKey, nil
 }
