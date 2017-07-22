@@ -30,8 +30,11 @@ all: verify test build
 
 .get_deps:
 	@echo "Grabbing dependencies..."
-	@go get -d k8s.io/kubernetes/cmd/libs/go2idl/... || true
+	@go get -d -u k8s.io/kubernetes/ || true
 	@go get -d github.com/kubernetes/repo-infra || true
+	# Once k8s.io/kube-gen is live, we should be able to remove this dependency
+	# on k8s.io/kubernetes. https://github.com/kubernetes/kubernetes/pull/49114
+	cd ${GOPATH}/src/k8s.io/kubernetes; git checkout 25d3523359ff17dda6deb867a7c3dd6c8b7ea705;
 	@touch $@
 
 .hack_verify: .generate_exes
