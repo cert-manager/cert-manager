@@ -4,7 +4,7 @@ cert-manager is a Kubernetes addon to automate the management and issuance of
 certificates from an aribitrary issuing source.
 
 It is loosely based upon the work of [kube-lego](https://github.com/jetstack/kube-lego)
-and has borrowed some wisdome from other similar projects eg.
+and has borrowed some wisdom from other similar projects eg.
 [kube-cert-manager](https://github.com/PalmStoneGames/kube-cert-manager).
 
 ## Current status
