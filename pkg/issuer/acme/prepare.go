@@ -3,6 +3,9 @@ package acme
 import (
 	"context"
 	"fmt"
+	"reflect"
+
+	"k8s.io/client-go/kubernetes/scheme"
 
 	"golang.org/x/crypto/acme"
 
@@ -46,6 +49,28 @@ func authorizationsToObtain(cl *acme.Client, crt v1alpha1.Certificate) ([]string
 // It will send the appropriate Letsencrypt authorizations, and complete
 // challenge requests if neccessary.
 func (a *Acme) Prepare(crt *v1alpha1.Certificate) error {
+	before, err := scheme.Scheme.DeepCopy(crt)
+
+	if err != nil {
+		return fmt.Errorf("internal error creating deepcopy for issuer: %s", err.Error())
+	}
+
+	defer func() {
+		if !reflect.DeepEqual(before, crt) {
+			a.ctx.CertManagerClient.Certificates(crt.Namespace).Update(crt)
+		}
+	}()
+
+	err = a.prepare(crt)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (a *Acme) prepare(crt *v1alpha1.Certificate) error {
 	if crt.Spec.ACME == nil {
 		return fmt.Errorf("acme config must be specified")
 	}
@@ -118,11 +143,19 @@ func (a *Acme) Prepare(crt *v1alpha1.Certificate) error {
 			return fmt.Errorf("error getting solver for challenge type '%s': %s", challengeType, err.Error())
 		}
 
+		a.ctx.Logger.Printf("presenting challenge for domain %s, token %s key %s", auth.domain, token, key)
 		err = solver.Present(*a.ctx, crt, auth.domain, token, key)
 		if err != nil {
 			return fmt.Errorf("error presenting acme authorization for domain '%s': %s", auth.domain, err.Error())
 		}
 
+		a.ctx.Logger.Printf("accepting %s challenge for domain %s", challengeType, auth.domain)
+		challenge, err = cl.Accept(context.Background(), challenge)
+		if err != nil {
+			return fmt.Errorf("error accepting acme challenge for domain '%s': %s", auth.domain, err.Error())
+		}
+
+		a.ctx.Logger.Printf("waiting for authorization for domain %s...", auth.domain)
 		authorization, err := cl.WaitAuthorization(context.Background(), challenge.URI)
 		if err != nil {
 			return fmt.Errorf("error waiting for authorization for domain '%s': %s", auth.domain, err.Error())
@@ -131,11 +164,18 @@ func (a *Acme) Prepare(crt *v1alpha1.Certificate) error {
 		if authorization.Status != acme.StatusValid {
 			return fmt.Errorf("expected acme domain authorization status for '%s' to be valid, but it's %s", auth.domain, authorization.Status)
 		}
+		a.ctx.Logger.Printf("got successful authorization for domain %s", auth.domain)
 
 		crt.Status.ACME.SaveAuthorization(v1alpha1.ACMEDomainAuthorization{
 			Domain: auth.domain,
 			URI:    authorization.URI,
 		})
+
+		crt, err = a.ctx.CertManagerClient.Certificates(crt.Namespace).Update(crt)
+
+		if err != nil {
+			return fmt.Errorf("error updating certificate resource with authorization details")
+		}
 	}
 
 	return nil
