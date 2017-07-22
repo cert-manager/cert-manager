@@ -1,0 +1,7 @@
+language: go
+
+services:
+- docker
+
+script:
+- make verify test
