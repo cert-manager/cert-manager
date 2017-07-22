@@ -22,7 +22,6 @@ package codec
 import (
 	"bytes"
 	"encoding/gob"
-	"flag"
 	"fmt"
 	"io/ioutil"
 	"math"
@@ -42,7 +41,6 @@ import (
 )
 
 func init() {
-	testInitFlags()
 	testPreInitFns = append(testPreInitFns, testInit)
 }
 
@@ -91,22 +89,6 @@ var (
 	// will encode a float32 as float64, or large int as uint
 	testRpcInt = new(TestRpcInt)
 )
-
-func testInitFlags() {
-	// delete(testDecOpts.ExtFuncs, timeTyp)
-	flag.BoolVar(&testVerbose, "tv", false, "Test Verbose")
-	flag.BoolVar(&testInitDebug, "tg", false, "Test Init Debug")
-	flag.BoolVar(&testUseIoEncDec, "ti", false, "Use IO Reader/Writer for Marshal/Unmarshal")
-	flag.BoolVar(&testStructToArray, "ts", false, "Set StructToArray option")
-	flag.BoolVar(&testWriteNoSymbols, "tn", false, "Set NoSymbols option")
-	flag.BoolVar(&testCanonical, "tc", false, "Set Canonical option")
-	flag.BoolVar(&testInternStr, "te", false, "Set InternStr option")
-	flag.BoolVar(&testSkipIntf, "tf", false, "Skip Interfaces")
-	flag.BoolVar(&testUseReset, "tr", false, "Use Reset")
-	flag.IntVar(&testJsonIndent, "td", 0, "Use JSON Indent")
-	flag.BoolVar(&testUseMust, "tm", true, "Use Must(En|De)code")
-	flag.BoolVar(&testCheckCircRef, "tl", false, "Use Check Circular Ref")
-}
 
 func testByteBuf(in []byte) *bytes.Buffer {
 	return bytes.NewBuffer(in)
@@ -346,6 +328,7 @@ func testInit() {
 		bh.Canonical = testCanonical
 		bh.CheckCircularRef = testCheckCircRef
 		bh.StructToArray = testStructToArray
+		bh.MaxInitLen = testMaxInitLen
 		// mostly doing this for binc
 		if testWriteNoSymbols {
 			bh.AsSymbols = AsSymbolNone
@@ -355,6 +338,7 @@ func testInit() {
 	}
 
 	testJsonH.Indent = int8(testJsonIndent)
+	testJsonH.HTMLCharsAsIs = testJsonHTMLCharsAsIs
 	testMsgpackH.RawToString = true
 
 	// testMsgpackH.AddExt(byteSliceTyp, 0, testMsgpackH.BinaryEncodeExt, testMsgpackH.BinaryDecodeExt)
@@ -389,7 +373,7 @@ func testInit() {
 		true,
 		"null",
 		nil,
-		"someday",
+		"some&day>some<day",
 		timeToCompare1,
 		"",
 		timeToCompare2,

@@ -405,6 +405,12 @@ var unmarshalTests = []struct {
 		map[string]interface{}{"v": 1},
 	},
 
+	// Non-specific tag (Issue #75)
+	{
+		"v: ! test",
+		map[string]interface{}{"v": "test"},
+	},
+
 	// Anchors and aliases.
 	{
 		"a: &x 1\nb: &y 2\nc: *x\nd: *y\n",
@@ -551,13 +557,44 @@ var unmarshalTests = []struct {
 	},
 	{
 		"a: 2015-02-24T18:19:39Z\n",
-		map[string]time.Time{"a": time.Unix(1424801979, 0)},
+		map[string]time.Time{"a": time.Unix(1424801979, 0).In(time.UTC)},
 	},
 
 	// Encode empty lists as zero-length slices.
 	{
 		"a: []",
 		&struct{ A []int }{[]int{}},
+	},
+
+	// UTF-16-LE
+	{
+		"\xff\xfe\xf1\x00o\x00\xf1\x00o\x00:\x00 \x00v\x00e\x00r\x00y\x00 \x00y\x00e\x00s\x00\n\x00",
+		M{"ñoño": "very yes"},
+	},
+	// UTF-16-LE with surrogate.
+	{
+		"\xff\xfe\xf1\x00o\x00\xf1\x00o\x00:\x00 \x00v\x00e\x00r\x00y\x00 \x00y\x00e\x00s\x00 \x00=\xd8\xd4\xdf\n\x00",
+		M{"ñoño": "very yes 🟔"},
+	},
+
+	// UTF-16-BE
+	{
+		"\xfe\xff\x00\xf1\x00o\x00\xf1\x00o\x00:\x00 \x00v\x00e\x00r\x00y\x00 \x00y\x00e\x00s\x00\n",
+		M{"ñoño": "very yes"},
+	},
+	// UTF-16-BE with surrogate.
+	{
+		"\xfe\xff\x00\xf1\x00o\x00\xf1\x00o\x00:\x00 \x00v\x00e\x00r\x00y\x00 \x00y\x00e\x00s\x00 \xd8=\xdf\xd4\x00\n",
+		M{"ñoño": "very yes 🟔"},
+	},
+
+	// YAML Float regex shouldn't match this
+	{
+		"a: 123456e1\n",
+		M{"a": "123456e1"},
+	}, {
+		"a: 123456E1\n",
+		M{"a": "123456E1"},
 	},
 }
 
@@ -573,7 +610,8 @@ type inlineC struct {
 }
 
 func (s *S) TestUnmarshal(c *C) {
-	for _, item := range unmarshalTests {
+	for i, item := range unmarshalTests {
+		c.Logf("test %d: %q", i, item.data)
 		t := reflect.ValueOf(item.value).Type()
 		var value interface{}
 		switch t.Kind() {
@@ -617,6 +655,7 @@ var unmarshalErrorTests = []struct {
 	{"a: !!binary ==", "yaml: !!binary value contains invalid base64 data"},
 	{"{[.]}", `yaml: invalid map key: \[\]interface \{\}\{"\."\}`},
 	{"{{.}}", `yaml: invalid map key: map\[interface\ \{\}\]interface \{\}\{".":interface \{\}\(nil\)\}`},
+	{"%TAG !%79! tag:yaml.org,2002:\n---\nv: !%79!int '1'", "yaml: did not find expected whitespace"},
 }
 
 func (s *S) TestUnmarshalErrors(c *C) {
@@ -638,6 +677,7 @@ var unmarshalerTests = []struct {
 	{`_: BAR!`, "!!str", "BAR!"},
 	{`_: "BAR!"`, "!!str", "BAR!"},
 	{"_: !!foo 'BAR!'", "!!foo", "BAR!"},
+	{`_: ""`, "!!str", ""},
 }
 
 var unmarshalerResult = map[int]error{}
@@ -934,6 +974,17 @@ func (s *S) TestUnmarshalSliceOnPreset(c *C) {
 	v := struct{ A []int }{[]int{1}}
 	yaml.Unmarshal([]byte("a: [2]"), &v)
 	c.Assert(v.A, DeepEquals, []int{2})
+}
+
+func (s *S) TestUnmarshalStrict(c *C) {
+	v := struct{ A, B int }{}
+
+	err := yaml.UnmarshalStrict([]byte("a: 1\nb: 2"), &v)
+	c.Check(err, IsNil)
+	err = yaml.Unmarshal([]byte("a: 1\nb: 2\nc: 3"), &v)
+	c.Check(err, IsNil)
+	err = yaml.UnmarshalStrict([]byte("a: 1\nb: 2\nc: 3"), &v)
+	c.Check(err, ErrorMatches, "yaml: unmarshal errors:\n  line 1: field c not found in struct struct { A int; B int }")
 }
 
 //var data []byte

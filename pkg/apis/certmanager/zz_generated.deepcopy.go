@@ -21,338 +21,542 @@ limitations under the License.
 package certmanager
 
 import (
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	conversion "k8s.io/apimachinery/pkg/conversion"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	reflect "reflect"
 )
 
+// Deprecated: register deep-copy functions.
 func init() {
 	SchemeBuilder.Register(RegisterDeepCopies)
 }
 
-// RegisterDeepCopies adds deep-copy functions to the given scheme. Public
+// Deprecated: RegisterDeepCopies adds deep-copy functions to the given scheme. Public
 // to allow building arbitrary schemes.
 func RegisterDeepCopies(scheme *runtime.Scheme) error {
 	return scheme.AddGeneratedDeepCopyFuncs(
-		conversion.GeneratedDeepCopyFunc{Fn: DeepCopy_certmanager_ACMECertificateConfig, InType: reflect.TypeOf(&ACMECertificateConfig{})},
-		conversion.GeneratedDeepCopyFunc{Fn: DeepCopy_certmanager_ACMECertificateDNS01Config, InType: reflect.TypeOf(&ACMECertificateDNS01Config{})},
-		conversion.GeneratedDeepCopyFunc{Fn: DeepCopy_certmanager_ACMECertificateDomainConfig, InType: reflect.TypeOf(&ACMECertificateDomainConfig{})},
-		conversion.GeneratedDeepCopyFunc{Fn: DeepCopy_certmanager_ACMECertificateHTTP01Config, InType: reflect.TypeOf(&ACMECertificateHTTP01Config{})},
-		conversion.GeneratedDeepCopyFunc{Fn: DeepCopy_certmanager_ACMEDomainAuthorization, InType: reflect.TypeOf(&ACMEDomainAuthorization{})},
-		conversion.GeneratedDeepCopyFunc{Fn: DeepCopy_certmanager_ACMEIssuer, InType: reflect.TypeOf(&ACMEIssuer{})},
-		conversion.GeneratedDeepCopyFunc{Fn: DeepCopy_certmanager_ACMEIssuerDNS01Config, InType: reflect.TypeOf(&ACMEIssuerDNS01Config{})},
-		conversion.GeneratedDeepCopyFunc{Fn: DeepCopy_certmanager_ACMEIssuerDNS01Provider, InType: reflect.TypeOf(&ACMEIssuerDNS01Provider{})},
-		conversion.GeneratedDeepCopyFunc{Fn: DeepCopy_certmanager_ACMEIssuerDNS01ProviderCloudDNS, InType: reflect.TypeOf(&ACMEIssuerDNS01ProviderCloudDNS{})},
-		conversion.GeneratedDeepCopyFunc{Fn: DeepCopy_certmanager_Certificate, InType: reflect.TypeOf(&Certificate{})},
-		conversion.GeneratedDeepCopyFunc{Fn: DeepCopy_certmanager_CertificateACMEStatus, InType: reflect.TypeOf(&CertificateACMEStatus{})},
-		conversion.GeneratedDeepCopyFunc{Fn: DeepCopy_certmanager_CertificateList, InType: reflect.TypeOf(&CertificateList{})},
-		conversion.GeneratedDeepCopyFunc{Fn: DeepCopy_certmanager_CertificateSpec, InType: reflect.TypeOf(&CertificateSpec{})},
-		conversion.GeneratedDeepCopyFunc{Fn: DeepCopy_certmanager_CertificateStatus, InType: reflect.TypeOf(&CertificateStatus{})},
-		conversion.GeneratedDeepCopyFunc{Fn: DeepCopy_certmanager_Issuer, InType: reflect.TypeOf(&Issuer{})},
-		conversion.GeneratedDeepCopyFunc{Fn: DeepCopy_certmanager_IssuerList, InType: reflect.TypeOf(&IssuerList{})},
-		conversion.GeneratedDeepCopyFunc{Fn: DeepCopy_certmanager_IssuerSpec, InType: reflect.TypeOf(&IssuerSpec{})},
-		conversion.GeneratedDeepCopyFunc{Fn: DeepCopy_certmanager_IssuerStatus, InType: reflect.TypeOf(&IssuerStatus{})},
+		conversion.GeneratedDeepCopyFunc{Fn: func(in interface{}, out interface{}, c *conversion.Cloner) error {
+			in.(*ACMECertificateConfig).DeepCopyInto(out.(*ACMECertificateConfig))
+			return nil
+		}, InType: reflect.TypeOf(&ACMECertificateConfig{})},
+		conversion.GeneratedDeepCopyFunc{Fn: func(in interface{}, out interface{}, c *conversion.Cloner) error {
+			in.(*ACMECertificateDNS01Config).DeepCopyInto(out.(*ACMECertificateDNS01Config))
+			return nil
+		}, InType: reflect.TypeOf(&ACMECertificateDNS01Config{})},
+		conversion.GeneratedDeepCopyFunc{Fn: func(in interface{}, out interface{}, c *conversion.Cloner) error {
+			in.(*ACMECertificateDomainConfig).DeepCopyInto(out.(*ACMECertificateDomainConfig))
+			return nil
+		}, InType: reflect.TypeOf(&ACMECertificateDomainConfig{})},
+		conversion.GeneratedDeepCopyFunc{Fn: func(in interface{}, out interface{}, c *conversion.Cloner) error {
+			in.(*ACMECertificateHTTP01Config).DeepCopyInto(out.(*ACMECertificateHTTP01Config))
+			return nil
+		}, InType: reflect.TypeOf(&ACMECertificateHTTP01Config{})},
+		conversion.GeneratedDeepCopyFunc{Fn: func(in interface{}, out interface{}, c *conversion.Cloner) error {
+			in.(*ACMEDomainAuthorization).DeepCopyInto(out.(*ACMEDomainAuthorization))
+			return nil
+		}, InType: reflect.TypeOf(&ACMEDomainAuthorization{})},
+		conversion.GeneratedDeepCopyFunc{Fn: func(in interface{}, out interface{}, c *conversion.Cloner) error {
+			in.(*ACMEIssuer).DeepCopyInto(out.(*ACMEIssuer))
+			return nil
+		}, InType: reflect.TypeOf(&ACMEIssuer{})},
+		conversion.GeneratedDeepCopyFunc{Fn: func(in interface{}, out interface{}, c *conversion.Cloner) error {
+			in.(*ACMEIssuerDNS01Config).DeepCopyInto(out.(*ACMEIssuerDNS01Config))
+			return nil
+		}, InType: reflect.TypeOf(&ACMEIssuerDNS01Config{})},
+		conversion.GeneratedDeepCopyFunc{Fn: func(in interface{}, out interface{}, c *conversion.Cloner) error {
+			in.(*ACMEIssuerDNS01Provider).DeepCopyInto(out.(*ACMEIssuerDNS01Provider))
+			return nil
+		}, InType: reflect.TypeOf(&ACMEIssuerDNS01Provider{})},
+		conversion.GeneratedDeepCopyFunc{Fn: func(in interface{}, out interface{}, c *conversion.Cloner) error {
+			in.(*ACMEIssuerDNS01ProviderCloudDNS).DeepCopyInto(out.(*ACMEIssuerDNS01ProviderCloudDNS))
+			return nil
+		}, InType: reflect.TypeOf(&ACMEIssuerDNS01ProviderCloudDNS{})},
+		conversion.GeneratedDeepCopyFunc{Fn: func(in interface{}, out interface{}, c *conversion.Cloner) error {
+			in.(*Certificate).DeepCopyInto(out.(*Certificate))
+			return nil
+		}, InType: reflect.TypeOf(&Certificate{})},
+		conversion.GeneratedDeepCopyFunc{Fn: func(in interface{}, out interface{}, c *conversion.Cloner) error {
+			in.(*CertificateACMEStatus).DeepCopyInto(out.(*CertificateACMEStatus))
+			return nil
+		}, InType: reflect.TypeOf(&CertificateACMEStatus{})},
+		conversion.GeneratedDeepCopyFunc{Fn: func(in interface{}, out interface{}, c *conversion.Cloner) error {
+			in.(*CertificateList).DeepCopyInto(out.(*CertificateList))
+			return nil
+		}, InType: reflect.TypeOf(&CertificateList{})},
+		conversion.GeneratedDeepCopyFunc{Fn: func(in interface{}, out interface{}, c *conversion.Cloner) error {
+			in.(*CertificateSpec).DeepCopyInto(out.(*CertificateSpec))
+			return nil
+		}, InType: reflect.TypeOf(&CertificateSpec{})},
+		conversion.GeneratedDeepCopyFunc{Fn: func(in interface{}, out interface{}, c *conversion.Cloner) error {
+			in.(*CertificateStatus).DeepCopyInto(out.(*CertificateStatus))
+			return nil
+		}, InType: reflect.TypeOf(&CertificateStatus{})},
+		conversion.GeneratedDeepCopyFunc{Fn: func(in interface{}, out interface{}, c *conversion.Cloner) error {
+			in.(*Issuer).DeepCopyInto(out.(*Issuer))
+			return nil
+		}, InType: reflect.TypeOf(&Issuer{})},
+		conversion.GeneratedDeepCopyFunc{Fn: func(in interface{}, out interface{}, c *conversion.Cloner) error {
+			in.(*IssuerList).DeepCopyInto(out.(*IssuerList))
+			return nil
+		}, InType: reflect.TypeOf(&IssuerList{})},
+		conversion.GeneratedDeepCopyFunc{Fn: func(in interface{}, out interface{}, c *conversion.Cloner) error {
+			in.(*IssuerSpec).DeepCopyInto(out.(*IssuerSpec))
+			return nil
+		}, InType: reflect.TypeOf(&IssuerSpec{})},
+		conversion.GeneratedDeepCopyFunc{Fn: func(in interface{}, out interface{}, c *conversion.Cloner) error {
+			in.(*IssuerStatus).DeepCopyInto(out.(*IssuerStatus))
+			return nil
+		}, InType: reflect.TypeOf(&IssuerStatus{})},
 	)
 }
 
-func DeepCopy_certmanager_ACMECertificateConfig(in interface{}, out interface{}, c *conversion.Cloner) error {
-	{
-		in := in.(*ACMECertificateConfig)
-		out := out.(*ACMECertificateConfig)
-		*out = *in
-		if in.Config != nil {
-			in, out := &in.Config, &out.Config
-			*out = make([]ACMECertificateDomainConfig, len(*in))
-			for i := range *in {
-				if newVal, err := c.DeepCopy(&(*in)[i]); err != nil {
-					return err
-				} else {
-					(*out)[i] = *newVal.(*ACMECertificateDomainConfig)
-				}
-			}
+// DeepCopyInto is an autogenerated deepcopy function, copying the receiver, writing into out. in must be non-nil.
+func (in *ACMECertificateConfig) DeepCopyInto(out *ACMECertificateConfig) {
+	*out = *in
+	if in.Config != nil {
+		in, out := &in.Config, &out.Config
+		*out = make([]ACMECertificateDomainConfig, len(*in))
+		for i := range *in {
+			(*in)[i].DeepCopyInto(&(*out)[i])
 		}
-		return nil
 	}
+	return
 }
 
-func DeepCopy_certmanager_ACMECertificateDNS01Config(in interface{}, out interface{}, c *conversion.Cloner) error {
-	{
-		in := in.(*ACMECertificateDNS01Config)
-		out := out.(*ACMECertificateDNS01Config)
-		*out = *in
+// DeepCopyInto is an autogenerated deepcopy function, copying the receiver, creating a new ACMECertificateConfig.
+func (x *ACMECertificateConfig) DeepCopy() *ACMECertificateConfig {
+	if x == nil {
 		return nil
 	}
+	out := new(ACMECertificateConfig)
+	x.DeepCopyInto(out)
+	return out
 }
 
-func DeepCopy_certmanager_ACMECertificateDomainConfig(in interface{}, out interface{}, c *conversion.Cloner) error {
-	{
-		in := in.(*ACMECertificateDomainConfig)
-		out := out.(*ACMECertificateDomainConfig)
-		*out = *in
-		if in.Domains != nil {
-			in, out := &in.Domains, &out.Domains
-			*out = make([]string, len(*in))
-			copy(*out, *in)
+// DeepCopyInto is an autogenerated deepcopy function, copying the receiver, writing into out. in must be non-nil.
+func (in *ACMECertificateDNS01Config) DeepCopyInto(out *ACMECertificateDNS01Config) {
+	*out = *in
+	return
+}
+
+// DeepCopyInto is an autogenerated deepcopy function, copying the receiver, creating a new ACMECertificateDNS01Config.
+func (x *ACMECertificateDNS01Config) DeepCopy() *ACMECertificateDNS01Config {
+	if x == nil {
+		return nil
+	}
+	out := new(ACMECertificateDNS01Config)
+	x.DeepCopyInto(out)
+	return out
+}
+
+// DeepCopyInto is an autogenerated deepcopy function, copying the receiver, writing into out. in must be non-nil.
+func (in *ACMECertificateDomainConfig) DeepCopyInto(out *ACMECertificateDomainConfig) {
+	*out = *in
+	if in.Domains != nil {
+		in, out := &in.Domains, &out.Domains
+		*out = make([]string, len(*in))
+		copy(*out, *in)
+	}
+	if in.HTTP01 != nil {
+		in, out := &in.HTTP01, &out.HTTP01
+		if *in == nil {
+			*out = nil
+		} else {
+			*out = new(ACMECertificateHTTP01Config)
+			(*in).DeepCopyInto(*out)
 		}
-		if in.HTTP01 != nil {
-			in, out := &in.HTTP01, &out.HTTP01
-			if newVal, err := c.DeepCopy(*in); err != nil {
-				return err
-			} else {
-				*out = newVal.(*ACMECertificateHTTP01Config)
-			}
-		}
-		if in.DNS01 != nil {
-			in, out := &in.DNS01, &out.DNS01
+	}
+	if in.DNS01 != nil {
+		in, out := &in.DNS01, &out.DNS01
+		if *in == nil {
+			*out = nil
+		} else {
 			*out = new(ACMECertificateDNS01Config)
 			**out = **in
 		}
-		return nil
 	}
+	return
 }
 
-func DeepCopy_certmanager_ACMECertificateHTTP01Config(in interface{}, out interface{}, c *conversion.Cloner) error {
-	{
-		in := in.(*ACMECertificateHTTP01Config)
-		out := out.(*ACMECertificateHTTP01Config)
-		*out = *in
-		if in.IngressClass != nil {
-			in, out := &in.IngressClass, &out.IngressClass
+// DeepCopyInto is an autogenerated deepcopy function, copying the receiver, creating a new ACMECertificateDomainConfig.
+func (x *ACMECertificateDomainConfig) DeepCopy() *ACMECertificateDomainConfig {
+	if x == nil {
+		return nil
+	}
+	out := new(ACMECertificateDomainConfig)
+	x.DeepCopyInto(out)
+	return out
+}
+
+// DeepCopyInto is an autogenerated deepcopy function, copying the receiver, writing into out. in must be non-nil.
+func (in *ACMECertificateHTTP01Config) DeepCopyInto(out *ACMECertificateHTTP01Config) {
+	*out = *in
+	if in.IngressClass != nil {
+		in, out := &in.IngressClass, &out.IngressClass
+		if *in == nil {
+			*out = nil
+		} else {
 			*out = new(string)
 			**out = **in
 		}
-		return nil
 	}
+	return
 }
 
-func DeepCopy_certmanager_ACMEDomainAuthorization(in interface{}, out interface{}, c *conversion.Cloner) error {
-	{
-		in := in.(*ACMEDomainAuthorization)
-		out := out.(*ACMEDomainAuthorization)
-		*out = *in
+// DeepCopyInto is an autogenerated deepcopy function, copying the receiver, creating a new ACMECertificateHTTP01Config.
+func (x *ACMECertificateHTTP01Config) DeepCopy() *ACMECertificateHTTP01Config {
+	if x == nil {
 		return nil
 	}
+	out := new(ACMECertificateHTTP01Config)
+	x.DeepCopyInto(out)
+	return out
 }
 
-func DeepCopy_certmanager_ACMEIssuer(in interface{}, out interface{}, c *conversion.Cloner) error {
-	{
-		in := in.(*ACMEIssuer)
-		out := out.(*ACMEIssuer)
-		*out = *in
-		if in.DNS01 != nil {
-			in, out := &in.DNS01, &out.DNS01
-			if newVal, err := c.DeepCopy(*in); err != nil {
-				return err
-			} else {
-				*out = newVal.(*ACMEIssuerDNS01Config)
-			}
+// DeepCopyInto is an autogenerated deepcopy function, copying the receiver, writing into out. in must be non-nil.
+func (in *ACMEDomainAuthorization) DeepCopyInto(out *ACMEDomainAuthorization) {
+	*out = *in
+	return
+}
+
+// DeepCopyInto is an autogenerated deepcopy function, copying the receiver, creating a new ACMEDomainAuthorization.
+func (x *ACMEDomainAuthorization) DeepCopy() *ACMEDomainAuthorization {
+	if x == nil {
+		return nil
+	}
+	out := new(ACMEDomainAuthorization)
+	x.DeepCopyInto(out)
+	return out
+}
+
+// DeepCopyInto is an autogenerated deepcopy function, copying the receiver, writing into out. in must be non-nil.
+func (in *ACMEIssuer) DeepCopyInto(out *ACMEIssuer) {
+	*out = *in
+	if in.DNS01 != nil {
+		in, out := &in.DNS01, &out.DNS01
+		if *in == nil {
+			*out = nil
+		} else {
+			*out = new(ACMEIssuerDNS01Config)
+			(*in).DeepCopyInto(*out)
 		}
-		return nil
 	}
+	return
 }
 
-func DeepCopy_certmanager_ACMEIssuerDNS01Config(in interface{}, out interface{}, c *conversion.Cloner) error {
-	{
-		in := in.(*ACMEIssuerDNS01Config)
-		out := out.(*ACMEIssuerDNS01Config)
-		*out = *in
-		if in.Providers != nil {
-			in, out := &in.Providers, &out.Providers
-			*out = make([]ACMEIssuerDNS01Provider, len(*in))
-			for i := range *in {
-				if newVal, err := c.DeepCopy(&(*in)[i]); err != nil {
-					return err
-				} else {
-					(*out)[i] = *newVal.(*ACMEIssuerDNS01Provider)
-				}
-			}
+// DeepCopyInto is an autogenerated deepcopy function, copying the receiver, creating a new ACMEIssuer.
+func (x *ACMEIssuer) DeepCopy() *ACMEIssuer {
+	if x == nil {
+		return nil
+	}
+	out := new(ACMEIssuer)
+	x.DeepCopyInto(out)
+	return out
+}
+
+// DeepCopyInto is an autogenerated deepcopy function, copying the receiver, writing into out. in must be non-nil.
+func (in *ACMEIssuerDNS01Config) DeepCopyInto(out *ACMEIssuerDNS01Config) {
+	*out = *in
+	if in.Providers != nil {
+		in, out := &in.Providers, &out.Providers
+		*out = make([]ACMEIssuerDNS01Provider, len(*in))
+		for i := range *in {
+			(*in)[i].DeepCopyInto(&(*out)[i])
 		}
-		return nil
 	}
+	return
 }
 
-func DeepCopy_certmanager_ACMEIssuerDNS01Provider(in interface{}, out interface{}, c *conversion.Cloner) error {
-	{
-		in := in.(*ACMEIssuerDNS01Provider)
-		out := out.(*ACMEIssuerDNS01Provider)
-		*out = *in
-		if in.CloudDNS != nil {
-			in, out := &in.CloudDNS, &out.CloudDNS
+// DeepCopyInto is an autogenerated deepcopy function, copying the receiver, creating a new ACMEIssuerDNS01Config.
+func (x *ACMEIssuerDNS01Config) DeepCopy() *ACMEIssuerDNS01Config {
+	if x == nil {
+		return nil
+	}
+	out := new(ACMEIssuerDNS01Config)
+	x.DeepCopyInto(out)
+	return out
+}
+
+// DeepCopyInto is an autogenerated deepcopy function, copying the receiver, writing into out. in must be non-nil.
+func (in *ACMEIssuerDNS01Provider) DeepCopyInto(out *ACMEIssuerDNS01Provider) {
+	*out = *in
+	if in.CloudDNS != nil {
+		in, out := &in.CloudDNS, &out.CloudDNS
+		if *in == nil {
+			*out = nil
+		} else {
 			*out = new(ACMEIssuerDNS01ProviderCloudDNS)
 			**out = **in
 		}
+	}
+	return
+}
+
+// DeepCopyInto is an autogenerated deepcopy function, copying the receiver, creating a new ACMEIssuerDNS01Provider.
+func (x *ACMEIssuerDNS01Provider) DeepCopy() *ACMEIssuerDNS01Provider {
+	if x == nil {
+		return nil
+	}
+	out := new(ACMEIssuerDNS01Provider)
+	x.DeepCopyInto(out)
+	return out
+}
+
+// DeepCopyInto is an autogenerated deepcopy function, copying the receiver, writing into out. in must be non-nil.
+func (in *ACMEIssuerDNS01ProviderCloudDNS) DeepCopyInto(out *ACMEIssuerDNS01ProviderCloudDNS) {
+	*out = *in
+	return
+}
+
+// DeepCopyInto is an autogenerated deepcopy function, copying the receiver, creating a new ACMEIssuerDNS01ProviderCloudDNS.
+func (x *ACMEIssuerDNS01ProviderCloudDNS) DeepCopy() *ACMEIssuerDNS01ProviderCloudDNS {
+	if x == nil {
+		return nil
+	}
+	out := new(ACMEIssuerDNS01ProviderCloudDNS)
+	x.DeepCopyInto(out)
+	return out
+}
+
+// DeepCopyInto is an autogenerated deepcopy function, copying the receiver, writing into out. in must be non-nil.
+func (in *Certificate) DeepCopyInto(out *Certificate) {
+	*out = *in
+	out.TypeMeta = in.TypeMeta
+	in.ObjectMeta.DeepCopyInto(&out.ObjectMeta)
+	in.Spec.DeepCopyInto(&out.Spec)
+	in.Status.DeepCopyInto(&out.Status)
+	return
+}
+
+// DeepCopyInto is an autogenerated deepcopy function, copying the receiver, creating a new Certificate.
+func (x *Certificate) DeepCopy() *Certificate {
+	if x == nil {
+		return nil
+	}
+	out := new(Certificate)
+	x.DeepCopyInto(out)
+	return out
+}
+
+// DeepCopyObject is an autogenerated deepcopy function, copying the receiver, creating a new runtime.Object.
+func (x *Certificate) DeepCopyObject() runtime.Object {
+	if c := x.DeepCopy(); c != nil {
+		return c
+	} else {
 		return nil
 	}
 }
 
-func DeepCopy_certmanager_ACMEIssuerDNS01ProviderCloudDNS(in interface{}, out interface{}, c *conversion.Cloner) error {
-	{
-		in := in.(*ACMEIssuerDNS01ProviderCloudDNS)
-		out := out.(*ACMEIssuerDNS01ProviderCloudDNS)
-		*out = *in
+// DeepCopyInto is an autogenerated deepcopy function, copying the receiver, writing into out. in must be non-nil.
+func (in *CertificateACMEStatus) DeepCopyInto(out *CertificateACMEStatus) {
+	*out = *in
+	if in.Authorizations != nil {
+		in, out := &in.Authorizations, &out.Authorizations
+		*out = make([]ACMEDomainAuthorization, len(*in))
+		copy(*out, *in)
+	}
+	return
+}
+
+// DeepCopyInto is an autogenerated deepcopy function, copying the receiver, creating a new CertificateACMEStatus.
+func (x *CertificateACMEStatus) DeepCopy() *CertificateACMEStatus {
+	if x == nil {
+		return nil
+	}
+	out := new(CertificateACMEStatus)
+	x.DeepCopyInto(out)
+	return out
+}
+
+// DeepCopyInto is an autogenerated deepcopy function, copying the receiver, writing into out. in must be non-nil.
+func (in *CertificateList) DeepCopyInto(out *CertificateList) {
+	*out = *in
+	out.TypeMeta = in.TypeMeta
+	out.ListMeta = in.ListMeta
+	if in.Items != nil {
+		in, out := &in.Items, &out.Items
+		*out = make([]Certificate, len(*in))
+		for i := range *in {
+			(*in)[i].DeepCopyInto(&(*out)[i])
+		}
+	}
+	return
+}
+
+// DeepCopyInto is an autogenerated deepcopy function, copying the receiver, creating a new CertificateList.
+func (x *CertificateList) DeepCopy() *CertificateList {
+	if x == nil {
+		return nil
+	}
+	out := new(CertificateList)
+	x.DeepCopyInto(out)
+	return out
+}
+
+// DeepCopyObject is an autogenerated deepcopy function, copying the receiver, creating a new runtime.Object.
+func (x *CertificateList) DeepCopyObject() runtime.Object {
+	if c := x.DeepCopy(); c != nil {
+		return c
+	} else {
 		return nil
 	}
 }
 
-func DeepCopy_certmanager_Certificate(in interface{}, out interface{}, c *conversion.Cloner) error {
-	{
-		in := in.(*Certificate)
-		out := out.(*Certificate)
-		*out = *in
-		if newVal, err := c.DeepCopy(&in.ObjectMeta); err != nil {
-			return err
+// DeepCopyInto is an autogenerated deepcopy function, copying the receiver, writing into out. in must be non-nil.
+func (in *CertificateSpec) DeepCopyInto(out *CertificateSpec) {
+	*out = *in
+	if in.Domains != nil {
+		in, out := &in.Domains, &out.Domains
+		*out = make([]string, len(*in))
+		copy(*out, *in)
+	}
+	if in.ACME != nil {
+		in, out := &in.ACME, &out.ACME
+		if *in == nil {
+			*out = nil
 		} else {
-			out.ObjectMeta = *newVal.(*v1.ObjectMeta)
+			*out = new(ACMECertificateConfig)
+			(*in).DeepCopyInto(*out)
 		}
-		if newVal, err := c.DeepCopy(&in.Spec); err != nil {
-			return err
+	}
+	return
+}
+
+// DeepCopyInto is an autogenerated deepcopy function, copying the receiver, creating a new CertificateSpec.
+func (x *CertificateSpec) DeepCopy() *CertificateSpec {
+	if x == nil {
+		return nil
+	}
+	out := new(CertificateSpec)
+	x.DeepCopyInto(out)
+	return out
+}
+
+// DeepCopyInto is an autogenerated deepcopy function, copying the receiver, writing into out. in must be non-nil.
+func (in *CertificateStatus) DeepCopyInto(out *CertificateStatus) {
+	*out = *in
+	if in.ACME != nil {
+		in, out := &in.ACME, &out.ACME
+		if *in == nil {
+			*out = nil
 		} else {
-			out.Spec = *newVal.(*CertificateSpec)
+			*out = new(CertificateACMEStatus)
+			(*in).DeepCopyInto(*out)
 		}
-		if newVal, err := c.DeepCopy(&in.Status); err != nil {
-			return err
+	}
+	return
+}
+
+// DeepCopyInto is an autogenerated deepcopy function, copying the receiver, creating a new CertificateStatus.
+func (x *CertificateStatus) DeepCopy() *CertificateStatus {
+	if x == nil {
+		return nil
+	}
+	out := new(CertificateStatus)
+	x.DeepCopyInto(out)
+	return out
+}
+
+// DeepCopyInto is an autogenerated deepcopy function, copying the receiver, writing into out. in must be non-nil.
+func (in *Issuer) DeepCopyInto(out *Issuer) {
+	*out = *in
+	out.TypeMeta = in.TypeMeta
+	in.ObjectMeta.DeepCopyInto(&out.ObjectMeta)
+	in.Spec.DeepCopyInto(&out.Spec)
+	out.Status = in.Status
+	return
+}
+
+// DeepCopyInto is an autogenerated deepcopy function, copying the receiver, creating a new Issuer.
+func (x *Issuer) DeepCopy() *Issuer {
+	if x == nil {
+		return nil
+	}
+	out := new(Issuer)
+	x.DeepCopyInto(out)
+	return out
+}
+
+// DeepCopyObject is an autogenerated deepcopy function, copying the receiver, creating a new runtime.Object.
+func (x *Issuer) DeepCopyObject() runtime.Object {
+	if c := x.DeepCopy(); c != nil {
+		return c
+	} else {
+		return nil
+	}
+}
+
+// DeepCopyInto is an autogenerated deepcopy function, copying the receiver, writing into out. in must be non-nil.
+func (in *IssuerList) DeepCopyInto(out *IssuerList) {
+	*out = *in
+	out.TypeMeta = in.TypeMeta
+	out.ListMeta = in.ListMeta
+	if in.Items != nil {
+		in, out := &in.Items, &out.Items
+		*out = make([]Issuer, len(*in))
+		for i := range *in {
+			(*in)[i].DeepCopyInto(&(*out)[i])
+		}
+	}
+	return
+}
+
+// DeepCopyInto is an autogenerated deepcopy function, copying the receiver, creating a new IssuerList.
+func (x *IssuerList) DeepCopy() *IssuerList {
+	if x == nil {
+		return nil
+	}
+	out := new(IssuerList)
+	x.DeepCopyInto(out)
+	return out
+}
+
+// DeepCopyObject is an autogenerated deepcopy function, copying the receiver, creating a new runtime.Object.
+func (x *IssuerList) DeepCopyObject() runtime.Object {
+	if c := x.DeepCopy(); c != nil {
+		return c
+	} else {
+		return nil
+	}
+}
+
+// DeepCopyInto is an autogenerated deepcopy function, copying the receiver, writing into out. in must be non-nil.
+func (in *IssuerSpec) DeepCopyInto(out *IssuerSpec) {
+	*out = *in
+	if in.ACME != nil {
+		in, out := &in.ACME, &out.ACME
+		if *in == nil {
+			*out = nil
 		} else {
-			out.Status = *newVal.(*CertificateStatus)
+			*out = new(ACMEIssuer)
+			(*in).DeepCopyInto(*out)
 		}
-		return nil
 	}
+	return
 }
 
-func DeepCopy_certmanager_CertificateACMEStatus(in interface{}, out interface{}, c *conversion.Cloner) error {
-	{
-		in := in.(*CertificateACMEStatus)
-		out := out.(*CertificateACMEStatus)
-		*out = *in
-		if in.Authorizations != nil {
-			in, out := &in.Authorizations, &out.Authorizations
-			*out = make([]ACMEDomainAuthorization, len(*in))
-			copy(*out, *in)
-		}
+// DeepCopyInto is an autogenerated deepcopy function, copying the receiver, creating a new IssuerSpec.
+func (x *IssuerSpec) DeepCopy() *IssuerSpec {
+	if x == nil {
 		return nil
 	}
+	out := new(IssuerSpec)
+	x.DeepCopyInto(out)
+	return out
 }
 
-func DeepCopy_certmanager_CertificateList(in interface{}, out interface{}, c *conversion.Cloner) error {
-	{
-		in := in.(*CertificateList)
-		out := out.(*CertificateList)
-		*out = *in
-		if in.Items != nil {
-			in, out := &in.Items, &out.Items
-			*out = make([]Certificate, len(*in))
-			for i := range *in {
-				if newVal, err := c.DeepCopy(&(*in)[i]); err != nil {
-					return err
-				} else {
-					(*out)[i] = *newVal.(*Certificate)
-				}
-			}
-		}
-		return nil
-	}
+// DeepCopyInto is an autogenerated deepcopy function, copying the receiver, writing into out. in must be non-nil.
+func (in *IssuerStatus) DeepCopyInto(out *IssuerStatus) {
+	*out = *in
+	return
 }
 
-func DeepCopy_certmanager_CertificateSpec(in interface{}, out interface{}, c *conversion.Cloner) error {
-	{
-		in := in.(*CertificateSpec)
-		out := out.(*CertificateSpec)
-		*out = *in
-		if in.Domains != nil {
-			in, out := &in.Domains, &out.Domains
-			*out = make([]string, len(*in))
-			copy(*out, *in)
-		}
-		if in.ACME != nil {
-			in, out := &in.ACME, &out.ACME
-			if newVal, err := c.DeepCopy(*in); err != nil {
-				return err
-			} else {
-				*out = newVal.(*ACMECertificateConfig)
-			}
-		}
+// DeepCopyInto is an autogenerated deepcopy function, copying the receiver, creating a new IssuerStatus.
+func (x *IssuerStatus) DeepCopy() *IssuerStatus {
+	if x == nil {
 		return nil
 	}
-}
-
-func DeepCopy_certmanager_CertificateStatus(in interface{}, out interface{}, c *conversion.Cloner) error {
-	{
-		in := in.(*CertificateStatus)
-		out := out.(*CertificateStatus)
-		*out = *in
-		if in.ACME != nil {
-			in, out := &in.ACME, &out.ACME
-			if newVal, err := c.DeepCopy(*in); err != nil {
-				return err
-			} else {
-				*out = newVal.(*CertificateACMEStatus)
-			}
-		}
-		return nil
-	}
-}
-
-func DeepCopy_certmanager_Issuer(in interface{}, out interface{}, c *conversion.Cloner) error {
-	{
-		in := in.(*Issuer)
-		out := out.(*Issuer)
-		*out = *in
-		if newVal, err := c.DeepCopy(&in.ObjectMeta); err != nil {
-			return err
-		} else {
-			out.ObjectMeta = *newVal.(*v1.ObjectMeta)
-		}
-		if newVal, err := c.DeepCopy(&in.Spec); err != nil {
-			return err
-		} else {
-			out.Spec = *newVal.(*IssuerSpec)
-		}
-		return nil
-	}
-}
-
-func DeepCopy_certmanager_IssuerList(in interface{}, out interface{}, c *conversion.Cloner) error {
-	{
-		in := in.(*IssuerList)
-		out := out.(*IssuerList)
-		*out = *in
-		if in.Items != nil {
-			in, out := &in.Items, &out.Items
-			*out = make([]Issuer, len(*in))
-			for i := range *in {
-				if newVal, err := c.DeepCopy(&(*in)[i]); err != nil {
-					return err
-				} else {
-					(*out)[i] = *newVal.(*Issuer)
-				}
-			}
-		}
-		return nil
-	}
-}
-
-func DeepCopy_certmanager_IssuerSpec(in interface{}, out interface{}, c *conversion.Cloner) error {
-	{
-		in := in.(*IssuerSpec)
-		out := out.(*IssuerSpec)
-		*out = *in
-		if in.ACME != nil {
-			in, out := &in.ACME, &out.ACME
-			if newVal, err := c.DeepCopy(*in); err != nil {
-				return err
-			} else {
-				*out = newVal.(*ACMEIssuer)
-			}
-		}
-		return nil
-	}
-}
-
-func DeepCopy_certmanager_IssuerStatus(in interface{}, out interface{}, c *conversion.Cloner) error {
-	{
-		in := in.(*IssuerStatus)
-		out := out.(*IssuerStatus)
-		*out = *in
-		return nil
-	}
+	out := new(IssuerStatus)
+	x.DeepCopyInto(out)
+	return out
 }

@@ -20,6 +20,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+
 type Issuer struct {
 	metav1.TypeMeta
 	metav1.ObjectMeta
@@ -27,6 +29,8 @@ type Issuer struct {
 	Spec   IssuerSpec
 	Status IssuerStatus
 }
+
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 // IssuerList is a list of Issuers
 type IssuerList struct {
@@ -79,6 +83,8 @@ type ACMEIssuerDNS01ProviderCloudDNS struct {
 	Project        string
 }
 
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+
 // Certificate is a type to represent a Certificate from ACME
 type Certificate struct {
 	metav1.TypeMeta
@@ -87,6 +93,8 @@ type Certificate struct {
 	Spec   CertificateSpec
 	Status CertificateStatus
 }
+
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 // CertificateList is a list of certificates
 type CertificateList struct {

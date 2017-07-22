@@ -23,7 +23,7 @@ package v1alpha1
 type CertificateListerExpansion interface{}
 
 // CertificateNamespaceListerExpansion allows custom methods to be added to
-// CertificateNamespaeLister.
+// CertificateNamespaceLister.
 type CertificateNamespaceListerExpansion interface{}
 
 // IssuerListerExpansion allows custom methods to be added to
@@ -31,5 +31,5 @@ type CertificateNamespaceListerExpansion interface{}
 type IssuerListerExpansion interface{}
 
 // IssuerNamespaceListerExpansion allows custom methods to be added to
-// IssuerNamespaeLister.
+// IssuerNamespaceLister.
 type IssuerNamespaceListerExpansion interface{}

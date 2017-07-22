@@ -277,6 +277,69 @@ func TestSkipAll(t *testing.T) {
 	}
 }
 
+func TestSkipEach(t *testing.T) {
+	msg := smallTestMsg()
+
+	buf, err := msg.Pack()
+	if err != nil {
+		t.Fatal("Packing test message:", err)
+	}
+	var p Parser
+	if _, err := p.Start(buf); err != nil {
+		t.Fatal(err)
+	}
+
+	tests := []struct {
+		name string
+		f    func() error
+	}{
+		{"SkipQuestion", p.SkipQuestion},
+		{"SkipAnswer", p.SkipAnswer},
+		{"SkipAuthority", p.SkipAuthority},
+		{"SkipAdditional", p.SkipAdditional},
+	}
+	for _, test := range tests {
+		if err := test.f(); err != nil {
+			t.Errorf("First call: got %s() = %v, want = %v", test.name, err, nil)
+		}
+		if err := test.f(); err != ErrSectionDone {
+			t.Errorf("Second call: got %s() = %v, want = %v", test.name, err, ErrSectionDone)
+		}
+	}
+}
+
+func TestSkipAfterRead(t *testing.T) {
+	msg := smallTestMsg()
+
+	buf, err := msg.Pack()
+	if err != nil {
+		t.Fatal("Packing test message:", err)
+	}
+	var p Parser
+	if _, err := p.Start(buf); err != nil {
+		t.Fatal(err)
+	}
+
+	tests := []struct {
+		name string
+		skip func() error
+		read func() error
+	}{
+		{"Question", p.SkipQuestion, func() error { _, err := p.Question(); return err }},
+		{"Answer", p.SkipAnswer, func() error { _, err := p.Answer(); return err }},
+		{"Authority", p.SkipAuthority, func() error { _, err := p.Authority(); return err }},
+		{"Additional", p.SkipAdditional, func() error { _, err := p.Additional(); return err }},
+	}
+	for _, test := range tests {
+		if err := test.read(); err != nil {
+			t.Errorf("Got %s() = _, %v, want = _, %v", test.name, err, nil)
+		}
+		if err := test.skip(); err != ErrSectionDone {
+			t.Errorf("Got Skip%s() = %v, want = %v", test.name, err, ErrSectionDone)
+		}
+	}
+}
+
 func TestSkipNotStarted(t *testing.T) {
 	var p Parser
 
@@ -742,6 +805,50 @@ func BenchmarkBuilding(b *testing.B) {
 		if _, err := bld.Finish(); err != nil {
 			b.Fatal("bld.Finish():", err)
 		}
+	}
+}
+
+func smallTestMsg() Message {
+	name := mustNewName("example.com.")
+	return Message{
+		Header: Header{Response: true, Authoritative: true},
+		Questions: []Question{
+			{
+				Name:  name,
+				Type:  TypeA,
+				Class: ClassINET,
+			},
+		},
+		Answers: []Resource{
+			{
+				ResourceHeader{
+					Name:  name,
+					Type:  TypeA,
+					Class: ClassINET,
+				},
+				&AResource{[4]byte{127, 0, 0, 1}},
+			},
+		},
+		Authorities: []Resource{
+			{
+				ResourceHeader{
+					Name:  name,
+					Type:  TypeA,
+					Class: ClassINET,
+				},
+				&AResource{[4]byte{127, 0, 0, 1}},
+			},
+		},
+		Additionals: []Resource{
+			{
+				ResourceHeader{
+					Name:  name,
+					Type:  TypeA,
+					Class: ClassINET,
+				},
+				&AResource{[4]byte{127, 0, 0, 1}},
+			},
+		},
 	}
 }
 

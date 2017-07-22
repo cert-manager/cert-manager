@@ -7,7 +7,7 @@ https://github.com/kubernetes/client-go/issues/234.
 ** Breaking changes**
 
 pkg/api and pkg/apis are moved to
-[k8s.io/aip](https://github.com/kubernetes/api). Other kubernetes repositories
+[k8s.io/api](https://github.com/kubernetes/api). Other kubernetes repositories
 also import types from there, so they are composable with client-go.
 
 Helper functions in pkg/api and pkg/apis are also removed. They are planned to

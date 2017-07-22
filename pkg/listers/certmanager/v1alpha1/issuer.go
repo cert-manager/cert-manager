@@ -19,7 +19,6 @@ limitations under the License.
 package v1alpha1
 
 import (
-	certmanager "github.com/munnerz/cert-manager/pkg/apis/certmanager"
 	v1alpha1 "github.com/munnerz/cert-manager/pkg/apis/certmanager/v1alpha1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/labels"
@@ -89,7 +88,7 @@ func (s issuerNamespaceLister) Get(name string) (*v1alpha1.Issuer, error) {
 		return nil, err
 	}
 	if !exists {
-		return nil, errors.NewNotFound(certmanager.Resource("issuer"), name)
+		return nil, errors.NewNotFound(v1alpha1.Resource("issuer"), name)
 	}
 	return obj.(*v1alpha1.Issuer), nil
 }

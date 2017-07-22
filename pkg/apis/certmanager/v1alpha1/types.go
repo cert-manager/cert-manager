@@ -24,6 +24,7 @@ import (
 
 // +genclient=true
 // +k8s:openapi-gen=true
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // +resource:path=issuers
 
 type Issuer struct {
@@ -33,6 +34,8 @@ type Issuer struct {
 	Spec   IssuerSpec   `json:"spec,omitempty"`
 	Status IssuerStatus `json:"status,omitempty"`
 }
+
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 // IssuerList is a list of Issuers
 type IssuerList struct {
@@ -100,6 +103,7 @@ type ACMEIssuerDNS01ProviderCloudDNS struct {
 
 // +genclient=true
 // +k8s:openapi-gen=true
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // +resource:path=certificates
 
 // Certificate is a type to represent a Certificate from ACME
@@ -110,6 +114,8 @@ type Certificate struct {
 	Spec   CertificateSpec   `json:"spec,omitempty"`
 	Status CertificateStatus `json:"status,omitempty"`
 }
+
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 // CertificateList is a list of Certificates
 type CertificateList struct {

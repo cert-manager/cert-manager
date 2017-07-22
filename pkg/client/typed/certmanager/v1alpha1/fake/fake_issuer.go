@@ -34,6 +34,8 @@ type FakeIssuers struct {
 
 var issuersResource = schema.GroupVersionResource{Group: "certmanager.k8s.io", Version: "v1alpha1", Resource: "issuers"}
 
+var issuersKind = schema.GroupVersionKind{Group: "certmanager.k8s.io", Version: "v1alpha1", Kind: "Issuer"}
+
 func (c *FakeIssuers) Create(issuer *v1alpha1.Issuer) (result *v1alpha1.Issuer, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewCreateAction(issuersResource, c.ns, issuer), &v1alpha1.Issuer{})
@@ -90,7 +92,7 @@ func (c *FakeIssuers) Get(name string, options v1.GetOptions) (result *v1alpha1.
 
 func (c *FakeIssuers) List(opts v1.ListOptions) (result *v1alpha1.IssuerList, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewListAction(issuersResource, c.ns, opts), &v1alpha1.IssuerList{})
+		Invokes(testing.NewListAction(issuersResource, issuersKind, c.ns, opts), &v1alpha1.IssuerList{})
 
 	if obj == nil {
 		return nil, err
