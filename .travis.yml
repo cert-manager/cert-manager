@@ -4,4 +4,4 @@ services:
 - docker
 
 script:
-- make verify test
+- make all
