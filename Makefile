@@ -1,5 +1,6 @@
 ACCOUNT=jetstack
 APP_NAME=cert-manager
+REGISTRY=quay.io
 
 PACKAGE_NAME=github.com/${ACCOUNT}/${APP_NAME}
 GO_VERSION=1.8
@@ -7,7 +8,7 @@ GO_VERSION=1.8
 GOOS := linux
 GOARCH := amd64
 
-DOCKER_IMAGE=${ACCOUNT}/${APP_NAME}
+DOCKER_IMAGE=${REGISTRY}/${ACCOUNT}/${APP_NAME}
 
 BUILD_DIR=_build
 TEST_DIR=_test
@@ -25,7 +26,7 @@ TYPES_FILES = $(shell find pkg/apis -name types.go)
 
 .PHONY: version
 
-all: test build
+all: verify test build
 
 .get_deps:
 	@echo "Grabbing dependencies..."
@@ -80,7 +81,7 @@ docker_%:
 	# remove container
 	docker rm $(CONTAINER_ID)
 
-image: docker_all version
+image: version
 	docker build --build-arg VCS_REF=$(GIT_COMMIT) -t $(DOCKER_IMAGE):$(BUILD_TAG) .
 	
 push: image
