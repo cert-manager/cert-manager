@@ -1,4 +1,4 @@
-package certificates
+package util
 
 import (
 	"testing"
@@ -40,7 +40,7 @@ func TestEqualUnsorted(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.desc, func(test testT) func(*testing.T) {
 			return func(t *testing.T) {
-				if actual := equalUnsorted(test.s1, test.s2); actual != test.equal {
+				if actual := EqualUnsorted(test.s1, test.s2); actual != test.equal {
 					t.Errorf("equalUnsorted(%+v, %+v) = %t, but expected %t", test.s1, test.s2, actual, test.equal)
 				}
 			}

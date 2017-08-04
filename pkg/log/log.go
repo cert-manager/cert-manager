@@ -12,6 +12,18 @@ type Logger interface {
 	Fatalf(string, ...interface{})
 }
 
+func Printf(str string, args ...interface{}) {
+	Default().Printf(str, args...)
+}
+
+func Errorf(str string, args ...interface{}) {
+	Default().Errorf(str, args...)
+}
+
+func Fatalf(str string, args ...interface{}) {
+	Default().Fatalf(str, args...)
+}
+
 // Default returns a default logging implementation
 func Default() Logger {
 	return &defaultLogger{}

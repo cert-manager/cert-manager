@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/munnerz/cert-manager/pkg/apis/certmanager/v1alpha1"
-	"github.com/munnerz/cert-manager/pkg/controller"
 )
 
 // Solver is an implementation of the acme http-01 challenge solver protocol
@@ -20,7 +19,7 @@ type Solver struct {
 
 func NewSolver() *Solver {
 	handler := &httpSolver{
-		ListenPort: 8080,
+		ListenPort: 8081,
 	}
 
 	// todo: provide a way to stop this goroutine
@@ -38,13 +37,13 @@ func NewSolver() *Solver {
 	return &Solver{handler}
 }
 
-func (s *Solver) Present(ctx controller.Context, crt *v1alpha1.Certificate, domain, token, key string) error {
+func (s *Solver) Present(crt *v1alpha1.Certificate, domain, token, key string) error {
 	s.solver.addChallenge(challenge{domain, token, key})
 	return nil
 }
 
 // todo
-func (s *Solver) Cleanup(ctx controller.Context, crt *v1alpha1.Certificate, domain, token string) error {
+func (s *Solver) Cleanup(crt *v1alpha1.Certificate, domain, token string) error {
 	return nil
 }
 

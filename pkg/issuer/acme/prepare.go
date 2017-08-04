@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"reflect"
 
-	"k8s.io/client-go/kubernetes/scheme"
-
 	"golang.org/x/crypto/acme"
 
 	"github.com/munnerz/cert-manager/pkg/apis/certmanager/v1alpha1"
@@ -23,7 +21,7 @@ func authorizationsMap(list []v1alpha1.ACMEDomainAuthorization) map[string]v1alp
 }
 
 func authorizationsToObtain(cl *acme.Client, crt v1alpha1.Certificate) ([]string, error) {
-	authMap := authorizationsMap(crt.Status.ACME.Authorizations)
+	authMap := authorizationsMap(crt.Status.ACMEStatus().Authorizations)
 	toAuthorize := util.StringFilter(func(domain string) (bool, error) {
 		auth, ok := authMap[domain]
 		if !ok {
@@ -48,16 +46,14 @@ func authorizationsToObtain(cl *acme.Client, crt v1alpha1.Certificate) ([]string
 //
 // It will send the appropriate Letsencrypt authorizations, and complete
 // challenge requests if neccessary.
-func (a *Acme) Prepare(crt *v1alpha1.Certificate) error {
-	before, err := scheme.Scheme.DeepCopy(crt)
-
-	if err != nil {
-		return fmt.Errorf("internal error creating deepcopy for issuer: %s", err.Error())
-	}
+func (a *Acme) Prepare(crt *v1alpha1.Certificate) (err error) {
+	beforeCrt := crt.DeepCopy()
 
 	defer func() {
-		if !reflect.DeepEqual(before, crt) {
-			a.ctx.CertManagerClient.Certificates(crt.Namespace).Update(crt)
+		if !reflect.DeepEqual(beforeCrt, crt) {
+			if err == nil {
+				_, err = a.cmClient.CertmanagerV1alpha1().Certificates(crt.Namespace).Update(crt)
+			}
 		}
 	}()
 
@@ -75,6 +71,7 @@ func (a *Acme) prepare(crt *v1alpha1.Certificate) error {
 		return fmt.Errorf("acme config must be specified")
 	}
 
+	log.Printf("getting private key for acme issuer %s/%s", a.account.issuer.Namespace, a.account.issuer.Name)
 	privKey, err := a.account.privateKey()
 
 	if err != nil {
@@ -93,7 +90,7 @@ func (a *Acme) prepare(crt *v1alpha1.Certificate) error {
 		return err
 	}
 
-	a.ctx.Logger.Printf("need to get authorizations for %v", toAuthorize)
+	log.Printf("need to get authorizations for %v", toAuthorize)
 
 	// step two: if there are any domains that we don't have authorization for,
 	// we should attempt to authorize those domains
@@ -107,17 +104,17 @@ func (a *Acme) prepare(crt *v1alpha1.Certificate) error {
 		return err
 	}
 
-	a.ctx.Logger.Printf("requested authorizations for %v", toAuthorize)
+	log.Printf("requested authorizations for %v", toAuthorize)
 
 	// todo: parallelize this
 	// todo: refactor into own function
 	for _, auth := range auths {
-		a.ctx.Logger.Printf("picking challenge type for domain '%s'", auth.domain)
-		challengeType, err := pickChallengeType(a.ctx.Logger, auth.domain, auth.auth, crt.Spec.ACME.Config)
+		log.Printf("picking challenge type for domain '%s'", auth.domain)
+		challengeType, err := pickChallengeType(auth.domain, auth.auth, crt.Spec.ACME.Config)
 		if err != nil {
 			return fmt.Errorf("error challenge type to use for domain '%s': %s", auth.domain, err.Error())
 		}
-		a.ctx.Logger.Printf("using challenge type %s for domain '%s'", challengeType, auth.domain)
+		log.Printf("using challenge type %s for domain '%s'", challengeType, auth.domain)
 		challenge, err := challengeForAuthorization(cl, auth.auth, challengeType)
 		if err != nil {
 			return fmt.Errorf("error getting challenge for domain '%s': %s", auth.domain, err.Error())
@@ -143,19 +140,19 @@ func (a *Acme) prepare(crt *v1alpha1.Certificate) error {
 			return fmt.Errorf("error getting solver for challenge type '%s': %s", challengeType, err.Error())
 		}
 
-		a.ctx.Logger.Printf("presenting challenge for domain %s, token %s key %s", auth.domain, token, key)
-		err = solver.Present(*a.ctx, crt, auth.domain, token, key)
+		log.Printf("presenting challenge for domain %s, token %s key %s", auth.domain, token, key)
+		err = solver.Present(crt, auth.domain, token, key)
 		if err != nil {
 			return fmt.Errorf("error presenting acme authorization for domain '%s': %s", auth.domain, err.Error())
 		}
 
-		a.ctx.Logger.Printf("accepting %s challenge for domain %s", challengeType, auth.domain)
+		log.Printf("accepting %s challenge for domain %s", challengeType, auth.domain)
 		challenge, err = cl.Accept(context.Background(), challenge)
 		if err != nil {
 			return fmt.Errorf("error accepting acme challenge for domain '%s': %s", auth.domain, err.Error())
 		}
 
-		a.ctx.Logger.Printf("waiting for authorization for domain %s...", auth.domain)
+		log.Printf("waiting for authorization for domain %s (%s)...", auth.domain, challenge.URI)
 		authorization, err := cl.WaitAuthorization(context.Background(), challenge.URI)
 		if err != nil {
 			return fmt.Errorf("error waiting for authorization for domain '%s': %s", auth.domain, err.Error())
@@ -164,18 +161,12 @@ func (a *Acme) prepare(crt *v1alpha1.Certificate) error {
 		if authorization.Status != acme.StatusValid {
 			return fmt.Errorf("expected acme domain authorization status for '%s' to be valid, but it's %s", auth.domain, authorization.Status)
 		}
-		a.ctx.Logger.Printf("got successful authorization for domain %s", auth.domain)
+		log.Printf("got successful authorization for domain %s", auth.domain)
 
-		crt.Status.ACME.SaveAuthorization(v1alpha1.ACMEDomainAuthorization{
+		crt.Status.ACMEStatus().SaveAuthorization(v1alpha1.ACMEDomainAuthorization{
 			Domain: auth.domain,
 			URI:    authorization.URI,
 		})
-
-		crt, err = a.ctx.CertManagerClient.Certificates(crt.Namespace).Update(crt)
-
-		if err != nil {
-			return fmt.Errorf("error updating certificate resource with authorization details: %s", err.Error())
-		}
 	}
 
 	return nil
@@ -239,11 +230,9 @@ func getAuthorizations(cl *acme.Client, domains ...string) ([]authResponse, erro
 	return responses, authResponses(responses).Error()
 }
 
-func pickChallengeType(log log.Logger, domain string, auth *acme.Authorization, cfg []v1alpha1.ACMECertificateDomainConfig) (string, error) {
+func pickChallengeType(domain string, auth *acme.Authorization, cfg []v1alpha1.ACMECertificateDomainConfig) (string, error) {
 	for _, d := range cfg {
-		log.Printf("checking config %v", d)
 		for _, dom := range d.Domains {
-			log.Printf("checking domain %s", dom)
 			if dom == domain {
 				for _, challenge := range auth.Challenges {
 					switch {

@@ -1,26 +1,12 @@
 package issuers
 
 import (
-	"fmt"
-
-	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
-
-	"github.com/munnerz/cert-manager/pkg/controller"
+	"github.com/munnerz/cert-manager/pkg/apis/certmanager/v1alpha1"
 	"github.com/munnerz/cert-manager/pkg/issuer"
 )
 
-func sync(ctx *controller.Context, namespace, name string) error {
-	acc, err := ctx.CertManagerInformerFactory.Certmanager().V1alpha1().Issuers().Lister().Issuers(namespace).Get(name)
-
-	if err != nil {
-		if k8sErrors.IsNotFound(err) {
-			ctx.Logger.Printf("issuer '%s/%s' in sync queue has been deleted", namespace, name)
-			return nil
-		}
-		return fmt.Errorf("error retreiving issuer: %s", err.Error())
-	}
-
-	i, err := issuer.IssuerFor(*ctx, acc)
+func (c *controller) sync(iss *v1alpha1.Issuer) error {
+	i, err := issuer.SharedFactory().IssuerFor(iss)
 
 	if err != nil {
 		return err

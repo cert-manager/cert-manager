@@ -33,6 +33,8 @@ import (
 	"github.com/munnerz/cert-manager/pkg/controller/certificates"
 	"github.com/munnerz/cert-manager/pkg/controller/issuers"
 	"github.com/munnerz/cert-manager/pkg/informers/externalversions"
+	"github.com/munnerz/cert-manager/pkg/issuer"
+	_ "github.com/munnerz/cert-manager/pkg/issuer/acme"
 	logpkg "github.com/munnerz/cert-manager/pkg/log"
 )
 
@@ -57,34 +59,34 @@ func main() {
 		log.Fatalf("error creating kubernetes clientset: %s", err.Error())
 	}
 
-	factory := informers.NewSharedInformerFactory(cl, time.Second*30)
-
 	cmCl, err := client.NewForConfig(cfg)
 
 	if err != nil {
 		log.Fatalf("error creating cert-manager clientset: %s", err.Error())
 	}
 
+	factory := informers.NewSharedInformerFactory(cl, time.Second*30)
 	cmFactory := externalversions.NewSharedInformerFactory(cmCl, time.Second*30)
 
-	ctx := controller.Context{
-		Client:                     cl,
-		CertManagerClient:          cmCl,
-		InformerFactory:            factory,
-		CertManagerInformerFactory: cmFactory,
-		Namespace:                  *namespace,
-		Logger:                     log,
+	issuer.SharedFactory().Setup(cl, cmCl, factory, cmFactory)
+	controller.SharedFactory().Setup(cl, cmCl, factory, cmFactory)
+
+	issuerCtrl, err := controller.SharedFactory().Controller(issuers.ControllerName)
+	if err != nil {
+		log.Fatalf(err.Error())
 	}
 
-	issuerCtrl := issuers.New(ctx)
-	certificatesCtrl := certificates.New(ctx)
+	certificateCtrl, err := controller.SharedFactory().Controller(certificates.ControllerName)
+	if err != nil {
+		log.Fatalf(err.Error())
+	}
 
 	stopCh := make(chan struct{})
 	factory.Start(stopCh)
 	cmFactory.Start(stopCh)
 
 	go issuerCtrl.Run(5, stopCh)
-	go certificatesCtrl.Run(5, stopCh)
+	go certificateCtrl.Run(5, stopCh)
 
 	<-stopCh
 }

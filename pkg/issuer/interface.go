@@ -1,12 +1,27 @@
 package issuer
 
 import (
-	"fmt"
+	"k8s.io/client-go/informers"
+	"k8s.io/client-go/kubernetes"
 
 	"github.com/munnerz/cert-manager/pkg/apis/certmanager/v1alpha1"
-	"github.com/munnerz/cert-manager/pkg/controller"
-	"github.com/munnerz/cert-manager/pkg/issuer/acme"
+	"github.com/munnerz/cert-manager/pkg/client"
+	"github.com/munnerz/cert-manager/pkg/informers/externalversions"
 )
+
+var sharedFactory = &Factory{
+	constructors: make(map[string]Constructor),
+}
+
+func SharedFactory() *Factory {
+	return sharedFactory
+}
+
+type Constructor func(issuer *v1alpha1.Issuer,
+	client kubernetes.Interface,
+	cmClient client.Interface,
+	factory informers.SharedInformerFactory,
+	cmFactory externalversions.SharedInformerFactory) (Interface, error)
 
 type Interface interface {
 	// Setup initialises the issuer. This may include registering accounts with
@@ -21,12 +36,4 @@ type Interface interface {
 	// Renew attempts to renew the certificate describe by the certificate
 	// resource given. If no certificate exists, an error is returned.
 	Renew(*v1alpha1.Certificate) ([]byte, []byte, error)
-}
-
-func IssuerFor(ctx controller.Context, issuer *v1alpha1.Issuer) (Interface, error) {
-	switch {
-	case issuer.Spec.ACME != nil:
-		return acme.New(&ctx, issuer)
-	}
-	return nil, fmt.Errorf("issuer '%s' does not have an issuer specification", issuer.Name)
 }
