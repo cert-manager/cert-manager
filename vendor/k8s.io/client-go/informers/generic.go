@@ -22,6 +22,7 @@ import (
 	"fmt"
 	v1alpha1 "k8s.io/api/admissionregistration/v1alpha1"
 	v1beta1 "k8s.io/api/apps/v1beta1"
+	v1beta2 "k8s.io/api/apps/v1beta2"
 	v1 "k8s.io/api/autoscaling/v1"
 	v2alpha1 "k8s.io/api/autoscaling/v2alpha1"
 	batch_v1 "k8s.io/api/batch/v1"
@@ -33,6 +34,7 @@ import (
 	policy_v1beta1 "k8s.io/api/policy/v1beta1"
 	rbac_v1alpha1 "k8s.io/api/rbac/v1alpha1"
 	rbac_v1beta1 "k8s.io/api/rbac/v1beta1"
+	scheduling_v1alpha1 "k8s.io/api/scheduling/v1alpha1"
 	settings_v1alpha1 "k8s.io/api/settings/v1alpha1"
 	storage_v1 "k8s.io/api/storage/v1"
 	storage_v1beta1 "k8s.io/api/storage/v1beta1"
@@ -79,6 +81,16 @@ func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Apps().V1beta1().Deployments().Informer()}, nil
 	case v1beta1.SchemeGroupVersion.WithResource("statefulsets"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Apps().V1beta1().StatefulSets().Informer()}, nil
+
+		// Group=Apps, Version=V1beta2
+	case v1beta2.SchemeGroupVersion.WithResource("daemonsets"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Apps().V1beta2().DaemonSets().Informer()}, nil
+	case v1beta2.SchemeGroupVersion.WithResource("deployments"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Apps().V1beta2().Deployments().Informer()}, nil
+	case v1beta2.SchemeGroupVersion.WithResource("replicasets"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Apps().V1beta2().ReplicaSets().Informer()}, nil
+	case v1beta2.SchemeGroupVersion.WithResource("statefulsets"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Apps().V1beta2().StatefulSets().Informer()}, nil
 
 		// Group=Autoscaling, Version=V1
 	case v1.SchemeGroupVersion.WithResource("horizontalpodautoscalers"):
@@ -175,6 +187,10 @@ func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Rbac().V1beta1().Roles().Informer()}, nil
 	case rbac_v1beta1.SchemeGroupVersion.WithResource("rolebindings"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Rbac().V1beta1().RoleBindings().Informer()}, nil
+
+		// Group=Scheduling, Version=V1alpha1
+	case scheduling_v1alpha1.SchemeGroupVersion.WithResource("priorityclasses"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Scheduling().V1alpha1().PriorityClasses().Informer()}, nil
 
 		// Group=Settings, Version=V1alpha1
 	case settings_v1alpha1.SchemeGroupVersion.WithResource("podpresets"):
