@@ -1,6 +1,7 @@
 package http
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"net/http"
@@ -12,20 +13,15 @@ import (
 	"github.com/munnerz/cert-manager/pkg/apis/certmanager/v1alpha1"
 )
 
-// Solver is an implementation of the acme http-01 challenge solver protocol
-type Solver struct {
-	solver *httpSolver
-}
+var (
+	solver = &httpSolver{ListenPort: 8081}
+)
 
-func NewSolver() *Solver {
-	handler := &httpSolver{
-		ListenPort: 8081,
-	}
-
+func init() {
 	// todo: provide a way to stop this goroutine
 	go func() {
 		for {
-			err := handler.listen()
+			err := solver.listen()
 
 			if err != nil {
 				log.Printf("error listening for acme challenges: %s", err.Error())
@@ -34,16 +30,28 @@ func NewSolver() *Solver {
 			time.Sleep(time.Second * 5)
 		}
 	}()
-	return &Solver{handler}
 }
 
-func (s *Solver) Present(crt *v1alpha1.Certificate, domain, token, key string) error {
-	s.solver.addChallenge(challenge{domain, token, key})
+// Solver is an implementation of the acme http-01 challenge solver protocol
+type Solver struct {
+}
+
+func NewSolver() *Solver {
+	return &Solver{}
+}
+
+func (s *Solver) Present(ctx context.Context, crt *v1alpha1.Certificate, domain, token, key string) error {
+	solver.addChallenge(challenge{domain, token, key})
 	return nil
 }
 
 // todo
-func (s *Solver) Cleanup(crt *v1alpha1.Certificate, domain, token string) error {
+func (s *Solver) Wait(ctx context.Context, crt *v1alpha1.Certificate, domain, token, key string) error {
+	return nil
+}
+
+// todo
+func (s *Solver) CleanUp(ctx context.Context, crt *v1alpha1.Certificate, domain, token, key string) error {
 	return nil
 }
 

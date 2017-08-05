@@ -84,7 +84,7 @@ func (a *Acme) obtainCertificate(crt *v1alpha1.Certificate) (privateKeyPem []byt
 		return nil, nil, fmt.Errorf("error creating certificate request: %s", err)
 	}
 
-	certSlice, certUrl, err := cl.CreateCert(
+	certSlice, certURL, err := cl.CreateCert(
 		context.Background(),
 		csr,
 		0,
@@ -99,7 +99,7 @@ func (a *Acme) obtainCertificate(crt *v1alpha1.Certificate) (privateKeyPem []byt
 		pem.Encode(certBuffer, &pem.Block{Type: "CERTIFICATE", Bytes: cert})
 	}
 
-	log.Printf("successfully got certificate: domains=%+v url=%s", domains, certUrl)
+	log.Printf("successfully got certificate: domains=%+v url=%s", domains, certURL)
 
 	return privateKeyPem, certBuffer.Bytes(), nil
 }

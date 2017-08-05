@@ -135,15 +135,21 @@ func (a *Acme) prepare(crt *v1alpha1.Certificate) error {
 			return fmt.Errorf("error getting key for acme challenge for domain '%s': %s", auth.domain, err.Error())
 		}
 
-		solver, err := solverFor(challengeType)
+		solver, err := a.solverFor(challengeType)
 		if err != nil {
 			return fmt.Errorf("error getting solver for challenge type '%s': %s", challengeType, err.Error())
 		}
 
 		log.Printf("presenting challenge for domain %s, token %s key %s", auth.domain, token, key)
-		err = solver.Present(crt, auth.domain, token, key)
+		err = solver.Present(context.Background(), crt, auth.domain, token, key)
 		if err != nil {
 			return fmt.Errorf("error presenting acme authorization for domain '%s': %s", auth.domain, err.Error())
+		}
+
+		log.Printf("waiting for key to be available to acme servers for domain %s", auth.domain)
+		err = solver.Wait(context.Background(), crt, auth.domain, token, key)
+		if err != nil {
+			return fmt.Errorf("error waiting for key to be available for domain '%s': %s", auth.domain, err.Error())
 		}
 
 		log.Printf("accepting %s challenge for domain %s", challengeType, auth.domain)
