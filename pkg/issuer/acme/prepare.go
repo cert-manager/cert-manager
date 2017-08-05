@@ -135,7 +135,7 @@ func (a *Acme) prepare(crt *v1alpha1.Certificate) error {
 			return fmt.Errorf("error getting key for acme challenge for domain '%s': %s", auth.domain, err.Error())
 		}
 
-		solver, err := solverFor(challengeType)
+		solver, err := a.solverFor(challengeType)
 		if err != nil {
 			return fmt.Errorf("error getting solver for challenge type '%s': %s", challengeType, err.Error())
 		}
