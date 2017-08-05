@@ -67,10 +67,10 @@ func New(client kubernetes.Interface,
 	certificatesInformer := cmFactory.Certmanager().V1alpha1().Certificates()
 	issuersInformer := cmFactory.Certmanager().V1alpha1().Issuers()
 
-	certificatesInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+	certificatesInformer.Informer().AddEventHandlerWithResyncPeriod(cache.ResourceEventHandlerFuncs{
 		AddFunc:    ctrl.certificateAdded,
 		UpdateFunc: ctrl.certificateUpdated,
-	})
+	}, time.Minute*5)
 	ctrl.certificateInformerSynced = certificatesInformer.Informer().HasSynced
 	ctrl.certificateLister = certificatesInformer.Lister()
 
