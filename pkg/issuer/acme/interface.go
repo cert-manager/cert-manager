@@ -4,13 +4,12 @@ import (
 	"fmt"
 
 	"github.com/munnerz/cert-manager/pkg/apis/certmanager/v1alpha1"
-	"github.com/munnerz/cert-manager/pkg/controller"
 	http01 "github.com/munnerz/cert-manager/pkg/issuer/acme/http"
 )
 
 type solver interface {
-	Present(ctx controller.Context, crt *v1alpha1.Certificate, domain, token, key string) error
-	Cleanup(ctx controller.Context, crt *v1alpha1.Certificate, domain, token string) error
+	Present(crt *v1alpha1.Certificate, domain, token, key string) error
+	Cleanup(crt *v1alpha1.Certificate, domain, token string) error
 }
 
 var httpSolver = http01.NewSolver()

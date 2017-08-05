@@ -7,7 +7,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-func EnsureSecret(cl *kubernetes.Clientset, secret *api.Secret) (*api.Secret, error) {
+func EnsureSecret(cl kubernetes.Interface, secret *api.Secret) (*api.Secret, error) {
 	s, err := cl.CoreV1().Secrets(secret.Namespace).Create(secret)
 	if err != nil {
 		if k8sErrors.IsAlreadyExists(err) {
@@ -18,7 +18,7 @@ func EnsureSecret(cl *kubernetes.Clientset, secret *api.Secret) (*api.Secret, er
 	return s, nil
 }
 
-func EnsureIngress(cl *kubernetes.Clientset, ingress *extensions.Ingress) (*extensions.Ingress, error) {
+func EnsureIngress(cl kubernetes.Interface, ingress *extensions.Ingress) (*extensions.Ingress, error) {
 	s, err := cl.ExtensionsV1beta1().Ingresses(ingress.Namespace).Create(ingress)
 	if err != nil {
 		if k8sErrors.IsAlreadyExists(err) {

@@ -53,7 +53,21 @@ type IssuerSpec struct {
 
 // IssuerStatus contains status information about an Issuer
 type IssuerStatus struct {
-	Ready bool `json:"ready"`
+	Ready bool              `json:"ready"`
+	ACME  *ACMEIssuerStatus `json:"acme,omitempty"`
+}
+
+func (i *IssuerStatus) ACMEStatus() *ACMEIssuerStatus {
+	if i.ACME == nil {
+		i.ACME = &ACMEIssuerStatus{}
+	}
+	return i.ACME
+}
+
+type ACMEIssuerStatus struct {
+	// URI is the unique account identifier, which can also be used to retrieve
+	// account details from the CA
+	URI string `json:"uri"`
 }
 
 // ACMEIssuer contains the specification for an ACME issuer
@@ -65,9 +79,6 @@ type ACMEIssuer struct {
 	// PrivateKey is the name of a secret containing the private key for this
 	// user account.
 	PrivateKey string `json:"privateKey"`
-	// URI is the unique account identifier, which can also be used to retrieve
-	// account details from the CA
-	URI string `json:"uri"`
 	// DNS-01 config
 	DNS01 *ACMEIssuerDNS01Config `json:"dns-01"`
 }
@@ -135,7 +146,7 @@ type CertificateSpec struct {
 	// certificate
 	Issuer string `json:"issuer"`
 
-	ACME *ACMECertificateConfig `json:"acme"`
+	ACME *ACMECertificateConfig `json:"acme,omitempty"`
 }
 
 // ACMEConfig contains the configuration for the ACME certificate provider
@@ -156,8 +167,8 @@ func (a *ACMECertificateConfig) ConfigForDomain(domain string) ACMECertificateDo
 
 type ACMECertificateDomainConfig struct {
 	Domains []string                     `json:"domains"`
-	HTTP01  *ACMECertificateHTTP01Config `json:"http-01"`
-	DNS01   *ACMECertificateDNS01Config  `json:"dns-01"`
+	HTTP01  *ACMECertificateHTTP01Config `json:"http-01,omitempty"`
+	DNS01   *ACMECertificateDNS01Config  `json:"dns-01,omitempty"`
 }
 
 type ACMECertificateHTTP01Config struct {
@@ -171,7 +182,14 @@ type ACMECertificateDNS01Config struct {
 
 // CertificateStatus defines the observed state of Certificate
 type CertificateStatus struct {
-	ACME *CertificateACMEStatus `json:"acme"`
+	ACME *CertificateACMEStatus `json:"acme,omitempty"`
+}
+
+func (c *CertificateStatus) ACMEStatus() *CertificateACMEStatus {
+	if c.ACME == nil {
+		c.ACME = &CertificateACMEStatus{}
+	}
+	return c.ACME
 }
 
 // CertificateACMEStatus holds the status for an ACME issuer

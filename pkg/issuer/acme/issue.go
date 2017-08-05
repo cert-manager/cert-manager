@@ -3,6 +3,7 @@ package acme
 import (
 	"bytes"
 	"context"
+	"crypto"
 	"crypto/rand"
 	"crypto/x509"
 	"crypto/x509/pkix"
@@ -13,13 +14,12 @@ import (
 	api "k8s.io/api/core/v1"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 
-	"crypto"
-
 	"github.com/munnerz/cert-manager/pkg/apis/certmanager/v1alpha1"
+	"github.com/munnerz/cert-manager/pkg/log"
 )
 
 func (a *Acme) getCertificatePrivateKey(crt *v1alpha1.Certificate) ([]byte, crypto.Signer, error) {
-	crtSecret, err := a.ctx.InformerFactory.Core().V1().Secrets().Lister().Secrets(crt.Namespace).Get(crt.Spec.SecretName)
+	crtSecret, err := a.factory.Core().V1().Secrets().Lister().Secrets(crt.Namespace).Get(crt.Spec.SecretName)
 	if err != nil {
 		if !k8sErrors.IsNotFound(err) {
 			return nil, nil, fmt.Errorf("error reading certificate private key for certificate '%s': %s", crt.Name, err.Error())
@@ -81,7 +81,7 @@ func (a *Acme) obtainCertificate(crt *v1alpha1.Certificate) (privateKeyPem []byt
 
 	csr, err := x509.CreateCertificateRequest(rand.Reader, &template, privateKey)
 	if err != nil {
-		return nil, nil, fmt.Errorf("error certificate request: %s", err)
+		return nil, nil, fmt.Errorf("error creating certificate request: %s", err)
 	}
 
 	certSlice, certUrl, err := cl.CreateCert(
@@ -99,7 +99,7 @@ func (a *Acme) obtainCertificate(crt *v1alpha1.Certificate) (privateKeyPem []byt
 		pem.Encode(certBuffer, &pem.Block{Type: "CERTIFICATE", Bytes: cert})
 	}
 
-	a.ctx.Logger.Printf("successfully got certificate: domains=%+v url=%s", domains, certUrl)
+	log.Printf("successfully got certificate: domains=%+v url=%s", domains, certUrl)
 
 	return privateKeyPem, certBuffer.Bytes(), nil
 }

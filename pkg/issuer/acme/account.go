@@ -12,9 +12,12 @@ import (
 	api "k8s.io/api/core/v1"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
+	corev1listers "k8s.io/client-go/listers/core/v1"
 
 	"github.com/munnerz/cert-manager/pkg/apis/certmanager/v1alpha1"
-	"github.com/munnerz/cert-manager/pkg/controller"
+	"github.com/munnerz/cert-manager/pkg/log"
+	"github.com/munnerz/cert-manager/pkg/util"
 )
 
 const (
@@ -22,19 +25,34 @@ const (
 )
 
 type account struct {
-	ctx    *controller.Context
 	issuer *v1alpha1.Issuer
+
+	client        kubernetes.Interface
+	secretsLister corev1listers.SecretLister
+}
+
+func newAccount(issuer *v1alpha1.Issuer, client kubernetes.Interface, secretsLister corev1listers.SecretLister) *account {
+	return &account{issuer, client, secretsLister}
 }
 
 func (a *account) uri() string {
-	return a.issuer.Spec.ACME.URI
+	if a.issuer.Status.ACME == nil {
+		return ""
+	}
+	return a.issuer.Status.ACME.URI
 }
 
 func (a *account) email() string {
+	if a.issuer.Spec.ACME == nil {
+		return ""
+	}
 	return a.issuer.Spec.ACME.Email
 }
 
 func (a *account) server() string {
+	if a.issuer.Spec.ACME == nil {
+		return ""
+	}
 	return a.issuer.Spec.ACME.Server
 }
 
@@ -43,8 +61,12 @@ func (a *account) server() string {
 // TODO (@munnerz): how can we support different types of private keys other
 // than rsa?
 func (a *account) privateKey() (*rsa.PrivateKey, error) {
+	if a.issuer.Spec.ACME == nil {
+		return nil, fmt.Errorf("acme spec block cannot be empty")
+	}
+
 	keyName := a.issuer.Spec.ACME.PrivateKey
-	keySecret, err := a.ctx.InformerFactory.Core().V1().Secrets().Lister().Secrets(a.issuer.Namespace).Get(keyName)
+	keySecret, err := a.secretsLister.Secrets(a.issuer.Namespace).Get(keyName)
 
 	if err != nil {
 		// we return the plain error here so k8sErrors.IsNotFound can be used
@@ -79,8 +101,10 @@ func (a *account) privateKey() (*rsa.PrivateKey, error) {
 // verify verifies an acme account is valid with the acme server
 func (a *account) verify() error {
 	if a.issuer.Spec.ACME.Server == "" {
-		a.ctx.Logger.Printf("acme server url must be set")
-		return nil
+		return fmt.Errorf("acme server url must be set")
+	}
+	if a.issuer.Status.ACME == nil || a.issuer.Status.ACME.URI == "" {
+		return fmt.Errorf("acme account uri must be set")
 	}
 
 	privateKey, err := a.privateKey()
@@ -90,13 +114,13 @@ func (a *account) verify() error {
 		return err
 	}
 
-	a.ctx.Logger.Printf("using acme server '%s' for verification", a.issuer.Spec.ACME.Server)
+	log.Printf("using acme server '%s' for verification", a.issuer.Spec.ACME.Server)
 	cl := acme.Client{
 		Key:          privateKey,
 		DirectoryURL: a.issuer.Spec.ACME.Server,
 	}
 
-	_, err = cl.GetReg(context.Background(), a.issuer.Spec.ACME.URI)
+	_, err = cl.GetReg(context.Background(), a.issuer.Status.ACME.URI)
 
 	if err != nil {
 		return fmt.Errorf("error getting acme registration: %s", err.Error())
@@ -110,10 +134,10 @@ func (a *account) verify() error {
 
 // register will register an account with the acme server and store the account
 // details in the context
+// TODO: break this function down
 func (a *account) register() error {
 	if a.issuer.Spec.ACME.Server == "" {
-		a.ctx.Logger.Printf("acme server url must be set")
-		return nil
+		return fmt.Errorf("acme server url must be set")
 	}
 
 	privateKey, err := a.privateKey()
@@ -130,7 +154,7 @@ func (a *account) register() error {
 			return fmt.Errorf("error generating private key: %s", err.Error())
 		}
 
-		_, err = a.ctx.Client.Secrets(a.issuer.Namespace).Create(&api.Secret{
+		_, err = util.EnsureSecret(a.client, &api.Secret{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      a.issuer.Spec.ACME.PrivateKey,
 				Namespace: a.issuer.Namespace,
@@ -145,7 +169,7 @@ func (a *account) register() error {
 		}
 	}
 
-	a.ctx.Logger.Printf("using acme server '%s' for registration", a.issuer.Spec.ACME.Server)
+	log.Printf("using acme server '%s' for registration", a.issuer.Spec.ACME.Server)
 	cl := acme.Client{
 		Key:          privateKey,
 		DirectoryURL: a.issuer.Spec.ACME.Server,
@@ -165,7 +189,7 @@ func (a *account) register() error {
 			return fmt.Errorf("error registering acme account: %s", err.Error())
 		}
 
-		if a.issuer.Spec.ACME.URI == "" {
+		if a.issuer.Status.ACME == nil || a.issuer.Status.ACME.URI == "" {
 			return fmt.Errorf("private key already registered but user URI not found. delete existing private key or set acme account URI")
 		}
 
@@ -174,6 +198,7 @@ func (a *account) register() error {
 		}
 	}
 
-	a.issuer.Spec.ACME.URI = account.URI
+	a.issuer.Status.ACMEStatus().URI = account.URI
+
 	return nil
 }

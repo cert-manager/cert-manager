@@ -46,6 +46,13 @@ type IssuerSpec struct {
 
 type IssuerStatus struct {
 	Ready bool
+	ACME  *ACMEIssuerStatus
+}
+
+type ACMEIssuerStatus struct {
+	// URI is the unique account identifier, which can also be used to retrieve
+	// account details from the CA
+	URI string
 }
 
 type ACMEIssuer struct {
@@ -56,9 +63,6 @@ type ACMEIssuer struct {
 	// PrivateKey is the name of a secret containing the private key for this
 	// user account.
 	PrivateKey string
-	// URI is the unique account identifier, which can also be used to retrieve
-	// account details from the CA
-	URI string
 	// DNS-01 config
 	DNS01 *ACMEIssuerDNS01Config
 }
