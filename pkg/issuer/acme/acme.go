@@ -33,10 +33,6 @@ func New(issuer *v1alpha1.Issuer,
 	}, nil
 }
 
-func (a *Acme) Renew(crt *v1alpha1.Certificate) ([]byte, []byte, error) {
-	return a.obtainCertificate(crt)
-}
-
 func init() {
 	issuer.SharedFactory().Register(issuer.IssuerACME, New)
 }

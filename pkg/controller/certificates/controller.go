@@ -51,6 +51,8 @@ type controller struct {
 	queue workqueue.RateLimitingInterface
 }
 
+// New returns a new Certificates controller. It sets up the informer handler
+// functions for all the types it watches.
 func New(client kubernetes.Interface,
 	cmClient client.Interface,
 	factory informers.SharedInformerFactory,
@@ -99,7 +101,7 @@ func (c *controller) certificateAdded(obj interface{}) {
 	}
 	var key string
 	var err error
-	if key, err = cache.DeletionHandlingMetaNamespaceKeyFunc(certificate); err != nil {
+	if key, err = keyFunc(certificate); err != nil {
 		runtime.HandleError(err)
 		return
 	}
@@ -118,7 +120,7 @@ func (c *controller) certificateUpdated(prev, obj interface{}) {
 	}
 	var key string
 	var err error
-	if key, err = cache.DeletionHandlingMetaNamespaceKeyFunc(certificate); err != nil {
+	if key, err = keyFunc(certificate); err != nil {
 		runtime.HandleError(err)
 		return
 	}
@@ -139,8 +141,19 @@ func (c *controller) secretDeleted(obj interface{}) {
 			return
 		}
 	}
-	log.Printf("TODO: implement watching for deleted secret resources (secret '%s/%s' deleted)", secret.Namespace, secret.Name)
-	//c.queue.Add(sa.Namespace)
+	crts, err := c.certificatesForSecret(secret)
+	if err != nil {
+		runtime.HandleError(fmt.Errorf("Error looking up certificates observing Secret: %s/%s", secret.Namespace, secret.Name))
+		return
+	}
+	for _, crt := range crts {
+		key, err := keyFunc(crt)
+		if err != nil {
+			runtime.HandleError(err)
+			continue
+		}
+		c.queue.Add(key)
+	}
 }
 
 func (c *controller) ingressDeleted(obj interface{}) {
@@ -157,8 +170,19 @@ func (c *controller) ingressDeleted(obj interface{}) {
 			return
 		}
 	}
-	log.Printf("TODO: implement watching for deleted ingress resources (secret '%s/%s' deleted)", ingress.Namespace, ingress.Name)
-	//c.queue.Add(sa.Namespace)
+	crts, err := c.certificatesForIngress(ingress)
+	if err != nil {
+		runtime.HandleError(fmt.Errorf("Error looking up certificates observing Ingress: %s/%s", ingress.Namespace, ingress.Name))
+		return
+	}
+	for _, crt := range crts {
+		key, err := keyFunc(crt)
+		if err != nil {
+			runtime.HandleError(err)
+			continue
+		}
+		c.queue.Add(key)
+	}
 }
 
 func (c *controller) Run(workers int, stopCh <-chan struct{}) {
@@ -238,6 +262,8 @@ func (c *controller) processNextWorkItem(key string) error {
 
 	return c.sync(crt)
 }
+
+var keyFunc = cache.DeletionHandlingMetaNamespaceKeyFunc
 
 const (
 	ControllerName = "certificates"
