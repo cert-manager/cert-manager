@@ -198,10 +198,7 @@ func (a *account) register() error {
 		}
 	}
 
-	if a.issuer.Status.ACME == nil {
-		a.issuer.Status.ACME = &v1alpha1.ACMEIssuerStatus{}
-	}
-	a.issuer.Status.ACME.URI = account.URI
+	a.issuer.Status.ACMEStatus().URI = account.URI
 
 	return nil
 }
