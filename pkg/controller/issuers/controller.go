@@ -40,6 +40,9 @@ type controller struct {
 	secretInformerSynced cache.InformerSynced
 	secretLister         corelisters.SecretLister
 
+	certificateInformerSynced cache.InformerSynced
+	certificateLister         cmlisters.CertificateLister
+
 	queue workqueue.RateLimitingInterface
 }
 
@@ -54,6 +57,7 @@ func New(client kubernetes.Interface,
 
 	secretsInformer := factory.Core().V1().Secrets()
 	issuersInformer := cmFactory.Certmanager().V1alpha1().Issuers()
+	certificatesInformer := cmFactory.Certmanager().V1alpha1().Certificates()
 
 	issuersInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc:    ctrl.issuerAdded,
@@ -68,6 +72,9 @@ func New(client kubernetes.Interface,
 	ctrl.secretInformerSynced = secretsInformer.Informer().HasSynced
 	ctrl.secretLister = secretsInformer.Lister()
 
+	ctrl.certificateInformerSynced = certificatesInformer.Informer().HasSynced
+	ctrl.certificateLister = certificatesInformer.Lister()
+
 	return ctrl, nil
 }
 
@@ -80,7 +87,7 @@ func (c *controller) issuerAdded(obj interface{}) {
 	}
 	var key string
 	var err error
-	if key, err = cache.DeletionHandlingMetaNamespaceKeyFunc(issuer); err != nil {
+	if key, err = keyFunc(issuer); err != nil {
 		runtime.HandleError(err)
 		return
 	}
@@ -99,7 +106,7 @@ func (c *controller) issuerUpdated(prev, obj interface{}) {
 	}
 	var key string
 	var err error
-	if key, err = cache.DeletionHandlingMetaNamespaceKeyFunc(issuer); err != nil {
+	if key, err = keyFunc(issuer); err != nil {
 		runtime.HandleError(err)
 		return
 	}
@@ -122,8 +129,19 @@ func (c *controller) secretDeleted(obj interface{}) {
 			return
 		}
 	}
-	log.Printf("TODO: implement watching for deleted secret resources (secret '%s/%s' deleted)", secret.Namespace, secret.Name)
-	//c.queue.Add(sa.Namespace)
+	issuers, err := c.issuersForSecret(secret)
+	if err != nil {
+		runtime.HandleError(fmt.Errorf("Error looking up issuers observing Secret: %s/%s", secret.Namespace, secret.Name))
+		return
+	}
+	for _, iss := range issuers {
+		key, err := keyFunc(iss)
+		if err != nil {
+			runtime.HandleError(err)
+			continue
+		}
+		c.queue.Add(key)
+	}
 }
 
 func (c *controller) Run(workers int, stopCh <-chan struct{}) {
@@ -199,6 +217,8 @@ func (c *controller) processNextWorkItem(key string) error {
 
 	return c.sync(issuer)
 }
+
+var keyFunc = cache.DeletionHandlingMetaNamespaceKeyFunc
 
 const (
 	ControllerName = "issuers"
