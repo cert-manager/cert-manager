@@ -1,6 +1,7 @@
 package acme
 
 import (
+	"context"
 	"fmt"
 
 	"k8s.io/client-go/informers"
@@ -43,8 +44,9 @@ func New(issuer *v1alpha1.Issuer,
 }
 
 type solver interface {
-	Present(crt *v1alpha1.Certificate, domain, token, key string) error
-	CleanUp(crt *v1alpha1.Certificate, domain, token, key string) error
+	Present(ctx context.Context, crt *v1alpha1.Certificate, domain, token, key string) error
+	Wait(ctx context.Context, crt *v1alpha1.Certificate, domain, token, key string) error
+	CleanUp(ctx context.Context, crt *v1alpha1.Certificate, domain, token, key string) error
 }
 
 func (a *Acme) solverFor(challengeType string) (solver, error) {

@@ -1,6 +1,7 @@
 package http
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"net/http"
@@ -39,13 +40,18 @@ func NewSolver() *Solver {
 	return &Solver{}
 }
 
-func (s *Solver) Present(crt *v1alpha1.Certificate, domain, token, key string) error {
+func (s *Solver) Present(ctx context.Context, crt *v1alpha1.Certificate, domain, token, key string) error {
 	solver.addChallenge(challenge{domain, token, key})
 	return nil
 }
 
 // todo
-func (s *Solver) CleanUp(crt *v1alpha1.Certificate, domain, token, key string) error {
+func (s *Solver) Wait(ctx context.Context, crt *v1alpha1.Certificate, domain, token, key string) error {
+	return nil
+}
+
+// todo
+func (s *Solver) CleanUp(ctx context.Context, crt *v1alpha1.Certificate, domain, token, key string) error {
 	return nil
 }
 

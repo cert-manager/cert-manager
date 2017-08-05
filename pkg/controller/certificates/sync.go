@@ -33,6 +33,7 @@ func (c *controller) sync(crt *v1alpha1.Certificate) error {
 		return fmt.Errorf("error getting issuer implementation for issuer '%s': %s", issuerObj.Name, err.Error())
 	}
 
+	log.Printf("Preparing Issuer '%s/%s' and Certificate '%s/%s'", issuerObj.Namespace, issuerObj.Name, crt.Namespace, crt.Name)
 	// TODO: move this to after the certificate check to avoid unneeded authorization checks
 	err = i.Prepare(crt)
 
@@ -40,6 +41,7 @@ func (c *controller) sync(crt *v1alpha1.Certificate) error {
 		return err
 	}
 
+	log.Printf("Finished preparing with Issuer '%s/%s' and Certificate '%s/%s'", issuerObj.Namespace, issuerObj.Name, crt.Namespace, crt.Name)
 	// step one: check if referenced secret exists, if not, trigger issue event
 	secret, err := c.secretLister.Secrets(crt.Namespace).Get(crt.Spec.SecretName)
 
