@@ -17,14 +17,17 @@ func (c *controller) certificatesForSecret(secret *corev1.Secret) ([]*v1alpha1.C
 		return nil, fmt.Errorf("error listing certificiates: %s", err.Error())
 	}
 
-	for i, crt := range crts {
-		if crt.Spec.SecretName == secret.Name && crt.Namespace == secret.Namespace {
+	var affected []*v1alpha1.Certificate
+	for _, crt := range crts {
+		if crt.Namespace != secret.Namespace {
 			continue
 		}
-		crts = append(crts[:i], crts[i+1:]...)
+		if crt.Spec.SecretName == secret.Name {
+			affected = append(affected, crt)
+		}
 	}
 
-	return crts, nil
+	return affected, nil
 }
 
 func (c *controller) certificatesForIngress(ing *extv1beta1.Ingress) ([]*v1alpha1.Certificate, error) {
@@ -52,5 +55,5 @@ func (c *controller) certificatesForIngress(ing *extv1beta1.Ingress) ([]*v1alpha
 		}
 	}
 
-	return crts, nil
+	return affected, nil
 }
