@@ -23,6 +23,7 @@ import (
 	"github.com/munnerz/cert-manager/pkg/informers/externalversions"
 	cmlisters "github.com/munnerz/cert-manager/pkg/listers/certmanager/v1alpha1"
 	"github.com/munnerz/cert-manager/pkg/log"
+	"github.com/munnerz/cert-manager/pkg/scheduler"
 )
 
 var _ controllerpkg.Constructor = New
@@ -48,7 +49,8 @@ type controller struct {
 	ingressInformerSynced cache.InformerSynced
 	ingressLister         extlisters.IngressLister
 
-	queue workqueue.RateLimitingInterface
+	queue              workqueue.RateLimitingInterface
+	scheduledWorkQueue *scheduler.ScheduledWorkQueue
 }
 
 // New returns a new Certificates controller. It sets up the informer handler
@@ -61,6 +63,10 @@ func New(client kubernetes.Interface,
 	ctrl := &controller{client: client, cmClient: cmClient}
 	ctrl.syncHandler = ctrl.processNextWorkItem
 	ctrl.queue = workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "certificates")
+	// Create a scheduled work queue that calls the ctrl.queue.Add method for
+	// each object in the queue. This is used to schedule re-checks of
+	// Certificate resources when they get near to expiry
+	ctrl.scheduledWorkQueue = scheduler.NewScheduledWorkQueue(ctrl.queue.Add)
 
 	secretsInformer := factory.Core().V1().Secrets()
 	ingressInformer := factory.Extensions().V1beta1().Ingresses()
@@ -70,6 +76,7 @@ func New(client kubernetes.Interface,
 	certificatesInformer.Informer().AddEventHandlerWithResyncPeriod(cache.ResourceEventHandlerFuncs{
 		AddFunc:    ctrl.certificateAdded,
 		UpdateFunc: ctrl.certificateUpdated,
+		DeleteFunc: ctrl.certificateDeleted,
 	}, time.Minute*5)
 	ctrl.certificateInformerSynced = certificatesInformer.Informer().HasSynced
 	ctrl.certificateLister = certificatesInformer.Lister()
@@ -99,9 +106,13 @@ func (c *controller) certificateAdded(obj interface{}) {
 		runtime.HandleError(fmt.Errorf("expected *Certificate but got %T in work queue", obj))
 		return
 	}
+	c.enqueueCertificate(certificate)
+}
+
+func (c *controller) enqueueCertificate(crt *v1alpha1.Certificate) {
 	var key string
 	var err error
-	if key, err = keyFunc(certificate); err != nil {
+	if key, err = keyFunc(crt); err != nil {
 		runtime.HandleError(err)
 		return
 	}
@@ -118,13 +129,24 @@ func (c *controller) certificateUpdated(prev, obj interface{}) {
 	if reflect.DeepEqual(prev, obj) {
 		return
 	}
-	var key string
-	var err error
-	if key, err = keyFunc(certificate); err != nil {
-		runtime.HandleError(err)
-		return
+	c.enqueueCertificate(certificate)
+}
+
+func (c *controller) certificateDeleted(obj interface{}) {
+	certificate, ok := obj.(*v1alpha1.Certificate)
+	if !ok {
+		tombstone, ok := obj.(cache.DeletedFinalStateUnknown)
+		if !ok {
+			runtime.HandleError(fmt.Errorf("Couldn't get object from tombstone %#v", obj))
+			return
+		}
+		certificate, ok = tombstone.Obj.(*v1alpha1.Certificate)
+		if !ok {
+			runtime.HandleError(fmt.Errorf("Tombstone contained object that is not a Secret %#v", obj))
+			return
+		}
 	}
-	c.queue.Add(key)
+	c.enqueueCertificate(certificate)
 }
 
 func (c *controller) secretDeleted(obj interface{}) {
@@ -224,7 +246,7 @@ func (c *controller) worker() {
 				runtime.HandleError(fmt.Errorf("expected string in workqueue but got %T", obj))
 				return nil
 			}
-			if err := c.processNextWorkItem(key); err != nil {
+			if err := c.syncHandler(key); err != nil {
 				return err
 			}
 			c.queue.Forget(obj)
@@ -253,6 +275,7 @@ func (c *controller) processNextWorkItem(key string) error {
 
 	if err != nil {
 		if k8sErrors.IsNotFound(err) {
+			c.scheduledWorkQueue.Forget(key)
 			runtime.HandleError(fmt.Errorf("certificate '%s' in work queue no longer exists", key))
 			return nil
 		}
