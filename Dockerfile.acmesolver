@@ -1,0 +1,7 @@
+FROM alpine:3.6
+
+RUN apk add --no-cache ca-certificates
+
+ADD _build/cert-manager-acmesolver-linux-amd64 /usr/bin/acmesolver
+
+ENTRYPOINT ["/usr/bin/acmesolver"]
