@@ -3,3 +3,5 @@
 .generate_exes
 bin/
 _build/
+acmesolver
+controller
