@@ -40,41 +40,54 @@ func (c *controller) sync(crt *v1alpha1.Certificate) (err error) {
 		return fmt.Errorf("error getting issuer implementation for issuer '%s': %s", issuerObj.Name, err.Error())
 	}
 
-	log.Printf("Preparing Issuer '%s/%s' and Certificate '%s/%s'", issuerObj.Namespace, issuerObj.Name, crt.Namespace, crt.Name)
-	// TODO: move this to after the certificate check to avoid unneeded authorization checks
-	err = i.Prepare(crt)
-
-	if err != nil {
-		return err
-	}
-
-	log.Printf("Finished preparing with Issuer '%s/%s' and Certificate '%s/%s'", issuerObj.Namespace, issuerObj.Name, crt.Namespace, crt.Name)
-
-	defer c.scheduleRenewal(crt)
-
-	// step one: check if referenced secret exists, if not, trigger issue event
+	// grab existing certificate and validate private key
 	cert, _, err := c.getCertificate(crt.Namespace, crt.Spec.SecretName)
 
-	if err != nil {
-		if k8sErrors.IsNotFound(err) || err == errInvalidCertificateData {
-			return c.issue(i, crt)
-		}
+	// if an error is returned, and that error is something other than
+	// IsNotFound or invalid data, then we should return the error.
+	if err != nil && !k8sErrors.IsNotFound(err) && err != errInvalidCertificateData {
 		return err
 	}
 
-	// step two: check if referenced secret is valid for listed domains. if not, return failure
-	if !util.EqualUnsorted(crt.Spec.Domains, cert.DNSNames) {
-		log.Printf("list of domains on certificate do not match domains in spec")
+	// as there is an existing certificate, or we may create one below, we will
+	// run scheduleRenewal to schedule a renewal if required at the end of
+	// execution.
+	defer c.scheduleRenewal(crt)
+
+	// if the certificate was not found, or the certificate data is invalid, we
+	// should issue a new certificate
+	if k8sErrors.IsNotFound(err) || err == errInvalidCertificateData {
 		return c.issue(i, crt)
 	}
+
+	// if the certificate is valid for a list of domains other than those
+	// listed in the certificate spec, we should re-issue the certificate
+	if !util.EqualUnsorted(crt.Spec.Domains, cert.DNSNames) {
+		return c.issue(i, crt)
+	}
+
+	// calculate the amount of time until expiry
 	durationUntilExpiry := cert.NotAfter.Sub(time.Now())
+	// calculate how long until we should start attempting to renew the
+	// certificate
 	renewIn := durationUntilExpiry - renewBefore
-	// step three: check if referenced secret is valid (after start & before expiry)
+
+	// if we should being attempting to renew now, then trigger a renewal
 	if renewIn <= 0 {
 		return c.renew(i, crt)
 	}
 
 	return nil
+}
+
+func needsRenew(cert *x509.Certificate) bool {
+	durationUntilExpiry := cert.NotAfter.Sub(time.Now())
+	renewIn := durationUntilExpiry - renewBefore
+	// step three: check if referenced secret is valid (after start & before expiry)
+	if renewIn <= 0 {
+		return true
+	}
+	return false
 }
 
 func (c *controller) getCertificate(namespace, name string) (*x509.Certificate, *rsa.PrivateKey, error) {
@@ -145,9 +158,26 @@ func (c *controller) scheduleRenewal(crt *v1alpha1.Certificate) {
 	c.scheduledWorkQueue.Add(key, renewIn)
 }
 
+func (c *controller) prepare(issuer issuer.Interface, crt *v1alpha1.Certificate) error {
+	log.Printf("Preparing Certificate '%s/%s'", crt.Namespace, crt.Name)
+	// TODO: move this to after the certificate check to avoid unneeded authorization checks
+	err := issuer.Prepare(crt)
+
+	if err != nil {
+		return err
+	}
+
+	log.Printf("Finished preparing Certificate '%s/%s'", crt.Namespace, crt.Name)
+	return nil
+}
+
 // return an error on failure. If retrieval is succesful, the certificate data
 // and private key will be stored in the named secret
 func (c *controller) issue(issuer issuer.Interface, crt *v1alpha1.Certificate) error {
+	if err := c.prepare(issuer, crt); err != nil {
+		return err
+	}
+
 	log.Printf("[%s/%s] Issuing certificate...", crt.Namespace, crt.Name)
 	key, cert, err := issuer.Issue(crt)
 	if err != nil {
@@ -178,6 +208,10 @@ func (c *controller) issue(issuer issuer.Interface, crt *v1alpha1.Certificate) e
 // return an error on failure. If renewal is succesful, the certificate data
 // and private key will be stored in the named secret
 func (c *controller) renew(issuer issuer.Interface, crt *v1alpha1.Certificate) error {
+	if err := c.prepare(issuer, crt); err != nil {
+		return err
+	}
+
 	log.Printf("[%s/%s] Renewing certificate...", crt.Namespace, crt.Name)
 	key, cert, err := issuer.Renew(crt)
 	if err != nil {

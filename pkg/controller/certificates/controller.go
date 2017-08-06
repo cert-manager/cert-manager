@@ -50,7 +50,7 @@ type controller struct {
 	ingressLister         extlisters.IngressLister
 
 	queue              workqueue.RateLimitingInterface
-	scheduledWorkQueue *scheduler.ScheduledWorkQueue
+	scheduledWorkQueue scheduler.ScheduledWorkQueue
 }
 
 // New returns a new Certificates controller. It sets up the informer handler
