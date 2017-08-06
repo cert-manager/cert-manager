@@ -19,10 +19,32 @@ func EnsureSecret(cl kubernetes.Interface, secret *api.Secret) (*api.Secret, err
 }
 
 func EnsureIngress(cl kubernetes.Interface, ingress *extensions.Ingress) (*extensions.Ingress, error) {
-	s, err := cl.ExtensionsV1beta1().Ingresses(ingress.Namespace).Create(ingress)
+	s, err := cl.ExtensionsV1beta1().Ingresses(ingress.Namespace).Update(ingress)
 	if err != nil {
-		if k8sErrors.IsAlreadyExists(err) {
-			return cl.ExtensionsV1beta1().Ingresses(ingress.Namespace).Update(ingress)
+		if k8sErrors.IsNotFound(err) {
+			return cl.ExtensionsV1beta1().Ingresses(ingress.Namespace).Create(ingress)
+		}
+		return nil, err
+	}
+	return s, nil
+}
+
+func EnsureService(cl kubernetes.Interface, service *core.Service) (*core.Service, error) {
+	s, err := cl.CoreV1().Services(service.Namespace).Update(service)
+	if err != nil {
+		if k8sErrors.IsNotFound(err) {
+			return cl.CoreV1().Services(service.Namespace).Create(service)
+		}
+		return nil, err
+	}
+	return s, nil
+}
+
+func EnsureJob(cl kubernetes.Interface, job *batch.Job) (*batch.Job, error) {
+	s, err := cl.BatchV1().Jobs(job.Namespace).Update(job)
+	if err != nil {
+		if k8sErrors.IsNotFound(err) {
+			return cl.BatchV1().Jobs(job.Namespace).Create(job)
 		}
 		return nil, err
 	}

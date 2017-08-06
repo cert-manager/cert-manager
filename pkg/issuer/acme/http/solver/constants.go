@@ -1,4 +1,4 @@
-package http
+package solver
 
 const (
 	// HTTPChallengePath is the path prefix used for http-01 challenge requests

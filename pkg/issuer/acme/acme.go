@@ -39,7 +39,7 @@ func New(issuer *v1alpha1.Issuer,
 		factory:    factory,
 		cmFactory:  cmFactory,
 		dnsSolver:  dns.NewSolver(issuer, client, factory.Core().V1().Secrets().Lister()),
-		httpSolver: http.NewSolver(),
+		httpSolver: http.NewSolver(issuer, client, factory.Core().V1().Secrets().Lister()),
 	}, nil
 }
 
