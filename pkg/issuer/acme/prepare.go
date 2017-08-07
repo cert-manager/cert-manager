@@ -109,6 +109,15 @@ func (a *Acme) prepare(crt *v1alpha1.Certificate) error {
 	// todo: parallelize this
 	// todo: refactor into own function
 	for _, auth := range auths {
+		if auth.auth.Status == acme.StatusValid {
+			log.Printf("[%s] Skipped authorization for domain we are already validated", auth.domain)
+			crt.Status.ACMEStatus().SaveAuthorization(v1alpha1.ACMEDomainAuthorization{
+				Domain: auth.domain,
+				URI:    auth.auth.URI,
+			})
+			continue
+		}
+
 		log.Printf("picking challenge type for domain '%s'", auth.domain)
 		challengeType, err := pickChallengeType(auth.domain, auth.auth, crt.Spec.ACME.Config)
 		if err != nil {
