@@ -15,19 +15,3 @@ spec:
       - name: cert-manager
         image: quay.io/jetstack/cert-manager-controller:canary.2
         imagePullPolicy: Always
-        ports:
-        - name: http
-          containerPort: 8081
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: cert-manager
-spec:
-  type: LoadBalancer
-  ports:
-  - name: http
-    port: 80
-    targetPort: 8081
-  selector:
-    app: cert-manager
