@@ -77,7 +77,8 @@ type ACMEIssuerDNS01Config struct {
 type ACMEIssuerDNS01Provider struct {
 	Name string
 
-	CloudDNS *ACMEIssuerDNS01ProviderCloudDNS
+	CloudDNS   *ACMEIssuerDNS01ProviderCloudDNS
+	Cloudflare *ACMEIssuerDNS01ProviderCloudflare
 }
 
 // ACMEIssuerDNS01ProviderCloudDNS is a structure containing the DNS
@@ -85,6 +86,13 @@ type ACMEIssuerDNS01Provider struct {
 type ACMEIssuerDNS01ProviderCloudDNS struct {
 	ServiceAccount SecretKeySelector
 	Project        string
+}
+
+// ACMEIssuerDNS01ProviderCloudflare is a structure containing the DNS
+// configuration for Cloudflare
+type ACMEIssuerDNS01ProviderCloudflare struct {
+	Email  string
+	APIKey SecretKeySelector
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

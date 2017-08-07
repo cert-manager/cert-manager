@@ -102,7 +102,8 @@ func (a *ACMEIssuerDNS01Config) Provider(name string) (*ACMEIssuerDNS01Provider,
 type ACMEIssuerDNS01Provider struct {
 	Name string `json:"name"`
 
-	CloudDNS *ACMEIssuerDNS01ProviderCloudDNS `json:"clouddns,omitempty"`
+	CloudDNS   *ACMEIssuerDNS01ProviderCloudDNS   `json:"clouddns,omitempty"`
+	Cloudflare *ACMEIssuerDNS01ProviderCloudflare `json:"cloudflare,omitempty"`
 }
 
 // ACMEIssuerDNS01ProviderCloudDNS is a structure containing the DNS
@@ -110,6 +111,13 @@ type ACMEIssuerDNS01Provider struct {
 type ACMEIssuerDNS01ProviderCloudDNS struct {
 	ServiceAccount SecretKeySelector `json:"serviceAccount"`
 	Project        string            `json:"project"`
+}
+
+// ACMEIssuerDNS01ProviderCloudflare is a structure containing the DNS
+// configuration for Cloudflare
+type ACMEIssuerDNS01ProviderCloudflare struct {
+	Email  string            `json:"email"`
+	APIKey SecretKeySelector `json:"apiKey"`
 }
 
 // +genclient=true

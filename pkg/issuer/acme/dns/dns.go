@@ -11,6 +11,7 @@ import (
 
 	"github.com/jetstack-experimental/cert-manager/pkg/apis/certmanager/v1alpha1"
 	"github.com/jetstack-experimental/cert-manager/pkg/issuer/acme/dns/clouddns"
+	"github.com/jetstack-experimental/cert-manager/pkg/issuer/acme/dns/cloudflare"
 	"github.com/jetstack-experimental/cert-manager/pkg/issuer/acme/dns/util"
 )
 
@@ -117,6 +118,19 @@ func (s *Solver) solverFor(crt *v1alpha1.Certificate, domain string) (solver, er
 		impl, err = clouddns.NewDNSProviderServiceAccountBytes(providerConfig.CloudDNS.Project, saBytes)
 		if err != nil {
 			return nil, fmt.Errorf("error instantiating google clouddns challenge solver: %s", err.Error())
+		}
+	case providerConfig.Cloudflare != nil:
+		apiKeySecret, err := s.secretLister.Secrets(s.issuer.Namespace).Get(providerConfig.Cloudflare.APIKey.Name)
+		if err != nil {
+			return nil, fmt.Errorf("error getting clouddns service account: %s", err.Error())
+		}
+
+		email := providerConfig.Cloudflare.Email
+		apiKey := string(apiKeySecret.Data[providerConfig.Cloudflare.APIKey.Key])
+
+		impl, err = cloudflare.NewDNSProviderCredentials(email, apiKey)
+		if err != nil {
+			return nil, fmt.Errorf("error instantiating cloudflare challenge solver: %s", err.Error())
 		}
 	default:
 		return nil, fmt.Errorf("no dns provider config specified for domain '%s'", domain)
