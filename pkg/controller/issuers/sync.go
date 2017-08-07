@@ -1,8 +1,8 @@
 package issuers
 
 import (
-	"github.com/munnerz/cert-manager/pkg/apis/certmanager/v1alpha1"
-	"github.com/munnerz/cert-manager/pkg/issuer"
+	"github.com/jetstack-experimental/cert-manager/pkg/apis/certmanager/v1alpha1"
+	"github.com/jetstack-experimental/cert-manager/pkg/issuer"
 )
 
 func (c *controller) sync(iss *v1alpha1.Issuer) error {

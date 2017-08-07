@@ -13,9 +13,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/runtime"
 
-	"github.com/munnerz/cert-manager/pkg/apis/certmanager/v1alpha1"
-	"github.com/munnerz/cert-manager/pkg/issuer"
-	"github.com/munnerz/cert-manager/pkg/util"
+	"github.com/jetstack-experimental/cert-manager/pkg/apis/certmanager/v1alpha1"
+	"github.com/jetstack-experimental/cert-manager/pkg/issuer"
+	"github.com/jetstack-experimental/cert-manager/pkg/util"
 )
 
 const renewBefore = time.Hour * 24 * 30

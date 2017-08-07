@@ -9,9 +9,9 @@ import (
 	"k8s.io/client-go/kubernetes"
 	corev1listers "k8s.io/client-go/listers/core/v1"
 
-	"github.com/munnerz/cert-manager/pkg/apis/certmanager/v1alpha1"
-	"github.com/munnerz/cert-manager/pkg/issuer/acme/dns/clouddns"
-	"github.com/munnerz/cert-manager/pkg/issuer/acme/dns/util"
+	"github.com/jetstack-experimental/cert-manager/pkg/apis/certmanager/v1alpha1"
+	"github.com/jetstack-experimental/cert-manager/pkg/issuer/acme/dns/clouddns"
+	"github.com/jetstack-experimental/cert-manager/pkg/issuer/acme/dns/util"
 )
 
 const (

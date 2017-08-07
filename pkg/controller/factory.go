@@ -7,8 +7,8 @@ import (
 	"k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 
-	"github.com/munnerz/cert-manager/pkg/client"
-	"github.com/munnerz/cert-manager/pkg/informers/externalversions"
+	"github.com/jetstack-experimental/cert-manager/pkg/client"
+	"github.com/jetstack-experimental/cert-manager/pkg/informers/externalversions"
 )
 
 var defaultFactory = &Factory{

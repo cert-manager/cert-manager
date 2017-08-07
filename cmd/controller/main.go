@@ -27,15 +27,15 @@ import (
 	rest "k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 
-	_ "github.com/munnerz/cert-manager/pkg/apis/certmanager/install"
-	"github.com/munnerz/cert-manager/pkg/client"
-	"github.com/munnerz/cert-manager/pkg/controller"
-	"github.com/munnerz/cert-manager/pkg/controller/certificates"
-	"github.com/munnerz/cert-manager/pkg/controller/issuers"
-	"github.com/munnerz/cert-manager/pkg/informers/externalversions"
-	"github.com/munnerz/cert-manager/pkg/issuer"
-	_ "github.com/munnerz/cert-manager/pkg/issuer/acme"
-	logpkg "github.com/munnerz/cert-manager/pkg/log"
+	_ "github.com/jetstack-experimental/cert-manager/pkg/apis/certmanager/install"
+	"github.com/jetstack-experimental/cert-manager/pkg/client"
+	"github.com/jetstack-experimental/cert-manager/pkg/controller"
+	"github.com/jetstack-experimental/cert-manager/pkg/controller/certificates"
+	"github.com/jetstack-experimental/cert-manager/pkg/controller/issuers"
+	"github.com/jetstack-experimental/cert-manager/pkg/informers/externalversions"
+	"github.com/jetstack-experimental/cert-manager/pkg/issuer"
+	_ "github.com/jetstack-experimental/cert-manager/pkg/issuer/acme"
+	logpkg "github.com/jetstack-experimental/cert-manager/pkg/log"
 )
 
 var (
