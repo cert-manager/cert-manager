@@ -20,8 +20,8 @@ import (
 	"k8s.io/apimachinery/pkg/apimachinery/registered"
 	"k8s.io/apimachinery/pkg/runtime"
 
-	"github.com/munnerz/cert-manager/pkg/apis/certmanager"
-	"github.com/munnerz/cert-manager/pkg/apis/certmanager/v1alpha1"
+	"github.com/jetstack-experimental/cert-manager/pkg/apis/certmanager"
+	"github.com/jetstack-experimental/cert-manager/pkg/apis/certmanager/v1alpha1"
 )
 
 // Install registers the API group and adds types to a scheme
@@ -30,7 +30,7 @@ func Install(groupFactoryRegistry announced.APIGroupFactoryRegistry, registry *r
 		&announced.GroupMetaFactoryArgs{
 			GroupName:                  certmanager.GroupName,
 			VersionPreferenceOrder:     []string{v1alpha1.SchemeGroupVersion.Version},
-			ImportPrefix:               "github.com/munnerz/cert-manager/pkg/apis/certmanager",
+			ImportPrefix:               "github.com/jetstack-experimental/cert-manager/pkg/apis/certmanager",
 			AddInternalObjectsToScheme: certmanager.AddToScheme,
 		},
 		announced.VersionToSchemeFunc{

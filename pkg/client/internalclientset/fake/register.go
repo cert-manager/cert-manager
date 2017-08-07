@@ -17,7 +17,7 @@ limitations under the License.
 package fake
 
 import (
-	certmanagerinternalversion "github.com/munnerz/cert-manager/pkg/apis/certmanager"
+	certmanagerinternalversion "github.com/jetstack-experimental/cert-manager/pkg/apis/certmanager"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"

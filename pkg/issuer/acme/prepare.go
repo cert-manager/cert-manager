@@ -7,9 +7,9 @@ import (
 
 	"golang.org/x/crypto/acme"
 
-	"github.com/munnerz/cert-manager/pkg/apis/certmanager/v1alpha1"
-	"github.com/munnerz/cert-manager/pkg/log"
-	"github.com/munnerz/cert-manager/pkg/util"
+	"github.com/jetstack-experimental/cert-manager/pkg/apis/certmanager/v1alpha1"
+	"github.com/jetstack-experimental/cert-manager/pkg/log"
+	"github.com/jetstack-experimental/cert-manager/pkg/util"
 )
 
 func authorizationsMap(list []v1alpha1.ACMEDomainAuthorization) map[string]v1alpha1.ACMEDomainAuthorization {

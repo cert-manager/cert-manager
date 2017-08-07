@@ -17,9 +17,9 @@ limitations under the License.
 package fake
 
 import (
-	clientset "github.com/munnerz/cert-manager/pkg/client"
-	certmanagerv1alpha1 "github.com/munnerz/cert-manager/pkg/client/typed/certmanager/v1alpha1"
-	fakecertmanagerv1alpha1 "github.com/munnerz/cert-manager/pkg/client/typed/certmanager/v1alpha1/fake"
+	clientset "github.com/jetstack-experimental/cert-manager/pkg/client"
+	certmanagerv1alpha1 "github.com/jetstack-experimental/cert-manager/pkg/client/typed/certmanager/v1alpha1"
+	fakecertmanagerv1alpha1 "github.com/jetstack-experimental/cert-manager/pkg/client/typed/certmanager/v1alpha1/fake"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/discovery"

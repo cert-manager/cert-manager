@@ -17,5 +17,5 @@ limitations under the License.
 package fake
 
 import (
-	internalversion "github.com/munnerz/cert-manager/pkg/client/internalclientset/typed/certmanager/internalversion"
+	internalversion "github.com/jetstack-experimental/cert-manager/pkg/client/internalclientset/typed/certmanager/internalversion"
 )

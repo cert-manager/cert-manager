@@ -7,12 +7,12 @@ import (
 	"k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 
-	"github.com/munnerz/cert-manager/pkg/apis/certmanager/v1alpha1"
-	"github.com/munnerz/cert-manager/pkg/client"
-	"github.com/munnerz/cert-manager/pkg/informers/externalversions"
-	"github.com/munnerz/cert-manager/pkg/issuer"
-	"github.com/munnerz/cert-manager/pkg/issuer/acme/dns"
-	"github.com/munnerz/cert-manager/pkg/issuer/acme/http"
+	"github.com/jetstack-experimental/cert-manager/pkg/apis/certmanager/v1alpha1"
+	"github.com/jetstack-experimental/cert-manager/pkg/client"
+	"github.com/jetstack-experimental/cert-manager/pkg/informers/externalversions"
+	"github.com/jetstack-experimental/cert-manager/pkg/issuer"
+	"github.com/jetstack-experimental/cert-manager/pkg/issuer/acme/dns"
+	"github.com/jetstack-experimental/cert-manager/pkg/issuer/acme/http"
 )
 
 type Acme struct {

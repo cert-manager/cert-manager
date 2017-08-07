@@ -14,8 +14,8 @@ import (
 	api "k8s.io/api/core/v1"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 
-	"github.com/munnerz/cert-manager/pkg/apis/certmanager/v1alpha1"
-	"github.com/munnerz/cert-manager/pkg/log"
+	"github.com/jetstack-experimental/cert-manager/pkg/apis/certmanager/v1alpha1"
+	"github.com/jetstack-experimental/cert-manager/pkg/log"
 )
 
 func (a *Acme) getCertificatePrivateKey(crt *v1alpha1.Certificate) ([]byte, crypto.Signer, error) {

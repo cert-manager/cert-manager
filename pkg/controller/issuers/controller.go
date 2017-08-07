@@ -15,12 +15,12 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
 
-	"github.com/munnerz/cert-manager/pkg/apis/certmanager/v1alpha1"
-	"github.com/munnerz/cert-manager/pkg/client"
-	controllerpkg "github.com/munnerz/cert-manager/pkg/controller"
-	"github.com/munnerz/cert-manager/pkg/informers/externalversions"
-	cmlisters "github.com/munnerz/cert-manager/pkg/listers/certmanager/v1alpha1"
-	"github.com/munnerz/cert-manager/pkg/log"
+	"github.com/jetstack-experimental/cert-manager/pkg/apis/certmanager/v1alpha1"
+	"github.com/jetstack-experimental/cert-manager/pkg/client"
+	controllerpkg "github.com/jetstack-experimental/cert-manager/pkg/controller"
+	"github.com/jetstack-experimental/cert-manager/pkg/informers/externalversions"
+	cmlisters "github.com/jetstack-experimental/cert-manager/pkg/listers/certmanager/v1alpha1"
+	"github.com/jetstack-experimental/cert-manager/pkg/log"
 )
 
 var _ controllerpkg.Constructor = New
