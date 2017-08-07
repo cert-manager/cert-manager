@@ -102,14 +102,14 @@ func (a *ACMEIssuerDNS01Config) Provider(name string) (*ACMEIssuerDNS01Provider,
 type ACMEIssuerDNS01Provider struct {
 	Name string `json:"name"`
 
-	CloudDNS *ACMEIssuerDNS01ProviderCloudDNS `json:"clouddns"`
+	CloudDNS *ACMEIssuerDNS01ProviderCloudDNS `json:"clouddns,omitempty"`
 }
 
 // ACMEIssuerDNS01ProviderCloudDNS is a structure containing the DNS
 // configuration for Google Cloud DNS
 type ACMEIssuerDNS01ProviderCloudDNS struct {
-	ServiceAccount string `json:"serviceAccount"`
-	Project        string `json:"project"`
+	ServiceAccount SecretKeySelector `json:"serviceAccount"`
+	Project        string            `json:"project"`
 }
 
 // +genclient=true
@@ -212,4 +212,18 @@ func (c *CertificateACMEStatus) SaveAuthorization(a ACMEDomainAuthorization) {
 type ACMEDomainAuthorization struct {
 	Domain string `json:"domain"`
 	URI    string `json:"uri"`
+}
+
+type LocalObjectReference struct {
+	// Name of the referent.
+	// More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+	// TODO: Add other useful fields. apiVersion, kind, uid?
+	Name string `json:"name,omitempty"`
+}
+
+type SecretKeySelector struct {
+	// The name of the secret in the pod's namespace to select from.
+	LocalObjectReference `json:",inline" protobuf:"bytes,1,opt,name=localObjectReference"`
+	// The key of the secret to select from.  Must be a valid secret key.
+	Key string `json:"key" protobuf:"bytes,2,opt,name=key"`
 }

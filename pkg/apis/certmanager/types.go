@@ -83,7 +83,7 @@ type ACMEIssuerDNS01Provider struct {
 // ACMEIssuerDNS01ProviderCloudDNS is a structure containing the DNS
 // configuration for Google Cloud DNS
 type ACMEIssuerDNS01ProviderCloudDNS struct {
-	ServiceAccount string
+	ServiceAccount SecretKeySelector
 	Project        string
 }
 
@@ -156,4 +156,18 @@ type CertificateACMEStatus struct {
 type ACMEDomainAuthorization struct {
 	Domain string
 	URI    string
+}
+
+type LocalObjectReference struct {
+	// Name of the referent.
+	// More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+	// TODO: Add other useful fields. apiVersion, kind, uid?
+	Name string
+}
+
+type SecretKeySelector struct {
+	// The name of the secret in the pod's namespace to select from.
+	LocalObjectReference
+	// The key of the secret to select from.  Must be a valid secret key.
+	Key string
 }
