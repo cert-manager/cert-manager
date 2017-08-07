@@ -13,12 +13,6 @@ This project is still heavily under development and is not ready for use
 **yet**. However, if you want to experiment, please do try running the current
 development build and reporting any issues you run into.
 
-## Future plans
-
-Soon, I'd like to see cert-manager expose it's own API server, to be used by
-the apiserver-aggregator. This will allow us to perform verification of
-resources as they are submitted, and consequently reject 'bad' manifests.
-
 ## Deploying
 
 To deploy the latest development version, run:
