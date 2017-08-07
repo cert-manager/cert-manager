@@ -160,7 +160,6 @@ func (c *controller) scheduleRenewal(crt *v1alpha1.Certificate) {
 
 func (c *controller) prepare(issuer issuer.Interface, crt *v1alpha1.Certificate) error {
 	log.Printf("Preparing Certificate '%s/%s'", crt.Namespace, crt.Name)
-	// TODO: move this to after the certificate check to avoid unneeded authorization checks
 	err := issuer.Prepare(crt)
 
 	if err != nil {
