@@ -27,11 +27,31 @@ To deploy the latest development version, run:
 $ kubectl create -f docs/cert-manager.yaml
 ```
 
-There is an example Certificate resource in `docs/acme-cert.yaml`, however
-requesting certificates via Ingress is not currently supported - instead, you
-must point your domain at the service created for cert-manager manually. This
-will naturally change over the coming days and weeks!
+## Getting started
+
+To get started, I've created two example issuers in `docs/acme-issuer.yaml`.
+These are configured to support the clouddns challenge provider for ACME, but
+if you do not intend to test this functionality then feel free to remove the
+configuration for it.
+
+Go ahead and create the issuer(s) with:
 
 ```
-$ kubectl create -f docs/acme-cert.yaml
+$ kubectl create -f docs/acme-issuer.yaml
 ```
+
+This will register your account with the ACME server, and generate you an
+account private key if required in the process.
+
+There are then three example Certificate resources in `docs/acme-cert.yaml`.
+One of these uses the ACME HTTP01 challenge solver, targetting an existing
+ingress with `ingressName`. This configuration is best chosen when using an
+ingress controller that behaves like the GCLB controller (ie. one ingress<>IP
+mapping). The other example uses the `ingressClass` field, which is best used
+for ingress controllers like `nginx` where Ingress resources are 'merged'.
+
+The third certificate is configured to use the clouddns DNS01 challenge
+provider.
+
+You can mix and match challenge mechanisms within a single certificate for
+different domains. Please test this out and report any issues on the repo.
