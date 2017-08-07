@@ -228,7 +228,7 @@ func (s *Solver) ensureIngressHasRule(ingName string, crt *v1alpha1.Certificate,
 
 func ingressPath(token, serviceName string) extv1beta1.HTTPIngressPath {
 	return extv1beta1.HTTPIngressPath{
-		Path: fmt.Sprintf("%s", solver.HTTPChallengePath, token),
+		Path: fmt.Sprintf("%s/%s", solver.HTTPChallengePath, token),
 		Backend: extv1beta1.IngressBackend{
 			ServiceName: serviceName,
 			ServicePort: intstr.FromInt(acmeSolverListenPort),
