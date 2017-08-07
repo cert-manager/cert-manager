@@ -173,7 +173,7 @@ type ACMECertificateDomainConfig struct {
 
 type ACMECertificateHTTP01Config struct {
 	Ingress      string  `json:"ingress"`
-	IngressClass *string `json:"ingressClass"`
+	IngressClass *string `json:"ingressClass,omitempty"`
 }
 
 type ACMECertificateDNS01Config struct {
