@@ -28,9 +28,17 @@ import (
 )
 
 const (
-	HTTP01Timeout        = time.Minute * 5
+	HTTP01Timeout        = time.Minute * 15
 	acmeSolverListenPort = 8089
 )
+
+func svcNameFunc(crtName, domain string) string {
+	return dns1035(fmt.Sprintf("cm-%s-%s", crtName, domain))
+}
+
+func ingNameFunc(crtName, domain string) string {
+	return dns1035(fmt.Sprintf("cm-%s-%s", crtName, domain))
+}
 
 // Solver is an implementation of the acme http-01 challenge solver protocol
 type Solver struct {
@@ -43,12 +51,12 @@ func NewSolver(issuer *v1alpha1.Issuer, client kubernetes.Interface, secretListe
 	return &Solver{issuer, client, secretLister}
 }
 
-func uniqueLabels(crt *v1alpha1.Certificate, domain string) map[string]string {
+func labelsForCert(crt *v1alpha1.Certificate, domain string) map[string]string {
 	return map[string]string{
-		"certmanager.k8s.io/managed":         "true",
-		"certmanager.k8s.io/domain":          domain,
-		"certmanager.k8s.io/certificate":     crt.Name,
-		"certmanager.k8s.io/acme-identifier": util.RandStringRunes(6),
+		"certmanager.k8s.io/managed":     "true",
+		"certmanager.k8s.io/domain":      domain,
+		"certmanager.k8s.io/certificate": crt.Name,
+		"certmanager.k8s.io/id":          util.RandStringRunes(5),
 	}
 }
 
@@ -57,7 +65,7 @@ func dns1035(s string) string {
 }
 
 func (s *Solver) ensureService(crt *v1alpha1.Certificate, domain string, labels map[string]string) (svc *corev1.Service, err error) {
-	svcName := dns1035(fmt.Sprintf("cm-%s-%s", crt.Name, domain))
+	svcName := svcNameFunc(crt.Name, domain)
 	svc, err = s.client.CoreV1().Services(crt.Namespace).Get(svcName, metav1.GetOptions{})
 	if err != nil && !k8sErrors.IsNotFound(err) {
 		return nil, fmt.Errorf("error checking for existing service when ensuring service: %s", err.Error())
@@ -98,12 +106,21 @@ func (s *Solver) ensureService(crt *v1alpha1.Certificate, domain string, labels 
 	return util.EnsureService(s.client, svc)
 }
 
+func (s *Solver) cleanupService(crt *v1alpha1.Certificate, domain string) error {
+	svcName := svcNameFunc(crt.Name, domain)
+	err := s.client.CoreV1().Services(crt.Namespace).Delete(svcName, nil)
+	if err != nil && !k8sErrors.IsNotFound(err) {
+		return fmt.Errorf("error cleaning up service: %s", err.Error())
+	}
+	return nil
+}
+
 func (s *Solver) ensureIngress(crt *v1alpha1.Certificate, svcName, domain, token string, labels map[string]string) (ing *extv1beta1.Ingress, err error) {
 	domainCfg := crt.Spec.ACME.ConfigForDomain(domain)
 	if existingIngressName := domainCfg.HTTP01.Ingress; existingIngressName != "" {
 		ing, err = s.ensureIngressHasRule(existingIngressName, crt, svcName, domain, token, nil)
 	} else {
-		ingName := dns1035(fmt.Sprintf("%s-%s-cm-ingress", crt.Name, domain))
+		ingName := ingNameFunc(crt.Name, domain)
 		ing, err = s.ensureIngressHasRule(ingName, crt, svcName, domain, token, labels)
 	}
 
@@ -112,6 +129,50 @@ func (s *Solver) ensureIngress(crt *v1alpha1.Certificate, svcName, domain, token
 	}
 
 	return util.EnsureIngress(s.client, ing)
+}
+
+func (s *Solver) cleanupIngress(crt *v1alpha1.Certificate, svcName, domain, token string, labels map[string]string) error {
+	domainCfg := crt.Spec.ACME.ConfigForDomain(domain)
+	existingIngressName := domainCfg.HTTP01.Ingress
+
+	if existingIngressName == "" {
+		ingName := ingNameFunc(crt.Name, domain)
+		err := s.client.ExtensionsV1beta1().Ingresses(crt.Namespace).Delete(ingName, nil)
+		if err != nil && !k8sErrors.IsNotFound(err) {
+			return fmt.Errorf("error cleaning up ingress: %s", err.Error())
+		}
+		return nil
+	}
+
+	ing, err := s.client.ExtensionsV1beta1().Ingresses(crt.Namespace).Get(existingIngressName, metav1.GetOptions{})
+
+	if err != nil && !k8sErrors.IsNotFound(err) {
+		return fmt.Errorf("error cleaning up ingress: %s", err.Error())
+	}
+
+	ingPathToDel := ingressPath(token, svcName)
+Outer:
+	for _, rule := range ing.Spec.Rules {
+		if rule.Host == domain {
+			if rule.HTTP == nil {
+				return nil
+			}
+			for i, path := range rule.HTTP.Paths {
+				if path.Path == ingPathToDel.Path {
+					rule.HTTP.Paths = append(rule.HTTP.Paths[:i], rule.HTTP.Paths[i+1:]...)
+					break Outer
+				}
+			}
+		}
+	}
+
+	_, err = s.client.ExtensionsV1beta1().Ingresses(ing.Namespace).Update(ing)
+
+	if err != nil {
+		return fmt.Errorf("error cleaning up ingress: %s", err.Error())
+	}
+
+	return nil
 }
 
 func (s *Solver) ensureIngressHasRule(ingName string, crt *v1alpha1.Certificate, svcName, domain, token string, labels map[string]string) (ing *extv1beta1.Ingress, err error) {
@@ -167,7 +228,7 @@ func (s *Solver) ensureIngressHasRule(ingName string, crt *v1alpha1.Certificate,
 
 func ingressPath(token, serviceName string) extv1beta1.HTTPIngressPath {
 	return extv1beta1.HTTPIngressPath{
-		Path: fmt.Sprintf("%s/%s", solver.HTTPChallengePath, token),
+		Path: fmt.Sprintf("%s", solver.HTTPChallengePath, token),
 		Backend: extv1beta1.IngressBackend{
 			ServiceName: serviceName,
 			ServicePort: intstr.FromInt(acmeSolverListenPort),
@@ -232,7 +293,7 @@ func (s *Solver) ensureJob(crt *v1alpha1.Certificate, domain, token, key string,
 
 // todo
 func (s *Solver) Present(ctx context.Context, crt *v1alpha1.Certificate, domain, token, key string) error {
-	labels := uniqueLabels(crt, domain)
+	labels := labelsForCert(crt, domain)
 
 	svc, err := s.ensureService(crt, domain, labels)
 
@@ -257,7 +318,7 @@ func (s *Solver) Present(ctx context.Context, crt *v1alpha1.Certificate, domain,
 
 // todo
 func (s *Solver) Wait(ctx context.Context, crt *v1alpha1.Certificate, domain, token, key string) error {
-	ctx, cancel := context.WithTimeout(ctx, time.Minute*5)
+	ctx, cancel := context.WithTimeout(ctx, HTTP01Timeout)
 	defer cancel()
 	for {
 		select {
@@ -317,6 +378,13 @@ func testReachability(ctx context.Context, domain, path, key string) error {
 
 // todo
 func (s *Solver) CleanUp(ctx context.Context, crt *v1alpha1.Certificate, domain, token, key string) error {
+	if err := s.cleanupService(crt, domain); err != nil {
+		return fmt.Errorf("[%s] Error cleaning up service: %s", domain, err.Error())
+	}
+	if err := s.cleanupIngress(crt, svcNameFunc(crt.Name, domain), domain, token, labelsForCert(crt, domain)); err != nil {
+		return fmt.Errorf("[%s] Error cleaning up ingress: %s", domain, err.Error())
+	}
+
 	return nil
 }
 

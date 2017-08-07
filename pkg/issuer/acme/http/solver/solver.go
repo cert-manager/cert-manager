@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"os"
 	"path"
 	"strings"
 )
@@ -23,6 +22,12 @@ type HTTP01Solver struct {
 
 func (h *HTTP01Solver) Listen() error {
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.EscapedPath() == "/" || r.URL.EscapedPath() == "/healthz" {
+			log.Printf("responding ok to health check")
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+
 		// extract vars from the request
 		host := strings.Split(r.Host, ":")[0]
 		basePath := path.Dir(r.URL.EscapedPath())
@@ -49,7 +54,7 @@ func (h *HTTP01Solver) Listen() error {
 		fmt.Fprint(w, h.Key)
 
 		if r.URL.Query().Get(CertManagerSelfTestParam) == "" {
-			os.Exit(0)
+			// os.Exit(0)
 		}
 	})
 	return http.ListenAndServe(fmt.Sprintf(":%d", h.ListenPort), handler)
