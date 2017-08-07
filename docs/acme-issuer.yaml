@@ -12,7 +12,9 @@ spec:
       providers:
       - name: clouddns
         clouddns:
-          serviceAccount: clouddns-service-account
+          serviceAccount:
+            name: clouddns-service-account
+            key: service-account.json
           project: jetstack-sandbox
 ---
 apiVersion: certmanager.k8s.io/v1alpha1
@@ -29,5 +31,7 @@ spec:
       providers:
       - name: clouddns
         clouddns:
-          serviceAccount: clouddns-service-account
+          serviceAccount:
+            name: clouddns-service-account
+            key: service-account.json
           project: jetstack-sandbox

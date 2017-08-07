@@ -108,11 +108,11 @@ func (s *Solver) solverFor(crt *v1alpha1.Certificate, domain string) (solver, er
 	var impl solver
 	switch {
 	case providerConfig.CloudDNS != nil:
-		saSecret, err := s.secretLister.Secrets(s.issuer.Namespace).Get(providerConfig.CloudDNS.ServiceAccount)
+		saSecret, err := s.secretLister.Secrets(s.issuer.Namespace).Get(providerConfig.CloudDNS.ServiceAccount.Name)
 		if err != nil {
 			return nil, fmt.Errorf("error getting clouddns service account: %s", err.Error())
 		}
-		saBytes := saSecret.Data[cloudDNSServiceAccountKey]
+		saBytes := saSecret.Data[providerConfig.CloudDNS.ServiceAccount.Key]
 
 		impl, err = clouddns.NewDNSProviderServiceAccountBytes(providerConfig.CloudDNS.Project, saBytes)
 		if err != nil {
