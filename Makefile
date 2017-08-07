@@ -55,12 +55,14 @@ depend:
 verify: .hack_verify
 test:
 
-build: depend version
+build_%: depend version
 	CGO_ENABLED=0 GOOS=$(GOOS) GOARCH=$(GOARCH) go build \
 		-a -tags netgo \
-		-o ${BUILD_DIR}/${APP_NAME}-$(GOOS)-$(GOARCH) \
+		-o ${BUILD_DIR}/${APP_NAME}-$*-$(GOOS)-$(GOARCH) \
 		-ldflags "-X main.AppGitState=${GIT_STATE} -X main.AppGitCommit=${GIT_COMMIT} -X main.AppVersion=${APP_VERSION}" \
-		./cmd/controller
+		./cmd/$*
+
+build: build_controller build_acmesolver
 
 docker: docker_all
 
@@ -84,15 +86,19 @@ docker_%:
 	# remove container
 	docker rm $(CONTAINER_ID)
 
-image: version
-	docker build --build-arg VCS_REF=$(GIT_COMMIT) -t $(DOCKER_IMAGE):$(BUILD_TAG) .
-	
-push: image
+image_%: version
+	docker build -f "./Dockerfile.$*" --build-arg VCS_REF=$(GIT_COMMIT) -t "$(DOCKER_IMAGE)-$*:$(BUILD_TAG)" .
+
+image: image_controller image_acmesolver
+
+push_%: image_%
 	set -e; \
 	for tag in $(IMAGE_TAGS); do \
-		docker tag  $(DOCKER_IMAGE):$(BUILD_TAG) $(DOCKER_IMAGE):$${tag} ; \
-		docker push $(DOCKER_IMAGE):$${tag}; \
+		docker tag  "$(DOCKER_IMAGE)-$*:$(BUILD_TAG)" "$(DOCKER_IMAGE)-$*:$${tag}" ; \
+		docker push "$(DOCKER_IMAGE)-$*:$${tag}"; \
 	done
+
+push: push_controller push_acmesolver
 
 release:
 ifndef VERSION

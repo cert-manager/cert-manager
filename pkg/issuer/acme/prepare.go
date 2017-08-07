@@ -140,6 +140,8 @@ func (a *Acme) prepare(crt *v1alpha1.Certificate) error {
 			return fmt.Errorf("error getting solver for challenge type '%s': %s", challengeType, err.Error())
 		}
 
+		defer solver.CleanUp(context.Background(), crt, auth.domain, token, key)
+
 		log.Printf("presenting challenge for domain %s, token %s key %s", auth.domain, token, key)
 		err = solver.Present(context.Background(), crt, auth.domain, token, key)
 		if err != nil {

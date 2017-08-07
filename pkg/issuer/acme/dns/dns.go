@@ -62,6 +62,7 @@ func (s *Solver) Wait(ctx context.Context, crt *v1alpha1.Certificate, domain, to
 		case r := <-func() <-chan boolErr {
 			out := make(chan boolErr, 1)
 			go func() {
+				defer close(out)
 				ok, err := util.PreCheckDNS(fqdn, value)
 				out <- boolErr{ok, err}
 			}()
