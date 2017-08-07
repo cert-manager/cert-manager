@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"time"
 
+	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	"k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
@@ -51,6 +52,10 @@ func main() {
 
 	if err != nil {
 		log.Fatalf("error getting in-cluster config: %s", err.Error())
+	}
+
+	if err := registerCRDResources(cfg); err != nil {
+		log.Fatalf("error registering custom resource definition with API server: %s", err.Error())
 	}
 
 	cl, err := kubernetes.NewForConfig(cfg)
@@ -117,4 +122,21 @@ func kubeConfig(apiServerHost string) (*rest.Config, error) {
 	}
 
 	return cfg, nil
+}
+
+func registerCRDResources(config *rest.Config) error {
+	apiextensionsclientset, err := apiextensionsclient.NewForConfig(config)
+	if err != nil {
+		return err
+	}
+
+	if _, err := CreateCustomResourceDefinition(apiextensionsclientset, "certificates.certmanager.k8s.io", "certmanager.k8s.io", "v1alpha1", "certificates", "Certificate"); err != nil {
+		return err
+	}
+
+	if _, err := CreateCustomResourceDefinition(apiextensionsclientset, "issuers.certmanager.k8s.io", "certmanager.k8s.io", "v1alpha1", "issuers", "Issuer"); err != nil {
+		return err
+	}
+
+	return nil
 }

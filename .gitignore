@@ -1,7 +1,7 @@
 .DS_Store
-.get_deps
-.generate_exes
-bin/
-_build/
-acmesolver
-controller
+/.get_deps
+/.generate_exes
+/bin/
+/_build/
+/acmesolver
+/controller
