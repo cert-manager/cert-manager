@@ -1,37 +1,50 @@
+## Example Certificate that uses nginx ingress to validate requests
 apiVersion: certmanager.k8s.io/v1alpha1
 kind: Certificate
 metadata:
-  name: certmanager-k8s-co
+  name: cm-http-nginx-k8s-group
 spec:
-  secretName: certmanager-k8s-co
+  secretName: cm-http-nginx-k8s-group
   issuer: letsencrypt-staging
   domains:
-  - certmanager.k8s.co
+  - cm-http-nginx.k8s.group
   acme:
     config:
     - domains:
-      - certmanager.k8s.co
+      - cm-http-nginx.k8s.group
       http-01:
-        # note: using an ingress doesn't currently work
-        ingress: certmanager-k8s-co
-status:
-  acme: {}
----
-apiVersion: certmanager.k8s.io/v1alpha1
-kind: Certificate
-metadata:
-  name: certmanager-k8s-co
-spec:
-  secretName: certmanager-k8s-co
-  issuer: letsencrypt-staging
-  domains:
-  - certmanager2.k8s.co
-  acme:
-    config:
-    - domains:
-      - certmanager.k8s.co
-      http-01:
-        # note: using an ingress class doesn't currently work
         ingressClass: nginx
-status:
-  acme: {}
+---
+## Example Certificate that uses gce ingress to validate requests
+apiVersion: certmanager.k8s.io/v1alpha1
+kind: Certificate
+metadata:
+  name: cm-http-gce-k8s-group
+spec:
+  secretName: cm-http-gce-k8s-group
+  issuer: letsencrypt-staging
+  domains:
+  - cm-http-gce.k8s.group
+  acme:
+    config:
+    - domains:
+      - cm-http-gce.k8s.group
+      http-01:
+        ingressName: my-existing-ingress
+---
+## Example Certificate that uses clouddns to validate requests
+apiVersion: certmanager.k8s.io/v1alpha1
+kind: Certificate
+metadata:
+  name: cm-dns-clouddns-k8s-group
+spec:
+  secretName: cm-dns-clouddns-k8s-group
+  issuer: letsencrypt-staging
+  domains:
+  - cm-dns-clouddns.k8s.group
+  acme:
+    config:
+    - domains:
+      - cm-dns-clouddns.k8s.group
+      dns-01:
+        provider: clouddns
