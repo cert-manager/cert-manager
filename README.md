@@ -13,6 +13,10 @@ This project is still heavily under development and is not ready for use
 **yet**. However, if you want to experiment, please do try running the current
 development build and reporting any issues you run into.
 
+## Requirements
+
+* Kubernetes cluster with CustomResourceDefinitions enabled (1.7+) OR convert the provided CRD spec into a TPR for support <1.7
+
 ## Deploying
 
 To deploy the latest development version, run:
@@ -27,6 +31,14 @@ To get started, I've created two example issuers in `docs/acme-issuer.yaml`.
 These are configured to support the clouddns challenge provider for ACME, but
 if you do not intend to test this functionality then feel free to remove the
 configuration for it.
+
+First you'll need to create the CustomResourceDefinition resource in the target
+cluster. This requirement will be removed once [#24](https://github.com/jetstack-experimental/cert-manager/issues/24)
+has merged.
+
+```
+$ kubectl create -f docs/crd.yaml
+```
 
 Go ahead and create the issuer(s) with:
 
