@@ -28,14 +28,21 @@ import (
 )
 
 const (
-	HTTP01Timeout        = time.Minute * 15
+	// HTTP01Timeout is the max amount of time to wait for an HTTP01 challenge
+	// to succeed
+	HTTP01Timeout = time.Minute * 15
+	// acmeSolverListenPort is the port acmesolver should listen on
 	acmeSolverListenPort = 8089
+	// acmeSolverImage is the docker image containing acmesolver to use
+	acmeSolverImage = "quay.io/jetstack/cert-manager-acmesolver:canary.2"
 )
 
+// svcNameFunc returns the name for the service to solve the challenge
 func svcNameFunc(crtName, domain string) string {
 	return dns1035(fmt.Sprintf("cm-%s-%s", crtName, domain))
 }
 
+// ingNameFunc returns the name for the ingress to solve the challenge
 func ingNameFunc(crtName, domain string) string {
 	return dns1035(fmt.Sprintf("cm-%s-%s", crtName, domain))
 }
@@ -47,10 +54,15 @@ type Solver struct {
 	secretLister corev1listers.SecretLister
 }
 
+// NewSolver returns a new ACME HTTP01 solver for the given Issuer and client.
 func NewSolver(issuer *v1alpha1.Issuer, client kubernetes.Interface, secretLister corev1listers.SecretLister) *Solver {
 	return &Solver{issuer, client, secretLister}
 }
 
+// labelsForCert returns some labels to add to resources related to the given
+// Certificate.
+// TODO: move this somewhere 'general', so that other control loops can filter
+// their watches based on these labels and save watching *all* resource types.
 func labelsForCert(crt *v1alpha1.Certificate, domain string) map[string]string {
 	return map[string]string{
 		"certmanager.k8s.io/managed":     "true",
@@ -64,6 +76,9 @@ func dns1035(s string) string {
 	return strings.Replace(s, ".", "-", -1)
 }
 
+// ensureService will ensure the service required to solve this challenge
+// exists in the target API server, either by updating the existing Service
+// or by creating a new one.
 func (s *Solver) ensureService(crt *v1alpha1.Certificate, domain string, labels map[string]string) (svc *corev1.Service, err error) {
 	svcName := svcNameFunc(crt.Name, domain)
 	svc, err = s.client.CoreV1().Services(crt.Namespace).Get(svcName, metav1.GetOptions{})
@@ -106,6 +121,8 @@ func (s *Solver) ensureService(crt *v1alpha1.Certificate, domain string, labels 
 	return util.EnsureService(s.client, svc)
 }
 
+// cleanupService will ensure the service created for this challenge request
+// does not exist.
 func (s *Solver) cleanupService(crt *v1alpha1.Certificate, domain string) error {
 	svcName := svcNameFunc(crt.Name, domain)
 	err := s.client.CoreV1().Services(crt.Namespace).Delete(svcName, nil)
@@ -115,6 +132,8 @@ func (s *Solver) cleanupService(crt *v1alpha1.Certificate, domain string) error 
 	return nil
 }
 
+// ensureIngress will ensure the ingress required to solve this challenge
+// exists.
 func (s *Solver) ensureIngress(crt *v1alpha1.Certificate, svcName, domain, token string, labels map[string]string) (ing *extv1beta1.Ingress, err error) {
 	domainCfg := crt.Spec.ACME.ConfigForDomain(domain)
 	if existingIngressName := domainCfg.HTTP01.Ingress; existingIngressName != "" {
@@ -131,6 +150,9 @@ func (s *Solver) ensureIngress(crt *v1alpha1.Certificate, svcName, domain, token
 	return util.EnsureIngress(s.client, ing)
 }
 
+// cleanupIngress will remove the rules added by cert-manager to an existing
+// ingress, or delete the ingress if an existing ingress name is not specified
+// on the certificate.
 func (s *Solver) cleanupIngress(crt *v1alpha1.Certificate, svcName, domain, token string, labels map[string]string) error {
 	domainCfg := crt.Spec.ACME.ConfigForDomain(domain)
 	existingIngressName := domainCfg.HTTP01.Ingress
@@ -175,6 +197,10 @@ Outer:
 	return nil
 }
 
+// ensureIngressHasRule will return an Ingress resource that contains the rule
+// required to solve the ACME challenge request for the given domain. If an
+// ingress named `ingName` already exists, it will be updated to contain the
+// required rule and returned. Otherwise, a new Ingress resource is returned.
 func (s *Solver) ensureIngressHasRule(ingName string, crt *v1alpha1.Certificate, svcName, domain, token string, labels map[string]string) (ing *extv1beta1.Ingress, err error) {
 	domainCfg := crt.Spec.ACME.ConfigForDomain(domain)
 	ing, err = s.client.ExtensionsV1beta1().Ingresses(crt.Namespace).Get(ingName, metav1.GetOptions{})
@@ -226,6 +252,8 @@ func (s *Solver) ensureIngressHasRule(ingName string, crt *v1alpha1.Certificate,
 	return ing, nil
 }
 
+// ingressPath returns the ingress HTTPIngressPath object needed to solve this
+// challenge.
 func ingressPath(token, serviceName string) extv1beta1.HTTPIngressPath {
 	return extv1beta1.HTTPIngressPath{
 		Path: fmt.Sprintf("%s/%s", solver.HTTPChallengePath, token),
@@ -236,14 +264,13 @@ func ingressPath(token, serviceName string) extv1beta1.HTTPIngressPath {
 	}
 }
 
+// ensureJob will ensure the job required to solve this challenge exists in the
+// Kubernetes API server.
 func (s *Solver) ensureJob(crt *v1alpha1.Certificate, domain, token, key string, labels map[string]string) (*batchv1.Job, error) {
 	activeDeadlineSeconds := int64(HTTP01Timeout / time.Second)
 	preClean := fmt.Sprintf("cm-%s-%s-%s", crt.Name, domain, util.RandStringRunes(5))
-	log.Printf("preclean: %s", preClean)
 	jobName := dns1035(preClean)
-	log.Printf("job name: %s", jobName)
-	// todo: check if ingress resource for this certificate & domain already exists
-	// todo: create ingress resource if it doesn't exist
+
 	return util.EnsureJob(s.client, &batchv1.Job{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      jobName,
@@ -262,7 +289,7 @@ func (s *Solver) ensureJob(crt *v1alpha1.Certificate, domain, token, key string,
 						{
 							Name: "acmesolver",
 							// TODO: use an image as specified as a config option
-							Image:           "quay.io/jetstack/cert-manager-acmesolver:canary.2",
+							Image:           acmeSolverImage,
 							ImagePullPolicy: corev1.PullAlways,
 							// TODO: replace this with some kind of cmdline generator
 							Args: []string{
@@ -291,7 +318,8 @@ func (s *Solver) ensureJob(crt *v1alpha1.Certificate, domain, token, key string,
 	})
 }
 
-// todo
+// Present will create the required service, update/create the required ingress
+// and created a Kubernetes Job to solve the HTTP01 challenge
 func (s *Solver) Present(ctx context.Context, crt *v1alpha1.Certificate, domain, token, key string) error {
 	labels := labelsForCert(crt, domain)
 
@@ -316,7 +344,9 @@ func (s *Solver) Present(ctx context.Context, crt *v1alpha1.Certificate, domain,
 	return nil
 }
 
-// todo
+// Wait will continuously test if the ingress controller has updated it's
+// routes to include the HTTP01 challenge path, or return with an error if the
+// context deadline is exceeded.
 func (s *Solver) Wait(ctx context.Context, crt *v1alpha1.Certificate, domain, token, key string) error {
 	ctx, cancel := context.WithTimeout(ctx, HTTP01Timeout)
 	defer cancel()
@@ -344,6 +374,9 @@ func (s *Solver) Wait(ctx context.Context, crt *v1alpha1.Certificate, domain, to
 
 }
 
+// testReachability will attempt to connect to the 'domain' with 'path' and
+// check if the returned body equals 'key'. It will also add a 'selftest=1'
+// query parameter to the request.
 func testReachability(ctx context.Context, domain, path, key string) error {
 	url := &url.URL{}
 	url.Scheme = "http"
@@ -376,7 +409,8 @@ func testReachability(ctx context.Context, domain, path, key string) error {
 	return nil
 }
 
-// todo
+// CleanUp will ensure the created service and ingress are clean/deleted of any
+// cert-manager created data.
 func (s *Solver) CleanUp(ctx context.Context, crt *v1alpha1.Certificate, domain, token, key string) error {
 	if err := s.cleanupService(crt, domain); err != nil {
 		return fmt.Errorf("[%s] Error cleaning up service: %s", domain, err.Error())
@@ -386,9 +420,4 @@ func (s *Solver) CleanUp(ctx context.Context, crt *v1alpha1.Certificate, domain,
 	}
 
 	return nil
-}
-
-// Challenge is a Host/Token pair that is used for verify ownership of domains
-type challenge struct {
-	host, token, key string
 }
