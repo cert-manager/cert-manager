@@ -1,4 +1,5 @@
-## Example Certificate that uses nginx ingress to validate requests
+## Example Certificate that uses multiple challenge mechanisms to obtain
+## a SAN certificate for multiple domains from the letsencrypt-staging issuer.
 apiVersion: certmanager.k8s.io/v1alpha1
 kind: Certificate
 metadata:
@@ -8,43 +9,26 @@ spec:
   issuer: letsencrypt-staging
   domains:
   - cm-http-nginx.k8s.group
-  acme:
-    config:
-    - domains:
-      - cm-http-nginx.k8s.group
-      http-01:
-        ingressClass: nginx
----
-## Example Certificate that uses gce ingress to validate requests
-apiVersion: certmanager.k8s.io/v1alpha1
-kind: Certificate
-metadata:
-  name: cm-http-gce-k8s-group
-spec:
-  secretName: cm-http-gce-k8s-group
-  issuer: letsencrypt-staging
-  domains:
+  - cm-http-nginx2.k8s.group
   - cm-http-gce.k8s.group
+  - cm-http-clouddns.k8s.group
+  - cm-http-cloudflare.k8s.group
   acme:
     config:
-    - domains:
+    - http-01:
+        ingressClass: nginx
+      domains:
+      - cm-http-nginx.k8s.group
+      - cm-http-nginx2.k8s.group
+    - http-01:
+        ingressName: my-gce-ingress
+      domains:
       - cm-http-gce.k8s.group
-      http-01:
-        ingressName: my-existing-ingress
----
-## Example Certificate that uses clouddns to validate requests
-apiVersion: certmanager.k8s.io/v1alpha1
-kind: Certificate
-metadata:
-  name: cm-dns-clouddns-k8s-group
-spec:
-  secretName: cm-dns-clouddns-k8s-group
-  issuer: letsencrypt-staging
-  domains:
-  - cm-dns-clouddns.k8s.group
-  acme:
-    config:
-    - domains:
-      - cm-dns-clouddns.k8s.group
-      dns-01:
+    - dns-01:
         provider: clouddns
+      domains:
+      - cm-dns-clouddns.k8s.group
+    - dns-01:
+        provider: cloudflare
+      domains:
+      - cm-dns-cloudflare.k8s.group
