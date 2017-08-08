@@ -104,6 +104,7 @@ type ACMEIssuerDNS01Provider struct {
 
 	CloudDNS   *ACMEIssuerDNS01ProviderCloudDNS   `json:"clouddns,omitempty"`
 	Cloudflare *ACMEIssuerDNS01ProviderCloudflare `json:"cloudflare,omitempty"`
+	Route53    *ACMEIssuerDNS01ProviderRoute53    `json:"route53,omitempty"`
 }
 
 // ACMEIssuerDNS01ProviderCloudDNS is a structure containing the DNS
@@ -118,6 +119,15 @@ type ACMEIssuerDNS01ProviderCloudDNS struct {
 type ACMEIssuerDNS01ProviderCloudflare struct {
 	Email  string            `json:"email"`
 	APIKey SecretKeySelector `json:"apiKey"`
+}
+
+// ACMEIssuerDNS01ProviderRoute53 is a structure containing the Route 53
+// configuration for AWS
+type ACMEIssuerDNS01ProviderRoute53 struct {
+	AccessKeyID     string            `json:"accessKeyID"`
+	SecretAccessKey SecretKeySelector `json:"secretAccessKey"`
+	HostedZoneID    string            `json:"hostedZoneID"`
+	Region          string            `json:"region"`
 }
 
 // +genclient=true

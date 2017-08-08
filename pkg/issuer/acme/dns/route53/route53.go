@@ -11,10 +11,12 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/client"
+	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/request"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/route53"
-	"github.com/xenolf/lego/acme"
+
+	"github.com/jetstack-experimental/cert-manager/pkg/issuer/acme/dns/util"
 )
 
 const (
@@ -22,7 +24,7 @@ const (
 	route53TTL = 10
 )
 
-// DNSProvider implements the acme.ChallengeProvider interface
+// DNSProvider implements the util.ChallengeProvider interface
 type DNSProvider struct {
 	client       *route53.Route53
 	hostedZoneID string
@@ -78,16 +80,44 @@ func NewDNSProvider() (*DNSProvider, error) {
 	}, nil
 }
 
+// NewDNSProviderAccessKey returns a DNSProvider instance configured for the AWS
+// Route 53 service using static credentials from its parameters
+func NewDNSProviderAccessKey(accessKeyID, secretAccessKey, hostedZoneID, region string) (*DNSProvider, error) {
+
+	creds := credentials.NewStaticCredentials(accessKeyID, secretAccessKey, "")
+
+	r := customRetryer{}
+	r.NumMaxRetries = maxRetries
+
+	config := request.WithRetryer(aws.NewConfig(), r).WithCredentials(creds)
+
+	if region != "" {
+		config.WithRegion(region)
+	}
+	client := route53.New(session.New(config))
+
+	return &DNSProvider{
+		client:       client,
+		hostedZoneID: hostedZoneID,
+	}, nil
+}
+
+// Timeout returns the timeout and interval to use when checking for DNS
+// propagation. Adjusting here to cope with spikes in propagation times.
+func (c *DNSProvider) Timeout() (timeout, interval time.Duration) {
+	return 120 * time.Second, 2 * time.Second
+}
+
 // Present creates a TXT record using the specified parameters
 func (r *DNSProvider) Present(domain, token, keyAuth string) error {
-	fqdn, value, _ := acme.DNS01Record(domain, keyAuth)
+	fqdn, value, _ := util.DNS01Record(domain, keyAuth)
 	value = `"` + value + `"`
 	return r.changeRecord("UPSERT", fqdn, value, route53TTL)
 }
 
 // CleanUp removes the TXT record matching the specified parameters
 func (r *DNSProvider) CleanUp(domain, token, keyAuth string) error {
-	fqdn, value, _ := acme.DNS01Record(domain, keyAuth)
+	fqdn, value, _ := util.DNS01Record(domain, keyAuth)
 	value = `"` + value + `"`
 	return r.changeRecord("DELETE", fqdn, value, route53TTL)
 }
@@ -119,7 +149,7 @@ func (r *DNSProvider) changeRecord(action, fqdn, value string, ttl int) error {
 
 	statusID := resp.ChangeInfo.Id
 
-	return acme.WaitFor(120*time.Second, 4*time.Second, func() (bool, error) {
+	return util.WaitFor(120*time.Second, 4*time.Second, func() (bool, error) {
 		reqParams := &route53.GetChangeInput{
 			Id: statusID,
 		}
@@ -139,14 +169,14 @@ func (r *DNSProvider) getHostedZoneID(fqdn string) (string, error) {
 		return r.hostedZoneID, nil
 	}
 
-	authZone, err := acme.FindZoneByFqdn(fqdn, acme.RecursiveNameservers)
+	authZone, err := util.FindZoneByFqdn(fqdn, util.RecursiveNameservers)
 	if err != nil {
 		return "", err
 	}
 
 	// .DNSName should not have a trailing dot
 	reqParams := &route53.ListHostedZonesByNameInput{
-		DNSName: aws.String(acme.UnFqdn(authZone)),
+		DNSName: aws.String(util.UnFqdn(authZone)),
 	}
 	resp, err := r.client.ListHostedZonesByName(reqParams)
 	if err != nil {
