@@ -15,3 +15,7 @@ limitations under the License.
 */
 
 package internalversion
+
+type CertificateExpansion interface{}
+
+type IssuerExpansion interface{}
