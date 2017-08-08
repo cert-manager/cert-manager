@@ -53,7 +53,7 @@ depend:
 	mkdir $(BUILD_DIR)/
 
 verify: .hack_verify
-test:
+test: go_test
 
 build_%: depend version
 	CGO_ENABLED=0 GOOS=$(GOOS) GOARCH=$(GOARCH) go build \
@@ -61,6 +61,9 @@ build_%: depend version
 		-o ${BUILD_DIR}/${APP_NAME}-$*-$(GOOS)-$(GOARCH) \
 		-ldflags "-X main.AppGitState=${GIT_STATE} -X main.AppGitCommit=${GIT_COMMIT} -X main.AppVersion=${APP_VERSION}" \
 		./cmd/$*
+
+go_test:
+	go test $$(go list ./... | grep -v '/vendor/')
 
 build: build_controller build_acmesolver
 

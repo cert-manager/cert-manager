@@ -20,6 +20,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// +genclient=true
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 type Issuer struct {
@@ -95,6 +96,7 @@ type ACMEIssuerDNS01ProviderCloudflare struct {
 	APIKey SecretKeySelector
 }
 
+// +genclient=true
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 // Certificate is a type to represent a Certificate from ACME
