@@ -59,7 +59,7 @@ be relatively similar/transfer across well.
 * We specifically do not want to tie ourselves to Ingress resources, as
 previous projects in this space have done. With the out-of-tree nature of
 Ingress, and with some areas having loose specification (ie.
-(kubernetes/ingress#555)[https://github.com/kubernetes/ingress/issues/555]),
+[kubernetes/ingress#555](https://github.com/kubernetes/ingress/issues/555]),
 it's desired that we don't specifically list a set of 'supported' Ingress
 controllers. This particularly limitation specifically applies to the ACME
 challenge provider at this point.
