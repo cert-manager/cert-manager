@@ -20,6 +20,7 @@ package internalversion
 
 import (
 	internalclientset "github.com/jetstack-experimental/cert-manager/pkg/client/internalclientset"
+	certmanager "github.com/jetstack-experimental/cert-manager/pkg/informers/internalversion/certmanager"
 	internalinterfaces "github.com/jetstack-experimental/cert-manager/pkg/informers/internalversion/internalinterfaces"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
@@ -108,4 +109,10 @@ type SharedInformerFactory interface {
 	internalinterfaces.SharedInformerFactory
 	ForResource(resource schema.GroupVersionResource) (GenericInformer, error)
 	WaitForCacheSync(stopCh <-chan struct{}) map[reflect.Type]bool
+
+	Certmanager() certmanager.Interface
+}
+
+func (f *sharedInformerFactory) Certmanager() certmanager.Interface {
+	return certmanager.New(f)
 }

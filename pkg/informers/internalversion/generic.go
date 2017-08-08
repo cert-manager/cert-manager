@@ -20,6 +20,7 @@ package internalversion
 
 import (
 	"fmt"
+	certmanager "github.com/jetstack-experimental/cert-manager/pkg/apis/certmanager"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	cache "k8s.io/client-go/tools/cache"
 )
@@ -50,6 +51,12 @@ func (f *genericInformer) Lister() cache.GenericLister {
 // TODO extend this to unknown resources with a client pool
 func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource) (GenericInformer, error) {
 	switch resource {
+	// Group=Certmanager, Version=InternalVersion
+	case certmanager.SchemeGroupVersion.WithResource("certificates"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Certmanager().InternalVersion().Certificates().Informer()}, nil
+	case certmanager.SchemeGroupVersion.WithResource("issuers"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Certmanager().InternalVersion().Issuers().Informer()}, nil
+
 	}
 
 	return nil, fmt.Errorf("no informer found for %v", resource)

@@ -18,4 +18,25 @@ package fake
 
 import (
 	internalversion "github.com/jetstack-experimental/cert-manager/pkg/client/internalclientset/typed/certmanager/internalversion"
+	rest "k8s.io/client-go/rest"
+	testing "k8s.io/client-go/testing"
 )
+
+type FakeCertmanager struct {
+	*testing.Fake
+}
+
+func (c *FakeCertmanager) Certificates(namespace string) internalversion.CertificateInterface {
+	return &FakeCertificates{c, namespace}
+}
+
+func (c *FakeCertmanager) Issuers(namespace string) internalversion.IssuerInterface {
+	return &FakeIssuers{c, namespace}
+}
+
+// RESTClient returns a RESTClient that is used to communicate
+// with API server by this client implementation.
+func (c *FakeCertmanager) RESTClient() rest.Interface {
+	var ret *rest.RESTClient
+	return ret
+}
