@@ -39,7 +39,9 @@ al.).
 cert-manager
 
 * Provide reliable support for at least ACME HTTP01 and DNS01 challenge types
-in the ACME provider.
+in the ACME provider. TLS-SNI-02 support is not a goal listed here due to
+potential difficulties in implementation with the current Ingress controller
+specification. In future, TLS-SNI-02 support for ACME may be considered.
 
 * Provide clear, understable Events/log messages to users to inform them that
 issuance/renewal of a certificate has failed. Also provide metrics endpoints
