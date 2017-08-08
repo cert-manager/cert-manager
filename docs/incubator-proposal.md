@@ -83,6 +83,9 @@ kube-cert-manager.
 
 ### Longer term
 
+* Implement API server that registers with aggregator, or utilise new
+validation APIs in future Kubernetes versions.
+
 * Implementing additional certificate issuers (eg. Vault, Amazon?)
 
 * Investigate how this can inter-play with the Kubernetes Certificates API
