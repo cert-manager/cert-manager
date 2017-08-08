@@ -67,7 +67,7 @@ provider.
 
 ## Roadmap
 
-** Short term **
+### Short term
 
 * Stabilise application to bring it to a comparable state to kube-lego and
 kube-cert-manager.
@@ -81,7 +81,7 @@ kube-cert-manager.
 
 * Filling out documentation to make the project user-friendly from day one.
 
-** Longer term **
+### Longer term
 
 * Implementing additional certificate issuers (eg. Vault, Amazon?)
 
