@@ -33,6 +33,98 @@ certificate source. This project should be designed in a similar manner to
 other Kubernetes controllers (eg. kube-controller-manager, service-catalog et
 al.).
 
+## Definitions
+
+* `Issuer` - an Issuer is a generic backend that issues certificates. cert-manager
+will contain logic on how to process each issuer, and multiple Issuer resources
+utilising the same issuer implementation may exist (e.g. to allow issuing
+certificates from both letsencrypt production & staging). An example manifest for
+an Issuer resource:
+
+```yaml
+kind: Issuer
+metadata:
+  name: letsencrypt-staging
+spec:
+  acme:
+    # The ACME server URL
+    server: https://acme-staging.api.letsencrypt.org/directory
+    # Email address used for ACME registration
+    email: user@example.com
+    # Name of a secret used to store the ACME account private key
+    privateKey: letsncrypt-staging
+    # ACME dns-01 provider configurations
+    dns-01:
+      # Here we define a list of DNS-01 providers that can solve DNS challenges
+      providers:
+      # We define a provider named 'clouddns', with configuration for the
+      # clouddns challenge provider.
+      - name: clouddns
+        clouddns:
+          # A secretKeyRef to a the google cloud json service account
+          serviceAccount:
+            name: clouddns-service-account
+            key: service-account.json
+          # The project in which to update the DNS zone
+          project: gcloud-project
+      # We define a provider named 'cloudflare', with configuration for the
+      # cloudflare challenge provider.
+      - name: cloudflare
+        cloudflare:
+          # A secretKeyRef to a the cloudflare api key
+          apiKey:
+            name: cloudflare-config
+            key: api-key
+          # The cloudflare user account email
+          email: cloudflare-user@example.com
+```
+
+* `Certificate` - a Certificate resource details a Certificate keypair to
+manage with cert-manager. It contains details such as the hostnames to be listed
+on the certificate, as well as details of which issuer to issuer certificates with,
+and any additional configuration required for the selected issuer. An example
+manifest for a Certificate resource:
+
+```yaml
+## Example Certificate that uses multiple challenge mechanisms to obtain
+## a SAN certificate for multiple domains from the letsencrypt-staging issuer.
+apiVersion: certmanager.k8s.io/v1alpha1
+kind: Certificate
+metadata:
+  name: cm-http-nginx-k8s-group
+spec:
+  secretName: cm-http-nginx-k8s-group
+  issuer: letsencrypt-staging
+  domains:
+  - cm-http-nginx.k8s.group
+  - cm-http-nginx2.k8s.group
+  - cm-http-gce.k8s.group
+  - cm-http-clouddns.k8s.group
+  - cm-http-cloudflare.k8s.group
+  acme:
+    config:
+    - http-01:
+        ingressClass: nginx
+      domains:
+      - cm-http-nginx.k8s.group
+      - cm-http-nginx2.k8s.group
+    - http-01:
+        ingressName: my-gce-ingress
+      domains:
+      - cm-http-gce.k8s.group
+    - dns-01:
+        provider: clouddns
+      domains:
+      - cm-dns-clouddns.k8s.group
+    - dns-01:
+        provider: cloudflare
+      domains:
+      - cm-dns-cloudflare.k8s.group
+```
+
+These example manifests do not describe a finalised API, but instead aim to
+help communicate the concept of Issuer vs Certificate.
+
 ## Goals
 
 * Provide a non-opinionated interface for new issuers to be added to
