@@ -42,7 +42,8 @@ cert-manager
 in the ACME provider.
 
 * Provide clear, understable Events/log messages to users to inform them that
-issuance/renewal of a certificate has failed.
+issuance/renewal of a certificate has failed. Also provide metrics endpoints
+that can be scrapped by metrics collection software (such as Prometheus).
 
 * Attempt to obtain certificates from the specified issuing backend, and then
 keep those certificates up to date by renewing them as they near expiry.
@@ -63,7 +64,8 @@ challenge provider at this point.
 
 * Tying ourselves to any specific issuer implementation. Whilst previous work
 has focused heavily on ACME, we do not want to be in any way tied to this
-provider.
+provider. Additional issuers such as [Hashicorp Vault](https://vaultproject.io)
+are planned in future.
 
 ## Roadmap
 
@@ -79,13 +81,20 @@ kube-cert-manager.
 
 * Writing up retrospective design proposals for what we have already.
 
-* Filling out documentation to make the project user-friendly from day one.
+* Filling out documentation and creating tutorials to make the project
+user-friendly from day one. Tutorials should be clear and cover common
+user stories.
 
-### Longer term
+### Medium term
+
+* Implement a metrics endpoint to expose useful information such as number
+of certificates issued, number of attempts per certificate, etc.
 
 * Implement API server that registers with aggregator, or utilise new
 validation APIs in future Kubernetes versions.
 
-* Implementing additional certificate issuers (eg. Vault, Amazon?)
+### Longer term
 
-* Investigate how this can inter-play with the Kubernetes Certificates API
+* Implementing additional certificate issuers (eg. Vault, Amazon?).
+
+* Investigate how this can inter-play with the Kubernetes Certificates API.
