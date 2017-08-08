@@ -15,7 +15,7 @@ development build and reporting any issues you run into.
 
 ## Requirements
 
-* Kubernetes cluster with CustomResourceDefinitions enabled (1.7+)
+* Kubernetes cluster with CustomResourceDefinitions enabled (1.7+) (see [#49](https://github.com/jetstack-experimental/cert-manager/issues/49))
 
 ## Deploying
 
