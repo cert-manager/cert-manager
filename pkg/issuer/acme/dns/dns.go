@@ -139,7 +139,7 @@ func (s *Solver) solverFor(crt *v1alpha1.Certificate, domain string) (solver, er
 			return nil, fmt.Errorf("error getting route53 secret access key: %s", err.Error())
 		}
 
-		secretAccessKeyBytes, ok := secretAccessKeySecret.Data[providerConfig.Cloudflare.APIKey.Key]
+		secretAccessKeyBytes, ok := secretAccessKeySecret.Data[providerConfig.Route53.SecretAccessKey.Key]
 		if !ok {
 			return nil, fmt.Errorf("error getting route53 secret access key: key '%s' not found in secret", providerConfig.Route53.SecretAccessKey.Key)
 		}
