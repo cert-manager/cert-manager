@@ -80,6 +80,7 @@ type ACMEIssuerDNS01Provider struct {
 
 	CloudDNS   *ACMEIssuerDNS01ProviderCloudDNS
 	Cloudflare *ACMEIssuerDNS01ProviderCloudflare
+	Route53    *ACMEIssuerDNS01ProviderRoute53
 }
 
 // ACMEIssuerDNS01ProviderCloudDNS is a structure containing the DNS
@@ -94,6 +95,16 @@ type ACMEIssuerDNS01ProviderCloudDNS struct {
 type ACMEIssuerDNS01ProviderCloudflare struct {
 	Email  string
 	APIKey SecretKeySelector
+}
+
+// ACMEIssuerDNS01ProviderRoute53 is a structure containing the Route 53
+// configuration for AWS
+type ACMEIssuerDNS01ProviderRoute53 struct {
+	AccessKeyID     string
+	SecretAccessKey SecretKeySelector
+	// these following parameters are optional
+	HostedZoneID string
+	Region       string
 }
 
 // +genclient=true

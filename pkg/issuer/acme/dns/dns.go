@@ -12,6 +12,7 @@ import (
 	"github.com/jetstack-experimental/cert-manager/pkg/apis/certmanager/v1alpha1"
 	"github.com/jetstack-experimental/cert-manager/pkg/issuer/acme/dns/clouddns"
 	"github.com/jetstack-experimental/cert-manager/pkg/issuer/acme/dns/cloudflare"
+	"github.com/jetstack-experimental/cert-manager/pkg/issuer/acme/dns/route53"
 	"github.com/jetstack-experimental/cert-manager/pkg/issuer/acme/dns/util"
 )
 
@@ -131,6 +132,26 @@ func (s *Solver) solverFor(crt *v1alpha1.Certificate, domain string) (solver, er
 		impl, err = cloudflare.NewDNSProviderCredentials(email, apiKey)
 		if err != nil {
 			return nil, fmt.Errorf("error instantiating cloudflare challenge solver: %s", err.Error())
+		}
+	case providerConfig.Route53 != nil:
+		secretAccessKeySecret, err := s.secretLister.Secrets(s.issuer.Namespace).Get(providerConfig.Route53.SecretAccessKey.Name)
+		if err != nil {
+			return nil, fmt.Errorf("error getting route53 secret access key: %s", err.Error())
+		}
+
+		secretAccessKeyBytes, ok := secretAccessKeySecret.Data[providerConfig.Route53.SecretAccessKey.Key]
+		if !ok {
+			return nil, fmt.Errorf("error getting route53 secret access key: key '%s' not found in secret", providerConfig.Route53.SecretAccessKey.Key)
+		}
+
+		impl, err = route53.NewDNSProviderAccessKey(
+			providerConfig.Route53.AccessKeyID,
+			string(secretAccessKeyBytes),
+			providerConfig.Route53.HostedZoneID,
+			providerConfig.Route53.Region,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("error instantiating route53 challenge solver: %s", err.Error())
 		}
 	default:
 		return nil, fmt.Errorf("no dns provider config specified for domain '%s'", domain)
