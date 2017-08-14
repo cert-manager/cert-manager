@@ -1,0 +1,49 @@
+image: golang:1.8-alpine
+
+variables:
+  DOCKER_DRIVER: overlay
+  PKG_PATH: github.com/jetstack-experimental/cert-manager
+
+services:
+- docker:1.12-dind
+
+before_script:
+  - apk --update add make docker bash curl
+  - export DOCKER_HOST=${DOCKER_PORT}
+  - docker info > /dev/null
+  - mkdir -p "${GOPATH}/src/${PKG_PATH}" && rmdir "${GOPATH}/src/${PKG_PATH}"
+  - mv "${CI_PROJECT_DIR}" "${GOPATH}/src/${PKG_PATH}"
+  - cd "${GOPATH}/src/${PKG_PATH}"
+  - mkdir -p "${CI_PROJECT_DIR}"
+
+after_script:
+  - cd "/"
+  - rm -rf "${CI_PROJECT_DIR}"
+  - mv "${GOPATH}/src/${PKG_PATH}" "${CI_PROJECT_DIR}"
+
+build:
+  tags:
+  - docker
+  script:
+  - make all image
+  except:
+  - master
+  - tags
+
+master_push:
+  tags:
+  - docker
+  script:
+  - mkdir -p ~/.docker && echo "${DOCKER_AUTH_CONFIG}" > ~/.docker/config.json && chmod 600 ~/.docker/config.json
+  - make all push IMAGE_TAGS="${CI_BUILD_REF_SLUG}-${CI_PIPELINE_ID} canary"
+  only:
+  - master
+
+release_push:
+  tags:
+  - docker
+  script:
+  - mkdir -p ~/.docker && echo "${DOCKER_AUTH_CONFIG}" > ~/.docker/config.json && chmod 600 ~/.docker/config.json
+  - make all push APP_VERSION=${CI_COMMIT_TAG} IMAGE_TAGS="${CI_COMMIT_TAG} latest"
+  only:
+  - tags

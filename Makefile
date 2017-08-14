@@ -1,6 +1,6 @@
-ACCOUNT=jetstack-experimental
+ACCOUNT=jetstackexperimental
 APP_NAME=cert-manager
-REGISTRY=quay.io
+REGISTRY=docker.io
 
 PACKAGE_NAME=github.com/${ACCOUNT}/${APP_NAME}
 GO_VERSION=1.8
@@ -54,6 +54,10 @@ depend:
 
 verify: .hack_verify
 test: go_test
+
+version:
+	$(eval GIT_STATE := $(shell if test -z "`git status --porcelain 2> /dev/null`"; then echo "clean"; else echo "dirty"; fi))
+	$(eval GIT_COMMIT := $(shell git rev-parse HEAD))
 
 build_%: depend version
 	CGO_ENABLED=0 GOOS=$(GOOS) GOARCH=$(GOARCH) go build \
