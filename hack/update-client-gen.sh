@@ -9,6 +9,19 @@ set -o pipefail
 REPO_ROOT=$(dirname "${BASH_SOURCE}")/..
 BINDIR=${REPO_ROOT}/bin
 
+# Generate defaults
+${BINDIR}/defaulter-gen \
+          --v 1 --logtostderr \
+          --go-header-file "${GOPATH}/src/github.com/kubernetes/repo-infra/verify/boilerplate/boilerplate.go.txt" \
+          --input-dirs "github.com/jetstack-experimental/cert-manager/pkg/apis/certmanager/v1alpha1" \
+          --extra-peer-dirs "github.com/jetstack-experimental/cert-manager/pkg/apis/certmanager/v1alpha1" \
+          --output-file-base "zz_generated.defaults"
+# Generate deep copies
+${BINDIR}/deepcopy-gen \
+          --v 1 --logtostderr \
+          --go-header-file "${GOPATH}/src/github.com/kubernetes/repo-infra/verify/boilerplate/boilerplate.go.txt" \
+          --input-dirs "github.com/jetstack-experimental/cert-manager/pkg/apis/certmanager/v1alpha1" \
+          --output-file-base zz_generated.deepcopy
 # Generate the versioned clientset (pkg/client/clientset_generated/clientset)
 ${BINDIR}/client-gen "$@" \
           --input-base "github.com/jetstack-experimental/cert-manager/pkg/apis/" \

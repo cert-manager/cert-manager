@@ -2,7 +2,7 @@ ACCOUNT=jetstackexperimental
 APP_NAME=cert-manager
 REGISTRY=docker.io
 
-PACKAGE_NAME=github.com/${ACCOUNT}/${APP_NAME}
+PACKAGE_NAME=github.com/jetstack-experimental/cert-manager
 GO_VERSION=1.8
 
 GOOS := linux
@@ -131,19 +131,5 @@ $(BINDIR)/%:
 
 # Regenerate all files if the gen exes changed or any "types.go" files changed
 .generate_files: .generate_exes $(TYPES_FILES)
-	# Generate defaults
-	$(BINDIR)/defaulter-gen \
-		--v 1 --logtostderr \
-		--go-header-file "$${GOPATH}/src/github.com/kubernetes/repo-infra/verify/boilerplate/boilerplate.go.txt" \
-		--input-dirs "$(PACKAGE_NAME)/pkg/apis/certmanager/v1alpha1" \
-		--extra-peer-dirs "$(PACKAGE_NAME)/pkg/apis/certmanager/v1alpha1" \
-		--output-file-base "zz_generated.defaults"
-	# Generate deep copies
-	$(BINDIR)/deepcopy-gen \
-		--v 1 --logtostderr \
-		--go-header-file "$${GOPATH}/src/github.com/kubernetes/repo-infra/verify/boilerplate/boilerplate.go.txt" \
-		--input-dirs "$(PACKAGE_NAME)/pkg/apis/certmanager/v1alpha1" \
-		--bounding-dirs "github.com/openshift/open-service-broker-sdk" \
-		--output-file-base zz_generated.deepcopy
 	# generate all pkg/client contents
 	$(HACK_DIR)/update-client-gen.sh
