@@ -33,7 +33,7 @@ import (
 	"github.com/jetstack-experimental/cert-manager/pkg/controller"
 	"github.com/jetstack-experimental/cert-manager/pkg/controller/certificates"
 	"github.com/jetstack-experimental/cert-manager/pkg/controller/issuers"
-	"github.com/jetstack-experimental/cert-manager/pkg/informers/externalversions"
+	cminformers "github.com/jetstack-experimental/cert-manager/pkg/informers"
 	"github.com/jetstack-experimental/cert-manager/pkg/issuer"
 	_ "github.com/jetstack-experimental/cert-manager/pkg/issuer/acme"
 	logpkg "github.com/jetstack-experimental/cert-manager/pkg/log"
@@ -71,7 +71,7 @@ func main() {
 	}
 
 	factory := informers.NewSharedInformerFactory(cl, time.Second*30)
-	cmFactory := externalversions.NewSharedInformerFactory(cmCl, time.Second*30)
+	cmFactory := cminformers.NewSharedInformerFactory(cmCl, time.Second*30)
 
 	issuer.SharedFactory().Setup(cl, cmCl, factory, cmFactory)
 	controller.SharedFactory().Setup(cl, cmCl, factory, cmFactory)

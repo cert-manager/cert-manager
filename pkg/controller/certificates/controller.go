@@ -20,7 +20,7 @@ import (
 	"github.com/jetstack-experimental/cert-manager/pkg/apis/certmanager/v1alpha1"
 	"github.com/jetstack-experimental/cert-manager/pkg/client"
 	controllerpkg "github.com/jetstack-experimental/cert-manager/pkg/controller"
-	"github.com/jetstack-experimental/cert-manager/pkg/informers/externalversions"
+	cminformers "github.com/jetstack-experimental/cert-manager/pkg/informers"
 	cmlisters "github.com/jetstack-experimental/cert-manager/pkg/listers/certmanager/v1alpha1"
 	"github.com/jetstack-experimental/cert-manager/pkg/log"
 	"github.com/jetstack-experimental/cert-manager/pkg/scheduler"
@@ -58,7 +58,7 @@ type controller struct {
 func New(client kubernetes.Interface,
 	cmClient client.Interface,
 	factory informers.SharedInformerFactory,
-	cmFactory externalversions.SharedInformerFactory) (controllerpkg.Controller, error) {
+	cmFactory cminformers.SharedInformerFactory) (controllerpkg.Controller, error) {
 
 	ctrl := &controller{client: client, cmClient: cmClient}
 	ctrl.syncHandler = ctrl.processNextWorkItem
