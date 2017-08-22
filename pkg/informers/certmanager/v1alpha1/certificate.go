@@ -21,7 +21,7 @@ package v1alpha1
 import (
 	certmanager_v1alpha1 "github.com/jetstack-experimental/cert-manager/pkg/apis/certmanager/v1alpha1"
 	client "github.com/jetstack-experimental/cert-manager/pkg/client"
-	internalinterfaces "github.com/jetstack-experimental/cert-manager/pkg/informers/externalversions/internalinterfaces"
+	internalinterfaces "github.com/jetstack-experimental/cert-manager/pkg/informers/internalinterfaces"
 	v1alpha1 "github.com/jetstack-experimental/cert-manager/pkg/listers/certmanager/v1alpha1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
@@ -30,44 +30,44 @@ import (
 	time "time"
 )
 
-// IssuerInformer provides access to a shared informer and lister for
-// Issuers.
-type IssuerInformer interface {
+// CertificateInformer provides access to a shared informer and lister for
+// Certificates.
+type CertificateInformer interface {
 	Informer() cache.SharedIndexInformer
-	Lister() v1alpha1.IssuerLister
+	Lister() v1alpha1.CertificateLister
 }
 
-type issuerInformer struct {
+type certificateInformer struct {
 	factory internalinterfaces.SharedInformerFactory
 }
 
-// NewIssuerInformer constructs a new informer for Issuer type.
+// NewCertificateInformer constructs a new informer for Certificate type.
 // Always prefer using an informer factory to get a shared informer instead of getting an independent
 // one. This reduces memory footprint and number of connections to the server.
-func NewIssuerInformer(client client.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers) cache.SharedIndexInformer {
+func NewCertificateInformer(client client.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers) cache.SharedIndexInformer {
 	return cache.NewSharedIndexInformer(
 		&cache.ListWatch{
 			ListFunc: func(options v1.ListOptions) (runtime.Object, error) {
-				return client.CertmanagerV1alpha1().Issuers(namespace).List(options)
+				return client.CertmanagerV1alpha1().Certificates(namespace).List(options)
 			},
 			WatchFunc: func(options v1.ListOptions) (watch.Interface, error) {
-				return client.CertmanagerV1alpha1().Issuers(namespace).Watch(options)
+				return client.CertmanagerV1alpha1().Certificates(namespace).Watch(options)
 			},
 		},
-		&certmanager_v1alpha1.Issuer{},
+		&certmanager_v1alpha1.Certificate{},
 		resyncPeriod,
 		indexers,
 	)
 }
 
-func defaultIssuerInformer(client client.Interface, resyncPeriod time.Duration) cache.SharedIndexInformer {
-	return NewIssuerInformer(client, v1.NamespaceAll, resyncPeriod, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc})
+func defaultCertificateInformer(client client.Interface, resyncPeriod time.Duration) cache.SharedIndexInformer {
+	return NewCertificateInformer(client, v1.NamespaceAll, resyncPeriod, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc})
 }
 
-func (f *issuerInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.InformerFor(&certmanager_v1alpha1.Issuer{}, defaultIssuerInformer)
+func (f *certificateInformer) Informer() cache.SharedIndexInformer {
+	return f.factory.InformerFor(&certmanager_v1alpha1.Certificate{}, defaultCertificateInformer)
 }
 
-func (f *issuerInformer) Lister() v1alpha1.IssuerLister {
-	return v1alpha1.NewIssuerLister(f.Informer().GetIndexer())
+func (f *certificateInformer) Lister() v1alpha1.CertificateLister {
+	return v1alpha1.NewCertificateLister(f.Informer().GetIndexer())
 }
