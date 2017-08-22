@@ -34,7 +34,7 @@ all: verify test build
 	@go get -d github.com/kubernetes/repo-infra || true
 	# Once k8s.io/kube-gen is live, we should be able to remove this dependency
 	# on k8s.io/kubernetes. https://github.com/kubernetes/kubernetes/pull/49114
-	cd ${GOPATH}/src/k8s.io/kubernetes; git checkout 25d3523359ff17dda6deb867a7c3dd6c8b7ea705;
+	cd ${GOPATH}/src/k8s.io/kubernetes
 	@touch $@
 
 .hack_verify: .generate_exes
@@ -126,23 +126,8 @@ endif
                 $(BINDIR)/informer-gen
 	touch $@
 
-$(BINDIR)/defaulter-gen:
-	go build -o $@ k8s.io/kubernetes/cmd/libs/go2idl/defaulter-gen
-
-$(BINDIR)/deepcopy-gen:
-	go build -o $@ k8s.io/kubernetes/cmd/libs/go2idl/deepcopy-gen
-
-$(BINDIR)/conversion-gen:
-	go build -o $@ k8s.io/kubernetes/cmd/libs/go2idl/conversion-gen
-
-$(BINDIR)/client-gen:
-	go build -o $@ k8s.io/kubernetes/cmd/libs/go2idl/client-gen
-
-$(BINDIR)/lister-gen:
-	go build -o $@ k8s.io/kubernetes/cmd/libs/go2idl/lister-gen
-
-$(BINDIR)/informer-gen:
-	go build -o $@ k8s.io/kubernetes/cmd/libs/go2idl/informer-gen
+$(BINDIR)/%:
+	go build -o $@ k8s.io/kubernetes/staging/src/k8s.io/code-generator/cmd/$*
 
 # Regenerate all files if the gen exes changed or any "types.go" files changed
 .generate_files: .generate_exes $(TYPES_FILES)
@@ -150,25 +135,15 @@ $(BINDIR)/informer-gen:
 	$(BINDIR)/defaulter-gen \
 		--v 1 --logtostderr \
 		--go-header-file "$${GOPATH}/src/github.com/kubernetes/repo-infra/verify/boilerplate/boilerplate.go.txt" \
-		--input-dirs "$(PACKAGE_NAME)/pkg/apis/certmanager" \
 		--input-dirs "$(PACKAGE_NAME)/pkg/apis/certmanager/v1alpha1" \
-		--extra-peer-dirs "$(PACKAGE_NAME)/pkg/apis/certmanager" \
 		--extra-peer-dirs "$(PACKAGE_NAME)/pkg/apis/certmanager/v1alpha1" \
 		--output-file-base "zz_generated.defaults"
 	# Generate deep copies
 	$(BINDIR)/deepcopy-gen \
 		--v 1 --logtostderr \
 		--go-header-file "$${GOPATH}/src/github.com/kubernetes/repo-infra/verify/boilerplate/boilerplate.go.txt" \
-		--input-dirs "$(PACKAGE_NAME)/pkg/apis/certmanager" \
 		--input-dirs "$(PACKAGE_NAME)/pkg/apis/certmanager/v1alpha1" \
 		--bounding-dirs "github.com/openshift/open-service-broker-sdk" \
 		--output-file-base zz_generated.deepcopy
-	# Generate conversions
-	$(BINDIR)/conversion-gen \
-		--v 1 --logtostderr \
-		--go-header-file "$${GOPATH}/src/github.com/kubernetes/repo-infra/verify/boilerplate/boilerplate.go.txt" \
-		--input-dirs "$(PACKAGE_NAME)/pkg/apis/certmanager" \
-		--input-dirs "$(PACKAGE_NAME)/pkg/apis/certmanager/v1alpha1" \
-		--output-file-base zz_generated.conversion
 	# generate all pkg/client contents
 	$(HACK_DIR)/update-client-gen.sh

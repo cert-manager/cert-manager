@@ -28,10 +28,9 @@ import (
 func Install(groupFactoryRegistry announced.APIGroupFactoryRegistry, registry *registered.APIRegistrationManager, scheme *runtime.Scheme) {
 	if err := announced.NewGroupMetaFactory(
 		&announced.GroupMetaFactoryArgs{
-			GroupName:                  certmanager.GroupName,
-			VersionPreferenceOrder:     []string{v1alpha1.SchemeGroupVersion.Version},
-			ImportPrefix:               "github.com/jetstack-experimental/cert-manager/pkg/apis/certmanager",
-			AddInternalObjectsToScheme: certmanager.AddToScheme,
+			GroupName:              certmanager.GroupName,
+			VersionPreferenceOrder: []string{v1alpha1.SchemeGroupVersion.Version},
+			ImportPrefix:           "github.com/jetstack-experimental/cert-manager/pkg/apis/certmanager",
 		},
 		announced.VersionToSchemeFunc{
 			v1alpha1.SchemeGroupVersion.Version: v1alpha1.AddToScheme,

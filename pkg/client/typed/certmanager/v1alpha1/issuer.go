@@ -59,6 +59,41 @@ func newIssuers(c *CertmanagerV1alpha1Client, namespace string) *issuers {
 	}
 }
 
+// Get takes name of the issuer, and returns the corresponding issuer object, and an error if there is any.
+func (c *issuers) Get(name string, options v1.GetOptions) (result *v1alpha1.Issuer, err error) {
+	result = &v1alpha1.Issuer{}
+	err = c.client.Get().
+		Namespace(c.ns).
+		Resource("issuers").
+		Name(name).
+		VersionedParams(&options, scheme.ParameterCodec).
+		Do().
+		Into(result)
+	return
+}
+
+// List takes label and field selectors, and returns the list of Issuers that match those selectors.
+func (c *issuers) List(opts v1.ListOptions) (result *v1alpha1.IssuerList, err error) {
+	result = &v1alpha1.IssuerList{}
+	err = c.client.Get().
+		Namespace(c.ns).
+		Resource("issuers").
+		VersionedParams(&opts, scheme.ParameterCodec).
+		Do().
+		Into(result)
+	return
+}
+
+// Watch returns a watch.Interface that watches the requested issuers.
+func (c *issuers) Watch(opts v1.ListOptions) (watch.Interface, error) {
+	opts.Watch = true
+	return c.client.Get().
+		Namespace(c.ns).
+		Resource("issuers").
+		VersionedParams(&opts, scheme.ParameterCodec).
+		Watch()
+}
+
 // Create takes the representation of a issuer and creates it.  Returns the server's representation of the issuer, and an error, if there is any.
 func (c *issuers) Create(issuer *v1alpha1.Issuer) (result *v1alpha1.Issuer, err error) {
 	result = &v1alpha1.Issuer{}
@@ -85,7 +120,7 @@ func (c *issuers) Update(issuer *v1alpha1.Issuer) (result *v1alpha1.Issuer, err 
 }
 
 // UpdateStatus was generated because the type contains a Status member.
-// Add a +genclientstatus=false comment above the type to avoid generating UpdateStatus().
+// Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
 
 func (c *issuers) UpdateStatus(issuer *v1alpha1.Issuer) (result *v1alpha1.Issuer, err error) {
 	result = &v1alpha1.Issuer{}
@@ -120,41 +155,6 @@ func (c *issuers) DeleteCollection(options *v1.DeleteOptions, listOptions v1.Lis
 		Body(options).
 		Do().
 		Error()
-}
-
-// Get takes name of the issuer, and returns the corresponding issuer object, and an error if there is any.
-func (c *issuers) Get(name string, options v1.GetOptions) (result *v1alpha1.Issuer, err error) {
-	result = &v1alpha1.Issuer{}
-	err = c.client.Get().
-		Namespace(c.ns).
-		Resource("issuers").
-		Name(name).
-		VersionedParams(&options, scheme.ParameterCodec).
-		Do().
-		Into(result)
-	return
-}
-
-// List takes label and field selectors, and returns the list of Issuers that match those selectors.
-func (c *issuers) List(opts v1.ListOptions) (result *v1alpha1.IssuerList, err error) {
-	result = &v1alpha1.IssuerList{}
-	err = c.client.Get().
-		Namespace(c.ns).
-		Resource("issuers").
-		VersionedParams(&opts, scheme.ParameterCodec).
-		Do().
-		Into(result)
-	return
-}
-
-// Watch returns a watch.Interface that watches the requested issuers.
-func (c *issuers) Watch(opts v1.ListOptions) (watch.Interface, error) {
-	opts.Watch = true
-	return c.client.Get().
-		Namespace(c.ns).
-		Resource("issuers").
-		VersionedParams(&opts, scheme.ParameterCodec).
-		Watch()
 }
 
 // Patch applies the patch and returns the patched issuer.

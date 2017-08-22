@@ -35,24 +35,18 @@ type Interface interface {
 // version included in a Clientset.
 type Clientset struct {
 	*discovery.DiscoveryClient
-	*certmanagerv1alpha1.CertmanagerV1alpha1Client
+	certmanagerV1alpha1 *certmanagerv1alpha1.CertmanagerV1alpha1Client
 }
 
 // CertmanagerV1alpha1 retrieves the CertmanagerV1alpha1Client
 func (c *Clientset) CertmanagerV1alpha1() certmanagerv1alpha1.CertmanagerV1alpha1Interface {
-	if c == nil {
-		return nil
-	}
-	return c.CertmanagerV1alpha1Client
+	return c.certmanagerV1alpha1
 }
 
 // Deprecated: Certmanager retrieves the default version of CertmanagerClient.
 // Please explicitly pick a version.
 func (c *Clientset) Certmanager() certmanagerv1alpha1.CertmanagerV1alpha1Interface {
-	if c == nil {
-		return nil
-	}
-	return c.CertmanagerV1alpha1Client
+	return c.certmanagerV1alpha1
 }
 
 // Discovery retrieves the DiscoveryClient
@@ -71,7 +65,7 @@ func NewForConfig(c *rest.Config) (*Clientset, error) {
 	}
 	var cs Clientset
 	var err error
-	cs.CertmanagerV1alpha1Client, err = certmanagerv1alpha1.NewForConfig(&configShallowCopy)
+	cs.certmanagerV1alpha1, err = certmanagerv1alpha1.NewForConfig(&configShallowCopy)
 	if err != nil {
 		return nil, err
 	}
@@ -88,7 +82,7 @@ func NewForConfig(c *rest.Config) (*Clientset, error) {
 // panics if there is an error in the config.
 func NewForConfigOrDie(c *rest.Config) *Clientset {
 	var cs Clientset
-	cs.CertmanagerV1alpha1Client = certmanagerv1alpha1.NewForConfigOrDie(c)
+	cs.certmanagerV1alpha1 = certmanagerv1alpha1.NewForConfigOrDie(c)
 
 	cs.DiscoveryClient = discovery.NewDiscoveryClientForConfigOrDie(c)
 	return &cs
@@ -97,7 +91,7 @@ func NewForConfigOrDie(c *rest.Config) *Clientset {
 // New creates a new Clientset for the given RESTClient.
 func New(c rest.Interface) *Clientset {
 	var cs Clientset
-	cs.CertmanagerV1alpha1Client = certmanagerv1alpha1.New(c)
+	cs.certmanagerV1alpha1 = certmanagerv1alpha1.New(c)
 
 	cs.DiscoveryClient = discovery.NewDiscoveryClient(c)
 	return &cs
