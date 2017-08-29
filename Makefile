@@ -34,7 +34,7 @@ all: verify test build
 	@go get -d github.com/kubernetes/repo-infra || true
 	# Once k8s.io/kube-gen is live, we should be able to remove this dependency
 	# on k8s.io/kubernetes. https://github.com/kubernetes/kubernetes/pull/49114
-	cd ${GOPATH}/src/k8s.io/kubernetes
+	cd ${GOPATH}/src/k8s.io/kubernetes; git checkout e0225de330e032215da37c288dbd9539806fc211;
 	@touch $@
 
 .hack_verify: .generate_exes
