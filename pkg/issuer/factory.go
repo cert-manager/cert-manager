@@ -9,7 +9,7 @@ import (
 
 	"github.com/jetstack-experimental/cert-manager/pkg/apis/certmanager/v1alpha1"
 	"github.com/jetstack-experimental/cert-manager/pkg/client"
-	"github.com/jetstack-experimental/cert-manager/pkg/informers/externalversions"
+	cminformers "github.com/jetstack-experimental/cert-manager/pkg/informers"
 	"github.com/jetstack-experimental/cert-manager/pkg/log"
 )
 
@@ -20,13 +20,13 @@ type Factory struct {
 	client    kubernetes.Interface
 	cmClient  client.Interface
 	factory   informers.SharedInformerFactory
-	cmFactory externalversions.SharedInformerFactory
+	cmFactory cminformers.SharedInformerFactory
 }
 
 func (f *Factory) Setup(client kubernetes.Interface,
 	cmClient client.Interface,
 	factory informers.SharedInformerFactory,
-	cmFactory externalversions.SharedInformerFactory) {
+	cmFactory cminformers.SharedInformerFactory) {
 	f.client = client
 	f.cmClient = cmClient
 	f.factory = factory

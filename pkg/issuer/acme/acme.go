@@ -9,7 +9,7 @@ import (
 
 	"github.com/jetstack-experimental/cert-manager/pkg/apis/certmanager/v1alpha1"
 	"github.com/jetstack-experimental/cert-manager/pkg/client"
-	"github.com/jetstack-experimental/cert-manager/pkg/informers/externalversions"
+	cminformers "github.com/jetstack-experimental/cert-manager/pkg/informers"
 	"github.com/jetstack-experimental/cert-manager/pkg/issuer"
 	"github.com/jetstack-experimental/cert-manager/pkg/issuer/acme/dns"
 	"github.com/jetstack-experimental/cert-manager/pkg/issuer/acme/http"
@@ -21,7 +21,7 @@ type Acme struct {
 	client    kubernetes.Interface
 	cmClient  client.Interface
 	factory   informers.SharedInformerFactory
-	cmFactory externalversions.SharedInformerFactory
+	cmFactory cminformers.SharedInformerFactory
 
 	dnsSolver  solver
 	httpSolver solver
@@ -31,7 +31,7 @@ func New(issuer *v1alpha1.Issuer,
 	client kubernetes.Interface,
 	cmClient client.Interface,
 	factory informers.SharedInformerFactory,
-	cmFactory externalversions.SharedInformerFactory) (issuer.Interface, error) {
+	cmFactory cminformers.SharedInformerFactory) (issuer.Interface, error) {
 	return &Acme{
 		account:    newAccount(issuer, client, factory.Core().V1().Secrets().Lister()),
 		client:     client,

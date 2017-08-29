@@ -8,7 +8,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 
 	"github.com/jetstack-experimental/cert-manager/pkg/client"
-	"github.com/jetstack-experimental/cert-manager/pkg/informers/externalversions"
+	cminformers "github.com/jetstack-experimental/cert-manager/pkg/informers"
 )
 
 var defaultFactory = &Factory{
@@ -30,13 +30,13 @@ type Factory struct {
 	client    kubernetes.Interface
 	cmClient  client.Interface
 	factory   informers.SharedInformerFactory
-	cmFactory externalversions.SharedInformerFactory
+	cmFactory cminformers.SharedInformerFactory
 }
 
 func (f *Factory) Setup(client kubernetes.Interface,
 	cmClient client.Interface,
 	factory informers.SharedInformerFactory,
-	cmFactory externalversions.SharedInformerFactory) {
+	cmFactory cminformers.SharedInformerFactory) {
 	f.client = client
 	f.cmClient = cmClient
 	f.factory = factory
@@ -96,7 +96,7 @@ func (f *Factory) initController(name string) (Controller, error) {
 type Constructor func(client kubernetes.Interface,
 	cmClient client.Interface,
 	factory informers.SharedInformerFactory,
-	cmFactory externalversions.SharedInformerFactory) (Controller, error)
+	cmFactory cminformers.SharedInformerFactory) (Controller, error)
 
 // Controller is a control loop to be run within cert-manager. It should watch
 // and act on a single resource type in an API server.

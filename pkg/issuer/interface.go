@@ -6,7 +6,7 @@ import (
 
 	"github.com/jetstack-experimental/cert-manager/pkg/apis/certmanager/v1alpha1"
 	"github.com/jetstack-experimental/cert-manager/pkg/client"
-	"github.com/jetstack-experimental/cert-manager/pkg/informers/externalversions"
+	cminformers "github.com/jetstack-experimental/cert-manager/pkg/informers"
 )
 
 var sharedFactory = &Factory{
@@ -21,7 +21,7 @@ type Constructor func(issuer *v1alpha1.Issuer,
 	client kubernetes.Interface,
 	cmClient client.Interface,
 	factory informers.SharedInformerFactory,
-	cmFactory externalversions.SharedInformerFactory) (Interface, error)
+	cmFactory cminformers.SharedInformerFactory) (Interface, error)
 
 type Interface interface {
 	// Setup initialises the issuer. This may include registering accounts with

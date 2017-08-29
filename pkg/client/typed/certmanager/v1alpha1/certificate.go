@@ -59,6 +59,41 @@ func newCertificates(c *CertmanagerV1alpha1Client, namespace string) *certificat
 	}
 }
 
+// Get takes name of the certificate, and returns the corresponding certificate object, and an error if there is any.
+func (c *certificates) Get(name string, options v1.GetOptions) (result *v1alpha1.Certificate, err error) {
+	result = &v1alpha1.Certificate{}
+	err = c.client.Get().
+		Namespace(c.ns).
+		Resource("certificates").
+		Name(name).
+		VersionedParams(&options, scheme.ParameterCodec).
+		Do().
+		Into(result)
+	return
+}
+
+// List takes label and field selectors, and returns the list of Certificates that match those selectors.
+func (c *certificates) List(opts v1.ListOptions) (result *v1alpha1.CertificateList, err error) {
+	result = &v1alpha1.CertificateList{}
+	err = c.client.Get().
+		Namespace(c.ns).
+		Resource("certificates").
+		VersionedParams(&opts, scheme.ParameterCodec).
+		Do().
+		Into(result)
+	return
+}
+
+// Watch returns a watch.Interface that watches the requested certificates.
+func (c *certificates) Watch(opts v1.ListOptions) (watch.Interface, error) {
+	opts.Watch = true
+	return c.client.Get().
+		Namespace(c.ns).
+		Resource("certificates").
+		VersionedParams(&opts, scheme.ParameterCodec).
+		Watch()
+}
+
 // Create takes the representation of a certificate and creates it.  Returns the server's representation of the certificate, and an error, if there is any.
 func (c *certificates) Create(certificate *v1alpha1.Certificate) (result *v1alpha1.Certificate, err error) {
 	result = &v1alpha1.Certificate{}
@@ -85,7 +120,7 @@ func (c *certificates) Update(certificate *v1alpha1.Certificate) (result *v1alph
 }
 
 // UpdateStatus was generated because the type contains a Status member.
-// Add a +genclientstatus=false comment above the type to avoid generating UpdateStatus().
+// Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
 
 func (c *certificates) UpdateStatus(certificate *v1alpha1.Certificate) (result *v1alpha1.Certificate, err error) {
 	result = &v1alpha1.Certificate{}
@@ -120,41 +155,6 @@ func (c *certificates) DeleteCollection(options *v1.DeleteOptions, listOptions v
 		Body(options).
 		Do().
 		Error()
-}
-
-// Get takes name of the certificate, and returns the corresponding certificate object, and an error if there is any.
-func (c *certificates) Get(name string, options v1.GetOptions) (result *v1alpha1.Certificate, err error) {
-	result = &v1alpha1.Certificate{}
-	err = c.client.Get().
-		Namespace(c.ns).
-		Resource("certificates").
-		Name(name).
-		VersionedParams(&options, scheme.ParameterCodec).
-		Do().
-		Into(result)
-	return
-}
-
-// List takes label and field selectors, and returns the list of Certificates that match those selectors.
-func (c *certificates) List(opts v1.ListOptions) (result *v1alpha1.CertificateList, err error) {
-	result = &v1alpha1.CertificateList{}
-	err = c.client.Get().
-		Namespace(c.ns).
-		Resource("certificates").
-		VersionedParams(&opts, scheme.ParameterCodec).
-		Do().
-		Into(result)
-	return
-}
-
-// Watch returns a watch.Interface that watches the requested certificates.
-func (c *certificates) Watch(opts v1.ListOptions) (watch.Interface, error) {
-	opts.Watch = true
-	return c.client.Get().
-		Namespace(c.ns).
-		Resource("certificates").
-		VersionedParams(&opts, scheme.ParameterCodec).
-		Watch()
 }
 
 // Patch applies the patch and returns the patched certificate.
