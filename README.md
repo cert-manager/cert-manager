@@ -145,7 +145,7 @@ Kubernetes Events API (see [#54](https://github.com/jetstack-experimental/cert-m
 
 Until then, we can view the logs of cert-manager with the following:
 
-```yaml
+```
 $ kubectl logs -l app=cert-manager
 2017/08/29 12:54:37 Preparing Certificate 'default/test-jetstack-net'
 2017/08/29 12:54:37 getting private key for acme issuer default/letsencrypt-staging
