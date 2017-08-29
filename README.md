@@ -1,4 +1,4 @@
-# cert-manager
+# cert-manager [![Build Status](https://travis-ci.org/jetstack-experimental/cert-manager.svg?branch=master)](https://travis-ci.org/jetstack-experimental/cert-manager)
 
 cert-manager is a Kubernetes addon to automate the management and issuance of
 TLS certificates from various issuing sources.
