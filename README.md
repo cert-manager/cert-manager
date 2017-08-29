@@ -21,12 +21,13 @@ development build and reporting any issues you run into.
 > Prebuilt images for cert-manager are made available on Dockerhub.
 
 This guide sets up cert-manager to run as a Deployment on your Kubernetes
-cluster. It will then go on to set up the Letsencrypt staging server as a
-Certificate issuer, and request a Certificate for a domain you control using
-the HTTP01 challenge mechanism.
+cluster.
+It will then go on to set up the [Let's Encrypt ACME staging server](https://letsencrypt.org/docs/staging-environment/)
+as a Certificate issuer, and request a Certificate for a domain you control
+using both the HTTP01 and DNS01 challenge mechanisms.
 
-This guide will configure cert-manager to attempt to fulfill Certificate
-resources in all namespace in your cluster.
+By default, it will be configured to fulfil Certificate resources in all
+namespaces.
 
 ### 0. Pre-requisites
 
@@ -37,19 +38,21 @@ resources in all namespace in your cluster.
 To deploy the latest version of cert-manager, run:
 
 ```
-$ kubectl create -f https://github.com/jetstack-experimental/cert-manager/blob/master/docs/cert-manager.yaml
+$ kubectl create -f https://raw.githubusercontent.com/jetstack-experimental/cert-manager/master/docs/cert-manager.yaml
 ```
 
-In future this may be replaced with a Helm chart. There are currently no
-official RBAC roles defined for cert-manager (see [#34](https://github.com/jetstack-experimental/cert-manager/issues/34))
+**NOTE**
+
+* In future this may be replaced with a Helm chart.
+* There are currently no official RBAC roles defined for cert-manager (see [#34](https://github.com/jetstack-experimental/cert-manager/issues/34))
 
 ### 2. Set up letsencrypt staging issuer
 
 An Issuer in cert-manager describes a source for signed TLS certificates that
 cert-manager can use to fulfil Certificate resources in a Kubernetes cluster.
 
-Within the Issuers spec, we can define any configuration that may be required
-(eg. credentials for updating a DNS server) on a per-issuer basis.
+Within the Issuer's spec, we can define any configuration that may be required
+(e.g. credentials for updating a DNS server) on a per-issuer basis.
 
 In the below example, you **must** remember to fill in the `spec.acme.email`
 field.
@@ -66,7 +69,7 @@ spec:
     # Email address used for ACME registration
     email: ""
     # Name of a secret used to store the ACME account private key
-    privateKey: letsncrypt-staging
+    privateKey: letsencrypt-staging
     # ACME dns-01 provider configurations
     dns-01:
       # Here we define a list of DNS-01 providers that can solve DNS challenges
@@ -91,7 +94,8 @@ issuer.
 
 Upon creation of the Issuer, any initial preparation for that Issuer will be
 performed, e.g. for the ACME issuer, an account is registered with the ACME
-server specified and a corresponding private key generated too if required.
+server specified in the spec, and a corresponding private key generated too if
+required.
 
 Multiple Issuers may exist at any one time, and they should be referenced by
 name in a Certificate resource. The Issuer and Certificate resource must exist
@@ -140,7 +144,7 @@ spec:
 
 ### 4. Ensuring the Certificate request has been fulfiled
 
-Currently, cert-manager does not log Events on Certificates or Issuers to the
+> Currently, cert-manager does not log Events on Certificates or Issuers to the
 Kubernetes Events API (see [#54](https://github.com/jetstack-experimental/cert-manager/issues/54)).
 
 Until then, we can view the logs of cert-manager with the following:
