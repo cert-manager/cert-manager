@@ -34,7 +34,7 @@ const (
 	// acmeSolverListenPort is the port acmesolver should listen on
 	acmeSolverListenPort = 8089
 	// acmeSolverImage is the docker image containing acmesolver to use
-	acmeSolverImage = "quay.io/jetstack/cert-manager-acmesolver:canary.2"
+	acmeSolverImage = "jetstackexperimental/cert-manager-acmesolver:canary"
 )
 
 // svcNameFunc returns the name for the service to solve the challenge
