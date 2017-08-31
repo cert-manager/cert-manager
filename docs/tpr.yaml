@@ -1,0 +1,15 @@
+apiVersion: extensions/v1beta1
+kind: ThirdPartyResource
+metadata:
+  name: certificate.certmanager.k8s.io
+description: "A specification for a cert-manager certificate"
+versions:
+- name: v1alpha1
+---
+apiVersion: extensions/v1beta1
+kind: ThirdPartyResource
+metadata:
+  name: issuer.certmanager.k8s.io
+description: "A specification for a cert-manager issuer"
+versions:
+- name: v1alpha1
