@@ -31,7 +31,33 @@ namespaces.
 
 ### 0. Pre-requisites
 
-* Kubernetes cluster with CustomResourceDefinitions enabled (1.7+) (see [#49](https://github.com/jetstack-experimental/cert-manager/issues/49))
+* Kubernetes cluster with CustomResourceDefinitions or ThirdPartyResource
+support
+
+cert-manager uses custom resources/third party resources to represent
+Certificates and Issuers. In order for cert-manager to do this, we must
+register our custom API types with the Kubernetes API server. How we do this
+varies slightly from Kubernetes 1.7 onwards:
+
+#### Kubernetes 1.7 and later
+
+Kubernetes 1.7 introduced [CustomResourceDefinitions](https://kubernetes.io/docs/concepts/api-extension/custom-resources/).
+A pre-made CRD for cert-manager is in `docs/crd.yaml`. We can install it with:
+
+```
+$ kubectl create -f https://raw.githubusercontent.com/jetstack-experimental/cert-manager/master/docs/crd.yaml
+```
+
+#### Kubernetes 1.6 and below
+
+As Kubernetes 1.6 does not support CustomResourceDefinitions, we must instead
+use ThirdPartyResources, the older, now deprecated version of
+CustomResourceDefinition. A pre-made TPR for cert-manager is in
+`docs/tpr.yaml`. We can install it with:
+
+```
+$ kubectl create -f https://raw.githubusercontent.com/jetstack-experimental/cert-manager/master/docs/tpr.yaml
+```
 
 ### 1. Deploy cert-manager
 
