@@ -123,7 +123,7 @@ func (s *Solver) solverFor(crt *v1alpha1.Certificate, domain string) (solver, er
 	case providerConfig.Cloudflare != nil:
 		apiKeySecret, err := s.secretLister.Secrets(s.issuer.Namespace).Get(providerConfig.Cloudflare.APIKey.Name)
 		if err != nil {
-			return nil, fmt.Errorf("error getting clouddns service account: %s", err.Error())
+			return nil, fmt.Errorf("error getting cloudflare service account: %s", err.Error())
 		}
 
 		email := providerConfig.Cloudflare.Email
