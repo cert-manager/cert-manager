@@ -67,7 +67,14 @@ build_%: depend version
 		./cmd/$*
 
 go_test:
-	go test $$(go list ./... | grep -v '/vendor/')
+	go test -v $$(go list ./... | grep -v '/vendor/' | grep -v '/test/e2e' )
+
+e2e_test:
+	go test -o e2e-tests -c ./test/e2e
+	KUBECONFIG=$$HOME/.kube/config CERTMANAGERCONFIG=$$HOME/.kube/config \
+		./e2e-tests \
+			-cert-manager-image-pull-policy=Never \
+			-cert-manager-image=$(DOCKER_IMAGE)-controller:$(BUILD_TAG)
 
 build: build_controller build_acmesolver
 
