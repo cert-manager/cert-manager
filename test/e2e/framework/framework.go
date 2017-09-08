@@ -22,6 +22,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	clientset "github.com/jetstack-experimental/cert-manager/pkg/client"
+	"github.com/jetstack-experimental/cert-manager/test/util"
 )
 
 // Framework supports common operations used by e2e tests; it will keep a client & a namespace for you.
@@ -105,6 +106,11 @@ func (f *Framework) AfterEach() {
 
 	By("Deleting Certificate CustomResourceDefinition")
 	err = DeleteCertificateCRD(f.APIExtensionsClientSet)
+	Expect(err).NotTo(HaveOccurred())
+
+	err = util.WaitForCRDToNotExist(f.APIExtensionsClientSet.ApiextensionsV1beta1().CustomResourceDefinitions(), issuerCrd().Name)
+	Expect(err).NotTo(HaveOccurred())
+	err = util.WaitForCRDToNotExist(f.APIExtensionsClientSet.ApiextensionsV1beta1().CustomResourceDefinitions(), certificateCrd().Name)
 	Expect(err).NotTo(HaveOccurred())
 }
 

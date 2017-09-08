@@ -48,12 +48,32 @@ var _ = framework.CertManagerDescribe("Issuer", func() {
 		_, err := f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Create(newCertManagerACMEIssuer(issuerName, testingACMEURL, testingACMEEmail, testingACMEPrivateKey))
 		Expect(err).NotTo(HaveOccurred())
 		By("Waiting for Issuer to become Ready")
-		err = util.WaitForIssuerReady(f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name), issuerName)
+		err = util.WaitForIssuerCondition(f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name),
+			issuerName,
+			v1alpha1.IssuerCondition{
+				Type:   v1alpha1.IssuerConditionReady,
+				Status: v1alpha1.ConditionTrue,
+			})
+		Expect(err).NotTo(HaveOccurred())
+	})
+
+	It("should fail to register an ACME account", func() {
+		By("Creating an Issuer with an invalid server")
+		_, err := f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Create(newCertManagerACMEIssuer(issuerName, invalidACMEURL, testingACMEEmail, testingACMEPrivateKey))
+		Expect(err).NotTo(HaveOccurred())
+		By("Waiting for Issuer to become non-Ready")
+		err = util.WaitForIssuerCondition(f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name),
+			issuerName,
+			v1alpha1.IssuerCondition{
+				Type:   v1alpha1.IssuerConditionReady,
+				Status: v1alpha1.ConditionFalse,
+			})
 		Expect(err).NotTo(HaveOccurred())
 	})
 })
 
 const testingACMEURL = "https://acme-staging.api.letsencrypt.org/directory"
+const invalidACMEURL = "http://not-a-real-acme-url.com"
 const testingACMEEmail = "test@example.com"
 const testingACMEPrivateKey = "test-acme-private-key"
 
