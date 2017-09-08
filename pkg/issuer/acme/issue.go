@@ -9,17 +9,17 @@ import (
 	"crypto/x509/pkix"
 	"encoding/pem"
 	"fmt"
+	"log"
 
 	"golang.org/x/crypto/acme"
 	api "k8s.io/api/core/v1"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 
 	"github.com/jetstack-experimental/cert-manager/pkg/apis/certmanager/v1alpha1"
-	"github.com/jetstack-experimental/cert-manager/pkg/log"
 )
 
 func (a *Acme) getCertificatePrivateKey(crt *v1alpha1.Certificate) ([]byte, crypto.Signer, error) {
-	crtSecret, err := a.factory.Core().V1().Secrets().Lister().Secrets(crt.Namespace).Get(crt.Spec.SecretName)
+	crtSecret, err := a.secretsLister.Secrets(crt.Namespace).Get(crt.Spec.SecretName)
 	if err != nil {
 		if !k8sErrors.IsNotFound(err) {
 			return nil, nil, fmt.Errorf("error reading certificate private key for certificate '%s': %s", crt.Name, err.Error())
@@ -53,7 +53,7 @@ func (a *Acme) obtainCertificate(crt *v1alpha1.Certificate) (privateKeyPem []byt
 		return nil, nil, fmt.Errorf("no domains specified")
 	}
 
-	privKey, err := a.account.privateKey()
+	privKey, err := a.accountPrivateKey()
 
 	if err != nil {
 		return nil, nil, fmt.Errorf("error getting acme account private key: %s", err.Error())
@@ -61,7 +61,7 @@ func (a *Acme) obtainCertificate(crt *v1alpha1.Certificate) (privateKeyPem []byt
 
 	cl := &acme.Client{
 		Key:          privKey,
-		DirectoryURL: a.account.server(),
+		DirectoryURL: a.issuer.Spec.ACME.Server,
 	}
 
 	template := x509.CertificateRequest{

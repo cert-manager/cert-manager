@@ -3,12 +3,12 @@ package acme
 import (
 	"context"
 	"fmt"
+	"log"
 	"reflect"
 
 	"golang.org/x/crypto/acme"
 
 	"github.com/jetstack-experimental/cert-manager/pkg/apis/certmanager/v1alpha1"
-	"github.com/jetstack-experimental/cert-manager/pkg/log"
 	"github.com/jetstack-experimental/cert-manager/pkg/util"
 )
 
@@ -71,8 +71,8 @@ func (a *Acme) prepare(crt *v1alpha1.Certificate) error {
 		return fmt.Errorf("acme config must be specified")
 	}
 
-	log.Printf("getting private key for acme issuer %s/%s", a.account.issuer.Namespace, a.account.issuer.Name)
-	privKey, err := a.account.privateKey()
+	log.Printf("getting private key for acme issuer %s/%s", a.issuer.Namespace, a.issuer.Name)
+	privKey, err := a.accountPrivateKey()
 
 	if err != nil {
 		return fmt.Errorf("error getting acme account private key: %s", err.Error())
@@ -80,7 +80,7 @@ func (a *Acme) prepare(crt *v1alpha1.Certificate) error {
 
 	cl := &acme.Client{
 		Key:          privKey,
-		DirectoryURL: a.account.server(),
+		DirectoryURL: a.issuer.Spec.ACME.Server,
 	}
 
 	// step one: check issuer to see if we already have authorizations

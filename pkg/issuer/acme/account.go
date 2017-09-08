@@ -6,17 +6,14 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
+	"log"
 	"strings"
 
 	"golang.org/x/crypto/acme"
 	api "k8s.io/api/core/v1"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
-	corev1listers "k8s.io/client-go/listers/core/v1"
 
-	"github.com/jetstack-experimental/cert-manager/pkg/apis/certmanager/v1alpha1"
-	"github.com/jetstack-experimental/cert-manager/pkg/log"
 	"github.com/jetstack-experimental/cert-manager/pkg/util"
 )
 
@@ -24,43 +21,11 @@ const (
 	acmeAccountPrivateKeyKey = "key.pem"
 )
 
-type account struct {
-	issuer *v1alpha1.Issuer
-
-	client        kubernetes.Interface
-	secretsLister corev1listers.SecretLister
-}
-
-func newAccount(issuer *v1alpha1.Issuer, client kubernetes.Interface, secretsLister corev1listers.SecretLister) *account {
-	return &account{issuer, client, secretsLister}
-}
-
-func (a *account) uri() string {
-	if a.issuer.Status.ACME == nil {
-		return ""
-	}
-	return a.issuer.Status.ACME.URI
-}
-
-func (a *account) email() string {
-	if a.issuer.Spec.ACME == nil {
-		return ""
-	}
-	return a.issuer.Spec.ACME.Email
-}
-
-func (a *account) server() string {
-	if a.issuer.Spec.ACME == nil {
-		return ""
-	}
-	return a.issuer.Spec.ACME.Server
-}
-
 // privateKey returns the private key for this account from the given context,
 // or an error
 // TODO (@munnerz): how can we support different types of private keys other
 // than rsa?
-func (a *account) privateKey() (*rsa.PrivateKey, error) {
+func (a *Acme) accountPrivateKey() (*rsa.PrivateKey, error) {
 	if a.issuer.Spec.ACME == nil {
 		return nil, fmt.Errorf("acme spec block cannot be empty")
 	}
@@ -99,7 +64,7 @@ func (a *account) privateKey() (*rsa.PrivateKey, error) {
 }
 
 // verify verifies an acme account is valid with the acme server
-func (a *account) verify() error {
+func (a *Acme) verifyAccount() error {
 	if a.issuer.Spec.ACME.Server == "" {
 		return fmt.Errorf("acme server url must be set")
 	}
@@ -107,10 +72,9 @@ func (a *account) verify() error {
 		return fmt.Errorf("acme account uri must be set")
 	}
 
-	privateKey, err := a.privateKey()
+	privateKey, err := a.accountPrivateKey()
 
 	if err != nil {
-		a.issuer.Status.Ready = false
 		return err
 	}
 
@@ -133,25 +97,25 @@ func (a *account) verify() error {
 }
 
 // register will register an account with the acme server and store the account
-// details in the context
+// details in the API server. It returns the registered account URI, or an error
 // TODO: break this function down
-func (a *account) register() error {
+func (a *Acme) registerAccount() (string, error) {
 	if a.issuer.Spec.ACME.Server == "" {
-		return fmt.Errorf("acme server url must be set")
+		return "", fmt.Errorf("acme server url must be set")
 	}
 
-	privateKey, err := a.privateKey()
+	privateKey, err := a.accountPrivateKey()
 	var privateKeyPem []byte
 	if err != nil {
 		if !k8sErrors.IsNotFound(err) {
-			return fmt.Errorf("error getting private key: %s", err.Error())
+			return "", fmt.Errorf("error getting private key: %s", err.Error())
 		}
 
 		// TODO (@munnerz): allow changing the keysize
 		privateKeyPem, privateKey, err = generatePrivateKey(2048)
 
 		if err != nil {
-			return fmt.Errorf("error generating private key: %s", err.Error())
+			return "", fmt.Errorf("error generating private key: %s", err.Error())
 		}
 
 		_, err = util.EnsureSecret(a.client, &api.Secret{
@@ -165,7 +129,7 @@ func (a *account) register() error {
 		})
 
 		if err != nil {
-			return fmt.Errorf("error saving private key: %s", err.Error())
+			return "", fmt.Errorf("error saving private key: %s", err.Error())
 		}
 	}
 
@@ -186,19 +150,17 @@ func (a *account) register() error {
 		var acmeErr *acme.Error
 		var ok bool
 		if acmeErr, ok = err.(*acme.Error); !ok || (acmeErr.StatusCode != 409) {
-			return fmt.Errorf("error registering acme account: %s", err.Error())
+			return "", fmt.Errorf("error registering acme account: %s", err.Error())
 		}
 
 		if a.issuer.Status.ACME == nil || a.issuer.Status.ACME.URI == "" {
-			return fmt.Errorf("private key already registered but user URI not found. delete existing private key or set acme account URI")
+			return "", fmt.Errorf("private key already registered but user URI not found. delete existing private key or set acme account URI")
 		}
 
 		if account, err = cl.UpdateReg(context.Background(), acc); err != nil {
-			return fmt.Errorf("error updating acme account registration: %s", err.Error())
+			return "", fmt.Errorf("error updating acme account registration: %s", err.Error())
 		}
 	}
 
-	a.issuer.Status.ACMEStatus().URI = account.URI
-
-	return nil
+	return account.URI, nil
 }

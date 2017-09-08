@@ -2,49 +2,28 @@ package acme
 
 import (
 	"fmt"
-	"reflect"
+
+	"github.com/jetstack-experimental/cert-manager/pkg/apis/certmanager/v1alpha1"
 )
 
-func (a *Acme) Setup() (err error) {
-	issuerBefore := a.account.issuer.DeepCopy()
+func (a *Acme) Setup() (v1alpha1.IssuerStatus, error) {
+	updateStatus := a.issuer.Status.DeepCopy()
 
-	defer func() {
-		if !reflect.DeepEqual(issuerBefore, a.account.issuer) {
-			if err == nil {
-				_, err = a.cmClient.CertmanagerV1alpha1().Issuers(a.account.issuer.Namespace).Update(a.account.issuer)
-			}
-		}
-	}()
-
-	err = a.ensureSetup()
-
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// ensureSetup will ensure that this issuer is ready to issue certificates.
-// it
-func (a *Acme) ensureSetup() error {
-	err := a.account.verify()
+	err := a.verifyAccount()
 
 	if err == nil {
-		a.account.issuer.Status.Ready = true
-		return nil
+		updateStatus.Ready = true
+		return *updateStatus, nil
 	}
 
-	a.account.issuer.Status.Ready = false
-
-	err = a.account.register()
+	uri, err := a.registerAccount()
 
 	if err != nil {
-		// don't write updated state as an actual error occurred
-		return fmt.Errorf("error registering acme account: %s", err.Error())
+		updateStatus.Ready = false
+		return *updateStatus, fmt.Errorf("error registering acme account: %s", err.Error())
 	}
 
-	a.account.issuer.Status.Ready = true
+	updateStatus.ACMEStatus().URI = uri
 
-	return nil
+	return *updateStatus, nil
 }

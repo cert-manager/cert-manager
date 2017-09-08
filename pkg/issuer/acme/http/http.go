@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"net/url"
 	"strings"
@@ -23,7 +24,6 @@ import (
 
 	"github.com/jetstack-experimental/cert-manager/pkg/apis/certmanager/v1alpha1"
 	"github.com/jetstack-experimental/cert-manager/pkg/issuer/acme/http/solver"
-	"github.com/jetstack-experimental/cert-manager/pkg/log"
 	"github.com/jetstack-experimental/cert-manager/pkg/util"
 )
 

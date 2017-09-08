@@ -3,25 +3,28 @@ package acme
 import (
 	"context"
 	"fmt"
+	"time"
 
-	"k8s.io/client-go/informers"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	coreinformers "k8s.io/client-go/informers/core/v1"
 	"k8s.io/client-go/kubernetes"
+	corelisters "k8s.io/client-go/listers/core/v1"
+	"k8s.io/client-go/tools/cache"
 
 	"github.com/jetstack-experimental/cert-manager/pkg/apis/certmanager/v1alpha1"
 	"github.com/jetstack-experimental/cert-manager/pkg/client"
-	cminformers "github.com/jetstack-experimental/cert-manager/pkg/informers"
 	"github.com/jetstack-experimental/cert-manager/pkg/issuer"
 	"github.com/jetstack-experimental/cert-manager/pkg/issuer/acme/dns"
 	"github.com/jetstack-experimental/cert-manager/pkg/issuer/acme/http"
 )
 
 type Acme struct {
-	account *account
+	issuer *v1alpha1.Issuer
 
-	client    kubernetes.Interface
-	cmClient  client.Interface
-	factory   informers.SharedInformerFactory
-	cmFactory cminformers.SharedInformerFactory
+	client   kubernetes.Interface
+	cmClient client.Interface
+
+	secretsLister corelisters.SecretLister
 
 	dnsSolver  solver
 	httpSolver solver
@@ -30,16 +33,19 @@ type Acme struct {
 func New(issuer *v1alpha1.Issuer,
 	client kubernetes.Interface,
 	cmClient client.Interface,
-	factory informers.SharedInformerFactory,
-	cmFactory cminformers.SharedInformerFactory) (issuer.Interface, error) {
+	secretsInformer cache.SharedIndexInformer) (issuer.Interface, error) {
+	if issuer.Spec.ACME == nil {
+		return nil, fmt.Errorf("acme config may not be empty")
+	}
+
+	secretsLister := corelisters.NewSecretLister(secretsInformer.GetIndexer())
 	return &Acme{
-		account:    newAccount(issuer, client, factory.Core().V1().Secrets().Lister()),
-		client:     client,
-		cmClient:   cmClient,
-		factory:    factory,
-		cmFactory:  cmFactory,
-		dnsSolver:  dns.NewSolver(issuer, client, factory.Core().V1().Secrets().Lister()),
-		httpSolver: http.NewSolver(issuer, client, factory.Core().V1().Secrets().Lister()),
+		issuer:        issuer,
+		client:        client,
+		cmClient:      cmClient,
+		secretsLister: secretsLister,
+		dnsSolver:     dns.NewSolver(issuer, client, secretsLister),
+		httpSolver:    http.NewSolver(issuer, client, secretsLister),
 	}, nil
 }
 
@@ -60,5 +66,15 @@ func (a *Acme) solverFor(challengeType string) (solver, error) {
 }
 
 func init() {
-	issuer.SharedFactory().Register(issuer.IssuerACME, New)
+	issuer.Register(issuer.IssuerACME, func(i *v1alpha1.Issuer, ctx *issuer.Context) (issuer.Interface, error) {
+		return New(
+			i,
+			ctx.Client,
+			ctx.CMClient,
+			ctx.SharedInformerFactory.InformerFor(
+				ctx.Namespace,
+				metav1.GroupVersionKind{Version: "v1", Kind: "Secret"},
+				coreinformers.NewSecretInformer(ctx.Client, ctx.Namespace, time.Second*30, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc})),
+		)
+	})
 }
