@@ -2,37 +2,36 @@ package certificates
 
 import (
 	"fmt"
-	"reflect"
+	"log"
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
 	extv1beta1 "k8s.io/api/extensions/v1beta1"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
-	"k8s.io/client-go/informers"
+	coreinformers "k8s.io/client-go/informers/core/v1"
+	extinformers "k8s.io/client-go/informers/extensions/v1beta1"
 	"k8s.io/client-go/kubernetes"
 	corelisters "k8s.io/client-go/listers/core/v1"
 	extlisters "k8s.io/client-go/listers/extensions/v1beta1"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
 
-	"github.com/jetstack-experimental/cert-manager/pkg/apis/certmanager/v1alpha1"
+	"github.com/jetstack-experimental/cert-manager/pkg/apis/certmanager"
 	"github.com/jetstack-experimental/cert-manager/pkg/client"
 	controllerpkg "github.com/jetstack-experimental/cert-manager/pkg/controller"
-	cminformers "github.com/jetstack-experimental/cert-manager/pkg/informers"
+	cminformers "github.com/jetstack-experimental/cert-manager/pkg/informers/certmanager/v1alpha1"
+	"github.com/jetstack-experimental/cert-manager/pkg/issuer"
 	cmlisters "github.com/jetstack-experimental/cert-manager/pkg/listers/certmanager/v1alpha1"
-	"github.com/jetstack-experimental/cert-manager/pkg/log"
 	"github.com/jetstack-experimental/cert-manager/pkg/scheduler"
 )
 
-var _ controllerpkg.Constructor = New
-
-var _ controllerpkg.Controller = &controller{}
-
-type controller struct {
-	client   kubernetes.Interface
-	cmClient client.Interface
+type Controller struct {
+	client        kubernetes.Interface
+	cmClient      client.Interface
+	issuerFactory issuer.Factory
 
 	// To allow injection for testing.
 	syncHandler func(key string) error
@@ -55,12 +54,15 @@ type controller struct {
 
 // New returns a new Certificates controller. It sets up the informer handler
 // functions for all the types it watches.
-func New(client kubernetes.Interface,
+func New(
+	certificatesInformer cache.SharedIndexInformer,
+	secretsInformer cache.SharedIndexInformer,
+	ingressInformer cache.SharedIndexInformer,
+	client kubernetes.Interface,
 	cmClient client.Interface,
-	factory informers.SharedInformerFactory,
-	cmFactory cminformers.SharedInformerFactory) (controllerpkg.Controller, error) {
-
-	ctrl := &controller{client: client, cmClient: cmClient}
+	issuerFactory issuer.Factory,
+) *Controller {
+	ctrl := &Controller{client: client, cmClient: cmClient, issuerFactory: issuerFactory}
 	ctrl.syncHandler = ctrl.processNextWorkItem
 	ctrl.queue = workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "certificates")
 	// Create a scheduled work queue that calls the ctrl.queue.Add method for
@@ -68,104 +70,33 @@ func New(client kubernetes.Interface,
 	// Certificate resources when they get near to expiry
 	ctrl.scheduledWorkQueue = scheduler.NewScheduledWorkQueue(ctrl.queue.Add)
 
-	secretsInformer := factory.Core().V1().Secrets()
-	ingressInformer := factory.Extensions().V1beta1().Ingresses()
-	certificatesInformer := cmFactory.Certmanager().V1alpha1().Certificates()
-	issuersInformer := cmFactory.Certmanager().V1alpha1().Issuers()
+	certificatesInformer.AddEventHandler(&controllerpkg.QueuingEventHandler{Queue: ctrl.queue})
+	ctrl.certificateInformerSynced = certificatesInformer.HasSynced
+	ctrl.certificateLister = cmlisters.NewCertificateLister(certificatesInformer.GetIndexer())
 
-	certificatesInformer.Informer().AddEventHandlerWithResyncPeriod(cache.ResourceEventHandlerFuncs{
-		AddFunc:    ctrl.certificateAdded,
-		UpdateFunc: ctrl.certificateUpdated,
-		DeleteFunc: ctrl.certificateDeleted,
-	}, time.Minute*5)
-	ctrl.certificateInformerSynced = certificatesInformer.Informer().HasSynced
-	ctrl.certificateLister = certificatesInformer.Lister()
+	secretsInformer.AddEventHandler(&controllerpkg.BlockingEventHandler{WorkFunc: ctrl.secretDeleted})
+	ctrl.secretInformerSynced = secretsInformer.HasSynced
+	ctrl.secretLister = corelisters.NewSecretLister(secretsInformer.GetIndexer())
 
-	secretsInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
-		DeleteFunc: ctrl.secretDeleted,
-	})
-	ctrl.secretInformerSynced = secretsInformer.Informer().HasSynced
-	ctrl.secretLister = secretsInformer.Lister()
+	ingressInformer.AddEventHandler(&controllerpkg.BlockingEventHandler{WorkFunc: ctrl.ingressDeleted})
+	ctrl.ingressInformerSynced = ingressInformer.HasSynced
+	ctrl.ingressLister = extlisters.NewIngressLister(ingressInformer.GetIndexer())
 
-	ctrl.issuerInformerSynced = issuersInformer.Informer().HasSynced
-	ctrl.issuerLister = issuersInformer.Lister()
-
-	ingressInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
-		DeleteFunc: ctrl.ingressDeleted,
-	})
-	ctrl.ingressInformerSynced = ingressInformer.Informer().HasSynced
-	ctrl.ingressLister = ingressInformer.Lister()
-
-	return ctrl, nil
+	return ctrl
 }
 
-func (c *controller) certificateAdded(obj interface{}) {
-	var certificate *v1alpha1.Certificate
+// TODO: replace with generic handleObjet function (like Navigator)
+func (c *Controller) secretDeleted(obj interface{}) {
+	var secret *corev1.Secret
 	var ok bool
-	if certificate, ok = obj.(*v1alpha1.Certificate); !ok {
-		runtime.HandleError(fmt.Errorf("expected *Certificate but got %T in work queue", obj))
-		return
-	}
-	c.enqueueCertificate(certificate)
-}
-
-func (c *controller) enqueueCertificate(crt *v1alpha1.Certificate) {
-	var key string
-	var err error
-	if key, err = keyFunc(crt); err != nil {
-		runtime.HandleError(err)
-		return
-	}
-	c.queue.Add(key)
-}
-
-func (c *controller) certificateUpdated(prev, obj interface{}) {
-	var certificate *v1alpha1.Certificate
-	var ok bool
-	if certificate, ok = obj.(*v1alpha1.Certificate); !ok {
-		runtime.HandleError(fmt.Errorf("expected *Certificate but got %T in work queue", obj))
-		return
-	}
-	if reflect.DeepEqual(prev, obj) {
-		return
-	}
-	c.enqueueCertificate(certificate)
-}
-
-func (c *controller) certificateDeleted(obj interface{}) {
-	certificate, ok := obj.(*v1alpha1.Certificate)
+	secret, ok = obj.(*corev1.Secret)
 	if !ok {
-		tombstone, ok := obj.(cache.DeletedFinalStateUnknown)
-		if !ok {
-			runtime.HandleError(fmt.Errorf("Couldn't get object from tombstone %#v", obj))
-			return
-		}
-		certificate, ok = tombstone.Obj.(*v1alpha1.Certificate)
-		if !ok {
-			runtime.HandleError(fmt.Errorf("Tombstone contained object that is not a Secret %#v", obj))
-			return
-		}
-	}
-	c.enqueueCertificate(certificate)
-}
-
-func (c *controller) secretDeleted(obj interface{}) {
-	secret, ok := obj.(*corev1.Secret)
-	if !ok {
-		tombstone, ok := obj.(cache.DeletedFinalStateUnknown)
-		if !ok {
-			runtime.HandleError(fmt.Errorf("Couldn't get object from tombstone %#v", obj))
-			return
-		}
-		secret, ok = tombstone.Obj.(*corev1.Secret)
-		if !ok {
-			runtime.HandleError(fmt.Errorf("Tombstone contained object that is not a Secret %#v", obj))
-			return
-		}
+		runtime.HandleError(fmt.Errorf("Object is not a Secret object %#v", obj))
+		return
 	}
 	crts, err := c.certificatesForSecret(secret)
 	if err != nil {
-		runtime.HandleError(fmt.Errorf("Error looking up certificates observing Secret: %s/%s", secret.Namespace, secret.Name))
+		runtime.HandleError(fmt.Errorf("Error looking up Certificates observing Secret: %s/%s", secret.Namespace, secret.Name))
 		return
 	}
 	for _, crt := range crts {
@@ -178,19 +109,11 @@ func (c *controller) secretDeleted(obj interface{}) {
 	}
 }
 
-func (c *controller) ingressDeleted(obj interface{}) {
+func (c *Controller) ingressDeleted(obj interface{}) {
 	ingress, ok := obj.(*extv1beta1.Ingress)
 	if !ok {
-		tombstone, ok := obj.(cache.DeletedFinalStateUnknown)
-		if !ok {
-			runtime.HandleError(fmt.Errorf("Couldn't get object from tombstone %#v", obj))
-			return
-		}
-		ingress, ok = tombstone.Obj.(*extv1beta1.Ingress)
-		if !ok {
-			runtime.HandleError(fmt.Errorf("Tombstone contained object that is not an Ingress %#v", obj))
-			return
-		}
+		runtime.HandleError(fmt.Errorf("Object is not an Ingress object %#v", obj))
+		return
 	}
 	crts, err := c.certificatesForIngress(ingress)
 	if err != nil {
@@ -207,17 +130,17 @@ func (c *controller) ingressDeleted(obj interface{}) {
 	}
 }
 
-func (c *controller) Run(workers int, stopCh <-chan struct{}) {
+func (c *Controller) Run(workers int, stopCh <-chan struct{}) {
 	defer c.queue.ShutDown()
 
 	log.Printf("Starting control loop")
 	// wait for all the informer caches we depend on are synced
 	if !cache.WaitForCacheSync(stopCh,
-		c.issuerInformerSynced,
 		c.secretInformerSynced,
 		c.certificateInformerSynced,
 		c.ingressInformerSynced) {
-		log.Errorf("error waiting for informer caches to sync")
+		// TODO: replace with a call to glog Errorf
+		log.Printf("error waiting for informer caches to sync")
 		return
 	}
 
@@ -230,7 +153,7 @@ func (c *controller) Run(workers int, stopCh <-chan struct{}) {
 	log.Printf("shutting down queue as workqueue signalled shutdown")
 }
 
-func (c *controller) worker() {
+func (c *Controller) worker() {
 	log.Printf("starting worker")
 	for {
 		obj, shutdown := c.queue.Get()
@@ -264,7 +187,7 @@ func (c *controller) worker() {
 	log.Printf("exiting worker loop")
 }
 
-func (c *controller) processNextWorkItem(key string) error {
+func (c *Controller) processNextWorkItem(key string) error {
 	namespace, name, err := cache.SplitMetaNamespaceKey(key)
 	if err != nil {
 		runtime.HandleError(fmt.Errorf("invalid resource key: %s", key))
@@ -283,7 +206,7 @@ func (c *controller) processNextWorkItem(key string) error {
 		return err
 	}
 
-	return c.sync(crt)
+	return c.Sync(crt)
 }
 
 var keyFunc = cache.DeletionHandlingMetaNamespaceKeyFunc
@@ -293,5 +216,43 @@ const (
 )
 
 func init() {
-	controllerpkg.SharedFactory().Register(ControllerName, New)
+	controllerpkg.Register(ControllerName, func(ctx *controllerpkg.Context, stopCh <-chan struct{}) (bool, error) {
+		go New(
+			ctx.SharedInformerFactory.InformerFor(
+				ctx.Namespace,
+				metav1.GroupVersionKind{Group: certmanager.GroupName, Version: "v1alpha1", Kind: "Certificate"},
+				cminformers.NewCertificateInformer(
+					ctx.CMClient,
+					ctx.Namespace,
+					time.Second*30,
+					cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc},
+				),
+			),
+			ctx.SharedInformerFactory.InformerFor(
+				ctx.Namespace,
+				metav1.GroupVersionKind{Version: "v1", Kind: "Secret"},
+				coreinformers.NewSecretInformer(
+					ctx.Client,
+					ctx.Namespace,
+					time.Second*30,
+					cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc},
+				),
+			),
+			ctx.SharedInformerFactory.InformerFor(
+				ctx.Namespace,
+				metav1.GroupVersionKind{Group: "extensions", Version: "v1beta1", Kind: "Ingress"},
+				extinformers.NewIngressInformer(
+					ctx.Client,
+					ctx.Namespace,
+					time.Second*30,
+					cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc},
+				),
+			),
+			ctx.Client,
+			ctx.CMClient,
+			ctx.IssuerFactory,
+		).Run(2, stopCh)
+
+		return true, nil
+	})
 }

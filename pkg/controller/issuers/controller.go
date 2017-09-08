@@ -2,34 +2,32 @@ package issuers
 
 import (
 	"fmt"
-	"reflect"
+	"log"
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
-	"k8s.io/client-go/informers"
+	coreinformers "k8s.io/client-go/informers/core/v1"
 	"k8s.io/client-go/kubernetes"
 	corelisters "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
 
-	"github.com/jetstack-experimental/cert-manager/pkg/apis/certmanager/v1alpha1"
+	"github.com/jetstack-experimental/cert-manager/pkg/apis/certmanager"
 	"github.com/jetstack-experimental/cert-manager/pkg/client"
 	controllerpkg "github.com/jetstack-experimental/cert-manager/pkg/controller"
-	cminformers "github.com/jetstack-experimental/cert-manager/pkg/informers"
+	cminformers "github.com/jetstack-experimental/cert-manager/pkg/informers/certmanager/v1alpha1"
+	"github.com/jetstack-experimental/cert-manager/pkg/issuer"
 	cmlisters "github.com/jetstack-experimental/cert-manager/pkg/listers/certmanager/v1alpha1"
-	"github.com/jetstack-experimental/cert-manager/pkg/log"
 )
 
-var _ controllerpkg.Constructor = New
-
-var _ controllerpkg.Controller = &controller{}
-
-type controller struct {
-	client   kubernetes.Interface
-	cmClient client.Interface
+type Controller struct {
+	client        kubernetes.Interface
+	cmClient      client.Interface
+	issuerFactory issuer.Factory
 
 	// To allow injection for testing.
 	syncHandler func(key string) error
@@ -40,94 +38,39 @@ type controller struct {
 	secretInformerSynced cache.InformerSynced
 	secretLister         corelisters.SecretLister
 
-	certificateInformerSynced cache.InformerSynced
-	certificateLister         cmlisters.CertificateLister
-
 	queue workqueue.RateLimitingInterface
 }
 
-func New(client kubernetes.Interface,
+func New(
+	issuersInformer cache.SharedIndexInformer,
+	secretsInformer cache.SharedIndexInformer,
+	cl kubernetes.Interface,
 	cmClient client.Interface,
-	factory informers.SharedInformerFactory,
-	cmFactory cminformers.SharedInformerFactory) (controllerpkg.Controller, error) {
-
-	ctrl := &controller{client: client, cmClient: cmClient}
+	issuerFactory issuer.Factory,
+) *Controller {
+	ctrl := &Controller{client: cl, cmClient: cmClient, issuerFactory: issuerFactory}
 	ctrl.syncHandler = ctrl.processNextWorkItem
 	ctrl.queue = workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "issuers")
 
-	secretsInformer := factory.Core().V1().Secrets()
-	issuersInformer := cmFactory.Certmanager().V1alpha1().Issuers()
-	certificatesInformer := cmFactory.Certmanager().V1alpha1().Certificates()
+	issuersInformer.AddEventHandler(&controllerpkg.QueuingEventHandler{Queue: ctrl.queue})
+	ctrl.issuerInformerSynced = issuersInformer.HasSynced
+	ctrl.issuerLister = cmlisters.NewIssuerLister(issuersInformer.GetIndexer())
 
-	issuersInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
-		AddFunc:    ctrl.issuerAdded,
-		UpdateFunc: ctrl.issuerUpdated,
-	})
-	ctrl.issuerInformerSynced = issuersInformer.Informer().HasSynced
-	ctrl.issuerLister = issuersInformer.Lister()
+	secretsInformer.AddEventHandler(&controllerpkg.BlockingEventHandler{WorkFunc: ctrl.secretDeleted})
+	ctrl.secretInformerSynced = secretsInformer.HasSynced
+	ctrl.secretLister = corelisters.NewSecretLister(secretsInformer.GetIndexer())
 
-	secretsInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
-		DeleteFunc: ctrl.secretDeleted,
-	})
-	ctrl.secretInformerSynced = secretsInformer.Informer().HasSynced
-	ctrl.secretLister = secretsInformer.Lister()
-
-	ctrl.certificateInformerSynced = certificatesInformer.Informer().HasSynced
-	ctrl.certificateLister = certificatesInformer.Lister()
-
-	return ctrl, nil
+	return ctrl
 }
 
-func (c *controller) issuerAdded(obj interface{}) {
-	var issuer *v1alpha1.Issuer
-	var ok bool
-	if issuer, ok = obj.(*v1alpha1.Issuer); !ok {
-		runtime.HandleError(fmt.Errorf("expected *Issuer but got %T in work queue", obj))
-		return
-	}
-	var key string
-	var err error
-	if key, err = keyFunc(issuer); err != nil {
-		runtime.HandleError(err)
-		return
-	}
-	c.queue.Add(key)
-}
-
-func (c *controller) issuerUpdated(prev, obj interface{}) {
-	var issuer *v1alpha1.Issuer
-	var ok bool
-	if issuer, ok = obj.(*v1alpha1.Issuer); !ok {
-		runtime.HandleError(fmt.Errorf("expected *Issuer but got %T in work queue", obj))
-		return
-	}
-	if reflect.DeepEqual(prev, obj) {
-		return
-	}
-	var key string
-	var err error
-	if key, err = keyFunc(issuer); err != nil {
-		runtime.HandleError(err)
-		return
-	}
-	c.queue.Add(key)
-}
-
-func (c *controller) secretDeleted(obj interface{}) {
+// TODO: replace with generic handleObjet function (like Navigator)
+func (c *Controller) secretDeleted(obj interface{}) {
 	var secret *corev1.Secret
 	var ok bool
 	secret, ok = obj.(*corev1.Secret)
 	if !ok {
-		tombstone, ok := obj.(cache.DeletedFinalStateUnknown)
-		if !ok {
-			runtime.HandleError(fmt.Errorf("Couldn't get object from tombstone %#v", obj))
-			return
-		}
-		secret, ok = tombstone.Obj.(*corev1.Secret)
-		if !ok {
-			runtime.HandleError(fmt.Errorf("Tombstone contained object that is not a Secret %#v", obj))
-			return
-		}
+		runtime.HandleError(fmt.Errorf("Object was not a Secret object %#v", obj))
+		return
 	}
 	issuers, err := c.issuersForSecret(secret)
 	if err != nil {
@@ -144,13 +87,14 @@ func (c *controller) secretDeleted(obj interface{}) {
 	}
 }
 
-func (c *controller) Run(workers int, stopCh <-chan struct{}) {
+func (c *Controller) Run(workers int, stopCh <-chan struct{}) {
 	defer c.queue.ShutDown()
 
 	log.Printf("Starting control loop")
 	// wait for all the informer caches we depend on are synced
 	if !cache.WaitForCacheSync(stopCh, c.issuerInformerSynced, c.secretInformerSynced) {
-		log.Errorf("error waiting for informer caches to sync")
+		// TODO: replace with Errorf call to glog
+		log.Printf("error waiting for informer caches to sync")
 		return
 	}
 
@@ -163,7 +107,7 @@ func (c *controller) Run(workers int, stopCh <-chan struct{}) {
 	log.Printf("shutting down queue as workqueue signalled shutdown")
 }
 
-func (c *controller) worker() {
+func (c *Controller) worker() {
 	log.Printf("starting worker")
 	for {
 		obj, shutdown := c.queue.Get()
@@ -179,7 +123,7 @@ func (c *controller) worker() {
 				runtime.HandleError(fmt.Errorf("expected string in workqueue but got %T", obj))
 				return nil
 			}
-			if err := c.processNextWorkItem(key); err != nil {
+			if err := c.syncHandler(key); err != nil {
 				return err
 			}
 			c.queue.Forget(obj)
@@ -197,7 +141,7 @@ func (c *controller) worker() {
 	log.Printf("exiting worker loop")
 }
 
-func (c *controller) processNextWorkItem(key string) error {
+func (c *Controller) processNextWorkItem(key string) error {
 	namespace, name, err := cache.SplitMetaNamespaceKey(key)
 	if err != nil {
 		runtime.HandleError(fmt.Errorf("invalid resource key: %s", key))
@@ -215,7 +159,7 @@ func (c *controller) processNextWorkItem(key string) error {
 		return err
 	}
 
-	return c.sync(issuer)
+	return c.Sync(issuer)
 }
 
 var keyFunc = cache.DeletionHandlingMetaNamespaceKeyFunc
@@ -225,5 +169,33 @@ const (
 )
 
 func init() {
-	controllerpkg.SharedFactory().Register(ControllerName, New)
+	controllerpkg.Register(ControllerName, func(ctx *controllerpkg.Context, stopCh <-chan struct{}) (bool, error) {
+		go New(
+			ctx.SharedInformerFactory.InformerFor(
+				ctx.Namespace,
+				metav1.GroupVersionKind{Group: certmanager.GroupName, Version: "v1alpha1", Kind: "Issuer"},
+				cminformers.NewIssuerInformer(
+					ctx.CMClient,
+					ctx.Namespace,
+					time.Second*30,
+					cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc},
+				),
+			),
+			ctx.SharedInformerFactory.InformerFor(
+				ctx.Namespace,
+				metav1.GroupVersionKind{Version: "v1", Kind: "Secret"},
+				coreinformers.NewSecretInformer(
+					ctx.Client,
+					ctx.Namespace,
+					time.Second*30,
+					cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc},
+				),
+			),
+			ctx.Client,
+			ctx.CMClient,
+			ctx.IssuerFactory,
+		).Run(2, stopCh)
+
+		return true, nil
+	})
 }

@@ -10,7 +10,7 @@ import (
 	"github.com/jetstack-experimental/cert-manager/pkg/apis/certmanager/v1alpha1"
 )
 
-func (c *controller) certificatesForSecret(secret *corev1.Secret) ([]*v1alpha1.Certificate, error) {
+func (c *Controller) certificatesForSecret(secret *corev1.Secret) ([]*v1alpha1.Certificate, error) {
 	crts, err := c.certificateLister.List(labels.NewSelector())
 
 	if err != nil {
@@ -30,7 +30,7 @@ func (c *controller) certificatesForSecret(secret *corev1.Secret) ([]*v1alpha1.C
 	return affected, nil
 }
 
-func (c *controller) certificatesForIngress(ing *extv1beta1.Ingress) ([]*v1alpha1.Certificate, error) {
+func (c *Controller) certificatesForIngress(ing *extv1beta1.Ingress) ([]*v1alpha1.Certificate, error) {
 	crts, err := c.certificateLister.List(labels.NewSelector())
 
 	if err != nil {

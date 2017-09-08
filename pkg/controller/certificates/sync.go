@@ -22,7 +22,7 @@ const renewBefore = time.Hour * 24 * 30
 
 var errInvalidCertificateData = fmt.Errorf("invalid certificate data")
 
-func (c *controller) sync(crt *v1alpha1.Certificate) (err error) {
+func (c *Controller) Sync(crt *v1alpha1.Certificate) (err error) {
 	// step zero: check if the referenced issuer exists and is ready
 	issuerObj, err := c.issuerLister.Issuers(crt.Namespace).Get(crt.Spec.Issuer)
 
@@ -34,7 +34,7 @@ func (c *controller) sync(crt *v1alpha1.Certificate) (err error) {
 		return fmt.Errorf("issuer '%s/%s' for certificate '%s' not ready", issuerObj.Namespace, issuerObj.Name, crt.Name)
 	}
 
-	i, err := issuer.SharedFactory().IssuerFor(issuerObj)
+	i, err := c.issuerFactory.IssuerFor(issuerObj)
 
 	if err != nil {
 		return fmt.Errorf("error getting issuer implementation for issuer '%s': %s", issuerObj.Name, err.Error())
@@ -90,7 +90,7 @@ func needsRenew(cert *x509.Certificate) bool {
 	return false
 }
 
-func (c *controller) getCertificate(namespace, name string) (*x509.Certificate, *rsa.PrivateKey, error) {
+func (c *Controller) getCertificate(namespace, name string) (*x509.Certificate, *rsa.PrivateKey, error) {
 	secret, err := c.client.CoreV1().Secrets(namespace).Get(name, metav1.GetOptions{})
 
 	if err != nil {
@@ -137,7 +137,7 @@ func (c *controller) getCertificate(namespace, name string) (*x509.Certificate, 
 	return cert, key, nil
 }
 
-func (c *controller) scheduleRenewal(crt *v1alpha1.Certificate) {
+func (c *Controller) scheduleRenewal(crt *v1alpha1.Certificate) {
 	key, err := keyFunc(crt)
 
 	if err != nil {
@@ -158,7 +158,7 @@ func (c *controller) scheduleRenewal(crt *v1alpha1.Certificate) {
 	c.scheduledWorkQueue.Add(key, renewIn)
 }
 
-func (c *controller) prepare(issuer issuer.Interface, crt *v1alpha1.Certificate) error {
+func (c *Controller) prepare(issuer issuer.Interface, crt *v1alpha1.Certificate) error {
 	log.Printf("Preparing Certificate '%s/%s'", crt.Namespace, crt.Name)
 	err := issuer.Prepare(crt)
 
@@ -172,7 +172,7 @@ func (c *controller) prepare(issuer issuer.Interface, crt *v1alpha1.Certificate)
 
 // return an error on failure. If retrieval is succesful, the certificate data
 // and private key will be stored in the named secret
-func (c *controller) issue(issuer issuer.Interface, crt *v1alpha1.Certificate) error {
+func (c *Controller) issue(issuer issuer.Interface, crt *v1alpha1.Certificate) error {
 	if err := c.prepare(issuer, crt); err != nil {
 		return err
 	}
@@ -206,7 +206,7 @@ func (c *controller) issue(issuer issuer.Interface, crt *v1alpha1.Certificate) e
 // renew will attempt to renew a certificate from the specified issuer, or
 // return an error on failure. If renewal is succesful, the certificate data
 // and private key will be stored in the named secret
-func (c *controller) renew(issuer issuer.Interface, crt *v1alpha1.Certificate) error {
+func (c *Controller) renew(issuer issuer.Interface, crt *v1alpha1.Certificate) error {
 	if err := c.prepare(issuer, crt); err != nil {
 		return err
 	}
