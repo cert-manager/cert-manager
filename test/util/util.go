@@ -23,17 +23,7 @@ func WaitForIssuerCondition(client clientset.IssuerInterface, name string, condi
 				return false, fmt.Errorf("error getting Issuer %v: %v", name, err)
 			}
 
-			if len(issuer.Status.Conditions) == 0 {
-				return false, nil
-			}
-
-			for _, cond := range issuer.Status.Conditions {
-				if condition.Type == cond.Type && condition.Status == cond.Status {
-					return true, nil
-				}
-			}
-
-			return false, nil
+			return v1alpha1.IssuerHasCondition(issuer, condition), nil
 		},
 	)
 }

@@ -30,7 +30,12 @@ func (c *Controller) Sync(crt *v1alpha1.Certificate) (err error) {
 		return fmt.Errorf("could not get issuer '%s' for certificate '%s': %s", crt.Spec.Issuer, crt.Name, err.Error())
 	}
 
-	if !issuerObj.Status.Ready {
+	issuerReady := !v1alpha1.IssuerHasCondition(issuerObj, v1alpha1.IssuerCondition{
+		Type:   v1alpha1.IssuerConditionReady,
+		Status: v1alpha1.ConditionTrue,
+	})
+
+	if !issuerReady {
 		return fmt.Errorf("issuer '%s/%s' for certificate '%s' not ready", issuerObj.Namespace, issuerObj.Name, crt.Name)
 	}
 

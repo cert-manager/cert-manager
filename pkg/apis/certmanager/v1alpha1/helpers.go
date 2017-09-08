@@ -52,6 +52,18 @@ func (c *CertificateACMEStatus) SaveAuthorization(a ACMEDomainAuthorization) {
 	c.Authorizations = append(c.Authorizations, a)
 }
 
+func IssuerHasCondition(iss *Issuer, condition IssuerCondition) bool {
+	if len(iss.Status.Conditions) == 0 {
+		return false
+	}
+	for _, cond := range iss.Status.Conditions {
+		if condition.Type == cond.Type && condition.Status == cond.Status {
+			return true
+		}
+	}
+	return false
+}
+
 func UpdateIssuerStatusCondition(iss *Issuer, conditionType IssuerConditionType, status ConditionStatus, reason, message string) *Issuer {
 	toUpdate := iss.DeepCopy()
 	newCondition := IssuerCondition{
