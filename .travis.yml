@@ -1,7 +1,27 @@
-language: go
+jobs:
+  include:
+    - stage: test
+      dist: trusty
+      language: go
+      go: 1.8
+      env:
+      - KUBERNETES_VERSION=v1.7.0
+      script:
+      - set -e
+      - curl -Lo helm.tar.gz https://storage.googleapis.com/kubernetes-helm/helm-v2.6.1-linux-amd64.tar.gz && tar xvf helm.tar.gz && sudo mv linux-amd64/helm /usr/local/bin
+      - curl -Lo kubectl https://storage.googleapis.com/kubernetes-release/release/$KUBERNETES_VERSION/bin/linux/amd64/kubectl && chmod +x kubectl && sudo mv kubectl /usr/local/bin/
+      - curl -Lo minikube https://storage.googleapis.com/minikube/releases/v0.21.0/minikube-linux-amd64 && chmod +x minikube && sudo mv minikube /usr/local/bin/
+      # Install nsenter
+      - docker build -t ubuntu-nsenter ./hack/ubuntu-nsenter
+      - docker run -v /usr/local/bin:/hostbin ubuntu-nsenter cp /nsenter /hostbin/nsenter
+      # Create a cluster. We do this as root as we are using the 'docker' driver.
+      - sudo -E CHANGE_MINIKUBE_NONE_USER=true minikube start --vm-driver=none --kubernetes-version="$KUBERNETES_VERSION"
+      - while true; do if kubectl get nodes; then break; fi; echo "Waiting 5s for kubernetes to be ready..."; sleep 5; done
+      - make build image e2e_test
 
-services:
-- docker
-
-script:
-- make all
+    - stage: test
+      dist: trusty
+      language: go
+      go: 1.8
+      script:
+      - make verify test
