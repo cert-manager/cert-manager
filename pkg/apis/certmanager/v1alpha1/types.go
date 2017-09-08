@@ -17,8 +17,6 @@ limitations under the License.
 package v1alpha1
 
 import (
-	"fmt"
-
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -53,22 +51,58 @@ type IssuerSpec struct {
 
 // IssuerStatus contains status information about an Issuer
 type IssuerStatus struct {
-	Ready bool              `json:"ready"`
-	ACME  *ACMEIssuerStatus `json:"acme,omitempty"`
+	Conditions []IssuerCondition `json:"conditions"`
+	ACME       *ACMEIssuerStatus `json:"acme,omitempty"`
 }
 
-func (i *IssuerStatus) ACMEStatus() *ACMEIssuerStatus {
-	if i.ACME == nil {
-		i.ACME = &ACMEIssuerStatus{}
-	}
-	return i.ACME
+// IssuerCondition contains condition information for an Issuer.
+type IssuerCondition struct {
+	// Type of the condition, currently ('Ready').
+	Type IssuerConditionType `json:"type"`
+
+	// Status of the condition, one of ('True', 'False', 'Unknown').
+	Status ConditionStatus `json:"status"`
+
+	// LastTransitionTime is the timestamp corresponding to the last status
+	// change of this condition.
+	LastTransitionTime metav1.Time `json:"lastTransitionTime"`
+
+	// Reason is a brief machine readable explanation for the condition's last
+	// transition.
+	Reason string `json:"reason"`
+
+	// Message is a human readable description of the details of the last
+	// transition, complementing reason.
+	Message string `json:"message"`
 }
 
-type ACMEIssuerStatus struct {
-	// URI is the unique account identifier, which can also be used to retrieve
-	// account details from the CA
-	URI string `json:"uri"`
-}
+// IssuerConditionType represents an Issuer condition value.
+type IssuerConditionType string
+
+const (
+	// IssuerConditionReady represents the fact that a given Issuer condition
+	// is in ready state.
+	IssuerConditionReady IssuerConditionType = "Ready"
+)
+
+// ConditionStatus represents a condition's status.
+type ConditionStatus string
+
+// These are valid condition statuses. "ConditionTrue" means a resource is in
+// the condition; "ConditionFalse" means a resource is not in the condition;
+// "ConditionUnknown" means kubernetes can't decide if a resource is in the
+// condition or not. In the future, we could add other intermediate
+// conditions, e.g. ConditionDegraded.
+const (
+	// ConditionTrue represents the fact that a given condition is true
+	ConditionTrue ConditionStatus = "True"
+
+	// ConditionFalse represents the fact that a given condition is false
+	ConditionFalse ConditionStatus = "False"
+
+	// ConditionUnknown represents the fact that a given condition is unknown
+	ConditionUnknown ConditionStatus = "Unknown"
+)
 
 // ACMEIssuer contains the specification for an ACME issuer
 type ACMEIssuer struct {
@@ -88,15 +122,6 @@ type ACMEIssuer struct {
 // ACME challenge type is set to dns-01
 type ACMEIssuerDNS01Config struct {
 	Providers []ACMEIssuerDNS01Provider `json:"providers"`
-}
-
-func (a *ACMEIssuerDNS01Config) Provider(name string) (*ACMEIssuerDNS01Provider, error) {
-	for _, p := range a.Providers {
-		if p.Name == name {
-			return &(*&p), nil
-		}
-	}
-	return nil, fmt.Errorf("provider '%s' not found", name)
 }
 
 type ACMEIssuerDNS01Provider struct {
@@ -128,6 +153,12 @@ type ACMEIssuerDNS01ProviderRoute53 struct {
 	SecretAccessKey SecretKeySelector `json:"secretAccessKey"`
 	HostedZoneID    string            `json:"hostedZoneID"`
 	Region          string            `json:"region"`
+}
+
+type ACMEIssuerStatus struct {
+	// URI is the unique account identifier, which can also be used to retrieve
+	// account details from the CA
+	URI string `json:"uri"`
 }
 
 // +genclient
@@ -172,17 +203,6 @@ type ACMECertificateConfig struct {
 	Config []ACMECertificateDomainConfig `json:"config"`
 }
 
-func (a *ACMECertificateConfig) ConfigForDomain(domain string) ACMECertificateDomainConfig {
-	for _, cfg := range a.Config {
-		for _, d := range cfg.Domains {
-			if d == domain {
-				return cfg
-			}
-		}
-	}
-	return ACMECertificateDomainConfig{}
-}
-
 type ACMECertificateDomainConfig struct {
 	Domains []string                     `json:"domains"`
 	HTTP01  *ACMECertificateHTTP01Config `json:"http-01,omitempty"`
@@ -203,26 +223,9 @@ type CertificateStatus struct {
 	ACME *CertificateACMEStatus `json:"acme,omitempty"`
 }
 
-func (c *CertificateStatus) ACMEStatus() *CertificateACMEStatus {
-	if c.ACME == nil {
-		c.ACME = &CertificateACMEStatus{}
-	}
-	return c.ACME
-}
-
 // CertificateACMEStatus holds the status for an ACME issuer
 type CertificateACMEStatus struct {
 	Authorizations []ACMEDomainAuthorization `json:"acme"`
-}
-
-func (c *CertificateACMEStatus) SaveAuthorization(a ACMEDomainAuthorization) {
-	for i, auth := range c.Authorizations {
-		if auth.Domain == a.Domain {
-			c.Authorizations[i] = a
-			return
-		}
-	}
-	c.Authorizations = append(c.Authorizations, a)
 }
 
 // ACMEDomainAuthorization holds information about an ACME issuers domain
