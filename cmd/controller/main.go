@@ -17,25 +17,22 @@ import (
 	"flag"
 	"os"
 	"os/signal"
-	"runtime"
 	"syscall"
 
 	"github.com/golang/glog"
 
+	_ "github.com/jetstack-experimental/cert-manager/pkg/issuer/acme"
 	"github.com/jetstack-experimental/cert-manager/pkg/logs"
 )
 
 func main() {
 	logs.InitLogs()
 	defer logs.FlushLogs()
-
-	if len(os.Getenv("GOMAXPROCS")) == 0 {
-		runtime.GOMAXPROCS(runtime.NumCPU())
-	}
-
 	stopCh := SetupSignalHandler()
+
 	cmd := NewCommandStartCertManagerController(os.Stdout, os.Stderr, stopCh)
 	cmd.Flags().AddGoFlagSet(flag.CommandLine)
+	flag.CommandLine.Parse([]string{})
 	if err := cmd.Execute(); err != nil {
 		glog.Fatal(err)
 	}
