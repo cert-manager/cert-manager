@@ -18,7 +18,7 @@ package v1alpha1
 
 import (
 	v1alpha1 "github.com/jetstack-experimental/cert-manager/pkg/apis/certmanager/v1alpha1"
-	scheme "github.com/jetstack-experimental/cert-manager/pkg/client/scheme"
+	scheme "github.com/jetstack-experimental/cert-manager/pkg/client/clientset/scheme"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"

@@ -19,9 +19,9 @@ limitations under the License.
 package informers
 
 import (
-	client "github.com/jetstack-experimental/cert-manager/pkg/client"
-	certmanager "github.com/jetstack-experimental/cert-manager/pkg/informers/certmanager"
-	internalinterfaces "github.com/jetstack-experimental/cert-manager/pkg/informers/internalinterfaces"
+	clientset "github.com/jetstack-experimental/cert-manager/pkg/client/clientset"
+	certmanager "github.com/jetstack-experimental/cert-manager/pkg/client/informers/certmanager"
+	internalinterfaces "github.com/jetstack-experimental/cert-manager/pkg/client/informers/internalinterfaces"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	cache "k8s.io/client-go/tools/cache"
@@ -31,7 +31,7 @@ import (
 )
 
 type sharedInformerFactory struct {
-	client        client.Interface
+	client        clientset.Interface
 	lock          sync.Mutex
 	defaultResync time.Duration
 
@@ -42,7 +42,7 @@ type sharedInformerFactory struct {
 }
 
 // NewSharedInformerFactory constructs a new instance of sharedInformerFactory
-func NewSharedInformerFactory(client client.Interface, defaultResync time.Duration) SharedInformerFactory {
+func NewSharedInformerFactory(client clientset.Interface, defaultResync time.Duration) SharedInformerFactory {
 	return &sharedInformerFactory{
 		client:           client,
 		defaultResync:    defaultResync,

@@ -18,7 +18,7 @@ package v1alpha1
 
 import (
 	v1alpha1 "github.com/jetstack-experimental/cert-manager/pkg/apis/certmanager/v1alpha1"
-	"github.com/jetstack-experimental/cert-manager/pkg/client/scheme"
+	"github.com/jetstack-experimental/cert-manager/pkg/client/clientset/scheme"
 	serializer "k8s.io/apimachinery/pkg/runtime/serializer"
 	rest "k8s.io/client-go/rest"
 )

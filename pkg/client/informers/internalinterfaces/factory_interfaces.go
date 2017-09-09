@@ -19,13 +19,13 @@ limitations under the License.
 package internalinterfaces
 
 import (
-	client "github.com/jetstack-experimental/cert-manager/pkg/client"
+	clientset "github.com/jetstack-experimental/cert-manager/pkg/client/clientset"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	cache "k8s.io/client-go/tools/cache"
 	time "time"
 )
 
-type NewInformerFunc func(client.Interface, time.Duration) cache.SharedIndexInformer
+type NewInformerFunc func(clientset.Interface, time.Duration) cache.SharedIndexInformer
 
 // SharedInformerFactory a small interface to allow for adding an informer without an import cycle
 type SharedInformerFactory interface {
