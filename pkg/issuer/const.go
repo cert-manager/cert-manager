@@ -22,7 +22,3 @@ func nameForIssuer(i *v1alpha1.Issuer) (string, error) {
 	}
 	return "", fmt.Errorf("no issuer specified for Issuer '%s/%s'", i.Namespace, i.Name)
 }
-
-func issuerKeyFunc(i *v1alpha1.Issuer) (string, error) {
-	return cache.DeletionHandlingMetaNamespaceKeyFunc(i)
-}
