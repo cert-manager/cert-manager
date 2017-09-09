@@ -8,12 +8,24 @@ import (
 	"github.com/jetstack-experimental/cert-manager/pkg/kube"
 )
 
+// Context contains various types that are used by controller implementations.
+// We purposely don't have specific informers/listers here, and instead keep
+// a reference to a SharedInformerFactory so that controllers can choose
+// themselves which listers are required.
 type Context struct {
-	Client   kubernetes.Interface
+	// Client is a Kubernetes clientset
+	Client kubernetes.Interface
+	// CMClient is a cert-manager clientset
 	CMClient clientset.Interface
 
+	// SharedInformerFactory can be used to obtain shared SharedIndexInformer
+	// instances
 	SharedInformerFactory kube.SharedInformerFactory
-	IssuerFactory         issuer.Factory
+	// IssuerFactory is a factory that can be used to obtain issuer.Interface
+	// instances
+	IssuerFactory issuer.Factory
 
+	// Namespace is a namespace to operate within. This should be used when
+	// constructing SharedIndexInformers for the informer factory.
 	Namespace string
 }

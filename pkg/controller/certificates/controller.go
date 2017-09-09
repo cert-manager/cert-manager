@@ -215,7 +215,7 @@ func (c *Controller) processNextWorkItem(key string) error {
 	return c.Sync(crt)
 }
 
-var keyFunc = cache.DeletionHandlingMetaNamespaceKeyFunc
+var keyFunc = controllerpkg.KeyFunc
 
 const (
 	ControllerName = "certificates"
