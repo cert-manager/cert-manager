@@ -3,6 +3,7 @@ package issuers
 import (
 	"fmt"
 	"log"
+	"sync"
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
@@ -39,7 +40,8 @@ type Controller struct {
 	secretInformerSynced cache.InformerSynced
 	secretLister         corelisters.SecretLister
 
-	queue workqueue.RateLimitingInterface
+	queue    workqueue.RateLimitingInterface
+	workerWg sync.WaitGroup
 }
 
 func New(
@@ -89,8 +91,6 @@ func (c *Controller) secretDeleted(obj interface{}) {
 }
 
 func (c *Controller) Run(workers int, stopCh <-chan struct{}) error {
-	defer c.queue.ShutDown()
-
 	glog.V(4).Infof("Starting %s control loop", ControllerName)
 	// wait for all the informer caches we depend on are synced
 	if !cache.WaitForCacheSync(stopCh, c.issuerInformerSynced, c.secretInformerSynced) {
@@ -99,16 +99,21 @@ func (c *Controller) Run(workers int, stopCh <-chan struct{}) error {
 	}
 
 	for i := 0; i < workers; i++ {
+		c.workerWg.Add(1)
 		// TODO (@munnerz): make time.Second duration configurable
 		go wait.Until(c.worker, time.Second, stopCh)
 	}
-
 	<-stopCh
-	log.Printf("shutting down queue as workqueue signalled shutdown")
+	glog.V(4).Infof("Shutting down queue as workqueue signaled shutdown")
+	c.queue.ShutDown()
+	glog.V(4).Infof("Waiting for workers to exit...")
+	c.workerWg.Wait()
+	glog.V(4).Infof("Workers exited.")
 	return nil
 }
 
 func (c *Controller) worker() {
+	defer c.workerWg.Done()
 	log.Printf("starting worker")
 	for {
 		obj, shutdown := c.queue.Get()

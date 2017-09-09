@@ -2,6 +2,7 @@ package certificates
 
 import (
 	"fmt"
+	"sync"
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
@@ -50,6 +51,7 @@ type Controller struct {
 
 	queue              workqueue.RateLimitingInterface
 	scheduledWorkQueue scheduler.ScheduledWorkQueue
+	workerWg           sync.WaitGroup
 }
 
 // New returns a new Certificates controller. It sets up the informer handler
@@ -131,8 +133,6 @@ func (c *Controller) ingressDeleted(obj interface{}) {
 }
 
 func (c *Controller) Run(workers int, stopCh <-chan struct{}) error {
-	defer c.queue.ShutDown()
-
 	glog.V(4).Infof("Starting %s control loop", ControllerName)
 	// wait for all the informer caches we depend to sync
 	if !cache.WaitForCacheSync(stopCh,
@@ -145,15 +145,21 @@ func (c *Controller) Run(workers int, stopCh <-chan struct{}) error {
 	glog.V(4).Infof("Synced all caches for %s control loop", ControllerName)
 
 	for i := 0; i < workers; i++ {
+		c.workerWg.Add(1)
 		// TODO (@munnerz): make time.Second duration configurable
 		go wait.Until(c.worker, time.Second, stopCh)
 	}
 	<-stopCh
-	glog.V(4).Infof("Shutting down queue as workqueue signalled shutdown")
+	glog.V(4).Infof("Shutting down queue as workqueue signaled shutdown")
+	c.queue.ShutDown()
+	glog.V(4).Infof("Waiting for workers to exit...")
+	c.workerWg.Wait()
+	glog.V(4).Infof("Workers exited.")
 	return nil
 }
 
 func (c *Controller) worker() {
+	defer c.workerWg.Done()
 	glog.V(4).Infof("Starting %s worker", ControllerName)
 	for {
 		obj, shutdown := c.queue.Get()
