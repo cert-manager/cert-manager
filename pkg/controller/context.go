@@ -3,7 +3,7 @@ package controller
 import (
 	"k8s.io/client-go/kubernetes"
 
-	clientset "github.com/jetstack-experimental/cert-manager/pkg/client"
+	clientset "github.com/jetstack-experimental/cert-manager/pkg/client/clientset"
 	"github.com/jetstack-experimental/cert-manager/pkg/issuer"
 	"github.com/jetstack-experimental/cert-manager/pkg/kube"
 )

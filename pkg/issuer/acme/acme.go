@@ -12,7 +12,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 
 	"github.com/jetstack-experimental/cert-manager/pkg/apis/certmanager/v1alpha1"
-	"github.com/jetstack-experimental/cert-manager/pkg/client"
+	"github.com/jetstack-experimental/cert-manager/pkg/client/clientset"
 	"github.com/jetstack-experimental/cert-manager/pkg/issuer"
 	"github.com/jetstack-experimental/cert-manager/pkg/issuer/acme/dns"
 	"github.com/jetstack-experimental/cert-manager/pkg/issuer/acme/http"
@@ -22,7 +22,7 @@ type Acme struct {
 	issuer *v1alpha1.Issuer
 
 	client   kubernetes.Interface
-	cmClient client.Interface
+	cmClient clientset.Interface
 
 	secretsLister corelisters.SecretLister
 
@@ -32,7 +32,7 @@ type Acme struct {
 
 func New(issuer *v1alpha1.Issuer,
 	client kubernetes.Interface,
-	cmClient client.Interface,
+	cmClient clientset.Interface,
 	secretsInformer cache.SharedIndexInformer) (issuer.Interface, error) {
 	if issuer.Spec.ACME == nil {
 		return nil, fmt.Errorf("acme config may not be empty")

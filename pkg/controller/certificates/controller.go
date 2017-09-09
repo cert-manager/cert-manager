@@ -5,6 +5,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/golang/glog"
 	corev1 "k8s.io/api/core/v1"
 	extv1beta1 "k8s.io/api/extensions/v1beta1"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
@@ -19,19 +20,18 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
 
-	"github.com/golang/glog"
 	"github.com/jetstack-experimental/cert-manager/pkg/apis/certmanager"
-	"github.com/jetstack-experimental/cert-manager/pkg/client"
+	"github.com/jetstack-experimental/cert-manager/pkg/client/clientset"
+	cminformers "github.com/jetstack-experimental/cert-manager/pkg/client/informers/certmanager/v1alpha1"
+	cmlisters "github.com/jetstack-experimental/cert-manager/pkg/client/listers/certmanager/v1alpha1"
 	controllerpkg "github.com/jetstack-experimental/cert-manager/pkg/controller"
-	cminformers "github.com/jetstack-experimental/cert-manager/pkg/informers/certmanager/v1alpha1"
 	"github.com/jetstack-experimental/cert-manager/pkg/issuer"
-	cmlisters "github.com/jetstack-experimental/cert-manager/pkg/listers/certmanager/v1alpha1"
 	"github.com/jetstack-experimental/cert-manager/pkg/scheduler"
 )
 
 type Controller struct {
 	client        kubernetes.Interface
-	cmClient      client.Interface
+	cmClient      clientset.Interface
 	issuerFactory issuer.Factory
 
 	// To allow injection for testing.
@@ -61,7 +61,7 @@ func New(
 	secretsInformer cache.SharedIndexInformer,
 	ingressInformer cache.SharedIndexInformer,
 	client kubernetes.Interface,
-	cmClient client.Interface,
+	cmClient clientset.Interface,
 	issuerFactory issuer.Factory,
 ) *Controller {
 	ctrl := &Controller{client: client, cmClient: cmClient, issuerFactory: issuerFactory}

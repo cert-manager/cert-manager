@@ -18,8 +18,8 @@ import (
 	"k8s.io/client-go/tools/record"
 
 	"github.com/jetstack-experimental/cert-manager/cmd/controller/app/options"
-	clientset "github.com/jetstack-experimental/cert-manager/pkg/client"
-	intscheme "github.com/jetstack-experimental/cert-manager/pkg/client/scheme"
+	clientset "github.com/jetstack-experimental/cert-manager/pkg/client/clientset"
+	intscheme "github.com/jetstack-experimental/cert-manager/pkg/client/clientset/scheme"
 	"github.com/jetstack-experimental/cert-manager/pkg/controller"
 	"github.com/jetstack-experimental/cert-manager/pkg/issuer"
 	"github.com/jetstack-experimental/cert-manager/pkg/kube"
