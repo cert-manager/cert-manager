@@ -18,6 +18,9 @@ import (
 	"github.com/jetstack-experimental/cert-manager/pkg/issuer/acme/http"
 )
 
+// Acme is an issuer for an ACME server. It can be used to register and obtain
+// certificates from any ACME server. It supports DNS01 and HTTP01 challenge
+// mechanisms.
 type Acme struct {
 	issuer *v1alpha1.Issuer
 
@@ -30,6 +33,7 @@ type Acme struct {
 	httpSolver solver
 }
 
+// New returns a new ACME issuer interface for the given issuer.
 func New(issuer *v1alpha1.Issuer,
 	client kubernetes.Interface,
 	cmClient clientset.Interface,
@@ -49,6 +53,8 @@ func New(issuer *v1alpha1.Issuer,
 	}, nil
 }
 
+// solver solves ACME challenges by presenting the given token and key in an
+// appropriate way given the config in the Issuer and Certificate.
 type solver interface {
 	Present(ctx context.Context, crt *v1alpha1.Certificate, domain, token, key string) error
 	Wait(ctx context.Context, crt *v1alpha1.Certificate, domain, token, key string) error
@@ -65,6 +71,7 @@ func (a *Acme) solverFor(challengeType string) (solver, error) {
 	return nil, fmt.Errorf("no solver implemented")
 }
 
+// Register this Issuer with the issuer factory
 func init() {
 	issuer.Register(issuer.IssuerACME, func(i *v1alpha1.Issuer, ctx *issuer.Context) (issuer.Interface, error) {
 		return New(

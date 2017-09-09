@@ -6,18 +6,29 @@ import (
 	"github.com/jetstack-experimental/cert-manager/pkg/apis/certmanager/v1alpha1"
 )
 
+// Factory is an interface that can be used to obtain Issuer implementations.
+// It determines which issuer implementation to use by introspecting the
+// given Issuer resource.
 type Factory interface {
 	IssuerFor(*v1alpha1.Issuer) (Interface, error)
 }
 
+// NewFactory returns a new issuer factory with the given issuer context.
+// The context will be injected into each Issuer upon creation.
 func NewFactory(ctx *Context) Factory {
 	return &factory{ctx: ctx}
 }
 
+// factory is the default Factory implementation
 type factory struct {
 	ctx *Context
 }
 
+// IssuerFor will return an Issuer interface for the given Issuer. If the
+// requested Issuer is not registered, an error will be returned.
+// A new instance of the Issuer will be returned for each call to IssuerFor,
+// however this is an inexpensive operation and so, Issuers should not need
+// to be cached and reused.
 func (f *factory) IssuerFor(issuer *v1alpha1.Issuer) (Interface, error) {
 	issuerType, err := nameForIssuer(issuer)
 	if err != nil {
@@ -30,13 +41,4 @@ func (f *factory) IssuerFor(issuer *v1alpha1.Issuer) (Interface, error) {
 		return constructor(issuer, f.ctx)
 	}
 	return nil, fmt.Errorf("issuer '%s' not registered", issuerType)
-}
-
-// Register will register an issuer constructor so it can be used within the
-// application. 'name' should be unique, and should be used to identify this
-// issuer.
-func Register(name string, c Constructor) {
-	constructorsLock.Lock()
-	defer constructorsLock.Unlock()
-	constructors[name] = c
 }
