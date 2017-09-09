@@ -10,6 +10,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	corelisters "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/tools/cache"
+	"k8s.io/client-go/tools/record"
 
 	"github.com/jetstack-experimental/cert-manager/pkg/apis/certmanager/v1alpha1"
 	"github.com/jetstack-experimental/cert-manager/pkg/client/clientset"
@@ -26,6 +27,7 @@ type Acme struct {
 
 	client   kubernetes.Interface
 	cmClient clientset.Interface
+	recorder record.EventRecorder
 
 	secretsLister corelisters.SecretLister
 
@@ -37,6 +39,7 @@ type Acme struct {
 func New(issuer *v1alpha1.Issuer,
 	client kubernetes.Interface,
 	cmClient clientset.Interface,
+	recorder record.EventRecorder,
 	secretsInformer cache.SharedIndexInformer) (issuer.Interface, error) {
 	if issuer.Spec.ACME == nil {
 		return nil, fmt.Errorf("acme config may not be empty")
@@ -47,6 +50,7 @@ func New(issuer *v1alpha1.Issuer,
 		issuer:        issuer,
 		client:        client,
 		cmClient:      cmClient,
+		recorder:      recorder,
 		secretsLister: secretsLister,
 		dnsSolver:     dns.NewSolver(issuer, client, secretsLister),
 		httpSolver:    http.NewSolver(issuer, client, secretsLister),
@@ -78,6 +82,7 @@ func init() {
 			i,
 			ctx.Client,
 			ctx.CMClient,
+			ctx.Recorder,
 			ctx.SharedInformerFactory.InformerFor(
 				ctx.Namespace,
 				metav1.GroupVersionKind{Version: "v1", Kind: "Secret"},

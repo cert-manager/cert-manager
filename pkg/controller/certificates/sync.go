@@ -5,7 +5,6 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
-	"log"
 	"time"
 
 	api "k8s.io/api/core/v1"
@@ -13,44 +12,97 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/runtime"
 
+	"github.com/golang/glog"
 	"github.com/jetstack-experimental/cert-manager/pkg/apis/certmanager/v1alpha1"
 	"github.com/jetstack-experimental/cert-manager/pkg/issuer"
 	"github.com/jetstack-experimental/cert-manager/pkg/util"
+	"github.com/jetstack-experimental/cert-manager/pkg/util/errors"
 )
 
 const renewBefore = time.Hour * 24 * 30
 
-var errInvalidCertificateData = fmt.Errorf("invalid certificate data")
+const (
+	errorIssuerNotFound       = "ErrorIssuerNotFound"
+	errorIssuerNotReady       = "ErrorIssuerNotReady"
+	errorIssuerInit           = "ErrorIssuerInitialization"
+	errorCheckCertificate     = "ErrorCheckCertificate"
+	errorGetCertificate       = "ErrorGetCertificate"
+	errorPreparingCertificate = "ErrorPrepareCertificate"
+	errorIssuingCertificate   = "ErrorIssueCertificate"
+	errorRenewingCertificate  = "ErrorRenewCertificate"
+	errorSavingCertificate    = "ErrorSaveCertificate"
+
+	reasonPreparingCertificate = "PrepareCertificate"
+	reasonIssuingCertificate   = "IssueCertificate"
+	reasonRenewingCertificate  = "RenewCertificate"
+
+	successCeritificateIssued  = "CeritifcateIssued"
+	successCeritificateRenewed = "CeritifcateRenewed"
+	successRenewalScheduled    = "RenewalScheduled"
+
+	messageIssuerNotFound            = "Issuer %s does not exist"
+	messageIssuerNotReady            = "Issuer %s not ready"
+	messageIssuerErrorInit           = "Error initializing issuer: "
+	messageErrorCheckCertificate     = "Error checking existing TLS certificate: "
+	messageErrorGetCertificate       = "Error getting TLS certificate: "
+	messageErrorPreparingCertificate = "Error preparing issuer for certificate: "
+	messageErrorIssuingCertificate   = "Error issuing certificate: "
+	messageErrorRenewingCertificate  = "Error renewing certificate: "
+	messageErrorSavingCertificate    = "Error saving TLS certificate: "
+
+	messagePreparingCertificate = "Preparing certificate with issuer"
+	messageIssuingCertificate   = "Issuing certificate..."
+	messageRenewingCertificate  = "Renewing certificate..."
+
+	messageCertificateIssued  = "Certificated issued successfully"
+	messageCertificateRenewed = "Certificated renewed successfully"
+	messageRenewalScheduled   = "Certificate scheduled for renewal in %d hours"
+)
 
 func (c *Controller) Sync(crt *v1alpha1.Certificate) (err error) {
 	// step zero: check if the referenced issuer exists and is ready
 	issuerObj, err := c.issuerLister.Issuers(crt.Namespace).Get(crt.Spec.Issuer)
 
 	if err != nil {
-		return fmt.Errorf("could not get issuer '%s' for certificate '%s': %s", crt.Spec.Issuer, crt.Name, err.Error())
+		s := fmt.Sprintf(messageIssuerNotFound, err.Error())
+		glog.Info(s)
+		c.recorder.Event(crt, api.EventTypeWarning, errorIssuerNotFound, s)
+		return err
 	}
 
-	issuerReady := !v1alpha1.IssuerHasCondition(issuerObj, v1alpha1.IssuerCondition{
+	issuerReady := v1alpha1.IssuerHasCondition(issuerObj, v1alpha1.IssuerCondition{
 		Type:   v1alpha1.IssuerConditionReady,
 		Status: v1alpha1.ConditionTrue,
 	})
 
 	if !issuerReady {
-		return fmt.Errorf("issuer '%s/%s' for certificate '%s' not ready", issuerObj.Namespace, issuerObj.Name, crt.Name)
+		s := fmt.Sprintf(messageIssuerNotReady, issuerObj.Name)
+		glog.Info(s)
+		c.recorder.Event(crt, api.EventTypeWarning, errorIssuerNotReady, s)
+		return fmt.Errorf(s)
 	}
 
 	i, err := c.issuerFactory.IssuerFor(issuerObj)
 
 	if err != nil {
-		return fmt.Errorf("error getting issuer implementation for issuer '%s': %s", issuerObj.Name, err.Error())
+		s := messageIssuerErrorInit + err.Error()
+		glog.Info(s)
+		c.recorder.Event(crt, api.EventTypeWarning, errorIssuerInit, s)
+		return err
 	}
 
 	// grab existing certificate and validate private key
 	cert, _, err := c.getCertificate(crt.Namespace, crt.Spec.SecretName)
 
+	if err != nil {
+		s := messageErrorCheckCertificate + err.Error()
+		glog.Info(s)
+		c.recorder.Event(crt, api.EventTypeWarning, errorCheckCertificate, s)
+	}
+
 	// if an error is returned, and that error is something other than
 	// IsNotFound or invalid data, then we should return the error.
-	if err != nil && !k8sErrors.IsNotFound(err) && err != errInvalidCertificateData {
+	if err != nil && !k8sErrors.IsNotFound(err) && !errors.IsInvalidData(err) {
 		return err
 	}
 
@@ -61,7 +113,7 @@ func (c *Controller) Sync(crt *v1alpha1.Certificate) (err error) {
 
 	// if the certificate was not found, or the certificate data is invalid, we
 	// should issue a new certificate
-	if k8sErrors.IsNotFound(err) || err == errInvalidCertificateData {
+	if k8sErrors.IsNotFound(err) || errors.IsInvalidData(err) {
 		return c.issue(i, crt)
 	}
 
@@ -105,39 +157,35 @@ func (c *Controller) getCertificate(namespace, name string) (*x509.Certificate, 
 	certBytes, okcert := secret.Data[api.TLSCertKey]
 	keyBytes, okkey := secret.Data[api.TLSPrivateKeyKey]
 
-	// check if the certificate and private key exist, if not, trigger an issue
+	// check if the certificate and private key exist, we stop so as to not
+	// destroy a secret potentially used for something else
 	if !okcert || !okkey {
-		return nil, nil, fmt.Errorf("invalid certificate data")
+		return nil, nil, fmt.Errorf("Secret does not contain TLS fields")
 	}
 
 	// decode the tls certificate pem
 	block, _ := pem.Decode(certBytes)
 	if block == nil {
-		log.Printf("error decoding cert PEM block in '%s/%s'", namespace, name)
-		return nil, nil, errInvalidCertificateData
+		return nil, nil, errors.NewInvalidData("error decoding cert PEM block")
 	}
 	// parse the tls certificate
 	cert, err := x509.ParseCertificate(block.Bytes)
 	if err != nil {
-		log.Printf("error parsing TLS certificate in '%s/%s': %s", namespace, name, err.Error())
-		return nil, nil, errInvalidCertificateData
+		return nil, nil, errors.NewInvalidData("error parsing TLS certificate: %s", err.Error())
 	}
 	// decode the private key pem
 	block, _ = pem.Decode(keyBytes)
 	if block == nil {
-		log.Printf("error decoding private key PEM block in '%s/%s'", namespace, name)
-		return nil, nil, errInvalidCertificateData
+		return nil, nil, errors.NewInvalidData("error decoding private key PEM block")
 	}
 	// parse the private key
 	key, err := x509.ParsePKCS1PrivateKey(block.Bytes)
 	if err != nil {
-		log.Printf("error parsing private key in '%s/%s': %s", namespace, name, err.Error())
-		return nil, nil, errInvalidCertificateData
+		return nil, nil, errors.NewInvalidData("error parsing private key: %s", err.Error())
 	}
 	// validate the private key
 	if err = key.Validate(); err != nil {
-		log.Printf("private key failed validation in '%s/%s': %s", namespace, name, err.Error())
-		return nil, nil, errInvalidCertificateData
+		return nil, nil, errors.NewInvalidData("private key failed validation: %s", err.Error())
 	}
 	return cert, key, nil
 }
@@ -159,33 +207,48 @@ func (c *Controller) scheduleRenewal(crt *v1alpha1.Certificate) {
 
 	durationUntilExpiry := cert.NotAfter.Sub(time.Now())
 	renewIn := durationUntilExpiry - renewBefore
-	log.Printf("[%s/%s] Scheduling renewal in %d hours", crt.Namespace, crt.Name, renewIn/time.Hour)
+
 	c.scheduledWorkQueue.Add(key, renewIn)
+
+	s := fmt.Sprintf(messageRenewalScheduled, renewIn/time.Hour)
+	glog.Info(s)
+	c.recorder.Event(crt, api.EventTypeNormal, successRenewalScheduled, s)
 }
 
 func (c *Controller) prepare(issuer issuer.Interface, crt *v1alpha1.Certificate) error {
-	log.Printf("Preparing Certificate '%s/%s'", crt.Namespace, crt.Name)
 	err := issuer.Prepare(crt)
 
 	if err != nil {
 		return err
 	}
 
-	log.Printf("Finished preparing Certificate '%s/%s'", crt.Namespace, crt.Name)
 	return nil
 }
 
 // return an error on failure. If retrieval is succesful, the certificate data
 // and private key will be stored in the named secret
 func (c *Controller) issue(issuer issuer.Interface, crt *v1alpha1.Certificate) error {
+	s := messagePreparingCertificate
+	glog.Info(s)
+	c.recorder.Event(crt, api.EventTypeNormal, reasonPreparingCertificate, s)
+
 	if err := c.prepare(issuer, crt); err != nil {
+		s := messageErrorPreparingCertificate + err.Error()
+		glog.Info(s)
+		c.recorder.Event(crt, api.EventTypeWarning, errorPreparingCertificate, s)
 		return err
 	}
 
-	log.Printf("[%s/%s] Issuing certificate...", crt.Namespace, crt.Name)
+	s = messageIssuingCertificate
+	glog.Info(s)
+	c.recorder.Event(crt, api.EventTypeNormal, reasonIssuingCertificate, s)
+
 	key, cert, err := issuer.Issue(crt)
 	if err != nil {
-		return fmt.Errorf("error issuing certificate: %s", err.Error())
+		s := messageErrorIssuingCertificate + err.Error()
+		glog.Info(s)
+		c.recorder.Event(crt, api.EventTypeWarning, errorIssuingCertificate, s)
+		return err
 	}
 
 	_, err = util.EnsureSecret(c.client, &api.Secret{
@@ -200,10 +263,15 @@ func (c *Controller) issue(issuer issuer.Interface, crt *v1alpha1.Certificate) e
 	})
 
 	if err != nil {
-		return fmt.Errorf("error saving certificate: %s", err.Error())
+		s := messageErrorSavingCertificate + err.Error()
+		glog.Info(s)
+		c.recorder.Event(crt, api.EventTypeWarning, errorSavingCertificate, s)
+		return err
 	}
 
-	log.Printf("[%s/%s] Successfully issued certificate (%s)", crt.Namespace, crt.Name, crt.Spec.SecretName)
+	s = messageCertificateIssued
+	glog.Info(s)
+	c.recorder.Event(crt, api.EventTypeNormal, successCeritificateIssued, s)
 
 	return nil
 }
@@ -212,14 +280,27 @@ func (c *Controller) issue(issuer issuer.Interface, crt *v1alpha1.Certificate) e
 // return an error on failure. If renewal is succesful, the certificate data
 // and private key will be stored in the named secret
 func (c *Controller) renew(issuer issuer.Interface, crt *v1alpha1.Certificate) error {
+	s := messagePreparingCertificate
+	glog.Info(s)
+	c.recorder.Event(crt, api.EventTypeNormal, reasonPreparingCertificate, s)
+
 	if err := c.prepare(issuer, crt); err != nil {
+		s := messageErrorPreparingCertificate + err.Error()
+		glog.Info(s)
+		c.recorder.Event(crt, api.EventTypeWarning, errorPreparingCertificate, s)
 		return err
 	}
 
-	log.Printf("[%s/%s] Renewing certificate...", crt.Namespace, crt.Name)
+	s = messageRenewingCertificate
+	glog.Info(s)
+	c.recorder.Event(crt, api.EventTypeNormal, reasonRenewingCertificate, s)
+
 	key, cert, err := issuer.Renew(crt)
 	if err != nil {
-		return fmt.Errorf("error renewing certificate: %s", err.Error())
+		s := messageErrorRenewingCertificate + err.Error()
+		glog.Info(s)
+		c.recorder.Event(crt, api.EventTypeWarning, errorRenewingCertificate, s)
+		return err
 	}
 
 	_, err = util.EnsureSecret(c.client, &api.Secret{
@@ -234,10 +315,15 @@ func (c *Controller) renew(issuer issuer.Interface, crt *v1alpha1.Certificate) e
 	})
 
 	if err != nil {
-		return fmt.Errorf("error saving certificate: %s", err.Error())
+		s := messageErrorSavingCertificate + err.Error()
+		glog.Info(s)
+		c.recorder.Event(crt, api.EventTypeWarning, errorSavingCertificate, s)
+		return err
 	}
 
-	log.Printf("[%s/%s] Successfully renewed certificate (%s)", crt.Namespace, crt.Name, crt.Spec.SecretName)
+	s = messageCertificateRenewed
+	glog.Info(s)
+	c.recorder.Event(crt, api.EventTypeNormal, successCeritificateRenewed, s)
 
 	return nil
 }

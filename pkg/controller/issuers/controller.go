@@ -16,6 +16,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	corelisters "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/tools/cache"
+	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
 
 	"github.com/jetstack-experimental/cert-manager/pkg/apis/certmanager"
@@ -30,6 +31,7 @@ type Controller struct {
 	client        kubernetes.Interface
 	cmClient      clientset.Interface
 	issuerFactory issuer.Factory
+	recorder      record.EventRecorder
 
 	// To allow injection for testing.
 	syncHandler func(key string) error
@@ -50,8 +52,9 @@ func New(
 	cl kubernetes.Interface,
 	cmClient clientset.Interface,
 	issuerFactory issuer.Factory,
+	recorder record.EventRecorder,
 ) *Controller {
-	ctrl := &Controller{client: cl, cmClient: cmClient, issuerFactory: issuerFactory}
+	ctrl := &Controller{client: cl, cmClient: cmClient, issuerFactory: issuerFactory, recorder: recorder}
 	ctrl.syncHandler = ctrl.processNextWorkItem
 	ctrl.queue = workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "issuers")
 
@@ -200,6 +203,7 @@ func init() {
 			ctx.Client,
 			ctx.CMClient,
 			ctx.IssuerFactory,
+			ctx.Recorder,
 		).Run
 	})
 }

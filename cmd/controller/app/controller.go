@@ -28,57 +28,17 @@ import (
 const controllerAgentName = "cert-manager-controller"
 
 func Run(opts *options.ControllerOptions, stopCh <-chan struct{}) {
-	// Add cert-manager types to the default Kubernetes Scheme so Events can be
-	// logged properly
-	intscheme.AddToScheme(scheme.Scheme)
-
-	// Load the users Kubernetes config
-	kubeCfg, err := KubeConfig(opts.APIServerHost)
+	ctx, kubeCfg, err := buildControllerContext(opts)
 
 	if err != nil {
-		glog.Fatalf("error creating rest config: %s", err.Error())
-	}
-
-	// Create a Navigator api client
-	intcl, err := clientset.NewForConfig(kubeCfg)
-
-	if err != nil {
-		glog.Fatalf("error creating internal group client: %s", err.Error())
-	}
-
-	// Create a Kubernetes api client
-	cl, err := kubernetes.NewForConfig(kubeCfg)
-
-	if err != nil {
-		glog.Fatalf("error creating kubernetes client: %s", err.Error())
-	}
-
-	// Create event broadcaster
-	glog.V(4).Info("Creating event broadcaster")
-	eventBroadcaster := record.NewBroadcaster()
-	eventBroadcaster.StartLogging(glog.V(4).Infof)
-	eventBroadcaster.StartRecordingToSink(&corev1.EventSinkImpl{Interface: cl.CoreV1().Events("")})
-	recorder := eventBroadcaster.NewRecorder(scheme.Scheme, v1.EventSource{Component: controllerAgentName})
-
-	sharedInformerFactory := kube.NewSharedInformerFactory()
-	controllerCtx := &controller.Context{
-		Client:                cl,
-		CMClient:              intcl,
-		SharedInformerFactory: sharedInformerFactory,
-		IssuerFactory: issuer.NewFactory(&issuer.Context{
-			Client:                cl,
-			CMClient:              intcl,
-			SharedInformerFactory: sharedInformerFactory,
-			Namespace:             opts.Namespace,
-		}),
-		Namespace: opts.Namespace,
+		glog.Fatalf(err.Error())
 	}
 
 	run := func(_ <-chan struct{}) {
 		var wg sync.WaitGroup
 		var controllers = make(map[string]controller.Interface)
 		for n, fn := range controller.Known() {
-			controllers[n] = fn(controllerCtx)
+			controllers[n] = fn(ctx)
 		}
 		for n, fn := range controllers {
 			wg.Add(1)
@@ -94,7 +54,7 @@ func Run(opts *options.ControllerOptions, stopCh <-chan struct{}) {
 			}(n, fn)
 		}
 		glog.V(4).Infof("Starting shared informer factory")
-		controllerCtx.SharedInformerFactory.Start(stopCh)
+		ctx.SharedInformerFactory.Start(stopCh)
 		wg.Wait()
 		glog.Fatalf("Control loops exited")
 	}
@@ -111,6 +71,60 @@ func Run(opts *options.ControllerOptions, stopCh <-chan struct{}) {
 		glog.Fatalf("error creating leader election client: %s", err.Error())
 	}
 
+	startLeaderElection(opts, leaderElectionClient, ctx.Recorder, run)
+	panic("unreachable")
+}
+
+func buildControllerContext(opts *options.ControllerOptions) (*controller.Context, *rest.Config, error) {
+	// Load the users Kubernetes config
+	kubeCfg, err := KubeConfig(opts.APIServerHost)
+
+	if err != nil {
+		return nil, nil, fmt.Errorf("error creating rest config: %s", err.Error())
+	}
+
+	// Create a Navigator api client
+	intcl, err := clientset.NewForConfig(kubeCfg)
+
+	if err != nil {
+		return nil, nil, fmt.Errorf("error creating internal group client: %s", err.Error())
+	}
+
+	// Create a Kubernetes api client
+	cl, err := kubernetes.NewForConfig(kubeCfg)
+
+	if err != nil {
+		return nil, nil, fmt.Errorf("error creating kubernetes client: %s", err.Error())
+	}
+
+	// Create event broadcaster
+	// Add cert-manager types to the default Kubernetes Scheme so Events can be
+	// logged properly
+	intscheme.AddToScheme(scheme.Scheme)
+	glog.V(4).Info("Creating event broadcaster")
+	eventBroadcaster := record.NewBroadcaster()
+	eventBroadcaster.StartLogging(glog.V(4).Infof)
+	eventBroadcaster.StartRecordingToSink(&corev1.EventSinkImpl{Interface: cl.CoreV1().Events("")})
+	recorder := eventBroadcaster.NewRecorder(scheme.Scheme, v1.EventSource{Component: controllerAgentName})
+
+	sharedInformerFactory := kube.NewSharedInformerFactory()
+	return &controller.Context{
+		Client:                cl,
+		CMClient:              intcl,
+		Recorder:              recorder,
+		SharedInformerFactory: sharedInformerFactory,
+		IssuerFactory: issuer.NewFactory(&issuer.Context{
+			Client:                cl,
+			CMClient:              intcl,
+			Recorder:              recorder,
+			SharedInformerFactory: sharedInformerFactory,
+			Namespace:             opts.Namespace,
+		}),
+		Namespace: opts.Namespace,
+	}, kubeCfg, nil
+}
+
+func startLeaderElection(opts *options.ControllerOptions, leaderElectionClient kubernetes.Interface, recorder record.EventRecorder, run func(<-chan struct{})) {
 	// Identity used to distinguish between multiple controller manager instances
 	id, err := os.Hostname()
 	if err != nil {
