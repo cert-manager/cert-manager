@@ -45,7 +45,7 @@ func (s *ControllerOptions) AddFlags(fs *pflag.FlagSet) {
 		"Optional apiserver host address to connect to. If not specified, autoconfiguration "+
 		"will be attempted.")
 	fs.StringVar(&s.Namespace, "namespace", "", defaultNamespace+
-		"Optional namespace to monitor resources within. THis can be used to limit the scope "+
+		"Optional namespace to monitor resources within. This can be used to limit the scope "+
 		"of cert-manager to a single namespace. If not specified, all namespaces will be watched")
 
 	fs.BoolVar(&s.LeaderElect, "leader-elect", true, ""+

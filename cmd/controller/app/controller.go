@@ -111,7 +111,7 @@ func Run(opts *options.ControllerOptions, stopCh <-chan struct{}) {
 		glog.Fatalf("error creating leader election client: %s", err.Error())
 	}
 
-	// Identity used to distinguish between multiple cloud controller manager instances
+	// Identity used to distinguish between multiple controller manager instances
 	id, err := os.Hostname()
 	if err != nil {
 		glog.Fatalf("error getting hostname: %s", err.Error())
@@ -130,7 +130,7 @@ func Run(opts *options.ControllerOptions, stopCh <-chan struct{}) {
 		},
 	}
 
-	// Try and become the leader and start cloud controller manager loops
+	// Try and become the leader and start controller manager loops
 	leaderelection.RunOrDie(leaderelection.LeaderElectionConfig{
 		Lock:          &rl,
 		LeaseDuration: opts.LeaderElectionLeaseDuration,
