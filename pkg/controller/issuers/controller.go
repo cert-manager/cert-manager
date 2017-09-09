@@ -16,6 +16,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
 
+	"github.com/golang/glog"
 	"github.com/jetstack-experimental/cert-manager/pkg/apis/certmanager"
 	"github.com/jetstack-experimental/cert-manager/pkg/client"
 	controllerpkg "github.com/jetstack-experimental/cert-manager/pkg/controller"
@@ -87,15 +88,14 @@ func (c *Controller) secretDeleted(obj interface{}) {
 	}
 }
 
-func (c *Controller) Run(workers int, stopCh <-chan struct{}) {
+func (c *Controller) Run(workers int, stopCh <-chan struct{}) error {
 	defer c.queue.ShutDown()
 
-	log.Printf("Starting control loop")
+	glog.V(4).Infof("Starting %s control loop", ControllerName)
 	// wait for all the informer caches we depend on are synced
 	if !cache.WaitForCacheSync(stopCh, c.issuerInformerSynced, c.secretInformerSynced) {
 		// TODO: replace with Errorf call to glog
-		log.Printf("error waiting for informer caches to sync")
-		return
+		return fmt.Errorf("error waiting for informer caches to sync")
 	}
 
 	for i := 0; i < workers; i++ {
@@ -105,6 +105,7 @@ func (c *Controller) Run(workers int, stopCh <-chan struct{}) {
 
 	<-stopCh
 	log.Printf("shutting down queue as workqueue signalled shutdown")
+	return nil
 }
 
 func (c *Controller) worker() {
@@ -169,8 +170,8 @@ const (
 )
 
 func init() {
-	controllerpkg.Register(ControllerName, func(ctx *controllerpkg.Context, stopCh <-chan struct{}) (bool, error) {
-		go New(
+	controllerpkg.Register(ControllerName, func(ctx *controllerpkg.Context) controllerpkg.Interface {
+		return New(
 			ctx.SharedInformerFactory.InformerFor(
 				ctx.Namespace,
 				metav1.GroupVersionKind{Group: certmanager.GroupName, Version: "v1alpha1", Kind: "Issuer"},
@@ -194,8 +195,6 @@ func init() {
 			ctx.Client,
 			ctx.CMClient,
 			ctx.IssuerFactory,
-		).Run(2, stopCh)
-
-		return true, nil
+		).Run
 	})
 }

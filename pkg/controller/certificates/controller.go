@@ -2,7 +2,6 @@ package certificates
 
 import (
 	"fmt"
-	"log"
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
@@ -19,6 +18,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
 
+	"github.com/golang/glog"
 	"github.com/jetstack-experimental/cert-manager/pkg/apis/certmanager"
 	"github.com/jetstack-experimental/cert-manager/pkg/client"
 	controllerpkg "github.com/jetstack-experimental/cert-manager/pkg/controller"
@@ -130,31 +130,31 @@ func (c *Controller) ingressDeleted(obj interface{}) {
 	}
 }
 
-func (c *Controller) Run(workers int, stopCh <-chan struct{}) {
+func (c *Controller) Run(workers int, stopCh <-chan struct{}) error {
 	defer c.queue.ShutDown()
 
-	log.Printf("Starting control loop")
-	// wait for all the informer caches we depend on are synced
+	glog.V(4).Infof("Starting %s control loop", ControllerName)
+	// wait for all the informer caches we depend to sync
 	if !cache.WaitForCacheSync(stopCh,
 		c.secretInformerSynced,
 		c.certificateInformerSynced,
 		c.ingressInformerSynced) {
-		// TODO: replace with a call to glog Errorf
-		log.Printf("error waiting for informer caches to sync")
-		return
+		return fmt.Errorf("error waiting for informer caches to sync")
 	}
+
+	glog.V(4).Infof("Synced all caches for %s control loop", ControllerName)
 
 	for i := 0; i < workers; i++ {
 		// TODO (@munnerz): make time.Second duration configurable
 		go wait.Until(c.worker, time.Second, stopCh)
 	}
-
 	<-stopCh
-	log.Printf("shutting down queue as workqueue signalled shutdown")
+	glog.V(4).Infof("Shutting down queue as workqueue signalled shutdown")
+	return nil
 }
 
 func (c *Controller) worker() {
-	log.Printf("starting worker")
+	glog.V(4).Infof("Starting %s worker", ControllerName)
 	for {
 		obj, shutdown := c.queue.Get()
 		if shutdown {
@@ -177,14 +177,14 @@ func (c *Controller) worker() {
 		}(obj)
 
 		if err != nil {
-			log.Printf("requeuing item due to error processing: %s", err.Error())
+			glog.V(2).Infof("Requeuing object due to error processing: %s", err.Error())
 			c.queue.AddRateLimited(obj)
 			continue
 		}
 
-		log.Printf("finished processing work item")
+		glog.V(4).Infof("Finished processing work item")
 	}
-	log.Printf("exiting worker loop")
+	glog.V(4).Infof("Exiting %s worker loop", ControllerName)
 }
 
 func (c *Controller) processNextWorkItem(key string) error {
@@ -216,8 +216,8 @@ const (
 )
 
 func init() {
-	controllerpkg.Register(ControllerName, func(ctx *controllerpkg.Context, stopCh <-chan struct{}) (bool, error) {
-		go New(
+	controllerpkg.Register(ControllerName, func(ctx *controllerpkg.Context) controllerpkg.Interface {
+		return New(
 			ctx.SharedInformerFactory.InformerFor(
 				ctx.Namespace,
 				metav1.GroupVersionKind{Group: certmanager.GroupName, Version: "v1alpha1", Kind: "Certificate"},
@@ -251,8 +251,6 @@ func init() {
 			ctx.Client,
 			ctx.CMClient,
 			ctx.IssuerFactory,
-		).Run(2, stopCh)
-
-		return true, nil
+		).Run
 	})
 }
