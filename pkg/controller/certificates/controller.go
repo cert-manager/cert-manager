@@ -76,6 +76,9 @@ func New(
 	ctrl.certificateInformerSynced = certificatesInformer.HasSynced
 	ctrl.certificateLister = cmlisters.NewCertificateLister(certificatesInformer.GetIndexer())
 
+	ctrl.issuerInformerSynced = issuersInformer.HasSynced
+	ctrl.issuerLister = cmlisters.NewIssuerLister(issuersInformer.GetIndexer())
+
 	secretsInformer.AddEventHandler(&controllerpkg.BlockingEventHandler{WorkFunc: ctrl.secretDeleted})
 	ctrl.secretInformerSynced = secretsInformer.HasSynced
 	ctrl.secretLister = corelisters.NewSecretLister(secretsInformer.GetIndexer())
@@ -228,6 +231,16 @@ func init() {
 				ctx.Namespace,
 				metav1.GroupVersionKind{Group: certmanager.GroupName, Version: "v1alpha1", Kind: "Certificate"},
 				cminformers.NewCertificateInformer(
+					ctx.CMClient,
+					ctx.Namespace,
+					time.Second*30,
+					cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc},
+				),
+			),
+			ctx.SharedInformerFactory.InformerFor(
+				ctx.Namespace,
+				metav1.GroupVersionKind{Group: certmanager.GroupName, Version: "v1alpha1", Kind: "Issuer"},
+				cminformers.NewIssuerInformer(
 					ctx.CMClient,
 					ctx.Namespace,
 					time.Second*30,
