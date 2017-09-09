@@ -154,7 +154,7 @@ func (c *Controller) Run(workers int, stopCh <-chan struct{}) error {
 	for i := 0; i < workers; i++ {
 		c.workerWg.Add(1)
 		// TODO (@munnerz): make time.Second duration configurable
-		go wait.Until(c.worker, time.Second, stopCh)
+		go wait.Until(func() { c.worker(stopCh) }, time.Second, stopCh)
 	}
 	<-stopCh
 	glog.V(4).Infof("Shutting down queue as workqueue signaled shutdown")
@@ -165,7 +165,7 @@ func (c *Controller) Run(workers int, stopCh <-chan struct{}) error {
 	return nil
 }
 
-func (c *Controller) worker() {
+func (c *Controller) worker(stopCh <-chan struct{}) {
 	defer c.workerWg.Done()
 	glog.V(4).Infof("Starting %s worker", ControllerName)
 	for {
