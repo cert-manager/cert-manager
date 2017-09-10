@@ -220,8 +220,39 @@ type ACMECertificateDNS01Config struct {
 
 // CertificateStatus defines the observed state of Certificate
 type CertificateStatus struct {
-	ACME *CertificateACMEStatus `json:"acme,omitempty"`
+	Conditions []CertificateCondition `json:"conditions"`
+	ACME       *CertificateACMEStatus `json:"acme,omitempty"`
 }
+
+// CertificateCondition contains condition information for an Certificate.
+type CertificateCondition struct {
+	// Type of the condition, currently ('Ready').
+	Type CertificateConditionType `json:"type"`
+
+	// Status of the condition, one of ('True', 'False', 'Unknown').
+	Status ConditionStatus `json:"status"`
+
+	// LastTransitionTime is the timestamp corresponding to the last status
+	// change of this condition.
+	LastTransitionTime metav1.Time `json:"lastTransitionTime"`
+
+	// Reason is a brief machine readable explanation for the condition's last
+	// transition.
+	Reason string `json:"reason"`
+
+	// Message is a human readable description of the details of the last
+	// transition, complementing reason.
+	Message string `json:"message"`
+}
+
+// CertificateConditionType represents an Certificate condition value.
+type CertificateConditionType string
+
+const (
+	// CertificateConditionReady represents the fact that a given Certificate condition
+	// is in ready state.
+	CertificateConditionReady CertificateConditionType = "Ready"
+)
 
 // CertificateACMEStatus holds the status for an ACME issuer
 type CertificateACMEStatus struct {
