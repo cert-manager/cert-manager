@@ -43,7 +43,7 @@ func (a *Acme) Setup() (v1alpha1.IssuerStatus, error) {
 		s := messageAccountRegistrationFailed + err.Error()
 		glog.Info(s)
 		a.recorder.Event(a.issuer, v1.EventTypeWarning, errorAccountRegistrationFailed, s)
-		v1alpha1.UpdateIssuerStatusCondition(update, v1alpha1.IssuerConditionReady, v1alpha1.ConditionFalse, errorAccountRegistrationFailed, s)
+		update.UpdateStatusCondition(v1alpha1.IssuerConditionReady, v1alpha1.ConditionFalse, errorAccountRegistrationFailed, s)
 		return update.Status, fmt.Errorf(s)
 	}
 
@@ -57,7 +57,7 @@ func (a *Acme) Setup() (v1alpha1.IssuerStatus, error) {
 	if err == nil {
 		glog.Info(messageAccountVerified)
 		a.recorder.Event(a.issuer, v1.EventTypeNormal, successAccountVerified, messageAccountVerified)
-		v1alpha1.UpdateIssuerStatusCondition(update, v1alpha1.IssuerConditionReady, v1alpha1.ConditionTrue, successAccountVerified, messageAccountVerified)
+		update.UpdateStatusCondition(v1alpha1.IssuerConditionReady, v1alpha1.ConditionTrue, successAccountVerified, messageAccountVerified)
 		return update.Status, nil
 	}
 
@@ -76,13 +76,13 @@ func (a *Acme) Setup() (v1alpha1.IssuerStatus, error) {
 		s := messageAccountRegistrationFailed + err.Error()
 		glog.Info(s)
 		a.recorder.Event(a.issuer, v1.EventTypeWarning, errorAccountRegistrationFailed, s)
-		v1alpha1.UpdateIssuerStatusCondition(update, v1alpha1.IssuerConditionReady, v1alpha1.ConditionFalse, errorAccountRegistrationFailed, s)
+		update.UpdateStatusCondition(v1alpha1.IssuerConditionReady, v1alpha1.ConditionFalse, errorAccountRegistrationFailed, s)
 		return update.Status, err
 	}
 
 	glog.V(4).Info(messageAccountRegistered)
 	a.recorder.Event(a.issuer, v1.EventTypeNormal, successAccountRegistered, messageAccountRegistered)
-	v1alpha1.UpdateIssuerStatusCondition(update, v1alpha1.IssuerConditionReady, v1alpha1.ConditionTrue, successAccountRegistered, messageAccountRegistered)
+	update.UpdateStatusCondition(v1alpha1.IssuerConditionReady, v1alpha1.ConditionTrue, successAccountRegistered, messageAccountRegistered)
 	update.Status.ACMEStatus().URI = account.URI
 
 	return update.Status, nil
