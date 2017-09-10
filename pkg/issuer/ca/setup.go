@@ -26,7 +26,7 @@ const (
 func (c *CA) Setup() (v1alpha1.IssuerStatus, error) {
 	update := c.issuer.DeepCopy()
 
-	cert, _, err := kube.GetKeyPair(c.cl, update.Namespace, update.Spec.CA.SecretRef.Name)
+	cert, err := kube.SecretTLSCert(c.secretsLister, update.Namespace, update.Spec.CA.SecretRef.Name)
 
 	if k8sErrors.IsNotFound(err) {
 		s := messageErrorGetKeyPair + err.Error()

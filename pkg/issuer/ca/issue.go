@@ -23,13 +23,19 @@ const (
 )
 
 func (c *CA) Issue(crt *v1alpha1.Certificate) ([]byte, []byte, error) {
-	signerCert, signerKey, err := kube.GetKeyPair(c.cl, c.issuer.Namespace, c.issuer.Spec.CA.SecretRef.Name)
+	signerCert, err := kube.SecretTLSCert(c.secretsLister, c.issuer.Namespace, c.issuer.Spec.CA.SecretRef.Name)
 
 	if err != nil {
 		return nil, nil, err
 	}
 
-	_, signeeKey, err := kube.GetKeyPair(c.cl, crt.Namespace, crt.Spec.SecretName)
+	signerKey, err := kube.SecretTLSKey(c.secretsLister, c.issuer.Namespace, c.issuer.Spec.CA.SecretRef.Name)
+
+	if err != nil {
+		return nil, nil, err
+	}
+
+	signeeKey, err := kube.SecretTLSKey(c.secretsLister, c.issuer.Namespace, crt.Spec.SecretName)
 
 	if k8sErrors.IsNotFound(err) {
 		signeeKey, err = pki.GenerateRSAPrivateKey(2048)
