@@ -1,4 +1,4 @@
-package util
+package kube
 
 import (
 	batch "k8s.io/api/batch/v1"
