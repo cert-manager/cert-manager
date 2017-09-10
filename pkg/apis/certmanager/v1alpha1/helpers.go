@@ -52,7 +52,7 @@ func (c *CertificateACMEStatus) SaveAuthorization(a ACMEDomainAuthorization) {
 	c.Authorizations = append(c.Authorizations, a)
 }
 
-func IssuerHasCondition(iss *Issuer, condition IssuerCondition) bool {
+func (iss *Issuer) HasCondition(condition IssuerCondition) bool {
 	if len(iss.Status.Conditions) == 0 {
 		return false
 	}
@@ -89,6 +89,49 @@ func (iss *Issuer) UpdateStatusCondition(conditionType IssuerConditionType, stat
 				}
 
 				iss.Status.Conditions[i] = newCondition
+				break
+			}
+		}
+	}
+}
+
+func (crt *Certificate) HasCondition(condition CertificateCondition) bool {
+	if len(crt.Status.Conditions) == 0 {
+		return false
+	}
+	for _, cond := range crt.Status.Conditions {
+		if condition.Type == cond.Type && condition.Status == cond.Status {
+			return true
+		}
+	}
+	return false
+}
+
+func (crt *Certificate) UpdateStatusCondition(conditionType CertificateConditionType, status ConditionStatus, reason, message string) {
+	newCondition := CertificateCondition{
+		Type:    conditionType,
+		Status:  status,
+		Reason:  reason,
+		Message: message,
+	}
+
+	t := time.Now()
+
+	if len(crt.Status.Conditions) == 0 {
+		glog.Infof("Setting lastTransitionTime for Certificate %q condition %q to %v", crt.Name, conditionType, t)
+		newCondition.LastTransitionTime = metav1.NewTime(t)
+		crt.Status.Conditions = []CertificateCondition{newCondition}
+	} else {
+		for i, cond := range crt.Status.Conditions {
+			if cond.Type == conditionType {
+				if cond.Status != newCondition.Status {
+					glog.Infof("Found status change for Certificate %q condition %q: %q -> %q; setting lastTransitionTime to %v", crt.Name, conditionType, cond.Status, status, t)
+					newCondition.LastTransitionTime = metav1.NewTime(t)
+				} else {
+					newCondition.LastTransitionTime = cond.LastTransitionTime
+				}
+
+				crt.Status.Conditions[i] = newCondition
 				break
 			}
 		}

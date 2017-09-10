@@ -70,7 +70,7 @@ func (c *Controller) Sync(crt *v1alpha1.Certificate) (err error) {
 		return err
 	}
 
-	issuerReady := v1alpha1.IssuerHasCondition(issuerObj, v1alpha1.IssuerCondition{
+	issuerReady := issuerObj.HasCondition(v1alpha1.IssuerCondition{
 		Type:   v1alpha1.IssuerConditionReady,
 		Status: v1alpha1.ConditionTrue,
 	})
