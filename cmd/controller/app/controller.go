@@ -22,7 +22,7 @@ import (
 	intscheme "github.com/jetstack-experimental/cert-manager/pkg/client/clientset/scheme"
 	"github.com/jetstack-experimental/cert-manager/pkg/controller"
 	"github.com/jetstack-experimental/cert-manager/pkg/issuer"
-	"github.com/jetstack-experimental/cert-manager/pkg/kube"
+	"github.com/jetstack-experimental/cert-manager/pkg/util/kube"
 )
 
 const controllerAgentName = "cert-manager-controller"
@@ -61,8 +61,7 @@ func Run(opts *options.ControllerOptions, stopCh <-chan struct{}) {
 
 	if !opts.LeaderElect {
 		run(stopCh)
-		<-make(chan struct{})
-		panic("unreachable")
+		return
 	}
 
 	leaderElectionClient, err := kubernetes.NewForConfig(rest.AddUserAgent(kubeCfg, "leader-election"))

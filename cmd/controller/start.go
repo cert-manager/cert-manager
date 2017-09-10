@@ -13,6 +13,7 @@ import (
 	_ "github.com/jetstack-experimental/cert-manager/pkg/controller/certificates"
 	_ "github.com/jetstack-experimental/cert-manager/pkg/controller/issuers"
 	_ "github.com/jetstack-experimental/cert-manager/pkg/issuer/acme"
+	_ "github.com/jetstack-experimental/cert-manager/pkg/issuer/ca"
 )
 
 type CertManagerControllerOptions struct {
