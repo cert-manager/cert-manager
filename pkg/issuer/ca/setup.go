@@ -32,7 +32,7 @@ func (c *CA) Setup() (v1alpha1.IssuerStatus, error) {
 		s := messageErrorGetKeyPair + err.Error()
 		glog.Info(s)
 		c.recorder.Event(update, v1.EventTypeWarning, errorGetKeyPair, s)
-		v1alpha1.UpdateIssuerStatusCondition(update, v1alpha1.IssuerConditionReady, v1alpha1.ConditionFalse, errorGetKeyPair, s)
+		update.UpdateStatusCondition(v1alpha1.IssuerConditionReady, v1alpha1.ConditionFalse, errorGetKeyPair, s)
 		return update.Status, err
 	}
 
@@ -40,13 +40,13 @@ func (c *CA) Setup() (v1alpha1.IssuerStatus, error) {
 		s := messageErrorGetKeyPair + "certificate is not a CA"
 		glog.Info(s)
 		c.recorder.Event(update, v1.EventTypeWarning, errorInvalidKeyPair, s)
-		v1alpha1.UpdateIssuerStatusCondition(update, v1alpha1.IssuerConditionReady, v1alpha1.ConditionFalse, errorInvalidKeyPair, s)
+		update.UpdateStatusCondition(v1alpha1.IssuerConditionReady, v1alpha1.ConditionFalse, errorInvalidKeyPair, s)
 		return update.Status, fmt.Errorf(s)
 	}
 
 	glog.Info(messageKeyPairVerified)
 	c.recorder.Event(update, v1.EventTypeNormal, successKeyPairVerified, messageKeyPairVerified)
-	v1alpha1.UpdateIssuerStatusCondition(update, v1alpha1.IssuerConditionReady, v1alpha1.ConditionTrue, successKeyPairVerified, messageKeyPairVerified)
+	update.UpdateStatusCondition(v1alpha1.IssuerConditionReady, v1alpha1.ConditionTrue, successKeyPairVerified, messageKeyPairVerified)
 
 	return update.Status, nil
 }
