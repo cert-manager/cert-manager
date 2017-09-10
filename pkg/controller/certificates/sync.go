@@ -3,6 +3,7 @@ package certificates
 import (
 	"crypto/x509"
 	"fmt"
+	"reflect"
 	"time"
 
 	api "k8s.io/api/core/v1"
@@ -314,12 +315,15 @@ func (c *Controller) renew(issuer issuer.Interface, crt *v1alpha1.Certificate) e
 	return nil
 }
 
-func (c *Controller) updateCertificateStatus(iss *v1alpha1.Certificate, status v1alpha1.CertificateStatus) error {
-	updateCertificate := iss.DeepCopy()
+func (c *Controller) updateCertificateStatus(crt *v1alpha1.Certificate, status v1alpha1.CertificateStatus) error {
+	updateCertificate := crt.DeepCopy()
 	updateCertificate.Status = status
+	if reflect.DeepEqual(crt.Status, updateCertificate.Status) {
+		return nil
+	}
 	// TODO: replace Update call with UpdateStatus. This requires a custom API
 	// server with the /status subresource enabled and/or subresource support
 	// for CRDs (https://github.com/kubernetes/kubernetes/issues/38113)
-	_, err := c.cmClient.CertmanagerV1alpha1().Certificates(iss.Namespace).Update(updateCertificate)
+	_, err := c.cmClient.CertmanagerV1alpha1().Certificates(crt.Namespace).Update(updateCertificate)
 	return err
 }
