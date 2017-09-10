@@ -2,6 +2,7 @@ package issuer
 
 import (
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/tools/record"
 
 	"github.com/jetstack-experimental/cert-manager/pkg/client/clientset"
 	"github.com/jetstack-experimental/cert-manager/pkg/kube"
@@ -16,7 +17,8 @@ type Context struct {
 	Client kubernetes.Interface
 	// CMClient is a cert-manager clientset
 	CMClient clientset.Interface
-
+	// Recorder is an EventRecorder to log events to
+	Recorder record.EventRecorder
 	// SharedInformerFactory can be used to obtain shared SharedIndexInformer
 	// instances
 	SharedInformerFactory kube.SharedInformerFactory
