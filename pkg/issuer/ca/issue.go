@@ -10,10 +10,24 @@ import (
 	"math/big"
 	"time"
 
+	"github.com/golang/glog"
 	"github.com/jetstack-experimental/cert-manager/pkg/apis/certmanager/v1alpha1"
 	"github.com/jetstack-experimental/cert-manager/pkg/util/kube"
 	"github.com/jetstack-experimental/cert-manager/pkg/util/pki"
+	"k8s.io/api/core/v1"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
+)
+
+const (
+	errorGetCertKeyPair = "ErrGetCertKeyPair"
+	errorIssueCert      = "ErrIssueCert"
+
+	successCertIssued = "CertIssueSuccess"
+
+	messageErrorGetCertKeyPair = "Error getting keypair for certificate: "
+	messageErrorIssueCert      = "Error issuing TLS certificate: "
+
+	messageCertIssued = "Certificate issued successfully"
 )
 
 const (
@@ -22,39 +36,61 @@ const (
 	defaultOrganization = "cert-manager"
 )
 
-func (c *CA) Issue(crt *v1alpha1.Certificate) ([]byte, []byte, error) {
-	signerCert, err := kube.SecretTLSCert(c.secretsLister, c.issuer.Namespace, c.issuer.Spec.CA.SecretRef.Name)
-
-	if err != nil {
-		return nil, nil, err
-	}
-
-	signerKey, err := kube.SecretTLSKey(c.secretsLister, c.issuer.Namespace, c.issuer.Spec.CA.SecretRef.Name)
-
-	if err != nil {
-		return nil, nil, err
-	}
+func (c *CA) Issue(crt *v1alpha1.Certificate) (v1alpha1.CertificateStatus, []byte, []byte, error) {
+	update := crt.DeepCopy()
 
 	signeeKey, err := kube.SecretTLSKey(c.secretsLister, c.issuer.Namespace, crt.Spec.SecretName)
 
 	if k8sErrors.IsNotFound(err) {
 		signeeKey, err = pki.GenerateRSAPrivateKey(2048)
-		if err != nil {
-			return nil, nil, fmt.Errorf("error generating private key: %s", err.Error())
-		}
 	}
-
-	if signeeKey == nil {
-		return nil, nil, fmt.Errorf("error getting certificate private key: %s", err.Error())
-	}
-
-	crtPem, _, err := signCertificate(crt, signerCert, &signeeKey.PublicKey, signerKey)
 
 	if err != nil {
-		return nil, nil, err
+		s := messageErrorGetCertKeyPair + err.Error()
+		glog.Info(s)
+		c.recorder.Event(update, v1.EventTypeWarning, errorGetCertKeyPair, s)
+		update.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse, errorGetCertKeyPair, s)
+		return update.Status, nil, nil, err
 	}
 
-	return pki.EncodePKCS1PrivateKey(signeeKey), crtPem, nil
+	certPem, err := c.obtainCertificate(crt, signeeKey)
+
+	if err != nil {
+		s := messageErrorIssueCert + err.Error()
+		glog.Info(s)
+		c.recorder.Event(update, v1.EventTypeWarning, errorIssueCert, s)
+		update.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse, errorIssueCert, s)
+		return update.Status, nil, nil, err
+	}
+
+	s := messageCertIssued
+	glog.Info(s)
+	c.recorder.Event(update, v1.EventTypeNormal, successCertIssued, s)
+	update.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionTrue, successCertIssued, s)
+
+	return update.Status, pki.EncodePKCS1PrivateKey(signeeKey), certPem, nil
+}
+
+func (c *CA) obtainCertificate(crt *v1alpha1.Certificate, signeeKey interface{}) ([]byte, error) {
+	signerCert, err := kube.SecretTLSCert(c.secretsLister, c.issuer.Namespace, c.issuer.Spec.CA.SecretRef.Name)
+
+	if err != nil {
+		return nil, fmt.Errorf("error getting issuer certificate: %s", err.Error())
+	}
+
+	signerKey, err := kube.SecretTLSKey(c.secretsLister, c.issuer.Namespace, c.issuer.Spec.CA.SecretRef.Name)
+
+	if err != nil {
+		return nil, fmt.Errorf("error getting issuer private key: %s", err.Error())
+	}
+
+	crtPem, _, err := signCertificate(crt, signerCert, signeeKey, signerKey)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return crtPem, nil
 }
 
 func createCertificateTemplate(crt *v1alpha1.Certificate, publicKey interface{}) (*x509.Certificate, error) {
@@ -90,25 +126,25 @@ func createCertificateTemplate(crt *v1alpha1.Certificate, publicKey interface{})
 func signCertificate(crt *v1alpha1.Certificate, issuerCert *x509.Certificate, publicKey interface{}, signerKey interface{}) ([]byte, *x509.Certificate, error) {
 	template, err := createCertificateTemplate(crt, publicKey)
 	if err != nil {
-		return nil, nil, fmt.Errorf("Error creating x509 certificate template: %s", err.Error())
+		return nil, nil, fmt.Errorf("error creating x509 certificate template: %s", err.Error())
 	}
 
 	derBytes, err := x509.CreateCertificate(rand.Reader, template, issuerCert, publicKey, signerKey)
 
 	if err != nil {
-		return nil, nil, fmt.Errorf("Error creating x509 certificate: %s", err.Error())
+		return nil, nil, fmt.Errorf("error creating x509 certificate: %s", err.Error())
 	}
 
 	cert, err := pki.DecodeDERCertificateBytes(derBytes)
 
 	if err != nil {
-		return nil, nil, fmt.Errorf("Error decoding DER certificate bytes: %s", err.Error())
+		return nil, nil, fmt.Errorf("error decoding DER certificate bytes: %s", err.Error())
 	}
 
 	pemBytes := bytes.NewBuffer([]byte{})
 	err = pem.Encode(pemBytes, &pem.Block{Type: "CERTIFICATE", Bytes: derBytes})
 	if err != nil {
-		return nil, nil, fmt.Errorf("Error encoding certificate PEM: %s", err.Error())
+		return nil, nil, fmt.Errorf("error encoding certificate PEM: %s", err.Error())
 	}
 	return pemBytes.Bytes(), cert, err
 }
