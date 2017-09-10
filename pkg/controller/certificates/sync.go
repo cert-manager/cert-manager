@@ -92,7 +92,7 @@ func (c *Controller) Sync(crt *v1alpha1.Certificate) (err error) {
 	}
 
 	// grab existing certificate and validate private key
-	cert, _, err := kube.GetKeyPair(c.client, crt.Namespace, crt.Spec.SecretName)
+	cert, err := kube.SecretTLSCert(c.secretLister, crt.Namespace, crt.Spec.SecretName)
 
 	if err != nil {
 		s := messageErrorCheckCertificate + err.Error()
@@ -155,7 +155,7 @@ func (c *Controller) scheduleRenewal(crt *v1alpha1.Certificate) {
 		return
 	}
 
-	cert, _, err := kube.GetKeyPair(c.client, crt.Namespace, crt.Spec.SecretName)
+	cert, err := kube.SecretTLSCert(c.secretLister, crt.Namespace, crt.Spec.SecretName)
 
 	if err != nil {
 		runtime.HandleError(fmt.Errorf("[%s/%s] Error getting certificate '%s': %s", crt.Namespace, crt.Name, crt.Spec.SecretName, err.Error()))

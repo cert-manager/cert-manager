@@ -27,9 +27,9 @@ func (a *Acme) obtainCertificate(crt *v1alpha1.Certificate) ([]byte, []byte, err
 		return nil, nil, fmt.Errorf("no domains specified")
 	}
 
-	_, acmePrivKey, err := kube.GetKeyPair(a.client, a.issuer.Namespace, a.issuer.Spec.ACME.PrivateKey)
+	acmePrivKey, err := kube.SecretTLSKey(a.secretsLister, a.issuer.Namespace, a.issuer.Spec.ACME.PrivateKey)
 
-	if acmePrivKey == nil {
+	if err != nil {
 		return nil, nil, fmt.Errorf("error getting acme account private key: %s", err.Error())
 	}
 
@@ -38,7 +38,7 @@ func (a *Acme) obtainCertificate(crt *v1alpha1.Certificate) ([]byte, []byte, err
 		DirectoryURL: a.issuer.Spec.ACME.Server,
 	}
 
-	_, key, err := kube.GetKeyPair(a.client, crt.Namespace, crt.Spec.SecretName)
+	key, err := kube.SecretTLSKey(a.secretsLister, crt.Namespace, crt.Spec.SecretName)
 
 	if k8sErrors.IsNotFound(err) {
 		key, err = pki.GenerateRSAPrivateKey(2048)
@@ -47,7 +47,7 @@ func (a *Acme) obtainCertificate(crt *v1alpha1.Certificate) ([]byte, []byte, err
 		}
 	}
 
-	if key == nil {
+	if err != nil {
 		return nil, nil, fmt.Errorf("error getting certificate private key: %s", err.Error())
 	}
 

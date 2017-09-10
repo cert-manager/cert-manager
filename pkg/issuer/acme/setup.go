@@ -2,6 +2,7 @@ package acme
 
 import (
 	"context"
+	"crypto/rsa"
 	"fmt"
 	"strings"
 
@@ -32,39 +33,13 @@ const (
 func (a *Acme) Setup() (v1alpha1.IssuerStatus, error) {
 	update := a.issuer.DeepCopy()
 
-	_, accountPrivKey, err := kube.GetKeyPair(a.client, a.issuer.Namespace, a.issuer.Spec.ACME.PrivateKey)
+	accountPrivKey, err := kube.SecretTLSKey(a.secretsLister, a.issuer.Namespace, a.issuer.Spec.ACME.PrivateKey)
 
 	if k8sErrors.IsNotFound(err) {
-		accountPrivKey, err = pki.GenerateRSAPrivateKey(2048)
-
-		if err != nil {
-			s := messageAccountRegistrationFailed + "error generating private key " + err.Error()
-			glog.Info(s)
-			a.recorder.Event(a.issuer, v1.EventTypeWarning, errorAccountRegistrationFailed, s)
-			v1alpha1.UpdateIssuerStatusCondition(update, v1alpha1.IssuerConditionReady, v1alpha1.ConditionFalse, errorAccountRegistrationFailed, s)
-			return update.Status, fmt.Errorf(s)
-		}
-
-		_, err = kube.EnsureSecret(a.client, &v1.Secret{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      a.issuer.Spec.ACME.PrivateKey,
-				Namespace: a.issuer.Namespace,
-			},
-			Data: map[string][]byte{
-				v1.TLSPrivateKeyKey: pki.EncodePKCS1PrivateKey(accountPrivKey),
-			},
-		})
-
-		if err != nil {
-			s := messageAccountRegistrationFailed + "error saving private key " + err.Error()
-			glog.Info(s)
-			a.recorder.Event(a.issuer, v1.EventTypeWarning, errorAccountRegistrationFailed, s)
-			v1alpha1.UpdateIssuerStatusCondition(update, v1alpha1.IssuerConditionReady, v1alpha1.ConditionFalse, errorAccountRegistrationFailed, s)
-			return update.Status, fmt.Errorf(s)
-		}
+		accountPrivKey, err = a.createAccountPrivateKey()
 	}
 
-	if accountPrivKey == nil {
+	if err != nil {
 		s := messageAccountRegistrationFailed + err.Error()
 		glog.Info(s)
 		a.recorder.Event(a.issuer, v1.EventTypeWarning, errorAccountRegistrationFailed, s)
@@ -77,7 +52,7 @@ func (a *Acme) Setup() (v1alpha1.IssuerStatus, error) {
 		DirectoryURL: a.issuer.Spec.ACME.Server,
 	}
 
-	_, err = cl.GetReg(context.Background(), a.issuer.Status.ACME.URI)
+	_, err = cl.GetReg(context.Background(), a.issuer.Status.ACMEStatus().URI)
 
 	if err == nil {
 		glog.Info(messageAccountVerified)
@@ -111,4 +86,28 @@ func (a *Acme) Setup() (v1alpha1.IssuerStatus, error) {
 	update.Status.ACMEStatus().URI = account.URI
 
 	return update.Status, nil
+}
+
+func (a *Acme) createAccountPrivateKey() (*rsa.PrivateKey, error) {
+	accountPrivKey, err := pki.GenerateRSAPrivateKey(2048)
+
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = kube.EnsureSecret(a.client, &v1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      a.issuer.Spec.ACME.PrivateKey,
+			Namespace: a.issuer.Namespace,
+		},
+		Data: map[string][]byte{
+			v1.TLSPrivateKeyKey: pki.EncodePKCS1PrivateKey(accountPrivKey),
+		},
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return accountPrivKey, err
 }

@@ -7,6 +7,7 @@ import (
 	"sync"
 
 	"golang.org/x/crypto/acme"
+	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 
 	"github.com/jetstack-experimental/cert-manager/pkg/apis/certmanager/v1alpha1"
@@ -27,9 +28,13 @@ func (a *Acme) Prepare(crt *v1alpha1.Certificate) (v1alpha1.CertificateStatus, e
 	}
 
 	log.Printf("getting private key for acme issuer %s/%s", a.issuer.Namespace, a.issuer.Name)
-	_, accountPrivKey, err := kube.GetKeyPair(a.client, a.issuer.Namespace, a.issuer.Spec.ACME.PrivateKey)
+	accountPrivKey, err := kube.SecretTLSKey(a.secretsLister, a.issuer.Namespace, a.issuer.Spec.ACME.PrivateKey)
 
-	if accountPrivKey == nil {
+	if k8sErrors.IsNotFound(err) {
+		return updateStatus, err
+	}
+
+	if err != nil {
 		return updateStatus, fmt.Errorf("error getting acme account private key: %s", err.Error())
 	}
 

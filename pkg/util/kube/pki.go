@@ -3,45 +3,54 @@ package kube
 import (
 	"crypto/rsa"
 	"crypto/x509"
-	"fmt"
 
 	"github.com/jetstack-experimental/cert-manager/pkg/util/errors"
 	"github.com/jetstack-experimental/cert-manager/pkg/util/pki"
 	api "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	utilerrors "k8s.io/apimachinery/pkg/util/errors"
-	"k8s.io/client-go/kubernetes"
+	corelisters "k8s.io/client-go/listers/core/v1"
 )
 
-func GetKeyPair(cl kubernetes.Interface, namespace, name string) (*x509.Certificate, *rsa.PrivateKey, error) {
-	secret, err := cl.CoreV1().Secrets(namespace).Get(name, metav1.GetOptions{})
+func GetKeyPair(secretLister corelisters.SecretLister, namespace, name string) (certBytes []byte, keyBytes []byte, err error) {
+	secret, err := secretLister.Secrets(namespace).Get(name)
 
 	if err != nil {
 		return nil, nil, err
 	}
 
-	certBytes, okcert := secret.Data[api.TLSCertKey]
-	keyBytes, okkey := secret.Data[api.TLSPrivateKeyKey]
+	certBytes = secret.Data[api.TLSCertKey]
+	keyBytes = secret.Data[api.TLSPrivateKeyKey]
 
-	// check if the certificate and private key exist, we stop so as to not
-	// destroy a secret potentially used for something else
-	if !okcert || !okkey {
-		return nil, nil, fmt.Errorf("Secret does not contain TLS fields")
+	return certBytes, keyBytes, err
+}
+
+func SecretTLSKey(secretLister corelisters.SecretLister, namespace, name string) (*rsa.PrivateKey, error) {
+	secret, err := secretLister.Secrets(namespace).Get(name)
+
+	if err != nil {
+		return nil, err
 	}
 
-	key, keyErr := pki.DecodePKCS1PrivateKeyBytes(keyBytes)
-	cert, certErr := pki.DecodeX509CertificateBytes(certBytes)
+	keyBytes := secret.Data[api.TLSPrivateKeyKey]
+	key, err := pki.DecodePKCS1PrivateKeyBytes(keyBytes)
 
-	var errs []error
-	if keyErr != nil {
-		errs = append(errs, keyErr)
+	if err != nil {
+		return key, errors.NewInvalidData(err.Error())
 	}
-	if certErr != nil {
-		errs = append(errs, certErr)
-	}
-	if len(errs) > 0 {
-		err = errors.NewInvalidData(utilerrors.NewAggregate(errs).Error())
+	return key, nil
+}
+
+func SecretTLSCert(secretLister corelisters.SecretLister, namespace, name string) (*x509.Certificate, error) {
+	secret, err := secretLister.Secrets(namespace).Get(name)
+
+	if err != nil {
+		return nil, err
 	}
 
-	return cert, key, err
+	certBytes := secret.Data[api.TLSCertKey]
+	cert, err := pki.DecodeX509CertificateBytes(certBytes)
+
+	if err != nil {
+		return cert, errors.NewInvalidData(err.Error())
+	}
+	return cert, nil
 }
