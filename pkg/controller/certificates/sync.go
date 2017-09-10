@@ -1,15 +1,14 @@
 package certificates
 
 import (
-	"crypto/rsa"
 	"crypto/x509"
-	"encoding/pem"
 	"fmt"
 	"time"
 
 	api "k8s.io/api/core/v1"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/apimachinery/pkg/util/runtime"
 
 	"github.com/golang/glog"
@@ -17,6 +16,7 @@ import (
 	"github.com/jetstack-experimental/cert-manager/pkg/issuer"
 	"github.com/jetstack-experimental/cert-manager/pkg/util"
 	"github.com/jetstack-experimental/cert-manager/pkg/util/errors"
+	"github.com/jetstack-experimental/cert-manager/pkg/util/kube"
 )
 
 const renewBefore = time.Hour * 24 * 30
@@ -92,7 +92,7 @@ func (c *Controller) Sync(crt *v1alpha1.Certificate) (err error) {
 	}
 
 	// grab existing certificate and validate private key
-	cert, _, err := c.getCertificate(crt.Namespace, crt.Spec.SecretName)
+	cert, _, err := kube.GetKeyPair(c.client, crt.Namespace, crt.Spec.SecretName)
 
 	if err != nil {
 		s := messageErrorCheckCertificate + err.Error()
@@ -147,49 +147,6 @@ func needsRenew(cert *x509.Certificate) bool {
 	return false
 }
 
-func (c *Controller) getCertificate(namespace, name string) (*x509.Certificate, *rsa.PrivateKey, error) {
-	secret, err := c.client.CoreV1().Secrets(namespace).Get(name, metav1.GetOptions{})
-
-	if err != nil {
-		return nil, nil, err
-	}
-
-	certBytes, okcert := secret.Data[api.TLSCertKey]
-	keyBytes, okkey := secret.Data[api.TLSPrivateKeyKey]
-
-	// check if the certificate and private key exist, we stop so as to not
-	// destroy a secret potentially used for something else
-	if !okcert || !okkey {
-		return nil, nil, fmt.Errorf("Secret does not contain TLS fields")
-	}
-
-	// decode the tls certificate pem
-	block, _ := pem.Decode(certBytes)
-	if block == nil {
-		return nil, nil, errors.NewInvalidData("error decoding cert PEM block")
-	}
-	// parse the tls certificate
-	cert, err := x509.ParseCertificate(block.Bytes)
-	if err != nil {
-		return nil, nil, errors.NewInvalidData("error parsing TLS certificate: %s", err.Error())
-	}
-	// decode the private key pem
-	block, _ = pem.Decode(keyBytes)
-	if block == nil {
-		return nil, nil, errors.NewInvalidData("error decoding private key PEM block")
-	}
-	// parse the private key
-	key, err := x509.ParsePKCS1PrivateKey(block.Bytes)
-	if err != nil {
-		return nil, nil, errors.NewInvalidData("error parsing private key: %s", err.Error())
-	}
-	// validate the private key
-	if err = key.Validate(); err != nil {
-		return nil, nil, errors.NewInvalidData("private key failed validation: %s", err.Error())
-	}
-	return cert, key, nil
-}
-
 func (c *Controller) scheduleRenewal(crt *v1alpha1.Certificate) {
 	key, err := keyFunc(crt)
 
@@ -198,7 +155,7 @@ func (c *Controller) scheduleRenewal(crt *v1alpha1.Certificate) {
 		return
 	}
 
-	cert, _, err := c.getCertificate(crt.Namespace, crt.Spec.SecretName)
+	cert, _, err := kube.GetKeyPair(c.client, crt.Namespace, crt.Spec.SecretName)
 
 	if err != nil {
 		runtime.HandleError(fmt.Errorf("[%s/%s] Error getting certificate '%s': %s", crt.Namespace, crt.Name, crt.Spec.SecretName, err.Error()))
@@ -215,14 +172,21 @@ func (c *Controller) scheduleRenewal(crt *v1alpha1.Certificate) {
 	c.recorder.Event(crt, api.EventTypeNormal, successRenewalScheduled, s)
 }
 
-func (c *Controller) prepare(issuer issuer.Interface, crt *v1alpha1.Certificate) error {
-	err := issuer.Prepare(crt)
+func (c *Controller) prepare(issuer issuer.Interface, crt *v1alpha1.Certificate) (err error) {
+	var status v1alpha1.CertificateStatus
+	status, err = issuer.Prepare(crt)
 
-	if err != nil {
-		return err
-	}
+	defer func() {
+		if saveErr := c.updateCertificateStatus(crt, status); saveErr != nil {
+			errs := []error{saveErr}
+			if err != nil {
+				errs = append(errs, err)
+			}
+			err = utilerrors.NewAggregate(errs)
+		}
+	}()
 
-	return nil
+	return
 }
 
 // return an error on failure. If retrieval is succesful, the certificate data
@@ -251,7 +215,7 @@ func (c *Controller) issue(issuer issuer.Interface, crt *v1alpha1.Certificate) e
 		return err
 	}
 
-	_, err = util.EnsureSecret(c.client, &api.Secret{
+	_, err = kube.EnsureSecret(c.client, &api.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      crt.Spec.SecretName,
 			Namespace: crt.Namespace,
@@ -303,7 +267,7 @@ func (c *Controller) renew(issuer issuer.Interface, crt *v1alpha1.Certificate) e
 		return err
 	}
 
-	_, err = util.EnsureSecret(c.client, &api.Secret{
+	_, err = kube.EnsureSecret(c.client, &api.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      crt.Spec.SecretName,
 			Namespace: crt.Namespace,
@@ -326,4 +290,14 @@ func (c *Controller) renew(issuer issuer.Interface, crt *v1alpha1.Certificate) e
 	c.recorder.Event(crt, api.EventTypeNormal, successCeritificateRenewed, s)
 
 	return nil
+}
+
+func (c *Controller) updateCertificateStatus(iss *v1alpha1.Certificate, status v1alpha1.CertificateStatus) error {
+	updateCertificate := iss.DeepCopy()
+	updateCertificate.Status = status
+	// TODO: replace Update call with UpdateStatus. This requires a custom API
+	// server with the /status subresource enabled and/or subresource support
+	// for CRDs (https://github.com/kubernetes/kubernetes/issues/38113)
+	_, err := c.cmClient.CertmanagerV1alpha1().Certificates(iss.Namespace).Update(updateCertificate)
+	return err
 }
