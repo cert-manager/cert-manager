@@ -47,6 +47,62 @@ type IssuerList struct {
 // configuration required for the issuer.
 type IssuerSpec struct {
 	ACME *ACMEIssuer `json:"acme,omitempty"`
+	CA   *CAIssuer   `json:"ca,omitempty"`
+}
+
+type CAIssuer struct {
+	SecretRef LocalObjectReference `json:"secretRef"`
+}
+
+// ACMEIssuer contains the specification for an ACME issuer
+type ACMEIssuer struct {
+	// Email is the email for this account
+	Email string `json:"email"`
+	// Server is the ACME server URL
+	Server string `json:"server"`
+	// PrivateKey is the name of a secret containing the private key for this
+	// user account.
+	PrivateKey string `json:"privateKey"`
+	// DNS-01 config
+	DNS01 *ACMEIssuerDNS01Config `json:"dns-01"`
+}
+
+// ACMEIssuerDNS01Config is a structure containing the ACME DNS configuration
+// option. One and only one of the fields within it should be set, when the
+// ACME challenge type is set to dns-01
+type ACMEIssuerDNS01Config struct {
+	Providers []ACMEIssuerDNS01Provider `json:"providers"`
+}
+
+type ACMEIssuerDNS01Provider struct {
+	Name string `json:"name"`
+
+	CloudDNS   *ACMEIssuerDNS01ProviderCloudDNS   `json:"clouddns,omitempty"`
+	Cloudflare *ACMEIssuerDNS01ProviderCloudflare `json:"cloudflare,omitempty"`
+	Route53    *ACMEIssuerDNS01ProviderRoute53    `json:"route53,omitempty"`
+}
+
+// ACMEIssuerDNS01ProviderCloudDNS is a structure containing the DNS
+// configuration for Google Cloud DNS
+type ACMEIssuerDNS01ProviderCloudDNS struct {
+	ServiceAccount SecretKeySelector `json:"serviceAccount"`
+	Project        string            `json:"project"`
+}
+
+// ACMEIssuerDNS01ProviderCloudflare is a structure containing the DNS
+// configuration for Cloudflare
+type ACMEIssuerDNS01ProviderCloudflare struct {
+	Email  string            `json:"email"`
+	APIKey SecretKeySelector `json:"apiKey"`
+}
+
+// ACMEIssuerDNS01ProviderRoute53 is a structure containing the Route 53
+// configuration for AWS
+type ACMEIssuerDNS01ProviderRoute53 struct {
+	AccessKeyID     string            `json:"accessKeyID"`
+	SecretAccessKey SecretKeySelector `json:"secretAccessKey"`
+	HostedZoneID    string            `json:"hostedZoneID"`
+	Region          string            `json:"region"`
 }
 
 // IssuerStatus contains status information about an Issuer
@@ -103,57 +159,6 @@ const (
 	// ConditionUnknown represents the fact that a given condition is unknown
 	ConditionUnknown ConditionStatus = "Unknown"
 )
-
-// ACMEIssuer contains the specification for an ACME issuer
-type ACMEIssuer struct {
-	// Email is the email for this account
-	Email string `json:"email"`
-	// Server is the ACME server URL
-	Server string `json:"server"`
-	// PrivateKey is the name of a secret containing the private key for this
-	// user account.
-	PrivateKey string `json:"privateKey"`
-	// DNS-01 config
-	DNS01 *ACMEIssuerDNS01Config `json:"dns-01"`
-}
-
-// ACMEIssuerDNS01Config is a structure containing the ACME DNS configuration
-// option. One and only one of the fields within it should be set, when the
-// ACME challenge type is set to dns-01
-type ACMEIssuerDNS01Config struct {
-	Providers []ACMEIssuerDNS01Provider `json:"providers"`
-}
-
-type ACMEIssuerDNS01Provider struct {
-	Name string `json:"name"`
-
-	CloudDNS   *ACMEIssuerDNS01ProviderCloudDNS   `json:"clouddns,omitempty"`
-	Cloudflare *ACMEIssuerDNS01ProviderCloudflare `json:"cloudflare,omitempty"`
-	Route53    *ACMEIssuerDNS01ProviderRoute53    `json:"route53,omitempty"`
-}
-
-// ACMEIssuerDNS01ProviderCloudDNS is a structure containing the DNS
-// configuration for Google Cloud DNS
-type ACMEIssuerDNS01ProviderCloudDNS struct {
-	ServiceAccount SecretKeySelector `json:"serviceAccount"`
-	Project        string            `json:"project"`
-}
-
-// ACMEIssuerDNS01ProviderCloudflare is a structure containing the DNS
-// configuration for Cloudflare
-type ACMEIssuerDNS01ProviderCloudflare struct {
-	Email  string            `json:"email"`
-	APIKey SecretKeySelector `json:"apiKey"`
-}
-
-// ACMEIssuerDNS01ProviderRoute53 is a structure containing the Route 53
-// configuration for AWS
-type ACMEIssuerDNS01ProviderRoute53 struct {
-	AccessKeyID     string            `json:"accessKeyID"`
-	SecretAccessKey SecretKeySelector `json:"secretAccessKey"`
-	HostedZoneID    string            `json:"hostedZoneID"`
-	Region          string            `json:"region"`
-}
 
 type ACMEIssuerStatus struct {
 	// URI is the unique account identifier, which can also be used to retrieve

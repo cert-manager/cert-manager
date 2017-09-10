@@ -25,6 +25,7 @@ import (
 	"github.com/jetstack-experimental/cert-manager/pkg/apis/certmanager/v1alpha1"
 	"github.com/jetstack-experimental/cert-manager/pkg/issuer/acme/http/solver"
 	"github.com/jetstack-experimental/cert-manager/pkg/util"
+	"github.com/jetstack-experimental/cert-manager/pkg/util/kube"
 )
 
 const (
@@ -122,7 +123,7 @@ func (s *Solver) ensureService(crt *v1alpha1.Certificate, domain string, labels 
 	svc.Spec.Type = corev1.ServiceTypeNodePort
 	svc.Spec.Selector = labels
 
-	return util.EnsureService(s.client, svc)
+	return kube.EnsureService(s.client, svc)
 }
 
 // cleanupService will ensure the service created for this challenge request
@@ -151,7 +152,7 @@ func (s *Solver) ensureIngress(crt *v1alpha1.Certificate, svcName, domain, token
 		return nil, err
 	}
 
-	return util.EnsureIngress(s.client, ing)
+	return kube.EnsureIngress(s.client, ing)
 }
 
 // cleanupIngress will remove the rules added by cert-manager to an existing

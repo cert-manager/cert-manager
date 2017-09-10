@@ -3,47 +3,21 @@ package acme
 import (
 	"bytes"
 	"context"
-	"crypto"
 	"crypto/rand"
 	"crypto/x509"
-	"crypto/x509/pkix"
 	"encoding/pem"
 	"fmt"
 	"log"
 
 	"golang.org/x/crypto/acme"
-	api "k8s.io/api/core/v1"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 
 	"github.com/jetstack-experimental/cert-manager/pkg/apis/certmanager/v1alpha1"
+	"github.com/jetstack-experimental/cert-manager/pkg/util/kube"
+	"github.com/jetstack-experimental/cert-manager/pkg/util/pki"
 )
 
-func (a *Acme) getCertificatePrivateKey(crt *v1alpha1.Certificate) ([]byte, crypto.Signer, error) {
-	crtSecret, err := a.secretsLister.Secrets(crt.Namespace).Get(crt.Spec.SecretName)
-	if err != nil {
-		if !k8sErrors.IsNotFound(err) {
-			return nil, nil, fmt.Errorf("error reading certificate private key for certificate '%s': %s", crt.Name, err.Error())
-		}
-		return generatePrivateKey(2048)
-	}
-	var keyBytes []byte
-	var ok bool
-	if keyBytes, ok = crtSecret.Data[api.TLSPrivateKeyKey]; !ok {
-		return generatePrivateKey(2048)
-	}
-	block, _ := pem.Decode(keyBytes)
-	der, err := x509.DecryptPEMBlock(block, nil)
-	if err != nil {
-		return generatePrivateKey(2048)
-	}
-	privKey, err := x509.ParsePKCS1PrivateKey(der)
-	if err != nil {
-		return generatePrivateKey(2048)
-	}
-	return keyBytes, privKey, nil
-}
-
-func (a *Acme) obtainCertificate(crt *v1alpha1.Certificate) (privateKeyPem []byte, certPem []byte, err error) {
+func (a *Acme) obtainCertificate(crt *v1alpha1.Certificate) ([]byte, []byte, error) {
 	if crt.Spec.ACME == nil {
 		return nil, nil, fmt.Errorf("acme config must be specified")
 	}
@@ -53,33 +27,32 @@ func (a *Acme) obtainCertificate(crt *v1alpha1.Certificate) (privateKeyPem []byt
 		return nil, nil, fmt.Errorf("no domains specified")
 	}
 
-	privKey, err := a.accountPrivateKey()
+	_, acmePrivKey, err := kube.GetKeyPair(a.client, a.issuer.Namespace, a.issuer.Spec.ACME.PrivateKey)
 
-	if err != nil {
+	if acmePrivKey == nil {
 		return nil, nil, fmt.Errorf("error getting acme account private key: %s", err.Error())
 	}
 
 	cl := &acme.Client{
-		Key:          privKey,
+		Key:          acmePrivKey,
 		DirectoryURL: a.issuer.Spec.ACME.Server,
 	}
 
-	template := x509.CertificateRequest{
-		Subject: pkix.Name{
-			CommonName: domains[0],
-		},
+	_, key, err := kube.GetKeyPair(a.client, crt.Namespace, crt.Spec.SecretName)
+
+	if k8sErrors.IsNotFound(err) {
+		key, err = pki.GenerateRSAPrivateKey(2048)
+		if err != nil {
+			return nil, nil, fmt.Errorf("error generating private key: %s", err.Error())
+		}
 	}
 
-	if len(domains) > 1 {
-		template.DNSNames = domains
+	if key == nil {
+		return nil, nil, fmt.Errorf("error getting certificate private key: %s", err.Error())
 	}
 
-	privateKeyPem, privateKey, err := a.getCertificatePrivateKey(crt)
-	if err != nil {
-		return nil, nil, fmt.Errorf("error generating private key for certificiate '%s': %s", crt.Name, err)
-	}
-
-	csr, err := x509.CreateCertificateRequest(rand.Reader, &template, privateKey)
+	template := pki.GenerateCSR(domains)
+	csr, err := x509.CreateCertificateRequest(rand.Reader, template, key)
 	if err != nil {
 		return nil, nil, fmt.Errorf("error creating certificate request: %s", err)
 	}
@@ -101,7 +74,7 @@ func (a *Acme) obtainCertificate(crt *v1alpha1.Certificate) (privateKeyPem []byt
 
 	log.Printf("successfully got certificate: domains=%+v url=%s", domains, certURL)
 
-	return privateKeyPem, certBuffer.Bytes(), nil
+	return pki.EncodePKCS1PrivateKey(key), certBuffer.Bytes(), nil
 }
 
 func (a *Acme) Issue(crt *v1alpha1.Certificate) ([]byte, []byte, error) {
