@@ -64,8 +64,10 @@ func IssuerHasCondition(iss *Issuer, condition IssuerCondition) bool {
 	return false
 }
 
-func UpdateIssuerStatusCondition(iss *Issuer, conditionType IssuerConditionType, status ConditionStatus, reason, message string) *Issuer {
-	toUpdate := iss.DeepCopy()
+// UpdateIssuerStatusCondition will add or update the given status condition
+// on the given issuer. It will modify the issuer given to it, and not create
+// a deep copy.
+func UpdateIssuerStatusCondition(iss *Issuer, conditionType IssuerConditionType, status ConditionStatus, reason, message string) {
 	newCondition := IssuerCondition{
 		Type:    conditionType,
 		Status:  status,
@@ -78,7 +80,7 @@ func UpdateIssuerStatusCondition(iss *Issuer, conditionType IssuerConditionType,
 	if len(iss.Status.Conditions) == 0 {
 		glog.Infof("Setting lastTransitionTime for Issuer %q condition %q to %v", iss.Name, conditionType, t)
 		newCondition.LastTransitionTime = metav1.NewTime(t)
-		toUpdate.Status.Conditions = []IssuerCondition{newCondition}
+		iss.Status.Conditions = []IssuerCondition{newCondition}
 	} else {
 		for i, cond := range iss.Status.Conditions {
 			if cond.Type == conditionType {
@@ -89,10 +91,9 @@ func UpdateIssuerStatusCondition(iss *Issuer, conditionType IssuerConditionType,
 					newCondition.LastTransitionTime = cond.LastTransitionTime
 				}
 
-				toUpdate.Status.Conditions[i] = newCondition
+				iss.Status.Conditions[i] = newCondition
 				break
 			}
 		}
 	}
-	return toUpdate
 }
