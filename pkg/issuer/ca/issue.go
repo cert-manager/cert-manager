@@ -53,7 +53,7 @@ func (c *CA) Issue(crt *v1alpha1.Certificate) (v1alpha1.CertificateStatus, []byt
 		return update.Status, nil, nil, err
 	}
 
-	certPem, err := c.obtainCertificate(crt, signeeKey)
+	certPem, err := c.obtainCertificate(crt, &signeeKey.PublicKey)
 
 	if err != nil {
 		s := messageErrorIssueCert + err.Error()
