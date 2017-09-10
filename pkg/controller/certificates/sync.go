@@ -191,7 +191,7 @@ func (c *Controller) prepare(issuer issuer.Interface, crt *v1alpha1.Certificate)
 
 // return an error on failure. If retrieval is succesful, the certificate data
 // and private key will be stored in the named secret
-func (c *Controller) issue(issuer issuer.Interface, crt *v1alpha1.Certificate) error {
+func (c *Controller) issue(issuer issuer.Interface, crt *v1alpha1.Certificate) (err error) {
 	s := messagePreparingCertificate
 	glog.Info(s)
 	c.recorder.Event(crt, api.EventTypeNormal, reasonPreparingCertificate, s)
@@ -207,7 +207,18 @@ func (c *Controller) issue(issuer issuer.Interface, crt *v1alpha1.Certificate) e
 	glog.Info(s)
 	c.recorder.Event(crt, api.EventTypeNormal, reasonIssuingCertificate, s)
 
-	key, cert, err := issuer.Issue(crt)
+	status, key, cert, err := issuer.Issue(crt)
+
+	defer func() {
+		if saveErr := c.updateCertificateStatus(crt, status); saveErr != nil {
+			errs := []error{saveErr}
+			if err != nil {
+				errs = append(errs, err)
+			}
+			err = utilerrors.NewAggregate(errs)
+		}
+	}()
+
 	if err != nil {
 		s := messageErrorIssuingCertificate + err.Error()
 		glog.Info(s)
@@ -259,7 +270,18 @@ func (c *Controller) renew(issuer issuer.Interface, crt *v1alpha1.Certificate) e
 	glog.Info(s)
 	c.recorder.Event(crt, api.EventTypeNormal, reasonRenewingCertificate, s)
 
-	key, cert, err := issuer.Renew(crt)
+	status, key, cert, err := issuer.Renew(crt)
+
+	defer func() {
+		if saveErr := c.updateCertificateStatus(crt, status); saveErr != nil {
+			errs := []error{saveErr}
+			if err != nil {
+				errs = append(errs, err)
+			}
+			err = utilerrors.NewAggregate(errs)
+		}
+	}()
+
 	if err != nil {
 		s := messageErrorRenewingCertificate + err.Error()
 		glog.Info(s)

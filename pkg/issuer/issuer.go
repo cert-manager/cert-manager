@@ -11,8 +11,8 @@ type Interface interface {
 	Prepare(*v1alpha1.Certificate) (v1alpha1.CertificateStatus, error)
 	// Issue attempts to issue a certificate as described by the certificate
 	// resource given
-	Issue(*v1alpha1.Certificate) ([]byte, []byte, error)
+	Issue(*v1alpha1.Certificate) (v1alpha1.CertificateStatus, []byte, []byte, error)
 	// Renew attempts to renew the certificate describe by the certificate
 	// resource given. If no certificate exists, an error is returned.
-	Renew(*v1alpha1.Certificate) ([]byte, []byte, error)
+	Renew(*v1alpha1.Certificate) (v1alpha1.CertificateStatus, []byte, []byte, error)
 }
