@@ -5,7 +5,7 @@ import (
 	"k8s.io/client-go/tools/record"
 
 	"github.com/jetstack-experimental/cert-manager/pkg/client/clientset"
-	"github.com/jetstack-experimental/cert-manager/pkg/kube"
+	"github.com/jetstack-experimental/cert-manager/pkg/util/kube"
 )
 
 // Context contains various types that are used by Issuer implementations.

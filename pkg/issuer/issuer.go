@@ -8,7 +8,7 @@ type Interface interface {
 	// credentials and authorization with a remote server.
 	Setup() (v1alpha1.IssuerStatus, error)
 	// Prepare
-	Prepare(*v1alpha1.Certificate) error
+	Prepare(*v1alpha1.Certificate) (v1alpha1.CertificateStatus, error)
 	// Issue attempts to issue a certificate as described by the certificate
 	// resource given
 	Issue(*v1alpha1.Certificate) ([]byte, []byte, error)
