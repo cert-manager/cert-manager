@@ -10,11 +10,23 @@ import (
 	"log"
 
 	"golang.org/x/crypto/acme"
+	"k8s.io/api/core/v1"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 
+	"github.com/golang/glog"
 	"github.com/jetstack-experimental/cert-manager/pkg/apis/certmanager/v1alpha1"
 	"github.com/jetstack-experimental/cert-manager/pkg/util/kube"
 	"github.com/jetstack-experimental/cert-manager/pkg/util/pki"
+)
+
+const (
+	errorIssueCert = "ErrIssueCert"
+
+	successCertIssued = "CertIssueSuccess"
+
+	messageErrorIssueCert = "Error issuing TLS certificate: "
+
+	messageCertIssued = "Certificate issued successfully"
 )
 
 func (a *Acme) obtainCertificate(crt *v1alpha1.Certificate) ([]byte, []byte, error) {
@@ -77,6 +89,21 @@ func (a *Acme) obtainCertificate(crt *v1alpha1.Certificate) ([]byte, []byte, err
 	return pki.EncodePKCS1PrivateKey(key), certBuffer.Bytes(), nil
 }
 
-func (a *Acme) Issue(crt *v1alpha1.Certificate) ([]byte, []byte, error) {
-	return a.obtainCertificate(crt)
+func (a *Acme) Issue(crt *v1alpha1.Certificate) (v1alpha1.CertificateStatus, []byte, []byte, error) {
+	update := crt.DeepCopy()
+	key, cert, err := a.obtainCertificate(crt)
+	if err != nil {
+		s := messageErrorIssueCert + err.Error()
+		glog.Info(s)
+		a.recorder.Event(update, v1.EventTypeWarning, errorIssueCert, s)
+		update.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse, errorIssueCert, s)
+		return update.Status, nil, nil, err
+	}
+
+	s := messageCertIssued
+	glog.Info(s)
+	a.recorder.Event(update, v1.EventTypeNormal, successCertIssued, s)
+	update.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionTrue, successCertIssued, s)
+
+	return update.Status, key, cert, err
 }
