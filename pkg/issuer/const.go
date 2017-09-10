@@ -19,6 +19,8 @@ func nameForIssuer(i *v1alpha1.Issuer) (string, error) {
 	switch {
 	case i.Spec.ACME != nil:
 		return IssuerACME, nil
+	case i.Spec.CA != nil:
+		return IssuerCA, nil
 	}
 	return "", fmt.Errorf("no issuer specified for Issuer '%s/%s'", i.Namespace, i.Name)
 }
