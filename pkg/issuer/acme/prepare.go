@@ -87,7 +87,7 @@ func (a *Acme) Prepare(crt *v1alpha1.Certificate) (v1alpha1.CertificateStatus, e
 		authResponse
 		*acme.Authorization
 		error
-	})
+	}, len(auths))
 	for _, auth := range auths {
 		wg.Add(1)
 		go func(auth authResponse) {
