@@ -10,11 +10,9 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/golang/glog"
 	"github.com/jetstack-experimental/cert-manager/pkg/apis/certmanager/v1alpha1"
 	"github.com/jetstack-experimental/cert-manager/pkg/util/kube"
 	"github.com/jetstack-experimental/cert-manager/pkg/util/pki"
-	"k8s.io/api/core/v1"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 )
 
@@ -47,8 +45,6 @@ func (c *CA) Issue(crt *v1alpha1.Certificate) (v1alpha1.CertificateStatus, []byt
 
 	if err != nil {
 		s := messageErrorGetCertKeyPair + err.Error()
-		glog.Info(s)
-		c.recorder.Event(update, v1.EventTypeWarning, errorGetCertKeyPair, s)
 		update.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse, errorGetCertKeyPair, s)
 		return update.Status, nil, nil, err
 	}
@@ -57,16 +53,11 @@ func (c *CA) Issue(crt *v1alpha1.Certificate) (v1alpha1.CertificateStatus, []byt
 
 	if err != nil {
 		s := messageErrorIssueCert + err.Error()
-		glog.Info(s)
-		c.recorder.Event(update, v1.EventTypeWarning, errorIssueCert, s)
 		update.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse, errorIssueCert, s)
 		return update.Status, nil, nil, err
 	}
 
-	s := messageCertIssued
-	glog.Info(s)
-	c.recorder.Event(update, v1.EventTypeNormal, successCertIssued, s)
-	update.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionTrue, successCertIssued, s)
+	update.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionTrue, successCertIssued, messageCertIssued)
 
 	return update.Status, pki.EncodePKCS1PrivateKey(signeeKey), certPem, nil
 }
