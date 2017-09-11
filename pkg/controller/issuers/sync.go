@@ -1,9 +1,17 @@
 package issuers
 
 import (
+	"github.com/golang/glog"
+	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/errors"
 
 	"github.com/jetstack-experimental/cert-manager/pkg/apis/certmanager/v1alpha1"
+)
+
+const (
+	errorInitIssuer = "ErrInitIssuer"
+
+	messageErrorInitIssuer = "Error initializing issuer: "
 )
 
 func (c *Controller) Sync(iss *v1alpha1.Issuer) (err error) {
@@ -27,6 +35,9 @@ func (c *Controller) Sync(iss *v1alpha1.Issuer) (err error) {
 	}()
 
 	if err != nil {
+		s := messageErrorInitIssuer + err.Error()
+		glog.Info(s)
+		c.recorder.Event(iss, v1.EventTypeWarning, errorInitIssuer, s)
 		return err
 	}
 

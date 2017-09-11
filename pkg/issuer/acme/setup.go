@@ -18,8 +18,8 @@ import (
 )
 
 const (
-	errorAccountRegistrationFailed = "ErrorRegisteringACMEAccount"
-	errorAccountVerificationFailed = "ErrorVerifyingACMEAccount"
+	errorAccountRegistrationFailed = "ErrRegisterACMEAccount"
+	errorAccountVerificationFailed = "ErrVerifyACMEAccount"
 
 	successAccountRegistered = "ACMEAccountRegistered"
 	successAccountVerified   = "ACMEAccountVerified"
@@ -41,8 +41,6 @@ func (a *Acme) Setup() (v1alpha1.IssuerStatus, error) {
 
 	if err != nil {
 		s := messageAccountRegistrationFailed + err.Error()
-		glog.Info(s)
-		a.recorder.Event(a.issuer, v1.EventTypeWarning, errorAccountRegistrationFailed, s)
 		update.UpdateStatusCondition(v1alpha1.IssuerConditionReady, v1alpha1.ConditionFalse, errorAccountRegistrationFailed, s)
 		return update.Status, fmt.Errorf(s)
 	}
@@ -55,8 +53,6 @@ func (a *Acme) Setup() (v1alpha1.IssuerStatus, error) {
 	_, err = cl.GetReg(context.Background(), a.issuer.Status.ACMEStatus().URI)
 
 	if err == nil {
-		glog.Info(messageAccountVerified)
-		a.recorder.Event(a.issuer, v1.EventTypeNormal, successAccountVerified, messageAccountVerified)
 		update.UpdateStatusCondition(v1alpha1.IssuerConditionReady, v1alpha1.ConditionTrue, successAccountVerified, messageAccountVerified)
 		return update.Status, nil
 	}
@@ -74,14 +70,10 @@ func (a *Acme) Setup() (v1alpha1.IssuerStatus, error) {
 
 	if err != nil {
 		s := messageAccountRegistrationFailed + err.Error()
-		glog.Info(s)
-		a.recorder.Event(a.issuer, v1.EventTypeWarning, errorAccountRegistrationFailed, s)
 		update.UpdateStatusCondition(v1alpha1.IssuerConditionReady, v1alpha1.ConditionFalse, errorAccountRegistrationFailed, s)
 		return update.Status, err
 	}
 
-	glog.V(4).Info(messageAccountRegistered)
-	a.recorder.Event(a.issuer, v1.EventTypeNormal, successAccountRegistered, messageAccountRegistered)
 	update.UpdateStatusCondition(v1alpha1.IssuerConditionReady, v1alpha1.ConditionTrue, successAccountRegistered, messageAccountRegistered)
 	update.Status.ACMEStatus().URI = account.URI
 
