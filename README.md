@@ -10,6 +10,8 @@ It is loosely based upon the work of [kube-lego](https://github.com/jetstack/kub
 and has borrowed some wisdom from other similar projects e.g.
 [kube-cert-manager](https://github.com/PalmStoneGames/kube-cert-manager).
 
+![cert-manager high level overview diagram](/docs/high-level-overview.png)
+
 ## Current status
 
 This project is still heavily under development and is not ready for use
