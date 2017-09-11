@@ -52,7 +52,7 @@ depend:
 	mkdir $(TEST_DIR)/
 	mkdir $(BUILD_DIR)/
 
-verify: .hack_verify
+verify: go_fmt .hack_verify
 test: go_test
 
 version:
@@ -65,6 +65,10 @@ build_%: depend version
 		-o ${BUILD_DIR}/${APP_NAME}-$*-$(GOOS)-$(GOARCH) \
 		-ldflags "-X main.AppGitState=${GIT_STATE} -X main.AppGitCommit=${GIT_COMMIT} -X main.AppVersion=${APP_VERSION}" \
 		./cmd/$*
+
+go_fmt:
+	$(eval FMT_OUTPUT := $(shell go fmt ./pkg/... ./cmd/... ./test/... | wc -l))
+	@if [ "$(FMT_OUTPUT)" != "0" ]; then echo "Please run go fmt"; exit 1; fi
 
 go_test:
 	go test -v $$(go list ./... | grep -v '/vendor/' | grep -v '/test/e2e' )
