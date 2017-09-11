@@ -2,17 +2,35 @@ package acme
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"sync"
 
 	"golang.org/x/crypto/acme"
-	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/api/core/v1"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 
+	"github.com/golang/glog"
 	"github.com/jetstack-experimental/cert-manager/pkg/apis/certmanager/v1alpha1"
 	"github.com/jetstack-experimental/cert-manager/pkg/util"
 	"github.com/jetstack-experimental/cert-manager/pkg/util/kube"
+)
+
+const (
+	successObtainedAuthorization = "ObtainAuthorization"
+	reasonPresentChallenge       = "PresentChallenge"
+	reasonSelfCheck              = "SelfCheck"
+	errorGetACMEAccount          = "ErrGetACMEAccount"
+	errorCheckAuthorization      = "ErrCheckAuthorization"
+	errorObtainAuthorization     = "ErrObtainAuthorization"
+
+	messageObtainedAuthorization    = "Obtained authorization for domain %s"
+	messagePresentChallenge         = "Presenting %s challenge for domain %s"
+	messageSelfCheck                = "Performing self-check for domain %s"
+	messageErrorGetACMEAccount      = "Error getting ACME account: "
+	messageErrorCheckAuthorization  = "Error checking ACME domain validation: "
+	messageErrorObtainAuthorization = "Error obtaining ACME domain authorization: "
 )
 
 // Prepare will ensure the issuer has been initialised and is ready to issue
@@ -21,21 +39,15 @@ import (
 // It will send the appropriate Letsencrypt authorizations, and complete
 // challenge requests if neccessary.
 func (a *Acme) Prepare(crt *v1alpha1.Certificate) (v1alpha1.CertificateStatus, error) {
-	updateStatus := *crt.Status.DeepCopy()
-
-	if crt.Spec.ACME == nil {
-		return updateStatus, fmt.Errorf("acme config must be specified")
-	}
+	update := crt.DeepCopy()
 
 	log.Printf("getting private key for acme issuer %s/%s", a.issuer.Namespace, a.issuer.Name)
 	accountPrivKey, err := kube.SecretTLSKey(a.secretsLister, a.issuer.Namespace, a.issuer.Spec.ACME.PrivateKey)
 
-	if k8sErrors.IsNotFound(err) {
-		return updateStatus, err
-	}
-
 	if err != nil {
-		return updateStatus, fmt.Errorf("error getting acme account private key: %s", err.Error())
+		s := messageErrorGetACMEAccount + err.Error()
+		update.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse, errorGetACMEAccount, s)
+		return update.Status, errors.New(s)
 	}
 
 	cl := &acme.Client{
@@ -47,21 +59,25 @@ func (a *Acme) Prepare(crt *v1alpha1.Certificate) (v1alpha1.CertificateStatus, e
 	toAuthorize, err := authorizationsToObtain(cl, *crt)
 
 	if err != nil {
-		return updateStatus, err
+		s := messageErrorCheckAuthorization + err.Error()
+		update.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse, errorCheckAuthorization, s)
+		return update.Status, errors.New(s)
 	}
-
-	log.Printf("need to get authorizations for %v", toAuthorize)
 
 	// step two: if there are any domains that we don't have authorization for,
 	// we should attempt to authorize those domains
 	if len(toAuthorize) == 0 {
-		return updateStatus, nil
+		// TODO: set a field in the status block to show authorizations have
+		// been obtained so we can periodically update the auth status
+		return update.Status, nil
 	}
 
 	auths, err := getAuthorizations(cl, toAuthorize...)
 
 	if err != nil {
-		return updateStatus, err
+		s := messageErrorCheckAuthorization + err.Error()
+		update.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse, errorCheckAuthorization, s)
+		return update.Status, errors.New(s)
 	}
 
 	log.Printf("requested authorizations for %v", toAuthorize)
@@ -71,7 +87,7 @@ func (a *Acme) Prepare(crt *v1alpha1.Certificate) (v1alpha1.CertificateStatus, e
 		authResponse
 		*acme.Authorization
 		error
-	})
+	}, len(auths))
 	for _, auth := range auths {
 		wg.Add(1)
 		go func(auth authResponse) {
@@ -103,10 +119,13 @@ func (a *Acme) Prepare(crt *v1alpha1.Certificate) (v1alpha1.CertificateStatus, e
 	}
 
 	if len(errs) > 0 {
-		return updateStatus, utilerrors.NewAggregate(errs)
+		err = utilerrors.NewAggregate(errs)
+		s := messageErrorCheckAuthorization + err.Error()
+		update.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse, errorCheckAuthorization, s)
+		return update.Status, err
 	}
 
-	return updateStatus, nil
+	return update.Status, nil
 }
 
 func keyForChallenge(cl *acme.Client, challenge *acme.Challenge) (string, error) {
@@ -123,12 +142,12 @@ func keyForChallenge(cl *acme.Client, challenge *acme.Challenge) (string, error)
 }
 
 func (a *Acme) authorize(cl *acme.Client, crt *v1alpha1.Certificate, auth authResponse) (*acme.Authorization, error) {
-	log.Printf("picking challenge type for domain '%s'", auth.domain)
+	glog.V(4).Infof("picking challenge type for domain '%s'", auth.domain)
 	challengeType, err := pickChallengeType(auth.domain, auth.auth, crt.Spec.ACME.Config)
 	if err != nil {
 		return nil, fmt.Errorf("error picking challenge type to use for domain '%s': %s", auth.domain, err.Error())
 	}
-	log.Printf("using challenge type %s for domain '%s'", challengeType, auth.domain)
+	glog.V(4).Infof("using challenge type %s for domain '%s'", challengeType, auth.domain)
 	challenge, err := challengeForAuthorization(cl, auth.auth, challengeType)
 	if err != nil {
 		return nil, fmt.Errorf("error getting challenge for domain '%s': %s", auth.domain, err.Error())
@@ -145,34 +164,34 @@ func (a *Acme) authorize(cl *acme.Client, crt *v1alpha1.Certificate, auth authRe
 
 	defer solver.CleanUp(context.Background(), crt, auth.domain, token, key)
 
-	log.Printf("presenting challenge for domain %s, token %s key %s", auth.domain, token, key)
+	a.recorder.Eventf(crt, v1.EventTypeNormal, reasonPresentChallenge, messagePresentChallenge, challengeType, auth.domain)
 	err = solver.Present(context.Background(), crt, auth.domain, token, key)
 	if err != nil {
 		return nil, fmt.Errorf("error presenting acme authorization for domain '%s': %s", auth.domain, err.Error())
 	}
 
-	log.Printf("waiting for key to be available to acme servers for domain %s", auth.domain)
+	a.recorder.Eventf(crt, v1.EventTypeNormal, reasonSelfCheck, messageSelfCheck, auth.domain)
 	err = solver.Wait(context.Background(), crt, auth.domain, token, key)
 	if err != nil {
 		return nil, fmt.Errorf("error waiting for key to be available for domain '%s': %s", auth.domain, err.Error())
 	}
 
-	log.Printf("accepting %s challenge for domain %s", challengeType, auth.domain)
 	challenge, err = cl.Accept(context.Background(), challenge)
 	if err != nil {
 		return nil, fmt.Errorf("error accepting acme challenge for domain '%s': %s", auth.domain, err.Error())
 	}
 
-	log.Printf("waiting for authorization for domain %s (%s)...", auth.domain, challenge.URI)
+	glog.V(4).Infof("waiting for authorization for domain %s (%s)...", auth.domain, challenge.URI)
 	authorization, err := cl.WaitAuthorization(context.Background(), challenge.URI)
 	if err != nil {
 		return nil, fmt.Errorf("error waiting for authorization for domain '%s': %s", auth.domain, err.Error())
 	}
 
 	if authorization.Status != acme.StatusValid {
-		return nil, fmt.Errorf("expected acme domain authorization status for '%s' to be valid, but it's %s", auth.domain, authorization.Status)
+		return nil, fmt.Errorf("expected acme domain authorization status for '%s' to be valid, but it is %s", auth.domain, authorization.Status)
 	}
-	log.Printf("got successful authorization for domain %s", auth.domain)
+
+	a.recorder.Eventf(crt, v1.EventTypeNormal, successObtainedAuthorization, messageObtainedAuthorization, auth.domain)
 
 	return authorization, nil
 }
