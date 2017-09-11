@@ -6,7 +6,7 @@ import (
 
 	clientset "github.com/jetstack-experimental/cert-manager/pkg/client/clientset"
 	"github.com/jetstack-experimental/cert-manager/pkg/issuer"
-	"github.com/jetstack-experimental/cert-manager/pkg/kube"
+	"github.com/jetstack-experimental/cert-manager/pkg/util/kube"
 )
 
 // Context contains various types that are used by controller implementations.
