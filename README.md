@@ -18,6 +18,11 @@ This project is still heavily under development and is not ready for use
 **yet**. However, if you want to experiment, please do try running the current
 development build and reporting any issues you run into.
 
+**NOTE:** currently we provide no guarantees on our API stability. This means
+there may be breaking changes that will require changes to *all* Issuer/Certificate
+resources you have already created. A stable API will be cut and maintained once the
+initial phase of development is complete.
+
 ## Quickstart
 
 > Prebuilt images for cert-manager are made available on Dockerhub.
