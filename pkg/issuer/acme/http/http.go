@@ -94,7 +94,7 @@ func (s *Solver) ensureService(crt *v1alpha1.Certificate, domain string, labels 
 		svc = &corev1.Service{}
 	}
 
-	svc.Name = dns1035(fmt.Sprintf("cm-%s-%s", crt.Name, domain))
+	svc.Name = svcName
 	svc.Namespace = crt.Namespace
 	if svc.Labels == nil {
 		svc.Labels = make(map[string]string)
