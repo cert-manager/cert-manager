@@ -40,16 +40,16 @@ const (
 
 // svcNameFunc returns the name for the service to solve the challenge
 func svcNameFunc(crtName, domain string) string {
-	return dns1035(fmt.Sprintf("cm-%s-%s", crtName, domain))
+	return dns1035(fmt.Sprintf("cm-%s-%s", crtName, util.RandStringRunes(5)))
 }
 
 // ingNameFunc returns the name for the ingress to solve the challenge
 func ingNameFunc(crtName, domain string) string {
-	return dns1035(fmt.Sprintf("cm-%s-%s", crtName, domain))
+	return dns1035(fmt.Sprintf("cm-%s-%s", crtName, util.RandStringRunes(5)))
 }
 
 func jobNameFunc(crtName, domain string) string {
-	return dns1035(fmt.Sprintf("cm-%s-%s", crtName, domain))
+	return dns1035(fmt.Sprintf("cm-%s-%s", crtName, util.RandStringRunes(5)))
 }
 
 // Solver is an implementation of the acme http-01 challenge solver protocol
