@@ -1,0 +1,43 @@
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRole
+metadata:
+  name: cert-manager
+rules:
+- apiGroups: ["certmanager.k8s.io"]
+  resources: ["certificates", "issuers"]
+  verbs: ["get", "list", "watch", "update", "create"]
+- apiGroups: [""]
+  resources: ["secrets"]
+  verbs: ["get", "list", "watch", "update", "create"]
+- apiGroups: [""]
+  resources: ["namespaces"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: [""]
+  resources: ["events"]
+  verbs: ["get", "list", "watch", "update", "create", "patch"]
+- apiGroups: [""]
+  resources: ["endpoints"]
+  verbs: ["list","watch","update","create","get"]
+- apiGroups: [""]
+  resources: ["services"]
+  verbs: ["list","watch","get"]
+- apiGroups: ["extensions"]
+  resources: ["ingresses"]
+  verbs: ["list","watch","get"]
+- apiGroups: ["batch"]
+  resources: ["jobs"]
+  verbs: ["list","watch","update","create","delete"]
+---
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRoleBinding
+metadata:
+  name: cert-manager-binding
+  namespace: default
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cert-manager
+subjects:
+- namespace: default
+  kind: ServiceAccount
+  name: default

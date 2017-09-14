@@ -74,10 +74,14 @@ To deploy the latest version of cert-manager, run:
 $ kubectl create -f https://raw.githubusercontent.com/jetstack-experimental/cert-manager/master/docs/cert-manager.yaml
 ```
 
+To deploy RBAC roles, run:
+```
+$ kubectl create -f https://raw.githubusercontent.com/jetstack-experimental/cert-manager/master/docs/rbac.yaml
+```
+
 **NOTE**
 
 * In future this may be replaced with a Helm chart.
-* There are currently no official RBAC roles defined for cert-manager (see [#34](https://github.com/jetstack-experimental/cert-manager/issues/34))
 
 ### 2. Set up letsencrypt staging issuer
 
