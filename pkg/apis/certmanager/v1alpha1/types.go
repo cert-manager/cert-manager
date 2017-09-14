@@ -149,9 +149,9 @@ type ACMEIssuerDNS01ProviderCloudflare struct {
 // ACMEIssuerDNS01ProviderRoute53 is a structure containing the Route 53
 // configuration for AWS
 type ACMEIssuerDNS01ProviderRoute53 struct {
-	AccessKeyID     string            `json:"accessKeyID"`
+	AccessKeyID     SecretKeySelector `json:"accessKeyID"`
 	SecretAccessKey SecretKeySelector `json:"secretAccessKey"`
-	HostedZoneID    string            `json:"hostedZoneID"`
+	HostedZoneID    SecretKeySelector `json:"hostedZoneID"`
 	Region          string            `json:"region"`
 }
 
