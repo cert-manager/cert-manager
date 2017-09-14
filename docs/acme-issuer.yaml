@@ -34,3 +34,21 @@ spec:
             key: api-key
           # The cloudflare user account email
           email: cloudflare-user@example.com
+      # We define a provider named 'route53', with configuration for the
+      # route53 challenge provider.
+      - name: route53
+        route53:
+          # A secretKeyRef to a the route53 access key ID
+          accessKeyID:
+            name: route53-config
+            key: access-key-id
+          # A secretKeyRef to a the route53 secret access key
+          secretAccessKey:
+            name: route53-config
+            key: secret-access-key
+          # A secretKeyRef to a the route53 hosted zone ID
+          hostedZoneID:
+            name: route53-config
+            key: hosted-zone-id
+          # The route53 region
+          region: us-east-1

@@ -13,6 +13,7 @@ spec:
   - cm-http-gce.k8s.group
   - cm-http-clouddns.k8s.group
   - cm-http-cloudflare.k8s.group
+  - cm-http-route53.k8s.group
   acme:
     config:
     - http-01:
@@ -32,3 +33,7 @@ spec:
         provider: cloudflare
       domains:
       - cm-dns-cloudflare.k8s.group
+    - dns-01:
+        provider: route53
+      domains:
+      - cm-dns-route53.k8s.group
