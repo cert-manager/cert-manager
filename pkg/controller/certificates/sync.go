@@ -3,6 +3,7 @@ package certificates
 import (
 	"crypto/x509"
 	"fmt"
+	"reflect"
 	"time"
 
 	api "k8s.io/api/core/v1"
@@ -70,7 +71,7 @@ func (c *Controller) Sync(crt *v1alpha1.Certificate) (err error) {
 		return err
 	}
 
-	issuerReady := v1alpha1.IssuerHasCondition(issuerObj, v1alpha1.IssuerCondition{
+	issuerReady := issuerObj.HasCondition(v1alpha1.IssuerCondition{
 		Type:   v1alpha1.IssuerConditionReady,
 		Status: v1alpha1.ConditionTrue,
 	})
@@ -191,7 +192,7 @@ func (c *Controller) prepare(issuer issuer.Interface, crt *v1alpha1.Certificate)
 
 // return an error on failure. If retrieval is succesful, the certificate data
 // and private key will be stored in the named secret
-func (c *Controller) issue(issuer issuer.Interface, crt *v1alpha1.Certificate) error {
+func (c *Controller) issue(issuer issuer.Interface, crt *v1alpha1.Certificate) (err error) {
 	s := messagePreparingCertificate
 	glog.Info(s)
 	c.recorder.Event(crt, api.EventTypeNormal, reasonPreparingCertificate, s)
@@ -207,7 +208,18 @@ func (c *Controller) issue(issuer issuer.Interface, crt *v1alpha1.Certificate) e
 	glog.Info(s)
 	c.recorder.Event(crt, api.EventTypeNormal, reasonIssuingCertificate, s)
 
-	key, cert, err := issuer.Issue(crt)
+	status, key, cert, err := issuer.Issue(crt)
+
+	defer func() {
+		if saveErr := c.updateCertificateStatus(crt, status); saveErr != nil {
+			errs := []error{saveErr}
+			if err != nil {
+				errs = append(errs, err)
+			}
+			err = utilerrors.NewAggregate(errs)
+		}
+	}()
+
 	if err != nil {
 		s := messageErrorIssuingCertificate + err.Error()
 		glog.Info(s)
@@ -259,7 +271,18 @@ func (c *Controller) renew(issuer issuer.Interface, crt *v1alpha1.Certificate) e
 	glog.Info(s)
 	c.recorder.Event(crt, api.EventTypeNormal, reasonRenewingCertificate, s)
 
-	key, cert, err := issuer.Renew(crt)
+	status, key, cert, err := issuer.Renew(crt)
+
+	defer func() {
+		if saveErr := c.updateCertificateStatus(crt, status); saveErr != nil {
+			errs := []error{saveErr}
+			if err != nil {
+				errs = append(errs, err)
+			}
+			err = utilerrors.NewAggregate(errs)
+		}
+	}()
+
 	if err != nil {
 		s := messageErrorRenewingCertificate + err.Error()
 		glog.Info(s)
@@ -292,12 +315,15 @@ func (c *Controller) renew(issuer issuer.Interface, crt *v1alpha1.Certificate) e
 	return nil
 }
 
-func (c *Controller) updateCertificateStatus(iss *v1alpha1.Certificate, status v1alpha1.CertificateStatus) error {
-	updateCertificate := iss.DeepCopy()
+func (c *Controller) updateCertificateStatus(crt *v1alpha1.Certificate, status v1alpha1.CertificateStatus) error {
+	updateCertificate := crt.DeepCopy()
 	updateCertificate.Status = status
+	if reflect.DeepEqual(crt.Status, updateCertificate.Status) {
+		return nil
+	}
 	// TODO: replace Update call with UpdateStatus. This requires a custom API
 	// server with the /status subresource enabled and/or subresource support
 	// for CRDs (https://github.com/kubernetes/kubernetes/issues/38113)
-	_, err := c.cmClient.CertmanagerV1alpha1().Certificates(iss.Namespace).Update(updateCertificate)
+	_, err := c.cmClient.CertmanagerV1alpha1().Certificates(crt.Namespace).Update(updateCertificate)
 	return err
 }

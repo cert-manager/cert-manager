@@ -1,6 +1,8 @@
 package issuers
 
 import (
+	"reflect"
+
 	"github.com/golang/glog"
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/errors"
@@ -47,6 +49,9 @@ func (c *Controller) Sync(iss *v1alpha1.Issuer) (err error) {
 func (c *Controller) updateIssuerStatus(iss *v1alpha1.Issuer, status v1alpha1.IssuerStatus) error {
 	updateIssuer := iss.DeepCopy()
 	updateIssuer.Status = status
+	if reflect.DeepEqual(iss.Status, updateIssuer.Status) {
+		return nil
+	}
 	// TODO: replace Update call with UpdateStatus. This requires a custom API
 	// server with the /status subresource enabled and/or subresource support
 	// for CRDs (https://github.com/kubernetes/kubernetes/issues/38113)

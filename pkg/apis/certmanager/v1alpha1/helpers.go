@@ -52,7 +52,7 @@ func (c *CertificateACMEStatus) SaveAuthorization(a ACMEDomainAuthorization) {
 	c.Authorizations = append(c.Authorizations, a)
 }
 
-func IssuerHasCondition(iss *Issuer, condition IssuerCondition) bool {
+func (iss *Issuer) HasCondition(condition IssuerCondition) bool {
 	if len(iss.Status.Conditions) == 0 {
 		return false
 	}

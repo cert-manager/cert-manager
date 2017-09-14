@@ -17,6 +17,16 @@ import (
 	"github.com/jetstack-experimental/cert-manager/pkg/util/pki"
 )
 
+const (
+	errorIssueCert = "ErrIssueCert"
+
+	successCertIssued = "CertIssueSuccess"
+
+	messageErrorIssueCert = "Error issuing TLS certificate: "
+
+	messageCertIssued = "Certificate issued successfully"
+)
+
 func (a *Acme) obtainCertificate(crt *v1alpha1.Certificate) ([]byte, []byte, error) {
 	if crt.Spec.ACME == nil {
 		return nil, nil, fmt.Errorf("acme config must be specified")
@@ -77,6 +87,16 @@ func (a *Acme) obtainCertificate(crt *v1alpha1.Certificate) ([]byte, []byte, err
 	return pki.EncodePKCS1PrivateKey(key), certBuffer.Bytes(), nil
 }
 
-func (a *Acme) Issue(crt *v1alpha1.Certificate) ([]byte, []byte, error) {
-	return a.obtainCertificate(crt)
+func (a *Acme) Issue(crt *v1alpha1.Certificate) (v1alpha1.CertificateStatus, []byte, []byte, error) {
+	update := crt.DeepCopy()
+	key, cert, err := a.obtainCertificate(crt)
+	if err != nil {
+		s := messageErrorIssueCert + err.Error()
+		update.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse, errorIssueCert, s)
+		return update.Status, nil, nil, err
+	}
+
+	update.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionTrue, successCertIssued, messageCertIssued)
+
+	return update.Status, key, cert, err
 }

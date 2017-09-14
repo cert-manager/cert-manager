@@ -23,8 +23,8 @@ import (
 	"github.com/jetstack-experimental/cert-manager/test/util"
 )
 
-var _ = framework.CertManagerDescribe("Issuer", func() {
-	f := framework.NewDefaultFramework("create-issuer")
+var _ = framework.CertManagerDescribe("ACME Issuer", func() {
+	f := framework.NewDefaultFramework("create-acme-issuer")
 
 	podName := "test-cert-manager"
 	issuerName := "test-acme-issuer"
