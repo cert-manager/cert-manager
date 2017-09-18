@@ -134,6 +134,16 @@ func (s *Solver) solverFor(crt *v1alpha1.Certificate, domain string) (solver, er
 			return nil, fmt.Errorf("error instantiating cloudflare challenge solver: %s", err.Error())
 		}
 	case providerConfig.Route53 != nil:
+		secretKeyIDSecret, err := s.secretLister.Secrets(s.issuer.Namespace).Get(providerConfig.Route53.AccessKeyID.Name)
+		if err != nil {
+			return nil, fmt.Errorf("error getting route53 access key id: %s", err.Error())
+		}
+
+		secretKeyIDBytes, ok := secretKeyIDSecret.Data[providerConfig.Route53.AccessKeyID.Key]
+		if !ok {
+			return nil, fmt.Errorf("error getting route53 access key id: key '%s' not found in secret", providerConfig.Route53.AccessKeyID.Key)
+		}
+
 		secretAccessKeySecret, err := s.secretLister.Secrets(s.issuer.Namespace).Get(providerConfig.Route53.SecretAccessKey.Name)
 		if err != nil {
 			return nil, fmt.Errorf("error getting route53 secret access key: %s", err.Error())
@@ -144,10 +154,20 @@ func (s *Solver) solverFor(crt *v1alpha1.Certificate, domain string) (solver, er
 			return nil, fmt.Errorf("error getting route53 secret access key: key '%s' not found in secret", providerConfig.Route53.SecretAccessKey.Key)
 		}
 
+		secretHostedZoneIDSecret, err := s.secretLister.Secrets(s.issuer.Namespace).Get(providerConfig.Route53.HostedZoneID.Name)
+		if err != nil {
+			return nil, fmt.Errorf("error getting route53 hosted zone id: %s", err.Error())
+		}
+
+		secretHostedZoneIDBytes, ok := secretHostedZoneIDSecret.Data[providerConfig.Route53.HostedZoneID.Key]
+		if !ok {
+			return nil, fmt.Errorf("error getting route53 hosted zone id: key '%s' not found in secret", providerConfig.Route53.HostedZoneID.Key)
+		}
+
 		impl, err = route53.NewDNSProviderAccessKey(
-			providerConfig.Route53.AccessKeyID,
+			string(secretKeyIDBytes),
 			string(secretAccessKeyBytes),
-			providerConfig.Route53.HostedZoneID,
+			string(secretHostedZoneIDBytes),
 			providerConfig.Route53.Region,
 		)
 		if err != nil {
