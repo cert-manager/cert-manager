@@ -3,9 +3,10 @@
 ## Problem
 
 Currently in Kubernetes, a number of different components including user
-applications require TLS certificates. Right now, users can provide
-certificates to workloads on the cluster by creating `Secret` resources that
-contain a private/public keypair.
+applications require X.509 certificates for use with TLS. Right now, users can
+provide certificates to workloads on the cluster by creating `Secret` resources
+that contain a private/public keypair, or potentially generating a CSR within a
+pod and requesting it be signed by a certificate authority.
 
 A number of projects (see: [kube-lego](https://github.com/jetstack/kube-lego),
 [kube-cert-manager](https://github.com/PalmStoneGames/kube-cert-manager)
@@ -13,25 +14,30 @@ and [kubernetes-letsencrypt](https://github.com/tazjin/kubernetes-letsencrypt))
 came about in order to automate the retrieval of certificates from an [ACME](https://github.com/ietf-wg-acme/acme/)
 compliant server. This has served the community well, especially with the rise
 in popularity of ACME due to [letsencrypt](https://letsencrypt.org). These
-projects also attempt to renew the certificate as it reaches it's expiry time.
+projects also attempt to renew the certificate as it reaches its expiry time.
 
-Whilst each project has invented it's own schema/methodology for obtaining
+Whilst each project has invented its own schema/methodology for obtaining
 these certificates, the end goal has largely been the same. To provide a signed
-keypair in a Secret resource to then be consumed, either by an Ingress
-controller or some other workload in-cluster, and then keep that keypair up to
-date.
+certificate and private key in a Secret resource to then be consumed, either by
+an Ingress controller or some other workload in-cluster, and then keep that
+certificate up to date.
 
-Looking beyond the capabilities of all of these projects, it'd also be
-beneficial for users to be able to utilise alternative issuer backends, other
-than ACME. This could include [Hashicorp Vault](https://vaultproject.io), a
-plain CA (backed by Kubernetes secret resources), or any other cloud based
-service.
+Furthermore, it is not currently possible with any of these projects to support
+a mode of operation where the private key is kept secret at all times (i.e. the
+key never leaves the application container). It'd also be beneficial for users
+to be able to utilise alternative issuer backends, other than ACME. This could
+include [Hashicorp Vault](https://vaultproject.io), a plain CA (backed by
+Kubernetes secret resources), or any other cloud based service.
 
 It is therefore proposed that a new project, `cert-manager`, is created that
 aims to generalise the issuance and renewal of certificates from an arbitrary
 certificate source. This project should be designed in a similar manner to
 other Kubernetes controllers (eg. kube-controller-manager, service-catalog et
-al.).
+al.). Whether certificates are signed by a publicly trusted authority is not a
+concern of cert-manager.
+
+cert-manager would also like to support this operating mode where the private
+key is never exposed outside of the application requesting a certificate.
 
 ## Definitions
 
@@ -53,35 +59,27 @@ spec:
     email: user@example.com
     # Name of a secret used to store the ACME account private key
     privateKey: letsncrypt-staging
-    # ACME dns-01 provider configurations
+    # Enable the HTTP-01 challenge mechanism
+    http-01: {}
+    # Enable the DNS-01 challenge mechanism and provide one DNS provider
     dns-01:
       # Here we define a list of DNS-01 providers that can solve DNS challenges
       providers:
       # We define a provider named 'clouddns', with configuration for the
       # clouddns challenge provider.
-      - name: clouddns
+      - name: clouddns-prod
         clouddns:
-          # A secretKeyRef to a the google cloud json service account
+          # A secretKeyRef to the google cloud json service account
           serviceAccount:
             name: clouddns-service-account
             key: service-account.json
           # The project in which to update the DNS zone
           project: gcloud-project
-      # We define a provider named 'cloudflare', with configuration for the
-      # cloudflare challenge provider.
-      - name: cloudflare
-        cloudflare:
-          # A secretKeyRef to a the cloudflare api key
-          apiKey:
-            name: cloudflare-config
-            key: api-key
-          # The cloudflare user account email
-          email: cloudflare-user@example.com
 ```
 
 * `Certificate` - a Certificate resource details a Certificate keypair to
 manage with cert-manager. It contains details such as the hostnames to be listed
-on the certificate, as well as details of which issuer to issuer certificates with,
+on the certificate, as well as details of which issuer to issue certificates with,
 and any additional configuration required for the selected issuer. An example
 manifest for a Certificate resource:
 
@@ -95,31 +93,27 @@ metadata:
 spec:
   secretName: cm-http-nginx-k8s-group
   issuer: letsencrypt-staging
+  # The certificate should be valid for the following domains
   domains:
   - cm-http-nginx.k8s.group
   - cm-http-nginx2.k8s.group
-  - cm-http-gce.k8s.group
-  - cm-http-clouddns.k8s.group
-  - cm-http-cloudflare.k8s.group
+  - cm-dns-clouddns.k8s.group
   acme:
     config:
-    - http-01:
-        ingressClass: nginx
-      domains:
+    # Validate cm-http-nginx.k8s.group and cm-http-nginx2.k8s.group
+    # using the http-01 challenge mechanism.
+    - domains:
       - cm-http-nginx.k8s.group
       - cm-http-nginx2.k8s.group
-    - http-01:
-        ingressName: my-gce-ingress
-      domains:
-      - cm-http-gce.k8s.group
-    - dns-01:
-        provider: clouddns
-      domains:
+      http-01:
+        # Create ingresses with class 'nginx' in order to solve the challenge
+        ingressClass: nginx
+    # Validate cm-dns-clouddns.k8s.group using the 'clouddns-prod' provider as
+    # configured in the letsencrypt-staging issuer above.
+    - domains:
       - cm-dns-clouddns.k8s.group
-    - dns-01:
-        provider: cloudflare
-      domains:
-      - cm-dns-cloudflare.k8s.group
+      dns-01:
+        provider: clouddns-prod
 ```
 
 These example manifests do not describe a finalised API, but instead aim to
