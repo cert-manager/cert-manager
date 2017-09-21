@@ -21,6 +21,30 @@ import (
 )
 
 // +genclient
+// +genclient:nonNamespaced
+// +k8s:openapi-gen=true
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+// +resource:path=clusterissuers
+
+type ClusterIssuer struct {
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
+
+	Spec   IssuerSpec   `json:"spec,omitempty"`
+	Status IssuerStatus `json:"status,omitempty"`
+}
+
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+
+// ClusterIssuerList is a list of Issuers
+type ClusterIssuerList struct {
+	metav1.TypeMeta `json:",inline"`
+	metav1.ListMeta `json:"metadata"`
+
+	Items []ClusterIssuer `json:"items"`
+}
+
+// +genclient
 // +k8s:openapi-gen=true
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // +resource:path=issuers
@@ -46,6 +70,10 @@ type IssuerList struct {
 // IssuerSpec is the specification of an Issuer. This includes any
 // configuration required for the issuer.
 type IssuerSpec struct {
+	IssuerConfig `json:",inline"`
+}
+
+type IssuerConfig struct {
 	ACME *ACMEIssuer `json:"acme,omitempty"`
 	CA   *CAIssuer   `json:"ca,omitempty"`
 }
@@ -196,9 +224,12 @@ type CertificateSpec struct {
 	Domains []string `json:"domains"`
 	// Secret is the name of the secret resource to store this secret in
 	SecretName string `json:"secretName"`
-	// Issuer is the name of the issuer resource to use to obtain this
-	// certificate
-	Issuer string `json:"issuer"`
+	// IssuerRef is a reference to the issuer for this certificate. If the
+	// namespace field is not set, it is assumed to be in the same namespace
+	// as the certificate. If the namespace field is set to the empty value "",
+	// a ClusterIssuer of the given name will be used. Any other value is
+	// invalid.
+	IssuerRef ObjectReference `json:"issuerRef"`
 
 	ACME *ACMECertificateConfig `json:"acme,omitempty"`
 }
@@ -276,6 +307,13 @@ type LocalObjectReference struct {
 	// More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
 	// TODO: Add other useful fields. apiVersion, kind, uid?
 	Name string `json:"name,omitempty"`
+}
+
+// ObjectReference is a reference to an object. If the namespace field is set,
+// it is assumed to be in a namespace
+type ObjectReference struct {
+	Name      string  `json:"name,omitempty"`
+	Namespace *string `json:"namespace,omitempty"`
 }
 
 type SecretKeySelector struct {
