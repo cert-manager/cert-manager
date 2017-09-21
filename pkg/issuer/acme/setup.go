@@ -30,7 +30,7 @@ const (
 	messageAccountVerified           = "The ACME account was verified with the ACME server"
 )
 
-func (a *Acme) Setup() (v1alpha1.IssuerStatus, error) {
+func (a *Acme) Setup(ctx context.Context) (v1alpha1.IssuerStatus, error) {
 	update := a.issuer.DeepCopy()
 
 	accountPrivKey, err := kube.SecretTLSKey(a.secretsLister, a.issuer.Namespace, a.issuer.Spec.ACME.PrivateKey)
@@ -50,7 +50,7 @@ func (a *Acme) Setup() (v1alpha1.IssuerStatus, error) {
 		DirectoryURL: a.issuer.Spec.ACME.Server,
 	}
 
-	_, err = cl.GetReg(context.Background(), a.issuer.Status.ACMEStatus().URI)
+	_, err = cl.GetReg(ctx, a.issuer.Status.ACMEStatus().URI)
 
 	if err == nil {
 		update.UpdateStatusCondition(v1alpha1.IssuerConditionReady, v1alpha1.ConditionTrue, successAccountVerified, messageAccountVerified)
@@ -65,8 +65,7 @@ func (a *Acme) Setup() (v1alpha1.IssuerStatus, error) {
 		Contact: []string{fmt.Sprintf("mailto:%s", strings.ToLower(a.issuer.Spec.ACME.Email))},
 	}
 
-	// todo (@munnerz): don't use ctx.Background() here
-	account, err := cl.Register(context.Background(), acc, acme.AcceptTOS)
+	account, err := cl.Register(ctx, acc, acme.AcceptTOS)
 
 	if err != nil {
 		s := messageAccountRegistrationFailed + err.Error()

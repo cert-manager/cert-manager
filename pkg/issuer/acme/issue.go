@@ -27,7 +27,7 @@ const (
 	messageCertIssued = "Certificate issued successfully"
 )
 
-func (a *Acme) obtainCertificate(crt *v1alpha1.Certificate) ([]byte, []byte, error) {
+func (a *Acme) obtainCertificate(ctx context.Context, crt *v1alpha1.Certificate) ([]byte, []byte, error) {
 	if crt.Spec.ACME == nil {
 		return nil, nil, fmt.Errorf("acme config must be specified")
 	}
@@ -68,7 +68,7 @@ func (a *Acme) obtainCertificate(crt *v1alpha1.Certificate) ([]byte, []byte, err
 	}
 
 	certSlice, certURL, err := cl.CreateCert(
-		context.Background(),
+		ctx,
 		csr,
 		0,
 		true,
@@ -87,9 +87,9 @@ func (a *Acme) obtainCertificate(crt *v1alpha1.Certificate) ([]byte, []byte, err
 	return pki.EncodePKCS1PrivateKey(key), certBuffer.Bytes(), nil
 }
 
-func (a *Acme) Issue(crt *v1alpha1.Certificate) (v1alpha1.CertificateStatus, []byte, []byte, error) {
+func (a *Acme) Issue(ctx context.Context, crt *v1alpha1.Certificate) (v1alpha1.CertificateStatus, []byte, []byte, error) {
 	update := crt.DeepCopy()
-	key, cert, err := a.obtainCertificate(crt)
+	key, cert, err := a.obtainCertificate(ctx, crt)
 	if err != nil {
 		s := messageErrorIssueCert + err.Error()
 		update.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse, errorIssueCert, s)

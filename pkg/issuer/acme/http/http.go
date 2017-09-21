@@ -17,6 +17,7 @@ import (
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/kubernetes"
 	corev1listers "k8s.io/client-go/listers/core/v1"
@@ -432,14 +433,19 @@ func testReachability(ctx context.Context, domain, path, key string) error {
 // CleanUp will ensure the created service and ingress are clean/deleted of any
 // cert-manager created data.
 func (s *Solver) CleanUp(ctx context.Context, crt *v1alpha1.Certificate, domain, token, key string) error {
+	var errs []error
 	if err := s.cleanupJob(crt, domain); err != nil {
-		return fmt.Errorf("[%s] Error cleaning up job: %s", domain, err.Error())
+		errs = append(errs, fmt.Errorf("[%s] Error cleaning up job: %s", domain, err.Error()))
 	}
 	if err := s.cleanupService(crt, domain); err != nil {
-		return fmt.Errorf("[%s] Error cleaning up service: %s", domain, err.Error())
+		errs = append(errs, fmt.Errorf("[%s] Error cleaning up service: %s", domain, err.Error()))
 	}
 	if err := s.cleanupIngress(crt, svcNameFunc(crt.Name, domain), domain, token, labelsForCert(crt, domain)); err != nil {
-		return fmt.Errorf("[%s] Error cleaning up ingress: %s", domain, err.Error())
+		errs = append(errs, fmt.Errorf("[%s] Error cleaning up ingress: %s", domain, err.Error()))
+	}
+
+	if errs != nil {
+		return utilerrors.NewAggregate(errs)
 	}
 
 	return nil

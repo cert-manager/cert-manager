@@ -224,7 +224,7 @@ func (c *Controller) processNextWorkItem(ctx context.Context, key string) error 
 		return err
 	}
 
-	return c.Sync(crt)
+	return c.Sync(ctx, crt)
 }
 
 var keyFunc = controllerpkg.KeyFunc

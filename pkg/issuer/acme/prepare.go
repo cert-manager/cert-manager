@@ -38,7 +38,7 @@ const (
 //
 // It will send the appropriate Letsencrypt authorizations, and complete
 // challenge requests if neccessary.
-func (a *Acme) Prepare(crt *v1alpha1.Certificate) (v1alpha1.CertificateStatus, error) {
+func (a *Acme) Prepare(ctx context.Context, crt *v1alpha1.Certificate) (v1alpha1.CertificateStatus, error) {
 	update := crt.DeepCopy()
 
 	log.Printf("getting private key for acme issuer %s/%s", a.issuer.Namespace, a.issuer.Name)
@@ -56,7 +56,7 @@ func (a *Acme) Prepare(crt *v1alpha1.Certificate) (v1alpha1.CertificateStatus, e
 	}
 
 	// step one: check issuer to see if we already have authorizations
-	toAuthorize, err := authorizationsToObtain(cl, *crt)
+	toAuthorize, err := authorizationsToObtain(ctx, cl, *crt)
 
 	if err != nil {
 		s := messageErrorCheckAuthorization + err.Error()
@@ -72,7 +72,7 @@ func (a *Acme) Prepare(crt *v1alpha1.Certificate) (v1alpha1.CertificateStatus, e
 		return update.Status, nil
 	}
 
-	auths, err := getAuthorizations(cl, toAuthorize...)
+	auths, err := getAuthorizations(ctx, cl, toAuthorize...)
 
 	if err != nil {
 		s := messageErrorCheckAuthorization + err.Error()
@@ -92,7 +92,7 @@ func (a *Acme) Prepare(crt *v1alpha1.Certificate) (v1alpha1.CertificateStatus, e
 		wg.Add(1)
 		go func(auth authResponse) {
 			defer wg.Done()
-			a, err := a.authorize(cl, crt, auth)
+			a, err := a.authorize(ctx, cl, crt, auth)
 			resultChan <- struct {
 				authResponse
 				*acme.Authorization
@@ -141,7 +141,7 @@ func keyForChallenge(cl *acme.Client, challenge *acme.Challenge) (string, error)
 	return "", err
 }
 
-func (a *Acme) authorize(cl *acme.Client, crt *v1alpha1.Certificate, auth authResponse) (*acme.Authorization, error) {
+func (a *Acme) authorize(ctx context.Context, cl *acme.Client, crt *v1alpha1.Certificate, auth authResponse) (*acme.Authorization, error) {
 	glog.V(4).Infof("picking challenge type for domain '%s'", auth.domain)
 	challengeType, err := pickChallengeType(auth.domain, auth.auth, crt.Spec.ACME.Config)
 	if err != nil {
@@ -162,27 +162,27 @@ func (a *Acme) authorize(cl *acme.Client, crt *v1alpha1.Certificate, auth authRe
 		return nil, err
 	}
 
-	defer solver.CleanUp(context.Background(), crt, auth.domain, token, key)
+	defer solver.CleanUp(ctx, crt, auth.domain, token, key)
 
 	a.recorder.Eventf(crt, v1.EventTypeNormal, reasonPresentChallenge, messagePresentChallenge, challengeType, auth.domain)
-	err = solver.Present(context.Background(), crt, auth.domain, token, key)
+	err = solver.Present(ctx, crt, auth.domain, token, key)
 	if err != nil {
 		return nil, fmt.Errorf("error presenting acme authorization for domain '%s': %s", auth.domain, err.Error())
 	}
 
 	a.recorder.Eventf(crt, v1.EventTypeNormal, reasonSelfCheck, messageSelfCheck, auth.domain)
-	err = solver.Wait(context.Background(), crt, auth.domain, token, key)
+	err = solver.Wait(ctx, crt, auth.domain, token, key)
 	if err != nil {
 		return nil, fmt.Errorf("error waiting for key to be available for domain '%s': %s", auth.domain, err.Error())
 	}
 
-	challenge, err = cl.Accept(context.Background(), challenge)
+	challenge, err = cl.Accept(ctx, challenge)
 	if err != nil {
 		return nil, fmt.Errorf("error accepting acme challenge for domain '%s': %s", auth.domain, err.Error())
 	}
 
 	glog.V(4).Infof("waiting for authorization for domain %s (%s)...", auth.domain, challenge.URI)
-	authorization, err := cl.WaitAuthorization(context.Background(), challenge.URI)
+	authorization, err := cl.WaitAuthorization(ctx, challenge.URI)
 	if err != nil {
 		return nil, fmt.Errorf("error waiting for authorization for domain '%s': %s", auth.domain, err.Error())
 	}
@@ -196,8 +196,8 @@ func (a *Acme) authorize(cl *acme.Client, crt *v1alpha1.Certificate, auth authRe
 	return authorization, nil
 }
 
-func checkAuthorization(cl *acme.Client, uri string) (bool, error) {
-	a, err := cl.GetAuthorization(context.Background(), uri)
+func checkAuthorization(ctx context.Context, cl *acme.Client, uri string) (bool, error) {
+	a, err := cl.GetAuthorization(ctx, uri)
 
 	if err != nil {
 		return false, err
@@ -218,14 +218,14 @@ func authorizationsMap(list []v1alpha1.ACMEDomainAuthorization) map[string]v1alp
 	return out
 }
 
-func authorizationsToObtain(cl *acme.Client, crt v1alpha1.Certificate) ([]string, error) {
+func authorizationsToObtain(ctx context.Context, cl *acme.Client, crt v1alpha1.Certificate) ([]string, error) {
 	authMap := authorizationsMap(crt.Status.ACMEStatus().Authorizations)
 	toAuthorize := util.StringFilter(func(domain string) (bool, error) {
 		auth, ok := authMap[domain]
 		if !ok {
 			return false, nil
 		}
-		return checkAuthorization(cl, auth.URI)
+		return checkAuthorization(ctx, cl, auth.URI)
 	}, crt.Spec.Domains...)
 
 	domains := make([]string, len(toAuthorize))
@@ -260,12 +260,12 @@ func (a authResponses) Error() error {
 	return nil
 }
 
-func getAuthorizations(cl *acme.Client, domains ...string) ([]authResponse, error) {
+func getAuthorizations(ctx context.Context, cl *acme.Client, domains ...string) ([]authResponse, error) {
 	respCh := make(chan authResponse)
 	defer close(respCh)
 	for _, d := range domains {
 		go func(domain string) {
-			auth, err := cl.Authorize(context.Background(), domain)
+			auth, err := cl.Authorize(ctx, domain)
 
 			if err != nil {
 				respCh <- authResponse{"", nil, fmt.Errorf("getting acme authorization failed: %s", err.Error())}

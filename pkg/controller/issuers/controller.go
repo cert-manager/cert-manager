@@ -173,7 +173,7 @@ func (c *Controller) processNextWorkItem(ctx context.Context, key string) error 
 		return err
 	}
 
-	return c.Sync(issuer)
+	return c.Sync(ctx, issuer)
 }
 
 var keyFunc = controllerpkg.KeyFunc
