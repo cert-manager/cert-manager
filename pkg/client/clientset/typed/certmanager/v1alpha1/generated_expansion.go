@@ -18,4 +18,6 @@ package v1alpha1
 
 type CertificateExpansion interface{}
 
+type ClusterIssuerExpansion interface{}
+
 type IssuerExpansion interface{}

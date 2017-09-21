@@ -26,6 +26,8 @@ import (
 type Interface interface {
 	// Certificates returns a CertificateInformer.
 	Certificates() CertificateInformer
+	// ClusterIssuers returns a ClusterIssuerInformer.
+	ClusterIssuers() ClusterIssuerInformer
 	// Issuers returns a IssuerInformer.
 	Issuers() IssuerInformer
 }
@@ -42,6 +44,11 @@ func New(f internalinterfaces.SharedInformerFactory) Interface {
 // Certificates returns a CertificateInformer.
 func (v *version) Certificates() CertificateInformer {
 	return &certificateInformer{factory: v.SharedInformerFactory}
+}
+
+// ClusterIssuers returns a ClusterIssuerInformer.
+func (v *version) ClusterIssuers() ClusterIssuerInformer {
+	return &clusterIssuerInformer{factory: v.SharedInformerFactory}
 }
 
 // Issuers returns a IssuerInformer.

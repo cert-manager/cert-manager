@@ -26,6 +26,10 @@ type CertificateListerExpansion interface{}
 // CertificateNamespaceLister.
 type CertificateNamespaceListerExpansion interface{}
 
+// ClusterIssuerListerExpansion allows custom methods to be added to
+// ClusterIssuerLister.
+type ClusterIssuerListerExpansion interface{}
+
 // IssuerListerExpansion allows custom methods to be added to
 // IssuerLister.
 type IssuerListerExpansion interface{}
