@@ -41,42 +41,16 @@ namespaces.
 * Kubernetes cluster with CustomResourceDefinitions or ThirdPartyResource
 support
 
-cert-manager uses custom resources/third party resources to represent
-Certificates and Issuers. In order for cert-manager to do this, we must
-register our custom API types with the Kubernetes API server. How we do this
-varies slightly from Kubernetes 1.7 onwards:
+### 1. Deploy cert-manager using Helm
 
-#### Kubernetes 1.7 and later
-
-Kubernetes 1.7 introduced [CustomResourceDefinitions](https://kubernetes.io/docs/concepts/api-extension/custom-resources/).
-A pre-made CRD for cert-manager is in `docs/crd.yaml`. We can install it with:
+To deploy the latest version of cert-manager using Helm, run:
 
 ```
-$ kubectl create -f https://raw.githubusercontent.com/jetstack-experimental/cert-manager/master/docs/crd.yaml
-```
-
-#### Kubernetes 1.6 and below
-
-As Kubernetes 1.6 does not support CustomResourceDefinitions, we must instead
-use ThirdPartyResources, the older, now deprecated version of
-CustomResourceDefinition. A pre-made TPR for cert-manager is in
-`docs/tpr.yaml`. We can install it with:
-
-```
-$ kubectl create -f https://raw.githubusercontent.com/jetstack-experimental/cert-manager/master/docs/tpr.yaml
-```
-
-### 1. Deploy cert-manager
-
-To deploy the latest version of cert-manager, run:
-
-```
-$ kubectl create -f https://raw.githubusercontent.com/jetstack-experimental/cert-manager/master/docs/cert-manager.yaml
+$ helm install --name cert-manager --namespace kube-system contrib/charts/cert-manager
 ```
 
 **NOTE**
 
-* In future this may be replaced with a Helm chart.
 * There are currently no official RBAC roles defined for cert-manager (see [#34](https://github.com/jetstack-experimental/cert-manager/issues/34))
 
 ### 2. Set up letsencrypt staging issuer
