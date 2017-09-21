@@ -113,13 +113,15 @@ func buildControllerContext(opts *options.ControllerOptions) (*controller.Contex
 		Recorder:              recorder,
 		SharedInformerFactory: sharedInformerFactory,
 		IssuerFactory: issuer.NewFactory(&issuer.Context{
-			Client:                cl,
-			CMClient:              intcl,
-			Recorder:              recorder,
-			SharedInformerFactory: sharedInformerFactory,
-			Namespace:             opts.Namespace,
+			Client:                   cl,
+			CMClient:                 intcl,
+			Recorder:                 recorder,
+			SharedInformerFactory:    sharedInformerFactory,
+			Namespace:                opts.Namespace,
+			ClusterResourceNamespace: opts.ClusterResourceNamespace,
 		}),
-		Namespace: opts.Namespace,
+		Namespace:                opts.Namespace,
+		ClusterResourceNamespace: opts.ClusterResourceNamespace,
 	}, kubeCfg, nil
 }
 

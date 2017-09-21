@@ -27,9 +27,10 @@ type solver interface {
 }
 
 type Solver struct {
-	issuer       v1alpha1.GenericIssuer
-	client       kubernetes.Interface
-	secretLister corev1listers.SecretLister
+	issuer            v1alpha1.GenericIssuer
+	client            kubernetes.Interface
+	secretLister      corev1listers.SecretLister
+	resourceNamespace string
 }
 
 func (s *Solver) Present(ctx context.Context, crt *v1alpha1.Certificate, domain, token, key string) error {
@@ -110,7 +111,7 @@ func (s *Solver) solverFor(crt *v1alpha1.Certificate, domain string) (solver, er
 	var impl solver
 	switch {
 	case providerConfig.CloudDNS != nil:
-		saSecret, err := s.secretLister.Secrets(s.issuer.GetObjectMeta().Namespace).Get(providerConfig.CloudDNS.ServiceAccount.Name)
+		saSecret, err := s.secretLister.Secrets(s.resourceNamespace).Get(providerConfig.CloudDNS.ServiceAccount.Name)
 		if err != nil {
 			return nil, fmt.Errorf("error getting clouddns service account: %s", err.Error())
 		}
@@ -121,7 +122,7 @@ func (s *Solver) solverFor(crt *v1alpha1.Certificate, domain string) (solver, er
 			return nil, fmt.Errorf("error instantiating google clouddns challenge solver: %s", err.Error())
 		}
 	case providerConfig.Cloudflare != nil:
-		apiKeySecret, err := s.secretLister.Secrets(s.issuer.GetObjectMeta().Namespace).Get(providerConfig.Cloudflare.APIKey.Name)
+		apiKeySecret, err := s.secretLister.Secrets(s.resourceNamespace).Get(providerConfig.Cloudflare.APIKey.Name)
 		if err != nil {
 			return nil, fmt.Errorf("error getting cloudflare service account: %s", err.Error())
 		}
@@ -134,7 +135,7 @@ func (s *Solver) solverFor(crt *v1alpha1.Certificate, domain string) (solver, er
 			return nil, fmt.Errorf("error instantiating cloudflare challenge solver: %s", err.Error())
 		}
 	case providerConfig.Route53 != nil:
-		secretAccessKeySecret, err := s.secretLister.Secrets(s.issuer.GetObjectMeta().Namespace).Get(providerConfig.Route53.SecretAccessKey.Name)
+		secretAccessKeySecret, err := s.secretLister.Secrets(s.resourceNamespace).Get(providerConfig.Route53.SecretAccessKey.Name)
 		if err != nil {
 			return nil, fmt.Errorf("error getting route53 secret access key: %s", err.Error())
 		}
@@ -160,6 +161,6 @@ func (s *Solver) solverFor(crt *v1alpha1.Certificate, domain string) (solver, er
 	return impl, nil
 }
 
-func NewSolver(issuer v1alpha1.GenericIssuer, client kubernetes.Interface, secretLister corev1listers.SecretLister) *Solver {
-	return &Solver{issuer, client, secretLister}
+func NewSolver(issuer v1alpha1.GenericIssuer, client kubernetes.Interface, secretLister corev1listers.SecretLister, resourceNamespace string) *Solver {
+	return &Solver{issuer, client, secretLister, resourceNamespace}
 }

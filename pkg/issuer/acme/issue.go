@@ -37,7 +37,7 @@ func (a *Acme) obtainCertificate(ctx context.Context, crt *v1alpha1.Certificate)
 		return nil, nil, fmt.Errorf("no domains specified")
 	}
 
-	acmePrivKey, err := kube.SecretTLSKey(a.secretsLister, a.issuer.GetObjectMeta().Namespace, a.issuer.GetSpec().ACME.PrivateKey)
+	acmePrivKey, err := kube.SecretTLSKey(a.secretsLister, a.resourceNamespace, a.issuer.GetSpec().ACME.PrivateKey)
 
 	if err != nil {
 		return nil, nil, fmt.Errorf("error getting acme account private key: %s", err.Error())

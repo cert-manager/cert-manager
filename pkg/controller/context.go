@@ -31,4 +31,7 @@ type Context struct {
 	// Namespace is a namespace to operate within. This should be used when
 	// constructing SharedIndexInformers for the informer factory.
 	Namespace string
+	// ClusterResourceNamespace is the namespace to store resources created by
+	// non-namespaced resources (e.g. ClusterIssuer) in.
+	ClusterResourceNamespace string
 }

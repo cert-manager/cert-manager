@@ -33,6 +33,13 @@ type Acme struct {
 
 	dnsSolver  solver
 	httpSolver solver
+
+	// resourceNamespace is a namespace to store resources in. This is here so
+	// we can easily support ClusterIssuers with the same codepath. By setting
+	// this field to either the namespace of the Issuer, or the
+	// clusterResourceNamespace specified on the CLI, we can easily continue
+	// to work with supplemental resources without significant refactoring.
+	resourceNamespace string
 }
 
 // New returns a new ACME issuer interface for the given issuer.
@@ -40,6 +47,7 @@ func New(issuer v1alpha1.GenericIssuer,
 	client kubernetes.Interface,
 	cmClient clientset.Interface,
 	recorder record.EventRecorder,
+	resourceNamespace string,
 	secretsInformer cache.SharedIndexInformer) (issuer.Interface, error) {
 	if issuer.GetSpec().ACME == nil {
 		return nil, fmt.Errorf("acme config may not be empty")
@@ -48,13 +56,14 @@ func New(issuer v1alpha1.GenericIssuer,
 	secretsLister := corelisters.NewSecretLister(secretsInformer.GetIndexer())
 
 	return &Acme{
-		issuer:        issuer,
-		client:        client,
-		cmClient:      cmClient,
-		recorder:      recorder,
-		secretsLister: secretsLister,
-		dnsSolver:     dns.NewSolver(issuer, client, secretsLister),
-		httpSolver:    http.NewSolver(issuer, client, secretsLister),
+		issuer:            issuer,
+		client:            client,
+		cmClient:          cmClient,
+		recorder:          recorder,
+		secretsLister:     secretsLister,
+		dnsSolver:         dns.NewSolver(issuer, client, secretsLister, resourceNamespace),
+		httpSolver:        http.NewSolver(issuer, client, secretsLister),
+		resourceNamespace: resourceNamespace,
 	}, nil
 }
 
@@ -79,12 +88,16 @@ func (a *Acme) solverFor(challengeType string) (solver, error) {
 // Register this Issuer with the issuer factory
 func init() {
 	issuer.Register(issuer.IssuerACME, func(i v1alpha1.GenericIssuer, ctx *issuer.Context) (issuer.Interface, error) {
-
+		resourceNamespace := i.GetObjectMeta().Namespace
+		if resourceNamespace == "" {
+			resourceNamespace = ctx.ClusterResourceNamespace
+		}
 		return New(
 			i,
 			ctx.Client,
 			ctx.CMClient,
 			ctx.Recorder,
+			resourceNamespace,
 			ctx.SharedInformerFactory.InformerFor(
 				ctx.Namespace,
 				metav1.GroupVersionKind{Version: "v1", Kind: "Secret"},

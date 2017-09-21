@@ -19,6 +19,7 @@ package kube
 import (
 	sync "sync"
 
+	"github.com/golang/glog"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	cache "k8s.io/client-go/tools/cache"
 )
@@ -49,10 +50,12 @@ func (s *sharedInformerFactory) InformerFor(namespace string, gvk metav1.GroupVe
 	s.lock.Lock()
 	defer s.lock.Unlock()
 	if s.informers == nil {
+		glog.Infof("Init map on lookup for %s - %#v", namespace, gvk)
 		s.informers = make(map[string]map[metav1.GroupVersionKind]cache.SharedIndexInformer)
 	}
 	informerMap, nsExists := s.informers[namespace]
 	if !nsExists {
+		glog.Infof("NS does not exist on lookup for %s - %#v", namespace, gvk)
 		s.informers[namespace] = map[metav1.GroupVersionKind]cache.SharedIndexInformer{
 			gvk: i,
 		}
@@ -60,9 +63,11 @@ func (s *sharedInformerFactory) InformerFor(namespace string, gvk metav1.GroupVe
 	}
 	informer, exists := informerMap[gvk]
 	if !exists {
+		glog.Infof("existing informer does not exist on lookup for %s - %#v", namespace, gvk)
 		informerMap[gvk] = i
 		return i
 	}
+	glog.Infof("existing informer found for %s - %#v", namespace, gvk)
 	return informer
 }
 

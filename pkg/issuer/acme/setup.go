@@ -33,9 +33,11 @@ const (
 func (a *Acme) Setup(ctx context.Context) (v1alpha1.IssuerStatus, error) {
 	update := a.issuer.Copy()
 
-	accountPrivKey, err := kube.SecretTLSKey(a.secretsLister, a.issuer.GetObjectMeta().Namespace, a.issuer.GetSpec().ACME.PrivateKey)
+	glog.V(4).Infof("%s: getting acme account private key '%s/%s'", a.issuer.GetObjectMeta().Name, a.resourceNamespace, a.issuer.GetSpec().ACME.PrivateKey)
+	accountPrivKey, err := kube.SecretTLSKey(a.secretsLister, a.resourceNamespace, a.issuer.GetSpec().ACME.PrivateKey)
 
 	if k8sErrors.IsNotFound(err) {
+		glog.V(4).Infof("%s: generating acme account private key '%s/%s'", a.issuer.GetObjectMeta().Name, a.resourceNamespace, a.issuer.GetSpec().ACME.PrivateKey)
 		accountPrivKey, err = a.createAccountPrivateKey()
 	}
 
@@ -50,15 +52,17 @@ func (a *Acme) Setup(ctx context.Context) (v1alpha1.IssuerStatus, error) {
 		DirectoryURL: a.issuer.GetSpec().ACME.Server,
 	}
 
+	glog.V(4).Infof("%s: verifying existing registration with ACME server", a.issuer.GetObjectMeta().Name)
 	_, err = cl.GetReg(ctx, a.issuer.GetStatus().ACMEStatus().URI)
 
 	if err == nil {
+		glog.V(4).Infof("%s: verified existing registration with ACME server", a.issuer.GetObjectMeta().Name)
 		update.UpdateStatusCondition(v1alpha1.IssuerConditionReady, v1alpha1.ConditionTrue, successAccountVerified, messageAccountVerified)
 		return *update.GetStatus(), nil
 	}
 
 	s := messageAccountVerificationFailed + err.Error()
-	glog.Info(s)
+	glog.V(4).Infof("%s: %s", a.issuer.GetObjectMeta().Name, s)
 	a.recorder.Event(a.issuer, v1.EventTypeWarning, errorAccountVerificationFailed, s)
 
 	acc := &acme.Account{
