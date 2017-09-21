@@ -10,4 +10,7 @@ image:
 
 createCustomResource: true
 
+rbac:
+  enabled: true
+
 resources: {}
