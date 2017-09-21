@@ -49,11 +49,8 @@ To deploy the latest version of cert-manager using Helm, run:
 $ helm install --name cert-manager --namespace kube-system contrib/charts/cert-manager
 ```
 
-#### Deploy RBAC roles
-
-```
-$ kubectl create -f https://raw.githubusercontent.com/jetstack-experimental/cert-manager/master/docs/rbac.yaml
-```
+There are a number of options you can customise when deploying, as detailed in
+[the chart itself](https://github.com/jetstack-experimental/cert-manager/tree/master/contrib/charts/cert-manager).
 
 ### 2. Set up letsencrypt staging issuer
 
