@@ -8,6 +8,6 @@ image:
   tag: canary
   pullPolicy: Always
 
-createCRD: true
+createCustomResource: true
 
 resources: {}
