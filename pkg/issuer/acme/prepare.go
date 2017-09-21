@@ -41,8 +41,8 @@ const (
 func (a *Acme) Prepare(ctx context.Context, crt *v1alpha1.Certificate) (v1alpha1.CertificateStatus, error) {
 	update := crt.DeepCopy()
 
-	log.Printf("getting private key for acme issuer %s/%s", a.issuer.Namespace, a.issuer.Name)
-	accountPrivKey, err := kube.SecretTLSKey(a.secretsLister, a.issuer.Namespace, a.issuer.Spec.ACME.PrivateKey)
+	log.Printf("getting private key for acme issuer %s/%s", a.issuer.GetObjectMeta().Namespace, a.issuer.GetObjectMeta().Name)
+	accountPrivKey, err := kube.SecretTLSKey(a.secretsLister, a.issuer.GetObjectMeta().Namespace, a.issuer.GetSpec().ACME.PrivateKey)
 
 	if err != nil {
 		s := messageErrorGetACMEAccount + err.Error()
@@ -52,7 +52,7 @@ func (a *Acme) Prepare(ctx context.Context, crt *v1alpha1.Certificate) (v1alpha1
 
 	cl := &acme.Client{
 		Key:          accountPrivKey,
-		DirectoryURL: a.issuer.Spec.ACME.Server,
+		DirectoryURL: a.issuer.GetSpec().ACME.Server,
 	}
 
 	// step one: check issuer to see if we already have authorizations

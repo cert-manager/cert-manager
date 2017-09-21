@@ -55,13 +55,13 @@ func jobNameFunc(crtName, domain string) string {
 
 // Solver is an implementation of the acme http-01 challenge solver protocol
 type Solver struct {
-	issuer       *v1alpha1.Issuer
+	issuer       v1alpha1.GenericIssuer
 	client       kubernetes.Interface
 	secretLister corev1listers.SecretLister
 }
 
 // NewSolver returns a new ACME HTTP01 solver for the given Issuer and client.
-func NewSolver(issuer *v1alpha1.Issuer, client kubernetes.Interface, secretLister corev1listers.SecretLister) *Solver {
+func NewSolver(issuer v1alpha1.GenericIssuer, client kubernetes.Interface, secretLister corev1listers.SecretLister) *Solver {
 	return &Solver{issuer, client, secretLister}
 }
 

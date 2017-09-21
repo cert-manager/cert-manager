@@ -63,7 +63,7 @@ const (
 
 func (c *Controller) Sync(ctx context.Context, crt *v1alpha1.Certificate) (err error) {
 	// step zero: check if the referenced issuer exists and is ready
-	issuerObj, err := c.issuerLister.Issuers(crt.Namespace).Get(crt.Spec.Issuer)
+	issuerObj, err := c.issuerLister.Issuers(crt.Namespace).Get(crt.Spec.IssuerRef.Name)
 
 	if err != nil {
 		s := fmt.Sprintf(messageIssuerNotFound, err.Error())

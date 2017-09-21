@@ -8,7 +8,7 @@ import (
 
 // Constructor constructs an issuer given an Issuer resource and a Context.
 // An error will be returned if the appropriate issuer is not registered.
-type Constructor func(*v1alpha1.Issuer, *Context) (Interface, error)
+type Constructor func(v1alpha1.GenericIssuer, *Context) (Interface, error)
 
 var (
 	constructors     = make(map[string]Constructor)

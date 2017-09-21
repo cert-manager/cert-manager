@@ -23,7 +23,7 @@ import (
 // certificates from any ACME server. It supports DNS01 and HTTP01 challenge
 // mechanisms.
 type Acme struct {
-	issuer *v1alpha1.Issuer
+	issuer v1alpha1.GenericIssuer
 
 	client   kubernetes.Interface
 	cmClient clientset.Interface
@@ -36,16 +36,17 @@ type Acme struct {
 }
 
 // New returns a new ACME issuer interface for the given issuer.
-func New(issuer *v1alpha1.Issuer,
+func New(issuer v1alpha1.GenericIssuer,
 	client kubernetes.Interface,
 	cmClient clientset.Interface,
 	recorder record.EventRecorder,
 	secretsInformer cache.SharedIndexInformer) (issuer.Interface, error) {
-	if issuer.Spec.ACME == nil {
+	if issuer.GetSpec().ACME == nil {
 		return nil, fmt.Errorf("acme config may not be empty")
 	}
 
 	secretsLister := corelisters.NewSecretLister(secretsInformer.GetIndexer())
+
 	return &Acme{
 		issuer:        issuer,
 		client:        client,
@@ -77,7 +78,8 @@ func (a *Acme) solverFor(challengeType string) (solver, error) {
 
 // Register this Issuer with the issuer factory
 func init() {
-	issuer.Register(issuer.IssuerACME, func(i *v1alpha1.Issuer, ctx *issuer.Context) (issuer.Interface, error) {
+	issuer.Register(issuer.IssuerACME, func(i v1alpha1.GenericIssuer, ctx *issuer.Context) (issuer.Interface, error) {
+
 		return New(
 			i,
 			ctx.Client,

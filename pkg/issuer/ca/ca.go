@@ -19,14 +19,14 @@ import (
 // A secret resource is used to store a CA public and private key that is then
 // used to sign certificates.
 type CA struct {
-	issuer        *v1alpha1.Issuer
+	issuer        v1alpha1.GenericIssuer
 	cl            kubernetes.Interface
 	cmclient      clientset.Interface
 	recorder      record.EventRecorder
 	secretsLister corelisters.SecretLister
 }
 
-func NewCA(issuer *v1alpha1.Issuer,
+func NewCA(issuer v1alpha1.GenericIssuer,
 	cl kubernetes.Interface,
 	cmclient clientset.Interface,
 	recorder record.EventRecorder,
@@ -46,7 +46,7 @@ const (
 )
 
 func init() {
-	issuer.Register(ControllerName, func(issuer *v1alpha1.Issuer, ctx *issuer.Context) (issuer.Interface, error) {
+	issuer.Register(ControllerName, func(issuer v1alpha1.GenericIssuer, ctx *issuer.Context) (issuer.Interface, error) {
 		return NewCA(
 			issuer,
 			ctx.Client,

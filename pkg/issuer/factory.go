@@ -10,7 +10,7 @@ import (
 // It determines which issuer implementation to use by introspecting the
 // given Issuer resource.
 type Factory interface {
-	IssuerFor(*v1alpha1.Issuer) (Interface, error)
+	IssuerFor(v1alpha1.GenericIssuer) (Interface, error)
 }
 
 // NewFactory returns a new issuer factory with the given issuer context.
@@ -29,7 +29,7 @@ type factory struct {
 // A new instance of the Issuer will be returned for each call to IssuerFor,
 // however this is an inexpensive operation and so, Issuers should not need
 // to be cached and reused.
-func (f *factory) IssuerFor(issuer *v1alpha1.Issuer) (Interface, error) {
+func (f *factory) IssuerFor(issuer v1alpha1.GenericIssuer) (Interface, error) {
 	issuerType, err := nameForIssuer(issuer)
 	if err != nil {
 		return nil, fmt.Errorf("could not get issuer type: %s", err.Error())

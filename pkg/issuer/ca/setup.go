@@ -25,16 +25,16 @@ const (
 )
 
 func (c *CA) Setup(ctx context.Context) (v1alpha1.IssuerStatus, error) {
-	update := c.issuer.DeepCopy()
+	update := c.issuer.Copy()
 
-	cert, err := kube.SecretTLSCert(c.secretsLister, update.Namespace, update.Spec.CA.SecretRef.Name)
+	cert, err := kube.SecretTLSCert(c.secretsLister, update.GetObjectMeta().Namespace, update.GetSpec().CA.SecretRef.Name)
 
 	if k8sErrors.IsNotFound(err) {
 		s := messageErrorGetKeyPair + err.Error()
 		glog.Info(s)
 		c.recorder.Event(update, v1.EventTypeWarning, errorGetKeyPair, s)
 		update.UpdateStatusCondition(v1alpha1.IssuerConditionReady, v1alpha1.ConditionFalse, errorGetKeyPair, s)
-		return update.Status, err
+		return *update.GetStatus(), err
 	}
 
 	if !cert.IsCA {
@@ -42,12 +42,12 @@ func (c *CA) Setup(ctx context.Context) (v1alpha1.IssuerStatus, error) {
 		glog.Info(s)
 		c.recorder.Event(update, v1.EventTypeWarning, errorInvalidKeyPair, s)
 		update.UpdateStatusCondition(v1alpha1.IssuerConditionReady, v1alpha1.ConditionFalse, errorInvalidKeyPair, s)
-		return update.Status, fmt.Errorf(s)
+		return *update.GetStatus(), fmt.Errorf(s)
 	}
 
 	glog.Info(messageKeyPairVerified)
 	c.recorder.Event(update, v1.EventTypeNormal, successKeyPairVerified, messageKeyPairVerified)
 	update.UpdateStatusCondition(v1alpha1.IssuerConditionReady, v1alpha1.ConditionTrue, successKeyPairVerified, messageKeyPairVerified)
 
-	return update.Status, nil
+	return *update.GetStatus(), nil
 }
