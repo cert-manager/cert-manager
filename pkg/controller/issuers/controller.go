@@ -1,6 +1,7 @@
 package issuers
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"sync"
@@ -25,6 +26,7 @@ import (
 	cmlisters "github.com/jetstack-experimental/cert-manager/pkg/client/listers/certmanager/v1alpha1"
 	controllerpkg "github.com/jetstack-experimental/cert-manager/pkg/controller"
 	"github.com/jetstack-experimental/cert-manager/pkg/issuer"
+	"github.com/jetstack-experimental/cert-manager/pkg/util"
 )
 
 type Controller struct {
@@ -34,7 +36,7 @@ type Controller struct {
 	recorder      record.EventRecorder
 
 	// To allow injection for testing.
-	syncHandler func(key string) error
+	syncHandler func(ctx context.Context, key string) error
 
 	issuerInformerSynced cache.InformerSynced
 	issuerLister         cmlisters.IssuerLister
@@ -104,7 +106,7 @@ func (c *Controller) Run(workers int, stopCh <-chan struct{}) error {
 	for i := 0; i < workers; i++ {
 		c.workerWg.Add(1)
 		// TODO (@munnerz): make time.Second duration configurable
-		go wait.Until(c.worker, time.Second, stopCh)
+		go wait.Until(func() { c.worker(stopCh) }, time.Second, stopCh)
 	}
 	<-stopCh
 	glog.V(4).Infof("Shutting down queue as workqueue signaled shutdown")
@@ -115,7 +117,7 @@ func (c *Controller) Run(workers int, stopCh <-chan struct{}) error {
 	return nil
 }
 
-func (c *Controller) worker() {
+func (c *Controller) worker(stopCh <-chan struct{}) {
 	defer c.workerWg.Done()
 	log.Printf("starting worker")
 	for {
@@ -132,7 +134,10 @@ func (c *Controller) worker() {
 				runtime.HandleError(fmt.Errorf("expected string in workqueue but got %T", obj))
 				return nil
 			}
-			if err := c.syncHandler(key); err != nil {
+			ctx, cancel := context.WithCancel(context.Background())
+			defer cancel()
+			ctx = util.ContextWithStopCh(ctx, stopCh)
+			if err := c.syncHandler(ctx, key); err != nil {
 				return err
 			}
 			c.queue.Forget(obj)
@@ -150,7 +155,7 @@ func (c *Controller) worker() {
 	log.Printf("exiting worker loop")
 }
 
-func (c *Controller) processNextWorkItem(key string) error {
+func (c *Controller) processNextWorkItem(ctx context.Context, key string) error {
 	namespace, name, err := cache.SplitMetaNamespaceKey(key)
 	if err != nil {
 		runtime.HandleError(fmt.Errorf("invalid resource key: %s", key))
@@ -168,7 +173,7 @@ func (c *Controller) processNextWorkItem(key string) error {
 		return err
 	}
 
-	return c.Sync(issuer)
+	return c.Sync(ctx, issuer)
 }
 
 var keyFunc = controllerpkg.KeyFunc

@@ -1,6 +1,7 @@
 package certificates
 
 import (
+	"context"
 	"crypto/x509"
 	"fmt"
 	"reflect"
@@ -60,7 +61,7 @@ const (
 	messageRenewalScheduled   = "Certificate scheduled for renewal in %d hours"
 )
 
-func (c *Controller) Sync(crt *v1alpha1.Certificate) (err error) {
+func (c *Controller) Sync(ctx context.Context, crt *v1alpha1.Certificate) (err error) {
 	// step zero: check if the referenced issuer exists and is ready
 	issuerObj, err := c.issuerLister.Issuers(crt.Namespace).Get(crt.Spec.Issuer)
 
@@ -115,13 +116,13 @@ func (c *Controller) Sync(crt *v1alpha1.Certificate) (err error) {
 	// if the certificate was not found, or the certificate data is invalid, we
 	// should issue a new certificate
 	if k8sErrors.IsNotFound(err) || errors.IsInvalidData(err) {
-		return c.issue(i, crt)
+		return c.issue(ctx, i, crt)
 	}
 
 	// if the certificate is valid for a list of domains other than those
 	// listed in the certificate spec, we should re-issue the certificate
 	if !util.EqualUnsorted(crt.Spec.Domains, cert.DNSNames) {
-		return c.issue(i, crt)
+		return c.issue(ctx, i, crt)
 	}
 
 	// calculate the amount of time until expiry
@@ -132,7 +133,7 @@ func (c *Controller) Sync(crt *v1alpha1.Certificate) (err error) {
 
 	// if we should being attempting to renew now, then trigger a renewal
 	if renewIn <= 0 {
-		return c.renew(i, crt)
+		return c.renew(ctx, i, crt)
 	}
 
 	return nil
@@ -173,9 +174,9 @@ func (c *Controller) scheduleRenewal(crt *v1alpha1.Certificate) {
 	c.recorder.Event(crt, api.EventTypeNormal, successRenewalScheduled, s)
 }
 
-func (c *Controller) prepare(issuer issuer.Interface, crt *v1alpha1.Certificate) (err error) {
+func (c *Controller) prepare(ctx context.Context, issuer issuer.Interface, crt *v1alpha1.Certificate) (err error) {
 	var status v1alpha1.CertificateStatus
-	status, err = issuer.Prepare(crt)
+	status, err = issuer.Prepare(ctx, crt)
 
 	defer func() {
 		if saveErr := c.updateCertificateStatus(crt, status); saveErr != nil {
@@ -192,12 +193,12 @@ func (c *Controller) prepare(issuer issuer.Interface, crt *v1alpha1.Certificate)
 
 // return an error on failure. If retrieval is succesful, the certificate data
 // and private key will be stored in the named secret
-func (c *Controller) issue(issuer issuer.Interface, crt *v1alpha1.Certificate) (err error) {
+func (c *Controller) issue(ctx context.Context, issuer issuer.Interface, crt *v1alpha1.Certificate) (err error) {
 	s := messagePreparingCertificate
 	glog.Info(s)
 	c.recorder.Event(crt, api.EventTypeNormal, reasonPreparingCertificate, s)
 
-	if err := c.prepare(issuer, crt); err != nil {
+	if err := c.prepare(ctx, issuer, crt); err != nil {
 		s := messageErrorPreparingCertificate + err.Error()
 		glog.Info(s)
 		c.recorder.Event(crt, api.EventTypeWarning, errorPreparingCertificate, s)
@@ -208,7 +209,7 @@ func (c *Controller) issue(issuer issuer.Interface, crt *v1alpha1.Certificate) (
 	glog.Info(s)
 	c.recorder.Event(crt, api.EventTypeNormal, reasonIssuingCertificate, s)
 
-	status, key, cert, err := issuer.Issue(crt)
+	status, key, cert, err := issuer.Issue(ctx, crt)
 
 	defer func() {
 		if saveErr := c.updateCertificateStatus(crt, status); saveErr != nil {
@@ -255,12 +256,12 @@ func (c *Controller) issue(issuer issuer.Interface, crt *v1alpha1.Certificate) (
 // renew will attempt to renew a certificate from the specified issuer, or
 // return an error on failure. If renewal is succesful, the certificate data
 // and private key will be stored in the named secret
-func (c *Controller) renew(issuer issuer.Interface, crt *v1alpha1.Certificate) error {
+func (c *Controller) renew(ctx context.Context, issuer issuer.Interface, crt *v1alpha1.Certificate) error {
 	s := messagePreparingCertificate
 	glog.Info(s)
 	c.recorder.Event(crt, api.EventTypeNormal, reasonPreparingCertificate, s)
 
-	if err := c.prepare(issuer, crt); err != nil {
+	if err := c.prepare(ctx, issuer, crt); err != nil {
 		s := messageErrorPreparingCertificate + err.Error()
 		glog.Info(s)
 		c.recorder.Event(crt, api.EventTypeWarning, errorPreparingCertificate, s)
@@ -271,7 +272,7 @@ func (c *Controller) renew(issuer issuer.Interface, crt *v1alpha1.Certificate) e
 	glog.Info(s)
 	c.recorder.Event(crt, api.EventTypeNormal, reasonRenewingCertificate, s)
 
-	status, key, cert, err := issuer.Renew(crt)
+	status, key, cert, err := issuer.Renew(ctx, crt)
 
 	defer func() {
 		if saveErr := c.updateCertificateStatus(crt, status); saveErr != nil {

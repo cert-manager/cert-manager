@@ -1,6 +1,7 @@
 package issuers
 
 import (
+	"context"
 	"reflect"
 
 	"github.com/golang/glog"
@@ -16,7 +17,7 @@ const (
 	messageErrorInitIssuer = "Error initializing issuer: "
 )
 
-func (c *Controller) Sync(iss *v1alpha1.Issuer) (err error) {
+func (c *Controller) Sync(ctx context.Context, iss *v1alpha1.Issuer) (err error) {
 	i, err := c.issuerFactory.IssuerFor(iss)
 
 	if err != nil {
@@ -24,7 +25,7 @@ func (c *Controller) Sync(iss *v1alpha1.Issuer) (err error) {
 	}
 
 	var status v1alpha1.IssuerStatus
-	status, err = i.Setup()
+	status, err = i.Setup(ctx)
 
 	defer func() {
 		if saveErr := c.updateIssuerStatus(iss, status); saveErr != nil {

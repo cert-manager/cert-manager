@@ -1,6 +1,7 @@
 package ca
 
 import (
+	"context"
 	"fmt"
 
 	"k8s.io/api/core/v1"
@@ -23,7 +24,7 @@ const (
 	messageKeyPairVerified = "Signing CA verified"
 )
 
-func (c *CA) Setup() (v1alpha1.IssuerStatus, error) {
+func (c *CA) Setup(ctx context.Context) (v1alpha1.IssuerStatus, error) {
 	update := c.issuer.DeepCopy()
 
 	cert, err := kube.SecretTLSCert(c.secretsLister, update.Namespace, update.Spec.CA.SecretRef.Name)

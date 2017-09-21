@@ -1,6 +1,8 @@
 package acme
 
 import (
+	"context"
+
 	"github.com/jetstack-experimental/cert-manager/pkg/apis/certmanager/v1alpha1"
 )
 
@@ -12,9 +14,9 @@ const (
 	messageCertRenewed = "Certificate renewed successfully"
 )
 
-func (a *Acme) Renew(crt *v1alpha1.Certificate) (v1alpha1.CertificateStatus, []byte, []byte, error) {
+func (a *Acme) Renew(ctx context.Context, crt *v1alpha1.Certificate) (v1alpha1.CertificateStatus, []byte, []byte, error) {
 	update := crt.DeepCopy()
-	key, cert, err := a.obtainCertificate(crt)
+	key, cert, err := a.obtainCertificate(ctx, crt)
 	if err != nil {
 		s := messageErrorIssueCert + err.Error()
 		update.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse, errorRenewCert, s)
