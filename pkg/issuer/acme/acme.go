@@ -88,9 +88,13 @@ func (a *Acme) solverFor(challengeType string) (solver, error) {
 // Register this Issuer with the issuer factory
 func init() {
 	issuer.Register(issuer.IssuerACME, func(i v1alpha1.GenericIssuer, ctx *issuer.Context) (issuer.Interface, error) {
+		// We do this little dance because of the way our SharedInformerFactory is
+		// written. It'd be great if this weren't necessary.
 		resourceNamespace := i.GetObjectMeta().Namespace
+		informerNS := ctx.Namespace
 		if resourceNamespace == "" {
 			resourceNamespace = ctx.ClusterResourceNamespace
+			informerNS = ctx.ClusterResourceNamespace
 		}
 		return New(
 			i,
@@ -99,9 +103,9 @@ func init() {
 			ctx.Recorder,
 			resourceNamespace,
 			ctx.SharedInformerFactory.InformerFor(
-				ctx.Namespace,
+				informerNS,
 				metav1.GroupVersionKind{Version: "v1", Kind: "Secret"},
-				coreinformers.NewSecretInformer(ctx.Client, ctx.Namespace, time.Second*30, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc})),
+				coreinformers.NewSecretInformer(ctx.Client, resourceNamespace, time.Second*30, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc})),
 		)
 	})
 }

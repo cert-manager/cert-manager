@@ -47,15 +47,23 @@ const (
 
 func init() {
 	issuer.Register(ControllerName, func(issuer v1alpha1.GenericIssuer, ctx *issuer.Context) (issuer.Interface, error) {
+		// We do this little dance because of the way our SharedInformerFactory is
+		// written. It'd be great if this weren't necessary.
+		resourceNamespace := issuer.GetObjectMeta().Namespace
+		informerNS := ctx.Namespace
+		if resourceNamespace == "" {
+			resourceNamespace = ctx.ClusterResourceNamespace
+			informerNS = ctx.ClusterResourceNamespace
+		}
 		return NewCA(
 			issuer,
 			ctx.Client,
 			ctx.CMClient,
 			ctx.Recorder,
 			ctx.SharedInformerFactory.InformerFor(
-				ctx.Namespace,
+				informerNS,
 				metav1.GroupVersionKind{Version: "v1", Kind: "Secret"},
-				coreinformers.NewSecretInformer(ctx.Client, ctx.Namespace, time.Second*30, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc})),
+				coreinformers.NewSecretInformer(ctx.Client, resourceNamespace, time.Second*30, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc})),
 		)
 	})
 }

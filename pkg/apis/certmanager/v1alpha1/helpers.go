@@ -96,6 +96,18 @@ func (iss *Issuer) UpdateStatusCondition(conditionType IssuerConditionType, stat
 	}
 }
 
+func (iss *ClusterIssuer) HasCondition(condition IssuerCondition) bool {
+	if len(iss.Status.Conditions) == 0 {
+		return false
+	}
+	for _, cond := range iss.Status.Conditions {
+		if condition.Type == cond.Type && condition.Status == cond.Status {
+			return true
+		}
+	}
+	return false
+}
+
 func (iss *ClusterIssuer) UpdateStatusCondition(conditionType IssuerConditionType, status ConditionStatus, reason, message string) {
 	newCondition := IssuerCondition{
 		Type:    conditionType,
@@ -176,6 +188,7 @@ type GenericIssuer interface {
 	GetSpec() *IssuerSpec
 	GetStatus() *IssuerStatus
 	UpdateStatusCondition(conditionType IssuerConditionType, status ConditionStatus, reason, message string)
+	HasCondition(condition IssuerCondition) bool
 	Copy() GenericIssuer
 }
 
