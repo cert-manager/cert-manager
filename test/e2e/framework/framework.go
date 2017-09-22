@@ -85,6 +85,10 @@ func (f *Framework) BeforeEach() {
 	err = CreateIssuerCRD(f.APIExtensionsClientSet)
 	Expect(err).NotTo(HaveOccurred())
 
+	By("Building a ClusterIssuer CustomResourceDefinition api object")
+	err = CreateClusterIssuerCRD(f.APIExtensionsClientSet)
+	Expect(err).NotTo(HaveOccurred())
+
 	By("Building an Certificate CustomResourceDefinition api object")
 	err = CreateCertificateCRD(f.APIExtensionsClientSet)
 	Expect(err).NotTo(HaveOccurred())
@@ -104,11 +108,17 @@ func (f *Framework) AfterEach() {
 	err = DeleteIssuerCRD(f.APIExtensionsClientSet)
 	Expect(err).NotTo(HaveOccurred())
 
+	By("Deleting ClusterIssuer CustomResourceDefinition")
+	err = DeleteClusterIssuerCRD(f.APIExtensionsClientSet)
+	Expect(err).NotTo(HaveOccurred())
+
 	By("Deleting Certificate CustomResourceDefinition")
 	err = DeleteCertificateCRD(f.APIExtensionsClientSet)
 	Expect(err).NotTo(HaveOccurred())
 
 	err = util.WaitForCRDToNotExist(f.APIExtensionsClientSet.ApiextensionsV1beta1().CustomResourceDefinitions(), issuerCrd().Name)
+	Expect(err).NotTo(HaveOccurred())
+	err = util.WaitForCRDToNotExist(f.APIExtensionsClientSet.ApiextensionsV1beta1().CustomResourceDefinitions(), clusterIssuerCrd().Name)
 	Expect(err).NotTo(HaveOccurred())
 	err = util.WaitForCRDToNotExist(f.APIExtensionsClientSet.ApiextensionsV1beta1().CustomResourceDefinitions(), certificateCrd().Name)
 	Expect(err).NotTo(HaveOccurred())

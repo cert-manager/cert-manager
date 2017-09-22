@@ -71,9 +71,11 @@ func newCertManagerCAIssuer(name, secretName string) *v1alpha1.Issuer {
 			Name: name,
 		},
 		Spec: v1alpha1.IssuerSpec{
-			CA: &v1alpha1.CAIssuer{
-				SecretRef: v1alpha1.LocalObjectReference{
-					Name: secretName,
+			IssuerConfig: v1alpha1.IssuerConfig{
+				CA: &v1alpha1.CAIssuer{
+					SecretRef: v1alpha1.LocalObjectReference{
+						Name: secretName,
+					},
 				},
 			},
 		},

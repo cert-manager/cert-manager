@@ -5,7 +5,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func NewCertManagerControllerPod(name string) *v1.Pod {
+func NewCertManagerControllerPod(name string, args ...string) *v1.Pod {
 	return &v1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: name,
@@ -18,9 +18,14 @@ func NewCertManagerControllerPod(name string) *v1.Pod {
 				{
 					Name:            name,
 					Image:           certManagerImageFlag,
+					Args:            args,
 					ImagePullPolicy: v1.PullPolicy(certManagerImagePullPolicy),
 				},
 			},
 		},
 	}
+}
+
+func strPtr(s string) *string {
+	return &s
 }

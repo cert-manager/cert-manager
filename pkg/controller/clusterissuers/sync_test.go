@@ -13,8 +13,8 @@ import (
 	"github.com/jetstack-experimental/cert-manager/pkg/client/clientset/fake"
 )
 
-func newFakeIssuerWithStatus(name string, status v1alpha1.IssuerStatus) *v1alpha1.Issuer {
-	return &v1alpha1.Issuer{
+func newFakeIssuerWithStatus(name string, status v1alpha1.IssuerStatus) *v1alpha1.ClusterIssuer {
+	return &v1alpha1.ClusterIssuer{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: name,
 		},
@@ -35,7 +35,7 @@ func TestUpdateIssuerStatus(t *testing.T) {
 
 	originalIssuer := newFakeIssuerWithStatus("test", v1alpha1.IssuerStatus{})
 
-	issuer, err := cmClient.CertmanagerV1alpha1().Issuers("testns").Create(originalIssuer)
+	issuer, err := cmClient.CertmanagerV1alpha1().ClusterIssuers().Create(originalIssuer)
 	assertErrIsNil(t, fatalf, err)
 
 	assertNumberOfActions(t, fatalf, cmClient.Actions(), 1)
@@ -59,7 +59,7 @@ func TestUpdateIssuerStatus(t *testing.T) {
 	updateAction := assertIsUpdateAction(t, errorf, action)
 
 	obj := updateAction.GetObject()
-	issuer = assertIsIssuer(t, errorf, obj)
+	issuer = assertIsClusterIssuer(t, errorf, obj)
 
 	assertDeepEqual(t, errorf, newStatus, issuer.Status)
 }
@@ -84,8 +84,8 @@ func assertErrIsNil(t *testing.T, f failfFunc, err error) {
 	}
 }
 
-func assertIsIssuer(t *testing.T, f failfFunc, obj runtime.Object) *v1alpha1.Issuer {
-	issuer, ok := obj.(*v1alpha1.Issuer)
+func assertIsClusterIssuer(t *testing.T, f failfFunc, obj runtime.Object) *v1alpha1.ClusterIssuer {
+	issuer, ok := obj.(*v1alpha1.ClusterIssuer)
 	if !ok {
 		f(t, "expected runtime.Object to be of type *v1alpha1.Issuer, but it was %#v", obj)
 	}

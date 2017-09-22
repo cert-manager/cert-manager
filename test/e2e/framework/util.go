@@ -151,6 +151,23 @@ func issuerCrd() *apiext.CustomResourceDefinition {
 	}
 }
 
+func clusterIssuerCrd() *apiext.CustomResourceDefinition {
+	return &apiext.CustomResourceDefinition{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "clusterissuers.certmanager.k8s.io",
+		},
+		Spec: apiext.CustomResourceDefinitionSpec{
+			Group:   "certmanager.k8s.io",
+			Version: "v1alpha1",
+			Names: apiext.CustomResourceDefinitionNames{
+				Kind:   "ClusterIssuer",
+				Plural: "clusterissuers",
+			},
+			Scope: apiext.ClusterScoped,
+		},
+	}
+}
+
 func CreateCertificateCRD(c apiextcs.Interface) error {
 	_, err := c.ApiextensionsV1beta1().CustomResourceDefinitions().Create(certificateCrd())
 	return err
@@ -167,6 +184,15 @@ func CreateIssuerCRD(c apiextcs.Interface) error {
 
 func DeleteIssuerCRD(c apiextcs.Interface) error {
 	return c.ApiextensionsV1beta1().CustomResourceDefinitions().Delete(issuerCrd().Name, nil)
+}
+
+func CreateClusterIssuerCRD(c apiextcs.Interface) error {
+	_, err := c.ApiextensionsV1beta1().CustomResourceDefinitions().Create(clusterIssuerCrd())
+	return err
+}
+
+func DeleteClusterIssuerCRD(c apiextcs.Interface) error {
+	return c.ApiextensionsV1beta1().CustomResourceDefinitions().Delete(clusterIssuerCrd().Name, nil)
 }
 
 func CreateKubeNamespace(baseName string, c kubernetes.Interface) (*v1.Namespace, error) {
