@@ -38,7 +38,7 @@ const (
 func (c *CA) Issue(ctx context.Context, crt *v1alpha1.Certificate) (v1alpha1.CertificateStatus, []byte, []byte, error) {
 	update := crt.DeepCopy()
 
-	signeeKey, err := kube.SecretTLSKey(c.secretsLister, c.issuer.GetObjectMeta().Namespace, crt.Spec.SecretName)
+	signeeKey, err := kube.SecretTLSKey(c.secretsLister, crt.Namespace, crt.Spec.SecretName)
 
 	if k8sErrors.IsNotFound(err) {
 		signeeKey, err = pki.GenerateRSAPrivateKey(2048)
@@ -64,13 +64,13 @@ func (c *CA) Issue(ctx context.Context, crt *v1alpha1.Certificate) (v1alpha1.Cer
 }
 
 func (c *CA) obtainCertificate(crt *v1alpha1.Certificate, signeeKey interface{}) ([]byte, error) {
-	signerCert, err := kube.SecretTLSCert(c.secretsLister, c.issuer.GetObjectMeta().Namespace, c.issuer.GetSpec().CA.SecretRef.Name)
+	signerCert, err := kube.SecretTLSCert(c.secretsLister, c.resourceNamespace, c.issuer.GetSpec().CA.SecretRef.Name)
 
 	if err != nil {
 		return nil, fmt.Errorf("error getting issuer certificate: %s", err.Error())
 	}
 
-	signerKey, err := kube.SecretTLSKey(c.secretsLister, c.issuer.GetObjectMeta().Namespace, c.issuer.GetSpec().CA.SecretRef.Name)
+	signerKey, err := kube.SecretTLSKey(c.secretsLister, c.resourceNamespace, c.issuer.GetSpec().CA.SecretRef.Name)
 
 	if err != nil {
 		return nil, fmt.Errorf("error getting issuer private key: %s", err.Error())

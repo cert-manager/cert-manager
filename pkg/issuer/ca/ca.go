@@ -19,25 +19,28 @@ import (
 // A secret resource is used to store a CA public and private key that is then
 // used to sign certificates.
 type CA struct {
-	issuer        v1alpha1.GenericIssuer
-	cl            kubernetes.Interface
-	cmclient      clientset.Interface
-	recorder      record.EventRecorder
-	secretsLister corelisters.SecretLister
+	issuer            v1alpha1.GenericIssuer
+	cl                kubernetes.Interface
+	cmclient          clientset.Interface
+	recorder          record.EventRecorder
+	resourceNamespace string
+	secretsLister     corelisters.SecretLister
 }
 
 func NewCA(issuer v1alpha1.GenericIssuer,
 	cl kubernetes.Interface,
 	cmclient clientset.Interface,
 	recorder record.EventRecorder,
+	resourceNamespace string,
 	secretInformer cache.SharedIndexInformer) (issuer.Interface, error) {
 	secretsLister := corelisters.NewSecretLister(secretInformer.GetIndexer())
 	return &CA{
-		issuer:        issuer,
-		cl:            cl,
-		cmclient:      cmclient,
-		recorder:      recorder,
-		secretsLister: secretsLister,
+		issuer:            issuer,
+		cl:                cl,
+		cmclient:          cmclient,
+		recorder:          recorder,
+		resourceNamespace: resourceNamespace,
+		secretsLister:     secretsLister,
 	}, nil
 }
 
@@ -60,6 +63,7 @@ func init() {
 			ctx.Client,
 			ctx.CMClient,
 			ctx.Recorder,
+			resourceNamespace,
 			ctx.SharedInformerFactory.InformerFor(
 				informerNS,
 				metav1.GroupVersionKind{Version: "v1", Kind: "Secret"},

@@ -21,7 +21,7 @@ const (
 func (c *CA) Renew(ctx context.Context, crt *v1alpha1.Certificate) (v1alpha1.CertificateStatus, []byte, []byte, error) {
 	update := crt.DeepCopy()
 
-	signeeKey, err := kube.SecretTLSKey(c.secretsLister, c.issuer.GetObjectMeta().Namespace, crt.Spec.SecretName)
+	signeeKey, err := kube.SecretTLSKey(c.secretsLister, crt.Namespace, crt.Spec.SecretName)
 
 	if err != nil {
 		s := messageErrorGetCertKeyPair + err.Error()
