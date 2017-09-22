@@ -44,8 +44,9 @@ type Controller struct {
 	secretInformerSynced cache.InformerSynced
 	secretLister         corelisters.SecretLister
 
-	queue    workqueue.RateLimitingInterface
-	workerWg sync.WaitGroup
+	queue                    workqueue.RateLimitingInterface
+	workerWg                 sync.WaitGroup
+	clusterResourceNamespace string
 }
 
 func New(
@@ -55,8 +56,9 @@ func New(
 	cmClient clientset.Interface,
 	issuerFactory issuer.Factory,
 	recorder record.EventRecorder,
+	clusterResourceNamespace string,
 ) *Controller {
-	ctrl := &Controller{client: cl, cmClient: cmClient, issuerFactory: issuerFactory, recorder: recorder}
+	ctrl := &Controller{client: cl, cmClient: cmClient, issuerFactory: issuerFactory, recorder: recorder, clusterResourceNamespace: clusterResourceNamespace}
 	ctrl.syncHandler = ctrl.processNextWorkItem
 	ctrl.queue = workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "clusterissuers")
 
@@ -211,6 +213,7 @@ func init() {
 			ctx.CMClient,
 			ctx.IssuerFactory,
 			ctx.Recorder,
+			ctx.ClusterResourceNamespace,
 		).Run
 	})
 }

@@ -49,6 +49,13 @@ const (
 )
 
 func init() {
+	// TODO: This constructor function below is called to create instances of
+	// the Issuer from a GenericIssuer and Context. However, we currently
+	// construct a new SharedInformer for every single item processed. This
+	// will be the same SharedInformer as other loops use, thanks to the
+	// SharedInformerFactory, however it seems a bit unnatural to create a
+	// lister per-request, even if that lister does share the same underlying
+	// indexer.
 	issuer.Register(ControllerName, func(issuer v1alpha1.GenericIssuer, ctx *issuer.Context) (issuer.Interface, error) {
 		// We do this little dance because of the way our SharedInformerFactory is
 		// written. It'd be great if this weren't necessary.
