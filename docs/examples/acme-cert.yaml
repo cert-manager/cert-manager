@@ -3,16 +3,16 @@
 apiVersion: certmanager.k8s.io/v1alpha1
 kind: Certificate
 metadata:
-  name: example-cert
+  name: cm-http-nginx-k8s-group
 spec:
-  secretName: example-cert
+  secretName: cm-http-nginx-k8s-group
   issuer: letsencrypt-staging
   domains:
   - cm-http-nginx.k8s.group
   - cm-http-nginx2.k8s.group
   - cm-http-gce.k8s.group
-  - cm-dns-clouddns.k8s.group
-  - cm-dns-cloudflare.k8s.group
+  - cm-http-clouddns.k8s.group
+  - cm-http-cloudflare.k8s.group
   acme:
     config:
     - http-01:

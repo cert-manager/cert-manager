@@ -1,0 +1,14 @@
+apiVersion: certmanager.k8s.io/v1alpha1
+kind: Issuer
+metadata:
+  name: letsencrypt-prod
+  namespace: skeleton-review
+spec:
+  acme:
+    # The ACME server URL
+    server: https://acme-v01.api.letsencrypt.org/directory
+    # Email address used for ACME registration
+    email: james+workshops@jetstack.io
+    # Name of a secret used to store the ACME account private key
+    privateKey: letsncrypt-prod
+    # ACME dns-01 provider configurations

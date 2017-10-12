@@ -1,0 +1,11 @@
+## Example Certificate that uses multiple challenge mechanisms to obtain
+## a SAN certificate for multiple domains from the letsencrypt-staging issuer.
+apiVersion: certmanager.k8s.io/v1alpha1
+kind: Certificate
+metadata:
+  name: test-ca-crt
+spec:
+  secretName: test-ca-crt
+  issuer: ca-issuer
+  domains:
+  - cert-manager.k8s.io
