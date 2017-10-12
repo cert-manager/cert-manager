@@ -11,33 +11,32 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package e2e
+package issuer
 
 import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/jetstack-experimental/cert-manager/pkg/apis/certmanager/v1alpha1"
 	"github.com/jetstack-experimental/cert-manager/test/e2e/framework"
 	"github.com/jetstack-experimental/cert-manager/test/util"
 )
 
-var _ = framework.CertManagerDescribe("CA ClusterIssuer", func() {
-	f := framework.NewDefaultFramework("create-ca-clusterissuer")
+var _ = framework.CertManagerDescribe("CA Issuer", func() {
+	f := framework.NewDefaultFramework("create-ca-issuer")
 
 	podName := "test-cert-manager"
-	issuerName := "test-ca-clusterissuer"
-	secretName := "ca-clusterissuer-signing-keypair"
+	issuerName := "test-ca-issuer"
+	secretName := "ca-issuer-signing-keypair"
 
 	BeforeEach(func() {
 		By("Creating a cert-manager pod")
-		pod, err := f.KubeClientSet.CoreV1().Pods(f.Namespace.Name).Create(NewCertManagerControllerPod(podName, "--cluster-resource-namespace="+f.Namespace.Name))
+		pod, err := f.KubeClientSet.CoreV1().Pods(f.Namespace.Name).Create(util.NewCertManagerControllerPod(podName))
 		Expect(err).NotTo(HaveOccurred())
 		err = framework.WaitForPodRunningInNamespace(f.KubeClientSet, pod)
 		Expect(err).NotTo(HaveOccurred())
 		By("Creating a signing keypair fixture")
-		_, err = f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Create(newSigningKeypairSecret(secretName))
+		_, err = f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Create(util.NewSigningKeypairSecret(secretName))
 		Expect(err).NotTo(HaveOccurred())
 	})
 
@@ -51,10 +50,10 @@ var _ = framework.CertManagerDescribe("CA ClusterIssuer", func() {
 
 	It("should generate a signing keypair", func() {
 		By("Creating an Issuer")
-		_, err := f.CertManagerClientSet.CertmanagerV1alpha1().ClusterIssuers().Create(newCertManagerCAClusterIssuer(issuerName, secretName))
+		_, err := f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Create(util.NewCertManagerCAIssuer(issuerName, secretName))
 		Expect(err).NotTo(HaveOccurred())
 		By("Waiting for Issuer to become Ready")
-		err = util.WaitForClusterIssuerCondition(f.CertManagerClientSet.CertmanagerV1alpha1().ClusterIssuers(),
+		err = util.WaitForIssuerCondition(f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name),
 			issuerName,
 			v1alpha1.IssuerCondition{
 				Type:   v1alpha1.IssuerConditionReady,
@@ -63,20 +62,3 @@ var _ = framework.CertManagerDescribe("CA ClusterIssuer", func() {
 		Expect(err).NotTo(HaveOccurred())
 	})
 })
-
-func newCertManagerCAClusterIssuer(name, secretName string) *v1alpha1.ClusterIssuer {
-	return &v1alpha1.ClusterIssuer{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: name,
-		},
-		Spec: v1alpha1.IssuerSpec{
-			IssuerConfig: v1alpha1.IssuerConfig{
-				CA: &v1alpha1.CAIssuer{
-					SecretRef: v1alpha1.LocalObjectReference{
-						Name: secretName,
-					},
-				},
-			},
-		},
-	}
-}

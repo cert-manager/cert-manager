@@ -23,7 +23,10 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
 	"github.com/jetstack-experimental/cert-manager/pkg/logs"
+	_ "github.com/jetstack-experimental/cert-manager/test/e2e/certificate"
+	_ "github.com/jetstack-experimental/cert-manager/test/e2e/clusterissuer"
 	"github.com/jetstack-experimental/cert-manager/test/e2e/framework"
+	_ "github.com/jetstack-experimental/cert-manager/test/e2e/issuer"
 )
 
 // TestE2E checks configuration parameters (specified through flags) and then runs
