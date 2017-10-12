@@ -88,6 +88,8 @@ for file in ${mdFiles}; do
 	  continue
 	fi
 
+	# Remove everything after # (aka section of page)
+	ref=${ref%#*}
 	newPath=${dir}/${ref}
 
 	# And finally make sure the file is there
