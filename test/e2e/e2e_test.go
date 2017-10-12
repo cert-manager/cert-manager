@@ -14,7 +14,6 @@ limitations under the License.
 package e2e
 
 import (
-	"flag"
 	"testing"
 
 	"github.com/golang/glog"
@@ -23,15 +22,7 @@ import (
 	"github.com/jetstack-experimental/cert-manager/test/e2e/framework"
 )
 
-var certManagerImageFlag string
-var certManagerImagePullPolicy string
-
 func init() {
-	flag.StringVar(&certManagerImageFlag, "cert-manager-image", "jetstackexperimental/cert-manager-controller:canary",
-		"The container image for cert-manager to test against")
-	flag.StringVar(&certManagerImagePullPolicy, "cert-manager-image-pull-policy", "Never",
-		"The image pull policy to use for cert-manager when running tests")
-
 	framework.RegisterParseFlags()
 
 	if "" == framework.TestContext.KubeConfig {

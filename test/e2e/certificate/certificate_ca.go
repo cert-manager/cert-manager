@@ -11,12 +11,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package e2e
+package certificate
 
 import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/jetstack-experimental/cert-manager/pkg/apis/certmanager/v1alpha1"
 	"github.com/jetstack-experimental/cert-manager/test/e2e/framework"
@@ -34,12 +33,12 @@ var _ = framework.CertManagerDescribe("CA Certificate", func() {
 
 	BeforeEach(func() {
 		By("Creating a cert-manager pod")
-		pod, err := f.KubeClientSet.CoreV1().Pods(f.Namespace.Name).Create(NewCertManagerControllerPod(podName, "--cluster-resource-namespace="+f.Namespace.Name))
+		pod, err := f.KubeClientSet.CoreV1().Pods(f.Namespace.Name).Create(util.NewCertManagerControllerPod(podName, "--cluster-resource-namespace="+f.Namespace.Name))
 		Expect(err).NotTo(HaveOccurred())
 		err = framework.WaitForPodRunningInNamespace(f.KubeClientSet, pod)
 		Expect(err).NotTo(HaveOccurred())
 		By("Creating a signing keypair fixture")
-		_, err = f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Create(newSigningKeypairSecret(issuerSecretName))
+		_, err = f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Create(util.NewSigningKeypairSecret(issuerSecretName))
 		Expect(err).NotTo(HaveOccurred())
 	})
 
@@ -53,7 +52,7 @@ var _ = framework.CertManagerDescribe("CA Certificate", func() {
 
 	It("should generate a signed keypair", func() {
 		By("Creating an Issuer")
-		_, err := f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Create(newCertManagerCAIssuer(issuerName, issuerSecretName))
+		_, err := f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Create(util.NewCertManagerCAIssuer(issuerName, issuerSecretName))
 		Expect(err).NotTo(HaveOccurred())
 		By("Waiting for Issuer to become Ready")
 		err = util.WaitForIssuerCondition(f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name),
@@ -64,7 +63,7 @@ var _ = framework.CertManagerDescribe("CA Certificate", func() {
 			})
 		Expect(err).NotTo(HaveOccurred())
 		By("Creating a Certificate")
-		_, err = f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name).Create(newCertManagerCACertificate(certificateName, certificateSecretName, issuerName, v1alpha1.IssuerKind))
+		_, err = f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name).Create(util.NewCertManagerCACertificate(certificateName, certificateSecretName, issuerName, v1alpha1.IssuerKind))
 		Expect(err).NotTo(HaveOccurred())
 		By("Waiting for Certificate to become Ready")
 		err = util.WaitForCertificateCondition(f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name),
@@ -78,7 +77,7 @@ var _ = framework.CertManagerDescribe("CA Certificate", func() {
 
 	It("should generate a signed keypair from a clusterissuer", func() {
 		By("Creating a ClusterIssuer")
-		_, err := f.CertManagerClientSet.CertmanagerV1alpha1().ClusterIssuers().Create(newCertManagerCAClusterIssuer(issuerName, issuerSecretName))
+		_, err := f.CertManagerClientSet.CertmanagerV1alpha1().ClusterIssuers().Create(util.NewCertManagerCAClusterIssuer(issuerName, issuerSecretName))
 		Expect(err).NotTo(HaveOccurred())
 		By("Waiting for ClusterIssuer to become Ready")
 		err = util.WaitForClusterIssuerCondition(f.CertManagerClientSet.CertmanagerV1alpha1().ClusterIssuers(),
@@ -89,7 +88,7 @@ var _ = framework.CertManagerDescribe("CA Certificate", func() {
 			})
 		Expect(err).NotTo(HaveOccurred())
 		By("Creating a Certificate")
-		_, err = f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name).Create(newCertManagerCACertificate(certificateName, certificateSecretName, issuerName, v1alpha1.ClusterIssuerKind))
+		_, err = f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name).Create(util.NewCertManagerCACertificate(certificateName, certificateSecretName, issuerName, v1alpha1.ClusterIssuerKind))
 		Expect(err).NotTo(HaveOccurred())
 		By("Waiting for Certificate to become Ready")
 		err = util.WaitForCertificateCondition(f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name),
@@ -101,21 +100,3 @@ var _ = framework.CertManagerDescribe("CA Certificate", func() {
 		Expect(err).NotTo(HaveOccurred())
 	})
 })
-
-func newCertManagerCACertificate(name, secretName, issuerName string, issuerKind string) *v1alpha1.Certificate {
-	return &v1alpha1.Certificate{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: name,
-		},
-		Spec: v1alpha1.CertificateSpec{
-			Domains: []string{
-				"test.domain.com",
-			},
-			SecretName: secretName,
-			IssuerRef: v1alpha1.ObjectReference{
-				Name: issuerName,
-				Kind: issuerKind,
-			},
-		},
-	}
-}
