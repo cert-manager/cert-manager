@@ -140,13 +140,13 @@ func (c *Controller) Sync(ctx context.Context, crt *v1alpha1.Certificate) (err e
 }
 
 func (c *Controller) getGenericIssuer(crt *v1alpha1.Certificate) (v1alpha1.GenericIssuer, error) {
-	switch {
-	case crt.Spec.IssuerRef.Namespace == nil:
+	switch crt.Spec.IssuerRef.Kind {
+	case "", v1alpha1.IssuerKind:
 		return c.issuerLister.Issuers(crt.Namespace).Get(crt.Spec.IssuerRef.Name)
-	case *crt.Spec.IssuerRef.Namespace == api.NamespaceAll:
+	case v1alpha1.ClusterIssuerKind:
 		return c.clusterIssuerLister.Get(crt.Spec.IssuerRef.Name)
 	default:
-		return nil, fmt.Errorf(`invalid value '%s' for certificate issuer namespace. Must be nil or ""`, *crt.Spec.IssuerRef.Namespace)
+		return nil, fmt.Errorf(`invalid value %q for certificate issuer kind. Must be empty, %q or %q`, crt.Spec.IssuerRef.Kind, v1alpha1.IssuerKind, v1alpha1.ClusterIssuerKind)
 	}
 }
 

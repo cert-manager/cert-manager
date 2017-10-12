@@ -312,9 +312,14 @@ type LocalObjectReference struct {
 // ObjectReference is a reference to an object. If the namespace field is set,
 // it is assumed to be in a namespace
 type ObjectReference struct {
-	Name      string  `json:"name,omitempty"`
-	Namespace *string `json:"namespace,omitempty"`
+	Name string `json:"name"`
+	Kind string `json:"kind,omitempty"`
 }
+
+const (
+	ClusterIssuerKind = "ClusterIssuer"
+	IssuerKind        = "Issuer"
+)
 
 type SecretKeySelector struct {
 	// The name of the secret in the pod's namespace to select from.

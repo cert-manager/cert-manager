@@ -64,7 +64,7 @@ var _ = framework.CertManagerDescribe("CA Certificate", func() {
 			})
 		Expect(err).NotTo(HaveOccurred())
 		By("Creating a Certificate")
-		_, err = f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name).Create(newCertManagerCACertificate(certificateName, certificateSecretName, issuerName, nil))
+		_, err = f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name).Create(newCertManagerCACertificate(certificateName, certificateSecretName, issuerName, v1alpha1.IssuerKind))
 		Expect(err).NotTo(HaveOccurred())
 		By("Waiting for Certificate to become Ready")
 		err = util.WaitForCertificateCondition(f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name),
@@ -89,7 +89,7 @@ var _ = framework.CertManagerDescribe("CA Certificate", func() {
 			})
 		Expect(err).NotTo(HaveOccurred())
 		By("Creating a Certificate")
-		_, err = f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name).Create(newCertManagerCACertificate(certificateName, certificateSecretName, issuerName, strPtr("")))
+		_, err = f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name).Create(newCertManagerCACertificate(certificateName, certificateSecretName, issuerName, v1alpha1.ClusterIssuerKind))
 		Expect(err).NotTo(HaveOccurred())
 		By("Waiting for Certificate to become Ready")
 		err = util.WaitForCertificateCondition(f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name),
@@ -102,7 +102,7 @@ var _ = framework.CertManagerDescribe("CA Certificate", func() {
 	})
 })
 
-func newCertManagerCACertificate(name, secretName, issuerName string, issuerNamespace *string) *v1alpha1.Certificate {
+func newCertManagerCACertificate(name, secretName, issuerName string, issuerKind string) *v1alpha1.Certificate {
 	return &v1alpha1.Certificate{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: name,
@@ -113,8 +113,8 @@ func newCertManagerCACertificate(name, secretName, issuerName string, issuerName
 			},
 			SecretName: secretName,
 			IssuerRef: v1alpha1.ObjectReference{
-				Name:      issuerName,
-				Namespace: issuerNamespace,
+				Name: issuerName,
+				Kind: issuerKind,
 			},
 		},
 	}
