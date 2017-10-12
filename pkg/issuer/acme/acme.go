@@ -23,7 +23,7 @@ import (
 // certificates from any ACME server. It supports DNS01 and HTTP01 challenge
 // mechanisms.
 type Acme struct {
-	issuer *v1alpha1.Issuer
+	issuer v1alpha1.GenericIssuer
 
 	client   kubernetes.Interface
 	cmClient clientset.Interface
@@ -33,27 +33,37 @@ type Acme struct {
 
 	dnsSolver  solver
 	httpSolver solver
+
+	// resourceNamespace is a namespace to store resources in. This is here so
+	// we can easily support ClusterIssuers with the same codepath. By setting
+	// this field to either the namespace of the Issuer, or the
+	// clusterResourceNamespace specified on the CLI, we can easily continue
+	// to work with supplemental resources without significant refactoring.
+	resourceNamespace string
 }
 
 // New returns a new ACME issuer interface for the given issuer.
-func New(issuer *v1alpha1.Issuer,
+func New(issuer v1alpha1.GenericIssuer,
 	client kubernetes.Interface,
 	cmClient clientset.Interface,
 	recorder record.EventRecorder,
+	resourceNamespace string,
 	secretsInformer cache.SharedIndexInformer) (issuer.Interface, error) {
-	if issuer.Spec.ACME == nil {
+	if issuer.GetSpec().ACME == nil {
 		return nil, fmt.Errorf("acme config may not be empty")
 	}
 
 	secretsLister := corelisters.NewSecretLister(secretsInformer.GetIndexer())
+
 	return &Acme{
-		issuer:        issuer,
-		client:        client,
-		cmClient:      cmClient,
-		recorder:      recorder,
-		secretsLister: secretsLister,
-		dnsSolver:     dns.NewSolver(issuer, client, secretsLister),
-		httpSolver:    http.NewSolver(issuer, client, secretsLister),
+		issuer:            issuer,
+		client:            client,
+		cmClient:          cmClient,
+		recorder:          recorder,
+		secretsLister:     secretsLister,
+		dnsSolver:         dns.NewSolver(issuer, client, secretsLister, resourceNamespace),
+		httpSolver:        http.NewSolver(issuer, client, secretsLister),
+		resourceNamespace: resourceNamespace,
 	}, nil
 }
 
@@ -77,16 +87,32 @@ func (a *Acme) solverFor(challengeType string) (solver, error) {
 
 // Register this Issuer with the issuer factory
 func init() {
-	issuer.Register(issuer.IssuerACME, func(i *v1alpha1.Issuer, ctx *issuer.Context) (issuer.Interface, error) {
+	// TODO: This constructor function below is called to create instances of
+	// the Issuer from a GenericIssuer and Context. However, we currently
+	// construct a new SharedInformer for every single item processed. This
+	// will be the same SharedInformer as other loops use, thanks to the
+	// SharedInformerFactory, however it seems a bit unnatural to create a
+	// lister per-request, even if that lister does share the same underlying
+	// indexer.
+	issuer.Register(issuer.IssuerACME, func(i v1alpha1.GenericIssuer, ctx *issuer.Context) (issuer.Interface, error) {
+		// We do this little dance because of the way our SharedInformerFactory is
+		// written. It'd be great if this weren't necessary.
+		resourceNamespace := i.GetObjectMeta().Namespace
+		informerNS := ctx.Namespace
+		if resourceNamespace == "" {
+			resourceNamespace = ctx.ClusterResourceNamespace
+			informerNS = ctx.ClusterResourceNamespace
+		}
 		return New(
 			i,
 			ctx.Client,
 			ctx.CMClient,
 			ctx.Recorder,
+			resourceNamespace,
 			ctx.SharedInformerFactory.InformerFor(
-				ctx.Namespace,
+				informerNS,
 				metav1.GroupVersionKind{Version: "v1", Kind: "Secret"},
-				coreinformers.NewSecretInformer(ctx.Client, ctx.Namespace, time.Second*30, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc})),
+				coreinformers.NewSecretInformer(ctx.Client, resourceNamespace, time.Second*30, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc})),
 		)
 	})
 }

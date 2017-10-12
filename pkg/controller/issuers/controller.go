@@ -137,9 +137,12 @@ func (c *Controller) worker(stopCh <-chan struct{}) {
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
 			ctx = util.ContextWithStopCh(ctx, stopCh)
+			glog.V(6).Infof("%s controller: syncing item '%s'", ControllerName, key)
 			if err := c.syncHandler(ctx, key); err != nil {
+				glog.V(4).Infof("%s controller: error syncing item '%s': %s", ControllerName, key, err.Error())
 				return err
 			}
+			glog.V(4).Infof("%s controller: synced item '%s'", ControllerName, key)
 			c.queue.Forget(obj)
 			return nil
 		}(obj)

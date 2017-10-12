@@ -63,7 +63,7 @@ const (
 
 func (c *Controller) Sync(ctx context.Context, crt *v1alpha1.Certificate) (err error) {
 	// step zero: check if the referenced issuer exists and is ready
-	issuerObj, err := c.issuerLister.Issuers(crt.Namespace).Get(crt.Spec.Issuer)
+	issuerObj, err := c.getGenericIssuer(crt)
 
 	if err != nil {
 		s := fmt.Sprintf(messageIssuerNotFound, err.Error())
@@ -78,7 +78,7 @@ func (c *Controller) Sync(ctx context.Context, crt *v1alpha1.Certificate) (err e
 	})
 
 	if !issuerReady {
-		s := fmt.Sprintf(messageIssuerNotReady, issuerObj.Name)
+		s := fmt.Sprintf(messageIssuerNotReady, issuerObj.GetObjectMeta().Name)
 		glog.Info(s)
 		c.recorder.Event(crt, api.EventTypeWarning, errorIssuerNotReady, s)
 		return fmt.Errorf(s)
@@ -137,6 +137,17 @@ func (c *Controller) Sync(ctx context.Context, crt *v1alpha1.Certificate) (err e
 	}
 
 	return nil
+}
+
+func (c *Controller) getGenericIssuer(crt *v1alpha1.Certificate) (v1alpha1.GenericIssuer, error) {
+	switch crt.Spec.IssuerRef.Kind {
+	case "", v1alpha1.IssuerKind:
+		return c.issuerLister.Issuers(crt.Namespace).Get(crt.Spec.IssuerRef.Name)
+	case v1alpha1.ClusterIssuerKind:
+		return c.clusterIssuerLister.Get(crt.Spec.IssuerRef.Name)
+	default:
+		return nil, fmt.Errorf(`invalid value %q for certificate issuer kind. Must be empty, %q or %q`, crt.Spec.IssuerRef.Kind, v1alpha1.IssuerKind, v1alpha1.ClusterIssuerKind)
+	}
 }
 
 func needsRenew(cert *x509.Certificate) bool {

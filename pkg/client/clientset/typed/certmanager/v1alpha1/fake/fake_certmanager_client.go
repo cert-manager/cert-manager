@@ -30,6 +30,10 @@ func (c *FakeCertmanagerV1alpha1) Certificates(namespace string) v1alpha1.Certif
 	return &FakeCertificates{c, namespace}
 }
 
+func (c *FakeCertmanagerV1alpha1) ClusterIssuers() v1alpha1.ClusterIssuerInterface {
+	return &FakeClusterIssuers{c}
+}
+
 func (c *FakeCertmanagerV1alpha1) Issuers(namespace string) v1alpha1.IssuerInterface {
 	return &FakeIssuers{c, namespace}
 }

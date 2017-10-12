@@ -15,12 +15,12 @@ const (
 
 // nameForIssuer determines the name of the issuer implementation given an
 // Issuer resource.
-func nameForIssuer(i *v1alpha1.Issuer) (string, error) {
+func nameForIssuer(i v1alpha1.GenericIssuer) (string, error) {
 	switch {
-	case i.Spec.ACME != nil:
+	case i.GetSpec().ACME != nil:
 		return IssuerACME, nil
-	case i.Spec.CA != nil:
+	case i.GetSpec().CA != nil:
 		return IssuerCA, nil
 	}
-	return "", fmt.Errorf("no issuer specified for Issuer '%s/%s'", i.Namespace, i.Name)
+	return "", fmt.Errorf("no issuer specified for Issuer '%s/%s'", i.GetObjectMeta().Namespace, i.GetObjectMeta().Name)
 }

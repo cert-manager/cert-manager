@@ -50,6 +50,8 @@ func addKnownTypes(scheme *runtime.Scheme) error {
 		&CertificateList{},
 		&Issuer{},
 		&IssuerList{},
+		&ClusterIssuer{},
+		&ClusterIssuerList{},
 	)
 	metav1.AddToGroupVersion(scheme, SchemeGroupVersion)
 	return nil

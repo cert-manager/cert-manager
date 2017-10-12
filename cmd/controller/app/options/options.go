@@ -7,8 +7,9 @@ import (
 )
 
 type ControllerOptions struct {
-	APIServerHost string
-	Namespace     string
+	APIServerHost            string
+	Namespace                string
+	ClusterResourceNamespace string
 
 	LeaderElect                 bool
 	LeaderElectionNamespace     string
@@ -18,8 +19,9 @@ type ControllerOptions struct {
 }
 
 const (
-	defaultAPIServerHost = ""
-	defaultNamespace     = ""
+	defaultAPIServerHost            = ""
+	defaultNamespace                = ""
+	defaultClusterResourceNamespace = "kube-system"
 
 	defaultLeaderElect                 = true
 	defaultLeaderElectionNamespace     = "kube-system"
@@ -32,6 +34,7 @@ func NewControllerOptions() *ControllerOptions {
 	return &ControllerOptions{
 		APIServerHost:               defaultAPIServerHost,
 		Namespace:                   defaultNamespace,
+		ClusterResourceNamespace:    defaultClusterResourceNamespace,
 		LeaderElect:                 defaultLeaderElect,
 		LeaderElectionNamespace:     defaultLeaderElectionNamespace,
 		LeaderElectionLeaseDuration: defaultLeaderElectionLeaseDuration,
@@ -44,9 +47,12 @@ func (s *ControllerOptions) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVar(&s.APIServerHost, "master", defaultAPIServerHost, ""+
 		"Optional apiserver host address to connect to. If not specified, autoconfiguration "+
 		"will be attempted.")
-	fs.StringVar(&s.Namespace, "namespace", "", defaultNamespace+
+	fs.StringVar(&s.Namespace, "namespace", defaultNamespace, ""+
 		"Optional namespace to monitor resources within. This can be used to limit the scope "+
 		"of cert-manager to a single namespace. If not specified, all namespaces will be watched")
+	fs.StringVar(&s.ClusterResourceNamespace, "cluster-resource-namespace", defaultClusterResourceNamespace, ""+
+		"Namespace to store resources owned by cluster scoped resources such as ClusterIssuer in. "+
+		"This must be specified if ClusterIssuers are enabled.")
 
 	fs.BoolVar(&s.LeaderElect, "leader-elect", true, ""+
 		"If true, cert-manager will perform leader election between instances to ensure no more "+

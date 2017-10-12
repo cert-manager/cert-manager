@@ -31,38 +31,42 @@ const (
 )
 
 func (a *Acme) Setup(ctx context.Context) (v1alpha1.IssuerStatus, error) {
-	update := a.issuer.DeepCopy()
+	update := a.issuer.Copy()
 
-	accountPrivKey, err := kube.SecretTLSKey(a.secretsLister, a.issuer.Namespace, a.issuer.Spec.ACME.PrivateKey)
+	glog.V(4).Infof("%s: getting acme account private key '%s/%s'", a.issuer.GetObjectMeta().Name, a.resourceNamespace, a.issuer.GetSpec().ACME.PrivateKey)
+	accountPrivKey, err := kube.SecretTLSKey(a.secretsLister, a.resourceNamespace, a.issuer.GetSpec().ACME.PrivateKey)
 
 	if k8sErrors.IsNotFound(err) {
+		glog.V(4).Infof("%s: generating acme account private key '%s/%s'", a.issuer.GetObjectMeta().Name, a.resourceNamespace, a.issuer.GetSpec().ACME.PrivateKey)
 		accountPrivKey, err = a.createAccountPrivateKey()
 	}
 
 	if err != nil {
 		s := messageAccountRegistrationFailed + err.Error()
 		update.UpdateStatusCondition(v1alpha1.IssuerConditionReady, v1alpha1.ConditionFalse, errorAccountRegistrationFailed, s)
-		return update.Status, fmt.Errorf(s)
+		return *update.GetStatus(), fmt.Errorf(s)
 	}
 
 	cl := acme.Client{
 		Key:          accountPrivKey,
-		DirectoryURL: a.issuer.Spec.ACME.Server,
+		DirectoryURL: a.issuer.GetSpec().ACME.Server,
 	}
 
-	_, err = cl.GetReg(ctx, a.issuer.Status.ACMEStatus().URI)
+	glog.V(4).Infof("%s: verifying existing registration with ACME server", a.issuer.GetObjectMeta().Name)
+	_, err = cl.GetReg(ctx, a.issuer.GetStatus().ACMEStatus().URI)
 
 	if err == nil {
+		glog.V(4).Infof("%s: verified existing registration with ACME server", a.issuer.GetObjectMeta().Name)
 		update.UpdateStatusCondition(v1alpha1.IssuerConditionReady, v1alpha1.ConditionTrue, successAccountVerified, messageAccountVerified)
-		return update.Status, nil
+		return *update.GetStatus(), nil
 	}
 
 	s := messageAccountVerificationFailed + err.Error()
-	glog.Info(s)
+	glog.V(4).Infof("%s: %s", a.issuer.GetObjectMeta().Name, s)
 	a.recorder.Event(a.issuer, v1.EventTypeWarning, errorAccountVerificationFailed, s)
 
 	acc := &acme.Account{
-		Contact: []string{fmt.Sprintf("mailto:%s", strings.ToLower(a.issuer.Spec.ACME.Email))},
+		Contact: []string{fmt.Sprintf("mailto:%s", strings.ToLower(a.issuer.GetSpec().ACME.Email))},
 	}
 
 	account, err := cl.Register(ctx, acc, acme.AcceptTOS)
@@ -70,13 +74,13 @@ func (a *Acme) Setup(ctx context.Context) (v1alpha1.IssuerStatus, error) {
 	if err != nil {
 		s := messageAccountRegistrationFailed + err.Error()
 		update.UpdateStatusCondition(v1alpha1.IssuerConditionReady, v1alpha1.ConditionFalse, errorAccountRegistrationFailed, s)
-		return update.Status, err
+		return *update.GetStatus(), err
 	}
 
 	update.UpdateStatusCondition(v1alpha1.IssuerConditionReady, v1alpha1.ConditionTrue, successAccountRegistered, messageAccountRegistered)
-	update.Status.ACMEStatus().URI = account.URI
+	update.GetStatus().ACMEStatus().URI = account.URI
 
-	return update.Status, nil
+	return *update.GetStatus(), nil
 }
 
 func (a *Acme) createAccountPrivateKey() (*rsa.PrivateKey, error) {
@@ -88,8 +92,8 @@ func (a *Acme) createAccountPrivateKey() (*rsa.PrivateKey, error) {
 
 	_, err = kube.EnsureSecret(a.client, &v1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      a.issuer.Spec.ACME.PrivateKey,
-			Namespace: a.issuer.Namespace,
+			Name:      a.issuer.GetSpec().ACME.PrivateKey,
+			Namespace: a.resourceNamespace,
 		},
 		Data: map[string][]byte{
 			v1.TLSPrivateKeyKey: pki.EncodePKCS1PrivateKey(accountPrivKey),

@@ -26,6 +26,7 @@ import (
 type CertmanagerV1alpha1Interface interface {
 	RESTClient() rest.Interface
 	CertificatesGetter
+	ClusterIssuersGetter
 	IssuersGetter
 }
 
@@ -36,6 +37,10 @@ type CertmanagerV1alpha1Client struct {
 
 func (c *CertmanagerV1alpha1Client) Certificates(namespace string) CertificateInterface {
 	return newCertificates(c, namespace)
+}
+
+func (c *CertmanagerV1alpha1Client) ClusterIssuers() ClusterIssuerInterface {
+	return newClusterIssuers(c)
 }
 
 func (c *CertmanagerV1alpha1Client) Issuers(namespace string) IssuerInterface {
