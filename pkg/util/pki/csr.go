@@ -6,6 +6,9 @@ import (
 )
 
 func GenerateCSR(commonName string, altNames ...string) *x509.CertificateRequest {
+	if commonName == "" && len(altNames) > 0 {
+		commonName = altNames[0]
+	}
 	template := x509.CertificateRequest{
 		Subject: pkix.Name{
 			CommonName: commonName,
