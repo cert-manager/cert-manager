@@ -77,7 +77,8 @@ spec:
   acme:
     email: user@example.com
     server: https://acme-staging.api.letsencrypt.org/directory
-    privateKey: example-issuer-account-key
+    privateKeySecretRef:
+      name: example-issuer-account-key
     dns-01:
       providers:
       - name: prod-clouddns
