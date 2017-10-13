@@ -17,7 +17,8 @@ spec:
     # Email address used for ACME registration
     email: user@example.com
     # Name of a secret used to store the ACME account private key
-    privateKey: letsncrypt-prod
+    privateKeySecretRef:
+      name: letsncrypt-prod
 ```
 
 This is the simplest of ACME issuers - it specifies no DNS-01 challenge

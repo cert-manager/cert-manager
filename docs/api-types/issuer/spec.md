@@ -21,7 +21,8 @@ spec:
     server: https://acme-v01.api.letsencrypt.org/directory
     email: user@example.com
     # Name of a secret used to store the ACME account private key
-    privateKey: letsncrypt-prod
+    privateKeySecretRef:
+      name: letsncrypt-prod
 ```
 
 ## ACME configuration
@@ -57,7 +58,8 @@ spec:
   acme:
     email: user@example.com
     server: https://acme-staging.api.letsencrypt.org/directory
-    privateKey: example-issuer-account-key
+    privateKeySecretRef:
+      name: example-issuer-account-key
 ```
 
 ### ACME issuer DNS provider configuration
@@ -80,7 +82,7 @@ spec:
       providers:
       - name: prod-clouddns
         clouddns:
-          serviceAccount:
+          serviceAccountSecretRef:
             name: prod-clouddns-svc-acct-secret
             key: service-account.json
 ```
@@ -99,7 +101,7 @@ a listing of them all, with an example block of configuration:
 
 ```yaml
 clouddns:
-  serviceAccount:
+  serviceAccountSecretRef:
     name: prod-clouddns-svc-acct-secret
     key: service-account.json
 ```
@@ -110,7 +112,7 @@ clouddns:
 route53:
   accessKeyID: AKIAIOSFODNN7EXAMPLE
   region: eu-west-1
-  secretAccessKey:
+  secretAccessKeySecretRef:
     name: prod-route53-credentials-secret
     key: secret-access-key
 ```
@@ -120,7 +122,7 @@ route53:
 ```yaml
 cloudflare:
   email: my-cloudflare-acc@example.com
-  secretAccessKey:
+  apiKeySecretRef:
     name: cloudflare-api-key-secret
     key: api-key
 ```
