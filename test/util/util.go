@@ -136,9 +136,7 @@ func NewCertManagerCACertificate(name, secretName, issuerName string, issuerKind
 			Name: name,
 		},
 		Spec: v1alpha1.CertificateSpec{
-			Domains: []string{
-				"test.domain.com",
-			},
+			CommonName: "test.domain.com",
 			SecretName: secretName,
 			IssuerRef: v1alpha1.ObjectReference{
 				Name: issuerName,
