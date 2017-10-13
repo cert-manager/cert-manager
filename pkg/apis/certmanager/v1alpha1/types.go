@@ -308,6 +308,8 @@ type CertificateACMEStatus struct {
 type ACMEDomainAuthorization struct {
 	Domain string `json:"domain"`
 	URI    string `json:"uri"`
+	// Account is the account URI this authorization is valid for
+	Account string `json:"account"`
 }
 
 type LocalObjectReference struct {

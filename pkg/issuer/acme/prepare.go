@@ -48,7 +48,7 @@ func (a *Acme) Prepare(ctx context.Context, crt *v1alpha1.Certificate) (v1alpha1
 	}
 
 	// step one: check issuer to see if we already have authorizations
-	toAuthorize, err := authorizationsToObtain(ctx, cl, *crt)
+	toAuthorize, err := a.authorizationsToObtain(ctx, cl, *crt)
 	if err != nil {
 		s := messageErrorCheckAuthorization + err.Error()
 		update.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse, errorCheckAuthorization, s)
@@ -104,8 +104,9 @@ func (a *Acme) Prepare(ctx context.Context, crt *v1alpha1.Certificate) (v1alpha1
 			errs = append(errs, fmt.Errorf("authorization in %s state is not ready", res.Authorization.Status))
 		}
 		crt.Status.ACMEStatus().SaveAuthorization(v1alpha1.ACMEDomainAuthorization{
-			Domain: res.authResponse.domain,
-			URI:    res.Authorization.URI,
+			Domain:  res.authResponse.domain,
+			URI:     res.Authorization.URI,
+			Account: a.issuer.GetStatus().ACMEStatus().URI,
 		})
 	}
 
@@ -209,11 +210,11 @@ func authorizationsMap(list []v1alpha1.ACMEDomainAuthorization) map[string]v1alp
 	return out
 }
 
-func authorizationsToObtain(ctx context.Context, cl *acme.Client, crt v1alpha1.Certificate) ([]string, error) {
+func (a *Acme) authorizationsToObtain(ctx context.Context, cl *acme.Client, crt v1alpha1.Certificate) ([]string, error) {
 	authMap := authorizationsMap(crt.Status.ACMEStatus().Authorizations)
 	toAuthorize := util.StringFilter(func(domain string) (bool, error) {
 		auth, ok := authMap[domain]
-		if !ok {
+		if !ok || auth.URI != a.issuer.GetStatus().ACMEStatus().URI {
 			return false, nil
 		}
 		return checkAuthorization(ctx, cl, auth.URI)
