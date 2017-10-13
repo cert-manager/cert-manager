@@ -222,9 +222,11 @@ type CertificateList struct {
 
 // CertificateSpec defines the desired state of Certificate
 type CertificateSpec struct {
-	// Domains is a list of domains to obtain a certificate for
-	Domains []string `json:"domains"`
-	// Secret is the name of the secret resource to store this secret in
+	// CommonName is a common name to be used on the Certificate
+	CommonName string `json:"commonName"`
+	// AltNames is a list of subject alt names to be used on the Certificate
+	AltNames []string `json:"altNames"`
+	// SecretName is the name of the secret resource to store this secret in
 	SecretName string `json:"secretName"`
 	// IssuerRef is a reference to the issuer for this certificate. If the
 	// namespace field is not set, it is assumed to be in the same namespace

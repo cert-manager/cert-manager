@@ -64,20 +64,23 @@ func (c *CA) Issue(ctx context.Context, crt *v1alpha1.Certificate) (v1alpha1.Cer
 }
 
 func (c *CA) obtainCertificate(crt *v1alpha1.Certificate, signeeKey interface{}) ([]byte, error) {
-	signerCert, err := kube.SecretTLSCert(c.secretsLister, c.resourceNamespace, c.issuer.GetSpec().CA.SecretName)
+	commonName := crt.Spec.CommonName
+	altNames := crt.Spec.AltNames
+	if len(commonName) == 0 && len(altNames) == 0 {
+		return nil, fmt.Errorf("no domains specified on certificate")
+	}
 
+	signerCert, err := kube.SecretTLSCert(c.secretsLister, c.resourceNamespace, c.issuer.GetSpec().CA.SecretName)
 	if err != nil {
 		return nil, fmt.Errorf("error getting issuer certificate: %s", err.Error())
 	}
 
 	signerKey, err := kube.SecretTLSKey(c.secretsLister, c.resourceNamespace, c.issuer.GetSpec().CA.SecretName)
-
 	if err != nil {
 		return nil, fmt.Errorf("error getting issuer private key: %s", err.Error())
 	}
 
 	crtPem, _, err := signCertificate(crt, signerCert, signeeKey, signerKey)
-
 	if err != nil {
 		return nil, err
 	}
@@ -85,13 +88,15 @@ func (c *CA) obtainCertificate(crt *v1alpha1.Certificate, signeeKey interface{})
 	return crtPem, nil
 }
 
-func createCertificateTemplate(crt *v1alpha1.Certificate, publicKey interface{}) (*x509.Certificate, error) {
+func createCertificateTemplate(publicKey interface{}, commonName string, altNames ...string) (*x509.Certificate, error) {
 	serialNumberLimit := new(big.Int).Lsh(big.NewInt(1), 128)
 	serialNumber, err := rand.Int(rand.Reader, serialNumberLimit)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate serial number: %s", err.Error())
 	}
-
+	if len(commonName) == 0 && len(altNames) > 0 {
+		commonName = altNames[0]
+	}
 	cert := &x509.Certificate{
 		Version:               3,
 		BasicConstraintsValid: true,
@@ -100,13 +105,13 @@ func createCertificateTemplate(crt *v1alpha1.Certificate, publicKey interface{})
 		PublicKey:             publicKey,
 		Subject: pkix.Name{
 			Organization: []string{defaultOrganization},
-			CommonName:   crt.Spec.Domains[0],
+			CommonName:   commonName,
 		},
 		NotBefore: time.Now(),
 		NotAfter:  time.Now().Add(certificateDuration),
 		// see http://golang.org/pkg/crypto/x509/#KeyUsage
 		KeyUsage: x509.KeyUsageDigitalSignature,
-		DNSNames: crt.Spec.Domains,
+		DNSNames: altNames,
 	}
 	return cert, nil
 }
@@ -116,7 +121,7 @@ func createCertificateTemplate(crt *v1alpha1.Certificate, publicKey interface{})
 // publicKey is the public key of the signee, and signerKey is the private
 // key of the signer.
 func signCertificate(crt *v1alpha1.Certificate, issuerCert *x509.Certificate, publicKey interface{}, signerKey interface{}) ([]byte, *x509.Certificate, error) {
-	template, err := createCertificateTemplate(crt, publicKey)
+	template, err := createCertificateTemplate(publicKey, crt.Spec.CommonName, crt.Spec.AltNames...)
 	if err != nil {
 		return nil, nil, fmt.Errorf("error creating x509 certificate template: %s", err.Error())
 	}

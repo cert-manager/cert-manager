@@ -217,7 +217,7 @@ func authorizationsToObtain(ctx context.Context, cl *acme.Client, crt v1alpha1.C
 			return false, nil
 		}
 		return checkAuthorization(ctx, cl, auth.URI)
-	}, crt.Spec.Domains...)
+	}, append(crt.Spec.AltNames, crt.Spec.CommonName)...)
 
 	domains := make([]string, len(toAuthorize))
 	for i, v := range toAuthorize {
