@@ -113,6 +113,10 @@ name in a Certificate resource. The Issuer and Certificate resource must exist
 in the same namespace, as cert-manager does not allow the traversal of
 namespace boundaries.
 
+If you would like to deploy a cluster-wide issuer, you can deploy a
+ClusterIssuer. The structure of a ClusterIssuer is identical to that of an
+Issuer. You can find more information in the [Issuer api type docs](docs/api-types/issuer).
+
 ### 3. Create a Certificate resource
 
 Now we have an Issuer configured, we can create a Certificate resource that
