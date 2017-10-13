@@ -1,9 +1,12 @@
 package options
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/spf13/pflag"
+
+	"github.com/jetstack-experimental/cert-manager/pkg/util"
 )
 
 type ControllerOptions struct {
@@ -16,6 +19,8 @@ type ControllerOptions struct {
 	LeaderElectionLeaseDuration time.Duration
 	LeaderElectionRenewDeadline time.Duration
 	LeaderElectionRetryPeriod   time.Duration
+
+	ACMEHTTP01SolverImage string
 }
 
 const (
@@ -28,6 +33,10 @@ const (
 	defaultLeaderElectionLeaseDuration = 15 * time.Second
 	defaultLeaderElectionRenewDeadline = 10 * time.Second
 	defaultLeaderElectionRetryPeriod   = 2 * time.Second
+)
+
+var (
+	defaultACMEHTTP01SolverImage = fmt.Sprintf("jetstackexperimental/cert-manager-acmesolver:%s", util.AppVersion)
 )
 
 func NewControllerOptions() *ControllerOptions {
@@ -72,6 +81,10 @@ func (s *ControllerOptions) AddFlags(fs *pflag.FlagSet) {
 	fs.DurationVar(&s.LeaderElectionRetryPeriod, "leader-election-retry-period", defaultLeaderElectionRetryPeriod, ""+
 		"The duration the clients should wait between attempting acquisition and renewal "+
 		"of a leadership. This is only applicable if leader election is enabled.")
+
+	fs.StringVar(&s.ACMEHTTP01SolverImage, "acme-http01-solver-image", defaultACMEHTTP01SolverImage, ""+
+		"The docker image to use to solve ACME HTTP01 challenges. You most likely will not "+
+		"need to change this parameter unless you are testing a new feature or developing cert-manager.")
 }
 
 func (o *ControllerOptions) Validate() error {

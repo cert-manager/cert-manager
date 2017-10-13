@@ -29,4 +29,7 @@ type Context struct {
 	// ClusterResourceNamespace is the namespace to store resources created by
 	// non-namespaced resources (e.g. ClusterIssuer) in.
 	ClusterResourceNamespace string
+	// ACMEHTTP01SolverImage is the image to use for solving ACME HTTP01
+	// challenges
+	ACMEHTTP01SolverImage string
 }

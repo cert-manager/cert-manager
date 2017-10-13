@@ -60,6 +60,7 @@ func New(issuer v1alpha1.GenericIssuer,
 	cmClient clientset.Interface,
 	recorder record.EventRecorder,
 	resourceNamespace string,
+	acmeHTTP01SolverImage string,
 	secretsInformer cache.SharedIndexInformer) (issuer.Interface, error) {
 	if issuer.GetSpec().ACME == nil {
 		return nil, fmt.Errorf("acme config may not be empty")
@@ -74,7 +75,7 @@ func New(issuer v1alpha1.GenericIssuer,
 		recorder:          recorder,
 		secretsLister:     secretsLister,
 		dnsSolver:         dns.NewSolver(issuer, client, secretsLister, resourceNamespace),
-		httpSolver:        http.NewSolver(issuer, client, secretsLister),
+		httpSolver:        http.NewSolver(issuer, client, secretsLister, acmeHTTP01SolverImage),
 		resourceNamespace: resourceNamespace,
 	}, nil
 }
@@ -139,6 +140,7 @@ func init() {
 			ctx.CMClient,
 			ctx.Recorder,
 			resourceNamespace,
+			ctx.ACMEHTTP01SolverImage,
 			ctx.SharedInformerFactory.InformerFor(
 				informerNS,
 				metav1.GroupVersionKind{Version: "v1", Kind: "Secret"},
