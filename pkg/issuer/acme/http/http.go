@@ -11,7 +11,6 @@ import (
 	"strings"
 	"time"
 
-	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	extv1beta1 "k8s.io/api/extensions/v1beta1"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
@@ -47,7 +46,7 @@ func ingNameFunc(crtName, domain string) string {
 	return dns1035(fmt.Sprintf("cm-%s-%s", crtName, util.RandStringRunes(5)))
 }
 
-func jobNameFunc(crtName, domain string) string {
+func podNameFunc(crtName, domain string) string {
 	return dns1035(fmt.Sprintf("cm-%s-%s", crtName, util.RandStringRunes(5)))
 }
 
@@ -64,7 +63,7 @@ type Solver struct {
 	// during the call to Cleanup()
 	svcNames map[string]string
 	ingNames map[string]string
-	jobNames map[string]string
+	podNames map[string]string
 }
 
 // NewSolver returns a new ACME HTTP01 solver for the given Issuer and client.
@@ -76,7 +75,7 @@ func NewSolver(issuer v1alpha1.GenericIssuer, client kubernetes.Interface, secre
 		solverImage:  solverImage,
 		svcNames:     make(map[string]string),
 		ingNames:     make(map[string]string),
-		jobNames:     make(map[string]string),
+		podNames:     make(map[string]string),
 	}
 }
 
@@ -188,7 +187,7 @@ func (s *Solver) cleanupIngress(crt *v1alpha1.Certificate, svcName, domain, toke
 	if existingIngressName == "" {
 		var ingName string
 		var ok bool
-		if ingName, ok = s.svcNames[domain]; !ok {
+		if ingName, ok = s.ingNames[domain]; !ok {
 			// no service to cleanup
 			return nil
 		}
@@ -297,56 +296,49 @@ func ingressPath(token, serviceName string) extv1beta1.HTTPIngressPath {
 	}
 }
 
-// ensureJob will ensure the job required to solve this challenge exists in the
+// ensurePod will ensure the pod required to solve this challenge exists in the
 // Kubernetes API server.
-func (s *Solver) ensureJob(crt *v1alpha1.Certificate, domain, token, key string, labels map[string]string) (*batchv1.Job, error) {
-	activeDeadlineSeconds := int64(HTTP01Timeout / time.Second)
-	jobName := jobNameFunc(crt.Name, domain)
+func (s *Solver) ensurePod(crt *v1alpha1.Certificate, domain, token, key string, labels map[string]string) (*corev1.Pod, error) {
+	podName := podNameFunc(crt.Name, domain)
 
-	err := s.client.BatchV1().Jobs(crt.Namespace).Delete(jobName, nil)
+	err := s.client.CoreV1().Pods(crt.Namespace).Delete(podName, nil)
 	if err != nil && !k8sErrors.IsNotFound(err) {
-		return nil, fmt.Errorf("error removing old job when creating new job resource: %s", err.Error())
+		return nil, fmt.Errorf("error removing old pod when creating new pod resource: %s", err.Error())
 	}
 
-	return s.client.BatchV1().Jobs(crt.Namespace).Create(&batchv1.Job{
+	s.podNames[domain] = podName
+
+	return s.client.CoreV1().Pods(crt.Namespace).Create(&corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      jobName,
+			Name:      podName,
 			Namespace: crt.Namespace,
 			Labels:    labels,
 		},
-		Spec: batchv1.JobSpec{
-			ActiveDeadlineSeconds: &activeDeadlineSeconds,
-			Template: corev1.PodTemplateSpec{
-				ObjectMeta: metav1.ObjectMeta{
-					Labels: labels,
-				},
-				Spec: corev1.PodSpec{
-					RestartPolicy: corev1.RestartPolicyOnFailure,
-					Containers: []corev1.Container{
+		Spec: corev1.PodSpec{
+			RestartPolicy: corev1.RestartPolicyOnFailure,
+			Containers: []corev1.Container{
+				{
+					Name: "acmesolver",
+					// TODO: use an image as specified as a config option
+					Image:           s.solverImage,
+					ImagePullPolicy: corev1.PullAlways,
+					// TODO: replace this with some kind of cmdline generator
+					Args: []string{
+						fmt.Sprintf("--listen-port=%d", acmeSolverListenPort),
+						fmt.Sprintf("--domain=%s", domain),
+						fmt.Sprintf("--token=%s", token),
+						fmt.Sprintf("--key=%s", key),
+					},
+					Resources: corev1.ResourceRequirements{
+						Requests: corev1.ResourceList{
+							corev1.ResourceCPU:    resource.MustParse("10m"),
+							corev1.ResourceMemory: resource.MustParse("2Mi"),
+						},
+					},
+					Ports: []corev1.ContainerPort{
 						{
-							Name: "acmesolver",
-							// TODO: use an image as specified as a config option
-							Image:           s.solverImage,
-							ImagePullPolicy: corev1.PullAlways,
-							// TODO: replace this with some kind of cmdline generator
-							Args: []string{
-								fmt.Sprintf("--listen-port=%d", acmeSolverListenPort),
-								fmt.Sprintf("--domain=%s", domain),
-								fmt.Sprintf("--token=%s", token),
-								fmt.Sprintf("--key=%s", key),
-							},
-							Resources: corev1.ResourceRequirements{
-								Requests: corev1.ResourceList{
-									corev1.ResourceCPU:    resource.MustParse("10m"),
-									corev1.ResourceMemory: resource.MustParse("2Mi"),
-								},
-							},
-							Ports: []corev1.ContainerPort{
-								{
-									Name:          "http",
-									ContainerPort: acmeSolverListenPort,
-								},
-							},
+							Name:          "http",
+							ContainerPort: acmeSolverListenPort,
 						},
 					},
 				},
@@ -355,27 +347,27 @@ func (s *Solver) ensureJob(crt *v1alpha1.Certificate, domain, token, key string,
 	})
 }
 
-func (s *Solver) cleanupJob(crt *v1alpha1.Certificate, domain string) error {
-	var jobName string
+func (s *Solver) cleanupPod(crt *v1alpha1.Certificate, domain string) error {
+	var podName string
 	var ok bool
-	if jobName, ok = s.jobNames[domain]; !ok {
-		// no job to cleanup
+	if podName, ok = s.podNames[domain]; !ok {
+		// no pod to cleanup
 		return nil
 	}
 
 	propPolicy := metav1.DeletePropagationBackground
-	err := s.client.BatchV1().Jobs(crt.Namespace).Delete(jobName, &metav1.DeleteOptions{
+	err := s.client.CoreV1().Pods(crt.Namespace).Delete(podName, &metav1.DeleteOptions{
 		PropagationPolicy: &propPolicy,
 	})
 
 	if err != nil && !k8sErrors.IsNotFound(err) {
-		return fmt.Errorf("error cleaning up job '%s': %s", jobName, err.Error())
+		return fmt.Errorf("error cleaning up pod '%s': %s", podName, err.Error())
 	}
 	return nil
 }
 
 // Present will create the required service, update/create the required ingress
-// and created a Kubernetes Job to solve the HTTP01 challenge
+// and created a Kubernetes Pod to solve the HTTP01 challenge
 func (s *Solver) Present(ctx context.Context, crt *v1alpha1.Certificate, domain, token, key string) error {
 	labels := labelsForCert(crt, domain)
 
@@ -391,10 +383,10 @@ func (s *Solver) Present(ctx context.Context, crt *v1alpha1.Certificate, domain,
 		return fmt.Errorf("error ensuring http01 challenge ingress: %s", err.Error())
 	}
 
-	_, err = s.ensureJob(crt, domain, token, key, labels)
+	_, err = s.ensurePod(crt, domain, token, key, labels)
 
 	if err != nil {
-		return fmt.Errorf("error ensuring http01 challenge job: %s", err.Error())
+		return fmt.Errorf("error ensuring http01 challenge pod: %s", err.Error())
 	}
 
 	return nil
@@ -466,8 +458,8 @@ func testReachability(ctx context.Context, domain, path, key string) error {
 // cert-manager created data.
 func (s *Solver) CleanUp(ctx context.Context, crt *v1alpha1.Certificate, domain, token, key string) error {
 	var errs []error
-	if err := s.cleanupJob(crt, domain); err != nil {
-		errs = append(errs, fmt.Errorf("[%s] Error cleaning up job: %s", domain, err.Error()))
+	if err := s.cleanupPod(crt, domain); err != nil {
+		errs = append(errs, fmt.Errorf("[%s] Error cleaning up pod: %s", domain, err.Error()))
 	}
 	if err := s.cleanupService(crt, domain); err != nil {
 		errs = append(errs, fmt.Errorf("[%s] Error cleaning up service: %s", domain, err.Error()))
@@ -475,7 +467,6 @@ func (s *Solver) CleanUp(ctx context.Context, crt *v1alpha1.Certificate, domain,
 	if err := s.cleanupIngress(crt, svcNameFunc(crt.Name, domain), domain, token, labelsForCert(crt, domain)); err != nil {
 		errs = append(errs, fmt.Errorf("[%s] Error cleaning up ingress: %s", domain, err.Error()))
 	}
-
 	if errs != nil {
 		return utilerrors.NewAggregate(errs)
 	}
