@@ -5,6 +5,9 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/golang/glog"
+	"golang.org/x/crypto/acme"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	coreinformers "k8s.io/client-go/informers/core/v1"
 	"k8s.io/client-go/kubernetes"
@@ -17,6 +20,7 @@ import (
 	"github.com/jetstack-experimental/cert-manager/pkg/issuer"
 	"github.com/jetstack-experimental/cert-manager/pkg/issuer/acme/dns"
 	"github.com/jetstack-experimental/cert-manager/pkg/issuer/acme/http"
+	"github.com/jetstack-experimental/cert-manager/pkg/util/kube"
 )
 
 // Acme is an issuer for an ACME server. It can be used to register and obtain
@@ -40,6 +44,14 @@ type Acme struct {
 	// clusterResourceNamespace specified on the CLI, we can easily continue
 	// to work with supplemental resources without significant refactoring.
 	resourceNamespace string
+}
+
+// solver solves ACME challenges by presenting the given token and key in an
+// appropriate way given the config in the Issuer and Certificate.
+type solver interface {
+	Present(ctx context.Context, crt *v1alpha1.Certificate, domain, token, key string) error
+	Wait(ctx context.Context, crt *v1alpha1.Certificate, domain, token, key string) error
+	CleanUp(ctx context.Context, crt *v1alpha1.Certificate, domain, token, key string) error
 }
 
 // New returns a new ACME issuer interface for the given issuer.
@@ -67,12 +79,30 @@ func New(issuer v1alpha1.GenericIssuer,
 	}, nil
 }
 
-// solver solves ACME challenges by presenting the given token and key in an
-// appropriate way given the config in the Issuer and Certificate.
-type solver interface {
-	Present(ctx context.Context, crt *v1alpha1.Certificate, domain, token, key string) error
-	Wait(ctx context.Context, crt *v1alpha1.Certificate, domain, token, key string) error
-	CleanUp(ctx context.Context, crt *v1alpha1.Certificate, domain, token, key string) error
+func (a *Acme) acmeClient() (*acme.Client, error) {
+	secretName, secretKey := a.acmeAccountPrivateKeyMeta()
+	glog.V(4).Infof("getting private key (%s->%s) for acme issuer %s/%s", secretName, secretKey, a.resourceNamespace, a.issuer.GetObjectMeta().Name)
+	accountPrivKey, err := kube.SecretTLSKeyRef(a.secretsLister, a.resourceNamespace, secretName, secretKey)
+	if err != nil {
+		return nil, err
+	}
+
+	cl := &acme.Client{
+		Key:          accountPrivKey,
+		DirectoryURL: a.issuer.GetSpec().ACME.Server,
+	}
+	return cl, nil
+}
+
+// acmeAccountPrivateKeyMeta returns the name and the secret 'key' that stores
+// the ACME account private key.
+func (a *Acme) acmeAccountPrivateKeyMeta() (name string, key string) {
+	secretName := a.issuer.GetSpec().ACME.PrivateKey.Name
+	secretKey := a.issuer.GetSpec().ACME.PrivateKey.Key
+	if len(secretKey) == 0 {
+		secretKey = corev1.TLSPrivateKeyKey
+	}
+	return secretName, secretKey
 }
 
 func (a *Acme) solverFor(challengeType string) (solver, error) {
