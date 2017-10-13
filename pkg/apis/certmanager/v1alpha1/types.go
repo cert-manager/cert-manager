@@ -79,7 +79,9 @@ type IssuerConfig struct {
 }
 
 type CAIssuer struct {
-	SecretRef LocalObjectReference `json:"secretRef"`
+	// SecretName is the name of the secret used to sign Certificates issued
+	// by this Issuer.
+	SecretName string `json:"secretName"`
 }
 
 // ACMEIssuer contains the specification for an ACME issuer
@@ -90,7 +92,7 @@ type ACMEIssuer struct {
 	Server string `json:"server"`
 	// PrivateKey is the name of a secret containing the private key for this
 	// user account.
-	PrivateKey string `json:"privateKey"`
+	PrivateKey SecretKeySelector `json:"privateKeySecretRef"`
 	// DNS-01 config
 	DNS01 *ACMEIssuerDNS01Config `json:"dns-01"`
 }
@@ -113,7 +115,7 @@ type ACMEIssuerDNS01Provider struct {
 // ACMEIssuerDNS01ProviderCloudDNS is a structure containing the DNS
 // configuration for Google Cloud DNS
 type ACMEIssuerDNS01ProviderCloudDNS struct {
-	ServiceAccount SecretKeySelector `json:"serviceAccount"`
+	ServiceAccount SecretKeySelector `json:"serviceAccountSecretRef"`
 	Project        string            `json:"project"`
 }
 
@@ -121,14 +123,14 @@ type ACMEIssuerDNS01ProviderCloudDNS struct {
 // configuration for Cloudflare
 type ACMEIssuerDNS01ProviderCloudflare struct {
 	Email  string            `json:"email"`
-	APIKey SecretKeySelector `json:"apiKey"`
+	APIKey SecretKeySelector `json:"apiKeySecretRef"`
 }
 
 // ACMEIssuerDNS01ProviderRoute53 is a structure containing the Route 53
 // configuration for AWS
 type ACMEIssuerDNS01ProviderRoute53 struct {
 	AccessKeyID     string            `json:"accessKeyID"`
-	SecretAccessKey SecretKeySelector `json:"secretAccessKey"`
+	SecretAccessKey SecretKeySelector `json:"secretAccessKeySecretRef"`
 	HostedZoneID    string            `json:"hostedZoneID"`
 	Region          string            `json:"region"`
 }
