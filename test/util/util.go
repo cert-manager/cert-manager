@@ -123,9 +123,7 @@ func NewCertManagerCAClusterIssuer(name, secretName string) *v1alpha1.ClusterIss
 		Spec: v1alpha1.IssuerSpec{
 			IssuerConfig: v1alpha1.IssuerConfig{
 				CA: &v1alpha1.CAIssuer{
-					SecretRef: v1alpha1.LocalObjectReference{
-						Name: secretName,
-					},
+					SecretName: secretName,
 				},
 			},
 		},
@@ -158,9 +156,13 @@ func NewCertManagerACMEIssuer(name, acmeURL, acmeEmail, acmePrivateKey string) *
 		Spec: v1alpha1.IssuerSpec{
 			IssuerConfig: v1alpha1.IssuerConfig{
 				ACME: &v1alpha1.ACMEIssuer{
-					Email:      acmeEmail,
-					Server:     acmeURL,
-					PrivateKey: acmePrivateKey,
+					Email:  acmeEmail,
+					Server: acmeURL,
+					PrivateKey: v1alpha1.SecretKeySelector{
+						LocalObjectReference: v1alpha1.LocalObjectReference{
+							Name: acmePrivateKey,
+						},
+					},
 				},
 			},
 		},
@@ -175,9 +177,7 @@ func NewCertManagerCAIssuer(name, secretName string) *v1alpha1.Issuer {
 		Spec: v1alpha1.IssuerSpec{
 			IssuerConfig: v1alpha1.IssuerConfig{
 				CA: &v1alpha1.CAIssuer{
-					SecretRef: v1alpha1.LocalObjectReference{
-						Name: secretName,
-					},
+					SecretName: secretName,
 				},
 			},
 		},
