@@ -34,11 +34,25 @@ configuring credentials for a DNS provider.
 
 ### ACME issuer HTTP01 configuration
 
-The ACME issuer does not require any additional configuration in order to
-support HTTP01 challenge validation. All valid ACME issuers are able to issue
-certificates validated with HTTP01 by creating or manipulating Ingress
-resources in the Kubernetes API server. The installed ingress controller will
-then configure routes to solve ACME challenges automatically.
+In order to allow HTTP01 challenges to be solved, we must enable the HTTP01
+challenge provider on our Issuer resource. This can be done through setting the
+`http-01` field on the `issuer.spec.acme` stanza. Cert-manager will then create
+and manage Ingress rules in the Kubernetes API server in order to solve HTTP-01
+based challenges.
+
+```yaml
+apiVersion: certmanager.k8s.io
+kind: Issuer
+metadata:
+  name: example-issuer
+spec:
+  acme:
+    email: user@example.com
+    server: https://acme-staging.api.letsencrypt.org/directory
+    privateKeySecretRef:
+      name: example-issuer-account-key
+    http-01: {}
+```
 
 ### ACME issuer with no configured DNS providers
 
