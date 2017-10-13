@@ -214,7 +214,7 @@ func (a *Acme) authorizationsToObtain(ctx context.Context, cl *acme.Client, crt 
 	authMap := authorizationsMap(crt.Status.ACMEStatus().Authorizations)
 	toAuthorize := util.StringFilter(func(domain string) (bool, error) {
 		auth, ok := authMap[domain]
-		if !ok || auth.URI != a.issuer.GetStatus().ACMEStatus().URI {
+		if !ok || auth.Account != a.issuer.GetStatus().ACMEStatus().URI {
 			return false, nil
 		}
 		return checkAuthorization(ctx, cl, auth.URI)
