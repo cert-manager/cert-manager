@@ -57,11 +57,27 @@ type Solver struct {
 	client       kubernetes.Interface
 	secretLister corev1listers.SecretLister
 	solverImage  string
+
+	// This is a hack to record the randomly generated names of resources
+	// created by this Solver. This should be refactored out in future with a
+	// redesign of this package. It is used so resources can be cleaned up
+	// during the call to Cleanup()
+	svcNames map[string]string
+	ingNames map[string]string
+	jobNames map[string]string
 }
 
 // NewSolver returns a new ACME HTTP01 solver for the given Issuer and client.
 func NewSolver(issuer v1alpha1.GenericIssuer, client kubernetes.Interface, secretLister corev1listers.SecretLister, solverImage string) *Solver {
-	return &Solver{issuer, client, secretLister, solverImage}
+	return &Solver{
+		issuer:       issuer,
+		client:       client,
+		secretLister: secretLister,
+		solverImage:  solverImage,
+		svcNames:     make(map[string]string),
+		ingNames:     make(map[string]string),
+		jobNames:     make(map[string]string),
+	}
 }
 
 // labelsForCert returns some labels to add to resources related to the given
@@ -123,13 +139,20 @@ func (s *Solver) ensureService(crt *v1alpha1.Certificate, domain string, labels 
 	svc.Spec.Type = corev1.ServiceTypeNodePort
 	svc.Spec.Selector = labels
 
+	s.svcNames[domain] = svcName
 	return kube.EnsureService(s.client, svc)
 }
 
 // cleanupService will ensure the service created for this challenge request
 // does not exist.
 func (s *Solver) cleanupService(crt *v1alpha1.Certificate, domain string) error {
-	svcName := svcNameFunc(crt.Name, domain)
+	var svcName string
+	var ok bool
+	if svcName, ok = s.svcNames[domain]; !ok {
+		// no service to cleanup
+		return nil
+	}
+
 	err := s.client.CoreV1().Services(crt.Namespace).Delete(svcName, nil)
 	if err != nil && !k8sErrors.IsNotFound(err) {
 		return fmt.Errorf("error cleaning up service: %s", err.Error())
@@ -145,6 +168,7 @@ func (s *Solver) ensureIngress(crt *v1alpha1.Certificate, svcName, domain, token
 		ing, err = s.ensureIngressHasRule(existingIngressName, crt, svcName, domain, token, nil)
 	} else {
 		ingName := ingNameFunc(crt.Name, domain)
+		s.ingNames[domain] = ingName
 		ing, err = s.ensureIngressHasRule(ingName, crt, svcName, domain, token, labels)
 	}
 
@@ -161,9 +185,13 @@ func (s *Solver) ensureIngress(crt *v1alpha1.Certificate, svcName, domain, token
 func (s *Solver) cleanupIngress(crt *v1alpha1.Certificate, svcName, domain, token string, labels map[string]string) error {
 	domainCfg := crt.Spec.ACME.ConfigForDomain(domain)
 	existingIngressName := domainCfg.HTTP01.Ingress
-
 	if existingIngressName == "" {
-		ingName := ingNameFunc(crt.Name, domain)
+		var ingName string
+		var ok bool
+		if ingName, ok = s.svcNames[domain]; !ok {
+			// no service to cleanup
+			return nil
+		}
 		err := s.client.ExtensionsV1beta1().Ingresses(crt.Namespace).Delete(ingName, nil)
 		if err != nil && !k8sErrors.IsNotFound(err) {
 			return fmt.Errorf("error cleaning up ingress: %s", err.Error())
@@ -328,7 +356,12 @@ func (s *Solver) ensureJob(crt *v1alpha1.Certificate, domain, token, key string,
 }
 
 func (s *Solver) cleanupJob(crt *v1alpha1.Certificate, domain string) error {
-	jobName := jobNameFunc(crt.Name, domain)
+	var jobName string
+	var ok bool
+	if jobName, ok = s.jobNames[domain]; !ok {
+		// no job to cleanup
+		return nil
+	}
 
 	propPolicy := metav1.DeletePropagationBackground
 	err := s.client.BatchV1().Jobs(crt.Namespace).Delete(jobName, &metav1.DeleteOptions{
