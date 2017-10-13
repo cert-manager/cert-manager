@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"io"
 
 	"github.com/golang/glog"
@@ -15,6 +16,7 @@ import (
 	_ "github.com/jetstack-experimental/cert-manager/pkg/controller/issuers"
 	_ "github.com/jetstack-experimental/cert-manager/pkg/issuer/acme"
 	_ "github.com/jetstack-experimental/cert-manager/pkg/issuer/ca"
+	"github.com/jetstack-experimental/cert-manager/pkg/util"
 )
 
 type CertManagerControllerOptions struct {
@@ -41,7 +43,7 @@ func NewCommandStartCertManagerController(out, errOut io.Writer, stopCh <-chan s
 
 	cmd := &cobra.Command{
 		Use:   "cert-manager-controller",
-		Short: "Automated TLS controller for Kubernetes",
+		Short: fmt.Sprintf("Automated TLS controller for Kubernetes (%s) (%s)", util.AppVersion, util.AppGitCommit),
 		Long: `
 cert-manager is a Kubernetes addon to automate the management and issuance of
 TLS certificates from various issuing sources.

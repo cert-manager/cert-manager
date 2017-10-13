@@ -26,6 +26,10 @@ TYPES_FILES = $(shell find pkg/apis -name types.go)
 
 .PHONY: version
 
+ifeq ($(APP_VERSION),)
+APP_VERSION := canary
+endif
+
 all: verify test build
 
 .get_deps:
@@ -63,7 +67,7 @@ build_%: depend version
 	CGO_ENABLED=0 GOOS=$(GOOS) GOARCH=$(GOARCH) go build \
 		-a -tags netgo \
 		-o ${BUILD_DIR}/${APP_NAME}-$*-$(GOOS)-$(GOARCH) \
-		-ldflags "-X main.AppGitState=${GIT_STATE} -X main.AppGitCommit=${GIT_COMMIT} -X main.AppVersion=${APP_VERSION}" \
+		-ldflags "-X github.com/jetstack-experimental/cert-manager/pkg/util.AppGitState=${GIT_STATE} -X github.com/jetstack-experimental/cert-manager/pkg/util.AppGitCommit=${GIT_COMMIT} -X github.com/jetstack-experimental/cert-manager/pkg/util.AppVersion=${APP_VERSION}" \
 		./cmd/$*
 
 go_fmt:

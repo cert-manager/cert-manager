@@ -44,6 +44,6 @@ release_push:
   - docker
   script:
   - mkdir -p ~/.docker && echo "${DOCKER_AUTH_CONFIG}" > ~/.docker/config.json && chmod 600 ~/.docker/config.json
-  - make all push APP_VERSION=${CI_COMMIT_TAG} IMAGE_TAGS="${CI_COMMIT_TAG} latest"
+  - APP_VERSION=${CI_COMMIT_TAG} make all push IMAGE_TAGS="${CI_COMMIT_TAG} latest"
   only:
   - tags

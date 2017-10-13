@@ -35,8 +35,6 @@ const (
 	HTTP01Timeout = time.Minute * 15
 	// acmeSolverListenPort is the port acmesolver should listen on
 	acmeSolverListenPort = 8089
-	// acmeSolverImage is the docker image containing acmesolver to use
-	acmeSolverImage = "jetstackexperimental/cert-manager-acmesolver:canary"
 )
 
 // svcNameFunc returns the name for the service to solve the challenge
@@ -58,11 +56,12 @@ type Solver struct {
 	issuer       v1alpha1.GenericIssuer
 	client       kubernetes.Interface
 	secretLister corev1listers.SecretLister
+	solverImage  string
 }
 
 // NewSolver returns a new ACME HTTP01 solver for the given Issuer and client.
-func NewSolver(issuer v1alpha1.GenericIssuer, client kubernetes.Interface, secretLister corev1listers.SecretLister) *Solver {
-	return &Solver{issuer, client, secretLister}
+func NewSolver(issuer v1alpha1.GenericIssuer, client kubernetes.Interface, secretLister corev1listers.SecretLister, solverImage string) *Solver {
+	return &Solver{issuer, client, secretLister, solverImage}
 }
 
 // labelsForCert returns some labels to add to resources related to the given
@@ -299,7 +298,7 @@ func (s *Solver) ensureJob(crt *v1alpha1.Certificate, domain, token, key string,
 						{
 							Name: "acmesolver",
 							// TODO: use an image as specified as a config option
-							Image:           acmeSolverImage,
+							Image:           s.solverImage,
 							ImagePullPolicy: corev1.PullAlways,
 							// TODO: replace this with some kind of cmdline generator
 							Args: []string{

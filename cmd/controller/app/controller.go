@@ -119,6 +119,7 @@ func buildControllerContext(opts *options.ControllerOptions) (*controller.Contex
 			SharedInformerFactory:    sharedInformerFactory,
 			Namespace:                opts.Namespace,
 			ClusterResourceNamespace: opts.ClusterResourceNamespace,
+			ACMEHTTP01SolverImage:    opts.ACMEHTTP01SolverImage,
 		}),
 		Namespace:                opts.Namespace,
 		ClusterResourceNamespace: opts.ClusterResourceNamespace,
