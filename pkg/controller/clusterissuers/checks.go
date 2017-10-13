@@ -21,7 +21,7 @@ func (c *Controller) issuersForSecret(secret *corev1.Secret) ([]*v1alpha1.Cluste
 		if secret.Namespace != c.clusterResourceNamespace {
 			continue
 		}
-		if iss.Spec.ACME != nil && iss.Spec.ACME.PrivateKey == secret.Name {
+		if iss.Spec.ACME != nil && iss.Spec.ACME.PrivateKey.Name == secret.Name {
 			affected = append(affected, iss)
 			continue
 		}
