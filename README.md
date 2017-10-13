@@ -78,9 +78,9 @@ spec:
     privateKeySecretRef:
       name: letsencrypt-staging
     # Enable the HTTP-01 challenge provider
-    http-01: {}
+    http01: {}
     # ACME dns-01 provider configurations
-    dns-01:
+    dns01:
       # Here we define a list of DNS-01 providers that can solve DNS challenges
       providers:
       # We define a provider named 'prod-dns', with configuration for the
@@ -144,11 +144,11 @@ spec:
     - domains:
       - example.com
       - www.example.com
-      http-01:
+      http01:
         ingressClass: nginx
     - domains:
       - example2.com
-      dns-01:
+      dns01:
         provider: prod-dns
 ```
 

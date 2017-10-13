@@ -19,11 +19,14 @@ spec:
     # Name of a secret used to store the ACME account private key
     privateKeySecretRef:
       name: letsncrypt-prod
+    # Enable HTTP01 validations
+    http01: {}
 ```
 
 This is the simplest of ACME issuers - it specifies no DNS-01 challenge
 providers. HTTP-01 validation can be performed through using Ingress
-resources without any additional configuration on the Issuer resource.
+resources by enabling the HTTP-01 challenge mechanism (with the `http01: {}`
+field).
 
 ## Namespacing
 
