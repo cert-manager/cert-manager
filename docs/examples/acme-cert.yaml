@@ -8,7 +8,7 @@ spec:
   secretName: cm-http-nginx-k8s-group
   issuerRef:
     name: letsencrypt-staging
-  domains:
+  dnsNames:
   - cm-http-nginx.k8s.group
   - cm-http-nginx2.k8s.group
   - cm-http-gce.k8s.group
