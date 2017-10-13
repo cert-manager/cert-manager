@@ -94,9 +94,9 @@ type ACMEIssuer struct {
 	// user account.
 	PrivateKey SecretKeySelector `json:"privateKeySecretRef"`
 	// HTTP01 config
-	HTTP01 *ACMEIssuerHTTP01Config `json:"http-01"`
+	HTTP01 *ACMEIssuerHTTP01Config `json:"http01,omitempty"`
 	// DNS-01 config
-	DNS01 *ACMEIssuerDNS01Config `json:"dns-01"`
+	DNS01 *ACMEIssuerDNS01Config `json:"dns01,omitempty"`
 }
 
 type ACMEIssuerHTTP01Config struct {
@@ -249,8 +249,8 @@ type ACMECertificateConfig struct {
 
 type ACMECertificateDomainConfig struct {
 	Domains []string                     `json:"domains"`
-	HTTP01  *ACMECertificateHTTP01Config `json:"http-01,omitempty"`
-	DNS01   *ACMECertificateDNS01Config  `json:"dns-01,omitempty"`
+	HTTP01  *ACMECertificateHTTP01Config `json:"http01,omitempty"`
+	DNS01   *ACMECertificateDNS01Config  `json:"dns01,omitempty"`
 }
 
 type ACMECertificateHTTP01Config struct {

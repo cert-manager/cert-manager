@@ -36,7 +36,7 @@ configuring credentials for a DNS provider.
 
 In order to allow HTTP01 challenges to be solved, we must enable the HTTP01
 challenge provider on our Issuer resource. This can be done through setting the
-`http-01` field on the `issuer.spec.acme` stanza. Cert-manager will then create
+`http01` field on the `issuer.spec.acme` stanza. Cert-manager will then create
 and manage Ingress rules in the Kubernetes API server in order to solve HTTP-01
 based challenges.
 
@@ -51,7 +51,7 @@ spec:
     server: https://acme-staging.api.letsencrypt.org/directory
     privateKeySecretRef:
       name: example-issuer-account-key
-    http-01: {}
+    http01: {}
 ```
 
 ### ACME issuer with no configured DNS providers
@@ -93,7 +93,7 @@ spec:
     server: https://acme-staging.api.letsencrypt.org/directory
     privateKeySecretRef:
       name: example-issuer-account-key
-    dns-01:
+    dns01:
       providers:
       - name: prod-clouddns
         clouddns:

@@ -16,20 +16,20 @@ spec:
   - cm-http-cloudflare.k8s.group
   acme:
     config:
-    - http-01:
+    - http01:
         ingressClass: nginx
       domains:
       - cm-http-nginx.k8s.group
       - cm-http-nginx2.k8s.group
-    - http-01:
+    - http01:
         ingressName: my-gce-ingress
       domains:
       - cm-http-gce.k8s.group
-    - dns-01:
+    - dns01:
         provider: clouddns
       domains:
       - cm-dns-clouddns.k8s.group
-    - dns-01:
+    - dns01:
         provider: cloudflare
       domains:
       - cm-dns-cloudflare.k8s.group
