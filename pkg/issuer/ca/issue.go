@@ -35,9 +35,7 @@ const (
 	defaultOrganization = "cert-manager"
 )
 
-func (c *CA) Issue(ctx context.Context, crt *v1alpha1.Certificate) (v1alpha1.CertificateStatus, []byte, []byte, error) {
-	update := crt.DeepCopy()
-
+func (c *CA) Issue(ctx context.Context, crt *v1alpha1.Certificate) ([]byte, []byte, error) {
 	signeeKey, err := kube.SecretTLSKey(c.secretsLister, crt.Namespace, crt.Spec.SecretName)
 
 	if k8sErrors.IsNotFound(err) {
@@ -46,21 +44,21 @@ func (c *CA) Issue(ctx context.Context, crt *v1alpha1.Certificate) (v1alpha1.Cer
 
 	if err != nil {
 		s := messageErrorGetCertKeyPair + err.Error()
-		update.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse, errorGetCertKeyPair, s)
-		return update.Status, nil, nil, err
+		crt.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse, errorGetCertKeyPair, s)
+		return nil, nil, err
 	}
 
 	certPem, err := c.obtainCertificate(crt, &signeeKey.PublicKey)
 
 	if err != nil {
 		s := messageErrorIssueCert + err.Error()
-		update.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse, errorIssueCert, s)
-		return update.Status, nil, nil, err
+		crt.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse, errorIssueCert, s)
+		return nil, nil, err
 	}
 
-	update.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionTrue, successCertIssued, messageCertIssued)
+	crt.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionTrue, successCertIssued, messageCertIssued)
 
-	return update.Status, pki.EncodePKCS1PrivateKey(signeeKey), certPem, nil
+	return pki.EncodePKCS1PrivateKey(signeeKey), certPem, nil
 }
 
 func (c *CA) obtainCertificate(crt *v1alpha1.Certificate, signeeKey interface{}) ([]byte, error) {
@@ -121,7 +119,7 @@ func createCertificateTemplate(publicKey interface{}, commonName string, altName
 // publicKey is the public key of the signee, and signerKey is the private
 // key of the signer.
 func signCertificate(crt *v1alpha1.Certificate, issuerCert *x509.Certificate, publicKey interface{}, signerKey interface{}) ([]byte, *x509.Certificate, error) {
-	template, err := createCertificateTemplate(publicKey, crt.Spec.CommonName, crt.Spec.DNSNames...)
+	template, err := createCertificateTemplate(publicKey, pki.CommonNameForCertificate(crt), pki.DNSNamesForCertificate(crt)...)
 	if err != nil {
 		return nil, nil, fmt.Errorf("error creating x509 certificate template: %s", err.Error())
 	}

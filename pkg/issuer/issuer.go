@@ -12,11 +12,11 @@ type Interface interface {
 	// credentials and authorization with a remote server.
 	Setup(ctx context.Context) (v1alpha1.IssuerStatus, error)
 	// Prepare
-	Prepare(context.Context, *v1alpha1.Certificate) (v1alpha1.CertificateStatus, error)
+	Prepare(context.Context, *v1alpha1.Certificate) error
 	// Issue attempts to issue a certificate as described by the certificate
 	// resource given
-	Issue(context.Context, *v1alpha1.Certificate) (v1alpha1.CertificateStatus, []byte, []byte, error)
+	Issue(context.Context, *v1alpha1.Certificate) ([]byte, []byte, error)
 	// Renew attempts to renew the certificate describe by the certificate
 	// resource given. If no certificate exists, an error is returned.
-	Renew(context.Context, *v1alpha1.Certificate) (v1alpha1.CertificateStatus, []byte, []byte, error)
+	Renew(context.Context, *v1alpha1.Certificate) ([]byte, []byte, error)
 }

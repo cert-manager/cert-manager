@@ -13,6 +13,7 @@ import (
 
 	"github.com/jetstack-experimental/cert-manager/pkg/apis/certmanager/v1alpha1"
 	"github.com/jetstack-experimental/cert-manager/pkg/util"
+	"github.com/jetstack-experimental/cert-manager/pkg/util/pki"
 )
 
 const (
@@ -36,38 +37,36 @@ const (
 //
 // It will send the appropriate Letsencrypt authorizations, and complete
 // challenge requests if neccessary.
-func (a *Acme) Prepare(ctx context.Context, crt *v1alpha1.Certificate) (v1alpha1.CertificateStatus, error) {
-	update := crt.DeepCopy()
-
+func (a *Acme) Prepare(ctx context.Context, crt *v1alpha1.Certificate) error {
 	// obtain an ACME client
 	cl, err := a.acmeClient()
 	if err != nil {
 		s := messageErrorGetACMEAccount + err.Error()
-		update.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse, errorGetACMEAccount, s)
-		return update.Status, errors.New(s)
+		crt.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse, errorGetACMEAccount, s)
+		return errors.New(s)
 	}
 
 	// step one: check issuer to see if we already have authorizations
-	toAuthorize, err := a.authorizationsToObtain(ctx, cl, *crt)
+	toAuthorize, err := a.authorizationsToObtain(ctx, cl, crt)
 	if err != nil {
 		s := messageErrorCheckAuthorization + err.Error()
-		update.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse, errorCheckAuthorization, s)
-		return update.Status, errors.New(s)
+		crt.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse, errorCheckAuthorization, s)
+		return errors.New(s)
 	}
 
 	// if there are no more authorizations to obtain, we are done
 	if len(toAuthorize) == 0 {
 		// TODO: set a field in the status block to show authorizations have
 		// been obtained so we can periodically update the auth status
-		return update.Status, nil
+		return nil
 	}
 
 	// request authorizations from the ACME server
 	auths, err := getAuthorizations(ctx, cl, toAuthorize...)
 	if err != nil {
 		s := messageErrorCheckAuthorization + err.Error()
-		update.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse, errorCheckAuthorization, s)
-		return update.Status, errors.New(s)
+		crt.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse, errorCheckAuthorization, s)
+		return errors.New(s)
 	}
 
 	// TODO: move some of this logic into it's own function
@@ -113,11 +112,11 @@ func (a *Acme) Prepare(ctx context.Context, crt *v1alpha1.Certificate) (v1alpha1
 	if len(errs) > 0 {
 		err = utilerrors.NewAggregate(errs)
 		s := messageErrorCheckAuthorization + err.Error()
-		update.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse, errorCheckAuthorization, s)
-		return update.Status, err
+		crt.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse, errorCheckAuthorization, s)
+		return err
 	}
 
-	return update.Status, nil
+	return nil
 }
 
 func keyForChallenge(cl *acme.Client, challenge *acme.Challenge) (string, error) {
@@ -153,8 +152,12 @@ func (a *Acme) authorize(ctx context.Context, cl *acme.Client, crt *v1alpha1.Cer
 	if err != nil {
 		return nil, err
 	}
-
-	defer solver.CleanUp(ctx, crt, auth.domain, token, key)
+	defer func() {
+		err := solver.CleanUp(ctx, crt, auth.domain, token, key)
+		if err != nil {
+			glog.Errorf("Error cleaning up solver: %s", err.Error())
+		}
+	}()
 
 	a.recorder.Eventf(crt, v1.EventTypeNormal, reasonPresentChallenge, messagePresentChallenge, challengeType, auth.domain)
 	err = solver.Present(ctx, crt, auth.domain, token, key)
@@ -210,15 +213,33 @@ func authorizationsMap(list []v1alpha1.ACMEDomainAuthorization) map[string]v1alp
 	return out
 }
 
-func (a *Acme) authorizationsToObtain(ctx context.Context, cl *acme.Client, crt v1alpha1.Certificate) ([]string, error) {
+func removeDuplicates(in []string) []string {
+	var found []string
+Outer:
+	for _, i := range in {
+		for _, i2 := range found {
+			if i2 == i {
+				continue Outer
+			}
+		}
+		found = append(found, i)
+	}
+	return found
+}
+
+func (a *Acme) authorizationsToObtain(ctx context.Context, cl *acme.Client, crt *v1alpha1.Certificate) ([]string, error) {
 	authMap := authorizationsMap(crt.Status.ACMEStatus().Authorizations)
+	expectedCN := pki.CommonNameForCertificate(crt)
+	expectedDNSNames := pki.DNSNamesForCertificate(crt)
+	check := removeDuplicates(append(expectedDNSNames, expectedCN))
 	toAuthorize := util.StringFilter(func(domain string) (bool, error) {
 		auth, ok := authMap[domain]
+		glog.Infof("Compare %q with %q", auth.Account, a.issuer.GetStatus().ACMEStatus().URI)
 		if !ok || auth.Account != a.issuer.GetStatus().ACMEStatus().URI {
 			return false, nil
 		}
 		return checkAuthorization(ctx, cl, auth.URI)
-	}, append(crt.Spec.DNSNames, crt.Spec.CommonName)...)
+	}, check...)
 
 	domains := make([]string, len(toAuthorize))
 	for i, v := range toAuthorize {

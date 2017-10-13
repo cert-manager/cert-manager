@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/x509"
 	"fmt"
-	"reflect"
 	"time"
 
 	api "k8s.io/api/core/v1"
@@ -19,6 +18,7 @@ import (
 	"github.com/jetstack-experimental/cert-manager/pkg/util"
 	"github.com/jetstack-experimental/cert-manager/pkg/util/errors"
 	"github.com/jetstack-experimental/cert-manager/pkg/util/kube"
+	"github.com/jetstack-experimental/cert-manager/pkg/util/pki"
 )
 
 const renewBefore = time.Hour * 24 * 30
@@ -76,7 +76,6 @@ func (c *Controller) Sync(ctx context.Context, crt *v1alpha1.Certificate) (err e
 		Type:   v1alpha1.IssuerConditionReady,
 		Status: v1alpha1.ConditionTrue,
 	})
-
 	if !issuerReady {
 		s := fmt.Sprintf(messageIssuerNotReady, issuerObj.GetObjectMeta().Name)
 		glog.Info(s)
@@ -85,7 +84,6 @@ func (c *Controller) Sync(ctx context.Context, crt *v1alpha1.Certificate) (err e
 	}
 
 	i, err := c.issuerFactory.IssuerFor(issuerObj)
-
 	if err != nil {
 		s := messageIssuerErrorInit + err.Error()
 		glog.Info(s)
@@ -95,7 +93,6 @@ func (c *Controller) Sync(ctx context.Context, crt *v1alpha1.Certificate) (err e
 
 	// grab existing certificate and validate private key
 	cert, err := kube.SecretTLSCert(c.secretLister, crt.Namespace, crt.Spec.SecretName)
-
 	if err != nil {
 		s := messageErrorCheckCertificate + err.Error()
 		glog.Info(s)
@@ -113,22 +110,22 @@ func (c *Controller) Sync(ctx context.Context, crt *v1alpha1.Certificate) (err e
 	// execution.
 	defer c.scheduleRenewal(crt)
 
-	// if the certificate was not found, or the certificate data is invalid, we
-	// should issue a new certificate
-	if k8sErrors.IsNotFound(err) || errors.IsInvalidData(err) {
-		return c.issue(ctx, i, crt)
-	}
+	crtCopy := crt.DeepCopy()
+	expectedCN := pki.CommonNameForCertificate(crtCopy)
+	expectedDNSNames := pki.DNSNamesForCertificate(crtCopy)
 
-	expectedCN := crt.Spec.CommonName
-	if len(expectedCN) == 0 {
-		if len(crt.Spec.DNSNames) > 0 {
-			expectedCN = crt.Spec.DNSNames[0]
-		}
-	}
+	// if the certificate was not found, or the certificate data is invalid, we
+	// should issue a new certificate.
 	// if the certificate is valid for a list of domains other than those
-	// listed in the certificate spec, we should re-issue the certificate
-	if expectedCN != cert.Subject.CommonName || !util.EqualUnsorted(crt.Spec.DNSNames, cert.DNSNames) {
-		return c.issue(ctx, i, crt)
+	// listed in the certificate spec, we should re-issue the certificate.
+	if k8sErrors.IsNotFound(err) || errors.IsInvalidData(err) ||
+		expectedCN != cert.Subject.CommonName || !util.EqualUnsorted(cert.DNSNames, expectedDNSNames) {
+		err := c.issue(ctx, i, crtCopy)
+		updateErr := c.updateCertificateStatus(crtCopy)
+		if err != nil || updateErr != nil {
+			return utilerrors.NewAggregate([]error{err, updateErr})
+		}
+		return nil
 	}
 
 	// calculate the amount of time until expiry
@@ -136,10 +133,13 @@ func (c *Controller) Sync(ctx context.Context, crt *v1alpha1.Certificate) (err e
 	// calculate how long until we should start attempting to renew the
 	// certificate
 	renewIn := durationUntilExpiry - renewBefore
-
 	// if we should being attempting to renew now, then trigger a renewal
 	if renewIn <= 0 {
-		return c.renew(ctx, i, crt)
+		err := c.renew(ctx, i, crtCopy)
+		updateErr := c.updateCertificateStatus(crtCopy)
+		if err != nil || updateErr != nil {
+			return utilerrors.NewAggregate([]error{err, updateErr})
+		}
 	}
 
 	return nil
@@ -191,31 +191,14 @@ func (c *Controller) scheduleRenewal(crt *v1alpha1.Certificate) {
 	c.recorder.Event(crt, api.EventTypeNormal, successRenewalScheduled, s)
 }
 
-func (c *Controller) prepare(ctx context.Context, issuer issuer.Interface, crt *v1alpha1.Certificate) (err error) {
-	var status v1alpha1.CertificateStatus
-	status, err = issuer.Prepare(ctx, crt)
-
-	defer func() {
-		if saveErr := c.updateCertificateStatus(crt, status); saveErr != nil {
-			errs := []error{saveErr}
-			if err != nil {
-				errs = append(errs, err)
-			}
-			err = utilerrors.NewAggregate(errs)
-		}
-	}()
-
-	return
-}
-
 // return an error on failure. If retrieval is succesful, the certificate data
 // and private key will be stored in the named secret
-func (c *Controller) issue(ctx context.Context, issuer issuer.Interface, crt *v1alpha1.Certificate) (err error) {
+func (c *Controller) issue(ctx context.Context, issuer issuer.Interface, crt *v1alpha1.Certificate) error {
+	var err error
 	s := messagePreparingCertificate
 	glog.Info(s)
 	c.recorder.Event(crt, api.EventTypeNormal, reasonPreparingCertificate, s)
-
-	if err := c.prepare(ctx, issuer, crt); err != nil {
+	if err = issuer.Prepare(ctx, crt); err != nil {
 		s := messageErrorPreparingCertificate + err.Error()
 		glog.Info(s)
 		c.recorder.Event(crt, api.EventTypeWarning, errorPreparingCertificate, s)
@@ -226,17 +209,8 @@ func (c *Controller) issue(ctx context.Context, issuer issuer.Interface, crt *v1
 	glog.Info(s)
 	c.recorder.Event(crt, api.EventTypeNormal, reasonIssuingCertificate, s)
 
-	status, key, cert, err := issuer.Issue(ctx, crt)
-
-	defer func() {
-		if saveErr := c.updateCertificateStatus(crt, status); saveErr != nil {
-			errs := []error{saveErr}
-			if err != nil {
-				errs = append(errs, err)
-			}
-			err = utilerrors.NewAggregate(errs)
-		}
-	}()
+	var key, cert []byte
+	key, cert, err = issuer.Issue(ctx, crt)
 
 	if err != nil {
 		s := messageErrorIssuingCertificate + err.Error()
@@ -274,11 +248,12 @@ func (c *Controller) issue(ctx context.Context, issuer issuer.Interface, crt *v1
 // return an error on failure. If renewal is succesful, the certificate data
 // and private key will be stored in the named secret
 func (c *Controller) renew(ctx context.Context, issuer issuer.Interface, crt *v1alpha1.Certificate) error {
+	var err error
 	s := messagePreparingCertificate
 	glog.Info(s)
 	c.recorder.Event(crt, api.EventTypeNormal, reasonPreparingCertificate, s)
 
-	if err := c.prepare(ctx, issuer, crt); err != nil {
+	if err = issuer.Prepare(ctx, crt); err != nil {
 		s := messageErrorPreparingCertificate + err.Error()
 		glog.Info(s)
 		c.recorder.Event(crt, api.EventTypeWarning, errorPreparingCertificate, s)
@@ -289,17 +264,8 @@ func (c *Controller) renew(ctx context.Context, issuer issuer.Interface, crt *v1
 	glog.Info(s)
 	c.recorder.Event(crt, api.EventTypeNormal, reasonRenewingCertificate, s)
 
-	status, key, cert, err := issuer.Renew(ctx, crt)
-
-	defer func() {
-		if saveErr := c.updateCertificateStatus(crt, status); saveErr != nil {
-			errs := []error{saveErr}
-			if err != nil {
-				errs = append(errs, err)
-			}
-			err = utilerrors.NewAggregate(errs)
-		}
-	}()
+	var key, cert []byte
+	key, cert, err = issuer.Renew(ctx, crt)
 
 	if err != nil {
 		s := messageErrorRenewingCertificate + err.Error()
@@ -333,15 +299,10 @@ func (c *Controller) renew(ctx context.Context, issuer issuer.Interface, crt *v1
 	return nil
 }
 
-func (c *Controller) updateCertificateStatus(crt *v1alpha1.Certificate, status v1alpha1.CertificateStatus) error {
-	updateCertificate := crt.DeepCopy()
-	updateCertificate.Status = status
-	if reflect.DeepEqual(crt.Status, updateCertificate.Status) {
-		return nil
-	}
+func (c *Controller) updateCertificateStatus(crt *v1alpha1.Certificate) error {
 	// TODO: replace Update call with UpdateStatus. This requires a custom API
 	// server with the /status subresource enabled and/or subresource support
 	// for CRDs (https://github.com/kubernetes/kubernetes/issues/38113)
-	_, err := c.cmClient.CertmanagerV1alpha1().Certificates(crt.Namespace).Update(updateCertificate)
+	_, err := c.cmClient.CertmanagerV1alpha1().Certificates(crt.Namespace).Update(crt)
 	return err
 }

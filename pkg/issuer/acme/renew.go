@@ -14,16 +14,15 @@ const (
 	messageCertRenewed = "Certificate renewed successfully"
 )
 
-func (a *Acme) Renew(ctx context.Context, crt *v1alpha1.Certificate) (v1alpha1.CertificateStatus, []byte, []byte, error) {
-	update := crt.DeepCopy()
+func (a *Acme) Renew(ctx context.Context, crt *v1alpha1.Certificate) ([]byte, []byte, error) {
 	key, cert, err := a.obtainCertificate(ctx, crt)
 	if err != nil {
 		s := messageErrorIssueCert + err.Error()
-		update.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse, errorRenewCert, s)
-		return update.Status, nil, nil, err
+		crt.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse, errorRenewCert, s)
+		return nil, nil, err
 	}
 
-	update.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionTrue, successCertRenewed, messageCertRenewed)
+	crt.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionTrue, successCertRenewed, messageCertRenewed)
 
-	return update.Status, key, cert, err
+	return key, cert, err
 }
