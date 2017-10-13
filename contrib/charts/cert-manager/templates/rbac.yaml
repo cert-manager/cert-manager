@@ -13,14 +13,11 @@ rules:
   resources: ["certificates", "issuers"]
   verbs: ["*"]
 - apiGroups: [""]
-  resources: ["secrets", "events", "endpoints", "services"]
+  resources: ["secrets", "events", "endpoints", "services", "pods"]
   verbs: ["*"]
 - apiGroups: ["extensions"]
   resources: ["ingresses"]
   verbs: ["*"]
-- apiGroups: ["batch"]
-  resources: ["jobs"]
-  verbs: ["list", "watch", "create", "delete", "get"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1beta1
 kind: ClusterRoleBinding
