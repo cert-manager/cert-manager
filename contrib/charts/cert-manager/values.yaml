@@ -5,7 +5,7 @@ replicaCount: 1
 
 image:
   repository: jetstackexperimental/cert-manager-controller
-  tag: canary
+  tag: v0.1.0
   pullPolicy: Always
 
 createCustomResource: true

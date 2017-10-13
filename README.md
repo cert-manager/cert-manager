@@ -14,14 +14,16 @@ and has borrowed some wisdom from other similar projects e.g.
 
 ## Current status
 
-This project is still heavily under development and is not ready for use
-**yet**. However, if you want to experiment, please do try running the current
-development build and reporting any issues you run into.
+This project is not yet ready to be a component in a critical production stack,
+however is at a point where it offers comparable features to other projects
+in the space. If you have a non-critical piece of infrastructure, or are
+feeling brave, please do try cert-manager and report your experience here in
+the issue section.
 
 **NOTE:** currently we provide no guarantees on our API stability. This means
 there may be breaking changes that will require changes to *all* Issuer/Certificate
-resources you have already created. A stable API will be cut and maintained once the
-initial phase of development is complete.
+resources you have already created. We aim to provide a stable API after a 1.0
+release.
 
 ## Quickstart
 
@@ -154,37 +156,29 @@ spec:
 
 ### 4. Ensuring the Certificate request has been fulfiled
 
-> Currently, cert-manager does not log Events on Certificates or Issuers to the
-Kubernetes Events API (see [#54](https://github.com/jetstack-experimental/cert-manager/issues/54)).
+cert-manager logs events about Issuers and Certificates back to the Kubernetes
+API in the form of Event resources.
 
-Until then, we can view the logs of cert-manager with the following:
+You can check the events produced about a Certificate with `kubectl describe`:
 
 ```
-$ kubectl logs -l app=cert-manager
-2017/08/29 12:54:37 Preparing Certificate 'default/test-jetstack-net'
-2017/08/29 12:54:37 getting private key for acme issuer default/letsencrypt-staging
-2017/08/29 12:54:37 need to get authorizations for [test.jetstack.net]
-2017/08/29 12:54:37 requested authorizations for [test.jetstack.net]
-2017/08/29 12:54:37 picking challenge type for domain 'test.jetstack.net'
-2017/08/29 12:54:37 using challenge type http-01 for domain 'test.jetstack.net'
-2017/08/29 12:54:37 presenting challenge for domain test.jetstack.net, token FdVsxK2U1NRqTpEtFux29xy-0SVkcHc2qbguttdZLy8 key FdVsxK2U1NRqTpEtFux29xy-0SVkqHc2qbguttdZLy8.HwRbVJxMBmV9fJ9UxUtbN5tvjnEeCTtHnH5G9JLSYhc
-2017/08/29 12:54:38 waiting for key to be available to acme servers for domain test.jetstack.net
-2017/08/29 12:54:38 [test.jetstack.net] Error self checking HTTP01 challenge: wrong status code '503'
-2017/08/29 12:54:44 [test.jetstack.net] Error self checking HTTP01 challenge: wrong status code '503'
-2017/08/29 12:54:49 [test.jetstack.net] Error self checking HTTP01 challenge: wrong status code '503'
-2017/08/29 12:54:54 [test.jetstack.net] Error self checking HTTP01 challenge: wrong status code '503'
-2017/08/29 12:54:59 [test.jetstack.net] Error self checking HTTP01 challenge: wrong status code '503'
-2017/08/29 12:55:04 [test.jetstack.net] Error self checking HTTP01 challenge: wrong status code '503'
-2017/08/29 12:55:09 [test.jetstack.net] HTTP01 challenge self checking passed
-2017/08/29 12:55:09 accepting http-01 challenge for domain test.jetstack.net
-2017/08/29 12:55:09 waiting for authorization for domain test.jetstack.net (https://acme-staging.api.letsencrypt.org/acme/challenge/MEFHD2piP1SpkG3tMcE9CRldMO-pS7OqzeJs6AK7AiE/1704174337)...
-2017/08/29 12:55:09 got successful authorization for domain test.jetstack.net
-2017/08/29 12:55:09 Finished preparing Certificate 'default/test-jetstack-net'
-2017/08/29 12:55:09 [default/test-jetstack-net] Issuing certificate...
-2017/08/29 12:55:15 successfully got certificate: domains=[test.jetstack.net] url=https://acme-staging.api.letsencrypt.org/acme/cert/03ed2ed8bac6c402a04ef8d9e83a536ad823
-2017/08/29 12:55:15 [default/test-jetstack-net] Successfully issued certificate (test-jetstack-net)
-2017/08/29 12:55:15 [default/test-jetstack-net] Scheduling renewal in 1438 hours
-2017/08/29 12:55:15 finished processing work item
+$ kubectl describe certificate test-jetstack-net
+Events:
+  Type     Reason                 Age              From                     Message
+  ----     ------                 ----             ----                     -------
+  Warning  ErrorCheckCertificate  33s              cert-manager-controller  Error checking existing TLS certificate: secret "example-com" not found
+  Normal   PrepareCertificate     33s              cert-manager-controller  Preparing certificate with issuer
+  Normal   PresentChallenge       33s              cert-manager-controller  Presenting http-01 challenge for domain example.com
+  Normal   PresentChallenge       33s              cert-manager-controller  Presenting http-01 challenge for domain www.example.com
+  Normal   PresentChallenge       33s              cert-manager-controller  Presenting dns-01 challenge for domain example2.com
+  Normal   SelfCheck              32s              cert-manager-controller  Performing self-check for domain example.com
+  Normal   SelfCheck              32s              cert-manager-controller  Performing self-check for domain www.example.com
+  Normal   SelfCheck              32s              cert-manager-controller  Performing self-check for domain example2.com
+  Normal   ObtainAuthorization    6s               cert-manager-controller  Obtained authorization for domain example.com
+  Normal   ObtainAuthorization    6s               cert-manager-controller  Obtained authorization for domain www.example.com
+  Normal   ObtainAuthorization    6s               cert-manager-controller  Obtained authorization for domain example2.com
+  Normal   IssueCertificate       6s               cert-manager-controller  Issuing certificate...
+  Normal   CeritifcateIssued      5s               cert-manager-controller  Certificated issued successfully
 ```
 
 You can also check the signed TLS keypair exists with:
