@@ -34,22 +34,25 @@ func (a *Acme) Setup(ctx context.Context) (v1alpha1.IssuerStatus, error) {
 	update := a.issuer.Copy()
 
 	glog.V(4).Infof("%s: getting acme account private key '%s/%s'", a.issuer.GetObjectMeta().Name, a.resourceNamespace, a.issuer.GetSpec().ACME.PrivateKey)
-	accountPrivKey, err := kube.SecretTLSKey(a.secretsLister, a.resourceNamespace, a.issuer.GetSpec().ACME.PrivateKey)
-
+	cl, err := a.acmeClient()
 	if k8sErrors.IsNotFound(err) {
 		glog.V(4).Infof("%s: generating acme account private key '%s/%s'", a.issuer.GetObjectMeta().Name, a.resourceNamespace, a.issuer.GetSpec().ACME.PrivateKey)
+		var accountPrivKey *rsa.PrivateKey
 		accountPrivKey, err = a.createAccountPrivateKey()
+		if err != nil {
+			s := messageAccountRegistrationFailed + err.Error()
+			update.UpdateStatusCondition(v1alpha1.IssuerConditionReady, v1alpha1.ConditionFalse, errorAccountRegistrationFailed, s)
+			return *update.GetStatus(), fmt.Errorf(s)
+		}
+		cl = &acme.Client{
+			Key:          accountPrivKey,
+			DirectoryURL: a.issuer.GetSpec().ACME.Server,
+		}
 	}
-
 	if err != nil {
-		s := messageAccountRegistrationFailed + err.Error()
-		update.UpdateStatusCondition(v1alpha1.IssuerConditionReady, v1alpha1.ConditionFalse, errorAccountRegistrationFailed, s)
-		return *update.GetStatus(), fmt.Errorf(s)
-	}
-
-	cl := acme.Client{
-		Key:          accountPrivKey,
-		DirectoryURL: a.issuer.GetSpec().ACME.Server,
+		s := messageAccountVerificationFailed + err.Error()
+		glog.V(4).Infof("%s: %s", a.issuer.GetObjectMeta().Name, s)
+		a.recorder.Event(a.issuer, v1.EventTypeWarning, errorAccountVerificationFailed, s)
 	}
 
 	glog.V(4).Infof("%s: verifying existing registration with ACME server", a.issuer.GetObjectMeta().Name)
@@ -84,19 +87,19 @@ func (a *Acme) Setup(ctx context.Context) (v1alpha1.IssuerStatus, error) {
 }
 
 func (a *Acme) createAccountPrivateKey() (*rsa.PrivateKey, error) {
+	secretName, secretKey := a.acmeAccountPrivateKeyMeta()
 	accountPrivKey, err := pki.GenerateRSAPrivateKey(2048)
-
 	if err != nil {
 		return nil, err
 	}
 
 	_, err = kube.EnsureSecret(a.client, &v1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      a.issuer.GetSpec().ACME.PrivateKey,
+			Name:      secretName,
 			Namespace: a.resourceNamespace,
 		},
 		Data: map[string][]byte{
-			v1.TLSPrivateKeyKey: pki.EncodePKCS1PrivateKey(accountPrivKey),
+			secretKey: pki.EncodePKCS1PrivateKey(accountPrivKey),
 		},
 	})
 

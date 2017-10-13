@@ -64,13 +64,13 @@ func (c *CA) Issue(ctx context.Context, crt *v1alpha1.Certificate) (v1alpha1.Cer
 }
 
 func (c *CA) obtainCertificate(crt *v1alpha1.Certificate, signeeKey interface{}) ([]byte, error) {
-	signerCert, err := kube.SecretTLSCert(c.secretsLister, c.resourceNamespace, c.issuer.GetSpec().CA.SecretRef.Name)
+	signerCert, err := kube.SecretTLSCert(c.secretsLister, c.resourceNamespace, c.issuer.GetSpec().CA.SecretName)
 
 	if err != nil {
 		return nil, fmt.Errorf("error getting issuer certificate: %s", err.Error())
 	}
 
-	signerKey, err := kube.SecretTLSKey(c.secretsLister, c.resourceNamespace, c.issuer.GetSpec().CA.SecretRef.Name)
+	signerKey, err := kube.SecretTLSKey(c.secretsLister, c.resourceNamespace, c.issuer.GetSpec().CA.SecretName)
 
 	if err != nil {
 		return nil, fmt.Errorf("error getting issuer private key: %s", err.Error())

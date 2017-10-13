@@ -27,7 +27,7 @@ const (
 func (c *CA) Setup(ctx context.Context) (v1alpha1.IssuerStatus, error) {
 	update := c.issuer.Copy()
 
-	cert, err := kube.SecretTLSCert(c.secretsLister, c.resourceNamespace, update.GetSpec().CA.SecretRef.Name)
+	cert, err := kube.SecretTLSCert(c.secretsLister, c.resourceNamespace, update.GetSpec().CA.SecretName)
 
 	if k8sErrors.IsNotFound(err) {
 		s := messageErrorGetKeyPair + err.Error()

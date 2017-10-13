@@ -75,7 +75,8 @@ spec:
     # Email address used for ACME registration
     email: ""
     # Name of a secret used to store the ACME account private key
-    privateKey: letsencrypt-staging
+    privateKeySecretRef:
+      name: letsencrypt-staging
     # ACME dns-01 provider configurations
     dns-01:
       # Here we define a list of DNS-01 providers that can solve DNS challenges
@@ -85,7 +86,7 @@ spec:
       - name: prod-dns
         clouddns:
           # A secretKeyRef to a the google cloud json service account
-          serviceAccount:
+          serviceAccountSecretRef:
             name: clouddns-service-account
             key: service-account.json
           # The project in which to update the DNS zone
@@ -127,7 +128,8 @@ spec:
   # The name of the Kubernetes secret resource to store the signed TLS keypair
   secretName: example-com
   # The Issuer to use for this certificate
-  issuer: letsencrypt-staging
+  issuerRef:
+    name: letsencrypt-staging
   # A list of domains to include on the TLS certificate
   domains:
   - example.com
