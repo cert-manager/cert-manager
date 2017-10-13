@@ -93,13 +93,17 @@ type ACMEIssuer struct {
 	// PrivateKey is the name of a secret containing the private key for this
 	// user account.
 	PrivateKey SecretKeySelector `json:"privateKeySecretRef"`
+	// HTTP01 config
+	HTTP01 *ACMEIssuerHTTP01Config `json:"http-01"`
 	// DNS-01 config
 	DNS01 *ACMEIssuerDNS01Config `json:"dns-01"`
 }
 
+type ACMEIssuerHTTP01Config struct {
+}
+
 // ACMEIssuerDNS01Config is a structure containing the ACME DNS configuration
-// option. One and only one of the fields within it should be set, when the
-// ACME challenge type is set to dns-01
+// options
 type ACMEIssuerDNS01Config struct {
 	Providers []ACMEIssuerDNS01Provider `json:"providers"`
 }

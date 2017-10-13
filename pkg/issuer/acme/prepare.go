@@ -134,7 +134,7 @@ func keyForChallenge(cl *acme.Client, challenge *acme.Challenge) (string, error)
 
 func (a *Acme) authorize(ctx context.Context, cl *acme.Client, crt *v1alpha1.Certificate, auth authResponse) (*acme.Authorization, error) {
 	glog.V(4).Infof("picking challenge type for domain %q", auth.domain)
-	challengeType, err := pickChallengeType(auth.domain, auth.auth, crt.Spec.ACME.Config)
+	challengeType, err := a.pickChallengeType(auth.domain, auth.auth, crt.Spec.ACME.Config)
 	if err != nil {
 		return nil, fmt.Errorf("error picking challenge type to use for domain '%s': %s", auth.domain, err.Error())
 	}
@@ -274,15 +274,15 @@ func getAuthorizations(ctx context.Context, cl *acme.Client, domains ...string) 
 	return responses, authResponses(responses).Error()
 }
 
-func pickChallengeType(domain string, auth *acme.Authorization, cfg []v1alpha1.ACMECertificateDomainConfig) (string, error) {
+func (a *Acme) pickChallengeType(domain string, auth *acme.Authorization, cfg []v1alpha1.ACMECertificateDomainConfig) (string, error) {
 	for _, d := range cfg {
 		for _, dom := range d.Domains {
 			if dom == domain {
 				for _, challenge := range auth.Challenges {
 					switch {
-					case challenge.Type == "http-01" && d.HTTP01 != nil:
+					case challenge.Type == "http-01" && d.HTTP01 != nil && a.issuer.GetSpec().ACME.HTTP01 != nil:
 						return challenge.Type, nil
-					case challenge.Type == "dns-01" && d.DNS01 != nil:
+					case challenge.Type == "dns-01" && d.DNS01 != nil && a.issuer.GetSpec().ACME.DNS01 != nil:
 						return challenge.Type, nil
 					}
 				}

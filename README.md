@@ -77,6 +77,8 @@ spec:
     # Name of a secret used to store the ACME account private key
     privateKeySecretRef:
       name: letsencrypt-staging
+    # Enable the HTTP-01 challenge provider
+    http-01: {}
     # ACME dns-01 provider configurations
     dns-01:
       # Here we define a list of DNS-01 providers that can solve DNS challenges
