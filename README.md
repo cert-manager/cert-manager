@@ -131,7 +131,7 @@ spec:
   issuerRef:
     name: letsencrypt-staging
   # A list of domains to include on the TLS certificate
-  domains:
+  dnsNames:
   - example.com
   - www.example.com
   - example2.com

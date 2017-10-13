@@ -65,7 +65,7 @@ func (c *CA) Issue(ctx context.Context, crt *v1alpha1.Certificate) (v1alpha1.Cer
 
 func (c *CA) obtainCertificate(crt *v1alpha1.Certificate, signeeKey interface{}) ([]byte, error) {
 	commonName := crt.Spec.CommonName
-	altNames := crt.Spec.AltNames
+	altNames := crt.Spec.DNSNames
 	if len(commonName) == 0 && len(altNames) == 0 {
 		return nil, fmt.Errorf("no domains specified on certificate")
 	}
@@ -121,7 +121,7 @@ func createCertificateTemplate(publicKey interface{}, commonName string, altName
 // publicKey is the public key of the signee, and signerKey is the private
 // key of the signer.
 func signCertificate(crt *v1alpha1.Certificate, issuerCert *x509.Certificate, publicKey interface{}, signerKey interface{}) ([]byte, *x509.Certificate, error) {
-	template, err := createCertificateTemplate(publicKey, crt.Spec.CommonName, crt.Spec.AltNames...)
+	template, err := createCertificateTemplate(publicKey, crt.Spec.CommonName, crt.Spec.DNSNames...)
 	if err != nil {
 		return nil, nil, fmt.Errorf("error creating x509 certificate template: %s", err.Error())
 	}

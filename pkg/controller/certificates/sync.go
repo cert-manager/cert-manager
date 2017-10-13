@@ -119,9 +119,15 @@ func (c *Controller) Sync(ctx context.Context, crt *v1alpha1.Certificate) (err e
 		return c.issue(ctx, i, crt)
 	}
 
+	expectedCN := crt.Spec.CommonName
+	if len(expectedCN) == 0 {
+		if len(crt.Spec.DNSNames) > 0 {
+			expectedCN = crt.Spec.DNSNames[0]
+		}
+	}
 	// if the certificate is valid for a list of domains other than those
 	// listed in the certificate spec, we should re-issue the certificate
-	if !util.EqualUnsorted(crt.Spec.AltNames, cert.DNSNames) {
+	if expectedCN != cert.Subject.CommonName || !util.EqualUnsorted(crt.Spec.DNSNames, cert.DNSNames) {
 		return c.issue(ctx, i, crt)
 	}
 
