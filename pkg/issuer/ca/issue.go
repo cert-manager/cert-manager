@@ -66,7 +66,7 @@ func (c *CA) Issue(ctx context.Context, crt *v1alpha1.Certificate) (v1alpha1.Cer
 func (c *CA) obtainCertificate(crt *v1alpha1.Certificate, signeeKey interface{}) ([]byte, error) {
 	commonName := crt.Spec.CommonName
 	altNames := crt.Spec.AltNames
-	if len(commonName) == 0 || len(altNames) == 0 {
+	if len(commonName) == 0 && len(altNames) == 0 {
 		return nil, fmt.Errorf("no domains specified on certificate")
 	}
 
