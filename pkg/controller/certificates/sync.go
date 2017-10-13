@@ -121,7 +121,7 @@ func (c *Controller) Sync(ctx context.Context, crt *v1alpha1.Certificate) (err e
 
 	// if the certificate is valid for a list of domains other than those
 	// listed in the certificate spec, we should re-issue the certificate
-	if !util.EqualUnsorted(crt.Spec.Domains, cert.DNSNames) {
+	if !util.EqualUnsorted(crt.Spec.AltNames, cert.DNSNames) {
 		return c.issue(ctx, i, crt)
 	}
 

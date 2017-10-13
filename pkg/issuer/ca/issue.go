@@ -100,13 +100,13 @@ func createCertificateTemplate(crt *v1alpha1.Certificate, publicKey interface{})
 		PublicKey:             publicKey,
 		Subject: pkix.Name{
 			Organization: []string{defaultOrganization},
-			CommonName:   crt.Spec.Domains[0],
+			CommonName:   crt.Spec.CommonName,
 		},
 		NotBefore: time.Now(),
 		NotAfter:  time.Now().Add(certificateDuration),
 		// see http://golang.org/pkg/crypto/x509/#KeyUsage
 		KeyUsage: x509.KeyUsageDigitalSignature,
-		DNSNames: crt.Spec.Domains,
+		DNSNames: crt.Spec.AltNames,
 	}
 	return cert, nil
 }

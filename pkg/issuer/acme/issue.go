@@ -7,8 +7,8 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
-	"log"
 
+	"github.com/golang/glog"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 
 	"github.com/jetstack-experimental/cert-manager/pkg/apis/certmanager/v1alpha1"
@@ -27,9 +27,10 @@ const (
 )
 
 func (a *Acme) obtainCertificate(ctx context.Context, crt *v1alpha1.Certificate) ([]byte, []byte, error) {
-	domains := crt.Spec.Domains
-	if len(domains) == 0 {
-		return nil, nil, fmt.Errorf("no domains specified")
+	commonName := crt.Spec.CommonName
+	altNames := crt.Spec.AltNames
+	if len(commonName) == 0 || len(altNames) == 0 {
+		return nil, nil, fmt.Errorf("no domains specified on certificate")
 	}
 
 	cl, err := a.acmeClient()
@@ -50,7 +51,7 @@ func (a *Acme) obtainCertificate(ctx context.Context, crt *v1alpha1.Certificate)
 	}
 
 	// generate a csr
-	template := pki.GenerateCSR(domains)
+	template := pki.GenerateCSR(commonName, altNames...)
 	csr, err := x509.CreateCertificateRequest(rand.Reader, template, key)
 	if err != nil {
 		return nil, nil, fmt.Errorf("error creating certificate request: %s", err)
@@ -72,8 +73,8 @@ func (a *Acme) obtainCertificate(ctx context.Context, crt *v1alpha1.Certificate)
 	for _, cert := range certSlice {
 		pem.Encode(certBuffer, &pem.Block{Type: "CERTIFICATE", Bytes: cert})
 	}
-	log.Printf("successfully got certificate: domains=%+v url=%s", domains, certURL)
 
+	glog.V(2).Infof("successfully got certificate: cn=%q altNames=%+v url=%q", commonName, altNames, certURL)
 	// encode the private key and return
 	return pki.EncodePKCS1PrivateKey(key), certBuffer.Bytes(), nil
 }
