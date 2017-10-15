@@ -24,6 +24,8 @@ BINDIR        ?= bin
 HACK_DIR     ?= hack
 TYPES_FILES = $(shell find pkg/apis -name types.go)
 
+E2E_NGINX_CERTIFICATE_DOMAIN=
+
 .PHONY: version
 
 ifeq ($(APP_VERSION),)
@@ -82,7 +84,8 @@ e2e_test:
 	KUBECONFIG=$$HOME/.kube/config CERTMANAGERCONFIG=$$HOME/.kube/config \
 		./e2e-tests \
 			-cert-manager-image-pull-policy=Never \
-			-cert-manager-image=$(DOCKER_IMAGE)-controller:$(BUILD_TAG)
+			-cert-manager-image=$(DOCKER_IMAGE)-controller:$(BUILD_TAG) \
+			-acme-nginx-certificate-domain=$(E2E_NGINX_CERTIFICATE_DOMAIN)
 
 build: build_controller build_acmesolver
 

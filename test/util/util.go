@@ -147,6 +147,33 @@ func NewCertManagerCACertificate(name, secretName, issuerName string, issuerKind
 	}
 }
 
+func NewCertManagerACMECertificate(name, secretName, issuerName string, issuerKind string, ingressClass string, cn string, dnsNames ...string) *v1alpha1.Certificate {
+	return &v1alpha1.Certificate{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: name,
+		},
+		Spec: v1alpha1.CertificateSpec{
+			CommonName: cn,
+			DNSNames:   dnsNames,
+			SecretName: secretName,
+			IssuerRef: v1alpha1.ObjectReference{
+				Name: issuerName,
+				Kind: issuerKind,
+			},
+			ACME: &v1alpha1.ACMECertificateConfig{
+				Config: []v1alpha1.ACMECertificateDomainConfig{
+					{
+						Domains: append(dnsNames, cn),
+						HTTP01: &v1alpha1.ACMECertificateHTTP01Config{
+							IngressClass: &ingressClass,
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
 func NewCertManagerACMEIssuer(name, acmeURL, acmeEmail, acmePrivateKey string) *v1alpha1.Issuer {
 	return &v1alpha1.Issuer{
 		ObjectMeta: metav1.ObjectMeta{
@@ -162,6 +189,7 @@ func NewCertManagerACMEIssuer(name, acmeURL, acmeEmail, acmePrivateKey string) *
 							Name: acmePrivateKey,
 						},
 					},
+					HTTP01: &v1alpha1.ACMEIssuerHTTP01Config{},
 				},
 			},
 		},

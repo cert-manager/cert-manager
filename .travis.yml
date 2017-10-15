@@ -19,7 +19,10 @@ jobs:
       # Create a cluster. We do this as root as we are using the 'docker' driver.
       - sudo -E CHANGE_MINIKUBE_NONE_USER=true minikube start --vm-driver=none --kubernetes-version="$KUBERNETES_VERSION"
       - while true; do if kubectl get nodes; then break; fi; echo "Waiting 5s for kubernetes to be ready..."; sleep 5; done
-      - make build image e2e_test
+      # Setup service for nginx ingress controller. A DNS entry for *.
+      - kubectl expose -n kube-system --port 80 --target-port 80 --type ClusterIP rc nginx-ingress-controller --cluster-ip 10.0.0.15
+      - make build image
+      - make e2e_test E2E_NGINX_CERTIFICATE_DOMAIN=certmanager.kubernetes.network
 
     - stage: test
       dist: trusty
