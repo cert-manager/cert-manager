@@ -5,6 +5,7 @@ set -o nounset
 set -o pipefail
 
 BOULDER_REPO="github.com/letsencrypt/boulder"
+BOULDER_URL="http://127.0.0.1:4000"
 
 echo "Fetching ${BOULDER_REPO}"
 go get -d github.com/letsencrypt/boulder || true
@@ -17,11 +18,13 @@ sed -i 's/127.0.0.1:8053/10.0.0.10:53/' test/config/va.json
 sed -i 's/5002/80/' test/config/va.json
 # TODO: set ratelimits
 
-docker-compose up &
+function start {
+    if ! docker-compose up; then
+        echo "Error running boulder"
+        exit 1
+    fi
+}
 
-while ! curl http://localhost:4000/ > /dev/null 2>&1 ; do
-  echo "Waiting for boulder API to be available..."
-  sleep 5
-done
+start &
 
-echo "Boulder API now available at http://localhost:4000/"
+echo "Started boulder process in background"
