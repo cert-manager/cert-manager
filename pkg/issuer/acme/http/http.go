@@ -321,7 +321,7 @@ func (s *Solver) ensurePod(crt *v1alpha1.Certificate, domain, token, key string,
 					Name: "acmesolver",
 					// TODO: use an image as specified as a config option
 					Image:           s.solverImage,
-					ImagePullPolicy: corev1.PullAlways,
+					ImagePullPolicy: corev1.PullIfNotPresent,
 					// TODO: replace this with some kind of cmdline generator
 					Args: []string{
 						fmt.Sprintf("--listen-port=%d", acmeSolverListenPort),
