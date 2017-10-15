@@ -103,6 +103,7 @@ func NewCertManagerControllerPod(name string, args ...string) *v1.Pod {
 			},
 		},
 		Spec: v1.PodSpec{
+			HostNetwork: true,
 			Containers: []v1.Container{
 				{
 					Name:            name,
