@@ -20,10 +20,10 @@ jobs:
       - sudo -E CHANGE_MINIKUBE_NONE_USER=true minikube start --vm-driver=none --kubernetes-version="$KUBERNETES_VERSION"
       - while true; do if kubectl get nodes; then break; fi; echo "Waiting 5s for kubernetes to be ready..."; sleep 5; done
       # Setup service for nginx ingress controller. A DNS entry for *.
-      - kubectl expose -n kube-system --port 80 --target-port 80 --type ClusterIP rc nginx-ingress-controller --cluster-ip 10.0.0.15
       - make build image
+      - while true; do if kubectl get rc nginx-ingress-controller -n kube-system; then break; fi; echo "Waiting 5s for nginx-ingress-controller rc to be installed..."; sleep 5; done
+      - kubectl expose -n kube-system --port 80 --target-port 80 --type ClusterIP rc nginx-ingress-controller --cluster-ip 10.0.0.15
       - make e2e_test E2E_NGINX_CERTIFICATE_DOMAIN=certmanager.kubernetes.network
-
     - stage: test
       dist: trusty
       language: go
