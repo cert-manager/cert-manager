@@ -18,6 +18,7 @@ jobs:
       - docker run -v /usr/local/bin:/hostbin ubuntu-nsenter cp /nsenter /hostbin/nsenter
       # Create a cluster. We do this as root as we are using the 'docker' driver.
       - sudo -E CHANGE_MINIKUBE_NONE_USER=true minikube start --vm-driver=none --kubernetes-version="$KUBERNETES_VERSION"
+      - sudo -E CHANGE_MINIKUBE_NONE_USER=true minikube addons enable ingress
       - while true; do if kubectl get nodes; then break; fi; echo "Waiting 5s for kubernetes to be ready..."; sleep 5; done
       # Setup service for nginx ingress controller. A DNS entry for *.
       - make build image
