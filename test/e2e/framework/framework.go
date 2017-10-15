@@ -83,7 +83,7 @@ func (f *Framework) BeforeEach() {
 	Expect(err).NotTo(HaveOccurred())
 
 	By("Building a namespace api object")
-	namespace, err := CreateKubeNamespace(f.BaseName, f.KubeClientSet)
+	f.Namespace, err = CreateKubeNamespace(f.BaseName, f.KubeClientSet)
 	Expect(err).NotTo(HaveOccurred())
 
 	By("Building an Issuer CustomResourceDefinition api object")
@@ -105,8 +105,6 @@ func (f *Framework) BeforeEach() {
 	By("Waiting for cert-manager to be running")
 	err = WaitForPodRunningInNamespace(f.KubeClientSet, pod)
 	Expect(err).NotTo(HaveOccurred())
-
-	f.Namespace = namespace
 }
 
 // AfterEach deletes the namespace, after reading its events.
