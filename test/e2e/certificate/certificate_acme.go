@@ -19,6 +19,7 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	corev1 "k8s.io/api/core/v1"
 
 	"github.com/jetstack-experimental/cert-manager/pkg/apis/certmanager/v1alpha1"
 	cmutil "github.com/jetstack-experimental/cert-manager/pkg/util"
@@ -70,12 +71,13 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 	})
 
 	AfterEach(func() {
-		By("Deleting the cert-manager pod")
-		err := f.KubeClientSet.CoreV1().Pods(f.Namespace.Name).Delete(podName, nil)
+		By("Retrieving the cert-manager pod logs")
+		b, err := f.KubeClientSet.CoreV1().Pods(f.Namespace.Name).GetLogs(podName, &corev1.PodLogOptions{}).Do().Raw()
 		Expect(err).NotTo(HaveOccurred())
-		By("Deleting the Certificate and Secret, if it exists")
-		f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name).Delete(certificateName, nil)
-		f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Delete(certificateSecretName, nil)
+		GinkgoWriter.Write(b)
+		By("Deleting the cert-manager pod")
+		err = f.KubeClientSet.CoreV1().Pods(f.Namespace.Name).Delete(podName, nil)
+		Expect(err).NotTo(HaveOccurred())
 	})
 
 	It("should obtain a signed certificate with a single CN from the ACME server", func() {
@@ -89,6 +91,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 				Type:   v1alpha1.CertificateConditionReady,
 				Status: v1alpha1.ConditionTrue,
 			})
+		Expect(err).NotTo(HaveOccurred())
 	})
 
 	It("should obtain a signed certificate with a CN and single subdomain as dns name from the ACME server", func() {
@@ -102,5 +105,6 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 				Type:   v1alpha1.CertificateConditionReady,
 				Status: v1alpha1.ConditionTrue,
 			})
+		Expect(err).NotTo(HaveOccurred())
 	})
 })
