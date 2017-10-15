@@ -19,7 +19,6 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	corev1 "k8s.io/api/core/v1"
 
 	"github.com/jetstack-experimental/cert-manager/pkg/apis/certmanager/v1alpha1"
 	cmutil "github.com/jetstack-experimental/cert-manager/pkg/util"
@@ -45,20 +44,13 @@ func init() {
 var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 	f := framework.NewDefaultFramework("create-acme-certificate-http01")
 
-	podName := "test-cert-manager"
 	issuerName := "test-acme-issuer"
 	certificateName := "test-acme-certificate"
 	certificateSecretName := "test-acme-certificate"
 
 	BeforeEach(func() {
-		By("Creating a cert-manager pod")
-		pod, err := f.KubeClientSet.CoreV1().Pods(f.Namespace.Name).Create(util.NewCertManagerControllerPod(podName, "--cluster-resource-namespace="+f.Namespace.Name))
-		Expect(err).NotTo(HaveOccurred())
-		By("Waiting for cert-manager to be running")
-		err = framework.WaitForPodRunningInNamespace(f.KubeClientSet, pod)
-		Expect(err).NotTo(HaveOccurred())
 		By("Creating an Issuer")
-		_, err = f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Create(util.NewCertManagerACMEIssuer(issuerName, testingACMEURL, testingACMEEmail, testingACMEPrivateKey))
+		_, err := f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Create(util.NewCertManagerACMEIssuer(issuerName, testingACMEURL, testingACMEEmail, testingACMEPrivateKey))
 		Expect(err).NotTo(HaveOccurred())
 		By("Waiting for Issuer to become Ready")
 		err = util.WaitForIssuerCondition(f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name),
@@ -71,13 +63,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 	})
 
 	AfterEach(func() {
-		By("Retrieving the cert-manager pod logs")
-		b, err := f.KubeClientSet.CoreV1().Pods(f.Namespace.Name).GetLogs(podName, &corev1.PodLogOptions{}).Do().Raw()
-		Expect(err).NotTo(HaveOccurred())
-		GinkgoWriter.Write(b)
-		By("Deleting the cert-manager pod")
-		err = f.KubeClientSet.CoreV1().Pods(f.Namespace.Name).Delete(podName, nil)
-		Expect(err).NotTo(HaveOccurred())
+
 	})
 
 	It("should obtain a signed certificate with a single CN from the ACME server", func() {

@@ -15,6 +15,7 @@ package framework
 
 import (
 	"k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	apiextcs "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	"k8s.io/client-go/kubernetes"
 
@@ -23,6 +24,10 @@ import (
 
 	clientset "github.com/jetstack-experimental/cert-manager/pkg/client/clientset"
 	"github.com/jetstack-experimental/cert-manager/test/util"
+)
+
+const (
+	podName = "test-cert-manager"
 )
 
 // Framework supports common operations used by e2e tests; it will keep a client & a namespace for you.
@@ -93,6 +98,14 @@ func (f *Framework) BeforeEach() {
 	err = CreateCertificateCRD(f.APIExtensionsClientSet)
 	Expect(err).NotTo(HaveOccurred())
 
+	By("Creating a cert-manager pod")
+	pod, err := f.KubeClientSet.CoreV1().Pods(f.Namespace.Name).Create(util.NewCertManagerControllerPod(podName, "--cluster-resource-namespace="+f.Namespace.Name))
+	Expect(err).NotTo(HaveOccurred())
+
+	By("Waiting for cert-manager to be running")
+	err = WaitForPodRunningInNamespace(f.KubeClientSet, pod)
+	Expect(err).NotTo(HaveOccurred())
+
 	f.Namespace = namespace
 }
 
@@ -100,8 +113,14 @@ func (f *Framework) BeforeEach() {
 func (f *Framework) AfterEach() {
 	RemoveCleanupAction(f.cleanupHandle)
 
+	By("Retrieving the cert-manager pod logs")
+	b, err := f.KubeClientSet.CoreV1().Pods(f.Namespace.Name).GetLogs(podName, &corev1.PodLogOptions{}).Do().Raw()
+	Expect(err).NotTo(HaveOccurred())
+	_, err = GinkgoWriter.Write(b)
+	Expect(err).NotTo(HaveOccurred())
+
 	By("Deleting test namespace")
-	err := DeleteKubeNamespace(f.KubeClientSet, f.Namespace.Name)
+	err = DeleteKubeNamespace(f.KubeClientSet, f.Namespace.Name)
 	Expect(err).NotTo(HaveOccurred())
 
 	By("Deleting Issuer CustomResourceDefinition")

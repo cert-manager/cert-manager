@@ -25,21 +25,12 @@ import (
 var _ = framework.CertManagerDescribe("ACME Issuer", func() {
 	f := framework.NewDefaultFramework("create-acme-issuer")
 
-	podName := "test-cert-manager"
 	issuerName := "test-acme-issuer"
 
 	BeforeEach(func() {
-		By("Creating a cert-manager pod")
-		pod, err := f.KubeClientSet.CoreV1().Pods(f.Namespace.Name).Create(util.NewCertManagerControllerPod(podName))
-		Expect(err).NotTo(HaveOccurred())
-		err = framework.WaitForPodRunningInNamespace(f.KubeClientSet, pod)
-		Expect(err).NotTo(HaveOccurred())
 	})
 
 	AfterEach(func() {
-		By("Deleting the cert-manager pod")
-		err := f.KubeClientSet.CoreV1().Pods(f.Namespace.Name).Delete(podName, nil)
-		Expect(err).NotTo(HaveOccurred())
 	})
 
 	It("should register ACME account", func() {
