@@ -23,6 +23,7 @@ import (
 	"k8s.io/api/core/v1"
 	apiext "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	apiextcs "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/uuid"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -230,6 +231,23 @@ func ExpectNoError(err error, explain ...interface{}) {
 	ExpectWithOffset(1, err).NotTo(HaveOccurred(), explain...)
 }
 
+func WaitForKubeNamespaceNotExist(c kubernetes.Interface, namespace string) error {
+	return wait.PollImmediate(Poll, time.Minute*2, namespaceNotExist(c, namespace))
+}
+
+func namespaceNotExist(c kubernetes.Interface, namespace string) wait.ConditionFunc {
+	return func() (bool, error) {
+		_, err := c.CoreV1().Namespaces().Get(namespace, metav1.GetOptions{})
+		if apierrors.IsNotFound(err) {
+			return true, nil
+		}
+		if err != nil {
+			return false, err
+		}
+		return false, nil
+	}
+}
+
 // Waits default amount of time (PodStartTimeout) for the specified pod to become running.
 // Returns an error if timeout occurs first, or pod goes in to failed state.
 func WaitForPodRunningInNamespace(c kubernetes.Interface, pod *v1.Pod) error {
@@ -245,7 +263,7 @@ func waitTimeoutForPodRunningInNamespace(c kubernetes.Interface, podName, namesp
 
 func podRunning(c kubernetes.Interface, podName, namespace string) wait.ConditionFunc {
 	return func() (bool, error) {
-		pod, err := c.Core().Pods(namespace).Get(podName, metav1.GetOptions{})
+		pod, err := c.CoreV1().Pods(namespace).Get(podName, metav1.GetOptions{})
 		if err != nil {
 			return false, err
 		}

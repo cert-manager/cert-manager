@@ -16,6 +16,7 @@ package certificate
 import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"k8s.io/apimachinery/pkg/util/wait"
 
 	"github.com/jetstack-experimental/cert-manager/pkg/apis/certmanager/v1alpha1"
 	"github.com/jetstack-experimental/cert-manager/test/e2e/framework"
@@ -62,7 +63,7 @@ var _ = framework.CertManagerDescribe("CA Certificate", func() {
 			v1alpha1.CertificateCondition{
 				Type:   v1alpha1.CertificateConditionReady,
 				Status: v1alpha1.ConditionTrue,
-			})
+			}, wait.ForeverTestTimeout)
 		Expect(err).NotTo(HaveOccurred())
 	})
 
@@ -87,7 +88,7 @@ var _ = framework.CertManagerDescribe("CA Certificate", func() {
 			v1alpha1.CertificateCondition{
 				Type:   v1alpha1.CertificateConditionReady,
 				Status: v1alpha1.ConditionTrue,
-			})
+			}, wait.ForeverTestTimeout)
 		Expect(err).NotTo(HaveOccurred())
 	})
 })

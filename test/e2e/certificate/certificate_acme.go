@@ -16,6 +16,7 @@ package certificate
 import (
 	"flag"
 	"fmt"
+	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -30,6 +31,7 @@ const testingACMEURL = "http://127.0.0.1:4000/directory"
 const invalidACMEURL = "http://not-a-real-acme-url.com"
 const testingACMEEmail = "test@example.com"
 const testingACMEPrivateKey = "test-acme-private-key"
+const foreverTestTimeout = time.Second * 60
 
 var acmeCertificateDomain string
 var acmeIngressClass string
@@ -78,7 +80,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 			v1alpha1.CertificateCondition{
 				Type:   v1alpha1.CertificateConditionReady,
 				Status: v1alpha1.ConditionTrue,
-			})
+			}, foreverTestTimeout)
 		Expect(err).NotTo(HaveOccurred())
 	})
 
@@ -92,7 +94,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 			v1alpha1.CertificateCondition{
 				Type:   v1alpha1.CertificateConditionReady,
 				Status: v1alpha1.ConditionTrue,
-			})
+			}, foreverTestTimeout)
 		Expect(err).NotTo(HaveOccurred())
 	})
 
@@ -106,7 +108,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 			v1alpha1.CertificateCondition{
 				Type:   v1alpha1.CertificateConditionReady,
 				Status: v1alpha1.ConditionTrue,
-			})
+			}, foreverTestTimeout)
 		Expect(err).To(HaveOccurred())
 	})
 })

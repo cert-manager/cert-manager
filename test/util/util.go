@@ -60,8 +60,8 @@ func WaitForClusterIssuerCondition(client clientset.ClusterIssuerInterface, name
 
 // WaitForCertificateCondition waits for the status of the named Certificate to contain
 // a condition whose type and status matches the supplied one.
-func WaitForCertificateCondition(client clientset.CertificateInterface, name string, condition v1alpha1.CertificateCondition) error {
-	return wait.PollImmediate(500*time.Millisecond, wait.ForeverTestTimeout,
+func WaitForCertificateCondition(client clientset.CertificateInterface, name string, condition v1alpha1.CertificateCondition, timeout time.Duration) error {
+	return wait.PollImmediate(500*time.Millisecond, timeout,
 		func() (bool, error) {
 			glog.V(5).Infof("Waiting for Certificate %v condition %#v", name, condition)
 			certificate, err := client.Get(name, metav1.GetOptions{})

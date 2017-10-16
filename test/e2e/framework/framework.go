@@ -133,11 +133,17 @@ func (f *Framework) AfterEach() {
 	err = DeleteCertificateCRD(f.APIExtensionsClientSet)
 	Expect(err).NotTo(HaveOccurred())
 
+	By("Waiting for Issuer CRD to no longer exist")
 	err = util.WaitForCRDToNotExist(f.APIExtensionsClientSet.ApiextensionsV1beta1().CustomResourceDefinitions(), issuerCrd().Name)
 	Expect(err).NotTo(HaveOccurred())
+	By("Waiting for ClusterIssuer CRD to no longer exist")
 	err = util.WaitForCRDToNotExist(f.APIExtensionsClientSet.ApiextensionsV1beta1().CustomResourceDefinitions(), clusterIssuerCrd().Name)
 	Expect(err).NotTo(HaveOccurred())
+	By("Waiting for Certificate CRD to no longer exist")
 	err = util.WaitForCRDToNotExist(f.APIExtensionsClientSet.ApiextensionsV1beta1().CustomResourceDefinitions(), certificateCrd().Name)
+	Expect(err).NotTo(HaveOccurred())
+	By("Waiting for test namespace to no longer exist")
+	err = WaitForKubeNamespaceNotExist(f.KubeClientSet, f.Namespace.Name)
 	Expect(err).NotTo(HaveOccurred())
 }
 
