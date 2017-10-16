@@ -16,6 +16,7 @@ package certificate
 import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"k8s.io/apimachinery/pkg/util/wait"
 
 	"github.com/jetstack-experimental/cert-manager/pkg/apis/certmanager/v1alpha1"
 	"github.com/jetstack-experimental/cert-manager/test/e2e/framework"
@@ -25,29 +26,20 @@ import (
 var _ = framework.CertManagerDescribe("CA Certificate", func() {
 	f := framework.NewDefaultFramework("create-ca-certificate")
 
-	podName := "test-cert-manager"
 	issuerName := "test-ca-issuer"
 	issuerSecretName := "ca-issuer-signing-keypair"
 	certificateName := "test-ca-certificate"
 	certificateSecretName := "test-ca-certificate"
 
 	BeforeEach(func() {
-		By("Creating a cert-manager pod")
-		pod, err := f.KubeClientSet.CoreV1().Pods(f.Namespace.Name).Create(util.NewCertManagerControllerPod(podName, "--cluster-resource-namespace="+f.Namespace.Name))
-		Expect(err).NotTo(HaveOccurred())
-		err = framework.WaitForPodRunningInNamespace(f.KubeClientSet, pod)
-		Expect(err).NotTo(HaveOccurred())
 		By("Creating a signing keypair fixture")
-		_, err = f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Create(util.NewSigningKeypairSecret(issuerSecretName))
+		_, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Create(util.NewSigningKeypairSecret(issuerSecretName))
 		Expect(err).NotTo(HaveOccurred())
 	})
 
 	AfterEach(func() {
-		By("Deleting the cert-manager pod")
-		err := f.KubeClientSet.CoreV1().Pods(f.Namespace.Name).Delete(podName, nil)
-		Expect(err).NotTo(HaveOccurred())
-		err = f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Delete(issuerSecretName, nil)
-		Expect(err).NotTo(HaveOccurred())
+		By("Cleaning up")
+		f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Delete(issuerSecretName, nil)
 	})
 
 	It("should generate a signed keypair", func() {
@@ -71,7 +63,7 @@ var _ = framework.CertManagerDescribe("CA Certificate", func() {
 			v1alpha1.CertificateCondition{
 				Type:   v1alpha1.CertificateConditionReady,
 				Status: v1alpha1.ConditionTrue,
-			})
+			}, wait.ForeverTestTimeout)
 		Expect(err).NotTo(HaveOccurred())
 	})
 
@@ -96,7 +88,7 @@ var _ = framework.CertManagerDescribe("CA Certificate", func() {
 			v1alpha1.CertificateCondition{
 				Type:   v1alpha1.CertificateConditionReady,
 				Status: v1alpha1.ConditionTrue,
-			})
+			}, wait.ForeverTestTimeout)
 		Expect(err).NotTo(HaveOccurred())
 	})
 })

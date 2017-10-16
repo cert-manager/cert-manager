@@ -49,7 +49,9 @@ func TestUpdateIssuerStatus(t *testing.T) {
 		},
 	}
 
-	err = c.updateIssuerStatus(issuer, newStatus)
+	issuerCopy := issuer.DeepCopy()
+	issuerCopy.Status = newStatus
+	err = c.updateIssuerStatus(issuerCopy)
 	assertErrIsNil(t, fatalf, err)
 
 	actions := cmClient.Actions()

@@ -60,8 +60,8 @@ func WaitForClusterIssuerCondition(client clientset.ClusterIssuerInterface, name
 
 // WaitForCertificateCondition waits for the status of the named Certificate to contain
 // a condition whose type and status matches the supplied one.
-func WaitForCertificateCondition(client clientset.CertificateInterface, name string, condition v1alpha1.CertificateCondition) error {
-	return wait.PollImmediate(500*time.Millisecond, wait.ForeverTestTimeout,
+func WaitForCertificateCondition(client clientset.CertificateInterface, name string, condition v1alpha1.CertificateCondition, timeout time.Duration) error {
+	return wait.PollImmediate(500*time.Millisecond, timeout,
 		func() (bool, error) {
 			glog.V(5).Infof("Waiting for Certificate %v condition %#v", name, condition)
 			certificate, err := client.Get(name, metav1.GetOptions{})
@@ -147,6 +147,33 @@ func NewCertManagerCACertificate(name, secretName, issuerName string, issuerKind
 	}
 }
 
+func NewCertManagerACMECertificate(name, secretName, issuerName string, issuerKind string, ingressClass string, cn string, dnsNames ...string) *v1alpha1.Certificate {
+	return &v1alpha1.Certificate{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: name,
+		},
+		Spec: v1alpha1.CertificateSpec{
+			CommonName: cn,
+			DNSNames:   dnsNames,
+			SecretName: secretName,
+			IssuerRef: v1alpha1.ObjectReference{
+				Name: issuerName,
+				Kind: issuerKind,
+			},
+			ACME: &v1alpha1.ACMECertificateConfig{
+				Config: []v1alpha1.ACMECertificateDomainConfig{
+					{
+						Domains: append(dnsNames, cn),
+						HTTP01: &v1alpha1.ACMECertificateHTTP01Config{
+							IngressClass: &ingressClass,
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
 func NewCertManagerACMEIssuer(name, acmeURL, acmeEmail, acmePrivateKey string) *v1alpha1.Issuer {
 	return &v1alpha1.Issuer{
 		ObjectMeta: metav1.ObjectMeta{
@@ -162,6 +189,7 @@ func NewCertManagerACMEIssuer(name, acmeURL, acmeEmail, acmePrivateKey string) *
 							Name: acmePrivateKey,
 						},
 					},
+					HTTP01: &v1alpha1.ACMEIssuerHTTP01Config{},
 				},
 			},
 		},
