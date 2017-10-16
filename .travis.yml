@@ -7,20 +7,25 @@ jobs:
       env:
       - KUBERNETES_VERSION=v1.7.0
       before_script:
-      - ./hack/test/setup-boulder.sh
-      script:
-      - set -e
+      # Install CLI dependencies
       - curl -Lo helm.tar.gz https://storage.googleapis.com/kubernetes-helm/helm-v2.6.1-linux-amd64.tar.gz && tar xvf helm.tar.gz && sudo mv linux-amd64/helm /usr/local/bin
       - curl -Lo kubectl https://storage.googleapis.com/kubernetes-release/release/$KUBERNETES_VERSION/bin/linux/amd64/kubectl && chmod +x kubectl && sudo mv kubectl /usr/local/bin/
       - curl -Lo minikube https://storage.googleapis.com/minikube/releases/v0.21.0/minikube-linux-amd64 && chmod +x minikube && sudo mv minikube /usr/local/bin/
       # Install nsenter
-      - docker build -t ubuntu-nsenter ./hack/ubuntu-nsenter
-      - docker run -v /usr/local/bin:/hostbin ubuntu-nsenter cp /nsenter /hostbin/nsenter
-      # Create a cluster. We do this as root as we are using the 'docker' driver.
-      - sudo -E CHANGE_MINIKUBE_NONE_USER=true minikube start --vm-driver=none --kubernetes-version="$KUBERNETES_VERSION"
-      - while true; do if kubectl get nodes; then break; fi; echo "Waiting 5s for kubernetes to be ready..."; sleep 5; done
-      - make build image e2e_test
-
+      - docker run -v /usr/local/bin:/hostbin munnerz/ubuntu-nsenter cp /nsenter /hostbin/nsenter
+      script:
+      # Setup e2e service dependencies
+      - ./hack/test/setup-boulder.sh
+      - ./hack/test/setup-minikube.sh
+      # Build images while we wait for services to start
+      - make build image APP_VERSION=build
+      # Wait for e2e service dependencies
+      - ./hack/test/wait-boulder.sh
+      - ./hack/test/wait-minikube.sh
+      # Setup service for nginx ingress controller. A DNS entry for *.certmanager.kubernetes.network has been setup to point to 10.0.0.15 for e2e tests
+      - while true; do if kubectl get rc nginx-ingress-controller -n kube-system; then break; fi; echo "Waiting 5s for nginx-ingress-controller rc to be installed..."; sleep 5; done
+      - kubectl expose -n kube-system --port 80 --target-port 80 --type ClusterIP rc nginx-ingress-controller --cluster-ip 10.0.0.15
+      - make e2e_test E2E_NGINX_CERTIFICATE_DOMAIN=certmanager.kubernetes.network
     - stage: test
       dist: trusty
       language: go

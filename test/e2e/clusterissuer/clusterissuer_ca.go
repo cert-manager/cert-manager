@@ -25,27 +25,18 @@ import (
 var _ = framework.CertManagerDescribe("CA ClusterIssuer", func() {
 	f := framework.NewDefaultFramework("create-ca-clusterissuer")
 
-	podName := "test-cert-manager"
 	issuerName := "test-ca-clusterissuer"
 	secretName := "ca-clusterissuer-signing-keypair"
 
 	BeforeEach(func() {
-		By("Creating a cert-manager pod")
-		pod, err := f.KubeClientSet.CoreV1().Pods(f.Namespace.Name).Create(util.NewCertManagerControllerPod(podName, "--cluster-resource-namespace="+f.Namespace.Name))
-		Expect(err).NotTo(HaveOccurred())
-		err = framework.WaitForPodRunningInNamespace(f.KubeClientSet, pod)
-		Expect(err).NotTo(HaveOccurred())
 		By("Creating a signing keypair fixture")
-		_, err = f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Create(util.NewSigningKeypairSecret(secretName))
+		_, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Create(util.NewSigningKeypairSecret(secretName))
 		Expect(err).NotTo(HaveOccurred())
 	})
 
 	AfterEach(func() {
-		By("Deleting the cert-manager pod")
-		err := f.KubeClientSet.CoreV1().Pods(f.Namespace.Name).Delete(podName, nil)
-		Expect(err).NotTo(HaveOccurred())
-		err = f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Delete(secretName, nil)
-		Expect(err).NotTo(HaveOccurred())
+		By("Cleaning up")
+		f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Delete(secretName, nil)
 	})
 
 	It("should generate a signing keypair", func() {
