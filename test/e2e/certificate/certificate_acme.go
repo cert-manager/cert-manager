@@ -63,7 +63,12 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 	})
 
 	AfterEach(func() {
-
+		By("Deleting the Issuer")
+		err := f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Delete(issuerName, nil)
+		Expect(err).NotTo(HaveOccurred())
+		By("Deleting the ACME account private key")
+		err = f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Delete(testingACMEPrivateKey, nil)
+		Expect(err).NotTo(HaveOccurred())
 	})
 
 	It("should obtain a signed certificate with a single CN from the ACME server", func() {
