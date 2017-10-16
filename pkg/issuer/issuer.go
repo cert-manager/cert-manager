@@ -10,7 +10,7 @@ type Interface interface {
 	// Setup initialises the issuer. This may include registering accounts with
 	// a service, creating a CA and storing it somewhere, or verifying
 	// credentials and authorization with a remote server.
-	Setup(ctx context.Context) (v1alpha1.IssuerStatus, error)
+	Setup(ctx context.Context) error
 	// Prepare
 	Prepare(context.Context, *v1alpha1.Certificate) error
 	// Issue attempts to issue a certificate as described by the certificate

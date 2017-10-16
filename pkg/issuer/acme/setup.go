@@ -30,19 +30,17 @@ const (
 	messageAccountVerified           = "The ACME account was verified with the ACME server"
 )
 
-func (a *Acme) Setup(ctx context.Context) (v1alpha1.IssuerStatus, error) {
-	update := a.issuer.Copy()
-
-	glog.V(4).Infof("%s: getting acme account private key '%s/%s'", a.issuer.GetObjectMeta().Name, a.resourceNamespace, a.issuer.GetSpec().ACME.PrivateKey)
+func (a *Acme) Setup(ctx context.Context) error {
+	glog.V(4).Infof("%s: getting acme account private key '%s/%s'", a.issuer.GetObjectMeta().Name, a.resourceNamespace, a.issuer.GetSpec().ACME.PrivateKey.Name)
 	cl, err := a.acmeClient()
 	if k8sErrors.IsNotFound(err) {
-		glog.V(4).Infof("%s: generating acme account private key '%s/%s'", a.issuer.GetObjectMeta().Name, a.resourceNamespace, a.issuer.GetSpec().ACME.PrivateKey)
+		glog.V(4).Infof("%s: generating acme account private key '%s/%s'", a.issuer.GetObjectMeta().Name, a.resourceNamespace, a.issuer.GetSpec().ACME.PrivateKey.Name)
 		var accountPrivKey *rsa.PrivateKey
 		accountPrivKey, err = a.createAccountPrivateKey()
 		if err != nil {
 			s := messageAccountRegistrationFailed + err.Error()
-			update.UpdateStatusCondition(v1alpha1.IssuerConditionReady, v1alpha1.ConditionFalse, errorAccountRegistrationFailed, s)
-			return *update.GetStatus(), fmt.Errorf(s)
+			a.issuer.UpdateStatusCondition(v1alpha1.IssuerConditionReady, v1alpha1.ConditionFalse, errorAccountRegistrationFailed, s)
+			return fmt.Errorf(s)
 		}
 		cl = &acme.Client{
 			Key:          accountPrivKey,
@@ -55,13 +53,14 @@ func (a *Acme) Setup(ctx context.Context) (v1alpha1.IssuerStatus, error) {
 		a.recorder.Event(a.issuer, v1.EventTypeWarning, errorAccountVerificationFailed, s)
 	}
 
+	glog.V(4).Infof("Verifying ")
 	glog.V(4).Infof("%s: verifying existing registration with ACME server", a.issuer.GetObjectMeta().Name)
 	_, err = cl.GetReg(ctx, a.issuer.GetStatus().ACMEStatus().URI)
 
 	if err == nil {
 		glog.V(4).Infof("%s: verified existing registration with ACME server", a.issuer.GetObjectMeta().Name)
-		update.UpdateStatusCondition(v1alpha1.IssuerConditionReady, v1alpha1.ConditionTrue, successAccountVerified, messageAccountVerified)
-		return *update.GetStatus(), nil
+		a.issuer.UpdateStatusCondition(v1alpha1.IssuerConditionReady, v1alpha1.ConditionTrue, successAccountVerified, messageAccountVerified)
+		return nil
 	}
 
 	s := messageAccountVerificationFailed + err.Error()
@@ -73,17 +72,16 @@ func (a *Acme) Setup(ctx context.Context) (v1alpha1.IssuerStatus, error) {
 	}
 
 	account, err := cl.Register(ctx, acc, acme.AcceptTOS)
-
 	if err != nil {
 		s := messageAccountRegistrationFailed + err.Error()
-		update.UpdateStatusCondition(v1alpha1.IssuerConditionReady, v1alpha1.ConditionFalse, errorAccountRegistrationFailed, s)
-		return *update.GetStatus(), err
+		a.issuer.UpdateStatusCondition(v1alpha1.IssuerConditionReady, v1alpha1.ConditionFalse, errorAccountRegistrationFailed, s)
+		return err
 	}
 
-	update.UpdateStatusCondition(v1alpha1.IssuerConditionReady, v1alpha1.ConditionTrue, successAccountRegistered, messageAccountRegistered)
-	update.GetStatus().ACMEStatus().URI = account.URI
+	a.issuer.UpdateStatusCondition(v1alpha1.IssuerConditionReady, v1alpha1.ConditionTrue, successAccountRegistered, messageAccountRegistered)
+	a.issuer.GetStatus().ACMEStatus().URI = account.URI
 
-	return *update.GetStatus(), nil
+	return nil
 }
 
 func (a *Acme) createAccountPrivateKey() (*rsa.PrivateKey, error) {

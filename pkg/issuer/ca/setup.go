@@ -24,30 +24,28 @@ const (
 	messageKeyPairVerified = "Signing CA verified"
 )
 
-func (c *CA) Setup(ctx context.Context) (v1alpha1.IssuerStatus, error) {
-	update := c.issuer.Copy()
-
-	cert, err := kube.SecretTLSCert(c.secretsLister, c.resourceNamespace, update.GetSpec().CA.SecretName)
+func (c *CA) Setup(ctx context.Context) error {
+	cert, err := kube.SecretTLSCert(c.secretsLister, c.resourceNamespace, c.issuer.GetSpec().CA.SecretName)
 
 	if k8sErrors.IsNotFound(err) {
 		s := messageErrorGetKeyPair + err.Error()
 		glog.Info(s)
-		c.recorder.Event(update, v1.EventTypeWarning, errorGetKeyPair, s)
-		update.UpdateStatusCondition(v1alpha1.IssuerConditionReady, v1alpha1.ConditionFalse, errorGetKeyPair, s)
-		return *update.GetStatus(), err
+		c.recorder.Event(c.issuer, v1.EventTypeWarning, errorGetKeyPair, s)
+		c.issuer.UpdateStatusCondition(v1alpha1.IssuerConditionReady, v1alpha1.ConditionFalse, errorGetKeyPair, s)
+		return err
 	}
 
 	if !cert.IsCA {
 		s := messageErrorGetKeyPair + "certificate is not a CA"
 		glog.Info(s)
-		c.recorder.Event(update, v1.EventTypeWarning, errorInvalidKeyPair, s)
-		update.UpdateStatusCondition(v1alpha1.IssuerConditionReady, v1alpha1.ConditionFalse, errorInvalidKeyPair, s)
-		return *update.GetStatus(), fmt.Errorf(s)
+		c.recorder.Event(c.issuer, v1.EventTypeWarning, errorInvalidKeyPair, s)
+		c.issuer.UpdateStatusCondition(v1alpha1.IssuerConditionReady, v1alpha1.ConditionFalse, errorInvalidKeyPair, s)
+		return fmt.Errorf(s)
 	}
 
 	glog.Info(messageKeyPairVerified)
-	c.recorder.Event(update, v1.EventTypeNormal, successKeyPairVerified, messageKeyPairVerified)
-	update.UpdateStatusCondition(v1alpha1.IssuerConditionReady, v1alpha1.ConditionTrue, successKeyPairVerified, messageKeyPairVerified)
+	c.recorder.Event(c.issuer, v1.EventTypeNormal, successKeyPairVerified, messageKeyPairVerified)
+	c.issuer.UpdateStatusCondition(v1alpha1.IssuerConditionReady, v1alpha1.ConditionTrue, successKeyPairVerified, messageKeyPairVerified)
 
-	return *update.GetStatus(), nil
+	return nil
 }
