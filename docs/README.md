@@ -8,7 +8,7 @@ It is split into these three sections for easier navigation.
 ## API types
 
 * [Issuer](api-types/issuer/)
-* Certificate (coming soon)
+* [Certificate](api-types/certificate/)
 
 ## User guides
 
