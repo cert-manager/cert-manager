@@ -93,4 +93,18 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 			})
 		Expect(err).NotTo(HaveOccurred())
 	})
+
+	It("should fail to obtain a certificate for an invalid ACME dns name", func() {
+		By("Creating a Certificate")
+		_, err := f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name).Create(util.NewCertManagerACMECertificate(certificateName, certificateSecretName, issuerName, v1alpha1.IssuerKind, acmeIngressClass, "google.com"))
+		Expect(err).NotTo(HaveOccurred())
+		By("Waiting for Certificate to become non-ready")
+		err = util.WaitForCertificateCondition(f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name),
+			certificateName,
+			v1alpha1.CertificateCondition{
+				Type:   v1alpha1.CertificateConditionReady,
+				Status: v1alpha1.ConditionFalse,
+			})
+		Expect(err).NotTo(HaveOccurred())
+	})
 })
