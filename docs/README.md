@@ -12,7 +12,7 @@ It is split into these three sections for easier navigation.
 
 ## User guides
 
-* Creating a simple CA based issuer
+* [Creating a simple CA based issuer](user-guides/ca-based-issuer.md)
 * Creating cluster wide issuers
 * Creating an ACME Issuer
 * Issuing an ACME certificate using an ingress controller
