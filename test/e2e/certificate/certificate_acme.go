@@ -20,6 +20,9 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/jetstack-experimental/cert-manager/pkg/apis/certmanager/v1alpha1"
 	cmutil "github.com/jetstack-experimental/cert-manager/pkg/util"
@@ -51,8 +54,11 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 	certificateSecretName := "test-acme-certificate"
 
 	BeforeEach(func() {
+		By("Verifying there is no existing ACME private key")
+		_, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Get(testingACMEPrivateKey, metav1.GetOptions{})
+		Expect(err).To(MatchError(apierrors.NewNotFound(corev1.Resource("secrets"), testingACMEPrivateKey)))
 		By("Creating an Issuer")
-		_, err := f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Create(util.NewCertManagerACMEIssuer(issuerName, testingACMEURL, testingACMEEmail, testingACMEPrivateKey))
+		_, err = f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Create(util.NewCertManagerACMEIssuer(issuerName, testingACMEURL, testingACMEEmail, testingACMEPrivateKey))
 		Expect(err).NotTo(HaveOccurred())
 		By("Waiting for Issuer to become Ready")
 		err = util.WaitForIssuerCondition(f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name),
