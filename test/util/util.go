@@ -12,8 +12,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 
+	"crypto/x509"
 	"github.com/jetstack-experimental/cert-manager/pkg/apis/certmanager/v1alpha1"
 	clientset "github.com/jetstack-experimental/cert-manager/pkg/client/clientset/typed/certmanager/v1alpha1"
+	"github.com/jetstack-experimental/cert-manager/pkg/util"
 )
 
 var certManagerImageFlag string
@@ -26,6 +28,24 @@ func init() {
 		"The image pull policy to use for cert-manager when running tests")
 }
 
+func CertificateOnlyValidForDomains(cert *x509.Certificate, commonName string, dnsNames ...string) bool {
+	if commonName != cert.Subject.CommonName || !util.EqualUnsorted(cert.DNSNames, dnsNames) {
+		return false
+	}
+	return true
+}
+
+func WaitForIssuerStatusFunc(client clientset.IssuerInterface, name string, fn func(*v1alpha1.Issuer) (bool, error)) error {
+	return wait.PollImmediate(500*time.Millisecond, wait.ForeverTestTimeout,
+		func() (bool, error) {
+			issuer, err := client.Get(name, metav1.GetOptions{})
+			if err != nil {
+				return false, fmt.Errorf("error getting Issuer %q: %v", name, err)
+			}
+			return fn(issuer)
+		})
+}
+
 // WaitForIssuerCondition waits for the status of the named issuer to contain
 // a condition whose type and status matches the supplied one.
 func WaitForIssuerCondition(client clientset.IssuerInterface, name string, condition v1alpha1.IssuerCondition) error {
@@ -34,7 +54,7 @@ func WaitForIssuerCondition(client clientset.IssuerInterface, name string, condi
 			glog.V(5).Infof("Waiting for issuer %v condition %#v", name, condition)
 			issuer, err := client.Get(name, metav1.GetOptions{})
 			if nil != err {
-				return false, fmt.Errorf("error getting Issuer %v: %v", name, err)
+				return false, fmt.Errorf("error getting Issuer %q: %v", name, err)
 			}
 
 			return issuer.HasCondition(condition), nil
