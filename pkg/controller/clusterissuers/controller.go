@@ -3,7 +3,6 @@ package issuers
 import (
 	"context"
 	"fmt"
-	"log"
 	"sync"
 	"time"
 
@@ -121,43 +120,40 @@ func (c *Controller) Run(workers int, stopCh <-chan struct{}) error {
 
 func (c *Controller) worker(stopCh <-chan struct{}) {
 	defer c.workerWg.Done()
-	log.Printf("starting worker")
+	glog.V(4).Infof("Starting %q worker", ControllerName)
 	for {
 		obj, shutdown := c.queue.Get()
 		if shutdown {
 			break
 		}
 
+		var key string
 		err := func(obj interface{}) error {
 			defer c.queue.Done(obj)
-			var key string
 			var ok bool
 			if key, ok = obj.(string); !ok {
-				runtime.HandleError(fmt.Errorf("expected string in workqueue but got %T", obj))
 				return nil
 			}
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
 			ctx = util.ContextWithStopCh(ctx, stopCh)
-			glog.V(6).Infof("%s controller: syncing item '%s'", ControllerName, key)
+			glog.Infof("%s controller: syncing item '%s'", ControllerName, key)
 			if err := c.syncHandler(ctx, key); err != nil {
-				glog.V(4).Infof("%s controller: error syncing item '%s': %s", ControllerName, key, err.Error())
 				return err
 			}
-			glog.V(4).Infof("%s controller: synced item '%s'", ControllerName, key)
 			c.queue.Forget(obj)
 			return nil
 		}(obj)
 
 		if err != nil {
-			log.Printf("requeuing item due to error processing: %s", err.Error())
+			glog.Errorf("%s controller: Re-queuing item %q due to error processing: %s", ControllerName, key, err.Error())
 			c.queue.AddRateLimited(obj)
 			continue
 		}
 
-		log.Printf("finished processing work item")
+		glog.Infof("%s controller: Finished processing work item %q", ControllerName, key)
 	}
-	log.Printf("exiting worker loop")
+	glog.V(4).Infof("Exiting %q worker loop", ControllerName)
 }
 
 func (c *Controller) processNextWorkItem(ctx context.Context, key string) error {
@@ -171,7 +167,7 @@ func (c *Controller) processNextWorkItem(ctx context.Context, key string) error 
 
 	if err != nil {
 		if k8sErrors.IsNotFound(err) {
-			runtime.HandleError(fmt.Errorf("issuer '%s' in work queue no longer exists", key))
+			runtime.HandleError(fmt.Errorf("issuer %q in work queue no longer exists", key))
 			return nil
 		}
 

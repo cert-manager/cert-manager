@@ -5,12 +5,12 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"net/url"
 	"strings"
 	"time"
 
+	"github.com/golang/glog"
 	corev1 "k8s.io/api/core/v1"
 	extv1beta1 "k8s.io/api/extensions/v1beta1"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
@@ -409,11 +409,11 @@ func (s *Solver) Wait(ctx context.Context, crt *v1alpha1.Certificate, domain, to
 			return out
 		}():
 			if err != nil {
-				log.Printf("[%s] Error self checking HTTP01 challenge: %s", domain, err.Error())
+				glog.V(4).Infof("ACME HTTP01 self check failed for domain %q, waiting 5s: %v", domain, err)
 				time.Sleep(time.Second * 5)
 				continue
 			}
-			log.Printf("[%s] HTTP01 challenge self checking passed", domain)
+			glog.V(4).Infof("ACME HTTP01 self check for %q passed", domain)
 			return nil
 		case <-ctx.Done():
 			return ctx.Err()
