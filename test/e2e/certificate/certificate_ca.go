@@ -16,6 +16,7 @@ package certificate
 import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 
 	"github.com/jetstack-experimental/cert-manager/pkg/apis/certmanager/v1alpha1"
@@ -65,6 +66,12 @@ var _ = framework.CertManagerDescribe("CA Certificate", func() {
 				Status: v1alpha1.ConditionTrue,
 			}, wait.ForeverTestTimeout)
 		Expect(err).NotTo(HaveOccurred())
+		By("Verifying TLS certificate exists")
+		secret, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Get(certificateSecretName, metav1.GetOptions{})
+		Expect(err).NotTo(HaveOccurred())
+		if len(secret.Data) != 2 {
+			Fail("Expected 2 keys in certificate secret, but there was %d", len(secret.Data))
+		}
 	})
 
 	It("should generate a signed keypair from a clusterissuer", func() {
