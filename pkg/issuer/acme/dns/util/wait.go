@@ -2,11 +2,11 @@ package util
 
 import (
 	"fmt"
-	"log"
 	"net"
 	"strings"
 	"time"
 
+	"github.com/golang/glog"
 	"github.com/miekg/dns"
 	"golang.org/x/net/publicsuffix"
 )
@@ -90,7 +90,7 @@ func checkAuthoritativeNss(fqdn, value string, nameservers []string) (bool, erro
 			return false, fmt.Errorf("NS %s returned %s for %s", ns, dns.RcodeToString[r.Rcode], fqdn)
 		}
 
-		log.Printf("looking up txt record for fqdn '%s'", fqdn)
+		glog.V(6).Infof("Looking up TXT records for %q", fqdn)
 		var found bool
 		for _, rr := range r.Answer {
 			if txt, ok := rr.(*dns.TXT); ok {
@@ -102,7 +102,7 @@ func checkAuthoritativeNss(fqdn, value string, nameservers []string) (bool, erro
 		}
 
 		if !found {
-			return false, fmt.Errorf("NS %s did not return the expected TXT record", ns)
+			return false, fmt.Errorf("nameserver %q did not return the expected TXT record for domain %q", ns, fqdn)
 		}
 	}
 

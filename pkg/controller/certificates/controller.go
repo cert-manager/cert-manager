@@ -178,43 +178,40 @@ func (c *Controller) Run(workers int, stopCh <-chan struct{}) error {
 
 func (c *Controller) worker(stopCh <-chan struct{}) {
 	defer c.workerWg.Done()
-	glog.V(4).Infof("Starting %s worker", ControllerName)
+	glog.V(4).Infof("Starting %q worker", ControllerName)
 	for {
 		obj, shutdown := c.queue.Get()
 		if shutdown {
 			break
 		}
 
+		var key string
 		err := func(obj interface{}) error {
 			defer c.queue.Done(obj)
-			var key string
 			var ok bool
 			if key, ok = obj.(string); !ok {
-				runtime.HandleError(fmt.Errorf("expected string in workqueue but got %T", obj))
 				return nil
 			}
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
 			ctx = util.ContextWithStopCh(ctx, stopCh)
-			glog.V(6).Infof("%s controller: syncing item '%s'", ControllerName, key)
+			glog.Infof("%s controller: syncing item '%s'", ControllerName, key)
 			if err := c.syncHandler(ctx, key); err != nil {
-				glog.V(4).Infof("%s controller: error syncing item '%s': %s", ControllerName, key, err.Error())
 				return err
 			}
-			glog.V(4).Infof("%s controller: synced item '%s'", ControllerName, key)
 			c.queue.Forget(obj)
 			return nil
 		}(obj)
 
 		if err != nil {
-			glog.V(2).Infof("Requeuing object due to error processing: %s", err.Error())
+			glog.Errorf("%s controller: Re-queuing item %q due to error processing: %s", ControllerName, key, err.Error())
 			c.queue.AddRateLimited(obj)
 			continue
 		}
 
-		glog.V(4).Infof("Finished processing work item")
+		glog.Infof("%s controller: Finished processing work item %q", ControllerName, key)
 	}
-	glog.V(4).Infof("Exiting %s worker loop", ControllerName)
+	glog.V(4).Infof("Exiting %q worker loop", ControllerName)
 }
 
 func (c *Controller) processNextWorkItem(ctx context.Context, key string) error {

@@ -3,9 +3,9 @@ package dns
 import (
 	"context"
 	"fmt"
-	"log"
 	"time"
 
+	"github.com/golang/glog"
 	"k8s.io/client-go/kubernetes"
 	corev1listers "k8s.io/client-go/listers/core/v1"
 
@@ -38,7 +38,7 @@ func (s *Solver) Present(ctx context.Context, crt *v1alpha1.Certificate, domain,
 	if err != nil {
 		return err
 	}
-	log.Printf("presenting key: %s", key)
+	glog.V(4).Infof("Presenting DNS01 challenge for domain %q", domain)
 	return slv.Present(domain, token, key)
 }
 
@@ -55,7 +55,7 @@ func (s *Solver) Wait(ctx context.Context, crt *v1alpha1.Certificate, domain, to
 
 	fqdn, value, ttl := util.DNS01Record(domain, key)
 
-	log.Printf("[%s] Checking DNS record propagation using %+v", domain, util.RecursiveNameservers)
+	glog.V(4).Infof("Checking DNS propagation for %q using name servers: %v", domain, util.RecursiveNameservers)
 
 	timeout, interval := slv.Timeout()
 	ctx, cancel := context.WithTimeout(ctx, timeout)
@@ -74,11 +74,12 @@ func (s *Solver) Wait(ctx context.Context, crt *v1alpha1.Certificate, domain, to
 			if r.bool {
 				// TODO: move this to somewhere else
 				// TODO: make this wait for whatever the record *was*, not is now
-				log.Printf("sleeping for dns record for '%s' ttl %ds before returning from Wait", fqdn, ttl)
+				glog.V(4).Infof("Waiting DNS record TTL (%ds) to allow propagation for propagation of DNS record for domain %q", ttl, fqdn)
 				time.Sleep(time.Second * time.Duration(ttl))
+				glog.V(4).Infof("ACME DNS01 validation record propagated for %q", fqdn)
 				return nil
 			}
-			log.Printf("[%s] dns record not yet propegated", domain)
+			glog.V(4).Infof("DNS record for %q not yet propagated", domain)
 			time.Sleep(interval)
 		case <-ctx.Done():
 			return ctx.Err()
