@@ -31,6 +31,7 @@ var _ = framework.CertManagerDescribe("ACME Issuer", func() {
 	})
 
 	AfterEach(func() {
+		By("Cleaning up")
 		f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Delete(issuerName, nil)
 		f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Delete(testingACMEPrivateKey, nil)
 	})

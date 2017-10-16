@@ -35,8 +35,8 @@ var _ = framework.CertManagerDescribe("CA ClusterIssuer", func() {
 	})
 
 	AfterEach(func() {
-		err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Delete(secretName, nil)
-		Expect(err).NotTo(HaveOccurred())
+		By("Cleaning up")
+		f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Delete(secretName, nil)
 	})
 
 	It("should generate a signing keypair", func() {
