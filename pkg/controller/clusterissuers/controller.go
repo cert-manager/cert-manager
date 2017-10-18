@@ -10,8 +10,10 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/runtime"
+	runtime "k8s.io/apimachinery/pkg/runtime"
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/apimachinery/pkg/watch"
 	coreinformers "k8s.io/client-go/informers/core/v1"
 	"k8s.io/client-go/kubernetes"
 	corelisters "k8s.io/client-go/listers/core/v1"
@@ -20,8 +22,8 @@ import (
 	"k8s.io/client-go/util/workqueue"
 
 	"github.com/jetstack-experimental/cert-manager/pkg/apis/certmanager"
+	"github.com/jetstack-experimental/cert-manager/pkg/apis/certmanager/v1alpha1"
 	"github.com/jetstack-experimental/cert-manager/pkg/client/clientset"
-	cminformers "github.com/jetstack-experimental/cert-manager/pkg/client/informers/certmanager/v1alpha1"
 	cmlisters "github.com/jetstack-experimental/cert-manager/pkg/client/listers/certmanager/v1alpha1"
 	controllerpkg "github.com/jetstack-experimental/cert-manager/pkg/controller"
 	"github.com/jetstack-experimental/cert-manager/pkg/issuer"
@@ -78,18 +80,18 @@ func (c *Controller) secretDeleted(obj interface{}) {
 	var ok bool
 	secret, ok = obj.(*corev1.Secret)
 	if !ok {
-		runtime.HandleError(fmt.Errorf("Object was not a Secret object %#v", obj))
+		utilruntime.HandleError(fmt.Errorf("Object was not a Secret object %#v", obj))
 		return
 	}
 	issuers, err := c.issuersForSecret(secret)
 	if err != nil {
-		runtime.HandleError(fmt.Errorf("Error looking up issuers observing Secret: %s/%s", secret.Namespace, secret.Name))
+		utilruntime.HandleError(fmt.Errorf("Error looking up issuers observing Secret: %s/%s", secret.Namespace, secret.Name))
 		return
 	}
 	for _, iss := range issuers {
 		key, err := keyFunc(iss)
 		if err != nil {
-			runtime.HandleError(err)
+			utilruntime.HandleError(err)
 			continue
 		}
 		c.queue.Add(key)
@@ -159,7 +161,7 @@ func (c *Controller) worker(stopCh <-chan struct{}) {
 func (c *Controller) processNextWorkItem(ctx context.Context, key string) error {
 	_, name, err := cache.SplitMetaNamespaceKey(key)
 	if err != nil {
-		runtime.HandleError(fmt.Errorf("invalid resource key: %s", key))
+		utilruntime.HandleError(fmt.Errorf("invalid resource key: %s", key))
 		return nil
 	}
 
@@ -167,11 +169,19 @@ func (c *Controller) processNextWorkItem(ctx context.Context, key string) error 
 
 	if err != nil {
 		if k8sErrors.IsNotFound(err) {
-			runtime.HandleError(fmt.Errorf("issuer %q in work queue no longer exists", key))
+			utilruntime.HandleError(fmt.Errorf("issuer %q in work queue no longer exists", key))
 			return nil
 		}
 
 		return err
+	}
+
+	var initializers *metav1.Initializers
+	if initializers = issuer.Initializers; initializers != nil && len(initializers.Pending) > 0 && initializers.Pending[0].Name == certmanager.GroupName {
+		if err = c.Initialize(ctx, issuer); err != nil {
+			return err
+		}
+		return nil
 	}
 
 	return c.Sync(ctx, issuer)
@@ -189,8 +199,18 @@ func init() {
 			ctx.SharedInformerFactory.InformerFor(
 				corev1.NamespaceAll,
 				metav1.GroupVersionKind{Group: certmanager.GroupName, Version: "v1alpha1", Kind: "ClusterIssuer"},
-				cminformers.NewClusterIssuerInformer(
-					ctx.CMClient,
+				cache.NewSharedIndexInformer(
+					&cache.ListWatch{
+						ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
+							options.IncludeUninitialized = true
+							return ctx.CMClient.CertmanagerV1alpha1().ClusterIssuers().List(options)
+						},
+						WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
+							options.IncludeUninitialized = true
+							return ctx.CMClient.CertmanagerV1alpha1().ClusterIssuers().Watch(options)
+						},
+					},
+					&v1alpha1.ClusterIssuer{},
 					time.Second*30,
 					cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc},
 				),
