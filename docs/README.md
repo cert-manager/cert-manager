@@ -14,8 +14,7 @@ It is split into these three sections for easier navigation.
 
 * [Creating a simple CA based issuer](user-guides/ca-based-issuer.md)
 * Creating cluster wide issuers
-* Creating an ACME Issuer
-* Issuing an ACME certificate using an ingress controller
+* [Issuing an ACME certificate using HTTP validation](user-guides/acme-http-validation.md)
 * Issuing an ACME certificate using DNS validation
 
 ## Developer docs

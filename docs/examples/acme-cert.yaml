@@ -22,7 +22,7 @@ spec:
       - cm-http-nginx.k8s.group
       - cm-http-nginx2.k8s.group
     - http01:
-        ingressName: my-gce-ingress
+        ingress: my-gce-ingress
       domains:
       - cm-http-gce.k8s.group
     - dns01:
