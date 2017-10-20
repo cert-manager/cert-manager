@@ -28,7 +28,7 @@ spec:
       - name: cf-dns
         cloudflare:
           email: user@example.com
-          # A secretKeyRef to a the google cloud json service account
+          # A secretKeyRef to a cloudflare api key
           apiKeySecretRef:
             name: cloudflare-api-key
             key: api-key.txt
