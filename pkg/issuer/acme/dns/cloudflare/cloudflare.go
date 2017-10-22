@@ -11,7 +11,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/jetstack-experimental/cert-manager/pkg/issuer/acme/dns/util"
+	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
 )
 
 // CloudFlareAPIURL represents the API endpoint to call.

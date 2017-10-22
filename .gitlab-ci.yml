@@ -2,7 +2,7 @@ image: golang:1.8-alpine
 
 variables:
   DOCKER_DRIVER: overlay
-  PKG_PATH: github.com/jetstack-experimental/cert-manager
+  PKG_PATH: github.com/jetstack/cert-manager
 
 services:
 - docker:1.12-dind

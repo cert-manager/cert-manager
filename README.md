@@ -1,4 +1,4 @@
-# cert-manager [![Build Status](https://travis-ci.org/jetstack-experimental/cert-manager.svg?branch=master)](https://travis-ci.org/jetstack-experimental/cert-manager)
+# cert-manager [![Build Status](https://travis-ci.org/jetstack/cert-manager.svg?branch=master)](https://travis-ci.org/jetstack/cert-manager)
 
 cert-manager is a Kubernetes add-on to automate the management and issuance of
 TLS certificates from various issuing sources.
@@ -61,7 +61,7 @@ repository.
 ## Troubleshooting
 
 If you encounter any issues whilst using cert-manager, and your issue is not
-documented, please [file an issue](https://github.com/jetstack-experimental/cert-manager/issues).
+documented, please [file an issue](https://github.com/jetstack/cert-manager/issues).
 
 ## Contributing
 
@@ -69,7 +69,7 @@ We welcome pull requests with open arms! There's a lot of work to do here, and
 we're especially concerned with ensuring the longevity and reliability of the
 project.
 
-Please take a look at our [issue tracker](https://github.com/jetstack-experimental/cert-manager/issues)
+Please take a look at our [issue tracker](https://github.com/jetstack/cert-manager/issues)
 if you are unsure where to start with getting involved!
 
 We also use the #kube-lego channel on kubernetes.slack.com for chat relating to
@@ -79,5 +79,5 @@ Developer documentation should be available soon at [docs/devel](docs/devel).
 
 ## Changelog
 
-The [list of releases](https://github.com/jetstack-experimental/cert-manager/releases)
+The [list of releases](https://github.com/jetstack/cert-manager/releases)
 is the best place to look for information on changes between releases.

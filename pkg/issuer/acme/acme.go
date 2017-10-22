@@ -15,12 +15,12 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
 
-	"github.com/jetstack-experimental/cert-manager/pkg/apis/certmanager/v1alpha1"
-	"github.com/jetstack-experimental/cert-manager/pkg/client/clientset"
-	"github.com/jetstack-experimental/cert-manager/pkg/issuer"
-	"github.com/jetstack-experimental/cert-manager/pkg/issuer/acme/dns"
-	"github.com/jetstack-experimental/cert-manager/pkg/issuer/acme/http"
-	"github.com/jetstack-experimental/cert-manager/pkg/util/kube"
+	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	"github.com/jetstack/cert-manager/pkg/client/clientset"
+	"github.com/jetstack/cert-manager/pkg/issuer"
+	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns"
+	"github.com/jetstack/cert-manager/pkg/issuer/acme/http"
+	"github.com/jetstack/cert-manager/pkg/util/kube"
 )
 
 // Acme is an issuer for an ACME server. It can be used to register and obtain

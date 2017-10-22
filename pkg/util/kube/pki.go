@@ -4,8 +4,8 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 
-	"github.com/jetstack-experimental/cert-manager/pkg/util/errors"
-	"github.com/jetstack-experimental/cert-manager/pkg/util/pki"
+	"github.com/jetstack/cert-manager/pkg/util/errors"
+	"github.com/jetstack/cert-manager/pkg/util/pki"
 	api "k8s.io/api/core/v1"
 	corelisters "k8s.io/client-go/listers/core/v1"
 )

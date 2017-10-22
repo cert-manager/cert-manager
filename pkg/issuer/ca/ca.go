@@ -10,9 +10,9 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
 
-	"github.com/jetstack-experimental/cert-manager/pkg/apis/certmanager/v1alpha1"
-	"github.com/jetstack-experimental/cert-manager/pkg/client/clientset"
-	"github.com/jetstack-experimental/cert-manager/pkg/issuer"
+	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	"github.com/jetstack/cert-manager/pkg/client/clientset"
+	"github.com/jetstack/cert-manager/pkg/issuer"
 )
 
 // CA is a simple CA implementation backed by the Kubernetes API server.

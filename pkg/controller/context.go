@@ -4,9 +4,9 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/record"
 
-	clientset "github.com/jetstack-experimental/cert-manager/pkg/client/clientset"
-	"github.com/jetstack-experimental/cert-manager/pkg/issuer"
-	"github.com/jetstack-experimental/cert-manager/pkg/util/kube"
+	clientset "github.com/jetstack/cert-manager/pkg/client/clientset"
+	"github.com/jetstack/cert-manager/pkg/issuer"
+	"github.com/jetstack/cert-manager/pkg/util/kube"
 )
 
 // Context contains various types that are used by controller implementations.

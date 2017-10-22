@@ -19,13 +19,13 @@ import (
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
 
-	"github.com/jetstack-experimental/cert-manager/pkg/apis/certmanager"
-	"github.com/jetstack-experimental/cert-manager/pkg/client/clientset"
-	cminformers "github.com/jetstack-experimental/cert-manager/pkg/client/informers/certmanager/v1alpha1"
-	cmlisters "github.com/jetstack-experimental/cert-manager/pkg/client/listers/certmanager/v1alpha1"
-	controllerpkg "github.com/jetstack-experimental/cert-manager/pkg/controller"
-	"github.com/jetstack-experimental/cert-manager/pkg/issuer"
-	"github.com/jetstack-experimental/cert-manager/pkg/util"
+	"github.com/jetstack/cert-manager/pkg/apis/certmanager"
+	"github.com/jetstack/cert-manager/pkg/client/clientset"
+	cminformers "github.com/jetstack/cert-manager/pkg/client/informers/certmanager/v1alpha1"
+	cmlisters "github.com/jetstack/cert-manager/pkg/client/listers/certmanager/v1alpha1"
+	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
+	"github.com/jetstack/cert-manager/pkg/issuer"
+	"github.com/jetstack/cert-manager/pkg/util"
 )
 
 type Controller struct {

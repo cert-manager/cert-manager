@@ -13,9 +13,9 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 
 	"crypto/x509"
-	"github.com/jetstack-experimental/cert-manager/pkg/apis/certmanager/v1alpha1"
-	clientset "github.com/jetstack-experimental/cert-manager/pkg/client/clientset/typed/certmanager/v1alpha1"
-	"github.com/jetstack-experimental/cert-manager/pkg/util"
+	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	clientset "github.com/jetstack/cert-manager/pkg/client/clientset/typed/certmanager/v1alpha1"
+	"github.com/jetstack/cert-manager/pkg/util"
 )
 
 var certManagerImageFlag string
