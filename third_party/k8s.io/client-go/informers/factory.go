@@ -19,9 +19,9 @@ limitations under the License.
 package informers
 
 import (
-	core "github.com/jetstack-experimental/cert-manager/third_party/k8s.io/client-go/informers/core"
-	extensions "github.com/jetstack-experimental/cert-manager/third_party/k8s.io/client-go/informers/extensions"
-	internalinterfaces "github.com/jetstack-experimental/cert-manager/third_party/k8s.io/client-go/informers/internalinterfaces"
+	core "github.com/jetstack/cert-manager/third_party/k8s.io/client-go/informers/core"
+	extensions "github.com/jetstack/cert-manager/third_party/k8s.io/client-go/informers/extensions"
+	internalinterfaces "github.com/jetstack/cert-manager/third_party/k8s.io/client-go/informers/internalinterfaces"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"

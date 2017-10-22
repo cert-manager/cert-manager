@@ -5,9 +5,9 @@ import (
 	corelisters "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/tools/record"
 
-	"github.com/jetstack-experimental/cert-manager/pkg/apis/certmanager/v1alpha1"
-	clientset "github.com/jetstack-experimental/cert-manager/pkg/client/clientset/versioned"
-	"github.com/jetstack-experimental/cert-manager/pkg/issuer"
+	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	clientset "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
+	"github.com/jetstack/cert-manager/pkg/issuer"
 )
 
 // CA is a simple CA implementation backed by the Kubernetes API server.

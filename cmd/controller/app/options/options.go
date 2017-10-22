@@ -6,7 +6,7 @@ import (
 
 	"github.com/spf13/pflag"
 
-	"github.com/jetstack-experimental/cert-manager/pkg/util"
+	"github.com/jetstack/cert-manager/pkg/util"
 )
 
 type ControllerOptions struct {
@@ -36,7 +36,7 @@ const (
 )
 
 var (
-	defaultACMEHTTP01SolverImage = fmt.Sprintf("jetstackexperimental/cert-manager-acmesolver:%s", util.AppVersion)
+	defaultACMEHTTP01SolverImage = fmt.Sprintf("quay.io/jetstack/cert-manager-acmesolver:%s", util.AppVersion)
 )
 
 func NewControllerOptions() *ControllerOptions {

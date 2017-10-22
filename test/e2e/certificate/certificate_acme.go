@@ -24,10 +24,10 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/jetstack-experimental/cert-manager/pkg/apis/certmanager/v1alpha1"
-	cmutil "github.com/jetstack-experimental/cert-manager/pkg/util"
-	"github.com/jetstack-experimental/cert-manager/test/e2e/framework"
-	"github.com/jetstack-experimental/cert-manager/test/util"
+	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	cmutil "github.com/jetstack/cert-manager/pkg/util"
+	"github.com/jetstack/cert-manager/test/e2e/framework"
+	"github.com/jetstack/cert-manager/test/util"
 )
 
 const testingACMEURL = "http://127.0.0.1:4000/directory"

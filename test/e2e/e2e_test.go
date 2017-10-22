@@ -19,7 +19,7 @@ import (
 	"github.com/golang/glog"
 	"k8s.io/client-go/tools/clientcmd"
 
-	"github.com/jetstack-experimental/cert-manager/test/e2e/framework"
+	"github.com/jetstack/cert-manager/test/e2e/framework"
 )
 
 func init() {

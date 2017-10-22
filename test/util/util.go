@@ -13,16 +13,16 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 
 	"crypto/x509"
-	"github.com/jetstack-experimental/cert-manager/pkg/apis/certmanager/v1alpha1"
-	clientset "github.com/jetstack-experimental/cert-manager/pkg/client/clientset/versioned/typed/certmanager/v1alpha1"
-	"github.com/jetstack-experimental/cert-manager/pkg/util"
+	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	clientset "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/typed/certmanager/v1alpha1"
+	"github.com/jetstack/cert-manager/pkg/util"
 )
 
 var certManagerImageFlag string
 var certManagerImagePullPolicy string
 
 func init() {
-	flag.StringVar(&certManagerImageFlag, "cert-manager-image", "jetstackexperimental/cert-manager-controller:canary",
+	flag.StringVar(&certManagerImageFlag, "cert-manager-image", "quay.io/jetstack/cert-manager-controller:canary",
 		"The container image for cert-manager to test against")
 	flag.StringVar(&certManagerImagePullPolicy, "cert-manager-image-pull-policy", "Never",
 		"The image pull policy to use for cert-manager when running tests")

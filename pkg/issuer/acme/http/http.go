@@ -23,10 +23,10 @@ import (
 	corev1listers "k8s.io/client-go/listers/core/v1"
 	"k8s.io/ingress/core/pkg/ingress/annotations/class"
 
-	"github.com/jetstack-experimental/cert-manager/pkg/apis/certmanager/v1alpha1"
-	"github.com/jetstack-experimental/cert-manager/pkg/issuer/acme/http/solver"
-	"github.com/jetstack-experimental/cert-manager/pkg/util"
-	"github.com/jetstack-experimental/cert-manager/pkg/util/kube"
+	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	"github.com/jetstack/cert-manager/pkg/issuer/acme/http/solver"
+	"github.com/jetstack/cert-manager/pkg/util"
+	"github.com/jetstack/cert-manager/pkg/util/kube"
 )
 
 const (

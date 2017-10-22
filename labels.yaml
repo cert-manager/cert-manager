@@ -1,5 +1,5 @@
 ---
-repo: jetstack-experimental/cert-manager
+repo: jetstack/cert-manager
 labels:
 - name: approved
   color: 0ffa16

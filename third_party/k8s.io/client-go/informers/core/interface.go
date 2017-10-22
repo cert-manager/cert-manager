@@ -19,8 +19,8 @@ limitations under the License.
 package core
 
 import (
-	v1 "github.com/jetstack-experimental/cert-manager/third_party/k8s.io/client-go/informers/core/v1"
-	internalinterfaces "github.com/jetstack-experimental/cert-manager/third_party/k8s.io/client-go/informers/internalinterfaces"
+	v1 "github.com/jetstack/cert-manager/third_party/k8s.io/client-go/informers/core/v1"
+	internalinterfaces "github.com/jetstack/cert-manager/third_party/k8s.io/client-go/informers/internalinterfaces"
 )
 
 // Interface provides access to each of this group's versions.
