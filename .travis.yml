@@ -1,3 +1,5 @@
+go_import_path: github.com/jetstack-experimental/cert-manager
+
 jobs:
   include:
     - stage: test
