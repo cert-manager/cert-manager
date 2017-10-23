@@ -5,17 +5,17 @@ labels:
   color: 0ffa16
 - name: approved-for-milestone
   color: fef2c0
-- name: area/admin
+- name: area/provider-acme
   color: 0052cc
-- name: area/admission-control
+- name: area/provider-ca
+  color: 0052cc
+- name: area/admin
   color: 0052cc
 - name: area/api
   color: 0052cc
 - name: area/apiserver
   color: 0052cc
 - name: area/controller-manager
-  color: 0052cc
-- name: area/ipv6
   color: 0052cc
 - name: area/logging
   color: 0052cc
@@ -33,8 +33,6 @@ labels:
   color: 0052cc
 - name: area/test-infra
   color: 0052cc
-- name: area/ui
-  color: 0052cc
 - name: area/upgrade
   color: 0052cc
 - name: area/usability
@@ -43,12 +41,6 @@ labels:
   color: fef2c0
 - name: cherrypick-candidate
   color: fef2c0
-- name: 'cla: human-approved'
-  color: bfe5bf
-- name: 'cla: no'
-  color: e11d21
-- name: 'cla: yes'
-  color: bfe5bf
 - name: do-not-merge
   color: e11d21
 - name: do-not-merge/work-in-progress
@@ -61,8 +53,6 @@ labels:
   color: e11d21
 - name: do-not-merge/blocked-paths
   color: e11d21
-- name: flake-has-meta
-  color: fbca04
 - name: for-new-contributors
   color: 006b75
 - name: help-wanted
@@ -153,8 +143,6 @@ labels:
   color: db5a64
 - name: release-note-none
   color: c2e0c6
-- name: requires-release-czar-attention
-  color: d93f0b
 - name: retest-not-required
   color: eb6420
 - name: retest-not-required-docs-only
