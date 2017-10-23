@@ -10,7 +10,7 @@ spec:
     email: user@example.com
     # Name of a secret used to store the ACME account private key
     privateKeySecretRef:
-      name: letsncrypt-prod
+      name: letsencrypt-prod
     # Enable the HTTP-01 challenge provider
     http01: {}
     # ACME dns-01 provider configurations
@@ -28,7 +28,7 @@ spec:
       - name: cf-dns
         cloudflare:
           email: user@example.com
-          # A secretKeyRef to a the google cloud json service account
+          # A secretKeyRef to a cloudflare api key
           apiKeySecretRef:
             name: cloudflare-api-key
             key: api-key.txt
