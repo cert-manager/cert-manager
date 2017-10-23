@@ -8,6 +8,7 @@ jobs:
       go: 1.8
       env:
       - KUBERNETES_VERSION=v1.7.0
+      - KUBERNETES_VERSION=v1.8.0
       before_script:
       # Install CLI dependencies
       - curl -Lo helm.tar.gz https://storage.googleapis.com/kubernetes-helm/helm-v2.6.1-linux-amd64.tar.gz && tar xvf helm.tar.gz && sudo mv linux-amd64/helm /usr/local/bin
