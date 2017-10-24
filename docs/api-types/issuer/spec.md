@@ -127,6 +127,7 @@ clouddns:
 route53:
   accessKeyID: AKIAIOSFODNN7EXAMPLE
   region: eu-west-1
+  hostedZoneID: DIKER8JPL21PSA
   secretAccessKeySecretRef:
     name: prod-route53-credentials-secret
     key: secret-access-key
@@ -146,5 +147,3 @@ cloudflare:
 
 CA Issuers issue certificates signed from a X509 signing keypair, stored in a
 secret in the Kubernetes API server.
-
-
