@@ -3,7 +3,7 @@ package issuer
 import (
 	"fmt"
 
-	"github.com/jetstack-experimental/cert-manager/pkg/apis/certmanager/v1alpha1"
+	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 )
 
 // Factory is an interface that can be used to obtain Issuer implementations.

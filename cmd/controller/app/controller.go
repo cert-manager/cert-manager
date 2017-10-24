@@ -17,12 +17,12 @@ import (
 	"k8s.io/client-go/tools/leaderelection/resourcelock"
 	"k8s.io/client-go/tools/record"
 
-	"github.com/jetstack-experimental/cert-manager/cmd/controller/app/options"
-	clientset "github.com/jetstack-experimental/cert-manager/pkg/client/clientset"
-	intscheme "github.com/jetstack-experimental/cert-manager/pkg/client/clientset/scheme"
-	"github.com/jetstack-experimental/cert-manager/pkg/controller"
-	"github.com/jetstack-experimental/cert-manager/pkg/issuer"
-	"github.com/jetstack-experimental/cert-manager/pkg/util/kube"
+	"github.com/jetstack/cert-manager/cmd/controller/app/options"
+	clientset "github.com/jetstack/cert-manager/pkg/client/clientset"
+	intscheme "github.com/jetstack/cert-manager/pkg/client/clientset/scheme"
+	"github.com/jetstack/cert-manager/pkg/controller"
+	"github.com/jetstack/cert-manager/pkg/issuer"
+	"github.com/jetstack/cert-manager/pkg/util/kube"
 )
 
 const controllerAgentName = "cert-manager-controller"

@@ -3,7 +3,7 @@ package pki
 import (
 	"crypto/x509"
 	"crypto/x509/pkix"
-	"github.com/jetstack-experimental/cert-manager/pkg/apis/certmanager/v1alpha1"
+	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 )
 
 // The provided Certificate *must* specify either a DNS name or a

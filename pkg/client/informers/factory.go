@@ -19,9 +19,9 @@ limitations under the License.
 package informers
 
 import (
-	clientset "github.com/jetstack-experimental/cert-manager/pkg/client/clientset"
-	certmanager "github.com/jetstack-experimental/cert-manager/pkg/client/informers/certmanager"
-	internalinterfaces "github.com/jetstack-experimental/cert-manager/pkg/client/informers/internalinterfaces"
+	clientset "github.com/jetstack/cert-manager/pkg/client/clientset"
+	certmanager "github.com/jetstack/cert-manager/pkg/client/informers/certmanager"
+	internalinterfaces "github.com/jetstack/cert-manager/pkg/client/informers/internalinterfaces"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	cache "k8s.io/client-go/tools/cache"

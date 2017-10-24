@@ -3,9 +3,9 @@ package ca
 import (
 	"context"
 
-	"github.com/jetstack-experimental/cert-manager/pkg/apis/certmanager/v1alpha1"
-	"github.com/jetstack-experimental/cert-manager/pkg/util/kube"
-	"github.com/jetstack-experimental/cert-manager/pkg/util/pki"
+	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	"github.com/jetstack/cert-manager/pkg/util/kube"
+	"github.com/jetstack/cert-manager/pkg/util/pki"
 )
 
 const (
