@@ -41,7 +41,8 @@ spec:
           secretAccessKeySecretRef:
             name: route53-config
             key: secret-access-key
-          # The Route53 hosted zone ID
-          hostedZoneID: DIKER8JPL21PSA
           # The Route53 region
           region: us-east-1
+          # This field is optional for overriding the Route53 hosted zone ID
+          # It is required to use it if the cert-manager cannot disambiguate between two different hosted zones for the same zone name
+          hostedZoneID: DIKER8JPL21PSA

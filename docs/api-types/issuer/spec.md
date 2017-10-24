@@ -127,7 +127,6 @@ clouddns:
 route53:
   accessKeyID: AKIAIOSFODNN7EXAMPLE
   region: eu-west-1
-  hostedZoneID: DIKER8JPL21PSA
   secretAccessKeySecretRef:
     name: prod-route53-credentials-secret
     key: secret-access-key
