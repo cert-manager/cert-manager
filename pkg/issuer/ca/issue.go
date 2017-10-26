@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/jetstack-experimental/cert-manager/pkg/apis/certmanager/v1alpha1"
+	"github.com/jetstack-experimental/cert-manager/pkg/util/errors"
 	"github.com/jetstack-experimental/cert-manager/pkg/util/kube"
 	"github.com/jetstack-experimental/cert-manager/pkg/util/pki"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
@@ -38,7 +39,7 @@ const (
 func (c *CA) Issue(ctx context.Context, crt *v1alpha1.Certificate) ([]byte, []byte, error) {
 	signeeKey, err := kube.SecretTLSKey(c.secretsLister, crt.Namespace, crt.Spec.SecretName)
 
-	if k8sErrors.IsNotFound(err) {
+	if k8sErrors.IsNotFound(err) || errors.IsInvalidData(err) {
 		signeeKey, err = pki.GenerateRSAPrivateKey(2048)
 	}
 
