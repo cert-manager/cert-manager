@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/golang/glog"
@@ -64,6 +65,8 @@ type Solver struct {
 	svcNames map[string]string
 	ingNames map[string]string
 	podNames map[string]string
+	// lock is used to lock the solver
+	lock sync.Mutex
 }
 
 // NewSolver returns a new ACME HTTP01 solver for the given Issuer and client.
@@ -369,6 +372,8 @@ func (s *Solver) cleanupPod(crt *v1alpha1.Certificate, domain string) error {
 // Present will create the required service, update/create the required ingress
 // and created a Kubernetes Pod to solve the HTTP01 challenge
 func (s *Solver) Present(ctx context.Context, crt *v1alpha1.Certificate, domain, token, key string) error {
+	s.lock.Lock()
+	defer s.lock.Unlock()
 	labels := labelsForCert(crt, domain)
 
 	svc, err := s.ensureService(crt, domain, labels)
@@ -457,6 +462,8 @@ func testReachability(ctx context.Context, domain, path, key string) error {
 // CleanUp will ensure the created service and ingress are clean/deleted of any
 // cert-manager created data.
 func (s *Solver) CleanUp(ctx context.Context, crt *v1alpha1.Certificate, domain, token, key string) error {
+	s.lock.Lock()
+	defer s.lock.Unlock()
 	var errs []error
 	if err := s.cleanupPod(crt, domain); err != nil {
 		errs = append(errs, fmt.Errorf("[%s] Error cleaning up pod: %s", domain, err.Error()))
