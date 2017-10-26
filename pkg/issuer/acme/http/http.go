@@ -58,6 +58,9 @@ type Solver struct {
 	secretLister corev1listers.SecretLister
 	solverImage  string
 
+	testReachability reachabilityTest
+	requiredPasses   int
+
 	// This is a hack to record the randomly generated names of resources
 	// created by this Solver. This should be refactored out in future with a
 	// redesign of this package. It is used so resources can be cleaned up
@@ -69,16 +72,20 @@ type Solver struct {
 	lock sync.Mutex
 }
 
+type reachabilityTest func(ctx context.Context, domain, path, key string) error
+
 // NewSolver returns a new ACME HTTP01 solver for the given Issuer and client.
 func NewSolver(issuer v1alpha1.GenericIssuer, client kubernetes.Interface, secretLister corev1listers.SecretLister, solverImage string) *Solver {
 	return &Solver{
-		issuer:       issuer,
-		client:       client,
-		secretLister: secretLister,
-		solverImage:  solverImage,
-		svcNames:     make(map[string]string),
-		ingNames:     make(map[string]string),
-		podNames:     make(map[string]string),
+		issuer:           issuer,
+		client:           client,
+		secretLister:     secretLister,
+		solverImage:      solverImage,
+		testReachability: testReachability,
+		requiredPasses:   5,
+		svcNames:         make(map[string]string),
+		ingNames:         make(map[string]string),
+		podNames:         make(map[string]string),
 	}
 }
 
@@ -401,6 +408,7 @@ func (s *Solver) Present(ctx context.Context, crt *v1alpha1.Certificate, domain,
 // routes to include the HTTP01 challenge path, or return with an error if the
 // context deadline is exceeded.
 func (s *Solver) Wait(ctx context.Context, crt *v1alpha1.Certificate, domain, token, key string) error {
+	passes := 0
 	ctx, cancel := context.WithTimeout(ctx, HTTP01Timeout)
 	defer cancel()
 	for {
@@ -409,16 +417,22 @@ func (s *Solver) Wait(ctx context.Context, crt *v1alpha1.Certificate, domain, to
 			out := make(chan error, 1)
 			go func() {
 				defer close(out)
-				out <- testReachability(ctx, domain, fmt.Sprintf("%s/%s", solver.HTTPChallengePath, token), key)
+				out <- s.testReachability(ctx, domain, fmt.Sprintf("%s/%s", solver.HTTPChallengePath, token), key)
 			}()
 			return out
 		}():
 			if err != nil {
+				passes = 0
 				glog.V(4).Infof("ACME HTTP01 self check failed for domain %q, waiting 5s: %v", domain, err)
 				time.Sleep(time.Second * 5)
 				continue
 			}
-			glog.V(4).Infof("ACME HTTP01 self check for %q passed", domain)
+			passes++
+			glog.V(4).Infof("ACME HTTP01 self check for %q passed (%d/%d)", domain, passes, s.requiredPasses+1)
+			if passes < s.requiredPasses {
+				time.Sleep(time.Second * 2)
+				continue
+			}
 			return nil
 		case <-ctx.Done():
 			return ctx.Err()
