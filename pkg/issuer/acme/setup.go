@@ -13,6 +13,7 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/jetstack-experimental/cert-manager/pkg/apis/certmanager/v1alpha1"
+	"github.com/jetstack-experimental/cert-manager/pkg/util/errors"
 	"github.com/jetstack-experimental/cert-manager/pkg/util/kube"
 	"github.com/jetstack-experimental/cert-manager/pkg/util/pki"
 )
@@ -35,7 +36,7 @@ func (a *Acme) Setup(ctx context.Context) (v1alpha1.IssuerStatus, error) {
 
 	glog.V(4).Infof("%s: getting acme account private key '%s/%s'", a.issuer.GetObjectMeta().Name, a.resourceNamespace, a.issuer.GetSpec().ACME.PrivateKey)
 	cl, err := a.acmeClient()
-	if k8sErrors.IsNotFound(err) {
+	if k8sErrors.IsNotFound(err) || errors.IsInvalidData(err) {
 		glog.V(4).Infof("%s: generating acme account private key '%s/%s'", a.issuer.GetObjectMeta().Name, a.resourceNamespace, a.issuer.GetSpec().ACME.PrivateKey)
 		var accountPrivKey *rsa.PrivateKey
 		accountPrivKey, err = a.createAccountPrivateKey()
@@ -53,6 +54,7 @@ func (a *Acme) Setup(ctx context.Context) (v1alpha1.IssuerStatus, error) {
 		s := messageAccountVerificationFailed + err.Error()
 		glog.V(4).Infof("%s: %s", a.issuer.GetObjectMeta().Name, s)
 		a.recorder.Event(a.issuer, v1.EventTypeWarning, errorAccountVerificationFailed, s)
+		return *update.GetStatus(), err
 	}
 
 	glog.V(4).Infof("%s: verifying existing registration with ACME server", a.issuer.GetObjectMeta().Name)
