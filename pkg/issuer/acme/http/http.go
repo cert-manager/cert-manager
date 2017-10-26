@@ -465,9 +465,7 @@ func testReachability(ctx context.Context, domain, path, key string) error {
 	}
 
 	if string(presentedKey) != key {
-		if err != nil {
-			return fmt.Errorf("presented key (%s) did not match expected (%s)", presentedKey, key)
-		}
+		return fmt.Errorf("presented key (%s) did not match expected (%s)", presentedKey, key)
 	}
 
 	return nil
