@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"k8s.io/api/core/v1"
-	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 
 	"github.com/golang/glog"
 	"github.com/jetstack-experimental/cert-manager/pkg/apis/certmanager/v1alpha1"
@@ -27,7 +26,17 @@ const (
 func (c *CA) Setup(ctx context.Context) error {
 	cert, err := kube.SecretTLSCert(c.secretsLister, c.resourceNamespace, c.issuer.GetSpec().CA.SecretName)
 
-	if k8sErrors.IsNotFound(err) {
+	if err != nil {
+		s := messageErrorGetKeyPair + err.Error()
+		glog.Info(s)
+		c.recorder.Event(c.issuer, v1.EventTypeWarning, errorGetKeyPair, s)
+		c.issuer.UpdateStatusCondition(v1alpha1.IssuerConditionReady, v1alpha1.ConditionFalse, errorGetKeyPair, s)
+		return err
+	}
+
+	_, err = kube.SecretTLSKey(c.secretsLister, c.resourceNamespace, c.issuer.GetSpec().CA.SecretName)
+
+	if err != nil {
 		s := messageErrorGetKeyPair + err.Error()
 		glog.Info(s)
 		c.recorder.Event(c.issuer, v1.EventTypeWarning, errorGetKeyPair, s)

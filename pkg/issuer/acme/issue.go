@@ -12,6 +12,7 @@ import (
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 
 	"github.com/jetstack-experimental/cert-manager/pkg/apis/certmanager/v1alpha1"
+	"github.com/jetstack-experimental/cert-manager/pkg/util/errors"
 	"github.com/jetstack-experimental/cert-manager/pkg/util/kube"
 	"github.com/jetstack-experimental/cert-manager/pkg/util/pki"
 )
@@ -40,7 +41,7 @@ func (a *Acme) obtainCertificate(ctx context.Context, crt *v1alpha1.Certificate)
 
 	// get existing certificate private key
 	key, err := kube.SecretTLSKey(a.secretsLister, crt.Namespace, crt.Spec.SecretName)
-	if k8sErrors.IsNotFound(err) {
+	if k8sErrors.IsNotFound(err) || errors.IsInvalidData(err) {
 		key, err = pki.GenerateRSAPrivateKey(2048)
 		if err != nil {
 			return nil, nil, fmt.Errorf("error generating private key: %s", err.Error())
