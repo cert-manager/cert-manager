@@ -106,50 +106,34 @@ func dns1035(s string) string {
 	return strings.Replace(s, ".", "-", -1)
 }
 
-// ensureService will ensure the service required to solve this challenge
-// exists in the target API server, either by updating the existing Service
-// or by creating a new one.
-func (s *Solver) ensureService(crt *v1alpha1.Certificate, domain string, labels map[string]string) (svc *corev1.Service, err error) {
+// createService will create the service required to solve this challenge
+// in the target API server.
+func (s *Solver) createService(crt *v1alpha1.Certificate, domain string, labels map[string]string) (*corev1.Service, error) {
 	svcName := svcNameFunc(crt.Name, domain)
-	svc, err = s.client.CoreV1().Services(crt.Namespace).Get(svcName, metav1.GetOptions{})
-	if err != nil && !k8sErrors.IsNotFound(err) {
-		return nil, fmt.Errorf("error checking for existing service when ensuring service: %s", err.Error())
+	svc := &corev1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      svcName,
+			Namespace: crt.Namespace,
+			Labels:    labels,
+		},
+		Spec: corev1.ServiceSpec{
+			Type: corev1.ServiceTypeNodePort,
+			Ports: []corev1.ServicePort{
+				{
+					Name:       "http",
+					Port:       acmeSolverListenPort,
+					TargetPort: intstr.FromInt(acmeSolverListenPort),
+				},
+			},
+			Selector: labels,
+		},
 	}
-	if svc == nil {
-		svc = &corev1.Service{}
+	svc, err := s.client.CoreV1().Services(crt.Namespace).Create(svc)
+	if err != nil {
+		return nil, err
 	}
-
-	svc.Name = svcName
-	svc.Namespace = crt.Namespace
-	if svc.Labels == nil {
-		svc.Labels = make(map[string]string)
-	}
-	for k, v := range labels {
-		svc.Labels[k] = v
-	}
-
-	svcPort := &corev1.ServicePort{}
-	svcPort.Name = "http"
-	svcPort.Port = acmeSolverListenPort
-	svcPort.TargetPort = intstr.FromInt(acmeSolverListenPort)
-
-	exists := false
-	for i, p := range svc.Spec.Ports {
-		if p.Port == acmeSolverListenPort {
-			svc.Spec.Ports[i] = *svcPort
-			exists = true
-			break
-		}
-	}
-	if !exists {
-		svc.Spec.Ports = append(svc.Spec.Ports, *svcPort)
-	}
-
-	svc.Spec.Type = corev1.ServiceTypeNodePort
-	svc.Spec.Selector = labels
-
 	s.svcNames[domain] = svcName
-	return kube.EnsureService(s.client, svc)
+	return svc, nil
 }
 
 // cleanupService will ensure the service created for this challenge request
@@ -383,7 +367,7 @@ func (s *Solver) Present(ctx context.Context, crt *v1alpha1.Certificate, domain,
 	defer s.lock.Unlock()
 	labels := labelsForCert(crt, domain)
 
-	svc, err := s.ensureService(crt, domain, labels)
+	svc, err := s.createService(crt, domain, labels)
 
 	if err != nil {
 		return fmt.Errorf("error ensuring http01 challenge service: %s", err.Error())
@@ -428,7 +412,7 @@ func (s *Solver) Wait(ctx context.Context, crt *v1alpha1.Certificate, domain, to
 				continue
 			}
 			passes++
-			glog.V(4).Infof("ACME HTTP01 self check for %q passed (%d/%d)", domain, passes, s.requiredPasses+1)
+			glog.V(4).Infof("ACME HTTP01 self check for %q passed (%d/%d)", domain, passes, s.requiredPasses)
 			if passes < s.requiredPasses {
 				time.Sleep(time.Second * 2)
 				continue
