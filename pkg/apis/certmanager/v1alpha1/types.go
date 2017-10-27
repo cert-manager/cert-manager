@@ -74,8 +74,23 @@ type IssuerSpec struct {
 }
 
 type IssuerConfig struct {
-	ACME *ACMEIssuer `json:"acme,omitempty"`
-	CA   *CAIssuer   `json:"ca,omitempty"`
+	ACME  *ACMEIssuer  `json:"acme,omitempty"`
+	CA    *CAIssuer    `json:"ca,omitempty"`
+	Vault *VaultIssuer `json:"vault,omitempty""`
+}
+
+type VaultIssuer struct {
+	Auth VaultAuth `json:"auth"`
+	// Server is the vault connection address
+	Server string `json:"server"`
+}
+
+type VaultAuth struct {
+	Token *VaultTokenAuth `json:"token"`
+}
+
+type VaultTokenAuth struct {
+	TokenSecretRef SecretKeySelector `json:"tokenSecretRef"`
 }
 
 type CAIssuer struct {
