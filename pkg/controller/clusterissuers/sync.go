@@ -8,6 +8,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/errors"
 
 	"github.com/jetstack-experimental/cert-manager/pkg/apis/certmanager/v1alpha1"
+	"github.com/jetstack-experimental/cert-manager/pkg/client/clientset/scheme"
 )
 
 const (
@@ -15,6 +16,15 @@ const (
 
 	messageErrorInitIssuer = "Error initializing issuer: "
 )
+
+func (c *Controller) Initialize(ctx context.Context, iss *v1alpha1.ClusterIssuer) error {
+	issuerCopy := iss.DeepCopy()
+	// Apply defaults
+	scheme.Scheme.Default(issuerCopy)
+	issuerCopy.Initializers.Pending = issuerCopy.Initializers.Pending[1:]
+	_, err := c.cmClient.CertmanagerV1alpha1().ClusterIssuers().Update(issuerCopy)
+	return err
+}
 
 func (c *Controller) Sync(ctx context.Context, iss *v1alpha1.ClusterIssuer) (err error) {
 	issuerCopy := iss.DeepCopy()

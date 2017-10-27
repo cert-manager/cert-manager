@@ -11,8 +11,10 @@ import (
 	extv1beta1 "k8s.io/api/extensions/v1beta1"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/runtime"
+	"k8s.io/apimachinery/pkg/runtime"
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/apimachinery/pkg/watch"
 	coreinformers "k8s.io/client-go/informers/core/v1"
 	extinformers "k8s.io/client-go/informers/extensions/v1beta1"
 	"k8s.io/client-go/kubernetes"
@@ -23,6 +25,7 @@ import (
 	"k8s.io/client-go/util/workqueue"
 
 	"github.com/jetstack-experimental/cert-manager/pkg/apis/certmanager"
+	"github.com/jetstack-experimental/cert-manager/pkg/apis/certmanager/v1alpha1"
 	"github.com/jetstack-experimental/cert-manager/pkg/client/clientset"
 	cminformers "github.com/jetstack-experimental/cert-manager/pkg/client/informers/certmanager/v1alpha1"
 	cmlisters "github.com/jetstack-experimental/cert-manager/pkg/client/listers/certmanager/v1alpha1"
@@ -109,18 +112,18 @@ func (c *Controller) secretDeleted(obj interface{}) {
 	var ok bool
 	secret, ok = obj.(*corev1.Secret)
 	if !ok {
-		runtime.HandleError(fmt.Errorf("Object is not a Secret object %#v", obj))
+		utilruntime.HandleError(fmt.Errorf("Object is not a Secret object %#v", obj))
 		return
 	}
 	crts, err := c.certificatesForSecret(secret)
 	if err != nil {
-		runtime.HandleError(fmt.Errorf("Error looking up Certificates observing Secret: %s/%s", secret.Namespace, secret.Name))
+		utilruntime.HandleError(fmt.Errorf("Error looking up Certificates observing Secret: %s/%s", secret.Namespace, secret.Name))
 		return
 	}
 	for _, crt := range crts {
 		key, err := keyFunc(crt)
 		if err != nil {
-			runtime.HandleError(err)
+			utilruntime.HandleError(err)
 			continue
 		}
 		c.queue.Add(key)
@@ -130,18 +133,18 @@ func (c *Controller) secretDeleted(obj interface{}) {
 func (c *Controller) ingressDeleted(obj interface{}) {
 	ingress, ok := obj.(*extv1beta1.Ingress)
 	if !ok {
-		runtime.HandleError(fmt.Errorf("Object is not an Ingress object %#v", obj))
+		utilruntime.HandleError(fmt.Errorf("Object is not an Ingress object %#v", obj))
 		return
 	}
 	crts, err := c.certificatesForIngress(ingress)
 	if err != nil {
-		runtime.HandleError(fmt.Errorf("Error looking up certificates observing Ingress: %s/%s", ingress.Namespace, ingress.Name))
+		utilruntime.HandleError(fmt.Errorf("Error looking up certificates observing Ingress: %s/%s", ingress.Namespace, ingress.Name))
 		return
 	}
 	for _, crt := range crts {
 		key, err := keyFunc(crt)
 		if err != nil {
-			runtime.HandleError(err)
+			utilruntime.HandleError(err)
 			continue
 		}
 		c.queue.Add(key)
@@ -217,7 +220,7 @@ func (c *Controller) worker(stopCh <-chan struct{}) {
 func (c *Controller) processNextWorkItem(ctx context.Context, key string) error {
 	namespace, name, err := cache.SplitMetaNamespaceKey(key)
 	if err != nil {
-		runtime.HandleError(fmt.Errorf("invalid resource key: %s", key))
+		utilruntime.HandleError(fmt.Errorf("invalid resource key: %s", key))
 		return nil
 	}
 
@@ -226,7 +229,7 @@ func (c *Controller) processNextWorkItem(ctx context.Context, key string) error 
 	if err != nil {
 		if k8sErrors.IsNotFound(err) {
 			c.scheduledWorkQueue.Forget(key)
-			runtime.HandleError(fmt.Errorf("certificate '%s' in work queue no longer exists", key))
+			utilruntime.HandleError(fmt.Errorf("certificate '%s' in work queue no longer exists", key))
 			return nil
 		}
 
@@ -268,8 +271,18 @@ func init() {
 			ctx.SharedInformerFactory.InformerFor(
 				corev1.NamespaceAll,
 				metav1.GroupVersionKind{Group: certmanager.GroupName, Version: "v1alpha1", Kind: "ClusterIssuer"},
-				cminformers.NewClusterIssuerInformer(
-					ctx.CMClient,
+				cache.NewSharedIndexInformer(
+					&cache.ListWatch{
+						ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
+							options.IncludeUninitialized = true
+							return ctx.CMClient.CertmanagerV1alpha1().ClusterIssuers().List(options)
+						},
+						WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
+							options.IncludeUninitialized = true
+							return ctx.CMClient.CertmanagerV1alpha1().ClusterIssuers().Watch(options)
+						},
+					},
+					&v1alpha1.ClusterIssuer{},
 					time.Second*30,
 					cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc},
 				),

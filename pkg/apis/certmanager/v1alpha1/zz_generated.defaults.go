@@ -28,5 +28,35 @@ import (
 // Public to allow building arbitrary schemes.
 // All generated defaulters are covering - they call all nested defaulters.
 func RegisterDefaults(scheme *runtime.Scheme) error {
+	scheme.AddTypeDefaultingFunc(&ClusterIssuer{}, func(obj interface{}) { SetObjectDefaults_ClusterIssuer(obj.(*ClusterIssuer)) })
+	scheme.AddTypeDefaultingFunc(&ClusterIssuerList{}, func(obj interface{}) { SetObjectDefaults_ClusterIssuerList(obj.(*ClusterIssuerList)) })
+	scheme.AddTypeDefaultingFunc(&Issuer{}, func(obj interface{}) { SetObjectDefaults_Issuer(obj.(*Issuer)) })
+	scheme.AddTypeDefaultingFunc(&IssuerList{}, func(obj interface{}) { SetObjectDefaults_IssuerList(obj.(*IssuerList)) })
 	return nil
+}
+
+func SetObjectDefaults_ClusterIssuer(in *ClusterIssuer) {
+	if in.Spec.IssuerConfig.ACME != nil {
+		SetDefaults_ACMEIssuer(in.Spec.IssuerConfig.ACME)
+	}
+}
+
+func SetObjectDefaults_ClusterIssuerList(in *ClusterIssuerList) {
+	for i := range in.Items {
+		a := &in.Items[i]
+		SetObjectDefaults_ClusterIssuer(a)
+	}
+}
+
+func SetObjectDefaults_Issuer(in *Issuer) {
+	if in.Spec.IssuerConfig.ACME != nil {
+		SetDefaults_ACMEIssuer(in.Spec.IssuerConfig.ACME)
+	}
+}
+
+func SetObjectDefaults_IssuerList(in *IssuerList) {
+	for i := range in.Items {
+		a := &in.Items[i]
+		SetObjectDefaults_Issuer(a)
+	}
 }
