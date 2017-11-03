@@ -45,7 +45,7 @@ const (
 func init() {
 	issuer.Register(ControllerName, func(issuer v1alpha1.GenericIssuer, ctx *issuer.Context) (issuer.Interface, error) {
 		issuerResourcesNamespace := issuer.GetObjectMeta().Namespace
-		if issuer.GetObjectKind().GroupVersionKind().Kind == v1alpha1.ClusterIssuerKind {
+		if issuerResourcesNamespace == "" {
 			issuerResourcesNamespace = ctx.ClusterResourceNamespace
 		}
 		return NewCA(

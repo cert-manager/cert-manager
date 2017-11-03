@@ -115,7 +115,7 @@ func (a *Acme) solverFor(challengeType string) (solver, error) {
 func init() {
 	issuer.Register(issuer.IssuerACME, func(i v1alpha1.GenericIssuer, ctx *issuer.Context) (issuer.Interface, error) {
 		issuerResourcesNamespace := i.GetObjectMeta().Namespace
-		if i.GetObjectKind().GroupVersionKind().Kind == v1alpha1.ClusterIssuerKind {
+		if issuerResourcesNamespace == "" {
 			issuerResourcesNamespace = ctx.ClusterResourceNamespace
 		}
 		return New(

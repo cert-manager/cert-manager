@@ -39,7 +39,7 @@ var _ = framework.CertManagerDescribe("CA ClusterIssuer", func() {
 		f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Delete(secretName, nil)
 	})
 
-	It("should generate a signing keypair", func() {
+	It("should validate a signing keypair", func() {
 		By("Creating an Issuer")
 		_, err := f.CertManagerClientSet.CertmanagerV1alpha1().ClusterIssuers().Create(util.NewCertManagerCAClusterIssuer(issuerName, secretName))
 		Expect(err).NotTo(HaveOccurred())

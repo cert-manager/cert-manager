@@ -114,6 +114,12 @@ func buildControllerContext(opts *options.ControllerOptions) (*controller.Contex
 	eventBroadcaster.StartRecordingToSink(&corev1.EventSinkImpl{Interface: cl.CoreV1().Events("")})
 	recorder := eventBroadcaster.NewRecorder(scheme.Scheme, v1.EventSource{Component: controllerAgentName})
 
+	// We only create SharedInformerFactories for the --namespace specified to
+	// watch. If this namespace is blank (i.e. the default, watch all
+	// namespaces) then the factories will watch all namespaces.
+	// If it is specified, all operations relating to ClusterIssuer resources
+	// should be disabled and thus we don't need to also create factories for
+	// the --cluster-resource-namespace.
 	sharedInformerFactory := informers.NewFilteredSharedInformerFactory(intcl, time.Second*30, opts.Namespace, nil)
 	kubeSharedInformerFactory := kubeinformers.NewFilteredSharedInformerFactory(cl, time.Second*30, opts.Namespace, nil)
 	return &controller.Context{
