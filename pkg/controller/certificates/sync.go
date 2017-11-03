@@ -224,6 +224,7 @@ func (c *Controller) issue(ctx context.Context, issuer issuer.Interface, crt *v1
 			Name:      crt.Spec.SecretName,
 			Namespace: crt.Namespace,
 		},
+		Type: api.SecretTypeTLS,
 		Data: map[string][]byte{
 			api.TLSCertKey:       cert,
 			api.TLSPrivateKeyKey: key,
@@ -279,6 +280,7 @@ func (c *Controller) renew(ctx context.Context, issuer issuer.Interface, crt *v1
 			Name:      crt.Spec.SecretName,
 			Namespace: crt.Namespace,
 		},
+		Type: api.SecretTypeTLS,
 		Data: map[string][]byte{
 			api.TLSCertKey:       cert,
 			api.TLSPrivateKeyKey: key,
