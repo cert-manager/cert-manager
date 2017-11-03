@@ -111,8 +111,14 @@ func (c *Controller) Sync(ctx context.Context, crt *v1alpha1.Certificate) (err e
 	defer c.scheduleRenewal(crt)
 
 	crtCopy := crt.DeepCopy()
-	expectedCN := pki.CommonNameForCertificate(crtCopy)
-	expectedDNSNames := pki.DNSNamesForCertificate(crtCopy)
+	expectedCN, err := pki.CommonNameForCertificate(crtCopy)
+	if err != nil {
+		return err
+	}
+	expectedDNSNames, err := pki.DNSNamesForCertificate(crtCopy)
+	if err != nil {
+		return err
+	}
 
 	// if the certificate was not found, or the certificate data is invalid, we
 	// should issue a new certificate.
