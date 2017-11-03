@@ -1,4 +1,4 @@
-go_import_path: github.com/jetstack-experimental/cert-manager
+go_import_path: github.com/jetstack/cert-manager
 
 jobs:
   include:

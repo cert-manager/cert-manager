@@ -19,7 +19,7 @@ limitations under the License.
 package v1
 
 import (
-	internalinterfaces "github.com/jetstack-experimental/cert-manager/third_party/k8s.io/client-go/informers/internalinterfaces"
+	internalinterfaces "github.com/jetstack/cert-manager/third_party/k8s.io/client-go/informers/internalinterfaces"
 )
 
 // Interface provides access to all the informers in this group version.

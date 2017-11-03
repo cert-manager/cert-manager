@@ -17,9 +17,9 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	"github.com/jetstack-experimental/cert-manager/pkg/apis/certmanager/v1alpha1"
-	"github.com/jetstack-experimental/cert-manager/test/e2e/framework"
-	"github.com/jetstack-experimental/cert-manager/test/util"
+	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	"github.com/jetstack/cert-manager/test/e2e/framework"
+	"github.com/jetstack/cert-manager/test/util"
 )
 
 var _ = framework.CertManagerDescribe("CA ClusterIssuer", func() {

@@ -1,8 +1,8 @@
-ACCOUNT=jetstackexperimental
+ACCOUNT=jetstack
 APP_NAME=cert-manager
-REGISTRY=docker.io
+REGISTRY=quay.io
 
-PACKAGE_NAME=github.com/jetstack-experimental/cert-manager
+PACKAGE_NAME=github.com/jetstack/cert-manager
 GO_VERSION=1.8
 
 GOOS := linux
@@ -60,7 +60,7 @@ build_%: depend version
 	CGO_ENABLED=0 GOOS=$(GOOS) GOARCH=$(GOARCH) go build \
 		-a -tags netgo \
 		-o ${BUILD_DIR}/${APP_NAME}-$*-$(GOOS)-$(GOARCH) \
-		-ldflags "-X github.com/jetstack-experimental/cert-manager/pkg/util.AppGitState=${GIT_STATE} -X github.com/jetstack-experimental/cert-manager/pkg/util.AppGitCommit=${GIT_COMMIT} -X github.com/jetstack-experimental/cert-manager/pkg/util.AppVersion=${APP_VERSION}" \
+		-ldflags "-X github.com/jetstack/cert-manager/pkg/util.AppGitState=${GIT_STATE} -X github.com/jetstack/cert-manager/pkg/util.AppGitCommit=${GIT_COMMIT} -X github.com/jetstack/cert-manager/pkg/util.AppVersion=${APP_VERSION}" \
 		./cmd/$*
 
 go_fmt:

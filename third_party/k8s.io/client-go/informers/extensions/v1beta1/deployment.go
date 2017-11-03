@@ -19,7 +19,7 @@ limitations under the License.
 package v1beta1
 
 import (
-	internalinterfaces "github.com/jetstack-experimental/cert-manager/third_party/k8s.io/client-go/informers/internalinterfaces"
+	internalinterfaces "github.com/jetstack/cert-manager/third_party/k8s.io/client-go/informers/internalinterfaces"
 	extensions_v1beta1 "k8s.io/api/extensions/v1beta1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"

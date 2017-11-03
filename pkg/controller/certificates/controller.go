@@ -19,15 +19,15 @@ import (
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
 
-	clientset "github.com/jetstack-experimental/cert-manager/pkg/client/clientset/versioned"
-	cminformers "github.com/jetstack-experimental/cert-manager/pkg/client/informers/externalversions/certmanager/v1alpha1"
-	cmlisters "github.com/jetstack-experimental/cert-manager/pkg/client/listers/certmanager/v1alpha1"
-	controllerpkg "github.com/jetstack-experimental/cert-manager/pkg/controller"
-	"github.com/jetstack-experimental/cert-manager/pkg/issuer"
-	"github.com/jetstack-experimental/cert-manager/pkg/scheduler"
-	"github.com/jetstack-experimental/cert-manager/pkg/util"
-	coreinformers "github.com/jetstack-experimental/cert-manager/third_party/k8s.io/client-go/informers/core/v1"
-	extinformers "github.com/jetstack-experimental/cert-manager/third_party/k8s.io/client-go/informers/extensions/v1beta1"
+	clientset "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
+	cminformers "github.com/jetstack/cert-manager/pkg/client/informers/externalversions/certmanager/v1alpha1"
+	cmlisters "github.com/jetstack/cert-manager/pkg/client/listers/certmanager/v1alpha1"
+	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
+	"github.com/jetstack/cert-manager/pkg/issuer"
+	"github.com/jetstack/cert-manager/pkg/scheduler"
+	"github.com/jetstack/cert-manager/pkg/util"
+	coreinformers "github.com/jetstack/cert-manager/third_party/k8s.io/client-go/informers/core/v1"
+	extinformers "github.com/jetstack/cert-manager/third_party/k8s.io/client-go/informers/extensions/v1beta1"
 )
 
 type Controller struct {

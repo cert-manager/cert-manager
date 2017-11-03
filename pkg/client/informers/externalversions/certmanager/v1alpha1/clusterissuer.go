@@ -19,10 +19,10 @@ limitations under the License.
 package v1alpha1
 
 import (
-	certmanager_v1alpha1 "github.com/jetstack-experimental/cert-manager/pkg/apis/certmanager/v1alpha1"
-	versioned "github.com/jetstack-experimental/cert-manager/pkg/client/clientset/versioned"
-	internalinterfaces "github.com/jetstack-experimental/cert-manager/pkg/client/informers/externalversions/internalinterfaces"
-	v1alpha1 "github.com/jetstack-experimental/cert-manager/pkg/client/listers/certmanager/v1alpha1"
+	certmanager_v1alpha1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	versioned "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
+	internalinterfaces "github.com/jetstack/cert-manager/pkg/client/informers/externalversions/internalinterfaces"
+	v1alpha1 "github.com/jetstack/cert-manager/pkg/client/listers/certmanager/v1alpha1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	watch "k8s.io/apimachinery/pkg/watch"

@@ -1,0 +1,18 @@
+apiVersion: certmanager.k8s.io/v1alpha1
+kind: Certificate
+metadata:
+  name: acme-http-cert-2
+  namespace: "default"
+spec:
+  acme:
+    config:
+    - http01:
+        ingressClass: nginx
+      domains:
+      - acme-http-2.k8s.school
+      - acme-cn-2.k8s.school
+  commonName: acme-http-2.k8s.school
+  issuerRef:
+    kind: ClusterIssuer
+    name: letsencrypt-staging
+  secretName: acme-http-k8s-school-2

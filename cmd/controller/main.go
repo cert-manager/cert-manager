@@ -21,8 +21,8 @@ import (
 
 	"github.com/golang/glog"
 
-	_ "github.com/jetstack-experimental/cert-manager/pkg/issuer/acme"
-	"github.com/jetstack-experimental/cert-manager/pkg/logs"
+	_ "github.com/jetstack/cert-manager/pkg/issuer/acme"
+	"github.com/jetstack/cert-manager/pkg/logs"
 )
 
 func main() {
