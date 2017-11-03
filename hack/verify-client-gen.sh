@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright 2015 The Kubernetes Authors.
+# Copyright 2017 The Kubernetes Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,14 +14,35 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# This script verifies that the generated code for the client matches
-# what would be generated currently. It will error out and print the
-# first difference found.
-
 set -o errexit
 set -o nounset
 set -o pipefail
 
-REPO_ROOT=$(dirname "${BASH_SOURCE}")/..
+SCRIPT_ROOT=$(dirname "${BASH_SOURCE}")/..
 
-"${REPO_ROOT}/hack/update-client-gen.sh" --verify-only
+DIFFROOT="${SCRIPT_ROOT}/pkg"
+TMP_DIFFROOT="${SCRIPT_ROOT}/_tmp/pkg"
+_tmp="${SCRIPT_ROOT}/_tmp"
+
+cleanup() {
+  rm -rf "${_tmp}"
+}
+trap "cleanup" EXIT SIGINT
+
+cleanup
+
+mkdir -p "${TMP_DIFFROOT}"
+cp -a "${DIFFROOT}"/* "${TMP_DIFFROOT}"
+
+"${SCRIPT_ROOT}/hack/update-client-gen.sh"
+echo "diffing ${DIFFROOT} against freshly generated codegen"
+ret=0
+diff -Naupr "${DIFFROOT}" "${TMP_DIFFROOT}" || ret=$?
+cp -a "${TMP_DIFFROOT}"/* "${DIFFROOT}"
+if [[ $ret -eq 0 ]]
+then
+  echo "${DIFFROOT} up to date."
+else
+  echo "${DIFFROOT} is out of date. Please run hack/update-client-gen.sh"
+  exit 1
+fi
