@@ -1,66 +1,11 @@
-
-# Gopkg.toml example
-#
-# Refer to https://github.com/golang/dep/blob/master/docs/Gopkg.toml.md
-# for detailed Gopkg.toml documentation.
-#
-# required = ["github.com/user/thing/cmd/thing"]
-# ignored = ["github.com/user/project/pkgX", "bitbucket.org/user/project/pkgA/pkgY"]
-#
-# [[constraint]]
-#   name = "github.com/user/project"
-#   version = "1.0.0"
-#
-# [[constraint]]
-#   name = "github.com/user/project2"
-#   branch = "dev"
-#   source = "github.com/myfork/project2"
-#
-# [[override]]
-#  name = "github.com/x/y"
-#  version = "2.4.0"
-
-
 [[constraint]]
-  branch = "master"
-  name = "github.com/golang/glog"
-
-[[constraint]]
-  branch = "master"
-  name = "github.com/juju/ratelimit"
-
-[[constraint]]
-  name = "github.com/stretchr/testify"
-  version = "1.1.4"
-
-[[constraint]]
-  name = "github.com/xenolf/lego"
-  version = "0.4.0"
-
-[[constraint]]
-  branch = "master"
-  name = "golang.org/x/crypto"
-
-[[constraint]]
-  branch = "master"
-  name = "golang.org/x/net"
-
-[[constraint]]
-  branch = "master"
-  name = "golang.org/x/oauth2"
-
-[[constraint]]
-  branch = "master"
-  name = "google.golang.org/api"
-
-[[constraint]]
-  branch = "master"
   name = "k8s.io/api"
+  branch = "release-1.8"
 
 [[constraint]]
-  branch = "master"
   name = "k8s.io/apimachinery"
+  branch = "release-1.8"
 
 [[constraint]]
   name = "k8s.io/client-go"
-  branch = "master"
+  branch = "release-5.0"

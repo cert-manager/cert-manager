@@ -15,6 +15,10 @@ be exported in other repos. The issue is tracked
 [here](https://github.com/kubernetes/kubernetes/issues/48209#issuecomment-314537745).
 During the transition, you'll have to copy the helper functions to your projects. 
 
+# v4.0.0
+
+No significant changes since v4.0.0-beta.0.
+
 # v4.0.0-beta.0
 
 **New features:**
