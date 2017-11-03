@@ -11,7 +11,7 @@ import (
 	"k8s.io/client-go/tools/record"
 
 	"github.com/jetstack-experimental/cert-manager/pkg/apis/certmanager/v1alpha1"
-	"github.com/jetstack-experimental/cert-manager/pkg/client/clientset"
+	clientset "github.com/jetstack-experimental/cert-manager/pkg/client/clientset/versioned"
 	"github.com/jetstack-experimental/cert-manager/pkg/issuer"
 )
 

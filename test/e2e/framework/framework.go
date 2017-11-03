@@ -22,7 +22,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	clientset "github.com/jetstack-experimental/cert-manager/pkg/client/clientset"
+	clientset "github.com/jetstack-experimental/cert-manager/pkg/client/clientset/versioned"
 	"github.com/jetstack-experimental/cert-manager/test/util"
 )
 

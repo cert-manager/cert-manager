@@ -1,3 +1,12 @@
+required = [
+  "k8s.io/code-generator/cmd/client-gen",
+  "k8s.io/code-generator/cmd/conversion-gen",
+  "k8s.io/code-generator/cmd/deepcopy-gen",
+  "k8s.io/code-generator/cmd/defaulter-gen",
+  "k8s.io/code-generator/cmd/informer-gen",
+  "k8s.io/code-generator/cmd/lister-gen",
+]
+
 [[constraint]]
   name = "k8s.io/api"
   branch = "release-1.8"
@@ -9,3 +18,14 @@
 [[constraint]]
   name = "k8s.io/client-go"
   branch = "release-5.0"
+
+[[constraint]]
+  name = "k8s.io/code-generator"
+  branch = "release-1.8"
+
+# gengo needs to be manually pinned to the version listed in code-generators
+# Gopkg.toml, because the k8s project does not produce Gopkg.toml files & dep
+# does not parse the Godeps.json file to determine revisions to use.
+[[override]]
+  name = "k8s.io/gengo"
+  revision = "9e661e9308f078838e266cca1c673922088c0ea4"

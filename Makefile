@@ -34,16 +34,7 @@ endif
 
 all: verify test build
 
-.get_deps:
-	@echo "Grabbing dependencies..."
-	@go get -d -u k8s.io/kubernetes/ || true
-	@go get -d github.com/kubernetes/repo-infra || true
-	# Once k8s.io/kube-gen is live, we should be able to remove this dependency
-	# on k8s.io/kubernetes. https://github.com/kubernetes/kubernetes/pull/49114
-	cd ${GOPATH}/src/k8s.io/kubernetes; git checkout e0225de330e032215da37c288dbd9539806fc211;
-	@touch $@
-
-.hack_verify: .generate_exes
+.hack_verify:
 	@echo Running repo-infra verify scripts
 	@echo Running href checker:
 	@${HACK_DIR}/verify-links.sh
@@ -133,21 +124,7 @@ endif
 	echo $(VERSION) > VERSION
 	find examples -name '*.yaml' -type f -exec sed -i 's/kube-lego:[0-9\.]*$$/kube-lego:$(VERSION)/g' {} \;
 
-# This section contains the code generation stuff
-#################################################
-.generate_exes: .get_deps \
-				$(BINDIR)/defaulter-gen \
-                $(BINDIR)/deepcopy-gen \
-                $(BINDIR)/conversion-gen \
-                $(BINDIR)/client-gen \
-                $(BINDIR)/lister-gen \
-                $(BINDIR)/informer-gen
-	touch $@
-
-$(BINDIR)/%:
-	go build -o $@ k8s.io/kubernetes/staging/src/k8s.io/code-generator/cmd/$*
-
 # Regenerate all files if the gen exes changed or any "types.go" files changed
-.generate_files: .generate_exes $(TYPES_FILES)
+.generate_files:
 	# generate all pkg/client contents
 	$(HACK_DIR)/update-client-gen.sh

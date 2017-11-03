@@ -14,7 +14,7 @@ import (
 
 	"crypto/x509"
 	"github.com/jetstack-experimental/cert-manager/pkg/apis/certmanager/v1alpha1"
-	clientset "github.com/jetstack-experimental/cert-manager/pkg/client/clientset/typed/certmanager/v1alpha1"
+	clientset "github.com/jetstack-experimental/cert-manager/pkg/client/clientset/versioned/typed/certmanager/v1alpha1"
 	"github.com/jetstack-experimental/cert-manager/pkg/util"
 )
 
