@@ -14,3 +14,13 @@ ${CODEGEN_PKG}/generate-groups.sh "deepcopy,defaulter,client,informer,lister" \
   certmanager:v1alpha1 \
   --output-base "${GOPATH}/src/" \
   --go-header-file ${SCRIPT_ROOT}/hack/boilerplate.go.txt
+
+${GOPATH}/bin/informer-gen \
+           --output-base "${GOPATH}/src/" \
+           --input-dirs "k8s.io/api/core/v1" \
+           --input-dirs "k8s.io/api/extensions/v1beta1" \
+           --versioned-clientset-package "k8s.io/client-go/kubernetes" \
+           --listers-package "k8s.io/client-go/listers" \
+           --output-package "github.com/jetstack-experimental/cert-manager/third_party/k8s.io/client-go/informers" \
+           --go-header-file ${SCRIPT_ROOT}/hack/boilerplate.go.txt \
+           --single-directory
