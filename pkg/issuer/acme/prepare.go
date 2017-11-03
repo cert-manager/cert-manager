@@ -119,7 +119,7 @@ func (a *Acme) Prepare(ctx context.Context, crt *v1alpha1.Certificate) error {
 	return nil
 }
 
-func keyForChallenge(cl *acme.Client, challenge *acme.Challenge) (string, error) {
+func keyForChallenge(cl client, challenge *acme.Challenge) (string, error) {
 	var err error
 	switch challenge.Type {
 	case "http-01":
@@ -132,14 +132,14 @@ func keyForChallenge(cl *acme.Client, challenge *acme.Challenge) (string, error)
 	return "", err
 }
 
-func (a *Acme) authorize(ctx context.Context, cl *acme.Client, crt *v1alpha1.Certificate, auth authResponse) (*acme.Authorization, error) {
+func (a *Acme) authorize(ctx context.Context, cl client, crt *v1alpha1.Certificate, auth authResponse) (*acme.Authorization, error) {
 	glog.V(4).Infof("picking challenge type for domain %q", auth.domain)
 	challengeType, err := a.pickChallengeType(auth.domain, auth.auth, crt.Spec.ACME.Config)
 	if err != nil {
 		return nil, fmt.Errorf("error picking challenge type to use for domain '%s': %s", auth.domain, err.Error())
 	}
 	glog.V(4).Infof("using challenge type %q for domain %q", challengeType, auth.domain)
-	challenge, err := challengeForAuthorization(cl, auth.auth, challengeType)
+	challenge, err := challengeForAuthorization(auth.auth, challengeType)
 	if err != nil {
 		return nil, fmt.Errorf("error getting challenge for domain '%s': %s", auth.domain, err.Error())
 	}
@@ -191,7 +191,7 @@ func (a *Acme) authorize(ctx context.Context, cl *acme.Client, crt *v1alpha1.Cer
 	return authorization, nil
 }
 
-func checkAuthorization(ctx context.Context, cl *acme.Client, uri string) (bool, error) {
+func checkAuthorization(ctx context.Context, cl client, uri string) (bool, error) {
 	a, err := cl.GetAuthorization(ctx, uri)
 
 	if err != nil {
@@ -227,7 +227,7 @@ Outer:
 	return found
 }
 
-func (a *Acme) authorizationsToObtain(ctx context.Context, cl *acme.Client, crt *v1alpha1.Certificate) ([]string, error) {
+func (a *Acme) authorizationsToObtain(ctx context.Context, cl client, crt *v1alpha1.Certificate) ([]string, error) {
 	authMap := authorizationsMap(crt.Status.ACMEStatus().Authorizations)
 	expectedCN := pki.CommonNameForCertificate(crt)
 	expectedDNSNames := pki.DNSNamesForCertificate(crt)
@@ -273,7 +273,7 @@ func (a authResponses) Error() error {
 	return nil
 }
 
-func getAuthorizations(ctx context.Context, cl *acme.Client, domains ...string) ([]authResponse, error) {
+func getAuthorizations(ctx context.Context, cl client, domains ...string) ([]authResponse, error) {
 	respCh := make(chan authResponse)
 	defer close(respCh)
 	for _, d := range domains {
@@ -314,7 +314,7 @@ func (a *Acme) pickChallengeType(domain string, auth *acme.Authorization, cfg []
 	return "", fmt.Errorf("no configured and supported challenge type found")
 }
 
-func challengeForAuthorization(cl *acme.Client, auth *acme.Authorization, challengeType string) (*acme.Challenge, error) {
+func challengeForAuthorization(auth *acme.Authorization, challengeType string) (*acme.Challenge, error) {
 	for _, challenge := range auth.Challenges {
 		if challenge.Type != challengeType {
 			continue

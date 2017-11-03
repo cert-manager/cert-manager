@@ -75,7 +75,7 @@ func New(issuer v1alpha1.GenericIssuer,
 	}, nil
 }
 
-func (a *Acme) acmeClient() (*acme.Client, error) {
+func (a *Acme) acmeClient() (client, error) {
 	secretName, secretKey := a.acmeAccountPrivateKeyMeta()
 	glog.V(4).Infof("getting private key (%s->%s) for acme issuer %s/%s", secretName, secretKey, a.issuerResourcesNamespace, a.issuer.GetObjectMeta().Name)
 	accountPrivKey, err := kube.SecretTLSKeyRef(a.secretsLister, a.issuerResourcesNamespace, secretName, secretKey)
