@@ -38,19 +38,34 @@ type IssuerInformer interface {
 }
 
 type issuerInformer struct {
-	factory internalinterfaces.SharedInformerFactory
+	factory          internalinterfaces.SharedInformerFactory
+	tweakListOptions internalinterfaces.TweakListOptionsFunc
+	namespace        string
 }
 
 // NewIssuerInformer constructs a new informer for Issuer type.
 // Always prefer using an informer factory to get a shared informer instead of getting an independent
 // one. This reduces memory footprint and number of connections to the server.
 func NewIssuerInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers) cache.SharedIndexInformer {
+	return NewFilteredIssuerInformer(client, namespace, resyncPeriod, indexers, nil)
+}
+
+// NewFilteredIssuerInformer constructs a new informer for Issuer type.
+// Always prefer using an informer factory to get a shared informer instead of getting an independent
+// one. This reduces memory footprint and number of connections to the server.
+func NewFilteredIssuerInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers, tweakListOptions internalinterfaces.TweakListOptionsFunc) cache.SharedIndexInformer {
 	return cache.NewSharedIndexInformer(
 		&cache.ListWatch{
 			ListFunc: func(options v1.ListOptions) (runtime.Object, error) {
+				if tweakListOptions != nil {
+					tweakListOptions(&options)
+				}
 				return client.CertmanagerV1alpha1().Issuers(namespace).List(options)
 			},
 			WatchFunc: func(options v1.ListOptions) (watch.Interface, error) {
+				if tweakListOptions != nil {
+					tweakListOptions(&options)
+				}
 				return client.CertmanagerV1alpha1().Issuers(namespace).Watch(options)
 			},
 		},
@@ -60,12 +75,12 @@ func NewIssuerInformer(client versioned.Interface, namespace string, resyncPerio
 	)
 }
 
-func defaultIssuerInformer(client versioned.Interface, resyncPeriod time.Duration) cache.SharedIndexInformer {
-	return NewIssuerInformer(client, v1.NamespaceAll, resyncPeriod, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc})
+func (f *issuerInformer) defaultInformer(client versioned.Interface, resyncPeriod time.Duration) cache.SharedIndexInformer {
+	return NewFilteredIssuerInformer(client, f.namespace, resyncPeriod, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc}, f.tweakListOptions)
 }
 
 func (f *issuerInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.InformerFor(&certmanager_v1alpha1.Issuer{}, defaultIssuerInformer)
+	return f.factory.InformerFor(&certmanager_v1alpha1.Issuer{}, f.defaultInformer)
 }
 
 func (f *issuerInformer) Lister() v1alpha1.IssuerLister {

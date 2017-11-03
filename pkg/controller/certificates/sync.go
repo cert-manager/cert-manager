@@ -150,6 +150,9 @@ func (c *Controller) getGenericIssuer(crt *v1alpha1.Certificate) (v1alpha1.Gener
 	case "", v1alpha1.IssuerKind:
 		return c.issuerLister.Issuers(crt.Namespace).Get(crt.Spec.IssuerRef.Name)
 	case v1alpha1.ClusterIssuerKind:
+		if c.clusterIssuerLister == nil {
+			return nil, fmt.Errorf("cannot get ClusterIssuer for %q as cert-manager is scoped to a single namespace", crt.Name)
+		}
 		return c.clusterIssuerLister.Get(crt.Spec.IssuerRef.Name)
 	default:
 		return nil, fmt.Errorf(`invalid value %q for certificate issuer kind. Must be empty, %q or %q`, crt.Spec.IssuerRef.Kind, v1alpha1.IssuerKind, v1alpha1.ClusterIssuerKind)

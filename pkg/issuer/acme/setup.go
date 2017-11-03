@@ -35,10 +35,9 @@ const (
 // Setup will verify an existing ACME registration, or create one if not
 // already registered.
 func (a *Acme) Setup(ctx context.Context) error {
-	glog.V(4).Infof("%s: getting acme account private key '%s/%s'", a.issuer.GetObjectMeta().Name, a.resourceNamespace, a.issuer.GetSpec().ACME.PrivateKey.Name)
 	cl, err := a.acmeClient()
 	if k8sErrors.IsNotFound(err) || errors.IsInvalidData(err) {
-		glog.V(4).Infof("%s: generating acme account private key '%s/%s'", a.issuer.GetObjectMeta().Name, a.resourceNamespace, a.issuer.GetSpec().ACME.PrivateKey.Name)
+		glog.V(4).Infof("%s: generating acme account private key %q", a.issuer.GetObjectMeta().Name, a.issuer.GetSpec().ACME.PrivateKey.Name)
 		accountPrivKey, err := a.createAccountPrivateKey()
 		if err != nil {
 			s := messageAccountRegistrationFailed + err.Error()
@@ -118,7 +117,7 @@ func (a *Acme) createAccountPrivateKey() (*rsa.PrivateKey, error) {
 	_, err = kube.EnsureSecret(a.client, &v1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      secretName,
-			Namespace: a.resourceNamespace,
+			Namespace: a.issuerResourcesNamespace,
 		},
 		Data: map[string][]byte{
 			secretKey: pki.EncodePKCS1PrivateKey(accountPrivKey),

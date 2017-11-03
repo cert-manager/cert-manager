@@ -9,23 +9,21 @@ import (
 	"github.com/golang/glog"
 	corev1 "k8s.io/api/core/v1"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
-	coreinformers "k8s.io/client-go/informers/core/v1"
 	"k8s.io/client-go/kubernetes"
 	corelisters "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
 
-	"github.com/jetstack-experimental/cert-manager/pkg/apis/certmanager"
 	clientset "github.com/jetstack-experimental/cert-manager/pkg/client/clientset/versioned"
 	cminformers "github.com/jetstack-experimental/cert-manager/pkg/client/informers/externalversions/certmanager/v1alpha1"
 	cmlisters "github.com/jetstack-experimental/cert-manager/pkg/client/listers/certmanager/v1alpha1"
 	controllerpkg "github.com/jetstack-experimental/cert-manager/pkg/controller"
 	"github.com/jetstack-experimental/cert-manager/pkg/issuer"
 	"github.com/jetstack-experimental/cert-manager/pkg/util"
+	coreinformers "github.com/jetstack-experimental/cert-manager/third_party/k8s.io/client-go/informers/core/v1"
 )
 
 type Controller struct {
@@ -48,8 +46,8 @@ type Controller struct {
 }
 
 func New(
-	issuersInformer cache.SharedIndexInformer,
-	secretsInformer cache.SharedIndexInformer,
+	issuersInformer cminformers.IssuerInformer,
+	secretsInformer coreinformers.SecretInformer,
 	cl kubernetes.Interface,
 	cmClient clientset.Interface,
 	issuerFactory issuer.Factory,
@@ -59,13 +57,13 @@ func New(
 	ctrl.syncHandler = ctrl.processNextWorkItem
 	ctrl.queue = workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "issuers")
 
-	issuersInformer.AddEventHandler(&controllerpkg.QueuingEventHandler{Queue: ctrl.queue})
-	ctrl.issuerInformerSynced = issuersInformer.HasSynced
-	ctrl.issuerLister = cmlisters.NewIssuerLister(issuersInformer.GetIndexer())
+	issuersInformer.Informer().AddEventHandler(&controllerpkg.QueuingEventHandler{Queue: ctrl.queue})
+	ctrl.issuerInformerSynced = issuersInformer.Informer().HasSynced
+	ctrl.issuerLister = issuersInformer.Lister()
 
-	secretsInformer.AddEventHandler(&controllerpkg.BlockingEventHandler{WorkFunc: ctrl.secretDeleted})
-	ctrl.secretInformerSynced = secretsInformer.HasSynced
-	ctrl.secretLister = corelisters.NewSecretLister(secretsInformer.GetIndexer())
+	secretsInformer.Informer().AddEventHandler(&controllerpkg.BlockingEventHandler{WorkFunc: ctrl.secretDeleted})
+	ctrl.secretInformerSynced = secretsInformer.Informer().HasSynced
+	ctrl.secretLister = secretsInformer.Lister()
 
 	return ctrl
 }
@@ -184,26 +182,8 @@ const (
 func init() {
 	controllerpkg.Register(ControllerName, func(ctx *controllerpkg.Context) controllerpkg.Interface {
 		return New(
-			ctx.SharedInformerFactory.InformerFor(
-				ctx.Namespace,
-				metav1.GroupVersionKind{Group: certmanager.GroupName, Version: "v1alpha1", Kind: "Issuer"},
-				cminformers.NewIssuerInformer(
-					ctx.CMClient,
-					ctx.Namespace,
-					time.Second*30,
-					cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc},
-				),
-			),
-			ctx.SharedInformerFactory.InformerFor(
-				ctx.Namespace,
-				metav1.GroupVersionKind{Version: "v1", Kind: "Secret"},
-				coreinformers.NewSecretInformer(
-					ctx.Client,
-					ctx.Namespace,
-					time.Second*30,
-					cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc},
-				),
-			),
+			ctx.SharedInformerFactory.Certmanager().V1alpha1().Issuers(),
+			ctx.KubeSharedInformerFactory.Core().V1().Secrets(),
 			ctx.Client,
 			ctx.CMClient,
 			ctx.IssuerFactory,

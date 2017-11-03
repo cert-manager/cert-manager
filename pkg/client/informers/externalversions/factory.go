@@ -22,6 +22,7 @@ import (
 	versioned "github.com/jetstack-experimental/cert-manager/pkg/client/clientset/versioned"
 	certmanager "github.com/jetstack-experimental/cert-manager/pkg/client/informers/externalversions/certmanager"
 	internalinterfaces "github.com/jetstack-experimental/cert-manager/pkg/client/informers/externalversions/internalinterfaces"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	cache "k8s.io/client-go/tools/cache"
@@ -31,9 +32,11 @@ import (
 )
 
 type sharedInformerFactory struct {
-	client        versioned.Interface
-	lock          sync.Mutex
-	defaultResync time.Duration
+	client           versioned.Interface
+	namespace        string
+	tweakListOptions internalinterfaces.TweakListOptionsFunc
+	lock             sync.Mutex
+	defaultResync    time.Duration
 
 	informers map[reflect.Type]cache.SharedIndexInformer
 	// startedInformers is used for tracking which informers have been started.
@@ -43,8 +46,15 @@ type sharedInformerFactory struct {
 
 // NewSharedInformerFactory constructs a new instance of sharedInformerFactory
 func NewSharedInformerFactory(client versioned.Interface, defaultResync time.Duration) SharedInformerFactory {
+	return NewFilteredSharedInformerFactory(client, defaultResync, v1.NamespaceAll, nil)
+}
+
+// NewFilteredSharedInformerFactory constructs a new instance of sharedInformerFactory
+func NewFilteredSharedInformerFactory(client versioned.Interface, defaultResync time.Duration, namespace string, tweakListOptions internalinterfaces.TweakListOptionsFunc) SharedInformerFactory {
 	return &sharedInformerFactory{
 		client:           client,
+		namespace:        namespace,
+		tweakListOptions: tweakListOptions,
 		defaultResync:    defaultResync,
 		informers:        make(map[reflect.Type]cache.SharedIndexInformer),
 		startedInformers: make(map[reflect.Type]bool),
@@ -114,5 +124,5 @@ type SharedInformerFactory interface {
 }
 
 func (f *sharedInformerFactory) Certmanager() certmanager.Interface {
-	return certmanager.New(f)
+	return certmanager.New(f, f.namespace, f.tweakListOptions)
 }

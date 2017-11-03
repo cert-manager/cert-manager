@@ -33,25 +33,27 @@ type Interface interface {
 }
 
 type version struct {
-	internalinterfaces.SharedInformerFactory
+	factory          internalinterfaces.SharedInformerFactory
+	namespace        string
+	tweakListOptions internalinterfaces.TweakListOptionsFunc
 }
 
 // New returns a new Interface.
-func New(f internalinterfaces.SharedInformerFactory) Interface {
-	return &version{f}
+func New(f internalinterfaces.SharedInformerFactory, namespace string, tweakListOptions internalinterfaces.TweakListOptionsFunc) Interface {
+	return &version{factory: f, namespace: namespace, tweakListOptions: tweakListOptions}
 }
 
 // Certificates returns a CertificateInformer.
 func (v *version) Certificates() CertificateInformer {
-	return &certificateInformer{factory: v.SharedInformerFactory}
+	return &certificateInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }
 
 // ClusterIssuers returns a ClusterIssuerInformer.
 func (v *version) ClusterIssuers() ClusterIssuerInformer {
-	return &clusterIssuerInformer{factory: v.SharedInformerFactory}
+	return &clusterIssuerInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
 }
 
 // Issuers returns a IssuerInformer.
 func (v *version) Issuers() IssuerInformer {
-	return &issuerInformer{factory: v.SharedInformerFactory}
+	return &issuerInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }
