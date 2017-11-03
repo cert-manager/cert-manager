@@ -199,6 +199,7 @@ type InternalTypeMeta struct {
 	CreationTimestamp metav1.Time             `json:"creationTimestamp,omitempty"`
 	SelfLink          string                  `json:"selfLink,omitempty"`
 	ResourceVersion   string                  `json:"resourceVersion,omitempty"`
+	Continue          string                  `json:"next,omitempty"`
 	APIVersion        string                  `json:"apiVersion,omitempty"`
 	Labels            map[string]string       `json:"labels,omitempty"`
 	Annotations       map[string]string       `json:"annotations,omitempty"`
@@ -210,12 +211,14 @@ func (m *InternalTypeMeta) GetResourceVersion() string   { return m.ResourceVers
 func (m *InternalTypeMeta) SetResourceVersion(rv string) { m.ResourceVersion = rv }
 func (m *InternalTypeMeta) GetSelfLink() string          { return m.SelfLink }
 func (m *InternalTypeMeta) SetSelfLink(link string)      { m.SelfLink = link }
+func (m *InternalTypeMeta) GetContinue() string          { return m.Continue }
+func (m *InternalTypeMeta) SetContinue(c string)         { m.Continue = c }
 
 type MyAPIObject struct {
 	TypeMeta InternalTypeMeta `json:",inline"`
 }
 
-func (obj *MyAPIObject) GetListMeta() metav1.List { return &obj.TypeMeta }
+func (obj *MyAPIObject) GetListMeta() metav1.ListInterface { return &obj.TypeMeta }
 
 func (obj *MyAPIObject) GetObjectKind() schema.ObjectKind { return obj }
 func (obj *MyAPIObject) SetGroupVersionKind(gvk schema.GroupVersionKind) {

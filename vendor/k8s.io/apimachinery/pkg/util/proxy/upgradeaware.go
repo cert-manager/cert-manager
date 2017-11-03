@@ -17,9 +17,11 @@ limitations under the License.
 package proxy
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net"
 	"net/http"
 	"net/http/httputil"
@@ -37,20 +39,44 @@ import (
 	"github.com/mxk/go-flowrate/flowrate"
 )
 
+// UpgradeRequestRoundTripper provides an additional method to decorate a request
+// with any authentication or other protocol level information prior to performing
+// an upgrade on the server. Any response will be handled by the intercepting
+// proxy.
+type UpgradeRequestRoundTripper interface {
+	http.RoundTripper
+	// WrapRequest takes a valid HTTP request and returns a suitably altered version
+	// of request with any HTTP level values required to complete the request half of
+	// an upgrade on the server. It does not get a chance to see the response and
+	// should bypass any request side logic that expects to see the response.
+	WrapRequest(*http.Request) (*http.Request, error)
+}
+
 // UpgradeAwareHandler is a handler for proxy requests that may require an upgrade
 type UpgradeAwareHandler struct {
+	// UpgradeRequired will reject non-upgrade connections if true.
 	UpgradeRequired bool
-	Location        *url.URL
+	// Location is the location of the upstream proxy. It is used as the location to Dial on the upstream server
+	// for upgrade requests unless UseRequestLocationOnUpgrade is true.
+	Location *url.URL
 	// Transport provides an optional round tripper to use to proxy. If nil, the default proxy transport is used
 	Transport http.RoundTripper
+	// UpgradeTransport, if specified, will be used as the backend transport when upgrade requests are provided.
+	// This allows clients to disable HTTP/2.
+	UpgradeTransport UpgradeRequestRoundTripper
 	// WrapTransport indicates whether the provided Transport should be wrapped with default proxy transport behavior (URL rewriting, X-Forwarded-* header setting)
 	WrapTransport bool
 	// InterceptRedirects determines whether the proxy should sniff backend responses for redirects,
 	// following them as necessary.
 	InterceptRedirects bool
-	FlushInterval      time.Duration
-	MaxBytesPerSec     int64
-	Responder          ErrorResponder
+	// UseRequestLocation will use the incoming request URL when talking to the backend server.
+	UseRequestLocation bool
+	// FlushInterval controls how often the standard HTTP proxy will flush content from the upstream.
+	FlushInterval time.Duration
+	// MaxBytesPerSec controls the maximum rate for an upstream connection. No rate is imposed if the value is zero.
+	MaxBytesPerSec int64
+	// Responder is passed errors that occur while setting up proxying.
+	Responder ErrorResponder
 }
 
 const defaultFlushInterval = 200 * time.Millisecond
@@ -58,14 +84,95 @@ const defaultFlushInterval = 200 * time.Millisecond
 // ErrorResponder abstracts error reporting to the proxy handler to remove the need to hardcode a particular
 // error format.
 type ErrorResponder interface {
+	Error(w http.ResponseWriter, req *http.Request, err error)
+}
+
+// SimpleErrorResponder is the legacy implementation of ErrorResponder for callers that only
+// service a single request/response per proxy.
+type SimpleErrorResponder interface {
 	Error(err error)
+}
+
+func NewErrorResponder(r SimpleErrorResponder) ErrorResponder {
+	return simpleResponder{r}
+}
+
+type simpleResponder struct {
+	responder SimpleErrorResponder
+}
+
+func (r simpleResponder) Error(w http.ResponseWriter, req *http.Request, err error) {
+	r.responder.Error(err)
+}
+
+// upgradeRequestRoundTripper implements proxy.UpgradeRequestRoundTripper.
+type upgradeRequestRoundTripper struct {
+	http.RoundTripper
+	upgrader http.RoundTripper
+}
+
+var (
+	_ UpgradeRequestRoundTripper  = &upgradeRequestRoundTripper{}
+	_ utilnet.RoundTripperWrapper = &upgradeRequestRoundTripper{}
+)
+
+// WrappedRoundTripper returns the round tripper that a caller would use.
+func (rt *upgradeRequestRoundTripper) WrappedRoundTripper() http.RoundTripper {
+	return rt.RoundTripper
+}
+
+// WriteToRequest calls the nested upgrader and then copies the returned request
+// fields onto the passed request.
+func (rt *upgradeRequestRoundTripper) WrapRequest(req *http.Request) (*http.Request, error) {
+	resp, err := rt.upgrader.RoundTrip(req)
+	if err != nil {
+		return nil, err
+	}
+	return resp.Request, nil
+}
+
+// onewayRoundTripper captures the provided request - which is assumed to have
+// been modified by other round trippers - and then returns a fake response.
+type onewayRoundTripper struct{}
+
+// RoundTrip returns a simple 200 OK response that captures the provided request.
+func (onewayRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
+	return &http.Response{
+		Status:     "200 OK",
+		StatusCode: http.StatusOK,
+		Body:       ioutil.NopCloser(&bytes.Buffer{}),
+		Request:    req,
+	}, nil
+}
+
+// MirrorRequest is a round tripper that can be called to get back the calling request as
+// the core round tripper in a chain.
+var MirrorRequest http.RoundTripper = onewayRoundTripper{}
+
+// NewUpgradeRequestRoundTripper takes two round trippers - one for the underlying TCP connection, and
+// one that is able to write headers to an HTTP request. The request rt is used to set the request headers
+// and that is written to the underlying connection rt.
+func NewUpgradeRequestRoundTripper(connection, request http.RoundTripper) UpgradeRequestRoundTripper {
+	return &upgradeRequestRoundTripper{
+		RoundTripper: connection,
+		upgrader:     request,
+	}
+}
+
+// normalizeLocation returns the result of parsing the full URL, with scheme set to http if missing
+func normalizeLocation(location *url.URL) *url.URL {
+	normalized, _ := url.Parse(location.String())
+	if len(normalized.Scheme) == 0 {
+		normalized.Scheme = "http"
+	}
+	return normalized
 }
 
 // NewUpgradeAwareHandler creates a new proxy handler with a default flush interval. Responder is required for returning
 // errors to the caller.
 func NewUpgradeAwareHandler(location *url.URL, transport http.RoundTripper, wrapTransport, upgradeRequired bool, responder ErrorResponder) *UpgradeAwareHandler {
 	return &UpgradeAwareHandler{
-		Location:        location,
+		Location:        normalizeLocation(location),
 		Transport:       transport,
 		WrapTransport:   wrapTransport,
 		UpgradeRequired: upgradeRequired,
@@ -76,14 +183,11 @@ func NewUpgradeAwareHandler(location *url.URL, transport http.RoundTripper, wrap
 
 // ServeHTTP handles the proxy request
 func (h *UpgradeAwareHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	if len(h.Location.Scheme) == 0 {
-		h.Location.Scheme = "http"
-	}
 	if h.tryUpgrade(w, req) {
 		return
 	}
 	if h.UpgradeRequired {
-		h.Responder.Error(errors.NewBadRequest("Upgrade request required"))
+		h.Responder.Error(w, req, errors.NewBadRequest("Upgrade request required"))
 		return
 	}
 
@@ -117,7 +221,9 @@ func (h *UpgradeAwareHandler) ServeHTTP(w http.ResponseWriter, req *http.Request
 	// WithContext creates a shallow clone of the request with the new context.
 	newReq := req.WithContext(context.Background())
 	newReq.Header = utilnet.CloneHeader(req.Header)
-	newReq.URL = &loc
+	if !h.UseRequestLocation {
+		newReq.URL = &loc
+	}
 
 	proxy := httputil.NewSingleHostReverseProxy(&url.URL{Scheme: h.Location.Scheme, Host: h.Location.Host})
 	proxy.Transport = h.Transport
@@ -128,6 +234,7 @@ func (h *UpgradeAwareHandler) ServeHTTP(w http.ResponseWriter, req *http.Request
 // tryUpgrade returns true if the request was handled.
 func (h *UpgradeAwareHandler) tryUpgrade(w http.ResponseWriter, req *http.Request) bool {
 	if !httpstream.IsUpgradeRequest(req) {
+		glog.V(6).Infof("Request was not an upgrade")
 		return false
 	}
 
@@ -137,18 +244,28 @@ func (h *UpgradeAwareHandler) tryUpgrade(w http.ResponseWriter, req *http.Reques
 		err         error
 	)
 
+	location := *h.Location
+	if h.UseRequestLocation {
+		location = *req.URL
+		location.Scheme = h.Location.Scheme
+		location.Host = h.Location.Host
+	}
+
 	clone := utilnet.CloneRequest(req)
 	// Only append X-Forwarded-For in the upgrade path, since httputil.NewSingleHostReverseProxy
 	// handles this in the non-upgrade path.
 	utilnet.AppendForwardedForHeader(clone)
 	if h.InterceptRedirects {
-		backendConn, rawResponse, err = utilnet.ConnectWithRedirects(req.Method, h.Location, clone.Header, req.Body, h)
+		glog.V(6).Infof("Connecting to backend proxy (intercepting redirects) %s\n  Headers: %v", &location, clone.Header)
+		backendConn, rawResponse, err = utilnet.ConnectWithRedirects(req.Method, &location, clone.Header, req.Body, utilnet.DialerFunc(h.DialForUpgrade))
 	} else {
-		clone.URL = h.Location
-		backendConn, err = h.Dial(clone)
+		glog.V(6).Infof("Connecting to backend proxy (direct dial) %s\n  Headers: %v", &location, clone.Header)
+		clone.URL = &location
+		backendConn, err = h.DialForUpgrade(clone)
 	}
 	if err != nil {
-		h.Responder.Error(err)
+		glog.V(6).Infof("Proxy connection error: %v", err)
+		h.Responder.Error(w, req, err)
 		return true
 	}
 	defer backendConn.Close()
@@ -157,18 +274,21 @@ func (h *UpgradeAwareHandler) tryUpgrade(w http.ResponseWriter, req *http.Reques
 	// hijacking should be the last step in the upgrade.
 	requestHijacker, ok := w.(http.Hijacker)
 	if !ok {
-		h.Responder.Error(fmt.Errorf("request connection cannot be hijacked: %T", w))
+		glog.V(6).Infof("Unable to hijack response writer: %T", w)
+		h.Responder.Error(w, req, fmt.Errorf("request connection cannot be hijacked: %T", w))
 		return true
 	}
 	requestHijackedConn, _, err := requestHijacker.Hijack()
 	if err != nil {
-		h.Responder.Error(fmt.Errorf("error hijacking request connection: %v", err))
+		glog.V(6).Infof("Unable to hijack response: %v", err)
+		h.Responder.Error(w, req, fmt.Errorf("error hijacking connection: %v", err))
 		return true
 	}
 	defer requestHijackedConn.Close()
 
 	// Forward raw response bytes back to client.
 	if len(rawResponse) > 0 {
+		glog.V(6).Infof("Writing %d bytes to hijacked connection", len(rawResponse))
 		if _, err = requestHijackedConn.Write(rawResponse); err != nil {
 			utilruntime.HandleError(fmt.Errorf("Error proxying response from backend to client: %v", err))
 		}
@@ -210,9 +330,24 @@ func (h *UpgradeAwareHandler) tryUpgrade(w http.ResponseWriter, req *http.Reques
 	return true
 }
 
-// Dial dials the backend at req.URL and writes req to it.
 func (h *UpgradeAwareHandler) Dial(req *http.Request) (net.Conn, error) {
-	conn, err := DialURL(req.URL, h.Transport)
+	return dial(req, h.Transport)
+}
+
+func (h *UpgradeAwareHandler) DialForUpgrade(req *http.Request) (net.Conn, error) {
+	if h.UpgradeTransport == nil {
+		return dial(req, h.Transport)
+	}
+	updatedReq, err := h.UpgradeTransport.WrapRequest(req)
+	if err != nil {
+		return nil, err
+	}
+	return dial(updatedReq, h.UpgradeTransport)
+}
+
+// dial dials the backend at req.URL and writes req to it.
+func dial(req *http.Request, transport http.RoundTripper) (net.Conn, error) {
+	conn, err := DialURL(req.URL, transport)
 	if err != nil {
 		return nil, fmt.Errorf("error dialing backend: %v", err)
 	}
