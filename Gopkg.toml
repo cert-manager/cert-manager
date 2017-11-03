@@ -19,9 +19,11 @@ required = [
   name = "k8s.io/client-go"
   branch = "release-5.0"
 
+# Use munnerz/code-generator fork that includes the filter changes
 [[constraint]]
   name = "k8s.io/code-generator"
   branch = "release-1.8"
+  source = "https://github.com/munnerz/code-generator.git"
 
 # gengo needs to be manually pinned to the version listed in code-generators
 # Gopkg.toml, because the k8s project does not produce Gopkg.toml files & dep
