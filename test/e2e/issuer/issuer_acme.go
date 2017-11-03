@@ -30,139 +30,152 @@ import (
 var _ = framework.CertManagerDescribe("ACME Issuer", func() {
 	f := framework.NewDefaultFramework("create-acme-issuer")
 
-	issuerName := "test-acme-issuer"
+	var (
+		issuerName     = "test-acme-issuer"
+		acmeURL        = "http://127.0.0.1:4000/directory"
+		acmeEmail      = "test@example.com"
+		acmePrivateKey = "test-acme-private-key"
+		issuer         *v1alpha1.Issuer
+	)
 
 	BeforeEach(func() {
 		By("Verifying there is no existing ACME private key")
-		_, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Get(testingACMEPrivateKey, metav1.GetOptions{})
-		Expect(err).To(MatchError(apierrors.NewNotFound(corev1.Resource("secrets"), testingACMEPrivateKey)))
+		_, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Get(acmePrivateKey, metav1.GetOptions{})
+		Expect(err).To(MatchError(apierrors.NewNotFound(corev1.Resource("secrets"), acmePrivateKey)))
+	})
+
+	JustBeforeEach(func() {
+		By("Creating an Issuer")
+		var err error
+		issuer, err = f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Create(util.NewCertManagerACMEIssuer(issuerName, acmeURL, acmeEmail, acmePrivateKey))
+		Expect(err).NotTo(HaveOccurred())
 	})
 
 	AfterEach(func() {
 		By("Cleaning up")
 		f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Delete(issuerName, nil)
-		f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Delete(testingACMEPrivateKey, nil)
+		f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Delete(acmePrivateKey, nil)
 	})
 
-	It("should register ACME account", func() {
-		By("Creating an Issuer")
-		_, err := f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Create(util.NewCertManagerACMEIssuer(issuerName, testingACMEURL, testingACMEEmail, testingACMEPrivateKey))
-		Expect(err).NotTo(HaveOccurred())
+	Describe("when the ACME details are valid", func() {
+		It("should register an ACME account", func() {
+			By("waiting for Issuer to become Ready")
+			err := util.WaitForIssuerCondition(f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name),
+				issuerName,
+				v1alpha1.IssuerCondition{
+					Type:   v1alpha1.IssuerConditionReady,
+					Status: v1alpha1.ConditionTrue,
+				})
+			Expect(err).NotTo(HaveOccurred())
 
-		By("Waiting for Issuer to become Ready")
-		err = util.WaitForIssuerCondition(f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name),
-			issuerName,
-			v1alpha1.IssuerCondition{
-				Type:   v1alpha1.IssuerConditionReady,
-				Status: v1alpha1.ConditionTrue,
-			})
-		Expect(err).NotTo(HaveOccurred())
+			By("verifying the ACME account URI is set")
+			err = util.WaitForIssuerStatusFunc(f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name),
+				issuerName,
+				func(i *v1alpha1.Issuer) (bool, error) {
+					if i.GetStatus().ACMEStatus().URI == "" {
+						return false, nil
+					}
+					return true, nil
+				})
+			Expect(err).NotTo(HaveOccurred())
 
-		By("Verifying the ACME account URI is set")
-		err = util.WaitForIssuerStatusFunc(f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name),
-			issuerName,
-			func(i *v1alpha1.Issuer) (bool, error) {
-				if i.GetStatus().ACMEStatus().URI == "" {
-					return false, nil
-				}
-				return true, nil
-			})
-		Expect(err).NotTo(HaveOccurred())
-
-		By("Verifying ACME account private key exists")
-		secret, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Get(testingACMEPrivateKey, metav1.GetOptions{})
-		Expect(err).NotTo(HaveOccurred())
-		if len(secret.Data) != 1 {
-			Fail("Expected 1 key in ACME account private key secret, but there was %d", len(secret.Data))
-		}
+			By("verifying ACME account private key exists")
+			secret, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Get(acmePrivateKey, metav1.GetOptions{})
+			Expect(err).NotTo(HaveOccurred())
+			if len(secret.Data) != 1 {
+				Fail("Expected 1 key in ACME account private key secret, but there was %d", len(secret.Data))
+			}
+		})
 	})
 
-	It("should recover a lost ACME account URI", func() {
+	Describe("when a private key that is registered with the ACME server already exists", func() {
+		var (
+			acmeRegistrationURI string
+		)
+		BeforeEach(func() {
+			By("Waiting for Issuer to become Ready")
+			err := util.WaitForIssuerCondition(f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name),
+				issuerName,
+				v1alpha1.IssuerCondition{
+					Type:   v1alpha1.IssuerConditionReady,
+					Status: v1alpha1.ConditionTrue,
+				})
+			Expect(err).NotTo(HaveOccurred())
 
-		By("Creating an Issuer")
-		_, err := f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Create(util.NewCertManagerACMEIssuer(issuerName, testingACMEURL, testingACMEEmail, testingACMEPrivateKey))
-		Expect(err).NotTo(HaveOccurred())
+			By("Verifying the ACME account URI is set")
+			err = util.WaitForIssuerStatusFunc(f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name),
+				issuerName,
+				func(i *v1alpha1.Issuer) (bool, error) {
+					if i.GetStatus().ACMEStatus().URI == "" {
+						return false, nil
+					}
+					acmeRegistrationURI = i.GetStatus().ACMEStatus().URI
+					return true, nil
+				})
+			Expect(err).NotTo(HaveOccurred())
 
-		By("Waiting for Issuer to become Ready")
-		err = util.WaitForIssuerCondition(f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name),
-			issuerName,
-			v1alpha1.IssuerCondition{
-				Type:   v1alpha1.IssuerConditionReady,
-				Status: v1alpha1.ConditionTrue,
-			})
-		Expect(err).NotTo(HaveOccurred())
+			By("Verifying ACME account private key exists")
+			secret, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Get(acmePrivateKey, metav1.GetOptions{})
+			Expect(err).NotTo(HaveOccurred())
 
-		By("Verifying the ACME account URI is set")
-		var finalURI string
-		err = util.WaitForIssuerStatusFunc(f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name),
-			issuerName,
-			func(i *v1alpha1.Issuer) (bool, error) {
-				if i.GetStatus().ACMEStatus().URI == "" {
-					return false, nil
-				}
-				finalURI = i.GetStatus().ACMEStatus().URI
-				return true, nil
-			})
-		Expect(err).NotTo(HaveOccurred())
+			if len(secret.Data) != 1 {
+				Fail("Expected 1 key in ACME account private key secret, but there was %d", len(secret.Data))
+			}
 
-		By("Verifying ACME account private key exists")
-		secret, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Get(testingACMEPrivateKey, metav1.GetOptions{})
-		Expect(err).NotTo(HaveOccurred())
+			By("Deleting the Issuer")
+			err = f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Delete(issuerName, &metav1.DeleteOptions{})
+			Expect(err).NotTo(HaveOccurred())
+		})
 
-		if len(secret.Data) != 1 {
-			Fail("Expected 1 key in ACME account private key secret, but there was %d", len(secret.Data))
-		}
+		It("should recover the lost ACME account URI", func() {
+			By("Create an Issuer")
+			_, err := f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Create(util.NewCertManagerACMEIssuer(issuerName, acmeURL, acmeEmail, acmePrivateKey))
+			Expect(err).NotTo(HaveOccurred())
 
-		By("Deleting the Issuer")
-		err = f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Delete(issuerName, &metav1.DeleteOptions{})
-		Expect(err).NotTo(HaveOccurred())
+			By("Waiting for Issuer to become Ready")
+			err = util.WaitForIssuerCondition(f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name),
+				issuerName,
+				v1alpha1.IssuerCondition{
+					Type:   v1alpha1.IssuerConditionReady,
+					Status: v1alpha1.ConditionTrue,
+				})
+			Expect(err).NotTo(HaveOccurred())
 
-		By("Recreating the Issuer")
-		_, err = f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Create(util.NewCertManagerACMEIssuer(issuerName, testingACMEURL, testingACMEEmail, testingACMEPrivateKey))
-		Expect(err).NotTo(HaveOccurred())
-
-		By("Waiting for Issuer to become Ready")
-		err = util.WaitForIssuerCondition(f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name),
-			issuerName,
-			v1alpha1.IssuerCondition{
-				Type:   v1alpha1.IssuerConditionReady,
-				Status: v1alpha1.ConditionTrue,
-			})
-		Expect(err).NotTo(HaveOccurred())
-
-		By("Verifying the ACME account URI has been recovered correctly")
-		err = util.WaitForIssuerStatusFunc(f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name),
-			issuerName,
-			func(i *v1alpha1.Issuer) (bool, error) {
-				uri := i.GetStatus().ACMEStatus().URI
-				if uri == "" {
-					return false, nil
-				}
-				if uri != finalURI {
-					return false, fmt.Errorf("expected account URI to equal %q, but was %q", finalURI, uri)
-				}
-				return true, nil
-			})
-		Expect(err).NotTo(HaveOccurred())
+			By("Verifying the ACME account URI has been recovered correctly")
+			err = util.WaitForIssuerStatusFunc(f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name),
+				issuerName,
+				func(i *v1alpha1.Issuer) (bool, error) {
+					uri := i.GetStatus().ACMEStatus().URI
+					if uri == "" {
+						return false, nil
+					}
+					if uri != acmeRegistrationURI {
+						return false, fmt.Errorf("expected account URI to equal %q, but was %q", acmeRegistrationURI, uri)
+					}
+					return true, nil
+				})
+			Expect(err).NotTo(HaveOccurred())
+		})
 	})
 
-	It("should fail to register an ACME account", func() {
-		By("Creating an Issuer with an invalid server")
-		_, err := f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Create(util.NewCertManagerACMEIssuer(issuerName, invalidACMEURL, testingACMEEmail, testingACMEPrivateKey))
-		Expect(err).NotTo(HaveOccurred())
+	Describe("when the ACME details are invalid", func() {
+		BeforeEach(func() {
+			acmeURL = "http://not-a-real-acme-url.com"
+		})
 
-		By("Waiting for Issuer to become non-Ready")
-		err = util.WaitForIssuerCondition(f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name),
-			issuerName,
-			v1alpha1.IssuerCondition{
-				Type:   v1alpha1.IssuerConditionReady,
-				Status: v1alpha1.ConditionFalse,
-			})
-		Expect(err).NotTo(HaveOccurred())
+		It("should fail to register an ACME account", func() {
+			By("Creating an Issuer with an invalid server")
+			_, err := f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Create(util.NewCertManagerACMEIssuer(issuerName, acmeURL, acmeEmail, acmePrivateKey))
+			Expect(err).NotTo(HaveOccurred())
+
+			By("Waiting for Issuer to become non-Ready")
+			err = util.WaitForIssuerCondition(f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name),
+				issuerName,
+				v1alpha1.IssuerCondition{
+					Type:   v1alpha1.IssuerConditionReady,
+					Status: v1alpha1.ConditionFalse,
+				})
+			Expect(err).NotTo(HaveOccurred())
+		})
 	})
 })
-
-const testingACMEURL = "http://127.0.0.1:4000/directory"
-const invalidACMEURL = "http://not-a-real-acme-url.com"
-const testingACMEEmail = "test@example.com"
-const testingACMEPrivateKey = "test-acme-private-key"
