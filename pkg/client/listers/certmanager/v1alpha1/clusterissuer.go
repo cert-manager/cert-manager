@@ -1,5 +1,5 @@
 /*
-Copyright 2017 The Kubernetes Authors.
+Copyright 2017 Jetstack Ltd.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -21,7 +21,6 @@ package v1alpha1
 import (
 	v1alpha1 "github.com/jetstack-experimental/cert-manager/pkg/apis/certmanager/v1alpha1"
 	"k8s.io/apimachinery/pkg/api/errors"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/tools/cache"
 )
@@ -55,8 +54,7 @@ func (s *clusterIssuerLister) List(selector labels.Selector) (ret []*v1alpha1.Cl
 
 // Get retrieves the ClusterIssuer from the index for a given name.
 func (s *clusterIssuerLister) Get(name string) (*v1alpha1.ClusterIssuer, error) {
-	key := &v1alpha1.ClusterIssuer{ObjectMeta: v1.ObjectMeta{Name: name}}
-	obj, exists, err := s.indexer.Get(key)
+	obj, exists, err := s.indexer.GetByKey(name)
 	if err != nil {
 		return nil, err
 	}
