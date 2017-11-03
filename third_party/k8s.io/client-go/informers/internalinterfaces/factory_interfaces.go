@@ -19,14 +19,14 @@ limitations under the License.
 package internalinterfaces
 
 import (
-	versioned "github.com/jetstack-experimental/cert-manager/pkg/client/clientset/versioned"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
+	kubernetes "k8s.io/client-go/kubernetes"
 	cache "k8s.io/client-go/tools/cache"
 	time "time"
 )
 
-type NewInformerFunc func(versioned.Interface, time.Duration) cache.SharedIndexInformer
+type NewInformerFunc func(kubernetes.Interface, time.Duration) cache.SharedIndexInformer
 
 // SharedInformerFactory a small interface to allow for adding an informer without an import cycle
 type SharedInformerFactory interface {
