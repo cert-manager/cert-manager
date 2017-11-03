@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"sync"
+	"time"
 
 	"github.com/golang/glog"
 	"k8s.io/api/core/v1"
@@ -20,9 +21,11 @@ import (
 	"github.com/jetstack-experimental/cert-manager/cmd/controller/app/options"
 	clientset "github.com/jetstack-experimental/cert-manager/pkg/client/clientset/versioned"
 	intscheme "github.com/jetstack-experimental/cert-manager/pkg/client/clientset/versioned/scheme"
+	informers "github.com/jetstack-experimental/cert-manager/pkg/client/informers/externalversions"
 	"github.com/jetstack-experimental/cert-manager/pkg/controller"
+	"github.com/jetstack-experimental/cert-manager/pkg/controller/clusterissuers"
 	"github.com/jetstack-experimental/cert-manager/pkg/issuer"
-	"github.com/jetstack-experimental/cert-manager/pkg/util/kube"
+	kubeinformers "github.com/jetstack-experimental/cert-manager/third_party/k8s.io/client-go/informers"
 )
 
 const controllerAgentName = "cert-manager-controller"
@@ -38,6 +41,10 @@ func Run(opts *options.ControllerOptions, stopCh <-chan struct{}) {
 		var wg sync.WaitGroup
 		var controllers = make(map[string]controller.Interface)
 		for n, fn := range controller.Known() {
+			if ctx.Namespace != "" && n == clusterissuers.ControllerName {
+				glog.Infof("Skipping ClusterIssuer controller as cert-manager is scoped to a single namespace")
+				continue
+			}
 			controllers[n] = fn(ctx)
 		}
 		for n, fn := range controllers {
@@ -55,6 +62,7 @@ func Run(opts *options.ControllerOptions, stopCh <-chan struct{}) {
 		}
 		glog.V(4).Infof("Starting shared informer factory")
 		ctx.SharedInformerFactory.Start(stopCh)
+		ctx.KubeSharedInformerFactory.Start(stopCh)
 		wg.Wait()
 		glog.Fatalf("Control loops exited")
 	}
@@ -106,20 +114,23 @@ func buildControllerContext(opts *options.ControllerOptions) (*controller.Contex
 	eventBroadcaster.StartRecordingToSink(&corev1.EventSinkImpl{Interface: cl.CoreV1().Events("")})
 	recorder := eventBroadcaster.NewRecorder(scheme.Scheme, v1.EventSource{Component: controllerAgentName})
 
-	sharedInformerFactory := kube.NewSharedInformerFactory()
+	sharedInformerFactory := informers.NewFilteredSharedInformerFactory(intcl, time.Second*30, opts.Namespace, nil)
+	kubeSharedInformerFactory := kubeinformers.NewFilteredSharedInformerFactory(cl, time.Second*30, opts.Namespace, nil)
 	return &controller.Context{
-		Client:                cl,
-		CMClient:              intcl,
-		Recorder:              recorder,
-		SharedInformerFactory: sharedInformerFactory,
+		Client:                    cl,
+		CMClient:                  intcl,
+		Recorder:                  recorder,
+		KubeSharedInformerFactory: kubeSharedInformerFactory,
+		SharedInformerFactory:     sharedInformerFactory,
 		IssuerFactory: issuer.NewFactory(&issuer.Context{
-			Client:                   cl,
-			CMClient:                 intcl,
-			Recorder:                 recorder,
-			SharedInformerFactory:    sharedInformerFactory,
-			Namespace:                opts.Namespace,
-			ClusterResourceNamespace: opts.ClusterResourceNamespace,
-			ACMEHTTP01SolverImage:    opts.ACMEHTTP01SolverImage,
+			Client:                    cl,
+			CMClient:                  intcl,
+			Recorder:                  recorder,
+			KubeSharedInformerFactory: kubeSharedInformerFactory,
+			SharedInformerFactory:     sharedInformerFactory,
+			Namespace:                 opts.Namespace,
+			ClusterResourceNamespace:  opts.ClusterResourceNamespace,
+			ACMEHTTP01SolverImage:     opts.ACMEHTTP01SolverImage,
 		}),
 		Namespace:                opts.Namespace,
 		ClusterResourceNamespace: opts.ClusterResourceNamespace,

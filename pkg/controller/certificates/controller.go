@@ -10,11 +10,8 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	extv1beta1 "k8s.io/api/extensions/v1beta1"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
-	coreinformers "k8s.io/client-go/informers/core/v1"
-	extinformers "k8s.io/client-go/informers/extensions/v1beta1"
 	"k8s.io/client-go/kubernetes"
 	corelisters "k8s.io/client-go/listers/core/v1"
 	extlisters "k8s.io/client-go/listers/extensions/v1beta1"
@@ -22,7 +19,6 @@ import (
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
 
-	"github.com/jetstack-experimental/cert-manager/pkg/apis/certmanager"
 	clientset "github.com/jetstack-experimental/cert-manager/pkg/client/clientset/versioned"
 	cminformers "github.com/jetstack-experimental/cert-manager/pkg/client/informers/externalversions/certmanager/v1alpha1"
 	cmlisters "github.com/jetstack-experimental/cert-manager/pkg/client/listers/certmanager/v1alpha1"
@@ -30,6 +26,8 @@ import (
 	"github.com/jetstack-experimental/cert-manager/pkg/issuer"
 	"github.com/jetstack-experimental/cert-manager/pkg/scheduler"
 	"github.com/jetstack-experimental/cert-manager/pkg/util"
+	coreinformers "github.com/jetstack-experimental/cert-manager/third_party/k8s.io/client-go/informers/core/v1"
+	extinformers "github.com/jetstack-experimental/cert-manager/third_party/k8s.io/client-go/informers/extensions/v1beta1"
 )
 
 type Controller struct {
@@ -41,34 +39,26 @@ type Controller struct {
 	// To allow injection for testing.
 	syncHandler func(ctx context.Context, key string) error
 
-	issuerInformerSynced cache.InformerSynced
-	issuerLister         cmlisters.IssuerLister
-
-	clusterIssuerInformerSynced cache.InformerSynced
-	clusterIssuerLister         cmlisters.ClusterIssuerLister
-
-	certificateInformerSynced cache.InformerSynced
-	certificateLister         cmlisters.CertificateLister
-
-	secretInformerSynced cache.InformerSynced
-	secretLister         corelisters.SecretLister
-
-	ingressInformerSynced cache.InformerSynced
-	ingressLister         extlisters.IngressLister
+	issuerLister        cmlisters.IssuerLister
+	clusterIssuerLister cmlisters.ClusterIssuerLister
+	certificateLister   cmlisters.CertificateLister
+	secretLister        corelisters.SecretLister
+	ingressLister       extlisters.IngressLister
 
 	queue              workqueue.RateLimitingInterface
 	scheduledWorkQueue scheduler.ScheduledWorkQueue
 	workerWg           sync.WaitGroup
+	syncedFuncs        []cache.InformerSynced
 }
 
 // New returns a new Certificates controller. It sets up the informer handler
 // functions for all the types it watches.
 func New(
-	certificatesInformer cache.SharedIndexInformer,
-	issuersInformer cache.SharedIndexInformer,
-	clusterIssuersInformer cache.SharedIndexInformer,
-	secretsInformer cache.SharedIndexInformer,
-	ingressInformer cache.SharedIndexInformer,
+	certificatesInformer cminformers.CertificateInformer,
+	issuersInformer cminformers.IssuerInformer,
+	clusterIssuersInformer cminformers.ClusterIssuerInformer,
+	secretsInformer coreinformers.SecretInformer,
+	ingressInformer extinformers.IngressInformer,
 	client kubernetes.Interface,
 	cmClient clientset.Interface,
 	issuerFactory issuer.Factory,
@@ -82,23 +72,27 @@ func New(
 	// Certificate resources when they get near to expiry
 	ctrl.scheduledWorkQueue = scheduler.NewScheduledWorkQueue(ctrl.queue.Add)
 
-	certificatesInformer.AddEventHandler(&controllerpkg.QueuingEventHandler{Queue: ctrl.queue})
-	ctrl.certificateInformerSynced = certificatesInformer.HasSynced
-	ctrl.certificateLister = cmlisters.NewCertificateLister(certificatesInformer.GetIndexer())
+	certificatesInformer.Informer().AddEventHandler(&controllerpkg.QueuingEventHandler{Queue: ctrl.queue})
+	ctrl.certificateLister = certificatesInformer.Lister()
+	ctrl.syncedFuncs = append(ctrl.syncedFuncs, certificatesInformer.Informer().HasSynced)
 
-	ctrl.issuerInformerSynced = issuersInformer.HasSynced
-	ctrl.issuerLister = cmlisters.NewIssuerLister(issuersInformer.GetIndexer())
+	ctrl.issuerLister = issuersInformer.Lister()
+	ctrl.syncedFuncs = append(ctrl.syncedFuncs, issuersInformer.Informer().HasSynced)
 
-	ctrl.clusterIssuerInformerSynced = clusterIssuersInformer.HasSynced
-	ctrl.clusterIssuerLister = cmlisters.NewClusterIssuerLister(clusterIssuersInformer.GetIndexer())
+	// clusterIssuersInformer may be nil if cert-manager is scoped to a single
+	// namespace
+	if clusterIssuersInformer != nil {
+		ctrl.clusterIssuerLister = clusterIssuersInformer.Lister()
+		ctrl.syncedFuncs = append(ctrl.syncedFuncs, clusterIssuersInformer.Informer().HasSynced)
+	}
 
-	secretsInformer.AddEventHandler(&controllerpkg.BlockingEventHandler{WorkFunc: ctrl.secretDeleted})
-	ctrl.secretInformerSynced = secretsInformer.HasSynced
-	ctrl.secretLister = corelisters.NewSecretLister(secretsInformer.GetIndexer())
+	secretsInformer.Informer().AddEventHandler(&controllerpkg.BlockingEventHandler{WorkFunc: ctrl.secretDeleted})
+	ctrl.secretLister = secretsInformer.Lister()
+	ctrl.syncedFuncs = append(ctrl.syncedFuncs, secretsInformer.Informer().HasSynced)
 
-	ingressInformer.AddEventHandler(&controllerpkg.BlockingEventHandler{WorkFunc: ctrl.ingressDeleted})
-	ctrl.ingressInformerSynced = ingressInformer.HasSynced
-	ctrl.ingressLister = extlisters.NewIngressLister(ingressInformer.GetIndexer())
+	ingressInformer.Informer().AddEventHandler(&controllerpkg.BlockingEventHandler{WorkFunc: ctrl.ingressDeleted})
+	ctrl.ingressLister = ingressInformer.Lister()
+	ctrl.syncedFuncs = append(ctrl.syncedFuncs, ingressInformer.Informer().HasSynced)
 
 	return ctrl
 }
@@ -151,12 +145,7 @@ func (c *Controller) ingressDeleted(obj interface{}) {
 func (c *Controller) Run(workers int, stopCh <-chan struct{}) error {
 	glog.V(4).Infof("Starting %s control loop", ControllerName)
 	// wait for all the informer caches we depend to sync
-	if !cache.WaitForCacheSync(stopCh,
-		c.secretInformerSynced,
-		c.issuerInformerSynced,
-		c.clusterIssuerInformerSynced,
-		c.certificateInformerSynced,
-		c.ingressInformerSynced) {
+	if !cache.WaitForCacheSync(stopCh, c.syncedFuncs...) {
 		return fmt.Errorf("error waiting for informer caches to sync")
 	}
 
@@ -244,56 +233,16 @@ const (
 
 func init() {
 	controllerpkg.Register(ControllerName, func(ctx *controllerpkg.Context) controllerpkg.Interface {
+		var clusterIssuerInformer cminformers.ClusterIssuerInformer
+		if ctx.Namespace == "" {
+			clusterIssuerInformer = ctx.SharedInformerFactory.Certmanager().V1alpha1().ClusterIssuers()
+		}
 		return New(
-			ctx.SharedInformerFactory.InformerFor(
-				ctx.Namespace,
-				metav1.GroupVersionKind{Group: certmanager.GroupName, Version: "v1alpha1", Kind: "Certificate"},
-				cminformers.NewCertificateInformer(
-					ctx.CMClient,
-					ctx.Namespace,
-					time.Second*30,
-					cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc},
-				),
-			),
-			ctx.SharedInformerFactory.InformerFor(
-				ctx.Namespace,
-				metav1.GroupVersionKind{Group: certmanager.GroupName, Version: "v1alpha1", Kind: "Issuer"},
-				cminformers.NewIssuerInformer(
-					ctx.CMClient,
-					ctx.Namespace,
-					time.Second*30,
-					cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc},
-				),
-			),
-			ctx.SharedInformerFactory.InformerFor(
-				corev1.NamespaceAll,
-				metav1.GroupVersionKind{Group: certmanager.GroupName, Version: "v1alpha1", Kind: "ClusterIssuer"},
-				cminformers.NewClusterIssuerInformer(
-					ctx.CMClient,
-					time.Second*30,
-					cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc},
-				),
-			),
-			ctx.SharedInformerFactory.InformerFor(
-				ctx.Namespace,
-				metav1.GroupVersionKind{Version: "v1", Kind: "Secret"},
-				coreinformers.NewSecretInformer(
-					ctx.Client,
-					ctx.Namespace,
-					time.Second*30,
-					cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc},
-				),
-			),
-			ctx.SharedInformerFactory.InformerFor(
-				ctx.Namespace,
-				metav1.GroupVersionKind{Group: "extensions", Version: "v1beta1", Kind: "Ingress"},
-				extinformers.NewIngressInformer(
-					ctx.Client,
-					ctx.Namespace,
-					time.Second*30,
-					cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc},
-				),
-			),
+			ctx.SharedInformerFactory.Certmanager().V1alpha1().Certificates(),
+			ctx.SharedInformerFactory.Certmanager().V1alpha1().Issuers(),
+			clusterIssuerInformer,
+			ctx.KubeSharedInformerFactory.Core().V1().Secrets(),
+			ctx.KubeSharedInformerFactory.Extensions().V1beta1().Ingresses(),
 			ctx.Client,
 			ctx.CMClient,
 			ctx.IssuerFactory,

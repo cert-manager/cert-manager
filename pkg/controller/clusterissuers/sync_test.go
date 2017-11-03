@@ -1,4 +1,4 @@
-package issuers
+package clusterissuers
 
 import (
 	"reflect"
