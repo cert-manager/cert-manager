@@ -91,6 +91,15 @@ func (c *Controller) Sync(ctx context.Context, crt *v1alpha1.Certificate) (err e
 		return err
 	}
 
+	expectedCN, err := pki.CommonNameForCertificate(crt)
+	if err != nil {
+		return err
+	}
+	expectedDNSNames, err := pki.DNSNamesForCertificate(crt)
+	if err != nil {
+		return err
+	}
+
 	// grab existing certificate and validate private key
 	cert, err := kube.SecretTLSCert(c.secretLister, crt.Namespace, crt.Spec.SecretName)
 	if err != nil {
@@ -111,14 +120,6 @@ func (c *Controller) Sync(ctx context.Context, crt *v1alpha1.Certificate) (err e
 	defer c.scheduleRenewal(crt)
 
 	crtCopy := crt.DeepCopy()
-	expectedCN, err := pki.CommonNameForCertificate(crtCopy)
-	if err != nil {
-		return err
-	}
-	expectedDNSNames, err := pki.DNSNamesForCertificate(crtCopy)
-	if err != nil {
-		return err
-	}
 
 	// if the certificate was not found, or the certificate data is invalid, we
 	// should issue a new certificate.
