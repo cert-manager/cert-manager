@@ -19,7 +19,10 @@ sed -i 's/5002/80/' test/config/va.json
 # TODO: set ratelimits
 
 function start {
-    if ! docker-compose up; then
+    # Read the log from a file to stop docker-compose abusing the terminal
+    touch /tmp/boulder.log
+    tail -f /tmp/boulder.log &
+    if ! docker-compose up > /tmp/boulder.log 2>&1; then
         echo "Error running boulder"
         exit 1
     fi
