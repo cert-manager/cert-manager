@@ -213,25 +213,12 @@ func authorizationsMap(list []v1alpha1.ACMEDomainAuthorization) map[string]v1alp
 	return out
 }
 
-func removeDuplicates(in []string) []string {
-	var found []string
-Outer:
-	for _, i := range in {
-		for _, i2 := range found {
-			if i2 == i {
-				continue Outer
-			}
-		}
-		found = append(found, i)
-	}
-	return found
-}
-
 func (a *Acme) authorizationsToObtain(ctx context.Context, cl *acme.Client, crt *v1alpha1.Certificate) ([]string, error) {
 	authMap := authorizationsMap(crt.Status.ACMEStatus().Authorizations)
-	expectedCN := pki.CommonNameForCertificate(crt)
-	expectedDNSNames := pki.DNSNamesForCertificate(crt)
-	check := removeDuplicates(append(expectedDNSNames, expectedCN))
+	expectedDNSNames, err := pki.DNSNamesForCertificate(crt)
+	if err != nil {
+		return nil, err
+	}
 	toAuthorize := util.StringFilter(func(domain string) (bool, error) {
 		auth, ok := authMap[domain]
 		glog.Infof("Compare %q with %q", auth.Account, a.issuer.GetStatus().ACMEStatus().URI)
@@ -239,7 +226,7 @@ func (a *Acme) authorizationsToObtain(ctx context.Context, cl *acme.Client, crt 
 			return false, nil
 		}
 		return checkAuthorization(ctx, cl, auth.URI)
-	}, check...)
+	}, expectedDNSNames...)
 
 	domains := make([]string, len(toAuthorize))
 	for i, v := range toAuthorize {
