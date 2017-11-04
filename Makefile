@@ -68,7 +68,7 @@ go_fmt:
 	@if [ "$(FMT_OUTPUT)" != "0" ]; then echo "Please run go fmt"; exit 1; fi
 
 go_test:
-	go test -v $$(go list ./... | grep -v '/vendor/' | grep -v '/test/e2e' )
+	go test -v $$(go list ./... | grep -v '/vendor/' | grep -v '/test/e2e' | grep -v '/pkg/client' | grep -v '/third_party' )
 
 e2e_test:
 	go test -o e2e-tests -c ./test/e2e
