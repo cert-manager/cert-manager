@@ -13,5 +13,5 @@ spec:
     spec:
       containers:
       - name: cert-manager
-        image: quay.io/jetstack/cert-manager-controller:v0.2.0
+        image: quay.io/jetstack/cert-manager-controller:v0.2.1
         imagePullPolicy: Always
