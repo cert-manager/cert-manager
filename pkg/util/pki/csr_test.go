@@ -102,6 +102,18 @@ func TestDNSNamesForCertificate(t *testing.T) {
 			crtDNSNames:    []string{"dnsname1", "dnsname2"},
 			expectDNSNames: []string{"dnsname1", "dnsname2"},
 		},
+		{
+			name:           "certificate with dnsName[0] set to equal common name",
+			crtCN:          "cn",
+			crtDNSNames:    []string{"cn", "dnsname"},
+			expectDNSNames: []string{"cn", "dnsname"},
+		},
+		{
+			name:           "certificate with a dnsName equal to cn",
+			crtCN:          "cn",
+			crtDNSNames:    []string{"dnsname", "cn"},
+			expectDNSNames: []string{"cn", "dnsname"},
+		},
 	}
 	testFn := func(test testT) func(*testing.T) {
 		return func(t *testing.T) {

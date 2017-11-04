@@ -57,15 +57,15 @@ func StringFilter(fn FilterFn, in ...string) StringFilterWrapper {
 }
 
 func RemoveDuplicates(in []string) []string {
-	dedupMap := make(map[string]struct{})
+	var found []string
+Outer:
 	for _, i := range in {
-		dedupMap[i] = struct{}{}
+		for _, i2 := range found {
+			if i2 == i {
+				continue Outer
+			}
+		}
+		found = append(found, i)
 	}
-	out := make([]string, len(dedupMap))
-	i := 0
-	for s := range dedupMap {
-		out[i] = s
-		i++
-	}
-	return out
+	return found
 }
