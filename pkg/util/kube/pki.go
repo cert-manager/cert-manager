@@ -3,22 +3,30 @@ package kube
 import (
 	"crypto/rsa"
 	"crypto/x509"
+	"fmt"
+
+	api "k8s.io/api/core/v1"
+	corelisters "k8s.io/client-go/listers/core/v1"
 
 	"github.com/jetstack/cert-manager/pkg/util/errors"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
-	api "k8s.io/api/core/v1"
-	corelisters "k8s.io/client-go/listers/core/v1"
 )
 
 func GetKeyPair(secretLister corelisters.SecretLister, namespace, name string) (certBytes []byte, keyBytes []byte, err error) {
 	secret, err := secretLister.Secrets(namespace).Get(name)
-
 	if err != nil {
 		return nil, nil, err
 	}
 
-	certBytes = secret.Data[api.TLSCertKey]
-	keyBytes = secret.Data[api.TLSPrivateKeyKey]
+	var ok bool
+	certBytes, ok = secret.Data[api.TLSCertKey]
+	if !ok {
+		return nil, nil, fmt.Errorf("no data for %q in secret '%s/%s'", api.TLSCertKey, namespace, name)
+	}
+	keyBytes, ok = secret.Data[api.TLSPrivateKeyKey]
+	if !ok {
+		return nil, nil, fmt.Errorf("no data for %q in secret '%s/%s'", api.TLSCertKey, namespace, name)
+	}
 
 	return certBytes, keyBytes, err
 }
@@ -32,7 +40,10 @@ func SecretTLSKeyRef(secretLister corelisters.SecretLister, namespace, name, key
 		return nil, err
 	}
 
-	keyBytes := secret.Data[keyName]
+	keyBytes, ok := secret.Data[keyName]
+	if !ok {
+		return nil, fmt.Errorf("no data for %q in secret '%s/%s'", keyName, namespace, name)
+	}
 	key, err := pki.DecodePKCS1PrivateKeyBytes(keyBytes)
 	if err != nil {
 		return key, errors.NewInvalidData(err.Error())
@@ -51,7 +62,10 @@ func SecretTLSCert(secretLister corelisters.SecretLister, namespace, name string
 		return nil, err
 	}
 
-	certBytes := secret.Data[api.TLSCertKey]
+	certBytes, ok := secret.Data[api.TLSCertKey]
+	if !ok {
+		return nil, fmt.Errorf("no data for %q in secret '%s/%s'", api.TLSCertKey, namespace, name)
+	}
 	cert, err := pki.DecodeX509CertificateBytes(certBytes)
 	if err != nil {
 		return cert, errors.NewInvalidData(err.Error())
