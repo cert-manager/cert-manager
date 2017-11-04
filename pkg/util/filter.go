@@ -55,3 +55,17 @@ func StringFilter(fn FilterFn, in ...string) StringFilterWrapper {
 	}
 	return res
 }
+
+func RemoveDuplicates(in []string) []string {
+	var found []string
+Outer:
+	for _, i := range in {
+		for _, i2 := range found {
+			if i2 == i {
+				continue Outer
+			}
+		}
+		found = append(found, i)
+	}
+	return found
+}
