@@ -7,10 +7,9 @@ import (
 	"time"
 
 	"github.com/golang/glog"
+	"github.com/pkg/errors"
 	"k8s.io/client-go/kubernetes"
 	corev1listers "k8s.io/client-go/listers/core/v1"
-
-	"github.com/pkg/errors"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 
@@ -189,23 +188,25 @@ func (s *Solver) solverForIssuerProvider(providerName string) (solver, error) {
 			return nil, fmt.Errorf("error instantiating cloudflare challenge solver: %s", err.Error())
 		}
 	case providerConfig.Route53 != nil:
-		secretAccessKey := ""
-		if providerConfig.Route53.SecretAccessKey.Name != "" {
-			secretAccessKeySecret, err := s.secretLister.Secrets(s.resourceNamespace).Get(providerConfig.Route53.SecretAccessKey.Name)
-			if err != nil {
-				return nil, fmt.Errorf("error getting route53 secret access key: %s", err.Error())
-			}
-
-			secretAccessKeyBytes, ok := secretAccessKeySecret.Data[providerConfig.Route53.SecretAccessKey.Key]
-			if !ok {
-				return nil, fmt.Errorf("error getting route53 secret access key: key '%s' not found in secret", providerConfig.Route53.SecretAccessKey.Key)
-			}
-			secretAccessKey = string(secretAccessKeyBytes)
+		secretAccessKey, err := s.resolveSecretKeyRef(providerConfig.Route53.SecretAccessKeyRef)
+		if err != nil {
+			return nil, fmt.Errorf("error getting route53 secret access key: %s", err)
 		}
 
+		accessKey := providerConfig.Route53.AccessKeyID
+		if accessKey == "" {
+			accessKeyFromSecret, err := s.resolveSecretKeyRef(providerConfig.Route53.AccessKeyIDRef)
+			if err == errEmptyRef {
+				return nil, fmt.Errorf("no route53 access key provided: 'accessKeyID' or 'accessKeyIDRef' must be set")
+			}
+			if err != nil {
+				return nil, fmt.Errorf("error getting route53 access key from secret: %s", err)
+			}
+			accessKey = string(accessKeyFromSecret)
+		}
 		impl, err = s.dnsProviderConstructors.route53(
-			strings.TrimSpace(providerConfig.Route53.AccessKeyID),
-			strings.TrimSpace(secretAccessKey),
+			strings.TrimSpace(accessKey),
+			strings.TrimSpace(string(secretAccessKey)),
 			providerConfig.Route53.HostedZoneID,
 			providerConfig.Route53.Region,
 			s.ambientCredentials,
@@ -266,4 +267,21 @@ func (s *Solver) loadSecretData(selector *v1alpha1.SecretKeySelector) ([]byte, e
 	}
 
 	return nil, errors.Errorf("no key %q in secret %q", selector.Key, selector.Name)
+}
+
+var errEmptyRef = errors.New("secret key reference was empty")
+
+func (s *Solver) resolveSecretKeyRef(ref v1alpha1.SecretKeySelector) ([]byte, error) {
+	if ref.Name == "" {
+		return nil, errEmptyRef
+	}
+	key, err := s.secretLister.Secrets(s.resourceNamespace).Get(ref.Name)
+	if err != nil {
+		return nil, fmt.Errorf("error getting secret %q: %s", ref.Name, err)
+	}
+	secretBytes, ok := key.Data[ref.Key]
+	if !ok {
+		return nil, fmt.Errorf("error getting secret key ref %q: not found in secret %q", ref.Name, ref.Key)
+	}
+	return secretBytes, nil
 }
