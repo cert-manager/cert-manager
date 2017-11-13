@@ -100,4 +100,4 @@ Once our certificate has been obtained, cert-manager will periodically check its
   [4]: ../api-types/certificate/
   [5]: ../api-types/issuer/
   [6]: https://en.wikipedia.org/wiki/Subject_Alternative_Name
-  [7]: cluster-issuers.md]
+  [7]: cluster-issuers.md
