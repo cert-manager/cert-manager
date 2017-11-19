@@ -1,4 +1,4 @@
-image: golang:1.8-alpine
+image: golang:1.9-alpine
 
 variables:
   DOCKER_DRIVER: overlay
