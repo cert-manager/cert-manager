@@ -262,11 +262,11 @@ func WaitForServiceEndpoints(c kubernetes.Interface, svc *v1.Service) error {
 }
 
 func waitTimeoutForPodRunning(c kubernetes.Interface, podName, namespace string, timeout time.Duration) error {
-	return wait.PollImmediate(Poll, defaultTimeout, podRunning(c, podName, namespace))
+	return wait.PollImmediate(Poll, timeout, podRunning(c, podName, namespace))
 }
 
 func waitTimeoutForServiceEndpoints(c kubernetes.Interface, svcName, namespace string, timeout time.Duration) error {
-	return wait.PollImmediate(Poll, defaultTimeout, serviceEndpoints(c, svcName, namespace))
+	return wait.PollImmediate(Poll, timeout, serviceEndpoints(c, svcName, namespace))
 }
 
 func podRunning(c kubernetes.Interface, podName, namespace string) wait.ConditionFunc {
