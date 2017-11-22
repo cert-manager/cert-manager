@@ -20,7 +20,7 @@ jobs:
       - ./hack/test/setup-boulder.sh
       - ./hack/test/setup-minikube.sh
       # Build images while we wait for services to start
-      - make build image APP_VERSION=build
+      - make build APP_VERSION=build
       # Wait for e2e service dependencies
       - ./hack/test/wait-boulder.sh
       - ./hack/test/wait-minikube.sh
