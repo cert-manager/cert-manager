@@ -80,14 +80,19 @@ func (a *Acme) registerAccount(ctx context.Context, cl *acme.Client) (*acme.Acco
 	acc := &acme.Account{
 		Contact: []string{fmt.Sprintf("mailto:%s", strings.ToLower(a.issuer.GetSpec().ACME.Email))},
 	}
+	glog.V(4).Infof("Attempting to register ACME account %q", acc.Contact)
 	acc, err := cl.Register(ctx, acc, acme.AcceptTOS)
 	if err != nil {
+		glog.V(4).Infof("Failed to register ACME account: %s", err.Error())
 		typedErr, ok := err.(*acme.Error)
 		// if this isn't an ACME error, we should just return it
 		if !ok {
+			glog.V(4).Infof("Unrecognised error when registering ACME account")
 			return nil, err
 		}
+		glog.V(4).Infof("Checking if ACME account is already registered...")
 		if typedErr.StatusCode == http.StatusConflict {
+			glog.V(4).Infof("ACME account is already registered")
 			accountUri := typedErr.Header.Get("Location")
 			if accountUri == "" {
 				return nil, fmt.Errorf("unexpected error - 409 Conflict error returned, but no Location header set: %s", typedErr.Error())

@@ -53,7 +53,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 	certificateSecretName := "test-acme-certificate"
 
 	BeforeEach(func() {
-		acmeURL := fmt.Sprintf("http://%s/directory", f.PebbleService.Name)
+		acmeURL := fmt.Sprintf("http://%s/dir", f.PebbleService.Name)
 		By("Verifying there is no existing ACME private key")
 		_, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Get(testingACMEPrivateKey, metav1.GetOptions{})
 		Expect(err).To(MatchError(apierrors.NewNotFound(corev1.Resource("secrets"), testingACMEPrivateKey)))

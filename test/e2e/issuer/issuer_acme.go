@@ -40,7 +40,7 @@ var _ = framework.CertManagerDescribe("ACME Issuer", func() {
 		Expect(err).To(MatchError(apierrors.NewNotFound(corev1.Resource("secrets"), testingACMEPrivateKey)))
 
 		// Set the acmeURL var
-		acmeURL = fmt.Sprintf("http://%s/directory", f.PebbleService.Name)
+		acmeURL = fmt.Sprintf("http://%s/dir", f.PebbleService.Name)
 	})
 
 	AfterEach(func() {
