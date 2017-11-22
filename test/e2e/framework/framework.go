@@ -27,7 +27,8 @@ import (
 )
 
 const (
-	podName = "test-cert-manager"
+	podName       = "test-cert-manager"
+	pebblePodName = "test-pebble"
 )
 
 // Framework supports common operations used by e2e tests; it will keep a client & a namespace for you.
@@ -41,6 +42,10 @@ type Framework struct {
 
 	// Namespace in which all test resources should reside
 	Namespace *v1.Namespace
+
+	// RequiresPebble indicates that this test requires a running instance of Pebble
+	RequiresPebble bool
+	PebbleService  *v1.Service
 
 	// To make sure that this framework cleans up after itself, no matter what,
 	// we install a Cleanup action before each test and clear it after.  If we
@@ -105,6 +110,26 @@ func (f *Framework) BeforeEach() {
 	By("Waiting for cert-manager to be running")
 	err = WaitForPodRunningInNamespace(f.KubeClientSet, pod)
 	Expect(err).NotTo(HaveOccurred())
+
+	if !f.RequiresPebble {
+		return
+	}
+
+	By("Creating a Pebble pod")
+	pod, err = f.KubeClientSet.CoreV1().Pods(f.Namespace.Name).Create(util.NewPebblePod(pebblePodName))
+	Expect(err).NotTo(HaveOccurred())
+
+	By("Waiting for Pebble pod to be running")
+	err = WaitForPodRunningInNamespace(f.KubeClientSet, pod)
+	Expect(err).NotTo(HaveOccurred())
+
+	By("Creating a Pebble service")
+	f.PebbleService, err = f.KubeClientSet.CoreV1().Services(f.Namespace.Name).Create(util.NewPebbleService(pebblePodName))
+	Expect(err).NotTo(HaveOccurred())
+
+	By("Waiting for the Pebble service to have endpoints available")
+	err = WaitForServiceEndpoints(f.KubeClientSet, f.PebbleService)
+	Expect(err).NotTo(HaveOccurred())
 }
 
 // AfterEach deletes the namespace, after reading its events.
@@ -116,6 +141,14 @@ func (f *Framework) AfterEach() {
 	Expect(err).NotTo(HaveOccurred())
 	_, err = GinkgoWriter.Write(b)
 	Expect(err).NotTo(HaveOccurred())
+
+	if f.RequiresPebble {
+		By("Retrieving the pebble pod logs")
+		b, err = f.KubeClientSet.CoreV1().Pods(f.Namespace.Name).GetLogs(pebblePodName, &corev1.PodLogOptions{}).Do().Raw()
+		Expect(err).NotTo(HaveOccurred())
+		_, err = GinkgoWriter.Write(b)
+		Expect(err).NotTo(HaveOccurred())
+	}
 
 	By("Deleting test namespace")
 	err = DeleteKubeNamespace(f.KubeClientSet, f.Namespace.Name)

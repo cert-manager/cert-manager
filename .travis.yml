@@ -17,12 +17,10 @@ jobs:
       - docker run -v /usr/local/bin:/hostbin munnerz/ubuntu-nsenter cp /nsenter /hostbin/nsenter
       script:
       # Setup e2e service dependencies
-      - ./hack/test/setup-boulder.sh
       - ./hack/test/setup-minikube.sh
       # Build images while we wait for services to start
       - make build APP_VERSION=build
       # Wait for e2e service dependencies
-      - ./hack/test/wait-boulder.sh
       - ./hack/test/wait-minikube.sh
       # Setup service for nginx ingress controller. A DNS entry for *.certmanager.kubernetes.network has been setup to point to 10.0.0.15 for e2e tests
       - while true; do if kubectl get rc nginx-ingress-controller -n kube-system; then break; fi; echo "Waiting 5s for nginx-ingress-controller rc to be installed..."; sleep 5; done

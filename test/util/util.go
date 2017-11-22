@@ -20,12 +20,15 @@ import (
 
 var certManagerImageFlag string
 var certManagerImagePullPolicy string
+var pebbleImageFlag string
 
 func init() {
 	flag.StringVar(&certManagerImageFlag, "cert-manager-image", "quay.io/jetstack/cert-manager-controller:canary",
 		"The container image for cert-manager to test against")
 	flag.StringVar(&certManagerImagePullPolicy, "cert-manager-image-pull-policy", "Never",
 		"The image pull policy to use for cert-manager when running tests")
+	flag.StringVar(&pebbleImageFlag, "pebble-image-flag", "quay.io/munnerz/pebble:20171122",
+		"The container image for pebble to use in e2e tests")
 }
 
 func CertificateOnlyValidForDomains(cert *x509.Certificate, commonName string, dnsNames ...string) bool {
@@ -114,6 +117,48 @@ func WaitForCRDToNotExist(client apiextcs.CustomResourceDefinitionInterface, nam
 	)
 }
 
+func NewPebblePod(name string) *v1.Pod {
+	return &v1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: name,
+			Labels: map[string]string{
+				"app":  "pebble",
+				"name": name,
+			},
+		},
+		Spec: v1.PodSpec{
+			Containers: []v1.Container{
+				{
+					Name:            "pebble",
+					Image:           pebbleImageFlag,
+					ImagePullPolicy: v1.PullIfNotPresent,
+				},
+			},
+		},
+	}
+}
+
+func NewPebbleService(name string) *v1.Service {
+	return &v1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: name,
+		},
+		Spec: v1.ServiceSpec{
+			Type: v1.ServiceTypeClusterIP,
+			Ports: []v1.ServicePort{
+				{
+					Name: "http",
+					Port: 80,
+				},
+			},
+			Selector: map[string]string{
+				"app":  "pebble",
+				"name": name,
+			},
+		},
+	}
+}
+
 func NewCertManagerControllerPod(name string, args ...string) *v1.Pod {
 	return &v1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
@@ -123,7 +168,6 @@ func NewCertManagerControllerPod(name string, args ...string) *v1.Pod {
 			},
 		},
 		Spec: v1.PodSpec{
-			HostNetwork: true,
 			Containers: []v1.Container{
 				{
 					Name:            name,
