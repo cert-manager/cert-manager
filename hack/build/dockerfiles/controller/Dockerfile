@@ -2,9 +2,9 @@ FROM alpine:3.6
 
 RUN apk add --no-cache ca-certificates
 
-ADD _build/cert-manager-acmesolver-linux-amd64 /usr/bin/acmesolver
+ADD cert-manager-controller_linux_amd64 /usr/bin/cert-manager
 
-ENTRYPOINT ["/usr/bin/acmesolver"]
+ENTRYPOINT ["/usr/bin/cert-manager"]
 ARG VCS_REF
 LABEL org.label-schema.vcs-ref=$VCS_REF \
       org.label-schema.vcs-url="https://github.com/jetstack/cert-manager" \
