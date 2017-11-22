@@ -254,11 +254,19 @@ func WaitForPodRunningInNamespace(c kubernetes.Interface, pod *v1.Pod) error {
 	if pod.Status.Phase == v1.PodRunning {
 		return nil
 	}
-	return waitTimeoutForPodRunningInNamespace(c, pod.Name, pod.Namespace, defaultTimeout)
+	return waitTimeoutForPodRunning(c, pod.Name, pod.Namespace, defaultTimeout)
 }
 
-func waitTimeoutForPodRunningInNamespace(c kubernetes.Interface, podName, namespace string, timeout time.Duration) error {
+func WaitForServiceEndpoints(c kubernetes.Interface, svc *v1.Service) error {
+	return waitTimeoutForServiceEndpoints(c, svc.Name, svc.Namespace, defaultTimeout)
+}
+
+func waitTimeoutForPodRunning(c kubernetes.Interface, podName, namespace string, timeout time.Duration) error {
 	return wait.PollImmediate(Poll, defaultTimeout, podRunning(c, podName, namespace))
+}
+
+func waitTimeoutForServiceEndpoints(c kubernetes.Interface, svcName, namespace string, timeout time.Duration) error {
+	return wait.PollImmediate(Poll, defaultTimeout, serviceEndpoints(c, svcName, namespace))
 }
 
 func podRunning(c kubernetes.Interface, podName, namespace string) wait.ConditionFunc {
@@ -274,5 +282,24 @@ func podRunning(c kubernetes.Interface, podName, namespace string) wait.Conditio
 			return false, fmt.Errorf("pod ran to completion")
 		}
 		return false, nil
+	}
+}
+
+func serviceEndpoints(c kubernetes.Interface, svcName, namespace string) wait.ConditionFunc {
+	return func() (bool, error) {
+		ep, err := c.CoreV1().Endpoints(namespace).Get(svcName, metav1.GetOptions{})
+		if apierrors.IsNotFound(err) {
+			return false, nil
+		}
+		if err != nil {
+			return false, err
+		}
+		if len(ep.Subsets) == 0 {
+			return false, nil
+		}
+		if len(ep.Subsets[0].Addresses) == 0 {
+			return false, nil
+		}
+		return true, nil
 	}
 }

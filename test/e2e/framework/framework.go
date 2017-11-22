@@ -126,6 +126,10 @@ func (f *Framework) BeforeEach() {
 	By("Creating a Pebble service")
 	f.PebbleService, err = f.KubeClientSet.CoreV1().Services(f.Namespace.Name).Create(util.NewPebbleService(pebblePodName))
 	Expect(err).NotTo(HaveOccurred())
+
+	By("Waiting for the Pebble service to have endpoints available")
+	err = WaitForServiceEndpoints(f.KubeClientSet, f.PebbleService)
+	Expect(err).NotTo(HaveOccurred())
 }
 
 // AfterEach deletes the namespace, after reading its events.
