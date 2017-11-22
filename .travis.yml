@@ -5,7 +5,7 @@ jobs:
     - stage: test
       dist: trusty
       language: go
-      go: 1.8
+      go: 1.9
       env:
       - KUBERNETES_VERSION=v1.7.0
       before_script:
@@ -31,6 +31,6 @@ jobs:
     - stage: test
       dist: trusty
       language: go
-      go: 1.8
+      go: 1.9
       script:
       - make verify test
