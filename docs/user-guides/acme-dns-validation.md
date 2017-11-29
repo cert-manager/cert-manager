@@ -64,11 +64,11 @@ spec:
   acme:
     config:
     - dns01:
-        provider: clouddns
+        provider: prod-dns
       domains:
       - example.com
     - dns01:
-        provider: cloudflare
+        provider: cf-dns
       domains:
       - www.example.com
 ```
