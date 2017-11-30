@@ -1,4 +1,4 @@
-package app
+package main
 
 import (
 	"fmt"
@@ -17,21 +17,19 @@ import (
 	"k8s.io/client-go/tools/leaderelection/resourcelock"
 	"k8s.io/client-go/tools/record"
 
-	"github.com/jetstack/cert-manager/cmd/controller/app/options"
+	"github.com/jetstack/cert-manager/cmd/ingress-shim/controller"
+	"github.com/jetstack/cert-manager/cmd/ingress-shim/options"
 	clientset "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
 	intscheme "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/scheme"
 	informers "github.com/jetstack/cert-manager/pkg/client/informers/externalversions"
-	"github.com/jetstack/cert-manager/pkg/controller"
-	"github.com/jetstack/cert-manager/pkg/controller/clusterissuers"
-	"github.com/jetstack/cert-manager/pkg/issuer"
 	"github.com/jetstack/cert-manager/pkg/util/kube"
 	kubeinformers "github.com/jetstack/cert-manager/third_party/k8s.io/client-go/informers"
 )
 
-const controllerAgentName = "cert-manager-controller"
+const controllerAgentName = "ingress-shim-controller"
 
 func Run(opts *options.ControllerOptions, stopCh <-chan struct{}) {
-	ctx, kubeCfg, err := buildControllerContext(opts)
+	ctrl, kubeCfg, err := buildController(opts, stopCh)
 
 	if err != nil {
 		glog.Fatalf(err.Error())
@@ -39,30 +37,17 @@ func Run(opts *options.ControllerOptions, stopCh <-chan struct{}) {
 
 	run := func(_ <-chan struct{}) {
 		var wg sync.WaitGroup
-		var controllers = make(map[string]controller.Interface)
-		for n, fn := range controller.Known() {
-			if ctx.Namespace != "" && n == clusterissuers.ControllerName {
-				glog.Infof("Skipping ClusterIssuer controller as cert-manager is scoped to a single namespace")
-				continue
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			err := ctrl.Run(2, stopCh)
+			if err != nil {
+				glog.Fatalf("error running controller: %s", err.Error())
 			}
-			controllers[n] = fn(ctx)
-		}
-		for n, fn := range controllers {
-			wg.Add(1)
-			go func(n string, fn controller.Interface) {
-				defer wg.Done()
-				glog.V(4).Infof("Starting %s controller", n)
+		}()
 
-				err := fn(2, stopCh)
-
-				if err != nil {
-					glog.Fatalf("error running %s controller: %s", n, err.Error())
-				}
-			}(n, fn)
-		}
-		glog.V(4).Infof("Starting shared informer factory")
-		ctx.SharedInformerFactory.Start(stopCh)
-		ctx.KubeSharedInformerFactory.Start(stopCh)
+		<-stopCh
+		glog.Infof("Waiting for controller to exit...")
 		wg.Wait()
 		glog.Fatalf("Control loops exited")
 	}
@@ -78,11 +63,11 @@ func Run(opts *options.ControllerOptions, stopCh <-chan struct{}) {
 		glog.Fatalf("error creating leader election client: %s", err.Error())
 	}
 
-	startLeaderElection(opts, leaderElectionClient, ctx.Recorder, run)
+	startLeaderElection(opts, leaderElectionClient, ctrl.Recorder, run)
 	panic("unreachable")
 }
 
-func buildControllerContext(opts *options.ControllerOptions) (*controller.Context, *rest.Config, error) {
+func buildController(opts *options.ControllerOptions, stopCh <-chan struct{}) (*controller.Controller, *rest.Config, error) {
 	// Load the users Kubernetes config
 	kubeCfg, err := kube.KubeConfig(opts.APIServerHost)
 
@@ -122,25 +107,19 @@ func buildControllerContext(opts *options.ControllerOptions) (*controller.Contex
 	// the --cluster-resource-namespace.
 	sharedInformerFactory := informers.NewFilteredSharedInformerFactory(intcl, time.Second*30, opts.Namespace, nil)
 	kubeSharedInformerFactory := kubeinformers.NewFilteredSharedInformerFactory(cl, time.Second*30, opts.Namespace, nil)
-	return &controller.Context{
-		Client:                    cl,
-		CMClient:                  intcl,
-		Recorder:                  recorder,
-		KubeSharedInformerFactory: kubeSharedInformerFactory,
-		SharedInformerFactory:     sharedInformerFactory,
-		IssuerFactory: issuer.NewFactory(&issuer.Context{
-			Client:                    cl,
-			CMClient:                  intcl,
-			Recorder:                  recorder,
-			KubeSharedInformerFactory: kubeSharedInformerFactory,
-			SharedInformerFactory:     sharedInformerFactory,
-			Namespace:                 opts.Namespace,
-			ClusterResourceNamespace:  opts.ClusterResourceNamespace,
-			ACMEHTTP01SolverImage:     opts.ACMEHTTP01SolverImage,
-		}),
-		Namespace:                opts.Namespace,
-		ClusterResourceNamespace: opts.ClusterResourceNamespace,
-	}, kubeCfg, nil
+	ctrl := controller.New(
+		sharedInformerFactory.Certmanager().V1alpha1().Certificates(),
+		kubeSharedInformerFactory.Extensions().V1beta1().Ingresses(),
+		sharedInformerFactory.Certmanager().V1alpha1().Issuers(),
+		sharedInformerFactory.Certmanager().V1alpha1().ClusterIssuers(),
+		cl,
+		intcl,
+		recorder,
+		opts,
+	)
+	sharedInformerFactory.Start(stopCh)
+	kubeSharedInformerFactory.Start(stopCh)
+	return ctrl, kubeCfg, nil
 }
 
 func startLeaderElection(opts *options.ControllerOptions, leaderElectionClient kubernetes.Interface, recorder record.EventRecorder, run func(<-chan struct{})) {
@@ -154,11 +133,11 @@ func startLeaderElection(opts *options.ControllerOptions, leaderElectionClient k
 	rl := resourcelock.EndpointsLock{
 		EndpointsMeta: metav1.ObjectMeta{
 			Namespace: opts.LeaderElectionNamespace,
-			Name:      "cert-manager-controller",
+			Name:      "ingress-shim-controller",
 		},
 		Client: leaderElectionClient.CoreV1(),
 		LockConfig: resourcelock.ResourceLockConfig{
-			Identity:      id + "-external-cert-manager-controller",
+			Identity:      id + "-external-ingress-shim-controller",
 			EventRecorder: recorder,
 		},
 	}
