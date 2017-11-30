@@ -93,6 +93,7 @@ go_fmt:
 	fi
 
 .e2e_configure_ingress:
+	while true; do if kubectl get rc nginx-ingress-controller -n kube-system; then break; fi; echo "Waiting 5s for nginx-ingress-controller rc to be installed..."; sleep 5; done
 	kubectl expose -n kube-system --port 80 --target-port 80 --type ClusterIP rc nginx-ingress-controller --cluster-ip 10.0.0.15
 
 e2e_test: .e2e_configure_ingress
