@@ -47,7 +47,6 @@ var _ = framework.CertManagerDescribe("ACME Certificate with Ingress (HTTP01)", 
 	f := framework.NewDefaultFramework("create-acme-certificate-http01-ingress")
 
 	issuerName := "test-acme-issuer"
-	certificateName := "test-acme-certificate"
 	certificateSecretName := "test-acme-certificate"
 
 	BeforeEach(func() {
