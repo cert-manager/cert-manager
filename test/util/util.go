@@ -23,6 +23,7 @@ var certManagerImageFlag string
 var certManagerImagePullPolicy string
 var ingressShimImageFlag string
 var ingressShimImagePullPolicy string
+var ACMECertificateDomain string
 
 func init() {
 	flag.StringVar(&certManagerImageFlag, "cert-manager-image", "quay.io/jetstack/cert-manager-controller:canary",
@@ -33,6 +34,8 @@ func init() {
 		"The container image for ingress-shim to test against")
 	flag.StringVar(&ingressShimImagePullPolicy, "ingress-shim-image-pull-policy", "Never",
 		"The image pull policy to use for ingress-shim when running tests")
+	flag.StringVar(&ACMECertificateDomain, "acme-nginx-certificate-domain", "",
+		"The provided domain and all sub-domains should resolve to the nginx ingress controller")
 }
 
 func CertificateOnlyValidForDomains(cert *x509.Certificate, commonName string, dnsNames ...string) bool {
