@@ -23,6 +23,7 @@ const (
 	errorGetACMEAccount          = "ErrGetACMEAccount"
 	errorCheckAuthorization      = "ErrCheckAuthorization"
 	errorObtainAuthorization     = "ErrObtainAuthorization"
+	errorInvalidConfig           = "ErrInvalidConfig"
 
 	messageObtainedAuthorization    = "Obtained authorization for domain %s"
 	messagePresentChallenge         = "Presenting %s challenge for domain %s"
@@ -30,6 +31,7 @@ const (
 	messageErrorGetACMEAccount      = "Error getting ACME account: "
 	messageErrorCheckAuthorization  = "Error checking ACME domain validation: "
 	messageErrorObtainAuthorization = "Error obtaining ACME domain authorization: "
+	messageErrorMissingConfig       = "certificate.spec.acme must be specified"
 )
 
 // Prepare will ensure the issuer has been initialised and is ready to issue
@@ -38,6 +40,10 @@ const (
 // It will send the appropriate Letsencrypt authorizations, and complete
 // challenge requests if neccessary.
 func (a *Acme) Prepare(ctx context.Context, crt *v1alpha1.Certificate) error {
+	if crt.Spec.ACME == nil {
+		crt.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse, errorInvalidConfig, messageErrorMissingConfig)
+		return fmt.Errorf(messageErrorMissingConfig)
+	}
 	// obtain an ACME client
 	cl, err := a.acmeClient()
 	if err != nil {
@@ -133,6 +139,9 @@ func keyForChallenge(cl *acme.Client, challenge *acme.Challenge) (string, error)
 }
 
 func (a *Acme) authorize(ctx context.Context, cl *acme.Client, crt *v1alpha1.Certificate, auth authResponse) (*acme.Authorization, error) {
+	if crt.Spec.ACME == nil {
+		return nil, fmt.Errorf("certificate.spec.acme must be set")
+	}
 	glog.V(4).Infof("picking challenge type for domain %q", auth.domain)
 	challengeType, err := a.pickChallengeType(auth.domain, auth.auth, crt.Spec.ACME.Config)
 	if err != nil {
