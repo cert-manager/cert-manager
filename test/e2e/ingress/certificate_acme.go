@@ -14,7 +14,6 @@ limitations under the License.
 package ingress
 
 import (
-	"flag"
 	"time"
 
 	. "github.com/onsi/ginkgo"
@@ -32,16 +31,6 @@ const testingACMEURL = "http://127.0.0.1:4000/directory"
 const testingACMEEmail = "test@example.com"
 const testingACMEPrivateKey = "test-acme-private-key"
 const foreverTestTimeout = time.Second * 60
-
-var acmeCertificateDomain string
-var acmeIngressClass string
-
-func init() {
-	flag.StringVar(&acmeCertificateDomain, "acme-nginx-certificate-domain", "",
-		"The provided domain and all sub-domains should resolve to the nginx ingress controller")
-	flag.StringVar(&acmeIngressClass, "acme-nginx-ingress-class", "nginx", ""+
-		"The ingress class for the nginx ingress controller")
-}
 
 var _ = framework.CertManagerDescribe("ACME Certificate with Ingress (HTTP01)", func() {
 	f := framework.NewDefaultFramework("create-acme-certificate-http01-ingress")
@@ -96,7 +85,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate with Ingress (HTTP01)", 
 		_, err := f.KubeClientSet.ExtensionsV1beta1().Ingresses(f.Namespace.Name).Create(util.NewIngress(certificateSecretName, certificateSecretName, map[string]string{
 			"certmanager.k8s.io/issuer":                  issuerName,
 			"certmanager.k8s.io/acme-challenge-provider": "http01",
-		}, acmeCertificateDomain))
+		}, util.ACMECertificateDomain))
 		Expect(err).NotTo(HaveOccurred())
 		By("Waiting for Certificate to exist")
 		err = util.WaitForCertificateToExist(f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name), certificateSecretName, foreverTestTimeout)

@@ -36,12 +36,9 @@ const testingACMEEmail = "test@example.com"
 const testingACMEPrivateKey = "test-acme-private-key"
 const foreverTestTimeout = time.Second * 60
 
-var acmeCertificateDomain string
 var acmeIngressClass string
 
 func init() {
-	flag.StringVar(&acmeCertificateDomain, "acme-nginx-certificate-domain", "",
-		"The provided domain and all sub-domains should resolve to the nginx ingress controller")
 	flag.StringVar(&acmeIngressClass, "acme-nginx-ingress-class", "nginx", ""+
 		"The ingress class for the nginx ingress controller")
 }
@@ -97,7 +94,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 
 	It("should obtain a signed certificate with a single CN from the ACME server", func() {
 		By("Creating a Certificate")
-		_, err := f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name).Create(util.NewCertManagerACMECertificate(certificateName, certificateSecretName, issuerName, v1alpha1.IssuerKind, acmeIngressClass, acmeCertificateDomain))
+		_, err := f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name).Create(util.NewCertManagerACMECertificate(certificateName, certificateSecretName, issuerName, v1alpha1.IssuerKind, acmeIngressClass, util.ACMECertificateDomain))
 		Expect(err).NotTo(HaveOccurred())
 		By("Waiting for Certificate to become Ready")
 		err = util.WaitForCertificateCondition(f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name),
@@ -117,7 +114,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 
 	It("should obtain a signed certificate with a CN and single subdomain as dns name from the ACME server", func() {
 		By("Creating a Certificate")
-		_, err := f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name).Create(util.NewCertManagerACMECertificate(certificateName, certificateSecretName, issuerName, v1alpha1.IssuerKind, acmeIngressClass, acmeCertificateDomain, fmt.Sprintf("%s.%s", cmutil.RandStringRunes(5), acmeCertificateDomain)))
+		_, err := f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name).Create(util.NewCertManagerACMECertificate(certificateName, certificateSecretName, issuerName, v1alpha1.IssuerKind, acmeIngressClass, util.ACMECertificateDomain, fmt.Sprintf("%s.%s", cmutil.RandStringRunes(5), util.ACMECertificateDomain)))
 		Expect(err).NotTo(HaveOccurred())
 		By("Waiting for Certificate to become Ready")
 		err = util.WaitForCertificateCondition(f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name),
