@@ -20,6 +20,8 @@ resources:
 
 ingressShim:
   enabled: true
+  # Optional additional arguments for ingress-shim
+  extraArgs: []
   resources:
     requests:
       cpu: 10m
