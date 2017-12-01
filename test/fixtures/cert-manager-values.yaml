@@ -1,0 +1,10 @@
+replicaCount: 1
+
+image:
+  tag: build
+  pullPolicy: Never
+
+ingressShim:
+  image:
+    tag: build
+    pullPolicy: Never

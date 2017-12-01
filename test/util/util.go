@@ -20,21 +20,9 @@ import (
 	"github.com/jetstack/cert-manager/pkg/util"
 )
 
-var certManagerImageFlag string
-var certManagerImagePullPolicy string
-var ingressShimImageFlag string
-var ingressShimImagePullPolicy string
 var ACMECertificateDomain string
 
 func init() {
-	flag.StringVar(&certManagerImageFlag, "cert-manager-image", "quay.io/jetstack/cert-manager-controller:canary",
-		"The container image for cert-manager to test against")
-	flag.StringVar(&certManagerImagePullPolicy, "cert-manager-image-pull-policy", "Never",
-		"The image pull policy to use for cert-manager when running tests")
-	flag.StringVar(&ingressShimImageFlag, "ingress-shim-image", "quay.io/jetstack/cert-manager-ingress-shim:canary",
-		"The container image for ingress-shim to test against")
-	flag.StringVar(&ingressShimImagePullPolicy, "ingress-shim-image-pull-policy", "Never",
-		"The image pull policy to use for ingress-shim when running tests")
 	flag.StringVar(&ACMECertificateDomain, "acme-nginx-certificate-domain", "",
 		"The provided domain and all sub-domains should resolve to the nginx ingress controller")
 }
@@ -141,50 +129,6 @@ func WaitForCRDToNotExist(client apiextcs.CustomResourceDefinitionInterface, nam
 			return false, nil
 		},
 	)
-}
-
-func NewCertManagerControllerPod(name string, args ...string) *v1.Pod {
-	return &v1.Pod{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: name,
-			Labels: map[string]string{
-				"app": name,
-			},
-		},
-		Spec: v1.PodSpec{
-			HostNetwork: true,
-			Containers: []v1.Container{
-				{
-					Name:            name,
-					Image:           certManagerImageFlag,
-					Args:            args,
-					ImagePullPolicy: v1.PullPolicy(certManagerImagePullPolicy),
-				},
-			},
-		},
-	}
-}
-
-func NewIngressShimControllerPod(name string, args ...string) *v1.Pod {
-	return &v1.Pod{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: name,
-			Labels: map[string]string{
-				"app": name,
-			},
-		},
-		Spec: v1.PodSpec{
-			HostNetwork: true,
-			Containers: []v1.Container{
-				{
-					Name:            name,
-					Image:           ingressShimImageFlag,
-					Args:            args,
-					ImagePullPolicy: v1.PullPolicy(ingressShimImagePullPolicy),
-				},
-			},
-		},
-	}
 }
 
 func NewCertManagerCAClusterIssuer(name, secretName string) *v1alpha1.ClusterIssuer {

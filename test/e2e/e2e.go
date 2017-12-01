@@ -14,6 +14,8 @@ limitations under the License.
 package e2e
 
 import (
+	"os"
+	"os/exec"
 	"testing"
 
 	"github.com/golang/glog"
@@ -42,6 +44,44 @@ func RunE2ETests(t *testing.T) {
 		config.GinkgoConfig.SkipString = `\[Flaky\]|\[Feature:.+\]`
 	}
 
+	glog.Infof("Install cert-manager helm chart")
+	InstallHelmChart(t)
+
 	glog.Infof("Starting e2e run %q on Ginkgo node %d", framework.RunId, config.GinkgoConfig.ParallelNode)
-	ginkgo.RunSpecs(t, "cert-manager e2e suite")
+	if !ginkgo.RunSpecs(t, "cert-manager e2e suite") {
+		PrintPodLogs(t)
+	}
+}
+
+const releaseName = "cm"
+
+func InstallHelmChart(t *testing.T) {
+	cmd := exec.Command("helm", "install", "./contrib/charts/cert-manager", "--namespace", "cert-manager", "--name", releaseName, "--values", "./test/fixtures/cert-manager-values.yaml", "--wait")
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	err := cmd.Run()
+	if err != nil {
+		t.Errorf("Error installing cert-manager: %s", err)
+		t.FailNow()
+		return
+	}
+}
+
+func PrintPodLogs(t *testing.T) {
+	glog.Infof("Printing cert-manager logs")
+	cmd := exec.Command("kubectl", "logs", "--namespace", "cert-manager", "-l", "app=cert-manager", "-l", "release=cm", "-c", "cert-manager")
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	err := cmd.Run()
+	if err != nil {
+		t.Errorf("Error printing cert-manager logs: %s", err)
+	}
+	glog.Infof("Printing ingress-shim logs")
+	cmdShim := exec.Command("kubectl", "logs", "--namespace", "cert-manager", "-l", "app=cert-manager", "-l", "release=cm", "-c", "ingress-shim")
+	cmdShim.Stdout = os.Stdout
+	cmdShim.Stderr = os.Stderr
+	err = cmdShim.Run()
+	if err != nil {
+		t.Errorf("Error printing ingress-shim logs: %s", err)
+	}
 }
