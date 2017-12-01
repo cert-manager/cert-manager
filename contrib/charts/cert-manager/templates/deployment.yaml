@@ -27,6 +27,10 @@ spec:
         - name: ingress-shim
           image: "{{ .Values.ingressShim.image.repository }}:{{ default .Values.ingressShim.image.tag | default .Values.image.tag }}"
           imagePullPolicy: {{ .Values.ingressShim.image.pullPolicy }}
+          args:
+{{- range .Values.ingressShim.extraArgs }}
+          - {{ . }}
+{{- end }}
           resources:
 {{ toYaml .Values.ingressShim.resources | indent 12 }}
 {{- end }}
