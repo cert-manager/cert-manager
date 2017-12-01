@@ -18,6 +18,9 @@ resources:
     cpu: 10m
     memory: 32Mi
 
+# Optional additional arguments for cert-manager
+extraArgs: []
+
 ingressShim:
   enabled: true
   # Optional additional arguments for ingress-shim
@@ -32,3 +35,6 @@ ingressShim:
     # You should only change this if you know what you are doing!
     # tag: v0.2.1
     pullPolicy: Always
+
+## Used for e2e testing
+# hostNetwork: false
