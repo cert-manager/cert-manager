@@ -12,6 +12,7 @@ import (
 	apiextcs "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/typed/apiextensions/v1beta1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/wait"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
@@ -261,7 +262,17 @@ func NewIngress(name, secretName string, annotations map[string]string, dnsNames
 				{
 					Host: dnsNames[0],
 					IngressRuleValue: extv1beta1.IngressRuleValue{
-						HTTP: &extv1beta1.HTTPIngressRuleValue{},
+						HTTP: &extv1beta1.HTTPIngressRuleValue{
+							Paths: []extv1beta1.HTTPIngressPath{
+								{
+									Path: "/",
+									Backend: extv1beta1.IngressBackend{
+										ServiceName: "dummy-service",
+										ServicePort: intstr.FromInt(80),
+									},
+								},
+							},
+						},
 					},
 				},
 			},
