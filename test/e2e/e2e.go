@@ -26,6 +26,7 @@ import (
 	_ "github.com/jetstack/cert-manager/test/e2e/certificate"
 	_ "github.com/jetstack/cert-manager/test/e2e/clusterissuer"
 	"github.com/jetstack/cert-manager/test/e2e/framework"
+	_ "github.com/jetstack/cert-manager/test/e2e/ingress"
 	_ "github.com/jetstack/cert-manager/test/e2e/issuer"
 )
 
