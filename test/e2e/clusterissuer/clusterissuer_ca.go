@@ -22,6 +22,8 @@ import (
 	"github.com/jetstack/cert-manager/test/util"
 )
 
+const clusterResourceNamespace = "kube-system"
+
 var _ = framework.CertManagerDescribe("CA ClusterIssuer", func() {
 	f := framework.NewDefaultFramework("create-ca-clusterissuer")
 
@@ -30,13 +32,13 @@ var _ = framework.CertManagerDescribe("CA ClusterIssuer", func() {
 
 	BeforeEach(func() {
 		By("Creating a signing keypair fixture")
-		_, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Create(util.NewSigningKeypairSecret(secretName))
+		_, err := f.KubeClientSet.CoreV1().Secrets(clusterResourceNamespace).Create(util.NewSigningKeypairSecret(secretName))
 		Expect(err).NotTo(HaveOccurred())
 	})
 
 	AfterEach(func() {
 		By("Cleaning up")
-		f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Delete(secretName, nil)
+		f.KubeClientSet.CoreV1().Secrets(clusterResourceNamespace).Delete(secretName, nil)
 	})
 
 	It("should validate a signing keypair", func() {
