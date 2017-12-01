@@ -99,10 +99,6 @@ e2e_test:
 	# Run e2e tests
 	KUBECONFIG=$$HOME/.kube/config CERTMANAGERCONFIG=$$HOME/.kube/config \
 		./e2e-tests \
-			-cert-manager-image-pull-policy=Never \
-			-cert-manager-image=$(REGISTRY)/$(APP_NAME)-controller:$(BUILD_TAG) \
-			-ingress-shim-image-pull-policy=Never \
-			-ingress-shim-image=$(REGISTRY)/$(APP_NAME)-ingress-shim:$(BUILD_TAG) \
 			-acme-nginx-certificate-domain=$(E2E_NGINX_CERTIFICATE_DOMAIN)
 
 # Docker targets
