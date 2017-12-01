@@ -20,12 +20,14 @@ resources:
 
 ingressShim:
   enabled: true
+  # Optional additional arguments for ingress-shim
+  extraArgs: []
   resources:
     requests:
       cpu: 10m
       memory: 32Mi
   image:
-    repository: quay.io/jetstack/cert-manager-controller
+    repository: quay.io/jetstack/cert-manager-ingress-shim
     # Defaults to image.tag.
     # You should only change this if you know what you are doing!
     # tag: v0.2.1
