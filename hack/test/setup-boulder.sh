@@ -16,7 +16,7 @@ cd "${GOPATH}/src/${BOULDER_REPO}"
 sed -i 's/FAKE_DNS: 127.0.0.1/FAKE_DNS: 10.0.0.10/' docker-compose.yml
 sed -i 's/127.0.0.1:8053/10.0.0.10:53/' test/config/va.json
 sed -i 's/5002/80/' test/config/va.json
-# TODO: set ratelimits
+sed -i 's/good-caa-reserved.com/kubernetes.network/' test/rate-limit-policies.yml
 
 function start {
     if ! docker-compose up; then

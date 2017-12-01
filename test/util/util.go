@@ -1,18 +1,20 @@
 package util
 
 import (
+	"crypto/x509"
 	"flag"
 	"fmt"
 	"time"
 
 	"github.com/golang/glog"
 	"k8s.io/api/core/v1"
+	extv1beta1 "k8s.io/api/extensions/v1beta1"
 	apiextcs "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/typed/apiextensions/v1beta1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/wait"
 
-	"crypto/x509"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	clientset "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/typed/certmanager/v1alpha1"
 	"github.com/jetstack/cert-manager/pkg/util"
@@ -20,12 +22,21 @@ import (
 
 var certManagerImageFlag string
 var certManagerImagePullPolicy string
+var ingressShimImageFlag string
+var ingressShimImagePullPolicy string
+var ACMECertificateDomain string
 
 func init() {
 	flag.StringVar(&certManagerImageFlag, "cert-manager-image", "quay.io/jetstack/cert-manager-controller:canary",
 		"The container image for cert-manager to test against")
 	flag.StringVar(&certManagerImagePullPolicy, "cert-manager-image-pull-policy", "Never",
 		"The image pull policy to use for cert-manager when running tests")
+	flag.StringVar(&ingressShimImageFlag, "ingress-shim-image", "quay.io/jetstack/cert-manager-ingress-shim:canary",
+		"The container image for ingress-shim to test against")
+	flag.StringVar(&ingressShimImagePullPolicy, "ingress-shim-image-pull-policy", "Never",
+		"The image pull policy to use for ingress-shim when running tests")
+	flag.StringVar(&ACMECertificateDomain, "acme-nginx-certificate-domain", "",
+		"The provided domain and all sub-domains should resolve to the nginx ingress controller")
 }
 
 func CertificateOnlyValidForDomains(cert *x509.Certificate, commonName string, dnsNames ...string) bool {
@@ -94,6 +105,24 @@ func WaitForCertificateCondition(client clientset.CertificateInterface, name str
 	)
 }
 
+// WaitForCertificateToExist waits for the named certificate to exist
+func WaitForCertificateToExist(client clientset.CertificateInterface, name string, timeout time.Duration) error {
+	return wait.PollImmediate(500*time.Millisecond, timeout,
+		func() (bool, error) {
+			glog.V(5).Infof("Waiting for Certificate %v to exist", name)
+			_, err := client.Get(name, metav1.GetOptions{})
+			if errors.IsNotFound(err) {
+				return false, nil
+			}
+			if err != nil {
+				return false, fmt.Errorf("error getting Certificate %v: %v", name, err)
+			}
+
+			return true, nil
+		},
+	)
+}
+
 // WaitForCRDToNotExist waits for the CRD with the given name to no
 // longer exist.
 func WaitForCRDToNotExist(client apiextcs.CustomResourceDefinitionInterface, name string) error {
@@ -130,6 +159,28 @@ func NewCertManagerControllerPod(name string, args ...string) *v1.Pod {
 					Image:           certManagerImageFlag,
 					Args:            args,
 					ImagePullPolicy: v1.PullPolicy(certManagerImagePullPolicy),
+				},
+			},
+		},
+	}
+}
+
+func NewIngressShimControllerPod(name string, args ...string) *v1.Pod {
+	return &v1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: name,
+			Labels: map[string]string{
+				"app": name,
+			},
+		},
+		Spec: v1.PodSpec{
+			HostNetwork: true,
+			Containers: []v1.Container{
+				{
+					Name:            name,
+					Image:           ingressShimImageFlag,
+					Args:            args,
+					ImagePullPolicy: v1.PullPolicy(ingressShimImagePullPolicy),
 				},
 			},
 		},
@@ -186,6 +237,41 @@ func NewCertManagerACMECertificate(name, secretName, issuerName string, issuerKi
 						Domains: append(dnsNames, cn),
 						HTTP01: &v1alpha1.ACMECertificateHTTP01Config{
 							IngressClass: &ingressClass,
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+func NewIngress(name, secretName string, annotations map[string]string, dnsNames ...string) *extv1beta1.Ingress {
+	return &extv1beta1.Ingress{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:        name,
+			Annotations: annotations,
+		},
+		Spec: extv1beta1.IngressSpec{
+			TLS: []extv1beta1.IngressTLS{
+				{
+					Hosts:      dnsNames,
+					SecretName: secretName,
+				},
+			},
+			Rules: []extv1beta1.IngressRule{
+				{
+					Host: dnsNames[0],
+					IngressRuleValue: extv1beta1.IngressRuleValue{
+						HTTP: &extv1beta1.HTTPIngressRuleValue{
+							Paths: []extv1beta1.HTTPIngressPath{
+								{
+									Path: "/",
+									Backend: extv1beta1.IngressBackend{
+										ServiceName: "dummy-service",
+										ServicePort: intstr.FromInt(80),
+									},
+								},
+							},
 						},
 					},
 				},

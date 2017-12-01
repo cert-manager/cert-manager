@@ -1,7 +1,4 @@
 .DS_Store
-/.get_deps
-/.generate_exes
-/bin/
-/_build/
 /acmesolver
 /controller
+/hack/build/dockerfiles/cert-manager-*_*_*

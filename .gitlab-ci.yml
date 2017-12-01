@@ -1,4 +1,4 @@
-image: golang:1.8-alpine
+image: golang:1.9-alpine
 
 variables:
   DOCKER_DRIVER: overlay
@@ -35,7 +35,7 @@ master_push:
   - docker
   script:
   - mkdir -p ~/.docker && echo "${DOCKER_AUTH_CONFIG}" > ~/.docker/config.json && chmod 600 ~/.docker/config.json
-  - make all push IMAGE_TAGS="${CI_BUILD_REF_SLUG}-${CI_PIPELINE_ID} canary"
+  - make verify push IMAGE_TAGS="${CI_BUILD_REF_SLUG}-${CI_PIPELINE_ID} canary"
   only:
   - master
 
@@ -44,6 +44,6 @@ release_push:
   - docker
   script:
   - mkdir -p ~/.docker && echo "${DOCKER_AUTH_CONFIG}" > ~/.docker/config.json && chmod 600 ~/.docker/config.json
-  - APP_VERSION=${CI_COMMIT_TAG} make all push IMAGE_TAGS="${CI_COMMIT_TAG} latest"
+  - APP_VERSION=${CI_COMMIT_TAG} make verify push IMAGE_TAGS="${CI_COMMIT_TAG} latest"
   only:
   - tags

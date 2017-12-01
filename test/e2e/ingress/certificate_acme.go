@@ -11,11 +11,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package certificate
+package ingress
 
 import (
-	"flag"
-	"fmt"
 	"time"
 
 	. "github.com/onsi/ginkgo"
@@ -25,29 +23,19 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
-	cmutil "github.com/jetstack/cert-manager/pkg/util"
 	"github.com/jetstack/cert-manager/test/e2e/framework"
 	"github.com/jetstack/cert-manager/test/util"
 )
 
 const testingACMEURL = "http://127.0.0.1:4000/directory"
-const invalidACMEURL = "http://not-a-real-acme-url.com"
 const testingACMEEmail = "test@example.com"
 const testingACMEPrivateKey = "test-acme-private-key"
 const foreverTestTimeout = time.Second * 60
 
-var acmeIngressClass string
-
-func init() {
-	flag.StringVar(&acmeIngressClass, "acme-nginx-ingress-class", "nginx", ""+
-		"The ingress class for the nginx ingress controller")
-}
-
-var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
-	f := framework.NewDefaultFramework("create-acme-certificate-http01")
+var _ = framework.CertManagerDescribe("ACME Certificate with Ingress (HTTP01)", func() {
+	f := framework.NewDefaultFramework("create-acme-certificate-http01-ingress")
 
 	issuerName := "test-acme-issuer"
-	certificateName := "test-acme-certificate"
 	certificateSecretName := "test-acme-certificate"
 
 	BeforeEach(func() {
@@ -92,13 +80,19 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Delete(testingACMEPrivateKey, nil)
 	})
 
-	It("should obtain a signed certificate with a single CN from the ACME server", func() {
-		By("Creating a Certificate")
-		_, err := f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name).Create(util.NewCertManagerACMECertificate(certificateName, certificateSecretName, issuerName, v1alpha1.IssuerKind, acmeIngressClass, util.ACMECertificateDomain))
+	It("should obtain a signed certificate with a single CN from the ACME server when putting an annotation on an ingress resource", func() {
+		By("Creating an Ingress with the issuer name annotation set")
+		_, err := f.KubeClientSet.ExtensionsV1beta1().Ingresses(f.Namespace.Name).Create(util.NewIngress(certificateSecretName, certificateSecretName, map[string]string{
+			"certmanager.k8s.io/issuer":                  issuerName,
+			"certmanager.k8s.io/acme-challenge-provider": "http01",
+		}, util.ACMECertificateDomain))
+		Expect(err).NotTo(HaveOccurred())
+		By("Waiting for Certificate to exist")
+		err = util.WaitForCertificateToExist(f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name), certificateSecretName, foreverTestTimeout)
 		Expect(err).NotTo(HaveOccurred())
 		By("Waiting for Certificate to become Ready")
 		err = util.WaitForCertificateCondition(f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name),
-			certificateName,
+			certificateSecretName,
 			v1alpha1.CertificateCondition{
 				Type:   v1alpha1.CertificateConditionReady,
 				Status: v1alpha1.ConditionTrue,
@@ -112,40 +106,4 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		}
 	})
 
-	It("should obtain a signed certificate with a CN and single subdomain as dns name from the ACME server", func() {
-		By("Creating a Certificate")
-		_, err := f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name).Create(util.NewCertManagerACMECertificate(certificateName, certificateSecretName, issuerName, v1alpha1.IssuerKind, acmeIngressClass, util.ACMECertificateDomain, fmt.Sprintf("%s.%s", cmutil.RandStringRunes(5), util.ACMECertificateDomain)))
-		Expect(err).NotTo(HaveOccurred())
-		By("Waiting for Certificate to become Ready")
-		err = util.WaitForCertificateCondition(f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name),
-			certificateName,
-			v1alpha1.CertificateCondition{
-				Type:   v1alpha1.CertificateConditionReady,
-				Status: v1alpha1.ConditionTrue,
-			}, foreverTestTimeout)
-		Expect(err).NotTo(HaveOccurred())
-		By("Verifying TLS certificate exists")
-		secret, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Get(certificateSecretName, metav1.GetOptions{})
-		Expect(err).NotTo(HaveOccurred())
-		if len(secret.Data) != 2 {
-			Fail("Expected 2 keys in ACME certificate secret, but there was %d", len(secret.Data))
-		}
-	})
-
-	It("should fail to obtain a certificate for an invalid ACME dns name", func() {
-		By("Creating a Certificate")
-		_, err := f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name).Create(util.NewCertManagerACMECertificate(certificateName, certificateSecretName, issuerName, v1alpha1.IssuerKind, acmeIngressClass, "google.com"))
-		Expect(err).NotTo(HaveOccurred())
-		By("Waiting for the Certificate to not have a ready condition")
-		err = util.WaitForCertificateCondition(f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name),
-			certificateName,
-			v1alpha1.CertificateCondition{
-				Type:   v1alpha1.CertificateConditionReady,
-				Status: v1alpha1.ConditionTrue,
-			}, foreverTestTimeout)
-		Expect(err).To(HaveOccurred())
-		By("Verifying TLS certificate secret does not exist")
-		_, err = f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Get(certificateSecretName, metav1.GetOptions{})
-		Expect(err).To(MatchError(apierrors.NewNotFound(corev1.Resource("secrets"), certificateSecretName)))
-	})
 })

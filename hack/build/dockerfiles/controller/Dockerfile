@@ -2,7 +2,7 @@ FROM alpine:3.6
 
 RUN apk add --no-cache ca-certificates
 
-ADD _build/cert-manager-controller-linux-amd64 /usr/bin/cert-manager
+ADD cert-manager-controller_linux_amd64 /usr/bin/cert-manager
 
 ENTRYPOINT ["/usr/bin/cert-manager"]
 ARG VCS_REF

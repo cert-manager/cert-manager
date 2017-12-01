@@ -1,130 +1,124 @@
-ACCOUNT=jetstack
-APP_NAME=cert-manager
-REGISTRY=quay.io
-
-PACKAGE_NAME=github.com/jetstack/cert-manager
-GO_VERSION=1.8
-
-GOOS := linux
-GOARCH := amd64
-
-DOCKER_IMAGE=${REGISTRY}/${ACCOUNT}/${APP_NAME}
-
-BUILD_DIR=_build
-TEST_DIR=_test
-
-CONTAINER_DIR=/go/src/${PACKAGE_NAME}
-
-BUILD_TAG := build
+PACKAGE_NAME := github.com/jetstack/cert-manager
+REGISTRY := quay.io/jetstack
+APP_NAME := cert-manager
 IMAGE_TAGS := canary
+GOPATH ?= $HOME/go
+HACK_DIR ?= hack
+BUILD_TAG := build
 
-PACKAGES=$(shell find . -name "*_test.go" | xargs -n1 dirname | grep -v 'vendor/' | sort -u | xargs -n1 printf "%s.test_pkg ")
-
-BINDIR        ?= bin
-HACK_DIR     ?= hack
-TYPES_FILES = $(shell find pkg/apis -name types.go)
-
+# Domain name to use in e2e tests. This is important for ACME HTTP01 e2e tests,
+# which require a domain that resolves to the ingress controller to be used for
+# e2e tests.
 E2E_NGINX_CERTIFICATE_DOMAIN=
 
-.PHONY: version
-
+# AppVersion is set as the AppVersion to be compiled into the controller binary.
+# It's used as the default version of the 'acmesolver' image to use for ACME
+# challenge requests, and any other future provider that requires additional
+# image dependencies will use this same tag.
 ifeq ($(APP_VERSION),)
 APP_VERSION := canary
 endif
 
-all: verify test build
+# Get a list of all binaries to be built
+CMDS := $(shell find ./cmd/ -maxdepth 1 -type d -exec basename {} \; | grep -v cmd)
+# Path to dockerfiles directory
+DOCKERFILES := $(HACK_DIR)/build/dockerfiles
+# A list of all types.go files in pkg/apis
+TYPES_FILES := $(shell find pkg/apis -name types.go)
+# docker_build_controller, docker_build_apiserver etc
+DOCKER_BUILD_TARGETS := $(addprefix docker_build_, $(CMDS))
+# docker_push_controller, docker_push_apiserver etc
+DOCKER_PUSH_TARGETS := $(addprefix docker_push_, $(CMDS))
 
-.hack_verify:
-	@echo Running repo-infra verify scripts
-	@echo Running href checker:
-	@${HACK_DIR}/verify-links.sh
-	@echo Running errexit checker:
-	@${HACK_DIR}/verify-errexit.sh
-	@echo Running generated client checker:
-	@${HACK_DIR}/verify-client-gen.sh
+# Go build flags
+GOOS := linux
+GOARCH := amd64
+GOLDFLAGS := -ldflags "-X $(PACKAGE_NAME)/pkg/util.AppGitState=${GIT_STATE} -X $(PACKAGE_NAME)/pkg/util.AppGitCommit=${GIT_COMMIT} -X $(PACKAGE_NAME)/pkg/util.AppVersion=${APP_VERSION}"
 
-depend:
-	rm -rf $(TEST_DIR)/
-	rm -rf ${BUILD_DIR}/
-	mkdir $(TEST_DIR)/
-	mkdir $(BUILD_DIR)/
+.PHONY: verify build docker_build push generate generate_verify $(CMDS) go_test go_fmt $(DOCKER_BUILD_TARGETS) $(DOCKER_PUSH_TARGETS)
 
-verify: go_fmt .hack_verify
-test: go_test
+# Alias targets
+###############
 
-version:
-	$(eval GIT_STATE := $(shell if test -z "`git status --porcelain 2> /dev/null`"; then echo "clean"; else echo "dirty"; fi))
-	$(eval GIT_COMMIT := $(shell git rev-parse HEAD))
+verify: generate_verify hack_verify go_verify
+build: $(CMDS) docker_build
+docker_build: $(DOCKER_BUILD_TARGETS)
+docker_push: $(DOCKER_PUSH_TARGETS)
+push: build docker_push
 
-build_%: depend version
+# Code generation
+#################
+# This target runs all required generators against our API types.
+generate: $(TYPES_FILES)
+	$(HACK_DIR)/update-codegen.sh
+
+generate_verify:
+	$(HACK_DIR)/verify-codegen.sh
+
+# Hack targets
+##############
+hack_verify:
+	@echo Running href checker
+	$(HACK_DIR)/verify-links.sh
+	@echo Running errexit checker
+	$(HACK_DIR)/verify-errexit.sh
+
+# Go targets
+#################
+go_verify: go_fmt go_test
+
+$(CMDS):
 	CGO_ENABLED=0 GOOS=$(GOOS) GOARCH=$(GOARCH) go build \
 		-a -tags netgo \
-		-o ${BUILD_DIR}/${APP_NAME}-$*-$(GOOS)-$(GOARCH) \
-		-ldflags "-X github.com/jetstack/cert-manager/pkg/util.AppGitState=${GIT_STATE} -X github.com/jetstack/cert-manager/pkg/util.AppGitCommit=${GIT_COMMIT} -X github.com/jetstack/cert-manager/pkg/util.AppVersion=${APP_VERSION}" \
-		./cmd/$*
-
-go_fmt:
-	$(eval FMT_OUTPUT := $(shell go fmt ./pkg/... ./cmd/... ./test/... | wc -l))
-	@if [ "$(FMT_OUTPUT)" != "0" ]; then echo "Please run go fmt"; exit 1; fi
+		-o $(DOCKERFILES)/${APP_NAME}-$@_$(GOOS)_$(GOARCH) \
+		$(GOLDFLAGS) \
+		./cmd/$@
 
 go_test:
-	go test -v $$(go list ./... | grep -v '/vendor/' | grep -v '/test/e2e' | grep -v '/pkg/client' | grep -v '/third_party' )
+	go test -v \
+		$$(go list ./... | \
+			grep -v '/vendor/' | \
+			grep -v '/test/e2e' | \
+			grep -v '/pkg/client' | \
+			grep -v '/third_party' \
+		)
+
+go_fmt:
+	@set -e; \
+	GO_FMT=$$(git ls-files *.go | grep -v 'vendor/' | xargs gofmt -d); \
+	if [ -n "$${GO_FMT}" ] ; then \
+		echo "Please run go fmt"; \
+		echo "$$GO_FMT"; \
+		exit 1; \
+	fi
 
 e2e_test:
+	# Build the e2e tests
 	go test -o e2e-tests -c ./test/e2e
+	# TODO: make these paths configurable
+	# Run e2e tests
 	KUBECONFIG=$$HOME/.kube/config CERTMANAGERCONFIG=$$HOME/.kube/config \
 		./e2e-tests \
 			-cert-manager-image-pull-policy=Never \
-			-cert-manager-image=$(DOCKER_IMAGE)-controller:$(BUILD_TAG) \
+			-cert-manager-image=$(REGISTRY)/$(APP_NAME)-controller:$(BUILD_TAG) \
+			-ingress-shim-image-pull-policy=Never \
+			-ingress-shim-image=$(REGISTRY)/$(APP_NAME)-ingress-shim:$(BUILD_TAG) \
 			-acme-nginx-certificate-domain=$(E2E_NGINX_CERTIFICATE_DOMAIN)
 
-build: build_controller build_acmesolver
+# Docker targets
+################
+$(DOCKER_BUILD_TARGETS):
+	$(eval DOCKER_BUILD_CMD := $(subst docker_build_,,$@))
+	docker build \
+		--build-arg VCS_REF=$(GIT_COMMIT) \
+		-t $(REGISTRY)/$(APP_NAME)-$(DOCKER_BUILD_CMD):$(BUILD_TAG) \
+		-f $(DOCKERFILES)/$(DOCKER_BUILD_CMD)/Dockerfile \
+		$(DOCKERFILES)
 
-docker: docker_all
-
-docker_%:
-	# create a container
-	$(eval CONTAINER_ID := $(shell docker create \
-		-i \
-		-w $(CONTAINER_DIR) \
-		golang:${GO_VERSION} \
-		/bin/bash -c "tar xf - && make $*" \
-	))
-	
-	# run build inside container
-	tar cf - . | docker start -a -i $(CONTAINER_ID)
-
-	# copy artifacts over
-	rm -rf $(BUILD_DIR)/ $(TEST_DIR)/
-	docker cp $(CONTAINER_ID):$(CONTAINER_DIR)/$(BUILD_DIR)/ .
-	docker cp $(CONTAINER_ID):$(CONTAINER_DIR)/$(TEST_DIR)/ .
-
-	# remove container
-	docker rm $(CONTAINER_ID)
-
-image_%: version
-	docker build -f "./Dockerfile.$*" --build-arg VCS_REF=$(GIT_COMMIT) -t "$(DOCKER_IMAGE)-$*:$(BUILD_TAG)" .
-
-image: image_controller image_acmesolver
-
-push_%: image_%
+$(DOCKER_PUSH_TARGETS):
+	$(eval DOCKER_PUSH_CMD := $(subst docker_push_,,$@))
 	set -e; \
-	for tag in $(IMAGE_TAGS); do \
-		docker tag  "$(DOCKER_IMAGE)-$*:$(BUILD_TAG)" "$(DOCKER_IMAGE)-$*:$${tag}" ; \
-		docker push "$(DOCKER_IMAGE)-$*:$${tag}"; \
+		for tag in $(IMAGE_TAGS); do \
+		docker tag $(REGISTRY)/$(APP_NAME)-$(DOCKER_PUSH_CMD):$(BUILD_TAG) $(REGISTRY)/$(APP_NAME)-$(DOCKER_PUSH_CMD):$${tag} ; \
+		docker push $(REGISTRY)/$(APP_NAME)-$(DOCKER_PUSH_CMD):$${tag}; \
 	done
-
-push: push_controller push_acmesolver
-
-release:
-ifndef VERSION
-	$(error VERSION is not set)
-endif
-	@echo "Preparing release of version $(VERSION)"
-	echo $(VERSION) > VERSION
-	find examples -name '*.yaml' -type f -exec sed -i 's/kube-lego:[0-9\.]*$$/kube-lego:$(VERSION)/g' {} \;
-
-# Regenerate all files if the gen exes changed or any "types.go" files changed
-.generate_files:
-	# generate all pkg/client contents
-	$(HACK_DIR)/update-client-gen.sh
