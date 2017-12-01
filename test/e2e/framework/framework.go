@@ -27,7 +27,8 @@ import (
 )
 
 const (
-	podName = "test-cert-manager"
+	certManagerPodName = "test-cert-manager"
+	ingressShimPodName = "test-cert-manager"
 )
 
 // Framework supports common operations used by e2e tests; it will keep a client & a namespace for you.
@@ -99,7 +100,11 @@ func (f *Framework) BeforeEach() {
 	Expect(err).NotTo(HaveOccurred())
 
 	By("Creating a cert-manager pod")
-	pod, err := f.KubeClientSet.CoreV1().Pods(f.Namespace.Name).Create(util.NewCertManagerControllerPod(podName, "--cluster-resource-namespace="+f.Namespace.Name, "--v=4"))
+	pod, err := f.KubeClientSet.CoreV1().Pods(f.Namespace.Name).Create(util.NewCertManagerControllerPod(certManagerPodName, "--cluster-resource-namespace="+f.Namespace.Name, "--v=4"))
+	Expect(err).NotTo(HaveOccurred())
+
+	By("Creating an ingress-shim pod")
+	pod, err = f.KubeClientSet.CoreV1().Pods(f.Namespace.Name).Create(util.NewIngressShimControllerPod(ingressShimPodName, "--v=4"))
 	Expect(err).NotTo(HaveOccurred())
 
 	By("Waiting for cert-manager to be running")
@@ -112,7 +117,13 @@ func (f *Framework) AfterEach() {
 	RemoveCleanupAction(f.cleanupHandle)
 
 	By("Retrieving the cert-manager pod logs")
-	b, err := f.KubeClientSet.CoreV1().Pods(f.Namespace.Name).GetLogs(podName, &corev1.PodLogOptions{}).Do().Raw()
+	b, err := f.KubeClientSet.CoreV1().Pods(f.Namespace.Name).GetLogs(certManagerPodName, &corev1.PodLogOptions{}).Do().Raw()
+	Expect(err).NotTo(HaveOccurred())
+	_, err = GinkgoWriter.Write(b)
+	Expect(err).NotTo(HaveOccurred())
+
+	By("Retrieving the ingress-shim pod logs")
+	b, err = f.KubeClientSet.CoreV1().Pods(f.Namespace.Name).GetLogs(ingressShimPodName, &corev1.PodLogOptions{}).Do().Raw()
 	Expect(err).NotTo(HaveOccurred())
 	_, err = GinkgoWriter.Write(b)
 	Expect(err).NotTo(HaveOccurred())
