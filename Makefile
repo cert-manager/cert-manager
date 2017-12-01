@@ -76,6 +76,7 @@ $(CMDS):
 
 go_test:
 	go test -v \
+	    -race \
 		$$(go list ./... | \
 			grep -v '/vendor/' | \
 			grep -v '/test/e2e' | \
