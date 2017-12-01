@@ -38,17 +38,7 @@ var ingressGVK = extv1beta1.SchemeGroupVersion.WithKind("Ingress")
 
 func (c *Controller) Sync(ctx context.Context, ing *extv1beta1.Ingress) error {
 	if !shouldSync(ing) {
-		glog.Infof("Not syncing ingress %s/%s as it does not contain necessary annotations")
-		return nil
-	}
-
-	// get the existing Certificate resource with the same name as the ingress resource
-	existingCrt, err := c.certificateLister.Certificates(ing.Namespace).Get(ing.Name)
-	if !apierrors.IsNotFound(err) && err != nil {
-		return err
-	}
-	if existingCrt != nil {
-		glog.Infof("Certificate %q for ingress %q already exists, skipping processing", existingCrt.Name, ing.Name)
+		glog.Infof("Not syncing ingress %s/%s as it does not contain necessary annotations", ing.Namespace, ing.Name)
 		return nil
 	}
 
