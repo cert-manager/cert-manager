@@ -58,12 +58,14 @@ func TestBuildCertificates(t *testing.T) {
 		IssuerLister        []*v1alpha1.Issuer
 		ClusterIssuerLister []*v1alpha1.ClusterIssuer
 		CertificateLister   []*v1alpha1.Certificate
+		DefaultIssuerName   string
+		DefaultIssuerKind   string
 		Err                 bool
 		Expected            []*v1alpha1.Certificate
 	}
 	tests := []testT{
 		{
-			Name: "return a single Certificate for an ingress with a single valid TLS entry and appropriate annotations",
+			Name: "return a single HTTP01 Certificate for an ingress with a single valid TLS entry and HTTP01 annotations",
 			Ingress: &extv1beta1.Ingress{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "ingress-name",
@@ -106,6 +108,162 @@ func TestBuildCertificates(t *testing.T) {
 									},
 								},
 							},
+						},
+					},
+				},
+			},
+		},
+		{
+			Name: "should error when an ingress specifies dns01 challenge type but no challenge provider",
+			Err:  true,
+			Ingress: &extv1beta1.Ingress{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "ingress-name",
+					Namespace: "ingress-namespace",
+					Annotations: map[string]string{
+						clusterIssuerNameAnnotation:       "issuer-name",
+						acmeIssuerChallengeTypeAnnotation: "dns01",
+					},
+				},
+				Spec: extv1beta1.IngressSpec{
+					TLS: []extv1beta1.IngressTLS{
+						{
+							Hosts:      []string{"example.com", "www.example.com"},
+							SecretName: "example-com-tls",
+						},
+					},
+				},
+			},
+			ClusterIssuerLister: []*v1alpha1.ClusterIssuer{buildACMEClusterIssuer("issuer-name")},
+		},
+		{
+			Name: "should error when an invalid ACME challenge type is specified",
+			Err:  true,
+			Ingress: &extv1beta1.Ingress{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "ingress-name",
+					Namespace: "ingress-namespace",
+					Annotations: map[string]string{
+						clusterIssuerNameAnnotation:       "issuer-name",
+						acmeIssuerChallengeTypeAnnotation: "invalid-challenge-type",
+					},
+				},
+				Spec: extv1beta1.IngressSpec{
+					TLS: []extv1beta1.IngressTLS{
+						{
+							Hosts:      []string{"example.com", "www.example.com"},
+							SecretName: "example-com-tls",
+						},
+					},
+				},
+			},
+			ClusterIssuerLister: []*v1alpha1.ClusterIssuer{buildACMEClusterIssuer("issuer-name")},
+		},
+		{
+			Name: "return a single DNS01 Certificate for an ingress with a single valid TLS entry and DNS01 annotations",
+			Err:  true,
+			Ingress: &extv1beta1.Ingress{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "ingress-name",
+					Namespace: "ingress-namespace",
+					Annotations: map[string]string{
+						clusterIssuerNameAnnotation:           "issuer-name",
+						acmeIssuerChallengeTypeAnnotation:     "dns01",
+						acmeIssuerDNS01ProviderNameAnnotation: "fake-dns",
+					},
+				},
+				Spec: extv1beta1.IngressSpec{
+					TLS: []extv1beta1.IngressTLS{
+						{
+							Hosts:      []string{"example.com", "www.example.com"},
+							SecretName: "example-com-tls",
+						},
+					},
+				},
+			},
+			ClusterIssuerLister: []*v1alpha1.ClusterIssuer{buildACMEClusterIssuer("issuer-name")},
+			Expected: []*v1alpha1.Certificate{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:            "example-com-tls",
+						Namespace:       "ingress-namespace",
+						OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(buildIngress("ingress-name", "ingress-namespace", nil), ingressGVK)},
+					},
+					Spec: v1alpha1.CertificateSpec{
+						DNSNames:   []string{"example.com", "www.example.com"},
+						SecretName: "example-com-tls",
+						IssuerRef: v1alpha1.ObjectReference{
+							Name: "issuer-name",
+							Kind: "ClusterIssuer",
+						},
+						ACME: &v1alpha1.ACMECertificateConfig{
+							Config: []v1alpha1.ACMECertificateDomainConfig{
+								{
+									Domains: []string{"example.com", "www.example.com"},
+									DNS01: &v1alpha1.ACMECertificateDNS01Config{
+										Provider: "fake-dns",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			Name: "should error when no challenge type is provided",
+			Err:  true,
+			Ingress: &extv1beta1.Ingress{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "ingress-name",
+					Namespace: "ingress-namespace",
+					Annotations: map[string]string{
+						clusterIssuerNameAnnotation: "issuer-name",
+					},
+				},
+				Spec: extv1beta1.IngressSpec{
+					TLS: []extv1beta1.IngressTLS{
+						{
+							Hosts:      []string{"example.com", "www.example.com"},
+							SecretName: "example-com-tls",
+						},
+					},
+				},
+			},
+			ClusterIssuerLister: []*v1alpha1.ClusterIssuer{buildACMEClusterIssuer("issuer-name")},
+		},
+		{
+			Name:              "should return a basic certificate when no provider specific config is provided",
+			DefaultIssuerName: "issuer-name",
+			DefaultIssuerKind: "ClusterIssuer",
+			Ingress: &extv1beta1.Ingress{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "ingress-name",
+					Namespace: "ingress-namespace",
+				},
+				Spec: extv1beta1.IngressSpec{
+					TLS: []extv1beta1.IngressTLS{
+						{
+							Hosts:      []string{"example.com", "www.example.com"},
+							SecretName: "example-com-tls",
+						},
+					},
+				},
+			},
+			ClusterIssuerLister: []*v1alpha1.ClusterIssuer{buildClusterIssuer("issuer-name")},
+			Expected: []*v1alpha1.Certificate{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:            "example-com-tls",
+						Namespace:       "ingress-namespace",
+						OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(buildIngress("ingress-name", "ingress-namespace", nil), ingressGVK)},
+					},
+					Spec: v1alpha1.CertificateSpec{
+						DNSNames:   []string{"example.com", "www.example.com"},
+						SecretName: "example-com-tls",
+						IssuerRef: v1alpha1.ObjectReference{
+							Name: "issuer-name",
+							Kind: "ClusterIssuer",
 						},
 					},
 				},
@@ -209,7 +367,10 @@ func TestBuildCertificates(t *testing.T) {
 				issuerLister:        issuerInformer.Lister(),
 				clusterIssuerLister: clusterIssuerInformer.Lister(),
 				certificateLister:   certificatesInformer.Lister(),
-				options:             &options.ControllerOptions{},
+				options: &options.ControllerOptions{
+					DefaultIssuerName: test.DefaultIssuerName,
+					DefaultIssuerKind: test.DefaultIssuerKind,
+				},
 			}
 			crts, err := c.buildCertificates(test.Ingress)
 			if err != nil && !test.Err {
