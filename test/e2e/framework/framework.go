@@ -28,7 +28,7 @@ import (
 
 const (
 	certManagerPodName = "test-cert-manager"
-	ingressShimPodName = "test-cert-manager"
+	ingressShimPodName = "test-ingress-shim"
 )
 
 // Framework supports common operations used by e2e tests; it will keep a client & a namespace for you.

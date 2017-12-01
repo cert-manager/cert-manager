@@ -94,17 +94,17 @@ var _ = framework.CertManagerDescribe("ACME Certificate with Ingress (HTTP01)", 
 
 	It("should obtain a signed certificate with a single CN from the ACME server when putting an annotation on an ingress resource", func() {
 		By("Creating an Ingress with the issuer name annotation set")
-		_, err := f.KubeClientSet.ExtensionsV1beta1().Ingresses(f.Namespace.Name).Create(util.NewIngress(certificateName, certificateSecretName, map[string]string{
+		_, err := f.KubeClientSet.ExtensionsV1beta1().Ingresses(f.Namespace.Name).Create(util.NewIngress(certificateSecretName, certificateSecretName, map[string]string{
 			"certmanager.k8s.io/issuer":                  issuerName,
 			"certmanager.k8s.io/acme-challenge-provider": "http01",
 		}, acmeCertificateDomain))
 		Expect(err).NotTo(HaveOccurred())
 		By("Waiting for Certificate to exist")
-		err = util.WaitForCertificateToExist(f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name), certificateName, foreverTestTimeout)
+		err = util.WaitForCertificateToExist(f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name), certificateSecretName, foreverTestTimeout)
 		Expect(err).NotTo(HaveOccurred())
 		By("Waiting for Certificate to become Ready")
 		err = util.WaitForCertificateCondition(f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name),
-			certificateName,
+			certificateSecretName,
 			v1alpha1.CertificateCondition{
 				Type:   v1alpha1.CertificateConditionReady,
 				Status: v1alpha1.ConditionTrue,
