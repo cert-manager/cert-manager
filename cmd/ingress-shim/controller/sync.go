@@ -121,9 +121,6 @@ func (c *Controller) setIssuerSpecificConfig(crt *v1alpha1.Certificate, issuer v
 		if !ok {
 			challengeType = c.options.DefaultACMEIssuerChallengeType
 		}
-		if challengeType == "" {
-			return fmt.Errorf("no acme issuer challenge type specified")
-		}
 		domainCfg := v1alpha1.ACMECertificateDomainConfig{
 			Domains: tls.Hosts,
 		}
@@ -139,6 +136,8 @@ func (c *Controller) setIssuerSpecificConfig(crt *v1alpha1.Certificate, issuer v
 				return fmt.Errorf("no acme issuer dns01 challenge provider specified")
 			}
 			domainCfg.DNS01 = &v1alpha1.ACMECertificateDNS01Config{Provider: dnsProvider}
+		default:
+			return fmt.Errorf("invalid acme issuer challenge type specified %q", challengeType)
 		}
 		crt.Spec.ACME = &v1alpha1.ACMECertificateConfig{Config: []v1alpha1.ACMECertificateDomainConfig{domainCfg}}
 	}
