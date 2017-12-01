@@ -195,6 +195,12 @@ func checkAuthorization(ctx context.Context, cl *acme.Client, uri string) (bool,
 	a, err := cl.GetAuthorization(ctx, uri)
 
 	if err != nil {
+		if err, ok := err.(*acme.Error); ok {
+			// response code is 404 when authorization has expired
+			if err.StatusCode == 404 {
+				return false, nil
+			}
+		}
 		return false, err
 	}
 
