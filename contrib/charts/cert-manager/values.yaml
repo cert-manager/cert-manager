@@ -13,4 +13,20 @@ createCustomResource: true
 rbac:
   enabled: true
 
-resources: {}
+resources:
+  requests:
+    cpu: 10m
+    memory: 32Mi
+
+ingressShim:
+  enabled: true
+  resources:
+    requests:
+      cpu: 10m
+      memory: 32Mi
+  image:
+    repository: quay.io/jetstack/cert-manager-controller
+    # Defaults to image.tag.
+    # You should only change this if you know what you are doing!
+    # tag: v0.2.1
+    pullPolicy: Always
