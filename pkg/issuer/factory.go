@@ -30,7 +30,7 @@ type factory struct {
 // however this is an inexpensive operation and so, Issuers should not need
 // to be cached and reused.
 func (f *factory) IssuerFor(issuer v1alpha1.GenericIssuer) (Interface, error) {
-	issuerType, err := nameForIssuer(issuer)
+	issuerType, err := NameForIssuer(issuer)
 	if err != nil {
 		return nil, fmt.Errorf("could not get issuer type: %s", err.Error())
 	}

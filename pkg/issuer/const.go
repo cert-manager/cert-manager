@@ -17,9 +17,9 @@ const (
 	IssuerSelfSigned string = "selfsigned"
 )
 
-// nameForIssuer determines the name of the issuer implementation given an
+// NameForIssuer determines the name of the issuer implementation given an
 // Issuer resource.
-func nameForIssuer(i v1alpha1.GenericIssuer) (string, error) {
+func NameForIssuer(i v1alpha1.GenericIssuer) (string, error) {
 	switch {
 	case i.GetSpec().ACME != nil:
 		return IssuerACME, nil
