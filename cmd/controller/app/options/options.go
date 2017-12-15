@@ -38,9 +38,6 @@ const (
 
 var (
 	defaultACMEHTTP01SolverImage = fmt.Sprintf("quay.io/jetstack/cert-manager-acmesolver:%s", util.AppVersion)
-)
-
-var (
 	defaultACMEDNS01ResolvConfFile = "/etc/resolv.conf"
 )
 
