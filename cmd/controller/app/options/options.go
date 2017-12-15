@@ -21,6 +21,7 @@ type ControllerOptions struct {
 	LeaderElectionRetryPeriod   time.Duration
 
 	ACMEHTTP01SolverImage string
+	ACMEDNS01ResolvConfFile string
 }
 
 const (
@@ -37,6 +38,10 @@ const (
 
 var (
 	defaultACMEHTTP01SolverImage = fmt.Sprintf("quay.io/jetstack/cert-manager-acmesolver:%s", util.AppVersion)
+)
+
+var (
+	defaultACMEDNS01ResolvConfFile = "/etc/resolv.conf"
 )
 
 func NewControllerOptions() *ControllerOptions {
@@ -81,6 +86,11 @@ func (s *ControllerOptions) AddFlags(fs *pflag.FlagSet) {
 	fs.DurationVar(&s.LeaderElectionRetryPeriod, "leader-election-retry-period", defaultLeaderElectionRetryPeriod, ""+
 		"The duration the clients should wait between attempting acquisition and renewal "+
 		"of a leadership. This is only applicable if leader election is enabled.")
+
+	fs.StringVar(&s.ACMEDNS01ResolvConfFile, "acme-dns01-resolv-conf-file", defaultACMEDNS01ResolvConfFile, ""+
+		"An optional path to a custom resolv.conf file to use when solving ACME DNS01 challenges. If you"+
+		"are running a cluster on-premise and need to have this deployment communicate directly with external"+
+		"DNS servers, set this to a custom file with upstream nameservers. Defaults to '/etc/resolv.conf'.")
 
 	fs.StringVar(&s.ACMEHTTP01SolverImage, "acme-http01-solver-image", defaultACMEHTTP01SolverImage, ""+
 		"The docker image to use to solve ACME HTTP01 challenges. You most likely will not "+
