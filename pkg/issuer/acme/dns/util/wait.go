@@ -1,10 +1,12 @@
 package util
 
 import (
+	"os"
 	"fmt"
 	"net"
 	"strings"
 	"time"
+	"context"
 
 	"github.com/golang/glog"
 	"github.com/miekg/dns"
@@ -20,7 +22,13 @@ var (
 	fqdnToZone                  = map[string]string{}
 )
 
-const defaultResolvConf = "/etc/resolv.conf"
+func getResolvConfFile(ctx context.Context) (string, error) {
+  if _, err := os.Stat(ctx.ACMEDNS01ResolvConfFile); os.IsNotExist(err) {
+    return "/etc/resolv.conf"
+  }
+}
+
+var defaultResolvConf = getResolveConfFile()
 
 var defaultNameservers = []string{
 	"google-public-dns-a.google.com:53",
