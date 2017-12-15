@@ -91,7 +91,7 @@ func (s *ControllerOptions) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVar(&s.ACMEDNS01ResolvConfFile, "acme-dns01-resolv-conf-file", defaultACMEDNS01ResolvConfFile, ""+
                 "An optional path to a custom resolv.conf file to use when solving ACME DNS01 challenges. If you"+
                 "are running a cluster on-premise and need to have this deployment communicate directly with external"+
-                "DNS servers, set this to a custom file with upstream nameservers. Defaults to '/etc/resolv.conf'.")
+                "DNS servers, set this to a custom file with upstream nameservers.")
 }
 
 func (o *ControllerOptions) Validate() error {
