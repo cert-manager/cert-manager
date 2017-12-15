@@ -87,14 +87,14 @@ func (s *ControllerOptions) AddFlags(fs *pflag.FlagSet) {
 		"The duration the clients should wait between attempting acquisition and renewal "+
 		"of a leadership. This is only applicable if leader election is enabled.")
 
-	fs.StringVar(&s.ACMEDNS01ResolvConfFile, "acme-dns01-resolv-conf-file", defaultACMEDNS01ResolvConfFile, ""+
-		"An optional path to a custom resolv.conf file to use when solving ACME DNS01 challenges. If you"+
-		"are running a cluster on-premise and need to have this deployment communicate directly with external"+
-		"DNS servers, set this to a custom file with upstream nameservers. Defaults to '/etc/resolv.conf'.")
-
 	fs.StringVar(&s.ACMEHTTP01SolverImage, "acme-http01-solver-image", defaultACMEHTTP01SolverImage, ""+
 		"The docker image to use to solve ACME HTTP01 challenges. You most likely will not "+
 		"need to change this parameter unless you are testing a new feature or developing cert-manager.")
+
+	fs.StringVar(&s.ACMEDNS01ResolvConfFile, "acme-dns01-resolv-conf-file", defaultACMEDNS01ResolvConfFile, ""+
+                "An optional path to a custom resolv.conf file to use when solving ACME DNS01 challenges. If you"+
+                "are running a cluster on-premise and need to have this deployment communicate directly with external"+
+                "DNS servers, set this to a custom file with upstream nameservers. Defaults to '/etc/resolv.conf'.")
 }
 
 func (o *ControllerOptions) Validate() error {
