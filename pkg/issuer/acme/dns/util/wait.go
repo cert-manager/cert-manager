@@ -28,7 +28,7 @@ func getResolvConfFile(ctx context.Context) (string, error) {
   }
 }
 
-var defaultResolvConf = getResolveConfFile()
+var defaultResolvConf = getResolvConfFile()
 
 var defaultNameservers = []string{
 	"google-public-dns-a.google.com:53",
