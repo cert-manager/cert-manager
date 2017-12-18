@@ -22,7 +22,7 @@ var (
 	fqdnToZone                  = map[string]string{}
 )
 
-func getResolvConfFile(ctx context.Context) (string, error) {
+func getResolvConfFile(ctx context.Context) string {
   if _, err := os.Stat(ctx.ACMEDNS01ResolvConfFile); os.IsNotExist(err) {
     return "/etc/resolv.conf"
   }
