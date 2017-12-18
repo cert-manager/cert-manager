@@ -44,15 +44,24 @@ The command removes all the Kubernetes components associated with the chart and 
 
 The following tables lists the configurable parameters of the cert-manager chart and their default values.
 
-| Parameter              | Description                             | Default                                        |
-| ---------------------- | --------------------------------------- | ---------------------------------------------- |
-| `image.repository`     | Image repository                        | `quay.io/jetstack/cert-manager-controller`     |
-| `image.tag`            | Image tag                               | `v0.2.3`                                       |
-| `image.pullPolicy`     | Image pull policy                       | `Always`                                       |
-| `replicaCount`         | Number of cert-manager replicas         | `1`                                            |
-| `createCustomResource` | Create CRD/TPR with this release        | `true`                                         |
-| `rbac.enabled`         | Create RBAC resources with this release | `true`                                         |
-| `resources`            | CPU/Memory resource requests/limits     | `None`                                         |
+| Parameter | Description | Default |
+| --------- | ----------- | ------- |
+| `image.repository` | Image repository | `quay.io/jetstack/cert-manager-controller` |
+| `image.tag` | Image tag | `v0.2.3` |
+| `image.pullPolicy` | Image pull policy | `IfNotPresent` |
+| `replicaCount`  | Number of cert-manager replicas  | `1` |
+| `createCustomResource` | Create CRD/TPR with this release | `true` |
+| `extraArgs` | Optional flags for cert-manager | `[]` |
+| `rbac.create` | If true, create & use RBAC resources | `true`
+| `rbac.serviceAccountName` | ServiceAccount to be used (ignored if rbac.create=true) | `default`
+| `resources` | CPU/memory resource requests/limits | `requests: {cpu: 10m, memory: 32Mi}` |
+| `nodeSelector` | Node labels for pod assignment | `{}` |
+| `ingressShim.enabled` | Enable ingress-shim for automatic ingress integration | `true`|
+| `ingressShim.extraArgs` | Optional flags for ingress-shim | `[]` |
+| `ingressShim.resources` | CPU/memory resource requests/limits for ingress-shim | `requests: {cpu: 10m, memory: 32Mi}` |
+| `ingressShim.image.repository` | Image repository for ingress-shim | `quay.io/jetstack/cert-manager-ingress-shim` |
+| `ingressShim.image.tag` | Image tag for ingress-shim. Defaults to `image.tag` if empty | `` |
+| `ingressShim.image.pullPolicy` | Image pull policy for ingress-shim | `IfNotPresent` |
 
 Specify each parameter using the `--set key=value[,key=value]` argument to `helm install`.
 

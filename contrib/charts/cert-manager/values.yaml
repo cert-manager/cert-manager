@@ -6,12 +6,17 @@ replicaCount: 1
 image:
   repository: quay.io/jetstack/cert-manager-controller
   tag: v0.2.3
-  pullPolicy: Always
+  pullPolicy: IfNotPresent
 
 createCustomResource: true
 
 rbac:
-  enabled: true
+  create: true
+  serviceAccountName: default
+
+# Optional additional arguments
+extraArgs: []
+  # - --cluster-resource-namespace=ingress
 
 resources:
   requests:
@@ -21,17 +26,24 @@ resources:
 # Optional additional arguments for cert-manager
 extraArgs: []
 
+nodeSelector: {}
+
 ingressShim:
   enabled: true
+
   # Optional additional arguments for ingress-shim
   extraArgs: []
+
   resources:
     requests:
       cpu: 10m
       memory: 32Mi
+
   image:
     repository: quay.io/jetstack/cert-manager-ingress-shim
+
     # Defaults to image.tag.
     # You should only change this if you know what you are doing!
     # tag: v0.2.3
-    pullPolicy: Always
+
+    pullPolicy: IfNotPresent

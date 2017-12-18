@@ -1,40 +1,41 @@
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1beta1
 kind: Deployment
 metadata:
-  name: {{ template "fullname" . }}
+  name: {{ template "cert-manager.fullname" . }}
   labels:
-    app: {{ template "name" . }}
-    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    app: {{ template "cert-manager.name" . }}
+    chart: {{ template "cert-manager.chart" . }}
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
 spec:
   replicas: {{ .Values.replicaCount }}
+  strategy:
+    type: Recreate
   template:
     metadata:
       labels:
-        app: {{ template "name" . }}
+        app: {{ template "cert-manager.name" . }}
         release: {{ .Release.Name }}
     spec:
-      serviceAccount: {{ template "fullname" . }}
-      serviceAccountName: {{ template "fullname" . }}
+      serviceAccountName: {{ if .Values.rbac.create }}{{ template "cert-manager.fullname" . }}{{ else }}"{{ .Values.rbac.serviceAccountName }}"{{ end }}
       containers:
         - name: {{ .Chart.Name }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
+        {{- if .Values.extraArgs }}
           args:
-{{- range .Values.extraArgs }}
-          - {{ . }}
-{{- end }}
+{{ toYaml .Values.extraArgs | indent 12 }}
+        {{- end }}
           resources:
 {{ toYaml .Values.resources | indent 12 }}
 {{- if .Values.ingressShim.enabled }}
         - name: ingress-shim
-          image: "{{ .Values.ingressShim.image.repository }}:{{ default .Values.ingressShim.image.tag | default .Values.image.tag }}"
+          image: "{{ .Values.ingressShim.image.repository }}:{{ default .Values.ingressShim.image.tag .Values.image.tag }}"
           imagePullPolicy: {{ .Values.ingressShim.image.pullPolicy }}
+        {{- if .Values.ingressShim.extraArgs }}
           args:
-{{- range .Values.ingressShim.extraArgs }}
-          - {{ . }}
-{{- end }}
+{{ toYaml .Values.ingressShim.extraArgs | indent 12 }}
+        {{- end }}
           resources:
 {{ toYaml .Values.ingressShim.resources | indent 12 }}
 {{- end }}
