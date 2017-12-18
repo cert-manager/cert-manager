@@ -26,6 +26,7 @@ func getResolvConfFile(ctx context.Context) (string, error) {
   if _, err := os.Stat(ctx.ACMEDNS01ResolvConfFile); os.IsNotExist(err) {
     return "/etc/resolv.conf"
   }
+  return ctx.ACMEDNS01ResolvConfFile
 }
 
 var defaultResolvConf = getResolvConfFile()
