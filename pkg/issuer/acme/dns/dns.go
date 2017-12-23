@@ -191,19 +191,12 @@ func (s *Solver) solverForIssuerProvider(providerName string) (solver, error) {
 			return nil, fmt.Errorf("error getting route53 secret access key: %s", err)
 		}
 
-		accessKey := providerConfig.Route53.AccessKeyID
-		if accessKey == "" {
-			accessKeyFromSecret, err := s.resolveSecretKeyRef(providerConfig.Route53.AccessKeyIDRef)
-			if err == errEmptyRef {
-				return nil, fmt.Errorf("no route53 access key provided: 'accessKeyID' or 'accessKeyIDRef' must be set")
-			}
-			if err != nil {
-				return nil, fmt.Errorf("error getting route53 access key from secret: %s", err)
-			}
-			accessKey = string(accessKeyFromSecret)
+		accessKey, err := s.resolveSecretKeyRef(providerConfig.Route53.AccessKeyIDRef)
+		if err != nil {
+			return nil, fmt.Errorf("error getting route53 access key from secret: %s", err)
 		}
 		impl, err = s.dnsProviderConstructors.route53(
-			strings.TrimSpace(accessKey),
+			strings.TrimSpace(string(accessKey)),
 			strings.TrimSpace(string(secretAccessKey)),
 			providerConfig.Route53.HostedZoneID,
 			providerConfig.Route53.Region,
