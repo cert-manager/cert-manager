@@ -114,6 +114,7 @@ type ACMEIssuerDNS01Provider struct {
 	CloudDNS   *ACMEIssuerDNS01ProviderCloudDNS   `json:"clouddns,omitempty"`
 	Cloudflare *ACMEIssuerDNS01ProviderCloudflare `json:"cloudflare,omitempty"`
 	Route53    *ACMEIssuerDNS01ProviderRoute53    `json:"route53,omitempty"`
+	AzureDNS   *ACMEIssuerDNS01ProviderAzureDNS   `json:"azuredns,omitempty"`
 }
 
 // ACMEIssuerDNS01ProviderCloudDNS is a structure containing the DNS
@@ -137,6 +138,19 @@ type ACMEIssuerDNS01ProviderRoute53 struct {
 	SecretAccessKey SecretKeySelector `json:"secretAccessKeySecretRef"`
 	HostedZoneID    string            `json:"hostedZoneID"`
 	Region          string            `json:"region"`
+}
+
+// ACMEIssuerDNS01ProviderAzureDNS is a structure containing the
+// configuration for Azure DNS
+type ACMEIssuerDNS01ProviderAzureDNS struct {
+	ClientID          string            `json:"clientID"`
+	ClientSecret      SecretKeySelector `json:"clientSecretSecretRef"`
+	SubscriptionID    string            `json:"subscriptionID"`
+	TenantID          string            `json:"tenantID"`
+	ResourceGroupName string            `json:"resourceGroupName"`
+
+	// + optional
+	HostedZoneName string `json:"hostedZoneName"`
 }
 
 // IssuerStatus contains status information about an Issuer

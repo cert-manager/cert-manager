@@ -46,3 +46,21 @@ spec:
           # This field is optional for overriding the Route53 hosted zone ID
           # It is required to use it if the cert-manager cannot disambiguate between two different hosted zones for the same zone name
           hostedZoneID: DIKER8JPL21PSA
+      - name: azuredns
+        azuredns:
+          # Service principal clientId (also called appId)
+          clientID: 8ff041f4-a14f-4753-80c2-101b35db5879
+          # A secretKeyRef to a service principal ClientSecret (password)
+          # ref: https://docs.microsoft.com/en-us/azure/container-service/kubernetes/container-service-kubernetes-service-principal
+          clientSecretSecretRef:
+            name: azuredns-config
+            key: client-secret
+          # Azure subscription Id
+          subscriptionID: 0933cdcc-0cd0-4fb3-9f26-dac4fdc2154b
+          # Azure AD tenant Id
+          tenantID: 9581f7ad-8f4f-4f07-92df-12c821981ce8
+          # ResourceGroup name where dns zone is provisioned
+          resourceGroupName: resource-group
+          # Name of the hosted zone, if ommited it will be computed from domain provided during certificate creation
+          # hosted zone name is always part of domain name from certificate request
+          hostedZoneName: k8s.group
