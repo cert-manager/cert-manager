@@ -7,6 +7,8 @@ import (
 	"testing"
 )
 
+const defaultResolvConfFile = "/etc/resolv.conf"
+
 var lookupNameserversTestsOK = []struct {
 	fqdn string
 	nss  []string
@@ -83,7 +85,7 @@ var checkResolvConfServersTests = []struct {
 
 func TestPreCheckDNS(t *testing.T) {
 	// TODO: find a better TXT record to use in tests
-	ok, err := PreCheckDNS("google.com.", "v=spf1 include:_spf.google.com ~all")
+	ok, err := PreCheckDNS("google.com.", "v=spf1 include:_spf.google.com ~all", defaultResolvConfFile)
 	if err != nil || !ok {
 		t.Errorf("preCheckDNS failed for acme-staging.api.letsencrypt.org: %s", err.Error())
 	}
@@ -91,7 +93,7 @@ func TestPreCheckDNS(t *testing.T) {
 
 func TestLookupNameserversOK(t *testing.T) {
 	for _, tt := range lookupNameserversTestsOK {
-		nss, err := lookupNameservers(tt.fqdn)
+		nss, err := lookupNameservers(tt.fqdn, defaultResolvConfFile)
 		if err != nil {
 			t.Fatalf("#%s: got %q; want nil", tt.fqdn, err)
 		}
@@ -107,7 +109,7 @@ func TestLookupNameserversOK(t *testing.T) {
 
 func TestLookupNameserversErr(t *testing.T) {
 	for _, tt := range lookupNameserversTestsErr {
-		_, err := lookupNameservers(tt.fqdn)
+		_, err := lookupNameservers(tt.fqdn, defaultResolvConfFile)
 		if err == nil {
 			t.Fatalf("#%s: expected %q (error); got <nil>", tt.fqdn, tt.error)
 		}
@@ -121,7 +123,7 @@ func TestLookupNameserversErr(t *testing.T) {
 
 func TestFindZoneByFqdn(t *testing.T) {
 	for _, tt := range findZoneByFqdnTests {
-		res, err := FindZoneByFqdn(tt.fqdn, RecursiveNameservers)
+		res, err := FindZoneByFqdn(tt.fqdn, defaultResolvConfFile)
 		if err != nil {
 			t.Errorf("FindZoneByFqdn failed for %s: %v", tt.fqdn, err)
 		}

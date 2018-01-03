@@ -137,9 +137,9 @@ func buildControllerContext(opts *options.ControllerOptions) (*controller.Contex
 			Namespace:                 opts.Namespace,
 			ClusterResourceNamespace:  opts.ClusterResourceNamespace,
 			ACMEHTTP01SolverImage:     opts.ACMEHTTP01SolverImage,
+			ACMEDNS01ResolvConfFile:   opts.ACMEDNS01ResolvConfFile,
 		}),
 		Namespace:                opts.Namespace,
-		ACMEDNS01ResolvConfFile:  opts.ACMEDNS01ResolvConfFile,
 		ClusterResourceNamespace: opts.ClusterResourceNamespace,
 	}, kubeCfg, nil
 }
