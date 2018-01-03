@@ -2,3 +2,4 @@
 /acmesolver
 /controller
 /hack/build/dockerfiles/cert-manager-*_*_*
+/vendor

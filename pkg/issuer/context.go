@@ -37,4 +37,7 @@ type Context struct {
 	// ACMEHTTP01SolverImage is the image to use for solving ACME HTTP01
 	// challenges
 	ACMEHTTP01SolverImage string
+	// acmeDNS01ResolvConfFile is an optional custom resolv.conf file for
+	// solve ACME DNS01 challenges
+	ACMEDNS01ResolvConfFile string
 }

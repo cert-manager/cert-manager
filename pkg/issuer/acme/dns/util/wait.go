@@ -1,6 +1,7 @@
 package util
 
 import (
+	"os"
 	"fmt"
 	"net"
 	"strings"
@@ -20,14 +21,10 @@ var (
 	fqdnToZone                  = map[string]string{}
 )
 
-const defaultResolvConf = "/etc/resolv.conf"
-
 var defaultNameservers = []string{
 	"google-public-dns-a.google.com:53",
 	"google-public-dns-b.google.com:53",
 }
-
-var RecursiveNameservers = getNameservers(defaultResolvConf, defaultNameservers)
 
 // DNSTimeout is used to override the default DNS timeout of 10 seconds.
 var DNSTimeout = 10 * time.Second
@@ -52,9 +49,11 @@ func getNameservers(path string, defaults []string) []string {
 }
 
 // checkDNSPropagation checks if the expected TXT record has been propagated to all authoritative nameservers.
-func checkDNSPropagation(fqdn, value string) (bool, error) {
+func checkDNSPropagation(fqdn, value string, resolvConfFile string) (bool, error) {
+	recursiveNameservers = getNameservers(resolvConfFile, defaultNameservers)
+
 	// Initial attempt to resolve at the recursive NS
-	r, err := dnsQuery(fqdn, dns.TypeTXT, RecursiveNameservers, true)
+	r, err := dnsQuery(fqdn, dns.TypeTXT, recursiveNameservers, true)
 	if err != nil {
 		return false, err
 	}
@@ -140,15 +139,16 @@ func dnsQuery(fqdn string, rtype uint16, nameservers []string, recursive bool) (
 }
 
 // lookupNameservers returns the authoritative nameservers for the given fqdn.
-func lookupNameservers(fqdn string) ([]string, error) {
+func lookupNameservers(fqdn string, resolvConfFile string) ([]string, error) {
+	recursiveNameservers = getNameservers(resolvConfFile, defaultNameservers)
 	var authoritativeNss []string
 
-	zone, err := FindZoneByFqdn(fqdn, RecursiveNameservers)
+	zone, err := FindZoneByFqdn(fqdn, recursiveNameservers)
 	if err != nil {
 		return nil, fmt.Errorf("Could not determine the zone: %v", err)
 	}
 
-	r, err := dnsQuery(zone, dns.TypeNS, RecursiveNameservers, true)
+	r, err := dnsQuery(zone, dns.TypeNS, recursiveNameservers, true)
 	if err != nil {
 		return nil, err
 	}
@@ -167,7 +167,9 @@ func lookupNameservers(fqdn string) ([]string, error) {
 
 // FindZoneByFqdn determines the zone apex for the given fqdn by recursing up the
 // domain labels until the nameserver returns a SOA record in the answer section.
-func FindZoneByFqdn(fqdn string, nameservers []string) (string, error) {
+func FindZoneByFqdn(fqdn string, resolvConfFile string) (string, error) {
+	nameservers = getNameservers(resolvConfFile, defaultNameservers)
+
 	// Do we have it cached?
 	if zone, ok := fqdnToZone[fqdn]; ok {
 		return zone, nil

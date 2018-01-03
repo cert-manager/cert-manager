@@ -113,7 +113,9 @@ func NewSharedInformerFactory(client {{.clientSetInterface|raw}}, defaultResync 
   return NewFilteredSharedInformerFactory(client, defaultResync, {{.namespaceAll|raw}}, nil)
 }
 
-// NewFilteredSharedInformerFactory constructs a new instance of sharedInformerFactory
+// NewFilteredSharedInformerFactory constructs a new instance of sharedInformerFactory.
+// Listers obtained via this SharedInformerFactory will be subject to the same filters
+// as specified here.
 func NewFilteredSharedInformerFactory(client {{.clientSetInterface|raw}}, defaultResync {{.timeDuration|raw}}, namespace string, tweakListOptions {{.interfacesTweakListOptionsFunc|raw}}) SharedInformerFactory {
   return &sharedInformerFactory{
     client:           client,

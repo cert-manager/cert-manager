@@ -188,6 +188,12 @@
   version = "v1.0"
 
 [[projects]]
+  name = "github.com/jetstack/cert-manager"
+  packages = ["cmd/controller/app","cmd/controller/app/options","cmd/ingress-shim/controller","cmd/ingress-shim/options","pkg/apis/certmanager","pkg/apis/certmanager/install","pkg/apis/certmanager/v1alpha1","pkg/client/clientset/versioned","pkg/client/clientset/versioned/fake","pkg/client/clientset/versioned/scheme","pkg/client/clientset/versioned/typed/certmanager/v1alpha1","pkg/client/clientset/versioned/typed/certmanager/v1alpha1/fake","pkg/client/informers/externalversions","pkg/client/informers/externalversions/certmanager","pkg/client/informers/externalversions/certmanager/v1alpha1","pkg/client/informers/externalversions/internalinterfaces","pkg/client/listers/certmanager/v1alpha1","pkg/controller","pkg/controller/certificates","pkg/controller/clusterissuers","pkg/controller/issuers","pkg/issuer","pkg/issuer/acme","pkg/issuer/acme/dns","pkg/issuer/acme/dns/clouddns","pkg/issuer/acme/dns/cloudflare","pkg/issuer/acme/dns/route53","pkg/issuer/acme/dns/util","pkg/issuer/acme/http","pkg/issuer/acme/http/solver","pkg/issuer/ca","pkg/logs","pkg/scheduler","pkg/util","pkg/util/errors","pkg/util/kube","pkg/util/pki","test/e2e/certificate","test/e2e/clusterissuer","test/e2e/framework","test/e2e/ingress","test/e2e/issuer","test/util","third_party/k8s.io/client-go/informers","third_party/k8s.io/client-go/informers/core","third_party/k8s.io/client-go/informers/core/v1","third_party/k8s.io/client-go/informers/extensions","third_party/k8s.io/client-go/informers/extensions/v1beta1","third_party/k8s.io/client-go/informers/internalinterfaces"]
+  revision = "4dac8737f479ff0bcdaedcda62fb1ef7f84d9389"
+  version = "v0.2.2"
+
+[[projects]]
   name = "github.com/jmespath/go-jmespath"
   packages = ["."]
   revision = "3433f3ea46d9f8019119e7dd41274e112a2359a9"
@@ -395,7 +401,7 @@
   branch = "release-1.8"
   name = "k8s.io/code-generator"
   packages = ["cmd/client-gen","cmd/client-gen/args","cmd/client-gen/generators","cmd/client-gen/generators/fake","cmd/client-gen/generators/scheme","cmd/client-gen/generators/util","cmd/client-gen/path","cmd/client-gen/types","cmd/conversion-gen","cmd/conversion-gen/generators","cmd/deepcopy-gen","cmd/defaulter-gen","cmd/informer-gen","cmd/informer-gen/generators","cmd/lister-gen","cmd/lister-gen/generators"]
-  revision = "d8075cd9833c9019ca3151eca616f54dbc6407ad"
+  revision = "241531e20b9e2c1540b08d61ed5ca52508c1d9dd"
   source = "https://github.com/munnerz/code-generator.git"
 
 [[projects]]
@@ -418,6 +424,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "6938bdecd896e86dedfbcb65e98140ac47ff29b4b68136a10f787f72b25eec97"
+  inputs-digest = "d188dcc55832b37e3f178123c7eea3e52e3c67e3a35b966aff4121c5c7267872"
   solver-name = "gps-cdcl"
   solver-version = 1
