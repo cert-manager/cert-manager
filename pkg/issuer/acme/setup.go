@@ -87,13 +87,19 @@ func (a *Acme) registerAccount(ctx context.Context, cl *acme.Client) (*acme.Acco
 		if !ok {
 			return nil, err
 		}
-		if typedErr.StatusCode == http.StatusConflict {
-			accountUri := typedErr.Header.Get("Location")
-			if accountUri == "" {
-				return nil, fmt.Errorf("unexpected error - 409 Conflict error returned, but no Location header set: %s", typedErr.Error())
-			}
-			return a.verifyAccount(ctx, cl, accountUri)
+		// StatusConflict means an account with the users private key already exists.
+		// If the response code was *not* StatusConflict, we should return the error
+		// here as we are not able to handle it.
+		if typedErr.StatusCode != http.StatusConflict {
+			return nil, err
 		}
+		// If StatusConflict was the returned error, we can attempt to look up the existing
+		// registration URI in the response headers.
+		accountUri := typedErr.Header.Get("Location")
+		if accountUri == "" {
+			return nil, fmt.Errorf("unexpected error - 409 Conflict error returned, but no Location header set: %s", typedErr.Error())
+		}
+		return a.verifyAccount(ctx, cl, accountUri)
 	}
 	return acc, nil
 }
