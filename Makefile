@@ -9,7 +9,7 @@ BUILD_TAG := build
 # Domain name to use in e2e tests. This is important for ACME HTTP01 e2e tests,
 # which require a domain that resolves to the ingress controller to be used for
 # e2e tests.
-E2E_NGINX_CERTIFICATE_DOMAIN=
+E2E_NGINX_CERTIFICATE_DOMAIN ?= certmanager.kubernetes.network
 
 # AppVersion is set as the AppVersion to be compiled into the controller binary.
 # It's used as the default version of the 'acmesolver' image to use for ACME
@@ -93,7 +93,11 @@ go_fmt:
 		exit 1; \
 	fi
 
-e2e_test:
+.e2e_configure_ingress:
+	while true; do if kubectl get rc nginx-ingress-controller -n kube-system; then break; fi; echo "Waiting 5s for nginx-ingress-controller rc to be installed..."; sleep 5; done
+	kubectl expose -n kube-system --port 80 --target-port 80 --type ClusterIP rc nginx-ingress-controller --cluster-ip 10.0.0.15
+
+e2e_test: .e2e_configure_ingress
 	# Build the e2e tests
 	go test -o e2e-tests -c ./test/e2e
 	# TODO: make these paths configurable
