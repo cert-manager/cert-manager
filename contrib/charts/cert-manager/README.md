@@ -52,8 +52,9 @@ The following tables lists the configurable parameters of the cert-manager chart
 | `replicaCount`  | Number of cert-manager replicas  | `1` |
 | `createCustomResource` | Create CRD/TPR with this release | `true` |
 | `extraArgs` | Optional flags for cert-manager | `[]` |
-| `rbac.create` | If true, create & use RBAC resources | `true`
-| `rbac.serviceAccountName` | ServiceAccount to be used (ignored if rbac.create=true) | `default`
+| `rbac.create` | If `true`, create and use RBAC resources | `true`
+| `serviceAccount.create` | If `true`, create a new service account | `true`
+| `serviceAccount.name` | Service account to be used. If not set and `serviceAccount.create` is `true`, a name is generated using the fullname template | ``
 | `resources` | CPU/memory resource requests/limits | `requests: {cpu: 10m, memory: 32Mi}` |
 | `nodeSelector` | Node labels for pod assignment | `{}` |
 | `ingressShim.enabled` | Enable ingress-shim for automatic ingress integration | `true`|
