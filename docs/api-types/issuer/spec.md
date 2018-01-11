@@ -125,8 +125,13 @@ clouddns:
 
 ```yaml
 route53:
-  accessKeyID: AKIAIOSFODNN7EXAMPLE
   region: eu-west-1
+
+  # optional -- if not specified, load credentials from from standard AWS
+  # environment variables or from EC2 instance metadata
+  accessKeyID: AKIAIOSFODNN7EXAMPLE
+
+  # also optional
   secretAccessKeySecretRef:
     name: prod-route53-credentials-secret
     key: secret-access-key

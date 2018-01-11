@@ -83,13 +83,19 @@ func NewDNSProvider() (*DNSProvider, error) {
 // NewDNSProviderAccessKey returns a DNSProvider instance configured for the AWS
 // Route 53 service using static credentials from its parameters
 func NewDNSProviderAccessKey(accessKeyID, secretAccessKey, hostedZoneID, region string) (*DNSProvider, error) {
-
-	creds := credentials.NewStaticCredentials(accessKeyID, secretAccessKey, "")
-
 	r := customRetryer{}
 	r.NumMaxRetries = maxRetries
 
-	config := request.WithRetryer(aws.NewConfig(), r).WithCredentials(creds)
+	config := request.WithRetryer(aws.NewConfig(), r)
+
+	// If an accessKeyID and secretAccessKey were set, use them. Otherwise, fall
+	// back on the aws-sdk-go's default credential handling behavior which loads
+	// from environment variables, shared credential file or EC2 instance role:
+	// https://docs.aws.amazon.com/sdk-for-go/v1/developer-guide/configuring-sdk.html#specifying-credentials.
+	if accessKeyID != "" && secretAccessKey != "" {
+		creds := credentials.NewStaticCredentials(accessKeyID, secretAccessKey, "")
+		config.WithCredentials(creds)
+	}
 
 	if region != "" {
 		config.WithRegion(region)
