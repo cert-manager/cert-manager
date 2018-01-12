@@ -5,7 +5,6 @@ package route53
 import (
 	"fmt"
 	"math/rand"
-	"os"
 	"strings"
 	"time"
 
@@ -50,34 +49,6 @@ func (d customRetryer) RetryRules(r *request.Request) time.Duration {
 
 	delay := (1 << uint(retryCount)) * (rand.Intn(50) + 200)
 	return time.Duration(delay) * time.Millisecond
-}
-
-// NewDNSProvider returns a DNSProvider instance configured for the AWS
-// Route 53 service.
-//
-// AWS Credentials are automatically detected in the following locations
-// and prioritized in the following order:
-// 1. Environment variables: AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY,
-//    AWS_REGION, [AWS_SESSION_TOKEN]
-// 2. Shared credentials file (defaults to ~/.aws/credentials)
-// 3. Amazon EC2 IAM role
-//
-// If AWS_HOSTED_ZONE_ID is not set, Lego tries to determine the correct
-// public hosted zone via the FQDN.
-//
-// See also: https://github.com/aws/aws-sdk-go/wiki/configuring-sdk
-func NewDNSProvider() (*DNSProvider, error) {
-	hostedZoneID := os.Getenv("AWS_HOSTED_ZONE_ID")
-
-	r := customRetryer{}
-	r.NumMaxRetries = maxRetries
-	config := request.WithRetryer(aws.NewConfig(), r)
-	client := route53.New(session.New(config))
-
-	return &DNSProvider{
-		client:       client,
-		hostedZoneID: hostedZoneID,
-	}, nil
 }
 
 // NewDNSProviderAccessKey returns a DNSProvider instance configured for the AWS

@@ -17,7 +17,7 @@ func TestRoute53TTL(t *testing.T) {
 		t.Skip(err.Error())
 	}
 
-	provider, err := NewDNSProvider()
+	provider, err := NewDNSProviderAccessKey("", "", "", "")
 	if err != nil {
 		t.Fatalf("Fatal: %s", err.Error())
 	}

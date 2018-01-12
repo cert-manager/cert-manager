@@ -76,7 +76,7 @@ func TestHostedZoneIDFromEnv(t *testing.T) {
 	defer restoreRoute53Env()
 	os.Setenv("AWS_HOSTED_ZONE_ID", testZoneID)
 
-	provider, err := NewDNSProvider()
+	provider, err := NewDNSProviderAccessKey("", "", "", "")
 	assert.NoError(t, err, "Expected no error constructing DNSProvider")
 
 	fqdn, err := provider.getHostedZoneID("whatever")
