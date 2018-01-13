@@ -2,6 +2,9 @@
 
 ## This file is a stop gap whilst we migrate the Makefile to better
 ## supprt prow for our testing
+set -o errexit
+set -o nounset
+set -o pipefail
 
 # Build images while we wait for services to start
 make build APP_VERSION=build
