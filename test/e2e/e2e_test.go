@@ -15,8 +15,10 @@ package e2e
 
 import (
 	"testing"
+	"time"
 
 	"github.com/golang/glog"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/tools/clientcmd"
 
 	"github.com/jetstack/cert-manager/test/e2e/framework"
@@ -24,6 +26,8 @@ import (
 
 func init() {
 	framework.RegisterParseFlags()
+
+	wait.ForeverTestTimeout = time.Second * 60
 
 	if "" == framework.TestContext.KubeConfig {
 		glog.Fatalf("environment variable %v must be set", clientcmd.RecommendedConfigPathEnvVar)
