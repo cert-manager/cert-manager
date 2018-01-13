@@ -27,9 +27,14 @@ import (
 	"github.com/jetstack/cert-manager/test/util"
 )
 
+const invalidACMEURL = "http://not-a-real-acme-url.com"
+const testingACMEEmail = "test@example.com"
+const testingACMEPrivateKey = "test-acme-private-key"
+
 var _ = framework.CertManagerDescribe("ACME Issuer", func() {
 	f := framework.NewDefaultFramework("create-acme-issuer")
 
+	testingACMEURL := framework.TestContext.ACMEURL
 	issuerName := "test-acme-issuer"
 
 	BeforeEach(func() {
@@ -161,9 +166,3 @@ var _ = framework.CertManagerDescribe("ACME Issuer", func() {
 		Expect(err).NotTo(HaveOccurred())
 	})
 })
-
-var testingACMEURL = framework.TestContext.ACMEURL
-
-const invalidACMEURL = "http://not-a-real-acme-url.com"
-const testingACMEEmail = "test@example.com"
-const testingACMEPrivateKey = "test-acme-private-key"
