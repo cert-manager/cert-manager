@@ -33,6 +33,8 @@ type Framework struct {
 	CertManagerClientSet   clientset.Interface
 	APIExtensionsClientSet apiextcs.Interface
 
+	ACMEURL string
+
 	// Namespace in which all test resources should reside
 	Namespace *v1.Namespace
 

@@ -1,0 +1,31 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  annotations:
+    kompose.cmd: kompose convert
+    kompose.version: 1.7.0 ()
+  creationTimestamp: null
+  labels:
+    io.kompose.service: bhsm
+  name: bhsm
+spec:
+  replicas: 1
+  strategy: {}
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        io.kompose.service: bhsm
+    spec:
+      containers:
+      - args:
+        - /usr/local/bin/pkcs11-daemon
+        - /usr/lib/softhsm/libsofthsm2.so
+        env:
+        - name: PKCS11_DAEMON_SOCKET
+          value: tcp://0.0.0.0:5657
+        image: letsencrypt/boulder-tools:2017-10-05
+        name: bhsm
+        resources: {}
+      restartPolicy: Always
+status: {}

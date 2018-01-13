@@ -1,0 +1,4 @@
+image:
+  repository: quay.io/munnerz/boulder
+  tag: "20180113"
+  pullPolicy: IfNotPresent
