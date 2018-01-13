@@ -73,7 +73,7 @@ func InstallHelmChart(t *testing.T, releaseName, chartName, namespace, values st
 	cmd.Stderr = os.Stderr
 	err := cmd.Run()
 	if err != nil {
-		t.Errorf("Error installing cert-manager: %s", err)
+		t.Errorf("Error installing %q: %s", releaseName, err)
 		t.FailNow()
 		return
 	}
