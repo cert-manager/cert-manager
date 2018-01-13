@@ -15,7 +15,6 @@ spec:
         app: {{ template "name" . }}
         release: {{ .Release.Name }}
     spec:
-      hostNetwork: {{ .Values.hostNetwork | default false }}
       serviceAccount: {{ template "fullname" . }}
       serviceAccountName: {{ template "fullname" . }}
       containers:
