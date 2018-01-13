@@ -31,6 +31,9 @@ func init() {
 	if "" == framework.TestContext.CertManagerConfig {
 		glog.Fatalf("environment variable %v must be set", framework.RecommendedConfigPathEnvVar)
 	}
+	if "" == framework.TestContext.ACMEURL {
+		glog.Fatalf("flag -acme-url must be set")
+	}
 }
 
 func TestE2E(t *testing.T) {
