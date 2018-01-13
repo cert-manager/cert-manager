@@ -201,6 +201,35 @@ func (c *Controller) scheduleRenewal(crt *v1alpha1.Certificate) {
 	c.recorder.Event(crt, api.EventTypeNormal, successRenewalScheduled, s)
 }
 
+func (c *Controller) updateSecret(name, namespace string, cert, key []byte) (*api.Secret, error) {
+	secret, err := c.client.CoreV1().Secrets(namespace).Get(name, metav1.GetOptions{})
+	if err != nil && !k8sErrors.IsNotFound(err) {
+		return nil, err
+	}
+	if k8sErrors.IsNotFound(err) {
+		secret = &api.Secret{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      name,
+				Namespace: namespace,
+			},
+			Type: api.SecretTypeTLS,
+			Data: map[string][]byte{},
+		}
+	}
+	secret.Data[api.TLSCertKey] = cert
+	secret.Data[api.TLSPrivateKeyKey] = key
+	// if it is a new resource
+	if secret.SelfLink == "" {
+		secret, err = c.client.CoreV1().Secrets(namespace).Create(secret)
+	} else {
+		secret, err = c.client.CoreV1().Secrets(namespace).Update(secret)
+	}
+	if err != nil {
+		return nil, err
+	}
+	return secret, nil
+}
+
 // return an error on failure. If retrieval is succesful, the certificate data
 // and private key will be stored in the named secret
 func (c *Controller) issue(ctx context.Context, issuer issuer.Interface, crt *v1alpha1.Certificate) error {
@@ -229,19 +258,7 @@ func (c *Controller) issue(ctx context.Context, issuer issuer.Interface, crt *v1
 		return err
 	}
 
-	_, err = kube.EnsureSecret(c.client, &api.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      crt.Spec.SecretName,
-			Namespace: crt.Namespace,
-		},
-		Type: api.SecretTypeTLS,
-		Data: map[string][]byte{
-			api.TLSCertKey:       cert,
-			api.TLSPrivateKeyKey: key,
-		},
-	})
-
-	if err != nil {
+	if _, err := c.updateSecret(crt.Spec.SecretName, crt.Namespace, cert, key); err != nil {
 		s := messageErrorSavingCertificate + err.Error()
 		glog.Info(s)
 		c.recorder.Event(crt, api.EventTypeWarning, errorSavingCertificate, s)
@@ -285,19 +302,7 @@ func (c *Controller) renew(ctx context.Context, issuer issuer.Interface, crt *v1
 		return err
 	}
 
-	_, err = kube.EnsureSecret(c.client, &api.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      crt.Spec.SecretName,
-			Namespace: crt.Namespace,
-		},
-		Type: api.SecretTypeTLS,
-		Data: map[string][]byte{
-			api.TLSCertKey:       cert,
-			api.TLSPrivateKeyKey: key,
-		},
-	})
-
-	if err != nil {
+	if _, err := c.updateSecret(crt.Spec.SecretName, crt.Namespace, cert, key); err != nil {
 		s := messageErrorSavingCertificate + err.Error()
 		glog.Info(s)
 		c.recorder.Event(crt, api.EventTypeWarning, errorSavingCertificate, s)
