@@ -18,6 +18,7 @@ spec:
       labels:
         io.kompose.service: boulder
     spec:
+      hostname: boulder
       containers:
       - env:
         - name: BOULDER_CONFIG_DIR
