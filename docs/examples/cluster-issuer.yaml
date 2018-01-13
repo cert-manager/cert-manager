@@ -46,3 +46,17 @@ spec:
           # This field is optional for overriding the Route53 hosted zone ID
           # It is required to use it if the cert-manager cannot disambiguate between two different hosted zones for the same zone name
           hostedZoneID: DIKER8JPL21PSA
+      - name: corp-dns
+        rfc2136:
+          # Nameserver to send DDNS Updates
+          nameserver: 192.168.0.1
+          # tsig key
+          tsigKey: tsig-key
+          # A kubernetes SecretRef to the TSIG Secret
+          tsigSecretSecretRef:
+            name: tsig-secret
+            key: secret
+          # This field is optional for overriding the tsig algorithm (default HmacMD5)
+          TSIGAlgorithm: HmacMD5
+          # this field is optional for overriding the default timeout in seconds 
+          timeout: 60
