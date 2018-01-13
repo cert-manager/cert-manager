@@ -27,8 +27,6 @@ import (
 	"github.com/jetstack/cert-manager/test/util"
 )
 
-var testingACMEURL = framework.TestContext.ACMEURL
-
 const testingACMEEmail = "test@example.com"
 const testingACMEPrivateKey = "test-acme-private-key"
 const foreverTestTimeout = time.Second * 60
@@ -36,6 +34,7 @@ const foreverTestTimeout = time.Second * 60
 var _ = framework.CertManagerDescribe("ACME Certificate with Ingress (HTTP01)", func() {
 	f := framework.NewDefaultFramework("create-acme-certificate-http01-ingress")
 
+	testingACMEURL := framework.TestContext.ACMEURL
 	issuerName := "test-acme-issuer"
 	certificateSecretName := "test-acme-certificate"
 
