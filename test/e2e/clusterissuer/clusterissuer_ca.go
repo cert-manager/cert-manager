@@ -43,8 +43,10 @@ var _ = framework.CertManagerDescribe("CA ClusterIssuer", func() {
 
 	It("should validate a signing keypair", func() {
 		By("Creating an Issuer")
-		_, err := f.CertManagerClientSet.CertmanagerV1alpha1().ClusterIssuers().Create(util.NewCertManagerCAClusterIssuer(issuerName, secretName))
+		clusterIssuer := util.NewCertManagerCAClusterIssuer(issuerName, secretName)
+		_, err := f.CertManagerClientSet.CertmanagerV1alpha1().ClusterIssuers().Create(clusterIssuer)
 		Expect(err).NotTo(HaveOccurred())
+		defer f.CertManagerClientSet.CertmanagerV1alpha1().ClusterIssuers().Delete(clusterIssuer.Name, nil)
 		By("Waiting for Issuer to become Ready")
 		err = util.WaitForClusterIssuerCondition(f.CertManagerClientSet.CertmanagerV1alpha1().ClusterIssuers(),
 			issuerName,
