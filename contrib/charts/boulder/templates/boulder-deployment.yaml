@@ -24,7 +24,7 @@ spec:
         - name: BOULDER_CONFIG_DIR
           value: test/config
         - name: FAKE_DNS
-          value: 10.0.0.10
+          value: 10.96.0.10
         - name: PKCS11_PROXY_SOCKET
           value: tcp://boulder-hsm:5657
         image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
