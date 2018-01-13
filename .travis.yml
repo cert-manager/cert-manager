@@ -16,6 +16,7 @@ jobs:
       # Install nsenter
       - docker run -v /usr/local/bin:/hostbin munnerz/ubuntu-nsenter cp /nsenter /hostbin/nsenter
       script:
+      - ./hack/test/setup-minikube.sh
       - ./hack/ci.sh
     - stage: test
       dist: trusty
