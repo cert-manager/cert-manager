@@ -35,6 +35,3 @@ ingressShim:
     # You should only change this if you know what you are doing!
     # tag: v0.2.2
     pullPolicy: Always
-
-## Used for e2e testing
-# hostNetwork: false

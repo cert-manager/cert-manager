@@ -13,5 +13,3 @@ ingressShim:
   image:
     tag: build
     pullPolicy: Never
-
-hostNetwork: true
