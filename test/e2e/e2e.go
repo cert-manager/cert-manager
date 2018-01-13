@@ -44,10 +44,20 @@ func RunE2ETests(t *testing.T) {
 		config.GinkgoConfig.SkipString = `\[Flaky\]|\[Feature:.+\]`
 	}
 
-	glog.Infof("Install cert-manager helm chart")
-	InstallHelmChart(t)
+	glog.Infof("Installing cert-manager helm chart")
+	InstallHelmChart(t, releaseName, "./contrib/charts/cert-manager", "cert-manager", "./test/fixtures/cert-manager-values.yaml")
 
+	glog.Infof("Installing boulder chart")
+	extraArgs := []string{}
+	if framework.TestContext.BoulderImageRepo != "" {
+		extraArgs = append(extraArgs, "--set image.repository="+framework.TestContext.BoulderImageRepo)
+	}
+	if framework.TestContext.BoulderImageTag != "" {
+		extraArgs = append(extraArgs, "--set image.tag="+framework.TestContext.BoulderImageTag)
+	}
+	InstallHelmChart(t, "boulder", "./contrib/charts/boulder", "boulder", "./test/fixtures/boulder-values.yaml", extraArgs...)
 	glog.Infof("Starting e2e run %q on Ginkgo node %d", framework.RunId, config.GinkgoConfig.ParallelNode)
+
 	if !ginkgo.RunSpecs(t, "cert-manager e2e suite") {
 		PrintPodLogs(t)
 	}
@@ -55,8 +65,10 @@ func RunE2ETests(t *testing.T) {
 
 const releaseName = "cm"
 
-func InstallHelmChart(t *testing.T) {
-	cmd := exec.Command("helm", "install", "./contrib/charts/cert-manager", "--namespace", "cert-manager", "--name", releaseName, "--values", "./test/fixtures/cert-manager-values.yaml", "--wait")
+func InstallHelmChart(t *testing.T, releaseName, chartName, namespace, values string, extraArgs ...string) {
+	args := []string{"install", chartName, "--namespace", namespace, "--name", releaseName, "--values", values, "--wait"}
+	args = append(args, extraArgs...)
+	cmd := exec.Command("helm", args...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	err := cmd.Run()

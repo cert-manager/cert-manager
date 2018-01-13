@@ -11,6 +11,8 @@ BUILD_TAG := build
 # e2e tests.
 E2E_NGINX_CERTIFICATE_DOMAIN=
 
+BOULDER_IMAGE_REPO=quay.io/munnerz/boulder
+
 # AppVersion is set as the AppVersion to be compiled into the controller binary.
 # It's used as the default version of the 'acmesolver' image to use for ACME
 # challenge requests, and any other future provider that requires additional
@@ -100,7 +102,8 @@ e2e_test:
 	# Run e2e tests
 	KUBECONFIG=$$HOME/.kube/config CERTMANAGERCONFIG=$$HOME/.kube/config \
 		./e2e-tests \
-			-acme-nginx-certificate-domain=$(E2E_NGINX_CERTIFICATE_DOMAIN)
+			-acme-nginx-certificate-domain=$(E2E_NGINX_CERTIFICATE_DOMAIN) \
+			-boulder-image-repo=$(BOULDER_IMAGE_REPO)
 
 # Docker targets
 ################

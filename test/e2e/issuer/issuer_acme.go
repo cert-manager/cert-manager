@@ -162,7 +162,8 @@ var _ = framework.CertManagerDescribe("ACME Issuer", func() {
 	})
 })
 
-const testingACMEURL = "http://127.0.0.1:4000/directory"
+var testingACMEURL = framework.TestContext.ACMEURL
+
 const invalidACMEURL = "http://not-a-real-acme-url.com"
 const testingACMEEmail = "test@example.com"
 const testingACMEPrivateKey = "test-acme-private-key"
