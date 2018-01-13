@@ -48,7 +48,8 @@ func RunE2ETests(t *testing.T) {
 	InstallHelmChart(t, releaseName, "./contrib/charts/cert-manager", "cert-manager", "./test/fixtures/cert-manager-values.yaml")
 
 	glog.Infof("Installing boulder chart")
-	extraArgs := []string{}
+	// 10 minute timeout for boulder install due to large images
+	extraArgs := []string{"--timeout", "600"}
 	if framework.TestContext.BoulderImageRepo != "" {
 		extraArgs = append(extraArgs, "--set", "image.repository="+framework.TestContext.BoulderImageRepo)
 	}
