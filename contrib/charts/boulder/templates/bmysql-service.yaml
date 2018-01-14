@@ -9,11 +9,10 @@ metadata:
     io.kompose.service: bmysql
   name: boulder-mysql
 spec:
-  clusterIP: None
   ports:
-  - name: headless
-    port: 55555
-    targetPort: 0
+  - name: sql
+    port: 3306
+    targetPort: 3306
   selector:
     io.kompose.service: bmysql
 status:
