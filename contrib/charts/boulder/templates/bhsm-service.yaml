@@ -9,11 +9,10 @@ metadata:
     io.kompose.service: bhsm
   name: boulder-hsm
 spec:
-  clusterIP: None
   ports:
   - name: headless
-    port: 55555
-    targetPort: 0
+    port: 5657
+    targetPort: 5657
   selector:
     io.kompose.service: bhsm
 status:
