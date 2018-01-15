@@ -47,7 +47,7 @@ The following tables lists the configurable parameters of the cert-manager chart
 | Parameter              | Description                             | Default                                        |
 | ---------------------- | --------------------------------------- | ---------------------------------------------- |
 | `image.repository`     | Image repository                        | `quay.io/jetstack/cert-manager-controller`     |
-| `image.tag`            | Image tag                               | `v0.2.2`                                       |
+| `image.tag`            | Image tag                               | `v0.2.3`                                       |
 | `image.pullPolicy`     | Image pull policy                       | `Always`                                       |
 | `replicaCount`         | Number of cert-manager replicas         | `1`                                            |
 | `createCustomResource` | Create CRD/TPR with this release        | `true`                                         |
