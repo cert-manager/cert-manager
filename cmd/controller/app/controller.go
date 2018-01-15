@@ -53,7 +53,7 @@ func Run(opts *options.ControllerOptions, stopCh <-chan struct{}) {
 				defer wg.Done()
 				glog.V(4).Infof("Starting %s controller", n)
 
-				err := fn(2, stopCh)
+				err := fn(5, stopCh)
 
 				if err != nil {
 					glog.Fatalf("error running %s controller: %s", n, err.Error())

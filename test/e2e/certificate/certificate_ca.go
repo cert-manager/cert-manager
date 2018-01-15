@@ -74,28 +74,4 @@ var _ = framework.CertManagerDescribe("CA Certificate", func() {
 		}
 	})
 
-	It("should generate a signed keypair from a clusterissuer", func() {
-		By("Creating a ClusterIssuer")
-		_, err := f.CertManagerClientSet.CertmanagerV1alpha1().ClusterIssuers().Create(util.NewCertManagerCAClusterIssuer(issuerName, issuerSecretName))
-		Expect(err).NotTo(HaveOccurred())
-		By("Waiting for ClusterIssuer to become Ready")
-		err = util.WaitForClusterIssuerCondition(f.CertManagerClientSet.CertmanagerV1alpha1().ClusterIssuers(),
-			issuerName,
-			v1alpha1.IssuerCondition{
-				Type:   v1alpha1.IssuerConditionReady,
-				Status: v1alpha1.ConditionTrue,
-			})
-		Expect(err).NotTo(HaveOccurred())
-		By("Creating a Certificate")
-		_, err = f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name).Create(util.NewCertManagerCACertificate(certificateName, certificateSecretName, issuerName, v1alpha1.ClusterIssuerKind))
-		Expect(err).NotTo(HaveOccurred())
-		By("Waiting for Certificate to become Ready")
-		err = util.WaitForCertificateCondition(f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name),
-			certificateName,
-			v1alpha1.CertificateCondition{
-				Type:   v1alpha1.CertificateConditionReady,
-				Status: v1alpha1.ConditionTrue,
-			}, wait.ForeverTestTimeout)
-		Expect(err).NotTo(HaveOccurred())
-	})
 })
