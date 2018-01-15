@@ -17,6 +17,7 @@ limitations under the License.
 package fuzzer
 
 import (
+	"reflect"
 	"strings"
 
 	"github.com/google/gofuzz"
@@ -42,5 +43,95 @@ func Funcs(codecs runtimeserializer.CodecFactory) []interface{} {
 				obj.Names.ListKind = obj.Names.Kind + "List"
 			}
 		},
+		func(obj *apiextensions.JSONSchemaProps, c fuzz.Continue) {
+			// we cannot use c.FuzzNoCustom because of the interface{} fields. So let's loop with reflection.
+			vobj := reflect.ValueOf(obj).Elem()
+			tobj := reflect.TypeOf(obj).Elem()
+			for i := 0; i < tobj.NumField(); i++ {
+				field := tobj.Field(i)
+				switch field.Name {
+				case "Default", "Enum", "Example", "Ref":
+					continue
+				default:
+					isValue := true
+					switch field.Type.Kind() {
+					case reflect.Interface, reflect.Map, reflect.Slice, reflect.Ptr:
+						isValue = false
+					}
+					if isValue || c.Intn(10) == 0 {
+						c.Fuzz(vobj.Field(i).Addr().Interface())
+
+						// JSON keys must not contain escape char with our JSON codec (jsoniter)
+						// TODO: remove this when/if we moved from jsoniter.ConfigFastest to ConfigCompatibleWithStandardLibrary
+						if field.Type.Kind() == reflect.Map {
+							keys := append([]reflect.Value(nil), vobj.Field(i).MapKeys()...)
+							for _, k := range keys {
+								stripped := toJSONString(k.String())
+								if stripped == k.String() {
+									continue
+								}
+								// set new key
+								vobj.Field(i).SetMapIndex(reflect.ValueOf(stripped), vobj.Field(i).MapIndex(k))
+								// remove old
+								vobj.Field(i).SetMapIndex(k, reflect.Value{})
+							}
+						}
+					}
+				}
+			}
+			if c.RandBool() {
+				validJSON := apiextensions.JSON(`{"some": {"json": "test"}, "string": 42}`)
+				obj.Default = &validJSON
+			}
+			if c.RandBool() {
+				obj.Enum = []apiextensions.JSON{c.Float64(), c.RandString(), c.RandBool()}
+			}
+			if c.RandBool() {
+				validJSON := apiextensions.JSON(`"foobarbaz"`)
+				obj.Example = &validJSON
+			}
+			if c.RandBool() {
+				validRef := "validRef"
+				obj.Ref = &validRef
+			}
+		},
+		func(obj *apiextensions.JSONSchemaPropsOrBool, c fuzz.Continue) {
+			if c.RandBool() {
+				obj.Schema = &apiextensions.JSONSchemaProps{}
+				c.Fuzz(obj.Schema)
+			} else {
+				obj.Allows = c.RandBool()
+			}
+		},
+		func(obj *apiextensions.JSONSchemaPropsOrArray, c fuzz.Continue) {
+			// disallow both Schema and JSONSchemas to be nil.
+			if c.RandBool() {
+				obj.Schema = &apiextensions.JSONSchemaProps{}
+				c.Fuzz(obj.Schema)
+			} else {
+				obj.JSONSchemas = make([]apiextensions.JSONSchemaProps, c.Intn(3)+1)
+				for i := range obj.JSONSchemas {
+					c.Fuzz(&obj.JSONSchemas[i])
+				}
+			}
+		},
+		func(obj *apiextensions.JSONSchemaPropsOrStringArray, c fuzz.Continue) {
+			if c.RandBool() {
+				obj.Schema = &apiextensions.JSONSchemaProps{}
+				c.Fuzz(obj.Schema)
+			} else {
+				c.Fuzz(&obj.Property)
+			}
+		},
 	}
+}
+
+func toJSONString(s string) string {
+	return strings.Map(func(r rune) rune {
+		// replace chars which are not supported in keys by jsoniter.ConfigFastest
+		if r == '\\' || r == '"' {
+			return 'x'
+		}
+		return r
+	}, s)
 }

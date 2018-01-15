@@ -17,7 +17,6 @@ limitations under the License.
 package apiserver
 
 import (
-	"bytes"
 	"fmt"
 	"io"
 	"net/http"
@@ -26,6 +25,12 @@ import (
 	"sync/atomic"
 	"time"
 
+	openapispec "github.com/go-openapi/spec"
+	"github.com/go-openapi/strfmt"
+	"github.com/go-openapi/validate"
+	"github.com/golang/glog"
+
+	apiequality "k8s.io/apimachinery/pkg/api/equality"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -44,8 +49,11 @@ import (
 	genericregistry "k8s.io/apiserver/pkg/registry/generic/registry"
 	"k8s.io/apiserver/pkg/storage/storagebackend"
 	"k8s.io/client-go/discovery"
+	cache "k8s.io/client-go/tools/cache"
 
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
+	apiservervalidation "k8s.io/apiextensions-apiserver/pkg/apiserver/validation"
+	informers "k8s.io/apiextensions-apiserver/pkg/client/informers/internalversion/apiextensions/internalversion"
 	listers "k8s.io/apiextensions-apiserver/pkg/client/listers/apiextensions/internalversion"
 	"k8s.io/apiextensions-apiserver/pkg/controller/finalizer"
 	"k8s.io/apiextensions-apiserver/pkg/registry/customresource"
@@ -72,6 +80,11 @@ type crdHandler struct {
 
 // crdInfo stores enough information to serve the storage for the custom resource
 type crdInfo struct {
+	// spec and acceptedNames are used to compare against if a change is made on a CRD. We only update
+	// the storage if one of these changes.
+	spec          *apiextensions.CustomResourceDefinitionSpec
+	acceptedNames *apiextensions.CustomResourceDefinitionNames
+
 	storage      *customresource.REST
 	requestScope handlers.RequestScope
 }
@@ -84,6 +97,7 @@ func NewCustomResourceDefinitionHandler(
 	groupDiscoveryHandler *groupDiscoveryHandler,
 	requestContextMapper apirequest.RequestContextMapper,
 	crdLister listers.CustomResourceDefinitionLister,
+	crdInformer informers.CustomResourceDefinitionInformer,
 	delegate http.Handler,
 	restOptionsGetter generic.RESTOptionsGetter,
 	admission admission.Interface) *crdHandler {
@@ -97,6 +111,13 @@ func NewCustomResourceDefinitionHandler(
 		restOptionsGetter:       restOptionsGetter,
 		admission:               admission,
 	}
+
+	crdInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+		UpdateFunc: ret.updateCustomResourceDefinition,
+		DeleteFunc: func(obj interface{}) {
+			ret.removeDeadStorage()
+		},
+	})
 
 	ret.customStorage.Store(crdStorageMap{})
 	return ret
@@ -155,7 +176,12 @@ func (r *crdHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 	terminating := apiextensions.IsCRDConditionTrue(crd, apiextensions.Terminating)
 
-	crdInfo := r.getServingInfoFor(crd)
+	crdInfo, err := r.getServingInfoFor(crd)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
 	storage := crdInfo.storage
 	requestScope := crdInfo.requestScope
 	minRequestTimeout := 1 * time.Minute
@@ -228,7 +254,7 @@ func (r *crdHandler) removeDeadStorage() {
 		return
 	}
 
-	for uid := range storageMap {
+	for uid, s := range storageMap {
 		found := false
 		for _, crd := range allCustomResourceDefinitions {
 			if crd.UID == uid {
@@ -237,6 +263,8 @@ func (r *crdHandler) removeDeadStorage() {
 			}
 		}
 		if !found {
+			glog.V(4).Infof("Removing dead CRD storage for %v", s.requestScope.Resource)
+			s.storage.DestroyFunc()
 			delete(storageMap, uid)
 		}
 	}
@@ -250,15 +278,18 @@ func (r *crdHandler) removeDeadStorage() {
 // GetCustomResourceListerCollectionDeleter returns the ListerCollectionDeleter for
 // the given uid, or nil if one does not exist.
 func (r *crdHandler) GetCustomResourceListerCollectionDeleter(crd *apiextensions.CustomResourceDefinition) finalizer.ListerCollectionDeleter {
-	info := r.getServingInfoFor(crd)
+	info, err := r.getServingInfoFor(crd)
+	if err != nil {
+		utilruntime.HandleError(err)
+	}
 	return info.storage
 }
 
-func (r *crdHandler) getServingInfoFor(crd *apiextensions.CustomResourceDefinition) *crdInfo {
+func (r *crdHandler) getServingInfoFor(crd *apiextensions.CustomResourceDefinition) (*crdInfo, error) {
 	storageMap := r.customStorage.Load().(crdStorageMap)
 	ret, ok := storageMap[crd.UID]
 	if ok {
-		return ret
+		return ret, nil
 	}
 
 	r.customStorageLock.Lock()
@@ -266,7 +297,7 @@ func (r *crdHandler) getServingInfoFor(crd *apiextensions.CustomResourceDefiniti
 
 	ret, ok = storageMap[crd.UID]
 	if ok {
-		return ret
+		return ret, nil
 	}
 
 	// In addition to Unstructured objects (Custom Resources), we also may sometimes need to
@@ -278,23 +309,33 @@ func (r *crdHandler) getServingInfoFor(crd *apiextensions.CustomResourceDefiniti
 		&metav1.GetOptions{},
 		&metav1.DeleteOptions{},
 	)
-	parameterScheme.AddGeneratedDeepCopyFuncs(metav1.GetGeneratedDeepCopyFuncs()...)
 	parameterCodec := runtime.NewParameterCodec(parameterScheme)
 
-	kind := schema.GroupVersionKind{Group: crd.Spec.Group, Version: crd.Spec.Version, Kind: crd.Spec.Names.Kind}
+	kind := schema.GroupVersionKind{Group: crd.Spec.Group, Version: crd.Spec.Version, Kind: crd.Status.AcceptedNames.Kind}
 	typer := unstructuredObjectTyper{
 		delegate:          parameterScheme,
 		unstructuredTyper: discovery.NewUnstructuredObjectTyper(nil),
 	}
 	creator := unstructuredCreator{}
+
+	// convert CRD schema to openapi schema
+	openapiSchema := &openapispec.Schema{}
+	if err := apiservervalidation.ConvertToOpenAPITypes(crd, openapiSchema); err != nil {
+		return nil, err
+	}
+	if err := openapispec.ExpandSchema(openapiSchema, nil, nil); err != nil {
+		return nil, err
+	}
+	validator := validate.NewSchemaValidator(openapiSchema, nil, "", strfmt.Default)
+
 	storage := customresource.NewREST(
-		schema.GroupResource{Group: crd.Spec.Group, Resource: crd.Spec.Names.Plural},
-		schema.GroupVersionKind{Group: crd.Spec.Group, Version: crd.Spec.Version, Kind: crd.Spec.Names.ListKind},
-		UnstructuredCopier{},
+		schema.GroupResource{Group: crd.Spec.Group, Resource: crd.Status.AcceptedNames.Plural},
+		schema.GroupVersionKind{Group: crd.Spec.Group, Version: crd.Spec.Version, Kind: crd.Status.AcceptedNames.ListKind},
 		customresource.NewStrategy(
 			typer,
 			crd.Spec.Scope == apiextensions.NamespaceScoped,
 			kind,
+			validator,
 		),
 		r.restOptionsGetter,
 	)
@@ -307,6 +348,8 @@ func (r *crdHandler) getServingInfoFor(crd *apiextensions.CustomResourceDefiniti
 		selfLinkPrefix = "/" + path.Join("apis", crd.Spec.Group, crd.Spec.Version, "namespaces") + "/"
 	}
 
+	clusterScoped := crd.Spec.Scope == apiextensions.ClusterScoped
+
 	requestScope := handlers.RequestScope{
 		Namer: handlers.ContextBasedNaming{
 			GetContext: func(req *http.Request) apirequest.Context {
@@ -314,7 +357,7 @@ func (r *crdHandler) getServingInfoFor(crd *apiextensions.CustomResourceDefiniti
 				return ret
 			},
 			SelfLinker:         meta.NewAccessor(),
-			ClusterScoped:      crd.Spec.Scope == apiextensions.ClusterScoped,
+			ClusterScoped:      clusterScoped,
 			SelfLinkPathPrefix: selfLinkPrefix,
 		},
 		ContextFunc: func(req *http.Request) apirequest.Context {
@@ -325,14 +368,16 @@ func (r *crdHandler) getServingInfoFor(crd *apiextensions.CustomResourceDefiniti
 		Serializer:     unstructuredNegotiatedSerializer{typer: typer, creator: creator},
 		ParameterCodec: parameterCodec,
 
-		Creater:         creator,
-		Convertor:       unstructured.UnstructuredObjectConverter{},
+		Creater: creator,
+		Convertor: crdObjectConverter{
+			UnstructuredObjectConverter: unstructured.UnstructuredObjectConverter{},
+			clusterScoped:               clusterScoped,
+		},
 		Defaulter:       unstructuredDefaulter{parameterScheme},
-		Copier:          UnstructuredCopier{},
 		Typer:           typer,
 		UnsafeConvertor: unstructured.UnstructuredObjectConverter{},
 
-		Resource:    schema.GroupVersionResource{Group: crd.Spec.Group, Version: crd.Spec.Version, Resource: crd.Spec.Names.Plural},
+		Resource:    schema.GroupVersionResource{Group: crd.Spec.Group, Version: crd.Spec.Version, Resource: crd.Status.AcceptedNames.Plural},
 		Kind:        kind,
 		Subresource: "",
 
@@ -340,6 +385,9 @@ func (r *crdHandler) getServingInfoFor(crd *apiextensions.CustomResourceDefiniti
 	}
 
 	ret = &crdInfo{
+		spec:          &crd.Spec,
+		acceptedNames: &crd.Status.AcceptedNames,
+
 		storage:      storage,
 		requestScope: requestScope,
 	}
@@ -354,7 +402,58 @@ func (r *crdHandler) getServingInfoFor(crd *apiextensions.CustomResourceDefiniti
 
 	storageMap2[crd.UID] = ret
 	r.customStorage.Store(storageMap2)
-	return ret
+	return ret, nil
+}
+
+// crdObjectConverter is a converter that supports field selectors for CRDs.
+type crdObjectConverter struct {
+	unstructured.UnstructuredObjectConverter
+	clusterScoped bool
+}
+
+func (c crdObjectConverter) ConvertFieldLabel(version, kind, label, value string) (string, string, error) {
+	// We currently only support metadata.namespace and metadata.name.
+	switch {
+	case label == "metadata.name":
+		return label, value, nil
+	case !c.clusterScoped && label == "metadata.namespace":
+		return label, value, nil
+	default:
+		return "", "", fmt.Errorf("field label not supported: %s", label)
+	}
+}
+
+func (c *crdHandler) updateCustomResourceDefinition(oldObj, newObj interface{}) {
+	oldCRD := oldObj.(*apiextensions.CustomResourceDefinition)
+	newCRD := newObj.(*apiextensions.CustomResourceDefinition)
+
+	c.customStorageLock.Lock()
+	defer c.customStorageLock.Unlock()
+	storageMap := c.customStorage.Load().(crdStorageMap)
+
+	oldInfo, found := storageMap[newCRD.UID]
+	if !found {
+		return
+	}
+	if apiequality.Semantic.DeepEqual(&newCRD.Spec, oldInfo.spec) && apiequality.Semantic.DeepEqual(&newCRD.Status.AcceptedNames, oldInfo.acceptedNames) {
+		glog.V(6).Infof("Ignoring customresourcedefinition %s update because neither spec, nor accepted names changed", oldCRD.Name)
+		return
+	}
+
+	glog.V(4).Infof("Updating customresourcedefinition %s", oldCRD.Name)
+	storageMap2 := make(crdStorageMap, len(storageMap))
+
+	// Copy because we cannot write to storageMap without a race
+	// as it is used without locking elsewhere
+	for k, v := range storageMap {
+		if k == oldCRD.UID {
+			v.storage.DestroyFunc()
+			continue
+		}
+		storageMap2[k] = v
+	}
+
+	c.customStorage.Store(storageMap2)
 }
 
 type unstructuredNegotiatedSerializer struct {
@@ -444,28 +543,6 @@ func (c unstructuredCreator) New(kind schema.GroupVersionKind) (runtime.Object, 
 	ret := &unstructured.Unstructured{}
 	ret.SetGroupVersionKind(kind)
 	return ret, nil
-}
-
-type UnstructuredCopier struct{}
-
-func (UnstructuredCopier) Copy(obj runtime.Object) (runtime.Object, error) {
-	if _, ok := obj.(runtime.Unstructured); !ok {
-		// Callers should not use this UnstructuredCopier for things other than Unstructured.
-		// If they do, the copy they get back will become Unstructured, which can lead to
-		// difficult-to-debug errors downstream. To make such errors more obvious,
-		// we explicitly reject anything that isn't Unstructured.
-		return nil, fmt.Errorf("UnstructuredCopier can't copy type %T", obj)
-	}
-
-	// serialize and deserialize to ensure a clean copy
-	buf := &bytes.Buffer{}
-	err := unstructured.UnstructuredJSONScheme.Encode(obj, buf)
-	if err != nil {
-		return nil, err
-	}
-	out := &unstructured.Unstructured{}
-	result, _, err := unstructured.UnstructuredJSONScheme.Decode(buf.Bytes(), nil, out)
-	return result, err
 }
 
 type unstructuredDefaulter struct {

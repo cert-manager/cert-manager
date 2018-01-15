@@ -77,7 +77,7 @@ func TestNilCopy(t *testing.T) {
 	var x *Struct_B
 	y := x.DeepCopy()
 	if y != nil {
-		t.Error("Expected nil as deepcopy of nil, got %+v", y)
+		t.Errorf("Expected nil as deepcopy of nil, got %+v", y)
 	}
 }
 
