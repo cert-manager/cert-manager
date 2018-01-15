@@ -13,8 +13,8 @@ spec:
     spec:
       containers:
       - name: cert-manager
-        image: quay.io/jetstack/cert-manager-controller:v0.2.2
+        image: quay.io/jetstack/cert-manager-controller:v0.2.3
         imagePullPolicy: Always
       - name: ingress-shim
-        image: quay.io/jetstack/cert-manager-ingress-shim:v0.2.2
+        image: quay.io/jetstack/cert-manager-ingress-shim:v0.2.3
         imagePullPolicy: Always
