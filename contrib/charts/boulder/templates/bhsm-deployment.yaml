@@ -24,7 +24,7 @@ spec:
         env:
         - name: PKCS11_DAEMON_SOCKET
           value: tcp://0.0.0.0:5657
-        image: letsencrypt/boulder-tools:2017-10-05
+        image: letsencrypt/boulder-tools:2017-12-18
         name: bhsm
         resources: {}
       restartPolicy: Always
