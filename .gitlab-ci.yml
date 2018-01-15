@@ -29,7 +29,7 @@ build:
   tags:
   - docker
   script:
-  - make all image
+  - make verify build
   except:
   - master
   - tags
@@ -39,7 +39,7 @@ master_push:
   - docker
   script:
   - mkdir -p ~/.docker && echo "${DOCKER_AUTH_CONFIG}" > ~/.docker/config.json && chmod 600 ~/.docker/config.json
-  - make verify push IMAGE_TAGS="${CI_BUILD_REF_SLUG}-${CI_PIPELINE_ID} canary"
+  - make verify build push IMAGE_TAGS="${CI_BUILD_REF_SLUG}-${CI_PIPELINE_ID} canary"
   only:
   - master
 
@@ -48,6 +48,6 @@ release_push:
   - docker
   script:
   - mkdir -p ~/.docker && echo "${DOCKER_AUTH_CONFIG}" > ~/.docker/config.json && chmod 600 ~/.docker/config.json
-  - APP_VERSION=${CI_COMMIT_TAG} make verify push IMAGE_TAGS="${CI_COMMIT_TAG} latest"
+  - APP_VERSION=${CI_COMMIT_TAG} make verify build push IMAGE_TAGS="${CI_COMMIT_TAG} latest"
   only:
   - tags
