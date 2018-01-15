@@ -15,5 +15,6 @@ make build APP_VERSION=build
 # Setup service for nginx ingress controller. A DNS entry for *.certmanager.kubernetes.network has been setup to point to 10.0.0.15 for e2e tests
 while true; do if kubectl get rc nginx-ingress-controller -n kube-system; then break; fi; echo "Waiting 5s for nginx-ingress-controller rc to be installed..."; sleep 5; done
 kubectl expose -n kube-system --port 80 --target-port 80 --type ClusterIP rc nginx-ingress-controller --cluster-ip 10.0.0.15
+while true; do if helm version; then break; fi; echo "Waiting 5s for tiller to be ready..."; sleep 5; done
 
 make e2e_test E2E_NGINX_CERTIFICATE_DOMAIN=certmanager.kubernetes.network
