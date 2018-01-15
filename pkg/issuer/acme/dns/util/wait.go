@@ -5,6 +5,7 @@ import (
 	"net"
 	"strings"
 	"time"
+	"os"
 
 	"github.com/golang/glog"
 	"github.com/miekg/dns"
@@ -20,7 +21,12 @@ var (
 	fqdnToZone                  = map[string]string{}
 )
 
-const defaultResolvConf = "/etc/resolv.conf"
+var defaultResolvConf = "/etc/resolv.conf"
+var acmeResolvConf    = "/etc/resolv.acme.conf"
+
+if _, err := os.Stat(acmeResolvConf); err == nil {
+  defaultResolvConf = acmeResolvConf
+}
 
 var defaultNameservers = []string{
 	"google-public-dns-a.google.com:53",
