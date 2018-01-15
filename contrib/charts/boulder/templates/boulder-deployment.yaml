@@ -1,0 +1,66 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  annotations:
+    kompose.cmd: kompose convert
+    kompose.version: 1.7.0 ()
+  creationTimestamp: null
+  labels:
+    io.kompose.service: boulder
+  name: boulder
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        io.kompose.service: boulder
+    spec:
+      hostname: boulder
+      containers:
+      - env:
+        - name: BOULDER_CONFIG_DIR
+          value: test/config
+        - name: FAKE_DNS
+          value: 10.0.0.10
+        - name: PKCS11_PROXY_SOCKET
+          value: tcp://boulder-hsm:5657
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        name: boulder
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 4000
+        ports:
+        - containerPort: 4000
+        - containerPort: 4001
+        - containerPort: 4002
+        - containerPort: 4003
+        - containerPort: 4430
+        - containerPort: 4431
+        - containerPort: 4500
+        - containerPort: 6000
+        - containerPort: 8000
+        - containerPort: 8001
+        - containerPort: 8002
+        - containerPort: 8003
+        - containerPort: 8004
+        - containerPort: 8005
+        - containerPort: 8006
+        - containerPort: 8008
+        - containerPort: 8009
+        - containerPort: 8010
+        - containerPort: 8055
+        - containerPort: 9380
+        - containerPort: 9381
+        resources: {}
+        volumeMounts:
+        - mountPath: /tmp
+          name: boulder-claim0
+      restartPolicy: Always
+      volumes:
+      - name: boulder-claim0
+        emptyDir: {}
+status: {}

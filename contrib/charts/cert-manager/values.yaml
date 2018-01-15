@@ -18,6 +18,9 @@ resources:
     cpu: 10m
     memory: 32Mi
 
+# Optional additional arguments for cert-manager
+extraArgs: []
+
 ingressShim:
   enabled: true
   # Optional additional arguments for ingress-shim
