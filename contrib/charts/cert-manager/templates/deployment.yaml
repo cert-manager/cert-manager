@@ -1,9 +1,9 @@
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
-  name: {{ template "fullname" . }}
+  name: {{ template "cert-manager.fullname" . }}
   labels:
-    app: {{ template "name" . }}
+    app: {{ template "cert-manager.name" . }}
     chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
@@ -12,11 +12,11 @@ spec:
   template:
     metadata:
       labels:
-        app: {{ template "name" . }}
+        app: {{ template "cert-manager.name" . }}
         release: {{ .Release.Name }}
     spec:
-      serviceAccount: {{ template "fullname" . }}
-      serviceAccountName: {{ template "fullname" . }}
+      serviceAccount: {{ template "cert-manager.fullname" . }}
+      serviceAccountName: {{ template "cert-manager.fullname" . }}
       containers:
         - name: {{ .Chart.Name }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
