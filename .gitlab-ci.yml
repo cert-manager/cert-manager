@@ -8,7 +8,11 @@ services:
 - docker:1.12-dind
 
 before_script:
-  - apk --update add make docker bash curl
+  # Install docker
+  # Note: 1.11+ changes the tarball format
+  - curl -L "https://get.docker.com/builds/Linux/x86_64/docker-1.9.1.tgz" | tar -C /usr/bin -xvzf- --strip-components=3 usr/local/bin/docker
+  - apt-get update
+  - apt-get install -y make curl
   - export DOCKER_HOST=${DOCKER_PORT}
   - docker info > /dev/null
   - mkdir -p "${GOPATH}/src/${PKG_PATH}" && rmdir "${GOPATH}/src/${PKG_PATH}"
