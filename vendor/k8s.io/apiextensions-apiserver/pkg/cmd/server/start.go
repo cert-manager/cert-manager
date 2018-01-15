@@ -43,11 +43,14 @@ type CustomResourceDefinitionsServerOptions struct {
 
 func NewCustomResourceDefinitionsServerOptions(out, errOut io.Writer) *CustomResourceDefinitionsServerOptions {
 	o := &CustomResourceDefinitionsServerOptions{
-		RecommendedOptions: genericoptions.NewRecommendedOptions(defaultEtcdPathPrefix, apiserver.Scheme, apiserver.Codecs.LegacyCodec(v1beta1.SchemeGroupVersion)),
+		RecommendedOptions: genericoptions.NewRecommendedOptions(defaultEtcdPathPrefix, apiserver.Codecs.LegacyCodec(v1beta1.SchemeGroupVersion)),
 
 		StdOut: out,
 		StdErr: errOut,
 	}
+
+	// the shared informer is not needed for kube-aggregator. Disable the kubeconfig flag and the client creation.
+	o.RecommendedOptions.CoreAPI = nil
 
 	return o
 }
@@ -94,14 +97,16 @@ func (o CustomResourceDefinitionsServerOptions) Config() (*apiserver.Config, err
 		return nil, fmt.Errorf("error creating self-signed certificates: %v", err)
 	}
 
-	serverConfig := genericapiserver.NewConfig(apiserver.Codecs)
+	serverConfig := genericapiserver.NewRecommendedConfig(apiserver.Codecs)
 	if err := o.RecommendedOptions.ApplyTo(serverConfig); err != nil {
 		return nil, err
 	}
 
 	config := &apiserver.Config{
-		GenericConfig:        serverConfig,
-		CRDRESTOptionsGetter: NewCRDRESTOptionsGetter(*o.RecommendedOptions.Etcd),
+		GenericConfig: serverConfig,
+		ExtraConfig: apiserver.ExtraConfig{
+			CRDRESTOptionsGetter: NewCRDRESTOptionsGetter(*o.RecommendedOptions.Etcd),
+		},
 	}
 	return config, nil
 }
@@ -116,7 +121,6 @@ func NewCRDRESTOptionsGetter(etcdOptions genericoptions.EtcdOptions) genericregi
 		DeleteCollectionWorkers: etcdOptions.DeleteCollectionWorkers,
 	}
 	ret.StorageConfig.Codec = unstructured.UnstructuredJSONScheme
-	ret.StorageConfig.Copier = apiserver.UnstructuredCopier{}
 
 	return ret
 }

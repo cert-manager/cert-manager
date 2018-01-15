@@ -23,7 +23,7 @@ import (
 	cmlisters "github.com/jetstack/cert-manager/pkg/client/listers/certmanager/v1alpha1"
 	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
 	"github.com/jetstack/cert-manager/pkg/util"
-	extinformers "github.com/jetstack/cert-manager/third_party/k8s.io/client-go/informers/extensions/v1beta1"
+	extinformers "k8s.io/client-go/informers/extensions/v1beta1"
 )
 
 const (

@@ -19,6 +19,10 @@ limitations under the License.
 package externalversions
 
 import (
+	reflect "reflect"
+	sync "sync"
+	time "time"
+
 	versioned "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
 	certmanager "github.com/jetstack/cert-manager/pkg/client/informers/externalversions/certmanager"
 	internalinterfaces "github.com/jetstack/cert-manager/pkg/client/informers/externalversions/internalinterfaces"
@@ -26,9 +30,6 @@ import (
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	cache "k8s.io/client-go/tools/cache"
-	reflect "reflect"
-	sync "sync"
-	time "time"
 )
 
 type sharedInformerFactory struct {
@@ -49,7 +50,9 @@ func NewSharedInformerFactory(client versioned.Interface, defaultResync time.Dur
 	return NewFilteredSharedInformerFactory(client, defaultResync, v1.NamespaceAll, nil)
 }
 
-// NewFilteredSharedInformerFactory constructs a new instance of sharedInformerFactory
+// NewFilteredSharedInformerFactory constructs a new instance of sharedInformerFactory.
+// Listers obtained via this SharedInformerFactory will be subject to the same filters
+// as specified here.
 func NewFilteredSharedInformerFactory(client versioned.Interface, defaultResync time.Duration, namespace string, tweakListOptions internalinterfaces.TweakListOptionsFunc) SharedInformerFactory {
 	return &sharedInformerFactory{
 		client:           client,

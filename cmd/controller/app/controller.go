@@ -25,7 +25,7 @@ import (
 	"github.com/jetstack/cert-manager/pkg/controller/clusterissuers"
 	"github.com/jetstack/cert-manager/pkg/issuer"
 	"github.com/jetstack/cert-manager/pkg/util/kube"
-	kubeinformers "github.com/jetstack/cert-manager/third_party/k8s.io/client-go/informers"
+	kubeinformers "k8s.io/client-go/informers"
 )
 
 const controllerAgentName = "cert-manager-controller"

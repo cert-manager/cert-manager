@@ -23,7 +23,7 @@ import (
 	intscheme "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/scheme"
 	informers "github.com/jetstack/cert-manager/pkg/client/informers/externalversions"
 	"github.com/jetstack/cert-manager/pkg/util/kube"
-	kubeinformers "github.com/jetstack/cert-manager/third_party/k8s.io/client-go/informers"
+	kubeinformers "k8s.io/client-go/informers"
 )
 
 const controllerAgentName = "ingress-shim-controller"
