@@ -49,10 +49,12 @@ The following tables lists the configurable parameters of the cert-manager chart
 | `image.repository`     | Image repository                        | `quay.io/jetstack/cert-manager-controller`     |
 | `image.tag`            | Image tag                               | `v0.2.3`                                       |
 | `image.pullPolicy`     | Image pull policy                       | `Always`                                       |
+| `image.pullSecret`     | Image pull Secrets                      | `[]`                                           |
 | `replicaCount`         | Number of cert-manager replicas         | `1`                                            |
 | `createCustomResource` | Create CRD/TPR with this release        | `true`                                         |
 | `rbac.enabled`         | Create RBAC resources with this release | `true`                                         |
 | `resources`            | CPU/Memory resource requests/limits     | `None`                                         |
+| `customDNSServers`     | Custom DNS Servers to use               | `None`                                         |
 
 Specify each parameter using the `--set key=value[,key=value]` argument to `helm install`.
 
