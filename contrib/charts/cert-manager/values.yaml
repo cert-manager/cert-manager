@@ -32,9 +32,6 @@ resources:
     cpu: 10m
     memory: 32Mi
 
-# Optional additional arguments for cert-manager
-extraArgs: []
-
 nodeSelector: {}
 
 ingressShim:
