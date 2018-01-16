@@ -17,6 +17,10 @@ spec:
     spec:
       serviceAccount: {{ template "fullname" . }}
       serviceAccountName: {{ template "fullname" . }}
+{{- if .Values.image.pullSecrets }}
+      imagePullSecrets:
+{{ toYaml .Values.image.pullSecrets | indent 6 }}
+{{- end }}
       containers:
         - name: {{ .Chart.Name }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
@@ -24,6 +28,12 @@ spec:
           args:
 {{- range .Values.extraArgs }}
           - {{ . }}
+{{- end }}
+{{- if .Values.customDNSServers }}
+          volumeMounts:
+            - name: resolv-acme
+              mountPath: /etc/resolv_acme.conf
+              subPath: resolv_acme.conf
 {{- end }}
           resources:
 {{ toYaml .Values.resources | indent 12 }}
@@ -41,4 +51,10 @@ spec:
 {{- if .Values.nodeSelector }}
       nodeSelector:
 {{ toYaml .Values.nodeSelector | indent 8 }}
+{{- end }}
+{{- if .Values.customDNSServers }}
+      volumes:
+        - name: resolv-acme
+          configMap:
+            name: {{ template "fullname" . }}
 {{- end }}

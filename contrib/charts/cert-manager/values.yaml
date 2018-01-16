@@ -7,6 +7,9 @@ image:
   repository: quay.io/jetstack/cert-manager-controller
   tag: v0.2.3
   pullPolicy: Always
+  # pullSecrets:
+  # - name: secretOne
+  # - name: secretTwo
 
 createCustomResource: true
 
@@ -35,3 +38,6 @@ ingressShim:
     # You should only change this if you know what you are doing!
     # tag: v0.2.3
     pullPolicy: Always
+
+# Set these if you need to use custom DNS servers
+customDNSServers: []

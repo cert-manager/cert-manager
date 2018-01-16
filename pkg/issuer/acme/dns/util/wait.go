@@ -22,11 +22,7 @@ var (
 )
 
 var defaultResolvConf = "/etc/resolv.conf"
-var acmeResolvConf    = "/etc/resolv.acme.conf"
-
-if _, err := os.Stat(acmeResolvConf); err == nil {
-  defaultResolvConf = acmeResolvConf
-}
+var acmeResolvConf    = "/etc/resolv_acme.conf"
 
 var defaultNameservers = []string{
 	"google-public-dns-a.google.com:53",
@@ -39,8 +35,13 @@ var RecursiveNameservers = getNameservers(defaultResolvConf, defaultNameservers)
 var DNSTimeout = 10 * time.Second
 
 // getNameservers attempts to get systems nameservers before falling back to the defaults
-func getNameservers(path string, defaults []string) []string {
-	config, err := dns.ClientConfigFromFile(path)
+func getNameservers(resolvConf string, defaults []string) []string {
+
+	if _, err := os.Stat(acmeResolvConf); err == nil {
+	  resolvConf = acmeResolvConf
+	}
+
+	config, err := dns.ClientConfigFromFile(resolvConf)
 	if err != nil || len(config.Servers) == 0 {
 		return defaults
 	}

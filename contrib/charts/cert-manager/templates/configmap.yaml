@@ -1,0 +1,17 @@
+{{- if .Values.customDNSServers }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ template "fullname" . }}
+  labels:
+    app: {{ template "name" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+data:
+  resolv_acme.conf: |-
+{{- range $nameserver := .Values.customDNSServers }}
+    nameserver {{ $nameserver }}
+{{- end }}
+{{- end }}
