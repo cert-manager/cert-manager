@@ -21,6 +21,7 @@ type ControllerOptions struct {
 	LeaderElectionRetryPeriod   time.Duration
 
 	ACMEHTTP01SolverImage string
+	RecurisveNameservers string
 }
 
 const (
@@ -37,6 +38,10 @@ const (
 
 var (
 	defaultACMEHTTP01SolverImage = fmt.Sprintf("quay.io/jetstack/cert-manager-acmesolver:%s", util.AppVersion)
+)
+
+var (
+	defaultRecurisveNameservers = ""
 )
 
 func NewControllerOptions() *ControllerOptions {
@@ -85,6 +90,10 @@ func (s *ControllerOptions) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVar(&s.ACMEHTTP01SolverImage, "acme-http01-solver-image", defaultACMEHTTP01SolverImage, ""+
 		"The docker image to use to solve ACME HTTP01 challenges. You most likely will not "+
 		"need to change this parameter unless you are testing a new feature or developing cert-manager.")
+
+	fs.StringVar(&s.RecurisveNameservers, "acme-recursive-dns-resolvers", defaultRecurisveNameservers, ""+
+		"The nameservers to use to solve ACME HTTP01 challenges. You most likely will not "+
+		"need to change this parameter unless you running cert-manager outside a cloud provider.")
 }
 
 func (o *ControllerOptions) Validate() error {
