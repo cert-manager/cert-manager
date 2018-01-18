@@ -21,9 +21,19 @@ RBAC can be found [here](https://github.com/kubernetes/helm/blob/master/docs/rba
 
 ### Step 1 - deploying cert-manager
 
-To deploy the latest version of cert-manager using Helm, run:
+To deploy the latest version of cert-manager using Helm you will first need to
+clone this repository:
 
+```bash
+$ git clone https://github.com/jetstack/cert-manager
+$ cd cert-manager
+# check out the latest release tag to ensure we use a supported version of cert-manager
+$ git checkout v0.2.3
 ```
+
+We can then go ahead and install the bundled chart:
+
+```bash
 $ helm install \
     --name cert-manager \
     --namespace kube-system \
