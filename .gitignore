@@ -2,4 +2,5 @@
 .idea
 /acmesolver
 /controller
+/ingress-shim
 /hack/build/dockerfiles/cert-manager-*_*_*
