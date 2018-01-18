@@ -13,6 +13,7 @@ It is split into these three sections for easier navigation.
 ## User guides
 
 * [Deploying cert-manager using Helm](user-guides/deploying.md)
+* [Migrating from kube-lego](user-guides/migrating-from-kube-lego.md)
 * [ingress-shim configuration and usage](user-guides/ingress-shim.md)
 * [Creating a simple CA based issuer](user-guides/ca-based-issuer.md)
 * [Creating cluster wide issuers](user-guides/cluster-issuers.md)

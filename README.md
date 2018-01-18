@@ -1,4 +1,4 @@
-# cert-manager [![Build Status](https://travis-ci.org/jetstack/cert-manager.svg?branch=master)](https://travis-ci.org/jetstack/cert-manager)
+# cert-manager
 
 cert-manager is a Kubernetes add-on to automate the management and issuance of
 TLS certificates from various issuing sources.
@@ -38,7 +38,7 @@ support
 
 The easiest way to deploy cert-manager into your cluster is to use the Helm
 chart. For information on how to do this see the [Deploying cert-manager using
-Helm](docs/user-guides/helm.md) user guide.
+Helm](docs/user-guides/deploying.md) user guide.
 
 ### Creating your first Issuer and Certificate
 
