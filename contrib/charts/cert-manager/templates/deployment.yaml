@@ -9,8 +9,6 @@ metadata:
     heritage: {{ .Release.Service }}
 spec:
   replicas: {{ .Values.replicaCount }}
-  strategy:
-    type: Recreate
   template:
     metadata:
       labels:
