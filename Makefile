@@ -42,7 +42,7 @@ GOLDFLAGS := -ldflags "-X $(PACKAGE_NAME)/pkg/util.AppGitState=${GIT_STATE} -X $
 # Alias targets
 ###############
 
-verify: generate_verify hack_verify go_verify
+verify: generate_verify deploy_verify hack_verify go_verify
 build: $(CMDS) docker_build
 docker_build: $(DOCKER_BUILD_TARGETS)
 docker_push: $(DOCKER_PUSH_TARGETS)
@@ -64,6 +64,10 @@ hack_verify:
 	$(HACK_DIR)/verify-links.sh
 	@echo Running errexit checker
 	$(HACK_DIR)/verify-errexit.sh
+
+deploy_verify:
+	@echo Running deploy-gen
+	$(HACK_DIR)/verify-deploy-gen.sh
 
 # Go targets
 #################
