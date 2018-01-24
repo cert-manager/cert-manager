@@ -98,12 +98,14 @@ go_fmt:
 e2e_test:
 	# Build the e2e tests
 	go test -o e2e-tests -c ./test/e2e
+	mkdir -p "$$(pwd)/_artifacts"
 	# TODO: make these paths configurable
 	# Run e2e tests
 	KUBECONFIG=$$HOME/.kube/config CERTMANAGERCONFIG=$$HOME/.kube/config \
 		./e2e-tests \
 			-acme-nginx-certificate-domain=$(E2E_NGINX_CERTIFICATE_DOMAIN) \
-			-boulder-image-repo=$(BOULDER_IMAGE_REPO)
+			-boulder-image-repo=$(BOULDER_IMAGE_REPO) \
+			-report-dir=./_artifacts
 
 # Docker targets
 ################

@@ -16,11 +16,13 @@ package e2e
 import (
 	"os"
 	"os/exec"
+	"path"
 	"testing"
 
 	"github.com/golang/glog"
 	"github.com/onsi/ginkgo"
 	"github.com/onsi/ginkgo/config"
+	"github.com/onsi/ginkgo/reporters"
 	"github.com/onsi/gomega"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
@@ -59,7 +61,11 @@ func RunE2ETests(t *testing.T) {
 	InstallHelmChart(t, "boulder", "./contrib/charts/boulder", "boulder", "./test/fixtures/boulder-values.yaml", extraArgs...)
 	glog.Infof("Starting e2e run %q on Ginkgo node %d", framework.RunId, config.GinkgoConfig.ParallelNode)
 
-	if !ginkgo.RunSpecs(t, "cert-manager e2e suite") {
+	var r []ginkgo.Reporter
+	if framework.TestContext.ReportDir != "" {
+		r = append(r, reporters.NewJUnitReporter(path.Join(framework.TestContext.ReportDir, "junit_00.xml")))
+	}
+	if !ginkgo.RunSpecsWithDefaultAndCustomReporters(t, "cert-manager e2e suite", r) {
 		PrintPodLogs(t)
 	}
 }
