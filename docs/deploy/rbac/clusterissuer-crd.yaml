@@ -1,13 +1,14 @@
-{{- if .Values.createCustomResource -}}
+##---
+# Source: cert-manager/templates/clusterissuer-crd.yaml
 apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
 metadata:
   name: clusterissuers.certmanager.k8s.io
   labels:
-    app: {{ template "cert-manager.name" . }}
-    chart: {{ template "cert-manager.chart" . }}
-    release: {{ .Release.Name }}
-    heritage: {{ .Release.Service }}
+    app: cert-manager
+    chart: cert-manager-0.2.1
+    release: cert-manager
+    heritage: Tiller
 spec:
   group: certmanager.k8s.io
   version: v1alpha1
@@ -15,4 +16,3 @@ spec:
     kind: ClusterIssuer
     plural: clusterissuers
   scope: Cluster
-{{- end -}}
