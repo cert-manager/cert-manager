@@ -16,6 +16,57 @@ spec:
     kind: Certificate
     plural: certificates
   scope: Namespaced
+  validation:
+    # openAPIV3Schema is the schema for validating custom objects.
+    openAPIV3Schema:
+      properties:
+        spec:
+          required:
+          - secretName
+          properties:
+            issuerRef:
+              type: object
+              required:
+              - name
+              properties:
+                name:
+                  type: string
+                kind:
+                  type: string
+                  pattern: '^(((Cluster)?Issuer)|)$'
+            commonName:
+              type: string
+            dnsNames:
+              type: array
+              items:
+                type: string
+            secretName:
+              type: string
+            acme:
+              type: object
+              properties:
+                config:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      domains:
+                        type: array
+                        items:
+                          type: string
+                      http01:
+                        type: object
+                        properties:
+                          ingress:
+                            type: string
+                          ingressClass:
+                            type: string
+                      dns01:
+                        type: object
+                        properties:
+                          provider:
+                            type: string
+
 {{ else if .Capabilities.APIVersions.Has "extensions/v1beta1"  }}
 apiVersion: extensions/v1beta1
 kind: ThirdPartyResource

@@ -1,4 +1,4 @@
-/*
+/*https://github.com/munnerz/cert-manager/edit/crd-validation/pkg/apis/certmanager/v1alpha1/types.go
 Copyright 2017 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -229,7 +229,7 @@ type CertificateSpec struct {
 	// CommonName is a common name to be used on the Certificate
 	CommonName string `json:"commonName"`
 	// DNSNames is a list of subject alt names to be used on the Certificate
-	DNSNames []string `json:"dnsNames"`
+	DNSNames []string `json:"dnsNames,omitempty"`
 	// SecretName is the name of the secret resource to store this secret in
 	SecretName string `json:"secretName"`
 	// IssuerRef is a reference to the issuer for this certificate. If the
