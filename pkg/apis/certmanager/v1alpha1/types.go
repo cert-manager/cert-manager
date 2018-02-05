@@ -203,6 +203,64 @@ type ACMEIssuerStatus struct {
 // +genclient
 // +k8s:openapi-gen=true
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+// +resource:path=acmevalidations
+
+// ACMEValidation contains configuration detailing how to validate a DNS name
+// with an ACME server.
+type ACMEValidation struct {
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
+
+	Spec   ACMEValidationSpec   `json:"spec,omitempty"`
+	Status ACMEValidationStatus `json:"status,omitempty"`
+}
+
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+
+// ACMEValidationList is a list of ACMEValidations
+type ACMEValidationList struct {
+	metav1.TypeMeta `json:",inline"`
+	metav1.ListMeta `json:"metadata"`
+
+	Items []ACMEValidation `json:"items"`
+}
+
+type ACMEValidationSpec struct {
+	IssuerRef ObjectReference             `json:"issuerRef"`
+	DNSName   string                      `json:"dnsName"`
+	HTTP01    *ACMEValidationHTTP01Config `json:"http01,omitempty"`
+	DNS01     *ACMEValidationDNS01Config  `json:"dns01,omitempty"`
+}
+
+type ACMEValidationHTTP01Config struct {
+	Ingress      string `json:"ingress,omitempty"`
+	IngressClass string `json:"ingressClass,omitempty"`
+}
+
+type ACMEValidationDNS01Config struct {
+	Provider string `json:"provider"`
+}
+
+type ACMEValidationStatus struct {
+	URI string `json:"uri"`
+	// Account is the account URI this authorization is valid for. This is used
+	// in order to verify an authorization is up to date with the ACME account,
+	// in case the accounts identity has changed.
+	Account string `json:"account"`
+}
+
+// ACMEDomainAuthorization holds information about an ACME issuers domain
+// authorization
+type ACMEDomainAuthorization struct {
+	Domain string `json:"domain"`
+	URI    string `json:"uri"`
+	// Account is the account URI this authorization is valid for
+	Account string `json:"account"`
+}
+
+// +genclient
+// +k8s:openapi-gen=true
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // +resource:path=certificates
 
 // Certificate is a type to represent a Certificate from ACME
@@ -238,34 +296,11 @@ type CertificateSpec struct {
 	// a ClusterIssuer of the given name will be used. Any other value is
 	// invalid.
 	IssuerRef ObjectReference `json:"issuerRef"`
-
-	ACME *ACMECertificateConfig `json:"acme,omitempty"`
-}
-
-// ACMEConfig contains the configuration for the ACME certificate provider
-type ACMECertificateConfig struct {
-	Config []ACMECertificateDomainConfig `json:"config"`
-}
-
-type ACMECertificateDomainConfig struct {
-	Domains []string                     `json:"domains"`
-	HTTP01  *ACMECertificateHTTP01Config `json:"http01,omitempty"`
-	DNS01   *ACMECertificateDNS01Config  `json:"dns01,omitempty"`
-}
-
-type ACMECertificateHTTP01Config struct {
-	Ingress      string  `json:"ingress"`
-	IngressClass *string `json:"ingressClass,omitempty"`
-}
-
-type ACMECertificateDNS01Config struct {
-	Provider string `json:"provider"`
 }
 
 // CertificateStatus defines the observed state of Certificate
 type CertificateStatus struct {
 	Conditions []CertificateCondition `json:"conditions"`
-	ACME       *CertificateACMEStatus `json:"acme,omitempty"`
 }
 
 // CertificateCondition contains condition information for an Certificate.
@@ -297,20 +332,6 @@ const (
 	// is in ready state.
 	CertificateConditionReady CertificateConditionType = "Ready"
 )
-
-// CertificateACMEStatus holds the status for an ACME issuer
-type CertificateACMEStatus struct {
-	Authorizations []ACMEDomainAuthorization `json:"authorizations"`
-}
-
-// ACMEDomainAuthorization holds information about an ACME issuers domain
-// authorization
-type ACMEDomainAuthorization struct {
-	Domain string `json:"domain"`
-	URI    string `json:"uri"`
-	// Account is the account URI this authorization is valid for
-	Account string `json:"account"`
-}
 
 type LocalObjectReference struct {
 	// Name of the referent.
