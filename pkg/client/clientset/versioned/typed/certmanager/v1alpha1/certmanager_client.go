@@ -24,6 +24,7 @@ import (
 
 type CertmanagerV1alpha1Interface interface {
 	RESTClient() rest.Interface
+	ACMEValidationsGetter
 	CertificatesGetter
 	ClusterIssuersGetter
 	IssuersGetter
@@ -32,6 +33,10 @@ type CertmanagerV1alpha1Interface interface {
 // CertmanagerV1alpha1Client is used to interact with features provided by the certmanager.k8s.io group.
 type CertmanagerV1alpha1Client struct {
 	restClient rest.Interface
+}
+
+func (c *CertmanagerV1alpha1Client) ACMEValidations(namespace string) ACMEValidationInterface {
+	return newACMEValidations(c, namespace)
 }
 
 func (c *CertmanagerV1alpha1Client) Certificates(namespace string) CertificateInterface {

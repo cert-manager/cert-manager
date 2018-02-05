@@ -25,6 +25,10 @@ type FakeCertmanagerV1alpha1 struct {
 	*testing.Fake
 }
 
+func (c *FakeCertmanagerV1alpha1) ACMEValidations(namespace string) v1alpha1.ACMEValidationInterface {
+	return &FakeACMEValidations{c, namespace}
+}
+
 func (c *FakeCertmanagerV1alpha1) Certificates(namespace string) v1alpha1.CertificateInterface {
 	return &FakeCertificates{c, namespace}
 }

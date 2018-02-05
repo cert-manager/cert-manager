@@ -18,6 +18,14 @@ limitations under the License.
 
 package v1alpha1
 
+// ACMEValidationListerExpansion allows custom methods to be added to
+// ACMEValidationLister.
+type ACMEValidationListerExpansion interface{}
+
+// ACMEValidationNamespaceListerExpansion allows custom methods to be added to
+// ACMEValidationNamespaceLister.
+type ACMEValidationNamespaceListerExpansion interface{}
+
 // CertificateListerExpansion allows custom methods to be added to
 // CertificateLister.
 type CertificateListerExpansion interface{}

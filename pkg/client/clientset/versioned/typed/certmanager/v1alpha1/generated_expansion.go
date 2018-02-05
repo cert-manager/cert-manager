@@ -15,6 +15,8 @@ limitations under the License.
 */
 package v1alpha1
 
+type ACMEValidationExpansion interface{}
+
 type CertificateExpansion interface{}
 
 type ClusterIssuerExpansion interface{}
