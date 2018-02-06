@@ -3,3 +3,14 @@ rbac:
 
 serviceAccount:
   create: false
+
+resources:
+  requests:
+    cpu: 10m
+    memory: 32Mi
+
+ingressShim:
+  resources:
+    requests:
+      cpu: 10m
+      memory: 32Mi
