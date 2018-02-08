@@ -28,7 +28,7 @@ clone this repository:
 $ git clone https://github.com/jetstack/cert-manager
 $ cd cert-manager
 # check out the latest release tag to ensure we use a supported version of cert-manager
-$ git checkout v0.2.3
+$ git checkout -b v0.2.3
 ```
 
 We can then go ahead and install the bundled chart:
