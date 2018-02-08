@@ -91,7 +91,7 @@ by default:
 
 ```bash
 $ kubectl create \
-    --namespace kube-system
+    --namespace kube-system \
     -f kube-lego-account.yaml
 ```
 
