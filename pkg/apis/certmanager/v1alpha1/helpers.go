@@ -43,16 +43,6 @@ func (c *CertificateStatus) ACMEStatus() *CertificateACMEStatus {
 	return c.ACME
 }
 
-func (c *CertificateACMEStatus) SaveAuthorization(a ACMEDomainAuthorization) {
-	for i, auth := range c.Authorizations {
-		if auth.Domain == a.Domain {
-			c.Authorizations[i] = a
-			return
-		}
-	}
-	c.Authorizations = append(c.Authorizations, a)
-}
-
 func (iss *Issuer) HasCondition(condition IssuerCondition) bool {
 	if len(iss.Status.Conditions) == 0 {
 		return false

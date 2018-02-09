@@ -314,7 +314,7 @@ const (
 
 // CertificateACMEStatus holds the status for an ACME issuer
 type CertificateACMEStatus struct {
-	Authorizations []ACMEDomainAuthorization `json:"authorizations"`
+	OrderURL string `json:"orderURL"`
 }
 
 // ACMEDomainAuthorization holds information about an ACME issuers domain
