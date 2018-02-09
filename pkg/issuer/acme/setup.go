@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"github.com/golang/glog"
-	"golang.org/x/crypto/acme"
 	"k8s.io/api/core/v1"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -17,6 +16,7 @@ import (
 	"github.com/jetstack/cert-manager/pkg/util/errors"
 	"github.com/jetstack/cert-manager/pkg/util/kube"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
+	"github.com/jetstack/cert-manager/third_party/crypto/acme"
 )
 
 const (
@@ -67,7 +67,7 @@ func (a *Acme) Setup(ctx context.Context) error {
 
 	glog.V(4).Infof("%s: verified existing registration with ACME server", a.issuer.GetObjectMeta().Name)
 	a.issuer.UpdateStatusCondition(v1alpha1.IssuerConditionReady, v1alpha1.ConditionTrue, successAccountRegistered, messageAccountRegistered)
-	a.issuer.GetStatus().ACMEStatus().URI = account.URI
+	a.issuer.GetStatus().ACMEStatus().URI = account.URL
 
 	return nil
 }
@@ -80,7 +80,7 @@ func (a *Acme) registerAccount(ctx context.Context, cl *acme.Client) (*acme.Acco
 	acc := &acme.Account{
 		Contact: []string{fmt.Sprintf("mailto:%s", strings.ToLower(a.issuer.GetSpec().ACME.Email))},
 	}
-	acc, err := cl.Register(ctx, acc, acme.AcceptTOS)
+	acc, err := cl.CreateAccount(ctx, acc)
 	if err != nil {
 		typedErr, ok := err.(*acme.Error)
 		// if this isn't an ACME error, we should just return it
@@ -99,14 +99,14 @@ func (a *Acme) registerAccount(ctx context.Context, cl *acme.Client) (*acme.Acco
 		if accountUri == "" {
 			return nil, fmt.Errorf("unexpected error - 409 Conflict error returned, but no Location header set: %s", typedErr.Error())
 		}
-		return a.verifyAccount(ctx, cl, accountUri)
+		return a.verifyAccount(ctx, cl)
 	}
 	return acc, nil
 }
 
 // verifyAccount will verify an ACME account with the given URI.
-func (a *Acme) verifyAccount(ctx context.Context, cl *acme.Client, uri string) (*acme.Account, error) {
-	acc, err := cl.GetReg(ctx, uri)
+func (a *Acme) verifyAccount(ctx context.Context, cl *acme.Client) (*acme.Account, error) {
+	acc, err := cl.GetAccount(ctx)
 	if err != nil {
 		return nil, err
 	}

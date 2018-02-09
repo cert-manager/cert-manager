@@ -39,6 +39,11 @@ func (a *Acme) obtainCertificate(ctx context.Context, crt *v1alpha1.Certificate)
 		return nil, nil, fmt.Errorf("error creating ACME client: %s", err.Error())
 	}
 
+	orderURL := crt.Status.ACMEStatus().OrderURL
+	if orderURL == "" {
+		return nil, nil, fmt.Errorf("certificate order url cannot be blank")
+	}
+
 	// get existing certificate private key
 	key, err := kube.SecretTLSKey(a.secretsLister, crt.Namespace, crt.Spec.SecretName)
 	if k8sErrors.IsNotFound(err) || errors.IsInvalidData(err) {
@@ -59,12 +64,7 @@ func (a *Acme) obtainCertificate(ctx context.Context, crt *v1alpha1.Certificate)
 	}
 
 	// obtain a certificate from the acme server
-	certSlice, certURL, err := cl.CreateCert(
-		ctx,
-		csr,
-		0,
-		true,
-	)
+	certSlice, err := cl.FinalizeOrder(ctx, orderURL, csr)
 	if err != nil {
 		return nil, nil, fmt.Errorf("error getting certificate for acme server: %s", err)
 	}
@@ -75,7 +75,7 @@ func (a *Acme) obtainCertificate(ctx context.Context, crt *v1alpha1.Certificate)
 		pem.Encode(certBuffer, &pem.Block{Type: "CERTIFICATE", Bytes: cert})
 	}
 
-	glog.V(2).Infof("successfully got certificate: cn=%q altNames=%+v url=%q", commonName, altNames, certURL)
+	glog.V(2).Infof("successfully got certificate: cn=%q altNames=%+v url=%q", commonName, altNames, orderURL)
 	// encode the private key and return
 	return pki.EncodePKCS1PrivateKey(key), certBuffer.Bytes(), nil
 }

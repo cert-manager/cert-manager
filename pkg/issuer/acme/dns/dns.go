@@ -58,53 +58,24 @@ func (s *Solver) Present(ctx context.Context, crt *v1alpha1.Certificate, domain,
 	return slv.Present(domain, token, key)
 }
 
-func (s *Solver) Wait(ctx context.Context, crt *v1alpha1.Certificate, domain, token, key string) error {
-	slv, err := s.solverFor(crt, domain)
-	if err != nil {
-		return err
-	}
-
-	type boolErr struct {
-		bool
-		error
-	}
-
+func (s *Solver) Check(domain, token, key string) (bool, error) {
 	fqdn, value, ttl := util.DNS01Record(domain, key)
-
 	glog.V(4).Infof("Checking DNS propagation for %q using name servers: %v", domain, util.RecursiveNameservers)
 
-	timeout, interval := slv.Timeout()
-	ctx, cancel := context.WithTimeout(ctx, timeout)
-	defer cancel()
-	for {
-		select {
-		case r := <-func() <-chan boolErr {
-			out := make(chan boolErr, 1)
-			go func() {
-				defer close(out)
-				ok, err := util.PreCheckDNS(fqdn, value)
-				out <- boolErr{ok, err}
-			}()
-			return out
-		}():
-
-			if r.error != nil {
-				glog.Warningf("Failed to check for DNS propagation of %q: %v", domain, r.error)
-			} else if r.bool {
-				// TODO: move this to somewhere else
-				// TODO: make this wait for whatever the record *was*, not is now
-				glog.V(4).Infof("Waiting DNS record TTL (%ds) to allow propagation for propagation of DNS record for domain %q", ttl, fqdn)
-				time.Sleep(time.Second * time.Duration(ttl))
-				glog.V(4).Infof("ACME DNS01 validation record propagated for %q", fqdn)
-				return nil
-			} else {
-				glog.V(4).Infof("DNS record for %q not yet propagated", domain)
-			}
-			time.Sleep(interval)
-		case <-ctx.Done():
-			return ctx.Err()
-		}
+	ok, err := util.PreCheckDNS(fqdn, value)
+	if err != nil {
+		return false, err
 	}
+
+	if ok {
+		glog.V(4).Infof("Waiting DNS record TTL (%ds) to allow propagation for propagation of DNS record for domain %q", ttl, fqdn)
+		time.Sleep(time.Second * time.Duration(ttl))
+		glog.V(4).Infof("ACME DNS01 validation record propagated for %q", fqdn)
+		return true, nil
+	}
+
+	glog.V(4).Infof("DNS record for %q not yet propagated", domain)
+	return false, nil
 }
 
 func (s *Solver) CleanUp(ctx context.Context, crt *v1alpha1.Certificate, domain, token, key string) error {

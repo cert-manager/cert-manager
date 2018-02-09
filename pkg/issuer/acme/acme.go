@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/golang/glog"
-	"golang.org/x/crypto/acme"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 	corelisters "k8s.io/client-go/listers/core/v1"
@@ -17,6 +16,7 @@ import (
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/http"
 	"github.com/jetstack/cert-manager/pkg/util/kube"
+	"github.com/jetstack/cert-manager/third_party/crypto/acme"
 )
 
 // Acme is an issuer for an ACME server. It can be used to register and obtain
@@ -47,7 +47,7 @@ type Acme struct {
 // appropriate way given the config in the Issuer and Certificate.
 type solver interface {
 	Present(ctx context.Context, crt *v1alpha1.Certificate, domain, token, key string) error
-	Wait(ctx context.Context, crt *v1alpha1.Certificate, domain, token, key string) error
+	Check(domain, token, key string) (bool, error)
 	CleanUp(ctx context.Context, crt *v1alpha1.Certificate, domain, token, key string) error
 }
 

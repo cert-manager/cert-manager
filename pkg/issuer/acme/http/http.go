@@ -11,7 +11,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/golang/glog"
 	corev1 "k8s.io/api/core/v1"
 	extv1beta1 "k8s.io/api/extensions/v1beta1"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
@@ -388,41 +387,17 @@ func (s *Solver) Present(ctx context.Context, crt *v1alpha1.Certificate, domain,
 	return nil
 }
 
-// Wait will continuously test if the ingress controller has updated it's
-// routes to include the HTTP01 challenge path, or return with an error if the
-// context deadline is exceeded.
-func (s *Solver) Wait(ctx context.Context, crt *v1alpha1.Certificate, domain, token, key string) error {
-	passes := 0
-	ctx, cancel := context.WithTimeout(ctx, HTTP01Timeout)
+func (s *Solver) Check(domain, token, key string) (bool, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), HTTP01Timeout)
 	defer cancel()
-	for {
-		select {
-		case err := <-func() <-chan error {
-			out := make(chan error, 1)
-			go func() {
-				defer close(out)
-				out <- s.testReachability(ctx, domain, fmt.Sprintf("%s/%s", solver.HTTPChallengePath, token), key)
-			}()
-			return out
-		}():
-			if err != nil {
-				passes = 0
-				glog.V(4).Infof("ACME HTTP01 self check failed for domain %q, waiting 5s: %v", domain, err)
-				time.Sleep(time.Second * 5)
-				continue
-			}
-			passes++
-			glog.V(4).Infof("ACME HTTP01 self check for %q passed (%d/%d)", domain, passes, s.requiredPasses)
-			if passes < s.requiredPasses {
-				time.Sleep(time.Second * 2)
-				continue
-			}
-			return nil
-		case <-ctx.Done():
-			return ctx.Err()
+	for i := 0; i < s.requiredPasses; i++ {
+		err := s.testReachability(ctx, domain, fmt.Sprintf("%s/%s", solver.HTTPChallengePath, token), key)
+		if err != nil {
+			return false, err
 		}
+		time.Sleep(time.Second * 2)
 	}
-
+	return true, nil
 }
 
 // testReachability will attempt to connect to the 'domain' with 'path' and
