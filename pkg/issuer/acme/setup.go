@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/rsa"
 	"fmt"
-	"net/http"
 	"strings"
 
 	"github.com/golang/glog"
@@ -52,6 +51,8 @@ func (a *Acme) Setup(ctx context.Context) error {
 		return err
 	}
 
+	// registerAccount will also verify the account exists if it already
+	// exists.
 	account, err := a.registerAccount(ctx, cl)
 	if err != nil {
 		s := messageAccountVerificationFailed + err.Error()
@@ -79,33 +80,10 @@ func (a *Acme) registerAccount(ctx context.Context, cl *acme.Client) (*acme.Acco
 	}
 	acc, err := cl.CreateAccount(ctx, acc)
 	if err != nil {
-		typedErr, ok := err.(*acme.Error)
-		// if this isn't an ACME error, we should just return it
-		if !ok {
-			return nil, err
-		}
-		// StatusConflict means an account with the users private key already exists.
-		// If the response code was *not* StatusConflict, we should return the error
-		// here as we are not able to handle it.
-		if typedErr.StatusCode != http.StatusConflict {
-			return nil, err
-		}
-		// If StatusConflict was the returned error, we can attempt to look up the existing
-		// registration URI in the response headers.
-		accountUri := typedErr.Header.Get("Location")
-		if accountUri == "" {
-			return nil, fmt.Errorf("unexpected error - 409 Conflict error returned, but no Location header set: %s", typedErr.Error())
-		}
-		return a.verifyAccount(ctx, cl)
-	}
-	return acc, nil
-}
-
-// verifyAccount will verify an ACME account with the given URI.
-func (a *Acme) verifyAccount(ctx context.Context, cl *acme.Client) (*acme.Account, error) {
-	acc, err := cl.GetAccount(ctx)
-	if err != nil {
 		return nil, err
+	}
+	if acc.Status != acme.StatusValid {
+		return nil, fmt.Errorf("acme account is not valid")
 	}
 	return acc, nil
 }
