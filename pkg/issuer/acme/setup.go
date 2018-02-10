@@ -82,9 +82,10 @@ func (a *Acme) registerAccount(ctx context.Context, cl *acme.Client) (*acme.Acco
 	if err != nil {
 		return nil, err
 	}
-	if acc.Status != acme.StatusValid {
-		return nil, fmt.Errorf("acme account is not valid")
-	}
+	// TODO: re-enable this check once this field is set by Pebble
+	// if acc.Status != acme.StatusValid {
+	// 	return nil, fmt.Errorf("acme account is not valid")
+	// }
 	return acc, nil
 }
 
