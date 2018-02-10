@@ -78,7 +78,8 @@ func (a *Acme) Setup(ctx context.Context) error {
 // it will return the
 func (a *Acme) registerAccount(ctx context.Context, cl *acme.Client) (*acme.Account, error) {
 	acc := &acme.Account{
-		Contact: []string{fmt.Sprintf("mailto:%s", strings.ToLower(a.issuer.GetSpec().ACME.Email))},
+		Contact:     []string{fmt.Sprintf("mailto:%s", strings.ToLower(a.issuer.GetSpec().ACME.Email))},
+		TermsAgreed: true,
 	}
 	acc, err := cl.CreateAccount(ctx, acc)
 	if err != nil {
