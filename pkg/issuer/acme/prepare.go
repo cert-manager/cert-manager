@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/golang/glog"
+	core "k8s.io/api/core/v1"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
@@ -52,7 +53,7 @@ func (a *Acme) Prepare(ctx context.Context, crt *v1alpha1.Certificate) error {
 	var order *acme.Order
 	// if the existing order URL is blank, create a new order
 	if orderURL == "" {
-		if order, err = createOrder(ctx, cl, crt); err != nil {
+		if order, err = a.createOrder(ctx, cl, crt); err != nil {
 			return err
 		}
 	} else {
@@ -62,7 +63,7 @@ func (a *Acme) Prepare(ctx context.Context, crt *v1alpha1.Certificate) error {
 			// TODO: review this - should we instead back-off and try again?
 			// perhaps instead attempt to parse the URL first, and create a new
 			// order if the URL is actually invalid. Not sure ??
-			if order, err = createOrder(ctx, cl, crt); err != nil {
+			if order, err = a.createOrder(ctx, cl, crt); err != nil {
 				return err
 			}
 		}
@@ -72,7 +73,7 @@ func (a *Acme) Prepare(ctx context.Context, crt *v1alpha1.Certificate) error {
 	switch order.Status {
 	// create a new order if the old one is invalid
 	case acme.StatusDeactivated, acme.StatusInvalid, acme.StatusRevoked:
-		if order, err = createOrder(ctx, cl, crt); err != nil {
+		if order, err = a.createOrder(ctx, cl, crt); err != nil {
 			return err
 		}
 	case acme.StatusValid:
@@ -216,7 +217,7 @@ func (a *Acme) cleanupAuthorization(ctx context.Context, cl *acme.Client, crt *v
 // createOrder will create an order for the given certificate with the acme
 // server. Once created, it will set the order URL on the status field of the
 // certificate resource.
-func createOrder(ctx context.Context, cl *acme.Client, crt *v1alpha1.Certificate) (*acme.Order, error) {
+func (a *Acme) createOrder(ctx context.Context, cl *acme.Client, crt *v1alpha1.Certificate) (*acme.Order, error) {
 	desiredCN, err := pki.CommonNameForCertificate(crt)
 	if err != nil {
 		return nil, err
@@ -226,11 +227,12 @@ func createOrder(ctx context.Context, cl *acme.Client, crt *v1alpha1.Certificate
 		return nil, err
 	}
 	desiredDomains := append([]string{desiredCN}, desiredDNSNames...)
-
 	order, err := cl.CreateOrder(ctx, acme.NewOrder(desiredDomains...))
 	if err != nil {
+		a.recorder.Eventf(crt, core.EventTypeWarning, "ErrCreateOrder", "Error creating order for domains '%v': %v", desiredDomains, err)
 		return nil, err
 	}
+	a.recorder.Eventf(crt, core.EventTypeNormal, "CreateOrder", "Created order for domains: %v", desiredDomains)
 	crt.Status.ACMEStatus().OrderURL = order.URL
 	return order, nil
 }
