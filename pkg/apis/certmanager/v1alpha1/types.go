@@ -90,6 +90,8 @@ type ACMEIssuer struct {
 	Email string `json:"email"`
 	// Server is the ACME server URL
 	Server string `json:"server"`
+	// If true, skip verifying the ACME server TLS certificate
+	SkipTLSVerify bool `json:"skipTLSVerify,omitempty"`
 	// PrivateKey is the name of a secret containing the private key for this
 	// user account.
 	PrivateKey SecretKeySelector `json:"privateKeySecretRef"`

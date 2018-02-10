@@ -2,7 +2,9 @@ package acme
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
+	nethttp "net/http"
 
 	"github.com/golang/glog"
 	corev1 "k8s.io/api/core/v1"
@@ -93,7 +95,13 @@ func (a *Acme) acmeClient() (*acme.Client, error) {
 		return nil, err
 	}
 
+	tr := &nethttp.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: a.issuer.GetSpec().ACME.SkipTLSVerify},
+	}
+	client := &nethttp.Client{Transport: tr}
+
 	cl := &acme.Client{
+		HTTPClient:   client,
 		Key:          accountPrivKey,
 		DirectoryURL: a.issuer.GetSpec().ACME.Server,
 	}
