@@ -14,7 +14,6 @@ import (
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	"github.com/jetstack/cert-manager/pkg/util/errors"
-	"github.com/jetstack/cert-manager/pkg/util/kube"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 	"github.com/jetstack/cert-manager/third_party/crypto/acme"
 )
@@ -118,7 +117,7 @@ func (a *Acme) createAccountPrivateKey() (*rsa.PrivateKey, error) {
 		return nil, err
 	}
 
-	_, err = kube.EnsureSecret(a.client, &v1.Secret{
+	_, err = a.client.CoreV1().Secrets(a.issuerResourcesNamespace).Create(&v1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      secretName,
 			Namespace: a.issuerResourcesNamespace,
