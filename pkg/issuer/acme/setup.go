@@ -45,10 +45,7 @@ func (a *Acme) Setup(ctx context.Context) error {
 			return fmt.Errorf(s)
 		}
 		a.issuer.GetStatus().ACMEStatus().URI = ""
-		cl = &acme.Client{
-			Key:          accountPrivKey,
-			DirectoryURL: a.issuer.GetSpec().ACME.Server,
-		}
+		cl = a.acmeClientWithKey(accountPrivKey)
 	} else if err != nil {
 		s := messageAccountVerificationFailed + err.Error()
 		glog.V(4).Infof("%s: %s", a.issuer.GetObjectMeta().Name, s)

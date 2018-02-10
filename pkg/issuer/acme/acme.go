@@ -2,6 +2,7 @@ package acme
 
 import (
 	"context"
+	"crypto/rsa"
 	"crypto/tls"
 	"fmt"
 	nethttp "net/http"
@@ -87,6 +88,18 @@ func New(issuer v1alpha1.GenericIssuer,
 	}, nil
 }
 
+func (a *Acme) acmeClientWithKey(accountPrivKey *rsa.PrivateKey) *acme.Client {
+	tr := &nethttp.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: a.issuer.GetSpec().ACME.SkipTLSVerify},
+	}
+	client := &nethttp.Client{Transport: tr}
+	cl := &acme.Client{
+		HTTPClient:   client,
+		Key:          accountPrivKey,
+		DirectoryURL: a.issuer.GetSpec().ACME.Server,
+	}
+	return cl
+}
 func (a *Acme) acmeClient() (*acme.Client, error) {
 	secretName, secretKey := a.acmeAccountPrivateKeyMeta()
 	glog.V(4).Infof("getting private key (%s->%s) for acme issuer %s/%s", secretName, secretKey, a.issuerResourcesNamespace, a.issuer.GetObjectMeta().Name)
@@ -95,17 +108,7 @@ func (a *Acme) acmeClient() (*acme.Client, error) {
 		return nil, err
 	}
 
-	tr := &nethttp.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: a.issuer.GetSpec().ACME.SkipTLSVerify},
-	}
-	client := &nethttp.Client{Transport: tr}
-
-	cl := &acme.Client{
-		HTTPClient:   client,
-		Key:          accountPrivKey,
-		DirectoryURL: a.issuer.GetSpec().ACME.Server,
-	}
-	return cl, nil
+	return a.acmeClientWithKey(accountPrivKey), nil
 }
 
 // acmeAccountPrivateKeyMeta returns the name and the secret 'key' that stores
