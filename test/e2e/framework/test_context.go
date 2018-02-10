@@ -63,7 +63,7 @@ func RegisterCommonFlags() {
 	flag.StringVar(&TestContext.CertManagerContext, "cert-manager-context", "", "config context to use for cert-manager. If unset, will use value from 'current-context'")
 	flag.StringVar(&TestContext.BoulderImageRepo, "boulder-image-repo", "", "The container image repository for boulder to use in e2e tests")
 	flag.StringVar(&TestContext.BoulderImageTag, "boulder-image-tag", "", "The container image tag for boulder to use in e2e tests")
-	flag.StringVar(&TestContext.ACMEURL, "acme-url", "http://boulder.boulder.svc.cluster.local:4000/directory", "The ACME test server to use in e2e tests")
+	flag.StringVar(&TestContext.ACMEURL, "acme-url", "http://boulder.boulder.svc.cluster.local:4000/dir", "The ACME test server to use in e2e tests")
 	flag.StringVar(&TestContext.ReportDir, "report-dir", "", "Optional directory to store junit output in. If not specified, no junit file will be output")
 }
 
