@@ -232,8 +232,9 @@ func NewCertManagerACMEIssuer(name, acmeURL, acmeEmail, acmePrivateKey string) *
 		Spec: v1alpha1.IssuerSpec{
 			IssuerConfig: v1alpha1.IssuerConfig{
 				ACME: &v1alpha1.ACMEIssuer{
-					Email:  acmeEmail,
-					Server: acmeURL,
+					Email:         acmeEmail,
+					Server:        acmeURL,
+					SkipTLSVerify: true,
 					PrivateKey: v1alpha1.SecretKeySelector{
 						LocalObjectReference: v1alpha1.LocalObjectReference{
 							Name: acmePrivateKey,

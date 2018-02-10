@@ -35,9 +35,9 @@ type TestContextType struct {
 	CertManagerConfig  string
 	CertManagerContext string
 
-	BoulderImageRepo string
-	BoulderImageTag  string
-	ACMEURL          string
+	PebbleImageRepo string
+	PebbleImageTag  string
+	ACMEURL         string
 
 	ReportDir string
 }
@@ -61,9 +61,9 @@ func RegisterCommonFlags() {
 	flag.StringVar(&TestContext.CertManagerHost, "cert-manager-host", "http://127.0.0.1:30000", "The cert-manager host, or apiserver, to connect to")
 	flag.StringVar(&TestContext.CertManagerConfig, "cert-manager-config", os.Getenv(RecommendedConfigPathEnvVar), "Path to config containing embedded authinfo for cert-manager. Default value is from environment variable "+RecommendedConfigPathEnvVar)
 	flag.StringVar(&TestContext.CertManagerContext, "cert-manager-context", "", "config context to use for cert-manager. If unset, will use value from 'current-context'")
-	flag.StringVar(&TestContext.BoulderImageRepo, "boulder-image-repo", "", "The container image repository for boulder to use in e2e tests")
-	flag.StringVar(&TestContext.BoulderImageTag, "boulder-image-tag", "", "The container image tag for boulder to use in e2e tests")
-	flag.StringVar(&TestContext.ACMEURL, "acme-url", "http://boulder.boulder.svc.cluster.local:4000/dir", "The ACME test server to use in e2e tests")
+	flag.StringVar(&TestContext.PebbleImageRepo, "pebble-image-repo", "", "The container image repository for pebble to use in e2e tests")
+	flag.StringVar(&TestContext.PebbleImageTag, "pebble-image-tag", "", "The container image tag for pebble to use in e2e tests")
+	flag.StringVar(&TestContext.ACMEURL, "acme-url", "https://pebble.pebble.svc.cluster.local/dir", "The ACME test server to use in e2e tests")
 	flag.StringVar(&TestContext.ReportDir, "report-dir", "", "Optional directory to store junit output in. If not specified, no junit file will be output")
 }
 

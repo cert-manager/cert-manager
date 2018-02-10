@@ -51,16 +51,16 @@ func RunE2ETests(t *testing.T) {
 	glog.Infof("Installing cert-manager helm chart")
 	InstallHelmChart(t, releaseName, "./contrib/charts/cert-manager", certManagerDeploymentNamespace, "./test/fixtures/cert-manager-values.yaml")
 
-	glog.Infof("Installing boulder chart")
-	// 10 minute timeout for boulder install due to large images
+	glog.Infof("Installing pebble chart")
+	// 10 minute timeout for pebble install due to large images
 	extraArgs := []string{"--timeout", "600"}
-	if framework.TestContext.BoulderImageRepo != "" {
-		extraArgs = append(extraArgs, "--set", "image.repository="+framework.TestContext.BoulderImageRepo)
+	if framework.TestContext.PebbleImageRepo != "" {
+		extraArgs = append(extraArgs, "--set", "image.repository="+framework.TestContext.PebbleImageRepo)
 	}
-	if framework.TestContext.BoulderImageTag != "" {
-		extraArgs = append(extraArgs, "--set", "image.tag="+framework.TestContext.BoulderImageTag)
+	if framework.TestContext.PebbleImageTag != "" {
+		extraArgs = append(extraArgs, "--set", "image.tag="+framework.TestContext.PebbleImageTag)
 	}
-	InstallHelmChart(t, "boulder", "./contrib/charts/boulder", "boulder", "./test/fixtures/boulder-values.yaml", extraArgs...)
+	InstallHelmChart(t, "pebble", "./contrib/charts/pebble", "pebble", "./test/fixtures/pebble-values.yaml", extraArgs...)
 	glog.Infof("Starting e2e run %q on Ginkgo node %d", framework.RunId, config.GinkgoConfig.ParallelNode)
 
 	var r []ginkgo.Reporter
