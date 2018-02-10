@@ -1,0 +1,14 @@
+replicaCount: 1
+image:
+  repository: quay.io/munnerz/pebble
+  tag: "20180210"
+  pullPolicy: IfNotPresent
+service:
+  type: ClusterIP
+resources: {}
+  # limits:
+  #  cpu: 100m
+  #  memory: 128Mi
+  # requests:
+  #  cpu: 100m
+  #  memory: 128Mi
