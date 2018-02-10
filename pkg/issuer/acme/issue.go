@@ -43,6 +43,10 @@ func (a *Acme) obtainCertificate(ctx context.Context, crt *v1alpha1.Certificate)
 	if orderURL == "" {
 		return nil, nil, fmt.Errorf("certificate order url cannot be blank")
 	}
+	order, err := cl.GetOrder(ctx, orderURL)
+	if err != nil {
+		return nil, nil, fmt.Errorf("error getting order details: %v", err)
+	}
 
 	// get existing certificate private key
 	key, err := kube.SecretTLSKey(a.secretsLister, crt.Namespace, crt.Spec.SecretName)
@@ -64,7 +68,7 @@ func (a *Acme) obtainCertificate(ctx context.Context, crt *v1alpha1.Certificate)
 	}
 
 	// obtain a certificate from the acme server
-	certSlice, err := cl.FinalizeOrder(ctx, orderURL, csr)
+	certSlice, err := cl.FinalizeOrder(ctx, order.FinalizeURL, csr)
 	if err != nil {
 		return nil, nil, fmt.Errorf("error getting certificate for acme server: %s", err)
 	}
