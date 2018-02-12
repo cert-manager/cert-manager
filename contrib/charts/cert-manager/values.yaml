@@ -10,6 +10,8 @@ image:
 
 createCustomResource: true
 
+certificateResourceShortNames: ["cert", "certs"]
+
 rbac:
   # Specifies whether RBAC resources should be created
   create: true
