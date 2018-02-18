@@ -151,5 +151,12 @@ func signCertificate(crt *v1alpha1.Certificate, issuerCert *x509.Certificate, pu
 	if err != nil {
 		return nil, nil, fmt.Errorf("error encoding certificate PEM: %s", err.Error())
 	}
+
+	// bundle the CA
+	err = pem.Encode(pemBytes, &pem.Block{Type: "CERTIFICATE", Bytes: issuerCert.Raw})
+	if err != nil {
+		return nil, nil, fmt.Errorf("error encoding issuer cetificate PEM: %s", err.Error())
+	}
+
 	return pemBytes.Bytes(), cert, err
 }
