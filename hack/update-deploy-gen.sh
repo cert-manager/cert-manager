@@ -4,7 +4,7 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-SCRIPT_ROOT=$(dirname ${BASH_SOURCE})
+SCRIPT_ROOT=$(dirname "${BASH_SOURCE}")
 REPO_ROOT="${SCRIPT_ROOT}/.."
 # This will set Capabilities.KubeVersion.Major/Minor when generating manifests
 KUBE_VERSION=1.9
