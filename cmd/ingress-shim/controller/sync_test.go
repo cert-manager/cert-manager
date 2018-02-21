@@ -32,6 +32,14 @@ func TestShouldSync(t *testing.T) {
 			ShouldSync:  true,
 		},
 		{
+			Annotations: map[string]string{tlsACMEAnnotation: "false"},
+			ShouldSync:  false,
+		},
+		{
+			Annotations: map[string]string{tlsACMEAnnotation: ""},
+			ShouldSync:  false,
+		},
+		{
 			Annotations: map[string]string{acmeIssuerChallengeTypeAnnotation: ""},
 			ShouldSync:  true,
 		},
