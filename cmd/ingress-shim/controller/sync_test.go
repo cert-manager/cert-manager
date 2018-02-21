@@ -28,7 +28,7 @@ func TestShouldSync(t *testing.T) {
 			ShouldSync:  true,
 		},
 		{
-			Annotations: map[string]string{tlsACMEAnnotation: ""},
+			Annotations: map[string]string{tlsACMEAnnotation: "true"},
 			ShouldSync:  true,
 		},
 		{
