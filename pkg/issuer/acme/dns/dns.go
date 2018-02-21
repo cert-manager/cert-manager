@@ -71,15 +71,19 @@ func (s *Solver) Wait(ctx context.Context, crt *v1alpha1.Certificate, domain, to
 			}()
 			return out
 		}():
-			if r.bool {
+
+			if r.error != nil {
+				glog.Warningf("Failed to check for DNS propagation of %q: %v", domain, r.error)
+			} else if r.bool {
 				// TODO: move this to somewhere else
 				// TODO: make this wait for whatever the record *was*, not is now
 				glog.V(4).Infof("Waiting DNS record TTL (%ds) to allow propagation for propagation of DNS record for domain %q", ttl, fqdn)
 				time.Sleep(time.Second * time.Duration(ttl))
 				glog.V(4).Infof("ACME DNS01 validation record propagated for %q", fqdn)
 				return nil
+			} else {
+				glog.V(4).Infof("DNS record for %q not yet propagated", domain)
 			}
-			glog.V(4).Infof("DNS record for %q not yet propagated", domain)
 			time.Sleep(interval)
 		case <-ctx.Done():
 			return ctx.Err()
