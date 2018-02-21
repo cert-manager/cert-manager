@@ -151,8 +151,8 @@ func startLeaderElection(opts *options.ControllerOptions, leaderElectionClient k
 	}
 
 	// Lock required for leader election
-	rl := resourcelock.EndpointsLock{
-		EndpointsMeta: metav1.ObjectMeta{
+	rl := resourcelock.ConfigMapLock{
+		ConfigMapMeta: metav1.ObjectMeta{
 			Namespace: opts.LeaderElectionNamespace,
 			Name:      "cert-manager-controller",
 		},
