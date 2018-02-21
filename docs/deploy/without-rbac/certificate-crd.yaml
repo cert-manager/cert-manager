@@ -12,7 +12,11 @@ metadata:
 spec:
   group: certmanager.k8s.io
   version: v1alpha1
+  scope: Namespaced
   names:
     kind: Certificate
     plural: certificates
-  scope: Namespaced
+    shortNames:
+      - cert
+      - certs
+      
