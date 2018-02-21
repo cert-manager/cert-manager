@@ -9,7 +9,11 @@ import (
 	"k8s.io/client-go/kubernetes"
 	corev1listers "k8s.io/client-go/listers/core/v1"
 
+	"github.com/pkg/errors"
+
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+
+	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/akamai"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/azuredns"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/clouddns"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/cloudflare"
@@ -116,6 +120,30 @@ func (s *Solver) solverFor(crt *v1alpha1.Certificate, domain string) (solver, er
 
 	var impl solver
 	switch {
+	case providerConfig.Akamai != nil:
+		clientToken, err := s.loadSecretData(&providerConfig.Akamai.ClientToken)
+		if err != nil {
+			return nil, errors.Wrap(err, "error getting akamai client token")
+		}
+
+		clientSecret, err := s.loadSecretData(&providerConfig.Akamai.ClientSecret)
+		if err != nil {
+			return nil, errors.Wrap(err, "error getting akamai client secret")
+		}
+
+		accessToken, err := s.loadSecretData(&providerConfig.Akamai.AccessToken)
+		if err != nil {
+			return nil, errors.Wrap(err, "error getting akamai access token")
+		}
+
+		impl, err = akamai.NewDNSProvider(
+			providerConfig.Akamai.ServiceConsumerDomain,
+			string(clientToken),
+			string(clientSecret),
+			string(accessToken))
+		if err != nil {
+			return nil, errors.Wrap(err, "error instantiating akamai challenge solver")
+		}
 	case providerConfig.CloudDNS != nil:
 		saSecret, err := s.secretLister.Secrets(s.resourceNamespace).Get(providerConfig.CloudDNS.ServiceAccount.Name)
 		if err != nil {
@@ -188,4 +216,17 @@ func (s *Solver) solverFor(crt *v1alpha1.Certificate, domain string) (solver, er
 
 func NewSolver(issuer v1alpha1.GenericIssuer, client kubernetes.Interface, secretLister corev1listers.SecretLister, resourceNamespace string) *Solver {
 	return &Solver{issuer, client, secretLister, resourceNamespace}
+}
+
+func (s *Solver) loadSecretData(selector *v1alpha1.SecretKeySelector) ([]byte, error) {
+	secret, err := s.secretLister.Secrets(s.resourceNamespace).Get(selector.Name)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to load secret with name %q", selector.Name)
+	}
+
+	if data, ok := secret.Data[selector.Key]; ok {
+		return data, nil
+	}
+
+	return nil, errors.Errorf("no key %q in secret %q", selector.Key, selector.Name)
 }
