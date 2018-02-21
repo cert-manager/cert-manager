@@ -3,6 +3,7 @@ package controller
 import (
 	"context"
 	"fmt"
+	"strconv"
 
 	"github.com/golang/glog"
 	corev1 "k8s.io/api/core/v1"
@@ -157,8 +158,10 @@ func shouldSync(ing *extv1beta1.Ingress) bool {
 	if _, ok := annotations[clusterIssuerNameAnnotation]; ok {
 		return true
 	}
-	if _, ok := annotations[tlsACMEAnnotation]; ok {
-		return true
+	if s, ok := annotations[tlsACMEAnnotation]; ok {
+		if b, _ := strconv.ParseBool(s); b {
+			return true
+		}
 	}
 	if _, ok := annotations[acmeIssuerChallengeTypeAnnotation]; ok {
 		return true
