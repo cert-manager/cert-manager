@@ -27,6 +27,10 @@ required = [
   name = "k8s.io/apiextensions-apiserver"
   version = "kubernetes-1.9.1"
 
+[[constraint]]
+    name = "github.com/Azure/azure-sdk-for-go"
+    version = "v12.0.0-beta"
+
 # gengo needs to be manually pinned to the version listed in code-generators
 # Gopkg.toml, because the k8s project does not produce Gopkg.toml files & dep
 # does not parse the Godeps.json file to determine revisions to use.

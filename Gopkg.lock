@@ -8,10 +8,16 @@
   version = "v0.10.0"
 
 [[projects]]
+  name = "github.com/Azure/azure-sdk-for-go"
+  packages = ["arm/dns"]
+  revision = "990842d1126ef6e294152c5f6f4e3f804a3cfd6d"
+  version = "v12.0.0-beta"
+
+[[projects]]
   name = "github.com/Azure/go-autorest"
-  packages = ["autorest","autorest/adal","autorest/azure","autorest/date"]
-  revision = "10791a4516e77c53ab10f198f144804cca3d5b43"
-  version = "v8.1.0"
+  packages = ["autorest","autorest/adal","autorest/azure","autorest/date","autorest/to"]
+  revision = "6311d7a76f54cf2b6dea03d737d9bd9a6022ac5f"
+  version = "v9.7.1"
 
 [[projects]]
   name = "github.com/PuerkitoBio/purell"
@@ -417,6 +423,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "92e908306cfabebc38f7fa0c713ea69fe267f22e2419546b981287b945325aa7"
+  inputs-digest = "d31e3b85944b92b8bd50bd7d4c87bda0c9dfa1066e4f9cf09d5a52e2f6ee6713"
   solver-name = "gps-cdcl"
   solver-version = 1

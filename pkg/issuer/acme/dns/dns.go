@@ -10,6 +10,7 @@ import (
 	corev1listers "k8s.io/client-go/listers/core/v1"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/azuredns"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/clouddns"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/cloudflare"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/route53"
@@ -155,6 +156,25 @@ func (s *Solver) solverFor(crt *v1alpha1.Certificate, domain string) (solver, er
 		if err != nil {
 			return nil, fmt.Errorf("error instantiating route53 challenge solver: %s", err.Error())
 		}
+	case providerConfig.AzureDNS != nil:
+		clientSecret, err := s.secretLister.Secrets(s.resourceNamespace).Get(providerConfig.AzureDNS.ClientSecret.Name)
+		if err != nil {
+			return nil, fmt.Errorf("error getting azuredns client secret: %s", err.Error())
+		}
+
+		clientSecretBytes, ok := clientSecret.Data[providerConfig.AzureDNS.ClientSecret.Key]
+		if !ok {
+			return nil, fmt.Errorf("error getting azure dns client secret: key '%s' not found in secret", providerConfig.AzureDNS.ClientSecret.Key)
+		}
+
+		impl, err = azuredns.NewDNSProviderCredentials(
+			providerConfig.AzureDNS.ClientID,
+			string(clientSecretBytes),
+			providerConfig.AzureDNS.SubscriptionID,
+			providerConfig.AzureDNS.TenantID,
+			providerConfig.AzureDNS.ResourceGroupName,
+			providerConfig.AzureDNS.HostedZoneName,
+		)
 	default:
 		return nil, fmt.Errorf("no dns provider config specified for domain '%s'", domain)
 	}
