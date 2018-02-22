@@ -35,5 +35,5 @@ roleRef:
   name: cert-manager
 subjects:
   - name: cert-manager
-    namespace: "default"
+    namespace: "cert-manager"
     kind: ServiceAccount

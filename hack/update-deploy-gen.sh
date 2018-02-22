@@ -18,7 +18,7 @@ gen() {
 		"${REPO_ROOT}/contrib/charts/cert-manager" \
 		--values "${SCRIPT_ROOT}/deploy/${VALUES}.yaml" \
 		--kube-version "${KUBE_VERSION}" \
-		--namespace "default" \
+		--namespace "cert-manager" \
 		--name "cert-manager" \
 		--set "fullnameOverride=cert-manager" \
 		--output-dir "${TMP_OUTPUT}"

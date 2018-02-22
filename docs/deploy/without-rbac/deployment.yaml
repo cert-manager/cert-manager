@@ -4,6 +4,7 @@ apiVersion: apps/v1beta1
 kind: Deployment
 metadata:
   name: cert-manager
+  namespace: "cert-manager"
   labels:
     app: cert-manager
     chart: cert-manager-0.2.2
