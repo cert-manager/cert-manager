@@ -45,7 +45,7 @@ const (
 	messageIssuerNotFound            = "Issuer %s does not exist"
 	messageIssuerNotReady            = "Issuer %s not ready"
 	messageIssuerErrorInit           = "Error initializing issuer: "
-	messageErrorCheckCertificate     = "Error checking existing TLS certificate: "
+	messageErrorCheckCertificate     = "Error checking existing TLS certificate, will re-issue: "
 	messageErrorGetCertificate       = "Error getting TLS certificate: "
 	messageErrorPreparingCertificate = "Error preparing issuer for certificate: "
 	messageErrorIssuingCertificate   = "Error issuing certificate: "
@@ -105,7 +105,7 @@ func (c *Controller) Sync(ctx context.Context, crt *v1alpha1.Certificate) (err e
 	if err != nil {
 		s := messageErrorCheckCertificate + err.Error()
 		glog.Info(s)
-		c.recorder.Event(crt, api.EventTypeWarning, errorCheckCertificate, s)
+		c.recorder.Event(crt, api.EventTypeNormal, errorCheckCertificate, s)
 	}
 
 	// if an error is returned, and that error is something other than
