@@ -24,15 +24,15 @@ import (
 const renewBefore = time.Hour * 24 * 30
 
 const (
-	errorIssuerNotFound       = "ErrorIssuerNotFound"
-	errorIssuerNotReady       = "ErrorIssuerNotReady"
-	errorIssuerInit           = "ErrorIssuerInitialization"
-	errorCheckCertificate     = "ErrorCheckCertificate"
-	errorGetCertificate       = "ErrorGetCertificate"
-	errorPreparingCertificate = "ErrorPrepareCertificate"
-	errorIssuingCertificate   = "ErrorIssueCertificate"
-	errorRenewingCertificate  = "ErrorRenewCertificate"
-	errorSavingCertificate    = "ErrorSaveCertificate"
+	errorIssuerNotFound       = "ErrIssuerNotFound"
+	errorIssuerNotReady       = "ErrIssuerNotReady"
+	errorIssuerInit           = "ErrIssuerInitialization"
+	errorCheckCertificate     = "ErrCheckCertificate"
+	errorGetCertificate       = "ErrGetCertificate"
+	errorPreparingCertificate = "ErrPrepareCertificate"
+	errorIssuingCertificate   = "ErrIssueCertificate"
+	errorRenewingCertificate  = "ErrRenewCertificate"
+	errorSavingCertificate    = "ErrSaveCertificate"
 
 	reasonPreparingCertificate = "PrepareCertificate"
 	reasonIssuingCertificate   = "IssueCertificate"
