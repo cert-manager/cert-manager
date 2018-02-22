@@ -2,6 +2,7 @@ apiVersion: apps/v1beta1
 kind: Deployment
 metadata:
   name: {{ template "cert-manager.fullname" . }}
+  namespace: {{ .Release.Namespace | quote }}
   labels:
     app: {{ template "cert-manager.name" . }}
     chart: {{ template "cert-manager.chart" . }}
