@@ -20,10 +20,16 @@ spec:
         - name: {{ .Chart.Name }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
-        {{- if .Values.extraArgs }}
           args:
+          - --cluster-resource-namespace=$(POD_NAMESPACE)
+        {{- if .Values.extraArgs }}
 {{ toYaml .Values.extraArgs | indent 12 }}
         {{- end }}
+          env:
+          - name: POD_NAMESPACE
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.namespace
           resources:
 {{ toYaml .Values.resources | indent 12 }}
 {{- if .Values.ingressShim.enabled }}
