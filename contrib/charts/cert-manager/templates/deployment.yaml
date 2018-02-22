@@ -23,7 +23,7 @@ spec:
           args:
           - --cluster-resource-namespace=$(POD_NAMESPACE)
         {{- if .Values.extraArgs }}
-{{ toYaml .Values.extraArgs | indent 12 }}
+{{ toYaml .Values.extraArgs | indent 10 }}
         {{- end }}
           env:
           - name: POD_NAMESPACE
@@ -38,7 +38,7 @@ spec:
           imagePullPolicy: {{ .Values.ingressShim.image.pullPolicy }}
         {{- if .Values.ingressShim.extraArgs }}
           args:
-{{ toYaml .Values.ingressShim.extraArgs | indent 12 }}
+{{ toYaml .Values.ingressShim.extraArgs | indent 10 }}
         {{- end }}
           resources:
 {{ toYaml .Values.ingressShim.resources | indent 12 }}
