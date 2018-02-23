@@ -34,6 +34,8 @@ import (
 	_ "github.com/jetstack/cert-manager/test/e2e/issuer"
 )
 
+const certManagerDeploymentNamespace = "cert-manager"
+
 // TestE2E checks configuration parameters (specified through flags) and then runs
 // E2E tests using the Ginkgo runner.
 func RunE2ETests(t *testing.T) {
@@ -47,7 +49,7 @@ func RunE2ETests(t *testing.T) {
 	}
 
 	glog.Infof("Installing cert-manager helm chart")
-	InstallHelmChart(t, releaseName, "./contrib/charts/cert-manager", "cert-manager", "./test/fixtures/cert-manager-values.yaml")
+	InstallHelmChart(t, releaseName, "./contrib/charts/cert-manager", certManagerDeploymentNamespace, "./test/fixtures/cert-manager-values.yaml")
 
 	glog.Infof("Installing boulder chart")
 	// 10 minute timeout for boulder install due to large images

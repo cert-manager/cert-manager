@@ -23,6 +23,13 @@ spec:
         - name: cert-manager
           image: "quay.io/jetstack/cert-manager-controller:v0.2.3"
           imagePullPolicy: IfNotPresent
+          args:
+          - --cluster-resource-namespace=$(POD_NAMESPACE)
+          env:
+          - name: POD_NAMESPACE
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.namespace
           resources:
             requests:
               cpu: 10m
