@@ -21,6 +21,7 @@ gen() {
 		--namespace "cert-manager" \
 		--name "cert-manager" \
 		--set "fullnameOverride=cert-manager" \
+		--set "createNamespaceResource=true" \
 		--output-dir "${TMP_OUTPUT}"
 	mv "${TMP_OUTPUT}"/cert-manager/templates/*.* "${OUTPUT_DIR}/"
 }
