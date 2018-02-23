@@ -3,6 +3,7 @@ package dns
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/golang/glog"
@@ -152,8 +153,8 @@ func (s *Solver) solverFor(crt *v1alpha1.Certificate, domain string) (solver, er
 		}
 
 		impl, err = route53.NewDNSProviderAccessKey(
-			providerConfig.Route53.AccessKeyID,
-			string(secretAccessKeyBytes),
+			strings.TrimSpace(providerConfig.Route53.AccessKeyID),
+			strings.TrimSpace(string(secretAccessKeyBytes)),
 			providerConfig.Route53.HostedZoneID,
 			providerConfig.Route53.Region,
 		)
