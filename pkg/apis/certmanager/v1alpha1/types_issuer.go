@@ -144,11 +144,12 @@ type ACMEIssuerDNS01Config struct {
 type ACMEIssuerDNS01Provider struct {
 	Name string `json:"name"`
 
-	Akamai     *ACMEIssuerDNS01ProviderAkamai     `json:"akamai,omitempty"`
-	CloudDNS   *ACMEIssuerDNS01ProviderCloudDNS   `json:"clouddns,omitempty"`
-	Cloudflare *ACMEIssuerDNS01ProviderCloudflare `json:"cloudflare,omitempty"`
-	Route53    *ACMEIssuerDNS01ProviderRoute53    `json:"route53,omitempty"`
-	AzureDNS   *ACMEIssuerDNS01ProviderAzureDNS   `json:"azuredns,omitempty"`
+	Akamai       *ACMEIssuerDNS01ProviderAkamai       `json:"akamai,omitempty"`
+	CloudDNS     *ACMEIssuerDNS01ProviderCloudDNS     `json:"clouddns,omitempty"`
+	Cloudflare   *ACMEIssuerDNS01ProviderCloudflare   `json:"cloudflare,omitempty"`
+	DigitalOcean *ACMEIssuerDNS01ProviderDigitalOcean `json:"digitalocean,omitempty"`
+	Route53      *ACMEIssuerDNS01ProviderRoute53      `json:"route53,omitempty"`
+	AzureDNS     *ACMEIssuerDNS01ProviderAzureDNS     `json:"azuredns,omitempty"`
 }
 
 // ACMEIssuerDNS01ProviderAkamai is a structure containing the DNS
@@ -172,6 +173,12 @@ type ACMEIssuerDNS01ProviderCloudDNS struct {
 type ACMEIssuerDNS01ProviderCloudflare struct {
 	Email  string            `json:"email"`
 	APIKey SecretKeySelector `json:"apiKeySecretRef"`
+}
+
+// ACMEIssuerDNS01ProviderCloudflare is a structure containing the DNS
+// configuration for DigitalOcean Domains
+type ACMEIssuerDNS01ProviderDigitalOcean struct {
+	Token SecretKeySelector `json:"token"`
 }
 
 // ACMEIssuerDNS01ProviderRoute53 is a structure containing the Route 53
