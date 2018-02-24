@@ -178,7 +178,7 @@ type ACMEIssuerDNS01ProviderCloudflare struct {
 // ACMEIssuerDNS01ProviderCloudflare is a structure containing the DNS
 // configuration for DigitalOcean Domains
 type ACMEIssuerDNS01ProviderDigitalOcean struct {
-	Token SecretKeySelector `json:"token"`
+	Token SecretKeySelector `json:"tokenSecretRef"`
 }
 
 // ACMEIssuerDNS01ProviderRoute53 is a structure containing the Route 53
