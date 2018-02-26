@@ -202,14 +202,10 @@ ClusterIssuer `letsencrypt-staging` (as above), run:
 ```bash
 helm upgrade \
     cert-manager \
-    ./contrib/charts/cert-manager \
+    stable/cert-manager \
     --namespace kube-system \
     --set ingressShim.extraArgs='{--default-issuer-name=letsencrypt-staging,--default-issuer-kind=ClusterIssuer}'
 ```
-
-If you get an error like: `Error: path "./contrib/charts/cert-manager" not found`,
-ensure you have cloned the cert-manager repository and you are in the root of
-the repository.
 
 You should see the cert-manager pod be re-created, and once started it should
 automatically create Certificate resources for all of your ingresses that
