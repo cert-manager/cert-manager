@@ -87,7 +87,7 @@ Events:
   Normal   ObtainAuthorization    6s               cert-manager-controller  Obtained authorization for domain example.com
   Normal   ObtainAuthorization    6s               cert-manager-controller  Obtained authorization for domain www.example.com
   Normal   IssueCertificate       6s               cert-manager-controller  Issuing certificate...
-  Normal   CeritifcateIssued      5s               cert-manager-controller  Certificated issued successfully
+  Normal   CertificateIssued      5s               cert-manager-controller  Certificate issued successfully
 ```
 
 You can also check whether issuance was successful with `kubectl get secret example-com-tls -o yaml`. You should see a base64 encoded signed TLS key pair.
