@@ -63,6 +63,18 @@ repository.
 If you encounter any issues whilst using cert-manager, and your issue is not
 documented, please [file an issue](https://github.com/jetstack/cert-manager/issues).
 
+Possible resources for *help*:
+
+* The official channel `#cert-manager` on `kubernetes.slack.com`
+
+> There is also a good chance to get some support on non-official support
+> channels for *cert-manager*, but be aware that these are rather general
+> kubernetes discussion channels.
+
+* `#coreos` on freenode
+* Slack channels like `#kubernetes-users` or `#kubernetes-novice` on `kubernetes.slack.com`
+* If you absolutely just can't figure out your problem, file an issue.
+
 ## Contributing
 
 We welcome pull requests with open arms! There's a lot of work to do here, and
