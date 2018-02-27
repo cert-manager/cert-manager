@@ -21,29 +21,19 @@ RBAC can be found [here](https://github.com/kubernetes/helm/blob/master/docs/rba
 
 ### Step 1 - deploying cert-manager
 
-To deploy the latest version of cert-manager using Helm you will first need to
-clone this repository:
-
-```bash
-$ git clone https://github.com/jetstack/cert-manager
-$ cd cert-manager
-# check out the latest release tag to ensure we use a supported version of cert-manager
-$ git checkout v0.2.3
-```
-
-We can then go ahead and install the bundled chart:
+The latest version of cert-manager can be installed from the official Charts repository for Helm:
 
 ```bash
 $ helm install \
     --name cert-manager \
     --namespace kube-system \
-    contrib/charts/cert-manager
+    stable/cert-manager
 ```
 
 > **NOTE**: if your cluster does not use RBAC (Role Based Access Control), you should add `--set rbac.enabled=false` when running your `helm install` command.
 
 The default cert-manager configuration is good for the majority of users, but a
-full list of the available options can be found in the [Helm chart README](https://github.com/jetstack/cert-manager/blob/master/contrib/charts/cert-manager/README.md).
+full list of the available options can be found in the [Helm chart README](https://github.com/kubernetes/charts/blob/master/stable/cert-manager/README.md).
 
 Next, you will need to configure cert-manager with Issuers and ClusterIssuers.
 These represent a 'source' for x509 certificates and will be used later on to
