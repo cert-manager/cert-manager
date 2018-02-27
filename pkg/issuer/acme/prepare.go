@@ -69,7 +69,7 @@ func (a *Acme) Prepare(ctx context.Context, crt *v1alpha1.Certificate) error {
 		}
 	}
 
-	glog.V(4).Infof("Order %q status is %q", order.URL, order.Status)
+	glog.Infof("Order %q status is %q", order.URL, order.Status)
 	switch order.Status {
 	// create a new order if the old one is invalid
 	case acme.StatusDeactivated, acme.StatusInvalid, acme.StatusRevoked:
@@ -77,7 +77,7 @@ func (a *Acme) Prepare(ctx context.Context, crt *v1alpha1.Certificate) error {
 			return err
 		}
 	case acme.StatusValid:
-		glog.V(4).Infof("Order %q already valid", order.URL)
+		glog.Infof("Order %q already valid", order.URL)
 		return nil
 	case acme.StatusPending, acme.StatusProcessing:
 		// if the order is pending or processing, we will proceed.
@@ -296,7 +296,7 @@ func (a *Acme) pickChallengeType(domain string, auth *acme.Authorization, cfg []
 
 func (a *Acme) challengeForAuthorization(cl *acme.Client, crt *v1alpha1.Certificate, auth *acme.Authorization) (*acme.Challenge, error) {
 	domain := auth.Identifier.Value
-	glog.V(4).Infof("picking challenge type for domain %q", domain)
+	glog.Infof("picking challenge type for domain %q", domain)
 	challengeType, err := a.pickChallengeType(domain, auth, crt.Spec.ACME.Config)
 	if err != nil {
 		return nil, fmt.Errorf("error picking challenge type to use for domain '%s': %s", domain, err.Error())
@@ -306,6 +306,7 @@ func (a *Acme) challengeForAuthorization(cl *acme.Client, crt *v1alpha1.Certific
 		if challenge.Type != challengeType {
 			continue
 		}
+		glog.Infof("picked challenge type %q for domain %q", challenge.Type, domain)
 		return challenge, nil
 	}
 	return nil, fmt.Errorf("challenge mechanism '%s' not allowed for domain", challengeType)

@@ -35,7 +35,7 @@ const (
 func (a *Acme) Setup(ctx context.Context) error {
 	cl, err := a.acmeClient()
 	if k8sErrors.IsNotFound(err) || errors.IsInvalidData(err) {
-		glog.V(4).Infof("%s: generating acme account private key %q", a.issuer.GetObjectMeta().Name, a.issuer.GetSpec().ACME.PrivateKey.Name)
+		glog.Infof("%s: generating acme account private key %q", a.issuer.GetObjectMeta().Name, a.issuer.GetSpec().ACME.PrivateKey.Name)
 		accountPrivKey, err := a.createAccountPrivateKey()
 		if err != nil {
 			s := messageAccountRegistrationFailed + err.Error()
@@ -62,7 +62,7 @@ func (a *Acme) Setup(ctx context.Context) error {
 		return err
 	}
 
-	glog.V(4).Infof("%s: verified existing registration with ACME server", a.issuer.GetObjectMeta().Name)
+	glog.Infof("%s: verified existing registration with ACME server", a.issuer.GetObjectMeta().Name)
 	a.issuer.UpdateStatusCondition(v1alpha1.IssuerConditionReady, v1alpha1.ConditionTrue, successAccountRegistered, messageAccountRegistered)
 	a.issuer.GetStatus().ACMEStatus().URI = account.URL
 

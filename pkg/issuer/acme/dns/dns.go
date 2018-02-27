@@ -54,13 +54,13 @@ func (s *Solver) Present(ctx context.Context, crt *v1alpha1.Certificate, domain,
 	if err != nil {
 		return err
 	}
-	glog.V(4).Infof("Presenting DNS01 challenge for domain %q", domain)
+	glog.Infof("Presenting DNS01 challenge for domain %q", domain)
 	return slv.Present(domain, token, key)
 }
 
 func (s *Solver) Check(domain, token, key string) (bool, error) {
 	fqdn, value, ttl := util.DNS01Record(domain, key)
-	glog.V(4).Infof("Checking DNS propagation for %q using name servers: %v", domain, util.RecursiveNameservers)
+	glog.Infof("Checking DNS propagation for %q using name servers: %v", domain, util.RecursiveNameservers)
 
 	ok, err := util.PreCheckDNS(fqdn, value)
 	if err != nil {
@@ -68,13 +68,13 @@ func (s *Solver) Check(domain, token, key string) (bool, error) {
 	}
 
 	if ok {
-		glog.V(4).Infof("Waiting DNS record TTL (%ds) to allow propagation for propagation of DNS record for domain %q", ttl, fqdn)
+		glog.Infof("Waiting DNS record TTL (%ds) to allow propagation for propagation of DNS record for domain %q", ttl, fqdn)
 		time.Sleep(time.Second * time.Duration(ttl))
-		glog.V(4).Infof("ACME DNS01 validation record propagated for %q", fqdn)
+		glog.Infof("ACME DNS01 validation record propagated for %q", fqdn)
 		return true, nil
 	}
 
-	glog.V(4).Infof("DNS record for %q not yet propagated", domain)
+	glog.Infof("DNS record for %q not yet propagated", domain)
 	return false, nil
 }
 
