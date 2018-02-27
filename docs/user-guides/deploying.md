@@ -30,7 +30,7 @@ $ helm install \
     stable/cert-manager
 ```
 
-> **NOTE**: if your cluster does not use RBAC (Role Based Access Control), you should add `--set rbac.enabled=false` when running your `helm install` command.
+> **NOTE**: if your cluster does not use RBAC (Role Based Access Control), you should add `--set rbac.create=false` when running your `helm install` command.
 
 The default cert-manager configuration is good for the majority of users, but a
 full list of the available options can be found in the [Helm chart README](https://github.com/kubernetes/charts/blob/master/stable/cert-manager/README.md).
@@ -41,7 +41,7 @@ issue certificates.
 
 ## Addendum
 
-* If your cluster does not use RBAC, you should add `--set rbac.enabled=false` to
+* If your cluster does not use RBAC, you should add `--set rbac.create=false` to
 your `helm install` command. All RBAC related resources will not be created in
 this instance.
 
