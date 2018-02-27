@@ -37,4 +37,13 @@ type Context struct {
 	// ACMEHTTP01SolverImage is the image to use for solving ACME HTTP01
 	// challenges
 	ACMEHTTP01SolverImage string
+
+	// ClusterIssuerAmbientCredentials controls whether a cluster issuer should
+	// pick up ambient credentials, such as those from metadata services, to
+	// construct clients.
+	ClusterIssuerAmbientCredentials bool
+
+	// IssuerAmbientCredentials controls whether an issuer should pick up ambient
+	// credentials, such as those from metadata services, to construct clients.
+	IssuerAmbientCredentials bool
 }

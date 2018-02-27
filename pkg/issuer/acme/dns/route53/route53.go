@@ -14,6 +14,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/request"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/route53"
+	"github.com/golang/glog"
 
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
 )
@@ -51,21 +52,33 @@ func (d customRetryer) RetryRules(r *request.Request) time.Duration {
 	return time.Duration(delay) * time.Millisecond
 }
 
-// NewDNSProviderAccessKey returns a DNSProvider instance configured for the AWS
-// Route 53 service using static credentials from its parameters
-func NewDNSProviderAccessKey(accessKeyID, secretAccessKey, hostedZoneID, region string) (*DNSProvider, error) {
+// NewDNSProvider returns a DNSProvider instance configured for the AWS
+// Route 53 service using static credentials from its parameters or, if they're
+// unset and the 'ambient' option is set, credentials from the environment.
+func NewDNSProvider(accessKeyID, secretAccessKey, hostedZoneID, region string, ambient bool) (*DNSProvider, error) {
+	if accessKeyID == "" && secretAccessKey == "" {
+		if !ambient {
+			return nil, fmt.Errorf("unable to construct route53 provider: empty credentials; perhaps you meant to enable ambient credentials?")
+		}
+	} else if accessKeyID == "" || secretAccessKey == "" {
+		// It's always an error to set one of those but not the other
+		return nil, fmt.Errorf("unable to construct route53 provider: only one of access and secret key was provided")
+	}
+
+	useAmbientCredentials := ambient && (accessKeyID == "" && secretAccessKey == "")
+
 	r := customRetryer{}
 	r.NumMaxRetries = maxRetries
-
 	config := request.WithRetryer(aws.NewConfig(), r)
 
-	// If an accessKeyID and secretAccessKey were set, use them. Otherwise, fall
-	// back on the aws-sdk-go's default credential handling behavior which loads
-	// from environment variables, shared credential file or EC2 instance role:
-	// https://docs.aws.amazon.com/sdk-for-go/v1/developer-guide/configuring-sdk.html#specifying-credentials.
-	if accessKeyID != "" && secretAccessKey != "" {
-		creds := credentials.NewStaticCredentials(accessKeyID, secretAccessKey, "")
-		config.WithCredentials(creds)
+	if useAmbientCredentials {
+		glog.V(5).Infof("using ambient credentials")
+		// Leaving credentials unset results in a default credential chain being
+		// used; this chain is a reasonable default for getting ambient creds.
+		// https://docs.aws.amazon.com/sdk-for-go/v1/developer-guide/configuring-sdk.html#specifying-credentials
+	} else {
+		glog.V(5).Infof("not using ambient credentials")
+		config.WithCredentials(credentials.NewStaticCredentials(accessKeyID, secretAccessKey, ""))
 	}
 
 	if region != "" {
@@ -81,7 +94,7 @@ func NewDNSProviderAccessKey(accessKeyID, secretAccessKey, hostedZoneID, region 
 
 // Timeout returns the timeout and interval to use when checking for DNS
 // propagation. Adjusting here to cope with spikes in propagation times.
-func (c *DNSProvider) Timeout() (timeout, interval time.Duration) {
+func (*DNSProvider) Timeout() (timeout, interval time.Duration) {
 	return 120 * time.Second, 2 * time.Second
 }
 

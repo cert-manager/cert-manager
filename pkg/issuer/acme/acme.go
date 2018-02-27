@@ -41,6 +41,12 @@ type Acme struct {
 	// to work with supplemental (e.g. secrets) resources without significant
 	// refactoring.
 	issuerResourcesNamespace string
+
+	// ambientCredentials determines whether a given acme solver may draw
+	// credentials ambiently, e.g. from metadata services or environment
+	// variables.
+	// Currently, only AWS ambient credential control is implemented.
+	ambientCredentials bool
 }
 
 // solver solves ACME challenges by presenting the given token and key in an
@@ -58,7 +64,8 @@ func New(issuer v1alpha1.GenericIssuer,
 	recorder record.EventRecorder,
 	resourceNamespace string,
 	acmeHTTP01SolverImage string,
-	secretsLister corelisters.SecretLister) (issuer.Interface, error) {
+	secretsLister corelisters.SecretLister,
+	ambientCreds bool) (issuer.Interface, error) {
 	if issuer.GetSpec().ACME == nil {
 		return nil, fmt.Errorf("acme config may not be empty")
 	}
@@ -79,7 +86,7 @@ func New(issuer v1alpha1.GenericIssuer,
 		cmClient:                 cmClient,
 		recorder:                 recorder,
 		secretsLister:            secretsLister,
-		dnsSolver:                dns.NewSolver(issuer, client, secretsLister, resourceNamespace),
+		dnsSolver:                dns.NewSolver(issuer, client, secretsLister, resourceNamespace, ambientCreds),
 		httpSolver:               http.NewSolver(issuer, client, secretsLister, acmeHTTP01SolverImage),
 		issuerResourcesNamespace: resourceNamespace,
 	}, nil
@@ -128,6 +135,17 @@ func init() {
 		if issuerResourcesNamespace == "" {
 			issuerResourcesNamespace = ctx.ClusterResourceNamespace
 		}
+
+		ambientCreds := false
+		switch i.(type) {
+		case *v1alpha1.ClusterIssuer:
+			ambientCreds = ctx.ClusterIssuerAmbientCredentials
+		case *v1alpha1.Issuer:
+			ambientCreds = ctx.IssuerAmbientCredentials
+		default:
+			return nil, fmt.Errorf("issuer was neither an 'Issuer' nor 'ClusterIssuer'; was %T", i)
+		}
+
 		return New(
 			i,
 			ctx.Client,
@@ -136,6 +154,7 @@ func init() {
 			issuerResourcesNamespace,
 			ctx.ACMEHTTP01SolverImage,
 			ctx.KubeSharedInformerFactory.Core().V1().Secrets().Lister(),
+			ambientCreds,
 		)
 	})
 }
