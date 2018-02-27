@@ -23,8 +23,8 @@ var (
 const defaultResolvConf = "/etc/resolv.conf"
 
 var defaultNameservers = []string{
-	"google-public-dns-a.google.com:53",
-	"google-public-dns-b.google.com:53",
+	"8.8.8.8:53",
+	"8.8.4.4:53",
 }
 
 var RecursiveNameservers = getNameservers(defaultResolvConf, defaultNameservers)
