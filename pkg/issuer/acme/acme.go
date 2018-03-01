@@ -184,6 +184,15 @@ func (a *Acme) createOrder(ctx context.Context, cl client.Interface, crt *v1alph
 	if err != nil {
 		return nil, err
 	}
+
+	// The ACME protocol supports custom validity dates in the certificate order.
+	// pebble and boulder do not support them at this time.
+	if a.issuer.GetSpec().Duration.Duration != 0 {
+		now := time.Now().UTC()
+		order.NotBefore = now
+		order.NotAfter = now.Add(a.issuer.GetSpec().Duration.Duration)
+	}
+
 	order, err = cl.CreateOrder(ctx, order)
 	if err != nil {
 		a.recorder.Eventf(crt, corev1.EventTypeWarning, "ErrCreateOrder", "Error creating order: %v", err)
