@@ -64,6 +64,8 @@ hack_verify:
 	$(HACK_DIR)/verify-links.sh
 	@echo Running errexit checker
 	$(HACK_DIR)/verify-errexit.sh
+	@echo Running helm chart version checker
+	$(HACK_DIR)/verify-chart-version.sh
 
 deploy_verify:
 	@echo Running deploy-gen
