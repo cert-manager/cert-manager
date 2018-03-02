@@ -54,7 +54,7 @@ deployment YAMLs, a command like so should do:
 
    $ kubectl scale deployment kube-lego \
        --namespace kube-lego \
-       --replicas=0 \
+       --replicas=0
 
 You can then verify your kube-lego pod is no longer running with:
 

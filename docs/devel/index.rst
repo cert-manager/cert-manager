@@ -9,3 +9,4 @@ Development documentation
    dns01-providers
    dco-sign-off
    release-process
+   generate-docs

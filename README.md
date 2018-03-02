@@ -28,6 +28,17 @@ Documentation for cert-manager can be found at [cert-manager.readthedocs.io](htt
 Please make sure to select the correct version of the documentation to view on
 the bottom left of the page.
 
+For the common use-case of automatically issuing TLS certificates to
+Ingress resources, aka a [kube-lego](https://github.com/jetstack/kube-lego)
+replacement, see the [cert-manager nginx ingress quick start
+guide](docs/tutorials/quick-start/index.rst).
+
+## Images
+
+Prebuilt images for cert-manager are available. Bitnami images are available on
+[Dockerhub](https://hub.docker.com/r/bitnami/cert-manager/) and
+images from Jetstack are available on [Quay](https://quay.io/jetstack/cert-manager-controller).
+
 ## Troubleshooting
 
 If you encounter any issues whilst using cert-manager, we have a number of places you
