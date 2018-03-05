@@ -161,7 +161,7 @@ func (r *DNSProvider) getHostedZoneID(fqdn string) (string, error) {
 
 	authZone, err := util.FindZoneByFqdn(fqdn, util.RecursiveNameservers)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("error finding zone from fqdn: %v", err)
 	}
 
 	// .DNSName should not have a trailing dot
