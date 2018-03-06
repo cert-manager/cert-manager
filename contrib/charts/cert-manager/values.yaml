@@ -41,6 +41,10 @@ ingressShim:
 
   # Optional additional arguments for ingress-shim
   extraArgs: []
+    # Use these flags to specify the default Issuer/ClusterIssuer
+    # (IMPORTANT: You need to create this Issuer/ClusterIssuer resource yourself)
+    # - --default-issuer-name=letsencrypt-prod
+    # - --default-issuer-kind=ClusterIssuer
 
   resources: {}
     # requests:
