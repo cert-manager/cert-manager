@@ -380,7 +380,7 @@ func TestBuildCertificates(t *testing.T) {
 					DefaultIssuerKind: test.DefaultIssuerKind,
 				},
 			}
-			crts, err := c.buildCertificates(test.Ingress)
+			crts, _, err := c.buildCertificates(test.Ingress)
 			if err != nil && !test.Err {
 				t.Errorf("Expected no error, but got: %s", err)
 			}

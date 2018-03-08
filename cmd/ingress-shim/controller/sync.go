@@ -3,6 +3,7 @@ package controller
 import (
 	"context"
 	"fmt"
+	"reflect"
 	"strconv"
 
 	"github.com/golang/glog"
@@ -43,12 +44,12 @@ func (c *Controller) Sync(ctx context.Context, ing *extv1beta1.Ingress) error {
 		return nil
 	}
 
-	crts, err := c.buildCertificates(ing)
+	newCrts, updateCrts, err := c.buildCertificates(ing)
 	if err != nil {
 		return err
 	}
 
-	for _, crt := range crts {
+	for _, crt := range newCrts {
 		_, err := c.CMClient.CertmanagerV1alpha1().Certificates(crt.Namespace).Create(crt)
 		if err != nil {
 			return err
@@ -56,35 +57,38 @@ func (c *Controller) Sync(ctx context.Context, ing *extv1beta1.Ingress) error {
 		c.Recorder.Eventf(ing, corev1.EventTypeNormal, "CreateCertificate", "Successfully created Certificate %q", crt.Name)
 	}
 
+	for _, crt := range updateCrts {
+		_, err := c.CMClient.CertmanagerV1alpha1().Certificates(crt.Namespace).Update(crt)
+		if err != nil {
+			return err
+		}
+		c.Recorder.Eventf(ing, corev1.EventTypeNormal, "CreateCertificate", "Successfully updated Certificate %q", crt.Name)
+	}
+
 	return nil
 }
 
-func (c *Controller) buildCertificates(ing *extv1beta1.Ingress) ([]*v1alpha1.Certificate, error) {
+func (c *Controller) buildCertificates(ing *extv1beta1.Ingress) (new, update []*v1alpha1.Certificate, _ error) {
 	issuerName, issuerKind := c.issuerForIngress(ing)
 	issuer, err := c.getGenericIssuer(ing.Namespace, issuerName, issuerKind)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	var crts []*v1alpha1.Certificate
+	var newCrts []*v1alpha1.Certificate
+	var updateCrts []*v1alpha1.Certificate
 	for i, tls := range ing.Spec.TLS {
 		// validate the ingress TLS block
 		if len(tls.Hosts) == 0 {
-			return nil, fmt.Errorf("secret %q for ingress %q has no hosts specified", tls.SecretName, ing.Name)
+			return nil, nil, fmt.Errorf("secret %q for ingress %q has no hosts specified", tls.SecretName, ing.Name)
 		}
 		if tls.SecretName == "" {
-			return nil, fmt.Errorf("TLS entry %d for ingress %q must specify a secretName", i, ing.Name)
+			return nil, nil, fmt.Errorf("TLS entry %d for ingress %q must specify a secretName", i, ing.Name)
 		}
 
-		// check if a Certificate for this TLS entry already exists, and if it
-		// does then skip this entry
 		existingCrt, err := c.certificateLister.Certificates(ing.Namespace).Get(tls.SecretName)
 		if !apierrors.IsNotFound(err) && err != nil {
-			return nil, err
-		}
-		if existingCrt != nil {
-			glog.Infof("Certificate %q for ingress %q already exists, not re-creating", tls.SecretName, ing.Name)
-			continue
+			return nil, nil, err
 		}
 
 		crt := &v1alpha1.Certificate{
@@ -102,13 +106,34 @@ func (c *Controller) buildCertificates(ing *extv1beta1.Ingress) ([]*v1alpha1.Cer
 				},
 			},
 		}
+
 		err = c.setIssuerSpecificConfig(crt, issuer, ing, tls)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
-		crts = append(crts, crt)
+
+		// check if a Certificate for this TLS entry already exists, and if it
+		// does then skip this entry
+		if existingCrt != nil {
+			glog.Infof("Certificate %q for ingress %q already exists", tls.SecretName, ing.Name)
+
+			if reflect.DeepEqual(existingCrt.Spec, crt.Spec) && existingCrt.Name == crt.Name {
+				glog.Infof("Certificate %q for ingress %q is up to date", tls.SecretName, ing.Name)
+				continue
+			}
+
+			updateCrt := existingCrt.DeepCopy()
+
+			updateCrt.Spec.DNSNames = tls.Hosts
+			updateCrt.Spec.SecretName = tls.SecretName
+			updateCrt.Spec.IssuerRef.Name = issuerName
+			updateCrt.Spec.IssuerRef.Kind = issuerKind
+			updateCrts = append(updateCrts, updateCrt)
+		} else {
+			newCrts = append(newCrts, crt)
+		}
 	}
-	return crts, nil
+	return newCrts, updateCrts, nil
 }
 
 func (c *Controller) setIssuerSpecificConfig(crt *v1alpha1.Certificate, issuer v1alpha1.GenericIssuer, ing *extv1beta1.Ingress, tls extv1beta1.IngressTLS) error {
