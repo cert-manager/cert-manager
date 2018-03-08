@@ -6,6 +6,7 @@ certificates, including any configuration required for that source.
 An example of an Issuer is ACME. A simple ACME issuer could be defined as:
 
 ```yaml
+apiVersion: certmanager.k8s.io/v1alpha1
 kind: Issuer
 metadata:
   name: letsencrypt-prod
