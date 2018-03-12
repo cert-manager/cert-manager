@@ -334,7 +334,45 @@ func TestBuildCertificates(t *testing.T) {
 			},
 		},
 		{
-			Name: "should not return any certificates if a Certificate already exists",
+			Name: "should not return any certificates if a correct Certificate already exists",
+			Ingress: &extv1beta1.Ingress{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "ingress-name",
+					Namespace: "ingress-namespace",
+					Annotations: map[string]string{
+						issuerNameAnnotation:              "issuer-name",
+						acmeIssuerChallengeTypeAnnotation: "http01",
+					},
+				},
+				Spec: extv1beta1.IngressSpec{
+					TLS: []extv1beta1.IngressTLS{
+						{
+							Hosts:      []string{"example.com"},
+							SecretName: "existing-crt",
+						},
+					},
+				},
+			},
+			IssuerLister: []*v1alpha1.Issuer{buildACMEIssuer("issuer-name", "ingress-namespace")},
+			CertificateLister: []*v1alpha1.Certificate{
+				&v1alpha1.Certificate{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "existing-crt",
+						Namespace: "ingress-namespace",
+					},
+					Spec: v1alpha1.CertificateSpec{
+						DNSNames:   []string{"example.com"},
+						SecretName: "existing-crt",
+						IssuerRef: v1alpha1.ObjectReference{
+							Name: "issuer-name",
+							Kind: "Issuer",
+						},
+					},
+				},
+			},
+		},
+		{
+			Name: "should update a certificate if an incorrect Certificate exists",
 			Ingress: &extv1beta1.Ingress{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "ingress-name",
@@ -355,6 +393,22 @@ func TestBuildCertificates(t *testing.T) {
 			},
 			IssuerLister:      []*v1alpha1.Issuer{buildACMEIssuer("issuer-name", "ingress-namespace")},
 			CertificateLister: []*v1alpha1.Certificate{buildCertificate("existing-crt", "ingress-namespace")},
+			ExpectedUpdate: []*v1alpha1.Certificate{
+				&v1alpha1.Certificate{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "existing-crt",
+						Namespace: "ingress-namespace",
+					},
+					Spec: v1alpha1.CertificateSpec{
+						DNSNames:   []string{"example.com"},
+						SecretName: "existing-crt",
+						IssuerRef: v1alpha1.ObjectReference{
+							Name: "issuer-name",
+							Kind: "Issuer",
+						},
+					},
+				},
+			},
 		},
 	}
 	testFn := func(test testT) func(t *testing.T) {
