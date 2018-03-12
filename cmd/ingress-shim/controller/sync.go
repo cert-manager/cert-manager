@@ -3,7 +3,6 @@ package controller
 import (
 	"context"
 	"fmt"
-	"reflect"
 	"strconv"
 
 	"github.com/golang/glog"
@@ -62,7 +61,7 @@ func (c *Controller) Sync(ctx context.Context, ing *extv1beta1.Ingress) error {
 		if err != nil {
 			return err
 		}
-		c.Recorder.Eventf(ing, corev1.EventTypeNormal, "CreateCertificate", "Successfully updated Certificate %q", crt.Name)
+		c.Recorder.Eventf(ing, corev1.EventTypeNormal, "UpdateCertificate", "Successfully updated Certificate %q", crt.Name)
 	}
 
 	return nil
@@ -117,7 +116,7 @@ func (c *Controller) buildCertificates(ing *extv1beta1.Ingress) (new, update []*
 		if existingCrt != nil {
 			glog.Infof("Certificate %q for ingress %q already exists", tls.SecretName, ing.Name)
 
-			if reflect.DeepEqual(existingCrt.Spec, crt.Spec) && existingCrt.Name == crt.Name {
+			if crtEqual(existingCrt, crt) {
 				glog.Infof("Certificate %q for ingress %q is up to date", tls.SecretName, ing.Name)
 				continue
 			}
@@ -134,6 +133,37 @@ func (c *Controller) buildCertificates(ing *extv1beta1.Ingress) (new, update []*
 		}
 	}
 	return newCrts, updateCrts, nil
+}
+
+// crtEqual checks and returns true if two Certificates are equal
+func crtEqual(a, b *v1alpha1.Certificate) bool {
+	if a.Name != b.Name {
+		return false
+	}
+
+	if len(a.Spec.DNSNames) != len(b.Spec.DNSNames) {
+		return false
+	}
+
+	for i := range a.Spec.DNSNames {
+		if a.Spec.DNSNames[i] != b.Spec.DNSNames[i] {
+			return false
+		}
+	}
+
+	if a.Spec.SecretName != b.Spec.SecretName {
+		return false
+	}
+
+	if a.Spec.IssuerRef.Name != b.Spec.IssuerRef.Name {
+		return false
+	}
+
+	if a.Spec.IssuerRef.Kind != b.Spec.IssuerRef.Kind {
+		return false
+	}
+
+	return true
 }
 
 func (c *Controller) setIssuerSpecificConfig(crt *v1alpha1.Certificate, issuer v1alpha1.GenericIssuer, ing *extv1beta1.Ingress, tls extv1beta1.IngressTLS) error {

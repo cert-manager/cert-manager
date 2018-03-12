@@ -339,7 +339,8 @@ func TestBuildCertificates(t *testing.T) {
 					Name:      "ingress-name",
 					Namespace: "ingress-namespace",
 					Annotations: map[string]string{
-						issuerNameAnnotation: "issuer-name",
+						issuerNameAnnotation:              "issuer-name",
+						acmeIssuerChallengeTypeAnnotation: "http01",
 					},
 				},
 				Spec: extv1beta1.IngressSpec{
