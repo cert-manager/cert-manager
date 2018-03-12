@@ -17,6 +17,7 @@ spec:
       labels:
         app: cert-manager
         release: cert-manager
+      annotations:
     spec:
       serviceAccountName: cert-manager
       containers:
