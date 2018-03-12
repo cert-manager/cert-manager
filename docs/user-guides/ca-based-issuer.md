@@ -62,7 +62,7 @@ Events:
   Warning  ErrorCheckCertificate  26s              cert-manager-controller  Error checking existing TLS certificate: secret "example-com-tls" not found
   Normal   PrepareCertificate     26s              cert-manager-controller  Preparing certificate with issuer
   Normal   IssueCertificate       26s              cert-manager-controller  Issuing certificate...
-  Normal   CeritifcateIssued      25s              cert-manager-controller  Certificated issued successfully
+  Normal   CertificateIssued      25s              cert-manager-controller  Certificate issued successfully
 ```
 
 You can also check whether issuance was successful with `kubectl get secret example-com-tls -o yaml`. You should see a base64 encoded signed TLS key pair.
