@@ -25,15 +25,15 @@ func (a *ACMEIssuerDNS01Config) Provider(name string) (*ACMEIssuerDNS01Provider,
 	return nil, fmt.Errorf("provider '%s' not found", name)
 }
 
-func (a *ACMECertificateConfig) ConfigForDomain(domain string) ACMECertificateDomainConfig {
+func (a *ACMECertificateConfig) ConfigForDomain(domain string) *ACMECertificateDomainConfig {
 	for _, cfg := range a.Config {
 		for _, d := range cfg.Domains {
 			if d == domain {
-				return cfg
+				return &cfg
 			}
 		}
 	}
-	return ACMECertificateDomainConfig{}
+	return &ACMECertificateDomainConfig{}
 }
 
 func (c *CertificateStatus) ACMEStatus() *CertificateACMEStatus {

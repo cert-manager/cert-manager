@@ -276,6 +276,11 @@ func partitionAuthorizations(authzs ...*acme.Authorization) (failed, pending, va
 	return failed, pending, valid
 }
 
+// pickChallengeType will select a challenge type to used based on the types
+// offered by the ACME server (i.e. auth.Challenges), the options configured on
+// the Certificate resource (cfg) and the providers configured on the
+// corresponding Issuer resource. If there is no challenge type that can be
+// used, it will return an error.
 func (a *Acme) pickChallengeType(domain string, auth *acme.Authorization, cfg []v1alpha1.ACMECertificateDomainConfig) (string, error) {
 	for _, d := range cfg {
 		for _, dom := range d.Domains {

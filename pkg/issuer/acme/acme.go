@@ -11,6 +11,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 	corelisters "k8s.io/client-go/listers/core/v1"
+	extlisters "k8s.io/client-go/listers/extensions/v1beta1"
 	"k8s.io/client-go/tools/record"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
@@ -32,7 +33,10 @@ type Acme struct {
 	cmClient clientset.Interface
 	recorder record.EventRecorder
 
-	secretsLister corelisters.SecretLister
+	secretsLister  corelisters.SecretLister
+	podsLister     corelisters.PodLister
+	servicesLister corelisters.ServiceLister
+	ingressLister  extlisters.IngressLister
 
 	dnsSolver  solver
 	httpSolver solver
@@ -61,7 +65,10 @@ func New(issuer v1alpha1.GenericIssuer,
 	recorder record.EventRecorder,
 	resourceNamespace string,
 	acmeHTTP01SolverImage string,
-	secretsLister corelisters.SecretLister) (issuer.Interface, error) {
+	secretsLister corelisters.SecretLister,
+	podsLister corelisters.PodLister,
+	servicesLister corelisters.ServiceLister,
+	ingressLister extlisters.IngressLister) (issuer.Interface, error) {
 	if issuer.GetSpec().ACME == nil {
 		return nil, fmt.Errorf("acme config may not be empty")
 	}
@@ -77,13 +84,17 @@ func New(issuer v1alpha1.GenericIssuer,
 	}
 
 	return &Acme{
-		issuer:                   issuer,
-		client:                   client,
-		cmClient:                 cmClient,
-		recorder:                 recorder,
-		secretsLister:            secretsLister,
+		issuer:         issuer,
+		client:         client,
+		cmClient:       cmClient,
+		recorder:       recorder,
+		secretsLister:  secretsLister,
+		podsLister:     podsLister,
+		servicesLister: servicesLister,
+		ingressLister:  ingressLister,
+
 		dnsSolver:                dns.NewSolver(issuer, client, secretsLister, resourceNamespace),
-		httpSolver:               http.NewSolver(issuer, client, secretsLister, acmeHTTP01SolverImage),
+		httpSolver:               http.NewSolver(issuer, client, podsLister, servicesLister, ingressLister, acmeHTTP01SolverImage),
 		issuerResourcesNamespace: resourceNamespace,
 	}, nil
 }
@@ -147,6 +158,9 @@ func init() {
 			issuerResourcesNamespace,
 			ctx.ACMEHTTP01SolverImage,
 			ctx.KubeSharedInformerFactory.Core().V1().Secrets().Lister(),
+			ctx.KubeSharedInformerFactory.Core().V1().Pods().Lister(),
+			ctx.KubeSharedInformerFactory.Core().V1().Services().Lister(),
+			ctx.KubeSharedInformerFactory.Extensions().V1beta1().Ingresses().Lister(),
 		)
 	})
 }
