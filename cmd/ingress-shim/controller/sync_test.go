@@ -382,12 +382,16 @@ func TestBuildCertificates(t *testing.T) {
 					DefaultIssuerKind: test.DefaultIssuerKind,
 				},
 			}
-			crts, _, err := c.buildCertificates(test.Ingress)
+			createCrts, updateCrts, err := c.buildCertificates(test.Ingress)
 			if err != nil && !test.Err {
 				t.Errorf("Expected no error, but got: %s", err)
 			}
-			if !reflect.DeepEqual(crts, test.ExpectedCreate) {
-				t.Errorf("Expected %+v but got %+v", test.ExpectedCreate, crts)
+			if !reflect.DeepEqual(createCrts, test.ExpectedCreate) {
+				t.Errorf("Expected to create %+v but got %+v", test.ExpectedCreate, createCrts)
+			}
+
+			if !reflect.DeepEqual(updateCrts, test.ExpectedUpdate) {
+				t.Errorf("Expected to update %+v but got %+v", test.ExpectedUpdate, updateCrts)
 			}
 		}
 	}
