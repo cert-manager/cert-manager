@@ -60,11 +60,6 @@ const (
 	messageCertificateIssued  = "Certificate issued successfully"
 	messageCertificateRenewed = "Certificate renewed successfully"
 	messageRenewalScheduled   = "Certificate scheduled for renewal in %d hours"
-
-	altNamesAnnotation   = "certmanager.k8s.io/alt-names"
-	commonNameAnnotation = "certmanager.k8s.io/common-name"
-	issuerNameAnnotation = "certmanager.k8s.io/issuer-name"
-	issuerKindAnnotation = "certmanager.k8s.io/issuer-kind"
 )
 
 func (c *Controller) Sync(ctx context.Context, crt *v1alpha1.Certificate) (err error) {
@@ -207,15 +202,24 @@ func (c *Controller) scheduleRenewal(crt *v1alpha1.Certificate) {
 	c.recorder.Event(crt, api.EventTypeNormal, successRenewalScheduled, s)
 }
 
-func (c *Controller) updateSecret(spec v1alpha1.CertificateSpec, namespace string, cert, key []byte) (*api.Secret, error) {
-	secret, err := c.client.CoreV1().Secrets(namespace).Get(spec.SecretName, metav1.GetOptions{})
+// issuerKind returns the kind of issuer for a certificate
+func issuerKind(crt *v1alpha1.Certificate) string {
+	if crt.Spec.IssuerRef.Kind == "" {
+		return v1alpha1.IssuerKind
+	} else {
+		return crt.Spec.IssuerRef.Kind
+	}
+}
+
+func (c *Controller) updateSecret(crt *v1alpha1.Certificate, namespace string, cert, key []byte) (*api.Secret, error) {
+	secret, err := c.client.CoreV1().Secrets(namespace).Get(crt.Spec.SecretName, metav1.GetOptions{})
 	if err != nil && !k8sErrors.IsNotFound(err) {
 		return nil, err
 	}
 	if k8sErrors.IsNotFound(err) {
 		secret = &api.Secret{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      spec.SecretName,
+				Name:      crt.Spec.SecretName,
 				Namespace: namespace,
 			},
 			Type: api.SecretTypeTLS,
@@ -229,10 +233,20 @@ func (c *Controller) updateSecret(spec v1alpha1.CertificateSpec, namespace strin
 		secret.Annotations = make(map[string]string)
 	}
 
-	secret.Annotations[altNamesAnnotation] = strings.Join(spec.DNSNames, ",")
-	secret.Annotations[commonNameAnnotation] = spec.CommonName
-	secret.Annotations[issuerNameAnnotation] = spec.IssuerRef.Name
-	secret.Annotations[issuerKindAnnotation] = spec.IssuerRef.Kind
+	dnsnames, err := pki.DNSNamesForCertificate(crt)
+	if err != nil {
+		return nil, err
+	}
+	secret.Annotations[v1alpha1.AltNamesAnnotationKey] = strings.Join(dnsnames, ",")
+
+	cn, err := pki.CommonNameForCertificate(crt)
+	if err != nil {
+		return nil, err
+	}
+	secret.Annotations[v1alpha1.CommonNameAnnotationKey] = cn
+
+	secret.Annotations[v1alpha1.IssuerNameAnnotationKey] = crt.Spec.IssuerRef.Name
+	secret.Annotations[v1alpha1.IssuerKindAnnotationKey] = issuerKind(crt)
 
 	// if it is a new resource
 	if secret.SelfLink == "" {
@@ -274,7 +288,7 @@ func (c *Controller) issue(ctx context.Context, issuer issuer.Interface, crt *v1
 		return err
 	}
 
-	if _, err := c.updateSecret(crt.Spec, crt.Namespace, cert, key); err != nil {
+	if _, err := c.updateSecret(crt, crt.Namespace, cert, key); err != nil {
 		s := messageErrorSavingCertificate + err.Error()
 		glog.Info(s)
 		c.recorder.Event(crt, api.EventTypeWarning, errorSavingCertificate, s)
@@ -318,7 +332,7 @@ func (c *Controller) renew(ctx context.Context, issuer issuer.Interface, crt *v1
 		return err
 	}
 
-	if _, err := c.updateSecret(crt.Spec, crt.Namespace, cert, key); err != nil {
+	if _, err := c.updateSecret(crt, crt.Namespace, cert, key); err != nil {
 		s := messageErrorSavingCertificate + err.Error()
 		glog.Info(s)
 		c.recorder.Event(crt, api.EventTypeWarning, errorSavingCertificate, s)

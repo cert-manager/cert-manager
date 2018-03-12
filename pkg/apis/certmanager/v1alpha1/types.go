@@ -20,6 +20,13 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+const (
+	AltNamesAnnotationKey   = "certmanager.k8s.io/alt-names"
+	CommonNameAnnotationKey = "certmanager.k8s.io/common-name"
+	IssuerNameAnnotationKey = "certmanager.k8s.io/issuer-name"
+	IssuerKindAnnotationKey = "certmanager.k8s.io/issuer-kind"
+)
+
 // +genclient
 // +genclient:nonNamespaced
 // +k8s:openapi-gen=true
