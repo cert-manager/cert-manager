@@ -69,7 +69,8 @@ func TestBuildCertificates(t *testing.T) {
 		DefaultIssuerName   string
 		DefaultIssuerKind   string
 		Err                 bool
-		Expected            []*v1alpha1.Certificate
+		ExpectedCreate      []*v1alpha1.Certificate
+		ExpectedUpdate      []*v1alpha1.Certificate
 	}
 	tests := []testT{
 		{
@@ -93,7 +94,7 @@ func TestBuildCertificates(t *testing.T) {
 				},
 			},
 			ClusterIssuerLister: []*v1alpha1.ClusterIssuer{buildACMEClusterIssuer("issuer-name")},
-			Expected: []*v1alpha1.Certificate{
+			ExpectedCreate: []*v1alpha1.Certificate{
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:            "example-com-tls",
@@ -190,7 +191,7 @@ func TestBuildCertificates(t *testing.T) {
 				},
 			},
 			ClusterIssuerLister: []*v1alpha1.ClusterIssuer{buildACMEClusterIssuer("issuer-name")},
-			Expected: []*v1alpha1.Certificate{
+			ExpectedCreate: []*v1alpha1.Certificate{
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:            "example-com-tls",
@@ -259,7 +260,7 @@ func TestBuildCertificates(t *testing.T) {
 				},
 			},
 			ClusterIssuerLister: []*v1alpha1.ClusterIssuer{buildClusterIssuer("issuer-name")},
-			Expected: []*v1alpha1.Certificate{
+			ExpectedCreate: []*v1alpha1.Certificate{
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:            "example-com-tls",
@@ -385,8 +386,8 @@ func TestBuildCertificates(t *testing.T) {
 			if err != nil && !test.Err {
 				t.Errorf("Expected no error, but got: %s", err)
 			}
-			if !reflect.DeepEqual(crts, test.Expected) {
-				t.Errorf("Expected %+v but got %+v", test.Expected, crts)
+			if !reflect.DeepEqual(crts, test.ExpectedCreate) {
+				t.Errorf("Expected %+v but got %+v", test.ExpectedCreate, crts)
 			}
 		}
 	}
