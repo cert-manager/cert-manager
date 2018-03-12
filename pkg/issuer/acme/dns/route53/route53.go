@@ -5,7 +5,6 @@ package route53
 import (
 	"fmt"
 	"math/rand"
-	"os"
 	"strings"
 	"time"
 
@@ -52,44 +51,22 @@ func (d customRetryer) RetryRules(r *request.Request) time.Duration {
 	return time.Duration(delay) * time.Millisecond
 }
 
-// NewDNSProvider returns a DNSProvider instance configured for the AWS
-// Route 53 service.
-//
-// AWS Credentials are automatically detected in the following locations
-// and prioritized in the following order:
-// 1. Environment variables: AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY,
-//    AWS_REGION, [AWS_SESSION_TOKEN]
-// 2. Shared credentials file (defaults to ~/.aws/credentials)
-// 3. Amazon EC2 IAM role
-//
-// If AWS_HOSTED_ZONE_ID is not set, Lego tries to determine the correct
-// public hosted zone via the FQDN.
-//
-// See also: https://github.com/aws/aws-sdk-go/wiki/configuring-sdk
-func NewDNSProvider() (*DNSProvider, error) {
-	hostedZoneID := os.Getenv("AWS_HOSTED_ZONE_ID")
-
-	r := customRetryer{}
-	r.NumMaxRetries = maxRetries
-	config := request.WithRetryer(aws.NewConfig(), r)
-	client := route53.New(session.New(config))
-
-	return &DNSProvider{
-		client:       client,
-		hostedZoneID: hostedZoneID,
-	}, nil
-}
-
 // NewDNSProviderAccessKey returns a DNSProvider instance configured for the AWS
 // Route 53 service using static credentials from its parameters
 func NewDNSProviderAccessKey(accessKeyID, secretAccessKey, hostedZoneID, region string) (*DNSProvider, error) {
-
-	creds := credentials.NewStaticCredentials(accessKeyID, secretAccessKey, "")
-
 	r := customRetryer{}
 	r.NumMaxRetries = maxRetries
 
-	config := request.WithRetryer(aws.NewConfig(), r).WithCredentials(creds)
+	config := request.WithRetryer(aws.NewConfig(), r)
+
+	// If an accessKeyID and secretAccessKey were set, use them. Otherwise, fall
+	// back on the aws-sdk-go's default credential handling behavior which loads
+	// from environment variables, shared credential file or EC2 instance role:
+	// https://docs.aws.amazon.com/sdk-for-go/v1/developer-guide/configuring-sdk.html#specifying-credentials.
+	if accessKeyID != "" && secretAccessKey != "" {
+		creds := credentials.NewStaticCredentials(accessKeyID, secretAccessKey, "")
+		config.WithCredentials(creds)
+	}
 
 	if region != "" {
 		config.WithRegion(region)
