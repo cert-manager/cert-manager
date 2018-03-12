@@ -116,7 +116,7 @@ func (c *Controller) buildCertificates(ing *extv1beta1.Ingress) (new, update []*
 		if existingCrt != nil {
 			glog.Infof("Certificate %q for ingress %q already exists", tls.SecretName, ing.Name)
 
-			if crtEqual(existingCrt, crt) {
+			if !certNeedsUpdate(existingCrt, crt) {
 				glog.Infof("Certificate %q for ingress %q is up to date", tls.SecretName, ing.Name)
 				continue
 			}
@@ -135,35 +135,35 @@ func (c *Controller) buildCertificates(ing *extv1beta1.Ingress) (new, update []*
 	return newCrts, updateCrts, nil
 }
 
-// crtEqual checks and returns true if two Certificates are equal
-func crtEqual(a, b *v1alpha1.Certificate) bool {
+// certNeedsUpdate checks and returns true if two Certificates are equal
+func certNeedsUpdate(a, b *v1alpha1.Certificate) bool {
 	if a.Name != b.Name {
-		return false
+		return true
 	}
 
 	if len(a.Spec.DNSNames) != len(b.Spec.DNSNames) {
-		return false
+		return true
 	}
 
 	for i := range a.Spec.DNSNames {
 		if a.Spec.DNSNames[i] != b.Spec.DNSNames[i] {
-			return false
+			return true
 		}
 	}
 
 	if a.Spec.SecretName != b.Spec.SecretName {
-		return false
+		return true
 	}
 
 	if a.Spec.IssuerRef.Name != b.Spec.IssuerRef.Name {
-		return false
+		return true
 	}
 
 	if a.Spec.IssuerRef.Kind != b.Spec.IssuerRef.Kind {
-		return false
+		return true
 	}
 
-	return true
+	return false
 }
 
 func (c *Controller) setIssuerSpecificConfig(crt *v1alpha1.Certificate, issuer v1alpha1.GenericIssuer, ing *extv1beta1.Ingress, tls extv1beta1.IngressTLS) error {
