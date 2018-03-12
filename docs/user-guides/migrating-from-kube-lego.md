@@ -86,7 +86,7 @@ more relevant to cert-manager. For the rest of this guide, we'll assume you
 chose `letsencrypt-private-key`.
 
 Once done, we need to create this new resource in the `kube-system` namespace.
-By default, cert-manager stores supporting resources for ClusterIssuer's in the
+By default, cert-manager stores supporting resources for ClusterIssuers in the
 namespace that it is running in, and we used `kube-system` when deploying
 cert-manager above. You should change this if you have deployed cert-manager into
 a different namespace.
