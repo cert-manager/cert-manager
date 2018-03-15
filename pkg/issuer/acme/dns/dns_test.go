@@ -1,6 +1,7 @@
 package dns
 
 import (
+	"errors"
 	"reflect"
 	"testing"
 
@@ -11,7 +12,10 @@ import (
 	kubefake "k8s.io/client-go/kubernetes/fake"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/azuredns"
+	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/clouddns"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/cloudflare"
+	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/route53"
 )
 
 type fixture struct {
@@ -29,6 +33,50 @@ type fixture struct {
 
 	// certificate used in the test
 	Certificate *v1alpha1.Certificate
+
+	DNSProviders *fakeDNSProviders
+}
+
+type fakeDNSProviderCall struct {
+	name string
+	args []interface{}
+}
+
+type fakeDNSProviders struct {
+	constructors dnsProviderConstructors
+	calls        []fakeDNSProviderCall
+}
+
+func (f *fakeDNSProviders) call(name string, args ...interface{}) {
+	f.calls = append(f.calls, fakeDNSProviderCall{name: name, args: args})
+}
+
+func newFakeDNSProviders() *fakeDNSProviders {
+	f := &fakeDNSProviders{
+		calls: []fakeDNSProviderCall{},
+	}
+	f.constructors = dnsProviderConstructors{
+		cloudDNS: func(project string, serviceAccount []byte) (*clouddns.DNSProvider, error) {
+			f.call("clouddns", project, serviceAccount)
+			return nil, nil
+		},
+		cloudFlare: func(email, apikey string) (*cloudflare.DNSProvider, error) {
+			f.call("cloudflare", email, apikey)
+			if email == "" || apikey == "" {
+				return nil, errors.New("invalid email or apikey")
+			}
+			return nil, nil
+		},
+		route53: func(accessKey, secretKey, hostedZoneID, region string) (*route53.DNSProvider, error) {
+			f.call("route53", accessKey, secretKey, hostedZoneID, region)
+			return nil, nil
+		},
+		azureDNS: func(clientID, clientSecret, subscriptionID, tenentID, resourceGroupName, hostedZoneName string) (*azuredns.DNSProvider, error) {
+			f.call("azuredns", clientID, clientSecret, subscriptionID, tenentID, resourceGroupName, hostedZoneName)
+			return nil, nil
+		},
+	}
+	return f
 }
 
 func (f *fixture) solver() *Solver {
@@ -41,11 +89,16 @@ func (f *fixture) solver() *Solver {
 	stopCh := make(chan struct{})
 	defer close(stopCh)
 	sharedInformerFactory.Start(stopCh)
+	dnsProvider := f.DNSProviders
+	if dnsProvider == nil {
+		dnsProvider = newFakeDNSProviders()
+	}
 	return &Solver{
-		issuer:            f.Issuer,
-		client:            kubeClient,
-		secretLister:      secretsLister,
-		resourceNamespace: f.ResourceNamespace,
+		issuer:                  f.Issuer,
+		client:                  kubeClient,
+		secretLister:            secretsLister,
+		dnsProviderConstructors: dnsProvider.constructors,
+		resourceNamespace:       f.ResourceNamespace,
 	}
 }
 
@@ -274,5 +327,55 @@ func TestSolverFor(t *testing.T) {
 	}
 	for name, test := range tests {
 		t.Run(name, testFn(test))
+	}
+}
+
+func TestRoute53TrimCreds(t *testing.T) {
+	f := &fixture{
+		Issuer: newIssuer("test", "default", []v1alpha1.ACMEIssuerDNS01Provider{
+			{
+				Name: "fake-route53",
+				Route53: &v1alpha1.ACMEIssuerDNS01ProviderRoute53{
+					AccessKeyID: "  test_with_spaces  ",
+					Region:      "us-west-2",
+					SecretAccessKey: v1alpha1.SecretKeySelector{
+						LocalObjectReference: v1alpha1.LocalObjectReference{
+							Name: "route53",
+						},
+						Key: "secret",
+					},
+				},
+			},
+		}),
+		SecretLister: []*corev1.Secret{newSecret("route53", "default", map[string][]byte{
+			"secret": []byte("AKIENDINNEWLINE \n"),
+		})},
+		ResourceNamespace: "default",
+		Certificate: newCertificate("test", "default", "example.com", nil, []v1alpha1.ACMECertificateDomainConfig{
+			{
+				Domains: []string{"example.com"},
+				DNS01: &v1alpha1.ACMECertificateDNS01Config{
+					Provider: "fake-route53",
+				},
+			},
+		}),
+		DNSProviders: newFakeDNSProviders(),
+	}
+
+	s := f.solver()
+	_, err := s.solverFor(f.Certificate, "example.com")
+	if err != nil {
+		t.Fatalf("expected solverFor to not error, but got: %s", err)
+	}
+
+	expectedR53Call := []fakeDNSProviderCall{
+		{
+			name: "route53",
+			args: []interface{}{"test_with_spaces", "AKIENDINNEWLINE", "", "us-west-2"},
+		},
+	}
+
+	if !reflect.DeepEqual(expectedR53Call, f.DNSProviders.calls) {
+		t.Fatalf("expected %+v == %+v", expectedR53Call, f.DNSProviders.calls)
 	}
 }

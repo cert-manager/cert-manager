@@ -3,6 +3,7 @@ package dns
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/golang/glog"
@@ -27,11 +28,25 @@ type solver interface {
 	Timeout() (timeout, interval time.Duration)
 }
 
+// dnsProviderConstructors defines how each provider may be constructed.
+// It is useful for mocking out a given provider since an alternate set of
+// constructors may be set.
+type dnsProviderConstructors struct {
+	cloudDNS   func(project string, serviceAccount []byte) (*clouddns.DNSProvider, error)
+	cloudFlare func(email, apikey string) (*cloudflare.DNSProvider, error)
+	route53    func(accessKey, secretKey, hostedZoneID, region string) (*route53.DNSProvider, error)
+	azureDNS   func(clientID, clientSecret, subscriptionID, tenentID, resourceGroupName, hostedZoneName string) (*azuredns.DNSProvider, error)
+}
+
+// Solver is a solver for the acme dns01 challenge.
+// Given a Certificate object, it determines the correct DNS provider based on
+// the certificate, and configures it based on the referenced issuer.
 type Solver struct {
-	issuer            v1alpha1.GenericIssuer
-	client            kubernetes.Interface
-	secretLister      corev1listers.SecretLister
-	resourceNamespace string
+	issuer                  v1alpha1.GenericIssuer
+	client                  kubernetes.Interface
+	secretLister            corev1listers.SecretLister
+	dnsProviderConstructors dnsProviderConstructors
+	resourceNamespace       string
 }
 
 func (s *Solver) Present(ctx context.Context, crt *v1alpha1.Certificate, domain, token, key string) error {
@@ -123,7 +138,7 @@ func (s *Solver) solverFor(crt *v1alpha1.Certificate, domain string) (solver, er
 		}
 		saBytes := saSecret.Data[providerConfig.CloudDNS.ServiceAccount.Key]
 
-		impl, err = clouddns.NewDNSProviderServiceAccountBytes(providerConfig.CloudDNS.Project, saBytes)
+		impl, err = s.dnsProviderConstructors.cloudDNS(providerConfig.CloudDNS.Project, saBytes)
 		if err != nil {
 			return nil, fmt.Errorf("error instantiating google clouddns challenge solver: %s", err.Error())
 		}
@@ -136,7 +151,7 @@ func (s *Solver) solverFor(crt *v1alpha1.Certificate, domain string) (solver, er
 		email := providerConfig.Cloudflare.Email
 		apiKey := string(apiKeySecret.Data[providerConfig.Cloudflare.APIKey.Key])
 
-		impl, err = cloudflare.NewDNSProviderCredentials(email, apiKey)
+		impl, err = s.dnsProviderConstructors.cloudFlare(email, apiKey)
 		if err != nil {
 			return nil, fmt.Errorf("error instantiating cloudflare challenge solver: %s", err.Error())
 		}
@@ -151,9 +166,9 @@ func (s *Solver) solverFor(crt *v1alpha1.Certificate, domain string) (solver, er
 			return nil, fmt.Errorf("error getting route53 secret access key: key '%s' not found in secret", providerConfig.Route53.SecretAccessKey.Key)
 		}
 
-		impl, err = route53.NewDNSProviderAccessKey(
-			providerConfig.Route53.AccessKeyID,
-			string(secretAccessKeyBytes),
+		impl, err = s.dnsProviderConstructors.route53(
+			strings.TrimSpace(providerConfig.Route53.AccessKeyID),
+			strings.TrimSpace(string(secretAccessKeyBytes)),
 			providerConfig.Route53.HostedZoneID,
 			providerConfig.Route53.Region,
 		)
@@ -171,7 +186,7 @@ func (s *Solver) solverFor(crt *v1alpha1.Certificate, domain string) (solver, er
 			return nil, fmt.Errorf("error getting azure dns client secret: key '%s' not found in secret", providerConfig.AzureDNS.ClientSecret.Key)
 		}
 
-		impl, err = azuredns.NewDNSProviderCredentials(
+		impl, err = s.dnsProviderConstructors.azureDNS(
 			providerConfig.AzureDNS.ClientID,
 			string(clientSecretBytes),
 			providerConfig.AzureDNS.SubscriptionID,
@@ -187,5 +202,16 @@ func (s *Solver) solverFor(crt *v1alpha1.Certificate, domain string) (solver, er
 }
 
 func NewSolver(issuer v1alpha1.GenericIssuer, client kubernetes.Interface, secretLister corev1listers.SecretLister, resourceNamespace string) *Solver {
-	return &Solver{issuer, client, secretLister, resourceNamespace}
+	return &Solver{
+		issuer,
+		client,
+		secretLister,
+		dnsProviderConstructors{
+			clouddns.NewDNSProviderServiceAccountBytes,
+			cloudflare.NewDNSProviderCredentials,
+			route53.NewDNSProviderAccessKey,
+			azuredns.NewDNSProviderCredentials,
+		},
+		resourceNamespace,
+	}
 }
