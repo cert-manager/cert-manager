@@ -25,7 +25,10 @@ if [ "${PULL_BASE_SHA}" == "" ]; then
     exit 1
 fi
 
-git remote add jetstack https://github.com/jetstack/cert-manager
+if ! git remote get-url jetstack; then
+  git remote add jetstack https://github.com/jetstack/cert-manager
+fi
+
 git fetch jetstack "${PULL_BASE_SHA}:refs/remotes/jetstack/pull-base"
 
 SCRIPT_ROOT=$(dirname "${BASH_SOURCE}")/..
