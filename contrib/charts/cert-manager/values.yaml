@@ -60,3 +60,8 @@ ingressShim:
 # namespace manifest for the namespace that cert-manager is being installed
 # within. It should **not** be used if you are using Helm for deployment.
 createNamespaceResource: false
+
+clusterIssuer:
+  name: letsencrypt
+  server: https://acme-v01.api.letsencrypt.org/directory
+  email:

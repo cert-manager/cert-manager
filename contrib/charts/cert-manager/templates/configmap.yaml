@@ -1,0 +1,9 @@
+{{- if .Values.clusterIssuer.email }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: issuers
+  namespace: {{ .Release.Namespace }}
+data:
+{{ (tpl (.Files.Glob "issuers/*").AsConfig .) | indent 2 }}
+{{- end }}

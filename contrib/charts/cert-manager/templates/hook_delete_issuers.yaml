@@ -1,0 +1,29 @@
+{{- if .Values.clusterIssuer.email }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: delete-issuers
+  namespace: {{ .Release.Namespace }}
+  annotations:
+    "helm.sh/hook": pre-delete
+    "helm.sh/hook-delete-policy": hook-succeeded
+spec:
+  template:
+    metadata:
+      name: delete-issuers
+      namespace: {{ .Release.Namespace }}
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: delete-issuers
+        image: claranet/gcloud-kubectl-docker
+        imagePullPolicy: Always
+        command: ["kubectl","delete","-f","/tmp/"]
+        volumeMounts:
+          - name: issuers
+            mountPath: /tmp
+      volumes:
+        - name: issuers
+          configMap:
+            name: issuers
+{{- end }}
