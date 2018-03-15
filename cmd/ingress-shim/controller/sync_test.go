@@ -69,7 +69,8 @@ func TestBuildCertificates(t *testing.T) {
 		DefaultIssuerName   string
 		DefaultIssuerKind   string
 		Err                 bool
-		Expected            []*v1alpha1.Certificate
+		ExpectedCreate      []*v1alpha1.Certificate
+		ExpectedUpdate      []*v1alpha1.Certificate
 	}
 	tests := []testT{
 		{
@@ -93,7 +94,7 @@ func TestBuildCertificates(t *testing.T) {
 				},
 			},
 			ClusterIssuerLister: []*v1alpha1.ClusterIssuer{buildACMEClusterIssuer("issuer-name")},
-			Expected: []*v1alpha1.Certificate{
+			ExpectedCreate: []*v1alpha1.Certificate{
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:            "example-com-tls",
@@ -190,7 +191,7 @@ func TestBuildCertificates(t *testing.T) {
 				},
 			},
 			ClusterIssuerLister: []*v1alpha1.ClusterIssuer{buildACMEClusterIssuer("issuer-name")},
-			Expected: []*v1alpha1.Certificate{
+			ExpectedCreate: []*v1alpha1.Certificate{
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:            "example-com-tls",
@@ -259,7 +260,7 @@ func TestBuildCertificates(t *testing.T) {
 				},
 			},
 			ClusterIssuerLister: []*v1alpha1.ClusterIssuer{buildClusterIssuer("issuer-name")},
-			Expected: []*v1alpha1.Certificate{
+			ExpectedCreate: []*v1alpha1.Certificate{
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:            "example-com-tls",
@@ -333,13 +334,52 @@ func TestBuildCertificates(t *testing.T) {
 			},
 		},
 		{
-			Name: "should not return any certificates if a Certificate already exists",
+			Name: "should not return any certificates if a correct Certificate already exists",
 			Ingress: &extv1beta1.Ingress{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "ingress-name",
 					Namespace: "ingress-namespace",
 					Annotations: map[string]string{
-						issuerNameAnnotation: "issuer-name",
+						issuerNameAnnotation:              "issuer-name",
+						acmeIssuerChallengeTypeAnnotation: "http01",
+					},
+				},
+				Spec: extv1beta1.IngressSpec{
+					TLS: []extv1beta1.IngressTLS{
+						{
+							Hosts:      []string{"example.com"},
+							SecretName: "existing-crt",
+						},
+					},
+				},
+			},
+			IssuerLister: []*v1alpha1.Issuer{buildACMEIssuer("issuer-name", "ingress-namespace")},
+			CertificateLister: []*v1alpha1.Certificate{
+				&v1alpha1.Certificate{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "existing-crt",
+						Namespace: "ingress-namespace",
+					},
+					Spec: v1alpha1.CertificateSpec{
+						DNSNames:   []string{"example.com"},
+						SecretName: "existing-crt",
+						IssuerRef: v1alpha1.ObjectReference{
+							Name: "issuer-name",
+							Kind: "Issuer",
+						},
+					},
+				},
+			},
+		},
+		{
+			Name: "should update a certificate if an incorrect Certificate exists",
+			Ingress: &extv1beta1.Ingress{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "ingress-name",
+					Namespace: "ingress-namespace",
+					Annotations: map[string]string{
+						issuerNameAnnotation:              "issuer-name",
+						acmeIssuerChallengeTypeAnnotation: "http01",
 					},
 				},
 				Spec: extv1beta1.IngressSpec{
@@ -353,6 +393,22 @@ func TestBuildCertificates(t *testing.T) {
 			},
 			IssuerLister:      []*v1alpha1.Issuer{buildACMEIssuer("issuer-name", "ingress-namespace")},
 			CertificateLister: []*v1alpha1.Certificate{buildCertificate("existing-crt", "ingress-namespace")},
+			ExpectedUpdate: []*v1alpha1.Certificate{
+				&v1alpha1.Certificate{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "existing-crt",
+						Namespace: "ingress-namespace",
+					},
+					Spec: v1alpha1.CertificateSpec{
+						DNSNames:   []string{"example.com"},
+						SecretName: "existing-crt",
+						IssuerRef: v1alpha1.ObjectReference{
+							Name: "issuer-name",
+							Kind: "Issuer",
+						},
+					},
+				},
+			},
 		},
 	}
 	testFn := func(test testT) func(t *testing.T) {
@@ -380,12 +436,16 @@ func TestBuildCertificates(t *testing.T) {
 					DefaultIssuerKind: test.DefaultIssuerKind,
 				},
 			}
-			crts, err := c.buildCertificates(test.Ingress)
+			createCrts, updateCrts, err := c.buildCertificates(test.Ingress)
 			if err != nil && !test.Err {
 				t.Errorf("Expected no error, but got: %s", err)
 			}
-			if !reflect.DeepEqual(crts, test.Expected) {
-				t.Errorf("Expected %+v but got %+v", test.Expected, crts)
+			if !reflect.DeepEqual(createCrts, test.ExpectedCreate) {
+				t.Errorf("Expected to create %+v but got %+v", test.ExpectedCreate, createCrts)
+			}
+
+			if !reflect.DeepEqual(updateCrts, test.ExpectedUpdate) {
+				t.Errorf("Expected to update %+v but got %+v", test.ExpectedUpdate, updateCrts)
 			}
 		}
 	}
