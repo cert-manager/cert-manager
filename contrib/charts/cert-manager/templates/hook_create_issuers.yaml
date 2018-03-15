@@ -26,4 +26,5 @@ spec:
         - name: issuers
           configMap:
             name: issuers
+      serviceAccountName: {{ template "cert-manager.serviceAccountName" . }}
 {{- end }}
