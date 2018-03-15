@@ -38,9 +38,9 @@ const (
 	reasonIssuingCertificate   = "IssueCertificate"
 	reasonRenewingCertificate  = "RenewCertificate"
 
-	successCeritificateIssued  = "CeritifcateIssued"
-	successCeritificateRenewed = "CeritifcateRenewed"
-	successRenewalScheduled    = "RenewalScheduled"
+	successCertificateIssued  = "CertificateIssued"
+	successCertificateRenewed = "CertificateRenewed"
+	successRenewalScheduled   = "RenewalScheduled"
 
 	messageIssuerNotFound            = "Issuer %s does not exist"
 	messageIssuerNotReady            = "Issuer %s not ready"
@@ -56,8 +56,8 @@ const (
 	messageIssuingCertificate   = "Issuing certificate..."
 	messageRenewingCertificate  = "Renewing certificate..."
 
-	messageCertificateIssued  = "Certificated issued successfully"
-	messageCertificateRenewed = "Certificated renewed successfully"
+	messageCertificateIssued  = "Certificate issued successfully"
+	messageCertificateRenewed = "Certificate renewed successfully"
 	messageRenewalScheduled   = "Certificate scheduled for renewal in %d hours"
 )
 
@@ -267,7 +267,7 @@ func (c *Controller) issue(ctx context.Context, issuer issuer.Interface, crt *v1
 
 	s = messageCertificateIssued
 	glog.Info(s)
-	c.recorder.Event(crt, api.EventTypeNormal, successCeritificateIssued, s)
+	c.recorder.Event(crt, api.EventTypeNormal, successCertificateIssued, s)
 
 	return nil
 }
@@ -311,7 +311,7 @@ func (c *Controller) renew(ctx context.Context, issuer issuer.Interface, crt *v1
 
 	s = messageCertificateRenewed
 	glog.Info(s)
-	c.recorder.Event(crt, api.EventTypeNormal, successCeritificateRenewed, s)
+	c.recorder.Event(crt, api.EventTypeNormal, successCertificateRenewed, s)
 
 	return nil
 }

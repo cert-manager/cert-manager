@@ -41,6 +41,10 @@ ingressShim:
 
   # Optional additional arguments for ingress-shim
   extraArgs: []
+    # Use these flags to specify the default Issuer/ClusterIssuer
+    # (IMPORTANT: You need to create this Issuer/ClusterIssuer resource yourself)
+    # - --default-issuer-name=letsencrypt-prod
+    # - --default-issuer-kind=ClusterIssuer
 
   resources: {}
     # requests:
@@ -60,7 +64,6 @@ ingressShim:
 # namespace manifest for the namespace that cert-manager is being installed
 # within. It should **not** be used if you are using Helm for deployment.
 createNamespaceResource: false
-
 clusterIssuer:
   name: letsencrypt
   server: https://acme-v01.api.letsencrypt.org/directory
