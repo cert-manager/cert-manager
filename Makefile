@@ -37,13 +37,16 @@ GOOS := linux
 GOARCH := amd64
 GOLDFLAGS := -ldflags "-X $(PACKAGE_NAME)/pkg/util.AppGitState=${GIT_STATE} -X $(PACKAGE_NAME)/pkg/util.AppGitCommit=${GIT_COMMIT} -X $(PACKAGE_NAME)/pkg/util.AppVersion=${APP_VERSION}"
 
-.PHONY: verify build docker_build push generate generate_verify $(CMDS) go_test go_fmt $(DOCKER_BUILD_TARGETS) $(DOCKER_PUSH_TARGETS)
+.PHONY: verify build docker_build push generate generate_verify deploy_verify \
+	$(CMDS) go_test go_fmt e2e_test go_verify hack_verify hack_verify_pr \
+	$(DOCKER_BUILD_TARGETS) $(DOCKER_PUSH_TARGETS)
 
 # Alias targets
 ###############
 
-verify: generate_verify deploy_verify hack_verify go_verify
 build: $(CMDS) docker_build
+verify: generate_verify deploy_verify hack_verify go_verify
+verify_pr: hack_verify_pr
 docker_build: $(DOCKER_BUILD_TARGETS)
 docker_push: $(DOCKER_PUSH_TARGETS)
 push: build docker_push
@@ -64,6 +67,8 @@ hack_verify:
 	$(HACK_DIR)/verify-links.sh
 	@echo Running errexit checker
 	$(HACK_DIR)/verify-errexit.sh
+
+hack_verify_pr:
 	@echo Running helm chart version checker
 	$(HACK_DIR)/verify-chart-version.sh
 

@@ -23,4 +23,4 @@ jobs:
       language: go
       go: 1.9
       script:
-      - make verify test
+      - make verify verify_pr test

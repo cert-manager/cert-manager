@@ -20,7 +20,7 @@ set -o pipefail
 semvercompareOldVer=""
 semvercompareNewVer=""
 
-if [ "${PULL_BASE_SHA}" == "" ]; then
+if [ -z "${PULL_BASE_SHA+a}" ]; then
     echo "PULL_BASE_SHA must be set"
     exit 1
 fi
@@ -31,7 +31,7 @@ fi
 
 git fetch jetstack "${PULL_BASE_SHA}:refs/remotes/jetstack/pull-base"
 
-SCRIPT_ROOT=$(dirname "${BASH_SOURCE}")/..
+SCRIPT_ROOT="$(dirname "${BASH_SOURCE}")/.."
 
 CHANGED_FOLDERS=`git diff --find-renames --name-only $(git merge-base jetstack/pull-base HEAD) "${SCRIPT_ROOT}/contrib/charts/" | awk -F/ '{print $1"/"$2"/"$3}' | uniq`
 
