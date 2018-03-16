@@ -42,8 +42,8 @@ GOLDFLAGS := -ldflags "-X $(PACKAGE_NAME)/pkg/util.AppGitState=${GIT_STATE} -X $
 # Alias targets
 ###############
 
-verify: generate_verify deploy_verify hack_verify go_verify
 build: $(CMDS) docker_build
+verify: generate_verify deploy_verify hack_verify go_verify
 docker_build: $(DOCKER_BUILD_TARGETS)
 docker_push: $(DOCKER_PUSH_TARGETS)
 push: build docker_push
