@@ -1,4 +1,4 @@
-{{- if .Values.clusterIssuer.email }}
+{{- if .Values.letsencrypt.email }}
 apiVersion: v1
 kind: ConfigMap
 metadata:

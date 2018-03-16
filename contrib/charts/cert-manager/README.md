@@ -21,8 +21,9 @@ To install the chart with the release name `my-release`:
 $ helm install --name my-release stable/cert-manager
 ```
 
-In order to begin issuing certificates, pass the following option:
-`--set clusterIssuer.email=certmanager@organization.org`.
+By default, no issuers is created. As an example, and to help you get started, we included 2 cluster issuer for Let's encrypt staging and production.
+To activate them, the only thing needed is to give your email address:
+`--set letsencrypt.email=certmanager@organization.org`.
 
 More information on the different types of issuers and how to configure them
 can be found in our documentation:
@@ -73,9 +74,7 @@ The following tables lists the configurable parameters of the cert-manager chart
 | `ingressShim.image.repository` | Image repository for ingress-shim | `quay.io/jetstack/cert-manager-ingress-shim` |
 | `ingressShim.image.tag` | Image tag for ingress-shim. Defaults to `image.tag` if empty | `` |
 | `ingressShim.image.pullPolicy` | Image pull policy for ingress-shim | `IfNotPresent` |
-| `clusterIssuer.name` | Name to give to the cluster Issue | `letsencrypt` |
-| `clusterIssuer.server` | Server to use to issue certs | `https://acme-v01.api.letsencrypt.org/directory` |
-| `clusterIssuer.email` | Email to use to create account with the issuer | |
+| `letsencrypt.email` | Email to use to create account with letsencrypt issuers. If given, it will create default cluster issuer. | |
 
 Specify each parameter using the `--set key=value[,key=value]` argument to `helm install`.
 
