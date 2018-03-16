@@ -2,23 +2,23 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: create-issuers
+  name: apply-issuers
   namespace: {{ .Release.Namespace }}
   annotations:
-    "helm.sh/hook": post-install
+    "helm.sh/hook": post-install,post-upgrade
     "helm.sh/hook-delete-policy": hook-succeeded
 spec:
   template:
     metadata:
-      name: create-issuers
+      name: apply-issuers
       namespace: {{ .Release.Namespace }}
     spec:
       restartPolicy: Never
       containers:
-      - name: create-issuers
+      - name: apply-issuers
         image: claranet/gcloud-kubectl-docker
         imagePullPolicy: Always
-        command: ["kubectl","create","-f","/tmp/"]
+        command: ["kubectl","apply","-f","/tmp/"]
         volumeMounts:
           - name: issuers
             mountPath: /tmp
