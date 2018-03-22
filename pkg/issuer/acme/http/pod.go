@@ -103,9 +103,9 @@ func (s *Solver) createPod(crt *v1alpha1.Certificate, domain, token, key string)
 	podLabels := podLabels(crt, domain)
 	return s.client.CoreV1().Pods(crt.Namespace).Create(&corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: "cm-acme-http-solver-",
-			Namespace:    crt.Namespace,
-			Labels:       podLabels,
+			GenerateName:    "cm-acme-http-solver-",
+			Namespace:       crt.Namespace,
+			Labels:          podLabels,
 			OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(crt, certificateGvk)},
 		},
 		Spec: corev1.PodSpec{

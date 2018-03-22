@@ -110,10 +110,10 @@ func buildIngressResource(crt *v1alpha1.Certificate, svcName, domain, token, ing
 
 	return &extv1beta1.Ingress{
 		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: "cm-acme-http-solver-",
-			Namespace:    crt.Namespace,
-			Labels:       podLabels,
-			Annotations:  ingAnnotaions,
+			GenerateName:    "cm-acme-http-solver-",
+			Namespace:       crt.Namespace,
+			Labels:          podLabels,
+			Annotations:     ingAnnotaions,
 			OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(crt, certificateGvk)},
 		},
 		Spec: extv1beta1.IngressSpec{

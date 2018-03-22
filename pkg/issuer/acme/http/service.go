@@ -79,9 +79,9 @@ func (s *Solver) createService(crt *v1alpha1.Certificate, domain string) (*corev
 	podLabels := podLabels(crt, domain)
 	return s.client.CoreV1().Services(crt.Namespace).Create(&corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: "cm-acme-http-solver-",
-			Namespace:    crt.Namespace,
-			Labels:       podLabels,
+			GenerateName:    "cm-acme-http-solver-",
+			Namespace:       crt.Namespace,
+			Labels:          podLabels,
 			OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(crt, certificateGvk)},
 		},
 		Spec: corev1.ServiceSpec{
