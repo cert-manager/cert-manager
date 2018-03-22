@@ -2,8 +2,8 @@ package acme
 
 import (
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
-	"github.com/jetstack/cert-manager/third_party/crypto/acme"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
+	"github.com/jetstack/cert-manager/third_party/crypto/acme"
 )
 
 // This file includes some utility functions that can be used throughout the

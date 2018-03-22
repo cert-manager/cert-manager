@@ -316,7 +316,7 @@ const (
 
 // CertificateACMEStatus holds the status for an ACME issuer
 type CertificateACMEStatus struct {
-	Order    ACMEOrderStatus `json:"order"`
+	Order ACMEOrderStatus `json:"order"`
 }
 
 type ACMEOrderStatus struct {
