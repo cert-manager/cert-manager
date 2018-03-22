@@ -106,6 +106,7 @@ func (s *Solver) createPod(crt *v1alpha1.Certificate, domain, token, key string)
 			GenerateName: "cm-acme-http-solver-",
 			Namespace:    crt.Namespace,
 			Labels:       podLabels,
+			OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(crt, certificateGvk)},
 		},
 		Spec: corev1.PodSpec{
 			RestartPolicy: corev1.RestartPolicyOnFailure,

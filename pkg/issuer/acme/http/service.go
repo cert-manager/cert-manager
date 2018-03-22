@@ -82,6 +82,7 @@ func (s *Solver) createService(crt *v1alpha1.Certificate, domain string) (*corev
 			GenerateName: "cm-acme-http-solver-",
 			Namespace:    crt.Namespace,
 			Labels:       podLabels,
+			OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(crt, certificateGvk)},
 		},
 		Spec: corev1.ServiceSpec{
 			Type: corev1.ServiceTypeNodePort,

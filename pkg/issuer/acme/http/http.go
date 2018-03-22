@@ -31,6 +31,10 @@ const (
 	domainLabelKey        = "certmanager.k8s.io/acme-http-domain"
 )
 
+var (
+	certificateGvk = v1alpha1.SchemeGroupVersion.WithKind("Certificate")
+)
+
 // Solver is an implementation of the acme http-01 challenge solver protocol
 type Solver struct {
 	issuer      v1alpha1.GenericIssuer

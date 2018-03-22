@@ -114,8 +114,7 @@ func buildIngressResource(crt *v1alpha1.Certificate, svcName, domain, token, ing
 			Namespace:    crt.Namespace,
 			Labels:       podLabels,
 			Annotations:  ingAnnotaions,
-			// TODO: move gvk to var declaration
-			OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(crt, v1alpha1.SchemeGroupVersion.WithKind("Certificate"))},
+			OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(crt, certificateGvk)},
 		},
 		Spec: extv1beta1.IngressSpec{
 			Rules: []extv1beta1.IngressRule{
