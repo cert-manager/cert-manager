@@ -10,19 +10,8 @@ by upgrading this chart and specifying a letsencryptEmail value:
 helm upgrade {{ .Release.Name }} --reuse-values --set letsencryptEmail= stable/cert-manager
 
 This will also configure the ingress-shim to automatically provision Certificates for you.
-
-More information on the different types of issuers and how to configure them
-can be found in our documentation:
-
-https://github.com/jetstack/cert-manager/blob/master/docs/api-types/issuer
-
-For information on how to configure cert-manager to automatically provision
-Certificates for Ingress resources, take a look at the `ingress-shim`
-documentation:
-
-https://github.com/jetstack/cert-manager/blob/master/docs/user-guides/ingress-shim.md
 {{- else }}
-{{- if .Values.letsencryptEmail }}
+  {{- if .Values.letsencryptEmail }}
 cert-manager has been upgraded successfully!
 Two default ClusterIssuers have been installed for letsencrypt-staging and
 letsencrypt-production.
@@ -32,7 +21,7 @@ annotation:
 
 kubernetes.io/tls-acme: "true"
 
-{{- if eq .Values.ingressShim.defaultIssuerName "letsencrypt-staging" }}
+    {{ if eq .Values.ingressShim.defaultIssuerName "letsencrypt-staging" }}
 ingress-shim is configured to automatically provision Certificates for Ingress
 resources with the letsencrypt-staging ClusterIssuer.
 
@@ -41,7 +30,7 @@ ClusterIssuer, please upgrade the chart:
 
 helm upgrade {{ .Release.Name }} --reuse-values --set ingressShim.defaultIssuerName=letsencrypt-production stable/cert-manager
 
-{{- else }}
+    {{- else }}
 ingress-shim is configured to automatically provision Certificates for Ingress
 resources with the letsencrypt-production ClusterIssuer.
 
@@ -50,10 +39,12 @@ If you just upgraded, don't forget to delete your already created staging certif
 kubectl delete secret my-tls-cert
 
 It should recreate the certificate with the letsencrypt-production ClusterIssuer!
-{{- end }}
-{{- else }}
+    {{- end }}
+  {{- else }}
 cert-manager has been upgraded successfully!
 
+  {{- end }}
+{{- end }}
 More information on the different types of issuers and how to configure them
 can be found in our documentation:
 
@@ -64,5 +55,3 @@ Certificates for Ingress resources, take a look at the `ingress-shim`
 documentation:
 
 https://github.com/jetstack/cert-manager/blob/master/docs/user-guides/ingress-shim.md
-{{- end }}
-{{- end }}
