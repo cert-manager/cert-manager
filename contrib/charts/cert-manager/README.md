@@ -83,7 +83,7 @@ The following tables lists the configurable parameters of the cert-manager chart
 | `ingressShim.image.repository` | Image repository for ingress-shim | `quay.io/jetstack/cert-manager-ingress-shim` |
 | `ingressShim.image.tag` | Image tag for ingress-shim. Defaults to `image.tag` if empty | `` |
 | `ingressShim.image.pullPolicy` | Image pull policy for ingress-shim | `IfNotPresent` |
-| `letsencryptEmail` | Email to use to create account with letsencrypt issuers. If given, it will create default ClusterIssuer. | |
+| `letsencryptEmail` | Email to use to create account with letsencrypt issuers. If given, it will create default ClusterIssuer. Use this value only during upgrade. | |
 
 Specify each parameter using the `--set key=value[,key=value]` argument to `helm install`.
 
