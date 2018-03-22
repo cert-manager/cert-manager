@@ -1,4 +1,4 @@
-{{- if Release.IsInstall }}
+{{- if .Release.IsInstall }}
 cert-manager and it's CRDs have been installed successfully!
 
 In order to begin issuing certificates, you will need to set up a ClusterIssuer
@@ -50,7 +50,7 @@ If you just upgraded, don't forget to delete your already created staging certif
 kubectl delete secret my-tls-cert
 
 It should recreate the certificate with the letsencrypt-production ClusterIssuer!
-{- end }}
+{{- end }}
 {{- else }}
 cert-manager has been upgraded successfully!
 
