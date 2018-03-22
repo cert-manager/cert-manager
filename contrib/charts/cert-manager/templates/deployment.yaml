@@ -25,9 +25,6 @@ spec:
           - --cluster-resource-namespace=$(POD_NAMESPACE)
         {{- if .Values.extraArgs }}
 {{ toYaml .Values.extraArgs | indent 10 }}
-        {{- else }}
-          - --default-issuer-name={{ .Values.ingressShim.defaultIssuerName }}
-          - --default-issuer-kind={{ .Values.ingressShim.defaultIssuerKind }}
         {{- end }}
           env:
           - name: POD_NAMESPACE
@@ -43,6 +40,10 @@ spec:
         {{- if .Values.ingressShim.extraArgs }}
           args:
 {{ toYaml .Values.ingressShim.extraArgs | indent 10 }}
+        {{- else }}
+          args:
+          - --default-issuer-name={{ .Values.ingressShim.defaultIssuerName }}
+          - --default-issuer-kind={{ .Values.ingressShim.defaultIssuerKind }}
         {{- end }}
           resources:
 {{ toYaml .Values.ingressShim.resources | indent 12 }}

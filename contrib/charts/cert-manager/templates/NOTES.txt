@@ -45,6 +45,7 @@ cert-manager has been upgraded successfully!
 
   {{- end }}
 {{- end }}
+
 More information on the different types of issuers and how to configure them
 can be found in our documentation:
 
