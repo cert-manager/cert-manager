@@ -12,10 +12,11 @@ to renew certificates at an appropriate time before expiry.
 
 ## Installing the Chart
 
-Due to a [bug](https://github.com/kubernetes/helm/issues/2994#issuecomment-357844513) in helm, we can't install CRDs and their definition in the same step.
+Due to a [bug](https://github.com/kubernetes/helm/issues/2994#issuecomment-357844513)
+in helm, we can't install CRDs and their definition in the same step.
 
-First install the chart with the CRDs and then install the default ClusterIssuer by
-specifying your letsencryptEmail value.
+First, install the chart with the CRDs and then install the default
+ClusterIssuer by specifying your letsencryptEmail value.
 
 To install the chart with the release name `my-release`:
 
@@ -23,9 +24,13 @@ To install the chart with the release name `my-release`:
 $ helm install --name my-release stable/cert-manager
 ```
 
-During installation step, no issuers is created. As an example, and to help you get started, we included 2 cluster issuer for Let's encrypt staging and production.
-eo activate them, you need to upgrade the chart and give your email address:
-`helm upgrade my-release --reuse-values --set letsencryptEmail= stable/cert-manager`.
+During installation step, no issuers is created. As an example, and to help
+you get started, we included 2 ClusterIssuers for Let's encrypt staging and
+production. To activate them, you need to upgrade the chart and give your email address:
+
+```console
+$ helm upgrade my-release --reuse-values --set letsencryptEmail= stable/cert-manager
+```
 
 More information on the different types of issuers and how to configure them
 can be found in our documentation:
