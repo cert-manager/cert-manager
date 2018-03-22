@@ -7,7 +7,7 @@ import (
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/client"
-	"github.com/jetstack/cert-manager/test/integration"
+	"github.com/jetstack/cert-manager/test/unit"
 )
 
 const (
@@ -29,14 +29,14 @@ type acmeFixture struct {
 	Err     bool
 
 	// f is the integration test fixture being used for this test
-	f *integration.Fixture
+	f *unit.Fixture
 }
 
 func (s *acmeFixture) Setup(t *testing.T) {
 	if s.Client == nil {
 		s.Client = &client.FakeACME{}
 	}
-	s.f = &integration.Fixture{
+	s.f = &unit.Fixture{
 		T:                  t,
 		KubeObjects:        s.KubeObjects,
 		CertManagerObjects: s.CMObjects,
@@ -60,7 +60,7 @@ func (s *acmeFixture) Finish(t *testing.T) {
 	}
 }
 
-func buildFakeAcme(f *integration.Fixture, client *client.FakeACME, issuer v1alpha1.GenericIssuer) *Acme {
+func buildFakeAcme(f *unit.Fixture, client *client.FakeACME, issuer v1alpha1.GenericIssuer) *Acme {
 	a, err := New(issuer,
 		f.KubeClient(),
 		f.CertManagerClient(),

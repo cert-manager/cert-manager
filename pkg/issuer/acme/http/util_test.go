@@ -9,7 +9,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
-	"github.com/jetstack/cert-manager/test/integration"
+	"github.com/jetstack/cert-manager/test/unit"
 )
 
 const (
@@ -36,7 +36,7 @@ type solverFixture struct {
 	Namespace   string
 
 	// f is the integration test fixture being used for this test
-	f *integration.Fixture
+	f *unit.Fixture
 	// createdIngress is used to store a reference to an ingress resource created
 	// during a tests PreFn. This should probably be removed in order to further
 	// generalise this test fixture
@@ -53,7 +53,7 @@ func (s *solverFixture) Setup(t *testing.T) {
 	if s.Namespace == "" {
 		s.Namespace = defaultTestNamespace
 	}
-	s.f = &integration.Fixture{
+	s.f = &unit.Fixture{
 		T:                  t,
 		KubeObjects:        s.KubeObjects,
 		CertManagerObjects: s.CMObjects,
@@ -77,7 +77,7 @@ func (s *solverFixture) Finish(t *testing.T) {
 	}
 }
 
-func buildFakeSolver(f *integration.Fixture, issuer v1alpha1.GenericIssuer) *Solver {
+func buildFakeSolver(f *unit.Fixture, issuer v1alpha1.GenericIssuer) *Solver {
 	s := &Solver{
 		issuer:        issuer,
 		client:        f.KubeClient(),
