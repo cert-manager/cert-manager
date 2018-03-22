@@ -67,8 +67,11 @@ func NewSolver(issuer v1alpha1.GenericIssuer, client kubernetes.Interface, podLi
 // will return nil (i.e. this function is idempotent).
 func (s *Solver) Present(ctx context.Context, crt *v1alpha1.Certificate, domain, token, key string) error {
 	_, podErr := s.ensurePod(crt, domain, token, key)
-	_, svcErr := s.ensureService(crt, domain, token, key)
-	_, ingressErr := s.ensureIngress(crt, domain, token, key)
+	svc, svcErr := s.ensureService(crt, domain, token, key)
+	if svcErr != nil {
+		return utilerrors.NewAggregate([]error{podErr, svcErr})
+	}
+	_, ingressErr := s.ensureIngress(crt, svc.Name, domain, token)
 	return utilerrors.NewAggregate([]error{podErr, svcErr, ingressErr})
 }
 
