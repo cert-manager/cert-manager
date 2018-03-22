@@ -27,7 +27,7 @@ func (s *Solver) ensurePod(crt *v1alpha1.Certificate, domain, token, key string)
 		return nil, err
 	}
 	var pod *corev1.Pod
-	if len(existingPods) > 0 {
+	if len(existingPods) > 1 {
 		errMsg := fmt.Sprintf("multiple challenge solver pods found for certificate '%s/%s'. Cleaning up existing pods.", crt.Namespace, crt.Name)
 		glog.Infof(errMsg)
 		err := s.cleanupPods(crt, domain)

@@ -20,7 +20,7 @@ func (s *Solver) ensureService(crt *v1alpha1.Certificate, domain, token, key str
 		return nil, err
 	}
 	var service *corev1.Service
-	if len(existingServices) > 0 {
+	if len(existingServices) > 1 {
 		errMsg := fmt.Sprintf("multiple challenge solver services found for certificate '%s/%s'. Cleaning up existing services.", crt.Namespace, crt.Name)
 		glog.Infof(errMsg)
 		err := s.cleanupServices(crt, domain)

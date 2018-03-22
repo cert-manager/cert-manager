@@ -73,10 +73,10 @@ func (s *Solver) ensureIngress(crt *v1alpha1.Certificate, svcName, domain, token
 	if err != nil {
 		return nil, err
 	}
-	if len(existingIngresses) > 0 {
-		errMsg := fmt.Sprintf("multiple challenge solver pods found for certificate '%s/%s'. Cleaning up existing pods.", crt.Namespace, crt.Name)
+	if len(existingIngresses) > 1 {
+		errMsg := fmt.Sprintf("multiple challenge solver ingresses found for certificate '%s/%s'. Cleaning up existing pods.", crt.Namespace, crt.Name)
 		glog.Infof(errMsg)
-		err := s.cleanupPods(crt, domain)
+		err := s.cleanupIngresses(crt, domain, token)
 		if err != nil {
 			return nil, err
 		}
@@ -85,7 +85,7 @@ func (s *Solver) ensureIngress(crt *v1alpha1.Certificate, svcName, domain, token
 	if len(existingIngresses) == 1 {
 		return existingIngresses[0], nil
 	}
-	glog.Infof("No existing HTTP01 challenge solver pod found for Certificate %q. One will be created.")
+	glog.Infof("No existing HTTP01 challenge solver ingress found for Certificate %q. One will be created.")
 	return s.createIngress(crt, svcName, domain, token, *httpDomainCfg)
 }
 
