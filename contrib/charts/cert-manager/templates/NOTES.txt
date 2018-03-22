@@ -1,5 +1,5 @@
 {{- if Release.IsInstall }}
-cert-manager and it's CRDs have been deployed successfully!
+cert-manager and it's CRDs have been installed successfully!
 
 In order to begin issuing certificates, you will need to set up a ClusterIssuer
 or Issuer resource.
@@ -10,7 +10,6 @@ by upgrading this chart and specifying a letsencryptEmail value:
 helm upgrade {{ .Release.Name }} --reuse-values --set letsencryptEmail= stable/cert-manager
 
 This will also configure the ingress-shim to automatically provision Certificates for you.
-
 
 More information on the different types of issuers and how to configure them
 can be found in our documentation:
@@ -25,24 +24,45 @@ https://github.com/jetstack/cert-manager/blob/master/docs/user-guides/ingress-sh
 {{- else }}
 {{- if .Values.letsencryptEmail }}
 cert-manager has been upgraded successfully!
-Two default ClusterIssuers have been installed for letsencrypt-staging and letsencrypt-production.
+Two default ClusterIssuers have been installed for letsencrypt-staging and
+letsencrypt-production.
 
-ingress-shim has been configured to automatically provision Certificates for Ingress resources with the letsencrypt-staging ClusterIssuer.
-
-All you need to provision a certificate with your ingress is to add this annotation:
+All you need to provision a certificate with your ingress is to add this
+annotation:
 
 kubernetes.io/tls-acme: "true"
 
-If you want to configure ingress-shim to provision with letsencrypt-production ClusterIssuer, please upgrade the chart:
+{{- if eq .Values.ingressShim.defaultIssuerName "letsencrypt-staging" }}
+ingress-shim is configured to automatically provision Certificates for Ingress
+resources with the letsencrypt-staging ClusterIssuer.
+
+If you want to configure ingress-shim to provision with letsencrypt-production
+ClusterIssuer, please upgrade the chart:
 
 helm upgrade {{ .Release.Name }} --reuse-values --set ingressShim.defaultIssuerName=letsencrypt-production stable/cert-manager
 
-Once upgraded, don't forget to delete your already created staging certificate:
+{{- else }}
+ingress-shim is configured to automatically provision Certificates for Ingress
+resources with the letsencrypt-production ClusterIssuer.
+
+If you just upgraded, don't forget to delete your already created staging certificates:
 
 kubectl delete secret my-tls-cert
 
 It should recreate the certificate with the letsencrypt-production ClusterIssuer!
+{- end }}
 {{- else }}
 cert-manager has been upgraded successfully!
+
+More information on the different types of issuers and how to configure them
+can be found in our documentation:
+
+https://github.com/jetstack/cert-manager/blob/master/docs/api-types/issuer
+
+For information on how to configure cert-manager to automatically provision
+Certificates for Ingress resources, take a look at the `ingress-shim`
+documentation:
+
+https://github.com/jetstack/cert-manager/blob/master/docs/user-guides/ingress-shim.md
 {{- end }}
 {{- end }}
