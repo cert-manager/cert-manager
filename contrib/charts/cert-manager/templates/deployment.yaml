@@ -40,6 +40,10 @@ spec:
         {{- if .Values.ingressShim.extraArgs }}
           args:
 {{ toYaml .Values.ingressShim.extraArgs | indent 10 }}
+        {{- else }}
+          args:
+          - --default-issuer-name={{ .Values.ingressShim.defaultIssuerName }}
+          - --default-issuer-kind={{ .Values.ingressShim.defaultIssuerKind }}
         {{- end }}
           resources:
 {{ toYaml .Values.ingressShim.resources | indent 12 }}
