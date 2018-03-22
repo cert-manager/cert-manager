@@ -102,7 +102,16 @@ func (a *Acme) Prepare(ctx context.Context, crt *v1alpha1.Certificate) error {
 	}
 
 	if len(failed) > 0 {
+		// clear the order url to trigger a new order to be created
 		crt.Status.ACMEStatus().Order.URL = ""
+		// clean up pending authorizations
+		for _, auth := range pending {
+			err := a.cleanupAuthorization(ctx, cl, crt, auth)
+			if err != nil {
+				// TODO: handle error properly
+				return err
+			}
+		}
 		// TODO: pretty-print the list of failed authorizations
 		s := fmt.Sprintf("Error obtaining validations for domains %v", failed)
 		crt.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse, errorCheckAuthorization, s)
@@ -193,8 +202,7 @@ func (a *Acme) presentAuthorization(ctx context.Context, cl client.Interface, cr
 func (a *Acme) cleanupAuthorization(ctx context.Context, cl client.Interface, crt *v1alpha1.Certificate, auth *acme.Authorization) error {
 	challenge, err := a.challengeForAuthorization(cl, crt, auth)
 	if err != nil {
-		// TODO: handle error properly
-		return nil
+		return err
 	}
 	domain := auth.Identifier.Value
 	token := challenge.Token

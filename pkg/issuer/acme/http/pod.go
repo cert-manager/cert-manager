@@ -16,8 +16,8 @@ import (
 
 func podLabels(crt *v1alpha1.Certificate, domain string) map[string]string {
 	return map[string]string{
+		certNameLabelKey: crt.Name,
 		domainLabelKey:   domain,
-		orderURLLabelKey: crt.Status.ACME.Order.URL,
 	}
 }
 
@@ -28,10 +28,13 @@ func (s *Solver) ensurePod(crt *v1alpha1.Certificate, domain, token, key string)
 	}
 	var pod *corev1.Pod
 	if len(existingPods) > 0 {
-		// we will only care about the first pod if there are multiple returned
-		// here. The others should be cleaned up after a call to CleanUp is
-		// complete.
-		pod = existingPods[0]
+		errMsg := fmt.Sprintf("multiple challenge solver pods found for certificate '%s/%s'. Cleaning up existing pods.", crt.Namespace, crt.Name)
+		glog.Infof(errMsg)
+		err := s.cleanupPods(crt, domain)
+		if err != nil {
+			return nil, err
+		}
+		return nil, fmt.Errorf(errMsg)
 	}
 	if len(existingPods) == 0 {
 		glog.Infof("No existing HTTP01 challenge solver pod found for Certificate %q. One will be created.")

@@ -66,8 +66,26 @@ func (s *Solver) ensureIngress(crt *v1alpha1.Certificate, svcName, domain, token
 	}
 	if httpDomainCfg != nil &&
 		httpDomainCfg.Ingress != "" {
+
 		return s.addChallengePathToIngress(crt, svcName, domain, token, *httpDomainCfg)
 	}
+	existingIngresses, err := s.getIngressesForCertificate(crt, domain)
+	if err != nil {
+		return nil, err
+	}
+	if len(existingIngresses) > 0 {
+		errMsg := fmt.Sprintf("multiple challenge solver pods found for certificate '%s/%s'. Cleaning up existing pods.", crt.Namespace, crt.Name)
+		glog.Infof(errMsg)
+		err := s.cleanupPods(crt, domain)
+		if err != nil {
+			return nil, err
+		}
+		return nil, fmt.Errorf(errMsg)
+	}
+	if len(existingIngresses) == 1 {
+		return existingIngresses[0], nil
+	}
+	glog.Infof("No existing HTTP01 challenge solver pod found for Certificate %q. One will be created.")
 	return s.createIngress(crt, svcName, domain, token, *httpDomainCfg)
 }
 
@@ -131,6 +149,11 @@ func (s *Solver) addChallengePathToIngress(crt *v1alpha1.Certificate, svcName, d
 				// if an existing path exists on this rule for the challenge path,
 				// we overwrite it else we'll confuse ingress controllers
 				if p.Path == ingPathToAdd.Path {
+					// ingress resource is already up to date
+					if p.Backend.ServiceName == ingPathToAdd.Backend.ServiceName &&
+						p.Backend.ServicePort == ingPathToAdd.Backend.ServicePort {
+						return ing, nil
+					}
 					rule.HTTP.Paths[i] = ingPathToAdd
 					return s.client.ExtensionsV1beta1().Ingresses(ing.Namespace).Update(ing)
 				}

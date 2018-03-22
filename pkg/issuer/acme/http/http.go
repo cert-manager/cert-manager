@@ -6,7 +6,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
-	"strings"
 	"time"
 
 	"github.com/golang/glog"
@@ -27,8 +26,9 @@ const (
 	acmeSolverListenPort = 8089
 	// orderURLLabelKey is the key used for the order URL label on resources
 	// created by the HTTP01 solver
-	orderURLLabelKey = "certmanager.k8s.io/acme-order-url"
-	domainLabelKey   = "certmanager.k8s.io/acme-http-domain"
+	certNameLabelKey      = "certmanager.k8s.io/certificate"
+	orderURLAnnotationKey = "certmanager.k8s.io/acme-order-url"
+	domainLabelKey        = "certmanager.k8s.io/acme-http-domain"
 )
 
 // Solver is an implementation of the acme http-01 challenge solver protocol
@@ -99,10 +99,6 @@ func (s *Solver) CleanUp(ctx context.Context, crt *v1alpha1.Certificate, domain,
 	errs = append(errs, s.cleanupServices(crt, domain))
 	errs = append(errs, s.cleanupIngresses(crt, domain, token))
 	return utilerrors.NewAggregate(errs)
-}
-
-func dns1035(s string) string {
-	return strings.Replace(s, ".", "-", -1)
 }
 
 // testReachability will attempt to connect to the 'domain' with 'path' and

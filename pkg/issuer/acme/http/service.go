@@ -1,6 +1,8 @@
 package http
 
 import (
+	"fmt"
+
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -19,10 +21,13 @@ func (s *Solver) ensureService(crt *v1alpha1.Certificate, domain, token, key str
 	}
 	var service *corev1.Service
 	if len(existingServices) > 0 {
-		// we will only care about the first service if there are multiple returned
-		// here. The others should be cleaned up after a call to CleanUp is
-		// complete.
-		service = existingServices[0]
+		errMsg := fmt.Sprintf("multiple challenge solver services found for certificate '%s/%s'. Cleaning up existing services.", crt.Namespace, crt.Name)
+		glog.Infof(errMsg)
+		err := s.cleanupServices(crt, domain)
+		if err != nil {
+			return nil, err
+		}
+		return nil, fmt.Errorf(errMsg)
 	}
 	if len(existingServices) == 0 {
 		glog.Infof("No existing HTTP01 challenge solver service found for Certificate %q. One will be created.")
@@ -60,10 +65,6 @@ func (s *Solver) getServicesForCertificate(crt *v1alpha1.Certificate, domain str
 		if !metav1.IsControlledBy(service, crt) {
 			glog.Infof("Found service %q with acme-order-url annotation set to that of Certificate %q"+
 				"but it is not owned by the Certificate resource, so skipping it.", service.Name, crt.Name)
-			continue
-		}
-		if service.Labels == nil ||
-			service.Labels[domainLabelKey] != domain {
 			continue
 		}
 		relevantServices = append(relevantServices, service)
