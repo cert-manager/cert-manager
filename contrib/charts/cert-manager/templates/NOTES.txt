@@ -5,9 +5,9 @@ In order to begin issuing certificates, you will need to set up a ClusterIssuer
 or Issuer resource.
 
 You can install the default letsencrypt ClusterIssuers (staging and production)
-by upgrading this chart and specifying a letsencrypt.email value:
+by upgrading this chart and specifying a letsencryptEmail value:
 
-helm upgrade {{ .Release.Name }} --reuse-values --set letsencrypt.email= stable/cert-manager
+helm upgrade {{ .Release.Name }} --reuse-values --set letsencryptEmail= stable/cert-manager
 
 This will also configure the ingress-shim to automatically provision Certificates for you.
 

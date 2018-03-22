@@ -76,12 +76,14 @@ The following tables lists the configurable parameters of the cert-manager chart
 | `affinity` | Node affinity for pod assignment | `{}` |
 | `tolerations` | Node tolerations for pod assignment | `[]` |
 | `ingressShim.enabled` | Enable ingress-shim for automatic ingress integration | `true`|
+| `ingressShim.defaultIssuerName` | default issuer name if ingressShim.extraArgs is empty | `letsencrypt-staging`|
+| `ingressShim.defaultIssuerKind` | default issuer kind if ingressShim.extraArgs is empty| `CLusterIssuer`|
 | `ingressShim.extraArgs` | Optional flags for ingress-shim | `[]` |
 | `ingressShim.resources` | CPU/memory resource requests/limits for ingress-shim | `requests: {cpu: 10m, memory: 32Mi}` |
 | `ingressShim.image.repository` | Image repository for ingress-shim | `quay.io/jetstack/cert-manager-ingress-shim` |
 | `ingressShim.image.tag` | Image tag for ingress-shim. Defaults to `image.tag` if empty | `` |
 | `ingressShim.image.pullPolicy` | Image pull policy for ingress-shim | `IfNotPresent` |
-| `letsencrypt.email` | Email to use to create account with letsencrypt issuers. If given, it will create default cluster issuer. | |
+| `letsencryptEmail` | Email to use to create account with letsencrypt issuers. If given, it will create default ClusterIssuer. | |
 
 Specify each parameter using the `--set key=value[,key=value]` argument to `helm install`.
 
