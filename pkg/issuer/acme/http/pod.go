@@ -17,7 +17,7 @@ import (
 func podLabels(crt *v1alpha1.Certificate, domain string) map[string]string {
 	return map[string]string{
 		domainLabelKey:   domain,
-		orderURLLabelKey: crt.Status.ACME.OrderURL,
+		orderURLLabelKey: crt.Status.ACME.Order.URL,
 	}
 }
 
@@ -46,7 +46,7 @@ func (s *Solver) ensurePod(crt *v1alpha1.Certificate, domain, token, key string)
 // getPodsForCertificate returns a list of pods that were created to solve
 // http challenges for the given domain
 func (s *Solver) getPodsForCertificate(crt *v1alpha1.Certificate, domain string) ([]*corev1.Pod, error) {
-	if crt.Status.ACME.OrderURL == "" {
+	if crt.Status.ACME.Order.URL == "" {
 		return nil, fmt.Errorf("Certificate order URL must be set")
 	}
 	podLabels := podLabels(crt, domain)

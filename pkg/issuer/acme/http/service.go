@@ -37,7 +37,7 @@ func (s *Solver) ensureService(crt *v1alpha1.Certificate, domain, token, key str
 // getServicesForCertificate returns a list of services that were created to solve
 // http challenges for the given domain
 func (s *Solver) getServicesForCertificate(crt *v1alpha1.Certificate, domain string) ([]*corev1.Service, error) {
-	if crt.Status.ACME.OrderURL == "" {
+	if crt.Status.ACME.Order.URL == "" {
 		return []*corev1.Service{}, nil
 	}
 	podLabels := podLabels(crt, domain)

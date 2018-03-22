@@ -316,16 +316,11 @@ const (
 
 // CertificateACMEStatus holds the status for an ACME issuer
 type CertificateACMEStatus struct {
-	OrderURL string `json:"orderURL"`
+	Order    ACMEOrderStatus `json:"order"`
 }
 
-// ACMEDomainAuthorization holds information about an ACME issuers domain
-// authorization
-type ACMEDomainAuthorization struct {
-	Domain string `json:"domain"`
-	URI    string `json:"uri"`
-	// Account is the account URI this authorization is valid for
-	Account string `json:"account"`
+type ACMEOrderStatus struct {
+	URL string `json:"url"`
 }
 
 type LocalObjectReference struct {

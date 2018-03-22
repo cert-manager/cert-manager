@@ -66,12 +66,10 @@ func NewSolver(issuer v1alpha1.GenericIssuer, client kubernetes.Interface, podLi
 // challenge validation in the apiserver. If those resources already exist, it
 // will return nil (i.e. this function is idempotent).
 func (s *Solver) Present(ctx context.Context, crt *v1alpha1.Certificate, domain, token, key string) error {
-	var errs []error
 	_, podErr := s.ensurePod(crt, domain, token, key)
 	_, svcErr := s.ensureService(crt, domain, token, key)
 	_, ingressErr := s.ensureIngress(crt, domain, token, key)
-	errs = append(errs, podErr, svcErr, ingressErr)
-	return utilerrors.NewAggregate(errs)
+	return utilerrors.NewAggregate([]error{podErr, svcErr, ingressErr})
 }
 
 func (s *Solver) Check(domain, token, key string) (bool, error) {

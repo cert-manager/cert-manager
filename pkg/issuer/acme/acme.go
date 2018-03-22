@@ -17,6 +17,7 @@ import (
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	clientset "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
 	"github.com/jetstack/cert-manager/pkg/issuer"
+	"github.com/jetstack/cert-manager/pkg/issuer/acme/client"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/http"
 	"github.com/jetstack/cert-manager/pkg/util/kube"
@@ -48,6 +49,9 @@ type Acme struct {
 	// to work with supplemental (e.g. secrets) resources without significant
 	// refactoring.
 	issuerResourcesNamespace string
+
+	// this is a field so it can be stubbed out for testing
+	acmeClient func() (client.Interface, error)
 }
 
 // solver solves ACME challenges by presenting the given token and key in an
@@ -83,7 +87,7 @@ func New(issuer v1alpha1.GenericIssuer,
 		return nil, fmt.Errorf("resource namespace cannot be empty")
 	}
 
-	return &Acme{
+	a := &Acme{
 		issuer:         issuer,
 		client:         client,
 		cmClient:       cmClient,
@@ -96,10 +100,12 @@ func New(issuer v1alpha1.GenericIssuer,
 		dnsSolver:                dns.NewSolver(issuer, client, secretsLister, resourceNamespace),
 		httpSolver:               http.NewSolver(issuer, client, podsLister, servicesLister, ingressLister, acmeHTTP01SolverImage),
 		issuerResourcesNamespace: resourceNamespace,
-	}, nil
+	}
+	a.acmeClient = a.acmeClientImpl
+	return a, nil
 }
 
-func (a *Acme) acmeClientWithKey(accountPrivKey *rsa.PrivateKey) *acme.Client {
+func (a *Acme) acmeClientWithKey(accountPrivKey *rsa.PrivateKey) client.Interface {
 	tr := &nethttp.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: a.issuer.GetSpec().ACME.SkipTLSVerify},
 	}
@@ -111,7 +117,8 @@ func (a *Acme) acmeClientWithKey(accountPrivKey *rsa.PrivateKey) *acme.Client {
 	}
 	return cl
 }
-func (a *Acme) acmeClient() (*acme.Client, error) {
+
+func (a *Acme) acmeClientImpl() (client.Interface, error) {
 	secretName, secretKey := a.acmeAccountPrivateKeyMeta()
 	glog.Infof("getting private key (%s->%s) for acme issuer %s/%s", secretName, secretKey, a.issuerResourcesNamespace, a.issuer.GetObjectMeta().Name)
 	accountPrivKey, err := kube.SecretTLSKeyRef(a.secretsLister, a.issuerResourcesNamespace, secretName, secretKey)
@@ -131,6 +138,23 @@ func (a *Acme) acmeAccountPrivateKeyMeta() (name string, key string) {
 		secretKey = corev1.TLSPrivateKeyKey
 	}
 	return secretName, secretKey
+}
+
+// createOrder will create an order for the given certificate with the acme
+// server. Once created, it will set the order URL on the status field of the
+// certificate resource.
+func (a *Acme) createOrder(ctx context.Context, cl client.Interface, crt *v1alpha1.Certificate) (*acme.Order, error) {
+	order, err := buildOrder(crt)
+	if err != nil {
+		return nil, err
+	}
+	order, err = cl.CreateOrder(ctx, order)
+	if err != nil {
+		a.recorder.Eventf(crt, corev1.EventTypeWarning, "ErrCreateOrder", "Error creating order for domains '%v': %v", order.Identifiers, err)
+		return nil, err
+	}
+	a.recorder.Eventf(crt, corev1.EventTypeNormal, "CreateOrder", "Created order for domains: %v", order.Identifiers)
+	return order, nil
 }
 
 func (a *Acme) solverFor(challengeType string) (solver, error) {

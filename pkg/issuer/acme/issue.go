@@ -39,7 +39,7 @@ func (a *Acme) obtainCertificate(ctx context.Context, crt *v1alpha1.Certificate)
 		return nil, nil, fmt.Errorf("error creating ACME client: %s", err.Error())
 	}
 
-	orderURL := crt.Status.ACMEStatus().OrderURL
+	orderURL := crt.Status.ACMEStatus().Order.URL
 	if orderURL == "" {
 		return nil, nil, fmt.Errorf("certificate order url cannot be blank")
 	}

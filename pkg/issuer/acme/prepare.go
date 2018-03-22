@@ -6,10 +6,8 @@ import (
 	"fmt"
 
 	"github.com/golang/glog"
-	core "k8s.io/api/core/v1"
-
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
-	"github.com/jetstack/cert-manager/pkg/util/pki"
+	"github.com/jetstack/cert-manager/pkg/issuer/acme/client"
 	"github.com/jetstack/cert-manager/third_party/crypto/acme"
 )
 
@@ -49,7 +47,7 @@ func (a *Acme) Prepare(ctx context.Context, crt *v1alpha1.Certificate) error {
 		return errors.New(s)
 	}
 
-	orderURL := crt.Status.ACMEStatus().OrderURL
+	orderURL := crt.Status.ACMEStatus().Order.URL
 	var order *acme.Order
 	// if the existing order URL is blank, create a new order
 	if orderURL == "" {
@@ -104,7 +102,7 @@ func (a *Acme) Prepare(ctx context.Context, crt *v1alpha1.Certificate) error {
 	}
 
 	if len(failed) > 0 {
-		crt.Status.ACMEStatus().OrderURL = ""
+		crt.Status.ACMEStatus().Order.URL = ""
 		// TODO: pretty-print the list of failed authorizations
 		s := fmt.Sprintf("Error obtaining validations for domains %v", failed)
 		crt.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse, errorCheckAuthorization, s)
@@ -139,7 +137,7 @@ func (a *Acme) Prepare(ctx context.Context, crt *v1alpha1.Certificate) error {
 	return nil
 }
 
-func (a *Acme) acceptChallenge(ctx context.Context, cl *acme.Client, auth *acme.Authorization, challenge *acme.Challenge) error {
+func (a *Acme) acceptChallenge(ctx context.Context, cl client.Interface, auth *acme.Authorization, challenge *acme.Challenge) error {
 	var err error
 	challenge, err = cl.AcceptChallenge(ctx, challenge)
 	if err != nil {
@@ -163,11 +161,11 @@ func (a *Acme) acceptChallenge(ctx context.Context, cl *acme.Client, auth *acme.
 // If ths authorization is already presented, it will return no error.
 // If the self-check for the authorization has passed, it will return true.
 // Otherwise it will return false.
-func (a *Acme) presentAuthorization(ctx context.Context, cl *acme.Client, crt *v1alpha1.Certificate, auth *acme.Authorization) (bool, *acme.Challenge, error) {
+func (a *Acme) presentAuthorization(ctx context.Context, cl client.Interface, crt *v1alpha1.Certificate, auth *acme.Authorization) (bool, *acme.Challenge, error) {
 	challenge, err := a.challengeForAuthorization(cl, crt, auth)
 	if err != nil {
 		// TODO: handle error properly
-		return false, nil, nil
+		return false, nil, err
 	}
 	domain := auth.Identifier.Value
 	token := challenge.Token
@@ -192,7 +190,7 @@ func (a *Acme) presentAuthorization(ctx context.Context, cl *acme.Client, crt *v
 	return ok, challenge, nil
 }
 
-func (a *Acme) cleanupAuthorization(ctx context.Context, cl *acme.Client, crt *v1alpha1.Certificate, auth *acme.Authorization) error {
+func (a *Acme) cleanupAuthorization(ctx context.Context, cl client.Interface, crt *v1alpha1.Certificate, auth *acme.Authorization) error {
 	challenge, err := a.challengeForAuthorization(cl, crt, auth)
 	if err != nil {
 		// TODO: handle error properly
@@ -207,37 +205,13 @@ func (a *Acme) cleanupAuthorization(ctx context.Context, cl *acme.Client, crt *v
 
 	solver, err := a.solverFor(challenge.Type)
 	if err != nil {
-		// TODO: handle error properly
 		return err
 	}
 
 	return solver.CleanUp(ctx, crt, domain, token, key)
 }
 
-// createOrder will create an order for the given certificate with the acme
-// server. Once created, it will set the order URL on the status field of the
-// certificate resource.
-func (a *Acme) createOrder(ctx context.Context, cl *acme.Client, crt *v1alpha1.Certificate) (*acme.Order, error) {
-	desiredCN, err := pki.CommonNameForCertificate(crt)
-	if err != nil {
-		return nil, err
-	}
-	desiredDNSNames, err := pki.DNSNamesForCertificate(crt)
-	if err != nil {
-		return nil, err
-	}
-	desiredDomains := append([]string{desiredCN}, desiredDNSNames...)
-	order, err := cl.CreateOrder(ctx, acme.NewOrder(desiredDomains...))
-	if err != nil {
-		a.recorder.Eventf(crt, core.EventTypeWarning, "ErrCreateOrder", "Error creating order for domains '%v': %v", desiredDomains, err)
-		return nil, err
-	}
-	a.recorder.Eventf(crt, core.EventTypeNormal, "CreateOrder", "Created order for domains: %v", desiredDomains)
-	crt.Status.ACMEStatus().OrderURL = order.URL
-	return order, nil
-}
-
-func keyForChallenge(cl *acme.Client, challenge *acme.Challenge) (string, error) {
+func keyForChallenge(cl client.Interface, challenge *acme.Challenge) (string, error) {
 	var err error
 	switch challenge.Type {
 	case "http-01":
@@ -250,7 +224,7 @@ func keyForChallenge(cl *acme.Client, challenge *acme.Challenge) (string, error)
 	return "", err
 }
 
-func getAuthorizations(ctx context.Context, cl *acme.Client, urls ...string) ([]*acme.Authorization, error) {
+func getAuthorizations(ctx context.Context, cl client.Interface, urls ...string) ([]*acme.Authorization, error) {
 	var authzs []*acme.Authorization
 	for _, url := range urls {
 		a, err := cl.GetAuthorization(ctx, url)
@@ -299,7 +273,7 @@ func (a *Acme) pickChallengeType(domain string, auth *acme.Authorization, cfg []
 	return "", fmt.Errorf("no configured and supported challenge type found")
 }
 
-func (a *Acme) challengeForAuthorization(cl *acme.Client, crt *v1alpha1.Certificate, auth *acme.Authorization) (*acme.Challenge, error) {
+func (a *Acme) challengeForAuthorization(cl client.Interface, crt *v1alpha1.Certificate, auth *acme.Authorization) (*acme.Challenge, error) {
 	domain := auth.Identifier.Value
 	glog.Infof("picking challenge type for domain %q", domain)
 	challengeType, err := a.pickChallengeType(domain, auth, crt.Spec.ACME.Config)

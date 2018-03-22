@@ -12,6 +12,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	"github.com/jetstack/cert-manager/pkg/issuer/acme/client"
 	"github.com/jetstack/cert-manager/pkg/util/errors"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 	"github.com/jetstack/cert-manager/third_party/crypto/acme"
@@ -73,7 +74,7 @@ func (a *Acme) Setup(ctx context.Context) error {
 // account with the clients private key already exists, it will attempt to look
 // up and verify the corresponding account, and will return that. If this fails
 // it will return the
-func (a *Acme) registerAccount(ctx context.Context, cl *acme.Client) (*acme.Account, error) {
+func (a *Acme) registerAccount(ctx context.Context, cl client.Interface) (*acme.Account, error) {
 	acc := &acme.Account{
 		Contact:     []string{fmt.Sprintf("mailto:%s", strings.ToLower(a.issuer.GetSpec().ACME.Email))},
 		TermsAgreed: true,

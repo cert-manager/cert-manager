@@ -20,7 +20,7 @@ import (
 // getIngressesForCertificate returns a list of Ingresses that were created to solve
 // http challenges for the given domain
 func (s *Solver) getIngressesForCertificate(crt *v1alpha1.Certificate, domain string) ([]*extv1beta1.Ingress, error) {
-	if crt.Status.ACME.OrderURL == "" {
+	if crt.Status.ACME.Order.URL == "" {
 		return []*extv1beta1.Ingress{}, nil
 	}
 	podLabels := podLabels(crt, domain)
@@ -33,6 +33,7 @@ func (s *Solver) getIngressesForCertificate(crt *v1alpha1.Certificate, domain st
 		selector = selector.Add(*req)
 	}
 
+	glog.V(4).Infof("Looking up Ingresses for selector %v", selector)
 	ingressList, err := s.ingressLister.Ingresses(crt.Namespace).List(selector)
 	if err != nil {
 		return nil, err
@@ -43,10 +44,6 @@ func (s *Solver) getIngressesForCertificate(crt *v1alpha1.Certificate, domain st
 		if !metav1.IsControlledBy(ingress, crt) {
 			glog.Infof("Found ingress %q with acme-order-url annotation set to that of Certificate %q"+
 				"but it is not owned by the Certificate resource, so skipping it.", ingress.Name, crt.Name)
-			continue
-		}
-		if ingress.Labels == nil ||
-			ingress.Labels[domainLabelKey] != domain {
 			continue
 		}
 		relevantIngresses = append(relevantIngresses, ingress)
@@ -77,21 +74,30 @@ func (s *Solver) ensureIngress(crt *v1alpha1.Certificate, svcName, domain, token
 // createIngress will create a challenge solving pod for the given certificate,
 // domain, token and key.
 func (s *Solver) createIngress(crt *v1alpha1.Certificate, svcName, domain, token string, domainCfg v1alpha1.ACMECertificateHTTP01Config) (*extv1beta1.Ingress, error) {
+	ingName := domainCfg.Ingress
+	ingClass := domainCfg.IngressClass
+
+	return s.client.ExtensionsV1beta1().Ingresses(crt.Namespace).Create(buildIngressResource(crt, svcName, domain, token, ingName, ingClass))
+}
+
+func buildIngressResource(crt *v1alpha1.Certificate, svcName, domain, token, ingName string, ingClass *string) *extv1beta1.Ingress {
 	podLabels := podLabels(crt, domain)
 	// TODO: add additional annotations to help workaround problematic ingress controller behaviours
 	ingAnnotaions := make(map[string]string)
-	if ingClass := domainCfg.IngressClass; ingClass != nil {
+	if ingClass != nil {
 		ingAnnotaions[class.IngressKey] = *ingClass
 	}
 
 	ingPathToAdd := ingressPath(token, svcName)
 
-	return s.client.ExtensionsV1beta1().Ingresses(crt.Namespace).Create(&extv1beta1.Ingress{
+	return &extv1beta1.Ingress{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "cm-acme-http-solver-",
 			Namespace:    crt.Namespace,
 			Labels:       podLabels,
 			Annotations:  ingAnnotaions,
+			// TODO: move gvk to var declaration
+			OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(crt, v1alpha1.SchemeGroupVersion.WithKind("Certificate"))},
 		},
 		Spec: extv1beta1.IngressSpec{
 			Rules: []extv1beta1.IngressRule{
@@ -105,7 +111,7 @@ func (s *Solver) createIngress(crt *v1alpha1.Certificate, svcName, domain, token
 				},
 			},
 		},
-	})
+	}
 }
 
 func (s *Solver) addChallengePathToIngress(crt *v1alpha1.Certificate, svcName, domain, token string, domainCfg v1alpha1.ACMECertificateHTTP01Config) (*extv1beta1.Ingress, error) {
@@ -164,6 +170,7 @@ func (s *Solver) cleanupIngresses(crt *v1alpha1.Certificate, domain, token strin
 		if err != nil {
 			return err
 		}
+		glog.V(4).Infof("Found %d ingresses to clean up for certificate %q", len(ingresses), crt.Name)
 		var errs []error
 		for _, ingress := range ingresses {
 			// TODO: should we call DeleteCollection here? We'd need to somehow
