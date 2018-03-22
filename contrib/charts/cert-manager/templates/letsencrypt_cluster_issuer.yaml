@@ -1,5 +1,5 @@
 {{- if .Values.letsencryptEmail }}
-{{ required "it is mandatory to install the chart without letsencrypt.email, read the documentation!" .Release.IsUpgrade }}
+{{ required "It is mandatory to install the chart without letsencryptEmail, read the documentation for more information." .Release.IsUpgrade }}
 apiVersion: certmanager.k8s.io/v1alpha1
 kind: ClusterIssuer
 metadata:
