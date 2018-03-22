@@ -1,4 +1,3 @@
-# This template is rendered in the configmap
 apiVersion: certmanager.k8s.io/v1alpha1
 kind: ClusterIssuer
 metadata:

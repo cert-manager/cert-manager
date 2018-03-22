@@ -41,38 +41,4 @@ subjects:
   - name: {{ template "cert-manager.serviceAccountName" . }}
     namespace: {{ .Release.Namespace | quote }}
     kind: ServiceAccount
-{{- if .Values.letsencrypt.email }}
----
-apiVersion: rbac.authorization.k8s.io/v1beta1
-kind: ClusterRole
-metadata:
-  name: {{ template "cert-manager.fullname" . }}-hook
-  labels:
-    app: {{ template "cert-manager.name" . }}
-    chart: {{ template "cert-manager.chart" . }}
-    release: {{ .Release.Name }}
-    heritage: {{ .Release.Service }}
-rules:
-  - apiGroups: ["certmanager.k8s.io"]
-    resources: ["certificates", "issuers", "clusterissuers"]
-    verbs: ["*"]
----
-apiVersion: rbac.authorization.k8s.io/v1beta1
-kind: ClusterRoleBinding
-metadata:
-  name: {{ template "cert-manager.fullname" . }}-hook
-  labels:
-    app: {{ template "cert-manager.name" . }}
-    chart: {{ template "cert-manager.chart" . }}
-    release: {{ .Release.Name }}
-    heritage: {{ .Release.Service }}
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: {{ template "cert-manager.fullname" . }}-hook
-subjects:
-  - name: {{ template "cert-manager.serviceAccountName" . }}-hook
-    namespace: {{ .Release.Namespace | quote }}
-    kind: ServiceAccount
-{{- end }}
 {{- end -}}
