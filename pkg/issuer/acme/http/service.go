@@ -19,7 +19,9 @@ func (s *Solver) ensureService(crt *v1alpha1.Certificate, domain, token, key str
 	if err != nil {
 		return nil, err
 	}
-	var service *corev1.Service
+	if len(existingServices) == 1 {
+		return existingServices[0], nil
+	}
 	if len(existingServices) > 1 {
 		errMsg := fmt.Sprintf("multiple challenge solver services found for certificate '%s/%s'. Cleaning up existing services.", crt.Namespace, crt.Name)
 		glog.Infof(errMsg)
@@ -29,14 +31,9 @@ func (s *Solver) ensureService(crt *v1alpha1.Certificate, domain, token, key str
 		}
 		return nil, fmt.Errorf(errMsg)
 	}
-	if len(existingServices) == 0 {
-		glog.Infof("No existing HTTP01 challenge solver service found for Certificate %q. One will be created.")
-		service, err = s.createService(crt, domain)
-		if err != nil {
-			return nil, err
-		}
-	}
-	return service, nil
+
+	glog.Infof("No existing HTTP01 challenge solver service found for Certificate %q. One will be created.")
+	return s.createService(crt, domain)
 }
 
 // getServicesForCertificate returns a list of services that were created to solve

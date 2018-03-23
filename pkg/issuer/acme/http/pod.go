@@ -26,7 +26,9 @@ func (s *Solver) ensurePod(crt *v1alpha1.Certificate, domain, token, key string)
 	if err != nil {
 		return nil, err
 	}
-	var pod *corev1.Pod
+	if len(existingPods) == 1 {
+		return existingPods[0], nil
+	}
 	if len(existingPods) > 1 {
 		errMsg := fmt.Sprintf("multiple challenge solver pods found for certificate '%s/%s'. Cleaning up existing pods.", crt.Namespace, crt.Name)
 		glog.Infof(errMsg)
@@ -36,14 +38,9 @@ func (s *Solver) ensurePod(crt *v1alpha1.Certificate, domain, token, key string)
 		}
 		return nil, fmt.Errorf(errMsg)
 	}
-	if len(existingPods) == 0 {
-		glog.Infof("No existing HTTP01 challenge solver pod found for Certificate %q. One will be created.")
-		pod, err = s.createPod(crt, domain, token, key)
-		if err != nil {
-			return nil, err
-		}
-	}
-	return pod, nil
+
+	glog.Infof("No existing HTTP01 challenge solver pod found for Certificate %q. One will be created.")
+	return s.createPod(crt, domain, token, key)
 }
 
 // getPodsForCertificate returns a list of pods that were created to solve
