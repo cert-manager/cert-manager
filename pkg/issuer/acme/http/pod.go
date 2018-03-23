@@ -39,7 +39,7 @@ func (s *Solver) ensurePod(crt *v1alpha1.Certificate, domain, token, key string)
 		return nil, fmt.Errorf(errMsg)
 	}
 
-	glog.Infof("No existing HTTP01 challenge solver pod found for Certificate %q. One will be created.")
+	glog.Infof("No existing HTTP01 challenge solver pod found for Certificate %q. One will be created.", crt.Name)
 	return s.createPod(crt, domain, token, key)
 }
 
@@ -94,8 +94,14 @@ func (s *Solver) cleanupPods(crt *v1alpha1.Certificate, domain string) error {
 // createPod will create a challenge solving pod for the given certificate,
 // domain, token and key.
 func (s *Solver) createPod(crt *v1alpha1.Certificate, domain, token, key string) (*corev1.Pod, error) {
+	return s.client.CoreV1().Pods(crt.Namespace).Create(s.buildPod(crt, domain, token, key))
+}
+
+// buildPod will build a challenge solving pod for the given certificate,
+// domain, token and key. It will not create it in the API server
+func (s *Solver) buildPod(crt *v1alpha1.Certificate, domain, token, key string) *corev1.Pod {
 	podLabels := podLabels(crt, domain)
-	return s.client.CoreV1().Pods(crt.Namespace).Create(&corev1.Pod{
+	return &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName:    "cm-acme-http-solver-",
 			Namespace:       crt.Namespace,
@@ -132,5 +138,5 @@ func (s *Solver) createPod(crt *v1alpha1.Certificate, domain, token, key string)
 				},
 			},
 		},
-	})
+	}
 }

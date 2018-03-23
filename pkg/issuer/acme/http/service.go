@@ -70,8 +70,12 @@ func (s *Solver) getServicesForCertificate(crt *v1alpha1.Certificate, domain str
 // createService will create the service required to solve this challenge
 // in the target API server.
 func (s *Solver) createService(crt *v1alpha1.Certificate, domain string) (*corev1.Service, error) {
+	return s.client.CoreV1().Services(crt.Namespace).Create(buildService(crt, domain))
+}
+
+func buildService(crt *v1alpha1.Certificate, domain string) *corev1.Service {
 	podLabels := podLabels(crt, domain)
-	return s.client.CoreV1().Services(crt.Namespace).Create(&corev1.Service{
+	return &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName:    "cm-acme-http-solver-",
 			Namespace:       crt.Namespace,
@@ -89,7 +93,7 @@ func (s *Solver) createService(crt *v1alpha1.Certificate, domain string) (*corev
 			},
 			Selector: podLabels,
 		},
-	})
+	}
 }
 
 func (s *Solver) cleanupServices(crt *v1alpha1.Certificate, domain string) error {
