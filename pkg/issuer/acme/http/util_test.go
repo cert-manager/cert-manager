@@ -21,18 +21,33 @@ const (
 )
 
 type solverFixture struct {
+	// The Solver under test
 	Solver *Solver
 
+	// List of Kubernetes resources to pre-load into the clientset
 	KubeObjects []runtime.Object
+	// List of cert manager resources to pre-load into the clientset
 	CMObjects   []runtime.Object
+	// Issuer that should be set on the Solver (a default will be used if nil)
 	Issuer      v1alpha1.GenericIssuer
+	// Optional certificate resource to use during tests
 	Certificate *v1alpha1.Certificate
+	// Optional domain to be used during tests
 	Domain      string
+	// Optional token to be used during tests
 	Token       string
+	// Optional key to be used during tests
 	Key         string
+	// PreFn will run before the test is run, but after the fixture has been initialised.
+	// This is useful if you want to load the clientset with some resources *after* the
+	// fixture has been created.
 	PreFn       func(*solverFixture)
+	// CheckFn should performs checks to ensure the output of the test is as expected
 	CheckFn     func(*solverFixture)
+	// Err should be true if an error is expected from the function under test
 	Err         bool
+	// Namespace is an optional namespace to operate within. If not set, a default
+	// will be used.
 	Namespace   string
 
 	// f is the integration test fixture being used for this test
