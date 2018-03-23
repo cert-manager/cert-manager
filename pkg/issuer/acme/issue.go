@@ -28,10 +28,13 @@ const (
 )
 
 func (a *Acme) obtainCertificate(ctx context.Context, crt *v1alpha1.Certificate) ([]byte, []byte, error) {
-	commonName := crt.Spec.CommonName
-	altNames := crt.Spec.DNSNames
-	if len(commonName) == 0 && len(altNames) == 0 {
-		return nil, nil, fmt.Errorf("no domains specified on certificate")
+	commonName, err := pki.CommonNameForCertificate(crt)
+	if err != nil {
+		return nil, nil, err
+	}
+	altNames, err := pki.DNSNamesForCertificate(crt)
+	if err != nil {
+		return nil, nil, err
 	}
 
 	cl, err := a.acmeClient()
