@@ -421,6 +421,34 @@ func TestRoute53AmbientCreds(t *testing.T) {
 				},
 			},
 		},
+		{
+			fixture{
+				Issuer: newIssuer("test", "default", []v1alpha1.ACMEIssuerDNS01Provider{
+					{
+						Name: "fake-route53",
+						Route53: &v1alpha1.ACMEIssuerDNS01ProviderRoute53{
+							Region: "us-west-2",
+						},
+					},
+				}),
+				DNSProviders: newFakeDNSProviders(),
+				Certificate: newCertificate("test", "default", "example.com", nil, []v1alpha1.ACMECertificateDomainConfig{
+					{
+						Domains: []string{"example.com"},
+						DNS01: &v1alpha1.ACMECertificateDNS01Config{
+							Provider: "fake-route53",
+						},
+					},
+				}),
+				Ambient: false,
+			},
+			result{
+				expectedCall: &fakeDNSProviderCall{
+					name: "route53",
+					args: []interface{}{"", "", "", "us-west-2", false},
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {
