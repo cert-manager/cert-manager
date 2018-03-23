@@ -13,14 +13,12 @@ import (
 // buildOrder will construct an ACME Order structure for a given Certificate.
 // This function should always be used to construct orders for Certificates.
 func buildOrder(crt *v1alpha1.Certificate) (*acme.Order, error) {
-	desiredCN, err := pki.CommonNameForCertificate(crt)
-	if err != nil {
-		return nil, err
-	}
+	// DNSNamesForCertificate will automatically include the common name
+	// for the certificate if not already included, so we don't need to
+	// append the common name here.
 	desiredDNSNames, err := pki.DNSNamesForCertificate(crt)
 	if err != nil {
 		return nil, err
 	}
-	desiredDomains := append([]string{desiredCN}, desiredDNSNames...)
-	return acme.NewOrder(desiredDomains...), nil
+	return acme.NewOrder(desiredDNSNames...), nil
 }
