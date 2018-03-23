@@ -252,7 +252,7 @@ type Order struct {
 
 // A Challenge is a CA challenge for an identifier.
 type Challenge struct {
-	// Type is the challenge type, e.g. "http-01", "tls-sni-02", "dns-01".
+	// Type is the challenge type, e.g. "http-01" or "dns-01".
 	Type string
 
 	// URL is the URL where a challenge response can be posted.
@@ -270,7 +270,7 @@ type Challenge struct {
 
 	// Error indicates the errors that occurred while the server was validating
 	// this challenge.
-	Errors []*Error
+	Error *Error
 }
 
 // Authorization encodes an authorization response.
@@ -287,7 +287,7 @@ type Authorization struct {
 	Identifier AuthzID
 
 	// Expires is the timestamp after which the server will consider this authorization invalid.
-	Expires *time.Time
+	Expires time.Time
 
 	// Challenges is the list of challenges that the client can fulfill in order
 	// to prove posession of the identifier. For valid/invalid authorizations,
@@ -310,7 +310,7 @@ type wireAuthzID struct {
 type wireAuthz struct {
 	Status     string
 	Challenges []wireChallenge
-	Expires    *time.Time
+	Expires    time.Time
 	Identifier struct {
 		Type  string
 		Value string
@@ -338,7 +338,7 @@ type wireChallenge struct {
 	Token     string
 	Status    string
 	Validated time.Time
-	Errors    []*Error
+	Error     *Error
 }
 
 func (c *wireChallenge) challenge() *Challenge {
@@ -348,7 +348,7 @@ func (c *wireChallenge) challenge() *Challenge {
 		Token:     c.Token,
 		Status:    c.Status,
 		Validated: c.Validated,
-		Errors:    c.Errors,
+		Error:     c.Error,
 	}
 	if v.Status == "" {
 		v.Status = StatusUnknown

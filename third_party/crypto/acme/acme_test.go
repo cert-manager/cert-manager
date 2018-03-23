@@ -533,7 +533,7 @@ func TestGetChallenge(t *testing.T) {
 			"status":"pending",
 			"url":"https://example.com/acme/challenge/publickey/id1",
 			"validated": "2014-12-01T12:05:00Z",
-			"errors": [{
+			"error": {
 				"type": "urn:ietf:params:acme:error:malformed",
 				"detail": "rejected",
 				"subproblems": [
@@ -546,7 +546,7 @@ func TestGetChallenge(t *testing.T) {
 						}
 					}
 				]
-			}],
+			},
 			"token":"token1"}`)
 	}))
 	defer ts.Close()
@@ -573,10 +573,7 @@ func TestGetChallenge(t *testing.T) {
 	if !chall.Validated.Equal(vt) {
 		t.Errorf("c.Validated = %v; want %v", chall.Validated, vt)
 	}
-	if l := len(chall.Errors); l != 1 {
-		t.Fatalf("len(c.Errors) = %d; want 1", l)
-	}
-	e := chall.Errors[0]
+	e := chall.Error
 	if e.Type != "urn:ietf:params:acme:error:malformed" {
 		t.Fatalf("e.Type = %q; want urn:ietf:params:acme:error:malformed", e.Type)
 	}

@@ -76,10 +76,9 @@ type Client struct {
 	noncesMu sync.Mutex
 	nonces   map[string]struct{} // nonces collected from previous responses
 
-	urlMu      sync.Mutex // urlMu guards writes to dir, accountURL, ordersURL
+	urlMu      sync.Mutex // urlMu guards writes to dir and accountURL
 	dir        *Directory // cached result of Client's Discover method
 	accountURL string
-	ordersURL  string
 }
 
 // Discover performs ACME server discovery using c.DirectoryURL.
@@ -141,7 +140,7 @@ func (c *Client) Discover(ctx context.Context) (Directory, error) {
 }
 
 // CreateOrder creates a new certificate order. The input order argument is not
-// modified and can be built using NewOrderWithDomains.
+// modified and can be built using NewOrder.
 func (c *Client) CreateOrder(ctx context.Context, order *Order) (*Order, error) {
 	if _, err := c.Discover(ctx); err != nil {
 		return nil, err
@@ -202,6 +201,10 @@ func (c *Client) CreateOrder(ctx context.Context, order *Order) (*Order, error) 
 // Callers are encouraged to parse the returned certificate chain to ensure it
 // is valid and has the expected attributes.
 func (c *Client) FinalizeOrder(ctx context.Context, finalizeURL string, csr []byte) (der [][]byte, err error) {
+	if _, err := c.Discover(ctx); err != nil {
+		return nil, err
+	}
+
 	req := struct {
 		CSR string `json:"csr"`
 	}{
@@ -454,6 +457,10 @@ func (c *Client) GetChallenge(ctx context.Context, url string) (*Challenge, erro
 //
 // The server will then perform the validation asynchronously.
 func (c *Client) AcceptChallenge(ctx context.Context, chal *Challenge) (*Challenge, error) {
+	if _, err := c.Discover(ctx); err != nil {
+		return nil, err
+	}
+
 	auth, err := keyAuth(c.Key.Public(), chal.Token)
 	if err != nil {
 		return nil, err
@@ -572,7 +579,6 @@ func (c *Client) doAccount(ctx context.Context, url string, getExistingWithKey b
 	c.urlMu.Lock()
 	defer c.urlMu.Unlock()
 	c.accountURL = a.URL
-	c.ordersURL = a.OrdersURL
 	return a, nil
 }
 
@@ -591,18 +597,11 @@ func (c *Client) cacheAccountURL(ctx context.Context) (string, error) {
 	if res.StatusCode != http.StatusOK {
 		return "", responseError(res)
 	}
-	var v struct {
-		Orders string
-	}
-	if err := json.NewDecoder(res.Body).Decode(&v); err != nil {
-		return "", err
-	}
 	l, err := resolveLocation(c.dir.NewAccountURL, res.Header)
 	if err != nil {
 		return "", err
 	}
 	c.accountURL = l
-	c.ordersURL = v.Orders
 	return c.accountURL, nil
 }
 
