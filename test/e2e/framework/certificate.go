@@ -28,7 +28,7 @@ func (f *Framework) WaitCertificateIssuedValid(c *v1alpha1.Certificate) {
 		v1alpha1.CertificateCondition{
 			Type:   v1alpha1.CertificateConditionReady,
 			Status: v1alpha1.ConditionTrue,
-		}, defaultTimeout)
+		}, longTimeout)
 	Expect(err).NotTo(HaveOccurred())
 	By("Verifying TLS certificate exists")
 	secret, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Get(c.Spec.SecretName, metav1.GetOptions{})
