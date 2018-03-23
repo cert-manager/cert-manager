@@ -103,7 +103,7 @@ func New(
 	// is far more performant to perform the sync here.
 	// We should consider moving this into pkg/issuer/acme at some point, some how.
 	ctrl.syncedFuncs = append(ctrl.syncedFuncs, podsInformer.Informer().HasSynced)
-	ctrl.syncedFuncs = append(ctrl.syncedFuncs, secretsInformer.Informer().HasSynced)
+	ctrl.syncedFuncs = append(ctrl.syncedFuncs, serviceInformer.Informer().HasSynced)
 
 	return ctrl
 }
