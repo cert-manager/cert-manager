@@ -39,6 +39,8 @@ func (a *Acme) Prepare(ctx context.Context, crt *v1alpha1.Certificate) error {
 		crt.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse, errorInvalidConfig, messageErrorMissingConfig)
 		return fmt.Errorf(messageErrorMissingConfig)
 	}
+
+	glog.V(4).Infof("Getting ACME client")
 	// obtain an ACME client
 	cl, err := a.acmeClient()
 	if err != nil {
@@ -48,16 +50,20 @@ func (a *Acme) Prepare(ctx context.Context, crt *v1alpha1.Certificate) error {
 	}
 
 	orderURL := crt.Status.ACMEStatus().Order.URL
+	glog.Infof("Checking existing order URL %q", orderURL)
 	var order *acme.Order
 	// if the existing order URL is blank, create a new order
 	if orderURL == "" {
+		glog.Infof("Existing order URL not set")
 		if order, err = a.createOrder(ctx, cl, crt); err != nil {
 			return err
 		}
 	} else {
+		glog.Infof("Requesting order details for %q from ACME server")
 		// if we fail to get an existing order by URL, we should create a new
 		// order to replace it.
 		if order, err = cl.GetOrder(ctx, orderURL); err != nil {
+			glog.Infof("Error requesting existing order details for %q from ACME server: %v", err)
 			// TODO: review this - should we instead back-off and try again?
 			// perhaps instead attempt to parse the URL first, and create a new
 			// order if the URL is actually invalid. Not sure ??
@@ -81,7 +87,7 @@ func (a *Acme) Prepare(ctx context.Context, crt *v1alpha1.Certificate) error {
 		// if the order is pending or processing, we will proceed.
 		// TODO: should we return nil on processing? need to check acme spec
 	default:
-		return fmt.Errorf("order %q status is %q", order.URL, order.Status)
+		return fmt.Errorf("order %q unknown status: %q", order.URL, order.Status)
 	}
 
 	allAuthorizations, err := getAuthorizations(ctx, cl, order.Authorizations...)
@@ -92,16 +98,18 @@ func (a *Acme) Prepare(ctx context.Context, crt *v1alpha1.Certificate) error {
 	}
 
 	failed, pending, valid := partitionAuthorizations(allAuthorizations...)
+	glog.Infof("Authorizations for order %q: %d failed, %d pending, %d valid", len(failed), len(pending), len(valid))
 	toCleanup := append(failed, valid...)
 	for _, auth := range toCleanup {
 		err := a.cleanupAuthorization(ctx, cl, crt, auth)
 		if err != nil {
-			// TODO: handle error properly
+			// TODO: don't error if cleaning up fails, as it might be due to the resources already being cleaned up
 			return err
 		}
 	}
 
 	if len(failed) > 0 {
+		glog.Infof("Found %d failed authorizations. Cleaning up pending authorizations and clearing order URL")
 		// clear the order url to trigger a new order to be created
 		crt.Status.ACMEStatus().Order.URL = ""
 		// clean up pending authorizations
@@ -120,6 +128,7 @@ func (a *Acme) Prepare(ctx context.Context, crt *v1alpha1.Certificate) error {
 
 	// all validations have been obtained
 	if len(pending) == 0 {
+		glog.Infof("No more pending authorizations remaining - challenge verification complete")
 		return nil
 	}
 
@@ -130,11 +139,13 @@ func (a *Acme) Prepare(ctx context.Context, crt *v1alpha1.Certificate) error {
 			return err
 		}
 		if selfCheckPassed {
+			glog.Infof("Self check passed for domain %q", auth.Identifier.Value)
 			err := a.acceptChallenge(ctx, cl, auth, challenge)
 			if err != nil {
 				return err
 			}
 		} else {
+			glog.Infof("Self check failed for domain %q", auth.Identifier.Value)
 			failingSelfChecks = append(failingSelfChecks, auth.Identifier.Value)
 		}
 	}
@@ -147,12 +158,14 @@ func (a *Acme) Prepare(ctx context.Context, crt *v1alpha1.Certificate) error {
 }
 
 func (a *Acme) acceptChallenge(ctx context.Context, cl client.Interface, auth *acme.Authorization, challenge *acme.Challenge) error {
+	glog.Infof("Accepting challenge for domain %q", auth.Identifier.Value)
 	var err error
 	challenge, err = cl.AcceptChallenge(ctx, challenge)
 	if err != nil {
 		return err
 	}
 
+	glog.Infof("Waiting for authorization for domain %q", auth.Identifier.Value)
 	authorization, err := cl.WaitAuthorization(ctx, auth.URL)
 	if err != nil {
 		return err
@@ -161,6 +174,8 @@ func (a *Acme) acceptChallenge(ctx context.Context, cl client.Interface, auth *a
 	if authorization.Status != acme.StatusValid {
 		return fmt.Errorf("expected acme domain authorization status for %q to be valid, but it is %q", authorization.Identifier.Value, authorization.Status)
 	}
+
+	glog.Infof("Successfully authorized domain %q", auth.Identifier.Value)
 
 	return nil
 }
@@ -171,6 +186,7 @@ func (a *Acme) acceptChallenge(ctx context.Context, cl client.Interface, auth *a
 // If the self-check for the authorization has passed, it will return true.
 // Otherwise it will return false.
 func (a *Acme) presentAuthorization(ctx context.Context, cl client.Interface, crt *v1alpha1.Certificate, auth *acme.Authorization) (bool, *acme.Challenge, error) {
+	glog.Infof("Presenting challenge for domain %q", auth.Identifier.Value)
 	challenge, err := a.challengeForAuthorization(cl, crt, auth)
 	if err != nil {
 		// TODO: handle error properly
@@ -192,6 +208,7 @@ func (a *Acme) presentAuthorization(ctx context.Context, cl client.Interface, cr
 		// TODO: handle error properly
 		return false, challenge, err
 	}
+	glog.Infof("Performing check to ensure challenge has propagated")
 	ok, err := solver.Check(domain, token, key)
 	if err != nil {
 		return false, challenge, err
@@ -200,6 +217,7 @@ func (a *Acme) presentAuthorization(ctx context.Context, cl client.Interface, cr
 }
 
 func (a *Acme) cleanupAuthorization(ctx context.Context, cl client.Interface, crt *v1alpha1.Certificate, auth *acme.Authorization) error {
+	glog.Infof("Cleaning up authorization for %q", auth.Identifier.Value)
 	challenge, err := a.challengeForAuthorization(cl, crt, auth)
 	if err != nil {
 		return err
