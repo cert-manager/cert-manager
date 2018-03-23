@@ -96,6 +96,12 @@ func New(
 	ctrl.ingressLister = ingressInformer.Lister()
 	ctrl.syncedFuncs = append(ctrl.syncedFuncs, ingressInformer.Informer().HasSynced)
 
+	// We also add pod and secret informers to the list of informers to sync.
+	// They are not actually used directly by the Certificates controller,
+	// however the ACME HTTP challenge solver *does* require a Pod and Secret
+	// lister, and due to the way the instantiation of issuers is performed it
+	// is far more performant to perform the sync here.
+	// We should consider moving this into pkg/issuer/acme at some point, some how.
 	ctrl.syncedFuncs = append(ctrl.syncedFuncs, podsInformer.Informer().HasSynced)
 	ctrl.syncedFuncs = append(ctrl.syncedFuncs, secretsInformer.Informer().HasSynced)
 
