@@ -24,6 +24,7 @@ import (
 	apiext "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	apiextcs "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/uuid"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -202,6 +203,23 @@ func CreateKubeNamespace(baseName string, c kubernetes.Interface) (*v1.Namespace
 			GenerateName: fmt.Sprintf("e2e-tests-%v-", baseName),
 		},
 	}
+
+	quota := &v1.ResourceQuota{
+		ObjectMeta: metav1.ObjectMeta{
+			GenerateName: fmt.Sprintf("e2e-tests-%v-", baseName),
+		},
+		Spec: v1.ResourceQuotaSpec{
+			Hard: v1.ResourceList{
+				"cpu":             resource.MustParse("16"),
+				"limits.cpu":      resource.MustParse("16"),
+				"requests.cpu":    resource.MustParse("16"),
+				"memory":          resource.MustParse("32G"),
+				"limits.memory":   resource.MustParse("32G"),
+				"requests.memory": resource.MustParse("32G"),
+			},
+		},
+	}
+
 	// Be robust about making the namespace creation call.
 	var got *v1.Namespace
 	err := wait.PollImmediate(Poll, defaultTimeout, func() (bool, error) {
@@ -212,6 +230,13 @@ func CreateKubeNamespace(baseName string, c kubernetes.Interface) (*v1.Namespace
 			return false, nil
 		}
 		Logf("Created namespace: %v", got.Name)
+
+		gotQuota, err := c.Core().ResourceQuotas(got.Name).Create(quota)
+		if err != nil {
+			Logf("Unexpected error while creating quota: %v", err)
+			return false, nil
+		}
+		Logf("Created quota: %v", gotQuota.Name)
 		return true, nil
 	})
 	if err != nil {
