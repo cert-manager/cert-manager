@@ -20,9 +20,6 @@ import (
 // getIngressesForCertificate returns a list of Ingresses that were created to solve
 // http challenges for the given domain
 func (s *Solver) getIngressesForCertificate(crt *v1alpha1.Certificate, domain string) ([]*extv1beta1.Ingress, error) {
-	if crt.Status.ACME.Order.URL == "" {
-		return []*extv1beta1.Ingress{}, nil
-	}
 	podLabels := podLabels(crt, domain)
 	selector := labels.NewSelector()
 	for key, val := range podLabels {
@@ -33,7 +30,7 @@ func (s *Solver) getIngressesForCertificate(crt *v1alpha1.Certificate, domain st
 		selector = selector.Add(*req)
 	}
 
-	glog.V(4).Infof("Looking up Ingresses for selector %v", selector)
+	glog.Infof("Looking up Ingresses for selector %v", selector)
 	ingressList, err := s.ingressLister.Ingresses(crt.Namespace).List(selector)
 	if err != nil {
 		return nil, err

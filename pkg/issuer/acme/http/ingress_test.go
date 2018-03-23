@@ -5,6 +5,7 @@ import (
 	"reflect"
 	"testing"
 
+	"k8s.io/api/extensions/v1beta1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -14,6 +15,7 @@ import (
 )
 
 func TestGetIngressesForCertificate(t *testing.T) {
+	const createdIngressKey = "createdIngress"
 	tests := map[string]solverFixture{
 		"should return one ingress that matches": {
 			Certificate: generate.Certificate(generate.CertificateConfig{
@@ -28,22 +30,43 @@ func TestGetIngressesForCertificate(t *testing.T) {
 					s.f.T.Errorf("error preparing test: %v", err)
 				}
 
-				s.createdIngress = ing
+				s.testResources[createdIngressKey] = ing
 				s.f.Sync()
 			},
-			CheckFn: func(s *solverFixture) {
-				ing, err := s.f.KubeClient().ExtensionsV1beta1().Ingresses(s.Namespace).List(metav1.ListOptions{})
-				if err != nil {
-					s.f.T.Errorf("error listing ingresses: %v", err)
-					s.f.T.Fail()
-				}
-				if len(ing.Items) != 1 {
-					s.f.T.Errorf("expected one ingress to be returned, but got %d", len(ing.Items))
+			CheckFn: func(s *solverFixture, args ...interface{}) {
+				createdIngress := s.testResources[createdIngressKey].(*v1beta1.Ingress)
+				resp := args[0].([]*v1beta1.Ingress)
+				if len(resp) != 1 {
+					s.f.T.Errorf("expected one ingress to be returned, but got %d", len(resp))
 					s.f.T.Fail()
 					return
 				}
-				if !reflect.DeepEqual(&ing.Items[0], s.createdIngress) {
-					s.f.T.Errorf("Expected %v to equal %v", ing.Items[0], s.createdIngress)
+				if !reflect.DeepEqual(resp[0], createdIngress) {
+					s.f.T.Errorf("Expected %v to equal %v", resp[0], createdIngress)
+				}
+			},
+		},
+		"should not return an ingress for the same certificate but different domain": {
+			Certificate: generate.Certificate(generate.CertificateConfig{
+				Name:      "test",
+				Namespace: defaultTestNamespace,
+				DNSNames:  []string{"example.com"},
+			}),
+			Domain: "example.com",
+			PreFn: func(s *solverFixture) {
+				_, err := s.Solver.createIngress(s.Certificate, "fakeservice", "invaliddomain", s.Token, *s.Certificate.Spec.ACME.ConfigForDomain(s.Domain).HTTP01)
+				if err != nil {
+					s.f.T.Errorf("error preparing test: %v", err)
+				}
+
+				s.f.Sync()
+			},
+			CheckFn: func(s *solverFixture, args ...interface{}) {
+				resp := args[0].([]*v1beta1.Ingress)
+				if len(resp) != 0 {
+					s.f.T.Errorf("expected zero ingresses to be returned, but got %d", len(resp))
+					s.f.T.Fail()
+					return
 				}
 			},
 		},
@@ -51,19 +74,20 @@ func TestGetIngressesForCertificate(t *testing.T) {
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			test.Setup(t)
-			_, err := test.Solver.getIngressesForCertificate(test.Certificate, test.Domain)
+			resp, err := test.Solver.getIngressesForCertificate(test.Certificate, test.Domain)
 			if err != nil && !test.Err {
 				t.Errorf("Expected function to not error, but got: %v", err)
 			}
 			if err == nil && test.Err {
 				t.Errorf("Expected function to get an error, but got: %v", err)
 			}
-			test.Finish(t)
+			test.Finish(t, resp, err)
 		})
 	}
 }
 
 func TestCleanupIngresses(t *testing.T) {
+	const createdIngressKey = "createdIngress"
 	tests := map[string]solverFixture{
 		"should delete ingress resource": {
 			Certificate: generate.Certificate(generate.CertificateConfig{
@@ -80,16 +104,17 @@ func TestCleanupIngresses(t *testing.T) {
 				if err != nil {
 					s.f.T.Errorf("error preparing test: %v", err)
 				}
-				s.createdIngress = ing
+				s.testResources[createdIngressKey] = ing
 				s.f.Sync()
 			},
-			CheckFn: func(s *solverFixture) {
-				ing, err := s.f.KubeClient().ExtensionsV1beta1().Ingresses(s.Certificate.Namespace).Get(s.createdIngress.Name, metav1.GetOptions{})
+			CheckFn: func(s *solverFixture, args ...interface{}) {
+				createdIngress := s.testResources[createdIngressKey].(*v1beta1.Ingress)
+				ing, err := s.f.KubeClient().ExtensionsV1beta1().Ingresses(s.Certificate.Namespace).Get(createdIngress.Name, metav1.GetOptions{})
 				if err != nil && !apierrors.IsNotFound(err) {
 					s.f.T.Errorf("error when getting test ingress, expected 'not found' but got: %v", err)
 				}
 				if !apierrors.IsNotFound(err) {
-					s.f.T.Errorf("expected ingress %q to not exist, but the resource was found: %+v", s.createdIngress.Name, ing)
+					s.f.T.Errorf("expected ingress %q to not exist, but the resource was found: %+v", createdIngress.Name, ing)
 				}
 			},
 		},
@@ -108,12 +133,13 @@ func TestCleanupIngresses(t *testing.T) {
 				if err != nil {
 					s.f.T.Errorf("error preparing test: %v", err)
 				}
-				s.createdIngress = ing
+				s.testResources[createdIngressKey] = ing
 			},
-			CheckFn: func(s *solverFixture) {
-				_, err := s.f.KubeClient().ExtensionsV1beta1().Ingresses(s.Certificate.Namespace).Get(s.createdIngress.Name, metav1.GetOptions{})
+			CheckFn: func(s *solverFixture, args ...interface{}) {
+				createdIngress := s.testResources[createdIngressKey].(*v1beta1.Ingress)
+				_, err := s.f.KubeClient().ExtensionsV1beta1().Ingresses(s.Certificate.Namespace).Get(createdIngress.Name, metav1.GetOptions{})
 				if apierrors.IsNotFound(err) {
-					s.f.T.Errorf("expected ingress resource %q to not be deleted, but it was deleted", s.createdIngress.Name)
+					s.f.T.Errorf("expected ingress resource %q to not be deleted, but it was deleted", createdIngress.Name)
 				}
 				if err != nil {
 					s.f.T.Errorf("error getting ingress resource: %v", err)
@@ -139,7 +165,7 @@ func TestCleanupIngresses(t *testing.T) {
 				if err != nil {
 					s.f.T.Errorf("error preparing test: %v", err)
 				}
-				s.createdIngress = ing
+				s.testResources[createdIngressKey] = ing
 			},
 		},
 	}
