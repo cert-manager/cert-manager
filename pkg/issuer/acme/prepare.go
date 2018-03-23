@@ -59,11 +59,11 @@ func (a *Acme) Prepare(ctx context.Context, crt *v1alpha1.Certificate) error {
 			return err
 		}
 	} else {
-		glog.Infof("Requesting order details for %q from ACME server")
+		glog.Infof("Requesting order details for %q from ACME server", crt.Name)
 		// if we fail to get an existing order by URL, we should create a new
 		// order to replace it.
 		if order, err = cl.GetOrder(ctx, orderURL); err != nil {
-			glog.Infof("Error requesting existing order details for %q from ACME server: %v", err)
+			glog.Infof("Error requesting existing order details for %q from ACME server: %v", crt.Name, err)
 			// TODO: review this - should we instead back-off and try again?
 			// perhaps instead attempt to parse the URL first, and create a new
 			// order if the URL is actually invalid. Not sure ??
@@ -98,7 +98,7 @@ func (a *Acme) Prepare(ctx context.Context, crt *v1alpha1.Certificate) error {
 	}
 
 	failed, pending, valid := partitionAuthorizations(allAuthorizations...)
-	glog.Infof("Authorizations for order %q: %d failed, %d pending, %d valid", len(failed), len(pending), len(valid))
+	glog.Infof("Authorizations for Certificate %q: %d failed, %d pending, %d valid", crt.Name, len(failed), len(pending), len(valid))
 	toCleanup := append(failed, valid...)
 	for _, auth := range toCleanup {
 		err := a.cleanupAuthorization(ctx, cl, crt, auth)
