@@ -5,7 +5,9 @@ import (
 	"crypto/rsa"
 	"crypto/tls"
 	"fmt"
+	"net"
 	nethttp "net/http"
+	"time"
 
 	"github.com/golang/glog"
 	corev1 "k8s.io/api/core/v1"
@@ -105,9 +107,16 @@ func New(issuer v1alpha1.GenericIssuer,
 	return a, nil
 }
 
+var timeout = time.Duration(5 * time.Second)
+
+func dialTimeout(ctx context.Context, network, addr string) (net.Conn, error) {
+	return net.DialTimeout(network, addr, timeout)
+}
+
 func (a *Acme) acmeClientWithKey(accountPrivKey *rsa.PrivateKey) client.Interface {
 	tr := &nethttp.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: a.issuer.GetSpec().ACME.SkipTLSVerify},
+		DialContext:     dialTimeout,
 	}
 	client := &nethttp.Client{Transport: tr}
 	cl := &acme.Client{
