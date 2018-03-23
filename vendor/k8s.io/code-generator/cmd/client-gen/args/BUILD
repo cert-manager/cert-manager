@@ -17,6 +17,8 @@ go_library(
     deps = [
         "//vendor/github.com/spf13/pflag:go_default_library",
         "//vendor/k8s.io/code-generator/cmd/client-gen/types:go_default_library",
+        "//vendor/k8s.io/code-generator/pkg/util:go_default_library",
+        "//vendor/k8s.io/gengo/args:go_default_library",
     ],
 )
 
@@ -36,8 +38,7 @@ filegroup(
 go_test(
     name = "go_default_test",
     srcs = ["gvpackages_test.go"],
-    importpath = "k8s.io/code-generator/cmd/client-gen/args",
-    library = ":go_default_library",
+    embed = [":go_default_library"],
     deps = [
         "//vendor/github.com/spf13/pflag:go_default_library",
         "//vendor/k8s.io/code-generator/cmd/client-gen/types:go_default_library",
