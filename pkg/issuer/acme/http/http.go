@@ -328,6 +328,10 @@ func (s *Solver) ensurePod(crt *v1alpha1.Certificate, domain, token, key string,
 							corev1.ResourceCPU:    resource.MustParse("10m"),
 							corev1.ResourceMemory: resource.MustParse("2Mi"),
 						},
+						Limits: corev1.ResourceList{
+							corev1.ResourceCPU:    resource.MustParse("10m"),
+							corev1.ResourceMemory: resource.MustParse("2Mi"),
+						},
 					},
 					Ports: []corev1.ContainerPort{
 						{
