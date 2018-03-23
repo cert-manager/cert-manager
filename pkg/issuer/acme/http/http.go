@@ -135,5 +135,5 @@ func testReachability(ctx context.Context, domain, path, key string) (bool, erro
 		return false, nil
 	}
 
-	return false, nil
+	return true, nil
 }
