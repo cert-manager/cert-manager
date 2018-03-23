@@ -73,13 +73,25 @@ func (a *Acme) Setup(ctx context.Context) error {
 // registerAccount will register a new ACME account with the server. If an
 // account with the clients private key already exists, it will attempt to look
 // up and verify the corresponding account, and will return that. If this fails
-// it will return the
+// due to a not found error it will register a new account with the given key.
 func (a *Acme) registerAccount(ctx context.Context, cl client.Interface) (*acme.Account, error) {
-	acc := &acme.Account{
+	// check if the account already exists
+	acc, err := cl.GetAccount(ctx)
+	if err == nil {
+		return acc, nil
+	}
+	// return all errors except for 404 errors (which indicate the account
+	// is not yet registered)
+	acmeErr, ok := err.(*acme.Error)
+	if !ok || (acmeErr.StatusCode != 400 && acmeErr.StatusCode != 404) {
+		return nil, err
+	}
+
+	acc = &acme.Account{
 		Contact:     []string{fmt.Sprintf("mailto:%s", strings.ToLower(a.issuer.GetSpec().ACME.Email))},
 		TermsAgreed: true,
 	}
-	acc, err := cl.CreateAccount(ctx, acc)
+	acc, err = cl.CreateAccount(ctx, acc)
 	if err != nil {
 		return nil, err
 	}

@@ -15,6 +15,7 @@ type Interface interface {
 	GetAuthorization(ctx context.Context, url string) (*acme.Authorization, error)
 	WaitAuthorization(ctx context.Context, url string) (*acme.Authorization, error)
 	CreateAccount(ctx context.Context, a *acme.Account) (*acme.Account, error)
+	GetAccount(ctx context.Context) (*acme.Account, error)
 	HTTP01ChallengeResponse(token string) (string, error)
 	DNS01ChallengeRecord(token string) (string, error)
 }
