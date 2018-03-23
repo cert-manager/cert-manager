@@ -59,6 +59,8 @@ func New(
 	clusterIssuersInformer cminformers.ClusterIssuerInformer,
 	secretsInformer coreinformers.SecretInformer,
 	ingressInformer extinformers.IngressInformer,
+	podsInformer coreinformers.PodInformer,
+	serviceInformer coreinformers.ServiceInformer,
 	client kubernetes.Interface,
 	cmClient clientset.Interface,
 	issuerFactory issuer.Factory,
@@ -93,6 +95,9 @@ func New(
 	ingressInformer.Informer().AddEventHandler(&controllerpkg.BlockingEventHandler{WorkFunc: ctrl.ingressDeleted})
 	ctrl.ingressLister = ingressInformer.Lister()
 	ctrl.syncedFuncs = append(ctrl.syncedFuncs, ingressInformer.Informer().HasSynced)
+
+	ctrl.syncedFuncs = append(ctrl.syncedFuncs, podsInformer.Informer().HasSynced)
+	ctrl.syncedFuncs = append(ctrl.syncedFuncs, secretsInformer.Informer().HasSynced)
 
 	return ctrl
 }
@@ -243,6 +248,8 @@ func init() {
 			clusterIssuerInformer,
 			ctx.KubeSharedInformerFactory.Core().V1().Secrets(),
 			ctx.KubeSharedInformerFactory.Extensions().V1beta1().Ingresses(),
+			ctx.KubeSharedInformerFactory.Core().V1().Pods(),
+			ctx.KubeSharedInformerFactory.Core().V1().Services(),
 			ctx.Client,
 			ctx.CMClient,
 			ctx.IssuerFactory,
