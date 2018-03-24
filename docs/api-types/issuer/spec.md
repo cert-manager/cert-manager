@@ -127,11 +127,8 @@ clouddns:
 route53:
   region: eu-west-1
 
-  # optional -- if not specified, load credentials from from standard AWS
-  # environment variables or from EC2 instance metadata
+  # optional if ambient credentials are available; see ambient credentials documentation
   accessKeyID: AKIAIOSFODNN7EXAMPLE
-
-  # also optional
   secretAccessKeySecretRef:
     name: prod-route53-credentials-secret
     key: secret-access-key
