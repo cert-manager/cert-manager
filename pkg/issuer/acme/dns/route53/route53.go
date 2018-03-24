@@ -70,6 +70,7 @@ func NewDNSProvider(accessKeyID, secretAccessKey, hostedZoneID, region string, a
 	r := customRetryer{}
 	r.NumMaxRetries = maxRetries
 	config := request.WithRetryer(aws.NewConfig(), r)
+	sessionOpts := session.Options{}
 
 	if useAmbientCredentials {
 		glog.V(5).Infof("using ambient credentials")
@@ -79,12 +80,20 @@ func NewDNSProvider(accessKeyID, secretAccessKey, hostedZoneID, region string, a
 	} else {
 		glog.V(5).Infof("not using ambient credentials")
 		config.WithCredentials(credentials.NewStaticCredentials(accessKeyID, secretAccessKey, ""))
+		// also disable 'ambient' region sources
+		sessionOpts.SharedConfigState = session.SharedConfigDisable
 	}
 
-	if region != "" {
+	// If ambient credentials aren't permitted, always set the region, even if to
+	// empty string, to avoid it falling back on the environment.
+	if region != "" || !useAmbientCredentials {
 		config.WithRegion(region)
 	}
-	client := route53.New(session.New(config))
+	sess, err := session.NewSessionWithOptions(sessionOpts)
+	if err != nil {
+		return nil, fmt.Errorf("unable to create aws session: %s", err)
+	}
+	client := route53.New(sess, config)
 
 	return &DNSProvider{
 		client:       client,

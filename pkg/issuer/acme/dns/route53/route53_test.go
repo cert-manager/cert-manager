@@ -54,6 +54,7 @@ func TestAmbientCredentialsFromEnv(t *testing.T) {
 
 	_, err = provider.client.Config.Credentials.Get()
 	assert.NoError(t, err, "Expected credentials to be set from environment")
+	assert.Equal(t, provider.client.Config.Region, aws.String("us-east-1"))
 }
 
 func TestNoCredentialsFromEnv(t *testing.T) {
@@ -74,6 +75,16 @@ func TestAmbientRegionFromEnv(t *testing.T) {
 	assert.NoError(t, err, "Expected no error constructing DNSProvider")
 
 	assert.Equal(t, "us-east-1", *provider.client.Config.Region, "Expected Region to be set from environment")
+}
+
+func TestNoRegionFromEnv(t *testing.T) {
+	os.Setenv("AWS_REGION", "us-east-1")
+	defer restoreRoute53Env()
+
+	provider, err := NewDNSProvider("marx", "swordfish", "", "", false)
+	assert.NoError(t, err, "Expected no error constructing DNSProvider")
+
+	assert.Equal(t, "", *provider.client.Config.Region, "Expected Region to not be set from environment")
 }
 
 func TestRoute53Present(t *testing.T) {
