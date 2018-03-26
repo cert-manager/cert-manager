@@ -35,6 +35,9 @@ spec:
             key: api-key.txt
       - name: route53
         route53:
+          # Credentials may optionally be omitted to use ambient credentials if
+          # --issuer-ambient-credentials is enabled and
+          # ambient credentials are available to cert-manager.
           # The Route53 access key ID
           accessKeyID: AKIADKOU3GLWAQM8WQKJ
           # A secretKeyRef to a the route53 secret access key

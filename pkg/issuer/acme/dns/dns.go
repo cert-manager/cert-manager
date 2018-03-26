@@ -34,7 +34,7 @@ type solver interface {
 type dnsProviderConstructors struct {
 	cloudDNS   func(project string, serviceAccount []byte) (*clouddns.DNSProvider, error)
 	cloudFlare func(email, apikey string) (*cloudflare.DNSProvider, error)
-	route53    func(accessKey, secretKey, hostedZoneID, region string) (*route53.DNSProvider, error)
+	route53    func(accessKey, secretKey, hostedZoneID, region string, ambient bool) (*route53.DNSProvider, error)
 	azureDNS   func(clientID, clientSecret, subscriptionID, tenentID, resourceGroupName, hostedZoneName string) (*azuredns.DNSProvider, error)
 }
 
@@ -45,8 +45,9 @@ type Solver struct {
 	issuer                  v1alpha1.GenericIssuer
 	client                  kubernetes.Interface
 	secretLister            corev1listers.SecretLister
-	dnsProviderConstructors dnsProviderConstructors
 	resourceNamespace       string
+	dnsProviderConstructors dnsProviderConstructors
+	ambientCredentials      bool
 }
 
 func (s *Solver) Present(ctx context.Context, crt *v1alpha1.Certificate, domain, token, key string) error {
@@ -156,21 +157,26 @@ func (s *Solver) solverFor(crt *v1alpha1.Certificate, domain string) (solver, er
 			return nil, fmt.Errorf("error instantiating cloudflare challenge solver: %s", err.Error())
 		}
 	case providerConfig.Route53 != nil:
-		secretAccessKeySecret, err := s.secretLister.Secrets(s.resourceNamespace).Get(providerConfig.Route53.SecretAccessKey.Name)
-		if err != nil {
-			return nil, fmt.Errorf("error getting route53 secret access key: %s", err.Error())
-		}
+		secretAccessKey := ""
+		if providerConfig.Route53.SecretAccessKey.Name != "" {
+			secretAccessKeySecret, err := s.secretLister.Secrets(s.resourceNamespace).Get(providerConfig.Route53.SecretAccessKey.Name)
+			if err != nil {
+				return nil, fmt.Errorf("error getting route53 secret access key: %s", err.Error())
+			}
 
-		secretAccessKeyBytes, ok := secretAccessKeySecret.Data[providerConfig.Route53.SecretAccessKey.Key]
-		if !ok {
-			return nil, fmt.Errorf("error getting route53 secret access key: key '%s' not found in secret", providerConfig.Route53.SecretAccessKey.Key)
+			secretAccessKeyBytes, ok := secretAccessKeySecret.Data[providerConfig.Route53.SecretAccessKey.Key]
+			if !ok {
+				return nil, fmt.Errorf("error getting route53 secret access key: key '%s' not found in secret", providerConfig.Route53.SecretAccessKey.Key)
+			}
+			secretAccessKey = string(secretAccessKeyBytes)
 		}
 
 		impl, err = s.dnsProviderConstructors.route53(
 			strings.TrimSpace(providerConfig.Route53.AccessKeyID),
-			strings.TrimSpace(string(secretAccessKeyBytes)),
+			strings.TrimSpace(secretAccessKey),
 			providerConfig.Route53.HostedZoneID,
 			providerConfig.Route53.Region,
+			s.ambientCredentials,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("error instantiating route53 challenge solver: %s", err.Error())
@@ -201,17 +207,18 @@ func (s *Solver) solverFor(crt *v1alpha1.Certificate, domain string) (solver, er
 	return impl, nil
 }
 
-func NewSolver(issuer v1alpha1.GenericIssuer, client kubernetes.Interface, secretLister corev1listers.SecretLister, resourceNamespace string) *Solver {
+func NewSolver(issuer v1alpha1.GenericIssuer, client kubernetes.Interface, secretLister corev1listers.SecretLister, resourceNamespace string, ambientCredentials bool) *Solver {
 	return &Solver{
 		issuer,
 		client,
 		secretLister,
+		resourceNamespace,
 		dnsProviderConstructors{
 			clouddns.NewDNSProviderServiceAccountBytes,
 			cloudflare.NewDNSProviderCredentials,
-			route53.NewDNSProviderAccessKey,
+			route53.NewDNSProvider,
 			azuredns.NewDNSProviderCredentials,
 		},
-		resourceNamespace,
+		ambientCredentials,
 	}
 }

@@ -125,8 +125,10 @@ clouddns:
 
 ```yaml
 route53:
-  accessKeyID: AKIAIOSFODNN7EXAMPLE
   region: eu-west-1
+
+  # optional if ambient credentials are available; see ambient credentials documentation
+  accessKeyID: AKIAIOSFODNN7EXAMPLE
   secretAccessKeySecretRef:
     name: prod-route53-credentials-secret
     key: secret-access-key
