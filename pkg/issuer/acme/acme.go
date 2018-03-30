@@ -92,6 +92,22 @@ func New(issuer v1alpha1.GenericIssuer,
 	}, nil
 }
 
+// uaRoundTripper implements the http.RoundTripper interface and adds a User-Agent
+// header. Note that this is a stopgap until upstream `crypto/acme` adds a
+// facility for setting User-Agent.
+
+type uaRoundTripper struct {
+	http.RoundTripper
+	ua string
+}
+
+const Version = "v0.2.3"
+
+func (uat uaRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
+	req.Header.Add("User-Agent", "jetstack-cert-manager/"+Version)
+	return uat.RoundTripper.RoundTrip(req)
+}
+
 func (a *Acme) acmeClient() (*acme.Client, error) {
 	secretName, secretKey := a.acmeAccountPrivateKeyMeta()
 	glog.V(4).Infof("getting private key (%s->%s) for acme issuer %s/%s", secretName, secretKey, a.issuerResourcesNamespace, a.issuer.GetObjectMeta().Name)
@@ -103,6 +119,11 @@ func (a *Acme) acmeClient() (*acme.Client, error) {
 	cl := &acme.Client{
 		Key:          accountPrivKey,
 		DirectoryURL: a.issuer.GetSpec().ACME.Server,
+		HTTPClient: &http.Client{
+			Transport: uaRoundTripper{
+				RoundTripper: http.DefaultTransport,
+			},
+		},
 	}
 	return cl, nil
 }
