@@ -160,6 +160,8 @@ html_context = {
   'display_github': True,
   'github_user': 'jetstack',
   'github_repo': 'cert-manager',
-  'github_version': 'master/docs/',
-  "css_files": ["_static/css/style.css"]
+  'github_version': 'master/docs/'
 }
+
+def setup(app):
+    app.add_stylesheet('css/style.css')
