@@ -43,6 +43,10 @@ GOLDFLAGS := -ldflags "-X $(PACKAGE_NAME)/pkg/util.AppGitState=${GIT_STATE} -X $
 ###############
 
 verify: generate_verify hack_verify go_verify
+verify_pr:
+	# This target is intentionaly blank. This is to allow the new e2e test
+	# invocation syntax to not fail since #397 merged
+
 build: $(CMDS) docker_build
 docker_build: $(DOCKER_BUILD_TARGETS)
 docker_push: $(DOCKER_PUSH_TARGETS)
