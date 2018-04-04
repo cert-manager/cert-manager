@@ -15,6 +15,7 @@ import (
 	"github.com/golang/glog"
 
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
+	pkgutil "github.com/jetstack/cert-manager/pkg/util"
 	"github.com/pkg/errors"
 )
 
@@ -165,6 +166,8 @@ func (a *DNSProvider) saveZoneData(domain string, data zoneData) error {
 }
 
 func (a *DNSProvider) makeRequest(req *http.Request) ([]byte, error) {
+	req.Header.Set("User-Agent", pkgutil.CertManagerUserAgent)
+
 	if err := a.auth.SignRequest(req); err != nil {
 		return nil, errors.Wrap(err, "failed to sign HTTP request")
 	}
