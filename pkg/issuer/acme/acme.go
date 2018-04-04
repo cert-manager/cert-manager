@@ -22,6 +22,7 @@ import (
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/client"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/http"
+	"github.com/jetstack/cert-manager/pkg/util"
 	"github.com/jetstack/cert-manager/pkg/util/kube"
 	"github.com/jetstack/cert-manager/third_party/crypto/acme"
 )
@@ -112,6 +113,17 @@ func New(issuer v1alpha1.GenericIssuer,
 	}
 	a.acmeClient = a.acmeClientImpl
 	return a, nil
+}
+
+var acmeUserAgent = "jetstack-cert-manager/" + util.AppVersion
+
+type uaRoundTripper struct {
+	nethttp.RoundTripper
+}
+
+func (uat uaRoundTripper) RoundTrip(req *nethttp.Request) (*nethttp.Response, error) {
+	req.Header.Set("User-Agent", acmeUserAgent)
+	return uat.RoundTripper.RoundTrip(req)
 }
 
 var timeout = time.Duration(5 * time.Second)
