@@ -44,50 +44,12 @@ func (a *Acme) Prepare(ctx context.Context, crt *v1alpha1.Certificate) error {
 	// obtain an ACME client
 	cl, err := a.acmeClient()
 	if err != nil {
-		s := messageErrorGetACMEAccount + err.Error()
-		crt.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse, errorGetACMEAccount, s)
-		return errors.New(s)
+		return err
 	}
 
-	orderURL := crt.Status.ACMEStatus().Order.URL
-	glog.Infof("Checking existing order URL %q", orderURL)
-	var order *acme.Order
-	// if the existing order URL is blank, create a new order
-	if orderURL == "" {
-		glog.Infof("Existing order URL not set")
-		if order, err = a.createOrder(ctx, cl, crt); err != nil {
-			return err
-		}
-	} else {
-		glog.Infof("Requesting order details for %q from ACME server", crt.Name)
-		// if we fail to get an existing order by URL, we should create a new
-		// order to replace it.
-		if order, err = cl.GetOrder(ctx, orderURL); err != nil {
-			glog.Infof("Error requesting existing order details for %q from ACME server: %v", crt.Name, err)
-			// TODO: review this - should we instead back-off and try again?
-			// perhaps instead attempt to parse the URL first, and create a new
-			// order if the URL is actually invalid. Not sure ??
-			if order, err = a.createOrder(ctx, cl, crt); err != nil {
-				return err
-			}
-		}
-	}
-
-	glog.Infof("Order %q status is %q", order.URL, order.Status)
-	switch order.Status {
-	// create a new order if the old one is invalid
-	case acme.StatusDeactivated, acme.StatusInvalid, acme.StatusRevoked:
-		if order, err = a.createOrder(ctx, cl, crt); err != nil {
-			return err
-		}
-	case acme.StatusValid:
-		glog.Infof("Order %q already valid", order.URL)
-		return nil
-	case acme.StatusPending, acme.StatusProcessing:
-		// if the order is pending or processing, we will proceed.
-		// TODO: should we return nil on processing? need to check acme spec
-	default:
-		return fmt.Errorf("order %q unknown status: %q", order.URL, order.Status)
+	order, err := a.getOrCreateOrder(ctx, cl, crt)
+	if err != nil {
+		return err
 	}
 
 	allAuthorizations, err := getAuthorizations(ctx, cl, order.Authorizations...)
@@ -154,6 +116,55 @@ func (a *Acme) Prepare(ctx context.Context, crt *v1alpha1.Certificate) error {
 	}
 
 	return nil
+}
+
+// getOrCreateOrder will attempt to retrieve an existing order for a
+// certificate using the status.acme.order.url field.
+//
+// - if it's not set, it will call createOrder and return
+//
+// - if it is set, and the order is not in an error state, it will be returned
+//
+// - if it is set, and the order is in an invalid state, an event will be
+//   logged and createOrder will be called
+//
+// - if an error occurs obtaining the order, it will be returned
+func (a *Acme) getOrCreateOrder(ctx context.Context, cl client.Interface, crt *v1alpha1.Certificate) (*acme.Order, error) {
+	orderURL := crt.Status.ACMEStatus().Order.URL
+	glog.Infof("Checking existing order URL %q", orderURL)
+	var err error
+	var order *acme.Order
+	// if the existing order URL is blank, create a new order
+	if orderURL == "" {
+		glog.Infof("Existing order URL not set. Creating new order.")
+		return a.createOrder(ctx, cl, crt)
+	}
+
+	glog.Infof("Requesting order details for %q from ACME server", crt.Name)
+	order, err = cl.GetOrder(ctx, orderURL)
+
+	if err != nil {
+		glog.Infof("Error requesting existing order details for %q from ACME server: %v", crt.Name, err)
+		return nil, err
+	}
+
+	if !orderIsValidForCertificate(order, crt) {
+		glog.Infof("Existing order is not valid for requested DNS names. Creating new order.")
+		return a.createOrder(ctx, cl, crt)
+	}
+
+	glog.Infof("Order %q status is %q", order.URL, order.Status)
+	switch order.Status {
+	// create a new order if the old one is invalid
+	case acme.StatusDeactivated, acme.StatusInvalid, acme.StatusRevoked:
+		// TODO: log an event
+		glog.Infof("Existing order is in state %q - creating a new order.", order.Status)
+		return a.createOrder(ctx, cl, crt)
+	case acme.StatusValid, acme.StatusPending, acme.StatusProcessing:
+		return order, nil
+	}
+
+	return nil, fmt.Errorf("order %q unknown status: %q", order.URL, order.Status)
 }
 
 func (a *Acme) acceptChallenge(ctx context.Context, cl client.Interface, auth *acme.Authorization, challenge *acme.Challenge) error {
