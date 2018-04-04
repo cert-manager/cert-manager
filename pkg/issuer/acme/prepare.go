@@ -47,6 +47,17 @@ func (a *Acme) Prepare(ctx context.Context, crt *v1alpha1.Certificate) error {
 		return err
 	}
 
+	// TODO: clean up old authorization attempts.
+	// This is complex because the Certificate resource may have been updated
+	// to no longer include information required to clean up the challenge
+	// (for example, if a domain is removed from a certificate while an authz
+	// is in progress). This means we need to store a list of challenges we are
+	// currently presenting on the certificates status field, which contains
+	// enough information to clean up the resource:
+	//
+	// http01: domain and the fact it is http01
+	// dns01: domain, token, key and dns01 provider name
+
 	order, err := a.getOrCreateOrder(ctx, cl, crt)
 	if err != nil {
 		return err
