@@ -61,6 +61,8 @@ const (
 	messageRenewalScheduled   = "Certificate scheduled for renewal in %d hours"
 )
 
+var certificateGVK = v1alpha1.SchemeGroupVersion.WithKind("Certificate")
+
 func (c *Controller) Sync(ctx context.Context, crt *v1alpha1.Certificate) (err error) {
 	// step zero: check if the referenced issuer exists and is ready
 	issuerObj, err := c.getGenericIssuer(crt)
@@ -201,7 +203,8 @@ func (c *Controller) scheduleRenewal(crt *v1alpha1.Certificate) {
 	c.recorder.Event(crt, api.EventTypeNormal, successRenewalScheduled, s)
 }
 
-func (c *Controller) updateSecret(name, namespace string, cert, key []byte) (*api.Secret, error) {
+func (c *Controller) updateSecret(crt *v1alpha1.Certificate, cert, key []byte) (*api.Secret, error) {
+	name, namespace := crt.Spec.SecretName, crt.Namespace
 	secret, err := c.client.CoreV1().Secrets(namespace).Get(name, metav1.GetOptions{})
 	if err != nil && !k8sErrors.IsNotFound(err) {
 		return nil, err
@@ -216,6 +219,7 @@ func (c *Controller) updateSecret(name, namespace string, cert, key []byte) (*ap
 			Data: map[string][]byte{},
 		}
 	}
+	secret.OwnerReferences = []metav1.OwnerReference{*metav1.NewControllerRef(crt, certificateGVK)}
 	secret.Data[api.TLSCertKey] = cert
 	secret.Data[api.TLSPrivateKeyKey] = key
 	// if it is a new resource
@@ -258,7 +262,7 @@ func (c *Controller) issue(ctx context.Context, issuer issuer.Interface, crt *v1
 		return err
 	}
 
-	if _, err := c.updateSecret(crt.Spec.SecretName, crt.Namespace, cert, key); err != nil {
+	if _, err := c.updateSecret(crt, cert, key); err != nil {
 		s := messageErrorSavingCertificate + err.Error()
 		glog.Info(s)
 		c.recorder.Event(crt, api.EventTypeWarning, errorSavingCertificate, s)
@@ -302,7 +306,7 @@ func (c *Controller) renew(ctx context.Context, issuer issuer.Interface, crt *v1
 		return err
 	}
 
-	if _, err := c.updateSecret(crt.Spec.SecretName, crt.Namespace, cert, key); err != nil {
+	if _, err := c.updateSecret(crt, cert, key); err != nil {
 		s := messageErrorSavingCertificate + err.Error()
 		glog.Info(s)
 		c.recorder.Event(crt, api.EventTypeWarning, errorSavingCertificate, s)
