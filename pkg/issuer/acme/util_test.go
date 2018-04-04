@@ -1,6 +1,7 @@
 package acme
 
 import (
+	"context"
 	"testing"
 
 	"k8s.io/apimachinery/pkg/runtime"
@@ -25,8 +26,10 @@ type acmeFixture struct {
 	Client      *client.FakeACME
 
 	PreFn   func(*acmeFixture)
-	CheckFn func(*acmeFixture)
+	CheckFn func(*acmeFixture, ...interface{})
 	Err     bool
+
+	Ctx context.Context
 
 	// f is the integration test fixture being used for this test
 	f *unit.Fixture
@@ -35,6 +38,9 @@ type acmeFixture struct {
 func (s *acmeFixture) Setup(t *testing.T) {
 	if s.Client == nil {
 		s.Client = &client.FakeACME{}
+	}
+	if s.Ctx == nil {
+		s.Ctx = context.Background()
 	}
 	s.f = &unit.Fixture{
 		T:                  t,
@@ -50,13 +56,13 @@ func (s *acmeFixture) Setup(t *testing.T) {
 	}
 }
 
-func (s *acmeFixture) Finish(t *testing.T) {
+func (s *acmeFixture) Finish(t *testing.T, args ...interface{}) {
 	defer s.f.Stop()
 	// resync listers before running checks
 	s.f.Sync()
 	// run custom checks
 	if s.CheckFn != nil {
-		s.CheckFn(s)
+		s.CheckFn(s, args...)
 	}
 }
 

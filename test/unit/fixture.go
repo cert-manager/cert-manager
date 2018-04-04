@@ -60,7 +60,10 @@ func (s *Fixture) CertManagerInformerFactory() informers.SharedInformerFactory {
 func (s *Fixture) Start() {
 	s.kubeClient = kubefake.NewSimpleClientset(s.KubeObjects...)
 	s.cmClient = cmfake.NewSimpleClientset(s.CertManagerObjects...)
-	s.recorder = record.NewFakeRecorder(0)
+	// create a fake recorder with a buffer of 5.
+	// this may need to be increased in future to acomodate tests that
+	// produce more than 5 events
+	s.recorder = record.NewFakeRecorder(5)
 
 	s.kubeClient.PrependReactor("create", "*", func(action coretesting.Action) (handled bool, ret runtime.Object, err error) {
 		obj := action.(coretesting.CreateAction).GetObject().(metav1.Object)
@@ -79,8 +82,14 @@ func (s *Fixture) Start() {
 }
 
 // Stop will signal the informers to stop watching changes
+// This method is *not* safe to be called concurrently
 func (s *Fixture) Stop() {
+	if s.stopCh == nil {
+		return
+	}
+
 	close(s.stopCh)
+	s.stopCh = nil
 }
 
 // WaitForResync will wait for the informer factory informer duration by
