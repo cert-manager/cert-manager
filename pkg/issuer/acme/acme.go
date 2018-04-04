@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	nethttp "net/http"
+	"time"
 
 	"github.com/golang/glog"
 	"golang.org/x/crypto/acme"
@@ -109,6 +110,7 @@ func (a *Acme) acmeClient() (*acme.Client, error) {
 			// Stopgap user-agent roundtripper until the upstream 'crypto/acme'
 			// provides a better method for setting user-agent.
 			Transport: util.UserAgentRoundTripper(nethttp.DefaultTransport),
+			Timeout:   30 * time.Second,
 		},
 	}
 	return cl, nil
