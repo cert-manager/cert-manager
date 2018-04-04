@@ -103,7 +103,6 @@ func (a *Acme) Prepare(ctx context.Context, crt *v1alpha1.Certificate) error {
 	for _, auth := range toCleanup {
 		err := a.cleanupAuthorization(ctx, cl, crt, auth)
 		if err != nil {
-			// TODO: don't error if cleaning up fails, as it might be due to the resources already being cleaned up
 			return err
 		}
 	}
@@ -116,7 +115,7 @@ func (a *Acme) Prepare(ctx context.Context, crt *v1alpha1.Certificate) error {
 		for _, auth := range pending {
 			err := a.cleanupAuthorization(ctx, cl, crt, auth)
 			if err != nil {
-				// TODO: handle error properly
+				// TODO: clean up remaining authorizations if one fails
 				return err
 			}
 		}
@@ -216,6 +215,14 @@ func (a *Acme) presentAuthorization(ctx context.Context, cl client.Interface, cr
 	return ok, challenge, nil
 }
 
+// cleanupAuthorization will clean up a given authorization.
+// To do this, it first determines the challenge type to use for the
+// authorization based on the Issuer and Certificate configuration.
+// It then calls CleanUp on the appropriate Solver.
+// CleanUp will clean up any remaining resources left over from attempting to
+// solve the given challenge.
+// If a valid challenge type is not configured, cleanupAuthorization will
+// return an error.
 func (a *Acme) cleanupAuthorization(ctx context.Context, cl client.Interface, crt *v1alpha1.Certificate, auth *acme.Authorization) error {
 	glog.Infof("Cleaning up authorization for %q", auth.Identifier.Value)
 	challenge, err := a.challengeForAuthorization(cl, crt, auth)
@@ -237,6 +244,11 @@ func (a *Acme) cleanupAuthorization(ctx context.Context, cl client.Interface, cr
 	return solver.CleanUp(ctx, crt, domain, token, key)
 }
 
+// keyForChallenge will return the key to use for solving a given acme
+// challenge.
+// Only http-01 and dns-01 challenges are supported.
+// An error will be returned if obtaining the key fails, or the challenge type
+// is unsupported.
 func keyForChallenge(cl client.Interface, challenge *acme.Challenge) (string, error) {
 	var err error
 	switch challenge.Type {
@@ -250,6 +262,9 @@ func keyForChallenge(cl client.Interface, challenge *acme.Challenge) (string, er
 	return "", err
 }
 
+// getAuthorizations will query the ACME server for the Authorization resources
+// for the given list of authorization URLs using the given ACME client.
+// It will return an error if obtaining any of the given authorizations fails.
 func getAuthorizations(ctx context.Context, cl client.Interface, urls ...string) ([]*acme.Authorization, error) {
 	var authzs []*acme.Authorization
 	for _, url := range urls {
@@ -262,6 +277,8 @@ func getAuthorizations(ctx context.Context, cl client.Interface, urls ...string)
 	return authzs, nil
 }
 
+// partitionAuthorizations will split a list of Authorizations into failed,
+// pending and valid states.
 func partitionAuthorizations(authzs ...*acme.Authorization) (failed, pending, valid []*acme.Authorization) {
 	for _, a := range authzs {
 		switch a.Status {
