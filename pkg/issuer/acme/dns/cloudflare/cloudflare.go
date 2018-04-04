@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
+	pkgutil "github.com/jetstack/cert-manager/pkg/util"
 )
 
 // CloudFlareAPIURL represents the API endpoint to call.
@@ -180,9 +181,11 @@ func (c *DNSProvider) makeRequest(method, uri string, body io.Reader) (json.RawM
 
 	req.Header.Set("X-Auth-Email", c.authEmail)
 	req.Header.Set("X-Auth-Key", c.authKey)
-	//req.Header.Set("User-Agent", userAgent())
+	req.Header.Set("User-Agent", pkgutil.CertManagerUserAgent)
 
-	client := http.Client{Timeout: 30 * time.Second}
+	client := http.Client{
+		Timeout: 30 * time.Second,
+	}
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("Error querying Cloudflare API -> %v", err)
