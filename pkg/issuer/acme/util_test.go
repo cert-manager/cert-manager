@@ -71,6 +71,8 @@ func buildFakeAcme(f *unit.Fixture, client *client.FakeACME, issuer v1alpha1.Gen
 		f.KubeInformerFactory().Core().V1().Pods().Lister(),
 		f.KubeInformerFactory().Core().V1().Services().Lister(),
 		f.KubeInformerFactory().Extensions().V1beta1().Ingresses().Lister(),
+		// TODO: support overriding this field
+		false,
 	)
 	if err != nil {
 		f.T.Errorf("error creating fake Acme: %v", err)
