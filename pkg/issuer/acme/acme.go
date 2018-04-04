@@ -3,6 +3,7 @@ package acme
 import (
 	"context"
 	"fmt"
+	nethttp "net/http"
 
 	"github.com/golang/glog"
 	"golang.org/x/crypto/acme"
@@ -16,6 +17,7 @@ import (
 	"github.com/jetstack/cert-manager/pkg/issuer"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/http"
+	"github.com/jetstack/cert-manager/pkg/util"
 	"github.com/jetstack/cert-manager/pkg/util/kube"
 )
 
@@ -90,14 +92,14 @@ func New(issuer v1alpha1.GenericIssuer,
 // facility for setting User-Agent.
 
 type uaRoundTripper struct {
-	http.RoundTripper
+	nethttp.RoundTripper
 	ua string
 }
 
-const Version = "v0.2.3"
+var acmeUserAgent = "jetstack-cert-manager/" + util.AppVersion
 
-func (uat uaRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
-	req.Header.Add("User-Agent", "jetstack-cert-manager/"+Version)
+func (uat uaRoundTripper) RoundTrip(req *nethttp.Request) (*nethttp.Response, error) {
+	req.Header.Add("User-Agent", acmeUserAgent)
 	return uat.RoundTripper.RoundTrip(req)
 }
 
@@ -112,9 +114,9 @@ func (a *Acme) acmeClient() (*acme.Client, error) {
 	cl := &acme.Client{
 		Key:          accountPrivKey,
 		DirectoryURL: a.issuer.GetSpec().ACME.Server,
-		HTTPClient: &http.Client{
+		HTTPClient: &nethttp.Client{
 			Transport: uaRoundTripper{
-				RoundTripper: http.DefaultTransport,
+				RoundTripper: nethttp.DefaultTransport,
 			},
 		},
 	}
