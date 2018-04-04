@@ -10,7 +10,7 @@ import (
 // TODO: expand this out one day to be backed by the pebble wfe package
 // this will allow us to simulate a 'real' acme server in lightweight tests
 
-// FakeACME is a convinience structure to create a stub ACME implementation
+// FakeACME is a convenience structure to create a stub ACME implementation
 type FakeACME struct {
 	FakeCreateOrder             func(ctx context.Context, order *acme.Order) (*acme.Order, error)
 	FakeGetOrder                func(ctx context.Context, url string) (*acme.Order, error)
