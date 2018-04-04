@@ -34,6 +34,8 @@ resources: {}
   #   cpu: 10m
   #   memory: 32Mi
 
+podAnnotations: {}
+
 nodeSelector: {}
 
 ingressShim:

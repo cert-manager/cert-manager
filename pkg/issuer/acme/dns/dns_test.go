@@ -35,6 +35,8 @@ type fixture struct {
 	Certificate *v1alpha1.Certificate
 
 	DNSProviders *fakeDNSProviders
+
+	Ambient bool
 }
 
 type fakeDNSProviderCall struct {
@@ -67,8 +69,8 @@ func newFakeDNSProviders() *fakeDNSProviders {
 			}
 			return nil, nil
 		},
-		route53: func(accessKey, secretKey, hostedZoneID, region string) (*route53.DNSProvider, error) {
-			f.call("route53", accessKey, secretKey, hostedZoneID, region)
+		route53: func(accessKey, secretKey, hostedZoneID, region string, ambient bool) (*route53.DNSProvider, error) {
+			f.call("route53", accessKey, secretKey, hostedZoneID, region, ambient)
 			return nil, nil
 		},
 		azureDNS: func(clientID, clientSecret, subscriptionID, tenentID, resourceGroupName, hostedZoneName string) (*azuredns.DNSProvider, error) {
@@ -94,11 +96,12 @@ func (f *fixture) solver() *Solver {
 		dnsProvider = newFakeDNSProviders()
 	}
 	return &Solver{
-		issuer:                  f.Issuer,
-		client:                  kubeClient,
-		secretLister:            secretsLister,
-		dnsProviderConstructors: dnsProvider.constructors,
-		resourceNamespace:       f.ResourceNamespace,
+		f.Issuer,
+		kubeClient,
+		secretsLister,
+		f.ResourceNamespace,
+		dnsProvider.constructors,
+		f.Ambient,
 	}
 }
 
@@ -371,11 +374,95 @@ func TestRoute53TrimCreds(t *testing.T) {
 	expectedR53Call := []fakeDNSProviderCall{
 		{
 			name: "route53",
-			args: []interface{}{"test_with_spaces", "AKIENDINNEWLINE", "", "us-west-2"},
+			args: []interface{}{"test_with_spaces", "AKIENDINNEWLINE", "", "us-west-2", false},
 		},
 	}
 
 	if !reflect.DeepEqual(expectedR53Call, f.DNSProviders.calls) {
 		t.Fatalf("expected %+v == %+v", expectedR53Call, f.DNSProviders.calls)
+	}
+}
+
+func TestRoute53AmbientCreds(t *testing.T) {
+	type result struct {
+		expectedCall *fakeDNSProviderCall
+		expectedErr  error
+	}
+
+	tests := []struct {
+		in  fixture
+		out result
+	}{
+		{
+			fixture{
+				Issuer: newIssuer("test", "default", []v1alpha1.ACMEIssuerDNS01Provider{
+					{
+						Name: "fake-route53",
+						Route53: &v1alpha1.ACMEIssuerDNS01ProviderRoute53{
+							Region: "us-west-2",
+						},
+					},
+				}),
+				DNSProviders: newFakeDNSProviders(),
+				Certificate: newCertificate("test", "default", "example.com", nil, []v1alpha1.ACMECertificateDomainConfig{
+					{
+						Domains: []string{"example.com"},
+						DNS01: &v1alpha1.ACMECertificateDNS01Config{
+							Provider: "fake-route53",
+						},
+					},
+				}),
+				Ambient: true,
+			},
+			result{
+				expectedCall: &fakeDNSProviderCall{
+					name: "route53",
+					args: []interface{}{"", "", "", "us-west-2", true},
+				},
+			},
+		},
+		{
+			fixture{
+				Issuer: newIssuer("test", "default", []v1alpha1.ACMEIssuerDNS01Provider{
+					{
+						Name: "fake-route53",
+						Route53: &v1alpha1.ACMEIssuerDNS01ProviderRoute53{
+							Region: "us-west-2",
+						},
+					},
+				}),
+				DNSProviders: newFakeDNSProviders(),
+				Certificate: newCertificate("test", "default", "example.com", nil, []v1alpha1.ACMECertificateDomainConfig{
+					{
+						Domains: []string{"example.com"},
+						DNS01: &v1alpha1.ACMECertificateDNS01Config{
+							Provider: "fake-route53",
+						},
+					},
+				}),
+				Ambient: false,
+			},
+			result{
+				expectedCall: &fakeDNSProviderCall{
+					name: "route53",
+					args: []interface{}{"", "", "", "us-west-2", false},
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		f := tt.in
+		s := f.solver()
+		_, err := s.solverFor(f.Certificate, "example.com")
+		if !reflect.DeepEqual(tt.out.expectedErr, err) {
+			t.Fatalf("expected error %v, got error %v", tt.out.expectedErr, err)
+		}
+
+		if tt.out.expectedCall != nil {
+			if !reflect.DeepEqual([]fakeDNSProviderCall{*tt.out.expectedCall}, f.DNSProviders.calls) {
+				t.Fatalf("expected %+v == %+v", []fakeDNSProviderCall{*tt.out.expectedCall}, f.DNSProviders.calls)
+			}
+		}
 	}
 }

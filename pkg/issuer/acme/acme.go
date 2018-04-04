@@ -54,6 +54,12 @@ type Acme struct {
 
 	// this is a field so it can be stubbed out for testing
 	acmeClient func() (client.Interface, error)
+
+	// ambientCredentials determines whether a given acme solver may draw
+	// credentials ambiently, e.g. from metadata services or environment
+	// variables.
+	// Currently, only AWS ambient credential control is implemented.
+	ambientCredentials bool
 }
 
 // solver solves ACME challenges by presenting the given token and key in an
@@ -74,7 +80,8 @@ func New(issuer v1alpha1.GenericIssuer,
 	secretsLister corelisters.SecretLister,
 	podsLister corelisters.PodLister,
 	servicesLister corelisters.ServiceLister,
-	ingressLister extlisters.IngressLister) (issuer.Interface, error) {
+	ingressLister extlisters.IngressLister,
+	ambientCreds bool) (issuer.Interface, error) {
 	if issuer.GetSpec().ACME == nil {
 		return nil, fmt.Errorf("acme config may not be empty")
 	}
@@ -99,7 +106,7 @@ func New(issuer v1alpha1.GenericIssuer,
 		servicesLister: servicesLister,
 		ingressLister:  ingressLister,
 
-		dnsSolver:                dns.NewSolver(issuer, client, secretsLister, resourceNamespace),
+		dnsSolver:                dns.NewSolver(issuer, client, secretsLister, resourceNamespace, ambientCreds),
 		httpSolver:               http.NewSolver(issuer, client, podsLister, servicesLister, ingressLister, acmeHTTP01SolverImage),
 		issuerResourcesNamespace: resourceNamespace,
 	}
@@ -184,6 +191,17 @@ func init() {
 		if issuerResourcesNamespace == "" {
 			issuerResourcesNamespace = ctx.ClusterResourceNamespace
 		}
+
+		ambientCreds := false
+		switch i.(type) {
+		case *v1alpha1.ClusterIssuer:
+			ambientCreds = ctx.ClusterIssuerAmbientCredentials
+		case *v1alpha1.Issuer:
+			ambientCreds = ctx.IssuerAmbientCredentials
+		default:
+			return nil, fmt.Errorf("issuer was neither an 'Issuer' nor 'ClusterIssuer'; was %T", i)
+		}
+
 		return New(
 			i,
 			ctx.Client,
@@ -195,6 +213,7 @@ func init() {
 			ctx.KubeSharedInformerFactory.Core().V1().Pods().Lister(),
 			ctx.KubeSharedInformerFactory.Core().V1().Services().Lister(),
 			ctx.KubeSharedInformerFactory.Extensions().V1beta1().Ingresses().Lister(),
+			ambientCreds,
 		)
 	})
 }

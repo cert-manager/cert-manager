@@ -21,6 +21,9 @@ type ControllerOptions struct {
 	LeaderElectionRetryPeriod   time.Duration
 
 	ACMEHTTP01SolverImage string
+
+	ClusterIssuerAmbientCredentials bool
+	IssuerAmbientCredentials        bool
 }
 
 const (
@@ -33,6 +36,9 @@ const (
 	defaultLeaderElectionLeaseDuration = 15 * time.Second
 	defaultLeaderElectionRenewDeadline = 10 * time.Second
 	defaultLeaderElectionRetryPeriod   = 2 * time.Second
+
+	defaultClusterIssuerAmbientCredentials = true
+	defaultIssuerAmbientCredentials        = false
 )
 
 var (
@@ -41,14 +47,16 @@ var (
 
 func NewControllerOptions() *ControllerOptions {
 	return &ControllerOptions{
-		APIServerHost:               defaultAPIServerHost,
-		Namespace:                   defaultNamespace,
-		ClusterResourceNamespace:    defaultClusterResourceNamespace,
-		LeaderElect:                 defaultLeaderElect,
-		LeaderElectionNamespace:     defaultLeaderElectionNamespace,
-		LeaderElectionLeaseDuration: defaultLeaderElectionLeaseDuration,
-		LeaderElectionRenewDeadline: defaultLeaderElectionRenewDeadline,
-		LeaderElectionRetryPeriod:   defaultLeaderElectionRetryPeriod,
+		APIServerHost:                   defaultAPIServerHost,
+		Namespace:                       defaultNamespace,
+		ClusterResourceNamespace:        defaultClusterResourceNamespace,
+		LeaderElect:                     defaultLeaderElect,
+		LeaderElectionNamespace:         defaultLeaderElectionNamespace,
+		LeaderElectionLeaseDuration:     defaultLeaderElectionLeaseDuration,
+		LeaderElectionRenewDeadline:     defaultLeaderElectionRenewDeadline,
+		LeaderElectionRetryPeriod:       defaultLeaderElectionRetryPeriod,
+		ClusterIssuerAmbientCredentials: defaultClusterIssuerAmbientCredentials,
+		IssuerAmbientCredentials:        defaultIssuerAmbientCredentials,
 	}
 }
 
@@ -85,6 +93,16 @@ func (s *ControllerOptions) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVar(&s.ACMEHTTP01SolverImage, "acme-http01-solver-image", defaultACMEHTTP01SolverImage, ""+
 		"The docker image to use to solve ACME HTTP01 challenges. You most likely will not "+
 		"need to change this parameter unless you are testing a new feature or developing cert-manager.")
+
+	fs.BoolVar(&s.ClusterIssuerAmbientCredentials, "cluster-issuer-ambient-credentials", defaultClusterIssuerAmbientCredentials, ""+
+		"Whether a cluster-issuer may make use of ambient credentials for issuers. 'Ambient Credentials' are credentials drawn from the environment, metadata services, or local files which are not explicitly configured in the ClusterIssuer API object. "+
+		"When this flag is enabled, the following sources for credentials are also used: "+
+		"AWS - All sources the Go SDK defaults to, notably including any EC2 IAM roles available via instance metadata.")
+	fs.BoolVar(&s.IssuerAmbientCredentials, "issuer-ambient-credentials", defaultIssuerAmbientCredentials, ""+
+		"Whether an issuer may make use of ambient credentials. 'Ambient Credentials' are credentials drawn from the environment, metadata services, or local files which are not explicitly configured in the Issuer API object. "+
+		"When this flag is enabled, the following sources for credentials are also used: "+
+		"AWS - All sources the Go SDK defaults to, notably including any EC2 IAM roles available via instance metadata.")
+
 }
 
 func (o *ControllerOptions) Validate() error {
