@@ -3,6 +3,7 @@ package kube
 import (
 	"fmt"
 
+	"github.com/jetstack/cert-manager/pkg/util"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 )
@@ -26,11 +27,11 @@ func KubeConfig(apiServerHost string) (*rest.Config, error) {
 		}
 
 		cfg, err = clientcmd.NewDefaultClientConfig(*apiCfg, &clientcmd.ConfigOverrides{}).ClientConfig()
-
 		if err != nil {
 			return nil, fmt.Errorf("error loading cluster client config: %s", err.Error())
 		}
 	}
+	cfg.UserAgent = util.CertManagerUserAgent
 
 	return cfg, nil
 }
