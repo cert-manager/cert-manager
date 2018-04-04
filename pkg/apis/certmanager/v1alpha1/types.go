@@ -316,10 +316,12 @@ const (
 
 // CertificateACMEStatus holds the status for an ACME issuer
 type CertificateACMEStatus struct {
+	// Order contains details about the current in-progress ACME Order.
 	Order ACMEOrderStatus `json:"order"`
 }
 
 type ACMEOrderStatus struct {
+	// The URI that can be used to get information about an ACME order.
 	URL string `json:"url"`
 }
 

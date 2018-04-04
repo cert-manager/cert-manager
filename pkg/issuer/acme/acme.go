@@ -117,7 +117,8 @@ func New(issuer v1alpha1.GenericIssuer,
 var timeout = time.Duration(5 * time.Second)
 
 func dialTimeout(ctx context.Context, network, addr string) (net.Conn, error) {
-	return net.DialTimeout(network, addr, timeout)
+	d := net.Dialer{Timeout: timeout}
+	return d.DialContext(ctx, network, addr)
 }
 
 func (a *Acme) acmeClientWithKey(accountPrivKey *rsa.PrivateKey) client.Interface {

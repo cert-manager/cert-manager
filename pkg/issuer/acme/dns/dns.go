@@ -69,7 +69,7 @@ func (s *Solver) Check(domain, token, key string) (bool, error) {
 	}
 
 	if ok {
-		glog.Infof("Waiting DNS record TTL (%ds) to allow propagation for propagation of DNS record for domain %q", ttl, fqdn)
+		glog.Infof("Waiting DNS record TTL (%ds) to allow propagation of DNS record for domain %q", ttl, fqdn)
 		time.Sleep(time.Second * time.Duration(ttl))
 		glog.Infof("ACME DNS01 validation record propagated for %q", fqdn)
 		return true, nil

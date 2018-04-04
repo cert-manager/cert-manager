@@ -39,7 +39,7 @@ func (s *Solver) getIngressesForCertificate(crt *v1alpha1.Certificate, domain st
 	var relevantIngresses []*extv1beta1.Ingress
 	for _, ingress := range ingressList {
 		if !metav1.IsControlledBy(ingress, crt) {
-			glog.Infof("Found ingress %q with acme-order-url annotation set to that of Certificate %q"+
+			glog.Infof("Found ingress %q with acme-order-url annotation set to that of Certificate %q "+
 				"but it is not owned by the Certificate resource, so skipping it.", ingress.Name, crt.Name)
 			continue
 		}
