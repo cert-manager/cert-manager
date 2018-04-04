@@ -91,13 +91,12 @@ func (c *Controller) Sync(ctx context.Context, crt *v1alpha1.Certificate) (err e
 		return err
 	}
 
-	expectedCN, err := pki.CommonNameForCertificate(crt)
-	if err != nil {
-		return err
-	}
-	expectedDNSNames, err := pki.DNSNamesForCertificate(crt)
-	if err != nil {
-		return err
+	expectedCN := pki.CommonNameForCertificate(crt)
+	expectedDNSNames := pki.DNSNamesForCertificate(crt)
+	if expectedCN == "" || len(expectedDNSNames) == 0 {
+		// TODO: Set certificate invalid condition on certificate resource
+		// TODO: remove this check in favour of resource validation
+		return fmt.Errorf("certificate must specify at least one of dnsNames or commonName")
 	}
 
 	// grab existing certificate and validate private key

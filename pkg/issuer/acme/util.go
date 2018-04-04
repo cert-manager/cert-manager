@@ -16,9 +16,6 @@ func buildOrder(crt *v1alpha1.Certificate) (*acme.Order, error) {
 	// DNSNamesForCertificate will automatically include the common name
 	// for the certificate if not already included, so we don't need to
 	// append the common name here.
-	desiredDNSNames, err := pki.DNSNamesForCertificate(crt)
-	if err != nil {
-		return nil, err
-	}
+	desiredDNSNames := pki.DNSNamesForCertificate(crt)
 	return acme.NewOrder(desiredDNSNames...), nil
 }

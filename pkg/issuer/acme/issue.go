@@ -28,14 +28,8 @@ const (
 )
 
 func (a *Acme) obtainCertificate(ctx context.Context, crt *v1alpha1.Certificate) ([]byte, []byte, error) {
-	commonName, err := pki.CommonNameForCertificate(crt)
-	if err != nil {
-		return nil, nil, err
-	}
-	altNames, err := pki.DNSNamesForCertificate(crt)
-	if err != nil {
-		return nil, nil, err
-	}
+	commonName := pki.CommonNameForCertificate(crt)
+	altNames := pki.DNSNamesForCertificate(crt)
 
 	cl, err := a.acmeClient()
 	if err != nil {
