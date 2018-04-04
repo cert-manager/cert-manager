@@ -32,7 +32,8 @@ func Certificate(cfg CertificateConfig) *v1alpha1.Certificate {
 				Name: cfg.IssuerName,
 				Kind: cfg.IssuerKind,
 			},
-			DNSNames: cfg.DNSNames,
+			CommonName: cfg.CommonName,
+			DNSNames:   cfg.DNSNames,
 			ACME: &v1alpha1.ACMECertificateConfig{
 				Config: []v1alpha1.ACMECertificateDomainConfig{
 					{
