@@ -179,10 +179,11 @@ func (a *Acme) createOrder(ctx context.Context, cl client.Interface, crt *v1alph
 	}
 	order, err = cl.CreateOrder(ctx, order)
 	if err != nil {
-		a.recorder.Eventf(crt, corev1.EventTypeWarning, "ErrCreateOrder", "Error creating order for domains '%v': %v", order.Identifiers, err)
+		a.recorder.Eventf(crt, corev1.EventTypeWarning, "ErrCreateOrder", "Error creating order: %v", err)
 		return nil, err
 	}
 	a.recorder.Eventf(crt, corev1.EventTypeNormal, "CreateOrder", "Created order for domains: %v", order.Identifiers)
+	glog.Infof("Created order for domains: %v", order.Identifiers)
 	crt.Status.ACMEStatus().Order.URL = order.URL
 	return order, nil
 }
