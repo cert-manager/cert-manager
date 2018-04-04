@@ -36,6 +36,12 @@ func TestEqualUnsorted(t *testing.T) {
 			s2:    []string{"a", "b", "c"},
 			equal: true,
 		},
+		{
+			desc:  "unequal lists of the same length are not equal",
+			s1:    []string{"example.com"},
+			s2:    []string{"notexample.com"},
+			equal: false,
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.desc, func(test testT) func(*testing.T) {

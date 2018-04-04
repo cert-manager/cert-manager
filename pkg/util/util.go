@@ -24,8 +24,10 @@ func EqualUnsorted(s1 []string, s2 []string) bool {
 		return false
 	}
 	s1_2, s2_2 := make([]string, len(s1)), make([]string, len(s2))
-	sort.Strings(s1)
-	sort.Strings(s2)
+	copy(s1_2, s1)
+	copy(s2_2, s2)
+	sort.Strings(s1_2)
+	sort.Strings(s2_2)
 	for i, s := range s1_2 {
 		if s != s2_2[i] {
 			return false
