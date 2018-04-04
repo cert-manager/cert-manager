@@ -20,6 +20,7 @@ type FakeACME struct {
 	FakeGetAuthorization        func(ctx context.Context, url string) (*acme.Authorization, error)
 	FakeWaitAuthorization       func(ctx context.Context, url string) (*acme.Authorization, error)
 	FakeCreateAccount           func(ctx context.Context, a *acme.Account) (*acme.Account, error)
+	FakeGetAccount              func(ctx context.Context) (*acme.Account, error)
 	FakeHTTP01ChallengeResponse func(token string) (string, error)
 	FakeDNS01ChallengeRecord    func(token string) (string, error)
 }
@@ -78,6 +79,13 @@ func (f *FakeACME) CreateAccount(ctx context.Context, a *acme.Account) (*acme.Ac
 		return f.FakeCreateAccount(ctx, a)
 	}
 	return nil, fmt.Errorf("CreateAccount not implemented")
+}
+
+func (f *FakeACME) GetAccount(ctx context.Context) (*acme.Account, error) {
+	if f.FakeGetAccount != nil {
+		return f.FakeGetAccount(ctx)
+	}
+	return nil, fmt.Errorf("GetAccount not implemented")
 }
 
 func (f *FakeACME) HTTP01ChallengeResponse(token string) (string, error) {
