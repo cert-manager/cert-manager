@@ -17,7 +17,11 @@ import (
 func podLabels(crt *v1alpha1.Certificate, domain string) map[string]string {
 	return map[string]string{
 		certNameLabelKey: crt.Name,
-		domainLabelKey:   domain,
+		// TODO: we need to support domains longer than 63 characters
+		// this value should probably be hashed, and then the full plain text
+		// value stored as an annotation to make it easier for users to read
+		// see #425 for details: https://github.com/jetstack/cert-manager/issues/425
+		domainLabelKey: domain,
 	}
 }
 
