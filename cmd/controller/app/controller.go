@@ -28,7 +28,11 @@ import (
 	kubeinformers "k8s.io/client-go/informers"
 )
 
-const controllerAgentName = "cert-manager-controller"
+const (
+	controllerAgentName = "cert-manager-controller"
+
+	defaultNamespace = ""
+)
 
 func Run(opts *options.ControllerOptions, stopCh <-chan struct{}) {
 	ctx, kubeCfg, err := buildControllerContext(opts)
@@ -120,8 +124,8 @@ func buildControllerContext(opts *options.ControllerOptions) (*controller.Contex
 	// If it is specified, all operations relating to ClusterIssuer resources
 	// should be disabled and thus we don't need to also create factories for
 	// the --cluster-resource-namespace.
-	sharedInformerFactory := informers.NewFilteredSharedInformerFactory(intcl, time.Second*30, opts.Namespace, nil)
-	kubeSharedInformerFactory := kubeinformers.NewFilteredSharedInformerFactory(cl, time.Second*30, opts.Namespace, nil)
+	sharedInformerFactory := informers.NewFilteredSharedInformerFactory(intcl, time.Second*30, defaultNamespace, nil)
+	kubeSharedInformerFactory := kubeinformers.NewFilteredSharedInformerFactory(cl, time.Second*30, defaultNamespace, nil)
 	return &controller.Context{
 		Client:                    cl,
 		CMClient:                  intcl,
@@ -134,13 +138,13 @@ func buildControllerContext(opts *options.ControllerOptions) (*controller.Contex
 			Recorder:                        recorder,
 			KubeSharedInformerFactory:       kubeSharedInformerFactory,
 			SharedInformerFactory:           sharedInformerFactory,
-			Namespace:                       opts.Namespace,
+			Namespace:                       defaultNamespace,
 			ClusterResourceNamespace:        opts.ClusterResourceNamespace,
 			ACMEHTTP01SolverImage:           opts.ACMEHTTP01SolverImage,
 			ClusterIssuerAmbientCredentials: opts.ClusterIssuerAmbientCredentials,
 			IssuerAmbientCredentials:        opts.IssuerAmbientCredentials,
 		}),
-		Namespace:                opts.Namespace,
+		Namespace:                defaultNamespace,
 		ClusterResourceNamespace: opts.ClusterResourceNamespace,
 	}, kubeCfg, nil
 }
