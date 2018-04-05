@@ -26,7 +26,11 @@ import (
 	kubeinformers "k8s.io/client-go/informers"
 )
 
-const controllerAgentName = "ingress-shim-controller"
+const (
+	controllerAgentName = "ingress-shim-controller"
+
+	defaultNamespace = ""
+)
 
 func Run(opts *options.ControllerOptions, stopCh <-chan struct{}) {
 	ctrl, kubeCfg, err := buildController(opts, stopCh)
@@ -105,8 +109,8 @@ func buildController(opts *options.ControllerOptions, stopCh <-chan struct{}) (*
 	// If it is specified, all operations relating to ClusterIssuer resources
 	// should be disabled and thus we don't need to also create factories for
 	// the --cluster-resource-namespace.
-	sharedInformerFactory := informers.NewFilteredSharedInformerFactory(intcl, time.Second*30, opts.Namespace, nil)
-	kubeSharedInformerFactory := kubeinformers.NewFilteredSharedInformerFactory(cl, time.Second*30, opts.Namespace, nil)
+	sharedInformerFactory := informers.NewFilteredSharedInformerFactory(intcl, time.Second*30, defaultNamespace, nil)
+	kubeSharedInformerFactory := kubeinformers.NewFilteredSharedInformerFactory(cl, time.Second*30, defaultNamespace, nil)
 	ctrl := controller.New(
 		sharedInformerFactory.Certmanager().V1alpha1().Certificates(),
 		kubeSharedInformerFactory.Extensions().V1beta1().Ingresses(),
