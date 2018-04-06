@@ -34,6 +34,10 @@ const (
 )
 
 func (a *Acme) urlChanged() (bool, error) {
+	if a.issuer.GetStatus().ACMEStatus().URI == "" {
+		return false, nil
+	}
+
 	spechost, err := url.Parse(a.issuer.GetSpec().ACME.Server)
 	if err != nil {
 		return false, err
