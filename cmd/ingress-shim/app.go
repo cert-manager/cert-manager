@@ -26,11 +26,7 @@ import (
 	kubeinformers "k8s.io/client-go/informers"
 )
 
-const (
-	controllerAgentName = "ingress-shim-controller"
-
-	defaultNamespace = ""
-)
+const controllerAgentName = "ingress-shim-controller"
 
 func Run(opts *options.ControllerOptions, stopCh <-chan struct{}) {
 	ctrl, kubeCfg, err := buildController(opts, stopCh)
