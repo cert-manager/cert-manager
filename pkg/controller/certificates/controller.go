@@ -233,14 +233,10 @@ const (
 
 func init() {
 	controllerpkg.Register(ControllerName, func(ctx *controllerpkg.Context) controllerpkg.Interface {
-		var clusterIssuerInformer cminformers.ClusterIssuerInformer
-		if ctx.Namespace == "" {
-			clusterIssuerInformer = ctx.SharedInformerFactory.Certmanager().V1alpha1().ClusterIssuers()
-		}
 		return New(
 			ctx.SharedInformerFactory.Certmanager().V1alpha1().Certificates(),
 			ctx.SharedInformerFactory.Certmanager().V1alpha1().Issuers(),
-			clusterIssuerInformer,
+			ctx.SharedInformerFactory.Certmanager().V1alpha1().ClusterIssuers(),
 			ctx.KubeSharedInformerFactory.Core().V1().Secrets(),
 			ctx.KubeSharedInformerFactory.Extensions().V1beta1().Ingresses(),
 			ctx.Client,

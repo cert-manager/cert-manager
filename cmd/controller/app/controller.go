@@ -22,7 +22,6 @@ import (
 	intscheme "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/scheme"
 	informers "github.com/jetstack/cert-manager/pkg/client/informers/externalversions"
 	"github.com/jetstack/cert-manager/pkg/controller"
-	"github.com/jetstack/cert-manager/pkg/controller/clusterissuers"
 	"github.com/jetstack/cert-manager/pkg/issuer"
 	"github.com/jetstack/cert-manager/pkg/util/kube"
 	kubeinformers "k8s.io/client-go/informers"
@@ -43,15 +42,7 @@ func Run(opts *options.ControllerOptions, stopCh <-chan struct{}) {
 
 	run := func(_ <-chan struct{}) {
 		var wg sync.WaitGroup
-		var controllers = make(map[string]controller.Interface)
 		for n, fn := range controller.Known() {
-			if ctx.Namespace != "" && n == clusterissuers.ControllerName {
-				glog.Infof("Skipping ClusterIssuer controller as cert-manager is scoped to a single namespace")
-				continue
-			}
-			controllers[n] = fn(ctx)
-		}
-		for n, fn := range controllers {
 			wg.Add(1)
 			go func(n string, fn controller.Interface) {
 				defer wg.Done()
@@ -62,7 +53,7 @@ func Run(opts *options.ControllerOptions, stopCh <-chan struct{}) {
 				if err != nil {
 					glog.Fatalf("error running %s controller: %s", n, err.Error())
 				}
-			}(n, fn)
+			}(n, fn(ctx))
 		}
 		glog.V(4).Infof("Starting shared informer factory")
 		ctx.SharedInformerFactory.Start(stopCh)
@@ -118,12 +109,6 @@ func buildControllerContext(opts *options.ControllerOptions) (*controller.Contex
 	eventBroadcaster.StartRecordingToSink(&corev1.EventSinkImpl{Interface: cl.CoreV1().Events("")})
 	recorder := eventBroadcaster.NewRecorder(scheme.Scheme, v1.EventSource{Component: controllerAgentName})
 
-	// We only create SharedInformerFactories for the --namespace specified to
-	// watch. If this namespace is blank (i.e. the default, watch all
-	// namespaces) then the factories will watch all namespaces.
-	// If it is specified, all operations relating to ClusterIssuer resources
-	// should be disabled and thus we don't need to also create factories for
-	// the --cluster-resource-namespace.
 	sharedInformerFactory := informers.NewSharedInformerFactory(intcl, time.Second*30)
 	kubeSharedInformerFactory := kubeinformers.NewSharedInformerFactory(cl, time.Second*30)
 	return &controller.Context{
@@ -138,13 +123,11 @@ func buildControllerContext(opts *options.ControllerOptions) (*controller.Contex
 			Recorder:                        recorder,
 			KubeSharedInformerFactory:       kubeSharedInformerFactory,
 			SharedInformerFactory:           sharedInformerFactory,
-			Namespace:                       defaultNamespace,
 			ClusterResourceNamespace:        opts.ClusterResourceNamespace,
 			ACMEHTTP01SolverImage:           opts.ACMEHTTP01SolverImage,
 			ClusterIssuerAmbientCredentials: opts.ClusterIssuerAmbientCredentials,
 			IssuerAmbientCredentials:        opts.IssuerAmbientCredentials,
 		}),
-		Namespace:                defaultNamespace,
 		ClusterResourceNamespace: opts.ClusterResourceNamespace,
 	}, kubeCfg, nil
 }
