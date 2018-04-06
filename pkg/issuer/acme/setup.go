@@ -55,9 +55,9 @@ func (a *Acme) urlChanged() (bool, error) {
 func (a *Acme) Setup(ctx context.Context) error {
 	cl, err := a.acmeClient()
 
-	urlchanged, err := a.urlChanged()
-	if err != nil {
-		return err
+	urlchanged, urlErr := a.urlChanged()
+	if urlErr != nil {
+		return urlErr
 	}
 
 	if urlchanged || k8sErrors.IsNotFound(err) || errors.IsInvalidData(err) {
