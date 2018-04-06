@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/x509"
 	"fmt"
+	"strings"
 	"time"
 
 	api "k8s.io/api/core/v1"
@@ -201,15 +202,24 @@ func (c *Controller) scheduleRenewal(crt *v1alpha1.Certificate) {
 	c.recorder.Event(crt, api.EventTypeNormal, successRenewalScheduled, s)
 }
 
-func (c *Controller) updateSecret(name, namespace string, cert, key []byte) (*api.Secret, error) {
-	secret, err := c.client.CoreV1().Secrets(namespace).Get(name, metav1.GetOptions{})
+// issuerKind returns the kind of issuer for a certificate
+func issuerKind(crt *v1alpha1.Certificate) string {
+	if crt.Spec.IssuerRef.Kind == "" {
+		return v1alpha1.IssuerKind
+	} else {
+		return crt.Spec.IssuerRef.Kind
+	}
+}
+
+func (c *Controller) updateSecret(crt *v1alpha1.Certificate, namespace string, cert, key []byte) (*api.Secret, error) {
+	secret, err := c.client.CoreV1().Secrets(namespace).Get(crt.Spec.SecretName, metav1.GetOptions{})
 	if err != nil && !k8sErrors.IsNotFound(err) {
 		return nil, err
 	}
 	if k8sErrors.IsNotFound(err) {
 		secret = &api.Secret{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      name,
+				Name:      crt.Spec.SecretName,
 				Namespace: namespace,
 			},
 			Type: api.SecretTypeTLS,
@@ -218,6 +228,29 @@ func (c *Controller) updateSecret(name, namespace string, cert, key []byte) (*ap
 	}
 	secret.Data[api.TLSCertKey] = cert
 	secret.Data[api.TLSPrivateKeyKey] = key
+
+	if secret.Annotations == nil {
+		secret.Annotations = make(map[string]string)
+	}
+
+	dnsnames, err := pki.DNSNamesForCertificate(crt)
+	if err != nil {
+		return nil, err
+	}
+	secret.Annotations[v1alpha1.AltNamesAnnotationKey] = strings.Join(dnsnames, ",")
+
+	// Note: since this sets annotations based on certificate resource, incorrect
+	// annotations will be set if resource and actual certificate somehow get out
+	// of sync
+	cn, err := pki.CommonNameForCertificate(crt)
+	if err != nil {
+		return nil, err
+	}
+	secret.Annotations[v1alpha1.CommonNameAnnotationKey] = cn
+
+	secret.Annotations[v1alpha1.IssuerNameAnnotationKey] = crt.Spec.IssuerRef.Name
+	secret.Annotations[v1alpha1.IssuerKindAnnotationKey] = issuerKind(crt)
+
 	// if it is a new resource
 	if secret.SelfLink == "" {
 		secret, err = c.client.CoreV1().Secrets(namespace).Create(secret)
@@ -258,7 +291,7 @@ func (c *Controller) issue(ctx context.Context, issuer issuer.Interface, crt *v1
 		return err
 	}
 
-	if _, err := c.updateSecret(crt.Spec.SecretName, crt.Namespace, cert, key); err != nil {
+	if _, err := c.updateSecret(crt, crt.Namespace, cert, key); err != nil {
 		s := messageErrorSavingCertificate + err.Error()
 		glog.Info(s)
 		c.recorder.Event(crt, api.EventTypeWarning, errorSavingCertificate, s)
@@ -302,7 +335,7 @@ func (c *Controller) renew(ctx context.Context, issuer issuer.Interface, crt *v1
 		return err
 	}
 
-	if _, err := c.updateSecret(crt.Spec.SecretName, crt.Namespace, cert, key); err != nil {
+	if _, err := c.updateSecret(crt, crt.Namespace, cert, key); err != nil {
 		s := messageErrorSavingCertificate + err.Error()
 		glog.Info(s)
 		c.recorder.Event(crt, api.EventTypeWarning, errorSavingCertificate, s)
