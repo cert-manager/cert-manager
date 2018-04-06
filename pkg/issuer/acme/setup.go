@@ -57,7 +57,6 @@ func (a *Acme) Setup(ctx context.Context) error {
 	}
 
 	if urlchanged || k8sErrors.IsNotFound(err) || errors.IsInvalidData(err) {
-		fmt.Println("isnotfound")
 		glog.V(4).Infof("%s: generating acme account private key %q", a.issuer.GetObjectMeta().Name, a.issuer.GetSpec().ACME.PrivateKey.Name)
 		accountPrivKey, err := a.createAccountPrivateKey()
 		if err != nil {
