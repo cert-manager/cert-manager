@@ -12,6 +12,15 @@ and has borrowed some wisdom from other similar projects e.g.
 
 ![cert-manager high level overview diagram](/docs/high-level-overview.png)
 
+## Quickstart
+
+> Prebuilt images for cert-manager are made available on Dockerhub.
+
+For the common use-case of automatically issuing TLS certificates to
+Ingress resources, aka a [kube-lego](https://github.com/jetstack/kube-lego)
+replacement, see the [cert-manager nginx ingress quick start
+guide](docs/quick-start/nginx-ingress/).
+
 ## Current status
 
 This project is not yet ready to be a component in a critical production stack,
@@ -25,14 +34,7 @@ there may be breaking changes that will require changes to *all*
 `Issuer`/`Certificate` resources you have already created. We aim to provide a
 stable API after a 1.0 release.
 
-## Quickstart
-
-> Prebuilt images for cert-manager are made available on Dockerhub.
-
-### Pre-requisites
-
-* Kubernetes cluster with `CustomResourceDefinition` or `ThirdPartyResource`
-support
+## Using cert-manager
 
 ### Deploying cert-manager
 
@@ -53,7 +55,7 @@ validation](docs/user-guides/acme-http-validation.md)
 * [Issuing an ACME certificate using DNS
 validation](docs/user-guides/acme-dns-validation.md)
 
-## Further documentation
+### Further Documentation
 
 For further documentation, please check the [/docs](/docs) directory in this
 repository.
