@@ -179,8 +179,10 @@ func NewCertManagerACMECertificate(name, secretName, issuerName string, issuerKi
 				Config: []v1alpha1.ACMECertificateDomainConfig{
 					{
 						Domains: append(dnsNames, cn),
-						HTTP01: &v1alpha1.ACMECertificateHTTP01Config{
-							IngressClass: &ingressClass,
+						ACMESolverConfig: v1alpha1.ACMESolverConfig{
+							HTTP01: &v1alpha1.ACMECertificateHTTP01Config{
+								IngressClass: &ingressClass,
+							},
 						},
 					},
 				},
