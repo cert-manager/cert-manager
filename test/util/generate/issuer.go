@@ -9,6 +9,7 @@ import (
 type IssuerConfig struct {
 	Name, Namespace string
 
+	ACMESkipTLSVerify                         bool
 	ACMEServer, ACMEEmail, ACMEPrivateKeyName string
 	HTTP01                                    *v1alpha1.ACMEIssuerHTTP01Config
 	DNS01                                     *v1alpha1.ACMEIssuerDNS01Config
@@ -26,8 +27,9 @@ func Issuer(cfg IssuerConfig) *v1alpha1.Issuer {
 		Spec: v1alpha1.IssuerSpec{
 			IssuerConfig: v1alpha1.IssuerConfig{
 				ACME: &v1alpha1.ACMEIssuer{
-					Server: cfg.ACMEServer,
-					Email:  cfg.ACMEEmail,
+					SkipTLSVerify: cfg.ACMESkipTLSVerify,
+					Server:        cfg.ACMEServer,
+					Email:         cfg.ACMEEmail,
 					PrivateKey: v1alpha1.SecretKeySelector{
 						LocalObjectReference: v1alpha1.LocalObjectReference{
 							Name: cfg.ACMEPrivateKeyName,

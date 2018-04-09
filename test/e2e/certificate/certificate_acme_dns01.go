@@ -77,6 +77,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (DNS01)", func() {
 		issuer := generate.Issuer(generate.IssuerConfig{
 			Name:               issuerName,
 			Namespace:          f.Namespace.Name,
+			ACMESkipTLSVerify:  true,
 			ACMEServer:         framework.TestContext.ACMEURL,
 			ACMEEmail:          testingACMEEmail,
 			ACMEPrivateKeyName: testingACMEPrivateKey,
@@ -129,6 +130,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (DNS01)", func() {
 		By("Cleaning up")
 		f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Delete(issuerName, nil)
 		f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Delete(testingACMEPrivateKey, nil)
+		f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Delete(cloudflareSecretName, nil)
 	})
 
 	It("should obtain a signed certificate for a wildcard domain", func() {
