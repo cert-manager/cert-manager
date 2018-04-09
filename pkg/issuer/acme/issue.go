@@ -15,6 +15,7 @@ import (
 	"github.com/jetstack/cert-manager/pkg/util/errors"
 	"github.com/jetstack/cert-manager/pkg/util/kube"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
+	"github.com/jetstack/cert-manager/third_party/crypto/acme"
 )
 
 const (
@@ -67,7 +68,20 @@ func (a *Acme) obtainCertificate(ctx context.Context, crt *v1alpha1.Certificate)
 	// obtain a certificate from the acme server
 	certSlice, err := cl.FinalizeOrder(ctx, order.FinalizeURL, csr)
 	if err != nil {
-		return nil, nil, fmt.Errorf("error getting certificate for acme server: %s", err)
+		// this handles an edge case where a certificate ends out with an order
+		// that is in an invalid state.
+		// ideally we would instead call GetCertificate on the ACME client
+		// instead of FinalizeOrder, which would save us creating a new order
+		// just to issue a new certificate.
+		// The underlying ACME client doesn't expose this though yet.
+		if acmeErr, ok := err.(*acme.Error); ok {
+			if acmeErr.StatusCode >= 400 && acmeErr.StatusCode <= 499 {
+				crt.Status.ACMEStatus().Order.URL = ""
+				// TODO: should we also set the FailedValidation status
+				// condition here so back off can be applied?
+			}
+		}
+		return nil, nil, fmt.Errorf("error getting certificate from acme server: %s", err)
 	}
 
 	// encode the retrieved certificate
