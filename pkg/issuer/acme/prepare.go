@@ -397,7 +397,10 @@ func (a *Acme) shouldAttemptValidation(ctx context.Context, cl client.Interface,
 	case acme.StatusPending, acme.StatusProcessing, acme.StatusValid:
 		// if the order has not failed, attempt authorization
 		return 0, order, nil
-	case acme.StatusRevoked, acme.StatusInvalid, acme.StatusUnknown:
+	case acme.StatusRevoked, acme.StatusUnknown:
+		// if the order is revoked (i.e. expired), we should create a new one
+		return 0, nil, nil
+	case acme.StatusInvalid:
 		// if the certificate is not marked as failed, we should set the
 		// condition on the resource
 		if !crt.HasCondition(v1alpha1.CertificateCondition{
