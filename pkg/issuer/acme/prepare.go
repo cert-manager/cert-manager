@@ -6,6 +6,8 @@ import (
 	"reflect"
 	"time"
 
+	corev1 "k8s.io/api/core/v1"
+
 	"github.com/golang/glog"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/client"
@@ -14,21 +16,17 @@ import (
 )
 
 const (
-	successObtainedAuthorization = "ObtainAuthorization"
-	reasonPresentChallenge       = "PresentChallenge"
-	reasonSelfCheck              = "SelfCheck"
-	errorGetACMEAccount          = "ErrGetACMEAccount"
-	errorCheckAuthorization      = "ErrCheckAuthorization"
-	errorObtainAuthorization     = "ErrObtainAuthorization"
-	errorInvalidConfig           = "ErrInvalidConfig"
+	reasonCreateOrder    = "CreateOrder"
+	reasonDomainVerified = "DomainVerified"
+	reasonSelfCheck      = "SelfCheck"
 
-	messageObtainedAuthorization    = "Obtained authorization for domain %s"
-	messagePresentChallenge         = "Presenting %s challenge for domain %s"
-	messageSelfCheck                = "Performing self-check for domain %s"
-	messageErrorGetACMEAccount      = "Error getting ACME account: "
-	messageErrorCheckAuthorization  = "Error checking ACME domain validation: "
-	messageErrorObtainAuthorization = "Error obtaining ACME domain authorization: "
-	messageErrorMissingConfig       = "certificate.spec.acme must be specified"
+	errorInvalidConfig = "InvalidConfig"
+	errorCleanupError  = "CleanupError"
+	errorPresentError  = "PresentError"
+	errorBackoff       = "Backoff"
+
+	messagePresentChallenge = "Presenting %s challenge for domain %s"
+	messageSelfCheck        = "Performing self-check for domain %s"
 
 	// the amount of time to wait before attempting to create a new order after
 	// an order has failed.s
@@ -42,14 +40,15 @@ const (
 // challenge requests if neccessary.
 func (a *Acme) Prepare(ctx context.Context, crt *v1alpha1.Certificate) error {
 	if crt.Spec.ACME == nil {
-		crt.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse, errorInvalidConfig, messageErrorMissingConfig, false)
-		return fmt.Errorf(messageErrorMissingConfig)
+		crt.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse, errorInvalidConfig, "spec.acme must be specified", false)
+		return fmt.Errorf("spec.acme not specified on certificate %s/%s", crt.Namespace, crt.Name)
 	}
 
 	glog.V(4).Infof("Getting ACME client")
 	// obtain an ACME client
 	cl, err := a.acmeClient()
 	if err != nil {
+		crt.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse, errorPresentError, fmt.Sprintf("Failed to get ACME client: %v", err), false)
 		return err
 	}
 
@@ -58,6 +57,7 @@ func (a *Acme) Prepare(ctx context.Context, crt *v1alpha1.Certificate) error {
 	// acme server.
 	nextPresentIn, order, err := a.shouldAttemptValidation(ctx, cl, crt)
 	if err != nil {
+		crt.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse, errorPresentError, fmt.Sprintf("Failed to determine order status: %v", err), false)
 		return err
 	}
 
@@ -66,6 +66,7 @@ func (a *Acme) Prepare(ctx context.Context, crt *v1alpha1.Certificate) error {
 	if order == nil {
 		err := a.cleanupLastOrder(ctx, crt)
 		if err != nil {
+			crt.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse, errorPresentError, fmt.Sprintf("Failed to clean up previous order: %v", err), false)
 			return err
 		}
 	}
@@ -74,6 +75,7 @@ func (a *Acme) Prepare(ctx context.Context, crt *v1alpha1.Certificate) error {
 	// will be requeued.
 	if nextPresentIn > 0 {
 		nextPresentTimeStr := time.Now().Add(nextPresentIn).Format(time.RFC822Z)
+		crt.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse, errorBackoff, fmt.Sprintf("Backing off %s until attempting re-validation", nextPresentIn), false)
 		return fmt.Errorf("not attempting acme validation until %s", nextPresentTimeStr)
 	}
 
@@ -82,8 +84,10 @@ func (a *Acme) Prepare(ctx context.Context, crt *v1alpha1.Certificate) error {
 	if order == nil {
 		order, err = a.createOrder(ctx, cl, crt)
 		if err != nil {
+			crt.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse, errorPresentError, fmt.Sprintf("Failed to create new order: %v", err), false)
 			return err
 		}
+		a.recorder.Eventf(crt, corev1.EventTypeNormal, reasonCreateOrder, "Created new ACME order, attempting validation...")
 	}
 
 	// attempt to present/validate the order
@@ -93,8 +97,7 @@ func (a *Acme) Prepare(ctx context.Context, crt *v1alpha1.Certificate) error {
 func (a *Acme) presentOrder(ctx context.Context, cl client.Interface, crt *v1alpha1.Certificate, order *acme.Order) error {
 	allAuthorizations, err := getRemainingAuthorizations(ctx, cl, order.Authorizations...)
 	if err != nil {
-		// TODO: update status condition?
-		// TODO: log an event?
+		crt.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse, errorPresentError, fmt.Sprintf("Failed to determine authorizations to obtain: %v", err), false)
 		return err
 	}
 
@@ -104,15 +107,13 @@ func (a *Acme) presentOrder(ctx context.Context, cl client.Interface, crt *v1alp
 	chs, err := a.selectChallengesForAuthorizations(ctx, cl, crt, allAuthorizations...)
 	errCleanup := a.cleanupIrrelevantChallenges(ctx, crt, chs)
 	if errCleanup != nil {
-		// TODO: update status condition?
-		// TODO: log an event?
+		crt.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse, errorCleanupError, fmt.Sprintf("Failed to clean up old challenges: %v", err), false)
 		// perhaps we should just throw a warning here instead of erroring.
 		// for now, return an error to pick up bugs in this codepath
 		return err
 	}
 	if err != nil {
-		// TODO: update status condition?
-		// TODO: log an event?
+		crt.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse, errorInvalidConfig, err.Error(), false)
 		return err
 	}
 
@@ -129,6 +130,9 @@ func (a *Acme) presentOrder(ctx context.Context, cl client.Interface, crt *v1alp
 	// passing, to save the number of 'accept' operations sent to the acme server.
 	err = utilerrors.NewAggregate(errs)
 	if err != nil {
+		// we set forceTime to true so the user can see the self check is being
+		// performed regularly
+		crt.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse, errorPresentError, err.Error(), true)
 		return err
 	}
 
@@ -137,16 +141,17 @@ func (a *Acme) presentOrder(ctx context.Context, cl client.Interface, crt *v1alp
 	// compute the new challenge list after cleaning up successful challenges
 	var newChallengeList []v1alpha1.ACMEOrderChallenge
 	for _, ch := range chs {
-		acceptChalErr := a.acceptChallenge(ctx, cl, ch)
+		acceptChalErr := a.acceptChallenge(ctx, cl, crt, ch)
 		errs = append(errs, acceptChalErr)
 		// only clean up if this stage suceeded.
 		// If it fails, an error will be returned anyway and our standard
 		// failed-validation cleanup logic will be invoked.
 		if acceptChalErr == nil {
 			err := a.cleanupChallenge(ctx, crt, ch)
+			errs = append(errs, err)
 			if err != nil {
 				newChallengeList = append(newChallengeList, ch)
-				return err
+				continue
 			}
 		} else {
 			newChallengeList = append(newChallengeList, ch)
@@ -154,7 +159,13 @@ func (a *Acme) presentOrder(ctx context.Context, cl client.Interface, crt *v1alp
 	}
 	crt.Status.ACMEStatus().Order.Challenges = newChallengeList
 
-	return utilerrors.NewAggregate(errs)
+	err = utilerrors.NewAggregate(errs)
+	if err != nil {
+		crt.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse, errorPresentError, err.Error(), false)
+		return err
+	}
+
+	return nil
 }
 
 // presentChallenge will process a challenge by talking to the acme server and
@@ -183,7 +194,7 @@ func (a *Acme) presentChallenge(ctx context.Context, cl client.Interface, crt *v
 		return fmt.Errorf("challenge for domain %q failed: %s", ch.Domain, acmeErrReason)
 	case acme.StatusPending, acme.StatusProcessing:
 	default:
-		return fmt.Errorf("unknown acme challenge status %q", acmeCh.Status)
+		return fmt.Errorf("unknown acme challenge status %q for domain %q", acmeCh.Status, ch.Domain)
 	}
 
 	solver, err := a.solverFor(ch.Type)
@@ -201,7 +212,7 @@ func (a *Acme) presentChallenge(ctx context.Context, cl client.Interface, crt *v
 		return err
 	}
 	if !ok {
-		return fmt.Errorf("Self check (%s) failed for domain %q", ch.Type, ch.Domain)
+		return fmt.Errorf("%s self check failed for domain %q", ch.Type, ch.Domain)
 	}
 
 	return nil
@@ -427,7 +438,7 @@ func (a *Acme) shouldAttemptValidation(ctx context.Context, cl client.Interface,
 	return 0, nil, fmt.Errorf("unrecognised existing acme order status: %q", order.Status)
 }
 
-func (a *Acme) acceptChallenge(ctx context.Context, cl client.Interface, ch v1alpha1.ACMEOrderChallenge) error {
+func (a *Acme) acceptChallenge(ctx context.Context, cl client.Interface, crt *v1alpha1.Certificate, ch v1alpha1.ACMEOrderChallenge) error {
 	glog.Infof("Accepting challenge for domain %q", ch.Domain)
 	// We manually construct an ACME challenge here from our own internal type
 	// to save additional round trips to the ACME server.
@@ -451,6 +462,7 @@ func (a *Acme) acceptChallenge(ctx context.Context, cl client.Interface, ch v1al
 	}
 
 	glog.Infof("Successfully authorized domain %q", authorization.Identifier.Value)
+	a.recorder.Eventf(crt, corev1.EventTypeNormal, reasonDomainVerified, "Domain %q verified with %q validation", ch.Domain, ch.Type)
 
 	return nil
 }

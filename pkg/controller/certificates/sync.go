@@ -43,23 +43,19 @@ const (
 	successCertificateRenewed = "CertificateRenewed"
 	successRenewalScheduled   = "RenewalScheduled"
 
-	messageIssuerNotFound            = "Issuer %s does not exist"
-	messageIssuerNotReady            = "Issuer %s not ready"
-	messageIssuerErrorInit           = "Error initializing issuer: "
-	messageErrorCheckCertificate     = "Error checking existing TLS certificate, will re-issue: "
-	messageErrorGetCertificate       = "Error getting TLS certificate: "
-	messageErrorPreparingCertificate = "Error preparing issuer for certificate: "
-	messageErrorIssuingCertificate   = "Error issuing certificate: "
-	messageErrorRenewingCertificate  = "Error renewing certificate: "
-	messageErrorSavingCertificate    = "Error saving TLS certificate: "
+	messageIssuerNotFound           = "Issuer %s does not exist"
+	messageIssuerNotReady           = "Issuer %s not ready"
+	messageIssuerErrorInit          = "Error initializing issuer: "
+	messageErrorGetCertificate      = "Error getting TLS certificate: "
+	messageErrorIssuingCertificate  = "Error issuing certificate: "
+	messageErrorRenewingCertificate = "Error renewing certificate: "
+	messageErrorSavingCertificate   = "Error saving TLS certificate: "
 
-	messagePreparingCertificate = "Preparing certificate with issuer"
-	messageIssuingCertificate   = "Issuing certificate..."
-	messageRenewingCertificate  = "Renewing certificate..."
+	messageIssuingCertificate  = "Issuing certificate..."
+	messageRenewingCertificate = "Renewing certificate..."
 
 	messageCertificateIssued  = "Certificate issued successfully"
 	messageCertificateRenewed = "Certificate renewed successfully"
-	messageRenewalScheduled   = "Certificate scheduled for renewal in %d hours"
 )
 
 func (c *Controller) Sync(ctx context.Context, crt *v1alpha1.Certificate) (err error) {
@@ -102,11 +98,6 @@ func (c *Controller) Sync(ctx context.Context, crt *v1alpha1.Certificate) (err e
 
 	// grab existing certificate and validate private key
 	cert, err := kube.SecretTLSCert(c.secretLister, crt.Namespace, crt.Spec.SecretName)
-	if err != nil {
-		s := messageErrorCheckCertificate + err.Error()
-		glog.Info(s)
-		c.recorder.Event(crt, api.EventTypeNormal, errorCheckCertificate, s)
-	}
 
 	// if an error is returned, and that error is something other than
 	// IsNotFound or invalid data, then we should return the error.
@@ -196,9 +187,7 @@ func (c *Controller) scheduleRenewal(crt *v1alpha1.Certificate) {
 
 	c.scheduledWorkQueue.Add(key, renewIn)
 
-	s := fmt.Sprintf(messageRenewalScheduled, renewIn/time.Hour)
-	glog.Info(s)
-	c.recorder.Event(crt, api.EventTypeNormal, successRenewalScheduled, s)
+	glog.Infof("Certificate %s/%s scheduled for renewal in %d hours", crt.Namespace, crt.Name, renewIn/time.Hour)
 }
 
 // issuerKind returns the kind of issuer for a certificate
@@ -260,17 +249,13 @@ func (c *Controller) updateSecret(crt *v1alpha1.Certificate, namespace string, c
 // and private key will be stored in the named secret
 func (c *Controller) issue(ctx context.Context, issuer issuer.Interface, crt *v1alpha1.Certificate) error {
 	var err error
-	s := messagePreparingCertificate
-	glog.Info(s)
-	c.recorder.Event(crt, api.EventTypeNormal, reasonPreparingCertificate, s)
+	glog.Info("Preparing certificate %s/%s with issuer", crt.Namespace, crt.Name)
 	if err = issuer.Prepare(ctx, crt); err != nil {
-		s := messageErrorPreparingCertificate + err.Error()
-		glog.Info(s)
-		c.recorder.Event(crt, api.EventTypeWarning, errorPreparingCertificate, s)
+		glog.Info("Error preparing issuer for certificate %s/%s: %v", crt.Namespace, crt.Name, err)
 		return err
 	}
 
-	s = messageIssuingCertificate
+	s := messageIssuingCertificate
 	glog.Info(s)
 	c.recorder.Event(crt, api.EventTypeNormal, reasonIssuingCertificate, s)
 
@@ -278,9 +263,7 @@ func (c *Controller) issue(ctx context.Context, issuer issuer.Interface, crt *v1
 	key, cert, err = issuer.Issue(ctx, crt)
 
 	if err != nil {
-		s := messageErrorIssuingCertificate + err.Error()
-		glog.Info(s)
-		c.recorder.Event(crt, api.EventTypeWarning, errorIssuingCertificate, s)
+		glog.Infof("Error issuing certificate for %s/%s: %v", crt.Namespace, crt.Name, err)
 		return err
 	}
 
@@ -294,6 +277,7 @@ func (c *Controller) issue(ctx context.Context, issuer issuer.Interface, crt *v1
 	s = messageCertificateIssued
 	glog.Info(s)
 	c.recorder.Event(crt, api.EventTypeNormal, successCertificateIssued, s)
+	crt.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionTrue, successCertificateIssued, s, true)
 
 	return nil
 }
@@ -303,18 +287,13 @@ func (c *Controller) issue(ctx context.Context, issuer issuer.Interface, crt *v1
 // and private key will be stored in the named secret
 func (c *Controller) renew(ctx context.Context, issuer issuer.Interface, crt *v1alpha1.Certificate) error {
 	var err error
-	s := messagePreparingCertificate
-	glog.Info(s)
-	c.recorder.Event(crt, api.EventTypeNormal, reasonPreparingCertificate, s)
-
+	glog.Info("Preparing certificate %s/%s with issuer", crt.Namespace, crt.Name)
 	if err = issuer.Prepare(ctx, crt); err != nil {
-		s := messageErrorPreparingCertificate + err.Error()
-		glog.Info(s)
-		c.recorder.Event(crt, api.EventTypeWarning, errorPreparingCertificate, s)
+		glog.Info("Error preparing issuer for certificate %s/%s: %v", crt.Namespace, crt.Name, err)
 		return err
 	}
 
-	s = messageRenewingCertificate
+	s := messageRenewingCertificate
 	glog.Info(s)
 	c.recorder.Event(crt, api.EventTypeNormal, reasonRenewingCertificate, s)
 
@@ -322,9 +301,6 @@ func (c *Controller) renew(ctx context.Context, issuer issuer.Interface, crt *v1
 	key, cert, err = issuer.Renew(ctx, crt)
 
 	if err != nil {
-		s := messageErrorRenewingCertificate + err.Error()
-		glog.Info(s)
-		c.recorder.Event(crt, api.EventTypeWarning, errorRenewingCertificate, s)
 		return err
 	}
 
@@ -338,6 +314,7 @@ func (c *Controller) renew(ctx context.Context, issuer issuer.Interface, crt *v1
 	s = messageCertificateRenewed
 	glog.Info(s)
 	c.recorder.Event(crt, api.EventTypeNormal, successCertificateRenewed, s)
+	crt.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionTrue, successCertificateRenewed, s, true)
 
 	return nil
 }
