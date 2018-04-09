@@ -30,7 +30,7 @@ $ helm install \
     stable/cert-manager
 ```
 
-> **NOTE**: if your cluster does not use RBAC (Role Based Access Control), you should add `--set rbac.create=false` when running your `helm install` command.
+> **NOTE**: If your cluster does not use RBAC (Role Based Access Control), please see the Addendum on disabling creation of RBAC resources.
 
 The default cert-manager configuration is good for the majority of users, but a
 full list of the available options can be found in the [Helm chart README](https://github.com/kubernetes/charts/blob/master/stable/cert-manager/README.md).
@@ -41,15 +41,29 @@ issue certificates.
 
 ## Addendum
 
-* If your cluster does not use RBAC, you should add `--set rbac.create=false` to
-your `helm install` command. All RBAC related resources will not be created in
-this instance.
+* disabling creation of RBAC resources
 
-* To add support for automatically creating Certificates for Ingress resources
+If your cluster does not use RBAC (Role Based Access Control), you should add the following command line flag to your `helm install` command:
+
+```
+--set rbac.create=false
+```
+
+For cert-manager versions <=0.2.3, the flag to use is as follows:
+
+```
+--set rbac.enabled=false
+```
+
+All RBAC related resources will not be created in this instance.
+
+* configuring automatic creation of Certificates
+
+To add support for automatically creating Certificates for Ingress resources
 with the `kubernetes.io/tls-acme` annotation (similar to [kube-lego](https://github.com/jetstack/kube-lego)),
 you should deploy cert-manager with additional flags in order to specify the
 Issuer (or ClusterIssuer) responsible for acquiring these certificates. This
-can be done by adding the following additional `--set` command when running
+can be done by adding the following additional `--set` flag when running
 `helm install` (replacing the values accordingly):
 
 ```
