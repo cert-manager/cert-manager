@@ -2,6 +2,7 @@ package http
 
 import (
 	"fmt"
+	"hash/adler32"
 
 	"github.com/golang/glog"
 	corev1 "k8s.io/api/core/v1"
@@ -15,13 +16,15 @@ import (
 )
 
 func podLabels(ch v1alpha1.ACMEOrderChallenge) map[string]string {
+	domainHash := fmt.Sprintf("%d", adler32.Checksum([]byte(ch.Domain)))
+	tokenHash := fmt.Sprintf("%d", adler32.Checksum([]byte(ch.Token)))
 	return map[string]string{
 		// TODO: we need to support domains longer than 63 characters
 		// this value should probably be hashed, and then the full plain text
 		// value stored as an annotation to make it easier for users to read
 		// see #425 for details: https://github.com/jetstack/cert-manager/issues/425
-		domainLabelKey: ch.Domain,
-		tokenLabelKey:  ch.Token,
+		domainLabelKey: domainHash,
+		tokenLabelKey:  tokenHash,
 	}
 }
 
