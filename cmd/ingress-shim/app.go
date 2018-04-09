@@ -105,8 +105,8 @@ func buildController(opts *options.ControllerOptions, stopCh <-chan struct{}) (*
 	// If it is specified, all operations relating to ClusterIssuer resources
 	// should be disabled and thus we don't need to also create factories for
 	// the --cluster-resource-namespace.
-	sharedInformerFactory := informers.NewFilteredSharedInformerFactory(intcl, time.Second*30, opts.Namespace, nil)
-	kubeSharedInformerFactory := kubeinformers.NewFilteredSharedInformerFactory(cl, time.Second*30, opts.Namespace, nil)
+	sharedInformerFactory := informers.NewSharedInformerFactory(intcl, time.Second*30)
+	kubeSharedInformerFactory := kubeinformers.NewSharedInformerFactory(cl, time.Second*30)
 	ctrl := controller.New(
 		sharedInformerFactory.Certmanager().V1alpha1().Certificates(),
 		kubeSharedInformerFactory.Extensions().V1beta1().Ingresses(),
