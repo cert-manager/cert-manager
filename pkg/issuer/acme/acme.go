@@ -20,6 +20,7 @@ import (
 	clientset "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
 	"github.com/jetstack/cert-manager/pkg/issuer"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/client"
+	"github.com/jetstack/cert-manager/pkg/issuer/acme/client/middleware"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/http"
 	"github.com/jetstack/cert-manager/pkg/util"
@@ -141,7 +142,7 @@ func (a *Acme) acmeClientWithKey(accountPrivKey *rsa.PrivateKey) client.Interfac
 		Key:          accountPrivKey,
 		DirectoryURL: a.issuer.GetSpec().ACME.Server,
 	}
-	return cl
+	return middleware.NewLogger(cl)
 }
 
 func (a *Acme) acmeClientImpl() (client.Interface, error) {

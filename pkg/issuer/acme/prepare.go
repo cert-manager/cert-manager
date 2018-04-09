@@ -202,6 +202,8 @@ func (a *Acme) presentChallenge(ctx context.Context, cl client.Interface, crt *v
 }
 
 func (a *Acme) cleanupLastOrder(ctx context.Context, crt *v1alpha1.Certificate) error {
+	glog.Infof("Cleaning up previous order for certificate %s/%s", crt.Namespace, crt.Name)
+
 	err := a.cleanupIrrelevantChallenges(ctx, crt, nil)
 	if err != nil {
 		return err
@@ -216,6 +218,7 @@ func (a *Acme) cleanupLastOrder(ctx context.Context, crt *v1alpha1.Certificate) 
 // TODO: ensure all DNS challenge solvers return non-error if the challenge
 // record doesn't exist
 func (a *Acme) cleanupIrrelevantChallenges(ctx context.Context, crt *v1alpha1.Certificate, keepChals []v1alpha1.ACMEOrderChallenge) error {
+	glog.Infof("Cleaning up old/expired challenges for Certificate %s/%s", crt.Namespace, crt.Name)
 	var toCleanUp []v1alpha1.ACMEOrderChallenge
 	for _, c := range crt.Status.ACMEStatus().Order.Challenges {
 		keep := false
@@ -239,6 +242,7 @@ func (a *Acme) cleanupIrrelevantChallenges(ctx context.Context, crt *v1alpha1.Ce
 }
 
 func (a *Acme) cleanupChallenge(ctx context.Context, crt *v1alpha1.Certificate, c v1alpha1.ACMEOrderChallenge) error {
+	glog.Infof("Cleaning up challenge for domain %q as part of Certificate %s/%s", c.Domain, crt.Namespace, crt.Name)
 	solver, err := a.solverFor(c.Type)
 	if err != nil {
 		return err
