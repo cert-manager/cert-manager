@@ -5,8 +5,8 @@ replicaCount: 1
 
 image:
   repository: quay.io/jetstack/cert-manager-controller
-  tag: v0.2.3
-  pullPolicy: Always
+  tag: v0.2.4
+  pullPolicy: IfNotPresent
 
 createCustomResource: true
 
@@ -33,5 +33,5 @@ ingressShim:
     repository: quay.io/jetstack/cert-manager-ingress-shim
     # Defaults to image.tag.
     # You should only change this if you know what you are doing!
-    # tag: v0.2.3
-    pullPolicy: Always
+    # tag: v0.2.4
+    pullPolicy: IfNotPresent
