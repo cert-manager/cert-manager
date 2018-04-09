@@ -1,7 +1,6 @@
 package acme
 
 import (
-	"github.com/golang/glog"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	"github.com/jetstack/cert-manager/pkg/util"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
@@ -28,7 +27,6 @@ func buildOrder(crt *v1alpha1.Certificate) (*acme.Order, error) {
 func orderIsValidForCertificate(order *acme.Order, crt *v1alpha1.Certificate) bool {
 	desiredDNSNames := pki.DNSNamesForCertificate(crt)
 	orderDNSNames := authzIDListToStrings(order.Identifiers)
-	glog.Infof("Comparing %+v and %+v", desiredDNSNames, orderDNSNames)
 	return util.EqualUnsorted(desiredDNSNames, orderDNSNames)
 }
 

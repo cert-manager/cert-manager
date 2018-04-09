@@ -141,7 +141,7 @@ func (crt *Certificate) HasCondition(condition CertificateCondition) bool {
 	return false
 }
 
-func (crt *Certificate) UpdateStatusCondition(conditionType CertificateConditionType, status ConditionStatus, reason, message string) {
+func (crt *Certificate) UpdateStatusCondition(conditionType CertificateConditionType, status ConditionStatus, reason, message string, forceTime bool) {
 	newCondition := CertificateCondition{
 		Type:    conditionType,
 		Status:  status,
@@ -158,7 +158,7 @@ func (crt *Certificate) UpdateStatusCondition(conditionType CertificateCondition
 	} else {
 		for i, cond := range crt.Status.Conditions {
 			if cond.Type == conditionType {
-				if cond.Status != newCondition.Status {
+				if cond.Status != newCondition.Status || forceTime {
 					glog.Infof("Found status change for Certificate %q condition %q: %q -> %q; setting lastTransitionTime to %v", crt.Name, conditionType, cond.Status, status, t)
 					newCondition.LastTransitionTime = metav1.NewTime(t)
 				} else {
@@ -166,9 +166,11 @@ func (crt *Certificate) UpdateStatusCondition(conditionType CertificateCondition
 				}
 
 				crt.Status.Conditions[i] = newCondition
-				break
+				return
 			}
 		}
+
+		crt.Status.Conditions = append(crt.Status.Conditions, newCondition)
 	}
 }
 

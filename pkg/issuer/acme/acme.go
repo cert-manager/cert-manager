@@ -66,9 +66,12 @@ type Acme struct {
 // solver solves ACME challenges by presenting the given token and key in an
 // appropriate way given the config in the Issuer and Certificate.
 type solver interface {
-	Present(ctx context.Context, crt *v1alpha1.Certificate, domain, token, key string) error
-	Check(domain, token, key string) (bool, error)
-	CleanUp(ctx context.Context, crt *v1alpha1.Certificate, domain, token, key string) error
+	// we pass the certificate to the Present function so that if the solver
+	// needs to create any new resources, it can set the appropriate owner
+	// reference
+	Present(ctx context.Context, crt *v1alpha1.Certificate, ch v1alpha1.ACMEOrderChallenge) error
+	Check(ch v1alpha1.ACMEOrderChallenge) (bool, error)
+	CleanUp(ctx context.Context, crt *v1alpha1.Certificate, ch v1alpha1.ACMEOrderChallenge) error
 }
 
 // New returns a new ACME issuer interface for the given issuer.
@@ -195,7 +198,7 @@ func (a *Acme) solverFor(challengeType string) (solver, error) {
 	case "dns-01":
 		return a.dnsSolver, nil
 	}
-	return nil, fmt.Errorf("no solver implemented")
+	return nil, fmt.Errorf("no solver for %q implemented", challengeType)
 }
 
 // Register this Issuer with the issuer factory

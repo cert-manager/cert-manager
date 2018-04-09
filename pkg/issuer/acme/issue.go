@@ -85,11 +85,11 @@ func (a *Acme) Issue(ctx context.Context, crt *v1alpha1.Certificate) ([]byte, []
 	key, cert, err := a.obtainCertificate(ctx, crt)
 	if err != nil {
 		s := messageErrorIssueCert + err.Error()
-		crt.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse, errorIssueCert, s)
+		crt.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse, errorIssueCert, s, false)
 		return nil, nil, err
 	}
 
-	crt.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionTrue, successCertIssued, messageCertIssued)
+	crt.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionTrue, successCertIssued, messageCertIssued, false)
 
 	return key, cert, err
 }
