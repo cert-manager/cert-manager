@@ -9,6 +9,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	coretesting "k8s.io/client-go/testing"
 
+	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	"github.com/jetstack/cert-manager/test/util/generate"
 )
 
@@ -22,9 +23,11 @@ func TestEnsureService(t *testing.T) {
 				DNSNames:     []string{"example.com"},
 				ACMEOrderURL: "testURL",
 			}),
-			Domain: "example.com",
+			Challenge: v1alpha1.ACMEOrderChallenge{
+				Domain: "example.com",
+			},
 			PreFn: func(s *solverFixture) {
-				svc, err := s.Solver.createService(s.Certificate, s.Domain)
+				svc, err := s.Solver.createService(s.Certificate, s.Challenge)
 				if err != nil {
 					s.f.T.Errorf("error preparing test: %v", err)
 				}
@@ -60,9 +63,11 @@ func TestEnsureService(t *testing.T) {
 				DNSNames:     []string{"example.com"},
 				ACMEOrderURL: "testURL",
 			}),
-			Domain: "example.com",
+			Challenge: v1alpha1.ACMEOrderChallenge{
+				Domain: "example.com",
+			},
 			PreFn: func(s *solverFixture) {
-				expectedService := buildService(s.Certificate, s.Domain)
+				expectedService := buildService(s.Certificate, s.Challenge)
 				// create a reactor that fails the test if a service is created
 				s.f.KubeClient().PrependReactor("create", "services", func(action coretesting.Action) (handled bool, ret runtime.Object, err error) {
 					service := action.(coretesting.CreateAction).GetObject().(*v1.Service)
@@ -107,14 +112,16 @@ func TestEnsureService(t *testing.T) {
 				DNSNames:     []string{"example.com"},
 				ACMEOrderURL: "testURL",
 			}),
-			Domain: "example.com",
-			Err:    true,
+			Challenge: v1alpha1.ACMEOrderChallenge{
+				Domain: "example.com",
+			},
+			Err: true,
 			PreFn: func(s *solverFixture) {
-				_, err := s.Solver.createService(s.Certificate, s.Domain)
+				_, err := s.Solver.createService(s.Certificate, s.Challenge)
 				if err != nil {
 					s.f.T.Errorf("error preparing test: %v", err)
 				}
-				_, err = s.Solver.createService(s.Certificate, s.Domain)
+				_, err = s.Solver.createService(s.Certificate, s.Challenge)
 				if err != nil {
 					s.f.T.Errorf("error preparing test: %v", err)
 				}
@@ -137,7 +144,7 @@ func TestEnsureService(t *testing.T) {
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			test.Setup(t)
-			resp, err := test.Solver.ensureService(test.Certificate, test.Domain, test.Token, test.Key)
+			resp, err := test.Solver.ensureService(test.Certificate, test.Challenge)
 			if err != nil && !test.Err {
 				t.Errorf("Expected function to not error, but got: %v", err)
 			}
@@ -159,9 +166,11 @@ func TestGetServicesForCertificate(t *testing.T) {
 				DNSNames:     []string{"example.com"},
 				ACMEOrderURL: "testURL",
 			}),
-			Domain: "example.com",
+			Challenge: v1alpha1.ACMEOrderChallenge{
+				Domain: "example.com",
+			},
 			PreFn: func(s *solverFixture) {
-				ing, err := s.Solver.createService(s.Certificate, s.Domain)
+				ing, err := s.Solver.createService(s.Certificate, s.Challenge)
 				if err != nil {
 					s.f.T.Errorf("error preparing test: %v", err)
 				}
@@ -188,9 +197,13 @@ func TestGetServicesForCertificate(t *testing.T) {
 				Namespace: defaultTestNamespace,
 				DNSNames:  []string{"example.com"},
 			}),
-			Domain: "example.com",
+			Challenge: v1alpha1.ACMEOrderChallenge{
+				Domain: "example.com",
+			},
 			PreFn: func(s *solverFixture) {
-				_, err := s.Solver.createService(s.Certificate, "invaliddomain")
+				_, err := s.Solver.createService(s.Certificate, v1alpha1.ACMEOrderChallenge{
+					Domain: "invaliddomain",
+				})
 				if err != nil {
 					s.f.T.Errorf("error preparing test: %v", err)
 				}
@@ -210,7 +223,7 @@ func TestGetServicesForCertificate(t *testing.T) {
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			test.Setup(t)
-			resp, err := test.Solver.getServicesForCertificate(test.Certificate, test.Domain)
+			resp, err := test.Solver.getServicesForChallenge(test.Certificate, test.Challenge)
 			if err != nil && !test.Err {
 				t.Errorf("Expected function to not error, but got: %v", err)
 			}

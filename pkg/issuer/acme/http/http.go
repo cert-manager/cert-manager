@@ -24,11 +24,9 @@ const (
 	HTTP01Timeout = time.Minute * 15
 	// acmeSolverListenPort is the port acmesolver should listen on
 	acmeSolverListenPort = 8089
-	// orderURLLabelKey is the key used for the order URL label on resources
-	// created by the HTTP01 solver
-	certNameLabelKey      = "certmanager.k8s.io/certificate"
-	orderURLAnnotationKey = "certmanager.k8s.io/acme-order-url"
-	domainLabelKey        = "certmanager.k8s.io/acme-http-domain"
+
+	domainLabelKey = "certmanager.k8s.io/acme-http-domain"
+	tokenLabelKey  = "certmanager.k8s.io/acme-http-token"
 )
 
 var (
@@ -69,21 +67,21 @@ func NewSolver(issuer v1alpha1.GenericIssuer, client kubernetes.Interface, podLi
 // Present will realise the resources required to solve the given HTTP01
 // challenge validation in the apiserver. If those resources already exist, it
 // will return nil (i.e. this function is idempotent).
-func (s *Solver) Present(ctx context.Context, crt *v1alpha1.Certificate, domain, token, key string) error {
-	_, podErr := s.ensurePod(crt, domain, token, key)
-	svc, svcErr := s.ensureService(crt, domain, token, key)
+func (s *Solver) Present(ctx context.Context, crt *v1alpha1.Certificate, ch v1alpha1.ACMEOrderChallenge) error {
+	_, podErr := s.ensurePod(crt, ch)
+	svc, svcErr := s.ensureService(crt, ch)
 	if svcErr != nil {
 		return utilerrors.NewAggregate([]error{podErr, svcErr})
 	}
-	_, ingressErr := s.ensureIngress(crt, svc.Name, domain, token)
+	_, ingressErr := s.ensureIngress(crt, svc.Name, ch)
 	return utilerrors.NewAggregate([]error{podErr, svcErr, ingressErr})
 }
 
-func (s *Solver) Check(domain, token, key string) (bool, error) {
+func (s *Solver) Check(ch v1alpha1.ACMEOrderChallenge) (bool, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), HTTP01Timeout)
 	defer cancel()
 	for i := 0; i < s.requiredPasses; i++ {
-		ok, err := s.testReachability(ctx, domain, fmt.Sprintf("%s/%s", solver.HTTPChallengePath, token), key)
+		ok, err := s.testReachability(ctx, ch.Domain, fmt.Sprintf("%s/%s", solver.HTTPChallengePath, ch.Token), ch.Key)
 		if err != nil {
 			return false, err
 		}
@@ -97,11 +95,11 @@ func (s *Solver) Check(domain, token, key string) (bool, error) {
 
 // CleanUp will ensure the created service, ingress and pod are clean/deleted of any
 // cert-manager created data.
-func (s *Solver) CleanUp(ctx context.Context, crt *v1alpha1.Certificate, domain, token, key string) error {
+func (s *Solver) CleanUp(ctx context.Context, crt *v1alpha1.Certificate, ch v1alpha1.ACMEOrderChallenge) error {
 	var errs []error
-	errs = append(errs, s.cleanupPods(crt, domain))
-	errs = append(errs, s.cleanupServices(crt, domain))
-	errs = append(errs, s.cleanupIngresses(crt, domain, token))
+	errs = append(errs, s.cleanupPods(crt, ch))
+	errs = append(errs, s.cleanupServices(crt, ch))
+	errs = append(errs, s.cleanupIngresses(crt, ch))
 	return utilerrors.NewAggregate(errs)
 }
 

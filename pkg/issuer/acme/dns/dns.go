@@ -50,55 +50,88 @@ type Solver struct {
 	ambientCredentials      bool
 }
 
-func (s *Solver) Present(ctx context.Context, crt *v1alpha1.Certificate, domain, token, key string) error {
-	slv, err := s.solverFor(crt, domain)
+func (s *Solver) Present(ctx context.Context, _ *v1alpha1.Certificate, ch v1alpha1.ACMEOrderChallenge) error {
+	if ch.Config.DNS01 == nil {
+		return fmt.Errorf("challenge dns config must be specified")
+	}
+
+	providerName := ch.Config.DNS01.Provider
+	if providerName == "" {
+		return fmt.Errorf("dns01 challenge provider name must be set")
+	}
+
+	slv, err := s.SolverForIssuerProvider(providerName)
 	if err != nil {
 		return err
 	}
-	glog.Infof("Presenting DNS01 challenge for domain %q", domain)
-	return slv.Present(domain, token, key)
+
+	glog.Infof("Presenting DNS01 challenge for domain %q", ch.Domain)
+	return slv.Present(ch.Domain, ch.Token, ch.Key)
 }
 
-func (s *Solver) Check(domain, token, key string) (bool, error) {
-	fqdn, value, ttl := util.DNS01Record(domain, key)
-	glog.Infof("Checking DNS propagation for %q using name servers: %v", domain, util.RecursiveNameservers)
+func (s *Solver) Check(ch v1alpha1.ACMEOrderChallenge) (bool, error) {
+	fqdn, value, ttl := util.DNS01Record(ch.Domain, ch.Key)
+	glog.Infof("Checking DNS propagation for %q using name servers: %v", ch.Domain, util.RecursiveNameservers)
 
 	ok, err := util.PreCheckDNS(fqdn, value)
 	if err != nil {
 		return false, err
 	}
-
-	if ok {
-		glog.Infof("Waiting DNS record TTL (%ds) to allow propagation of DNS record for domain %q", ttl, fqdn)
-		time.Sleep(time.Second * time.Duration(ttl))
-		glog.Infof("ACME DNS01 validation record propagated for %q", fqdn)
-		return true, nil
+	if !ok {
+		glog.Infof("DNS record for %q not yet propagated", ch.Domain)
+		return false, nil
 	}
 
-	glog.Infof("DNS record for %q not yet propagated", domain)
-	return false, nil
+	glog.Infof("Waiting DNS record TTL (%ds) to allow propagation of DNS record for domain %q", ttl, fqdn)
+	time.Sleep(time.Second * time.Duration(ttl))
+	glog.Infof("ACME DNS01 validation record propagated for %q", fqdn)
+
+	return true, nil
 }
 
-func (s *Solver) CleanUp(ctx context.Context, crt *v1alpha1.Certificate, domain, token, key string) error {
-	slv, err := s.solverFor(crt, domain)
+func (s *Solver) CleanUp(ctx context.Context, _ *v1alpha1.Certificate, ch v1alpha1.ACMEOrderChallenge) error {
+	if ch.Config.DNS01 == nil {
+		return fmt.Errorf("challenge dns config must be specified")
+	}
+
+	providerName := ch.Config.DNS01.Provider
+	if providerName == "" {
+		return fmt.Errorf("dns01 challenge provider name must be set")
+	}
+
+	slv, err := s.SolverForIssuerProvider(providerName)
 	if err != nil {
 		return err
 	}
-	return slv.CleanUp(domain, token, key)
+
+	return slv.CleanUp(ch.Domain, ch.Token, ch.Key)
 }
 
-func (s *Solver) solverFor(crt *v1alpha1.Certificate, domain string) (solver, error) {
+// returns the provider name for a given domain name by reading the acme
+// configuration block on the given Certificate resource
+func (s *Solver) providerForDomain(crt *v1alpha1.Certificate, domain string) (string, error) {
 	var cfg *v1alpha1.ACMECertificateDNS01Config
 	if cfg = crt.Spec.ACME.ConfigForDomain(domain).DNS01; cfg == nil ||
 		cfg.Provider == "" ||
 		s.issuer.GetSpec().ACME == nil ||
 		s.issuer.GetSpec().ACME.DNS01 == nil {
-		return nil, fmt.Errorf("no dns01 config found for domain '%s'", domain)
+		return "", fmt.Errorf("dns-01 challenge provider for domain %q is not configured. Ensure the Certificate resource configures a dns-01 provider for the domain", domain)
 	}
+	return cfg.Provider, nil
+}
 
-	providerConfig, err := s.issuer.GetSpec().ACME.DNS01.Provider(cfg.Provider)
+// solverForIssuerProvider returns a Solver for the given providerName.
+// The providerName is the name of an ACME DNS-01 challenge provider as
+// specified on the Issuer resource for the Solver.
+//
+// This method is exported so that only the provider name is required in order
+// to obtain an instance of a Solver. This is useful when cleaning up old
+// challenges after the ACME challenge configuration on the Certificate has
+// been removed by the user.
+func (s *Solver) SolverForIssuerProvider(providerName string) (solver, error) {
+	providerConfig, err := s.issuer.GetSpec().ACME.DNS01.Provider(providerName)
 	if err != nil {
-		return nil, fmt.Errorf("invalid provider config specified for domain '%s': %s", domain, err.Error())
+		return nil, err
 	}
 
 	var impl solver
@@ -172,7 +205,7 @@ func (s *Solver) solverFor(crt *v1alpha1.Certificate, domain string) (solver, er
 			providerConfig.AzureDNS.HostedZoneName,
 		)
 	default:
-		return nil, fmt.Errorf("no dns provider config specified for domain '%s'", domain)
+		return nil, fmt.Errorf("no dns provider config specified for provider %q", providerName)
 	}
 
 	return impl, nil

@@ -14,8 +14,8 @@ import (
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 )
 
-func (s *Solver) ensureService(crt *v1alpha1.Certificate, domain, token, key string) (*corev1.Service, error) {
-	existingServices, err := s.getServicesForCertificate(crt, domain)
+func (s *Solver) ensureService(crt *v1alpha1.Certificate, ch v1alpha1.ACMEOrderChallenge) (*corev1.Service, error) {
+	existingServices, err := s.getServicesForChallenge(crt, ch)
 	if err != nil {
 		return nil, err
 	}
@@ -25,7 +25,7 @@ func (s *Solver) ensureService(crt *v1alpha1.Certificate, domain, token, key str
 	if len(existingServices) > 1 {
 		errMsg := fmt.Sprintf("multiple challenge solver services found for certificate '%s/%s'. Cleaning up existing services.", crt.Namespace, crt.Name)
 		glog.Infof(errMsg)
-		err := s.cleanupServices(crt, domain)
+		err := s.cleanupServices(crt, ch)
 		if err != nil {
 			return nil, err
 		}
@@ -33,13 +33,13 @@ func (s *Solver) ensureService(crt *v1alpha1.Certificate, domain, token, key str
 	}
 
 	glog.Infof("No existing HTTP01 challenge solver service found for Certificate %q. One will be created.")
-	return s.createService(crt, domain)
+	return s.createService(crt, ch)
 }
 
-// getServicesForCertificate returns a list of services that were created to solve
+// getServicesForChallenge returns a list of services that were created to solve
 // http challenges for the given domain
-func (s *Solver) getServicesForCertificate(crt *v1alpha1.Certificate, domain string) ([]*corev1.Service, error) {
-	podLabels := podLabels(crt, domain)
+func (s *Solver) getServicesForChallenge(crt *v1alpha1.Certificate, ch v1alpha1.ACMEOrderChallenge) ([]*corev1.Service, error) {
+	podLabels := podLabels(ch)
 	selector := labels.NewSelector()
 	for key, val := range podLabels {
 		req, err := labels.NewRequirement(key, selection.Equals, []string{val})
@@ -69,12 +69,12 @@ func (s *Solver) getServicesForCertificate(crt *v1alpha1.Certificate, domain str
 
 // createService will create the service required to solve this challenge
 // in the target API server.
-func (s *Solver) createService(crt *v1alpha1.Certificate, domain string) (*corev1.Service, error) {
-	return s.client.CoreV1().Services(crt.Namespace).Create(buildService(crt, domain))
+func (s *Solver) createService(crt *v1alpha1.Certificate, ch v1alpha1.ACMEOrderChallenge) (*corev1.Service, error) {
+	return s.client.CoreV1().Services(crt.Namespace).Create(buildService(crt, ch))
 }
 
-func buildService(crt *v1alpha1.Certificate, domain string) *corev1.Service {
-	podLabels := podLabels(crt, domain)
+func buildService(crt *v1alpha1.Certificate, ch v1alpha1.ACMEOrderChallenge) *corev1.Service {
+	podLabels := podLabels(ch)
 	return &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName:    "cm-acme-http-solver-",
@@ -96,8 +96,8 @@ func buildService(crt *v1alpha1.Certificate, domain string) *corev1.Service {
 	}
 }
 
-func (s *Solver) cleanupServices(crt *v1alpha1.Certificate, domain string) error {
-	services, err := s.getServicesForCertificate(crt, domain)
+func (s *Solver) cleanupServices(crt *v1alpha1.Certificate, ch v1alpha1.ACMEOrderChallenge) error {
+	services, err := s.getServicesForChallenge(crt, ch)
 	if err != nil {
 		return err
 	}

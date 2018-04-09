@@ -29,14 +29,11 @@ type solverFixture struct {
 	CMObjects []runtime.Object
 	// Issuer that should be set on the Solver (a default will be used if nil)
 	Issuer v1alpha1.GenericIssuer
-	// Optional certificate resource to use during tests
+	// Certificate resource to use during tests
 	Certificate *v1alpha1.Certificate
-	// Optional domain to be used during tests
-	Domain string
-	// Optional token to be used during tests
-	Token string
-	// Optional key to be used during tests
-	Key string
+	// Challenge resource to use during tests
+	Challenge v1alpha1.ACMEOrderChallenge
+
 	// PreFn will run before the test is run, but after the fixture has been initialised.
 	// This is useful if you want to load the clientset with some resources *after* the
 	// fixture has been created.

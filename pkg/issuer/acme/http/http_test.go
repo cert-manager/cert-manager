@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"testing"
 	"time"
+
+	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 )
 
 // contextWithTimeout calls context.WithTimeout, and throws away the cancel fn
@@ -24,11 +26,11 @@ func countReachabilityTestCalls(counter *int, t reachabilityTest) reachabilityTe
 
 func TestCheck(t *testing.T) {
 	type testT struct {
-		name               string
-		reachabilityTest   reachabilityTest
-		domain, token, key string
-		expectedErr        bool
-		expectedOk         bool
+		name             string
+		reachabilityTest reachabilityTest
+		challenge        v1alpha1.ACMEOrderChallenge
+		expectedErr      bool
+		expectedOk       bool
 	}
 	tests := []testT{
 		{
@@ -63,7 +65,7 @@ func TestCheck(t *testing.T) {
 				requiredPasses:   requiredCallsForPass,
 			}
 
-			ok, err := s.Check(test.domain, test.token, test.key)
+			ok, err := s.Check(test.challenge)
 			if err != nil && !test.expectedErr {
 				t.Errorf("Expected Check to return non-nil error, but got %v", err)
 				return

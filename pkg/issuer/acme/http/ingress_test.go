@@ -11,10 +11,11 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	coretesting "k8s.io/client-go/testing"
 
+	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	"github.com/jetstack/cert-manager/test/util/generate"
 )
 
-func TestGetIngressesForCertificate(t *testing.T) {
+func TestGetIngressesForChallenge(t *testing.T) {
 	const createdIngressKey = "createdIngress"
 	tests := map[string]solverFixture{
 		"should return one ingress that matches": {
@@ -23,9 +24,11 @@ func TestGetIngressesForCertificate(t *testing.T) {
 				Namespace: defaultTestNamespace,
 				DNSNames:  []string{"example.com"},
 			}),
-			Domain: "example.com",
+			Challenge: v1alpha1.ACMEOrderChallenge{
+				Domain: "example.com",
+			},
 			PreFn: func(s *solverFixture) {
-				ing, err := s.Solver.createIngress(s.Certificate, "fakeservice", s.Domain, s.Token, *s.Certificate.Spec.ACME.ConfigForDomain(s.Domain).HTTP01)
+				ing, err := s.Solver.createIngress(s.Certificate, "fakeservice", s.Challenge)
 				if err != nil {
 					s.f.T.Errorf("error preparing test: %v", err)
 				}
@@ -52,9 +55,13 @@ func TestGetIngressesForCertificate(t *testing.T) {
 				Namespace: defaultTestNamespace,
 				DNSNames:  []string{"example.com"},
 			}),
-			Domain: "example.com",
+			Challenge: v1alpha1.ACMEOrderChallenge{
+				Domain: "example.com",
+			},
 			PreFn: func(s *solverFixture) {
-				_, err := s.Solver.createIngress(s.Certificate, "fakeservice", "invaliddomain", s.Token, *s.Certificate.Spec.ACME.ConfigForDomain(s.Domain).HTTP01)
+				_, err := s.Solver.createIngress(s.Certificate, "fakeservice", v1alpha1.ACMEOrderChallenge{
+					Domain: "notexample.com",
+				})
 				if err != nil {
 					s.f.T.Errorf("error preparing test: %v", err)
 				}
@@ -74,7 +81,7 @@ func TestGetIngressesForCertificate(t *testing.T) {
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			test.Setup(t)
-			resp, err := test.Solver.getIngressesForCertificate(test.Certificate, test.Domain)
+			resp, err := test.Solver.getIngressesForChallenge(test.Certificate, test.Challenge)
 			if err != nil && !test.Err {
 				t.Errorf("Expected function to not error, but got: %v", err)
 			}
@@ -97,10 +104,12 @@ func TestCleanupIngresses(t *testing.T) {
 				ACMEOrderURL:     "testurl",
 				ACMEIngressClass: strPtr("nginx"),
 			}),
-			Domain: "example.com",
-			Token:  "abcd",
+			Challenge: v1alpha1.ACMEOrderChallenge{
+				Domain: "example.com",
+				Token:  "abcd",
+			},
 			PreFn: func(s *solverFixture) {
-				ing, err := s.Solver.createIngress(s.Certificate, "fakeservice", s.Domain, s.Token, *s.Certificate.Spec.ACME.ConfigForDomain(s.Domain).HTTP01)
+				ing, err := s.Solver.createIngress(s.Certificate, "fakeservice", s.Challenge)
 				if err != nil {
 					s.f.T.Errorf("error preparing test: %v", err)
 				}
@@ -126,10 +135,15 @@ func TestCleanupIngresses(t *testing.T) {
 				ACMEOrderURL:     "testurl",
 				ACMEIngressClass: strPtr("nginx"),
 			}),
-			Domain: "example.com",
-			Token:  "abcd",
+			Challenge: v1alpha1.ACMEOrderChallenge{
+				Domain: "example.com",
+				Token:  "abcd",
+			},
 			PreFn: func(s *solverFixture) {
-				ing, err := s.Solver.createIngress(s.Certificate, "fakeservice", "notthetestdomain.com", s.Token, *s.Certificate.Spec.ACME.ConfigForDomain(s.Domain).HTTP01)
+				ing, err := s.Solver.createIngress(s.Certificate, "fakeservice", v1alpha1.ACMEOrderChallenge{
+					Domain: "notexample.com",
+					Token:  "abcd",
+				})
 				if err != nil {
 					s.f.T.Errorf("error preparing test: %v", err)
 				}
@@ -154,14 +168,16 @@ func TestCleanupIngresses(t *testing.T) {
 				ACMEOrderURL:     "testurl",
 				ACMEIngressClass: strPtr("nginx"),
 			}),
-			Domain: "example.com",
-			Token:  "abcd",
-			Err:    true,
+			Challenge: v1alpha1.ACMEOrderChallenge{
+				Domain: "example.com",
+				Token:  "abcd",
+			},
+			Err: true,
 			PreFn: func(s *solverFixture) {
 				s.f.KubeClient().PrependReactor("delete", "ingresses", func(action coretesting.Action) (handled bool, ret runtime.Object, err error) {
 					return true, nil, fmt.Errorf("simulated error")
 				})
-				ing, err := s.Solver.createIngress(s.Certificate, "fakeservice", "example.com", s.Token, *s.Certificate.Spec.ACME.ConfigForDomain(s.Domain).HTTP01)
+				ing, err := s.Solver.createIngress(s.Certificate, "fakeservice", s.Challenge)
 				if err != nil {
 					s.f.T.Errorf("error preparing test: %v", err)
 				}
@@ -173,7 +189,7 @@ func TestCleanupIngresses(t *testing.T) {
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			test.Setup(t)
-			err := test.Solver.cleanupIngresses(test.Certificate, test.Domain, test.Token)
+			err := test.Solver.cleanupIngresses(test.Certificate, test.Challenge)
 			if err != nil && !test.Err {
 				t.Errorf("Expected function to not error, but got: %v", err)
 			}

@@ -14,19 +14,19 @@ import (
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 )
 
-func podLabels(crt *v1alpha1.Certificate, domain string) map[string]string {
+func podLabels(ch v1alpha1.ACMEOrderChallenge) map[string]string {
 	return map[string]string{
-		certNameLabelKey: crt.Name,
 		// TODO: we need to support domains longer than 63 characters
 		// this value should probably be hashed, and then the full plain text
 		// value stored as an annotation to make it easier for users to read
 		// see #425 for details: https://github.com/jetstack/cert-manager/issues/425
-		domainLabelKey: domain,
+		domainLabelKey: ch.Domain,
+		tokenLabelKey:  ch.Token,
 	}
 }
 
-func (s *Solver) ensurePod(crt *v1alpha1.Certificate, domain, token, key string) (*corev1.Pod, error) {
-	existingPods, err := s.getPodsForCertificate(crt, domain)
+func (s *Solver) ensurePod(crt *v1alpha1.Certificate, ch v1alpha1.ACMEOrderChallenge) (*corev1.Pod, error) {
+	existingPods, err := s.getPodsForChallenge(crt, ch)
 	if err != nil {
 		return nil, err
 	}
@@ -36,7 +36,7 @@ func (s *Solver) ensurePod(crt *v1alpha1.Certificate, domain, token, key string)
 	if len(existingPods) > 1 {
 		errMsg := fmt.Sprintf("multiple challenge solver pods found for certificate '%s/%s'. Cleaning up existing pods.", crt.Namespace, crt.Name)
 		glog.Infof(errMsg)
-		err := s.cleanupPods(crt, domain)
+		err := s.cleanupPods(crt, ch)
 		if err != nil {
 			return nil, err
 		}
@@ -44,13 +44,13 @@ func (s *Solver) ensurePod(crt *v1alpha1.Certificate, domain, token, key string)
 	}
 
 	glog.Infof("No existing HTTP01 challenge solver pod found for Certificate %q. One will be created.", crt.Name)
-	return s.createPod(crt, domain, token, key)
+	return s.createPod(crt, ch)
 }
 
-// getPodsForCertificate returns a list of pods that were created to solve
-// http challenges for the given domain
-func (s *Solver) getPodsForCertificate(crt *v1alpha1.Certificate, domain string) ([]*corev1.Pod, error) {
-	podLabels := podLabels(crt, domain)
+// getPodsForChallenge returns a list of pods that were created to solve
+// the given challenge
+func (s *Solver) getPodsForChallenge(crt *v1alpha1.Certificate, ch v1alpha1.ACMEOrderChallenge) ([]*corev1.Pod, error) {
+	podLabels := podLabels(ch)
 	orderSelector := labels.NewSelector()
 	for key, val := range podLabels {
 		req, err := labels.NewRequirement(key, selection.Equals, []string{val})
@@ -78,8 +78,8 @@ func (s *Solver) getPodsForCertificate(crt *v1alpha1.Certificate, domain string)
 	return relevantPods, nil
 }
 
-func (s *Solver) cleanupPods(crt *v1alpha1.Certificate, domain string) error {
-	pods, err := s.getPodsForCertificate(crt, domain)
+func (s *Solver) cleanupPods(crt *v1alpha1.Certificate, ch v1alpha1.ACMEOrderChallenge) error {
+	pods, err := s.getPodsForChallenge(crt, ch)
 	if err != nil {
 		return err
 	}
@@ -97,14 +97,14 @@ func (s *Solver) cleanupPods(crt *v1alpha1.Certificate, domain string) error {
 
 // createPod will create a challenge solving pod for the given certificate,
 // domain, token and key.
-func (s *Solver) createPod(crt *v1alpha1.Certificate, domain, token, key string) (*corev1.Pod, error) {
-	return s.client.CoreV1().Pods(crt.Namespace).Create(s.buildPod(crt, domain, token, key))
+func (s *Solver) createPod(crt *v1alpha1.Certificate, ch v1alpha1.ACMEOrderChallenge) (*corev1.Pod, error) {
+	return s.client.CoreV1().Pods(crt.Namespace).Create(s.buildPod(crt, ch))
 }
 
 // buildPod will build a challenge solving pod for the given certificate,
 // domain, token and key. It will not create it in the API server
-func (s *Solver) buildPod(crt *v1alpha1.Certificate, domain, token, key string) *corev1.Pod {
-	podLabels := podLabels(crt, domain)
+func (s *Solver) buildPod(crt *v1alpha1.Certificate, ch v1alpha1.ACMEOrderChallenge) *corev1.Pod {
+	podLabels := podLabels(ch)
 	return &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName:    "cm-acme-http-solver-",
@@ -123,9 +123,9 @@ func (s *Solver) buildPod(crt *v1alpha1.Certificate, domain, token, key string) 
 					// TODO: replace this with some kind of cmdline generator
 					Args: []string{
 						fmt.Sprintf("--listen-port=%d", acmeSolverListenPort),
-						fmt.Sprintf("--domain=%s", domain),
-						fmt.Sprintf("--token=%s", token),
-						fmt.Sprintf("--key=%s", key),
+						fmt.Sprintf("--domain=%s", ch.Domain),
+						fmt.Sprintf("--token=%s", ch.Token),
+						fmt.Sprintf("--key=%s", ch.Key),
 					},
 					Resources: corev1.ResourceRequirements{
 						Requests: corev1.ResourceList{

@@ -1,13 +1,15 @@
 package http
 
 import (
+	"reflect"
+	"testing"
+
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	coretesting "k8s.io/client-go/testing"
-	"reflect"
-	"testing"
 
+	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	"github.com/jetstack/cert-manager/test/util/generate"
 )
 
@@ -21,11 +23,13 @@ func TestEnsurePod(t *testing.T) {
 				DNSNames:     []string{"example.com"},
 				ACMEOrderURL: "testURL",
 			}),
-			Domain: "example.com",
-			Token:  "token",
-			Key:    "key",
+			Challenge: v1alpha1.ACMEOrderChallenge{
+				Domain: "example.com",
+				Token:  "token",
+				Key:    "key",
+			},
 			PreFn: func(s *solverFixture) {
-				ing, err := s.Solver.createPod(s.Certificate, s.Domain, s.Token, s.Key)
+				ing, err := s.Solver.createPod(s.Certificate, s.Challenge)
 				if err != nil {
 					s.f.T.Errorf("error preparing test: %v", err)
 				}
@@ -61,11 +65,13 @@ func TestEnsurePod(t *testing.T) {
 				DNSNames:     []string{"example.com"},
 				ACMEOrderURL: "testURL",
 			}),
-			Domain: "example.com",
-			Token:  "token",
-			Key:    "key",
+			Challenge: v1alpha1.ACMEOrderChallenge{
+				Domain: "example.com",
+				Token:  "token",
+				Key:    "key",
+			},
 			PreFn: func(s *solverFixture) {
-				expectedPod := s.Solver.buildPod(s.Certificate, s.Domain, s.Token, s.Key)
+				expectedPod := s.Solver.buildPod(s.Certificate, s.Challenge)
 				// create a reactor that fails the test if a pod is created
 				s.f.KubeClient().PrependReactor("create", "pods", func(action coretesting.Action) (handled bool, ret runtime.Object, err error) {
 					pod := action.(coretesting.CreateAction).GetObject().(*v1.Pod)
@@ -110,16 +116,18 @@ func TestEnsurePod(t *testing.T) {
 				DNSNames:     []string{"example.com"},
 				ACMEOrderURL: "testURL",
 			}),
-			Domain: "example.com",
-			Token:  "token",
-			Key:    "key",
-			Err:    true,
+			Challenge: v1alpha1.ACMEOrderChallenge{
+				Domain: "example.com",
+				Token:  "token",
+				Key:    "key",
+			},
+			Err: true,
 			PreFn: func(s *solverFixture) {
-				_, err := s.Solver.createPod(s.Certificate, s.Domain, s.Token, s.Key)
+				_, err := s.Solver.createPod(s.Certificate, s.Challenge)
 				if err != nil {
 					s.f.T.Errorf("error preparing test: %v", err)
 				}
-				_, err = s.Solver.createPod(s.Certificate, s.Domain, s.Token, s.Key)
+				_, err = s.Solver.createPod(s.Certificate, s.Challenge)
 				if err != nil {
 					s.f.T.Errorf("error preparing test: %v", err)
 				}
@@ -142,7 +150,7 @@ func TestEnsurePod(t *testing.T) {
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			test.Setup(t)
-			resp, err := test.Solver.ensurePod(test.Certificate, test.Domain, test.Token, test.Key)
+			resp, err := test.Solver.ensurePod(test.Certificate, test.Challenge)
 			if err != nil && !test.Err {
 				t.Errorf("Expected function to not error, but got: %v", err)
 			}
@@ -164,9 +172,11 @@ func TestGetPodsForCertificate(t *testing.T) {
 				DNSNames:     []string{"example.com"},
 				ACMEOrderURL: "testURL",
 			}),
-			Domain: "example.com",
+			Challenge: v1alpha1.ACMEOrderChallenge{
+				Domain: "example.com",
+			},
 			PreFn: func(s *solverFixture) {
-				ing, err := s.Solver.createPod(s.Certificate, s.Domain, s.Token, s.Key)
+				ing, err := s.Solver.createPod(s.Certificate, s.Challenge)
 				if err != nil {
 					s.f.T.Errorf("error preparing test: %v", err)
 				}
@@ -193,9 +203,13 @@ func TestGetPodsForCertificate(t *testing.T) {
 				Namespace: defaultTestNamespace,
 				DNSNames:  []string{"example.com"},
 			}),
-			Domain: "example.com",
+			Challenge: v1alpha1.ACMEOrderChallenge{
+				Domain: "example.com",
+			},
 			PreFn: func(s *solverFixture) {
-				_, err := s.Solver.createPod(s.Certificate, "invaliddomain", s.Token, s.Key)
+				_, err := s.Solver.createPod(s.Certificate, v1alpha1.ACMEOrderChallenge{
+					Domain: "notexample.com",
+				})
 				if err != nil {
 					s.f.T.Errorf("error preparing test: %v", err)
 				}
@@ -215,7 +229,7 @@ func TestGetPodsForCertificate(t *testing.T) {
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			test.Setup(t)
-			resp, err := test.Solver.getPodsForCertificate(test.Certificate, test.Domain)
+			resp, err := test.Solver.getPodsForChallenge(test.Certificate, test.Challenge)
 			if err != nil && !test.Err {
 				t.Errorf("Expected function to not error, but got: %v", err)
 			}
