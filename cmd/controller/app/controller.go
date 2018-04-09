@@ -27,7 +27,7 @@ import (
 	kubeinformers "k8s.io/client-go/informers"
 )
 
-const controllerAgentName = "cert-manager-controller"
+const controllerAgentName = "cert-manager"
 
 func Run(opts *options.ControllerOptions, stopCh <-chan struct{}) {
 	ctx, kubeCfg, err := buildControllerContext(opts)
