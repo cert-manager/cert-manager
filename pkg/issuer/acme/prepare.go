@@ -91,7 +91,7 @@ func (a *Acme) Prepare(ctx context.Context, crt *v1alpha1.Certificate) error {
 }
 
 func (a *Acme) presentOrder(ctx context.Context, cl client.Interface, crt *v1alpha1.Certificate, order *acme.Order) error {
-	allAuthorizations, err := getAuthorizations(ctx, cl, order.Authorizations...)
+	allAuthorizations, err := getRemainingAuthorizations(ctx, cl, order.Authorizations...)
 	if err != nil {
 		// TODO: update status condition?
 		// TODO: log an event?
@@ -135,7 +135,17 @@ func (a *Acme) presentOrder(ctx context.Context, cl client.Interface, crt *v1alp
 	// reset errs
 	errs = make([]error, 0)
 	for _, ch := range chs {
-		errs = append(errs, a.acceptChallenge(ctx, cl, ch))
+		acceptChalErr := a.acceptChallenge(ctx, cl, ch)
+		errs = append(errs, acceptChalErr)
+		// only clean up if this stage suceeded.
+		// If it fails, an error will be returned anyway and our standard
+		// failed-validation cleanup logic will be invoked.
+		if acceptChalErr == nil {
+			err := a.cleanupChallenge(ctx, crt, ch)
+			if err != nil {
+				return err
+			}
+		}
 	}
 
 	return utilerrors.NewAggregate(errs)
@@ -220,14 +230,29 @@ func (a *Acme) cleanupIrrelevantChallenges(ctx context.Context, crt *v1alpha1.Ce
 		}
 	}
 	for _, c := range toCleanUp {
-		solver, err := a.solverFor(c.Type)
+		err := a.cleanupChallenge(ctx, crt, c)
 		if err != nil {
 			return err
 		}
+	}
+	return nil
+}
 
-		err = solver.CleanUp(ctx, crt, c)
-		if err != nil {
-			return err
+func (a *Acme) cleanupChallenge(ctx context.Context, crt *v1alpha1.Certificate, c v1alpha1.ACMEOrderChallenge) error {
+	solver, err := a.solverFor(c.Type)
+	if err != nil {
+		return err
+	}
+	err = solver.CleanUp(ctx, crt, c)
+	if err != nil {
+		return err
+	}
+	// remove the challenge from the certificate resource if it exists
+	crtChals := crt.Status.ACMEStatus().Order.Challenges
+	for i, crtCh := range crtChals {
+		if crtCh.URL == c.URL {
+			crt.Status.ACMEStatus().Order.Challenges = append(crtChals[:i], crtChals[i+1:]...)
+			break
 		}
 	}
 	return nil
@@ -425,17 +450,24 @@ func (a *Acme) acceptChallenge(ctx context.Context, cl client.Interface, ch v1al
 	return nil
 }
 
-// getAuthorizations will query the ACME server for the Authorization resources
-// for the given list of authorization URLs using the given ACME client.
+// getRemainingAuthorizations will query the ACME server for the Authorization
+// resources for the given list of authorization URLs using the given ACME
+// client.
+// It will filter out any authorizations that are in a 'Valid' state.
 // It will return an error if obtaining any of the given authorizations fails.
-func getAuthorizations(ctx context.Context, cl client.Interface, urls ...string) ([]*acme.Authorization, error) {
+func getRemainingAuthorizations(ctx context.Context, cl client.Interface, urls ...string) ([]*acme.Authorization, error) {
 	var authzs []*acme.Authorization
 	for _, url := range urls {
 		a, err := cl.GetAuthorization(ctx, url)
 		if err != nil {
 			return nil, err
 		}
-		authzs = append(authzs, a)
+		if a.Status == acme.StatusInvalid || a.Status == acme.StatusDeactivated || a.Status == acme.StatusRevoked {
+			return nil, fmt.Errorf("authorization for dmain %q is in a failed state", a.Identifier.Value)
+		}
+		if a.Status == acme.StatusPending {
+			authzs = append(authzs, a)
+		}
 	}
 	return authzs, nil
 }
