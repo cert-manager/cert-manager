@@ -134,6 +134,8 @@ func (a *Acme) presentOrder(ctx context.Context, cl client.Interface, crt *v1alp
 
 	// reset errs
 	errs = make([]error, 0)
+	// compute the new challenge list after cleaning up successful challenges
+	var newChallengeList []v1alpha1.ACMEOrderChallenge
 	for _, ch := range chs {
 		acceptChalErr := a.acceptChallenge(ctx, cl, ch)
 		errs = append(errs, acceptChalErr)
@@ -143,10 +145,14 @@ func (a *Acme) presentOrder(ctx context.Context, cl client.Interface, crt *v1alp
 		if acceptChalErr == nil {
 			err := a.cleanupChallenge(ctx, crt, ch)
 			if err != nil {
+				newChallengeList = append(newChallengeList, ch)
 				return err
 			}
+		} else {
+			newChallengeList = append(newChallengeList, ch)
 		}
 	}
+	crt.Status.ACMEStatus().Order.Challenges = newChallengeList
 
 	return utilerrors.NewAggregate(errs)
 }
@@ -250,14 +256,6 @@ func (a *Acme) cleanupChallenge(ctx context.Context, crt *v1alpha1.Certificate, 
 	err = solver.CleanUp(ctx, crt, c)
 	if err != nil {
 		return err
-	}
-	// remove the challenge from the certificate resource if it exists
-	crtChals := crt.Status.ACMEStatus().Order.Challenges
-	for i, crtCh := range crtChals {
-		if crtCh.URL == c.URL {
-			crt.Status.ACMEStatus().Order.Challenges = append(crtChals[:i], crtChals[i+1:]...)
-			break
-		}
 	}
 	return nil
 }
