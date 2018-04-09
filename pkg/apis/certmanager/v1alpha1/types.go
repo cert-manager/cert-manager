@@ -20,6 +20,13 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+const (
+	AltNamesAnnotationKey   = "certmanager.k8s.io/alt-names"
+	CommonNameAnnotationKey = "certmanager.k8s.io/common-name"
+	IssuerNameAnnotationKey = "certmanager.k8s.io/issuer-name"
+	IssuerKindAnnotationKey = "certmanager.k8s.io/issuer-kind"
+)
+
 // +genclient
 // +genclient:nonNamespaced
 // +k8s:openapi-gen=true
@@ -113,10 +120,20 @@ type ACMEIssuerDNS01Config struct {
 type ACMEIssuerDNS01Provider struct {
 	Name string `json:"name"`
 
+	Akamai     *ACMEIssuerDNS01ProviderAkamai     `json:"akamai,omitempty"`
 	CloudDNS   *ACMEIssuerDNS01ProviderCloudDNS   `json:"clouddns,omitempty"`
 	Cloudflare *ACMEIssuerDNS01ProviderCloudflare `json:"cloudflare,omitempty"`
 	Route53    *ACMEIssuerDNS01ProviderRoute53    `json:"route53,omitempty"`
 	AzureDNS   *ACMEIssuerDNS01ProviderAzureDNS   `json:"azuredns,omitempty"`
+}
+
+// ACMEIssuerDNS01ProviderAkamai is a structure containing the DNS
+// configuration for Akamai DNS—Zone Record Management API
+type ACMEIssuerDNS01ProviderAkamai struct {
+	ServiceConsumerDomain string            `json:"serviceConsumerDomain"`
+	ClientToken           SecretKeySelector `json:"clientTokenSecretRef"`
+	ClientSecret          SecretKeySelector `json:"clientSecretSecretRef"`
+	AccessToken           SecretKeySelector `json:"accessTokenSecretRef"`
 }
 
 // ACMEIssuerDNS01ProviderCloudDNS is a structure containing the DNS

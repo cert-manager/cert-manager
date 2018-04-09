@@ -3,8 +3,6 @@ repo: jetstack/cert-manager
 labels:
 - name: approved
   color: 0ffa16
-- name: approved-for-milestone
-  color: fef2c0
 - name: area/provider-acme
   color: 0052cc
 - name: area/provider-ca
@@ -12,10 +10,6 @@ labels:
 - name: area/admin
   color: 0052cc
 - name: area/api
-  color: 0052cc
-- name: area/apiserver
-  color: 0052cc
-- name: area/controller-manager
   color: 0052cc
 - name: area/logging
   color: 0052cc
@@ -27,8 +21,6 @@ labels:
   color: 0052cc
 - name: area/security
   color: d93f0b
-- name: area/teardown
-  color: 0052cc
 - name: area/test
   color: 0052cc
 - name: area/test-infra
@@ -57,8 +49,6 @@ labels:
   color: 006b75
 - name: help-wanted
   color: 006b75
-- name: keep-open
-  color: fbca04
 - name: kind/api-change
   color: c7def8
 - name: kind/bug
@@ -77,8 +67,6 @@ labels:
   color: f7c6c7
 - name: kind/friction
   color: c7def8
-- name: kind/new-api
-  color: c7def8
 - name: kind/old-docs
   color: c7def8
 - name: kind/postmortem
@@ -87,8 +75,8 @@ labels:
   color: eb6420
 - name: kind/technical-debt
   color: c7def8
-- name: kind/upgrade-test-failure
-  color: fbca04
+- name: kind/question
+  color: c7def8
 - name: lgtm
   color: 15dd18
 - name: milestone-labels-complete

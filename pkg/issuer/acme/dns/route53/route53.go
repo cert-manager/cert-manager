@@ -17,6 +17,7 @@ import (
 	"github.com/golang/glog"
 
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
+	pkgutil "github.com/jetstack/cert-manager/pkg/util"
 )
 
 const (
@@ -93,6 +94,7 @@ func NewDNSProvider(accessKeyID, secretAccessKey, hostedZoneID, region string, a
 	if err != nil {
 		return nil, fmt.Errorf("unable to create aws session: %s", err)
 	}
+	sess.Handlers.Build.PushBack(request.WithAppendUserAgent(pkgutil.CertManagerUserAgent))
 	client := route53.New(sess, config)
 
 	return &DNSProvider{

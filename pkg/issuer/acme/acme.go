@@ -118,17 +118,6 @@ func New(issuer v1alpha1.GenericIssuer,
 	return a, nil
 }
 
-var acmeUserAgent = "jetstack-cert-manager/" + util.AppVersion
-
-type uaRoundTripper struct {
-	nethttp.RoundTripper
-}
-
-func (uat uaRoundTripper) RoundTrip(req *nethttp.Request) (*nethttp.Response, error) {
-	req.Header.Set("User-Agent", acmeUserAgent)
-	return uat.RoundTripper.RoundTrip(req)
-}
-
 var timeout = time.Duration(5 * time.Second)
 
 func dialTimeout(ctx context.Context, network, addr string) (net.Conn, error) {
@@ -141,7 +130,12 @@ func (a *Acme) acmeClientWithKey(accountPrivKey *rsa.PrivateKey) client.Interfac
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: a.issuer.GetSpec().ACME.SkipTLSVerify},
 		DialContext:     dialTimeout,
 	}
-	client := &nethttp.Client{Transport: tr}
+	client := &nethttp.Client{
+		// Stopgap user-agent roundtripper until the upstream 'crypto/acme'
+		// provides a better method for setting user-agent.
+		Transport: util.UserAgentRoundTripper(tr),
+		Timeout:   time.Second * 30,
+	}
 	cl := &acme.Client{
 		HTTPClient:   client,
 		Key:          accountPrivKey,

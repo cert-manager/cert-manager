@@ -10,7 +10,6 @@ import (
 
 type ControllerOptions struct {
 	APIServerHost string
-	Namespace     string
 
 	LeaderElect                 bool
 	LeaderElectionNamespace     string
@@ -26,7 +25,6 @@ type ControllerOptions struct {
 
 const (
 	defaultAPIServerHost = ""
-	defaultNamespace     = ""
 
 	defaultLeaderElect                 = true
 	defaultLeaderElectionNamespace     = "kube-system"
@@ -43,7 +41,6 @@ const (
 func NewControllerOptions() *ControllerOptions {
 	return &ControllerOptions{
 		APIServerHost:                      defaultAPIServerHost,
-		Namespace:                          defaultNamespace,
 		LeaderElect:                        defaultLeaderElect,
 		LeaderElectionNamespace:            defaultLeaderElectionNamespace,
 		LeaderElectionLeaseDuration:        defaultLeaderElectionLeaseDuration,
@@ -60,10 +57,6 @@ func (s *ControllerOptions) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVar(&s.APIServerHost, "master", defaultAPIServerHost, ""+
 		"Optional apiserver host address to connect to. If not specified, autoconfiguration "+
 		"will be attempted.")
-	fs.StringVar(&s.Namespace, "namespace", defaultNamespace, ""+
-		"Optional namespace to monitor resources within. This can be used to limit the scope "+
-		"of ingress-annotation-controller to a single namespace. If not specified, all namespaces will be watched.")
-
 	fs.BoolVar(&s.LeaderElect, "leader-elect", true, ""+
 		"If true, ingress-annotation-controller will perform leader election between instances to ensure no more "+
 		"than one instance of cert-manager operates at a time.")

@@ -7,11 +7,15 @@ metadata:
   namespace: "cert-manager"
   labels:
     app: cert-manager
-    chart: cert-manager-0.2.5
+    chart: cert-manager-0.2.6
     release: cert-manager
     heritage: Tiller
 spec:
   replicas: 1
+  selector:
+    matchLabels:
+      app: cert-manager
+      release: cert-manager
   template:
     metadata:
       labels:
