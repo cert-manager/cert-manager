@@ -16,8 +16,7 @@ type CertificateConfig struct {
 	DNSNames               []string
 
 	// ACME parameters
-	ACMEIngress      string
-	ACMEIngressClass *string
+	ACMESolverConfig v1alpha1.ACMESolverConfig
 	ACMEOrderURL     string
 }
 
@@ -37,13 +36,8 @@ func Certificate(cfg CertificateConfig) *v1alpha1.Certificate {
 			ACME: &v1alpha1.ACMECertificateConfig{
 				Config: []v1alpha1.ACMECertificateDomainConfig{
 					{
-						Domains: cfg.DNSNames,
-						ACMESolverConfig: v1alpha1.ACMESolverConfig{
-							HTTP01: &v1alpha1.ACMECertificateHTTP01Config{
-								IngressClass: cfg.ACMEIngressClass,
-								Ingress:      cfg.ACMEIngress,
-							},
-						},
+						Domains:          cfg.DNSNames,
+						ACMESolverConfig: cfg.ACMESolverConfig,
 					},
 				},
 			},

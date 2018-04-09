@@ -23,6 +23,9 @@ func TestGetIngressesForChallenge(t *testing.T) {
 				Name:      "test",
 				Namespace: defaultTestNamespace,
 				DNSNames:  []string{"example.com"},
+				ACMESolverConfig: v1alpha1.ACMESolverConfig{
+					HTTP01: &v1alpha1.ACMECertificateHTTP01Config{},
+				},
 			}),
 			Challenge: v1alpha1.ACMEOrderChallenge{
 				Domain: "example.com",
@@ -54,6 +57,9 @@ func TestGetIngressesForChallenge(t *testing.T) {
 				Name:      "test",
 				Namespace: defaultTestNamespace,
 				DNSNames:  []string{"example.com"},
+				ACMESolverConfig: v1alpha1.ACMESolverConfig{
+					HTTP01: &v1alpha1.ACMECertificateHTTP01Config{},
+				},
 			}),
 			Challenge: v1alpha1.ACMEOrderChallenge{
 				Domain: "example.com",
@@ -98,11 +104,15 @@ func TestCleanupIngresses(t *testing.T) {
 	tests := map[string]solverFixture{
 		"should delete ingress resource": {
 			Certificate: generate.Certificate(generate.CertificateConfig{
-				Name:             "test",
-				Namespace:        defaultTestNamespace,
-				DNSNames:         []string{"example.com"},
-				ACMEOrderURL:     "testurl",
-				ACMEIngressClass: strPtr("nginx"),
+				Name:         "test",
+				Namespace:    defaultTestNamespace,
+				DNSNames:     []string{"example.com"},
+				ACMEOrderURL: "testurl",
+				ACMESolverConfig: v1alpha1.ACMESolverConfig{
+					HTTP01: &v1alpha1.ACMECertificateHTTP01Config{
+						IngressClass: strPtr("nginx"),
+					},
+				},
 			}),
 			Challenge: v1alpha1.ACMEOrderChallenge{
 				Domain: "example.com",
@@ -129,11 +139,15 @@ func TestCleanupIngresses(t *testing.T) {
 		},
 		"should not delete ingress resources without appropriate labels": {
 			Certificate: generate.Certificate(generate.CertificateConfig{
-				Name:             "test",
-				Namespace:        defaultTestNamespace,
-				DNSNames:         []string{"example.com"},
-				ACMEOrderURL:     "testurl",
-				ACMEIngressClass: strPtr("nginx"),
+				Name:         "test",
+				Namespace:    defaultTestNamespace,
+				DNSNames:     []string{"example.com"},
+				ACMEOrderURL: "testurl",
+				ACMESolverConfig: v1alpha1.ACMESolverConfig{
+					HTTP01: &v1alpha1.ACMECertificateHTTP01Config{
+						IngressClass: strPtr("nginx"),
+					},
+				},
 			}),
 			Challenge: v1alpha1.ACMEOrderChallenge{
 				Domain: "example.com",
@@ -162,11 +176,15 @@ func TestCleanupIngresses(t *testing.T) {
 		},
 		"should return an error if a delete fails": {
 			Certificate: generate.Certificate(generate.CertificateConfig{
-				Name:             "test",
-				Namespace:        defaultTestNamespace,
-				DNSNames:         []string{"example.com"},
-				ACMEOrderURL:     "testurl",
-				ACMEIngressClass: strPtr("nginx"),
+				Name:         "test",
+				Namespace:    defaultTestNamespace,
+				DNSNames:     []string{"example.com"},
+				ACMEOrderURL: "testurl",
+				ACMESolverConfig: v1alpha1.ACMESolverConfig{
+					HTTP01: &v1alpha1.ACMECertificateHTTP01Config{
+						IngressClass: strPtr("nginx"),
+					},
+				},
 			}),
 			Challenge: v1alpha1.ACMEOrderChallenge{
 				Domain: "example.com",

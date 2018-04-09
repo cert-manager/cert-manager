@@ -115,6 +115,9 @@ e2e_test:
 	KUBECONFIG=$$HOME/.kube/config CERTMANAGERCONFIG=$$HOME/.kube/config \
 		./e2e-tests \
 			-acme-nginx-certificate-domain=$(E2E_NGINX_CERTIFICATE_DOMAIN) \
+			-cloudflare-email=$(CLOUDFLARE_E2E_EMAIL) \
+			-cloudflare-api-key=$(CLOUDFLARE_E2E_API_TOKEN) \
+			-acme-cloudflare-domain=$(CLOUDFLARE_E2E_DOMAIN) \
 			-pebble-image-repo=$(PEBBLE_IMAGE_REPO) \
 			-report-dir=./_artifacts
 
