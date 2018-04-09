@@ -14,6 +14,7 @@ limitations under the License.
 package e2e
 
 import (
+	"io"
 	"os"
 	"os/exec"
 	"path"
@@ -88,21 +89,47 @@ func InstallHelmChart(t *testing.T, releaseName, chartName, namespace, values st
 	}
 }
 
+func ArtifactWriteCloser(name string) (io.WriteCloser, error) {
+	f, err := os.OpenFile(path.Join(framework.TestContext.ReportDir, name), os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
+	if err != nil {
+		return nil, err
+	}
+	return f, nil
+}
+
 func PrintPodLogs(t *testing.T) {
 	glog.Infof("Printing cert-manager logs")
-	cmd := exec.Command("kubectl", "logs", "--namespace", "cert-manager", "-l", "app=cert-manager", "-l", "release=cm", "-c", "cert-manager")
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	err := cmd.Run()
+	cmOut, err := ArtifactWriteCloser("cert-manager-logs.txt")
 	if err != nil {
-		t.Errorf("Error printing cert-manager logs: %s", err)
+		t.Errorf("Error saving cert-manager logs")
+		t.FailNow()
+		return
+	}
+	defer cmOut.Close()
+	cmd := exec.Command("kubectl", "logs", "--namespace", "cert-manager", "-l", "app=cert-manager", "-l", "release=cm", "-c", "cert-manager")
+	cmd.Stdout = cmOut
+	cmd.Stderr = cmOut
+	err = cmd.Run()
+	if err != nil {
+		t.Errorf("Error getting cert-manager logs: %v", err)
+		t.FailNow()
+		return
 	}
 	glog.Infof("Printing ingress-shim logs")
+	isOut, err := ArtifactWriteCloser("ingress-shim-logs.txt")
+	if err != nil {
+		t.Errorf("Error saving ingress-shim logs")
+		t.FailNow()
+		return
+	}
+	defer isOut.Close()
 	cmdShim := exec.Command("kubectl", "logs", "--namespace", "cert-manager", "-l", "app=cert-manager", "-l", "release=cm", "-c", "ingress-shim")
-	cmdShim.Stdout = os.Stdout
-	cmdShim.Stderr = os.Stderr
+	cmdShim.Stdout = isOut
+	cmdShim.Stderr = isOut
 	err = cmdShim.Run()
 	if err != nil {
-		t.Errorf("Error printing ingress-shim logs: %s", err)
+		t.Errorf("Error getting ingress-shim logs: %s", err)
+		t.FailNow()
+		return
 	}
 }
