@@ -25,6 +25,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	cmutil "github.com/jetstack/cert-manager/pkg/util"
 	"github.com/jetstack/cert-manager/test/e2e/framework"
 	"github.com/jetstack/cert-manager/test/util"
 )
@@ -139,7 +140,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (DNS01)", func() {
 			Name:       certificateName,
 			Namespace:  f.Namespace.Name,
 			IssuerName: issuerName,
-			DNSNames:   []string{"*." + util.ACMECloudflareDomain},
+			DNSNames:   []string{"*." + cmutil.RandStringRunes(5) + "." + util.ACMECloudflareDomain},
 			ACMESolverConfig: v1alpha1.ACMESolverConfig{
 				DNS01: &v1alpha1.ACMECertificateDNS01Config{
 					Provider: "cloudflare",
