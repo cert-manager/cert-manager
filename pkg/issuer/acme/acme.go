@@ -127,8 +127,13 @@ func dialTimeout(ctx context.Context, network, addr string) (net.Conn, error) {
 
 func (a *Acme) acmeClientWithKey(accountPrivKey *rsa.PrivateKey) client.Interface {
 	tr := &nethttp.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: a.issuer.GetSpec().ACME.SkipTLSVerify},
-		DialContext:     dialTimeout,
+		Proxy:                 nethttp.ProxyFromEnvironment,
+		DialContext:           dialTimeout,
+		TLSClientConfig:       &tls.Config{InsecureSkipVerify: a.issuer.GetSpec().ACME.SkipTLSVerify},
+		MaxIdleConns:          100,
+		IdleConnTimeout:       90 * time.Second,
+		TLSHandshakeTimeout:   10 * time.Second,
+		ExpectContinueTimeout: 1 * time.Second,
 	}
 	client := &nethttp.Client{
 		// Stopgap user-agent roundtripper until the upstream 'crypto/acme'
