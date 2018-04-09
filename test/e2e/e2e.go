@@ -106,7 +106,7 @@ func PrintPodLogs(t *testing.T) {
 		return
 	}
 	defer cmOut.Close()
-	cmd := exec.Command("kubectl", "logs", "--namespace", "cert-manager", "-l", "app=cert-manager", "-l", "release=cm", "-c", "cert-manager")
+	cmd := exec.Command("kubectl", "logs", "--namespace", "cert-manager", "-l", "app=cert-manager", "-l", "release=cm", "-c", "cert-manager", "--tail", "-1")
 	cmd.Stdout = cmOut
 	cmd.Stderr = cmOut
 	err = cmd.Run()
@@ -123,7 +123,7 @@ func PrintPodLogs(t *testing.T) {
 		return
 	}
 	defer isOut.Close()
-	cmdShim := exec.Command("kubectl", "logs", "--namespace", "cert-manager", "-l", "app=cert-manager", "-l", "release=cm", "-c", "ingress-shim")
+	cmdShim := exec.Command("kubectl", "logs", "--namespace", "cert-manager", "-l", "app=cert-manager", "-l", "release=cm", "-c", "ingress-shim", "--tail", "-1")
 	cmdShim.Stdout = isOut
 	cmdShim.Stderr = isOut
 	err = cmdShim.Run()
