@@ -264,9 +264,13 @@ type ACMECertificateConfig struct {
 }
 
 type ACMECertificateDomainConfig struct {
-	Domains []string                     `json:"domains"`
-	HTTP01  *ACMECertificateHTTP01Config `json:"http01,omitempty"`
-	DNS01   *ACMECertificateDNS01Config  `json:"dns01,omitempty"`
+	Domains          []string `json:"domains"`
+	ACMESolverConfig `json:",inline"`
+}
+
+type ACMESolverConfig struct {
+	HTTP01 *ACMECertificateHTTP01Config `json:"http01,omitempty"`
+	DNS01  *ACMECertificateDNS01Config  `json:"dns01,omitempty"`
 }
 
 type ACMECertificateHTTP01Config struct {
@@ -280,7 +284,7 @@ type ACMECertificateDNS01Config struct {
 
 // CertificateStatus defines the observed state of Certificate
 type CertificateStatus struct {
-	Conditions []CertificateCondition `json:"conditions"`
+	Conditions []CertificateCondition `json:"conditions,omitempty"`
 	ACME       *CertificateACMEStatus `json:"acme,omitempty"`
 }
 
@@ -312,17 +316,49 @@ const (
 	// CertificateConditionReady represents the fact that a given Certificate condition
 	// is in ready state.
 	CertificateConditionReady CertificateConditionType = "Ready"
+
+	// CertificateConditionValidationFailed is used to indicate whether a
+	// validation for a Certificate has failed.
+	// This is currently used by the ACME issuer to track when the last
+	// validation was attempted.
+	CertificateConditionValidationFailed CertificateConditionType = "ValidationFailed"
 )
 
 // CertificateACMEStatus holds the status for an ACME issuer
 type CertificateACMEStatus struct {
 	// Order contains details about the current in-progress ACME Order.
-	Order ACMEOrderStatus `json:"order"`
+	Order ACMEOrderStatus `json:"order,omitempty"`
 }
 
 type ACMEOrderStatus struct {
-	// The URI that can be used to get information about an ACME order.
+	// The URL that can be used to get information about the ACME order.
+	URL        string               `json:"url"`
+	Challenges []ACMEOrderChallenge `json:"challenges,omitempty"`
+}
+
+type ACMEOrderChallenge struct {
+	// The URL that can be used to get information about the ACME challenge.
 	URL string `json:"url"`
+
+	// The URL that can be used to get information about the ACME authorization
+	// associated with the challenge.
+	AuthzURL string `json:"authzURL"`
+
+	// Type of ACME challenge
+	// Either http-01 or dns-01
+	Type string `json:"type"`
+
+	// Domain this challenge corresponds to
+	Domain string `json:"domain"`
+
+	// Challenge token for this challenge
+	Token string `json:"token"`
+
+	// Challenge key for this challenge
+	Key string `json:"token"`
+
+	// Configuration used to present this challenge
+	Config ACMESolverConfig `json:",inline"`
 }
 
 type LocalObjectReference struct {

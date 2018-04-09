@@ -38,9 +38,11 @@ func Certificate(cfg CertificateConfig) *v1alpha1.Certificate {
 				Config: []v1alpha1.ACMECertificateDomainConfig{
 					{
 						Domains: cfg.DNSNames,
-						HTTP01: &v1alpha1.ACMECertificateHTTP01Config{
-							IngressClass: cfg.ACMEIngressClass,
-							Ingress:      cfg.ACMEIngress,
+						ACMESolverConfig: v1alpha1.ACMESolverConfig{
+							HTTP01: &v1alpha1.ACMECertificateHTTP01Config{
+								IngressClass: cfg.ACMEIngressClass,
+								Ingress:      cfg.ACMEIngress,
+							},
 						},
 					},
 				},
