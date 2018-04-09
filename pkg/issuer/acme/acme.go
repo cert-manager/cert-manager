@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	nethttp "net/http"
+	"time"
 
 	"github.com/golang/glog"
 	"golang.org/x/crypto/acme"
@@ -94,22 +95,6 @@ func New(issuer v1alpha1.GenericIssuer,
 	}, nil
 }
 
-// uaRoundTripper implements the http.RoundTripper interface and adds a User-Agent
-// header. Note that this is a stopgap until upstream `crypto/acme` adds a
-// facility for setting User-Agent.
-
-type uaRoundTripper struct {
-	nethttp.RoundTripper
-	ua string
-}
-
-var acmeUserAgent = "jetstack-cert-manager/" + util.AppVersion
-
-func (uat uaRoundTripper) RoundTrip(req *nethttp.Request) (*nethttp.Response, error) {
-	req.Header.Add("User-Agent", acmeUserAgent)
-	return uat.RoundTripper.RoundTrip(req)
-}
-
 func (a *Acme) acmeClient() (*acme.Client, error) {
 	secretName, secretKey := a.acmeAccountPrivateKeyMeta()
 	glog.V(4).Infof("getting private key (%s->%s) for acme issuer %s/%s", secretName, secretKey, a.issuerResourcesNamespace, a.issuer.GetObjectMeta().Name)
@@ -122,9 +107,10 @@ func (a *Acme) acmeClient() (*acme.Client, error) {
 		Key:          accountPrivKey,
 		DirectoryURL: a.issuer.GetSpec().ACME.Server,
 		HTTPClient: &nethttp.Client{
-			Transport: uaRoundTripper{
-				RoundTripper: nethttp.DefaultTransport,
-			},
+			// Stopgap user-agent roundtripper until the upstream 'crypto/acme'
+			// provides a better method for setting user-agent.
+			Transport: util.UserAgentRoundTripper(nethttp.DefaultTransport),
+			Timeout:   30 * time.Second,
 		},
 	}
 	return cl, nil
