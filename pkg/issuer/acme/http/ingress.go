@@ -95,8 +95,8 @@ func (s *Solver) createIngress(crt *v1alpha1.Certificate, svcName string, ch v1a
 
 func buildIngressResource(crt *v1alpha1.Certificate, svcName string, ch v1alpha1.ACMEOrderChallenge) *extv1beta1.Ingress {
 	var ingClass *string
-	if ch.Config.HTTP01 != nil {
-		ingClass = ch.Config.HTTP01.IngressClass
+	if ch.ACMESolverConfig.HTTP01 != nil {
+		ingClass = ch.ACMESolverConfig.HTTP01.IngressClass
 	}
 
 	podLabels := podLabels(ch)
@@ -132,7 +132,7 @@ func buildIngressResource(crt *v1alpha1.Certificate, svcName string, ch v1alpha1
 }
 
 func (s *Solver) addChallengePathToIngress(crt *v1alpha1.Certificate, svcName string, ch v1alpha1.ACMEOrderChallenge) (*extv1beta1.Ingress, error) {
-	ingressName := ch.Config.HTTP01.Ingress
+	ingressName := ch.ACMESolverConfig.HTTP01.Ingress
 
 	ing, err := s.ingressLister.Ingresses(crt.Namespace).Get(ingressName)
 	if err != nil {
@@ -180,7 +180,7 @@ func (s *Solver) addChallengePathToIngress(crt *v1alpha1.Certificate, svcName st
 // ingress, or delete the ingress if an existing ingress name is not specified
 // on the certificate.
 func (s *Solver) cleanupIngresses(crt *v1alpha1.Certificate, ch v1alpha1.ACMEOrderChallenge) error {
-	httpDomainCfg := ch.Config.HTTP01
+	httpDomainCfg := ch.ACMESolverConfig.HTTP01
 	if httpDomainCfg == nil {
 		httpDomainCfg = &v1alpha1.ACMECertificateHTTP01Config{}
 	}

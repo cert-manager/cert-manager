@@ -372,10 +372,10 @@ type ACMEOrderChallenge struct {
 	Token string `json:"token"`
 
 	// Challenge key for this challenge
-	Key string `json:"token"`
+	Key string `json:"key"`
 
 	// Configuration used to present this challenge
-	Config ACMESolverConfig `json:",inline"`
+	ACMESolverConfig `json:",inline"`
 }
 
 type LocalObjectReference struct {

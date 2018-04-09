@@ -55,11 +55,11 @@ type Solver struct {
 }
 
 func (s *Solver) Present(ctx context.Context, _ *v1alpha1.Certificate, ch v1alpha1.ACMEOrderChallenge) error {
-	if ch.Config.DNS01 == nil {
+	if ch.ACMESolverConfig.DNS01 == nil {
 		return fmt.Errorf("challenge dns config must be specified")
 	}
 
-	providerName := ch.Config.DNS01.Provider
+	providerName := ch.ACMESolverConfig.DNS01.Provider
 	if providerName == "" {
 		return fmt.Errorf("dns01 challenge provider name must be set")
 	}
@@ -94,11 +94,11 @@ func (s *Solver) Check(ch v1alpha1.ACMEOrderChallenge) (bool, error) {
 }
 
 func (s *Solver) CleanUp(ctx context.Context, _ *v1alpha1.Certificate, ch v1alpha1.ACMEOrderChallenge) error {
-	if ch.Config.DNS01 == nil {
+	if ch.ACMESolverConfig.DNS01 == nil {
 		return fmt.Errorf("challenge dns config must be specified")
 	}
 
-	providerName := ch.Config.DNS01.Provider
+	providerName := ch.ACMESolverConfig.DNS01.Provider
 	if providerName == "" {
 		return fmt.Errorf("dns01 challenge provider name must be set")
 	}

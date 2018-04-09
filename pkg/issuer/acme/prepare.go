@@ -313,13 +313,13 @@ func buildInternalChallengeType(cl client.Interface, ch *acme.Challenge, cfg v1a
 	}
 
 	return v1alpha1.ACMEOrderChallenge{
-		URL:      ch.URL,
-		AuthzURL: authzURL,
-		Type:     ch.Type,
-		Domain:   domain,
-		Token:    ch.Token,
-		Key:      key,
-		Config:   cfg,
+		URL:              ch.URL,
+		AuthzURL:         authzURL,
+		Type:             ch.Type,
+		Domain:           domain,
+		Token:            ch.Token,
+		Key:              key,
+		ACMESolverConfig: cfg,
 	}, nil
 }
 
