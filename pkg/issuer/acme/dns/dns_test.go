@@ -34,6 +34,8 @@ type fixture struct {
 	// certificate used in the test
 	Certificate *v1alpha1.Certificate
 
+	Challenge v1alpha1.ACMEOrderChallenge
+
 	DNSProviders *fakeDNSProviders
 
 	Ambient bool
@@ -173,14 +175,13 @@ func TestSolverFor(t *testing.T) {
 					"api-key": []byte("a-cloudflare-api-key"),
 				})},
 				ResourceNamespace: "default",
-				Certificate: newCertificate("test", "default", "example.com", nil, []v1alpha1.ACMECertificateDomainConfig{
-					{
-						Domains: []string{"example.com"},
+				Challenge: v1alpha1.ACMEOrderChallenge{
+					Config: v1alpha1.ACMESolverConfig{
 						DNS01: &v1alpha1.ACMECertificateDNS01Config{
 							Provider: "fake-cloudflare",
 						},
 					},
-				}),
+				},
 			},
 			domain:             "example.com",
 			expectedSolverType: reflect.TypeOf(&cloudflare.DNSProvider{}),
@@ -204,14 +205,13 @@ func TestSolverFor(t *testing.T) {
 				// don't include any secrets in the lister
 				SecretLister:      []*corev1.Secret{},
 				ResourceNamespace: "default",
-				Certificate: newCertificate("test", "default", "example.com", nil, []v1alpha1.ACMECertificateDomainConfig{
-					{
-						Domains: []string{"example.com"},
+				Challenge: v1alpha1.ACMEOrderChallenge{
+					Config: v1alpha1.ACMESolverConfig{
 						DNS01: &v1alpha1.ACMECertificateDNS01Config{
 							Provider: "fake-cloudflare",
 						},
 					},
-				}),
+				},
 			},
 			domain:    "example.com",
 			expectErr: true,
@@ -236,46 +236,13 @@ func TestSolverFor(t *testing.T) {
 					"api-key-oops": []byte("a-cloudflare-api-key"),
 				})},
 				ResourceNamespace: "default",
-				Certificate: newCertificate("test", "default", "example.com", nil, []v1alpha1.ACMECertificateDomainConfig{
-					{
-						Domains: []string{"example.com"},
+				Challenge: v1alpha1.ACMEOrderChallenge{
+					Config: v1alpha1.ACMESolverConfig{
 						DNS01: &v1alpha1.ACMECertificateDNS01Config{
 							Provider: "fake-cloudflare",
 						},
 					},
-				}),
-			},
-			domain:    "example.com",
-			expectErr: true,
-		},
-		"fails to load a provider with no config set for the domain": {
-			f: &fixture{
-				Issuer: newIssuer("test", "default", []v1alpha1.ACMEIssuerDNS01Provider{
-					{
-						Name: "fake-cloudflare",
-						Cloudflare: &v1alpha1.ACMEIssuerDNS01ProviderCloudflare{
-							Email: "test",
-							APIKey: v1alpha1.SecretKeySelector{
-								LocalObjectReference: v1alpha1.LocalObjectReference{
-									Name: "cloudflare-key",
-								},
-								Key: "api-key",
-							},
-						},
-					},
-				}),
-				SecretLister: []*corev1.Secret{newSecret("cloudflare-key", "default", map[string][]byte{
-					"api-key": []byte("a-cloudflare-api-key"),
-				})},
-				ResourceNamespace: "default",
-				Certificate: newCertificate("test", "default", "example.com", nil, []v1alpha1.ACMECertificateDomainConfig{
-					{
-						Domains: []string{"example-oops.com"},
-						DNS01: &v1alpha1.ACMECertificateDNS01Config{
-							Provider: "fake-cloudflare",
-						},
-					},
-				}),
+				},
 			},
 			domain:    "example.com",
 			expectErr: true,
@@ -300,14 +267,13 @@ func TestSolverFor(t *testing.T) {
 					"api-key": []byte("a-cloudflare-api-key"),
 				})},
 				ResourceNamespace: "default",
-				Certificate: newCertificate("test", "default", "example.com", nil, []v1alpha1.ACMECertificateDomainConfig{
-					{
-						Domains: []string{"example.com"},
+				Challenge: v1alpha1.ACMEOrderChallenge{
+					Config: v1alpha1.ACMESolverConfig{
 						DNS01: &v1alpha1.ACMECertificateDNS01Config{
 							Provider: "fake-cloudflare-oops",
 						},
 					},
-				}),
+				},
 			},
 			domain:    "example.com",
 			expectErr: true,
@@ -316,7 +282,7 @@ func TestSolverFor(t *testing.T) {
 	testFn := func(test testT) func(*testing.T) {
 		return func(t *testing.T) {
 			s := test.f.solver()
-			dnsSolver, err := s.solverFor(test.f.Certificate, test.domain)
+			dnsSolver, err := s.solverForIssuerProvider(test.f.Challenge.Config.DNS01.Provider)
 			if err != nil && !test.expectErr {
 				t.Errorf("expected solverFor to not error, but got: %s", err.Error())
 				return
@@ -354,19 +320,18 @@ func TestRoute53TrimCreds(t *testing.T) {
 			"secret": []byte("AKIENDINNEWLINE \n"),
 		})},
 		ResourceNamespace: "default",
-		Certificate: newCertificate("test", "default", "example.com", nil, []v1alpha1.ACMECertificateDomainConfig{
-			{
-				Domains: []string{"example.com"},
+		Challenge: v1alpha1.ACMEOrderChallenge{
+			Config: v1alpha1.ACMESolverConfig{
 				DNS01: &v1alpha1.ACMECertificateDNS01Config{
 					Provider: "fake-route53",
 				},
 			},
-		}),
+		},
 		DNSProviders: newFakeDNSProviders(),
 	}
 
 	s := f.solver()
-	_, err := s.solverFor(f.Certificate, "example.com")
+	_, err := s.solverForIssuerProvider(f.Challenge.Config.DNS01.Provider)
 	if err != nil {
 		t.Fatalf("expected solverFor to not error, but got: %s", err)
 	}
@@ -404,14 +369,13 @@ func TestRoute53AmbientCreds(t *testing.T) {
 					},
 				}),
 				DNSProviders: newFakeDNSProviders(),
-				Certificate: newCertificate("test", "default", "example.com", nil, []v1alpha1.ACMECertificateDomainConfig{
-					{
-						Domains: []string{"example.com"},
+				Challenge: v1alpha1.ACMEOrderChallenge{
+					Config: v1alpha1.ACMESolverConfig{
 						DNS01: &v1alpha1.ACMECertificateDNS01Config{
 							Provider: "fake-route53",
 						},
 					},
-				}),
+				},
 				Ambient: true,
 			},
 			result{
@@ -432,14 +396,13 @@ func TestRoute53AmbientCreds(t *testing.T) {
 					},
 				}),
 				DNSProviders: newFakeDNSProviders(),
-				Certificate: newCertificate("test", "default", "example.com", nil, []v1alpha1.ACMECertificateDomainConfig{
-					{
-						Domains: []string{"example.com"},
+				Challenge: v1alpha1.ACMEOrderChallenge{
+					Config: v1alpha1.ACMESolverConfig{
 						DNS01: &v1alpha1.ACMECertificateDNS01Config{
 							Provider: "fake-route53",
 						},
 					},
-				}),
+				},
 				Ambient: false,
 			},
 			result{
@@ -454,7 +417,7 @@ func TestRoute53AmbientCreds(t *testing.T) {
 	for _, tt := range tests {
 		f := tt.in
 		s := f.solver()
-		_, err := s.solverFor(f.Certificate, "example.com")
+		_, err := s.solverForIssuerProvider(f.Challenge.Config.DNS01.Provider)
 		if !reflect.DeepEqual(tt.out.expectedErr, err) {
 			t.Fatalf("expected error %v, got error %v", tt.out.expectedErr, err)
 		}

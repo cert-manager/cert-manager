@@ -64,7 +64,7 @@ func (s *Solver) Present(ctx context.Context, _ *v1alpha1.Certificate, ch v1alph
 		return fmt.Errorf("dns01 challenge provider name must be set")
 	}
 
-	slv, err := s.SolverForIssuerProvider(providerName)
+	slv, err := s.solverForIssuerProvider(providerName)
 	if err != nil {
 		return err
 	}
@@ -103,7 +103,7 @@ func (s *Solver) CleanUp(ctx context.Context, _ *v1alpha1.Certificate, ch v1alph
 		return fmt.Errorf("dns01 challenge provider name must be set")
 	}
 
-	slv, err := s.SolverForIssuerProvider(providerName)
+	slv, err := s.solverForIssuerProvider(providerName)
 	if err != nil {
 		return err
 	}
@@ -132,7 +132,7 @@ func (s *Solver) providerForDomain(crt *v1alpha1.Certificate, domain string) (st
 // to obtain an instance of a Solver. This is useful when cleaning up old
 // challenges after the ACME challenge configuration on the Certificate has
 // been removed by the user.
-func (s *Solver) SolverForIssuerProvider(providerName string) (solver, error) {
+func (s *Solver) solverForIssuerProvider(providerName string) (solver, error) {
 	providerConfig, err := s.issuer.GetSpec().ACME.DNS01.Provider(providerName)
 	if err != nil {
 		return nil, err
