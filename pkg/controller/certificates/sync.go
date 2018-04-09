@@ -25,31 +25,18 @@ import (
 const renewBefore = time.Hour * 24 * 30
 
 const (
-	errorIssuerNotFound       = "ErrIssuerNotFound"
-	errorIssuerNotReady       = "ErrIssuerNotReady"
-	errorIssuerInit           = "ErrIssuerInitialization"
-	errorCheckCertificate     = "ErrCheckCertificate"
-	errorGetCertificate       = "ErrGetCertificate"
-	errorPreparingCertificate = "ErrPrepareCertificate"
-	errorIssuingCertificate   = "ErrIssueCertificate"
-	errorRenewingCertificate  = "ErrRenewCertificate"
-	errorSavingCertificate    = "ErrSaveCertificate"
+	errorIssuerNotFound    = "IssuerNotFound"
+	errorIssuerNotReady    = "IssuerNotReady"
+	errorIssuerInit        = "IssuerInitError"
+	errorSavingCertificate = "SaveCertError"
 
-	reasonPreparingCertificate = "PrepareCertificate"
-	reasonIssuingCertificate   = "IssueCertificate"
-	reasonRenewingCertificate  = "RenewCertificate"
+	reasonIssuingCertificate  = "IssueCert"
+	reasonRenewingCertificate = "RenewCert"
 
-	successCertificateIssued  = "CertificateIssued"
-	successCertificateRenewed = "CertificateRenewed"
-	successRenewalScheduled   = "RenewalScheduled"
+	successCertificateIssued  = "CertIssued"
+	successCertificateRenewed = "CertRenewed"
 
-	messageIssuerNotFound           = "Issuer %s does not exist"
-	messageIssuerNotReady           = "Issuer %s not ready"
-	messageIssuerErrorInit          = "Error initializing issuer: "
-	messageErrorGetCertificate      = "Error getting TLS certificate: "
-	messageErrorIssuingCertificate  = "Error issuing certificate: "
-	messageErrorRenewingCertificate = "Error renewing certificate: "
-	messageErrorSavingCertificate   = "Error saving TLS certificate: "
+	messageErrorSavingCertificate = "Error saving TLS certificate: "
 
 	messageIssuingCertificate  = "Issuing certificate..."
 	messageRenewingCertificate = "Renewing certificate..."
@@ -63,7 +50,7 @@ func (c *Controller) Sync(ctx context.Context, crt *v1alpha1.Certificate) (err e
 	issuerObj, err := c.getGenericIssuer(crt)
 
 	if err != nil {
-		s := fmt.Sprintf(messageIssuerNotFound, err.Error())
+		s := fmt.Sprintf("Issuer %s does not exist", err.Error())
 		glog.Info(s)
 		c.recorder.Event(crt, api.EventTypeWarning, errorIssuerNotFound, s)
 		return err
@@ -74,7 +61,7 @@ func (c *Controller) Sync(ctx context.Context, crt *v1alpha1.Certificate) (err e
 		Status: v1alpha1.ConditionTrue,
 	})
 	if !issuerReady {
-		s := fmt.Sprintf(messageIssuerNotReady, issuerObj.GetObjectMeta().Name)
+		s := fmt.Sprintf("Issuer %s not ready", issuerObj.GetObjectMeta().Name)
 		glog.Info(s)
 		c.recorder.Event(crt, api.EventTypeWarning, errorIssuerNotReady, s)
 		return fmt.Errorf(s)
@@ -82,7 +69,7 @@ func (c *Controller) Sync(ctx context.Context, crt *v1alpha1.Certificate) (err e
 
 	i, err := c.issuerFactory.IssuerFor(issuerObj)
 	if err != nil {
-		s := messageIssuerErrorInit + err.Error()
+		s := "Error initializing issuer: " + err.Error()
 		glog.Info(s)
 		c.recorder.Event(crt, api.EventTypeWarning, errorIssuerInit, s)
 		return err

@@ -22,7 +22,7 @@ import (
 const (
 	errorIssueError = "IssueError"
 
-	successCertIssued = "CertIssued"
+	successCertObtained = "CertObtained"
 )
 
 func (a *Acme) obtainCertificate(ctx context.Context, crt *v1alpha1.Certificate) ([]byte, []byte, error) {
@@ -95,7 +95,7 @@ func (a *Acme) obtainCertificate(ctx context.Context, crt *v1alpha1.Certificate)
 		pem.Encode(certBuffer, &pem.Block{Type: "CERTIFICATE", Bytes: cert})
 	}
 
-	a.recorder.Eventf(crt, corev1.EventTypeNormal, successCertIssued, "Obtained certificate from ACME server")
+	a.recorder.Eventf(crt, corev1.EventTypeNormal, successCertObtained, "Obtained certificate from ACME server")
 
 	glog.Infof("successfully obtained certificate: cn=%q altNames=%+v url=%q", commonName, altNames, orderURL)
 	// encode the private key and return
