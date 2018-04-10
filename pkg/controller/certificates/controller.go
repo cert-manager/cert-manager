@@ -7,8 +7,6 @@ import (
 	"time"
 
 	"github.com/golang/glog"
-	corev1 "k8s.io/api/core/v1"
-	extv1beta1 "k8s.io/api/extensions/v1beta1"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -88,11 +86,9 @@ func New(
 		ctrl.syncedFuncs = append(ctrl.syncedFuncs, clusterIssuersInformer.Informer().HasSynced)
 	}
 
-	secretsInformer.Informer().AddEventHandler(&controllerpkg.BlockingEventHandler{WorkFunc: ctrl.secretDeleted})
 	ctrl.secretLister = secretsInformer.Lister()
 	ctrl.syncedFuncs = append(ctrl.syncedFuncs, secretsInformer.Informer().HasSynced)
 
-	ingressInformer.Informer().AddEventHandler(&controllerpkg.BlockingEventHandler{WorkFunc: ctrl.ingressDeleted})
 	ctrl.ingressLister = ingressInformer.Lister()
 	ctrl.syncedFuncs = append(ctrl.syncedFuncs, ingressInformer.Informer().HasSynced)
 
@@ -106,51 +102,6 @@ func New(
 	ctrl.syncedFuncs = append(ctrl.syncedFuncs, serviceInformer.Informer().HasSynced)
 
 	return ctrl
-}
-
-// TODO: replace with generic handleObjet function (like Navigator)
-func (c *Controller) secretDeleted(obj interface{}) {
-	var secret *corev1.Secret
-	var ok bool
-	secret, ok = obj.(*corev1.Secret)
-	if !ok {
-		runtime.HandleError(fmt.Errorf("Object is not a Secret object %#v", obj))
-		return
-	}
-	crts, err := c.certificatesForSecret(secret)
-	if err != nil {
-		runtime.HandleError(fmt.Errorf("Error looking up Certificates observing Secret: %s/%s", secret.Namespace, secret.Name))
-		return
-	}
-	for _, crt := range crts {
-		key, err := keyFunc(crt)
-		if err != nil {
-			runtime.HandleError(err)
-			continue
-		}
-		c.queue.Add(key)
-	}
-}
-
-func (c *Controller) ingressDeleted(obj interface{}) {
-	ingress, ok := obj.(*extv1beta1.Ingress)
-	if !ok {
-		runtime.HandleError(fmt.Errorf("Object is not an Ingress object %#v", obj))
-		return
-	}
-	crts, err := c.certificatesForIngress(ingress)
-	if err != nil {
-		runtime.HandleError(fmt.Errorf("Error looking up certificates observing Ingress: %s/%s", ingress.Namespace, ingress.Name))
-		return
-	}
-	for _, crt := range crts {
-		key, err := keyFunc(crt)
-		if err != nil {
-			runtime.HandleError(err)
-			continue
-		}
-		c.queue.Add(key)
-	}
 }
 
 func (c *Controller) Run(workers int, stopCh <-chan struct{}) error {
