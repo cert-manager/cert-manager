@@ -39,16 +39,16 @@ const (
 
 // svcNameFunc returns the name for the service to solve the challenge
 func svcNameFunc(crtName, domain string) string {
-	return dns1035(fmt.Sprintf("cm-%s-%s", crtName, util.RandStringRunes(5)))
+	return dns1035(fmt.Sprintf("cm-%.54s-%s", crtName, util.RandStringRunes(5)))
 }
 
 // ingNameFunc returns the name for the ingress to solve the challenge
 func ingNameFunc(crtName, domain string) string {
-	return dns1035(fmt.Sprintf("cm-%s-%s", crtName, util.RandStringRunes(5)))
+	return dns1035(fmt.Sprintf("cm-%.54s-%s", crtName, util.RandStringRunes(5)))
 }
 
 func podNameFunc(crtName, domain string) string {
-	return dns1035(fmt.Sprintf("cm-%s-%s", crtName, util.RandStringRunes(5)))
+	return dns1035(fmt.Sprintf("cm-%.54s-%s", crtName, util.RandStringRunes(5)))
 }
 
 // Solver is an implementation of the acme http-01 challenge solver protocol
@@ -96,7 +96,6 @@ func NewSolver(issuer v1alpha1.GenericIssuer, client kubernetes.Interface, secre
 func labelsForCert(crt *v1alpha1.Certificate, domain string) map[string]string {
 	return map[string]string{
 		"certmanager.k8s.io/managed":     "true",
-		"certmanager.k8s.io/domain":      domain,
 		"certmanager.k8s.io/certificate": crt.Name,
 		"certmanager.k8s.io/id":          util.RandStringRunes(5),
 	}
