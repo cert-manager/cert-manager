@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/golang/glog"
+	corev1 "k8s.io/api/core/v1"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -86,6 +87,9 @@ func New(
 		ctrl.syncedFuncs = append(ctrl.syncedFuncs, clusterIssuersInformer.Informer().HasSynced)
 	}
 
+	secretsInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+		DeleteFunc: ctrl.secretDeleted,
+	})
 	ctrl.secretLister = secretsInformer.Lister()
 	ctrl.syncedFuncs = append(ctrl.syncedFuncs, secretsInformer.Informer().HasSynced)
 
@@ -102,6 +106,30 @@ func New(
 	ctrl.syncedFuncs = append(ctrl.syncedFuncs, serviceInformer.Informer().HasSynced)
 
 	return ctrl
+}
+
+// TODO: replace with generic handleObjet function (like Navigator)
+func (c *Controller) secretDeleted(obj interface{}) {
+	var secret *corev1.Secret
+	var ok bool
+	secret, ok = obj.(*corev1.Secret)
+	if !ok {
+		runtime.HandleError(fmt.Errorf("Object is not a Secret object %#v", obj))
+		return
+	}
+	crts, err := c.certificatesForSecret(secret)
+	if err != nil {
+		runtime.HandleError(fmt.Errorf("Error looking up Certificates observing Secret: %s/%s", secret.Namespace, secret.Name))
+		return
+	}
+	for _, crt := range crts {
+		key, err := keyFunc(crt)
+		if err != nil {
+			runtime.HandleError(err)
+			continue
+		}
+		c.queue.AddRateLimited(key)
+	}
 }
 
 func (c *Controller) Run(workers int, stopCh <-chan struct{}) error {
