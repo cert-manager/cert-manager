@@ -244,6 +244,9 @@ func (s *Solver) ensureIngressHasRule(ingName string, crt *v1alpha1.Certificate,
 	}
 	if domainCfg.HTTP01.IngressClass != nil {
 		ing.Annotations[class.IngressKey] = *domainCfg.HTTP01.IngressClass
+		for k, v := range domainCfg.HTTP01.Annotations {
+			ing.Annotations[k] = v
+		}
 	}
 	if ing.Labels == nil {
 		ing.Labels = make(map[string]string)
