@@ -236,9 +236,9 @@ func (c *Controller) updateSecret(crt *v1alpha1.Certificate, namespace string, c
 // and private key will be stored in the named secret
 func (c *Controller) issue(ctx context.Context, issuer issuer.Interface, crt *v1alpha1.Certificate) error {
 	var err error
-	glog.Info("Preparing certificate %s/%s with issuer", crt.Namespace, crt.Name)
+	glog.Infof("Preparing certificate %s/%s with issuer", crt.Namespace, crt.Name)
 	if err = issuer.Prepare(ctx, crt); err != nil {
-		glog.Info("Error preparing issuer for certificate %s/%s: %v", crt.Namespace, crt.Name, err)
+		glog.Infof("Error preparing issuer for certificate %s/%s: %v", crt.Namespace, crt.Name, err)
 		return err
 	}
 
@@ -274,9 +274,9 @@ func (c *Controller) issue(ctx context.Context, issuer issuer.Interface, crt *v1
 // and private key will be stored in the named secret
 func (c *Controller) renew(ctx context.Context, issuer issuer.Interface, crt *v1alpha1.Certificate) error {
 	var err error
-	glog.Info("Preparing certificate %s/%s with issuer", crt.Namespace, crt.Name)
+	glog.Infof("Preparing certificate %s/%s with issuer", crt.Namespace, crt.Name)
 	if err = issuer.Prepare(ctx, crt); err != nil {
-		glog.Info("Error preparing issuer for certificate %s/%s: %v", crt.Namespace, crt.Name, err)
+		glog.Infof("Error preparing issuer for certificate %s/%s: %v", crt.Namespace, crt.Name, err)
 		return err
 	}
 
