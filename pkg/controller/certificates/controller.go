@@ -72,7 +72,7 @@ func New(
 	// Create a scheduled work queue that calls the ctrl.queue.Add method for
 	// each object in the queue. This is used to schedule re-checks of
 	// Certificate resources when they get near to expiry
-	ctrl.scheduledWorkQueue = scheduler.NewScheduledWorkQueue(ctrl.queue.Add)
+	ctrl.scheduledWorkQueue = scheduler.NewScheduledWorkQueue(ctrl.queue.AddRateLimited)
 
 	certificatesInformer.Informer().AddEventHandler(&controllerpkg.QueuingEventHandler{Queue: ctrl.queue})
 	ctrl.certificateLister = certificatesInformer.Lister()
