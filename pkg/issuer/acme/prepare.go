@@ -211,8 +211,8 @@ func (a *Acme) presentChallenge(ctx context.Context, cl client.Interface, crt *v
 
 	// TODO: make sure that solver.Present is noop if challenge
 	//       is already present and all we do is waiting for propagation,
-        //       otherwise it is spamming with errors which are not really erros
-        //       as we are just waiting for propagation
+	//       otherwise it is spamming with errors which are not really erros
+	//       as we are just waiting for propagation
 	err = solver.Present(ctx, crt, ch)
 	if err != nil {
 		return err
