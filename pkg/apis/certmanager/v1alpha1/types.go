@@ -338,7 +338,7 @@ const (
 	// validation for a Certificate has failed.
 	// This is currently used by the ACME issuer to track when the last
 	// validation was attempted.
-	CertificateConditionValidationFailed CertificateConditionType = "ValidationFailed"
+	CertificateConditionValidationFailed CertificateConditionType = "ValidateFailed"
 )
 
 // CertificateACMEStatus holds the status for an ACME issuer

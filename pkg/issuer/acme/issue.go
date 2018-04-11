@@ -40,7 +40,8 @@ func (a *Acme) obtainCertificate(ctx context.Context, crt *v1alpha1.Certificate)
 		crt.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse, errorInvalidConfig, "status.acme.order.url must be set", false)
 		return nil, nil, fmt.Errorf("certificate order url cannot be blank")
 	}
-	order, err := cl.GetOrder(ctx, orderURL)
+
+	order, err := cl.WaitOrder(ctx, orderURL)
 	if err != nil {
 		crt.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse, errorIssueError, fmt.Sprintf("Failed to get order details: %v", err), false)
 		return nil, nil, fmt.Errorf("error getting order details: %v", err)
@@ -80,10 +81,10 @@ func (a *Acme) obtainCertificate(ctx context.Context, crt *v1alpha1.Certificate)
 		if acmeErr, ok := err.(*acme.Error); ok {
 			if acmeErr.StatusCode >= 400 && acmeErr.StatusCode <= 499 {
 				crt.Status.ACMEStatus().Order.URL = ""
-				// TODO: should we also set the FailedValidation status
-				// condition here so back off can be applied?
 			}
 		}
+		// TODO: should we also set the FailedValidation status
+		// condition here so back off can be applied?
 		crt.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse, errorIssueError, fmt.Sprintf("Failed to finalize order: %v", err), false)
 		a.recorder.Eventf(crt, corev1.EventTypeWarning, errorIssueError, "Failed to finalize order: %v", err)
 		return nil, nil, fmt.Errorf("error getting certificate from acme server: %s", err)

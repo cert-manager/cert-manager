@@ -22,7 +22,7 @@ const (
 
 	errorInvalidConfig = "InvalidConfig"
 	errorCleanupError  = "CleanupError"
-	errorPresentError  = "PresentError"
+	errorValidateError = "ValidateError"
 	errorBackoff       = "Backoff"
 
 	messagePresentChallenge = "Presenting %s challenge for domain %s"
@@ -48,7 +48,7 @@ func (a *Acme) Prepare(ctx context.Context, crt *v1alpha1.Certificate) error {
 	// obtain an ACME client
 	cl, err := a.acmeClient()
 	if err != nil {
-		crt.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse, errorPresentError, fmt.Sprintf("Failed to get ACME client: %v", err), false)
+		crt.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse, errorValidateError, fmt.Sprintf("Failed to get ACME client: %v", err), false)
 		return err
 	}
 
@@ -57,7 +57,7 @@ func (a *Acme) Prepare(ctx context.Context, crt *v1alpha1.Certificate) error {
 	// acme server.
 	nextPresentIn, order, err := a.shouldAttemptValidation(ctx, cl, crt)
 	if err != nil {
-		crt.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse, errorPresentError, fmt.Sprintf("Failed to determine order status: %v", err), false)
+		crt.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse, errorValidateError, fmt.Sprintf("Failed to determine order status: %v", err), false)
 		return err
 	}
 
@@ -66,7 +66,7 @@ func (a *Acme) Prepare(ctx context.Context, crt *v1alpha1.Certificate) error {
 	if order == nil {
 		err := a.cleanupLastOrder(ctx, crt)
 		if err != nil {
-			crt.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse, errorPresentError, fmt.Sprintf("Failed to clean up previous order: %v", err), false)
+			crt.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse, errorValidateError, fmt.Sprintf("Failed to clean up previous order: %v", err), false)
 			return err
 		}
 	}
@@ -84,7 +84,7 @@ func (a *Acme) Prepare(ctx context.Context, crt *v1alpha1.Certificate) error {
 	if order == nil {
 		order, err = a.createOrder(ctx, cl, crt)
 		if err != nil {
-			crt.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse, errorPresentError, fmt.Sprintf("Failed to create new order: %v", err), false)
+			crt.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse, errorValidateError, fmt.Sprintf("Failed to create new order: %v", err), false)
 			return err
 		}
 		a.recorder.Eventf(crt, corev1.EventTypeNormal, reasonCreateOrder, "Created new ACME order, attempting validation...")
@@ -97,7 +97,7 @@ func (a *Acme) Prepare(ctx context.Context, crt *v1alpha1.Certificate) error {
 func (a *Acme) presentOrder(ctx context.Context, cl client.Interface, crt *v1alpha1.Certificate, order *acme.Order) error {
 	allAuthorizations, err := getRemainingAuthorizations(ctx, cl, order.Authorizations...)
 	if err != nil {
-		crt.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse, errorPresentError, fmt.Sprintf("Failed to determine authorizations to obtain: %v", err), false)
+		crt.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse, errorValidateError, fmt.Sprintf("Failed to determine authorizations to obtain: %v", err), false)
 		return err
 	}
 
@@ -132,7 +132,7 @@ func (a *Acme) presentOrder(ctx context.Context, cl client.Interface, crt *v1alp
 	if err != nil {
 		// we set forceTime to true so the user can see the self check is being
 		// performed regularly
-		crt.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse, errorPresentError, err.Error(), true)
+		crt.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse, errorValidateError, err.Error(), true)
 		return err
 	}
 
@@ -161,9 +161,11 @@ func (a *Acme) presentOrder(ctx context.Context, cl client.Interface, crt *v1alp
 
 	err = utilerrors.NewAggregate(errs)
 	if err != nil {
-		crt.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse, errorPresentError, err.Error(), false)
+		crt.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse, errorValidateError, err.Error(), false)
 		return err
 	}
+
+	crt.UpdateStatusCondition(v1alpha1.CertificateConditionValidationFailed, v1alpha1.ConditionFalse, "OrderValidated", fmt.Sprintf("Order validated"), true)
 
 	return nil
 }
