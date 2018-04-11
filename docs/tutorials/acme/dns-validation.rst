@@ -16,7 +16,7 @@ This is done by creating a TXT record with specific content that proves you
 have control of the domains DNS records.
 
 The following Issuer defines the necessary information to enable DNS validation.
-You can read more about the Issuer resource in the :doc:`Issuer reference docs </reference/issuers/index>`.
+You can read more about the Issuer resource in the :doc:`Issuer reference docs </reference/issuers>`.
 
 .. code-block:: yaml
    :linenos:

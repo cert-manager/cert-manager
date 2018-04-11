@@ -17,7 +17,7 @@ It is assumed that you control the domain if you are able to publish the given
 file under a given path.
 
 The following Issuer defines the necessary information to enable HTTP validation.
-You can read more about the Issuer resource in the :doc:`Issuer reference docs </reference/issuers/index>`.
+You can read more about the Issuer resource in the :doc:`Issuer reference docs </reference/issuers>`.
 
 .. code-block:: yaml
    :linenos:

@@ -24,7 +24,8 @@ This is the full technical documentation for the project, and should be used as
 a source of references when seeking help with the project.
 
 .. toctree::
-   :maxdepth: 3
+   :maxdepth: 5
+   :titlesonly:
    :caption: Contents:
 
    getting-started/index

@@ -133,8 +133,6 @@ inferred by which field it specifies in its spec, such as ``spec.acme``
 for the ACME issuer, or ``spec.ca`` for the CA based issuer.
 
 .. toctree::
-   :maxdepth: 1
-   :hidden:
 
    issuers/acme/index
    issuers/ca/index
