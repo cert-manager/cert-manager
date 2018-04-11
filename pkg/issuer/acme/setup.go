@@ -5,6 +5,7 @@ import (
 	"crypto/rsa"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strings"
 
 	"github.com/golang/glog"
@@ -32,11 +33,34 @@ const (
 	messageAccountVerified           = "The ACME account was verified with the ACME server"
 )
 
+func (a *Acme) urlChanged() (bool, error) {
+	if a.issuer.GetStatus().ACMEStatus().URI == "" {
+		return false, nil
+	}
+
+	spechost, err := url.Parse(a.issuer.GetSpec().ACME.Server)
+	if err != nil {
+		return false, err
+	}
+
+	statushost, err := url.Parse(a.issuer.GetStatus().ACMEStatus().URI)
+	if err != nil {
+		return false, err
+	}
+	return spechost.Host != statushost.Host, nil
+}
+
 // Setup will verify an existing ACME registration, or create one if not
 // already registered.
 func (a *Acme) Setup(ctx context.Context) error {
 	cl, err := a.acmeClient()
-	if k8sErrors.IsNotFound(err) || errors.IsInvalidData(err) {
+
+	urlchanged, urlErr := a.urlChanged()
+	if urlErr != nil {
+		return urlErr
+	}
+
+	if urlchanged || k8sErrors.IsNotFound(err) || errors.IsInvalidData(err) {
 		glog.V(4).Infof("%s: generating acme account private key %q", a.issuer.GetObjectMeta().Name, a.issuer.GetSpec().ACME.PrivateKey.Name)
 		accountPrivKey, err := a.createAccountPrivateKey()
 		if err != nil {
