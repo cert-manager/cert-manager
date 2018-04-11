@@ -26,5 +26,5 @@ gen() {
 	mv "${TMP_OUTPUT}"/cert-manager/templates/*.* "${OUTPUT_DIR}/"
 }
 
-gen rbac-values "${REPO_ROOT}/docs/deploy/rbac"
-gen without-rbac-values "${REPO_ROOT}/docs/deploy/without-rbac"
+gen rbac-values "${REPO_ROOT}/contrib/manifests/cert-manager/rbac"
+gen without-rbac-values "${REPO_ROOT}/contrib/manifests/cert-manager/without-rbac"

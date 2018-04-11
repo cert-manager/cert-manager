@@ -13,7 +13,7 @@ to renew certificates at an appropriate time before expiry.
 ## Installing the Chart
 
 Full installation instructions, including details on how to configure extra
-functionality in cert-manager can be found in the [official deploying docs](https://github.com/jetstack/cert-manager/blob/master/docs/user-guides/deploying.md#addendum).
+functionality in cert-manager can be found in the [getting started docs](https://cert-manager.readthedocs.io/en/latest/getting-started/).
 
 To install the chart with the release name `my-release`:
 
@@ -27,13 +27,13 @@ or Issuer resource (for example, by creating a 'letsencrypt-staging' issuer).
 More information on the different types of issuers and how to configure them
 can be found in our documentation:
 
-https://github.com/jetstack/cert-manager/tree/master/docs/api-types/issuer
+https://cert-manager.readthedocs.io/en/latest/reference/issuers.html
 
 For information on how to configure cert-manager to automatically provision
 Certificates for Ingress resources, take a look at the `ingress-shim`
 documentation:
 
-https://github.com/jetstack/cert-manager/blob/master/docs/user-guides/ingress-shim.md
+https://cert-manager.readthedocs.io/en/latest/reference/ingress-shim.html
 
 > **Tip**: List all releases using `helm list`
 
