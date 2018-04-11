@@ -10,7 +10,7 @@ It is loosely based upon the work of [kube-lego](https://github.com/jetstack/kub
 and has borrowed some wisdom from other similar projects e.g.
 [kube-cert-manager](https://github.com/PalmStoneGames/kube-cert-manager).
 
-![cert-manager high level overview diagram](/docs/high-level-overview.png)
+![cert-manager high level overview diagram](/docs/images/high-level-overview.png)
 
 ## Current status
 
@@ -25,38 +25,11 @@ there may be breaking changes that will require changes to *all*
 `Issuer`/`Certificate` resources you have already created. We aim to provide a
 stable API after a 1.0 release.
 
-## Quickstart
+## Documentation
 
-> Prebuilt images for cert-manager are made available on Dockerhub.
-
-### Pre-requisites
-
-* Kubernetes cluster with `CustomResourceDefinition` or `ThirdPartyResource`
-support
-
-### Deploying cert-manager
-
-The easiest way to deploy cert-manager into your cluster is to use the Helm
-chart. For information on how to do this see the [Deploying cert-manager using
-Helm](docs/user-guides/deploying.md) user guide.
-
-### Creating your first Issuer and Certificate
-
-An `Issuer` in cert-manager describes a source of X.509 certificates. A
-`Certificate` in cert-manager defines a desired X.509 certificate. Below is a
-list of user guides that can be used to get started with both resources:
-
-* [Creating a simple CA based Issuer](docs/user-guides/ca-based-issuer.md)
-* [Creating cluster wide Issuers](docs/user-guides/cluster-issuers.md)
-* [Issuing an ACME certificate using HTTP
-validation](docs/user-guides/acme-http-validation.md)
-* [Issuing an ACME certificate using DNS
-validation](docs/user-guides/acme-dns-validation.md)
-
-## Further documentation
-
-For further documentation, please check the [/docs](/docs) directory in this
-repository.
+Documentation for cert-manager can be found at [cert-manager.readthedocs.io](https://cert-manager.readthedocs.io/en/latest/).
+Please make sure to select the correct version of the documentation to view on
+the bottom left of the page.
 
 ## Troubleshooting
 
@@ -75,7 +48,7 @@ if you are unsure where to start with getting involved!
 We also use the #kube-lego channel on kubernetes.slack.com for chat relating to
 the project.
 
-Developer documentation should be available soon at [docs/devel](docs/devel).
+Developer documentation is available in the [official documentation](http://cert-manager.readthedocs.io/en/latest/devel/index.html).
 
 ## Changelog
 
