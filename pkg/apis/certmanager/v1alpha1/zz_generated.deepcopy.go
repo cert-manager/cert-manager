@@ -114,6 +114,13 @@ func (in *ACMECertificateHTTP01Config) DeepCopyInto(out *ACMECertificateHTTP01Co
 			**out = **in
 		}
 	}
+	if in.Annotations != nil {
+		in, out := &in.Annotations, &out.Annotations
+		*out = make(map[string]string, len(*in))
+		for key, val := range *in {
+			(*out)[key] = val
+		}
+	}
 	return
 }
 
