@@ -20,7 +20,8 @@ Distinct issuance sources per Certificate   Not supported                       
 Ingress controller support (ACME)           GCE, nginx                          All
 =========================================   ================================    =====================
 
-This guide will walk through how you can safely migrate your kube-lego installation to cert-manager, without service interruption.
+This guide will walk through how you can safely migrate your kube-lego
+installation to cert-manager, without service interruption.
 
 By the end of the guide, we should have:
 
@@ -44,7 +45,10 @@ By the end of the guide, we should have:
 1. Scale down kube-lego
 =======================
 
-Before we begin deploying cert-manager, it is best we scale our kube-lego deployment down to 0 replicas. This will prevent the two controllers potentially 'fighting' each other. If you deployed kube-lego using the official deployment YAMLs, a command like so should do:
+Before we begin deploying cert-manager, it is best we scale our kube-lego
+deployment down to 0 replicas. This will prevent the two controllers
+potentially 'fighting' each other. If you deployed kube-lego using the official
+deployment YAMLs, a command like so should do:
 
 .. code-block:: shell
 

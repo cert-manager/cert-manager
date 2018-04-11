@@ -17,12 +17,13 @@ You can install the chart with the following command:
         --namespace kube-system \
         stable/cert-manager
 
-**NOTE**: if your cluster does not use RBAC (Role Based Access Control), you
-will need to disable creation of RBAC resources by adding
-``--set rbac.create=false`` to your ``helm install`` command above.
-
 The default cert-manager configuration is good for the majority of users, but a
 full list of the available options can be found in the `Helm chart README`_.
+
+.. note::
+   If your cluster does not use RBAC (Role Based Access Control), you
+   will need to disable creation of RBAC resources by adding
+   ``--set rbac.create=false`` to your ``helm install`` command above.
 
 With static manifests
 =====================

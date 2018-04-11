@@ -33,7 +33,6 @@ A simple Certificate could be defined as:
        # The default value is Issuer (i.e. a locally namespaced Issuer)
        kind: Issuer
 
-
 This Certificate will tell cert-manager to attempt to use the Issuer
 named ``letsencrypt-prod`` to obtain a certificate key pair for the
 ``foo.example.com`` and ``bar.example.com`` domains. If successful, the resulting
