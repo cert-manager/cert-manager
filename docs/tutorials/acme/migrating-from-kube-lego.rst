@@ -1,6 +1,6 @@
-************************
+========================
 Migrating from kube-lego
-************************
+========================
 
 kube-lego_ is an older Jetstack project for obtaining TLS certificates from
 Let's Encrypt (or another ACME server).
