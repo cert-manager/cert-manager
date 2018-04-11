@@ -71,6 +71,10 @@ type solver interface {
 	// needs to create any new resources, it can set the appropriate owner
 	// reference
 	Present(ctx context.Context, crt *v1alpha1.Certificate, ch v1alpha1.ACMEOrderChallenge) error
+
+	// Check should return Error only if propagation check cannot be performed.
+	// It MUST return `false, nil` if can contact all relevant services and all is
+	// doing is waiting for propagation
 	Check(ch v1alpha1.ACMEOrderChallenge) (bool, error)
 	CleanUp(ctx context.Context, crt *v1alpha1.Certificate, ch v1alpha1.ACMEOrderChallenge) error
 }

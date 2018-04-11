@@ -170,11 +170,9 @@ func (a *Acme) presentOrder(ctx context.Context, cl client.Interface, crt *v1alp
 
 // presentChallenge will process a challenge by talking to the acme server and
 // obtaining up to date status information.
-// If the challenge is still in a pending state, it will 'present' the
-// challenge using the appropriate solver.
-// It will then run the 'Check' function in order to determine whether the
-// challenge has propegated (e.g. to DNS resolvers, or to the ingress
-// controller).
+// If the challenge is still in a pending state, it will first check propagation
+// status of a challenge from previous attempt, and if missing it will 'present' the
+// new challenge using the appropriate solver.
 // If the check fails, an error will be returned.
 // Otherwise, it will return nil.
 func (a *Acme) presentChallenge(ctx context.Context, cl client.Interface, crt *v1alpha1.Certificate, ch v1alpha1.ACMEOrderChallenge) error {
@@ -202,20 +200,26 @@ func (a *Acme) presentChallenge(ctx context.Context, cl client.Interface, crt *v
 		return err
 	}
 
+	ok, err := solver.Check(ch)
+	if err != nil {
+		return err
+	}
+
+	if ok {
+		return nil
+	}
+
+	// TODO: make sure that solver.Present is noop if challenge
+	//       is already present and all we do is waiting for propagation,
+        //       otherwise it is spamming with errors which are not really erros
+        //       as we are just waiting for propagation
 	err = solver.Present(ctx, crt, ch)
 	if err != nil {
 		return err
 	}
 
-	ok, err := solver.Check(ch)
-	if err != nil {
-		return err
-	}
-	if !ok {
-		return fmt.Errorf("%s self check failed for domain %q", ch.Type, ch.Domain)
-	}
-
-	return nil
+	// Error is only way to indicate that we are ready to ACME Accept challenge
+	return fmt.Errorf("% challenge was created for domain %q, waiting for propagation", ch.Type, ch.Domain)
 }
 
 func (a *Acme) cleanupLastOrder(ctx context.Context, crt *v1alpha1.Certificate) error {
