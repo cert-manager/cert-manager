@@ -33,6 +33,8 @@ it is also possible to have multiple instances of the same DNS provider on a
 single Issuer (e.g. two clouddns accounts could be set, each with their own
 name).
 
+.. _supported-dns01-providers:
+
 *************************
 Supported DNS01 providers
 *************************

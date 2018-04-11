@@ -11,3 +11,5 @@ helping 'quickstart' common use-cases for the project.
 
    migrating-from-kube-lego
    securing-nginx-ingress-with-letsencrypt
+   dns-validation
+   http-validation
