@@ -88,7 +88,7 @@ func (c *Controller) secretDeleted(obj interface{}) {
 			runtime.HandleError(err)
 			continue
 		}
-		c.queue.Add(key)
+		c.queue.AddRateLimited(key)
 	}
 }
 
