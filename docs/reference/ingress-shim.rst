@@ -68,5 +68,11 @@ Certificate resources to be automatically created:
   configuration of the ingress-shim (see above). Namely, a default issuer must be
   specified as arguments to the ingress-shim container.
 
+* ``certmanager.k8s.io/ingress-class: ""`` - by default, if the
+'kubernetes.io/tls-acme' annotation is set to "True", the resulting Certificate
+is created with 'ingest: <name>' in the acme spec. If present, this annotation
+will alter this behaviour and supply 'ingestClass: <value>' when creating the
+Certificate.
+
 .. _kube-lego: https://github.com/jetstack/kube-lego
 .. _ingress-shim: https://github.com/jetstack/cert-manager/tree/master/cmd/ingress-shim
