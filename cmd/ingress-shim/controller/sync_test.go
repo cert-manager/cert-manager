@@ -48,6 +48,10 @@ func TestShouldSync(t *testing.T) {
 			ShouldSync:  true,
 		},
 		{
+			Annotations: map[string]string{editInPlaceAnnotation: ""},
+			ShouldSync:  true,
+		},
+		{
 			ShouldSync: false,
 		},
 	}
