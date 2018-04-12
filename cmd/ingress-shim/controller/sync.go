@@ -22,7 +22,7 @@ const (
 	tlsACMEAnnotation = "kubernetes.io/tls-acme"
 	// ingressClassAnnotation is used to toggle the use of ingressClass instead
 	// of ingress on the created Certificate resource
-	ingressClassAnnotation = "certmanager.k8s.io/ingress-class"
+	editInPlaceAnnotation = "certmanager.k8s.io/edit-in-place"
 	// issuerNameAnnotation can be used to override the issuer specified on the
 	// created Certificate resource.
 	issuerNameAnnotation = "certmanager.k8s.io/issuer"
@@ -185,11 +185,16 @@ func (c *Controller) setIssuerSpecificConfig(crt *v1alpha1.Certificate, issuer v
 		}
 		switch challengeType {
 		case "http01":
-			ingressClassType, ok := ingAnnotations[ingressClassAnnotation]
-			if !ok {
+			editInPlace, ok := ingAnnotations[editInPlaceAnnotation]
+			// If annotation isn't present, or it's set to true, edit the existing ingress
+			if !ok || (ok && editInPlace == "true") {
 				domainCfg.HTTP01 = &v1alpha1.ACMECertificateHTTP01Config{Ingress: ing.Name}
 			} else {
-				domainCfg.HTTP01 = &v1alpha1.ACMECertificateHTTP01Config{IngressClass: &ingressClassType}
+				ingressClass, ok := ingAnnotations["kubernetes.io/ingress.class"]
+				if !ok {
+					return fmt.Errorf("unable to determine class of ingress %s", ing.Name)
+				}
+				domainCfg.HTTP01 = &v1alpha1.ACMECertificateHTTP01Config{IngressClass: &ingressClass}
 			}
 		case "dns01":
 			dnsProvider, ok := ingAnnotations[acmeIssuerDNS01ProviderNameAnnotation]
@@ -232,8 +237,10 @@ func shouldSync(ing *extv1beta1.Ingress) bool {
 	if _, ok := annotations[acmeIssuerDNS01ProviderNameAnnotation]; ok {
 		return true
 	}
-	if _, ok := annotations[ingressClassAnnotation]; ok {
-		return true
+	if s, ok := annotations[ingressClassAnnotation]; ok {
+		if b, _ := strconv.ParseBool(s); b {
+			return true
+		}
 	}
 	return false
 }
