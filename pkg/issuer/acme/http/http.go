@@ -113,7 +113,8 @@ func testReachability(ctx context.Context, domain, path, key string) (bool, erro
 
 	response, err := http.Get(url.String())
 	if err != nil {
-		return false, err
+		// absorb http client errors
+		return false, nil
 	}
 
 	if response.StatusCode != http.StatusOK {
