@@ -21,10 +21,14 @@ import (
 )
 
 var ACMECertificateDomain string
+var ACMECloudflareDomain string
 
 func init() {
 	flag.StringVar(&ACMECertificateDomain, "acme-nginx-certificate-domain", "",
 		"The provided domain and all sub-domains should resolve to the nginx ingress controller")
+	flag.StringVar(&ACMECloudflareDomain, "acme-cloudflare-domain", "",
+		"A domain name manageable using the test cloudflare api token to be used for testing "+
+			"the DNS01 provider")
 }
 
 func CertificateOnlyValidForDomains(cert *x509.Certificate, commonName string, dnsNames ...string) bool {
@@ -179,8 +183,10 @@ func NewCertManagerACMECertificate(name, secretName, issuerName string, issuerKi
 				Config: []v1alpha1.ACMECertificateDomainConfig{
 					{
 						Domains: append(dnsNames, cn),
-						HTTP01: &v1alpha1.ACMECertificateHTTP01Config{
-							IngressClass: &ingressClass,
+						ACMESolverConfig: v1alpha1.ACMESolverConfig{
+							HTTP01: &v1alpha1.ACMECertificateHTTP01Config{
+								IngressClass: &ingressClass,
+							},
 						},
 					},
 				},
@@ -232,8 +238,9 @@ func NewCertManagerACMEIssuer(name, acmeURL, acmeEmail, acmePrivateKey string) *
 		Spec: v1alpha1.IssuerSpec{
 			IssuerConfig: v1alpha1.IssuerConfig{
 				ACME: &v1alpha1.ACMEIssuer{
-					Email:  acmeEmail,
-					Server: acmeURL,
+					Email:         acmeEmail,
+					Server:        acmeURL,
+					SkipTLSVerify: true,
 					PrivateKey: v1alpha1.SecretKeySelector{
 						LocalObjectReference: v1alpha1.LocalObjectReference{
 							Name: acmePrivateKey,

@@ -112,8 +112,10 @@ func TestBuildCertificates(t *testing.T) {
 							Config: []v1alpha1.ACMECertificateDomainConfig{
 								{
 									Domains: []string{"example.com", "www.example.com"},
-									HTTP01: &v1alpha1.ACMECertificateHTTP01Config{
-										Ingress: "ingress-name",
+									ACMESolverConfig: v1alpha1.ACMESolverConfig{
+										HTTP01: &v1alpha1.ACMECertificateHTTP01Config{
+											Ingress: "ingress-name",
+										},
 									},
 								},
 							},
@@ -209,8 +211,10 @@ func TestBuildCertificates(t *testing.T) {
 							Config: []v1alpha1.ACMECertificateDomainConfig{
 								{
 									Domains: []string{"example.com", "www.example.com"},
-									DNS01: &v1alpha1.ACMECertificateDNS01Config{
-										Provider: "fake-dns",
+									ACMESolverConfig: v1alpha1.ACMESolverConfig{
+										DNS01: &v1alpha1.ACMECertificateDNS01Config{
+											Provider: "fake-dns",
+										},
 									},
 								},
 							},

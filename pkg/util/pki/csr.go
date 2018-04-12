@@ -3,36 +3,32 @@ package pki
 import (
 	"crypto/x509"
 	"crypto/x509/pkix"
-	"fmt"
+
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	"github.com/jetstack/cert-manager/pkg/util"
 )
 
-// The provided Certificate *must* specify either a DNS name or a
-// CommonName else this function will panic.
-func CommonNameForCertificate(crt *v1alpha1.Certificate) (string, error) {
+func CommonNameForCertificate(crt *v1alpha1.Certificate) string {
 	if crt.Spec.CommonName != "" {
-		return crt.Spec.CommonName, nil
+		return crt.Spec.CommonName
 	}
 	if len(crt.Spec.DNSNames) == 0 {
-		return "", fmt.Errorf("certificate must specify at least one of dnsNames or commonName")
+		return ""
 	}
-	return crt.Spec.DNSNames[0], nil
+	return crt.Spec.DNSNames[0]
 }
 
-// The provided Certificate *must* specify either a DNS name or a
-// CommonName else this function will panic.
-func DNSNamesForCertificate(crt *v1alpha1.Certificate) ([]string, error) {
+func DNSNamesForCertificate(crt *v1alpha1.Certificate) []string {
 	if len(crt.Spec.DNSNames) == 0 {
 		if crt.Spec.CommonName == "" {
-			return nil, fmt.Errorf("certificate must specify at least one of dnsNames or commonName")
+			return []string{}
 		}
-		return []string{crt.Spec.CommonName}, nil
+		return []string{crt.Spec.CommonName}
 	}
 	if crt.Spec.CommonName != "" {
-		return util.RemoveDuplicates(append([]string{crt.Spec.CommonName}, crt.Spec.DNSNames...)), nil
+		return util.RemoveDuplicates(append([]string{crt.Spec.CommonName}, crt.Spec.DNSNames...))
 	}
-	return crt.Spec.DNSNames, nil
+	return crt.Spec.DNSNames
 }
 
 func GenerateCSR(commonName string, altNames ...string) *x509.CertificateRequest {

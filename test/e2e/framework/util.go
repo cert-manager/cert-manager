@@ -40,6 +40,8 @@ const (
 
 	// Default time to wait for operations to complete
 	defaultTimeout = 30 * time.Second
+
+	longTimeout = 5 * time.Minute
 )
 
 func nowStamp() string {

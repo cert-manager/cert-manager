@@ -46,7 +46,7 @@ func (c *CA) Issue(ctx context.Context, crt *v1alpha1.Certificate) ([]byte, []by
 
 	if err != nil {
 		s := messageErrorGetCertKeyPair + err.Error()
-		crt.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse, errorGetCertKeyPair, s)
+		crt.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse, errorGetCertKeyPair, s, false)
 		return nil, nil, err
 	}
 
@@ -54,11 +54,11 @@ func (c *CA) Issue(ctx context.Context, crt *v1alpha1.Certificate) ([]byte, []by
 
 	if err != nil {
 		s := messageErrorIssueCert + err.Error()
-		crt.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse, errorIssueCert, s)
+		crt.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse, errorIssueCert, s, false)
 		return nil, nil, err
 	}
 
-	crt.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionTrue, successCertIssued, messageCertIssued)
+	crt.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionTrue, successCertIssued, messageCertIssued, true)
 
 	return pki.EncodePKCS1PrivateKey(signeeKey), certPem, nil
 }
@@ -121,14 +121,9 @@ func createCertificateTemplate(publicKey interface{}, commonName string, altName
 // publicKey is the public key of the signee, and signerKey is the private
 // key of the signer.
 func signCertificate(crt *v1alpha1.Certificate, issuerCert *x509.Certificate, publicKey interface{}, signerKey interface{}) ([]byte, *x509.Certificate, error) {
-	cn, err := pki.CommonNameForCertificate(crt)
-	if err != nil {
-		return nil, nil, err
-	}
-	dnsNames, err := pki.DNSNamesForCertificate(crt)
-	if err != nil {
-		return nil, nil, err
-	}
+	cn := pki.CommonNameForCertificate(crt)
+	dnsNames := pki.DNSNamesForCertificate(crt)
+
 	template, err := createCertificateTemplate(publicKey, cn, dnsNames...)
 	if err != nil {
 		return nil, nil, fmt.Errorf("error creating x509 certificate template: %s", err.Error())

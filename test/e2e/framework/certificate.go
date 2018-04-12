@@ -17,18 +17,16 @@ import (
 // domains.
 func (f *Framework) WaitCertificateIssuedValid(c *v1alpha1.Certificate) {
 	// check the provided certificate is valid
-	expectedCN, err := pki.CommonNameForCertificate(c)
-	Expect(err).NotTo(HaveOccurred())
-	expectedDNSNames, err := pki.DNSNamesForCertificate(c)
-	Expect(err).NotTo(HaveOccurred())
+	expectedCN := pki.CommonNameForCertificate(c)
+	expectedDNSNames := pki.DNSNamesForCertificate(c)
 
 	By("Waiting for Certificate to become Ready")
-	err = testutil.WaitForCertificateCondition(f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name),
+	err := testutil.WaitForCertificateCondition(f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name),
 		c.Name,
 		v1alpha1.CertificateCondition{
 			Type:   v1alpha1.CertificateConditionReady,
 			Status: v1alpha1.ConditionTrue,
-		}, defaultTimeout)
+		}, longTimeout)
 	Expect(err).NotTo(HaveOccurred())
 	By("Verifying TLS certificate exists")
 	secret, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Get(c.Spec.SecretName, metav1.GetOptions{})
