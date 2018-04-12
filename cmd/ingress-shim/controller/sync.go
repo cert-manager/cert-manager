@@ -187,7 +187,7 @@ func (c *Controller) setIssuerSpecificConfig(crt *v1alpha1.Certificate, issuer v
 		case "http01":
 			editInPlace, ok := ingAnnotations[editInPlaceAnnotation]
 			// If annotation isn't present, or it's set to true, edit the existing ingress
-			if !ok || (ok && editInPlace == "true") {
+			if ok && editInPlace == "true" {
 				domainCfg.HTTP01 = &v1alpha1.ACMECertificateHTTP01Config{Ingress: ing.Name}
 			} else {
 				ingressClass, ok := ingAnnotations["kubernetes.io/ingress.class"]
