@@ -394,7 +394,8 @@ func (c *Client) DeactivateAuthorization(ctx context.Context, url string) error 
 
 // WaitAuthorization retrieves authorization details. If the authorization is not in
 // a final state (StatusValid/StatusInvalid), it retries the request until the authorization
-// is final, ctx is cancelled by the caller, or an error response is received.
+// is final, ctx is cancelled by the caller, an error response is received, or the ACME CA
+// responded with a 4xx error.
 //
 // It returns a non-nil Authorization only if its Status is StatusValid.
 // In all other cases WaitAuthorization returns an error.
@@ -410,6 +411,12 @@ func (c *Client) WaitAuthorization(ctx context.Context, url string) (*Authorizat
 			err = responseError(res)
 			res.Body.Close()
 			return nil, err
+		}
+		if res.StatusCode >= 400 && res.StatusCode <= 499 {
+			// Non-retriable error. For instance, Let's Encrypt may return 404 Not Found
+			// when requesting an expired authorization.
+			defer res.Body.Close()
+			return nil, responseError(res)
 		}
 		var raw wireAuthz
 		err = json.NewDecoder(res.Body).Decode(&raw)
