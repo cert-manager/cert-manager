@@ -30,7 +30,7 @@ annotation for fully automated TLS, you will need to configure a default Issuer
 when deploying cert-manager. This can be done by adding the following ``--set``
 when deploying using Helm:
 
-.. code-block: shell
+.. code-block:: shell
 
    --set ingressShim.extraArgs='{--default-issuer-name=letsencrypt-prod,--default-issuer-kind=ClusterIssuer}'
 
