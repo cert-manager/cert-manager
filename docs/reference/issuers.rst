@@ -21,7 +21,7 @@ An example of an Issuer type is ACME. A simple ACME issuer could be defined as:
    spec:
      acme:
        # The ACME server URL
-       server: https://acme-v01.api.letsencrypt.org/directory
+       server: https://acme-v02.api.letsencrypt.org/directory
        # Email address used for ACME registration
        email: user@example.com
        # Name of a secret used to store the ACME account private key
@@ -78,7 +78,7 @@ those credentials to perform the ACME DNS01 challenge with route53.
      name: letsencrypt-prod
    spec:
      acme:
-       server: https://acme-v01.api.letsencrypt.org/directory
+       server: https://acme-v02.api.letsencrypt.org/directory
        email: user@example.com
        privateKeySecretRef:
          name: letsencrypt-prod

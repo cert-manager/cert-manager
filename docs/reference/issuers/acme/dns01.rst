@@ -17,7 +17,7 @@ requests:
    spec:
      acme:
        email: user@example.com
-       server: https://acme-staging.api.letsencrypt.org/directory
+       server: https://acme-staging-v02.api.letsencrypt.org/directory
        privateKeySecretRef:
          name: example-issuer-account-key
        dns01:
