@@ -202,11 +202,8 @@ func (a *Acme) presentChallenge(ctx context.Context, cl client.Interface, crt *v
 		return err
 	}
 
-	ok, err := solver.Check(ch)
-	if err != nil {
-		return err
-	}
-
+	// we defer checking checkErr to ensure that we call Present
+	ok, checkErr := solver.Check(ch)
 	if ok {
 		return nil
 	}
@@ -217,6 +214,9 @@ func (a *Acme) presentChallenge(ctx context.Context, cl client.Interface, crt *v
 	//       as we are just waiting for propagation
 	err = solver.Present(ctx, crt, ch)
 	if err != nil {
+		return err
+	}
+	if checkErr != nil {
 		return err
 	}
 
