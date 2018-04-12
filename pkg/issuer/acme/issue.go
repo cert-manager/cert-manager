@@ -41,7 +41,7 @@ func (a *Acme) obtainCertificate(ctx context.Context, crt *v1alpha1.Certificate)
 		return nil, nil, fmt.Errorf("certificate order url cannot be blank")
 	}
 
-	order, err := cl.WaitOrder(ctx, orderURL)
+	order, err := cl.GetOrder(ctx, orderURL)
 	if err != nil {
 		crt.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse, errorIssueError, fmt.Sprintf("Failed to get order details: %v", err), false)
 		return nil, nil, fmt.Errorf("error getting order details: %v", err)
