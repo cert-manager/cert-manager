@@ -22,7 +22,7 @@ const (
 	tlsACMEAnnotation = "kubernetes.io/tls-acme"
 	// editInPlaceAnnotation is used to toggle the use of ingressClass instead
 	// of ingress on the created Certificate resource
-	editInPlaceAnnotation = "certmanager.k8s.io/edit-in-place"
+	editInPlaceAnnotation = "certmanager.k8s.io/acme-http01-edit-in-place"
 	// issuerNameAnnotation can be used to override the issuer specified on the
 	// created Certificate resource.
 	issuerNameAnnotation = "certmanager.k8s.io/issuer"
