@@ -133,7 +133,7 @@ Your email address should be shown under the ``.data.lego.email`` field, and the
 ACME server URL under ``.data.lego.url``.
 
 For the purposes of this guide, we will assume the lego email is
-``user@example.com`` and the URL ``https://acme-staging.api.letsencrypt.org/directory``.
+``user@example.com`` and the URL ``https://acme-staging-v02.api.letsencrypt.org/directory``.
 
 Now that we have migrated our private key to the new Secret resource, as well
 as obtaining our ACME email address and URL, we can create a ClusterIssuer
@@ -153,7 +153,7 @@ Create a file named ``cluster-issuer.yaml``:
    spec:
      acme:
        # The ACME server URL
-       server: https://acme-staging.api.letsencrypt.org/directory
+       server: https://acme-staging-v02.api.letsencrypt.org/directory
        # Email address used for ACME registration
        email: user@example.com
        # Name of a secret used to store the ACME account private key from step 3
@@ -194,10 +194,10 @@ You should be able to verify the ACME account has been verified successfully:
        Private Key Secret Ref:
          Key:
          Name:  letsencrypt-private-key
-       Server:  https://acme-staging.api.letsencrypt.org/directory
+       Server:  https://acme-staging-v02.api.letsencrypt.org/directory
    Status:
      Acme:
-       Uri:  https://acme-staging.api.letsencrypt.org/acme/reg/5160358
+       Uri:  https://acme-staging-v02.api.letsencrypt.org/acme/reg/5160358
      Conditions:
        Last Transition Time:  2017-11-30T22:33:41Z
        Message:               The ACME account was registered with the ACME server

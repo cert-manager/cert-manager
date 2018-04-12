@@ -30,7 +30,7 @@ You can read more about the Issuer resource in the :doc:`Issuer reference docs <
    spec:
      acme:
        # The ACME server URL
-       server: https://acme-staging.api.letsencrypt.org/directory
+       server: https://acme-staging-v02.api.letsencrypt.org/directory
        # Email address used for ACME registration
        email: user@example.com
        # Name of a secret used to store the ACME account private key
@@ -46,7 +46,7 @@ production. Let's Encrypt's production environment imposes much stricter
 `rate limits`_, so to reduce the chance of you hitting those limits it is
 highly recommended to start by using the staging environment. To move to
 production, simply create a new Issuer with the URL set to
-``https://acme-v01.api.letsencrypt.org/directory``.
+``https://acme-v02.api.letsencrypt.org/directory``.
 
 The first stage of the ACME protocol is for the client to register with the
 ACME server. This phase includes generating an asymmetric key pair which is
