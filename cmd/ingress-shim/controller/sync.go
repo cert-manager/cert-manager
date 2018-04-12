@@ -191,10 +191,9 @@ func (c *Controller) setIssuerSpecificConfig(crt *v1alpha1.Certificate, issuer v
 				domainCfg.HTTP01 = &v1alpha1.ACMECertificateHTTP01Config{Ingress: ing.Name}
 			} else {
 				ingressClass, ok := ingAnnotations["kubernetes.io/ingress.class"]
-				if !ok {
-					return fmt.Errorf("unable to determine class of ingress %s", ing.Name)
+				if ok {
+					domainCfg.HTTP01 = &v1alpha1.ACMECertificateHTTP01Config{IngressClass: &ingressClass}
 				}
-				domainCfg.HTTP01 = &v1alpha1.ACMECertificateHTTP01Config{IngressClass: &ingressClass}
 			}
 		case "dns01":
 			dnsProvider, ok := ingAnnotations[acmeIssuerDNS01ProviderNameAnnotation]
