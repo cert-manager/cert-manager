@@ -232,8 +232,7 @@ func shouldSync(ing *extv1beta1.Ingress) bool {
 	if _, ok := annotations[acmeIssuerDNS01ProviderNameAnnotation]; ok {
 		return true
 	}
-	if s, ok := annotations[ingressClassAnnotation]; ok {
-		glog.Infof("%s: %s", annotations[ingressClassAnnotation], s)
+	if _, ok := annotations[ingressClassAnnotation]; ok {
 		return true
 	}
 	return false
