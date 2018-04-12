@@ -220,8 +220,9 @@ func (a *Acme) presentChallenge(ctx context.Context, cl client.Interface, crt *v
 		return err
 	}
 
-	// Error is only way to indicate that we are ready to ACME Accept challenge
-	return fmt.Errorf("% challenge was created for domain %q, waiting for propagation", ch.Type, ch.Domain)
+	// We return an error here instead of nil, as the only way for 'presentChallenge'
+	// to return without error is if the self check passes, which we check above.
+	return fmt.Errorf("%s self check failed for domain %q", ch.Type, ch.Domain)
 }
 
 func (a *Acme) cleanupLastOrder(ctx context.Context, crt *v1alpha1.Certificate) error {
