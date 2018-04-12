@@ -69,9 +69,9 @@ Certificate resources to be automatically created:
   specified as arguments to the ingress-shim container.
 
 * ``certmanager.k8s.io/ingress-class: ""`` - by default, if the
-'kubernetes.io/tls-acme' annotation is set to "True", the resulting Certificate
-is created with 'ingest: <name>' in the acme spec. If present, this annotation
-will alter this behaviour and supply 'ingestClass: <value>' when creating the
+'kubernetes.io/tls-acme' annotation is set to "true", the resulting Certificate
+is created with 'ingress: <name>' in the acme spec. If present, this annotation
+will alter this behaviour and supply 'ingressClass: <value>' when creating the
 Certificate.
 
 .. _kube-lego: https://github.com/jetstack/kube-lego
