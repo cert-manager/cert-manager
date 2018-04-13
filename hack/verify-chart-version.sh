@@ -90,6 +90,10 @@ for directory in ${CHANGED_FOLDERS}; do
     if [ "${directory}" == "contrib/charts" ]; then
         continue
     fi
+    if [ ! -d "${directory}" ]; then
+        echo "Directory ${directory} has been deleted. Skipping version check..."
+        continue
+    fi
     semvercompare "${directory}"
 done
 
