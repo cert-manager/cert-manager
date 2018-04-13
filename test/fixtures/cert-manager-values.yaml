@@ -5,11 +5,11 @@ image:
   pullPolicy: Never
 
 extraArgs:
-- --v=8
+- --v=4
 
 ingressShim:
   extraArgs:
-  - --v=8
+  - --v=4
   image:
     tag: build
     pullPolicy: Never

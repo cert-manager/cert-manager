@@ -4,19 +4,18 @@ import (
 	"context"
 	"crypto/rsa"
 	"fmt"
-	"net/http"
 	"strings"
 
 	"github.com/golang/glog"
-	"golang.org/x/crypto/acme"
 	"k8s.io/api/core/v1"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	"github.com/jetstack/cert-manager/pkg/issuer/acme/client"
 	"github.com/jetstack/cert-manager/pkg/util/errors"
-	"github.com/jetstack/cert-manager/pkg/util/kube"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
+	"github.com/jetstack/cert-manager/third_party/crypto/acme"
 )
 
 const (
@@ -37,7 +36,7 @@ const (
 func (a *Acme) Setup(ctx context.Context) error {
 	cl, err := a.acmeClient()
 	if k8sErrors.IsNotFound(err) || errors.IsInvalidData(err) {
-		glog.V(4).Infof("%s: generating acme account private key %q", a.issuer.GetObjectMeta().Name, a.issuer.GetSpec().ACME.PrivateKey.Name)
+		glog.Infof("%s: generating acme account private key %q", a.issuer.GetObjectMeta().Name, a.issuer.GetSpec().ACME.PrivateKey.Name)
 		accountPrivKey, err := a.createAccountPrivateKey()
 		if err != nil {
 			s := messageAccountRegistrationFailed + err.Error()
@@ -45,10 +44,7 @@ func (a *Acme) Setup(ctx context.Context) error {
 			return fmt.Errorf(s)
 		}
 		a.issuer.GetStatus().ACMEStatus().URI = ""
-		cl = &acme.Client{
-			Key:          accountPrivKey,
-			DirectoryURL: a.issuer.GetSpec().ACME.Server,
-		}
+		cl = a.acmeClientWithKey(accountPrivKey)
 	} else if err != nil {
 		s := messageAccountVerificationFailed + err.Error()
 		glog.V(4).Infof("%s: %s", a.issuer.GetObjectMeta().Name, s)
@@ -56,6 +52,8 @@ func (a *Acme) Setup(ctx context.Context) error {
 		return err
 	}
 
+	// registerAccount will also verify the account exists if it already
+	// exists.
 	account, err := a.registerAccount(ctx, cl)
 	if err != nil {
 		s := messageAccountVerificationFailed + err.Error()
@@ -65,9 +63,9 @@ func (a *Acme) Setup(ctx context.Context) error {
 		return err
 	}
 
-	glog.V(4).Infof("%s: verified existing registration with ACME server", a.issuer.GetObjectMeta().Name)
+	glog.Infof("%s: verified existing registration with ACME server", a.issuer.GetObjectMeta().Name)
 	a.issuer.UpdateStatusCondition(v1alpha1.IssuerConditionReady, v1alpha1.ConditionTrue, successAccountRegistered, messageAccountRegistered)
-	a.issuer.GetStatus().ACMEStatus().URI = account.URI
+	a.issuer.GetStatus().ACMEStatus().URI = account.URL
 
 	return nil
 }
@@ -75,41 +73,32 @@ func (a *Acme) Setup(ctx context.Context) error {
 // registerAccount will register a new ACME account with the server. If an
 // account with the clients private key already exists, it will attempt to look
 // up and verify the corresponding account, and will return that. If this fails
-// it will return the
-func (a *Acme) registerAccount(ctx context.Context, cl *acme.Client) (*acme.Account, error) {
-	acc := &acme.Account{
-		Contact: []string{fmt.Sprintf("mailto:%s", strings.ToLower(a.issuer.GetSpec().ACME.Email))},
+// due to a not found error it will register a new account with the given key.
+func (a *Acme) registerAccount(ctx context.Context, cl client.Interface) (*acme.Account, error) {
+	// check if the account already exists
+	acc, err := cl.GetAccount(ctx)
+	if err == nil {
+		return acc, nil
 	}
-	acc, err := cl.Register(ctx, acc, acme.AcceptTOS)
-	if err != nil {
-		typedErr, ok := err.(*acme.Error)
-		// if this isn't an ACME error, we should just return it
-		if !ok {
-			return nil, err
-		}
-		// StatusConflict means an account with the users private key already exists.
-		// If the response code was *not* StatusConflict, we should return the error
-		// here as we are not able to handle it.
-		if typedErr.StatusCode != http.StatusConflict {
-			return nil, err
-		}
-		// If StatusConflict was the returned error, we can attempt to look up the existing
-		// registration URI in the response headers.
-		accountUri := typedErr.Header.Get("Location")
-		if accountUri == "" {
-			return nil, fmt.Errorf("unexpected error - 409 Conflict error returned, but no Location header set: %s", typedErr.Error())
-		}
-		return a.verifyAccount(ctx, cl, accountUri)
+	// return all errors except for 404 errors (which indicate the account
+	// is not yet registered)
+	acmeErr, ok := err.(*acme.Error)
+	if !ok || (acmeErr.StatusCode != 400 && acmeErr.StatusCode != 404) {
+		return nil, err
 	}
-	return acc, nil
-}
 
-// verifyAccount will verify an ACME account with the given URI.
-func (a *Acme) verifyAccount(ctx context.Context, cl *acme.Client, uri string) (*acme.Account, error) {
-	acc, err := cl.GetReg(ctx, uri)
+	acc = &acme.Account{
+		Contact:     []string{fmt.Sprintf("mailto:%s", strings.ToLower(a.issuer.GetSpec().ACME.Email))},
+		TermsAgreed: true,
+	}
+	acc, err = cl.CreateAccount(ctx, acc)
 	if err != nil {
 		return nil, err
 	}
+	// TODO: re-enable this check once this field is set by Pebble
+	// if acc.Status != acme.StatusValid {
+	// 	return nil, fmt.Errorf("acme account is not valid")
+	// }
 	return acc, nil
 }
 
@@ -120,7 +109,7 @@ func (a *Acme) createAccountPrivateKey() (*rsa.PrivateKey, error) {
 		return nil, err
 	}
 
-	_, err = kube.EnsureSecret(a.client, &v1.Secret{
+	_, err = a.client.CoreV1().Secrets(a.issuerResourcesNamespace).Create(&v1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      secretName,
 			Namespace: a.issuerResourcesNamespace,

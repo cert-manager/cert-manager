@@ -55,6 +55,10 @@ var checkAuthoritativeNssTests = []struct {
 	{"ns1.google.com.", "", []string{"ns2.google.com."},
 		false,
 	},
+	// TXT RR /w unexpected value
+	{"8.8.8.8.asn.routeviews.org.", "fe01=", []string{"asnums.routeviews.org."},
+		false,
+	},
 }
 
 var checkAuthoritativeNssTestsErr = []struct {
@@ -62,13 +66,9 @@ var checkAuthoritativeNssTestsErr = []struct {
 	ns          []string
 	error       string
 }{
-	// TXT RR /w unexpected value
-	{"8.8.8.8.asn.routeviews.org.", "fe01=", []string{"asnums.routeviews.org."},
-		"did not return the expected TXT record",
-	},
-	// No TXT RR
-	{"ns1.google.com.", "fe01=", []string{"ns2.google.com."},
-		"did not return the expected TXT record",
+	// invalid nameserver
+	{"8.8.8.8.asn.routeviews.org.", "fe01=", []string{"invalidns.com."},
+		"",
 	},
 }
 

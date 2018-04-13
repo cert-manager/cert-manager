@@ -23,10 +23,14 @@ import (
 )
 
 var ACMECertificateDomain string
+var ACMECloudflareDomain string
 
 func init() {
 	flag.StringVar(&ACMECertificateDomain, "acme-nginx-certificate-domain", "",
 		"The provided domain and all sub-domains should resolve to the nginx ingress controller")
+	flag.StringVar(&ACMECloudflareDomain, "acme-cloudflare-domain", "",
+		"A domain name manageable using the test cloudflare api token to be used for testing "+
+			"the DNS01 provider")
 }
 
 func CertificateOnlyValidForDomains(cert *x509.Certificate, commonName string, dnsNames ...string) bool {
@@ -98,55 +102,50 @@ func WaitForCertificateCondition(client clientset.CertificateInterface, name str
 // WaitCertificateIssuedValid waits for the given Certificate to be
 // 'Ready' and ensures the stored certificate is valid for the specified
 // domains.
-func WaitCertificateIssuedValid(certClient clientset.CertificateInterface, secretClient corecs.SecretInterface, name string, timeout time.Duration) error {
-	return wait.PollImmediate(time.Second, timeout,
-		func() (bool, error) {
-			glog.V(5).Infof("Waiting for Certificate %v to be ready", name)
-			certificate, err := certClient.Get(name, metav1.GetOptions{})
-			if nil != err {
-				return false, fmt.Errorf("error getting Certificate %v: %v", name, err)
-			}
-			isReady := certificate.HasCondition(v1alpha1.CertificateCondition{
-				Type:   v1alpha1.CertificateConditionReady,
-				Status: v1alpha1.ConditionTrue,
-			})
-			if !isReady {
-				return false, nil
-			}
-			glog.Infof("Getting the TLS certificate Secret resource")
-			secret, err := secretClient.Get(certificate.Spec.SecretName, metav1.GetOptions{})
-			if err != nil {
-				return false, err
-			}
-			if len(secret.Data) != 2 {
-				glog.Infof("Expected 2 keys in certificate secret, but there was %d", len(secret.Data))
-				return false, nil
-			}
-			certBytes, ok := secret.Data[v1.TLSCertKey]
-			if !ok {
-				glog.Infof("No certificate data found for Certificate %q (secret %q)", name, certificate.Spec.SecretName)
-				return false, nil
-			}
-			// check the provided certificate is valid
-			expectedCN, err := pki.CommonNameForCertificate(certificate)
-			if err != nil {
-				return false, err
-			}
-			expectedDNSNames, err := pki.DNSNamesForCertificate(certificate)
-			if err != nil {
-				return false, err
-			}
-			cert, err := pki.DecodeX509CertificateBytes(certBytes)
-			if err != nil {
-				return false, err
-			}
-			if expectedCN != cert.Subject.CommonName || !util.EqualUnsorted(cert.DNSNames, expectedDNSNames) {
-				glog.Infof("Expected certificate valid for CN %q, dnsNames %v but got a certificate valid for CN %q, dnsNames %v", expectedCN, expectedDNSNames, cert.Subject.CommonName, cert.DNSNames)
-				return false, nil
-			}
-			return true, nil
-		},
-	)
+func WaitCertificateIssuedValid(certClient clientset.CertificateInterface, secretClient corecs.SecretInterface, name string) error {
+	glog.V(5).Infof("Waiting for Certificate to become Ready")
+	err := WaitForCertificateCondition(certClient,
+		name,
+		v1alpha1.CertificateCondition{
+			Type:   v1alpha1.CertificateConditionReady,
+			Status: v1alpha1.ConditionTrue,
+		}, time.Minute*5)
+	if err != nil {
+		return err
+	}
+
+	cert, err := certClient.Get(name, metav1.GetOptions{})
+	if nil != err {
+		return fmt.Errorf("error getting Certificate %v: %v", name, err)
+	}
+
+	glog.V(5).Infof("Verifying TLS certificate exists")
+	secret, err := secretClient.Get(cert.Spec.SecretName, metav1.GetOptions{})
+	if err != nil {
+		return err
+	}
+	if len(secret.Data) != 2 {
+		return fmt.Errorf("Expected 2 keys in certificate secret, but there was %d", len(secret.Data))
+	}
+
+	certBytes, ok := secret.Data[v1.TLSCertKey]
+	if !ok {
+		return fmt.Errorf("No certificate data found for Certificate %q", name)
+	}
+
+	x509Cert, err := pki.DecodeX509CertificateBytes(certBytes)
+	if err != nil {
+		return err
+	}
+
+	// check the provided certificate is valid
+	expectedCN := pki.CommonNameForCertificate(cert)
+	expectedDNSNames := pki.DNSNamesForCertificate(cert)
+	if expectedCN != x509Cert.Subject.CommonName || !util.EqualUnsorted(x509Cert.DNSNames, expectedDNSNames) {
+		return fmt.Errorf("Expected certificate valid for CN %q, dnsNames %v but got a certificate valid for CN %q, dnsNames %v", expectedCN, expectedDNSNames, x509Cert.Subject.CommonName, x509Cert.DNSNames)
+	}
+
+	return nil
 }
 
 // WaitForCertificateToExist waits for the named certificate to exist
@@ -235,8 +234,10 @@ func NewCertManagerACMECertificate(name, secretName, issuerName string, issuerKi
 				Config: []v1alpha1.ACMECertificateDomainConfig{
 					{
 						Domains: append(dnsNames, cn),
-						HTTP01: &v1alpha1.ACMECertificateHTTP01Config{
-							IngressClass: &ingressClass,
+						ACMESolverConfig: v1alpha1.ACMESolverConfig{
+							HTTP01: &v1alpha1.ACMECertificateHTTP01Config{
+								IngressClass: &ingressClass,
+							},
 						},
 					},
 				},
@@ -288,8 +289,9 @@ func NewCertManagerACMEIssuer(name, acmeURL, acmeEmail, acmePrivateKey string) *
 		Spec: v1alpha1.IssuerSpec{
 			IssuerConfig: v1alpha1.IssuerConfig{
 				ACME: &v1alpha1.ACMEIssuer{
-					Email:  acmeEmail,
-					Server: acmeURL,
+					Email:         acmeEmail,
+					Server:        acmeURL,
+					SkipTLSVerify: true,
 					PrivateKey: v1alpha1.SecretKeySelector{
 						LocalObjectReference: v1alpha1.LocalObjectReference{
 							Name: acmePrivateKey,

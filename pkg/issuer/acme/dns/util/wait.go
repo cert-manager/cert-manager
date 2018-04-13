@@ -23,8 +23,8 @@ var (
 const defaultResolvConf = "/etc/resolv.conf"
 
 var defaultNameservers = []string{
-	"google-public-dns-a.google.com:53",
-	"google-public-dns-b.google.com:53",
+	"8.8.8.8:53",
+	"8.8.4.4:53",
 }
 
 var RecursiveNameservers = getNameservers(defaultResolvConf, defaultNameservers)
@@ -86,7 +86,8 @@ func checkAuthoritativeNss(fqdn, value string, nameservers []string) (bool, erro
 			return false, err
 		}
 
-		if r.Rcode != dns.RcodeSuccess {
+		// NXDomain response is not really an error, just waiting for propagation to happen
+		if !(r.Rcode == dns.RcodeSuccess || r.Rcode == dns.RcodeNameError) {
 			return false, fmt.Errorf("NS %s returned %s for %s", ns, dns.RcodeToString[r.Rcode], fqdn)
 		}
 
@@ -102,7 +103,7 @@ func checkAuthoritativeNss(fqdn, value string, nameservers []string) (bool, erro
 		}
 
 		if !found {
-			return false, fmt.Errorf("nameserver %q did not return the expected TXT record for domain %q", ns, fqdn)
+			return false, nil
 		}
 	}
 

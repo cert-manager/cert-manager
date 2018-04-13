@@ -1,6 +1,7 @@
 package dns
 
 import (
+	"errors"
 	"reflect"
 	"testing"
 
@@ -11,7 +12,10 @@ import (
 	kubefake "k8s.io/client-go/kubernetes/fake"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/azuredns"
+	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/clouddns"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/cloudflare"
+	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/route53"
 )
 
 type fixture struct {
@@ -29,6 +33,54 @@ type fixture struct {
 
 	// certificate used in the test
 	Certificate *v1alpha1.Certificate
+
+	Challenge v1alpha1.ACMEOrderChallenge
+
+	DNSProviders *fakeDNSProviders
+
+	Ambient bool
+}
+
+type fakeDNSProviderCall struct {
+	name string
+	args []interface{}
+}
+
+type fakeDNSProviders struct {
+	constructors dnsProviderConstructors
+	calls        []fakeDNSProviderCall
+}
+
+func (f *fakeDNSProviders) call(name string, args ...interface{}) {
+	f.calls = append(f.calls, fakeDNSProviderCall{name: name, args: args})
+}
+
+func newFakeDNSProviders() *fakeDNSProviders {
+	f := &fakeDNSProviders{
+		calls: []fakeDNSProviderCall{},
+	}
+	f.constructors = dnsProviderConstructors{
+		cloudDNS: func(project string, serviceAccount []byte) (*clouddns.DNSProvider, error) {
+			f.call("clouddns", project, serviceAccount)
+			return nil, nil
+		},
+		cloudFlare: func(email, apikey string) (*cloudflare.DNSProvider, error) {
+			f.call("cloudflare", email, apikey)
+			if email == "" || apikey == "" {
+				return nil, errors.New("invalid email or apikey")
+			}
+			return nil, nil
+		},
+		route53: func(accessKey, secretKey, hostedZoneID, region string, ambient bool) (*route53.DNSProvider, error) {
+			f.call("route53", accessKey, secretKey, hostedZoneID, region, ambient)
+			return nil, nil
+		},
+		azureDNS: func(clientID, clientSecret, subscriptionID, tenentID, resourceGroupName, hostedZoneName string) (*azuredns.DNSProvider, error) {
+			f.call("azuredns", clientID, clientSecret, subscriptionID, tenentID, resourceGroupName, hostedZoneName)
+			return nil, nil
+		},
+	}
+	return f
 }
 
 func (f *fixture) solver() *Solver {
@@ -41,11 +93,17 @@ func (f *fixture) solver() *Solver {
 	stopCh := make(chan struct{})
 	defer close(stopCh)
 	sharedInformerFactory.Start(stopCh)
+	dnsProvider := f.DNSProviders
+	if dnsProvider == nil {
+		dnsProvider = newFakeDNSProviders()
+	}
 	return &Solver{
-		issuer:            f.Issuer,
-		client:            kubeClient,
-		secretLister:      secretsLister,
-		resourceNamespace: f.ResourceNamespace,
+		f.Issuer,
+		kubeClient,
+		secretsLister,
+		f.ResourceNamespace,
+		dnsProvider.constructors,
+		f.Ambient,
 	}
 }
 
@@ -117,14 +175,13 @@ func TestSolverFor(t *testing.T) {
 					"api-key": []byte("a-cloudflare-api-key"),
 				})},
 				ResourceNamespace: "default",
-				Certificate: newCertificate("test", "default", "example.com", nil, []v1alpha1.ACMECertificateDomainConfig{
-					{
-						Domains: []string{"example.com"},
+				Challenge: v1alpha1.ACMEOrderChallenge{
+					ACMESolverConfig: v1alpha1.ACMESolverConfig{
 						DNS01: &v1alpha1.ACMECertificateDNS01Config{
 							Provider: "fake-cloudflare",
 						},
 					},
-				}),
+				},
 			},
 			domain:             "example.com",
 			expectedSolverType: reflect.TypeOf(&cloudflare.DNSProvider{}),
@@ -148,14 +205,13 @@ func TestSolverFor(t *testing.T) {
 				// don't include any secrets in the lister
 				SecretLister:      []*corev1.Secret{},
 				ResourceNamespace: "default",
-				Certificate: newCertificate("test", "default", "example.com", nil, []v1alpha1.ACMECertificateDomainConfig{
-					{
-						Domains: []string{"example.com"},
+				Challenge: v1alpha1.ACMEOrderChallenge{
+					ACMESolverConfig: v1alpha1.ACMESolverConfig{
 						DNS01: &v1alpha1.ACMECertificateDNS01Config{
 							Provider: "fake-cloudflare",
 						},
 					},
-				}),
+				},
 			},
 			domain:    "example.com",
 			expectErr: true,
@@ -180,46 +236,13 @@ func TestSolverFor(t *testing.T) {
 					"api-key-oops": []byte("a-cloudflare-api-key"),
 				})},
 				ResourceNamespace: "default",
-				Certificate: newCertificate("test", "default", "example.com", nil, []v1alpha1.ACMECertificateDomainConfig{
-					{
-						Domains: []string{"example.com"},
+				Challenge: v1alpha1.ACMEOrderChallenge{
+					ACMESolverConfig: v1alpha1.ACMESolverConfig{
 						DNS01: &v1alpha1.ACMECertificateDNS01Config{
 							Provider: "fake-cloudflare",
 						},
 					},
-				}),
-			},
-			domain:    "example.com",
-			expectErr: true,
-		},
-		"fails to load a provider with no config set for the domain": {
-			f: &fixture{
-				Issuer: newIssuer("test", "default", []v1alpha1.ACMEIssuerDNS01Provider{
-					{
-						Name: "fake-cloudflare",
-						Cloudflare: &v1alpha1.ACMEIssuerDNS01ProviderCloudflare{
-							Email: "test",
-							APIKey: v1alpha1.SecretKeySelector{
-								LocalObjectReference: v1alpha1.LocalObjectReference{
-									Name: "cloudflare-key",
-								},
-								Key: "api-key",
-							},
-						},
-					},
-				}),
-				SecretLister: []*corev1.Secret{newSecret("cloudflare-key", "default", map[string][]byte{
-					"api-key": []byte("a-cloudflare-api-key"),
-				})},
-				ResourceNamespace: "default",
-				Certificate: newCertificate("test", "default", "example.com", nil, []v1alpha1.ACMECertificateDomainConfig{
-					{
-						Domains: []string{"example-oops.com"},
-						DNS01: &v1alpha1.ACMECertificateDNS01Config{
-							Provider: "fake-cloudflare",
-						},
-					},
-				}),
+				},
 			},
 			domain:    "example.com",
 			expectErr: true,
@@ -244,14 +267,13 @@ func TestSolverFor(t *testing.T) {
 					"api-key": []byte("a-cloudflare-api-key"),
 				})},
 				ResourceNamespace: "default",
-				Certificate: newCertificate("test", "default", "example.com", nil, []v1alpha1.ACMECertificateDomainConfig{
-					{
-						Domains: []string{"example.com"},
+				Challenge: v1alpha1.ACMEOrderChallenge{
+					ACMESolverConfig: v1alpha1.ACMESolverConfig{
 						DNS01: &v1alpha1.ACMECertificateDNS01Config{
 							Provider: "fake-cloudflare-oops",
 						},
 					},
-				}),
+				},
 			},
 			domain:    "example.com",
 			expectErr: true,
@@ -260,7 +282,7 @@ func TestSolverFor(t *testing.T) {
 	testFn := func(test testT) func(*testing.T) {
 		return func(t *testing.T) {
 			s := test.f.solver()
-			dnsSolver, err := s.solverFor(test.f.Certificate, test.domain)
+			dnsSolver, err := s.solverForIssuerProvider(test.f.Challenge.ACMESolverConfig.DNS01.Provider)
 			if err != nil && !test.expectErr {
 				t.Errorf("expected solverFor to not error, but got: %s", err.Error())
 				return
@@ -274,5 +296,136 @@ func TestSolverFor(t *testing.T) {
 	}
 	for name, test := range tests {
 		t.Run(name, testFn(test))
+	}
+}
+
+func TestRoute53TrimCreds(t *testing.T) {
+	f := &fixture{
+		Issuer: newIssuer("test", "default", []v1alpha1.ACMEIssuerDNS01Provider{
+			{
+				Name: "fake-route53",
+				Route53: &v1alpha1.ACMEIssuerDNS01ProviderRoute53{
+					AccessKeyID: "  test_with_spaces  ",
+					Region:      "us-west-2",
+					SecretAccessKey: v1alpha1.SecretKeySelector{
+						LocalObjectReference: v1alpha1.LocalObjectReference{
+							Name: "route53",
+						},
+						Key: "secret",
+					},
+				},
+			},
+		}),
+		SecretLister: []*corev1.Secret{newSecret("route53", "default", map[string][]byte{
+			"secret": []byte("AKIENDINNEWLINE \n"),
+		})},
+		ResourceNamespace: "default",
+		Challenge: v1alpha1.ACMEOrderChallenge{
+			ACMESolverConfig: v1alpha1.ACMESolverConfig{
+				DNS01: &v1alpha1.ACMECertificateDNS01Config{
+					Provider: "fake-route53",
+				},
+			},
+		},
+		DNSProviders: newFakeDNSProviders(),
+	}
+
+	s := f.solver()
+	_, err := s.solverForIssuerProvider(f.Challenge.ACMESolverConfig.DNS01.Provider)
+	if err != nil {
+		t.Fatalf("expected solverFor to not error, but got: %s", err)
+	}
+
+	expectedR53Call := []fakeDNSProviderCall{
+		{
+			name: "route53",
+			args: []interface{}{"test_with_spaces", "AKIENDINNEWLINE", "", "us-west-2", false},
+		},
+	}
+
+	if !reflect.DeepEqual(expectedR53Call, f.DNSProviders.calls) {
+		t.Fatalf("expected %+v == %+v", expectedR53Call, f.DNSProviders.calls)
+	}
+}
+
+func TestRoute53AmbientCreds(t *testing.T) {
+	type result struct {
+		expectedCall *fakeDNSProviderCall
+		expectedErr  error
+	}
+
+	tests := []struct {
+		in  fixture
+		out result
+	}{
+		{
+			fixture{
+				Issuer: newIssuer("test", "default", []v1alpha1.ACMEIssuerDNS01Provider{
+					{
+						Name: "fake-route53",
+						Route53: &v1alpha1.ACMEIssuerDNS01ProviderRoute53{
+							Region: "us-west-2",
+						},
+					},
+				}),
+				DNSProviders: newFakeDNSProviders(),
+				Challenge: v1alpha1.ACMEOrderChallenge{
+					ACMESolverConfig: v1alpha1.ACMESolverConfig{
+						DNS01: &v1alpha1.ACMECertificateDNS01Config{
+							Provider: "fake-route53",
+						},
+					},
+				},
+				Ambient: true,
+			},
+			result{
+				expectedCall: &fakeDNSProviderCall{
+					name: "route53",
+					args: []interface{}{"", "", "", "us-west-2", true},
+				},
+			},
+		},
+		{
+			fixture{
+				Issuer: newIssuer("test", "default", []v1alpha1.ACMEIssuerDNS01Provider{
+					{
+						Name: "fake-route53",
+						Route53: &v1alpha1.ACMEIssuerDNS01ProviderRoute53{
+							Region: "us-west-2",
+						},
+					},
+				}),
+				DNSProviders: newFakeDNSProviders(),
+				Challenge: v1alpha1.ACMEOrderChallenge{
+					ACMESolverConfig: v1alpha1.ACMESolverConfig{
+						DNS01: &v1alpha1.ACMECertificateDNS01Config{
+							Provider: "fake-route53",
+						},
+					},
+				},
+				Ambient: false,
+			},
+			result{
+				expectedCall: &fakeDNSProviderCall{
+					name: "route53",
+					args: []interface{}{"", "", "", "us-west-2", false},
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		f := tt.in
+		s := f.solver()
+		_, err := s.solverForIssuerProvider(f.Challenge.ACMESolverConfig.DNS01.Provider)
+		if !reflect.DeepEqual(tt.out.expectedErr, err) {
+			t.Fatalf("expected error %v, got error %v", tt.out.expectedErr, err)
+		}
+
+		if tt.out.expectedCall != nil {
+			if !reflect.DeepEqual([]fakeDNSProviderCall{*tt.out.expectedCall}, f.DNSProviders.calls) {
+				t.Fatalf("expected %+v == %+v", []fakeDNSProviderCall{*tt.out.expectedCall}, f.DNSProviders.calls)
+			}
+		}
 	}
 }

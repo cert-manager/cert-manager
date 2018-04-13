@@ -5,7 +5,6 @@ package route53
 import (
 	"fmt"
 	"math/rand"
-	"os"
 	"strings"
 	"time"
 
@@ -15,8 +14,10 @@ import (
 	"github.com/aws/aws-sdk-go/aws/request"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/route53"
+	"github.com/golang/glog"
 
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
+	pkgutil "github.com/jetstack/cert-manager/pkg/util"
 )
 
 const (
@@ -53,48 +54,48 @@ func (d customRetryer) RetryRules(r *request.Request) time.Duration {
 }
 
 // NewDNSProvider returns a DNSProvider instance configured for the AWS
-// Route 53 service.
-//
-// AWS Credentials are automatically detected in the following locations
-// and prioritized in the following order:
-// 1. Environment variables: AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY,
-//    AWS_REGION, [AWS_SESSION_TOKEN]
-// 2. Shared credentials file (defaults to ~/.aws/credentials)
-// 3. Amazon EC2 IAM role
-//
-// If AWS_HOSTED_ZONE_ID is not set, Lego tries to determine the correct
-// public hosted zone via the FQDN.
-//
-// See also: https://github.com/aws/aws-sdk-go/wiki/configuring-sdk
-func NewDNSProvider() (*DNSProvider, error) {
-	hostedZoneID := os.Getenv("AWS_HOSTED_ZONE_ID")
+// Route 53 service using static credentials from its parameters or, if they're
+// unset and the 'ambient' option is set, credentials from the environment.
+func NewDNSProvider(accessKeyID, secretAccessKey, hostedZoneID, region string, ambient bool) (*DNSProvider, error) {
+	if accessKeyID == "" && secretAccessKey == "" {
+		if !ambient {
+			return nil, fmt.Errorf("unable to construct route53 provider: empty credentials; perhaps you meant to enable ambient credentials?")
+		}
+	} else if accessKeyID == "" || secretAccessKey == "" {
+		// It's always an error to set one of those but not the other
+		return nil, fmt.Errorf("unable to construct route53 provider: only one of access and secret key was provided")
+	}
+
+	useAmbientCredentials := ambient && (accessKeyID == "" && secretAccessKey == "")
 
 	r := customRetryer{}
 	r.NumMaxRetries = maxRetries
 	config := request.WithRetryer(aws.NewConfig(), r)
-	client := route53.New(session.New(config))
+	sessionOpts := session.Options{}
 
-	return &DNSProvider{
-		client:       client,
-		hostedZoneID: hostedZoneID,
-	}, nil
-}
+	if useAmbientCredentials {
+		glog.V(5).Infof("using ambient credentials")
+		// Leaving credentials unset results in a default credential chain being
+		// used; this chain is a reasonable default for getting ambient creds.
+		// https://docs.aws.amazon.com/sdk-for-go/v1/developer-guide/configuring-sdk.html#specifying-credentials
+	} else {
+		glog.V(5).Infof("not using ambient credentials")
+		config.WithCredentials(credentials.NewStaticCredentials(accessKeyID, secretAccessKey, ""))
+		// also disable 'ambient' region sources
+		sessionOpts.SharedConfigState = session.SharedConfigDisable
+	}
 
-// NewDNSProviderAccessKey returns a DNSProvider instance configured for the AWS
-// Route 53 service using static credentials from its parameters
-func NewDNSProviderAccessKey(accessKeyID, secretAccessKey, hostedZoneID, region string) (*DNSProvider, error) {
-
-	creds := credentials.NewStaticCredentials(accessKeyID, secretAccessKey, "")
-
-	r := customRetryer{}
-	r.NumMaxRetries = maxRetries
-
-	config := request.WithRetryer(aws.NewConfig(), r).WithCredentials(creds)
-
-	if region != "" {
+	// If ambient credentials aren't permitted, always set the region, even if to
+	// empty string, to avoid it falling back on the environment.
+	if region != "" || !useAmbientCredentials {
 		config.WithRegion(region)
 	}
-	client := route53.New(session.New(config))
+	sess, err := session.NewSessionWithOptions(sessionOpts)
+	if err != nil {
+		return nil, fmt.Errorf("unable to create aws session: %s", err)
+	}
+	sess.Handlers.Build.PushBack(request.WithAppendUserAgent(pkgutil.CertManagerUserAgent))
+	client := route53.New(sess, config)
 
 	return &DNSProvider{
 		client:       client,
@@ -104,7 +105,7 @@ func NewDNSProviderAccessKey(accessKeyID, secretAccessKey, hostedZoneID, region 
 
 // Timeout returns the timeout and interval to use when checking for DNS
 // propagation. Adjusting here to cope with spikes in propagation times.
-func (c *DNSProvider) Timeout() (timeout, interval time.Duration) {
+func (*DNSProvider) Timeout() (timeout, interval time.Duration) {
 	return 120 * time.Second, 2 * time.Second
 }
 
@@ -171,7 +172,7 @@ func (r *DNSProvider) getHostedZoneID(fqdn string) (string, error) {
 
 	authZone, err := util.FindZoneByFqdn(fqdn, util.RecursiveNameservers)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("error finding zone from fqdn: %v", err)
 	}
 
 	// .DNSName should not have a trailing dot

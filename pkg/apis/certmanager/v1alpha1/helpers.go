@@ -25,15 +25,15 @@ func (a *ACMEIssuerDNS01Config) Provider(name string) (*ACMEIssuerDNS01Provider,
 	return nil, fmt.Errorf("provider '%s' not found", name)
 }
 
-func (a *ACMECertificateConfig) ConfigForDomain(domain string) ACMECertificateDomainConfig {
+func (a *ACMECertificateConfig) ConfigForDomain(domain string) *ACMECertificateDomainConfig {
 	for _, cfg := range a.Config {
 		for _, d := range cfg.Domains {
 			if d == domain {
-				return cfg
+				return &cfg
 			}
 		}
 	}
-	return ACMECertificateDomainConfig{}
+	return &ACMECertificateDomainConfig{}
 }
 
 func (c *CertificateStatus) ACMEStatus() *CertificateACMEStatus {
@@ -41,16 +41,6 @@ func (c *CertificateStatus) ACMEStatus() *CertificateACMEStatus {
 		c.ACME = &CertificateACMEStatus{}
 	}
 	return c.ACME
-}
-
-func (c *CertificateACMEStatus) SaveAuthorization(a ACMEDomainAuthorization) {
-	for i, auth := range c.Authorizations {
-		if auth.Domain == a.Domain {
-			c.Authorizations[i] = a
-			return
-		}
-	}
-	c.Authorizations = append(c.Authorizations, a)
 }
 
 func (iss *Issuer) HasCondition(condition IssuerCondition) bool {
@@ -151,7 +141,7 @@ func (crt *Certificate) HasCondition(condition CertificateCondition) bool {
 	return false
 }
 
-func (crt *Certificate) UpdateStatusCondition(conditionType CertificateConditionType, status ConditionStatus, reason, message string) {
+func (crt *Certificate) UpdateStatusCondition(conditionType CertificateConditionType, status ConditionStatus, reason, message string, forceTime bool) {
 	newCondition := CertificateCondition{
 		Type:    conditionType,
 		Status:  status,
@@ -168,7 +158,7 @@ func (crt *Certificate) UpdateStatusCondition(conditionType CertificateCondition
 	} else {
 		for i, cond := range crt.Status.Conditions {
 			if cond.Type == conditionType {
-				if cond.Status != newCondition.Status {
+				if cond.Status != newCondition.Status || forceTime {
 					glog.Infof("Found status change for Certificate %q condition %q: %q -> %q; setting lastTransitionTime to %v", crt.Name, conditionType, cond.Status, status, t)
 					newCondition.LastTransitionTime = metav1.NewTime(t)
 				} else {
@@ -176,9 +166,11 @@ func (crt *Certificate) UpdateStatusCondition(conditionType CertificateCondition
 				}
 
 				crt.Status.Conditions[i] = newCondition
-				break
+				return
 			}
 		}
+
+		crt.Status.Conditions = append(crt.Status.Conditions, newCondition)
 	}
 }
 

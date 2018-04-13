@@ -128,7 +128,7 @@ func isProtoable(seen map[*types.Type]bool, t *types.Type) bool {
 	case types.Interface:
 		return false
 	default:
-		log.Printf("WARNING: type %q is not protable: %s", t.Kind, t.Name)
+		log.Printf("WARNING: type %q is not portable: %s", t.Kind, t.Name)
 		return false
 	}
 }
@@ -516,10 +516,13 @@ func memberTypeToProtobufField(locator ProtobufLocator, field *protoField, t *ty
 				log.Printf("failed to alias: %s %s: err %v", t.Name, t.Underlying.Name, err)
 				return err
 			}
-			if field.Extras == nil {
-				field.Extras = make(map[string]string)
+			// If this is not an alias to a slice, cast to the alias
+			if !field.Repeated {
+				if field.Extras == nil {
+					field.Extras = make(map[string]string)
+				}
+				field.Extras["(gogoproto.casttype)"] = strconv.Quote(locator.CastTypeName(t.Name))
 			}
-			field.Extras["(gogoproto.casttype)"] = strconv.Quote(locator.CastTypeName(t.Name))
 		}
 	case types.Slice:
 		if t.Elem.Name.Name == "byte" && len(t.Elem.Name.Package) == 0 {

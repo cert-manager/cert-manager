@@ -23,14 +23,12 @@ func init() {
 	route53Key = os.Getenv("AWS_ACCESS_KEY_ID")
 	route53Secret = os.Getenv("AWS_SECRET_ACCESS_KEY")
 	route53Region = os.Getenv("AWS_REGION")
-	route53Zone = os.Getenv("AWS_HOSTED_ZONE_ID")
 }
 
 func restoreRoute53Env() {
 	os.Setenv("AWS_ACCESS_KEY_ID", route53Key)
 	os.Setenv("AWS_SECRET_ACCESS_KEY", route53Secret)
 	os.Setenv("AWS_REGION", route53Region)
-	os.Setenv("AWS_HOSTED_ZONE_ID", route53Zone)
 }
 
 func makeRoute53Provider(ts *httptest.Server) *DNSProvider {
@@ -45,44 +43,48 @@ func makeRoute53Provider(ts *httptest.Server) *DNSProvider {
 	return &DNSProvider{client: client}
 }
 
-func TestCredentialsFromEnv(t *testing.T) {
+func TestAmbientCredentialsFromEnv(t *testing.T) {
 	os.Setenv("AWS_ACCESS_KEY_ID", "123")
 	os.Setenv("AWS_SECRET_ACCESS_KEY", "123")
 	os.Setenv("AWS_REGION", "us-east-1")
-
-	config := &aws.Config{
-		CredentialsChainVerboseErrors: aws.Bool(true),
-	}
-
-	sess := session.New(config)
-	_, err := sess.Config.Credentials.Get()
-	assert.NoError(t, err, "Expected credentials to be set from environment")
-
-	restoreRoute53Env()
-}
-
-func TestRegionFromEnv(t *testing.T) {
-	os.Setenv("AWS_REGION", "us-east-1")
-
-	sess := session.New(aws.NewConfig())
-	assert.Equal(t, "us-east-1", *sess.Config.Region, "Expected Region to be set from environment")
-
-	restoreRoute53Env()
-}
-
-func TestHostedZoneIDFromEnv(t *testing.T) {
-	const testZoneID = "testzoneid"
-
 	defer restoreRoute53Env()
-	os.Setenv("AWS_HOSTED_ZONE_ID", testZoneID)
 
-	provider, err := NewDNSProvider()
+	provider, err := NewDNSProvider("", "", "", "", true)
 	assert.NoError(t, err, "Expected no error constructing DNSProvider")
 
-	fqdn, err := provider.getHostedZoneID("whatever")
-	assert.NoError(t, err, "Expected FQDN to be resolved to environment variable value")
+	_, err = provider.client.Config.Credentials.Get()
+	assert.NoError(t, err, "Expected credentials to be set from environment")
+	assert.Equal(t, provider.client.Config.Region, aws.String("us-east-1"))
+}
 
-	assert.Equal(t, testZoneID, fqdn)
+func TestNoCredentialsFromEnv(t *testing.T) {
+	os.Setenv("AWS_ACCESS_KEY_ID", "123")
+	os.Setenv("AWS_SECRET_ACCESS_KEY", "123")
+	os.Setenv("AWS_REGION", "us-east-1")
+	defer restoreRoute53Env()
+
+	_, err := NewDNSProvider("", "", "", "", false)
+	assert.Error(t, err, "Expected error constructing DNSProvider with no credentials and not ambient")
+}
+
+func TestAmbientRegionFromEnv(t *testing.T) {
+	os.Setenv("AWS_REGION", "us-east-1")
+	defer restoreRoute53Env()
+
+	provider, err := NewDNSProvider("", "", "", "", true)
+	assert.NoError(t, err, "Expected no error constructing DNSProvider")
+
+	assert.Equal(t, "us-east-1", *provider.client.Config.Region, "Expected Region to be set from environment")
+}
+
+func TestNoRegionFromEnv(t *testing.T) {
+	os.Setenv("AWS_REGION", "us-east-1")
+	defer restoreRoute53Env()
+
+	provider, err := NewDNSProvider("marx", "swordfish", "", "", false)
+	assert.NoError(t, err, "Expected no error constructing DNSProvider")
+
+	assert.Equal(t, "", *provider.client.Config.Region, "Expected Region to not be set from environment")
 }
 
 func TestRoute53Present(t *testing.T) {

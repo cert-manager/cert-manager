@@ -14,8 +14,6 @@ limitations under the License.
 package certificate
 
 import (
-	"time"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
@@ -64,7 +62,7 @@ var _ = framework.CertManagerDescribe("CA Certificate", func() {
 		_, err := certClient.Create(util.NewCertManagerCACertificate(certificateName, certificateSecretName, issuerName, v1alpha1.IssuerKind))
 		Expect(err).NotTo(HaveOccurred())
 		By("Verifying the Certificate is valid")
-		err = util.WaitCertificateIssuedValid(certClient, secretClient, certificateName, time.Second*30)
+		err = util.WaitCertificateIssuedValid(certClient, secretClient, certificateName)
 		Expect(err).NotTo(HaveOccurred())
 	})
 

@@ -28,13 +28,19 @@ type Context struct {
 	// instances
 	SharedInformerFactory informers.SharedInformerFactory
 
-	// Namespace is a namespace to operate within. This should be used when
-	// constructing SharedIndexInformers for the informer factory.
-	Namespace string
 	// ClusterResourceNamespace is the namespace to store resources created by
 	// non-namespaced resources (e.g. ClusterIssuer) in.
 	ClusterResourceNamespace string
 	// ACMEHTTP01SolverImage is the image to use for solving ACME HTTP01
 	// challenges
 	ACMEHTTP01SolverImage string
+
+	// ClusterIssuerAmbientCredentials controls whether a cluster issuer should
+	// pick up ambient credentials, such as those from metadata services, to
+	// construct clients.
+	ClusterIssuerAmbientCredentials bool
+
+	// IssuerAmbientCredentials controls whether an issuer should pick up ambient
+	// credentials, such as those from metadata services, to construct clients.
+	IssuerAmbientCredentials bool
 }

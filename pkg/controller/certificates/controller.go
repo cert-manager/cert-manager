@@ -8,7 +8,6 @@ import (
 
 	"github.com/golang/glog"
 	corev1 "k8s.io/api/core/v1"
-	extv1beta1 "k8s.io/api/extensions/v1beta1"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -59,6 +58,8 @@ func New(
 	clusterIssuersInformer cminformers.ClusterIssuerInformer,
 	secretsInformer coreinformers.SecretInformer,
 	ingressInformer extinformers.IngressInformer,
+	podsInformer coreinformers.PodInformer,
+	serviceInformer coreinformers.ServiceInformer,
 	client kubernetes.Interface,
 	cmClient clientset.Interface,
 	issuerFactory issuer.Factory,
@@ -66,11 +67,11 @@ func New(
 ) *Controller {
 	ctrl := &Controller{client: client, cmClient: cmClient, issuerFactory: issuerFactory, recorder: recorder}
 	ctrl.syncHandler = ctrl.processNextWorkItem
-	ctrl.queue = workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "certificates")
+	ctrl.queue = workqueue.NewNamedRateLimitingQueue(workqueue.NewItemExponentialFailureRateLimiter(time.Second*2, time.Minute*1), "certificates")
 	// Create a scheduled work queue that calls the ctrl.queue.Add method for
 	// each object in the queue. This is used to schedule re-checks of
 	// Certificate resources when they get near to expiry
-	ctrl.scheduledWorkQueue = scheduler.NewScheduledWorkQueue(ctrl.queue.Add)
+	ctrl.scheduledWorkQueue = scheduler.NewScheduledWorkQueue(ctrl.queue.AddRateLimited)
 
 	certificatesInformer.Informer().AddEventHandler(&controllerpkg.QueuingEventHandler{Queue: ctrl.queue})
 	ctrl.certificateLister = certificatesInformer.Lister()
@@ -86,13 +87,23 @@ func New(
 		ctrl.syncedFuncs = append(ctrl.syncedFuncs, clusterIssuersInformer.Informer().HasSynced)
 	}
 
-	secretsInformer.Informer().AddEventHandler(&controllerpkg.BlockingEventHandler{WorkFunc: ctrl.secretDeleted})
+	secretsInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+		DeleteFunc: ctrl.secretDeleted,
+	})
 	ctrl.secretLister = secretsInformer.Lister()
 	ctrl.syncedFuncs = append(ctrl.syncedFuncs, secretsInformer.Informer().HasSynced)
 
-	ingressInformer.Informer().AddEventHandler(&controllerpkg.BlockingEventHandler{WorkFunc: ctrl.ingressDeleted})
 	ctrl.ingressLister = ingressInformer.Lister()
 	ctrl.syncedFuncs = append(ctrl.syncedFuncs, ingressInformer.Informer().HasSynced)
+
+	// We also add pod and service informers to the list of informers to sync.
+	// They are not actually used directly by the Certificates controller,
+	// however the ACME HTTP challenge solver *does* require a Pod and Secret
+	// lister, and due to the way the instantiation of issuers is performed it
+	// is far more performant to perform the sync here.
+	// We should consider moving this into pkg/issuer/acme at some point, some how.
+	ctrl.syncedFuncs = append(ctrl.syncedFuncs, podsInformer.Informer().HasSynced)
+	ctrl.syncedFuncs = append(ctrl.syncedFuncs, serviceInformer.Informer().HasSynced)
 
 	return ctrl
 }
@@ -117,28 +128,7 @@ func (c *Controller) secretDeleted(obj interface{}) {
 			runtime.HandleError(err)
 			continue
 		}
-		c.queue.Add(key)
-	}
-}
-
-func (c *Controller) ingressDeleted(obj interface{}) {
-	ingress, ok := obj.(*extv1beta1.Ingress)
-	if !ok {
-		runtime.HandleError(fmt.Errorf("Object is not an Ingress object %#v", obj))
-		return
-	}
-	crts, err := c.certificatesForIngress(ingress)
-	if err != nil {
-		runtime.HandleError(fmt.Errorf("Error looking up certificates observing Ingress: %s/%s", ingress.Namespace, ingress.Name))
-		return
-	}
-	for _, crt := range crts {
-		key, err := keyFunc(crt)
-		if err != nil {
-			runtime.HandleError(err)
-			continue
-		}
-		c.queue.Add(key)
+		c.queue.AddRateLimited(key)
 	}
 }
 
@@ -233,16 +223,14 @@ const (
 
 func init() {
 	controllerpkg.Register(ControllerName, func(ctx *controllerpkg.Context) controllerpkg.Interface {
-		var clusterIssuerInformer cminformers.ClusterIssuerInformer
-		if ctx.Namespace == "" {
-			clusterIssuerInformer = ctx.SharedInformerFactory.Certmanager().V1alpha1().ClusterIssuers()
-		}
 		return New(
 			ctx.SharedInformerFactory.Certmanager().V1alpha1().Certificates(),
 			ctx.SharedInformerFactory.Certmanager().V1alpha1().Issuers(),
-			clusterIssuerInformer,
+			ctx.SharedInformerFactory.Certmanager().V1alpha1().ClusterIssuers(),
 			ctx.KubeSharedInformerFactory.Core().V1().Secrets(),
 			ctx.KubeSharedInformerFactory.Extensions().V1beta1().Ingresses(),
+			ctx.KubeSharedInformerFactory.Core().V1().Pods(),
+			ctx.KubeSharedInformerFactory.Core().V1().Services(),
 			ctx.Client,
 			ctx.CMClient,
 			ctx.IssuerFactory,

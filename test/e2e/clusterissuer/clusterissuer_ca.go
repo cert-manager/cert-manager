@@ -22,7 +22,7 @@ import (
 	"github.com/jetstack/cert-manager/test/util"
 )
 
-const clusterResourceNamespace = "kube-system"
+const clusterResourceNamespace = "cert-manager"
 
 var _ = framework.CertManagerDescribe("CA ClusterIssuer", func() {
 	f := framework.NewDefaultFramework("create-ca-clusterissuer")
