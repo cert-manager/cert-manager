@@ -197,9 +197,9 @@ You should be able to verify the ACME account has been verified successfully:
        Server:  https://acme-staging-v02.api.letsencrypt.org/directory
    Status:
      Acme:
-       Uri:  https://acme-staging-v02.api.letsencrypt.org/acme/reg/5160358
+       Uri:  https://acme-staging-v02.api.letsencrypt.org/acme/acct/11217539
      Conditions:
-       Last Transition Time:  2017-11-30T22:33:41Z
+       Last Transition Time:  2018-04-12T17:32:30Z
        Message:               The ACME account was registered with the ACME server
        Reason:                ACMEAccountRegistered
        Status:                True

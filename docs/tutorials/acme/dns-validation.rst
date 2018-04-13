@@ -148,18 +148,14 @@ successfully using ``kubectl describe``:
 
    $ kubectl describe certificate example-com
    Events:
-     Type     Reason                 Age              From                     Message
-     ----     ------                 ----             ----                     -------
-     Warning  ErrorCheckCertificate  33s              cert-manager-controller  Error checking existing TLS certificate: secret "example-com-tls" not found
-     Normal   PrepareCertificate     33s              cert-manager-controller  Preparing certificate with issuer
-     Normal   PresentChallenge       33s              cert-manager-controller  Presenting dns-01 challenge for domain example.com
-     Normal   PresentChallenge       33s              cert-manager-controller  Presenting dns-01 challenge for domain www.example.com
-     Normal   SelfCheck              32s              cert-manager-controller  Performing self-check for domain example.com
-     Normal   SelfCheck              32s              cert-manager-controller  Performing self-check for domain www.example.com
-     Normal   ObtainAuthorization    6s               cert-manager-controller  Obtained authorization for domain example.com
-     Normal   ObtainAuthorization    6s               cert-manager-controller  Obtained authorization for domain www.example.com
-     Normal   IssueCertificate       6s               cert-manager-controller  Issuing certificate...
-     Normal   CertificateIssued      5s               cert-manager-controller  Certificate issued successfully
+     Type    Reason          Age      From          Message
+     ----    ------          ----     ----          -------
+     Normal  CreateOrder     57m      cert-manager  Created new ACME order, attempting validation...
+     Normal  DomainVerified  55m      cert-manager  Domain "example.com" verified with "dns-01" validation
+     Normal  DomainVerified  55m      cert-manager  Domain "www.example.com" verified with "dns-01" validation
+     Normal  IssueCert       55m      cert-manager  Issuing certificate...
+     Normal  CertObtained    55m      cert-manager  Obtained certificate from ACME server
+     Normal  CertIssued      55m      cert-manager  Certificate issued successfully
 
 You can also check whether issuance was successful with
 ``kubectl get secret example-com-tls -o yaml``.
