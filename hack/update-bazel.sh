@@ -18,18 +18,12 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-SCRIPT_ROOT="$(cd "$(dirname "$0")" && pwd -P)"
-REPO_ROOT="${SCRIPT_ROOT}/.."
-pushd "${REPO_ROOT}"
-echo "+++ Running dep ensure"
-dep ensure -v "$@"
-echo "+++ Cleaning up erroneous vendored testdata symlinks"
-rm -Rf vendor/github.com/prometheus/procfs/fixtures \
-       vendor/github.com/hashicorp/go-rootcerts/test-fixtures \
-       vendor/github.com/json-iterator/go/skip_tests
-popd
-echo "+++ Deleting bazel related data in vendor/"
-find vendor/ -type f \( -name BUILD -o -name BUILD.bazel -o -name WORKSPACE \) \
-  -exec rm -f {} \;
+SCRIPT_ROOT="$(cd "$(dirname "$0")" && pwd -P)"/..
 
-hack/update-bazel.sh
+bazel run //:gazelle
+kazel
+
+go get github.com/bazelbuild/buildtools/buildozer
+buildozer 'add tags manual' '//vendor/...:%go_library' '//vendor/...:%go_binary' '//vendor/...:%go_test'
+buildozer 'add tags manual' '//docs/generated/...:%go_library' '//docs/generated/...:%go_binary' '//docs/generated/...:%go_test'
+buildozer 'add tags manual' '//test/e2e/...:%go_library' '//test/e2e/...:%go_binary' '//test/e2e/...:%go_test'

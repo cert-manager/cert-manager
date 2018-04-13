@@ -135,12 +135,14 @@ go_fmt:
 
 e2e_test:
 	# Build the e2e tests
-	go test -o e2e-tests -c ./test/e2e
+	bazel build //test/e2e:go_default_test
+
 	mkdir -p "$$(pwd)/_artifacts"
-	# TODO: make these paths configurable
+
 	# Run e2e tests
+	# TODO: make these paths configurable
 	KUBECONFIG=$$HOME/.kube/config CERTMANAGERCONFIG=$$HOME/.kube/config \
-		./e2e-tests \
+		$(BAZEL_OUT)/test/e2e/go_default_test
 			-acme-nginx-certificate-domain=$(E2E_NGINX_CERTIFICATE_DOMAIN) \
 			-cloudflare-email=$${CLOUDFLARE_E2E_EMAIL} \
 			-cloudflare-api-key=$${CLOUDFLARE_E2E_API_TOKEN} \

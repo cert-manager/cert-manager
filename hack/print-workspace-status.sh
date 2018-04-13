@@ -14,22 +14,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# The only argument this script should ever be called with is '--verify-only'
+
 set -o errexit
 set -o nounset
 set -o pipefail
 
-SCRIPT_ROOT="$(cd "$(dirname "$0")" && pwd -P)"
-REPO_ROOT="${SCRIPT_ROOT}/.."
-pushd "${REPO_ROOT}"
-echo "+++ Running dep ensure"
-dep ensure -v "$@"
-echo "+++ Cleaning up erroneous vendored testdata symlinks"
-rm -Rf vendor/github.com/prometheus/procfs/fixtures \
-       vendor/github.com/hashicorp/go-rootcerts/test-fixtures \
-       vendor/github.com/json-iterator/go/skip_tests
-popd
-echo "+++ Deleting bazel related data in vendor/"
-find vendor/ -type f \( -name BUILD -o -name BUILD.bazel -o -name WORKSPACE \) \
-  -exec rm -f {} \;
+SCRIPT_ROOT=$(dirname ${BASH_SOURCE})/..
 
-hack/update-bazel.sh
+cat <<EOF
+STABLE_DOCKER_TAG build
+PULL_BASE_SHA master
+EOF

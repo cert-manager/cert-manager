@@ -1,0 +1,11 @@
+{
+  "GoPrefix": "github.com/jetstack/cert-manager",
+  "SrcDirs": [
+    "./pkg",
+    "./test"
+  ],
+  "AddSourcesRules": true,
+  "SkippedPaths": [
+    ".*vendor/.*$"
+  ]
+}

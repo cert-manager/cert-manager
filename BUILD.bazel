@@ -1,0 +1,64 @@
+load("@bazel_gazelle//:def.bzl", "gazelle")
+load("@io_bazel_rules_docker//container:container.bzl", "container_image", "container_push")
+
+gazelle(
+    name = "gazelle",
+    external = "vendored",
+    extra_args = [
+        "-build_file_name",
+        "BUILD.bazel",
+    ],
+    prefix = "github.com/jetstack/cert-manager",
+)
+
+filegroup(
+    name = "images",
+    srcs = [
+        "//cmd/acmesolver:image",
+        "//cmd/controller:image",
+    ],
+)
+
+container_push(
+    name = "controller",
+    format = "Docker",
+    image = "//cmd/controller:image",
+    registry = "quay.io",
+    repository = "jetstack/cert-manager-controller",
+    tag = "{STABLE_DOCKER_TAG}",
+)
+
+container_push(
+    name = "acmesolver",
+    format = "Docker",
+    image = "//cmd/acmesolver:image",
+    registry = "quay.io",
+    repository = "jetstack/cert-manager-acmesolver",
+    tag = "{STABLE_DOCKER_TAG}",
+)
+
+filegroup(
+    name = "package-srcs",
+    srcs = glob(["**"], exclude=["bazel-*/**", ".git/**"]),
+    tags = ["automanaged"],
+    visibility = ["//visibility:private"],
+)
+
+filegroup(
+    name = "all-srcs",
+    srcs = [
+        ":package-srcs",
+        "//cmd/acmesolver:all-srcs",
+        "//cmd/controller:all-srcs",
+        "//cmd/ingress-shim:all-srcs",
+        "//contrib:all-srcs",
+        "//hack:all-srcs",
+        "//pkg:all-srcs",
+        "//test/e2e:all-srcs",
+        "//test/unit:all-srcs",
+        "//test/util:all-srcs",
+        "//third_party/crypto/acme:all-srcs",
+    ],
+    tags = ["automanaged"],
+    visibility = ["//visibility:public"],
+)
