@@ -159,6 +159,7 @@ type ACMEIssuerDNS01Provider struct {
 	Cloudflare *ACMEIssuerDNS01ProviderCloudflare `json:"cloudflare,omitempty"`
 	Route53    *ACMEIssuerDNS01ProviderRoute53    `json:"route53,omitempty"`
 	AzureDNS   *ACMEIssuerDNS01ProviderAzureDNS   `json:"azuredns,omitempty"`
+	DNSimple   *ACMEIssuerDNS01ProviderDNSimple   `json:"dnsimple,omitempty"`
 }
 
 // ACMEIssuerDNS01ProviderAkamai is a structure containing the DNS
@@ -204,6 +205,12 @@ type ACMEIssuerDNS01ProviderAzureDNS struct {
 
 	// + optional
 	HostedZoneName string `json:"hostedZoneName"`
+}
+
+// ACMEIssuerDNS01ProviderDNSimple is a structure containing the
+// configuration for DNSimple
+type ACMEIssuerDNS01ProviderDNSimple struct {
+	OAuthToken string `json:"oauthToken"`
 }
 
 // IssuerStatus contains status information about an Issuer
