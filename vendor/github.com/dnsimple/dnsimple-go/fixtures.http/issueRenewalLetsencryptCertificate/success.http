@@ -1,0 +1,21 @@
+HTTP/1.1 202 Accepted
+Server: nginx
+Date: Thu, 19 Oct 2017 08:22:17 GMT
+Content-Type: application/json; charset=utf-8
+Transfer-Encoding: chunked
+Connection: keep-alive
+X-RateLimit-Limit: 2400
+X-RateLimit-Remaining: 2398
+X-RateLimit-Reset: 1508404733
+ETag: W/"8dfa538f5255d47f11d016dbb1c26059"
+Cache-Control: max-age=0, private, must-revalidate
+X-Request-Id: 185ad43f-1e34-43fb-a4aa-0359c9f95f2d
+X-Runtime: 0.853294
+X-Content-Type-Options: nosniff
+X-Download-Options: noopen
+X-Frame-Options: DENY
+X-Permitted-Cross-Domain-Policies: none
+X-XSS-Protection: 1; mode=block
+Strict-Transport-Security: max-age=31536000
+
+{"data":{"id":300,"domain_id":300,"contact_id":100,"name":"www","common_name":"www.example.com","years":1,"csr":null,"state":"requesting","auto_renew":false,"alternate_names":[],"authority_identifier":"letsencrypt","created_at":"2017-10-19T08:18:53Z","updated_at":"2017-10-19T08:22:17Z","expires_on":null}}
