@@ -37,7 +37,7 @@ when deploying using Helm:
 
 In the above example, cert-manager will create Certificate resources that reference the ClusterIssuer `letsencrypt-prod` for all Ingresses that have a `kubernetes.io/tls-acme: "true"` annotation.
 
-For more information on deploying cert-manager, read the [deployment guide](deploying.md).
+For more information on deploying cert-manager, read the :doc:`deployment guide </getting-started>`.
 
 Supported annotations
 =====================
