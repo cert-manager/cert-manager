@@ -30,14 +30,14 @@ annotation for fully automated TLS, you will need to configure a default Issuer
 when deploying cert-manager. This can be done by adding the following ``--set``
 when deploying using Helm:
 
-.. code-block: shell
+.. code-block:: shell
 
    --set ingressShim.extraArgs='{--default-issuer-name=letsencrypt-prod,--default-issuer-kind=ClusterIssuer}'
 
 
 In the above example, cert-manager will create Certificate resources that reference the ClusterIssuer `letsencrypt-prod` for all Ingresses that have a `kubernetes.io/tls-acme: "true"` annotation.
 
-For more information on deploying cert-manager, read the [deployment guide](deploying.md).
+For more information on deploying cert-manager, read the :doc:`deployment guide </getting-started>`.
 
 Supported annotations
 =====================
