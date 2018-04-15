@@ -35,9 +35,9 @@ when deploying using Helm:
    --set ingressShim.extraArgs='{--default-issuer-name=letsencrypt-prod,--default-issuer-kind=ClusterIssuer}'
 
 
-In the above example, cert-manager will create Certificate resources that reference the ClusterIssuer `letsencrypt-prod` for all Ingresses that have a `kubernetes.io/tls-acme: "true"` annotation.
+In the above example, cert-manager will create Certificate resources that reference the ClusterIssuer `letsencrypt-prod` for all Ingresses that have a ``kubernetes.io/tls-acme: "true"`` annotation.
 
-For more information on deploying cert-manager, read the :doc:`deployment guide </getting-started>`.
+For more information on deploying cert-manager, read the :doc:`deployment guide </getting-started/index>`.
 
 Supported annotations
 =====================
