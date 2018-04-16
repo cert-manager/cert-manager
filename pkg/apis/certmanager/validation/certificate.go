@@ -19,7 +19,6 @@ package validation
 import (
 	"fmt"
 
-	"github.com/golang/glog"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
@@ -43,11 +42,6 @@ func ValidateCertificateSpec(crt *v1alpha1.CertificateSpec, fldPath *field.Path)
 	}
 	switch crt.IssuerRef.Kind {
 	case "":
-		// For now we disable this check in order to support older versions where
-		// defaulting doesn't occur
-		glog.Infof("Certificate does not set issuerRef.kind - " +
-			"in future versions of cert-manager, this will be a hard failure.")
-		// el = append(el, field.Required(issuerRefPath.Child("kind"), "must be specified"))
 	case "Issuer", "ClusterIssuer":
 	default:
 		el = append(el, field.Invalid(issuerRefPath.Child("kind"), crt.IssuerRef.Kind, "must be one of Issuer or ClusterIssuer"))
