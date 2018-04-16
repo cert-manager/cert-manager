@@ -21,6 +21,10 @@ func isDNSimpleSandbox() bool {
 	return os.Getenv("DNSIMPLE_SANDBOX") != ""
 }
 
+func getAccountID() (string, error) {
+
+}
+
 // DNSProvider is an implementation of the acme.ChallengeProvider interface
 type DNSProvider struct {
 	dnsimpleZoneClient *dnsimple.ZonesService
@@ -34,7 +38,7 @@ func NewDNSProvider() (*DNSProvider, error) {
 
 func NewDNSProviderCredentials(oauthToken string) (*DNSProvider, error) {
 	if oauthToken == "" {
-		return nil, fmt.Errorf("DNSimple OAuth token missing")
+		return nil, fmt.Errorf("DNSimple OAuth token is missing")
 	}
 
 	client := dnsimple.NewClient(dnsimple.NewOauthTokenCredentials(oauthToken))
@@ -47,6 +51,10 @@ func NewDNSProviderCredentials(oauthToken string) (*DNSProvider, error) {
 	whoamiResponse, err := client.Identity.Whoami()
 	if err != nil {
 		return nil, fmt.Errorf("DNSimple Whoami() returned error: %v", err)
+	}
+
+	if whoamiResponse.Data.Account == nil {
+		return nil, fmt.Errorf("DNSimple user tokens are not supported, please use an account token.")
 	}
 
 	accountID := strconv.Itoa(whoamiResponse.Data.Account.ID)
