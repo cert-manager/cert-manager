@@ -210,7 +210,7 @@ type ACMEIssuerDNS01ProviderAzureDNS struct {
 // ACMEIssuerDNS01ProviderDNSimple is a structure containing the
 // configuration for DNSimple
 type ACMEIssuerDNS01ProviderDNSimple struct {
-	OAuthToken string `json:"oauthToken"`
+	OAuthToken SecretKeySelector `json:"oauthTokenSecretRef"`
 }
 
 // IssuerStatus contains status information about an Issuer

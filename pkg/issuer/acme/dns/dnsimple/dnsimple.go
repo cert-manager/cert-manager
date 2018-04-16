@@ -9,6 +9,18 @@ import (
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
 )
 
+const (
+	dnsimpleSandboxBaseURL = "https://api.sandbox.dnsimple.com"
+)
+
+func getOauthToken() string {
+	return os.Getenv("DNSIMPLE_OAUTH_TOKEN")
+}
+
+func isDNSimpleSandbox() bool {
+	return os.Getenv("DNSIMPLE_SANDBOX") != ""
+}
+
 // DNSProvider is an implementation of the acme.ChallengeProvider interface
 type DNSProvider struct {
 	dnsimpleZoneClient *dnsimple.ZonesService
@@ -26,6 +38,11 @@ func NewDNSProviderCredentials(oauthToken string) (*DNSProvider, error) {
 	}
 
 	client := dnsimple.NewClient(dnsimple.NewOauthTokenCredentials(oauthToken))
+	client.UserAgent = "cert-manager"
+
+	if isDNSimpleSandbox() {
+		client.BaseURL = dnsimpleSandboxBaseURL
+	}
 
 	whoamiResponse, err := client.Identity.Whoami()
 	if err != nil {
@@ -51,10 +68,6 @@ func (c *DNSProvider) CleanUp(domain, token, keyAuth string) error {
 	fqdn, _, _ := util.DNS01Record(domain, keyAuth)
 
 	return c.removeRecord(fqdn)
-}
-
-func getOauthToken() string {
-	return os.Getenv("DNSIMPLE_OAUTH_TOKEN")
 }
 
 func (c *DNSProvider) createRecord(fqdn, value string, ttl int) error {
