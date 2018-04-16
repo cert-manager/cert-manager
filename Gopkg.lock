@@ -451,12 +451,6 @@
   version = "v0.9.0"
 
 [[projects]]
-  branch = "v1"
-  name = "gopkg.in/jarcoal/httpmock.v1"
-  packages = ["."]
-  revision = "cf52904a3cf0f78f199ecade6a6df8e245d5b25a"
-
-[[projects]]
   branch = "v2"
   name = "gopkg.in/yaml.v2"
   packages = ["."]
@@ -506,8 +500,8 @@
     "pkg/client/clientset/clientset/scheme",
     "pkg/client/clientset/clientset/typed/apiextensions/v1beta1"
   ]
-  revision = "2b7a0cda091845d6fdf2960a7675f835d76ee0e6"
-  version = "kubernetes-1.10.0-rc.1"
+  revision = "750feebe2038bad00fdf68ba37c31f62c4f1f891"
+  version = "kubernetes-1.10.0"
 
 [[projects]]
   name = "k8s.io/apimachinery"
@@ -724,8 +718,8 @@
     "util/retry",
     "util/workqueue"
   ]
-  revision = "5e04b0f75003ecfbd8d5b98d028e05300a461eb1"
-  version = "kubernetes-1.10.0-rc.1"
+  revision = "23781f4d6632d88e869066eaebb743857aa1ef9b"
+  version = "v7.0.0"
 
 [[projects]]
   name = "k8s.io/code-generator"
@@ -789,6 +783,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "b432fd65a0564ead06db02149c58babcb6b324a6ae7af80210728bf39516368b"
+  inputs-digest = "419efd926db6ba22ec506ffcfe35f4818c21946423bb9c71a242e3610a1a9f0b"
   solver-name = "gps-cdcl"
   solver-version = 1
