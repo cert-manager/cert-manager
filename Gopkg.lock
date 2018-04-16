@@ -186,6 +186,14 @@
   version = "v1.1.0"
 
 [[projects]]
+  branch = "master"
+  digest = "1:d1fefa2d2eda9eedd7d94a80df39d23cc6d9e0c455ba91d88749920a84875edb"
+  name = "github.com/decker502/dnspod-go"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "83a3ba562b048c9fc88229408e593494b7774684"
+
+[[projects]]
   digest = "1:76dc72490af7174349349838f2fe118996381b31ea83243812a97e5a0fd5ed55"
   name = "github.com/dgrijalva/jwt-go"
   packages = ["."]
@@ -1607,6 +1615,7 @@
     "github.com/aws/aws-sdk-go/aws/session",
     "github.com/aws/aws-sdk-go/service/route53",
     "github.com/cpu/goacmedns",
+    "github.com/decker502/dnspod-go",
     "github.com/digitalocean/godo",
     "github.com/go-logr/logr",
     "github.com/go-openapi/spec",

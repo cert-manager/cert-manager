@@ -6,9 +6,10 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/decker502/dnspod-go"
-	"github.com/xenolf/lego/acme"
+	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
 )
 
 // DNSProvider is an implementation of the acme.ChallengeProvider interface.
@@ -38,7 +39,7 @@ func NewDNSProviderCredentials(key string) (*DNSProvider, error) {
 
 // Present creates a TXT record to fulfil the dns-01 challenge.
 func (c *DNSProvider) Present(domain, token, keyAuth string) error {
-	fqdn, value, ttl := acme.DNS01Record(domain, keyAuth)
+	fqdn, value, ttl := util.DNS01Record(domain, keyAuth)
 	zoneID, zoneName, err := c.getHostedZone(domain)
 	if err != nil {
 		return err
@@ -55,7 +56,7 @@ func (c *DNSProvider) Present(domain, token, keyAuth string) error {
 
 // CleanUp removes the TXT record matching the specified parameters.
 func (c *DNSProvider) CleanUp(domain, token, keyAuth string) error {
-	fqdn, _, _ := acme.DNS01Record(domain, keyAuth)
+	fqdn, _, _ := util.DNS01Record(domain, keyAuth)
 
 	records, err := c.findTxtRecords(domain, fqdn)
 	if err != nil {
@@ -82,14 +83,14 @@ func (c *DNSProvider) getHostedZone(domain string) (string, string, error) {
 		return "", "", fmt.Errorf("dnspod API call failed: %v", err)
 	}
 
-	authZone, err := acme.FindZoneByFqdn(acme.ToFqdn(domain), acme.RecursiveNameservers)
+	authZone, err := util.FindZoneByFqdn(util.ToFqdn(domain), util.RecursiveNameservers)
 	if err != nil {
 		return "", "", err
 	}
 
 	var hostedZone dnspod.Domain
 	for _, zone := range zones {
-		if zone.Name == acme.UnFqdn(authZone) {
+		if zone.Name == util.UnFqdn(authZone) {
 			hostedZone = zone
 		}
 	}
@@ -138,9 +139,15 @@ func (c *DNSProvider) findTxtRecords(domain, fqdn string) ([]dnspod.Record, erro
 }
 
 func (c *DNSProvider) extractRecordName(fqdn, domain string) string {
-	name := acme.UnFqdn(fqdn)
+	name := util.UnFqdn(fqdn)
 	if idx := strings.Index(name, "."+domain); idx != -1 {
 		return name[:idx]
 	}
 	return name
+}
+
+// Timeout returns the timeout and interval to use when checking for DNS
+// propagation. Adjusting here to cope with spikes in propagation times.
+func (c *DNSProvider) Timeout() (timeout, interval time.Duration) {
+	return 120 * time.Second, 2 * time.Second
 }

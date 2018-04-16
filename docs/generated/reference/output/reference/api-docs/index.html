@@ -800,6 +800,10 @@ Appears In:
 <td></td>
 </tr>
 <tr>
+<td><code>dnspod</code><br /> <em><a href="#acmeissuerdns01providerdnspod-v1alpha1">ACMEIssuerDNS01ProviderDNSPod</a></em></td>
+<td></td>
+</tr>
+<tr>
 <td><code>name</code><br /> <em>string</em></td>
 <td>Name is the name of the DNS provider, which should be used to reference this DNS provider configuration on Certificate resources.</td>
 </tr>
@@ -1048,6 +1052,45 @@ Appears In:
 </tr>
 <tr>
 <td><code>email</code><br /> <em>string</em></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h2 id="acmeissuerdns01providerdnspod-v1alpha1">ACMEIssuerDNS01ProviderDNSPod v1alpha1</h2>
+<table>
+<thead>
+<tr>
+<th>Group</th>
+<th>Version</th>
+<th>Kind</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>certmanager</code></td>
+<td><code>v1alpha1</code></td>
+<td><code>ACMEIssuerDNS01ProviderDNSPod</code></td>
+</tr>
+</tbody>
+</table>
+<p>ACMEIssuerDNS01ProviderDNSPod is a structure containing the configuration for DNSPod</p>
+<aside class="notice">
+Appears In:
+
+<ul> 
+<li><a href="#acmeissuerdns01provider-v1alpha1">ACMEIssuerDNS01Provider v1alpha1</a></li>
+</ul></aside>
+
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>apiKeySecretRef</code><br /> <em><a href="#secretkeyselector-v1alpha1">SecretKeySelector</a></em></td>
 <td></td>
 </tr>
 </tbody>
@@ -1952,6 +1995,7 @@ Appears In:
 <li><a href="#acmeissuerdns01providerazuredns-v1alpha1">ACMEIssuerDNS01ProviderAzureDNS v1alpha1</a></li>
 <li><a href="#acmeissuerdns01providerclouddns-v1alpha1">ACMEIssuerDNS01ProviderCloudDNS v1alpha1</a></li>
 <li><a href="#acmeissuerdns01providercloudflare-v1alpha1">ACMEIssuerDNS01ProviderCloudflare v1alpha1</a></li>
+<li><a href="#acmeissuerdns01providerdnspod-v1alpha1">ACMEIssuerDNS01ProviderDNSPod v1alpha1</a></li>
 <li><a href="#acmeissuerdns01providerdigitalocean-v1alpha1">ACMEIssuerDNS01ProviderDigitalOcean v1alpha1</a></li>
 <li><a href="#acmeissuerdns01providerrfc2136-v1alpha1">ACMEIssuerDNS01ProviderRFC2136 v1alpha1</a></li>
 <li><a href="#acmeissuerdns01providerroute53-v1alpha1">ACMEIssuerDNS01ProviderRoute53 v1alpha1</a></li>

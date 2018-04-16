@@ -39,6 +39,7 @@ filegroup(
         "//vendor/github.com/coreos/go-systemd/daemon:all-srcs",
         "//vendor/github.com/cpu/goacmedns:all-srcs",
         "//vendor/github.com/davecgh/go-spew/spew:all-srcs",
+        "//vendor/github.com/decker502/dnspod-go:all-srcs",
         "//vendor/github.com/dgrijalva/jwt-go:all-srcs",
         "//vendor/github.com/digitalocean/godo:all-srcs",
         "//vendor/github.com/docker/docker/pkg/term:all-srcs",
