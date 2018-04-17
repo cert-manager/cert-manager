@@ -45,7 +45,7 @@ project.
 Please take a look at our [issue tracker](https://github.com/jetstack/cert-manager/issues)
 if you are unsure where to start with getting involved!
 
-We also use the #kube-lego channel on kubernetes.slack.com for chat relating to
+We also use the #cert-manager channel on kubernetes.slack.com for chat relating to
 the project.
 
 Developer documentation is available in the [official documentation](http://cert-manager.readthedocs.io/en/latest/devel/index.html).
