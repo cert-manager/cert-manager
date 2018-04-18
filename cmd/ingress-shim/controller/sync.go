@@ -20,6 +20,9 @@ const (
 	// the default configuration provided to ingress-annotation should be
 	// created.
 	tlsACMEAnnotation = "kubernetes.io/tls-acme"
+	// editInPlaceAnnotation is used to toggle the use of ingressClass instead
+	// of ingress on the created Certificate resource
+	editInPlaceAnnotation = "certmanager.k8s.io/acme-http01-edit-in-place"
 	// issuerNameAnnotation can be used to override the issuer specified on the
 	// created Certificate resource.
 	issuerNameAnnotation = "certmanager.k8s.io/issuer"
@@ -182,7 +185,16 @@ func (c *Controller) setIssuerSpecificConfig(crt *v1alpha1.Certificate, issuer v
 		}
 		switch challengeType {
 		case "http01":
-			domainCfg.HTTP01 = &v1alpha1.ACMECertificateHTTP01Config{Ingress: ing.Name}
+			editInPlace, ok := ingAnnotations[editInPlaceAnnotation]
+			// If annotation isn't present, or it's set to true, edit the existing ingress
+			if ok && editInPlace == "true" {
+				domainCfg.HTTP01 = &v1alpha1.ACMECertificateHTTP01Config{Ingress: ing.Name}
+			} else {
+				ingressClass, ok := ingAnnotations["kubernetes.io/ingress.class"]
+				if ok {
+					domainCfg.HTTP01 = &v1alpha1.ACMECertificateHTTP01Config{IngressClass: &ingressClass}
+				}
+			}
 		case "dns01":
 			dnsProvider, ok := ingAnnotations[acmeIssuerDNS01ProviderNameAnnotation]
 			if !ok {
