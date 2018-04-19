@@ -61,7 +61,9 @@ Amazon Route53
      region: eu-west-1
 
      # optional if ambient credentials are available; see ambient credentials documentation
-     accessKeyID: AKIAIOSFODNN7EXAMPLE
+     accessKeyIDSecretRef:
+       name: r53
+       key: access-key
      secretAccessKeySecretRef:
        name: prod-route53-credentials-secret
        key: secret-access-key
