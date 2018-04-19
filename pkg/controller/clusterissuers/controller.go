@@ -57,7 +57,7 @@ func New(
 ) *Controller {
 	ctrl := &Controller{client: cl, cmClient: cmClient, issuerFactory: issuerFactory, recorder: recorder, clusterResourceNamespace: clusterResourceNamespace}
 	ctrl.syncHandler = ctrl.processNextWorkItem
-	ctrl.queue = workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "clusterissuers")
+	ctrl.queue = workqueue.NewNamedRateLimitingQueue(workqueue.NewItemExponentialFailureRateLimiter(time.Second*2, time.Minute*1), "clusterissuers")
 
 	clusterIssuersInformer.Informer().AddEventHandler(&controllerpkg.QueuingEventHandler{Queue: ctrl.queue})
 	ctrl.issuerInformerSynced = clusterIssuersInformer.Informer().HasSynced
@@ -90,7 +90,7 @@ func (c *Controller) secretDeleted(obj interface{}) {
 			runtime.HandleError(err)
 			continue
 		}
-		c.queue.Add(key)
+		c.queue.AddRateLimited(key)
 	}
 }
 

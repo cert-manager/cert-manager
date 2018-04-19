@@ -66,11 +66,11 @@ func New(
 ) *Controller {
 	ctrl := &Controller{client: client, cmClient: cmClient, issuerFactory: issuerFactory, recorder: recorder}
 	ctrl.syncHandler = ctrl.processNextWorkItem
-	ctrl.queue = workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "certificates")
+	ctrl.queue = workqueue.NewNamedRateLimitingQueue(workqueue.NewItemExponentialFailureRateLimiter(time.Second*2, time.Minute*1), "certificates")
 	// Create a scheduled work queue that calls the ctrl.queue.Add method for
 	// each object in the queue. This is used to schedule re-checks of
 	// Certificate resources when they get near to expiry
-	ctrl.scheduledWorkQueue = scheduler.NewScheduledWorkQueue(ctrl.queue.Add)
+	ctrl.scheduledWorkQueue = scheduler.NewScheduledWorkQueue(ctrl.queue.AddRateLimited)
 
 	certificatesInformer.Informer().AddEventHandler(&controllerpkg.QueuingEventHandler{Queue: ctrl.queue})
 	ctrl.certificateLister = certificatesInformer.Lister()
@@ -117,7 +117,7 @@ func (c *Controller) secretDeleted(obj interface{}) {
 			runtime.HandleError(err)
 			continue
 		}
-		c.queue.Add(key)
+		c.queue.AddRateLimited(key)
 	}
 }
 
@@ -138,7 +138,7 @@ func (c *Controller) ingressDeleted(obj interface{}) {
 			runtime.HandleError(err)
 			continue
 		}
-		c.queue.Add(key)
+		c.queue.AddRateLimited(key)
 	}
 }
 

@@ -55,7 +55,7 @@ func New(
 ) *Controller {
 	ctrl := &Controller{client: cl, cmClient: cmClient, issuerFactory: issuerFactory, recorder: recorder}
 	ctrl.syncHandler = ctrl.processNextWorkItem
-	ctrl.queue = workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "issuers")
+	ctrl.queue = workqueue.NewNamedRateLimitingQueue(workqueue.NewItemExponentialFailureRateLimiter(time.Second*2, time.Minute*1), "issuers")
 
 	issuersInformer.Informer().AddEventHandler(&controllerpkg.QueuingEventHandler{Queue: ctrl.queue})
 	ctrl.issuerInformerSynced = issuersInformer.Informer().HasSynced
@@ -88,7 +88,7 @@ func (c *Controller) secretDeleted(obj interface{}) {
 			runtime.HandleError(err)
 			continue
 		}
-		c.queue.Add(key)
+		c.queue.AddRateLimited(key)
 	}
 }
 
