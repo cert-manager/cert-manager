@@ -10,6 +10,7 @@ import (
 	extv1beta1 "k8s.io/api/extensions/v1beta1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/ingress/core/pkg/ingress/annotations/class"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 )
@@ -36,6 +37,8 @@ const (
 	// acmeIssuerDNS01ProviderNameAnnotation can be used to override the default dns01 provider
 	// configured on the issuer if the challenge type is set to dns01
 	acmeIssuerDNS01ProviderNameAnnotation = "certmanager.k8s.io/acme-dns01-provider"
+
+	ingressClassAnnotation = class.IngressKey
 )
 
 var ingressGVK = extv1beta1.SchemeGroupVersion.WithKind("Ingress")
@@ -190,7 +193,7 @@ func (c *Controller) setIssuerSpecificConfig(crt *v1alpha1.Certificate, issuer v
 			if ok && editInPlace == "true" {
 				domainCfg.HTTP01 = &v1alpha1.ACMECertificateHTTP01Config{Ingress: ing.Name}
 			} else {
-				ingressClass, ok := ingAnnotations["kubernetes.io/ingress.class"]
+				ingressClass, ok := ingAnnotations[ingressClassAnnotation]
 				if ok {
 					domainCfg.HTTP01 = &v1alpha1.ACMECertificateHTTP01Config{IngressClass: &ingressClass}
 				}
