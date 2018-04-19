@@ -130,6 +130,55 @@ func TestBuildCertificates(t *testing.T) {
 			},
 		},
 		{
+			Name: "return a single HTTP01 Certificate for an ingress with a single valid TLS entry and HTTP01 annotations with no ingress class set",
+			Ingress: &extv1beta1.Ingress{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "ingress-name",
+					Namespace: "ingress-namespace",
+					Annotations: map[string]string{
+						clusterIssuerNameAnnotation:       "issuer-name",
+						acmeIssuerChallengeTypeAnnotation: "http01",
+					},
+				},
+				Spec: extv1beta1.IngressSpec{
+					TLS: []extv1beta1.IngressTLS{
+						{
+							Hosts:      []string{"example.com", "www.example.com"},
+							SecretName: "example-com-tls",
+						},
+					},
+				},
+			},
+			ClusterIssuerLister: []*v1alpha1.ClusterIssuer{buildACMEClusterIssuer("issuer-name")},
+			ExpectedCreate: []*v1alpha1.Certificate{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:            "example-com-tls",
+						Namespace:       "ingress-namespace",
+						OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(buildIngress("ingress-name", "ingress-namespace", nil), ingressGVK)},
+					},
+					Spec: v1alpha1.CertificateSpec{
+						DNSNames:   []string{"example.com", "www.example.com"},
+						SecretName: "example-com-tls",
+						IssuerRef: v1alpha1.ObjectReference{
+							Name: "issuer-name",
+							Kind: "ClusterIssuer",
+						},
+						ACME: &v1alpha1.ACMECertificateConfig{
+							Config: []v1alpha1.ACMECertificateDomainConfig{
+								{
+									Domains: []string{"example.com", "www.example.com"},
+									ACMESolverConfig: v1alpha1.ACMESolverConfig{
+										HTTP01: &v1alpha1.ACMECertificateHTTP01Config{},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
 			Name: "return a single HTTP01 Certificate for an ingress with a single valid TLS entry and HTTP01 annotations with a custom ingress class",
 			Ingress: &extv1beta1.Ingress{
 				ObjectMeta: metav1.ObjectMeta{

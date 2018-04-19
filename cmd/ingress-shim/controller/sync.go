@@ -188,14 +188,15 @@ func (c *Controller) setIssuerSpecificConfig(crt *v1alpha1.Certificate, issuer v
 		}
 		switch challengeType {
 		case "http01":
+			domainCfg.HTTP01 = &v1alpha1.ACMECertificateHTTP01Config{}
 			editInPlace, ok := ingAnnotations[editInPlaceAnnotation]
 			// If annotation isn't present, or it's set to true, edit the existing ingress
 			if ok && editInPlace == "true" {
-				domainCfg.HTTP01 = &v1alpha1.ACMECertificateHTTP01Config{Ingress: ing.Name}
+				domainCfg.HTTP01.Ingress = ing.Name
 			} else {
 				ingressClass, ok := ingAnnotations[ingressClassAnnotation]
 				if ok {
-					domainCfg.HTTP01 = &v1alpha1.ACMECertificateHTTP01Config{IngressClass: &ingressClass}
+					domainCfg.HTTP01.IngressClass = &ingressClass
 				}
 			}
 		case "dns01":
