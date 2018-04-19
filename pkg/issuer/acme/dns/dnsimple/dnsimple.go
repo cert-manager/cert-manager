@@ -21,10 +21,6 @@ func isDNSimpleSandbox() bool {
 	return os.Getenv("DNSIMPLE_SANDBOX") != ""
 }
 
-func getAccountID() (string, error) {
-
-}
-
 // DNSProvider is an implementation of the acme.ChallengeProvider interface
 type DNSProvider struct {
 	dnsimpleZoneClient *dnsimple.ZonesService
@@ -80,11 +76,16 @@ func (c *DNSProvider) CleanUp(domain, token, keyAuth string) error {
 
 func (c *DNSProvider) createRecord(fqdn, value string, ttl int) error {
 	zone, err := util.FindZoneByFqdn(fqdn, util.RecursiveNameservers)
-
 	if err != nil {
 		return err
 	}
+
 	zoneID := util.UnFqdn(zone)
+
+	verifiedZoneID, err := c.getZoneID(zoneID)
+	if err != nil {
+		return err
+	}
 
 	newZoneRecord := dnsimple.ZoneRecord{
 		Name:    util.UnFqdn(fqdn),
@@ -92,7 +93,7 @@ func (c *DNSProvider) createRecord(fqdn, value string, ttl int) error {
 		Type:    "TXT",
 		TTL:     ttl,
 	}
-	_, err = c.dnsimpleZoneClient.CreateRecord(c.dnsimpleAccountID, zoneID, newZoneRecord)
+	_, err = c.dnsimpleZoneClient.CreateRecord(c.dnsimpleAccountID, verifiedZoneID, newZoneRecord)
 
 	if err != nil {
 		return err
@@ -108,17 +109,40 @@ func (c *DNSProvider) removeRecord(fqdn string) error {
 	}
 
 	zoneID := util.UnFqdn(zone)
-	recordID, err := c.getRecordID(zoneID, util.UnFqdn(fqdn))
+
+	verifiedZoneID, err := c.getZoneID(zoneID)
 	if err != nil {
 		return err
 	}
 
-	_, err = c.dnsimpleZoneClient.DeleteRecord(c.dnsimpleAccountID, zoneID, recordID)
+	recordID, err := c.getRecordID(verifiedZoneID, util.UnFqdn(fqdn))
+	if err != nil {
+		return err
+	}
+
+	_, err = c.dnsimpleZoneClient.DeleteRecord(c.dnsimpleAccountID, verifiedZoneID, recordID)
 	if err != nil {
 		return err
 	}
 
 	return nil
+}
+
+func (c *DNSProvider) getZoneID(localZoneName string) (zoneName string, err error) {
+	zoneResponse, err := c.dnsimpleZoneClient.GetZone(c.dnsimpleAccountID, localZoneName)
+	if err != nil {
+		return "", err
+	}
+
+	if zoneResponse.Data.ID == 0 {
+		return "", fmt.Errorf("No zone found in DNSimple for zone %s", localZoneName)
+	}
+
+	if zoneResponse.Data.Name != localZoneName {
+		return "", fmt.Errorf("Incorrect zone %s returned in lookup for %s", zoneResponse.Data.Name, localZoneName)
+	}
+
+	return zoneResponse.Data.Name, nil
 }
 
 func (c *DNSProvider) getRecordID(zoneID, recordName string) (recordID int, err error) {
