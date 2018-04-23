@@ -14,10 +14,12 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/wait"
+	corecs "k8s.io/client-go/kubernetes/typed/core/v1"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	clientset "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/typed/certmanager/v1alpha1"
 	"github.com/jetstack/cert-manager/pkg/util"
+	"github.com/jetstack/cert-manager/pkg/util/pki"
 )
 
 var ACMECertificateDomain string
@@ -95,6 +97,55 @@ func WaitForCertificateCondition(client clientset.CertificateInterface, name str
 			return certificate.HasCondition(condition), nil
 		},
 	)
+}
+
+// WaitCertificateIssuedValid waits for the given Certificate to be
+// 'Ready' and ensures the stored certificate is valid for the specified
+// domains.
+func WaitCertificateIssuedValid(certClient clientset.CertificateInterface, secretClient corecs.SecretInterface, name string) error {
+	glog.V(5).Infof("Waiting for Certificate to become Ready")
+	err := WaitForCertificateCondition(certClient,
+		name,
+		v1alpha1.CertificateCondition{
+			Type:   v1alpha1.CertificateConditionReady,
+			Status: v1alpha1.ConditionTrue,
+		}, time.Minute*5)
+	if err != nil {
+		return err
+	}
+
+	cert, err := certClient.Get(name, metav1.GetOptions{})
+	if nil != err {
+		return fmt.Errorf("error getting Certificate %v: %v", name, err)
+	}
+
+	glog.V(5).Infof("Verifying TLS certificate exists")
+	secret, err := secretClient.Get(cert.Spec.SecretName, metav1.GetOptions{})
+	if err != nil {
+		return err
+	}
+	if len(secret.Data) != 2 {
+		return fmt.Errorf("Expected 2 keys in certificate secret, but there was %d", len(secret.Data))
+	}
+
+	certBytes, ok := secret.Data[v1.TLSCertKey]
+	if !ok {
+		return fmt.Errorf("No certificate data found for Certificate %q", name)
+	}
+
+	x509Cert, err := pki.DecodeX509CertificateBytes(certBytes)
+	if err != nil {
+		return err
+	}
+
+	// check the provided certificate is valid
+	expectedCN := pki.CommonNameForCertificate(cert)
+	expectedDNSNames := pki.DNSNamesForCertificate(cert)
+	if expectedCN != x509Cert.Subject.CommonName || !util.EqualUnsorted(x509Cert.DNSNames, expectedDNSNames) {
+		return fmt.Errorf("Expected certificate valid for CN %q, dnsNames %v but got a certificate valid for CN %q, dnsNames %v", expectedCN, expectedDNSNames, x509Cert.Subject.CommonName, x509Cert.DNSNames)
+	}
+
+	return nil
 }
 
 // WaitForCertificateToExist waits for the named certificate to exist

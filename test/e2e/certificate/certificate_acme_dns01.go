@@ -147,8 +147,12 @@ var _ = framework.CertManagerDescribe("ACME Certificate (DNS01)", func() {
 				},
 			},
 		})
-		cert, err := f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name).Create(util.NewCertManagerACMECertificate(certificateName, certificateSecretName, issuerName, v1alpha1.IssuerKind, acmeIngressClass, util.ACMECertificateDomain))
+		certClient := f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name)
+		secretClient := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name)
+
+		cert, err := certClient.Create(cert)
 		Expect(err).NotTo(HaveOccurred())
-		f.WaitCertificateIssuedValid(cert)
+		err = util.WaitCertificateIssuedValid(certClient, secretClient, certificateName)
+		Expect(err).NotTo(HaveOccurred())
 	})
 })
