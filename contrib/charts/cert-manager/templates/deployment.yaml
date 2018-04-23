@@ -34,6 +34,20 @@ spec:
         {{- if .Values.extraArgs }}
 {{ toYaml .Values.extraArgs | indent 10 }}
         {{- end }}
+          {{- with .Values.ingressShim }}
+          {{- if .defaultIssuerName }}
+          - --default-issuer-name={{ .defaultIssuerName }}
+          {{- end }}
+          {{- if .defaultIssuerKind }}
+          - --default-issuer-kind={{ .defaultIssuerKind }}
+          {{- end }}
+          {{- if .defaultACMEChallengeType }}
+          - --default-acme-challenge-type={{ .defaultACMEChallengeType }}
+          {{- end }}
+          {{- if .defaultACMEDNS01ChallengeProvider }}
+          - --default-acme-dns01-challenge-provider={{ .defaultACMEDNS01ChallengeProvider }}
+          {{- end }}
+          {{- end }}
           env:
           - name: POD_NAMESPACE
             valueFrom:
@@ -41,17 +55,6 @@ spec:
                 fieldPath: metadata.namespace
           resources:
 {{ toYaml .Values.resources | indent 12 }}
-{{- if .Values.ingressShim.enabled }}
-        - name: ingress-shim
-          image: "{{ .Values.ingressShim.image.repository }}:{{ default .Values.ingressShim.image.tag .Values.image.tag }}"
-          imagePullPolicy: {{ .Values.ingressShim.image.pullPolicy }}
-        {{- if .Values.ingressShim.extraArgs }}
-          args:
-{{ toYaml .Values.ingressShim.extraArgs | indent 10 }}
-        {{- end }}
-          resources:
-{{ toYaml .Values.ingressShim.resources | indent 12 }}
-{{- end }}
     {{- with .Values.nodeSelector }}
       nodeSelector:
 {{ toYaml . | indent 8 }}

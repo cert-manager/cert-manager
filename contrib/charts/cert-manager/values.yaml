@@ -38,29 +38,11 @@ podAnnotations: {}
 
 nodeSelector: {}
 
-ingressShim:
-  enabled: true
-
-  # Optional additional arguments for ingress-shim
-  extraArgs: []
-    # Use these flags to specify the default Issuer/ClusterIssuer
-    # (IMPORTANT: You need to create this Issuer/ClusterIssuer resource yourself)
-    # - --default-issuer-name=letsencrypt-prod
-    # - --default-issuer-kind=ClusterIssuer
-
-  resources: {}
-    # requests:
-    #   cpu: 10m
-    #   memory: 32Mi
-
-  image:
-    repository: quay.io/jetstack/cert-manager-ingress-shim
-
-    # Defaults to image.tag.
-    # You should only change this if you know what you are doing!
-    # tag: v0.3.0-alpha.1
-
-    pullPolicy: IfNotPresent
+ingressShim: {}
+  # defaultIssuerName: ""
+  # defaultIssuerKind: ""
+  # defaultACMEChallengeType: ""
+  # defaultACMEDNS01ChallengeProvider: ""
 
 # This is used by the static manifest generator in order to create a static
 # namespace manifest for the namespace that cert-manager is being installed
