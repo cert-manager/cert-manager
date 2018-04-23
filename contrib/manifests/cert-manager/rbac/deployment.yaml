@@ -40,11 +40,3 @@ spec:
               cpu: 10m
               memory: 32Mi
             
-        - name: ingress-shim
-          image: "quay.io/jetstack/cert-manager-ingress-shim:v0.3.0-alpha.1"
-          imagePullPolicy: IfNotPresent
-          resources:
-            requests:
-              cpu: 10m
-              memory: 32Mi
-            
