@@ -124,7 +124,11 @@ func buildControllerContext(opts *options.ControllerOptions) (*controller.Contex
 			ClusterIssuerAmbientCredentials: opts.ClusterIssuerAmbientCredentials,
 			IssuerAmbientCredentials:        opts.IssuerAmbientCredentials,
 		}),
-		ClusterResourceNamespace: opts.ClusterResourceNamespace,
+		ClusterResourceNamespace:           opts.ClusterResourceNamespace,
+		DefaultIssuerName:                  opts.DefaultIssuerName,
+		DefaultIssuerKind:                  opts.DefaultIssuerKind,
+		DefaultACMEIssuerChallengeType:     opts.DefaultACMEIssuerChallengeType,
+		DefaultACMEIssuerDNS01ProviderName: opts.DefaultACMEIssuerDNS01ProviderName,
 	}, kubeCfg, nil
 }
 

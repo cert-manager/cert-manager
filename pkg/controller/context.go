@@ -35,4 +35,10 @@ type Context struct {
 	// ClusterResourceNamespace is the namespace to store resources created by
 	// non-namespaced resources (e.g. ClusterIssuer) in.
 	ClusterResourceNamespace string
+
+	// Default issuer/certificates details consumed by ingress-shim
+	DefaultIssuerName                  string
+	DefaultIssuerKind                  string
+	DefaultACMEIssuerChallengeType     string
+	DefaultACMEIssuerDNS01ProviderName string
 }
