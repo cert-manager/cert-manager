@@ -223,7 +223,8 @@ ClusterIssuer ``letsencrypt-staging`` (as above), run:
    helm upgrade cert-manager \
        stable/cert-manager \
        --namespace kube-system \
-       --set ingressShim.extraArgs='{--default-issuer-name=letsencrypt-staging,--default-issuer-kind=ClusterIssuer}'
+       --set ingressShim.defaultIssuerName=letsencrypt-staging \
+       --set ingressShim.defaultIssuerKind=ClusterIssuer
 
 You should see the cert-manager pod be re-created, and once started it should
 automatically create Certificate resources for all of your ingresses that
