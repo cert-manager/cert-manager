@@ -45,7 +45,7 @@ An Issuer is a namespaced resource, and it is not possible to issue
 certificates from an Issuer in a different namespace. This means you will need
 to create an Issuer in each namespace you wish to obtain Certificates in.
 
-If you want to create a single issuer than can be consumed in multiple
+If you want to create a single issuer that can be consumed in multiple
 namespaces, you should consider creating a :doc:`ClusterIssuer <clusterissuers>`
 resource. This is almost identical to the Issuer resource, however is
 non-namespaced and so it can be used to issue Certificates across all namespaces.
