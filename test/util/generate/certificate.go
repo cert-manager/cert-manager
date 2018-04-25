@@ -12,6 +12,7 @@ type CertificateConfig struct {
 
 	// common parameters
 	IssuerName, IssuerKind string
+	SecretName             string
 	CommonName             string
 	DNSNames               []string
 
@@ -27,6 +28,7 @@ func Certificate(cfg CertificateConfig) *v1alpha1.Certificate {
 			Namespace: cfg.Namespace,
 		},
 		Spec: v1alpha1.CertificateSpec{
+			SecretName: cfg.SecretName,
 			IssuerRef: v1alpha1.ObjectReference{
 				Name: cfg.IssuerName,
 				Kind: cfg.IssuerKind,
