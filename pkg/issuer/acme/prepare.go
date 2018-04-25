@@ -282,8 +282,7 @@ func (a *Acme) selectChallengesForAuthorizations(ctx context.Context, cl client.
 	chals := make([]v1alpha1.ACMEOrderChallenge, len(allAuthorizations))
 	var errs []error
 	for i, authz := range allAuthorizations {
-		domain := authz.Identifier.Value
-		cfg, err := acmeSolverConfiguration(crt.Spec.ACME, domain)
+		cfg, err := acmeSolverConfigurationForAuthorization(crt.Spec.ACME, authz)
 		if err != nil {
 			errs = append(errs, err)
 			continue
@@ -300,11 +299,18 @@ func (a *Acme) selectChallengesForAuthorizations(ctx context.Context, cl client.
 		}
 
 		if challenge == nil {
+			// we prepend *. if this is an authz for a wildcard to make it easier
+			// for users to debug problems and identify the actual domain that cannot
+			// be solved.
+			domain := authz.Identifier.Value
+			if authz.Wildcard {
+				domain = "*." + domain
+			}
 			errs = append(errs, fmt.Errorf("ACME server does not allow selected challenge type for domain %q", domain))
 			continue
 		}
 
-		internalCh, err := buildInternalChallengeType(cl, challenge, *cfg, domain, authz.URL)
+		internalCh, err := buildInternalChallengeType(cl, challenge, *cfg, authz.Identifier.Value, authz.URL)
 		if err != nil {
 			errs = append(errs, err)
 			continue
@@ -496,7 +502,11 @@ func getRemainingAuthorizations(ctx context.Context, cl client.Interface, urls .
 	return authzs, nil
 }
 
-func acmeSolverConfiguration(cfg *v1alpha1.ACMECertificateConfig, domain string) (*v1alpha1.ACMESolverConfig, error) {
+func acmeSolverConfigurationForAuthorization(cfg *v1alpha1.ACMECertificateConfig, authz *acme.Authorization) (*v1alpha1.ACMESolverConfig, error) {
+	domain := authz.Identifier.Value
+	if authz.Wildcard {
+		domain = "*." + domain
+	}
 	for _, d := range cfg.Config {
 		for _, dom := range d.Domains {
 			if dom != domain {
