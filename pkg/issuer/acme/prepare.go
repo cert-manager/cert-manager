@@ -150,6 +150,9 @@ Outer:
 		}
 
 	}
+
+	crt.Status.ACMEStatus().Order.Challenges = newChallengeList
+
 	// we aggregate the errors here before beginning to accept challenges.
 	// This will mean we only accept challenges once all self checks are
 	// passing, to save the number of 'accept' operations sent to the acme server.
@@ -161,7 +164,6 @@ Outer:
 		return err
 	}
 
-	crt.Status.ACMEStatus().Order.Challenges = newChallengeList
 	crt.UpdateStatusCondition(v1alpha1.CertificateConditionValidationFailed, v1alpha1.ConditionFalse, "OrderValidated", fmt.Sprintf("Order validated"), true)
 
 	return nil
