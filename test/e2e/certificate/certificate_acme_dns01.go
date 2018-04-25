@@ -172,8 +172,6 @@ var _ = framework.CertManagerDescribe("ACME Certificate (DNS01)", func() {
 				},
 			},
 		})
-		// temporary hack whilst cert-manager does not understand wildcard domains in config
-		cert.Spec.ACME.Config[0].Domains = []string{dnsName}
 		cert, err := f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name).Create(cert)
 		Expect(err).NotTo(HaveOccurred())
 		f.WaitCertificateIssuedValid(cert)

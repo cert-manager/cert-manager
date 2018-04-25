@@ -293,6 +293,9 @@ type Authorization struct {
 	// to prove posession of the identifier. For valid/invalid authorizations,
 	// this is the list of challenges that were used.
 	Challenges []*Challenge
+
+	// Wildcard is set to true if this authorization is for a 'wildcard' dnsName.
+	Wildcard bool
 }
 
 // AuthzID is an identifier that an account is authorized to represent.
@@ -315,6 +318,7 @@ type wireAuthz struct {
 		Type  string
 		Value string
 	}
+	Wildcard bool
 }
 
 func (z *wireAuthz) authorization(url string) *Authorization {
@@ -324,6 +328,7 @@ func (z *wireAuthz) authorization(url string) *Authorization {
 		Expires:    z.Expires,
 		Identifier: AuthzID{Type: z.Identifier.Type, Value: z.Identifier.Value},
 		Challenges: make([]*Challenge, len(z.Challenges)),
+		Wildcard:   z.Wildcard,
 	}
 	for i, v := range z.Challenges {
 		a.Challenges[i] = v.challenge()
