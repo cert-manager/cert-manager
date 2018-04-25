@@ -130,8 +130,10 @@ var _ = framework.CertManagerDescribe("ACME Certificate (DNS01)", func() {
 	AfterEach(func() {
 		By("Cleaning up")
 		f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Delete(issuerName, nil)
+		f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name).Delete(certificateName, nil)
 		f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Delete(testingACMEPrivateKey, nil)
 		f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Delete(cloudflareSecretName, nil)
+		f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Delete(certificateSecretName, nil)
 	})
 
 	It("should obtain a signed certificate for a regular domain", func() {
@@ -139,6 +141,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (DNS01)", func() {
 		cert := generate.Certificate(generate.CertificateConfig{
 			Name:       certificateName,
 			Namespace:  f.Namespace.Name,
+			SecretName: certificateSecretName,
 			IssuerName: issuerName,
 			DNSNames:   []string{cmutil.RandStringRunes(5) + "." + util.ACMECloudflareDomain},
 			ACMESolverConfig: v1alpha1.ACMESolverConfig{
@@ -157,6 +160,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (DNS01)", func() {
 		cert := generate.Certificate(generate.CertificateConfig{
 			Name:       certificateName,
 			Namespace:  f.Namespace.Name,
+			SecretName: certificateSecretName,
 			IssuerName: issuerName,
 			DNSNames:   []string{"*." + cmutil.RandStringRunes(5) + "." + util.ACMECloudflareDomain},
 			ACMESolverConfig: v1alpha1.ACMESolverConfig{
@@ -176,6 +180,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (DNS01)", func() {
 		cert := generate.Certificate(generate.CertificateConfig{
 			Name:       certificateName,
 			Namespace:  f.Namespace.Name,
+			SecretName: certificateSecretName,
 			IssuerName: issuerName,
 			DNSNames:   []string{"*." + ranstr + "." + util.ACMECloudflareDomain, ranstr + "." + util.ACMECloudflareDomain},
 			ACMESolverConfig: v1alpha1.ACMESolverConfig{
