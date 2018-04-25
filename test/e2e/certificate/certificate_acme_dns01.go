@@ -76,10 +76,12 @@ var _ = framework.CertManagerDescribe("ACME Certificate (DNS01)", func() {
 
 		By("Creating an Issuer")
 		issuer := generate.Issuer(generate.IssuerConfig{
-			Name:               issuerName,
-			Namespace:          f.Namespace.Name,
-			ACMESkipTLSVerify:  true,
-			ACMEServer:         framework.TestContext.ACMEURL,
+			Name:              issuerName,
+			Namespace:         f.Namespace.Name,
+			ACMESkipTLSVerify: true,
+			// Hardcode this to the acme staging endpoint now due to issues with pebble dns resolution
+			ACMEServer: "https://acme-staging-v02.api.letsencrypt.org/directory",
+			// ACMEServer:         framework.TestContext.ACMEURL,
 			ACMEEmail:          testingACMEEmail,
 			ACMEPrivateKeyName: testingACMEPrivateKey,
 			DNS01: &v1alpha1.ACMEIssuerDNS01Config{
