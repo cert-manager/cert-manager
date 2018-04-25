@@ -134,6 +134,24 @@ var _ = framework.CertManagerDescribe("ACME Certificate (DNS01)", func() {
 		f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Delete(cloudflareSecretName, nil)
 	})
 
+	It("should obtain a signed certificate for a regular domain", func() {
+		By("Creating a Certificate")
+		cert := generate.Certificate(generate.CertificateConfig{
+			Name:       certificateName,
+			Namespace:  f.Namespace.Name,
+			IssuerName: issuerName,
+			DNSNames:   []string{cmutil.RandStringRunes(5) + "." + util.ACMECloudflareDomain},
+			ACMESolverConfig: v1alpha1.ACMESolverConfig{
+				DNS01: &v1alpha1.ACMECertificateDNS01Config{
+					Provider: "cloudflare",
+				},
+			},
+		})
+		cert, err := f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name).Create(cert)
+		Expect(err).NotTo(HaveOccurred())
+		f.WaitCertificateIssuedValid(cert)
+	})
+
 	It("should obtain a signed certificate for a wildcard domain", func() {
 		By("Creating a Certificate")
 		cert := generate.Certificate(generate.CertificateConfig{
