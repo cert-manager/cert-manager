@@ -453,9 +453,14 @@ func (a *Acme) acceptChallenge(ctx context.Context, cl client.Interface, crt *v1
 		URL:   ch.URL,
 		Token: ch.Token,
 	}
-	_, err := cl.AcceptChallenge(ctx, acmeChal)
+	var err error
+	acmeChal, err = cl.AcceptChallenge(ctx, acmeChal)
 	if err != nil {
 		return err
+	}
+	if acmeChal.Error != nil {
+		glog.Infof("Error accepting challenge for domain %q: %v", ch.Domain, err)
+		return acmeChal.Error
 	}
 
 	glog.Infof("Waiting for authorization for domain %q", ch.Domain)
