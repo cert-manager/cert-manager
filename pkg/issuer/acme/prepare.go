@@ -121,8 +121,38 @@ func (a *Acme) presentOrder(ctx context.Context, cl client.Interface, crt *v1alp
 	crt.Status.ACMEStatus().Order.Challenges = chs
 
 	var errs []error
+	// we use this field to ensure we don't attempt to present the same identifier
+	// twice in a single sync.
+	// Without this, if a Certificate specifies both *.domain.com and domain.com on
+	// a Certificate, the DNS provider will race with itself and fail to solve either
+	// challenge.
+	var presentedIdentifiers []string
 	// TODO: run this in parallel
+Outer:
 	for _, ch := range chs {
+		// we perform this dance around the *. prefix in order to handle
+		// processing wildcard certificates.
+		// if our challenge specifies a domain the begins with *., we will strip
+		// the *. prefix from it as the DNS01 challenge should be presented at the
+		// apex of the domain.
+		// we also use the de-wildcarded version as part of deduplication
+		// (in presentedIdentifiers) for the same reason.
+
+		// store a reference to the original domain for use when printing errors
+		origDomain := ch.Domain
+		// directly modify this copy of the challenge object so it is valid when
+		// passed to the solver (i.e. does not have the *. prefix)
+		if len(ch.Domain) >= 2 && ch.Domain[0:2] == "*." {
+			ch.Domain = ch.Domain[2:]
+		}
+		// don't present challenges for the same domain more than once
+		for _, i := range presentedIdentifiers {
+			if ch.Domain == i {
+				errs = append(errs, fmt.Errorf("another authorization for domain %q is in progress", origDomain))
+				continue Outer
+			}
+		}
+		presentedIdentifiers = append(presentedIdentifiers, ch.Domain)
 		errs = append(errs, a.presentChallenge(ctx, cl, crt, ch))
 	}
 	// we aggregate the errors here before beginning to accept challenges.
@@ -282,8 +312,16 @@ func (a *Acme) selectChallengesForAuthorizations(ctx context.Context, cl client.
 	chals := make([]v1alpha1.ACMEOrderChallenge, len(allAuthorizations))
 	var errs []error
 	for i, authz := range allAuthorizations {
+		// TODO: once we have unit tests for this function, we should pass 'domain'
+		// to acmeSolverConfigurationForAuthorization directly (thus moving wildcard
+		// handling to this function).
+		// As we don't currently have these tests, we'll keep it as-is for now.
 		domain := authz.Identifier.Value
-		cfg, err := acmeSolverConfiguration(crt.Spec.ACME, domain)
+		if authz.Wildcard {
+			domain = "*." + domain
+		}
+
+		cfg, err := acmeSolverConfigurationForAuthorization(crt.Spec.ACME, authz)
 		if err != nil {
 			errs = append(errs, err)
 			continue
@@ -300,6 +338,9 @@ func (a *Acme) selectChallengesForAuthorizations(ctx context.Context, cl client.
 		}
 
 		if challenge == nil {
+			// we prepend *. if this is an authz for a wildcard to make it easier
+			// for users to debug problems and identify the actual domain that cannot
+			// be solved.
 			errs = append(errs, fmt.Errorf("ACME server does not allow selected challenge type for domain %q", domain))
 			continue
 		}
@@ -496,7 +537,11 @@ func getRemainingAuthorizations(ctx context.Context, cl client.Interface, urls .
 	return authzs, nil
 }
 
-func acmeSolverConfiguration(cfg *v1alpha1.ACMECertificateConfig, domain string) (*v1alpha1.ACMESolverConfig, error) {
+func acmeSolverConfigurationForAuthorization(cfg *v1alpha1.ACMECertificateConfig, authz *acme.Authorization) (*v1alpha1.ACMESolverConfig, error) {
+	domain := authz.Identifier.Value
+	if authz.Wildcard {
+		domain = "*." + domain
+	}
 	for _, d := range cfg.Config {
 		for _, dom := range d.Domains {
 			if dom != domain {

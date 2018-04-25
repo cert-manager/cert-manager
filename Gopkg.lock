@@ -202,6 +202,18 @@
   version = "1.0.3"
 
 [[projects]]
+  branch = "master"
+  name = "github.com/kr/pretty"
+  packages = ["."]
+  revision = "cfb55aafdaf3ec08f0db22699ab822c50091b1c4"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/kr/text"
+  packages = ["."]
+  revision = "7cafcd837844e784b526369c9bce262804aebc60"
+
+[[projects]]
   name = "github.com/matttproud/golang_protobuf_extensions"
   packages = ["pbutil"]
   revision = "3247c84500bff8d9fb6d579d800f20b3e091582c"
@@ -783,6 +795,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "419efd926db6ba22ec506ffcfe35f4818c21946423bb9c71a242e3610a1a9f0b"
+  inputs-digest = "06e647c284f98c675c2f2aa889732cc51045c4f10870d31b1bfd527a2aee30b1"
   solver-name = "gps-cdcl"
   solver-version = 1

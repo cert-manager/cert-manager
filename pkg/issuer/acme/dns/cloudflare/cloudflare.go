@@ -69,11 +69,26 @@ func (c *DNSProvider) Present(domain, token, keyAuth string) error {
 		TTL:     120,
 	}
 
+	existingRec, err := c.findTxtRecord(fqdn)
+	// skip errors when checking existing resource
+	if err == nil {
+		// if the record is already set to the correct value, return nil
+		if existingRec.Content == value {
+			return nil
+		}
+		// otherwise, attempt to delete the existing resource
+		_, err = c.makeRequest("DELETE", fmt.Sprintf("/zones/%s/dns_records/%s", existingRec.ZoneID, existingRec.ID), nil)
+		if err != nil {
+			return err
+		}
+	}
+
 	body, err := json.Marshal(rec)
 	if err != nil {
 		return err
 	}
 
+	// TODO: can we use PATCH instead of POST if the resource already exists?
 	_, err = c.makeRequest("POST", fmt.Sprintf("/zones/%s/dns_records", zoneID), bytes.NewReader(body))
 	if err != nil {
 		return err
