@@ -141,7 +141,7 @@ func (a *Acme) presentOrder(ctx context.Context, cl client.Interface, crt *v1alp
 		origDomain := ch.Domain
 		// directly modify this copy of the challenge object so it is valid when
 		// passed to the solver (i.e. does not have the *. prefix)
-		if len(ch.Domain) > 2 && ch.Domain[0:1] == "*." {
+		if len(ch.Domain) >= 2 && ch.Domain[0:2] == "*." {
 			ch.Domain = ch.Domain[2:]
 		}
 		// don't present challenges for the same domain more than once
