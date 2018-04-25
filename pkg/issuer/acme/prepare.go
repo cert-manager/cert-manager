@@ -128,6 +128,7 @@ func (a *Acme) presentOrder(ctx context.Context, cl client.Interface, crt *v1alp
 	// challenge.
 	var presentedIdentifiers []string
 	// TODO: run this in parallel
+Outer:
 	for _, ch := range chs {
 		// we perform this dance around the *. prefix in order to handle
 		// processing wildcard certificates.
@@ -148,7 +149,7 @@ func (a *Acme) presentOrder(ctx context.Context, cl client.Interface, crt *v1alp
 		for _, i := range presentedIdentifiers {
 			if ch.Domain == i {
 				errs = append(errs, fmt.Errorf("another authorization for domain %q is in progress", origDomain))
-				continue
+				continue Outer
 			}
 		}
 		presentedIdentifiers = append(presentedIdentifiers, ch.Domain)
