@@ -26,7 +26,7 @@ An example of an Issuer type is ACME. A simple ACME issuer could be defined as:
        email: user@example.com
        # Name of a secret used to store the ACME account private key
        privateKeySecretRef:
-         name: letsncrypt-prod
+         name: letsencrypt-prod
        # Enable HTTP01 validations
        http01: {}
 
