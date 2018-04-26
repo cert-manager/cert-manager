@@ -23,6 +23,12 @@ type ControllerOptions struct {
 
 	ClusterIssuerAmbientCredentials bool
 	IssuerAmbientCredentials        bool
+
+	// Default issuer/certificates details consumed by ingress-shim
+	DefaultIssuerName                  string
+	DefaultIssuerKind                  string
+	DefaultACMEIssuerChallengeType     string
+	DefaultACMEIssuerDNS01ProviderName string
 }
 
 const (
@@ -37,6 +43,11 @@ const (
 
 	defaultClusterIssuerAmbientCredentials = true
 	defaultIssuerAmbientCredentials        = false
+
+	defaultTLSACMEIssuerName           = ""
+	defaultTLSACMEIssuerKind           = "Issuer"
+	defaultACMEIssuerChallengeType     = "http01"
+	defaultACMEIssuerDNS01ProviderName = ""
 )
 
 var (
@@ -45,15 +56,19 @@ var (
 
 func NewControllerOptions() *ControllerOptions {
 	return &ControllerOptions{
-		APIServerHost:                   defaultAPIServerHost,
-		ClusterResourceNamespace:        defaultClusterResourceNamespace,
-		LeaderElect:                     defaultLeaderElect,
-		LeaderElectionNamespace:         defaultLeaderElectionNamespace,
-		LeaderElectionLeaseDuration:     defaultLeaderElectionLeaseDuration,
-		LeaderElectionRenewDeadline:     defaultLeaderElectionRenewDeadline,
-		LeaderElectionRetryPeriod:       defaultLeaderElectionRetryPeriod,
-		ClusterIssuerAmbientCredentials: defaultClusterIssuerAmbientCredentials,
-		IssuerAmbientCredentials:        defaultIssuerAmbientCredentials,
+		APIServerHost:                      defaultAPIServerHost,
+		ClusterResourceNamespace:           defaultClusterResourceNamespace,
+		LeaderElect:                        defaultLeaderElect,
+		LeaderElectionNamespace:            defaultLeaderElectionNamespace,
+		LeaderElectionLeaseDuration:        defaultLeaderElectionLeaseDuration,
+		LeaderElectionRenewDeadline:        defaultLeaderElectionRenewDeadline,
+		LeaderElectionRetryPeriod:          defaultLeaderElectionRetryPeriod,
+		ClusterIssuerAmbientCredentials:    defaultClusterIssuerAmbientCredentials,
+		IssuerAmbientCredentials:           defaultIssuerAmbientCredentials,
+		DefaultIssuerName:                  defaultTLSACMEIssuerName,
+		DefaultIssuerKind:                  defaultTLSACMEIssuerKind,
+		DefaultACMEIssuerChallengeType:     defaultACMEIssuerChallengeType,
+		DefaultACMEIssuerDNS01ProviderName: defaultACMEIssuerDNS01ProviderName,
 	}
 }
 
@@ -96,8 +111,23 @@ func (s *ControllerOptions) AddFlags(fs *pflag.FlagSet) {
 		"When this flag is enabled, the following sources for credentials are also used: "+
 		"AWS - All sources the Go SDK defaults to, notably including any EC2 IAM roles available via instance metadata.")
 
+	fs.StringVar(&s.DefaultIssuerName, "default-issuer-name", defaultTLSACMEIssuerName, ""+
+		"Name of the Issuer to use when the tls is requested but issuer name is not specified on the ingress resource.")
+	fs.StringVar(&s.DefaultIssuerKind, "default-issuer-kind", defaultTLSACMEIssuerKind, ""+
+		"Kind of the Issuer to use when the tls is requested but issuer kind is not specified on the ingress resource.")
+	fs.StringVar(&s.DefaultACMEIssuerChallengeType, "default-acme-issuer-challenge-type", defaultACMEIssuerChallengeType, ""+
+		"The ACME challenge type to use when tls is requested for an ACME Issuer but is not specified on the ingress resource.")
+	fs.StringVar(&s.DefaultACMEIssuerDNS01ProviderName, "default-acme-issuer-dns01-provider-name", defaultACMEIssuerDNS01ProviderName, ""+
+		"Required if --default-acme-issuer-challenge-type is set to dns01. The DNS01 provider to use for ingresses using ACME dns01 "+
+		"validation that do not explicitly state a dns provider.")
 }
 
 func (o *ControllerOptions) Validate() error {
+	switch o.DefaultIssuerKind {
+	case "Issuer":
+	case "ClusterIssuer":
+	default:
+		return fmt.Errorf("invalid default issuer kind: %v", o.DefaultIssuerKind)
+	}
 	return nil
 }

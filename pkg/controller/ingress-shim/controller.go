@@ -16,7 +16,6 @@ import (
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
 
-	"github.com/jetstack/cert-manager/cmd/ingress-shim/options"
 	cmv1alpha1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	clientset "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
 	cminformers "github.com/jetstack/cert-manager/pkg/client/informers/externalversions/certmanager/v1alpha1"
@@ -29,6 +28,12 @@ import (
 const (
 	ControllerName = "ingress-shim"
 )
+
+type defaults struct {
+	issuerName, issuerKind      string
+	acmeIssuerChallengeType     string
+	acmeIssuerDNS01ProviderName string
+}
 
 type Controller struct {
 	Client   kubernetes.Interface
@@ -46,7 +51,7 @@ type Controller struct {
 	queue       workqueue.RateLimitingInterface
 	workerWg    sync.WaitGroup
 	syncedFuncs []cache.InformerSynced
-	options     *options.ControllerOptions
+	defaults    defaults
 }
 
 // New returns a new Certificates controller. It sets up the informer handler
@@ -59,9 +64,9 @@ func New(
 	client kubernetes.Interface,
 	cmClient clientset.Interface,
 	recorder record.EventRecorder,
-	options *options.ControllerOptions,
+	defaults defaults,
 ) *Controller {
-	ctrl := &Controller{Client: client, CMClient: cmClient, Recorder: recorder, options: options}
+	ctrl := &Controller{Client: client, CMClient: cmClient, Recorder: recorder, defaults: defaults}
 	ctrl.syncHandler = ctrl.processNextWorkItem
 	ctrl.queue = workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "ingresses")
 
@@ -182,4 +187,21 @@ func (c *Controller) processNextWorkItem(ctx context.Context, key string) error 
 	}
 
 	return c.Sync(ctx, crt)
+}
+
+var keyFunc = controllerpkg.KeyFunc
+
+func init() {
+	controllerpkg.Register(ControllerName, func(ctx *controllerpkg.Context) controllerpkg.Interface {
+		return New(
+			ctx.SharedInformerFactory.Certmanager().V1alpha1().Certificates(),
+			ctx.KubeSharedInformerFactory.Extensions().V1beta1().Ingresses(),
+			ctx.SharedInformerFactory.Certmanager().V1alpha1().Issuers(),
+			ctx.SharedInformerFactory.Certmanager().V1alpha1().ClusterIssuers(),
+			ctx.Client,
+			ctx.CMClient,
+			ctx.Recorder,
+			defaults{ctx.DefaultIssuerName, ctx.DefaultIssuerKind, ctx.DefaultACMEIssuerChallengeType, ctx.DefaultACMEIssuerDNS01ProviderName},
+		).Run
+	})
 }

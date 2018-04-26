@@ -115,21 +115,4 @@ func PrintPodLogs(t *testing.T) {
 		t.FailNow()
 		return
 	}
-	glog.Infof("Printing ingress-shim logs")
-	isOut, err := ArtifactWriteCloser("ingress-shim-logs.txt")
-	if err != nil {
-		t.Errorf("Error saving ingress-shim logs")
-		t.FailNow()
-		return
-	}
-	defer isOut.Close()
-	cmdShim := exec.Command("kubectl", "logs", "--namespace", "cert-manager", "-l", "app=cert-manager", "-l", "release=cm", "-c", "ingress-shim", "--tail", "10000")
-	cmdShim.Stdout = isOut
-	cmdShim.Stderr = isOut
-	err = cmdShim.Run()
-	if err != nil {
-		t.Errorf("Error getting ingress-shim logs: %s", err)
-		t.FailNow()
-		return
-	}
 }

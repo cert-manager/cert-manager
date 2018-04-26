@@ -181,7 +181,7 @@ func (c *Controller) setIssuerSpecificConfig(crt *v1alpha1.Certificate, issuer v
 	if issuer.GetSpec().ACME != nil {
 		challengeType, ok := ingAnnotations[acmeIssuerChallengeTypeAnnotation]
 		if !ok {
-			challengeType = c.options.DefaultACMEIssuerChallengeType
+			challengeType = c.defaults.acmeIssuerChallengeType
 		}
 		domainCfg := v1alpha1.ACMECertificateDomainConfig{
 			Domains: tls.Hosts,
@@ -202,7 +202,7 @@ func (c *Controller) setIssuerSpecificConfig(crt *v1alpha1.Certificate, issuer v
 		case "dns01":
 			dnsProvider, ok := ingAnnotations[acmeIssuerDNS01ProviderNameAnnotation]
 			if !ok {
-				dnsProvider = c.options.DefaultACMEIssuerDNS01ProviderName
+				dnsProvider = c.defaults.acmeIssuerDNS01ProviderName
 			}
 			if dnsProvider == "" {
 				return fmt.Errorf("no acme issuer dns01 challenge provider specified")
@@ -247,8 +247,8 @@ func shouldSync(ing *extv1beta1.Ingress) bool {
 // Certificate created for the given Ingress resource. If one is not set, the
 // default issuer given to the controller will be used.
 func (c *Controller) issuerForIngress(ing *extv1beta1.Ingress) (name string, kind string) {
-	name = c.options.DefaultIssuerName
-	kind = c.options.DefaultIssuerKind
+	name = c.defaults.issuerName
+	kind = c.defaults.issuerKind
 	annotations := ing.Annotations
 	if annotations == nil {
 		annotations = map[string]string{}

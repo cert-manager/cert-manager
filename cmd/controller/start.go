@@ -13,6 +13,7 @@ import (
 	"github.com/jetstack/cert-manager/cmd/controller/app/options"
 	_ "github.com/jetstack/cert-manager/pkg/controller/certificates"
 	_ "github.com/jetstack/cert-manager/pkg/controller/clusterissuers"
+	_ "github.com/jetstack/cert-manager/pkg/controller/ingress-shim"
 	_ "github.com/jetstack/cert-manager/pkg/controller/issuers"
 	_ "github.com/jetstack/cert-manager/pkg/issuer/acme"
 	_ "github.com/jetstack/cert-manager/pkg/issuer/ca"

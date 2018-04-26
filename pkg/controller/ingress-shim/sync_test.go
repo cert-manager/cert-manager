@@ -7,7 +7,6 @@ import (
 	extv1beta1 "k8s.io/api/extensions/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/jetstack/cert-manager/cmd/ingress-shim/options"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	cmfake "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/fake"
 	cminformers "github.com/jetstack/cert-manager/pkg/client/informers/externalversions"
@@ -594,9 +593,9 @@ func TestBuildCertificates(t *testing.T) {
 				issuerLister:        issuerInformer.Lister(),
 				clusterIssuerLister: clusterIssuerInformer.Lister(),
 				certificateLister:   certificatesInformer.Lister(),
-				options: &options.ControllerOptions{
-					DefaultIssuerName: test.DefaultIssuerName,
-					DefaultIssuerKind: test.DefaultIssuerKind,
+				defaults: defaults{
+					issuerName: test.DefaultIssuerName,
+					issuerKind: test.DefaultIssuerKind,
 				},
 			}
 			createCrts, updateCrts, err := c.buildCertificates(test.Ingress)
@@ -655,9 +654,9 @@ func TestIssuerForIngress(t *testing.T) {
 	}
 	for _, test := range tests {
 		c := &Controller{
-			options: &options.ControllerOptions{
-				DefaultIssuerKind: test.DefaultKind,
-				DefaultIssuerName: test.DefaultName,
+			defaults: defaults{
+				issuerKind: test.DefaultKind,
+				issuerName: test.DefaultName,
 			},
 		}
 		name, kind := c.issuerForIngress(test.Ingress)

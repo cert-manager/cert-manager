@@ -7,7 +7,7 @@ metadata:
   namespace: "cert-manager"
   labels:
     app: cert-manager
-    chart: cert-manager-v0.3.0-alpha.1
+    chart: cert-manager-v0.3.0-alpha.2
     release: cert-manager
     heritage: Tiller
 spec:
@@ -35,14 +35,6 @@ spec:
             valueFrom:
               fieldRef:
                 fieldPath: metadata.namespace
-          resources:
-            requests:
-              cpu: 10m
-              memory: 32Mi
-            
-        - name: ingress-shim
-          image: "quay.io/jetstack/cert-manager-ingress-shim:v0.3.0-alpha.1"
-          imagePullPolicy: IfNotPresent
           resources:
             requests:
               cpu: 10m
