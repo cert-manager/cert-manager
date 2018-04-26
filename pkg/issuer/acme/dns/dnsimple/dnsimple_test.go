@@ -35,6 +35,10 @@ func TestLiveDNSimpleDnsPresent(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+func TestLiveDNSimpleDnsPresentIdempotent(t *testing.T) {
+	TestLiveDNSimpleDnsPresent(t)
+}
+
 func TestLiveDNSimpleDnsCleanUp(t *testing.T) {
 	if !dnsimpleLiveTest {
 		t.Skip("skipping live test")
@@ -47,4 +51,8 @@ func TestLiveDNSimpleDnsCleanUp(t *testing.T) {
 
 	err = provider.CleanUp(dnsimpleDomain, "", "123d==")
 	assert.NoError(t, err)
+}
+
+func TestLiveDNSimpleDnsCleanUpIdempotent(t *testing.T) {
+	TestLiveDNSimpleDnsCleanUp(t)
 }
