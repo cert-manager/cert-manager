@@ -68,5 +68,12 @@ Certificate resources to be automatically created:
   configuration of the ingress-shim (see above). Namely, a default issuer must be
   specified as arguments to the ingress-shim container.
 
+* ``certmanager.k8s.io/acme-http01-edit-in-place""`` - if the ACME challenge type
+  has been set to http01, and the ingress has the 'kubernetes.io/tls-acme: true'
+  annotation, this controls whether the ingress is modified 'in-place', or a new
+  one created specifically for the http01 challenge. If present, and set to "true"
+  the existing ingress will be modified. Any other value, or the absence of the
+  annotation assumes "false".
+
 .. _kube-lego: https://github.com/jetstack/kube-lego
 .. _ingress-shim: https://github.com/jetstack/cert-manager/tree/master/cmd/ingress-shim

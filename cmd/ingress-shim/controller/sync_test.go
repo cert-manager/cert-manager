@@ -13,6 +13,10 @@ import (
 	cminformers "github.com/jetstack/cert-manager/pkg/client/informers/externalversions"
 )
 
+func strPtr(s string) *string {
+	return &s
+}
+
 func TestShouldSync(t *testing.T) {
 	type testT struct {
 		Annotations map[string]string
@@ -74,7 +78,59 @@ func TestBuildCertificates(t *testing.T) {
 	}
 	tests := []testT{
 		{
-			Name: "return a single HTTP01 Certificate for an ingress with a single valid TLS entry and HTTP01 annotations",
+			Name: "return a single HTTP01 Certificate for an ingress with a single valid TLS entry and HTTP01 annotations using edit-in-place",
+			Ingress: &extv1beta1.Ingress{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "ingress-name",
+					Namespace: "ingress-namespace",
+					Annotations: map[string]string{
+						clusterIssuerNameAnnotation:       "issuer-name",
+						acmeIssuerChallengeTypeAnnotation: "http01",
+						editInPlaceAnnotation:             "true",
+					},
+				},
+				Spec: extv1beta1.IngressSpec{
+					TLS: []extv1beta1.IngressTLS{
+						{
+							Hosts:      []string{"example.com", "www.example.com"},
+							SecretName: "example-com-tls",
+						},
+					},
+				},
+			},
+			ClusterIssuerLister: []*v1alpha1.ClusterIssuer{buildACMEClusterIssuer("issuer-name")},
+			ExpectedCreate: []*v1alpha1.Certificate{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:            "example-com-tls",
+						Namespace:       "ingress-namespace",
+						OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(buildIngress("ingress-name", "ingress-namespace", nil), ingressGVK)},
+					},
+					Spec: v1alpha1.CertificateSpec{
+						DNSNames:   []string{"example.com", "www.example.com"},
+						SecretName: "example-com-tls",
+						IssuerRef: v1alpha1.ObjectReference{
+							Name: "issuer-name",
+							Kind: "ClusterIssuer",
+						},
+						ACME: &v1alpha1.ACMECertificateConfig{
+							Config: []v1alpha1.ACMECertificateDomainConfig{
+								{
+									Domains: []string{"example.com", "www.example.com"},
+									ACMESolverConfig: v1alpha1.ACMESolverConfig{
+										HTTP01: &v1alpha1.ACMECertificateHTTP01Config{
+											Ingress: "ingress-name",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			Name: "return a single HTTP01 Certificate for an ingress with a single valid TLS entry and HTTP01 annotations with no ingress class set",
 			Ingress: &extv1beta1.Ingress{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "ingress-name",
@@ -113,8 +169,111 @@ func TestBuildCertificates(t *testing.T) {
 								{
 									Domains: []string{"example.com", "www.example.com"},
 									ACMESolverConfig: v1alpha1.ACMESolverConfig{
+										HTTP01: &v1alpha1.ACMECertificateHTTP01Config{},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			Name: "return a single HTTP01 Certificate for an ingress with a single valid TLS entry and HTTP01 annotations with a custom ingress class",
+			Ingress: &extv1beta1.Ingress{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "ingress-name",
+					Namespace: "ingress-namespace",
+					Annotations: map[string]string{
+						clusterIssuerNameAnnotation:       "issuer-name",
+						acmeIssuerChallengeTypeAnnotation: "http01",
+						ingressClassAnnotation:            "nginx-ing",
+					},
+				},
+				Spec: extv1beta1.IngressSpec{
+					TLS: []extv1beta1.IngressTLS{
+						{
+							Hosts:      []string{"example.com", "www.example.com"},
+							SecretName: "example-com-tls",
+						},
+					},
+				},
+			},
+			ClusterIssuerLister: []*v1alpha1.ClusterIssuer{buildACMEClusterIssuer("issuer-name")},
+			ExpectedCreate: []*v1alpha1.Certificate{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:            "example-com-tls",
+						Namespace:       "ingress-namespace",
+						OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(buildIngress("ingress-name", "ingress-namespace", nil), ingressGVK)},
+					},
+					Spec: v1alpha1.CertificateSpec{
+						DNSNames:   []string{"example.com", "www.example.com"},
+						SecretName: "example-com-tls",
+						IssuerRef: v1alpha1.ObjectReference{
+							Name: "issuer-name",
+							Kind: "ClusterIssuer",
+						},
+						ACME: &v1alpha1.ACMECertificateConfig{
+							Config: []v1alpha1.ACMECertificateDomainConfig{
+								{
+									Domains: []string{"example.com", "www.example.com"},
+									ACMESolverConfig: v1alpha1.ACMESolverConfig{
 										HTTP01: &v1alpha1.ACMECertificateHTTP01Config{
-											Ingress: "ingress-name",
+											IngressClass: strPtr("nginx-ing"),
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			Name: "edit-in-place set to false should not trigger editing the ingress in-place",
+			Ingress: &extv1beta1.Ingress{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "ingress-name",
+					Namespace: "ingress-namespace",
+					Annotations: map[string]string{
+						clusterIssuerNameAnnotation:       "issuer-name",
+						acmeIssuerChallengeTypeAnnotation: "http01",
+						ingressClassAnnotation:            "nginx-ing",
+						editInPlaceAnnotation:             "false",
+					},
+				},
+				Spec: extv1beta1.IngressSpec{
+					TLS: []extv1beta1.IngressTLS{
+						{
+							Hosts:      []string{"example.com", "www.example.com"},
+							SecretName: "example-com-tls",
+						},
+					},
+				},
+			},
+			ClusterIssuerLister: []*v1alpha1.ClusterIssuer{buildACMEClusterIssuer("issuer-name")},
+			ExpectedCreate: []*v1alpha1.Certificate{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:            "example-com-tls",
+						Namespace:       "ingress-namespace",
+						OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(buildIngress("ingress-name", "ingress-namespace", nil), ingressGVK)},
+					},
+					Spec: v1alpha1.CertificateSpec{
+						DNSNames:   []string{"example.com", "www.example.com"},
+						SecretName: "example-com-tls",
+						IssuerRef: v1alpha1.ObjectReference{
+							Name: "issuer-name",
+							Kind: "ClusterIssuer",
+						},
+						ACME: &v1alpha1.ACMECertificateConfig{
+							Config: []v1alpha1.ACMECertificateDomainConfig{
+								{
+									Domains: []string{"example.com", "www.example.com"},
+									ACMESolverConfig: v1alpha1.ACMESolverConfig{
+										HTTP01: &v1alpha1.ACMECertificateHTTP01Config{
+											IngressClass: strPtr("nginx-ing"),
 										},
 									},
 								},
