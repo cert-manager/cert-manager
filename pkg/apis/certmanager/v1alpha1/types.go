@@ -374,6 +374,9 @@ type ACMEOrderChallenge struct {
 	// Challenge key for this challenge
 	Key string `json:"key"`
 
+	// Set to true if this challenge is for a wildcard domain
+	Wildcard bool `json:"wildcard"`
+
 	// Configuration used to present this challenge
 	ACMESolverConfig `json:",inline"`
 }

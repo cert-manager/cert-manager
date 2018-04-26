@@ -176,4 +176,24 @@ var _ = framework.CertManagerDescribe("ACME Certificate (DNS01)", func() {
 		Expect(err).NotTo(HaveOccurred())
 		f.WaitCertificateIssuedValid(cert)
 	})
+
+	It("should obtain a signed certificate for a wildcard and apex domain", func() {
+		By("Creating a Certificate")
+		dnsName := cmutil.RandStringRunes(5) + "." + util.ACMECloudflareDomain
+		cert := generate.Certificate(generate.CertificateConfig{
+			Name:       certificateName,
+			Namespace:  f.Namespace.Name,
+			SecretName: certificateSecretName,
+			IssuerName: issuerName,
+			DNSNames:   []string{"*." + dnsName, dnsName},
+			ACMESolverConfig: v1alpha1.ACMESolverConfig{
+				DNS01: &v1alpha1.ACMECertificateDNS01Config{
+					Provider: "cloudflare",
+				},
+			},
+		})
+		cert, err := f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name).Create(cert)
+		Expect(err).NotTo(HaveOccurred())
+		f.WaitCertificateIssuedValid(cert)
+	})
 })

@@ -120,11 +120,39 @@ func (a *Acme) presentOrder(ctx context.Context, cl client.Interface, crt *v1alp
 	// set the challenges field of the status block
 	crt.Status.ACMEStatus().Order.Challenges = chs
 
+	// compute the new challenge list after cleaning up successful challenges
+	var newChallengeList []v1alpha1.ACMEOrderChallenge
+
 	var errs []error
-	// TODO: run this in parallel
+
+	// we use this field to ensure we don't attempt to present the same identifier
+	// twice in a single sync.
+	// Without this, if a Certificate specifies both *.domain.com and domain.com on
+	// a Certificate, the DNS provider will race with itself and fail to solve either
+	// challenge.
+	var presentedIdentifiers []string
+Outer:
 	for _, ch := range chs {
-		errs = append(errs, a.presentChallenge(ctx, cl, crt, ch))
+		// don't present challenges for the same domain more than once
+		for _, i := range presentedIdentifiers {
+			if ch.Domain == i {
+				newChallengeList = append(newChallengeList, ch)
+				errs = append(errs, fmt.Errorf("another authorization for domain %q is in progress", ch.Domain))
+				continue Outer
+			}
+		}
+
+		presentedIdentifiers = append(presentedIdentifiers, ch.Domain)
+		err := a.processChallenge(ctx, cl, crt, ch)
+		if err != nil {
+			newChallengeList = append(newChallengeList, ch)
+			errs = append(errs, err)
+		}
+
 	}
+
+	crt.Status.ACMEStatus().Order.Challenges = newChallengeList
+
 	// we aggregate the errors here before beginning to accept challenges.
 	// This will mean we only accept challenges once all self checks are
 	// passing, to save the number of 'accept' operations sent to the acme server.
@@ -136,36 +164,26 @@ func (a *Acme) presentOrder(ctx context.Context, cl client.Interface, crt *v1alp
 		return err
 	}
 
-	// reset errs
-	errs = make([]error, 0)
-	// compute the new challenge list after cleaning up successful challenges
-	var newChallengeList []v1alpha1.ACMEOrderChallenge
-	for _, ch := range chs {
-		acceptChalErr := a.acceptChallenge(ctx, cl, crt, ch)
-		errs = append(errs, acceptChalErr)
-		// only clean up if this stage suceeded.
-		// If it fails, an error will be returned anyway and our standard
-		// failed-validation cleanup logic will be invoked.
-		if acceptChalErr == nil {
-			err := a.cleanupChallenge(ctx, crt, ch)
-			errs = append(errs, err)
-			if err != nil {
-				newChallengeList = append(newChallengeList, ch)
-				continue
-			}
-		} else {
-			newChallengeList = append(newChallengeList, ch)
-		}
-	}
-	crt.Status.ACMEStatus().Order.Challenges = newChallengeList
+	crt.UpdateStatusCondition(v1alpha1.CertificateConditionValidationFailed, v1alpha1.ConditionFalse, "OrderValidated", fmt.Sprintf("Order validated"), true)
 
-	err = utilerrors.NewAggregate(errs)
+	return nil
+}
+
+func (a *Acme) processChallenge(ctx context.Context, cl client.Interface, crt *v1alpha1.Certificate, ch v1alpha1.ACMEOrderChallenge) error {
+	err := a.presentChallenge(ctx, cl, crt, ch)
 	if err != nil {
-		crt.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse, errorValidateError, err.Error(), false)
 		return err
 	}
 
-	crt.UpdateStatusCondition(v1alpha1.CertificateConditionValidationFailed, v1alpha1.ConditionFalse, "OrderValidated", fmt.Sprintf("Order validated"), true)
+	err = a.acceptChallenge(ctx, cl, crt, ch)
+	if err != nil {
+		return err
+	}
+
+	err = a.cleanupChallenge(ctx, crt, ch)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -304,7 +322,7 @@ func (a *Acme) selectChallengesForAuthorizations(ctx context.Context, cl client.
 			continue
 		}
 
-		internalCh, err := buildInternalChallengeType(cl, challenge, *cfg, domain, authz.URL)
+		internalCh, err := buildInternalChallengeType(cl, challenge, *cfg, domain, authz.URL, authz.Wildcard)
 		if err != nil {
 			errs = append(errs, err)
 			continue
@@ -315,7 +333,7 @@ func (a *Acme) selectChallengesForAuthorizations(ctx context.Context, cl client.
 	return chals, utilerrors.NewAggregate(errs)
 }
 
-func buildInternalChallengeType(cl client.Interface, ch *acme.Challenge, cfg v1alpha1.ACMESolverConfig, domain, authzURL string) (v1alpha1.ACMEOrderChallenge, error) {
+func buildInternalChallengeType(cl client.Interface, ch *acme.Challenge, cfg v1alpha1.ACMESolverConfig, domain, authzURL string, wildcard bool) (v1alpha1.ACMEOrderChallenge, error) {
 	var key string
 	var err error
 	switch ch.Type {
@@ -338,6 +356,7 @@ func buildInternalChallengeType(cl client.Interface, ch *acme.Challenge, cfg v1a
 		Token:            ch.Token,
 		Key:              key,
 		ACMESolverConfig: cfg,
+		Wildcard:         wildcard,
 	}, nil
 }
 
