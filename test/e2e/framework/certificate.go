@@ -1,6 +1,8 @@
 package framework
 
 import (
+	"time"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	api "k8s.io/api/core/v1"
@@ -12,10 +14,14 @@ import (
 	testutil "github.com/jetstack/cert-manager/test/util"
 )
 
+func (f *Framework) WaitCertificateIssuedValid(c *v1alpha1.Certificate) {
+	f.WaitCertificateIssuedValidTimeout(c, longTimeout)
+}
+
 // WaitCertificateIssuedValid waits for the given Certificate to be
 // 'Ready' and ensures the stored certificate is valid for the specified
 // domains.
-func (f *Framework) WaitCertificateIssuedValid(c *v1alpha1.Certificate) {
+func (f *Framework) WaitCertificateIssuedValidTimeout(c *v1alpha1.Certificate, t time.Duration) {
 	// check the provided certificate is valid
 	expectedCN := pki.CommonNameForCertificate(c)
 	expectedDNSNames := pki.DNSNamesForCertificate(c)
@@ -26,7 +32,7 @@ func (f *Framework) WaitCertificateIssuedValid(c *v1alpha1.Certificate) {
 		v1alpha1.CertificateCondition{
 			Type:   v1alpha1.CertificateConditionReady,
 			Status: v1alpha1.ConditionTrue,
-		}, longTimeout)
+		}, t)
 	Expect(err).NotTo(HaveOccurred())
 	By("Verifying TLS certificate exists")
 	secret, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Get(c.Spec.SecretName, metav1.GetOptions{})

@@ -15,6 +15,7 @@ package certificate
 
 import (
 	"flag"
+	"time"
 
 	"github.com/jetstack/cert-manager/test/util/generate"
 
@@ -194,6 +195,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (DNS01)", func() {
 		})
 		cert, err := f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name).Create(cert)
 		Expect(err).NotTo(HaveOccurred())
-		f.WaitCertificateIssuedValid(cert)
+		// use a longer timeout for this, as it requires performing 2 dns validations in serial
+		f.WaitCertificateIssuedValidTimeout(cert, time.Minute*10)
 	})
 })
