@@ -10,7 +10,8 @@ import (
 )
 
 const (
-	dnsimpleSandboxBaseURL = "https://api.sandbox.dnsimple.com"
+	dnsimpleSandboxBaseURL   = "https://api.sandbox.dnsimple.com"
+	dnsimpleNoRecordErrorMsg = "No record id found"
 )
 
 func getOauthToken() string {
@@ -89,6 +90,7 @@ func (c *DNSProvider) createRecord(fqdn, value string, ttl int) error {
 
 	recordName := util.UnFqdn(fqdn)
 	recordID, err := c.getRecordID(verifiedZoneID, recordName)
+	// Do not attempt to create an existing record
 	if recordID != 0 {
 		return nil
 	}
@@ -123,6 +125,11 @@ func (c *DNSProvider) removeRecord(fqdn string) error {
 
 	recordID, err := c.getRecordID(verifiedZoneID, util.UnFqdn(fqdn))
 	if err != nil {
+		// Do not attempt to delete a non-existing record
+		if err.Error() == dnsimpleNoRecordErrorMsg {
+			return nil
+		}
+
 		return err
 	}
 
@@ -173,5 +180,5 @@ func (c *DNSProvider) getRecordID(zoneID, recordName string) (recordID int, err 
 		}
 	}
 
-	return 0, fmt.Errorf("No record id found")
+	return 0, fmt.Errorf(dnsimpleNoRecordErrorMsg)
 }
