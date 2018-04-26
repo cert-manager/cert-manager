@@ -87,6 +87,12 @@ func (c *DNSProvider) createRecord(fqdn, value string, ttl int) error {
 		return err
 	}
 
+	recordName := util.UnFqdn(fqdn)
+	recordID, err := c.getRecordID(verifiedZoneID, recordName)
+	if recordID != 0 {
+		return nil
+	}
+
 	newZoneRecord := dnsimple.ZoneRecord{
 		Name:    util.UnFqdn(fqdn),
 		Content: value,
