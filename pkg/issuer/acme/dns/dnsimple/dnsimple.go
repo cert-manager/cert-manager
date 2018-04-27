@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
+	"time"
 
 	"github.com/dnsimple/dnsimple-go/dnsimple"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
@@ -75,6 +77,10 @@ func (c *DNSProvider) CleanUp(domain, token, keyAuth string) error {
 	return c.removeRecord(fqdn)
 }
 
+func (c *DNSProvider) Timeout() (timeout, interval time.Duration) {
+	return 120 * time.Second, 2 * time.Second
+}
+
 func (c *DNSProvider) createRecord(fqdn, value string, ttl int) error {
 	zone, err := util.FindZoneByFqdn(fqdn, util.RecursiveNameservers)
 	if err != nil {
@@ -88,7 +94,7 @@ func (c *DNSProvider) createRecord(fqdn, value string, ttl int) error {
 		return err
 	}
 
-	recordName := util.UnFqdn(fqdn)
+	recordName := c.extractRecordName(fqdn, zoneID)
 	recordID, err := c.getRecordID(verifiedZoneID, recordName)
 	// Do not attempt to create an existing record
 	if recordID != 0 {
@@ -96,7 +102,7 @@ func (c *DNSProvider) createRecord(fqdn, value string, ttl int) error {
 	}
 
 	newZoneRecord := dnsimple.ZoneRecord{
-		Name:    util.UnFqdn(fqdn),
+		Name:    recordName,
 		Content: value,
 		Type:    "TXT",
 		TTL:     ttl,
@@ -123,7 +129,8 @@ func (c *DNSProvider) removeRecord(fqdn string) error {
 		return err
 	}
 
-	recordID, err := c.getRecordID(verifiedZoneID, util.UnFqdn(fqdn))
+	recordName := c.extractRecordName(fqdn, zoneID)
+	recordID, err := c.getRecordID(verifiedZoneID, recordName)
 	if err != nil {
 		// Do not attempt to delete a non-existing record
 		if err.Error() == dnsimpleNoRecordErrorMsg {
@@ -139,6 +146,14 @@ func (c *DNSProvider) removeRecord(fqdn string) error {
 	}
 
 	return nil
+}
+
+func (c *DNSProvider) extractRecordName(fqdn, domain string) string {
+	name := util.UnFqdn(fqdn)
+	if idx := strings.Index(name, "."+domain); idx != -1 {
+		return name[:idx]
+	}
+	return name
 }
 
 func (c *DNSProvider) getZoneID(localZoneName string) (zoneName string, err error) {
