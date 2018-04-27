@@ -145,9 +145,9 @@ DNSimple
 
 .. code-block:: yaml
 
-   dnsimple:
-     serviceAccountSecretRef:
-       name: prod-dnsimple-oauth-token
-       key: oauthToken
+  dnsimple:
+    oauthTokenSecretRef:
+      name: dnsimple-oauth-token
+      key: oauth-token
 
 .. _`Let's Encrypt`: https://letsencrypt.org
