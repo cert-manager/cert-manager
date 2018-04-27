@@ -18,6 +18,7 @@ import (
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/azuredns"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/clouddns"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/cloudflare"
+	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/dnsimple"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/route53"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
 )
@@ -40,6 +41,7 @@ type dnsProviderConstructors struct {
 	cloudFlare func(email, apikey string) (*cloudflare.DNSProvider, error)
 	route53    func(accessKey, secretKey, hostedZoneID, region string, ambient bool) (*route53.DNSProvider, error)
 	azureDNS   func(clientID, clientSecret, subscriptionID, tenentID, resourceGroupName, hostedZoneName string) (*azuredns.DNSProvider, error)
+	dnsimple   func(oauthToken string) (*dnsimple.DNSProvider, error)
 }
 
 // Solver is a solver for the acme dns01 challenge.
@@ -239,6 +241,17 @@ func (s *Solver) solverForIssuerProvider(providerName string) (solver, error) {
 			providerConfig.AzureDNS.ResourceGroupName,
 			providerConfig.AzureDNS.HostedZoneName,
 		)
+	case providerConfig.DNSimple != nil:
+		oauthSecret, err := s.secretLister.Secrets(s.resourceNamespace).Get(providerConfig.DNSimple.OAuthToken.Name)
+		if err != nil {
+			return nil, fmt.Errorf("error getting DNSimple OAuth token: %s", err.Error())
+		}
+
+		oauthToken := string(oauthSecret.Data[providerConfig.DNSimple.OAuthToken.Key])
+		impl, err = s.dnsProviderConstructors.dnsimple(oauthToken)
+		if err != nil {
+			return nil, fmt.Errorf("error instantiating DNSimple challenge solver: %s", err.Error())
+		}
 	default:
 		return nil, fmt.Errorf("no dns provider config specified for provider %q", providerName)
 	}
@@ -257,6 +270,7 @@ func NewSolver(issuer v1alpha1.GenericIssuer, client kubernetes.Interface, secre
 			cloudflare.NewDNSProviderCredentials,
 			route53.NewDNSProvider,
 			azuredns.NewDNSProviderCredentials,
+			dnsimple.NewDNSProviderCredentials,
 		},
 		ambientCredentials,
 		dns01Nameservers,
