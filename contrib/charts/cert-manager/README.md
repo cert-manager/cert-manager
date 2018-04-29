@@ -62,9 +62,9 @@ The following table lists the configurable parameters of the cert-manager chart 
 | `leaderElection.Namespace` | Override the namespace used to store the ConfigMap for leader election | Same namespace as cert-manager pod
 | `certificateResourceShortNames` | Custom aliases for Certificate CRD | `["cert", "certs"]` |
 | `extraArgs` | Optional flags for cert-manager | `[]` |
-| `rbac.create` | If `true`, create and use RBAC resources | `true`
-| `serviceAccount.create` | If `true`, create a new service account | `true`
-| `serviceAccount.name` | Service account to be used. If not set and `serviceAccount.create` is `true`, a name is generated using the fullname template | ``
+| `rbac.create` | If `true`, create and use RBAC resources | `true` |
+| `serviceAccount.create` | If `true`, create a new service account | `true` |
+| `serviceAccount.name` | Service account to be used. If not set and `serviceAccount.create` is `true`, a name is generated using the fullname template |  |
 | `resources` | CPU/memory resource requests/limits | `requests: {cpu: 10m, memory: 32Mi}` |
 | `nodeSelector` | Node labels for pod assignment | `{}` |
 | `affinity` | Node affinity for pod assignment | `{}` |
