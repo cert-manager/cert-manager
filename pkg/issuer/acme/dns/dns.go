@@ -143,10 +143,8 @@ func (s *Solver) solverForIssuerProvider(providerName string) (solver, error) {
 	var impl solver
 	switch {
 	case providerConfig.DynDNS != nil:
-		glog.V(4).Infof("Found dyndns provider, providerName: ", providerName)
 		dynPassword, err := s.loadSecretData(&providerConfig.DynDNS.DynPassword)
 		if err != nil {
-			glog.V(4).Infof("Trying to get dynPassword got error: ", err)
 			return nil, errors.Wrap(err, "error getting dyn password")
 		}
 		dynUsername, err := s.loadSecretData(&providerConfig.DynDNS.DynUsername)
@@ -158,8 +156,6 @@ func (s *Solver) solverForIssuerProvider(providerName string) (solver, error) {
 		if err != nil {
 			return nil, errors.Wrap(err, "error getting dyn customer name")
 		}
-
-		glog.V(4).Infof("secrets, dynCustomerName: %s, dynUsername: %s, dynPassword: %s", dynCustomerName, dynUsername, dynPassword)
 
 		impl, err = dyndns.NewDynDNSProvider(
 			string(dynCustomerName),
