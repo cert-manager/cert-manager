@@ -20,6 +20,7 @@ import (
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/cloudflare"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/route53"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
+	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/dyndns"
 )
 
 const (
@@ -40,6 +41,7 @@ type dnsProviderConstructors struct {
 	cloudFlare func(email, apikey string) (*cloudflare.DNSProvider, error)
 	route53    func(accessKey, secretKey, hostedZoneID, region string, ambient bool) (*route53.DNSProvider, error)
 	azureDNS   func(clientID, clientSecret, subscriptionID, tenentID, resourceGroupName, hostedZoneName string) (*azuredns.DNSProvider, error)
+	dynDNS     func(dynCustomerName, dynUsername, dynPassword, dynZoneName string) (*dyndns.DNSProvider, error)
 }
 
 // Solver is a solver for the acme dns01 challenge.
@@ -140,6 +142,33 @@ func (s *Solver) solverForIssuerProvider(providerName string) (solver, error) {
 
 	var impl solver
 	switch {
+	case providerConfig.DynDNS != nil:
+		glog.V(4).Infof("Found dyndns provider, providerName: ", providerName)
+		dynPassword, err := s.loadSecretData(&providerConfig.DynDNS.DynPassword)
+		if err != nil {
+			glog.V(4).Infof("Trying to get dynPassword got error: ", err)
+			return nil, errors.Wrap(err, "error getting dyn password")
+		}
+		dynUsername, err := s.loadSecretData(&providerConfig.DynDNS.DynUsername)
+		if err != nil {
+			return nil, errors.Wrap(err, "error getting dyn username")
+		}
+
+		dynCustomerName, err := s.loadSecretData(&providerConfig.DynDNS.DynCustomerName)
+		if err != nil {
+			return nil, errors.Wrap(err, "error getting dyn customer name")
+		}
+
+		glog.V(4).Infof("secrets, dynCustomerName: %s, dynUsername: %s, dynPassword: %s", dynCustomerName, dynUsername, dynPassword)
+
+		impl, err = dyndns.NewDynDNSProvider(
+			string(dynCustomerName),
+			string(dynUsername),
+			string(dynPassword),
+			string(providerConfig.DynDNS.DynZoneName))
+		if err != nil {
+			return nil, errors.Wrap(err, "error instantiating Dyn challenge solver")
+		}
 	case providerConfig.Akamai != nil:
 		clientToken, err := s.loadSecretData(&providerConfig.Akamai.ClientToken)
 		if err != nil {
@@ -250,6 +279,7 @@ func NewSolver(issuer v1alpha1.GenericIssuer, client kubernetes.Interface, secre
 			cloudflare.NewDNSProviderCredentials,
 			route53.NewDNSProvider,
 			azuredns.NewDNSProviderCredentials,
+			dyndns.NewDynDNSProvider,
 		},
 		ambientCredentials,
 	}

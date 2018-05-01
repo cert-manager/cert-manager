@@ -108,6 +108,23 @@ Cloudflare
        name: cloudflare-api-key-secret
        key: api-key
 
+DynDNS
+==========
+
+.. code-block:: yaml
+
+   dyndns:
+     clientTokenSecretRef:
+         name: dyndns-secret
+         key: DynUsername
+     clientSecretSecretRef:
+         name: dyndns-secret
+         key: DynPassword
+     accessTokenSecretRef:
+         name: dyndns-secret
+         key: DynCustomerName
+     dynzonename: myzone.example.com
+
 Akamai FastDNS
 ==============
 

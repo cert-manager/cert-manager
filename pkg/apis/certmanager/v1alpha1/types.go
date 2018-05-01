@@ -125,8 +125,17 @@ type ACMEIssuerDNS01Provider struct {
 	Cloudflare *ACMEIssuerDNS01ProviderCloudflare `json:"cloudflare,omitempty"`
 	Route53    *ACMEIssuerDNS01ProviderRoute53    `json:"route53,omitempty"`
 	AzureDNS   *ACMEIssuerDNS01ProviderAzureDNS   `json:"azuredns,omitempty"`
+	DynDNS     *ACMEIssuerDNS01ProviderDynDNS     `json:"dyndns,omitempty"`
 }
 
+// ACMEIssuerDNS01ProviderDynDNS is a structure containing the DNS
+// configuration for DynDNS DNS—Zone Record Management API
+type ACMEIssuerDNS01ProviderDynDNS struct {
+	DynUsername        SecretKeySelector `json:"clientTokenSecretRef"`
+	DynPassword        SecretKeySelector `json:"clientSecretSecretRef"`
+	DynCustomerName    SecretKeySelector `json:"accessTokenSecretRef"`
+	DynZoneName        string `json:"dynzonename"`
+}
 // ACMEIssuerDNS01ProviderAkamai is a structure containing the DNS
 // configuration for Akamai DNS—Zone Record Management API
 type ACMEIssuerDNS01ProviderAkamai struct {

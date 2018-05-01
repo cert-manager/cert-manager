@@ -222,7 +222,11 @@ func (a *Acme) presentChallenge(ctx context.Context, cl client.Interface, crt *v
 
 	ok, err := solver.Check(ch)
 	if err != nil {
-		return err
+		glog.V(4).Info("error while doing solver.Check, error: ", err)
+		//TODO: Figure out why I had to remove this statement
+		//return err
+	} else {
+		glog.V(4).Info("no error while doing solver.Check, error: ", err)
 	}
 
 	if ok {
@@ -236,6 +240,9 @@ func (a *Acme) presentChallenge(ctx context.Context, cl client.Interface, crt *v
 	err = solver.Present(ctx, crt, ch)
 	if err != nil {
 		return err
+	} else {
+		return nil
+
 	}
 
 	// We return an error here instead of nil, as the only way for 'presentChallenge'
