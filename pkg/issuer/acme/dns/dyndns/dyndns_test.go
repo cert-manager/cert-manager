@@ -22,7 +22,6 @@ func init () {
 	dynUsername = os.Getenv("DYN_USERNAME")
 	dynPassword = os.Getenv("DYN_PASSWORD")
 	dynZoneName = os.Getenv("DYN_ZONE_NAME")
-	println("here: ", dynCustomerName, dynUsername, dynPassword, dynZoneName)
 	if len(dynCustomerName) > 0 && len(dynUsername) > 0 && len(dynPassword) > 0  && len(dynZoneName) > 0 {
 		dynLiveTest = true
 	}
@@ -32,9 +31,7 @@ func TestLiveDynDnsPresent(t *testing.T) {
 	if !dynLiveTest {
 		t.Skip("skipping live test")
 	}
-	println("here: ", dynCustomerName, dynUsername, dynPassword, dynZoneName)
 	provider, err := NewDynDNSProvider(dynCustomerName, dynUsername, dynPassword, dynZoneName)
-	println("got PRovider, client.Token: ", provider.client.Token)
 	assert.NoError(t, err)
 
 	err = provider.Present(dynZoneName, "testing123123", "123d==")
