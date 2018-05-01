@@ -65,15 +65,6 @@ func NewDynDNSProvider(dynCustomerName, dynUsername, dynPassword, dynZoneName st
 	}
 	client.Token = resp.Data.Token
 
-	/*
-	defer func() {
-		err := client.Logout()
-		if err != nil {
-			log.Fatal(err)
-		}
-	}()
-	*/
-
 	return &DNSProvider{
 		client:      client,
 		zoneName:    dynZoneName,
@@ -161,14 +152,6 @@ func (c *DNSProvider) getHostedZoneName(fqdn string) (string, error) {
 		return "", fmt.Errorf("Zone %s not found for domain %s", z, fqdn)
 	}
 
-	/*
-	_, err = c.zoneClient.Get(c.resourceGroupName, util.UnFqdn(z))
-
-	if err != nil {
-		return "", fmt.Errorf("Zone %s not found in AzureDNS for domain %s. Err: %v", z, fqdn, err)
-	}
-
-	*/
 	return util.UnFqdn(z), nil
 }
 
