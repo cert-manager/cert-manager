@@ -42,10 +42,10 @@ spec:
           - --default-issuer-kind={{ .defaultIssuerKind }}
           {{- end }}
           {{- if .defaultACMEChallengeType }}
-          - --default-acme-challenge-type={{ .defaultACMEChallengeType }}
+          - --default-acme-issuer-challenge-type={{ .defaultACMEChallengeType }}
           {{- end }}
           {{- if .defaultACMEDNS01ChallengeProvider }}
-          - --default-acme-dns01-challenge-provider={{ .defaultACMEDNS01ChallengeProvider }}
+          - --default-acme-issuer-dns01-provider-name={{ .defaultACMEDNS01ChallengeProvider }}
           {{- end }}
           {{- end }}
           env:
