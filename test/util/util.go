@@ -287,6 +287,22 @@ func NewCertManagerACMECertificate(name, secretName, issuerName string, issuerKi
 	}
 }
 
+func NewCertManagerVaultCertificate(name, secretName, issuerName string, issuerKind string) *v1alpha1.Certificate {
+	return &v1alpha1.Certificate{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: name,
+		},
+		Spec: v1alpha1.CertificateSpec{
+			CommonName: "test.domain.com",
+			SecretName: secretName,
+			IssuerRef: v1alpha1.ObjectReference{
+				Name: issuerName,
+				Kind: issuerKind,
+			},
+		},
+	}
+}
+
 func NewIngress(name, secretName string, annotations map[string]string, dnsNames ...string) *extv1beta1.Ingress {
 	return &extv1beta1.Ingress{
 		ObjectMeta: metav1.ObjectMeta{
@@ -354,6 +370,57 @@ func NewCertManagerCAIssuer(name, secretName string) *v1alpha1.Issuer {
 			IssuerConfig: v1alpha1.IssuerConfig{
 				CA: &v1alpha1.CAIssuer{
 					SecretName: secretName,
+				},
+			},
+		},
+	}
+}
+
+func NewCertManagerVaultIssuerToken(name, vaultURL, vaultPath, vaultSecretToken string) *v1alpha1.Issuer {
+	return &v1alpha1.Issuer{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: name,
+		},
+		Spec: v1alpha1.IssuerSpec{
+			IssuerConfig: v1alpha1.IssuerConfig{
+				Vault: &v1alpha1.VaultIssuer{
+					Server: vaultURL,
+					Path:   vaultPath,
+					Auth: v1alpha1.VaultAuth{
+						TokenSecretRef: v1alpha1.SecretKeySelector{
+							Key: "secretkey",
+							LocalObjectReference: v1alpha1.LocalObjectReference{
+								Name: vaultSecretToken,
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+func NewCertManagerVaultIssuerAppRole(name, vaultURL, vaultPath, roleId, vaultSecretAppRole string) *v1alpha1.Issuer {
+	return &v1alpha1.Issuer{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: name,
+		},
+		Spec: v1alpha1.IssuerSpec{
+			IssuerConfig: v1alpha1.IssuerConfig{
+				Vault: &v1alpha1.VaultIssuer{
+					Server: vaultURL,
+					Path:   vaultPath,
+					Auth: v1alpha1.VaultAuth{
+						AppRole: v1alpha1.VaultAppRole{
+							RoleId: roleId,
+							SecretRef: v1alpha1.SecretKeySelector{
+								Key: "secretkey",
+								LocalObjectReference: v1alpha1.LocalObjectReference{
+									Name: vaultSecretAppRole,
+								},
+							},
+						},
+					},
 				},
 			},
 		},

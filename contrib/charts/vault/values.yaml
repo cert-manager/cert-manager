@@ -1,0 +1,4 @@
+image:
+  repository: vault
+  tag: "0.9.3"
+  pullPolicy: IfNotPresent
