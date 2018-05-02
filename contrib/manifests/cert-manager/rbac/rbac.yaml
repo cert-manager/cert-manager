@@ -6,7 +6,7 @@ metadata:
   name: cert-manager
   labels:
     app: cert-manager
-    chart: cert-manager-v0.3.0-alpha.3
+    chart: cert-manager-v0.3.0-alpha.4
     release: cert-manager
     heritage: Tiller
 rules:
@@ -31,7 +31,7 @@ metadata:
   name: cert-manager
   labels:
     app: cert-manager
-    chart: cert-manager-v0.3.0-alpha.3
+    chart: cert-manager-v0.3.0-alpha.4
     release: cert-manager
     heritage: Tiller
 roleRef:
