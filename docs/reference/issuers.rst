@@ -126,6 +126,8 @@ Name                                  Description
 :doc:`CA <issuers/ca/index>`          Supports issuing certificates using a
                                       simple signing keypair, stored in a Secret
                                       in the Kubernetes API server
+:doc:`Vault <issuers/vault/index>`    Supports issuing certificates using
+                                      HashiCorp Vault.
 ===================================   =========================================
 
 Each Issuer resource is of one, and only one type. The type of an Issuer is
@@ -136,6 +138,7 @@ for the ACME issuer, or ``spec.ca`` for the CA based issuer.
 
    issuers/acme/index
    issuers/ca/index
+   issuers/vault/index
 
 .. _`Let's Encrypt`: https://letsencrypt.org
 .. _kube2iam: https://github.com/jtblin/kube2iam

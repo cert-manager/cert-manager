@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/golang/glog"
+	intscheme "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/scheme"
 	"k8s.io/api/core/v1"
 	extv1beta1 "k8s.io/api/extensions/v1beta1"
 	apiextcs "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/typed/apiextensions/v1beta1"
@@ -14,6 +15,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/client-go/kubernetes"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	clientset "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/typed/certmanager/v1alpha1"
@@ -52,7 +54,7 @@ func WaitForIssuerStatusFunc(client clientset.IssuerInterface, name string, fn f
 // WaitForIssuerCondition waits for the status of the named issuer to contain
 // a condition whose type and status matches the supplied one.
 func WaitForIssuerCondition(client clientset.IssuerInterface, name string, condition v1alpha1.IssuerCondition) error {
-	return wait.PollImmediate(500*time.Millisecond, wait.ForeverTestTimeout,
+	pollErr := wait.PollImmediate(500*time.Millisecond, wait.ForeverTestTimeout,
 		func() (bool, error) {
 			glog.V(5).Infof("Waiting for issuer %v condition %#v", name, condition)
 			issuer, err := client.Get(name, metav1.GetOptions{})
@@ -63,12 +65,34 @@ func WaitForIssuerCondition(client clientset.IssuerInterface, name string, condi
 			return issuer.HasCondition(condition), nil
 		},
 	)
+	return wrapErrorWithIssuerStatusCondition(client, pollErr, name, condition.Type)
+}
+
+// try to retrieve last condition to help diagnose tests.
+func wrapErrorWithIssuerStatusCondition(client clientset.IssuerInterface, pollErr error, name string, conditionType v1alpha1.IssuerConditionType) error {
+	if pollErr == nil {
+		return nil
+	}
+
+	issuer, err := client.Get(name, metav1.GetOptions{})
+	if err != nil {
+		return pollErr
+	}
+
+	for _, cond := range issuer.GetStatus().Conditions {
+		if cond.Type == conditionType {
+			return fmt.Errorf("%s: Last Status: '%s' Reason: '%s', Message: '%s'", pollErr.Error(), cond.Status, cond.Reason, cond.Message)
+		}
+
+	}
+
+	return pollErr
 }
 
 // WaitForClusterIssuerCondition waits for the status of the named issuer to contain
 // a condition whose type and status matches the supplied one.
 func WaitForClusterIssuerCondition(client clientset.ClusterIssuerInterface, name string, condition v1alpha1.IssuerCondition) error {
-	return wait.PollImmediate(500*time.Millisecond, wait.ForeverTestTimeout,
+	pollErr := wait.PollImmediate(500*time.Millisecond, wait.ForeverTestTimeout,
 		func() (bool, error) {
 			glog.V(5).Infof("Waiting for clusterissuer %v condition %#v", name, condition)
 			issuer, err := client.Get(name, metav1.GetOptions{})
@@ -79,12 +103,34 @@ func WaitForClusterIssuerCondition(client clientset.ClusterIssuerInterface, name
 			return issuer.HasCondition(condition), nil
 		},
 	)
+	return wrapErrorWithClusterIssuerStatusCondition(client, pollErr, name, condition.Type)
+}
+
+// try to retrieve last condition to help diagnose tests.
+func wrapErrorWithClusterIssuerStatusCondition(client clientset.ClusterIssuerInterface, pollErr error, name string, conditionType v1alpha1.IssuerConditionType) error {
+	if pollErr == nil {
+		return nil
+	}
+
+	issuer, err := client.Get(name, metav1.GetOptions{})
+	if err != nil {
+		return pollErr
+	}
+
+	for _, cond := range issuer.GetStatus().Conditions {
+		if cond.Type == conditionType {
+			return fmt.Errorf("%s: Last Status: '%s' Reason: '%s', Message: '%s'", pollErr.Error(), cond.Status, cond.Reason, cond.Message)
+		}
+
+	}
+
+	return pollErr
 }
 
 // WaitForCertificateCondition waits for the status of the named Certificate to contain
 // a condition whose type and status matches the supplied one.
 func WaitForCertificateCondition(client clientset.CertificateInterface, name string, condition v1alpha1.CertificateCondition, timeout time.Duration) error {
-	return wait.PollImmediate(500*time.Millisecond, timeout,
+	pollErr := wait.PollImmediate(500*time.Millisecond, timeout,
 		func() (bool, error) {
 			glog.V(5).Infof("Waiting for Certificate %v condition %#v", name, condition)
 			certificate, err := client.Get(name, metav1.GetOptions{})
@@ -95,6 +141,52 @@ func WaitForCertificateCondition(client clientset.CertificateInterface, name str
 			return certificate.HasCondition(condition), nil
 		},
 	)
+	return wrapErrorWithCertificateStatusCondition(client, pollErr, name, condition.Type)
+}
+
+// WaitForCertificateEvent waits for an event on the named Certificate to contain
+// an event reason matches the supplied one.
+func WaitForCertificateEvent(client kubernetes.Interface, cert *v1alpha1.Certificate, reason string, timeout time.Duration) error {
+	return wait.PollImmediate(500*time.Millisecond, timeout,
+		func() (bool, error) {
+			glog.V(5).Infof("Waiting for Certificate event %v reason %#v", cert.Name, reason)
+			evts, err := client.Core().Events(cert.Namespace).Search(intscheme.Scheme, cert)
+			if err != nil {
+				return false, fmt.Errorf("error getting Certificate %v: %v", cert.Name, err)
+			}
+
+			return hasEvent(evts, reason), nil
+		},
+	)
+}
+
+func hasEvent(events *v1.EventList, reason string) bool {
+	for _, evt := range events.Items {
+		if evt.Reason == reason {
+			return true
+		}
+	}
+	return false
+}
+
+// try to retrieve last condition to help diagnose tests.
+func wrapErrorWithCertificateStatusCondition(client clientset.CertificateInterface, pollErr error, name string, conditionType v1alpha1.CertificateConditionType) error {
+	if pollErr == nil {
+		return nil
+	}
+
+	certificate, err := client.Get(name, metav1.GetOptions{})
+	if err != nil {
+		return pollErr
+	}
+
+	for _, cond := range certificate.Status.Conditions {
+		if cond.Type == conditionType {
+			return fmt.Errorf("%s: Last Status: '%s' Reason: '%s', Message: '%s'", pollErr.Error(), cond.Status, cond.Reason, cond.Message)
+		}
+	}
+
+	return pollErr
 }
 
 // WaitForCertificateToExist waits for the named certificate to exist
@@ -195,6 +287,22 @@ func NewCertManagerACMECertificate(name, secretName, issuerName string, issuerKi
 	}
 }
 
+func NewCertManagerVaultCertificate(name, secretName, issuerName string, issuerKind string) *v1alpha1.Certificate {
+	return &v1alpha1.Certificate{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: name,
+		},
+		Spec: v1alpha1.CertificateSpec{
+			CommonName: "test.domain.com",
+			SecretName: secretName,
+			IssuerRef: v1alpha1.ObjectReference{
+				Name: issuerName,
+				Kind: issuerKind,
+			},
+		},
+	}
+}
+
 func NewIngress(name, secretName string, annotations map[string]string, dnsNames ...string) *extv1beta1.Ingress {
 	return &extv1beta1.Ingress{
 		ObjectMeta: metav1.ObjectMeta{
@@ -262,6 +370,57 @@ func NewCertManagerCAIssuer(name, secretName string) *v1alpha1.Issuer {
 			IssuerConfig: v1alpha1.IssuerConfig{
 				CA: &v1alpha1.CAIssuer{
 					SecretName: secretName,
+				},
+			},
+		},
+	}
+}
+
+func NewCertManagerVaultIssuerToken(name, vaultURL, vaultPath, vaultSecretToken string) *v1alpha1.Issuer {
+	return &v1alpha1.Issuer{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: name,
+		},
+		Spec: v1alpha1.IssuerSpec{
+			IssuerConfig: v1alpha1.IssuerConfig{
+				Vault: &v1alpha1.VaultIssuer{
+					Server: vaultURL,
+					Path:   vaultPath,
+					Auth: v1alpha1.VaultAuth{
+						TokenSecretRef: v1alpha1.SecretKeySelector{
+							Key: "secretkey",
+							LocalObjectReference: v1alpha1.LocalObjectReference{
+								Name: vaultSecretToken,
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+func NewCertManagerVaultIssuerAppRole(name, vaultURL, vaultPath, roleId, vaultSecretAppRole string) *v1alpha1.Issuer {
+	return &v1alpha1.Issuer{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: name,
+		},
+		Spec: v1alpha1.IssuerSpec{
+			IssuerConfig: v1alpha1.IssuerConfig{
+				Vault: &v1alpha1.VaultIssuer{
+					Server: vaultURL,
+					Path:   vaultPath,
+					Auth: v1alpha1.VaultAuth{
+						AppRole: v1alpha1.VaultAppRole{
+							RoleId: roleId,
+							SecretRef: v1alpha1.SecretKeySelector{
+								Key: "secretkey",
+								LocalObjectReference: v1alpha1.LocalObjectReference{
+									Name: vaultSecretAppRole,
+								},
+							},
+						},
+					},
 				},
 			},
 		},

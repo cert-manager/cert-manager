@@ -1,0 +1,34 @@
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  labels:
+    app: vault
+  name: vault
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: vault
+    spec:
+      containers:
+      - name: vault
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        ports:
+        - containerPort: 8200
+          name: vaultport
+          protocol: TCP
+        securityContext:
+         capabilities:
+           add:
+             - IPC_LOCK
+        env:
+        - name: VAULT_DEV_ROOT_TOKEN_ID
+          value: vault-root-token
+        readinessProbe:
+          httpGet:
+            path: /v1/sys/health
+            port: 8200

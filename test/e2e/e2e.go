@@ -62,6 +62,9 @@ func RunE2ETests(t *testing.T) {
 		extraArgs = append(extraArgs, "--set", "image.tag="+framework.TestContext.PebbleImageTag)
 	}
 	InstallHelmChart(t, "pebble", "./contrib/charts/pebble", "pebble", "./test/fixtures/pebble-values.yaml", extraArgs...)
+
+	InstallHelmChart(t, "vault", "./contrib/charts/vault", "vault", "./test/fixtures/vault-values.yaml")
+
 	glog.Infof("Starting e2e run %q on Ginkgo node %d", framework.RunId, config.GinkgoConfig.ParallelNode)
 
 	var r []ginkgo.Reporter
