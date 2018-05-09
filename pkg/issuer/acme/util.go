@@ -37,3 +37,10 @@ func authzIDListToStrings(auths []acme.AuthzID) []string {
 	}
 	return ret
 }
+
+var acmev1ToV2Mappings = map[string]string{
+	"https://acme-v01.api.letsencrypt.org/directory":      "https://acme-v02.api.letsencrypt.org/directory",
+	"https://acme-staging.api.letsencrypt.org/directory":  "https://acme-staging-v02.api.letsencrypt.org/directory",
+	"https://acme-v01.api.letsencrypt.org/directory/":     "https://acme-v02.api.letsencrypt.org/directory",
+	"https://acme-staging.api.letsencrypt.org/directory/": "https://acme-staging-v02.api.letsencrypt.org/directory",
+}
