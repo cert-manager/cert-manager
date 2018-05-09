@@ -30,7 +30,11 @@ spec:
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           args:
+        {{- if .Values.clusterResourceNamespace }}
+          - --cluster-resource-namespace={{ .Values.clusterResourceNamespace }}
+        {{- else }}
           - --cluster-resource-namespace=$(POD_NAMESPACE)
+        {{- end }}
         {{- if .Values.extraArgs }}
 {{ toYaml .Values.extraArgs | indent 10 }}
         {{- end }}
