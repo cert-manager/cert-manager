@@ -24,6 +24,9 @@ full list of the available options can be found in the `Helm chart README`_.
    If your cluster does not use RBAC (Role Based Access Control), you
    will need to disable creation of RBAC resources by adding
    ``--set rbac.create=false`` to your ``helm install`` command above.
+   
+.. note::
+   If it tries to connect to localhost, instead of your actual Kubernetes cluster, check your kubectl context with ``kubectl config current-context``.
 
 With static manifests
 =====================
