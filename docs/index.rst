@@ -30,6 +30,7 @@ a source of references when seeking help with the project.
 
    getting-started/index
    tutorials/index
+   admin/index
    reference/index
    devel/index
 
