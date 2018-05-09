@@ -34,6 +34,13 @@ const (
 // Setup will verify an existing ACME registration, or create one if not
 // already registered.
 func (a *Acme) Setup(ctx context.Context) error {
+	if newURL, ok := acmev1ToV2Mappings[a.issuer.GetSpec().ACME.Server]; ok {
+		a.issuer.UpdateStatusCondition(v1alpha1.IssuerConditionReady, v1alpha1.ConditionFalse, errorInvalidConfig, fmt.Sprintf("Your ACME server URL is set to a v1 endpoint (%s). "+
+			"You should update the spec.acme.server field to %q", a.issuer.GetSpec().ACME.Server, newURL))
+		// return nil so that Setup only gets called again after the spec is updated
+		return nil
+	}
+
 	cl, err := a.acmeClient()
 	if k8sErrors.IsNotFound(err) || errors.IsInvalidData(err) {
 		glog.Infof("%s: generating acme account private key %q", a.issuer.GetObjectMeta().Name, a.issuer.GetSpec().ACME.PrivateKey.Name)
