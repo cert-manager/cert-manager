@@ -444,7 +444,11 @@ func (a *Acme) shouldAttemptValidation(ctx context.Context, cl client.Interface,
 			Type:   v1alpha1.CertificateConditionValidationFailed,
 			Status: v1alpha1.ConditionTrue,
 		}) {
-			crt.UpdateStatusCondition(v1alpha1.CertificateConditionValidationFailed, v1alpha1.ConditionTrue, "OrderFailed", fmt.Sprintf("Order failed: %v", order.Error.Error()), true)
+			var extraText = ""
+			if order.Error != nil {
+				extraText = fmt.Sprintf(": %v", order.Error.Error())
+			}
+			crt.UpdateStatusCondition(v1alpha1.CertificateConditionValidationFailed, v1alpha1.ConditionTrue, "OrderFailed", "Order status is invalid"+extraText, true)
 		}
 
 		// we know that we'll be able to find the appropriate condition because
