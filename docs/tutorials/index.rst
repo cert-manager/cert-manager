@@ -11,3 +11,4 @@ cert-manager.
    acme/index
    ca/index
    vault/index
+   upgrading/index
