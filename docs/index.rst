@@ -7,6 +7,7 @@
 Welcome to cert-manager's documentation!
 ========================================
 
+
 cert-manager is a native Kubernetes_ certificate management controller.
 It can help with issuing certificates from a variety of sources, such as
 `Let's Encrypt`_, `HashiCorp Vault`_ or a simple signing keypair.
