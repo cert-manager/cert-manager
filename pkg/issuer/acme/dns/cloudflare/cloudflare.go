@@ -5,6 +5,7 @@ package cloudflare
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -60,6 +61,23 @@ func (c *DNSProvider) Present(domain, token, keyAuth string) error {
 	zoneID, err := c.getHostedZoneID(fqdn)
 	if err != nil {
 		return err
+	}
+
+	record, err := c.findTxtRecord(fqdn)
+	if err != nil && err != errNoExistingRecord {
+		// this is a real error
+		return err
+	}
+	if record != nil {
+		if record.Content == value {
+			// the record is already set to the desired value
+			return nil
+		}
+
+		_, err = c.makeRequest("DELETE", fmt.Sprintf("/zones/%s/dns_records/%s", record.ZoneID, record.ID), nil)
+		if err != nil {
+			return err
+		}
 	}
 
 	rec := cloudFlareRecord{
@@ -129,6 +147,8 @@ func (c *DNSProvider) getHostedZoneID(fqdn string) (string, error) {
 	return hostedZone[0].ID, nil
 }
 
+var errNoExistingRecord = errors.New("No existing record found")
+
 func (c *DNSProvider) findTxtRecord(fqdn string) (*cloudFlareRecord, error) {
 	zoneID, err := c.getHostedZoneID(fqdn)
 	if err != nil {
@@ -156,7 +176,7 @@ func (c *DNSProvider) findTxtRecord(fqdn string) (*cloudFlareRecord, error) {
 		}
 	}
 
-	return nil, fmt.Errorf("No existing record found for %s", fqdn)
+	return nil, errNoExistingRecord
 }
 
 func (c *DNSProvider) makeRequest(method, uri string, body io.Reader) (json.RawMessage, error) {
