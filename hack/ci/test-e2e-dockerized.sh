@@ -19,9 +19,7 @@ kubectl create serviceaccount -n kube-system tiller
 # Bind the tiller service account to the cluster-admin role
 kubectl create clusterrolebinding tiller-binding --clusterrole=cluster-admin --serviceaccount kube-system:tiller
 # Deploy tiller
-helm init --service-account=tiller
-
-while true; do if helm version; then break; fi; echo "Waiting 5s for tiller to be ready"; sleep 5; done
+helm init --wait --service-account=tiller
 
 echo "Exposing nginx-ingress service with a stable IP (10.80.0.123)"
 # Setup service for nginx ingress controller. A DNS entry for *.certmanager.kubernetes.network has been setup to point to 10.80.0.123 for e2e tests
