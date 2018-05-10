@@ -21,6 +21,8 @@ kubectl create clusterrolebinding tiller-binding --clusterrole=cluster-admin --s
 # Deploy tiller
 helm init --service-account=tiller
 
+while true; do if helm version; then break; fi; echo "Waiting 5s for tiller to be ready"; sleep 5; done
+
 echo "Exposing nginx-ingress service with a stable IP (10.80.0.123)"
 # Setup service for nginx ingress controller. A DNS entry for *.certmanager.kubernetes.network has been setup to point to 10.80.0.123 for e2e tests
 helm repo update
