@@ -11,6 +11,7 @@ set -o xtrace
 # github.com/jetstack/test-infra/scenarios/cert-manager_e2e.py
 
 while true; do if kubectl get nodes; then break; fi; echo "Waiting 5s for kubernetes to be ready..."; sleep 5; done
+while true; do if kubectl get namespace kube-system; then break; fi; echo "Waiting 5s for kube-system to exist"; sleep 5; done
 
 echo "Installing helm with cluster-admin privileges..."
 # Create a service account for tiller
