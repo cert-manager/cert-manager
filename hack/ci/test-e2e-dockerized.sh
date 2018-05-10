@@ -27,6 +27,7 @@ echo "Exposing nginx-ingress service with a stable IP (10.80.0.123)"
 # Setup service for nginx ingress controller. A DNS entry for *.certmanager.kubernetes.network has been setup to point to 10.80.0.123 for e2e tests
 helm repo update
 helm install stable/nginx-ingress --wait --version 0.18.1 \
+    --set rbac.create=true \
     --set controller.service.clusterIP=10.80.0.123
 
 cd /go/src/github.com/jetstack/cert-manager
