@@ -15,6 +15,10 @@ createCustomResource: true
 # used. This namespace will not be automatically created by the Helm chart.
 clusterResourceNamespace: ""
 
+leaderElection:
+  # Override the namespace used to store the ConfigMap for leader election
+  namespace: ""
+
 certificateResourceShortNames: ["cert", "certs"]
 
 rbac:

@@ -35,6 +35,11 @@ spec:
         {{- else }}
           - --cluster-resource-namespace=$(POD_NAMESPACE)
         {{- end }}
+        {{- if .Values.leaderElection.namespace }}
+          - --leader-election-namespace={{ .Values.leaderElection.namespace }}
+        {{- else }}
+          - --leader-election-namespace=$(POD_NAMESPACE)
+        {{- end }}
         {{- if .Values.extraArgs }}
 {{ toYaml .Values.extraArgs | indent 10 }}
         {{- end }}
