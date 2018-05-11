@@ -95,28 +95,35 @@ Once we have created the above Issuer we can use it to obtain a certificate.
      secretName: example-com-tls
      issuerRef:
        name: letsencrypt-staging
-     commonName: example.com
+     commonName: '*.example.com'
      dnsNames:
-     - www.example.com
+     - example.com
+     - foo.com
      acme:
        config:
        - dns01:
            provider: prod-dns
          domains:
+         - '*.example.com'
          - example.com
        - dns01:
            provider: cf-dns
          domains:
-         - www.example.com
+         - foo.com
 
 The Certificate resource describes our desired certificate and the possible
-methods that can be used to obtain it. You can learn more about the Certificate
-resource in the :doc:`reference docs </reference/certificates>`.
+methods that can be used to obtain it.
+You can obtain certificates for wildcard domains just like any other. Make sure to
+wrap wildcard domains with asterisks in your YAML resources, to avoid formatting issues.
+If you specify both ``example.com`` and ``*.example.com`` on the same Certificate,
+it will take slightly longer to perform validation as each domain will have to be
+validated one after the other.
+You can learn more about the Certificate resource in the :doc:`reference docs </reference/certificates>`.
 If the certificate is obtained successfully, the resulting key pair will be
 stored in a secret called ``example-com-tls`` in the same namespace as the Certificate.
 
-The certificate will have a common name of ``example.com`` and the
-`Subject Alternative Names `_ (SANs) will be ``example.com`` and ``www.example.com``.
+The certificate will have a common name of ``*.example.com`` and the
+`Subject Alternative Names `_ (SANs) will be ``example.com`` and ``foo.com``.
 
 In our Certificate we have referenced the ``letsencrypt-staging`` Issuer above.
 The Issuer must be in the same namespace as the Certificate.
@@ -151,8 +158,9 @@ successfully using ``kubectl describe``:
      Type    Reason          Age      From          Message
      ----    ------          ----     ----          -------
      Normal  CreateOrder     57m      cert-manager  Created new ACME order, attempting validation...
+     Normal  DomainVerified  55m      cert-manager  Domain "*.example.com" verified with "dns-01" validation
      Normal  DomainVerified  55m      cert-manager  Domain "example.com" verified with "dns-01" validation
-     Normal  DomainVerified  55m      cert-manager  Domain "www.example.com" verified with "dns-01" validation
+     Normal  DomainVerified  55m      cert-manager  Domain "foo.com" verified with "dns-01" validation
      Normal  IssueCert       55m      cert-manager  Issuing certificate...
      Normal  CertObtained    55m      cert-manager  Obtained certificate from ACME server
      Normal  CertIssued      55m      cert-manager  Certificate issued successfully
