@@ -27,6 +27,12 @@
 
 [[projects]]
   branch = "master"
+  name = "github.com/andrexus/xmlrpc"
+  packages = ["."]
+  revision = "748f22b60198b74de8f11c9c7f11d721b9ba2a4b"
+
+[[projects]]
+  branch = "master"
   name = "github.com/aws/aws-sdk-go"
   packages = [
     "aws",
@@ -407,6 +413,12 @@
   name = "github.com/spf13/pflag"
   packages = ["."]
   revision = "e57e3eeb33f795204c1ca35f56c44f83227c6e66"
+
+[[projects]]
+  name = "github.com/steigr/goinwx"
+  packages = ["."]
+  revision = "94bfa530eb607e1e1efdd26fe2e539b4ec787a9e"
+  version = "v0.3.3"
 
 [[projects]]
   name = "github.com/stretchr/testify"
@@ -873,6 +885,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "765f22a433adb68a682e5ae3cdb4dfad6aadfdd4ac4b67880139833f187f724e"
+  inputs-digest = "f427e3275e464052c4c278f48493a88c38a2278c5252f59e46a5ee5fa45d7d2a"
   solver-name = "gps-cdcl"
   solver-version = 1

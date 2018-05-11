@@ -18,6 +18,7 @@ import (
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/azuredns"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/clouddns"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/cloudflare"
+	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/inwx"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/route53"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
 )
@@ -232,6 +233,22 @@ func (s *Solver) solverForIssuerProvider(providerName string) (solver, error) {
 			providerConfig.AzureDNS.ResourceGroupName,
 			providerConfig.AzureDNS.HostedZoneName,
 		)
+	case providerConfig.Inwx != nil:
+		password, err := s.secretLister.Secrets(s.resourceNamespace).Get(providerConfig.Inwx.Password.Name)
+		if err != nil {
+			return nil, fmt.Errorf("error getting inwx password: %s", err.Error())
+		}
+		passwordBytes, ok := password.Data[providerConfig.Inwx.Password.Key]
+		if !ok {
+			return nil, fmt.Errorf("error getting inwx password: password '%s' not found in secret", providerConfig.Inwx.Password.Key)
+		}
+		impl, err = inwx.NewDNSProviderCredentials(
+			providerConfig.Inwx.Username,
+			string(passwordBytes),
+		)
+		if err != nil {
+			return nil, fmt.Errorf("error instantiating inwx challenge solver: %s", err.Error())
+		}
 	default:
 		return nil, fmt.Errorf("no dns provider config specified for provider %q", providerName)
 	}

@@ -151,6 +151,7 @@ type ACMEIssuerDNS01Provider struct {
 	Cloudflare *ACMEIssuerDNS01ProviderCloudflare `json:"cloudflare,omitempty"`
 	Route53    *ACMEIssuerDNS01ProviderRoute53    `json:"route53,omitempty"`
 	AzureDNS   *ACMEIssuerDNS01ProviderAzureDNS   `json:"azuredns,omitempty"`
+	Inwx       *ACMEIssuerDNS01ProviderInwx       `json:"inwx,omitempty"`
 }
 
 // ACMEIssuerDNS01ProviderAkamai is a structure containing the DNS
@@ -196,6 +197,13 @@ type ACMEIssuerDNS01ProviderAzureDNS struct {
 
 	// + optional
 	HostedZoneName string `json:"hostedZoneName"`
+}
+
+// ACMEIssuerDNS01ProviderInwx is a structure containing the Inwx
+// configuration for Inwx
+type ACMEIssuerDNS01ProviderInwx struct {
+	Username string            `json:"username"`
+	Password SecretKeySelector `json:"passwordRef"`
 }
 
 // IssuerStatus contains status information about an Issuer
