@@ -169,7 +169,13 @@ func (s *Solver) solverForIssuerProvider(providerName string) (solver, error) {
 		if err != nil {
 			return nil, fmt.Errorf("error getting clouddns service account: %s", err.Error())
 		}
-		saBytes := saSecret.Data[providerConfig.CloudDNS.ServiceAccount.Key]
+
+		saKey := providerConfig.CloudDNS.ServiceAccount.Key
+		saBytes := saSecret.Data[saKey]
+
+		if len(saBytes) == 0 {
+			return nil, fmt.Errorf("specfied key %q not found in secret %s/%s", saKey, saSecret.Namespace, saSecret.Name)
+		}
 
 		impl, err = s.dnsProviderConstructors.cloudDNS(providerConfig.CloudDNS.Project, saBytes)
 		if err != nil {
