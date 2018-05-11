@@ -83,7 +83,7 @@ type IssuerSpec struct {
 type IssuerConfig struct {
 	ACME  *ACMEIssuer  `json:"acme,omitempty"`
 	CA    *CAIssuer    `json:"ca,omitempty"`
-	Vault *VaultIssuer `json:"vault,omitempty""`
+	Vault *VaultIssuer `json:"vault,omitempty"`
 }
 
 type VaultIssuer struct {
