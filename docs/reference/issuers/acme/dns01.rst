@@ -48,6 +48,7 @@ Google CloudDNS
 .. code-block:: yaml
 
    clouddns:
+     project: project-name
      serviceAccountSecretRef:
        name: prod-clouddns-svc-acct-secret
        key: service-account.json
