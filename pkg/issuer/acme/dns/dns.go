@@ -55,16 +55,7 @@ type Solver struct {
 }
 
 func (s *Solver) Present(ctx context.Context, _ *v1alpha1.Certificate, ch v1alpha1.ACMEOrderChallenge) error {
-	if ch.ACMESolverConfig.DNS01 == nil {
-		return fmt.Errorf("challenge dns config must be specified")
-	}
-
-	providerName := ch.ACMESolverConfig.DNS01.Provider
-	if providerName == "" {
-		return fmt.Errorf("dns01 challenge provider name must be set")
-	}
-
-	slv, err := s.solverForIssuerProvider(providerName)
+	slv, err := solverForChallenge(ch)
 	if err != nil {
 		return err
 	}
@@ -94,16 +85,7 @@ func (s *Solver) Check(ch v1alpha1.ACMEOrderChallenge) (bool, error) {
 }
 
 func (s *Solver) CleanUp(ctx context.Context, _ *v1alpha1.Certificate, ch v1alpha1.ACMEOrderChallenge) error {
-	if ch.ACMESolverConfig.DNS01 == nil {
-		return fmt.Errorf("challenge dns config must be specified")
-	}
-
-	providerName := ch.ACMESolverConfig.DNS01.Provider
-	if providerName == "" {
-		return fmt.Errorf("dns01 challenge provider name must be set")
-	}
-
-	slv, err := s.solverForIssuerProvider(providerName)
+	slv, err := solverForChallenge(ch)
 	if err != nil {
 		return err
 	}
@@ -122,6 +104,21 @@ func (s *Solver) providerForDomain(crt *v1alpha1.Certificate, domain string) (st
 		return "", fmt.Errorf("dns-01 challenge provider for domain %q is not configured. Ensure the Certificate resource configures a dns-01 provider for the domain", domain)
 	}
 	return cfg.Provider, nil
+}
+
+// solverForChallenge returns a Solver for the given
+// ACMEOrderChallenge
+func (s *Solver) solverForChallenge(ch v1alpha1.ACMEOrderChallenge) (solver, error) {
+	if ch.ACMESolverConfig.DNS01 == nil {
+		return fmt.Errorf("challenge dns config must be specified")
+	}
+
+	providerName := ch.ACMESolverConfig.DNS01.Provider
+	if providerName == "" {
+		return fmt.Errorf("dns01 challenge provider name must be set")
+	}
+
+	return s.solverForIssuerProvider(providerName)
 }
 
 // solverForIssuerProvider returns a Solver for the given providerName.
