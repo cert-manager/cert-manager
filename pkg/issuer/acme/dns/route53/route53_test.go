@@ -9,6 +9,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/route53"
+	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -40,7 +41,7 @@ func makeRoute53Provider(ts *httptest.Server) *DNSProvider {
 	}
 
 	client := route53.New(session.New(config))
-	return &DNSProvider{client: client}
+	return &DNSProvider{nameservers: util.RecursiveNameservers, client: client}
 }
 
 func TestAmbientCredentialsFromEnv(t *testing.T) {
@@ -49,7 +50,7 @@ func TestAmbientCredentialsFromEnv(t *testing.T) {
 	os.Setenv("AWS_REGION", "us-east-1")
 	defer restoreRoute53Env()
 
-	provider, err := NewDNSProvider("", "", "", "", true)
+	provider, err := NewDNSProvider(util.RecursiveNameservers, "", "", "", "", true)
 	assert.NoError(t, err, "Expected no error constructing DNSProvider")
 
 	_, err = provider.client.Config.Credentials.Get()
@@ -63,7 +64,7 @@ func TestNoCredentialsFromEnv(t *testing.T) {
 	os.Setenv("AWS_REGION", "us-east-1")
 	defer restoreRoute53Env()
 
-	_, err := NewDNSProvider("", "", "", "", false)
+	_, err := NewDNSProvider(util.RecursiveNameservers, "", "", "", "", false)
 	assert.Error(t, err, "Expected error constructing DNSProvider with no credentials and not ambient")
 }
 
@@ -71,7 +72,7 @@ func TestAmbientRegionFromEnv(t *testing.T) {
 	os.Setenv("AWS_REGION", "us-east-1")
 	defer restoreRoute53Env()
 
-	provider, err := NewDNSProvider("", "", "", "", true)
+	provider, err := NewDNSProvider(util.RecursiveNameservers, "", "", "", "", true)
 	assert.NoError(t, err, "Expected no error constructing DNSProvider")
 
 	assert.Equal(t, "us-east-1", *provider.client.Config.Region, "Expected Region to be set from environment")
@@ -81,7 +82,7 @@ func TestNoRegionFromEnv(t *testing.T) {
 	os.Setenv("AWS_REGION", "us-east-1")
 	defer restoreRoute53Env()
 
-	provider, err := NewDNSProvider("marx", "swordfish", "", "", false)
+	provider, err := NewDNSProvider(util.RecursiveNameservers, "marx", "swordfish", "", "", false)
 	assert.NoError(t, err, "Expected no error constructing DNSProvider")
 
 	assert.Equal(t, "", *provider.client.Config.Region, "Expected Region to not be set from environment")

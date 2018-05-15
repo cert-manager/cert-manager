@@ -18,8 +18,9 @@ import (
 
 // DNSProvider is an implementation of the DNSProvider interface.
 type DNSProvider struct {
-	project string
-	client  *dns.Service
+	nameservers []string
+	project     string
+	client      *dns.Service
 }
 
 // NewDNSProvider returns a DNSProvider instance configured for Google Cloud
@@ -29,14 +30,14 @@ type DNSProvider struct {
 func NewDNSProvider() (*DNSProvider, error) {
 	project := os.Getenv("GCE_PROJECT")
 	if saFile, ok := os.LookupEnv("GCE_SERVICE_ACCOUNT_FILE"); ok {
-		return NewDNSProviderServiceAccount(project, saFile)
+		return NewDNSProviderServiceAccount(util.RecursiveNameservers, project, saFile)
 	}
-	return NewDNSProviderCredentials(project)
+	return NewDNSProviderCredentials(util.RecursiveNameservers, project)
 }
 
 // NewDNSProviderCredentials uses the supplied credentials to return a
 // DNSProvider instance configured for Google Cloud DNS.
-func NewDNSProviderCredentials(project string) (*DNSProvider, error) {
+func NewDNSProviderCredentials(nameservers []string, project string) (*DNSProvider, error) {
 	if project == "" {
 		return nil, fmt.Errorf("Google Cloud project name missing")
 	}
@@ -50,14 +51,15 @@ func NewDNSProviderCredentials(project string) (*DNSProvider, error) {
 		return nil, fmt.Errorf("Unable to create Google Cloud DNS service: %v", err)
 	}
 	return &DNSProvider{
-		project: project,
-		client:  svc,
+		nameservers: nameservers,
+		project:     project,
+		client:      svc,
 	}, nil
 }
 
 // NewDNSProviderServiceAccount uses the supplied service account JSON file to
 // return a DNSProvider instance configured for Google Cloud DNS.
-func NewDNSProviderServiceAccount(project string, saFile string) (*DNSProvider, error) {
+func NewDNSProviderServiceAccount(nameservers []string, project string, saFile string) (*DNSProvider, error) {
 	if project == "" {
 		return nil, fmt.Errorf("Google Cloud project name missing")
 	}
@@ -69,12 +71,12 @@ func NewDNSProviderServiceAccount(project string, saFile string) (*DNSProvider, 
 	if err != nil {
 		return nil, fmt.Errorf("Unable to read Service Account file: %v", err)
 	}
-	return NewDNSProviderServiceAccountBytes(project, dat)
+	return NewDNSProviderServiceAccountBytes(nameservers, project, dat)
 }
 
 // NewDNSProviderServiceAccountBytes uses the supplied service account JSON
 // file data to return a DNSProvider instance configured for Google Cloud DNS.
-func NewDNSProviderServiceAccountBytes(project string, saBytes []byte) (*DNSProvider, error) {
+func NewDNSProviderServiceAccountBytes(nameservers []string, project string, saBytes []byte) (*DNSProvider, error) {
 	if project == "" {
 		return nil, fmt.Errorf("Google Cloud project name missing")
 	}
@@ -93,8 +95,9 @@ func NewDNSProviderServiceAccountBytes(project string, saBytes []byte) (*DNSProv
 		return nil, fmt.Errorf("Unable to create Google Cloud DNS service: %v", err)
 	}
 	return &DNSProvider{
-		project: project,
-		client:  svc,
+		nameservers: nameservers,
+		project:     project,
+		client:      svc,
 	}, nil
 }
 
@@ -177,9 +180,13 @@ func (c *DNSProvider) Timeout() (timeout, interval time.Duration) {
 	return 180 * time.Second, 5 * time.Second
 }
 
+func (a *DNSProvider) GetNameservers() []string {
+	return a.nameservers
+}
+
 // getHostedZone returns the managed-zone
 func (c *DNSProvider) getHostedZone(domain string) (string, error) {
-	authZone, err := util.FindZoneByFqdn(util.ToFqdn(domain), util.RecursiveNameservers)
+	authZone, err := util.FindZoneByFqdn(util.ToFqdn(domain), c.nameservers)
 	if err != nil {
 		return "", err
 	}

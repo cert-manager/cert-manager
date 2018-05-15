@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -88,7 +89,7 @@ func (r httpResponder) RoundTrip(req *http.Request) (*http.Response, error) {
 }
 
 func TestPresent(t *testing.T) {
-	akamai, err := NewDNSProvider("akamai.example.com", "token", "secret", "access-token")
+	akamai, err := NewDNSProvider(util.RecursiveNameservers, "akamai.example.com", "token", "secret", "access-token")
 	assert.NoError(t, err)
 
 	var response []byte
@@ -103,7 +104,7 @@ func TestPresent(t *testing.T) {
 }
 
 func TestCleanUp(t *testing.T) {
-	akamai, err := NewDNSProvider("akamai.example.com", "token", "secret", "access-token")
+	akamai, err := NewDNSProvider(util.RecursiveNameservers, "akamai.example.com", "token", "secret", "access-token")
 	assert.NoError(t, err)
 
 	var response []byte
@@ -154,7 +155,7 @@ func mockTransport(t *testing.T, akamai *DNSProvider, domain, data string, respo
 		t.Fatalf("unexpected method: %v", req.Method)
 		return nil, nil
 	})
-	akamai.findHostedDomainByFqdn = func(fqdn string) (string, error) {
+	akamai.findHostedDomainByFqdn = func(fqdn string, nameservers []string) (string, error) {
 		if !strings.HasSuffix(fqdn, domain+".") {
 			t.Fatalf("unexpected fqdn: %s", fqdn)
 		}

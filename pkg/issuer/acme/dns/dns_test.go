@@ -16,6 +16,7 @@ import (
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/clouddns"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/cloudflare"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/route53"
+	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
 )
 
 type fixture struct {
@@ -60,23 +61,23 @@ func newFakeDNSProviders() *fakeDNSProviders {
 		calls: []fakeDNSProviderCall{},
 	}
 	f.constructors = dnsProviderConstructors{
-		cloudDNS: func(project string, serviceAccount []byte) (*clouddns.DNSProvider, error) {
-			f.call("clouddns", project, serviceAccount)
+		cloudDNS: func(nameservers []string, project string, serviceAccount []byte) (*clouddns.DNSProvider, error) {
+			f.call("clouddns", nameservers, project, serviceAccount)
 			return nil, nil
 		},
-		cloudFlare: func(email, apikey string) (*cloudflare.DNSProvider, error) {
-			f.call("cloudflare", email, apikey)
+		cloudFlare: func(nameservers []string, email, apikey string) (*cloudflare.DNSProvider, error) {
+			f.call("cloudflare", nameservers, email, apikey)
 			if email == "" || apikey == "" {
 				return nil, errors.New("invalid email or apikey")
 			}
 			return nil, nil
 		},
-		route53: func(accessKey, secretKey, hostedZoneID, region string, ambient bool) (*route53.DNSProvider, error) {
-			f.call("route53", accessKey, secretKey, hostedZoneID, region, ambient)
+		route53: func(nameservers []string, accessKey, secretKey, hostedZoneID, region string, ambient bool) (*route53.DNSProvider, error) {
+			f.call("route53", nameservers, accessKey, secretKey, hostedZoneID, region, ambient)
 			return nil, nil
 		},
-		azureDNS: func(clientID, clientSecret, subscriptionID, tenentID, resourceGroupName, hostedZoneName string) (*azuredns.DNSProvider, error) {
-			f.call("azuredns", clientID, clientSecret, subscriptionID, tenentID, resourceGroupName, hostedZoneName)
+		azureDNS: func(nameservers []string, clientID, clientSecret, subscriptionID, tenentID, resourceGroupName, hostedZoneName string) (*azuredns.DNSProvider, error) {
+			f.call("azuredns", nameservers, clientID, clientSecret, subscriptionID, tenentID, resourceGroupName, hostedZoneName)
 			return nil, nil
 		},
 	}
@@ -339,7 +340,7 @@ func TestRoute53TrimCreds(t *testing.T) {
 	expectedR53Call := []fakeDNSProviderCall{
 		{
 			name: "route53",
-			args: []interface{}{"test_with_spaces", "AKIENDINNEWLINE", "", "us-west-2", false},
+			args: []interface{}{util.RecursiveNameservers, "test_with_spaces", "AKIENDINNEWLINE", "", "us-west-2", false},
 		},
 	}
 
@@ -381,7 +382,7 @@ func TestRoute53AmbientCreds(t *testing.T) {
 			result{
 				expectedCall: &fakeDNSProviderCall{
 					name: "route53",
-					args: []interface{}{"", "", "", "us-west-2", true},
+					args: []interface{}{util.RecursiveNameservers, "", "", "", "us-west-2", true},
 				},
 			},
 		},
@@ -408,7 +409,7 @@ func TestRoute53AmbientCreds(t *testing.T) {
 			result{
 				expectedCall: &fakeDNSProviderCall{
 					name: "route53",
-					args: []interface{}{"", "", "", "us-west-2", false},
+					args: []interface{}{util.RecursiveNameservers, "", "", "", "us-west-2", false},
 				},
 			},
 		},

@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -32,7 +33,7 @@ func restoreCloudFlareEnv() {
 func TestNewDNSProviderValid(t *testing.T) {
 	os.Setenv("CLOUDFLARE_EMAIL", "")
 	os.Setenv("CLOUDFLARE_API_KEY", "")
-	_, err := NewDNSProviderCredentials("123", "123")
+	_, err := NewDNSProviderCredentials(util.RecursiveNameservers, "123", "123")
 	assert.NoError(t, err)
 	restoreCloudFlareEnv()
 }
@@ -58,7 +59,7 @@ func TestCloudFlarePresent(t *testing.T) {
 		t.Skip("skipping live test")
 	}
 
-	provider, err := NewDNSProviderCredentials(cflareEmail, cflareAPIKey)
+	provider, err := NewDNSProviderCredentials(util.RecursiveNameservers, cflareEmail, cflareAPIKey)
 	assert.NoError(t, err)
 
 	err = provider.Present(cflareDomain, "", "123d==")
@@ -72,7 +73,7 @@ func TestCloudFlareCleanUp(t *testing.T) {
 
 	time.Sleep(time.Second * 2)
 
-	provider, err := NewDNSProviderCredentials(cflareEmail, cflareAPIKey)
+	provider, err := NewDNSProviderCredentials(util.RecursiveNameservers, cflareEmail, cflareAPIKey)
 	assert.NoError(t, err)
 
 	err = provider.CleanUp(cflareDomain, "", "123d==")

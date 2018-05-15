@@ -27,6 +27,7 @@ const (
 
 // DNSProvider implements the util.ChallengeProvider interface
 type DNSProvider struct {
+	nameservers  []string
 	client       *route53.Route53
 	hostedZoneID string
 }
@@ -56,7 +57,7 @@ func (d customRetryer) RetryRules(r *request.Request) time.Duration {
 // NewDNSProvider returns a DNSProvider instance configured for the AWS
 // Route 53 service using static credentials from its parameters or, if they're
 // unset and the 'ambient' option is set, credentials from the environment.
-func NewDNSProvider(accessKeyID, secretAccessKey, hostedZoneID, region string, ambient bool) (*DNSProvider, error) {
+func NewDNSProvider(nameservers []string, accessKeyID, secretAccessKey, hostedZoneID, region string, ambient bool) (*DNSProvider, error) {
 	if accessKeyID == "" && secretAccessKey == "" {
 		if !ambient {
 			return nil, fmt.Errorf("unable to construct route53 provider: empty credentials; perhaps you meant to enable ambient credentials?")
@@ -98,6 +99,7 @@ func NewDNSProvider(accessKeyID, secretAccessKey, hostedZoneID, region string, a
 	client := route53.New(sess, config)
 
 	return &DNSProvider{
+		nameservers:  nameservers,
 		client:       client,
 		hostedZoneID: hostedZoneID,
 	}, nil
@@ -121,6 +123,10 @@ func (r *DNSProvider) CleanUp(domain, token, keyAuth string) error {
 	fqdn, value, _ := util.DNS01Record(domain, keyAuth)
 	value = `"` + value + `"`
 	return r.changeRecord("DELETE", fqdn, value, route53TTL)
+}
+
+func (r *DNSProvider) GetNameservers() []string {
+	return r.nameservers
 }
 
 func (r *DNSProvider) changeRecord(action, fqdn, value string, ttl int) error {
@@ -170,7 +176,7 @@ func (r *DNSProvider) getHostedZoneID(fqdn string) (string, error) {
 		return r.hostedZoneID, nil
 	}
 
-	authZone, err := util.FindZoneByFqdn(fqdn, util.RecursiveNameservers)
+	authZone, err := util.FindZoneByFqdn(fqdn, r.nameservers)
 	if err != nil {
 		return "", fmt.Errorf("error finding zone from fqdn: %v", err)
 	}

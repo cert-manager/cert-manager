@@ -144,7 +144,8 @@ type ACMEIssuerDNS01Config struct {
 }
 
 type ACMEIssuerDNS01Provider struct {
-	Name string `json:"name"`
+	Name        string   `json:"name"`
+	Nameservers []string `json:"nameservers,omitempty"`
 
 	Akamai     *ACMEIssuerDNS01ProviderAkamai     `json:"akamai,omitempty"`
 	CloudDNS   *ACMEIssuerDNS01ProviderCloudDNS   `json:"clouddns,omitempty"`

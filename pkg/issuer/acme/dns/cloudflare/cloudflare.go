@@ -22,8 +22,9 @@ const CloudFlareAPIURL = "https://api.cloudflare.com/client/v4"
 
 // DNSProvider is an implementation of the acme.ChallengeProvider interface
 type DNSProvider struct {
-	authEmail string
-	authKey   string
+	nameservers []string
+	authEmail   string
+	authKey     string
 }
 
 // NewDNSProvider returns a DNSProvider instance configured for cloudflare.
@@ -32,19 +33,20 @@ type DNSProvider struct {
 func NewDNSProvider() (*DNSProvider, error) {
 	email := os.Getenv("CLOUDFLARE_EMAIL")
 	key := os.Getenv("CLOUDFLARE_API_KEY")
-	return NewDNSProviderCredentials(email, key)
+	return NewDNSProviderCredentials(util.RecursiveNameservers, email, key)
 }
 
 // NewDNSProviderCredentials uses the supplied credentials to return a
 // DNSProvider instance configured for cloudflare.
-func NewDNSProviderCredentials(email, key string) (*DNSProvider, error) {
+func NewDNSProviderCredentials(nameservers []string, email, key string) (*DNSProvider, error) {
 	if email == "" || key == "" {
 		return nil, fmt.Errorf("CloudFlare credentials missing")
 	}
 
 	return &DNSProvider{
-		authEmail: email,
-		authKey:   key,
+		nameservers: nameservers,
+		authEmail:   email,
+		authKey:     key,
 	}, nil
 }
 
@@ -117,6 +119,10 @@ func (c *DNSProvider) CleanUp(domain, token, keyAuth string) error {
 	return nil
 }
 
+func (c *DNSProvider) GetNameservers() []string {
+	return c.nameservers
+}
+
 func (c *DNSProvider) getHostedZoneID(fqdn string) (string, error) {
 	// HostedZone represents a CloudFlare DNS zone
 	type HostedZone struct {
@@ -124,7 +130,7 @@ func (c *DNSProvider) getHostedZoneID(fqdn string) (string, error) {
 		Name string `json:"name"`
 	}
 
-	authZone, err := util.FindZoneByFqdn(fqdn, util.RecursiveNameservers)
+	authZone, err := util.FindZoneByFqdn(fqdn, c.nameservers)
 	if err != nil {
 		return "", err
 	}
