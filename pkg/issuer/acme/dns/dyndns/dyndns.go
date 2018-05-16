@@ -1,5 +1,5 @@
-// Package azuredns implements a DNS provider for solving the DNS-01 challenge
-// using Azure DNS.
+// Package dyndns implements a DNS provider for solving the DNS-01 challenge
+// using Dyn DNS.
 package dyndns
 
 import (
