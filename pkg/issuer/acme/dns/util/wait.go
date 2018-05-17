@@ -32,6 +32,20 @@ var RecursiveNameservers = getNameservers(defaultResolvConf, defaultNameservers)
 // DNSTimeout is used to override the default DNS timeout of 10 seconds.
 var DNSTimeout = 10 * time.Second
 
+// AddNameserverPorts makes sure all servers have a port number
+func AddNameserverPorts(nameservers []string) []string {
+	nameserversWithPorts := []string{}
+	for _, server := range nameservers {
+		// ensure all servers have a port number
+		if _, _, err := net.SplitHostPort(server); err != nil {
+			nameserversWithPorts = append(nameserversWithPorts, net.JoinHostPort(server, "53"))
+		} else {
+			nameserversWithPorts = append(nameserversWithPorts, server)
+		}
+	}
+	return nameserversWithPorts
+}
+
 // getNameservers attempts to get systems nameservers before falling back to the defaults
 func getNameservers(path string, defaults []string) []string {
 	config, err := dns.ClientConfigFromFile(path)
@@ -39,15 +53,7 @@ func getNameservers(path string, defaults []string) []string {
 		return defaults
 	}
 
-	systemNameservers := []string{}
-	for _, server := range config.Servers {
-		// ensure all servers have a port number
-		if _, _, err := net.SplitHostPort(server); err != nil {
-			systemNameservers = append(systemNameservers, net.JoinHostPort(server, "53"))
-		} else {
-			systemNameservers = append(systemNameservers, server)
-		}
-	}
+	systemNameservers := AddNameserverPorts(config.Servers)
 	return systemNameservers
 }
 

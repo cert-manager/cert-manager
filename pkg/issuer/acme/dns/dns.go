@@ -145,6 +145,7 @@ func (s *Solver) solverForIssuerProvider(providerName string) (solver, error) {
 	if len(nameservers) == 0 {
 		nameservers = util.RecursiveNameservers
 	}
+	nameservers = util.AddNameserverPorts(nameservers)
 
 	var impl solver
 	switch {
