@@ -12,11 +12,8 @@ We truncate at 63 chars because some Kubernetes name fields are limited to this 
 */}}
 {{- define "cert-manager.fullname" -}}
 {{- $name := default .Chart.Name .Values.nameOverride -}}
-{{- if ne $name .Release.Name -}}
-{{- printf "%s-%s" .Release.Name $name | trunc 63 | trimSuffix "-" -}}
-{{- else -}}
-{{- printf "%s" $name | trunc 63 | trimSuffix "-" -}}
-{{- end -}}
+{{- $fullname := printf "%s-%s" $name .Release.Name -}}
+{{- default $fullname .Values.fullnameOverride | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
 
 {{/*
