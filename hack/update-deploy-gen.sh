@@ -11,9 +11,9 @@ KUBE_VERSION=1.9
 
 gen() {
 	VALUES=$1
-	OUTPUT_DIR=$2
-	TMP_OUTPUT=$(mktemp -d)
-	mkdir -p "${OUTPUT_DIR}"
+	OUTPUT=$2
+	TMP_OUTPUT=$(mktemp)
+	mkdir -p "$(dirname ${OUTPUT})"
 	helm template \
 		"${REPO_ROOT}/contrib/charts/cert-manager" \
 		--values "${SCRIPT_ROOT}/deploy/${VALUES}.yaml" \
@@ -21,10 +21,9 @@ gen() {
 		--namespace "cert-manager" \
 		--name "cert-manager" \
 		--set "fullnameOverride=cert-manager" \
-		--set "createNamespaceResource=true" \
-		--output-dir "${TMP_OUTPUT}"
-	mv "${TMP_OUTPUT}"/cert-manager/templates/*.* "${OUTPUT_DIR}/"
+		--set "createNamespaceResource=true" > "${TMP_OUTPUT}"
+	mv "${TMP_OUTPUT}" "${OUTPUT}"
 }
 
-gen rbac-values "${REPO_ROOT}/contrib/manifests/cert-manager/rbac"
-gen without-rbac-values "${REPO_ROOT}/contrib/manifests/cert-manager/without-rbac"
+gen rbac-values "${REPO_ROOT}/contrib/manifests/cert-manager/with-rbac.yaml"
+gen without-rbac-values "${REPO_ROOT}/contrib/manifests/cert-manager/without-rbac.yaml"
