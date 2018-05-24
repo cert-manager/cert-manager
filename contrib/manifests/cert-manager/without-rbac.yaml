@@ -1,0 +1,116 @@
+---
+# Source: cert-manager/templates/00-namespace.yaml
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: "cert-manager"
+
+---
+# Source: cert-manager/templates/certificate-crd.yaml
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  name: certificates.certmanager.k8s.io
+  labels:
+    app: cert-manager
+    chart: cert-manager-v0.3.0-alpha.7
+    release: cert-manager
+    heritage: Tiller
+spec:
+  group: certmanager.k8s.io
+  version: v1alpha1
+  scope: Namespaced
+  names:
+    kind: Certificate
+    plural: certificates
+    shortNames:
+      - cert
+      - certs
+      
+---
+# Source: cert-manager/templates/clusterissuer-crd.yaml
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  name: clusterissuers.certmanager.k8s.io
+  labels:
+    app: cert-manager
+    chart: cert-manager-v0.3.0-alpha.7
+    release: cert-manager
+    heritage: Tiller
+spec:
+  group: certmanager.k8s.io
+  version: v1alpha1
+  names:
+    kind: ClusterIssuer
+    plural: clusterissuers
+  scope: Cluster
+---
+# Source: cert-manager/templates/issuer-crd.yaml
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  name: issuers.certmanager.k8s.io
+  labels:
+    app: cert-manager
+    chart: cert-manager-v0.3.0-alpha.7
+    release: cert-manager
+    heritage: Tiller
+spec:
+  group: certmanager.k8s.io
+  version: v1alpha1
+  names:
+    kind: Issuer
+    plural: issuers
+  scope: Namespaced
+---
+# Source: cert-manager/templates/deployment.yaml
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  name: cert-manager
+  namespace: "cert-manager"
+  labels:
+    app: cert-manager
+    chart: cert-manager-v0.3.0-alpha.7
+    release: cert-manager
+    heritage: Tiller
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cert-manager
+      release: cert-manager
+  template:
+    metadata:
+      labels:
+        app: cert-manager
+        release: cert-manager
+      annotations:
+    spec:
+      serviceAccountName: default
+      containers:
+        - name: cert-manager
+          image: "quay.io/jetstack/cert-manager-controller:v0.3.0-alpha.2"
+          imagePullPolicy: IfNotPresent
+          args:
+          - --cluster-resource-namespace=$(POD_NAMESPACE)
+          - --leader-election-namespace=$(POD_NAMESPACE)
+          env:
+          - name: POD_NAMESPACE
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.namespace
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            
+
+---
+# Source: cert-manager/templates/rbac.yaml
+
+---
+# Source: cert-manager/templates/serviceaccount.yaml
+
