@@ -74,6 +74,7 @@ The following table lists the configurable parameters of the cert-manager chart 
 | `ingressShim.defaultACMEChallengeType` | Optional default challenge type to use for ingresses using ACME issuers |  |
 | `ingressShim.defaultACMEDNS01ChallengeProvider` | Optional default DNS01 challenge provider to use for ingresses using ACME issuers with DNS01 |  |
 | `podAnnotations` | Annotations to add to the cert-manager pod | `{}` |
+| `podLabels` | Labels to add to the cert-manager pod | `{}` |
 
 Specify each parameter using the `--set key=value[,key=value]` argument to `helm install`.
 
@@ -83,3 +84,7 @@ Alternatively, a YAML file that specifies the values for the above parameters ca
 $ helm install --name my-release -f values.yaml .
 ```
 > **Tip**: You can use the default [values.yaml](values.yaml)
+
+## Contributing
+
+This chart is maintained at [github.com/jetstack/cert-manager](https://github.com/jetstack/cert-manager/tree/master/contrib/charts/cert-manager).
