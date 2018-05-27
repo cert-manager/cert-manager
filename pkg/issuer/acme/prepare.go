@@ -510,7 +510,7 @@ func getRemainingAuthorizations(ctx context.Context, cl client.Interface, urls .
 			return nil, err
 		}
 		if a.Status == acme.StatusInvalid || a.Status == acme.StatusDeactivated || a.Status == acme.StatusRevoked {
-			return nil, fmt.Errorf("authorization for dmain %q is in a failed state", a.Identifier.Value)
+			return nil, fmt.Errorf("authorization for domain %q is in a failed state", a.Identifier.Value)
 		}
 		if a.Status == acme.StatusPending {
 			authzs = append(authzs, a)
