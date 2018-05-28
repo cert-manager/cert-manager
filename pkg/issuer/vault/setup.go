@@ -16,7 +16,7 @@ const (
 
 	messageVaultClientInitFailed         = "Failed to initialize Vault client: "
 	messageVaultHealthCheckFailed        = "Failed to call Vault health check: "
-	messageVaultStatusVerificationFailed = "Vault is not initialized or is sealed: "
+	messageVaultStatusVerificationFailed = "Vault is not initialized or is sealed"
 	messageVaultConfigRequired           = "Vault config cannot be empty"
 	messageServerAndPathRequired         = "Vault server and path are required fields"
 	messsageAuthFieldsRequired           = "Vault tokenSecretRef or appRole is required"
@@ -70,10 +70,9 @@ func (v *Vault) Setup(ctx context.Context) error {
 	}
 
 	if !health.Initialized || health.Sealed {
-		s := messageVaultStatusVerificationFailed + err.Error()
-		glog.V(4).Infof("%s: %s", v.issuer.GetObjectMeta().Name, s)
-		v.issuer.UpdateStatusCondition(v1alpha1.IssuerConditionReady, v1alpha1.ConditionFalse, errorVault, s)
-		return err
+		glog.V(4).Infof("%s: %s: health: %v", v.issuer.GetObjectMeta().Name, messageVaultStatusVerificationFailed, health)
+		v.issuer.UpdateStatusCondition(v1alpha1.IssuerConditionReady, v1alpha1.ConditionFalse, errorVault, messageVaultStatusVerificationFailed)
+		return fmt.Errorf(messageVaultStatusVerificationFailed)
 	}
 
 	glog.Info(messageVaultVerified)
