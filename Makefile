@@ -42,6 +42,9 @@ GOLDFLAGS := -ldflags "-X $(PACKAGE_NAME)/pkg/util.AppGitState=${GIT_STATE} -X $
 	$(CMDS) go_test go_fmt e2e_test go_verify hack_verify hack_verify_pr \
 	$(DOCKER_BUILD_TARGETS) $(DOCKER_PUSH_TARGETS)
 
+# Docker build flags
+DOCKER_BUILD_FLAGS := --build-arg VCS_REF=$(GIT_COMMIT) $(DOCKER_BUILD_FLAGS)
+
 # Alias targets
 ###############
 
@@ -127,7 +130,7 @@ e2e_test:
 $(DOCKER_BUILD_TARGETS):
 	$(eval DOCKER_BUILD_CMD := $(subst docker_build_,,$@))
 	docker build \
-		--build-arg VCS_REF=$(GIT_COMMIT) \
+		$(DOCKER_BUILD_FLAGS) \
 		-t $(REGISTRY)/$(APP_NAME)-$(DOCKER_BUILD_CMD):$(BUILD_TAG) \
 		-f $(DOCKERFILES)/$(DOCKER_BUILD_CMD)/Dockerfile \
 		$(DOCKERFILES)
