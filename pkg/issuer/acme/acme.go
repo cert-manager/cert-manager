@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net"
 	nethttp "net/http"
+	"strings"
 	"time"
 
 	"github.com/golang/glog"
@@ -185,23 +186,40 @@ func (a *Acme) createOrder(ctx context.Context, cl client.Interface, crt *v1alph
 		return nil, err
 	}
 
-	// The ACME protocol supports custom validity dates in the certificate order.
-	// pebble and boulder do not support them at this time.
 	if a.issuer.GetSpec().Duration.Duration != 0 {
 		now := time.Now().UTC()
 		order.NotBefore = now
 		order.NotAfter = now.Add(a.issuer.GetSpec().Duration.Duration)
 	}
 
-	order, err = cl.CreateOrder(ctx, order)
+	createdOrder, err := cl.CreateOrder(ctx, order)
 	if err != nil {
+		if ae, ok := err.(*acme.Error); ok &&
+			ae.Type == "urn:ietf:params:acme:error:malformed" &&
+			a.issuer.GetSpec().Duration.Duration != 0 &&
+			strings.Contains(strings.ToLower(ae.Detail), "notbefore") {
+			// The ACME protocol supports user specified validity dates in the certificate order.
+			// Pebble and Boulder do not support them at this time.
+			// ACMEv2 returns a validation error if the server implementation does not support NotBefore and NotAfter.
+			glog.Infof("Error creating order with user specified duration. Retrying order without unsupported parameters: %v", err)
+			a.recorder.Eventf(crt, corev1.EventTypeWarning, "ErrCreateOrder", "Error creating order with user specified duration. Retrying order without unsupported parameters: %v", err)
+
+			// Clearing the specified validity period in the request and try again
+			order.NotBefore = time.Time{}
+			order.NotAfter = time.Time{}
+			createdOrder, err = cl.CreateOrder(ctx, order)
+		}
+	}
+
+	if err != nil {
+		glog.Infof("Error creating order: %v", err)
 		a.recorder.Eventf(crt, corev1.EventTypeWarning, "ErrCreateOrder", "Error creating order: %v", err)
 		return nil, err
 	}
 
-	glog.Infof("Created order for domains: %v", order.Identifiers)
-	crt.Status.ACMEStatus().Order.URL = order.URL
-	return order, nil
+	glog.Infof("Created order for domains: %v", createdOrder.Identifiers)
+	crt.Status.ACMEStatus().Order.URL = createdOrder.URL
+	return createdOrder, nil
 }
 
 func (a *Acme) solverFor(challengeType string) (solver, error) {
