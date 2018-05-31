@@ -167,18 +167,18 @@ func (s *Solver) solverForIssuerProvider(providerName string) (solver, error) {
 	case providerConfig.CloudDNS != nil:
 		saSecret, err := s.secretLister.Secrets(s.resourceNamespace).Get(providerConfig.CloudDNS.ServiceAccount.Name)
 		if err != nil {
-			return nil, fmt.Errorf("error getting clouddns service account: %s", err.Error())
+			return nil, fmt.Errorf("error getting clouddns service account: %s", err)
 		}
 		saBytes := saSecret.Data[providerConfig.CloudDNS.ServiceAccount.Key]
 
 		impl, err = s.dnsProviderConstructors.cloudDNS(providerConfig.CloudDNS.Project, saBytes)
 		if err != nil {
-			return nil, fmt.Errorf("error instantiating google clouddns challenge solver: %s", err.Error())
+			return nil, fmt.Errorf("error instantiating google clouddns challenge solver: %s", err)
 		}
 	case providerConfig.Cloudflare != nil:
 		apiKeySecret, err := s.secretLister.Secrets(s.resourceNamespace).Get(providerConfig.Cloudflare.APIKey.Name)
 		if err != nil {
-			return nil, fmt.Errorf("error getting cloudflare service account: %s", err.Error())
+			return nil, fmt.Errorf("error getting cloudflare service account: %s", err)
 		}
 
 		email := providerConfig.Cloudflare.Email
@@ -186,14 +186,14 @@ func (s *Solver) solverForIssuerProvider(providerName string) (solver, error) {
 
 		impl, err = s.dnsProviderConstructors.cloudFlare(email, apiKey)
 		if err != nil {
-			return nil, fmt.Errorf("error instantiating cloudflare challenge solver: %s", err.Error())
+			return nil, fmt.Errorf("error instantiating cloudflare challenge solver: %s", err)
 		}
 	case providerConfig.Route53 != nil:
 		secretAccessKey := ""
 		if providerConfig.Route53.SecretAccessKey.Name != "" {
 			secretAccessKeySecret, err := s.secretLister.Secrets(s.resourceNamespace).Get(providerConfig.Route53.SecretAccessKey.Name)
 			if err != nil {
-				return nil, fmt.Errorf("error getting route53 secret access key: %s", err.Error())
+				return nil, fmt.Errorf("error getting route53 secret access key: %s", err)
 			}
 
 			secretAccessKeyBytes, ok := secretAccessKeySecret.Data[providerConfig.Route53.SecretAccessKey.Key]
@@ -211,12 +211,12 @@ func (s *Solver) solverForIssuerProvider(providerName string) (solver, error) {
 			s.ambientCredentials,
 		)
 		if err != nil {
-			return nil, fmt.Errorf("error instantiating route53 challenge solver: %s", err.Error())
+			return nil, fmt.Errorf("error instantiating route53 challenge solver: %s", err)
 		}
 	case providerConfig.AzureDNS != nil:
 		clientSecret, err := s.secretLister.Secrets(s.resourceNamespace).Get(providerConfig.AzureDNS.ClientSecret.Name)
 		if err != nil {
-			return nil, fmt.Errorf("error getting azuredns client secret: %s", err.Error())
+			return nil, fmt.Errorf("error getting azuredns client secret: %s", err)
 		}
 
 		clientSecretBytes, ok := clientSecret.Data[providerConfig.AzureDNS.ClientSecret.Key]
