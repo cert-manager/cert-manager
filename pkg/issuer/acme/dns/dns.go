@@ -258,12 +258,12 @@ func NewSolver(issuer v1alpha1.GenericIssuer, client kubernetes.Interface, secre
 func (s *Solver) loadSecretData(selector *v1alpha1.SecretKeySelector) ([]byte, error) {
 	secret, err := s.secretLister.Secrets(s.resourceNamespace).Get(selector.Name)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to load secret with name %q", selector.Name)
+		return nil, errors.Wrapf(err, "failed to load secret %q", s.resourceNamespace+"/"+selector.Name)
 	}
 
 	if data, ok := secret.Data[selector.Key]; ok {
 		return data, nil
 	}
 
-	return nil, errors.Errorf("no key %q in secret %q", selector.Key, selector.Name)
+	return nil, errors.Errorf("no key %q in secret %q", selector.Key, s.resourceNamespace+"/"+selector.Name)
 }
