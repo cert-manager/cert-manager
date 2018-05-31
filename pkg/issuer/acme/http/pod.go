@@ -46,7 +46,7 @@ func (s *Solver) ensurePod(crt *v1alpha1.Certificate, ch v1alpha1.ACMEOrderChall
 		return nil, fmt.Errorf(errMsg)
 	}
 
-	glog.Infof("No existing HTTP01 challenge solver pod found for Certificate %q. One will be created.", crt.Name)
+	glog.Infof("No existing HTTP01 challenge solver pod found for Certificate %q. One will be created.", crt.Namespace+"/"+crt.Name)
 	return s.createPod(crt, ch)
 }
 
@@ -72,7 +72,7 @@ func (s *Solver) getPodsForChallenge(crt *v1alpha1.Certificate, ch v1alpha1.ACME
 	for _, pod := range podList {
 		if !metav1.IsControlledBy(pod, crt) {
 			glog.Infof("Found pod %q with acme-order-url annotation set to that of Certificate %q"+
-				"but it is not owned by the Certificate resource, so skipping it.", pod.Name, crt.Name)
+				"but it is not owned by the Certificate resource, so skipping it.", pod.Namespace+"/"+pod.Name, crt.Namespace+"/"+crt.Name)
 			continue
 		}
 		relevantPods = append(relevantPods, pod)
