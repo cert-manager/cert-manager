@@ -66,7 +66,7 @@ You can then verify your kube-lego pod is no longer running with:
 ======================
 
 cert-manager should be deployed using Helm, according to our official
-[deploying.md](deploying.md) guide. No special steps are required here. We will
+:doc:`/getting-started/index` guide. No special steps are required here. We will
 return to this deployment at the end of this guide and perform an upgrade of
 some of the CLI flags we deploy cert-manager with however.
 
@@ -109,7 +109,7 @@ a different namespace.
 .. code-block:: shell
 
    $ kubectl create -f kube-lego-account.yaml \
-       --namespace kube-system \
+       --namespace kube-system
 
 4. Creating an ACME ClusterIssuer using your old ACME account
 =============================================================
@@ -214,9 +214,9 @@ cert-manager) to automatically create Certificate resources for all Ingress
 resources it finds with appropriate annotations.
 
 More information on the role of ingress-shim can be found
-[in the docs](ingress-shim.md), but for now we can just run a ``helm upgrade``
-in order to add a few additional flags. Assuming you've named your
-ClusterIssuer ``letsencrypt-staging`` (as above), run:
+:doc:`in the docs </reference/ingress-shim>`, but for now we can just run a
+``helm upgrade`` in order to add a few additional flags. Assuming you've named
+your ClusterIssuer ``letsencrypt-staging`` (as above), run:
 
 .. code-block:: shell
 
