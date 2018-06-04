@@ -21,6 +21,7 @@ const (
 	messageServerAndPathRequired         = "Vault server and path are required fields"
 	messsageAuthFieldsRequired           = "Vault tokenSecretRef or appRole is required"
 	messageAuthFieldRequired             = "Vault tokenSecretRef and appRole cannot be set on the same issuer"
+	messageAuthPathInvalid               = "Vault authPath cannot be used with a tokenSecretRef"
 )
 
 func (v *Vault) Setup(ctx context.Context) error {
@@ -51,6 +52,13 @@ func (v *Vault) Setup(ctx context.Context) error {
 		glog.Infof("%s: %s", v.issuer.GetObjectMeta().Name, messageAuthFieldRequired)
 		v.issuer.UpdateStatusCondition(v1alpha1.IssuerConditionReady, v1alpha1.ConditionFalse, errorVault, messageAuthFieldRequired)
 		return fmt.Errorf(messageAuthFieldRequired)
+	}
+
+	if v.issuer.GetSpec().Vault.Auth.TokenSecretRef.Name != "" &&
+		v.issuer.GetSpec().Vault.Auth.AuthPath != "" {
+		glog.Infof("%s: %s", v.issuer.GetObjectMeta().Name, messageAuthPathInvalid)
+		v.issuer.UpdateStatusCondition(v1alpha1.IssuerConditionReady, v1alpha1.ConditionFalse, errorVault, messageAuthPathInvalid)
+		return fmt.Errorf(messageAuthPathInvalid)
 	}
 
 	client, err := v.initVaultClient()

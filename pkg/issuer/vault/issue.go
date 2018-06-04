@@ -131,7 +131,12 @@ func (v *Vault) requestTokenWithAppRoleRef(client *vault.Client, appRole *v1alph
 		"secret_id": secretId,
 	}
 
-	url := "/v1/auth/approle/login"
+	authPath := v.issuer.GetSpec().Vault.Auth.AuthPath
+	if authPath == "" {
+		authPath = "approle"
+	}
+
+	url := path.Join("/v1/auth", authPath, "login")
 
 	request := client.NewRequest("POST", url)
 
