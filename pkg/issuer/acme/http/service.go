@@ -32,7 +32,7 @@ func (s *Solver) ensureService(crt *v1alpha1.Certificate, ch v1alpha1.ACMEOrderC
 		return nil, fmt.Errorf(errMsg)
 	}
 
-	glog.Infof("No existing HTTP01 challenge solver service found for Certificate %q. One will be created.")
+	glog.Infof("No existing HTTP01 challenge solver service found for Certificate %q. One will be created.", crt.Namespace+"/"+crt.Name)
 	return s.createService(crt, ch)
 }
 
@@ -58,7 +58,7 @@ func (s *Solver) getServicesForChallenge(crt *v1alpha1.Certificate, ch v1alpha1.
 	for _, service := range serviceList {
 		if !metav1.IsControlledBy(service, crt) {
 			glog.Infof("Found service %q with acme-order-url annotation set to that of Certificate %q"+
-				"but it is not owned by the Certificate resource, so skipping it.", service.Name, crt.Name)
+				"but it is not owned by the Certificate resource, so skipping it.", service.Namespace+"/"+service.Name, crt.Namespace+"/"+crt.Name)
 			continue
 		}
 		relevantServices = append(relevantServices, service)

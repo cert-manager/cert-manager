@@ -4,16 +4,9 @@ import (
 	"context"
 	"fmt"
 	"testing"
-	"time"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 )
-
-// contextWithTimeout calls context.WithTimeout, and throws away the cancel fn
-func contextWithTimeout(t time.Duration) context.Context {
-	c, _ := context.WithTimeout(context.Background(), t)
-	return c
-}
 
 // countReachabilityTestCalls is a wrapper function that allows us to count the number
 // of calls to a reachabilityTest.
