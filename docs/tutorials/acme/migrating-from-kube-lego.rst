@@ -66,7 +66,7 @@ You can then verify your kube-lego pod is no longer running with:
 ======================
 
 cert-manager should be deployed using Helm, according to our official
-[deploying.md](deploying.md) guide. No special steps are required here. We will
+[Getting Started](https://github.com/jetstack/cert-manager/blob/master/docs/getting-started/1-configuring-helm.rst) guide. No special steps are required here. We will
 return to this deployment at the end of this guide and perform an upgrade of
 some of the CLI flags we deploy cert-manager with however.
 
