@@ -92,7 +92,7 @@ spec:
       serviceAccountName: default
       containers:
         - name: cert-manager
-          image: "quay.io/jetstack/cert-manager-controller:v0.3.0"
+          image: "quay.io/jetstack/cert-manager-controller:v0.4.0-alpha.1"
           imagePullPolicy: IfNotPresent
           args:
           - --cluster-resource-namespace=$(POD_NAMESPACE)
