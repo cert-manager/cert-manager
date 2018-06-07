@@ -22,28 +22,16 @@ import (
 	"github.com/jetstack/cert-manager/test/util"
 )
 
-var _ = framework.CertManagerDescribe("CA Certificate", func() {
-	f := framework.NewDefaultFramework("create-ca-certificate")
+var _ = framework.CertManagerDescribe("Self Signed Certificate", func() {
+	f := framework.NewDefaultFramework("create-selfsigned-certificate")
 
-	issuerName := "test-ca-issuer"
-	issuerSecretName := "ca-issuer-signing-keypair"
-	certificateName := "test-ca-certificate"
-	certificateSecretName := "test-ca-certificate"
-
-	BeforeEach(func() {
-		By("Creating a signing keypair fixture")
-		_, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Create(util.NewSigningKeypairSecret(issuerSecretName))
-		Expect(err).NotTo(HaveOccurred())
-	})
-
-	AfterEach(func() {
-		By("Cleaning up")
-		f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Delete(issuerSecretName, nil)
-	})
+	issuerName := "test-selfsigned-issuer"
+	certificateName := "test-selfsigned-certificate"
+	certificateSecretName := "test-selfsigned-certificate"
 
 	It("should generate a signed keypair", func() {
 		By("Creating an Issuer")
-		_, err := f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Create(util.NewCertManagerCAIssuer(issuerName, issuerSecretName))
+		_, err := f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Create(util.NewCertManagerSelfSignedIssuer(issuerName))
 		Expect(err).NotTo(HaveOccurred())
 		By("Waiting for Issuer to become Ready")
 		err = util.WaitForIssuerCondition(f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name),
@@ -58,5 +46,4 @@ var _ = framework.CertManagerDescribe("CA Certificate", func() {
 		Expect(err).NotTo(HaveOccurred())
 		f.WaitCertificateIssuedValid(cert)
 	})
-
 })
