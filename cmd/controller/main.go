@@ -21,7 +21,6 @@ import (
 
 	"github.com/golang/glog"
 
-	_ "github.com/jetstack/cert-manager/pkg/issuer/acme"
 	"github.com/jetstack/cert-manager/pkg/logs"
 )
 
