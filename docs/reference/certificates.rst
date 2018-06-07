@@ -27,6 +27,7 @@ A simple Certificate could be defined as:
          domains:
          - foo.example.com
          - bar.example.com
+     keysize: 2048
      issuerRef:
        name: letsencrypt-prod
        # We can reference ClusterIssuers by changing the kind here.
