@@ -31,8 +31,8 @@ const (
 // +genclient:nonNamespaced
 // +k8s:openapi-gen=true
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-// +resource:path=clusterissuers
 
+// +kubebuilder:resource:path=clusterissuers
 type ClusterIssuer struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -54,8 +54,8 @@ type ClusterIssuerList struct {
 // +genclient
 // +k8s:openapi-gen=true
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-// +resource:path=issuers
 
+// +kubebuilder:resource:path=issuers
 type Issuer struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -266,8 +266,8 @@ type ACMEIssuerStatus struct {
 // +genclient
 // +k8s:openapi-gen=true
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-// +resource:path=certificates
 
+// +kubebuilder:resource:path=certificates
 // Certificate is a type to represent a Certificate from ACME
 type Certificate struct {
 	metav1.TypeMeta   `json:",inline"`
