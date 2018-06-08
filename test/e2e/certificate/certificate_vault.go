@@ -1,7 +1,7 @@
 package certificate
 
 import (
-	"fmt"
+	"path"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -23,7 +23,8 @@ var _ = framework.CertManagerDescribe("Vault Certificate (AppRole)", func() {
 	certificateName := "test-vault-certificate"
 	certificateSecretName := "test-vault-certificate"
 	vaultSecretAppRoleName := "vault-role"
-	vaultPath := fmt.Sprintf("%s/sign/%s", intermediateMount, role)
+	vaultPath := path.Join(intermediateMount, "sign", role)
+	authPath := "approle"
 	var vaultInit *vault.VaultInitializer
 	var roleId string
 	var secretId string
@@ -33,7 +34,7 @@ var _ = framework.CertManagerDescribe("Vault Certificate (AppRole)", func() {
 		podList, err := f.KubeClientSet.CoreV1().Pods("vault").List(metav1.ListOptions{})
 		Expect(err).NotTo(HaveOccurred())
 		vaultPodName := podList.Items[0].Name
-		vaultInit, err = vault.NewVaultInitializer(vaultPodName, rootMount, intermediateMount, role, "")
+		vaultInit, err = vault.NewVaultInitializer(vaultPodName, rootMount, intermediateMount, role, authPath)
 		Expect(err).NotTo(HaveOccurred())
 		err = vaultInit.Setup()
 		Expect(err).NotTo(HaveOccurred())
@@ -54,7 +55,7 @@ var _ = framework.CertManagerDescribe("Vault Certificate (AppRole)", func() {
 	vaultURL := "http://vault.vault:8200"
 	It("should generate a new valid certificate", func() {
 		By("Creating an Issuer")
-		_, err := f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Create(util.NewCertManagerVaultIssuerAppRole(issuerName, vaultURL, vaultPath, roleId, vaultSecretAppRoleName, ""))
+		_, err := f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Create(util.NewCertManagerVaultIssuerAppRole(issuerName, vaultURL, vaultPath, roleId, vaultSecretAppRoleName, authPath))
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Waiting for Issuer to become Ready")
@@ -79,13 +80,13 @@ var _ = framework.CertManagerDescribe("Vault Certificate (AppRole with a custom 
 
 	rootMount := "root-ca"
 	intermediateMount := "intermediate-ca"
-	roleMount := "custom/path"
+	authPath := "custom/path"
 	role := "kubernetes-vault"
 	issuerName := "test-vault-issuer"
 	certificateName := "test-vault-certificate"
 	certificateSecretName := "test-vault-certificate"
 	vaultSecretAppRoleName := "vault-role"
-	vaultPath := fmt.Sprintf("%s/sign/%s", intermediateMount, role)
+	vaultPath := path.Join(intermediateMount, "sign", role)
 	var vaultInit *vault.VaultInitializer
 	var roleId string
 	var secretId string
@@ -95,7 +96,7 @@ var _ = framework.CertManagerDescribe("Vault Certificate (AppRole with a custom 
 		podList, err := f.KubeClientSet.CoreV1().Pods("vault").List(metav1.ListOptions{})
 		Expect(err).NotTo(HaveOccurred())
 		vaultPodName := podList.Items[0].Name
-		vaultInit, err = vault.NewVaultInitializer(vaultPodName, rootMount, intermediateMount, role, roleMount)
+		vaultInit, err = vault.NewVaultInitializer(vaultPodName, rootMount, intermediateMount, role, authPath)
 		Expect(err).NotTo(HaveOccurred())
 		err = vaultInit.Setup()
 		Expect(err).NotTo(HaveOccurred())
@@ -116,7 +117,7 @@ var _ = framework.CertManagerDescribe("Vault Certificate (AppRole with a custom 
 	vaultURL := "http://vault.vault:8200"
 	It("should generate a new valid certificate", func() {
 		By("Creating an Issuer")
-		_, err := f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Create(util.NewCertManagerVaultIssuerAppRole(issuerName, vaultURL, vaultPath, roleId, vaultSecretAppRoleName, roleMount))
+		_, err := f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Create(util.NewCertManagerVaultIssuerAppRole(issuerName, vaultURL, vaultPath, roleId, vaultSecretAppRoleName, authPath))
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Waiting for Issuer to become Ready")

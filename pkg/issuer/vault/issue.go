@@ -110,7 +110,7 @@ func (v *Vault) initVaultClient() (*vault.Client, error) {
 	if appRole.RoleId != "" {
 		token, err := v.requestTokenWithAppRoleRef(client, &appRole)
 		if err != nil {
-			return nil, fmt.Errorf("error reading Vault token from secret %s/%s: %s", v.issuerResourcesNamespace, appRole.SecretRef.Name, err.Error())
+			return nil, fmt.Errorf("error reading Vault token from AppRole: %s", err.Error())
 		}
 		client.SetToken(token)
 
@@ -131,12 +131,12 @@ func (v *Vault) requestTokenWithAppRoleRef(client *vault.Client, appRole *v1alph
 		"secret_id": secretId,
 	}
 
-	authPath := v.issuer.GetSpec().Vault.Auth.AuthPath
+	authPath := appRole.Path
 	if authPath == "" {
 		authPath = "approle"
 	}
 
-	url := path.Join("/v1/auth", authPath, "login")
+	url := path.Join("/v1", "auth", authPath, "login")
 
 	request := client.NewRequest("POST", url)
 
@@ -147,7 +147,7 @@ func (v *Vault) requestTokenWithAppRoleRef(client *vault.Client, appRole *v1alph
 
 	resp, err := client.RawRequest(request)
 	if err != nil {
-		return "", fmt.Errorf("error calling Vault server: %s", err.Error())
+		return "", fmt.Errorf("error logging in to Vault server: %s", err.Error())
 	}
 
 	defer resp.Body.Close()
@@ -193,7 +193,7 @@ func (v *Vault) requestVaultCert(commonName string, altNames []string, csr []byt
 
 	resp, err := client.RawRequest(request)
 	if err != nil {
-		return nil, fmt.Errorf("error calling Vault server: %s", err.Error())
+		return nil, fmt.Errorf("error logging in to Vault server: %s", err.Error())
 	}
 
 	defer resp.Body.Close()

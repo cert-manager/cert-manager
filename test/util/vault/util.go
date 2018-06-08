@@ -65,7 +65,7 @@ func NewVaultInitializer(container, rootMount, intermediateMount, role, authPath
 	client.SetToken(vaultToken)
 
 	if authPath == "" {
-		authPath = "approle"
+		return nil, fmt.Errorf("Error authPath must be set")
 	}
 
 	return &VaultInitializer{
@@ -151,7 +151,7 @@ func (v *VaultInitializer) CreateAppRole() (string, string, error) {
 		"policies": v.role,
 	}
 
-	baseUrl := path.Join("/v1/auth", v.authPath, "role", v.role)
+	baseUrl := path.Join("/v1", "auth", v.authPath, "role", v.role)
 	_, err = v.callVault("POST", baseUrl, "", params)
 	if err != nil {
 		return "", "", fmt.Errorf("Error creating approle: %s", err.Error())
@@ -175,7 +175,7 @@ func (v *VaultInitializer) CreateAppRole() (string, string, error) {
 }
 
 func (v *VaultInitializer) CleanAppRole() error {
-	url := path.Join("/v1/auth", v.authPath, "role", v.role)
+	url := path.Join("/v1", "auth", v.authPath, "role", v.role)
 	_, err := v.callVault("DELETE", url, "", map[string]string{})
 	if err != nil {
 		return fmt.Errorf("Error deleting AppRole: %s", err.Error())

@@ -424,8 +424,8 @@ func NewCertManagerVaultIssuerAppRole(name, vaultURL, vaultPath, roleId, vaultSe
 					Server: vaultURL,
 					Path:   vaultPath,
 					Auth: v1alpha1.VaultAuth{
-						AuthPath: authPath,
 						AppRole: v1alpha1.VaultAppRole{
+							Path:   authPath,
 							RoleId: roleId,
 							SecretRef: v1alpha1.SecretKeySelector{
 								Key: "secretkey",

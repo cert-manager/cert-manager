@@ -109,11 +109,12 @@ type VaultAuth struct {
 	TokenSecretRef SecretKeySelector `json:"tokenSecretRef,omitempty"`
 	// This Secret contains a AppRole and Secret
 	AppRole VaultAppRole `json:"appRole,omitempty"`
-	// Where the authentication path is mounted in Vault.
-	AuthPath string `json:"authPath,omitempty"`
 }
 
 type VaultAppRole struct {
+	// Where the authentication path is mounted in Vault.
+	Path string `json:"path,omitempty"`
+
 	RoleId    string            `json:"roleId"`
 	SecretRef SecretKeySelector `json:"secretRef"`
 }
