@@ -1,4 +1,4 @@
-package ca
+package selfsigned
 
 import (
 	"context"
