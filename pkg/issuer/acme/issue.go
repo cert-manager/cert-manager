@@ -3,8 +3,6 @@ package acme
 import (
 	"bytes"
 	"context"
-	"crypto/rand"
-	"crypto/x509"
 	"encoding/pem"
 	"fmt"
 
@@ -62,15 +60,20 @@ func (a *Acme) obtainCertificate(ctx context.Context, crt *v1alpha1.Certificate)
 	}
 
 	// generate a csr
-	template := pki.GenerateCSR(commonName, altNames...)
-	csr, err := x509.CreateCertificateRequest(rand.Reader, template, key)
+	template, err := pki.GenerateCSR(a.issuer, crt)
+	if err != nil {
+		// TODO: this should probably be classed as a permanant failure
+		return nil, nil, err
+	}
+
+	derBytes, err := pki.EncodeCSR(template, key)
 	if err != nil {
 		crt.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse, errorIssueError, fmt.Sprintf("Failed to generate certificate request: %v", err), false)
-		return nil, nil, fmt.Errorf("error creating certificate request: %s", err)
+		return nil, nil, err
 	}
 
 	// obtain a certificate from the acme server
-	certSlice, err := cl.FinalizeOrder(ctx, order.FinalizeURL, csr)
+	certSlice, err := cl.FinalizeOrder(ctx, order.FinalizeURL, derBytes)
 	if err != nil {
 		// this handles an edge case where a certificate ends out with an order
 		// that is in an invalid state.
