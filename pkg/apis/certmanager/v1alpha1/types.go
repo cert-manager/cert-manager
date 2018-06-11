@@ -86,6 +86,7 @@ type IssuerConfig struct {
 	CA         *CAIssuer         `json:"ca,omitempty"`
 	Vault      *VaultIssuer      `json:"vault,omitempty"`
 	SelfSigned *SelfSignedIssuer `json:"selfSigned,omitempty"`
+	CFSSL      *CFSSLIssuer      `json:"cfssl,omitempty"`
 }
 
 type SelfSignedIssuer struct {
@@ -123,6 +124,14 @@ type CAIssuer struct {
 	// SecretName is the name of the secret used to sign Certificates issued
 	// by this Issuer.
 	SecretName string `json:"secretName"`
+}
+
+type CFSSLIssuer struct {
+	// CFSSL Authentication
+	AuthKey *SecretKeySelector `json:"authKeySecretRef,omitempty"`
+	// Server is the cfssl connection address
+	Server string `json:"server"`
+	Path   string `json:"path"`
 }
 
 // ACMEIssuer contains the specification for an ACME issuer
@@ -313,7 +322,8 @@ type CertificateSpec struct {
 	// invalid.
 	IssuerRef ObjectReference `json:"issuerRef"`
 
-	ACME *ACMECertificateConfig `json:"acme,omitempty"`
+	ACME  *ACMECertificateConfig  `json:"acme,omitempty"`
+	CFSSL *CFSSLCertificateConfig `json:"cfssl,omitempty"`
 
 	// KeySize is the key bit size of the corresponding private key for this certificate.
 	// If provided, value must be between 2048 and 8192 inclusive when KeyAlgorithm is
@@ -350,6 +360,12 @@ type ACMECertificateHTTP01Config struct {
 
 type ACMECertificateDNS01Config struct {
 	Provider string `json:"provider"`
+}
+
+// CFSSLCertificateConfig contains the configuration for the CFSSL certificate provider
+type CFSSLCertificateConfig struct {
+	Profile string `json:"profile,omitempty"`
+	Label   string `json:"label,omitempty"`
 }
 
 // CertificateStatus defines the observed state of Certificate
