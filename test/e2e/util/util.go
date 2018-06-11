@@ -317,6 +317,22 @@ func NewCertManagerVaultCertificate(name, secretName, issuerName string, issuerK
 	}
 }
 
+func NewCertManagerCFSSLCertificate(name, secretName, issuerName string, issuerKind string) *v1alpha1.Certificate {
+	return &v1alpha1.Certificate{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: name,
+		},
+		Spec: v1alpha1.CertificateSpec{
+			CommonName: "test.domain.com",
+			SecretName: secretName,
+			IssuerRef: v1alpha1.ObjectReference{
+				Name: issuerName,
+				Kind: issuerKind,
+			},
+		},
+	}
+}
+
 func NewIngress(name, secretName string, annotations map[string]string, dnsNames ...string) *extv1beta1.Ingress {
 	return &extv1beta1.Ingress{
 		ObjectMeta: metav1.ObjectMeta{
@@ -398,6 +414,33 @@ func NewCertManagerSelfSignedIssuer(name string) *v1alpha1.Issuer {
 		Spec: v1alpha1.IssuerSpec{
 			IssuerConfig: v1alpha1.IssuerConfig{
 				SelfSigned: &v1alpha1.SelfSignedIssuer{},
+			},
+		},
+	}
+}
+
+func NewCertManagerCFSSLIssuer(name, serverURL, serverAPIPrefix, secretName string) *v1alpha1.Issuer {
+	issuer := &v1alpha1.CFSSLIssuer{
+		Server:    serverURL,
+		APIPrefix: serverAPIPrefix,
+	}
+
+	if len(secretName) > 0 {
+		issuer.AuthKey = &v1alpha1.SecretKeySelector{
+			Key: "auth-key",
+			LocalObjectReference: v1alpha1.LocalObjectReference{
+				Name: secretName,
+			},
+		}
+	}
+
+	return &v1alpha1.Issuer{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: name,
+		},
+		Spec: v1alpha1.IssuerSpec{
+			IssuerConfig: v1alpha1.IssuerConfig{
+				CFSSL: issuer,
 			},
 		},
 	}

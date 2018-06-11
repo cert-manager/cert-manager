@@ -1,0 +1,41 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ template "fullname" . }}
+  labels:
+    app: {{ template "name" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    heritage: {{ .Release.Service }}
+    release: {{ .Release.Name }}
+data:
+  config.json: |
+    {
+      "auth_keys": {
+        "ca-auth": {
+          "type": "standard",
+          "key": "env:AUTH_KEY"
+        }
+      },
+      "signing": {
+        "profiles": {
+          "server": {
+            "expiry": "720h",
+            "auth_key": "ca-auth",
+            "usages": [ "key encipherment", "server auth" ]
+          },
+          "server-no-auth": {
+            "expiry": "720h",
+            "usages": [ "key encipherment", "server auth" ]
+          },
+          "client": {
+            "expiry": "720h",
+            "auth_key": "ca-auth",
+            "usages": [ "key encipherment", "client auth" ]
+          },
+          "client-no-auth": {
+            "expiry": "720h",
+            "usages": [ "key encipherment", "client auth" ]
+          }
+        }
+      }
+    }

@@ -46,6 +46,7 @@ build_images() {
         "quay.io/kubernetes-ingress-controller/nginx-ingress-controller:0.23.0" \
         "k8s.gcr.io/defaultbackend:bazel" \
         "vault:bazel" \
+        "cfssl:bazel" \
         "gcr.io/kubernetes-helm/tiller:bazel" \
         -o "${BUNDLE_FILE}"
 

@@ -86,7 +86,10 @@ type IssuerConfig struct {
 
 	// +optional
 	SelfSigned *SelfSignedIssuer `json:"selfSigned,omitempty"`
-	Venafi     *VenafiIssuer     `json:"venafi,omitempty"`
+
+	CFSSL *CFSSLIssuer `json:"cfssl,omitempty"`
+
+	Venafi *VenafiIssuer `json:"venafi,omitempty"`
 }
 
 // VenafiIssuer describes issuer configuration details for Venafi Cloud.
@@ -184,6 +187,18 @@ type CAIssuer struct {
 	// SecretName is the name of the secret used to sign Certificates issued
 	// by this Issuer.
 	SecretName string `json:"secretName"`
+}
+
+type CFSSLIssuer struct {
+	// CFSSL Authentication
+	AuthKey *SecretKeySelector `json:"authKeySecretRef,omitempty"`
+	// Server is the cfssl connection address
+	// Cfssl servers using HTTP protocol is supported at the moment. Servers using
+	// HTTPS protocol are not yet supported
+	Server string `json:"server"`
+	// APIPrefix is the prefix of cfssl api endpoints
+	// e.g /api/v1/cfssl
+	APIPrefix string `json:"apiPrefix,omitempty"`
 }
 
 // ACMEIssuer contains the specification for an ACME issuer
