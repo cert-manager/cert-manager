@@ -30,6 +30,7 @@ filegroup(
         ":package-srcs",
         "//test/e2e/framework/addon/base:all-srcs",
         "//test/e2e/framework/addon/certmanager:all-srcs",
+        "//test/e2e/framework/addon/cfssl:all-srcs",
         "//test/e2e/framework/addon/chart:all-srcs",
         "//test/e2e/framework/addon/nginxingress:all-srcs",
         "//test/e2e/framework/addon/pebble:all-srcs",

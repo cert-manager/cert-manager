@@ -24,7 +24,7 @@ import (
 	"time"
 
 	intscheme "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/scheme"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	extv1beta1 "k8s.io/api/extensions/v1beta1"
 	apiextcs "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/typed/apiextensions/v1beta1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -322,6 +322,25 @@ func NewCertManagerVaultCertificate(name, secretName, issuerName string, issuerK
 	}
 }
 
+func NewCertManagerCFSSLCertificate(name, profile, secretName, issuerName, issuerKind string) *v1alpha1.Certificate {
+	return &v1alpha1.Certificate{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: name,
+		},
+		Spec: v1alpha1.CertificateSpec{
+			CommonName: "test.domain.com",
+			SecretName: secretName,
+			CFSSL: &v1alpha1.CFSSLCertificateConfig{
+				Profile: profile,
+			},
+			IssuerRef: v1alpha1.ObjectReference{
+				Name: issuerName,
+				Kind: issuerKind,
+			},
+		},
+	}
+}
+
 func NewIngress(name, secretName string, annotations map[string]string, dnsNames ...string) *extv1beta1.Ingress {
 	return &extv1beta1.Ingress{
 		ObjectMeta: metav1.ObjectMeta{
@@ -403,6 +422,33 @@ func NewCertManagerSelfSignedIssuer(name string) *v1alpha1.Issuer {
 		Spec: v1alpha1.IssuerSpec{
 			IssuerConfig: v1alpha1.IssuerConfig{
 				SelfSigned: &v1alpha1.SelfSignedIssuer{},
+			},
+		},
+	}
+}
+
+func NewCertManagerCFSSLIssuer(name, serverURL, secretName string) *v1alpha1.Issuer {
+	var secretSelector *v1alpha1.SecretKeySelector
+
+	if len(secretName) > 0 {
+		secretSelector = &v1alpha1.SecretKeySelector{
+			Key: "auth-key",
+			LocalObjectReference: v1alpha1.LocalObjectReference{
+				Name: secretName,
+			},
+		}
+	}
+
+	return &v1alpha1.Issuer{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: name,
+		},
+		Spec: v1alpha1.IssuerSpec{
+			IssuerConfig: v1alpha1.IssuerConfig{
+				CFSSL: &v1alpha1.CFSSLIssuer{
+					Server:  serverURL,
+					AuthKey: secretSelector,
+				},
 			},
 		},
 	}

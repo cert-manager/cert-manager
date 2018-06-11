@@ -55,6 +55,10 @@ var (
 		Server: "something",
 		Path:   "a/b/c",
 	}
+	validCFSSLIssuer = v1alpha1.CFSSLIssuer{
+		Server:  "valid-server",
+		AuthKey: &validSecretKeyRef,
+	}
 )
 
 func TestValidateVaultIssuerConfig(t *testing.T) {
@@ -274,6 +278,54 @@ func TestValidateACMEIssuerConfig(t *testing.T) {
 	}
 }
 
+func TestValidateCFSSLIssuerConfig(t *testing.T) {
+	fldPath := field.NewPath("")
+	scenarios := map[string]struct {
+		spec *v1alpha1.CFSSLIssuer
+		errs []*field.Error
+	}{
+		"valid cfssl issuer": {
+			spec: &validCFSSLIssuer,
+		},
+		"cfssl issuer without authkey specified": {
+			spec: &v1alpha1.CFSSLIssuer{
+				Server: "valid-server",
+			},
+		},
+		"cfssl issuer with missing fields": {
+			spec: &v1alpha1.CFSSLIssuer{},
+			errs: []*field.Error{
+				field.Required(fldPath.Child("server"), "cfssl server url is a required field"),
+			},
+		},
+		"cfssl issuer with missing authkey fields": {
+			spec: &v1alpha1.CFSSLIssuer{
+				Server:  "valid-server",
+				AuthKey: &v1alpha1.SecretKeySelector{},
+			},
+			errs: []*field.Error{
+				field.Required(fldPath.Child("authKey", "name"), "secret name is required"),
+				field.Required(fldPath.Child("authKey", "key"), "secret key is required"),
+			},
+		},
+	}
+	for n, s := range scenarios {
+		t.Run(n, func(t *testing.T) {
+			errs := ValidateCFSSLIssuerConfig(s.spec, fldPath)
+			if len(errs) != len(s.errs) {
+				t.Errorf("Expected %v but got %v", s.errs, errs)
+				return
+			}
+			for i, e := range errs {
+				expectedErr := s.errs[i]
+				if !reflect.DeepEqual(e, expectedErr) {
+					t.Errorf("Expected %v but got %v", expectedErr, e)
+				}
+			}
+		})
+	}
+}
+
 func TestValidateIssuerSpec(t *testing.T) {
 	fldPath := field.NewPath("")
 	scenarios := map[string]struct {
@@ -315,6 +367,13 @@ func TestValidateIssuerSpec(t *testing.T) {
 			spec: &v1alpha1.IssuerSpec{
 				IssuerConfig: v1alpha1.IssuerConfig{
 					Vault: &validVaultIssuer,
+				},
+			},
+		},
+		"valid cfssl issuer": {
+			spec: &v1alpha1.IssuerSpec{
+				IssuerConfig: v1alpha1.IssuerConfig{
+					CFSSL: &validCFSSLIssuer,
 				},
 			},
 		},

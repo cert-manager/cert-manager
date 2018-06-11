@@ -44,6 +44,7 @@ build_images() {
         "k8s.gcr.io/defaultbackend:bazel" \
         "sample-webhook:bazel" \
         "vault:bazel" \
+        "cfssl:bazel" \
         "gcr.io/kubernetes-helm/tiller:bazel" \
     ; do
         echo "Loading image ${IMG} into kind container"

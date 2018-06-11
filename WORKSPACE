@@ -184,6 +184,16 @@ container_pull(
     tag = "v1.13.4",
 )
 
+## Fetch cfssl for use during e2e tests
+## You can change the version of cfssl used for tests by changing the 'tag'
+## field in this rule
+container_pull(
+    name = "com_cloudflare_cfssl",
+    registry = "index.docker.io",
+    repository = "cfssl/cfssl",
+    tag = "1.3.2",
+)
+
 ## Fetch kubectl for use during e2e tests
 http_file(
     name = "kubectl_1_11_darwin",

@@ -1,0 +1,59 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ template "fullname" . }}
+  labels:
+    app: {{ template "name" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    heritage: {{ .Release.Service }}
+    release: {{ .Release.Name }}
+data:
+  config.json: |
+    {
+      "auth_keys": {
+        "ca-auth": {
+          "type": "standard",
+          "key": "env:AUTH_KEY"
+        }
+      },
+      "signing": {
+        "profiles": {
+          "server": {
+            "expiry": "720h",
+            "auth_key": "ca-auth",
+            "usages": [ "key encipherment", "server auth" ]
+          },
+          "server-no-authentication": {
+            "expiry": "720h",
+            "usages": [ "key encipherment", "server auth" ]
+          },
+          "client": {
+            "expiry": "720h",
+            "auth_key": "ca-auth",
+            "usages": [ "key encipherment", "client auth" ]
+          },
+          "client-no-authentication": {
+            "expiry": "720h",
+            "usages": [ "key encipherment", "client auth" ]
+          }
+        }
+      }
+    }
+  ca.pem: |
+    -----BEGIN CERTIFICATE-----
+    MIIBnzCCAUWgAwIBAgIRAMs7I6XYakCIH+EqZV5A3hgwCgYIKoZIzj0EAwIwMDEW
+    MBQGA1UEChMNY2Zzc2wtdGVzdC1jYTEWMBQGA1UEAxMNY2Zzc2wtdGVzdC1jYTAe
+    Fw0xOTA2MjcyMTM1MzBaFw0xOTA2MjgyMTM1MzBaMDAxFjAUBgNVBAoTDWNmc3Ns
+    LXRlc3QtY2ExFjAUBgNVBAMTDWNmc3NsLXRlc3QtY2EwWTATBgcqhkjOPQIBBggq
+    hkjOPQMBBwNCAATB2R8hynUbymgy5O5TxXbjIlhtHr6BlZdFLsuBSMQiRMivIIp0
+    sM0Byd+57Kn12aou4oJtZPTp1PZPzcCCQm+4o0AwPjAOBgNVHQ8BAf8EBAMCAoQw
+    EgYDVR0TAQH/BAgwBgEB/wIBADAYBgNVHREEETAPgg1jZnNzbC10ZXN0LWNhMAoG
+    CCqGSM49BAMCA0gAMEUCIDUfOZgFlJ8PgQs7ZIpnSykZMMr75F9yxUs+r18ePr21
+    AiEAoohpZDBZFQ+o4uEotpjSeaHbTo8PPoEU7f4LGP8hPE8=
+    -----END CERTIFICATE-----
+  ca-key.pem: |
+    -----BEGIN EC PRIVATE KEY-----
+    MHcCAQEEIAasqIdso8Y3caeQcBaSEH54YuqE8XYdYTSDg7jn4QEloAoGCCqGSM49
+    AwEHoUQDQgAEwdkfIcp1G8poMuTuU8V24yJYbR6+gZWXRS7LgUjEIkTIryCKdLDN
+    Acnfueyp9dmqLuKCbWT06dT2T83AgkJvuA==
+    -----END EC PRIVATE KEY-----

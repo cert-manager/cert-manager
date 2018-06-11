@@ -33,6 +33,8 @@ const (
 	IssuerSelfSigned string = "selfsigned"
 	// IssuerVenafi uses Venafi Trust Protection Platform and Venafi Cloud
 	IssuerVenafi string = "venafi"
+	// IssuerCFSSL is the name of the CFSSL issuer
+	IssuerCFSSL string = "cfssl"
 )
 
 // NameForIssuer determines the name of the Issuer implementation given an
@@ -47,6 +49,8 @@ func NameForIssuer(i cmapi.GenericIssuer) (string, error) {
 		return IssuerVault, nil
 	case i.GetSpec().SelfSigned != nil:
 		return IssuerSelfSigned, nil
+	case i.GetSpec().CFSSL != nil:
+		return IssuerCFSSL, nil
 	case i.GetSpec().Venafi != nil:
 		return IssuerVenafi, nil
 	}

@@ -39,6 +39,7 @@ types you require:
 * :doc:`Self signed <./setup-selfsigned>` - issue self signed certificates.
 * :doc:`ACME <./setup-acme/index>` - issue certificates obtained by performing
   challenge validations against an ACME server such as `Let's Encrypt`_.
+* :doc:`CFSSL <./setup-cfssl>` - issue certificates from a CFSSL_ instance.
 * :doc:`Vault <./setup-vault>`- issue certificates from a Vault instance
   configured with the `Vault PKI backend`_.
 * :doc:`Venafi <./setup-venafi>` - issue certificates from a Venafi_ Cloud
@@ -74,6 +75,7 @@ Certificate resources.
 
    setup-acme/index
    setup-ca
+   setup-cfssl
    setup-selfsigned
    setup-vault
    setup-venafi
@@ -81,3 +83,4 @@ Certificate resources.
 .. _`Let's Encrypt`: https://letsencrypt.org
 .. _`Vault PKI backend`: https://www.vaultproject.io/docs/secrets/pki/index.html
 .. _Venafi: https://venafi.com
+.. _CFSSL: https://github.com/cloudflare/cfssl

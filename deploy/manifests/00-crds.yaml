@@ -75,6 +75,17 @@ spec:
               required:
               - config
               type: object
+            cfssl:
+              description: CFSSL contains configuration specific to CFSSL issued Certiicates.
+                It contains fields 'Label' & 'Profile'. 'Profile' is a string specifying
+                the signing profile to use to sign the certificate. 'Label' is a string
+                label for the certificate.
+              properties:
+                label:
+                  type: string
+                profile:
+                  type: string
+              type: object
             commonName:
               description: CommonName is a common name to be used on the Certificate
               type: string
@@ -610,6 +621,37 @@ spec:
               required:
               - secretName
               type: object
+            cfssl:
+              properties:
+                authKeySecretRef:
+                  description: This Secret contains the Authkey used to authenticate
+                    requests to cfssl
+                  properties:
+                    key:
+                      description: The key of the secret to select from. Must be a
+                        valid secret key.
+                      type: string
+                    name:
+                      description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                        TODO: Add other useful fields. apiVersion, kind, uid?'
+                      type: string
+                  required:
+                  - name
+                  type: object
+                caBundle:
+                  description: Base64 encoded CA bundle to validate cfssl server certificate.
+                    Only used if the Server URL is using HTTPS protocol. This parameter
+                    is ignored for plain HTTP protocol connection. If not set the
+                    system root certificates are used to validate the TLS connection.
+                  format: byte
+                  type: string
+                server:
+                  description: Server is the cfssl connection address This field is
+                    required.
+                  type: string
+              required:
+              - server
+              type: object
             selfSigned:
               type: object
             vault:
@@ -888,6 +930,37 @@ spec:
                   type: string
               required:
               - secretName
+              type: object
+            cfssl:
+              properties:
+                authKeySecretRef:
+                  description: This Secret contains the Authkey used to authenticate
+                    requests to cfssl
+                  properties:
+                    key:
+                      description: The key of the secret to select from. Must be a
+                        valid secret key.
+                      type: string
+                    name:
+                      description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                        TODO: Add other useful fields. apiVersion, kind, uid?'
+                      type: string
+                  required:
+                  - name
+                  type: object
+                caBundle:
+                  description: Base64 encoded CA bundle to validate cfssl server certificate.
+                    Only used if the Server URL is using HTTPS protocol. This parameter
+                    is ignored for plain HTTP protocol connection. If not set the
+                    system root certificates are used to validate the TLS connection.
+                  format: byte
+                  type: string
+                server:
+                  description: Server is the cfssl connection address This field is
+                    required.
+                  type: string
+              required:
+              - server
               type: object
             selfSigned:
               type: object

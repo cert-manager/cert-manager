@@ -10,6 +10,7 @@ container_bundle(
         "k8s.gcr.io/defaultbackend:bazel": "@io_gcr_k8s_defaultbackend//image",
         "vault:bazel": "@com_hashicorp_vault//image",
         "sample-webhook:bazel": "//test/e2e/framework/addon/samplewebhook/sample:image",
+        "cfssl:bazel": "@com_cloudflare_cfssl//image",
         "gcr.io/kubernetes-helm/tiller:bazel": "@io_gcr_helm_tiller//image",
         "{STABLE_DOCKER_REPO}/cert-manager-controller:{STABLE_DOCKER_TAG}": "//cmd/controller:image",
         "{STABLE_DOCKER_REPO}/cert-manager-acmesolver:{STABLE_DOCKER_TAG}": "//cmd/acmesolver:image",

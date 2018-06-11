@@ -75,6 +75,12 @@ func SetIssuerSelfSigned(a v1alpha1.SelfSignedIssuer) IssuerModifier {
 	}
 }
 
+func SetIssuerCFSSL(a v1alpha1.CFSSLIssuer) IssuerModifier {
+	return func(iss v1alpha1.GenericIssuer) {
+		iss.GetSpec().CFSSL = &a
+	}
+}
+
 func AddIssuerCondition(c v1alpha1.IssuerCondition) IssuerModifier {
 	return func(iss v1alpha1.GenericIssuer) {
 		iss.GetStatus().Conditions = append(iss.GetStatus().Conditions, c)

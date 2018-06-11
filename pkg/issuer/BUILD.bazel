@@ -30,6 +30,7 @@ filegroup(
         ":package-srcs",
         "//pkg/issuer/acme:all-srcs",
         "//pkg/issuer/ca:all-srcs",
+        "//pkg/issuer/cfssl:all-srcs",
         "//pkg/issuer/fake:all-srcs",
         "//pkg/issuer/selfsigned:all-srcs",
         "//pkg/issuer/vault:all-srcs",

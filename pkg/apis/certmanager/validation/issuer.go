@@ -79,6 +79,14 @@ func ValidateIssuerConfig(iss *v1alpha1.IssuerConfig, fldPath *field.Path) field
 			el = append(el, ValidateVaultIssuerConfig(iss.Vault, fldPath.Child("vault"))...)
 		}
 	}
+	if iss.CFSSL != nil {
+		if numConfigs > 0 {
+			el = append(el, field.Forbidden(fldPath.Child("cfssl"), "may not specify more than one issuer type"))
+		} else {
+			numConfigs++
+			el = append(el, ValidateCFSSLIssuerConfig(iss.CFSSL, fldPath.Child("cfssl"))...)
+		}
+	}
 	if iss.Venafi != nil {
 		if numConfigs > 0 {
 			el = append(el, field.Forbidden(fldPath.Child("venafi"), "may not specify more than one issuer type"))
@@ -156,6 +164,27 @@ func ValidateACMEIssuerChallengeSolverHTTP01IngressPodTemplateConfig(podTempl *v
 		el = append(el, field.Invalid(fldPath.Child("metadata"), "", "only labels and annotations may be set on podTemplate"))
 	}
 
+	return el
+}
+
+func ValidateCFSSLIssuerConfig(iss *v1alpha1.CFSSLIssuer, fldPath *field.Path) field.ErrorList {
+	el := field.ErrorList{}
+	if len(iss.Server) == 0 {
+		el = append(el, field.Required(fldPath.Child("server"), "cfssl server url is a required field"))
+	}
+	if iss.AuthKey != nil {
+		el = append(el, ValidateSecretKeySelector(iss.AuthKey, fldPath.Child("authKey"))...)
+	}
+
+	// check if caBundle is valid
+	certs := iss.CABundle
+	if len(iss.CABundle) > 0 {
+		caCertPool := x509.NewCertPool()
+		ok := caCertPool.AppendCertsFromPEM(certs)
+		if !ok {
+			el = append(el, field.Invalid(fldPath.Child("caBundle"), "", "Specified CA bundle is invalid"))
+		}
+	}
 	return el
 }
 

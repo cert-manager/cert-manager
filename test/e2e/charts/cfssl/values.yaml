@@ -1,0 +1,22 @@
+replicaCount: 1
+image:
+  repository: cfssl
+  tag: "bazel"
+  pullPolicy: Never
+service:
+  type: ClusterIP
+  internalPort: 8080
+
+volumes:
+  configMountPath: /cfssl/config
+
+signing:
+  authKey: C0DEC0DEC0DEC0DEC0DEC0DE
+
+resources:
+  limits:
+    cpu: 50m
+    memory: 32Mi
+  requests:
+    cpu: 50m
+    memory: 32Mi

@@ -39,6 +39,7 @@ func (c *controller) issuersForSecret(secret *corev1.Secret) ([]*v1alpha1.Issuer
 		}
 		if (iss.Spec.ACME != nil && iss.Spec.ACME.PrivateKey.Name == secret.Name) ||
 			(iss.Spec.CA != nil && iss.Spec.CA.SecretName == secret.Name) ||
+			(iss.Spec.CFSSL != nil && iss.Spec.CFSSL.AuthKey != nil && iss.Spec.CFSSL.AuthKey.Name == secret.Name) ||
 			(iss.Spec.Vault != nil && iss.Spec.Vault.Auth.TokenSecretRef.Name == secret.Name) ||
 			(iss.Spec.Venafi != nil && iss.Spec.Venafi.TPP != nil && iss.Spec.Venafi.TPP.CredentialsRef.Name == secret.Name) ||
 			(iss.Spec.Venafi != nil && iss.Spec.Venafi.Cloud != nil && iss.Spec.Venafi.Cloud.APITokenSecretRef.Name == secret.Name) {
