@@ -18,7 +18,7 @@ First, run minikube, and configure your local kubectl command to work with minik
    minikube version: v0.25.0
 
    # Start a local cluster
-   $ minikube start --extra-config=apiserver.Authorization.Mode=RBAC
+   $ minikube start --extra-config=apiserver.authorization-mode=RBAC
 
    # Verify it works. This should output a local apiserver IP
    $ kubectl cluster-info
