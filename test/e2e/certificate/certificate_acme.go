@@ -31,7 +31,7 @@ import (
 )
 
 const invalidACMEURL = "http://not-a-real-acme-url.com"
-const testingACMEEmail = "test@example.com"
+const testingACMEEmail = "e2e@cert-manager.io"
 const testingACMEPrivateKey = "test-acme-private-key"
 const foreverTestTimeout = time.Second * 60
 
