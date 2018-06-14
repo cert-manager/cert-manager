@@ -309,16 +309,16 @@ func (a *Acme) selectChallengesForAuthorizations(ctx context.Context, cl client.
 		var challenge *acme.Challenge
 		for _, ch := range authz.Challenges {
 			switch {
-			case ch.Type == "http-01" && cfg.HTTP01 != nil:
+			case ch.Type == "http-01" && cfg.HTTP01 != nil && a.issuer.GetSpec().ACME.HTTP01 != nil:
 				challenge = ch
-			case ch.Type == "dns-01" && cfg.DNS01 != nil:
+			case ch.Type == "dns-01" && cfg.DNS01 != nil && a.issuer.GetSpec().ACME.DNS01 != nil:
 				challenge = ch
 			}
 		}
 
 		domain := authz.Identifier.Value
 		if challenge == nil {
-			errs = append(errs, fmt.Errorf("ACME server does not allow selected challenge type for domain %q", domain))
+			errs = append(errs, fmt.Errorf("ACME server does not allow selected challenge type or no provider is configured for domain %q", domain))
 			continue
 		}
 
