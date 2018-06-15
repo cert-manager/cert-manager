@@ -128,7 +128,7 @@ currently supported Issuer types are:
 +-----------------------------------------------+----------------------------------------------------------------------+
 | :doc:`Vault <issuers/vault/index>`            | Supports issuing certificates using HashiCorp Vault.                 |
 +-----------------------------------------------+----------------------------------------------------------------------+
-| :doc:`Self signed <issuers/selfsigned/index>` | Supports issuing self signed Certificates                            |
+| :doc:`Self signed <issuers/selfsigned/index>` | Supports issuing self signed certificates                            |
 +-----------------------------------------------+----------------------------------------------------------------------+
 
 

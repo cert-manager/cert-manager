@@ -28,7 +28,7 @@ created with a resource like so:
    The presence of the ``selfSigned: {}`` line is enough to indicate that this Issuer
    is of type 'self signed'.
 
-Once created, you should be able to Issue certificates like normal by
+Once created, you should be able to issue certificates like usual by
 referencing the newly created Issuer in your ``issuerRef``:
 
 .. code-block:: yaml
