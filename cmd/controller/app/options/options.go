@@ -29,6 +29,8 @@ type ControllerOptions struct {
 	DefaultIssuerKind                  string
 	DefaultACMEIssuerChallengeType     string
 	DefaultACMEIssuerDNS01ProviderName string
+
+	LocalManifestsDir string
 }
 
 const (
@@ -48,6 +50,8 @@ const (
 	defaultTLSACMEIssuerKind           = "Issuer"
 	defaultACMEIssuerChallengeType     = "http01"
 	defaultACMEIssuerDNS01ProviderName = ""
+
+	defaultLocalManifestsDir = "/etc/cert-manager/manifests"
 )
 
 var (
@@ -69,6 +73,7 @@ func NewControllerOptions() *ControllerOptions {
 		DefaultIssuerKind:                  defaultTLSACMEIssuerKind,
 		DefaultACMEIssuerChallengeType:     defaultACMEIssuerChallengeType,
 		DefaultACMEIssuerDNS01ProviderName: defaultACMEIssuerDNS01ProviderName,
+		LocalManifestsDir:                  defaultLocalManifestsDir,
 	}
 }
 
@@ -120,6 +125,10 @@ func (s *ControllerOptions) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVar(&s.DefaultACMEIssuerDNS01ProviderName, "default-acme-issuer-dns01-provider-name", defaultACMEIssuerDNS01ProviderName, ""+
 		"Required if --default-acme-issuer-challenge-type is set to dns01. The DNS01 provider to use for ingresses using ACME dns01 "+
 		"validation that do not explicitly state a dns provider.")
+
+	fs.StringVar(&s.LocalManifestsDir, "local-manifests-dir", defaultLocalManifestsDir, ""+
+		"Directory containing resources to be synced and mirrored back to the Kubernetes API. "+
+		"Similar to 'mirror pods' in Kubernetes.")
 }
 
 func (o *ControllerOptions) Validate() error {

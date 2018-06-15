@@ -129,6 +129,7 @@ func buildControllerContext(opts *options.ControllerOptions) (*controller.Contex
 		DefaultIssuerKind:                  opts.DefaultIssuerKind,
 		DefaultACMEIssuerChallengeType:     opts.DefaultACMEIssuerChallengeType,
 		DefaultACMEIssuerDNS01ProviderName: opts.DefaultACMEIssuerDNS01ProviderName,
+		LocalManifestsDir:                  opts.LocalManifestsDir,
 	}, kubeCfg, nil
 }
 
