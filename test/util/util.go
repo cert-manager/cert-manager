@@ -242,7 +242,7 @@ func NewCertManagerCAClusterIssuer(name, secretName string) *v1alpha1.ClusterIss
 	}
 }
 
-func NewCertManagerCACertificate(name, secretName, issuerName string, issuerKind string) *v1alpha1.Certificate {
+func NewCertManagerBasicCertificate(name, secretName, issuerName string, issuerKind string) *v1alpha1.Certificate {
 	return &v1alpha1.Certificate{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: name,
@@ -371,6 +371,19 @@ func NewCertManagerCAIssuer(name, secretName string) *v1alpha1.Issuer {
 				CA: &v1alpha1.CAIssuer{
 					SecretName: secretName,
 				},
+			},
+		},
+	}
+}
+
+func NewCertManagerSelfSignedIssuer(name string) *v1alpha1.Issuer {
+	return &v1alpha1.Issuer{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: name,
+		},
+		Spec: v1alpha1.IssuerSpec{
+			IssuerConfig: v1alpha1.IssuerConfig{
+				SelfSigned: &v1alpha1.SelfSignedIssuer{},
 			},
 		},
 	}

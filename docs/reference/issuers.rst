@@ -117,18 +117,20 @@ Supported Issuer types
 cert-manager has been designed to support pluggable Issuer backends. The
 currently supported Issuer types are:
 
-===================================   =========================================
-Name                                  Description
-===================================   =========================================
-:doc:`ACME <issuers/acme/index>`      Supports obtaining certificates from an
-                                      ACME server, validating with HTTP01 or
-                                      DNS01
-:doc:`CA <issuers/ca/index>`          Supports issuing certificates using a
-                                      simple signing keypair, stored in a Secret
-                                      in the Kubernetes API server
-:doc:`Vault <issuers/vault/index>`    Supports issuing certificates using
-                                      HashiCorp Vault.
-===================================   =========================================
++-----------------------------------------------+----------------------------------------------------------------------+
+| Name                                          | Description                                                          |
++===============================================+======================================================================+
+| :doc:`ACME <issuers/acme/index>`              | Supports obtaining certificates from an ACME server, validating with |
+|                                               | HTTP01 or DNS01                                                      |
++-----------------------------------------------+----------------------------------------------------------------------+
+| :doc:`CA <issuers/ca/index>`                  | Supports issuing certificates using a simple signing keypair, stored |
+|                                               | in a Secret in the Kubernetes API server                             |
++-----------------------------------------------+----------------------------------------------------------------------+
+| :doc:`Vault <issuers/vault/index>`            | Supports issuing certificates using HashiCorp Vault.                 |
++-----------------------------------------------+----------------------------------------------------------------------+
+| :doc:`Self signed <issuers/selfsigned/index>` | Supports issuing self signed certificates                            |
++-----------------------------------------------+----------------------------------------------------------------------+
+
 
 Each Issuer resource is of one, and only one type. The type of an Issuer is
 inferred by which field it specifies in its spec, such as ``spec.acme``

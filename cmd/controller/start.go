@@ -17,6 +17,7 @@ import (
 	_ "github.com/jetstack/cert-manager/pkg/controller/issuers"
 	_ "github.com/jetstack/cert-manager/pkg/issuer/acme"
 	_ "github.com/jetstack/cert-manager/pkg/issuer/ca"
+	_ "github.com/jetstack/cert-manager/pkg/issuer/selfsigned"
 	_ "github.com/jetstack/cert-manager/pkg/issuer/vault"
 	"github.com/jetstack/cert-manager/pkg/util"
 )

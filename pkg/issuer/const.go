@@ -13,6 +13,8 @@ const (
 	IssuerCA string = "ca"
 	// IssuerVault is the name of the Vault issuer
 	IssuerVault string = "vault"
+	// IssuerSelfSigned is a self signing issuer
+	IssuerSelfSigned string = "selfsigned"
 )
 
 // nameForIssuer determines the name of the issuer implementation given an
@@ -25,6 +27,8 @@ func nameForIssuer(i v1alpha1.GenericIssuer) (string, error) {
 		return IssuerCA, nil
 	case i.GetSpec().Vault != nil:
 		return IssuerVault, nil
+	case i.GetSpec().SelfSigned != nil:
+		return IssuerSelfSigned, nil
 	}
 	return "", fmt.Errorf("no issuer specified for Issuer '%s/%s'", i.GetObjectMeta().Namespace, i.GetObjectMeta().Name)
 }
