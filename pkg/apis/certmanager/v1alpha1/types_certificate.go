@@ -68,6 +68,10 @@ type CertificateSpec struct {
 	// The 'name' field in this stanza is required at all times.
 	IssuerRef ObjectReference `json:"issuerRef"`
 
+	// IsCA will mark this Certificate as valid for signing.
+	// This implies that the 'signing' usage is set
+	IsCA bool `json:"isCA,omitempty"`
+
 	// ACME contains configuration specific to ACME Certificates.
 	// Notably, this contains details on how the domain names listed on this
 	// Certificate resource should be 'solved', i.e. mapping HTTP01 and DNS01

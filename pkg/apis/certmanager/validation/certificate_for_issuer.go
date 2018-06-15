@@ -55,6 +55,10 @@ func ValidateCertificateForACMEIssuer(crt *v1alpha1.CertificateSpec, issuer *v1a
 		el = append(el, field.Invalid(specPath.Child("keyAlgorithm"), crt.KeyAlgorithm, "ACME key algorithm must be RSA"))
 	}
 
+	if crt.IsCA {
+		el = append(el, field.Invalid(specPath.Child("isCA"), crt.KeyAlgorithm, "ACME does not support CA certificates"))
+	}
+
 	return el
 }
 
@@ -66,6 +70,10 @@ func ValidateCertificateForCAIssuer(crt *v1alpha1.CertificateSpec, issuer *v1alp
 
 func ValidateCertificateForVaultIssuer(crt *v1alpha1.CertificateSpec, issuer *v1alpha1.IssuerSpec, specPath *field.Path) field.ErrorList {
 	el := field.ErrorList{}
+
+	if crt.IsCA {
+		el = append(el, field.Invalid(specPath.Child("isCA"), crt.KeyAlgorithm, "Vault issuer does not currently support CA certificates"))
+	}
 
 	return el
 }
