@@ -56,8 +56,6 @@ type Controller struct {
 // The 'workers' parameter is ignored, and only one manifest will be processed
 // at a time.
 func (c *Controller) Run(_ int, stopCh <-chan struct{}) error {
-	c.queue = workqueue.NewNamedRateLimitingQueue(workqueue.NewItemExponentialFailureRateLimiter(time.Second*2, time.Minute*1), "localmanifests")
-
 	// wait for all the informer caches we depend to sync
 	if !cache.WaitForCacheSync(stopCh,
 		c.certificateInformer.Informer().HasSynced,
@@ -208,6 +206,8 @@ func (c *Controller) persistCertificate(obj runtime.Object) error {
 
 	existingCrt, err := c.certificateInformer.Lister().Certificates(crt.Namespace).Get(crt.Name)
 	if err == nil && existingCrt.ResourceVersion != "" {
+		// we must deepcopy the certificate as we are modifying it
+		crt = crt.DeepCopy()
 		// we want to overwrite the contents of the Certificate, and this is a
 		// required field on update
 		crt.ResourceVersion = existingCrt.ResourceVersion
@@ -234,6 +234,8 @@ func (c *Controller) persistIssuer(obj runtime.Object) error {
 
 	existingIss, err := c.issuerInformer.Lister().Issuers(iss.Namespace).Get(iss.Name)
 	if err == nil && existingIss.ResourceVersion != "" {
+		// we must deepcopy the issuer as we are modifying it
+		iss = iss.DeepCopy()
 		// we want to overwrite the contents of the Issuer, and this is a
 		// required field on update
 		iss.ResourceVersion = existingIss.ResourceVersion
@@ -260,6 +262,8 @@ func (c *Controller) persistClusterIssuer(obj runtime.Object) error {
 
 	existingIss, err := c.clusterIssuerInformer.Lister().Get(iss.Name)
 	if err == nil && existingIss.ResourceVersion != "" {
+		// we must deepcopy the issuer as we are modifying it
+		iss = iss.DeepCopy()
 		// we want to overwrite the contents of the ClusterIssuer, and this is a
 		// required field on update
 		iss.ResourceVersion = existingIss.ResourceVersion
@@ -290,6 +294,7 @@ func init() {
 			issuerInformer:        ctx.SharedInformerFactory.Certmanager().V1alpha1().Issuers(),
 			clusterIssuerInformer: ctx.SharedInformerFactory.Certmanager().V1alpha1().ClusterIssuers(),
 			manifestsPath:         ctx.LocalManifestsDir,
+			queue:                 workqueue.NewNamedRateLimitingQueue(workqueue.NewItemExponentialFailureRateLimiter(time.Second*2, time.Minute*1), "localmanifests"),
 		}).Run
 	})
 }
