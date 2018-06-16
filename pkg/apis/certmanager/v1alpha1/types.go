@@ -426,6 +426,7 @@ type ObjectReference struct {
 }
 
 const (
+	CertificateKind   = "Certificate"
 	ClusterIssuerKind = "ClusterIssuer"
 	IssuerKind        = "Issuer"
 )

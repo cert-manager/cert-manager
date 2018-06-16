@@ -41,4 +41,8 @@ type Context struct {
 	DefaultIssuerKind                  string
 	DefaultACMEIssuerChallengeType     string
 	DefaultACMEIssuerDNS01ProviderName string
+
+	// LocalManifestsDir is the directory containing local manifests that
+	// should be processed and eventually persisted to the API server.
+	LocalManifestsDir string
 }
