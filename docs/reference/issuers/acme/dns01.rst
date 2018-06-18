@@ -76,12 +76,12 @@ Cert-manager requires the following IAM policy.
            {
                "Effect": "Allow",
                "Action": "route53:GetChange",
-               "Resource": "*"
+               "Resource": "arn:aws:route53:::change/*"
            },
            {
                "Effect": "Allow",
                "Action": "route53:ChangeResourceRecordSets",
-               "Resource": "*"
+               "Resource": "arn:aws:route53:::hostedzone/*"
            },
            {
                "Effect": "Allow",
