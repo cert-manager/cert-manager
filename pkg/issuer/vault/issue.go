@@ -3,9 +3,6 @@ package vault
 import (
 	"bytes"
 	"context"
-	"crypto/rand"
-	"crypto/rsa"
-	"crypto/x509"
 	"encoding/pem"
 	"fmt"
 	"path"
@@ -36,8 +33,6 @@ const (
 )
 
 const (
-	defaultOrganization = "cert-manager"
-
 	keyBitSize = 2048
 )
 
@@ -68,45 +63,28 @@ func (v *Vault) obtainCertificate(ctx context.Context, crt *v1alpha1.Certificate
 		return nil, nil, fmt.Errorf("error getting certificate private key: %s", err.Error())
 	}
 
-	commonName := crt.Spec.CommonName
-	altNames := crt.Spec.DNSNames
-	if len(commonName) == 0 && len(altNames) == 0 {
-		return nil, nil, fmt.Errorf("no domains specified on certificate")
-	}
-
-	crtPem, err := v.signCertificate(crt, signeeKey)
+	template, err := pki.GenerateCSR(v.issuer, crt)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	return pki.EncodePKCS1PrivateKey(signeeKey), crtPem, nil
-}
-
-// signCertificate returns a signed x509.Certificate object for the given
-// *v1alpha1.Certificate crt.
-func (v *Vault) signCertificate(crt *v1alpha1.Certificate, key *rsa.PrivateKey) ([]byte, error) {
-	commonName := pki.CommonNameForCertificate(crt)
-	altNames := pki.DNSNamesForCertificate(crt)
-
-	if len(commonName) == 0 && len(altNames) > 0 {
-		commonName = altNames[0]
-	}
-
-	template := pki.GenerateCSR(commonName, altNames...)
-	template.Subject.Organization = []string{defaultOrganization}
-
-	derBytes, err := x509.CreateCertificateRequest(rand.Reader, template, key)
+	derBytes, err := pki.EncodeCSR(template, signeeKey)
 	if err != nil {
-		return nil, fmt.Errorf("error creating x509 certificate: %s", err.Error())
+		return nil, nil, err
 	}
 
 	pemRequestBuf := &bytes.Buffer{}
 	err = pem.Encode(pemRequestBuf, &pem.Block{Type: "CERTIFICATE REQUEST", Bytes: derBytes})
 	if err != nil {
-		return nil, fmt.Errorf("error encoding certificate request: %s", err.Error())
+		return nil, nil, fmt.Errorf("error encoding certificate request: %s", err.Error())
 	}
 
-	return v.requestVaultCert(commonName, altNames, pemRequestBuf.String())
+	crtBytes, err := v.requestVaultCert(template.Subject.CommonName, template.DNSNames, pemRequestBuf.Bytes())
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return pki.EncodePKCS1PrivateKey(signeeKey), crtBytes, nil
 }
 
 func (v *Vault) initVaultClient() (*vault.Client, error) {
@@ -183,7 +161,7 @@ func (v *Vault) requestTokenWithAppRoleRef(client *vault.Client, appRole *v1alph
 	return token, nil
 }
 
-func (v *Vault) requestVaultCert(commonName string, altNames []string, csr string) ([]byte, error) {
+func (v *Vault) requestVaultCert(commonName string, altNames []string, csr []byte) ([]byte, error) {
 	client, err := v.initVaultClient()
 	if err != nil {
 		return nil, err
@@ -195,7 +173,7 @@ func (v *Vault) requestVaultCert(commonName string, altNames []string, csr strin
 		"common_name": commonName,
 		"alt_names":   strings.Join(altNames, ","),
 		"ttl":         defaultCertificateDuration.String(),
-		"csr":         csr,
+		"csr":         string(csr),
 		"exclude_cn_from_sans": "true",
 	}
 

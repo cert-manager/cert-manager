@@ -2,6 +2,7 @@ package issuers
 
 import (
 	"context"
+	"reflect"
 
 	"github.com/golang/glog"
 	"k8s.io/api/core/v1"
@@ -26,6 +27,10 @@ func (c *Controller) Sync(ctx context.Context, iss *v1alpha1.Issuer) (err error)
 
 	err = i.Setup(ctx)
 	defer func() {
+		// TODO: replace this with more efficient comparison?
+		if reflect.DeepEqual(issuerCopy.Status, iss.Status) {
+			return
+		}
 		if saveErr := c.updateIssuerStatus(issuerCopy); saveErr != nil {
 			errs := []error{saveErr}
 			if err != nil {

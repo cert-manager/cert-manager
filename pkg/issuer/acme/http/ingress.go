@@ -40,7 +40,7 @@ func (s *Solver) getIngressesForChallenge(crt *v1alpha1.Certificate, ch v1alpha1
 	for _, ingress := range ingressList {
 		if !metav1.IsControlledBy(ingress, crt) {
 			glog.Infof("Found ingress %q with acme-order-url annotation set to that of Certificate %q "+
-				"but it is not owned by the Certificate resource, so skipping it.", ingress.Name, crt.Name)
+				"but it is not owned by the Certificate resource, so skipping it.", ingress.Namespace+"/"+ingress.Name, crt.Namespace+"/"+crt.Name)
 			continue
 		}
 		relevantIngresses = append(relevantIngresses, ingress)
@@ -83,7 +83,7 @@ func (s *Solver) ensureIngress(crt *v1alpha1.Certificate, svcName string, ch v1a
 		return nil, fmt.Errorf(errMsg)
 	}
 
-	glog.Infof("No existing HTTP01 challenge solver ingress found for Certificate %q. One will be created.")
+	glog.Infof("No existing HTTP01 challenge solver ingress found for Certificate %q. One will be created.", crt.Namespace+"/"+crt.Name)
 	return s.createIngress(crt, svcName, ch)
 }
 
@@ -193,7 +193,7 @@ func (s *Solver) cleanupIngresses(crt *v1alpha1.Certificate, ch v1alpha1.ACMEOrd
 		if err != nil {
 			return err
 		}
-		glog.V(4).Infof("Found %d ingresses to clean up for certificate %q", len(ingresses), crt.Name)
+		glog.V(4).Infof("Found %d ingresses to clean up for certificate %q", len(ingresses), crt.Namespace+"/"+crt.Name)
 		var errs []error
 		for _, ingress := range ingresses {
 			// TODO: should we call DeleteCollection here? We'd need to somehow
@@ -209,7 +209,7 @@ func (s *Solver) cleanupIngresses(crt *v1alpha1.Certificate, ch v1alpha1.ACMEOrd
 	// otherwise, we need to remove any cert-manager added rules from the ingress resource
 	ing, err := s.client.ExtensionsV1beta1().Ingresses(crt.Namespace).Get(existingIngressName, metav1.GetOptions{})
 	if k8sErrors.IsNotFound(err) {
-		glog.Infof("attempt to cleanup Ingress %q of ACME challenge path failed: %v", existingIngressName, err)
+		glog.Infof("attempt to cleanup Ingress %q of ACME challenge path failed: %v", crt.Namespace+"/"+existingIngressName, err)
 		return nil
 	}
 	if err != nil {

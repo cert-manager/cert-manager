@@ -36,10 +36,10 @@ var findZoneByFqdnTests = []struct {
 	fqdn string
 	zone string
 }{
-	{"mail.google.com.", "google.com."}, // domain is a CNAME
-	{"foo.google.com.", "google.com."},  // domain is a non-existent subdomain
-	// TODO: work out why this test doesn't work
-	//{"example.com.ac.", "ac."},          // domain is a eTLD
+	{"mail.google.com.", "google.com."},             // domain is a CNAME
+	{"foo.google.com.", "google.com."},              // domain is a non-existent subdomain
+	{"example.com.ac.", "ac."},                      // domain is a eTLD
+	{"cross-zone-example.assets.sh.", "assets.sh."}, // domain is a cross-zone CNAME
 }
 
 var checkAuthoritativeNssTests = []struct {

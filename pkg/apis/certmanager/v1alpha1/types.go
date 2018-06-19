@@ -81,9 +81,13 @@ type IssuerSpec struct {
 }
 
 type IssuerConfig struct {
-	ACME  *ACMEIssuer  `json:"acme,omitempty"`
-	CA    *CAIssuer    `json:"ca,omitempty"`
-	Vault *VaultIssuer `json:"vault,omitempty"`
+	ACME       *ACMEIssuer       `json:"acme,omitempty"`
+	CA         *CAIssuer         `json:"ca,omitempty"`
+	Vault      *VaultIssuer      `json:"vault,omitempty"`
+	SelfSigned *SelfSignedIssuer `json:"selfSigned,omitempty"`
+}
+
+type SelfSignedIssuer struct {
 }
 
 type VaultIssuer struct {

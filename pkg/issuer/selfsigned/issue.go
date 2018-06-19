@@ -1,8 +1,9 @@
-package ca
+package selfsigned
 
 import (
 	"context"
-	"fmt"
+	"crypto/rsa"
+	"time"
 
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 
@@ -13,7 +14,7 @@ import (
 )
 
 const (
-	errorGetCertKeyPair = "ErrGetCertKeyPair"
+	errorGetCertKeyPair = "ErrGetKey"
 	errorIssueCert      = "ErrIssueCert"
 
 	successCertIssued = "CertIssueSuccess"
@@ -24,7 +25,13 @@ const (
 	messageCertIssued = "Certificate issued successfully"
 )
 
-func (c *CA) Issue(ctx context.Context, crt *v1alpha1.Certificate) ([]byte, []byte, error) {
+const (
+	// certificateDuration of 1 year
+	certificateDuration = time.Hour * 24 * 365
+	defaultOrganization = "cert-manager"
+)
+
+func (c *SelfSigned) Issue(ctx context.Context, crt *v1alpha1.Certificate) ([]byte, []byte, error) {
 	signeeKey, err := kube.SecretTLSKey(c.secretsLister, crt.Namespace, crt.Spec.SecretName)
 
 	if k8sErrors.IsNotFound(err) || errors.IsInvalidData(err) {
@@ -37,7 +44,7 @@ func (c *CA) Issue(ctx context.Context, crt *v1alpha1.Certificate) ([]byte, []by
 		return nil, nil, err
 	}
 
-	certPem, err := c.obtainCertificate(crt, &signeeKey.PublicKey)
+	certPem, err := c.obtainCertificate(crt, signeeKey)
 
 	if err != nil {
 		s := messageErrorIssueCert + err.Error()
@@ -50,29 +57,15 @@ func (c *CA) Issue(ctx context.Context, crt *v1alpha1.Certificate) ([]byte, []by
 	return pki.EncodePKCS1PrivateKey(signeeKey), certPem, nil
 }
 
-func (c *CA) obtainCertificate(crt *v1alpha1.Certificate, signeeKey interface{}) ([]byte, error) {
-	commonName := crt.Spec.CommonName
-	altNames := crt.Spec.DNSNames
-	if len(commonName) == 0 && len(altNames) == 0 {
-		return nil, fmt.Errorf("no domains specified on certificate")
-	}
-
-	signerCert, err := kube.SecretTLSCert(c.secretsLister, c.issuerResourcesNamespace, c.issuer.GetSpec().CA.SecretName)
-	if err != nil {
-		return nil, fmt.Errorf("error getting issuer certificate: %s", err.Error())
-	}
-
-	signerKey, err := kube.SecretTLSKey(c.secretsLister, c.issuerResourcesNamespace, c.issuer.GetSpec().CA.SecretName)
-	if err != nil {
-		return nil, fmt.Errorf("error getting issuer private key: %s", err.Error())
-	}
+func (c *SelfSigned) obtainCertificate(crt *v1alpha1.Certificate, privateKey *rsa.PrivateKey) ([]byte, error) {
+	publicKey := privateKey.Public()
 
 	template, err := pki.GenerateTemplate(c.issuer, crt, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	crtPem, _, err := pki.SignCertificate(template, signerCert, signeeKey, signerKey)
+	crtPem, _, err := pki.SignCertificate(template, template, publicKey, privateKey)
 	if err != nil {
 		return nil, err
 	}
