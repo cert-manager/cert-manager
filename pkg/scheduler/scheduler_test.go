@@ -80,6 +80,29 @@ func TestForget(t *testing.T) {
 	wg.Wait()
 }
 
+// TestConcurrentAdd checks that if we add the same item concurrently, it
+// doesn't end up hitting a data-race / leaking a timer.
+func TestConcurrentAdd(t *testing.T) {
+	after := newMockAfter()
+	afterFunc = after.AfterFunc
+	var wg sync.WaitGroup
+	queue := NewScheduledWorkQueue(func(obj interface{}) {
+		t.Fatalf("should not be called, but was called with %v", obj)
+	})
+
+	for i := 0; i < 1000; i++ {
+		wg.Add(1)
+		go func() {
+			queue.Add(1, 1*time.Second)
+			wg.Done()
+		}()
+	}
+	wg.Wait()
+
+	queue.Forget(1)
+	after.warp(5 * time.Second)
+}
+
 type timerQueueItem struct {
 	f       func()
 	t       time.Time
@@ -94,6 +117,7 @@ func (tq *timerQueueItem) Stop() bool {
 }
 
 type mockAfter struct {
+	lock        *sync.Mutex
 	startTime   time.Time
 	currentTime time.Time
 	queue       []*timerQueueItem
@@ -102,10 +126,14 @@ type mockAfter struct {
 func newMockAfter() *mockAfter {
 	return &mockAfter{
 		queue: make([]*timerQueueItem, 0),
+		lock:  &sync.Mutex{},
 	}
 }
 
 func (m *mockAfter) AfterFunc(d time.Duration, f func()) stoppable {
+	m.lock.Lock()
+	defer m.lock.Unlock()
+
 	item := &timerQueueItem{
 		f: f,
 		t: m.currentTime.Add(d),
@@ -115,6 +143,8 @@ func (m *mockAfter) AfterFunc(d time.Duration, f func()) stoppable {
 }
 
 func (m *mockAfter) warp(d time.Duration) {
+	m.lock.Lock()
+	defer m.lock.Unlock()
 	m.currentTime = m.currentTime.Add(d)
 	for _, item := range m.queue {
 		if item.run || item.stopped {
@@ -123,9 +153,7 @@ func (m *mockAfter) warp(d time.Duration) {
 
 		if item.t.Before(m.currentTime) {
 			item.run = true
-			go func(f func()) {
-				f()
-			}(item.f)
+			go item.f()
 		}
 	}
 }

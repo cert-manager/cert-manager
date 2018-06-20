@@ -48,10 +48,9 @@ func NewScheduledWorkQueue(processFunc ProcessFunc) ScheduledWorkQueue {
 // Duration has come (since the time Add was called). If an existing Timer for
 // obj already exists, the previous timer will be cancelled.
 func (s *scheduledWorkQueue) Add(obj interface{}, duration time.Duration) {
-	// we call Forget before acquiring the workLock in order to avoid deadlock
-	s.Forget(obj)
 	s.workLock.Lock()
 	defer s.workLock.Unlock()
+	s.forget(obj)
 	s.work[obj] = afterFunc(duration, func() {
 		defer s.Forget(obj)
 		s.processFunc(obj)
@@ -62,6 +61,11 @@ func (s *scheduledWorkQueue) Add(obj interface{}, duration time.Duration) {
 func (s *scheduledWorkQueue) Forget(obj interface{}) {
 	s.workLock.Lock()
 	defer s.workLock.Unlock()
+	s.forget(obj)
+}
+
+// forget cancels and removes an item. It *must* be called with the lock already held
+func (s *scheduledWorkQueue) forget(obj interface{}) {
 	if timer, ok := s.work[obj]; ok {
 		timer.Stop()
 		delete(s.work, obj)
