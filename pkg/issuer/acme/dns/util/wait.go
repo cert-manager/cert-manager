@@ -50,6 +50,21 @@ func getNameservers(path string, defaults []string) []string {
 	return systemNameservers
 }
 
+// Update FQDN with CNAME if any
+func updateDomainWithCName(r *dns.Msg, fqdn string) string {
+	for _, rr := range r.Answer {
+		if cn, ok := rr.(*dns.CNAME); ok {
+			if cn.Hdr.Name == fqdn {
+				glog.Infof("Updating FQDN: %s with it's CNAME: %s", fqdn, cn.Target)
+				fqdn = cn.Target
+				break
+			}
+		}
+	}
+
+	return fqdn
+}
+
 // checkDNSPropagation checks if the expected TXT record has been propagated to all authoritative nameservers.
 func checkDNSPropagation(fqdn, value string) (bool, error) {
 	// Initial attempt to resolve at the recursive NS
@@ -58,15 +73,7 @@ func checkDNSPropagation(fqdn, value string) (bool, error) {
 		return false, err
 	}
 	if r.Rcode == dns.RcodeSuccess {
-		// If we see a CNAME here then use the alias
-		for _, rr := range r.Answer {
-			if cn, ok := rr.(*dns.CNAME); ok {
-				if cn.Hdr.Name == fqdn {
-					fqdn = cn.Target
-					break
-				}
-			}
-		}
+		fqdn = updateDomainWithCName(r, fqdn)
 	}
 
 	authoritativeNss, err := lookupNameservers(fqdn)
