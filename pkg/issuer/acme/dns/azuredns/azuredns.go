@@ -34,8 +34,8 @@ func NewDNSProvider() (*DNSProvider, error) {
 	clientSecret := os.Getenv("AZURE_CLIENT_SECRET")
 	subscriptionID := os.Getenv("AZURE_SUBSCRIPTION_ID")
 	tenantID := os.Getenv("AZURE_TENANT_ID")
-	resourceGroupName := ("AZURE_RESOURCE_GROUP")
-	zoneName := ("AZURE_ZONE_NAME")
+	resourceGroupName := os.Getenv("AZURE_RESOURCE_GROUP")
+	zoneName := os.Getenv("AZURE_ZONE_NAME")
 
 	return NewDNSProviderCredentials(clientID, clientSecret, subscriptionID, tenantID, resourceGroupName, zoneName)
 }
