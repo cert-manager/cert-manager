@@ -5,8 +5,8 @@ replicaCount: 1
 
 image:
   repository: quay.io/jetstack/cert-manager-controller
-  tag: v0.3.0
-  pullPolicy: IfNotPresent
+  tag: canary
+  pullPolicy: Always
 
 createCustomResource: true
 
