@@ -62,7 +62,8 @@ We can now create a cluster issuer referencing this secret:
               key: secretId
 
 Where *path* is the Vault role path of the PKI backend and *server* is
-the Vault server base URL. The Vault appRole credentials are supplied as the
+the Vault server base URL. The *path* MUST USE the vault ``sign`` endpoint.
+The Vault appRole credentials are supplied as the
 Vault authentication method using the appRole created in Vault. The secretRef
 references the Kubernetes secret created previously. More specifically, the field
 *name* is the Kubernetes secret name and *key* is the name given as the
