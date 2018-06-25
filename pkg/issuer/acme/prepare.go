@@ -462,7 +462,7 @@ func (a *Acme) shouldAttemptValidation(ctx context.Context, cl client.Interface,
 			}
 		}
 
-		return prepareAttemptWaitPeriod - (time.Now().Sub(condition.LastTransitionTime.Time)), order, nil
+		return prepareAttemptWaitPeriod - (time.Now().Sub(condition.LastTransitionTime.Time)), nil, nil
 	}
 
 	return 0, nil, fmt.Errorf("unrecognised existing acme order status: %q", order.Status)
