@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/x509"
 	"fmt"
+	"reflect"
 	"strings"
 	"time"
 
@@ -15,6 +16,7 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	"github.com/jetstack/cert-manager/pkg/apis/certmanager/validation"
 	"github.com/jetstack/cert-manager/pkg/issuer"
 	"github.com/jetstack/cert-manager/pkg/util"
 	"github.com/jetstack/cert-manager/pkg/util/errors"
@@ -29,6 +31,7 @@ const (
 	errorIssuerNotReady    = "IssuerNotReady"
 	errorIssuerInit        = "IssuerInitError"
 	errorSavingCertificate = "SaveCertError"
+	errorConfig            = "ConfigError"
 
 	reasonIssuingCertificate  = "IssueCert"
 	reasonRenewingCertificate = "RenewCert"
@@ -46,13 +49,36 @@ const (
 )
 
 func (c *Controller) Sync(ctx context.Context, crt *v1alpha1.Certificate) (err error) {
+	crtCopy := crt.DeepCopy()
+	defer func() {
+		if _, saveErr := c.updateCertificateStatus(crt, crtCopy); saveErr != nil {
+			err = utilerrors.NewAggregate([]error{saveErr, err})
+		}
+	}()
+
+	el := validation.ValidateCertificate(crtCopy)
+	if len(el) > 0 {
+		msg := fmt.Sprintf("Resource validation failed: %v", el.ToAggregate())
+		crtCopy.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse, errorConfig, msg, false)
+		return
+	} else {
+		for i, c := range crtCopy.Status.Conditions {
+			if c.Type == v1alpha1.CertificateConditionReady {
+				if c.Reason == errorConfig && c.Status == v1alpha1.ConditionFalse {
+					crtCopy.Status.Conditions = append(crtCopy.Status.Conditions[:i], crtCopy.Status.Conditions[i+1:]...)
+					break
+				}
+			}
+		}
+	}
+
 	// step zero: check if the referenced issuer exists and is ready
-	issuerObj, err := c.getGenericIssuer(crt)
+	issuerObj, err := c.getGenericIssuer(crtCopy)
 
 	if err != nil {
 		s := fmt.Sprintf("Issuer %s does not exist", err.Error())
 		glog.Info(s)
-		c.recorder.Event(crt, api.EventTypeWarning, errorIssuerNotFound, s)
+		c.recorder.Event(crtCopy, api.EventTypeWarning, errorIssuerNotFound, s)
 		return err
 	}
 
@@ -63,7 +89,7 @@ func (c *Controller) Sync(ctx context.Context, crt *v1alpha1.Certificate) (err e
 	if !issuerReady {
 		s := fmt.Sprintf("Issuer %s not ready", issuerObj.GetObjectMeta().Name)
 		glog.Info(s)
-		c.recorder.Event(crt, api.EventTypeWarning, errorIssuerNotReady, s)
+		c.recorder.Event(crtCopy, api.EventTypeWarning, errorIssuerNotReady, s)
 		return fmt.Errorf(s)
 	}
 
@@ -71,12 +97,12 @@ func (c *Controller) Sync(ctx context.Context, crt *v1alpha1.Certificate) (err e
 	if err != nil {
 		s := "Error initializing issuer: " + err.Error()
 		glog.Info(s)
-		c.recorder.Event(crt, api.EventTypeWarning, errorIssuerInit, s)
+		c.recorder.Event(crtCopy, api.EventTypeWarning, errorIssuerInit, s)
 		return err
 	}
 
-	expectedCN := pki.CommonNameForCertificate(crt)
-	expectedDNSNames := pki.DNSNamesForCertificate(crt)
+	expectedCN := pki.CommonNameForCertificate(crtCopy)
+	expectedDNSNames := pki.DNSNamesForCertificate(crtCopy)
 	if expectedCN == "" || len(expectedDNSNames) == 0 {
 		// TODO: Set certificate invalid condition on certificate resource
 		// TODO: remove this check in favour of resource validation
@@ -84,8 +110,7 @@ func (c *Controller) Sync(ctx context.Context, crt *v1alpha1.Certificate) (err e
 	}
 
 	// grab existing certificate and validate private key
-	cert, err := kube.SecretTLSCert(c.secretLister, crt.Namespace, crt.Spec.SecretName)
-
+	cert, err := kube.SecretTLSCert(c.secretLister, crtCopy.Namespace, crtCopy.Spec.SecretName)
 	// if an error is returned, and that error is something other than
 	// IsNotFound or invalid data, then we should return the error.
 	if err != nil && !k8sErrors.IsNotFound(err) && !errors.IsInvalidData(err) {
@@ -95,9 +120,7 @@ func (c *Controller) Sync(ctx context.Context, crt *v1alpha1.Certificate) (err e
 	// as there is an existing certificate, or we may create one below, we will
 	// run scheduleRenewal to schedule a renewal if required at the end of
 	// execution.
-	defer c.scheduleRenewal(crt)
-
-	crtCopy := crt.DeepCopy()
+	defer c.scheduleRenewal(crtCopy)
 
 	// if the certificate was not found, or the certificate data is invalid, we
 	// should issue a new certificate.
@@ -105,12 +128,7 @@ func (c *Controller) Sync(ctx context.Context, crt *v1alpha1.Certificate) (err e
 	// listed in the certificate spec, we should re-issue the certificate.
 	if k8sErrors.IsNotFound(err) || errors.IsInvalidData(err) ||
 		expectedCN != cert.Subject.CommonName || !util.EqualUnsorted(cert.DNSNames, expectedDNSNames) {
-		err := c.issue(ctx, i, crtCopy)
-		updateErr := c.updateCertificateStatus(crtCopy)
-		if err != nil || updateErr != nil {
-			return utilerrors.NewAggregate([]error{err, updateErr})
-		}
-		return nil
+		return c.issue(ctx, i, crtCopy)
 	}
 
 	// calculate the amount of time until expiry
@@ -120,11 +138,7 @@ func (c *Controller) Sync(ctx context.Context, crt *v1alpha1.Certificate) (err e
 	renewIn := durationUntilExpiry - renewBefore
 	// if we should being attempting to renew now, then trigger a renewal
 	if renewIn <= 0 {
-		err := c.renew(ctx, i, crtCopy)
-		updateErr := c.updateCertificateStatus(crtCopy)
-		if err != nil || updateErr != nil {
-			return utilerrors.NewAggregate([]error{err, updateErr})
-		}
+		return c.renew(ctx, i, crtCopy)
 	}
 
 	return nil
@@ -306,10 +320,12 @@ func (c *Controller) renew(ctx context.Context, issuer issuer.Interface, crt *v1
 	return nil
 }
 
-func (c *Controller) updateCertificateStatus(crt *v1alpha1.Certificate) error {
+func (c *Controller) updateCertificateStatus(old, new *v1alpha1.Certificate) (*v1alpha1.Certificate, error) {
+	if reflect.DeepEqual(old.Status, new.Status) {
+		return nil, nil
+	}
 	// TODO: replace Update call with UpdateStatus. This requires a custom API
 	// server with the /status subresource enabled and/or subresource support
 	// for CRDs (https://github.com/kubernetes/kubernetes/issues/38113)
-	_, err := c.cmClient.CertmanagerV1alpha1().Certificates(crt.Namespace).Update(crt)
-	return err
+	return c.cmClient.CertmanagerV1alpha1().Certificates(new.Namespace).Update(new)
 }

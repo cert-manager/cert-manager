@@ -1,0 +1,198 @@
+package validation
+
+import (
+	"k8s.io/apimachinery/pkg/util/validation/field"
+
+	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+)
+
+// Validation functions for cert-manager v1alpha1 Issuer types
+
+func ValidateIssuer(iss *v1alpha1.Issuer) field.ErrorList {
+	allErrs := ValidateIssuerSpec(&iss.Spec, field.NewPath("spec"))
+	return allErrs
+}
+
+func ValidateIssuerSpec(iss *v1alpha1.IssuerSpec, fldPath *field.Path) field.ErrorList {
+	el := field.ErrorList{}
+	el = ValidateIssuerConfig(&iss.IssuerConfig, fldPath)
+	return el
+}
+
+func ValidateIssuerConfig(iss *v1alpha1.IssuerConfig, fldPath *field.Path) field.ErrorList {
+	numConfigs := 0
+	el := field.ErrorList{}
+	if iss.ACME != nil {
+		if numConfigs > 0 {
+			el = append(el, field.Forbidden(fldPath.Child("acme"), "may not specify more than one issuer type"))
+		} else {
+			numConfigs++
+			el = append(el, ValidateACMEIssuerConfig(iss.ACME, fldPath.Child("acme"))...)
+		}
+	}
+	if iss.CA != nil {
+		if numConfigs > 0 {
+			el = append(el, field.Forbidden(fldPath.Child("ca"), "may not specify more than one issuer type"))
+		} else {
+			numConfigs++
+			el = append(el, ValidateCAIssuerConfig(iss.CA, fldPath.Child("ca"))...)
+		}
+	}
+	if iss.SelfSigned != nil {
+		if numConfigs > 0 {
+			el = append(el, field.Forbidden(fldPath.Child("selfSigned"), "may not specify more than one issuer type"))
+		} else {
+			numConfigs++
+			el = append(el, ValidateSelfSignedIssuerConfig(iss.SelfSigned, fldPath.Child("selfSigned"))...)
+		}
+	}
+	if iss.Vault != nil {
+		if numConfigs > 0 {
+			el = append(el, field.Forbidden(fldPath.Child("vault"), "may not specify more than one issuer type"))
+		} else {
+			numConfigs++
+			el = append(el, ValidateVaultIssuerConfig(iss.Vault, fldPath.Child("vault"))...)
+		}
+	}
+	if numConfigs == 0 {
+		el = append(el, field.Required(fldPath, "at least one issuer must be configured"))
+	}
+	return el
+}
+
+func ValidateACMEIssuerConfig(iss *v1alpha1.ACMEIssuer, fldPath *field.Path) field.ErrorList {
+	el := field.ErrorList{}
+	if len(iss.Email) == 0 {
+		el = append(el, field.Required(fldPath.Child("email"), "email address is a required field"))
+	}
+	if len(iss.PrivateKey.Name) == 0 {
+		el = append(el, field.Required(fldPath.Child("privateKey", "name"), "private key secret name is a required field"))
+	}
+	if len(iss.Server) == 0 {
+		el = append(el, field.Required(fldPath.Child("server"), "acme server URL is a required field"))
+	}
+	if iss.HTTP01 != nil {
+		el = append(el, ValidateACMEIssuerHTTP01Config(iss.HTTP01, fldPath.Child("http01"))...)
+	}
+	if iss.DNS01 != nil {
+		el = append(el, ValidateACMEIssuerDNS01Config(iss.DNS01, fldPath.Child("dns01"))...)
+	}
+	return el
+}
+
+func ValidateCAIssuerConfig(iss *v1alpha1.CAIssuer, fldPath *field.Path) field.ErrorList {
+	el := field.ErrorList{}
+	if len(iss.SecretName) == 0 {
+		el = append(el, field.Required(fldPath.Child("secretName"), ""))
+	}
+	return el
+}
+
+func ValidateSelfSignedIssuerConfig(iss *v1alpha1.SelfSignedIssuer, fldPath *field.Path) field.ErrorList {
+	return nil
+}
+
+func ValidateVaultIssuerConfig(iss *v1alpha1.VaultIssuer, fldPath *field.Path) field.ErrorList {
+	el := field.ErrorList{}
+	if len(iss.Server) == 0 {
+		el = append(el, field.Required(fldPath.Child("server"), ""))
+	}
+	if len(iss.Path) == 0 {
+		el = append(el, field.Required(fldPath.Child("path"), ""))
+	}
+	return el
+	// TODO: add validation for Vault authentication types
+}
+
+func ValidateACMEIssuerHTTP01Config(iss *v1alpha1.ACMEIssuerHTTP01Config, fldPath *field.Path) field.ErrorList {
+	return nil
+}
+
+func ValidateACMEIssuerDNS01Config(iss *v1alpha1.ACMEIssuerDNS01Config, fldPath *field.Path) field.ErrorList {
+	el := field.ErrorList{}
+	providersFldPath := fldPath.Child("providers")
+	for i, p := range iss.Providers {
+		fldPath := providersFldPath.Index(i)
+		if len(p.Name) == 0 {
+			el = append(el, field.Required(fldPath.Child("name"), "name must be specified"))
+		}
+		numProviders := 0
+		if p.Akamai != nil {
+			numProviders++
+			el = append(el, ValidateSecretKeySelector(&p.Akamai.AccessToken, fldPath.Child("akamai", "accessToken"))...)
+			el = append(el, ValidateSecretKeySelector(&p.Akamai.ClientSecret, fldPath.Child("akamai", "clientSecret"))...)
+			el = append(el, ValidateSecretKeySelector(&p.Akamai.ClientToken, fldPath.Child("akamai", "clientToken"))...)
+			if len(p.Akamai.ServiceConsumerDomain) == 0 {
+				el = append(el, field.Required(fldPath.Child("akamai", "serviceConsumerDomain"), ""))
+			}
+		}
+		if p.AzureDNS != nil {
+			if numProviders > 0 {
+				el = append(el, field.Forbidden(fldPath.Child("azuredns"), "may not specify more than one provider type"))
+			} else {
+				numProviders++
+				el = append(el, ValidateSecretKeySelector(&p.AzureDNS.ClientSecret, fldPath.Child("azuredns", "clientSecretSecretRef"))...)
+				if len(p.AzureDNS.ClientID) == 0 {
+					el = append(el, field.Required(fldPath.Child("azuredns", "clientID"), ""))
+				}
+				if len(p.AzureDNS.SubscriptionID) == 0 {
+					el = append(el, field.Required(fldPath.Child("azuredns", "subscriptionID"), ""))
+				}
+				if len(p.AzureDNS.TenantID) == 0 {
+					el = append(el, field.Required(fldPath.Child("azuredns", "tenantID"), ""))
+				}
+				if len(p.AzureDNS.ResourceGroupName) == 0 {
+					el = append(el, field.Required(fldPath.Child("azuredns", "resourceGroupName"), ""))
+				}
+			}
+		}
+		if p.CloudDNS != nil {
+			if numProviders > 0 {
+				el = append(el, field.Forbidden(fldPath.Child("clouddns"), "may not specify more than one provider type"))
+			} else {
+				numProviders++
+				el = append(el, ValidateSecretKeySelector(&p.CloudDNS.ServiceAccount, fldPath.Child("clouddns", "serviceAccountSecretRef"))...)
+				if len(p.CloudDNS.Project) == 0 {
+					el = append(el, field.Required(fldPath.Child("clouddns", "project"), ""))
+				}
+			}
+		}
+		if p.Cloudflare != nil {
+			if numProviders > 0 {
+				el = append(el, field.Forbidden(fldPath.Child("cloudflare"), "may not specify more than one provider type"))
+			} else {
+				numProviders++
+				el = append(el, ValidateSecretKeySelector(&p.Cloudflare.APIKey, fldPath.Child("cloudflare", "apiKeySecretRef"))...)
+				if len(p.Cloudflare.Email) == 0 {
+					el = append(el, field.Required(fldPath.Child("cloudflare", "email"), ""))
+				}
+			}
+		}
+		if p.Route53 != nil {
+			if numProviders > 0 {
+				el = append(el, field.Forbidden(fldPath.Child("route53"), "may not specify more than one provider type"))
+			} else {
+				numProviders++
+				// region is the only required field for route53 as ambient credentials can be used instead
+				if len(p.Route53.Region) == 0 {
+					el = append(el, field.Required(fldPath.Child("route53", "region"), ""))
+				}
+			}
+		}
+		if numProviders == 0 {
+			el = append(el, field.Required(fldPath, "at least one provider must be configured"))
+		}
+	}
+	return el
+}
+
+func ValidateSecretKeySelector(sks *v1alpha1.SecretKeySelector, fldPath *field.Path) field.ErrorList {
+	el := field.ErrorList{}
+	if sks.Name == "" {
+		el = append(el, field.Required(fldPath.Child("name"), "secret name is required"))
+	}
+	if sks.Key == "" {
+		el = append(el, field.Required(fldPath.Child("key"), "secret key is required"))
+	}
+	return el
+}
