@@ -5,6 +5,19 @@ import (
 	"time"
 )
 
+// For mocking purposes.
+// This little bit of wrapping needs to be done becuase go doesn't do
+// covariance, but it does coerse *time.Timer into stoppable implicitly if we
+// write it out like so.
+var afterFunc = func(d time.Duration, f func()) stoppable {
+	return time.AfterFunc(d, f)
+}
+
+// stoppable is the subset of time.Timer which we use, split out for mocking purposes
+type stoppable interface {
+	Stop() bool
+}
+
 // ProcessFunc is a function to process an item in the work queue.
 type ProcessFunc func(interface{})
 
@@ -22,24 +35,23 @@ type ScheduledWorkQueue interface {
 
 type scheduledWorkQueue struct {
 	processFunc ProcessFunc
-	work        map[interface{}]*time.Timer
+	work        map[interface{}]stoppable
 	workLock    sync.Mutex
 }
 
 // NewScheduledWorkQueue will create a new workqueue with the given processFunc
 func NewScheduledWorkQueue(processFunc ProcessFunc) ScheduledWorkQueue {
-	return &scheduledWorkQueue{processFunc, make(map[interface{}]*time.Timer), sync.Mutex{}}
+	return &scheduledWorkQueue{processFunc, make(map[interface{}]stoppable), sync.Mutex{}}
 }
 
 // Add will add an item to this queue, executing the ProcessFunc after the
 // Duration has come (since the time Add was called). If an existing Timer for
 // obj already exists, the previous timer will be cancelled.
 func (s *scheduledWorkQueue) Add(obj interface{}, duration time.Duration) {
-	// we call Forget before acquiring the workLock in order to avoid deadlock
-	s.Forget(obj)
 	s.workLock.Lock()
 	defer s.workLock.Unlock()
-	s.work[obj] = time.AfterFunc(duration, func() {
+	s.forget(obj)
+	s.work[obj] = afterFunc(duration, func() {
 		defer s.Forget(obj)
 		s.processFunc(obj)
 	})
@@ -49,6 +61,11 @@ func (s *scheduledWorkQueue) Add(obj interface{}, duration time.Duration) {
 func (s *scheduledWorkQueue) Forget(obj interface{}) {
 	s.workLock.Lock()
 	defer s.workLock.Unlock()
+	s.forget(obj)
+}
+
+// forget cancels and removes an item. It *must* be called with the lock already held
+func (s *scheduledWorkQueue) forget(obj interface{}) {
 	if timer, ok := s.work[obj]; ok {
 		timer.Stop()
 		delete(s.work, obj)
