@@ -83,7 +83,8 @@ deploy_verify:
 # Go targets
 #################
 dep_verify:
-	dep status
+	@echo Running dep
+	$(HACK_DIR)/verify-deps.sh
 
 go_verify: go_fmt go_test
 
