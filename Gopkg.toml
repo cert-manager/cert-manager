@@ -48,5 +48,11 @@ required = [
     name = "github.com/hashicorp/vault"
     non-go = true
   [[prune.project]]
+    name = "github.com/prometheus/procfs"
+    non-go = true
+  [[prune.project]]
+    name = "github.com/hashicorp/go-rootcerts"
+    non-go = true
+  [[prune.project]]
     name = "k8s.io/code-generator"
     unused-packages = false
