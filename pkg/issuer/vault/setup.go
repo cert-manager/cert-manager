@@ -6,6 +6,7 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	"github.com/jetstack/cert-manager/pkg/issuer"
 )
 
 const (
@@ -24,6 +25,13 @@ const (
 )
 
 func (v *Vault) Setup(ctx context.Context) error {
+	err := issuer.ValidateDuration(v.issuer)
+	if err != nil {
+		glog.Info(err.Error())
+		v.issuer.UpdateStatusCondition(v1alpha1.IssuerConditionReady, v1alpha1.ConditionFalse, issuer.ErrorDurationInvalid, err.Error())
+		return err
+	}
+
 	if v.issuer.GetSpec().Vault == nil {
 		glog.Infof("%s: %s", v.issuer.GetObjectMeta().Name, messageVaultConfigRequired)
 		v.issuer.UpdateStatusCondition(v1alpha1.IssuerConditionReady, v1alpha1.ConditionFalse, errorVault, messageVaultConfigRequired)

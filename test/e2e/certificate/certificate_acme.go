@@ -57,7 +57,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		_, err = f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Get(certificateSecretName, metav1.GetOptions{})
 		Expect(err).To(MatchError(apierrors.NewNotFound(corev1.Resource("secrets"), certificateSecretName)))
 		By("Creating an Issuer")
-		_, err = f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Create(util.NewCertManagerACMEIssuer(issuerName, framework.TestContext.ACMEURL, testingACMEEmail, testingACMEPrivateKey))
+		_, err = f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Create(util.NewCertManagerACMEIssuer(issuerName, framework.TestContext.ACMEURL, testingACMEEmail, testingACMEPrivateKey, 0, 0))
 		Expect(err).NotTo(HaveOccurred())
 		By("Waiting for Issuer to become Ready")
 		err = util.WaitForIssuerCondition(f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name),
@@ -129,5 +129,62 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		By("Verifying TLS certificate secret does not exist")
 		_, err = f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Get(certificateSecretName, metav1.GetOptions{})
 		Expect(err).To(MatchError(apierrors.NewNotFound(corev1.Resource("secrets"), certificateSecretName)))
+	})
+})
+
+var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01) - Duration", func() {
+	f := framework.NewDefaultFramework("create-acme-certificate-http01-duration")
+
+	issuerName := "test-acme-issuer-duration"
+	certificateName := "test-acme-certificate-duration"
+	certificateSecretName := "test-acme-certificate-duration"
+
+	BeforeEach(func() {
+		By("Verifying there is no existing ACME private key")
+		_, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Get(testingACMEPrivateKey, metav1.GetOptions{})
+		Expect(err).To(MatchError(apierrors.NewNotFound(corev1.Resource("secrets"), testingACMEPrivateKey)))
+		By("Verifying there is no existing TLS certificate secret")
+		_, err = f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Get(certificateSecretName, metav1.GetOptions{})
+		Expect(err).To(MatchError(apierrors.NewNotFound(corev1.Resource("secrets"), certificateSecretName)))
+		By("Creating an Issuer")
+		_, err = f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Create(util.NewCertManagerACMEIssuer(issuerName, framework.TestContext.ACMEURL, testingACMEEmail, testingACMEPrivateKey, time.Hour*24*60, 0))
+		Expect(err).NotTo(HaveOccurred())
+		By("Waiting for Issuer to become Ready")
+		err = util.WaitForIssuerCondition(f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name),
+			issuerName,
+			v1alpha1.IssuerCondition{
+				Type:   v1alpha1.IssuerConditionReady,
+				Status: v1alpha1.ConditionTrue,
+			})
+		Expect(err).NotTo(HaveOccurred())
+		By("Verifying the ACME account URI is set")
+		err = util.WaitForIssuerStatusFunc(f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name),
+			issuerName,
+			func(i *v1alpha1.Issuer) (bool, error) {
+				if i.GetStatus().ACMEStatus().URI == "" {
+					return false, nil
+				}
+				return true, nil
+			})
+		Expect(err).NotTo(HaveOccurred())
+		By("Verifying ACME account private key exists")
+		secret, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Get(testingACMEPrivateKey, metav1.GetOptions{})
+		Expect(err).NotTo(HaveOccurred())
+		if len(secret.Data) != 1 {
+			Fail("Expected 1 key in ACME account private key secret, but there was %d", len(secret.Data))
+		}
+	})
+
+	AfterEach(func() {
+		By("Cleaning up")
+		f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Delete(issuerName, nil)
+		f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Delete(testingACMEPrivateKey, nil)
+	})
+
+	It("should obtain a signed certificate with custom duration", func() {
+		By("Creating a Certificate")
+		cert, err := f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name).Create(util.NewCertManagerACMECertificate(certificateName, certificateSecretName, issuerName, v1alpha1.IssuerKind, acmeIngressClass, util.ACMECertificateDomain))
+		Expect(err).NotTo(HaveOccurred())
+		f.WaitCertificateIssuedValid(cert)
 	})
 })

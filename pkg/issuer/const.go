@@ -15,6 +15,9 @@ const (
 	IssuerVault string = "vault"
 	// IssuerSelfSigned is a self signing issuer
 	IssuerSelfSigned string = "selfsigned"
+
+	// Error reason generated when duration or renewBefore is invalid
+	ErrorDurationInvalid = "ErrDurationInvalid"
 )
 
 // nameForIssuer determines the name of the issuer implementation given an

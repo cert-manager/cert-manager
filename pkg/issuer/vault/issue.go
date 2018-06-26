@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"path"
 	"strings"
-	"time"
 
 	"github.com/golang/glog"
 	vault "github.com/hashicorp/vault/api"
@@ -28,8 +27,6 @@ const (
 	messageErrorIssueCert = "Error issuing TLS certificate: "
 
 	messageCertIssued = "Certificate issued successfully"
-
-	defaultCertificateDuration = time.Hour * 24 * 90
 )
 
 const (
@@ -169,10 +166,15 @@ func (v *Vault) requestVaultCert(commonName string, altNames []string, csr []byt
 
 	glog.V(4).Infof("Vault certificate request for commonName %s altNames: %q", commonName, altNames)
 
+	certDuration := v1alpha1.DefaultCertificateDuration
+	if v.issuer.GetSpec().Duration.Duration != 0 {
+		certDuration = v.issuer.GetSpec().Duration.Duration
+	}
+
 	parameters := map[string]string{
 		"common_name": commonName,
 		"alt_names":   strings.Join(altNames, ","),
-		"ttl":         defaultCertificateDuration.String(),
+		"ttl":         certDuration.String(),
 		"csr":         string(csr),
 		"exclude_cn_from_sans": "true",
 	}

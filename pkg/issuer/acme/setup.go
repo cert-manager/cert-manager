@@ -12,6 +12,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	"github.com/jetstack/cert-manager/pkg/issuer"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/client"
 	"github.com/jetstack/cert-manager/pkg/util/errors"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
@@ -34,6 +35,13 @@ const (
 // Setup will verify an existing ACME registration, or create one if not
 // already registered.
 func (a *Acme) Setup(ctx context.Context) error {
+	err := issuer.ValidateDuration(a.issuer)
+	if err != nil {
+		glog.Info(err.Error())
+		a.issuer.UpdateStatusCondition(v1alpha1.IssuerConditionReady, v1alpha1.ConditionFalse, issuer.ErrorDurationInvalid, err.Error())
+		return err
+	}
+
 	if newURL, ok := acmev1ToV2Mappings[a.issuer.GetSpec().ACME.Server]; ok {
 		a.issuer.UpdateStatusCondition(v1alpha1.IssuerConditionReady, v1alpha1.ConditionFalse, errorInvalidConfig, fmt.Sprintf("Your ACME server URL is set to a v1 endpoint (%s). "+
 			"You should update the spec.acme.server field to %q", a.issuer.GetSpec().ACME.Server, newURL))

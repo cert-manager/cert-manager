@@ -14,6 +14,8 @@ limitations under the License.
 package certificate
 
 import (
+	"time"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
@@ -43,7 +45,7 @@ var _ = framework.CertManagerDescribe("CA Certificate", func() {
 
 	It("should generate a signed keypair", func() {
 		By("Creating an Issuer")
-		_, err := f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Create(util.NewCertManagerCAIssuer(issuerName, issuerSecretName))
+		_, err := f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Create(util.NewCertManagerCAIssuer(issuerName, issuerSecretName, 0, 0))
 		Expect(err).NotTo(HaveOccurred())
 		By("Waiting for Issuer to become Ready")
 		err = util.WaitForIssuerCondition(f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name),
@@ -59,4 +61,46 @@ var _ = framework.CertManagerDescribe("CA Certificate", func() {
 		f.WaitCertificateIssuedValid(cert)
 	})
 
+	cases := []struct {
+		inputDuration    time.Duration
+		inputRenewBefore time.Duration
+		expectedDuration time.Duration
+		label            string
+	}{
+		{
+			inputDuration:    time.Hour * 24 * 35,
+			inputRenewBefore: 0,
+			expectedDuration: time.Hour * 24 * 35,
+			label:            "35 days",
+		},
+		{
+			inputDuration:    0,
+			inputRenewBefore: 0,
+			expectedDuration: time.Hour * 24 * 90,
+			label:            "the default duration (90 days)",
+		},
+	}
+
+	for _, v := range cases {
+		v := v
+		It("should generate a signed keypair valid for "+v.label, func() {
+			By("Creating an Issuer")
+			_, err := f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Create(util.NewCertManagerCAIssuer(issuerName, issuerSecretName, v.inputDuration, v.inputRenewBefore))
+			Expect(err).NotTo(HaveOccurred())
+			By("Waiting for Issuer to become Ready")
+			err = util.WaitForIssuerCondition(f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name),
+				issuerName,
+				v1alpha1.IssuerCondition{
+					Type:   v1alpha1.IssuerConditionReady,
+					Status: v1alpha1.ConditionTrue,
+				})
+			Expect(err).NotTo(HaveOccurred())
+			By("Creating a Certificate")
+			cert, err := f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name).Create(util.NewCertManagerBasicCertificate(certificateName, certificateSecretName, issuerName, v1alpha1.IssuerKind))
+			Expect(err).NotTo(HaveOccurred())
+
+			f.WaitCertificateIssuedValid(cert)
+			f.CertificateDurationValid(cert, v.expectedDuration)
+		})
+	}
 })

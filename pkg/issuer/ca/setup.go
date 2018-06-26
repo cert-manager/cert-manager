@@ -8,6 +8,7 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	"github.com/jetstack/cert-manager/pkg/issuer"
 	"github.com/jetstack/cert-manager/pkg/util/kube"
 )
 
@@ -24,6 +25,13 @@ const (
 )
 
 func (c *CA) Setup(ctx context.Context) error {
+	err := issuer.ValidateDuration(c.issuer)
+	if err != nil {
+		glog.Info(err.Error())
+		c.issuer.UpdateStatusCondition(v1alpha1.IssuerConditionReady, v1alpha1.ConditionFalse, issuer.ErrorDurationInvalid, err.Error())
+		return err
+	}
+
 	cert, err := kube.SecretTLSCert(c.secretsLister, c.issuerResourcesNamespace, c.issuer.GetSpec().CA.SecretName)
 
 	if err != nil {

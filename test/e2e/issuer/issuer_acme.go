@@ -15,6 +15,7 @@ package issuer
 
 import (
 	"fmt"
+	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -50,7 +51,7 @@ var _ = framework.CertManagerDescribe("ACME Issuer", func() {
 
 	It("should register ACME account", func() {
 		By("Creating an Issuer")
-		_, err := f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Create(util.NewCertManagerACMEIssuer(issuerName, framework.TestContext.ACMEURL, testingACMEEmail, testingACMEPrivateKey))
+		_, err := f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Create(util.NewCertManagerACMEIssuer(issuerName, framework.TestContext.ACMEURL, testingACMEEmail, testingACMEPrivateKey, 0, 0))
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Waiting for Issuer to become Ready")
@@ -84,7 +85,7 @@ var _ = framework.CertManagerDescribe("ACME Issuer", func() {
 	It("should recover a lost ACME account URI", func() {
 
 		By("Creating an Issuer")
-		_, err := f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Create(util.NewCertManagerACMEIssuer(issuerName, framework.TestContext.ACMEURL, testingACMEEmail, testingACMEPrivateKey))
+		_, err := f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Create(util.NewCertManagerACMEIssuer(issuerName, framework.TestContext.ACMEURL, testingACMEEmail, testingACMEPrivateKey, 0, 0))
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Waiting for Issuer to become Ready")
@@ -122,7 +123,7 @@ var _ = framework.CertManagerDescribe("ACME Issuer", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Recreating the Issuer")
-		_, err = f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Create(util.NewCertManagerACMEIssuer(issuerName, framework.TestContext.ACMEURL, testingACMEEmail, testingACMEPrivateKey))
+		_, err = f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Create(util.NewCertManagerACMEIssuer(issuerName, framework.TestContext.ACMEURL, testingACMEEmail, testingACMEPrivateKey, 0, 0))
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Waiting for Issuer to become Ready")
@@ -152,7 +153,7 @@ var _ = framework.CertManagerDescribe("ACME Issuer", func() {
 
 	It("should fail to register an ACME account", func() {
 		By("Creating an Issuer with an invalid server")
-		_, err := f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Create(util.NewCertManagerACMEIssuer(issuerName, invalidACMEURL, testingACMEEmail, testingACMEPrivateKey))
+		_, err := f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Create(util.NewCertManagerACMEIssuer(issuerName, invalidACMEURL, testingACMEEmail, testingACMEPrivateKey, 0, 0))
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Waiting for Issuer to become non-Ready")
@@ -164,4 +165,44 @@ var _ = framework.CertManagerDescribe("ACME Issuer", func() {
 			})
 		Expect(err).NotTo(HaveOccurred())
 	})
+
+	cases := []struct {
+		inputRenewBefore time.Duration
+		label            string
+		status           v1alpha1.ConditionStatus
+	}{
+		{
+			inputRenewBefore: time.Hour * 24 * 365 * 10,
+			label:            "should fail when renewBefore is bigger than the duration",
+			status:           v1alpha1.ConditionStatus(v1alpha1.ConditionFalse),
+		},
+		{
+			inputRenewBefore: time.Second,
+			label:            "should fail when renewBefore is less than the minimum permitted value",
+			status:           v1alpha1.ConditionStatus(v1alpha1.ConditionFalse),
+		},
+	}
+
+	for _, v := range cases {
+		v := v
+		It(v.label, func() {
+			issuerName := "test-acme-issuer-duration"
+
+			By("Creating an Issuer")
+			_, err := f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Create(util.NewCertManagerACMEIssuer(issuerName, framework.TestContext.ACMEURL, testingACMEEmail, testingACMEPrivateKey, 0, v.inputRenewBefore))
+			Expect(err).NotTo(HaveOccurred())
+
+			By("Waiting for Issuer to become Ready")
+			err = util.WaitForIssuerCondition(f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name),
+				issuerName,
+				v1alpha1.IssuerCondition{
+					Type:   v1alpha1.IssuerConditionReady,
+					Status: v.status,
+				})
+			Expect(err).NotTo(HaveOccurred())
+
+			By("Cleaning up")
+			f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Delete(issuerName, nil)
+		})
+	}
 })

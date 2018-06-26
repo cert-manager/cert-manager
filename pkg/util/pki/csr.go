@@ -44,9 +44,6 @@ const defaultOrganization = "cert-manager"
 
 const defaultSignatureAlgorithm = x509.SHA256WithRSA
 
-// default certification duration is 1 year
-const defaultNotAfter = time.Hour * 24 * 365
-
 func GenerateCSR(issuer v1alpha1.GenericIssuer, crt *v1alpha1.Certificate) (*x509.CertificateRequest, error) {
 	commonName := CommonNameForCertificate(crt)
 	dnsNames := DNSNamesForCertificate(crt)
@@ -83,6 +80,11 @@ func GenerateTemplate(issuer v1alpha1.GenericIssuer, crt *v1alpha1.Certificate, 
 		return nil, fmt.Errorf("failed to generate serial number: %s", err.Error())
 	}
 
+	certDuration := v1alpha1.DefaultCertificateDuration
+	if issuer.GetSpec().Duration.Duration != 0 {
+		certDuration = issuer.GetSpec().Duration.Duration
+	}
+
 	return &x509.Certificate{
 		Version:               3,
 		BasicConstraintsValid: true,
@@ -93,7 +95,7 @@ func GenerateTemplate(issuer v1alpha1.GenericIssuer, crt *v1alpha1.Certificate, 
 			CommonName:   commonName,
 		},
 		NotBefore: time.Now(),
-		NotAfter:  time.Now().Add(defaultNotAfter),
+		NotAfter:  time.Now().Add(certDuration),
 		// see http://golang.org/pkg/crypto/x509/#KeyUsage
 		KeyUsage: x509.KeyUsageDigitalSignature | x509.KeyUsageKeyEncipherment,
 		DNSNames: dnsNames,
