@@ -8,6 +8,7 @@ import (
 	clientset "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
 	informers "github.com/jetstack/cert-manager/pkg/client/informers/externalversions"
 	"github.com/jetstack/cert-manager/pkg/issuer"
+	"github.com/jetstack/cert-manager/pkg/metrics"
 )
 
 // Context contains various types that are used by controller implementations.
@@ -41,4 +42,6 @@ type Context struct {
 	DefaultIssuerKind                  string
 	DefaultACMEIssuerChallengeType     string
 	DefaultACMEIssuerDNS01ProviderName string
+	// Metrics
+	Metrics *metrics.Metrics
 }

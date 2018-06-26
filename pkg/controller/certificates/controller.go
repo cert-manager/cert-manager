@@ -25,6 +25,7 @@ import (
 	cmlisters "github.com/jetstack/cert-manager/pkg/client/listers/certmanager/v1alpha1"
 	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
 	"github.com/jetstack/cert-manager/pkg/issuer"
+	"github.com/jetstack/cert-manager/pkg/metrics"
 	"github.com/jetstack/cert-manager/pkg/scheduler"
 	"github.com/jetstack/cert-manager/pkg/util"
 )
@@ -48,6 +49,7 @@ type Controller struct {
 	scheduledWorkQueue scheduler.ScheduledWorkQueue
 	workerWg           sync.WaitGroup
 	syncedFuncs        []cache.InformerSynced
+	metrics            *metrics.Metrics
 }
 
 // New returns a new Certificates controller. It sets up the informer handler
@@ -64,8 +66,11 @@ func New(
 	cmClient clientset.Interface,
 	issuerFactory issuer.Factory,
 	recorder record.EventRecorder,
+	metrics *metrics.Metrics,
 ) *Controller {
-	ctrl := &Controller{client: client, cmClient: cmClient, issuerFactory: issuerFactory, recorder: recorder}
+
+	ctrl := &Controller{client: client, cmClient: cmClient, issuerFactory: issuerFactory, recorder: recorder, metrics: metrics}
+
 	ctrl.syncHandler = ctrl.processNextWorkItem
 	ctrl.queue = workqueue.NewNamedRateLimitingQueue(workqueue.NewItemExponentialFailureRateLimiter(time.Second*2, time.Minute*1), "certificates")
 	// Create a scheduled work queue that calls the ctrl.queue.Add method for
@@ -235,6 +240,7 @@ func init() {
 			ctx.CMClient,
 			ctx.IssuerFactory,
 			ctx.Recorder,
+			ctx.Metrics,
 		).Run
 	})
 }

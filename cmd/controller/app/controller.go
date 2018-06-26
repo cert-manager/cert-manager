@@ -23,6 +23,7 @@ import (
 	informers "github.com/jetstack/cert-manager/pkg/client/informers/externalversions"
 	"github.com/jetstack/cert-manager/pkg/controller"
 	"github.com/jetstack/cert-manager/pkg/issuer"
+	"github.com/jetstack/cert-manager/pkg/metrics"
 	"github.com/jetstack/cert-manager/pkg/util/kube"
 	kubeinformers "k8s.io/client-go/informers"
 )
@@ -38,6 +39,12 @@ func Run(opts *options.ControllerOptions, stopCh <-chan struct{}) {
 
 	run := func(_ <-chan struct{}) {
 		var wg sync.WaitGroup
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			ctx.Metrics.Start(stopCh)
+		}()
+		var controllers = make(map[string]controller.Interface)
 		for n, fn := range controller.Known() {
 			wg.Add(1)
 			go func(n string, fn controller.Interface) {
@@ -129,6 +136,7 @@ func buildControllerContext(opts *options.ControllerOptions) (*controller.Contex
 		DefaultIssuerKind:                  opts.DefaultIssuerKind,
 		DefaultACMEIssuerChallengeType:     opts.DefaultACMEIssuerChallengeType,
 		DefaultACMEIssuerDNS01ProviderName: opts.DefaultACMEIssuerDNS01ProviderName,
+		Metrics: metrics.New(),
 	}, kubeCfg, nil
 }
 

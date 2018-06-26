@@ -59,7 +59,6 @@ to renew certificates at an appropriate time before expiry.`,
 			if err := o.Validate(args); err != nil {
 				glog.Fatalf("error validating options: %s", err.Error())
 			}
-			go StartPrometheusMetricsServer(stopCh)
 			o.RunCertManagerController(stopCh)
 		},
 	}

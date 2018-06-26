@@ -43,8 +43,13 @@ const (
 
 	messageCertificateIssued  = "Certificate issued successfully"
 	messageCertificateRenewed = "Certificate renewed successfully"
-)
 
+	operationIssue = "issue"
+	operationRenew = "renew"
+	resultSuccess  = "success"
+	resultFailure  = "failure"
+)
+s
 func (c *Controller) Sync(ctx context.Context, crt *v1alpha1.Certificate) (err error) {
 	// step zero: check if the referenced issuer exists and is ready
 	issuerObj, err := c.getGenericIssuer(crt)
@@ -53,6 +58,11 @@ func (c *Controller) Sync(ctx context.Context, crt *v1alpha1.Certificate) (err e
 		s := fmt.Sprintf("Issuer %s does not exist", err.Error())
 		glog.Info(s)
 		c.recorder.Event(crt, api.EventTypeWarning, errorIssuerNotFound, s)
+		return err
+	}
+
+	issuerType, err := issuer.NameForIssuer(issuerObj)
+	if err != nil {
 		return err
 	}
 
@@ -92,6 +102,9 @@ func (c *Controller) Sync(ctx context.Context, crt *v1alpha1.Certificate) (err e
 		return err
 	}
 
+	// update certificate expiry metric
+	defer c.metrics.UpdateCertificateExpiry(crt, c.secretLister)
+
 	// as there is an existing certificate, or we may create one below, we will
 	// run scheduleRenewal to schedule a renewal if required at the end of
 	// execution.
@@ -105,7 +118,23 @@ func (c *Controller) Sync(ctx context.Context, crt *v1alpha1.Certificate) (err e
 	// listed in the certificate spec, we should re-issue the certificate.
 	if k8sErrors.IsNotFound(err) || errors.IsInvalidData(err) ||
 		expectedCN != cert.Subject.CommonName || !util.EqualUnsorted(cert.DNSNames, expectedDNSNames) {
+
 		err := c.issue(ctx, i, crtCopy)
+
+		// count result
+		result := resultSuccess
+		if err != nil {
+			result = resultFailure
+		}
+		c.metrics.IncCertificateRequestCount(
+			crt.Name,
+			crt.Namespace,
+			issuerObj.GetObjectMeta().Name,
+			crt.Spec.IssuerRef.Kind,
+			issuerType,
+			operationIssue,
+			result)
+
 		updateErr := c.updateCertificateStatus(crtCopy)
 		if err != nil || updateErr != nil {
 			return utilerrors.NewAggregate([]error{err, updateErr})
@@ -121,6 +150,21 @@ func (c *Controller) Sync(ctx context.Context, crt *v1alpha1.Certificate) (err e
 	// if we should being attempting to renew now, then trigger a renewal
 	if renewIn <= 0 {
 		err := c.renew(ctx, i, crtCopy)
+
+		// count result
+		result := resultSuccess
+		if err != nil {
+			result = resultFailure
+		}
+		c.metrics.IncCertificateRequestCount(
+			crt.Name,
+			crt.Namespace,
+			issuerObj.GetObjectMeta().Name,
+			crt.Spec.IssuerRef.Kind,
+			issuerType,
+			operationRenew,
+			result)
+
 		updateErr := c.updateCertificateStatus(crtCopy)
 		if err != nil || updateErr != nil {
 			return utilerrors.NewAggregate([]error{err, updateErr})
