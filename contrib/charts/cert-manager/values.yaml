@@ -38,6 +38,10 @@ extraArgs: []
   # supporting resources required for each ClusterIssuer (default is kube-system)
   # - --cluster-resource-namespace=kube-system
 
+extraEnv: []
+# - name: SOME_VAR
+#   value: 'some value'
+
 resources: {}
   # requests:
   #   cpu: 10m
