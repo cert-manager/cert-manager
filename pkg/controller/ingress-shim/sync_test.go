@@ -529,6 +529,18 @@ func TestBuildCertificates(t *testing.T) {
 							Name: "issuer-name",
 							Kind: "Issuer",
 						},
+						ACME: &v1alpha1.ACMECertificateConfig{
+							Config: []v1alpha1.ACMECertificateDomainConfig{
+								{
+									Domains: []string{"example.com"},
+									ACMESolverConfig: v1alpha1.ACMESolverConfig{
+										HTTP01: &v1alpha1.ACMECertificateHTTP01Config{
+											Ingress: "",
+										},
+									},
+								},
+							},
+						},
 					},
 				},
 			},
