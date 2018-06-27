@@ -3,6 +3,7 @@ package controller
 import (
 	"context"
 	"fmt"
+	"reflect"
 	"strconv"
 
 	"github.com/golang/glog"
@@ -133,6 +134,12 @@ func (c *Controller) buildCertificates(ing *extv1beta1.Ingress) (new, update []*
 			updateCrt.Spec.SecretName = tls.SecretName
 			updateCrt.Spec.IssuerRef.Name = issuerName
 			updateCrt.Spec.IssuerRef.Kind = issuerKind
+			updateCrt.Spec.IssuerRef.Kind = issuerKind
+			updateCrt.Spec.IssuerRef.Kind = issuerKind
+			err = c.setIssuerSpecificConfig(updateCrt, issuer, ing, tls)
+			if err != nil {
+				return nil, nil, err
+			}
 			updateCrts = append(updateCrts, updateCrt)
 		} else {
 			newCrts = append(newCrts, crt)
@@ -167,6 +174,12 @@ func certNeedsUpdate(a, b *v1alpha1.Certificate) bool {
 
 	if a.Spec.IssuerRef.Kind != b.Spec.IssuerRef.Kind {
 		return true
+	}
+
+	if a.Spec.ACME != nil && b.Spec.ACME != nil {
+		if !reflect.DeepEqual(a.Spec.ACME.Config, b.Spec.ACME.Config) {
+			return true
+		}
 	}
 
 	return false
