@@ -928,9 +928,18 @@
   ]
   revision = "39a7bf85c140f972372c2a0d1ee40adbf0c8bfe1"
 
+[[projects]]
+  branch = "master"
+  name = "k8s.io/utils"
+  packages = [
+    "clock",
+    "clock/testing"
+  ]
+  revision = "ab9069044f32ba0c6da081bb46bb0b12e3862c21"
+
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "d792bbf24d87653ea8f00046b922dca780a50fdd60e8ea9540c9f34c9a28e675"
+  inputs-digest = "18d7042f445f227a674b1a6d9aa75b6f8a54c7c8aef3edba7ca142e659d4cc53"
   solver-name = "gps-cdcl"
   solver-version = 1
