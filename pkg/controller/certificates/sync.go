@@ -24,6 +24,8 @@ import (
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 )
 
+// Even if the certificate is expired, wait at least 30s for renewal retries
+const minRenewIn = 30 * time.Second
 const renewBefore = time.Hour * 24 * 30
 
 const (
@@ -185,10 +187,13 @@ func (c *Controller) scheduleRenewal(crt *v1alpha1.Certificate) {
 
 	durationUntilExpiry := cert.NotAfter.Sub(time.Now())
 	renewIn := durationUntilExpiry - renewBefore
+	if renewIn < minRenewIn {
+		renewIn = minRenewIn
+	}
 
-	c.scheduledWorkQueue.Add(key, renewIn)
+	scheduledDelay := c.scheduledWorkQueue.Add(key, renewIn)
 
-	glog.Infof("Certificate %s/%s scheduled for renewal in %d hours", crt.Namespace, crt.Name, renewIn/time.Hour)
+	glog.Infof("Certificate %s/%s scheduled for renewal in %d hours", crt.Namespace, crt.Name, scheduledDelay/time.Hour)
 }
 
 // issuerKind returns the kind of issuer for a certificate

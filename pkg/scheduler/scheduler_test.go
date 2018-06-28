@@ -4,6 +4,8 @@ import (
 	"sync"
 	"testing"
 	"time"
+
+	"k8s.io/client-go/util/workqueue"
 )
 
 func TestAdd(t *testing.T) {
@@ -37,7 +39,7 @@ func TestAdd(t *testing.T) {
 						t.Errorf("expected obj '%+v' but got obj '%+v'", test.obj, obj)
 					}
 					waitSubtest <- struct{}{}
-				})
+				}, noopRateLimiter{})
 				queue.Add(test.obj, test.duration)
 				after.warp(test.duration + time.Millisecond)
 				<-waitSubtest
@@ -69,7 +71,7 @@ func TestForget(t *testing.T) {
 				defer wg.Done()
 				queue := NewScheduledWorkQueue(func(obj interface{}) {
 					t.Errorf("scheduled function should never be called")
-				})
+				}, noopRateLimiter{})
 				queue.Add(test.obj, test.duration)
 				queue.Forget(test.obj)
 				after.warp(test.duration * 2)
@@ -88,7 +90,7 @@ func TestConcurrentAdd(t *testing.T) {
 	var wg sync.WaitGroup
 	queue := NewScheduledWorkQueue(func(obj interface{}) {
 		t.Fatalf("should not be called, but was called with %v", obj)
-	})
+	}, noopRateLimiter{})
 
 	for i := 0; i < 1000; i++ {
 		wg.Add(1)
@@ -156,4 +158,16 @@ func (m *mockAfter) warp(d time.Duration) {
 			go item.f()
 		}
 	}
+}
+
+type noopRateLimiter struct{}
+
+var _ workqueue.RateLimiter = noopRateLimiter{}
+
+func (noopRateLimiter) When(item interface{}) time.Duration {
+	return 0
+}
+func (noopRateLimiter) Forget(item interface{}) {}
+func (noopRateLimiter) NumRequeues(item interface{}) int {
+	return 0
 }
