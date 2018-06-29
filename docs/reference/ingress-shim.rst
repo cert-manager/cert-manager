@@ -76,4 +76,8 @@ Certificate resources to be automatically created:
   the existing ingress will be modified. Any other value, or the absence of the
   annotation assumes "false".
 
+* ``kubernetes.io/ingress.class`` - this annotaion is used to determine
+  "ingressClass" to use when ingress has the 'kubernetes.io/tls-acme: true'. If not set
+  then the default behaviour will be similar to 'certmanager.k8s.io/acme-http01-edit-in-place: true'.
+
 .. _kube-lego: https://github.com/jetstack/kube-lego
