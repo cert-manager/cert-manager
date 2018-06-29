@@ -676,6 +676,74 @@ func TestBuildCertificates(t *testing.T) {
 				},
 			},
 		},
+		{
+			Name: "should update a Certificate correctly if an existing one of a different type exists",
+			Ingress: &extv1beta1.Ingress{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "ingress-name",
+					Namespace: "ingress-namespace",
+					Annotations: map[string]string{
+						issuerNameAnnotation:              "issuer-name",
+						acmeIssuerChallengeTypeAnnotation: "http01",
+						ingressClassAnnotation:            "toot-ing",
+					},
+				},
+				Spec: extv1beta1.IngressSpec{
+					TLS: []extv1beta1.IngressTLS{
+						{
+							Hosts:      []string{"example.com"},
+							SecretName: "existing-crt",
+						},
+					},
+				},
+			},
+			IssuerLister: []*v1alpha1.Issuer{buildACMEIssuer("issuer-name", "ingress-namespace")},
+			CertificateLister: []*v1alpha1.Certificate{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "existing-crt",
+						Namespace: "ingress-namespace",
+					},
+					Spec: v1alpha1.CertificateSpec{
+						DNSNames:   []string{"example.com"},
+						SecretName: "existing-crt",
+						IssuerRef: v1alpha1.ObjectReference{
+							Name: "issuer-name",
+							Kind: "Issuer",
+						},
+					},
+				},
+			},
+			ExpectedUpdate: []*v1alpha1.Certificate{
+				&v1alpha1.Certificate{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "existing-crt",
+						Namespace: "ingress-namespace",
+					},
+					Spec: v1alpha1.CertificateSpec{
+						DNSNames:   []string{"example.com"},
+						SecretName: "existing-crt",
+						IssuerRef: v1alpha1.ObjectReference{
+							Name: "issuer-name",
+							Kind: "Issuer",
+						},
+						ACME: &v1alpha1.ACMECertificateConfig{
+							Config: []v1alpha1.ACMECertificateDomainConfig{
+								{
+									Domains: []string{"example.com"},
+									ACMESolverConfig: v1alpha1.ACMESolverConfig{
+										HTTP01: &v1alpha1.ACMECertificateHTTP01Config{
+											Ingress:      "",
+											IngressClass: strPtr("toot-ing"),
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
 	}
 	testFn := func(test testT) func(t *testing.T) {
 		return func(t *testing.T) {
