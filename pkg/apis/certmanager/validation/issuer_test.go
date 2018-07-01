@@ -387,6 +387,33 @@ func TestValidateACMEIssuerDNS01Config(t *testing.T) {
 			},
 			errs: []*field.Error{},
 		},
+		"missing dnsimple config": {
+			cfg: &v1alpha1.ACMEIssuerDNS01Config{
+				Providers: []v1alpha1.ACMEIssuerDNS01Provider{
+					{
+						Name:     "a name",
+						DNSimple: &v1alpha1.ACMEIssuerDNS01ProviderDNSimple{},
+					},
+				},
+			},
+			errs: []*field.Error{
+				field.Required(providersPath.Index(0).Child("dnsimple", "oauthTokenSecretRef", "name"), "secret name is required"),
+				field.Required(providersPath.Index(0).Child("dnsimple", "oauthTokenSecretRef", "key"), "secret key is required"),
+			},
+		},
+		"valid dnsimple config": {
+			cfg: &v1alpha1.ACMEIssuerDNS01Config{
+				Providers: []v1alpha1.ACMEIssuerDNS01Provider{
+					{
+						Name: "a name",
+						DNSimple: &v1alpha1.ACMEIssuerDNS01ProviderDNSimple{
+							OAuthToken: validSecretKeyRef,
+						},
+					},
+				},
+			},
+			errs: []*field.Error{},
+		},
 		"multiple providers configured": {
 			cfg: &v1alpha1.ACMEIssuerDNS01Config{
 				Providers: []v1alpha1.ACMEIssuerDNS01Provider{
