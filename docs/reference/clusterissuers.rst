@@ -44,5 +44,7 @@ the ``spec.issuerRef.kind`` field to ClusterIssuer:
        kind: ClusterIssuer
      ...
 
+When referencing a ``Secret`` resource in ``ClusterIssuer`` resources (eg ``apiKeySecretRef``) the ``Secret`` needs to be in the same namespace as the ``cert-manager`` controller pod. You can optionally override this by using the ``--cluster-resource-namespace`` argument to the controller.
+
 For more information on configuring Issuer resources, see the :doc:`Issuers </reference/issuers>`
 reference documentation.
