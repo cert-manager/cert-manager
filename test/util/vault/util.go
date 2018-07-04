@@ -65,7 +65,7 @@ func NewVaultInitializer(container, rootMount, intermediateMount, role, authPath
 	client.SetToken(vaultToken)
 
 	if authPath == "" {
-		return nil, fmt.Errorf("Error authPath must be set")
+		authPath = "approle"
 	}
 
 	return &VaultInitializer{

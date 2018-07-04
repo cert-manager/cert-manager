@@ -55,8 +55,8 @@ We can now create a cluster issuer referencing this secret:
         path: pki_int/sign/example-dot-com
         server: https://vault
         auth:
-          authPath: approle
           appRole:
+            path: approle
             roleId: "291b9d21-8ff5-..."
             secretRef:
               name: cert-manager-vault-approle
@@ -68,9 +68,9 @@ The Vault appRole credentials are supplied as the
 Vault authentication method using the appRole created in Vault. The secretRef
 references the Kubernetes secret created previously. More specifically, the field
 *name* is the Kubernetes secret name and *key* is the name given as the
-key value that store the *secretId*. The optional attribute *authPath* specifies
-where the AppRole authentication is mounted in Vault. The *authPath* default value
-is *approle*.
+key value that store the *secretId*. The optional attribute *path* specifies
+where the AppRole authentication is mounted in Vault. The attribute *path* default
+value is *approle*.
 
 Once we have created the above Issuer we can use it to obtain a certificate.
 

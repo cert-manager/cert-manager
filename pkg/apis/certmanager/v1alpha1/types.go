@@ -113,7 +113,7 @@ type VaultAuth struct {
 
 type VaultAppRole struct {
 	// Where the authentication path is mounted in Vault.
-	Path string `json:"path,omitempty"`
+	Path string `json:"path"`
 
 	RoleId    string            `json:"roleId"`
 	SecretRef SecretKeySelector `json:"secretRef"`

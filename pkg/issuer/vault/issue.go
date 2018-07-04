@@ -193,7 +193,7 @@ func (v *Vault) requestVaultCert(commonName string, altNames []string, csr []byt
 
 	resp, err := client.RawRequest(request)
 	if err != nil {
-		return nil, fmt.Errorf("error logging in to Vault server: %s", err.Error())
+		return nil, fmt.Errorf("error signing certificate in Vault: %s", err.Error())
 	}
 
 	defer resp.Body.Close()
