@@ -20,6 +20,7 @@ const (
 	StatusInvalid     = "invalid"
 	StatusRevoked     = "revoked"
 	StatusDeactivated = "deactivated"
+	StatusReady       = "ready"
 )
 
 // CRLReasonCode identifies the reason for a certificate revocation.
@@ -215,7 +216,7 @@ type Order struct {
 	URL string
 
 	// Status is the status of the order. It will be one of StatusPending,
-	// StatusProcessing, StatusValid, and StatusInvalid.
+	// StatusReady, StatusProcessing, StatusValid, and StatusInvalid.
 	Status string
 
 	// Expires is the teimstamp after which the server will consider the order invalid.

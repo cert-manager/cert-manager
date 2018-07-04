@@ -431,7 +431,7 @@ func (a *Acme) shouldAttemptValidation(ctx context.Context, cl client.Interface,
 	}
 
 	switch order.Status {
-	case acme.StatusPending, acme.StatusProcessing, acme.StatusValid:
+	case acme.StatusPending, acme.StatusProcessing, acme.StatusValid, acme.StatusReady:
 		// if the order has not failed, attempt authorization
 		return 0, order, nil
 	case acme.StatusRevoked, acme.StatusUnknown:
