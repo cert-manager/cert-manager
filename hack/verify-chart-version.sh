@@ -17,12 +17,16 @@ if [ -z "${REMOTE:-}" ]; then
     export REMOTE="upstream"
 fi
 
-if [ ! git remote get-url "${REMOTE}" 2>&1 /dev/null ]; then
-    echo "+++ Remote '${REMOTE}' does not exist. Setting to "
+if ! git remote get-url "${REMOTE}" > /dev/null 2>&1; then
+    echo "+++ Remote '${REMOTE}' does not exist. Setting to ${UPSTREAM_REPO}"
     git remote add "${REMOTE}" "${UPSTREAM_REPO}"
 fi
 
-docker run --rm -v "${REPO_ROOT}:/workdir" --workdir /workdir -e TARGET_BRANCH="${PULL_BASE_REF}" \
+git fetch "${REMOTE}"
+
+docker run --rm -v "${REPO_ROOT}:/workdir" --workdir /workdir \
+   -e REMOTE="${REMOTE}" \
+   -e TARGET_BRANCH="${PULL_BASE_REF}" \
    gcr.io/kubernetes-charts-ci/chart-testing:v1.0.2 \
    /workdir/test/chart/chart_test.sh \
    --no-install \
