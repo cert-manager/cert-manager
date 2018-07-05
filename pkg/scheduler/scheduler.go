@@ -30,6 +30,11 @@ type ScheduledWorkQueue interface {
 type workItem struct {
 	processAt time.Time
 	item      interface{}
+	// itemAdded is used to signal 'Add' that this workItem has been added to the
+	// queue.
+	// It is not strictly necessary for regular operation, but is necessary to be
+	// able to reliably unit test this package.
+	itemAdded chan<- struct{}
 }
 
 type scheduledWorkQueue struct {
@@ -114,6 +119,7 @@ func (s *scheduledWorkQueue) workLoop() {
 			// arbitrarily
 			s.pending[newItem.item] = newItem.processAt
 			s.setNextTime()
+			close(newItem.itemAdded)
 		case obj := <-s.forget:
 			delete(s.pending, obj)
 			s.setNextTime()
@@ -160,10 +166,13 @@ func (s *scheduledWorkQueue) setNextTime() {
 // obj already exists, the previous timer will be cancelled.
 func (s *scheduledWorkQueue) Add(obj interface{}, duration time.Duration) time.Duration {
 	delay := s.limiter.When(obj)
+	done := make(chan struct{})
 	s.in <- workItem{
 		processAt: s.clock.Now().Add(delay + duration),
 		item:      obj,
+		itemAdded: done,
 	}
+	<-done
 	return delay + duration
 }
 
