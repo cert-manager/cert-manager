@@ -31,7 +31,7 @@ type ControllerOptions struct {
 	DefaultACMEIssuerDNS01ProviderName string
 
 	// DNS01Nameservers allows specifying a list of custom nameservers to perform DNS checks
-	DNS01Nameservers string
+	DNS01Nameservers []string
 }
 
 const (
@@ -51,8 +51,6 @@ const (
 	defaultTLSACMEIssuerKind           = "Issuer"
 	defaultACMEIssuerChallengeType     = "http01"
 	defaultACMEIssuerDNS01ProviderName = ""
-
-	defaultDNS01Nameservers = ""
 )
 
 var (
@@ -74,7 +72,7 @@ func NewControllerOptions() *ControllerOptions {
 		DefaultIssuerKind:                  defaultTLSACMEIssuerKind,
 		DefaultACMEIssuerChallengeType:     defaultACMEIssuerChallengeType,
 		DefaultACMEIssuerDNS01ProviderName: defaultACMEIssuerDNS01ProviderName,
-		DNS01Nameservers:                   defaultDNS01Nameservers,
+		DNS01Nameservers:                   []string{},
 	}
 }
 
@@ -126,7 +124,7 @@ func (s *ControllerOptions) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVar(&s.DefaultACMEIssuerDNS01ProviderName, "default-acme-issuer-dns01-provider-name", defaultACMEIssuerDNS01ProviderName, ""+
 		"Required if --default-acme-issuer-challenge-type is set to dns01. The DNS01 provider to use for ingresses using ACME dns01 "+
 		"validation that do not explicitly state a dns provider.")
-	fs.StringVar(&s.DNS01Nameservers, "dns01-self-check-nameservers", defaultDNS01Nameservers, ""+
+	fs.StringSliceVar(&s.DNS01Nameservers, "dns01-self-check-nameservers", []string{}, ""+
 		"A list of comma seperated DNS server endpoints used for DNS01 check requests. "+
 		"")
 }

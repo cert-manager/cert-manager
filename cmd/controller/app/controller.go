@@ -3,7 +3,6 @@ package app
 import (
 	"fmt"
 	"os"
-	"strings"
 	"sync"
 	"time"
 
@@ -97,10 +96,8 @@ func buildControllerContext(opts *options.ControllerOptions) (*controller.Contex
 		return nil, nil, fmt.Errorf("error creating kubernetes client: %s", err.Error())
 	}
 
-	nameservers := []string{}
-	if opts.DNS01Nameservers != "" {
-		nameservers = strings.Split(opts.DNS01Nameservers, ",")
-	} else {
+	nameservers := opts.DNS01Nameservers
+	if len(nameservers) == 0 {
 		nameservers = dnsutil.RecursiveNameservers
 	}
 
