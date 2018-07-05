@@ -2,6 +2,7 @@ package options
 
 import (
 	"fmt"
+	"net"
 	"time"
 
 	"github.com/spf13/pflag"
@@ -135,6 +136,18 @@ func (o *ControllerOptions) Validate() error {
 	case "ClusterIssuer":
 	default:
 		return fmt.Errorf("invalid default issuer kind: %v", o.DefaultIssuerKind)
+	}
+
+	for _, server := range o.DNS01Nameservers {
+		// ensure all servers have a port number
+		host, _, err := net.SplitHostPort(server)
+		if err != nil {
+			return fmt.Errorf("invalid DNS server (%v): %v", err, server)
+		}
+		ip := net.ParseIP(host)
+		if ip == nil {
+			return fmt.Errorf("invalid IP address: %v", host)
+		}
 	}
 	return nil
 }
