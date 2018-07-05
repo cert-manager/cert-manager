@@ -126,7 +126,7 @@ func (s *ControllerOptions) AddFlags(fs *pflag.FlagSet) {
 		"validation that do not explicitly state a dns provider.")
 	fs.StringSliceVar(&s.DNS01Nameservers, "dns01-self-check-nameservers", []string{}, ""+
 		"A list of comma seperated DNS server endpoints used for DNS01 check requests. "+
-		"")
+		"This should be a list containing IP address and port, for example: 8.8.8.8:53,8.8.4.4:53")
 }
 
 func (o *ControllerOptions) Validate() error {
