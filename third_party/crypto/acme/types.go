@@ -20,7 +20,6 @@ const (
 	StatusInvalid     = "invalid"
 	StatusRevoked     = "revoked"
 	StatusDeactivated = "deactivated"
-	StatusReady       = "ready"
 )
 
 // CRLReasonCode identifies the reason for a certificate revocation.
@@ -216,7 +215,7 @@ type Order struct {
 	URL string
 
 	// Status is the status of the order. It will be one of StatusPending,
-	// StatusReady, StatusProcessing, StatusValid, and StatusInvalid.
+	// StatusProcessing, StatusValid, and StatusInvalid.
 	Status string
 
 	// Expires is the teimstamp after which the server will consider the order invalid.
@@ -287,6 +286,9 @@ type Authorization struct {
 	// Identifier is the identifier that the account is authorized to represent.
 	Identifier AuthzID
 
+	// Wildcard is true if the authorization is for the base domain of a wildcard identifier.
+	Wildcard bool
+
 	// Expires is the timestamp after which the server will consider this authorization invalid.
 	Expires time.Time
 
@@ -294,9 +296,6 @@ type Authorization struct {
 	// to prove posession of the identifier. For valid/invalid authorizations,
 	// this is the list of challenges that were used.
 	Challenges []*Challenge
-
-	// Wildcard is set to true if this authorization is for a 'wildcard' dnsName.
-	Wildcard bool
 }
 
 // AuthzID is an identifier that an account is authorized to represent.
@@ -328,8 +327,8 @@ func (z *wireAuthz) authorization(url string) *Authorization {
 		Status:     z.Status,
 		Expires:    z.Expires,
 		Identifier: AuthzID{Type: z.Identifier.Type, Value: z.Identifier.Value},
-		Challenges: make([]*Challenge, len(z.Challenges)),
 		Wildcard:   z.Wildcard,
+		Challenges: make([]*Challenge, len(z.Challenges)),
 	}
 	for i, v := range z.Challenges {
 		a.Challenges[i] = v.challenge()

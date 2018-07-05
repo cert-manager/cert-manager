@@ -46,6 +46,10 @@ const (
 	// Max number of collected nonces kept in memory.
 	// Expect usual peak of 1 or 2.
 	maxNonces = 100
+
+	// User-Agent, bump the version each time a change is made to the
+	// handling of API requests.
+	userAgent = "go-acme/2"
 )
 
 // Client is an ACME client.
@@ -72,6 +76,11 @@ type Client struct {
 	// Mutating this value after a successful call of Client's Discover method
 	// will have no effect.
 	DirectoryURL string
+
+	// UserAgent is an optional string that identifies this client and
+	// version to the ACME server. It should be set to something like
+	// "myclient/1.2.3".
+	UserAgent string
 
 	noncesMu sync.Mutex
 	nonces   map[string]struct{} // nonces collected from previous responses
@@ -274,6 +283,13 @@ func (c *Client) WaitOrder(ctx context.Context, url string) (*Order, error) {
 	sleep := timeSleeper(ctx)
 	for {
 		o, err := c.GetOrder(ctx, url)
+		if e, ok := err.(*Error); ok && e.StatusCode >= 500 && e.StatusCode <= 599 {
+			// retriable 5xx error
+			if err := sleep(retryAfter(e.Header.Get("Retry-After"))); err != nil {
+				return nil, err
+			}
+			continue
+		}
 		if err != nil {
 			return nil, err
 		}
@@ -392,14 +408,14 @@ func (c *Client) DeactivateAuthorization(ctx context.Context, url string) error 
 	return nil
 }
 
-// WaitAuthorization retrieves authorization details. If the authorization is not in
-// a final state (StatusValid/StatusInvalid), it retries the request until the authorization
-// is final, ctx is cancelled by the caller, an error response is received, or the ACME CA
-// responded with a 4xx error.
+// WaitAuthorization polls an authorization at the given URL
+// until it is in one of the final states, StatusValid or StatusInvalid,
+// the ACME CA responded with a 4xx error code, or the context is done.
 //
 // It returns a non-nil Authorization only if its Status is StatusValid.
 // In all other cases WaitAuthorization returns an error.
-// If the Status is StatusInvalid or StatusDeactivated, the returned error will be of type AuthorizationError.
+// If the Status is StatusInvalid, StatusDeactivated, or StatusRevoked the
+// returned error will be of type AuthorizationError.
 func (c *Client) WaitAuthorization(ctx context.Context, url string) (*Authorization, error) {
 	sleep := sleeper(ctx)
 	for {
@@ -407,16 +423,20 @@ func (c *Client) WaitAuthorization(ctx context.Context, url string) (*Authorizat
 		if err != nil {
 			return nil, err
 		}
-		if res.StatusCode != http.StatusOK {
-			err = responseError(res)
-			res.Body.Close()
-			return nil, err
-		}
 		if res.StatusCode >= 400 && res.StatusCode <= 499 {
 			// Non-retriable error. For instance, Let's Encrypt may return 404 Not Found
 			// when requesting an expired authorization.
 			defer res.Body.Close()
 			return nil, responseError(res)
+		}
+
+		retry := res.Header.Get("Retry-After")
+		if res.StatusCode != http.StatusOK && res.StatusCode != http.StatusAccepted {
+			res.Body.Close()
+			if err := sleep(retry); err != nil {
+				return nil, err
+			}
+			continue
 		}
 		var raw wireAuthz
 		err = json.NewDecoder(res.Body).Decode(&raw)
@@ -427,13 +447,13 @@ func (c *Client) WaitAuthorization(ctx context.Context, url string) (*Authorizat
 		switch raw.Status {
 		case StatusValid:
 			return raw.authorization(url), nil
-		case StatusInvalid, StatusDeactivated:
+		case StatusInvalid, StatusDeactivated, StatusRevoked:
 			return nil, AuthorizationError{raw.authorization(url)}
 		case StatusPending, StatusProcessing: // fall through to sleep
 		default:
 			return nil, fmt.Errorf("acme: unknown authorization status %q", raw.Status)
 		}
-		if err := sleep(res.Header.Get("Retry-After")); err != nil {
+		if err := sleep(retry); err != nil {
 			return nil, err
 		}
 	}
@@ -723,7 +743,7 @@ func (c *Client) httpClient() *http.Client {
 }
 
 func (c *Client) get(ctx context.Context, urlStr string) (*http.Response, error) {
-	req, err := http.NewRequest("GET", urlStr, nil)
+	req, err := c.newRequest("GET", urlStr, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -731,7 +751,7 @@ func (c *Client) get(ctx context.Context, urlStr string) (*http.Response, error)
 }
 
 func (c *Client) head(ctx context.Context, urlStr string) (*http.Response, error) {
-	req, err := http.NewRequest("HEAD", urlStr, nil)
+	req, err := c.newRequest("HEAD", urlStr, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -739,12 +759,25 @@ func (c *Client) head(ctx context.Context, urlStr string) (*http.Response, error
 }
 
 func (c *Client) post(ctx context.Context, urlStr, contentType string, body io.Reader) (*http.Response, error) {
-	req, err := http.NewRequest("POST", urlStr, body)
+	req, err := c.newRequest("POST", urlStr, body)
 	if err != nil {
 		return nil, err
 	}
 	req.Header.Set("Content-Type", contentType)
 	return c.do(ctx, req)
+}
+
+func (c *Client) newRequest(method, url string, body io.Reader) (*http.Request, error) {
+	req, err := http.NewRequest(method, url, body)
+	if err != nil {
+		return nil, err
+	}
+	ua := userAgent
+	if c.UserAgent != "" {
+		ua += " " + c.UserAgent
+	}
+	req.Header.Set("User-Agent", ua)
+	return req, nil
 }
 
 func (c *Client) do(ctx context.Context, req *http.Request) (*http.Response, error) {
