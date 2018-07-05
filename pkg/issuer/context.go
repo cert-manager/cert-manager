@@ -43,4 +43,6 @@ type Context struct {
 	// IssuerAmbientCredentials controls whether an issuer should pick up ambient
 	// credentials, such as those from metadata services, to construct clients.
 	IssuerAmbientCredentials bool
+
+	DNS01Nameservers []string
 }
