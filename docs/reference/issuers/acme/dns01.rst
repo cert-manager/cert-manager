@@ -38,7 +38,8 @@ Setting nameservers for DNS01 check
 
 Cert-manager will check the correct DNS records exist before attempting a DNS01
 challenge.  By default, the DNS servers for this check will be taken from
-``/etc/resolv.conf``.  If this is not desired, the cert-manager controller
+``/etc/resolv.conf``.  If this is not desired (for example with multiple
+authoritative nameservers or split-horizon DNS), the cert-manager controller
 provides the ``--dns01-nameservers`` flag, which allows overriding the default
 nameservers with a comma seperated list of custom nameservers.
 
