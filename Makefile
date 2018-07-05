@@ -75,6 +75,8 @@ hack_verify:
 hack_verify_pr:
 	@echo Running helm chart version checker
 	$(HACK_DIR)/verify-chart-version.sh
+	@echo Running reference docs checker
+	IMAGE=eu.gcr.io/jetstack-build-infra/gen-apidocs-img $(HACK_DIR)/verify-reference-docs.sh
 
 deploy_verify:
 	@echo Running deploy-gen
@@ -102,7 +104,8 @@ go_test:
 			grep -v '/vendor/' | \
 			grep -v '/test/e2e' | \
 			grep -v '/pkg/client' | \
-			grep -v '/third_party' \
+			grep -v '/third_party' | \
+			grep -v '/docs/generated' \
 		)
 
 go_fmt:
