@@ -56,3 +56,6 @@ required = [
   [[prune.project]]
     name = "k8s.io/code-generator"
     unused-packages = false
+  [[prune.project]]
+    name = "k8s.io/kube-openapi"
+    unused-packages = false
