@@ -10,6 +10,10 @@ import (
 )
 
 func (i *IssuerStatus) ACMEStatus() *ACMEIssuerStatus {
+	// this is an edge case, but this will prevent panics
+	if i == nil {
+		return &ACMEIssuerStatus{}
+	}
 	if i.ACME == nil {
 		i.ACME = &ACMEIssuerStatus{}
 	}
@@ -17,15 +21,21 @@ func (i *IssuerStatus) ACMEStatus() *ACMEIssuerStatus {
 }
 
 func (a *ACMEIssuerDNS01Config) Provider(name string) (*ACMEIssuerDNS01Provider, error) {
+	if a == nil {
+		return nil, fmt.Errorf("issuer does not contain DNS01 configuration for provider named %q", name)
+	}
 	for _, p := range a.Providers {
 		if p.Name == name {
 			return &(*&p), nil
 		}
 	}
-	return nil, fmt.Errorf("provider '%s' not found", name)
+	return nil, fmt.Errorf("issuer does not contain DNS01 configuration for provider named %q", name)
 }
 
 func (a *ACMECertificateConfig) ConfigForDomain(domain string) *ACMECertificateDomainConfig {
+	if a == nil {
+		return &ACMECertificateDomainConfig{}
+	}
 	for _, cfg := range a.Config {
 		for _, d := range cfg.Domains {
 			if d == domain {
@@ -37,6 +47,10 @@ func (a *ACMECertificateConfig) ConfigForDomain(domain string) *ACMECertificateD
 }
 
 func (c *CertificateStatus) ACMEStatus() *CertificateACMEStatus {
+	// this is an edge case, but this will prevent panics
+	if c == nil {
+		return &CertificateACMEStatus{}
+	}
 	if c.ACME == nil {
 		c.ACME = &CertificateACMEStatus{}
 	}
@@ -44,6 +58,10 @@ func (c *CertificateStatus) ACMEStatus() *CertificateACMEStatus {
 }
 
 func (iss *Issuer) HasCondition(condition IssuerCondition) bool {
+	// this is an edge case, but this will prevent panics
+	if iss == nil {
+		return false
+	}
 	if len(iss.Status.Conditions) == 0 {
 		return false
 	}
@@ -87,6 +105,10 @@ func (iss *Issuer) UpdateStatusCondition(conditionType IssuerConditionType, stat
 }
 
 func (iss *ClusterIssuer) HasCondition(condition IssuerCondition) bool {
+	// this is an edge case, but this will prevent panics
+	if iss == nil {
+		return false
+	}
 	if len(iss.Status.Conditions) == 0 {
 		return false
 	}
@@ -130,6 +152,10 @@ func (iss *ClusterIssuer) UpdateStatusCondition(conditionType IssuerConditionTyp
 }
 
 func (crt *Certificate) HasCondition(condition CertificateCondition) bool {
+	// this is an edge case, but this will prevent panics
+	if crt == nil {
+		return false
+	}
 	if len(crt.Status.Conditions) == 0 {
 		return false
 	}
