@@ -33,7 +33,9 @@ type workItem struct {
 	// itemAdded is used to signal 'Add' that this workItem has been added to the
 	// queue. It is not strictly necessary for regular operation, but is
 	// necessary to be able to reliably unit test this package.
-	itemAdded chan<- struct{}
+	// It will provide a bool indicating if the item was added, or if the item
+	// was skipped due to already currently being processed.
+	itemAdded chan<- bool
 }
 
 type scheduledWorkQueue struct {
@@ -112,13 +114,14 @@ func (s *scheduledWorkQueue) workLoop() {
 		case newItem := <-s.in:
 			if _, ok := s.processing[newItem.item]; ok {
 				// already processing this, be stingy rather than overeager
+				newItem.itemAdded <- false
 				continue
 			}
 			// if this one's already pending, override it with the new time
 			// arbitrarily
 			s.pending[newItem.item] = newItem.processAt
 			s.setNextTime()
-			close(newItem.itemAdded)
+			newItem.itemAdded <- true
 		case obj := <-s.forget:
 			delete(s.pending, obj)
 			s.setNextTime()
@@ -165,14 +168,17 @@ func (s *scheduledWorkQueue) setNextTime() {
 // obj already exists, the previous timer will be cancelled.
 func (s *scheduledWorkQueue) Add(obj interface{}, duration time.Duration) time.Duration {
 	delay := s.limiter.When(obj)
-	done := make(chan struct{})
+	added := make(chan bool)
 	s.in <- workItem{
 		processAt: s.clock.Now().Add(delay + duration),
 		item:      obj,
-		itemAdded: done,
+		itemAdded: added,
 	}
-	<-done
-	return delay + duration
+	if <-added {
+		return delay + duration
+	}
+	// if it wasn't actually added, that means it's already running now.
+	return 0
 }
 
 // Forget will cancel the timer for the given object, if the timer exists.

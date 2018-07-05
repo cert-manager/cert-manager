@@ -100,6 +100,36 @@ func TestDedupes(t *testing.T) {
 	}
 }
 
+func TestStingy(t *testing.T) {
+	fc := fakeclock.NewFakeClock(time.Now())
+
+	called := make(chan struct{})
+	stopProcessing := make(chan struct{})
+	queue := newScheduledWorkQueue(fc, func(obj interface{}) {
+		called <- struct{}{}
+		<-stopProcessing
+	}, noopRateLimiter{})
+	defer queue.Stop()
+	queue.Add("500ms", 500*time.Millisecond)
+
+	fc.Step(500 * time.Millisecond)
+	<-called
+
+	// shouldn't add becuase it's still processing the last one
+	inDuration := queue.Add("500ms", 500*time.Millisecond)
+	if inDuration != 0 {
+		t.Errorf("expected a duration of 0 for already processing item, got %v", inDuration)
+	}
+	stopProcessing <- struct{}{}
+
+	fc.Step(1 * time.Second)
+	select {
+	case <-called:
+		t.Error("should not be called again")
+	default:
+	}
+}
+
 func TestSameDelayRun(t *testing.T) {
 	fc := fakeclock.NewFakeClock(time.Now())
 
