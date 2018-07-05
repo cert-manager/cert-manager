@@ -33,6 +33,15 @@ it is also possible to have multiple instances of the same DNS provider on a
 single Issuer (e.g. two clouddns accounts could be set, each with their own
 name).
 
+Setting nameservers for DNS01 check
+===================================
+
+Cert-manager will check the correct DNS records exist before attempting a DNS01
+challenge.  By default, the DNS servers for this check will be taken from
+``/etc/resolv.conf``.  If this is not desired, the cert-manager controller
+provides the ``--dns01-nameservers`` flag, which allows overriding the default
+nameservers with a comma seperated list of custom nameservers.
+
 .. _supported-dns01-providers:
 
 *************************
