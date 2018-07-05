@@ -126,8 +126,9 @@ func (s *ControllerOptions) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVar(&s.DefaultACMEIssuerDNS01ProviderName, "default-acme-issuer-dns01-provider-name", defaultACMEIssuerDNS01ProviderName, ""+
 		"Required if --default-acme-issuer-challenge-type is set to dns01. The DNS01 provider to use for ingresses using ACME dns01 "+
 		"validation that do not explicitly state a dns provider.")
-	fs.StringVar(&s.DNS01Nameservers, "dns01-nameservers", defaultDNS01Nameservers, ""+
-		"A list of comma seperated DNS servers used for DNS01 check requests")
+	fs.StringVar(&s.DNS01Nameservers, "dns01-self-check-nameservers", defaultDNS01Nameservers, ""+
+		"A list of comma seperated DNS server endpoints used for DNS01 check requests. "+
+		"")
 }
 
 func (o *ControllerOptions) Validate() error {
