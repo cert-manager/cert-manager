@@ -1,0 +1,1976 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Cert-manager API Reference</title>
+<link rel="shortcut icon" href="favicon.ico" type="image/vnd.microsoft.icon">
+<!-- Latest compiled and minified CSS -->
+<link rel="stylesheet" href="node_modules/bootstrap/dist/css/bootstrap.min.css">
+<link rel="stylesheet" href="node_modules/font-awesome/css/font-awesome.min.css" type="text/css">
+<link rel="stylesheet" href="node_modules/highlight.js/styles/default.css" type="text/css">
+<link rel="stylesheet" href="stylesheet.css" type="text/css">
+</head>
+<body>
+<div id="sidebar-wrapper" class="side-nav side-bar-nav"><ul><li class="nav-level-1 strong-nav"><a href="#-strong-cert-manager-strong-" class="nav-item"><strong>cert-manager</strong></a></li></ul><ul><li class="nav-level-1"><a href="#certificate-v1alpha1" class="nav-item">Certificate v1alpha1</a></li></ul><ul><li class="nav-level-1"><a href="#clusterissuer-v1alpha1" class="nav-item">ClusterIssuer v1alpha1</a></li></ul><ul><li class="nav-level-1"><a href="#issuer-v1alpha1" class="nav-item">Issuer v1alpha1</a></li></ul><ul><li class="nav-level-1 strong-nav"><a href="#-strong-old-api-versions-strong-" class="nav-item"><strong>Old API Versions</strong></a></li></ul><ul><li class="nav-level-1 strong-nav"><a href="#-strong-field-definitions-strong-" class="nav-item"><strong>Field Definitions</strong></a></li><ul id="-strong-field-definitions-strong--nav" style="display: none;"><li class="nav-level-2"><a href="#acmecertificateconfig-v1alpha1" class="nav-item">ACMECertificateConfig v1alpha1</a></li><li class="nav-level-2"><a href="#acmecertificatedns01config-v1alpha1" class="nav-item">ACMECertificateDNS01Config v1alpha1</a></li><li class="nav-level-2"><a href="#acmecertificatedomainconfig-v1alpha1" class="nav-item">ACMECertificateDomainConfig v1alpha1</a></li><li class="nav-level-2"><a href="#acmecertificatehttp01config-v1alpha1" class="nav-item">ACMECertificateHTTP01Config v1alpha1</a></li><li class="nav-level-2"><a href="#acmeissuer-v1alpha1" class="nav-item">ACMEIssuer v1alpha1</a></li><li class="nav-level-2"><a href="#acmeissuerdns01config-v1alpha1" class="nav-item">ACMEIssuerDNS01Config v1alpha1</a></li><li class="nav-level-2"><a href="#acmeissuerdns01provider-v1alpha1" class="nav-item">ACMEIssuerDNS01Provider v1alpha1</a></li><li class="nav-level-2"><a href="#acmeissuerdns01providerakamai-v1alpha1" class="nav-item">ACMEIssuerDNS01ProviderAkamai v1alpha1</a></li><li class="nav-level-2"><a href="#acmeissuerdns01providerazuredns-v1alpha1" class="nav-item">ACMEIssuerDNS01ProviderAzureDNS v1alpha1</a></li><li class="nav-level-2"><a href="#acmeissuerdns01providerclouddns-v1alpha1" class="nav-item">ACMEIssuerDNS01ProviderCloudDNS v1alpha1</a></li><li class="nav-level-2"><a href="#acmeissuerdns01providercloudflare-v1alpha1" class="nav-item">ACMEIssuerDNS01ProviderCloudflare v1alpha1</a></li><li class="nav-level-2"><a href="#acmeissuerdns01providerroute53-v1alpha1" class="nav-item">ACMEIssuerDNS01ProviderRoute53 v1alpha1</a></li><li class="nav-level-2"><a href="#acmeissuerhttp01config-v1alpha1" class="nav-item">ACMEIssuerHTTP01Config v1alpha1</a></li><li class="nav-level-2"><a href="#acmeorderchallenge-v1alpha1" class="nav-item">ACMEOrderChallenge v1alpha1</a></li><li class="nav-level-2"><a href="#acmeorderstatus-v1alpha1" class="nav-item">ACMEOrderStatus v1alpha1</a></li><li class="nav-level-2"><a href="#caissuer-v1alpha1" class="nav-item">CAIssuer v1alpha1</a></li><li class="nav-level-2"><a href="#certificateacmestatus-v1alpha1" class="nav-item">CertificateACMEStatus v1alpha1</a></li><li class="nav-level-2"><a href="#certificatecondition-v1alpha1" class="nav-item">CertificateCondition v1alpha1</a></li><li class="nav-level-2"><a href="#initializer-v1" class="nav-item">Initializer v1</a></li><li class="nav-level-2"><a href="#initializers-v1" class="nav-item">Initializers v1</a></li><li class="nav-level-2"><a href="#issuercondition-v1alpha1" class="nav-item">IssuerCondition v1alpha1</a></li><li class="nav-level-2"><a href="#listmeta-v1" class="nav-item">ListMeta v1</a></li><li class="nav-level-2"><a href="#objectmeta-v1" class="nav-item">ObjectMeta v1</a></li><li class="nav-level-2"><a href="#objectreference-v1alpha1" class="nav-item">ObjectReference v1alpha1</a></li><li class="nav-level-2"><a href="#ownerreference-v1" class="nav-item">OwnerReference v1</a></li><li class="nav-level-2"><a href="#secretkeyselector-v1alpha1" class="nav-item">SecretKeySelector v1alpha1</a></li><li class="nav-level-2"><a href="#selfsignedissuer-v1alpha1" class="nav-item">SelfSignedIssuer v1alpha1</a></li><li class="nav-level-2"><a href="#status-v1" class="nav-item">Status v1</a></li><li class="nav-level-2"><a href="#statuscause-v1" class="nav-item">StatusCause v1</a></li><li class="nav-level-2"><a href="#statusdetails-v1" class="nav-item">StatusDetails v1</a></li><li class="nav-level-2"><a href="#time-v1" class="nav-item">Time v1</a></li><li class="nav-level-2"><a href="#vaultapprole-v1alpha1" class="nav-item">VaultAppRole v1alpha1</a></li><li class="nav-level-2"><a href="#vaultauth-v1alpha1" class="nav-item">VaultAuth v1alpha1</a></li><li class="nav-level-2"><a href="#vaultissuer-v1alpha1" class="nav-item">VaultIssuer v1alpha1</a></li></ul></ul><br/><div class="copyright"><a href="https://jetstack.io">Copyright 2018 Jetstack Ltd.</a></div></div>
+<div id="wrapper">
+<div id="code-tabs-wrapper" class="code-tabs"><ul class="code-tab-list"></ul></div>
+<div id="page-content-wrapper" class="body-content container-fluid"><h1 id="-strong-cert-manager-strong-"><strong>cert-manager</strong></h1>
+<hr>
+<p>This page contains reference documentation for cert-manager API types.</p>
+<p>For full documentation on how to use cert-manager, please view our
+<a href="https://cert-manager.readthedocs.io/">official documentation</a>.</p>
+<hr>
+<h1 id="certificate-v1alpha1">Certificate v1alpha1</h1>
+<table>
+<thead>
+<tr>
+<th>Group</th>
+<th>Version</th>
+<th>Kind</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>certmanager</code></td>
+<td><code>v1alpha1</code></td>
+<td><code>Certificate</code></td>
+</tr>
+</tbody>
+</table>
+<p>Certificate is a type to represent a Certificate from ACME</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>apiVersion</code><br /> <em>string</em></td>
+<td>APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: <a href="https://git.k8s.io/community/contributors/devel/api-conventions.md#resources">https://git.k8s.io/community/contributors/devel/api-conventions.md#resources</a></td>
+</tr>
+<tr>
+<td><code>kind</code><br /> <em>string</em></td>
+<td>Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: <a href="https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds">https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds</a></td>
+</tr>
+<tr>
+<td><code>metadata</code><br /> <em><a href="#objectmeta-v1">ObjectMeta</a></em></td>
+<td></td>
+</tr>
+<tr>
+<td><code>spec</code><br /> <em><a href="#certificatespec-v1alpha1">CertificateSpec</a></em></td>
+<td></td>
+</tr>
+<tr>
+<td><code>status</code><br /> <em><a href="#certificatestatus-v1alpha1">CertificateStatus</a></em></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h3 id="certificatespec-v1alpha1">CertificateSpec v1alpha1</h3>
+<aside class="notice">
+Appears In:
+
+<ul>
+<li><a href="#certificate-v1alpha1">Certificate v1alpha1</a></li>
+</ul></aside>
+
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>acme</code><br /> <em><a href="#acmecertificateconfig-v1alpha1">ACMECertificateConfig</a></em></td>
+<td></td>
+</tr>
+<tr>
+<td><code>commonName</code><br /> <em>string</em></td>
+<td>CommonName is a common name to be used on the Certificate</td>
+</tr>
+<tr>
+<td><code>dnsNames</code><br /> <em>string array</em></td>
+<td>DNSNames is a list of subject alt names to be used on the Certificate</td>
+</tr>
+<tr>
+<td><code>issuerRef</code><br /> <em><a href="#objectreference-v1alpha1">ObjectReference</a></em></td>
+<td>IssuerRef is a reference to the issuer for this certificate. If the namespace field is not set, it is assumed to be in the same namespace as the certificate. If the namespace field is set to the empty value &#34;&#34;, a ClusterIssuer of the given name will be used. Any other value is invalid.</td>
+</tr>
+<tr>
+<td><code>secretName</code><br /> <em>string</em></td>
+<td>SecretName is the name of the secret resource to store this secret in</td>
+</tr>
+</tbody>
+</table>
+<h3 id="certificatestatus-v1alpha1">CertificateStatus v1alpha1</h3>
+<aside class="notice">
+Appears In:
+
+<ul>
+<li><a href="#certificate-v1alpha1">Certificate v1alpha1</a></li>
+</ul></aside>
+
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>acme</code><br /> <em><a href="#certificateacmestatus-v1alpha1">CertificateACMEStatus</a></em></td>
+<td></td>
+</tr>
+<tr>
+<td><code>conditions</code><br /> <em><a href="#certificatecondition-v1alpha1">CertificateCondition</a> array</em></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h1 id="clusterissuer-v1alpha1">ClusterIssuer v1alpha1</h1>
+<table>
+<thead>
+<tr>
+<th>Group</th>
+<th>Version</th>
+<th>Kind</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>certmanager</code></td>
+<td><code>v1alpha1</code></td>
+<td><code>ClusterIssuer</code></td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>apiVersion</code><br /> <em>string</em></td>
+<td>APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: <a href="https://git.k8s.io/community/contributors/devel/api-conventions.md#resources">https://git.k8s.io/community/contributors/devel/api-conventions.md#resources</a></td>
+</tr>
+<tr>
+<td><code>kind</code><br /> <em>string</em></td>
+<td>Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: <a href="https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds">https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds</a></td>
+</tr>
+<tr>
+<td><code>metadata</code><br /> <em><a href="#objectmeta-v1">ObjectMeta</a></em></td>
+<td></td>
+</tr>
+<tr>
+<td><code>spec</code><br /> <em><a href="#issuerspec-v1alpha1">IssuerSpec</a></em></td>
+<td></td>
+</tr>
+<tr>
+<td><code>status</code><br /> <em><a href="#issuerstatus-v1alpha1">IssuerStatus</a></em></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h1 id="issuer-v1alpha1">Issuer v1alpha1</h1>
+<table>
+<thead>
+<tr>
+<th>Group</th>
+<th>Version</th>
+<th>Kind</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>certmanager</code></td>
+<td><code>v1alpha1</code></td>
+<td><code>Issuer</code></td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>apiVersion</code><br /> <em>string</em></td>
+<td>APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: <a href="https://git.k8s.io/community/contributors/devel/api-conventions.md#resources">https://git.k8s.io/community/contributors/devel/api-conventions.md#resources</a></td>
+</tr>
+<tr>
+<td><code>kind</code><br /> <em>string</em></td>
+<td>Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: <a href="https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds">https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds</a></td>
+</tr>
+<tr>
+<td><code>metadata</code><br /> <em><a href="#objectmeta-v1">ObjectMeta</a></em></td>
+<td></td>
+</tr>
+<tr>
+<td><code>spec</code><br /> <em><a href="#issuerspec-v1alpha1">IssuerSpec</a></em></td>
+<td></td>
+</tr>
+<tr>
+<td><code>status</code><br /> <em><a href="#issuerstatus-v1alpha1">IssuerStatus</a></em></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h3 id="issuerspec-v1alpha1">IssuerSpec v1alpha1</h3>
+<aside class="notice">
+Appears In:
+
+<ul>
+<li><a href="#clusterissuer-v1alpha1">ClusterIssuer v1alpha1</a></li>
+<li><a href="#issuer-v1alpha1">Issuer v1alpha1</a></li>
+</ul></aside>
+
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>acme</code><br /> <em><a href="#acmeissuer-v1alpha1">ACMEIssuer</a></em></td>
+<td></td>
+</tr>
+<tr>
+<td><code>ca</code><br /> <em><a href="#caissuer-v1alpha1">CAIssuer</a></em></td>
+<td></td>
+</tr>
+<tr>
+<td><code>selfSigned</code><br /> <em><a href="#selfsignedissuer-v1alpha1">SelfSignedIssuer</a></em></td>
+<td></td>
+</tr>
+<tr>
+<td><code>vault</code><br /> <em><a href="#vaultissuer-v1alpha1">VaultIssuer</a></em></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h3 id="issuerstatus-v1alpha1">IssuerStatus v1alpha1</h3>
+<aside class="notice">
+Appears In:
+
+<ul>
+<li><a href="#clusterissuer-v1alpha1">ClusterIssuer v1alpha1</a></li>
+<li><a href="#issuer-v1alpha1">Issuer v1alpha1</a></li>
+</ul></aside>
+
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>acme</code><br /> <em><a href="#acmeissuerstatus-v1alpha1">ACMEIssuerStatus</a></em></td>
+<td></td>
+</tr>
+<tr>
+<td><code>conditions</code><br /> <em><a href="#issuercondition-v1alpha1">IssuerCondition</a> array</em></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h1 id="-strong-old-api-versions-strong-"><strong>Old API Versions</strong></h1>
+<hr>
+<h1 id="-strong-field-definitions-strong-"><strong>Field Definitions</strong></h1>
+<hr>
+<h2 id="acmecertificateconfig-v1alpha1">ACMECertificateConfig v1alpha1</h2>
+<table>
+<thead>
+<tr>
+<th>Group</th>
+<th>Version</th>
+<th>Kind</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>certmanager</code></td>
+<td><code>v1alpha1</code></td>
+<td><code>ACMECertificateConfig</code></td>
+</tr>
+</tbody>
+</table>
+<p>ACMEConfig contains the configuration for the ACME certificate provider</p>
+<aside class="notice">
+Appears In:
+
+<ul> 
+<li><a href="#certificatespec-v1alpha1">CertificateSpec v1alpha1</a></li>
+</ul></aside>
+
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>config</code><br /> <em><a href="#acmecertificatedomainconfig-v1alpha1">ACMECertificateDomainConfig</a> array</em></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h2 id="acmecertificatedns01config-v1alpha1">ACMECertificateDNS01Config v1alpha1</h2>
+<table>
+<thead>
+<tr>
+<th>Group</th>
+<th>Version</th>
+<th>Kind</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>certmanager</code></td>
+<td><code>v1alpha1</code></td>
+<td><code>ACMECertificateDNS01Config</code></td>
+</tr>
+</tbody>
+</table>
+<aside class="notice">
+Appears In:
+
+<ul> 
+<li><a href="#acmecertificatedomainconfig-v1alpha1">ACMECertificateDomainConfig v1alpha1</a></li>
+<li><a href="#acmeorderchallenge-v1alpha1">ACMEOrderChallenge v1alpha1</a></li>
+</ul></aside>
+
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>provider</code><br /> <em>string</em></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h2 id="acmecertificatedomainconfig-v1alpha1">ACMECertificateDomainConfig v1alpha1</h2>
+<table>
+<thead>
+<tr>
+<th>Group</th>
+<th>Version</th>
+<th>Kind</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>certmanager</code></td>
+<td><code>v1alpha1</code></td>
+<td><code>ACMECertificateDomainConfig</code></td>
+</tr>
+</tbody>
+</table>
+<aside class="notice">
+Appears In:
+
+<ul> 
+<li><a href="#acmecertificateconfig-v1alpha1">ACMECertificateConfig v1alpha1</a></li>
+</ul></aside>
+
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>dns01</code><br /> <em><a href="#acmecertificatedns01config-v1alpha1">ACMECertificateDNS01Config</a></em></td>
+<td></td>
+</tr>
+<tr>
+<td><code>domains</code><br /> <em>string array</em></td>
+<td></td>
+</tr>
+<tr>
+<td><code>http01</code><br /> <em><a href="#acmecertificatehttp01config-v1alpha1">ACMECertificateHTTP01Config</a></em></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h2 id="acmecertificatehttp01config-v1alpha1">ACMECertificateHTTP01Config v1alpha1</h2>
+<table>
+<thead>
+<tr>
+<th>Group</th>
+<th>Version</th>
+<th>Kind</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>certmanager</code></td>
+<td><code>v1alpha1</code></td>
+<td><code>ACMECertificateHTTP01Config</code></td>
+</tr>
+</tbody>
+</table>
+<aside class="notice">
+Appears In:
+
+<ul> 
+<li><a href="#acmecertificatedomainconfig-v1alpha1">ACMECertificateDomainConfig v1alpha1</a></li>
+<li><a href="#acmeorderchallenge-v1alpha1">ACMEOrderChallenge v1alpha1</a></li>
+</ul></aside>
+
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ingress</code><br /> <em>string</em></td>
+<td></td>
+</tr>
+<tr>
+<td><code>ingressClass</code><br /> <em>string</em></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h2 id="acmeissuer-v1alpha1">ACMEIssuer v1alpha1</h2>
+<table>
+<thead>
+<tr>
+<th>Group</th>
+<th>Version</th>
+<th>Kind</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>certmanager</code></td>
+<td><code>v1alpha1</code></td>
+<td><code>ACMEIssuer</code></td>
+</tr>
+</tbody>
+</table>
+<p>ACMEIssuer contains the specification for an ACME issuer</p>
+<aside class="notice">
+Appears In:
+
+<ul> 
+<li><a href="#issuerspec-v1alpha1">IssuerSpec v1alpha1</a></li>
+</ul></aside>
+
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>dns01</code><br /> <em><a href="#acmeissuerdns01config-v1alpha1">ACMEIssuerDNS01Config</a></em></td>
+<td>DNS-01 config</td>
+</tr>
+<tr>
+<td><code>email</code><br /> <em>string</em></td>
+<td>Email is the email for this account</td>
+</tr>
+<tr>
+<td><code>http01</code><br /> <em><a href="#acmeissuerhttp01config-v1alpha1">ACMEIssuerHTTP01Config</a></em></td>
+<td>HTTP01 config</td>
+</tr>
+<tr>
+<td><code>privateKeySecretRef</code><br /> <em><a href="#secretkeyselector-v1alpha1">SecretKeySelector</a></em></td>
+<td>PrivateKey is the name of a secret containing the private key for this user account.</td>
+</tr>
+<tr>
+<td><code>server</code><br /> <em>string</em></td>
+<td>Server is the ACME server URL</td>
+</tr>
+<tr>
+<td><code>skipTLSVerify</code><br /> <em>boolean</em></td>
+<td>If true, skip verifying the ACME server TLS certificate</td>
+</tr>
+</tbody>
+</table>
+<h2 id="acmeissuerdns01config-v1alpha1">ACMEIssuerDNS01Config v1alpha1</h2>
+<table>
+<thead>
+<tr>
+<th>Group</th>
+<th>Version</th>
+<th>Kind</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>certmanager</code></td>
+<td><code>v1alpha1</code></td>
+<td><code>ACMEIssuerDNS01Config</code></td>
+</tr>
+</tbody>
+</table>
+<p>ACMEIssuerDNS01Config is a structure containing the ACME DNS configuration options</p>
+<aside class="notice">
+Appears In:
+
+<ul> 
+<li><a href="#acmeissuer-v1alpha1">ACMEIssuer v1alpha1</a></li>
+</ul></aside>
+
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>providers</code><br /> <em><a href="#acmeissuerdns01provider-v1alpha1">ACMEIssuerDNS01Provider</a> array</em></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h2 id="acmeissuerdns01provider-v1alpha1">ACMEIssuerDNS01Provider v1alpha1</h2>
+<table>
+<thead>
+<tr>
+<th>Group</th>
+<th>Version</th>
+<th>Kind</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>certmanager</code></td>
+<td><code>v1alpha1</code></td>
+<td><code>ACMEIssuerDNS01Provider</code></td>
+</tr>
+</tbody>
+</table>
+<aside class="notice">
+Appears In:
+
+<ul> 
+<li><a href="#acmeissuerdns01config-v1alpha1">ACMEIssuerDNS01Config v1alpha1</a></li>
+</ul></aside>
+
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>akamai</code><br /> <em><a href="#acmeissuerdns01providerakamai-v1alpha1">ACMEIssuerDNS01ProviderAkamai</a></em></td>
+<td></td>
+</tr>
+<tr>
+<td><code>azuredns</code><br /> <em><a href="#acmeissuerdns01providerazuredns-v1alpha1">ACMEIssuerDNS01ProviderAzureDNS</a></em></td>
+<td></td>
+</tr>
+<tr>
+<td><code>clouddns</code><br /> <em><a href="#acmeissuerdns01providerclouddns-v1alpha1">ACMEIssuerDNS01ProviderCloudDNS</a></em></td>
+<td></td>
+</tr>
+<tr>
+<td><code>cloudflare</code><br /> <em><a href="#acmeissuerdns01providercloudflare-v1alpha1">ACMEIssuerDNS01ProviderCloudflare</a></em></td>
+<td></td>
+</tr>
+<tr>
+<td><code>name</code><br /> <em>string</em></td>
+<td></td>
+</tr>
+<tr>
+<td><code>route53</code><br /> <em><a href="#acmeissuerdns01providerroute53-v1alpha1">ACMEIssuerDNS01ProviderRoute53</a></em></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h2 id="acmeissuerdns01providerakamai-v1alpha1">ACMEIssuerDNS01ProviderAkamai v1alpha1</h2>
+<table>
+<thead>
+<tr>
+<th>Group</th>
+<th>Version</th>
+<th>Kind</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>certmanager</code></td>
+<td><code>v1alpha1</code></td>
+<td><code>ACMEIssuerDNS01ProviderAkamai</code></td>
+</tr>
+</tbody>
+</table>
+<p>ACMEIssuerDNS01ProviderAkamai is a structure containing the DNS configuration for Akamai DNS—Zone Record Management API</p>
+<aside class="notice">
+Appears In:
+
+<ul> 
+<li><a href="#acmeissuerdns01provider-v1alpha1">ACMEIssuerDNS01Provider v1alpha1</a></li>
+</ul></aside>
+
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>accessTokenSecretRef</code><br /> <em><a href="#secretkeyselector-v1alpha1">SecretKeySelector</a></em></td>
+<td></td>
+</tr>
+<tr>
+<td><code>clientSecretSecretRef</code><br /> <em><a href="#secretkeyselector-v1alpha1">SecretKeySelector</a></em></td>
+<td></td>
+</tr>
+<tr>
+<td><code>clientTokenSecretRef</code><br /> <em><a href="#secretkeyselector-v1alpha1">SecretKeySelector</a></em></td>
+<td></td>
+</tr>
+<tr>
+<td><code>serviceConsumerDomain</code><br /> <em>string</em></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h2 id="acmeissuerdns01providerazuredns-v1alpha1">ACMEIssuerDNS01ProviderAzureDNS v1alpha1</h2>
+<table>
+<thead>
+<tr>
+<th>Group</th>
+<th>Version</th>
+<th>Kind</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>certmanager</code></td>
+<td><code>v1alpha1</code></td>
+<td><code>ACMEIssuerDNS01ProviderAzureDNS</code></td>
+</tr>
+</tbody>
+</table>
+<p>ACMEIssuerDNS01ProviderAzureDNS is a structure containing the configuration for Azure DNS</p>
+<aside class="notice">
+Appears In:
+
+<ul> 
+<li><a href="#acmeissuerdns01provider-v1alpha1">ACMEIssuerDNS01Provider v1alpha1</a></li>
+</ul></aside>
+
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>clientID</code><br /> <em>string</em></td>
+<td></td>
+</tr>
+<tr>
+<td><code>clientSecretSecretRef</code><br /> <em><a href="#secretkeyselector-v1alpha1">SecretKeySelector</a></em></td>
+<td></td>
+</tr>
+<tr>
+<td><code>hostedZoneName</code><br /> <em>string</em></td>
+<td></td>
+</tr>
+<tr>
+<td><code>resourceGroupName</code><br /> <em>string</em></td>
+<td></td>
+</tr>
+<tr>
+<td><code>subscriptionID</code><br /> <em>string</em></td>
+<td></td>
+</tr>
+<tr>
+<td><code>tenantID</code><br /> <em>string</em></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h2 id="acmeissuerdns01providerclouddns-v1alpha1">ACMEIssuerDNS01ProviderCloudDNS v1alpha1</h2>
+<table>
+<thead>
+<tr>
+<th>Group</th>
+<th>Version</th>
+<th>Kind</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>certmanager</code></td>
+<td><code>v1alpha1</code></td>
+<td><code>ACMEIssuerDNS01ProviderCloudDNS</code></td>
+</tr>
+</tbody>
+</table>
+<p>ACMEIssuerDNS01ProviderCloudDNS is a structure containing the DNS configuration for Google Cloud DNS</p>
+<aside class="notice">
+Appears In:
+
+<ul> 
+<li><a href="#acmeissuerdns01provider-v1alpha1">ACMEIssuerDNS01Provider v1alpha1</a></li>
+</ul></aside>
+
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>project</code><br /> <em>string</em></td>
+<td></td>
+</tr>
+<tr>
+<td><code>serviceAccountSecretRef</code><br /> <em><a href="#secretkeyselector-v1alpha1">SecretKeySelector</a></em></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h2 id="acmeissuerdns01providercloudflare-v1alpha1">ACMEIssuerDNS01ProviderCloudflare v1alpha1</h2>
+<table>
+<thead>
+<tr>
+<th>Group</th>
+<th>Version</th>
+<th>Kind</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>certmanager</code></td>
+<td><code>v1alpha1</code></td>
+<td><code>ACMEIssuerDNS01ProviderCloudflare</code></td>
+</tr>
+</tbody>
+</table>
+<p>ACMEIssuerDNS01ProviderCloudflare is a structure containing the DNS configuration for Cloudflare</p>
+<aside class="notice">
+Appears In:
+
+<ul> 
+<li><a href="#acmeissuerdns01provider-v1alpha1">ACMEIssuerDNS01Provider v1alpha1</a></li>
+</ul></aside>
+
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>apiKeySecretRef</code><br /> <em><a href="#secretkeyselector-v1alpha1">SecretKeySelector</a></em></td>
+<td></td>
+</tr>
+<tr>
+<td><code>email</code><br /> <em>string</em></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h2 id="acmeissuerdns01providerroute53-v1alpha1">ACMEIssuerDNS01ProviderRoute53 v1alpha1</h2>
+<table>
+<thead>
+<tr>
+<th>Group</th>
+<th>Version</th>
+<th>Kind</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>certmanager</code></td>
+<td><code>v1alpha1</code></td>
+<td><code>ACMEIssuerDNS01ProviderRoute53</code></td>
+</tr>
+</tbody>
+</table>
+<p>ACMEIssuerDNS01ProviderRoute53 is a structure containing the Route 53 configuration for AWS</p>
+<aside class="notice">
+Appears In:
+
+<ul> 
+<li><a href="#acmeissuerdns01provider-v1alpha1">ACMEIssuerDNS01Provider v1alpha1</a></li>
+</ul></aside>
+
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>accessKeyID</code><br /> <em>string</em></td>
+<td></td>
+</tr>
+<tr>
+<td><code>hostedZoneID</code><br /> <em>string</em></td>
+<td></td>
+</tr>
+<tr>
+<td><code>region</code><br /> <em>string</em></td>
+<td></td>
+</tr>
+<tr>
+<td><code>secretAccessKeySecretRef</code><br /> <em><a href="#secretkeyselector-v1alpha1">SecretKeySelector</a></em></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h2 id="acmeissuerhttp01config-v1alpha1">ACMEIssuerHTTP01Config v1alpha1</h2>
+<table>
+<thead>
+<tr>
+<th>Group</th>
+<th>Version</th>
+<th>Kind</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>certmanager</code></td>
+<td><code>v1alpha1</code></td>
+<td><code>ACMEIssuerHTTP01Config</code></td>
+</tr>
+</tbody>
+</table>
+<aside class="notice">
+Appears In:
+
+<ul> 
+<li><a href="#acmeissuer-v1alpha1">ACMEIssuer v1alpha1</a></li>
+</ul></aside>
+
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h2 id="acmeorderchallenge-v1alpha1">ACMEOrderChallenge v1alpha1</h2>
+<table>
+<thead>
+<tr>
+<th>Group</th>
+<th>Version</th>
+<th>Kind</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>certmanager</code></td>
+<td><code>v1alpha1</code></td>
+<td><code>ACMEOrderChallenge</code></td>
+</tr>
+</tbody>
+</table>
+<aside class="notice">
+Appears In:
+
+<ul> 
+<li><a href="#acmeorderstatus-v1alpha1">ACMEOrderStatus v1alpha1</a></li>
+</ul></aside>
+
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>authzURL</code><br /> <em>string</em></td>
+<td>The URL that can be used to get information about the ACME authorization associated with the challenge.</td>
+</tr>
+<tr>
+<td><code>dns01</code><br /> <em><a href="#acmecertificatedns01config-v1alpha1">ACMECertificateDNS01Config</a></em></td>
+<td></td>
+</tr>
+<tr>
+<td><code>domain</code><br /> <em>string</em></td>
+<td>Domain this challenge corresponds to</td>
+</tr>
+<tr>
+<td><code>http01</code><br /> <em><a href="#acmecertificatehttp01config-v1alpha1">ACMECertificateHTTP01Config</a></em></td>
+<td></td>
+</tr>
+<tr>
+<td><code>key</code><br /> <em>string</em></td>
+<td>Challenge key for this challenge</td>
+</tr>
+<tr>
+<td><code>token</code><br /> <em>string</em></td>
+<td>Challenge token for this challenge</td>
+</tr>
+<tr>
+<td><code>type</code><br /> <em>string</em></td>
+<td>Type of ACME challenge Either http-01 or dns-01</td>
+</tr>
+<tr>
+<td><code>url</code><br /> <em>string</em></td>
+<td>The URL that can be used to get information about the ACME challenge.</td>
+</tr>
+<tr>
+<td><code>wildcard</code><br /> <em>boolean</em></td>
+<td>Set to true if this challenge is for a wildcard domain</td>
+</tr>
+</tbody>
+</table>
+<h2 id="acmeorderstatus-v1alpha1">ACMEOrderStatus v1alpha1</h2>
+<table>
+<thead>
+<tr>
+<th>Group</th>
+<th>Version</th>
+<th>Kind</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>certmanager</code></td>
+<td><code>v1alpha1</code></td>
+<td><code>ACMEOrderStatus</code></td>
+</tr>
+</tbody>
+</table>
+<aside class="notice">
+Appears In:
+
+<ul> 
+<li><a href="#certificateacmestatus-v1alpha1">CertificateACMEStatus v1alpha1</a></li>
+</ul></aside>
+
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>challenges</code><br /> <em><a href="#acmeorderchallenge-v1alpha1">ACMEOrderChallenge</a> array</em></td>
+<td></td>
+</tr>
+<tr>
+<td><code>url</code><br /> <em>string</em></td>
+<td>The URL that can be used to get information about the ACME order.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="caissuer-v1alpha1">CAIssuer v1alpha1</h2>
+<table>
+<thead>
+<tr>
+<th>Group</th>
+<th>Version</th>
+<th>Kind</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>certmanager</code></td>
+<td><code>v1alpha1</code></td>
+<td><code>CAIssuer</code></td>
+</tr>
+</tbody>
+</table>
+<aside class="notice">
+Appears In:
+
+<ul> 
+<li><a href="#issuerspec-v1alpha1">IssuerSpec v1alpha1</a></li>
+</ul></aside>
+
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>secretName</code><br /> <em>string</em></td>
+<td>SecretName is the name of the secret used to sign Certificates issued by this Issuer.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="certificateacmestatus-v1alpha1">CertificateACMEStatus v1alpha1</h2>
+<table>
+<thead>
+<tr>
+<th>Group</th>
+<th>Version</th>
+<th>Kind</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>certmanager</code></td>
+<td><code>v1alpha1</code></td>
+<td><code>CertificateACMEStatus</code></td>
+</tr>
+</tbody>
+</table>
+<p>CertificateACMEStatus holds the status for an ACME issuer</p>
+<aside class="notice">
+Appears In:
+
+<ul> 
+<li><a href="#certificatestatus-v1alpha1">CertificateStatus v1alpha1</a></li>
+</ul></aside>
+
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>order</code><br /> <em><a href="#acmeorderstatus-v1alpha1">ACMEOrderStatus</a></em></td>
+<td>Order contains details about the current in-progress ACME Order.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="certificatecondition-v1alpha1">CertificateCondition v1alpha1</h2>
+<table>
+<thead>
+<tr>
+<th>Group</th>
+<th>Version</th>
+<th>Kind</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>certmanager</code></td>
+<td><code>v1alpha1</code></td>
+<td><code>CertificateCondition</code></td>
+</tr>
+</tbody>
+</table>
+<p>CertificateCondition contains condition information for an Certificate.</p>
+<aside class="notice">
+Appears In:
+
+<ul> 
+<li><a href="#certificatestatus-v1alpha1">CertificateStatus v1alpha1</a></li>
+</ul></aside>
+
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>lastTransitionTime</code><br /> <em><a href="#time-v1">Time</a></em></td>
+<td>LastTransitionTime is the timestamp corresponding to the last status change of this condition.</td>
+</tr>
+<tr>
+<td><code>message</code><br /> <em>string</em></td>
+<td>Message is a human readable description of the details of the last transition, complementing reason.</td>
+</tr>
+<tr>
+<td><code>reason</code><br /> <em>string</em></td>
+<td>Reason is a brief machine readable explanation for the condition&#39;s last transition.</td>
+</tr>
+<tr>
+<td><code>status</code><br /> <em>string</em></td>
+<td>Status of the condition, one of (&#39;True&#39;, &#39;False&#39;, &#39;Unknown&#39;).</td>
+</tr>
+<tr>
+<td><code>type</code><br /> <em>string</em></td>
+<td>Type of the condition, currently (&#39;Ready&#39;).</td>
+</tr>
+</tbody>
+</table>
+<h2 id="initializer-v1">Initializer v1</h2>
+<table>
+<thead>
+<tr>
+<th>Group</th>
+<th>Version</th>
+<th>Kind</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>meta</code></td>
+<td><code>v1</code></td>
+<td><code>Initializer</code></td>
+</tr>
+</tbody>
+</table>
+<p>Initializer is information about an initializer that has not yet completed.</p>
+<aside class="notice">
+Appears In:
+
+<ul> 
+<li><a href="#initializers-v1">Initializers v1</a></li>
+</ul></aside>
+
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>name</code><br /> <em>string</em></td>
+<td>name of the process that is responsible for initializing this object.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="initializers-v1">Initializers v1</h2>
+<table>
+<thead>
+<tr>
+<th>Group</th>
+<th>Version</th>
+<th>Kind</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>meta</code></td>
+<td><code>v1</code></td>
+<td><code>Initializers</code></td>
+</tr>
+</tbody>
+</table>
+<p>Initializers tracks the progress of initialization.</p>
+<aside class="notice">
+Appears In:
+
+<ul> 
+<li><a href="#objectmeta-v1">ObjectMeta v1</a></li>
+</ul></aside>
+
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>pending</code><br /> <em><a href="#initializer-v1">Initializer</a> array</em>  <br /> <strong>patch type</strong>: <em>merge</em>  <br /> <strong>patch merge key</strong>: <em>name</em></td>
+<td>Pending is a list of initializers that must execute in order before this object is visible. When the last pending initializer is removed, and no failing result is set, the initializers struct will be set to nil and the object is considered as initialized and visible to all clients.</td>
+</tr>
+<tr>
+<td><code>result</code><br /> <em><a href="#status-v1">Status</a></em></td>
+<td>If result is set with the Failure field, the object will be persisted to storage and then deleted, ensuring that other clients can observe the deletion.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="issuercondition-v1alpha1">IssuerCondition v1alpha1</h2>
+<table>
+<thead>
+<tr>
+<th>Group</th>
+<th>Version</th>
+<th>Kind</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>certmanager</code></td>
+<td><code>v1alpha1</code></td>
+<td><code>IssuerCondition</code></td>
+</tr>
+</tbody>
+</table>
+<p>IssuerCondition contains condition information for an Issuer.</p>
+<aside class="notice">
+Appears In:
+
+<ul> 
+<li><a href="#issuerstatus-v1alpha1">IssuerStatus v1alpha1</a></li>
+</ul></aside>
+
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>lastTransitionTime</code><br /> <em><a href="#time-v1">Time</a></em></td>
+<td>LastTransitionTime is the timestamp corresponding to the last status change of this condition.</td>
+</tr>
+<tr>
+<td><code>message</code><br /> <em>string</em></td>
+<td>Message is a human readable description of the details of the last transition, complementing reason.</td>
+</tr>
+<tr>
+<td><code>reason</code><br /> <em>string</em></td>
+<td>Reason is a brief machine readable explanation for the condition&#39;s last transition.</td>
+</tr>
+<tr>
+<td><code>status</code><br /> <em>string</em></td>
+<td>Status of the condition, one of (&#39;True&#39;, &#39;False&#39;, &#39;Unknown&#39;).</td>
+</tr>
+<tr>
+<td><code>type</code><br /> <em>string</em></td>
+<td>Type of the condition, currently (&#39;Ready&#39;).</td>
+</tr>
+</tbody>
+</table>
+<h2 id="listmeta-v1">ListMeta v1</h2>
+<table>
+<thead>
+<tr>
+<th>Group</th>
+<th>Version</th>
+<th>Kind</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>meta</code></td>
+<td><code>v1</code></td>
+<td><code>ListMeta</code></td>
+</tr>
+</tbody>
+</table>
+<p>ListMeta describes metadata that synthetic resources must have, including lists and various status objects. A resource may have only one of {ObjectMeta, ListMeta}.</p>
+<aside class="notice">
+Appears In:
+
+<ul> 
+<li><a href="#status-v1">Status v1</a></li>
+</ul></aside>
+
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>continue</code><br /> <em>string</em></td>
+<td>continue may be set if the user set a limit on the number of items returned, and indicates that the server has more data available. The value is opaque and may be used to issue another request to the endpoint that served this list to retrieve the next set of available objects. Continuing a list may not be possible if the server configuration has changed or more than a few minutes have passed. The resourceVersion field returned when using this continue value will be identical to the value in the first response.</td>
+</tr>
+<tr>
+<td><code>resourceVersion</code><br /> <em>string</em></td>
+<td>String that identifies the server&#39;s internal version of this object that can be used by clients to determine when objects have changed. Value must be treated as opaque by clients and passed unmodified back to the server. Populated by the system. Read-only. More info: <a href="https://git.k8s.io/community/contributors/devel/api-conventions.md#concurrency-control-and-consistency">https://git.k8s.io/community/contributors/devel/api-conventions.md#concurrency-control-and-consistency</a></td>
+</tr>
+<tr>
+<td><code>selfLink</code><br /> <em>string</em></td>
+<td>selfLink is a URL representing this object. Populated by the system. Read-only.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="objectmeta-v1">ObjectMeta v1</h2>
+<table>
+<thead>
+<tr>
+<th>Group</th>
+<th>Version</th>
+<th>Kind</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>meta</code></td>
+<td><code>v1</code></td>
+<td><code>ObjectMeta</code></td>
+</tr>
+</tbody>
+</table>
+<p>ObjectMeta is metadata that all persisted resources must have, which includes all objects users must create.</p>
+<aside class="notice">
+Appears In:
+
+<ul> 
+<li><a href="#certificate-v1alpha1">Certificate v1alpha1</a></li>
+<li><a href="#clusterissuer-v1alpha1">ClusterIssuer v1alpha1</a></li>
+<li><a href="#issuer-v1alpha1">Issuer v1alpha1</a></li>
+</ul></aside>
+
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>annotations</code><br /> <em>object</em></td>
+<td>Annotations is an unstructured key value map stored with a resource that may be set by external tools to store and retrieve arbitrary metadata. They are not queryable and should be preserved when modifying objects. More info: <a href="http://kubernetes.io/docs/user-guide/annotations">http://kubernetes.io/docs/user-guide/annotations</a></td>
+</tr>
+<tr>
+<td><code>clusterName</code><br /> <em>string</em></td>
+<td>The name of the cluster which the object belongs to. This is used to distinguish resources with same name and namespace in different clusters. This field is not set anywhere right now and apiserver is going to ignore it if set in create or update request.</td>
+</tr>
+<tr>
+<td><code>creationTimestamp</code><br /> <em><a href="#time-v1">Time</a></em></td>
+<td>CreationTimestamp is a timestamp representing the server time when this object was created. It is not guaranteed to be set in happens-before order across separate operations. Clients may not set this value. It is represented in RFC3339 form and is in UTC.  Populated by the system. Read-only. Null for lists. More info: <a href="https://git.k8s.io/community/contributors/devel/api-conventions.md#metadata">https://git.k8s.io/community/contributors/devel/api-conventions.md#metadata</a></td>
+</tr>
+<tr>
+<td><code>deletionGracePeriodSeconds</code><br /> <em>integer</em></td>
+<td>Number of seconds allowed for this object to gracefully terminate before it will be removed from the system. Only set when deletionTimestamp is also set. May only be shortened. Read-only.</td>
+</tr>
+<tr>
+<td><code>deletionTimestamp</code><br /> <em><a href="#time-v1">Time</a></em></td>
+<td>DeletionTimestamp is RFC 3339 date and time at which this resource will be deleted. This field is set by the server when a graceful deletion is requested by the user, and is not directly settable by a client. The resource is expected to be deleted (no longer visible from resource lists, and not reachable by name) after the time in this field, once the finalizers list is empty. As long as the finalizers list contains items, deletion is blocked. Once the deletionTimestamp is set, this value may not be unset or be set further into the future, although it may be shortened or the resource may be deleted prior to this time. For example, a user may request that a pod is deleted in 30 seconds. The Kubelet will react by sending a graceful termination signal to the containers in the pod. After that 30 seconds, the Kubelet will send a hard termination signal (SIGKILL) to the container and after cleanup, remove the pod from the API. In the presence of network partitions, this object may still exist after this timestamp, until an administrator or automated process can determine the resource is fully terminated. If not set, graceful deletion of the object has not been requested.  Populated by the system when a graceful deletion is requested. Read-only. More info: <a href="https://git.k8s.io/community/contributors/devel/api-conventions.md#metadata">https://git.k8s.io/community/contributors/devel/api-conventions.md#metadata</a></td>
+</tr>
+<tr>
+<td><code>finalizers</code><br /> <em>string array</em>  <br /> <strong>patch type</strong>: <em>merge</em></td>
+<td>Must be empty before the object is deleted from the registry. Each entry is an identifier for the responsible component that will remove the entry from the list. If the deletionTimestamp of the object is non-nil, entries in this list can only be removed.</td>
+</tr>
+<tr>
+<td><code>generateName</code><br /> <em>string</em></td>
+<td>GenerateName is an optional prefix, used by the server, to generate a unique name ONLY IF the Name field has not been provided. If this field is used, the name returned to the client will be different than the name passed. This value will also be combined with a unique suffix. The provided value has the same validation rules as the Name field, and may be truncated by the length of the suffix required to make the value unique on the server.  If this field is specified and the generated name exists, the server will NOT return a 409 - instead, it will either return 201 Created or 500 with Reason ServerTimeout indicating a unique name could not be found in the time allotted, and the client should retry (optionally after the time indicated in the Retry-After header).  Applied only if Name is not specified. More info: <a href="https://git.k8s.io/community/contributors/devel/api-conventions.md#idempotency">https://git.k8s.io/community/contributors/devel/api-conventions.md#idempotency</a></td>
+</tr>
+<tr>
+<td><code>generation</code><br /> <em>integer</em></td>
+<td>A sequence number representing a specific generation of the desired state. Populated by the system. Read-only.</td>
+</tr>
+<tr>
+<td><code>initializers</code><br /> <em><a href="#initializers-v1">Initializers</a></em></td>
+<td>An initializer is a controller which enforces some system invariant at object creation time. This field is a list of initializers that have not yet acted on this object. If nil or empty, this object has been completely initialized. Otherwise, the object is considered uninitialized and is hidden (in list/watch and get calls) from clients that haven&#39;t explicitly asked to observe uninitialized objects.  When an object is created, the system will populate this list with the current set of initializers. Only privileged users may set or modify this list. Once it is empty, it may not be modified further by any user.</td>
+</tr>
+<tr>
+<td><code>labels</code><br /> <em>object</em></td>
+<td>Map of string keys and values that can be used to organize and categorize (scope and select) objects. May match selectors of replication controllers and services. More info: <a href="http://kubernetes.io/docs/user-guide/labels">http://kubernetes.io/docs/user-guide/labels</a></td>
+</tr>
+<tr>
+<td><code>name</code><br /> <em>string</em></td>
+<td>Name must be unique within a namespace. Is required when creating resources, although some resources may allow a client to request the generation of an appropriate name automatically. Name is primarily intended for creation idempotence and configuration definition. Cannot be updated. More info: <a href="http://kubernetes.io/docs/user-guide/identifiers#names">http://kubernetes.io/docs/user-guide/identifiers#names</a></td>
+</tr>
+<tr>
+<td><code>namespace</code><br /> <em>string</em></td>
+<td>Namespace defines the space within each name must be unique. An empty namespace is equivalent to the &#34;default&#34; namespace, but &#34;default&#34; is the canonical representation. Not all objects are required to be scoped to a namespace - the value of this field for those objects will be empty.  Must be a DNS_LABEL. Cannot be updated. More info: <a href="http://kubernetes.io/docs/user-guide/namespaces">http://kubernetes.io/docs/user-guide/namespaces</a></td>
+</tr>
+<tr>
+<td><code>ownerReferences</code><br /> <em><a href="#ownerreference-v1">OwnerReference</a> array</em>  <br /> <strong>patch type</strong>: <em>merge</em>  <br /> <strong>patch merge key</strong>: <em>uid</em></td>
+<td>List of objects depended by this object. If ALL objects in the list have been deleted, this object will be garbage collected. If this object is managed by a controller, then an entry in this list will point to this controller, with the controller field set to true. There cannot be more than one managing controller.</td>
+</tr>
+<tr>
+<td><code>resourceVersion</code><br /> <em>string</em></td>
+<td>An opaque value that represents the internal version of this object that can be used by clients to determine when objects have changed. May be used for optimistic concurrency, change detection, and the watch operation on a resource or set of resources. Clients must treat these values as opaque and passed unmodified back to the server. They may only be valid for a particular resource or set of resources.  Populated by the system. Read-only. Value must be treated as opaque by clients and . More info: <a href="https://git.k8s.io/community/contributors/devel/api-conventions.md#concurrency-control-and-consistency">https://git.k8s.io/community/contributors/devel/api-conventions.md#concurrency-control-and-consistency</a></td>
+</tr>
+<tr>
+<td><code>selfLink</code><br /> <em>string</em></td>
+<td>SelfLink is a URL representing this object. Populated by the system. Read-only.</td>
+</tr>
+<tr>
+<td><code>uid</code><br /> <em>string</em></td>
+<td>UID is the unique in time and space value for this object. It is typically generated by the server on successful creation of a resource and is not allowed to change on PUT operations.  Populated by the system. Read-only. More info: <a href="http://kubernetes.io/docs/user-guide/identifiers#uids">http://kubernetes.io/docs/user-guide/identifiers#uids</a></td>
+</tr>
+</tbody>
+</table>
+<h2 id="objectreference-v1alpha1">ObjectReference v1alpha1</h2>
+<table>
+<thead>
+<tr>
+<th>Group</th>
+<th>Version</th>
+<th>Kind</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>certmanager</code></td>
+<td><code>v1alpha1</code></td>
+<td><code>ObjectReference</code></td>
+</tr>
+</tbody>
+</table>
+<p>ObjectReference is a reference to an object. If the namespace field is set, it is assumed to be in a namespace</p>
+<aside class="notice">
+Appears In:
+
+<ul> 
+<li><a href="#certificatespec-v1alpha1">CertificateSpec v1alpha1</a></li>
+</ul></aside>
+
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>kind</code><br /> <em>string</em></td>
+<td></td>
+</tr>
+<tr>
+<td><code>name</code><br /> <em>string</em></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h2 id="ownerreference-v1">OwnerReference v1</h2>
+<table>
+<thead>
+<tr>
+<th>Group</th>
+<th>Version</th>
+<th>Kind</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>meta</code></td>
+<td><code>v1</code></td>
+<td><code>OwnerReference</code></td>
+</tr>
+</tbody>
+</table>
+<p>OwnerReference contains enough information to let you identify an owning object. Currently, an owning object must be in the same namespace, so there is no namespace field.</p>
+<aside class="notice">
+Appears In:
+
+<ul> 
+<li><a href="#objectmeta-v1">ObjectMeta v1</a></li>
+</ul></aside>
+
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>apiVersion</code><br /> <em>string</em></td>
+<td>API version of the referent.</td>
+</tr>
+<tr>
+<td><code>blockOwnerDeletion</code><br /> <em>boolean</em></td>
+<td>If true, AND if the owner has the &#34;foregroundDeletion&#34; finalizer, then the owner cannot be deleted from the key-value store until this reference is removed. Defaults to false. To set this field, a user needs &#34;delete&#34; permission of the owner, otherwise 422 (Unprocessable Entity) will be returned.</td>
+</tr>
+<tr>
+<td><code>controller</code><br /> <em>boolean</em></td>
+<td>If true, this reference points to the managing controller.</td>
+</tr>
+<tr>
+<td><code>kind</code><br /> <em>string</em></td>
+<td>Kind of the referent. More info: <a href="https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds">https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds</a></td>
+</tr>
+<tr>
+<td><code>name</code><br /> <em>string</em></td>
+<td>Name of the referent. More info: <a href="http://kubernetes.io/docs/user-guide/identifiers#names">http://kubernetes.io/docs/user-guide/identifiers#names</a></td>
+</tr>
+<tr>
+<td><code>uid</code><br /> <em>string</em></td>
+<td>UID of the referent. More info: <a href="http://kubernetes.io/docs/user-guide/identifiers#uids">http://kubernetes.io/docs/user-guide/identifiers#uids</a></td>
+</tr>
+</tbody>
+</table>
+<h2 id="secretkeyselector-v1alpha1">SecretKeySelector v1alpha1</h2>
+<table>
+<thead>
+<tr>
+<th>Group</th>
+<th>Version</th>
+<th>Kind</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>certmanager</code></td>
+<td><code>v1alpha1</code></td>
+<td><code>SecretKeySelector</code></td>
+</tr>
+</tbody>
+</table>
+<aside class="notice">
+Appears In:
+
+<ul> 
+<li><a href="#acmeissuer-v1alpha1">ACMEIssuer v1alpha1</a></li>
+<li><a href="#acmeissuerdns01providerakamai-v1alpha1">ACMEIssuerDNS01ProviderAkamai v1alpha1</a></li>
+<li><a href="#acmeissuerdns01providerazuredns-v1alpha1">ACMEIssuerDNS01ProviderAzureDNS v1alpha1</a></li>
+<li><a href="#acmeissuerdns01providerclouddns-v1alpha1">ACMEIssuerDNS01ProviderCloudDNS v1alpha1</a></li>
+<li><a href="#acmeissuerdns01providercloudflare-v1alpha1">ACMEIssuerDNS01ProviderCloudflare v1alpha1</a></li>
+<li><a href="#acmeissuerdns01providerroute53-v1alpha1">ACMEIssuerDNS01ProviderRoute53 v1alpha1</a></li>
+<li><a href="#vaultapprole-v1alpha1">VaultAppRole v1alpha1</a></li>
+<li><a href="#vaultauth-v1alpha1">VaultAuth v1alpha1</a></li>
+</ul></aside>
+
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>key</code><br /> <em>string</em></td>
+<td>The key of the secret to select from.  Must be a valid secret key.</td>
+</tr>
+<tr>
+<td><code>name</code><br /> <em>string</em></td>
+<td>Name of the referent. More info: <a href="https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names">https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names</a></td>
+</tr>
+</tbody>
+</table>
+<h2 id="selfsignedissuer-v1alpha1">SelfSignedIssuer v1alpha1</h2>
+<table>
+<thead>
+<tr>
+<th>Group</th>
+<th>Version</th>
+<th>Kind</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>certmanager</code></td>
+<td><code>v1alpha1</code></td>
+<td><code>SelfSignedIssuer</code></td>
+</tr>
+</tbody>
+</table>
+<aside class="notice">
+Appears In:
+
+<ul> 
+<li><a href="#issuerspec-v1alpha1">IssuerSpec v1alpha1</a></li>
+</ul></aside>
+
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h2 id="status-v1">Status v1</h2>
+<table>
+<thead>
+<tr>
+<th>Group</th>
+<th>Version</th>
+<th>Kind</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>meta</code></td>
+<td><code>v1</code></td>
+<td><code>Status</code></td>
+</tr>
+</tbody>
+</table>
+<p>Status is a return value for calls that don&#39;t return other objects.</p>
+<aside class="notice">
+Appears In:
+
+<ul> 
+<li><a href="#initializers-v1">Initializers v1</a></li>
+</ul></aside>
+
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>apiVersion</code><br /> <em>string</em></td>
+<td>APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: <a href="https://git.k8s.io/community/contributors/devel/api-conventions.md#resources">https://git.k8s.io/community/contributors/devel/api-conventions.md#resources</a></td>
+</tr>
+<tr>
+<td><code>code</code><br /> <em>integer</em></td>
+<td>Suggested HTTP return code for this status, 0 if not set.</td>
+</tr>
+<tr>
+<td><code>details</code><br /> <em><a href="#statusdetails-v1">StatusDetails</a></em></td>
+<td>Extended data associated with the reason.  Each reason may define its own extended details. This field is optional and the data returned is not guaranteed to conform to any schema except that defined by the reason type.</td>
+</tr>
+<tr>
+<td><code>kind</code><br /> <em>string</em></td>
+<td>Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: <a href="https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds">https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds</a></td>
+</tr>
+<tr>
+<td><code>message</code><br /> <em>string</em></td>
+<td>A human-readable description of the status of this operation.</td>
+</tr>
+<tr>
+<td><code>metadata</code><br /> <em><a href="#listmeta-v1">ListMeta</a></em></td>
+<td>Standard list metadata. More info: <a href="https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds">https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds</a></td>
+</tr>
+<tr>
+<td><code>reason</code><br /> <em>string</em></td>
+<td>A machine-readable description of why this operation is in the &#34;Failure&#34; status. If this value is empty there is no information available. A Reason clarifies an HTTP status code but does not override it.</td>
+</tr>
+<tr>
+<td><code>status</code><br /> <em>string</em></td>
+<td>Status of the operation. One of: &#34;Success&#34; or &#34;Failure&#34;. More info: <a href="https://git.k8s.io/community/contributors/devel/api-conventions.md#spec-and-status">https://git.k8s.io/community/contributors/devel/api-conventions.md#spec-and-status</a></td>
+</tr>
+</tbody>
+</table>
+<h2 id="statuscause-v1">StatusCause v1</h2>
+<table>
+<thead>
+<tr>
+<th>Group</th>
+<th>Version</th>
+<th>Kind</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>meta</code></td>
+<td><code>v1</code></td>
+<td><code>StatusCause</code></td>
+</tr>
+</tbody>
+</table>
+<p>StatusCause provides more information about an api.Status failure, including cases when multiple errors are encountered.</p>
+<aside class="notice">
+Appears In:
+
+<ul> 
+<li><a href="#statusdetails-v1">StatusDetails v1</a></li>
+</ul></aside>
+
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>field</code><br /> <em>string</em></td>
+<td>The field of the resource that has caused this error, as named by its JSON serialization. May include dot and postfix notation for nested attributes. Arrays are zero-indexed.  Fields may appear more than once in an array of causes due to fields having multiple errors. Optional.  Examples:   &#34;name&#34; - the field &#34;name&#34; on the current resource   &#34;items[0].name&#34; - the field &#34;name&#34; on the first array entry in &#34;items&#34;</td>
+</tr>
+<tr>
+<td><code>message</code><br /> <em>string</em></td>
+<td>A human-readable description of the cause of the error.  This field may be presented as-is to a reader.</td>
+</tr>
+<tr>
+<td><code>reason</code><br /> <em>string</em></td>
+<td>A machine-readable description of the cause of the error. If this value is empty there is no information available.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="statusdetails-v1">StatusDetails v1</h2>
+<table>
+<thead>
+<tr>
+<th>Group</th>
+<th>Version</th>
+<th>Kind</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>meta</code></td>
+<td><code>v1</code></td>
+<td><code>StatusDetails</code></td>
+</tr>
+</tbody>
+</table>
+<p>StatusDetails is a set of additional properties that MAY be set by the server to provide additional information about a response. The Reason field of a Status object defines what attributes will be set. Clients must ignore fields that do not match the defined type of each attribute, and should assume that any attribute may be empty, invalid, or under defined.</p>
+<aside class="notice">
+Appears In:
+
+<ul> 
+<li><a href="#status-v1">Status v1</a></li>
+</ul></aside>
+
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>causes</code><br /> <em><a href="#statuscause-v1">StatusCause</a> array</em></td>
+<td>The Causes array includes more details associated with the StatusReason failure. Not all StatusReasons may provide detailed causes.</td>
+</tr>
+<tr>
+<td><code>group</code><br /> <em>string</em></td>
+<td>The group attribute of the resource associated with the status StatusReason.</td>
+</tr>
+<tr>
+<td><code>kind</code><br /> <em>string</em></td>
+<td>The kind attribute of the resource associated with the status StatusReason. On some operations may differ from the requested resource Kind. More info: <a href="https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds">https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds</a></td>
+</tr>
+<tr>
+<td><code>name</code><br /> <em>string</em></td>
+<td>The name attribute of the resource associated with the status StatusReason (when there is a single name which can be described).</td>
+</tr>
+<tr>
+<td><code>retryAfterSeconds</code><br /> <em>integer</em></td>
+<td>If specified, the time in seconds before the operation should be retried. Some errors may indicate the client must take an alternate action - for those errors this field may indicate how long to wait before taking the alternate action.</td>
+</tr>
+<tr>
+<td><code>uid</code><br /> <em>string</em></td>
+<td>UID of the resource. (when there is a single resource which can be described). More info: <a href="http://kubernetes.io/docs/user-guide/identifiers#uids">http://kubernetes.io/docs/user-guide/identifiers#uids</a></td>
+</tr>
+</tbody>
+</table>
+<h2 id="time-v1">Time v1</h2>
+<table>
+<thead>
+<tr>
+<th>Group</th>
+<th>Version</th>
+<th>Kind</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>meta</code></td>
+<td><code>v1</code></td>
+<td><code>Time</code></td>
+</tr>
+</tbody>
+</table>
+<p>Time is a wrapper around time.Time which supports correct marshaling to YAML and JSON.  Wrappers are provided for many of the factory methods that the time package offers.</p>
+<aside class="notice">
+Appears In:
+
+<ul> 
+<li><a href="#certificatecondition-v1alpha1">CertificateCondition v1alpha1</a></li>
+<li><a href="#issuercondition-v1alpha1">IssuerCondition v1alpha1</a></li>
+<li><a href="#objectmeta-v1">ObjectMeta v1</a></li>
+</ul></aside>
+
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Time</code><br /> <em>string</em></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h2 id="vaultapprole-v1alpha1">VaultAppRole v1alpha1</h2>
+<table>
+<thead>
+<tr>
+<th>Group</th>
+<th>Version</th>
+<th>Kind</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>certmanager</code></td>
+<td><code>v1alpha1</code></td>
+<td><code>VaultAppRole</code></td>
+</tr>
+</tbody>
+</table>
+<aside class="notice">
+Appears In:
+
+<ul> 
+<li><a href="#vaultauth-v1alpha1">VaultAuth v1alpha1</a></li>
+</ul></aside>
+
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>roleId</code><br /> <em>string</em></td>
+<td></td>
+</tr>
+<tr>
+<td><code>secretRef</code><br /> <em><a href="#secretkeyselector-v1alpha1">SecretKeySelector</a></em></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h2 id="vaultauth-v1alpha1">VaultAuth v1alpha1</h2>
+<table>
+<thead>
+<tr>
+<th>Group</th>
+<th>Version</th>
+<th>Kind</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>certmanager</code></td>
+<td><code>v1alpha1</code></td>
+<td><code>VaultAuth</code></td>
+</tr>
+</tbody>
+</table>
+<p>Vault authentication  can be configured: - With a secret containing a token. Cert-manager is using this token as-is. - With a secret containing a AppRole. This AppRole is used to authenticate to
+  Vault and retrieve a token.</p>
+<aside class="notice">
+Appears In:
+
+<ul> 
+<li><a href="#vaultissuer-v1alpha1">VaultIssuer v1alpha1</a></li>
+</ul></aside>
+
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>appRole</code><br /> <em><a href="#vaultapprole-v1alpha1">VaultAppRole</a></em></td>
+<td>This Secret contains a AppRole and Secret</td>
+</tr>
+<tr>
+<td><code>tokenSecretRef</code><br /> <em><a href="#secretkeyselector-v1alpha1">SecretKeySelector</a></em></td>
+<td>This Secret contains the Vault token key</td>
+</tr>
+</tbody>
+</table>
+<h2 id="vaultissuer-v1alpha1">VaultIssuer v1alpha1</h2>
+<table>
+<thead>
+<tr>
+<th>Group</th>
+<th>Version</th>
+<th>Kind</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>certmanager</code></td>
+<td><code>v1alpha1</code></td>
+<td><code>VaultIssuer</code></td>
+</tr>
+</tbody>
+</table>
+<aside class="notice">
+Appears In:
+
+<ul> 
+<li><a href="#issuerspec-v1alpha1">IssuerSpec v1alpha1</a></li>
+</ul></aside>
+
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>auth</code><br /> <em><a href="#vaultauth-v1alpha1">VaultAuth</a></em></td>
+<td>Vault authentication</td>
+</tr>
+<tr>
+<td><code>path</code><br /> <em>string</em></td>
+<td>Vault URL path to the certificate role</td>
+</tr>
+<tr>
+<td><code>server</code><br /> <em>string</em></td>
+<td>Server is the vault connection address</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<script src="node_modules/jquery/dist/jquery.min.js"></script>
+<script src="node_modules/jquery.scrollto/jquery.scrollTo.min.js"></script>
+<script src="navData.js"></script>
+<script src="scroll.js"></script>
+<!--<script src="actions.js"></script>-->
+<script src="tabvisibility.js"></script>
+</body>
+</html>
