@@ -67,6 +67,39 @@ func TestNoEarlyRun(t *testing.T) {
 	fc.Step(200 * time.Millisecond)
 }
 
+func TestDedupes(t *testing.T) {
+	fc := fakeclock.NewFakeClock(time.Now())
+
+	called := make(chan struct{})
+	queue := newScheduledWorkQueue(fc, func(obj interface{}) {
+		called <- struct{}{}
+	}, noopRateLimiter{})
+	defer queue.Stop()
+	queue.Add("500ms", 500*time.Millisecond)
+	queue.Add("500ms", 1*time.Second)
+	queue.Add("500m", 500*time.Millisecond)
+
+	fc.Step(400 * time.Millisecond)
+	select {
+	case <-called:
+		t.Error("should be called after 500ms, not 400ms")
+	default:
+	}
+	fc.Step(101 * time.Millisecond)
+	<-called
+	select {
+	case <-called:
+		t.Error("should not be called again")
+	default:
+	}
+	fc.Step(1 * time.Second)
+	select {
+	case <-called:
+		t.Error("should not be called again")
+	default:
+	}
+}
+
 func TestSameDelayRun(t *testing.T) {
 	fc := fakeclock.NewFakeClock(time.Now())
 

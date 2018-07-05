@@ -31,9 +31,8 @@ type workItem struct {
 	processAt time.Time
 	item      interface{}
 	// itemAdded is used to signal 'Add' that this workItem has been added to the
-	// queue.
-	// It is not strictly necessary for regular operation, but is necessary to be
-	// able to reliably unit test this package.
+	// queue. It is not strictly necessary for regular operation, but is
+	// necessary to be able to reliably unit test this package.
 	itemAdded chan<- struct{}
 }
 
