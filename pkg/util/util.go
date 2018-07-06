@@ -49,3 +49,13 @@ func RandStringRunes(n int) string {
 	}
 	return string(b)
 }
+
+// Contains returns true if a string is contained in a string slice
+func Contains(ss []string, s string) bool {
+	for _, v := range ss {
+		if v == s {
+			return true
+		}
+	}
+	return false
+}

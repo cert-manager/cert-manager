@@ -53,3 +53,41 @@ func TestEqualUnsorted(t *testing.T) {
 		}(test))
 	}
 }
+
+func TestContains(t *testing.T) {
+	type testT struct {
+		desc  string
+		slice []string
+		value string
+		equal bool
+	}
+	tests := []testT{
+		{
+			desc:  "slice containing value",
+			slice: []string{"a", "b", "c"},
+			value: "a",
+			equal: true,
+		},
+		{
+			desc:  "slice not containing value",
+			slice: []string{"a", "b", "c"},
+			value: "x",
+			equal: false,
+		},
+		{
+			desc:  "empty slice",
+			slice: []string{},
+			value: "x",
+			equal: false,
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.desc, func(test testT) func(*testing.T) {
+			return func(t *testing.T) {
+				if actual := Contains(test.slice, test.value); actual != test.equal {
+					t.Errorf("Contains(%+v, %+v) = %t, but expected %t", test.slice, test.value, actual, test.equal)
+				}
+			}
+		}(test))
+	}
+}
