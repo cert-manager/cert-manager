@@ -13,7 +13,7 @@ using Ingress resources
    :linenos:
    :emphasize-lines: 7, 11
 
-   apiVersion: certmanager.k8s.io
+   apiVersion: certmanager.k8s.io/v1alpha1
    kind: Issuer
    metadata:
      name: example-issuer
