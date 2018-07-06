@@ -19,6 +19,7 @@ import (
 
 // DNSProvider implements the util.ChallengeProvider interface
 type DNSProvider struct {
+	nameservers       []string
 	recordClient      dns.RecordSetsClient
 	zoneClient        dns.ZonesClient
 	resourceGroupName string
@@ -37,12 +38,12 @@ func NewDNSProvider() (*DNSProvider, error) {
 	resourceGroupName := ("AZURE_RESOURCE_GROUP")
 	zoneName := ("AZURE_ZONE_NAME")
 
-	return NewDNSProviderCredentials(clientID, clientSecret, subscriptionID, tenantID, resourceGroupName, zoneName)
+	return NewDNSProviderCredentials(util.RecursiveNameservers, clientID, clientSecret, subscriptionID, tenantID, resourceGroupName, zoneName)
 }
 
 // NewDNSProviderCredentials returns a DNSProvider instance configured for the Azure
 // DNS service using static credentials from its parameters
-func NewDNSProviderCredentials(clientID, clientSecret, subscriptionID, tenantID, resourceGroupName, zoneName string) (*DNSProvider, error) {
+func NewDNSProviderCredentials(nameservers []string, clientID, clientSecret, subscriptionID, tenantID, resourceGroupName, zoneName string) (*DNSProvider, error) {
 	oauthConfig, err := adal.NewOAuthConfig(azure.PublicCloud.ActiveDirectoryEndpoint, tenantID)
 	if err != nil {
 		return nil, err
@@ -60,6 +61,7 @@ func NewDNSProviderCredentials(clientID, clientSecret, subscriptionID, tenantID,
 	zc.Authorizer = autorest.NewBearerAuthorizer(spt)
 
 	return &DNSProvider{
+		nameservers:       nameservers,
 		recordClient:      rc,
 		zoneClient:        zc,
 		resourceGroupName: resourceGroupName,
@@ -102,6 +104,10 @@ func (c *DNSProvider) Timeout() (timeout, interval time.Duration) {
 	return 120 * time.Second, 2 * time.Second
 }
 
+func (c *DNSProvider) GetNameservers() []string {
+	return c.nameservers
+}
+
 func (c *DNSProvider) createRecord(fqdn, value string, ttl int) error {
 	rparams := &dns.RecordSet{
 		RecordSetProperties: &dns.RecordSetProperties{
@@ -136,7 +142,7 @@ func (c *DNSProvider) getHostedZoneName(fqdn string) (string, error) {
 	if c.zoneName != "" {
 		return c.zoneName, nil
 	}
-	z, err := util.FindZoneByFqdn(fqdn, util.RecursiveNameservers)
+	z, err := util.FindZoneByFqdn(fqdn, c.nameservers)
 	if err != nil {
 		return "", err
 	}

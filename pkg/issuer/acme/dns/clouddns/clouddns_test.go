@@ -9,6 +9,7 @@ import (
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/dns/v1"
 
+	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -36,7 +37,7 @@ func TestNewDNSProviderValid(t *testing.T) {
 		t.Skip("skipping live test (requires credentials)")
 	}
 	os.Setenv("GCE_PROJECT", "")
-	_, err := NewDNSProviderCredentials("my-project")
+	_, err := NewDNSProviderCredentials(util.RecursiveNameservers, "my-project")
 	assert.NoError(t, err)
 	restoreGCloudEnv()
 }
@@ -63,7 +64,7 @@ func TestLiveGoogleCloudPresent(t *testing.T) {
 		t.Skip("skipping live test")
 	}
 
-	provider, err := NewDNSProviderCredentials(gcloudProject)
+	provider, err := NewDNSProviderCredentials(util.RecursiveNameservers, gcloudProject)
 	assert.NoError(t, err)
 
 	err = provider.Present(gcloudDomain, "", "123d==")
@@ -75,7 +76,7 @@ func TestLiveGoogleCloudPresentMultiple(t *testing.T) {
 		t.Skip("skipping live test")
 	}
 
-	provider, err := NewDNSProviderCredentials(gcloudProject)
+	provider, err := NewDNSProviderCredentials(util.RecursiveNameservers, gcloudProject)
 	assert.NoError(t, err)
 
 	// Check that we're able to create multiple entries
@@ -91,7 +92,7 @@ func TestLiveGoogleCloudCleanUp(t *testing.T) {
 
 	time.Sleep(time.Second * 1)
 
-	provider, err := NewDNSProviderCredentials(gcloudProject)
+	provider, err := NewDNSProviderCredentials(util.RecursiveNameservers, gcloudProject)
 	assert.NoError(t, err)
 
 	err = provider.CleanUp(gcloudDomain, "", "123d==")

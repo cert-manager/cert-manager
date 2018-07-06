@@ -21,6 +21,7 @@ import (
 
 // DNSProvider is an implementation of the acme.ChallengeProvider interface
 type DNSProvider struct {
+	nameservers []string
 	// serviceConsumerDomain as issued by Akamai Luna Control Center.
 	// The ServiceConsumerDomain is the base URL.
 	serviceConsumerDomain string
@@ -28,12 +29,13 @@ type DNSProvider struct {
 	auth *EdgeGridAuth
 
 	transport              http.RoundTripper
-	findHostedDomainByFqdn func(string) (string, error)
+	findHostedDomainByFqdn func(string, []string) (string, error)
 }
 
 // NewDNSProvider returns a DNSProvider instance configured for Akamai.
-func NewDNSProvider(serviceConsumerDomain, clientToken, clientSecret, accessToken string) (*DNSProvider, error) {
+func NewDNSProvider(nameservers []string, serviceConsumerDomain, clientToken, clientSecret, accessToken string) (*DNSProvider, error) {
 	return &DNSProvider{
+		nameservers,
 		serviceConsumerDomain,
 		NewEdgeGridAuth(clientToken, clientSecret, accessToken),
 		http.DefaultTransport,
@@ -41,8 +43,8 @@ func NewDNSProvider(serviceConsumerDomain, clientToken, clientSecret, accessToke
 	}, nil
 }
 
-func findHostedDomainByFqdn(fqdn string) (string, error) {
-	zone, err := util.FindZoneByFqdn(fqdn, util.RecursiveNameservers)
+func findHostedDomainByFqdn(fqdn string, nameservers []string) (string, error) {
+	zone, err := util.FindZoneByFqdn(fqdn, nameservers)
 	if err != nil {
 		return "", err
 	}
@@ -68,13 +70,17 @@ func (a *DNSProvider) CleanUp(domain, token, keyAuth string) error {
 	return a.setTxtRecord(fqdn, nil)
 }
 
+func (a *DNSProvider) GetNameservers() []string {
+	return a.nameservers
+}
+
 type dns01Record struct {
 	value string
 	ttl   int
 }
 
 func (a *DNSProvider) setTxtRecord(fqdn string, dns01Record *dns01Record) error {
-	hostedDomain, err := a.findHostedDomainByFqdn(fqdn)
+	hostedDomain, err := a.findHostedDomainByFqdn(fqdn, a.nameservers)
 	if err != nil {
 		return errors.Wrapf(err, "failed to determine hosted domain for %q", fqdn)
 	}

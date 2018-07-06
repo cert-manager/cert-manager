@@ -30,16 +30,17 @@ type solver interface {
 	Present(domain, token, key string) error
 	CleanUp(domain, token, key string) error
 	Timeout() (timeout, interval time.Duration)
+	GetNameservers() []string
 }
 
 // dnsProviderConstructors defines how each provider may be constructed.
 // It is useful for mocking out a given provider since an alternate set of
 // constructors may be set.
 type dnsProviderConstructors struct {
-	cloudDNS   func(project string, serviceAccount []byte) (*clouddns.DNSProvider, error)
-	cloudFlare func(email, apikey string) (*cloudflare.DNSProvider, error)
-	route53    func(accessKey, secretKey, hostedZoneID, region string, ambient bool) (*route53.DNSProvider, error)
-	azureDNS   func(clientID, clientSecret, subscriptionID, tenentID, resourceGroupName, hostedZoneName string) (*azuredns.DNSProvider, error)
+	cloudDNS   func(nameservers []string, project string, serviceAccount []byte) (*clouddns.DNSProvider, error)
+	cloudFlare func(nameservers []string, email, apikey string) (*cloudflare.DNSProvider, error)
+	route53    func(nameservers []string, accessKey, secretKey, hostedZoneID, region string, ambient bool) (*route53.DNSProvider, error)
+	azureDNS   func(nameservers []string, clientID, clientSecret, subscriptionID, tenentID, resourceGroupName, hostedZoneName string) (*azuredns.DNSProvider, error)
 }
 
 // Solver is a solver for the acme dns01 challenge.
@@ -55,16 +56,7 @@ type Solver struct {
 }
 
 func (s *Solver) Present(ctx context.Context, _ *v1alpha1.Certificate, ch v1alpha1.ACMEOrderChallenge) error {
-	if ch.ACMESolverConfig.DNS01 == nil {
-		return fmt.Errorf("challenge dns config must be specified")
-	}
-
-	providerName := ch.ACMESolverConfig.DNS01.Provider
-	if providerName == "" {
-		return fmt.Errorf("dns01 challenge provider name must be set")
-	}
-
-	slv, err := s.solverForIssuerProvider(providerName)
+	slv, err := s.solverForChallenge(ch)
 	if err != nil {
 		return err
 	}
@@ -74,10 +66,15 @@ func (s *Solver) Present(ctx context.Context, _ *v1alpha1.Certificate, ch v1alph
 }
 
 func (s *Solver) Check(ch v1alpha1.ACMEOrderChallenge) (bool, error) {
-	fqdn, value, ttl := util.DNS01Record(ch.Domain, ch.Key)
-	glog.Infof("Checking DNS propagation for %q using name servers: %v", ch.Domain, util.RecursiveNameservers)
+	slv, err := s.solverForChallenge(ch)
+	if err != nil {
+		return false, err
+	}
 
-	ok, err := util.PreCheckDNS(fqdn, value)
+	fqdn, value, ttl := util.DNS01Record(ch.Domain, ch.Key)
+	glog.Infof("Checking DNS propagation for %q using name servers: %v", ch.Domain, slv.GetNameservers())
+
+	ok, err := util.PreCheckDNS(fqdn, value, slv.GetNameservers())
 	if err != nil {
 		return false, err
 	}
@@ -94,16 +91,7 @@ func (s *Solver) Check(ch v1alpha1.ACMEOrderChallenge) (bool, error) {
 }
 
 func (s *Solver) CleanUp(ctx context.Context, _ *v1alpha1.Certificate, ch v1alpha1.ACMEOrderChallenge) error {
-	if ch.ACMESolverConfig.DNS01 == nil {
-		return fmt.Errorf("challenge dns config must be specified")
-	}
-
-	providerName := ch.ACMESolverConfig.DNS01.Provider
-	if providerName == "" {
-		return fmt.Errorf("dns01 challenge provider name must be set")
-	}
-
-	slv, err := s.solverForIssuerProvider(providerName)
+	slv, err := s.solverForChallenge(ch)
 	if err != nil {
 		return err
 	}
@@ -124,6 +112,21 @@ func (s *Solver) providerForDomain(crt *v1alpha1.Certificate, domain string) (st
 	return cfg.Provider, nil
 }
 
+// solverForChallenge returns a Solver for the given
+// ACMEOrderChallenge
+func (s *Solver) solverForChallenge(ch v1alpha1.ACMEOrderChallenge) (solver, error) {
+	if ch.ACMESolverConfig.DNS01 == nil {
+		return nil, fmt.Errorf("challenge dns config must be specified")
+	}
+
+	providerName := ch.ACMESolverConfig.DNS01.Provider
+	if providerName == "" {
+		return nil, fmt.Errorf("dns01 challenge provider name must be set")
+	}
+
+	return s.solverForIssuerProvider(providerName)
+}
+
 // solverForIssuerProvider returns a Solver for the given providerName.
 // The providerName is the name of an ACME DNS-01 challenge provider as
 // specified on the Issuer resource for the Solver.
@@ -137,6 +140,12 @@ func (s *Solver) solverForIssuerProvider(providerName string) (solver, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	nameservers := providerConfig.Nameservers
+	if len(nameservers) == 0 {
+		nameservers = util.RecursiveNameservers
+	}
+	nameservers = util.AddNameserverPorts(nameservers)
 
 	var impl solver
 	switch {
@@ -157,6 +166,7 @@ func (s *Solver) solverForIssuerProvider(providerName string) (solver, error) {
 		}
 
 		impl, err = akamai.NewDNSProvider(
+			nameservers,
 			providerConfig.Akamai.ServiceConsumerDomain,
 			string(clientToken),
 			string(clientSecret),
@@ -177,7 +187,7 @@ func (s *Solver) solverForIssuerProvider(providerName string) (solver, error) {
 			return nil, fmt.Errorf("specfied key %q not found in secret %s/%s", saKey, saSecret.Namespace, saSecret.Name)
 		}
 
-		impl, err = s.dnsProviderConstructors.cloudDNS(providerConfig.CloudDNS.Project, saBytes)
+		impl, err = s.dnsProviderConstructors.cloudDNS(nameservers, providerConfig.CloudDNS.Project, saBytes)
 		if err != nil {
 			return nil, fmt.Errorf("error instantiating google clouddns challenge solver: %s", err)
 		}
@@ -190,7 +200,7 @@ func (s *Solver) solverForIssuerProvider(providerName string) (solver, error) {
 		email := providerConfig.Cloudflare.Email
 		apiKey := string(apiKeySecret.Data[providerConfig.Cloudflare.APIKey.Key])
 
-		impl, err = s.dnsProviderConstructors.cloudFlare(email, apiKey)
+		impl, err = s.dnsProviderConstructors.cloudFlare(nameservers, email, apiKey)
 		if err != nil {
 			return nil, fmt.Errorf("error instantiating cloudflare challenge solver: %s", err)
 		}
@@ -210,6 +220,7 @@ func (s *Solver) solverForIssuerProvider(providerName string) (solver, error) {
 		}
 
 		impl, err = s.dnsProviderConstructors.route53(
+			nameservers,
 			strings.TrimSpace(providerConfig.Route53.AccessKeyID),
 			strings.TrimSpace(secretAccessKey),
 			providerConfig.Route53.HostedZoneID,
@@ -231,6 +242,7 @@ func (s *Solver) solverForIssuerProvider(providerName string) (solver, error) {
 		}
 
 		impl, err = s.dnsProviderConstructors.azureDNS(
+			nameservers,
 			providerConfig.AzureDNS.ClientID,
 			string(clientSecretBytes),
 			providerConfig.AzureDNS.SubscriptionID,
