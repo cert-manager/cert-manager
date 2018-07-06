@@ -234,6 +234,12 @@ func (c *Controller) updateSecret(crt *v1alpha1.Certificate, namespace string, c
 	secret.Annotations[v1alpha1.IssuerNameAnnotationKey] = crt.Spec.IssuerRef.Name
 	secret.Annotations[v1alpha1.IssuerKindAnnotationKey] = issuerKind(crt)
 
+	if secret.Labels == nil {
+		secret.Labels = make(map[string]string)
+	}
+
+	secret.Labels[v1alpha1.CertificateNameKey] = crt.Name
+
 	// if it is a new resource
 	if secret.SelfLink == "" {
 		secret, err = c.client.CoreV1().Secrets(namespace).Create(secret)
