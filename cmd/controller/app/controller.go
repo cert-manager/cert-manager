@@ -22,6 +22,7 @@ import (
 	intscheme "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/scheme"
 	informers "github.com/jetstack/cert-manager/pkg/client/informers/externalversions"
 	"github.com/jetstack/cert-manager/pkg/controller"
+	ingressshimcontroller "github.com/jetstack/cert-manager/pkg/controller/ingress-shim"
 	"github.com/jetstack/cert-manager/pkg/issuer"
 	dnsutil "github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
 	"github.com/jetstack/cert-manager/pkg/util/kube"
@@ -40,6 +41,11 @@ func Run(opts *options.ControllerOptions, stopCh <-chan struct{}) {
 	run := func(_ <-chan struct{}) {
 		var wg sync.WaitGroup
 		for n, fn := range controller.Known() {
+			// don't enable ingress-shim if it's been disabled
+			if n == ingressshimcontroller.ControllerName && !opts.EnableIngressShim {
+				continue
+			}
+
 			wg.Add(1)
 			go func(n string, fn controller.Interface) {
 				defer wg.Done()

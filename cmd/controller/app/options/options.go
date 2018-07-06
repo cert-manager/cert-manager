@@ -20,6 +20,8 @@ type ControllerOptions struct {
 	LeaderElectionRenewDeadline time.Duration
 	LeaderElectionRetryPeriod   time.Duration
 
+	EnableIngressShim bool
+
 	ACMEHTTP01SolverImage string
 
 	ClusterIssuerAmbientCredentials bool
@@ -45,6 +47,8 @@ const (
 	defaultLeaderElectionRenewDeadline = 10 * time.Second
 	defaultLeaderElectionRetryPeriod   = 2 * time.Second
 
+	defaultEnableIngressShim = true
+
 	defaultClusterIssuerAmbientCredentials = true
 	defaultIssuerAmbientCredentials        = false
 
@@ -67,6 +71,7 @@ func NewControllerOptions() *ControllerOptions {
 		LeaderElectionLeaseDuration:        defaultLeaderElectionLeaseDuration,
 		LeaderElectionRenewDeadline:        defaultLeaderElectionRenewDeadline,
 		LeaderElectionRetryPeriod:          defaultLeaderElectionRetryPeriod,
+		EnableIngressShim:                  defaultEnableIngressShim,
 		ClusterIssuerAmbientCredentials:    defaultClusterIssuerAmbientCredentials,
 		IssuerAmbientCredentials:           defaultIssuerAmbientCredentials,
 		DefaultIssuerName:                  defaultTLSACMEIssuerName,
@@ -102,6 +107,9 @@ func (s *ControllerOptions) AddFlags(fs *pflag.FlagSet) {
 	fs.DurationVar(&s.LeaderElectionRetryPeriod, "leader-election-retry-period", defaultLeaderElectionRetryPeriod, ""+
 		"The duration the clients should wait between attempting acquisition and renewal "+
 		"of a leadership. This is only applicable if leader election is enabled.")
+
+	fs.BoolVar(&s.EnableIngressShim, "enable-ingress-shim", defaultEnableIngressShim, ""+
+		"If true, the ingress-shim component will be enabled")
 
 	fs.StringVar(&s.ACMEHTTP01SolverImage, "acme-http01-solver-image", defaultACMEHTTP01SolverImage, ""+
 		"The docker image to use to solve ACME HTTP01 challenges. You most likely will not "+
