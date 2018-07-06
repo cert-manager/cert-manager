@@ -381,12 +381,6 @@ func NewCertManagerCFSSLCertificate(name, secretName, issuerName string, issuerK
 				Name: issuerName,
 				Kind: issuerKind,
 			},
-			CFSSL: &v1alpha1.CFSSLCertificateConfig{
-				Key: v1alpha1.CFSSLCertificateKeyConfig{
-					Algo: "ecdsa",
-					Size: 256,
-				},
-			},
 		},
 	}
 }
@@ -478,22 +472,27 @@ func NewCertManagerSelfSignedIssuer(name string) *v1alpha1.Issuer {
 }
 
 func NewCertManagerCFSSLIssuer(name, serverURL, serverPath, secretName string) *v1alpha1.Issuer {
+	issuer := &v1alpha1.CFSSLIssuer{
+		Server: serverURL,
+		Path:   serverPath,
+	}
+
+	if len(secretName) > 0 {
+		issuer.AuthKey = &v1alpha1.SecretKeySelector{
+			Key: "auth-key",
+			LocalObjectReference: v1alpha1.LocalObjectReference{
+				Name: secretName,
+			},
+		}
+	}
+
 	return &v1alpha1.Issuer{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: name,
 		},
 		Spec: v1alpha1.IssuerSpec{
 			IssuerConfig: v1alpha1.IssuerConfig{
-				CFSSL: &v1alpha1.CFSSLIssuer{
-					Server: serverURL,
-					Path:   serverPath,
-					AuthKey: &v1alpha1.SecretKeySelector{
-						Key: "auth-key",
-						LocalObjectReference: v1alpha1.LocalObjectReference{
-							Name: secretName,
-						},
-					},
-				},
+				CFSSL: issuer,
 			},
 		},
 	}

@@ -1,0 +1,24 @@
+replicaCount: 1
+image:
+  repository: cfssl/cfssl
+  tag: latest
+  pullPolicy: IfNotPresent
+service:
+  type: ClusterIP
+  internalPort: 8080
+
+volumes:
+  configMountPath: /cfssl/config
+  certificateMountPath: /cfssl/certificate
+
+server:
+  config: |
+    {}
+
+resources:
+  limits:
+    cpu: 100m
+    memory: 64Mi
+  requests:
+    cpu: 100m
+    memory: 64Mi

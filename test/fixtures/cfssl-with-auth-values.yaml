@@ -1,0 +1,24 @@
+server:
+  config: |
+    {
+      "auth_keys": {
+        "test-authkey": {
+          "type": "standard",
+          "key": "C0DEC0DEC0DEC0DEC0DEC0DE"
+        }
+      },
+      "signing": {
+        "default": {
+          "auth_key": "test-authkey",
+          "expiry": "720h",
+          "usages": [ "server auth", "signing" ]
+        },
+        "profiles": {
+          "test-profile": {
+            "auth_key": "test-authkey",
+            "expiry": "720h",
+            "usages": [ "server auth", "signing" ]
+          }
+        }
+      }
+    }

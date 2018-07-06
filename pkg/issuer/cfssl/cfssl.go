@@ -21,9 +21,13 @@ type CFSSL struct {
 	secretsLister            corelisters.SecretLister
 }
 
-// Request defines the body of an unauthenticated request to send to a remote cfssl ca server
-type Request struct {
+// Request represents a CFSSL request which can either be authenticated or unauthenticated.
+type Request interface{}
+
+// UnauthenticatedRequest defines the body of an unauthenticated request to send to a remote cfssl ca server
+type UnauthenticatedRequest struct {
 	Profile            string `json:"profile,omitempty"`
+	Label              string `json:"label,omitempty"`
 	CertificateRequest string `json:"certificate_request"`
 }
 

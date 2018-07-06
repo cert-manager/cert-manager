@@ -1,0 +1,16 @@
+server:
+  config: |
+    {
+      "signing": {
+        "default": {
+          "expiry": "720h",
+          "usages": [ "server auth", "signing" ]
+        },
+        "profiles": {
+          "test-profile": {
+            "expiry": "720h",
+            "usages": [ "server auth", "signing" ]
+          }
+        }
+      }
+    }

@@ -20,25 +20,34 @@ import (
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	"github.com/jetstack/cert-manager/test/e2e/framework"
 	"github.com/jetstack/cert-manager/test/util"
+	"github.com/jetstack/cert-manager/test/util/cfssl"
 )
 
 var _ = framework.CertManagerDescribe("CFSSL Issuer", func() {
 	f := framework.NewDefaultFramework("create-cfssl-issuer")
 
 	issuerName := "test-cfssl-issuer"
-	serverURL := "http://local.cfssl.server"
-	serverPath := "/api/v1/authsign"
-	secretName := "test-auth-key"
+	serverURL := "http://cfssl.cfssl:8080"
+	serverPath := "/api/v1/cfssl/authsign"
+
+	issuerAuthKeySecret := "C0DEC0DEC0DEC0DEC0DEC0DE"
+	issuerAuthKeySecretName := "test-cfssl-authkey"
+
+	BeforeEach(func() {
+		By("Creating a authkey secret fixture")
+		_, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Create(cfssl.NewAuthKeySecret(issuerAuthKeySecretName, issuerAuthKeySecret))
+		Expect(err).NotTo(HaveOccurred())
+	})
 
 	AfterEach(func() {
 		By("Cleaning up")
 		f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Delete(issuerName, nil)
-		f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Delete(secretName, nil)
+		f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Delete(issuerAuthKeySecretName, nil)
 	})
 
 	It("should be ready with a valid serverurl and serverpath and missing authkey", func() {
 		By("Creating an Issuer")
-		issuer := util.NewCertManagerCFSSLIssuer(issuerName, serverURL, serverPath, secretName)
+		issuer := util.NewCertManagerCFSSLIssuer(issuerName, serverURL, serverPath, issuerAuthKeySecretName)
 		issuer.Spec.IssuerConfig.CFSSL.AuthKey = nil
 
 		_, err := f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Create(issuer)
@@ -56,7 +65,7 @@ var _ = framework.CertManagerDescribe("CFSSL Issuer", func() {
 
 	It("should be ready with a valid serverurl, serverpath and authkey", func() {
 		By("Creating an Issuer")
-		_, err := f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Create(util.NewCertManagerCFSSLIssuer(issuerName, serverURL, serverPath, secretName))
+		_, err := f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Create(util.NewCertManagerCFSSLIssuer(issuerName, serverURL, serverPath, issuerAuthKeySecretName))
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Waiting for Issuer to become Ready")
@@ -71,7 +80,7 @@ var _ = framework.CertManagerDescribe("CFSSL Issuer", func() {
 
 	It("should fail to init with missing serverurl", func() {
 		By("Creating an Issuer with empty serverurl")
-		_, err := f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Create(util.NewCertManagerCFSSLIssuer(issuerName, "", serverPath, secretName))
+		_, err := f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Create(util.NewCertManagerCFSSLIssuer(issuerName, "", serverPath, issuerAuthKeySecretName))
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Waiting for Issuer to become Ready")
@@ -86,7 +95,7 @@ var _ = framework.CertManagerDescribe("CFSSL Issuer", func() {
 
 	It("should fail to init with missing serverpath", func() {
 		By("Creating an Issuer with empty serverpath")
-		_, err := f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Create(util.NewCertManagerCFSSLIssuer(issuerName, serverURL, "", secretName))
+		_, err := f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Create(util.NewCertManagerCFSSLIssuer(issuerName, serverURL, "", issuerAuthKeySecretName))
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Waiting for Issuer to become Ready")

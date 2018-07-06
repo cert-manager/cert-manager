@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ template "fullname" . }}
+  labels:
+    app: {{ .Chart.Name }}
+    chart: {{.Chart.Name}}-{{.Chart.Version}}
+    heritage: {{ .Release.Service }}
+    release: {{ .Release.Name }}
+data:
+  config.json: |
+{{ required ".Values.server.config must be provided" .Values.server.config | indent 4 }}
