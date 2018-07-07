@@ -41,7 +41,7 @@ type dnsProviderConstructors struct {
 	cloudFlare  func(email, apikey string) (*cloudflare.DNSProvider, error)
 	route53     func(accessKey, secretKey, hostedZoneID, region string, ambient bool) (*route53.DNSProvider, error)
 	azureDNS    func(clientID, clientSecret, subscriptionID, tenentID, resourceGroupName, hostedZoneName string) (*azuredns.DNSProvider, error)
-	dnsMadeEasy func(baseURL, apiKey, apiSecrety) (*dnsmadeeasy.DNSProvider, error)
+	dnsMadeEasy func(baseURL, apiKey, apiSecret string) (*dnsmadeeasy.DNSProvider, error)
 }
 
 // Solver is a solver for the acme dns01 challenge.
@@ -241,7 +241,7 @@ func (s *Solver) solverForIssuerProvider(providerName string) (solver, error) {
 			providerConfig.AzureDNS.HostedZoneName,
 		)
 	case providerConfig.DNSMadeEasy != nil:
-		apiSecretKey, err := s.secretLister.Secrets(s.resourceNamespace).Get(providerConfig.DNSMadeEasy.APISecret.Name)
+		apiSecret, err := s.secretLister.Secrets(s.resourceNamespace).Get(providerConfig.DNSMadeEasy.APISecret.Name)
 		if err != nil {
 			return nil, fmt.Errorf("error getting dnsmadeeasy secret key: %s", err)
 		}
@@ -251,7 +251,7 @@ func (s *Solver) solverForIssuerProvider(providerName string) (solver, error) {
 			return nil, fmt.Errorf("error getting dnsmadeeasy secret key: key '%s' not found in secret", providerConfig.DNSMadeEasy.APISecret.Key)
 		}
 
-		impl, err = s.dnsProviderConstructors.DNSMadeEasy(
+		impl, err = s.dnsProviderConstructors.dnsMadeEasy(
 			providerConfig.DNSMadeEasy.BaseURL,
 			providerConfig.DNSMadeEasy.APIKey,
 			string(apiSecretBytes),
@@ -274,7 +274,7 @@ func NewSolver(issuer v1alpha1.GenericIssuer, client kubernetes.Interface, secre
 			cloudflare.NewDNSProviderCredentials,
 			route53.NewDNSProvider,
 			azuredns.NewDNSProviderCredentials,
-			dnsmadeeasy.NewDNSProviderCredentials,
+			dnsmadeeasy.NewDNSProvider,
 		},
 		ambientCredentials,
 	}

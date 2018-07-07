@@ -9,13 +9,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"os"
-	"strconv"
 	"strings"
 	"time"
 
-	"github.com/xenolf/lego/acme" # XXX
-	"github.com/xenolf/lego/platform/config/env"
+	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
 )
 
 // DNSProvider is an implementation of the acme.ChallengeProvider interface that uses
@@ -43,29 +40,10 @@ type Record struct {
 	SourceID int    `json:"sourceId"`
 }
 
-// NewDNSProvider returns a DNSProvider instance configured for DNSMadeEasy DNS.
-// Credentials must be passed in the environment variables: DNSMADEEASY_API_KEY
-// and DNSMADEEASY_API_SECRET.
-func NewDNSProvider() (*DNSProvider, error) {
-	values, err := env.Get("DNSMADEEASY_API_KEY", "DNSMADEEASY_API_SECRET") # TODO: merge
-	if err != nil {
-		return nil, fmt.Errorf("DNSMadeEasy: %v", err)
-	}
-
-	var baseURL string
-	if sandbox, _ := strconv.ParseBool(os.Getenv("DNSMADEEASY_SANDBOX")); sandbox {
-		baseURL = "https://api.sandbox.dnsmadeeasy.com/V2.0"
-	} else {
-		baseURL = "https://api.dnsmadeeasy.com/V2.0"
-	}
-
-	return NewDNSProviderCredentials(baseURL, values["DNSMADEEASY_API_KEY"], values["DNSMADEEASY_API_SECRET"])
-}
-
-// NewDNSProviderCredentials uses the supplied credentials to return a
+// NewDNSProvider uses the supplied credentials to return a
 // DNSProvider instance configured for DNSMadeEasy.
-func NewDNSProviderCredentials(baseURL, apiKey, apiSecret string) (*DNSProvider, error) {
-	if baseURL == "" || apiKey == "" || apiSecret == "" {
+func NewDNSProvider(baseURL, apiKey, apiSecret string) (*DNSProvider, error) {
+	if baseURL == "" || apiKey == "" || apiSecret == "" { // TODO: better validation?
 		return nil, fmt.Errorf("DNS Made Easy credentials missing")
 	}
 
@@ -87,9 +65,9 @@ func NewDNSProviderCredentials(baseURL, apiKey, apiSecret string) (*DNSProvider,
 
 // Present creates a TXT record using the specified parameters
 func (d *DNSProvider) Present(domainName, token, keyAuth string) error {
-	fqdn, value, ttl := acme.DNS01Record(domainName, keyAuth)
+	fqdn, value, ttl := util.DNS01Record(domainName, keyAuth)
 
-	authZone, err := acme.FindZoneByFqdn(fqdn, acme.RecursiveNameservers)
+	authZone, err := util.FindZoneByFqdn(fqdn, util.RecursiveNameservers)
 	if err != nil {
 		return err
 	}
@@ -110,9 +88,9 @@ func (d *DNSProvider) Present(domainName, token, keyAuth string) error {
 
 // CleanUp removes the TXT records matching the specified parameters
 func (d *DNSProvider) CleanUp(domainName, token, keyAuth string) error {
-	fqdn, _, _ := acme.DNS01Record(domainName, keyAuth)
+	fqdn, _, _ := util.DNS01Record(domainName, keyAuth)
 
-	authZone, err := acme.FindZoneByFqdn(fqdn, acme.RecursiveNameservers)
+	authZone, err := util.FindZoneByFqdn(fqdn, util.RecursiveNameservers)
 	if err != nil {
 		return err
 	}
@@ -139,6 +117,10 @@ func (d *DNSProvider) CleanUp(domainName, token, keyAuth string) error {
 	}
 
 	return nil
+}
+
+func (d *DNSProvider) Timeout() (timeout, interval time.Duration) {
+	return 120 * time.Second, 2 * time.Second // TODO
 }
 
 func (d *DNSProvider) getDomain(authZone string) (*Domain, error) {
