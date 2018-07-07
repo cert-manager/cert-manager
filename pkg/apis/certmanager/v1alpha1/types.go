@@ -208,7 +208,7 @@ type ACMEIssuerDNS01ProviderAzureDNS struct {
 type ACMEIssuerDNS01ProviderDNSMadeEasy struct {
 	BaseURL   string            `json:"baseUrl"`
 	APIKey    string            `json:"apiKey"`
-	APISecret SecretKeySelector `json:"apiSecretSecretRef"`
+	SecretKey SecretKeySelector `json:"secretKeySecretRef"`
 }
 
 // IssuerStatus contains status information about an Issuer

@@ -20,7 +20,7 @@ import (
 type DNSProvider struct {
 	baseURL   string
 	apiKey    string
-	apiSecret string
+	secretKey string
 	client    *http.Client
 }
 
@@ -42,8 +42,8 @@ type Record struct {
 
 // NewDNSProvider uses the supplied credentials to return a
 // DNSProvider instance configured for DNSMadeEasy.
-func NewDNSProvider(baseURL, apiKey, apiSecret string) (*DNSProvider, error) {
-	if baseURL == "" || apiKey == "" || apiSecret == "" { // TODO: better validation?
+func NewDNSProvider(baseURL, apiKey, secretKey string) (*DNSProvider, error) {
+	if baseURL == "" || apiKey == "" || secretKey == "" { // TODO: better validation?
 		return nil, fmt.Errorf("DNS Made Easy credentials missing")
 	}
 
@@ -58,7 +58,7 @@ func NewDNSProvider(baseURL, apiKey, apiSecret string) (*DNSProvider, error) {
 	return &DNSProvider{
 		baseURL:   baseURL,
 		apiKey:    apiKey,
-		apiSecret: apiSecret,
+		secretKey: secretKey,
 		client:    client,
 	}, nil
 }
@@ -197,7 +197,7 @@ func (d *DNSProvider) sendRequest(method, resource string, payload interface{}) 
 	}
 
 	timestamp := time.Now().UTC().Format(time.RFC1123)
-	signature := computeHMAC(timestamp, d.apiSecret)
+	signature := computeHMAC(timestamp, d.secretKey)
 
 	req, err := http.NewRequest(method, url, bytes.NewReader(body))
 	if err != nil {

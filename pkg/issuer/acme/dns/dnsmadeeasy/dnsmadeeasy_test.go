@@ -9,17 +9,18 @@ import (
 
 var (
 	testLive      bool
+	testBaseURL   string
 	testAPIKey    string
-	testAPISecret string
+	testSecretKey string
 	testDomain    string
 )
 
 func init() {
+  testBaseURL = "https://api.sandbox.dnsmadeeasy.com/V2.0/"
 	testAPIKey = os.Getenv("DNSMADEEASY_API_KEY")
-	testAPISecret = os.Getenv("DNSMADEEASY_API_SECRET")
+	testSecretKey = os.Getenv("DNSMADEEASY_SECRET_KEY")
 	testDomain = os.Getenv("DNSMADEEASY_DOMAIN")
-	os.Setenv("DNSMADEEASY_SANDBOX", "true")
-	testLive = len(testAPIKey) > 0 && len(testAPISecret) > 0
+	testLive = len(testAPIKey) > 0 && len(testAPISecret) > 0 && len(testDomain) > 0
 }
 
 func TestPresentAndCleanup(t *testing.T) {
@@ -27,7 +28,7 @@ func TestPresentAndCleanup(t *testing.T) {
 		t.Skip("skipping live test")
 	}
 
-	provider, err := NewDNSProvider()
+	provider, err := NewDNSProvider(testBaseURL, testAPIKey, testSecretKey)
 	assert.NoError(t, err)
 
 	err = provider.Present(testDomain, "", "123d==")
