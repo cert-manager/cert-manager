@@ -150,11 +150,12 @@ type ACMEIssuerDNS01Config struct {
 type ACMEIssuerDNS01Provider struct {
 	Name string `json:"name"`
 
-	Akamai     *ACMEIssuerDNS01ProviderAkamai     `json:"akamai,omitempty"`
-	CloudDNS   *ACMEIssuerDNS01ProviderCloudDNS   `json:"clouddns,omitempty"`
-	Cloudflare *ACMEIssuerDNS01ProviderCloudflare `json:"cloudflare,omitempty"`
-	Route53    *ACMEIssuerDNS01ProviderRoute53    `json:"route53,omitempty"`
-	AzureDNS   *ACMEIssuerDNS01ProviderAzureDNS   `json:"azuredns,omitempty"`
+	Akamai      *ACMEIssuerDNS01ProviderAkamai      `json:"akamai,omitempty"`
+	CloudDNS    *ACMEIssuerDNS01ProviderCloudDNS    `json:"clouddns,omitempty"`
+	Cloudflare  *ACMEIssuerDNS01ProviderCloudflare  `json:"cloudflare,omitempty"`
+	Route53     *ACMEIssuerDNS01ProviderRoute53     `json:"route53,omitempty"`
+	AzureDNS    *ACMEIssuerDNS01ProviderAzureDNS    `json:"azuredns,omitempty"`
+	DNSMadeEasy *ACMEIssuerDNS01ProviderDNSMadeEasy `json:"dnsmadeeasy,omitempty"`
 }
 
 // ACMEIssuerDNS01ProviderAkamai is a structure containing the DNS
@@ -200,6 +201,14 @@ type ACMEIssuerDNS01ProviderAzureDNS struct {
 
 	// + optional
 	HostedZoneName string `json:"hostedZoneName"`
+}
+
+// ACMEIssuerDNS01ProviderDNSMadeEasy is a structure containing the
+// configuration for DNSMadeEasy
+type ACMEIssuerDNS01ProviderDNSMadeEasy struct {
+	BaseURL   string            `json:"baseUrl"`
+	APIKey    string            `json:"apiKey"`
+	APISecret SecretKeySelector `json:"apiSecretSecretRef"`
 }
 
 // IssuerStatus contains status information about an Issuer
