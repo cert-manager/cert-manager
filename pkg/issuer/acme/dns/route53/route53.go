@@ -133,7 +133,7 @@ func (r *DNSProvider) changeRecord(action, fqdn, value string, ttl int) error {
 	reqParams := &route53.ChangeResourceRecordSetsInput{
 		HostedZoneId: aws.String(hostedZoneID),
 		ChangeBatch: &route53.ChangeBatch{
-			Comment: aws.String("Managed by Lego"),
+			Comment: aws.String("Managed by cert-manager"),
 			Changes: []*route53.Change{
 				{
 					Action:            aws.String(action),
