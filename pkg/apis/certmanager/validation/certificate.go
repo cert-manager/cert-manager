@@ -43,6 +43,23 @@ func ValidateCertificateSpec(crt *v1alpha1.CertificateSpec, fldPath *field.Path)
 		el = append(el, validateACMEConfigForAllDNSNames(crt, fldPath)...)
 		el = append(el, ValidateACMECertificateConfig(crt.ACME, fldPath.Child("acme"))...)
 	}
+	if crt.KeySize < 0 {
+		el = append(el, field.Invalid(fldPath.Child("keySize"), crt.KeySize, "cannot be less than zero"))
+	}
+	switch crt.KeyAlgorithm {
+	case v1alpha1.KeyAlgorithm(""):
+	case v1alpha1.RSAKeyAlgorithm:
+		if crt.KeySize > 0 && (crt.KeySize < 2048 || crt.KeySize > 8192) {
+			el = append(el, field.Invalid(fldPath.Child("keySize"), crt.KeySize, "must be between 2048 & 8192 for rsa keyAlgorithm"))
+		}
+	case v1alpha1.ECDSAKeyAlgorithm:
+		if crt.KeySize > 0 && crt.KeySize != 256 && crt.KeySize != 384 && crt.KeySize != 521 {
+			el = append(el, field.NotSupported(fldPath.Child("keySize"), crt.KeySize, []string{"256", "384", "521"}))
+		}
+	default:
+		el = append(el, field.Invalid(fldPath.Child("keyAlgorithm"), crt.KeyAlgorithm, "must be either empty or one of rsa or ecdsa"))
+	}
+
 	return el
 }
 

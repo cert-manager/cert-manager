@@ -32,10 +32,6 @@ const (
 	defaultCertificateDuration = time.Hour * 24 * 90
 )
 
-const (
-	keyBitSize = 2048
-)
-
 func (v *Vault) Issue(ctx context.Context, crt *v1alpha1.Certificate) ([]byte, []byte, error) {
 	key, certPem, err := v.obtainCertificate(ctx, crt)
 	if err != nil {
@@ -53,7 +49,7 @@ func (v *Vault) obtainCertificate(ctx context.Context, crt *v1alpha1.Certificate
 	// get existing certificate private key
 	signeeKey, err := kube.SecretTLSKey(v.secretsLister, crt.Namespace, crt.Spec.SecretName)
 	if k8sErrors.IsNotFound(err) || errors.IsInvalidData(err) {
-		signeeKey, err = pki.GenerateRSAPrivateKey(keyBitSize)
+		signeeKey, err = pki.GeneratePrivateKeyForCertificate(crt)
 		if err != nil {
 			return nil, nil, fmt.Errorf("error generating private key: %s", err.Error())
 		}
@@ -84,7 +80,12 @@ func (v *Vault) obtainCertificate(ctx context.Context, crt *v1alpha1.Certificate
 		return nil, nil, err
 	}
 
-	return pki.EncodePKCS1PrivateKey(signeeKey), crtBytes, nil
+	keyBytes, err := pki.EncodePrivateKey(signeeKey)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return keyBytes, crtBytes, nil
 }
 
 func (v *Vault) initVaultClient() (*vault.Client, error) {

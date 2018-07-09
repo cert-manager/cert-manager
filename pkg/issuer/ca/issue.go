@@ -13,13 +13,17 @@ import (
 )
 
 const (
-	errorGetCertKeyPair = "ErrGetCertKeyPair"
-	errorIssueCert      = "ErrIssueCert"
+	errorGetCertKeyPair   = "ErrGetCertKeyPair"
+	errorIssueCert        = "ErrIssueCert"
+	errorGetPublicKey     = "ErrGetPublicKey"
+	errorEncodePrivateKey = "ErrEncodePrivateKey"
 
 	successCertIssued = "CertIssueSuccess"
 
-	messageErrorGetCertKeyPair = "Error getting keypair for certificate: "
-	messageErrorIssueCert      = "Error issuing TLS certificate: "
+	messageErrorGetCertKeyPair   = "Error getting keypair for certificate: "
+	messageErrorIssueCert        = "Error issuing TLS certificate: "
+	messageErrorPublicKey        = "Error getting public key from private key: "
+	messageErrorEncodePrivateKey = "Error encoding private key: "
 
 	messageCertIssued = "Certificate issued successfully"
 )
@@ -28,7 +32,7 @@ func (c *CA) Issue(ctx context.Context, crt *v1alpha1.Certificate) ([]byte, []by
 	signeeKey, err := kube.SecretTLSKey(c.secretsLister, crt.Namespace, crt.Spec.SecretName)
 
 	if k8sErrors.IsNotFound(err) || errors.IsInvalidData(err) {
-		signeeKey, err = pki.GenerateRSAPrivateKey(2048)
+		signeeKey, err = pki.GeneratePrivateKeyForCertificate(crt)
 	}
 
 	if err != nil {
@@ -37,7 +41,14 @@ func (c *CA) Issue(ctx context.Context, crt *v1alpha1.Certificate) ([]byte, []by
 		return nil, nil, err
 	}
 
-	certPem, err := c.obtainCertificate(crt, &signeeKey.PublicKey)
+	publicKey, err := pki.PublicKeyForPrivateKey(signeeKey)
+	if err != nil {
+		s := messageErrorPublicKey + err.Error()
+		crt.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse, errorGetPublicKey, s, false)
+		return nil, nil, err
+	}
+
+	certPem, err := c.obtainCertificate(crt, publicKey)
 
 	if err != nil {
 		s := messageErrorIssueCert + err.Error()
@@ -47,7 +58,14 @@ func (c *CA) Issue(ctx context.Context, crt *v1alpha1.Certificate) ([]byte, []by
 
 	crt.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionTrue, successCertIssued, messageCertIssued, true)
 
-	return pki.EncodePKCS1PrivateKey(signeeKey), certPem, nil
+	keyPem, err := pki.EncodePrivateKey(signeeKey)
+	if err != nil {
+		s := messageErrorEncodePrivateKey + err.Error()
+		crt.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse, errorEncodePrivateKey, s, false)
+		return nil, nil, err
+	}
+
+	return keyPem, certPem, nil
 }
 
 func (c *CA) obtainCertificate(crt *v1alpha1.Certificate, signeeKey interface{}) ([]byte, error) {
