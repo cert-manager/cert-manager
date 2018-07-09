@@ -42,8 +42,6 @@ var serialNumberLimit = new(big.Int).Lsh(big.NewInt(1), 128)
 // TODO: allow this to be configurable
 const defaultOrganization = "cert-manager"
 
-const defaultSignatureAlgorithm = x509.SHA256WithRSA
-
 // default certification duration is 1 year
 const defaultNotAfter = time.Hour * 24 * 365
 
@@ -54,9 +52,14 @@ func GenerateCSR(issuer v1alpha1.GenericIssuer, crt *v1alpha1.Certificate) (*x50
 		return nil, fmt.Errorf("no domains specified on certificate")
 	}
 
+	sigAlgo, err := SignatureAlgorithm(crt)
+	if err != nil {
+		return nil, err
+	}
+
 	return &x509.CertificateRequest{
 		Version:            3,
-		SignatureAlgorithm: defaultSignatureAlgorithm,
+		SignatureAlgorithm: sigAlgo,
 		Subject: pkix.Name{
 			Organization: []string{defaultOrganization},
 			CommonName:   commonName,
@@ -83,11 +86,16 @@ func GenerateTemplate(issuer v1alpha1.GenericIssuer, crt *v1alpha1.Certificate, 
 		return nil, fmt.Errorf("failed to generate serial number: %s", err.Error())
 	}
 
+	sigAlgo, err := SignatureAlgorithm(crt)
+	if err != nil {
+		return nil, err
+	}
+
 	return &x509.Certificate{
 		Version:               3,
 		BasicConstraintsValid: true,
 		SerialNumber:          serialNumber,
-		SignatureAlgorithm:    defaultSignatureAlgorithm,
+		SignatureAlgorithm:    sigAlgo,
 		Subject: pkix.Name{
 			Organization: []string{defaultOrganization},
 			CommonName:   commonName,
@@ -139,4 +147,38 @@ func EncodeCSR(template *x509.CertificateRequest, key interface{}) ([]byte, erro
 	}
 
 	return derBytes, nil
+}
+
+// Return the appropriate signature algorithm for the certificate
+// Adapted from https://github.com/cloudflare/cfssl/blob/master/csr/csr.go#L102
+func SignatureAlgorithm(crt *v1alpha1.Certificate) (x509.SignatureAlgorithm, error) {
+	switch crt.Spec.KeyAlgorithm {
+	case v1alpha1.KeyAlgorithm(""):
+		// If keyAlgorithm is not specified, we default to rsa with keysize 2048
+		return x509.SHA256WithRSA, nil
+	case v1alpha1.RSAKeyAlgorithm:
+		switch {
+		case crt.Spec.KeySize >= 4096:
+			return x509.SHA512WithRSA, nil
+		case crt.Spec.KeySize >= 3072:
+			return x509.SHA384WithRSA, nil
+		case crt.Spec.KeySize >= 2048:
+			return x509.SHA256WithRSA, nil
+		default:
+			return x509.UnknownSignatureAlgorithm, fmt.Errorf("unsupported rsa keysize specified: %d. min keysize %d", crt.Spec.KeySize, MinRSAKeySize)
+		}
+	case v1alpha1.ECDSAKeyAlgorithm:
+		switch crt.Spec.KeySize {
+		case 521:
+			return x509.ECDSAWithSHA512, nil
+		case 384:
+			return x509.ECDSAWithSHA384, nil
+		case 256:
+			return x509.ECDSAWithSHA256, nil
+		default:
+			return x509.UnknownSignatureAlgorithm, fmt.Errorf("unsupported ecdsa keysize specified: %d", crt.Spec.KeySize)
+		}
+	default:
+		return x509.UnknownSignatureAlgorithm, fmt.Errorf("unsupported algorithm specified: %s. should be either 'ecdsa' or 'rsa", crt.Spec.KeyAlgorithm)
+	}
 }
