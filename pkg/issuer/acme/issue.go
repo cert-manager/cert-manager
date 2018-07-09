@@ -18,9 +18,12 @@ import (
 )
 
 const (
-	errorIssueError = "IssueError"
+	errorIssueError       = "IssueError"
+	errorEncodePrivateKey = "ErrEncodePrivateKey"
 
 	successCertObtained = "CertObtained"
+
+	messageErrorEncodePrivateKey = "Error encoding private key: "
 )
 
 func (a *Acme) obtainCertificate(ctx context.Context, crt *v1alpha1.Certificate) ([]byte, []byte, error) {
@@ -48,7 +51,7 @@ func (a *Acme) obtainCertificate(ctx context.Context, crt *v1alpha1.Certificate)
 	// get existing certificate private key
 	key, err := kube.SecretTLSKey(a.secretsLister, crt.Namespace, crt.Spec.SecretName)
 	if k8sErrors.IsNotFound(err) || errors.IsInvalidData(err) {
-		key, err = pki.GenerateRSAPrivateKey(2048)
+		key, err = pki.GeneratePrivateKeyForCertificate(crt)
 		if err != nil {
 			crt.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse, errorIssueError, fmt.Sprintf("Failed to generate certificate private key: %v", err), false)
 			return nil, nil, fmt.Errorf("error generating private key: %s", err.Error())
@@ -103,7 +106,14 @@ func (a *Acme) obtainCertificate(ctx context.Context, crt *v1alpha1.Certificate)
 
 	glog.Infof("successfully obtained certificate: cn=%q altNames=%+v url=%q", commonName, altNames, orderURL)
 	// encode the private key and return
-	return pki.EncodePKCS1PrivateKey(key), certBuffer.Bytes(), nil
+	keyPem, err := pki.EncodePrivateKey(key)
+	if err != nil {
+		s := messageErrorEncodePrivateKey + err.Error()
+		crt.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse, errorEncodePrivateKey, s, false)
+		return nil, nil, err
+	}
+
+	return keyPem, certBuffer.Bytes(), nil
 }
 
 func (a *Acme) Issue(ctx context.Context, crt *v1alpha1.Certificate) ([]byte, []byte, error) {

@@ -37,5 +37,12 @@ func (c *CA) Renew(ctx context.Context, crt *v1alpha1.Certificate) ([]byte, []by
 
 	crt.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionTrue, successCertRenewed, messageCertRenewed, true)
 
-	return pki.EncodePKCS1PrivateKey(signeeKey), certPem, nil
+	keyPem, err := pki.EncodePrivateKey(signeeKey)
+	if err != nil {
+		s := messageErrorEncodePrivateKey + err.Error()
+		crt.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse, errorEncodePrivateKey, s, false)
+		return nil, nil, err
+	}
+
+	return keyPem, certPem, nil
 }
