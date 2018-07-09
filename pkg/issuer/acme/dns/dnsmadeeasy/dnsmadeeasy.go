@@ -78,10 +78,22 @@ func (d *DNSProvider) Present(domainName, token, keyAuth string) error {
 		return err
 	}
 
-	// create the TXT record
+	// find existing records, as there is no update-or-create
 	name := strings.Replace(fqdn, "."+authZone, "", 1)
-	record := &Record{Type: "TXT", Name: name, Value: value, TTL: ttl}
+	records, err := d.getRecords(domain, name, "TXT")
+	if err != nil {
+		return err
+	}
 
+	// check for existing correct record
+	for _, record := range *records {
+		if record.Value == value {
+			return nil
+		}
+	}
+
+	// create new record
+	record := &Record{Type: "TXT", Name: name, Value: value, TTL: ttl}
 	err = d.createRecord(domain, record)
 	return err
 }

@@ -20,7 +20,7 @@ func init() {
 	testAPIKey = os.Getenv("DNSMADEEASY_API_KEY")
 	testSecretKey = os.Getenv("DNSMADEEASY_SECRET_KEY")
 	testDomain = os.Getenv("DNSMADEEASY_DOMAIN")
-	testLive = len(testAPIKey) > 0 && len(testAPISecret) > 0 && len(testDomain) > 0
+	testLive = len(testAPIKey) > 0 && len(testSecretKey) > 0 && len(testDomain) > 0
 }
 
 func TestPresentAndCleanup(t *testing.T) {
