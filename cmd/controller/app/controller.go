@@ -107,6 +107,7 @@ func buildControllerContext(opts *options.ControllerOptions) (*controller.Contex
 
 	sharedInformerFactory := informers.NewSharedInformerFactory(intcl, time.Second*30)
 	kubeSharedInformerFactory := kubeinformers.NewSharedInformerFactory(cl, time.Second*30)
+
 	return &controller.Context{
 		Client:                    cl,
 		CMClient:                  intcl,
@@ -121,6 +122,7 @@ func buildControllerContext(opts *options.ControllerOptions) (*controller.Contex
 			SharedInformerFactory:           sharedInformerFactory,
 			ClusterResourceNamespace:        opts.ClusterResourceNamespace,
 			ACMEHTTP01SolverImage:           opts.ACMEHTTP01SolverImage,
+			ACMEDNS01CheckMethod:            opts.ACMEDNS01CheckMethod,
 			ClusterIssuerAmbientCredentials: opts.ClusterIssuerAmbientCredentials,
 			IssuerAmbientCredentials:        opts.IssuerAmbientCredentials,
 		}),

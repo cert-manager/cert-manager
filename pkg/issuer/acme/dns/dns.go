@@ -26,6 +26,8 @@ const (
 	cloudDNSServiceAccountKey = "service-account.json"
 )
 
+type DNSCheckMethod = util.LookupMethod
+
 type solver interface {
 	Present(domain, token, key string) error
 	CleanUp(domain, token, key string) error
@@ -52,6 +54,7 @@ type Solver struct {
 	resourceNamespace       string
 	dnsProviderConstructors dnsProviderConstructors
 	ambientCredentials      bool
+	dnsCheckMethod          DNSCheckMethod
 }
 
 func (s *Solver) Present(ctx context.Context, _ *v1alpha1.Certificate, ch v1alpha1.ACMEOrderChallenge) error {
@@ -74,10 +77,10 @@ func (s *Solver) Present(ctx context.Context, _ *v1alpha1.Certificate, ch v1alph
 }
 
 func (s *Solver) Check(ch v1alpha1.ACMEOrderChallenge) (bool, error) {
-	fqdn, value, ttl := util.DNS01Record(ch.Domain, ch.Key)
+	fqdn, value, _ := util.DNS01Record(ch.Domain, ch.Key)
 	glog.Infof("Checking DNS propagation for %q using name servers: %v", ch.Domain, util.RecursiveNameservers)
 
-	ok, err := util.PreCheckDNS(fqdn, value)
+	ok, err := util.PreCheckDNS(fqdn, value, s.dnsCheckMethod)
 	if err != nil {
 		return false, err
 	}
@@ -85,10 +88,6 @@ func (s *Solver) Check(ch v1alpha1.ACMEOrderChallenge) (bool, error) {
 		glog.Infof("DNS record for %q not yet propagated", ch.Domain)
 		return false, nil
 	}
-
-	glog.Infof("Waiting DNS record TTL (%ds) to allow propagation of DNS record for domain %q", ttl, fqdn)
-	time.Sleep(time.Second * time.Duration(ttl))
-	glog.Infof("ACME DNS01 validation record propagated for %q", fqdn)
 
 	return true, nil
 }
@@ -245,7 +244,7 @@ func (s *Solver) solverForIssuerProvider(providerName string) (solver, error) {
 	return impl, nil
 }
 
-func NewSolver(issuer v1alpha1.GenericIssuer, client kubernetes.Interface, secretLister corev1listers.SecretLister, resourceNamespace string, ambientCredentials bool) *Solver {
+func NewSolver(issuer v1alpha1.GenericIssuer, client kubernetes.Interface, secretLister corev1listers.SecretLister, resourceNamespace string, ambientCredentials bool, dnsCheckMethod DNSCheckMethod) *Solver {
 	return &Solver{
 		issuer,
 		client,
@@ -258,6 +257,7 @@ func NewSolver(issuer v1alpha1.GenericIssuer, client kubernetes.Interface, secre
 			azuredns.NewDNSProviderCredentials,
 		},
 		ambientCredentials,
+		dnsCheckMethod,
 	}
 }
 

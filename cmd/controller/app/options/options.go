@@ -20,6 +20,7 @@ type ControllerOptions struct {
 	LeaderElectionRetryPeriod   time.Duration
 
 	ACMEHTTP01SolverImage string
+	ACMEDNS01CheckMethod  string
 
 	ClusterIssuerAmbientCredentials bool
 	IssuerAmbientCredentials        bool
@@ -48,6 +49,10 @@ const (
 	defaultTLSACMEIssuerKind           = "Issuer"
 	defaultACMEIssuerChallengeType     = "http01"
 	defaultACMEIssuerDNS01ProviderName = ""
+
+	ACMEDNS01CheckViaDNSLookup  = "dnslookup"
+	ACMEDNS01CheckViaHTTPS      = "dns-over-https"
+	defaultACMEDNS01CheckMethod = ACMEDNS01CheckViaDNSLookup
 )
 
 var (
@@ -101,6 +106,11 @@ func (s *ControllerOptions) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVar(&s.ACMEHTTP01SolverImage, "acme-http01-solver-image", defaultACMEHTTP01SolverImage, ""+
 		"The docker image to use to solve ACME HTTP01 challenges. You most likely will not "+
 		"need to change this parameter unless you are testing a new feature or developing cert-manager.")
+	fs.StringVar(&s.ACMEDNS01CheckMethod, "acme-dns01-check-method", defaultACMEDNS01CheckMethod, fmt.Sprintf(
+		"[%s, %s] Method used to check DNS propagation during ACME DNS01 challenges. You most likely will not "+
+			"need to change this parameter unless you run cert-manager with different DNS view "+
+			"than the rest of the world (aka DNS split horizon).",
+		ACMEDNS01CheckViaDNSLookup, ACMEDNS01CheckViaHTTPS))
 
 	fs.BoolVar(&s.ClusterIssuerAmbientCredentials, "cluster-issuer-ambient-credentials", defaultClusterIssuerAmbientCredentials, ""+
 		"Whether a cluster-issuer may make use of ambient credentials for issuers. 'Ambient Credentials' are credentials drawn from the environment, metadata services, or local files which are not explicitly configured in the ClusterIssuer API object. "+
@@ -128,6 +138,13 @@ func (o *ControllerOptions) Validate() error {
 	case "ClusterIssuer":
 	default:
 		return fmt.Errorf("invalid default issuer kind: %v", o.DefaultIssuerKind)
+	}
+
+	switch o.ACMEDNS01CheckMethod {
+	case ACMEDNS01CheckViaDNSLookup:
+	case ACMEDNS01CheckViaHTTPS:
+	default:
+		return fmt.Errorf("Unsupported DNS01 check method: %s", o.ACMEDNS01CheckMethod)
 	}
 	return nil
 }

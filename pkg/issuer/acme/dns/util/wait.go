@@ -3,14 +3,23 @@ package util
 import (
 	"fmt"
 	"net"
+	"net/http"
 	"strings"
 	"time"
 
+	"encoding/json"
 	"github.com/golang/glog"
 	"github.com/miekg/dns"
 )
 
-type preCheckDNSFunc func(fqdn, value string) (bool, error)
+type LookupMethod int
+
+const (
+	DNSLookup LookupMethod = iota
+	DNSOverHTTPS
+)
+
+type preCheckDNSFunc func(fqdn, value string, lookupMethod LookupMethod) (bool, error)
 
 var (
 	// PreCheckDNS checks DNS propagation before notifying ACME that
@@ -51,7 +60,20 @@ func getNameservers(path string, defaults []string) []string {
 }
 
 // checkDNSPropagation checks if the expected TXT record has been propagated to all authoritative nameservers.
-func checkDNSPropagation(fqdn, value string) (bool, error) {
+func checkDNSPropagation(fqdn, value string, lookupMethod LookupMethod) (bool, error) {
+	switch lookupMethod {
+	case DNSLookup:
+		return checkDNSPropagationWithDNSLookup(fqdn, value)
+	case DNSOverHTTPS:
+		return checkDNSPropagationWithHTTPS(fqdn, value)
+	default:
+		return false, fmt.Errorf("Unknown DNS propagation method")
+	}
+}
+
+// checkDNSPropagation checks if the expected TXT record has been propagated to all authoritative nameservers.
+func checkDNSPropagationWithDNSLookup(fqdn, value string) (bool, error) {
+	glog.Infof("Checking DNS propagation for FQDN %s using nameservers: %s", fqdn, RecursiveNameservers)
 	// Initial attempt to resolve at the recursive NS
 	r, err := dnsQuery(fqdn, dns.TypeTXT, RecursiveNameservers, true)
 	if err != nil {
@@ -75,6 +97,39 @@ func checkDNSPropagation(fqdn, value string) (bool, error) {
 	}
 
 	return checkAuthoritativeNss(fqdn, value, authoritativeNss)
+}
+
+func checkDNSPropagationWithHTTPS(fqdn, value string) (bool, error) {
+	glog.Infof("Checking DNS propagation for FQDN %s using 1.1.1.1 DNS over HTTPS", fqdn)
+	req, err := http.NewRequest("GET", "https://1.1.1.1/dns-query?ct=application/dns-json&type=TXT&name="+fqdn, nil)
+	if err != nil {
+		return false, err
+	}
+	req.Header.Add("Cache-Control", "no-cache")
+	r, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return false, fmt.Errorf("Unable to lookup DNS via HTTPS: %s", err)
+	}
+	defer r.Body.Close()
+
+	var resp struct {
+		Status int
+		Answer []struct{ Data string }
+	}
+
+	if err = json.NewDecoder(r.Body).Decode(&resp); err != nil {
+		return false, fmt.Errorf("Error parsing response from DNS over HTTPS: %s", err)
+	}
+
+	if resp.Status == 0 && len(resp.Answer) == 1 {
+		if txt := strings.Trim(resp.Answer[0].Data, "\""); txt == value {
+			return true, nil
+		} else {
+			glog.Warningf("Found unexpected TXT record. Expected='%s', found='%s'", value, txt)
+		}
+	}
+
+	return false, nil
 }
 
 // checkAuthoritativeNss queries each of the given nameservers for the expected TXT record.

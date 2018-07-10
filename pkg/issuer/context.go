@@ -35,6 +35,10 @@ type Context struct {
 	// challenges
 	ACMEHTTP01SolverImage string
 
+	// ACMEDNS01CheckMethod specifies how to check for DNS propagation
+	// for DNS01 challenges
+	ACMEDNS01CheckMethod string
+
 	// ClusterIssuerAmbientCredentials controls whether a cluster issuer should
 	// pick up ambient credentials, such as those from metadata services, to
 	// construct clients.

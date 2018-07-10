@@ -16,12 +16,14 @@ import (
 	extlisters "k8s.io/client-go/listers/extensions/v1beta1"
 	"k8s.io/client-go/tools/record"
 
+	"github.com/jetstack/cert-manager/cmd/controller/app/options"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	clientset "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
 	"github.com/jetstack/cert-manager/pkg/issuer"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/client"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/client/middleware"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns"
+	dnsutil "github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/http"
 	"github.com/jetstack/cert-manager/pkg/util"
 	"github.com/jetstack/cert-manager/pkg/util/kube"
@@ -86,6 +88,7 @@ func New(issuer v1alpha1.GenericIssuer,
 	recorder record.EventRecorder,
 	resourceNamespace string,
 	acmeHTTP01SolverImage string,
+	acmeDNS01CheckMethod dns.DNSCheckMethod,
 	secretsLister corelisters.SecretLister,
 	podsLister corelisters.PodLister,
 	servicesLister corelisters.ServiceLister,
@@ -115,7 +118,7 @@ func New(issuer v1alpha1.GenericIssuer,
 		servicesLister: servicesLister,
 		ingressLister:  ingressLister,
 
-		dnsSolver:                dns.NewSolver(issuer, client, secretsLister, resourceNamespace, ambientCreds),
+		dnsSolver:                dns.NewSolver(issuer, client, secretsLister, resourceNamespace, ambientCreds, acmeDNS01CheckMethod),
 		httpSolver:               http.NewSolver(issuer, client, podsLister, servicesLister, ingressLister, acmeHTTP01SolverImage),
 		issuerResourcesNamespace: resourceNamespace,
 	}
@@ -223,6 +226,14 @@ func init() {
 			return nil, fmt.Errorf("issuer was neither an 'Issuer' nor 'ClusterIssuer'; was %T", i)
 		}
 
+		var dnsCheckMethod dns.DNSCheckMethod
+		m := map[string]dns.DNSCheckMethod{options.ACMEDNS01CheckViaDNSLookup: dnsutil.DNSLookup, options.ACMEDNS01CheckViaHTTPS: dnsutil.DNSOverHTTPS}
+		if v, ok := m[ctx.ACMEDNS01CheckMethod]; !ok {
+			return nil, fmt.Errorf("Unexpected DNS01 check method: %s", ctx.ACMEDNS01CheckMethod)
+		} else {
+			dnsCheckMethod = v
+		}
+
 		return New(
 			i,
 			ctx.Client,
@@ -230,6 +241,7 @@ func init() {
 			ctx.Recorder,
 			issuerResourcesNamespace,
 			ctx.ACMEHTTP01SolverImage,
+			dnsCheckMethod,
 			ctx.KubeSharedInformerFactory.Core().V1().Secrets().Lister(),
 			ctx.KubeSharedInformerFactory.Core().V1().Pods().Lister(),
 			ctx.KubeSharedInformerFactory.Core().V1().Services().Lister(),
