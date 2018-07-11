@@ -30,6 +30,7 @@ func (v *Vault) Setup(ctx context.Context) error {
 		return fmt.Errorf(messageVaultConfigRequired)
 	}
 
+	// check if Vault server info is specified.
 	if v.issuer.GetSpec().Vault.Server == "" ||
 		v.issuer.GetSpec().Vault.Path == "" {
 		glog.Infof("%s: %s", v.issuer.GetObjectMeta().Name, messageServerAndPathRequired)
@@ -37,6 +38,7 @@ func (v *Vault) Setup(ctx context.Context) error {
 		return fmt.Errorf(messageVaultConfigRequired)
 	}
 
+	// check if at least one auth method is specified.
 	if v.issuer.GetSpec().Vault.Auth.TokenSecretRef.Name == "" &&
 		v.issuer.GetSpec().Vault.Auth.AppRole.RoleId == "" &&
 		v.issuer.GetSpec().Vault.Auth.AppRole.SecretRef.Name == "" {
@@ -45,9 +47,19 @@ func (v *Vault) Setup(ctx context.Context) error {
 		return fmt.Errorf(messsageAuthFieldsRequired)
 	}
 
+	// check if only token auth method is set.
 	if v.issuer.GetSpec().Vault.Auth.TokenSecretRef.Name != "" &&
 		(v.issuer.GetSpec().Vault.Auth.AppRole.RoleId != "" ||
 			v.issuer.GetSpec().Vault.Auth.AppRole.SecretRef.Name != "") {
+		glog.Infof("%s: %s", v.issuer.GetObjectMeta().Name, messageAuthFieldRequired)
+		v.issuer.UpdateStatusCondition(v1alpha1.IssuerConditionReady, v1alpha1.ConditionFalse, errorVault, messageAuthFieldRequired)
+		return fmt.Errorf(messageAuthFieldRequired)
+	}
+
+	// check if all mandatory Vault appRole fields are set.
+	if v.issuer.GetSpec().Vault.Auth.TokenSecretRef.Name == "" &&
+		(v.issuer.GetSpec().Vault.Auth.AppRole.RoleId == "" ||
+			v.issuer.GetSpec().Vault.Auth.AppRole.SecretRef.Name == "") {
 		glog.Infof("%s: %s", v.issuer.GetObjectMeta().Name, messageAuthFieldRequired)
 		v.issuer.UpdateStatusCondition(v1alpha1.IssuerConditionReady, v1alpha1.ConditionFalse, errorVault, messageAuthFieldRequired)
 		return fmt.Errorf(messageAuthFieldRequired)

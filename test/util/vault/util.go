@@ -42,9 +42,10 @@ type VaultInitializer struct {
 	rootMount         string
 	intermediateMount string
 	role              string
+	authPath          string
 }
 
-func NewVaultInitializer(container, rootMount, intermediateMount, role string) (*VaultInitializer, error) {
+func NewVaultInitializer(container, rootMount, intermediateMount, role, authPath string) (*VaultInitializer, error) {
 	args := []string{"port-forward", "-n", "vault", container, "8200:8200"}
 	cmd := exec.Command("kubectl", args...)
 	err := cmd.Start()
@@ -63,12 +64,17 @@ func NewVaultInitializer(container, rootMount, intermediateMount, role string) (
 
 	client.SetToken(vaultToken)
 
+	if authPath == "" {
+		authPath = "approle"
+	}
+
 	return &VaultInitializer{
 		proxyCmd:          cmd,
 		client:            client,
 		rootMount:         rootMount,
 		intermediateMount: intermediateMount,
 		role:              role,
+		authPath:          authPath,
 	}, nil
 }
 
@@ -144,21 +150,22 @@ func (v *VaultInitializer) CreateAppRole() (string, string, error) {
 		"period":   "24h",
 		"policies": v.role,
 	}
-	url := path.Join("/v1/auth/approle/role", v.role)
-	_, err = v.callVault("POST", url, "", params)
+
+	baseUrl := path.Join("/v1", "auth", v.authPath, "role", v.role)
+	_, err = v.callVault("POST", baseUrl, "", params)
 	if err != nil {
 		return "", "", fmt.Errorf("Error creating approle: %s", err.Error())
 	}
 
 	// # read the role-id
-	url = path.Join("/v1/auth/approle/role", v.role, "role-id")
+	url := path.Join(baseUrl, "role-id")
 	roleId, err := v.callVault("GET", url, "role_id", map[string]string{})
 	if err != nil {
 		return "", "", fmt.Errorf("Error reading role_id: %s", err.Error())
 	}
 
 	// # read the secret-id
-	url = path.Join("/v1/auth/approle/role", v.role, "secret-id")
+	url = path.Join(baseUrl, "secret-id")
 	secretId, err := v.callVault("POST", url, "secret_id", map[string]string{})
 	if err != nil {
 		return "", "", fmt.Errorf("Error reading secret_id: %s", err.Error())
@@ -168,7 +175,7 @@ func (v *VaultInitializer) CreateAppRole() (string, string, error) {
 }
 
 func (v *VaultInitializer) CleanAppRole() error {
-	url := path.Join("/v1/auth/approle/role", v.role)
+	url := path.Join("/v1", "auth", v.authPath, "role", v.role)
 	_, err := v.callVault("DELETE", url, "", map[string]string{})
 	if err != nil {
 		return fmt.Errorf("Error deleting AppRole: %s", err.Error())
@@ -280,14 +287,14 @@ func (v *VaultInitializer) setupRole() error {
 	if err != nil {
 		return fmt.Errorf("Error fetching auth mounts: %s", err.Error())
 	}
-	if _, ok := auths["approle/"]; !ok {
+
+	if _, ok := auths[v.authPath+"/"]; !ok {
 		options := &vault.EnableAuthOptions{Type: "approle"}
-		if err := v.client.Sys().EnableAuthWithOptions("approle", options); err != nil {
+		if err := v.client.Sys().EnableAuthWithOptions(v.authPath, options); err != nil {
 			return fmt.Errorf("Error enabling approle: %s", err.Error())
 		}
 	}
 
-	// vault write intermediate-ca/roles/kubernetes-vault allow_any_name=true max_ttl="2160h"
 	params := map[string]string{
 		"allow_any_name": "true",
 		"max_ttl":        "2160h",

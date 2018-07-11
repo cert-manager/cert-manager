@@ -1,7 +1,7 @@
 package issuer
 
 import (
-	"fmt"
+	"path"
 	"time"
 
 	. "github.com/onsi/ginkgo"
@@ -23,7 +23,8 @@ var _ = framework.CertManagerDescribe("Vault Issuer", func() {
 	role := "kubernetes-vault"
 	vaultSecretAppRoleName := "vault-role"
 	vaultSecretTokenName := "vault-token"
-	vaultPath := fmt.Sprintf("%s/sign/%s", intermediateMount, role)
+	vaultPath := path.Join(intermediateMount, "sign", role)
+	authPath := "approle"
 	var roleId, secretId string
 	var vaultInit *vault.VaultInitializer
 
@@ -32,7 +33,7 @@ var _ = framework.CertManagerDescribe("Vault Issuer", func() {
 		podList, err := f.KubeClientSet.CoreV1().Pods("vault").List(metav1.ListOptions{})
 		Expect(err).NotTo(HaveOccurred())
 		vaultPodName := podList.Items[0].Name
-		vaultInit, err = vault.NewVaultInitializer(vaultPodName, rootMount, intermediateMount, role)
+		vaultInit, err = vault.NewVaultInitializer(vaultPodName, rootMount, intermediateMount, role, authPath)
 		Expect(err).NotTo(HaveOccurred())
 		err = vaultInit.Setup()
 		Expect(err).NotTo(HaveOccurred())
@@ -56,7 +57,7 @@ var _ = framework.CertManagerDescribe("Vault Issuer", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Creating an Issuer")
-		_, err = f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Create(util.NewCertManagerVaultIssuerAppRole(issuerName, vaultURL, vaultPath, roleId, vaultSecretAppRoleName))
+		_, err = f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Create(util.NewCertManagerVaultIssuerAppRole(issuerName, vaultURL, vaultPath, roleId, vaultSecretAppRoleName, authPath))
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Waiting for Issuer to become Ready")
@@ -71,7 +72,7 @@ var _ = framework.CertManagerDescribe("Vault Issuer", func() {
 
 	It("should fail to init with missing Vault AppRole", func() {
 		By("Creating an Issuer")
-		_, err := f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Create(util.NewCertManagerVaultIssuerAppRole(issuerName, vaultURL, vaultPath, roleId, vaultSecretAppRoleName))
+		_, err := f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Create(util.NewCertManagerVaultIssuerAppRole(issuerName, vaultURL, vaultPath, roleId, vaultSecretAppRoleName, authPath))
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Waiting for Issuer to become Ready")
