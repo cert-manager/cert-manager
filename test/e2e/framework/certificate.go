@@ -49,4 +49,13 @@ func (f *Framework) WaitCertificateIssuedValidTimeout(c *v1alpha1.Certificate, t
 	if expectedCN != cert.Subject.CommonName || !util.EqualUnsorted(cert.DNSNames, expectedDNSNames) {
 		Failf("Expected certificate valid for CN %q, dnsNames %v but got a certificate valid for CN %q, dnsNames %v", expectedCN, expectedDNSNames, cert.Subject.CommonName, cert.DNSNames)
 	}
+
+	label, ok := secret.Labels[v1alpha1.CertificateNameKey]
+	if !ok {
+		Failf("Expected secret to have certificate-name label, but had none")
+	}
+
+	if label != c.Name {
+		Failf("Expected secret to have certificate-name label with a value of %q, but got %q", c.Name, label)
+	}
 }
