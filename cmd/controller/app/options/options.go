@@ -2,6 +2,7 @@ package options
 
 import (
 	"fmt"
+	"net"
 	"time"
 
 	"github.com/spf13/pflag"
@@ -29,6 +30,9 @@ type ControllerOptions struct {
 	DefaultIssuerKind                  string
 	DefaultACMEIssuerChallengeType     string
 	DefaultACMEIssuerDNS01ProviderName string
+
+	// DNS01Nameservers allows specifying a list of custom nameservers to perform DNS checks
+	DNS01Nameservers []string
 }
 
 const (
@@ -69,6 +73,7 @@ func NewControllerOptions() *ControllerOptions {
 		DefaultIssuerKind:                  defaultTLSACMEIssuerKind,
 		DefaultACMEIssuerChallengeType:     defaultACMEIssuerChallengeType,
 		DefaultACMEIssuerDNS01ProviderName: defaultACMEIssuerDNS01ProviderName,
+		DNS01Nameservers:                   []string{},
 	}
 }
 
@@ -120,6 +125,9 @@ func (s *ControllerOptions) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVar(&s.DefaultACMEIssuerDNS01ProviderName, "default-acme-issuer-dns01-provider-name", defaultACMEIssuerDNS01ProviderName, ""+
 		"Required if --default-acme-issuer-challenge-type is set to dns01. The DNS01 provider to use for ingresses using ACME dns01 "+
 		"validation that do not explicitly state a dns provider.")
+	fs.StringSliceVar(&s.DNS01Nameservers, "dns01-self-check-nameservers", []string{}, ""+
+		"A list of comma seperated DNS server endpoints used for DNS01 check requests. "+
+		"This should be a list containing IP address and port, for example: 8.8.8.8:53,8.8.4.4:53")
 }
 
 func (o *ControllerOptions) Validate() error {
@@ -128,6 +136,18 @@ func (o *ControllerOptions) Validate() error {
 	case "ClusterIssuer":
 	default:
 		return fmt.Errorf("invalid default issuer kind: %v", o.DefaultIssuerKind)
+	}
+
+	for _, server := range o.DNS01Nameservers {
+		// ensure all servers have a port number
+		host, _, err := net.SplitHostPort(server)
+		if err != nil {
+			return fmt.Errorf("invalid DNS server (%v): %v", err, server)
+		}
+		ip := net.ParseIP(host)
+		if ip == nil {
+			return fmt.Errorf("invalid IP address: %v", host)
+		}
 	}
 	return nil
 }

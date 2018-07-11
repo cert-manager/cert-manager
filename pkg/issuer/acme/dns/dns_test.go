@@ -104,6 +104,7 @@ func (f *fixture) solver() *Solver {
 		f.ResourceNamespace,
 		dnsProvider.constructors,
 		f.Ambient,
+		[]string{"8.8.8.8:53"},
 	}
 }
 

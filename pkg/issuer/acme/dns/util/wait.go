@@ -10,7 +10,7 @@ import (
 	"github.com/miekg/dns"
 )
 
-type preCheckDNSFunc func(fqdn, value string) (bool, error)
+type preCheckDNSFunc func(fqdn, value string, nameservers []string) (bool, error)
 
 var (
 	// PreCheckDNS checks DNS propagation before notifying ACME that
@@ -51,9 +51,9 @@ func getNameservers(path string, defaults []string) []string {
 }
 
 // checkDNSPropagation checks if the expected TXT record has been propagated to all authoritative nameservers.
-func checkDNSPropagation(fqdn, value string) (bool, error) {
+func checkDNSPropagation(fqdn, value string, nameservers []string) (bool, error) {
 	// Initial attempt to resolve at the recursive NS
-	r, err := dnsQuery(fqdn, dns.TypeTXT, RecursiveNameservers, true)
+	r, err := dnsQuery(fqdn, dns.TypeTXT, nameservers, true)
 	if err != nil {
 		return false, err
 	}

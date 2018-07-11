@@ -83,7 +83,7 @@ var checkResolvConfServersTests = []struct {
 
 func TestPreCheckDNS(t *testing.T) {
 	// TODO: find a better TXT record to use in tests
-	ok, err := PreCheckDNS("google.com.", "v=spf1 include:_spf.google.com ~all")
+	ok, err := PreCheckDNS("google.com.", "v=spf1 include:_spf.google.com ~all", []string{"8.8.8.8:53"})
 	if err != nil || !ok {
 		t.Errorf("preCheckDNS failed for acme-staging.api.letsencrypt.org: %s", err.Error())
 	}

@@ -52,6 +52,7 @@ type Solver struct {
 	resourceNamespace       string
 	dnsProviderConstructors dnsProviderConstructors
 	ambientCredentials      bool
+	dns01Nameservers        []string
 }
 
 func (s *Solver) Present(ctx context.Context, _ *v1alpha1.Certificate, ch v1alpha1.ACMEOrderChallenge) error {
@@ -75,9 +76,9 @@ func (s *Solver) Present(ctx context.Context, _ *v1alpha1.Certificate, ch v1alph
 
 func (s *Solver) Check(ch v1alpha1.ACMEOrderChallenge) (bool, error) {
 	fqdn, value, ttl := util.DNS01Record(ch.Domain, ch.Key)
-	glog.Infof("Checking DNS propagation for %q using name servers: %v", ch.Domain, util.RecursiveNameservers)
+	glog.Infof("Checking DNS propagation for %q using name servers: %v", ch.Domain, s.dns01Nameservers)
 
-	ok, err := util.PreCheckDNS(fqdn, value)
+	ok, err := util.PreCheckDNS(fqdn, value, s.dns01Nameservers)
 	if err != nil {
 		return false, err
 	}
@@ -245,7 +246,7 @@ func (s *Solver) solverForIssuerProvider(providerName string) (solver, error) {
 	return impl, nil
 }
 
-func NewSolver(issuer v1alpha1.GenericIssuer, client kubernetes.Interface, secretLister corev1listers.SecretLister, resourceNamespace string, ambientCredentials bool) *Solver {
+func NewSolver(issuer v1alpha1.GenericIssuer, client kubernetes.Interface, secretLister corev1listers.SecretLister, resourceNamespace string, ambientCredentials bool, dns01Nameservers []string) *Solver {
 	return &Solver{
 		issuer,
 		client,
@@ -258,6 +259,7 @@ func NewSolver(issuer v1alpha1.GenericIssuer, client kubernetes.Interface, secre
 			azuredns.NewDNSProviderCredentials,
 		},
 		ambientCredentials,
+		dns01Nameservers,
 	}
 }
 

@@ -23,6 +23,7 @@ import (
 	informers "github.com/jetstack/cert-manager/pkg/client/informers/externalversions"
 	"github.com/jetstack/cert-manager/pkg/controller"
 	"github.com/jetstack/cert-manager/pkg/issuer"
+	dnsutil "github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
 	"github.com/jetstack/cert-manager/pkg/util/kube"
 	kubeinformers "k8s.io/client-go/informers"
 )
@@ -95,6 +96,13 @@ func buildControllerContext(opts *options.ControllerOptions) (*controller.Contex
 		return nil, nil, fmt.Errorf("error creating kubernetes client: %s", err.Error())
 	}
 
+	nameservers := opts.DNS01Nameservers
+	if len(nameservers) == 0 {
+		nameservers = dnsutil.RecursiveNameservers
+	}
+
+	glog.Infof("Using the following nameservers for DNS01 checks: %v", nameservers)
+
 	// Create event broadcaster
 	// Add cert-manager types to the default Kubernetes Scheme so Events can be
 	// logged properly
@@ -123,6 +131,7 @@ func buildControllerContext(opts *options.ControllerOptions) (*controller.Contex
 			ACMEHTTP01SolverImage:           opts.ACMEHTTP01SolverImage,
 			ClusterIssuerAmbientCredentials: opts.ClusterIssuerAmbientCredentials,
 			IssuerAmbientCredentials:        opts.IssuerAmbientCredentials,
+			DNS01Nameservers:                nameservers,
 		}),
 		ClusterResourceNamespace:           opts.ClusterResourceNamespace,
 		DefaultIssuerName:                  opts.DefaultIssuerName,
