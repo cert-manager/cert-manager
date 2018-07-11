@@ -18,6 +18,7 @@ import (
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/azuredns"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/clouddns"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/cloudflare"
+	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/dnsmadeeasy"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/route53"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
 )
@@ -36,10 +37,11 @@ type solver interface {
 // It is useful for mocking out a given provider since an alternate set of
 // constructors may be set.
 type dnsProviderConstructors struct {
-	cloudDNS   func(project string, serviceAccount []byte) (*clouddns.DNSProvider, error)
-	cloudFlare func(email, apikey string) (*cloudflare.DNSProvider, error)
-	route53    func(accessKey, secretKey, hostedZoneID, region string, ambient bool) (*route53.DNSProvider, error)
-	azureDNS   func(clientID, clientSecret, subscriptionID, tenentID, resourceGroupName, hostedZoneName string) (*azuredns.DNSProvider, error)
+	cloudDNS    func(project string, serviceAccount []byte) (*clouddns.DNSProvider, error)
+	cloudFlare  func(email, apikey string) (*cloudflare.DNSProvider, error)
+	route53     func(accessKey, secretKey, hostedZoneID, region string, ambient bool) (*route53.DNSProvider, error)
+	azureDNS    func(clientID, clientSecret, subscriptionID, tenentID, resourceGroupName, hostedZoneName string) (*azuredns.DNSProvider, error)
+	dnsMadeEasy func(baseURL, apiKey, secretKey string) (*dnsmadeeasy.DNSProvider, error)
 }
 
 // Solver is a solver for the acme dns01 challenge.
@@ -239,6 +241,22 @@ func (s *Solver) solverForIssuerProvider(providerName string) (solver, error) {
 			providerConfig.AzureDNS.ResourceGroupName,
 			providerConfig.AzureDNS.HostedZoneName,
 		)
+	case providerConfig.DNSMadeEasy != nil:
+		secretKey, err := s.secretLister.Secrets(s.resourceNamespace).Get(providerConfig.DNSMadeEasy.SecretKey.Name)
+		if err != nil {
+			return nil, fmt.Errorf("error getting dnsmadeeasy secret key: %s", err)
+		}
+
+		secretKeyBytes, ok := secretKey.Data[providerConfig.DNSMadeEasy.SecretKey.Key]
+		if !ok {
+			return nil, fmt.Errorf("error getting dnsmadeeasy secret key: key '%s' not found in secret", providerConfig.DNSMadeEasy.SecretKey.Key)
+		}
+
+		impl, err = s.dnsProviderConstructors.dnsMadeEasy(
+			providerConfig.DNSMadeEasy.BaseURL,
+			providerConfig.DNSMadeEasy.APIKey,
+			string(secretKeyBytes),
+		)
 	default:
 		return nil, fmt.Errorf("no dns provider config specified for provider %q", providerName)
 	}
@@ -257,6 +275,7 @@ func NewSolver(issuer v1alpha1.GenericIssuer, client kubernetes.Interface, secre
 			cloudflare.NewDNSProviderCredentials,
 			route53.NewDNSProvider,
 			azuredns.NewDNSProviderCredentials,
+			dnsmadeeasy.NewDNSProvider,
 		},
 		ambientCredentials,
 		dns01Nameservers,

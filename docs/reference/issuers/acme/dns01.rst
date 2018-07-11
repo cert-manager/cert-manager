@@ -140,4 +140,16 @@ Akamai FastDNS
         name: akamai-dns
         key: accessToken
 
+DNSMadeEasy
+==============
+
+.. code-block:: yaml
+
+    dnsmadeeasy:
+      apiUrl: https://api.dnsmadeeasy.com/V1.2 #XXX
+      apiKey: 15a79ab1-9d6b-438a-8515-304b58121470
+      secretKeySecretRef:
+        name: dnsmadeeasy
+        key: secretKey
+
 .. _`Let's Encrypt`: https://letsencrypt.org
