@@ -168,6 +168,17 @@ func ValidateACMEIssuerDNS01Config(iss *v1alpha1.ACMEIssuerDNS01Config, fldPath 
 				}
 			}
 		}
+		if p.DNSMadeEasy != nil {
+			if numProviders > 0 {
+				el = append(el, field.Forbidden(fldPath.Child("dnsmadeeasy"), "may not specify more than one provider type"))
+			} else {
+				numProviders++
+				el = append(el, ValidateSecretKeySelector(&p.DNSMadeEasy.SecretKey, fldPath.Child("dnsmadeeasy", "secretKeySecretRef"))...)
+				if len(p.DNSMadeEasy.APIKey) == 0 {
+					el = append(el, field.Required(fldPath.Child("dnsmadeeasy", "apiKey"), ""))
+				}
+			}
+		}
 		if p.Route53 != nil {
 			if numProviders > 0 {
 				el = append(el, field.Forbidden(fldPath.Child("route53"), "may not specify more than one provider type"))
