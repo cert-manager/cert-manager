@@ -77,9 +77,12 @@ func buildService(crt *v1alpha1.Certificate, ch v1alpha1.ACMEOrderChallenge) *co
 	podLabels := podLabels(ch)
 	return &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
-			GenerateName:    "cm-acme-http-solver-",
-			Namespace:       crt.Namespace,
-			Labels:          podLabels,
+			GenerateName: "cm-acme-http-solver-",
+			Namespace:    crt.Namespace,
+			Labels:       podLabels,
+			Annotations: map[string]string{
+				"auth.istio.io/8089": "NONE",
+			},
 			OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(crt, certificateGvk)},
 		},
 		Spec: corev1.ServiceSpec{

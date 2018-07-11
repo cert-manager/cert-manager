@@ -110,9 +110,12 @@ func (s *Solver) buildPod(crt *v1alpha1.Certificate, ch v1alpha1.ACMEOrderChalle
 	podLabels := podLabels(ch)
 	return &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
-			GenerateName:    "cm-acme-http-solver-",
-			Namespace:       crt.Namespace,
-			Labels:          podLabels,
+			GenerateName: "cm-acme-http-solver-",
+			Namespace:    crt.Namespace,
+			Labels:       podLabels,
+			Annotations: map[string]string{
+				"sidecar.istio.io/inject": "false",
+			},
 			OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(crt, certificateGvk)},
 		},
 		Spec: corev1.PodSpec{
