@@ -16,7 +16,7 @@ var (
 )
 
 func init() {
-  testBaseURL = "https://api.sandbox.dnsmadeeasy.com/V2.0/"
+	testBaseURL = "https://api.sandbox.dnsmadeeasy.com/V2.0/"
 	testAPIKey = os.Getenv("DNSMADEEASY_API_KEY")
 	testSecretKey = os.Getenv("DNSMADEEASY_SECRET_KEY")
 	testDomain = os.Getenv("DNSMADEEASY_DOMAIN")
