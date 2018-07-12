@@ -8,6 +8,11 @@ import (
 	"github.com/spf13/pflag"
 
 	"github.com/jetstack/cert-manager/pkg/util"
+
+	certificatescontroller "github.com/jetstack/cert-manager/pkg/controller/certificates"
+	clusterissuerscontroller "github.com/jetstack/cert-manager/pkg/controller/clusterissuers"
+	ingressshimcontroller "github.com/jetstack/cert-manager/pkg/controller/ingress-shim"
+	issuerscontroller "github.com/jetstack/cert-manager/pkg/controller/issuers"
 )
 
 type ControllerOptions struct {
@@ -19,6 +24,8 @@ type ControllerOptions struct {
 	LeaderElectionLeaseDuration time.Duration
 	LeaderElectionRenewDeadline time.Duration
 	LeaderElectionRetryPeriod   time.Duration
+
+	EnabledControllers []string
 
 	ACMEHTTP01SolverImage string
 
@@ -56,6 +63,13 @@ const (
 
 var (
 	defaultACMEHTTP01SolverImage = fmt.Sprintf("quay.io/jetstack/cert-manager-acmesolver:%s", util.AppVersion)
+
+	defaultEnabledControllers = []string{
+		issuerscontroller.ControllerName,
+		clusterissuerscontroller.ControllerName,
+		certificatescontroller.ControllerName,
+		ingressshimcontroller.ControllerName,
+	}
 )
 
 func NewControllerOptions() *ControllerOptions {
@@ -67,6 +81,7 @@ func NewControllerOptions() *ControllerOptions {
 		LeaderElectionLeaseDuration:        defaultLeaderElectionLeaseDuration,
 		LeaderElectionRenewDeadline:        defaultLeaderElectionRenewDeadline,
 		LeaderElectionRetryPeriod:          defaultLeaderElectionRetryPeriod,
+		EnabledControllers:                 defaultEnabledControllers,
 		ClusterIssuerAmbientCredentials:    defaultClusterIssuerAmbientCredentials,
 		IssuerAmbientCredentials:           defaultIssuerAmbientCredentials,
 		DefaultIssuerName:                  defaultTLSACMEIssuerName,
@@ -102,6 +117,9 @@ func (s *ControllerOptions) AddFlags(fs *pflag.FlagSet) {
 	fs.DurationVar(&s.LeaderElectionRetryPeriod, "leader-election-retry-period", defaultLeaderElectionRetryPeriod, ""+
 		"The duration the clients should wait between attempting acquisition and renewal "+
 		"of a leadership. This is only applicable if leader election is enabled.")
+
+	fs.StringSliceVar(&s.EnabledControllers, "controllers", defaultEnabledControllers, ""+
+		"The set of controllers to enable.")
 
 	fs.StringVar(&s.ACMEHTTP01SolverImage, "acme-http01-solver-image", defaultACMEHTTP01SolverImage, ""+
 		"The docker image to use to solve ACME HTTP01 challenges. You most likely will not "+

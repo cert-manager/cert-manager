@@ -24,6 +24,7 @@ import (
 	"github.com/jetstack/cert-manager/pkg/controller"
 	"github.com/jetstack/cert-manager/pkg/issuer"
 	dnsutil "github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
+	"github.com/jetstack/cert-manager/pkg/util"
 	"github.com/jetstack/cert-manager/pkg/util/kube"
 	kubeinformers "k8s.io/client-go/informers"
 )
@@ -40,10 +41,16 @@ func Run(opts *options.ControllerOptions, stopCh <-chan struct{}) {
 	run := func(_ <-chan struct{}) {
 		var wg sync.WaitGroup
 		for n, fn := range controller.Known() {
+			// only run a controller if it's been enabled
+			if !util.Contains(opts.EnabledControllers, n) {
+				glog.Infof("%s controller is not in list of controllers to enable, so not enabling it", n)
+				continue
+			}
+
 			wg.Add(1)
 			go func(n string, fn controller.Interface) {
 				defer wg.Done()
-				glog.V(4).Infof("Starting %s controller", n)
+				glog.Infof("Starting %s controller", n)
 
 				err := fn(5, stopCh)
 
