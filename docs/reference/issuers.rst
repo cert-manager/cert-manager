@@ -141,6 +141,7 @@ for the ACME issuer, or ``spec.ca`` for the CA based issuer.
    issuers/acme/index
    issuers/ca/index
    issuers/vault/index
+   issuers/selfsigned/index
 
 .. _`Let's Encrypt`: https://letsencrypt.org
 .. _kube2iam: https://github.com/jtblin/kube2iam
