@@ -427,6 +427,33 @@ func TestValidateACMEIssuerDNS01Config(t *testing.T) {
 				field.Required(providersPath.Index(0).Child("route53", "region"), ""),
 			},
 		},
+		"missing dnspod apikey": {
+			cfg: &v1alpha1.ACMEIssuerDNS01Config{
+				Providers: []v1alpha1.ACMEIssuerDNS01Provider{
+					{
+						Name:    "a name",
+						DNSPod: &v1alpha1.ACMEIssuerDNS01ProviderDNSPod {},
+					},
+				},
+			},
+			errs: []*field.Error{
+				field.Required(providersPath.Index(0).Child("dnspod", "apiKeySecretRef", "name"), "secret name is required"),
+				field.Required(providersPath.Index(0).Child("dnspod", "apiKeySecretRef", "key"), "secret key is required"),
+			},
+		},
+		"valid dnspod config": {
+			cfg: &v1alpha1.ACMEIssuerDNS01Config{
+				Providers: []v1alpha1.ACMEIssuerDNS01Provider{
+					{
+						Name: "a name",
+						DNSPod: &v1alpha1.ACMEIssuerDNS01ProviderDNSPod {
+							APIKey: validSecretKeyRef,
+						},
+					},
+				},
+			},
+			errs: []*field.Error{},
+		},
 		"missing provider config": {
 			cfg: &v1alpha1.ACMEIssuerDNS01Config{
 				Providers: []v1alpha1.ACMEIssuerDNS01Provider{
