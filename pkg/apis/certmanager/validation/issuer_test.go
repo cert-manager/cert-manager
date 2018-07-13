@@ -431,8 +431,8 @@ func TestValidateACMEIssuerDNS01Config(t *testing.T) {
 			cfg: &v1alpha1.ACMEIssuerDNS01Config{
 				Providers: []v1alpha1.ACMEIssuerDNS01Provider{
 					{
-						Name:    "a name",
-						DNSPod: &v1alpha1.ACMEIssuerDNS01ProviderDNSPod {},
+						Name:   "a name",
+						DNSPod: &v1alpha1.ACMEIssuerDNS01ProviderDNSPod{},
 					},
 				},
 			},
@@ -446,7 +446,7 @@ func TestValidateACMEIssuerDNS01Config(t *testing.T) {
 				Providers: []v1alpha1.ACMEIssuerDNS01Provider{
 					{
 						Name: "a name",
-						DNSPod: &v1alpha1.ACMEIssuerDNS01ProviderDNSPod {
+						DNSPod: &v1alpha1.ACMEIssuerDNS01ProviderDNSPod{
 							APIKey: validSecretKeyRef,
 						},
 					},
