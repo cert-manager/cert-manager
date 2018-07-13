@@ -140,6 +140,8 @@ type ACMEIssuer struct {
 	HTTP01 *ACMEIssuerHTTP01Config `json:"http01,omitempty"`
 	// DNS-01 config
 	DNS01 *ACMEIssuerDNS01Config `json:"dns01,omitempty"`
+	// KeySize in bits for account rsa key
+	KeySize int `json:"keysize,omitempty"`
 }
 
 type ACMEIssuerHTTP01Config struct {
@@ -305,6 +307,8 @@ type CertificateSpec struct {
 	// a ClusterIssuer of the given name will be used. Any other value is
 	// invalid.
 	IssuerRef ObjectReference `json:"issuerRef"`
+	// KeySize in bits for certificate private key
+	KeySize int `json:"keysize,omitempty"`
 
 	ACME *ACMECertificateConfig `json:"acme,omitempty"`
 }

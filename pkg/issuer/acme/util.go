@@ -44,3 +44,19 @@ var acmev1ToV2Mappings = map[string]string{
 	"https://acme-v01.api.letsencrypt.org/directory/":     "https://acme-v02.api.letsencrypt.org/directory",
 	"https://acme-staging.api.letsencrypt.org/directory/": "https://acme-staging-v02.api.letsencrypt.org/directory",
 }
+
+// the minimum keysize should be 2048 bits
+const ACME_MINIMUM_KEYSIZE = 2048
+
+// return the number of bits for ACME account key or for private keys
+// returned value should never be lower than ACME_MINIMUM_KEYSIZE
+func getKeysize(configuredValue, defaultValue int) (keysize int) {
+	if defaultValue < ACME_MINIMUM_KEYSIZE {
+		defaultValue = ACME_MINIMUM_KEYSIZE
+	}
+	if configuredValue < defaultValue {
+		return defaultValue
+	} else {
+		return configuredValue
+	}
+}

@@ -111,7 +111,7 @@ func (a *Acme) registerAccount(ctx context.Context, cl client.Interface) (*acme.
 
 func (a *Acme) createAccountPrivateKey() (*rsa.PrivateKey, error) {
 	secretName, secretKey := a.acmeAccountPrivateKeyMeta()
-	accountPrivKey, err := pki.GenerateRSAPrivateKey(2048)
+	accountPrivKey, err := pki.GenerateRSAPrivateKey(getKeysize(a.issuer.GetSpec().IssuerConfig.ACME.KeySize, 2048))
 	if err != nil {
 		return nil, err
 	}
