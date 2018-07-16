@@ -88,6 +88,12 @@
   version = "v3.0.0"
 
 [[projects]]
+  name = "github.com/dnsimple/dnsimple-go"
+  packages = ["dnsimple"]
+  revision = "4618db489ff90331782dd0a6cf3aa0de68415355"
+  version = "v0.16.0"
+
+[[projects]]
   name = "github.com/emicklei/go-restful"
   packages = [
     ".",
@@ -95,18 +101,6 @@
   ]
   revision = "3eb9738c1697594ea6e71a7156a9bb32ed216cf0"
   version = "v2.8.0"
-
-[[projects]]
-  name = "github.com/fatih/structs"
-  packages = ["."]
-  revision = "a720dfa8df582c51dee1b36feabb906bde1588bd"
-  version = "v1.0"
-
-[[projects]]
-  name = "github.com/dnsimple/dnsimple-go"
-  packages = ["dnsimple"]
-  revision = "4618db489ff90331782dd0a6cf3aa0de68415355"
-  version = "v0.16.0"
 
 [[projects]]
   name = "github.com/fatih/structs"
@@ -948,6 +942,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "d792bbf24d87653ea8f00046b922dca780a50fdd60e8ea9540c9f34c9a28e675"
+  inputs-digest = "ec461773b08f40a2963201642cfce93e9f770f63f612bc713e927a1b089780ed"
   solver-name = "gps-cdcl"
   solver-version = 1
