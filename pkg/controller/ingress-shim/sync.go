@@ -33,11 +33,6 @@ import (
 )
 
 const (
-	// tlsACMEAnnotation is here for compatibility with kube-lego style
-	// ingress resources. When set to "true", a Certificate resource with
-	// the default configuration provided to ingress-annotation should be
-	// created.
-	tlsACMEAnnotation = "kubernetes.io/tls-acme"
 	// editInPlaceAnnotation is used to toggle the use of ingressClass instead
 	// of ingress on the created Certificate resource
 	editInPlaceAnnotation = "certmanager.k8s.io/acme-http01-edit-in-place"
@@ -64,7 +59,7 @@ const (
 var ingressGVK = extv1beta1.SchemeGroupVersion.WithKind("Ingress")
 
 func (c *Controller) Sync(ctx context.Context, ing *extv1beta1.Ingress) error {
-	if !shouldSync(ing) {
+	if !shouldSync(ing, c.defaults.acmeTLSAnnotation) {
 		glog.Infof("Not syncing ingress %s/%s as it does not contain necessary annotations", ing.Namespace, ing.Name)
 		return nil
 	}
@@ -261,7 +256,7 @@ func (c *Controller) setIssuerSpecificConfig(crt *v1alpha1.Certificate, issuer v
 
 // shouldSync returns true if this ingress should have a Certificate resource
 // created for it
-func shouldSync(ing *extv1beta1.Ingress) bool {
+func shouldSync(ing *extv1beta1.Ingress, tlsACMEAnnotation string) bool {
 	annotations := ing.Annotations
 	if annotations == nil {
 		annotations = map[string]string{}

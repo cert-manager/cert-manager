@@ -181,6 +181,7 @@ func buildControllerContext(opts *options.ControllerOptions) (*controller.Contex
 		IngressShimOptions: controller.IngressShimOptions{
 			DefaultIssuerName:                  opts.DefaultIssuerName,
 			DefaultIssuerKind:                  opts.DefaultIssuerKind,
+                        DefaultACMEAnnotation:              opts.DefaultACMEAnnotation,
 			DefaultACMEIssuerChallengeType:     opts.DefaultACMEIssuerChallengeType,
 			DefaultACMEIssuerDNS01ProviderName: opts.DefaultACMEIssuerDNS01ProviderName,
 		},
