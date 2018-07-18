@@ -1,6 +1,7 @@
 package kube
 
 import (
+	"crypto"
 	"crypto/rsa"
 	"crypto/x509"
 	"fmt"
@@ -31,10 +32,34 @@ func GetKeyPair(secretLister corelisters.SecretLister, namespace, name string) (
 	return certBytes, keyBytes, err
 }
 
-// SecretTLSKeyRef will decode a PKCS1 private key stored in a secret with
+// SecretRSAKeyRef will decode a PKCS1 private key stored in a secret with
 // 'name' in 'namespace'. It will read the private key data from the secret
 // entry with name 'keyName'.
-func SecretTLSKeyRef(secretLister corelisters.SecretLister, namespace, name, keyName string) (*rsa.PrivateKey, error) {
+func SecretRSAKeyRef(secretLister corelisters.SecretLister, namespace, name, keyName string) (*rsa.PrivateKey, error) {
+	privateKey, err := SecretTLSKeyRef(secretLister, namespace, name, api.TLSPrivateKeyKey)
+	if err != nil {
+		return nil, err
+	}
+
+	rsaPrivateKey, ok := privateKey.(*rsa.PrivateKey)
+	if !ok {
+		return nil, fmt.Errorf("data for %q in secret '%s/%s' is not PKCS1 encoded", keyName, namespace, name)
+	}
+
+	return rsaPrivateKey, nil
+}
+
+// SecretRSAKey will decode a PKCS1 private key stored in a secret with
+// 'name' in 'namespace'. It will read the private key data from the secret
+// entry with name 'keyName'.
+func SecretRSAKey(secretLister corelisters.SecretLister, namespace, name string) (*rsa.PrivateKey, error) {
+	return SecretRSAKeyRef(secretLister, namespace, name, api.TLSPrivateKeyKey)
+}
+
+// SecretTLSKeyRef will decode a PKCS1/SEC1 (in effect, a RSA or ECDSA) private key stored in a
+// secret with 'name' in 'namespace'. It will read the private key data from the secret
+// entry with name 'keyName'.
+func SecretTLSKeyRef(secretLister corelisters.SecretLister, namespace, name, keyName string) (crypto.PrivateKey, error) {
 	secret, err := secretLister.Secrets(namespace).Get(name)
 	if err != nil {
 		return nil, err
@@ -44,7 +69,7 @@ func SecretTLSKeyRef(secretLister corelisters.SecretLister, namespace, name, key
 	if !ok {
 		return nil, fmt.Errorf("no data for %q in secret '%s/%s'", keyName, namespace, name)
 	}
-	key, err := pki.DecodePKCS1PrivateKeyBytes(keyBytes)
+	key, err := pki.DecodePrivateKeyBytes(keyBytes)
 	if err != nil {
 		return key, errors.NewInvalidData(err.Error())
 	}
@@ -52,7 +77,10 @@ func SecretTLSKeyRef(secretLister corelisters.SecretLister, namespace, name, key
 	return key, nil
 }
 
-func SecretTLSKey(secretLister corelisters.SecretLister, namespace, name string) (*rsa.PrivateKey, error) {
+// SecretTLSKey will decode a PKCS1/SEC1 (in effect, a RSA or ECDSA) private key stored in a
+// secret with 'name' in 'namespace'. It will read the private key data from the secret
+// entry with name 'keyName'.
+func SecretTLSKey(secretLister corelisters.SecretLister, namespace, name string) (crypto.PrivateKey, error) {
 	return SecretTLSKeyRef(secretLister, namespace, name, api.TLSPrivateKeyKey)
 }
 

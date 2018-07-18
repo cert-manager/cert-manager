@@ -101,6 +101,14 @@ Appears In:
 <td>IssuerRef is a reference to the issuer for this certificate. If the namespace field is not set, it is assumed to be in the same namespace as the certificate. If the namespace field is set to the empty value &#34;&#34;, a ClusterIssuer of the given name will be used. Any other value is invalid.</td>
 </tr>
 <tr>
+<td><code>keyAlgorithm</code><br /> <em>string</em></td>
+<td>KeyAlgorithm is the private key algorithm of the corresponding private key for this certificate. If provided, allowed values are either &#34;rsa&#34; or &#34;ecdsa&#34; If KeyAlgorithm is specified and KeySize is not provided, key size of 256 will be used for &#34;ecdsa&#34; key algorithm and key size of 2048 will be used for &#34;rsa&#34; key algorithm.</td>
+</tr>
+<tr>
+<td><code>keySize</code><br /> <em>integer</em></td>
+<td>KeySize is the key bit size of the corresponding private key for this certificate. If provided, value must be between 2048 and 8192 inclusive when KeyAlgorithm is empty or is set to &#34;rsa&#34;, and value must be one of (256, 384, 521) when KeyAlgorithm is set to &#34;ecdsa&#34;.</td>
+</tr>
+<tr>
 <td><code>secretName</code><br /> <em>string</em></td>
 <td>SecretName is the name of the secret resource to store this secret in</td>
 </tr>

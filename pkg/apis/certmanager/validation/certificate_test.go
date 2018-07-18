@@ -178,6 +178,170 @@ func TestValidateCertificate(t *testing.T) {
 				field.Required(fldPath.Child("acme", "config"), "no ACME solver configuration specified for domain \"commonname\""),
 			},
 		},
+		"valid certificate with rsa keyAlgorithm specified and no keySize": {
+			cfg: &v1alpha1.Certificate{
+				Spec: v1alpha1.CertificateSpec{
+					CommonName:   "testcn",
+					SecretName:   "abc",
+					IssuerRef:    validIssuerRef,
+					KeyAlgorithm: v1alpha1.RSAKeyAlgorithm,
+				},
+			},
+		},
+		"valid certificate with rsa keyAlgorithm specified with keySize 2048": {
+			cfg: &v1alpha1.Certificate{
+				Spec: v1alpha1.CertificateSpec{
+					CommonName:   "testcn",
+					SecretName:   "abc",
+					IssuerRef:    validIssuerRef,
+					KeyAlgorithm: v1alpha1.RSAKeyAlgorithm,
+					KeySize:      2048,
+				},
+			},
+		},
+		"valid certificate with rsa keyAlgorithm specified with keySize 4096": {
+			cfg: &v1alpha1.Certificate{
+				Spec: v1alpha1.CertificateSpec{
+					CommonName:   "testcn",
+					SecretName:   "abc",
+					IssuerRef:    validIssuerRef,
+					KeyAlgorithm: v1alpha1.RSAKeyAlgorithm,
+					KeySize:      4096,
+				},
+			},
+		},
+		"valid certificate with rsa keyAlgorithm specified with keySize 8192": {
+			cfg: &v1alpha1.Certificate{
+				Spec: v1alpha1.CertificateSpec{
+					CommonName:   "testcn",
+					SecretName:   "abc",
+					IssuerRef:    validIssuerRef,
+					KeyAlgorithm: v1alpha1.RSAKeyAlgorithm,
+					KeySize:      8192,
+				},
+			},
+		},
+		"valid certificate with ecdsa keyAlgorithm specified and no keySize": {
+			cfg: &v1alpha1.Certificate{
+				Spec: v1alpha1.CertificateSpec{
+					CommonName:   "testcn",
+					SecretName:   "abc",
+					IssuerRef:    validIssuerRef,
+					KeyAlgorithm: v1alpha1.ECDSAKeyAlgorithm,
+				},
+			},
+		},
+		"valid certificate with ecdsa keyAlgorithm specified with keySize 256": {
+			cfg: &v1alpha1.Certificate{
+				Spec: v1alpha1.CertificateSpec{
+					CommonName:   "testcn",
+					SecretName:   "abc",
+					IssuerRef:    validIssuerRef,
+					KeyAlgorithm: v1alpha1.ECDSAKeyAlgorithm,
+					KeySize:      256,
+				},
+			},
+		},
+		"valid certificate with ecdsa keyAlgorithm specified with keySize 384": {
+			cfg: &v1alpha1.Certificate{
+				Spec: v1alpha1.CertificateSpec{
+					CommonName:   "testcn",
+					SecretName:   "abc",
+					IssuerRef:    validIssuerRef,
+					KeyAlgorithm: v1alpha1.ECDSAKeyAlgorithm,
+					KeySize:      384,
+				},
+			},
+		},
+		"valid certificate with ecdsa keyAlgorithm specified with keySize 521": {
+			cfg: &v1alpha1.Certificate{
+				Spec: v1alpha1.CertificateSpec{
+					CommonName:   "testcn",
+					SecretName:   "abc",
+					IssuerRef:    validIssuerRef,
+					KeyAlgorithm: v1alpha1.ECDSAKeyAlgorithm,
+					KeySize:      521,
+				},
+			},
+		},
+		"valid certificate with keyAlgorithm not specified and keySize specified": {
+			cfg: &v1alpha1.Certificate{
+				Spec: v1alpha1.CertificateSpec{
+					CommonName: "testcn",
+					SecretName: "abc",
+					IssuerRef:  validIssuerRef,
+					KeySize:    2048,
+				},
+			},
+		},
+		"certificate with keysize less than zero": {
+			cfg: &v1alpha1.Certificate{
+				Spec: v1alpha1.CertificateSpec{
+					CommonName: "testcn",
+					SecretName: "abc",
+					IssuerRef:  validIssuerRef,
+					KeySize:    -99,
+				},
+			},
+			errs: []*field.Error{
+				field.Invalid(fldPath.Child("keySize"), -99, "cannot be less than zero"),
+			},
+		},
+		"certificate with rsa keyAlgorithm specified and invalid keysize 1024": {
+			cfg: &v1alpha1.Certificate{
+				Spec: v1alpha1.CertificateSpec{
+					CommonName:   "testcn",
+					SecretName:   "abc",
+					IssuerRef:    validIssuerRef,
+					KeyAlgorithm: v1alpha1.RSAKeyAlgorithm,
+					KeySize:      1024,
+				},
+			},
+			errs: []*field.Error{
+				field.Invalid(fldPath.Child("keySize"), 1024, "must be between 2048 & 8192 for rsa keyAlgorithm"),
+			},
+		},
+		"certificate with rsa keyAlgorithm specified and invalid keysize 8196": {
+			cfg: &v1alpha1.Certificate{
+				Spec: v1alpha1.CertificateSpec{
+					CommonName:   "testcn",
+					SecretName:   "abc",
+					IssuerRef:    validIssuerRef,
+					KeyAlgorithm: v1alpha1.RSAKeyAlgorithm,
+					KeySize:      8196,
+				},
+			},
+			errs: []*field.Error{
+				field.Invalid(fldPath.Child("keySize"), 8196, "must be between 2048 & 8192 for rsa keyAlgorithm"),
+			},
+		},
+		"certificate with ecdsa keyAlgorithm specified and invalid keysize": {
+			cfg: &v1alpha1.Certificate{
+				Spec: v1alpha1.CertificateSpec{
+					CommonName:   "testcn",
+					SecretName:   "abc",
+					IssuerRef:    validIssuerRef,
+					KeyAlgorithm: v1alpha1.ECDSAKeyAlgorithm,
+					KeySize:      100,
+				},
+			},
+			errs: []*field.Error{
+				field.NotSupported(fldPath.Child("keySize"), 100, []string{"256", "384", "521"}),
+			},
+		},
+		"certificate with invalid keyAlgorithm": {
+			cfg: &v1alpha1.Certificate{
+				Spec: v1alpha1.CertificateSpec{
+					CommonName:   "testcn",
+					SecretName:   "abc",
+					IssuerRef:    validIssuerRef,
+					KeyAlgorithm: v1alpha1.KeyAlgorithm("blah"),
+				},
+			},
+			errs: []*field.Error{
+				field.Invalid(fldPath.Child("keyAlgorithm"), v1alpha1.KeyAlgorithm("blah"), "must be either empty or one of rsa or ecdsa"),
+			},
+		},
 	}
 	for n, s := range scenarios {
 		t.Run(n, func(t *testing.T) {

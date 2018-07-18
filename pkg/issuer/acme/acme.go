@@ -160,7 +160,7 @@ func (a *Acme) acmeClientWithKey(accountPrivKey *rsa.PrivateKey) client.Interfac
 func (a *Acme) acmeClientImpl() (client.Interface, error) {
 	secretName, secretKey := a.acmeAccountPrivateKeyMeta()
 	glog.Infof("getting private key (%s->%s) for acme issuer %s/%s", secretName, secretKey, a.issuerResourcesNamespace, a.issuer.GetObjectMeta().Name)
-	accountPrivKey, err := kube.SecretTLSKeyRef(a.secretsLister, a.issuerResourcesNamespace, secretName, secretKey)
+	accountPrivKey, err := kube.SecretRSAKeyRef(a.secretsLister, a.issuerResourcesNamespace, secretName, secretKey)
 	if err != nil {
 		return nil, err
 	}
