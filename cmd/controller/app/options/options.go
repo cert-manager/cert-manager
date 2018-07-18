@@ -56,7 +56,8 @@ type ControllerOptions struct {
 	RenewBeforeExpiryDuration       time.Duration
 
 	// Default issuer/certificates details consumed by ingress-shim
-	DefaultIssuerName                  string
+	DefaultACMEAnnotation              string
+        DefaultIssuerName                  string
 	DefaultIssuerKind                  string
 	DefaultACMEIssuerChallengeType     string
 	DefaultACMEIssuerDNS01ProviderName string
@@ -79,8 +80,9 @@ const (
 	defaultIssuerAmbientCredentials        = false
 	defaultRenewBeforeExpiryDuration       = time.Hour * 24 * 30
 
-	defaultTLSACMEIssuerName           = ""
+        defaultTLSACMEIssuerName           = ""
 	defaultTLSACMEIssuerKind           = "Issuer"
+        defaultACMEAnnotation              = "kubernetes.io/tls-acme"
 	defaultACMEIssuerChallengeType     = "http01"
 	defaultACMEIssuerDNS01ProviderName = ""
 )
@@ -115,6 +117,7 @@ func NewControllerOptions() *ControllerOptions {
 		ClusterIssuerAmbientCredentials:    defaultClusterIssuerAmbientCredentials,
 		IssuerAmbientCredentials:           defaultIssuerAmbientCredentials,
 		RenewBeforeExpiryDuration:          defaultRenewBeforeExpiryDuration,
+                DefaultACMEAnnotation:              defaultACMEAnnotation,
 		DefaultIssuerName:                  defaultTLSACMEIssuerName,
 		DefaultIssuerKind:                  defaultTLSACMEIssuerKind,
 		DefaultACMEIssuerChallengeType:     defaultACMEIssuerChallengeType,
@@ -180,6 +183,8 @@ func (s *ControllerOptions) AddFlags(fs *pflag.FlagSet) {
 		"The default 'renew before expiry' time for Certificates. "+
 		"Once a certificate is within this duration until expiry, a new Certificate "+
 		"will be attempted to be issued.")
+	fs.StringVar(&s.DefaultACMEAnnotation, "default-acme-annotation", defaultACMEAnnotation, ""+
+		"The annotation consumed by the ingress-shim controller to indicate a ingress is requesting a certificate")
 
 	fs.StringVar(&s.DefaultIssuerName, "default-issuer-name", defaultTLSACMEIssuerName, ""+
 		"Name of the Issuer to use when the tls is requested but issuer name is not specified on the ingress resource.")

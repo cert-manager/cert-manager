@@ -46,6 +46,7 @@ const (
 )
 
 type defaults struct {
+	acmeTLSAnnotation           string
 	issuerName, issuerKind      string
 	acmeIssuerChallengeType     string
 	acmeIssuerDNS01ProviderName string
@@ -217,7 +218,7 @@ func init() {
 			ctx.Client,
 			ctx.CMClient,
 			ctx.Recorder,
-			defaults{ctx.DefaultIssuerName, ctx.DefaultIssuerKind, ctx.DefaultACMEIssuerChallengeType, ctx.DefaultACMEIssuerDNS01ProviderName},
+			defaults{ctx.DefaultACMEAnnotation, ctx.DefaultIssuerName, ctx.DefaultIssuerKind, ctx.DefaultACMEIssuerChallengeType, ctx.DefaultACMEIssuerDNS01ProviderName},
 		).Run
 	})
 }
