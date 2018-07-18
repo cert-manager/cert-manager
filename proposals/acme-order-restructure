@@ -1,0 +1,367 @@
+# Proposal for breaking out ACME orders and validation
+
+This is a proposal to break out the ACME order handling and validation flow
+from the core cert-manager control loop.
+
+It will first explain some background on how orders and validations are handled,
+then motivations for changing this process, the requirements for a new
+implementation and finally a proposed solution to the issues described.
+
+## Background
+
+cert-manager supports obtaining certificates from ACME servers (commonly Let's
+Encrypt).
+As part of the ACME specification, a user must prove their ownership of any DNS
+names they wish to acquire a Certificate for by 'solving' a number of different
+'challenges'.
+Extensive information on the ACME specification and how authorizations work can
+be found in the latest revision of the spec (currently [draft-ietf-acme-acme-12](https://tools.ietf.org/html/draft-ietf-acme-acme-12)).
+
+We support both the ACME dns01 and http01 challenge mechanisms in cert-manager
+currently by attempting to solve the challenges as part of the Issuers
+'Prepare' stage (you can see this [in the source code](https://github.com/jetstack/cert-manager/blob/c48a38ae17eb29dfa4494d18cd80c2c35c2330e1/pkg/issuer/acme/prepare.go#L41)).
+
+The process of this on the 'happy path' is roughly as follows:
+
+1. Create an ACME order with the domains specified on the Certificate resource
+2. Check the returned ACME Order object to see if any of the requested domains
+   require validating
+3. For each domain that requires validating, select the challenge type to use
+   (either http01 or dns01) by reading the `certificate.spec.acme.config[*]`
+   for the domain in question.
+4. 'Present' the challenge. For DNS01, this involves setting a DNS TXT record
+   in the authorative zone. For HTTP01, this involves serving a 'key' (a
+   cryptographically signed string) with a HTTP server on a special path on the
+   relevant domain (e.g. `mydomain.com/.well-known/acme-challenge/{random-long-token}`).
+   This **must** be served over plaintext HTTP.
+5. Perform a 'self-check', i.e. poll either the authorative DNS server, or the
+   HTTP server, to ensure that the correct key is found and accessible for the
+   given token.
+6. Once the self-check is passing, inform the ACME server to 'finalize' the
+   order, and then poll the ACME server to check whether the order has been
+   successful.
+7. Once successful, the Certificate is returned.
+8. These 'validation' records (i.e. the TXT record or the HTTP server serving
+   the key) will be cleaned-up, as they are no longer required.
+9. At renewal time, this process repeats.
+
+Prior to ACMEv2, the validation process was synchronous. It would process N
+Certificates at a time (where N is the number of 'workers' in our workqueue)
+and if one of those took a long time because the self check was failing, or
+because it is for a large number of domains, it would 'hold up' a worker.
+If at any point in this process the cert-manager pod failed, or exited, all
+state would be lost.
+
+It was decided to make this process asynchronous with ACMEv2 by storing more
+information in the 'status' subresource of the Certificate.
+This meant that after step (5) in the above example (the self check), we would
+return with an error and retry the self check at a later time, thus
+unblocking our workers so they don't hang on long running operations.
+
+Once the authorizations are passing their self checks, the process continues
+and we request a Certificate (either failing or succeeding, depending on
+whether the ACME server can get a successful/valid response when performing the
+validation).
+
+## Motivations
+
+This behaviour has presented a number of challenges.
+
+### Increase in number of API calls
+
+We do not store *all* information about an Order on the Certificate resource,
+instead opting to retrieve this information from the ACME server on each
+iteration of the sync loop.
+
+This is mostly down to the way this area of the codebase is written, and so we
+can detect failed orders early on in the prepare function as we query the ACME server for this information on demand.
+
+This is something we should change one way or another, as it has caused
+cert-manager to be a large consumer of Let's Encrypts APIs.
+
+It has also been difficult to automatically test (and reduce) the usage of the
+ACME API as it is written in an asynchronous manner which relies on end to end
+testing the whole controller functionality (as opposed to just the ACME issuer
+implementation).
+
+### One controller doing many things
+
+TODO: flesh out this bullet
+
+### Difficult to integrate new challenge solver strategies
+
+TODO: flesh out this bullet
+
+### Intrinsic binding between Certificate and Issuer type
+
+TODO: flesh out this bullet
+
+## Requirements
+
+1. Isolate area of the codebase that handles ACME orders
+
+1. Minimise number of calls to ACME APIs
+
+1. Support additional/alternative challenge solver strategies (i.e. using Contour IngressRoute or Istio Gateway to solve HTTP01, or an external DNS provider to solve DNS01)
+
+1. Reduce the ACME-specific configuration surface of the Certificate resource, to
+make Certificates portable between Issuers.
+
+1. Communicate 'what is going on and why' to users clearly
+
+## Proposal
+
+I propose we create a new resource, `Order`, as part of a new API group `acme.cert-manager.io`.
+
+This will be used to represent an Order as it moves from the initial submitted state all the way through to a 'final' state (i.e. success or failure).
+
+### New API resources
+
+#### Order
+
+We will add a new 'Order' type. This will help in meeting points 1, 2 and 5.
+
+This resource will be used to track information about old and ongoing ACME Orders.
+
+Once created, the `spec` field **cannot** be updated. This will be restricted using
+a `MutatingWebhookConfiguration` resource. This is to allow a 1:1 mapping between
+an ACME Order resource, and an Order as created in the ACME API.
+
+Users will generally not create these resources. Instead, the 'Certificates'
+controller will create an Order resource as and when a new Certificate is required.
+
+```go
+type Order struct {
+    metav1.TypeMeta `json:",inline"`
+    metav1.ObjectMeta `json:"metadata"`
+
+    Spec   OrderSpec `json:"spec"`
+    Status OrderStatus `json:"status"`
+}
+
+type OrderSpec struct {
+    // IssuerRef references a properly configured ACME-type Issuer which should
+    // be used to create this Order.
+    // If the Issuer does not exist, processing will be retried.
+    // If the Issuer is not an 'ACME' Issuer, an error will be returned and the
+    // Order will be marked as failed.
+    IssuerRef IssuerRef `json:"issuerRef"`
+
+    // DNSNames is a list of DNS names that should be included as part of the Order
+    // validation process.
+    DNSNames   []string `json:"dnsNames"`
+}
+
+type OrderStatus struct {
+    // URL of the Order.
+    // This will initially be empty when the resource is first created.
+    // The Order controller will populate this field when the Order is first processed.
+    // This field will be immutable after it is initially set.
+    URL string `json:"url"`
+
+    // State contains the current state of this Order resource.
+    // States 'success' and 'expired' are 'final'
+    State State `json:"state"`
+
+    // Reason optionally provides more information about a why the order is in
+    // the current state.
+    Reason string `json:"reason"`
+}
+
+// State represents the state of an ACME resource, such as an Order.
+// The possible options here map to the corresponding values in the
+// ACME specification.
+// Full details of these values can be found there.
+// Clients utilising this type **must** also gracefully handle unknown
+// values, as the contents of this enumeration may be added to over time.
+type State string
+
+const (
+    // Unknown is not a real state as part of the ACME spec.
+    // It is used to represent an unrecognised value.
+    Unknown State = ""
+
+    // Success signifies that an ACME resource is in a success state.
+    // If an Order is marked 'Success', all validations on that Order
+    // have been completed successfully.
+    // This is a transient state as of ACME draft-12
+    Success State = "success"
+
+    // Ready signifies that an ACME resource is in a ready state.
+    // If an Order is marked 'Ready', the corresponding certificate
+    // is ready and can be obtained.
+    // This is a final state.
+    Ready State = "ready"
+
+    // Pending signifies that an ACME resource is still pending and is not yet ready.
+    // If an Order is marked 'Pending', the validations for that Order are still in progress.
+    // This is a transient state.
+    Pending State    = "pending"
+
+    // Processing signifies that an ACME resource is being processed by the server.
+    // If an Order is marked 'Processing', the validations for that Order are currently being processed.
+    // This is a transient state.
+    Processing State = "processing"
+
+    // Failed signifies that an ACME resource has failed for some reason.
+    // If an Order is marked 'Failed', one of its validations may have failed for some reason.
+    // This is a final state.
+    Failed State = "failed"
+
+    // Expired signifies that an ACME resource has expired.
+    // If an Order is marked 'Expired', one of its validations may have expired or the Order itself.
+    // This is a final state.
+    Expired State = "expired"
+)
+```
+
+An example Order resource for illustrative purposes:
+
+```yaml
+apiVersion: acme.cert-manager.io/v1alpha2
+kind: Order
+metadata:
+  name: example-com-tls-xdfjk
+  namespace: edge
+spec:
+  issuerRef:
+    name: letsencrypt-prod
+    kind: ClusterIssuer
+  dnsNames:
+  - admin.example.com
+  - www.example.com
+  - example.com
+status:
+  url: https://acme-v02.letsencrypt.org/unique-identifier-for-this-order
+  state: pending
+  validations:
+  - domain: admin.example.com
+    presented: true
+    selfCheckPassing: true
+    solverRef:
+      name: james-cloudflare
+
+  - domain: www.example.com
+    presented: true
+
+```
+
+#### Validation
+
+TODO: not sure whether a Validation should be a distinct resource type, or if we
+overload the `status` block of the Order resource (as shown in the example above)
+
+#### Solver
+
+In order to support 3, we propose to introduce a 'Solver' resource type.
+This resource will contain configuration for a challenge solver for ACME Orders.
+
+These Solvers are intended to be provisioned by administrators of the Issuer.
+They will then be referenced by Issuer resources, as illustrated in the next section.
+
+
+### Changes to existing API resources
+
+In order to facilitate requirements 3 and 4, we propose to move the configuration
+that has previously existed in the `certificate.spec.acme` stanza into the
+`issuer.spec.acme` stanza.
+
+This will allow a Certificate denoting an ACME Issuer to be fully portable and
+compatible with all other issuer types.
+
+It will also allow administrators to explicitly control which DNS provider will
+be used for which domains, instead of allowing creators of Certificate resources
+this control.
+
+The Issuer's specification allows administrators to define mappings from domain
+names to their corresponding solver mechanisms.
+
+TODO: complete these example code sections
+
+```go
+type CertificateStatus struct {
+    ACME *ACMEStatus `json:"acme"`
+}
+
+type ACMEStatus struct {
+    OrderRef
+}
+
+// this structure is an excerpt from this current types.go
+type IssuerSpec struct {
+    ACME *ACMEIssuer `json:"acme"`
+}
+
+type ACMEIssuer struct {
+    Solvers []ACMESolver `json:"solvers"`
+}
+
+type ACMESolver struct {
+
+}
+```
+
+Some example Solver configurations for illustrative purposes:
+
+```yaml
+apiVersion: acme.cert-manager.io/v1alpha2
+kind: Solver
+metadata:
+  name: james-cloudflare
+  namespace: edge
+spec:
+  dns01:
+    cloudflare:
+      email: james@jetstack.io
+      apiKeySecretRef:
+        name: james-cloudflare-api-key
+        key: api-key.txt
+---
+apiVersion: acme.cert-manager.io/v1alpha2
+kind: Solver
+metadata:
+  name: nginx
+  namespace: edge
+spec:
+  http01:
+    ingress:
+      # Like the current v1alpha1 API, one of the following should
+      # be specified *only*
+      class: nginx
+      name: abc
+---
+apiVersion: acme.cert-manager.io/v1alpha2
+kind: Solver
+metadata:
+  name: contour
+  namespace: edge
+spec:
+  http01:
+    # TODO: expand out the config surface for ingressRoute
+    ingressRoute:
+      name: name-of-ingress-route
+---
+# This defines an 'external' (i.e. plugin backed) HTTP01 solver
+apiVersion: acme.cert-manager.io/v1alpha2
+kind: Solver
+metadata:
+  name: external-solver
+  namespace: edge
+spec:
+  http01:
+    plugin:
+      name: f5-solver
+      # Raw/unstructured data passed to the f5-solver plugin
+      config:
+        apiServerAddress: http://f5-admin-server
+        username: admin
+        # TODO: how can we handle secret values for external plugins?
+        password: secretpassword
+```
+
+## notes
+
+This proposal is based off https://gist.github.com/munnerz/760c68e8929edcb5854dd59b2d79ca07
+
+For a more complete example whilst this document is fleshed out, please refer to
+the above gist!
