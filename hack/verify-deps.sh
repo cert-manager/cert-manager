@@ -22,6 +22,8 @@ SCRIPT_ROOT=$(dirname "${BASH_SOURCE}")/..
 
 pushd "${SCRIPT_ROOT}"
 echo "+++ Checking Gopkg.lock is up-to-date"
+dep version
+echo ""
 dep status
 popd
 
