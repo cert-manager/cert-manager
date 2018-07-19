@@ -76,7 +76,7 @@ var _ = framework.CertManagerDescribe("Vault Certificate (AppRole)", func() {
 		_, err = certClient.Create(util.NewCertManagerVaultCertificate(certificateName, certificateSecretName, issuerName, v1alpha1.IssuerKind))
 		Expect(err).NotTo(HaveOccurred())
 
-		err = util.WaitCertificateIssuedValid(certClient, secretClient, certificateName, time.Minute*2)
+		err = util.WaitCertificateIssuedValid(certClient, secretClient, certificateName, time.Minute*5)
 		Expect(err).NotTo(HaveOccurred())
 
 	})
@@ -144,7 +144,7 @@ var _ = framework.CertManagerDescribe("Vault Certificate (AppRole with a custom 
 		_, err = certClient.Create(util.NewCertManagerVaultCertificate(certificateName, certificateSecretName, issuerName, v1alpha1.IssuerKind))
 		Expect(err).NotTo(HaveOccurred())
 
-		err = util.WaitCertificateIssuedValid(certClient, secretClient, certificateName, time.Minute*2)
+		err = util.WaitCertificateIssuedValid(certClient, secretClient, certificateName, time.Minute*5)
 		Expect(err).NotTo(HaveOccurred())
 	})
 })
