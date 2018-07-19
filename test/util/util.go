@@ -235,6 +235,16 @@ func WaitCertificateIssuedValid(certClient clientset.CertificateInterface, secre
 				glog.Infof("Expected certificate valid for CN %q, dnsNames %v but got a certificate valid for CN %q, dnsNames %v", expectedCN, expectedDNSNames, cert.Subject.CommonName, cert.DNSNames)
 				return false, nil
 			}
+
+			label, ok := secret.Labels[v1alpha1.CertificateNameKey]
+			if !ok {
+				return false, fmt.Errorf("Expected secret to have certificate-name label, but had none")
+			}
+
+			if label != certificate.Name {
+				return false, fmt.Errorf("Expected secret to have certificate-name label with a value of %q, but got %q", certificate.Name, label)
+			}
+
 			return true, nil
 		},
 	)
