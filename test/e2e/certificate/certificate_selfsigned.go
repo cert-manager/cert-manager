@@ -27,15 +27,16 @@ import (
 var _ = framework.CertManagerDescribe("Self Signed Certificate", func() {
 	f := framework.NewDefaultFramework("create-selfsigned-certificate")
 
-	certClient := f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name)
-	secretClient := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name)
-
 	issuerName := "test-selfsigned-issuer"
 	certificateName := "test-selfsigned-certificate"
 	certificateSecretName := "test-selfsigned-certificate"
 
 	It("should generate a signed keypair", func() {
 		By("Creating an Issuer")
+
+		certClient := f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name)
+		secretClient := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name)
+
 		_, err := f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Create(util.NewCertManagerSelfSignedIssuer(issuerName))
 		Expect(err).NotTo(HaveOccurred())
 		By("Waiting for Issuer to become Ready")
@@ -47,7 +48,7 @@ var _ = framework.CertManagerDescribe("Self Signed Certificate", func() {
 			})
 		Expect(err).NotTo(HaveOccurred())
 		By("Creating a Certificate")
-		_, err = f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name).Create(util.NewCertManagerBasicCertificate(certificateName, certificateSecretName, issuerName, v1alpha1.IssuerKind))
+		_, err = certClient.Create(util.NewCertManagerBasicCertificate(certificateName, certificateSecretName, issuerName, v1alpha1.IssuerKind))
 		Expect(err).NotTo(HaveOccurred())
 		err = util.WaitCertificateIssuedValid(certClient, secretClient, certificateName, time.Minute*2)
 		Expect(err).NotTo(HaveOccurred())
