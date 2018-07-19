@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/client"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/request"
@@ -113,14 +114,14 @@ func (*DNSProvider) Timeout() (timeout, interval time.Duration) {
 func (r *DNSProvider) Present(domain, token, keyAuth string) error {
 	fqdn, value, _ := util.DNS01Record(domain, keyAuth)
 	value = `"` + value + `"`
-	return r.changeRecord("UPSERT", fqdn, value, route53TTL)
+	return r.changeRecord(route53.ChangeActionUpsert, fqdn, value, route53TTL)
 }
 
 // CleanUp removes the TXT record matching the specified parameters
 func (r *DNSProvider) CleanUp(domain, token, keyAuth string) error {
 	fqdn, value, _ := util.DNS01Record(domain, keyAuth)
 	value = `"` + value + `"`
-	return r.changeRecord("DELETE", fqdn, value, route53TTL)
+	return r.changeRecord(route53.ChangeActionDelete, fqdn, value, route53TTL)
 }
 
 func (r *DNSProvider) changeRecord(action, fqdn, value string, ttl int) error {
@@ -136,7 +137,7 @@ func (r *DNSProvider) changeRecord(action, fqdn, value string, ttl int) error {
 			Comment: aws.String("Managed by cert-manager"),
 			Changes: []*route53.Change{
 				{
-					Action:            aws.String(action),
+					Action:            &action,
 					ResourceRecordSet: recordSet,
 				},
 			},
@@ -145,7 +146,15 @@ func (r *DNSProvider) changeRecord(action, fqdn, value string, ttl int) error {
 
 	resp, err := r.client.ChangeResourceRecordSets(reqParams)
 	if err != nil {
+		if awserr, ok := err.(awserr.Error); ok {
+			if action == route53.ChangeActionDelete && awserr.Code() == route53.ErrCodeInvalidChangeBatch {
+				// If we try to delete something and get a 'InvalidChangeBatch' that
+				// means it's already deleted, no need to consider it an error.
+				return nil
+			}
+		}
 		return fmt.Errorf("Failed to change Route 53 record set: %v", err)
+
 	}
 
 	statusID := resp.ChangeInfo.Id
@@ -207,7 +216,7 @@ func (r *DNSProvider) getHostedZoneID(fqdn string) (string, error) {
 func newTXTRecordSet(fqdn, value string, ttl int) *route53.ResourceRecordSet {
 	return &route53.ResourceRecordSet{
 		Name: aws.String(fqdn),
-		Type: aws.String("TXT"),
+		Type: aws.String(route53.RRTypeTxt),
 		TTL:  aws.Int64(int64(ttl)),
 		ResourceRecords: []*route53.ResourceRecord{
 			{Value: aws.String(value)},
