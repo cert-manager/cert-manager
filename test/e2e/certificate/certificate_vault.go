@@ -17,9 +17,6 @@ import (
 var _ = framework.CertManagerDescribe("Vault Certificate (AppRole)", func() {
 	f := framework.NewDefaultFramework("create-vault-certificate")
 
-	certClient := f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name)
-	secretClient := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name)
-
 	rootMount := "root-ca"
 	intermediateMount := "intermediate-ca"
 	role := "kubernetes-vault"
@@ -59,6 +56,10 @@ var _ = framework.CertManagerDescribe("Vault Certificate (AppRole)", func() {
 	vaultURL := "http://vault.vault:8200"
 	It("should generate a new valid certificate", func() {
 		By("Creating an Issuer")
+
+		certClient := f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name)
+		secretClient := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name)
+
 		_, err := f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Create(util.NewCertManagerVaultIssuerAppRole(issuerName, vaultURL, vaultPath, roleId, vaultSecretAppRoleName, authPath))
 		Expect(err).NotTo(HaveOccurred())
 
@@ -83,9 +84,6 @@ var _ = framework.CertManagerDescribe("Vault Certificate (AppRole)", func() {
 
 var _ = framework.CertManagerDescribe("Vault Certificate (AppRole with a custom mount path)", func() {
 	f := framework.NewDefaultFramework("create-vault-certificate")
-
-	certClient := f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name)
-	secretClient := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name)
 
 	rootMount := "root-ca"
 	intermediateMount := "intermediate-ca"
@@ -126,6 +124,10 @@ var _ = framework.CertManagerDescribe("Vault Certificate (AppRole with a custom 
 	vaultURL := "http://vault.vault:8200"
 	It("should generate a new valid certificate", func() {
 		By("Creating an Issuer")
+
+		certClient := f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name)
+		secretClient := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name)
+
 		_, err := f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Create(util.NewCertManagerVaultIssuerAppRole(issuerName, vaultURL, vaultPath, roleId, vaultSecretAppRoleName, authPath))
 		Expect(err).NotTo(HaveOccurred())
 
