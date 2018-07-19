@@ -159,7 +159,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (DNS01)", func() {
 		})
 		cert, err := certClient.Create(cert)
 		Expect(err).NotTo(HaveOccurred())
-		err = util.WaitCertificateIssuedValid(certClient, secretClient, certificateName, time.Minute*2)
+		err = util.WaitCertificateIssuedValid(certClient, secretClient, certificateName, time.Minute*5)
 		Expect(err).NotTo(HaveOccurred())
 	})
 
@@ -184,7 +184,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (DNS01)", func() {
 		})
 		cert, err := f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name).Create(cert)
 		Expect(err).NotTo(HaveOccurred())
-		err = util.WaitCertificateIssuedValid(certClient, secretClient, certificateName, time.Minute*2)
+		err = util.WaitCertificateIssuedValid(certClient, secretClient, certificateName, time.Minute*5)
 		Expect(err).NotTo(HaveOccurred())
 	})
 
