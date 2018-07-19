@@ -99,7 +99,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		_, err := certClient.Create(util.NewCertManagerACMECertificate(certificateName, certificateSecretName, issuerName, v1alpha1.IssuerKind, acmeIngressClass, util.ACMECertificateDomain))
 		Expect(err).NotTo(HaveOccurred())
 		By("Verifying the Certificate is valid")
-		err = util.WaitCertificateIssuedValid(certClient, secretClient, certificateName, time.Second*30)
+		err = util.WaitCertificateIssuedValid(certClient, secretClient, certificateName, time.Minute*2)
 		Expect(err).NotTo(HaveOccurred())
 	})
 
@@ -120,7 +120,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		_, err := certClient.Create(util.NewCertManagerACMECertificate(certificateName, certificateSecretName, issuerName, v1alpha1.IssuerKind, acmeIngressClass, util.ACMECertificateDomain, fmt.Sprintf("%s.%s", cmutil.RandStringRunes(5), util.ACMECertificateDomain)))
 		Expect(err).NotTo(HaveOccurred())
 		By("Verifying the Certificate is valid")
-		err = util.WaitCertificateIssuedValid(certClient, secretClient, certificateName, time.Second*30)
+		err = util.WaitCertificateIssuedValid(certClient, secretClient, certificateName, time.Minute*2)
 		Expect(err).NotTo(HaveOccurred())
 	})
 
@@ -132,7 +132,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		cert, err := certClient.Create(util.NewCertManagerACMECertificate(certificateName, certificateSecretName, issuerName, v1alpha1.IssuerKind, acmeIngressClass, util.ACMECertificateDomain, fmt.Sprintf("%s.%s", cmutil.RandStringRunes(5), util.ACMECertificateDomain)))
 		Expect(err).NotTo(HaveOccurred())
 		By("Verifying the Certificate is valid")
-		err = util.WaitCertificateIssuedValid(certClient, secretClient, certificateName, time.Second*30)
+		err = util.WaitCertificateIssuedValid(certClient, secretClient, certificateName, time.Minute*2)
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Getting the latest version of the Certificate")
@@ -148,7 +148,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		cert, err = certClient.Update(cert)
 		Expect(err).NotTo(HaveOccurred())
 
-		err = util.WaitCertificateIssuedValid(certClient, secretClient, certificateName, time.Second*30)
+		err = util.WaitCertificateIssuedValid(certClient, secretClient, certificateName, time.Minute*2)
 		Expect(err).NotTo(HaveOccurred())
 	})
 
@@ -186,7 +186,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Verifying the Certificate is valid")
-		err = util.WaitCertificateIssuedValid(certClient, secretClient, certificateName, time.Second*30)
+		err = util.WaitCertificateIssuedValid(certClient, secretClient, certificateName, time.Minute*2)
 		Expect(err).NotTo(HaveOccurred())
 
 	})
