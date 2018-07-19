@@ -2,6 +2,7 @@ package certificate
 
 import (
 	"path"
+	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -15,6 +16,9 @@ import (
 
 var _ = framework.CertManagerDescribe("Vault Certificate (AppRole)", func() {
 	f := framework.NewDefaultFramework("create-vault-certificate")
+
+	certClient := f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name)
+	secretClient := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name)
 
 	rootMount := "root-ca"
 	intermediateMount := "intermediate-ca"
@@ -68,15 +72,20 @@ var _ = framework.CertManagerDescribe("Vault Certificate (AppRole)", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Creating a Certificate")
-		cert, err := f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name).Create(util.NewCertManagerVaultCertificate(certificateName, certificateSecretName, issuerName, v1alpha1.IssuerKind))
+		_, err = certClient.Create(util.NewCertManagerVaultCertificate(certificateName, certificateSecretName, issuerName, v1alpha1.IssuerKind))
 		Expect(err).NotTo(HaveOccurred())
 
-		f.WaitCertificateIssuedValid(cert)
+		err = util.WaitCertificateIssuedValid(certClient, secretClient, certificateName, time.Minute*2)
+		Expect(err).NotTo(HaveOccurred())
+
 	})
 })
 
 var _ = framework.CertManagerDescribe("Vault Certificate (AppRole with a custom mount path)", func() {
 	f := framework.NewDefaultFramework("create-vault-certificate")
+
+	certClient := f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name)
+	secretClient := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name)
 
 	rootMount := "root-ca"
 	intermediateMount := "intermediate-ca"
@@ -130,9 +139,10 @@ var _ = framework.CertManagerDescribe("Vault Certificate (AppRole with a custom 
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Creating a Certificate")
-		cert, err := f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name).Create(util.NewCertManagerVaultCertificate(certificateName, certificateSecretName, issuerName, v1alpha1.IssuerKind))
+		_, err = certClient.Create(util.NewCertManagerVaultCertificate(certificateName, certificateSecretName, issuerName, v1alpha1.IssuerKind))
 		Expect(err).NotTo(HaveOccurred())
 
-		f.WaitCertificateIssuedValid(cert)
+		err = util.WaitCertificateIssuedValid(certClient, secretClient, certificateName, time.Minute*2)
+		Expect(err).NotTo(HaveOccurred())
 	})
 })

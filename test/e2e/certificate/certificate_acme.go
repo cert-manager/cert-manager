@@ -104,12 +104,16 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 	})
 
 	It("should obtain a signed certificate for a long domain using http01 validation", func() {
+		certClient := f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name)
+		secretClient := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name)
+
 		// the maximum length of a single segment of the domain being requested
 		const maxLengthOfDomainSegment = 63
 		By("Creating a Certificate")
-		cert, err := f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name).Create(util.NewCertManagerACMECertificate(certificateName, certificateSecretName, issuerName, v1alpha1.IssuerKind, acmeIngressClass, fmt.Sprintf("%s.%s", cmutil.RandStringRunes(maxLengthOfDomainSegment), util.ACMECertificateDomain)))
+		_, err := certClient.Create(util.NewCertManagerACMECertificate(certificateName, certificateSecretName, issuerName, v1alpha1.IssuerKind, acmeIngressClass, fmt.Sprintf("%s.%s", cmutil.RandStringRunes(maxLengthOfDomainSegment), util.ACMECertificateDomain)))
 		Expect(err).NotTo(HaveOccurred())
-		f.WaitCertificateIssuedValid(cert)
+		err = util.WaitCertificateIssuedValid(certClient, secretClient, certificateName, time.Minute*2)
+		Expect(err).NotTo(HaveOccurred())
 	})
 
 	It("should obtain a signed certificate with a CN and single subdomain as dns name from the ACME server", func() {
