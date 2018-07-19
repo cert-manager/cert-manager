@@ -14,6 +14,8 @@ limitations under the License.
 package certificate
 
 import (
+	"time"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
@@ -24,6 +26,9 @@ import (
 
 var _ = framework.CertManagerDescribe("Self Signed Certificate", func() {
 	f := framework.NewDefaultFramework("create-selfsigned-certificate")
+
+	certClient := f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name)
+	secretClient := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name)
 
 	issuerName := "test-selfsigned-issuer"
 	certificateName := "test-selfsigned-certificate"
@@ -42,8 +47,9 @@ var _ = framework.CertManagerDescribe("Self Signed Certificate", func() {
 			})
 		Expect(err).NotTo(HaveOccurred())
 		By("Creating a Certificate")
-		cert, err := f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name).Create(util.NewCertManagerBasicCertificate(certificateName, certificateSecretName, issuerName, v1alpha1.IssuerKind))
+		_, err = f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name).Create(util.NewCertManagerBasicCertificate(certificateName, certificateSecretName, issuerName, v1alpha1.IssuerKind))
 		Expect(err).NotTo(HaveOccurred())
-		f.WaitCertificateIssuedValid(cert)
+		err = util.WaitCertificateIssuedValid(certClient, secretClient, certificateName, time.Minute*2)
+		Expect(err).NotTo(HaveOccurred())
 	})
 })
