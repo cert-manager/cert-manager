@@ -115,11 +115,13 @@ temporary self-signed certificate using openssl to complete this setup.
 
    openssl req \
      -newkey rsa:2048 -nodes -keyout domain.key \
-     -out domain.csr
+     -x509 -out domain.crt
 
 Convert PKCS8 key to PKCS1 key if you are using Rancher
+
 .. code-block:: shell
-   openssl rsa -in server.key -out server_new.key
+
+   openssl rsa -in domain.key -out domain_new.key
 
 4. Verify each ingress now has a corresponding Certificate
 ==========================================================
