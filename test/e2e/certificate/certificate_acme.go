@@ -92,26 +92,68 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 	})
 
 	It("should obtain a signed certificate with a single CN from the ACME server", func() {
+		certClient := f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name)
+		secretClient := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name)
+
 		By("Creating a Certificate")
-		cert, err := f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name).Create(util.NewCertManagerACMECertificate(certificateName, certificateSecretName, issuerName, v1alpha1.IssuerKind, acmeIngressClass, util.ACMECertificateDomain))
+		_, err := certClient.Create(util.NewCertManagerACMECertificate(certificateName, certificateSecretName, issuerName, v1alpha1.IssuerKind, acmeIngressClass, util.ACMECertificateDomain))
 		Expect(err).NotTo(HaveOccurred())
-		f.WaitCertificateIssuedValid(cert)
+		By("Verifying the Certificate is valid")
+		err = util.WaitCertificateIssuedValid(certClient, secretClient, certificateName, time.Minute*5)
+		Expect(err).NotTo(HaveOccurred())
 	})
 
 	It("should obtain a signed certificate for a long domain using http01 validation", func() {
+		certClient := f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name)
+		secretClient := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name)
+
 		// the maximum length of a single segment of the domain being requested
 		const maxLengthOfDomainSegment = 63
 		By("Creating a Certificate")
-		cert, err := f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name).Create(util.NewCertManagerACMECertificate(certificateName, certificateSecretName, issuerName, v1alpha1.IssuerKind, acmeIngressClass, fmt.Sprintf("%s.%s", cmutil.RandStringRunes(maxLengthOfDomainSegment), util.ACMECertificateDomain)))
+		_, err := certClient.Create(util.NewCertManagerACMECertificate(certificateName, certificateSecretName, issuerName, v1alpha1.IssuerKind, acmeIngressClass, fmt.Sprintf("%s.%s", cmutil.RandStringRunes(maxLengthOfDomainSegment), util.ACMECertificateDomain)))
 		Expect(err).NotTo(HaveOccurred())
-		f.WaitCertificateIssuedValid(cert)
+		err = util.WaitCertificateIssuedValid(certClient, secretClient, certificateName, time.Minute*5)
+		Expect(err).NotTo(HaveOccurred())
 	})
 
 	It("should obtain a signed certificate with a CN and single subdomain as dns name from the ACME server", func() {
+		certClient := f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name)
+		secretClient := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name)
+
 		By("Creating a Certificate")
-		cert, err := f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name).Create(util.NewCertManagerACMECertificate(certificateName, certificateSecretName, issuerName, v1alpha1.IssuerKind, acmeIngressClass, util.ACMECertificateDomain, fmt.Sprintf("%s.%s", cmutil.RandStringRunes(5), util.ACMECertificateDomain)))
+		_, err := certClient.Create(util.NewCertManagerACMECertificate(certificateName, certificateSecretName, issuerName, v1alpha1.IssuerKind, acmeIngressClass, util.ACMECertificateDomain, fmt.Sprintf("%s.%s", cmutil.RandStringRunes(5), util.ACMECertificateDomain)))
 		Expect(err).NotTo(HaveOccurred())
-		f.WaitCertificateIssuedValid(cert)
+		By("Verifying the Certificate is valid")
+		err = util.WaitCertificateIssuedValid(certClient, secretClient, certificateName, time.Minute*5)
+		Expect(err).NotTo(HaveOccurred())
+	})
+
+	It("should allow updating an existing certificate with a new dns name", func() {
+		certClient := f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name)
+		secretClient := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name)
+
+		By("Creating a Certificate")
+		cert, err := certClient.Create(util.NewCertManagerACMECertificate(certificateName, certificateSecretName, issuerName, v1alpha1.IssuerKind, acmeIngressClass, util.ACMECertificateDomain, fmt.Sprintf("%s.%s", cmutil.RandStringRunes(5), util.ACMECertificateDomain)))
+		Expect(err).NotTo(HaveOccurred())
+		By("Verifying the Certificate is valid")
+		err = util.WaitCertificateIssuedValid(certClient, secretClient, certificateName, time.Minute*5)
+		Expect(err).NotTo(HaveOccurred())
+
+		By("Getting the latest version of the Certificate")
+		cert, err = certClient.Get(certificateName, metav1.GetOptions{})
+		Expect(err).NotTo(HaveOccurred())
+
+		By("Adding an additional dnsName to the Certificate")
+		newDNSName := fmt.Sprintf("%s.%s", cmutil.RandStringRunes(5), util.ACMECertificateDomain)
+		cert.Spec.DNSNames = append(cert.Spec.DNSNames, newDNSName)
+		cert.Spec.ACME.Config[0].Domains = append(cert.Spec.ACME.Config[0].Domains, newDNSName)
+
+		By("Updating the Certificate in the apiserver")
+		cert, err = certClient.Update(cert)
+		Expect(err).NotTo(HaveOccurred())
+
+		err = util.WaitCertificateIssuedValid(certClient, secretClient, certificateName, time.Minute*5)
+		Expect(err).NotTo(HaveOccurred())
 	})
 
 	It("should fail to obtain a certificate for an invalid ACME dns name", func() {
@@ -129,5 +171,26 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		By("Verifying TLS certificate secret does not exist")
 		_, err = f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Get(certificateSecretName, metav1.GetOptions{})
 		Expect(err).To(MatchError(apierrors.NewNotFound(corev1.Resource("secrets"), certificateSecretName)))
+	})
+
+	It("should obtain a signed certificate with a single CN from the ACME server when putting an annotation on an ingress resource", func() {
+		ingClient := f.KubeClientSet.ExtensionsV1beta1().Ingresses(f.Namespace.Name)
+		certClient := f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name)
+		secretClient := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name)
+
+		By("Creating an Ingress with the issuer name annotation set")
+		_, err := ingClient.Create(util.NewIngress(certificateSecretName, certificateSecretName, map[string]string{
+			"certmanager.k8s.io/issuer":                  issuerName,
+			"certmanager.k8s.io/acme-challenge-provider": "http01",
+		}, util.ACMECertificateDomain))
+		Expect(err).NotTo(HaveOccurred())
+
+		By("Waiting for Certificate to exist")
+		err = util.WaitForCertificateToExist(certClient, certificateSecretName, foreverTestTimeout)
+		Expect(err).NotTo(HaveOccurred())
+
+		By("Verifying the Certificate is valid")
+		err = util.WaitCertificateIssuedValid(certClient, secretClient, certificateName, time.Minute*5)
+		Expect(err).NotTo(HaveOccurred())
 	})
 })
