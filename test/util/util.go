@@ -199,7 +199,7 @@ func WaitCertificateIssuedValid(certClient clientset.CertificateInterface, secre
 		func() (bool, error) {
 			glog.V(5).Infof("Waiting for Certificate %v to be ready", name)
 			certificate, err := certClient.Get(name, metav1.GetOptions{})
-			if nil != err {
+			if err != nil {
 				return false, fmt.Errorf("error getting Certificate %v: %v", name, err)
 			}
 			isReady := certificate.HasCondition(v1alpha1.CertificateCondition{
