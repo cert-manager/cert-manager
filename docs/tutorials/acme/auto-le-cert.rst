@@ -37,7 +37,6 @@ Pick a name for your ClusterIssuer and set it at launch.
 Create a file named ``cluster-issuer.yaml``:
 
 .. code-block:: yaml
-
    :linenos:
    :emphasize-lines: 11
 
