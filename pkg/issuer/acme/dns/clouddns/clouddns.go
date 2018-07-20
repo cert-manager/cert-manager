@@ -102,7 +102,7 @@ func NewDNSProviderServiceAccountBytes(project string, saBytes []byte) (*DNSProv
 func (c *DNSProvider) Present(domain, token, key string) error {
 	fqdn, value, ttl := util.DNS01Record(domain, key)
 
-	zone, err := c.getHostedZone(domain)
+	zone, err := c.getHostedZone(fqdn)
 	if err != nil {
 		return err
 	}
