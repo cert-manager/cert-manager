@@ -16,5 +16,8 @@ func DNS01Record(domain, value string) (string, string, int) {
 	if err == nil && r.Rcode == dns.RcodeSuccess {
 		fqdn = updateDomainWithCName(r, fqdn)
 	}
-	return fqdn, value, 60
+	if err != nil {
+		return "", "", 0, err
+	}
+	return fqdn, value, 60, nil
 }
