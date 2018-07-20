@@ -23,6 +23,7 @@ cert-manager should be deployed using Helm, according to our official
 Pick a name for your ClusterIssuer and set it at launch.
 
 .. code-block:: shell
+
    helm install \
       --name cert-manager \
       --namespace kube-system \
