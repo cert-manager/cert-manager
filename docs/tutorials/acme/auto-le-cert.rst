@@ -8,17 +8,14 @@ ClusterIssuer resource.
 
 1. Launch cert-manager with defaultIssuer
 
-2. Created an ACME ClusterIssuer
+2. Create an ACME ClusterIssuer
 
-5. Configured cert-manager's :doc:`ingress-shim </reference/ingress-shim>` to
-   automatically provision Certificate resources for all Ingress resources with
-   the ``kubernetes.io/tls-acme: "true"`` annotation, using the ClusterIssuer
-   we have created
+3. Configure ingress with a TLS placeholder and annotation
 
-6. Verified that the cert-manager installation is working
+4. Verify each ingress now has a corresponding Certificate
 
-1. Launch cert-manager
-======================
+1. Launch cert-manager with defaultIssuer
+=========================================
 
 cert-manager should be deployed using Helm, according to our official
 :doc:`/getting-started/index` guide.
@@ -33,8 +30,8 @@ Pick a name for your ClusterIssuer and set it at launch.
      --set ingressShim.defaultIssuerKind=ClusterIssuer \
      stable/cert-manager
 
-2. Creating an ACME ClusterIssuer
-=============================================================
+2. Create an ACME ClusterIssuer
+===============================
 
 Create a file named ``cluster-issuer.yaml``:
 
@@ -103,17 +100,19 @@ You should be able to verify the ACME account has been verified successfully:
        Type:                  Ready
 
 
-3. Configure ingress with a TLS placeholder and annotaion
-=========================================================
+3. Configure ingress with a TLS placeholder and annotation
+==========================================================
 
 The ingress-shim watches for ingress resources with 2 conditions
-- ``kubernetes.io/tls-acme: "true"`` annotation
-- an TLS Certificate resource specified
 
+* ``kubernetes.io/tls-acme: "true"`` annotation
+* an TLS Certificate resource specified
+  
 The specified Certificate resource will be overwritten, so you can generate a 
 temporary self-signed certificate using openssl to complete this setup.
 
 .. code-block:: shell
+
    openssl req \
      -newkey rsa:2048 -nodes -keyout domain.key \
      -out domain.csr
