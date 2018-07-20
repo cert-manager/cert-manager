@@ -28,8 +28,12 @@ required = [
   version = "kubernetes-1.10.0"
 
 [[constraint]]
-    name = "github.com/Azure/azure-sdk-for-go"
-    version = "v12.0.0-beta"
+  name = "github.com/Azure/azure-sdk-for-go"
+  version = "v12.0.0-beta"
+  
+[[constraint]]
+  name = "github.com/dnsimple/dnsimple-go"
+  version = "0.16.0"
 
 [[constraint]]
   name = "github.com/hashicorp/vault"

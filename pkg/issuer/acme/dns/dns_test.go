@@ -15,6 +15,7 @@ import (
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/azuredns"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/clouddns"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/cloudflare"
+	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/dnsimple"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/route53"
 )
 
@@ -77,6 +78,10 @@ func newFakeDNSProviders() *fakeDNSProviders {
 		},
 		azureDNS: func(clientID, clientSecret, subscriptionID, tenentID, resourceGroupName, hostedZoneName string) (*azuredns.DNSProvider, error) {
 			f.call("azuredns", clientID, clientSecret, subscriptionID, tenentID, resourceGroupName, hostedZoneName)
+			return nil, nil
+		},
+		dnsimple: func(oauthToken string) (*dnsimple.DNSProvider, error) {
+			f.call("dnsimple", oauthToken)
 			return nil, nil
 		},
 	}

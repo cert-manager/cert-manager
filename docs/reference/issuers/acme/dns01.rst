@@ -140,4 +140,14 @@ Akamai FastDNS
         name: akamai-dns
         key: accessToken
 
+DNSimple
+==========
+
+.. code-block:: yaml
+
+  dnsimple:
+    oauthTokenSecretRef:
+      name: dnsimple-oauth-token
+      key: oauth-token
+
 .. _`Let's Encrypt`: https://letsencrypt.org

@@ -88,6 +88,12 @@
   version = "v3.0.0"
 
 [[projects]]
+  name = "github.com/dnsimple/dnsimple-go"
+  packages = ["dnsimple"]
+  revision = "4618db489ff90331782dd0a6cf3aa0de68415355"
+  version = "v0.16.0"
+
+[[projects]]
   name = "github.com/emicklei/go-restful"
   packages = [
     ".",
@@ -176,6 +182,11 @@
   name = "github.com/golang/snappy"
   packages = ["."]
   revision = "553a641470496b2327abcac10b36396bd98e45c9"
+
+[[projects]]
+  name = "github.com/google/go-querystring"
+  packages = ["query"]
+  revision = "53e6ce116135b80d037921a7fdd5138cf32d7a8a"
 
 [[projects]]
   branch = "master"
@@ -931,6 +942,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "d792bbf24d87653ea8f00046b922dca780a50fdd60e8ea9540c9f34c9a28e675"
+  inputs-digest = "ec461773b08f40a2963201642cfce93e9f770f63f612bc713e927a1b089780ed"
   solver-name = "gps-cdcl"
   solver-version = 1
