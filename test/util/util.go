@@ -12,6 +12,7 @@ import (
 	extv1beta1 "k8s.io/api/extensions/v1beta1"
 	apiextcs "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/typed/apiextensions/v1beta1"
 	"k8s.io/apimachinery/pkg/api/errors"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -212,6 +213,10 @@ func WaitCertificateIssuedValid(certClient clientset.CertificateInterface, secre
 			glog.Infof("Getting the TLS certificate Secret resource")
 			secret, err := secretClient.Get(certificate.Spec.SecretName, metav1.GetOptions{})
 			if err != nil {
+				if apierrors.IsNotFound(err) {
+					return false, nil
+				}
+
 				return false, err
 			}
 			if len(secret.Data) != 2 {
