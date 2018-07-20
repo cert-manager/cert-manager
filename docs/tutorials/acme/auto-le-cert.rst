@@ -110,6 +110,7 @@ The ingress-shim watches for ingress resources with 2 conditions
 * a TLS Certificate resource specified
 
 Allowing the ingress-shim to use the existing ingress to validate would simplify the process, and is necessary when using Rancher. This can be done by adding the following annotation to the ingress as well.
+
 * ``certmanager.k8s.io/acme-http01-edit-in-place: "true"`` annotation
 
 The specified Certificate resource will be overwritten, so you can generate a 
