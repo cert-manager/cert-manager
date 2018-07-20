@@ -10,10 +10,10 @@ A small sub-component of cert-manager, ingress-shim, is responsible for this.
 How it works
 ============
 
-ingress-shim watches Ingress resources across your cluster. If it observes an
-Ingress with *any* of the annotations described in the 'Usage' section, it will
-ensure a Certificate resource with the same name as the Ingress, and configured
-as described on the Ingress exists.
+ingress-shim watches Ingress resources across your cluster. If an Ingress resource
+specifies a TLS Certificate resource and has *any* of the annotations described in the
+'Usage' section, it will obtain a TLS certificate from the issuer and update the 
+Certificate resource mentioned in the Ingress.
 
 As of the time of writing, it **will not** update Certificate resources if your
 Ingress resource changes. It is up to yourself to ensure the corresponding
