@@ -30,6 +30,7 @@ const (
 type DNSProvider struct {
 	client       *route53.Route53
 	hostedZoneID string
+	dns          *util.DNSClient
 }
 
 // customRetryer implements the client.Retryer interface by composing the
@@ -57,7 +58,7 @@ func (d customRetryer) RetryRules(r *request.Request) time.Duration {
 // NewDNSProvider returns a DNSProvider instance configured for the AWS
 // Route 53 service using static credentials from its parameters or, if they're
 // unset and the 'ambient' option is set, credentials from the environment.
-func NewDNSProvider(accessKeyID, secretAccessKey, hostedZoneID, region string, ambient bool) (*DNSProvider, error) {
+func NewDNSProvider(dnsclient *util.DNSClient, accessKeyID, secretAccessKey, hostedZoneID, region string, ambient bool) (*DNSProvider, error) {
 	if accessKeyID == "" && secretAccessKey == "" {
 		if !ambient {
 			return nil, fmt.Errorf("unable to construct route53 provider: empty credentials; perhaps you meant to enable ambient credentials?")
@@ -101,6 +102,7 @@ func NewDNSProvider(accessKeyID, secretAccessKey, hostedZoneID, region string, a
 	return &DNSProvider{
 		client:       client,
 		hostedZoneID: hostedZoneID,
+		dns:          dnsclient,
 	}, nil
 }
 
@@ -112,14 +114,22 @@ func (*DNSProvider) Timeout() (timeout, interval time.Duration) {
 
 // Present creates a TXT record using the specified parameters
 func (r *DNSProvider) Present(domain, token, keyAuth string) error {
-	fqdn, value, _ := util.DNS01Record(domain, keyAuth)
+	fqdn, value, _, err := r.dns.DNS01Record(domain, keyAuth)
+	if err != nil {
+		return err
+	}
+
 	value = `"` + value + `"`
 	return r.changeRecord(route53.ChangeActionUpsert, fqdn, value, route53TTL)
 }
 
 // CleanUp removes the TXT record matching the specified parameters
 func (r *DNSProvider) CleanUp(domain, token, keyAuth string) error {
-	fqdn, value, _ := util.DNS01Record(domain, keyAuth)
+	fqdn, value, _, err := r.dns.DNS01Record(domain, keyAuth)
+	if err != nil {
+		return err
+	}
+
 	value = `"` + value + `"`
 	return r.changeRecord(route53.ChangeActionDelete, fqdn, value, route53TTL)
 }
@@ -180,7 +190,7 @@ func (r *DNSProvider) getHostedZoneID(fqdn string) (string, error) {
 		return r.hostedZoneID, nil
 	}
 
-	authZone, err := util.FindZoneByFqdn(fqdn, util.RecursiveNameservers)
+	authZone, err := r.dns.FindZoneByFqdn(fqdn)
 	if err != nil {
 		return "", fmt.Errorf("error finding zone from fqdn: %v", err)
 	}

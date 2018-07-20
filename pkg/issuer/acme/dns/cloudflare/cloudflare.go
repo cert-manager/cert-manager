@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"os"
 	"time"
 
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
@@ -24,8 +23,10 @@ const CloudFlareAPIURL = "https://api.cloudflare.com/client/v4"
 type DNSProvider struct {
 	authEmail string
 	authKey   string
+	dns       *util.DNSClient
 }
 
+/*
 // NewDNSProvider returns a DNSProvider instance configured for cloudflare.
 // Credentials must be passed in the environment variables: CLOUDFLARE_EMAIL
 // and CLOUDFLARE_API_KEY.
@@ -34,15 +35,17 @@ func NewDNSProvider() (*DNSProvider, error) {
 	key := os.Getenv("CLOUDFLARE_API_KEY")
 	return NewDNSProviderCredentials(email, key)
 }
+*/
 
 // NewDNSProviderCredentials uses the supplied credentials to return a
 // DNSProvider instance configured for cloudflare.
-func NewDNSProviderCredentials(email, key string) (*DNSProvider, error) {
+func NewDNSProviderCredentials(dnsclient *util.DNSClient, email, key string) (*DNSProvider, error) {
 	if email == "" || key == "" {
 		return nil, fmt.Errorf("CloudFlare credentials missing")
 	}
 
 	return &DNSProvider{
+		dns:       dnsclient,
 		authEmail: email,
 		authKey:   key,
 	}, nil
@@ -56,7 +59,10 @@ func (c *DNSProvider) Timeout() (timeout, interval time.Duration) {
 
 // Present creates a TXT record to fulfil the dns-01 challenge
 func (c *DNSProvider) Present(domain, token, keyAuth string) error {
-	fqdn, value, _ := util.DNS01Record(domain, keyAuth)
+	fqdn, value, _, err := c.dns.DNS01Record(domain, keyAuth)
+	if err != nil {
+		return err
+	}
 
 	zoneID, err := c.getHostedZoneID(fqdn)
 	if err != nil {
@@ -102,7 +108,10 @@ func (c *DNSProvider) Present(domain, token, keyAuth string) error {
 
 // CleanUp removes the TXT record matching the specified parameters
 func (c *DNSProvider) CleanUp(domain, token, keyAuth string) error {
-	fqdn, _, _ := util.DNS01Record(domain, keyAuth)
+	fqdn, _, _, err := c.dns.DNS01Record(domain, keyAuth)
+	if err != nil {
+		return err
+	}
 
 	record, err := c.findTxtRecord(fqdn)
 	if err != nil {
@@ -124,7 +133,7 @@ func (c *DNSProvider) getHostedZoneID(fqdn string) (string, error) {
 		Name string `json:"name"`
 	}
 
-	authZone, err := util.FindZoneByFqdn(fqdn, util.RecursiveNameservers)
+	authZone, err := c.dns.FindZoneByFqdn(fqdn)
 	if err != nil {
 		return "", err
 	}

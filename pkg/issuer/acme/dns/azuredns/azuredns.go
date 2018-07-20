@@ -5,7 +5,6 @@ package azuredns
 import (
 	"fmt"
 	"log"
-	"os"
 	"strings"
 	"time"
 
@@ -14,6 +13,7 @@ import (
 	"github.com/Azure/go-autorest/autorest/adal"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/to"
+
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
 )
 
@@ -23,8 +23,10 @@ type DNSProvider struct {
 	zoneClient        dns.ZonesClient
 	resourceGroupName string
 	zoneName          string
+	dns               *util.DNSClient
 }
 
+/*
 // NewDNSProvider returns a DNSProvider instance configured for the Azure
 // DNS service.
 // Credentials are automatically detected from environment variables
@@ -39,10 +41,11 @@ func NewDNSProvider() (*DNSProvider, error) {
 
 	return NewDNSProviderCredentials(clientID, clientSecret, subscriptionID, tenantID, resourceGroupName, zoneName)
 }
+*/
 
 // NewDNSProviderCredentials returns a DNSProvider instance configured for the Azure
 // DNS service using static credentials from its parameters
-func NewDNSProviderCredentials(clientID, clientSecret, subscriptionID, tenantID, resourceGroupName, zoneName string) (*DNSProvider, error) {
+func NewDNSProviderCredentials(dnsclient *util.DNSClient, clientID, clientSecret, subscriptionID, tenantID, resourceGroupName, zoneName string) (*DNSProvider, error) {
 	oauthConfig, err := adal.NewOAuthConfig(azure.PublicCloud.ActiveDirectoryEndpoint, tenantID)
 	if err != nil {
 		return nil, err
@@ -64,19 +67,26 @@ func NewDNSProviderCredentials(clientID, clientSecret, subscriptionID, tenantID,
 		zoneClient:        zc,
 		resourceGroupName: resourceGroupName,
 		zoneName:          zoneName,
+		dns:               dnsclient,
 	}, nil
 }
 
 // Present creates a TXT record using the specified parameters
 func (c *DNSProvider) Present(domain, token, keyAuth string) error {
-	fqdn, value, ttl := util.DNS01Record(domain, keyAuth)
+	fqdn, value, ttl, err := c.dns.DNS01Record(domain, keyAuth)
+	if err != nil {
+		return err
+	}
 
 	return c.createRecord(fqdn, value, ttl)
 }
 
 // CleanUp removes the TXT record matching the specified parameters
 func (c *DNSProvider) CleanUp(domain, token, keyAuth string) error {
-	fqdn, _, _ := util.DNS01Record(domain, keyAuth)
+	fqdn, _, _, err := c.dns.DNS01Record(domain, keyAuth)
+	if err != nil {
+		return err
+	}
 
 	z, err := c.getHostedZoneName(fqdn)
 	if err != nil {
@@ -136,7 +146,7 @@ func (c *DNSProvider) getHostedZoneName(fqdn string) (string, error) {
 	if c.zoneName != "" {
 		return c.zoneName, nil
 	}
-	z, err := util.FindZoneByFqdn(fqdn, util.RecursiveNameservers)
+	z, err := c.dns.FindZoneByFqdn(fqdn)
 	if err != nil {
 		return "", err
 	}
