@@ -148,6 +148,7 @@ func (r *DNSProvider) changeRecord(action, fqdn, value string, ttl int) error {
 	if err != nil {
 		if awserr, ok := err.(awserr.Error); ok {
 			if action == route53.ChangeActionDelete && awserr.Code() == route53.ErrCodeInvalidChangeBatch {
+				glog.V(5).Infof("ignoring InvalidChangeBatch error: %v", err)
 				// If we try to delete something and get a 'InvalidChangeBatch' that
 				// means it's already deleted, no need to consider it an error.
 				return nil
