@@ -9,6 +9,7 @@ helping 'quickstart' common use-cases for the project.
 .. toctree::
    :maxdepth: 1
 
+   auto-le-cert
    migrating-from-kube-lego
    securing-nginx-ingress-with-letsencrypt
    dns-validation
