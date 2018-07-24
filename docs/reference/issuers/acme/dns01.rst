@@ -66,6 +66,9 @@ Google CloudDNS
      serviceAccountSecretRef:
        name: prod-clouddns-svc-acct-secret
        key: service-account.json
+       
+     # for if your DNS is in a different project than your cluster
+     project: my-dns-project
 
 Amazon Route53
 ==============
