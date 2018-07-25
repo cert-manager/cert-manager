@@ -14,7 +14,7 @@ metadata:
   name: certificates.certmanager.k8s.io
   labels:
     app: cert-manager
-    chart: cert-manager-v0.4.0-dev.2
+    chart: cert-manager-v0.4.0-dev.3
     release: cert-manager
     heritage: Tiller
 spec:
@@ -156,7 +156,7 @@ metadata:
   name: clusterissuers.certmanager.k8s.io
   labels:
     app: cert-manager
-    chart: cert-manager-v0.4.0-dev.2
+    chart: cert-manager-v0.4.0-dev.3
     release: cert-manager
     heritage: Tiller
 spec:
@@ -296,7 +296,7 @@ metadata:
   name: issuers.certmanager.k8s.io
   labels:
     app: cert-manager
-    chart: cert-manager-v0.4.0-dev.2
+    chart: cert-manager-v0.4.0-dev.3
     release: cert-manager
     heritage: Tiller
 spec:
@@ -437,7 +437,7 @@ metadata:
   namespace: "cert-manager"
   labels:
     app: cert-manager
-    chart: cert-manager-v0.4.0-dev.2
+    chart: cert-manager-v0.4.0-dev.3
     release: cert-manager
     heritage: Tiller
 spec:
