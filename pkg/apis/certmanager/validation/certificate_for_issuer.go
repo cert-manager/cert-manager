@@ -39,10 +39,6 @@ func ValidateCertificateForACMEIssuer(crt *v1alpha1.CertificateSpec, issuer *v1a
 		el = append(el, field.Invalid(specPath.Child("keyAlgorithm"), crt.KeyAlgorithm, "ACME key algorithm must be RSA"))
 	}
 
-	if crt.KeyAlgorithm != v1alpha1.KeyAlgorithm("") && crt.KeyAlgorithm != v1alpha1.RSAKeyAlgorithm {
-		el = append(el, field.Invalid(specPath.Child("keyAlgorithm"), crt.KeyAlgorithm, "ACME key algorithm must be RSA"))
-	}
-
 	return el
 }
 
