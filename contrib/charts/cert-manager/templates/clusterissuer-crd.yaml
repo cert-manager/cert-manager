@@ -15,4 +15,127 @@ spec:
     kind: ClusterIssuer
     plural: clusterissuers
   scope: Cluster
+
+  validation:
+    openAPIV3Schema:
+      properties:
+        apiVersion:
+          type: string
+        kind:
+          type: string
+        metadata:
+          type: object
+        spec:
+          properties:
+            acme:
+              properties:
+                email:
+                  type: string
+                privateKeySecretRef:
+                  properties:
+                    key:
+                      type: string
+                    name:
+                      type: string
+                  required:
+                  - key
+                  type: object
+                server:
+                  type: string
+                skipTLSVerify:
+                  type: boolean
+              required:
+              - email
+              - server
+              - privateKeySecretRef
+              type: object
+            ca:
+              properties:
+                secretName:
+                  type: string
+              required:
+              - secretName
+              type: object
+            selfSigned:
+              type: object
+            vault:
+              properties:
+                auth:
+                  properties:
+                    appRole:
+                      properties:
+                        path:
+                          type: string
+                        roleId:
+                          type: string
+                        secretRef:
+                          properties:
+                            key:
+                              type: string
+                            name:
+                              type: string
+                          required:
+                          - key
+                          type: object
+                      required:
+                      - path
+                      - roleId
+                      - secretRef
+                      type: object
+                    tokenSecretRef:
+                      properties:
+                        key:
+                          type: string
+                        name:
+                          type: string
+                      required:
+                      - key
+                      type: object
+                  type: object
+                path:
+                  type: string
+                server:
+                  type: string
+              required:
+              - auth
+              - server
+              - path
+              type: object
+          type: object
+        status:
+          properties:
+            acme:
+              properties:
+                uri:
+                  type: string
+              required:
+              - uri
+              type: object
+            conditions:
+              items:
+                properties:
+                  lastTransitionTime:
+                    format: date-time
+                    type: string
+                  message:
+                    type: string
+                  reason:
+                    type: string
+                  status:
+                    type: string
+                  type:
+                    type: string
+                required:
+                - type
+                - status
+                - lastTransitionTime
+                - reason
+                - message
+                type: object
+              type: array
+          required:
+          - conditions
+          type: object
+      type: object
+
 {{- end -}}
