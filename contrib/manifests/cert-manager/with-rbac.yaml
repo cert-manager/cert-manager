@@ -33,6 +33,126 @@ spec:
   group: certmanager.k8s.io
   version: v1alpha1
   scope: Namespaced
+
+  validation:
+    openAPIV3Schema:
+      properties:
+        apiVersion:
+          type: string
+        kind:
+          type: string
+        metadata:
+          type: object
+        spec:
+          properties:
+            acme:
+              properties:
+                config:
+                  items:
+                    properties:
+                      domains:
+                        items:
+                          type: string
+                        type: array
+                    required:
+                    - domains
+                    type: object
+                  type: array
+              required:
+              - config
+              type: object
+            commonName:
+              type: string
+            dnsNames:
+              items:
+                type: string
+              type: array
+            issuerRef:
+              properties:
+                kind:
+                  type: string
+                name:
+                  type: string
+              required:
+              - name
+              type: object
+            keyAlgorithm:
+              type: string
+            keySize:
+              format: int64
+              type: integer
+            secretName:
+              type: string
+          required:
+          - commonName
+          - dnsNames
+          - secretName
+          - issuerRef
+          type: object
+        status:
+          properties:
+            acme:
+              properties:
+                order:
+                  properties:
+                    challenges:
+                      items:
+                        properties:
+                          authzURL:
+                            type: string
+                          domain:
+                            type: string
+                          key:
+                            type: string
+                          token:
+                            type: string
+                          type:
+                            type: string
+                          url:
+                            type: string
+                          wildcard:
+                            type: boolean
+                        required:
+                        - url
+                        - authzURL
+                        - type
+                        - domain
+                        - token
+                        - key
+                        - wildcard
+                        type: object
+                      type: array
+                    url:
+                      type: string
+                  required:
+                  - url
+                  type: object
+              type: object
+            conditions:
+              items:
+                properties:
+                  lastTransitionTime:
+                    format: date-time
+                    type: string
+                  message:
+                    type: string
+                  reason:
+                    type: string
+                  status:
+                    type: string
+                  type:
+                    type: string
+                required:
+                - type
+                - status
+                - lastTransitionTime
+                - reason
+                - message
+                type: object
+              type: array
+          type: object
+      type: object
+
   names:
     kind: Certificate
     plural: certificates
@@ -58,6 +178,128 @@ spec:
     kind: ClusterIssuer
     plural: clusterissuers
   scope: Cluster
+
+  validation:
+    openAPIV3Schema:
+      properties:
+        apiVersion:
+          type: string
+        kind:
+          type: string
+        metadata:
+          type: object
+        spec:
+          properties:
+            acme:
+              properties:
+                email:
+                  type: string
+                privateKeySecretRef:
+                  properties:
+                    key:
+                      type: string
+                    name:
+                      type: string
+                  required:
+                  - key
+                  type: object
+                server:
+                  type: string
+                skipTLSVerify:
+                  type: boolean
+              required:
+              - email
+              - server
+              - privateKeySecretRef
+              type: object
+            ca:
+              properties:
+                secretName:
+                  type: string
+              required:
+              - secretName
+              type: object
+            selfSigned:
+              type: object
+            vault:
+              properties:
+                auth:
+                  properties:
+                    appRole:
+                      properties:
+                        path:
+                          type: string
+                        roleId:
+                          type: string
+                        secretRef:
+                          properties:
+                            key:
+                              type: string
+                            name:
+                              type: string
+                          required:
+                          - key
+                          type: object
+                      required:
+                      - path
+                      - roleId
+                      - secretRef
+                      type: object
+                    tokenSecretRef:
+                      properties:
+                        key:
+                          type: string
+                        name:
+                          type: string
+                      required:
+                      - key
+                      type: object
+                  type: object
+                path:
+                  type: string
+                server:
+                  type: string
+              required:
+              - auth
+              - server
+              - path
+              type: object
+          type: object
+        status:
+          properties:
+            acme:
+              properties:
+                uri:
+                  type: string
+              required:
+              - uri
+              type: object
+            conditions:
+              items:
+                properties:
+                  lastTransitionTime:
+                    format: date-time
+                    type: string
+                  message:
+                    type: string
+                  reason:
+                    type: string
+                  status:
+                    type: string
+                  type:
+                    type: string
+                required:
+                - type
+                - status
+                - lastTransitionTime
+                - reason
+                - message
+                type: object
+              type: array
+          required:
+          - conditions
+          type: object
+      type: object
 ---
 # Source: cert-manager/templates/issuer-crd.yaml
 apiVersion: apiextensions.k8s.io/v1beta1
@@ -76,6 +318,128 @@ spec:
     kind: Issuer
     plural: issuers
   scope: Namespaced
+
+  validation:
+    openAPIV3Schema:
+      properties:
+        apiVersion:
+          type: string
+        kind:
+          type: string
+        metadata:
+          type: object
+        spec:
+          properties:
+            acme:
+              properties:
+                email:
+                  type: string
+                privateKeySecretRef:
+                  properties:
+                    key:
+                      type: string
+                    name:
+                      type: string
+                  required:
+                  - key
+                  type: object
+                server:
+                  type: string
+                skipTLSVerify:
+                  type: boolean
+              required:
+              - email
+              - server
+              - privateKeySecretRef
+              type: object
+            ca:
+              properties:
+                secretName:
+                  type: string
+              required:
+              - secretName
+              type: object
+            selfSigned:
+              type: object
+            vault:
+              properties:
+                auth:
+                  properties:
+                    appRole:
+                      properties:
+                        path:
+                          type: string
+                        roleId:
+                          type: string
+                        secretRef:
+                          properties:
+                            key:
+                              type: string
+                            name:
+                              type: string
+                          required:
+                          - key
+                          type: object
+                      required:
+                      - path
+                      - roleId
+                      - secretRef
+                      type: object
+                    tokenSecretRef:
+                      properties:
+                        key:
+                          type: string
+                        name:
+                          type: string
+                      required:
+                      - key
+                      type: object
+                  type: object
+                path:
+                  type: string
+                server:
+                  type: string
+              required:
+              - auth
+              - server
+              - path
+              type: object
+          type: object
+        status:
+          properties:
+            acme:
+              properties:
+                uri:
+                  type: string
+              required:
+              - uri
+              type: object
+            conditions:
+              items:
+                properties:
+                  lastTransitionTime:
+                    format: date-time
+                    type: string
+                  message:
+                    type: string
+                  reason:
+                    type: string
+                  status:
+                    type: string
+                  type:
+                    type: string
+                required:
+                - type
+                - status
+                - lastTransitionTime
+                - reason
+                - message
+                type: object
+              type: array
+          required:
+          - conditions
+          type: object
+      type: object
 ---
 # Source: cert-manager/templates/rbac.yaml
 apiVersion: rbac.authorization.k8s.io/v1beta1
