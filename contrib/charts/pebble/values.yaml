@@ -1,7 +1,7 @@
 replicaCount: 1
 image:
   repository: quay.io/munnerz/pebble
-  tag: "20180323"
+  tag: "20180725"
   pullPolicy: IfNotPresent
 service:
   type: ClusterIP

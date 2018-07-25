@@ -13,8 +13,8 @@ CHART_DIRS=(
 
 # Charts that should be skipped
 EXCLUDED_CHARTS=(
-    pebble
-    vault
+    contrib/charts/pebble
+    contrib/charts/vault
 )
 
 # Additional chart repos to add (<name>=<url>), separated by a space
