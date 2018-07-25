@@ -25,5 +25,10 @@ using Ingress resources
          name: example-issuer-account-key
        http01: {}
 
+
+.. note::
+   Let's Encrypt does not support issuing wildcard certificates with HTTP-01 challenges.
+   To issue wildcard certificates, you must use the DNS-01 challenge.
+
 .. todo::
    Write a full description of how HTTP01 challenge validation works
