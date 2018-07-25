@@ -12,6 +12,126 @@ spec:
   group: certmanager.k8s.io
   version: v1alpha1
   scope: Namespaced
+
+  validation:
+    openAPIV3Schema:
+      properties:
+        apiVersion:
+          type: string
+        kind:
+          type: string
+        metadata:
+          type: object
+        spec:
+          properties:
+            acme:
+              properties:
+                config:
+                  items:
+                    properties:
+                      domains:
+                        items:
+                          type: string
+                        type: array
+                    required:
+                    - domains
+                    type: object
+                  type: array
+              required:
+              - config
+              type: object
+            commonName:
+              type: string
+            dnsNames:
+              items:
+                type: string
+              type: array
+            issuerRef:
+              properties:
+                kind:
+                  type: string
+                name:
+                  type: string
+              required:
+              - name
+              type: object
+            keyAlgorithm:
+              type: string
+            keySize:
+              format: int64
+              type: integer
+            secretName:
+              type: string
+          required:
+          - commonName
+          - dnsNames
+          - secretName
+          - issuerRef
+          type: object
+        status:
+          properties:
+            acme:
+              properties:
+                order:
+                  properties:
+                    challenges:
+                      items:
+                        properties:
+                          authzURL:
+                            type: string
+                          domain:
+                            type: string
+                          key:
+                            type: string
+                          token:
+                            type: string
+                          type:
+                            type: string
+                          url:
+                            type: string
+                          wildcard:
+                            type: boolean
+                        required:
+                        - url
+                        - authzURL
+                        - type
+                        - domain
+                        - token
+                        - key
+                        - wildcard
+                        type: object
+                      type: array
+                    url:
+                      type: string
+                  required:
+                  - url
+                  type: object
+              type: object
+            conditions:
+              items:
+                properties:
+                  lastTransitionTime:
+                    format: date-time
+                    type: string
+                  message:
+                    type: string
+                  reason:
+                    type: string
+                  status:
+                    type: string
+                  type:
+                    type: string
+                required:
+                - type
+                - status
+                - lastTransitionTime
+                - reason
+                - message
+                type: object
+              type: array
+          type: object
+      type: object
+
   names:
     kind: Certificate
     plural: certificates
