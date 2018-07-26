@@ -54,8 +54,8 @@ The following table lists the configurable parameters of the cert-manager chart 
 | Parameter | Description | Default |
 | --------- | ----------- | ------- |
 | `image.repository` | Image repository | `quay.io/jetstack/cert-manager-controller` |
-| `image.tag` | Image tag | `canary` |
-| `image.pullPolicy` | Image pull policy | `Always` |
+| `image.tag` | Image tag | `v0.4.0` |
+| `image.pullPolicy` | Image pull policy | `IfNotPresent` |
 | `replicaCount`  | Number of cert-manager replicas  | `1` |
 | `createCustomResource` | Create CRD/TPR with this release | `true` |
 | `clusterResourceNamespace` | Override the namespace used to store DNS provider credentials etc. for ClusterIssuer resources | Same namespace as cert-manager pod
