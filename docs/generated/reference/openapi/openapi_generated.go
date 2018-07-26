@@ -162,6 +162,11 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 								Ref: ref("github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1.ACMEIssuerDNS01ProviderAzureDNS"),
 							},
 						},
+						"livedns": {
+							SchemaProps: spec.SchemaProps{
+								Ref: ref("github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1.ACMEIssuerDNS01ProviderLiveDNS"),
+							},
+						},
 						"acmedns": {
 							SchemaProps: spec.SchemaProps{
 								Ref: ref("github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1.ACMEIssuerDNS01ProviderAcmeDNS"),
@@ -177,7 +182,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 				},
 			},
 			Dependencies: []string{
-				"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1.ACMEIssuerDNS01ProviderAcmeDNS", "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1.ACMEIssuerDNS01ProviderAkamai", "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1.ACMEIssuerDNS01ProviderAzureDNS", "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1.ACMEIssuerDNS01ProviderCloudDNS", "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1.ACMEIssuerDNS01ProviderCloudflare", "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1.ACMEIssuerDNS01ProviderRFC2136", "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1.ACMEIssuerDNS01ProviderRoute53"},
+				"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1.ACMEIssuerDNS01ProviderAcmeDNS", "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1.ACMEIssuerDNS01ProviderAkamai", "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1.ACMEIssuerDNS01ProviderAzureDNS", "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1.ACMEIssuerDNS01ProviderCloudDNS", "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1.ACMEIssuerDNS01ProviderCloudflare", "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1.ACMEIssuerDNS01ProviderLiveDNS", "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1.ACMEIssuerDNS01ProviderRFC2136", "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1.ACMEIssuerDNS01ProviderRoute53"},
 		},
 		"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1.ACMEIssuerDNS01ProviderAcmeDNS": {
 			Schema: spec.Schema{
@@ -323,6 +328,23 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 						},
 					},
 					Required: []string{"email", "apiKeySecretRef"},
+				},
+			},
+			Dependencies: []string{
+				"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1.SecretKeySelector"},
+		},
+		"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1.ACMEIssuerDNS01ProviderLiveDNS": {
+			Schema: spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Description: "ACMEIssuerDNS01ProviderLiveDNS is a structure containing the DNS configuration for Gandi LiveDNS",
+					Properties: map[string]spec.Schema{
+						"apiKeySecretRef": {
+							SchemaProps: spec.SchemaProps{
+								Ref: ref("github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1.SecretKeySelector"),
+							},
+						},
+					},
+					Required: []string{"apiKeySecretRef"},
 				},
 			},
 			Dependencies: []string{

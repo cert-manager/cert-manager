@@ -34,6 +34,7 @@ import (
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/clouddns"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/cloudflare"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/rfc2136"
+	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/livedns"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/route53"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
 )
@@ -57,6 +58,7 @@ type dnsProviderConstructors struct {
 	route53    func(accessKey, secretKey, hostedZoneID, region string, ambient bool, dns01Nameservers []string) (*route53.DNSProvider, error)
 	azureDNS   func(clientID, clientSecret, subscriptionID, tenentID, resourceGroupName, hostedZoneName string, dns01Nameservers []string) (*azuredns.DNSProvider, error)
 	acmeDNS    func(host string, accountJson []byte, dns01Nameservers []string) (*acmedns.DNSProvider, error)
+	liveDNS    func(apikey string) (*livedns.DNSProvider, error)
 	rfc2136    func(nameserver, tsigAlgorithm, tsigKeyName, tsigSecret string) (*rfc2136.DNSProvider, error)
 }
 
@@ -304,6 +306,17 @@ func (s *Solver) solverForIssuerProvider(issuer v1alpha1.GenericIssuer, provider
 		)
 		if err != nil {
 			return nil, fmt.Errorf("error instantiating rfc2136 challenge solver: %s", err.Error())
+	case providerConfig.LiveDNS != nil:
+		apiKeySecret, err := s.secretLister.Secrets(s.resourceNamespace).Get(providerConfig.LiveDNS.APIKey.Name)
+		if err != nil {
+			return nil, fmt.Errorf("error getting livedns service account: %s", err)
+		}
+
+		apiKey := string(apiKeySecret.Data[providerConfig.LiveDNS.APIKey.Key])
+
+		impl, err = s.dnsProviderConstructors.liveDNS(apiKey)
+		if err != nil {
+			return nil, fmt.Errorf("error instantiating livedns challenge solver: %s", err)
 		}
 	default:
 		return nil, fmt.Errorf("no dns provider config specified for provider %q", providerName)
