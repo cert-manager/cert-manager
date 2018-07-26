@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/golang/glog"
@@ -26,20 +25,12 @@ var (
 	findZoneByFqdn = util.FindZoneByFqdn
 )
 
-// inProgressInfo contains information about an in-progress challenge
-type inProgressInfo struct {
-	fieldName string
-	authZone  string
-}
-
 // DNSProvider is an implementation of the
 // acme.ChallengeProviderTimeout interface that uses Gandi's LiveDNS
 // API to manage TXT records for a domain.
 type DNSProvider struct {
-	apiKey          string
-	inProgressFQDNs map[string]inProgressInfo
-	inProgressMu    sync.Mutex
-	client          *http.Client
+	apiKey string
+	client *http.Client
 }
 
 // NewDNSProviderCredentials uses the supplied credentials to return a
@@ -49,9 +40,8 @@ func NewDNSProviderCredentials(apiKey string) (*DNSProvider, error) {
 		return nil, fmt.Errorf("Gandi DNS: No Gandi API Key given")
 	}
 	return &DNSProvider{
-		apiKey:          apiKey,
-		inProgressFQDNs: make(map[string]inProgressInfo),
-		client:          &http.Client{Timeout: 10 * time.Second},
+		apiKey: apiKey,
+		client: &http.Client{Timeout: 10 * time.Second},
 	}, nil
 }
 
@@ -76,22 +66,12 @@ func (d *DNSProvider) Present(domain, token, keyAuth string) error {
 	}
 	name := fqdn[:len(fqdn)-len("."+authZone)]
 
-	// acquire lock and check there is not a challenge already in
-	// progress for this value of authZone
-	d.inProgressMu.Lock()
-	defer d.inProgressMu.Unlock()
-
 	// add TXT record into authZone
 	err = d.addTXTRecord(util.UnFqdn(authZone), name, value, ttl)
 	if err != nil {
 		return err
 	}
 
-	// save data necessary for CleanUp
-	d.inProgressFQDNs[fqdn] = inProgressInfo{
-		authZone:  authZone,
-		fieldName: name,
-	}
 	return nil
 }
 
@@ -99,20 +79,22 @@ func (d *DNSProvider) Present(domain, token, keyAuth string) error {
 func (d *DNSProvider) CleanUp(domain, token, keyAuth string) error {
 	fqdn, _, _ := util.DNS01Record(domain, keyAuth)
 
-	// acquire lock and retrieve authZone
-	d.inProgressMu.Lock()
-	defer d.inProgressMu.Unlock()
-	if _, ok := d.inProgressFQDNs[fqdn]; !ok {
-		// if there is no cleanup information then just return
-		return nil
+	// find authZone
+	authZone, err := findZoneByFqdn(fqdn, util.RecursiveNameservers)
+	if err != nil {
+		return fmt.Errorf("Gandi DNS: findZoneByFqdn failure: %v", err)
 	}
 
-	fieldName := d.inProgressFQDNs[fqdn].fieldName
-	authZone := d.inProgressFQDNs[fqdn].authZone
-	delete(d.inProgressFQDNs, fqdn)
+	// determine name of TXT record
+	if !strings.HasSuffix(
+		strings.ToLower(fqdn), strings.ToLower("."+authZone)) {
+		return fmt.Errorf(
+			"Gandi DNS: unexpected authZone %s for fqdn %s", authZone, fqdn)
+	}
+	name := fqdn[:len(fqdn)-len("."+authZone)]
 
 	// delete TXT record from authZone
-	return d.deleteTXTRecord(util.UnFqdn(authZone), fieldName)
+	return d.deleteTXTRecord(util.UnFqdn(authZone), name)
 }
 
 // Timeout returns the values (20*time.Minute, 20*time.Second) which
