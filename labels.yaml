@@ -22,7 +22,7 @@ labels:
     target: both
     addedBy: prow
   - color: 0052cc
-    description: Indicates a PR directly modifies one of the ACME DNS01 providers
+    description: Indicates a PR modifies or adds an ACME DNS01 provider
     name: area/acme-dns01
     target: both
     addedBy: prow
