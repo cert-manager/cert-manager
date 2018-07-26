@@ -312,7 +312,7 @@ func (s *Solver) solverForIssuerProvider(issuer v1alpha1.GenericIssuer, provider
 			return nil, fmt.Errorf("error getting livedns service account: %s", err)
 		}
 
-		apiKey := string(apiKeySecret.Data[providerConfig.LiveDNS.APIKey.Key])
+		apiKey := strings.TrimSpace(string(apiKeySecret.Data[providerConfig.LiveDNS.APIKey.Key]))
 
 		impl, err = s.dnsProviderConstructors.liveDNS(apiKey)
 		if err != nil {
