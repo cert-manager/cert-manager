@@ -246,6 +246,14 @@ func ValidateACMEIssuerDNS01Config(iss *v1alpha1.ACMEIssuerDNS01Config, fldPath 
 				}
 			}
 		}
+		if p.LiveDNS != nil {
+			if numProviders > 0 {
+				el = append(el, field.Forbidden(fldPath.Child("livedns"), "may not specify more than one provider type"))
+			} else {
+				numProviders++
+				el = append(el, ValidateSecretKeySelector(&p.LiveDNS.APIKey, fldPath.Child("livedns", "apiKeySecretRef"))...)
+			}
+		}
 		if numProviders == 0 {
 			el = append(el, field.Required(fldPath, "at least one provider must be configured"))
 		}
