@@ -14,7 +14,7 @@ func ValidateCertificateForIssuer(crt *v1alpha1.Certificate, issuerObj v1alpha1.
 
 	issuerType, err := issuer.NameForIssuer(issuerObj)
 	if err != nil {
-		el = append(el, field.Invalid(path, err, err.Error()))
+		el = append(el, field.Invalid(path, err.Error(), err.Error()))
 		return el
 	}
 
