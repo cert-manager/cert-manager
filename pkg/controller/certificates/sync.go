@@ -82,6 +82,22 @@ func (c *Controller) Sync(ctx context.Context, crt *v1alpha1.Certificate) (err e
 		return err
 	}
 
+	el = validation.ValidateCertificateForIssuer(crtCopy, issuerObj)
+	if len(el) > 0 {
+		msg := fmt.Sprintf("Resource validation failed: %v", el.ToAggregate())
+		crtCopy.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse, errorConfig, msg, false)
+		return
+	} else {
+		for i, c := range crtCopy.Status.Conditions {
+			if c.Type == v1alpha1.CertificateConditionReady {
+				if c.Reason == errorConfig && c.Status == v1alpha1.ConditionFalse {
+					crtCopy.Status.Conditions = append(crtCopy.Status.Conditions[:i], crtCopy.Status.Conditions[i+1:]...)
+					break
+				}
+			}
+		}
+	}
+
 	issuerReady := issuerObj.HasCondition(v1alpha1.IssuerCondition{
 		Type:   v1alpha1.IssuerConditionReady,
 		Status: v1alpha1.ConditionTrue,
