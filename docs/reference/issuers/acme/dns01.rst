@@ -125,6 +125,16 @@ Cloudflare
        name: cloudflare-api-key-secret
        key: api-key
 
+Gandi LiveDNS
+=============
+
+.. code-block:: yaml
+
+   livedns:
+     apiKeySecretRef:
+       name: livedns-api-key-secret
+       key: api-key
+
 Akamai FastDNS
 ==============
 
