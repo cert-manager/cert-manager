@@ -3,3 +3,5 @@ approvers:
 reviewers:
 - munnerz
 - vdesjardins
+labels:
+- area/provider-vault
