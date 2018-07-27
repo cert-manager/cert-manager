@@ -29,15 +29,17 @@ type DNSProvider struct {
 
 	transport              http.RoundTripper
 	findHostedDomainByFqdn func(string) (string, error)
+	dns                    *util.DNSClient
 }
 
 // NewDNSProvider returns a DNSProvider instance configured for Akamai.
-func NewDNSProvider(serviceConsumerDomain, clientToken, clientSecret, accessToken string) (*DNSProvider, error) {
+func NewDNSProvider(dnsclient *util.DNSClient, serviceConsumerDomain, clientToken, clientSecret, accessToken string) (*DNSProvider, error) {
 	return &DNSProvider{
 		serviceConsumerDomain,
 		NewEdgeGridAuth(clientToken, clientSecret, accessToken),
 		http.DefaultTransport,
 		findHostedDomainByFqdn,
+		dnsclient,
 	}, nil
 }
 
@@ -58,13 +60,19 @@ func (a *DNSProvider) Timeout() (timeout, interval time.Duration) {
 
 // Present creates a TXT record to fulfil the dns-01 challenge
 func (a *DNSProvider) Present(domain, token, keyAuth string) error {
-	fqdn, value, ttl := util.DNS01Record(domain, keyAuth)
+	fqdn, value, ttl, err := a.dns.DNS01Record(domain, keyAuth)
+	if err != nil {
+		return err
+	}
 	return a.setTxtRecord(fqdn, &dns01Record{value, ttl})
 }
 
 // CleanUp removes the TXT record matching the specified parameters
 func (a *DNSProvider) CleanUp(domain, token, keyAuth string) error {
-	fqdn, _, _ := util.DNS01Record(domain, keyAuth)
+	fqdn, _, _, err := a.dns.DNS01Record(domain, keyAuth)
+	if err != nil {
+		return err
+	}
 	return a.setTxtRecord(fqdn, nil)
 }
 
