@@ -3,56 +3,38 @@
 package pdns
 
 import (
-	"fmt"
-	"io/ioutil"
-	"os"
-	"time"
-    "bytes"
+	"bytes"
 	"encoding/json"
+	"fmt"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"net/url"
+	"os"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/golang/glog"
+	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
 	"golang.org/x/net/context"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/dns/v1"
-
-	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
 )
 
 // DNSProvider is an implementation of the DNSProvider interface.
 type DNSProvider struct {
-    apiKey     string
+	apiKey     string
 	host       *url.URL
 	apiVersion int
 	client     *http.Client
 }
 
-// NewDNSProvider returns a DNSProvider instance configured for pdns.
-// Credentials must be passed in the environment variable:
-// PDNS_API_URL and PDNS_API_KEY.
-func NewDNSProvider() (*DNSProvider, error) {
-    values, err := os.Get("PDNS_API_KEY", "PDNS_API_URL")
-	if err != nil {
-		return nil, fmt.Errorf("PDNS: %v", err)
-	}
-
-	hostURL, err := url.Parse(values["PDNS_API_URL"])
-	if err != nil {
-		return nil, fmt.Errorf("PDNS: %v", err)
-	}
-
-	return NewDNSProviderCredentials(hostURL, values["PDNS_API_KEY"])
-}
-
 // NewDNSProviderCredentials uses the supplied credentials to return a
 // DNSProvider instance configured for pdns.
 func NewDNSProviderCredentials(host *url.URL, key string) (*DNSProvider, error) {
-    if key == "" {
+	if key == "" {
 		return nil, fmt.Errorf("PDNS API key missing")
 	}
 
@@ -68,13 +50,12 @@ func NewDNSProviderCredentials(host *url.URL, key string) (*DNSProvider, error) 
 
 	apiVersion, err := d.getAPIVersion()
 	if err != nil {
-		log.Warnf("PDNS: failed to get API version %v", err)
+		glog.Warnf("PDNS: failed to get API version %v", err)
 	}
 	d.apiVersion = apiVersion
 
 	return d, nil
 }
-
 
 // Timeout returns the timeout and interval to use when checking for DNS
 // propagation. Adjusting here to cope with spikes in propagation times.
@@ -84,7 +65,7 @@ func (d *DNSProvider) Timeout() (timeout, interval time.Duration) {
 
 // Present creates a TXT record to fulfil the dns-01 challenge
 func (d *DNSProvider) Present(domain, token, keyAuth string) error {
-	fqdn, value, _ := acme.DNS01Record(domain, keyAuth)
+	fqdn, value, _ := util.DNS01Record(domain, keyAuth)
 	zone, err := d.getHostedZone(fqdn)
 	if err != nil {
 		return err
@@ -94,7 +75,7 @@ func (d *DNSProvider) Present(domain, token, keyAuth string) error {
 
 	// pre-v1 API wants non-fqdn
 	if d.apiVersion == 0 {
-		name = acme.UnFqdn(fqdn)
+		name = util.UnFqdn(fqdn)
 	}
 
 	rec := pdnsRecord{
@@ -131,7 +112,7 @@ func (d *DNSProvider) Present(domain, token, keyAuth string) error {
 
 // CleanUp removes the TXT record matching the specified parameters
 func (d *DNSProvider) CleanUp(domain, token, keyAuth string) error {
-	fqdn, _, _ := acme.DNS01Record(domain, keyAuth)
+	fqdn, _, _ := util.DNS01Record(domain, keyAuth)
 
 	zone, err := d.getHostedZone(fqdn)
 	if err != nil {
@@ -163,7 +144,7 @@ func (d *DNSProvider) CleanUp(domain, token, keyAuth string) error {
 
 func (d *DNSProvider) getHostedZone(fqdn string) (*hostedZone, error) {
 	var zone hostedZone
-	authZone, err := acme.FindZoneByFqdn(fqdn, acme.RecursiveNameservers)
+	authZone, err := util.FindZoneByFqdn(fqdn, util.RecursiveNameservers)
 	if err != nil {
 		return nil, err
 	}
@@ -182,7 +163,7 @@ func (d *DNSProvider) getHostedZone(fqdn string) (*hostedZone, error) {
 
 	url = ""
 	for _, zone := range zones {
-		if acme.UnFqdn(zone.Name) == acme.UnFqdn(authZone) {
+		if util.UnFqdn(zone.Name) == util.UnFqdn(authZone) {
 			url = zone.URL
 		}
 	}
@@ -225,7 +206,7 @@ func (d *DNSProvider) findTxtRecord(fqdn string) (*rrSet, error) {
 	}
 
 	for _, set := range zone.RRSets {
-		if (set.Name == acme.UnFqdn(fqdn) || set.Name == fqdn) && set.Type == "TXT" {
+		if (set.Name == util.UnFqdn(fqdn) || set.Name == fqdn) && set.Type == "TXT" {
 			return &set, nil
 		}
 	}

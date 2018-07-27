@@ -66,7 +66,7 @@ Google CloudDNS
      serviceAccountSecretRef:
        name: prod-clouddns-svc-acct-secret
        key: service-account.json
-       
+
      # for if your DNS is in a different project than your cluster
      project: my-dns-project
 
@@ -143,4 +143,15 @@ Akamai FastDNS
         name: akamai-dns
         key: accessToken
 
+PowerDNS
+==========
+
+.. code-block:: yaml
+
+   pdns:
+     url: http://powerdns.example.com
+     clientSecretSecretRef:
+       name: powerdns
+       key: pdns-key
+       
 .. _`Let's Encrypt`: https://letsencrypt.org

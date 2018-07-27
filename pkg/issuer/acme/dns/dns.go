@@ -18,8 +18,8 @@ import (
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/azuredns"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/clouddns"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/cloudflare"
+	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/pdns"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/route53"
-    "github.com/jetstack/cert-manager/pkg/issuer/acme/dns/pdns"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
 )
 
@@ -41,7 +41,7 @@ type dnsProviderConstructors struct {
 	cloudFlare func(email, apikey string) (*cloudflare.DNSProvider, error)
 	route53    func(accessKey, secretKey, hostedZoneID, region string, ambient bool) (*route53.DNSProvider, error)
 	azureDNS   func(clientID, clientSecret, subscriptionID, tenentID, resourceGroupName, hostedZoneName string) (*azuredns.DNSProvider, error)
-    pdns       func(host, url, key string) (*pdns.DNSProvider, error)
+	pdns       func(host, url, clientSecret string) (*pdns.DNSProvider, error)
 }
 
 // Solver is a solver for the acme dns01 challenge.
@@ -240,6 +240,101 @@ func (s *Solver) solverForIssuerProvider(providerName string) (solver, error) {
 			providerConfig.AzureDNS.TenantID,
 			providerConfig.AzureDNS.ResourceGroupName,
 			providerConfig.AzureDNS.HostedZoneName,
+		)
+	case providerConfig.Akamai != nil:
+		clientToken, err := s.loadSecretData(&providerConfig.Akamai.ClientToken)
+		if err != nil {
+			return nil, errors.Wrap(err, "error getting akamai client token")
+		}
+
+		clientSecret, err := s.loadSecretData(&providerConfig.Akamai.ClientSecret)
+		if err != nil {
+			return nil, errors.Wrap(err, "error getting akamai client secret")
+		}
+
+		accessToken, err := s.loadSecretData(&providerConfig.Akamai.AccessToken)
+		if err != nil {
+			return nil, errors.Wrap(err, "error getting akamai access token")
+		}
+
+		impl, err = akamai.NewDNSProvider(
+			providerConfig.Akamai.ServiceConsumerDomain,
+			string(clientToken),
+			string(clientSecret),
+			string(accessToken))
+		if err != nil {
+			return nil, errors.Wrap(err, "error instantiating akamai challenge solver")
+		}
+	case providerConfig.CloudDNS != nil:
+		saSecret, err := s.secretLister.Secrets(s.resourceNamespace).Get(providerConfig.CloudDNS.ServiceAccount.Name)
+		if err != nil {
+			return nil, fmt.Errorf("error getting clouddns service account: %s", err)
+		}
+
+		saKey := providerConfig.CloudDNS.ServiceAccount.Key
+		saBytes := saSecret.Data[saKey]
+
+		if len(saBytes) == 0 {
+			return nil, fmt.Errorf("specfied key %q not found in secret %s/%s", saKey, saSecret.Namespace, saSecret.Name)
+		}
+
+		impl, err = s.dnsProviderConstructors.cloudDNS(providerConfig.CloudDNS.Project, saBytes)
+		if err != nil {
+			return nil, fmt.Errorf("error instantiating google clouddns challenge solver: %s", err)
+		}
+	case providerConfig.Cloudflare != nil:
+		apiKeySecret, err := s.secretLister.Secrets(s.resourceNamespace).Get(providerConfig.Cloudflare.APIKey.Name)
+		if err != nil {
+			return nil, fmt.Errorf("error getting cloudflare service account: %s", err)
+		}
+
+		email := providerConfig.Cloudflare.Email
+		apiKey := string(apiKeySecret.Data[providerConfig.Cloudflare.APIKey.Key])
+
+		impl, err = s.dnsProviderConstructors.cloudFlare(email, apiKey)
+		if err != nil {
+			return nil, fmt.Errorf("error instantiating cloudflare challenge solver: %s", err)
+		}
+	case providerConfig.Route53 != nil:
+		secretAccessKey := ""
+		if providerConfig.Route53.SecretAccessKey.Name != "" {
+			secretAccessKeySecret, err := s.secretLister.Secrets(s.resourceNamespace).Get(providerConfig.Route53.SecretAccessKey.Name)
+			if err != nil {
+				return nil, fmt.Errorf("error getting route53 secret access key: %s", err)
+			}
+
+			secretAccessKeyBytes, ok := secretAccessKeySecret.Data[providerConfig.Route53.SecretAccessKey.Key]
+			if !ok {
+				return nil, fmt.Errorf("error getting route53 secret access key: key '%s' not found in secret", providerConfig.Route53.SecretAccessKey.Key)
+			}
+			secretAccessKey = string(secretAccessKeyBytes)
+		}
+
+		impl, err = s.dnsProviderConstructors.route53(
+			strings.TrimSpace(providerConfig.Route53.AccessKeyID),
+			strings.TrimSpace(secretAccessKey),
+			providerConfig.Route53.HostedZoneID,
+			providerConfig.Route53.Region,
+			s.ambientCredentials,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("error instantiating route53 challenge solver: %s", err)
+		}
+	case providerConfig.PowerDNS != nil:
+		key, err := s.secretLister.Secrets(s.resourceNamespace).Get(providerConfig.PowerDNS.clientSecret.Name)
+		if err != nil {
+			return nil, fmt.Errorf("error getting powerdns key: %s", err)
+		}
+
+		KeyBytes, ok := clientSecret.Data[providerConfig.PowerDNS.clientSecret.Key]
+		if !ok {
+			return nil, fmt.Errorf("error getting powerdns key secret: key '%s' not found in secret", providerConfig.PowerDNS.ClientSecret.Key)
+		}
+
+		impl, err = s.dnsProviderConstructors.PowerDNS(
+			providerConfig.PowerDNS.Host,
+			providerConfig.PowerDNS.Url,
+			string(clientSecretBytes),
 		)
 	default:
 		return nil, fmt.Errorf("no dns provider config specified for provider %q", providerName)

@@ -159,6 +159,7 @@ type ACMEIssuerDNS01Provider struct {
 	Cloudflare *ACMEIssuerDNS01ProviderCloudflare `json:"cloudflare,omitempty"`
 	Route53    *ACMEIssuerDNS01ProviderRoute53    `json:"route53,omitempty"`
 	AzureDNS   *ACMEIssuerDNS01ProviderAzureDNS   `json:"azuredns,omitempty"`
+	PowerDNS   *ACMEIssuerDNS01ProviderPowerDNS   `json:"powerdns,omitempty"`
 }
 
 // ACMEIssuerDNS01ProviderAkamai is a structure containing the DNS
@@ -204,6 +205,12 @@ type ACMEIssuerDNS01ProviderAzureDNS struct {
 
 	// + optional
 	HostedZoneName string `json:"hostedZoneName"`
+}
+
+type ACMEIssuerDNS01ProviderPowerDNS struct {
+	Host         string            `json:"host"`
+	Url          string            `json:"url"`
+	ClientSecret SecretKeySelector `json:"clientSecretSecretRef"`
 }
 
 // IssuerStatus contains status information about an Issuer
@@ -291,13 +298,6 @@ type CertificateList struct {
 	Items []Certificate `json:"items"`
 }
 
-type KeyAlgorithm string
-
-const (
-	RSAKeyAlgorithm   KeyAlgorithm = "rsa"
-	ECDSAKeyAlgorithm KeyAlgorithm = "ecdsa"
-)
-
 // CertificateSpec defines the desired state of Certificate
 type CertificateSpec struct {
 	// CommonName is a common name to be used on the Certificate
@@ -314,18 +314,6 @@ type CertificateSpec struct {
 	IssuerRef ObjectReference `json:"issuerRef"`
 
 	ACME *ACMECertificateConfig `json:"acme,omitempty"`
-
-	// KeySize is the key bit size of the corresponding private key for this certificate.
-	// If provided, value must be between 2048 and 8192 inclusive when KeyAlgorithm is
-	// empty or is set to "rsa", and value must be one of (256, 384, 521) when
-	// KeyAlgorithm is set to "ecdsa".
-	KeySize int `json:"keySize,omitempty"`
-	// KeyAlgorithm is the private key algorithm of the corresponding private key
-	// for this certificate. If provided, allowed values are either "rsa" or "ecdsa"
-	// If KeyAlgorithm is specified and KeySize is not provided,
-	// key size of 256 will be used for "ecdsa" key algorithm and
-	// key size of 2048 will be used for "rsa" key algorithm.
-	KeyAlgorithm KeyAlgorithm `json:"keyAlgorithm,omitempty"`
 }
 
 // ACMEConfig contains the configuration for the ACME certificate provider
