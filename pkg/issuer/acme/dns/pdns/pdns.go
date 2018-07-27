@@ -50,7 +50,7 @@ func NewDNSProviderCredentials(host *url.URL, key string) (*DNSProvider, error) 
 
 	apiVersion, err := d.getAPIVersion()
 	if err != nil {
-		glog.Warnf("PDNS: failed to get API version %v", err)
+		glog.Warning("PDNS: failed to get API version %v", err)
 	}
 	d.apiVersion = apiVersion
 
