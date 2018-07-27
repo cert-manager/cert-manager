@@ -22,6 +22,11 @@ labels:
     target: both
     addedBy: prow
   - color: 0052cc
+    description: Indicates a PR modifies or adds an ACME DNS01 provider
+    name: area/acme-dns01
+    target: both
+    addedBy: prow
+  - color: 0052cc
     description: Indicates a PR directly modifies the CA Issuer code
     name: area/provider-ca
     target: both
