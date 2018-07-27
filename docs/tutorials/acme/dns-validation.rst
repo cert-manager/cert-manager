@@ -123,7 +123,7 @@ If the certificate is obtained successfully, the resulting key pair will be
 stored in a secret called ``example-com-tls`` in the same namespace as the Certificate.
 
 The certificate will have a common name of ``*.example.com`` and the
-`Subject Alternative Names `_ (SANs) will be ``example.com`` and ``foo.com``.
+`Subject Alternative Names`_ (SANs) will be ``*.example.com``, ``example.com`` and ``foo.com``.
 
 In our Certificate we have referenced the ``letsencrypt-staging`` Issuer above.
 The Issuer must be in the same namespace as the Certificate.
