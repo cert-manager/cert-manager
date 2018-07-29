@@ -202,7 +202,7 @@ func (s *Solver) solverForIssuerProvider(issuer v1alpha1.GenericIssuer, provider
 	case providerConfig.DigitalOcean != nil:
 		apiTokenSecret, err := s.secretLister.Secrets(s.resourceNamespace).Get(providerConfig.DigitalOcean.Token.Name)
 		if err != nil {
-			return nil, fmt.Errorf("error getting digitalocean token: %s", err.Error())
+			return nil, fmt.Errorf("error getting digitalocean token: %s", err)
 		}
 
 		apiToken := string(apiTokenSecret.Data[providerConfig.DigitalOcean.Token.Key])
