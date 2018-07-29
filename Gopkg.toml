@@ -32,6 +32,10 @@ required = [
     version = "v12.0.0-beta"
 
 [[constraint]]
+    name = "github.com/digitalocean/godo"
+    version = "v1.3.0"
+
+[[constraint]]
   name = "github.com/hashicorp/vault"
   version = "v0.9.3"
 
