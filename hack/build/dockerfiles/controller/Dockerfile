@@ -1,9 +1,11 @@
 FROM alpine:3.6
 
+ARG ARCH
+
 RUN apk add --no-cache ca-certificates && \
   addgroup -S certmanager && adduser -S -G certmanager certmanager
 
-ADD cert-manager-controller_linux_amd64 /usr/bin/cert-manager
+ADD cert-manager-controller_linux_$ARCH /usr/bin/cert-manager
 
 USER certmanager
 
