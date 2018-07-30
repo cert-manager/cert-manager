@@ -43,7 +43,11 @@ GOLDFLAGS := -ldflags "-X $(PACKAGE_NAME)/pkg/util.AppGitState=${GIT_STATE} -X $
 	$(DOCKER_BUILD_TARGETS) $(DOCKER_PUSH_TARGETS)
 
 # Docker build flags
+<<<<<<< HEAD
 DOCKER_BUILD_FLAGS := --build-arg VCS_REF=$(GIT_COMMIT) --build-arg ARCH=$(GOARCH) $(DOCKER_BUILD_FLAGS)
+=======
+DOCKER_BUILD_FLAGS := --build-arg VCS_REF=$(GIT_COMMIT) --build-arg ARCH=$(GOARCH) $(DOCKER_BUILD_FLAGS) 
+>>>>>>> a8e369c77aa3c3726f0f4d7b2d3caf70825b5c6e
 
 # Alias targets
 ###############
