@@ -1,0 +1,67 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: {{ template "fullname" . }}
+  labels:
+    app: {{ template "name" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  replicas: 1
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: {{ template "name" . }}
+        release: {{ .Release.Name }}
+    spec:
+      volumes:
+      - name: config
+        configMap:
+          name: {{ template "fullname" . }}
+      - name: certificate
+        secret:
+          secretName: {{ template "fullname" . }}
+      containers:
+      - name: {{ .Chart.Name }}
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        args:
+        - "serve"
+        - "-address"
+        - "$(ADDRESS)"
+        - "-port"
+        - "$(PORT)"
+        - "-config"
+        - {{ required ".Values.volumes.configMountPath must be provided" .Values.volumes.configMountPath }}/config.json
+        - "-ca"
+        - {{ required ".Values.volumes.certificateMountPath must be provided" .Values.volumes.certificateMountPath }}/ca.pem
+        - "-ca-key"
+        - {{ required ".Values.volumes.certificateMountPath must be provided" .Values.volumes.certificateMountPath }}/ca-key.pem
+        ports:
+        - containerPort: {{ .Values.service.internalPort }}
+        readinessProbe:
+          httpGet:
+            path: /api/v1/cfssl/health
+            port: {{ .Values.service.internalPort }}
+        resources:
+{{ toYaml .Values.resources | indent 12 }}
+        volumeMounts:
+        - name: config
+          readOnly: true
+          mountPath: {{ required ".Values.volumes.configMountPath must be provided" .Values.volumes.configMountPath }}
+        - name: certificate
+          readOnly: true
+          mountPath: {{ required ".Values.volumes.certificateMountPath must be provided" .Values.volumes.certificateMountPath }}
+        env:
+        - name: ADDRESS
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+        - name: PORT
+          value: {{ .Values.service.internalPort | quote }}

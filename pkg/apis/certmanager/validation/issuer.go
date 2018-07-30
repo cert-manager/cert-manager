@@ -54,6 +54,14 @@ func ValidateIssuerConfig(iss *v1alpha1.IssuerConfig, fldPath *field.Path) field
 			el = append(el, ValidateVaultIssuerConfig(iss.Vault, fldPath.Child("vault"))...)
 		}
 	}
+	if iss.CFSSL != nil {
+		if numConfigs > 0 {
+			el = append(el, field.Forbidden(fldPath.Child("cfssl"), "may not specify more than one issuer type"))
+		} else {
+			numConfigs++
+			el = append(el, ValidateCFSSLIssuerConfig(iss.CFSSL, fldPath.Child("cfssl"))...)
+		}
+	}
 	if numConfigs == 0 {
 		el = append(el, field.Required(fldPath, "at least one issuer must be configured"))
 	}
@@ -76,6 +84,20 @@ func ValidateACMEIssuerConfig(iss *v1alpha1.ACMEIssuer, fldPath *field.Path) fie
 	}
 	if iss.DNS01 != nil {
 		el = append(el, ValidateACMEIssuerDNS01Config(iss.DNS01, fldPath.Child("dns01"))...)
+	}
+	return el
+}
+
+func ValidateCFSSLIssuerConfig(iss *v1alpha1.CFSSLIssuer, fldPath *field.Path) field.ErrorList {
+	el := field.ErrorList{}
+	if len(iss.Server) == 0 {
+		el = append(el, field.Required(fldPath.Child("server"), "cfssl server url is a required field"))
+	}
+	if len(iss.Path) == 0 {
+		el = append(el, field.Required(fldPath.Child("path"), "cfssl server path is a required field"))
+	}
+	if iss.AuthKey != nil {
+		el = append(el, ValidateSecretKeySelector(iss.AuthKey, fldPath.Child("authKey"))...)
 	}
 	return el
 }
