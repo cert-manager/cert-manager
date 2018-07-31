@@ -56,9 +56,9 @@ type ControllerOptions struct {
 	RenewBeforeExpiryDuration       time.Duration
 
 	// Default issuer/certificates details consumed by ingress-shim
-	DefaultACMEAnnotation              string
-        DefaultIssuerName                  string
+	DefaultIssuerName                  string
 	DefaultIssuerKind                  string
+	DefaultAutoCertificateAnnotations  []string
 	DefaultACMEIssuerChallengeType     string
 	DefaultACMEIssuerDNS01ProviderName string
 
@@ -80,9 +80,8 @@ const (
 	defaultIssuerAmbientCredentials        = false
 	defaultRenewBeforeExpiryDuration       = time.Hour * 24 * 30
 
-        defaultTLSACMEIssuerName           = ""
+	defaultTLSACMEIssuerName           = ""
 	defaultTLSACMEIssuerKind           = "Issuer"
-        defaultACMEAnnotation              = "kubernetes.io/tls-acme"
 	defaultACMEIssuerChallengeType     = "http01"
 	defaultACMEIssuerDNS01ProviderName = ""
 )
@@ -93,6 +92,8 @@ var (
 	defaultACMEHTTP01SolverResourceRequestMemory = "64Mi"
 	defaultACMEHTTP01SolverResourceLimitsCPU     = "10m"
 	defaultACMEHTTP01SolverResourceLimitsMemory  = "64Mi"
+
+	defaultAutoCertificateAnnotations = []string{"kubernetes.io/tls-acme"}
 
 	defaultEnabledControllers = []string{
 		issuerscontroller.ControllerName,
@@ -117,9 +118,9 @@ func NewControllerOptions() *ControllerOptions {
 		ClusterIssuerAmbientCredentials:    defaultClusterIssuerAmbientCredentials,
 		IssuerAmbientCredentials:           defaultIssuerAmbientCredentials,
 		RenewBeforeExpiryDuration:          defaultRenewBeforeExpiryDuration,
-                DefaultACMEAnnotation:              defaultACMEAnnotation,
 		DefaultIssuerName:                  defaultTLSACMEIssuerName,
 		DefaultIssuerKind:                  defaultTLSACMEIssuerKind,
+		DefaultAutoCertificateAnnotations:  defaultAutoCertificateAnnotations,
 		DefaultACMEIssuerChallengeType:     defaultACMEIssuerChallengeType,
 		DefaultACMEIssuerDNS01ProviderName: defaultACMEIssuerDNS01ProviderName,
 		DNS01Nameservers:                   []string{},
@@ -183,7 +184,7 @@ func (s *ControllerOptions) AddFlags(fs *pflag.FlagSet) {
 		"The default 'renew before expiry' time for Certificates. "+
 		"Once a certificate is within this duration until expiry, a new Certificate "+
 		"will be attempted to be issued.")
-	fs.StringVar(&s.DefaultACMEAnnotation, "default-acme-annotation", defaultACMEAnnotation, ""+
+	fs.StringSliceVar(&s.DefaultAutoCertificateAnnotations, "auto-certificate-annotations", defaultAutoCertificateAnnotations, ""+
 		"The annotation consumed by the ingress-shim controller to indicate a ingress is requesting a certificate")
 
 	fs.StringVar(&s.DefaultIssuerName, "default-issuer-name", defaultTLSACMEIssuerName, ""+

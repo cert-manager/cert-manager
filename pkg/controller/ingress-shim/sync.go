@@ -59,7 +59,7 @@ const (
 var ingressGVK = extv1beta1.SchemeGroupVersion.WithKind("Ingress")
 
 func (c *Controller) Sync(ctx context.Context, ing *extv1beta1.Ingress) error {
-	if !shouldSync(ing, c.defaults.acmeTLSAnnotation) {
+	if !shouldSync(ing, c.defaults.autoCertificateAnnotations) {
 		glog.Infof("Not syncing ingress %s/%s as it does not contain necessary annotations", ing.Namespace, ing.Name)
 		return nil
 	}
@@ -256,7 +256,7 @@ func (c *Controller) setIssuerSpecificConfig(crt *v1alpha1.Certificate, issuer v
 
 // shouldSync returns true if this ingress should have a Certificate resource
 // created for it
-func shouldSync(ing *extv1beta1.Ingress, tlsACMEAnnotation string) bool {
+func shouldSync(ing *extv1beta1.Ingress, autoCertificateAnnotations []string) bool {
 	annotations := ing.Annotations
 	if annotations == nil {
 		annotations = map[string]string{}
@@ -267,9 +267,11 @@ func shouldSync(ing *extv1beta1.Ingress, tlsACMEAnnotation string) bool {
 	if _, ok := annotations[clusterIssuerNameAnnotation]; ok {
 		return true
 	}
-	if s, ok := annotations[tlsACMEAnnotation]; ok {
-		if b, _ := strconv.ParseBool(s); b {
-			return true
+	for _, x := range autoCertificateAnnotations {
+		if s, ok := annotations[x]; ok {
+			if b, _ := strconv.ParseBool(s); b {
+				return true
+			}
 		}
 	}
 	if _, ok := annotations[acmeIssuerChallengeTypeAnnotation]; ok {

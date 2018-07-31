@@ -73,7 +73,7 @@ func TestShouldSync(t *testing.T) {
 		},
 	}
 	for _, test := range tests {
-		shouldSync := shouldSync(buildIngress("", "", test.Annotations), "kubernetes.io/tls-acme")
+		shouldSync := shouldSync(buildIngress("", "", test.Annotations), []string{"kubernetes.io/tls-acme"})
 		if shouldSync != test.ShouldSync {
 			t.Errorf("Expected shouldSync=%v for annotations %#v", test.ShouldSync, test.Annotations)
 		}
