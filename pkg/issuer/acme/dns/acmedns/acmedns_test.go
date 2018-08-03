@@ -14,8 +14,8 @@ var (
 )
 
 func init() {
-	acmednsHost = os.Getenv("")
-	acmednsAccountsJson = []byte(os.Getenv("AZURE_CLIENT_SECRET"))
+	acmednsHost = os.Getenv("ACME_DNS_HOST")
+	acmednsAccountsJson = []byte(os.Getenv("ACME_DNS_ACCOUNT_JSON"))
 	if len(acmednsHost) > 0 && len(acmednsAccountsJson) > 0 {
 		acmednsLiveTest = true
 	}
