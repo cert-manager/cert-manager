@@ -6,6 +6,8 @@
 package acmedns
 
 import (
+	"encoding/json"
+	"fmt"
 	"github.com/cpu/goacmedns"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
 	"os"
@@ -14,52 +16,46 @@ import (
 
 // DNSProvider is an implementation of the acme.ChallengeProvider interface
 type DNSProvider struct {
-	client goacmedns.Client
+	client   goacmedns.Client
+	accounts map[string]goacmedns.Account
 }
 
 // NewDNSProvider returns a DNSProvider instance configured for ACME DNS
-// Credentials are handled automatically by the API
-// API base URL is assumed to be in an environment variable
+// Credentials and acme-dns server host are given in environment variables
 func NewDNSProvider() (*DNSProvider, error) {
-	apiBase := os.Getenv("ACME_DNS_API_BASE")
-	return NewDNSProviderApiBase(apiBase)
+	host := os.Getenv("ACME_DNS_HOST")
+	accountJson := os.Getenv("ACME_DNS_ACCOUNT_JSON")
+	return NewDNSProviderHostBytes(host, []byte(accountJson))
 }
 
-// NewDNSProvider returns a DNSProvider instance configured for ACME DNS
-// Credentials are handled automatically by the API
-// API base URL given in parameters
-func NewDNSProviderApiBase(apiBase string) (*DNSProvider, error) {
-	client := goacmedns.NewClient(apiBase)
+// NewDNSProviderHostBytes returns a DNSProvider instance configured for ACME DNS
+// acme-dns server host is given in a string
+// credentials are stored in json in the given string
+func NewDNSProviderHostBytes(host string, accountJson []byte) (*DNSProvider, error) {
+	client := goacmedns.NewClient(host)
+
+	var accounts map[string]goacmedns.Account
+	if err := json.Unmarshal(accountJson, &accounts); err != nil {
+		return nil, err
+	}
 
 	return &DNSProvider{
-		client: client,
+		client:   client,
+		accounts: accounts,
 	}, nil
 }
 
 // Present creates a TXT record to fulfil the dns-01 challenge
 func (c *DNSProvider) Present(domain, token, keyAuth string) error {
-	// TODO need to fetch credentials from storage and register/store them
-	// TODO if they do not exist. User needs to be informed of CNAME records
-	// TODO relevant lego code is commented out below for reference
+	// fqdn, ttl are unused by ACME DNS
+	_, value, _ := util.DNS01Record(domain, keyAuth)
 
-	// ttl is unused by ACME DNS
-	fqdn, value, _ := util.DNS01Record(domain, keyAuth)
+	if account, exists := c.accounts[domain]; exists {
+		// Update the acme-dns TXT record.
+		return c.client.UpdateTXTRecord(account, value)
+	}
 
-	// Check if credentials were previously saved for this domain.
-	// account, err := c.storage.Fetch(domain)
-	//
-	// Errors other than goacmeDNS.ErrDomainNotFound are unexpected.
-	//if err != nil && err != goacmedns.ErrDomainNotFound {
-	//	return err
-	//}
-	//if err == goacmedns.ErrDomainNotFound {
-	//	// The account did not exist. Create a new one and return an error
-	//	// indicating the required one-time manual CNAME setup.
-	//	return c.register(domain, fqdn)
-	//}
-
-	// Update the acme-dns TXT record.
-	return c.client.UpdateTXTRecord(account, value)
+	return fmt.Errorf("account credentials not found for domain %s", domain)
 }
 
 // CleanUp removes the record matching the specified parameters. It is not
