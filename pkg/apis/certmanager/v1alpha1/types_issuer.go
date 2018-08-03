@@ -201,7 +201,7 @@ type ACMEIssuerDNS01ProviderAzureDNS struct {
 // configuration for ACME-DNS servers
 type ACMEIssuerDNS01ProviderAcmeDNS struct {
 	Host               string            `json:"host"`
-	RegistrationSecret SecretKeySelector `json:"registrationSecret"`
+	AccountsSecret SecretKeySelector `json:"registrationSecret"`
 }
 
 // IssuerStatus contains status information about an Issuer
