@@ -153,6 +153,15 @@ func (in *ACMEIssuerDNS01Provider) DeepCopyInto(out *ACMEIssuerDNS01Provider) {
 			**out = **in
 		}
 	}
+	if in.AcmeDNS != nil {
+		in, out := &in.AcmeDNS, &out.AcmeDNS
+		if *in == nil {
+			*out = nil
+		} else {
+			*out = new(ACMEIssuerDNS01ProviderAcmeDNS)
+			**out = **in
+		}
+	}
 	return
 }
 
