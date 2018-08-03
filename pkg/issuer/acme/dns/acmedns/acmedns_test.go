@@ -16,6 +16,7 @@ var (
 func init() {
 	acmednsHost = os.Getenv("ACME_DNS_HOST")
 	acmednsAccountsJson = []byte(os.Getenv("ACME_DNS_ACCOUNTS_JSON"))
+	acmednsDomain = os.Getenv("ACME_DNS_DOMAIN")
 	if len(acmednsHost) > 0 && len(acmednsAccountsJson) > 0 {
 		acmednsLiveTest = true
 	}
