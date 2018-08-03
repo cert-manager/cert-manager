@@ -142,4 +142,59 @@ Akamai FastDNS
         name: akamai-dns
         key: accessToken
 
+ACME-DNS
+========
+
+.. code-block:: yaml
+
+    acmedns:
+      host: https://acme.example.com
+      accountsSecretRef:
+        name: acme-dns
+        key: acmedns.json
+
+In general, clients to acme-dns perform registration on the users behalf and inform
+them of the CNAME entries they must create. This is not possible in cert-manager, it
+is a non-interactive system. Registration must be carried out beforehand and the resulting
+credentials JSON uploaded to the cluster as a secret. There are several ways to accomplish this:
+
+1. Using certbot, follow the instructions in the `official certbot hook <https://github.com/joohoi/acme-dns-certbot-joohoi>`_ You can either create a certificate or cancel the process after it informs you of the CNAME record. The resulting `acmedns.json` will be stored in `/etc/letsencrypt`
+
+2. Using the `acme-dns client <https://github.com/cpu/goacmedns>`_ follow the instructions for "Pre-Registration", the location of the accounts JSON file can be specified as an argument. The CNAME record will be printed by the command.
+
+3. Manually using the API. ``curl -X POST http://auth.example.com/register`` will return a JSON for your registration:
+
+  .. code-block :: json
+
+    {
+      "username":"eabcdb41-d89f-4580-826f-3e62e9755ef2",
+      "password":"pbAXVjlIOE01xbut7YnAbkhMQIkcwoHO0ek2j4Q0",
+      "fulldomain":"d420c923-bbd7-4056-ab64-c3ca54c9b3cf.auth.example.com",
+      "subdomain":"d420c923-bbd7-4056-ab64-c3ca54c9b3cf",
+      "allowfrom":[]
+    }
+
+
+  Save this JSON to a file with the key as your domain:
+
+  .. code-block :: json
+
+    {
+      'example.com': {
+        "username":"eabcdb41-d89f-4580-826f-3e62e9755ef2",
+        "password":"pbAXVjlIOE01xbut7YnAbkhMQIkcwoHO0ek2j4Q0",
+        "fulldomain":"d420c923-bbd7-4056-ab64-c3ca54c9b3cf.auth.example.com",
+        "subdomain":"d420c923-bbd7-4056-ab64-c3ca54c9b3cf",
+        "allowfrom":[]
+      }
+    }
+
+  You will need to form the CNAME record manually. In this case it would look like
+
+  ``_acme_challenge.example.com CNAME d420c923-bbd7-4056-ab64-c3ca54c9b3cf.auth.example.com``
+
+In all cases, create a secret from the json file:
+``kubectl create secret generic acme-dns --from-file acmedns.json``
+
+
 .. _`Let's Encrypt`: https://letsencrypt.org
