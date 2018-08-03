@@ -203,6 +203,13 @@ type ACMEIssuerDNS01ProviderAzureDNS struct {
 	HostedZoneName string `json:"hostedZoneName"`
 }
 
+// ACMEIssuerDNS01ProviderAcmeDNS is a structure containing the
+// configuration for ACME-DNS servers
+type ACMEIssuerDNS01ProviderAcmeDNS struct {
+	Host               string            `json:"host"`
+	RegistrationSecret SecretKeySelector `json:"registrationSecret"`
+}
+
 // IssuerStatus contains status information about an Issuer
 type IssuerStatus struct {
 	Conditions []IssuerCondition `json:"conditions"`
