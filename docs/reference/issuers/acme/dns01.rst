@@ -180,7 +180,7 @@ credentials JSON uploaded to the cluster as a secret. There are several ways to 
   .. code-block :: json
 
     {
-      'example.com': {
+      "example.com": {
         "username":"eabcdb41-d89f-4580-826f-3e62e9755ef2",
         "password":"pbAXVjlIOE01xbut7YnAbkhMQIkcwoHO0ek2j4Q0",
         "fulldomain":"d420c923-bbd7-4056-ab64-c3ca54c9b3cf.auth.example.com",
