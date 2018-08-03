@@ -29,6 +29,7 @@ func TestLiveAcmeDnsPresent(t *testing.T) {
 	provider, err := NewDNSProviderHostBytes(acmednsHost, acmednsAccountsJson)
 	assert.NoError(t, err)
 
-	err = provider.Present(acmednsDomain, "", "123d==")
+	// ACME-DNS requires 43 character keys or it throws a bad TXT error
+	err = provider.Present(acmednsDomain, "", "LG3tptA6W7T1vw4ujbmDxH2lLu6r8TUIqLZD3pzPmgE")
 	assert.NoError(t, err)
 }
