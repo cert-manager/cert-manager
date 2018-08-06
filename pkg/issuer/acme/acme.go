@@ -60,26 +60,17 @@ type solver interface {
 	// we pass the certificate to the Present function so that if the solver
 	// needs to create any new resources, it can set the appropriate owner
 	// reference
-	Present(ctx context.Context, crt *v1alpha1.Certificate, ch v1alpha1.ACMEOrderChallenge) error
+	Present(ctx context.Context, issuer v1alpha1.GenericIssuer, crt *v1alpha1.Certificate, ch v1alpha1.ACMEOrderChallenge) error
 
 	// Check should return Error only if propagation check cannot be performed.
 	// It MUST return `false, nil` if can contact all relevant services and all is
 	// doing is waiting for propagation
 	Check(ch v1alpha1.ACMEOrderChallenge) (bool, error)
-	CleanUp(ctx context.Context, crt *v1alpha1.Certificate, ch v1alpha1.ACMEOrderChallenge) error
+	CleanUp(ctx context.Context, issuer v1alpha1.GenericIssuer, crt *v1alpha1.Certificate, ch v1alpha1.ACMEOrderChallenge) error
 }
 
 // New returns a new ACME issuer interface for the given issuer.
-func New(ctx *controller.Context,
-	issuer v1alpha1.GenericIssuer,
-	resourceNamespace string,
-	acmeHTTP01SolverImage string,
-	secretsLister corelisters.SecretLister,
-	podsLister corelisters.PodLister,
-	servicesLister corelisters.ServiceLister,
-	ingressLister extlisters.IngressLister,
-	ambientCreds bool,
-	dns01Nameservers []string) (issuer.Interface, error) {
+func New(ctx *controller.Context, issuer v1alpha1.GenericIssuer) (issuer.Interface, error) {
 	if issuer.GetSpec().ACME == nil {
 		return nil, fmt.Errorf("acme config may not be empty")
 	}
@@ -90,9 +81,10 @@ func New(ctx *controller.Context,
 		return nil, fmt.Errorf("acme server, private key and email are required fields")
 	}
 
-	if resourceNamespace == "" {
-		return nil, fmt.Errorf("resource namespace cannot be empty")
-	}
+	secretsLister := ctx.KubeSharedInformerFactory.Core().V1().Secrets().Lister()
+	podsLister := ctx.KubeSharedInformerFactory.Core().V1().Pods().Lister()
+	servicesLister := ctx.KubeSharedInformerFactory.Core().V1().Services().Lister()
+	ingressLister := ctx.KubeSharedInformerFactory.Extensions().V1beta1().Ingresses().Lister()
 
 	a := &Acme{
 		Context: ctx,
@@ -104,9 +96,8 @@ func New(ctx *controller.Context,
 		servicesLister: servicesLister,
 		ingressLister:  ingressLister,
 
-		dnsSolver:                dns.NewSolver(issuer, ctx.Client, secretsLister, resourceNamespace, ambientCreds, dns01Nameservers),
-		httpSolver:               http.NewSolver(issuer, ctx.Client, podsLister, servicesLister, ingressLister, acmeHTTP01SolverImage),
-		issuerResourcesNamespace: resourceNamespace,
+		dnsSolver:  dns.NewSolver(ctx),
+		httpSolver: http.NewSolver(ctx),
 	}
 	return a, nil
 }
@@ -150,32 +141,6 @@ func (a *Acme) solverFor(challengeType string) (solver, error) {
 // Register this Issuer with the issuer factory
 func init() {
 	controller.RegisterIssuer(controller.IssuerACME, func(ctx *controller.Context, i v1alpha1.GenericIssuer) (issuer.Interface, error) {
-		issuerResourcesNamespace := i.GetObjectMeta().Namespace
-		if issuerResourcesNamespace == "" {
-			issuerResourcesNamespace = ctx.ClusterResourceNamespace
-		}
-
-		ambientCreds := false
-		switch i.(type) {
-		case *v1alpha1.ClusterIssuer:
-			ambientCreds = ctx.ClusterIssuerAmbientCredentials
-		case *v1alpha1.Issuer:
-			ambientCreds = ctx.IssuerAmbientCredentials
-		default:
-			return nil, fmt.Errorf("issuer was neither an 'Issuer' nor 'ClusterIssuer'; was %T", i)
-		}
-
-		return New(
-			ctx,
-			i,
-			issuerResourcesNamespace,
-			ctx.ACMEOptions.HTTP01SolverImage,
-			ctx.KubeSharedInformerFactory.Core().V1().Secrets().Lister(),
-			ctx.KubeSharedInformerFactory.Core().V1().Pods().Lister(),
-			ctx.KubeSharedInformerFactory.Core().V1().Services().Lister(),
-			ctx.KubeSharedInformerFactory.Extensions().V1beta1().Ingresses().Lister(),
-			ambientCreds,
-			ctx.DNS01Nameservers,
-		)
+		return New(ctx, i)
 	})
 }
