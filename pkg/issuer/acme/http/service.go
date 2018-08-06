@@ -70,7 +70,7 @@ func (s *Solver) getServicesForChallenge(crt *v1alpha1.Certificate, ch v1alpha1.
 // createService will create the service required to solve this challenge
 // in the target API server.
 func (s *Solver) createService(crt *v1alpha1.Certificate, ch v1alpha1.ACMEOrderChallenge) (*corev1.Service, error) {
-	return s.client.CoreV1().Services(crt.Namespace).Create(buildService(crt, ch))
+	return s.Client.CoreV1().Services(crt.Namespace).Create(buildService(crt, ch))
 }
 
 func buildService(crt *v1alpha1.Certificate, ch v1alpha1.ACMEOrderChallenge) *corev1.Service {
@@ -108,7 +108,7 @@ func (s *Solver) cleanupServices(crt *v1alpha1.Certificate, ch v1alpha1.ACMEOrde
 	for _, service := range services {
 		// TODO: should we call DeleteCollection here? We'd need to somehow
 		// also ensure ownership as part of that request using a FieldSelector.
-		err := s.client.CoreV1().Services(service.Namespace).Delete(service.Name, nil)
+		err := s.Client.CoreV1().Services(service.Namespace).Delete(service.Name, nil)
 		if err != nil {
 			errs = append(errs, err)
 		}
