@@ -44,7 +44,7 @@ func (c *Controller) Sync(ctx context.Context, iss *v1alpha1.Issuer) (err error)
 		}
 	}
 
-	i, err := c.issuerFactory.IssuerFor(issuerCopy)
+	i, err := c.IssuerFactory().IssuerFor(issuerCopy)
 
 	if err != nil {
 		return err
@@ -54,7 +54,7 @@ func (c *Controller) Sync(ctx context.Context, iss *v1alpha1.Issuer) (err error)
 	if err != nil {
 		s := messageErrorInitIssuer + err.Error()
 		glog.Info(s)
-		c.recorder.Event(issuerCopy, v1.EventTypeWarning, errorInitIssuer, s)
+		c.Recorder.Event(issuerCopy, v1.EventTypeWarning, errorInitIssuer, s)
 		return err
 	}
 
@@ -68,5 +68,5 @@ func (c *Controller) updateIssuerStatus(old, new *v1alpha1.Issuer) (*v1alpha1.Is
 	// TODO: replace Update call with UpdateStatus. This requires a custom API
 	// server with the /status subresource enabled and/or subresource support
 	// for CRDs (https://github.com/kubernetes/kubernetes/issues/38113)
-	return c.cmClient.CertmanagerV1alpha1().Issuers(new.Namespace).Update(new)
+	return c.CMClient.CertmanagerV1alpha1().Issuers(new.Namespace).Update(new)
 }
