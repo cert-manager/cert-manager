@@ -233,7 +233,7 @@ func (a *Acme) presentChallenge(ctx context.Context, cl client.Interface, crt *v
 	//       is already present and all we do is waiting for propagation,
 	//       otherwise it is spamming with errors which are not really erros
 	//       as we are just waiting for propagation
-	err = solver.Present(ctx, crt, ch)
+	err = solver.Present(ctx, a.issuer, crt, ch)
 	if err != nil {
 		return err
 	}
@@ -289,7 +289,7 @@ func (a *Acme) cleanupChallenge(ctx context.Context, crt *v1alpha1.Certificate, 
 	if err != nil {
 		return err
 	}
-	err = solver.CleanUp(ctx, crt, c)
+	err = solver.CleanUp(ctx, a.issuer, crt, c)
 	if err != nil {
 		return err
 	}
