@@ -10,7 +10,7 @@ import (
 )
 
 func (c *Controller) issuersForSecret(secret *corev1.Secret) ([]*v1alpha1.ClusterIssuer, error) {
-	issuers, err := c.issuerLister.List(labels.NewSelector())
+	issuers, err := c.clusterIssuerLister.List(labels.NewSelector())
 
 	if err != nil {
 		return nil, fmt.Errorf("error listing certificiates: %s", err.Error())
@@ -18,7 +18,7 @@ func (c *Controller) issuersForSecret(secret *corev1.Secret) ([]*v1alpha1.Cluste
 
 	var affected []*v1alpha1.ClusterIssuer
 	for _, iss := range issuers {
-		if secret.Namespace != c.clusterResourceNamespace {
+		if secret.Namespace != c.IssuerOptions.ClusterResourceNamespace {
 			continue
 		}
 		if (iss.Spec.ACME != nil && iss.Spec.ACME.PrivateKey.Name == secret.Name) ||
