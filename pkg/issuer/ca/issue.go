@@ -75,12 +75,12 @@ func (c *CA) obtainCertificate(crt *v1alpha1.Certificate, signeeKey interface{})
 		return nil, fmt.Errorf("no domains specified on certificate")
 	}
 
-	signerCert, err := kube.SecretTLSCert(c.secretsLister, c.issuerResourcesNamespace, c.issuer.GetSpec().CA.SecretName)
+	signerCert, err := kube.SecretTLSCert(c.secretsLister, c.resourceNamespace, c.issuer.GetSpec().CA.SecretName)
 	if err != nil {
 		return nil, fmt.Errorf("error getting issuer certificate: %s", err.Error())
 	}
 
-	signerKey, err := kube.SecretTLSKey(c.secretsLister, c.issuerResourcesNamespace, c.issuer.GetSpec().CA.SecretName)
+	signerKey, err := kube.SecretTLSKey(c.secretsLister, c.resourceNamespace, c.issuer.GetSpec().CA.SecretName)
 	if err != nil {
 		return nil, fmt.Errorf("error getting issuer private key: %s", err.Error())
 	}
