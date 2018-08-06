@@ -59,7 +59,7 @@ func (a *Acme) Setup(ctx context.Context) error {
 	} else if err != nil {
 		s := messageAccountVerificationFailed + err.Error()
 		glog.V(4).Infof("%s: %s", a.issuer.GetObjectMeta().Name, s)
-		a.recorder.Event(a.issuer, v1.EventTypeWarning, errorAccountVerificationFailed, s)
+		a.Recorder.Event(a.issuer, v1.EventTypeWarning, errorAccountVerificationFailed, s)
 		return err
 	}
 
@@ -69,7 +69,7 @@ func (a *Acme) Setup(ctx context.Context) error {
 	if err != nil {
 		s := messageAccountVerificationFailed + err.Error()
 		glog.V(4).Infof("%s: %s", a.issuer.GetObjectMeta().Name, s)
-		a.recorder.Event(a.issuer, v1.EventTypeWarning, errorAccountVerificationFailed, s)
+		a.Recorder.Event(a.issuer, v1.EventTypeWarning, errorAccountVerificationFailed, s)
 		a.issuer.UpdateStatusCondition(v1alpha1.IssuerConditionReady, v1alpha1.ConditionFalse, errorAccountRegistrationFailed, s)
 		return err
 	}
@@ -120,7 +120,7 @@ func (a *Acme) createAccountPrivateKey(sel v1alpha1.SecretKeySelector) (*rsa.Pri
 		return nil, err
 	}
 
-	_, err = a.client.CoreV1().Secrets(a.issuerResourcesNamespace).Create(&v1.Secret{
+	_, err = a.Client.CoreV1().Secrets(a.issuerResourcesNamespace).Create(&v1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      sel.Name,
 			Namespace: a.issuerResourcesNamespace,
