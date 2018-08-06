@@ -87,7 +87,7 @@ func (a *Acme) Prepare(ctx context.Context, crt *v1alpha1.Certificate) error {
 			crt.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse, errorValidateError, fmt.Sprintf("Failed to create new order: %v", err), false)
 			return err
 		}
-		a.recorder.Eventf(crt, corev1.EventTypeNormal, reasonCreateOrder, "Created new ACME order, attempting validation...")
+		a.Recorder.Eventf(crt, corev1.EventTypeNormal, reasonCreateOrder, "Created new ACME order, attempting validation...")
 	}
 
 	// attempt to present/validate the order
@@ -492,7 +492,7 @@ func (a *Acme) acceptChallenge(ctx context.Context, cl client.Interface, crt *v1
 	}
 
 	glog.Infof("Successfully authorized domain %q", authorization.Identifier.Value)
-	a.recorder.Eventf(crt, corev1.EventTypeNormal, reasonDomainVerified, "Domain %q verified with %q validation", ch.Domain, ch.Type)
+	a.Recorder.Eventf(crt, corev1.EventTypeNormal, reasonDomainVerified, "Domain %q verified with %q validation", ch.Domain, ch.Type)
 
 	return nil
 }

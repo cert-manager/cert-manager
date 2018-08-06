@@ -104,7 +104,7 @@ func (a *Acme) obtainCertificate(ctx context.Context, crt *v1alpha1.Certificate)
 		// TODO: should we also set the FailedValidation status
 		// condition here so back off can be applied?
 		crt.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse, errorIssueError, fmt.Sprintf("Failed to finalize order: %v", err), false)
-		a.recorder.Eventf(crt, corev1.EventTypeWarning, errorIssueError, "Failed to finalize order: %v", err)
+		a.Recorder.Eventf(crt, corev1.EventTypeWarning, errorIssueError, "Failed to finalize order: %v", err)
 		return nil, nil, fmt.Errorf("error getting certificate from acme server: %s", err)
 	}
 
@@ -114,7 +114,7 @@ func (a *Acme) obtainCertificate(ctx context.Context, crt *v1alpha1.Certificate)
 		pem.Encode(certBuffer, &pem.Block{Type: "CERTIFICATE", Bytes: cert})
 	}
 
-	a.recorder.Eventf(crt, corev1.EventTypeNormal, successCertObtained, "Obtained certificate from ACME server")
+	a.Recorder.Eventf(crt, corev1.EventTypeNormal, successCertObtained, "Obtained certificate from ACME server")
 
 	glog.Infof("successfully obtained certificate: cn=%q altNames=%+v url=%q", commonName, altNames, orderURL)
 	// encode the private key and return
