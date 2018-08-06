@@ -8,15 +8,13 @@ import (
 
 	"github.com/golang/glog"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/client-go/kubernetes"
 	corelisters "k8s.io/client-go/listers/core/v1"
 	extlisters "k8s.io/client-go/listers/extensions/v1beta1"
-	"k8s.io/client-go/tools/record"
 
 	"github.com/jetstack/cert-manager/pkg/acme"
 	"github.com/jetstack/cert-manager/pkg/acme/client"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
-	clientset "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
+	"github.com/jetstack/cert-manager/pkg/controller"
 	"github.com/jetstack/cert-manager/pkg/issuer"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/http"
@@ -27,13 +25,9 @@ import (
 // certificates from any ACME server. It supports DNS01 and HTTP01 challenge
 // mechanisms.
 type Acme struct {
-	helper *acme.Helper
-
 	issuer v1alpha1.GenericIssuer
-
-	client   kubernetes.Interface
-	cmClient clientset.Interface
-	recorder record.EventRecorder
+	*controller.Context
+	helper *acme.Helper
 
 	secretsLister  corelisters.SecretLister
 	podsLister     corelisters.PodLister
@@ -76,10 +70,8 @@ type solver interface {
 }
 
 // New returns a new ACME issuer interface for the given issuer.
-func New(issuer v1alpha1.GenericIssuer,
-	client kubernetes.Interface,
-	cmClient clientset.Interface,
-	recorder record.EventRecorder,
+func New(ctx *controller.Context,
+	issuer v1alpha1.GenericIssuer,
 	resourceNamespace string,
 	acmeHTTP01SolverImage string,
 	secretsLister corelisters.SecretLister,
@@ -103,24 +95,17 @@ func New(issuer v1alpha1.GenericIssuer,
 	}
 
 	a := &Acme{
-		// TODO: helper *should* be instantiated with the ClusterResourceNamespace,
-		// whereas here we are instantiating it with the actual namespace that should
-		// be used to discover resources.
-		// This is okay in this instance, as we construct a dedicated Helper per Issuer
-		// and we also construct a dedicated 'Acme' per issuer too.
-		// With the ACME order changes, this line will change appropriately.
-		helper:         acme.NewHelper(secretsLister, resourceNamespace),
-		issuer:         issuer,
-		client:         client,
-		cmClient:       cmClient,
-		recorder:       recorder,
+		Context: ctx,
+		helper:  acme.NewHelper(secretsLister, ctx.ClusterResourceNamespace),
+		issuer:  issuer,
+
 		secretsLister:  secretsLister,
 		podsLister:     podsLister,
 		servicesLister: servicesLister,
 		ingressLister:  ingressLister,
 
-		dnsSolver:                dns.NewSolver(issuer, client, secretsLister, resourceNamespace, ambientCreds, dns01Nameservers),
-		httpSolver:               http.NewSolver(issuer, client, podsLister, servicesLister, ingressLister, acmeHTTP01SolverImage),
+		dnsSolver:                dns.NewSolver(issuer, ctx.Client, secretsLister, resourceNamespace, ambientCreds, dns01Nameservers),
+		httpSolver:               http.NewSolver(issuer, ctx.Client, podsLister, servicesLister, ingressLister, acmeHTTP01SolverImage),
 		issuerResourcesNamespace: resourceNamespace,
 	}
 	return a, nil
@@ -143,7 +128,7 @@ func (a *Acme) createOrder(ctx context.Context, cl client.Interface, crt *v1alph
 	}
 	order, err = cl.CreateOrder(ctx, order)
 	if err != nil {
-		a.recorder.Eventf(crt, corev1.EventTypeWarning, "ErrCreateOrder", "Error creating order: %v", err)
+		a.Recorder.Eventf(crt, corev1.EventTypeWarning, "ErrCreateOrder", "Error creating order: %v", err)
 		return nil, err
 	}
 
@@ -164,7 +149,7 @@ func (a *Acme) solverFor(challengeType string) (solver, error) {
 
 // Register this Issuer with the issuer factory
 func init() {
-	issuer.Register(issuer.IssuerACME, func(i v1alpha1.GenericIssuer, ctx *issuer.Context) (issuer.Interface, error) {
+	controller.RegisterIssuer(controller.IssuerACME, func(ctx *controller.Context, i v1alpha1.GenericIssuer) (issuer.Interface, error) {
 		issuerResourcesNamespace := i.GetObjectMeta().Namespace
 		if issuerResourcesNamespace == "" {
 			issuerResourcesNamespace = ctx.ClusterResourceNamespace
@@ -181,12 +166,10 @@ func init() {
 		}
 
 		return New(
+			ctx,
 			i,
-			ctx.Client,
-			ctx.CMClient,
-			ctx.Recorder,
 			issuerResourcesNamespace,
-			ctx.ACMEHTTP01SolverImage,
+			ctx.ACMEOptions.HTTP01SolverImage,
 			ctx.KubeSharedInformerFactory.Core().V1().Secrets().Lister(),
 			ctx.KubeSharedInformerFactory.Core().V1().Pods().Lister(),
 			ctx.KubeSharedInformerFactory.Core().V1().Services().Lister(),
