@@ -45,7 +45,7 @@ const (
 	messageSelfCheck        = "Performing self-check for domain %s"
 
 	// the amount of time to wait before attempting to create a new order after
-	// an order has failed.s
+	// an order has failed.
 	prepareAttemptWaitPeriod = time.Minute * 5
 )
 
@@ -57,6 +57,7 @@ func buildOrder(crt *v1alpha1.Certificate) *v1alpha1.Order {
 	o := &v1alpha1.Order{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: crt.Name + "-",
+			Namespace:    crt.Namespace,
 		},
 		Spec: v1alpha1.OrderSpec{
 			IssuerRef: crt.Spec.IssuerRef,
@@ -93,8 +94,23 @@ func (a *Acme) Prepare(ctx context.Context, crt *v1alpha1.Certificate) error {
 	}
 
 	newOrder := buildOrder(crt)
+
+	if existingOrder != nil && acme.IsFailureState(existingOrder.Status.State) {
+		if crt.Status.LastFailureTime == nil {
+			nowTime := metav1.NewTime(time.Now())
+			crt.Status.LastFailureTime = &nowTime
+		}
+
+		if time.Now().Sub(crt.Status.LastFailureTime.Time) < prepareAttemptWaitPeriod {
+			return fmt.Errorf("applying acme order back-off for certificate %s/%s because it has failed within the last %s", crt.Namespace, crt.Name, prepareAttemptWaitPeriod)
+		}
+
+		// otherwise, we clear the lastFailureTime and create a new order
+		crt.Status.LastFailureTime = nil
+		existingOrder = nil
+	}
+
 	if existingOrder == nil {
-		// TODO: add back-off logic here
 		existingOrder, err = a.CMClient.CertmanagerV1alpha1().Orders(crt.Namespace).Create(newOrder)
 		if err != nil {
 			return err
@@ -133,13 +149,6 @@ func (a *Acme) Prepare(ctx context.Context, crt *v1alpha1.Certificate) error {
 		acmeStatus.OrderRef = &v1alpha1.LocalObjectReference{
 			Name: existingOrder.Name,
 		}
-	}
-
-	if acme.IsFailureState(existingOrder.Status.State) {
-		// TODO: set last failure time on the certificate and mark it as failed.
-		// we also need to be careful to not enter an update loop on this field.
-		nowTime := metav1.NewTime(time.Now())
-		crt.Status.LastFailureTime = &nowTime
 	}
 
 	if existingOrder.Status.State != v1alpha1.Ready {
