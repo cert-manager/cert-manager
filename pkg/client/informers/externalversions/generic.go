@@ -53,10 +53,14 @@ func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource
 	// Group=certmanager.k8s.io, Version=v1alpha1
 	case v1alpha1.SchemeGroupVersion.WithResource("certificates"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Certmanager().V1alpha1().Certificates().Informer()}, nil
+	case v1alpha1.SchemeGroupVersion.WithResource("challenges"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Certmanager().V1alpha1().Challenges().Informer()}, nil
 	case v1alpha1.SchemeGroupVersion.WithResource("clusterissuers"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Certmanager().V1alpha1().ClusterIssuers().Informer()}, nil
 	case v1alpha1.SchemeGroupVersion.WithResource("issuers"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Certmanager().V1alpha1().Issuers().Informer()}, nil
+	case v1alpha1.SchemeGroupVersion.WithResource("orders"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Certmanager().V1alpha1().Orders().Informer()}, nil
 
 	}
 

@@ -436,106 +436,6 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 			},
 			Dependencies: []string{},
 		},
-		"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1.ACMEOrderChallenge": {
-			Schema: spec.Schema{
-				SchemaProps: spec.SchemaProps{
-					Properties: map[string]spec.Schema{
-						"url": {
-							SchemaProps: spec.SchemaProps{
-								Description: "The URL that can be used to get information about the ACME challenge.",
-								Type:        []string{"string"},
-								Format:      "",
-							},
-						},
-						"authzURL": {
-							SchemaProps: spec.SchemaProps{
-								Description: "The URL that can be used to get information about the ACME authorization associated with the challenge.",
-								Type:        []string{"string"},
-								Format:      "",
-							},
-						},
-						"type": {
-							SchemaProps: spec.SchemaProps{
-								Description: "Type of ACME challenge Either http-01 or dns-01",
-								Type:        []string{"string"},
-								Format:      "",
-							},
-						},
-						"domain": {
-							SchemaProps: spec.SchemaProps{
-								Description: "Domain this challenge corresponds to",
-								Type:        []string{"string"},
-								Format:      "",
-							},
-						},
-						"token": {
-							SchemaProps: spec.SchemaProps{
-								Description: "Challenge token for this challenge",
-								Type:        []string{"string"},
-								Format:      "",
-							},
-						},
-						"key": {
-							SchemaProps: spec.SchemaProps{
-								Description: "Challenge key for this challenge",
-								Type:        []string{"string"},
-								Format:      "",
-							},
-						},
-						"wildcard": {
-							SchemaProps: spec.SchemaProps{
-								Description: "Set to true if this challenge is for a wildcard domain",
-								Type:        []string{"boolean"},
-								Format:      "",
-							},
-						},
-						"http01": {
-							SchemaProps: spec.SchemaProps{
-								Ref: ref("github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1.HTTP01SolverConfig"),
-							},
-						},
-						"dns01": {
-							SchemaProps: spec.SchemaProps{
-								Ref: ref("github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1.DNS01SolverConfig"),
-							},
-						},
-					},
-					Required: []string{"url", "authzURL", "type", "domain", "token", "key", "wildcard"},
-				},
-			},
-			Dependencies: []string{
-				"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1.DNS01SolverConfig", "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1.HTTP01SolverConfig"},
-		},
-		"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1.ACMEOrderStatus": {
-			Schema: spec.Schema{
-				SchemaProps: spec.SchemaProps{
-					Properties: map[string]spec.Schema{
-						"url": {
-							SchemaProps: spec.SchemaProps{
-								Description: "The URL that can be used to get information about the ACME order.",
-								Type:        []string{"string"},
-								Format:      "",
-							},
-						},
-						"challenges": {
-							SchemaProps: spec.SchemaProps{
-								Type: []string{"array"},
-								Items: &spec.SchemaOrArray{
-									Schema: &spec.Schema{
-										SchemaProps: spec.SchemaProps{
-											Ref: ref("github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1.ACMEOrderChallenge"),
-										},
-									},
-								},
-							},
-						},
-					},
-					Required: []string{"url"},
-				},
-			},
-			Dependencies: []string{
-				"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1.ACMEOrderChallenge"},
-		},
 		"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1.CAIssuer": {
 			Schema: spec.Schema{
 				SchemaProps: spec.SchemaProps{
@@ -592,23 +492,6 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 			},
 			Dependencies: []string{
 				"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1.CertificateSpec", "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1.CertificateStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
-		},
-		"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1.CertificateACMEStatus": {
-			Schema: spec.Schema{
-				SchemaProps: spec.SchemaProps{
-					Description: "CertificateACMEStatus holds the status for an ACME issuer",
-					Properties: map[string]spec.Schema{
-						"order": {
-							SchemaProps: spec.SchemaProps{
-								Description: "Order contains details about the current in-progress ACME Order.",
-								Ref:         ref("github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1.ACMEOrderStatus"),
-							},
-						},
-					},
-				},
-			},
-			Dependencies: []string{
-				"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1.ACMEOrderStatus"},
 		},
 		"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1.CertificateCondition": {
 			Schema: spec.Schema{
@@ -803,16 +686,192 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 								},
 							},
 						},
-						"acme": {
+						"lastFailureTime": {
 							SchemaProps: spec.SchemaProps{
-								Ref: ref("github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1.CertificateACMEStatus"),
+								Ref: ref("k8s.io/apimachinery/pkg/apis/meta/v1.Time"),
 							},
 						},
 					},
 				},
 			},
 			Dependencies: []string{
-				"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1.CertificateACMEStatus", "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1.CertificateCondition"},
+				"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1.CertificateCondition", "k8s.io/apimachinery/pkg/apis/meta/v1.Time"},
+		},
+		"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1.Challenge": {
+			Schema: spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Properties: map[string]spec.Schema{
+						"kind": {
+							SchemaProps: spec.SchemaProps{
+								Description: "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds",
+								Type:        []string{"string"},
+								Format:      "",
+							},
+						},
+						"apiVersion": {
+							SchemaProps: spec.SchemaProps{
+								Description: "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#resources",
+								Type:        []string{"string"},
+								Format:      "",
+							},
+						},
+						"metadata": {
+							SchemaProps: spec.SchemaProps{
+								Ref: ref("k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"),
+							},
+						},
+						"spec": {
+							SchemaProps: spec.SchemaProps{
+								Ref: ref("github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1.ChallengeSpec"),
+							},
+						},
+						"status": {
+							SchemaProps: spec.SchemaProps{
+								Ref: ref("github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1.ChallengeStatus"),
+							},
+						},
+					},
+					Required: []string{"metadata", "spec", "status"},
+				},
+			},
+			Dependencies: []string{
+				"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1.ChallengeSpec", "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1.ChallengeStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
+		},
+		"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1.ChallengeList": {
+			Schema: spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Description: "ChallengeList is a list of Challenges",
+					Properties: map[string]spec.Schema{
+						"kind": {
+							SchemaProps: spec.SchemaProps{
+								Description: "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds",
+								Type:        []string{"string"},
+								Format:      "",
+							},
+						},
+						"apiVersion": {
+							SchemaProps: spec.SchemaProps{
+								Description: "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#resources",
+								Type:        []string{"string"},
+								Format:      "",
+							},
+						},
+						"metadata": {
+							SchemaProps: spec.SchemaProps{
+								Ref: ref("k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"),
+							},
+						},
+						"items": {
+							SchemaProps: spec.SchemaProps{
+								Type: []string{"array"},
+								Items: &spec.SchemaOrArray{
+									Schema: &spec.Schema{
+										SchemaProps: spec.SchemaProps{
+											Ref: ref("github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1.Challenge"),
+										},
+									},
+								},
+							},
+						},
+					},
+					Required: []string{"metadata", "items"},
+				},
+			},
+			Dependencies: []string{
+				"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1.Challenge", "k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"},
+		},
+		"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1.ChallengeSpec": {
+			Schema: spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Properties: map[string]spec.Schema{
+						"authzURL": {
+							SchemaProps: spec.SchemaProps{
+								Type:   []string{"string"},
+								Format: "",
+							},
+						},
+						"type": {
+							SchemaProps: spec.SchemaProps{
+								Type:   []string{"string"},
+								Format: "",
+							},
+						},
+						"url": {
+							SchemaProps: spec.SchemaProps{
+								Type:   []string{"string"},
+								Format: "",
+							},
+						},
+						"dnsName": {
+							SchemaProps: spec.SchemaProps{
+								Type:   []string{"string"},
+								Format: "",
+							},
+						},
+						"token": {
+							SchemaProps: spec.SchemaProps{
+								Type:   []string{"string"},
+								Format: "",
+							},
+						},
+						"key": {
+							SchemaProps: spec.SchemaProps{
+								Type:   []string{"string"},
+								Format: "",
+							},
+						},
+						"wildcard": {
+							SchemaProps: spec.SchemaProps{
+								Type:   []string{"boolean"},
+								Format: "",
+							},
+						},
+						"config": {
+							SchemaProps: spec.SchemaProps{
+								Description: "Config specifies the solver configuration for this challenge.",
+								Ref:         ref("github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1.SolverConfig"),
+							},
+						},
+						"issuerRef": {
+							SchemaProps: spec.SchemaProps{
+								Description: "IssuerRef references a properly configured ACME-type Issuer which should be used to create this Challenge. If the Issuer does not exist, processing will be retried. If the Issuer is not an 'ACME' Issuer, an error will be returned and the Challenge will be marked as failed.",
+								Ref:         ref("github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1.ObjectReference"),
+							},
+						},
+					},
+					Required: []string{"authzURL", "type", "url", "dnsName", "token", "key", "wildcard", "config", "issuerRef"},
+				},
+			},
+			Dependencies: []string{
+				"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1.ObjectReference", "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1.SolverConfig"},
+		},
+		"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1.ChallengeStatus": {
+			Schema: spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Properties: map[string]spec.Schema{
+						"presented": {
+							SchemaProps: spec.SchemaProps{
+								Type:   []string{"boolean"},
+								Format: "",
+							},
+						},
+						"reason": {
+							SchemaProps: spec.SchemaProps{
+								Type:   []string{"string"},
+								Format: "",
+							},
+						},
+						"state": {
+							SchemaProps: spec.SchemaProps{
+								Type:   []string{"string"},
+								Format: "",
+							},
+						},
+					},
+					Required: []string{"presented", "reason", "state"},
+				},
+			},
+			Dependencies: []string{},
 		},
 		"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1.ClusterIssuer": {
 			Schema: spec.Schema{
@@ -1225,6 +1284,212 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 				},
 			},
 			Dependencies: []string{},
+		},
+		"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1.Order": {
+			Schema: spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Properties: map[string]spec.Schema{
+						"kind": {
+							SchemaProps: spec.SchemaProps{
+								Description: "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds",
+								Type:        []string{"string"},
+								Format:      "",
+							},
+						},
+						"apiVersion": {
+							SchemaProps: spec.SchemaProps{
+								Description: "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#resources",
+								Type:        []string{"string"},
+								Format:      "",
+							},
+						},
+						"metadata": {
+							SchemaProps: spec.SchemaProps{
+								Ref: ref("k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"),
+							},
+						},
+						"spec": {
+							SchemaProps: spec.SchemaProps{
+								Ref: ref("github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1.OrderSpec"),
+							},
+						},
+						"status": {
+							SchemaProps: spec.SchemaProps{
+								Ref: ref("github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1.OrderStatus"),
+							},
+						},
+					},
+					Required: []string{"metadata", "spec", "status"},
+				},
+			},
+			Dependencies: []string{
+				"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1.OrderSpec", "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1.OrderStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
+		},
+		"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1.OrderList": {
+			Schema: spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Description: "OrderList is a list of Orders",
+					Properties: map[string]spec.Schema{
+						"kind": {
+							SchemaProps: spec.SchemaProps{
+								Description: "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds",
+								Type:        []string{"string"},
+								Format:      "",
+							},
+						},
+						"apiVersion": {
+							SchemaProps: spec.SchemaProps{
+								Description: "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#resources",
+								Type:        []string{"string"},
+								Format:      "",
+							},
+						},
+						"metadata": {
+							SchemaProps: spec.SchemaProps{
+								Ref: ref("k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"),
+							},
+						},
+						"items": {
+							SchemaProps: spec.SchemaProps{
+								Type: []string{"array"},
+								Items: &spec.SchemaOrArray{
+									Schema: &spec.Schema{
+										SchemaProps: spec.SchemaProps{
+											Ref: ref("github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1.Order"),
+										},
+									},
+								},
+							},
+						},
+					},
+					Required: []string{"metadata", "items"},
+				},
+			},
+			Dependencies: []string{
+				"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1.Order", "k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"},
+		},
+		"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1.OrderSpec": {
+			Schema: spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Properties: map[string]spec.Schema{
+						"csr": {
+							SchemaProps: spec.SchemaProps{
+								Description: "Certificate signing request bytes in DER encoding. This will be used when finalizing the order. This field must be set on the order.",
+								Type:        []string{"string"},
+								Format:      "byte",
+							},
+						},
+						"issuerRef": {
+							SchemaProps: spec.SchemaProps{
+								Description: "IssuerRef references a properly configured ACME-type Issuer which should be used to create this Order. If the Issuer does not exist, processing will be retried. If the Issuer is not an 'ACME' Issuer, an error will be returned and the Order will be marked as failed.",
+								Ref:         ref("github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1.ObjectReference"),
+							},
+						},
+						"commonName": {
+							SchemaProps: spec.SchemaProps{
+								Description: "CommonName is the common name as specified on the DER encoded CSR. If CommonName is not specified, the first DNSName specified will be used as the CommonName. At least on of CommonName or a DNSName must be set. This field must match the corresponding field on the DER encoded CSR.",
+								Type:        []string{"string"},
+								Format:      "",
+							},
+						},
+						"dnsNames": {
+							SchemaProps: spec.SchemaProps{
+								Description: "DNSNames is a list of DNS names that should be included as part of the Order validation process. If CommonName is not specified, the first DNSName specified will be used as the CommonName. At least on of CommonName or a DNSName must be set. This field must match the corresponding field on the DER encoded CSR.",
+								Type:        []string{"array"},
+								Items: &spec.SchemaOrArray{
+									Schema: &spec.Schema{
+										SchemaProps: spec.SchemaProps{
+											Type:   []string{"string"},
+											Format: "",
+										},
+									},
+								},
+							},
+						},
+						"config": {
+							SchemaProps: spec.SchemaProps{
+								Description: "Config specifies a mapping from DNS identifiers to how those identifiers should be solved when performing ACME challenges. A config entry must exist for each domain listed in DNSNames and CommonName.",
+								Type:        []string{"array"},
+								Items: &spec.SchemaOrArray{
+									Schema: &spec.Schema{
+										SchemaProps: spec.SchemaProps{
+											Ref: ref("github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1.DomainSolverConfig"),
+										},
+									},
+								},
+							},
+						},
+					},
+					Required: []string{"csr", "issuerRef", "config"},
+				},
+			},
+			Dependencies: []string{
+				"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1.DomainSolverConfig", "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1.ObjectReference"},
+		},
+		"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1.OrderStatus": {
+			Schema: spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Properties: map[string]spec.Schema{
+						"url": {
+							SchemaProps: spec.SchemaProps{
+								Description: "URL of the Order. This will initially be empty when the resource is first created. The Order controller will populate this field when the Order is first processed. This field will be immutable after it is initially set.",
+								Type:        []string{"string"},
+								Format:      "",
+							},
+						},
+						"finalizeURL": {
+							SchemaProps: spec.SchemaProps{
+								Description: "FinalizeURL of the Order. This is used to obtain certificates for this order once it has been completed.",
+								Type:        []string{"string"},
+								Format:      "",
+							},
+						},
+						"certificateURL": {
+							SchemaProps: spec.SchemaProps{
+								Description: "CertificateURL is a URL that can be used to retrieve a copy of the signed TLS certificate for this order. It will be populated automatically once the order has completed successfully and the certificate is available for retrieval.",
+								Type:        []string{"string"},
+								Format:      "",
+							},
+						},
+						"state": {
+							SchemaProps: spec.SchemaProps{
+								Description: "State contains the current state of this Order resource. States 'success' and 'expired' are 'final'",
+								Type:        []string{"string"},
+								Format:      "",
+							},
+						},
+						"reason": {
+							SchemaProps: spec.SchemaProps{
+								Description: "Reason optionally provides more information about a why the order is in the current state.",
+								Type:        []string{"string"},
+								Format:      "",
+							},
+						},
+						"challenges": {
+							SchemaProps: spec.SchemaProps{
+								Description: "Challenges is a list of ChallengeSpecs for Challenges that must be created in order to complete this Order.",
+								Type:        []string{"array"},
+								Items: &spec.SchemaOrArray{
+									Schema: &spec.Schema{
+										SchemaProps: spec.SchemaProps{
+											Ref: ref("github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1.ChallengeSpec"),
+										},
+									},
+								},
+							},
+						},
+						"failureTime": {
+							SchemaProps: spec.SchemaProps{
+								Description: "FailureTime stores the time that this order failed. This is used to influence garbage collection and back-off. The order resource will be automatically deleted after 30 minutes has passed since the failure time.",
+								Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.Time"),
+							},
+						},
+					},
+					Required: []string{"url", "finalizeURL", "state", "reason"},
+				},
+			},
+			Dependencies: []string{
+				"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1.ChallengeSpec", "k8s.io/apimachinery/pkg/apis/meta/v1.Time"},
 		},
 		"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1.SecretKeySelector": {
 			Schema: spec.Schema{
