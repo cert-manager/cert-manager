@@ -53,13 +53,13 @@ func (s *Solver) getIngressesForChallenge(crt *v1alpha1.Certificate, ch v1alpha1
 // exists, or if an existing ingress is specified on the secret will ensure
 // that the ingress has an appropriate challenge path configured
 func (s *Solver) ensureIngress(crt *v1alpha1.Certificate, svcName string, ch v1alpha1.ACMEOrderChallenge) (ing *extv1beta1.Ingress, err error) {
-	domainCfg := crt.Spec.ACME.ConfigForDomain(ch.Domain)
+	domainCfg := v1alpha1.ConfigForDomain(crt.Spec.ACME.Config, ch.Domain)
 	if domainCfg == nil {
 		return nil, fmt.Errorf("no ACME challenge configuration found for domain %q", ch.Domain)
 	}
 	httpDomainCfg := domainCfg.HTTP01
 	if httpDomainCfg == nil {
-		httpDomainCfg = &v1alpha1.ACMECertificateHTTP01Config{}
+		httpDomainCfg = &v1alpha1.HTTP01SolverConfig{}
 	}
 	if httpDomainCfg != nil &&
 		httpDomainCfg.Ingress != "" {
@@ -95,8 +95,8 @@ func (s *Solver) createIngress(crt *v1alpha1.Certificate, svcName string, ch v1a
 
 func buildIngressResource(crt *v1alpha1.Certificate, svcName string, ch v1alpha1.ACMEOrderChallenge) *extv1beta1.Ingress {
 	var ingClass *string
-	if ch.ACMESolverConfig.HTTP01 != nil {
-		ingClass = ch.ACMESolverConfig.HTTP01.IngressClass
+	if ch.SolverConfig.HTTP01 != nil {
+		ingClass = ch.SolverConfig.HTTP01.IngressClass
 	}
 
 	podLabels := podLabels(ch)
@@ -132,7 +132,7 @@ func buildIngressResource(crt *v1alpha1.Certificate, svcName string, ch v1alpha1
 }
 
 func (s *Solver) addChallengePathToIngress(crt *v1alpha1.Certificate, svcName string, ch v1alpha1.ACMEOrderChallenge) (*extv1beta1.Ingress, error) {
-	ingressName := ch.ACMESolverConfig.HTTP01.Ingress
+	ingressName := ch.SolverConfig.HTTP01.Ingress
 
 	ing, err := s.ingressLister.Ingresses(crt.Namespace).Get(ingressName)
 	if err != nil {
@@ -180,9 +180,9 @@ func (s *Solver) addChallengePathToIngress(crt *v1alpha1.Certificate, svcName st
 // ingress, or delete the ingress if an existing ingress name is not specified
 // on the certificate.
 func (s *Solver) cleanupIngresses(crt *v1alpha1.Certificate, ch v1alpha1.ACMEOrderChallenge) error {
-	httpDomainCfg := ch.ACMESolverConfig.HTTP01
+	httpDomainCfg := ch.SolverConfig.HTTP01
 	if httpDomainCfg == nil {
-		httpDomainCfg = &v1alpha1.ACMECertificateHTTP01Config{}
+		httpDomainCfg = &v1alpha1.HTTP01SolverConfig{}
 	}
 	existingIngressName := httpDomainCfg.Ingress
 

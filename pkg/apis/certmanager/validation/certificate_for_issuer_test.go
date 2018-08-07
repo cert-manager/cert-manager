@@ -28,11 +28,11 @@ func TestValidateCertificateForIssuer(t *testing.T) {
 				Spec: v1alpha1.CertificateSpec{
 					IssuerRef: validIssuerRef,
 					ACME: &v1alpha1.ACMECertificateConfig{
-						Config: []v1alpha1.ACMECertificateDomainConfig{
+						Config: []v1alpha1.DomainSolverConfig{
 							{
 								Domains: []string{"example.com"},
-								ACMESolverConfig: v1alpha1.ACMESolverConfig{
-									HTTP01: &v1alpha1.ACMECertificateHTTP01Config{},
+								SolverConfig: v1alpha1.SolverConfig{
+									HTTP01: &v1alpha1.HTTP01SolverConfig{},
 								},
 							},
 						},
@@ -51,11 +51,11 @@ func TestValidateCertificateForIssuer(t *testing.T) {
 					KeyAlgorithm: v1alpha1.KeyAlgorithm("blah"),
 					IssuerRef:    validIssuerRef,
 					ACME: &v1alpha1.ACMECertificateConfig{
-						Config: []v1alpha1.ACMECertificateDomainConfig{
+						Config: []v1alpha1.DomainSolverConfig{
 							{
 								Domains: []string{"example.com"},
-								ACMESolverConfig: v1alpha1.ACMESolverConfig{
-									HTTP01: &v1alpha1.ACMECertificateHTTP01Config{},
+								SolverConfig: v1alpha1.SolverConfig{
+									HTTP01: &v1alpha1.HTTP01SolverConfig{},
 								},
 							},
 						},
@@ -76,11 +76,11 @@ func TestValidateCertificateForIssuer(t *testing.T) {
 					KeyAlgorithm: v1alpha1.RSAKeyAlgorithm,
 					IssuerRef:    validIssuerRef,
 					ACME: &v1alpha1.ACMECertificateConfig{
-						Config: []v1alpha1.ACMECertificateDomainConfig{
+						Config: []v1alpha1.DomainSolverConfig{
 							{
 								Domains: []string{"example.com"},
-								ACMESolverConfig: v1alpha1.ACMESolverConfig{
-									HTTP01: &v1alpha1.ACMECertificateHTTP01Config{},
+								SolverConfig: v1alpha1.SolverConfig{
+									HTTP01: &v1alpha1.HTTP01SolverConfig{},
 								},
 							},
 						},
@@ -98,11 +98,11 @@ func TestValidateCertificateForIssuer(t *testing.T) {
 					KeyAlgorithm: v1alpha1.ECDSAKeyAlgorithm,
 					IssuerRef:    validIssuerRef,
 					ACME: &v1alpha1.ACMECertificateConfig{
-						Config: []v1alpha1.ACMECertificateDomainConfig{
+						Config: []v1alpha1.DomainSolverConfig{
 							{
 								Domains: []string{"example.com"},
-								ACMESolverConfig: v1alpha1.ACMESolverConfig{
-									HTTP01: &v1alpha1.ACMECertificateHTTP01Config{},
+								SolverConfig: v1alpha1.SolverConfig{
+									HTTP01: &v1alpha1.HTTP01SolverConfig{},
 								},
 							},
 						},
@@ -123,11 +123,11 @@ func TestValidateCertificateForIssuer(t *testing.T) {
 					KeyAlgorithm: v1alpha1.ECDSAKeyAlgorithm,
 					IssuerRef:    validIssuerRef,
 					ACME: &v1alpha1.ACMECertificateConfig{
-						Config: []v1alpha1.ACMECertificateDomainConfig{
+						Config: []v1alpha1.DomainSolverConfig{
 							{
 								Domains: []string{"example.com"},
-								ACMESolverConfig: v1alpha1.ACMESolverConfig{
-									HTTP01: &v1alpha1.ACMECertificateHTTP01Config{},
+								SolverConfig: v1alpha1.SolverConfig{
+									HTTP01: &v1alpha1.HTTP01SolverConfig{},
 								},
 							},
 						},

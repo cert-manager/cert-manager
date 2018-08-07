@@ -300,7 +300,7 @@ func (a *Acme) selectChallengesForAuthorizations(ctx context.Context, cl client.
 	chals := make([]v1alpha1.ACMEOrderChallenge, len(allAuthorizations))
 	var errs []error
 	for i, authz := range allAuthorizations {
-		cfg, err := acmeSolverConfigurationForAuthorization(crt.Spec.ACME, authz)
+		cfg, err := solverConfigurationForAuthorization(crt.Spec.ACME, authz)
 		if err != nil {
 			errs = append(errs, err)
 			continue
@@ -333,7 +333,7 @@ func (a *Acme) selectChallengesForAuthorizations(ctx context.Context, cl client.
 	return chals, utilerrors.NewAggregate(errs)
 }
 
-func buildInternalChallengeType(cl client.Interface, ch *acme.Challenge, cfg v1alpha1.ACMESolverConfig, domain, authzURL string, wildcard bool) (v1alpha1.ACMEOrderChallenge, error) {
+func buildInternalChallengeType(cl client.Interface, ch *acme.Challenge, cfg v1alpha1.SolverConfig, domain, authzURL string, wildcard bool) (v1alpha1.ACMEOrderChallenge, error) {
 	var key string
 	var err error
 	switch ch.Type {
@@ -349,14 +349,14 @@ func buildInternalChallengeType(cl client.Interface, ch *acme.Challenge, cfg v1a
 	}
 
 	return v1alpha1.ACMEOrderChallenge{
-		URL:              ch.URL,
-		AuthzURL:         authzURL,
-		Type:             ch.Type,
-		Domain:           domain,
-		Token:            ch.Token,
-		Key:              key,
-		ACMESolverConfig: cfg,
-		Wildcard:         wildcard,
+		URL:          ch.URL,
+		AuthzURL:     authzURL,
+		Type:         ch.Type,
+		Domain:       domain,
+		Token:        ch.Token,
+		Key:          key,
+		SolverConfig: cfg,
+		Wildcard:     wildcard,
 	}, nil
 }
 
@@ -519,7 +519,7 @@ func getRemainingAuthorizations(ctx context.Context, cl client.Interface, urls .
 	return authzs, nil
 }
 
-func acmeSolverConfigurationForAuthorization(cfg *v1alpha1.ACMECertificateConfig, authz *acme.Authorization) (*v1alpha1.ACMESolverConfig, error) {
+func solverConfigurationForAuthorization(cfg *v1alpha1.ACMECertificateConfig, authz *acme.Authorization) (*v1alpha1.SolverConfig, error) {
 	domain := authz.Identifier.Value
 	if authz.Wildcard {
 		domain = "*." + domain
@@ -529,7 +529,7 @@ func acmeSolverConfigurationForAuthorization(cfg *v1alpha1.ACMECertificateConfig
 			if dom != domain {
 				continue
 			}
-			return &d.ACMESolverConfig, nil
+			return &d.SolverConfig, nil
 		}
 	}
 	return nil, fmt.Errorf("solver configuration for domain %q not found. Ensure you have configured a challenge mechanism using the certificate.spec.acme.config field", domain)

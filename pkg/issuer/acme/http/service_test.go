@@ -22,8 +22,8 @@ func TestEnsureService(t *testing.T) {
 				Namespace:    defaultTestNamespace,
 				DNSNames:     []string{"example.com"},
 				ACMEOrderURL: "testURL",
-				ACMESolverConfig: v1alpha1.ACMESolverConfig{
-					HTTP01: &v1alpha1.ACMECertificateHTTP01Config{},
+				SolverConfig: v1alpha1.SolverConfig{
+					HTTP01: &v1alpha1.HTTP01SolverConfig{},
 				},
 			}),
 			Challenge: v1alpha1.ACMEOrderChallenge{
@@ -65,8 +65,8 @@ func TestEnsureService(t *testing.T) {
 				Namespace:    defaultTestNamespace,
 				DNSNames:     []string{"example.com"},
 				ACMEOrderURL: "testURL",
-				ACMESolverConfig: v1alpha1.ACMESolverConfig{
-					HTTP01: &v1alpha1.ACMECertificateHTTP01Config{},
+				SolverConfig: v1alpha1.SolverConfig{
+					HTTP01: &v1alpha1.HTTP01SolverConfig{},
 				},
 			}),
 			Challenge: v1alpha1.ACMEOrderChallenge{
@@ -117,8 +117,8 @@ func TestEnsureService(t *testing.T) {
 				Namespace:    defaultTestNamespace,
 				DNSNames:     []string{"example.com"},
 				ACMEOrderURL: "testURL",
-				ACMESolverConfig: v1alpha1.ACMESolverConfig{
-					HTTP01: &v1alpha1.ACMECertificateHTTP01Config{},
+				SolverConfig: v1alpha1.SolverConfig{
+					HTTP01: &v1alpha1.HTTP01SolverConfig{},
 				},
 			}),
 			Challenge: v1alpha1.ACMEOrderChallenge{
@@ -174,8 +174,8 @@ func TestGetServicesForCertificate(t *testing.T) {
 				Namespace:    defaultTestNamespace,
 				DNSNames:     []string{"example.com"},
 				ACMEOrderURL: "testURL",
-				ACMESolverConfig: v1alpha1.ACMESolverConfig{
-					HTTP01: &v1alpha1.ACMECertificateHTTP01Config{},
+				SolverConfig: v1alpha1.SolverConfig{
+					HTTP01: &v1alpha1.HTTP01SolverConfig{},
 				},
 			}),
 			Challenge: v1alpha1.ACMEOrderChallenge{
@@ -208,8 +208,8 @@ func TestGetServicesForCertificate(t *testing.T) {
 				Name:      "test",
 				Namespace: defaultTestNamespace,
 				DNSNames:  []string{"example.com"},
-				ACMESolverConfig: v1alpha1.ACMESolverConfig{
-					HTTP01: &v1alpha1.ACMECertificateHTTP01Config{},
+				SolverConfig: v1alpha1.SolverConfig{
+					HTTP01: &v1alpha1.HTTP01SolverConfig{},
 				},
 			}),
 			Challenge: v1alpha1.ACMEOrderChallenge{

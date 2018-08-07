@@ -17,8 +17,8 @@ type CertificateConfig struct {
 	DNSNames               []string
 
 	// ACME parameters
-	ACMESolverConfig v1alpha1.ACMESolverConfig
-	ACMEOrderURL     string
+	SolverConfig v1alpha1.SolverConfig
+	ACMEOrderURL string
 }
 
 func Certificate(cfg CertificateConfig) *v1alpha1.Certificate {
@@ -36,10 +36,10 @@ func Certificate(cfg CertificateConfig) *v1alpha1.Certificate {
 			CommonName: cfg.CommonName,
 			DNSNames:   cfg.DNSNames,
 			ACME: &v1alpha1.ACMECertificateConfig{
-				Config: []v1alpha1.ACMECertificateDomainConfig{
+				Config: []v1alpha1.DomainSolverConfig{
 					{
-						Domains:          cfg.DNSNames,
-						ACMESolverConfig: cfg.ACMESolverConfig,
+						Domains:      cfg.DNSNames,
+						SolverConfig: cfg.SolverConfig,
 					},
 				},
 			},

@@ -14,21 +14,21 @@ const (
 	defaultTestNamespace = "default"
 )
 
-func TestACMESolverConfigurationForAuthorization(t *testing.T) {
+func TestSolverConfigurationForAuthorization(t *testing.T) {
 	type testT struct {
 		cfg         *v1alpha1.ACMECertificateConfig
 		authz       *acme.Authorization
-		expectedCfg *v1alpha1.ACMESolverConfig
+		expectedCfg *v1alpha1.SolverConfig
 		expectedErr bool
 	}
 	tests := map[string]testT{
 		"correctly selects normal domain": testT{
 			cfg: &v1alpha1.ACMECertificateConfig{
-				Config: []v1alpha1.ACMECertificateDomainConfig{
+				Config: []v1alpha1.DomainSolverConfig{
 					{
 						Domains: []string{"example.com"},
-						ACMESolverConfig: v1alpha1.ACMESolverConfig{
-							DNS01: &v1alpha1.ACMECertificateDNS01Config{
+						SolverConfig: v1alpha1.SolverConfig{
+							DNS01: &v1alpha1.DNS01SolverConfig{
 								Provider: "correctdns",
 							},
 						},
@@ -40,19 +40,19 @@ func TestACMESolverConfigurationForAuthorization(t *testing.T) {
 					Value: "example.com",
 				},
 			},
-			expectedCfg: &v1alpha1.ACMESolverConfig{
-				DNS01: &v1alpha1.ACMECertificateDNS01Config{
+			expectedCfg: &v1alpha1.SolverConfig{
+				DNS01: &v1alpha1.DNS01SolverConfig{
 					Provider: "correctdns",
 				},
 			},
 		},
 		"correctly selects normal domain with multiple domains configured": testT{
 			cfg: &v1alpha1.ACMECertificateConfig{
-				Config: []v1alpha1.ACMECertificateDomainConfig{
+				Config: []v1alpha1.DomainSolverConfig{
 					{
 						Domains: []string{"notexample.com", "example.com"},
-						ACMESolverConfig: v1alpha1.ACMESolverConfig{
-							DNS01: &v1alpha1.ACMECertificateDNS01Config{
+						SolverConfig: v1alpha1.SolverConfig{
+							DNS01: &v1alpha1.DNS01SolverConfig{
 								Provider: "correctdns",
 							},
 						},
@@ -64,27 +64,27 @@ func TestACMESolverConfigurationForAuthorization(t *testing.T) {
 					Value: "example.com",
 				},
 			},
-			expectedCfg: &v1alpha1.ACMESolverConfig{
-				DNS01: &v1alpha1.ACMECertificateDNS01Config{
+			expectedCfg: &v1alpha1.SolverConfig{
+				DNS01: &v1alpha1.DNS01SolverConfig{
 					Provider: "correctdns",
 				},
 			},
 		},
 		"correctly selects normal domain with multiple domains configured separately": testT{
 			cfg: &v1alpha1.ACMECertificateConfig{
-				Config: []v1alpha1.ACMECertificateDomainConfig{
+				Config: []v1alpha1.DomainSolverConfig{
 					{
 						Domains: []string{"example.com"},
-						ACMESolverConfig: v1alpha1.ACMESolverConfig{
-							DNS01: &v1alpha1.ACMECertificateDNS01Config{
+						SolverConfig: v1alpha1.SolverConfig{
+							DNS01: &v1alpha1.DNS01SolverConfig{
 								Provider: "correctdns",
 							},
 						},
 					},
 					{
 						Domains: []string{"notexample.com"},
-						ACMESolverConfig: v1alpha1.ACMESolverConfig{
-							DNS01: &v1alpha1.ACMECertificateDNS01Config{
+						SolverConfig: v1alpha1.SolverConfig{
+							DNS01: &v1alpha1.DNS01SolverConfig{
 								Provider: "incorrectdns",
 							},
 						},
@@ -96,27 +96,27 @@ func TestACMESolverConfigurationForAuthorization(t *testing.T) {
 					Value: "example.com",
 				},
 			},
-			expectedCfg: &v1alpha1.ACMESolverConfig{
-				DNS01: &v1alpha1.ACMECertificateDNS01Config{
+			expectedCfg: &v1alpha1.SolverConfig{
+				DNS01: &v1alpha1.DNS01SolverConfig{
 					Provider: "correctdns",
 				},
 			},
 		},
 		"correctly selects configuration for wildcard domain": testT{
 			cfg: &v1alpha1.ACMECertificateConfig{
-				Config: []v1alpha1.ACMECertificateDomainConfig{
+				Config: []v1alpha1.DomainSolverConfig{
 					{
 						Domains: []string{"example.com"},
-						ACMESolverConfig: v1alpha1.ACMESolverConfig{
-							DNS01: &v1alpha1.ACMECertificateDNS01Config{
+						SolverConfig: v1alpha1.SolverConfig{
+							DNS01: &v1alpha1.DNS01SolverConfig{
 								Provider: "incorrectdns",
 							},
 						},
 					},
 					{
 						Domains: []string{"*.example.com"},
-						ACMESolverConfig: v1alpha1.ACMESolverConfig{
-							DNS01: &v1alpha1.ACMECertificateDNS01Config{
+						SolverConfig: v1alpha1.SolverConfig{
+							DNS01: &v1alpha1.DNS01SolverConfig{
 								Provider: "correctdns",
 							},
 						},
@@ -131,19 +131,19 @@ func TestACMESolverConfigurationForAuthorization(t *testing.T) {
 					Value: "example.com",
 				},
 			},
-			expectedCfg: &v1alpha1.ACMESolverConfig{
-				DNS01: &v1alpha1.ACMECertificateDNS01Config{
+			expectedCfg: &v1alpha1.SolverConfig{
+				DNS01: &v1alpha1.DNS01SolverConfig{
 					Provider: "correctdns",
 				},
 			},
 		},
 		"returns an error when configuration for the domain is not found": testT{
 			cfg: &v1alpha1.ACMECertificateConfig{
-				Config: []v1alpha1.ACMECertificateDomainConfig{
+				Config: []v1alpha1.DomainSolverConfig{
 					{
 						Domains: []string{"notexample.com"},
-						ACMESolverConfig: v1alpha1.ACMESolverConfig{
-							DNS01: &v1alpha1.ACMECertificateDNS01Config{
+						SolverConfig: v1alpha1.SolverConfig{
+							DNS01: &v1alpha1.DNS01SolverConfig{
 								Provider: "incorrectdns",
 							},
 						},
@@ -160,7 +160,7 @@ func TestACMESolverConfigurationForAuthorization(t *testing.T) {
 	}
 	for n, test := range tests {
 		t.Run(n, func(t *testing.T) {
-			actualCfg, err := acmeSolverConfigurationForAuthorization(test.cfg, test.authz)
+			actualCfg, err := solverConfigurationForAuthorization(test.cfg, test.authz)
 			if err != nil && !test.expectedErr {
 				t.Errorf("Expected to return non-nil error, but got %v", err)
 				return

@@ -113,11 +113,11 @@ func TestBuildCertificates(t *testing.T) {
 							Kind: "ClusterIssuer",
 						},
 						ACME: &v1alpha1.ACMECertificateConfig{
-							Config: []v1alpha1.ACMECertificateDomainConfig{
+							Config: []v1alpha1.DomainSolverConfig{
 								{
 									Domains: []string{"example.com", "www.example.com"},
-									ACMESolverConfig: v1alpha1.ACMESolverConfig{
-										HTTP01: &v1alpha1.ACMECertificateHTTP01Config{
+									SolverConfig: v1alpha1.SolverConfig{
+										HTTP01: &v1alpha1.HTTP01SolverConfig{
 											Ingress: "ingress-name",
 										},
 									},
@@ -164,11 +164,11 @@ func TestBuildCertificates(t *testing.T) {
 							Kind: "ClusterIssuer",
 						},
 						ACME: &v1alpha1.ACMECertificateConfig{
-							Config: []v1alpha1.ACMECertificateDomainConfig{
+							Config: []v1alpha1.DomainSolverConfig{
 								{
 									Domains: []string{"example.com", "www.example.com"},
-									ACMESolverConfig: v1alpha1.ACMESolverConfig{
-										HTTP01: &v1alpha1.ACMECertificateHTTP01Config{},
+									SolverConfig: v1alpha1.SolverConfig{
+										HTTP01: &v1alpha1.HTTP01SolverConfig{},
 									},
 								},
 							},
@@ -214,11 +214,11 @@ func TestBuildCertificates(t *testing.T) {
 							Kind: "ClusterIssuer",
 						},
 						ACME: &v1alpha1.ACMECertificateConfig{
-							Config: []v1alpha1.ACMECertificateDomainConfig{
+							Config: []v1alpha1.DomainSolverConfig{
 								{
 									Domains: []string{"example.com", "www.example.com"},
-									ACMESolverConfig: v1alpha1.ACMESolverConfig{
-										HTTP01: &v1alpha1.ACMECertificateHTTP01Config{
+									SolverConfig: v1alpha1.SolverConfig{
+										HTTP01: &v1alpha1.HTTP01SolverConfig{
 											IngressClass: strPtr("nginx-ing"),
 										},
 									},
@@ -267,11 +267,11 @@ func TestBuildCertificates(t *testing.T) {
 							Kind: "ClusterIssuer",
 						},
 						ACME: &v1alpha1.ACMECertificateConfig{
-							Config: []v1alpha1.ACMECertificateDomainConfig{
+							Config: []v1alpha1.DomainSolverConfig{
 								{
 									Domains: []string{"example.com", "www.example.com"},
-									ACMESolverConfig: v1alpha1.ACMESolverConfig{
-										HTTP01: &v1alpha1.ACMECertificateHTTP01Config{
+									SolverConfig: v1alpha1.SolverConfig{
+										HTTP01: &v1alpha1.HTTP01SolverConfig{
 											IngressClass: strPtr("nginx-ing"),
 										},
 									},
@@ -366,11 +366,11 @@ func TestBuildCertificates(t *testing.T) {
 							Kind: "ClusterIssuer",
 						},
 						ACME: &v1alpha1.ACMECertificateConfig{
-							Config: []v1alpha1.ACMECertificateDomainConfig{
+							Config: []v1alpha1.DomainSolverConfig{
 								{
 									Domains: []string{"example.com", "www.example.com"},
-									ACMESolverConfig: v1alpha1.ACMESolverConfig{
-										DNS01: &v1alpha1.ACMECertificateDNS01Config{
+									SolverConfig: v1alpha1.SolverConfig{
+										DNS01: &v1alpha1.DNS01SolverConfig{
 											Provider: "fake-dns",
 										},
 									},
@@ -530,11 +530,11 @@ func TestBuildCertificates(t *testing.T) {
 							Kind: "Issuer",
 						},
 						ACME: &v1alpha1.ACMECertificateConfig{
-							Config: []v1alpha1.ACMECertificateDomainConfig{
+							Config: []v1alpha1.DomainSolverConfig{
 								{
 									Domains: []string{"example.com"},
-									ACMESolverConfig: v1alpha1.ACMESolverConfig{
-										HTTP01: &v1alpha1.ACMECertificateHTTP01Config{
+									SolverConfig: v1alpha1.SolverConfig{
+										HTTP01: &v1alpha1.HTTP01SolverConfig{
 											Ingress: "",
 										},
 									},
@@ -581,11 +581,11 @@ func TestBuildCertificates(t *testing.T) {
 							Kind: "Issuer",
 						},
 						ACME: &v1alpha1.ACMECertificateConfig{
-							Config: []v1alpha1.ACMECertificateDomainConfig{
+							Config: []v1alpha1.DomainSolverConfig{
 								{
 									Domains: []string{"example.com"},
-									ACMESolverConfig: v1alpha1.ACMESolverConfig{
-										HTTP01: &v1alpha1.ACMECertificateHTTP01Config{
+									SolverConfig: v1alpha1.SolverConfig{
+										HTTP01: &v1alpha1.HTTP01SolverConfig{
 											Ingress: "",
 										},
 									},
@@ -632,11 +632,11 @@ func TestBuildCertificates(t *testing.T) {
 							Kind: "Issuer",
 						},
 						ACME: &v1alpha1.ACMECertificateConfig{
-							Config: []v1alpha1.ACMECertificateDomainConfig{
+							Config: []v1alpha1.DomainSolverConfig{
 								{
 									Domains: []string{"wrong-example.com"},
-									ACMESolverConfig: v1alpha1.ACMESolverConfig{
-										HTTP01: &v1alpha1.ACMECertificateHTTP01Config{
+									SolverConfig: v1alpha1.SolverConfig{
+										HTTP01: &v1alpha1.HTTP01SolverConfig{
 											Ingress: "wrong-ingress",
 										},
 									},
@@ -660,11 +660,11 @@ func TestBuildCertificates(t *testing.T) {
 							Kind: "Issuer",
 						},
 						ACME: &v1alpha1.ACMECertificateConfig{
-							Config: []v1alpha1.ACMECertificateDomainConfig{
+							Config: []v1alpha1.DomainSolverConfig{
 								{
 									Domains: []string{"example.com"},
-									ACMESolverConfig: v1alpha1.ACMESolverConfig{
-										HTTP01: &v1alpha1.ACMECertificateHTTP01Config{
+									SolverConfig: v1alpha1.SolverConfig{
+										HTTP01: &v1alpha1.HTTP01SolverConfig{
 											Ingress:      "",
 											IngressClass: strPtr("toot-ing"),
 										},
@@ -728,11 +728,11 @@ func TestBuildCertificates(t *testing.T) {
 							Kind: "Issuer",
 						},
 						ACME: &v1alpha1.ACMECertificateConfig{
-							Config: []v1alpha1.ACMECertificateDomainConfig{
+							Config: []v1alpha1.DomainSolverConfig{
 								{
 									Domains: []string{"example.com"},
-									ACMESolverConfig: v1alpha1.ACMESolverConfig{
-										HTTP01: &v1alpha1.ACMECertificateHTTP01Config{
+									SolverConfig: v1alpha1.SolverConfig{
+										HTTP01: &v1alpha1.HTTP01SolverConfig{
 											Ingress:      "",
 											IngressClass: strPtr("toot-ing"),
 										},
