@@ -338,11 +338,11 @@ func NewCertManagerACMECertificate(name, secretName, issuerName string, issuerKi
 				Kind: issuerKind,
 			},
 			ACME: &v1alpha1.ACMECertificateConfig{
-				Config: []v1alpha1.ACMECertificateDomainConfig{
+				Config: []v1alpha1.DomainSolverConfig{
 					{
 						Domains: append(dnsNames, cn),
-						ACMESolverConfig: v1alpha1.ACMESolverConfig{
-							HTTP01: &v1alpha1.ACMECertificateHTTP01Config{
+						SolverConfig: v1alpha1.SolverConfig{
+							HTTP01: &v1alpha1.HTTP01SolverConfig{
 								IngressClass: &ingressClass,
 							},
 						},

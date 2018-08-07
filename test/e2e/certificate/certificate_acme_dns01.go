@@ -151,8 +151,8 @@ var _ = framework.CertManagerDescribe("ACME Certificate (DNS01)", func() {
 			SecretName: certificateSecretName,
 			IssuerName: issuerName,
 			DNSNames:   []string{dnsName},
-			ACMESolverConfig: v1alpha1.ACMESolverConfig{
-				DNS01: &v1alpha1.ACMECertificateDNS01Config{
+			SolverConfig: v1alpha1.SolverConfig{
+				DNS01: &v1alpha1.DNS01SolverConfig{
 					Provider: "cloudflare",
 				},
 			},
@@ -176,8 +176,8 @@ var _ = framework.CertManagerDescribe("ACME Certificate (DNS01)", func() {
 			SecretName: certificateSecretName,
 			IssuerName: issuerName,
 			DNSNames:   []string{"*." + dnsName},
-			ACMESolverConfig: v1alpha1.ACMESolverConfig{
-				DNS01: &v1alpha1.ACMECertificateDNS01Config{
+			SolverConfig: v1alpha1.SolverConfig{
+				DNS01: &v1alpha1.DNS01SolverConfig{
 					Provider: "cloudflare",
 				},
 			},
@@ -201,8 +201,8 @@ var _ = framework.CertManagerDescribe("ACME Certificate (DNS01)", func() {
 			SecretName: certificateSecretName,
 			IssuerName: issuerName,
 			DNSNames:   []string{"*." + dnsName, dnsName},
-			ACMESolverConfig: v1alpha1.ACMESolverConfig{
-				DNS01: &v1alpha1.ACMECertificateDNS01Config{
+			SolverConfig: v1alpha1.SolverConfig{
+				DNS01: &v1alpha1.DNS01SolverConfig{
 					Provider: "cloudflare",
 				},
 			},
