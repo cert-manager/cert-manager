@@ -23,8 +23,8 @@ func TestGetIngressesForChallenge(t *testing.T) {
 				Name:      "test",
 				Namespace: defaultTestNamespace,
 				DNSNames:  []string{"example.com"},
-				ACMESolverConfig: v1alpha1.ACMESolverConfig{
-					HTTP01: &v1alpha1.ACMECertificateHTTP01Config{},
+				SolverConfig: v1alpha1.SolverConfig{
+					HTTP01: &v1alpha1.HTTP01SolverConfig{},
 				},
 			}),
 			Challenge: v1alpha1.ACMEOrderChallenge{
@@ -57,8 +57,8 @@ func TestGetIngressesForChallenge(t *testing.T) {
 				Name:      "test",
 				Namespace: defaultTestNamespace,
 				DNSNames:  []string{"example.com"},
-				ACMESolverConfig: v1alpha1.ACMESolverConfig{
-					HTTP01: &v1alpha1.ACMECertificateHTTP01Config{},
+				SolverConfig: v1alpha1.SolverConfig{
+					HTTP01: &v1alpha1.HTTP01SolverConfig{},
 				},
 			}),
 			Challenge: v1alpha1.ACMEOrderChallenge{
@@ -108,8 +108,8 @@ func TestCleanupIngresses(t *testing.T) {
 				Namespace:    defaultTestNamespace,
 				DNSNames:     []string{"example.com"},
 				ACMEOrderURL: "testurl",
-				ACMESolverConfig: v1alpha1.ACMESolverConfig{
-					HTTP01: &v1alpha1.ACMECertificateHTTP01Config{
+				SolverConfig: v1alpha1.SolverConfig{
+					HTTP01: &v1alpha1.HTTP01SolverConfig{
 						IngressClass: strPtr("nginx"),
 					},
 				},
@@ -143,8 +143,8 @@ func TestCleanupIngresses(t *testing.T) {
 				Namespace:    defaultTestNamespace,
 				DNSNames:     []string{"example.com"},
 				ACMEOrderURL: "testurl",
-				ACMESolverConfig: v1alpha1.ACMESolverConfig{
-					HTTP01: &v1alpha1.ACMECertificateHTTP01Config{
+				SolverConfig: v1alpha1.SolverConfig{
+					HTTP01: &v1alpha1.HTTP01SolverConfig{
 						IngressClass: strPtr("nginx"),
 					},
 				},
@@ -180,8 +180,8 @@ func TestCleanupIngresses(t *testing.T) {
 				Namespace:    defaultTestNamespace,
 				DNSNames:     []string{"example.com"},
 				ACMEOrderURL: "testurl",
-				ACMESolverConfig: v1alpha1.ACMESolverConfig{
-					HTTP01: &v1alpha1.ACMECertificateHTTP01Config{
+				SolverConfig: v1alpha1.SolverConfig{
+					HTTP01: &v1alpha1.HTTP01SolverConfig{
 						IngressClass: strPtr("nginx"),
 					},
 				},

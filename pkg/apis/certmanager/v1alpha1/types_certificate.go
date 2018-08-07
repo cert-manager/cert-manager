@@ -36,18 +36,26 @@ const (
 // CertificateSpec defines the desired state of Certificate
 type CertificateSpec struct {
 	// CommonName is a common name to be used on the Certificate
-	CommonName string `json:"commonName"`
+	CommonName string `json:"commonName,omitempty"`
+
 	// DNSNames is a list of subject alt names to be used on the Certificate
-	DNSNames []string `json:"dnsNames"`
+	DNSNames []string `json:"dnsNames,omitempty"`
+
 	// SecretName is the name of the secret resource to store this secret in
 	SecretName string `json:"secretName"`
-	// IssuerRef is a reference to the issuer for this certificate. If the
-	// namespace field is not set, it is assumed to be in the same namespace
-	// as the certificate. If the namespace field is set to the empty value "",
-	// a ClusterIssuer of the given name will be used. Any other value is
-	// invalid.
+
+	// IssuerRef is a reference to the issuer for this certificate.
+	// If the 'kind' field is not set, or set to 'Issuer', an Issuer resource
+	// with the given name in the same namespace as the Certificate will be used.
+	// If the 'kind' field is set to 'ClusterIssuer', a ClusterIssuer with the
+	// provided name will be used.
+	// The 'name' field in this stanza is required at all times.
 	IssuerRef ObjectReference `json:"issuerRef"`
 
+	// ACME contains configuration specific to ACME Certificates.
+	// Notably, this contains details on how the domain names listed on this
+	// Certificate resource should be 'solved', i.e. mapping HTTP01 and DNS01
+	// providers to DNS names.
 	ACME *ACMECertificateConfig `json:"acme,omitempty"`
 
 	// KeySize is the key bit size of the corresponding private key for this certificate.
@@ -63,27 +71,27 @@ type CertificateSpec struct {
 	KeyAlgorithm KeyAlgorithm `json:"keyAlgorithm,omitempty"`
 }
 
-// ACMEConfig contains the configuration for the ACME certificate provider
+// ACMECertificateConfig contains the configuration for the ACME certificate provider
 type ACMECertificateConfig struct {
-	Config []ACMECertificateDomainConfig `json:"config"`
+	Config []DomainSolverConfig `json:"config"`
 }
 
-type ACMECertificateDomainConfig struct {
-	Domains          []string `json:"domains"`
-	ACMESolverConfig `json:",inline"`
+type DomainSolverConfig struct {
+	Domains      []string `json:"domains"`
+	SolverConfig `json:",inline"`
 }
 
-type ACMESolverConfig struct {
-	HTTP01 *ACMECertificateHTTP01Config `json:"http01,omitempty"`
-	DNS01  *ACMECertificateDNS01Config  `json:"dns01,omitempty"`
+type SolverConfig struct {
+	HTTP01 *HTTP01SolverConfig `json:"http01,omitempty"`
+	DNS01  *DNS01SolverConfig  `json:"dns01,omitempty"`
 }
 
-type ACMECertificateHTTP01Config struct {
+type HTTP01SolverConfig struct {
 	Ingress      string  `json:"ingress"`
 	IngressClass *string `json:"ingressClass,omitempty"`
 }
 
-type ACMECertificateDNS01Config struct {
+type DNS01SolverConfig struct {
 	Provider string `json:"provider"`
 }
 
@@ -166,5 +174,5 @@ type ACMEOrderChallenge struct {
 	Wildcard bool `json:"wildcard"`
 
 	// Configuration used to present this challenge
-	ACMESolverConfig `json:",inline"`
+	SolverConfig `json:",inline"`
 }

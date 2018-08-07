@@ -174,7 +174,7 @@ func certNeedsUpdate(a, b *v1alpha1.Certificate) bool {
 		return true
 	}
 
-	var configA, configB []v1alpha1.ACMECertificateDomainConfig
+	var configA, configB []v1alpha1.DomainSolverConfig
 
 	if a.Spec.ACME != nil {
 		configA = a.Spec.ACME.Config
@@ -202,12 +202,12 @@ func (c *Controller) setIssuerSpecificConfig(crt *v1alpha1.Certificate, issuer v
 		if !ok {
 			challengeType = c.defaults.acmeIssuerChallengeType
 		}
-		domainCfg := v1alpha1.ACMECertificateDomainConfig{
+		domainCfg := v1alpha1.DomainSolverConfig{
 			Domains: tls.Hosts,
 		}
 		switch challengeType {
 		case "http01":
-			domainCfg.HTTP01 = &v1alpha1.ACMECertificateHTTP01Config{}
+			domainCfg.HTTP01 = &v1alpha1.HTTP01SolverConfig{}
 			editInPlace, ok := ingAnnotations[editInPlaceAnnotation]
 			// If annotation isn't present, or it's set to true, edit the existing ingress
 			if ok && editInPlace == "true" {
@@ -226,11 +226,11 @@ func (c *Controller) setIssuerSpecificConfig(crt *v1alpha1.Certificate, issuer v
 			if dnsProvider == "" {
 				return fmt.Errorf("no acme issuer dns01 challenge provider specified")
 			}
-			domainCfg.DNS01 = &v1alpha1.ACMECertificateDNS01Config{Provider: dnsProvider}
+			domainCfg.DNS01 = &v1alpha1.DNS01SolverConfig{Provider: dnsProvider}
 		default:
 			return fmt.Errorf("invalid acme issuer challenge type specified %q", challengeType)
 		}
-		crt.Spec.ACME = &v1alpha1.ACMECertificateConfig{Config: []v1alpha1.ACMECertificateDomainConfig{domainCfg}}
+		crt.Spec.ACME = &v1alpha1.ACMECertificateConfig{Config: []v1alpha1.DomainSolverConfig{domainCfg}}
 	}
 	return nil
 }
