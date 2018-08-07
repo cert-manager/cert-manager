@@ -114,16 +114,17 @@ func (a *Acme) registerAccount(ctx context.Context, cl client.Interface) (*acmea
 }
 
 func (a *Acme) createAccountPrivateKey(sel v1alpha1.SecretKeySelector) (*rsa.PrivateKey, error) {
+	ns := a.Context.ResourceNamespace(a.issuer)
 	sel = acme.PrivateKeySelector(sel)
 	accountPrivKey, err := pki.GenerateRSAPrivateKey(pki.MinRSAKeySize)
 	if err != nil {
 		return nil, err
 	}
 
-	_, err = a.Client.CoreV1().Secrets(a.issuerResourcesNamespace).Create(&v1.Secret{
+	_, err = a.Client.CoreV1().Secrets(ns).Create(&v1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      sel.Name,
-			Namespace: a.issuerResourcesNamespace,
+			Namespace: ns,
 		},
 		Data: map[string][]byte{
 			sel.Key: pki.EncodePKCS1PrivateKey(accountPrivKey),

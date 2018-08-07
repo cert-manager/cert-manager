@@ -36,22 +36,6 @@ type Acme struct {
 
 	dnsSolver  solver
 	httpSolver solver
-
-	// issuerResourcesNamespace is a namespace to store resources in. This is
-	// here so we can easily support ClusterIssuers with the same codepath. By
-	// setting this field to either the namespace of the Issuer, or the
-	// clusterResourceNamespace specified on the CLI, we can easily continue
-	// to work with supplemental (e.g. secrets) resources without significant
-	// refactoring.
-	issuerResourcesNamespace string
-
-	// ambientCredentials determines whether a given acme solver may draw
-	// credentials ambiently, e.g. from metadata services or environment
-	// variables.
-	// Currently, only AWS ambient credential control is implemented.
-	ambientCredentials bool
-
-	dns01Nameservers []string
 }
 
 // solver solves ACME challenges by presenting the given token and key in an
