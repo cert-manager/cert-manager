@@ -32,18 +32,15 @@ func (a *ACMEIssuerDNS01Config) Provider(name string) (*ACMEIssuerDNS01Provider,
 	return nil, fmt.Errorf("issuer does not contain DNS01 configuration for provider named %q", name)
 }
 
-func (a *ACMECertificateConfig) ConfigForDomain(domain string) *ACMECertificateDomainConfig {
-	if a == nil {
-		return &ACMECertificateDomainConfig{}
-	}
-	for _, cfg := range a.Config {
+func ConfigForDomain(cfgs []DomainSolverConfig, domain string) *DomainSolverConfig {
+	for _, cfg := range cfgs {
 		for _, d := range cfg.Domains {
 			if d == domain {
 				return &cfg
 			}
 		}
 	}
-	return &ACMECertificateDomainConfig{}
+	return &DomainSolverConfig{}
 }
 
 func (c *CertificateStatus) ACMEStatus() *CertificateACMEStatus {
