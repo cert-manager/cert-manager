@@ -46,12 +46,6 @@ func New(ctx *controller.Context, issuer v1alpha1.GenericIssuer) (issuer.Interfa
 		return nil, fmt.Errorf("acme config may not be empty")
 	}
 
-	if issuer.GetSpec().ACME.Server == "" ||
-		issuer.GetSpec().ACME.PrivateKey.Name == "" ||
-		issuer.GetSpec().ACME.Email == "" {
-		return nil, fmt.Errorf("acme server, private key and email are required fields")
-	}
-
 	// TODO: invent a way to ensure WaitForCacheSync is called for all listers
 	// we are interested in
 
