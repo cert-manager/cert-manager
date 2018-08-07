@@ -38,14 +38,23 @@ type acmeFixture struct {
 	Certificate *v1alpha1.Certificate
 	Client      *client.FakeACME
 
-	PreFn   func(*acmeFixture)
-	CheckFn func(*acmeFixture, ...interface{})
+	PreFn   func(*testing.T, *acmeFixture)
+	CheckFn func(*testing.T, *acmeFixture, ...interface{})
 	Err     bool
 
 	Ctx context.Context
 }
 
 func (s *acmeFixture) Setup(t *testing.T) {
+	if s.Issuer == nil {
+		s.Issuer = &v1alpha1.Issuer{
+			Spec: v1alpha1.IssuerSpec{
+				IssuerConfig: v1alpha1.IssuerConfig{
+					ACME: &v1alpha1.ACMEIssuer{},
+				},
+			},
+		}
+	}
 	if s.Client == nil {
 		s.Client = &client.FakeACME{}
 	}
@@ -62,18 +71,25 @@ func (s *acmeFixture) Setup(t *testing.T) {
 	}
 	s.Acme = buildFakeAcme(s.Builder, s.Issuer)
 	if s.PreFn != nil {
-		s.PreFn(s)
+		s.PreFn(t, s)
 		s.Builder.Sync()
 	}
 }
 
 func (s *acmeFixture) Finish(t *testing.T, args ...interface{}) {
 	defer s.Builder.Stop()
+	if err := s.Builder.AllReactorsCalled(); err != nil {
+		t.Errorf("Not all expected reactors were called: %v", err)
+	}
+	if err := s.Builder.AllActionsExecuted(); err != nil {
+		t.Errorf(err.Error())
+	}
+
 	// resync listers before running checks
 	s.Builder.Sync()
 	// run custom checks
 	if s.CheckFn != nil {
-		s.CheckFn(s, args...)
+		s.CheckFn(t, s, args...)
 	}
 }
 
@@ -81,7 +97,7 @@ func buildFakeAcme(b *test.Builder, issuer v1alpha1.GenericIssuer) *Acme {
 	b.Start()
 	a, err := New(b.Context, issuer)
 	if err != nil {
-		panic("error creating fake Acme: %v" + err.Error())
+		panic("error creating fake Acme: " + err.Error())
 	}
 	b.Sync()
 	return a.(*Acme)
