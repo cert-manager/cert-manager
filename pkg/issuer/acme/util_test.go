@@ -37,13 +37,12 @@ func (s *acmeFixture) Setup(t *testing.T) {
 		s.Ctx = context.Background()
 	}
 	if s.Builder == nil {
-		s.Builder = &test.Builder{
-			// TODO: set default IssuerOptions
-			//		defaultTestAcmeClusterResourceNamespace,
-			//		defaultTestSolverImage,
-			//		default dns01 nameservers
-			//		ambient credentials settings
-		}
+		// TODO: set default IssuerOptions
+		//		defaultTestAcmeClusterResourceNamespace,
+		//		defaultTestSolverImage,
+		//		default dns01 nameservers
+		//		ambient credentials settings
+		s.Builder = &test.Builder{}
 	}
 	s.Acme = buildFakeAcme(s.Builder, s.Issuer)
 	if s.PreFn != nil {
