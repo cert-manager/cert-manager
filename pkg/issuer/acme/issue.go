@@ -14,7 +14,7 @@ import (
 	"github.com/jetstack/cert-manager/pkg/util/errors"
 	"github.com/jetstack/cert-manager/pkg/util/kube"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
-	"github.com/jetstack/cert-manager/third_party/crypto/acme"
+	acmeapi "github.com/jetstack/cert-manager/third_party/crypto/acme"
 )
 
 const (
@@ -30,7 +30,7 @@ func (a *Acme) obtainCertificate(ctx context.Context, crt *v1alpha1.Certificate)
 	commonName := pki.CommonNameForCertificate(crt)
 	altNames := pki.DNSNamesForCertificate(crt)
 
-	cl, err := a.acmeClient()
+	cl, err := a.helper.ClientForIssuer(a.issuer)
 	if err != nil {
 		crt.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse, errorIssueError, fmt.Sprintf("Failed to get ACME client: %v", err), false)
 		return nil, nil, fmt.Errorf("error creating ACME client: %s", err.Error())
@@ -48,13 +48,13 @@ func (a *Acme) obtainCertificate(ctx context.Context, crt *v1alpha1.Certificate)
 		return nil, nil, fmt.Errorf("error getting order details: %v", err)
 	}
 
-	if order.Status != acme.StatusReady {
-		err := fmt.Errorf("expected certificate status to be %q, but it is %q", acme.StatusReady, order.Status)
+	if order.Status != acmeapi.StatusReady {
+		err := fmt.Errorf("expected certificate status to be %q, but it is %q", acmeapi.StatusReady, order.Status)
 		// print a more helpful message to users when an order is marked 'valid'.
 		// this happens when all challenges have been completed successfully, but
 		// the acme server has not finished processing the order.
-		if order.Status == acme.StatusValid {
-			err = fmt.Errorf("%v. Waiting until Order transitions into %q state", err, acme.StatusReady)
+		if order.Status == acmeapi.StatusValid {
+			err = fmt.Errorf("%v. Waiting until Order transitions into %q state", err, acmeapi.StatusReady)
 		}
 		crt.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse, errorIssueError, err.Error(), false)
 		return nil, nil, err
@@ -96,7 +96,7 @@ func (a *Acme) obtainCertificate(ctx context.Context, crt *v1alpha1.Certificate)
 		// instead of FinalizeOrder, which would save us creating a new order
 		// just to issue a new certificate.
 		// The underlying ACME client doesn't expose this though yet.
-		if acmeErr, ok := err.(*acme.Error); ok {
+		if acmeErr, ok := err.(*acmeapi.Error); ok {
 			if acmeErr.StatusCode >= 400 && acmeErr.StatusCode <= 499 {
 				crt.Status.ACMEStatus().Order.URL = ""
 			}

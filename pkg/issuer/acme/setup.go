@@ -11,11 +11,12 @@ import (
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/jetstack/cert-manager/pkg/acme"
+	"github.com/jetstack/cert-manager/pkg/acme/client"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
-	"github.com/jetstack/cert-manager/pkg/issuer/acme/client"
 	"github.com/jetstack/cert-manager/pkg/util/errors"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
-	"github.com/jetstack/cert-manager/third_party/crypto/acme"
+	acmeapi "github.com/jetstack/cert-manager/third_party/crypto/acme"
 )
 
 const (
@@ -41,17 +42,20 @@ func (a *Acme) Setup(ctx context.Context) error {
 		return nil
 	}
 
-	cl, err := a.acmeClient()
+	cl, err := a.helper.ClientForIssuer(a.issuer)
 	if k8sErrors.IsNotFound(err) || errors.IsInvalidData(err) {
 		glog.Infof("%s: generating acme account private key %q", a.issuer.GetObjectMeta().Name, a.issuer.GetSpec().ACME.PrivateKey.Name)
-		accountPrivKey, err := a.createAccountPrivateKey()
+		accountPrivKey, err := a.createAccountPrivateKey(a.issuer.GetSpec().ACME.PrivateKey)
 		if err != nil {
 			s := messageAccountRegistrationFailed + err.Error()
 			a.issuer.UpdateStatusCondition(v1alpha1.IssuerConditionReady, v1alpha1.ConditionFalse, errorAccountRegistrationFailed, s)
 			return fmt.Errorf(s)
 		}
 		a.issuer.GetStatus().ACMEStatus().URI = ""
-		cl = a.acmeClientWithKey(accountPrivKey)
+		cl, err = acme.ClientWithKey(a.issuer, accountPrivKey)
+		if err != nil {
+			return err
+		}
 	} else if err != nil {
 		s := messageAccountVerificationFailed + err.Error()
 		glog.V(4).Infof("%s: %s", a.issuer.GetObjectMeta().Name, s)
@@ -81,7 +85,7 @@ func (a *Acme) Setup(ctx context.Context) error {
 // account with the clients private key already exists, it will attempt to look
 // up and verify the corresponding account, and will return that. If this fails
 // due to a not found error it will register a new account with the given key.
-func (a *Acme) registerAccount(ctx context.Context, cl client.Interface) (*acme.Account, error) {
+func (a *Acme) registerAccount(ctx context.Context, cl client.Interface) (*acmeapi.Account, error) {
 	// check if the account already exists
 	acc, err := cl.GetAccount(ctx)
 	if err == nil {
@@ -89,12 +93,12 @@ func (a *Acme) registerAccount(ctx context.Context, cl client.Interface) (*acme.
 	}
 	// return all errors except for 404 errors (which indicate the account
 	// is not yet registered)
-	acmeErr, ok := err.(*acme.Error)
+	acmeErr, ok := err.(*acmeapi.Error)
 	if !ok || (acmeErr.StatusCode != 400 && acmeErr.StatusCode != 404) {
 		return nil, err
 	}
 
-	acc = &acme.Account{
+	acc = &acmeapi.Account{
 		Contact:     []string{fmt.Sprintf("mailto:%s", strings.ToLower(a.issuer.GetSpec().ACME.Email))},
 		TermsAgreed: true,
 	}
@@ -109,8 +113,8 @@ func (a *Acme) registerAccount(ctx context.Context, cl client.Interface) (*acme.
 	return acc, nil
 }
 
-func (a *Acme) createAccountPrivateKey() (*rsa.PrivateKey, error) {
-	secretName, secretKey := a.acmeAccountPrivateKeyMeta()
+func (a *Acme) createAccountPrivateKey(sel v1alpha1.SecretKeySelector) (*rsa.PrivateKey, error) {
+	sel = acme.PrivateKeySelector(sel)
 	accountPrivKey, err := pki.GenerateRSAPrivateKey(pki.MinRSAKeySize)
 	if err != nil {
 		return nil, err
@@ -118,11 +122,11 @@ func (a *Acme) createAccountPrivateKey() (*rsa.PrivateKey, error) {
 
 	_, err = a.client.CoreV1().Secrets(a.issuerResourcesNamespace).Create(&v1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      secretName,
+			Name:      sel.Name,
 			Namespace: a.issuerResourcesNamespace,
 		},
 		Data: map[string][]byte{
-			secretKey: pki.EncodePKCS1PrivateKey(accountPrivKey),
+			sel.Key: pki.EncodePKCS1PrivateKey(accountPrivKey),
 		},
 	})
 
