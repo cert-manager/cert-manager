@@ -85,20 +85,6 @@ func New(ctx *controllerpkg.Context) *Controller {
 	ctrl.secretLister = secretsInformer.Lister()
 	ctrl.syncedFuncs = append(ctrl.syncedFuncs, secretsInformer.Informer().HasSynced)
 
-	// We add pod, service and ingress informers to the list of informers to sync.
-	// They are not actually used directly by the Certificates controller,
-	// however the ACME HTTP challenge solver *does* require a Pod and Secret
-	// lister, and due to the way the instantiation of issuers is performed it
-	// is far more performant to perform the sync here.
-	// This will be refactored into a dedicated 'challenges' controller in future.
-	ingressInformer := ctrl.KubeSharedInformerFactory.Extensions().V1beta1().Ingresses()
-	podsInformer := ctrl.KubeSharedInformerFactory.Core().V1().Pods()
-	serviceInformer := ctrl.KubeSharedInformerFactory.Core().V1().Services()
-
-	ctrl.syncedFuncs = append(ctrl.syncedFuncs, ingressInformer.Informer().HasSynced)
-	ctrl.syncedFuncs = append(ctrl.syncedFuncs, podsInformer.Informer().HasSynced)
-	ctrl.syncedFuncs = append(ctrl.syncedFuncs, serviceInformer.Informer().HasSynced)
-
 	return ctrl
 }
 

@@ -58,10 +58,15 @@ func (a *Acme) Setup(ctx context.Context) error {
 		return nil
 	}
 
+	ns := a.issuer.GetObjectMeta().Namespace
+	if ns == "" {
+		ns = a.IssuerOptions.ClusterResourceNamespace
+	}
+
 	cl, err := a.helper.ClientForIssuer(a.issuer)
 	if k8sErrors.IsNotFound(err) || errors.IsInvalidData(err) {
 		glog.Infof("%s: generating acme account private key %q", a.issuer.GetObjectMeta().Name, a.issuer.GetSpec().ACME.PrivateKey.Name)
-		accountPrivKey, err := a.createAccountPrivateKey(a.issuer.GetSpec().ACME.PrivateKey)
+		accountPrivKey, err := a.createAccountPrivateKey(a.issuer.GetSpec().ACME.PrivateKey, ns)
 		if err != nil {
 			s := messageAccountRegistrationFailed + err.Error()
 			a.issuer.UpdateStatusCondition(v1alpha1.IssuerConditionReady, v1alpha1.ConditionFalse, errorAccountRegistrationFailed, s)
@@ -69,9 +74,6 @@ func (a *Acme) Setup(ctx context.Context) error {
 		}
 		a.issuer.GetStatus().ACMEStatus().URI = ""
 		cl, err = acme.ClientWithKey(a.issuer, accountPrivKey)
-		if err != nil {
-			return err
-		}
 	} else if err != nil {
 		s := messageAccountVerificationFailed + err.Error()
 		glog.V(4).Infof("%s: %s", a.issuer.GetObjectMeta().Name, s)
@@ -129,8 +131,7 @@ func (a *Acme) registerAccount(ctx context.Context, cl client.Interface) (*acmea
 	return acc, nil
 }
 
-func (a *Acme) createAccountPrivateKey(sel v1alpha1.SecretKeySelector) (*rsa.PrivateKey, error) {
-	ns := a.Context.ResourceNamespace(a.issuer)
+func (a *Acme) createAccountPrivateKey(sel v1alpha1.SecretKeySelector, ns string) (*rsa.PrivateKey, error) {
 	sel = acme.PrivateKeySelector(sel)
 	accountPrivKey, err := pki.GenerateRSAPrivateKey(pki.MinRSAKeySize)
 	if err != nil {
@@ -152,4 +153,11 @@ func (a *Acme) createAccountPrivateKey(sel v1alpha1.SecretKeySelector) (*rsa.Pri
 	}
 
 	return accountPrivKey, err
+}
+
+var acmev1ToV2Mappings = map[string]string{
+	"https://acme-v01.api.letsencrypt.org/directory":      "https://acme-v02.api.letsencrypt.org/directory",
+	"https://acme-staging.api.letsencrypt.org/directory":  "https://acme-staging-v02.api.letsencrypt.org/directory",
+	"https://acme-v01.api.letsencrypt.org/directory/":     "https://acme-v02.api.letsencrypt.org/directory",
+	"https://acme-staging.api.letsencrypt.org/directory/": "https://acme-staging-v02.api.letsencrypt.org/directory",
 }

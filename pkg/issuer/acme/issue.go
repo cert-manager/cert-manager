@@ -19,17 +19,15 @@ package acme
 import (
 	"bytes"
 	"context"
-	"crypto"
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
 
 	"github.com/golang/glog"
 	corev1 "k8s.io/api/core/v1"
-	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
-	"github.com/jetstack/cert-manager/pkg/util"
 	"github.com/jetstack/cert-manager/pkg/util/errors"
 	"github.com/jetstack/cert-manager/pkg/util/kube"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
@@ -46,44 +44,34 @@ const (
 )
 
 func (a *Acme) obtainCertificate(ctx context.Context, crt *v1alpha1.Certificate) ([]byte, []byte, error) {
-	commonName := pki.CommonNameForCertificate(crt)
-	altNames := pki.DNSNamesForCertificate(crt)
+	if crt.Status.ACMEStatus().OrderRef == nil || crt.Status.ACMEStatus().OrderRef.Name == "" {
+		return nil, nil, fmt.Errorf("status.acme.orderRef.name must be set")
+	}
 
-	cl, err := a.helper.ClientForIssuer(a.issuer)
+	orderName := crt.Status.ACMEStatus().OrderRef.Name
+	order, err := a.orderLister.Orders(crt.Namespace).Get(orderName)
 	if err != nil {
-		crt.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse, errorIssueError, fmt.Sprintf("Failed to get ACME client: %v", err), false)
-		return nil, nil, fmt.Errorf("error creating ACME client: %s", err.Error())
-	}
-
-	orderURL := crt.Status.ACMEStatus().Order.URL
-	if orderURL == "" {
-		crt.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse, errorInvalidConfig, "status.acme.order.url must be set", false)
-		return nil, nil, fmt.Errorf("certificate order url cannot be blank")
-	}
-
-	order, err := cl.GetOrder(ctx, orderURL)
-	if err != nil {
-		crt.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse, errorIssueError, fmt.Sprintf("Failed to get order details: %v", err), false)
-		return nil, nil, fmt.Errorf("error getting order details: %v", err)
-	}
-
-	if order.Status != acmeapi.StatusReady && order.Status != acmeapi.StatusValid {
-		err := fmt.Errorf("expected certificate status to be %q or %q, but it is %q", acmeapi.StatusReady, acmeapi.StatusValid, order.Status)
-		crt.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse, errorIssueError, err.Error(), false)
+		// we return err without checking for IsNotFound because Prepare already
+		// performs cleanup in the event the referenced Order does not exist.
+		// this saves us re-implementing missing order handling here.
 		return nil, nil, err
 	}
 
+	// TODO: ensure the names on the Order match the desired names for this Certificate
+	// If not, we should return an error here in order to trigger the hash-detection
+	// logic in Prepare to run.
+
+	cl, err := a.helper.ClientForIssuer(a.issuer)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	commonName := pki.CommonNameForCertificate(crt)
+	altNames := pki.DNSNamesForCertificate(crt)
+
 	// get existing certificate private key
 	key, err := kube.SecretTLSKey(a.secretsLister, crt.Namespace, crt.Spec.SecretName)
-	if k8sErrors.IsNotFound(err) || errors.IsInvalidData(err) {
-		if order.Status == acmeapi.StatusValid {
-			// if this order is already marked 'valid', but we do not have the private
-			// key for the Certificate, we must create a new order as we cannot call
-			// Finalize on the order twice with different CSRs.
-			crt.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse, errorIssueError, "Creating new order due to lost TLS private key", false)
-			crt.Status.ACMEStatus().Order.URL = ""
-			return nil, nil, fmt.Errorf("marking certificate as failed to trigger a new order to be created due to lost private key")
-		}
+	if apierrors.IsNotFound(err) || errors.IsInvalidData(err) {
 		key, err = pki.GeneratePrivateKeyForCertificate(crt)
 		if err != nil {
 			crt.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse, errorIssueError, fmt.Sprintf("Failed to generate certificate private key: %v", err), false)
@@ -158,31 +146,12 @@ func (a *Acme) obtainCertificate(ctx context.Context, crt *v1alpha1.Certificate)
 		return nil, nil, fmt.Errorf("failed to parse returned x509 certificate: %v", err.Error())
 	}
 
-	if a.Context.IssuerOptions.CertificateNeedsRenew(x509Cert) {
-		// existing orders certificate is near expiry, so we clear the order URL
-		// field and trigger a retry to create a new order for a new certificate
-		crt.Status.ACMEStatus().Order.URL = ""
-		return nil, nil, fmt.Errorf("triggering new order creation as existing order's certificate is nearing expiry")
-	}
-
-	cryptoSigner, ok := key.(crypto.Signer)
-	if !ok {
-		return nil, nil, fmt.Errorf("unreachable: private key is not of type crypto.Signer")
-	}
-	validForPrivKey, err := pki.PublicKeyMatchesCertificate(cryptoSigner.Public(), x509Cert)
+	// obtain a certificate from the acme server
+	certSlice, err := cl.FinalizeOrder(ctx, order.Status.FinalizeURL, derBytes)
 	if err != nil {
-		return nil, nil, fmt.Errorf("error verifying certificate: %v", err)
-	}
-	if !validForPrivKey {
-		crt.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse, errorIssueError, "Creating new order due to lost TLS private key", false)
-		crt.Status.ACMEStatus().Order.URL = ""
-		return nil, nil, fmt.Errorf("marking certificate as failed to trigger a new order to be created due to lost private key")
-	}
-
-	if commonName != x509Cert.Subject.CommonName || !util.EqualUnsorted(x509Cert.DNSNames, altNames) {
-		crt.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse, errorIssueError, "Creating new order due to change in common name", false)
-		crt.Status.ACMEStatus().Order.URL = ""
-		return nil, nil, fmt.Errorf("marking certificate as failed to trigger a new order to be created due to change in common name")
+		crt.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse, errorIssueError, fmt.Sprintf("Failed to finalize order: %v", err), false)
+		a.Recorder.Eventf(crt, corev1.EventTypeWarning, errorIssueError, "Failed to finalize order: %v", err)
+		return nil, nil, fmt.Errorf("error getting certificate from acme server: %s", err)
 	}
 
 	// encode the retrieved certificate
@@ -193,7 +162,7 @@ func (a *Acme) obtainCertificate(ctx context.Context, crt *v1alpha1.Certificate)
 
 	a.Recorder.Eventf(crt, corev1.EventTypeNormal, successCertObtained, "Obtained certificate from ACME server")
 
-	glog.Infof("successfully obtained certificate: cn=%q altNames=%+v url=%q", commonName, altNames, orderURL)
+	glog.Infof("successfully obtained certificate: cn=%q altNames=%+v url=%q", commonName, altNames, order.Status.URL)
 	// encode the private key and return
 	keyPem, err := pki.EncodePrivateKey(key)
 	if err != nil {
