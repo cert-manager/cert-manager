@@ -4,11 +4,9 @@ import (
 	"context"
 	"testing"
 
-	"k8s.io/apimachinery/pkg/runtime"
-
 	"github.com/jetstack/cert-manager/pkg/acme/client"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
-	"github.com/jetstack/cert-manager/test/unit"
+	"github.com/jetstack/cert-manager/pkg/controller/test"
 )
 
 const (
@@ -18,9 +16,8 @@ const (
 
 type acmeFixture struct {
 	Acme *Acme
+	*test.Builder
 
-	KubeObjects []runtime.Object
-	CMObjects   []runtime.Object
 	Issuer      v1alpha1.GenericIssuer
 	Certificate *v1alpha1.Certificate
 	Client      *client.FakeACME
@@ -30,9 +27,6 @@ type acmeFixture struct {
 	Err     bool
 
 	Ctx context.Context
-
-	// f is the integration test fixture being used for this test
-	f *unit.Fixture
 }
 
 func (s *acmeFixture) Setup(t *testing.T) {
@@ -42,49 +36,38 @@ func (s *acmeFixture) Setup(t *testing.T) {
 	if s.Ctx == nil {
 		s.Ctx = context.Background()
 	}
-	s.f = &unit.Fixture{
-		T:                  t,
-		KubeObjects:        s.KubeObjects,
-		CertManagerObjects: s.CMObjects,
+	if s.Builder == nil {
+		s.Builder = &test.Builder{
+			// TODO: set default IssuerOptions
+			//		defaultTestAcmeClusterResourceNamespace,
+			//		defaultTestSolverImage,
+			//		default dns01 nameservers
+			//		ambient credentials settings
+		}
 	}
-	// start the fixture to initialise the informer factories
-	s.f.Start()
-	s.Acme = buildFakeAcme(s.f, s.Client, s.Issuer)
+	s.Acme = buildFakeAcme(s.Builder, s.Issuer)
 	if s.PreFn != nil {
 		s.PreFn(s)
-		s.f.Sync()
+		s.Builder.Sync()
 	}
 }
 
 func (s *acmeFixture) Finish(t *testing.T, args ...interface{}) {
-	defer s.f.Stop()
+	defer s.Builder.Stop()
 	// resync listers before running checks
-	s.f.Sync()
+	s.Builder.Sync()
 	// run custom checks
 	if s.CheckFn != nil {
 		s.CheckFn(s, args...)
 	}
 }
 
-func buildFakeAcme(f *unit.Fixture, client *client.FakeACME, issuer v1alpha1.GenericIssuer) *Acme {
-	a, err := New(issuer,
-		f.KubeClient(),
-		f.CertManagerClient(),
-		f.EventRecorder(),
-		defaultTestAcmeClusterResourceNamespace,
-		defaultTestSolverImage,
-		f.KubeInformerFactory().Core().V1().Secrets().Lister(),
-		f.KubeInformerFactory().Core().V1().Pods().Lister(),
-		f.KubeInformerFactory().Core().V1().Services().Lister(),
-		f.KubeInformerFactory().Extensions().V1beta1().Ingresses().Lister(),
-		// TODO: support overriding this field
-		false,
-		[]string{"8.8.8.8:53"},
-	)
+func buildFakeAcme(b *test.Builder, issuer v1alpha1.GenericIssuer) *Acme {
+	b.Start()
+	a, err := New(b.Context, issuer)
 	if err != nil {
-		f.T.Errorf("error creating fake Acme: %v", err)
-		f.T.FailNow()
+		panic("error creating fake Acme: %v" + err.Error())
 	}
-	f.Sync()
+	b.Sync()
 	return a.(*Acme)
 }

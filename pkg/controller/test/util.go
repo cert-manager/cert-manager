@@ -1,4 +1,4 @@
-package unit
+package test
 
 import (
 	"math/rand"
