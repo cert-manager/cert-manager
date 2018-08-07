@@ -2,11 +2,8 @@ package acme
 
 import (
 	"context"
-	"crypto/rsa"
-	"crypto/tls"
 	"fmt"
 	"net"
-	nethttp "net/http"
 	"time"
 
 	"github.com/golang/glog"
@@ -16,22 +13,22 @@ import (
 	extlisters "k8s.io/client-go/listers/extensions/v1beta1"
 	"k8s.io/client-go/tools/record"
 
+	"github.com/jetstack/cert-manager/pkg/acme"
+	"github.com/jetstack/cert-manager/pkg/acme/client"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	clientset "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
 	"github.com/jetstack/cert-manager/pkg/issuer"
-	"github.com/jetstack/cert-manager/pkg/issuer/acme/client"
-	"github.com/jetstack/cert-manager/pkg/issuer/acme/client/middleware"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/http"
-	"github.com/jetstack/cert-manager/pkg/util"
-	"github.com/jetstack/cert-manager/pkg/util/kube"
-	"github.com/jetstack/cert-manager/third_party/crypto/acme"
+	acmeapi "github.com/jetstack/cert-manager/third_party/crypto/acme"
 )
 
 // Acme is an issuer for an ACME server. It can be used to register and obtain
 // certificates from any ACME server. It supports DNS01 and HTTP01 challenge
 // mechanisms.
 type Acme struct {
+	helper *acme.Helper
+
 	issuer v1alpha1.GenericIssuer
 
 	client   kubernetes.Interface
@@ -53,9 +50,6 @@ type Acme struct {
 	// to work with supplemental (e.g. secrets) resources without significant
 	// refactoring.
 	issuerResourcesNamespace string
-
-	// this is a field so it can be stubbed out for testing
-	acmeClient func() (client.Interface, error)
 
 	// ambientCredentials determines whether a given acme solver may draw
 	// credentials ambiently, e.g. from metadata services or environment
@@ -109,6 +103,13 @@ func New(issuer v1alpha1.GenericIssuer,
 	}
 
 	a := &Acme{
+		// TODO: helper *should* be instantiated with the ClusterResourceNamespace,
+		// whereas here we are instantiating it with the actual namespace that should
+		// be used to discover resources.
+		// This is okay in this instance, as we construct a dedicated Helper per Issuer
+		// and we also construct a dedicated 'Acme' per issuer too.
+		// With the ACME order changes, this line will change appropriately.
+		helper:         acme.NewHelper(secretsLister, resourceNamespace),
 		issuer:         issuer,
 		client:         client,
 		cmClient:       cmClient,
@@ -122,7 +123,6 @@ func New(issuer v1alpha1.GenericIssuer,
 		httpSolver:               http.NewSolver(issuer, client, podsLister, servicesLister, ingressLister, acmeHTTP01SolverImage),
 		issuerResourcesNamespace: resourceNamespace,
 	}
-	a.acmeClient = a.acmeClientImpl
 	return a, nil
 }
 
@@ -133,56 +133,10 @@ func dialTimeout(ctx context.Context, network, addr string) (net.Conn, error) {
 	return d.DialContext(ctx, network, addr)
 }
 
-func (a *Acme) acmeClientWithKey(accountPrivKey *rsa.PrivateKey) client.Interface {
-	tr := &nethttp.Transport{
-		Proxy:                 nethttp.ProxyFromEnvironment,
-		DialContext:           dialTimeout,
-		TLSClientConfig:       &tls.Config{InsecureSkipVerify: a.issuer.GetSpec().ACME.SkipTLSVerify},
-		MaxIdleConns:          100,
-		IdleConnTimeout:       90 * time.Second,
-		TLSHandshakeTimeout:   10 * time.Second,
-		ExpectContinueTimeout: 1 * time.Second,
-	}
-	client := &nethttp.Client{
-		// Stopgap user-agent roundtripper until the upstream 'crypto/acme'
-		// provides a better method for setting user-agent.
-		Transport: util.UserAgentRoundTripper(tr),
-		Timeout:   time.Second * 30,
-	}
-	cl := &acme.Client{
-		HTTPClient:   client,
-		Key:          accountPrivKey,
-		DirectoryURL: a.issuer.GetSpec().ACME.Server,
-	}
-	return middleware.NewLogger(cl)
-}
-
-func (a *Acme) acmeClientImpl() (client.Interface, error) {
-	secretName, secretKey := a.acmeAccountPrivateKeyMeta()
-	glog.Infof("getting private key (%s->%s) for acme issuer %s/%s", secretName, secretKey, a.issuerResourcesNamespace, a.issuer.GetObjectMeta().Name)
-	accountPrivKey, err := kube.SecretRSAKeyRef(a.secretsLister, a.issuerResourcesNamespace, secretName, secretKey)
-	if err != nil {
-		return nil, err
-	}
-
-	return a.acmeClientWithKey(accountPrivKey), nil
-}
-
-// acmeAccountPrivateKeyMeta returns the name and the secret 'key' that stores
-// the ACME account private key.
-func (a *Acme) acmeAccountPrivateKeyMeta() (name string, key string) {
-	secretName := a.issuer.GetSpec().ACME.PrivateKey.Name
-	secretKey := a.issuer.GetSpec().ACME.PrivateKey.Key
-	if len(secretKey) == 0 {
-		secretKey = corev1.TLSPrivateKeyKey
-	}
-	return secretName, secretKey
-}
-
 // createOrder will create an order for the given certificate with the acme
 // server. Once created, it will set the order URL on the status field of the
 // certificate resource.
-func (a *Acme) createOrder(ctx context.Context, cl client.Interface, crt *v1alpha1.Certificate) (*acme.Order, error) {
+func (a *Acme) createOrder(ctx context.Context, cl client.Interface, crt *v1alpha1.Certificate) (*acmeapi.Order, error) {
 	order, err := buildOrder(crt)
 	if err != nil {
 		return nil, err

@@ -5,7 +5,7 @@ import (
 
 	"github.com/golang/glog"
 
-	"github.com/jetstack/cert-manager/pkg/issuer/acme/client"
+	"github.com/jetstack/cert-manager/pkg/acme/client"
 	"github.com/jetstack/cert-manager/third_party/crypto/acme"
 )
 
