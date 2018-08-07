@@ -56,11 +56,11 @@ type Solver struct {
 }
 
 func (s *Solver) Present(ctx context.Context, _ *v1alpha1.Certificate, ch v1alpha1.ACMEOrderChallenge) error {
-	if ch.ACMESolverConfig.DNS01 == nil {
+	if ch.SolverConfig.DNS01 == nil {
 		return fmt.Errorf("challenge dns config must be specified")
 	}
 
-	providerName := ch.ACMESolverConfig.DNS01.Provider
+	providerName := ch.SolverConfig.DNS01.Provider
 	if providerName == "" {
 		return fmt.Errorf("dns01 challenge provider name must be set")
 	}
@@ -95,11 +95,11 @@ func (s *Solver) Check(ch v1alpha1.ACMEOrderChallenge) (bool, error) {
 }
 
 func (s *Solver) CleanUp(ctx context.Context, _ *v1alpha1.Certificate, ch v1alpha1.ACMEOrderChallenge) error {
-	if ch.ACMESolverConfig.DNS01 == nil {
+	if ch.SolverConfig.DNS01 == nil {
 		return fmt.Errorf("challenge dns config must be specified")
 	}
 
-	providerName := ch.ACMESolverConfig.DNS01.Provider
+	providerName := ch.SolverConfig.DNS01.Provider
 	if providerName == "" {
 		return fmt.Errorf("dns01 challenge provider name must be set")
 	}
@@ -110,19 +110,6 @@ func (s *Solver) CleanUp(ctx context.Context, _ *v1alpha1.Certificate, ch v1alph
 	}
 
 	return slv.CleanUp(ch.Domain, ch.Token, ch.Key)
-}
-
-// returns the provider name for a given domain name by reading the acme
-// configuration block on the given Certificate resource
-func (s *Solver) providerForDomain(crt *v1alpha1.Certificate, domain string) (string, error) {
-	var cfg *v1alpha1.ACMECertificateDNS01Config
-	if cfg = crt.Spec.ACME.ConfigForDomain(domain).DNS01; cfg == nil ||
-		cfg.Provider == "" ||
-		s.issuer.GetSpec().ACME == nil ||
-		s.issuer.GetSpec().ACME.DNS01 == nil {
-		return "", fmt.Errorf("dns-01 challenge provider for domain %q is not configured. Ensure the Certificate resource configures a dns-01 provider for the domain", domain)
-	}
-	return cfg.Provider, nil
 }
 
 // solverForIssuerProvider returns a Solver for the given providerName.

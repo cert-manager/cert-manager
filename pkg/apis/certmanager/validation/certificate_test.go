@@ -121,11 +121,11 @@ func TestValidateCertificate(t *testing.T) {
 					SecretName: "abc",
 					IssuerRef:  validIssuerRef,
 					ACME: &v1alpha1.ACMECertificateConfig{
-						Config: []v1alpha1.ACMECertificateDomainConfig{
+						Config: []v1alpha1.DomainSolverConfig{
 							{
 								Domains: []string{"validdnsname"},
-								ACMESolverConfig: v1alpha1.ACMESolverConfig{
-									HTTP01: &v1alpha1.ACMECertificateHTTP01Config{},
+								SolverConfig: v1alpha1.SolverConfig{
+									HTTP01: &v1alpha1.HTTP01SolverConfig{},
 								},
 							},
 						},
@@ -140,11 +140,11 @@ func TestValidateCertificate(t *testing.T) {
 					SecretName: "abc",
 					IssuerRef:  validIssuerRef,
 					ACME: &v1alpha1.ACMECertificateConfig{
-						Config: []v1alpha1.ACMECertificateDomainConfig{
+						Config: []v1alpha1.DomainSolverConfig{
 							{
 								Domains: []string{"validdnsname"},
-								ACMESolverConfig: v1alpha1.ACMESolverConfig{
-									HTTP01: &v1alpha1.ACMECertificateHTTP01Config{},
+								SolverConfig: v1alpha1.SolverConfig{
+									HTTP01: &v1alpha1.HTTP01SolverConfig{},
 								},
 							},
 						},
@@ -163,11 +163,11 @@ func TestValidateCertificate(t *testing.T) {
 					SecretName: "abc",
 					IssuerRef:  validIssuerRef,
 					ACME: &v1alpha1.ACMECertificateConfig{
-						Config: []v1alpha1.ACMECertificateDomainConfig{
+						Config: []v1alpha1.DomainSolverConfig{
 							{
 								Domains: []string{"validdnsname"},
-								ACMESolverConfig: v1alpha1.ACMESolverConfig{
-									HTTP01: &v1alpha1.ACMECertificateHTTP01Config{},
+								SolverConfig: v1alpha1.SolverConfig{
+									HTTP01: &v1alpha1.HTTP01SolverConfig{},
 								},
 							},
 						},
@@ -368,11 +368,11 @@ func TestValidateACMECertificateConfig(t *testing.T) {
 	}{
 		"valid acme configuration": {
 			cfg: &v1alpha1.ACMECertificateConfig{
-				Config: []v1alpha1.ACMECertificateDomainConfig{
+				Config: []v1alpha1.DomainSolverConfig{
 					{
 						Domains: []string{"abc.xyz"},
-						ACMESolverConfig: v1alpha1.ACMESolverConfig{
-							HTTP01: &v1alpha1.ACMECertificateHTTP01Config{},
+						SolverConfig: v1alpha1.SolverConfig{
+							HTTP01: &v1alpha1.HTTP01SolverConfig{},
 						},
 					},
 				},
@@ -380,10 +380,10 @@ func TestValidateACMECertificateConfig(t *testing.T) {
 		},
 		"acme configuration missing for domain": {
 			cfg: &v1alpha1.ACMECertificateConfig{
-				Config: []v1alpha1.ACMECertificateDomainConfig{
+				Config: []v1alpha1.DomainSolverConfig{
 					{
-						Domains:          []string{"abc.xyz"},
-						ACMESolverConfig: v1alpha1.ACMESolverConfig{},
+						Domains:      []string{"abc.xyz"},
+						SolverConfig: v1alpha1.SolverConfig{},
 					},
 				},
 			},
@@ -393,11 +393,11 @@ func TestValidateACMECertificateConfig(t *testing.T) {
 		},
 		"acme dns01 configuration missing provider name": {
 			cfg: &v1alpha1.ACMECertificateConfig{
-				Config: []v1alpha1.ACMECertificateDomainConfig{
+				Config: []v1alpha1.DomainSolverConfig{
 					{
 						Domains: []string{"abc.xyz"},
-						ACMESolverConfig: v1alpha1.ACMESolverConfig{
-							DNS01: &v1alpha1.ACMECertificateDNS01Config{},
+						SolverConfig: v1alpha1.SolverConfig{
+							DNS01: &v1alpha1.DNS01SolverConfig{},
 						},
 					},
 				},
@@ -408,11 +408,11 @@ func TestValidateACMECertificateConfig(t *testing.T) {
 		},
 		"valid acme dns01 configuration": {
 			cfg: &v1alpha1.ACMECertificateConfig{
-				Config: []v1alpha1.ACMECertificateDomainConfig{
+				Config: []v1alpha1.DomainSolverConfig{
 					{
 						Domains: []string{"abc.xyz"},
-						ACMESolverConfig: v1alpha1.ACMESolverConfig{
-							DNS01: &v1alpha1.ACMECertificateDNS01Config{
+						SolverConfig: v1alpha1.SolverConfig{
+							DNS01: &v1alpha1.DNS01SolverConfig{
 								Provider: "abc",
 							},
 						},
@@ -423,11 +423,11 @@ func TestValidateACMECertificateConfig(t *testing.T) {
 		},
 		"no domains specified": {
 			cfg: &v1alpha1.ACMECertificateConfig{
-				Config: []v1alpha1.ACMECertificateDomainConfig{
+				Config: []v1alpha1.DomainSolverConfig{
 					{
 						Domains: []string{},
-						ACMESolverConfig: v1alpha1.ACMESolverConfig{
-							HTTP01: &v1alpha1.ACMECertificateHTTP01Config{},
+						SolverConfig: v1alpha1.SolverConfig{
+							HTTP01: &v1alpha1.HTTP01SolverConfig{},
 						},
 					},
 				},
@@ -438,12 +438,12 @@ func TestValidateACMECertificateConfig(t *testing.T) {
 		},
 		"multiple solvers configured": {
 			cfg: &v1alpha1.ACMECertificateConfig{
-				Config: []v1alpha1.ACMECertificateDomainConfig{
+				Config: []v1alpha1.DomainSolverConfig{
 					{
 						Domains: []string{"abc.xyz"},
-						ACMESolverConfig: v1alpha1.ACMESolverConfig{
-							HTTP01: &v1alpha1.ACMECertificateHTTP01Config{},
-							DNS01: &v1alpha1.ACMECertificateDNS01Config{
+						SolverConfig: v1alpha1.SolverConfig{
+							HTTP01: &v1alpha1.HTTP01SolverConfig{},
+							DNS01: &v1alpha1.DNS01SolverConfig{
 								Provider: "abc",
 							},
 						},
@@ -472,29 +472,29 @@ func TestValidateACMECertificateConfig(t *testing.T) {
 	}
 }
 
-func TestValidateACMECertificateHTTP01Config(t *testing.T) {
+func TestValidateHTTP01SolverConfig(t *testing.T) {
 	fldPath := field.NewPath("")
 	scenarios := map[string]struct {
 		isExpectedFailure bool
-		cfg               *v1alpha1.ACMECertificateHTTP01Config
+		cfg               *v1alpha1.HTTP01SolverConfig
 		errs              []*field.Error
 	}{
 		"ingress field specified": {
-			cfg: &v1alpha1.ACMECertificateHTTP01Config{
+			cfg: &v1alpha1.HTTP01SolverConfig{
 				Ingress: "abc",
 			},
 		},
 		"ingress class field specified": {
-			cfg: &v1alpha1.ACMECertificateHTTP01Config{
+			cfg: &v1alpha1.HTTP01SolverConfig{
 				IngressClass: strPtr("abc"),
 			},
 		},
 		"neither field specified": {
-			cfg:  &v1alpha1.ACMECertificateHTTP01Config{},
+			cfg:  &v1alpha1.HTTP01SolverConfig{},
 			errs: []*field.Error{},
 		},
 		"both fields specified": {
-			cfg: &v1alpha1.ACMECertificateHTTP01Config{
+			cfg: &v1alpha1.HTTP01SolverConfig{
 				Ingress:      "abc",
 				IngressClass: strPtr("abc"),
 			},
@@ -505,7 +505,7 @@ func TestValidateACMECertificateHTTP01Config(t *testing.T) {
 	}
 	for n, s := range scenarios {
 		t.Run(n, func(t *testing.T) {
-			errs := ValidateACMECertificateHTTP01Config(s.cfg, fldPath)
+			errs := ValidateHTTP01SolverConfig(s.cfg, fldPath)
 			if len(errs) != len(s.errs) {
 				t.Errorf("Expected %v but got %v", s.errs, errs)
 				return
