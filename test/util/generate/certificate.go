@@ -62,8 +62,8 @@ func Certificate(cfg CertificateConfig) *v1alpha1.Certificate {
 		},
 		Status: v1alpha1.CertificateStatus{
 			ACME: &v1alpha1.CertificateACMEStatus{
-				Order: v1alpha1.ACMEOrderStatus{
-					URL: cfg.ACMEOrderURL,
+				OrderRef: &v1alpha1.LocalObjectReference{
+					Name: "",
 				},
 			},
 		},
