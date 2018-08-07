@@ -22,7 +22,6 @@ import (
 	intscheme "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/scheme"
 	informers "github.com/jetstack/cert-manager/pkg/client/informers/externalversions"
 	"github.com/jetstack/cert-manager/pkg/controller"
-	"github.com/jetstack/cert-manager/pkg/issuer"
 	dnsutil "github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
 	"github.com/jetstack/cert-manager/pkg/util"
 	"github.com/jetstack/cert-manager/pkg/util/kube"
@@ -128,23 +127,21 @@ func buildControllerContext(opts *options.ControllerOptions) (*controller.Contex
 		Recorder:                  recorder,
 		KubeSharedInformerFactory: kubeSharedInformerFactory,
 		SharedInformerFactory:     sharedInformerFactory,
-		IssuerFactory: issuer.NewFactory(&issuer.Context{
-			Client:                          cl,
-			CMClient:                        intcl,
-			Recorder:                        recorder,
-			KubeSharedInformerFactory:       kubeSharedInformerFactory,
-			SharedInformerFactory:           sharedInformerFactory,
-			ClusterResourceNamespace:        opts.ClusterResourceNamespace,
-			ACMEHTTP01SolverImage:           opts.ACMEHTTP01SolverImage,
+		ACMEOptions: controller.ACMEOptions{
+			HTTP01SolverImage: opts.ACMEHTTP01SolverImage,
+			DNS01Nameservers:  nameservers,
+		},
+		IssuerOptions: controller.IssuerOptions{
 			ClusterIssuerAmbientCredentials: opts.ClusterIssuerAmbientCredentials,
 			IssuerAmbientCredentials:        opts.IssuerAmbientCredentials,
-			DNS01Nameservers:                nameservers,
-		}),
-		ClusterResourceNamespace:           opts.ClusterResourceNamespace,
-		DefaultIssuerName:                  opts.DefaultIssuerName,
-		DefaultIssuerKind:                  opts.DefaultIssuerKind,
-		DefaultACMEIssuerChallengeType:     opts.DefaultACMEIssuerChallengeType,
-		DefaultACMEIssuerDNS01ProviderName: opts.DefaultACMEIssuerDNS01ProviderName,
+			ClusterResourceNamespace:        opts.ClusterResourceNamespace,
+		},
+		IngressShimOptions: controller.IngressShimOptions{
+			DefaultIssuerName:                  opts.DefaultIssuerName,
+			DefaultIssuerKind:                  opts.DefaultIssuerKind,
+			DefaultACMEIssuerChallengeType:     opts.DefaultACMEIssuerChallengeType,
+			DefaultACMEIssuerDNS01ProviderName: opts.DefaultACMEIssuerDNS01ProviderName,
+		},
 	}, kubeCfg, nil
 }
 

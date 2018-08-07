@@ -10,11 +10,11 @@ import (
 
 	"github.com/golang/glog"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
-	"k8s.io/client-go/kubernetes"
 	corev1listers "k8s.io/client-go/listers/core/v1"
 	extv1beta1listers "k8s.io/client-go/listers/extensions/v1beta1"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	"github.com/jetstack/cert-manager/pkg/controller"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/http/solver"
 )
 
@@ -35,9 +35,7 @@ var (
 
 // Solver is an implementation of the acme http-01 challenge solver protocol
 type Solver struct {
-	issuer      v1alpha1.GenericIssuer
-	client      kubernetes.Interface
-	solverImage string
+	*controller.Context
 
 	podLister     corev1listers.PodLister
 	serviceLister corev1listers.ServiceLister
@@ -51,14 +49,12 @@ type reachabilityTest func(ctx context.Context, domain, path, key string) (bool,
 
 // NewSolver returns a new ACME HTTP01 solver for the given Issuer and client.
 // TODO: refactor this to have fewer args
-func NewSolver(issuer v1alpha1.GenericIssuer, client kubernetes.Interface, podLister corev1listers.PodLister, serviceLister corev1listers.ServiceLister, ingressLister extv1beta1listers.IngressLister, solverImage string) *Solver {
+func NewSolver(ctx *controller.Context) *Solver {
 	return &Solver{
-		issuer:           issuer,
-		client:           client,
-		podLister:        podLister,
-		serviceLister:    serviceLister,
-		ingressLister:    ingressLister,
-		solverImage:      solverImage,
+		Context:          ctx,
+		podLister:        ctx.KubeSharedInformerFactory.Core().V1().Pods().Lister(),
+		serviceLister:    ctx.KubeSharedInformerFactory.Core().V1().Services().Lister(),
+		ingressLister:    ctx.KubeSharedInformerFactory.Extensions().V1beta1().Ingresses().Lister(),
 		testReachability: testReachability,
 		requiredPasses:   5,
 	}
@@ -67,7 +63,7 @@ func NewSolver(issuer v1alpha1.GenericIssuer, client kubernetes.Interface, podLi
 // Present will realise the resources required to solve the given HTTP01
 // challenge validation in the apiserver. If those resources already exist, it
 // will return nil (i.e. this function is idempotent).
-func (s *Solver) Present(ctx context.Context, crt *v1alpha1.Certificate, ch v1alpha1.ACMEOrderChallenge) error {
+func (s *Solver) Present(ctx context.Context, issuer v1alpha1.GenericIssuer, crt *v1alpha1.Certificate, ch v1alpha1.ACMEOrderChallenge) error {
 	_, podErr := s.ensurePod(crt, ch)
 	svc, svcErr := s.ensureService(crt, ch)
 	if svcErr != nil {
@@ -95,7 +91,7 @@ func (s *Solver) Check(ch v1alpha1.ACMEOrderChallenge) (bool, error) {
 
 // CleanUp will ensure the created service, ingress and pod are clean/deleted of any
 // cert-manager created data.
-func (s *Solver) CleanUp(ctx context.Context, crt *v1alpha1.Certificate, ch v1alpha1.ACMEOrderChallenge) error {
+func (s *Solver) CleanUp(ctx context.Context, issuer v1alpha1.GenericIssuer, crt *v1alpha1.Certificate, ch v1alpha1.ACMEOrderChallenge) error {
 	var errs []error
 	errs = append(errs, s.cleanupPods(crt, ch))
 	errs = append(errs, s.cleanupServices(crt, ch))

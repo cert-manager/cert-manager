@@ -8,15 +8,13 @@ import (
 
 	"github.com/golang/glog"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/client-go/kubernetes"
 	corelisters "k8s.io/client-go/listers/core/v1"
 	extlisters "k8s.io/client-go/listers/extensions/v1beta1"
-	"k8s.io/client-go/tools/record"
 
 	"github.com/jetstack/cert-manager/pkg/acme"
 	"github.com/jetstack/cert-manager/pkg/acme/client"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
-	clientset "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
+	"github.com/jetstack/cert-manager/pkg/controller"
 	"github.com/jetstack/cert-manager/pkg/issuer"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/http"
@@ -27,13 +25,9 @@ import (
 // certificates from any ACME server. It supports DNS01 and HTTP01 challenge
 // mechanisms.
 type Acme struct {
-	helper *acme.Helper
-
 	issuer v1alpha1.GenericIssuer
-
-	client   kubernetes.Interface
-	cmClient clientset.Interface
-	recorder record.EventRecorder
+	*controller.Context
+	helper *acme.Helper
 
 	secretsLister  corelisters.SecretLister
 	podsLister     corelisters.PodLister
@@ -42,22 +36,6 @@ type Acme struct {
 
 	dnsSolver  solver
 	httpSolver solver
-
-	// issuerResourcesNamespace is a namespace to store resources in. This is
-	// here so we can easily support ClusterIssuers with the same codepath. By
-	// setting this field to either the namespace of the Issuer, or the
-	// clusterResourceNamespace specified on the CLI, we can easily continue
-	// to work with supplemental (e.g. secrets) resources without significant
-	// refactoring.
-	issuerResourcesNamespace string
-
-	// ambientCredentials determines whether a given acme solver may draw
-	// credentials ambiently, e.g. from metadata services or environment
-	// variables.
-	// Currently, only AWS ambient credential control is implemented.
-	ambientCredentials bool
-
-	dns01Nameservers []string
 }
 
 // solver solves ACME challenges by presenting the given token and key in an
@@ -66,28 +44,17 @@ type solver interface {
 	// we pass the certificate to the Present function so that if the solver
 	// needs to create any new resources, it can set the appropriate owner
 	// reference
-	Present(ctx context.Context, crt *v1alpha1.Certificate, ch v1alpha1.ACMEOrderChallenge) error
+	Present(ctx context.Context, issuer v1alpha1.GenericIssuer, crt *v1alpha1.Certificate, ch v1alpha1.ACMEOrderChallenge) error
 
 	// Check should return Error only if propagation check cannot be performed.
 	// It MUST return `false, nil` if can contact all relevant services and all is
 	// doing is waiting for propagation
 	Check(ch v1alpha1.ACMEOrderChallenge) (bool, error)
-	CleanUp(ctx context.Context, crt *v1alpha1.Certificate, ch v1alpha1.ACMEOrderChallenge) error
+	CleanUp(ctx context.Context, issuer v1alpha1.GenericIssuer, crt *v1alpha1.Certificate, ch v1alpha1.ACMEOrderChallenge) error
 }
 
 // New returns a new ACME issuer interface for the given issuer.
-func New(issuer v1alpha1.GenericIssuer,
-	client kubernetes.Interface,
-	cmClient clientset.Interface,
-	recorder record.EventRecorder,
-	resourceNamespace string,
-	acmeHTTP01SolverImage string,
-	secretsLister corelisters.SecretLister,
-	podsLister corelisters.PodLister,
-	servicesLister corelisters.ServiceLister,
-	ingressLister extlisters.IngressLister,
-	ambientCreds bool,
-	dns01Nameservers []string) (issuer.Interface, error) {
+func New(ctx *controller.Context, issuer v1alpha1.GenericIssuer) (issuer.Interface, error) {
 	if issuer.GetSpec().ACME == nil {
 		return nil, fmt.Errorf("acme config may not be empty")
 	}
@@ -98,30 +65,23 @@ func New(issuer v1alpha1.GenericIssuer,
 		return nil, fmt.Errorf("acme server, private key and email are required fields")
 	}
 
-	if resourceNamespace == "" {
-		return nil, fmt.Errorf("resource namespace cannot be empty")
-	}
+	secretsLister := ctx.KubeSharedInformerFactory.Core().V1().Secrets().Lister()
+	podsLister := ctx.KubeSharedInformerFactory.Core().V1().Pods().Lister()
+	servicesLister := ctx.KubeSharedInformerFactory.Core().V1().Services().Lister()
+	ingressLister := ctx.KubeSharedInformerFactory.Extensions().V1beta1().Ingresses().Lister()
 
 	a := &Acme{
-		// TODO: helper *should* be instantiated with the ClusterResourceNamespace,
-		// whereas here we are instantiating it with the actual namespace that should
-		// be used to discover resources.
-		// This is okay in this instance, as we construct a dedicated Helper per Issuer
-		// and we also construct a dedicated 'Acme' per issuer too.
-		// With the ACME order changes, this line will change appropriately.
-		helper:         acme.NewHelper(secretsLister, resourceNamespace),
-		issuer:         issuer,
-		client:         client,
-		cmClient:       cmClient,
-		recorder:       recorder,
+		Context: ctx,
+		helper:  acme.NewHelper(secretsLister, ctx.ClusterResourceNamespace),
+		issuer:  issuer,
+
 		secretsLister:  secretsLister,
 		podsLister:     podsLister,
 		servicesLister: servicesLister,
 		ingressLister:  ingressLister,
 
-		dnsSolver:                dns.NewSolver(issuer, client, secretsLister, resourceNamespace, ambientCreds, dns01Nameservers),
-		httpSolver:               http.NewSolver(issuer, client, podsLister, servicesLister, ingressLister, acmeHTTP01SolverImage),
-		issuerResourcesNamespace: resourceNamespace,
+		dnsSolver:  dns.NewSolver(ctx),
+		httpSolver: http.NewSolver(ctx),
 	}
 	return a, nil
 }
@@ -143,7 +103,7 @@ func (a *Acme) createOrder(ctx context.Context, cl client.Interface, crt *v1alph
 	}
 	order, err = cl.CreateOrder(ctx, order)
 	if err != nil {
-		a.recorder.Eventf(crt, corev1.EventTypeWarning, "ErrCreateOrder", "Error creating order: %v", err)
+		a.Recorder.Eventf(crt, corev1.EventTypeWarning, "ErrCreateOrder", "Error creating order: %v", err)
 		return nil, err
 	}
 
@@ -164,35 +124,7 @@ func (a *Acme) solverFor(challengeType string) (solver, error) {
 
 // Register this Issuer with the issuer factory
 func init() {
-	issuer.Register(issuer.IssuerACME, func(i v1alpha1.GenericIssuer, ctx *issuer.Context) (issuer.Interface, error) {
-		issuerResourcesNamespace := i.GetObjectMeta().Namespace
-		if issuerResourcesNamespace == "" {
-			issuerResourcesNamespace = ctx.ClusterResourceNamespace
-		}
-
-		ambientCreds := false
-		switch i.(type) {
-		case *v1alpha1.ClusterIssuer:
-			ambientCreds = ctx.ClusterIssuerAmbientCredentials
-		case *v1alpha1.Issuer:
-			ambientCreds = ctx.IssuerAmbientCredentials
-		default:
-			return nil, fmt.Errorf("issuer was neither an 'Issuer' nor 'ClusterIssuer'; was %T", i)
-		}
-
-		return New(
-			i,
-			ctx.Client,
-			ctx.CMClient,
-			ctx.Recorder,
-			issuerResourcesNamespace,
-			ctx.ACMEHTTP01SolverImage,
-			ctx.KubeSharedInformerFactory.Core().V1().Secrets().Lister(),
-			ctx.KubeSharedInformerFactory.Core().V1().Pods().Lister(),
-			ctx.KubeSharedInformerFactory.Core().V1().Services().Lister(),
-			ctx.KubeSharedInformerFactory.Extensions().V1beta1().Ingresses().Lister(),
-			ambientCreds,
-			ctx.DNS01Nameservers,
-		)
+	controller.RegisterIssuer(controller.IssuerACME, func(ctx *controller.Context, i v1alpha1.GenericIssuer) (issuer.Interface, error) {
+		return New(ctx, i)
 	})
 }
