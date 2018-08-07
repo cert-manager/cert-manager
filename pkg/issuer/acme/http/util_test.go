@@ -40,10 +40,8 @@ type solverFixture struct {
 
 	// Issuer to be passed to functions on the Solver (a default will be used if nil)
 	Issuer v1alpha1.GenericIssuer
-	// Certificate resource to use during tests
-	Certificate *v1alpha1.Certificate
 	// Challenge resource to use during tests
-	Challenge v1alpha1.ACMEOrderChallenge
+	Challenge *v1alpha1.Challenge
 
 	// PreFn will run before the test is run, but after the fixture has been initialised.
 	// This is useful if you want to load the clientset with some resources *after* the
