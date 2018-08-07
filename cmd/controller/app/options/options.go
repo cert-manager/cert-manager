@@ -48,9 +48,9 @@ const (
 
 	defaultLeaderElect                 = true
 	defaultLeaderElectionNamespace     = "kube-system"
-	defaultLeaderElectionLeaseDuration = 15 * time.Second
-	defaultLeaderElectionRenewDeadline = 10 * time.Second
-	defaultLeaderElectionRetryPeriod   = 2 * time.Second
+	defaultLeaderElectionLeaseDuration = 60 * time.Second
+	defaultLeaderElectionRenewDeadline = 40 * time.Second
+	defaultLeaderElectionRetryPeriod   = 20 * time.Second
 
 	defaultClusterIssuerAmbientCredentials = true
 	defaultIssuerAmbientCredentials        = false
