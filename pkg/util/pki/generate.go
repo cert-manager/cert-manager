@@ -112,3 +112,35 @@ func PublicKeyForPrivateKey(pk crypto.PrivateKey) (crypto.PublicKey, error) {
 		return nil, fmt.Errorf("unknown private key type: %T", pk)
 	}
 }
+
+// PublicKeyMatchesCertificate can be used to verify the given public key
+// is the correct counter-part to the given x509 Certificate.
+// It will return false and no error if the public key is *not* valid for the
+// given Certificate.
+// It will return true if the public key *is* valid for the given Certificate.
+// It will return an error if either of the passed parameters are of an
+// unrecognised type (i.e. non RSA/ECDSA)
+func PublicKeyMatchesCertificate(check crypto.PublicKey, crt *x509.Certificate) (bool, error) {
+	switch pub := crt.PublicKey.(type) {
+	case *rsa.PublicKey:
+		rsaCheck, ok := check.(*rsa.PublicKey)
+		if !ok {
+			return false, nil
+		}
+		if pub.N.Cmp(rsaCheck.N) != 0 {
+			return false, nil
+		}
+		return true, nil
+	case *ecdsa.PublicKey:
+		ecdsaCheck, ok := check.(*ecdsa.PublicKey)
+		if !ok {
+			return false, nil
+		}
+		if pub.X.Cmp(ecdsaCheck.X) != 0 || pub.Y.Cmp(ecdsaCheck.Y) != 0 {
+			return false, nil
+		}
+		return true, nil
+	default:
+		return false, fmt.Errorf("unrecognised Certificate public key type")
+	}
+}
