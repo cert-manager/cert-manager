@@ -1,7 +1,9 @@
 package controller
 
 import (
+	"crypto/x509"
 	"fmt"
+	"time"
 
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	cmlisters "github.com/jetstack/cert-manager/pkg/client/listers/certmanager/v1alpha1"
@@ -62,6 +64,19 @@ func (o IssuerOptions) CanUseAmbientCredentials(iss cmapi.GenericIssuer) bool {
 		return o.ClusterIssuerAmbientCredentials
 	case *cmapi.Issuer:
 		return o.IssuerAmbientCredentials
+	}
+	return false
+}
+
+func (o IssuerOptions) CertificateNeedsRenew(cert *x509.Certificate) bool {
+	// calculate the amount of time until expiry
+	durationUntilExpiry := cert.NotAfter.Sub(time.Now())
+	// calculate how long until we should start attempting to renew the
+	// certificate
+	renewIn := durationUntilExpiry - o.RenewBeforeExpiryDuration
+	// if we should being attempting to renew now, then trigger a renewal
+	if renewIn <= 0 {
+		return true
 	}
 	return false
 }
