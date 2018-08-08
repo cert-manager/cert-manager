@@ -1,6 +1,8 @@
 package controller
 
 import (
+	"time"
+
 	kubeinformers "k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/record"
@@ -50,6 +52,11 @@ type IssuerOptions struct {
 	// IssuerAmbientCredentials controls whether an issuer should pick up ambient
 	// credentials, such as those from metadata services, to construct clients.
 	IssuerAmbientCredentials bool
+
+	// RenewBeforeExpiryDuration is the default 'renew before expiry' time for Certificates.
+	// Once a certificate is within this duration until expiry, a new Certificate
+	// will be attempted to be issued.
+	RenewBeforeExpiryDuration time.Duration
 }
 
 type ACMEOptions struct {

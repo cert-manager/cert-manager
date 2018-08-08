@@ -135,6 +135,7 @@ func buildControllerContext(opts *options.ControllerOptions) (*controller.Contex
 			ClusterIssuerAmbientCredentials: opts.ClusterIssuerAmbientCredentials,
 			IssuerAmbientCredentials:        opts.IssuerAmbientCredentials,
 			ClusterResourceNamespace:        opts.ClusterResourceNamespace,
+			RenewBeforeExpiryDuration:       opts.RenewBeforeExpiryDuration,
 		},
 		IngressShimOptions: controller.IngressShimOptions{
 			DefaultIssuerName:                  opts.DefaultIssuerName,
