@@ -13,6 +13,7 @@ import (
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	"github.com/jetstack/cert-manager/pkg/util"
 	"github.com/jetstack/cert-manager/pkg/util/errors"
 	"github.com/jetstack/cert-manager/pkg/util/kube"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
@@ -160,6 +161,12 @@ func (a *Acme) obtainCertificate(ctx context.Context, crt *v1alpha1.Certificate)
 		crt.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse, errorIssueError, "Creating new order due to lost TLS private key", false)
 		crt.Status.ACMEStatus().Order.URL = ""
 		return nil, nil, fmt.Errorf("marking certificate as failed to trigger a new order to be created due to lost private key")
+	}
+
+	if commonName != x509Cert.Subject.CommonName || !util.EqualUnsorted(x509Cert.DNSNames, altNames) {
+		crt.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse, errorIssueError, "Creating new order due to change in common name", false)
+		crt.Status.ACMEStatus().Order.URL = ""
+		return nil, nil, fmt.Errorf("marking certificate as failed to trigger a new order to be created due to change in common name")
 	}
 
 	// encode the retrieved certificate
