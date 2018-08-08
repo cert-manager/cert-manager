@@ -1,6 +1,8 @@
 package issuer
 
 import (
+	"time"
+
 	kubeinformers "k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/record"
@@ -45,4 +47,9 @@ type Context struct {
 	IssuerAmbientCredentials bool
 
 	DNS01Nameservers []string
+
+	// RenewBeforeExpiryDuration is the default 'renew before expiry' time for Certificates.
+	// Once a certificate is within this duration until expiry, a new Certificate
+	// will be attempted to be issued.
+	RenewBeforeExpiryDuration time.Duration
 }

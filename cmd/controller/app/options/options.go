@@ -31,6 +31,7 @@ type ControllerOptions struct {
 
 	ClusterIssuerAmbientCredentials bool
 	IssuerAmbientCredentials        bool
+	RenewBeforeExpiryDuration       time.Duration
 
 	// Default issuer/certificates details consumed by ingress-shim
 	DefaultIssuerName                  string
@@ -54,6 +55,7 @@ const (
 
 	defaultClusterIssuerAmbientCredentials = true
 	defaultIssuerAmbientCredentials        = false
+	defaultRenewBeforeExpiryDuration       = time.Hour * 24 * 30
 
 	defaultTLSACMEIssuerName           = ""
 	defaultTLSACMEIssuerKind           = "Issuer"
@@ -84,6 +86,7 @@ func NewControllerOptions() *ControllerOptions {
 		EnabledControllers:                 defaultEnabledControllers,
 		ClusterIssuerAmbientCredentials:    defaultClusterIssuerAmbientCredentials,
 		IssuerAmbientCredentials:           defaultIssuerAmbientCredentials,
+		RenewBeforeExpiryDuration:          defaultRenewBeforeExpiryDuration,
 		DefaultIssuerName:                  defaultTLSACMEIssuerName,
 		DefaultIssuerKind:                  defaultTLSACMEIssuerKind,
 		DefaultACMEIssuerChallengeType:     defaultACMEIssuerChallengeType,
@@ -133,6 +136,10 @@ func (s *ControllerOptions) AddFlags(fs *pflag.FlagSet) {
 		"Whether an issuer may make use of ambient credentials. 'Ambient Credentials' are credentials drawn from the environment, metadata services, or local files which are not explicitly configured in the Issuer API object. "+
 		"When this flag is enabled, the following sources for credentials are also used: "+
 		"AWS - All sources the Go SDK defaults to, notably including any EC2 IAM roles available via instance metadata.")
+	fs.DurationVar(&s.RenewBeforeExpiryDuration, "renew-before-expiry-duration", defaultRenewBeforeExpiryDuration, ""+
+		"The default 'renew before expiry' time for Certificates. "+
+		"Once a certificate is within this duration until expiry, a new Certificate "+
+		"will be attempted to be issued.")
 
 	fs.StringVar(&s.DefaultIssuerName, "default-issuer-name", defaultTLSACMEIssuerName, ""+
 		"Name of the Issuer to use when the tls is requested but issuer name is not specified on the ingress resource.")
