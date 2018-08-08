@@ -14,7 +14,7 @@ and has borrowed some wisdom from other similar projects e.g.
 
 ## Current status
 
-As this project is pre-1.0, we do not currently offer strong gguarantees around our
+As this project is pre-1.0, we do not currently offer strong guarantees around our
 API stability.
 
 Notably, we may choose to make breaking changes to our API specification (i.e. the
@@ -35,10 +35,12 @@ can use to try and get help.
 
 The quickest way to ask a question is to first post on our Slack channel (#cert-manager)
 on the [Kubernetes Slack](http://slack.kubernetes.io/).
+There are a lot of community members in this channel, and you can often get an answer
+to your question straight away!
 
 You can also try [searching for an existing issue](https://github.com/jetstack/cert-manager/issues).
-Properly searching for an existing problem will help reduce the number of duplicate issues,
-and find you the answer you are looking for quicker.
+Properly searching for an existing issue will help reduce the number of duplicates,
+and help you find the answer you are looking for quicker.
 
 Please also make sure to read through the relevant pages in the [documentation](https://cert-manager.readthedocs.io/en/latest/)
 before opening an issue. You can also search the documentation using the search box on the
