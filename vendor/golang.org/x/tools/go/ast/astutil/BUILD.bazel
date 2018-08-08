@@ -1,0 +1,32 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "enclosing.go",
+        "imports.go",
+        "rewrite.go",
+        "util.go",
+    ],
+    importmap = "vendor/golang.org/x/tools/go/ast/astutil",
+    importpath = "golang.org/x/tools/go/ast/astutil",
+    tags = ["manual"],
+    visibility = ["//visibility:public"],
+)
+
+go_test(
+    name = "go_default_test",
+    srcs = ["imports_test.go"],
+    embed = [":go_default_library"],
+    tags = ["manual"],
+)
+
+go_test(
+    name = "go_default_xtest",
+    srcs = [
+        "enclosing_test.go",
+        "rewrite_test.go",
+    ],
+    tags = ["manual"],
+    deps = [":go_default_library"],
+)

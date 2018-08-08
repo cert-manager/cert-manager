@@ -1,0 +1,23 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "parse.go",
+        "xfs.go",
+    ],
+    importmap = "vendor/github.com/prometheus/procfs/xfs",
+    importpath = "github.com/prometheus/procfs/xfs",
+    tags = ["manual"],
+    visibility = ["//visibility:public"],
+)
+
+go_test(
+    name = "go_default_xtest",
+    srcs = ["parse_test.go"],
+    tags = ["manual"],
+    deps = [
+        ":go_default_library",
+        "//vendor/github.com/prometheus/procfs:go_default_library",
+    ],
+)

@@ -1,0 +1,22 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = ["ginkgo_dsl.go"],
+    importmap = "vendor/github.com/onsi/ginkgo",
+    importpath = "github.com/onsi/ginkgo",
+    tags = ["manual"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//vendor/github.com/onsi/ginkgo/config:go_default_library",
+        "//vendor/github.com/onsi/ginkgo/internal/codelocation:go_default_library",
+        "//vendor/github.com/onsi/ginkgo/internal/failer:go_default_library",
+        "//vendor/github.com/onsi/ginkgo/internal/remote:go_default_library",
+        "//vendor/github.com/onsi/ginkgo/internal/suite:go_default_library",
+        "//vendor/github.com/onsi/ginkgo/internal/testingtproxy:go_default_library",
+        "//vendor/github.com/onsi/ginkgo/internal/writer:go_default_library",
+        "//vendor/github.com/onsi/ginkgo/reporters:go_default_library",
+        "//vendor/github.com/onsi/ginkgo/reporters/stenographer:go_default_library",
+        "//vendor/github.com/onsi/ginkgo/types:go_default_library",
+    ],
+)

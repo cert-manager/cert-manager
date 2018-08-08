@@ -1,0 +1,30 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "context.go",
+        "go17.go",
+        "go19.go",
+        "pre_go17.go",
+        "pre_go19.go",
+    ],
+    importmap = "vendor/golang.org/x/net/context",
+    importpath = "golang.org/x/net/context",
+    tags = ["manual"],
+    visibility = ["//visibility:public"],
+)
+
+go_test(
+    name = "go_default_test",
+    srcs = ["context_test.go"],
+    embed = [":go_default_library"],
+    tags = ["manual"],
+)
+
+go_test(
+    name = "go_default_xtest",
+    srcs = ["withtimeout_test.go"],
+    tags = ["manual"],
+    deps = [":go_default_library"],
+)

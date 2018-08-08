@@ -1,0 +1,24 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "account.go",
+        "client.go",
+        "storage.go",
+    ],
+    importmap = "vendor/github.com/cpu/goacmedns",
+    importpath = "github.com/cpu/goacmedns",
+    tags = ["manual"],
+    visibility = ["//visibility:public"],
+)
+
+go_test(
+    name = "go_default_test",
+    srcs = [
+        "client_test.go",
+        "storage_test.go",
+    ],
+    embed = [":go_default_library"],
+    tags = ["manual"],
+)

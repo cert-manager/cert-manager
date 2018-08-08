@@ -1,0 +1,30 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "append.go",
+        "flatten.go",
+        "format.go",
+        "multierror.go",
+        "prefix.go",
+    ],
+    importmap = "vendor/github.com/hashicorp/go-multierror",
+    importpath = "github.com/hashicorp/go-multierror",
+    tags = ["manual"],
+    visibility = ["//visibility:public"],
+    deps = ["//vendor/github.com/hashicorp/errwrap:go_default_library"],
+)
+
+go_test(
+    name = "go_default_test",
+    srcs = [
+        "append_test.go",
+        "flatten_test.go",
+        "format_test.go",
+        "multierror_test.go",
+        "prefix_test.go",
+    ],
+    embed = [":go_default_library"],
+    tags = ["manual"],
+)

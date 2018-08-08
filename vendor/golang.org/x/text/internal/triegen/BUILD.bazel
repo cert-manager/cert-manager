@@ -1,0 +1,25 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "compact.go",
+        "print.go",
+        "triegen.go",
+    ],
+    importmap = "vendor/golang.org/x/text/internal/triegen",
+    importpath = "golang.org/x/text/internal/triegen",
+    tags = ["manual"],
+    visibility = ["//vendor/golang.org/x/text:__subpackages__"],
+)
+
+go_test(
+    name = "go_default_xtest",
+    srcs = [
+        "data_test.go",
+        "example_compact_test.go",
+        "example_test.go",
+    ],
+    tags = ["manual"],
+    deps = [":go_default_library"],
+)

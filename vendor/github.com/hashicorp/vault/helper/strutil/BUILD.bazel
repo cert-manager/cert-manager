@@ -1,0 +1,18 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "go_default_library",
+    srcs = ["strutil.go"],
+    importmap = "vendor/github.com/hashicorp/vault/helper/strutil",
+    importpath = "github.com/hashicorp/vault/helper/strutil",
+    tags = ["manual"],
+    visibility = ["//visibility:public"],
+    deps = ["//vendor/github.com/ryanuber/go-glob:go_default_library"],
+)
+
+go_test(
+    name = "go_default_test",
+    srcs = ["strutil_test.go"],
+    embed = [":go_default_library"],
+    tags = ["manual"],
+)
