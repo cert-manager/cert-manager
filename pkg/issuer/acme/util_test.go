@@ -3,6 +3,7 @@ package acme
 import (
 	"context"
 	"testing"
+	"time"
 
 	"k8s.io/apimachinery/pkg/runtime"
 
@@ -80,6 +81,7 @@ func buildFakeAcme(f *unit.Fixture, client *client.FakeACME, issuer v1alpha1.Gen
 		// TODO: support overriding this field
 		false,
 		[]string{"8.8.8.8:53"},
+		time.Hour*24*30,
 	)
 	if err != nil {
 		f.T.Errorf("error creating fake Acme: %v", err)
