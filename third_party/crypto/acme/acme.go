@@ -247,7 +247,7 @@ func (c *Client) FinalizeOrder(ctx context.Context, finalizeURL string, csr []by
 		return nil, fmt.Errorf("acme: unexpected order status %q", o.Status)
 	}
 
-	return c.getCert(ctx, o.CertificateURL)
+	return c.GetCertificate(ctx, o.CertificateURL)
 }
 
 // GetOrder retrieves an order identified by url.
@@ -818,7 +818,7 @@ func nonceFromHeader(h http.Header) string {
 	return h.Get("Replay-Nonce")
 }
 
-func (c *Client) getCert(ctx context.Context, url string) ([][]byte, error) {
+func (c *Client) GetCertificate(ctx context.Context, url string) ([][]byte, error) {
 	res, err := c.get(ctx, url)
 	if err != nil {
 		return nil, err
