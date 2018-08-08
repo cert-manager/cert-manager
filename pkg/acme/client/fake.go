@@ -14,6 +14,7 @@ import (
 type FakeACME struct {
 	FakeCreateOrder             func(ctx context.Context, order *acme.Order) (*acme.Order, error)
 	FakeGetOrder                func(ctx context.Context, url string) (*acme.Order, error)
+	FakeGetCertificate          func(ctx context.Context, url string) ([][]byte, error)
 	FakeWaitOrder               func(ctx context.Context, url string) (*acme.Order, error)
 	FakeFinalizeOrder           func(ctx context.Context, finalizeURL string, csr []byte) (der [][]byte, err error)
 	FakeAcceptChallenge         func(ctx context.Context, chal *acme.Challenge) (*acme.Challenge, error)
@@ -38,6 +39,13 @@ func (f *FakeACME) GetOrder(ctx context.Context, url string) (*acme.Order, error
 		return f.FakeGetOrder(ctx, url)
 	}
 	return nil, fmt.Errorf("GetOrder not implemented")
+}
+
+func (f *FakeACME) GetCertificate(ctx context.Context, url string) ([][]byte, error) {
+	if f.FakeGetCertificate != nil {
+		return f.FakeGetCertificate(ctx, url)
+	}
+	return nil, fmt.Errorf("GetCertificate not implemented")
 }
 
 func (f *FakeACME) WaitOrder(ctx context.Context, url string) (*acme.Order, error) {
