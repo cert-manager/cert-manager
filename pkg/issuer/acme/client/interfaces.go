@@ -9,6 +9,7 @@ import (
 type Interface interface {
 	CreateOrder(ctx context.Context, order *acme.Order) (*acme.Order, error)
 	GetOrder(ctx context.Context, url string) (*acme.Order, error)
+	GetCertificate(ctx context.Context, url string) ([][]byte, error)
 	WaitOrder(ctx context.Context, url string) (*acme.Order, error)
 	FinalizeOrder(ctx context.Context, finalizeURL string, csr []byte) (der [][]byte, err error)
 	AcceptChallenge(ctx context.Context, chal *acme.Challenge) (*acme.Challenge, error)

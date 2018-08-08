@@ -28,6 +28,11 @@ func (l *Logger) GetOrder(ctx context.Context, url string) (*acme.Order, error) 
 	return l.baseCl.GetOrder(ctx, url)
 }
 
+func (l *Logger) GetCertificate(ctx context.Context, url string) ([][]byte, error) {
+	glog.Infof("Calling GetCertificate")
+	return l.baseCl.GetCertificate(ctx, url)
+}
+
 func (l *Logger) WaitOrder(ctx context.Context, url string) (*acme.Order, error) {
 	glog.Infof("Calling WaitOrder")
 	return l.baseCl.WaitOrder(ctx, url)
