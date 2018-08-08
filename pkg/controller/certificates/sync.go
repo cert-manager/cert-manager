@@ -2,7 +2,6 @@ package certificates
 
 import (
 	"context"
-	"crypto/x509"
 	"fmt"
 	"reflect"
 	"strings"
@@ -23,8 +22,6 @@ import (
 	"github.com/jetstack/cert-manager/pkg/util/kube"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 )
-
-const renewBefore = time.Hour * 24 * 30
 
 const (
 	errorIssuerNotFound    = "IssuerNotFound"
@@ -147,13 +144,8 @@ func (c *Controller) Sync(ctx context.Context, crt *v1alpha1.Certificate) (err e
 		return c.issue(ctx, i, crtCopy)
 	}
 
-	// calculate the amount of time until expiry
-	durationUntilExpiry := cert.NotAfter.Sub(time.Now())
-	// calculate how long until we should start attempting to renew the
-	// certificate
-	renewIn := durationUntilExpiry - renewBefore
 	// if we should being attempting to renew now, then trigger a renewal
-	if renewIn <= 0 {
+	if c.Context.IssuerOptions.CertificateNeedsRenew(cert) {
 		return c.renew(ctx, i, crtCopy)
 	}
 
@@ -175,16 +167,6 @@ func (c *Controller) getGenericIssuer(crt *v1alpha1.Certificate) (v1alpha1.Gener
 	}
 }
 
-func needsRenew(cert *x509.Certificate) bool {
-	durationUntilExpiry := cert.NotAfter.Sub(time.Now())
-	renewIn := durationUntilExpiry - renewBefore
-	// step three: check if referenced secret is valid (after start & before expiry)
-	if renewIn <= 0 {
-		return true
-	}
-	return false
-}
-
 func (c *Controller) scheduleRenewal(crt *v1alpha1.Certificate) {
 	key, err := keyFunc(crt)
 
@@ -201,7 +183,7 @@ func (c *Controller) scheduleRenewal(crt *v1alpha1.Certificate) {
 	}
 
 	durationUntilExpiry := cert.NotAfter.Sub(time.Now())
-	renewIn := durationUntilExpiry - renewBefore
+	renewIn := durationUntilExpiry - c.Context.IssuerOptions.RenewBeforeExpiryDuration
 
 	c.scheduledWorkQueue.Add(key, renewIn)
 
