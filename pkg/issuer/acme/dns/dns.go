@@ -200,7 +200,7 @@ func (s *Solver) solverForIssuerProvider(issuer v1alpha1.GenericIssuer, provider
 			return nil, fmt.Errorf("error instantiating cloudflare challenge solver: %s", err)
 		}
 	case providerConfig.DigitalOcean != nil:
-		apiTokenSecret, err := s.secretLister.Secrets(s.resourceNamespace).Get(providerConfig.DigitalOcean.Token.Name)
+		apiTokenSecret, err := s.secretLister.Secrets(resourceNamespace).Get(providerConfig.DigitalOcean.Token.Name)
 		if err != nil {
 			return nil, fmt.Errorf("error getting digitalocean token: %s", err)
 		}
