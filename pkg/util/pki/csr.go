@@ -123,10 +123,14 @@ func SignCertificate(template *x509.Certificate, issuerCert *x509.Certificate, p
 		return nil, nil, fmt.Errorf("error encoding certificate PEM: %s", err.Error())
 	}
 
-	// bundle the CA
-	err = pem.Encode(pemBytes, &pem.Block{Type: "CERTIFICATE", Bytes: issuerCert.Raw})
-	if err != nil {
-		return nil, nil, fmt.Errorf("error encoding issuer cetificate PEM: %s", err.Error())
+	// don't bundle the CA for selfsigned certificates
+	// TODO: better comparison method here? for now we can just compare pointers.
+	if issuerCert != template {
+		// bundle the CA
+		err = pem.Encode(pemBytes, &pem.Block{Type: "CERTIFICATE", Bytes: issuerCert.Raw})
+		if err != nil {
+			return nil, nil, fmt.Errorf("error encoding issuer cetificate PEM: %s", err.Error())
+		}
 	}
 
 	return pemBytes.Bytes(), cert, err
