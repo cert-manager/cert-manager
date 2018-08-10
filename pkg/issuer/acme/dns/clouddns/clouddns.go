@@ -100,7 +100,10 @@ func NewDNSProviderServiceAccountBytes(project string, saBytes []byte) (*DNSProv
 
 // Present creates a TXT record to fulfil the dns-01 challenge.
 func (c *DNSProvider) Present(domain, token, key string) error {
-	fqdn, value, ttl := util.DNS01Record(domain, key)
+	fqdn, value, ttl, err := util.DNS01Record(domain, key)
+	if err != nil {
+		return err
+	}
 
 	zone, err := c.getHostedZone(fqdn)
 	if err != nil {
@@ -147,7 +150,10 @@ func (c *DNSProvider) Present(domain, token, key string) error {
 
 // CleanUp removes the TXT record matching the specified parameters.
 func (c *DNSProvider) CleanUp(domain, token, key string) error {
-	fqdn, _, _ := util.DNS01Record(domain, key)
+	fqdn, _, _, err := util.DNS01Record(domain, key)
+	if err != nil {
+		return err
+	}
 
 	zone, err := c.getHostedZone(fqdn)
 	if err != nil {

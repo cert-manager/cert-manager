@@ -8,7 +8,7 @@ import (
 
 // DNS01Record returns a DNS record which will fulfill the `dns-01` challenge
 // TODO: move this into a non-generic place by resolving import cycle in dns package
-func DNS01Record(domain, value string) (string, string, int) {
+func DNS01Record(domain, value string) (string, string, int, error) {
 	fqdn := fmt.Sprintf("_acme-challenge.%s.", domain)
 
 	// Check if the domain has CNAME then return that
