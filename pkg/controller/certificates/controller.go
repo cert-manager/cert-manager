@@ -25,6 +25,8 @@ import (
 	"github.com/golang/glog"
 	corev1 "k8s.io/api/core/v1"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
 	corelisters "k8s.io/client-go/listers/core/v1"
@@ -41,7 +43,7 @@ type Controller struct {
 	*controllerpkg.Context
 
 	// To allow injection for testing.
-	syncHandler func(ctx context.Context, key string) error
+	syncHandler func(ctx context.Context, key string) (bool, error)
 
 	issuerLister        cmlisters.IssuerLister
 	clusterIssuerLister cmlisters.ClusterIssuerLister
@@ -60,6 +62,7 @@ func New(ctx *controllerpkg.Context) *Controller {
 	ctrl := &Controller{Context: ctx}
 	ctrl.syncHandler = ctrl.processNextWorkItem
 	ctrl.queue = workqueue.NewNamedRateLimitingQueue(workqueue.NewItemExponentialFailureRateLimiter(time.Second*2, time.Minute*1), "certificates")
+
 	// Create a scheduled work queue that calls the ctrl.queue.Add method for
 	// each object in the queue. This is used to schedule re-checks of
 	// Certificate resources when they get near to expiry
@@ -85,7 +88,44 @@ func New(ctx *controllerpkg.Context) *Controller {
 	ctrl.secretLister = secretsInformer.Lister()
 	ctrl.syncedFuncs = append(ctrl.syncedFuncs, secretsInformer.Informer().HasSynced)
 
+	ordersInformer := ctrl.SharedInformerFactory.Certmanager().V1alpha1().Orders()
+	ordersInformer.Informer().AddEventHandler(&controllerpkg.BlockingEventHandler{ctrl.handleOwnedResource})
+	ctrl.syncedFuncs = append(ctrl.syncedFuncs, ordersInformer.Informer().HasSynced)
+
 	return ctrl
+}
+
+func (c *Controller) handleOwnedResource(obj interface{}) {
+	metaobj, ok := obj.(metav1.Object)
+	if !ok {
+		glog.Errorf("item passed to handleOwnedResource does not implement ObjectMetaAccessor")
+		return
+	}
+
+	ownerRefs := metaobj.GetOwnerReferences()
+	for _, ref := range ownerRefs {
+		// Parse the Group out of the OwnerReference to compare it to what was parsed out of the requested OwnerType
+		refGV, err := schema.ParseGroupVersion(ref.APIVersion)
+		if err != nil {
+			glog.Errorf("Could not parse OwnerReference GroupVersion: %v", err)
+			continue
+		}
+
+		if refGV.Group == certificateGvk.Group && ref.Kind == certificateGvk.Kind {
+			// TODO: how to handle namespace of owner references?
+			cert, err := c.certificateLister.Certificates(metaobj.GetNamespace()).Get(ref.Name)
+			if err != nil {
+				glog.Errorf("Error getting Certificate %q referenced by resource %q", ref.Name, metaobj.GetName())
+				continue
+			}
+			objKey, err := keyFunc(cert)
+			if err != nil {
+				runtime.HandleError(err)
+				continue
+			}
+			c.queue.Add(objKey)
+		}
+	}
 }
 
 // TODO: replace with generic handleObjet function (like Navigator)
@@ -145,21 +185,22 @@ func (c *Controller) worker(stopCh <-chan struct{}) {
 		}
 
 		var key string
-		err := func(obj interface{}) error {
+		forceAdd, err := func(obj interface{}) (bool, error) {
 			defer c.queue.Done(obj)
 			var ok bool
 			if key, ok = obj.(string); !ok {
-				return nil
+				return false, nil
 			}
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
 			ctx = util.ContextWithStopCh(ctx, stopCh)
 			glog.Infof("%s controller: syncing item '%s'", ControllerName, key)
-			if err := c.syncHandler(ctx, key); err != nil {
-				return err
+
+			forceAdd, err := c.syncHandler(ctx, key)
+			if err == nil {
+				c.queue.Forget(obj)
 			}
-			c.queue.Forget(obj)
-			return nil
+			return forceAdd, err
 		}(obj)
 
 		if err != nil {
@@ -168,16 +209,20 @@ func (c *Controller) worker(stopCh <-chan struct{}) {
 			continue
 		}
 
+		if forceAdd {
+			c.queue.Add(obj)
+		}
+
 		glog.Infof("%s controller: Finished processing work item %q", ControllerName, key)
 	}
 	glog.V(4).Infof("Exiting %q worker loop", ControllerName)
 }
 
-func (c *Controller) processNextWorkItem(ctx context.Context, key string) error {
+func (c *Controller) processNextWorkItem(ctx context.Context, key string) (bool, error) {
 	namespace, name, err := cache.SplitMetaNamespaceKey(key)
 	if err != nil {
 		runtime.HandleError(fmt.Errorf("invalid resource key: %s", key))
-		return nil
+		return false, nil
 	}
 
 	crt, err := c.certificateLister.Certificates(namespace).Get(name)
@@ -186,10 +231,10 @@ func (c *Controller) processNextWorkItem(ctx context.Context, key string) error 
 		if k8sErrors.IsNotFound(err) {
 			c.scheduledWorkQueue.Forget(key)
 			runtime.HandleError(fmt.Errorf("certificate '%s' in work queue no longer exists", key))
-			return nil
+			return false, nil
 		}
 
-		return err
+		return false, err
 	}
 
 	return c.Sync(ctx, crt)

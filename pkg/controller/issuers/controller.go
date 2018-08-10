@@ -40,7 +40,7 @@ type Controller struct {
 	*controllerpkg.Context
 
 	// To allow injection for testing.
-	syncHandler func(ctx context.Context, key string) error
+	syncHandler func(ctx context.Context, key string) (bool, error)
 
 	issuerLister cmlisters.IssuerLister
 	secretLister corelisters.SecretLister
@@ -129,21 +129,21 @@ func (c *Controller) worker(stopCh <-chan struct{}) {
 		}
 
 		var key string
-		err := func(obj interface{}) error {
+		forceAdd, err := func(obj interface{}) (bool, error) {
 			defer c.queue.Done(obj)
 			var ok bool
 			if key, ok = obj.(string); !ok {
-				return nil
+				return false, nil
 			}
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
 			ctx = util.ContextWithStopCh(ctx, stopCh)
 			glog.Infof("%s controller: syncing item '%s'", ControllerName, key)
-			if err := c.syncHandler(ctx, key); err != nil {
-				return err
+			forceAdd, err := c.syncHandler(ctx, key)
+			if err == nil {
+				c.queue.Forget(obj)
 			}
-			c.queue.Forget(obj)
-			return nil
+			return forceAdd, err
 		}(obj)
 
 		if err != nil {
@@ -152,16 +152,20 @@ func (c *Controller) worker(stopCh <-chan struct{}) {
 			continue
 		}
 
+		if forceAdd {
+			c.queue.Add(obj)
+		}
+
 		glog.Infof("%s controller: Finished processing work item %q", ControllerName, key)
 	}
 	glog.V(4).Infof("Exiting %q worker loop", ControllerName)
 }
 
-func (c *Controller) processNextWorkItem(ctx context.Context, key string) error {
+func (c *Controller) processNextWorkItem(ctx context.Context, key string) (bool, error) {
 	namespace, name, err := cache.SplitMetaNamespaceKey(key)
 	if err != nil {
 		runtime.HandleError(fmt.Errorf("invalid resource key: %s", key))
-		return nil
+		return false, nil
 	}
 
 	issuer, err := c.issuerLister.Issuers(namespace).Get(name)
@@ -169,10 +173,10 @@ func (c *Controller) processNextWorkItem(ctx context.Context, key string) error 
 	if err != nil {
 		if k8sErrors.IsNotFound(err) {
 			runtime.HandleError(fmt.Errorf("issuer '%s' in work queue no longer exists", key))
-			return nil
+			return false, nil
 		}
 
-		return err
+		return false, err
 	}
 
 	return c.Sync(ctx, issuer)

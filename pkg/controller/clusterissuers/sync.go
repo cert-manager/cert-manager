@@ -36,7 +36,7 @@ const (
 	messageErrorInitIssuer = "Error initializing issuer: "
 )
 
-func (c *Controller) Sync(ctx context.Context, iss *v1alpha1.ClusterIssuer) (err error) {
+func (c *Controller) Sync(ctx context.Context, iss *v1alpha1.ClusterIssuer) (requeue bool, err error) {
 	issuerCopy := iss.DeepCopy()
 	defer func() {
 		if _, saveErr := c.updateIssuerStatus(iss, issuerCopy); saveErr != nil {
@@ -62,18 +62,18 @@ func (c *Controller) Sync(ctx context.Context, iss *v1alpha1.ClusterIssuer) (err
 
 	i, err := c.IssuerFactory().IssuerFor(issuerCopy)
 	if err != nil {
-		return err
+		return false, err
 	}
 
-	err = i.Setup(ctx)
+	resp, err := i.Setup(ctx)
 	if err != nil {
 		s := messageErrorInitIssuer + err.Error()
 		glog.Info(s)
 		c.Recorder.Event(issuerCopy, v1.EventTypeWarning, errorInitIssuer, s)
-		return err
+		return false, err
 	}
 
-	return nil
+	return resp.Requeue, nil
 }
 
 func (c *Controller) updateIssuerStatus(old, new *v1alpha1.ClusterIssuer) (*v1alpha1.ClusterIssuer, error) {

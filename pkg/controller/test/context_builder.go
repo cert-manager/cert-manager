@@ -47,7 +47,7 @@ func init() {
 type Builder struct {
 	KubeObjects        []runtime.Object
 	CertManagerObjects []runtime.Object
-	ExpectedActions    []coretesting.Action
+	ExpectedActions    []Action
 	StringGenerator    StringGenerator
 
 	stopCh           chan struct{}
@@ -137,7 +137,7 @@ func (b *Builder) AllActionsExecuted() error {
 	firedActions = append(firedActions, b.FakeKubeClient().Actions()...)
 
 	var unexpectedActions []coretesting.Action
-	missingActions := make([]coretesting.Action, len(b.ExpectedActions))
+	missingActions := make([]Action, len(b.ExpectedActions))
 	copy(missingActions, b.ExpectedActions)
 	for _, a := range firedActions {
 		// skip list and watch actions
@@ -146,7 +146,7 @@ func (b *Builder) AllActionsExecuted() error {
 		}
 		found := false
 		for i, expA := range missingActions {
-			if reflect.DeepEqual(a, expA) {
+			if expA.Matches(a) {
 				missingActions = append(missingActions[:i], missingActions[i+1:]...)
 				found = true
 				break
@@ -158,7 +158,7 @@ func (b *Builder) AllActionsExecuted() error {
 	}
 	var errs []error
 	for _, a := range missingActions {
-		errs = append(errs, fmt.Errorf("missing action: %v", actionToString(a)))
+		errs = append(errs, fmt.Errorf("missing action: %v", actionToString(a.Action())))
 	}
 	for _, a := range unexpectedActions {
 		errs = append(errs, fmt.Errorf("unexpected action: %v", actionToString(a)))

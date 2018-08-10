@@ -38,7 +38,7 @@ const (
 	ECCurve521 = 521
 )
 
-func GeneratePrivateKeyForCertificate(crt *v1alpha1.Certificate) (crypto.PrivateKey, error) {
+func GeneratePrivateKeyForCertificate(crt *v1alpha1.Certificate) (crypto.Signer, error) {
 	switch crt.Spec.KeyAlgorithm {
 	case v1alpha1.KeyAlgorithm(""), v1alpha1.RSAKeyAlgorithm:
 		keySize := MinRSAKeySize
@@ -138,6 +138,38 @@ func PublicKeyForPrivateKey(pk crypto.PrivateKey) (crypto.PublicKey, error) {
 // unrecognised type (i.e. non RSA/ECDSA)
 func PublicKeyMatchesCertificate(check crypto.PublicKey, crt *x509.Certificate) (bool, error) {
 	switch pub := crt.PublicKey.(type) {
+	case *rsa.PublicKey:
+		rsaCheck, ok := check.(*rsa.PublicKey)
+		if !ok {
+			return false, nil
+		}
+		if pub.N.Cmp(rsaCheck.N) != 0 {
+			return false, nil
+		}
+		return true, nil
+	case *ecdsa.PublicKey:
+		ecdsaCheck, ok := check.(*ecdsa.PublicKey)
+		if !ok {
+			return false, nil
+		}
+		if pub.X.Cmp(ecdsaCheck.X) != 0 || pub.Y.Cmp(ecdsaCheck.Y) != 0 {
+			return false, nil
+		}
+		return true, nil
+	default:
+		return false, fmt.Errorf("unrecognised Certificate public key type")
+	}
+}
+
+// PublicKeyMatchesCSR can be used to verify the given public key is the correct
+// counter-part to the given x509 CertificateRequest.
+// It will return false and no error if the public key is *not* valid for the
+// given CertificateRequest.
+// It will return true if the public key *is* valid for the given CertificateRequest.
+// It will return an error if either of the passed parameters are of an
+// unrecognised type (i.e. non RSA/ECDSA)
+func PublicKeyMatchesCSR(check crypto.PublicKey, csr *x509.CertificateRequest) (bool, error) {
+	switch pub := csr.PublicKey.(type) {
 	case *rsa.PublicKey:
 		rsaCheck, ok := check.(*rsa.PublicKey)
 		if !ok {

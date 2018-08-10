@@ -10,6 +10,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/selection"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
+	"k8s.io/apimachinery/pkg/util/sets"
 
 	"github.com/golang/glog"
 	"github.com/jetstack/cert-manager/pkg/acme"
@@ -73,7 +74,6 @@ func (c *Controller) Sync(ctx context.Context, o *cmapi.Order) (err error) {
 	}
 
 	switch o.Status.State {
-
 	// if the status field is not set, we should check the Order with the ACME
 	// server to try and populate it.
 	// If this is not possible - what should we do? (???)
@@ -86,47 +86,21 @@ func (c *Controller) Sync(ctx context.Context, o *cmapi.Order) (err error) {
 		// error here.
 		return fmt.Errorf("updated unknown order state. Retrying processing after applying back-off")
 
-	// if the current state is 'valid', we should keep polling the ACME server
-	// until the Order automatically progresses to the 'ready' state.
-	// This *should* happen automatically, after **some period of time**.
-	case cmapi.Valid:
-		waitTimeout := time.Second * 60
-		// wait up to 60s for the order to enter 'ready' state
-		ctx, cancel := context.WithTimeout(ctx, waitTimeout)
-		defer cancel()
-
-		existingState := o.Status.State
-		// wait for a state change (i.e. transitioning to a 'ready' state)
-		newState, err := c.pollForStateChange(ctx, cl, o, time.Second*5)
+	// if the current state is 'ready', we need to generate a CSR and finalize
+	// the order
+	case cmapi.Ready:
+		// TODO: add finalize code
+		_, err := cl.FinalizeOrder(ctx, o.Status.FinalizeURL, o.Spec.CSR)
+		errUpdate := c.syncOrderStatus(ctx, cl, o)
+		if errUpdate != nil {
+			// TODO: mark permenant failure?
+			return fmt.Errorf("error syncing order status: %v", errUpdate)
+		}
 		if err != nil {
-			return err
+			return fmt.Errorf("error finalizing order: %v", err)
 		}
 
-		// if the state has not changed, we return an error so the order can be
-		// re-queued.
-		if existingState == newState {
-			// TODO: should we mark the order as failed if the state doesn't transition?
-			// For now, we will return an error which will cause the Order to be
-			// requeued after a back-off has been applied.
-			return fmt.Errorf("expected order to transition from %q to 'ready' state, but it did not after %s", existingState, waitTimeout)
-		}
-
-		// if the state has changed, but is not in a 'ready' state, then we return
-		// an error here.
-		// When the Sync function gets called again, the appropriate action will
-		// be taken if the order is now in a failed 'final' state for some reason.
-		if newState != cmapi.Ready {
-			return fmt.Errorf("expected order to transition to the %q state, but it is %q", cmapi.Ready, newState)
-		}
-
-		if acme.IsFinalState(newState) {
-			return nil
-		}
-
-		// this *should* be unreachable, because an order cannot transition from 'valid'
-		// to another non-final state, and if it does then it should be caught by
-		// the clauses above
-		return fmt.Errorf("unexpected error: order state is %q - this case should not occur, and is likely a bug", newState)
+		return nil
 
 	// if the order is still pending or processing, we should continue to check
 	// the state of all Challenge resources (or create challenge resources)
@@ -228,8 +202,12 @@ func (c *Controller) createOrder(ctx context.Context, cl acmecl.Interface, issue
 		return fmt.Errorf("refusing to recreate a new order for Order %q. Please create a new Order resource to initiate a new order", o.Name)
 	}
 
+	identifierSet := sets.NewString(o.Spec.DNSNames...)
+	if o.Spec.CommonName != "" {
+		identifierSet.Insert(o.Spec.CommonName)
+	}
 	// create a new order with the acme server
-	orderTemplate := acmeapi.NewOrder(o.Spec.DNSNames...)
+	orderTemplate := acmeapi.NewOrder(identifierSet.List()...)
 	acmeOrder, err := cl.CreateOrder(ctx, orderTemplate)
 	if err != nil {
 		return fmt.Errorf("error creating new order: %v", err)
@@ -373,6 +351,7 @@ func setOrderStatus(o *cmapi.OrderStatus, acmeOrder *acmeapi.Order) {
 
 	o.URL = acmeOrder.URL
 	o.FinalizeURL = acmeOrder.FinalizeURL
+	o.CertificateURL = acmeOrder.CertificateURL
 }
 
 func challengeLabelsForOrder(o *cmapi.Order) map[string]string {

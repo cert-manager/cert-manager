@@ -10,7 +10,7 @@ import (
 // not for Orders.
 func IsFinalState(s v1alpha1.State) bool {
 	switch s {
-	case v1alpha1.Ready, v1alpha1.Failed, v1alpha1.Expired:
+	case v1alpha1.Valid, v1alpha1.Failed, v1alpha1.Expired:
 		return true
 	}
 	return false

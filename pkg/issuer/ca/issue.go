@@ -24,6 +24,7 @@ import (
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	"github.com/jetstack/cert-manager/pkg/issuer"
 	"github.com/jetstack/cert-manager/pkg/util/errors"
 	"github.com/jetstack/cert-manager/pkg/util/kube"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
@@ -45,7 +46,7 @@ const (
 	messageCertIssued = "Certificate issued successfully"
 )
 
-func (c *CA) Issue(ctx context.Context, crt *v1alpha1.Certificate) ([]byte, []byte, []byte, error) {
+func (c *CA) Issue(ctx context.Context, crt *v1alpha1.Certificate) (issuer.IssueResponse, error) {
 	signeeKey, err := kube.SecretTLSKey(c.secretsLister, crt.Namespace, crt.Spec.SecretName)
 
 	if k8sErrors.IsNotFound(err) || errors.IsInvalidData(err) {
@@ -55,27 +56,26 @@ func (c *CA) Issue(ctx context.Context, crt *v1alpha1.Certificate) ([]byte, []by
 	if err != nil {
 		s := messageErrorGetCertKeyPair + err.Error()
 		crt.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse, errorGetCertKeyPair, s, false)
-		return nil, nil, nil, err
+		return issuer.IssueResponse{}, err
 	}
 
 	publicKey, err := pki.PublicKeyForPrivateKey(signeeKey)
 	if err != nil {
 		s := messageErrorPublicKey + err.Error()
 		crt.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse, errorGetPublicKey, s, false)
-		return nil, nil, nil, err
+		return issuer.IssueResponse{}, err
 	}
 
 	caCert, err := kube.SecretTLSCert(c.secretsLister, c.resourceNamespace, c.issuer.GetSpec().CA.SecretName)
 	if err != nil {
-		return nil, nil, nil, err
+		return issuer.IssueResponse{}, err
 	}
 
 	certPem, err := c.obtainCertificate(crt, publicKey, caCert)
-
 	if err != nil {
 		s := messageErrorIssueCert + err.Error()
 		crt.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse, errorIssueCert, s, false)
-		return nil, nil, nil, err
+		return issuer.IssueResponse{}, err
 	}
 
 	crt.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionTrue, successCertIssued, messageCertIssued, true)
@@ -84,15 +84,19 @@ func (c *CA) Issue(ctx context.Context, crt *v1alpha1.Certificate) ([]byte, []by
 	if err != nil {
 		s := messageErrorEncodePrivateKey + err.Error()
 		crt.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse, errorEncodePrivateKey, s, false)
-		return nil, nil, nil, err
+		return issuer.IssueResponse{}, err
 	}
 
 	caPem, err := pki.EncodeX509(caCert)
 	if err != nil {
-		return nil, nil, nil, err
+		return issuer.IssueResponse{}, err
 	}
 
-	return keyPem, certPem, caPem, nil
+	return issuer.IssueResponse{
+		PrivateKey:  keyPem,
+		Certificate: certPem,
+		CA:          caPem,
+	}, nil
 }
 
 func (c *CA) obtainCertificate(crt *v1alpha1.Certificate, signeeKey interface{}, signerCert *x509.Certificate) ([]byte, error) {
