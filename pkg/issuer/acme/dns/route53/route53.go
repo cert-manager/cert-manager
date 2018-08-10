@@ -112,14 +112,22 @@ func (*DNSProvider) Timeout() (timeout, interval time.Duration) {
 
 // Present creates a TXT record using the specified parameters
 func (r *DNSProvider) Present(domain, token, keyAuth string) error {
-	fqdn, value, _ := util.DNS01Record(domain, keyAuth)
+	fqdn, value, _, err := util.DNS01Record(domain, keyAuth)
+	if err != nil {
+		return err
+	}
+
 	value = `"` + value + `"`
 	return r.changeRecord(route53.ChangeActionUpsert, fqdn, value, route53TTL)
 }
 
 // CleanUp removes the TXT record matching the specified parameters
 func (r *DNSProvider) CleanUp(domain, token, keyAuth string) error {
-	fqdn, value, _ := util.DNS01Record(domain, keyAuth)
+	fqdn, value, _, err := util.DNS01Record(domain, keyAuth)
+	if err != nil {
+		return err
+	}
+
 	value = `"` + value + `"`
 	return r.changeRecord(route53.ChangeActionDelete, fqdn, value, route53TTL)
 }

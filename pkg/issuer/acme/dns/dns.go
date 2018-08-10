@@ -69,7 +69,11 @@ func (s *Solver) Present(ctx context.Context, issuer v1alpha1.GenericIssuer, _ *
 }
 
 func (s *Solver) Check(ch v1alpha1.ACMEOrderChallenge) (bool, error) {
-	fqdn, value, ttl := util.DNS01Record(ch.Domain, ch.Key)
+	fqdn, value, ttl, err := util.DNS01Record(ch.Domain, ch.Key)
+	if err != nil {
+		return false, err
+	}
+
 	glog.Infof("Checking DNS propagation for %q using name servers: %v", ch.Domain, s.DNS01Nameservers)
 
 	ok, err := util.PreCheckDNS(fqdn, value, s.DNS01Nameservers)

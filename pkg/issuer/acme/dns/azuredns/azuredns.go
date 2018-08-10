@@ -69,14 +69,20 @@ func NewDNSProviderCredentials(clientID, clientSecret, subscriptionID, tenantID,
 
 // Present creates a TXT record using the specified parameters
 func (c *DNSProvider) Present(domain, token, keyAuth string) error {
-	fqdn, value, ttl := util.DNS01Record(domain, keyAuth)
+	fqdn, value, ttl, err := util.DNS01Record(domain, keyAuth)
+	if err != nil {
+		return err
+	}
 
 	return c.createRecord(fqdn, value, ttl)
 }
 
 // CleanUp removes the TXT record matching the specified parameters
 func (c *DNSProvider) CleanUp(domain, token, keyAuth string) error {
-	fqdn, _, _ := util.DNS01Record(domain, keyAuth)
+	fqdn, _, _, err := util.DNS01Record(domain, keyAuth)
+	if err != nil {
+		return err
+	}
 
 	z, err := c.getHostedZoneName(fqdn)
 	if err != nil {
