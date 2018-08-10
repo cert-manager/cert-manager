@@ -65,19 +65,23 @@ func (a *Acme) Issue(ctx context.Context, crt *v1alpha1.Certificate) (issuer.Iss
 				return issuer.IssueResponse{}, err
 			}
 
+			glog.V(4).Infof("Existing order named %s/%s does not exist in lister. Querying apiserver directly...", crt.Namespace, existingOrderName)
+
 			// to prevent duplicate orders being created due to the order lister
 			// not being up-to-date, we query the apiserver directly to ensure
 			// that there really is no existing certificate
 			existingOrder, err = a.CMClient.CertmanagerV1alpha1().Orders(crt.Namespace).Get(existingOrderName, metav1.GetOptions{})
-			if err != nil && !apierrors.IsNotFound(err) {
-				return issuer.IssueResponse{}, err
+			if err != nil {
+				if !apierrors.IsNotFound(err) {
+					return issuer.IssueResponse{}, err
+				}
 			}
+
+			glog.V(4).Infof("Order %s/%s does not exist in apiserver. Creating new Order resource.", crt.Namespace, existingOrderName)
 
 			// if the order is not found, we will proceed to create a new one
 			// because existingOrder is nil
-			if apierrors.IsNotFound(err) {
-				existingOrder = nil
-			}
+			existingOrder = nil
 		}
 	}
 

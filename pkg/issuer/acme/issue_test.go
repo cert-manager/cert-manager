@@ -173,6 +173,7 @@ func TestIssue(t *testing.T) {
 				CertManagerObjects: []runtime.Object{},
 				KubeObjects:        []runtime.Object{testCertExistingPKSecret},
 				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(coretesting.NewGetAction(v1alpha1.SchemeGroupVersion.WithResource("orders"), testOrder.Namespace, testOrder.Name)),
 					testpkg.NewCustomMatch(coretesting.NewCreateAction(v1alpha1.SchemeGroupVersion.WithResource("orders"), testOrder.Namespace, testOrder),
 						func(exp, actual coretesting.Action) bool {
 							expOrder := exp.(coretesting.CreateAction).GetObject().(*v1alpha1.Order)
