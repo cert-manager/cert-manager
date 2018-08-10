@@ -59,6 +59,7 @@ type ObjectReference struct {
 const (
 	ClusterIssuerKind = "ClusterIssuer"
 	IssuerKind        = "Issuer"
+	CertificateKind   = "Certificate"
 )
 
 type SecretKeySelector struct {

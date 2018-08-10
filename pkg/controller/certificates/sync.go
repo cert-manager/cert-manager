@@ -243,6 +243,17 @@ func issuerKind(crt *v1alpha1.Certificate) string {
 	}
 }
 
+func ownerRef(crt *v1alpha1.Certificate) metav1.OwnerReference {
+	controller := true
+	return metav1.OwnerReference{
+		APIVersion: v1alpha1.SchemeGroupVersion.String(),
+		Kind:       v1alpha1.CertificateKind,
+		Name:       crt.Name,
+		UID:        crt.UID,
+		Controller: &controller,
+	}
+}
+
 func (c *Controller) updateSecret(crt *v1alpha1.Certificate, namespace string, cert, key, ca []byte) (*api.Secret, error) {
 	secret, err := c.Client.CoreV1().Secrets(namespace).Get(crt.Spec.SecretName, metav1.GetOptions{})
 	if err != nil && !k8sErrors.IsNotFound(err) {
@@ -290,6 +301,7 @@ func (c *Controller) updateSecret(crt *v1alpha1.Certificate, namespace string, c
 	// if it is a new resource
 	if secret.SelfLink == "" {
 		secret, err = c.Client.CoreV1().Secrets(namespace).Create(secret)
+		secret.SetOwnerReferences(append(secret.GetOwnerReferences(), ownerRef(crt)))
 	} else {
 		secret, err = c.Client.CoreV1().Secrets(namespace).Update(secret)
 	}
