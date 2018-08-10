@@ -1,6 +1,9 @@
 package controller
 
 import (
+	"crypto/x509"
+	"time"
+
 	kubeinformers "k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/record"
@@ -41,4 +44,22 @@ type Context struct {
 	DefaultIssuerKind                  string
 	DefaultACMEIssuerChallengeType     string
 	DefaultACMEIssuerDNS01ProviderName string
+
+	// RenewBeforeExpiryDuration is the default 'renew before expiry' time for Certificates.
+	// Once a certificate is within this duration until expiry, a new Certificate
+	// will be attempted to be issued.
+	RenewBeforeExpiryDuration time.Duration
+}
+
+func CertificateNeedsRenew(cert *x509.Certificate, renewBeforeDuration time.Duration) bool {
+	// calculate the amount of time until expiry
+	durationUntilExpiry := cert.NotAfter.Sub(time.Now())
+	// calculate how long until we should start attempting to renew the
+	// certificate
+	renewIn := durationUntilExpiry - renewBeforeDuration
+	// if we should being attempting to renew now, then trigger a renewal
+	if renewIn <= 0 {
+		return true
+	}
+	return false
 }

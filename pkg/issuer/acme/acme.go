@@ -64,6 +64,11 @@ type Acme struct {
 	ambientCredentials bool
 
 	dns01Nameservers []string
+
+	// renewBeforeExpiryDuration is the default 'renew before expiry' time for Certificates.
+	// Once a certificate is within this duration until expiry, a new Certificate
+	// will be attempted to be issued.
+	renewBeforeExpiryDuration time.Duration
 }
 
 // solver solves ACME challenges by presenting the given token and key in an
@@ -93,7 +98,8 @@ func New(issuer v1alpha1.GenericIssuer,
 	servicesLister corelisters.ServiceLister,
 	ingressLister extlisters.IngressLister,
 	ambientCreds bool,
-	dns01Nameservers []string) (issuer.Interface, error) {
+	dns01Nameservers []string,
+	renewBeforeExpiryDuration time.Duration) (issuer.Interface, error) {
 	if issuer.GetSpec().ACME == nil {
 		return nil, fmt.Errorf("acme config may not be empty")
 	}
@@ -118,9 +124,10 @@ func New(issuer v1alpha1.GenericIssuer,
 		servicesLister: servicesLister,
 		ingressLister:  ingressLister,
 
-		dnsSolver:                dns.NewSolver(issuer, client, secretsLister, resourceNamespace, ambientCreds, dns01Nameservers),
-		httpSolver:               http.NewSolver(issuer, client, podsLister, servicesLister, ingressLister, acmeHTTP01SolverImage),
-		issuerResourcesNamespace: resourceNamespace,
+		dnsSolver:                 dns.NewSolver(issuer, client, secretsLister, resourceNamespace, ambientCreds, dns01Nameservers),
+		httpSolver:                http.NewSolver(issuer, client, podsLister, servicesLister, ingressLister, acmeHTTP01SolverImage),
+		issuerResourcesNamespace:  resourceNamespace,
+		renewBeforeExpiryDuration: renewBeforeExpiryDuration,
 	}
 	a.acmeClient = a.acmeClientImpl
 	return a, nil
@@ -239,6 +246,7 @@ func init() {
 			ctx.KubeSharedInformerFactory.Extensions().V1beta1().Ingresses().Lister(),
 			ambientCreds,
 			ctx.DNS01Nameservers,
+			ctx.RenewBeforeExpiryDuration,
 		)
 	})
 }

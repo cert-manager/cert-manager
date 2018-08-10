@@ -48,6 +48,9 @@ type Controller struct {
 	scheduledWorkQueue scheduler.ScheduledWorkQueue
 	workerWg           sync.WaitGroup
 	syncedFuncs        []cache.InformerSynced
+
+	// added as part of cherry picking PR #800 onto release-0.4
+	renewBeforeExpiryDuration time.Duration
 }
 
 // New returns a new Certificates controller. It sets up the informer handler
@@ -64,8 +67,9 @@ func New(
 	cmClient clientset.Interface,
 	issuerFactory issuer.Factory,
 	recorder record.EventRecorder,
+	renewBeforeExpiryDuration time.Duration,
 ) *Controller {
-	ctrl := &Controller{client: client, cmClient: cmClient, issuerFactory: issuerFactory, recorder: recorder}
+	ctrl := &Controller{client: client, cmClient: cmClient, issuerFactory: issuerFactory, recorder: recorder, renewBeforeExpiryDuration: renewBeforeExpiryDuration}
 	ctrl.syncHandler = ctrl.processNextWorkItem
 	ctrl.queue = workqueue.NewNamedRateLimitingQueue(workqueue.NewItemExponentialFailureRateLimiter(time.Second*2, time.Minute*1), "certificates")
 	// Create a scheduled work queue that calls the ctrl.queue.Add method for
@@ -235,6 +239,7 @@ func init() {
 			ctx.CMClient,
 			ctx.IssuerFactory,
 			ctx.Recorder,
+			ctx.RenewBeforeExpiryDuration,
 		).Run
 	})
 }

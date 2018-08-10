@@ -139,12 +139,14 @@ func buildControllerContext(opts *options.ControllerOptions) (*controller.Contex
 			ClusterIssuerAmbientCredentials: opts.ClusterIssuerAmbientCredentials,
 			IssuerAmbientCredentials:        opts.IssuerAmbientCredentials,
 			DNS01Nameservers:                nameservers,
+			RenewBeforeExpiryDuration:       opts.RenewBeforeExpiryDuration,
 		}),
 		ClusterResourceNamespace:           opts.ClusterResourceNamespace,
 		DefaultIssuerName:                  opts.DefaultIssuerName,
 		DefaultIssuerKind:                  opts.DefaultIssuerKind,
 		DefaultACMEIssuerChallengeType:     opts.DefaultACMEIssuerChallengeType,
 		DefaultACMEIssuerDNS01ProviderName: opts.DefaultACMEIssuerDNS01ProviderName,
+		RenewBeforeExpiryDuration:          opts.RenewBeforeExpiryDuration,
 	}, kubeCfg, nil
 }
 
