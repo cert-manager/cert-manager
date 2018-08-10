@@ -56,7 +56,10 @@ func (c *DNSProvider) Timeout() (timeout, interval time.Duration) {
 
 // Present creates a TXT record to fulfil the dns-01 challenge
 func (c *DNSProvider) Present(domain, token, keyAuth string) error {
-	fqdn, value, _ := util.DNS01Record(domain, keyAuth)
+	fqdn, value, _, err := util.DNS01Record(domain, keyAuth)
+	if err != nil {
+		return err
+	}
 
 	zoneID, err := c.getHostedZoneID(fqdn)
 	if err != nil {
@@ -102,7 +105,10 @@ func (c *DNSProvider) Present(domain, token, keyAuth string) error {
 
 // CleanUp removes the TXT record matching the specified parameters
 func (c *DNSProvider) CleanUp(domain, token, keyAuth string) error {
-	fqdn, _, _ := util.DNS01Record(domain, keyAuth)
+	fqdn, _, _, err := util.DNS01Record(domain, keyAuth)
+	if err != nil {
+		return err
+	}
 
 	record, err := c.findTxtRecord(fqdn)
 	if err != nil {
