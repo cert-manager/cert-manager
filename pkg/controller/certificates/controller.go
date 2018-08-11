@@ -23,10 +23,7 @@ import (
 	"time"
 
 	"github.com/golang/glog"
-	corev1 "k8s.io/api/core/v1"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
 	corelisters "k8s.io/client-go/listers/core/v1"
@@ -82,74 +79,15 @@ func New(ctx *controllerpkg.Context) *Controller {
 	ctrl.syncedFuncs = append(ctrl.syncedFuncs, clusterIssuerInformer.Informer().HasSynced)
 
 	secretsInformer := ctrl.KubeSharedInformerFactory.Core().V1().Secrets()
-	secretsInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
-		DeleteFunc: ctrl.secretDeleted,
-	})
+	secretsInformer.Informer().AddEventHandler(&controllerpkg.BlockingEventHandler{WorkFunc: ctrl.handleSecretResource})
 	ctrl.secretLister = secretsInformer.Lister()
 	ctrl.syncedFuncs = append(ctrl.syncedFuncs, secretsInformer.Informer().HasSynced)
 
 	ordersInformer := ctrl.SharedInformerFactory.Certmanager().V1alpha1().Orders()
-	ordersInformer.Informer().AddEventHandler(&controllerpkg.BlockingEventHandler{ctrl.handleOwnedResource})
+	ordersInformer.Informer().AddEventHandler(&controllerpkg.BlockingEventHandler{WorkFunc: ctrl.handleOwnedResource})
 	ctrl.syncedFuncs = append(ctrl.syncedFuncs, ordersInformer.Informer().HasSynced)
 
 	return ctrl
-}
-
-func (c *Controller) handleOwnedResource(obj interface{}) {
-	metaobj, ok := obj.(metav1.Object)
-	if !ok {
-		glog.Errorf("item passed to handleOwnedResource does not implement ObjectMetaAccessor")
-		return
-	}
-
-	ownerRefs := metaobj.GetOwnerReferences()
-	for _, ref := range ownerRefs {
-		// Parse the Group out of the OwnerReference to compare it to what was parsed out of the requested OwnerType
-		refGV, err := schema.ParseGroupVersion(ref.APIVersion)
-		if err != nil {
-			glog.Errorf("Could not parse OwnerReference GroupVersion: %v", err)
-			continue
-		}
-
-		if refGV.Group == certificateGvk.Group && ref.Kind == certificateGvk.Kind {
-			// TODO: how to handle namespace of owner references?
-			cert, err := c.certificateLister.Certificates(metaobj.GetNamespace()).Get(ref.Name)
-			if err != nil {
-				glog.Errorf("Error getting Certificate %q referenced by resource %q", ref.Name, metaobj.GetName())
-				continue
-			}
-			objKey, err := keyFunc(cert)
-			if err != nil {
-				runtime.HandleError(err)
-				continue
-			}
-			c.queue.Add(objKey)
-		}
-	}
-}
-
-// TODO: replace with generic handleObjet function (like Navigator)
-func (c *Controller) secretDeleted(obj interface{}) {
-	var secret *corev1.Secret
-	var ok bool
-	secret, ok = obj.(*corev1.Secret)
-	if !ok {
-		runtime.HandleError(fmt.Errorf("Object is not a Secret object %#v", obj))
-		return
-	}
-	crts, err := c.certificatesForSecret(secret)
-	if err != nil {
-		runtime.HandleError(fmt.Errorf("Error looking up Certificates observing Secret: %s/%s", secret.Namespace, secret.Name))
-		return
-	}
-	for _, crt := range crts {
-		key, err := keyFunc(crt)
-		if err != nil {
-			runtime.HandleError(err)
-			continue
-		}
-		c.queue.AddRateLimited(key)
-	}
 }
 
 func (c *Controller) Run(workers int, stopCh <-chan struct{}) error {

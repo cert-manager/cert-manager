@@ -54,7 +54,7 @@ func (c *Controller) Sync(ctx context.Context, ch *cmapi.Challenge) (err error) 
 
 	// if a challenge is in a final state, we bail out early as there is nothing
 	// left for us to do here.
-	if acme.IsFinalState(ch.Status.State) || ch.Status.State == cmapi.Valid {
+	if acme.IsFinalState(ch.Status.State) {
 		return nil
 	}
 
@@ -82,7 +82,7 @@ func (c *Controller) Sync(ctx context.Context, ch *cmapi.Challenge) (err error) 
 		// we reperform the check from above now that we have updated the status
 		// if a challenge is in a final state, we bail out early as there is nothing
 		// left for us to do here.
-		if acme.IsFinalState(ch.Status.State) || ch.Status.State == cmapi.Valid {
+		if acme.IsFinalState(ch.Status.State) {
 			return nil
 		}
 	}
@@ -106,7 +106,7 @@ func (c *Controller) Sync(ctx context.Context, ch *cmapi.Challenge) (err error) 
 		return err
 	}
 	if !ok {
-		ch.Status.Reason = fmt.Sprintf("Self check failed - %s challenge still propagating. Will retry after applying back-off.", ch.Spec.Type)
+		ch.Status.Reason = fmt.Sprintf("Waiting for %s challenge propagation", ch.Spec.Type)
 		return fmt.Errorf(ch.Status.Reason)
 	}
 

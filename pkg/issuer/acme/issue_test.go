@@ -1,8 +1,15 @@
 package acme
 
 import (
+	"bytes"
+	"context"
+	"crypto"
+	"crypto/rand"
+	"crypto/rsa"
 	"crypto/x509"
 	"crypto/x509/pkix"
+	"encoding/pem"
+	"math/big"
 	"reflect"
 	"testing"
 	"time"
@@ -13,16 +20,305 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	coretesting "k8s.io/client-go/testing"
 
+	acmecl "github.com/jetstack/cert-manager/pkg/acme/client"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	"github.com/jetstack/cert-manager/pkg/controller"
 	testpkg "github.com/jetstack/cert-manager/pkg/controller/test"
 	"github.com/jetstack/cert-manager/pkg/issuer"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 )
 
-func TestIssue(t *testing.T) {
-	const generateNameSuffix = "test"
-	stringGenerator := testpkg.FixedString(generateNameSuffix)
+func generatePrivateKey(t *testing.T) *rsa.PrivateKey {
+	pk, err := pki.GenerateRSAPrivateKey(2048)
+	if err != nil {
+		t.Errorf("failed to generate private key: %v", err)
+		t.FailNow()
+	}
+	return pk
+}
 
+var serialNumberLimit = new(big.Int).Lsh(big.NewInt(1), 128)
+
+func generateSelfSignedCert(t *testing.T, crt *v1alpha1.Certificate, key crypto.Signer, duration time.Duration) (derBytes, pemBytes []byte) {
+	commonName := pki.CommonNameForCertificate(crt)
+	dnsNames := pki.DNSNamesForCertificate(crt)
+
+	serialNumber, err := rand.Int(rand.Reader, serialNumberLimit)
+	if err != nil {
+		t.Errorf("failed to generate serial number: %v", err)
+		t.FailNow()
+	}
+
+	template := &x509.Certificate{
+		Version:               3,
+		BasicConstraintsValid: true,
+		SerialNumber:          serialNumber,
+		Subject: pkix.Name{
+			CommonName: commonName,
+		},
+		NotBefore: time.Now(),
+		NotAfter:  time.Now().Add(duration),
+		// see http://golang.org/pkg/crypto/x509/#KeyUsage
+		KeyUsage: x509.KeyUsageDigitalSignature | x509.KeyUsageKeyEncipherment,
+		DNSNames: dnsNames,
+	}
+
+	derBytes, err = x509.CreateCertificate(rand.Reader, template, template, key.Public(), key)
+	if err != nil {
+		t.Errorf("error signing cert: %v", err)
+		t.FailNow()
+	}
+
+	pemByteBuffer := bytes.NewBuffer([]byte{})
+	err = pem.Encode(pemByteBuffer, &pem.Block{Type: "CERTIFICATE", Bytes: derBytes})
+	if err != nil {
+		t.Errorf("failed to encode cert: %v", err)
+		t.FailNow()
+	}
+
+	return derBytes, pemByteBuffer.Bytes()
+}
+
+// This set of tests is an ordered representation of the happy path of Issue
+// being called.
+func TestIssueHappyPath(t *testing.T) {
+	// Build required test PKI fixtures
+	pk := generatePrivateKey(t)
+	pkBytes := pki.EncodePKCS1PrivateKey(pk)
+	testCertPrivateKeySecret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "testcrt-tls",
+			Namespace: "default",
+		},
+		Data: map[string][]byte{
+			"tls.key": pkBytes,
+		},
+	}
+	testCertCSRTemplate := &x509.CertificateRequest{
+		Version: 3,
+		// SignatureAlgorithm: sigAlgo,
+		Subject: pkix.Name{
+			CommonName: "test.com",
+		},
+	}
+	testCertCSR, err := pki.EncodeCSR(testCertCSRTemplate, pk)
+	if err != nil {
+		t.Errorf("error generating csr1: %v", err)
+	}
+
+	// build actual test fixtures
+	testCert := &v1alpha1.Certificate{
+		ObjectMeta: metav1.ObjectMeta{Name: "testcrt", Namespace: "default"},
+		Spec: v1alpha1.CertificateSpec{
+			SecretName: "testcrt-tls",
+			CommonName: "test.com",
+			ACME: &v1alpha1.ACMECertificateConfig{
+				Config: []v1alpha1.DomainSolverConfig{
+					{
+						Domains:      []string{"test.com"},
+						SolverConfig: v1alpha1.SolverConfig{HTTP01: &v1alpha1.HTTP01SolverConfig{}},
+					},
+				},
+			},
+		},
+	}
+
+	testCertSignedBytesDER, testCertSignedBytesPEM := generateSelfSignedCert(t, testCert, pk, time.Hour*24*365)
+	testCertExpiringSignedBytesDER, _ := generateSelfSignedCert(t, testCert, pk, time.Minute*5)
+	testCertEmptyOrder, _ := buildOrder(testCert, testCertCSR)
+	testCertPendingOrder := testCertEmptyOrder.DeepCopy()
+	testCertPendingOrder.Status.State = v1alpha1.Pending
+	testCertValidOrder := testCertEmptyOrder.DeepCopy()
+	testCertValidOrder.Status.State = v1alpha1.Valid
+
+	tests := map[string]acmeFixture{
+		"generate a new private key if one does not exist": {
+			Certificate: testCert,
+			Builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{},
+			},
+			CheckFn: func(t *testing.T, s *acmeFixture, args ...interface{}) {
+				// returnedCert := args[0].(*v1alpha1.Certificate)
+				resp := args[1].(issuer.IssueResponse)
+				// err := args[2].(error)
+
+				if resp.PrivateKey == nil {
+					t.Errorf("expected new private key to be generated")
+				}
+				if resp.Requeue == true {
+					t.Errorf("expected certificate to not be requeued")
+				}
+			},
+			Err: false,
+		},
+		"create a new order if a private key exists and there isn't an existing order": {
+			Certificate: testCert,
+			Builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{},
+				KubeObjects:        []runtime.Object{testCertPrivateKeySecret},
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewCustomMatch(coretesting.NewCreateAction(v1alpha1.SchemeGroupVersion.WithResource("orders"), testCertEmptyOrder.Namespace, testCertEmptyOrder),
+						func(exp, actual coretesting.Action) bool {
+							expOrder := exp.(coretesting.CreateAction).GetObject().(*v1alpha1.Order)
+							actOrder := actual.(coretesting.CreateAction).GetObject().(*v1alpha1.Order)
+							expOrderCopy := expOrder.DeepCopy()
+							expOrderCopy.Spec.CSR = actOrder.Spec.CSR
+							return reflect.DeepEqual(expOrderCopy, actOrder)
+						}),
+				},
+			},
+			PreFn: func(t *testing.T, s *acmeFixture) {
+			},
+			CheckFn: func(t *testing.T, s *acmeFixture, args ...interface{}) {
+				returnedCert := args[0].(*v1alpha1.Certificate)
+				resp := args[1].(issuer.IssueResponse)
+				// err := args[2].(error)
+
+				if resp.PrivateKey != nil {
+					t.Errorf("unexpected PrivateKey response set")
+				}
+				if resp.Requeue == true {
+					t.Errorf("expected certificate to not be requeued")
+				}
+				if !reflect.DeepEqual(returnedCert, testCert) {
+					t.Errorf("output was not as expected: %s", pretty.Diff(returnedCert, testCert))
+				}
+			},
+		},
+		"do nothing if the existing order is pending and up-to-date": {
+			Certificate: testCert,
+			Builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{testCertPendingOrder},
+				KubeObjects:        []runtime.Object{testCertPrivateKeySecret},
+				ExpectedActions:    []testpkg.Action{},
+			},
+			PreFn: func(t *testing.T, s *acmeFixture) {
+			},
+			CheckFn: func(t *testing.T, s *acmeFixture, args ...interface{}) {
+				returnedCert := args[0].(*v1alpha1.Certificate)
+				resp := args[1].(issuer.IssueResponse)
+				// err := args[2].(error)
+
+				if resp.PrivateKey != nil {
+					t.Errorf("unexpected PrivateKey response set")
+				}
+				if resp.Requeue == true {
+					t.Errorf("expected certificate to not be requeued")
+				}
+				if !reflect.DeepEqual(returnedCert, testCert) {
+					t.Errorf("output was not as expected: %s", pretty.Diff(returnedCert, testCert))
+				}
+			},
+			Err: false,
+		},
+		"call GetCertificate and return the Certificate bytes if the order is 'valid'": {
+			Certificate: testCert,
+			Builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{testCertValidOrder},
+				KubeObjects:        []runtime.Object{testCertPrivateKeySecret},
+				ExpectedActions:    []testpkg.Action{},
+			},
+			Client: &acmecl.FakeACME{
+				FakeGetCertificate: func(ctx context.Context, url string) ([][]byte, error) {
+					return [][]byte{testCertSignedBytesDER}, nil
+				},
+			},
+			PreFn: func(t *testing.T, s *acmeFixture) {
+			},
+			CheckFn: func(t *testing.T, s *acmeFixture, args ...interface{}) {
+				returnedCert := args[0].(*v1alpha1.Certificate)
+				resp := args[1].(issuer.IssueResponse)
+				// err := args[2].(error)
+
+				if resp.Requeue == true {
+					t.Errorf("expected certificate to not be requeued")
+				}
+				if !reflect.DeepEqual(returnedCert, testCert) {
+					t.Errorf("output was not as expected: %s", pretty.Diff(returnedCert, testCert))
+				}
+				if !reflect.DeepEqual(resp.Certificate, testCertSignedBytesPEM) {
+					t.Errorf("unexpected certificate returned: %s", pretty.Diff(string(resp.Certificate), string(testCertSignedBytesPEM)))
+				}
+				if !reflect.DeepEqual(resp.PrivateKey, pkBytes) {
+					t.Errorf("unexpected private key returned: %v", resp.PrivateKey)
+				}
+			},
+			Err: false,
+		},
+		"trigger a renewal if the certificate associated with the order is nearing expiry": {
+			Certificate: testCert,
+			Builder: &testpkg.Builder{
+				Context: &controller.Context{
+					IssuerOptions: controller.IssuerOptions{
+						RenewBeforeExpiryDuration: time.Hour * 2,
+					},
+				},
+				CertManagerObjects: []runtime.Object{testCertValidOrder},
+				KubeObjects:        []runtime.Object{testCertPrivateKeySecret},
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(
+						coretesting.NewDeleteAction(v1alpha1.SchemeGroupVersion.WithResource("orders"), testCertValidOrder.Namespace, testCertValidOrder.Name),
+					),
+				},
+			},
+			Client: &acmecl.FakeACME{
+				FakeGetCertificate: func(ctx context.Context, url string) ([][]byte, error) {
+					return [][]byte{testCertExpiringSignedBytesDER}, nil
+				},
+			},
+			PreFn: func(t *testing.T, s *acmeFixture) {
+			},
+			CheckFn: func(t *testing.T, s *acmeFixture, args ...interface{}) {
+				returnedCert := args[0].(*v1alpha1.Certificate)
+				resp := args[1].(issuer.IssueResponse)
+				// err := args[2].(error)
+
+				if resp.Certificate != nil {
+					t.Errorf("unexpected certificate data")
+				}
+				if resp.PrivateKey != nil {
+					t.Errorf("unexpected private key data")
+				}
+				if resp.Requeue == true {
+					t.Errorf("expected certificate to not be requeued")
+				}
+				if !reflect.DeepEqual(returnedCert, testCert) {
+					t.Errorf("output was not as expected: %s", pretty.Diff(returnedCert, testCert))
+				}
+			},
+			Err: false,
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			if test.Builder == nil {
+				test.Builder = &testpkg.Builder{}
+			}
+			test.Setup(t)
+			certCopy := test.Certificate.DeepCopy()
+			resp, err := test.Acme.Issue(test.Ctx, certCopy)
+			if err != nil && !test.Err {
+				t.Errorf("Expected function to not error, but got: %v", err)
+			}
+			if err == nil && test.Err {
+				t.Errorf("Expected function to get an error, but got: %v", err)
+			}
+			if resp.Requeue == true {
+				if !reflect.DeepEqual(test.Certificate, certCopy) {
+					t.Errorf("Requeue should never be true if the Certificate is modified to prevent race conditions")
+				}
+
+				if err != nil {
+					t.Errorf("Requeue cannot be true if err is true")
+				}
+			}
+			test.Finish(t, certCopy, resp, err)
+		})
+	}
+}
+
+func TestIssueRetryCases(t *testing.T) {
 	pk1, err := pki.GenerateRSAPrivateKey(2048)
 	if err != nil {
 		t.Errorf("failed to generate private key: %v", err)
@@ -63,28 +359,19 @@ func TestIssue(t *testing.T) {
 				},
 			},
 		},
-		Status: v1alpha1.CertificateStatus{
-			ACME: &v1alpha1.CertificateACMEStatus{},
-		},
 	}
 	invalidTestCert := testCert.DeepCopy()
 	invalidTestCert.Spec.CommonName = "test2.com"
 
-	testCertOrderRefSet := testCert.DeepCopy()
-	testCertOrderRefSet.Status.ACMEStatus().OrderRef = &v1alpha1.LocalObjectReference{
-		Name: "testcrt-" + generateNameSuffix,
-	}
+	testOrder, _ := buildOrder(testCert, nil)
 
-	recentlyFailedCertificate := testCertOrderRefSet.DeepCopy()
+	recentlyFailedCertificate := testCert.DeepCopy()
 	nowTime := metav1.NewTime(time.Now())
 	recentlyFailedCertificate.Status.LastFailureTime = &nowTime
 
-	notRecentlyFailedCertificate := testCertOrderRefSet.DeepCopy()
+	notRecentlyFailedCertificate := testCert.DeepCopy()
 	pastTime := metav1.NewTime(time.Now().Add(time.Hour * -24))
 	notRecentlyFailedCertificate.Status.LastFailureTime = &pastTime
-
-	testOrder := buildOrder(testCert, nil)
-	testOrder.Name = testCertOrderRefSet.Status.ACMEStatus().OrderRef.Name
 
 	testOrderCSR1Set := testOrder.DeepCopy()
 	testOrderCSR1Set.Spec.CSR = testCSR1
@@ -98,8 +385,7 @@ func TestIssue(t *testing.T) {
 
 	readyTestOrder := testOrder.DeepCopy()
 	readyTestOrder.Status.State = v1alpha1.Ready
-	invalidTestOrder := buildOrder(invalidTestCert, nil)
-	invalidTestOrder.Name = testCertOrderRefSet.Status.ACMEStatus().OrderRef.Name
+	invalidTestOrder, _ := buildOrder(invalidTestCert, nil)
 
 	pkBytes := pki.EncodePKCS1PrivateKey(pk1)
 	testCertExistingPKSecret := &corev1.Secret{
@@ -113,128 +399,8 @@ func TestIssue(t *testing.T) {
 	}
 
 	tests := map[string]acmeFixture{
-		"should generate a new private key and requeue certificate if one does not exist": {
+		"delete existing order and create a new one immediately if the order hash has changed": {
 			Certificate: testCert,
-			Builder: &testpkg.Builder{
-				CertManagerObjects: []runtime.Object{},
-			},
-			CheckFn: func(t *testing.T, s *acmeFixture, args ...interface{}) {
-				// returnedCert := args[0].(*v1alpha1.Certificate)
-				resp := args[1].(issuer.IssueResponse)
-				// err := args[2].(error)
-
-				if resp.PrivateKey == nil {
-					t.Errorf("expected new private key to be generated")
-				}
-				if resp.Requeue != true {
-					t.Errorf("expected certificate to be requeued")
-				}
-			},
-			Err: false,
-		},
-		"should create a new order and set order status if a private key exists": {
-			Certificate: testCert,
-			Builder: &testpkg.Builder{
-				CertManagerObjects: []runtime.Object{},
-				KubeObjects:        []runtime.Object{testCertExistingPKSecret},
-				ExpectedActions: []testpkg.Action{
-					testpkg.NewCustomMatch(coretesting.NewCreateAction(v1alpha1.SchemeGroupVersion.WithResource("orders"), testOrder.Namespace, testOrder),
-						func(exp, actual coretesting.Action) bool {
-							expOrder := exp.(coretesting.CreateAction).GetObject().(*v1alpha1.Order)
-							actOrder := actual.(coretesting.CreateAction).GetObject().(*v1alpha1.Order)
-							expOrderCopy := expOrder.DeepCopy()
-							expOrderCopy.Spec.CSR = actOrder.Spec.CSR
-							return reflect.DeepEqual(expOrderCopy, actOrder)
-						}),
-				},
-			},
-			PreFn: func(t *testing.T, s *acmeFixture) {
-			},
-			CheckFn: func(t *testing.T, s *acmeFixture, args ...interface{}) {
-				returnedCert := args[0].(*v1alpha1.Certificate)
-				resp := args[1].(issuer.IssueResponse)
-				// err := args[2].(error)
-
-				if resp.PrivateKey != nil {
-					t.Errorf("unexpected PrivateKey response set")
-				}
-				if resp.Requeue == true {
-					t.Errorf("expected certificate to not be requeued")
-				}
-				if !reflect.DeepEqual(returnedCert, testCertOrderRefSet) {
-					t.Errorf("output was not as expected: %s", pretty.Diff(returnedCert, testCertOrderRefSet))
-				}
-			},
-			Err: false,
-		},
-		"should create new order if the existing order referenced does not exist": {
-			Certificate: testCertOrderRefSet,
-			Builder: &testpkg.Builder{
-				CertManagerObjects: []runtime.Object{},
-				KubeObjects:        []runtime.Object{testCertExistingPKSecret},
-				ExpectedActions: []testpkg.Action{
-					testpkg.NewAction(coretesting.NewGetAction(v1alpha1.SchemeGroupVersion.WithResource("orders"), testOrder.Namespace, testOrder.Name)),
-					testpkg.NewCustomMatch(coretesting.NewCreateAction(v1alpha1.SchemeGroupVersion.WithResource("orders"), testOrder.Namespace, testOrder),
-						func(exp, actual coretesting.Action) bool {
-							expOrder := exp.(coretesting.CreateAction).GetObject().(*v1alpha1.Order)
-							actOrder := actual.(coretesting.CreateAction).GetObject().(*v1alpha1.Order)
-							expOrderCopy := expOrder.DeepCopy()
-							expOrderCopy.Spec.CSR = actOrder.Spec.CSR
-							return reflect.DeepEqual(expOrderCopy, actOrder)
-						}),
-				},
-			},
-			PreFn: func(t *testing.T, s *acmeFixture) {
-			},
-			CheckFn: func(t *testing.T, s *acmeFixture, args ...interface{}) {
-				returnedCert := args[0].(*v1alpha1.Certificate)
-				resp := args[1].(issuer.IssueResponse)
-				// err := args[2].(error)
-
-				if resp.PrivateKey != nil {
-					t.Errorf("unexpected PrivateKey response set")
-				}
-				if resp.Requeue == true {
-					t.Errorf("expected certificate to not be requeued")
-				}
-				if !reflect.DeepEqual(returnedCert, testCertOrderRefSet) {
-					t.Errorf("output was not as expected: %s", pretty.Diff(returnedCert, testCertOrderRefSet))
-				}
-			},
-			Err: false,
-		},
-		"should perform no action and not requeue if the order does not have a state set": {
-			Certificate: testCertOrderRefSet,
-			Builder: &testpkg.Builder{
-				CertManagerObjects: []runtime.Object{pendingTestOrderCSR1},
-				KubeObjects:        []runtime.Object{testCertExistingPKSecret},
-				ExpectedActions:    []testpkg.Action{},
-			},
-			PreFn: func(t *testing.T, s *acmeFixture) {
-			},
-			CheckFn: func(t *testing.T, s *acmeFixture, args ...interface{}) {
-				returnedCert := args[0].(*v1alpha1.Certificate)
-				resp := args[1].(issuer.IssueResponse)
-				// err := args[2].(error)
-
-				if resp.PrivateKey != nil {
-					t.Errorf("unexpected PrivateKey response set")
-				}
-				if resp.Certificate != nil {
-					t.Errorf("unexpected Certificate response set")
-				}
-				if resp.Requeue == true {
-					t.Errorf("expected certificate to not be requeued")
-				}
-				// there should be no update
-				if !reflect.DeepEqual(returnedCert, testCertOrderRefSet) {
-					t.Errorf("output was not as expected: %s", pretty.Diff(returnedCert, testCertOrderRefSet))
-				}
-			},
-			Err: false,
-		},
-		"delete existing order and set orderRef to nil if the order hash has changed": {
-			Certificate: testCertOrderRefSet,
 			Builder: &testpkg.Builder{
 				CertManagerObjects: []runtime.Object{invalidTestOrder},
 				KubeObjects:        []runtime.Object{testCertExistingPKSecret},
@@ -242,6 +408,14 @@ func TestIssue(t *testing.T) {
 					testpkg.NewAction(
 						coretesting.NewDeleteAction(v1alpha1.SchemeGroupVersion.WithResource("orders"), invalidTestOrder.Namespace, invalidTestOrder.Name),
 					),
+					testpkg.NewCustomMatch(coretesting.NewCreateAction(v1alpha1.SchemeGroupVersion.WithResource("orders"), testOrder.Namespace, testOrder),
+						func(exp, actual coretesting.Action) bool {
+							expOrder := exp.(coretesting.CreateAction).GetObject().(*v1alpha1.Order)
+							actOrder := actual.(coretesting.CreateAction).GetObject().(*v1alpha1.Order)
+							expOrderCopy := expOrder.DeepCopy()
+							expOrderCopy.Spec.CSR = actOrder.Spec.CSR
+							return reflect.DeepEqual(expOrderCopy, actOrder)
+						}),
 				},
 			},
 			PreFn: func(t *testing.T, s *acmeFixture) {
@@ -268,8 +442,8 @@ func TestIssue(t *testing.T) {
 			Err: false,
 		},
 
-		"delete existing order and set orderRef to nil if the csr is signed by a different private key": {
-			Certificate: testCertOrderRefSet,
+		"delete existing order if the csr is signed by a different private key": {
+			Certificate: testCert,
 			Builder: &testpkg.Builder{
 				CertManagerObjects: []runtime.Object{testOrderCSR2Set},
 				KubeObjects:        []runtime.Object{testCertExistingPKSecret},
@@ -303,14 +477,49 @@ func TestIssue(t *testing.T) {
 			Err: false,
 		},
 
-		"delete existing order and set orderRef to nil if the csr field is not set": {
-			Certificate: testCertOrderRefSet,
+		"delete existing order if the csr field is not set": {
+			Certificate: testCert,
 			Builder: &testpkg.Builder{
 				CertManagerObjects: []runtime.Object{testOrder},
 				KubeObjects:        []runtime.Object{testCertExistingPKSecret},
 				ExpectedActions: []testpkg.Action{
 					testpkg.NewAction(
 						coretesting.NewDeleteAction(v1alpha1.SchemeGroupVersion.WithResource("orders"), testOrder.Namespace, testOrder.Name),
+					),
+				},
+			},
+			PreFn: func(t *testing.T, s *acmeFixture) {
+			},
+			CheckFn: func(t *testing.T, s *acmeFixture, args ...interface{}) {
+				returnedCert := args[0].(*v1alpha1.Certificate)
+				resp := args[1].(issuer.IssueResponse)
+				// err := args[2].(error)
+
+				if resp.PrivateKey != nil {
+					t.Errorf("unexpected PrivateKey response set")
+				}
+				if resp.Certificate != nil {
+					t.Errorf("unexpected Certificate response set")
+				}
+				if resp.Requeue == true {
+					t.Errorf("expected certificate to not be requeued")
+				}
+				// the orderRef field should be set to nil
+				if !reflect.DeepEqual(returnedCert, testCert) {
+					t.Errorf("expected certificate order ref to be nil: %s", pretty.Diff(returnedCert, testCert))
+				}
+			},
+			Err: false,
+		},
+
+		"delete existing order if the back-off time has passed": {
+			Certificate: notRecentlyFailedCertificate,
+			Builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{failedTestOrderCSR1},
+				KubeObjects:        []runtime.Object{testCertExistingPKSecret},
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(
+						coretesting.NewDeleteAction(v1alpha1.SchemeGroupVersion.WithResource("orders"), failedTestOrderCSR1.Namespace, failedTestOrderCSR1.Name),
 					),
 				},
 			},
@@ -368,182 +577,11 @@ func TestIssue(t *testing.T) {
 			},
 			Err: true,
 		},
-
-		"delete existing order and set orderRef to nil if the back-off time has passed": {
-			Certificate: notRecentlyFailedCertificate,
-			Builder: &testpkg.Builder{
-				CertManagerObjects: []runtime.Object{failedTestOrderCSR1},
-				KubeObjects:        []runtime.Object{testCertExistingPKSecret},
-				ExpectedActions: []testpkg.Action{
-					testpkg.NewAction(
-						coretesting.NewDeleteAction(v1alpha1.SchemeGroupVersion.WithResource("orders"), failedTestOrderCSR1.Namespace, failedTestOrderCSR1.Name),
-					),
-				},
-			},
-			PreFn: func(t *testing.T, s *acmeFixture) {
-			},
-			CheckFn: func(t *testing.T, s *acmeFixture, args ...interface{}) {
-				returnedCert := args[0].(*v1alpha1.Certificate)
-				resp := args[1].(issuer.IssueResponse)
-				// err := args[2].(error)
-
-				if resp.PrivateKey != nil {
-					t.Errorf("unexpected PrivateKey response set")
-				}
-				if resp.Certificate != nil {
-					t.Errorf("unexpected Certificate response set")
-				}
-				if resp.Requeue == true {
-					t.Errorf("expected certificate to not be requeued")
-				}
-				// the orderRef field should be set to nil
-				if !reflect.DeepEqual(returnedCert, testCert) {
-					t.Errorf("expected certificate order ref to be nil: %s", pretty.Diff(returnedCert, testCert))
-				}
-			},
-			Err: false,
-		},
-
-		// // Success cases
-		// "should not return an error if the existing order is in a 'ready' state": {
-		// 	Certificate: testCertOrderRefSet,
-		// 	Builder: &testpkg.Builder{
-		// 		CertManagerObjects: []runtime.Object{readyTestOrder},
-		// 	},
-		// 	PreFn: func(t *testing.T, s *acmeFixture) {
-		// 	},
-		// 	CheckFn: func(t *testing.T, s *acmeFixture, args ...interface{}) {
-		// 		returnedCert := args[0].(*v1alpha1.Certificate)
-		// 		if !reflect.DeepEqual(returnedCert, s.Certificate) {
-		// 			t.Errorf("expected %+v to equal %+v", returnedCert, s.Certificate)
-		// 		}
-		// 	},
-		// 	Err: false,
-		// },
-		// "should create an order and update the Certificate status if no existing order is named in status": {
-		// 	Certificate: testCert,
-		// 	Builder: &testpkg.Builder{
-		// 		ExpectedActions: []coretesting.Action{
-		// 			coretesting.NewCreateAction(v1alpha1.SchemeGroupVersion.WithResource("orders"), testOrder.Namespace, testOrder),
-		// 		},
-		// 	},
-		// 	PreFn: func(t *testing.T, s *acmeFixture) {
-		// 	},
-		// 	CheckFn: func(t *testing.T, s *acmeFixture, args ...interface{}) {
-		// 		returnedCert := args[0].(*v1alpha1.Certificate)
-		// 		if returnedCert.Status.ACMEStatus().OrderRef.Name != testOrder.Name {
-		// 			t.Errorf("Expected orderRef.name to equal %q, but it is %q", testOrder.Name, returnedCert.Status.ACMEStatus().OrderRef.Name)
-		// 		}
-		// 	},
-		// 	Err: true,
-		// },
-		// "should create a new order and update Certificate status if the one referenced no longer exists": {
-		// 	Certificate: testCertOrderRefSet,
-		// 	Builder: &testpkg.Builder{
-		// 		ExpectedActions: []coretesting.Action{
-		// 			coretesting.NewCreateAction(v1alpha1.SchemeGroupVersion.WithResource("orders"), testOrder.Namespace, testOrder),
-		// 		},
-		// 	},
-		// 	CheckFn: func(t *testing.T, s *acmeFixture, args ...interface{}) {
-		// 		returnedCert := args[0].(*v1alpha1.Certificate)
-		// 		if returnedCert.Status.ACMEStatus().OrderRef.Name != testOrder.Name {
-		// 			t.Errorf("Expected orderRef.name to equal %q, but it is %q", testOrder.Name, returnedCert.Status.ACMEStatus().OrderRef.Name)
-		// 		}
-		// 	},
-		// 	Err: true,
-		// },
-		// "should delete the existing order, create a new one and update status if the order hash has changed": {
-		// 	Certificate: testCertOrderRefSet,
-		// 	Builder: &testpkg.Builder{
-		// 		CertManagerObjects: []runtime.Object{invalidTestOrder},
-		// 		// create an Order based on a different version of the test cert
-		// 		ExpectedActions: []coretesting.Action{
-		// 			coretesting.NewDeleteAction(v1alpha1.SchemeGroupVersion.WithResource("orders"), invalidTestOrder.Namespace, invalidTestOrder.Name),
-		// 			coretesting.NewCreateAction(v1alpha1.SchemeGroupVersion.WithResource("orders"), testOrder.Namespace, buildOrder(testCert, nil)),
-		// 		},
-		// 	},
-		// 	PreFn: func(t *testing.T, s *acmeFixture) {
-		// 		s.FakeCMClient().PrependReactor("delete", "orders",
-		// 			s.EnsureReactorCalled("existing order deleted",
-		// 				testpkg.ObjectDeletedReactor(t, s.Builder, invalidTestOrder)),
-		// 		)
-		// 		s.FakeCMClient().PrependReactor("create", "orders",
-		// 			s.EnsureReactorCalled("new order created",
-		// 				testpkg.ObjectCreatedReactor(t, s.Builder, buildOrder(testCert, nil))),
-		// 		)
-		// 	},
-		// 	CheckFn: func(t *testing.T, s *acmeFixture, args ...interface{}) {
-		// 	},
-		// 	Err: true,
-		// },
-		// // Failure cases
-		// "should set failure time and error if the referenced order has failed and last failure is not set": {
-		// 	Certificate: testCertOrderRefSet,
-		// 	Builder: &testpkg.Builder{
-		// 		CertManagerObjects: []runtime.Object{failedTestOrder},
-		// 		// create an Order based on a different version of the test cert
-		// 		ExpectedActions: []coretesting.Action{},
-		// 	},
-		// 	PreFn: func(t *testing.T, s *acmeFixture) {
-		// 		s.Builder.Sync()
-		// 	},
-		// 	CheckFn: func(t *testing.T, s *acmeFixture, args ...interface{}) {
-		// 		returnedCert := args[0].(*v1alpha1.Certificate)
-		// 		if returnedCert.Status.LastFailureTime == nil {
-		// 			t.Errorf("expected lastFailureTime to be set")
-		// 		}
-		// 	},
-		// 	Err: true,
-		// },
-		// "should not set failure time, but return error if the referenced order has failed and last failure < failureBackoffPeriod ago": {
-		// 	Certificate: recentlyFailedCertificate,
-		// 	Builder: &testpkg.Builder{
-		// 		CertManagerObjects: []runtime.Object{failedTestOrder},
-		// 		// create an Order based on a different version of the test cert
-		// 		ExpectedActions: []coretesting.Action{},
-		// 	},
-		// 	PreFn: func(t *testing.T, s *acmeFixture) {
-		// 		s.Builder.Sync()
-		// 	},
-		// 	CheckFn: func(t *testing.T, s *acmeFixture, args ...interface{}) {
-		// 		returnedCert := args[0].(*v1alpha1.Certificate)
-		// 		if !returnedCert.Status.LastFailureTime.Equal(recentlyFailedCertificate.Status.LastFailureTime) {
-		// 			t.Errorf("Expected status.lastFailureTime to equal %q, but it is %q", recentlyFailedCertificate.Status.LastFailureTime, returnedCert.Status.LastFailureTime)
-		// 		}
-		// 	},
-		// 	Err: true,
-		// },
-		// "should clear failure time and create a new order if the lastFailureTime > failureBackoffPeriod minutes ago": {
-		// 	Certificate: notRecentlyFailedCertificate,
-		// 	Builder: &testpkg.Builder{
-		// 		CertManagerObjects: []runtime.Object{failedTestOrder},
-		// 		// create an Order based on a different version of the test cert
-		// 		ExpectedActions: []coretesting.Action{
-		// 			coretesting.NewCreateAction(v1alpha1.SchemeGroupVersion.WithResource("orders"), testOrder.Namespace, buildOrder(testCert, nil)),
-		// 		},
-		// 	},
-		// 	PreFn: func(t *testing.T, s *acmeFixture) {
-		// 		s.FakeCMClient().PrependReactor("create", "orders",
-		// 			s.EnsureReactorCalled("new order created",
-		// 				testpkg.ObjectCreatedReactor(t, s.Builder, buildOrder(testCert, nil))),
-		// 		)
-		// 	},
-		// 	CheckFn: func(t *testing.T, s *acmeFixture, args ...interface{}) {
-		// 		returnedCert := args[0].(*v1alpha1.Certificate)
-		// 		if returnedCert.Status.LastFailureTime != nil {
-		// 			t.Errorf("Expected status.lastFailureTime to be nil, but it is: %v", returnedCert.Status.LastFailureTime)
-		// 		}
-		// 	},
-		// 	Err: true,
-		// },
 	}
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			if test.Builder == nil {
 				test.Builder = &testpkg.Builder{}
-			}
-			if test.StringGenerator == nil {
-				test.StringGenerator = stringGenerator
 			}
 			test.Setup(t)
 			certCopy := test.Certificate.DeepCopy()

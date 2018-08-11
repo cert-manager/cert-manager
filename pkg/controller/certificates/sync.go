@@ -151,11 +151,6 @@ func (c *Controller) Sync(ctx context.Context, crt *v1alpha1.Certificate) (reque
 		return false, err
 	}
 
-	// as there is an existing certificate, or we may create one below, we will
-	// run scheduleRenewal to schedule a renewal if required at the end of
-	// execution.
-	defer c.scheduleRenewal(crtCopy)
-
 	if cert != nil && key != nil {
 		matches, err := pki.PublicKeyMatchesCertificate(key.Public(), cert)
 		if err != nil {
@@ -208,7 +203,9 @@ func (c *Controller) scheduleRenewal(crt *v1alpha1.Certificate) {
 	cert, err := kube.SecretTLSCert(c.secretLister, crt.Namespace, crt.Spec.SecretName)
 
 	if err != nil {
-		runtime.HandleError(fmt.Errorf("[%s/%s] Error getting certificate '%s': %s", crt.Namespace, crt.Name, crt.Spec.SecretName, err.Error()))
+		if !errors.IsInvalidData(err) {
+			runtime.HandleError(fmt.Errorf("[%s/%s] Error getting certificate '%s': %s", crt.Namespace, crt.Name, crt.Spec.SecretName, err.Error()))
+		}
 		return
 	}
 
@@ -305,12 +302,17 @@ func (c *Controller) issue(ctx context.Context, issuer issuer.Interface, crt *v1
 		return false, err
 	}
 
-	s := messageCertificateIssued
-	glog.Info(s)
-	c.Recorder.Event(crt, api.EventTypeNormal, successCertificateIssued, s)
-	crt.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionTrue, successCertificateIssued, s, true)
+	if len(resp.Certificate) > 0 {
+		s := messageCertificateIssued
+		glog.Info(s)
+		c.Recorder.Event(crt, api.EventTypeNormal, successCertificateIssued, s)
+		crt.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionTrue, successCertificateIssued, s, true)
 
-	return false, nil
+		// as we have just written a certificate, we should schedule it for renewal
+		c.scheduleRenewal(crt)
+	}
+
+	return resp.Requeue, nil
 }
 
 func (c *Controller) updateCertificateStatus(old, new *v1alpha1.Certificate) (*v1alpha1.Certificate, error) {

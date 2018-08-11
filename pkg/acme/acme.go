@@ -37,6 +37,11 @@ import (
 	acmecl "github.com/jetstack/cert-manager/third_party/crypto/acme"
 )
 
+type Interface interface {
+	ClientForIssuer(iss cmapi.GenericIssuer) (acme.Interface, error)
+	ReadPrivateKey(sel cmapi.SecretKeySelector, ns string) (*rsa.PrivateKey, error)
+}
+
 // Helper is a structure that provides 'glue' between cert-managers API types and
 // constructs, and ACME clients.
 // For example, it can be used to obtain an ACME client for a IssuerRef that is
@@ -46,6 +51,8 @@ type Helper struct {
 
 	ClusterResourceNamespace string
 }
+
+var _ Interface = &Helper{}
 
 // NewHelper is a helper that constructs a new Helper structure with the given
 // secret lister.

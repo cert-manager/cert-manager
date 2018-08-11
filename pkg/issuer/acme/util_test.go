@@ -18,6 +18,8 @@ package acme
 
 import (
 	"context"
+	"crypto/rsa"
+	"fmt"
 	"testing"
 
 	"github.com/jetstack/cert-manager/pkg/acme/client"
@@ -69,7 +71,7 @@ func (s *acmeFixture) Setup(t *testing.T) {
 		//		ambient credentials settings
 		s.Builder = &test.Builder{}
 	}
-	s.Acme = buildFakeAcme(s.Builder, s.Issuer)
+	s.Acme = s.buildFakeAcme(s.Builder, s.Issuer)
 	if s.PreFn != nil {
 		s.PreFn(t, s)
 		s.Builder.Sync()
@@ -93,12 +95,22 @@ func (s *acmeFixture) Finish(t *testing.T, args ...interface{}) {
 	}
 }
 
-func buildFakeAcme(b *test.Builder, issuer v1alpha1.GenericIssuer) *Acme {
+func (s *acmeFixture) buildFakeAcme(b *test.Builder, issuer v1alpha1.GenericIssuer) *Acme {
 	b.Start()
 	a, err := New(b.Context, issuer)
 	if err != nil {
 		panic("error creating fake Acme: " + err.Error())
 	}
+	acmeStruct := a.(*Acme)
+	acmeStruct.helper = s
 	b.Sync()
-	return a.(*Acme)
+	return acmeStruct
+}
+
+func (s *acmeFixture) ClientForIssuer(iss v1alpha1.GenericIssuer) (client.Interface, error) {
+	return s.Client, nil
+}
+
+func (s *acmeFixture) ReadPrivateKey(sel v1alpha1.SecretKeySelector, ns string) (*rsa.PrivateKey, error) {
+	return nil, fmt.Errorf("not implemented")
 }

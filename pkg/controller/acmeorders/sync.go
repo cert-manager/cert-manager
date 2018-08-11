@@ -65,6 +65,7 @@ func (c *Controller) Sync(ctx context.Context, o *cmapi.Order) (err error) {
 		if err != nil {
 			return err
 		}
+		return nil
 	}
 
 	// if an order is in a final state, we bail out early as there is nothing
@@ -89,7 +90,6 @@ func (c *Controller) Sync(ctx context.Context, o *cmapi.Order) (err error) {
 	// if the current state is 'ready', we need to generate a CSR and finalize
 	// the order
 	case cmapi.Ready:
-		// TODO: add finalize code
 		_, err := cl.FinalizeOrder(ctx, o.Status.FinalizeURL, o.Spec.CSR)
 		errUpdate := c.syncOrderStatus(ctx, cl, o)
 		if errUpdate != nil {
@@ -124,8 +124,8 @@ func (c *Controller) Sync(ctx context.Context, o *cmapi.Order) (err error) {
 		return err
 	}
 
-	var specsToCreate []cmapi.ChallengeSpec
-	for _, s := range o.Status.Challenges {
+	specsToCreate := make(map[int]cmapi.ChallengeSpec)
+	for i, s := range o.Status.Challenges {
 		create := true
 		for _, ch := range existingChallenges {
 			if s.DNSName == ch.Spec.DNSName {
@@ -138,18 +138,14 @@ func (c *Controller) Sync(ctx context.Context, o *cmapi.Order) (err error) {
 			break
 		}
 
-		specsToCreate = append(specsToCreate, s)
+		specsToCreate[i] = s
 	}
 
 	glog.Infof("Need to create %d challenges", len(specsToCreate))
 
 	var errs []error
-	for _, spec := range specsToCreate {
-		ch, err := buildChallenge(o, spec)
-		if err != nil {
-			// TODO: check if this is a perma-fail
-			return err
-		}
+	for i, spec := range specsToCreate {
+		ch := buildChallenge(i, o, spec)
 
 		ch, err = c.CMClient.CertmanagerV1alpha1().Challenges(o.Namespace).Create(ch)
 		if err != nil {
@@ -165,7 +161,7 @@ func (c *Controller) Sync(ctx context.Context, o *cmapi.Order) (err error) {
 		return fmt.Errorf("error ensuring Challenge resources for Order: %v", err)
 	}
 
-	// if all
+	// TODO: revise this logic
 	recheckOrderStatus := true
 	anyChallengesFailed := false
 	for _, ch := range existingChallenges {
@@ -328,18 +324,17 @@ func (c *Controller) syncOrderStatus(ctx context.Context, cl acmecl.Interface, o
 	return nil
 }
 
-func buildChallenge(o *cmapi.Order, chalSpec cmapi.ChallengeSpec) (*cmapi.Challenge, error) {
-	// TODO: select challenge to use and set these fields appropriately
+func buildChallenge(i int, o *cmapi.Order, chalSpec cmapi.ChallengeSpec) *cmapi.Challenge {
 	ch := &cmapi.Challenge{
 		ObjectMeta: metav1.ObjectMeta{
-			GenerateName:    o.Name + "-",
+			Name:            fmt.Sprintf("%s-%d", o.Name, i),
 			Labels:          challengeLabelsForOrder(o),
 			OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(o, orderGvk)},
 		},
 		Spec: chalSpec,
 	}
 
-	return ch, nil
+	return ch
 }
 
 // setOrderStatus will populate the given OrderStatus struct with the details from
@@ -373,49 +368,6 @@ func challengeSelectorForOrder(o *cmapi.Order) (labels.Selector, error) {
 		reqs = append(reqs, *req)
 	}
 	return labels.NewSelector().Add(reqs...), nil
-}
-
-// pollForStateChange will poll the ACME API every pollInterval for a change in
-// the Orders state.
-// This is primarily used to wait for the Order to transition from a 'valid' to
-// a 'ready' state.
-// If the state does not change before the context deadline is reached, the old
-// state will be returned and **no error** will be returned. It is up to the caller
-// to detect and handle this case appropriately.
-func (c *Controller) pollForStateChange(ctx context.Context, cl acmecl.Interface, o *cmapi.Order, pollInterval time.Duration) (cmapi.State, error) {
-	oldState := o.Status.State
-	for {
-		// we define err here outside of the go func, so we can detect errors
-		// caused by attempting to sync the order state without an extra struct
-		// that contains (cmapi.State, error).
-		// This should be okay (at least for now), because there will never be two
-		// go funcs that are running at once which may access err at the same time.
-		// If this assumption is wrong however, a race may occur, so we may want
-		// to consider create a 'wrapper struct' in future.
-		var err error
-		select {
-		case newState := <-func() <-chan cmapi.State {
-			out := make(chan cmapi.State)
-			go func() {
-				defer close(out)
-				err = c.syncOrderStatus(ctx, cl, o)
-				out <- o.Status.State
-			}()
-			return out
-		}():
-			if err != nil {
-				return newState, err
-			}
-			if newState != oldState {
-				return newState, nil
-			}
-		case <-ctx.Done():
-			return oldState, fmt.Errorf("timeout whilst waiting for ACME order state to change from %q", oldState)
-		}
-
-		// wait for pollInterval until we re-poll the ACME server for a new state
-		time.Sleep(pollInterval)
-	}
 }
 
 // setOrderState will set the 'State' field of the given Order to 's'.

@@ -29,6 +29,8 @@ import (
 	"github.com/golang/glog"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/selection"
 
 	"github.com/jetstack/cert-manager/pkg/acme"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
@@ -47,41 +49,49 @@ var (
 )
 
 func (a *Acme) Issue(ctx context.Context, crt *v1alpha1.Certificate) (issuer.IssueResponse, error) {
-	acmeStatus := crt.Status.ACMEStatus()
-
-	// attempt to retrieve the existing order resource for this Certificate
-	existingOrderName := ""
-	if acmeStatus.OrderRef != nil {
-		existingOrderName = acmeStatus.OrderRef.Name
+	// initially, we do not set the csr on the order resource we build.
+	// this is to save having the overhead of generating a new CSR in the case
+	// where the Order resource is up to date already
+	expectedOrder, err := buildOrder(crt, nil)
+	if err != nil {
+		return issuer.IssueResponse{}, err
 	}
 
+	// attempt to retrieve the existing order resource for this Certificate
 	var existingOrder *v1alpha1.Order
-	var err error
-	if existingOrderName != "" {
-		glog.V(4).Infof("Attempting to retrieve existing order %q", existingOrderName)
-		existingOrder, err = a.orderLister.Orders(crt.Namespace).Get(existingOrderName)
+
+	glog.V(4).Infof("Attempting to retrieve existing orders for %q/%q", crt.Namespace, crt.Name)
+	labelMap := certLabels(crt.Name)
+	selector := labels.NewSelector()
+	for k, v := range labelMap {
+		req, err := labels.NewRequirement(k, selection.Equals, []string{v})
 		if err != nil {
-			if !apierrors.IsNotFound(err) {
-				return issuer.IssueResponse{}, err
-			}
+			return issuer.IssueResponse{}, err
+		}
+		selector.Add(*req)
+	}
+	existingOrders, err := a.orderLister.Orders(crt.Namespace).List(selector)
+	if err != nil {
+		return issuer.IssueResponse{}, err
+	}
+	for _, o := range existingOrders {
+		// Don't touch any objects that don't have this certificate set as the
+		// owner reference.
+		if !metav1.IsControlledBy(o, crt) {
+			continue
+		}
 
-			glog.V(4).Infof("Existing order named %s/%s does not exist in lister. Querying apiserver directly...", crt.Namespace, existingOrderName)
+		if o.Name == expectedOrder.Name {
+			existingOrder = o
+			glog.V(4).Infof("Found existing order %q for certificate %s/%s", existingOrder.Name, crt.Namespace, crt.Name)
+			continue
+		}
 
-			// to prevent duplicate orders being created due to the order lister
-			// not being up-to-date, we query the apiserver directly to ensure
-			// that there really is no existing certificate
-			existingOrder, err = a.CMClient.CertmanagerV1alpha1().Orders(crt.Namespace).Get(existingOrderName, metav1.GetOptions{})
-			if err != nil {
-				if !apierrors.IsNotFound(err) {
-					return issuer.IssueResponse{}, err
-				}
-			}
-
-			glog.V(4).Infof("Order %s/%s does not exist in apiserver. Creating new Order resource.", crt.Namespace, existingOrderName)
-
-			// if the order is not found, we will proceed to create a new one
-			// because existingOrder is nil
-			existingOrder = nil
+		// delete any old order resources
+		glog.Infof("Deleting Order resource %s/%s", o.Namespace, o.Name)
+		err := a.CMClient.CertmanagerV1alpha1().Orders(o.Namespace).Delete(o.Name, nil)
+		if err != nil {
+			return issuer.IssueResponse{}, err
 		}
 	}
 
@@ -110,16 +120,14 @@ func (a *Acme) Issue(ctx context.Context, crt *v1alpha1.Certificate) (issuer.Iss
 			return issuer.IssueResponse{}, err
 		}
 
+		glog.V(4).Infof("Storing new certificate private key for %s/%s", crt.Namespace, crt.Name)
 		// We return the private key here early, and trigger an immediate requeue.
 		// This is because we have just generated a new one, and to keep our
 		// later logic simple we store it immediately.
-		return issuer.IssueResponse{Requeue: true, PrivateKey: keyBytes}, nil
+		// TODO: remove the 'requeue: true' as it could cause a race condition
+		// where our lister has not observed the new private key generated above
+		return issuer.IssueResponse{PrivateKey: keyBytes}, nil
 	}
-
-	// initially, we do not set the csr on the order resource we build.
-	// this is to save having the overhead of generating a new CSR in the case
-	// where the Order resource is up to date already
-	expectedOrder := buildOrder(crt, nil)
 
 	// if there is an existing order, we check to make sure it is up to date
 	// with the current certificate & issuer configuration.
@@ -129,32 +137,16 @@ func (a *Acme) Issue(ctx context.Context, crt *v1alpha1.Certificate) (issuer.Iss
 	// They should therefore *only* match on changes to the actual Certificate
 	// resource, or underlying Order (i.e. user interaction).
 	if existingOrder != nil {
-		glog.V(4).Infof("Hashing existing order resource for %s/%s", crt.Namespace, crt.Name)
-
-		// check order is up to date by hashing the contents and comparing.
-		// the hash function only hashes the 'spec' stanza, and does not
-		// include the CSR as part of the hash.
-		existingHash, err := hashOrder(existingOrder)
-		if err != nil {
-			return issuer.IssueResponse{}, err
-		}
-		expectedHash, err := hashOrder(expectedOrder)
-		if err != nil {
-			return issuer.IssueResponse{}, err
-		}
-		if existingHash != expectedHash {
-			glog.V(4).Infof("Order hashes for Certificate %s/%s do not match. Creating new order.", crt.Namespace, crt.Name)
-			return a.retryOrder(acmeStatus, existingOrder)
-		}
+		glog.V(4).Infof("Validating existing order CSR for Certificate %s/%s", crt.Namespace, crt.Name)
 
 		// check the CSR is created by the private key that we hold
 		csrBytes := existingOrder.Spec.CSR
 		if len(csrBytes) == 0 {
-			return a.retryOrder(acmeStatus, existingOrder)
+			return a.retryOrder(existingOrder)
 		}
 		existingCSR, err := x509.ParseCertificateRequest(csrBytes)
 		if err != nil {
-			return a.retryOrder(acmeStatus, existingOrder)
+			return a.retryOrder(existingOrder)
 		}
 
 		matches, err := pki.PublicKeyMatchesCSR(key.Public(), existingCSR)
@@ -164,7 +156,7 @@ func (a *Acme) Issue(ctx context.Context, crt *v1alpha1.Certificate) (issuer.Iss
 
 		if !matches {
 			glog.V(4).Infof("CSR on existing order resource does not match certificate %s/%s private key. Creating new order.", crt.Namespace, crt.Name)
-			return a.retryOrder(acmeStatus, existingOrder)
+			return a.retryOrder(existingOrder)
 		}
 
 		// finally, we check if the existing order has failed.
@@ -184,11 +176,13 @@ func (a *Acme) Issue(ctx context.Context, crt *v1alpha1.Certificate) (issuer.Iss
 			// as the back-off time has passed.
 			crt.Status.LastFailureTime = nil
 
-			return a.retryOrder(acmeStatus, existingOrder)
+			return a.retryOrder(existingOrder)
 		}
 	}
 
 	if existingOrder == nil {
+		glog.V(4).Infof("Creating new Order resource for Certificate %s/%s", crt.Namespace, crt.Name)
+
 		csr, err := pki.GenerateCSR(a.issuer, crt)
 		if err != nil {
 			// TODO: what errors can be produced here? some error types might
@@ -204,19 +198,13 @@ func (a *Acme) Issue(ctx context.Context, crt *v1alpha1.Certificate) (issuer.Iss
 		// set the CSR field on the order to be created
 		expectedOrder.Spec.CSR = csrBytes
 
-		// TODO: generate and populate CSR
 		existingOrder, err = a.CMClient.CertmanagerV1alpha1().Orders(crt.Namespace).Create(expectedOrder)
 		if err != nil {
 			return issuer.IssueResponse{}, err
 		}
 
-		acmeStatus.OrderRef = &v1alpha1.LocalObjectReference{
-			Name: existingOrder.Name,
-		}
+		glog.V(4).Infof("Created new Order resource named %q for Certificate %s/%s", expectedOrder.Name, crt.Namespace, crt.Name)
 
-		// We don't set requeue here because the Order resource being observed
-		// by the lister should trigger the Certificate controller to run for
-		// this resource again.
 		return issuer.IssueResponse{}, nil
 	}
 
@@ -253,8 +241,8 @@ func (a *Acme) Issue(ctx context.Context, crt *v1alpha1.Certificate) (issuer.Iss
 	}
 
 	if a.Context.IssuerOptions.CertificateNeedsRenew(x509Cert) {
-		// existing orders certificate is near expiry
-		return a.retryOrder(acmeStatus, existingOrder)
+		// existing order's certificate is near expiry
+		return a.retryOrder(existingOrder)
 	}
 
 	// encode the retrieved certificates (including the chain)
@@ -283,7 +271,7 @@ func (a *Acme) Issue(ctx context.Context, crt *v1alpha1.Certificate) (issuer.Iss
 // deletion policy.
 // If delete successfully (i.e. cleaned up), the order name will be
 // reset to empty and a resync of the resource will begin.
-func (a *Acme) retryOrder(acmeStatus *v1alpha1.CertificateACMEStatus, existingOrder *v1alpha1.Order) (issuer.IssueResponse, error) {
+func (a *Acme) retryOrder(existingOrder *v1alpha1.Order) (issuer.IssueResponse, error) {
 	foregroundDeletion := metav1.DeletePropagationForeground
 	err := a.CMClient.CertmanagerV1alpha1().Orders(existingOrder.Namespace).Delete(existingOrder.Name, &metav1.DeleteOptions{
 		PropagationPolicy: &foregroundDeletion,
@@ -292,8 +280,6 @@ func (a *Acme) retryOrder(acmeStatus *v1alpha1.CertificateACMEStatus, existingOr
 		return issuer.IssueResponse{}, err
 	}
 
-	acmeStatus.OrderRef = nil
-
 	// Updating the certificate status will trigger a requeue once the change
 	// has been observed by the informer.
 	// If we set Requeue: true here, we may cause a race where the lister has
@@ -301,31 +287,38 @@ func (a *Acme) retryOrder(acmeStatus *v1alpha1.CertificateACMEStatus, existingOr
 	return issuer.IssueResponse{}, nil
 }
 
-func buildOrder(crt *v1alpha1.Certificate, csr []byte) *v1alpha1.Order {
-	o := &v1alpha1.Order{
+func buildOrder(crt *v1alpha1.Certificate, csr []byte) (*v1alpha1.Order, error) {
+	spec := v1alpha1.OrderSpec{
+		CSR:        csr,
+		IssuerRef:  crt.Spec.IssuerRef,
+		CommonName: crt.Spec.CommonName,
+		DNSNames:   crt.Spec.DNSNames,
+		Config:     crt.Spec.ACME.Config,
+	}
+	hash, err := hashOrder(spec)
+	if err != nil {
+		return nil, err
+	}
+
+	return &v1alpha1.Order{
 		ObjectMeta: metav1.ObjectMeta{
-			GenerateName:    crt.Name + "-",
+			Name:            fmt.Sprintf("%s-%d", crt.Name, hash),
 			Namespace:       crt.Namespace,
+			Labels:          certLabels(crt.Name),
 			OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(crt, certificateGvk)},
 		},
-		Spec: v1alpha1.OrderSpec{
-			CSR:        csr,
-			IssuerRef:  crt.Spec.IssuerRef,
-			CommonName: crt.Spec.CommonName,
-			DNSNames:   crt.Spec.DNSNames,
-			Config:     crt.Spec.ACME.Config,
-		},
-	}
-	return o
+		Spec: spec,
+	}, nil
 }
 
-func hashOrder(o *v1alpha1.Order) (uint64, error) {
-	if o == nil {
-		return 0, nil
+func certLabels(crtName string) map[string]string {
+	return map[string]string{
+		"acme.cert-manager.io/certificate-name": crtName,
 	}
+}
 
+func hashOrder(orderSpec v1alpha1.OrderSpec) (uint32, error) {
 	// create a shallow copy of the OrderSpec so we can overwrite the CSR field
-	orderSpec := o.Spec
 	orderSpec.CSR = nil
 
 	orderSpecBytes, err := json.Marshal(orderSpec)
@@ -333,11 +326,11 @@ func hashOrder(o *v1alpha1.Order) (uint64, error) {
 		return 0, err
 	}
 
-	hashF := fnv.New64()
+	hashF := fnv.New32()
 	_, err = hashF.Write(orderSpecBytes)
 	if err != nil {
 		return 0, err
 	}
 
-	return hashF.Sum64(), nil
+	return hashF.Sum32(), nil
 }

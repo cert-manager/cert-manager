@@ -34,7 +34,7 @@ import (
 type Acme struct {
 	*controller.Context
 	issuer v1alpha1.GenericIssuer
-	helper *acme.Helper
+	helper acme.Interface
 
 	secretsLister corelisters.SecretLister
 	orderLister   cmlisters.OrderLister
