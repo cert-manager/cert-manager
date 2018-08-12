@@ -139,6 +139,32 @@ func (a *Acme) Issue(ctx context.Context, crt *v1alpha1.Certificate) (issuer.Iss
 	if existingOrder != nil {
 		glog.V(4).Infof("Validating existing order CSR for Certificate %s/%s", crt.Namespace, crt.Name)
 
+		// if the existing order has expired, we should create a new one
+		// TODO: implement this order state in the acmeorders controller
+		if existingOrder.Status.State == v1alpha1.Expired {
+			return a.retryOrder(existingOrder)
+		}
+
+		// check if the existing order has failed.
+		// If it has, we check to see when it last failed and 'back-off' if it
+		// failed in the recent past.
+		if acme.IsFailureState(existingOrder.Status.State) {
+			if crt.Status.LastFailureTime == nil {
+				nowTime := metav1.NewTime(a.clock.Now())
+				crt.Status.LastFailureTime = &nowTime
+			}
+
+			if time.Now().Sub(crt.Status.LastFailureTime.Time) < createOrderWaitDuration {
+				return issuer.IssueResponse{}, fmt.Errorf("applying acme order back-off for certificate %s/%s because it has failed within the last %s", crt.Namespace, crt.Name, createOrderWaitDuration)
+			}
+
+			// otherwise, we clear the lastFailureTime and create a new order
+			// as the back-off time has passed.
+			crt.Status.LastFailureTime = nil
+
+			return a.retryOrder(existingOrder)
+		}
+
 		// check the CSR is created by the private key that we hold
 		csrBytes := existingOrder.Spec.CSR
 		if len(csrBytes) == 0 {
@@ -156,26 +182,6 @@ func (a *Acme) Issue(ctx context.Context, crt *v1alpha1.Certificate) (issuer.Iss
 
 		if !matches {
 			glog.V(4).Infof("CSR on existing order resource does not match certificate %s/%s private key. Creating new order.", crt.Namespace, crt.Name)
-			return a.retryOrder(existingOrder)
-		}
-
-		// finally, we check if the existing order has failed.
-		// If it has, we check to see when it last failed and 'back-off' if it
-		// failed in the recent past.
-		if acme.IsFailureState(existingOrder.Status.State) {
-			if crt.Status.LastFailureTime == nil {
-				nowTime := metav1.NewTime(time.Now())
-				crt.Status.LastFailureTime = &nowTime
-			}
-
-			if time.Now().Sub(crt.Status.LastFailureTime.Time) < createOrderWaitDuration {
-				return issuer.IssueResponse{}, fmt.Errorf("applying acme order back-off for certificate %s/%s because it has failed within the last %s", crt.Namespace, crt.Name, createOrderWaitDuration)
-			}
-
-			// otherwise, we clear the lastFailureTime and create a new order
-			// as the back-off time has passed.
-			crt.Status.LastFailureTime = nil
-
 			return a.retryOrder(existingOrder)
 		}
 	}

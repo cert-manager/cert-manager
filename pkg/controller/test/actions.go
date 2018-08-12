@@ -1,8 +1,11 @@
 package test
 
 import (
+	"encoding/json"
+	"log"
 	"reflect"
 
+	"github.com/kr/pretty"
 	coretesting "k8s.io/client-go/testing"
 )
 
@@ -52,5 +55,25 @@ func (a *action) Action() coretesting.Action {
 }
 
 func (a *action) Matches(act coretesting.Action) bool {
-	return reflect.DeepEqual(a.action, act)
+	matches := reflect.DeepEqual(a.action, act)
+	if matches == true {
+		return true
+	}
+
+	objAct, ok := act.(coretesting.CreateAction)
+	if !ok {
+		return false
+	}
+	objExp, ok := a.action.(coretesting.CreateAction)
+	if !ok {
+		return false
+	}
+
+	bExp, _ := json.MarshalIndent(objExp, "", "\t")
+	bAct, _ := json.MarshalIndent(objAct, "", "\t")
+	log.Printf("Expected: %s", string(bExp))
+	log.Printf("Actual: %s", string(bAct))
+	log.Printf("Unexpected difference between actions: %s", pretty.Diff(objExp.GetObject(), objAct.GetObject()))
+
+	return false
 }

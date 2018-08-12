@@ -14,6 +14,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
 
+	"github.com/jetstack/cert-manager/pkg/acme"
 	cmlisters "github.com/jetstack/cert-manager/pkg/client/listers/certmanager/v1alpha1"
 	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns"
@@ -24,7 +25,8 @@ import (
 type Controller struct {
 	controllerpkg.Context
 
-	helper *controllerpkg.Helper
+	helper     controllerpkg.Helper
+	acmeHelper acme.Helper
 
 	// To allow injection for testing.
 	syncHandler func(ctx context.Context, key string) error
@@ -79,6 +81,7 @@ func New(ctx *controllerpkg.Context) *Controller {
 	ctrl.watchedInformers = append(ctrl.watchedInformers, ingressInformer.Informer().HasSynced)
 
 	ctrl.helper = controllerpkg.NewHelper(ctrl.issuerLister, ctrl.clusterIssuerLister)
+	ctrl.acmeHelper = acme.NewHelper(ctrl.secretLister, ctrl.Context.ClusterResourceNamespace)
 
 	ctrl.httpSolver = http.NewSolver(ctx)
 	ctrl.dnsSolver = dns.NewSolver(ctx)

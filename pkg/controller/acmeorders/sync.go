@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"reflect"
-	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -44,17 +43,12 @@ func (c *Controller) Sync(ctx context.Context, o *cmapi.Order) (err error) {
 		}
 	}()
 
-	acmeHelper := &acme.Helper{
-		SecretLister:             c.secretLister,
-		ClusterResourceNamespace: c.Context.ClusterResourceNamespace,
-	}
-
 	genericIssuer, err := c.helper.GetGenericIssuer(o.Spec.IssuerRef, o.Namespace)
 	if err != nil {
 		return fmt.Errorf("error reading (cluster)issuer %q: %v", o.Spec.IssuerRef.Name, err)
 	}
 
-	cl, err := acmeHelper.ClientForIssuer(genericIssuer)
+	cl, err := c.acmeHelper.ClientForIssuer(genericIssuer)
 	if err != nil {
 		return err
 	}
@@ -63,19 +57,27 @@ func (c *Controller) Sync(ctx context.Context, o *cmapi.Order) (err error) {
 		err := c.createOrder(ctx, cl, genericIssuer, o)
 		// TODO: check for error types (perm or transient?)
 		if err != nil {
+			// TODO: check for acmeerrors.IsMalformed and mark the Order as failed
 			return err
 		}
+		// Return here and allow the updating of the Status field to trigger
+		// a resync.
+		// This ensures we have observed the `status.url` field being set, preventing
+		// us accidentally creating duplicate orders with the ACME server.
 		return nil
 	}
 
-	// if an order is in a final state, we bail out early as there is nothing
+	// If an order is in a final state, we bail out early as there is nothing
 	// left for us to do here.
+	// TODO: we should find a way to periodically update the state of the resource
+	// to reflect the current/actual state in the ACME server.
 	if acme.IsFinalState(o.Status.State) {
 		return nil
 	}
 
 	switch o.Status.State {
-	// if the status field is not set, we should check the Order with the ACME
+
+	// If the status field is not set, we should check the Order with the ACME
 	// server to try and populate it.
 	// If this is not possible - what should we do? (???)
 	case cmapi.Unknown:
@@ -83,9 +85,16 @@ func (c *Controller) Sync(ctx context.Context, o *cmapi.Order) (err error) {
 		if err != nil {
 			return err
 		}
-		// TODO: we should do something more intelligent than just returning an
-		// error here.
-		return fmt.Errorf("updated unknown order state. Retrying processing after applying back-off")
+		// If the state has changed, return nil here as the change in state will
+		// cause the controller to sync again once the new state has been observed
+		// by the informer.
+		if o.Status.State != cmapi.Unknown {
+			return nil
+		}
+		// Return an error if the state is still unknown. This is an edge case
+		// that *should* be unreachable, but in case it does happen we will requeue
+		// the order to attempt to get a valid state after applying a back-off.
+		return fmt.Errorf("order %s/%s state unknown", o.Namespace, o.Name)
 
 	// if the current state is 'ready', we need to generate a CSR and finalize
 	// the order
@@ -124,6 +133,13 @@ func (c *Controller) Sync(ctx context.Context, o *cmapi.Order) (err error) {
 		return err
 	}
 
+	// to avoid creating multiple challenge objects for the same challenge due
+	// to cache timing issues with the informers, we use a deterministic name
+	// for each challenge we create. each challenge will have have a name of
+	// the form `{order-name}-{index}` where index is the index of the challenge
+	// as is stored on the `order.status.challenges` array.
+	// therefore, if there is a cache timing issue, the Create will fail as the
+	// challenge with that name will already exist.
 	specsToCreate := make(map[int]cmapi.ChallengeSpec)
 	for i, s := range o.Status.Challenges {
 		create := true
@@ -143,6 +159,7 @@ func (c *Controller) Sync(ctx context.Context, o *cmapi.Order) (err error) {
 
 	glog.Infof("Need to create %d challenges", len(specsToCreate))
 
+	// create a Challenge resource for each challenge we need to create.
 	var errs []error
 	for i, spec := range specsToCreate {
 		ch := buildChallenge(i, o, spec)
@@ -156,35 +173,34 @@ func (c *Controller) Sync(ctx context.Context, o *cmapi.Order) (err error) {
 		existingChallenges = append(existingChallenges, ch)
 	}
 
+	// if any errors occured creating the challenge resources, retry after back-off
 	err = utilerrors.NewAggregate(errs)
 	if err != nil {
 		return fmt.Errorf("error ensuring Challenge resources for Order: %v", err)
 	}
 
-	// TODO: revise this logic
-	recheckOrderStatus := true
+	// if any of the challenges have failed, we will sync the order status.
+	// if all of the challenges are valid, we will sync the order status.
+	allChallengesValid := true
 	anyChallengesFailed := false
 	for _, ch := range existingChallenges {
-		switch ch.Status.State {
-		case cmapi.Pending, cmapi.Processing:
-			recheckOrderStatus = false
-		case cmapi.Failed, cmapi.Expired:
+		if ch.Status.State != cmapi.Valid {
+			allChallengesValid = false
+		}
+		if ch.Status.State == cmapi.Invalid || ch.Status.State == cmapi.Expired {
 			anyChallengesFailed = true
 		}
 	}
 
-	// if at least 1 order is not valid, AND no orders have failed, we should
-	// just return early and not query the ACME API.
-	if !recheckOrderStatus && !anyChallengesFailed {
-		glog.Infof("Waiting for all challenges for order %q to enter 'ready' state", o.Name)
+	if allChallengesValid || anyChallengesFailed {
+		err = c.syncOrderStatus(ctx, cl, o)
+		if err != nil {
+			return err
+		}
 		return nil
 	}
 
-	// otherwise, sync the order state with the ACME API.
-	err = c.syncOrderStatus(ctx, cl, o)
-	if err != nil {
-		return err
-	}
+	glog.Infof("Waiting for all challenges for order %q to enter 'valid' state", o.Name)
 
 	return nil
 }
@@ -209,7 +225,7 @@ func (c *Controller) createOrder(ctx context.Context, cl acmecl.Interface, issue
 		return fmt.Errorf("error creating new order: %v", err)
 	}
 
-	setOrderStatus(&o.Status, acmeOrder)
+	c.setOrderStatus(&o.Status, acmeOrder)
 
 	chals := make([]cmapi.ChallengeSpec, len(acmeOrder.Authorizations))
 	// we only set the status.challenges field when we first create the order,
@@ -319,7 +335,7 @@ func (c *Controller) syncOrderStatus(ctx context.Context, cl acmecl.Interface, o
 		return err
 	}
 
-	setOrderStatus(&o.Status, acmeOrder)
+	c.setOrderStatus(&o.Status, acmeOrder)
 
 	return nil
 }
@@ -328,6 +344,7 @@ func buildChallenge(i int, o *cmapi.Order, chalSpec cmapi.ChallengeSpec) *cmapi.
 	ch := &cmapi.Challenge{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:            fmt.Sprintf("%s-%d", o.Name, i),
+			Namespace:       o.Namespace,
 			Labels:          challengeLabelsForOrder(o),
 			OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(o, orderGvk)},
 		},
@@ -339,10 +356,10 @@ func buildChallenge(i int, o *cmapi.Order, chalSpec cmapi.ChallengeSpec) *cmapi.
 
 // setOrderStatus will populate the given OrderStatus struct with the details from
 // the provided ACME Order.
-func setOrderStatus(o *cmapi.OrderStatus, acmeOrder *acmeapi.Order) {
+func (c *Controller) setOrderStatus(o *cmapi.OrderStatus, acmeOrder *acmeapi.Order) {
 	// TODO: should we validate the State returned by the ACME server here?
 	cmState := cmapi.State(acmeOrder.Status)
-	setOrderState(o, cmState)
+	c.setOrderState(o, cmState)
 
 	o.URL = acmeOrder.URL
 	o.FinalizeURL = acmeOrder.FinalizeURL
@@ -373,11 +390,11 @@ func challengeSelectorForOrder(o *cmapi.Order) (labels.Selector, error) {
 // setOrderState will set the 'State' field of the given Order to 's'.
 // It will set the Orders failureTime field if the state provided is classed as
 // a failure state.
-func setOrderState(o *cmapi.OrderStatus, s cmapi.State) {
+func (c *Controller) setOrderState(o *cmapi.OrderStatus, s cmapi.State) {
 	o.State = s
 	// if the order is in a failure state, we should set the `failureTime` field
 	if acme.IsFailureState(o.State) {
-		t := metav1.NewTime(time.Now())
+		t := metav1.NewTime(c.clock.Now())
 		o.FailureTime = &t
 	}
 }

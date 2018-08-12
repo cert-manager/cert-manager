@@ -19,6 +19,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	coretesting "k8s.io/client-go/testing"
+	fakeclock "k8s.io/utils/clock/testing"
 
 	acmecl "github.com/jetstack/cert-manager/pkg/acme/client"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
@@ -319,6 +320,10 @@ func TestIssueHappyPath(t *testing.T) {
 }
 
 func TestIssueRetryCases(t *testing.T) {
+	nowTime := time.Now()
+	nowMetaTime := metav1.NewTime(nowTime)
+	fixedClock := fakeclock.NewFakeClock(nowTime)
+
 	pk1, err := pki.GenerateRSAPrivateKey(2048)
 	if err != nil {
 		t.Errorf("failed to generate private key: %v", err)
@@ -366,8 +371,7 @@ func TestIssueRetryCases(t *testing.T) {
 	testOrder, _ := buildOrder(testCert, nil)
 
 	recentlyFailedCertificate := testCert.DeepCopy()
-	nowTime := metav1.NewTime(time.Now())
-	recentlyFailedCertificate.Status.LastFailureTime = &nowTime
+	recentlyFailedCertificate.Status.LastFailureTime = &nowMetaTime
 
 	notRecentlyFailedCertificate := testCert.DeepCopy()
 	pastTime := metav1.NewTime(time.Now().Add(time.Hour * -24))
@@ -378,7 +382,7 @@ func TestIssueRetryCases(t *testing.T) {
 	pendingTestOrderCSR1 := testOrderCSR1Set.DeepCopy()
 	pendingTestOrderCSR1.Status.State = v1alpha1.Pending
 	failedTestOrderCSR1 := testOrderCSR1Set.DeepCopy()
-	failedTestOrderCSR1.Status.State = v1alpha1.Failed
+	failedTestOrderCSR1.Status.State = v1alpha1.Invalid
 
 	testOrderCSR2Set := testOrder.DeepCopy()
 	testOrderCSR2Set.Spec.CSR = testCSR2
@@ -577,11 +581,45 @@ func TestIssueRetryCases(t *testing.T) {
 			},
 			Err: true,
 		},
+
+		"set the last failure time if the order has failed and there is not a failure time set": {
+			Certificate: testCert,
+			Builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{failedTestOrderCSR1},
+				KubeObjects:        []runtime.Object{testCertExistingPKSecret},
+				ExpectedActions:    []testpkg.Action{},
+			},
+			PreFn: func(t *testing.T, s *acmeFixture) {
+			},
+			CheckFn: func(t *testing.T, s *acmeFixture, args ...interface{}) {
+				returnedCert := args[0].(*v1alpha1.Certificate)
+				resp := args[1].(issuer.IssueResponse)
+				// err := args[2].(error)
+
+				if resp.PrivateKey != nil {
+					t.Errorf("unexpected PrivateKey response set")
+				}
+				if resp.Certificate != nil {
+					t.Errorf("unexpected Certificate response set")
+				}
+				if resp.Requeue == true {
+					t.Errorf("expected certificate to not be immediately requeued")
+				}
+				// the resource should have the last failure time set
+				if !reflect.DeepEqual(returnedCert, recentlyFailedCertificate) {
+					t.Errorf("expected certificate order ref to be nil: %s", pretty.Diff(returnedCert, recentlyFailedCertificate))
+				}
+			},
+			Err: true,
+		},
 	}
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			if test.Builder == nil {
 				test.Builder = &testpkg.Builder{}
+			}
+			if test.Clock == nil {
+				test.Clock = fixedClock
 			}
 			test.Setup(t)
 			certCopy := test.Certificate.DeepCopy()

@@ -21,6 +21,9 @@ import (
 	"crypto/rsa"
 	"fmt"
 	"testing"
+	"time"
+
+	fakeclock "k8s.io/utils/clock/testing"
 
 	"github.com/jetstack/cert-manager/pkg/acme/client"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
@@ -39,6 +42,7 @@ type acmeFixture struct {
 	Issuer      v1alpha1.GenericIssuer
 	Certificate *v1alpha1.Certificate
 	Client      *client.FakeACME
+	Clock       *fakeclock.FakeClock
 
 	PreFn   func(*testing.T, *acmeFixture)
 	CheckFn func(*testing.T, *acmeFixture, ...interface{})
@@ -56,6 +60,9 @@ func (s *acmeFixture) Setup(t *testing.T) {
 				},
 			},
 		}
+	}
+	if s.Clock == nil {
+		s.Clock = fakeclock.NewFakeClock(time.Now())
 	}
 	if s.Client == nil {
 		s.Client = &client.FakeACME{}
@@ -103,6 +110,7 @@ func (s *acmeFixture) buildFakeAcme(b *test.Builder, issuer v1alpha1.GenericIssu
 	}
 	acmeStruct := a.(*Acme)
 	acmeStruct.helper = s
+	acmeStruct.clock = s.Clock
 	b.Sync()
 	return acmeStruct
 }

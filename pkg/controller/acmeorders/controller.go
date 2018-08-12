@@ -15,7 +15,9 @@ import (
 	corelisters "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
+	"k8s.io/utils/clock"
 
+	"github.com/jetstack/cert-manager/pkg/acme"
 	cmlisters "github.com/jetstack/cert-manager/pkg/client/listers/certmanager/v1alpha1"
 	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
 	"github.com/jetstack/cert-manager/pkg/util"
@@ -24,7 +26,8 @@ import (
 type Controller struct {
 	controllerpkg.Context
 
-	helper *controllerpkg.Helper
+	helper     controllerpkg.Helper
+	acmeHelper acme.Helper
 
 	// To allow injection for testing.
 	syncHandler func(ctx context.Context, key string) error
@@ -37,6 +40,8 @@ type Controller struct {
 
 	watchedInformers []cache.InformerSynced
 	queue            workqueue.RateLimitingInterface
+	// used for testing
+	clock clock.Clock
 }
 
 func New(ctx *controllerpkg.Context) *Controller {
@@ -60,6 +65,11 @@ func New(ctx *controllerpkg.Context) *Controller {
 	ctrl.watchedInformers = append(ctrl.watchedInformers, clusterIssuerInformer.Informer().HasSynced)
 	ctrl.clusterIssuerLister = clusterIssuerInformer.Lister()
 
+	// TODO: the same problem here as with Certificates creating Orders occurs.
+	// The informer notices the new challenge resources which causes a resync
+	// of the owning Order resource before the order.status.url field is set.
+	// we need to detect this and not sync the order again automatically to
+	// prevent another order being created with the acme server.
 	challengeInformer := ctrl.SharedInformerFactory.Certmanager().V1alpha1().Challenges()
 	challengeInformer.Informer().AddEventHandler(&controllerpkg.BlockingEventHandler{WorkFunc: ctrl.handleOwnedResource})
 	ctrl.watchedInformers = append(ctrl.watchedInformers, challengeInformer.Informer().HasSynced)
@@ -70,6 +80,7 @@ func New(ctx *controllerpkg.Context) *Controller {
 	ctrl.secretLister = secretInformer.Lister()
 
 	ctrl.helper = controllerpkg.NewHelper(ctrl.issuerLister, ctrl.clusterIssuerLister)
+	ctrl.acmeHelper = acme.NewHelper(ctrl.secretLister, ctrl.Context.ClusterResourceNamespace)
 
 	return ctrl
 }

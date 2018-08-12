@@ -58,17 +58,12 @@ func (c *Controller) Sync(ctx context.Context, ch *cmapi.Challenge) (err error) 
 		return nil
 	}
 
-	acmeHelper := &acme.Helper{
-		SecretLister:             c.secretLister,
-		ClusterResourceNamespace: c.Context.ClusterResourceNamespace,
-	}
-
 	genericIssuer, err := c.helper.GetGenericIssuer(ch.Spec.IssuerRef, ch.Namespace)
 	if err != nil {
 		return fmt.Errorf("error reading (cluster)issuer %q: %v", ch.Spec.IssuerRef.Name, err)
 	}
 
-	cl, err := acmeHelper.ClientForIssuer(genericIssuer)
+	cl, err := c.acmeHelper.ClientForIssuer(genericIssuer)
 	if err != nil {
 		return err
 	}
@@ -76,15 +71,21 @@ func (c *Controller) Sync(ctx context.Context, ch *cmapi.Challenge) (err error) 
 	if ch.Status.State == "" {
 		err := c.syncChallengeStatus(ctx, cl, ch)
 		if err != nil {
+			// TODO: check acme error types and potentially mark the challenge
+			// as failed if there is some known error
 			return err
 		}
 
-		// we reperform the check from above now that we have updated the status
-		// if a challenge is in a final state, we bail out early as there is nothing
-		// left for us to do here.
-		if acme.IsFinalState(ch.Status.State) {
-			return nil
+		// if the state has not changed, return an error
+		if ch.Status.State == "" {
+			return fmt.Errorf("could not determine acme challenge status. retrying after applying back-off")
 		}
+
+		// the change in the challenges status will trigger a resync.
+		// this ensures our cache is consistent so we don't call Present twice
+		// due to the http01 solver creating resources that this controller
+		// watches/syncs on
+		return nil
 	}
 
 	solver, err := c.solverFor(ch.Spec.Type)
@@ -144,35 +145,6 @@ func (c *Controller) syncChallengeStatus(ctx context.Context, cl acmecl.Interfac
 	return nil
 }
 
-// presentChallenge will process a challenge by talking to the acme server and
-// obtaining up to date status information.
-// If the challenge is still in a pending state, it will first check propagation
-// status of a challenge from previous attempt, and if missing it will 'present' the
-// new challenge using the appropriate solver.
-// If the check fails, an error will be returned.
-// Otherwise, it will return nil.
-func (c *Controller) presentChallenge(ctx context.Context, issuer cmapi.GenericIssuer, ch *cmapi.Challenge) error {
-	solver, err := c.solverFor(ch.Spec.Type)
-	if err != nil {
-		return err
-	}
-
-	// TODO: make sure that solver.Present is noop if challenge
-	//       is already present and all we do is waiting for propagation,
-	//       otherwise it is spamming with errors which are not really erros
-	//       as we are just waiting for propagation
-	err = solver.Present(ctx, issuer, ch)
-	if err != nil {
-		return err
-	}
-
-	ch.Status.Presented = true
-
-	// We return an error here instead of nil, as the only way for 'presentChallenge'
-	// to return without error is if the self check passes, which we check above.
-	return nil
-}
-
 func (c *Controller) acceptChallenge(ctx context.Context, cl acmecl.Interface, ch *cmapi.Challenge) error {
 	glog.Infof("Accepting challenge for domain %q", ch.Spec.DNSName)
 	// We manually construct an ACME challenge here from our own internal type
@@ -182,8 +154,10 @@ func (c *Controller) acceptChallenge(ctx context.Context, cl acmecl.Interface, c
 		Token: ch.Spec.Token,
 	}
 	acmeChal, err := cl.AcceptChallenge(ctx, acmeChal)
-	if err != nil {
+	if acmeChal != nil {
 		ch.Status.State = cmapi.State(acmeChal.Status)
+	}
+	if err != nil {
 		if acmeErr, ok := err.(*acmeapi.Error); ok {
 			ch.Status.Reason = fmt.Sprintf("Error accepting challenge: %v", acmeErr)
 		}
@@ -192,15 +166,15 @@ func (c *Controller) acceptChallenge(ctx context.Context, cl acmecl.Interface, c
 
 	glog.Infof("Waiting for authorization for domain %q", ch.Spec.DNSName)
 	authorization, err := cl.WaitAuthorization(ctx, ch.Spec.AuthzURL)
-	if err != nil {
+	if authorization != nil {
 		ch.Status.State = cmapi.State(authorization.Status)
+	}
+	if err != nil {
 		if acmeErr, ok := err.(*acmeapi.Error); ok {
 			ch.Status.Reason = fmt.Sprintf("Error accepting challenge: %v", acmeErr)
 		}
 		return err
 	}
-
-	ch.Status.State = cmapi.State(authorization.Status)
 
 	if authorization.Status != acmeapi.StatusValid {
 		ch.Status.Reason = fmt.Sprintf("Authorization status is %q and not 'valid'", authorization.Status)

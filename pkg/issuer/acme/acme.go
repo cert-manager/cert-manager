@@ -20,6 +20,7 @@ import (
 	"fmt"
 
 	corelisters "k8s.io/client-go/listers/core/v1"
+	"k8s.io/utils/clock"
 
 	"github.com/jetstack/cert-manager/pkg/acme"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
@@ -34,10 +35,12 @@ import (
 type Acme struct {
 	*controller.Context
 	issuer v1alpha1.GenericIssuer
-	helper acme.Interface
+	helper acme.Helper
 
 	secretsLister corelisters.SecretLister
 	orderLister   cmlisters.OrderLister
+	// used for testing
+	clock clock.Clock
 }
 
 // New returns a new ACME issuer interface for the given issuer.

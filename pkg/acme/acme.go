@@ -37,7 +37,7 @@ import (
 	acmecl "github.com/jetstack/cert-manager/third_party/crypto/acme"
 )
 
-type Interface interface {
+type Helper interface {
 	ClientForIssuer(iss cmapi.GenericIssuer) (acme.Interface, error)
 	ReadPrivateKey(sel cmapi.SecretKeySelector, ns string) (*rsa.PrivateKey, error)
 }
@@ -46,18 +46,18 @@ type Interface interface {
 // constructs, and ACME clients.
 // For example, it can be used to obtain an ACME client for a IssuerRef that is
 // correctly configured (e.g. with user agents, timeouts, proxy handling etc)
-type Helper struct {
+type helperImpl struct {
 	SecretLister corelisters.SecretLister
 
 	ClusterResourceNamespace string
 }
 
-var _ Interface = &Helper{}
+var _ Helper = &helperImpl{}
 
 // NewHelper is a helper that constructs a new Helper structure with the given
 // secret lister.
-func NewHelper(lister corelisters.SecretLister, ns string) *Helper {
-	return &Helper{
+func NewHelper(lister corelisters.SecretLister, ns string) Helper {
+	return &helperImpl{
 		SecretLister:             lister,
 		ClusterResourceNamespace: ns,
 	}
@@ -77,7 +77,7 @@ func PrivateKeySelector(sel cmapi.SecretKeySelector) cmapi.SecretKeySelector {
 // be returned.
 // A *rsa.PrivateKey will be returned here, as ACME private keys can currently
 // only be RSA.
-func (h *Helper) ReadPrivateKey(sel cmapi.SecretKeySelector, ns string) (*rsa.PrivateKey, error) {
+func (h *helperImpl) ReadPrivateKey(sel cmapi.SecretKeySelector, ns string) (*rsa.PrivateKey, error) {
 	sel = PrivateKeySelector(sel)
 
 	s, err := h.SecretLister.Secrets(ns).Get(sel.Name)
@@ -123,7 +123,7 @@ func ClientWithKey(iss cmapi.GenericIssuer, pk *rsa.PrivateKey) (acme.Interface,
 // Issuer resource.
 // If the private key for the Issuer does not exist, an error will be returned.
 // If the provided issuer is not an ACME Issuer, an error will be returned.
-func (h *Helper) ClientForIssuer(iss cmapi.GenericIssuer) (acme.Interface, error) {
+func (h *helperImpl) ClientForIssuer(iss cmapi.GenericIssuer) (acme.Interface, error) {
 	acmeSpec := iss.GetSpec().ACME
 	if acmeSpec == nil {
 		return nil, fmt.Errorf("issuer %q is not an ACME issuer. Ensure the 'acme' stanza is correctly specified on your Issuer resource", iss.GetObjectMeta().Name)
