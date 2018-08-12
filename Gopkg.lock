@@ -1353,6 +1353,17 @@
   pruneopts = ""
   revision = "50ae88d24ede7b8bad68e23c805b5d3da5c8abaf"
 
+[[projects]]
+  branch = "master"
+  digest = "1:34e9be75da07411fdb73e9da24ce5a93e9c3c50bfe0d4b88a6685dd8e8d7bae1"
+  name = "k8s.io/utils"
+  packages = [
+    "clock",
+    "clock/testing",
+  ]
+  pruneopts = "U"
+  revision = "045dc31ee5c40e8240241ce28dc24d7b56130373"
+
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
@@ -1451,6 +1462,8 @@
     "k8s.io/code-generator/cmd/lister-gen",
     "k8s.io/ingress/core/pkg/ingress/annotations/class",
     "k8s.io/kube-openapi/pkg/common",
+    "k8s.io/utils/clock",
+    "k8s.io/utils/clock/testing",
   ]
   solver-name = "gps-cdcl"
   solver-version = 1
