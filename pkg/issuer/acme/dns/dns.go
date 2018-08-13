@@ -207,7 +207,7 @@ func (s *Solver) solverForIssuerProvider(issuer v1alpha1.GenericIssuer, provider
 
 		apiToken := string(apiTokenSecret.Data[providerConfig.DigitalOcean.Token.Key])
 
-		impl, err = digitalocean.NewDNSProviderCredentials(strings.TrimSpace(apiToken))
+		impl, err = digitalocean.NewDNSProviderCredentials(strings.TrimSpace(apiToken), s.DNS01Nameservers)
 		if err != nil {
 			return nil, fmt.Errorf("error instantiating digitalocean challenge solver: %s", err.Error())
 		}
