@@ -15,7 +15,7 @@ metadata:
   namespace: "cert-manager"
   labels:
     app: cert-manager
-    chart: cert-manager-v0.4.0-dev.3
+    chart: cert-manager-v0.4.0-dev.4
     release: cert-manager
     heritage: Tiller
 ---
@@ -28,7 +28,7 @@ metadata:
     "helm.sh/hook": crd-install
   labels:
     app: cert-manager
-    chart: cert-manager-v0.4.0-dev.3
+    chart: cert-manager-v0.4.0-dev.4
     release: cert-manager
     heritage: Tiller
 spec:
@@ -52,7 +52,7 @@ metadata:
     "helm.sh/hook": crd-install
   labels:
     app: cert-manager
-    chart: cert-manager-v0.4.0-dev.3
+    chart: cert-manager-v0.4.0-dev.4
     release: cert-manager
     heritage: Tiller
 spec:
@@ -72,7 +72,7 @@ metadata:
     "helm.sh/hook": crd-install
   labels:
     app: cert-manager
-    chart: cert-manager-v0.4.0-dev.3
+    chart: cert-manager-v0.4.0-dev.4
     release: cert-manager
     heritage: Tiller
 spec:
@@ -90,7 +90,7 @@ metadata:
   name: cert-manager
   labels:
     app: cert-manager
-    chart: cert-manager-v0.4.0-dev.3
+    chart: cert-manager-v0.4.0-dev.4
     release: cert-manager
     heritage: Tiller
 rules:
@@ -110,7 +110,7 @@ metadata:
   name: cert-manager
   labels:
     app: cert-manager
-    chart: cert-manager-v0.4.0-dev.3
+    chart: cert-manager-v0.4.0-dev.4
     release: cert-manager
     heritage: Tiller
 roleRef:
@@ -130,7 +130,7 @@ metadata:
   namespace: "cert-manager"
   labels:
     app: cert-manager
-    chart: cert-manager-v0.4.0-dev.3
+    chart: cert-manager-v0.4.0-dev.4
     release: cert-manager
     heritage: Tiller
 spec:
