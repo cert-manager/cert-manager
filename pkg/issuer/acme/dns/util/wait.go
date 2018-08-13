@@ -84,7 +84,7 @@ func checkDNSPropagation(fqdn, value string, nameservers []string) (bool, error)
 		fqdn = updateDomainWithCName(r, fqdn)
 	}
 
-	authoritativeNss, err := lookupNameservers(fqdn)
+	authoritativeNss, err := lookupNameservers(fqdn, nameservers)
 	if err != nil {
 		return false, err
 	}
@@ -155,15 +155,15 @@ func dnsQuery(fqdn string, rtype uint16, nameservers []string, recursive bool) (
 }
 
 // lookupNameservers returns the authoritative nameservers for the given fqdn.
-func lookupNameservers(fqdn string) ([]string, error) {
+func lookupNameservers(fqdn string, nameservers []string) ([]string, error) {
 	var authoritativeNss []string
 
-	zone, err := FindZoneByFqdn(fqdn, RecursiveNameservers)
+	zone, err := FindZoneByFqdn(fqdn, nameservers)
 	if err != nil {
 		return nil, fmt.Errorf("Could not determine the zone: %v", err)
 	}
 
-	r, err := dnsQuery(zone, dns.TypeNS, RecursiveNameservers, true)
+	r, err := dnsQuery(zone, dns.TypeNS, nameservers, true)
 	if err != nil {
 		return nil, err
 	}

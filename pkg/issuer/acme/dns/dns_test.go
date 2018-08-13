@@ -28,6 +28,7 @@ import (
 	"github.com/jetstack/cert-manager/pkg/controller"
 	"github.com/jetstack/cert-manager/pkg/controller/test"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/cloudflare"
+	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
 )
 
 func newIssuer(name, namespace string, configs []v1alpha1.ACMEIssuerDNS01Provider) *v1alpha1.Issuer {
@@ -276,7 +277,7 @@ func TestRoute53TrimCreds(t *testing.T) {
 	expectedR53Call := []fakeDNSProviderCall{
 		{
 			name: "route53",
-			args: []interface{}{"test_with_spaces", "AKIENDINNEWLINE", "", "us-west-2", false},
+			args: []interface{}{"test_with_spaces", "AKIENDINNEWLINE", "", "us-west-2", false, util.RecursiveNameservers},
 		},
 	}
 
@@ -324,7 +325,7 @@ func TestRoute53AmbientCreds(t *testing.T) {
 			result{
 				expectedCall: &fakeDNSProviderCall{
 					name: "route53",
-					args: []interface{}{"", "", "", "us-west-2", true},
+					args: []interface{}{"", "", "", "us-west-2", true, util.RecursiveNameservers},
 				},
 			},
 		},
@@ -357,7 +358,7 @@ func TestRoute53AmbientCreds(t *testing.T) {
 			result{
 				expectedCall: &fakeDNSProviderCall{
 					name: "route53",
-					args: []interface{}{"", "", "", "us-west-2", false},
+					args: []interface{}{"", "", "", "us-west-2", false, util.RecursiveNameservers},
 				},
 			},
 		},

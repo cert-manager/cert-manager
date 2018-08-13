@@ -99,7 +99,7 @@ func TestPreCheckDNS(t *testing.T) {
 
 func TestLookupNameserversOK(t *testing.T) {
 	for _, tt := range lookupNameserversTestsOK {
-		nss, err := lookupNameservers(tt.fqdn)
+		nss, err := lookupNameservers(tt.fqdn, RecursiveNameservers)
 		if err != nil {
 			t.Fatalf("#%s: got %q; want nil", tt.fqdn, err)
 		}
@@ -115,7 +115,7 @@ func TestLookupNameserversOK(t *testing.T) {
 
 func TestLookupNameserversErr(t *testing.T) {
 	for _, tt := range lookupNameserversTestsErr {
-		_, err := lookupNameservers(tt.fqdn)
+		_, err := lookupNameservers(tt.fqdn, RecursiveNameservers)
 		if err == nil {
 			t.Fatalf("#%s: expected %q (error); got <nil>", tt.fqdn, tt.error)
 		}
