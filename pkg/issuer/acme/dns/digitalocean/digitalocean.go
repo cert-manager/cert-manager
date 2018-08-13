@@ -6,10 +6,12 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/digitalocean/godo"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
+	"github.com/miekg/dns"
 
 	"golang.org/x/oauth2"
 )
@@ -57,6 +59,36 @@ func (c *DNSProvider) Present(domain, token, keyAuth string) error {
 	zoneName, err := util.FindZoneByFqdn(fqdn, util.RecursiveNameservers)
 	if err != nil {
 		return err
+	}
+
+	skipCreation := false
+
+	// check if the record has already been created
+	domains, _, err := c.client.Domains.List(context.Background(), &godo.ListOptions{})
+	for _, domain := range domains {
+		if dns.Fqdn(domain.Name) == fqdn {
+			// loop over each record
+			for x := range dns.ParseZone(strings.NewReader(domain.ZoneFile), "", "") {
+				if x.Error != nil {
+					return x.Error
+				} else {
+					// check if this record is a TXT
+					if x.RR.Header().Rrtype == dns.TypeTXT {
+						txt := x.RR.(*dns.TXT).Txt
+						for _, c := range txt {
+							// skip creation if it has the correct value
+							if c == keyAuth {
+								skipCreation = true
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	if skipCreation {
+		return nil
 	}
 
 	createRequest := &godo.DomainRecordEditRequest{
