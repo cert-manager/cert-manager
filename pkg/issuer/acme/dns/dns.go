@@ -56,7 +56,7 @@ type dnsProviderConstructors struct {
 	cloudFlare func(email, apikey string, dns01Nameservers []string) (*cloudflare.DNSProvider, error)
 	route53    func(accessKey, secretKey, hostedZoneID, region string, ambient bool, dns01Nameservers []string) (*route53.DNSProvider, error)
 	azureDNS   func(clientID, clientSecret, subscriptionID, tenentID, resourceGroupName, hostedZoneName string, dns01Nameservers []string) (*azuredns.DNSProvider, error)
-	acmeDNS    func(host string, accountJson []byte) (*acmedns.DNSProvider, error)
+	acmeDNS    func(host string, accountJson []byte, dns01Nameservers []string) (*acmedns.DNSProvider, error)
 }
 
 // Solver is a solver for the acme dns01 challenge.
@@ -270,7 +270,11 @@ func (s *Solver) solverForIssuerProvider(issuer v1alpha1.GenericIssuer, provider
 			return nil, fmt.Errorf("error getting acmedns accounts secret: key '%s' not found in secret", providerConfig.AcmeDNS.AccountSecret.Key)
 		}
 
-		impl, err = s.dnsProviderConstructors.acmeDNS(providerConfig.AcmeDNS.Host, accountSecretBytes)
+		impl, err = s.dnsProviderConstructors.acmeDNS(
+			providerConfig.AcmeDNS.Host,
+			accountSecretBytes,
+			s.DNS01Nameservers,
+		)
 	default:
 		return nil, fmt.Errorf("no dns provider config specified for provider %q", providerName)
 	}
