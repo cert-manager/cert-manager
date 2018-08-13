@@ -17,23 +17,24 @@ limitations under the License.
 package acmedns
 
 import (
+	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
 	"github.com/stretchr/testify/assert"
 	"os"
 	"testing"
 )
 
 var (
-	acmednsLiveTest     bool
-	acmednsHost         string
-	acmednsAccountsJson []byte
-	acmednsDomain       string
+	acmednsLiveTest    bool
+	acmednsHost        string
+	acmednsAccountJson []byte
+	acmednsDomain      string
 )
 
 func init() {
 	acmednsHost = os.Getenv("ACME_DNS_HOST")
-	acmednsAccountsJson = []byte(os.Getenv("ACME_DNS_ACCOUNTS_JSON"))
+	acmednsAccountJson = []byte(os.Getenv("ACME_DNS_ACCOUNTS_JSON"))
 	acmednsDomain = os.Getenv("ACME_DNS_DOMAIN")
-	if len(acmednsHost) > 0 && len(acmednsAccountsJson) > 0 {
+	if len(acmednsHost) > 0 && len(acmednsAccountJson) > 0 {
 		acmednsLiveTest = true
 	}
 }
@@ -42,7 +43,7 @@ func TestLiveAcmeDnsPresent(t *testing.T) {
 	if !acmednsLiveTest {
 		t.Skip("skipping live test")
 	}
-	provider, err := NewDNSProviderHostBytes(acmednsHost, acmednsAccountsJson)
+	provider, err := NewDNSProviderHostBytes(acmednsHost, acmednsAccountJson, util.RecursiveNameservers)
 	assert.NoError(t, err)
 
 	// ACME-DNS requires 43 character keys or it throws a bad TXT error
