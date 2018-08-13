@@ -66,8 +66,10 @@ func (c *DNSProvider) Present(domain, token, keyAuth string) error {
 	// check if the record has already been created
 	domains, _, err := c.client.Domains.List(context.Background(), &godo.ListOptions{})
 	for _, domain := range domains {
+		// we're only interested in the challenge domain, so skip the rest
 		if dns.Fqdn(domain.Name) == fqdn {
-			// loop over each record
+			// loop over each record in the domain
+			// the digitalocean API only returns a zone file, so we need to parse it first
 			for x := range dns.ParseZone(strings.NewReader(domain.ZoneFile), "", "") {
 				if x.Error != nil {
 					return x.Error
