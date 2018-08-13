@@ -24,7 +24,7 @@ type DNSProvider struct {
 // Credentials and acme-dns server host are given in environment variables
 func NewDNSProvider() (*DNSProvider, error) {
 	host := os.Getenv("ACME_DNS_HOST")
-	accountJson := os.Getenv("ACME_DNS_ACCOUNTS_JSON")
+	accountJson := os.Getenv("ACME_DNS_ACCOUNT_JSON")
 	return NewDNSProviderHostBytes(host, []byte(accountJson))
 }
 
@@ -53,7 +53,6 @@ func (c *DNSProvider) Present(domain, token, keyAuth string) error {
 	if err != nil {
 		return err
 	}
-
 
 	if account, exists := c.accounts[domain]; exists {
 		// Update the acme-dns TXT record.

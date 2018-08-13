@@ -260,17 +260,17 @@ func (s *Solver) solverForIssuerProvider(issuer v1alpha1.GenericIssuer, provider
 			s.DNS01Nameservers,
 		)
 	case providerConfig.AcmeDNS != nil:
-		accountsSecret, err := s.secretLister.Secrets(resourceNamespace).Get(providerConfig.AcmeDNS.AccountsSecret.Name)
+		accountSecret, err := s.secretLister.Secrets(resourceNamespace).Get(providerConfig.AcmeDNS.AccountSecret.Name)
 		if err != nil {
 			return nil, fmt.Errorf("error getting acmedns accounts secret: %s", err)
 		}
 
-		accountsSecretBytes, ok := accountsSecret.Data[providerConfig.AcmeDNS.AccountsSecret.Key]
+		accountSecretBytes, ok := accountSecret.Data[providerConfig.AcmeDNS.AccountSecret.Key]
 		if !ok {
-			return nil, fmt.Errorf("error getting acmedns accounts secret: key '%s' not found in secret", providerConfig.AcmeDNS.AccountsSecret.Key)
+			return nil, fmt.Errorf("error getting acmedns accounts secret: key '%s' not found in secret", providerConfig.AcmeDNS.AccountSecret.Key)
 		}
 
-		impl, err = s.dnsProviderConstructors.acmeDNS(providerConfig.AcmeDNS.Host, accountsSecretBytes)
+		impl, err = s.dnsProviderConstructors.acmeDNS(providerConfig.AcmeDNS.Host, accountSecretBytes)
 	default:
 		return nil, fmt.Errorf("no dns provider config specified for provider %q", providerName)
 	}
