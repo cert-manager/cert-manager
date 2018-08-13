@@ -16,22 +16,23 @@ import (
 
 // DNSProvider is an implementation of the acme.ChallengeProvider interface
 type DNSProvider struct {
-	client   goacmedns.Client
-	accounts map[string]goacmedns.Account
+	dns01Nameservers []string
+	client           goacmedns.Client
+	accounts         map[string]goacmedns.Account
 }
 
 // NewDNSProvider returns a DNSProvider instance configured for ACME DNS
 // Credentials and acme-dns server host are given in environment variables
-func NewDNSProvider() (*DNSProvider, error) {
+func NewDNSProvider(dns01Nameservers []string) (*DNSProvider, error) {
 	host := os.Getenv("ACME_DNS_HOST")
 	accountJson := os.Getenv("ACME_DNS_ACCOUNT_JSON")
-	return NewDNSProviderHostBytes(host, []byte(accountJson))
+	return NewDNSProviderHostBytes(host, []byte(accountJson), dns01Nameservers)
 }
 
 // NewDNSProviderHostBytes returns a DNSProvider instance configured for ACME DNS
 // acme-dns server host is given in a string
 // credentials are stored in json in the given string
-func NewDNSProviderHostBytes(host string, accountJson []byte) (*DNSProvider, error) {
+func NewDNSProviderHostBytes(host string, accountJson []byte, dns01Nameservers []string) (*DNSProvider, error) {
 	client := goacmedns.NewClient(host)
 
 	var accounts map[string]goacmedns.Account
@@ -40,15 +41,16 @@ func NewDNSProviderHostBytes(host string, accountJson []byte) (*DNSProvider, err
 	}
 
 	return &DNSProvider{
-		client:   client,
-		accounts: accounts,
+		client:           client,
+		accounts:         accounts,
+		dns01Nameservers: dns01Nameservers,
 	}, nil
 }
 
 // Present creates a TXT record to fulfil the dns-01 challenge
 func (c *DNSProvider) Present(domain, token, keyAuth string) error {
 	// fqdn, ttl are unused by ACME DNS
-	_, value, _, err := util.DNS01Record(domain, keyAuth)
+	_, value, _, err := util.DNS01Record(domain, keyAuth, c.dns01Nameservers)
 
 	if err != nil {
 		return err
