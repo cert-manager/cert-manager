@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# +skip_license_check
+
 # Copyright 2017 The Kubernetes Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -71,16 +73,16 @@ for file in ${mdFiles}; do
 	ref=${ref%)*}
 
 	# An external href (ie. starts with http)
-	if [ "${ref:0:4}" == "http" ]; then 
+	if [ "${ref:0:4}" == "http" ]; then
 	  if ! curl --connect-timeout 10 -o /dev/null ${ref} > /dev/null 2>&1 ; then
 	    echo $file: Can\'t load: url ${ref} | tee -a ${tmp}3
 	  fi
 	  continue
 	fi
 
-	# Local file href - skip for now. 
+	# Local file href - skip for now.
 	# TODO add support for checking these
-	if [ "${ref:0:1}" == "#" ]; then 
+	if [ "${ref:0:1}" == "#" ]; then
 	  ref=${ref:1}
 	  if ! grep "^$ref$" ${tmp}anchors1 > /dev/null 2>&1 ; then
 	    echo $file: Can\'t find anchor \'\#${ref}\' | tee -a ${tmp}3

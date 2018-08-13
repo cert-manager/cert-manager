@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+# +skip_license_check
+
 # Copyright 2018 The Helm Authors. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
