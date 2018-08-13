@@ -197,7 +197,7 @@ func ValidateACMEIssuerDNS01Config(iss *v1alpha1.ACMEIssuerDNS01Config, fldPath 
 		}
 		if p.AcmeDNS != nil {
 			numProviders++
-			el = append(el, ValidateSecretKeySelector(&p.AcmeDNS.AccountsSecret, fldPath.Child("acmedns", "accounts"))...)
+			el = append(el, ValidateSecretKeySelector(&p.AcmeDNS.AccountSecret, fldPath.Child("acmedns", "accountSecretRef"))...)
 			if len(p.AcmeDNS.Host) == 0 {
 				el = append(el, field.Required(fldPath.Child("acmedns", "host"), ""))
 			}
