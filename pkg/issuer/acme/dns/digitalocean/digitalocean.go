@@ -61,7 +61,7 @@ func (c *DNSProvider) Present(domain, token, keyAuth string) error {
 		return err
 	}
 
-	skipCreation := false
+	alreadyExists := false
 
 	// check if the record has already been created
 	domains, _, err := c.client.Domains.List(context.Background(), &godo.ListOptions{})
@@ -78,7 +78,7 @@ func (c *DNSProvider) Present(domain, token, keyAuth string) error {
 						for _, c := range txt {
 							// skip creation if it has the correct value
 							if c == keyAuth {
-								skipCreation = true
+								alreadyExists = true
 							}
 						}
 					}
@@ -87,7 +87,7 @@ func (c *DNSProvider) Present(domain, token, keyAuth string) error {
 		}
 	}
 
-	if skipCreation {
+	if alreadyExists {
 		return nil
 	}
 
