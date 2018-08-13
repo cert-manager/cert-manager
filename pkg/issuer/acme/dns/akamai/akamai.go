@@ -37,6 +37,7 @@ import (
 
 // DNSProvider is an implementation of the acme.ChallengeProvider interface
 type DNSProvider struct {
+	dns01Nameservers []string
 	// serviceConsumerDomain as issued by Akamai Luna Control Center.
 	// The ServiceConsumerDomain is the base URL.
 	serviceConsumerDomain string
@@ -48,8 +49,9 @@ type DNSProvider struct {
 }
 
 // NewDNSProvider returns a DNSProvider instance configured for Akamai.
-func NewDNSProvider(serviceConsumerDomain, clientToken, clientSecret, accessToken string) (*DNSProvider, error) {
+func NewDNSProvider(serviceConsumerDomain, clientToken, clientSecret, accessToken string, dns01Nameservers []string) (*DNSProvider, error) {
 	return &DNSProvider{
+		dns01Nameservers,
 		serviceConsumerDomain,
 		NewEdgeGridAuth(clientToken, clientSecret, accessToken),
 		http.DefaultTransport,
@@ -74,7 +76,7 @@ func (a *DNSProvider) Timeout() (timeout, interval time.Duration) {
 
 // Present creates a TXT record to fulfil the dns-01 challenge
 func (a *DNSProvider) Present(domain, token, keyAuth string) error {
-	fqdn, value, ttl, err := util.DNS01Record(domain, keyAuth)
+	fqdn, value, ttl, err := util.DNS01Record(domain, keyAuth, a.dns01Nameservers)
 	if err != nil {
 		return err
 	}
@@ -84,7 +86,7 @@ func (a *DNSProvider) Present(domain, token, keyAuth string) error {
 
 // CleanUp removes the TXT record matching the specified parameters
 func (a *DNSProvider) CleanUp(domain, token, keyAuth string) error {
-	fqdn, _, _, err := util.DNS01Record(domain, keyAuth)
+	fqdn, _, _, err := util.DNS01Record(domain, keyAuth, a.dns01Nameservers)
 	if err != nil {
 		return err
 	}
