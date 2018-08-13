@@ -81,6 +81,8 @@ generate_verify:
 # Hack targets
 ##############
 hack_verify:
+	@echo Running boilerplate header checker
+	$(HACK_DIR)/verify_boilerplate.py
 	@echo Running href checker
 	$(HACK_DIR)/verify-links.sh
 	@echo Running errexit checker
