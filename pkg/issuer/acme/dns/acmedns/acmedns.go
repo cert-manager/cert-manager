@@ -48,7 +48,12 @@ func NewDNSProviderHostBytes(host string, accountJson []byte) (*DNSProvider, err
 // Present creates a TXT record to fulfil the dns-01 challenge
 func (c *DNSProvider) Present(domain, token, keyAuth string) error {
 	// fqdn, ttl are unused by ACME DNS
-	_, value, _ := util.DNS01Record(domain, keyAuth)
+	_, value, _, err := util.DNS01Record(domain, keyAuth)
+
+	if err != nil {
+		return err
+	}
+
 
 	if account, exists := c.accounts[domain]; exists {
 		// Update the acme-dns TXT record.
