@@ -12,6 +12,7 @@ import (
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/clouddns"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/cloudflare"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/route53"
+	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
 )
 
 const (
@@ -118,23 +119,23 @@ func newFakeDNSProviders() *fakeDNSProviders {
 		calls: []fakeDNSProviderCall{},
 	}
 	f.constructors = dnsProviderConstructors{
-		cloudDNS: func(project string, serviceAccount []byte) (*clouddns.DNSProvider, error) {
-			f.call("clouddns", project, serviceAccount)
+		cloudDNS: func(project string, serviceAccount []byte, dns01Nameservers []string) (*clouddns.DNSProvider, error) {
+			f.call("clouddns", project, serviceAccount, util.RecursiveNameservers)
 			return nil, nil
 		},
-		cloudFlare: func(email, apikey string) (*cloudflare.DNSProvider, error) {
-			f.call("cloudflare", email, apikey)
+		cloudFlare: func(email, apikey string, dns01Nameservers []string) (*cloudflare.DNSProvider, error) {
+			f.call("cloudflare", email, apikey, util.RecursiveNameservers)
 			if email == "" || apikey == "" {
 				return nil, errors.New("invalid email or apikey")
 			}
 			return nil, nil
 		},
-		route53: func(accessKey, secretKey, hostedZoneID, region string, ambient bool) (*route53.DNSProvider, error) {
-			f.call("route53", accessKey, secretKey, hostedZoneID, region, ambient)
+		route53: func(accessKey, secretKey, hostedZoneID, region string, ambient bool, dns01Nameservers []string) (*route53.DNSProvider, error) {
+			f.call("route53", accessKey, secretKey, hostedZoneID, region, ambient, util.RecursiveNameservers)
 			return nil, nil
 		},
-		azureDNS: func(clientID, clientSecret, subscriptionID, tenentID, resourceGroupName, hostedZoneName string) (*azuredns.DNSProvider, error) {
-			f.call("azuredns", clientID, clientSecret, subscriptionID, tenentID, resourceGroupName, hostedZoneName)
+		azureDNS: func(clientID, clientSecret, subscriptionID, tenentID, resourceGroupName, hostedZoneName string, dns01Nameservers []string) (*azuredns.DNSProvider, error) {
+			f.call("azuredns", clientID, clientSecret, subscriptionID, tenentID, resourceGroupName, hostedZoneName, util.RecursiveNameservers)
 			return nil, nil
 		},
 	}

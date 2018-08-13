@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -88,7 +89,7 @@ func (r httpResponder) RoundTrip(req *http.Request) (*http.Response, error) {
 }
 
 func TestPresent(t *testing.T) {
-	akamai, err := NewDNSProvider("akamai.example.com", "token", "secret", "access-token")
+	akamai, err := NewDNSProvider("akamai.example.com", "token", "secret", "access-token", util.RecursiveNameservers)
 	assert.NoError(t, err)
 
 	var response []byte
@@ -103,7 +104,7 @@ func TestPresent(t *testing.T) {
 }
 
 func TestCleanUp(t *testing.T) {
-	akamai, err := NewDNSProvider("akamai.example.com", "token", "secret", "access-token")
+	akamai, err := NewDNSProvider("akamai.example.com", "token", "secret", "access-token", util.RecursiveNameservers)
 	assert.NoError(t, err)
 
 	var response []byte
