@@ -1,17 +1,6 @@
 #!/usr/bin/env bash
 
-## This script has been taken from https://github.com/kubernetes-helm/chart-testing
-## It has the same dependencies as described in that repo, and should ideally be run
-## within the docker image published by that same repository in order to make sure
-## the correct dependencies are included.
-##
-## Run from within the root of the repository with:
-##
-## docker run --rm -v "$(pwd):/workdir" --workdir /workdir \
-##    gcr.io/kubernetes-charts-ci/chart-testing:v1.0.2 \
-##    /workdir/test/chart_test.sh \
-##    --no-install \
-##    --config test/.testenv
+# +skip_license_check
 
 # Copyright 2018 The Helm Authors. All rights reserved.
 #
@@ -26,6 +15,20 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+## This script has been taken from https://github.com/kubernetes-helm/chart-testing
+## It has the same dependencies as described in that repo, and should ideally be run
+## within the docker image published by that same repository in order to make sure
+## the correct dependencies are included.
+##
+## Run from within the root of the repository with:
+##
+## docker run --rm -v "$(pwd):/workdir" --workdir /workdir \
+##    gcr.io/kubernetes-charts-ci/chart-testing:v1.0.2 \
+##    /workdir/test/chart_test.sh \
+##    --no-install \
+##    --config test/.testenv
+
 
 set -o errexit
 set -o nounset
