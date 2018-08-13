@@ -6,3 +6,4 @@ Development documentation
 
    develop-with-minikube
    dns01-providers
+   dco-sign-off
