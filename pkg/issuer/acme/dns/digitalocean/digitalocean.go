@@ -31,19 +31,20 @@ import (
 
 // DNSProvider is an implementation of the acme.ChallengeProvider interface
 type DNSProvider struct {
-	client *godo.Client
+	dns01Nameservers []string
+	client           *godo.Client
 }
 
 // NewDNSProvider returns a DNSProvider instance configured for digitalocean.
 // The access token must be passed in the environment variable DIGITALOCEAN_TOKEN
-func NewDNSProvider() (*DNSProvider, error) {
+func NewDNSProvider(dns01Nameservers []string) (*DNSProvider, error) {
 	token := os.Getenv("DIGITALOCEAN_TOKEN")
-	return NewDNSProviderCredentials(token)
+	return NewDNSProviderCredentials(token, dns01Nameservers)
 }
 
 // NewDNSProviderCredentials uses the supplied credentials to return a
 // DNSProvider instance configured for digitalocean.
-func NewDNSProviderCredentials(token string) (*DNSProvider, error) {
+func NewDNSProviderCredentials(token string, dns01Nameservers []string) (*DNSProvider, error) {
 	if token == "" {
 		return nil, fmt.Errorf("DigitalOcean token missing")
 	}
@@ -54,7 +55,8 @@ func NewDNSProviderCredentials(token string) (*DNSProvider, error) {
 	)
 
 	return &DNSProvider{
-		client: godo.NewClient(c),
+		dns01Nameservers: dns01Nameservers,
+		client:           godo.NewClient(c),
 	}, nil
 }
 
@@ -66,7 +68,7 @@ func (c *DNSProvider) Timeout() (timeout, interval time.Duration) {
 
 // Present creates a TXT record to fulfil the dns-01 challenge
 func (c *DNSProvider) Present(domain, token, keyAuth string) error {
-	fqdn, value, ttl, err := util.DNS01Record(domain, keyAuth)
+	fqdn, value, ttl, err := util.DNS01Record(domain, keyAuth, c.dns01Nameservers)
 	if err != nil {
 		return err
 	}
@@ -131,7 +133,7 @@ func (c *DNSProvider) Present(domain, token, keyAuth string) error {
 
 // CleanUp removes the TXT record matching the specified parameters
 func (c *DNSProvider) CleanUp(domain, token, keyAuth string) error {
-	fqdn, _, _, err := util.DNS01Record(domain, keyAuth)
+	fqdn, _, _, err := util.DNS01Record(domain, keyAuth, c.dns01Nameservers)
 	if err != nil {
 		return err
 	}
