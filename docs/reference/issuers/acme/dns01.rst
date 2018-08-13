@@ -149,20 +149,20 @@ ACME-DNS
 
     acmedns:
       host: https://acme.example.com
-      accountsSecretRef:
+      accountSecretRef:
         name: acme-dns
         key: acmedns.json
 
 In general, clients to acme-dns perform registration on the users behalf and inform
 them of the CNAME entries they must create. This is not possible in cert-manager, it
 is a non-interactive system. Registration must be carried out beforehand and the resulting
-credentials JSON uploaded to the cluster as a secret. There are several ways to accomplish this:
+credentials JSON uploaded to the cluster as a secret. In this example, we use ``curl`` and the
+API endpoints directly. Information about setting up and configuring acme-dns is available on
+the `acme-dns project page <https://github.com/joohoi/acme-dns>`_.
 
-1. Using certbot, follow the instructions in the `official certbot hook <https://github.com/joohoi/acme-dns-certbot-joohoi>`_ You can either create a certificate or cancel the process after it informs you of the CNAME record. The resulting `acmedns.json` will be stored in `/etc/letsencrypt`
+1. First, register with the acme-dns server, in this example, there is one running at "auth.example.com"
 
-2. Using the `acme-dns client <https://github.com/cpu/goacmedns>`_ follow the instructions for "Pre-Registration", the location of the accounts JSON file can be specified as an argument. The CNAME record will be printed by the command.
-
-3. Manually using the API. ``curl -X POST http://auth.example.com/register`` will return a JSON for your registration:
+  ``curl -X POST http://auth.example.com/register`` will return a JSON with credentials for your registration:
 
   .. code-block :: json
 
@@ -174,8 +174,26 @@ credentials JSON uploaded to the cluster as a secret. There are several ways to 
       "allowfrom":[]
     }
 
+  It is strongly recommended to restrict the update endpoint to the IP range of your pods.
+  This is done at registration time as follows:
 
-  Save this JSON to a file with the key as your domain:
+  ``curl -X POST http://auth.example.com/register -H "Content-Type: application/json" --data '{"allowfrom": ["10.244.0.0/16"]}'``
+
+  Make sure to update the ``allowfrom`` field to match your cluster configuration. The JSON will now look like
+
+  .. code-block :: json
+
+    {
+      "username":"eabcdb41-d89f-4580-826f-3e62e9755ef2",
+      "password":"pbAXVjlIOE01xbut7YnAbkhMQIkcwoHO0ek2j4Q0",
+      "fulldomain":"d420c923-bbd7-4056-ab64-c3ca54c9b3cf.auth.example.com",
+      "subdomain":"d420c923-bbd7-4056-ab64-c3ca54c9b3cf",
+      "allowfrom":["10.244.0.0/16"]
+    }
+
+2. Save this JSON to a file with the key as your domain. You can specify multiple domains with the same credentials
+   if you like. In our example, the returned credentials can be used to verify ownership of "example.com" and
+   and "example.org".
 
   .. code-block :: json
 
@@ -185,16 +203,34 @@ credentials JSON uploaded to the cluster as a secret. There are several ways to 
         "password":"pbAXVjlIOE01xbut7YnAbkhMQIkcwoHO0ek2j4Q0",
         "fulldomain":"d420c923-bbd7-4056-ab64-c3ca54c9b3cf.auth.example.com",
         "subdomain":"d420c923-bbd7-4056-ab64-c3ca54c9b3cf",
-        "allowfrom":[]
+        "allowfrom":["10.244.0.0/16"]
+      },
+      "example.org": {
+        "username":"eabcdb41-d89f-4580-826f-3e62e9755ef2",
+        "password":"pbAXVjlIOE01xbut7YnAbkhMQIkcwoHO0ek2j4Q0",
+        "fulldomain":"d420c923-bbd7-4056-ab64-c3ca54c9b3cf.auth.example.com",
+        "subdomain":"d420c923-bbd7-4056-ab64-c3ca54c9b3cf",
+        "allowfrom":["10.244.0.0/16"]
       }
     }
 
-  You will need to form the CNAME record manually. In this case it would look like
+3. Next update your primary DNS server with CNAME record that will tell the verifier how to locate the challenge TXT
+   record. This is obtained from the "fulldomain" field in the registration:
 
-  ``_acme_challenge.example.com CNAME d420c923-bbd7-4056-ab64-c3ca54c9b3cf.auth.example.com``
+  ``_acme-challenge.example.com CNAME d420c923-bbd7-4056-ab64-c3ca54c9b3cf.auth.example.com``
+  ``_acme-challenge.example.org CNAME d420c923-bbd7-4056-ab64-c3ca54c9b3cf.auth.example.com``
 
-In all cases, create a secret from the json file:
-``kubectl create secret generic acme-dns --from-file acmedns.json``
+  Note that the "name" of the record is always the "_acme-challenge" subdomain, and the "value" of the record matches
+  exactly the "fulldomain" field from registration.
+
+  At verification time, the domain name ``d420c923-bbd7-4056-ab64-c3ca54c9b3cf.auth.example.com`` will be a TXT
+  record that is set to your validation token. When the verifier queries ``_acme-challenge.example.com``, it will
+  be directed to the correct location by this CNAME record. This proves that you control "example.com"
+
+4. Create a secret from the credentials json that was saved in step 2, this secret is referenced
+   in the ``accountSecretRef`` field of your dns01 issuer settings.
+
+   ``kubectl create secret generic acme-dns --from-file acmedns.json``
 
 
 .. _`Let's Encrypt`: https://letsencrypt.org
