@@ -247,7 +247,7 @@ func (s *Solver) solverForIssuerProvider(issuer v1alpha1.GenericIssuer, provider
 			s.DNS01Nameservers,
 		)
 	case providerConfig.AcmeDNS != nil:
-		accountsSecret, err := s.secretLister.Secrets(s.resourceNamespace).Get(providerConfig.AcmeDNS.AccountsSecret.Name)
+		accountsSecret, err := s.secretLister.Secrets(resourceNamespace).Get(providerConfig.AcmeDNS.AccountsSecret.Name)
 		if err != nil {
 			return nil, fmt.Errorf("error getting acmedns accounts secret: %s", err)
 		}
