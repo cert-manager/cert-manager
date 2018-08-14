@@ -97,6 +97,10 @@ Appears In:
 <td>DNSNames is a list of subject alt names to be used on the Certificate</td>
 </tr>
 <tr>
+<td><code>isCA</code><br /> <em>boolean</em></td>
+<td>IsCA will mark this Certificate as valid for signing. This implies that the &#39;signing&#39; usage is set</td>
+</tr>
+<tr>
 <td><code>issuerRef</code><br /> <em><a href="#objectreference-v1alpha1">ObjectReference</a></em></td>
 <td>IssuerRef is a reference to the issuer for this certificate. If the &#39;kind&#39; field is not set, or set to &#39;Issuer&#39;, an Issuer resource with the given name in the same namespace as the Certificate will be used. If the &#39;kind&#39; field is set to &#39;ClusterIssuer&#39;, a ClusterIssuer with the provided name will be used. The &#39;name&#39; field in this stanza is required at all times.</td>
 </tr>
