@@ -77,7 +77,7 @@ func (c *DNSProvider) Present(domain, token, keyAuth string) error {
 	}
 
 	// if DigitalOcean does not have this zone then we will find out later
-	zoneName, err := util.FindZoneByFqdn(fqdn, util.RecursiveNameservers)
+	zoneName, err := util.FindZoneByFqdn(fqdn, c.dns01Nameservers)
 	if err != nil {
 		return err
 	}
@@ -141,7 +141,7 @@ func (c *DNSProvider) CleanUp(domain, token, keyAuth string) error {
 		return err
 	}
 
-	zoneName, err := util.FindZoneByFqdn(fqdn, util.RecursiveNameservers)
+	zoneName, err := util.FindZoneByFqdn(fqdn, c.dns01Nameservers)
 
 	records, err := c.findTxtRecord(fqdn)
 	if err != nil {
@@ -161,7 +161,7 @@ func (c *DNSProvider) CleanUp(domain, token, keyAuth string) error {
 
 func (c *DNSProvider) findTxtRecord(fqdn string) ([]godo.DomainRecord, error) {
 
-	zoneName, err := util.FindZoneByFqdn(fqdn, util.RecursiveNameservers)
+	zoneName, err := util.FindZoneByFqdn(fqdn, c.dns01Nameservers)
 	if err != nil {
 		return nil, err
 	}
