@@ -155,8 +155,8 @@ func newFakeDNSProviders() *fakeDNSProviders {
 			f.call("azuredns", clientID, clientSecret, subscriptionID, tenentID, resourceGroupName, hostedZoneName, util.RecursiveNameservers)
 			return nil, nil
 		},
-		acmeDNS: func(host string, accountJson []byte) (*acmedns.DNSProvider, error) {
-			f.call("acmedns", host, accountJson)
+		acmeDNS: func(host string, accountJson []byte, dns01Nameservers []string) (*acmedns.DNSProvider, error) {
+			f.call("acmedns", host, accountJson, dns01Nameservers)
 			return nil, nil
 		},
 	}
