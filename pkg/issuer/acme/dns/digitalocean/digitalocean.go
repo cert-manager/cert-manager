@@ -94,15 +94,15 @@ func (c *DNSProvider) Present(domain, token, keyAuth string) error {
 			for x := range dns.ParseZone(strings.NewReader(domain.ZoneFile), "", "") {
 				if x.Error != nil {
 					return x.Error
-				} else {
-					// check if this record is a TXT
-					if x.RR.Header().Rrtype == dns.TypeTXT {
-						txt := x.RR.(*dns.TXT).Txt
-						for _, c := range txt {
-							// skip creation if it has the correct value
-							if c == keyAuth {
-								alreadyExists = true
-							}
+				}
+
+				// check if this record is a TXT
+				if x.RR.Header().Rrtype == dns.TypeTXT {
+					txt := x.RR.(*dns.TXT).Txt
+					for _, c := range txt {
+						// skip creation if it has the correct value
+						if c == keyAuth {
+							alreadyExists = true
 						}
 					}
 				}
