@@ -223,6 +223,7 @@ func (s *Solver) cleanupIngresses(crt *v1alpha1.Certificate, ch v1alpha1.ACMEOrd
 	}
 
 	// otherwise, we need to remove any cert-manager added rules from the ingress resource
+	// TODO: switch to using ingress lister?
 	ing, err := s.Client.ExtensionsV1beta1().Ingresses(crt.Namespace).Get(existingIngressName, metav1.GetOptions{})
 	if k8sErrors.IsNotFound(err) {
 		glog.Infof("attempt to cleanup Ingress %q of ACME challenge path failed: %v", crt.Namespace+"/"+existingIngressName, err)
@@ -233,20 +234,31 @@ func (s *Solver) cleanupIngresses(crt *v1alpha1.Certificate, ch v1alpha1.ACMEOrd
 	}
 
 	ingPathToDel := solverPathFn(ch.Token)
-Outer:
+	var ingRules []extv1beta1.IngressRule
+
 	for _, rule := range ing.Spec.Rules {
 		if rule.Host == ch.Domain {
+			// if the 'http' stanza is not set, we will retain the rule as it is
+			// not managed by cert-manager
 			if rule.HTTP == nil {
-				return nil
+				ingRules = append(ingRules, rule)
+				continue
 			}
+			// check the rule for paths. If we find the ingress path we need to
+			// delete here, delete it
 			for i, path := range rule.HTTP.Paths {
 				if path.Path == ingPathToDel {
 					rule.HTTP.Paths = append(rule.HTTP.Paths[:i], rule.HTTP.Paths[i+1:]...)
-					break Outer
 				}
+			}
+			// if there are still paths level on this rule, we should retain it
+			if len(rule.HTTP.Paths) > 0 {
+				ingRules = append(ingRules, rule)
 			}
 		}
 	}
+
+	ing.Spec.Rules = ingRules
 
 	_, err = s.Client.ExtensionsV1beta1().Ingresses(ing.Namespace).Update(ing)
 	if err != nil {
