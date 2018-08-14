@@ -200,7 +200,7 @@ func ValidateACMEIssuerDNS01Config(iss *v1alpha1.ACMEIssuerDNS01Config, fldPath 
 				el = append(el, field.Forbidden(fldPath.Child("digitalocean"), "may not specify more than one provider type"))
 			} else {
 				numProviders++
-				el = append(el, ValidateSecretKeySelector(&p.DigitalOcean.Token, fldPath.Child("digitalocean", "token"))...)
+				el = append(el, ValidateSecretKeySelector(&p.DigitalOcean.Token, fldPath.Child("digitalocean", "tokenSecretRef"))...)
 			}
 		}
 		if numProviders == 0 {
