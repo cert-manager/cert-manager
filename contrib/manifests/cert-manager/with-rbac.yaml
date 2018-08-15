@@ -24,8 +24,6 @@ apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
 metadata:
   name: certificates.certmanager.k8s.io
-  annotations:
-    "helm.sh/hook": crd-install
   labels:
     app: cert-manager
     chart: cert-manager-v0.4.0-dev.4
@@ -48,8 +46,6 @@ apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
 metadata:
   name: clusterissuers.certmanager.k8s.io
-  annotations:
-    "helm.sh/hook": crd-install
   labels:
     app: cert-manager
     chart: cert-manager-v0.4.0-dev.4
@@ -68,8 +64,6 @@ apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
 metadata:
   name: issuers.certmanager.k8s.io
-  annotations:
-    "helm.sh/hook": crd-install
   labels:
     app: cert-manager
     chart: cert-manager-v0.4.0-dev.4
