@@ -76,6 +76,12 @@
   revision = "4c0e84591b9aa9e6dcfdf3e020114cd81f89d5f9"
 
 [[projects]]
+  branch = "master"
+  name = "github.com/cpu/goacmedns"
+  packages = ["."]
+  revision = "565ecf2a84df654865cc102705ac160a3b04fc01"
+
+[[projects]]
   name = "github.com/davecgh/go-spew"
   packages = ["spew"]
   revision = "346938d642f2ec3594ed81d874461961cd0faa76"
@@ -634,7 +640,7 @@
     "storage/v1beta1"
   ]
   revision = "73d903622b7391f3312dcbac6483fed484e185f8"
-  version = "kubernetes-1.10.0-beta.3"
+  version = "kubernetes-1.10.0"
 
 [[projects]]
   name = "k8s.io/apiextensions-apiserver"
@@ -698,7 +704,7 @@
     "third_party/forked/golang/reflect"
   ]
   revision = "302974c03f7e50f16561ba237db776ab93594ef6"
-  version = "kubernetes-1.10.0-beta.1"
+  version = "kubernetes-1.10.0"
 
 [[projects]]
   name = "k8s.io/client-go"
@@ -864,7 +870,7 @@
     "util/workqueue"
   ]
   revision = "23781f4d6632d88e869066eaebb743857aa1ef9b"
-  version = "v7.0.0"
+  version = "kubernetes-1.10.0"
 
 [[projects]]
   name = "k8s.io/code-generator"
@@ -893,7 +899,7 @@
     "pkg/util"
   ]
   revision = "7ead8f38b01cf8653249f5af80ce7b2c8aba12e2"
-  version = "kubernetes-1.10.0-beta.1"
+  version = "kubernetes-1.10.0"
 
 [[projects]]
   name = "k8s.io/gengo"
@@ -931,6 +937,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "4cf8191e849d3b72e429b022f8ae52941ea1dcff71d5b1cac68c6645a6b1ed95"
+  inputs-digest = "b462cfd787dbec48634c0d4588bb909f8fdcfd80be9dac7db9af354c80a109c1"
   solver-name = "gps-cdcl"
   solver-version = 1

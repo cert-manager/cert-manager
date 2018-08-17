@@ -28,6 +28,7 @@ import (
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	"github.com/jetstack/cert-manager/pkg/controller"
+	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/acmedns"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/akamai"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/azuredns"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/clouddns"
@@ -54,6 +55,7 @@ type dnsProviderConstructors struct {
 	cloudFlare func(email, apikey string, dns01Nameservers []string) (*cloudflare.DNSProvider, error)
 	route53    func(accessKey, secretKey, hostedZoneID, region string, ambient bool, dns01Nameservers []string) (*route53.DNSProvider, error)
 	azureDNS   func(clientID, clientSecret, subscriptionID, tenentID, resourceGroupName, hostedZoneName string, dns01Nameservers []string) (*azuredns.DNSProvider, error)
+	acmeDNS    func(host string, accountJson []byte, dns01Nameservers []string) (*acmedns.DNSProvider, error)
 }
 
 // Solver is a solver for the acme dns01 challenge.
@@ -244,6 +246,22 @@ func (s *Solver) solverForIssuerProvider(issuer v1alpha1.GenericIssuer, provider
 			providerConfig.AzureDNS.HostedZoneName,
 			s.DNS01Nameservers,
 		)
+	case providerConfig.AcmeDNS != nil:
+		accountSecret, err := s.secretLister.Secrets(resourceNamespace).Get(providerConfig.AcmeDNS.AccountSecret.Name)
+		if err != nil {
+			return nil, fmt.Errorf("error getting acmedns accounts secret: %s", err)
+		}
+
+		accountSecretBytes, ok := accountSecret.Data[providerConfig.AcmeDNS.AccountSecret.Key]
+		if !ok {
+			return nil, fmt.Errorf("error getting acmedns accounts secret: key '%s' not found in secret", providerConfig.AcmeDNS.AccountSecret.Key)
+		}
+
+		impl, err = s.dnsProviderConstructors.acmeDNS(
+			providerConfig.AcmeDNS.Host,
+			accountSecretBytes,
+			s.DNS01Nameservers,
+		)
 	default:
 		return nil, fmt.Errorf("no dns provider config specified for provider %q", providerName)
 	}
@@ -260,6 +278,7 @@ func NewSolver(ctx *controller.Context) *Solver {
 			cloudflare.NewDNSProviderCredentials,
 			route53.NewDNSProvider,
 			azuredns.NewDNSProviderCredentials,
+			acmedns.NewDNSProviderHostBytes,
 		},
 	}
 }

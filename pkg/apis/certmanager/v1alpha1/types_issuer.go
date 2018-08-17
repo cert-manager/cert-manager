@@ -149,6 +149,7 @@ type ACMEIssuerDNS01Provider struct {
 	Cloudflare *ACMEIssuerDNS01ProviderCloudflare `json:"cloudflare,omitempty"`
 	Route53    *ACMEIssuerDNS01ProviderRoute53    `json:"route53,omitempty"`
 	AzureDNS   *ACMEIssuerDNS01ProviderAzureDNS   `json:"azuredns,omitempty"`
+	AcmeDNS    *ACMEIssuerDNS01ProviderAcmeDNS    `json:"acmedns,omitempty"`
 }
 
 // ACMEIssuerDNS01ProviderAkamai is a structure containing the DNS
@@ -194,6 +195,13 @@ type ACMEIssuerDNS01ProviderAzureDNS struct {
 
 	// + optional
 	HostedZoneName string `json:"hostedZoneName"`
+}
+
+// ACMEIssuerDNS01ProviderAcmeDNS is a structure containing the
+// configuration for ACME-DNS servers
+type ACMEIssuerDNS01ProviderAcmeDNS struct {
+	Host          string            `json:"host"`
+	AccountSecret SecretKeySelector `json:"accountSecretRef"`
 }
 
 // IssuerStatus contains status information about an Issuer
