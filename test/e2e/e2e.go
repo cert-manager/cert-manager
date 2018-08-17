@@ -81,12 +81,19 @@ func RunE2ETests(t *testing.T) {
 const releaseName = "cm"
 
 func InstallHelmChart(t *testing.T, releaseName, chartName, namespace, values string, extraArgs ...string) {
+	err := exec.Command("helm", "dep", "update", chartName).Run()
+	if err != nil {
+		t.Errorf("Error updating dependencies for %q: %s", releaseName, err)
+		t.FailNow()
+		return
+	}
+
 	args := []string{"install", chartName, "--namespace", namespace, "--name", releaseName, "--values", values, "--wait"}
 	args = append(args, extraArgs...)
 	cmd := exec.Command("helm", args...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
-	err := cmd.Run()
+	err = cmd.Run()
 	if err != nil {
 		t.Errorf("Error installing %q: %s", releaseName, err)
 		t.FailNow()
