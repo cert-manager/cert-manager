@@ -1,0 +1,96 @@
+package(default_visibility = ["//visibility:public"])
+
+py_test(
+    name = "verify-boilerplate",
+    srcs = ["verify-boilerplate.py"],
+    data = ["//:all-srcs"],
+    tags = ["lint"],
+)
+
+# sh_test(
+#     name = "verify-chart-version",
+#     srcs = ["verify-chart-version.sh"],
+#     data = [
+#         "//:all-srcs",
+#     ],
+#     tags = ["lint"],
+# )
+
+# sh_test(
+#     name = "verify-codegen",
+#     srcs = ["verify-codegen.sh"],
+#     data = [
+#         "//:all-srcs",
+#     ],
+#     tags = ["lint"],
+# )
+
+sh_test(
+    name = "verify-deploy-gen",
+    srcs = ["verify-deploy-gen.sh"],
+    data = [
+        "deploy/rbac-values.yaml",
+        "deploy/without-rbac-values.yaml",
+        "update-deploy-gen.sh",
+        "//contrib/charts/cert-manager:all-srcs",
+        "//contrib/manifests/cert-manager:all-srcs",
+    ],
+    tags = ["lint"],
+)
+
+# sh_test(
+#     name = "verify-deps",
+#     srcs = ["verify-deps.sh"],
+#     data = [
+#         "//:all-srcs",
+#     ],
+#     tags = ["lint"],
+# )
+
+sh_test(
+    name = "verify-errexit",
+    srcs = ["verify-errexit.sh"],
+    data = [
+        "//:all-srcs",
+    ],
+    tags = ["lint"],
+)
+
+sh_test(
+    name = "verify-links",
+    srcs = ["verify-links.sh"],
+    data = [
+        "//:all-srcs",
+    ],
+    tags = ["lint"],
+)
+
+# sh_test(
+#     name = "verify-reference-docs",
+#     srcs = ["verify-reference-docs.sh"],
+#     data = [
+#         "verify-reference-docs.sh",
+#         "update-reference-docs.sh",
+#         "update-reference-docs-dockerized.sh",
+#         "//pkg/apis:all-srcs",
+#         "//pkg/apis/certmanager:all-srcs",
+#         "//pkg/apis/certmanager/install:all-srcs",
+#         "//pkg/apis/certmanager/v1alpha1:all-srcs",
+#         "//docs/generated/reference/output:all-srcs",
+#     ],
+#     tags = ["lint"],
+# )
+
+filegroup(
+    name = "package-srcs",
+    srcs = glob(["**"]),
+    tags = ["automanaged"],
+    visibility = ["//visibility:private"],
+)
+
+filegroup(
+    name = "all-srcs",
+    srcs = [":package-srcs"],
+    tags = ["automanaged"],
+    visibility = ["//visibility:public"],
+)

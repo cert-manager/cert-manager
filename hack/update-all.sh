@@ -14,16 +14,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# The only argument this script should ever be called with is '--verify-only'
+
 set -o errexit
 set -o nounset
 set -o pipefail
 
-SCRIPT_ROOT="$(cd "$(dirname "$0")" && pwd -P)"/..
+ROOT="$(cd "$(dirname "$0")" && pwd -P)"/..
 
-bazel run //:gazelle
-kazel
-
-go get github.com/bazelbuild/buildtools/buildozer
-buildozer -types 'go_library,go_binary,go_test' 'add tags manual' '//vendor/...:*' || [[ $? -eq 3 ]]
-buildozer -types 'go_library,go_binary,go_test' 'add tags manual' '//docs/generated/...:*' || [[ $? -eq 3 ]]
-buildozer -types 'go_library,go_binary,go_test' 'add tags manual' '//test/e2e/...:*' || [[ $? -eq 3 ]]
+${ROOT}/hack/update-deps.sh
+${ROOT}/hack/update-codegen.sh
+${ROOT}/hack/update-deploy-gen.sh
+${ROOT}/hack/update-reference-docs-dockerized.sh
+${ROOT}/hack/update-bazel.sh

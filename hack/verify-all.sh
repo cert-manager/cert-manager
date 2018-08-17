@@ -14,16 +14,25 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# The only argument this script should ever be called with is '--verify-only'
+
 set -o errexit
 set -o nounset
 set -o pipefail
 
-SCRIPT_ROOT="$(cd "$(dirname "$0")" && pwd -P)"/..
+ROOT="$(cd "$(dirname "$0")" && pwd -P)"/..
 
-bazel run //:gazelle
-kazel
+echo "+++ Running reference docs checker"
+${ROOT}/hack/verify-reference-docs.sh
 
-go get github.com/bazelbuild/buildtools/buildozer
-buildozer -types 'go_library,go_binary,go_test' 'add tags manual' '//vendor/...:*' || [[ $? -eq 3 ]]
-buildozer -types 'go_library,go_binary,go_test' 'add tags manual' '//docs/generated/...:*' || [[ $? -eq 3 ]]
-buildozer -types 'go_library,go_binary,go_test' 'add tags manual' '//test/e2e/...:*' || [[ $? -eq 3 ]]
+echo "+++ Running kubernetes codegen checker"
+${ROOT}/hack/verify-codegen.sh
+
+echo "+++ Running helm chart version checker"
+${ROOT}/hack/verify-chart-version.sh
+
+echo "+++ Running dep checker"
+${ROOT}/hack/verify-deps.sh
+
+echo "+++ Running bazel tests"
+bazel test //hack/...
