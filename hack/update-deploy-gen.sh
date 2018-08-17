@@ -47,5 +47,7 @@ gen() {
 	mv "${TMP_OUTPUT_WEBHOOK}" "${OUTPUT}-webhook.yaml"
 }
 
+helm init --client-only
+helm dep update "${REPO_ROOT}/contrib/charts/cert-manager"
 gen rbac-values "${REPO_ROOT}/contrib/manifests/cert-manager/with-rbac"
 gen without-rbac-values "${REPO_ROOT}/contrib/manifests/cert-manager/without-rbac"
