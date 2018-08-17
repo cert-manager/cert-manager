@@ -10,4 +10,5 @@ manage a cert-manager deployment as an administrator.
 .. toctree::
    :maxdepth: 1
 
+   resource-validation-webhook
    upgrading/index

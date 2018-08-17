@@ -10,7 +10,7 @@ version of the chart to the public `charts repository`_.
 
 You can install the chart with the following command:
 
-.. code-block:: none
+.. code-block:: shell
 
     $ helm install \
         --name cert-manager \
@@ -24,6 +24,10 @@ full list of the available options can be found in the `Helm chart README`_.
    If your cluster does not use RBAC (Role Based Access Control), you
    will need to disable creation of RBAC resources by adding
    ``--set rbac.create=false`` to your ``helm install`` command above.
+
+.. note::
+   If you are upgrading from a previous release, please check the :doc:`upgrading guide </admin/upgrading>`
+   for special considerations.
 
 With static manifests
 =====================
