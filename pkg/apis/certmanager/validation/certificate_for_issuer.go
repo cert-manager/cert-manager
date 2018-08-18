@@ -59,6 +59,10 @@ func ValidateCertificateForACMEIssuer(crt *v1alpha1.CertificateSpec, issuer *v1a
 		el = append(el, field.Invalid(specPath.Child("isCA"), crt.KeyAlgorithm, "ACME does not support CA certificates"))
 	}
 
+	if crt.Organization != "" {
+		el = append(el, field.Invalid(specPath.Child("organization"), crt.Organization, "ACME does not support setting the organization name"))
+	}
+
 	return el
 }
 
