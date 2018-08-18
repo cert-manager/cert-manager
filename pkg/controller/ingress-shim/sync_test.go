@@ -22,6 +22,7 @@ import (
 
 	extv1beta1 "k8s.io/api/extensions/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	cmfake "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/fake"
@@ -759,6 +760,171 @@ func TestBuildCertificates(t *testing.T) {
 					},
 				},
 			},
+		},
+		{
+			Name: "return a single HTTP01 Certificate for an ingress with no TLS hosts and a single Rule host",
+			Ingress: &extv1beta1.Ingress{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "ingress-name",
+					Namespace: "ingress-namespace",
+					Annotations: map[string]string{
+						clusterIssuerNameAnnotation:       "issuer-name",
+						acmeIssuerChallengeTypeAnnotation: "http01",
+						editInPlaceAnnotation:             "true",
+					},
+				},
+				Spec: extv1beta1.IngressSpec{
+					TLS: []extv1beta1.IngressTLS{
+						{
+							SecretName: "example-com-tls",
+						},
+					},
+					Rules: []extv1beta1.IngressRule{
+						{
+							Host: "example.com",
+						},
+					},
+				},
+			},
+			ClusterIssuerLister: []*v1alpha1.ClusterIssuer{buildACMEClusterIssuer("issuer-name")},
+			ExpectedCreate: []*v1alpha1.Certificate{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:            "example-com-tls",
+						Namespace:       "ingress-namespace",
+						OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(buildIngress("ingress-name", "ingress-namespace", nil), ingressGVK)},
+					},
+					Spec: v1alpha1.CertificateSpec{
+						DNSNames:   []string{"example.com"},
+						SecretName: "example-com-tls",
+						IssuerRef: v1alpha1.ObjectReference{
+							Name: "issuer-name",
+							Kind: "ClusterIssuer",
+						},
+						ACME: &v1alpha1.ACMECertificateConfig{
+							Config: []v1alpha1.DomainSolverConfig{
+								{
+									Domains: []string{"example.com"},
+									SolverConfig: v1alpha1.SolverConfig{
+										HTTP01: &v1alpha1.HTTP01SolverConfig{
+											Ingress: "ingress-name",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			Name: "return a single HTTP01 Certificate for an ingress with no TLS hosts and multiple Rule hosts",
+			Ingress: &extv1beta1.Ingress{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "ingress-name",
+					Namespace: "ingress-namespace",
+					Annotations: map[string]string{
+						clusterIssuerNameAnnotation:       "issuer-name",
+						acmeIssuerChallengeTypeAnnotation: "http01",
+						editInPlaceAnnotation:             "true",
+					},
+				},
+				Spec: extv1beta1.IngressSpec{
+					TLS: []extv1beta1.IngressTLS{
+						{
+							SecretName: "example-com-tls",
+						},
+					},
+					Rules: []extv1beta1.IngressRule{
+						{
+							Host: "example.com",
+						},
+						{
+							Host: "www.example.com",
+							IngressRuleValue: extv1beta1.IngressRuleValue{
+								HTTP: &extv1beta1.HTTPIngressRuleValue{
+									Paths: []extv1beta1.HTTPIngressPath{
+										{
+											Path: "/foo",
+											Backend: extv1beta1.IngressBackend{
+												ServiceName: "www",
+												ServicePort: intstr.FromInt(80),
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			ClusterIssuerLister: []*v1alpha1.ClusterIssuer{buildACMEClusterIssuer("issuer-name")},
+			ExpectedCreate: []*v1alpha1.Certificate{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:            "example-com-tls",
+						Namespace:       "ingress-namespace",
+						OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(buildIngress("ingress-name", "ingress-namespace", nil), ingressGVK)},
+					},
+					Spec: v1alpha1.CertificateSpec{
+						DNSNames:   []string{"example.com", "www.example.com"},
+						SecretName: "example-com-tls",
+						IssuerRef: v1alpha1.ObjectReference{
+							Name: "issuer-name",
+							Kind: "ClusterIssuer",
+						},
+						ACME: &v1alpha1.ACMECertificateConfig{
+							Config: []v1alpha1.DomainSolverConfig{
+								{
+									Domains: []string{"example.com", "www.example.com"},
+									SolverConfig: v1alpha1.SolverConfig{
+										HTTP01: &v1alpha1.HTTP01SolverConfig{
+											Ingress: "ingress-name",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			Name: "should return an error when no TLS hosts are specified on a fallback Ingress",
+			Err:  true,
+			Ingress: &extv1beta1.Ingress{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "ingress-name",
+					Namespace: "ingress-namespace",
+					Annotations: map[string]string{
+						issuerNameAnnotation: "issuer-name",
+					},
+				},
+				Spec: extv1beta1.IngressSpec{
+					TLS: []extv1beta1.IngressTLS{
+						{
+							SecretName: "example-com-tls",
+						},
+					},
+					Rules: []extv1beta1.IngressRule{
+						{
+							IngressRuleValue: extv1beta1.IngressRuleValue{
+								HTTP: &extv1beta1.HTTPIngressRuleValue{
+									Paths: []extv1beta1.HTTPIngressPath{
+										{
+											Backend: extv1beta1.IngressBackend{
+												ServiceName: "www",
+												ServicePort: intstr.FromInt(80),
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			IssuerLister: []*v1alpha1.Issuer{buildACMEIssuer("issuer-name", "ingress-namespace")},
 		},
 	}
 	testFn := func(test testT) func(t *testing.T) {

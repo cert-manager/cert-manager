@@ -100,9 +100,10 @@ func (c *Controller) buildCertificates(ing *extv1beta1.Ingress) (new, update []*
 	var newCrts []*v1alpha1.Certificate
 	var updateCrts []*v1alpha1.Certificate
 	for i, tls := range ing.Spec.TLS {
+		hosts, err := c.hostsForIngress(ing, &tls)
 		// validate the ingress TLS block
-		if len(tls.Hosts) == 0 {
-			return nil, nil, fmt.Errorf("secret %q for ingress %q has no hosts specified", tls.SecretName, ing.Name)
+		if err != nil {
+			return nil, nil, err
 		}
 		if tls.SecretName == "" {
 			return nil, nil, fmt.Errorf("TLS entry %d for ingress %q must specify a secretName", i, ing.Name)
@@ -120,7 +121,7 @@ func (c *Controller) buildCertificates(ing *extv1beta1.Ingress) (new, update []*
 				OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(ing, ingressGVK)},
 			},
 			Spec: v1alpha1.CertificateSpec{
-				DNSNames:   tls.Hosts,
+				DNSNames:   hosts,
 				SecretName: tls.SecretName,
 				IssuerRef: v1alpha1.ObjectReference{
 					Name: issuerName,
@@ -146,7 +147,7 @@ func (c *Controller) buildCertificates(ing *extv1beta1.Ingress) (new, update []*
 
 			updateCrt := existingCrt.DeepCopy()
 
-			updateCrt.Spec.DNSNames = tls.Hosts
+			updateCrt.Spec.DNSNames = hosts
 			updateCrt.Spec.SecretName = tls.SecretName
 			updateCrt.Spec.IssuerRef.Name = issuerName
 			updateCrt.Spec.IssuerRef.Kind = issuerKind
@@ -219,7 +220,7 @@ func (c *Controller) setIssuerSpecificConfig(crt *v1alpha1.Certificate, issuer v
 			challengeType = c.defaults.acmeIssuerChallengeType
 		}
 		domainCfg := v1alpha1.DomainSolverConfig{
-			Domains: tls.Hosts,
+			Domains: crt.Spec.DNSNames,
 		}
 		switch challengeType {
 		case "http01":
@@ -311,4 +312,24 @@ func (c *Controller) getGenericIssuer(namespace, name, kind string) (v1alpha1.Ge
 	default:
 		return nil, fmt.Errorf(`invalid value %q for issuer kind. Must be empty, %q or %q`, kind, v1alpha1.IssuerKind, v1alpha1.ClusterIssuerKind)
 	}
+}
+
+func (c *Controller) hostsForIngress(ing *extv1beta1.Ingress, tls *extv1beta1.IngressTLS) (hosts []string, _ error) {
+	if len(tls.Hosts) > 0 {
+		// Explict hosts configuration.
+		hosts = append(hosts, tls.Hosts...)
+	} else {
+		// If no explicit hosts are configured, try to use the hostnames from the
+		// Ingress rules.
+		for _, rule := range ing.Spec.Rules {
+			if rule.Host != "" {
+				hosts = append(hosts, rule.Host)
+			}
+		}
+	}
+	if len(hosts) == 0 {
+		// Still nothing, bail out.
+		return nil, fmt.Errorf("secret %q for ingress %q has no certificate hosts specified", tls.SecretName, ing.Name)
+	}
+	return hosts, nil
 }
