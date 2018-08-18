@@ -53,10 +53,17 @@ func DNSNamesForCertificate(crt *v1alpha1.Certificate) []string {
 	return crt.Spec.DNSNames
 }
 
-var serialNumberLimit = new(big.Int).Lsh(big.NewInt(1), 128)
-
-// TODO: allow this to be configurable
 const defaultOrganization = "cert-manager"
+
+func OrganizationForCertificate(crt *v1alpha1.Certificate) string {
+	if crt.Spec.Organization != "" {
+		return crt.Spec.Organization
+	}
+
+	return defaultOrganization
+}
+
+var serialNumberLimit = new(big.Int).Lsh(big.NewInt(1), 128)
 
 // default certification duration is 1 year
 const defaultNotAfter = time.Hour * 24 * 365
@@ -64,6 +71,8 @@ const defaultNotAfter = time.Hour * 24 * 365
 func GenerateCSR(issuer v1alpha1.GenericIssuer, crt *v1alpha1.Certificate) (*x509.CertificateRequest, error) {
 	commonName := CommonNameForCertificate(crt)
 	dnsNames := DNSNamesForCertificate(crt)
+	organization := OrganizationForCertificate(crt)
+
 	if len(commonName) == 0 && len(dnsNames) == 0 {
 		return nil, fmt.Errorf("no domains specified on certificate")
 	}
@@ -77,7 +86,7 @@ func GenerateCSR(issuer v1alpha1.GenericIssuer, crt *v1alpha1.Certificate) (*x50
 		Version:            3,
 		SignatureAlgorithm: sigAlgo,
 		Subject: pkix.Name{
-			Organization: []string{defaultOrganization},
+			Organization: []string{organization},
 			CommonName:   commonName,
 		},
 		DNSNames: dnsNames,
@@ -93,6 +102,8 @@ func GenerateCSR(issuer v1alpha1.GenericIssuer, crt *v1alpha1.Certificate) (*x50
 func GenerateTemplate(issuer v1alpha1.GenericIssuer, crt *v1alpha1.Certificate, serialNo *big.Int) (*x509.Certificate, error) {
 	commonName := CommonNameForCertificate(crt)
 	dnsNames := DNSNamesForCertificate(crt)
+	organization := OrganizationForCertificate(crt)
+
 	if len(commonName) == 0 && len(dnsNames) == 0 {
 		return nil, fmt.Errorf("no domains specified on certificate")
 	}
@@ -118,7 +129,7 @@ func GenerateTemplate(issuer v1alpha1.GenericIssuer, crt *v1alpha1.Certificate, 
 		SignatureAlgorithm:    sigAlgo,
 		IsCA:                  crt.Spec.IsCA,
 		Subject: pkix.Name{
-			Organization: []string{defaultOrganization},
+			Organization: []string{organization},
 			CommonName:   commonName,
 		},
 		NotBefore: time.Now(),
