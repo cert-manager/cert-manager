@@ -133,6 +133,31 @@ func TestValidateCertificateForIssuer(t *testing.T) {
 				field.Invalid(fldPath.Child("keyAlgorithm"), v1alpha1.ECDSAKeyAlgorithm, "ACME key algorithm must be RSA"),
 			},
 		},
+		"acme certificate with organization set": {
+			crt: &v1alpha1.Certificate{
+				Spec: v1alpha1.CertificateSpec{
+					Organization: "shouldfailorg",
+					IssuerRef:    validIssuerRef,
+					ACME: &v1alpha1.ACMECertificateConfig{
+						Config: []v1alpha1.DomainSolverConfig{
+							{
+								Domains: []string{"example.com"},
+								SolverConfig: v1alpha1.SolverConfig{
+									HTTP01: &v1alpha1.HTTP01SolverConfig{},
+								},
+							},
+						},
+					},
+				},
+			},
+			issuer: generate.Issuer(generate.IssuerConfig{
+				Name:      defaultTestIssuerName,
+				Namespace: defaultTestNamespace,
+			}),
+			errs: []*field.Error{
+				field.Invalid(fldPath.Child("organization"), "shouldfailorg", "ACME does not support setting the organization name"),
+			},
+		},
 		"certificate with unspecified issuer type": {
 			crt: &v1alpha1.Certificate{
 				Spec: v1alpha1.CertificateSpec{
