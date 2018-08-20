@@ -61,6 +61,10 @@ const (
 	messageCertificateRenewed = "Certificate renewed successfully"
 )
 
+const (
+	nginxCAKey = "ca.crt"
+)
+
 func (c *Controller) Sync(ctx context.Context, crt *v1alpha1.Certificate) (err error) {
 	crtCopy := crt.DeepCopy()
 	defer func() {
@@ -232,6 +236,10 @@ func (c *Controller) updateSecret(crt *v1alpha1.Certificate, namespace string, c
 	}
 	secret.Data[api.TLSCertKey] = cert
 	secret.Data[api.TLSPrivateKeyKey] = key
+
+	if crt.Spec.IsCA {
+		secret.Data[nginxCAKey] = cert
+	}
 
 	if secret.Annotations == nil {
 		secret.Annotations = make(map[string]string)
