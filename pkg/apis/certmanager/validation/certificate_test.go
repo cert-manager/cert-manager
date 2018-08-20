@@ -73,6 +73,16 @@ func TestValidateCertificate(t *testing.T) {
 				},
 			},
 		},
+		"valid with org set": {
+			cfg: &v1alpha1.Certificate{
+				Spec: v1alpha1.CertificateSpec{
+					CommonName:   "testcn",
+					SecretName:   "abc",
+					Organization: "testorg",
+					IssuerRef:    validIssuerRef,
+				},
+			},
+		},
 		"invalid issuerRef kind": {
 			cfg: &v1alpha1.Certificate{
 				Spec: v1alpha1.CertificateSpec{
