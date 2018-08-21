@@ -1,0 +1,28 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "key.go",
+        "nuts.go",
+        "paths.go",
+        "types.go",
+    ],
+    importmap = "vendor/github.com/jmank88/nuts",
+    importpath = "github.com/jmank88/nuts",
+    tags = ["manual"],
+    visibility = ["//visibility:public"],
+    deps = ["//vendor/github.com/boltdb/bolt:go_default_library"],
+)
+
+go_test(
+    name = "go_default_test",
+    srcs = [
+        "example_test.go",
+        "key_test.go",
+        "paths_test.go",
+    ],
+    embed = [":go_default_library"],
+    tags = ["manual"],
+    deps = ["//vendor/github.com/boltdb/bolt:go_default_library"],
+)

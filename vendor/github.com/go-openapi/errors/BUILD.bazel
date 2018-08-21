@@ -1,0 +1,32 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "api.go",
+        "auth.go",
+        "doc.go",
+        "headers.go",
+        "middleware.go",
+        "parsing.go",
+        "schema.go",
+    ],
+    importmap = "vendor/github.com/go-openapi/errors",
+    importpath = "github.com/go-openapi/errors",
+    tags = ["manual"],
+    visibility = ["//visibility:public"],
+)
+
+go_test(
+    name = "go_default_test",
+    srcs = [
+        "api_test.go",
+        "auth_test.go",
+        "middleware_test.go",
+        "parsing_test.go",
+        "schema_test.go",
+    ],
+    embed = [":go_default_library"],
+    tags = ["manual"],
+    deps = ["//vendor/github.com/stretchr/testify/assert:go_default_library"],
+)

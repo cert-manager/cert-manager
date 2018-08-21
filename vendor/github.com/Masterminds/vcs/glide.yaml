@@ -1,0 +1,8 @@
+package: github.com/Masterminds/vcs
+homepage: https://github.com/Masterminds/vcs
+license: MIT
+owners:
+- name: Matt Farina
+  email: matt@mattfarina.com
+  homepage: https://www.mattfarina.com/
+import: []

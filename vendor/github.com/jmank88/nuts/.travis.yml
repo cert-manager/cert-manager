@@ -1,0 +1,9 @@
+language: go
+
+go:
+    - 1.x
+    - tip
+
+install:
+    - go get -u github.com/golang/dep/...
+    - dep ensure -vendor-only

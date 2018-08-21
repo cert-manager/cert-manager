@@ -1,0 +1,87 @@
+language: go
+sudo: false
+notifications:
+  email: false
+jobs:
+  include:
+    - stage: test
+      go_import_path: github.com/golang/dep
+      install:
+        - make get-deps
+        - npm install -g codeclimate-test-reporter
+      env:
+        - DEPTESTBYPASS501=1
+      os: linux
+      go: 1.10.x
+      script:
+        - make validate test
+        - ./hack/coverage.bash
+      after_success:
+        - codeclimate-test-reporter < coverage.txt
+    # YAML alias, for settings shared across the simpler builds
+    - &simple-test
+      go: 1.9.x
+      stage: test
+      go_import_path: github.com/golang/dep
+      install: skip
+      env:
+        - DEPTESTBYPASS501=1
+      script: make test
+    - <<: *simple-test
+      go: tip
+    - <<: *simple-test
+      os: osx
+      go: 1.10.x
+      install:
+        # brew takes horribly long to update itself despite the above caching
+        # attempt; only bzr install if it's not on the $PATH
+        - test $(which bzr) || brew install bzr
+      env:
+        - HOMEBREW_NO_AUTO_UPDATE=1
+        - DEPTESTBYPASS501=1
+      script:
+        # OSX as of El Capitan sets an exit trap that interacts poorly with how
+        # travis seems to spawn these shells; if set -e is set, then it can cause
+        # build failures. We're not doing that here, but retain the trap statement
+        # for future safety.
+        # Related: https://superuser.com/questions/1044130/why-am-i-having-how-can-i-fix-this-error-shell-session-update-command-not-f
+        - trap EXIT
+        - make test
+    - go: 1.10.x
+      # Run on OS X so that we get a CGO-enabled binary for this OS; see
+      # https://github.com/golang/dep/issues/1838 for more details.
+      os: osx
+      stage: deploy
+      go_import_path: github.com/golang/dep
+      install: skip
+      script: skip
+      before_deploy:
+        - ./hack/build-all.bash
+      deploy:
+        - provider: releases
+          api_key:
+            secure: fL9GX11J3JLizEBTPZHN32wuAT91eAJsGl0kjlAdIc6Lb/9UCe1XZGgFnpQFN4qo/S+omhHBDbM6Ty1xhNy7xmjDecpQGDU8Rmap9Oll0TuxqMigG+njOuPp5VUYPofPP0PGKdxAcYg+KaFM7x0o2rK+qA046NHwo2gH1BbE+bn55TZglEajEfc8j9iX4jt96KC7zlu+WiKArLmfUtlrI8m8ZYgbYcvFmlYjeCiEqlNhvNL59ejug9Rl0PLtPbamqVXkGLafYtekgPCb4WSxBiCt8pq5Rb5svk9YcdXpiaWQhZjMPAuKN6BrmN2lw1PiXzADUG5fjvNc8eo2HY70GD2utU9cAsY8VIafhoH5n6uM1WI8MHwDfd7P1PiQA3ZGQ8CPwk4q/8HSfQU9ap7vZgSF63pTIbtlviyIG67orOJE9PWWncl9olYM946UylZu6m3hWI/rmJxOeJ1UJjym/3GNPMRfKubaGhV/TyRdM0bKX4M0cXHU6k/ESVFupGXdKRt4RpvkD4/1Km6b2OShW6PNI+ifFspnJr7obkI7dm7ubySdnNz4lMv9WWymxRpMVc8hUAhuoDvXeZJq7pSnkjBEWDxIRoTkA93CU3/Rf7MFYCJMnGSqjcxWUpIfCAk2/r4BqL9NQnqBvvVt+MYi64QaD5n7ZF3dVbr6HZ2zjSU=
+          file:
+            - release/dep-linux-amd64
+            - release/dep-linux-amd64.sha256
+            - release/dep-darwin-amd64
+            - release/dep-darwin-amd64.sha256
+            - release/dep-freebsd-amd64
+            - release/dep-freebsd-amd64.sha256
+            - release/dep-windows-amd64.exe
+            - release/dep-windows-amd64.exe.sha256
+            - release/dep-linux-386
+            - release/dep-linux-386.sha256
+            - release/dep-darwin-386
+            - release/dep-darwin-386.sha256
+            - release/dep-freebsd-386
+            - release/dep-freebsd-386.sha256
+            - release/dep-windows-386.exe
+            - release/dep-windows-386.exe.sha256
+          skip_cleanup: true
+          on:
+            repo: golang/dep
+            branch: master
+            tags: true
+addons:
+  ssh_known_hosts: github.com

@@ -1,0 +1,11 @@
+# dep project generated files to ignore
+#  if you want to ignore files created by your editor/tools,
+#  please consider a global .gitignore https://help.github.com/articles/ignoring-files
+#  please do not open a pull request to add something created by your editor or tools
+/dep
+/testdep
+/dep.exe
+/licenseok
+/profile.out
+/coverage.txt
+release/

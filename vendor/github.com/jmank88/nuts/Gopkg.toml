@@ -1,0 +1,3 @@
+[[constraint]]
+  name = "github.com/boltdb/bolt"
+  version = "^1.0.0"
