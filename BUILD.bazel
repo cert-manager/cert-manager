@@ -43,6 +43,25 @@ genrule(
     visibility = ["//visibility:public"],
 )
 
+genrule(
+    name = "getbuildozer",
+    srcs = select({
+        ":darwin": ["@buildozer_darwin//file"],
+        ":k8": ["@buildozer_linux//file"],
+    }),
+    outs = ["buildozer"],
+    cmd = "cp $(SRCS) $@",
+    visibility = ["//visibility:public"],
+)
+
+genrule(
+    name = "getkazel",
+    srcs = ["@io_kubernetes_build//kazel"],
+    outs = ["kazel"],
+    cmd = "cp $(SRCS) $@",
+    visibility = ["//visibility:public"],
+)
+
 config_setting(
     name = "k8",
     values = {"host_cpu": "k8"},

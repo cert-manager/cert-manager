@@ -20,10 +20,12 @@ set -o pipefail
 
 SCRIPT_ROOT="$(cd "$(dirname "$0")" && pwd -P)"/..
 
-bazel run //:gazelle
-kazel
+bazel build //:kazel //:buildozer
+export PATH="$(bazel info bazel-genfiles)/:$PATH"
 
-go get github.com/bazelbuild/buildtools/buildozer
+bazel run //:gazelle
+
+kazel
 buildozer -types 'go_library,go_binary,go_test' 'add tags manual' '//vendor/...:*' || [[ $? -eq 3 ]]
 buildozer -types 'go_library,go_binary,go_test' 'add tags manual' '//docs/generated/...:*' || [[ $? -eq 3 ]]
 buildozer -types 'go_library,go_binary,go_test' 'add tags manual' '//test/e2e/...:*' || [[ $? -eq 3 ]]
