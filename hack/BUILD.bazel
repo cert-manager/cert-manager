@@ -25,18 +25,20 @@ py_test(
 #     tags = ["lint"],
 # )
 
-sh_test(
-    name = "verify-deploy-gen",
-    srcs = ["verify-deploy-gen.sh"],
-    data = [
-        "deploy/rbac-values.yaml",
-        "deploy/without-rbac-values.yaml",
-        "update-deploy-gen.sh",
-        "//contrib/charts/cert-manager:all-srcs",
-        "//contrib/manifests/cert-manager:all-srcs",
-    ],
-    tags = ["lint"],
-)
+# sh_test(
+#     name = "verify-deploy-gen",
+#     srcs = ["verify-deploy-gen.sh"],
+#     args = ["--helm=$(location //:helm)"],
+#     data = [
+#         "//:helm",
+#         "deploy/rbac-values.yaml",
+#         "deploy/without-rbac-values.yaml",
+#         "update-deploy-gen.sh",
+#         "//contrib/charts/cert-manager:all-srcs",
+#         "//contrib/manifests/cert-manager:all-srcs",
+#     ],
+#     tags = ["lint"],
+# )
 
 # sh_test(
 #     name = "verify-deps",
