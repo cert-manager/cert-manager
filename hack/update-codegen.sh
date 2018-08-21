@@ -20,10 +20,10 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-SCRIPT_ROOT=$(dirname "${BASH_SOURCE}")/..
-CODEGEN_PKG=${CODEGEN_PKG:-$(CDPATH='' cd "${SCRIPT_ROOT}"; ls -d -1 ./vendor/k8s.io/code-generator 2>/dev/null || echo ../code-generator)}
+SCRIPT_ROOT="$(cd "$(dirname "$0")" && pwd -P)"/..
 
-"${CODEGEN_PKG}/generate-groups.sh" "deepcopy,client,informer,lister" \
+"${SCRIPT_ROOT}/third_party/k8s.io/code-generator/generate-groups.sh" \
+  "deepcopy,client,informer,lister" \
   github.com/jetstack/cert-manager/pkg/client github.com/jetstack/cert-manager/pkg/apis \
   certmanager:v1alpha1 \
   --output-base "${GOPATH}/src/" \
