@@ -19,9 +19,8 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"log"
-	"path/filepath"
+	"os"
 	"strings"
 
 	"github.com/go-openapi/spec"
@@ -47,7 +46,14 @@ func WriteOpenAPI(openapi func(ref common.ReferenceCallback) map[string]common.O
 	if err != nil {
 		log.Fatalf("Could not Marshal JSON %v\n%v", err, defs)
 	}
-	err = ioutil.WriteFile(filepath.Join("docs", "generated", "reference", "openapi-spec", "swagger.json"), o, 0700)
+
+	// wd, err := os.Getwd()
+	// if err != nil {
+	// 	log.Fatalf("Error getting working directory: %v", err)
+	// }
+
+	_, err = os.Stdout.Write(o)
+	// err = ioutil.WriteFile(filepath.Join(wd, "docs", "generated", "reference", "openapi-spec", "swagger.json"), o, 0700)
 	if err != nil {
 		log.Fatalf("%v", err)
 	}
