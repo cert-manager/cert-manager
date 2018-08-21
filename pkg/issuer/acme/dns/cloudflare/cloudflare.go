@@ -121,6 +121,10 @@ func (c *DNSProvider) CleanUp(domain, token, keyAuth string) error {
 	}
 
 	record, err := c.findTxtRecord(fqdn)
+	// Nothing to cleanup
+	if err == errNoExistingRecord {
+		return nil
+	}
 	if err != nil {
 		return err
 	}
