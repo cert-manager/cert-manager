@@ -75,6 +75,7 @@ filegroup(
 """,
 )
 
+# Setup npm for brodocs doc generation
 git_repository(
     name = "build_bazel_rules_nodejs",
     remote = "https://github.com/bazelbuild/rules_nodejs.git",
@@ -94,4 +95,19 @@ npm_install(
     name = "brodocs_modules",
     package_json = "@brodocs//:package.json",
     package_lock_json = "//hack/brodocs:package-lock.json",
+)
+
+# Install Helm for use in template generation and testing
+new_http_archive(
+    name = "helm_darwin",
+    sha256 = "7c4e6bfbc211d6b984ffb4fa490ce9ac112cc4b9b8d859ece27045b8514c1ed1",
+    urls = ["https://storage.googleapis.com/kubernetes-helm/helm-v2.10.0-darwin-amd64.tar.gz"],
+    build_file = "hack/bazel/BUILD.helm-darwin",
+)
+
+new_http_archive(
+    name = "helm_linux",
+    sha256 = "0fa2ed4983b1e4a3f90f776d08b88b0c73fd83f305b5b634175cb15e61342ffe",
+    urls = ["https://storage.googleapis.com/kubernetes-helm/helm-v2.10.0-linux-amd64.tar.gz"],
+    build_file = "hack/bazel/BUILD.helm-linux",
 )

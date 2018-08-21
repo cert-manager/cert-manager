@@ -1,0 +1,7 @@
+filegroup(
+    name = "helm",
+    srcs = [
+        "linux-amd64/helm",
+    ],
+    visibility = ["//visibility:public"],
+)

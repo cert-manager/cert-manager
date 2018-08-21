@@ -32,6 +32,29 @@ workspace_binary(
     cmd = "//docs/generated/reference",
 )
 
+genrule(
+    name = "gethelm",
+    srcs = select({
+        ":darwin": ["@helm_darwin//:helm"],
+        ":k8": ["@helm_linux//:helm"],
+    }),
+    outs = ["helm"],
+    cmd = "cp $(SRCS) $@",
+    visibility = ["//visibility:public"],
+)
+
+config_setting(
+    name = "k8",
+    values = {"host_cpu": "k8"},
+    visibility = ["//visibility:public"],
+)
+
+config_setting(
+    name = "darwin",
+    values = {"host_cpu": "darwin"},
+    visibility = ["//visibility:public"],
+)
+
 filegroup(
     name = "images",
     srcs = [

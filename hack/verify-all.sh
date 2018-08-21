@@ -28,8 +28,11 @@ ${ROOT}/hack/verify-reference-docs.sh
 echo "+++ Running kubernetes codegen checker"
 ${ROOT}/hack/verify-codegen.sh
 
-echo "+++ Running helm chart version checker"
-${ROOT}/hack/verify-chart-version.sh
+# echo "+++ Running helm chart version checker"
+# ${ROOT}/hack/verify-chart-version.sh
+
+echo "+++ Running static manifest checker"
+${ROOT}/hack/verify-deploy-gen.sh
 
 echo "+++ Running dep checker"
 ${ROOT}/hack/verify-deps.sh

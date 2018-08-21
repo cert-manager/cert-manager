@@ -9,7 +9,6 @@ filegroup(
     name = "all-srcs",
     srcs = [
         ":package-srcs",
-        "//contrib/charts/cert-manager/templates:all-srcs",
     ],
     tags = ["automanaged"],
     visibility = ["//visibility:public"],

@@ -39,5 +39,8 @@ gen() {
 	mv "${TMP_OUTPUT}" "${OUTPUT}"
 }
 
+bazel build //:helm
+export PATH="$(bazel info bazel-genfiles)/:$PATH"
+
 gen rbac-values "${REPO_ROOT}/contrib/manifests/cert-manager/with-rbac.yaml"
 gen without-rbac-values "${REPO_ROOT}/contrib/manifests/cert-manager/without-rbac.yaml"
