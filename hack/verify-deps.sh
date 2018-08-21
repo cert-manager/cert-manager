@@ -22,9 +22,9 @@ SCRIPT_ROOT=$(dirname "${BASH_SOURCE}")/..
 
 pushd "${SCRIPT_ROOT}"
 echo "+++ Checking Gopkg.lock is up-to-date"
-dep version
+bazel run //:dep -- version
 echo ""
-dep status
+bazel run //:dep -- check --skip-vendor
 popd
 
 echo "+++ Checking vendor/ is up-to-date"

@@ -14,6 +14,11 @@ git_repository(
     remote = "https://github.com/bazelbuild/bazel-gazelle.git",
     commit = "f4ae892927eeabd060c59693c38e82303f41558d",
 )
+git_repository(
+    name = "io_kubernetes_build",
+    commit = "4ce715fbe67d8fbed05ec2bb47a148e754100a4b",
+    remote = "https://github.com/kubernetes/repo-infra.git",
+)
 load(
     "@io_bazel_rules_go//go:def.bzl",
     "go_rules_dependencies",

@@ -1,4 +1,6 @@
 required = [
+  "github.com/golang/dep/cmd/dep",
+  "github.com/kubernetes-incubator/reference-docs/gen-apidocs",
   "k8s.io/code-generator/cmd/client-gen",
   "k8s.io/code-generator/cmd/conversion-gen",
   "k8s.io/code-generator/cmd/deepcopy-gen",
@@ -28,12 +30,20 @@ required = [
   version = "kubernetes-1.10.0"
 
 [[constraint]]
-    name = "github.com/Azure/azure-sdk-for-go"
-    version = "v12.0.0-beta"
+  name = "github.com/Azure/azure-sdk-for-go"
+  version = "v12.0.0-beta"
 
 [[constraint]]
   name = "github.com/hashicorp/vault"
   version = "v0.9.3"
+
+[[constraint]]
+  name = "github.com/golang/dep"
+  version = "v0.5.0"
+
+[[constraint]]
+  name = "github.com/kubernetes-incubator/reference-docs"
+  branch = "kubebuilder"
 
 # gengo needs to be manually pinned to the version listed in code-generators
 # Gopkg.toml, because the k8s project does not produce Gopkg.toml files & dep

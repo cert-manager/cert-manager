@@ -1,5 +1,6 @@
 load("@bazel_gazelle//:def.bzl", "gazelle")
 load("@io_bazel_rules_docker//container:container.bzl", "container_image", "container_push")
+load("@io_kubernetes_build//defs:run_in_workspace.bzl", "workspace_binary")
 
 gazelle(
     name = "gazelle",
@@ -9,6 +10,26 @@ gazelle(
         "BUILD.bazel",
     ],
     prefix = "github.com/jetstack/cert-manager",
+)
+
+workspace_binary(
+    name = "dep",
+    cmd = "//vendor/github.com/golang/dep/cmd/dep",
+)
+
+workspace_binary(
+    name = "openapi-gen",
+    cmd = "//vendor/k8s.io/code-generator/cmd/openapi-gen",
+)
+
+workspace_binary(
+    name = "gen-apidocs",
+    cmd = "//vendor/github.com/kubernetes-incubator/reference-docs/gen-apidocs",
+)
+
+workspace_binary(
+    name = "gen-swagger",
+    cmd = "//docs/generated/reference",
 )
 
 filegroup(
