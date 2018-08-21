@@ -20,7 +20,7 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-SCRIPT_ROOT=$(dirname ${BASH_SOURCE})/..
+SCRIPT_ROOT=$(dirname ${BASH_SOURCE})/../..
 
 cat <<EOF
 STABLE_DOCKER_TAG build
