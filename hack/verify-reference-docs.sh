@@ -34,7 +34,7 @@ cleanup
 mkdir -p "${TMP_DIFFROOT}"
 cp -a "${DIFFROOT}"/* "${TMP_DIFFROOT}"
 
-"${SCRIPT_ROOT}/hack/update-reference-docs-dockerized.sh"
+"${SCRIPT_ROOT}/hack/update-reference-docs.sh"
 echo "diffing ${DIFFROOT} against freshly generated reference docs"
 ret=0
 diff -Naupr "${DIFFROOT}" "${TMP_DIFFROOT}" || ret=$?

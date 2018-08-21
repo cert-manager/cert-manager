@@ -93,6 +93,7 @@ filegroup(
     srcs = [
         ":package-srcs",
         "//hack/boilerplate:all-srcs",
+        "//hack/brodocs:all-srcs",
     ],
     tags = ["automanaged"],
     visibility = ["//visibility:public"],

@@ -60,7 +60,7 @@ generate:
 # Hack targets
 ##############
 hack_verify:
-	@IMAGE=eu.gcr.io/jetstack-build-infra/gen-apidocs-img $(HACK_DIR)/verify-all.sh
+	$(HACK_DIR)/verify-all.sh
 
 # Go targets
 #################

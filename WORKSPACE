@@ -1,4 +1,6 @@
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
+load("@bazel_tools//tools/build_defs/repo:git.bzl", "new_git_repository")
+
 http_archive(
     name = "io_bazel_rules_go",
     urls = ["https://github.com/bazelbuild/rules_go/releases/download/0.14.0/rules_go-0.14.0.tar.gz"],
@@ -58,4 +60,38 @@ container_pull(
     registry = "index.docker.io",
     repository = "library/alpine",
     tag = "3.5",
+)
+
+new_git_repository(
+    name = "brodocs",
+    remote = "https://github.com/munnerz/brodocs.git",
+    commit = "94937a75f3fd680df04a2cfb06ea7299aad156e9",
+    build_file_content = """
+filegroup(
+    name = "all-srcs",
+    srcs = glob(["**/*"]),
+    visibility = ["//visibility:public"],
+)
+""",
+)
+
+git_repository(
+    name = "build_bazel_rules_nodejs",
+    remote = "https://github.com/bazelbuild/rules_nodejs.git",
+    tag = "0.11.5", # check for the latest tag when you install
+)
+
+load("@build_bazel_rules_nodejs//:package.bzl", "rules_nodejs_dependencies")
+rules_nodejs_dependencies()
+
+load("@build_bazel_rules_nodejs//:defs.bzl", "node_repositories")
+
+node_repositories(package_json = ["@brodocs//:package.json"])
+
+load("@build_bazel_rules_nodejs//:defs.bzl", "npm_install")
+
+npm_install(
+    name = "brodocs_modules",
+    package_json = "@brodocs//:package.json",
+    package_lock_json = "//hack/brodocs:package-lock.json",
 )
