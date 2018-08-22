@@ -1,6 +1,7 @@
 load("@bazel_gazelle//:def.bzl", "gazelle")
 load("@io_bazel_rules_docker//container:container.bzl", "container_image", "container_push")
 load("@io_kubernetes_build//defs:run_in_workspace.bzl", "workspace_binary")
+load("@com_github_atlassian_bazel_tools//goimports:def.bzl", "goimports")
 
 gazelle(
     name = "gazelle",
@@ -43,6 +44,20 @@ workspace_binary(
 workspace_binary(
     name = "gen-swagger",
     cmd = "//docs/generated/reference",
+)
+
+goimports(
+    name = "goimports",
+    display_diffs = True,
+    write = True,
+    prefix = "github.com/jetstack/cert-manager",
+)
+
+goimports(
+    name = "goimports-verify",
+    display_diffs = True,
+    report_all_errors = True,
+    prefix = "github.com/jetstack/cert-manager",
 )
 
 genrule(

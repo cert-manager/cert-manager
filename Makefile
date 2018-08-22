@@ -62,6 +62,9 @@ generate:
 hack_verify:
 	$(HACK_DIR)/verify-all.sh
 
+verify_pr:
+	$(HACK_DIR)/verify-chart-version.sh
+
 # Go targets
 #################
 go_verify: go_test

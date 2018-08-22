@@ -19,6 +19,12 @@ git_repository(
     remote = "https://github.com/kubernetes/repo-infra.git",
 )
 
+http_archive(
+    name = "com_github_atlassian_bazel_tools",
+    strip_prefix = "bazel-tools-e0e575b8a809c4565ef189be871bb6b11cd91043",
+    urls = ["https://github.com/atlassian/bazel-tools/archive/e0e575b8a809c4565ef189be871bb6b11cd91043.zip"],
+)
+
 load(
     "@io_bazel_rules_go//go:def.bzl",
     "go_rules_dependencies",
@@ -131,3 +137,6 @@ http_file(
     sha256 = "be07a37307759c68696c989058b3446390dd6e8aa6fdca6f44f04ae3c37212c5",
     urls = ["https://github.com/bazelbuild/buildtools/releases/download/0.15.0/buildozer"],
 )
+
+load("@com_github_atlassian_bazel_tools//goimports:deps.bzl", "goimports_dependencies")
+goimports_dependencies()

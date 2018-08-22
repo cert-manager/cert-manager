@@ -22,6 +22,9 @@ set -o pipefail
 
 ROOT="$(cd "$(dirname "$0")" && pwd -P)"/..
 
+echo "+++ Running go format checker"
+${ROOT}/hack/verify-fmt.sh
+
 echo "+++ Running bazel checker"
 ${ROOT}/hack/verify-bazel.sh
 
@@ -31,6 +34,7 @@ ${ROOT}/hack/verify-reference-docs.sh
 echo "+++ Running kubernetes codegen checker"
 ${ROOT}/hack/verify-codegen.sh
 
+# This is run as a separate job that requires docker during CI
 # echo "+++ Running helm chart version checker"
 # ${ROOT}/hack/verify-chart-version.sh
 
