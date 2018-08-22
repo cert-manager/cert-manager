@@ -6,7 +6,7 @@ go_library(
         "ast.go",
         "walk.go",
     ],
-    importmap = "vendor/github.com/hashicorp/hcl/hcl/ast",
+    importmap = "github.com/jetstack/cert-manager/vendor/github.com/hashicorp/hcl/hcl/ast",
     importpath = "github.com/hashicorp/hcl/hcl/ast",
     tags = ["manual"],
     visibility = ["//visibility:public"],

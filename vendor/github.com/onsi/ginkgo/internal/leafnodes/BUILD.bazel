@@ -13,7 +13,7 @@ go_library(
         "synchronized_after_suite_node.go",
         "synchronized_before_suite_node.go",
     ],
-    importmap = "vendor/github.com/onsi/ginkgo/internal/leafnodes",
+    importmap = "github.com/jetstack/cert-manager/vendor/github.com/onsi/ginkgo/internal/leafnodes",
     importpath = "github.com/onsi/ginkgo/internal/leafnodes",
     tags = ["manual"],
     visibility = ["//vendor/github.com/onsi/ginkgo:__subpackages__"],
@@ -25,7 +25,7 @@ go_library(
 )
 
 go_test(
-    name = "go_default_xtest",
+    name = "go_default_test",
     srcs = [
         "it_node_test.go",
         "leaf_node_suite_test.go",
@@ -36,9 +36,9 @@ go_test(
         "synchronized_after_suite_node_test.go",
         "synchronized_before_suite_node_test.go",
     ],
+    embed = [":go_default_library"],
     tags = ["manual"],
     deps = [
-        ":go_default_library",
         "//vendor/github.com/onsi/ginkgo:go_default_library",
         "//vendor/github.com/onsi/ginkgo/internal/codelocation:go_default_library",
         "//vendor/github.com/onsi/ginkgo/internal/failer:go_default_library",

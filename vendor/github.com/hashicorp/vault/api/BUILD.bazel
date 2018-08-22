@@ -31,7 +31,7 @@ go_library(
         "sys_seal.go",
         "sys_stepdown.go",
     ],
-    importmap = "vendor/github.com/hashicorp/vault/api",
+    importmap = "github.com/jetstack/cert-manager/vendor/github.com/hashicorp/vault/api",
     importpath = "github.com/hashicorp/vault/api",
     tags = ["manual"],
     visibility = ["//visibility:public"],
@@ -54,26 +54,18 @@ go_library(
 go_test(
     name = "go_default_test",
     srcs = [
+        "api_integration_test.go",
         "api_test.go",
         "client_test.go",
+        "renewer_integration_test.go",
         "renewer_test.go",
         "request_test.go",
+        "secret_test.go",
         "ssh_agent_test.go",
     ],
     embed = [":go_default_library"],
     tags = ["manual"],
-)
-
-go_test(
-    name = "go_default_xtest",
-    srcs = [
-        "api_integration_test.go",
-        "renewer_integration_test.go",
-        "secret_test.go",
-    ],
-    tags = ["manual"],
     deps = [
-        ":go_default_library",
         "//vendor/github.com/hashicorp/vault/audit:go_default_library",
         "//vendor/github.com/hashicorp/vault/builtin/audit/file:go_default_library",
         "//vendor/github.com/hashicorp/vault/builtin/credential/userpass:go_default_library",

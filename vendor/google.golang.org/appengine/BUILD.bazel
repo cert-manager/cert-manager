@@ -10,7 +10,7 @@ go_library(
         "namespace.go",
         "timeout.go",
     ],
-    importmap = "vendor/google.golang.org/appengine",
+    importmap = "github.com/jetstack/cert-manager/vendor/google.golang.org/appengine",
     importpath = "google.golang.org/appengine",
     tags = ["manual"],
     visibility = ["//visibility:public"],

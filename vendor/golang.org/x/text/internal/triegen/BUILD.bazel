@@ -7,19 +7,19 @@ go_library(
         "print.go",
         "triegen.go",
     ],
-    importmap = "vendor/golang.org/x/text/internal/triegen",
+    importmap = "github.com/jetstack/cert-manager/vendor/golang.org/x/text/internal/triegen",
     importpath = "golang.org/x/text/internal/triegen",
     tags = ["manual"],
     visibility = ["//vendor/golang.org/x/text:__subpackages__"],
 )
 
 go_test(
-    name = "go_default_xtest",
+    name = "go_default_test",
     srcs = [
         "data_test.go",
         "example_compact_test.go",
         "example_test.go",
     ],
+    embed = [":go_default_library"],
     tags = ["manual"],
-    deps = [":go_default_library"],
 )

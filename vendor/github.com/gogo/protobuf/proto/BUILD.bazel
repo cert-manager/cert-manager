@@ -27,7 +27,7 @@ go_library(
         "timestamp.go",
         "timestamp_gogo.go",
     ],
-    importmap = "vendor/github.com/gogo/protobuf/proto",
+    importmap = "github.com/jetstack/cert-manager/vendor/github.com/gogo/protobuf/proto",
     importpath = "github.com/gogo/protobuf/proto",
     tags = ["manual"],
     visibility = ["//visibility:public"],
@@ -35,16 +35,6 @@ go_library(
 
 go_test(
     name = "go_default_test",
-    srcs = [
-        "message_set_test.go",
-        "size2_test.go",
-    ],
-    embed = [":go_default_library"],
-    tags = ["manual"],
-)
-
-go_test(
-    name = "go_default_xtest",
     srcs = [
         "all_test.go",
         "any_test.go",
@@ -54,14 +44,16 @@ go_test(
         "equal_test.go",
         "extensions_test.go",
         "map_test.go",
+        "message_set_test.go",
         "proto3_test.go",
+        "size2_test.go",
         "size_test.go",
         "text_parser_test.go",
         "text_test.go",
     ],
+    embed = [":go_default_library"],
     tags = ["manual"],
     deps = [
-        ":go_default_library",
         "//vendor/github.com/gogo/protobuf/proto/proto3_proto:go_default_library",
         "//vendor/github.com/gogo/protobuf/proto/testdata:go_default_library",
         "//vendor/github.com/gogo/protobuf/types:go_default_library",

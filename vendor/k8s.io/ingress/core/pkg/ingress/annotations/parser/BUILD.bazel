@@ -3,7 +3,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 go_library(
     name = "go_default_library",
     srcs = ["main.go"],
-    importmap = "vendor/k8s.io/ingress/core/pkg/ingress/annotations/parser",
+    importmap = "github.com/jetstack/cert-manager/vendor/k8s.io/ingress/core/pkg/ingress/annotations/parser",
     importpath = "k8s.io/ingress/core/pkg/ingress/annotations/parser",
     tags = ["manual"],
     visibility = ["//visibility:public"],

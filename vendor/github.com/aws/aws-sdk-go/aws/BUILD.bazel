@@ -17,7 +17,7 @@ go_library(
         "url_1_7.go",
         "version.go",
     ],
-    importmap = "vendor/github.com/aws/aws-sdk-go/aws",
+    importmap = "github.com/jetstack/cert-manager/vendor/github.com/aws/aws-sdk-go/aws",
     importpath = "github.com/aws/aws-sdk-go/aws",
     tags = ["manual"],
     visibility = ["//visibility:public"],
@@ -32,6 +32,7 @@ go_test(
     name = "go_default_test",
     srcs = [
         "config_test.go",
+        "context_test.go",
         "convert_types_test.go",
         "types_test.go",
     ],
@@ -39,16 +40,7 @@ go_test(
     tags = ["manual"],
     deps = [
         "//vendor/github.com/aws/aws-sdk-go/aws/credentials:go_default_library",
-        "//vendor/github.com/stretchr/testify/assert:go_default_library",
-    ],
-)
-
-go_test(
-    name = "go_default_xtest",
-    srcs = ["context_test.go"],
-    tags = ["manual"],
-    deps = [
-        ":go_default_library",
         "//vendor/github.com/aws/aws-sdk-go/awstesting:go_default_library",
+        "//vendor/github.com/stretchr/testify/assert:go_default_library",
     ],
 )

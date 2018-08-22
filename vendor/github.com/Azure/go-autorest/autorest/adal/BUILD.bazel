@@ -11,7 +11,7 @@ go_library(
         "sender.go",
         "token.go",
     ],
-    importmap = "vendor/github.com/Azure/go-autorest/autorest/adal",
+    importmap = "github.com/jetstack/cert-manager/vendor/github.com/Azure/go-autorest/autorest/adal",
     importpath = "github.com/Azure/go-autorest/autorest/adal",
     tags = ["manual"],
     visibility = ["//visibility:public"],

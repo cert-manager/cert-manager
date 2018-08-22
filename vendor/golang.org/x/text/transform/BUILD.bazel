@@ -3,7 +3,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 go_library(
     name = "go_default_library",
     srcs = ["transform.go"],
-    importmap = "vendor/golang.org/x/text/transform",
+    importmap = "github.com/jetstack/cert-manager/vendor/golang.org/x/text/transform",
     importpath = "golang.org/x/text/transform",
     tags = ["manual"],
     visibility = ["//visibility:public"],
@@ -11,18 +11,14 @@ go_library(
 
 go_test(
     name = "go_default_test",
-    srcs = ["transform_test.go"],
+    srcs = [
+        "examples_test.go",
+        "transform_test.go",
+    ],
     embed = [":go_default_library"],
     tags = ["manual"],
-    deps = ["//vendor/golang.org/x/text/internal/testtext:go_default_library"],
-)
-
-go_test(
-    name = "go_default_xtest",
-    srcs = ["examples_test.go"],
-    tags = ["manual"],
     deps = [
-        ":go_default_library",
+        "//vendor/golang.org/x/text/internal/testtext:go_default_library",
         "//vendor/golang.org/x/text/unicode/norm:go_default_library",
     ],
 )

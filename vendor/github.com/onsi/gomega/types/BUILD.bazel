@@ -3,7 +3,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 go_library(
     name = "go_default_library",
     srcs = ["types.go"],
-    importmap = "vendor/github.com/onsi/gomega/types",
+    importmap = "github.com/jetstack/cert-manager/vendor/github.com/onsi/gomega/types",
     importpath = "github.com/onsi/gomega/types",
     tags = ["manual"],
     visibility = ["//visibility:public"],

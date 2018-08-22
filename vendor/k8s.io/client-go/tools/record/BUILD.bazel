@@ -8,7 +8,7 @@ go_library(
         "events_cache.go",
         "fake.go",
     ],
-    importmap = "vendor/k8s.io/client-go/tools/record",
+    importmap = "github.com/jetstack/cert-manager/vendor/k8s.io/client-go/tools/record",
     importpath = "k8s.io/client-go/tools/record",
     tags = ["manual"],
     visibility = ["//visibility:public"],

@@ -16,7 +16,7 @@ go_library(
         "util.go",
         "yaml.go",
     ],
-    importmap = "vendor/github.com/go-openapi/swag",
+    importmap = "github.com/jetstack/cert-manager/vendor/github.com/go-openapi/swag",
     importpath = "github.com/go-openapi/swag",
     tags = ["manual"],
     visibility = ["//visibility:public"],

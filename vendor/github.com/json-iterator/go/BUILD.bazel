@@ -42,7 +42,7 @@ go_library(
         "feature_stream_string.go",
         "jsoniter.go",
     ],
-    importmap = "vendor/github.com/json-iterator/go",
+    importmap = "github.com/jetstack/cert-manager/vendor/github.com/json-iterator/go",
     importpath = "github.com/json-iterator/go",
     tags = ["manual"],
     visibility = ["//visibility:public"],

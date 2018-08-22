@@ -6,7 +6,7 @@ go_library(
         "big5.go",
         "tables.go",
     ],
-    importmap = "vendor/golang.org/x/text/encoding/traditionalchinese",
+    importmap = "github.com/jetstack/cert-manager/vendor/golang.org/x/text/encoding/traditionalchinese",
     importpath = "golang.org/x/text/encoding/traditionalchinese",
     tags = ["manual"],
     visibility = ["//visibility:public"],

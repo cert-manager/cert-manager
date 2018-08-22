@@ -7,7 +7,7 @@ go_library(
         "lockfile_unix.go",
         "lockfile_windows.go",
     ],
-    importmap = "vendor/github.com/nightlyone/lockfile",
+    importmap = "github.com/jetstack/cert-manager/vendor/github.com/nightlyone/lockfile",
     importpath = "github.com/nightlyone/lockfile",
     tags = ["manual"],
     visibility = ["//visibility:public"],

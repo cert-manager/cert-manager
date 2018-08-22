@@ -6,7 +6,7 @@ go_library(
         "pb.go",
         "source_cache.pb.go",
     ],
-    importmap = "vendor/github.com/golang/dep/gps/internal/pb",
+    importmap = "github.com/jetstack/cert-manager/vendor/github.com/golang/dep/gps/internal/pb",
     importpath = "github.com/golang/dep/gps/internal/pb",
     tags = ["manual"],
     visibility = ["//vendor/github.com/golang/dep/gps:__subpackages__"],

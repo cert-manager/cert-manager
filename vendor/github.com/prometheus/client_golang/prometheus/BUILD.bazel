@@ -21,7 +21,7 @@ go_library(
         "value.go",
         "vec.go",
     ],
-    importmap = "vendor/github.com/prometheus/client_golang/prometheus",
+    importmap = "github.com/jetstack/cert-manager/vendor/github.com/prometheus/client_golang/prometheus",
     importpath = "github.com/prometheus/client_golang/prometheus",
     tags = ["manual"],
     visibility = ["//visibility:public"],
@@ -40,38 +40,26 @@ go_test(
     srcs = [
         "benchmark_test.go",
         "counter_test.go",
+        "example_clustermanager_test.go",
+        "examples_test.go",
+        "expvar_collector_test.go",
         "gauge_test.go",
         "go_collector_test.go",
         "histogram_test.go",
         "http_test.go",
         "metric_test.go",
         "process_collector_test.go",
+        "registry_test.go",
         "summary_test.go",
         "vec_test.go",
     ],
     embed = [":go_default_library"],
     tags = ["manual"],
     deps = [
-        "//vendor/github.com/prometheus/client_model/go:go_default_library",
-        "//vendor/github.com/prometheus/common/expfmt:go_default_library",
-        "//vendor/github.com/prometheus/procfs:go_default_library",
-    ],
-)
-
-go_test(
-    name = "go_default_xtest",
-    srcs = [
-        "example_clustermanager_test.go",
-        "examples_test.go",
-        "expvar_collector_test.go",
-        "registry_test.go",
-    ],
-    tags = ["manual"],
-    deps = [
-        ":go_default_library",
         "//vendor/github.com/golang/protobuf/proto:go_default_library",
         "//vendor/github.com/prometheus/client_golang/prometheus/promhttp:go_default_library",
         "//vendor/github.com/prometheus/client_model/go:go_default_library",
         "//vendor/github.com/prometheus/common/expfmt:go_default_library",
+        "//vendor/github.com/prometheus/procfs:go_default_library",
     ],
 )

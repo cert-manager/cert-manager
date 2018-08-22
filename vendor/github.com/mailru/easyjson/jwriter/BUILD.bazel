@@ -3,7 +3,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 go_library(
     name = "go_default_library",
     srcs = ["writer.go"],
-    importmap = "vendor/github.com/mailru/easyjson/jwriter",
+    importmap = "github.com/jetstack/cert-manager/vendor/github.com/mailru/easyjson/jwriter",
     importpath = "github.com/mailru/easyjson/jwriter",
     tags = ["manual"],
     visibility = ["//visibility:public"],

@@ -8,7 +8,7 @@ go_library(
         "paths.go",
         "types.go",
     ],
-    importmap = "vendor/github.com/jmank88/nuts",
+    importmap = "github.com/jetstack/cert-manager/vendor/github.com/jmank88/nuts",
     importpath = "github.com/jmank88/nuts",
     tags = ["manual"],
     visibility = ["//visibility:public"],

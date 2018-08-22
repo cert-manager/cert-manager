@@ -17,23 +17,21 @@ go_library(
         "yamlh.go",
         "yamlprivateh.go",
     ],
-    importmap = "vendor/gopkg.in/yaml.v2",
+    importmap = "github.com/jetstack/cert-manager/vendor/gopkg.in/yaml.v2",
     importpath = "gopkg.in/yaml.v2",
     tags = ["manual"],
     visibility = ["//visibility:public"],
 )
 
 go_test(
-    name = "go_default_xtest",
+    name = "go_default_test",
     srcs = [
         "decode_test.go",
         "encode_test.go",
         "example_embedded_test.go",
         "suite_test.go",
     ],
+    embed = [":go_default_library"],
     tags = ["manual"],
-    deps = [
-        ":go_default_library",
-        "//vendor/gopkg.in/check.v1:go_default_library",
-    ],
+    deps = ["//vendor/gopkg.in/check.v1:go_default_library"],
 )

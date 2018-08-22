@@ -9,7 +9,7 @@ go_library(
         "errors.go",
         "service.go",
     ],
-    importmap = "vendor/github.com/aws/aws-sdk-go/service/sts",
+    importmap = "github.com/jetstack/cert-manager/vendor/github.com/aws/aws-sdk-go/service/sts",
     importpath = "github.com/aws/aws-sdk-go/service/sts",
     tags = ["manual"],
     visibility = ["//visibility:public"],
@@ -25,14 +25,14 @@ go_library(
 )
 
 go_test(
-    name = "go_default_xtest",
+    name = "go_default_test",
     srcs = [
         "customizations_test.go",
         "examples_test.go",
     ],
+    embed = [":go_default_library"],
     tags = ["manual"],
     deps = [
-        ":go_default_library",
         "//vendor/github.com/aws/aws-sdk-go/aws:go_default_library",
         "//vendor/github.com/aws/aws-sdk-go/aws/awserr:go_default_library",
         "//vendor/github.com/aws/aws-sdk-go/aws/session:go_default_library",

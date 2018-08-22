@@ -8,7 +8,7 @@ go_library(
         "uri_path.go",
         "v4.go",
     ],
-    importmap = "vendor/github.com/aws/aws-sdk-go/aws/signer/v4",
+    importmap = "github.com/jetstack/cert-manager/vendor/github.com/aws/aws-sdk-go/aws/signer/v4",
     importpath = "github.com/aws/aws-sdk-go/aws/signer/v4",
     tags = ["manual"],
     visibility = ["//visibility:public"],
@@ -23,6 +23,8 @@ go_library(
 go_test(
     name = "go_default_test",
     srcs = [
+        "functional_1_5_test.go",
+        "functional_test.go",
         "header_rules_test.go",
         "v4_test.go",
     ],
@@ -33,20 +35,6 @@ go_test(
         "//vendor/github.com/aws/aws-sdk-go/aws/credentials:go_default_library",
         "//vendor/github.com/aws/aws-sdk-go/aws/request:go_default_library",
         "//vendor/github.com/aws/aws-sdk-go/awstesting:go_default_library",
-        "//vendor/github.com/stretchr/testify/assert:go_default_library",
-    ],
-)
-
-go_test(
-    name = "go_default_xtest",
-    srcs = [
-        "functional_1_5_test.go",
-        "functional_test.go",
-    ],
-    tags = ["manual"],
-    deps = [
-        ":go_default_library",
-        "//vendor/github.com/aws/aws-sdk-go/aws:go_default_library",
         "//vendor/github.com/aws/aws-sdk-go/awstesting/unit:go_default_library",
         "//vendor/github.com/aws/aws-sdk-go/service/s3:go_default_library",
         "//vendor/github.com/stretchr/testify/assert:go_default_library",

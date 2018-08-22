@@ -12,7 +12,7 @@ go_library(
         "suffix.go",
         "zz_generated.deepcopy.go",
     ],
-    importmap = "vendor/k8s.io/apimachinery/pkg/api/resource",
+    importmap = "github.com/jetstack/cert-manager/vendor/k8s.io/apimachinery/pkg/api/resource",
     importpath = "k8s.io/apimachinery/pkg/api/resource",
     tags = ["manual"],
     visibility = ["//visibility:public"],
@@ -28,6 +28,7 @@ go_test(
     srcs = [
         "amount_test.go",
         "math_test.go",
+        "quantity_example_test.go",
         "quantity_proto_test.go",
         "quantity_test.go",
         "scale_int_test.go",
@@ -39,11 +40,4 @@ go_test(
         "//vendor/github.com/spf13/pflag:go_default_library",
         "//vendor/gopkg.in/inf.v0:go_default_library",
     ],
-)
-
-go_test(
-    name = "go_default_xtest",
-    srcs = ["quantity_example_test.go"],
-    tags = ["manual"],
-    deps = [":go_default_library"],
 )

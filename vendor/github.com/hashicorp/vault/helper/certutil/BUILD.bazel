@@ -7,7 +7,7 @@ go_library(
         "pkcs8.go",
         "types.go",
     ],
-    importmap = "vendor/github.com/hashicorp/vault/helper/certutil",
+    importmap = "github.com/jetstack/cert-manager/vendor/github.com/hashicorp/vault/helper/certutil",
     importpath = "github.com/hashicorp/vault/helper/certutil",
     tags = ["manual"],
     visibility = ["//visibility:public"],

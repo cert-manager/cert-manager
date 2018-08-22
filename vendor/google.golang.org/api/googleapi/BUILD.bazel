@@ -6,7 +6,7 @@ go_library(
         "googleapi.go",
         "types.go",
     ],
-    importmap = "vendor/google.golang.org/api/googleapi",
+    importmap = "github.com/jetstack/cert-manager/vendor/google.golang.org/api/googleapi",
     importpath = "google.golang.org/api/googleapi",
     tags = ["manual"],
     visibility = ["//visibility:public"],

@@ -6,7 +6,7 @@ go_library(
         "gomega_dsl.go",
         "matchers.go",
     ],
-    importmap = "vendor/github.com/onsi/gomega",
+    importmap = "github.com/jetstack/cert-manager/vendor/github.com/onsi/gomega",
     importpath = "github.com/onsi/gomega",
     tags = ["manual"],
     visibility = ["//visibility:public"],

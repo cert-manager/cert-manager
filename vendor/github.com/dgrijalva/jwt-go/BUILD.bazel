@@ -18,14 +18,14 @@ go_library(
         "signing_method.go",
         "token.go",
     ],
-    importmap = "vendor/github.com/dgrijalva/jwt-go",
+    importmap = "github.com/jetstack/cert-manager/vendor/github.com/dgrijalva/jwt-go",
     importpath = "github.com/dgrijalva/jwt-go",
     tags = ["manual"],
     visibility = ["//visibility:public"],
 )
 
 go_test(
-    name = "go_default_xtest",
+    name = "go_default_test",
     srcs = [
         "ecdsa_test.go",
         "example_test.go",
@@ -37,9 +37,9 @@ go_test(
         "rsa_pss_test.go",
         "rsa_test.go",
     ],
+    embed = [":go_default_library"],
     tags = ["manual"],
     deps = [
-        ":go_default_library",
         "//vendor/github.com/dgrijalva/jwt-go/request:go_default_library",
         "//vendor/github.com/dgrijalva/jwt-go/test:go_default_library",
     ],

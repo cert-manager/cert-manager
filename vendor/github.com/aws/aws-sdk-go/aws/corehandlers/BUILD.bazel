@@ -6,7 +6,7 @@ go_library(
         "handlers.go",
         "param_validator.go",
     ],
-    importmap = "vendor/github.com/aws/aws-sdk-go/aws/corehandlers",
+    importmap = "github.com/jetstack/cert-manager/vendor/github.com/aws/aws-sdk-go/aws/corehandlers",
     importpath = "github.com/aws/aws-sdk-go/aws/corehandlers",
     tags = ["manual"],
     visibility = ["//visibility:public"],
@@ -19,15 +19,15 @@ go_library(
 )
 
 go_test(
-    name = "go_default_xtest",
+    name = "go_default_test",
     srcs = [
         "handlers_1_8_test.go",
         "handlers_test.go",
         "param_validator_test.go",
     ],
+    embed = [":go_default_library"],
     tags = ["manual"],
     deps = [
-        ":go_default_library",
         "//vendor/github.com/aws/aws-sdk-go/aws:go_default_library",
         "//vendor/github.com/aws/aws-sdk-go/aws/awserr:go_default_library",
         "//vendor/github.com/aws/aws-sdk-go/aws/client:go_default_library",

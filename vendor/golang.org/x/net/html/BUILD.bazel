@@ -14,7 +14,7 @@ go_library(
         "render.go",
         "token.go",
     ],
-    importmap = "vendor/golang.org/x/net/html",
+    importmap = "github.com/jetstack/cert-manager/vendor/golang.org/x/net/html",
     importpath = "golang.org/x/net/html",
     tags = ["manual"],
     visibility = ["//visibility:public"],
@@ -26,6 +26,7 @@ go_test(
     srcs = [
         "entity_test.go",
         "escape_test.go",
+        "example_test.go",
         "node_test.go",
         "parse_test.go",
         "render_test.go",
@@ -34,11 +35,4 @@ go_test(
     embed = [":go_default_library"],
     tags = ["manual"],
     deps = ["//vendor/golang.org/x/net/html/atom:go_default_library"],
-)
-
-go_test(
-    name = "go_default_xtest",
-    srcs = ["example_test.go"],
-    tags = ["manual"],
-    deps = [":go_default_library"],
 )

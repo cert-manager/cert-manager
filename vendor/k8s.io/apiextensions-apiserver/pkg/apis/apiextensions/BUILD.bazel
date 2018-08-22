@@ -11,7 +11,7 @@ go_library(
         "types_jsonschema.go",
         "zz_generated.deepcopy.go",
     ],
-    importmap = "vendor/k8s.io/apiextensions-apiserver/pkg/apis/apiextensions",
+    importmap = "github.com/jetstack/cert-manager/vendor/k8s.io/apiextensions-apiserver/pkg/apis/apiextensions",
     importpath = "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions",
     tags = ["manual"],
     visibility = ["//visibility:public"],

@@ -11,7 +11,7 @@ go_library(
         "watch.go",
         "zz_generated.deepcopy.go",
     ],
-    importmap = "vendor/k8s.io/apimachinery/pkg/watch",
+    importmap = "github.com/jetstack/cert-manager/vendor/k8s.io/apimachinery/pkg/watch",
     importpath = "k8s.io/apimachinery/pkg/watch",
     tags = ["manual"],
     visibility = ["//visibility:public"],
@@ -27,27 +27,16 @@ go_library(
 
 go_test(
     name = "go_default_test",
-    srcs = ["until_test.go"],
-    embed = [":go_default_library"],
-    tags = ["manual"],
-    deps = [
-        "//vendor/k8s.io/apimachinery/pkg/runtime:go_default_library",
-        "//vendor/k8s.io/apimachinery/pkg/runtime/schema:go_default_library",
-        "//vendor/k8s.io/apimachinery/pkg/util/wait:go_default_library",
-    ],
-)
-
-go_test(
-    name = "go_default_xtest",
     srcs = [
         "filter_test.go",
         "mux_test.go",
         "streamwatcher_test.go",
+        "until_test.go",
         "watch_test.go",
     ],
+    embed = [":go_default_library"],
     tags = ["manual"],
     deps = [
-        ":go_default_library",
         "//vendor/k8s.io/apimachinery/pkg/runtime:go_default_library",
         "//vendor/k8s.io/apimachinery/pkg/runtime/schema:go_default_library",
         "//vendor/k8s.io/apimachinery/pkg/util/wait:go_default_library",

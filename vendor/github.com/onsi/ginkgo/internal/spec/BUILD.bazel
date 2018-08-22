@@ -6,7 +6,7 @@ go_library(
         "spec.go",
         "specs.go",
     ],
-    importmap = "vendor/github.com/onsi/ginkgo/internal/spec",
+    importmap = "github.com/jetstack/cert-manager/vendor/github.com/onsi/ginkgo/internal/spec",
     importpath = "github.com/onsi/ginkgo/internal/spec",
     tags = ["manual"],
     visibility = ["//vendor/github.com/onsi/ginkgo:__subpackages__"],
@@ -18,15 +18,15 @@ go_library(
 )
 
 go_test(
-    name = "go_default_xtest",
+    name = "go_default_test",
     srcs = [
         "spec_suite_test.go",
         "spec_test.go",
         "specs_test.go",
     ],
+    embed = [":go_default_library"],
     tags = ["manual"],
     deps = [
-        ":go_default_library",
         "//vendor/github.com/onsi/ginkgo:go_default_library",
         "//vendor/github.com/onsi/ginkgo/internal/codelocation:go_default_library",
         "//vendor/github.com/onsi/ginkgo/internal/containernode:go_default_library",

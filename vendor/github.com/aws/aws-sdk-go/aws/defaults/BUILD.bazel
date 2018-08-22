@@ -6,7 +6,7 @@ go_library(
         "defaults.go",
         "shared_config.go",
     ],
-    importmap = "vendor/github.com/aws/aws-sdk-go/aws/defaults",
+    importmap = "github.com/jetstack/cert-manager/vendor/github.com/aws/aws-sdk-go/aws/defaults",
     importpath = "github.com/aws/aws-sdk-go/aws/defaults",
     tags = ["manual"],
     visibility = ["//visibility:public"],

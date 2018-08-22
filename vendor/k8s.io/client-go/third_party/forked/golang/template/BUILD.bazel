@@ -6,7 +6,7 @@ go_library(
         "exec.go",
         "funcs.go",
     ],
-    importmap = "vendor/k8s.io/client-go/third_party/forked/golang/template",
+    importmap = "github.com/jetstack/cert-manager/vendor/k8s.io/client-go/third_party/forked/golang/template",
     importpath = "k8s.io/client-go/third_party/forked/golang/template",
     tags = ["manual"],
     visibility = ["//visibility:public"],

@@ -6,7 +6,7 @@ go_library(
         "charmap.go",
         "tables.go",
     ],
-    importmap = "vendor/golang.org/x/text/encoding/charmap",
+    importmap = "github.com/jetstack/cert-manager/vendor/golang.org/x/text/encoding/charmap",
     importpath = "golang.org/x/text/encoding/charmap",
     tags = ["manual"],
     visibility = ["//visibility:public"],

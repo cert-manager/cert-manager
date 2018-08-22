@@ -9,7 +9,7 @@ go_library(
         "reporter.go",
         "teamcity_reporter.go",
     ],
-    importmap = "vendor/github.com/onsi/ginkgo/reporters",
+    importmap = "github.com/jetstack/cert-manager/vendor/github.com/onsi/ginkgo/reporters",
     importpath = "github.com/onsi/ginkgo/reporters",
     tags = ["manual"],
     visibility = ["//visibility:public"],
@@ -21,16 +21,16 @@ go_library(
 )
 
 go_test(
-    name = "go_default_xtest",
+    name = "go_default_test",
     srcs = [
         "default_reporter_test.go",
         "junit_reporter_test.go",
         "reporters_suite_test.go",
         "teamcity_reporter_test.go",
     ],
+    embed = [":go_default_library"],
     tags = ["manual"],
     deps = [
-        ":go_default_library",
         "//vendor/github.com/onsi/ginkgo:go_default_library",
         "//vendor/github.com/onsi/ginkgo/config:go_default_library",
         "//vendor/github.com/onsi/ginkgo/internal/codelocation:go_default_library",

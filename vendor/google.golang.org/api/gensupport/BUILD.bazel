@@ -15,7 +15,7 @@ go_library(
         "retry.go",
         "send.go",
     ],
-    importmap = "vendor/google.golang.org/api/gensupport",
+    importmap = "github.com/jetstack/cert-manager/vendor/google.golang.org/api/gensupport",
     importpath = "google.golang.org/api/gensupport",
     tags = ["manual"],
     visibility = ["//visibility:public"],

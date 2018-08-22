@@ -7,7 +7,7 @@ go_library(
         "group_version.go",
         "interfaces.go",
     ],
-    importmap = "vendor/k8s.io/apimachinery/pkg/runtime/schema",
+    importmap = "github.com/jetstack/cert-manager/vendor/k8s.io/apimachinery/pkg/runtime/schema",
     importpath = "k8s.io/apimachinery/pkg/runtime/schema",
     tags = ["manual"],
     visibility = ["//visibility:public"],

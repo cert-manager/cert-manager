@@ -6,7 +6,7 @@ go_library(
         "position.go",
         "token.go",
     ],
-    importmap = "vendor/github.com/hashicorp/hcl/json/token",
+    importmap = "github.com/jetstack/cert-manager/vendor/github.com/hashicorp/hcl/json/token",
     importpath = "github.com/hashicorp/hcl/json/token",
     tags = ["manual"],
     visibility = ["//visibility:public"],

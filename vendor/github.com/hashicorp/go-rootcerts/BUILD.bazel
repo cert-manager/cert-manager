@@ -8,7 +8,7 @@ go_library(
         "rootcerts_base.go",
         "rootcerts_darwin.go",
     ],
-    importmap = "vendor/github.com/hashicorp/go-rootcerts",
+    importmap = "github.com/jetstack/cert-manager/vendor/github.com/hashicorp/go-rootcerts",
     importpath = "github.com/hashicorp/go-rootcerts",
     tags = ["manual"],
     visibility = ["//visibility:public"],

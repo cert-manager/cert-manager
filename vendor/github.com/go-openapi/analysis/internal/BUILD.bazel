@@ -6,7 +6,7 @@ go_library(
         "post_go18.go",
         "pre_go18.go",
     ],
-    importmap = "vendor/github.com/go-openapi/analysis/internal",
+    importmap = "github.com/jetstack/cert-manager/vendor/github.com/go-openapi/analysis/internal",
     importpath = "github.com/go-openapi/analysis/internal",
     tags = ["manual"],
     visibility = ["//visibility:public"],

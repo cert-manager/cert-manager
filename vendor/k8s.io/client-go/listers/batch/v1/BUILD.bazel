@@ -7,7 +7,7 @@ go_library(
         "job.go",
         "job_expansion.go",
     ],
-    importmap = "vendor/k8s.io/client-go/listers/batch/v1",
+    importmap = "github.com/jetstack/cert-manager/vendor/k8s.io/client-go/listers/batch/v1",
     importpath = "k8s.io/client-go/listers/batch/v1",
     tags = ["manual"],
     visibility = ["//visibility:public"],

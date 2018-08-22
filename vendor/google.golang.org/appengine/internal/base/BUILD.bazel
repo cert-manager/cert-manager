@@ -3,7 +3,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 go_library(
     name = "go_default_library",
     srcs = ["api_base.pb.go"],
-    importmap = "vendor/google.golang.org/appengine/internal/base",
+    importmap = "github.com/jetstack/cert-manager/vendor/google.golang.org/appengine/internal/base",
     importpath = "google.golang.org/appengine/internal/base",
     tags = ["manual"],
     visibility = ["//vendor/google.golang.org/appengine:__subpackages__"],

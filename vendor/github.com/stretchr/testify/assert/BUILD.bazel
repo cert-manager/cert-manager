@@ -10,7 +10,7 @@ go_library(
         "forward_assertions.go",
         "http_assertions.go",
     ],
-    importmap = "vendor/github.com/stretchr/testify/assert",
+    importmap = "github.com/jetstack/cert-manager/vendor/github.com/stretchr/testify/assert",
     importpath = "github.com/stretchr/testify/assert",
     tags = ["manual"],
     visibility = ["//visibility:public"],

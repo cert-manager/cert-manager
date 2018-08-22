@@ -7,7 +7,7 @@ go_library(
         "jws.go",
         "types.go",
     ],
-    importmap = "vendor/golang.org/x/crypto/acme",
+    importmap = "github.com/jetstack/cert-manager/vendor/golang.org/x/crypto/acme",
     importpath = "golang.org/x/crypto/acme",
     tags = ["manual"],
     visibility = ["//visibility:public"],

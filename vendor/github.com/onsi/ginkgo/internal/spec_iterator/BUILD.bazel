@@ -9,7 +9,7 @@ go_library(
         "sharded_parallel_spec_iterator.go",
         "spec_iterator.go",
     ],
-    importmap = "vendor/github.com/onsi/ginkgo/internal/spec_iterator",
+    importmap = "github.com/jetstack/cert-manager/vendor/github.com/onsi/ginkgo/internal/spec_iterator",
     importpath = "github.com/onsi/ginkgo/internal/spec_iterator",
     tags = ["manual"],
     visibility = ["//vendor/github.com/onsi/ginkgo:__subpackages__"],
@@ -17,7 +17,7 @@ go_library(
 )
 
 go_test(
-    name = "go_default_xtest",
+    name = "go_default_test",
     srcs = [
         "index_computer_test.go",
         "parallel_spec_iterator_test.go",
@@ -25,9 +25,9 @@ go_test(
         "sharded_parallel_spec_iterator_test.go",
         "spec_iterator_suite_test.go",
     ],
+    embed = [":go_default_library"],
     tags = ["manual"],
     deps = [
-        ":go_default_library",
         "//vendor/github.com/onsi/ginkgo:go_default_library",
         "//vendor/github.com/onsi/ginkgo/internal/codelocation:go_default_library",
         "//vendor/github.com/onsi/ginkgo/internal/containernode:go_default_library",

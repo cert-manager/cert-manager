@@ -14,7 +14,7 @@ go_library(
         "net.go",
         "transaction.go",
     ],
-    importmap = "vendor/google.golang.org/appengine/internal",
+    importmap = "github.com/jetstack/cert-manager/vendor/google.golang.org/appengine/internal",
     importpath = "google.golang.org/appengine/internal",
     tags = ["manual"],
     visibility = ["//visibility:public"],
@@ -31,6 +31,7 @@ go_library(
 go_test(
     name = "go_default_test",
     srcs = [
+        "api_race_test.go",
         "api_test.go",
         "app_id_test.go",
         "internal_vm_test.go",

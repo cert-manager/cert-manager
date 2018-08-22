@@ -3,7 +3,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 go_library(
     name = "go_default_library",
     srcs = ["metrics.pb.go"],
-    importmap = "vendor/github.com/prometheus/client_model/go",
+    importmap = "github.com/jetstack/cert-manager/vendor/github.com/prometheus/client_model/go",
     importpath = "github.com/prometheus/client_model/go",
     tags = ["manual"],
     visibility = ["//visibility:public"],

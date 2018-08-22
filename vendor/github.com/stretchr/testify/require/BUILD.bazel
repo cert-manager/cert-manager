@@ -9,7 +9,7 @@ go_library(
         "require_forward.go",
         "requirements.go",
     ],
-    importmap = "vendor/github.com/stretchr/testify/require",
+    importmap = "github.com/jetstack/cert-manager/vendor/github.com/stretchr/testify/require",
     importpath = "github.com/stretchr/testify/require",
     tags = ["manual"],
     visibility = ["//visibility:public"],

@@ -9,7 +9,7 @@ go_library(
         "encode.go",
         "json.go",
     ],
-    importmap = "vendor/gopkg.in/mgo.v2/bson",
+    importmap = "github.com/jetstack/cert-manager/vendor/gopkg.in/mgo.v2/bson",
     importpath = "gopkg.in/mgo.v2/bson",
     tags = ["manual"],
     visibility = ["//visibility:public"],
@@ -17,16 +17,16 @@ go_library(
 )
 
 go_test(
-    name = "go_default_xtest",
+    name = "go_default_test",
     srcs = [
         "bson_test.go",
         "decimal_test.go",
         "json_test.go",
         "specdata_test.go",
     ],
+    embed = [":go_default_library"],
     tags = ["manual"],
     deps = [
-        ":go_default_library",
         "//vendor/gopkg.in/check.v1:go_default_library",
         "//vendor/gopkg.in/yaml.v2:go_default_library",
     ],

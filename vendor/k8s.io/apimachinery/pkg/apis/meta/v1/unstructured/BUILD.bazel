@@ -8,7 +8,7 @@ go_library(
         "unstructured_list.go",
         "zz_generated.deepcopy.go",
     ],
-    importmap = "vendor/k8s.io/apimachinery/pkg/apis/meta/v1/unstructured",
+    importmap = "github.com/jetstack/cert-manager/vendor/k8s.io/apimachinery/pkg/apis/meta/v1/unstructured",
     importpath = "k8s.io/apimachinery/pkg/apis/meta/v1/unstructured",
     tags = ["manual"],
     visibility = ["//visibility:public"],

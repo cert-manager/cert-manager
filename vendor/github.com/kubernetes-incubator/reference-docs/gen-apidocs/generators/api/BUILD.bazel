@@ -17,7 +17,7 @@ go_library(
         "types.go",
         "util.go",
     ],
-    importmap = "vendor/github.com/kubernetes-incubator/reference-docs/gen-apidocs/generators/api",
+    importmap = "github.com/jetstack/cert-manager/vendor/github.com/kubernetes-incubator/reference-docs/gen-apidocs/generators/api",
     importpath = "github.com/kubernetes-incubator/reference-docs/gen-apidocs/generators/api",
     tags = ["manual"],
     visibility = ["//visibility:public"],

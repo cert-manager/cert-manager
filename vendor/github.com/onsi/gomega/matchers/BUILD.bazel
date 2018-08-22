@@ -43,7 +43,7 @@ go_library(
         "type_support.go",
         "with_transform.go",
     ],
-    importmap = "vendor/github.com/onsi/gomega/matchers",
+    importmap = "github.com/jetstack/cert-manager/vendor/github.com/onsi/gomega/matchers",
     importpath = "github.com/onsi/gomega/matchers",
     tags = ["manual"],
     visibility = ["//visibility:public"],
@@ -58,7 +58,7 @@ go_library(
 )
 
 go_test(
-    name = "go_default_xtest",
+    name = "go_default_test",
     srcs = [
         "and_test.go",
         "assignable_to_type_of_matcher_test.go",
@@ -100,9 +100,9 @@ go_test(
         "succeed_matcher_test.go",
         "with_transform_test.go",
     ],
+    embed = [":go_default_library"],
     tags = ["manual"],
     deps = [
-        ":go_default_library",
         "//vendor/github.com/onsi/ginkgo:go_default_library",
         "//vendor/github.com/onsi/gomega:go_default_library",
         "//vendor/github.com/onsi/gomega/types:go_default_library",

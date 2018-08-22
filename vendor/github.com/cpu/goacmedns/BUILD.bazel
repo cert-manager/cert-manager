@@ -7,7 +7,7 @@ go_library(
         "client.go",
         "storage.go",
     ],
-    importmap = "vendor/github.com/cpu/goacmedns",
+    importmap = "github.com/jetstack/cert-manager/vendor/github.com/cpu/goacmedns",
     importpath = "github.com/cpu/goacmedns",
     tags = ["manual"],
     visibility = ["//visibility:public"],

@@ -7,7 +7,7 @@ go_library(
         "document.go",
         "openapi.go",
     ],
-    importmap = "vendor/k8s.io/kube-openapi/pkg/util/proto",
+    importmap = "github.com/jetstack/cert-manager/vendor/k8s.io/kube-openapi/pkg/util/proto",
     importpath = "k8s.io/kube-openapi/pkg/util/proto",
     tags = ["manual"],
     visibility = ["//visibility:public"],
@@ -18,14 +18,14 @@ go_library(
 )
 
 go_test(
-    name = "go_default_xtest",
+    name = "go_default_test",
     srcs = [
         "openapi_suite_test.go",
         "openapi_test.go",
     ],
+    embed = [":go_default_library"],
     tags = ["manual"],
     deps = [
-        ":go_default_library",
         "//vendor/github.com/onsi/ginkgo:go_default_library",
         "//vendor/github.com/onsi/ginkgo/config:go_default_library",
         "//vendor/github.com/onsi/ginkgo/types:go_default_library",

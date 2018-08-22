@@ -3,7 +3,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 go_library(
     name = "go_default_library",
     srcs = ["errgroup.go"],
-    importmap = "vendor/golang.org/x/sync/errgroup",
+    importmap = "github.com/jetstack/cert-manager/vendor/golang.org/x/sync/errgroup",
     importpath = "golang.org/x/sync/errgroup",
     tags = ["manual"],
     visibility = ["//visibility:public"],
@@ -11,14 +11,12 @@ go_library(
 )
 
 go_test(
-    name = "go_default_xtest",
+    name = "go_default_test",
     srcs = [
         "errgroup_example_md5all_test.go",
         "errgroup_test.go",
     ],
+    embed = [":go_default_library"],
     tags = ["manual"],
-    deps = [
-        ":go_default_library",
-        "//vendor/golang.org/x/net/context:go_default_library",
-    ],
+    deps = ["//vendor/golang.org/x/net/context:go_default_library"],
 )

@@ -32,7 +32,7 @@ go_library(
         "web_service.go",
         "web_service_container.go",
     ],
-    importmap = "vendor/github.com/emicklei/go-restful",
+    importmap = "github.com/jetstack/cert-manager/vendor/github.com/emicklei/go-restful",
     importpath = "github.com/emicklei/go-restful",
     tags = ["manual"],
     visibility = ["//visibility:public"],

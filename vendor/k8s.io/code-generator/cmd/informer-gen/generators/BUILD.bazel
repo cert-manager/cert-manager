@@ -13,7 +13,7 @@ go_library(
         "types.go",
         "versioninterface.go",
     ],
-    importmap = "vendor/k8s.io/code-generator/cmd/informer-gen/generators",
+    importmap = "github.com/jetstack/cert-manager/vendor/k8s.io/code-generator/cmd/informer-gen/generators",
     importpath = "k8s.io/code-generator/cmd/informer-gen/generators",
     tags = ["manual"],
     visibility = ["//visibility:public"],

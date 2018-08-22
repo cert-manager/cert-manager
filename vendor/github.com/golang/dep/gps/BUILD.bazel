@@ -41,7 +41,7 @@ go_library(
         "version.go",
         "version_queue.go",
     ],
-    importmap = "vendor/github.com/golang/dep/gps",
+    importmap = "github.com/jetstack/cert-manager/vendor/github.com/golang/dep/gps",
     importpath = "github.com/golang/dep/gps",
     tags = ["manual"],
     visibility = ["//visibility:public"],

@@ -7,7 +7,7 @@ go_library(
         "default_retryer.go",
         "logger.go",
     ],
-    importmap = "vendor/github.com/aws/aws-sdk-go/aws/client",
+    importmap = "github.com/jetstack/cert-manager/vendor/github.com/aws/aws-sdk-go/aws/client",
     importpath = "github.com/aws/aws-sdk-go/aws/client",
     tags = ["manual"],
     visibility = ["//visibility:public"],

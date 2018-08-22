@@ -3,7 +3,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 go_library(
     name = "go_default_library",
     srcs = ["discovery.go"],
-    importmap = "vendor/k8s.io/client-go/discovery/fake",
+    importmap = "github.com/jetstack/cert-manager/vendor/k8s.io/client-go/discovery/fake",
     importpath = "k8s.io/client-go/discovery/fake",
     tags = ["manual"],
     visibility = ["//visibility:public"],
@@ -19,11 +19,11 @@ go_library(
 )
 
 go_test(
-    name = "go_default_xtest",
+    name = "go_default_test",
     srcs = ["discovery_test.go"],
+    embed = [":go_default_library"],
     tags = ["manual"],
     deps = [
-        ":go_default_library",
         "//vendor/k8s.io/apimachinery/pkg/version:go_default_library",
         "//vendor/k8s.io/client-go/kubernetes/fake:go_default_library",
     ],

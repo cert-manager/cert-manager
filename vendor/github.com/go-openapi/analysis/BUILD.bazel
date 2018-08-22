@@ -11,7 +11,7 @@ go_library(
         "mixin.go",
         "schema.go",
     ],
-    importmap = "vendor/github.com/go-openapi/analysis",
+    importmap = "github.com/jetstack/cert-manager/vendor/github.com/go-openapi/analysis",
     importpath = "github.com/go-openapi/analysis",
     tags = ["manual"],
     visibility = ["//visibility:public"],
@@ -29,6 +29,7 @@ go_test(
     srcs = [
         "analyzer_test.go",
         "debug_test.go",
+        "doc_test.go",
         "fixer_test.go",
         "flatten_test.go",
         "mixin_test.go",
@@ -38,20 +39,11 @@ go_test(
     tags = ["manual"],
     deps = [
         "//vendor/github.com/go-openapi/jsonpointer:go_default_library",
+        "//vendor/github.com/go-openapi/loads:go_default_library",
         "//vendor/github.com/go-openapi/loads/fmts:go_default_library",
         "//vendor/github.com/go-openapi/spec:go_default_library",
         "//vendor/github.com/go-openapi/swag:go_default_library",
         "//vendor/github.com/stretchr/testify/assert:go_default_library",
         "//vendor/github.com/stretchr/testify/require:go_default_library",
-    ],
-)
-
-go_test(
-    name = "go_default_xtest",
-    srcs = ["doc_test.go"],
-    tags = ["manual"],
-    deps = [
-        ":go_default_library",
-        "//vendor/github.com/go-openapi/loads:go_default_library",
     ],
 )

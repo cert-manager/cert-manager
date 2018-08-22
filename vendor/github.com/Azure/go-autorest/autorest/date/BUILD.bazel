@@ -9,7 +9,7 @@ go_library(
         "unixtime.go",
         "utility.go",
     ],
-    importmap = "vendor/github.com/Azure/go-autorest/autorest/date",
+    importmap = "github.com/jetstack/cert-manager/vendor/github.com/Azure/go-autorest/autorest/date",
     importpath = "github.com/Azure/go-autorest/autorest/date",
     tags = ["manual"],
     visibility = ["//visibility:public"],

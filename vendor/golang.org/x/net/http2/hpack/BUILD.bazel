@@ -8,7 +8,7 @@ go_library(
         "huffman.go",
         "tables.go",
     ],
-    importmap = "vendor/golang.org/x/net/http2/hpack",
+    importmap = "github.com/jetstack/cert-manager/vendor/golang.org/x/net/http2/hpack",
     importpath = "golang.org/x/net/http2/hpack",
     tags = ["manual"],
     visibility = ["//visibility:public"],

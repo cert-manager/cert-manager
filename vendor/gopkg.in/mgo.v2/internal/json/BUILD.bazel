@@ -12,7 +12,7 @@ go_library(
         "stream.go",
         "tags.go",
     ],
-    importmap = "vendor/gopkg.in/mgo.v2/internal/json",
+    importmap = "github.com/jetstack/cert-manager/vendor/gopkg.in/mgo.v2/internal/json",
     importpath = "gopkg.in/mgo.v2/internal/json",
     tags = ["manual"],
     visibility = ["//vendor/gopkg.in/mgo.v2:__subpackages__"],
@@ -24,6 +24,7 @@ go_test(
         "bench_test.go",
         "decode_test.go",
         "encode_test.go",
+        "example_test.go",
         "extension_test.go",
         "fold_test.go",
         "number_test.go",
@@ -33,11 +34,5 @@ go_test(
         "tags_test.go",
     ],
     embed = [":go_default_library"],
-    tags = ["manual"],
-)
-
-go_test(
-    name = "go_default_xtest",
-    srcs = ["example_test.go"],
     tags = ["manual"],
 )

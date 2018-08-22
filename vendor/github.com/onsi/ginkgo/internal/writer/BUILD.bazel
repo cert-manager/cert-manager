@@ -6,21 +6,21 @@ go_library(
         "fake_writer.go",
         "writer.go",
     ],
-    importmap = "vendor/github.com/onsi/ginkgo/internal/writer",
+    importmap = "github.com/jetstack/cert-manager/vendor/github.com/onsi/ginkgo/internal/writer",
     importpath = "github.com/onsi/ginkgo/internal/writer",
     tags = ["manual"],
     visibility = ["//vendor/github.com/onsi/ginkgo:__subpackages__"],
 )
 
 go_test(
-    name = "go_default_xtest",
+    name = "go_default_test",
     srcs = [
         "writer_suite_test.go",
         "writer_test.go",
     ],
+    embed = [":go_default_library"],
     tags = ["manual"],
     deps = [
-        ":go_default_library",
         "//vendor/github.com/onsi/ginkgo:go_default_library",
         "//vendor/github.com/onsi/gomega:go_default_library",
         "//vendor/github.com/onsi/gomega/gbytes:go_default_library",

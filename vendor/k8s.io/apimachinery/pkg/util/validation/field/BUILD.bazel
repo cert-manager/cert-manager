@@ -6,7 +6,7 @@ go_library(
         "errors.go",
         "path.go",
     ],
-    importmap = "vendor/k8s.io/apimachinery/pkg/util/validation/field",
+    importmap = "github.com/jetstack/cert-manager/vendor/k8s.io/apimachinery/pkg/util/validation/field",
     importpath = "k8s.io/apimachinery/pkg/util/validation/field",
     tags = ["manual"],
     visibility = ["//visibility:public"],

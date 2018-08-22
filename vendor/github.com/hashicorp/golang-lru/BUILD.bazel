@@ -7,7 +7,7 @@ go_library(
         "arc.go",
         "lru.go",
     ],
-    importmap = "vendor/github.com/hashicorp/golang-lru",
+    importmap = "github.com/jetstack/cert-manager/vendor/github.com/hashicorp/golang-lru",
     importpath = "github.com/hashicorp/golang-lru",
     tags = ["manual"],
     visibility = ["//visibility:public"],

@@ -7,7 +7,7 @@ go_library(
         "structs.go",
         "tags.go",
     ],
-    importmap = "vendor/github.com/fatih/structs",
+    importmap = "github.com/jetstack/cert-manager/vendor/github.com/fatih/structs",
     importpath = "github.com/fatih/structs",
     tags = ["manual"],
     visibility = ["//visibility:public"],

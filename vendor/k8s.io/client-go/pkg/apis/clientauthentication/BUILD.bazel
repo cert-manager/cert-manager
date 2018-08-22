@@ -8,7 +8,7 @@ go_library(
         "types.go",
         "zz_generated.deepcopy.go",
     ],
-    importmap = "vendor/k8s.io/client-go/pkg/apis/clientauthentication",
+    importmap = "github.com/jetstack/cert-manager/vendor/k8s.io/client-go/pkg/apis/clientauthentication",
     importpath = "k8s.io/client-go/pkg/apis/clientauthentication",
     tags = ["manual"],
     visibility = ["//visibility:public"],

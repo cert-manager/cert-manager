@@ -7,7 +7,7 @@ go_library(
         "map.go",
         "tables.go",
     ],
-    importmap = "vendor/golang.org/x/text/encoding/htmlindex",
+    importmap = "github.com/jetstack/cert-manager/vendor/golang.org/x/text/encoding/htmlindex",
     importpath = "golang.org/x/text/encoding/htmlindex",
     tags = ["manual"],
     visibility = ["//visibility:public"],

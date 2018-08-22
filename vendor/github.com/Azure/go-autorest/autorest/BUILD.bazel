@@ -16,7 +16,7 @@ go_library(
         "utility.go",
         "version.go",
     ],
-    importmap = "vendor/github.com/Azure/go-autorest/autorest",
+    importmap = "github.com/jetstack/cert-manager/vendor/github.com/Azure/go-autorest/autorest",
     importpath = "github.com/Azure/go-autorest/autorest",
     tags = ["manual"],
     visibility = ["//visibility:public"],

@@ -7,7 +7,7 @@ go_library(
         "doc.go",
         "encode.go",
     ],
-    importmap = "vendor/github.com/matttproud/golang_protobuf_extensions/pbutil",
+    importmap = "github.com/jetstack/cert-manager/vendor/github.com/matttproud/golang_protobuf_extensions/pbutil",
     importpath = "github.com/matttproud/golang_protobuf_extensions/pbutil",
     tags = ["manual"],
     visibility = ["//visibility:public"],

@@ -26,7 +26,7 @@ go_library(
         "page.go",
         "tx.go",
     ],
-    importmap = "vendor/github.com/boltdb/bolt",
+    importmap = "github.com/jetstack/cert-manager/vendor/github.com/boltdb/bolt",
     importpath = "github.com/boltdb/bolt",
     tags = ["manual"],
     visibility = ["//visibility:public"],
@@ -41,24 +41,16 @@ go_library(
 go_test(
     name = "go_default_test",
     srcs = [
-        "freelist_test.go",
-        "node_test.go",
-        "page_test.go",
-    ],
-    embed = [":go_default_library"],
-    tags = ["manual"],
-)
-
-go_test(
-    name = "go_default_xtest",
-    srcs = [
         "bucket_test.go",
         "cursor_test.go",
         "db_test.go",
+        "freelist_test.go",
+        "node_test.go",
+        "page_test.go",
         "quick_test.go",
         "simulation_test.go",
         "tx_test.go",
     ],
+    embed = [":go_default_library"],
     tags = ["manual"],
-    deps = [":go_default_library"],
 )

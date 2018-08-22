@@ -13,7 +13,7 @@ go_library(
         "syscall_dup_solaris.go",
         "syscall_dup_unix.go",
     ],
-    importmap = "vendor/github.com/onsi/ginkgo/internal/remote",
+    importmap = "github.com/jetstack/cert-manager/vendor/github.com/onsi/ginkgo/internal/remote",
     importpath = "github.com/onsi/ginkgo/internal/remote",
     tags = ["manual"],
     visibility = ["//vendor/github.com/onsi/ginkgo:__subpackages__"],
@@ -32,7 +32,7 @@ go_library(
 )
 
 go_test(
-    name = "go_default_xtest",
+    name = "go_default_test",
     srcs = [
         "aggregator_test.go",
         "fake_output_interceptor_test.go",
@@ -41,9 +41,9 @@ go_test(
         "remote_suite_test.go",
         "server_test.go",
     ],
+    embed = [":go_default_library"],
     tags = ["manual"],
     deps = [
-        ":go_default_library",
         "//vendor/github.com/onsi/ginkgo:go_default_library",
         "//vendor/github.com/onsi/ginkgo/config:go_default_library",
         "//vendor/github.com/onsi/ginkgo/reporters:go_default_library",

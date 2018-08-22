@@ -8,7 +8,7 @@ go_library(
         "generated_expansion.go",
         "initializerconfiguration.go",
     ],
-    importmap = "vendor/k8s.io/client-go/kubernetes/typed/admissionregistration/v1alpha1",
+    importmap = "github.com/jetstack/cert-manager/vendor/k8s.io/client-go/kubernetes/typed/admissionregistration/v1alpha1",
     importpath = "k8s.io/client-go/kubernetes/typed/admissionregistration/v1alpha1",
     tags = ["manual"],
     visibility = ["//visibility:public"],

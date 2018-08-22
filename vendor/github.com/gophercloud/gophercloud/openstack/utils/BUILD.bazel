@@ -3,7 +3,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 go_library(
     name = "go_default_library",
     srcs = ["choose_version.go"],
-    importmap = "vendor/github.com/gophercloud/gophercloud/openstack/utils",
+    importmap = "github.com/jetstack/cert-manager/vendor/github.com/gophercloud/gophercloud/openstack/utils",
     importpath = "github.com/gophercloud/gophercloud/openstack/utils",
     tags = ["manual"],
     visibility = ["//visibility:public"],

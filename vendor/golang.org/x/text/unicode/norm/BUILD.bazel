@@ -13,7 +13,7 @@ go_library(
         "transform.go",
         "trie.go",
     ],
-    importmap = "vendor/golang.org/x/text/unicode/norm",
+    importmap = "github.com/jetstack/cert-manager/vendor/golang.org/x/text/unicode/norm",
     importpath = "golang.org/x/text/unicode/norm",
     tags = ["manual"],
     visibility = ["//visibility:public"],
@@ -24,7 +24,10 @@ go_test(
     name = "go_default_test",
     srcs = [
         "composition_test.go",
+        "example_iter_test.go",
+        "example_test.go",
         "iter_test.go",
+        "norm_test.go",
         "normalize_test.go",
         "readwriter_test.go",
         "transform_test.go",
@@ -37,15 +40,4 @@ go_test(
         "//vendor/golang.org/x/text/internal/testtext:go_default_library",
         "//vendor/golang.org/x/text/transform:go_default_library",
     ],
-)
-
-go_test(
-    name = "go_default_xtest",
-    srcs = [
-        "example_iter_test.go",
-        "example_test.go",
-        "norm_test.go",
-    ],
-    tags = ["manual"],
-    deps = [":go_default_library"],
 )

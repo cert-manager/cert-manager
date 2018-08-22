@@ -7,7 +7,7 @@ go_library(
         "doc.go",
         "handlers.go",
     ],
-    importmap = "vendor/github.com/hashicorp/go-cleanhttp",
+    importmap = "github.com/jetstack/cert-manager/vendor/github.com/hashicorp/go-cleanhttp",
     importpath = "github.com/hashicorp/go-cleanhttp",
     tags = ["manual"],
     visibility = ["//visibility:public"],

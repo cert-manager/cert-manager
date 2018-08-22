@@ -6,18 +6,18 @@ go_library(
         "convert.go",
         "doc.go",
     ],
-    importmap = "vendor/k8s.io/apimachinery/pkg/conversion/queryparams",
+    importmap = "github.com/jetstack/cert-manager/vendor/k8s.io/apimachinery/pkg/conversion/queryparams",
     importpath = "k8s.io/apimachinery/pkg/conversion/queryparams",
     tags = ["manual"],
     visibility = ["//visibility:public"],
 )
 
 go_test(
-    name = "go_default_xtest",
+    name = "go_default_test",
     srcs = ["convert_test.go"],
+    embed = [":go_default_library"],
     tags = ["manual"],
     deps = [
-        ":go_default_library",
         "//vendor/k8s.io/apimachinery/pkg/apis/meta/v1:go_default_library",
         "//vendor/k8s.io/apimachinery/pkg/runtime/schema:go_default_library",
     ],

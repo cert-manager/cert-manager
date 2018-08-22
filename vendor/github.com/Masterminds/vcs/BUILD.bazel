@@ -12,7 +12,7 @@ go_library(
         "vcs_local_lookup.go",
         "vcs_remote_lookup.go",
     ],
-    importmap = "vendor/github.com/Masterminds/vcs",
+    importmap = "github.com/jetstack/cert-manager/vendor/github.com/Masterminds/vcs",
     importpath = "github.com/Masterminds/vcs",
     tags = ["manual"],
     visibility = ["//visibility:public"],

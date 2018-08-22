@@ -6,7 +6,7 @@ go_library(
         "idempotency.go",
         "unmarshal.go",
     ],
-    importmap = "vendor/github.com/aws/aws-sdk-go/private/protocol",
+    importmap = "github.com/jetstack/cert-manager/vendor/github.com/aws/aws-sdk-go/private/protocol",
     importpath = "github.com/aws/aws-sdk-go/private/protocol",
     tags = ["manual"],
     visibility = ["//visibility:public"],
@@ -14,15 +14,15 @@ go_library(
 )
 
 go_test(
-    name = "go_default_xtest",
+    name = "go_default_test",
     srcs = [
         "idempotency_test.go",
         "protocol_test.go",
         "unmarshal_test.go",
     ],
+    embed = [":go_default_library"],
     tags = ["manual"],
     deps = [
-        ":go_default_library",
         "//vendor/github.com/aws/aws-sdk-go/aws/client/metadata:go_default_library",
         "//vendor/github.com/aws/aws-sdk-go/aws/request:go_default_library",
         "//vendor/github.com/aws/aws-sdk-go/awstesting:go_default_library",

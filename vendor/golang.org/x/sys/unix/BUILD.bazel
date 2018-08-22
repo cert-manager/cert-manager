@@ -37,6 +37,7 @@ go_library(
         "flock.go",
         "flock_linux_32bit.go",
         "openbsd_pledge.go",
+        "race.go",
         "race0.go",
         "sockcmsg_linux.go",
         "sockcmsg_unix.go",
@@ -179,7 +180,7 @@ go_library(
         "ztypes_solaris_amd64.go",
     ],
     cgo = True,
-    importmap = "vendor/golang.org/x/sys/unix",
+    importmap = "github.com/jetstack/cert-manager/vendor/golang.org/x/sys/unix",
     importpath = "golang.org/x/sys/unix",
     tags = ["manual"],
     visibility = ["//visibility:public"],
@@ -187,15 +188,9 @@ go_library(
 
 go_test(
     name = "go_default_test",
-    srcs = ["export_test.go"],
-    embed = [":go_default_library"],
-    tags = ["manual"],
-)
-
-go_test(
-    name = "go_default_xtest",
     srcs = [
         "creds_test.go",
+        "export_test.go",
         "mmap_unix_test.go",
         "openbsd_test.go",
         "syscall_bsd_test.go",
@@ -205,29 +200,6 @@ go_test(
         "syscall_test.go",
         "syscall_unix_test.go",
     ],
+    embed = [":go_default_library"],
     tags = ["manual"],
-    deps = select({
-        "@io_bazel_rules_go//go/platform:darwin": [
-            ":go_default_library",
-        ],
-        "@io_bazel_rules_go//go/platform:dragonfly": [
-            ":go_default_library",
-        ],
-        "@io_bazel_rules_go//go/platform:freebsd": [
-            ":go_default_library",
-        ],
-        "@io_bazel_rules_go//go/platform:linux": [
-            ":go_default_library",
-        ],
-        "@io_bazel_rules_go//go/platform:netbsd": [
-            ":go_default_library",
-        ],
-        "@io_bazel_rules_go//go/platform:openbsd": [
-            ":go_default_library",
-        ],
-        "@io_bazel_rules_go//go/platform:solaris": [
-            ":go_default_library",
-        ],
-        "//conditions:default": [],
-    }),
 )

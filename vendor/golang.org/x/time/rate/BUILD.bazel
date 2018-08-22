@@ -7,7 +7,7 @@ go_library(
         "rate_go16.go",
         "rate_go17.go",
     ],
-    importmap = "vendor/golang.org/x/time/rate",
+    importmap = "github.com/jetstack/cert-manager/vendor/golang.org/x/time/rate",
     importpath = "golang.org/x/time/rate",
     tags = ["manual"],
     visibility = ["//visibility:public"],

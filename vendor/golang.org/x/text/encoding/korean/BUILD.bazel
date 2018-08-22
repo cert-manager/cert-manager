@@ -6,7 +6,7 @@ go_library(
         "euckr.go",
         "tables.go",
     ],
-    importmap = "vendor/golang.org/x/text/encoding/korean",
+    importmap = "github.com/jetstack/cert-manager/vendor/golang.org/x/text/encoding/korean",
     importpath = "golang.org/x/text/encoding/korean",
     tags = ["manual"],
     visibility = ["//visibility:public"],

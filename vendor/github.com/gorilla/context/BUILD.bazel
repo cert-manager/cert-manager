@@ -6,7 +6,7 @@ go_library(
         "context.go",
         "doc.go",
     ],
-    importmap = "vendor/github.com/gorilla/context",
+    importmap = "github.com/jetstack/cert-manager/vendor/github.com/gorilla/context",
     importpath = "github.com/gorilla/context",
     tags = ["manual"],
     visibility = ["//visibility:public"],

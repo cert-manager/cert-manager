@@ -22,7 +22,7 @@ go_library(
         "types_proto.go",
         "zz_generated.deepcopy.go",
     ],
-    importmap = "vendor/k8s.io/apimachinery/pkg/runtime",
+    importmap = "github.com/jetstack/cert-manager/vendor/k8s.io/apimachinery/pkg/runtime",
     importpath = "k8s.io/apimachinery/pkg/runtime",
     tags = ["manual"],
     visibility = ["//visibility:public"],
@@ -40,23 +40,17 @@ go_library(
 
 go_test(
     name = "go_default_test",
-    srcs = ["swagger_doc_generator_test.go"],
-    embed = [":go_default_library"],
-    tags = ["manual"],
-)
-
-go_test(
-    name = "go_default_xtest",
     srcs = [
         "conversion_test.go",
         "converter_test.go",
         "embedded_test.go",
         "extension_test.go",
         "scheme_test.go",
+        "swagger_doc_generator_test.go",
     ],
+    embed = [":go_default_library"],
     tags = ["manual"],
     deps = [
-        ":go_default_library",
         "//vendor/github.com/google/gofuzz:go_default_library",
         "//vendor/github.com/spf13/pflag:go_default_library",
         "//vendor/github.com/stretchr/testify/assert:go_default_library",

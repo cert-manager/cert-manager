@@ -6,7 +6,7 @@ go_library(
         "override.go",
         "unicode.go",
     ],
-    importmap = "vendor/golang.org/x/text/encoding/unicode",
+    importmap = "github.com/jetstack/cert-manager/vendor/golang.org/x/text/encoding/unicode",
     importpath = "golang.org/x/text/encoding/unicode",
     tags = ["manual"],
     visibility = ["//visibility:public"],

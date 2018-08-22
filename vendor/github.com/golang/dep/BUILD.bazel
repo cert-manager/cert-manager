@@ -11,7 +11,7 @@ go_library(
         "project.go",
         "txn_writer.go",
     ],
-    importmap = "vendor/github.com/golang/dep",
+    importmap = "github.com/jetstack/cert-manager/vendor/github.com/golang/dep",
     importpath = "github.com/golang/dep",
     tags = ["manual"],
     visibility = ["//visibility:public"],

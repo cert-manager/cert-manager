@@ -10,7 +10,7 @@ go_library(
         "regexp.go",
         "route.go",
     ],
-    importmap = "vendor/github.com/gorilla/mux",
+    importmap = "github.com/jetstack/cert-manager/vendor/github.com/gorilla/mux",
     importpath = "github.com/gorilla/mux",
     tags = ["manual"],
     visibility = ["//visibility:public"],

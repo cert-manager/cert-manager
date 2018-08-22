@@ -6,7 +6,7 @@ go_library(
         "interface.go",
         "priorityclass.go",
     ],
-    importmap = "vendor/k8s.io/client-go/informers/scheduling/v1alpha1",
+    importmap = "github.com/jetstack/cert-manager/vendor/k8s.io/client-go/informers/scheduling/v1alpha1",
     importpath = "k8s.io/client-go/informers/scheduling/v1alpha1",
     tags = ["manual"],
     visibility = ["//visibility:public"],

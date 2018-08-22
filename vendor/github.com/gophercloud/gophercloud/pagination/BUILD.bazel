@@ -10,7 +10,7 @@ go_library(
         "pkg.go",
         "single.go",
     ],
-    importmap = "vendor/github.com/gophercloud/gophercloud/pagination",
+    importmap = "github.com/jetstack/cert-manager/vendor/github.com/gophercloud/gophercloud/pagination",
     importpath = "github.com/gophercloud/gophercloud/pagination",
     tags = ["manual"],
     visibility = ["//visibility:public"],

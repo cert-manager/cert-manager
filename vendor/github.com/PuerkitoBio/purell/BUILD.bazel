@@ -3,7 +3,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 go_library(
     name = "go_default_library",
     srcs = ["purell.go"],
-    importmap = "vendor/github.com/PuerkitoBio/purell",
+    importmap = "github.com/jetstack/cert-manager/vendor/github.com/PuerkitoBio/purell",
     importpath = "github.com/PuerkitoBio/purell",
     tags = ["manual"],
     visibility = ["//visibility:public"],

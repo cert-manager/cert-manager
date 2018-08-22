@@ -11,7 +11,7 @@ go_library(
         "unmarshal_error.go",
         "waiters.go",
     ],
-    importmap = "vendor/github.com/aws/aws-sdk-go/service/route53",
+    importmap = "github.com/jetstack/cert-manager/vendor/github.com/aws/aws-sdk-go/service/route53",
     importpath = "github.com/aws/aws-sdk-go/service/route53",
     tags = ["manual"],
     visibility = ["//visibility:public"],
@@ -29,30 +29,20 @@ go_library(
 
 go_test(
     name = "go_default_test",
-    srcs = ["unmarshal_error_leak_test.go"],
-    embed = [":go_default_library"],
-    tags = ["manual"],
-    deps = [
-        "//vendor/github.com/aws/aws-sdk-go/aws/request:go_default_library",
-        "//vendor/github.com/aws/aws-sdk-go/awstesting:go_default_library",
-        "//vendor/github.com/stretchr/testify/assert:go_default_library",
-    ],
-)
-
-go_test(
-    name = "go_default_xtest",
     srcs = [
         "customizations_test.go",
         "examples_test.go",
+        "unmarshal_error_leak_test.go",
         "unmarshal_error_test.go",
     ],
+    embed = [":go_default_library"],
     tags = ["manual"],
     deps = [
-        ":go_default_library",
         "//vendor/github.com/aws/aws-sdk-go/aws:go_default_library",
         "//vendor/github.com/aws/aws-sdk-go/aws/awserr:go_default_library",
         "//vendor/github.com/aws/aws-sdk-go/aws/request:go_default_library",
         "//vendor/github.com/aws/aws-sdk-go/aws/session:go_default_library",
+        "//vendor/github.com/aws/aws-sdk-go/awstesting:go_default_library",
         "//vendor/github.com/aws/aws-sdk-go/awstesting/unit:go_default_library",
         "//vendor/github.com/stretchr/testify/assert:go_default_library",
     ],

@@ -11,7 +11,7 @@ go_library(
         "parsing.go",
         "schema.go",
     ],
-    importmap = "vendor/github.com/go-openapi/errors",
+    importmap = "github.com/jetstack/cert-manager/vendor/github.com/go-openapi/errors",
     importpath = "github.com/go-openapi/errors",
     tags = ["manual"],
     visibility = ["//visibility:public"],

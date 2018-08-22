@@ -8,7 +8,7 @@ go_library(
         "rewrite.go",
         "util.go",
     ],
-    importmap = "vendor/golang.org/x/tools/go/ast/astutil",
+    importmap = "github.com/jetstack/cert-manager/vendor/golang.org/x/tools/go/ast/astutil",
     importpath = "golang.org/x/tools/go/ast/astutil",
     tags = ["manual"],
     visibility = ["//visibility:public"],
@@ -16,17 +16,11 @@ go_library(
 
 go_test(
     name = "go_default_test",
-    srcs = ["imports_test.go"],
-    embed = [":go_default_library"],
-    tags = ["manual"],
-)
-
-go_test(
-    name = "go_default_xtest",
     srcs = [
         "enclosing_test.go",
+        "imports_test.go",
         "rewrite_test.go",
     ],
+    embed = [":go_default_library"],
     tags = ["manual"],
-    deps = [":go_default_library"],
 )

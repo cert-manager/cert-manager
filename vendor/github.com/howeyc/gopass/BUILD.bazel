@@ -7,7 +7,7 @@ go_library(
         "terminal.go",
         "terminal_solaris.go",
     ],
-    importmap = "vendor/github.com/howeyc/gopass",
+    importmap = "github.com/jetstack/cert-manager/vendor/github.com/howeyc/gopass",
     importpath = "github.com/howeyc/gopass",
     tags = ["manual"],
     visibility = ["//visibility:public"],

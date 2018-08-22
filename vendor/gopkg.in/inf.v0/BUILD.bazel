@@ -6,7 +6,7 @@ go_library(
         "dec.go",
         "rounder.go",
     ],
-    importmap = "vendor/gopkg.in/inf.v0",
+    importmap = "github.com/jetstack/cert-manager/vendor/gopkg.in/inf.v0",
     importpath = "gopkg.in/inf.v0",
     tags = ["manual"],
     visibility = ["//visibility:public"],
@@ -18,19 +18,11 @@ go_test(
         "benchmark_test.go",
         "dec_go1_2_test.go",
         "dec_internal_test.go",
-    ],
-    embed = [":go_default_library"],
-    tags = ["manual"],
-)
-
-go_test(
-    name = "go_default_xtest",
-    srcs = [
         "dec_test.go",
         "example_test.go",
         "rounder_example_test.go",
         "rounder_test.go",
     ],
+    embed = [":go_default_library"],
     tags = ["manual"],
-    deps = [":go_default_library"],
 )

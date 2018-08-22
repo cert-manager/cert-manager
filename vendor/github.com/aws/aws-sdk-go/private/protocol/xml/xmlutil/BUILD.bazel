@@ -7,7 +7,7 @@ go_library(
         "unmarshal.go",
         "xml_to_struct.go",
     ],
-    importmap = "vendor/github.com/aws/aws-sdk-go/private/protocol/xml/xmlutil",
+    importmap = "github.com/jetstack/cert-manager/vendor/github.com/aws/aws-sdk-go/private/protocol/xml/xmlutil",
     importpath = "github.com/aws/aws-sdk-go/private/protocol/xml/xmlutil",
     tags = ["manual"],
     visibility = ["//visibility:public"],
@@ -16,21 +16,15 @@ go_library(
 
 go_test(
     name = "go_default_test",
-    srcs = ["unmarshal_test.go"],
+    srcs = [
+        "unmarshal_test.go",
+        "xml_to_struct_test.go",
+    ],
     embed = [":go_default_library"],
     tags = ["manual"],
     deps = [
         "//vendor/github.com/aws/aws-sdk-go/aws:go_default_library",
         "//vendor/github.com/aws/aws-sdk-go/aws/awsutil:go_default_library",
-    ],
-)
-
-go_test(
-    name = "go_default_xtest",
-    srcs = ["xml_to_struct_test.go"],
-    tags = ["manual"],
-    deps = [
-        "//vendor/github.com/aws/aws-sdk-go/aws:go_default_library",
         "//vendor/github.com/aws/aws-sdk-go/awstesting/unit:go_default_library",
         "//vendor/github.com/aws/aws-sdk-go/service/s3:go_default_library",
         "//vendor/github.com/stretchr/testify/assert:go_default_library",

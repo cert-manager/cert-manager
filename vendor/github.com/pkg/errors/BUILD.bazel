@@ -6,7 +6,7 @@ go_library(
         "errors.go",
         "stack.go",
     ],
-    importmap = "vendor/github.com/pkg/errors",
+    importmap = "github.com/jetstack/cert-manager/vendor/github.com/pkg/errors",
     importpath = "github.com/pkg/errors",
     tags = ["manual"],
     visibility = ["//visibility:public"],
@@ -17,16 +17,10 @@ go_test(
     srcs = [
         "bench_test.go",
         "errors_test.go",
+        "example_test.go",
         "format_test.go",
         "stack_test.go",
     ],
     embed = [":go_default_library"],
     tags = ["manual"],
-)
-
-go_test(
-    name = "go_default_xtest",
-    srcs = ["example_test.go"],
-    tags = ["manual"],
-    deps = [":go_default_library"],
 )

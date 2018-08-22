@@ -6,7 +6,7 @@ go_library(
         "bipartitegraph.go",
         "bipartitegraphmatching.go",
     ],
-    importmap = "vendor/github.com/onsi/gomega/matchers/support/goraph/bipartitegraph",
+    importmap = "github.com/jetstack/cert-manager/vendor/github.com/onsi/gomega/matchers/support/goraph/bipartitegraph",
     importpath = "github.com/onsi/gomega/matchers/support/goraph/bipartitegraph",
     tags = ["manual"],
     visibility = ["//visibility:public"],

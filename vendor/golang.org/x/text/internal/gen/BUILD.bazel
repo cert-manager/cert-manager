@@ -6,7 +6,7 @@ go_library(
         "code.go",
         "gen.go",
     ],
-    importmap = "vendor/golang.org/x/text/internal/gen",
+    importmap = "github.com/jetstack/cert-manager/vendor/golang.org/x/text/internal/gen",
     importpath = "golang.org/x/text/internal/gen",
     tags = ["manual"],
     visibility = ["//vendor/golang.org/x/text:__subpackages__"],

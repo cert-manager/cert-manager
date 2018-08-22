@@ -3,7 +3,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 go_library(
     name = "go_default_library",
     srcs = ["radix.go"],
-    importmap = "vendor/github.com/armon/go-radix",
+    importmap = "github.com/jetstack/cert-manager/vendor/github.com/armon/go-radix",
     importpath = "github.com/armon/go-radix",
     tags = ["manual"],
     visibility = ["//visibility:public"],

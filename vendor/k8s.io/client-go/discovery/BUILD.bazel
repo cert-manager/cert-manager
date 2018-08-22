@@ -8,7 +8,7 @@ go_library(
         "restmapper.go",
         "unstructured.go",
     ],
-    importmap = "vendor/k8s.io/client-go/discovery",
+    importmap = "github.com/jetstack/cert-manager/vendor/k8s.io/client-go/discovery",
     importpath = "k8s.io/client-go/discovery",
     tags = ["manual"],
     visibility = ["//visibility:public"],
@@ -30,15 +30,15 @@ go_library(
 )
 
 go_test(
-    name = "go_default_xtest",
+    name = "go_default_test",
     srcs = [
         "discovery_client_test.go",
         "helper_blackbox_test.go",
         "restmapper_test.go",
     ],
+    embed = [":go_default_library"],
     tags = ["manual"],
     deps = [
-        ":go_default_library",
         "//vendor/github.com/gogo/protobuf/proto:go_default_library",
         "//vendor/github.com/googleapis/gnostic/OpenAPIv2:go_default_library",
         "//vendor/github.com/stretchr/testify/assert:go_default_library",

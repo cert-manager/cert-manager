@@ -6,7 +6,7 @@ go_library(
         "doc.go",
         "fuzz.go",
     ],
-    importmap = "vendor/github.com/google/gofuzz",
+    importmap = "github.com/jetstack/cert-manager/vendor/github.com/google/gofuzz",
     importpath = "github.com/google/gofuzz",
     tags = ["manual"],
     visibility = ["//visibility:public"],
@@ -14,14 +14,10 @@ go_library(
 
 go_test(
     name = "go_default_test",
-    srcs = ["fuzz_test.go"],
+    srcs = [
+        "example_test.go",
+        "fuzz_test.go",
+    ],
     embed = [":go_default_library"],
     tags = ["manual"],
-)
-
-go_test(
-    name = "go_default_xtest",
-    srcs = ["example_test.go"],
-    tags = ["manual"],
-    deps = [":go_default_library"],
 )

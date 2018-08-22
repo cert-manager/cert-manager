@@ -3,7 +3,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 go_library(
     name = "go_default_library",
     srcs = ["pester.go"],
-    importmap = "vendor/github.com/sethgrid/pester",
+    importmap = "github.com/jetstack/cert-manager/vendor/github.com/sethgrid/pester",
     importpath = "github.com/sethgrid/pester",
     tags = ["manual"],
     visibility = ["//visibility:public"],

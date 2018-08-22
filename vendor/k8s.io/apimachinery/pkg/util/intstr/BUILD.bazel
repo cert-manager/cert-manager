@@ -6,7 +6,7 @@ go_library(
         "generated.pb.go",
         "intstr.go",
     ],
-    importmap = "vendor/k8s.io/apimachinery/pkg/util/intstr",
+    importmap = "github.com/jetstack/cert-manager/vendor/k8s.io/apimachinery/pkg/util/intstr",
     importpath = "k8s.io/apimachinery/pkg/util/intstr",
     tags = ["manual"],
     visibility = ["//visibility:public"],

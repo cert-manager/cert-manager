@@ -7,7 +7,7 @@ go_library(
         "rangetable.go",
         "tables.go",
     ],
-    importmap = "vendor/golang.org/x/text/unicode/rangetable",
+    importmap = "github.com/jetstack/cert-manager/vendor/golang.org/x/text/unicode/rangetable",
     importpath = "golang.org/x/text/unicode/rangetable",
     tags = ["manual"],
     visibility = ["//visibility:public"],

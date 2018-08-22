@@ -6,7 +6,7 @@ go_library(
         "cond.go",
         "runes.go",
     ],
-    importmap = "vendor/golang.org/x/text/runes",
+    importmap = "github.com/jetstack/cert-manager/vendor/golang.org/x/text/runes",
     importpath = "golang.org/x/text/runes",
     tags = ["manual"],
     visibility = ["//visibility:public"],
@@ -17,6 +17,7 @@ go_test(
     name = "go_default_test",
     srcs = [
         "cond_test.go",
+        "example_test.go",
         "runes_test.go",
     ],
     embed = [":go_default_library"],
@@ -25,16 +26,6 @@ go_test(
         "//vendor/golang.org/x/text/cases:go_default_library",
         "//vendor/golang.org/x/text/internal/testtext:go_default_library",
         "//vendor/golang.org/x/text/language:go_default_library",
-        "//vendor/golang.org/x/text/transform:go_default_library",
-    ],
-)
-
-go_test(
-    name = "go_default_xtest",
-    srcs = ["example_test.go"],
-    tags = ["manual"],
-    deps = [
-        ":go_default_library",
         "//vendor/golang.org/x/text/transform:go_default_library",
         "//vendor/golang.org/x/text/unicode/norm:go_default_library",
         "//vendor/golang.org/x/text/width:go_default_library",

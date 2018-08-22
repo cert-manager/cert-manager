@@ -3,7 +3,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 go_library(
     name = "go_default_library",
     srcs = ["metadata.go"],
-    importmap = "vendor/cloud.google.com/go/compute/metadata",
+    importmap = "github.com/jetstack/cert-manager/vendor/cloud.google.com/go/compute/metadata",
     importpath = "cloud.google.com/go/compute/metadata",
     tags = ["manual"],
     visibility = ["//visibility:public"],

@@ -15,7 +15,7 @@ go_library(
         "tables.go",
         "tags.go",
     ],
-    importmap = "vendor/golang.org/x/text/language",
+    importmap = "github.com/jetstack/cert-manager/vendor/golang.org/x/text/language",
     importpath = "golang.org/x/text/language",
     tags = ["manual"],
     visibility = ["//visibility:public"],
@@ -27,6 +27,8 @@ go_test(
     srcs = [
         "coverage_test.go",
         "data_test.go",
+        "examples_test.go",
+        "httpexample_test.go",
         "language_test.go",
         "lookup_test.go",
         "match_test.go",
@@ -38,14 +40,4 @@ go_test(
         "//vendor/golang.org/x/text/internal/tag:go_default_library",
         "//vendor/golang.org/x/text/internal/testtext:go_default_library",
     ],
-)
-
-go_test(
-    name = "go_default_xtest",
-    srcs = [
-        "examples_test.go",
-        "httpexample_test.go",
-    ],
-    tags = ["manual"],
-    deps = [":go_default_library"],
 )

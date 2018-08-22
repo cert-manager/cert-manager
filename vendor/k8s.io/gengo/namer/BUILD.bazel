@@ -9,7 +9,7 @@ go_library(
         "order.go",
         "plural_namer.go",
     ],
-    importmap = "vendor/k8s.io/gengo/namer",
+    importmap = "github.com/jetstack/cert-manager/vendor/k8s.io/gengo/namer",
     importpath = "k8s.io/gengo/namer",
     tags = ["manual"],
     visibility = ["//visibility:public"],

@@ -7,7 +7,7 @@ go_library(
         "pkgtree.go",
         "reachmap.go",
     ],
-    importmap = "vendor/github.com/golang/dep/gps/pkgtree",
+    importmap = "github.com/jetstack/cert-manager/vendor/github.com/golang/dep/gps/pkgtree",
     importpath = "github.com/golang/dep/gps/pkgtree",
     tags = ["manual"],
     visibility = ["//visibility:public"],

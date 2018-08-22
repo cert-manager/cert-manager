@@ -8,7 +8,7 @@ go_library(
         "merge.go",
         "mergo.go",
     ],
-    importmap = "vendor/github.com/imdario/mergo",
+    importmap = "github.com/jetstack/cert-manager/vendor/github.com/imdario/mergo",
     importpath = "github.com/imdario/mergo",
     tags = ["manual"],
     visibility = ["//visibility:public"],

@@ -6,7 +6,7 @@ go_library(
         "expansion_generated.go",
         "podpreset.go",
     ],
-    importmap = "vendor/k8s.io/client-go/listers/settings/v1alpha1",
+    importmap = "github.com/jetstack/cert-manager/vendor/k8s.io/client-go/listers/settings/v1alpha1",
     importpath = "k8s.io/client-go/listers/settings/v1alpha1",
     tags = ["manual"],
     visibility = ["//visibility:public"],

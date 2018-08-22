@@ -6,7 +6,7 @@ go_library(
         "api.go",
         "service.go",
     ],
-    importmap = "vendor/github.com/aws/aws-sdk-go/aws/ec2metadata",
+    importmap = "github.com/jetstack/cert-manager/vendor/github.com/aws/aws-sdk-go/aws/ec2metadata",
     importpath = "github.com/aws/aws-sdk-go/aws/ec2metadata",
     tags = ["manual"],
     visibility = ["//visibility:public"],
@@ -20,14 +20,14 @@ go_library(
 )
 
 go_test(
-    name = "go_default_xtest",
+    name = "go_default_test",
     srcs = [
         "api_test.go",
         "service_test.go",
     ],
+    embed = [":go_default_library"],
     tags = ["manual"],
     deps = [
-        ":go_default_library",
         "//vendor/github.com/aws/aws-sdk-go/aws:go_default_library",
         "//vendor/github.com/aws/aws-sdk-go/aws/awserr:go_default_library",
         "//vendor/github.com/aws/aws-sdk-go/aws/request:go_default_library",

@@ -9,7 +9,7 @@ go_library(
         "shiftjis.go",
         "tables.go",
     ],
-    importmap = "vendor/golang.org/x/text/encoding/japanese",
+    importmap = "github.com/jetstack/cert-manager/vendor/golang.org/x/text/encoding/japanese",
     importpath = "golang.org/x/text/encoding/japanese",
     tags = ["manual"],
     visibility = ["//visibility:public"],

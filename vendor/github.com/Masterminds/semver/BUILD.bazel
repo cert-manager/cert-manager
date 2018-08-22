@@ -13,7 +13,7 @@ go_library(
         "union.go",
         "version.go",
     ],
-    importmap = "vendor/github.com/Masterminds/semver",
+    importmap = "github.com/jetstack/cert-manager/vendor/github.com/Masterminds/semver",
     importpath = "github.com/Masterminds/semver",
     tags = ["manual"],
     visibility = ["//visibility:public"],

@@ -15,7 +15,7 @@ go_library(
         "subjectaccessreview.go",
         "subjectaccessreview_expansion.go",
     ],
-    importmap = "vendor/k8s.io/client-go/kubernetes/typed/authorization/v1",
+    importmap = "github.com/jetstack/cert-manager/vendor/k8s.io/client-go/kubernetes/typed/authorization/v1",
     importpath = "k8s.io/client-go/kubernetes/typed/authorization/v1",
     tags = ["manual"],
     visibility = ["//visibility:public"],

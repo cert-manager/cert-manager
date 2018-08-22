@@ -15,7 +15,7 @@ go_library(
         "statefulset.go",
         "statefulset_expansion.go",
     ],
-    importmap = "vendor/k8s.io/client-go/listers/apps/v1beta2",
+    importmap = "github.com/jetstack/cert-manager/vendor/k8s.io/client-go/listers/apps/v1beta2",
     importpath = "k8s.io/client-go/listers/apps/v1beta2",
     tags = ["manual"],
     visibility = ["//visibility:public"],

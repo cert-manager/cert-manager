@@ -7,7 +7,7 @@ go_library(
         "unmarshal.go",
         "unmarshal_error.go",
     ],
-    importmap = "vendor/github.com/aws/aws-sdk-go/private/protocol/query",
+    importmap = "github.com/jetstack/cert-manager/vendor/github.com/aws/aws-sdk-go/private/protocol/query",
     importpath = "github.com/aws/aws-sdk-go/private/protocol/query",
     tags = ["manual"],
     visibility = ["//visibility:public"],
@@ -20,14 +20,14 @@ go_library(
 )
 
 go_test(
-    name = "go_default_xtest",
+    name = "go_default_test",
     srcs = [
         "build_test.go",
         "unmarshal_test.go",
     ],
+    embed = [":go_default_library"],
     tags = ["manual"],
     deps = [
-        ":go_default_library",
         "//vendor/github.com/aws/aws-sdk-go/aws:go_default_library",
         "//vendor/github.com/aws/aws-sdk-go/aws/client:go_default_library",
         "//vendor/github.com/aws/aws-sdk-go/aws/client/metadata:go_default_library",

@@ -6,7 +6,7 @@ go_library(
         "doc.go",
         "register.go",
     ],
-    importmap = "vendor/k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/scheme",
+    importmap = "github.com/jetstack/cert-manager/vendor/k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/scheme",
     importpath = "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/scheme",
     tags = ["manual"],
     visibility = ["//visibility:public"],

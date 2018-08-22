@@ -9,7 +9,7 @@ go_library(
         "trie.go",
         "trieval.go",
     ],
-    importmap = "vendor/golang.org/x/net/idna",
+    importmap = "github.com/jetstack/cert-manager/vendor/golang.org/x/net/idna",
     importpath = "golang.org/x/net/idna",
     tags = ["manual"],
     visibility = ["//visibility:public"],
@@ -22,16 +22,10 @@ go_library(
 go_test(
     name = "go_default_test",
     srcs = [
+        "example_test.go",
         "idna_test.go",
         "punycode_test.go",
     ],
     embed = [":go_default_library"],
     tags = ["manual"],
-)
-
-go_test(
-    name = "go_default_xtest",
-    srcs = ["example_test.go"],
-    tags = ["manual"],
-    deps = [":go_default_library"],
 )

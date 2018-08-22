@@ -11,7 +11,7 @@ go_library(
         "format.go",
         "spew.go",
     ],
-    importmap = "vendor/github.com/davecgh/go-spew/spew",
+    importmap = "github.com/jetstack/cert-manager/vendor/github.com/davecgh/go-spew/spew",
     importpath = "github.com/davecgh/go-spew/spew",
     tags = ["manual"],
     visibility = ["//visibility:public"],
@@ -20,23 +20,15 @@ go_library(
 go_test(
     name = "go_default_test",
     srcs = [
-        "internal_test.go",
-        "internalunsafe_test.go",
-    ],
-    embed = [":go_default_library"],
-    tags = ["manual"],
-)
-
-go_test(
-    name = "go_default_xtest",
-    srcs = [
         "common_test.go",
         "dump_test.go",
         "dumpnocgo_test.go",
         "example_test.go",
         "format_test.go",
+        "internal_test.go",
+        "internalunsafe_test.go",
         "spew_test.go",
     ],
+    embed = [":go_default_library"],
     tags = ["manual"],
-    deps = [":go_default_library"],
 )

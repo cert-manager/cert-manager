@@ -30,7 +30,7 @@ go_library(
         "uint8.go",
         "uint_slice.go",
     ],
-    importmap = "vendor/github.com/spf13/pflag",
+    importmap = "github.com/jetstack/cert-manager/vendor/github.com/spf13/pflag",
     importpath = "github.com/spf13/pflag",
     tags = ["manual"],
     visibility = ["//visibility:public"],
@@ -42,6 +42,7 @@ go_test(
         "bool_slice_test.go",
         "bool_test.go",
         "count_test.go",
+        "example_test.go",
         "export_test.go",
         "flag_test.go",
         "golangflag_test.go",
@@ -55,11 +56,4 @@ go_test(
     ],
     embed = [":go_default_library"],
     tags = ["manual"],
-)
-
-go_test(
-    name = "go_default_xtest",
-    srcs = ["example_test.go"],
-    tags = ["manual"],
-    deps = [":go_default_library"],
 )

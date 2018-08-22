@@ -3,7 +3,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 go_library(
     name = "go_default_library",
     srcs = ["bidirule.go"],
-    importmap = "vendor/golang.org/x/text/secure/bidirule",
+    importmap = "github.com/jetstack/cert-manager/vendor/golang.org/x/text/secure/bidirule",
     importpath = "golang.org/x/text/secure/bidirule",
     tags = ["manual"],
     visibility = ["//visibility:public"],
