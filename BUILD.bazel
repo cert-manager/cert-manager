@@ -4,11 +4,24 @@ load("@io_kubernetes_build//defs:run_in_workspace.bzl", "workspace_binary")
 
 gazelle(
     name = "gazelle",
+    command = "fix",
     external = "vendored",
     extra_args = [
         "-build_file_name",
         "BUILD.bazel",
     ],
+    prefix = "github.com/jetstack/cert-manager",
+)
+
+gazelle(
+    name = "gazelle-diff",
+    command = "fix",
+    external = "vendored",
+    extra_args = [
+        "-build_file_name",
+        "BUILD.bazel",
+    ],
+    mode = "diff",
     prefix = "github.com/jetstack/cert-manager",
 )
 
@@ -102,8 +115,13 @@ container_push(
 
 filegroup(
     name = "package-srcs",
-    srcs = glob(["**"], exclude=["bazel-*/**", ".git/**"]),
-    tags = ["automanaged"],
+    srcs = glob(
+        ["**"],
+        exclude = [
+            "bazel-*/**",
+            ".git/**",
+        ],
+    ),
     visibility = ["//visibility:private"],
 )
 

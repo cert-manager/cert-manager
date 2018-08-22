@@ -22,6 +22,9 @@ set -o pipefail
 
 ROOT="$(cd "$(dirname "$0")" && pwd -P)"/..
 
+echo "+++ Running bazel checker"
+${ROOT}/hack/verify-bazel.sh
+
 echo "+++ Running reference docs checker"
 ${ROOT}/hack/verify-reference-docs.sh
 

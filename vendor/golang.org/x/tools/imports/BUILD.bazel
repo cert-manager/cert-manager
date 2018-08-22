@@ -17,9 +17,7 @@ go_library(
     importpath = "golang.org/x/tools/imports",
     tags = ["manual"],
     visibility = ["//visibility:public"],
-    deps = [
-        "//vendor/golang.org/x/tools/go/ast/astutil:go_default_library",
-    ],
+    deps = ["//vendor/golang.org/x/tools/go/ast/astutil:go_default_library"],
 )
 
 go_test(

@@ -6,27 +6,34 @@ http_archive(
     urls = ["https://github.com/bazelbuild/rules_go/releases/download/0.15.0/rules_go-0.15.0.tar.gz"],
     sha256 = "56d946edecb9879aed8dff411eb7a901f687e242da4fa95c81ca08938dd23bb4",
 )
+
 http_archive(
-   name = "bazel_gazelle",
-   url = "https://github.com/bazelbuild/bazel-gazelle/releases/download/0.14.0/bazel-gazelle-0.14.0.tar.gz",
-   sha256 = "c0a5739d12c6d05b6c1ad56f2200cb0b57c5a70e03ebd2f7b87ce88cabf09c7b",
+    name = "bazel_gazelle",
+    url = "https://github.com/bazelbuild/bazel-gazelle/releases/download/0.14.0/bazel-gazelle-0.14.0.tar.gz",
+    sha256 = "c0a5739d12c6d05b6c1ad56f2200cb0b57c5a70e03ebd2f7b87ce88cabf09c7b",
 )
+
 git_repository(
     name = "io_kubernetes_build",
     commit = "4ce715fbe67d8fbed05ec2bb47a148e754100a4b",
     remote = "https://github.com/kubernetes/repo-infra.git",
 )
+
 load(
     "@io_bazel_rules_go//go:def.bzl",
     "go_rules_dependencies",
     "go_register_toolchains",
 )
+
 go_rules_dependencies()
+
 go_register_toolchains()
+
 load(
     "@bazel_gazelle//:deps.bzl",
     "gazelle_dependencies",
 )
+
 gazelle_dependencies()
 
 git_repository(
@@ -34,6 +41,7 @@ git_repository(
     remote = "https://github.com/bazelbuild/rules_docker.git",
     tag = "v0.5.0",
 )
+
 load(
     "@io_bazel_rules_docker//container:container.bzl",
     "container_pull",
@@ -48,6 +56,7 @@ load(
     "@io_bazel_rules_docker//go:image.bzl",
     _go_image_repos = "repositories",
 )
+
 _go_image_repos()
 
 container_pull(
@@ -74,10 +83,11 @@ filegroup(
 git_repository(
     name = "build_bazel_rules_nodejs",
     remote = "https://github.com/bazelbuild/rules_nodejs.git",
-    tag = "0.11.5", # check for the latest tag when you install
+    tag = "0.11.5",  # check for the latest tag when you install
 )
 
 load("@build_bazel_rules_nodejs//:package.bzl", "rules_nodejs_dependencies")
+
 rules_nodejs_dependencies()
 
 load("@build_bazel_rules_nodejs//:defs.bzl", "node_repositories")
