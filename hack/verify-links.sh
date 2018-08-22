@@ -73,7 +73,7 @@ for file in ${mdFiles}; do
 
 	# An external href (ie. starts with http)
 	if [ "${ref:0:4}" == "http" ]; then
-	  if ! curl --connect-timeout 10 -o /dev/null ${ref} > /dev/null 2>&1 ; then
+	  if ! wget --timeout 10 -o /dev/null ${ref} > /dev/null 2>&1 ; then
 	    echo $file: Can\'t load: url ${ref} | tee -a ${tmp}3
 	  fi
 	  continue
