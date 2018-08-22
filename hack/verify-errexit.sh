@@ -38,7 +38,10 @@ fi
 # Meaning they have some form of "#!...sh" as a line in them.
 shFiles=$(grep -rl '^#!.*sh$' $args)
 
-tmp=/tmp/out$RANDOM
+tmp=$(mktemp)
+# Delete the temporary file as it should only exist if errors have occurred.
+rm $tmp
+
 for file in ${shFiles}; do
   grep "set -o errexit" $file > /dev/null 2>&1 && continue
   grep "set -[a-z]*e" $file > /dev/null 2>&1 && continue

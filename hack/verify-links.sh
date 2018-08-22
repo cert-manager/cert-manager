@@ -38,9 +38,8 @@ fi
 
 mdFiles=$(find "${args}" -name "*.md" | grep -v vendor | grep -v glide)
 
-tmp=/tmp/out${RANDOM}
+tmp=$(mktemp)
 
-rm -f /tmp/$tmp*
 for file in ${mdFiles}; do
   # echo scanning $file
   dir=$(dirname $file)
