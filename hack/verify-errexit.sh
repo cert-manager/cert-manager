@@ -36,7 +36,7 @@ fi
 
 # Gather the list of files that appear to be shell scripts.
 # Meaning they have some form of "#!...sh" as a line in them.
-shFiles=$(grep -rl '^#!.*sh$' $args)
+shFiles=$(grep -Rrl '^#!.*sh$' $args)
 
 tmp=$(mktemp)
 # Delete the temporary file as it should only exist if errors have occurred.
