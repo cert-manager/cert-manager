@@ -2,9 +2,9 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 
 genrule(
     name = "gete2e",
+    testonly = True,
     srcs = [":go_default_test"],
     outs = ["e2e"],
-    testonly = True,
     cmd = "cp $(SRCS) $@",
     visibility = ["//visibility:public"],
 )
