@@ -29,8 +29,8 @@ popd
 
 echo "+++ Checking vendor/ is up-to-date"
 DIFFROOT="${SCRIPT_ROOT}/vendor"
-TMP_DIFFROOT="${SCRIPT_ROOT}/_tmp/vendor"
-_tmp="${SCRIPT_ROOT}/_tmp"
+_tmp="$(mktemp -d)"
+TMP_DIFFROOT="${_tmp}/vendor"
 
 cleanup() {
   rm -rf "${_tmp}"

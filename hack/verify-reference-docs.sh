@@ -21,8 +21,8 @@ set -o pipefail
 SCRIPT_ROOT=$(dirname "${BASH_SOURCE}")/..
 
 DIFFROOT="${SCRIPT_ROOT}/docs/generated/reference/output"
-TMP_DIFFROOT="${SCRIPT_ROOT}/_tmp/docs/generated/reference/output"
-_tmp="${SCRIPT_ROOT}/_tmp"
+_tmp="$(mktemp -d)"
+TMP_DIFFROOT="${_tmp}/docs/generated/reference/output"
 
 cleanup() {
   rm -rf "${_tmp}"
