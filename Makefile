@@ -47,8 +47,6 @@ GOLDFLAGS := -ldflags "-X $(PACKAGE_NAME)/pkg/util.AppGitState=${GIT_STATE} -X $
 
 build: docker_build
 verify: hack_verify go_verify
-docker_build: $(DOCKER_BUILD_TARGETS)
-docker_push: $(DOCKER_PUSH_TARGETS)
 push: build docker_push
 
 # Code generation
@@ -106,6 +104,9 @@ e2e_test:
 
 # Docker targets
 ################
+docker_build:
+	bazel run //:images
+
 # docker_build_controller, docker_build_apiserver etc
 DOCKER_BUILD_TARGETS := $(addprefix docker_build_, $(CMDS))
 $(DOCKER_BUILD_TARGETS):
@@ -115,6 +116,7 @@ $(DOCKER_BUILD_TARGETS):
 
 # docker_push_controller, docker_push_apiserver etc
 DOCKER_PUSH_TARGETS := $(addprefix docker_push_, $(CMDS))
+docker_push: $(DOCKER_PUSH_TARGETS)
 $(DOCKER_PUSH_TARGETS):
 	$(eval DOCKER_PUSH_CMD := $(subst docker_push_,,$@))
 	bazel run //:$(DOCKER_PUSH_CMD)

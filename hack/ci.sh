@@ -1,0 +1,1 @@
+./ci/run-e2e.sh
