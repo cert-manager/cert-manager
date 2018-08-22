@@ -67,9 +67,9 @@ _go_image_repos()
 
 container_pull(
     name = "alpine",
-    registry = "index.docker.io",
-    repository = "library/alpine",
-    tag = "3.5",
+    registry = "gcr.io",
+    repository = "jetstack-build-infra/alpine",
+    tag = "3.7-v20180822-0201cfb11",
 )
 
 new_git_repository(
