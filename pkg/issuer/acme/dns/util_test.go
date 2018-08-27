@@ -28,6 +28,7 @@ import (
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/azuredns"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/clouddns"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/cloudflare"
+	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/dnsmadeeasy"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/route53"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
 )
@@ -157,6 +158,10 @@ func newFakeDNSProviders() *fakeDNSProviders {
 		},
 		acmeDNS: func(host string, accountJson []byte, dns01Nameservers []string) (*acmedns.DNSProvider, error) {
 			f.call("acmedns", host, accountJson, dns01Nameservers)
+			return nil, nil
+		},
+		dnsMadeEasy: func(baseURL, apiKey, secretKey string, domainID uint, dns01Nameservers []string) (*dnsmadeeasy.DNSProvider, error) {
+			f.call("dnsmadeeasy", baseURL, apiKey, secretKey, 0, util.RecursiveNameservers)
 			return nil, nil
 		},
 	}

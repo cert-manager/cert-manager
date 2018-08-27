@@ -232,5 +232,16 @@ the `acme-dns project page <https://github.com/joohoi/acme-dns>`_.
 
    ``kubectl create secret generic acme-dns --from-file acmedns.json``
 
+DNSMadeEasy
+==============
+
+.. code-block:: yaml
+
+    dnsmadeeasy:
+      domainID: 999999 # Optional, restricts operations to specific domain
+      apiKey: 15a79ab1-9d6b-438a-8515-304b58121470
+      secretKeySecretRef:
+        name: dnsmadeeasy
+        key: secretKey
 
 .. _`Let's Encrypt`: https://letsencrypt.org

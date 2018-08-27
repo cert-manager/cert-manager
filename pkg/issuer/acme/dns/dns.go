@@ -33,6 +33,7 @@ import (
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/azuredns"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/clouddns"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/cloudflare"
+	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/dnsmadeeasy"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/route53"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
 )
@@ -51,11 +52,12 @@ type solver interface {
 // It is useful for mocking out a given provider since an alternate set of
 // constructors may be set.
 type dnsProviderConstructors struct {
-	cloudDNS   func(project string, serviceAccount []byte, dns01Nameservers []string) (*clouddns.DNSProvider, error)
-	cloudFlare func(email, apikey string, dns01Nameservers []string) (*cloudflare.DNSProvider, error)
-	route53    func(accessKey, secretKey, hostedZoneID, region string, ambient bool, dns01Nameservers []string) (*route53.DNSProvider, error)
-	azureDNS   func(clientID, clientSecret, subscriptionID, tenentID, resourceGroupName, hostedZoneName string, dns01Nameservers []string) (*azuredns.DNSProvider, error)
-	acmeDNS    func(host string, accountJson []byte, dns01Nameservers []string) (*acmedns.DNSProvider, error)
+	cloudDNS    func(project string, serviceAccount []byte, dns01Nameservers []string) (*clouddns.DNSProvider, error)
+	cloudFlare  func(email, apikey string, dns01Nameservers []string) (*cloudflare.DNSProvider, error)
+	route53     func(accessKey, secretKey, hostedZoneID, region string, ambient bool, dns01Nameservers []string) (*route53.DNSProvider, error)
+	azureDNS    func(clientID, clientSecret, subscriptionID, tenentID, resourceGroupName, hostedZoneName string, dns01Nameservers []string) (*azuredns.DNSProvider, error)
+	acmeDNS     func(host string, accountJson []byte, dns01Nameservers []string) (*acmedns.DNSProvider, error)
+	dnsMadeEasy func(baseURL, apiKey, secretKey string, domainID uint, dns01Nameservers []string) (*dnsmadeeasy.DNSProvider, error)
 }
 
 // Solver is a solver for the acme dns01 challenge.
@@ -262,6 +264,24 @@ func (s *Solver) solverForIssuerProvider(issuer v1alpha1.GenericIssuer, provider
 			accountSecretBytes,
 			s.DNS01Nameservers,
 		)
+	case providerConfig.DNSMadeEasy != nil:
+		secretKey, err := s.secretLister.Secrets(resourceNamespace).Get(providerConfig.DNSMadeEasy.SecretKey.Name)
+		if err != nil {
+			return nil, fmt.Errorf("error getting dnsmadeeasy secret key: %s", err)
+		}
+
+		secretKeyBytes, ok := secretKey.Data[providerConfig.DNSMadeEasy.SecretKey.Key]
+		if !ok {
+			return nil, fmt.Errorf("error getting dnsmadeeasy secret key: key '%s' not found in secret", providerConfig.DNSMadeEasy.SecretKey.Key)
+		}
+
+		impl, err = s.dnsProviderConstructors.dnsMadeEasy(
+			providerConfig.DNSMadeEasy.BaseURL,
+			providerConfig.DNSMadeEasy.APIKey,
+			string(secretKeyBytes),
+			providerConfig.DNSMadeEasy.DomainID,
+			s.DNS01Nameservers,
+		)
 	default:
 		return nil, fmt.Errorf("no dns provider config specified for provider %q", providerName)
 	}
@@ -279,6 +299,7 @@ func NewSolver(ctx *controller.Context) *Solver {
 			route53.NewDNSProvider,
 			azuredns.NewDNSProviderCredentials,
 			acmedns.NewDNSProviderHostBytes,
+			dnsmadeeasy.NewDNSProvider,
 		},
 	}
 }
