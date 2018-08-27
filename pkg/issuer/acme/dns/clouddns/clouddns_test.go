@@ -55,14 +55,14 @@ func TestNewDNSProviderValidEnv(t *testing.T) {
 		t.Skip("skipping live test (requires credentials)")
 	}
 	os.Setenv("GCE_PROJECT", "my-project")
-	_, err := NewDNSProvider(util.RecursiveNameservers)
+	_, err := NewDNSProviderEnvironment(util.RecursiveNameservers)
 	assert.NoError(t, err)
 	restoreGCloudEnv()
 }
 
 func TestNewDNSProviderMissingCredErr(t *testing.T) {
 	os.Setenv("GCE_PROJECT", "")
-	_, err := NewDNSProvider(util.RecursiveNameservers)
+	_, err := NewDNSProviderEnvironment(util.RecursiveNameservers)
 	assert.EqualError(t, err, "Google Cloud project name missing")
 	restoreGCloudEnv()
 }

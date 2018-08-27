@@ -136,8 +136,8 @@ func newFakeDNSProviders() *fakeDNSProviders {
 		calls: []fakeDNSProviderCall{},
 	}
 	f.constructors = dnsProviderConstructors{
-		cloudDNS: func(project string, serviceAccount []byte, dns01Nameservers []string) (*clouddns.DNSProvider, error) {
-			f.call("clouddns", project, serviceAccount, util.RecursiveNameservers)
+		cloudDNS: func(project string, serviceAccountFile string, serviceAccount []byte, dns01Nameservers []string, ambient bool) (*clouddns.DNSProvider, error) {
+			f.call("clouddns", project, serviceAccountFile, serviceAccount, util.RecursiveNameservers, ambient)
 			return nil, nil
 		},
 		cloudFlare: func(email, apikey string, dns01Nameservers []string) (*cloudflare.DNSProvider, error) {

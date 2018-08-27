@@ -31,11 +31,30 @@ type DNSProvider struct {
 	client           *dns.Service
 }
 
+func NewDNSProvider(project string, saFile string, saBytes []byte, dns01Nameservers []string, ambient bool) (*DNSProvider, error) {
+	if project == "" {
+		return nil, fmt.Errorf("Google Cloud project name missing")
+	}
+	if saFile == "" && len(saBytes) == 0 {
+		if !ambient {
+			return nil, fmt.Errorf("unable to construct clouddns provider: empty credentials; perhaps you meant to enable ambient credentials?")
+		}
+		return NewDNSProviderCredentials(project, dns01Nameservers)
+	}
+	if saFile != "" {
+		return NewDNSProviderServiceAccount(project, saFile, dns01Nameservers)
+	}
+	if len(saBytes) != 0 {
+		return NewDNSProviderServiceAccountBytes(project, saBytes, dns01Nameservers)
+	}
+	return nil, fmt.Errorf("Google Cloud project name missing")
+}
+
 // NewDNSProvider returns a DNSProvider instance configured for Google Cloud
 // DNS. Project name must be passed in the environment variable: GCE_PROJECT.
 // A Service Account file can be passed in the environment variable:
 // GCE_SERVICE_ACCOUNT_FILE
-func NewDNSProvider(dns01Nameservers []string) (*DNSProvider, error) {
+func NewDNSProviderEnvironment(dns01Nameservers []string) (*DNSProvider, error) {
 	project := os.Getenv("GCE_PROJECT")
 	if saFile, ok := os.LookupEnv("GCE_SERVICE_ACCOUNT_FILE"); ok {
 		return NewDNSProviderServiceAccount(project, saFile, dns01Nameservers)
