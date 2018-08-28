@@ -20,7 +20,7 @@ func DNS01Record(domain, value string, nameservers []string) (string, string, in
 	fqdn := fmt.Sprintf("_acme-challenge.%s.", domain)
 
 	// Check if the domain has CNAME then return that
-	r, err := dnsQuery(fqdn, dns.TypeCNAME, nameservers, true)
+	r, err := DnsQuery(fqdn, dns.TypeCNAME, nameservers, true)
 	if err == nil && r.Rcode == dns.RcodeSuccess {
 		fqdn = updateDomainWithCName(r, fqdn)
 	}

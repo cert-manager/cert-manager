@@ -76,7 +76,7 @@ func updateDomainWithCName(r *dns.Msg, fqdn string) string {
 // checkDNSPropagation checks if the expected TXT record has been propagated to all authoritative nameservers.
 func checkDNSPropagation(fqdn, value string, nameservers []string) (bool, error) {
 	// Initial attempt to resolve at the recursive NS
-	r, err := dnsQuery(fqdn, dns.TypeTXT, nameservers, true)
+	r, err := DnsQuery(fqdn, dns.TypeTXT, nameservers, true)
 	if err != nil {
 		return false, err
 	}
@@ -95,7 +95,7 @@ func checkDNSPropagation(fqdn, value string, nameservers []string) (bool, error)
 // checkAuthoritativeNss queries each of the given nameservers for the expected TXT record.
 func checkAuthoritativeNss(fqdn, value string, nameservers []string) (bool, error) {
 	for _, ns := range nameservers {
-		r, err := dnsQuery(fqdn, dns.TypeTXT, []string{net.JoinHostPort(ns, "53")}, false)
+		r, err := DnsQuery(fqdn, dns.TypeTXT, []string{net.JoinHostPort(ns, "53")}, false)
 		if err != nil {
 			return false, err
 		}
@@ -124,9 +124,9 @@ func checkAuthoritativeNss(fqdn, value string, nameservers []string) (bool, erro
 	return true, nil
 }
 
-// dnsQuery will query a nameserver, iterating through the supplied servers as it retries
+// DnsQuery will query a nameserver, iterating through the supplied servers as it retries
 // The nameserver should include a port, to facilitate testing where we talk to a mock dns server.
-func dnsQuery(fqdn string, rtype uint16, nameservers []string, recursive bool) (in *dns.Msg, err error) {
+func DnsQuery(fqdn string, rtype uint16, nameservers []string, recursive bool) (in *dns.Msg, err error) {
 	m := new(dns.Msg)
 	m.SetQuestion(fqdn, rtype)
 	m.SetEdns0(4096, false)
@@ -163,7 +163,7 @@ func lookupNameservers(fqdn string, nameservers []string) ([]string, error) {
 		return nil, fmt.Errorf("Could not determine the zone: %v", err)
 	}
 
-	r, err := dnsQuery(zone, dns.TypeNS, nameservers, true)
+	r, err := DnsQuery(zone, dns.TypeNS, nameservers, true)
 	if err != nil {
 		return nil, err
 	}
@@ -192,7 +192,7 @@ func FindZoneByFqdn(fqdn string, nameservers []string) (string, error) {
 	for _, index := range labelIndexes {
 		domain := fqdn[index:]
 
-		in, err := dnsQuery(domain, dns.TypeSOA, nameservers, true)
+		in, err := DnsQuery(domain, dns.TypeSOA, nameservers, true)
 		if err != nil {
 			return "", err
 		}
