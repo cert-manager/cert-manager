@@ -11,7 +11,7 @@ before_script:
   # Install docker
   # Note: 1.11+ changes the tarball format
   - curl -L "https://get.docker.com/builds/Linux/x86_64/docker-1.9.1.tgz" | tar -C /usr/bin -xvzf- --strip-components=3 usr/local/bin/docker
-  - curl -L https://storage.googleapis.com/kubernetes-helm/helm-v2.8.1-linux-amd64.tar.gz | tar -C /tmp -xvzf- && mv /tmp/linux-amd64/helm /usr/local/bin
+  - curl -L https://storage.googleapis.com/kubernetes-helm/helm-v2.10.0-linux-amd64.tar.gz | tar -C /tmp -xvzf- && mv /tmp/linux-amd64/helm /usr/local/bin
   - curl -L https://github.com/golang/dep/releases/download/v0.4.1/dep-linux-amd64 >/tmp/dep && chmod +x /tmp/dep && mv /tmp/dep /usr/local/bin/
   - apt-get update
   - apt-get install -y make curl
