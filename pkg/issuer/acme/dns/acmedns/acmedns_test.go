@@ -50,21 +50,19 @@ func TestValidJsonAccount(t *testing.T) {
     }`)
 	provider, err := NewDNSProviderHostBytes("http://localhost/", accountJson, util.RecursiveNameservers)
 	assert.NoError(t, err, "Expected no error constructing DNSProvider")
-
-	assert.NoError(t, err, "Expected account to be set from JSON")
 	assert.Equal(t, provider.accounts["domain"].FullDomain, "fooldom")
 }
 
 func TestNoValidJsonAccount(t *testing.T) {
 	accountJson := []byte(`{"duck": "quack"}`)
 	_, err := NewDNSProviderHostBytes("http://localhost/", accountJson, util.RecursiveNameservers)
-	assert.Error(t, err, "Expected no error constructing DNSProvider")
+	assert.Error(t, err, "Expected error constructing DNSProvider from invalid accountJson")
 }
 
 func TestNoValidJson(t *testing.T) {
 	accountJson := []byte("b00m")
 	_, err := NewDNSProviderHostBytes("http://localhost/", accountJson, util.RecursiveNameservers)
-	assert.Error(t, err, "Expected no error constructing DNSProvider")
+	assert.Error(t, err, "Expected error constructing DNSProvider from invalid JSON")
 }
 
 func TestLiveAcmeDnsPresent(t *testing.T) {
