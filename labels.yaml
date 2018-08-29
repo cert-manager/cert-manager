@@ -1,5 +1,6 @@
 ---
 labels:
+
   # Keys for each item: color, description, name, target, deleteAfter, previously
   #   deleteAfter: 2006-01-02T15:04:05Z (rfc3339)
   #   previously: list of previous labels (color name deleteAfter, previously)
