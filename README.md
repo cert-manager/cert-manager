@@ -63,6 +63,17 @@ Anyone is welcome to join these calls, even if just to ask questions.
 
 Meeting notes are recorded in [Google docs](https://docs.google.com/document/d/1Tc5t6ylY9dhXAan1OjOoldeaoys1Yh4Ir710ATfBa5U).
 
+Possible resources for *help*:
+
+* The official channel `#cert-manager` on `kubernetes.slack.com`
+
+> There is also a good chance to get some support on non-official support
+> channels for *cert-manager*, but be aware that these are rather general
+> kubernetes discussion channels.
+
+* Slack channels like `#kubernetes-users` or `#kubernetes-novice` on `kubernetes.slack.com`
+* If you think you've run into a bug, and you cannot find an existing issue open that describes your problem, please file an issue against the repo [here](https://github.com/jetstack/cert-manager/issues).
+
 ## Contributing
 
 We welcome pull requests with open arms! There's a lot of work to do here, and
