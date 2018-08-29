@@ -214,7 +214,7 @@ func TestSolverFor(t *testing.T) {
 				Builder: &test.Builder{
 					KubeObjects: []runtime.Object{
 						newSecret("acmedns-key", "default", map[string][]byte{
-							"acmedns.json": []byte("{x}"),
+							"acmedns.json": []byte("{}"),
 						}),
 					},
 				},
