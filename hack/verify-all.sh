@@ -45,4 +45,4 @@ echo "+++ Running dep checker"
 ${ROOT}/hack/verify-deps.sh
 
 echo "+++ Running bazel tests"
-bazel test //hack/...
+bazel test //hack/... "$@"
