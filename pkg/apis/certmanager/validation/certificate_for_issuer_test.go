@@ -136,7 +136,7 @@ func TestValidateCertificateForIssuer(t *testing.T) {
 		"acme certificate with organization set": {
 			crt: &v1alpha1.Certificate{
 				Spec: v1alpha1.CertificateSpec{
-					Organization: "shouldfailorg",
+					Organization: []string{"shouldfailorg"},
 					IssuerRef:    validIssuerRef,
 					ACME: &v1alpha1.ACMECertificateConfig{
 						Config: []v1alpha1.DomainSolverConfig{
@@ -155,7 +155,7 @@ func TestValidateCertificateForIssuer(t *testing.T) {
 				Namespace: defaultTestNamespace,
 			}),
 			errs: []*field.Error{
-				field.Invalid(fldPath.Child("organization"), "shouldfailorg", "ACME does not support setting the organization name"),
+				field.Invalid(fldPath.Child("organization"), []string{"shouldfailorg"}, "ACME does not support setting the organization name"),
 			},
 		},
 		"certificate with unspecified issuer type": {

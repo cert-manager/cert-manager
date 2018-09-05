@@ -78,7 +78,7 @@ func TestValidateCertificate(t *testing.T) {
 				Spec: v1alpha1.CertificateSpec{
 					CommonName:   "testcn",
 					SecretName:   "abc",
-					Organization: "testorg",
+					Organization: []string{"testorg"},
 					IssuerRef:    validIssuerRef,
 				},
 			},
