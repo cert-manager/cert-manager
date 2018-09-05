@@ -47,6 +47,8 @@ resources: {}
   #   cpu: 10m
   #   memory: 32Mi
 
+priorityClassName: ""
+
 podAnnotations: {}
 
 podLabels: {}
