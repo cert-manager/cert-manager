@@ -331,8 +331,9 @@ func NewCertManagerBasicCertificate(name, secretName, issuerName string, issuerK
 			Name: name,
 		},
 		Spec: v1alpha1.CertificateSpec{
-			CommonName: "test.domain.com",
-			SecretName: secretName,
+			CommonName:   "test.domain.com",
+			Organization: []string{"test-org"},
+			SecretName:   secretName,
 			IssuerRef: v1alpha1.ObjectReference{
 				Name: issuerName,
 				Kind: issuerKind,
