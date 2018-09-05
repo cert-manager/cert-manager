@@ -26,5 +26,10 @@ dep ensure -v "$@"
 echo "+++ Cleaning up erroneous vendored testdata symlinks"
 rm -Rf vendor/github.com/prometheus/procfs/fixtures \
        vendor/github.com/hashicorp/go-rootcerts/test-fixtures \
-       vendor/github.com/json-iterator/go/skip_tests
+       vendor/github.com/json-iterator/go/skip_tests \
+       vendor/github.com/coreos/etcd/Documentation \
+       vendor/github.com/coreos/etcd/cmd/etcdctl \
+       vendor/github.com/coreos/etcd/cmd/functional \
+       vendor/github.com/coreos/etcd/cmd/tools \
+       vendor/github.com/coreos/etcd/cmd/etcd
 popd

@@ -6,3 +6,9 @@ image:
 
 extraArgs:
 - --v=4
+
+webhook:
+  enabled: true
+  image:
+    tag: build
+    pullPolicy: Never
