@@ -262,6 +262,9 @@ func (s *Solver) solverForIssuerProvider(issuer v1alpha1.GenericIssuer, provider
 			accountSecretBytes,
 			s.DNS01Nameservers,
 		)
+		if err != nil {
+			return nil, fmt.Errorf("error instantiating acmedns challenge solver: %s", err)
+		}
 	default:
 		return nil, fmt.Errorf("no dns provider config specified for provider %q", providerName)
 	}
