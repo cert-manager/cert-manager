@@ -55,12 +55,12 @@ func DNSNamesForCertificate(crt *v1alpha1.Certificate) []string {
 
 const defaultOrganization = "cert-manager"
 
-func OrganizationForCertificate(crt *v1alpha1.Certificate) string {
-	if crt.Spec.Organization != "" {
-		return crt.Spec.Organization
+func OrganizationForCertificate(crt *v1alpha1.Certificate) []string {
+	if len(crt.Spec.Organization) == 0 {
+		return []string{defaultOrganization}
 	}
 
-	return defaultOrganization
+	return crt.Spec.Organization
 }
 
 var serialNumberLimit = new(big.Int).Lsh(big.NewInt(1), 128)
@@ -86,7 +86,7 @@ func GenerateCSR(issuer v1alpha1.GenericIssuer, crt *v1alpha1.Certificate) (*x50
 		Version:            3,
 		SignatureAlgorithm: sigAlgo,
 		Subject: pkix.Name{
-			Organization: []string{organization},
+			Organization: organization,
 			CommonName:   commonName,
 		},
 		DNSNames: dnsNames,
@@ -129,7 +129,7 @@ func GenerateTemplate(issuer v1alpha1.GenericIssuer, crt *v1alpha1.Certificate, 
 		SignatureAlgorithm:    sigAlgo,
 		IsCA:                  crt.Spec.IsCA,
 		Subject: pkix.Name{
-			Organization: []string{organization},
+			Organization: organization,
 			CommonName:   commonName,
 		},
 		NotBefore: time.Now(),
