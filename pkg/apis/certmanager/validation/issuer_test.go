@@ -403,6 +403,48 @@ func TestValidateACMEIssuerDNS01Config(t *testing.T) {
 			},
 			errs: []*field.Error{},
 		},
+		"valid rfc2136 config": {
+			cfg: &v1alpha1.ACMEIssuerDNS01Config{
+				Providers: []v1alpha1.ACMEIssuerDNS01Provider{
+					{
+						Name: "a name",
+						RFC2136: &v1alpha1.ACMEIssuerDNS01ProviderRFC2136{
+							Nameserver: "127.0.0.1",
+						},
+					},
+				},
+			},
+			errs: []*field.Error{},
+		},
+		"missing rfc2136 required field": {
+			cfg: &v1alpha1.ACMEIssuerDNS01Config{
+				Providers: []v1alpha1.ACMEIssuerDNS01Provider{
+					{
+						Name:    "a name",
+						RFC2136: &v1alpha1.ACMEIssuerDNS01ProviderRFC2136{},
+					},
+				},
+			},
+			errs: []*field.Error{
+				field.Required(providersPath.Index(0).Child("rfc2136", "nameserver"), ""),
+			},
+		},
+		"rfc2136 provider using non-supported algorithm": {
+			cfg: &v1alpha1.ACMEIssuerDNS01Config{
+				Providers: []v1alpha1.ACMEIssuerDNS01Provider{
+					{
+						Name: "a name",
+						RFC2136: &v1alpha1.ACMEIssuerDNS01ProviderRFC2136{
+							Nameserver:    "127.0.0.1",
+							TSIGAlgorithm: "HAMMOCK",
+						},
+					},
+				},
+			},
+			errs: []*field.Error{
+				field.Forbidden(providersPath.Index(0).Child("rfc2136", "tsigSecretSecretRef"), ""),
+			},
+		},
 		"multiple providers configured": {
 			cfg: &v1alpha1.ACMEIssuerDNS01Config{
 				Providers: []v1alpha1.ACMEIssuerDNS01Provider{
