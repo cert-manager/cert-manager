@@ -146,6 +146,6 @@ $(DOCKER_PUSH_TARGETS):
 	$(eval DOCKER_PUSH_CMD := $(subst docker_push_,,$@))
 	set -e; \
 		for tag in $(IMAGE_TAGS); do \
-		docker tag $(REGISTRY)/$(APP_NAME)-$(DOCKER_PUSH_CMD):$(BUILD_TAG) $(REGISTRY)/$(APP_NAME)-$(DOCKER_PUSH_CMD):$${tag} ; \
+		docker tag $(REGISTRY)/$(APP_NAME)-$(DOCKER_PUSH_CMD)-$(GOARCH):$(BUILD_TAG) $(REGISTRY)/$(APP_NAME)-$(DOCKER_PUSH_CMD):$${tag} ; \
 		docker push $(REGISTRY)/$(APP_NAME)-$(DOCKER_PUSH_CMD):$${tag}; \
 	done
