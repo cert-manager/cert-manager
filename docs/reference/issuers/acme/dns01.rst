@@ -142,6 +142,19 @@ Akamai FastDNS
         name: akamai-dns
         key: accessToken
 
+RFC2136
+========
+
+.. code-block:: yaml
+
+    rfc2136:
+      nameserver: 192.168.0.1
+      tsigKeyName: myzone-tsig
+      tsigAlgorithm: HMACMD5
+      tsigSecretSecretRef:
+        name: my-secret
+        key: tsigkey
+
 ACME-DNS
 ========
 

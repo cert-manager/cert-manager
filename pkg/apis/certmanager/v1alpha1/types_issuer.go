@@ -16,7 +16,9 @@ limitations under the License.
 
 package v1alpha1
 
-import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+import (
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+)
 
 // +genclient
 // +genclient:nonNamespaced
@@ -150,6 +152,7 @@ type ACMEIssuerDNS01Provider struct {
 	Route53    *ACMEIssuerDNS01ProviderRoute53    `json:"route53,omitempty"`
 	AzureDNS   *ACMEIssuerDNS01ProviderAzureDNS   `json:"azuredns,omitempty"`
 	AcmeDNS    *ACMEIssuerDNS01ProviderAcmeDNS    `json:"acmedns,omitempty"`
+	RFC2136    *ACMEIssuerDNS01ProviderRFC2136    `json:"rfc2136,omitempty"`
 }
 
 // ACMEIssuerDNS01ProviderAkamai is a structure containing the DNS
@@ -202,6 +205,29 @@ type ACMEIssuerDNS01ProviderAzureDNS struct {
 type ACMEIssuerDNS01ProviderAcmeDNS struct {
 	Host          string            `json:"host"`
 	AccountSecret SecretKeySelector `json:"accountSecretRef"`
+}
+
+// ACMEIssuerDNS01ProviderRFC2136 is a structure containing the
+// configuration for RFC2136 DNS
+type ACMEIssuerDNS01ProviderRFC2136 struct {
+	// The IP address of the DNS supporting RFC2136. Required.
+	Nameserver string `json:"nameserver"`
+
+	// The name of the secret containing the TSIG value.
+	// If ``tsigSecretSecretRef`` is not defined, ``tsigKey`` is ignored.
+	// +optional
+	TSIGSecret SecretKeySelector `json:"tsigSecretSecretRef"`
+
+	// The TSIG Key name configured in the DNS. If ``tsigKeyName`` is not defined,
+	// ``tsigSecretSecretRef`` is ignored
+	// +optional
+	TSIGKeyName string `json:"tsigKeyName"`
+
+	// The TSIG Algorithm configured in the DNS supporting RFC2136. Acceptable
+	// values are (case-insensitive): ``HMACMD5`` (default), ``HMACSHA1``,
+	// ``HMACSHA256`` or ``HMACSHA512``
+	// +optional
+	TSIGAlgorithm string `json:"tsigAlgorithm"`
 }
 
 // IssuerStatus contains status information about an Issuer

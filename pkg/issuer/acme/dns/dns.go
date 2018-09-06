@@ -33,6 +33,7 @@ import (
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/azuredns"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/clouddns"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/cloudflare"
+	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/rfc2136"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/route53"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
 )
@@ -56,6 +57,7 @@ type dnsProviderConstructors struct {
 	route53    func(accessKey, secretKey, hostedZoneID, region string, ambient bool, dns01Nameservers []string) (*route53.DNSProvider, error)
 	azureDNS   func(clientID, clientSecret, subscriptionID, tenentID, resourceGroupName, hostedZoneName string, dns01Nameservers []string) (*azuredns.DNSProvider, error)
 	acmeDNS    func(host string, accountJson []byte, dns01Nameservers []string) (*acmedns.DNSProvider, error)
+	rfc2136    func(nameserver, tsigAlgorithm, tsigKeyName, tsigSecret string) (*rfc2136.DNSProvider, error)
 }
 
 // Solver is a solver for the acme dns01 challenge.
@@ -265,6 +267,29 @@ func (s *Solver) solverForIssuerProvider(issuer v1alpha1.GenericIssuer, provider
 		if err != nil {
 			return nil, fmt.Errorf("error instantiating acmedns challenge solver: %s", err)
 		}
+	case providerConfig.RFC2136 != nil:
+		var secret string
+		if len(providerConfig.RFC2136.TSIGSecret.Name) > 0 {
+			tsigSecret, err := s.secretLister.Secrets(resourceNamespace).Get(providerConfig.RFC2136.TSIGSecret.Name)
+			if err != nil {
+				return nil, fmt.Errorf("error getting rfc2136 service account: %s", err.Error())
+			}
+			secretBytes, ok := tsigSecret.Data[providerConfig.RFC2136.TSIGSecret.Key]
+			if !ok {
+				return nil, fmt.Errorf("error getting rfc2136 secret key: key '%s' not found in secret", providerConfig.RFC2136.TSIGSecret.Key)
+			}
+			secret = string(secretBytes)
+		}
+
+		impl, err = s.dnsProviderConstructors.rfc2136(
+			providerConfig.RFC2136.Nameserver,
+			string(providerConfig.RFC2136.TSIGAlgorithm),
+			providerConfig.RFC2136.TSIGKeyName,
+			secret,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("error instantiating rfc2136 challenge solver: %s", err.Error())
+		}
 	default:
 		return nil, fmt.Errorf("no dns provider config specified for provider %q", providerName)
 	}
@@ -282,6 +307,7 @@ func NewSolver(ctx *controller.Context) *Solver {
 			route53.NewDNSProvider,
 			azuredns.NewDNSProviderCredentials,
 			acmedns.NewDNSProviderHostBytes,
+			rfc2136.NewDNSProviderCredentials,
 		},
 	}
 }
