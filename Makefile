@@ -16,7 +16,7 @@ PACKAGE_NAME := github.com/jetstack/cert-manager
 REGISTRY := quay.io/jetstack
 APP_NAME := cert-manager
 IMAGE_TAGS := canary
-GOPATH ?= $HOME/go
+GOPATH ?= $$HOME/go
 HACK_DIR ?= hack
 BUILD_TAG := build
 
@@ -24,7 +24,7 @@ BUILD_TAG := build
 # which require a domain that resolves to the ingress controller to be used for
 # e2e tests.
 E2E_NGINX_CERTIFICATE_DOMAIN=
-
+KUBECONFIG ?= $$HOME/.kube/config
 PEBBLE_IMAGE_REPO=quay.io/munnerz/pebble
 
 # AppVersion is set as the AppVersion to be compiled into the controller binary.
@@ -139,7 +139,7 @@ e2e_test:
 	mkdir -p "$$(pwd)/_artifacts"
 	# TODO: make these paths configurable
 	# Run e2e tests
-	KUBECONFIG=$$HOME/.kube/config CERTMANAGERCONFIG=$$HOME/.kube/config \
+	KUBECONFIG=$(KUBECONFIG) CERTMANAGERCONFIG=$(KUBECONFIG) \
 		./e2e-tests \
 			-acme-nginx-certificate-domain=$(E2E_NGINX_CERTIFICATE_DOMAIN) \
 			-cloudflare-email=$${CLOUDFLARE_E2E_EMAIL} \
