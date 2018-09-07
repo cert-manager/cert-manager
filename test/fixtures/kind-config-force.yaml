@@ -1,3 +1,7 @@
+# this config is a copy of kind-config.yaml, but with an additional lifecycle
+# hook that downloads kubeadm 1.11.2 which is able to bootstrap kubernetes 1.10
+# clusters needed during tests.
+#
 # this config file is similar to the default, except we set the cluster's
 # service cidr range to be 10.0.0.0/16.
 # we do this because we need a fixed/predictable clusterIP of 10.0.0.15 for the
@@ -30,3 +34,20 @@ kubeadmConfigTemplate: |
     baseConfig:
       clusterDNS:
       - 10.0.0.10
+nodeLifecycle:
+  preKubeadm:
+  # we download kubeadm 1.11.x here manually as earlier version of kubeadm do
+  # not support the kubeadm MasterConfiguration structure
+  - name: download kubeadm 1.11.2
+    mustSucceed: true
+    command:
+    - /bin/bash
+    - -c
+    - |
+      #!/bin/bash
+      set -o errexit
+      set -o nounset
+      set -o pipefail
+
+      curl -o /usr/bin/kubeadm https://storage.googleapis.com/kubernetes-release/release/v1.11.2/bin/linux/amd64/kubeadm
+      chmod +x /usr/bin/kubeadm

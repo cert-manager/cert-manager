@@ -40,11 +40,17 @@ trap cleanup EXIT
 
 # deploy_kind will deploy a kubernetes-in-docker cluster
 deploy_kind() {
+
+    local KIND_CONFIG="kind-config.yaml"
+    if [ ! -z "${KIND_KUBEADM_1_11_FORCE:-}" ]; then
+        KIND_CONFIG="kind-config-force.yaml"
+    fi
+
     # create the kind cluster
     kind create \
         --name="${KIND_CLUSTER_NAME}" \
         --image="${KIND_IMAGE}" \
-        --config "${REPO_ROOT}"/test/fixtures/kind-config.yaml
+        --config "${REPO_ROOT}"/test/fixtures/"${KIND_CONFIG}"
 
     export KUBECONFIG="${HOME}/.kube/kind-config-${KIND_CLUSTER_NAME}"
 
