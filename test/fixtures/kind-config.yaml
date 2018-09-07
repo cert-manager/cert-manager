@@ -30,3 +30,20 @@ kubeadmConfigTemplate: |
     baseConfig:
       clusterDNS:
       - 10.0.0.10
+nodeLifecycle:
+  preKubeadm:
+  # we download kubeadm 1.11.x here manually as earlier version of kubeadm do
+  # not support the kubeadm MasterConfiguration structure
+  - name: download kubeadm 1.11.2
+    mustSucceed: true
+    command:
+    - /bin/bash
+    - -c
+    - |
+      #!/bin/bash
+      set -o errexit
+      set -o nounset
+      set -o pipefail
+
+      curl -o /usr/bin/kubeadm https://storage.googleapis.com/kubernetes-release/release/v1.11.2/bin/linux/amd64/kubeadm
+      chmod +x /usr/bin/kubeadm
