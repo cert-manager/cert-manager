@@ -99,7 +99,7 @@ spec:
   ports:
   - name: https
     port: 443
-    targetPort: 443
+    targetPort: 6443
   selector:
     app: webhook
     release: webhook
@@ -138,6 +138,7 @@ spec:
           - --v=12
           - --tls-cert-file=/certs/tls.crt
           - --tls-private-key-file=/certs/tls.key
+          - --secure-port=6443
           - --disable-admission-plugins=NamespaceLifecycle,MutatingAdmissionWebhook,ValidatingAdmissionWebhook,Initializers
           env:
           - name: POD_NAMESPACE
