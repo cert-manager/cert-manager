@@ -29,6 +29,7 @@ REPO_ROOT="${SCRIPT_ROOT}/../.."
 KIND_CLUSTER_NAME="cm-e2e"
 # TODO: can we rely on this being fixed as such?
 KIND_CONTAINER_NAME="kind-${KIND_CLUSTER_NAME}-control-plane"
+KIND_IMAGE=${KIND_IMAGE:-eu.gcr.io/jetstack-build-infra-images/kind:1.11.2-0}
 
 # cleanup will call kind delete - it will absorb errors
 cleanup() {
@@ -39,16 +40,11 @@ trap cleanup EXIT
 
 # deploy_kind will deploy a kubernetes-in-docker cluster
 deploy_kind() {
-    # build kind base and node image
-    # TODO: use pre-built kind images
-    kind build base
-    kind build node --type=apt
-
-    # Create a directory to contain the final KUBECONFIG file
-    mkdir -p "$HOME/.kube"
-
     # create the kind cluster
-    kind create --name="${KIND_CLUSTER_NAME}" --config "${REPO_ROOT}"/test/fixtures/kind-config.yaml
+    kind create \
+        --name="${KIND_CLUSTER_NAME}" \
+        --image="${KIND_IMAGE}" \
+        --config "${REPO_ROOT}"/test/fixtures/kind-config.yaml
 
     export KUBECONFIG="${HOME}/.kube/kind-config-${KIND_CLUSTER_NAME}"
 
