@@ -18,6 +18,7 @@
 # (kubernetes-in-docker).
 #
 # It requires 'kind', 'helm', 'kubectl' and 'docker' to be installed.
+# kubectl will be automatically installed if not found when on linux
 
 set -o errexit
 set -o nounset
@@ -96,9 +97,12 @@ build_images() {
     # Build cert-manager binaries & docker image
     make build APP_VERSION=build
 
-    docker save quay.io/jetstack/cert-manager-controller:build quay.io/jetstack/cert-manager-acmesolver:build quay.io/jetstack/cert-manager-webhook:build -o cmbundle.tar.gz
-    docker cp cmbundle.tar.gz "${KIND_CONTAINER_NAME}":/cmbundle.tar.gz
+    local TMP_DIR=$(mktemp -d)
+    local BUNDLE_FILE="${TMP_DIR}"/cmbundle.tar.gz
+    docker save quay.io/jetstack/cert-manager-controller:build quay.io/jetstack/cert-manager-acmesolver:build quay.io/jetstack/cert-manager-webhook:build -o "${BUNDLE_FILE}"
+    docker cp "${BUNDLE_FILE}" "${KIND_CONTAINER_NAME}":/cmbundle.tar.gz
     docker exec "${KIND_CONTAINER_NAME}" docker load -i /cmbundle.tar.gz
+    rm -Rf "${TMP_DIR}"
 }
 
 deploy_kind
