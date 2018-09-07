@@ -17,6 +17,17 @@ go_binary(
     visibility = ["//visibility:public"],
 )
 
+go_image(
+    name = "image",
+    base = "@alpine//image",
+    embed = [":go_default_library"],
+    goarch = "amd64",
+    goos = "linux",
+    importpath = "github.com/jetstack/cert-manager",
+    pure = "on",
+    visibility = ["//visibility:public"],
+)
+
 filegroup(
     name = "package-srcs",
     srcs = glob(["**"]),

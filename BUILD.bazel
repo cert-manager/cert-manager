@@ -107,6 +107,7 @@ container_bundle(
     images = {
         "quay.io/jetstack/cert-manager-controller:{STABLE_DOCKER_TAG}": "//cmd/controller:image",
         "quay.io/jetstack/cert-manager-acmesolver:{STABLE_DOCKER_TAG}": "//cmd/acmesolver:image",
+        "quay.io/jetstack/cert-manager-webhook:{STABLE_DOCKER_TAG}": "//cmd/webhook:image",
     },
     stamp = True,
 )
