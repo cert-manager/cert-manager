@@ -27,6 +27,7 @@ import (
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	"github.com/jetstack/cert-manager/pkg/controller"
 	"github.com/jetstack/cert-manager/pkg/controller/test"
+	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/acmedns"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/cloudflare"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
 )
@@ -207,6 +208,40 @@ func TestSolverFor(t *testing.T) {
 			},
 			domain:    "example.com",
 			expectErr: true,
+		},
+		"loads json for acmedns provider": {
+			solverFixture: &solverFixture{
+				Builder: &test.Builder{
+					KubeObjects: []runtime.Object{
+						newSecret("acmedns-key", "default", map[string][]byte{
+							"acmedns.json": []byte("{}"),
+						}),
+					},
+				},
+				Issuer: newIssuer("test", "default", []v1alpha1.ACMEIssuerDNS01Provider{
+					{
+						Name: "fake-acmedns",
+						AcmeDNS: &v1alpha1.ACMEIssuerDNS01ProviderAcmeDNS{
+							Host: "http://127.0.0.1/",
+							AccountSecret: v1alpha1.SecretKeySelector{
+								LocalObjectReference: v1alpha1.LocalObjectReference{
+									Name: "acmedns-key",
+								},
+								Key: "acmedns.json",
+							},
+						},
+					},
+				}),
+				Challenge: v1alpha1.ACMEOrderChallenge{
+					SolverConfig: v1alpha1.SolverConfig{
+						DNS01: &v1alpha1.DNS01SolverConfig{
+							Provider: "fake-acmedns",
+						},
+					},
+				},
+			},
+			domain:             "example.com",
+			expectedSolverType: reflect.TypeOf(&acmedns.DNSProvider{}),
 		},
 	}
 	testFn := func(test testT) func(*testing.T) {

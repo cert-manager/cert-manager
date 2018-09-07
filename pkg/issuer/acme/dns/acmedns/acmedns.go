@@ -54,7 +54,7 @@ func NewDNSProviderHostBytes(host string, accountJson []byte, dns01Nameservers [
 
 	var accounts map[string]goacmedns.Account
 	if err := json.Unmarshal(accountJson, &accounts); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Error unmarshalling accountJson: %s", err)
 	}
 
 	return &DNSProvider{

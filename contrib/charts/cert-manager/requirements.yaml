@@ -1,0 +1,6 @@
+# requirements.yaml
+dependencies:
+- name: webhook
+  version: "0.1.0"
+  repository: "file://webhook"
+  condition: webhook.enabled

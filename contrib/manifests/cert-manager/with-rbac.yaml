@@ -5,6 +5,9 @@ apiVersion: v1
 kind: Namespace
 metadata:
   name: "cert-manager"
+  labels:
+    name: "cert-manager"
+    certmanager.k8s.io/disable-validation: "true"
 
 ---
 # Source: cert-manager/templates/serviceaccount.yaml
@@ -15,7 +18,7 @@ metadata:
   namespace: "cert-manager"
   labels:
     app: cert-manager
-    chart: cert-manager-v0.4.0-dev.4
+    chart: cert-manager-v0.4.0-dev.6
     release: cert-manager
     heritage: Tiller
 ---
@@ -24,9 +27,11 @@ apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
 metadata:
   name: certificates.certmanager.k8s.io
+  annotations:
+    "helm.sh/hook": crd-install
   labels:
     app: cert-manager
-    chart: cert-manager-v0.4.0-dev.4
+    chart: cert-manager-v0.4.0-dev.6
     release: cert-manager
     heritage: Tiller
 spec:
@@ -46,9 +51,11 @@ apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
 metadata:
   name: clusterissuers.certmanager.k8s.io
+  annotations:
+    "helm.sh/hook": crd-install
   labels:
     app: cert-manager
-    chart: cert-manager-v0.4.0-dev.4
+    chart: cert-manager-v0.4.0-dev.6
     release: cert-manager
     heritage: Tiller
 spec:
@@ -64,9 +71,11 @@ apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
 metadata:
   name: issuers.certmanager.k8s.io
+  annotations:
+    "helm.sh/hook": crd-install
   labels:
     app: cert-manager
-    chart: cert-manager-v0.4.0-dev.4
+    chart: cert-manager-v0.4.0-dev.6
     release: cert-manager
     heritage: Tiller
 spec:
@@ -84,7 +93,7 @@ metadata:
   name: cert-manager
   labels:
     app: cert-manager
-    chart: cert-manager-v0.4.0-dev.4
+    chart: cert-manager-v0.4.0-dev.6
     release: cert-manager
     heritage: Tiller
 rules:
@@ -104,7 +113,7 @@ metadata:
   name: cert-manager
   labels:
     app: cert-manager
-    chart: cert-manager-v0.4.0-dev.4
+    chart: cert-manager-v0.4.0-dev.6
     release: cert-manager
     heritage: Tiller
 roleRef:
@@ -124,7 +133,7 @@ metadata:
   namespace: "cert-manager"
   labels:
     app: cert-manager
-    chart: cert-manager-v0.4.0-dev.4
+    chart: cert-manager-v0.4.0-dev.6
     release: cert-manager
     heritage: Tiller
 spec:
