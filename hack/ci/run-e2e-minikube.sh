@@ -14,8 +14,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-## This file is a stop gap whilst we migrate the Makefile to better
-## supprt prow for our testing
+# This file is the entrypoint to our legacy minikube e2e testing environment
+# for cert-manager. It is currently used to run e2e test jobs against a
+# 1.9 or lower minikube built cluster.
+# This script should not be used for anything except for our CI process.
+
 set -o errexit
 set -o nounset
 set -o pipefail
@@ -28,36 +31,12 @@ echo "Waiting for minikube cluster to be ready..."
 
 while true; do if kubectl get nodes; then break; fi; echo "Waiting 5s for kubernetes to be ready..."; sleep 5; done
 
-echo "Installing helm with cluster-admin privileges..."
-cat <<EOF | kubectl apply -f -
-apiVersion: v1
-kind: List
-items:
-
-### Tiller ###
-# Create a ServiceAccount for tiller to use
-- apiVersion: v1
-  kind: ServiceAccount
-  metadata:
-    name: tiller
-    namespace: kube-system
-# Bind tiller to the cluster-admin role
-- apiVersion: rbac.authorization.k8s.io/v1beta1
-  kind: ClusterRoleBinding
-  metadata:
-    name: "tiller"
-  roleRef:
-    apiGroup: rbac.authorization.k8s.io
-    kind: ClusterRole
-    name: "cluster-admin"
-  subjects:
-  - apiGroup: ""
-    kind: ServiceAccount
-    name: tiller
-    namespace: kube-system
-EOF
-helm init --service-account=tiller
-
+# Install tiller with admin permissions
+kubectl create serviceaccount -n kube-system tiller
+# Bind the tiller service account to the cluster-admin role
+kubectl create clusterrolebinding tiller-binding --clusterrole=cluster-admin --serviceaccount kube-system:tiller
+# Deploy tiller
+helm init --service-account tiller --wait
 
 echo "Exposing nginx-ingress service with a stable IP (10.0.0.15)"
 # Setup service for nginx ingress controller. A DNS entry for *.certmanager.kubernetes.network has been setup to point to 10.0.0.15 for e2e tests
