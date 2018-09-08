@@ -63,8 +63,19 @@ DOCKER_BUILD_FLAGS := --build-arg VCS_REF=$(GIT_COMMIT) $(DOCKER_BUILD_FLAGS)
 ###############
 
 build: $(CMDS) docker_build
-verify: generate_verify deploy_verify hack_verify dep_verify go_verify
-verify_pr: hack_verify_pr
+verify: verify_lint verify_codegen verify_deps verify_unit
+
+verify_lint: hack_verify go_fmt
+verify_unit: go_test
+verify_deps: dep_verify
+verify_codegen: generate_verify deploy_verify
+# requires docker
+verify_docs:
+	$(HACK_DIR)/verify-reference-docs.sh
+# requires docker
+verify_chart:
+	$(HACK_DIR)/verify-chart-version.sh
+
 docker_build: $(DOCKER_BUILD_TARGETS)
 docker_push: $(DOCKER_PUSH_TARGETS)
 push: build docker_push
