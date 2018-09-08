@@ -82,7 +82,7 @@ func ValidateACMEIssuerConfig(iss *v1alpha1.ACMEIssuer, fldPath *field.Path) fie
 		el = append(el, field.Required(fldPath.Child("email"), "email address is a required field"))
 	}
 	if len(iss.PrivateKey.Name) == 0 {
-		el = append(el, field.Required(fldPath.Child("privateKey", "name"), "private key secret name is a required field"))
+		el = append(el, field.Required(fldPath.Child("privateKeySecretRef", "name"), "private key secret name is a required field"))
 	}
 	if len(iss.Server) == 0 {
 		el = append(el, field.Required(fldPath.Child("server"), "acme server URL is a required field"))
