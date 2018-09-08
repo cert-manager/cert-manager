@@ -157,7 +157,7 @@ e2e_test:
 			-cloudflare-api-key=$${CLOUDFLARE_E2E_API_TOKEN} \
 			-acme-cloudflare-domain=$${CLOUDFLARE_E2E_DOMAIN} \
 			-pebble-image-repo=$(PEBBLE_IMAGE_REPO) \
-			-report-dir=./_artifacts
+			-report-dir="$${ARTIFACTS:-./_artifacts}"
 
 # Docker targets
 ################
