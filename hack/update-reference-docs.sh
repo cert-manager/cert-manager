@@ -60,6 +60,8 @@ bazel run //:openapi-gen -- \
         --output-package "github.com/jetstack/cert-manager/docs/generated/reference/openapi" \
         --go-header-file "$(pwd)/hack/boilerplate/boilerplate.go.txt"
 
+"${SCRIPT_ROOT}"/hack/update-bazel.sh
+
 # Generate swagger.json from the Golang generated openapi spec
 mkdir -p "${REFERENCE_ROOT}/openapi-spec"
 echo "+++ Running 'swagger-gen' to generate swagger.json"
