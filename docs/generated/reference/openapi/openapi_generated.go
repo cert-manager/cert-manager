@@ -22,6 +22,7 @@ package openapi
 
 import (
 	spec "github.com/go-openapi/spec"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	common "k8s.io/kube-openapi/pkg/common"
 )
 
@@ -2202,11 +2203,10 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"k8s.io/apimachinery/pkg/apis/meta/v1.MicroTime": {
 			Schema: spec.Schema{
 				SchemaProps: spec.SchemaProps{
-					Description: "MicroTime is version of Time with microsecond level precision.",
-					Properties:  map[string]spec.Schema{},
+					Type:   v1.MicroTime{}.OpenAPISchemaType(),
+					Format: v1.MicroTime{}.OpenAPISchemaFormat(),
 				},
 			},
-			Dependencies: []string{},
 		},
 		"k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta": {
 			Schema: spec.Schema{
@@ -2653,11 +2653,10 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"k8s.io/apimachinery/pkg/apis/meta/v1.Time": {
 			Schema: spec.Schema{
 				SchemaProps: spec.SchemaProps{
-					Description: "Time is a wrapper around time.Time which supports correct marshaling to YAML and JSON.  Wrappers are provided for many of the factory methods that the time package offers.",
-					Properties:  map[string]spec.Schema{},
+					Type:   v1.Time{}.OpenAPISchemaType(),
+					Format: v1.Time{}.OpenAPISchemaFormat(),
 				},
 			},
-			Dependencies: []string{},
 		},
 		"k8s.io/apimachinery/pkg/apis/meta/v1.Timestamp": {
 			Schema: spec.Schema{
