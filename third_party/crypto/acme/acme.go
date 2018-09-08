@@ -134,15 +134,15 @@ func (c *Client) Discover(ctx context.Context) (Directory, error) {
 		return Directory{}, err
 	}
 	c.dir = &Directory{
-		NewNonceURL:   v.NewNonce,
-		NewAccountURL: v.NewAccount,
-		NewOrderURL:   v.NewOrder,
-		NewAuthzURL:   v.NewAuthz,
-		RevokeCertURL: v.RevokeCert,
-		KeyChangeURL:  v.KeyChange,
-		Terms:         v.Meta.TermsOfService,
-		Website:       v.Meta.Website,
-		CAA:           v.Meta.CAAIdentities,
+		NewNonceURL:             v.NewNonce,
+		NewAccountURL:           v.NewAccount,
+		NewOrderURL:             v.NewOrder,
+		NewAuthzURL:             v.NewAuthz,
+		RevokeCertURL:           v.RevokeCert,
+		KeyChangeURL:            v.KeyChange,
+		Terms:                   v.Meta.TermsOfService,
+		Website:                 v.Meta.Website,
+		CAA:                     v.Meta.CAAIdentities,
 		ExternalAccountRequired: v.Meta.ExternalAccountRequired,
 	}
 	return *c.dir, nil
