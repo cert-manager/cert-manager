@@ -228,10 +228,12 @@ func TestSolverFor(t *testing.T) {
 						},
 					},
 				}),
-				Challenge: v1alpha1.ACMEOrderChallenge{
-					SolverConfig: v1alpha1.SolverConfig{
-						DNS01: &v1alpha1.DNS01SolverConfig{
-							Provider: "fake-acmedns",
+				Challenge: &v1alpha1.Challenge{
+					Spec: v1alpha1.ChallengeSpec{
+						Config: v1alpha1.SolverConfig{
+							DNS01: &v1alpha1.DNS01SolverConfig{
+								Provider: "fake-acmedns",
+							},
 						},
 					},
 				},

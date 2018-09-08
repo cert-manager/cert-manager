@@ -230,7 +230,6 @@ func (s *Solver) cleanupIngresses(ch *v1alpha1.Challenge) error {
 
 	ingPathToDel := solverPathFn(ch.Spec.Token)
 	var ingRules []extv1beta1.IngressRule
-Outer:
 	for _, rule := range ing.Spec.Rules {
 		if rule.Host == ch.Spec.DNSName {
 			if rule.HTTP == nil {
