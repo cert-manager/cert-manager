@@ -1,0 +1,33 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "collection.go",
+        "constraints.go",
+        "doc.go",
+        "error.go",
+        "magic.go",
+        "parse.go",
+        "range.go",
+        "union.go",
+        "version.go",
+    ],
+    importmap = "github.com/jetstack/cert-manager/vendor/github.com/Masterminds/semver",
+    importpath = "github.com/Masterminds/semver",
+    tags = ["manual"],
+    visibility = ["//visibility:public"],
+)
+
+go_test(
+    name = "go_default_test",
+    srcs = [
+        "benchmark_test.go",
+        "collection_test.go",
+        "constraints_test.go",
+        "set_ops_test.go",
+        "version_test.go",
+    ],
+    embed = [":go_default_library"],
+    tags = ["manual"],
+)

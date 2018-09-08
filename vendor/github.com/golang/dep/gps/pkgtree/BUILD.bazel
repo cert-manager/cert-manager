@@ -1,0 +1,30 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "ignored_ruleset.go",
+        "pkgtree.go",
+        "reachmap.go",
+    ],
+    importmap = "github.com/jetstack/cert-manager/vendor/github.com/golang/dep/gps/pkgtree",
+    importpath = "github.com/golang/dep/gps/pkgtree",
+    tags = ["manual"],
+    visibility = ["//visibility:public"],
+    deps = ["//vendor/github.com/armon/go-radix:go_default_library"],
+)
+
+go_test(
+    name = "go_default_test",
+    srcs = [
+        "ignored_ruleset_test.go",
+        "pkgtree_test.go",
+    ],
+    embed = [":go_default_library"],
+    tags = ["manual"],
+    deps = [
+        "//vendor/github.com/golang/dep/gps/paths:go_default_library",
+        "//vendor/github.com/golang/dep/internal/fs:go_default_library",
+        "//vendor/github.com/golang/dep/internal/test:go_default_library",
+    ],
+)

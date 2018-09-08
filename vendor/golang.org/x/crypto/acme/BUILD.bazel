@@ -1,0 +1,25 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "acme.go",
+        "jws.go",
+        "types.go",
+    ],
+    importmap = "github.com/jetstack/cert-manager/vendor/golang.org/x/crypto/acme",
+    importpath = "golang.org/x/crypto/acme",
+    tags = ["manual"],
+    visibility = ["//visibility:public"],
+)
+
+go_test(
+    name = "go_default_test",
+    srcs = [
+        "acme_test.go",
+        "jws_test.go",
+        "types_test.go",
+    ],
+    embed = [":go_default_library"],
+    tags = ["manual"],
+)

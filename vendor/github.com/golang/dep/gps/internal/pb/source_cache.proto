@@ -1,0 +1,36 @@
+// Copyright 2017 The Go Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
+syntax = "proto3";
+package pb;
+
+// Constraint is a serializable representation of a gps.Constraint or gps.UnpairedVersion.
+message Constraint {
+	enum Type {
+		Revision = 0;
+		Branch = 1;
+		DefaultBranch = 2;
+		Version = 3;
+		Semver = 4;
+	}
+	Type type = 1;
+	string value = 2;
+	//TODO strongly typed Semver field
+}
+
+// ProjectProperties is a serializable representation of gps.ProjectRoot and gps.ProjectProperties.
+message ProjectProperties {
+	string root = 1;
+	string source = 2;
+	Constraint constraint = 3;
+}
+
+// LockedProject is a serializable representation of gps.LockedProject.
+message LockedProject {
+	string root = 1;
+	string source = 2;
+	Constraint unpairedVersion = 3;
+	string revision = 4;
+	repeated string packages = 5;
+}

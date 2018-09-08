@@ -18,18 +18,24 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-SCRIPT_ROOT=$(dirname "${BASH_SOURCE}")
+SCRIPT_ROOT="$(cd "$(dirname "$0")" && pwd -P)"
 REPO_ROOT="${SCRIPT_ROOT}/.."
 pushd "${REPO_ROOT}"
 echo "+++ Running dep ensure"
-dep ensure -v "$@"
+bazel run //:dep -- ensure -v "$@"
 echo "+++ Cleaning up erroneous vendored testdata symlinks"
 rm -Rf vendor/github.com/prometheus/procfs/fixtures \
        vendor/github.com/hashicorp/go-rootcerts/test-fixtures \
        vendor/github.com/json-iterator/go/skip_tests \
+       vendor/github.com/golang/dep/internal/fs/testdata \
        vendor/github.com/coreos/etcd/Documentation \
        vendor/github.com/coreos/etcd/cmd/etcdctl \
        vendor/github.com/coreos/etcd/cmd/functional \
        vendor/github.com/coreos/etcd/cmd/tools \
        vendor/github.com/coreos/etcd/cmd/etcd
 popd
+echo "+++ Deleting bazel related data in vendor/"
+find vendor/ -type f \( -name BUILD -o -name BUILD.bazel -o -name WORKSPACE \) \
+  -exec rm -f {} \;
+
+hack/update-bazel.sh

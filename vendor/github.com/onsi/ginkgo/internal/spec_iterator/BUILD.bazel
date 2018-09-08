@@ -1,0 +1,40 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "index_computer.go",
+        "parallel_spec_iterator.go",
+        "serial_spec_iterator.go",
+        "sharded_parallel_spec_iterator.go",
+        "spec_iterator.go",
+    ],
+    importmap = "github.com/jetstack/cert-manager/vendor/github.com/onsi/ginkgo/internal/spec_iterator",
+    importpath = "github.com/onsi/ginkgo/internal/spec_iterator",
+    tags = ["manual"],
+    visibility = ["//vendor/github.com/onsi/ginkgo:__subpackages__"],
+    deps = ["//vendor/github.com/onsi/ginkgo/internal/spec:go_default_library"],
+)
+
+go_test(
+    name = "go_default_test",
+    srcs = [
+        "index_computer_test.go",
+        "parallel_spec_iterator_test.go",
+        "serial_spec_iterator_test.go",
+        "sharded_parallel_spec_iterator_test.go",
+        "spec_iterator_suite_test.go",
+    ],
+    embed = [":go_default_library"],
+    tags = ["manual"],
+    deps = [
+        "//vendor/github.com/onsi/ginkgo:go_default_library",
+        "//vendor/github.com/onsi/ginkgo/internal/codelocation:go_default_library",
+        "//vendor/github.com/onsi/ginkgo/internal/containernode:go_default_library",
+        "//vendor/github.com/onsi/ginkgo/internal/leafnodes:go_default_library",
+        "//vendor/github.com/onsi/ginkgo/internal/spec:go_default_library",
+        "//vendor/github.com/onsi/ginkgo/types:go_default_library",
+        "//vendor/github.com/onsi/gomega:go_default_library",
+        "//vendor/github.com/onsi/gomega/ghttp:go_default_library",
+    ],
+)

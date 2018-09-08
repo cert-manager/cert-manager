@@ -1,0 +1,7 @@
+filegroup(
+    name = "helm",
+    srcs = [
+        "darwin-amd64/helm",
+    ],
+    visibility = ["//visibility:public"],
+)

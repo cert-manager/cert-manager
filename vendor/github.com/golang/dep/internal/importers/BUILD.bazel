@@ -1,0 +1,21 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = ["importers.go"],
+    importmap = "github.com/jetstack/cert-manager/vendor/github.com/golang/dep/internal/importers",
+    importpath = "github.com/golang/dep/internal/importers",
+    tags = ["manual"],
+    visibility = ["//vendor/github.com/golang/dep:__subpackages__"],
+    deps = [
+        "//vendor/github.com/golang/dep:go_default_library",
+        "//vendor/github.com/golang/dep/gps:go_default_library",
+        "//vendor/github.com/golang/dep/internal/importers/glide:go_default_library",
+        "//vendor/github.com/golang/dep/internal/importers/glock:go_default_library",
+        "//vendor/github.com/golang/dep/internal/importers/godep:go_default_library",
+        "//vendor/github.com/golang/dep/internal/importers/govend:go_default_library",
+        "//vendor/github.com/golang/dep/internal/importers/govendor:go_default_library",
+        "//vendor/github.com/golang/dep/internal/importers/gvt:go_default_library",
+        "//vendor/github.com/golang/dep/internal/importers/vndr:go_default_library",
+    ],
+)

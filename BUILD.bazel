@@ -1,0 +1,157 @@
+load("@bazel_gazelle//:def.bzl", "gazelle")
+load("@io_bazel_rules_docker//container:container.bzl", "container_image", "container_push", "container_bundle")
+load("@io_kubernetes_build//defs:run_in_workspace.bzl", "workspace_binary")
+load("@com_github_atlassian_bazel_tools//goimports:def.bzl", "goimports")
+
+gazelle(
+    name = "gazelle",
+    command = "fix",
+    external = "vendored",
+    extra_args = [
+        "-build_file_name",
+        "BUILD.bazel",
+    ],
+    prefix = "github.com/jetstack/cert-manager",
+)
+
+gazelle(
+    name = "gazelle-diff",
+    command = "fix",
+    external = "vendored",
+    extra_args = [
+        "-build_file_name",
+        "BUILD.bazel",
+    ],
+    mode = "diff",
+    prefix = "github.com/jetstack/cert-manager",
+)
+
+workspace_binary(
+    name = "dep",
+    cmd = "//vendor/github.com/golang/dep/cmd/dep",
+)
+
+workspace_binary(
+    name = "openapi-gen",
+    cmd = "//vendor/k8s.io/code-generator/cmd/openapi-gen",
+)
+
+workspace_binary(
+    name = "gen-apidocs",
+    cmd = "//vendor/github.com/kubernetes-incubator/reference-docs/gen-apidocs",
+)
+
+workspace_binary(
+    name = "gen-swagger",
+    cmd = "//docs/generated/reference",
+)
+
+goimports(
+    name = "goimports",
+    display_diffs = True,
+    prefix = "github.com/jetstack/cert-manager",
+    write = True,
+)
+
+goimports(
+    name = "goimports-verify",
+    display_diffs = True,
+    prefix = "github.com/jetstack/cert-manager",
+    report_all_errors = True,
+)
+
+genrule(
+    name = "gethelm",
+    srcs = select({
+        ":darwin": ["@helm_darwin//:helm"],
+        ":k8": ["@helm_linux//:helm"],
+    }),
+    outs = ["helm"],
+    cmd = "cp $(SRCS) $@",
+    visibility = ["//visibility:public"],
+)
+
+genrule(
+    name = "getbuildozer",
+    srcs = select({
+        ":darwin": ["@buildozer_darwin//file"],
+        ":k8": ["@buildozer_linux//file"],
+    }),
+    outs = ["buildozer"],
+    cmd = "cp $(SRCS) $@",
+    visibility = ["//visibility:public"],
+)
+
+genrule(
+    name = "getkazel",
+    srcs = ["@io_kubernetes_build//kazel"],
+    outs = ["kazel"],
+    cmd = "cp $(SRCS) $@",
+    visibility = ["//visibility:public"],
+)
+
+config_setting(
+    name = "k8",
+    values = {"host_cpu": "k8"},
+    visibility = ["//visibility:public"],
+)
+
+config_setting(
+    name = "darwin",
+    values = {"host_cpu": "darwin"},
+    visibility = ["//visibility:public"],
+)
+
+container_bundle(
+    name = "images",
+    images = {
+        "quay.io/jetstack/cert-manager-controller:{STABLE_DOCKER_TAG}": "//cmd/controller:image",
+        "quay.io/jetstack/cert-manager-acmesolver:{STABLE_DOCKER_TAG}": "//cmd/acmesolver:image",
+        "quay.io/jetstack/cert-manager-webhook:{STABLE_DOCKER_TAG}": "//cmd/webhook:image",
+    },
+    stamp = True,
+)
+
+filegroup(
+    name = "package-srcs",
+    srcs = glob(
+        ["**"],
+        exclude = [
+            "bazel-*/**",
+            ".git/**",
+        ],
+    ),
+    visibility = ["//visibility:private"],
+)
+
+filegroup(
+    name = "all-srcs",
+    srcs = [
+        ":package-srcs",
+        "//cmd/acmesolver:all-srcs",
+        "//cmd/controller:all-srcs",
+        "//cmd/webhook:all-srcs",
+        "//contrib/charts:all-srcs",
+        "//contrib/manifests:all-srcs",
+        "//docs/generated/reference:all-srcs",
+        "//hack:all-srcs",
+        "//pkg/acme:all-srcs",
+        "//pkg/api:all-srcs",
+        "//pkg/apis:all-srcs",
+        "//pkg/client/clientset/versioned:all-srcs",
+        "//pkg/client/informers/externalversions:all-srcs",
+        "//pkg/client/listers/certmanager/v1alpha1:all-srcs",
+        "//pkg/controller:all-srcs",
+        "//pkg/issuer:all-srcs",
+        "//pkg/logs:all-srcs",
+        "//pkg/scheduler:all-srcs",
+        "//pkg/util:all-srcs",
+        "//test/chart:all-srcs",
+        "//test/e2e:all-srcs",
+        "//test/util:all-srcs",
+        "//third_party/crypto/acme:all-srcs",
+        "//third_party/k8s.io/code-generator:all-srcs",
+    ],
+    tags = ["automanaged"],
+    visibility = ["//visibility:public"],
+)

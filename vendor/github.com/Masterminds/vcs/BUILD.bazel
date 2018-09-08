@@ -1,0 +1,34 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "bzr.go",
+        "errors.go",
+        "git.go",
+        "hg.go",
+        "repo.go",
+        "svn.go",
+        "vcs_local_lookup.go",
+        "vcs_remote_lookup.go",
+    ],
+    importmap = "github.com/jetstack/cert-manager/vendor/github.com/Masterminds/vcs",
+    importpath = "github.com/Masterminds/vcs",
+    tags = ["manual"],
+    visibility = ["//visibility:public"],
+)
+
+go_test(
+    name = "go_default_test",
+    srcs = [
+        "bzr_test.go",
+        "errors_test.go",
+        "git_test.go",
+        "hg_test.go",
+        "repo_test.go",
+        "svn_test.go",
+        "vcs_remote_lookup_test.go",
+    ],
+    embed = [":go_default_library"],
+    tags = ["manual"],
+)

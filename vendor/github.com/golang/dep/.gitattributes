@@ -1,0 +1,2 @@
+# Prevent problems comparing golden files on Windows
+**/testdata/** text eol=lf

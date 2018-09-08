@@ -1,0 +1,18 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "go_default_library",
+    srcs = ["paths.go"],
+    importmap = "github.com/jetstack/cert-manager/vendor/github.com/golang/dep/gps/paths",
+    importpath = "github.com/golang/dep/gps/paths",
+    tags = ["manual"],
+    visibility = ["//visibility:public"],
+)
+
+go_test(
+    name = "go_default_test",
+    srcs = ["paths_test.go"],
+    embed = [":go_default_library"],
+    tags = ["manual"],
+    deps = ["//vendor/github.com/golang/dep/internal/test:go_default_library"],
+)

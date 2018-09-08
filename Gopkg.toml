@@ -1,4 +1,6 @@
 required = [
+  "github.com/golang/dep/cmd/dep",
+  "github.com/kubernetes-incubator/reference-docs/gen-apidocs",
   "k8s.io/code-generator/cmd/client-gen",
   "k8s.io/code-generator/cmd/conversion-gen",
   "k8s.io/code-generator/cmd/deepcopy-gen",
@@ -43,8 +45,19 @@ required = [
   name = "github.com/hashicorp/vault"
   version = "v0.9.3"
 
+[[constraint]]
+  name = "github.com/golang/dep"
+  version = "v0.5.0"
+
+[[constraint]]
+  name = "github.com/kubernetes-incubator/reference-docs"
+  branch = "kubebuilder"
+
 ### Overrides for transitive kubernetes dependencies
 ### These should be updated whenever we bump the kubernetes version we depend on
+# gengo needs to be manually pinned to the version listed in code-generators
+# Gopkg.toml, because the k8s project does not produce Gopkg.toml files & dep
+# does not parse the Godeps.json file to determine revisions to use.
 [[override]]
   name = "k8s.io/gengo"
   revision = "b6c426f7730e6d66e6e476a85d1c3eb7633880e0"

@@ -1,0 +1,44 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
+load("@io_bazel_rules_docker//go:image.bzl", "go_image")
+
+go_library(
+    name = "go_default_library",
+    srcs = ["main.go"],
+    importpath = "github.com/jetstack/cert-manager/cmd/webhook",
+    visibility = ["//visibility:private"],
+    deps = [
+        "//pkg/apis/certmanager/validation/webhooks:go_default_library",
+        "//vendor/github.com/openshift/generic-admission-server/pkg/cmd:go_default_library",
+    ],
+)
+
+go_binary(
+    name = "webhook",
+    embed = [":go_default_library"],
+    visibility = ["//visibility:public"],
+)
+
+go_image(
+    name = "image",
+    base = "@alpine//image",
+    embed = [":go_default_library"],
+    goarch = "amd64",
+    goos = "linux",
+    importpath = "github.com/jetstack/cert-manager",
+    pure = "on",
+    visibility = ["//visibility:public"],
+)
+
+filegroup(
+    name = "package-srcs",
+    srcs = glob(["**"]),
+    tags = ["automanaged"],
+    visibility = ["//visibility:private"],
+)
+
+filegroup(
+    name = "all-srcs",
+    srcs = [":package-srcs"],
+    tags = ["automanaged"],
+    visibility = ["//visibility:public"],
+)

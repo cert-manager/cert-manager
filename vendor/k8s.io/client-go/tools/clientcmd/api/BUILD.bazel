@@ -1,0 +1,31 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "doc.go",
+        "helpers.go",
+        "register.go",
+        "types.go",
+        "zz_generated.deepcopy.go",
+    ],
+    importmap = "github.com/jetstack/cert-manager/vendor/k8s.io/client-go/tools/clientcmd/api",
+    importpath = "k8s.io/client-go/tools/clientcmd/api",
+    tags = ["manual"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//vendor/k8s.io/apimachinery/pkg/runtime:go_default_library",
+        "//vendor/k8s.io/apimachinery/pkg/runtime/schema:go_default_library",
+    ],
+)
+
+go_test(
+    name = "go_default_test",
+    srcs = [
+        "helpers_test.go",
+        "types_test.go",
+    ],
+    embed = [":go_default_library"],
+    tags = ["manual"],
+    deps = ["//vendor/github.com/ghodss/yaml:go_default_library"],
+)

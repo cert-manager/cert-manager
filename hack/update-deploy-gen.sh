@@ -47,6 +47,9 @@ gen() {
 	mv "${TMP_OUTPUT_WEBHOOK}" "${OUTPUT}-webhook.yaml"
 }
 
+bazel build //:helm
+export PATH="$(bazel info bazel-genfiles)/:$PATH"
+
 helm init --client-only
 helm dep update "${REPO_ROOT}/contrib/charts/cert-manager"
 gen rbac-values "${REPO_ROOT}/contrib/manifests/cert-manager/with-rbac"

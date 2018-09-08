@@ -37,72 +37,76 @@ cleanup() {
     pushd "${REFERENCE_ROOT}"
     echo "+++ Cleaning up temporary docsgen files"
     # Clean up old temporary files
-    find "${OUTPUT_DIR}" \
-        \( -type l -o -type f \) \
-        -not -name bootstrap.min.css \
-        -not -name font-awesome.min.css \
-        -not -name highlight.js \
-        -not -name stylesheet.css \
-        -not -name index.html \
-        -not -name scroll.js \
-        -not -name tabvisibility.js \
-        -not -name default.css \
-        -not -name navData.js \
-        -not -name jquery.min.js \
-        -not -name jquery.scrollTo.min.js \
-        -not -name fontawesome-webfont.ttf \
-        -not -name fontawesome-webfont.woff \
-        -not -name fontawesome-webfont.woff2 \
-        -exec rm -Rf {} \; || true
-    find "${OUTPUT_DIR}" \
-        -type d \
-        -depth \
-        -exec rmdir {} \; > /dev/null 2>&1
-    rm -Rf "openapi-spec" "openapi" "includes" "manifest.json"
-
+    rm -Rf "openapi-spec" "includes" "manifest.json"
     popd
 }
 
+# Ensure we start with a clean set of directories
 trap cleanup EXIT
-
-mkdir -p "${OUTPUT_DIR}"
-
 cleanup
 echo "+++ Removing old output"
 rm -Rf "${OUTPUT_DIR}"
 
-echo "+++ Creating temporary directories"
+echo "+++ Creating temporary output directories"
 
 # Create all required directories
-mkdir -p "${REFERENCE_ROOT}/openapi-spec"
 mkdir -p "${REFERENCE_ROOT}/openapi"
-mkdir -p "${OUTPUT_DIR}"
 # Create a placeholder .go file to prevent issues with openapi-gen
 echo "package openapi" > "${REFERENCE_ROOT}/openapi/openapi_generated.go"
-
-echo "+++ Building openapi-gen"
-OPENAPI_GEN="$(mktemp)"
-go build -o "${OPENAPI_GEN}" ./vendor/k8s.io/code-generator/cmd/openapi-gen
-
 echo "+++ Generating openapi_generated.go into 'github.com/jetstack/cert-manager/${REFERENCE_PATH}/openapi'"
 # Generate Golang types for OpenAPI spec
-${OPENAPI_GEN} \
+bazel run //:openapi-gen -- \
         --input-dirs github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1,k8s.io/apimachinery/pkg/apis/meta/v1,k8s.io/apimachinery/pkg/runtime,k8s.io/apimachinery/pkg/version \
-        --output-package "github.com/jetstack/cert-manager/${REFERENCE_PATH}/openapi"
+        --output-package "github.com/jetstack/cert-manager/docs/generated/reference/openapi" \
+        --go-header-file "$(pwd)/hack/boilerplate/boilerplate.go.txt"
 
-echo "+++ Running './${REFERENCE_PATH}/main.go'"
-# Generate swagger.json
-go run "./${REFERENCE_PATH}/main.go"
+"${SCRIPT_ROOT}"/hack/update-bazel.sh
 
+# Generate swagger.json from the Golang generated openapi spec
+mkdir -p "${REFERENCE_ROOT}/openapi-spec"
+echo "+++ Running 'swagger-gen' to generate swagger.json"
+bazel run "//docs/generated/reference/swagger-gen" > "${REFERENCE_ROOT}/openapi-spec/swagger.json"
+
+# Generate Markdown docs to be used as input for brodocs
+# This generates the manifest.json file, as well as the *.md files in includes/
 echo "+++ Running gen-apidocs"
-# Generate Markdown docs
-gen-apidocs \
+bazel run //vendor/github.com/kubernetes-incubator/reference-docs/gen-apidocs -- \
     --copyright "<a href=\"https://jetstack.io\">Copyright 2018 Jetstack Ltd.</a>" \
     --title "Cert-manager API Reference" \
-    --config-dir ./docs/generated/reference/
+    --config-dir "${REFERENCE_ROOT}"
 
+# Run brodocs to generate a HTML site from the generated markdown and manifest json
 echo "+++ Running brodocs"
-INCLUDES_DIR="${REFERENCE_ROOT}/includes" \
-OUTPUT_DIR="${OUTPUT_DIR}" \
-MANIFEST_PATH="${REFERENCE_ROOT}/manifest.json" \
-runbrodocs.sh
+mkdir -p "${OUTPUT_DIR}"
+BAZEL_BRODOCS_RUNFILES="bazel-bin/hack/brodocs/brodocs.runfiles"
+BAZEL_BRODOCS_NODE_MODULES="${BAZEL_BRODOCS_RUNFILES}/brodocs_modules/node_modules"
+BAZEL_BRODOCS_PATH="${BAZEL_BRODOCS_RUNFILES}/__main__/external/brodocs"
+bazel run //hack/brodocs -- \
+    "${REFERENCE_ROOT}/manifest.json" \
+    "${REFERENCE_ROOT}/includes" \
+    "${OUTPUT_DIR}"
+
+# Copy across supporting files from the brodocs repo
+cp "${BAZEL_BRODOCS_PATH}"/stylesheet.css \
+   "${BAZEL_BRODOCS_PATH}"/scroll.js \
+   "${BAZEL_BRODOCS_PATH}"/actions.js \
+   "${BAZEL_BRODOCS_PATH}"/tabvisibility.js \
+   "${OUTPUT_DIR}/"
+
+mkdir -p "${OUTPUT_DIR}/node_modules/jquery/dist"
+cp "${BAZEL_BRODOCS_NODE_MODULES}/jquery/dist/jquery.min.js" "${OUTPUT_DIR}/node_modules/jquery/dist/"
+
+mkdir -p "${OUTPUT_DIR}/node_modules/bootstrap/dist/css"
+cp "${BAZEL_BRODOCS_NODE_MODULES}/bootstrap/dist/css/bootstrap.min.css" "${OUTPUT_DIR}/node_modules/bootstrap/dist/css/"
+
+mkdir -p "${OUTPUT_DIR}/node_modules/font-awesome/css"
+cp "${BAZEL_BRODOCS_NODE_MODULES}/font-awesome/css/"* "${OUTPUT_DIR}/node_modules/font-awesome/css/"
+
+mkdir -p "${OUTPUT_DIR}/node_modules/font-awesome/fonts"
+cp "${BAZEL_BRODOCS_NODE_MODULES}/font-awesome/fonts/"* "${OUTPUT_DIR}/node_modules/font-awesome/fonts/"
+
+mkdir -p "${OUTPUT_DIR}/node_modules/highlight.js/styles"
+cp "${BAZEL_BRODOCS_NODE_MODULES}/highlight.js/styles/default.css" "${OUTPUT_DIR}/node_modules/highlight.js/styles/"
+
+mkdir -p "${OUTPUT_DIR}/node_modules/jquery.scrollto"
+cp "${BAZEL_BRODOCS_NODE_MODULES}/jquery.scrollto/jquery.scrollTo.min.js" "${OUTPUT_DIR}/node_modules/jquery.scrollto/"

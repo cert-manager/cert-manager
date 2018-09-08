@@ -1,0 +1,34 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "arrays.go",
+        "converter.go",
+        "error.go",
+        "numerics.go",
+        "patterns.go",
+        "types.go",
+        "utils.go",
+        "validator.go",
+    ],
+    importmap = "github.com/jetstack/cert-manager/vendor/github.com/asaskevich/govalidator",
+    importpath = "github.com/asaskevich/govalidator",
+    tags = ["manual"],
+    visibility = ["//visibility:public"],
+)
+
+go_test(
+    name = "go_default_test",
+    srcs = [
+        "arrays_test.go",
+        "converter_test.go",
+        "error_test.go",
+        "numerics_test.go",
+        "utils_benchmark_test.go",
+        "utils_test.go",
+        "validator_test.go",
+    ],
+    embed = [":go_default_library"],
+    tags = ["manual"],
+)

@@ -21,8 +21,8 @@ set -o pipefail
 SCRIPT_ROOT=$(dirname "${BASH_SOURCE}")/..
 
 DIFFROOT="${SCRIPT_ROOT}/docs/generated/reference/output"
-TMP_DIFFROOT="${SCRIPT_ROOT}/_tmp/docs/generated/reference/output"
-_tmp="${SCRIPT_ROOT}/_tmp"
+_tmp="$(mktemp -d)"
+TMP_DIFFROOT="${_tmp}/docs/generated/reference/output"
 
 cleanup() {
   rm -rf "${_tmp}"
@@ -34,7 +34,7 @@ cleanup
 mkdir -p "${TMP_DIFFROOT}"
 cp -a "${DIFFROOT}"/* "${TMP_DIFFROOT}"
 
-"${SCRIPT_ROOT}/hack/update-reference-docs-dockerized.sh"
+"${SCRIPT_ROOT}/hack/update-reference-docs.sh"
 echo "diffing ${DIFFROOT} against freshly generated reference docs"
 ret=0
 diff -Naupr "${DIFFROOT}" "${TMP_DIFFROOT}" || ret=$?

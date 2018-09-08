@@ -21,8 +21,8 @@ set -o pipefail
 SCRIPT_ROOT=$(dirname "${BASH_SOURCE}")/..
 
 DIFFROOT="${SCRIPT_ROOT}/contrib/manifests"
-TMP_DIFFROOT="${SCRIPT_ROOT}/_tmp/contrib/manifests"
-_tmp="${SCRIPT_ROOT}/_tmp"
+_tmp="$(mktemp -d)"
+TMP_DIFFROOT="${_tmp}/contrib/manifests"
 
 cleanup() {
   rm -rf "${_tmp}"
