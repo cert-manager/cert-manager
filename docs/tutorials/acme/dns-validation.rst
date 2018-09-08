@@ -114,7 +114,7 @@ Once we have created the above Issuer we can use it to obtain a certificate.
 The Certificate resource describes our desired certificate and the possible
 methods that can be used to obtain it.
 You can obtain certificates for wildcard domains just like any other. Make sure to
-wrap wildcard domains with asterisks in your YAML resources, to avoid formatting issues.
+wrap wildcard domains with single quotes in your YAML resources, to avoid formatting issues.
 If you specify both ``example.com`` and ``*.example.com`` on the same Certificate,
 it will take slightly longer to perform validation as each domain will have to be
 validated one after the other.
