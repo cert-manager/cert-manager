@@ -128,7 +128,6 @@ filegroup(
     name = "all-srcs",
     srcs = [
         ":package-srcs",
-        "//.vscode/.vs_code_bazel_build:all-srcs",
         "//cmd/acmesolver:all-srcs",
         "//cmd/controller:all-srcs",
         "//cmd/webhook:all-srcs",
