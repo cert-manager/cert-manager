@@ -253,7 +253,7 @@ func WaitCertificateIssuedValid(certClient clientset.CertificateInterface, secre
 			if err != nil {
 				return false, err
 			}
-			if expectedCN != cert.Subject.CommonName || !util.EqualUnsorted(cert.DNSNames, expectedDNSNames) || !util.EqualUnsorted(cert.Subject.Organization, expectedOrganization) {
+			if expectedCN != cert.Subject.CommonName || !util.EqualUnsorted(cert.DNSNames, expectedDNSNames) || !(len(cert.Subject.Organization) == 0 || util.EqualUnsorted(cert.Subject.Organization, expectedOrganization)) {
 				glog.Infof("Expected certificate valid for CN %q, O %v, dnsNames %v but got a certificate valid for CN %q, O %v, dnsNames %v", expectedCN, expectedOrganization, expectedDNSNames, cert.Subject.CommonName, cert.Subject.Organization, cert.DNSNames)
 				return false, nil
 			}
