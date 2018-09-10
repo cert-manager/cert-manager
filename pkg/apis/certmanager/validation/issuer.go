@@ -215,12 +215,31 @@ func ValidateACMEIssuerDNS01Config(iss *v1alpha1.ACMEIssuerDNS01Config, fldPath 
 				// Nameserver is the only required field for RFC2136
 				if len(p.RFC2136.Nameserver) == 0 {
 					el = append(el, field.Required(fldPath.Child("rfc2136", "nameserver"), ""))
+				} else {
+					if _, err := rfc2136.ValidNameserver(p.RFC2136.Nameserver); err != nil {
+						el = append(el, field.Invalid(fldPath.Child("rfc2136", "nameserver"), "", "Nameserver invalid. Check the documentation for details."))
+					}
 				}
 				if len(p.RFC2136.TSIGAlgorithm) > 0 {
-					_, ok := rfc2136.SupportedAlgorithms[strings.ToUpper(p.RFC2136.TSIGAlgorithm)]
-					if !ok {
-						el = append(el, field.Forbidden(fldPath.Child("rfc2136", "tsigSecretSecretRef"), ""))
+					present := false
+					for _, b := range rfc2136.GetSupportedAlgorithms() {
+						if b == strings.ToUpper(p.RFC2136.TSIGAlgorithm) {
+							present = true
+						}
 					}
+					if !present {
+						el = append(el, field.NotSupported(fldPath.Child("rfc2136", "tsigAlgorithm"), "", rfc2136.GetSupportedAlgorithms()))
+					}
+				}
+				if len(p.RFC2136.TSIGKeyName) > 0 {
+					el = append(el, ValidateSecretKeySelector(&p.RFC2136.TSIGSecret, fldPath.Child("rfc2136", "tsigSecretSecretRef"))...)
+				}
+
+				if len(ValidateSecretKeySelector(&p.RFC2136.TSIGSecret, fldPath.Child("rfc2136", "tsigSecretSecretRef"))) == 0 {
+					if len(p.RFC2136.TSIGKeyName) <= 0 {
+						el = append(el, field.Required(fldPath.Child("rfc2136", "tsigKeyName"), ""))
+					}
+
 				}
 			}
 		}

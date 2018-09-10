@@ -25,6 +25,8 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"reflect"
+	"sort"
 	"strings"
 	"time"
 
@@ -32,13 +34,62 @@ import (
 	"github.com/miekg/dns"
 )
 
-// SupportedAlgorithms should refer to https://tools.ietf.org/html/rfc4635#section-2
-// but miekd/dns supports only the ones below
-var SupportedAlgorithms = map[string]string{
+var supportedAlgorithms = map[string]string{
 	"HMACMD5":    dns.HmacMD5,
 	"HMACSHA1":   dns.HmacSHA1,
 	"HMACSHA256": dns.HmacSHA256,
 	"HMACSHA512": dns.HmacSHA512,
+}
+
+// Returns a slice of all the supported algorithms
+// It should contain all listed in https://tools.ietf.org/html/rfc4635#section-2
+// but miekd/dns supports only supportedAlgorithms(keys)
+func GetSupportedAlgorithms() []string {
+	keys := reflect.ValueOf(supportedAlgorithms).MapKeys()
+	strkeys := make([]string, len(keys))
+	for i := 0; i < len(keys); i++ {
+		strkeys[i] = keys[i].String()
+	}
+	sort.Strings(strkeys)
+	return strkeys
+}
+
+// This function make a valid nameserver as per RFC2136
+func ValidNameserver(nameserver string) (string, error) {
+
+	if nameserver == "" {
+		return "", fmt.Errorf("RFC2136 nameserver missing")
+	}
+
+	// SplitHostPort Behavior
+	// namserver           host                port    err
+	// 8.8.8.8             ""                  ""      missing port in address
+	// 8.8.8.8:            "8.8.8.8"           ""      <nil>
+	// 8.8.8.8.8:53        "8.8.8.8"           53      <nil>
+	// nameserver.com      ""                  ""      missing port in address
+	// nameserver.com:     "nameserver.com"    ""      <nil>
+	// nameserver.com:53   "nameserver.com"    53      <nil>
+	// :53                 ""                  53      <nil>
+	host, port, err := net.SplitHostPort(nameserver)
+
+	if err != nil {
+		if strings.Contains(err.Error(), "missing port") {
+			host = nameserver
+		}
+	}
+
+	if port == "" {
+		port = "53"
+	}
+
+	if host != "" {
+		if ipaddr := net.ParseIP(host); ipaddr == nil {
+			return "", fmt.Errorf("RFC2136 nameserver must be a valid IP Address, not %v", host)
+		}
+	} else {
+		return "", fmt.Errorf("RFC2136 nameserver has no IP Address defined, %v", nameserver)
+	}
+	return nameserver, nil
 }
 
 // DNSProvider is an implementation of the acme.ChallengeProvider interface that
@@ -72,45 +123,31 @@ func NewDNSProvider() (*DNSProvider, error) {
 // nameserver must be a network address in the form "IP" or "IP:port".
 func NewDNSProviderCredentials(nameserver, tsigAlgorithm, tsigKeyName, tsigSecret string) (*DNSProvider, error) {
 
-	if nameserver == "" {
-		return nil, fmt.Errorf("RFC2136 nameserver missing")
+	d := &DNSProvider{}
+
+	validNameserver, err := ValidNameserver(nameserver)
+	if err != nil {
+		d.nameserver = validNameserver
+	} else {
+		return nil, err
 	}
 
-	// Append the default DNS port if none is specified.
-	if _, _, err := net.SplitHostPort(nameserver); err != nil {
-		if strings.Contains(err.Error(), "missing port") {
-			host := nameserver
-			if ipaddr := net.ParseIP(host); ipaddr != nil {
-				nameserver = net.JoinHostPort(host, "53")
-			} else {
-				return nil, fmt.Errorf("RFC2136 nameserver must be a valid IP Address, not %v", nameserver)
-			}
-		} else {
-			return nil, err
-		}
-	}
-
-	d := &DNSProvider{
-		nameserver: nameserver,
+	if len(tsigKeyName) > 0 && len(tsigSecret) > 0 {
+		d.tsigKeyName = tsigKeyName
+		d.tsigSecret = tsigSecret
 	}
 
 	if tsigAlgorithm == "" {
 		tsigAlgorithm = dns.HmacMD5
 	} else {
-		if value, ok := SupportedAlgorithms[strings.ToUpper(tsigAlgorithm)]; ok {
+		if value, ok := supportedAlgorithms[strings.ToUpper(tsigAlgorithm)]; ok {
 			tsigAlgorithm = value
 		} else {
 			return nil, fmt.Errorf("The algorithm '%v' is not supported", tsigAlgorithm)
 
 		}
 	}
-
 	d.tsigAlgorithm = tsigAlgorithm
-
-	if len(tsigKeyName) > 0 && len(tsigSecret) > 0 {
-		d.tsigKeyName = tsigKeyName
-		d.tsigSecret = tsigSecret
-	}
 
 	return d, nil
 }
