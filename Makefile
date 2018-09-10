@@ -12,14 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-PACKAGE_NAME := github.com/jetstack/cert-manager
-REGISTRY := quay.io/jetstack
-APP_NAME := cert-manager
-IMAGE_TAGS := canary
-GOPATH ?= $$HOME/go
+# Set DOCKER_REPO to customise the image docker repo, e.g. "quay.io/jetstack"
+DOCKER_REPO :=
+APP_VERSION := canary
 HACK_DIR ?= hack
-BUILD_TAG := build
 
+## e2e test vars
 # Domain name to use in e2e tests. This is important for ACME HTTP01 e2e tests,
 # which require a domain that resolves to the ingress controller to be used for
 # e2e tests.
@@ -27,131 +25,89 @@ E2E_NGINX_CERTIFICATE_DOMAIN=
 KUBECONFIG ?= $$HOME/.kube/config
 PEBBLE_IMAGE_REPO=quay.io/munnerz/pebble
 
-# AppVersion is set as the AppVersion to be compiled into the controller binary.
-# It's used as the default version of the 'acmesolver' image to use for ACME
-# challenge requests, and any other future provider that requires additional
-# image dependencies will use this same tag.
-ifeq ($(APP_VERSION),)
-APP_VERSION := canary
-endif
-
 # Get a list of all binaries to be built
 CMDS := $(shell find ./cmd/ -maxdepth 1 -type d -exec basename {} \; | grep -v cmd)
-# Path to dockerfiles directory
-DOCKERFILES := $(HACK_DIR)/build/dockerfiles
-# A list of all types.go files in pkg/apis
-TYPES_FILES := $(shell find pkg/apis -name types.go)
-# docker_build_controller, docker_build_apiserver etc
-DOCKER_BUILD_TARGETS := $(addprefix docker_build_, $(CMDS))
-# docker_push_controller, docker_push_apiserver etc
-DOCKER_PUSH_TARGETS := $(addprefix docker_push_, $(CMDS))
 
-# Go build flags
-GOOS := linux
-GOARCH := amd64
-GIT_COMMIT := $(shell git rev-parse HEAD)
-GOLDFLAGS := -ldflags "-X $(PACKAGE_NAME)/pkg/util.AppGitState=${GIT_STATE} -X $(PACKAGE_NAME)/pkg/util.AppGitCommit=${GIT_COMMIT} -X $(PACKAGE_NAME)/pkg/util.AppVersion=${APP_VERSION}"
+.PHONY: help build verify push $(CMDS) e2e_test images images_push \
+	verify_lint verify_unit verify_deps verify_codegen verify_docs verify_chart \
 
-.PHONY: verify build docker_build push generate generate_verify deploy_verify \
-	$(CMDS) go_test go_fmt e2e_test go_verify hack_verify hack_verify_pr \
-	$(DOCKER_BUILD_TARGETS) $(DOCKER_PUSH_TARGETS)
-
-# Docker build flags
-DOCKER_BUILD_FLAGS := --build-arg VCS_REF=$(GIT_COMMIT) $(DOCKER_BUILD_FLAGS)
+help:
+	# This Makefile provides common wrappers around Bazel invocations.
+	#
+	### Verify targets
+	#
+	# verify_lint       - run 'lint' targets
+	# verify_unit       - run unit tests
+	# verify_deps       - verifiy vendor/ and Gopkg.lock is up to date
+	# verify_codegen    - verify generated code, including 'static deploy manifests', is up to date
+	# verify_docs       - verify the generated reference docs for API types is up to date
+	# verify_chart      - runs Helm chart linter (e.g. ensuring version has been bumped etc)
+	#
+	### Build targets
+	#
+	# controller        - build a binary of the 'controller'
+	# webhook           - build a binary of the 'webhook'
+	# acmesolver        - build a binary of the 'acmesolver'
+	# e2e_test          - builds and runs end-to-end tests.
+	#                     NOTE: you probably want to execute ./hack/ci/run-e2e-kind.sh instead of this target
+	# images            - builds docker images for all of the components, saving them in your Docker daemon
+	# images_push       - pushes docker images to the target registry
+	#
+	# Image targets can be run with optional args DOCKER_REPO and DOCKER_TAG:
+	#
+	#     make images DOCKER_REPO=quay.io/yourusername DOCKER_TAG=experimental-tag
+	#
 
 # Alias targets
 ###############
 
-build: $(CMDS) docker_build
-verify: verify_lint verify_codegen verify_deps verify_unit
+build: images
+verify: verify_lint verify_codegen verify_deps verify_unit verify_docs
+push: docker_push
 
-verify_lint: hack_verify go_fmt
-verify_unit: go_test
-verify_deps: dep_verify
-verify_codegen: generate_verify deploy_verify
-# requires docker
+verify_lint:
+	bazel test \
+		//hack:verify-boilerplate \
+		//hack:verify-links \
+		//hack:verify-errexit \
+		//hack:verify-gofmt
+
+verify_unit:
+	bazel test \
+		$$(bazel query 'kind("go._*test", "...")' \
+			| grep -v //vendor/ \
+			| grep -v //test/e2e \
+		)
+
+verify_deps:
+	bazel test \
+		//hack:verify-deps
+
+verify_codegen:
+	bazel test \
+		//hack:verify-codegen \
+		//hack:verify-deploy-gen
+
 verify_docs:
-	$(HACK_DIR)/verify-reference-docs.sh
+	bazel test \
+		//hack:verify-reference-docs
+
 # requires docker
 verify_chart:
 	$(HACK_DIR)/verify-chart-version.sh
 
-docker_build: $(DOCKER_BUILD_TARGETS)
-docker_push: $(DOCKER_PUSH_TARGETS)
-push: build docker_push
-
-# Code generation
-#################
-# This target runs all required generators against our API types.
-generate: $(TYPES_FILES)
-	$(HACK_DIR)/update-codegen.sh
-
-generate_verify:
-	$(HACK_DIR)/verify-codegen.sh
-
-# Hack targets
-##############
-hack_verify:
-	@echo Running boilerplate header checker
-	$(HACK_DIR)/verify_boilerplate.py
-	@echo Running href checker
-	$(HACK_DIR)/verify-links.sh
-	@echo Running errexit checker
-	$(HACK_DIR)/verify-errexit.sh
-
-hack_verify_pr:
-	@echo Running helm chart version checker
-	$(HACK_DIR)/verify-chart-version.sh
-	@echo Running reference docs checker
-	IMAGE=eu.gcr.io/jetstack-build-infra/gen-apidocs-img $(HACK_DIR)/verify-reference-docs.sh
-
-deploy_verify:
-	@echo Running deploy-gen
-	$(HACK_DIR)/verify-deploy-gen.sh
-
 # Go targets
-#################
-dep_verify:
-	@echo Running dep
-	$(HACK_DIR)/verify-deps.sh
-
-go_verify: go_fmt go_test
-
+############
 $(CMDS):
-	CGO_ENABLED=0 GOOS=$(GOOS) GOARCH=$(GOARCH) go build \
-		-a -tags netgo \
-		-o $(DOCKERFILES)/${APP_NAME}-$@_$(GOOS)_$(GOARCH) \
-		$(GOLDFLAGS) \
-		./cmd/$@
-
-go_test:
-	go test -v \
-	    -race \
-		$$(go list ./... | \
-			grep -v '/vendor/' | \
-			grep -v '/test/e2e' | \
-			grep -v '/pkg/client' | \
-			grep -v '/third_party' | \
-			grep -v '/docs/generated' \
-		)
-
-go_fmt:
-	@set -e; \
-	GO_FMT=$$(git ls-files *.go | grep -v 'vendor/' | xargs gofmt -d); \
-	if [ -n "$${GO_FMT}" ] ; then \
-		echo "Please run go fmt"; \
-		echo "$$GO_FMT"; \
-		exit 1; \
-	fi
+	bazel build \
+		//cmd/$@
 
 e2e_test:
-	# Build the e2e tests
-	go test -o e2e-tests -c ./test/e2e
 	mkdir -p "$$(pwd)/_artifacts"
-	# TODO: make these paths configurable
+	bazel build //test/e2e
 	# Run e2e tests
 	KUBECONFIG=$(KUBECONFIG) CERTMANAGERCONFIG=$(KUBECONFIG) \
-		./e2e-tests \
+		bazel-genfiles/test/e2e/e2e \
 			-acme-nginx-certificate-domain=$(E2E_NGINX_CERTIFICATE_DOMAIN) \
 			-cloudflare-email=$${CLOUDFLARE_E2E_EMAIL} \
 			-cloudflare-api-key=$${CLOUDFLARE_E2E_API_TOKEN} \
@@ -161,18 +117,12 @@ e2e_test:
 
 # Docker targets
 ################
-$(DOCKER_BUILD_TARGETS):
-	$(eval DOCKER_BUILD_CMD := $(subst docker_build_,,$@))
-	docker build \
-		$(DOCKER_BUILD_FLAGS) \
-		-t $(REGISTRY)/$(APP_NAME)-$(DOCKER_BUILD_CMD):$(BUILD_TAG) \
-		-f $(DOCKERFILES)/$(DOCKER_BUILD_CMD)/Dockerfile \
-		$(DOCKERFILES)
 
-$(DOCKER_PUSH_TARGETS):
-	$(eval DOCKER_PUSH_CMD := $(subst docker_push_,,$@))
-	set -e; \
-		for tag in $(IMAGE_TAGS); do \
-		docker tag $(REGISTRY)/$(APP_NAME)-$(DOCKER_PUSH_CMD):$(BUILD_TAG) $(REGISTRY)/$(APP_NAME)-$(DOCKER_PUSH_CMD):$${tag} ; \
-		docker push $(REGISTRY)/$(APP_NAME)-$(DOCKER_PUSH_CMD):$${tag}; \
-	done
+BAZEL_IMAGE_ENV := APP_VERSION=$(APP_VERSION) DOCKER_REPO=$(DOCKER_REPO) DOCKER_TAG=$(APP_VERSION)
+images:
+	$(BAZEL_IMAGE_ENV) \
+		bazel run //:images
+
+images_push:
+	$(BAZEL_IMAGE_ENV) \
+		bazel run //:images.push
