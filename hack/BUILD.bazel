@@ -45,6 +45,28 @@ sh_test(
     ],
 )
 
+# Dep/vendor rules
+
+sh_binary(
+    name = "update-deps",
+    srcs = ["update-deps.sh"],
+    data = [
+        ":update-bazel",
+        "//hack/bin:dep",
+    ],
+)
+
+sh_test(
+    name = "verify-deps",
+    timeout = "long",
+    srcs = ["verify-deps.sh"],
+    data = [
+        ":update-deps",
+        "//:all-srcs",
+    ],
+    tags = ["manual"],
+)
+
 filegroup(
     name = "package-srcs",
     srcs = glob(["**"]),
