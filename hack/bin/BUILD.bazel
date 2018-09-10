@@ -39,6 +39,14 @@ genrule(
     visibility = ["//visibility:public"],
 )
 
+genrule(
+    name = "fetch_gazelle",
+    srcs = ["@bazel_gazelle//cmd/gazelle"],
+    outs = ["gazelle"],
+    cmd = "cp $(SRCS) $@",
+    visibility = ["//visibility:public"],
+)
+
 config_setting(
     name = "k8",
     values = {"host_cpu": "k8"},

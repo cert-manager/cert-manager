@@ -26,6 +26,25 @@ sh_test(
     tags = ["lint"],
 )
 
+sh_binary(
+    name = "update-bazel",
+    srcs = ["update-bazel.sh"],
+    data = [
+        "//hack/bin:buildozer",
+        "//hack/bin:gazelle",
+        "//hack/bin:kazel",
+    ],
+)
+
+sh_test(
+    name = "verify-bazel",
+    srcs = ["verify-bazel.sh"],
+    data = [
+        ":update-bazel",
+        "//:all-srcs",
+    ],
+)
+
 filegroup(
     name = "package-srcs",
     srcs = glob(["**"]),
