@@ -23,3 +23,23 @@ go_binary(
     tags = ["manual"],
     visibility = ["//visibility:public"],
 )
+
+filegroup(
+    name = "package-srcs",
+    srcs = glob(["**"]),
+    tags = ["automanaged"],
+    visibility = ["//visibility:private"],
+)
+
+filegroup(
+    name = "all-srcs",
+    srcs = [
+        ":package-srcs",
+        "//vendor/k8s.io/code-generator/cmd/client-gen/args:all-srcs",
+        "//vendor/k8s.io/code-generator/cmd/client-gen/generators:all-srcs",
+        "//vendor/k8s.io/code-generator/cmd/client-gen/path:all-srcs",
+        "//vendor/k8s.io/code-generator/cmd/client-gen/types:all-srcs",
+    ],
+    tags = ["automanaged"],
+    visibility = ["//visibility:public"],
+)

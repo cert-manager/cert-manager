@@ -33,6 +33,7 @@ filegroup(
         "//test/e2e:all-srcs",
         "//test/util:all-srcs",
         "//third_party:all-srcs",
+        "//vendor:all-srcs",
     ],
     tags = ["automanaged"],
     visibility = ["//visibility:public"],
