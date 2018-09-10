@@ -22,7 +22,22 @@ set -o pipefail
 
 SCRIPT_ROOT=$(dirname ${BASH_SOURCE})/../..
 
+# AppVersion is set as the AppVersion to be compiled into the controller binary.
+# It's used as the default version of the 'acmesolver' image to use for ACME
+# challenge requests, and any other future provider that requires additional
+# image dependencies will use this same tag.
+if [ -z "${APP_VERSION:-}" ]; then
+    APP_VERSION=canary
+fi
+APP_GIT_COMMIT=$(git rev-parse HEAD)
+GIT_STATE=""
+if [ ! -z "$(git status --porcelain)" ]; then
+    GIT_STATE="dirty"
+fi
+
 # TODO: properly configure this file
 cat <<EOF
-STABLE_DOCKER_TAG build
+STABLE_APP_GIT_COMMIT ${APP_GIT_COMMIT}
+STABLE_APP_GIT_STATE ${GIT_STATE}
+STABLE_APP_VERSION ${APP_VERSION}
 EOF
