@@ -1,0 +1,44 @@
+package(default_visibility = ["//visibility:public"])
+
+py_test(
+    name = "verify-boilerplate",
+    main = "verify_boilerplate.py",
+    srcs = ["verify_boilerplate.py"],
+    data = ["//:all-srcs"],
+    tags = ["lint"],
+)
+
+sh_test(
+    name = "verify-errexit",
+    srcs = ["verify-errexit.sh"],
+    data = [
+        "//:all-srcs",
+    ],
+    tags = ["lint"],
+)
+
+sh_test(
+    name = "verify-links",
+    srcs = ["verify-links.sh"],
+    data = [
+        "//:all-srcs",
+    ],
+    tags = ["lint"],
+)
+
+filegroup(
+    name = "package-srcs",
+    srcs = glob(["**"]),
+    tags = ["automanaged"],
+    visibility = ["//visibility:private"],
+)
+
+filegroup(
+    name = "all-srcs",
+    srcs = [
+        ":package-srcs",
+        "//hack/boilerplate:all-srcs",
+    ],
+    tags = ["automanaged"],
+    visibility = ["//visibility:public"],
+)
