@@ -51,7 +51,7 @@ type solver interface {
 // It is useful for mocking out a given provider since an alternate set of
 // constructors may be set.
 type dnsProviderConstructors struct {
-	cloudDNS   func(project string, serviceAccount []byte, dns01Nameservers []string) (*clouddns.DNSProvider, error)
+	cloudDNS   func(project string, serviceAccount []byte, dns01Nameservers []string, ambient bool) (*clouddns.DNSProvider, error)
 	cloudFlare func(email, apikey string, dns01Nameservers []string) (*cloudflare.DNSProvider, error)
 	route53    func(accessKey, secretKey, hostedZoneID, region string, ambient bool, dns01Nameservers []string) (*route53.DNSProvider, error)
 	azureDNS   func(clientID, clientSecret, subscriptionID, tenentID, resourceGroupName, hostedZoneName string, dns01Nameservers []string) (*azuredns.DNSProvider, error)
@@ -171,19 +171,27 @@ func (s *Solver) solverForIssuerProvider(issuer v1alpha1.GenericIssuer, provider
 			return nil, errors.Wrap(err, "error instantiating akamai challenge solver")
 		}
 	case providerConfig.CloudDNS != nil:
-		saSecret, err := s.secretLister.Secrets(resourceNamespace).Get(providerConfig.CloudDNS.ServiceAccount.Name)
-		if err != nil {
-			return nil, fmt.Errorf("error getting clouddns service account: %s", err)
+		var keyData []byte
+
+		// if the serviceAccount.name field is set, we will load credentials from
+		// that secret.
+		// If it is not set, we will attempt to instantiate the provider using
+		// ambient credentials (if enabled).
+		if providerConfig.CloudDNS.ServiceAccount.Name != "" {
+			saSecret, err := s.secretLister.Secrets(resourceNamespace).Get(providerConfig.CloudDNS.ServiceAccount.Name)
+			if err != nil {
+				return nil, fmt.Errorf("error getting clouddns service account: %s", err)
+			}
+
+			saKey := providerConfig.CloudDNS.ServiceAccount.Key
+			keyData = saSecret.Data[saKey]
+			if len(keyData) == 0 {
+				return nil, fmt.Errorf("specfied key %q not found in secret %s/%s", saKey, saSecret.Namespace, saSecret.Name)
+			}
 		}
 
-		saKey := providerConfig.CloudDNS.ServiceAccount.Key
-		saBytes := saSecret.Data[saKey]
-
-		if len(saBytes) == 0 {
-			return nil, fmt.Errorf("specfied key %q not found in secret %s/%s", saKey, saSecret.Namespace, saSecret.Name)
-		}
-
-		impl, err = s.dnsProviderConstructors.cloudDNS(providerConfig.CloudDNS.Project, saBytes, s.DNS01Nameservers)
+		// attempt to construct the cloud dns provider
+		impl, err = s.dnsProviderConstructors.cloudDNS(providerConfig.CloudDNS.Project, keyData, s.DNS01Nameservers, s.CanUseAmbientCredentials(issuer))
 		if err != nil {
 			return nil, fmt.Errorf("error instantiating google clouddns challenge solver: %s", err)
 		}
@@ -277,7 +285,7 @@ func NewSolver(ctx *controller.Context) *Solver {
 		ctx,
 		ctx.KubeSharedInformerFactory.Core().V1().Secrets().Lister(),
 		dnsProviderConstructors{
-			clouddns.NewDNSProviderServiceAccountBytes,
+			clouddns.NewDNSProvider,
 			cloudflare.NewDNSProviderCredentials,
 			route53.NewDNSProvider,
 			azuredns.NewDNSProviderCredentials,
