@@ -1,0 +1,52 @@
+genrule(
+    name = "fetch_helm",
+    srcs = select({
+        ":darwin": ["@helm_darwin//:file"],
+        ":k8": ["@helm_linux//:file"],
+    }),
+    outs = ["helm"],
+    cmd = "cp $(SRCS) $@",
+    visibility = ["//visibility:public"],
+)
+
+genrule(
+    name = "fetch_buildozer",
+    srcs = select({
+        ":darwin": ["@buildozer_darwin//file"],
+        ":k8": ["@buildozer_linux//file"],
+    }),
+    outs = ["buildozer"],
+    cmd = "cp $(SRCS) $@",
+    visibility = ["//visibility:public"],
+)
+
+genrule(
+    name = "fetch_kazel",
+    srcs = ["@io_kubernetes_build//kazel"],
+    outs = ["kazel"],
+    cmd = "cp $(SRCS) $@",
+    visibility = ["//visibility:public"],
+)
+
+genrule(
+    name = "fetch_dep",
+    srcs = select({
+        ":darwin": ["@dep_darwin//file"],
+        ":k8": ["@dep_linux//file"],
+    }),
+    outs = ["dep"],
+    cmd = "cp $(SRCS) $@",
+    visibility = ["//visibility:public"],
+)
+
+config_setting(
+    name = "k8",
+    values = {"host_cpu": "k8"},
+    visibility = ["//visibility:private"],
+)
+
+config_setting(
+    name = "darwin",
+    values = {"host_cpu": "darwin"},
+    visibility = ["//visibility:private"],
+)
