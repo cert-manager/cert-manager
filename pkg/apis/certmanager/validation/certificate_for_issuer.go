@@ -79,6 +79,10 @@ func ValidateCertificateForVaultIssuer(crt *v1alpha1.CertificateSpec, issuer *v1
 		el = append(el, field.Invalid(specPath.Child("isCA"), crt.KeyAlgorithm, "Vault issuer does not currently support CA certificates"))
 	}
 
+	if len(crt.Organization) != 0 {
+		el = append(el, field.Invalid(specPath.Child("organization"), crt.Organization, "Vault issuer does not currently support setting the organization name"))
+	}
+
 	return el
 }
 
