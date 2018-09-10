@@ -54,6 +54,9 @@ type CertificateSpec struct {
 	// CommonName is a common name to be used on the Certificate
 	CommonName string `json:"commonName,omitempty"`
 
+	// Organization is the organization to be used on the Certificate
+	Organization []string `json:"organization,omitempty"`
+
 	// DNSNames is a list of subject alt names to be used on the Certificate
 	DNSNames []string `json:"dnsNames,omitempty"`
 

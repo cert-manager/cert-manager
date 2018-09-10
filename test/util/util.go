@@ -246,14 +246,15 @@ func WaitCertificateIssuedValid(certClient clientset.CertificateInterface, secre
 			}
 			// check the provided certificate is valid
 			expectedCN := pki.CommonNameForCertificate(certificate)
+			expectedOrganization := pki.OrganizationForCertificate(certificate)
 			expectedDNSNames := pki.DNSNamesForCertificate(certificate)
 
 			cert, err := pki.DecodeX509CertificateBytes(certBytes)
 			if err != nil {
 				return false, err
 			}
-			if expectedCN != cert.Subject.CommonName || !util.EqualUnsorted(cert.DNSNames, expectedDNSNames) {
-				glog.Infof("Expected certificate valid for CN %q, dnsNames %v but got a certificate valid for CN %q, dnsNames %v", expectedCN, expectedDNSNames, cert.Subject.CommonName, cert.DNSNames)
+			if expectedCN != cert.Subject.CommonName || !util.EqualUnsorted(cert.DNSNames, expectedDNSNames) || !(len(cert.Subject.Organization) == 0 || util.EqualUnsorted(cert.Subject.Organization, expectedOrganization)) {
+				glog.Infof("Expected certificate valid for CN %q, O %v, dnsNames %v but got a certificate valid for CN %q, O %v, dnsNames %v", expectedCN, expectedOrganization, expectedDNSNames, cert.Subject.CommonName, cert.Subject.Organization, cert.DNSNames)
 				return false, nil
 			}
 
@@ -330,8 +331,9 @@ func NewCertManagerBasicCertificate(name, secretName, issuerName string, issuerK
 			Name: name,
 		},
 		Spec: v1alpha1.CertificateSpec{
-			CommonName: "test.domain.com",
-			SecretName: secretName,
+			CommonName:   "test.domain.com",
+			Organization: []string{"test-org"},
+			SecretName:   secretName,
 			IssuerRef: v1alpha1.ObjectReference{
 				Name: issuerName,
 				Kind: issuerKind,
