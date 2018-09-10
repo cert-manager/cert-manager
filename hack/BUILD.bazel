@@ -1,5 +1,7 @@
 package(default_visibility = ["//visibility:public"])
 
+# General repo verification targets
+
 py_test(
     name = "verify-boilerplate",
     srcs = ["verify_boilerplate.py"],
@@ -25,6 +27,8 @@ sh_test(
     ],
     tags = ["lint"],
 )
+
+# Bazel file generation rules
 
 sh_binary(
     name = "update-bazel",
@@ -65,6 +69,27 @@ sh_test(
         "//:all-srcs",
     ],
     tags = ["manual"],
+)
+
+# Kubernetes codegen rules
+
+sh_binary(
+    name = "update-codegen",
+    srcs = ["update-codegen.sh"],
+    data = [
+        "//hack/boilerplate:all-srcs",
+        "//third_party/k8s.io/code-generator:generate-groups",
+        "//third_party/k8s.io/code-generator:openapi-gen"
+    ],
+)
+
+sh_test(
+    name = "verify-codegen",
+    srcs = ["verify-codegen.sh"],
+    data = [
+        ":update-codegen",
+        "//:all-srcs",
+    ],
 )
 
 filegroup(
