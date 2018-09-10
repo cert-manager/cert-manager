@@ -1,0 +1,10 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = ["keepalive.go"],
+    importmap = "github.com/jetstack/cert-manager/vendor/google.golang.org/grpc/keepalive",
+    importpath = "google.golang.org/grpc/keepalive",
+    tags = ["manual"],
+    visibility = ["//visibility:public"],
+)

@@ -2,9 +2,9 @@ package(default_visibility = ["//visibility:public"])
 
 py_test(
     name = "verify-boilerplate",
-    main = "verify_boilerplate.py",
     srcs = ["verify_boilerplate.py"],
     data = ["//:all-srcs"],
+    main = "verify_boilerplate.py",
     tags = ["lint"],
 )
 
@@ -56,6 +56,7 @@ filegroup(
     name = "all-srcs",
     srcs = [
         ":package-srcs",
+        "//hack/bin:all-srcs",
         "//hack/boilerplate:all-srcs",
     ],
     tags = ["automanaged"],
