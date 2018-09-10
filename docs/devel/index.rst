@@ -8,3 +8,4 @@ Development documentation
    end-to-end-tests
    dns01-providers
    dco-sign-off
+   release-process
