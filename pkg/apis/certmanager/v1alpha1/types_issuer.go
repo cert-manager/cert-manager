@@ -211,21 +211,23 @@ type ACMEIssuerDNS01ProviderAcmeDNS struct {
 // configuration for RFC2136 DNS
 type ACMEIssuerDNS01ProviderRFC2136 struct {
 	// The IP address of the DNS supporting RFC2136. Required.
+	// Note: FQDN is not a valid value, only IP.
 	Nameserver string `json:"nameserver"`
 
 	// The name of the secret containing the TSIG value.
-	// If ``tsigSecretSecretRef`` is not defined, ``tsigKey`` is ignored.
+	// If ``tsigKeyName`` is defined, this field is required.
 	// +optional
 	TSIGSecret SecretKeySelector `json:"tsigSecretSecretRef"`
 
-	// The TSIG Key name configured in the DNS. If ``tsigKeyName`` is not defined,
-	// ``tsigSecretSecretRef`` is ignored
+	// The TSIG Key name configured in the DNS.
+	// If ``tsigSecretSecretRef`` is defined, this field is required.
 	// +optional
 	TSIGKeyName string `json:"tsigKeyName"`
 
-	// The TSIG Algorithm configured in the DNS supporting RFC2136. Acceptable
-	// values are (case-insensitive): ``HMACMD5`` (default), ``HMACSHA1``,
-	// ``HMACSHA256`` or ``HMACSHA512``
+	// The TSIG Algorithm configured in the DNS supporting RFC2136. Used only
+	// when ``tsigSecretSecretRef`` and ``tsigKeyName`` are defined.
+	// Supported values are (case-insensitive): ``HMACMD5`` (default),
+	// ``HMACSHA1``, ``HMACSHA256`` or ``HMACSHA512``.
 	// +optional
 	TSIGAlgorithm string `json:"tsigAlgorithm"`
 }

@@ -783,19 +783,19 @@ Appears In:
 <tbody>
 <tr>
 <td><code>nameserver</code><br /> <em>string</em></td>
-<td>The IP address of the DNS supporting RFC2136. Required.</td>
+<td>The IP address of the DNS supporting RFC2136. Required. Note: FQDN is not a valid value, only IP.</td>
 </tr>
 <tr>
 <td><code>tsigAlgorithm</code><br /> <em>string</em></td>
-<td>The TSIG Algorithm configured in the DNS supporting RFC2136. Acceptable values are (case-insensitive): <code>HMACMD5</code> (default), <code>HMACSHA1</code>, <code>HMACSHA256</code> or <code>HMACSHA512</code></td>
+<td>The TSIG Algorithm configured in the DNS supporting RFC2136. Used only when <code>tsigSecretSecretRef</code> and <code>tsigKeyName</code> are defined. Supported values are (case-insensitive): <code>HMACMD5</code> (default), <code>HMACSHA1</code>, <code>HMACSHA256</code> or <code>HMACSHA512</code>.</td>
 </tr>
 <tr>
 <td><code>tsigKeyName</code><br /> <em>string</em></td>
-<td>The TSIG Key name configured in the DNS. If <code>tsigKeyName</code> is not defined, <code>tsigSecretSecretRef</code> is ignored</td>
+<td>The TSIG Key name configured in the DNS. If <code>tsigSecretSecretRef</code> is defined, this field is required.</td>
 </tr>
 <tr>
 <td><code>tsigSecretSecretRef</code><br /> <em><a href="#secretkeyselector-v1alpha1">SecretKeySelector</a></em></td>
-<td>The name of the secret containing the TSIG value. If <code>tsigSecretSecretRef</code> is not defined, <code>tsigKey</code> is ignored.</td>
+<td>The name of the secret containing the TSIG value. If <code>tsigKeyName</code> is defined, this field is required.</td>
 </tr>
 </tbody>
 </table>

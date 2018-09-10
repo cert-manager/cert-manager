@@ -23,6 +23,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/rfc2136"
 )
 
 var (
@@ -429,7 +430,36 @@ func TestValidateACMEIssuerDNS01Config(t *testing.T) {
 				field.Required(providersPath.Index(0).Child("rfc2136", "nameserver"), ""),
 			},
 		},
-		"rfc2136 provider using non-supported algorithm": {
+		"rfc2136 provider invalid nameserver": {
+			cfg: &v1alpha1.ACMEIssuerDNS01Config{
+				Providers: []v1alpha1.ACMEIssuerDNS01Provider{
+					{
+						Name: "a name",
+						RFC2136: &v1alpha1.ACMEIssuerDNS01ProviderRFC2136{
+							Nameserver: "dns.example.com",
+						},
+					},
+				},
+			},
+			errs: []*field.Error{
+				field.Invalid(providersPath.Index(0).Child("rfc2136", "nameserver"), "", "Nameserver invalid. Check the documentation for details."),
+			},
+		},
+		"rfc2136 provider using case-camel in algorithm": {
+			cfg: &v1alpha1.ACMEIssuerDNS01Config{
+				Providers: []v1alpha1.ACMEIssuerDNS01Provider{
+					{
+						Name: "a name",
+						RFC2136: &v1alpha1.ACMEIssuerDNS01ProviderRFC2136{
+							Nameserver:    "127.0.0.1",
+							TSIGAlgorithm: "HmAcMd5",
+						},
+					},
+				},
+			},
+			errs: []*field.Error{},
+		},
+		"rfc2136 provider using unsupported algorithm": {
 			cfg: &v1alpha1.ACMEIssuerDNS01Config{
 				Providers: []v1alpha1.ACMEIssuerDNS01Provider{
 					{
@@ -442,7 +472,40 @@ func TestValidateACMEIssuerDNS01Config(t *testing.T) {
 				},
 			},
 			errs: []*field.Error{
-				field.Forbidden(providersPath.Index(0).Child("rfc2136", "tsigSecretSecretRef"), ""),
+				field.NotSupported(providersPath.Index(0).Child("rfc2136", "tsigAlgorithm"), "", rfc2136.GetSupportedAlgorithms()),
+			},
+		},
+		"rfc2136 provider TSIGKeyName provided but no TSIGSecret": {
+			cfg: &v1alpha1.ACMEIssuerDNS01Config{
+				Providers: []v1alpha1.ACMEIssuerDNS01Provider{
+					{
+						Name: "a name",
+						RFC2136: &v1alpha1.ACMEIssuerDNS01ProviderRFC2136{
+							Nameserver:  "127.0.0.1",
+							TSIGKeyName: "some-name",
+						},
+					},
+				},
+			},
+			errs: []*field.Error{
+				field.Required(providersPath.Index(0).Child("rfc2136", "tsigSecretSecretRef", "name"), "secret name is required"),
+				field.Required(providersPath.Index(0).Child("rfc2136", "tsigSecretSecretRef", "key"), "secret key is required"),
+			},
+		},
+		"rfc2136 provider TSIGSecret provided but no TSIGKeyName": {
+			cfg: &v1alpha1.ACMEIssuerDNS01Config{
+				Providers: []v1alpha1.ACMEIssuerDNS01Provider{
+					{
+						Name: "a name",
+						RFC2136: &v1alpha1.ACMEIssuerDNS01ProviderRFC2136{
+							Nameserver: "127.0.0.1",
+							TSIGSecret: validSecretKeyRef,
+						},
+					},
+				},
+			},
+			errs: []*field.Error{
+				field.Required(providersPath.Index(0).Child("rfc2136", "tsigKeyName"), ""),
 			},
 		},
 		"multiple providers configured": {
