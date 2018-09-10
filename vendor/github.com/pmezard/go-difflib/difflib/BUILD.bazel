@@ -1,0 +1,17 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "go_default_library",
+    srcs = ["difflib.go"],
+    importmap = "github.com/jetstack/cert-manager/vendor/github.com/pmezard/go-difflib/difflib",
+    importpath = "github.com/pmezard/go-difflib/difflib",
+    tags = ["manual"],
+    visibility = ["//visibility:public"],
+)
+
+go_test(
+    name = "go_default_test",
+    srcs = ["difflib_test.go"],
+    embed = [":go_default_library"],
+    tags = ["manual"],
+)

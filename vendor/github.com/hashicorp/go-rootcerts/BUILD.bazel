@@ -1,0 +1,31 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "doc.go",
+        "rootcerts.go",
+        "rootcerts_base.go",
+        "rootcerts_darwin.go",
+    ],
+    importmap = "github.com/jetstack/cert-manager/vendor/github.com/hashicorp/go-rootcerts",
+    importpath = "github.com/hashicorp/go-rootcerts",
+    tags = ["manual"],
+    visibility = ["//visibility:public"],
+    deps = select({
+        "@io_bazel_rules_go//go/platform:darwin": [
+            "//vendor/github.com/mitchellh/go-homedir:go_default_library",
+        ],
+        "//conditions:default": [],
+    }),
+)
+
+go_test(
+    name = "go_default_test",
+    srcs = [
+        "rootcerts_darwin_test.go",
+        "rootcerts_test.go",
+    ],
+    embed = [":go_default_library"],
+    tags = ["manual"],
+)
