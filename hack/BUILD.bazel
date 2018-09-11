@@ -113,6 +113,33 @@ sh_test(
     ],
 )
 
+# Reference docs generation rules
+
+sh_binary(
+    name = "update-reference-docs",
+    srcs = ["update-reference-docs.sh"],
+    data = [
+        "//hack/bin:gen-apidocs",
+        "//hack/bin:swagger-gen",
+        "//hack/brodocs",
+    ],
+    deps = [
+        "@bazel_tools//tools/bash/runfiles",
+    ],
+)
+
+sh_test(
+    name = "verify-reference-docs",
+    srcs = ["verify-reference-docs.sh"],
+    data = [
+        ":update-reference-docs",
+        "//:all-srcs",
+    ],
+    deps = [
+        "@bazel_tools//tools/bash/runfiles",
+    ],
+)
+
 filegroup(
     name = "package-srcs",
     srcs = glob(["**"]),
@@ -126,6 +153,7 @@ filegroup(
         ":package-srcs",
         "//hack/bin:all-srcs",
         "//hack/boilerplate:all-srcs",
+        "//hack/brodocs:all-srcs",
         "//hack/deploy:all-srcs",
     ],
     tags = ["automanaged"],
