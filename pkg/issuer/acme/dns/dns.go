@@ -67,6 +67,7 @@ type Solver struct {
 	dnsProviderConstructors dnsProviderConstructors
 }
 
+// Present performs the work to configure DNS to resolve a DNS01 challenge.
 func (s *Solver) Present(ctx context.Context, issuer v1alpha1.GenericIssuer, _ *v1alpha1.Certificate, ch v1alpha1.ACMEOrderChallenge) error {
 	if ch.SolverConfig.DNS01 == nil {
 		return fmt.Errorf("challenge dns config must be specified")
@@ -86,6 +87,7 @@ func (s *Solver) Present(ctx context.Context, issuer v1alpha1.GenericIssuer, _ *
 	return slv.Present(ch.Domain, ch.Token, ch.Key)
 }
 
+// Check verifies that the DNS records for the ACME challenge have propagated.
 func (s *Solver) Check(ch v1alpha1.ACMEOrderChallenge) (bool, error) {
 	fqdn, value, ttl, err := util.DNS01Record(ch.Domain, ch.Key, s.DNS01Nameservers)
 	if err != nil {
@@ -110,6 +112,8 @@ func (s *Solver) Check(ch v1alpha1.ACMEOrderChallenge) (bool, error) {
 	return true, nil
 }
 
+// CleanUp removes DNS records which are no longer needed after
+// certificate issuance.
 func (s *Solver) CleanUp(ctx context.Context, issuer v1alpha1.GenericIssuer, _ *v1alpha1.Certificate, ch v1alpha1.ACMEOrderChallenge) error {
 	if ch.SolverConfig.DNS01 == nil {
 		return fmt.Errorf("challenge dns config must be specified")
@@ -254,6 +258,9 @@ func (s *Solver) solverForIssuerProvider(issuer v1alpha1.GenericIssuer, provider
 			providerConfig.AzureDNS.HostedZoneName,
 			s.DNS01Nameservers,
 		)
+		if err != nil {
+			return nil, fmt.Errorf("error instantiating azuredns challenge solver: %s", err)
+		}
 	case providerConfig.AcmeDNS != nil:
 		accountSecret, err := s.secretLister.Secrets(resourceNamespace).Get(providerConfig.AcmeDNS.AccountSecret.Name)
 		if err != nil {
@@ -280,6 +287,8 @@ func (s *Solver) solverForIssuerProvider(issuer v1alpha1.GenericIssuer, provider
 	return impl, nil
 }
 
+// NewSolver creates a Solver which can instantiate the appropriate DNS
+// provider.
 func NewSolver(ctx *controller.Context) *Solver {
 	return &Solver{
 		ctx,
