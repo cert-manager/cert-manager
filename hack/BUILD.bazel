@@ -140,6 +140,25 @@ sh_test(
     ],
 )
 
+# Gofmt rules
+
+sh_binary(
+    name = "update-gofmt",
+    srcs = ["update-gofmt.sh"],
+    data = [
+        "//hack/bin:goimports",
+    ],
+)
+
+sh_test(
+    name = "verify-gofmt",
+    srcs = ["verify-gofmt.sh"],
+    data = [
+        "//:all-srcs",
+        "//hack/bin:goimports",
+    ],
+)
+
 filegroup(
     name = "package-srcs",
     srcs = glob(["**"]),
