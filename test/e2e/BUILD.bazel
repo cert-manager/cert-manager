@@ -1,5 +1,16 @@
 load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 
+# we add this rule so users can `bazel build //test/e2e` to run a
+# platform-independent version of the e2e test binary
+genrule(
+    name = "build_e2e",
+    testonly = True,
+    srcs = [":go_default_test"],
+    outs = ["e2e"],
+    cmd = "cp $(SRCS) $@",
+    visibility = ["//visibility:public"],
+)
+
 go_library(
     name = "go_default_library",
     srcs = ["e2e.go"],
