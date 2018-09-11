@@ -47,6 +47,14 @@ genrule(
     visibility = ["//visibility:public"],
 )
 
+genrule(
+    name = "fetch_goimports",
+    srcs = ["@org_golang_x_tools//cmd/goimports"],
+    outs = ["goimports"],
+    cmd = "cp $(SRCS) $@",
+    visibility = ["//visibility:public"],
+)
+
 # We include these rules here to make PATH mapping easier, and to provide a
 # stable arch-independent target for generating swagger.json & apidocs.
 genrule(
