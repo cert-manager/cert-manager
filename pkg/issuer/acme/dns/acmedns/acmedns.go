@@ -24,10 +24,11 @@ package acmedns
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/cpu/goacmedns"
-	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
 	"os"
 	"time"
+
+	"github.com/cpu/goacmedns"
+	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
 )
 
 // DNSProvider is an implementation of the acme.ChallengeProvider interface
