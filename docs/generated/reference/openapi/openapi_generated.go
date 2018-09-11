@@ -1354,8 +1354,15 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 								Format:      "",
 							},
 						},
+						"caBundle": {
+							SchemaProps: spec.SchemaProps{
+								Description: "CA bundle to validate Vault server certificate",
+								Type:        []string{"string"},
+								Format:      "",
+							},
+						},
 					},
-					Required: []string{"auth", "server", "path"},
+					Required: []string{"auth", "server", "path", "caBundle"},
 				},
 			},
 			Dependencies: []string{

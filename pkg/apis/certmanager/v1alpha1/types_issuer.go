@@ -91,6 +91,8 @@ type VaultIssuer struct {
 	Server string `json:"server"`
 	// Vault URL path to the certificate role
 	Path string `json:"path"`
+	// CA bundle to validate Vault server certificate
+	CABundle string `json:"caBundle"`
 }
 
 // Vault authentication  can be configured:

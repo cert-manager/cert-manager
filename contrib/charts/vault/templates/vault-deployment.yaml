@@ -17,6 +17,8 @@ spec:
       containers:
       - name: vault
         image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        command: ["vault", "server", "-dev", "-dev-listen-address=[::]:8202", "-config", "/vault/config/config.json"]
+        # command: ["/bin/sh", "-c", "sleep 9999"]
         ports:
         - containerPort: 8200
           name: vaultport
@@ -32,3 +34,16 @@ spec:
           httpGet:
             path: /v1/sys/health
             port: 8200
+            scheme: HTTPS
+        volumeMounts:
+        - name: vault-config
+          mountPath: /vault/config
+        - name: vault-tls
+          mountPath: /vault/tls
+      volumes:
+      - name: vault-config
+        configMap:
+          name: vault-config
+      - name: vault-tls
+        secret:
+          secretName: vault-tls

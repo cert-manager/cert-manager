@@ -23,6 +23,7 @@ go_library(
         "//test/e2e/clusterissuer:go_default_library",
         "//test/e2e/framework:go_default_library",
         "//test/e2e/issuer:go_default_library",
+        "//test/util/vault:go_default_library",
         "//vendor/github.com/golang/glog:go_default_library",
         "//vendor/github.com/onsi/ginkgo:go_default_library",
         "//vendor/github.com/onsi/ginkgo/config:go_default_library",

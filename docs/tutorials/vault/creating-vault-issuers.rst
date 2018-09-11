@@ -54,6 +54,7 @@ We can now create a cluster issuer referencing this secret:
       vault:
         path: pki_int/sign/example-dot-com
         server: https://vault
+        caBundle: ...
         auth:
           appRole:
             path: approle
@@ -70,7 +71,8 @@ references the Kubernetes secret created previously. More specifically, the fiel
 *name* is the Kubernetes secret name and *key* is the name given as the
 key value that store the *secretId*. The optional attribute *path* specifies
 where the AppRole authentication is mounted in Vault. The attribute *path* default
-value is *approle*.
+value is *approle*. An optional *caBundle* in PEM format can be provided to validate
+the TLS connection to the Vault Server.
 
 Once we have created the above Issuer we can use it to obtain a certificate.
 
@@ -153,11 +155,13 @@ We can now create an issuer referencing this secret:
             key: token
         path: pki_int/sign/example-dot-com
         server: https://vault
+        caBundle: ...
 
 Where *path* is the Vault role path of the PKI backend and *server* is
 the Vault server base URL. The secret created previously is referenced in the issuer
 with its *name* and *key* corresponding to the name of the Kubernetes secret and the
-property name containing the token value respectively.
+property name containing the token value respectively. An optional *caBundle* in PEM
+format can be provided to validate the TLS connection to the Vault Server.
 
 Once we have created the above Issuer we can use it to obtain a certificate.
 

@@ -473,7 +473,7 @@ func NewCertManagerSelfSignedIssuer(name string) *v1alpha1.Issuer {
 	}
 }
 
-func NewCertManagerVaultIssuerToken(name, vaultURL, vaultPath, vaultSecretToken string) *v1alpha1.Issuer {
+func NewCertManagerVaultIssuerToken(name, vaultURL, vaultPath, vaultSecretToken, authPath string, caBundle []byte) *v1alpha1.Issuer {
 	return &v1alpha1.Issuer{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: name,
@@ -481,8 +481,9 @@ func NewCertManagerVaultIssuerToken(name, vaultURL, vaultPath, vaultSecretToken 
 		Spec: v1alpha1.IssuerSpec{
 			IssuerConfig: v1alpha1.IssuerConfig{
 				Vault: &v1alpha1.VaultIssuer{
-					Server: vaultURL,
-					Path:   vaultPath,
+					Server:   vaultURL,
+					Path:     vaultPath,
+					CABundle: string(caBundle),
 					Auth: v1alpha1.VaultAuth{
 						TokenSecretRef: v1alpha1.SecretKeySelector{
 							Key: "secretkey",
@@ -497,7 +498,7 @@ func NewCertManagerVaultIssuerToken(name, vaultURL, vaultPath, vaultSecretToken 
 	}
 }
 
-func NewCertManagerVaultIssuerAppRole(name, vaultURL, vaultPath, roleId, vaultSecretAppRole, authPath string) *v1alpha1.Issuer {
+func NewCertManagerVaultIssuerAppRole(name, vaultURL, vaultPath, roleId, vaultSecretAppRole string, authPath string, caBundle []byte) *v1alpha1.Issuer {
 	return &v1alpha1.Issuer{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: name,
@@ -505,8 +506,9 @@ func NewCertManagerVaultIssuerAppRole(name, vaultURL, vaultPath, roleId, vaultSe
 		Spec: v1alpha1.IssuerSpec{
 			IssuerConfig: v1alpha1.IssuerConfig{
 				Vault: &v1alpha1.VaultIssuer{
-					Server: vaultURL,
-					Path:   vaultPath,
+					Server:   vaultURL,
+					Path:     vaultPath,
+					CABundle: string(caBundle),
 					Auth: v1alpha1.VaultAuth{
 						AppRole: v1alpha1.VaultAppRole{
 							Path:   authPath,
