@@ -1,38 +1,10 @@
-image: golang:1.11
-
-variables:
-  DOCKER_DRIVER: overlay
-  PKG_PATH: github.com/jetstack/cert-manager
-
-services:
-- docker:1.12-dind
-
-before_script:
-  # Install docker
-  # Note: 1.11+ changes the tarball format
-  - curl -L "https://get.docker.com/builds/Linux/x86_64/docker-1.9.1.tgz" | tar -C /usr/bin -xvzf- --strip-components=3 usr/local/bin/docker
-  - curl -L https://storage.googleapis.com/kubernetes-helm/helm-v2.10.0-linux-amd64.tar.gz | tar -C /tmp -xvzf- && mv /tmp/linux-amd64/helm /usr/local/bin
-  - curl -L https://github.com/golang/dep/releases/download/v0.5.0/dep-linux-amd64 >/tmp/dep && chmod +x /tmp/dep && mv /tmp/dep /usr/local/bin/
-  - apt-get update
-  - apt-get install -y make curl
-  - export DOCKER_HOST=${DOCKER_PORT}
-  - docker info > /dev/null
-  - mkdir -p "${GOPATH}/src/${PKG_PATH}" && rmdir "${GOPATH}/src/${PKG_PATH}"
-  - mv "${CI_PROJECT_DIR}" "${GOPATH}/src/${PKG_PATH}"
-  - cd "${GOPATH}/src/${PKG_PATH}"
-  - mkdir -p "${CI_PROJECT_DIR}"
-  - export PULL_BASE_SHA=${CI_COMMIT_SHA}
-
-after_script:
-  - cd "/"
-  - rm -rf "${CI_PROJECT_DIR}"
-  - mv "${GOPATH}/src/${PKG_PATH}" "${CI_PROJECT_DIR}"
+image: eu.gcr.io/jetstack-build-infra-images/cert-manager-e2e:v20180910-b8de01d-0.16.1
 
 build:
   tags:
   - docker
   script:
-  - make verify build
+  - make verify images
   except:
   - master
   - tags
@@ -42,7 +14,9 @@ master_push:
   - docker
   script:
   - mkdir -p ~/.docker && echo "${DOCKER_AUTH_CONFIG}" > ~/.docker/config.json && chmod 600 ~/.docker/config.json
-  - make verify build push IMAGE_TAGS="${CI_BUILD_REF_SLUG}-${CI_PIPELINE_ID} canary"
+  - make verify
+  - APP_VERSION=${CI_BUILD_REF_SLUG}-${CI_PIPELINE_ID} make images_push
+  - APP_VERSION=canary make images_push
   only:
   - master
 
@@ -51,6 +25,7 @@ release_push:
   - docker
   script:
   - mkdir -p ~/.docker && echo "${DOCKER_AUTH_CONFIG}" > ~/.docker/config.json && chmod 600 ~/.docker/config.json
-  - APP_VERSION=${CI_COMMIT_TAG} make verify build push IMAGE_TAGS="${CI_COMMIT_TAG}"
+  - make verify
+  - APP_VERSION=${CI_COMMIT_TAG} make images_push DOCKER_TAG="${CI_COMMIT_TAG}"
   only:
   - tags
