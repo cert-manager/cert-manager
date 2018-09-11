@@ -35,6 +35,7 @@ filegroup(
         "//cmd/acmesolver:all-srcs",
         "//cmd/controller:all-srcs",
         "//cmd/webhook:all-srcs",
+        "//contrib:all-srcs",
         "//docs/generated/reference:all-srcs",
         "//hack:all-srcs",
         "//pkg/acme:all-srcs",
