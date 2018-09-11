@@ -92,6 +92,26 @@ sh_test(
     ],
 )
 
+# Static deployment manifests rules
+
+sh_binary(
+    name = "update-deploy-gen",
+    srcs = ["update-deploy-gen.sh"],
+    data = [
+        "//hack/bin:helm",
+    ],
+)
+
+sh_test(
+    name = "verify-deploy-gen",
+    srcs = ["verify-deploy-gen.sh"],
+    data = [
+        ":update-deploy-gen",
+        "//contrib:all-srcs",
+        "//hack/deploy:all-srcs",
+    ],
+)
+
 filegroup(
     name = "package-srcs",
     srcs = glob(["**"]),
@@ -105,6 +125,7 @@ filegroup(
         ":package-srcs",
         "//hack/bin:all-srcs",
         "//hack/boilerplate:all-srcs",
+        "//hack/deploy:all-srcs",
     ],
     tags = ["automanaged"],
     visibility = ["//visibility:public"],
