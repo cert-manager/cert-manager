@@ -109,7 +109,7 @@ Cert-manager requires the following IAM policy.
    }
 
 The ``route53:ListHostedZonesByName`` statement can be removed if you specify
-the optional hosted zone ID (``spec.acme.dns01.providers[].hostedZoneID``) on
+the optional hosted zone ID (``spec.acme.dns01.providers[].route53.hostedZoneID``) on
 the Issuer resource. You can further tighten this policy by limiting the hosted
 zone that cert-manager has access to (replace ``arn:aws:route53:::hostedzone/*``
 with ``arn:aws:route53:::hostedzone/DIKER8JPL21PSA``, for instance).
