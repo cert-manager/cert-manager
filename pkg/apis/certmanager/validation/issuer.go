@@ -17,6 +17,10 @@ limitations under the License.
 package validation
 
 import (
+	"strings"
+
+	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/rfc2136"
+
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
@@ -200,6 +204,42 @@ func ValidateACMEIssuerDNS01Config(iss *v1alpha1.ACMEIssuerDNS01Config, fldPath 
 			el = append(el, ValidateSecretKeySelector(&p.AcmeDNS.AccountSecret, fldPath.Child("acmedns", "accountSecretRef"))...)
 			if len(p.AcmeDNS.Host) == 0 {
 				el = append(el, field.Required(fldPath.Child("acmedns", "host"), ""))
+			}
+		}
+		if p.RFC2136 != nil {
+			if numProviders > 0 {
+				el = append(el, field.Forbidden(fldPath.Child("rfc2136"), "may not specify more than one provider type"))
+			} else {
+				numProviders++
+				// Nameserver is the only required field for RFC2136
+				if len(p.RFC2136.Nameserver) == 0 {
+					el = append(el, field.Required(fldPath.Child("rfc2136", "nameserver"), ""))
+				} else {
+					if _, err := rfc2136.ValidNameserver(p.RFC2136.Nameserver); err != nil {
+						el = append(el, field.Invalid(fldPath.Child("rfc2136", "nameserver"), "", "Nameserver invalid. Check the documentation for details."))
+					}
+				}
+				if len(p.RFC2136.TSIGAlgorithm) > 0 {
+					present := false
+					for _, b := range rfc2136.GetSupportedAlgorithms() {
+						if b == strings.ToUpper(p.RFC2136.TSIGAlgorithm) {
+							present = true
+						}
+					}
+					if !present {
+						el = append(el, field.NotSupported(fldPath.Child("rfc2136", "tsigAlgorithm"), "", rfc2136.GetSupportedAlgorithms()))
+					}
+				}
+				if len(p.RFC2136.TSIGKeyName) > 0 {
+					el = append(el, ValidateSecretKeySelector(&p.RFC2136.TSIGSecret, fldPath.Child("rfc2136", "tsigSecretSecretRef"))...)
+				}
+
+				if len(ValidateSecretKeySelector(&p.RFC2136.TSIGSecret, fldPath.Child("rfc2136", "tsigSecretSecretRef"))) == 0 {
+					if len(p.RFC2136.TSIGKeyName) <= 0 {
+						el = append(el, field.Required(fldPath.Child("rfc2136", "tsigKeyName"), ""))
+					}
+
+				}
 			}
 		}
 		if numProviders == 0 {
