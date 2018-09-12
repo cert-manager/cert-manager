@@ -18,6 +18,7 @@ package certificates
 
 import (
 	"context"
+	"crypto/x509"
 	"fmt"
 	"reflect"
 	"strings"
@@ -57,9 +58,16 @@ const (
 	messageIssuingCertificate  = "Issuing certificate..."
 	messageRenewingCertificate = "Renewing certificate..."
 
+	infoCertificateDuration = "WarnCertificateDuration"
+	infoScheduleModified    = "WarnScheduleModified"
+
 	messageCertificateIssued  = "Certificate issued successfully"
 	messageCertificateRenewed = "Certificate renewed successfully"
+
+	messageCertificateDuration = "Certificate received from server has a validity duration of %s. The requested certificate validity duration was %s"
+	messageScheduleModified    = "Certificate renewal duration was changed to fit inside the received certificate validity duration from issuer."
 )
+
 
 const (
 	TLSCAKey = "ca.crt"
@@ -68,6 +76,9 @@ const (
 var (
 	certificateGvk = v1alpha1.SchemeGroupVersion.WithKind("Certificate")
 )
+
+// to help testing
+var now = time.Now
 
 func (c *Controller) Sync(ctx context.Context, crt *v1alpha1.Certificate) (requeue bool, err error) {
 	crtCopy := crt.DeepCopy()
@@ -178,10 +189,19 @@ func (c *Controller) Sync(ctx context.Context, crt *v1alpha1.Certificate) (reque
 	if !util.EqualUnsorted(cert.DNSNames, expectedDNSNames) {
 		return c.issue(ctx, i, crtCopy)
 	}
+	
+	// as there is an existing certificate, or we may create one below, we will
+	// run scheduleRenewal to schedule a renewal if required at the end of
+	// execution.
+	defer c.scheduleRenewal(crtCopy, issuerObj)
 
-	// check if the certificate needs renewal
-	needsRenew := c.Context.IssuerOptions.CertificateNeedsRenew(cert)
-	if needsRenew {
+	// if the certificate was not found, or the certificate data is invalid, we
+	// should issue a new certificate.
+	// if the certificate is valid for a list of domains other than those
+	// listed in the certificate spec, we should re-issue the certificate.
+	if k8sErrors.IsNotFound(err) || errors.IsInvalidData(err) ||
+		expectedCN != cert.Subject.CommonName || !util.EqualUnsorted(cert.DNSNames, expectedDNSNames) ||
+		c.Context.IssuerOptions.CertificateNeedsRenew(cert) {
 		return c.issue(ctx, i, crtCopy)
 	}
 
@@ -209,7 +229,7 @@ func (c *Controller) getGenericIssuer(crt *v1alpha1.Certificate) (v1alpha1.Gener
 	}
 }
 
-func (c *Controller) scheduleRenewal(crt *v1alpha1.Certificate) {
+func (c *Controller) scheduleRenewal(crt *v1alpha1.Certificate, issuerObj v1alpha1.GenericIssuer) {
 	key, err := keyFunc(crt)
 
 	if err != nil {
@@ -226,8 +246,7 @@ func (c *Controller) scheduleRenewal(crt *v1alpha1.Certificate) {
 		return
 	}
 
-	durationUntilExpiry := cert.NotAfter.Sub(time.Now())
-	renewIn := durationUntilExpiry - c.Context.IssuerOptions.RenewBeforeExpiryDuration
+	renewIn :=  c.calculateTimeBeforeExpiry(cert, crt, issuerObj)
 
 	c.scheduledWorkQueue.Add(key, renewIn)
 
@@ -340,4 +359,36 @@ func (c *Controller) updateCertificateStatus(old, new *v1alpha1.Certificate) (*v
 	// server with the /status subresource enabled and/or subresource support
 	// for CRDs (https://github.com/kubernetes/kubernetes/issues/38113)
 	return c.CMClient.CertmanagerV1alpha1().Certificates(new.Namespace).Update(new)
+}
+
+func (c *Controller) calculateTimeBeforeExpiry(cert *x509.Certificate, crt *v1alpha1.Certificate, issuerObj v1alpha1.GenericIssuer) time.Duration {
+	// validate if the certificate received was with the issuer configured
+	// duration. If not we generate an event to warn the user of that fact.
+	certDuration := cert.NotAfter.Sub(cert.NotBefore)
+	if certDuration < issuerObj.GetSpec().Duration.Duration {
+		s := fmt.Sprintf(messageCertificateDuration, certDuration, issuerObj.GetSpec().Duration.Duration)
+		glog.Info(s)
+		c.Recorder.Event(crt, api.EventTypeNormal, infoCertificateDuration, s)
+	}
+ 	// renew is the duration before the certificate expiration that cert-manager
+	// will start to try renewing the certificate.
+	renew := v1alpha1.DefaultRenewBefore
+	if issuerObj.GetSpec().RenewBefore.Duration != 0 {
+		renew = issuerObj.GetSpec().RenewBefore.Duration
+	}
+ 	// Verify that the renewBefore duration is inside the certificate validity duration.
+	// If not we notify with an event that we will renew the certificate
+	// before (certificate duration / 3) of its expiration duration.
+	if renew > certDuration {
+		glog.Info(messageScheduleModified)
+		c.Recorder.Event(crt, api.EventTypeNormal, infoScheduleModified, messageScheduleModified)
+		// We will renew 1/3 before the expiration date.
+		renew = certDuration / 3
+	}
+ 	// calculate the amount of time until expiry
+	durationUntilExpiry := cert.NotAfter.Sub(now())
+ 	// calculate how long until we should start attempting to renew the
+	// certificate
+	renewIn := durationUntilExpiry - renew
+ 	return renewIn
 }

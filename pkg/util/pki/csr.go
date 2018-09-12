@@ -86,9 +86,6 @@ func OrganizationForCertificate(crt *v1alpha1.Certificate) []string {
 
 var serialNumberLimit = new(big.Int).Lsh(big.NewInt(1), 128)
 
-// default certification duration is 1 year
-const defaultNotAfter = time.Hour * 24 * 365
-
 // GenerateCSR will generate a new *x509.CertificateRequest template to be used
 // by issuers that utilise CSRs to obtain Certificates.
 // The CSR will not be signed, and should be passed to either EncodeCSR or
@@ -139,7 +136,13 @@ func GenerateTemplate(issuer v1alpha1.GenericIssuer, crt *v1alpha1.Certificate) 
 		return nil, fmt.Errorf("failed to generate serial number: %s", err.Error())
 	}
 
+	certDuration := v1alpha1.DefaultCertificateDuration
+	if issuer.GetSpec().Duration.Duration != 0 {
+		certDuration = issuer.GetSpec().Duration.Duration
+	}
+
 	pubKeyAlgo, _, err := SignatureAlgorithm(crt)
+
 	if err != nil {
 		return nil, err
 	}
@@ -160,7 +163,7 @@ func GenerateTemplate(issuer v1alpha1.GenericIssuer, crt *v1alpha1.Certificate) 
 			CommonName:   commonName,
 		},
 		NotBefore: time.Now(),
-		NotAfter:  time.Now().Add(defaultNotAfter),
+		NotAfter:  time.Now().Add(certDuration),
 		// see http://golang.org/pkg/crypto/x509/#KeyUsage
 		KeyUsage: keyUsages,
 		DNSNames: dnsNames,

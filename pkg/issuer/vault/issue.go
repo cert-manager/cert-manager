@@ -36,6 +36,8 @@ import (
 	"github.com/jetstack/cert-manager/pkg/util/kube"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
+	"path"
+	"strings"
 )
 
 const (
@@ -47,8 +49,6 @@ const (
 	messageErrorIssueCert = "Error issuing TLS certificate: "
 
 	messageCertIssued = "Certificate issued successfully"
-
-	defaultCertificateDuration = time.Hour * 24 * 90
 )
 
 func (v *Vault) Issue(ctx context.Context, crt *v1alpha1.Certificate) (issuer.IssueResponse, error) {
@@ -220,10 +220,15 @@ func (v *Vault) requestVaultCert(commonName string, altNames []string, csr []byt
 
 	glog.V(4).Infof("Vault certificate request for commonName %s altNames: %q", commonName, altNames)
 
+	certDuration := v1alpha1.DefaultCertificateDuration
+	if v.issuer.GetSpec().Duration.Duration != 0 {
+		certDuration = v.issuer.GetSpec().Duration.Duration
+	}
+
 	parameters := map[string]string{
 		"common_name":          commonName,
 		"alt_names":            strings.Join(altNames, ","),
-		"ttl":                  defaultCertificateDuration.String(),
+		"ttl":                  certDuration.String(),
 		"csr":                  string(csr),
 		"exclude_cn_from_sans": "true",
 	}

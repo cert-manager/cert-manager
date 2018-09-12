@@ -19,6 +19,7 @@ package vault
 import (
 	"context"
 	"fmt"
+	"github.com/jetstack/cert-manager/pkg/issuer"
 
 	"github.com/golang/glog"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
@@ -41,6 +42,13 @@ const (
 )
 
 func (v *Vault) Setup(ctx context.Context) (issuer.SetupResponse, error) {
+	err := issuer.ValidateDuration(v.issuer)
+	if err != nil {
+		glog.Info(err.Error())
+		v.issuer.UpdateStatusCondition(v1alpha1.IssuerConditionReady, v1alpha1.ConditionFalse, issuer.ErrorDurationInvalid, err.Error())
+		return err
+	}
+
 	if v.issuer.GetSpec().Vault == nil {
 		glog.Infof("%s: %s", v.issuer.GetObjectMeta().Name, messageVaultConfigRequired)
 		v.issuer.UpdateStatusCondition(v1alpha1.IssuerConditionReady, v1alpha1.ConditionFalse, errorVault, messageVaultConfigRequired)
