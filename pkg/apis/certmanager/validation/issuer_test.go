@@ -278,7 +278,45 @@ func TestValidateACMEIssuerDNS01Config(t *testing.T) {
 				field.Required(providersPath.Index(0).Child("clouddns", "project"), ""),
 			},
 		},
-		"missing clouddns service account": {
+		"missing clouddns service account key": {
+			cfg: &v1alpha1.ACMEIssuerDNS01Config{
+				Providers: []v1alpha1.ACMEIssuerDNS01Provider{
+					{
+						Name: "a name",
+						CloudDNS: &v1alpha1.ACMEIssuerDNS01ProviderCloudDNS{
+							Project: "valid",
+							ServiceAccount: v1alpha1.SecretKeySelector{
+								LocalObjectReference: v1alpha1.LocalObjectReference{Name: "something"},
+								Key:                  "",
+							},
+						},
+					},
+				},
+			},
+			errs: []*field.Error{
+				field.Required(providersPath.Index(0).Child("clouddns", "serviceAccountSecretRef", "key"), "secret key is required"),
+			},
+		},
+		"missing clouddns service account name": {
+			cfg: &v1alpha1.ACMEIssuerDNS01Config{
+				Providers: []v1alpha1.ACMEIssuerDNS01Provider{
+					{
+						Name: "a name",
+						CloudDNS: &v1alpha1.ACMEIssuerDNS01ProviderCloudDNS{
+							Project: "valid",
+							ServiceAccount: v1alpha1.SecretKeySelector{
+								LocalObjectReference: v1alpha1.LocalObjectReference{Name: ""},
+								Key:                  "something",
+							},
+						},
+					},
+				},
+			},
+			errs: []*field.Error{
+				field.Required(providersPath.Index(0).Child("clouddns", "serviceAccountSecretRef", "name"), "secret name is required"),
+			},
+		},
+		"clouddns serviceAccount field not set should be allowed for ambient auth": {
 			cfg: &v1alpha1.ACMEIssuerDNS01Config{
 				Providers: []v1alpha1.ACMEIssuerDNS01Provider{
 					{
@@ -288,10 +326,6 @@ func TestValidateACMEIssuerDNS01Config(t *testing.T) {
 						},
 					},
 				},
-			},
-			errs: []*field.Error{
-				field.Required(providersPath.Index(0).Child("clouddns", "serviceAccountSecretRef", "name"), "secret name is required"),
-				field.Required(providersPath.Index(0).Child("clouddns", "serviceAccountSecretRef", "key"), "secret key is required"),
 			},
 		},
 		"missing cloudflare token": {
