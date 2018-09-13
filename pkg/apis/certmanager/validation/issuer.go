@@ -210,6 +210,15 @@ func ValidateACMEIssuerDNS01Config(iss *v1alpha1.ACMEIssuerDNS01Config, fldPath 
 				el = append(el, field.Required(fldPath.Child("acmedns", "host"), ""))
 			}
 		}
+
+		if p.DigitalOcean != nil {
+			if numProviders > 0 {
+				el = append(el, field.Forbidden(fldPath.Child("digitalocean"), "may not specify more than one provider type"))
+			} else {
+				numProviders++
+				el = append(el, ValidateSecretKeySelector(&p.DigitalOcean.Token, fldPath.Child("digitalocean", "tokenSecretRef"))...)
+			}
+		}
 		if p.RFC2136 != nil {
 			if numProviders > 0 {
 				el = append(el, field.Forbidden(fldPath.Child("rfc2136"), "may not specify more than one provider type"))
