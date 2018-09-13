@@ -1,3 +1,13 @@
+// +skip_license_check
+
+/*
+This file contains portions of code directly taken from the 'xenolf/lego' project.
+A copy of the license for this code can be found in the file named LICENSE in
+this directory.
+*/
+
+// Package livedns implements a DNS provider for solving the DNS-01
+// challenge using gandi livedns DNS service.
 package livedns
 
 import (

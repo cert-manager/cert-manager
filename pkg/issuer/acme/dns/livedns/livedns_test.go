@@ -1,3 +1,10 @@
+// +skip_license_check
+
+/*
+This file contains portions of code directly taken from the 'xenolf/lego' project.
+A copy of the license for this code can be found in the file named LICENSE in
+this directory.
+*/
 package livedns
 
 import (
