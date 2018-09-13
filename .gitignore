@@ -6,3 +6,4 @@
 /hack/build/dockerfiles/cert-manager-*_*_*
 .vscode
 bazel-*
+vendor
