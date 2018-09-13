@@ -149,6 +149,17 @@ func (c *DNSProvider) findTxtRecord(fqdn string) ([]godo.DomainRecord, error) {
 
 	var records []godo.DomainRecord
 
+	// The record Name doesn't contain the zoneName, so
+	// lets remove it before filtering the array of record
+
+	//		zoneName:
+	//        fqdn: _acme-challenge.example.no
+	// record.Name:  _acme-challenge
+	targetName := fqdn
+	if strings.HasSuffix(fqdn, zoneName) {
+		targetName = fqdn[:len(fqdn)-len(zoneName)]
+	}
+
 	for _, record := range allRecords {
 		if util.ToFqdn(record.Name) == targetName {
 			records = append(records, record)
