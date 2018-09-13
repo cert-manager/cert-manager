@@ -27,8 +27,6 @@ import (
 
 	"github.com/digitalocean/godo"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
-	"github.com/miekg/dns"
-
 	"golang.org/x/oauth2"
 )
 
@@ -82,36 +80,13 @@ func (c *DNSProvider) Present(domain, token, keyAuth string) error {
 		return err
 	}
 
-	alreadyExists := false
-
 	// check if the record has already been created
-	domains, _, err := c.client.Domains.List(context.Background(), &godo.ListOptions{})
-	for _, domain := range domains {
-		// we're only interested in the challenge domain, so skip the rest
-		if dns.Fqdn(domain.Name) == fqdn {
-			// loop over each record in the domain
-			// the digitalocean API only returns a zone file, so we need to parse it first
-			for x := range dns.ParseZone(strings.NewReader(domain.ZoneFile), "", "") {
-				if x.Error != nil {
-					return x.Error
-				}
-
-				// check if this record is a TXT
-				if x.RR.Header().Rrtype == dns.TypeTXT {
-					txt := x.RR.(*dns.TXT).Txt
-					for _, c := range txt {
-						// skip creation if it has the correct value
-						if c == keyAuth {
-							alreadyExists = true
-						}
-					}
-				}
-			}
+	records, err := c.findTxtRecord(fqdn)
+	for _, record := range records {
+		if record.Type == "TXT" && record.Data == keyAuth {
+			return nil
 		}
-	}
 
-	if alreadyExists {
-		return nil
 	}
 
 	createRequest := &godo.DomainRecordEditRequest{
@@ -175,7 +150,7 @@ func (c *DNSProvider) findTxtRecord(fqdn string) ([]godo.DomainRecord, error) {
 	var records []godo.DomainRecord
 
 	for _, record := range allRecords {
-		if util.ToFqdn(record.Name) == fqdn {
+		if util.ToFqdn(record.Name) == targetName {
 			records = append(records, record)
 		}
 	}
