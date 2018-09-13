@@ -20,16 +20,22 @@ import (
 	"github.com/jetstack/cert-manager/test/e2e/framework/helper"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	"github.com/jetstack/cert-manager/pkg/util/pki"
 	"k8s.io/api/core/v1"
+	api "k8s.io/api/core/v1"
 	apiextcs "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+	"time"
 
 	clientset "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
 	"github.com/jetstack/cert-manager/test/e2e/framework/addon"
 	"github.com/jetstack/cert-manager/test/e2e/framework/config"
 	"github.com/jetstack/cert-manager/test/e2e/framework/util"
 	"github.com/jetstack/cert-manager/test/e2e/framework/util/errors"
+	"github.com/jetstack/cert-manager/test/util"
 )
 
 // DefaultConfig contains the default shared config the is likely parsed from
@@ -123,6 +129,7 @@ func (f *Framework) AfterEach() {
 	Expect(err).NotTo(HaveOccurred())
 }
 
+<<<<<<< HEAD
 // RequireGlobalAddon calls Setup on the given addon.
 // This should be called in specs or describe blocks that require access to any
 // of the global/shared addons in order to ensure their details are available.
@@ -166,6 +173,31 @@ func (f *Framework) Helper() *helper.Helper {
 	return &helper.Helper{
 		KubeClient: f.KubeClientSet,
 	}
+}
+
+func (f *Framework) CertificateDurationValid(c *v1alpha1.Certificate, duration time.Duration) {
+	By("Verifying TLS certificate exists")
+	secret, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Get(c.Spec.SecretName, metav1.GetOptions{})
+	Expect(err).NotTo(HaveOccurred())
+	if len(secret.Data) != 2 {
+		Failf("Expected 2 keys in certificate secret, but there was %d", len(secret.Data))
+	}
+	certBytes, ok := secret.Data[api.TLSCertKey]
+	if !ok {
+		Failf("No certificate data found for Certificate %q", c.Name)
+	}
+	cert, err := pki.DecodeX509CertificateBytes(certBytes)
+	Expect(err).NotTo(HaveOccurred())
+	By("Verifying that the duration is valid")
+	if cert.NotAfter.Sub(cert.NotBefore) != duration {
+		Failf("Expected duration of %s, got %s [NotBefore: %s, NotAfter: %s]", duration, cert.NotAfter.Sub(cert.NotBefore), cert.NotBefore.Format(time.RFC3339), cert.NotAfter.Format(time.RFC3339))
+	}
+}
+
+func (f *Framework) WaitForCertificateEvent(cert *v1alpha1.Certificate, reason string) {
+	By("Verifying that the certificate has an event with reason " + reason)
+	err := util.WaitForCertificateEvent(f.KubeClientSet, cert, reason, defaultTimeout)
+	Expect(err).NotTo(HaveOccurred())
 }
 
 // CertManagerDescribe is a wrapper function for ginkgo describe. Adds namespacing.
