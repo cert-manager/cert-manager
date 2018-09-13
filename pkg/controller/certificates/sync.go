@@ -246,7 +246,7 @@ func (c *Controller) scheduleRenewal(crt *v1alpha1.Certificate, issuerObj v1alph
 		return
 	}
 
-	renewIn :=  c.calculateTimeBeforeExpiry(cert, crt, issuerObj)
+	renewIn := c.calculateTimeBeforeExpiry(cert, crt, issuerObj)
 
 	c.scheduledWorkQueue.Add(key, renewIn)
 
@@ -370,13 +370,13 @@ func (c *Controller) calculateTimeBeforeExpiry(cert *x509.Certificate, crt *v1al
 		glog.Info(s)
 		c.Recorder.Event(crt, api.EventTypeNormal, infoCertificateDuration, s)
 	}
- 	// renew is the duration before the certificate expiration that cert-manager
+	// renew is the duration before the certificate expiration that cert-manager
 	// will start to try renewing the certificate.
 	renew := v1alpha1.DefaultRenewBefore
 	if issuerObj.GetSpec().RenewBefore.Duration != 0 {
 		renew = issuerObj.GetSpec().RenewBefore.Duration
 	}
- 	// Verify that the renewBefore duration is inside the certificate validity duration.
+	// Verify that the renewBefore duration is inside the certificate validity duration.
 	// If not we notify with an event that we will renew the certificate
 	// before (certificate duration / 3) of its expiration duration.
 	if renew > certDuration {
@@ -385,10 +385,10 @@ func (c *Controller) calculateTimeBeforeExpiry(cert *x509.Certificate, crt *v1al
 		// We will renew 1/3 before the expiration date.
 		renew = certDuration / 3
 	}
- 	// calculate the amount of time until expiry
+	// calculate the amount of time until expiry
 	durationUntilExpiry := cert.NotAfter.Sub(now())
- 	// calculate how long until we should start attempting to renew the
+	// calculate how long until we should start attempting to renew the
 	// certificate
 	renewIn := durationUntilExpiry - renew
- 	return renewIn
+	return renewIn
 }

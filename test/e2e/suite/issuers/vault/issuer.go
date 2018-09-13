@@ -179,7 +179,7 @@ var _ = framework.CertManagerDescribe("Vault Issuer", func() {
 			By("Creating an Issuer")
 			_, err = f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Create(util.NewCertManagerVaultIssuerAppRole(issuerName, vaultURL, vaultPath, roleId, vaultSecretAppRoleName, v.inputDuration, v.inputRenewBefore))
 			Expect(err).NotTo(HaveOccurred())
- 			By("Waiting for Issuer to become Ready")
+			By("Waiting for Issuer to become Ready")
 			err = util.WaitForIssuerCondition(f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name),
 				issuerName,
 				v1alpha1.IssuerCondition{

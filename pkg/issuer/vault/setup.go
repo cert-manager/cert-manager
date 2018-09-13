@@ -19,6 +19,7 @@ package vault
 import (
 	"context"
 	"fmt"
+
 	"github.com/jetstack/cert-manager/pkg/issuer"
 
 	"github.com/golang/glog"

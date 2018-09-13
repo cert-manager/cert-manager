@@ -17,9 +17,10 @@ limitations under the License.
 package ca
 
 import (
+	"time"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"time"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	"github.com/jetstack/cert-manager/test/e2e/framework"
@@ -82,14 +83,14 @@ var _ = framework.CertManagerDescribe("CA Issuer", func() {
 			status:           v1alpha1.ConditionStatus(v1alpha1.ConditionFalse),
 		},
 	}
- 	for _, v := range cases {
+	for _, v := range cases {
 		v := v
 		It(v.label, func() {
 			issuerName := "test-issuer-duration"
- 			By("Creating an Issuer")
+			By("Creating an Issuer")
 			_, err := f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Create(util.NewCertManagerCAIssuer(issuerName, secretName, v.inputDuration, v.inputRenewBefore))
 			Expect(err).NotTo(HaveOccurred())
- 			By("Waiting for Issuer to become Ready")
+			By("Waiting for Issuer to become Ready")
 			err = util.WaitForIssuerCondition(f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name),
 				issuerName,
 				v1alpha1.IssuerCondition{
@@ -97,7 +98,7 @@ var _ = framework.CertManagerDescribe("CA Issuer", func() {
 					Status: v.status,
 				})
 			Expect(err).NotTo(HaveOccurred())
- 			By("Cleaning up")
+			By("Cleaning up")
 			f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Delete(issuerName, nil)
 		})
 	}

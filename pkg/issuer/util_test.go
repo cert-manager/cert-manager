@@ -1,16 +1,19 @@
-
 package issuer
- import (
+
+import (
 	"testing"
 	"time"
- 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+
+	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
- const (
+
+const (
 	success = iota
 	fail
 )
- func TestValidateDuration(t *testing.T) {
+
+func TestValidateDuration(t *testing.T) {
 	cases := []struct {
 		inputDuration    time.Duration
 		inputRenewBefore time.Duration
@@ -48,11 +51,11 @@ package issuer
 			label:            "default duration and renewBefore should be valid",
 		},
 	}
- 	issuer := &v1alpha1.Issuer{}
+	issuer := &v1alpha1.Issuer{}
 	for _, v := range cases {
 		issuer.Spec.Duration = metav1.Duration{v.inputDuration}
 		issuer.Spec.RenewBefore = metav1.Duration{v.inputRenewBefore}
- 		err := ValidateDuration(issuer)
+		err := ValidateDuration(issuer)
 		if err == nil && v.expected == fail {
 			t.Errorf(v.label)
 		}

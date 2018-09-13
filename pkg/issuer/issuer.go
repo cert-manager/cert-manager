@@ -22,8 +22,8 @@ import (
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 )
 
- const (
- 	// Error reason generated when duration or renewBefore is invalid
+const (
+	// Error reason generated when duration or renewBefore is invalid
 	ErrorDurationInvalid = "ErrDurationInvalid"
 )
 

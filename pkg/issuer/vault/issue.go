@@ -36,8 +36,6 @@ import (
 	"github.com/jetstack/cert-manager/pkg/util/kube"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
-	"path"
-	"strings"
 )
 
 const (
@@ -226,10 +224,10 @@ func (v *Vault) requestVaultCert(commonName string, altNames []string, csr []byt
 	}
 
 	parameters := map[string]string{
-		"common_name":          commonName,
-		"alt_names":            strings.Join(altNames, ","),
-		"ttl":                  certDuration.String(),
-		"csr":                  string(csr),
+		"common_name": commonName,
+		"alt_names":   strings.Join(altNames, ","),
+		"ttl":         certDuration.String(),
+		"csr":         string(csr),
 		"exclude_cn_from_sans": "true",
 	}
 

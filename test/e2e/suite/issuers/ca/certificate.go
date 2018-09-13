@@ -107,7 +107,7 @@ var _ = framework.CertManagerDescribe("CA Certificate", func() {
 			label:            "the default duration (90 days)",
 		},
 	}
- 	for _, v := range cases {
+	for _, v := range cases {
 		v := v
 		It("should generate a signed keypair valid for "+v.label, func() {
 			By("Creating an Issuer")
@@ -124,7 +124,7 @@ var _ = framework.CertManagerDescribe("CA Certificate", func() {
 			By("Creating a Certificate")
 			cert, err := f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name).Create(util.NewCertManagerBasicCertificate(certificateName, certificateSecretName, issuerName, v1alpha1.IssuerKind))
 			Expect(err).NotTo(HaveOccurred())
- 			f.WaitCertificateIssuedValid(cert)
+			f.WaitCertificateIssuedValid(cert)
 			f.CertificateDurationValid(cert, v.expectedDuration)
 		})
 	}

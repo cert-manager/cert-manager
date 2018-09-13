@@ -2,11 +2,12 @@ package certificates
 
 import (
 	"crypto/x509"
+	"testing"
+	"time"
+
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"testing"
-	"time"
 )
 
 type recorder struct {
