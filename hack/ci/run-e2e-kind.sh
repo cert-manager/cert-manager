@@ -89,7 +89,7 @@ install_nginx() {
 # cluster's docker daemon.
 build_images() {
     # Build cert-manager binaries & docker image
-    make build APP_VERSION=build
+    make images APP_VERSION=build
 
     local TMP_DIR=$(mktemp -d)
     local BUNDLE_FILE="${TMP_DIR}"/cmbundle.tar.gz

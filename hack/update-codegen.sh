@@ -14,17 +14,36 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# The only argument this script should ever be called with is '--verify-only'
-
 set -o errexit
 set -o nounset
 set -o pipefail
 
-SCRIPT_ROOT=$(dirname "${BASH_SOURCE}")/..
-CODEGEN_PKG=${CODEGEN_PKG:-$(CDPATH='' cd "${SCRIPT_ROOT}"; ls -d -1 ./vendor/k8s.io/code-generator 2>/dev/null || echo ../code-generator)}
+# This script should be run via `bazel run //hack:update-bazel`
+REPO_ROOT=${BUILD_WORKSPACE_DIRECTORY:-"$(cd "$(dirname "$0")" && pwd -P)"/..}
+runfiles="$(pwd)"
+export PATH="${runfiles}/third_party/k8s.io/code-generator:${runfiles}/hack:${runfiles}/hack/bin:${PATH}"
+cd "${REPO_ROOT}"
 
-"${CODEGEN_PKG}/generate-groups.sh" "deepcopy,client,informer,lister" \
+generate-groups.sh "deepcopy,client,informer,lister" \
   github.com/jetstack/cert-manager/pkg/client github.com/jetstack/cert-manager/pkg/apis \
   certmanager:v1alpha1 \
   --output-base "${GOPATH}/src/" \
-  --go-header-file "${SCRIPT_ROOT}/hack/boilerplate/boilerplate.go.txt"
+  --go-header-file "${runfiles}/hack/boilerplate/boilerplate.go.txt"
+
+OPENAPI_PATH_SEGMENT="docs/generated/reference/openapi"
+OPENAPI_OUTPUT_DIR="${REPO_ROOT}/${OPENAPI_PATH_SEGMENT}"
+# Create all required directories
+mkdir -p "${OPENAPI_OUTPUT_DIR}"
+if [ ! -f "${OPENAPI_OUTPUT_DIR}/openapi_generated.go" ]; then
+    # Create a placeholder .go file to prevent issues with openapi-gen
+    echo "package openapi" > "${OPENAPI_OUTPUT_DIR}/openapi_generated.go"
+fi
+
+echo "+++ Generating openapi_generated.go into 'github.com/jetstack/cert-manager/${OPENAPI_PATH_SEGMENT}'"
+# Generate Golang types for OpenAPI spec
+openapi-gen \
+        --input-dirs github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1,k8s.io/apimachinery/pkg/apis/meta/v1,k8s.io/apimachinery/pkg/runtime,k8s.io/apimachinery/pkg/version \
+        --go-header-file "${runfiles}/hack/boilerplate/boilerplate.go.txt" \
+        --output-package "github.com/jetstack/cert-manager/${OPENAPI_PATH_SEGMENT}"
+
+update-bazel.sh

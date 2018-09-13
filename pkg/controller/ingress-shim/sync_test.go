@@ -901,10 +901,10 @@ func TestGetGenericIssuer(t *testing.T) {
 			Err:  true,
 		},
 		{
-			Name:                   "name",
-			Kind:                   "ClusterIssuer",
+			Name: "name",
+			Kind: "ClusterIssuer",
 			NilClusterIssuerLister: true,
-			Err:                    true,
+			Err: true,
 		},
 	}
 

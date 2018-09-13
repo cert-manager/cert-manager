@@ -24,7 +24,7 @@ set -o nounset
 set -o pipefail
 
 # Build images while we wait for services to start
-make build APP_VERSION=build
+make images APP_VERSION=build
 
 # Wait for e2e service dependencies
 echo "Waiting for minikube cluster to be ready..."

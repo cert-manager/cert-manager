@@ -18,8 +18,12 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-SCRIPT_ROOT=$(dirname "${BASH_SOURCE}")
-REPO_ROOT="${SCRIPT_ROOT}/.."
+# This script should be run via `bazel run //hack:update-deploy-gen`
+REPO_ROOT=${BUILD_WORKSPACE_DIRECTORY:-"$(cd "$(dirname "$0")" && pwd -P)"/..}
+runfiles="$(pwd)"
+export PATH="${runfiles}/hack/bin:${PATH}"
+cd "${REPO_ROOT}"
+
 # This will set Capabilities.KubeVersion.Major/Minor when generating manifests
 KUBE_VERSION=1.9
 
@@ -31,7 +35,7 @@ gen() {
 	mkdir -p "$(dirname ${OUTPUT})"
 	helm template \
 		"${REPO_ROOT}/contrib/charts/cert-manager" \
-		--values "${SCRIPT_ROOT}/deploy/${VALUES}.yaml" \
+		--values "${REPO_ROOT}/hack/deploy/${VALUES}.yaml" \
 		--kube-version "${KUBE_VERSION}" \
 		--namespace "cert-manager" \
 		--name "cert-manager" \
@@ -39,7 +43,7 @@ gen() {
 		--set "createNamespaceResource=true" > "${TMP_OUTPUT}"
 	helm template \
 		"${REPO_ROOT}/contrib/charts/cert-manager/webhook" \
-		--values "${SCRIPT_ROOT}/deploy/${VALUES}.yaml" \
+		--values "${REPO_ROOT}/hack/deploy/${VALUES}.yaml" \
 		--kube-version "${KUBE_VERSION}" \
 		--namespace "cert-manager" \
 		--name "webhook" > "${TMP_OUTPUT_WEBHOOK}"
@@ -47,6 +51,7 @@ gen() {
 	mv "${TMP_OUTPUT_WEBHOOK}" "${OUTPUT}-webhook.yaml"
 }
 
+export HELM_HOME="$(mktemp -d)"
 helm init --client-only
 helm dep update "${REPO_ROOT}/contrib/charts/cert-manager"
 gen rbac-values "${REPO_ROOT}/contrib/manifests/cert-manager/with-rbac"
