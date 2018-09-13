@@ -31,7 +31,7 @@ const (
 )
 
 func (c *Vault) Renew(ctx context.Context, crt *v1alpha1.Certificate) ([]byte, []byte, []byte, error) {
-	key, cert, err := c.obtainCertificate(ctx, crt)
+	key, cert, caPem, err := c.obtainCertificate(ctx, crt)
 	if err != nil {
 		s := messageErrorRenewCert + err.Error()
 		crt.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse, errorRenewCert, s, false)
@@ -40,5 +40,5 @@ func (c *Vault) Renew(ctx context.Context, crt *v1alpha1.Certificate) ([]byte, [
 
 	crt.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionTrue, successCertRenewed, messageCertRenewed, true)
 
-	return key, cert, nil, err
+	return key, cert, caPem, err
 }
