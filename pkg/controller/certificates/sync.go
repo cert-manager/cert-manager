@@ -62,7 +62,7 @@ const (
 )
 
 const (
-	nginxCAKey = "ca.crt"
+	TLSCAKey = "ca.crt"
 )
 
 func (c *Controller) Sync(ctx context.Context, crt *v1alpha1.Certificate) (err error) {
@@ -238,7 +238,7 @@ func (c *Controller) updateSecret(crt *v1alpha1.Certificate, namespace string, c
 	secret.Data[api.TLSPrivateKeyKey] = key
 
 	if crt.Spec.IsCA {
-		secret.Data[nginxCAKey] = cert
+		secret.Data[TLSCAKey] = cert
 	}
 
 	if secret.Annotations == nil {
