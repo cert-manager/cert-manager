@@ -16,6 +16,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
 	"github.com/stretchr/testify/require"
 )
 
@@ -25,7 +26,7 @@ func TestDNSProvider(t *testing.T) {
 	fakeAPIKey := "123412341234123412341234"
 	fakeKeyAuth := "XXXX"
 
-	provider, err := NewDNSProviderCredentials(fakeAPIKey)
+	provider, err := NewDNSProviderCredentials(fakeAPIKey, util.RecursiveNameservers)
 	require.NoError(t, err)
 
 	regexpToken, err := regexp.Compile(`"rrset_values":\[".+"\]`)

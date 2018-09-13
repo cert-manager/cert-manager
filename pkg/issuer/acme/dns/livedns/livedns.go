@@ -39,25 +39,31 @@ var (
 // acme.ChallengeProviderTimeout interface that uses Gandi's LiveDNS
 // API to manage TXT records for a domain.
 type DNSProvider struct {
-	apiKey string
-	client *http.Client
+	dns01Nameservers []string
+	apiKey           string
+	client           *http.Client
 }
 
 // NewDNSProviderCredentials uses the supplied credentials to return a
 // DNSProvider instance configured for Gandi.
-func NewDNSProviderCredentials(apiKey string) (*DNSProvider, error) {
+func NewDNSProviderCredentials(apiKey string, dns01Nameservers []string) (*DNSProvider, error) {
 	if apiKey == "" {
 		return nil, fmt.Errorf("Gandi DNS: No Gandi API Key given")
 	}
 	return &DNSProvider{
-		apiKey: apiKey,
-		client: &http.Client{Timeout: 10 * time.Second},
+		apiKey:           apiKey,
+		client:           &http.Client{Timeout: 10 * time.Second},
+		dns01Nameservers: dns01Nameservers,
 	}, nil
 }
 
 // Present creates a TXT record using the specified parameters.
 func (d *DNSProvider) Present(domain, token, keyAuth string) error {
-	fqdn, value, ttl := util.DNS01Record(domain, keyAuth)
+	fqdn, value, ttl, err := util.DNS01Record(domain, keyAuth, d.dns01Nameservers)
+	if err != nil {
+		return err
+	}
+
 	if ttl < 300 {
 		ttl = 300 // 300 is gandi minimum value for ttl
 	}
@@ -87,7 +93,10 @@ func (d *DNSProvider) Present(domain, token, keyAuth string) error {
 
 // CleanUp removes the TXT record matching the specified parameters.
 func (d *DNSProvider) CleanUp(domain, token, keyAuth string) error {
-	fqdn, _, _ := util.DNS01Record(domain, keyAuth)
+	fqdn, _, _, err := util.DNS01Record(domain, keyAuth, d.dns01Nameservers)
+	if err != nil {
+		return err
+	}
 
 	// find authZone
 	authZone, err := findZoneByFqdn(fqdn, util.RecursiveNameservers)

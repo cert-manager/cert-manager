@@ -29,5 +29,8 @@ go_test(
     name = "go_default_test",
     srcs = ["livedns_test.go"],
     embed = [":go_default_library"],
-    deps = ["//vendor/github.com/stretchr/testify/require:go_default_library"],
+    deps = [
+        "//pkg/issuer/acme/dns/util:go_default_library",
+        "//vendor/github.com/stretchr/testify/require:go_default_library",
+    ],
 )

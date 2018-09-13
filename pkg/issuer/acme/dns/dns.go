@@ -58,7 +58,7 @@ type dnsProviderConstructors struct {
 	route53    func(accessKey, secretKey, hostedZoneID, region string, ambient bool, dns01Nameservers []string) (*route53.DNSProvider, error)
 	azureDNS   func(clientID, clientSecret, subscriptionID, tenentID, resourceGroupName, hostedZoneName string, dns01Nameservers []string) (*azuredns.DNSProvider, error)
 	acmeDNS    func(host string, accountJson []byte, dns01Nameservers []string) (*acmedns.DNSProvider, error)
-	liveDNS    func(apikey string) (*livedns.DNSProvider, error)
+	liveDNS    func(apikey string, dns01Nameservers []string) (*livedns.DNSProvider, error)
 	rfc2136    func(nameserver, tsigAlgorithm, tsigKeyName, tsigSecret string) (*rfc2136.DNSProvider, error)
 }
 
@@ -308,14 +308,14 @@ func (s *Solver) solverForIssuerProvider(issuer v1alpha1.GenericIssuer, provider
 			return nil, fmt.Errorf("error instantiating rfc2136 challenge solver: %s", err.Error())
 		}
 	case providerConfig.LiveDNS != nil:
-		apiKeySecret, err := s.secretLister.Secrets(s.resourceNamespace).Get(providerConfig.LiveDNS.APIKey.Name)
+		apiKeySecret, err := s.secretLister.Secrets(resourceNamespace).Get(providerConfig.LiveDNS.APIKey.Name)
 		if err != nil {
 			return nil, fmt.Errorf("error getting livedns service account: %s", err)
 		}
 
 		apiKey := strings.TrimSpace(string(apiKeySecret.Data[providerConfig.LiveDNS.APIKey.Key]))
 
-		impl, err = s.dnsProviderConstructors.liveDNS(apiKey)
+		impl, err = s.dnsProviderConstructors.liveDNS(apiKey, s.DNS01Nameservers)
 		if err != nil {
 			return nil, fmt.Errorf("error instantiating livedns challenge solver: %s", err)
 		}
@@ -338,8 +338,8 @@ func NewSolver(ctx *controller.Context) *Solver {
 			route53.NewDNSProvider,
 			azuredns.NewDNSProviderCredentials,
 			acmedns.NewDNSProviderHostBytes,
-			rfc2136.NewDNSProviderCredentials,
 			livedns.NewDNSProviderCredentials,
+			rfc2136.NewDNSProviderCredentials,
 		},
 	}
 }
