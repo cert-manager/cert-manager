@@ -219,7 +219,7 @@ func issuerKind(crt *v1alpha1.Certificate) string {
 	}
 }
 
-func (c *Controller) updateSecret(crt *v1alpha1.Certificate, namespace string, cert, key []byte) (*api.Secret, error) {
+func (c *Controller) updateSecret(crt *v1alpha1.Certificate, namespace string, cert, key, ca []byte) (*api.Secret, error) {
 	secret, err := c.Client.CoreV1().Secrets(namespace).Get(crt.Spec.SecretName, metav1.GetOptions{})
 	if err != nil && !k8sErrors.IsNotFound(err) {
 		return nil, err
@@ -237,8 +237,8 @@ func (c *Controller) updateSecret(crt *v1alpha1.Certificate, namespace string, c
 	secret.Data[api.TLSCertKey] = cert
 	secret.Data[api.TLSPrivateKeyKey] = key
 
-	if crt.Spec.IsCA {
-		secret.Data[TLSCAKey] = cert
+	if ca != nil {
+		secret.Data[TLSCAKey] = ca
 	}
 
 	if secret.Annotations == nil {
@@ -289,15 +289,15 @@ func (c *Controller) issue(ctx context.Context, issuer issuer.Interface, crt *v1
 	glog.Info(s)
 	c.Recorder.Event(crt, api.EventTypeNormal, reasonIssuingCertificate, s)
 
-	var key, cert []byte
-	key, cert, err = issuer.Issue(ctx, crt)
+	var key, cert, ca []byte
+	key, cert, ca, err = issuer.Issue(ctx, crt)
 
 	if err != nil {
 		glog.Infof("Error issuing certificate for %s/%s: %v", crt.Namespace, crt.Name, err)
 		return err
 	}
 
-	if _, err := c.updateSecret(crt, crt.Namespace, cert, key); err != nil {
+	if _, err := c.updateSecret(crt, crt.Namespace, cert, key, ca); err != nil {
 		s := messageErrorSavingCertificate + err.Error()
 		glog.Info(s)
 		c.Recorder.Event(crt, api.EventTypeWarning, errorSavingCertificate, s)
@@ -327,14 +327,14 @@ func (c *Controller) renew(ctx context.Context, issuer issuer.Interface, crt *v1
 	glog.Info(s)
 	c.Recorder.Event(crt, api.EventTypeNormal, reasonRenewingCertificate, s)
 
-	var key, cert []byte
-	key, cert, err = issuer.Renew(ctx, crt)
+	var key, cert, ca []byte
+	key, cert, ca, err = issuer.Renew(ctx, crt)
 
 	if err != nil {
 		return err
 	}
 
-	if _, err := c.updateSecret(crt, crt.Namespace, cert, key); err != nil {
+	if _, err := c.updateSecret(crt, crt.Namespace, cert, key, ca); err != nil {
 		s := messageErrorSavingCertificate + err.Error()
 		glog.Info(s)
 		c.Recorder.Event(crt, api.EventTypeWarning, errorSavingCertificate, s)
