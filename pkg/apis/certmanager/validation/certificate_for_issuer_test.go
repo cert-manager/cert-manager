@@ -155,17 +155,6 @@ func TestValidateCertificateForIssuer(t *testing.T) {
 				field.Invalid(fldPath, "no issuer specified for Issuer '/'", "no issuer specified for Issuer '/'"),
 			},
 		},
-		"certificate with incorrect keyAlgorithm for ACME": {
-			spec: &v1alpha1.CertificateSpec{
-				CommonName:   "testcn",
-				SecretName:   "abc",
-				IssuerRef:    validIssuerRef,
-				KeyAlgorithm: v1alpha1.ECDSAKeyAlgorithm,
-			},
-			errs: []*field.Error{
-				field.Invalid(fldPath.Child("keyAlgorithm"), v1alpha1.ECDSAKeyAlgorithm, "ACME key algorithm must be RSA"),
-			},
-		},
 	}
 	for n, s := range scenarios {
 		t.Run(n, func(t *testing.T) {
