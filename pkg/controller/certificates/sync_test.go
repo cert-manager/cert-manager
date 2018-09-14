@@ -22,6 +22,7 @@ import (
 	"time"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 )
@@ -48,7 +49,9 @@ func (r *recorder) PastEventf(object runtime.Object, timestamp metav1.Time, even
 	r.message = messageFmt
 }
 func TestCalculateTimeBeforeExpiry(t *testing.T) {
-	c := &Controller{}
+	ctx := &controllerpkg.Context{}
+	c := &Controller{Context: ctx}
+
 	currentTime := time.Now()
 	now = func() time.Time { return currentTime }
 	defer func() { now = time.Now }()
@@ -120,7 +123,7 @@ func TestCalculateTimeBeforeExpiry(t *testing.T) {
 		issuer.GetSpec().Duration = metav1.Duration{v.duration}
 		issuer.GetSpec().RenewBefore = metav1.Duration{v.renewBefore}
 		rec := &recorder{}
-		c.recorder = rec
+		c.Recorder = rec
 		duration := c.calculateTimeBeforeExpiry(x509Cert, cert, issuer)
 		if duration != v.expectedExpiry {
 			t.Errorf("test # %d - %s: got %v, expected %v", k, v.desc, duration, v.expectedExpiry)
