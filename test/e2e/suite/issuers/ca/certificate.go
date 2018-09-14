@@ -114,16 +114,6 @@ var _ = framework.CertManagerDescribe("CA Certificate", func() {
 			certClient := f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name)
 			secretClient := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name)
 
-			_, err := f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Create(util.NewCertManagerCAIssuer(issuerName, issuerSecretName, v.inputDuration, v.inputRenewBefore))
-			Expect(err).NotTo(HaveOccurred())
-			By("Waiting for Issuer to become Ready")
-			err = util.WaitForIssuerCondition(f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name),
-				issuerName,
-				v1alpha1.IssuerCondition{
-					Type:   v1alpha1.IssuerConditionReady,
-					Status: v1alpha1.ConditionTrue,
-				})
-			Expect(err).NotTo(HaveOccurred())
 			By("Creating a Certificate")
 			cert, err := certClient.Create(util.NewCertManagerBasicCertificate(certificateName, certificateSecretName, issuerName, v1alpha1.IssuerKind))
 			Expect(err).NotTo(HaveOccurred())
