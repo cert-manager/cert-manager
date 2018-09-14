@@ -43,6 +43,10 @@ help:
 	# verify_docs       - verify the generated reference docs for API types is up to date
 	# verify_chart      - runs Helm chart linter (e.g. ensuring version has been bumped etc)
 	#
+	### Generate targets
+	#
+	# generate          - regenerate all generated files
+	#
 	### Build targets
 	#
 	# controller        - build a binary of the 'controller'
@@ -114,6 +118,17 @@ e2e_test:
 			-acme-cloudflare-domain=$${CLOUDFLARE_E2E_DOMAIN} \
 			-pebble-image-repo=$(PEBBLE_IMAGE_REPO) \
 			-report-dir="$${ARTIFACTS:-./_artifacts}"
+
+# Generate targets
+##################
+
+generate:
+	bazel run //hack:update-bazel
+	bazel run //hack:update-gofmt
+	bazel run //hack:update-codegen
+	bazel run //hack:update-deploy-gen
+	bazel run //hack:update-reference-docs
+	bazel run //hack:update-deps
 
 # Docker targets
 ################
