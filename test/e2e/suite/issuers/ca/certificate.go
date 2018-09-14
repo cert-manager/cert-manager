@@ -41,7 +41,7 @@ var _ = framework.CertManagerDescribe("CA Certificate", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Creating an Issuer")
-		_, err = f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Create(util.NewCertManagerCAIssuer(issuerName, issuerSecretName))
+		_, err = f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Create(util.NewCertManagerCAIssuer(issuerName, issuerSecretName, 0, 0))
 		Expect(err).NotTo(HaveOccurred())
 		By("Waiting for Issuer to become Ready")
 		err = util.WaitForIssuerCondition(f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name),
@@ -111,6 +111,9 @@ var _ = framework.CertManagerDescribe("CA Certificate", func() {
 		v := v
 		It("should generate a signed keypair valid for "+v.label, func() {
 			By("Creating an Issuer")
+			certClient := f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name)
+			secretClient := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name)
+
 			_, err := f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Create(util.NewCertManagerCAIssuer(issuerName, issuerSecretName, v.inputDuration, v.inputRenewBefore))
 			Expect(err).NotTo(HaveOccurred())
 			By("Waiting for Issuer to become Ready")
@@ -122,9 +125,9 @@ var _ = framework.CertManagerDescribe("CA Certificate", func() {
 				})
 			Expect(err).NotTo(HaveOccurred())
 			By("Creating a Certificate")
-			cert, err := f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name).Create(util.NewCertManagerBasicCertificate(certificateName, certificateSecretName, issuerName, v1alpha1.IssuerKind))
+			cert, err := certClient.Create(util.NewCertManagerBasicCertificate(certificateName, certificateSecretName, issuerName, v1alpha1.IssuerKind))
 			Expect(err).NotTo(HaveOccurred())
-			f.WaitCertificateIssuedValid(cert)
+			util.WaitCertificateIssuedValid(certClient, secretClient, certificateName, time.Second*30)
 			f.CertificateDurationValid(cert, v.expectedDuration)
 		})
 	}

@@ -470,13 +470,15 @@ func NewCertManagerACMEIssuer(name, acmeURL, acmeEmail, acmePrivateKey string) *
 	}
 }
 
-func NewCertManagerCAIssuer(name, secretName string) *v1alpha1.Issuer {
+func NewCertManagerCAIssuer(name, secretName string, duration, renewBefore time.Duration) *v1alpha1.Issuer {
 	return &v1alpha1.Issuer{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: name,
 		},
 		Spec: v1alpha1.IssuerSpec{
 			IssuerConfig: v1alpha1.IssuerConfig{
+				Duration:    metav1.Duration{duration},
+				RenewBefore: metav1.Duration{renewBefore},
 				CA: &v1alpha1.CAIssuer{
 					SecretName: secretName,
 				},
@@ -498,13 +500,15 @@ func NewCertManagerSelfSignedIssuer(name string) *v1alpha1.Issuer {
 	}
 }
 
-func NewCertManagerVaultIssuerToken(name, vaultURL, vaultPath, vaultSecretToken, authPath string, caBundle []byte) *v1alpha1.Issuer {
+func NewCertManagerVaultIssuerToken(name, vaultURL, vaultPath, vaultSecretToken, authPath string, caBundle []byte, duration, renewBefore time.Duration) *v1alpha1.Issuer {
 	return &v1alpha1.Issuer{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: name,
 		},
 		Spec: v1alpha1.IssuerSpec{
 			IssuerConfig: v1alpha1.IssuerConfig{
+				Duration:    metav1.Duration{duration},
+				RenewBefore: metav1.Duration{renewBefore},
 				Vault: &v1alpha1.VaultIssuer{
 					Server:   vaultURL,
 					Path:     vaultPath,
@@ -523,13 +527,15 @@ func NewCertManagerVaultIssuerToken(name, vaultURL, vaultPath, vaultSecretToken,
 	}
 }
 
-func NewCertManagerVaultIssuerAppRole(name, vaultURL, vaultPath, roleId, vaultSecretAppRole string, authPath string, caBundle []byte) *v1alpha1.Issuer {
+func NewCertManagerVaultIssuerAppRole(name, vaultURL, vaultPath, roleId, vaultSecretAppRole string, authPath string, caBundle []byte, duration, renewBefore time.Duration) *v1alpha1.Issuer {
 	return &v1alpha1.Issuer{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: name,
 		},
 		Spec: v1alpha1.IssuerSpec{
 			IssuerConfig: v1alpha1.IssuerConfig{
+				Duration:    metav1.Duration{duration},
+				RenewBefore: metav1.Duration{renewBefore},
 				Vault: &v1alpha1.VaultIssuer{
 					Server:   vaultURL,
 					Path:     vaultPath,
