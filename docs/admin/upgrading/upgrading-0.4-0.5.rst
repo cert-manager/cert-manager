@@ -15,7 +15,7 @@ Disabling resource validation on the cert-manager namespace
 ===========================================================
 
 Before upgrading, you should add the ``certmanager.k8s.io/disable-validation: "true"``
-annotation to the ``cert-manager`` namespace.
+label to the ``cert-manager`` namespace.
 
 This will allow the system resources that cert-manager requires to bootstrap
 TLS to be created in its own namespace.
