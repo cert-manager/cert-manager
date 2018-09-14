@@ -29,6 +29,8 @@ type IssuerConfig struct {
 	ACMEServer, ACMEEmail, ACMEPrivateKeyName string
 	HTTP01                                    *v1alpha1.ACMEIssuerHTTP01Config
 	DNS01                                     *v1alpha1.ACMEIssuerDNS01Config
+	Duration                                  metav1.Duration
+	RenewBefore                               metav1.Duration
 }
 
 func Issuer(cfg IssuerConfig) *v1alpha1.Issuer {
@@ -42,6 +44,8 @@ func Issuer(cfg IssuerConfig) *v1alpha1.Issuer {
 		},
 		Spec: v1alpha1.IssuerSpec{
 			IssuerConfig: v1alpha1.IssuerConfig{
+				Duration:    cfg.Duration,
+				RenewBefore: cfg.RenewBefore,
 				ACME: &v1alpha1.ACMEIssuer{
 					SkipTLSVerify: cfg.ACMESkipTLSVerify,
 					Server:        cfg.ACMEServer,
