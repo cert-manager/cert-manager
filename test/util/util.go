@@ -487,14 +487,16 @@ func NewCertManagerCAIssuer(name, secretName string, duration, renewBefore time.
 	}
 }
 
-func NewCertManagerSelfSignedIssuer(name string) *v1alpha1.Issuer {
+func NewCertManagerSelfSignedIssuer(name string, duration, renewBefore time.Duration) *v1alpha1.Issuer {
 	return &v1alpha1.Issuer{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: name,
 		},
 		Spec: v1alpha1.IssuerSpec{
 			IssuerConfig: v1alpha1.IssuerConfig{
-				SelfSigned: &v1alpha1.SelfSignedIssuer{},
+				Duration:    metav1.Duration{duration},
+				RenewBefore: metav1.Duration{renewBefore},
+				SelfSigned:  &v1alpha1.SelfSignedIssuer{},
 			},
 		},
 	}

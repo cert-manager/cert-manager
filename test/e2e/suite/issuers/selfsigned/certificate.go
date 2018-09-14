@@ -17,6 +17,7 @@ limitations under the License.
 package certificate
 
 import (
+	"fmt"
 	"time"
 
 	. "github.com/onsi/ginkgo"
@@ -40,7 +41,7 @@ var _ = framework.CertManagerDescribe("Self Signed Certificate", func() {
 		certClient := f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name)
 		secretClient := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name)
 
-		_, err := f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Create(util.NewCertManagerSelfSignedIssuer(issuerName))
+		_, err := f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Create(util.NewCertManagerSelfSignedIssuer(issuerName, 0, 0))
 		Expect(err).NotTo(HaveOccurred())
 		By("Waiting for Issuer to become Ready")
 		err = util.WaitForIssuerCondition(f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name),
@@ -56,4 +57,50 @@ var _ = framework.CertManagerDescribe("Self Signed Certificate", func() {
 		err = util.WaitCertificateIssuedValid(certClient, secretClient, certificateName, time.Minute*5)
 		Expect(err).NotTo(HaveOccurred())
 	})
+
+	cases := []struct {
+		inputDuration    time.Duration
+		inputRenewBefore time.Duration
+		expectedDuration time.Duration
+		label            string
+	}{
+		{
+			inputDuration:    time.Hour * 24 * 35,
+			inputRenewBefore: 0,
+			expectedDuration: time.Hour * 24 * 35,
+			label:            "35 days",
+		},
+		{
+			inputDuration:    0,
+			inputRenewBefore: 0,
+			expectedDuration: time.Hour * 24 * 90,
+			label:            "the default duration (90 days)",
+		},
+	}
+	for _, v := range cases {
+		v := v
+		It("should generate a signed keypair valid for "+v.label, func() {
+			certClient := f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name)
+			secretClient := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name)
+
+			By("Creating an Issuer")
+			issuerDurationName := fmt.Sprintf("%s-%d", issuerName, v.expectedDuration)
+			_, err := f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Create(util.NewCertManagerSelfSignedIssuer(issuerDurationName, v.inputDuration, v.inputRenewBefore))
+			Expect(err).NotTo(HaveOccurred())
+			By("Waiting for Issuer to become Ready")
+			err = util.WaitForIssuerCondition(f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name),
+				issuerDurationName,
+				v1alpha1.IssuerCondition{
+					Type:   v1alpha1.IssuerConditionReady,
+					Status: v1alpha1.ConditionTrue,
+				})
+			Expect(err).NotTo(HaveOccurred())
+
+			By("Creating a Certificate")
+			cert, err := certClient.Create(util.NewCertManagerBasicCertificate(certificateName, certificateSecretName, issuerDurationName, v1alpha1.IssuerKind))
+			Expect(err).NotTo(HaveOccurred())
+			util.WaitCertificateIssuedValid(certClient, secretClient, certificateName, time.Second*30)
+			f.CertificateDurationValid(cert, v.expectedDuration)
+		})
+	}
 })
