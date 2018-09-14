@@ -20,6 +20,7 @@ import (
 	"k8s.io/api/core/v1"
 	apiextcs "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -40,6 +41,9 @@ type Framework struct {
 
 	// Namespace in which all test resources should reside
 	Namespace *v1.Namespace
+
+	// Config which was used to create the connection.
+	Config *rest.Config
 
 	// To make sure that this framework cleans up after itself, no matter what,
 	// we install a Cleanup action before each test and clear it after.  If we
@@ -67,6 +71,7 @@ func (f *Framework) BeforeEach() {
 	By("Creating a kubernetes client")
 	kubeConfig, err := LoadConfig(TestContext.KubeConfig, TestContext.KubeContext)
 	Expect(err).NotTo(HaveOccurred())
+	f.Config = kubeConfig
 
 	f.KubeClientSet, err = kubernetes.NewForConfig(kubeConfig)
 	Expect(err).NotTo(HaveOccurred())
