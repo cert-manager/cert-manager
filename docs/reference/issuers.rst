@@ -60,25 +60,28 @@ certificate with a different validity period than what is requested in the
 issuer.
  The table below shows the support state of the different backend services used
 by issuer types:
- =======  ============================================================
-Issuer   Description
-=======  ============================================================
-ACME     The protocol supports it but it is currently not supported
-         in Boulder (Let's Encrypt). It is currently disabled.
-CA       Fully supported.
-Vault    Fully supported. (Although the requested duration must be
-         lower than the configured Vault role's TTL)
-=======  ============================================================
+
+===========  ============================================================
+Issuer       Description
+===========  ============================================================
+ACME         The protocol supports it but it is currently not supported in Boulder (Let's Encrypt) and others. It is not allowed by cert-manager
+CA           Fully supported.
+Vault        Fully supported. (Although the requested duration must be lower than the configured Vault role's TTL)
+Self Signed  Fully supported.
+===========  ============================================================
+
  The table below shows the default duration and renewal window per
 issuer:
- ======  =========================  =========================
-Issuer  Duration                   RenewBefore
-======  =========================  =========================
-ACME    Implementation dependent   30 days
-        (Let's Encrypt - 90 days)
-CA      90 days                    30 days
-Vault   90 days                    30 days
-======  =========================  =========================
+
+===========  ==================================================  =========================
+Issuer       Duration                                            RenewBefore
+===========  ==================================================  =========================
+ACME         Implementation dependent (Let's Encrypt - 90 days)  30 days
+CA           90 days                                             30 days
+Vault        90 days                                             30 days
+Self Signed  90 days                                             30 days
+===========  ==================================================  =========================
+
  The *duration* and *renewBefore* parameters must be given in the golang
 `parseDuration string format <https://golang.org/pkg/time/#ParseDuration>`__.
  Example Usage
