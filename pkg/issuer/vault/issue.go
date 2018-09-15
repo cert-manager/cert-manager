@@ -232,13 +232,8 @@ func (v *Vault) requestVaultCert(commonName string, altNames []string, csr []byt
 	}
 
 	var caPem []byte = nil
-	if len(parsedBundle.CAChain) > 0 {
-		block := pem.Block{
-			Type: "CERTIFICATE",
-		}
-		block.Bytes = parsedBundle.CAChain[0].Bytes
-		caString := strings.TrimSpace(string(pem.EncodeToMemory(&block)))
-		caPem = []byte(caString)
+	if len(bundle.CAChain) > 0 {
+		caPem = []byte(bundle.CAChain[0])
 	}
 
 	return []byte(bundle.ToPEMBundle()), caPem, nil
