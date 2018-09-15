@@ -250,7 +250,7 @@ func (c *Controller) scheduleRenewal(crt *v1alpha1.Certificate, issuerObj v1alph
 
 	c.scheduledWorkQueue.Add(key, renewIn)
 
-	glog.Infof("Certificate %s/%s scheduled for renewal in %d hours", crt.Namespace, crt.Name, renewIn/time.Hour)
+	glog.Infof("Certificate %s/%s scheduled for renewal in %s", crt.Namespace, crt.Name, renewIn.String())
 }
 
 // issuerKind returns the kind of issuer for a certificate
