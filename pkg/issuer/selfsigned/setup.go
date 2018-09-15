@@ -19,6 +19,8 @@ package selfsigned
 import (
 	"context"
 
+	"github.com/golang/glog"
+
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	"github.com/jetstack/cert-manager/pkg/issuer"
 )
@@ -28,6 +30,13 @@ const (
 )
 
 func (c *SelfSigned) Setup(ctx context.Context) (issuer.SetupResponse, error) {
+	err := issuer.ValidateDuration(c.issuer)
+	if err != nil {
+		glog.Info(err.Error())
+		c.issuer.UpdateStatusCondition(v1alpha1.IssuerConditionReady, v1alpha1.ConditionFalse, issuer.ErrorDurationInvalid, err.Error())
+		return err
+	}
+
 	c.issuer.UpdateStatusCondition(v1alpha1.IssuerConditionReady, v1alpha1.ConditionTrue, successReady, "")
 	return issuer.SetupResponse{}, nil
 }
