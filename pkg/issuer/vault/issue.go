@@ -192,10 +192,10 @@ func (v *Vault) requestVaultCert(commonName string, altNames []string, csr []byt
 	glog.V(4).Infof("Vault certificate request for commonName %s altNames: %q", commonName, altNames)
 
 	parameters := map[string]string{
-		"common_name": commonName,
-		"alt_names":   strings.Join(altNames, ","),
-		"ttl":         defaultCertificateDuration.String(),
-		"csr":         string(csr),
+		"common_name":          commonName,
+		"alt_names":            strings.Join(altNames, ","),
+		"ttl":                  defaultCertificateDuration.String(),
+		"csr":                  string(csr),
 		"exclude_cn_from_sans": "true",
 	}
 
@@ -231,7 +231,17 @@ func (v *Vault) requestVaultCert(commonName string, altNames []string, csr []byt
 		return nil, nil, fmt.Errorf("unable to convert certificate bundle to PEM bundle: %s", err.Error())
 	}
 
-	return []byte(bundle.ToPEMBundle()), []byte(bundle.IssuingCA), nil
+	var caPem []byte = nil
+	if len(parsedBundle.CAChain) > 0 {
+		block := pem.Block{
+			Type: "CERTIFICATE",
+		}
+		block.Bytes = parsedBundle.CAChain[0].Bytes
+		caString := strings.TrimSpace(string(pem.EncodeToMemory(&block)))
+		caPem = []byte(caString)
+	}
+
+	return []byte(bundle.ToPEMBundle()), caPem, nil
 }
 
 func (v *Vault) appRoleRef(appRole *v1alpha1.VaultAppRole) (roleId, secretId string, err error) {
