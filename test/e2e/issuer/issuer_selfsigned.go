@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package ca
+package issuer
 
 import (
 	"time"
@@ -27,26 +27,14 @@ import (
 	"github.com/jetstack/cert-manager/test/util"
 )
 
-var _ = framework.CertManagerDescribe("CA Issuer", func() {
-	f := framework.NewDefaultFramework("create-ca-issuer")
+var _ = framework.CertManagerDescribe("Selfsigned Issuer", func() {
+	f := framework.NewDefaultFramework("create-selfsigned-issuer")
 
-	issuerName := "test-ca-issuer"
-	secretName := "ca-issuer-signing-keypair"
+	issuerName := "test-selfsigned-issuer"
 
-	BeforeEach(func() {
-		By("Creating a signing keypair fixture")
-		_, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Create(util.NewSigningKeypairSecret(secretName))
-		Expect(err).NotTo(HaveOccurred())
-	})
-
-	AfterEach(func() {
-		By("Cleaning up")
-		f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Delete(secretName, nil)
-	})
-
-	It("should generate a signing keypair", func() {
+	It("should generate a self-signed keypair", func() {
 		By("Creating an Issuer")
-		_, err := f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Create(util.NewCertManagerCAIssuer(issuerName, secretName, 0, 0))
+		_, err := f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Create(util.NewCertManagerSelfSignedIssuer(issuerName, 0, 0))
 		Expect(err).NotTo(HaveOccurred())
 		By("Waiting for Issuer to become Ready")
 		err = util.WaitForIssuerCondition(f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name),
@@ -58,9 +46,9 @@ var _ = framework.CertManagerDescribe("CA Issuer", func() {
 		Expect(err).NotTo(HaveOccurred())
 	})
 
-	It("should create a CA issuer with a custom duration and renewBefore", func() {
+	It("should create a selfsigned issuer with a custom duration and renewBefore", func() {
 		By("Creating an Issuer")
-		_, err := f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Create(util.NewCertManagerCAIssuer(issuerName, secretName, time.Hour*24*365, time.Hour*24*180))
+		_, err := f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Create(util.NewCertManagerSelfSignedIssuer(issuerName, time.Hour*24*365, time.Hour*24*180))
 		Expect(err).NotTo(HaveOccurred())
 		By("Waiting for Issuer to become Ready")
 		err = util.WaitForIssuerCondition(f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name),
