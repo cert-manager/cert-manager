@@ -80,6 +80,18 @@ func ValidateIssuerConfig(iss *v1alpha1.IssuerConfig, fldPath *field.Path) field
 	if numConfigs == 0 {
 		el = append(el, field.Required(fldPath, "at least one issuer must be configured"))
 	}
+
+	if iss.Duration.Duration != 0 || iss.RenewBefore.Duration != 0 {
+		el = append(el, ValidateDuration(iss, fldPath)...)
+	}
+
+	//err := issuer.ValidateDuration(c.issuer)
+	//if err != nil {
+	//	glog.Info(err.Error())
+	//	c.issuer.UpdateStatusCondition(v1alpha1.IssuerConditionReady, v1alpha1.ConditionFalse, issuer.ErrorDurationInvalid, err.Error())
+	//	return err
+	//}
+
 	return el
 }
 
@@ -302,6 +314,29 @@ func ValidateSecretKeySelector(sks *v1alpha1.SecretKeySelector, fldPath *field.P
 	}
 	if sks.Key == "" {
 		el = append(el, field.Required(fldPath.Child("key"), "secret key is required"))
+	}
+	return el
+}
+
+func ValidateDuration(iss *v1alpha1.IssuerConfig, fldPath *field.Path) field.ErrorList {
+	el := field.ErrorList{}
+
+	duration := iss.Duration.Duration
+	if duration == 0 {
+		duration = v1alpha1.DefaultCertificateDuration
+	}
+	renewBefore := iss.RenewBefore.Duration
+	if renewBefore == 0 {
+		renewBefore = v1alpha1.DefaultRenewBefore
+	}
+	if duration < v1alpha1.MinimumCertificateDuration {
+		el = append(el, field.Invalid(fldPath.Child("duration"), duration, fmt.Sprintf("certificate duration must be greater than %s", v1alpha1.MinimumCertificateDuration)))
+	}
+	if renewBefore < v1alpha1.MinimumRenewBefore {
+		el = append(el, field.Invalid(fldPath.Child("renewBefore"), renewBefore, fmt.Sprintf("certificate renewBefore must be greater than %s", v1alpha1.MinimumRenewBefore)))
+	}
+	if duration <= renewBefore {
+		el = append(el, field.Invalid(fldPath.Child("renewBefore"), renewBefore, fmt.Sprintf("certificate duration %s must be greater than renewBefore %s", duration, renewBefore)))
 	}
 	return el
 }

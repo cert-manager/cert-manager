@@ -1,11 +1,8 @@
-load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
 
 go_library(
     name = "go_default_library",
-    srcs = [
-        "issuer.go",
-        "util.go",
-    ],
+    srcs = ["issuer.go"],
     importpath = "github.com/jetstack/cert-manager/pkg/issuer",
     visibility = ["//visibility:public"],
     deps = ["//pkg/apis/certmanager/v1alpha1:go_default_library"],
@@ -29,14 +26,4 @@ filegroup(
     ],
     tags = ["automanaged"],
     visibility = ["//visibility:public"],
-)
-
-go_test(
-    name = "go_default_test",
-    srcs = ["util_test.go"],
-    embed = [":go_default_library"],
-    deps = [
-        "//pkg/apis/certmanager/v1alpha1:go_default_library",
-        "//vendor/k8s.io/apimachinery/pkg/apis/meta/v1:go_default_library",
-    ],
 )

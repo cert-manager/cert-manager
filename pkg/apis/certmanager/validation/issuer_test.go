@@ -17,14 +17,17 @@ limitations under the License.
 package validation
 
 import (
+	"fmt"
 	"reflect"
 	"testing"
+	"time"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/rfc2136"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var (
@@ -679,6 +682,110 @@ func TestValidateSecretKeySelector(t *testing.T) {
 	for n, s := range scenarios {
 		t.Run(n, func(t *testing.T) {
 			errs := ValidateSecretKeySelector(s.selector, fldPath)
+			if len(errs) != len(s.errs) {
+				t.Errorf("Expected %v but got %v", s.errs, errs)
+				return
+			}
+			for i, e := range errs {
+				expectedErr := s.errs[i]
+				if !reflect.DeepEqual(e, expectedErr) {
+					t.Errorf("Expected %v but got %v", expectedErr, e)
+				}
+			}
+		})
+	}
+}
+
+func TestValidateDuration(t *testing.T) {
+	usefulDurations := map[string]metav1.Duration{
+		"one second":  {Duration: time.Second},
+		"ten minutes": {Duration: time.Minute * 10},
+		"half hour":   {Duration: time.Minute * 30},
+		"one hour":    {Duration: time.Hour},
+		"one month":   {Duration: time.Hour * 24 * 30},
+		"half year":   {Duration: time.Hour * 24 * 180},
+		"one year":    {Duration: time.Hour * 24 * 365},
+		"ten years":   {Duration: time.Hour * 24 * 365 * 10},
+	}
+
+	fldPath := field.NewPath("")
+	scenarios := map[string]struct {
+		spec *v1alpha1.IssuerSpec
+		errs []*field.Error
+	}{
+		"default duration and renewBefore": {
+			spec: &v1alpha1.IssuerSpec{
+				IssuerConfig: v1alpha1.IssuerConfig{},
+			},
+		},
+		"valid duration and renewBefore": {
+			spec: &v1alpha1.IssuerSpec{
+				IssuerConfig: v1alpha1.IssuerConfig{
+					Duration:    usefulDurations["one year"],
+					RenewBefore: usefulDurations["half year"],
+				},
+			},
+		},
+		"unset duration, valid renewBefore for default": {
+			spec: &v1alpha1.IssuerSpec{
+				IssuerConfig: v1alpha1.IssuerConfig{
+					RenewBefore: usefulDurations["one month"],
+				},
+			},
+		},
+		"unset renewBefore, valid duration for default": {
+			spec: &v1alpha1.IssuerSpec{
+				IssuerConfig: v1alpha1.IssuerConfig{
+					Duration: usefulDurations["one year"],
+				},
+			},
+		},
+		"renewBefore is bigger than the default duration": {
+			spec: &v1alpha1.IssuerSpec{
+				IssuerConfig: v1alpha1.IssuerConfig{
+					RenewBefore: usefulDurations["ten years"],
+				},
+			},
+			errs: []*field.Error{field.Invalid(fldPath.Child("renewBefore"), usefulDurations["ten years"].Duration, fmt.Sprintf("certificate duration %s must be greater than renewBefore %s", v1alpha1.DefaultCertificateDuration, usefulDurations["ten years"].Duration))},
+		},
+		"default renewBefore is bigger than the set duration": {
+			spec: &v1alpha1.IssuerSpec{
+				IssuerConfig: v1alpha1.IssuerConfig{
+					Duration: usefulDurations["one hour"],
+				},
+			},
+			errs: []*field.Error{field.Invalid(fldPath.Child("renewBefore"), v1alpha1.DefaultRenewBefore, fmt.Sprintf("certificate duration %s must be greater than renewBefore %s", usefulDurations["one hour"].Duration, v1alpha1.DefaultRenewBefore))},
+		},
+		"renewBefore is bigger than the duration": {
+			spec: &v1alpha1.IssuerSpec{
+				IssuerConfig: v1alpha1.IssuerConfig{
+					Duration:    usefulDurations["one month"],
+					RenewBefore: usefulDurations["one year"],
+				},
+			},
+			errs: []*field.Error{field.Invalid(fldPath.Child("renewBefore"), usefulDurations["one year"].Duration, fmt.Sprintf("certificate duration %s must be greater than renewBefore %s", usefulDurations["one month"].Duration, usefulDurations["one year"].Duration))},
+		},
+		"renewBefore is less than the minimum permitted value": {
+			spec: &v1alpha1.IssuerSpec{
+				IssuerConfig: v1alpha1.IssuerConfig{
+					RenewBefore: usefulDurations["one second"],
+				},
+			},
+			errs: []*field.Error{field.Invalid(fldPath.Child("renewBefore"), usefulDurations["one second"].Duration, fmt.Sprintf("certificate renewBefore must be greater than %s", v1alpha1.MinimumRenewBefore))},
+		},
+		"duration is less than the minimum permitted value": {
+			spec: &v1alpha1.IssuerSpec{
+				IssuerConfig: v1alpha1.IssuerConfig{
+					Duration:    usefulDurations["half hour"],
+					RenewBefore: usefulDurations["ten minutes"],
+				},
+			},
+			errs: []*field.Error{field.Invalid(fldPath.Child("duration"), usefulDurations["half hour"].Duration, fmt.Sprintf("certificate duration must be greater than %s", v1alpha1.MinimumCertificateDuration))},
+		},
+	}
+	for n, s := range scenarios {
+		t.Run(n, func(t *testing.T) {
+			errs := ValidateDuration(&s.spec.IssuerConfig, fldPath)
 			if len(errs) != len(s.errs) {
 				t.Errorf("Expected %v but got %v", s.errs, errs)
 				return
