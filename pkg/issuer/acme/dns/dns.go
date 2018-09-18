@@ -18,6 +18,7 @@ package dns
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
 	"strings"
 	"time"
@@ -33,6 +34,7 @@ import (
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/azuredns"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/clouddns"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/cloudflare"
+	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/grpc"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/rfc2136"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/route53"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
@@ -304,6 +306,37 @@ func (s *Solver) solverForIssuerProvider(issuer v1alpha1.GenericIssuer, provider
 		)
 		if err != nil {
 			return nil, fmt.Errorf("error instantiating rfc2136 challenge solver: %s", err.Error())
+		}
+	case providerConfig.GRPC != nil:
+		var cert *tls.Certificate
+		config := providerConfig.GRPC
+		if config.ClientCertificate.Name != "" {
+			certPem, err := s.loadSecretData(&config.ClientCertificate, resourceNamespace)
+			if err != nil {
+				return nil, errors.Wrap(err, "error getting grpc client certificate")
+			}
+			keyPem, err := s.loadSecretData(&config.ClientCertificateKey, resourceNamespace)
+			if err != nil {
+				return nil, errors.Wrap(err, "error getting grpc client certificate key")
+			}
+			c, err := tls.X509KeyPair(certPem, keyPem)
+			if err != nil {
+				return nil, errors.Wrap(err, "error loading grpc client certificate")
+			}
+			cert = &c
+		}
+		timeout, err := time.ParseDuration(config.Timeout)
+		if err != nil {
+			return nil, errors.Wrap(err, "error parsing timeout duration")
+		}
+		interval, err := time.ParseDuration(config.Interval)
+		if err != nil {
+			return nil, errors.Wrap(err, "error parsing interval duration")
+		}
+		if config.UseTLS {
+			impl, err = grpc.NewDNSProviderTLS(config.Service, config.ServerName, cert, timeout, interval)
+		} else {
+			impl, err = grpc.NewDNSProviderInsecure(config.Service, timeout, interval)
 		}
 	default:
 		return nil, fmt.Errorf("no dns provider config specified for provider %q", providerName)

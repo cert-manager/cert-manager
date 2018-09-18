@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+package proto;
+
+service AcmeDnsSolverService {
+  rpc Present (PresentRequest) returns (PresentResponse) {}
+  rpc CleanUp (CleanUpRequest) returns (CleanUpResponse) {}
+}
+
+message PresentRequest {
+  string fqdn = 1;
+
+  string value = 2;
+
+  uint32 ttl = 3;
+}
+
+message CleanUpRequest {
+  string fqdn = 1;
+}
+
+message PresentResponse {
+}
+
+message CleanUpResponse {
+}

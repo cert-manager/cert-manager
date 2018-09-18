@@ -153,6 +153,7 @@ type ACMEIssuerDNS01Provider struct {
 	AzureDNS   *ACMEIssuerDNS01ProviderAzureDNS   `json:"azuredns,omitempty"`
 	AcmeDNS    *ACMEIssuerDNS01ProviderAcmeDNS    `json:"acmedns,omitempty"`
 	RFC2136    *ACMEIssuerDNS01ProviderRFC2136    `json:"rfc2136,omitempty"`
+	GRPC       *ACMEIssuerDNS01ProviderGRPC       `json:"grpc,omitempty"`
 }
 
 // ACMEIssuerDNS01ProviderAkamai is a structure containing the DNS
@@ -230,6 +231,16 @@ type ACMEIssuerDNS01ProviderRFC2136 struct {
 	// ``HMACSHA1``, ``HMACSHA256`` or ``HMACSHA512``.
 	// +optional
 	TSIGAlgorithm string `json:"tsigAlgorithm"`
+}
+
+type ACMEIssuerDNS01ProviderGRPC struct {
+	UseTLS                bool              `json:"useTLS"`
+	Service               string            `json:"service"`
+	ServerName            string            `json:"serverName"`
+	ClientCertificate     SecretKeySelector `json:"clientCertificateSecretRef"`
+	ClientCertificateKey  SecretKeySelector `json:"clientCertificateKeySecretRef"`
+	Timeout               string            `json:"timeout"`
+	Interval              string            `json:"interval"`
 }
 
 // IssuerStatus contains status information about an Issuer
