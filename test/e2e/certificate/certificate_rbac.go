@@ -23,7 +23,7 @@ import (
 )
 
 var _ = framework.CertManagerDescribe("Service Account", func() {
-	f := framework.NewDefaultFramework("test-view")
+	f := framework.NewDefaultFramework("certificate-rbac")
 	resource := "certificates" // this file is related to certificates
 
 	Context("with namespace view access", func() {
