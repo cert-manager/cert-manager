@@ -57,7 +57,7 @@ type dnsProviderConstructors struct {
 	route53    func(accessKey, secretKey, hostedZoneID, region string, ambient bool, dns01Nameservers []string) (*route53.DNSProvider, error)
 	azureDNS   func(clientID, clientSecret, subscriptionID, tenentID, resourceGroupName, hostedZoneName string, dns01Nameservers []string) (*azuredns.DNSProvider, error)
 	acmeDNS    func(host string, accountJson []byte, dns01Nameservers []string) (*acmedns.DNSProvider, error)
-	rfc2136    func(nameserver, tsigAlgorithm, tsigKeyName, tsigSecret string) (*rfc2136.DNSProvider, error)
+	rfc2136    func(nameserver, tsigAlgorithm, tsigKeyName, tsigSecret string, dns01Nameservers []string) (*rfc2136.DNSProvider, error)
 }
 
 // Solver is a solver for the acme dns01 challenge.
@@ -301,6 +301,7 @@ func (s *Solver) solverForIssuerProvider(issuer v1alpha1.GenericIssuer, provider
 			string(providerConfig.RFC2136.TSIGAlgorithm),
 			providerConfig.RFC2136.TSIGKeyName,
 			secret,
+			s.DNS01Nameservers,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("error instantiating rfc2136 challenge solver: %s", err.Error())

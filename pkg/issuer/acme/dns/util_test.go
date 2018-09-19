@@ -160,8 +160,8 @@ func newFakeDNSProviders() *fakeDNSProviders {
 			f.call("acmedns", host, accountJson, dns01Nameservers)
 			return nil, nil
 		},
-		rfc2136: func(nameserver, tsigAlgorithm, tsigKeyName, tsigSecret string) (*rfc2136.DNSProvider, error) {
-			f.call("rfc2136", nameserver, tsigAlgorithm, tsigKeyName, tsigSecret)
+		rfc2136: func(nameserver, tsigAlgorithm, tsigKeyName, tsigSecret string, dns01Nameservers []string) (*rfc2136.DNSProvider, error) {
+			f.call("rfc2136", nameserver, tsigAlgorithm, tsigKeyName, tsigSecret, util.RecursiveNameservers)
 			return nil, nil
 		},
 	}
