@@ -32,8 +32,8 @@ var (
 )
 
 func init() {
-	doToken = "7b44115dcfcfbbe6f7fa54981846afcc5d04bfa167c226d3f5cb6e8d0b39ac0e" // os.Getenv("DIGITALOCEAN_TOKEN")
-	doDomain = "skil-sky.no"                                                     // os.Getenv("DIGITALOCEAN_DOMAIN")
+	doToken = os.Getenv("DIGITALOCEAN_TOKEN")
+	doDomain = os.Getenv("DIGITALOCEAN_DOMAIN")
 	if len(doToken) > 0 && len(doDomain) > 0 {
 		doLiveTest = true
 	}
