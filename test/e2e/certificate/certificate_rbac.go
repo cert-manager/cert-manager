@@ -32,12 +32,12 @@ import (
 
 var _ = framework.CertManagerDescribe("Service Account", func() {
 	f := framework.NewDefaultFramework("test-view")
+	resource := "certificates" // this file is related to certificates
 
 	Context("with namespace view access", func() {
 		clusterRole := "view"
 		It("shouldn't be able to create certificates", func() {
 			verb := "create"
-			resource := "certificates"
 
 			hasAccess := rbacClusterRoleHasAccessToResource(f, clusterRole, verb, resource)
 			Expect(hasAccess).Should(BeFalse())
@@ -45,7 +45,6 @@ var _ = framework.CertManagerDescribe("Service Account", func() {
 
 		It("shouldn't be able to delete certificates", func() {
 			verb := "delete"
-			resource := "certificates"
 
 			hasAccess := rbacClusterRoleHasAccessToResource(f, clusterRole, verb, resource)
 			Expect(hasAccess).Should(BeFalse())
@@ -53,7 +52,6 @@ var _ = framework.CertManagerDescribe("Service Account", func() {
 
 		It("shouldn't be able to delete collections of certificates", func() {
 			verb := "deletecollection"
-			resource := "certificates"
 
 			hasAccess := rbacClusterRoleHasAccessToResource(f, clusterRole, verb, resource)
 			Expect(hasAccess).Should(BeFalse())
@@ -61,7 +59,6 @@ var _ = framework.CertManagerDescribe("Service Account", func() {
 
 		It("shouldn't be able to patch certificates", func() {
 			verb := "patch"
-			resource := "certificates"
 
 			hasAccess := rbacClusterRoleHasAccessToResource(f, clusterRole, verb, resource)
 			Expect(hasAccess).Should(BeFalse())
@@ -69,7 +66,6 @@ var _ = framework.CertManagerDescribe("Service Account", func() {
 
 		It("shouldn't be able to update certificates", func() {
 			verb := "update"
-			resource := "certificates"
 
 			hasAccess := rbacClusterRoleHasAccessToResource(f, clusterRole, verb, resource)
 			Expect(hasAccess).Should(BeFalse())
@@ -77,7 +73,6 @@ var _ = framework.CertManagerDescribe("Service Account", func() {
 
 		It("should be able to get certificates", func() {
 			verb := "get"
-			resource := "certificates"
 
 			hasAccess := rbacClusterRoleHasAccessToResource(f, clusterRole, verb, resource)
 			Expect(hasAccess).Should(BeTrue())
@@ -85,7 +80,6 @@ var _ = framework.CertManagerDescribe("Service Account", func() {
 
 		It("should be able to list certificates", func() {
 			verb := "list"
-			resource := "certificates"
 
 			hasAccess := rbacClusterRoleHasAccessToResource(f, clusterRole, verb, resource)
 			Expect(hasAccess).Should(BeTrue())
@@ -93,7 +87,6 @@ var _ = framework.CertManagerDescribe("Service Account", func() {
 
 		It("should be able to watch certificates", func() {
 			verb := "watch"
-			resource := "certificates"
 
 			hasAccess := rbacClusterRoleHasAccessToResource(f, clusterRole, verb, resource)
 			Expect(hasAccess).Should(BeTrue())
@@ -103,7 +96,6 @@ var _ = framework.CertManagerDescribe("Service Account", func() {
 		clusterRole := "edit"
 		It("should be able to create certificates", func() {
 			verb := "create"
-			resource := "certificates"
 
 			hasAccess := rbacClusterRoleHasAccessToResource(f, clusterRole, verb, resource)
 			Expect(hasAccess).Should(BeTrue())
@@ -111,7 +103,6 @@ var _ = framework.CertManagerDescribe("Service Account", func() {
 
 		It("should be able to delete certificates", func() {
 			verb := "delete"
-			resource := "certificates"
 
 			hasAccess := rbacClusterRoleHasAccessToResource(f, clusterRole, verb, resource)
 			Expect(hasAccess).Should(BeTrue())
@@ -119,7 +110,6 @@ var _ = framework.CertManagerDescribe("Service Account", func() {
 
 		It("should be able to delete collections of certificates", func() {
 			verb := "deletecollection"
-			resource := "certificates"
 
 			hasAccess := rbacClusterRoleHasAccessToResource(f, clusterRole, verb, resource)
 			Expect(hasAccess).Should(BeTrue())
@@ -127,7 +117,6 @@ var _ = framework.CertManagerDescribe("Service Account", func() {
 
 		It("should be able to patch certificates", func() {
 			verb := "patch"
-			resource := "certificates"
 
 			hasAccess := rbacClusterRoleHasAccessToResource(f, clusterRole, verb, resource)
 			Expect(hasAccess).Should(BeTrue())
@@ -135,7 +124,6 @@ var _ = framework.CertManagerDescribe("Service Account", func() {
 
 		It("should be able to update certificates", func() {
 			verb := "update"
-			resource := "certificates"
 
 			hasAccess := rbacClusterRoleHasAccessToResource(f, clusterRole, verb, resource)
 			Expect(hasAccess).Should(BeTrue())
@@ -143,7 +131,6 @@ var _ = framework.CertManagerDescribe("Service Account", func() {
 
 		It("should be able to get certificates", func() {
 			verb := "get"
-			resource := "certificates"
 
 			hasAccess := rbacClusterRoleHasAccessToResource(f, clusterRole, verb, resource)
 			Expect(hasAccess).Should(BeTrue())
@@ -151,7 +138,6 @@ var _ = framework.CertManagerDescribe("Service Account", func() {
 
 		It("should be able to list certificates", func() {
 			verb := "list"
-			resource := "certificates"
 
 			hasAccess := rbacClusterRoleHasAccessToResource(f, clusterRole, verb, resource)
 			Expect(hasAccess).Should(BeTrue())
@@ -159,7 +145,6 @@ var _ = framework.CertManagerDescribe("Service Account", func() {
 
 		It("should be able to watch certificates", func() {
 			verb := "watch"
-			resource := "certificates"
 
 			hasAccess := rbacClusterRoleHasAccessToResource(f, clusterRole, verb, resource)
 			Expect(hasAccess).Should(BeTrue())
@@ -170,7 +155,6 @@ var _ = framework.CertManagerDescribe("Service Account", func() {
 		clusterRole := "admin"
 		It("should be able to create certificates", func() {
 			verb := "create"
-			resource := "certificates"
 
 			hasAccess := rbacClusterRoleHasAccessToResource(f, clusterRole, verb, resource)
 			Expect(hasAccess).Should(BeTrue())
@@ -178,7 +162,6 @@ var _ = framework.CertManagerDescribe("Service Account", func() {
 
 		It("should be able to delete certificates", func() {
 			verb := "delete"
-			resource := "certificates"
 
 			hasAccess := rbacClusterRoleHasAccessToResource(f, clusterRole, verb, resource)
 			Expect(hasAccess).Should(BeTrue())
@@ -186,7 +169,6 @@ var _ = framework.CertManagerDescribe("Service Account", func() {
 
 		It("should be able to delete collections of certificates", func() {
 			verb := "deletecollection"
-			resource := "certificates"
 
 			hasAccess := rbacClusterRoleHasAccessToResource(f, clusterRole, verb, resource)
 			Expect(hasAccess).Should(BeTrue())
@@ -194,7 +176,6 @@ var _ = framework.CertManagerDescribe("Service Account", func() {
 
 		It("should be able to patch certificates", func() {
 			verb := "patch"
-			resource := "certificates"
 
 			hasAccess := rbacClusterRoleHasAccessToResource(f, clusterRole, verb, resource)
 			Expect(hasAccess).Should(BeTrue())
@@ -202,7 +183,6 @@ var _ = framework.CertManagerDescribe("Service Account", func() {
 
 		It("should be able to update certificates", func() {
 			verb := "update"
-			resource := "certificates"
 
 			hasAccess := rbacClusterRoleHasAccessToResource(f, clusterRole, verb, resource)
 			Expect(hasAccess).Should(BeTrue())
@@ -210,7 +190,6 @@ var _ = framework.CertManagerDescribe("Service Account", func() {
 
 		It("should be able to get certificates", func() {
 			verb := "get"
-			resource := "certificates"
 
 			hasAccess := rbacClusterRoleHasAccessToResource(f, clusterRole, verb, resource)
 			Expect(hasAccess).Should(BeTrue())
@@ -218,7 +197,6 @@ var _ = framework.CertManagerDescribe("Service Account", func() {
 
 		It("should be able to list certificates", func() {
 			verb := "list"
-			resource := "certificates"
 
 			hasAccess := rbacClusterRoleHasAccessToResource(f, clusterRole, verb, resource)
 			Expect(hasAccess).Should(BeTrue())
@@ -226,7 +204,6 @@ var _ = framework.CertManagerDescribe("Service Account", func() {
 
 		It("should be able to watch certificates", func() {
 			verb := "watch"
-			resource := "certificates"
 
 			hasAccess := rbacClusterRoleHasAccessToResource(f, clusterRole, verb, resource)
 			Expect(hasAccess).Should(BeTrue())
