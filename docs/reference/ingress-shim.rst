@@ -16,6 +16,7 @@ ensure a Certificate resource with the same name as the Ingress, and configured
 as described on the Ingress exists. For example:
 
 .. code-block:: yaml
+
   apiVersion: extensions/v1beta1
   kind: Ingress
   metadata:
@@ -38,10 +39,6 @@ as described on the Ingress exists. For example:
       - myingress.com
       secretName: myingress-cert # < cert-manager will store the created certificate in this secret.
 
-
-As of the time of writing, it **will not** update Certificate resources if your
-Ingress resource changes. It is up to yourself to ensure the corresponding
-Certificate resource is as required.
 
 Configuration
 =============
