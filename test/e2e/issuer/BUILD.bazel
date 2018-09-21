@@ -5,6 +5,7 @@ go_library(
     srcs = [
         "issuer_acme.go",
         "issuer_ca.go",
+        "issuer_rbac.go",
         "issuer_vault.go",
     ],
     importpath = "github.com/jetstack/cert-manager/test/e2e/issuer",

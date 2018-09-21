@@ -6,6 +6,7 @@ go_library(
         "certificate_acme.go",
         "certificate_acme_dns01.go",
         "certificate_ca.go",
+        "certificate_rbac.go",
         "certificate_selfsigned.go",
         "certificate_vault.go",
     ],
