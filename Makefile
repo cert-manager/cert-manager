@@ -138,6 +138,12 @@ images:
 	$(BAZEL_IMAGE_ENV) \
 		bazel run //:images
 
-images_push:
-	$(BAZEL_IMAGE_ENV) \
-		bazel run //:images.push
+images_push: images
+	# we do not use the :push target as Quay.io does not support v2.2
+	# manifests for Docker images, and rules_docker only supports 2.2+
+	# https://github.com/moby/buildkit/issues/409#issuecomment-394757219
+	# source the bazel workspace environment
+	eval $$($(BAZEL_IMAGE_ENV) ./hack/print-workspace-status.sh | tr ' ' '='); \
+	docker push "$${STABLE_DOCKER_REPO}/cert-manager-acmesolver:$${STABLE_DOCKER_TAG}"; \
+	docker push "$${STABLE_DOCKER_REPO}/cert-manager-controller:$${STABLE_DOCKER_TAG}"; \
+	docker push "$${STABLE_DOCKER_REPO}/cert-manager-webhook:$${STABLE_DOCKER_TAG}"
