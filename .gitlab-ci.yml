@@ -1,5 +1,16 @@
 image: eu.gcr.io/jetstack-build-infra-images/cert-manager-e2e:v20180910-b8de01d-0.16.1
 
+variables:
+  DOCKER_DRIVER: overlay
+
+services:
+- docker:1.12-dind
+
+before_script:
+- curl -L "https://get.docker.com/builds/Linux/x86_64/docker-1.9.1.tgz" | tar -C /usr/bin -xvzf- --strip-components=3 usr/local/bin/docker
+- export DOCKER_HOST=${DOCKER_PORT}
+- docker info > /dev/null
+
 build:
   tags:
   - docker
