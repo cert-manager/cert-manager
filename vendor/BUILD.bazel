@@ -40,6 +40,7 @@ filegroup(
         "//vendor/github.com/davecgh/go-spew/spew:all-srcs",
         "//vendor/github.com/dgrijalva/jwt-go:all-srcs",
         "//vendor/github.com/digitalocean/godo:all-srcs",
+        "//vendor/github.com/dnsimple/dnsimple-go/dnsimple:all-srcs",
         "//vendor/github.com/elazarl/go-bindata-assetfs:all-srcs",
         "//vendor/github.com/emicklei/go-restful:all-srcs",
         "//vendor/github.com/emicklei/go-restful-swagger12:all-srcs",

@@ -80,6 +80,10 @@ required = [
   name = "github.com/json-iterator/go"
   revision = "f2b4162afba35581b6d4a50d3b8f34e33c144682"
 
+[[constraint]]
+  name = "github.com/dnsimple/dnsimple-go"
+  version = "0.22.0"
+
 [prune]
   unused-packages = true
   go-tests = true
@@ -98,3 +102,7 @@ required = [
   [[prune.project]]
     name = "k8s.io/kube-openapi"
     unused-packages = false
+
+[[constraint]]
+  branch = "master"
+  name = "golang.org/x/oauth2"

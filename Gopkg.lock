@@ -175,6 +175,14 @@
   version = "v1.6.0"
 
 [[projects]]
+  digest = "1:df4f5dd46731633f2886e9b85ca4507093817e9038c229633ffc7eb022ee76b5"
+  name = "github.com/dnsimple/dnsimple-go"
+  packages = ["dnsimple"]
+  pruneopts = "UT"
+  revision = "2d4b13656504f47f5d928bd8960f59e43b1fae6a"
+  version = "v0.22.0"
+
+[[projects]]
   digest = "1:f4f6279cb37479954644babd8f8ef00584ff9fa63555d2c6718c1c3517170202"
   name = "github.com/elazarl/go-bindata-assetfs"
   packages = ["."]
@@ -1434,6 +1442,7 @@
     "github.com/aws/aws-sdk-go/service/route53",
     "github.com/cpu/goacmedns",
     "github.com/digitalocean/godo",
+    "github.com/dnsimple/dnsimple-go/dnsimple",
     "github.com/go-openapi/spec",
     "github.com/golang/glog",
     "github.com/gorilla/mux",

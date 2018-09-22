@@ -10,6 +10,7 @@ filegroup(
     srcs = [
         ":package-srcs",
         "//docs/generated/reference/generate:all-srcs",
+        "//docs/generated/reference/openapi:all-srcs",
     ],
     tags = ["automanaged"],
     visibility = ["//visibility:public"],
