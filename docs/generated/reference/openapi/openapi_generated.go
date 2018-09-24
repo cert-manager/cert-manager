@@ -1356,9 +1356,9 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 						},
 						"caBundle": {
 							SchemaProps: spec.SchemaProps{
-								Description: "CA bundle to validate Vault server certificate",
+								Description: "Base64 encoded CA bundle to validate Vault server certificate. Only used if the Server URL is using HTTPS protocol. This parameter is ignored for plain HTTP protocol connection. If not set the system root certificates are used to validate the TLS connection.",
 								Type:        []string{"string"},
-								Format:      "",
+								Format:      "byte",
 							},
 						},
 					},

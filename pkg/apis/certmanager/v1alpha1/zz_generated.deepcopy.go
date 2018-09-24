@@ -755,7 +755,7 @@ func (in *IssuerConfig) DeepCopyInto(out *IssuerConfig) {
 			*out = nil
 		} else {
 			*out = new(VaultIssuer)
-			**out = **in
+			(*in).DeepCopyInto(*out)
 		}
 	}
 	if in.SelfSigned != nil {
@@ -999,6 +999,11 @@ func (in *VaultAuth) DeepCopy() *VaultAuth {
 func (in *VaultIssuer) DeepCopyInto(out *VaultIssuer) {
 	*out = *in
 	out.Auth = in.Auth
+	if in.CABundle != nil {
+		in, out := &in.CABundle, &out.CABundle
+		*out = make([]byte, len(*in))
+		copy(*out, *in)
+	}
 	return
 }
 

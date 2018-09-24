@@ -108,12 +108,12 @@ func (v *Vault) obtainCertificate(ctx context.Context, crt *v1alpha1.Certificate
 
 func (v *Vault) configureCertPool(cfg *vault.Config) error {
 	certs := v.issuer.GetSpec().Vault.CABundle
-	if certs == "" {
+	if len(certs) == 0 {
 		return nil
 	}
 
 	caCertPool := x509.NewCertPool()
-	ok := caCertPool.AppendCertsFromPEM([]byte(certs))
+	ok := caCertPool.AppendCertsFromPEM(certs)
 	if ok == false {
 		return fmt.Errorf("error loading Vault CA bundle")
 	}

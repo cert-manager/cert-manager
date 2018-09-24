@@ -483,7 +483,7 @@ func NewCertManagerVaultIssuerToken(name, vaultURL, vaultPath, vaultSecretToken,
 				Vault: &v1alpha1.VaultIssuer{
 					Server:   vaultURL,
 					Path:     vaultPath,
-					CABundle: string(caBundle),
+					CABundle: caBundle,
 					Auth: v1alpha1.VaultAuth{
 						TokenSecretRef: v1alpha1.SecretKeySelector{
 							Key: "secretkey",
@@ -508,7 +508,7 @@ func NewCertManagerVaultIssuerAppRole(name, vaultURL, vaultPath, roleId, vaultSe
 				Vault: &v1alpha1.VaultIssuer{
 					Server:   vaultURL,
 					Path:     vaultPath,
-					CABundle: string(caBundle),
+					CABundle: caBundle,
 					Auth: v1alpha1.VaultAuth{
 						AppRole: v1alpha1.VaultAppRole{
 							Path:   authPath,
