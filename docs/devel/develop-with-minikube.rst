@@ -30,6 +30,18 @@ First, run minikube, and configure your local kubectl command to work with minik
    $ helm init
 
 
+Install local development tools
+===============================
+
+You will need the following tools to build cert-manager:
+
+* `Bazel <https://docs.bazel.build/versions/master/install.html>`
+* `Docker <https://store.docker.com/search?type=edition&offering=community>` (and enable for non-root user)
+
+These instructions have only been tested on Linux; Windows and MacOS may
+require further changes.
+
+
 Build a dev version of cert-manager
 ===================================
 
