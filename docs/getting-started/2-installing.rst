@@ -26,7 +26,7 @@ full list of the available options can be found in the `Helm chart README`_.
    ``--set rbac.create=false`` to your ``helm install`` command above.
    
 .. note::
-   If it tries to connect to localhost, instead of your actual Kubernetes cluster, check your kubectl context with ``kubectl    config current-context``. If that is correct, use ``kubectl patch deploy --namespace kube-system tiller-deploy -p  '{"spec":{"template":{"spec":{"automountServiceAccountToken":true}}}}'``
+   If it tries to connect to localhost, instead of your actual Kubernetes cluster, check your kubectl context with ``kubectl config current-context``.
 
 With static manifests
 =====================
