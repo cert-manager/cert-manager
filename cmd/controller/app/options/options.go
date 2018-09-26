@@ -43,7 +43,11 @@ type ControllerOptions struct {
 
 	EnabledControllers []string
 
-	ACMEHTTP01SolverImage string
+	ACMEHTTP01SolverImage                 string
+	ACMEHTTP01SolverResourceRequestCPU    string
+	ACMEHTTP01SolverResourceRequestMemory string
+	ACMEHTTP01SolverResourceLimitsCPU     string
+	ACMEHTTP01SolverResourceLimitsMemory  string
 
 	ClusterIssuerAmbientCredentials bool
 	IssuerAmbientCredentials        bool
@@ -80,7 +84,11 @@ const (
 )
 
 var (
-	defaultACMEHTTP01SolverImage = fmt.Sprintf("quay.io/jetstack/cert-manager-acmesolver:%s", util.AppVersion)
+	defaultACMEHTTP01SolverImage                 = fmt.Sprintf("quay.io/jetstack/cert-manager-acmesolver:%s", util.AppVersion)
+	defaultACMEHTTP01SolverResourceRequestCPU    = "10m"
+	defaultACMEHTTP01SolverResourceRequestMemory = "64Mi"
+	defaultACMEHTTP01SolverResourceLimitsCPU     = "10m"
+	defaultACMEHTTP01SolverResourceLimitsMemory  = "64Mi"
 
 	defaultEnabledControllers = []string{
 		issuerscontroller.ControllerName,
@@ -143,6 +151,18 @@ func (s *ControllerOptions) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVar(&s.ACMEHTTP01SolverImage, "acme-http01-solver-image", defaultACMEHTTP01SolverImage, ""+
 		"The docker image to use to solve ACME HTTP01 challenges. You most likely will not "+
 		"need to change this parameter unless you are testing a new feature or developing cert-manager.")
+
+	fs.StringVar(&s.ACMEHTTP01SolverResourceRequestCPU, "acme-http01-solver-resource-request-cpu", defaultACMEHTTP01SolverResourceRequestCPU, ""+
+		"Defines the resource request CPU size when spawning new ACME HTTP01 challenge solver pods.")
+
+	fs.StringVar(&s.ACMEHTTP01SolverResourceRequestMemory, "acme-http01-solver-resource-request-memory", defaultACMEHTTP01SolverResourceRequestMemory, ""+
+		"Defines the resource request Memory size when spawning new ACME HTTP01 challenge solver pods.")
+
+	fs.StringVar(&s.ACMEHTTP01SolverResourceLimitsCPU, "acme-http01-solver-resource-limits-cpu", defaultACMEHTTP01SolverResourceLimitsCPU, ""+
+		"Defines the resource limits CPU size when spawning new ACME HTTP01 challenge solver pods.")
+
+	fs.StringVar(&s.ACMEHTTP01SolverResourceLimitsMemory, "acme-http01-solver-resource-limits-memory", defaultACMEHTTP01SolverResourceLimitsMemory, ""+
+		"Defines the resource limits Memory size when spawning new ACME HTTP01 challenge solver pods.")
 
 	fs.BoolVar(&s.ClusterIssuerAmbientCredentials, "cluster-issuer-ambient-credentials", defaultClusterIssuerAmbientCredentials, ""+
 		"Whether a cluster-issuer may make use of ambient credentials for issuers. 'Ambient Credentials' are credentials drawn from the environment, metadata services, or local files which are not explicitly configured in the ClusterIssuer API object. "+
