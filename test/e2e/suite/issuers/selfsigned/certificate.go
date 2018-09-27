@@ -41,7 +41,7 @@ var _ = framework.CertManagerDescribe("Self Signed Certificate", func() {
 		certClient := f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name)
 		secretClient := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name)
 
-		_, err := f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Create(util.NewCertManagerSelfSignedIssuer(issuerName, 0, 0))
+		_, err := f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Create(util.NewCertManagerSelfSignedIssuer(issuerName))
 		Expect(err).NotTo(HaveOccurred())
 		By("Waiting for Issuer to become Ready")
 		err = util.WaitForIssuerCondition(f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name),
@@ -52,7 +52,7 @@ var _ = framework.CertManagerDescribe("Self Signed Certificate", func() {
 			})
 		Expect(err).NotTo(HaveOccurred())
 		By("Creating a Certificate")
-		_, err = certClient.Create(util.NewCertManagerBasicCertificate(certificateName, certificateSecretName, issuerName, v1alpha1.IssuerKind))
+		_, err = certClient.Create(util.NewCertManagerBasicCertificate(certificateName, certificateSecretName, issuerName, v1alpha1.IssuerKind, 0, 0))
 		Expect(err).NotTo(HaveOccurred())
 		err = util.WaitCertificateIssuedValid(certClient, secretClient, certificateName, time.Minute*5)
 		Expect(err).NotTo(HaveOccurred())
@@ -85,7 +85,7 @@ var _ = framework.CertManagerDescribe("Self Signed Certificate", func() {
 
 			By("Creating an Issuer")
 			issuerDurationName := fmt.Sprintf("%s-%d", issuerName, v.expectedDuration)
-			_, err := f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Create(util.NewCertManagerSelfSignedIssuer(issuerDurationName, v.inputDuration, v.inputRenewBefore))
+			_, err := f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Create(util.NewCertManagerSelfSignedIssuer(issuerDurationName))
 			Expect(err).NotTo(HaveOccurred())
 			By("Waiting for Issuer to become Ready")
 			err = util.WaitForIssuerCondition(f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name),
@@ -97,7 +97,7 @@ var _ = framework.CertManagerDescribe("Self Signed Certificate", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Creating a Certificate")
-			cert, err := certClient.Create(util.NewCertManagerBasicCertificate(certificateName, certificateSecretName, issuerDurationName, v1alpha1.IssuerKind))
+			cert, err := certClient.Create(util.NewCertManagerBasicCertificate(certificateName, certificateSecretName, issuerDurationName, v1alpha1.IssuerKind, v.inputDuration, v.inputRenewBefore))
 			Expect(err).NotTo(HaveOccurred())
 			util.WaitCertificateIssuedValid(certClient, secretClient, certificateName, time.Second*30)
 			f.CertificateDurationValid(cert, v.expectedDuration)

@@ -17,8 +17,6 @@ limitations under the License.
 package issuer
 
 import (
-	"time"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
@@ -34,21 +32,7 @@ var _ = framework.CertManagerDescribe("Selfsigned Issuer", func() {
 
 	It("should generate a self-signed keypair", func() {
 		By("Creating an Issuer")
-		_, err := f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Create(util.NewCertManagerSelfSignedIssuer(issuerName, 0, 0))
-		Expect(err).NotTo(HaveOccurred())
-		By("Waiting for Issuer to become Ready")
-		err = util.WaitForIssuerCondition(f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name),
-			issuerName,
-			v1alpha1.IssuerCondition{
-				Type:   v1alpha1.IssuerConditionReady,
-				Status: v1alpha1.ConditionTrue,
-			})
-		Expect(err).NotTo(HaveOccurred())
-	})
-
-	It("should create a selfsigned issuer with a custom duration and renewBefore", func() {
-		By("Creating an Issuer")
-		_, err := f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Create(util.NewCertManagerSelfSignedIssuer(issuerName, time.Hour*24*365, time.Hour*24*180))
+		_, err := f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Create(util.NewCertManagerSelfSignedIssuer(issuerName))
 		Expect(err).NotTo(HaveOccurred())
 		By("Waiting for Issuer to become Ready")
 		err = util.WaitForIssuerCondition(f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name),

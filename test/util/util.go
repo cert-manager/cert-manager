@@ -350,7 +350,7 @@ func NewCertManagerCAClusterIssuer(name, secretName string) *v1alpha1.ClusterIss
 	}
 }
 
-func NewCertManagerBasicCertificate(name, secretName, issuerName string, issuerKind string) *v1alpha1.Certificate {
+func NewCertManagerBasicCertificate(name, secretName, issuerName string, issuerKind string, duration, renewBefore time.Duration) *v1alpha1.Certificate {
 	return &v1alpha1.Certificate{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: name,
@@ -359,6 +359,8 @@ func NewCertManagerBasicCertificate(name, secretName, issuerName string, issuerK
 			CommonName:   "test.domain.com",
 			Organization: []string{"test-org"},
 			SecretName:   secretName,
+			Duration:     metav1.Duration{duration},
+			RenewBefore:  metav1.Duration{renewBefore},
 			IssuerRef: v1alpha1.ObjectReference{
 				Name: issuerName,
 				Kind: issuerKind,
@@ -367,15 +369,17 @@ func NewCertManagerBasicCertificate(name, secretName, issuerName string, issuerK
 	}
 }
 
-func NewCertManagerACMECertificate(name, secretName, issuerName string, issuerKind string, ingressClass string, cn string, dnsNames ...string) *v1alpha1.Certificate {
+func NewCertManagerACMECertificate(name, secretName, issuerName string, issuerKind string, duration, renewBefore time.Duration, ingressClass string, cn string, dnsNames ...string) *v1alpha1.Certificate {
 	return &v1alpha1.Certificate{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: name,
 		},
 		Spec: v1alpha1.CertificateSpec{
-			CommonName: cn,
-			DNSNames:   dnsNames,
-			SecretName: secretName,
+			CommonName:  cn,
+			DNSNames:    dnsNames,
+			SecretName:  secretName,
+			Duration:    metav1.Duration{duration},
+			RenewBefore: metav1.Duration{renewBefore},
 			IssuerRef: v1alpha1.ObjectReference{
 				Name: issuerName,
 				Kind: issuerKind,
@@ -396,14 +400,16 @@ func NewCertManagerACMECertificate(name, secretName, issuerName string, issuerKi
 	}
 }
 
-func NewCertManagerVaultCertificate(name, secretName, issuerName string, issuerKind string) *v1alpha1.Certificate {
+func NewCertManagerVaultCertificate(name, secretName, issuerName string, issuerKind string, duration, renewBefore time.Duration) *v1alpha1.Certificate {
 	return &v1alpha1.Certificate{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: name,
 		},
 		Spec: v1alpha1.CertificateSpec{
-			CommonName: "test.domain.com",
-			SecretName: secretName,
+			CommonName:  "test.domain.com",
+			SecretName:  secretName,
+			Duration:    metav1.Duration{duration},
+			RenewBefore: metav1.Duration{renewBefore},
 			IssuerRef: v1alpha1.ObjectReference{
 				Name: issuerName,
 				Kind: issuerKind,
@@ -470,15 +476,13 @@ func NewCertManagerACMEIssuer(name, acmeURL, acmeEmail, acmePrivateKey string) *
 	}
 }
 
-func NewCertManagerCAIssuer(name, secretName string, duration, renewBefore time.Duration) *v1alpha1.Issuer {
+func NewCertManagerCAIssuer(name, secretName string) *v1alpha1.Issuer {
 	return &v1alpha1.Issuer{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: name,
 		},
 		Spec: v1alpha1.IssuerSpec{
 			IssuerConfig: v1alpha1.IssuerConfig{
-				Duration:    metav1.Duration{duration},
-				RenewBefore: metav1.Duration{renewBefore},
 				CA: &v1alpha1.CAIssuer{
 					SecretName: secretName,
 				},
@@ -487,30 +491,26 @@ func NewCertManagerCAIssuer(name, secretName string, duration, renewBefore time.
 	}
 }
 
-func NewCertManagerSelfSignedIssuer(name string, duration, renewBefore time.Duration) *v1alpha1.Issuer {
+func NewCertManagerSelfSignedIssuer(name string) *v1alpha1.Issuer {
 	return &v1alpha1.Issuer{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: name,
 		},
 		Spec: v1alpha1.IssuerSpec{
 			IssuerConfig: v1alpha1.IssuerConfig{
-				Duration:    metav1.Duration{duration},
-				RenewBefore: metav1.Duration{renewBefore},
-				SelfSigned:  &v1alpha1.SelfSignedIssuer{},
+				SelfSigned: &v1alpha1.SelfSignedIssuer{},
 			},
 		},
 	}
 }
 
-func NewCertManagerVaultIssuerToken(name, vaultURL, vaultPath, vaultSecretToken, authPath string, caBundle []byte, duration, renewBefore time.Duration) *v1alpha1.Issuer {
+func NewCertManagerVaultIssuerToken(name, vaultURL, vaultPath, vaultSecretToken, authPath string, caBundle []byte) *v1alpha1.Issuer {
 	return &v1alpha1.Issuer{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: name,
 		},
 		Spec: v1alpha1.IssuerSpec{
 			IssuerConfig: v1alpha1.IssuerConfig{
-				Duration:    metav1.Duration{duration},
-				RenewBefore: metav1.Duration{renewBefore},
 				Vault: &v1alpha1.VaultIssuer{
 					Server:   vaultURL,
 					Path:     vaultPath,
@@ -529,15 +529,13 @@ func NewCertManagerVaultIssuerToken(name, vaultURL, vaultPath, vaultSecretToken,
 	}
 }
 
-func NewCertManagerVaultIssuerAppRole(name, vaultURL, vaultPath, roleId, vaultSecretAppRole string, authPath string, caBundle []byte, duration, renewBefore time.Duration) *v1alpha1.Issuer {
+func NewCertManagerVaultIssuerAppRole(name, vaultURL, vaultPath, roleId, vaultSecretAppRole string, authPath string, caBundle []byte) *v1alpha1.Issuer {
 	return &v1alpha1.Issuer{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: name,
 		},
 		Spec: v1alpha1.IssuerSpec{
 			IssuerConfig: v1alpha1.IssuerConfig{
-				Duration:    metav1.Duration{duration},
-				RenewBefore: metav1.Duration{renewBefore},
 				Vault: &v1alpha1.VaultIssuer{
 					Server:   vaultURL,
 					Path:     vaultPath,

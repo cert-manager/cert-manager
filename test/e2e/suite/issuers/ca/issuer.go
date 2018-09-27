@@ -17,8 +17,6 @@ limitations under the License.
 package ca
 
 import (
-	"time"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
@@ -46,21 +44,7 @@ var _ = framework.CertManagerDescribe("CA Issuer", func() {
 
 	It("should generate a signing keypair", func() {
 		By("Creating an Issuer")
-		_, err := f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Create(util.NewCertManagerCAIssuer(issuerName, secretName, 0, 0))
-		Expect(err).NotTo(HaveOccurred())
-		By("Waiting for Issuer to become Ready")
-		err = util.WaitForIssuerCondition(f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name),
-			issuerName,
-			v1alpha1.IssuerCondition{
-				Type:   v1alpha1.IssuerConditionReady,
-				Status: v1alpha1.ConditionTrue,
-			})
-		Expect(err).NotTo(HaveOccurred())
-	})
-
-	It("should create a CA issuer with a custom duration and renewBefore", func() {
-		By("Creating an Issuer")
-		_, err := f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Create(util.NewCertManagerCAIssuer(issuerName, secretName, time.Hour*24*365, time.Hour*24*180))
+		_, err := f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Create(util.NewCertManagerCAIssuer(issuerName, secretName))
 		Expect(err).NotTo(HaveOccurred())
 		By("Waiting for Issuer to become Ready")
 		err = util.WaitForIssuerCondition(f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name),
