@@ -97,6 +97,10 @@ Appears In:
 <td>DNSNames is a list of subject alt names to be used on the Certificate</td>
 </tr>
 <tr>
+<td><code>duration</code><br /> <em><a href="#duration-v1">Duration</a></em></td>
+<td>Certificate default Duration</td>
+</tr>
+<tr>
 <td><code>isCA</code><br /> <em>boolean</em></td>
 <td>IsCA will mark this Certificate as valid for signing. This implies that the &#39;signing&#39; usage is set</td>
 </tr>
@@ -115,6 +119,10 @@ Appears In:
 <tr>
 <td><code>organization</code><br /> <em>string array</em></td>
 <td>Organization is the organization to be used on the Certificate</td>
+</tr>
+<tr>
+<td><code>renewBefore</code><br /> <em><a href="#duration-v1">Duration</a></em></td>
+<td>Certificate renew before expiration duration</td>
 </tr>
 <tr>
 <td><code>secretName</code><br /> <em>string</em></td>
@@ -268,14 +276,6 @@ Appears In:
 <tr>
 <td><code>ca</code><br /> <em><a href="#caissuer-v1alpha1">CAIssuer</a></em></td>
 <td></td>
-</tr>
-<tr>
-<td><code>duration</code><br /> <em><a href="#duration-v1">Duration</a></em></td>
-<td>Certificate default Duration</td>
-</tr>
-<tr>
-<td><code>renewBefore</code><br /> <em><a href="#duration-v1">Duration</a></em></td>
-<td>Certificate renew before expiration duration</td>
 </tr>
 <tr>
 <td><code>selfSigned</code><br /> <em><a href="#selfsignedissuer-v1alpha1">SelfSignedIssuer</a></em></td>
@@ -1250,7 +1250,7 @@ Appears In:
 Appears In:
 
 <ul> 
-<li><a href="#issuerspec-v1alpha1">IssuerSpec v1alpha1</a></li>
+<li><a href="#certificatespec-v1alpha1">CertificateSpec v1alpha1</a></li>
 </ul></aside>
 
 <table>

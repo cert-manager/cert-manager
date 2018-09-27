@@ -70,6 +70,10 @@ func ValidateCertificateSpec(crt *v1alpha1.CertificateSpec, fldPath *field.Path)
 		el = append(el, field.Invalid(fldPath.Child("keyAlgorithm"), crt.KeyAlgorithm, "must be either empty or one of rsa or ecdsa"))
 	}
 
+	if crt.Duration.Duration != 0 || crt.RenewBefore.Duration != 0 {
+		el = append(el, ValidateDuration(crt, fldPath)...)
+	}
+
 	return el
 }
 
@@ -146,5 +150,28 @@ func ValidateHTTP01SolverConfig(a *v1alpha1.HTTP01SolverConfig, fldPath *field.P
 		el = append(el, field.Forbidden(fldPath, "only one of 'ingress' and 'ingressClass' should be specified"))
 	}
 	// TODO: ensure 'ingress' is a valid resource name (i.e. DNS name)
+	return el
+}
+
+func ValidateDuration(crt *v1alpha1.CertificateSpec, fldPath *field.Path) field.ErrorList {
+	el := field.ErrorList{}
+
+	duration := crt.Duration.Duration
+	if duration == 0 {
+		duration = v1alpha1.DefaultCertificateDuration
+	}
+	renewBefore := crt.RenewBefore.Duration
+	if renewBefore == 0 {
+		renewBefore = v1alpha1.DefaultRenewBefore
+	}
+	if duration < v1alpha1.MinimumCertificateDuration {
+		el = append(el, field.Invalid(fldPath.Child("duration"), duration, fmt.Sprintf("certificate duration must be greater than %s", v1alpha1.MinimumCertificateDuration)))
+	}
+	if renewBefore < v1alpha1.MinimumRenewBefore {
+		el = append(el, field.Invalid(fldPath.Child("renewBefore"), renewBefore, fmt.Sprintf("certificate renewBefore must be greater than %s", v1alpha1.MinimumRenewBefore)))
+	}
+	if duration <= renewBefore {
+		el = append(el, field.Invalid(fldPath.Child("renewBefore"), renewBefore, fmt.Sprintf("certificate duration %s must be greater than renewBefore %s", duration, renewBefore)))
+	}
 	return el
 }

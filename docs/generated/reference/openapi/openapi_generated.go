@@ -608,6 +608,18 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 								},
 							},
 						},
+						"duration": {
+							SchemaProps: spec.SchemaProps{
+								Description: "Certificate default Duration",
+								Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.Duration"),
+							},
+						},
+						"renewBefore": {
+							SchemaProps: spec.SchemaProps{
+								Description: "Certificate renew before expiration duration",
+								Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.Duration"),
+							},
+						},
 						"dnsNames": {
 							SchemaProps: spec.SchemaProps{
 								Description: "DNSNames is a list of subject alt names to be used on the Certificate",
@@ -667,7 +679,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 				},
 			},
 			Dependencies: []string{
-				"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1.ACMECertificateConfig", "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1.ObjectReference"},
+				"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1.ACMECertificateConfig", "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1.ObjectReference", "k8s.io/apimachinery/pkg/apis/meta/v1.Duration"},
 		},
 		"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1.CertificateStatus": {
 			Schema: spec.Schema{
@@ -1135,18 +1147,6 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 			Schema: spec.Schema{
 				SchemaProps: spec.SchemaProps{
 					Properties: map[string]spec.Schema{
-						"duration": {
-							SchemaProps: spec.SchemaProps{
-								Description: "Certificate default Duration",
-								Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.Duration"),
-							},
-						},
-						"renewBefore": {
-							SchemaProps: spec.SchemaProps{
-								Description: "Certificate renew before expiration duration",
-								Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.Duration"),
-							},
-						},
 						"acme": {
 							SchemaProps: spec.SchemaProps{
 								Ref: ref("github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1.ACMEIssuer"),
@@ -1171,7 +1171,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 				},
 			},
 			Dependencies: []string{
-				"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1.ACMEIssuer", "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1.CAIssuer", "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1.SelfSignedIssuer", "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1.VaultIssuer", "k8s.io/apimachinery/pkg/apis/meta/v1.Duration"},
+				"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1.ACMEIssuer", "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1.CAIssuer", "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1.SelfSignedIssuer", "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1.VaultIssuer"},
 		},
 		"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1.IssuerList": {
 			Schema: spec.Schema{
@@ -1221,18 +1221,6 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 				SchemaProps: spec.SchemaProps{
 					Description: "IssuerSpec is the specification of an Issuer. This includes any configuration required for the issuer.",
 					Properties: map[string]spec.Schema{
-						"duration": {
-							SchemaProps: spec.SchemaProps{
-								Description: "Certificate default Duration",
-								Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.Duration"),
-							},
-						},
-						"renewBefore": {
-							SchemaProps: spec.SchemaProps{
-								Description: "Certificate renew before expiration duration",
-								Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.Duration"),
-							},
-						},
 						"acme": {
 							SchemaProps: spec.SchemaProps{
 								Ref: ref("github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1.ACMEIssuer"),
@@ -1257,7 +1245,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 				},
 			},
 			Dependencies: []string{
-				"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1.ACMEIssuer", "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1.CAIssuer", "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1.SelfSignedIssuer", "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1.VaultIssuer", "k8s.io/apimachinery/pkg/apis/meta/v1.Duration"},
+				"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1.ACMEIssuer", "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1.CAIssuer", "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1.SelfSignedIssuer", "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1.VaultIssuer"},
 		},
 		"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1.IssuerStatus": {
 			Schema: spec.Schema{

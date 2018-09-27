@@ -75,11 +75,6 @@ type IssuerSpec struct {
 }
 
 type IssuerConfig struct {
-	// Certificate default Duration
-	Duration metav1.Duration `json:"duration,omitempty"`
-	// Certificate renew before expiration duration
-	RenewBefore metav1.Duration `json:"renewBefore,omitempty"`
-
 	ACME       *ACMEIssuer       `json:"acme,omitempty"`
 	CA         *CAIssuer         `json:"ca,omitempty"`
 	Vault      *VaultIssuer      `json:"vault,omitempty"`

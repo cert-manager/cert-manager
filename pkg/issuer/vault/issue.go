@@ -96,7 +96,13 @@ func (v *Vault) obtainCertificate(ctx context.Context, crt *v1alpha1.Certificate
 		return nil, nil, nil, fmt.Errorf("error encoding certificate request: %s", err.Error())
 	}
 
-	crtBytes, caBytes, err := v.requestVaultCert(template.Subject.CommonName, template.DNSNames, pemRequestBuf.Bytes())
+	certDuration := v1alpha1.DefaultCertificateDuration
+	if crt.Spec.Duration.Duration != 0 {
+		certDuration = crt.Spec.Duration.Duration
+	}
+
+	crtBytes, caBytes, err := v.requestVaultCert(template.Subject.CommonName, certDuration, template.DNSNames, pemRequestBuf.Bytes())
+
 	if err != nil {
 		return nil, nil, nil, err
 	}
@@ -210,7 +216,8 @@ func (v *Vault) requestTokenWithAppRoleRef(client *vault.Client, appRole *v1alph
 	return token, nil
 }
 
-func (v *Vault) requestVaultCert(commonName string, altNames []string, csr []byte) ([]byte, []byte, error) {
+
+func (v *Vault) requestVaultCert(commonName string, certDuration time.Duration, altNames []string, csr []byte) ([]byte, []byte, error) {
 	client, err := v.initVaultClient()
 	if err != nil {
 		return nil, nil, err
@@ -218,16 +225,11 @@ func (v *Vault) requestVaultCert(commonName string, altNames []string, csr []byt
 
 	glog.V(4).Infof("Vault certificate request for commonName %s altNames: %q", commonName, altNames)
 
-	certDuration := v1alpha1.DefaultCertificateDuration
-	if v.issuer.GetSpec().Duration.Duration != 0 {
-		certDuration = v.issuer.GetSpec().Duration.Duration
-	}
-
 	parameters := map[string]string{
-		"common_name": commonName,
-		"alt_names":   strings.Join(altNames, ","),
-		"ttl":         certDuration.String(),
-		"csr":         string(csr),
+		"common_name":          commonName,
+		"alt_names":            strings.Join(altNames, ","),
+		"ttl":                  certDuration.String(),
+		"csr":                  string(csr),
 		"exclude_cn_from_sans": "true",
 	}
 

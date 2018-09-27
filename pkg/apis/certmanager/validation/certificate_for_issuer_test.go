@@ -136,6 +136,7 @@ func TestValidateCertificateForIssuer(t *testing.T) {
 		"acme certificate with duration set": {
 			crt: &v1alpha1.Certificate{
 				Spec: v1alpha1.CertificateSpec{
+					Duration:  metav1.Duration{Duration: time.Minute * 60},
 					IssuerRef: validIssuerRef,
 					ACME: &v1alpha1.ACMECertificateConfig{
 						Config: []v1alpha1.DomainSolverConfig{
@@ -152,7 +153,6 @@ func TestValidateCertificateForIssuer(t *testing.T) {
 			issuer: generate.Issuer(generate.IssuerConfig{
 				Name:      defaultTestIssuerName,
 				Namespace: defaultTestNamespace,
-				Duration:  metav1.Duration{Duration: time.Minute * 60},
 			}),
 			errs: []*field.Error{
 				field.Invalid(fldPath.Child("duration"), metav1.Duration{Duration: time.Minute * 60}, "ACME does not support certificate durations"),
@@ -161,7 +161,8 @@ func TestValidateCertificateForIssuer(t *testing.T) {
 		"acme certificate with renewBefore set": {
 			crt: &v1alpha1.Certificate{
 				Spec: v1alpha1.CertificateSpec{
-					IssuerRef: validIssuerRef,
+					RenewBefore: metav1.Duration{Duration: time.Minute * 60},
+					IssuerRef:   validIssuerRef,
 					ACME: &v1alpha1.ACMECertificateConfig{
 						Config: []v1alpha1.DomainSolverConfig{
 							{
@@ -175,9 +176,8 @@ func TestValidateCertificateForIssuer(t *testing.T) {
 				},
 			},
 			issuer: generate.Issuer(generate.IssuerConfig{
-				Name:        defaultTestIssuerName,
-				Namespace:   defaultTestNamespace,
-				RenewBefore: metav1.Duration{Duration: time.Minute * 60},
+				Name:      defaultTestIssuerName,
+				Namespace: defaultTestNamespace,
 			}),
 			errs: []*field.Error{
 				field.Invalid(fldPath.Child("renewBefore"), metav1.Duration{Duration: time.Minute * 60}, "ACME does not support certificate renewal times"),

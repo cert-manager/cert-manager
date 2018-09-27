@@ -137,8 +137,8 @@ func GenerateTemplate(issuer v1alpha1.GenericIssuer, crt *v1alpha1.Certificate) 
 	}
 
 	certDuration := v1alpha1.DefaultCertificateDuration
-	if issuer.GetSpec().Duration.Duration != 0 {
-		certDuration = issuer.GetSpec().Duration.Duration
+	if crt.Spec.Duration.Duration != 0 {
+		certDuration = crt.Spec.Duration.Duration
 	}
 
 	pubKeyAlgo, _, err := SignatureAlgorithm(crt)

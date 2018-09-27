@@ -246,7 +246,7 @@ func (c *Controller) scheduleRenewal(crt *v1alpha1.Certificate, issuerObj v1alph
 		return
 	}
 
-	renewIn := c.calculateTimeBeforeExpiry(cert, crt, issuerObj)
+	renewIn := c.calculateTimeBeforeExpiry(cert, crt)
 
 	c.scheduledWorkQueue.Add(key, renewIn)
 
@@ -361,20 +361,20 @@ func (c *Controller) updateCertificateStatus(old, new *v1alpha1.Certificate) (*v
 	return c.CMClient.CertmanagerV1alpha1().Certificates(new.Namespace).Update(new)
 }
 
-func (c *Controller) calculateTimeBeforeExpiry(cert *x509.Certificate, crt *v1alpha1.Certificate, issuerObj v1alpha1.GenericIssuer) time.Duration {
+func (c *Controller) calculateTimeBeforeExpiry(cert *x509.Certificate, crt *v1alpha1.Certificate) time.Duration {
 	// validate if the certificate received was with the issuer configured
 	// duration. If not we generate an event to warn the user of that fact.
 	certDuration := cert.NotAfter.Sub(cert.NotBefore)
-	if certDuration < issuerObj.GetSpec().Duration.Duration {
-		s := fmt.Sprintf(messageCertificateDuration, certDuration, issuerObj.GetSpec().Duration.Duration)
+	if certDuration < crt.Spec.Duration.Duration {
+		s := fmt.Sprintf(messageCertificateDuration, certDuration, crt.Spec.Duration.Duration)
 		glog.Info(s)
 		c.Recorder.Event(crt, api.EventTypeNormal, infoCertificateDuration, s)
 	}
 	// renew is the duration before the certificate expiration that cert-manager
 	// will start to try renewing the certificate.
 	renew := v1alpha1.DefaultRenewBefore
-	if issuerObj.GetSpec().RenewBefore.Duration != 0 {
-		renew = issuerObj.GetSpec().RenewBefore.Duration
+	if crt.Spec.RenewBefore.Duration != 0 {
+		renew = crt.Spec.RenewBefore.Duration
 	}
 	// Verify that the renewBefore duration is inside the certificate validity duration.
 	// If not we notify with an event that we will renew the certificate
