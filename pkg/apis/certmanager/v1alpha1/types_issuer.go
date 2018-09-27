@@ -152,6 +152,7 @@ type ACMEIssuerDNS01Provider struct {
 	Route53    *ACMEIssuerDNS01ProviderRoute53    `json:"route53,omitempty"`
 	AzureDNS   *ACMEIssuerDNS01ProviderAzureDNS   `json:"azuredns,omitempty"`
 	AcmeDNS    *ACMEIssuerDNS01ProviderAcmeDNS    `json:"acmedns,omitempty"`
+	OVH        *ACMEIssuerDNS01ProviderOVH        `json:"ovh,omitempty"`
 	RFC2136    *ACMEIssuerDNS01ProviderRFC2136    `json:"rfc2136,omitempty"`
 }
 
@@ -205,6 +206,15 @@ type ACMEIssuerDNS01ProviderAzureDNS struct {
 type ACMEIssuerDNS01ProviderAcmeDNS struct {
 	Host          string            `json:"host"`
 	AccountSecret SecretKeySelector `json:"accountSecretRef"`
+}
+
+// ACMEIssuerDNS01ProviderOVH is a structure containing the
+// configuration for OVH
+type ACMEIssuerDNS01ProviderOVH struct {
+	Endpoint          string            `json:"endpoint"`
+	ApplicationKey    string            `json:"applicationKey"`
+	ApplicationSecret SecretKeySelector `json:"applicationSecretSecretRef"`
+	ConsumerKey       SecretKeySelector `json:"consumerKeySecretRef"`
 }
 
 // ACMEIssuerDNS01ProviderRFC2136 is a structure containing the

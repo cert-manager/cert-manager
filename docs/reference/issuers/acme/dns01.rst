@@ -142,6 +142,21 @@ Akamai FastDNS
         name: akamai-dns
         key: accessToken
 
+OVH
+==============
+
+.. code-block:: yaml
+
+    ovh:
+      endpoint: ovh-eu
+      applicationKey: tf128Wv3U9hBj0FU
+      applicationSecretSecretRef:
+        name: ovh-credentials
+        key: application-secret
+      consumerKeySecretRef:
+        name: ovh-credentials
+        key: consumer-key
+
 RFC2136
 ========
 

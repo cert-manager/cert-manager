@@ -33,6 +33,7 @@ import (
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/azuredns"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/clouddns"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/cloudflare"
+	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/ovh"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/rfc2136"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/route53"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
@@ -58,6 +59,7 @@ type dnsProviderConstructors struct {
 	azureDNS   func(clientID, clientSecret, subscriptionID, tenentID, resourceGroupName, hostedZoneName string, dns01Nameservers []string) (*azuredns.DNSProvider, error)
 	acmeDNS    func(host string, accountJson []byte, dns01Nameservers []string) (*acmedns.DNSProvider, error)
 	rfc2136    func(nameserver, tsigAlgorithm, tsigKeyName, tsigSecret string, dns01Nameservers []string) (*rfc2136.DNSProvider, error)
+	ovh        func(endpoint, applicationKey, applicationSecret, consumerKey string, dns01Nameservers []string) (*ovh.DNSProvider, error)
 }
 
 // Solver is a solver for the acme dns01 challenge.
@@ -306,6 +308,44 @@ func (s *Solver) solverForIssuerProvider(issuer v1alpha1.GenericIssuer, provider
 		if err != nil {
 			return nil, fmt.Errorf("error instantiating rfc2136 challenge solver: %s", err.Error())
 		}
+	case providerConfig.OVH != nil:
+		applicationSecret := ""
+		if providerConfig.OVH.ApplicationSecret.Name != "" {
+			secret, err := s.secretLister.Secrets(resourceNamespace).Get(providerConfig.OVH.ApplicationSecret.Name)
+			if err != nil {
+				return nil, fmt.Errorf("error getting ovh secret applicationSecret: %s", err)
+			}
+
+			secretBytes, ok := secret.Data[providerConfig.OVH.ApplicationSecret.Key]
+			if !ok {
+				return nil, fmt.Errorf("error getting ovh secret applicationSecret: key '%s' not found in secret", providerConfig.OVH.ApplicationSecret.Key)
+			}
+			applicationSecret = string(secretBytes)
+		}
+		consumerKey := ""
+		if providerConfig.OVH.ConsumerKey.Name != "" {
+			secret, err := s.secretLister.Secrets(resourceNamespace).Get(providerConfig.OVH.ConsumerKey.Name)
+			if err != nil {
+				return nil, fmt.Errorf("error getting ovh secret consumerKey: %s", err)
+			}
+
+			secretBytes, ok := secret.Data[providerConfig.OVH.ConsumerKey.Key]
+			if !ok {
+				return nil, fmt.Errorf("error getting ovh secret consumerKey: key '%s' not found in secret", providerConfig.OVH.ConsumerKey.Key)
+			}
+			consumerKey = string(secretBytes)
+		}
+
+		impl, err = s.dnsProviderConstructors.ovh(
+			strings.TrimSpace(providerConfig.OVH.Endpoint),
+			strings.TrimSpace(providerConfig.OVH.ApplicationKey),
+			strings.TrimSpace(applicationSecret),
+			strings.TrimSpace(consumerKey),
+			s.DNS01Nameservers,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("error instantiating ovh challenge solver: %s", err)
+		}
 	default:
 		return nil, fmt.Errorf("no dns provider config specified for provider %q", providerName)
 	}
@@ -326,6 +366,7 @@ func NewSolver(ctx *controller.Context) *Solver {
 			azuredns.NewDNSProviderCredentials,
 			acmedns.NewDNSProviderHostBytes,
 			rfc2136.NewDNSProviderCredentials,
+			ovh.NewDNSProvider,
 		},
 	}
 }

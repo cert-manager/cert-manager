@@ -581,6 +581,14 @@
   revision = "76d182e57ce628bbf6eb266a7d26cf6c52adf551"
 
 [[projects]]
+  branch = "master"
+  digest = "1:14521a6fa81bd2f0d674ed1e485f34a05302452ce3b66e3c63a6cee1770f28b7"
+  name = "github.com/ovh/go-ovh"
+  packages = ["ovh"]
+  pruneopts = "U"
+  revision = "c3e61035ea66f5c637719c90140da4e3ac3b1bf0"
+
+[[projects]]
   digest = "1:63e142fc50307bcb3c57494913cfc9c12f6061160bdf97a678f78c71615f939b"
   name = "github.com/pborman/uuid"
   packages = ["."]
@@ -872,6 +880,14 @@
   pruneopts = "U"
   revision = "3887ee99ecf07df5b447e9b00d9c0b2adaa9f3e4"
   version = "v0.9.0"
+
+[[projects]]
+  digest = "1:1c4c5c36633974dcca2b9d2df3a8232d91492cd939b3c4d1da808579d7abce84"
+  name = "gopkg.in/ini.v1"
+  packages = ["."]
+  pruneopts = "U"
+  revision = "5cf292cae48347c2490ac1a58fe36735fb78df7e"
+  version = "v1.38.2"
 
 [[projects]]
   digest = "1:11c58e19ff7ce22740423bb933f1ddca3bf575def40d5ac3437ec12871b1648b"
@@ -1365,6 +1381,7 @@
     "github.com/onsi/ginkgo/reporters",
     "github.com/onsi/gomega",
     "github.com/openshift/generic-admission-server/pkg/cmd",
+    "github.com/ovh/go-ovh/ovh",
     "github.com/pkg/errors",
     "github.com/prometheus/client_golang/prometheus",
     "github.com/spf13/cobra",

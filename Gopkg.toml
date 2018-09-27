@@ -40,6 +40,10 @@ required = [
   revision = "76d182e57ce628bbf6eb266a7d26cf6c52adf551"
 
 [[constraint]]
+  name = "github.com/ovh/go-ovh"
+  branch = "master"
+
+[[constraint]]
   name = "github.com/hashicorp/vault"
   version = "v0.9.3"
 
