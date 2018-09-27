@@ -59,7 +59,7 @@ required = [
 
 [[override]]
   name = "github.com/golang/protobuf"
-  revision = "1643683e1b54a9e88ad26d98f81400c8c9d9f4f9"
+  revision = "aa810b61a9c79d51363740d207bb46cf8e620ed5"
 
 [[override]]
   name = "google.golang.org/genproto"

@@ -246,6 +246,9 @@ func ValidateACMEIssuerDNS01Config(iss *v1alpha1.ACMEIssuerDNS01Config, fldPath 
 				}
 			}
 		}
+		if p.GRPC != nil {
+			numProviders++
+		}
 		if numProviders == 0 {
 			el = append(el, field.Required(fldPath, "at least one provider must be configured"))
 		}
