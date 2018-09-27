@@ -117,14 +117,16 @@ func TestCalculateTimeBeforeExpiry(t *testing.T) {
 		},
 	}
 	for k, v := range tests {
-		cert := &v1alpha1.Certificate{}
+		cert := &v1alpha1.Certificate{
+			Spec: v1alpha1.CertificateSpec{
+				Duration:    metav1.Duration{v.duration},
+				RenewBefore: metav1.Duration{v.renewBefore},
+			},
+		}
 		x509Cert := &x509.Certificate{NotBefore: v.notBefore, NotAfter: v.notAfter}
-		issuer := &v1alpha1.Issuer{}
-		issuer.GetSpec().Duration = metav1.Duration{v.duration}
-		issuer.GetSpec().RenewBefore = metav1.Duration{v.renewBefore}
 		rec := &recorder{}
 		c.Recorder = rec
-		duration := c.calculateTimeBeforeExpiry(x509Cert, cert, issuer)
+		duration := c.calculateTimeBeforeExpiry(x509Cert, cert)
 		if duration != v.expectedExpiry {
 			t.Errorf("test # %d - %s: got %v, expected %v", k, v.desc, duration, v.expectedExpiry)
 		}

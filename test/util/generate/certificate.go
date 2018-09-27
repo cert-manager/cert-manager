@@ -31,6 +31,8 @@ type CertificateConfig struct {
 	SecretName             string
 	CommonName             string
 	DNSNames               []string
+	Duration               metav1.Duration
+	RenewBefore            metav1.Duration
 
 	// ACME parameters
 	SolverConfig v1alpha1.SolverConfig
@@ -43,7 +45,9 @@ func Certificate(cfg CertificateConfig) *v1alpha1.Certificate {
 			Namespace: cfg.Namespace,
 		},
 		Spec: v1alpha1.CertificateSpec{
-			SecretName: cfg.SecretName,
+			Duration:    cfg.Duration,
+			RenewBefore: cfg.RenewBefore,
+			SecretName:  cfg.SecretName,
 			IssuerRef: v1alpha1.ObjectReference{
 				Name: cfg.IssuerName,
 				Kind: cfg.IssuerKind,
