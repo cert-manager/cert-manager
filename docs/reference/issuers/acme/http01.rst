@@ -26,6 +26,15 @@ using Ingress resources
        http01: {}
 
 
+To define which Kubernetes service type to use during challenge response specify the following http01 config
+
+.. code-block:: yaml
+       http01:
+         # Valid values are ClusterIP and NodePort
+         solverServiceType: ClusterIP
+
+By default type NodePort will be used when you don't set http01 or when you set solverServiceType to an empty string. This may change in future.
+
 .. note::
    Let's Encrypt does not support issuing wildcard certificates with HTTP-01 challenges.
    To issue wildcard certificates, you must use the DNS-01 challenge.

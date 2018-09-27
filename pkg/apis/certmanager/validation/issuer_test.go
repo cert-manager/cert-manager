@@ -20,6 +20,7 @@ import (
 	"reflect"
 	"testing"
 
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
@@ -144,6 +145,19 @@ func TestValidateACMEIssuerConfig(t *testing.T) {
 				Server:     "valid-server",
 				PrivateKey: validSecretKeyRef,
 				HTTP01:     &v1alpha1.ACMEIssuerHTTP01Config{},
+			},
+		},
+		"acme issue with invalid http01 service config": {
+			spec: &v1alpha1.ACMEIssuer{
+				Email:      "valid-email",
+				Server:     "valid-server",
+				PrivateKey: validSecretKeyRef,
+				HTTP01: &v1alpha1.ACMEIssuerHTTP01Config{
+					SolverServiceType: corev1.ServiceType("InvalidServiceType"),
+				},
+			},
+			errs: []*field.Error{
+				field.Invalid(fldPath.Child("http01", "solverServiceType"), corev1.ServiceType("InvalidServiceType"), "optional field solverServiceType must be one of [\"ClusterIP\" \"NodePort\"]"),
 			},
 		},
 	}

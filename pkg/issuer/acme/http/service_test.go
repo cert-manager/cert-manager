@@ -46,7 +46,7 @@ func TestEnsureService(t *testing.T) {
 				Domain: "example.com",
 			},
 			PreFn: func(t *testing.T, s *solverFixture) {
-				svc, err := s.Solver.createService(s.Certificate, s.Challenge)
+				svc, err := s.Solver.createService(s.Issuer, s.Certificate, s.Challenge)
 				if err != nil {
 					t.Errorf("error preparing test: %v", err)
 				}
@@ -89,7 +89,7 @@ func TestEnsureService(t *testing.T) {
 				Domain: "example.com",
 			},
 			PreFn: func(t *testing.T, s *solverFixture) {
-				expectedService := buildService(s.Certificate, s.Challenge)
+				expectedService := buildService(s.Issuer, s.Certificate, s.Challenge)
 				// create a reactor that fails the test if a service is created
 				s.Builder.FakeKubeClient().PrependReactor("create", "services", func(action coretesting.Action) (handled bool, ret runtime.Object, err error) {
 					service := action.(coretesting.CreateAction).GetObject().(*v1.Service)
@@ -142,11 +142,11 @@ func TestEnsureService(t *testing.T) {
 			},
 			Err: true,
 			PreFn: func(t *testing.T, s *solverFixture) {
-				_, err := s.Solver.createService(s.Certificate, s.Challenge)
+				_, err := s.Solver.createService(s.Issuer, s.Certificate, s.Challenge)
 				if err != nil {
 					t.Errorf("error preparing test: %v", err)
 				}
-				_, err = s.Solver.createService(s.Certificate, s.Challenge)
+				_, err = s.Solver.createService(s.Issuer, s.Certificate, s.Challenge)
 				if err != nil {
 					t.Errorf("error preparing test: %v", err)
 				}
@@ -169,7 +169,7 @@ func TestEnsureService(t *testing.T) {
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			test.Setup(t)
-			resp, err := test.Solver.ensureService(test.Certificate, test.Challenge)
+			resp, err := test.Solver.ensureService(test.Issuer, test.Certificate, test.Challenge)
 			if err != nil && !test.Err {
 				t.Errorf("Expected function to not error, but got: %v", err)
 			}
@@ -198,7 +198,7 @@ func TestGetServicesForCertificate(t *testing.T) {
 				Domain: "example.com",
 			},
 			PreFn: func(t *testing.T, s *solverFixture) {
-				ing, err := s.Solver.createService(s.Certificate, s.Challenge)
+				ing, err := s.Solver.createService(s.Issuer, s.Certificate, s.Challenge)
 				if err != nil {
 					t.Errorf("error preparing test: %v", err)
 				}
@@ -232,7 +232,7 @@ func TestGetServicesForCertificate(t *testing.T) {
 				Domain: "example.com",
 			},
 			PreFn: func(t *testing.T, s *solverFixture) {
-				_, err := s.Solver.createService(s.Certificate, v1alpha1.ACMEOrderChallenge{
+				_, err := s.Solver.createService(s.Issuer, s.Certificate, v1alpha1.ACMEOrderChallenge{
 					Domain: "invaliddomain",
 				})
 				if err != nil {
