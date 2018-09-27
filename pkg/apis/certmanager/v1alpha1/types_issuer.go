@@ -234,13 +234,13 @@ type ACMEIssuerDNS01ProviderRFC2136 struct {
 }
 
 type ACMEIssuerDNS01ProviderGRPC struct {
-	UseTLS                bool              `json:"useTLS"`
-	Service               string            `json:"service"`
-	ServerName            string            `json:"serverName"`
-	ClientCertificate     SecretKeySelector `json:"clientCertificateSecretRef"`
-	ClientCertificateKey  SecretKeySelector `json:"clientCertificateKeySecretRef"`
-	Timeout               string            `json:"timeout"`
-	Interval              string            `json:"interval"`
+	UseTLS               bool              `json:"useTLS"`
+	Service              string            `json:"service"`
+	ServerName           string            `json:"serverName"`
+	ClientCertificate    SecretKeySelector `json:"clientCertificateSecretRef"`
+	ClientCertificateKey SecretKeySelector `json:"clientCertificateKeySecretRef"`
+	Timeout              string            `json:"timeout"`
+	Interval             string            `json:"interval"`
 }
 
 // IssuerStatus contains status information about an Issuer

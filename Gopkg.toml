@@ -65,6 +65,11 @@ required = [
   name = "google.golang.org/genproto"
   revision = "09f6ed296fc66555a25fe4ce95173148778dfa85"
 
+[[constraint]]
+  branch = "master"
+  name = "github.com/jetstack/cert-manager-proto"
+  source = "github.com/bluecmd/cert-manager-proto"
+
 [prune]
   unused-packages = true
   [[prune.project]]

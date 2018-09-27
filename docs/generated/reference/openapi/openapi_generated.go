@@ -172,12 +172,17 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 								Ref: ref("github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1.ACMEIssuerDNS01ProviderRFC2136"),
 							},
 						},
+						"grpc": {
+							SchemaProps: spec.SchemaProps{
+								Ref: ref("github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1.ACMEIssuerDNS01ProviderGRPC"),
+							},
+						},
 					},
 					Required: []string{"name"},
 				},
 			},
 			Dependencies: []string{
-				"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1.ACMEIssuerDNS01ProviderAcmeDNS", "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1.ACMEIssuerDNS01ProviderAkamai", "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1.ACMEIssuerDNS01ProviderAzureDNS", "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1.ACMEIssuerDNS01ProviderCloudDNS", "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1.ACMEIssuerDNS01ProviderCloudflare", "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1.ACMEIssuerDNS01ProviderRFC2136", "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1.ACMEIssuerDNS01ProviderRoute53"},
+				"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1.ACMEIssuerDNS01ProviderAcmeDNS", "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1.ACMEIssuerDNS01ProviderAkamai", "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1.ACMEIssuerDNS01ProviderAzureDNS", "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1.ACMEIssuerDNS01ProviderCloudDNS", "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1.ACMEIssuerDNS01ProviderCloudflare", "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1.ACMEIssuerDNS01ProviderGRPC", "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1.ACMEIssuerDNS01ProviderRFC2136", "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1.ACMEIssuerDNS01ProviderRoute53"},
 		},
 		"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1.ACMEIssuerDNS01ProviderAcmeDNS": {
 			Schema: spec.Schema{
@@ -323,6 +328,57 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 						},
 					},
 					Required: []string{"email", "apiKeySecretRef"},
+				},
+			},
+			Dependencies: []string{
+				"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1.SecretKeySelector"},
+		},
+		"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1.ACMEIssuerDNS01ProviderGRPC": {
+			Schema: spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Properties: map[string]spec.Schema{
+						"useTLS": {
+							SchemaProps: spec.SchemaProps{
+								Type:   []string{"boolean"},
+								Format: "",
+							},
+						},
+						"service": {
+							SchemaProps: spec.SchemaProps{
+								Type:   []string{"string"},
+								Format: "",
+							},
+						},
+						"serverName": {
+							SchemaProps: spec.SchemaProps{
+								Type:   []string{"string"},
+								Format: "",
+							},
+						},
+						"clientCertificateSecretRef": {
+							SchemaProps: spec.SchemaProps{
+								Ref: ref("github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1.SecretKeySelector"),
+							},
+						},
+						"clientCertificateKeySecretRef": {
+							SchemaProps: spec.SchemaProps{
+								Ref: ref("github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1.SecretKeySelector"),
+							},
+						},
+						"timeout": {
+							SchemaProps: spec.SchemaProps{
+								Type:   []string{"string"},
+								Format: "",
+							},
+						},
+						"interval": {
+							SchemaProps: spec.SchemaProps{
+								Type:   []string{"string"},
+								Format: "",
+							},
+						},
+					},
+					Required: []string{"useTLS", "service", "serverName", "clientCertificateSecretRef", "clientCertificateKeySecretRef", "timeout", "interval"},
 				},
 			},
 			Dependencies: []string{

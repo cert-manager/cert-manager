@@ -461,6 +461,15 @@
   version = "v1.0"
 
 [[projects]]
+  branch = "master"
+  digest = "1:643dabc13179fd3ca3c4ecf7a85223e20ad97b7cedbe2bf78dcf087cec8aa671"
+  name = "github.com/jetstack/cert-manager-proto"
+  packages = ["."]
+  pruneopts = "U"
+  revision = "95979dbd8b3df6900435ed1019a3b034026da591"
+  source = "github.com/bluecmd/cert-manager-proto"
+
+[[projects]]
   digest = "1:508df2f146d150e2ca7c68a50b4118b278161716450f49159f77d0e2e3fec174"
   name = "github.com/jmespath/go-jmespath"
   packages = ["."]
@@ -1359,6 +1368,7 @@
     "github.com/gorilla/mux",
     "github.com/hashicorp/vault/api",
     "github.com/hashicorp/vault/helper/certutil",
+    "github.com/jetstack/cert-manager-proto",
     "github.com/miekg/dns",
     "github.com/onsi/ginkgo",
     "github.com/onsi/ginkgo/config",
@@ -1376,6 +1386,8 @@
     "golang.org/x/oauth2",
     "golang.org/x/oauth2/google",
     "google.golang.org/api/dns/v1",
+    "google.golang.org/grpc",
+    "google.golang.org/grpc/credentials",
     "k8s.io/api/admission/v1beta1",
     "k8s.io/api/batch/v1",
     "k8s.io/api/core/v1",

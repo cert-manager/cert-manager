@@ -3,18 +3,19 @@ package grpc
 import (
 	"crypto/tls"
 	"time"
+
+	pb "github.com/jetstack/cert-manager-proto"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
-	pb "github.com/jetstack/cert-manager-proto"
 )
 
 type provider struct {
-	service   string
-	do        grpc.DialOption
-	timeout   time.Duration
-	interval  time.Duration
+	service  string
+	do       grpc.DialOption
+	timeout  time.Duration
+	interval time.Duration
 }
 
 func NewDNSProviderTLS(service, serverName string, clientCert *tls.Certificate, timeout, interval time.Duration) (*provider, error) {
@@ -47,9 +48,9 @@ func (p *provider) Present(domain, token, key string) error {
 	defer conn.Close()
 	c := pb.NewAcmeDnsSolverServiceClient(conn)
 	r := &pb.PresentRequest{
-		Fqdn: fqdn,
+		Fqdn:  fqdn,
 		Value: value,
-		Ttl: uint32(ttl),
+		Ttl:   uint32(ttl),
 	}
 	_, err = c.Present(ctx, r)
 	if err != nil {
