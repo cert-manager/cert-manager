@@ -96,6 +96,7 @@ to write a simple TXT RR and make sure we can delete it.
 
 ::
 
+   $ nsupdate -k <keyID>
    > update add www1.example.com txt testing
    > send
    > … test here with ``nslookup``
