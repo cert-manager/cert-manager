@@ -253,9 +253,10 @@ func matchCAA(caas []*dns.CAA, issuerIDs map[string]bool, iswildcard bool) bool 
 func lookupNameservers(fqdn string, nameservers []string) ([]string, error) {
 	var authoritativeNss []string
 
+	glog.V(6).Infof("Searching fqdn %q using seed nameservers [%s]", fqdn, strings.Join(nameservers, ", "))
 	zone, err := FindZoneByFqdn(fqdn, nameservers)
 	if err != nil {
-		return nil, fmt.Errorf("Could not determine the zone: %v", err)
+		return nil, fmt.Errorf("Could not determine the zone for %q: %v", fqdn, err)
 	}
 
 	r, err := dnsQuery(zone, dns.TypeNS, nameservers, true)
@@ -270,9 +271,10 @@ func lookupNameservers(fqdn string, nameservers []string) ([]string, error) {
 	}
 
 	if len(authoritativeNss) > 0 {
+		glog.V(6).Infof("Returning authoritative nameservers [%s]", strings.Join(authoritativeNss, ", "))
 		return authoritativeNss, nil
 	}
-	return nil, fmt.Errorf("Could not determine authoritative nameservers")
+	return nil, fmt.Errorf("Could not determine authoritative nameservers for %q", fqdn)
 }
 
 // FindZoneByFqdn determines the zone apex for the given fqdn by recursing up the
@@ -282,6 +284,7 @@ func FindZoneByFqdn(fqdn string, nameservers []string) (string, error) {
 	// Do we have it cached?
 	if zone, ok := fqdnToZone[fqdn]; ok {
 		fqdnToZoneLock.RUnlock()
+		glog.V(6).Infof("Returning cached zone record %q for fqdn %q", zone, fqdn)
 		return zone, nil
 	}
 	fqdnToZoneLock.RUnlock()
@@ -317,6 +320,7 @@ func FindZoneByFqdn(fqdn string, nameservers []string) (string, error) {
 
 					zone := soa.Hdr.Name
 					fqdnToZone[fqdn] = zone
+					glog.V(6).Infof("Returning discovered zone record %q for fqdn %q", zone, fqdn)
 					return zone, nil
 				}
 			}
