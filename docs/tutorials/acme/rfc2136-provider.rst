@@ -94,9 +94,12 @@ the value returned from ``dnssec-keygen``. This will read the key from
 disk and provide a command prompt to issue commands. In general, we want
 to write a simple TXT RR and make sure we can delete it.
 
-   update add www1.example.com txt testing send … test here with
-   ``nslookup`` update delete www1.example.com txt send … test here with
-   ``nslookup``
+> update add www1.example.com txt testing
+> send
+> … test here with ``nslookup``
+> update delete www1.example.com txt
+> send
+> … test here with ``nslookup``
 
 Any failures to write, read or delete the record will mean that
 cert-manager will not be able to do so either, no matter how well it is
