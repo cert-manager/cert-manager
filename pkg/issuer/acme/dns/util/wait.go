@@ -94,19 +94,22 @@ func checkDNSPropagation(fqdn, value string, nameservers []string) (bool, error)
 
 // checkAuthoritativeNss queries each of the given nameservers for the expected TXT record.
 func checkAuthoritativeNss(fqdn, value string, nameservers []string) (bool, error) {
+	var errs []error
+	var found = false
 	for _, ns := range nameservers {
 		r, err := dnsQuery(fqdn, dns.TypeTXT, []string{net.JoinHostPort(ns, "53")}, false)
 		if err != nil {
-			return false, err
+			errs = append(errs, err)
+			continue
 		}
 
 		// NXDomain response is not really an error, just waiting for propagation to happen
 		if !(r.Rcode == dns.RcodeSuccess || r.Rcode == dns.RcodeNameError) {
-			return false, fmt.Errorf("NS %s returned %s for %s", ns, dns.RcodeToString[r.Rcode], fqdn)
+			errs = append(errs, fmt.Errorf("NS %s returned %s for %s", ns, dns.RcodeToString[r.Rcode], fqdn))
+			continue
 		}
 
 		glog.V(6).Infof("Looking up TXT records for %q", fqdn)
-		var found bool
 		for _, rr := range r.Answer {
 			if txt, ok := rr.(*dns.TXT); ok {
 				if strings.Join(txt.Txt, "") == value {
@@ -115,14 +118,63 @@ func checkAuthoritativeNss(fqdn, value string, nameservers []string) (bool, erro
 				}
 			}
 		}
-
-		if !found {
+	}
+	if !found {
+		if len(errs) > 0 {
+			return false, fmt.Errorf("%v", errs)
+		} else {
 			return false, nil
 		}
 	}
 
 	return true, nil
 }
+
+//// checkAuthoritativeNss queries each of the given nameservers for the expected TXT record.
+//func checkAuthoritativeNss(fqdn, challenge string, nameservers []string) (bool, error) {
+//	var errs []error
+//	for _, ns := range nameservers {
+//		var nsErrs []error
+//		r, err := dnsQuery(fqdn, dns.TypeTXT, []string{net.JoinHostPort(ns, "53")}, false)
+//		if err != nil {
+//			nsErrs = append(nsErrs, err)
+//			continue
+//		}
+//
+//		// NXDomain response is not really an error, just waiting for propagation to happen
+//		if !(r.Rcode == dns.RcodeSuccess || r.Rcode == dns.RcodeNameError) {
+//			 nsErrs = append(nsErrs, fmt.Errorf("NS %s returned %s for %s", ns, dns.RcodeToString[r.Rcode], fqdn))
+//			 continue
+//		}
+//
+//		glog.V(6).Infof("Querying TXT records for %q from server %q", fqdn, ns)
+//		var found bool
+//		for _, rr := range r.Answer {
+//			if txt, ok := rr.(*dns.TXT); ok {
+//				if strings.Join(txt.Txt, "") == challenge {
+//					glog.V(6).Infof("TXT record(s) found [%s] from server %q", challenge, ns)
+//					found = true
+//					break
+//				}
+//			}
+//		}
+//
+//		if !found {
+//			if (len(nsErrs) > 0) {
+//				errorf := fmt.Errorf("%v", nsErrs)
+//				glog.V(6).Infof("Errors encountered searching TXT record %q from server %q: %v", fqdn, ns, errorf)
+//				errs = append(errs, nsErrs...)
+//			} else {
+//				glog.V(6).Infof("No TXT record found for %q from server %q", fqdn, ns)
+//			}
+//			continue
+//		} else {
+//			break
+//		}
+//	}
+//
+//	return true, nil
+//}
 
 // dnsQuery will query a nameserver, iterating through the supplied servers as it retries
 // The nameserver should include a port, to facilitate testing where we talk to a mock dns server.
@@ -158,9 +210,10 @@ func dnsQuery(fqdn string, rtype uint16, nameservers []string, recursive bool) (
 func lookupNameservers(fqdn string, nameservers []string) ([]string, error) {
 	var authoritativeNss []string
 
+	glog.V(6).Infof("Searching fqdn %q using seed nameservers [%s]", fqdn, strings.Join(nameservers, ", "))
 	zone, err := FindZoneByFqdn(fqdn, nameservers)
 	if err != nil {
-		return nil, fmt.Errorf("Could not determine the zone: %v", err)
+		return nil, fmt.Errorf("Could not determine the zone for %q: %v", fqdn, err)
 	}
 
 	r, err := dnsQuery(zone, dns.TypeNS, nameservers, true)
@@ -175,9 +228,10 @@ func lookupNameservers(fqdn string, nameservers []string) ([]string, error) {
 	}
 
 	if len(authoritativeNss) > 0 {
+		glog.V(6).Infof("Returning authoritative nameservers [%s]", strings.Join(authoritativeNss, ", "))
 		return authoritativeNss, nil
 	}
-	return nil, fmt.Errorf("Could not determine authoritative nameservers")
+	return nil, fmt.Errorf("Could not determine authoritative nameservers for %q", fqdn)
 }
 
 // FindZoneByFqdn determines the zone apex for the given fqdn by recursing up the
@@ -185,6 +239,7 @@ func lookupNameservers(fqdn string, nameservers []string) ([]string, error) {
 func FindZoneByFqdn(fqdn string, nameservers []string) (string, error) {
 	// Do we have it cached?
 	if zone, ok := fqdnToZone[fqdn]; ok {
+		glog.V(6).Infof("Returning cached zone record %q for fqdn %q", zone, fqdn)
 		return zone, nil
 	}
 
@@ -216,6 +271,7 @@ func FindZoneByFqdn(fqdn string, nameservers []string) (string, error) {
 				if soa, ok := ans.(*dns.SOA); ok {
 					zone := soa.Hdr.Name
 					fqdnToZone[fqdn] = zone
+					glog.V(6).Infof("Returning discovered zone record %q for fqdn %q", zone, fqdn)
 					return zone, nil
 				}
 			}
