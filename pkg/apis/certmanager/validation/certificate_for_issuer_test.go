@@ -83,10 +83,10 @@ func TestValidateCertificateForIssuer(t *testing.T) {
 				Namespace: defaultTestNamespace,
 			}),
 			errs: []*field.Error{
-				field.Invalid(fldPath.Child("keyAlgorithm"), v1alpha1.KeyAlgorithm("blah"), "ACME key algorithm must be RSA"),
+				field.Invalid(fldPath.Child("keyAlgorithm"), v1alpha1.KeyAlgorithm("blah"), "ACME key algorithm must be RSA or ECDSA"),
 			},
 		},
-		"certificate with correct keyAlgorithm for ACME": {
+		"certificate with RSA keyAlgorithm for ACME": {
 			crt: &v1alpha1.Certificate{
 				Spec: v1alpha1.CertificateSpec{
 					KeyAlgorithm: v1alpha1.RSAKeyAlgorithm,
@@ -108,7 +108,7 @@ func TestValidateCertificateForIssuer(t *testing.T) {
 				Namespace: defaultTestNamespace,
 			}),
 		},
-		"certificate with incorrect keyAlgorithm for ACME": {
+		"certificate with ECDSA keyAlgorithm for ACME": {
 			crt: &v1alpha1.Certificate{
 				Spec: v1alpha1.CertificateSpec{
 					KeyAlgorithm: v1alpha1.ECDSAKeyAlgorithm,
@@ -129,9 +129,6 @@ func TestValidateCertificateForIssuer(t *testing.T) {
 				Name:      defaultTestIssuerName,
 				Namespace: defaultTestNamespace,
 			}),
-			errs: []*field.Error{
-				field.Invalid(fldPath.Child("keyAlgorithm"), v1alpha1.ECDSAKeyAlgorithm, "ACME key algorithm must be RSA"),
-			},
 		},
 		"acme certificate with organization set": {
 			crt: &v1alpha1.Certificate{
