@@ -149,28 +149,24 @@ var _ = framework.CertManagerDescribe("Vault Issuer", func() {
 			inputRenewBefore: 0,
 			expectedDuration: time.Hour * 24 * 35,
 			label:            "valid for 35 days",
-			event:            "",
 		},
 		{
 			inputDuration:    0,
 			inputRenewBefore: 0,
 			expectedDuration: time.Hour * 24 * 90,
 			label:            "valid for the default value (90 days)",
-			event:            "",
 		},
 		{
 			inputDuration:    time.Hour * 24 * 365,
 			inputRenewBefore: 0,
 			expectedDuration: time.Hour * 24 * 90,
 			label:            "with Vault configured maximum TTL duration (90 days) when requested duration is greater than TTL",
-			event:            "WarnCertificateDuration",
 		},
 		{
 			inputDuration:    time.Hour * 24 * 240,
 			inputRenewBefore: time.Hour * 24 * 120,
 			expectedDuration: time.Hour * 24 * 90,
 			label:            "with a warning event when renewBefore is bigger than the duration",
-			event:            "WarnScheduleModified",
 		},
 	}
 
@@ -201,10 +197,6 @@ var _ = framework.CertManagerDescribe("Vault Issuer", func() {
 
 			// Vault substract 30 seconds to the NotBefore date.
 			f.CertificateDurationValid(cert, v.expectedDuration+(30*time.Second))
-
-			if v.event != "" {
-				f.WaitForCertificateEvent(cert, v.event)
-			}
 		})
 	}
 })
@@ -280,35 +272,30 @@ var _ = framework.CertManagerDescribe("Vault Certificate (AppRole with a custom 
 		inputRenewBefore time.Duration
 		expectedDuration time.Duration
 		label            string
-		event            string
 	}{
 		{
 			inputDuration:    time.Hour * 24 * 35,
 			inputRenewBefore: 0,
 			expectedDuration: time.Hour * 24 * 35,
 			label:            "valid for 35 days",
-			event:            "",
 		},
 		{
 			inputDuration:    0,
 			inputRenewBefore: 0,
 			expectedDuration: time.Hour * 24 * 90,
 			label:            "valid for the default value (90 days)",
-			event:            "",
 		},
 		{
 			inputDuration:    time.Hour * 24 * 365,
 			inputRenewBefore: 0,
 			expectedDuration: time.Hour * 24 * 90,
 			label:            "with Vault configured maximum TTL duration (90 days) when requested duration is greater than TTL",
-			event:            "WarnCertificateDuration",
 		},
 		{
 			inputDuration:    time.Hour * 24 * 240,
 			inputRenewBefore: time.Hour * 24 * 120,
 			expectedDuration: time.Hour * 24 * 90,
 			label:            "with a warning event when renewBefore is bigger than the duration",
-			event:            "WarnScheduleModified",
 		},
 	}
 
@@ -339,10 +326,6 @@ var _ = framework.CertManagerDescribe("Vault Certificate (AppRole with a custom 
 
 			// Vault substract 30 seconds to the NotBefore date.
 			f.CertificateDurationValid(cert, v.expectedDuration+(30*time.Second))
-
-			if v.event != "" {
-				f.WaitForCertificateEvent(cert, v.event)
-			}
 		})
 	}
 })
