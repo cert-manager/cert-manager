@@ -216,7 +216,6 @@ func (v *Vault) requestTokenWithAppRoleRef(client *vault.Client, appRole *v1alph
 	return token, nil
 }
 
-
 func (v *Vault) requestVaultCert(commonName string, certDuration time.Duration, altNames []string, csr []byte) ([]byte, []byte, error) {
 	client, err := v.initVaultClient()
 	if err != nil {

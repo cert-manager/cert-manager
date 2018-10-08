@@ -68,7 +68,6 @@ const (
 	messageScheduleModified    = "Certificate renewal duration was changed to fit inside the received certificate validity duration from issuer."
 )
 
-
 const (
 	TLSCAKey = "ca.crt"
 )
