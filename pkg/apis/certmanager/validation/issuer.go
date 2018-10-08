@@ -129,20 +129,20 @@ func ValidateVaultIssuerConfig(iss *v1alpha1.VaultIssuer, fldPath *field.Path) f
 func ValidateACMEIssuerHTTP01Config(iss *v1alpha1.ACMEIssuerHTTP01Config, fldPath *field.Path) field.ErrorList {
 	el := field.ErrorList{}
 
-	if len(iss.SolverServiceType) > 0 {
+	if len(iss.ServiceType) > 0 {
 		validTypes := []corev1.ServiceType{
 			corev1.ServiceTypeClusterIP,
 			corev1.ServiceTypeNodePort,
 		}
 		validType := false
 		for _, validTypeName := range validTypes {
-			if iss.SolverServiceType == validTypeName {
+			if iss.ServiceType == validTypeName {
 				validType = true
 				break
 			}
 		}
 		if !validType {
-			el = append(el, field.Invalid(fldPath.Child("solverServiceType"), iss.SolverServiceType, fmt.Sprintf("optional field solverServiceType must be one of %q", validTypes)))
+			el = append(el, field.Invalid(fldPath.Child("serviceType"), iss.ServiceType, fmt.Sprintf("optional field serviceType must be one of %q", validTypes)))
 		}
 	}
 

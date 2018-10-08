@@ -137,7 +137,7 @@ type ACMEIssuer struct {
 
 // ACMEIssuerHTTP01Config is a structure containing the ACME HTTP configuration options
 type ACMEIssuerHTTP01Config struct {
-	SolverServiceType corev1.ServiceType `json:"solverServiceType,omitempty"`
+	ServiceType corev1.ServiceType `json:"serviceType,omitempty"`
 }
 
 // ACMEIssuerDNS01Config is a structure containing the ACME DNS configuration

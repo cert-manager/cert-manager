@@ -113,11 +113,10 @@ func buildService(issuer v1alpha1.GenericIssuer, crt *v1alpha1.Certificate, ch v
 		},
 	}
 
-	// http01 config is still optional, thus checking for presence and setting previous default
-	if issuer.GetSpec().ACME.HTTP01 == nil {
-		service.Spec.Type = corev1.ServiceTypeNodePort //TODO drop this line in future to use Kubernetes' default
-	} else if issuer.GetSpec().ACME.HTTP01.SolverServiceType != "" {
-		service.Spec.Type = issuer.GetSpec().ACME.HTTP01.SolverServiceType
+	// checking for presence of http01 config and if set serviceType is set, override our default (NodePort)
+	service.Spec.Type = corev1.ServiceTypeNodePort
+	if issuer.GetSpec().ACME.HTTP01 != nil && issuer.GetSpec().ACME.HTTP01.ServiceType != "" {
+		service.Spec.Type = issuer.GetSpec().ACME.HTTP01.ServiceType
 	}
 
 	return service
