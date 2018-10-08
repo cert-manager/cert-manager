@@ -61,32 +61,7 @@ func TestValidateCertificateForIssuer(t *testing.T) {
 				Namespace: defaultTestNamespace,
 			}),
 		},
-		"certificate with invalid keyAlgorithm": {
-			crt: &v1alpha1.Certificate{
-				Spec: v1alpha1.CertificateSpec{
-					KeyAlgorithm: v1alpha1.KeyAlgorithm("blah"),
-					IssuerRef:    validIssuerRef,
-					ACME: &v1alpha1.ACMECertificateConfig{
-						Config: []v1alpha1.DomainSolverConfig{
-							{
-								Domains: []string{"example.com"},
-								SolverConfig: v1alpha1.SolverConfig{
-									HTTP01: &v1alpha1.HTTP01SolverConfig{},
-								},
-							},
-						},
-					},
-				},
-			},
-			issuer: generate.Issuer(generate.IssuerConfig{
-				Name:      defaultTestIssuerName,
-				Namespace: defaultTestNamespace,
-			}),
-			errs: []*field.Error{
-				field.Invalid(fldPath.Child("keyAlgorithm"), v1alpha1.KeyAlgorithm("blah"), "ACME key algorithm must be RSA"),
-			},
-		},
-		"certificate with correct keyAlgorithm for ACME": {
+		"certificate with RSA keyAlgorithm for ACME": {
 			crt: &v1alpha1.Certificate{
 				Spec: v1alpha1.CertificateSpec{
 					KeyAlgorithm: v1alpha1.RSAKeyAlgorithm,
@@ -108,7 +83,7 @@ func TestValidateCertificateForIssuer(t *testing.T) {
 				Namespace: defaultTestNamespace,
 			}),
 		},
-		"certificate with incorrect keyAlgorithm for ACME": {
+		"certificate with ECDSA keyAlgorithm for ACME": {
 			crt: &v1alpha1.Certificate{
 				Spec: v1alpha1.CertificateSpec{
 					KeyAlgorithm: v1alpha1.ECDSAKeyAlgorithm,
@@ -129,9 +104,6 @@ func TestValidateCertificateForIssuer(t *testing.T) {
 				Name:      defaultTestIssuerName,
 				Namespace: defaultTestNamespace,
 			}),
-			errs: []*field.Error{
-				field.Invalid(fldPath.Child("keyAlgorithm"), v1alpha1.ECDSAKeyAlgorithm, "ACME key algorithm must be RSA"),
-			},
 		},
 		"acme certificate with organization set": {
 			crt: &v1alpha1.Certificate{
