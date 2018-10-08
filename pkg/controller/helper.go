@@ -91,6 +91,10 @@ func (o IssuerOptions) CanUseAmbientCredentials(iss cmapi.GenericIssuer) bool {
 }
 
 func (o IssuerOptions) CertificateNeedsRenew(cert *x509.Certificate, renewBefore time.Duration) bool {
+	if renewBefore == 0 {
+		renewBefore = o.RenewBeforeExpiryDuration
+	}
+
 	// calculate the amount of time until expiry
 	durationUntilExpiry := cert.NotAfter.Sub(time.Now())
 	// calculate how long until we should start attempting to renew the
