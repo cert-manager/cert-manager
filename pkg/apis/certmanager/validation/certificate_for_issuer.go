@@ -51,10 +51,6 @@ func ValidateCertificateForIssuer(crt *v1alpha1.Certificate, issuerObj v1alpha1.
 func ValidateCertificateForACMEIssuer(crt *v1alpha1.CertificateSpec, issuer *v1alpha1.IssuerSpec, specPath *field.Path) field.ErrorList {
 	el := field.ErrorList{}
 
-	if crt.KeyAlgorithm != v1alpha1.KeyAlgorithm("") && crt.KeyAlgorithm != v1alpha1.RSAKeyAlgorithm && crt.KeyAlgorithm != v1alpha1.ECDSAKeyAlgorithm {
-		el = append(el, field.Invalid(specPath.Child("keyAlgorithm"), crt.KeyAlgorithm, "ACME key algorithm must be RSA or ECDSA"))
-	}
-
 	if crt.IsCA {
 		el = append(el, field.Invalid(specPath.Child("isCA"), crt.KeyAlgorithm, "ACME does not support CA certificates"))
 	}
