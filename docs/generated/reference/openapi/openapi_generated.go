@@ -407,7 +407,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 				SchemaProps: spec.SchemaProps{
 					Description: "ACMEIssuerHTTP01Config is a structure containing the ACME HTTP configuration options",
 					Properties: map[string]spec.Schema{
-						"solverServiceType": {
+						"serviceType": {
 							SchemaProps: spec.SchemaProps{
 								Type:   []string{"string"},
 								Format: "",

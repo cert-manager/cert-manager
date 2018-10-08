@@ -33,7 +33,7 @@ In rare cases it might be not possible/desired to use NodePort as type for the h
          # Valid values are ClusterIP and NodePort
          serviceType: ClusterIP
 
-By default type NodePort will be used when you don't set http01 or when you set solverServiceType to an empty string. Normally there's no need to change this.
+By default type NodePort will be used when you don't set http01 or when you set serviceType to an empty string. Normally there's no need to change this.
 
 .. note::
    Let's Encrypt does not support issuing wildcard certificates with HTTP-01 challenges.
