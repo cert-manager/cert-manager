@@ -235,7 +235,7 @@ func WaitCertificateIssuedValid(certClient clientset.CertificateInterface, secre
 
 				return false, err
 			}
-			if len(secret.Data) != 2 {
+			if !(len(secret.Data) == 2 || len(secret.Data) == 3) {
 				glog.Infof("Expected 2 keys in certificate secret, but there was %d", len(secret.Data))
 				return false, nil
 			}

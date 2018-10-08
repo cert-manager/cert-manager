@@ -185,6 +185,16 @@ func EncodeCSR(template *x509.CertificateRequest, key interface{}) ([]byte, erro
 	return derBytes, nil
 }
 
+func EncodeX509(cert *x509.Certificate) ([]byte, error) {
+	caPem := bytes.NewBuffer([]byte{})
+	err := pem.Encode(caPem, &pem.Block{Type: "CERTIFICATE", Bytes: cert.Raw})
+	if err != nil {
+		return nil, err
+	}
+
+	return caPem.Bytes(), nil
+}
+
 // Return the appropriate signature algorithm for the certificate
 // Adapted from https://github.com/cloudflare/cfssl/blob/master/csr/csr.go#L102
 func SignatureAlgorithm(crt *v1alpha1.Certificate) (x509.SignatureAlgorithm, error) {

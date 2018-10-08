@@ -34,21 +34,26 @@ const (
 	messageCertRenewed = "Certificate issued successfully"
 )
 
-func (c *CA) Renew(ctx context.Context, crt *v1alpha1.Certificate) ([]byte, []byte, error) {
+func (c *CA) Renew(ctx context.Context, crt *v1alpha1.Certificate) ([]byte, []byte, []byte, error) {
 	signeeKey, err := kube.SecretTLSKey(c.secretsLister, crt.Namespace, crt.Spec.SecretName)
 
 	if err != nil {
 		s := messageErrorGetCertKeyPair + err.Error()
 		crt.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse, errorGetCertKeyPair, s, false)
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 
-	certPem, err := c.obtainCertificate(crt, signeeKey)
+	caCert, err := kube.SecretTLSCert(c.secretsLister, c.resourceNamespace, c.issuer.GetSpec().CA.SecretName)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	certPem, err := c.obtainCertificate(crt, signeeKey, caCert)
 
 	if err != nil {
 		s := messageErrorRenewCert + err.Error()
 		crt.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse, errorRenewCert, s, false)
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 
 	crt.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionTrue, successCertRenewed, messageCertRenewed, true)
@@ -57,8 +62,13 @@ func (c *CA) Renew(ctx context.Context, crt *v1alpha1.Certificate) ([]byte, []by
 	if err != nil {
 		s := messageErrorEncodePrivateKey + err.Error()
 		crt.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse, errorEncodePrivateKey, s, false)
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 
-	return keyPem, certPem, nil
+	caPem, err := pki.EncodeX509(caCert)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	return keyPem, certPem, caPem, nil
 }

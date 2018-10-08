@@ -48,60 +48,60 @@ const (
 	defaultCertificateDuration = time.Hour * 24 * 90
 )
 
-func (v *Vault) Issue(ctx context.Context, crt *v1alpha1.Certificate) ([]byte, []byte, error) {
-	key, certPem, err := v.obtainCertificate(ctx, crt)
+func (v *Vault) Issue(ctx context.Context, crt *v1alpha1.Certificate) ([]byte, []byte, []byte, error) {
+	key, certPem, caPem, err := v.obtainCertificate(ctx, crt)
 	if err != nil {
 		s := messageErrorIssueCert + err.Error()
 		crt.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse, errorIssueCert, s, false)
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 
 	crt.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionTrue, successCertIssued, messageCertIssued, true)
 
-	return key, certPem, nil
+	return key, certPem, caPem, nil
 }
 
-func (v *Vault) obtainCertificate(ctx context.Context, crt *v1alpha1.Certificate) ([]byte, []byte, error) {
+func (v *Vault) obtainCertificate(ctx context.Context, crt *v1alpha1.Certificate) ([]byte, []byte, []byte, error) {
 	// get existing certificate private key
 	signeeKey, err := kube.SecretTLSKey(v.secretsLister, crt.Namespace, crt.Spec.SecretName)
 	if k8sErrors.IsNotFound(err) || errors.IsInvalidData(err) {
 		signeeKey, err = pki.GeneratePrivateKeyForCertificate(crt)
 		if err != nil {
-			return nil, nil, fmt.Errorf("error generating private key: %s", err.Error())
+			return nil, nil, nil, fmt.Errorf("error generating private key: %s", err.Error())
 		}
 	}
 
 	if err != nil {
-		return nil, nil, fmt.Errorf("error getting certificate private key: %s", err.Error())
+		return nil, nil, nil, fmt.Errorf("error getting certificate private key: %s", err.Error())
 	}
 
 	template, err := pki.GenerateCSR(v.issuer, crt)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 
 	derBytes, err := pki.EncodeCSR(template, signeeKey)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 
 	pemRequestBuf := &bytes.Buffer{}
 	err = pem.Encode(pemRequestBuf, &pem.Block{Type: "CERTIFICATE REQUEST", Bytes: derBytes})
 	if err != nil {
-		return nil, nil, fmt.Errorf("error encoding certificate request: %s", err.Error())
+		return nil, nil, nil, fmt.Errorf("error encoding certificate request: %s", err.Error())
 	}
 
-	crtBytes, err := v.requestVaultCert(template.Subject.CommonName, template.DNSNames, pemRequestBuf.Bytes())
+	crtBytes, caBytes, err := v.requestVaultCert(template.Subject.CommonName, template.DNSNames, pemRequestBuf.Bytes())
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 
 	keyBytes, err := pki.EncodePrivateKey(signeeKey)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 
-	return keyBytes, crtBytes, nil
+	return keyBytes, crtBytes, caBytes, nil
 }
 
 func (v *Vault) initVaultClient() (*vault.Client, error) {
@@ -183,10 +183,10 @@ func (v *Vault) requestTokenWithAppRoleRef(client *vault.Client, appRole *v1alph
 	return token, nil
 }
 
-func (v *Vault) requestVaultCert(commonName string, altNames []string, csr []byte) ([]byte, error) {
+func (v *Vault) requestVaultCert(commonName string, altNames []string, csr []byte) ([]byte, []byte, error) {
 	client, err := v.initVaultClient()
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	glog.V(4).Infof("Vault certificate request for commonName %s altNames: %q", commonName, altNames)
@@ -205,12 +205,12 @@ func (v *Vault) requestVaultCert(commonName string, altNames []string, csr []byt
 
 	err = request.SetJSONBody(parameters)
 	if err != nil {
-		return nil, fmt.Errorf("error encoding Vault parameters: %s", err.Error())
+		return nil, nil, fmt.Errorf("error encoding Vault parameters: %s", err.Error())
 	}
 
 	resp, err := client.RawRequest(request)
 	if err != nil {
-		return nil, fmt.Errorf("error signing certificate in Vault: %s", err.Error())
+		return nil, nil, fmt.Errorf("error signing certificate in Vault: %s", err.Error())
 	}
 
 	defer resp.Body.Close()
@@ -218,20 +218,25 @@ func (v *Vault) requestVaultCert(commonName string, altNames []string, csr []byt
 	vaultResult := certutil.Secret{}
 	resp.DecodeJSON(&vaultResult)
 	if err != nil {
-		return nil, fmt.Errorf("unable to decode JSON payload: %s", err.Error())
+		return nil, nil, fmt.Errorf("unable to decode JSON payload: %s", err.Error())
 	}
 
 	parsedBundle, err := certutil.ParsePKIMap(vaultResult.Data)
 	if err != nil {
-		return nil, fmt.Errorf("unable to parse certificate: %s", err.Error())
+		return nil, nil, fmt.Errorf("unable to parse certificate: %s", err.Error())
 	}
 
 	bundle, err := parsedBundle.ToCertBundle()
 	if err != nil {
-		return nil, fmt.Errorf("unable to convert certificate bundle to PEM bundle: %s", err.Error())
+		return nil, nil, fmt.Errorf("unable to convert certificate bundle to PEM bundle: %s", err.Error())
 	}
 
-	return []byte(bundle.ToPEMBundle()), nil
+	var caPem []byte = nil
+	if len(bundle.CAChain) > 0 {
+		caPem = []byte(bundle.CAChain[0])
+	}
+
+	return []byte(bundle.ToPEMBundle()), caPem, nil
 }
 
 func (v *Vault) appRoleRef(appRole *v1alpha1.VaultAppRole) (roleId, secretId string, err error) {
