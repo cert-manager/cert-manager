@@ -368,7 +368,7 @@ func (c *Controller) calculateTimeBeforeExpiry(cert *x509.Certificate, crt *v1al
 	if certDuration < crt.Spec.Duration.Duration {
 		s := fmt.Sprintf(messageCertificateDuration, certDuration, crt.Spec.Duration.Duration)
 		glog.Info(s)
-		c.Recorder.Event(crt, api.EventTypeNormal, infoCertificateDuration, s)
+		// TODO Use the message as the reason in a 'renewal status' condition
 	}
 	// renew is the duration before the certificate expiration that cert-manager
 	// will start to try renewing the certificate.
@@ -381,7 +381,7 @@ func (c *Controller) calculateTimeBeforeExpiry(cert *x509.Certificate, crt *v1al
 	// before (certificate duration / 3) of its expiration duration.
 	if renew > certDuration {
 		glog.Info(messageScheduleModified)
-		c.Recorder.Event(crt, api.EventTypeNormal, infoScheduleModified, messageScheduleModified)
+		// TODO Use the message as the reason in a 'renewal status' condition
 		// We will renew 1/3 before the expiration date.
 		renew = certDuration / 3
 	}
