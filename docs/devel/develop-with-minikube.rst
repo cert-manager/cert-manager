@@ -35,12 +35,21 @@ Install local development tools
 
 You will need the following tools to build cert-manager:
 
-* `Bazel <https://docs.bazel.build/versions/master/install.html>`
-* `Docker <https://store.docker.com/search?type=edition&offering=community>` (and enable for non-root user)
+* Go_ (You may need a newer version than ships with your distro)
+* Bazel_
+* Docker_ (and enable for non-root user)
 
 These instructions have only been tested on Linux; Windows and MacOS may
 require further changes.
 
+If you need to add dependencies, you will additionally need:
+
+* Dep_
+* Gazelle_
+* Kazel_
+* Buildozer_
+* Git_
+* Mercurial_
 
 Build a dev version of cert-manager
 ===================================
@@ -84,3 +93,14 @@ However, if you make changes to the helm chart or wish to change the controller'
         --set extraArgs="{-v=5}"
         --set image.tag=build
         ./contrib/charts/cert-manager
+
+
+.. _Go: https://golang.org/
+.. _Bazel: https://docs.bazel.build/versions/master/install.html
+.. _Docker: https://store.docker.com/search?type=edition&offering=community
+.. _Dep: https://github.com/golang/dep
+.. _Gazelle: https://github.com/bazelbuild/bazel-gazelle
+.. _Kazel: https://github.com/kubernetes/repo-infra/tree/master/kazel
+.. _Buildozer: https://github.com/bazelbuild/buildtools/tree/master/buildozer
+.. _Git: https://git-scm.com/downloads
+.. _Mercurial: https://www.mercurial-scm.org/
