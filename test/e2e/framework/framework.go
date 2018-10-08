@@ -179,9 +179,6 @@ func (f *Framework) CertificateDurationValid(c *v1alpha1.Certificate, duration t
 	By("Verifying TLS certificate exists")
 	secret, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Get(c.Spec.SecretName, metav1.GetOptions{})
 	Expect(err).NotTo(HaveOccurred())
-	if len(secret.Data) != 2 {
-		Failf("Expected 2 keys in certificate secret, but there was %d", len(secret.Data))
-	}
 	certBytes, ok := secret.Data[api.TLSCertKey]
 	if !ok {
 		Failf("No certificate data found for Certificate %q", c.Name)
