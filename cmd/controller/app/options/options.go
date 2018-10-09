@@ -44,6 +44,7 @@ type ControllerOptions struct {
 	EnabledControllers []string
 
 	ACMEHTTP01SolverImage string
+	ACMEHTTP01SolverNamespace string
 
 	ClusterIssuerAmbientCredentials bool
 	IssuerAmbientCredentials        bool
@@ -77,6 +78,8 @@ const (
 	defaultTLSACMEIssuerKind           = "Issuer"
 	defaultACMEIssuerChallengeType     = "http01"
 	defaultACMEIssuerDNS01ProviderName = ""
+
+	defaultACMEHTTP01SolverNamespace   = ""
 )
 
 var (
@@ -143,6 +146,9 @@ func (s *ControllerOptions) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVar(&s.ACMEHTTP01SolverImage, "acme-http01-solver-image", defaultACMEHTTP01SolverImage, ""+
 		"The docker image to use to solve ACME HTTP01 challenges. You most likely will not "+
 		"need to change this parameter unless you are testing a new feature or developing cert-manager.")
+	fs.StringVar(&s.ACMEHTTP01SolverNamespace, "acme-http01-solver-namespace", defaultACMEHTTP01SolverNamespace, ""+
+		"The namespace to use for start ACME HTTP01 Solver pod. By default, it will use the same namespace "+
+		"as the related ingress resource.")
 
 	fs.BoolVar(&s.ClusterIssuerAmbientCredentials, "cluster-issuer-ambient-credentials", defaultClusterIssuerAmbientCredentials, ""+
 		"Whether a cluster-issuer may make use of ambient credentials for issuers. 'Ambient Credentials' are credentials drawn from the environment, metadata services, or local files which are not explicitly configured in the ClusterIssuer API object. "+

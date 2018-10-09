@@ -146,6 +146,7 @@ func buildControllerContext(opts *options.ControllerOptions) (*controller.Contex
 		ACMEOptions: controller.ACMEOptions{
 			HTTP01SolverImage: opts.ACMEHTTP01SolverImage,
 			DNS01Nameservers:  nameservers,
+			HTTP01SolverNamespace: opts.ACMEHTTP01SolverNamespace,
 		},
 		IssuerOptions: controller.IssuerOptions{
 			ClusterIssuerAmbientCredentials: opts.ClusterIssuerAmbientCredentials,

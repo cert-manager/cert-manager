@@ -83,6 +83,9 @@ type ACMEOptions struct {
 	// DNS01Nameservers is a list of nameservers to use when performing self-checks
 	// for ACME DNS01 validations.
 	DNS01Nameservers []string
+
+	// ACMEHTTP01SolverNamespace is the namespace where to start ACME HTTP01 Solver
+	HTTP01SolverNamespace string
 }
 
 type IngressShimOptions struct {
