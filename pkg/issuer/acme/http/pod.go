@@ -43,8 +43,8 @@ func podLabels(ch v1alpha1.ACMEOrderChallenge) map[string]string {
 	}
 }
 
-func (s *Solver) ensurePod(crt *v1alpha1.Certificate, ch v1alpha1.ACMEOrderChallenge) (*corev1.Pod, error) {
-	existingPods, err := s.getPodsForChallenge(crt, ch)
+func (s *Solver) ensurePod(crt *v1alpha1.Certificate, ch v1alpha1.ACMEOrderChallenge, namespace string) (*corev1.Pod, error) {
+	existingPods, err := s.getPodsForChallenge(crt, ch, namespace)
 	if err != nil {
 		return nil, err
 	}
@@ -52,22 +52,22 @@ func (s *Solver) ensurePod(crt *v1alpha1.Certificate, ch v1alpha1.ACMEOrderChall
 		return existingPods[0], nil
 	}
 	if len(existingPods) > 1 {
-		errMsg := fmt.Sprintf("multiple challenge solver pods found for certificate '%s/%s'. Cleaning up existing pods.", crt.Namespace, crt.Name)
+		errMsg := fmt.Sprintf("multiple challenge solver pods found for certificate '%s/%s'. Cleaning up existing pods.", namespace, crt.Name)
 		glog.Infof(errMsg)
-		err := s.cleanupPods(crt, ch)
+		err := s.cleanupPods(crt, ch, namespace)
 		if err != nil {
 			return nil, err
 		}
 		return nil, fmt.Errorf(errMsg)
 	}
 
-	glog.Infof("No existing HTTP01 challenge solver pod found for Certificate %q. One will be created.", crt.Namespace+"/"+crt.Name)
-	return s.createPod(crt, ch)
+	glog.Infof("No existing HTTP01 challenge solver pod found for Certificate %q. One will be created.", namespace+"/"+crt.Name)
+	return s.createPod(crt, ch, namespace)
 }
 
 // getPodsForChallenge returns a list of pods that were created to solve
 // the given challenge
-func (s *Solver) getPodsForChallenge(crt *v1alpha1.Certificate, ch v1alpha1.ACMEOrderChallenge) ([]*corev1.Pod, error) {
+func (s *Solver) getPodsForChallenge(crt *v1alpha1.Certificate, ch v1alpha1.ACMEOrderChallenge, namespace string) ([]*corev1.Pod, error) {
 	podLabels := podLabels(ch)
 	orderSelector := labels.NewSelector()
 	for key, val := range podLabels {
@@ -78,7 +78,7 @@ func (s *Solver) getPodsForChallenge(crt *v1alpha1.Certificate, ch v1alpha1.ACME
 		orderSelector = orderSelector.Add(*req)
 	}
 
-	podList, err := s.podLister.Pods(crt.Namespace).List(orderSelector)
+	podList, err := s.podLister.Pods(namespace).List(orderSelector)
 	if err != nil {
 		return nil, err
 	}
@@ -87,7 +87,7 @@ func (s *Solver) getPodsForChallenge(crt *v1alpha1.Certificate, ch v1alpha1.ACME
 	for _, pod := range podList {
 		if !metav1.IsControlledBy(pod, crt) {
 			glog.Infof("Found pod %q with acme-order-url annotation set to that of Certificate %q"+
-				"but it is not owned by the Certificate resource, so skipping it.", pod.Namespace+"/"+pod.Name, crt.Namespace+"/"+crt.Name)
+				"but it is not owned by the Certificate resource, so skipping it.", pod.Namespace+"/"+pod.Name, namespace+"/"+crt.Name)
 			continue
 		}
 		relevantPods = append(relevantPods, pod)
@@ -96,8 +96,8 @@ func (s *Solver) getPodsForChallenge(crt *v1alpha1.Certificate, ch v1alpha1.ACME
 	return relevantPods, nil
 }
 
-func (s *Solver) cleanupPods(crt *v1alpha1.Certificate, ch v1alpha1.ACMEOrderChallenge) error {
-	pods, err := s.getPodsForChallenge(crt, ch)
+func (s *Solver) cleanupPods(crt *v1alpha1.Certificate, ch v1alpha1.ACMEOrderChallenge, namespace string) error {
+	pods, err := s.getPodsForChallenge(crt, ch, namespace)
 	if err != nil {
 		return err
 	}
@@ -115,18 +115,18 @@ func (s *Solver) cleanupPods(crt *v1alpha1.Certificate, ch v1alpha1.ACMEOrderCha
 
 // createPod will create a challenge solving pod for the given certificate,
 // domain, token and key.
-func (s *Solver) createPod(crt *v1alpha1.Certificate, ch v1alpha1.ACMEOrderChallenge) (*corev1.Pod, error) {
-	return s.Client.CoreV1().Pods(crt.Namespace).Create(s.buildPod(crt, ch))
+func (s *Solver) createPod(crt *v1alpha1.Certificate, ch v1alpha1.ACMEOrderChallenge, namespace string) (*corev1.Pod, error) {
+	return s.Client.CoreV1().Pods(namespace).Create(s.buildPod(crt, ch, namespace))
 }
 
 // buildPod will build a challenge solving pod for the given certificate,
 // domain, token and key. It will not create it in the API server
-func (s *Solver) buildPod(crt *v1alpha1.Certificate, ch v1alpha1.ACMEOrderChallenge) *corev1.Pod {
+func (s *Solver) buildPod(crt *v1alpha1.Certificate, ch v1alpha1.ACMEOrderChallenge, namespace string) *corev1.Pod {
 	podLabels := podLabels(ch)
 	return &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "cm-acme-http-solver-",
-			Namespace:    crt.Namespace,
+			Namespace:    namespace,
 			Labels:       podLabels,
 			Annotations: map[string]string{
 				"sidecar.istio.io/inject": "false",

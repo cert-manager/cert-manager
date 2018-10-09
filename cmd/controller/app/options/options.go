@@ -48,6 +48,7 @@ type ControllerOptions struct {
 	ACMEHTTP01SolverResourceRequestMemory string
 	ACMEHTTP01SolverResourceLimitsCPU     string
 	ACMEHTTP01SolverResourceLimitsMemory  string
+	ACMEHTTP01SolverNamespace             string
 
 	ClusterIssuerAmbientCredentials bool
 	IssuerAmbientCredentials        bool
@@ -81,14 +82,16 @@ const (
 	defaultTLSACMEIssuerKind           = "Issuer"
 	defaultACMEIssuerChallengeType     = "http01"
 	defaultACMEIssuerDNS01ProviderName = ""
-)
 
-var (
-	defaultACMEHTTP01SolverImage                 = fmt.Sprintf("quay.io/jetstack/cert-manager-acmesolver:%s", util.AppVersion)
 	defaultACMEHTTP01SolverResourceRequestCPU    = "10m"
 	defaultACMEHTTP01SolverResourceRequestMemory = "64Mi"
 	defaultACMEHTTP01SolverResourceLimitsCPU     = "10m"
 	defaultACMEHTTP01SolverResourceLimitsMemory  = "64Mi"
+	defaultACMEHTTP01SolverNamespace             = ""
+)
+
+var (
+	defaultACMEHTTP01SolverImage                 = fmt.Sprintf("quay.io/jetstack/cert-manager-acmesolver:%s", util.AppVersion)
 
 	defaultEnabledControllers = []string{
 		issuerscontroller.ControllerName,
@@ -163,6 +166,9 @@ func (s *ControllerOptions) AddFlags(fs *pflag.FlagSet) {
 
 	fs.StringVar(&s.ACMEHTTP01SolverResourceLimitsMemory, "acme-http01-solver-resource-limits-memory", defaultACMEHTTP01SolverResourceLimitsMemory, ""+
 		"Defines the resource limits Memory size when spawning new ACME HTTP01 challenge solver pods.")
+	fs.StringVar(&s.ACMEHTTP01SolverNamespace, "acme-http01-solver-namespace", defaultACMEHTTP01SolverNamespace, ""+
+		"The namespace to use for start ACME HTTP01 Solver pod. By default, it will use the same namespace "+
+		"as the related ingress resource.")
 
 	fs.BoolVar(&s.ClusterIssuerAmbientCredentials, "cluster-issuer-ambient-credentials", defaultClusterIssuerAmbientCredentials, ""+
 		"Whether a cluster-issuer may make use of ambient credentials for issuers. 'Ambient Credentials' are credentials drawn from the environment, metadata services, or local files which are not explicitly configured in the ClusterIssuer API object. "+

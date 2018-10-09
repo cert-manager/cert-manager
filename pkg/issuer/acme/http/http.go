@@ -80,12 +80,13 @@ func NewSolver(ctx *controller.Context) *Solver {
 // challenge validation in the apiserver. If those resources already exist, it
 // will return nil (i.e. this function is idempotent).
 func (s *Solver) Present(ctx context.Context, issuer v1alpha1.GenericIssuer, crt *v1alpha1.Certificate, ch v1alpha1.ACMEOrderChallenge) error {
-	_, podErr := s.ensurePod(crt, ch)
-	svc, svcErr := s.ensureService(issuer, crt, ch)
+	ns := namespace(crt, s)
+	_, podErr := s.ensurePod(crt, ch, ns)
+	svc, svcErr := s.ensureService(issuer, crt, ch, ns)
 	if svcErr != nil {
 		return utilerrors.NewAggregate([]error{podErr, svcErr})
 	}
-	_, ingressErr := s.ensureIngress(crt, svc.Name, ch)
+	_, ingressErr := s.ensureIngress(crt, svc.Name, ch, ns)
 	return utilerrors.NewAggregate([]error{podErr, svcErr, ingressErr})
 }
 
@@ -109,9 +110,10 @@ func (s *Solver) Check(ch v1alpha1.ACMEOrderChallenge) (bool, error) {
 // cert-manager created data.
 func (s *Solver) CleanUp(ctx context.Context, issuer v1alpha1.GenericIssuer, crt *v1alpha1.Certificate, ch v1alpha1.ACMEOrderChallenge) error {
 	var errs []error
-	errs = append(errs, s.cleanupPods(crt, ch))
-	errs = append(errs, s.cleanupServices(crt, ch))
-	errs = append(errs, s.cleanupIngresses(crt, ch))
+	ns := namespace(crt, s)
+	errs = append(errs, s.cleanupPods(crt, ch, ns))
+	errs = append(errs, s.cleanupServices(crt, ch, ns))
+	errs = append(errs, s.cleanupIngresses(crt, ch, ns))
 	return utilerrors.NewAggregate(errs)
 }
 
@@ -147,4 +149,11 @@ func testReachability(ctx context.Context, domain, path, key string) (bool, erro
 	}
 
 	return true, nil
+}
+
+func namespace(crt *v1alpha1.Certificate, s *Solver) string {
+	if s.ACMEOptions.HTTP01SolverNamespace == "" {
+		return crt.Namespace
+	}
+	return s.ACMEOptions.HTTP01SolverNamespace
 }
