@@ -3,7 +3,7 @@ Generating Documentation
 =====================
 
 The documentation uses `Sphinx`_ (via `Read The Docs`_) to generate markdown
- rom `reStructured Text`_.
+from `reStructured Text`_.
 
 Installation instructions
 =========================
