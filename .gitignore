@@ -6,3 +6,5 @@
 /hack/build/dockerfiles/cert-manager-*_*_*
 .vscode
 bazel-*
+/.settings/
+/.project

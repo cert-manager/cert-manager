@@ -25,6 +25,7 @@ import (
 	"fmt"
 	"math/big"
 	"time"
+	"net"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	"github.com/jetstack/cert-manager/pkg/util"
@@ -53,6 +54,14 @@ func DNSNamesForCertificate(crt *v1alpha1.Certificate) []string {
 	return crt.Spec.DNSNames
 }
 
+func IPAddressesForCertificate(crt *v1alpha1.Certificate) []net.IP {
+	var ipAddresses []net.IP
+	for _, ip := range crt.Spec.IPAddresses {
+		ipAddresses = append(ipAddresses, net.ParseIP(ip))
+	}
+	return ipAddresses	
+}
+
 const defaultOrganization = "cert-manager"
 
 func OrganizationForCertificate(crt *v1alpha1.Certificate) []string {
@@ -71,6 +80,7 @@ const defaultNotAfter = time.Hour * 24 * 365
 func GenerateCSR(issuer v1alpha1.GenericIssuer, crt *v1alpha1.Certificate) (*x509.CertificateRequest, error) {
 	commonName := CommonNameForCertificate(crt)
 	dnsNames := DNSNamesForCertificate(crt)
+	iPAddresses := IPAddressesForCertificate(crt)
 	organization := OrganizationForCertificate(crt)
 
 	if len(commonName) == 0 && len(dnsNames) == 0 {
@@ -90,6 +100,7 @@ func GenerateCSR(issuer v1alpha1.GenericIssuer, crt *v1alpha1.Certificate) (*x50
 			CommonName:   commonName,
 		},
 		DNSNames: dnsNames,
+		IPAddresses: iPAddresses,
 		// TODO: work out how best to handle extensions/key usages here
 		ExtraExtensions: []pkix.Extension{},
 	}, nil
@@ -102,6 +113,7 @@ func GenerateCSR(issuer v1alpha1.GenericIssuer, crt *v1alpha1.Certificate) (*x50
 func GenerateTemplate(issuer v1alpha1.GenericIssuer, crt *v1alpha1.Certificate, serialNo *big.Int) (*x509.Certificate, error) {
 	commonName := CommonNameForCertificate(crt)
 	dnsNames := DNSNamesForCertificate(crt)
+	iPAddresses := IPAddressesForCertificate(crt)
 	organization := OrganizationForCertificate(crt)
 
 	if len(commonName) == 0 && len(dnsNames) == 0 {
@@ -137,6 +149,7 @@ func GenerateTemplate(issuer v1alpha1.GenericIssuer, crt *v1alpha1.Certificate, 
 		// see http://golang.org/pkg/crypto/x509/#KeyUsage
 		KeyUsage: keyUsages,
 		DNSNames: dnsNames,
+		IPAddresses: iPAddresses,
 	}, nil
 }
 
