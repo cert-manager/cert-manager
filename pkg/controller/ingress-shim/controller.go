@@ -18,6 +18,7 @@ package controller
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"sync"
 	"time"
@@ -27,6 +28,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
+	corelisters "k8s.io/client-go/listers/core/v1"
 	extlisters "k8s.io/client-go/listers/extensions/v1beta1"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
@@ -38,11 +40,13 @@ import (
 	cmlisters "github.com/jetstack/cert-manager/pkg/client/listers/certmanager/v1alpha1"
 	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
 	"github.com/jetstack/cert-manager/pkg/util"
+	coreinformers "k8s.io/client-go/informers/core/v1"
 	extinformers "k8s.io/client-go/informers/extensions/v1beta1"
 )
 
 const (
-	ControllerName = "ingress-shim"
+	ControllerName                     = "ingress-shim"
+	IngressShimCertificateSpecRulesKey = "certificate-spec-rules"
 )
 
 type defaults struct {
@@ -63,11 +67,34 @@ type Controller struct {
 	certificateLister   cmlisters.CertificateLister
 	issuerLister        cmlisters.IssuerLister
 	clusterIssuerLister cmlisters.ClusterIssuerLister
+	configMapLister     corelisters.ConfigMapLister
 
 	queue       workqueue.RateLimitingInterface
 	workerWg    sync.WaitGroup
 	syncedFuncs []cache.InformerSynced
 	defaults    defaults
+
+	clusterResourceNamespace string
+	ingressShimConfig        IngressShimConfig
+}
+
+type IngressShimConfig struct {
+	CertificateSpecRules []IngressShimCertificateSpecRule
+}
+
+type IngressShimCertificateSpecRule struct {
+	Selector IngressShimIngressSelector `json:"selector"`
+	Spec     IngressShimCertificateSpec `json:"spec"`
+}
+
+type IngressShimIngressSelector struct {
+	MatchAll            bool     `json:"matchAll"`
+	MatchIngressClasses []string `json:"matchIngressClasses"`
+}
+
+type IngressShimCertificateSpec struct {
+	IssuerRef *cmv1alpha1.ObjectReference `json:"issuerRef,omitempty"`
+	ACME      *cmv1alpha1.SolverConfig    `json:"acme,omitempty"`
 }
 
 // New returns a new Certificates controller. It sets up the informer handler
@@ -77,12 +104,14 @@ func New(
 	ingressInformer extinformers.IngressInformer,
 	issuerInformer cminformers.IssuerInformer,
 	clusterIssuerInformer cminformers.ClusterIssuerInformer,
+	configMapInformer coreinformers.ConfigMapInformer,
 	client kubernetes.Interface,
 	cmClient clientset.Interface,
 	recorder record.EventRecorder,
 	defaults defaults,
+	clusterResourceNamespace string,
 ) *Controller {
-	ctrl := &Controller{Client: client, CMClient: cmClient, Recorder: recorder, defaults: defaults}
+	ctrl := &Controller{Client: client, CMClient: cmClient, Recorder: recorder, defaults: defaults, clusterResourceNamespace: clusterResourceNamespace}
 	ctrl.syncHandler = ctrl.processNextWorkItem
 	ctrl.queue = workqueue.NewNamedRateLimitingQueue(workqueue.NewItemExponentialFailureRateLimiter(time.Second*5, time.Minute*1), "ingresses")
 
@@ -99,6 +128,8 @@ func New(
 	ctrl.clusterIssuerLister = clusterIssuerInformer.Lister()
 	ctrl.syncedFuncs = append(ctrl.syncedFuncs, clusterIssuerInformer.Informer().HasSynced)
 
+	ctrl.configMapLister = configMapInformer.Lister()
+	ctrl.syncedFuncs = append(ctrl.syncedFuncs, configMapInformer.Informer().HasSynced)
 	return ctrl
 }
 
@@ -131,6 +162,15 @@ func (c *Controller) Run(workers int, stopCh <-chan struct{}) error {
 	}
 
 	glog.V(4).Infof("Synced all caches for %s control loop", ControllerName)
+
+	c.ingressShimConfig = IngressShimConfig{}
+	configMap, err := c.configMapLister.ConfigMaps(c.clusterResourceNamespace).Get(ControllerName)
+	if err == nil {
+		json.Unmarshal(
+			[]byte(configMap.Data[IngressShimCertificateSpecRulesKey]),
+			&c.ingressShimConfig.CertificateSpecRules,
+		)
+	}
 
 	for i := 0; i < workers; i++ {
 		c.workerWg.Add(1)
@@ -214,10 +254,12 @@ func init() {
 			ctx.KubeSharedInformerFactory.Extensions().V1beta1().Ingresses(),
 			ctx.SharedInformerFactory.Certmanager().V1alpha1().Issuers(),
 			ctx.SharedInformerFactory.Certmanager().V1alpha1().ClusterIssuers(),
+			ctx.KubeSharedInformerFactory.Core().V1().ConfigMaps(),
 			ctx.Client,
 			ctx.CMClient,
 			ctx.Recorder,
 			defaults{ctx.DefaultIssuerName, ctx.DefaultIssuerKind, ctx.DefaultACMEIssuerChallengeType, ctx.DefaultACMEIssuerDNS01ProviderName},
+			ctx.IssuerOptions.ClusterResourceNamespace,
 		).Run
 	})
 }

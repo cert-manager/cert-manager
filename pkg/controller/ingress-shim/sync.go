@@ -94,7 +94,8 @@ func (c *Controller) Sync(ctx context.Context, ing *extv1beta1.Ingress) error {
 }
 
 func (c *Controller) buildCertificates(ing *extv1beta1.Ingress) (new, update []*v1alpha1.Certificate, _ error) {
-	issuerName, issuerKind := c.issuerForIngress(ing)
+	shimCertSpec := c.getIngressShimCertificateSpec(ing)
+	issuerName, issuerKind := c.issuerForIngress(ing, shimCertSpec.IssuerRef)
 	issuer, err := c.getGenericIssuer(ing.Namespace, issuerName, issuerKind)
 	if err != nil {
 		return nil, nil, err
@@ -132,7 +133,7 @@ func (c *Controller) buildCertificates(ing *extv1beta1.Ingress) (new, update []*
 			},
 		}
 
-		err = c.setIssuerSpecificConfig(crt, issuer, ing, tls)
+		err = c.setIssuerSpecificConfig(crt, issuer, ing, tls, shimCertSpec)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -153,7 +154,7 @@ func (c *Controller) buildCertificates(ing *extv1beta1.Ingress) (new, update []*
 			updateCrt.Spec.SecretName = tls.SecretName
 			updateCrt.Spec.IssuerRef.Name = issuerName
 			updateCrt.Spec.IssuerRef.Kind = issuerKind
-			err = c.setIssuerSpecificConfig(updateCrt, issuer, ing, tls)
+			err = c.setIssuerSpecificConfig(updateCrt, issuer, ing, tls, shimCertSpec)
 			if err != nil {
 				return nil, nil, err
 			}
@@ -210,7 +211,7 @@ func certNeedsUpdate(a, b *v1alpha1.Certificate) bool {
 	return false
 }
 
-func (c *Controller) setIssuerSpecificConfig(crt *v1alpha1.Certificate, issuer v1alpha1.GenericIssuer, ing *extv1beta1.Ingress, tls extv1beta1.IngressTLS) error {
+func (c *Controller) setIssuerSpecificConfig(crt *v1alpha1.Certificate, issuer v1alpha1.GenericIssuer, ing *extv1beta1.Ingress, tls extv1beta1.IngressTLS, shimCertSpec *IngressShimCertificateSpec) error {
 	ingAnnotations := ing.Annotations
 	if ingAnnotations == nil {
 		ingAnnotations = map[string]string{}
@@ -226,7 +227,11 @@ func (c *Controller) setIssuerSpecificConfig(crt *v1alpha1.Certificate, issuer v
 		}
 		switch challengeType {
 		case "http01":
-			domainCfg.HTTP01 = &v1alpha1.HTTP01SolverConfig{}
+			if shimCertSpec.ACME == nil || shimCertSpec.ACME.HTTP01 == nil {
+				domainCfg.HTTP01 = &v1alpha1.HTTP01SolverConfig{}
+			} else {
+				domainCfg.HTTP01 = shimCertSpec.ACME.HTTP01.DeepCopy()
+			}
 			editInPlace, ok := ingAnnotations[editInPlaceAnnotation]
 			// If annotation isn't present, or it's set to true, edit the existing ingress
 			if ok && editInPlace == "true" {
@@ -289,9 +294,13 @@ func shouldSync(ing *extv1beta1.Ingress) bool {
 // issuerForIngress will determine the issuer that should be specified on a
 // Certificate created for the given Ingress resource. If one is not set, the
 // default issuer given to the controller will be used.
-func (c *Controller) issuerForIngress(ing *extv1beta1.Ingress) (name string, kind string) {
+func (c *Controller) issuerForIngress(ing *extv1beta1.Ingress, shimIssuerRef *v1alpha1.ObjectReference) (name string, kind string) {
 	name = c.defaults.issuerName
 	kind = c.defaults.issuerKind
+	if shimIssuerRef != nil {
+		name = shimIssuerRef.Name
+		kind = shimIssuerRef.Kind
+	}
 	annotations := ing.Annotations
 	if annotations == nil {
 		annotations = map[string]string{}
@@ -319,4 +328,19 @@ func (c *Controller) getGenericIssuer(namespace, name, kind string) (v1alpha1.Ge
 	default:
 		return nil, fmt.Errorf(`invalid value %q for issuer kind. Must be empty, %q or %q`, kind, v1alpha1.IssuerKind, v1alpha1.ClusterIssuerKind)
 	}
+}
+
+func (c *Controller) getIngressShimCertificateSpec(ing *extv1beta1.Ingress) *IngressShimCertificateSpec {
+	ingressClass := ing.Annotations[ingressClassAnnotation]
+	for _, rule := range c.ingressShimConfig.CertificateSpecRules {
+		if rule.Selector.MatchAll {
+			return &rule.Spec
+		}
+		for _, value := range rule.Selector.MatchIngressClasses {
+			if ingressClass == value {
+				return &rule.Spec
+			}
+		}
+	}
+	return &IngressShimCertificateSpec{}
 }
