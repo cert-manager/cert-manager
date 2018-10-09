@@ -30,6 +30,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/golang/glog"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
 	"github.com/miekg/dns"
 )
@@ -128,6 +129,7 @@ func NewDNSProvider(dns01Nameservers []string) (*DNSProvider, error) {
 // authentication, leave the TSIG parameters as empty strings.
 // nameserver must be a network address in the form "IP" or "IP:port".
 func NewDNSProviderCredentials(nameserver, tsigAlgorithm, tsigKeyName, tsigSecret string, dns01Nameservers []string) (*DNSProvider, error) {
+	glog.V(5).Infof("Creating RFC2136 Provider")
 
 	d := &DNSProvider{}
 
@@ -155,6 +157,12 @@ func NewDNSProviderCredentials(nameserver, tsigAlgorithm, tsigKeyName, tsigSecre
 	d.tsigAlgorithm = tsigAlgorithm
 
 	d.dns01Nameservers = dns01Nameservers
+
+	glog.V(5).Infof("DNSProvider nameserver:       %s\n", d.nameserver)
+	glog.V(5).Infof("            tsigAlgorithm:    %s\n", d.tsigAlgorithm)
+	glog.V(5).Infof("            tsigKeyName:      %s\n", d.tsigKeyName)
+	glog.V(5).Infof("            tsigSecret:       %s\n", d.tsigSecret)
+	glog.V(5).Infof("            dns01Nameservers: [%s]", strings.Join(d.dns01Nameservers, ", "))
 	return d, nil
 }
 

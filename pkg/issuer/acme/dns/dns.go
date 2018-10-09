@@ -152,6 +152,7 @@ func (s *Solver) solverForIssuerProvider(issuer v1alpha1.GenericIssuer, provider
 	var impl solver
 	switch {
 	case providerConfig.Akamai != nil:
+		glog.V(5).Infof("Preparing to create Akamai Provider")
 		clientToken, err := s.loadSecretData(&providerConfig.Akamai.ClientToken, resourceNamespace)
 		if err != nil {
 			return nil, errors.Wrap(err, "error getting akamai client token")
@@ -177,6 +178,7 @@ func (s *Solver) solverForIssuerProvider(issuer v1alpha1.GenericIssuer, provider
 			return nil, errors.Wrap(err, "error instantiating akamai challenge solver")
 		}
 	case providerConfig.CloudDNS != nil:
+		glog.V(5).Infof("Preparing to create CloudDNS Provider")
 		var keyData []byte
 
 		// if the serviceAccount.name field is set, we will load credentials from
@@ -202,6 +204,7 @@ func (s *Solver) solverForIssuerProvider(issuer v1alpha1.GenericIssuer, provider
 			return nil, fmt.Errorf("error instantiating google clouddns challenge solver: %s", err)
 		}
 	case providerConfig.Cloudflare != nil:
+		glog.V(5).Infof("Preparing to create Cloudflare Provider")
 		apiKeySecret, err := s.secretLister.Secrets(resourceNamespace).Get(providerConfig.Cloudflare.APIKey.Name)
 		if err != nil {
 			return nil, fmt.Errorf("error getting cloudflare service account: %s", err)
@@ -215,6 +218,7 @@ func (s *Solver) solverForIssuerProvider(issuer v1alpha1.GenericIssuer, provider
 			return nil, fmt.Errorf("error instantiating cloudflare challenge solver: %s", err)
 		}
 	case providerConfig.Route53 != nil:
+		glog.V(5).Infof("Preparing to create Route53 Provider")
 		secretAccessKey := ""
 		if providerConfig.Route53.SecretAccessKey.Name != "" {
 			secretAccessKeySecret, err := s.secretLister.Secrets(resourceNamespace).Get(providerConfig.Route53.SecretAccessKey.Name)
@@ -241,6 +245,7 @@ func (s *Solver) solverForIssuerProvider(issuer v1alpha1.GenericIssuer, provider
 			return nil, fmt.Errorf("error instantiating route53 challenge solver: %s", err)
 		}
 	case providerConfig.AzureDNS != nil:
+		glog.V(5).Infof("Preparing to create AzureDNS Provider")
 		clientSecret, err := s.secretLister.Secrets(resourceNamespace).Get(providerConfig.AzureDNS.ClientSecret.Name)
 		if err != nil {
 			return nil, fmt.Errorf("error getting azuredns client secret: %s", err)
@@ -264,6 +269,7 @@ func (s *Solver) solverForIssuerProvider(issuer v1alpha1.GenericIssuer, provider
 			return nil, fmt.Errorf("error instantiating azuredns challenge solver: %s", err)
 		}
 	case providerConfig.AcmeDNS != nil:
+		glog.V(5).Infof("Preparing to create AcmeDNS Provider")
 		accountSecret, err := s.secretLister.Secrets(resourceNamespace).Get(providerConfig.AcmeDNS.AccountSecret.Name)
 		if err != nil {
 			return nil, fmt.Errorf("error getting acmedns accounts secret: %s", err)
@@ -283,6 +289,7 @@ func (s *Solver) solverForIssuerProvider(issuer v1alpha1.GenericIssuer, provider
 			return nil, fmt.Errorf("error instantiating acmedns challenge solver: %s", err)
 		}
 	case providerConfig.RFC2136 != nil:
+		glog.V(5).Infof("Preparing to create RFC2136 Provider")
 		var secret string
 		if len(providerConfig.RFC2136.TSIGSecret.Name) > 0 {
 			tsigSecret, err := s.secretLister.Secrets(resourceNamespace).Get(providerConfig.RFC2136.TSIGSecret.Name)
