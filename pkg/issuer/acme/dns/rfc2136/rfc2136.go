@@ -161,7 +161,15 @@ func NewDNSProviderCredentials(nameserver, tsigAlgorithm, tsigKeyName, tsigSecre
 	glog.V(5).Infof("DNSProvider nameserver:       %s\n", d.nameserver)
 	glog.V(5).Infof("            tsigAlgorithm:    %s\n", d.tsigAlgorithm)
 	glog.V(5).Infof("            tsigKeyName:      %s\n", d.tsigKeyName)
-	glog.V(5).Infof("            tsigSecret:       %s\n", d.tsigSecret)
+	if glog.V(5) {
+		keyLen := len(d.tsigSecret)
+		mask := make([]rune, keyLen/2)
+		for i := range mask {
+			mask[i] = '*';
+		}
+		masked := d.tsigSecret[0:keyLen/4] + string(mask) + d.tsigSecret[keyLen/4*3:keyLen]
+		glog.Infof("            tsigSecret:       %s\n", masked)
+	}
 	glog.V(5).Infof("            dns01Nameservers: [%s]", strings.Join(d.dns01Nameservers, ", "))
 	return d, nil
 }

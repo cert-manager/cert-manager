@@ -94,22 +94,19 @@ func checkDNSPropagation(fqdn, value string, nameservers []string) (bool, error)
 
 // checkAuthoritativeNss queries each of the given nameservers for the expected TXT record.
 func checkAuthoritativeNss(fqdn, value string, nameservers []string) (bool, error) {
-	var errs []error
-	var found = false
 	for _, ns := range nameservers {
 		r, err := dnsQuery(fqdn, dns.TypeTXT, []string{net.JoinHostPort(ns, "53")}, false)
 		if err != nil {
-			errs = append(errs, err)
-			continue
+			return false, err
 		}
 
 		// NXDomain response is not really an error, just waiting for propagation to happen
 		if !(r.Rcode == dns.RcodeSuccess || r.Rcode == dns.RcodeNameError) {
-			errs = append(errs, fmt.Errorf("NS %s returned %s for %s", ns, dns.RcodeToString[r.Rcode], fqdn))
-			continue
+			return false, fmt.Errorf("NS %s returned %s for %s", ns, dns.RcodeToString[r.Rcode], fqdn)
 		}
 
 		glog.V(6).Infof("Looking up TXT records for %q", fqdn)
+		var found bool
 		for _, rr := range r.Answer {
 			if txt, ok := rr.(*dns.TXT); ok {
 				if strings.Join(txt.Txt, "") == value {
@@ -118,63 +115,14 @@ func checkAuthoritativeNss(fqdn, value string, nameservers []string) (bool, erro
 				}
 			}
 		}
-	}
-	if !found {
-		if len(errs) > 0 {
-			return false, fmt.Errorf("%v", errs)
-		} else {
+
+		if !found {
 			return false, nil
 		}
 	}
 
 	return true, nil
 }
-
-//// checkAuthoritativeNss queries each of the given nameservers for the expected TXT record.
-//func checkAuthoritativeNss(fqdn, challenge string, nameservers []string) (bool, error) {
-//	var errs []error
-//	for _, ns := range nameservers {
-//		var nsErrs []error
-//		r, err := dnsQuery(fqdn, dns.TypeTXT, []string{net.JoinHostPort(ns, "53")}, false)
-//		if err != nil {
-//			nsErrs = append(nsErrs, err)
-//			continue
-//		}
-//
-//		// NXDomain response is not really an error, just waiting for propagation to happen
-//		if !(r.Rcode == dns.RcodeSuccess || r.Rcode == dns.RcodeNameError) {
-//			 nsErrs = append(nsErrs, fmt.Errorf("NS %s returned %s for %s", ns, dns.RcodeToString[r.Rcode], fqdn))
-//			 continue
-//		}
-//
-//		glog.V(6).Infof("Querying TXT records for %q from server %q", fqdn, ns)
-//		var found bool
-//		for _, rr := range r.Answer {
-//			if txt, ok := rr.(*dns.TXT); ok {
-//				if strings.Join(txt.Txt, "") == challenge {
-//					glog.V(6).Infof("TXT record(s) found [%s] from server %q", challenge, ns)
-//					found = true
-//					break
-//				}
-//			}
-//		}
-//
-//		if !found {
-//			if (len(nsErrs) > 0) {
-//				errorf := fmt.Errorf("%v", nsErrs)
-//				glog.V(6).Infof("Errors encountered searching TXT record %q from server %q: %v", fqdn, ns, errorf)
-//				errs = append(errs, nsErrs...)
-//			} else {
-//				glog.V(6).Infof("No TXT record found for %q from server %q", fqdn, ns)
-//			}
-//			continue
-//		} else {
-//			break
-//		}
-//	}
-//
-//	return true, nil
-//}
 
 // dnsQuery will query a nameserver, iterating through the supplied servers as it retries
 // The nameserver should include a port, to facilitate testing where we talk to a mock dns server.
