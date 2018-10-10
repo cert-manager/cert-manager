@@ -91,7 +91,12 @@ func (v *Vault) obtainCertificate(ctx context.Context, crt *v1alpha1.Certificate
 		return nil, nil, fmt.Errorf("error encoding certificate request: %s", err.Error())
 	}
 
-	crtBytes, err := v.requestVaultCert(template.Subject.CommonName, template.DNSNames, pemRequestBuf.Bytes())
+	var ipSans []string
+	for _, ip := range template.IPAddresses {
+		ipSans = append(ipSans, ip.String())
+	}
+
+	crtBytes, err := v.requestVaultCert(template.Subject.CommonName, template.DNSNames, ipSans, pemRequestBuf.Bytes())
 	if err != nil {
 		return nil, nil, err
 	}
@@ -183,17 +188,18 @@ func (v *Vault) requestTokenWithAppRoleRef(client *vault.Client, appRole *v1alph
 	return token, nil
 }
 
-func (v *Vault) requestVaultCert(commonName string, altNames []string, csr []byte) ([]byte, error) {
+func (v *Vault) requestVaultCert(commonName string, altNames []string, ipSans []string, csr []byte) ([]byte, error) {
 	client, err := v.initVaultClient()
 	if err != nil {
 		return nil, err
 	}
 
-	glog.V(4).Infof("Vault certificate request for commonName %s altNames: %q", commonName, altNames)
+	glog.V(4).Infof("Vault certificate request for commonName %s altNames: %q ipSans: %q", commonName, altNames, ipSans)
 
 	parameters := map[string]string{
 		"common_name": commonName,
 		"alt_names":   strings.Join(altNames, ","),
+		"ip_sans":     strings.Join(ipSans, ","),
 		"ttl":         defaultCertificateDuration.String(),
 		"csr":         string(csr),
 		"exclude_cn_from_sans": "true",
