@@ -86,7 +86,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 						},
 						"http01": {
 							SchemaProps: spec.SchemaProps{
-								Description: "HTTP01 config",
+								Description: "HTTP-01 config",
 								Ref:         ref("github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1.ACMEIssuerHTTP01Config"),
 							},
 						},
@@ -409,8 +409,9 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 					Properties: map[string]spec.Schema{
 						"serviceType": {
 							SchemaProps: spec.SchemaProps{
-								Type:   []string{"string"},
-								Format: "",
+								Description: "Optional service type for Kubernetes solver service",
+								Type:        []string{"string"},
+								Format:      "",
 							},
 						},
 					},
