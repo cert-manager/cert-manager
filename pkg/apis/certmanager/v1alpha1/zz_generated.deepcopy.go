@@ -503,6 +503,11 @@ func (in *CertificateSpec) DeepCopyInto(out *CertificateSpec) {
 		*out = make([]string, len(*in))
 		copy(*out, *in)
 	}
+	if in.IPAddresses != nil {
+		in, out := &in.IPAddresses, &out.IPAddresses
+		*out = make([]string, len(*in))
+		copy(*out, *in)
+	}
 	out.IssuerRef = in.IssuerRef
 	if in.ACME != nil {
 		in, out := &in.ACME, &out.ACME
