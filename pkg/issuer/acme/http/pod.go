@@ -22,7 +22,6 @@ import (
 
 	"github.com/golang/glog"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/selection"
@@ -151,12 +150,12 @@ func (s *Solver) buildPod(crt *v1alpha1.Certificate, ch v1alpha1.ACMEOrderChalle
 					},
 					Resources: corev1.ResourceRequirements{
 						Requests: corev1.ResourceList{
-							corev1.ResourceCPU:    resource.MustParse("10m"),
-							corev1.ResourceMemory: resource.MustParse("64Mi"),
+							corev1.ResourceCPU:    s.ACMEOptions.HTTP01SolverResourceRequestCPU,
+							corev1.ResourceMemory: s.ACMEOptions.HTTP01SolverResourceRequestMemory,
 						},
 						Limits: corev1.ResourceList{
-							corev1.ResourceCPU:    resource.MustParse("10m"),
-							corev1.ResourceMemory: resource.MustParse("64Mi"),
+							corev1.ResourceCPU:    s.ACMEOptions.HTTP01SolverResourceLimitsCPU,
+							corev1.ResourceMemory: s.ACMEOptions.HTTP01SolverResourceLimitsMemory,
 						},
 					},
 					Ports: []corev1.ContainerPort{
