@@ -11,4 +11,4 @@ configuring credentials for a DNS provider.
    :maxdepth: 1
 
    http01
-   dns01
+   dns01/index
