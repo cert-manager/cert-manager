@@ -17,6 +17,7 @@ limitations under the License.
 package v1alpha1
 
 import (
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -128,13 +129,16 @@ type ACMEIssuer struct {
 	// PrivateKey is the name of a secret containing the private key for this
 	// user account.
 	PrivateKey SecretKeySelector `json:"privateKeySecretRef"`
-	// HTTP01 config
+	// HTTP-01 config
 	HTTP01 *ACMEIssuerHTTP01Config `json:"http01,omitempty"`
 	// DNS-01 config
 	DNS01 *ACMEIssuerDNS01Config `json:"dns01,omitempty"`
 }
 
+// ACMEIssuerHTTP01Config is a structure containing the ACME HTTP configuration options
 type ACMEIssuerHTTP01Config struct {
+	// Optional service type for Kubernetes solver service
+	ServiceType corev1.ServiceType `json:"serviceType,omitempty"`
 }
 
 // ACMEIssuerDNS01Config is a structure containing the ACME DNS configuration

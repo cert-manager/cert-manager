@@ -17,10 +17,12 @@ limitations under the License.
 package validation
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/rfc2136"
 
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
@@ -125,7 +127,26 @@ func ValidateVaultIssuerConfig(iss *v1alpha1.VaultIssuer, fldPath *field.Path) f
 }
 
 func ValidateACMEIssuerHTTP01Config(iss *v1alpha1.ACMEIssuerHTTP01Config, fldPath *field.Path) field.ErrorList {
-	return nil
+	el := field.ErrorList{}
+
+	if len(iss.ServiceType) > 0 {
+		validTypes := []corev1.ServiceType{
+			corev1.ServiceTypeClusterIP,
+			corev1.ServiceTypeNodePort,
+		}
+		validType := false
+		for _, validTypeName := range validTypes {
+			if iss.ServiceType == validTypeName {
+				validType = true
+				break
+			}
+		}
+		if !validType {
+			el = append(el, field.Invalid(fldPath.Child("serviceType"), iss.ServiceType, fmt.Sprintf("optional field serviceType must be one of %q", validTypes)))
+		}
+	}
+
+	return el
 }
 
 func ValidateACMEIssuerDNS01Config(iss *v1alpha1.ACMEIssuerDNS01Config, fldPath *field.Path) field.ErrorList {

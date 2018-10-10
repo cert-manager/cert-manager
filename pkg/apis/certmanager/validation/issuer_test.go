@@ -20,6 +20,7 @@ import (
 	"reflect"
 	"testing"
 
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
@@ -144,6 +145,49 @@ func TestValidateACMEIssuerConfig(t *testing.T) {
 				Server:     "valid-server",
 				PrivateKey: validSecretKeyRef,
 				HTTP01:     &v1alpha1.ACMEIssuerHTTP01Config{},
+			},
+		},
+		"acme issue with valid http01 service config serviceType ClusterIP": {
+			spec: &v1alpha1.ACMEIssuer{
+				Email:      "valid-email",
+				Server:     "valid-server",
+				PrivateKey: validSecretKeyRef,
+				HTTP01: &v1alpha1.ACMEIssuerHTTP01Config{
+					ServiceType: corev1.ServiceType("ClusterIP"),
+				},
+			},
+		},
+		"acme issue with valid http01 service config serviceType NodePort": {
+			spec: &v1alpha1.ACMEIssuer{
+				Email:      "valid-email",
+				Server:     "valid-server",
+				PrivateKey: validSecretKeyRef,
+				HTTP01: &v1alpha1.ACMEIssuerHTTP01Config{
+					ServiceType: corev1.ServiceType("NodePort"),
+				},
+			},
+		},
+		"acme issue with valid http01 service config serviceType (empty string)": {
+			spec: &v1alpha1.ACMEIssuer{
+				Email:      "valid-email",
+				Server:     "valid-server",
+				PrivateKey: validSecretKeyRef,
+				HTTP01: &v1alpha1.ACMEIssuerHTTP01Config{
+					ServiceType: corev1.ServiceType(""),
+				},
+			},
+		},
+		"acme issue with invalid http01 service config": {
+			spec: &v1alpha1.ACMEIssuer{
+				Email:      "valid-email",
+				Server:     "valid-server",
+				PrivateKey: validSecretKeyRef,
+				HTTP01: &v1alpha1.ACMEIssuerHTTP01Config{
+					ServiceType: corev1.ServiceType("InvalidServiceType"),
+				},
+			},
+			errs: []*field.Error{
+				field.Invalid(fldPath.Child("http01", "serviceType"), corev1.ServiceType("InvalidServiceType"), "optional field serviceType must be one of [\"ClusterIP\" \"NodePort\"]"),
 			},
 		},
 	}

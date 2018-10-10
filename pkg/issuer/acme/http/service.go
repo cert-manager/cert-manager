@@ -30,7 +30,7 @@ import (
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 )
 
-func (s *Solver) ensureService(crt *v1alpha1.Certificate, ch v1alpha1.ACMEOrderChallenge) (*corev1.Service, error) {
+func (s *Solver) ensureService(issuer v1alpha1.GenericIssuer, crt *v1alpha1.Certificate, ch v1alpha1.ACMEOrderChallenge) (*corev1.Service, error) {
 	existingServices, err := s.getServicesForChallenge(crt, ch)
 	if err != nil {
 		return nil, err
@@ -49,7 +49,7 @@ func (s *Solver) ensureService(crt *v1alpha1.Certificate, ch v1alpha1.ACMEOrderC
 	}
 
 	glog.Infof("No existing HTTP01 challenge solver service found for Certificate %q. One will be created.", crt.Namespace+"/"+crt.Name)
-	return s.createService(crt, ch)
+	return s.createService(issuer, crt, ch)
 }
 
 // getServicesForChallenge returns a list of services that were created to solve
@@ -85,13 +85,13 @@ func (s *Solver) getServicesForChallenge(crt *v1alpha1.Certificate, ch v1alpha1.
 
 // createService will create the service required to solve this challenge
 // in the target API server.
-func (s *Solver) createService(crt *v1alpha1.Certificate, ch v1alpha1.ACMEOrderChallenge) (*corev1.Service, error) {
-	return s.Client.CoreV1().Services(crt.Namespace).Create(buildService(crt, ch))
+func (s *Solver) createService(issuer v1alpha1.GenericIssuer, crt *v1alpha1.Certificate, ch v1alpha1.ACMEOrderChallenge) (*corev1.Service, error) {
+	return s.Client.CoreV1().Services(crt.Namespace).Create(buildService(issuer, crt, ch))
 }
 
-func buildService(crt *v1alpha1.Certificate, ch v1alpha1.ACMEOrderChallenge) *corev1.Service {
+func buildService(issuer v1alpha1.GenericIssuer, crt *v1alpha1.Certificate, ch v1alpha1.ACMEOrderChallenge) *corev1.Service {
 	podLabels := podLabels(ch)
-	return &corev1.Service{
+	service := &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "cm-acme-http-solver-",
 			Namespace:    crt.Namespace,
@@ -102,7 +102,6 @@ func buildService(crt *v1alpha1.Certificate, ch v1alpha1.ACMEOrderChallenge) *co
 			OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(crt, certificateGvk)},
 		},
 		Spec: corev1.ServiceSpec{
-			Type: corev1.ServiceTypeNodePort,
 			Ports: []corev1.ServicePort{
 				{
 					Name:       "http",
@@ -113,6 +112,14 @@ func buildService(crt *v1alpha1.Certificate, ch v1alpha1.ACMEOrderChallenge) *co
 			Selector: podLabels,
 		},
 	}
+
+	// checking for presence of http01 config and if set serviceType is set, override our default (NodePort)
+	service.Spec.Type = corev1.ServiceTypeNodePort
+	if issuer.GetSpec().ACME.HTTP01 != nil && issuer.GetSpec().ACME.HTTP01.ServiceType != "" {
+		service.Spec.Type = issuer.GetSpec().ACME.HTTP01.ServiceType
+	}
+
+	return service
 }
 
 func (s *Solver) cleanupServices(crt *v1alpha1.Certificate, ch v1alpha1.ACMEOrderChallenge) error {
