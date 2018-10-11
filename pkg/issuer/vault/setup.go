@@ -18,7 +18,6 @@ package vault
 
 import (
 	"context"
-	"crypto/x509"
 	"fmt"
 
 	"github.com/golang/glog"
@@ -38,7 +37,6 @@ const (
 	messageServerAndPathRequired         = "Vault server and path are required fields"
 	messsageAuthFieldsRequired           = "Vault tokenSecretRef or appRole is required"
 	messageAuthFieldRequired             = "Vault tokenSecretRef and appRole cannot be set on the same issuer"
-	messageVaultCABundleInvalid          = "Specified CA bundle is invalid"
 )
 
 func (v *Vault) Setup(ctx context.Context) error {
@@ -81,18 +79,6 @@ func (v *Vault) Setup(ctx context.Context) error {
 		glog.Infof("%s: %s", v.issuer.GetObjectMeta().Name, messageAuthFieldRequired)
 		v.issuer.UpdateStatusCondition(v1alpha1.IssuerConditionReady, v1alpha1.ConditionFalse, errorVault, messageAuthFieldRequired)
 		return fmt.Errorf(messageAuthFieldRequired)
-	}
-
-	// check if caBundle is valid
-	certs := v.issuer.GetSpec().Vault.CABundle
-	if len(certs) > 0 {
-		caCertPool := x509.NewCertPool()
-		ok := caCertPool.AppendCertsFromPEM(certs)
-		if !ok {
-			glog.V(4).Infof("%s: %s", v.issuer.GetObjectMeta().Name, messageVaultCABundleInvalid)
-			v.issuer.UpdateStatusCondition(v1alpha1.IssuerConditionReady, v1alpha1.ConditionFalse, errorVault, messageVaultCABundleInvalid)
-			return fmt.Errorf(messageVaultCABundleInvalid)
-		}
 	}
 
 	client, err := v.initVaultClient()

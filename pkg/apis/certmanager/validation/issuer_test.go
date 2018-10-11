@@ -72,6 +72,16 @@ func TestValidateVaultIssuerConfig(t *testing.T) {
 				field.Required(fldPath.Child("path"), ""),
 			},
 		},
+		"vault issuer with invalid fields": {
+			spec: &v1alpha1.VaultIssuer{
+				Server:   "something",
+				Path:     "a/b/c",
+				CABundle: []byte("invalid"),
+			},
+			errs: []*field.Error{
+				field.Invalid(fldPath.Child("caBundle"), "", "Specified CA bundle is invalid"),
+			},
+		},
 	}
 	for n, s := range scenarios {
 		t.Run(n, func(t *testing.T) {
@@ -619,7 +629,7 @@ func TestValidateACMEIssuerDNS01Config(t *testing.T) {
 }
 
 func TestValidateSecretKeySelector(t *testing.T) {
-	validName := v1alpha1.LocalObjectReference{"name"}
+	validName := v1alpha1.LocalObjectReference{Name: "name"}
 	validKey := "key"
 	// invalidName := v1alpha1.LocalObjectReference{"-name-"}
 	// invalidKey := "-key-"

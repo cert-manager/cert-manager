@@ -17,6 +17,7 @@ limitations under the License.
 package validation
 
 import (
+	"crypto/x509"
 	"fmt"
 	"strings"
 
@@ -122,6 +123,17 @@ func ValidateVaultIssuerConfig(iss *v1alpha1.VaultIssuer, fldPath *field.Path) f
 	if len(iss.Path) == 0 {
 		el = append(el, field.Required(fldPath.Child("path"), ""))
 	}
+
+	// check if caBundle is valid
+	certs := iss.CABundle
+	if len(certs) > 0 {
+		caCertPool := x509.NewCertPool()
+		ok := caCertPool.AppendCertsFromPEM(certs)
+		if !ok {
+			el = append(el, field.Invalid(fldPath.Child("caBundle"), "", "Specified CA bundle is invalid"))
+		}
+	}
+
 	return el
 	// TODO: add validation for Vault authentication types
 }
