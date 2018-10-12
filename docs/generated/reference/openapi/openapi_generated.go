@@ -786,44 +786,51 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 					Properties: map[string]spec.Schema{
 						"authzURL": {
 							SchemaProps: spec.SchemaProps{
-								Type:   []string{"string"},
-								Format: "",
+								Description: "AuthzURL is the URL to the ACME Authorization resource that this challenge is a part of.",
+								Type:        []string{"string"},
+								Format:      "",
 							},
 						},
 						"type": {
 							SchemaProps: spec.SchemaProps{
-								Type:   []string{"string"},
-								Format: "",
+								Description: "Type is the type of ACME challenge this resource represents, e.g. \"dns01\" or \"http01\"",
+								Type:        []string{"string"},
+								Format:      "",
 							},
 						},
 						"url": {
 							SchemaProps: spec.SchemaProps{
-								Type:   []string{"string"},
-								Format: "",
+								Description: "URL is the URL of the ACME Challenge resource for this challenge. This can be used to lookup details about the status of this challenge.",
+								Type:        []string{"string"},
+								Format:      "",
 							},
 						},
 						"dnsName": {
 							SchemaProps: spec.SchemaProps{
-								Type:   []string{"string"},
-								Format: "",
+								Description: "DNSName is the identifier that this challenge is for, e.g. example.com.",
+								Type:        []string{"string"},
+								Format:      "",
 							},
 						},
 						"token": {
 							SchemaProps: spec.SchemaProps{
-								Type:   []string{"string"},
-								Format: "",
+								Description: "Token is the ACME challenge token for this challenge.",
+								Type:        []string{"string"},
+								Format:      "",
 							},
 						},
 						"key": {
 							SchemaProps: spec.SchemaProps{
-								Type:   []string{"string"},
-								Format: "",
+								Description: "Key is the ACME challenge key for this challenge",
+								Type:        []string{"string"},
+								Format:      "",
 							},
 						},
 						"wildcard": {
 							SchemaProps: spec.SchemaProps{
-								Type:   []string{"boolean"},
-								Format: "",
+								Description: "Wildcard will be true if this challenge is for a wildcard identifier, for example '*.example.com'",
+								Type:        []string{"boolean"},
+								Format:      "",
 							},
 						},
 						"config": {
@@ -851,20 +858,23 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 					Properties: map[string]spec.Schema{
 						"presented": {
 							SchemaProps: spec.SchemaProps{
-								Type:   []string{"boolean"},
-								Format: "",
+								Description: "Presented will be set to true if the challenge values for this challenge are currently 'presented'. This *does not* imply the self check is passing. Only that the values have been 'submitted' for the appropriate challenge mechanism (i.e. the DNS01 TXT record has been presented, or the HTTP01 configuration has been configured).",
+								Type:        []string{"boolean"},
+								Format:      "",
 							},
 						},
 						"reason": {
 							SchemaProps: spec.SchemaProps{
-								Type:   []string{"string"},
-								Format: "",
+								Description: "Reason contains human readable information on why the Challenge is in the current state.",
+								Type:        []string{"string"},
+								Format:      "",
 							},
 						},
 						"state": {
 							SchemaProps: spec.SchemaProps{
-								Type:   []string{"string"},
-								Format: "",
+								Description: "State contains the current 'state' of the challenge. If not set, the state of the challenge is unknown.",
+								Type:        []string{"string"},
+								Format:      "",
 							},
 						},
 					},
@@ -958,11 +968,13 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1.DNS01SolverConfig": {
 			Schema: spec.Schema{
 				SchemaProps: spec.SchemaProps{
+					Description: "DNS01SolverConfig contains solver configuration for DNS01 challenges.",
 					Properties: map[string]spec.Schema{
 						"provider": {
 							SchemaProps: spec.SchemaProps{
-								Type:   []string{"string"},
-								Format: "",
+								Description: "Provider is the name of the DNS01 challenge provider to use, as configure on the referenced Issuer or ClusterIssuer resource.",
+								Type:        []string{"string"},
+								Format:      "",
 							},
 						},
 					},
@@ -974,10 +986,12 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1.DomainSolverConfig": {
 			Schema: spec.Schema{
 				SchemaProps: spec.SchemaProps{
+					Description: "DomainSolverConfig contains solver configuration for a set of domains.",
 					Properties: map[string]spec.Schema{
 						"domains": {
 							SchemaProps: spec.SchemaProps{
-								Type: []string{"array"},
+								Description: "Domains is the list of domains that this SolverConfig applies to.",
+								Type:        []string{"array"},
 								Items: &spec.SchemaOrArray{
 									Schema: &spec.Schema{
 										SchemaProps: spec.SchemaProps{
@@ -990,12 +1004,14 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 						},
 						"http01": {
 							SchemaProps: spec.SchemaProps{
-								Ref: ref("github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1.HTTP01SolverConfig"),
+								Description: "HTTP01 contains HTTP01 challenge solving configuration",
+								Ref:         ref("github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1.HTTP01SolverConfig"),
 							},
 						},
 						"dns01": {
 							SchemaProps: spec.SchemaProps{
-								Ref: ref("github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1.DNS01SolverConfig"),
+								Description: "DNS01 contains DNS01 challenge solving configuration",
+								Ref:         ref("github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1.DNS01SolverConfig"),
 							},
 						},
 					},
@@ -1008,17 +1024,20 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1.HTTP01SolverConfig": {
 			Schema: spec.Schema{
 				SchemaProps: spec.SchemaProps{
+					Description: "HTTP01SolverConfig contains solver configuration for HTTP01 challenges.",
 					Properties: map[string]spec.Schema{
 						"ingress": {
 							SchemaProps: spec.SchemaProps{
-								Type:   []string{"string"},
-								Format: "",
+								Description: "Ingress is the name of an Ingress resource that will be edited to include the ACME HTTP01 'well-known' challenge path in order to solve HTTP01 challenges. If this field is specified, 'ingressClass' **must not** be specified.",
+								Type:        []string{"string"},
+								Format:      "",
 							},
 						},
 						"ingressClass": {
 							SchemaProps: spec.SchemaProps{
-								Type:   []string{"string"},
-								Format: "",
+								Description: "IngressClass is the ingress class that should be set on new ingress resources that are created in order to solve HTTP01 challenges. This field should be used when using an ingress controller such as nginx, which 'flattens' ingress configuration instead of maintaining a 1:1 mapping between loadbalancer IP:ingress resources. If this field is not set, and 'ingress' is not set, then ingresses without an ingress class set will be created to solve HTTP01 challenges. If this field is specified, 'ingress' **must not** be specified.",
+								Type:        []string{"string"},
+								Format:      "",
 							},
 						},
 					},
@@ -1526,15 +1545,18 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1.SolverConfig": {
 			Schema: spec.Schema{
 				SchemaProps: spec.SchemaProps{
+					Description: "SolverConfig is a container type holding the configuration for either a HTTP01 or DNS01 challenge. Only one of HTTP01 or DNS01 should be non-nil.",
 					Properties: map[string]spec.Schema{
 						"http01": {
 							SchemaProps: spec.SchemaProps{
-								Ref: ref("github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1.HTTP01SolverConfig"),
+								Description: "HTTP01 contains HTTP01 challenge solving configuration",
+								Ref:         ref("github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1.HTTP01SolverConfig"),
 							},
 						},
 						"dns01": {
 							SchemaProps: spec.SchemaProps{
-								Ref: ref("github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1.DNS01SolverConfig"),
+								Description: "DNS01 contains DNS01 challenge solving configuration",
+								Ref:         ref("github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1.DNS01SolverConfig"),
 							},
 						},
 					},
