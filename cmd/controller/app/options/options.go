@@ -26,6 +26,7 @@ import (
 	"github.com/jetstack/cert-manager/pkg/util"
 
 	challengescontroller "github.com/jetstack/cert-manager/pkg/controller/acmechallenges"
+	"github.com/jetstack/cert-manager/pkg/controller/acmechallenges/scheduler"
 	orderscontroller "github.com/jetstack/cert-manager/pkg/controller/acmeorders"
 	certificatescontroller "github.com/jetstack/cert-manager/pkg/controller/certificates"
 	clusterissuerscontroller "github.com/jetstack/cert-manager/pkg/controller/clusterissuers"
@@ -99,6 +100,7 @@ var (
 		ingressshimcontroller.ControllerName,
 		orderscontroller.ControllerName,
 		challengescontroller.ControllerName,
+		scheduler.ControllerName,
 	}
 )
 

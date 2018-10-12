@@ -84,6 +84,15 @@ type ChallengeSpec struct {
 }
 
 type ChallengeStatus struct {
+	// Processing is used to denote whether this challenge should be processed
+	// or not.
+	// This field will only be set to true by the 'scheduling' component.
+	// It will only be set to false by the 'challenges' controller, after the
+	// challenge has reached a final state or timed out.
+	// If this field is set to false, the challenge controller will not take
+	// any more action.
+	Processing bool `json:"processing"`
+
 	// Presented will be set to true if the challenge values for this challenge
 	// are currently 'presented'.
 	// This *does not* imply the self check is passing. Only that the values
