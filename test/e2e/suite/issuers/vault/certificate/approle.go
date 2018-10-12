@@ -98,6 +98,7 @@ var _ = framework.CertManagerDescribe("Vault Certificate (AppRole)", func() {
 		secretClient := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name)
 
 		_, err := f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Create(util.NewCertManagerVaultIssuerAppRole(issuerName, vaultURL, vaultPath, roleId, vaultSecretAppRoleName, authPath, vault.Details().VaultCA))
+
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Waiting for Issuer to become Ready")
