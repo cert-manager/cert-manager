@@ -7,6 +7,7 @@ go_library(
     visibility = ["//visibility:public"],
     deps = [
         "//pkg/controller/acmechallenges:go_default_library",
+        "//pkg/controller/acmechallenges/scheduler:go_default_library",
         "//pkg/controller/acmeorders:go_default_library",
         "//pkg/controller/certificates:go_default_library",
         "//pkg/controller/clusterissuers:go_default_library",
