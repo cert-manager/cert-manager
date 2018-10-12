@@ -186,6 +186,9 @@ func (c *Controller) Sync(ctx context.Context, crt *v1alpha1.Certificate) (reque
 		return c.issue(ctx, i, crtCopy)
 	}
 
+	// update certificate expiry metric
+	defer c.metrics.UpdateCertificateExpiry(crt, c.secretLister)
+
 	// check if the certificate needs renewal
 	needsRenew := c.Context.IssuerOptions.CertificateNeedsRenew(cert, crt.Spec.RenewBefore)
 	if needsRenew {

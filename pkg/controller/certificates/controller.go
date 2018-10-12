@@ -32,6 +32,7 @@ import (
 
 	cmlisters "github.com/jetstack/cert-manager/pkg/client/listers/certmanager/v1alpha1"
 	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
+	"github.com/jetstack/cert-manager/pkg/metrics"
 	"github.com/jetstack/cert-manager/pkg/scheduler"
 	"github.com/jetstack/cert-manager/pkg/util"
 )
@@ -51,6 +52,7 @@ type Controller struct {
 	scheduledWorkQueue scheduler.ScheduledWorkQueue
 	workerWg           sync.WaitGroup
 	syncedFuncs        []cache.InformerSynced
+	metrics            *metrics.Metrics
 }
 
 // New returns a new Certificates controller. It sets up the informer handler
@@ -86,6 +88,8 @@ func New(ctx *controllerpkg.Context) *Controller {
 	ordersInformer := ctrl.SharedInformerFactory.Certmanager().V1alpha1().Orders()
 	ordersInformer.Informer().AddEventHandler(&controllerpkg.BlockingEventHandler{WorkFunc: ctrl.handleOwnedResource})
 	ctrl.syncedFuncs = append(ctrl.syncedFuncs, ordersInformer.Informer().HasSynced)
+
+	ctrl.metrics = metrics.Default
 
 	return ctrl
 }

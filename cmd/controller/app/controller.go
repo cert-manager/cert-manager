@@ -41,6 +41,7 @@ import (
 	"github.com/jetstack/cert-manager/pkg/controller"
 	"github.com/jetstack/cert-manager/pkg/controller/acmechallenges/scheduler"
 	dnsutil "github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
+	"github.com/jetstack/cert-manager/pkg/metrics"
 	"github.com/jetstack/cert-manager/pkg/util"
 	"github.com/jetstack/cert-manager/pkg/util/kube"
 	kubeinformers "k8s.io/client-go/informers"
@@ -57,6 +58,11 @@ func Run(opts *options.ControllerOptions, stopCh <-chan struct{}) {
 
 	run := func(_ <-chan struct{}) {
 		var wg sync.WaitGroup
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			metrics.Default.Start(stopCh)
+		}()
 		for n, fn := range controller.Known() {
 			// only run a controller if it's been enabled
 			if !util.Contains(opts.EnabledControllers, n) {
