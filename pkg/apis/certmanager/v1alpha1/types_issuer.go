@@ -95,7 +95,7 @@ type VaultIssuer struct {
 	// if the Server URL is using HTTPS protocol. This parameter is ignored for
 	// plain HTTP protocol connection. If not set the system root certificates
 	// are used to validate the TLS connection.
-	CABundle []byte `json:"caBundle"`
+	CABundle []byte `json:"caBundle,omitempty"`
 }
 
 // Vault authentication  can be configured:

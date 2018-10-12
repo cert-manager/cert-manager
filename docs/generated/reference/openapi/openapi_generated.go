@@ -1362,7 +1362,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 							},
 						},
 					},
-					Required: []string{"auth", "server", "path", "caBundle"},
+					Required: []string{"auth", "server", "path"},
 				},
 			},
 			Dependencies: []string{
