@@ -30,6 +30,7 @@ import (
 	"github.com/jetstack/cert-manager/pkg/acme"
 	"github.com/jetstack/cert-manager/pkg/acme/client"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	"github.com/jetstack/cert-manager/pkg/issuer"
 	"github.com/jetstack/cert-manager/pkg/util/errors"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 	acmeapi "github.com/jetstack/cert-manager/third_party/crypto/acme"
@@ -50,33 +51,36 @@ const (
 
 // Setup will verify an existing ACME registration, or create one if not
 // already registered.
-func (a *Acme) Setup(ctx context.Context) error {
+func (a *Acme) Setup(ctx context.Context) (issuer.SetupResponse, error) {
 	if newURL, ok := acmev1ToV2Mappings[a.issuer.GetSpec().ACME.Server]; ok {
-		a.issuer.UpdateStatusCondition(v1alpha1.IssuerConditionReady, v1alpha1.ConditionFalse, errorInvalidConfig, fmt.Sprintf("Your ACME server URL is set to a v1 endpoint (%s). "+
-			"You should update the spec.acme.server field to %q", a.issuer.GetSpec().ACME.Server, newURL))
+		a.issuer.UpdateStatusCondition(v1alpha1.IssuerConditionReady, v1alpha1.ConditionFalse, "InvalidConfig",
+			fmt.Sprintf("Your ACME server URL is set to a v1 endpoint (%s). "+
+				"You should update the spec.acme.server field to %q", a.issuer.GetSpec().ACME.Server, newURL))
 		// return nil so that Setup only gets called again after the spec is updated
-		return nil
+		return issuer.SetupResponse{Requeue: false}, nil
+	}
+
+	ns := a.issuer.GetObjectMeta().Namespace
+	if ns == "" {
+		ns = a.IssuerOptions.ClusterResourceNamespace
 	}
 
 	cl, err := a.helper.ClientForIssuer(a.issuer)
 	if k8sErrors.IsNotFound(err) || errors.IsInvalidData(err) {
 		glog.Infof("%s: generating acme account private key %q", a.issuer.GetObjectMeta().Name, a.issuer.GetSpec().ACME.PrivateKey.Name)
-		accountPrivKey, err := a.createAccountPrivateKey(a.issuer.GetSpec().ACME.PrivateKey)
+		accountPrivKey, err := a.createAccountPrivateKey(a.issuer.GetSpec().ACME.PrivateKey, ns)
 		if err != nil {
 			s := messageAccountRegistrationFailed + err.Error()
 			a.issuer.UpdateStatusCondition(v1alpha1.IssuerConditionReady, v1alpha1.ConditionFalse, errorAccountRegistrationFailed, s)
-			return fmt.Errorf(s)
+			return issuer.SetupResponse{Requeue: true}, fmt.Errorf(s)
 		}
 		a.issuer.GetStatus().ACMEStatus().URI = ""
 		cl, err = acme.ClientWithKey(a.issuer, accountPrivKey)
-		if err != nil {
-			return err
-		}
 	} else if err != nil {
 		s := messageAccountVerificationFailed + err.Error()
 		glog.V(4).Infof("%s: %s", a.issuer.GetObjectMeta().Name, s)
 		a.Recorder.Event(a.issuer, v1.EventTypeWarning, errorAccountVerificationFailed, s)
-		return err
+		return issuer.SetupResponse{Requeue: true}, err
 	}
 
 	// registerAccount will also verify the account exists if it already
@@ -87,14 +91,14 @@ func (a *Acme) Setup(ctx context.Context) error {
 		glog.V(4).Infof("%s: %s", a.issuer.GetObjectMeta().Name, s)
 		a.Recorder.Event(a.issuer, v1.EventTypeWarning, errorAccountVerificationFailed, s)
 		a.issuer.UpdateStatusCondition(v1alpha1.IssuerConditionReady, v1alpha1.ConditionFalse, errorAccountRegistrationFailed, s)
-		return err
+		return issuer.SetupResponse{Requeue: true}, err
 	}
 
 	glog.Infof("%s: verified existing registration with ACME server", a.issuer.GetObjectMeta().Name)
 	a.issuer.UpdateStatusCondition(v1alpha1.IssuerConditionReady, v1alpha1.ConditionTrue, successAccountRegistered, messageAccountRegistered)
 	a.issuer.GetStatus().ACMEStatus().URI = account.URL
 
-	return nil
+	return issuer.SetupResponse{}, err
 }
 
 // registerAccount will register a new ACME account with the server. If an
@@ -129,8 +133,7 @@ func (a *Acme) registerAccount(ctx context.Context, cl client.Interface) (*acmea
 	return acc, nil
 }
 
-func (a *Acme) createAccountPrivateKey(sel v1alpha1.SecretKeySelector) (*rsa.PrivateKey, error) {
-	ns := a.Context.ResourceNamespace(a.issuer)
+func (a *Acme) createAccountPrivateKey(sel v1alpha1.SecretKeySelector, ns string) (*rsa.PrivateKey, error) {
 	sel = acme.PrivateKeySelector(sel)
 	accountPrivKey, err := pki.GenerateRSAPrivateKey(pki.MinRSAKeySize)
 	if err != nil {
@@ -152,4 +155,11 @@ func (a *Acme) createAccountPrivateKey(sel v1alpha1.SecretKeySelector) (*rsa.Pri
 	}
 
 	return accountPrivKey, err
+}
+
+var acmev1ToV2Mappings = map[string]string{
+	"https://acme-v01.api.letsencrypt.org/directory":      "https://acme-v02.api.letsencrypt.org/directory",
+	"https://acme-staging.api.letsencrypt.org/directory":  "https://acme-staging-v02.api.letsencrypt.org/directory",
+	"https://acme-v01.api.letsencrypt.org/directory/":     "https://acme-v02.api.letsencrypt.org/directory",
+	"https://acme-staging.api.letsencrypt.org/directory/": "https://acme-staging-v02.api.letsencrypt.org/directory",
 }

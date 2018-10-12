@@ -29,6 +29,7 @@ import (
 	vault "github.com/hashicorp/vault/api"
 	"github.com/hashicorp/vault/helper/certutil"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	"github.com/jetstack/cert-manager/pkg/issuer"
 	"github.com/jetstack/cert-manager/pkg/util/errors"
 	"github.com/jetstack/cert-manager/pkg/util/kube"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
@@ -48,17 +49,21 @@ const (
 	defaultCertificateDuration = time.Hour * 24 * 90
 )
 
-func (v *Vault) Issue(ctx context.Context, crt *v1alpha1.Certificate) ([]byte, []byte, []byte, error) {
+func (v *Vault) Issue(ctx context.Context, crt *v1alpha1.Certificate) (issuer.IssueResponse, error) {
 	key, certPem, caPem, err := v.obtainCertificate(ctx, crt)
 	if err != nil {
 		s := messageErrorIssueCert + err.Error()
 		crt.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse, errorIssueCert, s, false)
-		return nil, nil, nil, err
+		return issuer.IssueResponse{}, err
 	}
 
 	crt.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionTrue, successCertIssued, messageCertIssued, true)
 
-	return key, certPem, caPem, nil
+	return issuer.IssueResponse{
+		PrivateKey:  key,
+		Certificate: certPem,
+		CA:          caPem,
+	}, nil
 }
 
 func (v *Vault) obtainCertificate(ctx context.Context, crt *v1alpha1.Certificate) ([]byte, []byte, []byte, error) {

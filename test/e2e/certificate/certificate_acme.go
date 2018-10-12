@@ -172,8 +172,14 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 			}, foreverTestTimeout)
 		Expect(err).To(HaveOccurred())
 		By("Verifying TLS certificate secret does not exist")
-		_, err = f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Get(certificateSecretName, metav1.GetOptions{})
-		Expect(err).To(MatchError(apierrors.NewNotFound(corev1.Resource("secrets"), certificateSecretName)))
+		d, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Get(certificateSecretName, metav1.GetOptions{})
+		Expect(err).NotTo(HaveOccurred())
+		if len(d.Data["tls.key"]) == 0 {
+			Fail("expected private key to be generated")
+		}
+		if len(d.Data["tls.crt"]) > 0 {
+			Fail("expected certificate to be empty")
+		}
 	})
 
 	It("should obtain a signed certificate with a single CN from the ACME server when putting an annotation on an ingress resource", func() {

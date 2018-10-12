@@ -82,7 +82,7 @@ func (f *FakeACME) AcceptChallenge(ctx context.Context, chal *acme.Challenge) (*
 	if f.FakeAcceptChallenge != nil {
 		return f.FakeAcceptChallenge(ctx, chal)
 	}
-	return nil, fmt.Errorf("AcceptAcceptChallenge not implemented")
+	return nil, fmt.Errorf("AcceptChallenge not implemented")
 }
 
 func (f *FakeACME) GetChallenge(ctx context.Context, url string) (*acme.Challenge, error) {

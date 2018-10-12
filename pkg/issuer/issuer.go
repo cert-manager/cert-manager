@@ -26,13 +26,38 @@ type Interface interface {
 	// Setup initialises the issuer. This may include registering accounts with
 	// a service, creating a CA and storing it somewhere, or verifying
 	// credentials and authorization with a remote server.
-	Setup(ctx context.Context) error
-	// Prepare
-	Prepare(context.Context, *v1alpha1.Certificate) error
+	Setup(ctx context.Context) (SetupResponse, error)
+
 	// Issue attempts to issue a certificate as described by the certificate
 	// resource given
-	Issue(context.Context, *v1alpha1.Certificate) ([]byte, []byte, []byte, error)
-	// Renew attempts to renew the certificate describe by the certificate
-	// resource given. If no certificate exists, an error is returned.
-	Renew(context.Context, *v1alpha1.Certificate) ([]byte, []byte, []byte, error)
+	Issue(context.Context, *v1alpha1.Certificate) (IssueResponse, error)
+}
+
+type IssueResponse struct {
+	// If Requeue is true, the Certificate will be requeued for processing
+	// after applying the controllers rate limit.
+	Requeue bool
+
+	// Certificate is the certificate resource that should be stored in the
+	// target secret.
+	// It will only be set if the corresponding private key is also set on the
+	// IssuerResponse structure.
+	Certificate []byte
+
+	// PrivateKey is the private key that should be stored in the target secret.
+	// If set, the certificate and CA field will also be overwritten with the
+	// contents of the field.
+	// If Certificate is not set, the existing Certificate will be overwritten.
+	PrivateKey []byte
+
+	// CA is the CA certificate that should be stored in the target secret.
+	// This field should only be set if the private key field is set, similar
+	// to the Certificate field.
+	CA []byte
+}
+
+type SetupResponse struct {
+	// If Requeue is true, the Certificate will be requeued for processing
+	// after applying the controllers rate limit.
+	Requeue bool
 }

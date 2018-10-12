@@ -30,9 +30,9 @@ import (
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 )
 
-func podLabels(ch v1alpha1.ACMEOrderChallenge) map[string]string {
-	domainHash := fmt.Sprintf("%d", adler32.Checksum([]byte(ch.Domain)))
-	tokenHash := fmt.Sprintf("%d", adler32.Checksum([]byte(ch.Token)))
+func podLabels(ch *v1alpha1.Challenge) map[string]string {
+	domainHash := fmt.Sprintf("%d", adler32.Checksum([]byte(ch.Spec.DNSName)))
+	tokenHash := fmt.Sprintf("%d", adler32.Checksum([]byte(ch.Spec.Token)))
 	return map[string]string{
 		// TODO: we need to support domains longer than 63 characters
 		// this value should probably be hashed, and then the full plain text
@@ -43,8 +43,8 @@ func podLabels(ch v1alpha1.ACMEOrderChallenge) map[string]string {
 	}
 }
 
-func (s *Solver) ensurePod(crt *v1alpha1.Certificate, ch v1alpha1.ACMEOrderChallenge) (*corev1.Pod, error) {
-	existingPods, err := s.getPodsForChallenge(crt, ch)
+func (s *Solver) ensurePod(ch *v1alpha1.Challenge) (*corev1.Pod, error) {
+	existingPods, err := s.getPodsForChallenge(ch)
 	if err != nil {
 		return nil, err
 	}
@@ -52,22 +52,22 @@ func (s *Solver) ensurePod(crt *v1alpha1.Certificate, ch v1alpha1.ACMEOrderChall
 		return existingPods[0], nil
 	}
 	if len(existingPods) > 1 {
-		errMsg := fmt.Sprintf("multiple challenge solver pods found for certificate '%s/%s'. Cleaning up existing pods.", crt.Namespace, crt.Name)
+		errMsg := fmt.Sprintf("multiple challenge solver pods found for certificate '%s/%s'. Cleaning up existing pods.", ch.Namespace, ch.Name)
 		glog.Infof(errMsg)
-		err := s.cleanupPods(crt, ch)
+		err := s.cleanupPods(ch)
 		if err != nil {
 			return nil, err
 		}
 		return nil, fmt.Errorf(errMsg)
 	}
 
-	glog.Infof("No existing HTTP01 challenge solver pod found for Certificate %q. One will be created.", crt.Namespace+"/"+crt.Name)
-	return s.createPod(crt, ch)
+	glog.Infof("No existing HTTP01 challenge solver pod found for Certificate %q. One will be created.", ch.Namespace+"/"+ch.Name)
+	return s.createPod(ch)
 }
 
 // getPodsForChallenge returns a list of pods that were created to solve
 // the given challenge
-func (s *Solver) getPodsForChallenge(crt *v1alpha1.Certificate, ch v1alpha1.ACMEOrderChallenge) ([]*corev1.Pod, error) {
+func (s *Solver) getPodsForChallenge(ch *v1alpha1.Challenge) ([]*corev1.Pod, error) {
 	podLabels := podLabels(ch)
 	orderSelector := labels.NewSelector()
 	for key, val := range podLabels {
@@ -78,16 +78,16 @@ func (s *Solver) getPodsForChallenge(crt *v1alpha1.Certificate, ch v1alpha1.ACME
 		orderSelector = orderSelector.Add(*req)
 	}
 
-	podList, err := s.podLister.Pods(crt.Namespace).List(orderSelector)
+	podList, err := s.podLister.Pods(ch.Namespace).List(orderSelector)
 	if err != nil {
 		return nil, err
 	}
 
 	var relevantPods []*corev1.Pod
 	for _, pod := range podList {
-		if !metav1.IsControlledBy(pod, crt) {
+		if !metav1.IsControlledBy(pod, ch) {
 			glog.Infof("Found pod %q with acme-order-url annotation set to that of Certificate %q"+
-				"but it is not owned by the Certificate resource, so skipping it.", pod.Namespace+"/"+pod.Name, crt.Namespace+"/"+crt.Name)
+				"but it is not owned by the Certificate resource, so skipping it.", pod.Namespace+"/"+pod.Name, ch.Namespace+"/"+ch.Name)
 			continue
 		}
 		relevantPods = append(relevantPods, pod)
@@ -96,8 +96,8 @@ func (s *Solver) getPodsForChallenge(crt *v1alpha1.Certificate, ch v1alpha1.ACME
 	return relevantPods, nil
 }
 
-func (s *Solver) cleanupPods(crt *v1alpha1.Certificate, ch v1alpha1.ACMEOrderChallenge) error {
-	pods, err := s.getPodsForChallenge(crt, ch)
+func (s *Solver) cleanupPods(ch *v1alpha1.Challenge) error {
+	pods, err := s.getPodsForChallenge(ch)
 	if err != nil {
 		return err
 	}
@@ -115,23 +115,23 @@ func (s *Solver) cleanupPods(crt *v1alpha1.Certificate, ch v1alpha1.ACMEOrderCha
 
 // createPod will create a challenge solving pod for the given certificate,
 // domain, token and key.
-func (s *Solver) createPod(crt *v1alpha1.Certificate, ch v1alpha1.ACMEOrderChallenge) (*corev1.Pod, error) {
-	return s.Client.CoreV1().Pods(crt.Namespace).Create(s.buildPod(crt, ch))
+func (s *Solver) createPod(ch *v1alpha1.Challenge) (*corev1.Pod, error) {
+	return s.Client.CoreV1().Pods(ch.Namespace).Create(s.buildPod(ch))
 }
 
 // buildPod will build a challenge solving pod for the given certificate,
 // domain, token and key. It will not create it in the API server
-func (s *Solver) buildPod(crt *v1alpha1.Certificate, ch v1alpha1.ACMEOrderChallenge) *corev1.Pod {
+func (s *Solver) buildPod(ch *v1alpha1.Challenge) *corev1.Pod {
 	podLabels := podLabels(ch)
 	return &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "cm-acme-http-solver-",
-			Namespace:    crt.Namespace,
+			Namespace:    ch.Namespace,
 			Labels:       podLabels,
 			Annotations: map[string]string{
 				"sidecar.istio.io/inject": "false",
 			},
-			OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(crt, certificateGvk)},
+			OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(ch, challengeGvk)},
 		},
 		Spec: corev1.PodSpec{
 			RestartPolicy: corev1.RestartPolicyOnFailure,
@@ -139,14 +139,14 @@ func (s *Solver) buildPod(crt *v1alpha1.Certificate, ch v1alpha1.ACMEOrderChalle
 				{
 					Name: "acmesolver",
 					// TODO: use an image as specified as a config option
-					Image:           s.ACMEOptions.HTTP01SolverImage,
+					Image:           s.Context.HTTP01SolverImage,
 					ImagePullPolicy: corev1.PullIfNotPresent,
 					// TODO: replace this with some kind of cmdline generator
 					Args: []string{
 						fmt.Sprintf("--listen-port=%d", acmeSolverListenPort),
-						fmt.Sprintf("--domain=%s", ch.Domain),
-						fmt.Sprintf("--token=%s", ch.Token),
-						fmt.Sprintf("--key=%s", ch.Key),
+						fmt.Sprintf("--domain=%s", ch.Spec.DNSName),
+						fmt.Sprintf("--token=%s", ch.Spec.Token),
+						fmt.Sprintf("--key=%s", ch.Spec.Key),
 					},
 					Resources: corev1.ResourceRequirements{
 						Requests: corev1.ResourceList{

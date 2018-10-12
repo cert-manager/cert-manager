@@ -25,7 +25,7 @@ import (
 	"github.com/jetstack/cert-manager/pkg/util/errors"
 )
 
-func DecodePrivateKeyBytes(keyBytes []byte) (crypto.PrivateKey, error) {
+func DecodePrivateKeyBytes(keyBytes []byte) (crypto.Signer, error) {
 	// decode the private key pem
 	block, _ := pem.Decode(keyBytes)
 	if block == nil {

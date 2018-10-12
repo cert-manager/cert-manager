@@ -14,17 +14,28 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package ca
+package acme
 
 import (
-	"context"
-
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	v1alpha1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 )
 
-// Prepare does nothing for the CA issuer. In future, this may validate
-// the certificate request against the issuer, or set fields in the Status
-// block to be consumed in Issue and Renew
-func (c *CA) Prepare(ctx context.Context, crt *v1alpha1.Certificate) error {
-	return nil
+// IsFinalState will return true if the given ACME State is a 'final' state.
+// This is either one of 'ready', 'invalid' or 'expired'.
+// The 'valid' state is a special case, as it is a final state for Challenges but
+// not for Orders.
+func IsFinalState(s v1alpha1.State) bool {
+	switch s {
+	case v1alpha1.Valid, v1alpha1.Invalid, v1alpha1.Expired:
+		return true
+	}
+	return false
+}
+
+func IsFailureState(s v1alpha1.State) bool {
+	switch s {
+	case v1alpha1.Invalid, v1alpha1.Expired:
+		return true
+	}
+	return false
 }

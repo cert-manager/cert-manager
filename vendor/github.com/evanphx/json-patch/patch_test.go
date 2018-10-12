@@ -168,6 +168,36 @@ var Cases = []Case{
 		`[ { "op": "copy", "from": "/0/foo/bar", "path": "/0/baz/bar"}]`,
 		`[ { "baz": {"bar": ["qux","baz"], "qux":"bum"}, "foo": {"bar": ["qux","baz"]}}]`,
 	},
+	{
+		`{ "foo": ["bar","qux","baz"]}`,
+		`[ { "op": "remove", "path": "/foo/-2"}]`,
+		`{ "foo": ["bar", "baz"]}`,
+	},
+	{
+		`{ "foo": []}`,
+		`[ { "op": "add", "path": "/foo/-1", "value": "qux"}]`,
+		`{ "foo": ["qux"]}`,
+	},
+	{
+		`{ "bar": [{"baz": null}]}`,
+		`[ { "op": "replace", "path": "/bar/0/baz", "value": 1 } ]`,
+		`{ "bar": [{"baz": 1}]}`,
+	},
+	{
+		`{ "bar": [{"baz": 1}]}`,
+		`[ { "op": "replace", "path": "/bar/0/baz", "value": null } ]`,
+		`{ "bar": [{"baz": null}]}`,
+	},
+	{
+		`{ "bar": [null]}`,
+		`[ { "op": "replace", "path": "/bar/0", "value": 1 } ]`,
+		`{ "bar": [1]}`,
+	},
+	{
+		`{ "bar": [1]}`,
+		`[ { "op": "replace", "path": "/bar/0", "value": null } ]`,
+		`{ "bar": [null]}`,
+	},
 }
 
 type BadCase struct {
@@ -222,10 +252,37 @@ var BadCases = []BadCase{
 		`{ "foo": ["bar","baz"]}`,
 		`[ { "op": "add", "path": "/foo/-4", "value": "bum"}]`,
 	},
-
 	{
 		`{ "name":{ "foo": "bat", "qux": "bum"}}`,
 		`[ { "op": "replace", "path": "/foo/bar", "value":"baz"}]`,
+	},
+	{
+		`{ "foo": ["bar"]}`,
+		`[ {"op": "add", "path": "/foo/2", "value": "bum"}]`,
+	},
+	{
+		`{ "foo": []}`,
+		`[ {"op": "remove", "path": "/foo/-"}]`,
+	},
+	{
+		`{ "foo": []}`,
+		`[ {"op": "remove", "path": "/foo/-1"}]`,
+	},
+	{
+		`{ "foo": ["bar"]}`,
+		`[ {"op": "remove", "path": "/foo/-2"}]`,
+  },
+  {
+		`{}`,
+		`[ {"op":null,"path":""} ]`,
+	},
+	{
+		`{}`,
+		`[ {"op":"add","path":null} ]`,
+	},
+	{
+		`{}`,
+		`[ { "op": "copy", "from": null }]`,
 	},
 }
 

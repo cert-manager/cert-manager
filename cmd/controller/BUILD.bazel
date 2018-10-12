@@ -23,6 +23,8 @@ go_library(
     deps = [
         "//cmd/controller/app:go_default_library",
         "//cmd/controller/app/options:go_default_library",
+        "//pkg/controller/acmechallenges:go_default_library",
+        "//pkg/controller/acmeorders:go_default_library",
         "//pkg/controller/certificates:go_default_library",
         "//pkg/controller/clusterissuers:go_default_library",
         "//pkg/controller/ingress-shim:go_default_library",

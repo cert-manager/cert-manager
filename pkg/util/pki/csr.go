@@ -18,6 +18,7 @@ package pki
 
 import (
 	"bytes"
+	"crypto"
 	"crypto/rand"
 	"crypto/x509"
 	"crypto/x509/pkix"
@@ -176,7 +177,7 @@ func SignCertificate(template *x509.Certificate, issuerCert *x509.Certificate, p
 	return pemBytes.Bytes(), cert, err
 }
 
-func EncodeCSR(template *x509.CertificateRequest, key interface{}) ([]byte, error) {
+func EncodeCSR(template *x509.CertificateRequest, key crypto.Signer) ([]byte, error) {
 	derBytes, err := x509.CreateCertificateRequest(rand.Reader, template, key)
 	if err != nil {
 		return nil, fmt.Errorf("error creating x509 certificate: %s", err.Error())

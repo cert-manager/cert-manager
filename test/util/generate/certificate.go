@@ -34,7 +34,6 @@ type CertificateConfig struct {
 
 	// ACME parameters
 	SolverConfig v1alpha1.SolverConfig
-	ACMEOrderURL string
 }
 
 func Certificate(cfg CertificateConfig) *v1alpha1.Certificate {
@@ -60,12 +59,6 @@ func Certificate(cfg CertificateConfig) *v1alpha1.Certificate {
 				},
 			},
 		},
-		Status: v1alpha1.CertificateStatus{
-			ACME: &v1alpha1.CertificateACMEStatus{
-				Order: v1alpha1.ACMEOrderStatus{
-					URL: cfg.ACMEOrderURL,
-				},
-			},
-		},
+		Status: v1alpha1.CertificateStatus{},
 	}
 }
