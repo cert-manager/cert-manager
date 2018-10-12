@@ -47,13 +47,30 @@ type ChallengeList struct {
 }
 
 type ChallengeSpec struct {
+	// AuthzURL is the URL to the ACME Authorization resource that this
+	// challenge is a part of.
 	AuthzURL string `json:"authzURL"`
-	Type     string `json:"type"`
-	URL      string `json:"url"`
-	DNSName  string `json:"dnsName"`
-	Token    string `json:"token"`
-	Key      string `json:"key"`
-	Wildcard bool   `json:"wildcard"`
+
+	// Type is the type of ACME challenge this resource represents, e.g. "dns01"
+	// or "http01"
+	Type string `json:"type"`
+
+	// URL is the URL of the ACME Challenge resource for this challenge.
+	// This can be used to lookup details about the status of this challenge.
+	URL string `json:"url"`
+
+	// DNSName is the identifier that this challenge is for, e.g. example.com.
+	DNSName string `json:"dnsName"`
+
+	// Token is the ACME challenge token for this challenge.
+	Token string `json:"token"`
+
+	// Key is the ACME challenge key for this challenge
+	Key string `json:"key"`
+
+	// Wildcard will be true if this challenge is for a wildcard identifier,
+	// for example '*.example.com'
+	Wildcard bool `json:"wildcard"`
 
 	// Config specifies the solver configuration for this challenge.
 	Config SolverConfig `json:"config"`
@@ -67,7 +84,19 @@ type ChallengeSpec struct {
 }
 
 type ChallengeStatus struct {
-	Presented bool   `json:"presented"`
-	Reason    string `json:"reason"`
-	State     State  `json:"state"`
+	// Presented will be set to true if the challenge values for this challenge
+	// are currently 'presented'.
+	// This *does not* imply the self check is passing. Only that the values
+	// have been 'submitted' for the appropriate challenge mechanism (i.e. the
+	// DNS01 TXT record has been presented, or the HTTP01 configuration has been
+	// configured).
+	Presented bool `json:"presented"`
+
+	// Reason contains human readable information on why the Challenge is in the
+	// current state.
+	Reason string `json:"reason"`
+
+	// State contains the current 'state' of the challenge.
+	// If not set, the state of the challenge is unknown.
+	State State `json:"state"`
 }
