@@ -192,7 +192,7 @@ func (c *Controller) Sync(ctx context.Context, crt *v1alpha1.Certificate) (reque
 	// as there is an existing certificate, or we may create one below, we will
 	// run scheduleRenewal to schedule a renewal if required at the end of
 	// execution.
-	defer c.scheduleRenewal(crtCopy, issuerObj)
+	defer c.scheduleRenewal(crtCopy)
 
 	// if the certificate was not found, or the certificate data is invalid, we
 	// should issue a new certificate.
@@ -200,7 +200,7 @@ func (c *Controller) Sync(ctx context.Context, crt *v1alpha1.Certificate) (reque
 	// listed in the certificate spec, we should re-issue the certificate.
 	if k8sErrors.IsNotFound(err) || errors.IsInvalidData(err) ||
 		expectedCN != cert.Subject.CommonName || !util.EqualUnsorted(cert.DNSNames, expectedDNSNames) ||
-		c.Context.IssuerOptions.CertificateNeedsRenew(cert) {
+		c.Context.IssuerOptions.CertificateNeedsRenew(cert, crt.Spec.RenewBefore.Duration) {
 		return c.issue(ctx, i, crtCopy)
 	}
 
@@ -228,7 +228,7 @@ func (c *Controller) getGenericIssuer(crt *v1alpha1.Certificate) (v1alpha1.Gener
 	}
 }
 
-func (c *Controller) scheduleRenewal(crt *v1alpha1.Certificate, issuerObj v1alpha1.GenericIssuer) {
+func (c *Controller) scheduleRenewal(crt *v1alpha1.Certificate) {
 	key, err := keyFunc(crt)
 
 	if err != nil {
