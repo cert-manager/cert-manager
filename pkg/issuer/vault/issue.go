@@ -19,8 +19,10 @@ package vault
 import (
 	"bytes"
 	"context"
+	"crypto/x509"
 	"encoding/pem"
 	"fmt"
+	"net/http"
 	"path"
 	"strings"
 	"time"
@@ -109,13 +111,35 @@ func (v *Vault) obtainCertificate(ctx context.Context, crt *v1alpha1.Certificate
 	return keyBytes, crtBytes, caBytes, nil
 }
 
+func (v *Vault) configureCertPool(cfg *vault.Config) error {
+	certs := v.issuer.GetSpec().Vault.CABundle
+	if len(certs) == 0 {
+		return nil
+	}
+
+	caCertPool := x509.NewCertPool()
+	ok := caCertPool.AppendCertsFromPEM(certs)
+	if ok == false {
+		return fmt.Errorf("error loading Vault CA bundle")
+	}
+
+	cfg.HttpClient.Transport.(*http.Transport).TLSClientConfig.RootCAs = caCertPool
+
+	return nil
+}
+
 func (v *Vault) initVaultClient() (*vault.Client, error) {
-	client, err := vault.NewClient(nil)
+	vaultCfg := vault.DefaultConfig()
+	vaultCfg.Address = v.issuer.GetSpec().Vault.Server
+	err := v.configureCertPool(vaultCfg)
+	if err != nil {
+		return nil, err
+	}
+
+	client, err := vault.NewClient(vaultCfg)
 	if err != nil {
 		return nil, fmt.Errorf("error initializing Vault client: %s", err.Error())
 	}
-
-	client.SetAddress(v.issuer.GetSpec().Vault.Server)
 
 	tokenRef := v.issuer.GetSpec().Vault.Auth.TokenSecretRef
 	if tokenRef.Name != "" {

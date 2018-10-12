@@ -35,6 +35,7 @@ import (
 	_ "github.com/jetstack/cert-manager/test/e2e/clusterissuer"
 	"github.com/jetstack/cert-manager/test/e2e/framework"
 	_ "github.com/jetstack/cert-manager/test/e2e/issuer"
+	"github.com/jetstack/cert-manager/test/util/vault"
 )
 
 const certManagerDeploymentNamespace = "cert-manager"
@@ -69,7 +70,8 @@ func RunE2ETests(t *testing.T) {
 	}
 	InstallHelmChart(t, "pebble", "./contrib/charts/pebble", "pebble", "./test/fixtures/pebble-values.yaml", extraArgs...)
 
-	InstallHelmChart(t, "vault", "./contrib/charts/vault", "vault", "./test/fixtures/vault-values.yaml")
+	vaultExtraArgs := []string{"--set", "vault.privateKey=" + string(vault.VaultCertPrivateKey), "--set", "vault.publicKey=" + string(vault.VaultCert)}
+	InstallHelmChart(t, "vault", "./contrib/charts/vault", "vault", "./test/fixtures/vault-values.yaml", vaultExtraArgs...)
 
 	glog.Infof("Starting e2e run %q on Ginkgo node %d", framework.RunId, config.GinkgoConfig.ParallelNode)
 

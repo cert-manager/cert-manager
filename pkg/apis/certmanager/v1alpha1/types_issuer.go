@@ -91,6 +91,11 @@ type VaultIssuer struct {
 	Server string `json:"server"`
 	// Vault URL path to the certificate role
 	Path string `json:"path"`
+	// Base64 encoded CA bundle to validate Vault server certificate. Only used
+	// if the Server URL is using HTTPS protocol. This parameter is ignored for
+	// plain HTTP protocol connection. If not set the system root certificates
+	// are used to validate the TLS connection.
+	CABundle []byte `json:"caBundle,omitempty"`
 }
 
 // Vault authentication  can be configured:
