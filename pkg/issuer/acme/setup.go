@@ -52,6 +52,7 @@ const (
 // Setup will verify an existing ACME registration, or create one if not
 // already registered.
 func (a *Acme) Setup(ctx context.Context) (issuer.SetupResponse, error) {
+	// check if user has specified a v1 account URL, and set a status condition if so.
 	if newURL, ok := acmev1ToV2Mappings[a.issuer.GetSpec().ACME.Server]; ok {
 		a.issuer.UpdateStatusCondition(v1alpha1.IssuerConditionReady, v1alpha1.ConditionFalse, "InvalidConfig",
 			fmt.Sprintf("Your ACME server URL is set to a v1 endpoint (%s). "+
@@ -60,11 +61,17 @@ func (a *Acme) Setup(ctx context.Context) (issuer.SetupResponse, error) {
 		return issuer.SetupResponse{Requeue: false}, nil
 	}
 
+	// if the namespace field is not set, we are working on a ClusterIssuer resource
+	// therefore we should check for the ACME private key in the 'cluster resource namespace'.
 	ns := a.issuer.GetObjectMeta().Namespace
 	if ns == "" {
 		ns = a.IssuerOptions.ClusterResourceNamespace
 	}
 
+	// attempt to obtain the ACME client for this issuer using the 'acme helper'.
+	// This will will attempt to retrieve the ACME private key from the apiserver.
+	// If retrieving the private key fails, we catch this case and generate a
+	// new key.
 	cl, err := a.helper.ClientForIssuer(a.issuer)
 	if k8sErrors.IsNotFound(err) || errors.IsInvalidData(err) {
 		glog.Infof("%s: generating acme account private key %q", a.issuer.GetObjectMeta().Name, a.issuer.GetSpec().ACME.PrivateKey.Name)
@@ -111,6 +118,7 @@ func (a *Acme) registerAccount(ctx context.Context, cl client.Interface) (*acmea
 	if err == nil {
 		return acc, nil
 	}
+
 	// return all errors except for 404 errors (which indicate the account
 	// is not yet registered)
 	acmeErr, ok := err.(*acmeapi.Error)
@@ -122,6 +130,7 @@ func (a *Acme) registerAccount(ctx context.Context, cl client.Interface) (*acmea
 		Contact:     []string{fmt.Sprintf("mailto:%s", strings.ToLower(a.issuer.GetSpec().ACME.Email))},
 		TermsAgreed: true,
 	}
+
 	acc, err = cl.CreateAccount(ctx, acc)
 	if err != nil {
 		return nil, err
@@ -130,9 +139,12 @@ func (a *Acme) registerAccount(ctx context.Context, cl client.Interface) (*acmea
 	// if acc.Status != acme.StatusValid {
 	// 	return nil, fmt.Errorf("acme account is not valid")
 	// }
+
 	return acc, nil
 }
 
+// createAccountPrivateKey will generate a new RSA private key, and create it
+// as a secret resource in the apiserver.
 func (a *Acme) createAccountPrivateKey(sel v1alpha1.SecretKeySelector, ns string) (*rsa.PrivateKey, error) {
 	sel = acme.PrivateKeySelector(sel)
 	accountPrivKey, err := pki.GenerateRSAPrivateKey(pki.MinRSAKeySize)
