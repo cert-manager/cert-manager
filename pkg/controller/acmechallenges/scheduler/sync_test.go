@@ -50,13 +50,13 @@ func TestSync(t *testing.T) {
 					gen.Challenge("test",
 						gen.SetChallengeDNSName("example.com"))},
 				ExpectedActions: []testpkg.Action{
-					testpkg.NewAction(coretesting.NewUpdateAction(v1alpha1.SchemeGroupVersion.WithResource("challenges"), defaultTestNamespace,
+					testpkg.NewAction(coretesting.NewUpdateAction(v1alpha1.SchemeGroupVersion.WithResource("challenges"), gen.DefaultTestNamespace,
 						gen.Challenge("test",
 							gen.SetChallengeDNSName("example.com"),
 							gen.SetChallengeProcessing(true)))),
 				},
 			},
-			Challenge: gen.Challenge("test", setDNSName("example.com")),
+			Challenge: gen.Challenge("test", gen.SetChallengeDNSName("example.com")),
 		},
 		"when a duplicate challenge exists in the API, and is processing, don't mark next one as processing": {
 			Builder: &testpkg.Builder{
@@ -68,7 +68,7 @@ func TestSync(t *testing.T) {
 						gen.SetChallengeProcessing(true)),
 				},
 			},
-			Challenge: gen.Challenge("test", setDNSName("example.com")),
+			Challenge: gen.Challenge("test", gen.SetChallengeDNSName("example.com")),
 			Err:       true,
 		},
 		"skip elements that are already marked as processing=true": {
