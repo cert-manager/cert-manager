@@ -161,6 +161,11 @@ func (c *Controller) syncChallengeStatus(ctx context.Context, cl acmecl.Interfac
 	return nil
 }
 
+// acceptChallenge will accept the challenge with the acme server and then wait
+// for the authorization to reach a 'final' state.
+// It will update the challenge's status to reflect the final state of the
+// challenge if it failed, or the final state of the challenge's authorization
+// if accepting the challenge succeeds.
 func (c *Controller) acceptChallenge(ctx context.Context, cl acmecl.Interface, ch *cmapi.Challenge) error {
 	glog.Infof("Accepting challenge for domain %q", ch.Spec.DNSName)
 	// We manually construct an ACME challenge here from our own internal type
@@ -174,29 +179,29 @@ func (c *Controller) acceptChallenge(ctx context.Context, cl acmecl.Interface, c
 		ch.Status.State = cmapi.State(acmeChal.Status)
 	}
 	if err != nil {
-		if acmeErr, ok := err.(*acmeapi.Error); ok {
-			ch.Status.Reason = fmt.Sprintf("Error accepting challenge: %v", acmeErr)
-		}
+		glog.Infof("%s: Error accepting challenge: %v", ch.Name, err)
+		ch.Status.Reason = fmt.Sprintf("Error accepting challenge: %v", err)
 		return err
 	}
 
 	glog.Infof("Waiting for authorization for domain %q", ch.Spec.DNSName)
 	authorization, err := cl.WaitAuthorization(ctx, ch.Spec.AuthzURL)
-	if authorization != nil {
-		ch.Status.State = cmapi.State(authorization.Status)
-	}
 	if err != nil {
-		if acmeErr, ok := err.(*acmeapi.Error); ok {
-			ch.Status.Reason = fmt.Sprintf("Error accepting challenge: %v", acmeErr)
+		authErr, ok := err.(acmeapi.AuthorizationError)
+		if !ok {
+			glog.Infof("%s: Unexpected error waiting for authorization: %v", ch.Name, err)
+			return err
 		}
-		return err
+
+		ch.Status.State = cmapi.State(authErr.Authorization.Status)
+		ch.Status.Reason = fmt.Sprintf("Error accepting authorization: %v", authErr)
+
+		// return nil here, as accepting the challenge did not error, the challenge
+		// simply failed
+		return nil
 	}
 
-	if authorization.Status != acmeapi.StatusValid {
-		ch.Status.Reason = fmt.Sprintf("Authorization status is %q and not 'valid'", authorization.Status)
-		return fmt.Errorf("expected acme domain authorization status for %q to be valid, but it is %q", authorization.Identifier.Value, authorization.Status)
-	}
-
+	ch.Status.State = cmapi.State(authorization.Status)
 	ch.Status.Reason = "Successfully authorized domain"
 	c.Context.Recorder.Eventf(ch, corev1.EventTypeNormal, reasonDomainVerified, "Domain %q verified with %q validation", ch.Spec.DNSName, ch.Spec.Type)
 
