@@ -20,13 +20,13 @@ import (
 	"context"
 	"testing"
 
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	coretesting "k8s.io/client-go/testing"
 
 	acmecl "github.com/jetstack/cert-manager/pkg/acme/client"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	testpkg "github.com/jetstack/cert-manager/pkg/controller/test"
+	"github.com/jetstack/cert-manager/test/unit/gen"
 	acmeapi "github.com/jetstack/cert-manager/third_party/crypto/acme"
 )
 
@@ -66,104 +66,27 @@ func TestSyncHappyPath(t *testing.T) {
 		},
 	}
 
-	// build actual test fixtures
-	testChallenge := &v1alpha1.Challenge{
-		ObjectMeta: metav1.ObjectMeta{Name: "testchal", Namespace: "default"},
-		Spec: v1alpha1.ChallengeSpec{
-			AuthzURL: "http://authzurl",
-			URL:      "http://chalurl",
-			Type:     "http-01",
-			Token:    "token",
-			DNSName:  "test.com",
-			Key:      "key",
-			Config: v1alpha1.SolverConfig{
-				HTTP01: &v1alpha1.HTTP01SolverConfig{
-					Ingress: "",
-				},
-			},
-		},
-	}
-
-	testChallengePending := testChallenge.DeepCopy()
-	testChallengePending.Status = v1alpha1.ChallengeStatus{
-		State: v1alpha1.Pending,
-	}
-	testChallengeInvalid := testChallengePending.DeepCopy()
-	testChallengeInvalid.Status.State = v1alpha1.Invalid
-	testChallengeValid := testChallengePending.DeepCopy()
-	testChallengeValid.Status.State = v1alpha1.Valid
-	testChallengeReady := testChallengePending.DeepCopy()
-	testChallengeReady.Status.State = v1alpha1.Ready
-
-	testChallengePendingPresented := testChallengePending.DeepCopy()
-	testChallengePendingPresented.Status.Presented = true
-	testChallengePendingPresented.Status.Reason = "Waiting for http-01 challenge propagation"
-	testChallengeValidPresented := testChallengeValid.DeepCopy()
-	testChallengeValidPresented.Status.Presented = true
-	testChallengeValidPresented.Status.Reason = "Successfully authorized domain"
-	testChallengeInvalidPresented := testChallengeInvalid.DeepCopy()
-	testChallengeInvalidPresented.Status.Presented = true
-	testChallengeInvalidPresented.Status.Reason = `Authorization status is "invalid" and not 'valid'`
-
-	testACMEChallengePending := &acmeapi.Challenge{
-		URL:    "http://chalurl",
-		Status: acmeapi.StatusPending,
-		Type:   "http-01",
-		Token:  "token",
-	}
-	// shallow copy
-	testACMEChallengeValid := &acmeapi.Challenge{}
-	*testACMEChallengeValid = *testACMEChallengePending
-	testACMEChallengeValid.Status = acmeapi.StatusValid
-	// shallow copy
-	testACMEChallengeReady := &acmeapi.Challenge{}
-	*testACMEChallengeReady = *testACMEChallengePending
-	testACMEChallengeReady.Status = acmeapi.StatusReady
-	// shallow copy
-	testACMEChallengeInvalid := &acmeapi.Challenge{}
-	*testACMEChallengeInvalid = *testACMEChallengePending
-	testACMEChallengeInvalid.Status = acmeapi.StatusInvalid
-
-	testACMEAuthorizationPending := &acmeapi.Authorization{
-		URL:    "http://authzurl",
-		Status: acmeapi.StatusPending,
-		Identifier: acmeapi.AuthzID{
-			Value: "test.com",
-		},
-		Challenges: []*acmeapi.Challenge{
-			{
-				URL:   "http://chalurl",
-				Type:  "http-01",
-				Token: "token",
-			},
-		},
-	}
-	// shallow copy
-	testACMEAuthorizationValid := &acmeapi.Authorization{}
-	*testACMEAuthorizationValid = *testACMEAuthorizationPending
-	testACMEAuthorizationValid.Status = acmeapi.StatusValid
-	// shallow copy
-	testACMEAuthorizationReady := &acmeapi.Authorization{}
-	*testACMEAuthorizationReady = *testACMEAuthorizationPending
-	testACMEAuthorizationReady.Status = acmeapi.StatusReady
-	// shallow copy
-	testACMEAuthorizationInvalid := &acmeapi.Authorization{}
-	*testACMEAuthorizationInvalid = *testACMEAuthorizationPending
-	testACMEAuthorizationInvalid.Status = acmeapi.StatusInvalid
-
 	tests := map[string]controllerFixture{
 		"update status if state is unknown": {
-			Issuer:    testIssuerHTTP01Enabled,
-			Challenge: testChallenge,
+			Issuer: testIssuerHTTP01Enabled,
+			Challenge: gen.Challenge("testchal",
+				gen.SetChallengeURL("testurl"),
+			),
 			Builder: &testpkg.Builder{
-				CertManagerObjects: []runtime.Object{testChallenge},
+				CertManagerObjects: []runtime.Object{gen.Challenge("testchal",
+					gen.SetChallengeURL("testurl"),
+				)},
 				ExpectedActions: []testpkg.Action{
-					testpkg.NewAction(coretesting.NewUpdateAction(v1alpha1.SchemeGroupVersion.WithResource("challenges"), testChallengePending.Namespace, testChallengePending)),
+					testpkg.NewAction(coretesting.NewUpdateAction(v1alpha1.SchemeGroupVersion.WithResource("challenges"), gen.DefaultTestNamespace,
+						gen.Challenge("testchal",
+							gen.SetChallengeURL("testurl"),
+							gen.SetChallengeState(v1alpha1.Pending),
+						))),
 				},
 			},
 			Client: &acmecl.FakeACME{
 				FakeGetChallenge: func(ctx context.Context, url string) (*acmeapi.Challenge, error) {
-					return testACMEChallengePending, nil
+					return &acmeapi.Challenge{Status: acmeapi.StatusPending}, nil
 				},
 			},
 			CheckFn: func(t *testing.T, s *controllerFixture, args ...interface{}) {
@@ -171,8 +94,12 @@ func TestSyncHappyPath(t *testing.T) {
 			Err: false,
 		},
 		"call Present and update challenge status to presented": {
-			Issuer:    testIssuerHTTP01Enabled,
-			Challenge: testChallengePending,
+			Issuer: testIssuerHTTP01Enabled,
+			Challenge: gen.Challenge("testchal",
+				gen.SetChallengeURL("testurl"),
+				gen.SetChallengeState(v1alpha1.Pending),
+				gen.SetChallengeType("http-01"),
+			),
 			HTTP01: &fakeSolver{
 				fakePresent: func(ctx context.Context, issuer v1alpha1.GenericIssuer, ch *v1alpha1.Challenge) error {
 					return nil
@@ -182,9 +109,20 @@ func TestSyncHappyPath(t *testing.T) {
 				},
 			},
 			Builder: &testpkg.Builder{
-				CertManagerObjects: []runtime.Object{testChallengePending},
+				CertManagerObjects: []runtime.Object{gen.Challenge("testchal",
+					gen.SetChallengeURL("testurl"),
+					gen.SetChallengeState(v1alpha1.Pending),
+					gen.SetChallengeType("http-01"),
+				)},
 				ExpectedActions: []testpkg.Action{
-					testpkg.NewAction(coretesting.NewUpdateAction(v1alpha1.SchemeGroupVersion.WithResource("challenges"), testChallengePendingPresented.Namespace, testChallengePendingPresented)),
+					testpkg.NewAction(coretesting.NewUpdateAction(v1alpha1.SchemeGroupVersion.WithResource("challenges"), gen.DefaultTestNamespace,
+						gen.Challenge("testchal",
+							gen.SetChallengeURL("testurl"),
+							gen.SetChallengeState(v1alpha1.Pending),
+							gen.SetChallengePresented(true),
+							gen.SetChallengeType("http-01"),
+							gen.SetChallengeReason("Waiting for http-01 challenge propagation"),
+						))),
 				},
 			},
 			Client: &acmecl.FakeACME{},
@@ -193,8 +131,13 @@ func TestSyncHappyPath(t *testing.T) {
 			Err: true,
 		},
 		"accept the challenge if the self check is passing": {
-			Issuer:    testIssuerHTTP01Enabled,
-			Challenge: testChallengePendingPresented,
+			Issuer: testIssuerHTTP01Enabled,
+			Challenge: gen.Challenge("testchal",
+				gen.SetChallengeURL("testurl"),
+				gen.SetChallengeState(v1alpha1.Pending),
+				gen.SetChallengeType("http-01"),
+				gen.SetChallengePresented(true),
+			),
 			HTTP01: &fakeSolver{
 				fakeCheck: func(ch *v1alpha1.Challenge) (bool, error) {
 					return true, nil
@@ -204,9 +147,21 @@ func TestSyncHappyPath(t *testing.T) {
 				},
 			},
 			Builder: &testpkg.Builder{
-				CertManagerObjects: []runtime.Object{testChallengePendingPresented},
+				CertManagerObjects: []runtime.Object{gen.Challenge("testchal",
+					gen.SetChallengeURL("testurl"),
+					gen.SetChallengeState(v1alpha1.Pending),
+					gen.SetChallengeType("http-01"),
+					gen.SetChallengePresented(true),
+				)},
 				ExpectedActions: []testpkg.Action{
-					testpkg.NewAction(coretesting.NewUpdateAction(v1alpha1.SchemeGroupVersion.WithResource("challenges"), testChallengeValidPresented.Namespace, testChallengeValidPresented)),
+					testpkg.NewAction(coretesting.NewUpdateAction(v1alpha1.SchemeGroupVersion.WithResource("challenges"), gen.DefaultTestNamespace,
+						gen.Challenge("testchal",
+							gen.SetChallengeURL("testurl"),
+							gen.SetChallengeState(v1alpha1.Valid),
+							gen.SetChallengeType("http-01"),
+							gen.SetChallengePresented(true),
+							gen.SetChallengeReason("Successfully authorized domain"),
+						))),
 				},
 			},
 			Client: &acmecl.FakeACME{
@@ -214,10 +169,10 @@ func TestSyncHappyPath(t *testing.T) {
 					// return something other than valid here so we can verify that
 					// the challenge.status.state is set to the *authorizations*
 					// status and not the challenges
-					return testACMEChallengePending, nil
+					return &acmeapi.Challenge{Status: acmeapi.StatusPending}, nil
 				},
 				FakeWaitAuthorization: func(context.Context, string) (*acmeapi.Authorization, error) {
-					return testACMEAuthorizationValid, nil
+					return &acmeapi.Authorization{Status: acmeapi.StatusValid}, nil
 				},
 			},
 			CheckFn: func(t *testing.T, s *controllerFixture, args ...interface{}) {
@@ -225,8 +180,13 @@ func TestSyncHappyPath(t *testing.T) {
 			Err: false,
 		},
 		"mark certificate as failed if accepting the authorization fails": {
-			Issuer:    testIssuerHTTP01Enabled,
-			Challenge: testChallengePendingPresented,
+			Issuer: testIssuerHTTP01Enabled,
+			Challenge: gen.Challenge("testchal",
+				gen.SetChallengeURL("testurl"),
+				gen.SetChallengeState(v1alpha1.Pending),
+				gen.SetChallengeType("http-01"),
+				gen.SetChallengePresented(true),
+			),
 			HTTP01: &fakeSolver{
 				fakeCheck: func(ch *v1alpha1.Challenge) (bool, error) {
 					return true, nil
@@ -236,9 +196,21 @@ func TestSyncHappyPath(t *testing.T) {
 				},
 			},
 			Builder: &testpkg.Builder{
-				CertManagerObjects: []runtime.Object{testChallengePendingPresented},
+				CertManagerObjects: []runtime.Object{gen.Challenge("testchal",
+					gen.SetChallengeURL("testurl"),
+					gen.SetChallengeState(v1alpha1.Pending),
+					gen.SetChallengeType("http-01"),
+					gen.SetChallengePresented(true),
+				)},
 				ExpectedActions: []testpkg.Action{
-					testpkg.NewAction(coretesting.NewUpdateAction(v1alpha1.SchemeGroupVersion.WithResource("challenges"), testChallengeInvalidPresented.Namespace, testChallengeInvalidPresented)),
+					testpkg.NewAction(coretesting.NewUpdateAction(v1alpha1.SchemeGroupVersion.WithResource("challenges"), gen.DefaultTestNamespace,
+						gen.Challenge("testchal",
+							gen.SetChallengeURL("testurl"),
+							gen.SetChallengeState(v1alpha1.Invalid),
+							gen.SetChallengeType("http-01"),
+							gen.SetChallengePresented(true),
+							gen.SetChallengeReason("Authorization status is \"invalid\" and not 'valid'"),
+						))),
 				},
 			},
 			Client: &acmecl.FakeACME{
@@ -246,10 +218,10 @@ func TestSyncHappyPath(t *testing.T) {
 					// return something other than invalid here so we can verify that
 					// the challenge.status.state is set to the *authorizations*
 					// status and not the challenges
-					return testACMEChallengePending, nil
+					return &acmeapi.Challenge{Status: acmeapi.StatusPending}, nil
 				},
 				FakeWaitAuthorization: func(context.Context, string) (*acmeapi.Authorization, error) {
-					return testACMEAuthorizationInvalid, nil
+					return &acmeapi.Authorization{Status: acmeapi.StatusInvalid}, nil
 				},
 			},
 			CheckFn: func(t *testing.T, s *controllerFixture, args ...interface{}) {
@@ -257,28 +229,38 @@ func TestSyncHappyPath(t *testing.T) {
 			Err: true,
 		},
 		"do nothing if the challenge is valid": {
-			Issuer:    testIssuerHTTP01Enabled,
-			Challenge: testChallengeValid,
+			Issuer: testIssuerHTTP01Enabled,
+			Challenge: gen.Challenge("testchal",
+				gen.SetChallengeURL("testurl"),
+				gen.SetChallengeState(v1alpha1.Valid),
+				gen.SetChallengeType("http-01"),
+				gen.SetChallengePresented(true),
+			),
 			Builder: &testpkg.Builder{
-				CertManagerObjects: []runtime.Object{testChallengeValid},
-				ExpectedActions:    []testpkg.Action{},
+				CertManagerObjects: []runtime.Object{gen.Challenge("testchal",
+					gen.SetChallengeURL("testurl"),
+					gen.SetChallengeState(v1alpha1.Valid),
+					gen.SetChallengeType("http-01"),
+					gen.SetChallengePresented(true),
+				)},
 			},
-			Client: &acmecl.FakeACME{},
-			CheckFn: func(t *testing.T, s *controllerFixture, args ...interface{}) {
-			},
-			Err: false,
 		},
 		"do nothing if the challenge is failed": {
-			Issuer:    testIssuerHTTP01Enabled,
-			Challenge: testChallengeInvalid,
+			Issuer: testIssuerHTTP01Enabled,
+			Challenge: gen.Challenge("testchal",
+				gen.SetChallengeURL("testurl"),
+				gen.SetChallengeState(v1alpha1.Invalid),
+				gen.SetChallengeType("http-01"),
+				gen.SetChallengePresented(true),
+			),
 			Builder: &testpkg.Builder{
-				CertManagerObjects: []runtime.Object{testChallengeInvalid},
-				ExpectedActions:    []testpkg.Action{},
+				CertManagerObjects: []runtime.Object{gen.Challenge("testchal",
+					gen.SetChallengeURL("testurl"),
+					gen.SetChallengeState(v1alpha1.Invalid),
+					gen.SetChallengeType("http-01"),
+					gen.SetChallengePresented(true),
+				)},
 			},
-			Client: &acmecl.FakeACME{},
-			CheckFn: func(t *testing.T, s *controllerFixture, args ...interface{}) {
-			},
-			Err: false,
 		},
 	}
 
