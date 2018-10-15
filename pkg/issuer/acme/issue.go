@@ -125,7 +125,7 @@ func (a *Acme) Issue(ctx context.Context, crt *v1alpha1.Certificate) (issuer.Iss
 	// If the existing order has expired, we should create a new one
 	// TODO: implement setting this order state in the acmeorders controller
 	if existingOrder.Status.State == v1alpha1.Expired {
-		return a.retryOrder(existingOrder)
+		return a.retryOrder(crt, existingOrder)
 	}
 
 	// If the existing order has failed, we should check if the Certificate
@@ -144,11 +144,7 @@ func (a *Acme) Issue(ctx context.Context, crt *v1alpha1.Certificate) (issuer.Iss
 			return issuer.IssueResponse{}, fmt.Errorf("applying acme order back-off for certificate %s/%s because it has failed within the last %s", crt.Namespace, crt.Name, createOrderWaitDuration)
 		}
 
-		// otherwise, we clear the lastFailureTime and create a new order
-		// as the back-off time has passed.
-		crt.Status.LastFailureTime = nil
-
-		return a.retryOrder(existingOrder)
+		return a.retryOrder(crt, existingOrder)
 	}
 
 	if existingOrder.Status.State != v1alpha1.Valid {
@@ -187,7 +183,7 @@ func (a *Acme) Issue(ctx context.Context, crt *v1alpha1.Certificate) (issuer.Iss
 
 	if a.Context.IssuerOptions.CertificateNeedsRenew(x509Cert) {
 		// existing order's certificate is near expiry
-		return a.retryOrder(existingOrder)
+		return a.retryOrder(crt, existingOrder)
 	}
 
 	// encode the retrieved certificates (including the chain)
@@ -319,7 +315,7 @@ func (a *Acme) createNewOrder(crt *v1alpha1.Certificate, template *v1alpha1.Orde
 // deletion policy.
 // If delete successfully (i.e. cleaned up), the order name will be
 // reset to empty and a resync of the resource will begin.
-func (a *Acme) retryOrder(existingOrder *v1alpha1.Order) (issuer.IssueResponse, error) {
+func (a *Acme) retryOrder(crt *v1alpha1.Certificate, existingOrder *v1alpha1.Order) (issuer.IssueResponse, error) {
 	foregroundDeletion := metav1.DeletePropagationForeground
 	err := a.CMClient.CertmanagerV1alpha1().Orders(existingOrder.Namespace).Delete(existingOrder.Name, &metav1.DeleteOptions{
 		PropagationPolicy: &foregroundDeletion,
@@ -327,6 +323,8 @@ func (a *Acme) retryOrder(existingOrder *v1alpha1.Order) (issuer.IssueResponse, 
 	if err != nil {
 		return issuer.IssueResponse{}, err
 	}
+
+	crt.Status.LastFailureTime = nil
 
 	// Updating the certificate status will trigger a requeue once the change
 	// has been observed by the informer.
