@@ -120,18 +120,20 @@ func (a *Acme) Issue(ctx context.Context, crt *v1alpha1.Certificate) (issuer.Iss
 	}
 	if !validForKey {
 		glog.V(4).Infof("CSR on existing order resource does not match certificate %s/%s private key. Creating new order.", crt.Namespace, crt.Name)
-
 	}
 
-	// if the existing order has expired, we should create a new one
-	// TODO: implement this order state in the acmeorders controller
+	// If the existing order has expired, we should create a new one
+	// TODO: implement setting this order state in the acmeorders controller
 	if existingOrder.Status.State == v1alpha1.Expired {
 		return a.retryOrder(existingOrder)
 	}
 
-	// check if the existing order has failed.
-	// If it has, we check to see when it last failed and 'back-off' if it
-	// failed in the recent past.
+	// If the existing order has failed, we should check if the Certificate
+	// already has a LastFailureTime
+	// - If it does not, then this is a new failure and we record the LastFailureTime
+	//   as Now() and return
+	// - If it does, and it is more than the 'back-off' period ago, we retry the order
+	// - Otherwise we return an error to attempt re-processing at a later time
 	if acme.IsFailureState(existingOrder.Status.State) {
 		if crt.Status.LastFailureTime == nil {
 			nowTime := metav1.NewTime(a.clock.Now())
@@ -164,6 +166,8 @@ func (a *Acme) Issue(ctx context.Context, crt *v1alpha1.Certificate) (issuer.Iss
 		return issuer.IssueResponse{}, err
 	}
 
+	// We check the current Order's Certificate resource to see if it's nearing expiry.
+	// If it is, this implies that it is an old order that is now out of date.
 	certSlice, err := cl.GetCertificate(ctx, existingOrder.Status.CertificateURL)
 	if err != nil {
 		// TODO: parse returned ACME error and potentially re-create order.
