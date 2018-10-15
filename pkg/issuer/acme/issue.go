@@ -52,6 +52,26 @@ var (
 )
 
 func (a *Acme) Issue(ctx context.Context, crt *v1alpha1.Certificate) (issuer.IssueResponse, error) {
+	key, generated, err := a.getCertificatePrivateKey(crt)
+	if err != nil {
+		glog.Errorf("Error getting certificate private key: %v", err)
+		return issuer.IssueResponse{}, err
+	}
+	if generated {
+		// If we have generated a new private key, we return here to ensure we
+		// successfully persist the key before creating any CSRs with it.
+		glog.V(4).Infof("Storing new certificate private key for %s/%s", crt.Namespace, crt.Name)
+
+		keyPem, err := pki.EncodePrivateKey(key)
+		if err != nil {
+			return issuer.IssueResponse{}, err
+		}
+
+		return issuer.IssueResponse{
+			PrivateKey: keyPem,
+		}, nil
+	}
+
 	// Initially, we do not set the csr on the order resource we build.
 	// This is to save having the overhead of generating a new CSR in the case
 	// where the Order resource is up to date already, and also because we have
@@ -80,27 +100,6 @@ func (a *Acme) Issue(ctx context.Context, crt *v1alpha1.Certificate) (issuer.Iss
 	if err != nil && !apierrors.IsNotFound(err) {
 		glog.Errorf("Error getting existing Order resource: %v", err)
 		return issuer.IssueResponse{}, err
-	}
-
-	key, generated, err := a.getCertificatePrivateKey(crt)
-	if err != nil {
-		glog.Errorf("Error getting certificate private key: %v", err)
-		return issuer.IssueResponse{}, err
-	}
-	if generated {
-		// If we have generated a new private key, we return here to ensure we
-		// successfully persist the key before creating any CSRs with it.
-
-		glog.V(4).Infof("Storing new certificate private key for %s/%s", crt.Namespace, crt.Name)
-
-		keyPem, err := pki.EncodePrivateKey(key)
-		if err != nil {
-			return issuer.IssueResponse{}, err
-		}
-
-		return issuer.IssueResponse{
-			PrivateKey: keyPem,
-		}, nil
 	}
 
 	// if there is an existing order, we check to make sure it is up to date
