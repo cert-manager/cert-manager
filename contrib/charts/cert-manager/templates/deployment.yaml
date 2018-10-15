@@ -4,10 +4,13 @@ metadata:
   name: {{ template "cert-manager.fullname" . }}
   namespace: {{ .Release.Namespace | quote }}
   labels:
+    app.kubernetes.io/name: {{ template "cert-manager.name" . }}
+    app.kubernetes.io/managed-by: helm
+    app.kubernetes.io/part-of: {{ template "cert-manager.name" . }}
     app: {{ template "cert-manager.name" . }}
-    chart: {{ template "cert-manager.chart" . }}
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
+    chart: {{ template "cert-manager.chart" . }}
 spec:
   replicas: {{ .Values.replicaCount }}
   selector:
@@ -17,6 +20,7 @@ spec:
   template:
     metadata:
       labels:
+        app.kubernetes.io/name: {{ template "cert-manager.name" . }}
         app: {{ template "cert-manager.name" . }}
         release: {{ .Release.Name }}
 {{- if .Values.podLabels }}

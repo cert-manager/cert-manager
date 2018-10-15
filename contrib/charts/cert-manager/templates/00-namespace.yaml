@@ -4,6 +4,9 @@ kind: Namespace
 metadata:
   name: {{ .Release.Namespace | quote }}
   labels:
+    app.kubernetes.io/name: {{ .Release.Namespace | quote }}
+    app.kubernetes.io/managed-by: helm
+    app.kubernetes.io/part-of: {{ template "cert-manager.name" . }}
     name: {{ .Release.Namespace | quote }}
     certmanager.k8s.io/disable-validation: "true"
 {{- end }}

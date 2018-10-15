@@ -4,9 +4,11 @@ kind: ClusterRole
 metadata:
   name: {{ template "cert-manager.fullname" . }}
   labels:
+    app.kubernetes.io/name: {{ template "cert-manager.name" . }}
+    app.kubernetes.io/part-of: {{ template "cert-manager.name" . }}
     app: {{ template "cert-manager.name" . }}
-    chart: {{ template "cert-manager.chart" . }}
     release: {{ .Release.Name }}
+    chart: {{ template "cert-manager.chart" . }}
     heritage: {{ .Release.Service }}
 rules:
   - apiGroups: ["certmanager.k8s.io"]
@@ -24,9 +26,11 @@ kind: ClusterRoleBinding
 metadata:
   name: {{ template "cert-manager.fullname" . }}
   labels:
+    app.kubernetes.io/name: {{ template "cert-manager.name" . }}
+    app.kubernetes.io/part-of: {{ template "cert-manager.name" . }}
     app: {{ template "cert-manager.name" . }}
-    chart: {{ template "cert-manager.chart" . }}
     release: {{ .Release.Name }}
+    chart: {{ template "cert-manager.chart" . }}
     heritage: {{ .Release.Service }}
 roleRef:
   apiGroup: rbac.authorization.k8s.io
@@ -42,9 +46,11 @@ kind: ClusterRole
 metadata:
   name: {{ template "cert-manager.fullname" . }}-view
   labels:
+    app.kubernetes.io/name: {{ template "cert-manager.name" . }}
+    app.kubernetes.io/part-of: {{ template "cert-manager.name" . }}
     app: {{ template "cert-manager.name" . }}
-    chart: {{ template "cert-manager.chart" . }}
     release: {{ .Release.Name }}
+    chart: {{ template "cert-manager.chart" . }}
     heritage: {{ .Release.Service }}
     rbac.authorization.k8s.io/aggregate-to-view: "true"
     rbac.authorization.k8s.io/aggregate-to-edit: "true"
@@ -59,9 +65,11 @@ kind: ClusterRole
 metadata:
   name: {{ template "cert-manager.fullname" . }}-edit
   labels:
+    app.kubernetes.io/name: {{ template "cert-manager.name" . }}
+    app.kubernetes.io/part-of: {{ template "cert-manager.name" . }}
     app: {{ template "cert-manager.name" . }}
-    chart: {{ template "cert-manager.chart" . }}
     release: {{ .Release.Name }}
+    chart: {{ template "cert-manager.chart" . }}
     heritage: {{ .Release.Service }}
     rbac.authorization.k8s.io/aggregate-to-edit: "true"
     rbac.authorization.k8s.io/aggregate-to-admin: "true"

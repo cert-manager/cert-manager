@@ -4,9 +4,11 @@ kind: CustomResourceDefinition
 metadata:
   name: orders.certmanager.k8s.io
   labels:
+    app.kubernetes.io/name: {{ template "cert-manager.name" . }}
+    app.kubernetes.io/part-of: {{ template "cert-manager.name" . }}
     app: {{ template "cert-manager.name" . }}
-    chart: {{ template "cert-manager.chart" . }}
     release: {{ .Release.Name }}
+    chart: {{ template "cert-manager.chart" . }}
     heritage: {{ .Release.Service }}
 spec:
   group: certmanager.k8s.io

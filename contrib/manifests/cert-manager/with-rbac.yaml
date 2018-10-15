@@ -1,4 +1,3 @@
----
 # Source: cert-manager/templates/00-namespace.yaml
 
 apiVersion: v1
@@ -6,7 +5,10 @@ kind: Namespace
 metadata:
   name: "cert-manager"
   labels:
-    name: "cert-manager"
+    app.kubernetes.io/name: "cert-manager"
+    app.kubernetes.io/managed-by: helm
+    app.kubernetes.io/part-of: cert-manager
+    app: "cert-manager"
     certmanager.k8s.io/disable-validation: "true"
 
 ---
@@ -17,9 +19,11 @@ metadata:
   name: cert-manager
   namespace: "cert-manager"
   labels:
+    app.kubernetes.io/name: cert-manager
+    app.kubernetes.io/part-of: cert-manager
     app: cert-manager
-    chart: cert-manager-v0.6.0-dev.5
     release: cert-manager
+    chart: cert-manager-v0.6.0-dev.5
     heritage: Tiller
 ---
 # Source: cert-manager/templates/certificate-crd.yaml
@@ -30,9 +34,11 @@ metadata:
   annotations:
     "helm.sh/hook": crd-install
   labels:
+    app.kubernetes.io/name: cert-manager
+    app.kubernetes.io/part-of: cert-manager
     app: cert-manager
-    chart: cert-manager-v0.6.0-dev.5
     release: cert-manager
+    chart: cert-manager-v0.6.0-dev.5
     heritage: Tiller
 spec:
   group: certmanager.k8s.io
@@ -44,7 +50,7 @@ spec:
     shortNames:
       - cert
       - certs
-      
+
 ---
 # Source: cert-manager/templates/challenge-crd.yaml
 apiVersion: apiextensions.k8s.io/v1beta1
@@ -52,9 +58,11 @@ kind: CustomResourceDefinition
 metadata:
   name: challenges.certmanager.k8s.io
   labels:
+    app.kubernetes.io/name: cert-manager
+    app.kubernetes.io/part-of: cert-manager
     app: cert-manager
-    chart: cert-manager-v0.6.0-dev.5
     release: cert-manager
+    chart: cert-manager-v0.6.0-dev.5
     heritage: Tiller
 spec:
   group: certmanager.k8s.io
@@ -72,9 +80,11 @@ metadata:
   annotations:
     "helm.sh/hook": crd-install
   labels:
+    app.kubernetes.io/name: cert-manager
+    app.kubernetes.io/part-of: cert-manager
     app: cert-manager
-    chart: cert-manager-v0.6.0-dev.5
     release: cert-manager
+    chart: cert-manager-v0.6.0-dev.5
     heritage: Tiller
 spec:
   group: certmanager.k8s.io
@@ -92,9 +102,12 @@ metadata:
   annotations:
     "helm.sh/hook": crd-install
   labels:
+    app.kubernetes.io/name: cert-manager
+    app.kubernetes.io/managed-by: helm
+    app.kubernetes.io/part-of: cert-manager
     app: cert-manager
-    chart: cert-manager-v0.6.0-dev.5
     release: cert-manager
+    chart: cert-manager-v0.6.0-dev.5
     heritage: Tiller
 spec:
   group: certmanager.k8s.io
@@ -110,9 +123,11 @@ kind: CustomResourceDefinition
 metadata:
   name: orders.certmanager.k8s.io
   labels:
+    app.kubernetes.io/name: cert-manager
+    app.kubernetes.io/part-of: cert-manager
     app: cert-manager
-    chart: cert-manager-v0.6.0-dev.5
     release: cert-manager
+    chart: cert-manager-v0.6.0-dev.5
     heritage: Tiller
 spec:
   group: certmanager.k8s.io
@@ -128,13 +143,16 @@ kind: ClusterRole
 metadata:
   name: cert-manager
   labels:
+    app.kubernetes.io/name: cert-manager
+    app.kubernetes.io/part-of: cert-manager
     app: cert-manager
-    chart: cert-manager-v0.6.0-dev.5
     release: cert-manager
+    chart: cert-manager-v0.6.0-dev.5
     heritage: Tiller
 rules:
   - apiGroups: ["certmanager.k8s.io"]
-    resources: ["certificates", "issuers", "clusterissuers", "orders", "challenges"]
+    resources:
+      ["certificates", "issuers", "clusterissuers", "orders", "challenges"]
     verbs: ["*"]
   - apiGroups: [""]
     resources: ["configmaps", "secrets", "events", "services", "pods"]
@@ -148,9 +166,11 @@ kind: ClusterRoleBinding
 metadata:
   name: cert-manager
   labels:
+    app.kubernetes.io/name: cert-manager
+    app.kubernetes.io/part-of: cert-manager
     app: cert-manager
-    chart: cert-manager-v0.6.0-dev.5
     release: cert-manager
+    chart: cert-manager-v0.6.0-dev.5
     heritage: Tiller
 roleRef:
   apiGroup: rbac.authorization.k8s.io
@@ -166,9 +186,11 @@ kind: ClusterRole
 metadata:
   name: cert-manager-view
   labels:
+    app.kubernetes.io/name: cert-manager
+    app.kubernetes.io/part-of: cert-manager
     app: cert-manager
-    chart: cert-manager-v0.6.0-dev.5
     release: cert-manager
+    chart: cert-manager-v0.6.0-dev.5
     heritage: Tiller
     rbac.authorization.k8s.io/aggregate-to-view: "true"
     rbac.authorization.k8s.io/aggregate-to-edit: "true"
@@ -183,9 +205,11 @@ kind: ClusterRole
 metadata:
   name: cert-manager-edit
   labels:
+    app.kubernetes.io/name: cert-manager
+    app.kubernetes.io/part-of: cert-manager
     app: cert-manager
-    chart: cert-manager-v0.6.0-dev.5
     release: cert-manager
+    chart: cert-manager-v0.6.0-dev.5
     heritage: Tiller
     rbac.authorization.k8s.io/aggregate-to-edit: "true"
     rbac.authorization.k8s.io/aggregate-to-admin: "true"
@@ -201,10 +225,13 @@ metadata:
   name: cert-manager
   namespace: "cert-manager"
   labels:
+    app.kubernetes.io/name: cert-manager
+    app.kubernetes.io/managed-by: helm
+    app.kubernetes.io/part-of: cert-manager
     app: cert-manager
-    chart: cert-manager-v0.6.0-dev.5
     release: cert-manager
     heritage: Tiller
+    chart: cert-manager-v0.6.0-dev.5
 spec:
   replicas: 1
   selector:
@@ -214,9 +241,10 @@ spec:
   template:
     metadata:
       labels:
+        app.kubernetes.io/name: cert-manager
         app: cert-manager
         release: cert-manager
-      annotations:
+      ? annotations
     spec:
       serviceAccountName: cert-manager
       containers:
@@ -224,16 +252,14 @@ spec:
           image: "quay.io/jetstack/cert-manager-controller:canary"
           imagePullPolicy: Always
           args:
-          - --cluster-resource-namespace=$(POD_NAMESPACE)
-          - --leader-election-namespace=$(POD_NAMESPACE)
+            - --cluster-resource-namespace=$(POD_NAMESPACE)
+            - --leader-election-namespace=$(POD_NAMESPACE)
           env:
-          - name: POD_NAMESPACE
-            valueFrom:
-              fieldRef:
-                fieldPath: metadata.namespace
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
           resources:
             requests:
               cpu: 10m
               memory: 32Mi
-            
-
