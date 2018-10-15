@@ -30,7 +30,6 @@ import (
 	"github.com/onsi/gomega"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
-	"github.com/jetstack/cert-manager/pkg/logs"
 	_ "github.com/jetstack/cert-manager/test/e2e/certificate"
 	_ "github.com/jetstack/cert-manager/test/e2e/clusterissuer"
 	"github.com/jetstack/cert-manager/test/e2e/framework"
@@ -43,9 +42,6 @@ const certManagerDeploymentNamespace = "cert-manager"
 // TestE2E checks configuration parameters (specified through flags) and then runs
 // E2E tests using the Ginkgo runner.
 func RunE2ETests(t *testing.T) {
-	logs.InitLogs()
-	defer logs.FlushLogs()
-
 	gomega.RegisterFailHandler(ginkgo.Fail)
 	// Disable skipped tests unless they are explicitly requested.
 	if config.GinkgoConfig.FocusString == "" && config.GinkgoConfig.SkipString == "" {

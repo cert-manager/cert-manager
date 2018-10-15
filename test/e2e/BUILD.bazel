@@ -18,7 +18,6 @@ go_library(
     tags = ["manual"],
     visibility = ["//visibility:public"],
     deps = [
-        "//pkg/logs:go_default_library",
         "//test/e2e/certificate:go_default_library",
         "//test/e2e/clusterissuer:go_default_library",
         "//test/e2e/framework:go_default_library",
