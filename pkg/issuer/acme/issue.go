@@ -177,8 +177,8 @@ func (a *Acme) Issue(ctx context.Context, crt *v1alpha1.Certificate) (issuer.Iss
 
 	x509Cert, err := x509.ParseCertificate(certSlice[0])
 	if err != nil {
-		// TODO: parse returned ACME error and potentially re-create order.
-		return issuer.IssueResponse{}, fmt.Errorf("failed to parse returned x509 certificate: %v", err.Error())
+		// if parsing the certificate fails, recreate the order
+		return a.retryOrder(crt, existingOrder)
 	}
 
 	if a.Context.IssuerOptions.CertificateNeedsRenew(x509Cert) {
