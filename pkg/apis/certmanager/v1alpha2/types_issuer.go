@@ -168,11 +168,16 @@ type VaultIssuer struct {
 type VaultAuth struct {
 	// This Secret contains the Vault token key
 	// +optional
-	TokenSecretRef cmmeta.SecretKeySelector `json:"tokenSecretRef,omitempty"`
+	TokenSecretRef *cmmeta.SecretKeySelector `json:"tokenSecretRef,omitempty"`
 
 	// This Secret contains a AppRole and Secret
 	// +optional
-	AppRole VaultAppRole `json:"appRole,omitempty"`
+	AppRole *VaultAppRole `json:"appRole,omitempty"`
+
+	// This contains a Role and Secret with a ServiceAccount token to
+	// authenticate with vault.
+	// +optional
+	Kubernetes *VaultKubernetesAuth `json:"kubernetes,omitempty"`
 }
 
 type VaultAppRole struct {
@@ -181,6 +186,26 @@ type VaultAppRole struct {
 
 	RoleId    string                   `json:"roleId"`
 	SecretRef cmmeta.SecretKeySelector `json:"secretRef"`
+}
+
+// Authenticate against Vault using a Kubernetes ServiceAccount token stored in
+// a Secret.
+type VaultKubernetesAuth struct {
+	// The value here will be used as part of the path used when authenticating
+	// with vault, for example if you set a value of "foo", the path used will be
+	// `/v1/auth/foo/login`. If unspecified, the default value "kubernetes" will
+	// be used.
+	// +optional
+	Path string `json:"mountPath,omitempty"`
+
+	// The required Secret field containing a Kubernetes ServiceAccount JWT used
+	// for authenticating with Vault. Use of 'ambient credentials' is not
+	// supported.
+	SecretRef cmmeta.SecretKeySelector `json:"secretRef"`
+
+	// A required field containing the Vault Role to assume. A Role binds a
+	// Kubernetes ServiceAccount with a set of Vault policies.
+	Role string `json:"role"`
 }
 
 type CAIssuer struct {

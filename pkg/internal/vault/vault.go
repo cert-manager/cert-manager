@@ -33,6 +33,10 @@ import (
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 )
 
+const (
+	defaultKubernetesAuthMountPath = "kubernetes"
+)
+
 var _ Interface = &Vault{}
 
 type VaultClientBuilder func(namespace string, secretsLister corelisters.SecretLister,
@@ -164,7 +168,17 @@ func (v *Vault) setToken(client Client) error {
 		return nil
 	}
 
-	return fmt.Errorf("error initializing Vault client tokenSecretRef or appRoleSecretRef not set")
+	kubernetesAuth := v.issuer.GetSpec().Vault.Auth.Kubernetes
+	if kubernetesAuth.Role != "" {
+		token, err := v.requestTokenWithKubernetesAuth(client, &kubernetesAuth)
+		if err != nil {
+			return fmt.Errorf("error reading Kubernetes service account token from %s: %s", kubernetesAuth.SecretRef.Name, err.Error())
+		}
+		client.SetToken(token)
+		return nil
+	}
+
+	return fmt.Errorf("error initializing Vault client. tokenSecretRef, appRoleSecretRef, or Kubernetes auth role not set")
 }
 
 func (v *Vault) newConfig() (*vault.Config, error) {
@@ -276,6 +290,57 @@ func (v *Vault) requestTokenWithAppRoleRef(client Client, appRole *v1alpha2.Vaul
 		return "", errors.New("no token returned")
 	}
 
+	return token, nil
+}
+
+func (v *Vault) requestTokenWithKubernetesAuth(client Client, kubernetesAuth *v1alpha1.KubernetesAuth) (string, error) {
+	secret, err := v.secretsLister.Secrets(v.namespace).Get(kubernetesAuth.SecretRef.Name)
+	if err != nil {
+		return "", err
+	}
+
+	key := kubernetesAuth.SecretRef.Key
+	if key == "" {
+		key = "token"
+	}
+
+	keyBytes, ok := secret.Data[key]
+	if !ok {
+		return "", fmt.Errorf("no data for %q in secret '%s/%s'\n%+v", key, kubernetesAuth.SecretRef.Name, v.namespace, secret)
+	}
+
+	jwt := string(keyBytes)
+
+	parameters := map[string]string{
+		"role": kubernetesAuth.Role,
+		"jwt":  jwt,
+	}
+
+	mountPath := kubernetesAuth.Path
+	if mountPath == "" {
+		mountPath = defaultKubernetesAuthMountPath
+	}
+
+	url := fmt.Sprintf("/v1/auth/%s/login", mountPath)
+	request := client.NewRequest("POST", url)
+	err = request.SetJSONBody(parameters)
+	if err != nil {
+		return "", fmt.Errorf("error encoding Vault parameters: %s", err.Error())
+	}
+	resp, err := client.RawRequest(request)
+	if err != nil {
+		return "", fmt.Errorf("error calling Vault server: %s", err.Error())
+	}
+	defer resp.Body.Close()
+	vaultResult := vault.Secret{}
+	resp.DecodeJSON(&vaultResult)
+	if err != nil {
+		return "", fmt.Errorf("unable to decode JSON payload: %s", err.Error())
+	}
+	token, err := vaultResult.TokenID()
+	if err != nil {
+		return "", fmt.Errorf("unable to read token: %s", err.Error())
+	}
 	return token, nil
 }
 

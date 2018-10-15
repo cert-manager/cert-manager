@@ -513,3 +513,32 @@ func NewCertManagerVaultIssuerAppRole(name, vaultURL, vaultPath, roleId, vaultSe
 		},
 	}
 }
+
+func NewCertManagerVaultIssuerKubernetes(name, vaultURL, vaultPath, vaultSecretServiceAccount string, role string, authPath string, caBundle []byte) *v1alpha2.Issuer {
+	return &v1alpha2.Issuer{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: name,
+		},
+		Spec: v1alpha2.IssuerSpec{
+			IssuerConfig: v1alpha2.IssuerConfig{
+				Vault: &v1alpha2.VaultIssuer{
+					Server:   vaultURL,
+					Path:     vaultPath,
+					CABundle: caBundle,
+					Auth: v1alpha2.VaultAuth{
+						Kubernetes: v1alpha2.KubernetesAuth{
+							Path: authPath,
+							SecretRef: v1alpha2.SecretKeySelector{
+								Key: "token",
+								LocalObjectReference: v1alpha2.LocalObjectReference{
+									Name: vaultSecretServiceAccount,
+								},
+							},
+							Role: role,
+						},
+					},
+				},
+			},
+		},
+	}
+}
