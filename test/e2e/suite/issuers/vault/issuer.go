@@ -58,33 +58,55 @@ var _ = framework.CertManagerDescribe("Vault Issuer", func() {
 	role := "kubernetes-vault"
 	vaultSecretAppRoleName := "vault-role"
 	vaultSecretTokenName := "vault-token"
+	vaultSecretServiceAccount := "vault-serviceaccount"
+	vaultKubernetesRoleName := "kubernetes-role"
 	vaultPath := path.Join(intermediateMount, "sign", role)
-	authPath := "approle"
+	appRoleAuthPath := "approle"
+	kubernetesAuthPath := "kubernetes"
 	var roleId, secretId string
 	var vaultInit *vaultaddon.VaultInitializer
 
 	BeforeEach(func() {
 		By("Configuring the Vault server")
+
+		apiHost := "https://kubernetes.default.svc.cluster.local" // since vault is running in-cluster
+		caCert := string(f.KubeClientConfig.CAData)
+
+		Expect(apiHost).NotTo(BeEmpty())
+		Expect(caCert).NotTo(BeEmpty())
+
 		vaultInit = &vaultaddon.VaultInitializer{
 			Details:           *vault.Details(),
 			RootMount:         rootMount,
 			IntermediateMount: intermediateMount,
 			Role:              role,
-			AuthPath:          authPath,
+			AppRoleAuthPath:   appRoleAuthPath,
+			APIServerURL:      apiHost,
+			APIServerCA:       caCert,
 		}
+
 		err := vaultInit.Init()
 		Expect(err).NotTo(HaveOccurred())
 		err = vaultInit.Setup()
 		Expect(err).NotTo(HaveOccurred())
 		roleId, secretId, err = vaultInit.CreateAppRole()
 		Expect(err).NotTo(HaveOccurred())
+
+		By("creating a service account for Vault authentication")
+		err = vaultInit.CreateKubernetesRole(f.KubeClientSet, f.Namespace.Name, vaultKubernetesRoleName, vaultSecretServiceAccount)
+		Expect(err).NotTo(HaveOccurred())
 	})
 
 	AfterEach(func() {
-		By("Cleaning up")
+		By("Cleaning up AppRole")
 		f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Delete(issuerName, nil)
 		f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Delete(vaultSecretAppRoleName, nil)
 		vaultInit.CleanAppRole()
+
+		By("Cleaning up Kubernetes")
+		vaultInit.CleanKubernetesRole(f.KubeClientSet, f.Namespace.Name, vaultKubernetesRoleName, vaultSecretServiceAccount)
+
+		By("Cleaning up Vault")
 		vaultInit.Clean()
 	})
 
@@ -94,7 +116,7 @@ var _ = framework.CertManagerDescribe("Vault Issuer", func() {
 		_, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Create(vaultaddon.NewVaultAppRoleSecret(vaultSecretAppRoleName, secretId))
 		Expect(err).NotTo(HaveOccurred())
 
-		_, err = f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Create(util.NewCertManagerVaultIssuerAppRole(issuerName, vault.Details().Host, vaultPath, roleId, vaultSecretAppRoleName, authPath, vault.Details().VaultCA))
+		_, err = f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Create(util.NewCertManagerVaultIssuerAppRole(issuerName, vault.Details().Host, vaultPath, roleId, vaultSecretAppRoleName, appRoleAuthPath, vault.Details().VaultCA))
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Waiting for Issuer to become Ready")
@@ -109,7 +131,7 @@ var _ = framework.CertManagerDescribe("Vault Issuer", func() {
 
 	It("should fail to init with missing Vault AppRole", func() {
 		By("Creating an Issuer")
-		_, err := f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Create(util.NewCertManagerVaultIssuerAppRole(issuerName, vault.Details().Host, vaultPath, roleId, vaultSecretAppRoleName, authPath, vault.Details().VaultCA))
+		_, err := f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Create(util.NewCertManagerVaultIssuerAppRole(issuerName, vault.Details().Host, vaultPath, roleId, vaultSecretAppRoleName, appRoleAuthPath, vault.Details().VaultCA))
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Waiting for Issuer to become Ready")
@@ -124,9 +146,40 @@ var _ = framework.CertManagerDescribe("Vault Issuer", func() {
 
 	It("should fail to init with missing Vault Token", func() {
 		By("Creating an Issuer")
-		_, err := f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Create(util.NewCertManagerVaultIssuerToken(issuerName, vault.Details().Host, vaultPath, vaultSecretTokenName, authPath, vault.Details().VaultCA))
+		_, err := f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Create(util.NewCertManagerVaultIssuerToken(issuerName, vault.Details().Host, vaultPath, vaultSecretTokenName, appRoleAuthPath, vault.Details().VaultCA))
 		Expect(err).NotTo(HaveOccurred())
 
+		By("Waiting for Issuer to become Ready")
+		err = util.WaitForIssuerCondition(f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name),
+			issuerName,
+			v1alpha1.IssuerCondition{
+				Type:   v1alpha1.IssuerConditionReady,
+				Status: v1alpha1.ConditionFalse,
+			})
+		Expect(err).NotTo(HaveOccurred())
+	})
+
+	It("should be ready with a valid Kubernetes Role and ServiceAccount Secret", func() {
+		_, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Create(vaultaddon.NewVaultKubernetesSecret(vaultSecretServiceAccount, vaultSecretServiceAccount))
+		Expect(err).NotTo(HaveOccurred())
+
+		_, err = f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Create(util.NewCertManagerVaultIssuerKubernetes(issuerName, vault.Details().Host, vaultPath, vaultSecretServiceAccount, vaultKubernetesRoleName, kubernetesAuthPath, vault.Details().VaultCA))
+		Expect(err).NotTo(HaveOccurred())
+
+		By("Waiting for Issuer to become Ready")
+		err = util.WaitForIssuerCondition(f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name),
+			issuerName,
+			v1alpha1.IssuerCondition{
+				Type:   v1alpha1.IssuerConditionReady,
+				Status: v1alpha1.ConditionTrue,
+			})
+		Expect(err).NotTo(HaveOccurred())
+	})
+
+	It("should fail to init with missing Kubernetes Role", func() {
+		By("Creating an Issuer")
+		_, err := f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Create(util.NewCertManagerVaultIssuerKubernetes(issuerName, vault.Details().Host, vaultPath, vaultSecretServiceAccount, vaultKubernetesRoleName, kubernetesAuthPath, vault.Details().VaultCA))
+		Expect(err).NotTo(HaveOccurred())
 		By("Waiting for Issuer to become Ready")
 		err = util.WaitForIssuerCondition(f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name),
 			issuerName,

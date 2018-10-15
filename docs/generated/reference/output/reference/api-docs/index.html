@@ -1633,7 +1633,7 @@ Appears In:
 </tr>
 </tbody>
 </table>
-<h2 id="listmeta-v1">ListMeta v1</h2>
+<h2 id="kubernetesauth-v1alpha1">KubernetesAuth v1alpha1</h2>
 <table>
 <thead>
 <tr>
@@ -1644,9 +1644,9 @@ Appears In:
 </thead>
 <tbody>
 <tr>
-<td><code>meta</code></td>
-<td><code>v1</code></td>
-<td><code>ListMeta</code></td>
+<td><code>certmanager</code></td>
+<td><code>v1alpha1</code></td>
+<td><code>KubernetesAuth</code></td>
 </tr>
 </tbody>
 </table>
@@ -1654,8 +1654,8 @@ Appears In:
 <aside class="notice">
 Appears In:
 
-<ul> 
-<li><a href="#status-v1">Status v1</a></li>
+<ul>
+<li><a href="#vaultauth-v1alpha1">VaultAuth v1alpha1</a></li>
 </ul></aside>
 
 <table>
@@ -1667,16 +1667,16 @@ Appears In:
 </thead>
 <tbody>
 <tr>
-<td><code>continue</code><br /> <em>string</em></td>
-<td>continue may be set if the user set a limit on the number of items returned, and indicates that the server has more data available. The value is opaque and may be used to issue another request to the endpoint that served this list to retrieve the next set of available objects. Continuing a consistent list may not be possible if the server configuration has changed or more than a few minutes have passed. The resourceVersion field returned when using this continue value will be identical to the value in the first response, unless you have received this token from an error message.</td>
+<td><code>mountPath</code><br /> <em>string</em></td>
+<td>The Kubernetes auth backend mount point if different from the default &#34;kubernetes&#34;</td>
 </tr>
 <tr>
-<td><code>resourceVersion</code><br /> <em>string</em></td>
-<td>String that identifies the server&#39;s internal version of this object that can be used by clients to determine when objects have changed. Value must be treated as opaque by clients and passed unmodified back to the server. Populated by the system. Read-only. More info: <a href="https://git.k8s.io/community/contributors/devel/api-conventions.md#concurrency-control-and-consistency">https://git.k8s.io/community/contributors/devel/api-conventions.md#concurrency-control-and-consistency</a></td>
+<td><code>role</code><br /> <em>string</em></td>
+<td>The Vault role to assume. A role binds a Kubernetes ServiceAccount with a set of Vault policies.</td>
 </tr>
 <tr>
-<td><code>selfLink</code><br /> <em>string</em></td>
-<td>selfLink is a URL representing this object. Populated by the system. Read-only.</td>
+<td><code>secretRef</code><br /> <em><a href="#secretkeyselector-v1alpha1">SecretKeySelector</a></em></td>
+<td>Secret containing a Kubernetes ServiceAccount JWT used for authenticating with Vault</td>
 </tr>
 </tbody>
 </table>
@@ -1955,6 +1955,7 @@ Appears In:
 <li><a href="#acmeissuerdns01providerdigitalocean-v1alpha1">ACMEIssuerDNS01ProviderDigitalOcean v1alpha1</a></li>
 <li><a href="#acmeissuerdns01providerrfc2136-v1alpha1">ACMEIssuerDNS01ProviderRFC2136 v1alpha1</a></li>
 <li><a href="#acmeissuerdns01providerroute53-v1alpha1">ACMEIssuerDNS01ProviderRoute53 v1alpha1</a></li>
+<li><a href="#kubernetesauth-v1alpha1">KubernetesAuth v1alpha1</a></li>
 <li><a href="#vaultapprole-v1alpha1">VaultAppRole v1alpha1</a></li>
 <li><a href="#vaultauth-v1alpha1">VaultAuth v1alpha1</a></li>
 <li><a href="#venaficloud-v1alpha1">VenafiCloud v1alpha1</a></li>
@@ -2338,6 +2339,10 @@ Appears In:
 </table>
 <p>Vault authentication  can be configured: - With a secret containing a token. Cert-manager is using this token as-is. - With a secret containing a AppRole. This AppRole is used to authenticate to
   Vault and retrieve a token.</p>
+<ul>
+<li>With a secret containing a Kubernetes ServiceAccount JWT. This JWT is used
+to authenticate with Vault and retrieve a token.</li>
+</ul>
 <aside class="notice">
 Appears In:
 
@@ -2356,6 +2361,10 @@ Appears In:
 <tr>
 <td><code>appRole</code><br /> <em><a href="#vaultapprole-v1alpha1">VaultAppRole</a></em></td>
 <td>This Secret contains a AppRole and Secret</td>
+</tr>
+<tr>
+<td><code>kubernetes</code><br /> <em><a href="#kubernetesauth-v1alpha1">KubernetesAuth</a></em></td>
+<td>This indicates we wish to use the ServiceAccount token</td>
 </tr>
 <tr>
 <td><code>tokenSecretRef</code><br /> <em><a href="#secretkeyselector-v1alpha1">SecretKeySelector</a></em></td>

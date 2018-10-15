@@ -74,7 +74,7 @@ var _ = framework.CertManagerDescribe("Vault Certificate (AppRole with a custom 
 			RootMount:         rootMount,
 			IntermediateMount: intermediateMount,
 			Role:              role,
-			AuthPath:          authPath,
+			AppRoleAuthPath:   authPath,
 		}
 		err := vaultInit.Init()
 		Expect(err).NotTo(HaveOccurred())

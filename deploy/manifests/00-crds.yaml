@@ -458,6 +458,38 @@ spec:
                       - roleId
                       - secretRef
                       type: object
+                    kubernetes:
+                      description: This indicates we wish to use the ServiceAccount
+                        token
+                      properties:
+                        mountPath:
+                          description: The Kubernetes auth backend mount point if
+                            different from the default "kubernetes"
+                          type: string
+                        role:
+                          description: The Vault role to assume. A role binds a Kubernetes
+                            ServiceAccount with a set of Vault policies.
+                          type: string
+                        secretRef:
+                          description: Secret containing a Kubernetes ServiceAccount
+                            JWT used for authenticating with Vault
+                          properties:
+                            key:
+                              description: The key of the secret to select from. Must
+                                be a valid secret key.
+                              type: string
+                            name:
+                              description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                                TODO: Add other useful fields. apiVersion, kind, uid?'
+                              type: string
+                          required:
+                          - name
+                          type: object
+                      required:
+                      - mountPath
+                      - secretRef
+                      - role
+                      type: object
                     tokenSecretRef:
                       description: This Secret contains the Vault token key
                       properties:
@@ -716,6 +748,38 @@ spec:
                       - path
                       - roleId
                       - secretRef
+                      type: object
+                    kubernetes:
+                      description: This indicates we wish to use the ServiceAccount
+                        token
+                      properties:
+                        mountPath:
+                          description: The Kubernetes auth backend mount point if
+                            different from the default "kubernetes"
+                          type: string
+                        role:
+                          description: The Vault role to assume. A role binds a Kubernetes
+                            ServiceAccount with a set of Vault policies.
+                          type: string
+                        secretRef:
+                          description: Secret containing a Kubernetes ServiceAccount
+                            JWT used for authenticating with Vault
+                          properties:
+                            key:
+                              description: The key of the secret to select from. Must
+                                be a valid secret key.
+                              type: string
+                            name:
+                              description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                                TODO: Add other useful fields. apiVersion, kind, uid?'
+                              type: string
+                          required:
+                          - name
+                          type: object
+                      required:
+                      - mountPath
+                      - secretRef
+                      - role
                       type: object
                     tokenSecretRef:
                       description: This Secret contains the Vault token key

@@ -162,6 +162,8 @@ type VaultIssuer struct {
 // - With a secret containing a token. Cert-manager is using this token as-is.
 // - With a secret containing a AppRole. This AppRole is used to authenticate to
 //   Vault and retrieve a token.
+// - With a secret containing a Kubernetes ServiceAccount JWT. This JWT is used
+//   to authenticate with Vault and retrieve a token.
 type VaultAuth struct {
 	// This Secret contains the Vault token key
 	// +optional
@@ -170,6 +172,9 @@ type VaultAuth struct {
 	// This Secret contains a AppRole and Secret
 	// +optional
 	AppRole VaultAppRole `json:"appRole,omitempty"`
+	// This indicates we wish to use the ServiceAccount token
+	// +optional
+	Kubernetes KubernetesAuth `json:"kubernetes,omitempty"`
 }
 
 type VaultAppRole struct {
@@ -178,6 +183,16 @@ type VaultAppRole struct {
 
 	RoleId    string            `json:"roleId"`
 	SecretRef SecretKeySelector `json:"secretRef"`
+}
+
+type KubernetesAuth struct {
+	// The Kubernetes auth backend mount point if different from the default "kubernetes"
+	// +optional
+	Path string `json:"mountPath"`
+	// Secret containing a Kubernetes ServiceAccount JWT used for authenticating with Vault
+	SecretRef SecretKeySelector `json:"secretRef"`
+	// The Vault role to assume. A role binds a Kubernetes ServiceAccount with a set of Vault policies.
+	Role string `json:"role"`
 }
 
 type CAIssuer struct {
