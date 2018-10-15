@@ -19,6 +19,7 @@ package acme
 import (
 	"bytes"
 	"context"
+	"crypto"
 	"crypto/x509"
 	"encoding/json"
 	"encoding/pem"
@@ -81,38 +82,25 @@ func (a *Acme) Issue(ctx context.Context, crt *v1alpha1.Certificate) (issuer.Iss
 		return issuer.IssueResponse{}, err
 	}
 
-	// get existing certificate private key
-	glog.V(4).Infof("Attempting to fetch existing certificate private key")
-	key, err := kube.SecretTLSKey(a.secretsLister, crt.Namespace, crt.Spec.SecretName)
+	key, generated, err := a.getCertificatePrivateKey(crt)
 	if err != nil {
-		// if the private key is not found, or is formatted incorrectly, we
-		// will generate a new one and create/overwrite the secret.
-		if !apierrors.IsNotFound(err) && !errors.IsInvalidData(err) {
-			return issuer.IssueResponse{}, err
-		}
-
-		// TODO: perhaps we shouldn't overwrite the secret if it is invalid,
-		// and instead bail out here?
-
-		glog.V(4).Infof("Generating new private key for %s/%s", crt.Namespace, crt.Name)
-		// generate a new private key.
-		key, err := pki.GenerateRSAPrivateKey(2048)
-		if err != nil {
-			return issuer.IssueResponse{}, err
-		}
-
-		keyBytes, err := pki.EncodePrivateKey(key)
-		if err != nil {
-			return issuer.IssueResponse{}, err
-		}
+		glog.Errorf("Error getting certificate private key: %v", err)
+		return issuer.IssueResponse{}, err
+	}
+	if generated {
+		// If we have generated a new private key, we return here to ensure we
+		// successfully persist the key before creating any CSRs with it.
 
 		glog.V(4).Infof("Storing new certificate private key for %s/%s", crt.Namespace, crt.Name)
-		// We return the private key here early, and trigger an immediate requeue.
-		// This is because we have just generated a new one, and to keep our
-		// later logic simple we store it immediately.
-		// TODO: remove the 'requeue: true' as it could cause a race condition
-		// where our lister has not observed the new private key generated above
-		return issuer.IssueResponse{PrivateKey: keyBytes}, nil
+
+		keyPem, err := pki.EncodePrivateKey(key)
+		if err != nil {
+			return issuer.IssueResponse{}, err
+		}
+
+		return issuer.IssueResponse{
+			PrivateKey: keyPem,
+		}, nil
 	}
 
 	// if there is an existing order, we check to make sure it is up to date
@@ -301,6 +289,37 @@ func (a *Acme) cleanupOwnedOrders(crt *v1alpha1.Certificate, retain string) erro
 	}
 
 	return utilerrors.NewAggregate(errs)
+}
+
+func (a *Acme) getCertificatePrivateKey(crt *v1alpha1.Certificate) (crypto.Signer, bool, error) {
+	glog.V(4).Infof("Attempting to fetch existing certificate private key")
+
+	// If a private key already exists, reuse it.
+	// TODO: if we have not observed the update to the Secret resource with the
+	// private key yet, we may in some cases loop and re-generate the private key
+	// over and over. We could attempt to use the live clientset to read the
+	// private key too to avoid this case.
+	key, err := kube.SecretTLSKey(a.secretsLister, crt.Namespace, crt.Spec.SecretName)
+	if err == nil {
+		return key, false, nil
+	}
+
+	// We only generate a new private key if the existing one is not found or
+	// contains invalid data.
+	// TODO: should we re-generate on InvalidData?
+	if !apierrors.IsNotFound(err) && !errors.IsInvalidData(err) {
+		return nil, false, err
+	}
+
+	glog.V(4).Infof("Generating new private key for %s/%s", crt.Namespace, crt.Name)
+
+	// generate a new private key.
+	rsaKey, err := pki.GenerateRSAPrivateKey(2048)
+	if err != nil {
+		return nil, false, err
+	}
+
+	return rsaKey, true, nil
 }
 
 // retryOrder will delete the existing order with the foreground
