@@ -114,6 +114,15 @@ func (a *Acme) Issue(ctx context.Context, crt *v1alpha1.Certificate) (issuer.Iss
 	// resource, or underlying Order (i.e. user interaction).
 	glog.V(4).Infof("Validating existing order CSR for Certificate %s/%s", crt.Namespace, crt.Name)
 
+	validForKey, err := existingOrderIsValidForKey(existingOrder, key)
+	if err != nil {
+		return issuer.IssueResponse{}, err
+	}
+	if !validForKey {
+		glog.V(4).Infof("CSR on existing order resource does not match certificate %s/%s private key. Creating new order.", crt.Namespace, crt.Name)
+
+	}
+
 	// if the existing order has expired, we should create a new one
 	// TODO: implement this order state in the acmeorders controller
 	if existingOrder.Status.State == v1alpha1.Expired {
@@ -137,26 +146,6 @@ func (a *Acme) Issue(ctx context.Context, crt *v1alpha1.Certificate) (issuer.Iss
 		// as the back-off time has passed.
 		crt.Status.LastFailureTime = nil
 
-		return a.retryOrder(existingOrder)
-	}
-
-	// check the CSR is created by the private key that we hold
-	csrBytes := existingOrder.Spec.CSR
-	if len(csrBytes) == 0 {
-		return a.retryOrder(existingOrder)
-	}
-	existingCSR, err := x509.ParseCertificateRequest(csrBytes)
-	if err != nil {
-		return a.retryOrder(existingOrder)
-	}
-
-	matches, err := pki.PublicKeyMatchesCSR(key.Public(), existingCSR)
-	if err != nil {
-		return issuer.IssueResponse{}, err
-	}
-
-	if !matches {
-		glog.V(4).Infof("CSR on existing order resource does not match certificate %s/%s private key. Creating new order.", crt.Namespace, crt.Name)
 		return a.retryOrder(existingOrder)
 	}
 
@@ -340,6 +329,31 @@ func (a *Acme) retryOrder(existingOrder *v1alpha1.Order) (issuer.IssueResponse, 
 	// If we set Requeue: true here, we may cause a race where the lister has
 	// not observed the updated orderRef.
 	return issuer.IssueResponse{}, nil
+}
+
+func existingOrderIsValidForKey(o *v1alpha1.Order, key crypto.Signer) (bool, error) {
+	// check the CSR is created by the private key that we hold
+	csrBytes := o.Spec.CSR
+	if len(csrBytes) == 0 {
+		// Handles a weird case where an Order exists *without* a CSR set
+		return false, nil
+	}
+	existingCSR, err := x509.ParseCertificateRequest(csrBytes)
+	if err != nil {
+		// Absorb invalid CSR datas as 'not valid'
+		return false, nil
+	}
+
+	matches, err := pki.PublicKeyMatchesCSR(key.Public(), existingCSR)
+	if err != nil {
+		// If this returns an error, something bad happened parsing somewhere
+		return false, err
+	}
+	if !matches {
+		return false, nil
+	}
+
+	return true, nil
 }
 
 func buildOrder(crt *v1alpha1.Certificate, csr []byte) (*v1alpha1.Order, error) {
