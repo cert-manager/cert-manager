@@ -244,6 +244,7 @@ func issuerKind(crt *v1alpha1.Certificate) string {
 }
 
 func (c *Controller) updateSecret(crt *v1alpha1.Certificate, namespace string, cert, key, ca []byte) (*api.Secret, error) {
+	// Get the existing copy of the secret resource first
 	secret, err := c.Client.CoreV1().Secrets(namespace).Get(crt.Spec.SecretName, metav1.GetOptions{})
 	if err != nil && !k8sErrors.IsNotFound(err) {
 		return nil, err
@@ -258,9 +259,15 @@ func (c *Controller) updateSecret(crt *v1alpha1.Certificate, namespace string, c
 			Data: map[string][]byte{},
 		}
 	}
-	secret.Data[api.TLSCertKey] = cert
-	secret.Data[api.TLSPrivateKeyKey] = key
 
+	// Only overwrite fields that have been explicitly returned from the issuer.
+	// If we want to empty/clear the values, []byte{} can be used instead of nil.
+	if cert != nil {
+		secret.Data[api.TLSCertKey] = cert
+	}
+	if key != nil {
+		secret.Data[api.TLSPrivateKeyKey] = key
+	}
 	if ca != nil {
 		secret.Data[TLSCAKey] = ca
 	}
@@ -269,49 +276,57 @@ func (c *Controller) updateSecret(crt *v1alpha1.Certificate, namespace string, c
 		secret.Annotations = make(map[string]string)
 	}
 
-	// Note: since this sets annotations based on certificate resource, incorrect
-	// annotations will be set if resource and actual certificate somehow get out
-	// of sync
-	dnsNames := pki.DNSNamesForCertificate(crt)
-	cn := pki.CommonNameForCertificate(crt)
+	// If we are updating the Certificate, we update the secret metadata to
+	// reflect the actual certificate it contains
+	if cert != nil {
+		x509Cert, err := pki.DecodeX509CertificateBytes(cert)
+		if err != nil {
+			return nil, fmt.Errorf("invalid certificate data: %v", err)
+		}
 
-	secret.Annotations[v1alpha1.AltNamesAnnotationKey] = strings.Join(dnsNames, ",")
-	secret.Annotations[v1alpha1.CommonNameAnnotationKey] = cn
+		secret.Annotations[v1alpha1.IssuerNameAnnotationKey] = crt.Spec.IssuerRef.Name
+		secret.Annotations[v1alpha1.IssuerKindAnnotationKey] = issuerKind(crt)
+		secret.Annotations[v1alpha1.CommonNameAnnotationKey] = x509Cert.Subject.CommonName
+		secret.Annotations[v1alpha1.AltNamesAnnotationKey] = strings.Join(x509Cert.DNSNames, ",")
+	}
 
-	secret.Annotations[v1alpha1.IssuerNameAnnotationKey] = crt.Spec.IssuerRef.Name
-	secret.Annotations[v1alpha1.IssuerKindAnnotationKey] = issuerKind(crt)
-
+	// Always set the certificate name label on the target secret
 	if secret.Labels == nil {
 		secret.Labels = make(map[string]string)
 	}
-
 	secret.Labels[v1alpha1.CertificateNameKey] = crt.Name
 
-	// if it is a new resource
+	// If it is a new resource, create it. Otherwise update it.
 	if secret.SelfLink == "" {
 		secret, err = c.Client.CoreV1().Secrets(namespace).Create(secret)
 	} else {
 		secret, err = c.Client.CoreV1().Secrets(namespace).Update(secret)
 	}
-	if err != nil {
-		return nil, err
-	}
-	return secret, nil
+
+	return secret, err
 }
 
 // return an error on failure. If retrieval is succesful, the certificate data
 // and private key will be stored in the named secret
 func (c *Controller) issue(ctx context.Context, issuer issuer.Interface, crt *v1alpha1.Certificate) (bool, error) {
+	crt.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionTrue,
+		"Pending", "Certificate is being issued", false)
+
 	resp, err := issuer.Issue(ctx, crt)
 	if err != nil {
 		glog.Infof("Error issuing certificate for %s/%s: %v", crt.Namespace, crt.Name, err)
 		return false, err
 	}
 
+	// We only update the secret if the private key field is set.
+	// This helps ensure we never persist *just* a certificate for which we do
+	// not have the public key.
 	if resp.PrivateKey == nil {
 		return resp.Requeue, nil
 	}
 
+	// If the private key is set, call updateSecret to update whatever fields in
+	// 'resp' are not nil.
 	if _, err := c.updateSecret(crt, crt.Namespace, resp.Certificate, resp.PrivateKey, resp.CA); err != nil {
 		s := messageErrorSavingCertificate + err.Error()
 		glog.Info(s)
@@ -319,12 +334,15 @@ func (c *Controller) issue(ctx context.Context, issuer issuer.Interface, crt *v1
 		return false, err
 	}
 
+	// If we have just persisted a new certificate, update the status condition
+	// and mark the certificate as Ready.
 	if len(resp.Certificate) > 0 {
-		s := messageCertificateIssued
-		glog.Info(s)
-		c.Recorder.Event(crt, api.EventTypeNormal, successCertificateIssued, s)
-		crt.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionTrue, successCertificateIssued, s, true)
+		c.Recorder.Event(crt, api.EventTypeNormal,
+			"Issued", "Certificate issued successfully")
+		crt.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionTrue,
+			"Issued", "Certificate issued successfully", true)
 
+		// TODO: move this into Sync
 		// as we have just written a certificate, we should schedule it for renewal
 		c.scheduleRenewal(crt)
 	}
