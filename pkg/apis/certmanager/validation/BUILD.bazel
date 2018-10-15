@@ -1,0 +1,54 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "certificate.go",
+        "certificate_for_issuer.go",
+        "clusterissuer.go",
+        "issuer.go",
+    ],
+    importpath = "github.com/jetstack/cert-manager/pkg/apis/certmanager/validation",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//pkg/apis/certmanager/v1alpha1:go_default_library",
+        "//pkg/controller:go_default_library",
+        "//pkg/issuer/acme/dns/rfc2136:go_default_library",
+        "//vendor/k8s.io/api/core/v1:go_default_library",
+        "//vendor/k8s.io/apimachinery/pkg/util/validation/field:go_default_library",
+    ],
+)
+
+go_test(
+    name = "go_default_test",
+    srcs = [
+        "certificate_for_issuer_test.go",
+        "certificate_test.go",
+        "issuer_test.go",
+    ],
+    embed = [":go_default_library"],
+    deps = [
+        "//pkg/apis/certmanager/v1alpha1:go_default_library",
+        "//pkg/issuer/acme/dns/rfc2136:go_default_library",
+        "//test/util/generate:go_default_library",
+        "//vendor/k8s.io/api/core/v1:go_default_library",
+        "//vendor/k8s.io/apimachinery/pkg/util/validation/field:go_default_library",
+    ],
+)
+
+filegroup(
+    name = "package-srcs",
+    srcs = glob(["**"]),
+    tags = ["automanaged"],
+    visibility = ["//visibility:private"],
+)
+
+filegroup(
+    name = "all-srcs",
+    srcs = [
+        ":package-srcs",
+        "//pkg/apis/certmanager/validation/webhooks:all-srcs",
+    ],
+    tags = ["automanaged"],
+    visibility = ["//visibility:public"],
+)

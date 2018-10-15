@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Copyright 2018 The Jetstack cert-manager contributors.
 #
@@ -18,31 +18,37 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
+RULE_NAME="reference-docs"
+
 SCRIPT_ROOT=$(dirname "${BASH_SOURCE}")/..
 
-DIFFROOT="${SCRIPT_ROOT}/docs/generated/reference/output"
-TMP_DIFFROOT="${SCRIPT_ROOT}/_tmp/docs/generated/reference/output"
-_tmp="${SCRIPT_ROOT}/_tmp"
+_tmp="$(mktemp -d)"
+DIFFROOT="${SCRIPT_ROOT}/"
 
 cleanup() {
   rm -rf "${_tmp}"
 }
 trap "cleanup" EXIT SIGINT
 
-cleanup
+# Create a fake GOPATH
+export GOPATH="${_tmp}"
+TMP_DIFFROOT="${GOPATH}/src/github.com/jetstack/cert-manager"
 
 mkdir -p "${TMP_DIFFROOT}"
-cp -a "${DIFFROOT}"/* "${TMP_DIFFROOT}"
+rsync -avvL "${DIFFROOT}"/ "${TMP_DIFFROOT}" >/dev/null
 
-"${SCRIPT_ROOT}/hack/update-reference-docs-dockerized.sh"
-echo "diffing ${DIFFROOT} against freshly generated reference docs"
+export runfiles="$(pwd)"
+cd "${TMP_DIFFROOT}"
+export BUILD_WORKSPACE_DIRECTORY="$(pwd)"
+"hack/update-${RULE_NAME}.sh"
+
+echo "diffing ${DIFFROOT} against freshly generated ${RULE_NAME}"
 ret=0
-diff -Naupr "${DIFFROOT}" "${TMP_DIFFROOT}" || ret=$?
-cp -a "${TMP_DIFFROOT}"/* "${DIFFROOT}"
+diff --exclude=__main__ -Naupr "${DIFFROOT}/docs/generated/reference/output" "${TMP_DIFFROOT}/docs/generated/reference/output" || ret=$?
 if [[ $ret -eq 0 ]]
 then
   echo "${DIFFROOT} up to date."
 else
-  echo "${DIFFROOT} is out of date. Please run hack/update-reference-docs.sh"
+  echo "${DIFFROOT} is out of date. Please run 'bazel run //hack:update-${RULE_NAME}'"
   exit 1
 fi

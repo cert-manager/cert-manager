@@ -37,7 +37,7 @@ func TestCheck(t *testing.T) {
 	type testT struct {
 		name             string
 		reachabilityTest reachabilityTest
-		challenge        v1alpha1.ACMEOrderChallenge
+		challenge        *v1alpha1.Challenge
 		expectedErr      bool
 		expectedOk       bool
 	}
@@ -68,7 +68,10 @@ func TestCheck(t *testing.T) {
 		test := tests[i]
 		t.Run(test.name, func(t *testing.T) {
 			calls := 0
-			requiredCallsForPass := 5
+			requiredCallsForPass := 2
+			if test.challenge == nil {
+				test.challenge = &v1alpha1.Challenge{}
+			}
 			s := Solver{
 				testReachability: countReachabilityTestCalls(&calls, test.reachabilityTest),
 				requiredPasses:   requiredCallsForPass,

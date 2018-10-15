@@ -1,0 +1,29 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "fake.go",
+        "interfaces.go",
+    ],
+    importpath = "github.com/jetstack/cert-manager/pkg/acme/client",
+    visibility = ["//visibility:public"],
+    deps = ["//third_party/crypto/acme:go_default_library"],
+)
+
+filegroup(
+    name = "package-srcs",
+    srcs = glob(["**"]),
+    tags = ["automanaged"],
+    visibility = ["//visibility:private"],
+)
+
+filegroup(
+    name = "all-srcs",
+    srcs = [
+        ":package-srcs",
+        "//pkg/acme/client/middleware:all-srcs",
+    ],
+    tags = ["automanaged"],
+    visibility = ["//visibility:public"],
+)

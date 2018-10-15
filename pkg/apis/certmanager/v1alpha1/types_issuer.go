@@ -16,7 +16,10 @@ limitations under the License.
 
 package v1alpha1
 
-import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+import (
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+)
 
 // +genclient
 // +genclient:nonNamespaced
@@ -88,6 +91,11 @@ type VaultIssuer struct {
 	Server string `json:"server"`
 	// Vault URL path to the certificate role
 	Path string `json:"path"`
+	// Base64 encoded CA bundle to validate Vault server certificate. Only used
+	// if the Server URL is using HTTPS protocol. This parameter is ignored for
+	// plain HTTP protocol connection. If not set the system root certificates
+	// are used to validate the TLS connection.
+	CABundle []byte `json:"caBundle,omitempty"`
 }
 
 // Vault authentication  can be configured:
@@ -126,13 +134,16 @@ type ACMEIssuer struct {
 	// PrivateKey is the name of a secret containing the private key for this
 	// user account.
 	PrivateKey SecretKeySelector `json:"privateKeySecretRef"`
-	// HTTP01 config
+	// HTTP-01 config
 	HTTP01 *ACMEIssuerHTTP01Config `json:"http01,omitempty"`
 	// DNS-01 config
 	DNS01 *ACMEIssuerDNS01Config `json:"dns01,omitempty"`
 }
 
+// ACMEIssuerHTTP01Config is a structure containing the ACME HTTP configuration options
 type ACMEIssuerHTTP01Config struct {
+	// Optional service type for Kubernetes solver service
+	ServiceType corev1.ServiceType `json:"serviceType,omitempty"`
 }
 
 // ACMEIssuerDNS01Config is a structure containing the ACME DNS configuration
@@ -150,6 +161,7 @@ type ACMEIssuerDNS01Provider struct {
 	Route53    *ACMEIssuerDNS01ProviderRoute53    `json:"route53,omitempty"`
 	AzureDNS   *ACMEIssuerDNS01ProviderAzureDNS   `json:"azuredns,omitempty"`
 	AcmeDNS    *ACMEIssuerDNS01ProviderAcmeDNS    `json:"acmedns,omitempty"`
+	RFC2136    *ACMEIssuerDNS01ProviderRFC2136    `json:"rfc2136,omitempty"`
 }
 
 // ACMEIssuerDNS01ProviderAkamai is a structure containing the DNS
@@ -202,6 +214,31 @@ type ACMEIssuerDNS01ProviderAzureDNS struct {
 type ACMEIssuerDNS01ProviderAcmeDNS struct {
 	Host          string            `json:"host"`
 	AccountSecret SecretKeySelector `json:"accountSecretRef"`
+}
+
+// ACMEIssuerDNS01ProviderRFC2136 is a structure containing the
+// configuration for RFC2136 DNS
+type ACMEIssuerDNS01ProviderRFC2136 struct {
+	// The IP address of the DNS supporting RFC2136. Required.
+	// Note: FQDN is not a valid value, only IP.
+	Nameserver string `json:"nameserver"`
+
+	// The name of the secret containing the TSIG value.
+	// If ``tsigKeyName`` is defined, this field is required.
+	// +optional
+	TSIGSecret SecretKeySelector `json:"tsigSecretSecretRef"`
+
+	// The TSIG Key name configured in the DNS.
+	// If ``tsigSecretSecretRef`` is defined, this field is required.
+	// +optional
+	TSIGKeyName string `json:"tsigKeyName"`
+
+	// The TSIG Algorithm configured in the DNS supporting RFC2136. Used only
+	// when ``tsigSecretSecretRef`` and ``tsigKeyName`` are defined.
+	// Supported values are (case-insensitive): ``HMACMD5`` (default),
+	// ``HMACSHA1``, ``HMACSHA256`` or ``HMACSHA512``.
+	// +optional
+	TSIGAlgorithm string `json:"tsigAlgorithm"`
 }
 
 // IssuerStatus contains status information about an Issuer

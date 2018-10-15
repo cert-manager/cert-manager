@@ -46,7 +46,7 @@ const (
 )
 
 var (
-	certificateGvk = v1alpha1.SchemeGroupVersion.WithKind("Certificate")
+	challengeGvk = v1alpha1.SchemeGroupVersion.WithKind("Challenge")
 )
 
 // Solver is an implementation of the acme http-01 challenge solver protocol
@@ -79,21 +79,21 @@ func NewSolver(ctx *controller.Context) *Solver {
 // Present will realise the resources required to solve the given HTTP01
 // challenge validation in the apiserver. If those resources already exist, it
 // will return nil (i.e. this function is idempotent).
-func (s *Solver) Present(ctx context.Context, issuer v1alpha1.GenericIssuer, crt *v1alpha1.Certificate, ch v1alpha1.ACMEOrderChallenge) error {
-	_, podErr := s.ensurePod(crt, ch)
-	svc, svcErr := s.ensureService(crt, ch)
+func (s *Solver) Present(ctx context.Context, issuer v1alpha1.GenericIssuer, ch *v1alpha1.Challenge) error {
+	_, podErr := s.ensurePod(ch)
+	svc, svcErr := s.ensureService(issuer, ch)
 	if svcErr != nil {
 		return utilerrors.NewAggregate([]error{podErr, svcErr})
 	}
-	_, ingressErr := s.ensureIngress(crt, svc.Name, ch)
+	_, ingressErr := s.ensureIngress(ch, svc.Name)
 	return utilerrors.NewAggregate([]error{podErr, svcErr, ingressErr})
 }
 
-func (s *Solver) Check(ch v1alpha1.ACMEOrderChallenge) (bool, error) {
+func (s *Solver) Check(ch *v1alpha1.Challenge) (bool, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), HTTP01Timeout)
 	defer cancel()
 	for i := 0; i < s.requiredPasses; i++ {
-		ok, err := s.testReachability(ctx, ch.Domain, fmt.Sprintf("%s/%s", solver.HTTPChallengePath, ch.Token), ch.Key)
+		ok, err := s.testReachability(ctx, ch.Spec.DNSName, fmt.Sprintf("%s/%s", solver.HTTPChallengePath, ch.Spec.Token), ch.Spec.Key)
 		if err != nil {
 			return false, err
 		}
@@ -107,11 +107,11 @@ func (s *Solver) Check(ch v1alpha1.ACMEOrderChallenge) (bool, error) {
 
 // CleanUp will ensure the created service, ingress and pod are clean/deleted of any
 // cert-manager created data.
-func (s *Solver) CleanUp(ctx context.Context, issuer v1alpha1.GenericIssuer, crt *v1alpha1.Certificate, ch v1alpha1.ACMEOrderChallenge) error {
+func (s *Solver) CleanUp(ctx context.Context, issuer v1alpha1.GenericIssuer, ch *v1alpha1.Challenge) error {
 	var errs []error
-	errs = append(errs, s.cleanupPods(crt, ch))
-	errs = append(errs, s.cleanupServices(crt, ch))
-	errs = append(errs, s.cleanupIngresses(crt, ch))
+	errs = append(errs, s.cleanupPods(ch))
+	errs = append(errs, s.cleanupServices(ch))
+	errs = append(errs, s.cleanupIngresses(ch))
 	return utilerrors.NewAggregate(errs)
 }
 

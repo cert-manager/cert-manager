@@ -5,6 +5,9 @@ apiVersion: v1
 kind: Namespace
 metadata:
   name: "cert-manager"
+  labels:
+    name: "cert-manager"
+    certmanager.k8s.io/disable-validation: "true"
 
 ---
 # Source: cert-manager/templates/serviceaccount.yaml
@@ -15,7 +18,7 @@ metadata:
   namespace: "cert-manager"
   labels:
     app: cert-manager
-    chart: cert-manager-v0.4.0-dev.4
+    chart: cert-manager-v0.6.0-dev.2
     release: cert-manager
     heritage: Tiller
 ---
@@ -24,9 +27,11 @@ apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
 metadata:
   name: certificates.certmanager.k8s.io
+  annotations:
+    "helm.sh/hook": crd-install
   labels:
     app: cert-manager
-    chart: cert-manager-v0.4.0-dev.4
+    chart: cert-manager-v0.6.0-dev.2
     release: cert-manager
     heritage: Tiller
 spec:
@@ -41,14 +46,36 @@ spec:
       - certs
       
 ---
+# Source: cert-manager/templates/challenge-crd.yaml
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  name: challenges.certmanager.k8s.io
+  annotations:
+    "helm.sh/hook": crd-install
+  labels:
+    app: cert-manager
+    chart: cert-manager-v0.6.0-dev.2
+    release: cert-manager
+    heritage: Tiller
+spec:
+  group: certmanager.k8s.io
+  version: v1alpha1
+  names:
+    kind: Challenge
+    plural: challenges
+  scope: Namespaced
+---
 # Source: cert-manager/templates/clusterissuer-crd.yaml
 apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
 metadata:
   name: clusterissuers.certmanager.k8s.io
+  annotations:
+    "helm.sh/hook": crd-install
   labels:
     app: cert-manager
-    chart: cert-manager-v0.4.0-dev.4
+    chart: cert-manager-v0.6.0-dev.2
     release: cert-manager
     heritage: Tiller
 spec:
@@ -64,9 +91,11 @@ apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
 metadata:
   name: issuers.certmanager.k8s.io
+  annotations:
+    "helm.sh/hook": crd-install
   labels:
     app: cert-manager
-    chart: cert-manager-v0.4.0-dev.4
+    chart: cert-manager-v0.6.0-dev.2
     release: cert-manager
     heritage: Tiller
 spec:
@@ -77,6 +106,26 @@ spec:
     plural: issuers
   scope: Namespaced
 ---
+# Source: cert-manager/templates/order-crd.yaml
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  name: orders.certmanager.k8s.io
+  annotations:
+    "helm.sh/hook": crd-install
+  labels:
+    app: cert-manager
+    chart: cert-manager-v0.6.0-dev.2
+    release: cert-manager
+    heritage: Tiller
+spec:
+  group: certmanager.k8s.io
+  version: v1alpha1
+  names:
+    kind: Order
+    plural: orders
+  scope: Namespaced
+---
 # Source: cert-manager/templates/rbac.yaml
 apiVersion: rbac.authorization.k8s.io/v1beta1
 kind: ClusterRole
@@ -84,12 +133,12 @@ metadata:
   name: cert-manager
   labels:
     app: cert-manager
-    chart: cert-manager-v0.4.0-dev.4
+    chart: cert-manager-v0.6.0-dev.2
     release: cert-manager
     heritage: Tiller
 rules:
   - apiGroups: ["certmanager.k8s.io"]
-    resources: ["certificates", "issuers", "clusterissuers"]
+    resources: ["certificates", "issuers", "clusterissuers", "orders", "challenges"]
     verbs: ["*"]
   - apiGroups: [""]
     resources: ["configmaps", "secrets", "events", "services", "pods"]
@@ -104,7 +153,7 @@ metadata:
   name: cert-manager
   labels:
     app: cert-manager
-    chart: cert-manager-v0.4.0-dev.4
+    chart: cert-manager-v0.6.0-dev.2
     release: cert-manager
     heritage: Tiller
 roleRef:
@@ -116,6 +165,39 @@ subjects:
     namespace: "cert-manager"
     kind: ServiceAccount
 ---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: cert-manager-view
+  labels:
+    app: cert-manager
+    chart: cert-manager-v0.6.0-dev.2
+    release: cert-manager
+    heritage: Tiller
+    rbac.authorization.k8s.io/aggregate-to-view: "true"
+    rbac.authorization.k8s.io/aggregate-to-edit: "true"
+    rbac.authorization.k8s.io/aggregate-to-admin: "true"
+rules:
+  - apiGroups: ["certmanager.k8s.io"]
+    resources: ["certificates", "issuers"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: cert-manager-edit
+  labels:
+    app: cert-manager
+    chart: cert-manager-v0.6.0-dev.2
+    release: cert-manager
+    heritage: Tiller
+    rbac.authorization.k8s.io/aggregate-to-edit: "true"
+    rbac.authorization.k8s.io/aggregate-to-admin: "true"
+rules:
+  - apiGroups: ["certmanager.k8s.io"]
+    resources: ["certificates", "issuers"]
+    verbs: ["create", "delete", "deletecollection", "patch", "update"]
+---
 # Source: cert-manager/templates/deployment.yaml
 apiVersion: apps/v1beta1
 kind: Deployment
@@ -124,7 +206,7 @@ metadata:
   namespace: "cert-manager"
   labels:
     app: cert-manager
-    chart: cert-manager-v0.4.0-dev.4
+    chart: cert-manager-v0.6.0-dev.2
     release: cert-manager
     heritage: Tiller
 spec:
@@ -143,8 +225,8 @@ spec:
       serviceAccountName: cert-manager
       containers:
         - name: cert-manager
-          image: "quay.io/jetstack/cert-manager-controller:canary"
-          imagePullPolicy: Always
+          image: "quay.io/jetstack/cert-manager-controller:v0.5.0"
+          imagePullPolicy: IfNotPresent
           args:
           - --cluster-resource-namespace=$(POD_NAMESPACE)
           - --leader-election-namespace=$(POD_NAMESPACE)

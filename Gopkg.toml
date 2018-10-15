@@ -27,20 +27,43 @@ required = [
   name = "k8s.io/apiextensions-apiserver"
   version = "kubernetes-1.10.0"
 
+[[override]]
+  name = "k8s.io/apiserver"
+  version = "kubernetes-1.10.0"
+
 [[constraint]]
-    name = "github.com/Azure/azure-sdk-for-go"
-    version = "v12.0.0-beta"
+  name = "github.com/Azure/azure-sdk-for-go"
+  version = "v12.0.0-beta"
+
+[[constraint]]
+  name = "github.com/openshift/generic-admission-server"
+  revision = "76d182e57ce628bbf6eb266a7d26cf6c52adf551"
 
 [[constraint]]
   name = "github.com/hashicorp/vault"
   version = "v0.9.3"
 
-# gengo needs to be manually pinned to the version listed in code-generators
-# Gopkg.toml, because the k8s project does not produce Gopkg.toml files & dep
-# does not parse the Godeps.json file to determine revisions to use.
+### Overrides for transitive kubernetes dependencies
+### These should be updated whenever we bump the kubernetes version we depend on
 [[override]]
   name = "k8s.io/gengo"
   revision = "b6c426f7730e6d66e6e476a85d1c3eb7633880e0"
+
+[[override]]
+  name = "google.golang.org/grpc"
+  revision = "5b3c4e850e90a4cf6a20ebd46c8b32a0a3afcb9e"
+
+[[override]]
+  name = "k8s.io/kube-openapi"
+  revision = "50ae88d24ede7b8bad68e23c805b5d3da5c8abaf"
+
+[[override]]
+  name = "github.com/golang/protobuf"
+  revision = "1643683e1b54a9e88ad26d98f81400c8c9d9f4f9"
+
+[[override]]
+  name = "google.golang.org/genproto"
+  revision = "09f6ed296fc66555a25fe4ce95173148778dfa85"
 
 [prune]
   unused-packages = true

@@ -28,6 +28,7 @@ import (
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/azuredns"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/clouddns"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/cloudflare"
+	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/rfc2136"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/route53"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
 )
@@ -46,10 +47,8 @@ type solverFixture struct {
 
 	// Issuer to be passed to functions on the Solver (a default will be used if nil)
 	Issuer v1alpha1.GenericIssuer
-	// Certificate resource to use during tests
-	Certificate *v1alpha1.Certificate
 	// Challenge resource to use during tests
-	Challenge v1alpha1.ACMEOrderChallenge
+	Challenge *v1alpha1.Challenge
 
 	dnsProviders *fakeDNSProviders
 
@@ -136,8 +135,8 @@ func newFakeDNSProviders() *fakeDNSProviders {
 		calls: []fakeDNSProviderCall{},
 	}
 	f.constructors = dnsProviderConstructors{
-		cloudDNS: func(project string, serviceAccount []byte, dns01Nameservers []string) (*clouddns.DNSProvider, error) {
-			f.call("clouddns", project, serviceAccount, util.RecursiveNameservers)
+		cloudDNS: func(project string, serviceAccount []byte, dns01Nameservers []string, ambient bool) (*clouddns.DNSProvider, error) {
+			f.call("clouddns", project, serviceAccount, util.RecursiveNameservers, ambient)
 			return nil, nil
 		},
 		cloudFlare: func(email, apikey string, dns01Nameservers []string) (*cloudflare.DNSProvider, error) {
@@ -157,6 +156,10 @@ func newFakeDNSProviders() *fakeDNSProviders {
 		},
 		acmeDNS: func(host string, accountJson []byte, dns01Nameservers []string) (*acmedns.DNSProvider, error) {
 			f.call("acmedns", host, accountJson, dns01Nameservers)
+			return nil, nil
+		},
+		rfc2136: func(nameserver, tsigAlgorithm, tsigKeyName, tsigSecret string, dns01Nameservers []string) (*rfc2136.DNSProvider, error) {
+			f.call("rfc2136", nameserver, tsigAlgorithm, tsigKeyName, tsigSecret, util.RecursiveNameservers)
 			return nil, nil
 		},
 	}

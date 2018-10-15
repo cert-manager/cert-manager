@@ -54,6 +54,9 @@ type CertificateSpec struct {
 	// CommonName is a common name to be used on the Certificate
 	CommonName string `json:"commonName,omitempty"`
 
+	// Organization is the organization to be used on the Certificate
+	Organization []string `json:"organization,omitempty"`
+
 	// DNSNames is a list of subject alt names to be used on the Certificate
 	DNSNames []string `json:"dnsNames,omitempty"`
 
@@ -96,29 +99,10 @@ type ACMECertificateConfig struct {
 	Config []DomainSolverConfig `json:"config"`
 }
 
-type DomainSolverConfig struct {
-	Domains      []string `json:"domains"`
-	SolverConfig `json:",inline"`
-}
-
-type SolverConfig struct {
-	HTTP01 *HTTP01SolverConfig `json:"http01,omitempty"`
-	DNS01  *DNS01SolverConfig  `json:"dns01,omitempty"`
-}
-
-type HTTP01SolverConfig struct {
-	Ingress      string  `json:"ingress"`
-	IngressClass *string `json:"ingressClass,omitempty"`
-}
-
-type DNS01SolverConfig struct {
-	Provider string `json:"provider"`
-}
-
 // CertificateStatus defines the observed state of Certificate
 type CertificateStatus struct {
-	Conditions []CertificateCondition `json:"conditions,omitempty"`
-	ACME       *CertificateACMEStatus `json:"acme,omitempty"`
+	Conditions      []CertificateCondition `json:"conditions,omitempty"`
+	LastFailureTime *metav1.Time           `json:"lastFailureTime,omitempty"`
 }
 
 // CertificateCondition contains condition information for an Certificate.
@@ -156,43 +140,3 @@ const (
 	// validation was attempted.
 	CertificateConditionValidationFailed CertificateConditionType = "ValidateFailed"
 )
-
-// CertificateACMEStatus holds the status for an ACME issuer
-type CertificateACMEStatus struct {
-	// Order contains details about the current in-progress ACME Order.
-	Order ACMEOrderStatus `json:"order,omitempty"`
-}
-
-type ACMEOrderStatus struct {
-	// The URL that can be used to get information about the ACME order.
-	URL        string               `json:"url"`
-	Challenges []ACMEOrderChallenge `json:"challenges,omitempty"`
-}
-
-type ACMEOrderChallenge struct {
-	// The URL that can be used to get information about the ACME challenge.
-	URL string `json:"url"`
-
-	// The URL that can be used to get information about the ACME authorization
-	// associated with the challenge.
-	AuthzURL string `json:"authzURL"`
-
-	// Type of ACME challenge
-	// Either http-01 or dns-01
-	Type string `json:"type"`
-
-	// Domain this challenge corresponds to
-	Domain string `json:"domain"`
-
-	// Challenge token for this challenge
-	Token string `json:"token"`
-
-	// Challenge key for this challenge
-	Key string `json:"key"`
-
-	// Set to true if this challenge is for a wildcard domain
-	Wildcard bool `json:"wildcard"`
-
-	// Configuration used to present this challenge
-	SolverConfig `json:",inline"`
-}

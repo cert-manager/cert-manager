@@ -1,0 +1,72 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "bdp_estimator.go",
+        "control.go",
+        "handler_server.go",
+        "http2_client.go",
+        "http2_server.go",
+        "http_util.go",
+        "log.go",
+        "transport.go",
+    ],
+    importmap = "github.com/jetstack/cert-manager/vendor/google.golang.org/grpc/transport",
+    importpath = "google.golang.org/grpc/transport",
+    tags = ["manual"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//vendor/github.com/golang/protobuf/proto:go_default_library",
+        "//vendor/golang.org/x/net/context:go_default_library",
+        "//vendor/golang.org/x/net/http2:go_default_library",
+        "//vendor/golang.org/x/net/http2/hpack:go_default_library",
+        "//vendor/google.golang.org/grpc/codes:go_default_library",
+        "//vendor/google.golang.org/grpc/credentials:go_default_library",
+        "//vendor/google.golang.org/grpc/grpclog:go_default_library",
+        "//vendor/google.golang.org/grpc/keepalive:go_default_library",
+        "//vendor/google.golang.org/grpc/metadata:go_default_library",
+        "//vendor/google.golang.org/grpc/peer:go_default_library",
+        "//vendor/google.golang.org/grpc/stats:go_default_library",
+        "//vendor/google.golang.org/grpc/status:go_default_library",
+        "//vendor/google.golang.org/grpc/tap:go_default_library",
+        "@go_googleapis//google/rpc:status_go_proto",
+    ],
+)
+
+go_test(
+    name = "go_default_test",
+    srcs = [
+        "handler_server_test.go",
+        "http_util_test.go",
+        "transport_test.go",
+    ],
+    embed = [":go_default_library"],
+    tags = ["manual"],
+    deps = [
+        "//vendor/github.com/golang/protobuf/proto:go_default_library",
+        "//vendor/golang.org/x/net/context:go_default_library",
+        "//vendor/golang.org/x/net/http2:go_default_library",
+        "//vendor/golang.org/x/net/http2/hpack:go_default_library",
+        "//vendor/google.golang.org/grpc/codes:go_default_library",
+        "//vendor/google.golang.org/grpc/keepalive:go_default_library",
+        "//vendor/google.golang.org/grpc/metadata:go_default_library",
+        "//vendor/google.golang.org/grpc/status:go_default_library",
+        "@go_googleapis//google/rpc:errdetails_go_proto",
+        "@io_bazel_rules_go//proto/wkt:duration_go_proto",
+    ],
+)
+
+filegroup(
+    name = "package-srcs",
+    srcs = glob(["**"]),
+    tags = ["automanaged"],
+    visibility = ["//visibility:private"],
+)
+
+filegroup(
+    name = "all-srcs",
+    srcs = [":package-srcs"],
+    tags = ["automanaged"],
+    visibility = ["//visibility:public"],
+)

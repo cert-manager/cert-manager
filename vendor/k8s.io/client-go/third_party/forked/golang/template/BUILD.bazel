@@ -1,0 +1,27 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "exec.go",
+        "funcs.go",
+    ],
+    importmap = "github.com/jetstack/cert-manager/vendor/k8s.io/client-go/third_party/forked/golang/template",
+    importpath = "k8s.io/client-go/third_party/forked/golang/template",
+    tags = ["manual"],
+    visibility = ["//visibility:public"],
+)
+
+filegroup(
+    name = "package-srcs",
+    srcs = glob(["**"]),
+    tags = ["automanaged"],
+    visibility = ["//visibility:private"],
+)
+
+filegroup(
+    name = "all-srcs",
+    srcs = [":package-srcs"],
+    tags = ["automanaged"],
+    visibility = ["//visibility:public"],
+)

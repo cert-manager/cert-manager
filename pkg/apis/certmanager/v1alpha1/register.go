@@ -55,6 +55,10 @@ func addKnownTypes(scheme *runtime.Scheme) error {
 		&IssuerList{},
 		&ClusterIssuer{},
 		&ClusterIssuerList{},
+		&Order{},
+		&OrderList{},
+		&Challenge{},
+		&ChallengeList{},
 	)
 	metav1.AddToGroupVersion(scheme, SchemeGroupVersion)
 	return nil

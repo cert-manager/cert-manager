@@ -1,0 +1,42 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "auth_env.go",
+        "client.go",
+        "doc.go",
+        "endpoint_location.go",
+        "errors.go",
+    ],
+    importmap = "github.com/jetstack/cert-manager/vendor/github.com/gophercloud/gophercloud/openstack",
+    importpath = "github.com/gophercloud/gophercloud/openstack",
+    tags = ["manual"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//vendor/github.com/gophercloud/gophercloud:go_default_library",
+        "//vendor/github.com/gophercloud/gophercloud/openstack/identity/v2/tokens:go_default_library",
+        "//vendor/github.com/gophercloud/gophercloud/openstack/identity/v3/tokens:go_default_library",
+        "//vendor/github.com/gophercloud/gophercloud/openstack/utils:go_default_library",
+    ],
+)
+
+filegroup(
+    name = "package-srcs",
+    srcs = glob(["**"]),
+    tags = ["automanaged"],
+    visibility = ["//visibility:private"],
+)
+
+filegroup(
+    name = "all-srcs",
+    srcs = [
+        ":package-srcs",
+        "//vendor/github.com/gophercloud/gophercloud/openstack/identity/v2/tenants:all-srcs",
+        "//vendor/github.com/gophercloud/gophercloud/openstack/identity/v2/tokens:all-srcs",
+        "//vendor/github.com/gophercloud/gophercloud/openstack/identity/v3/tokens:all-srcs",
+        "//vendor/github.com/gophercloud/gophercloud/openstack/utils:all-srcs",
+    ],
+    tags = ["automanaged"],
+    visibility = ["//visibility:public"],
+)

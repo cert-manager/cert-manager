@@ -33,6 +33,7 @@ import (
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/azuredns"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/clouddns"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/cloudflare"
+	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/rfc2136"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/route53"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
 )
@@ -51,11 +52,12 @@ type solver interface {
 // It is useful for mocking out a given provider since an alternate set of
 // constructors may be set.
 type dnsProviderConstructors struct {
-	cloudDNS   func(project string, serviceAccount []byte, dns01Nameservers []string) (*clouddns.DNSProvider, error)
+	cloudDNS   func(project string, serviceAccount []byte, dns01Nameservers []string, ambient bool) (*clouddns.DNSProvider, error)
 	cloudFlare func(email, apikey string, dns01Nameservers []string) (*cloudflare.DNSProvider, error)
 	route53    func(accessKey, secretKey, hostedZoneID, region string, ambient bool, dns01Nameservers []string) (*route53.DNSProvider, error)
 	azureDNS   func(clientID, clientSecret, subscriptionID, tenentID, resourceGroupName, hostedZoneName string, dns01Nameservers []string) (*azuredns.DNSProvider, error)
 	acmeDNS    func(host string, accountJson []byte, dns01Nameservers []string) (*acmedns.DNSProvider, error)
+	rfc2136    func(nameserver, tsigAlgorithm, tsigKeyName, tsigSecret string, dns01Nameservers []string) (*rfc2136.DNSProvider, error)
 }
 
 // Solver is a solver for the acme dns01 challenge.
@@ -67,39 +69,36 @@ type Solver struct {
 	dnsProviderConstructors dnsProviderConstructors
 }
 
-func (s *Solver) Present(ctx context.Context, issuer v1alpha1.GenericIssuer, _ *v1alpha1.Certificate, ch v1alpha1.ACMEOrderChallenge) error {
-	if ch.SolverConfig.DNS01 == nil {
+// Present performs the work to configure DNS to resolve a DNS01 challenge.
+func (s *Solver) Present(ctx context.Context, issuer v1alpha1.GenericIssuer, ch *v1alpha1.Challenge) error {
+	if ch.Spec.Config.DNS01 == nil {
 		return fmt.Errorf("challenge dns config must be specified")
 	}
 
-	providerName := ch.SolverConfig.DNS01.Provider
-	if providerName == "" {
-		return fmt.Errorf("dns01 challenge provider name must be set")
-	}
-
-	slv, err := s.solverForIssuerProvider(issuer, providerName)
+	slv, err := s.solverForChallenge(issuer, ch)
 	if err != nil {
 		return err
 	}
 
-	glog.Infof("Presenting DNS01 challenge for domain %q", ch.Domain)
-	return slv.Present(ch.Domain, ch.Token, ch.Key)
+	glog.Infof("Presenting DNS01 challenge for domain %q", ch.Spec.DNSName)
+	return slv.Present(ch.Spec.DNSName, ch.Spec.Token, ch.Spec.Key)
 }
 
-func (s *Solver) Check(ch v1alpha1.ACMEOrderChallenge) (bool, error) {
-	fqdn, value, ttl, err := util.DNS01Record(ch.Domain, ch.Key, s.DNS01Nameservers)
+// Check verifies that the DNS records for the ACME challenge have propagated.
+func (s *Solver) Check(ch *v1alpha1.Challenge) (bool, error) {
+	fqdn, value, ttl, err := util.DNS01Record(ch.Spec.DNSName, ch.Spec.Key, s.DNS01Nameservers)
 	if err != nil {
 		return false, err
 	}
 
-	glog.Infof("Checking DNS propagation for %q using name servers: %v", ch.Domain, s.DNS01Nameservers)
+	glog.Infof("Checking DNS propagation for %q using name servers: %v", ch.Spec.DNSName, s.Context.DNS01Nameservers)
 
-	ok, err := util.PreCheckDNS(fqdn, value, s.DNS01Nameservers)
+	ok, err := util.PreCheckDNS(fqdn, value, s.Context.DNS01Nameservers)
 	if err != nil {
 		return false, err
 	}
 	if !ok {
-		glog.Infof("DNS record for %q not yet propagated", ch.Domain)
+		glog.Infof("DNS record for %q not yet propagated", ch.Spec.DNSName)
 		return false, nil
 	}
 
@@ -110,34 +109,33 @@ func (s *Solver) Check(ch v1alpha1.ACMEOrderChallenge) (bool, error) {
 	return true, nil
 }
 
-func (s *Solver) CleanUp(ctx context.Context, issuer v1alpha1.GenericIssuer, _ *v1alpha1.Certificate, ch v1alpha1.ACMEOrderChallenge) error {
-	if ch.SolverConfig.DNS01 == nil {
+// CleanUp removes DNS records which are no longer needed after
+// certificate issuance.
+func (s *Solver) CleanUp(ctx context.Context, issuer v1alpha1.GenericIssuer, ch *v1alpha1.Challenge) error {
+	if ch.Spec.Config.DNS01 == nil {
 		return fmt.Errorf("challenge dns config must be specified")
 	}
 
-	providerName := ch.SolverConfig.DNS01.Provider
-	if providerName == "" {
-		return fmt.Errorf("dns01 challenge provider name must be set")
-	}
-
-	slv, err := s.solverForIssuerProvider(issuer, providerName)
+	slv, err := s.solverForChallenge(issuer, ch)
 	if err != nil {
 		return err
 	}
 
-	return slv.CleanUp(ch.Domain, ch.Token, ch.Key)
+	return slv.CleanUp(ch.Spec.DNSName, ch.Spec.Token, ch.Spec.Key)
 }
 
-// solverForIssuerProvider returns a Solver for the given providerName.
+// solverForChallenge returns a Solver for the given providerName.
 // The providerName is the name of an ACME DNS-01 challenge provider as
 // specified on the Issuer resource for the Solver.
-//
-// This method is exported so that only the provider name is required in order
-// to obtain an instance of a Solver. This is useful when cleaning up old
-// challenges after the ACME challenge configuration on the Certificate has
-// been removed by the user.
-func (s *Solver) solverForIssuerProvider(issuer v1alpha1.GenericIssuer, providerName string) (solver, error) {
+func (s *Solver) solverForChallenge(issuer v1alpha1.GenericIssuer, ch *v1alpha1.Challenge) (solver, error) {
 	resourceNamespace := s.ResourceNamespace(issuer)
+	canUseAmbientCredentials := s.CanUseAmbientCredentials(issuer)
+
+	providerName := ch.Spec.Config.DNS01.Provider
+	if providerName == "" {
+		return nil, fmt.Errorf("dns01 challenge provider name must be set")
+	}
+
 	providerConfig, err := issuer.GetSpec().ACME.DNS01.Provider(providerName)
 	if err != nil {
 		return nil, err
@@ -171,19 +169,27 @@ func (s *Solver) solverForIssuerProvider(issuer v1alpha1.GenericIssuer, provider
 			return nil, errors.Wrap(err, "error instantiating akamai challenge solver")
 		}
 	case providerConfig.CloudDNS != nil:
-		saSecret, err := s.secretLister.Secrets(resourceNamespace).Get(providerConfig.CloudDNS.ServiceAccount.Name)
-		if err != nil {
-			return nil, fmt.Errorf("error getting clouddns service account: %s", err)
+		var keyData []byte
+
+		// if the serviceAccount.name field is set, we will load credentials from
+		// that secret.
+		// If it is not set, we will attempt to instantiate the provider using
+		// ambient credentials (if enabled).
+		if providerConfig.CloudDNS.ServiceAccount.Name != "" {
+			saSecret, err := s.secretLister.Secrets(resourceNamespace).Get(providerConfig.CloudDNS.ServiceAccount.Name)
+			if err != nil {
+				return nil, fmt.Errorf("error getting clouddns service account: %s", err)
+			}
+
+			saKey := providerConfig.CloudDNS.ServiceAccount.Key
+			keyData = saSecret.Data[saKey]
+			if len(keyData) == 0 {
+				return nil, fmt.Errorf("specfied key %q not found in secret %s/%s", saKey, saSecret.Namespace, saSecret.Name)
+			}
 		}
 
-		saKey := providerConfig.CloudDNS.ServiceAccount.Key
-		saBytes := saSecret.Data[saKey]
-
-		if len(saBytes) == 0 {
-			return nil, fmt.Errorf("specfied key %q not found in secret %s/%s", saKey, saSecret.Namespace, saSecret.Name)
-		}
-
-		impl, err = s.dnsProviderConstructors.cloudDNS(providerConfig.CloudDNS.Project, saBytes, s.DNS01Nameservers)
+		// attempt to construct the cloud dns provider
+		impl, err = s.dnsProviderConstructors.cloudDNS(providerConfig.CloudDNS.Project, keyData, s.DNS01Nameservers, s.CanUseAmbientCredentials(issuer))
 		if err != nil {
 			return nil, fmt.Errorf("error instantiating google clouddns challenge solver: %s", err)
 		}
@@ -220,7 +226,7 @@ func (s *Solver) solverForIssuerProvider(issuer v1alpha1.GenericIssuer, provider
 			strings.TrimSpace(secretAccessKey),
 			providerConfig.Route53.HostedZoneID,
 			providerConfig.Route53.Region,
-			s.CanUseAmbientCredentials(issuer),
+			canUseAmbientCredentials,
 			s.DNS01Nameservers,
 		)
 		if err != nil {
@@ -246,6 +252,9 @@ func (s *Solver) solverForIssuerProvider(issuer v1alpha1.GenericIssuer, provider
 			providerConfig.AzureDNS.HostedZoneName,
 			s.DNS01Nameservers,
 		)
+		if err != nil {
+			return nil, fmt.Errorf("error instantiating azuredns challenge solver: %s", err)
+		}
 	case providerConfig.AcmeDNS != nil:
 		accountSecret, err := s.secretLister.Secrets(resourceNamespace).Get(providerConfig.AcmeDNS.AccountSecret.Name)
 		if err != nil {
@@ -262,6 +271,33 @@ func (s *Solver) solverForIssuerProvider(issuer v1alpha1.GenericIssuer, provider
 			accountSecretBytes,
 			s.DNS01Nameservers,
 		)
+		if err != nil {
+			return nil, fmt.Errorf("error instantiating acmedns challenge solver: %s", err)
+		}
+	case providerConfig.RFC2136 != nil:
+		var secret string
+		if len(providerConfig.RFC2136.TSIGSecret.Name) > 0 {
+			tsigSecret, err := s.secretLister.Secrets(resourceNamespace).Get(providerConfig.RFC2136.TSIGSecret.Name)
+			if err != nil {
+				return nil, fmt.Errorf("error getting rfc2136 service account: %s", err.Error())
+			}
+			secretBytes, ok := tsigSecret.Data[providerConfig.RFC2136.TSIGSecret.Key]
+			if !ok {
+				return nil, fmt.Errorf("error getting rfc2136 secret key: key '%s' not found in secret", providerConfig.RFC2136.TSIGSecret.Key)
+			}
+			secret = string(secretBytes)
+		}
+
+		impl, err = s.dnsProviderConstructors.rfc2136(
+			providerConfig.RFC2136.Nameserver,
+			string(providerConfig.RFC2136.TSIGAlgorithm),
+			providerConfig.RFC2136.TSIGKeyName,
+			secret,
+			s.DNS01Nameservers,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("error instantiating rfc2136 challenge solver: %s", err.Error())
+		}
 	default:
 		return nil, fmt.Errorf("no dns provider config specified for provider %q", providerName)
 	}
@@ -269,16 +305,19 @@ func (s *Solver) solverForIssuerProvider(issuer v1alpha1.GenericIssuer, provider
 	return impl, nil
 }
 
+// NewSolver creates a Solver which can instantiate the appropriate DNS
+// provider.
 func NewSolver(ctx *controller.Context) *Solver {
 	return &Solver{
 		ctx,
 		ctx.KubeSharedInformerFactory.Core().V1().Secrets().Lister(),
 		dnsProviderConstructors{
-			clouddns.NewDNSProviderServiceAccountBytes,
+			clouddns.NewDNSProvider,
 			cloudflare.NewDNSProviderCredentials,
 			route53.NewDNSProvider,
 			azuredns.NewDNSProviderCredentials,
 			acmedns.NewDNSProviderHostBytes,
+			rfc2136.NewDNSProviderCredentials,
 		},
 	}
 }

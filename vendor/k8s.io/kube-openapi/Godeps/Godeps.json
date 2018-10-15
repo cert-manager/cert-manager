@@ -7,6 +7,11 @@
 	],
 	"Deps": [
 		{
+		        "ImportPath": "bitbucket.org/ww/goautoneg",
+		        "Comment": "null-5",
+		        "Rev": "75cd24fc2f2c2a2088577d12123ddee5f54e0675"
+		},
+		{
 			"ImportPath": "github.com/NYTimes/gziphandler",
 			"Rev": "56545f4a5d46df9a6648819d1664c3a03a13ffdb"
 		},

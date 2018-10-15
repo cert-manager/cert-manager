@@ -69,14 +69,14 @@ var _ = framework.CertManagerDescribe("Vault Certificate (AppRole)", func() {
 		vaultInit.Clean()
 	})
 
-	vaultURL := "http://vault.vault:8200"
+	vaultURL := "https://vault.vault:8200"
 	It("should generate a new valid certificate", func() {
 		By("Creating an Issuer")
 
 		certClient := f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name)
 		secretClient := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name)
 
-		_, err := f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Create(util.NewCertManagerVaultIssuerAppRole(issuerName, vaultURL, vaultPath, roleId, vaultSecretAppRoleName, authPath))
+		_, err := f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Create(util.NewCertManagerVaultIssuerAppRole(issuerName, vaultURL, vaultPath, roleId, vaultSecretAppRoleName, authPath, vault.VaultCA))
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Waiting for Issuer to become Ready")
@@ -137,14 +137,14 @@ var _ = framework.CertManagerDescribe("Vault Certificate (AppRole with a custom 
 		vaultInit.Clean()
 	})
 
-	vaultURL := "http://vault.vault:8200"
+	vaultURL := "https://vault.vault:8200"
 	It("should generate a new valid certificate", func() {
 		By("Creating an Issuer")
 
 		certClient := f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name)
 		secretClient := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name)
 
-		_, err := f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Create(util.NewCertManagerVaultIssuerAppRole(issuerName, vaultURL, vaultPath, roleId, vaultSecretAppRoleName, authPath))
+		_, err := f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Create(util.NewCertManagerVaultIssuerAppRole(issuerName, vaultURL, vaultPath, roleId, vaultSecretAppRoleName, authPath, vault.VaultCA))
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Waiting for Issuer to become Ready")

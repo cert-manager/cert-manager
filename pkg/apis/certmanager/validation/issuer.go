@@ -17,6 +17,13 @@ limitations under the License.
 package validation
 
 import (
+	"crypto/x509"
+	"fmt"
+	"strings"
+
+	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/rfc2136"
+
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
@@ -82,7 +89,7 @@ func ValidateACMEIssuerConfig(iss *v1alpha1.ACMEIssuer, fldPath *field.Path) fie
 		el = append(el, field.Required(fldPath.Child("email"), "email address is a required field"))
 	}
 	if len(iss.PrivateKey.Name) == 0 {
-		el = append(el, field.Required(fldPath.Child("privateKey", "name"), "private key secret name is a required field"))
+		el = append(el, field.Required(fldPath.Child("privateKeySecretRef", "name"), "private key secret name is a required field"))
 	}
 	if len(iss.Server) == 0 {
 		el = append(el, field.Required(fldPath.Child("server"), "acme server URL is a required field"))
@@ -116,12 +123,42 @@ func ValidateVaultIssuerConfig(iss *v1alpha1.VaultIssuer, fldPath *field.Path) f
 	if len(iss.Path) == 0 {
 		el = append(el, field.Required(fldPath.Child("path"), ""))
 	}
+
+	// check if caBundle is valid
+	certs := iss.CABundle
+	if len(certs) > 0 {
+		caCertPool := x509.NewCertPool()
+		ok := caCertPool.AppendCertsFromPEM(certs)
+		if !ok {
+			el = append(el, field.Invalid(fldPath.Child("caBundle"), "", "Specified CA bundle is invalid"))
+		}
+	}
+
 	return el
 	// TODO: add validation for Vault authentication types
 }
 
 func ValidateACMEIssuerHTTP01Config(iss *v1alpha1.ACMEIssuerHTTP01Config, fldPath *field.Path) field.ErrorList {
-	return nil
+	el := field.ErrorList{}
+
+	if len(iss.ServiceType) > 0 {
+		validTypes := []corev1.ServiceType{
+			corev1.ServiceTypeClusterIP,
+			corev1.ServiceTypeNodePort,
+		}
+		validType := false
+		for _, validTypeName := range validTypes {
+			if iss.ServiceType == validTypeName {
+				validType = true
+				break
+			}
+		}
+		if !validType {
+			el = append(el, field.Invalid(fldPath.Child("serviceType"), iss.ServiceType, fmt.Sprintf("optional field serviceType must be one of %q", validTypes)))
+		}
+	}
+
+	return el
 }
 
 func ValidateACMEIssuerDNS01Config(iss *v1alpha1.ACMEIssuerDNS01Config, fldPath *field.Path) field.ErrorList {
@@ -167,7 +204,11 @@ func ValidateACMEIssuerDNS01Config(iss *v1alpha1.ACMEIssuerDNS01Config, fldPath 
 				el = append(el, field.Forbidden(fldPath.Child("clouddns"), "may not specify more than one provider type"))
 			} else {
 				numProviders++
-				el = append(el, ValidateSecretKeySelector(&p.CloudDNS.ServiceAccount, fldPath.Child("clouddns", "serviceAccountSecretRef"))...)
+				// if either of serviceAccount.name or serviceAccount.key is set, we
+				// validate the entire secret key selector
+				if p.CloudDNS.ServiceAccount.Name != "" || p.CloudDNS.ServiceAccount.Key != "" {
+					el = append(el, ValidateSecretKeySelector(&p.CloudDNS.ServiceAccount, fldPath.Child("clouddns", "serviceAccountSecretRef"))...)
+				}
 				if len(p.CloudDNS.Project) == 0 {
 					el = append(el, field.Required(fldPath.Child("clouddns", "project"), ""))
 				}
@@ -200,6 +241,42 @@ func ValidateACMEIssuerDNS01Config(iss *v1alpha1.ACMEIssuerDNS01Config, fldPath 
 			el = append(el, ValidateSecretKeySelector(&p.AcmeDNS.AccountSecret, fldPath.Child("acmedns", "accountSecretRef"))...)
 			if len(p.AcmeDNS.Host) == 0 {
 				el = append(el, field.Required(fldPath.Child("acmedns", "host"), ""))
+			}
+		}
+		if p.RFC2136 != nil {
+			if numProviders > 0 {
+				el = append(el, field.Forbidden(fldPath.Child("rfc2136"), "may not specify more than one provider type"))
+			} else {
+				numProviders++
+				// Nameserver is the only required field for RFC2136
+				if len(p.RFC2136.Nameserver) == 0 {
+					el = append(el, field.Required(fldPath.Child("rfc2136", "nameserver"), ""))
+				} else {
+					if _, err := rfc2136.ValidNameserver(p.RFC2136.Nameserver); err != nil {
+						el = append(el, field.Invalid(fldPath.Child("rfc2136", "nameserver"), "", "Nameserver invalid. Check the documentation for details."))
+					}
+				}
+				if len(p.RFC2136.TSIGAlgorithm) > 0 {
+					present := false
+					for _, b := range rfc2136.GetSupportedAlgorithms() {
+						if b == strings.ToUpper(p.RFC2136.TSIGAlgorithm) {
+							present = true
+						}
+					}
+					if !present {
+						el = append(el, field.NotSupported(fldPath.Child("rfc2136", "tsigAlgorithm"), "", rfc2136.GetSupportedAlgorithms()))
+					}
+				}
+				if len(p.RFC2136.TSIGKeyName) > 0 {
+					el = append(el, ValidateSecretKeySelector(&p.RFC2136.TSIGSecret, fldPath.Child("rfc2136", "tsigSecretSecretRef"))...)
+				}
+
+				if len(ValidateSecretKeySelector(&p.RFC2136.TSIGSecret, fldPath.Child("rfc2136", "tsigSecretSecretRef"))) == 0 {
+					if len(p.RFC2136.TSIGKeyName) <= 0 {
+						el = append(el, field.Required(fldPath.Child("rfc2136", "tsigKeyName"), ""))
+					}
+
+				}
 			}
 		}
 		if numProviders == 0 {

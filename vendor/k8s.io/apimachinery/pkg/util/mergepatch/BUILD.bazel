@@ -1,0 +1,38 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "errors.go",
+        "util.go",
+    ],
+    importmap = "github.com/jetstack/cert-manager/vendor/k8s.io/apimachinery/pkg/util/mergepatch",
+    importpath = "k8s.io/apimachinery/pkg/util/mergepatch",
+    tags = ["manual"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//vendor/github.com/davecgh/go-spew/spew:go_default_library",
+        "//vendor/github.com/ghodss/yaml:go_default_library",
+    ],
+)
+
+go_test(
+    name = "go_default_test",
+    srcs = ["util_test.go"],
+    embed = [":go_default_library"],
+    tags = ["manual"],
+)
+
+filegroup(
+    name = "package-srcs",
+    srcs = glob(["**"]),
+    tags = ["automanaged"],
+    visibility = ["//visibility:private"],
+)
+
+filegroup(
+    name = "all-srcs",
+    srcs = [":package-srcs"],
+    tags = ["automanaged"],
+    visibility = ["//visibility:public"],
+)

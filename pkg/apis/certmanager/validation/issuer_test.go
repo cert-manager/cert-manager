@@ -20,9 +20,11 @@ import (
 	"reflect"
 	"testing"
 
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/rfc2136"
 )
 
 var (
@@ -70,6 +72,16 @@ func TestValidateVaultIssuerConfig(t *testing.T) {
 				field.Required(fldPath.Child("path"), ""),
 			},
 		},
+		"vault issuer with invalid fields": {
+			spec: &v1alpha1.VaultIssuer{
+				Server:   "something",
+				Path:     "a/b/c",
+				CABundle: []byte("invalid"),
+			},
+			errs: []*field.Error{
+				field.Invalid(fldPath.Child("caBundle"), "", "Specified CA bundle is invalid"),
+			},
+		},
 	}
 	for n, s := range scenarios {
 		t.Run(n, func(t *testing.T) {
@@ -101,7 +113,7 @@ func TestValidateACMEIssuerConfig(t *testing.T) {
 			spec: &v1alpha1.ACMEIssuer{},
 			errs: []*field.Error{
 				field.Required(fldPath.Child("email"), "email address is a required field"),
-				field.Required(fldPath.Child("privateKey", "name"), "private key secret name is a required field"),
+				field.Required(fldPath.Child("privateKeySecretRef", "name"), "private key secret name is a required field"),
 				field.Required(fldPath.Child("server"), "acme server URL is a required field"),
 			},
 		},
@@ -143,6 +155,49 @@ func TestValidateACMEIssuerConfig(t *testing.T) {
 				Server:     "valid-server",
 				PrivateKey: validSecretKeyRef,
 				HTTP01:     &v1alpha1.ACMEIssuerHTTP01Config{},
+			},
+		},
+		"acme issue with valid http01 service config serviceType ClusterIP": {
+			spec: &v1alpha1.ACMEIssuer{
+				Email:      "valid-email",
+				Server:     "valid-server",
+				PrivateKey: validSecretKeyRef,
+				HTTP01: &v1alpha1.ACMEIssuerHTTP01Config{
+					ServiceType: corev1.ServiceType("ClusterIP"),
+				},
+			},
+		},
+		"acme issue with valid http01 service config serviceType NodePort": {
+			spec: &v1alpha1.ACMEIssuer{
+				Email:      "valid-email",
+				Server:     "valid-server",
+				PrivateKey: validSecretKeyRef,
+				HTTP01: &v1alpha1.ACMEIssuerHTTP01Config{
+					ServiceType: corev1.ServiceType("NodePort"),
+				},
+			},
+		},
+		"acme issue with valid http01 service config serviceType (empty string)": {
+			spec: &v1alpha1.ACMEIssuer{
+				Email:      "valid-email",
+				Server:     "valid-server",
+				PrivateKey: validSecretKeyRef,
+				HTTP01: &v1alpha1.ACMEIssuerHTTP01Config{
+					ServiceType: corev1.ServiceType(""),
+				},
+			},
+		},
+		"acme issue with invalid http01 service config": {
+			spec: &v1alpha1.ACMEIssuer{
+				Email:      "valid-email",
+				Server:     "valid-server",
+				PrivateKey: validSecretKeyRef,
+				HTTP01: &v1alpha1.ACMEIssuerHTTP01Config{
+					ServiceType: corev1.ServiceType("InvalidServiceType"),
+				},
+			},
+			errs: []*field.Error{
+				field.Invalid(fldPath.Child("http01", "serviceType"), corev1.ServiceType("InvalidServiceType"), "optional field serviceType must be one of [\"ClusterIP\" \"NodePort\"]"),
 			},
 		},
 	}
@@ -278,7 +333,45 @@ func TestValidateACMEIssuerDNS01Config(t *testing.T) {
 				field.Required(providersPath.Index(0).Child("clouddns", "project"), ""),
 			},
 		},
-		"missing clouddns service account": {
+		"missing clouddns service account key": {
+			cfg: &v1alpha1.ACMEIssuerDNS01Config{
+				Providers: []v1alpha1.ACMEIssuerDNS01Provider{
+					{
+						Name: "a name",
+						CloudDNS: &v1alpha1.ACMEIssuerDNS01ProviderCloudDNS{
+							Project: "valid",
+							ServiceAccount: v1alpha1.SecretKeySelector{
+								LocalObjectReference: v1alpha1.LocalObjectReference{Name: "something"},
+								Key:                  "",
+							},
+						},
+					},
+				},
+			},
+			errs: []*field.Error{
+				field.Required(providersPath.Index(0).Child("clouddns", "serviceAccountSecretRef", "key"), "secret key is required"),
+			},
+		},
+		"missing clouddns service account name": {
+			cfg: &v1alpha1.ACMEIssuerDNS01Config{
+				Providers: []v1alpha1.ACMEIssuerDNS01Provider{
+					{
+						Name: "a name",
+						CloudDNS: &v1alpha1.ACMEIssuerDNS01ProviderCloudDNS{
+							Project: "valid",
+							ServiceAccount: v1alpha1.SecretKeySelector{
+								LocalObjectReference: v1alpha1.LocalObjectReference{Name: ""},
+								Key:                  "something",
+							},
+						},
+					},
+				},
+			},
+			errs: []*field.Error{
+				field.Required(providersPath.Index(0).Child("clouddns", "serviceAccountSecretRef", "name"), "secret name is required"),
+			},
+		},
+		"clouddns serviceAccount field not set should be allowed for ambient auth": {
 			cfg: &v1alpha1.ACMEIssuerDNS01Config{
 				Providers: []v1alpha1.ACMEIssuerDNS01Provider{
 					{
@@ -288,10 +381,6 @@ func TestValidateACMEIssuerDNS01Config(t *testing.T) {
 						},
 					},
 				},
-			},
-			errs: []*field.Error{
-				field.Required(providersPath.Index(0).Child("clouddns", "serviceAccountSecretRef", "name"), "secret name is required"),
-				field.Required(providersPath.Index(0).Child("clouddns", "serviceAccountSecretRef", "key"), "secret key is required"),
 			},
 		},
 		"missing cloudflare token": {
@@ -403,6 +492,110 @@ func TestValidateACMEIssuerDNS01Config(t *testing.T) {
 			},
 			errs: []*field.Error{},
 		},
+		"valid rfc2136 config": {
+			cfg: &v1alpha1.ACMEIssuerDNS01Config{
+				Providers: []v1alpha1.ACMEIssuerDNS01Provider{
+					{
+						Name: "a name",
+						RFC2136: &v1alpha1.ACMEIssuerDNS01ProviderRFC2136{
+							Nameserver: "127.0.0.1",
+						},
+					},
+				},
+			},
+			errs: []*field.Error{},
+		},
+		"missing rfc2136 required field": {
+			cfg: &v1alpha1.ACMEIssuerDNS01Config{
+				Providers: []v1alpha1.ACMEIssuerDNS01Provider{
+					{
+						Name:    "a name",
+						RFC2136: &v1alpha1.ACMEIssuerDNS01ProviderRFC2136{},
+					},
+				},
+			},
+			errs: []*field.Error{
+				field.Required(providersPath.Index(0).Child("rfc2136", "nameserver"), ""),
+			},
+		},
+		"rfc2136 provider invalid nameserver": {
+			cfg: &v1alpha1.ACMEIssuerDNS01Config{
+				Providers: []v1alpha1.ACMEIssuerDNS01Provider{
+					{
+						Name: "a name",
+						RFC2136: &v1alpha1.ACMEIssuerDNS01ProviderRFC2136{
+							Nameserver: "dns.example.com",
+						},
+					},
+				},
+			},
+			errs: []*field.Error{
+				field.Invalid(providersPath.Index(0).Child("rfc2136", "nameserver"), "", "Nameserver invalid. Check the documentation for details."),
+			},
+		},
+		"rfc2136 provider using case-camel in algorithm": {
+			cfg: &v1alpha1.ACMEIssuerDNS01Config{
+				Providers: []v1alpha1.ACMEIssuerDNS01Provider{
+					{
+						Name: "a name",
+						RFC2136: &v1alpha1.ACMEIssuerDNS01ProviderRFC2136{
+							Nameserver:    "127.0.0.1",
+							TSIGAlgorithm: "HmAcMd5",
+						},
+					},
+				},
+			},
+			errs: []*field.Error{},
+		},
+		"rfc2136 provider using unsupported algorithm": {
+			cfg: &v1alpha1.ACMEIssuerDNS01Config{
+				Providers: []v1alpha1.ACMEIssuerDNS01Provider{
+					{
+						Name: "a name",
+						RFC2136: &v1alpha1.ACMEIssuerDNS01ProviderRFC2136{
+							Nameserver:    "127.0.0.1",
+							TSIGAlgorithm: "HAMMOCK",
+						},
+					},
+				},
+			},
+			errs: []*field.Error{
+				field.NotSupported(providersPath.Index(0).Child("rfc2136", "tsigAlgorithm"), "", rfc2136.GetSupportedAlgorithms()),
+			},
+		},
+		"rfc2136 provider TSIGKeyName provided but no TSIGSecret": {
+			cfg: &v1alpha1.ACMEIssuerDNS01Config{
+				Providers: []v1alpha1.ACMEIssuerDNS01Provider{
+					{
+						Name: "a name",
+						RFC2136: &v1alpha1.ACMEIssuerDNS01ProviderRFC2136{
+							Nameserver:  "127.0.0.1",
+							TSIGKeyName: "some-name",
+						},
+					},
+				},
+			},
+			errs: []*field.Error{
+				field.Required(providersPath.Index(0).Child("rfc2136", "tsigSecretSecretRef", "name"), "secret name is required"),
+				field.Required(providersPath.Index(0).Child("rfc2136", "tsigSecretSecretRef", "key"), "secret key is required"),
+			},
+		},
+		"rfc2136 provider TSIGSecret provided but no TSIGKeyName": {
+			cfg: &v1alpha1.ACMEIssuerDNS01Config{
+				Providers: []v1alpha1.ACMEIssuerDNS01Provider{
+					{
+						Name: "a name",
+						RFC2136: &v1alpha1.ACMEIssuerDNS01ProviderRFC2136{
+							Nameserver: "127.0.0.1",
+							TSIGSecret: validSecretKeyRef,
+						},
+					},
+				},
+			},
+			errs: []*field.Error{
+				field.Required(providersPath.Index(0).Child("rfc2136", "tsigKeyName"), ""),
+			},
+		},
 		"multiple providers configured": {
 			cfg: &v1alpha1.ACMEIssuerDNS01Config{
 				Providers: []v1alpha1.ACMEIssuerDNS01Provider{
@@ -436,7 +629,7 @@ func TestValidateACMEIssuerDNS01Config(t *testing.T) {
 }
 
 func TestValidateSecretKeySelector(t *testing.T) {
-	validName := v1alpha1.LocalObjectReference{"name"}
+	validName := v1alpha1.LocalObjectReference{Name: "name"}
 	validKey := "key"
 	// invalidName := v1alpha1.LocalObjectReference{"-name-"}
 	// invalidKey := "-key-"

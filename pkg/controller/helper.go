@@ -25,18 +25,24 @@ import (
 	cmlisters "github.com/jetstack/cert-manager/pkg/client/listers/certmanager/v1alpha1"
 )
 
+type Helper interface {
+	GetGenericIssuer(ref cmapi.ObjectReference, ns string) (cmapi.GenericIssuer, error)
+}
+
 // Type Helper provides a set of commonly useful functions for use when building
 // a cert-manager controller.
 // An instance of Helper is made available as part of a controller's context.
-type Helper struct {
+type helperImpl struct {
 	issuerLister        cmlisters.IssuerLister
 	clusterIssuerLister cmlisters.ClusterIssuerLister
 }
 
+var _ Helper = &helperImpl{}
+
 // NewHelper will construct a new instance of a Helper using values supplied on
 // the provided controller context.
-func NewHelper(issuerLister cmlisters.IssuerLister, clusterIssuerLister cmlisters.ClusterIssuerLister) *Helper {
-	return &Helper{
+func NewHelper(issuerLister cmlisters.IssuerLister, clusterIssuerLister cmlisters.ClusterIssuerLister) Helper {
+	return &helperImpl{
 		issuerLister:        issuerLister,
 		clusterIssuerLister: clusterIssuerLister,
 	}
@@ -47,7 +53,7 @@ func NewHelper(issuerLister cmlisters.IssuerLister, clusterIssuerLister cmlister
 // This namespace will be used to read the Issuer resource.
 // In most cases, the ns parameter should be set to the namespace of the resource
 // that defines the IssuerRef (i.e. the namespace of the Certificate resource).
-func (h *Helper) GetGenericIssuer(ref cmapi.ObjectReference, ns string) (cmapi.GenericIssuer, error) {
+func (h *helperImpl) GetGenericIssuer(ref cmapi.ObjectReference, ns string) (cmapi.GenericIssuer, error) {
 	switch ref.Kind {
 	case "", cmapi.IssuerKind:
 		return h.issuerLister.Issuers(ns).Get(ref.Name)

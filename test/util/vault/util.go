@@ -17,7 +17,16 @@ limitations under the License.
 package vault
 
 import (
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/tls"
+	"crypto/x509"
+	"crypto/x509/pkix"
+	"encoding/pem"
 	"fmt"
+	"math/big"
+	"net"
+	"net/http"
 	"os/exec"
 	"path"
 	"time"
@@ -29,6 +38,18 @@ import (
 )
 
 const vaultToken = "vault-root-token"
+
+var (
+	VaultCA             []byte
+	VaultCAPrivateKey   []byte
+	VaultCert           []byte
+	VaultCertPrivateKey []byte
+)
+
+func init() {
+	generateCA()
+	generateCert()
+}
 
 func NewVaultTokenSecret(name string) *v1.Secret {
 	return &v1.Secret{
@@ -72,7 +93,16 @@ func NewVaultInitializer(container, rootMount, intermediateMount, role, authPath
 	time.Sleep(3 * time.Second)
 
 	cfg := vault.DefaultConfig()
-	cfg.Address = "http://127.0.0.1:8200"
+	cfg.Address = "https://127.0.0.1:8200"
+
+	caCertPool := x509.NewCertPool()
+	ok := caCertPool.AppendCertsFromPEM(VaultCA)
+	if ok == false {
+		glog.Fatal("error loading Vault CA bundle")
+	}
+
+	cfg.HttpClient.Transport.(*http.Transport).TLSClientConfig.RootCAs = caCertPool
+
 	client, err := vault.NewClient(cfg)
 	if err != nil {
 		return nil, fmt.Errorf("Unable to initialize vault client: %s", err.Error())
@@ -284,8 +314,8 @@ func (v *VaultInitializer) importSignIntermediate(intermediateCa, rootCa, interm
 
 func (v *VaultInitializer) configureCert(mount string) error {
 	params := map[string]string{
-		"issuing_certificates":    fmt.Sprintf("http://vault.vault:8200/v1/%s/ca", mount),
-		"crl_distribution_points": fmt.Sprintf("http://vault.vault:8200/v1/%s/crl", mount),
+		"issuing_certificates":    fmt.Sprintf("https://vault.vault:8200/v1/%s/ca", mount),
+		"crl_distribution_points": fmt.Sprintf("https://vault.vault:8200/v1/%s/crl", mount),
 	}
 	url := path.Join("/v1", mount, "config", "urls")
 
@@ -352,4 +382,79 @@ func (v *VaultInitializer) callVault(method, url, field string, params map[strin
 	}
 
 	return fieldData, err
+}
+
+func generateCA() {
+	ca := &x509.Certificate{
+		SerialNumber: big.NewInt(1653),
+		Subject: pkix.Name{
+			Organization: []string{"cert-manager test"},
+		},
+		NotBefore:             time.Now(),
+		NotAfter:              time.Now().AddDate(10, 0, 0),
+		IsCA:                  true,
+		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth, x509.ExtKeyUsageServerAuth},
+		KeyUsage:              x509.KeyUsageDigitalSignature | x509.KeyUsageCertSign,
+		BasicConstraintsValid: true,
+	}
+
+	privateKey, _ := rsa.GenerateKey(rand.Reader, 2048)
+	pubKey := &privateKey.PublicKey
+	caBytes, err := x509.CreateCertificate(rand.Reader, ca, ca, pubKey, privateKey)
+	if err != nil {
+		glog.Fatalf("create ca failed: %s", err.Error())
+	}
+
+	VaultCA = encodePublicKey(caBytes)
+	VaultCAPrivateKey = encodePrivateKey(privateKey)
+}
+
+func generateCert() {
+	catls, err := tls.X509KeyPair(VaultCA, VaultCAPrivateKey)
+	if err != nil {
+		glog.Fatalf("parsing ca key pair failed: %s", err.Error())
+	}
+	ca, err := x509.ParseCertificate(catls.Certificate[0])
+	if err != nil {
+		glog.Fatalf("parsing ca failed: %s", err.Error())
+	}
+
+	cert := &x509.Certificate{
+		SerialNumber: big.NewInt(1658),
+		Subject: pkix.Name{
+			CommonName:   "vault.vault",
+			Organization: []string{"cert-manager vault server"},
+		},
+		NotBefore:    time.Now(),
+		NotAfter:     time.Now().AddDate(10, 0, 0),
+		SubjectKeyId: []byte{1, 2, 3, 4, 6},
+		ExtKeyUsage:  []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth, x509.ExtKeyUsageServerAuth},
+		KeyUsage:     x509.KeyUsageDigitalSignature,
+		IPAddresses:  []net.IP{net.IPv4(127, 0, 0, 1)},
+		DNSNames:     []string{"vault.vault"},
+	}
+	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		glog.Fatalf("private key generation failed: %s", err.Error())
+	}
+
+	publicKey := &privateKey.PublicKey
+
+	certBytes, err := x509.CreateCertificate(rand.Reader, cert, ca, publicKey, catls.PrivateKey)
+	if err != nil {
+		glog.Fatal(err)
+	}
+
+	VaultCert = encodePublicKey(certBytes)
+	VaultCertPrivateKey = encodePrivateKey(privateKey)
+}
+
+func encodePublicKey(pub []byte) []byte {
+	return pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: pub})
+}
+
+func encodePrivateKey(priv *rsa.PrivateKey) []byte {
+	block := &pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(priv)}
+
+	return pem.EncodeToMemory(block)
 }
