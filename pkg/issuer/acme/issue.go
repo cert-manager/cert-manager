@@ -27,10 +27,12 @@ import (
 	"time"
 
 	"github.com/golang/glog"
+	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/selection"
+	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 
 	"github.com/jetstack/cert-manager/pkg/acme"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
@@ -49,50 +51,34 @@ var (
 )
 
 func (a *Acme) Issue(ctx context.Context, crt *v1alpha1.Certificate) (issuer.IssueResponse, error) {
-	// initially, we do not set the csr on the order resource we build.
-	// this is to save having the overhead of generating a new CSR in the case
-	// where the Order resource is up to date already
+	// Initially, we do not set the csr on the order resource we build.
+	// This is to save having the overhead of generating a new CSR in the case
+	// where the Order resource is up to date already, and also because we have
+	// not actually read the existing certificate private key yet to ensure it
+	// exists.
 	expectedOrder, err := buildOrder(crt, nil)
 	if err != nil {
 		return issuer.IssueResponse{}, err
 	}
 
-	// attempt to retrieve the existing order resource for this Certificate
-	var existingOrder *v1alpha1.Order
-
-	glog.V(4).Infof("Attempting to retrieve existing orders for %q/%q", crt.Namespace, crt.Name)
-	labelMap := certLabels(crt.Name)
-	selector := labels.NewSelector()
-	for k, v := range labelMap {
-		req, err := labels.NewRequirement(k, selection.Equals, []string{v})
-		if err != nil {
-			return issuer.IssueResponse{}, err
-		}
-		selector.Add(*req)
-	}
-	existingOrders, err := a.orderLister.Orders(crt.Namespace).List(selector)
+	// Cleanup Order resources that are owned by this Certificate but are not
+	// up to date (i.e. do not match the requirements on the Certificate).
+	// Because the order name returned by buildOrder is a hash of its spec, we
+	// can simply delete all order resources that are owned by us that do not
+	// have the same name.
+	err = a.cleanupOwnedOrders(crt, expectedOrder.Name)
 	if err != nil {
+		glog.Errorf("Error cleaning up old orders: %v", err)
 		return issuer.IssueResponse{}, err
 	}
-	for _, o := range existingOrders {
-		// Don't touch any objects that don't have this certificate set as the
-		// owner reference.
-		if !metav1.IsControlledBy(o, crt) {
-			continue
-		}
 
-		if o.Name == expectedOrder.Name {
-			existingOrder = o
-			glog.V(4).Infof("Found existing order %q for certificate %s/%s", existingOrder.Name, crt.Namespace, crt.Name)
-			continue
-		}
-
-		// delete any old order resources
-		glog.Infof("Deleting Order resource %s/%s", o.Namespace, o.Name)
-		err := a.CMClient.CertmanagerV1alpha1().Orders(o.Namespace).Delete(o.Name, nil)
-		if err != nil {
-			return issuer.IssueResponse{}, err
-		}
+	// Obtain the existing Order for this Certificate from the API server.
+	// If it does not exist, we continue on as it will be created from
+	// the generated expectedOrder.
+	existingOrder, err := a.orderLister.Orders(expectedOrder.Namespace).Get(expectedOrder.Name)
+	if err != nil && !apierrors.IsNotFound(err) {
+		glog.Errorf("Error getting existing Order resource: %v", err)
+		return issuer.IssueResponse{}, err
 	}
 
 	// get existing certificate private key
@@ -271,6 +257,50 @@ func (a *Acme) Issue(ctx context.Context, crt *v1alpha1.Certificate) (issuer.Iss
 		Certificate: certBuffer.Bytes(),
 		PrivateKey:  keyPem,
 	}, nil
+}
+
+func (a *Acme) cleanupOwnedOrders(crt *v1alpha1.Certificate, retain string) error {
+	labelMap := certLabels(crt.Name)
+	selector := labels.NewSelector()
+	for k, v := range labelMap {
+		req, err := labels.NewRequirement(k, selection.Equals, []string{v})
+		if err != nil {
+			return err
+		}
+		selector.Add(*req)
+	}
+	existingOrders, err := a.orderLister.Orders(crt.Namespace).List(selector)
+	if err != nil {
+		return err
+	}
+
+	var errs []error
+	for _, o := range existingOrders {
+		// Don't touch any objects that don't have this certificate set as the
+		// owner reference.
+		if !metav1.IsControlledBy(o, crt) {
+			continue
+		}
+
+		if o.Name == retain {
+			glog.V(4).Infof("Skipping cleanup for active order resource %q", retain)
+			continue
+		}
+
+		// delete any old order resources
+		glog.Infof("Deleting Order resource %s/%s", o.Namespace, o.Name)
+		a.Recorder.Eventf(crt, corev1.EventTypeNormal, "Cleanup",
+			fmt.Sprintf("Deleting old Order resource %q", o.Name))
+
+		err := a.CMClient.CertmanagerV1alpha1().Orders(o.Namespace).Delete(o.Name, nil)
+		if err != nil && !apierrors.IsNotFound(err) {
+			glog.Errorf("Error deleting Order resource %s/%s: %v", o.Namespace, o.Name, err)
+			errs = append(errs, err)
+			continue
+		}
+	}
+
+	return utilerrors.NewAggregate(errs)
 }
 
 // retryOrder will delete the existing order with the foreground
