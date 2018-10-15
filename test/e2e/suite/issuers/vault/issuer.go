@@ -193,10 +193,11 @@ var _ = framework.CertManagerDescribe("Vault Issuer", func() {
 			cert, err := f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name).Create(util.NewCertManagerVaultCertificate(certificateName, certificateSecretName, issuerName, v1alpha1.IssuerKind, v.inputDuration, v.inputRenewBefore))
 			Expect(err).NotTo(HaveOccurred())
 
-			util.WaitCertificateIssuedValid(certClient, secretClient, certificateName, time.Minute*5)
+			err = util.WaitCertificateIssuedValid(certClient, secretClient, certificateName, time.Minute*5)
 
 			// Vault substract 30 seconds to the NotBefore date.
 			f.CertificateDurationValid(cert, v.expectedDuration+(30*time.Second))
+			Expect(err).NotTo(HaveOccurred())
 		})
 	}
 })
@@ -322,10 +323,11 @@ var _ = framework.CertManagerDescribe("Vault Certificate (AppRole with a custom 
 			cert, err := f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name).Create(util.NewCertManagerVaultCertificate(certificateName, certificateSecretName, issuerName, v1alpha1.IssuerKind, v.inputDuration, v.inputRenewBefore))
 			Expect(err).NotTo(HaveOccurred())
 
-			util.WaitCertificateIssuedValid(certClient, secretClient, certificateName, time.Minute*5)
+			err = util.WaitCertificateIssuedValid(certClient, secretClient, certificateName, time.Minute*5)
 
 			// Vault substract 30 seconds to the NotBefore date.
 			f.CertificateDurationValid(cert, v.expectedDuration+(30*time.Second))
+			Expect(err).NotTo(HaveOccurred())
 		})
 	}
 })

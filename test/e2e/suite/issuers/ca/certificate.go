@@ -114,10 +114,11 @@ var _ = framework.CertManagerDescribe("CA Certificate", func() {
 			secretClient := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name)
 
 			By("Creating a Certificate")
-			_, err := certClient.Create(util.NewCertManagerBasicCertificate(certificateName, certificateSecretName, issuerName, v1alpha1.IssuerKind, v.inputDuration, v.inputRenewBefore))
+			cert, err := certClient.Create(util.NewCertManagerBasicCertificate(certificateName, certificateSecretName, issuerName, v1alpha1.IssuerKind, v.inputDuration, v.inputRenewBefore))
 			Expect(err).NotTo(HaveOccurred())
 			By("Verifying the Certificate is valid")
 			err = util.WaitCertificateIssuedValid(certClient, secretClient, certificateName, time.Second*30)
+			f.CertificateDurationValid(cert, v.expectedDuration)
 			Expect(err).NotTo(HaveOccurred())
 		})
 	}
