@@ -120,6 +120,7 @@ func (a *Acme) Issue(ctx context.Context, crt *v1alpha1.Certificate) (issuer.Iss
 	}
 	if !validForKey {
 		glog.V(4).Infof("CSR on existing order resource does not match certificate %s/%s private key. Creating new order.", crt.Namespace, crt.Name)
+		return a.retryOrder(crt, existingOrder)
 	}
 
 	// If the existing order has expired, we should create a new one
