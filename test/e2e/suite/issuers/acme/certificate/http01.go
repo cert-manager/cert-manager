@@ -30,6 +30,7 @@ import (
 	"github.com/jetstack/cert-manager/test/e2e/framework/addon"
 	"github.com/jetstack/cert-manager/test/e2e/framework/addon/pebble"
 	"github.com/jetstack/cert-manager/test/e2e/framework/addon/tiller"
+	. "github.com/jetstack/cert-manager/test/e2e/framework/matcher"
 	"github.com/jetstack/cert-manager/test/e2e/util"
 )
 
@@ -179,19 +180,15 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 	})
 
 	It("should fail to obtain a certificate for an invalid ACME dns name", func() {
-		Skip("Poorly designed test skipped until it can be rewritten")
+		// create test fixture
+		cert := util.NewCertManagerACMECertificate(certificateName, certificateSecretName, issuerName, v1alpha1.IssuerKind, nil, nil, acmeIngressClass, "google.com")
 
-		By("Creating a Certificate")
-		_, err := f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name).Create(util.NewCertManagerACMECertificate(certificateName, certificateSecretName, issuerName, v1alpha1.IssuerKind, nil, nil, acmeIngressClass, "google.com"))
-		Expect(err).NotTo(HaveOccurred())
-		By("Waiting for the Certificate to not have a ready condition")
-		err = util.WaitForCertificateCondition(f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name),
-			certificateName,
-			v1alpha1.CertificateCondition{
-				Type:   v1alpha1.CertificateConditionReady,
-				Status: v1alpha1.ConditionTrue,
-			}, foreverTestTimeout)
-		Expect(err).To(HaveOccurred())
+		Expect(f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name).Create(cert))
+		Consistently(cert, "1m", "10s").Should(HaveCondition(f, v1alpha1.CertificateCondition{
+			Type:   v1alpha1.CertificateConditionReady,
+			Status: v1alpha1.ConditionFalse,
+		}))
+
 		By("Verifying TLS certificate secret does not exist")
 		d, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Get(certificateSecretName, metav1.GetOptions{})
 		Expect(err).NotTo(HaveOccurred())
