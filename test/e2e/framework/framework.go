@@ -32,11 +32,13 @@ import (
 	"k8s.io/client-go/rest"
 
 	clientset "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
+
 	"github.com/jetstack/cert-manager/test/e2e/framework/addon"
 	"github.com/jetstack/cert-manager/test/e2e/framework/config"
 	"github.com/jetstack/cert-manager/test/e2e/framework/util"
 	"github.com/jetstack/cert-manager/test/e2e/framework/util/errors"
 	"github.com/jetstack/cert-manager/test/util"
+
 )
 
 // DefaultConfig contains the default shared config the is likely parsed from
@@ -189,12 +191,6 @@ func (f *Framework) CertificateDurationValid(c *v1alpha1.Certificate, duration t
 	if cert.NotAfter.Sub(cert.NotBefore) != duration {
 		Failf("Expected duration of %s, got %s [NotBefore: %s, NotAfter: %s]", duration, cert.NotAfter.Sub(cert.NotBefore), cert.NotBefore.Format(time.RFC3339), cert.NotAfter.Format(time.RFC3339))
 	}
-}
-
-func (f *Framework) WaitForCertificateEvent(cert *v1alpha1.Certificate, reason string) {
-	By("Verifying that the certificate has an event with reason " + reason)
-	err := util.WaitForCertificateEvent(f.KubeClientSet, cert, reason, defaultTimeout)
-	Expect(err).NotTo(HaveOccurred())
 }
 
 // CertManagerDescribe is a wrapper function for ginkgo describe. Adds namespacing.
