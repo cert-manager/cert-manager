@@ -39,8 +39,8 @@ const (
 	messageVaultStatusVerificationFailed = "Vault is not initialized or is sealed"
 	messageVaultConfigRequired           = "Vault config cannot be empty"
 	messageServerAndPathRequired         = "Vault server and path are required fields"
-	messsageAuthFieldsRequired           = "Vault tokenSecretRef or appRole is required"
-	messageAuthFieldRequired             = "Vault tokenSecretRef and appRole cannot be set on the same issuer"
+	messsageAuthFieldsRequired           = "Vault tokenSecretRef, appRole, or kubernetes is required"
+	messageAuthFieldRequired             = "Multiple auth methods cannot be set on the same Vault issuer"
 )
 
 func (v *Vault) Setup(ctx context.Context) error {
@@ -61,7 +61,9 @@ func (v *Vault) Setup(ctx context.Context) error {
 	// check if at least one auth method is specified.
 	if v.issuer.GetSpec().Vault.Auth.TokenSecretRef.Name == "" &&
 		v.issuer.GetSpec().Vault.Auth.AppRole.RoleId == "" &&
-		v.issuer.GetSpec().Vault.Auth.AppRole.SecretRef.Name == "" {
+		v.issuer.GetSpec().Vault.Auth.AppRole.SecretRef.Name == "" &&
+		v.issuer.GetSpec().Vault.Auth.Kubernetes.Role == "" &&
+		v.issuer.GetSpec().Vault.Auth.Kubernetes.SecretRef.Name == "" {
 		klog.Infof("%s: %s", v.issuer.GetObjectMeta().Name, messsageAuthFieldsRequired)
 		apiutil.SetIssuerCondition(v.issuer, v1alpha2.IssuerConditionReady, cmmeta.ConditionFalse, errorVault, messsageAuthFieldsRequired)
 		return nil
@@ -70,7 +72,8 @@ func (v *Vault) Setup(ctx context.Context) error {
 	// check if only token auth method is set.
 	if v.issuer.GetSpec().Vault.Auth.TokenSecretRef.Name != "" &&
 		(v.issuer.GetSpec().Vault.Auth.AppRole.RoleId != "" ||
-			v.issuer.GetSpec().Vault.Auth.AppRole.SecretRef.Name != "") {
+			v.issuer.GetSpec().Vault.Auth.AppRole.SecretRef.Name != "" ||
+			v.issuer.GetSpec().Vault.Auth.Kubernetes.Role != "") {
 		klog.Infof("%s: %s", v.issuer.GetObjectMeta().Name, messageAuthFieldRequired)
 		apiutil.SetIssuerCondition(v.issuer, v1alpha2.IssuerConditionReady, cmmeta.ConditionFalse, errorVault, messageAuthFieldRequired)
 		return nil
@@ -78,10 +81,22 @@ func (v *Vault) Setup(ctx context.Context) error {
 
 	// check if all mandatory Vault appRole fields are set.
 	if v.issuer.GetSpec().Vault.Auth.TokenSecretRef.Name == "" &&
+		v.issuer.GetSpec().Vault.Auth.Kubernetes.Role == "" &&
 		(v.issuer.GetSpec().Vault.Auth.AppRole.RoleId == "" ||
 			v.issuer.GetSpec().Vault.Auth.AppRole.SecretRef.Name == "") {
 		klog.Infof("%s: %s", v.issuer.GetObjectMeta().Name, messageAuthFieldRequired)
 		apiutil.SetIssuerCondition(v.issuer, v1alpha2.IssuerConditionReady, cmmeta.ConditionFalse, errorVault, messageAuthFieldRequired)
+		return nil
+	}
+
+	// check if all mandatory Kubernetes Auth fields are set.
+	if v.issuer.GetSpec().Vault.Auth.Kubernetes.Role != "" &&
+		v.issuer.GetSpec().Vault.Auth.Kubernetes.SecretRef.Name != "" &&
+		(v.issuer.GetSpec().Vault.Auth.AppRole.RoleId != "" ||
+			v.issuer.GetSpec().Vault.Auth.AppRole.SecretRef.Name != "" ||
+			v.issuer.GetSpec().Vault.Auth.TokenSecretRef.Name != "") {
+		klog.Infof("%s: %s", v.issuer.GetObjectMeta().Name, messageAuthFieldRequired)
+		apiutil.SetIssuerCondition(v.issuer, v1alpha1.IssuerConditionReady, v1alpha1.ConditionFalse, errorVault, messageAuthFieldRequired)
 		return nil
 	}
 

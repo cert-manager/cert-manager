@@ -17,11 +17,10 @@ limitations under the License.
 package v1alpha2
 
 import (
+	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	corev1 "k8s.io/api/core/v1"
 	apiext "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 )
 
 // ACMEIssuer contains the specification for an ACME issuer
