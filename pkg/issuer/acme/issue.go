@@ -101,6 +101,9 @@ func (a *Acme) Issue(ctx context.Context, crt *v1alpha1.Certificate) (issuer.Iss
 		glog.Errorf("Error getting existing Order resource: %v", err)
 		return issuer.IssueResponse{}, err
 	}
+	if existingOrder == nil {
+		return issuer.IssueResponse{}, a.createNewOrder(crt, expectedOrder, key)
+	}
 
 	// if there is an existing order, we check to make sure it is up to date
 	// with the current certificate & issuer configuration.
@@ -109,82 +112,52 @@ func (a *Acme) Issue(ctx context.Context, crt *v1alpha1.Certificate) (issuer.Iss
 	// well as the back-off applied to failing ACME Orders.
 	// They should therefore *only* match on changes to the actual Certificate
 	// resource, or underlying Order (i.e. user interaction).
-	if existingOrder != nil {
-		glog.V(4).Infof("Validating existing order CSR for Certificate %s/%s", crt.Namespace, crt.Name)
+	glog.V(4).Infof("Validating existing order CSR for Certificate %s/%s", crt.Namespace, crt.Name)
 
-		// if the existing order has expired, we should create a new one
-		// TODO: implement this order state in the acmeorders controller
-		if existingOrder.Status.State == v1alpha1.Expired {
-			return a.retryOrder(existingOrder)
-		}
-
-		// check if the existing order has failed.
-		// If it has, we check to see when it last failed and 'back-off' if it
-		// failed in the recent past.
-		if acme.IsFailureState(existingOrder.Status.State) {
-			if crt.Status.LastFailureTime == nil {
-				nowTime := metav1.NewTime(a.clock.Now())
-				crt.Status.LastFailureTime = &nowTime
-			}
-
-			if time.Now().Sub(crt.Status.LastFailureTime.Time) < createOrderWaitDuration {
-				return issuer.IssueResponse{}, fmt.Errorf("applying acme order back-off for certificate %s/%s because it has failed within the last %s", crt.Namespace, crt.Name, createOrderWaitDuration)
-			}
-
-			// otherwise, we clear the lastFailureTime and create a new order
-			// as the back-off time has passed.
-			crt.Status.LastFailureTime = nil
-
-			return a.retryOrder(existingOrder)
-		}
-
-		// check the CSR is created by the private key that we hold
-		csrBytes := existingOrder.Spec.CSR
-		if len(csrBytes) == 0 {
-			return a.retryOrder(existingOrder)
-		}
-		existingCSR, err := x509.ParseCertificateRequest(csrBytes)
-		if err != nil {
-			return a.retryOrder(existingOrder)
-		}
-
-		matches, err := pki.PublicKeyMatchesCSR(key.Public(), existingCSR)
-		if err != nil {
-			return issuer.IssueResponse{}, err
-		}
-
-		if !matches {
-			glog.V(4).Infof("CSR on existing order resource does not match certificate %s/%s private key. Creating new order.", crt.Namespace, crt.Name)
-			return a.retryOrder(existingOrder)
-		}
+	// if the existing order has expired, we should create a new one
+	// TODO: implement this order state in the acmeorders controller
+	if existingOrder.Status.State == v1alpha1.Expired {
+		return a.retryOrder(existingOrder)
 	}
 
-	if existingOrder == nil {
-		glog.V(4).Infof("Creating new Order resource for Certificate %s/%s", crt.Namespace, crt.Name)
-
-		csr, err := pki.GenerateCSR(a.issuer, crt)
-		if err != nil {
-			// TODO: what errors can be produced here? some error types might
-			// be permenant, and we should handle that properly.
-			return issuer.IssueResponse{}, err
+	// check if the existing order has failed.
+	// If it has, we check to see when it last failed and 'back-off' if it
+	// failed in the recent past.
+	if acme.IsFailureState(existingOrder.Status.State) {
+		if crt.Status.LastFailureTime == nil {
+			nowTime := metav1.NewTime(a.clock.Now())
+			crt.Status.LastFailureTime = &nowTime
 		}
 
-		csrBytes, err := pki.EncodeCSR(csr, key)
-		if err != nil {
-			return issuer.IssueResponse{}, err
+		if time.Now().Sub(crt.Status.LastFailureTime.Time) < createOrderWaitDuration {
+			return issuer.IssueResponse{}, fmt.Errorf("applying acme order back-off for certificate %s/%s because it has failed within the last %s", crt.Namespace, crt.Name, createOrderWaitDuration)
 		}
 
-		// set the CSR field on the order to be created
-		expectedOrder.Spec.CSR = csrBytes
+		// otherwise, we clear the lastFailureTime and create a new order
+		// as the back-off time has passed.
+		crt.Status.LastFailureTime = nil
 
-		existingOrder, err = a.CMClient.CertmanagerV1alpha1().Orders(crt.Namespace).Create(expectedOrder)
-		if err != nil {
-			return issuer.IssueResponse{}, err
-		}
+		return a.retryOrder(existingOrder)
+	}
 
-		glog.V(4).Infof("Created new Order resource named %q for Certificate %s/%s", expectedOrder.Name, crt.Namespace, crt.Name)
+	// check the CSR is created by the private key that we hold
+	csrBytes := existingOrder.Spec.CSR
+	if len(csrBytes) == 0 {
+		return a.retryOrder(existingOrder)
+	}
+	existingCSR, err := x509.ParseCertificateRequest(csrBytes)
+	if err != nil {
+		return a.retryOrder(existingOrder)
+	}
 
-		return issuer.IssueResponse{}, nil
+	matches, err := pki.PublicKeyMatchesCSR(key.Public(), existingCSR)
+	if err != nil {
+		return issuer.IssueResponse{}, err
+	}
+
+	if !matches {
+		glog.V(4).Infof("CSR on existing order resource does not match certificate %s/%s private key. Creating new order.", crt.Namespace, crt.Name)
+		return a.retryOrder(existingOrder)
 	}
 
 	if existingOrder.Status.State != v1alpha1.Valid {
@@ -319,6 +292,34 @@ func (a *Acme) getCertificatePrivateKey(crt *v1alpha1.Certificate) (crypto.Signe
 	}
 
 	return rsaKey, true, nil
+}
+
+func (a *Acme) createNewOrder(crt *v1alpha1.Certificate, template *v1alpha1.Order, key crypto.Signer) error {
+	glog.V(4).Infof("Creating new Order resource for Certificate %s/%s", crt.Namespace, crt.Name)
+
+	csr, err := pki.GenerateCSR(a.issuer, crt)
+	if err != nil {
+		// TODO: what errors can be produced here? some error types might
+		// be permenant, and we should handle that properly.
+		return err
+	}
+
+	csrBytes, err := pki.EncodeCSR(csr, key)
+	if err != nil {
+		return err
+	}
+
+	// set the CSR field on the order to be created
+	template.Spec.CSR = csrBytes
+
+	_, err = a.CMClient.CertmanagerV1alpha1().Orders(template.Namespace).Create(template)
+	if err != nil {
+		return err
+	}
+
+	glog.V(4).Infof("Created new Order resource named %q for Certificate %s/%s", template.Name, crt.Namespace, crt.Name)
+
+	return nil
 }
 
 // retryOrder will delete the existing order with the foreground
