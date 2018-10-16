@@ -91,7 +91,7 @@ func (c *SelfSigned) obtainCertificate(crt *v1alpha1.Certificate, privateKey cry
 		return nil, err
 	}
 
-	template, err := pki.GenerateTemplate(c.issuer, crt, nil)
+	template, err := pki.GenerateTemplate(c.issuer, crt)
 	if err != nil {
 		return nil, err
 	}
