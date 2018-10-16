@@ -31,64 +31,67 @@ import (
 )
 
 const (
-	errorGetCertKeyPair   = "ErrGetCertKeyPair"
-	errorIssueCert        = "ErrIssueCert"
-	errorGetPublicKey     = "ErrGetPublicKey"
-	errorEncodePrivateKey = "ErrEncodePrivateKey"
-
-	successCertIssued = "CertIssueSuccess"
-
-	messageErrorGetCertKeyPair   = "Error getting keypair for certificate: "
-	messageErrorIssueCert        = "Error issuing TLS certificate: "
-	messageErrorPublicKey        = "Error getting public key from private key: "
-	messageErrorEncodePrivateKey = "Error encoding private key: "
-
-	messageCertIssued = "Certificate issued successfully"
+	reasonPending         = "Pending"
+	reasonErrorPrivateKey = "ErrorPrivateKey"
+	reasonErrorCA         = "ErrorCA"
+	reasonErrorSigning    = "ErrorSigning"
 )
 
+// Issue will issue a certificate using the CA issuer contained in CA.
+// It uses the 'Ready' status condition to convey the majority of failures, and
+// treats them all as errors to be retried.
+// If there are any failures, they are likely caused by missing or invalid
+// supporting resources, and to ensure we re-attempt issuance when these resources
+// are fixed, it always returns an error on any failure.
 func (c *CA) Issue(ctx context.Context, crt *v1alpha1.Certificate) (issuer.IssueResponse, error) {
 	signeeKey, err := kube.SecretTLSKey(c.secretsLister, crt.Namespace, crt.Spec.SecretName)
-
 	if k8sErrors.IsNotFound(err) || errors.IsInvalidData(err) {
 		signeeKey, err = pki.GeneratePrivateKeyForCertificate(crt)
+		if err != nil {
+			crt.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse,
+				reasonErrorPrivateKey, fmt.Sprintf("Error generating private key for certificate: %v", err), false)
+			return issuer.IssueResponse{}, err
+		}
 	}
-
 	if err != nil {
-		s := messageErrorGetCertKeyPair + err.Error()
-		crt.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse, errorGetCertKeyPair, s, false)
+		crt.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse,
+			reasonErrorPrivateKey, fmt.Sprintf("Error getting private key for certificate: %v", err), false)
 		return issuer.IssueResponse{}, err
 	}
 
 	publicKey, err := pki.PublicKeyForPrivateKey(signeeKey)
 	if err != nil {
-		s := messageErrorPublicKey + err.Error()
-		crt.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse, errorGetPublicKey, s, false)
+		crt.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse,
+			reasonErrorPrivateKey, fmt.Sprintf("Error getting public key from private key: %v", err), false)
 		return issuer.IssueResponse{}, err
 	}
 
 	caCert, err := kube.SecretTLSCert(c.secretsLister, c.resourceNamespace, c.issuer.GetSpec().CA.SecretName)
 	if err != nil {
+		crt.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse,
+			reasonErrorCA, fmt.Sprintf("Error getting signing CA: %v", err), false)
 		return issuer.IssueResponse{}, err
 	}
 
 	certPem, err := c.obtainCertificate(crt, publicKey, caCert)
 	if err != nil {
-		s := messageErrorIssueCert + err.Error()
-		crt.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse, errorIssueCert, s, false)
+		crt.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse,
+			reasonErrorSigning, fmt.Sprintf("Error signing certificate: %v", err), false)
 		return issuer.IssueResponse{}, err
 	}
 
-	crt.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionTrue, successCertIssued, messageCertIssued, true)
-
+	// Encode output private key and CA cert ready for return
 	keyPem, err := pki.EncodePrivateKey(signeeKey)
 	if err != nil {
-		s := messageErrorEncodePrivateKey + err.Error()
-		crt.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse, errorEncodePrivateKey, s, false)
+		crt.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse,
+			reasonErrorPrivateKey, fmt.Sprintf("Error encoding certificate private key: %v", err), false)
 		return issuer.IssueResponse{}, err
 	}
 
 	caPem, err := pki.EncodeX509(caCert)
 	if err != nil {
+		crt.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse,
+			reasonErrorSigning, fmt.Sprintf("Error encoding certificate: %v", err), false)
 		return issuer.IssueResponse{}, err
 	}
 
