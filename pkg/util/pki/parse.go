@@ -25,6 +25,8 @@ import (
 	"github.com/jetstack/cert-manager/pkg/util/errors"
 )
 
+// DecodePrivateKeyBytes will decode a PEM encoded private key into a crypto.Signer.
+// It supports ECDSA and RSA private keys only. All other types will return err.
 func DecodePrivateKeyBytes(keyBytes []byte) (crypto.Signer, error) {
 	// decode the private key pem
 	block, _ := pem.Decode(keyBytes)
@@ -57,6 +59,7 @@ func DecodePrivateKeyBytes(keyBytes []byte) (crypto.Signer, error) {
 	}
 }
 
+// DecodePKCS1PrivateKeyBytes will decode a PEM encoded RSA private key.
 func DecodePKCS1PrivateKeyBytes(keyBytes []byte) (*rsa.PrivateKey, error) {
 	// decode the private key pem
 	block, _ := pem.Decode(keyBytes)
@@ -75,6 +78,7 @@ func DecodePKCS1PrivateKeyBytes(keyBytes []byte) (*rsa.PrivateKey, error) {
 	return key, nil
 }
 
+// DecodeX509CertificateBytes will decode a PEM encoded x509 Certificate.
 func DecodeX509CertificateBytes(certBytes []byte) (*x509.Certificate, error) {
 	// decode the tls certificate pem
 	block, _ := pem.Decode(certBytes)
@@ -88,8 +92,4 @@ func DecodeX509CertificateBytes(certBytes []byte) (*x509.Certificate, error) {
 	}
 
 	return cert, nil
-}
-
-func DecodeDERCertificateBytes(derBytes []byte) (*x509.Certificate, error) {
-	return x509.ParseCertificate(derBytes)
 }

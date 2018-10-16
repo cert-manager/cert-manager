@@ -28,9 +28,10 @@ import (
 	"time"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
-	"github.com/jetstack/cert-manager/pkg/util"
 )
 
+// CommonNameForCertificate returns the common name that should be used for the
+// given Certificate resource, by inspecting the CommonName and DNSNames fields.
 func CommonNameForCertificate(crt *v1alpha1.Certificate) string {
 	if crt.Spec.CommonName != "" {
 		return crt.Spec.CommonName
@@ -41,6 +42,8 @@ func CommonNameForCertificate(crt *v1alpha1.Certificate) string {
 	return crt.Spec.DNSNames[0]
 }
 
+// DNSNamesForCertificate returns the DNS names that should be used for the
+// given Certificate resource, by inspecting the CommonName and DNSNames fields.
 func DNSNamesForCertificate(crt *v1alpha1.Certificate) []string {
 	if len(crt.Spec.DNSNames) == 0 {
 		if crt.Spec.CommonName == "" {
@@ -49,13 +52,30 @@ func DNSNamesForCertificate(crt *v1alpha1.Certificate) []string {
 		return []string{crt.Spec.CommonName}
 	}
 	if crt.Spec.CommonName != "" {
-		return util.RemoveDuplicates(append([]string{crt.Spec.CommonName}, crt.Spec.DNSNames...))
+		return removeDuplicates(append([]string{crt.Spec.CommonName}, crt.Spec.DNSNames...))
 	}
 	return crt.Spec.DNSNames
 }
 
+func removeDuplicates(in []string) []string {
+	var found []string
+Outer:
+	for _, i := range in {
+		for _, i2 := range found {
+			if i2 == i {
+				continue Outer
+			}
+		}
+		found = append(found, i)
+	}
+	return found
+}
+
 const defaultOrganization = "cert-manager"
 
+// OrganizationForCertificate will return the Organization to set for the
+// Certificate resource.
+// If an Organization is not specifically set, a default will be used.
 func OrganizationForCertificate(crt *v1alpha1.Certificate) []string {
 	if len(crt.Spec.Organization) == 0 {
 		return []string{defaultOrganization}
@@ -69,6 +89,10 @@ var serialNumberLimit = new(big.Int).Lsh(big.NewInt(1), 128)
 // default certification duration is 1 year
 const defaultNotAfter = time.Hour * 24 * 365
 
+// GenerateCSR will generate a new *x509.CertificateRequest template to be used
+// by issuers that utilise CSRs to obtain Certificates.
+// The CSR will not be signed, and should be passed to either EncodeCSR or
+// to the x509.CreateCertificateRequest function.
 func GenerateCSR(issuer v1alpha1.GenericIssuer, crt *v1alpha1.Certificate) (*x509.CertificateRequest, error) {
 	commonName := CommonNameForCertificate(crt)
 	dnsNames := DNSNamesForCertificate(crt)
@@ -145,6 +169,8 @@ func GenerateTemplate(issuer v1alpha1.GenericIssuer, crt *v1alpha1.Certificate, 
 // *v1alpha1.Certificate crt.
 // publicKey is the public key of the signee, and signerKey is the private
 // key of the signer.
+// It returns a PEM encoded copy of the Certificate as well as a *x509.Certificate
+// which can be used for reading the encoded values.
 func SignCertificate(template *x509.Certificate, issuerCert *x509.Certificate, publicKey interface{}, signerKey interface{}) ([]byte, *x509.Certificate, error) {
 	derBytes, err := x509.CreateCertificate(rand.Reader, template, issuerCert, publicKey, signerKey)
 
@@ -152,8 +178,7 @@ func SignCertificate(template *x509.Certificate, issuerCert *x509.Certificate, p
 		return nil, nil, fmt.Errorf("error creating x509 certificate: %s", err.Error())
 	}
 
-	cert, err := DecodeDERCertificateBytes(derBytes)
-
+	cert, err := x509.ParseCertificate(derBytes)
 	if err != nil {
 		return nil, nil, fmt.Errorf("error decoding DER certificate bytes: %s", err.Error())
 	}
@@ -177,6 +202,8 @@ func SignCertificate(template *x509.Certificate, issuerCert *x509.Certificate, p
 	return pemBytes.Bytes(), cert, err
 }
 
+// EncodeCSR calls x509.CreateCertificateRequest to sign the given CSR template.
+// It returns a DER encoded signed CSR.
 func EncodeCSR(template *x509.CertificateRequest, key crypto.Signer) ([]byte, error) {
 	derBytes, err := x509.CreateCertificateRequest(rand.Reader, template, key)
 	if err != nil {
@@ -186,6 +213,7 @@ func EncodeCSR(template *x509.CertificateRequest, key crypto.Signer) ([]byte, er
 	return derBytes, nil
 }
 
+// EncodeX509 will encode a *x509.Certificate into PEM format.
 func EncodeX509(cert *x509.Certificate) ([]byte, error) {
 	caPem := bytes.NewBuffer([]byte{})
 	err := pem.Encode(caPem, &pem.Block{Type: "CERTIFICATE", Bytes: cert.Raw})
@@ -196,7 +224,8 @@ func EncodeX509(cert *x509.Certificate) ([]byte, error) {
 	return caPem.Bytes(), nil
 }
 
-// Return the appropriate signature algorithm for the certificate
+// SignatureAlgorithm will determine the appropriate signature algorithm for
+// the given certificate.
 // Adapted from https://github.com/cloudflare/cfssl/blob/master/csr/csr.go#L102
 func SignatureAlgorithm(crt *v1alpha1.Certificate) (x509.SignatureAlgorithm, error) {
 	switch crt.Spec.KeyAlgorithm {
