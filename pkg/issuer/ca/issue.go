@@ -111,7 +111,7 @@ func (c *CA) obtainCertificate(crt *v1alpha1.Certificate, signeeKey interface{},
 		return nil, fmt.Errorf("error getting issuer private key: %s", err.Error())
 	}
 
-	template, err := pki.GenerateTemplate(c.issuer, crt, nil)
+	template, err := pki.GenerateTemplate(c.issuer, crt)
 	if err != nil {
 		return nil, err
 	}
