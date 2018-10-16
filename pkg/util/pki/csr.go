@@ -102,7 +102,7 @@ func GenerateCSR(issuer v1alpha1.GenericIssuer, crt *v1alpha1.Certificate) (*x50
 		return nil, fmt.Errorf("no domains specified on certificate")
 	}
 
-	sigAlgo, err := SignatureAlgorithm(crt)
+	pubKeyAlgo, sigAlgo, err := SignatureAlgorithm(crt)
 	if err != nil {
 		return nil, err
 	}
@@ -110,6 +110,7 @@ func GenerateCSR(issuer v1alpha1.GenericIssuer, crt *v1alpha1.Certificate) (*x50
 	return &x509.CertificateRequest{
 		Version:            3,
 		SignatureAlgorithm: sigAlgo,
+		PublicKeyAlgorithm: pubKeyAlgo,
 		Subject: pkix.Name{
 			Organization: organization,
 			CommonName:   commonName,
@@ -138,7 +139,7 @@ func GenerateTemplate(issuer v1alpha1.GenericIssuer, crt *v1alpha1.Certificate) 
 		return nil, fmt.Errorf("failed to generate serial number: %s", err.Error())
 	}
 
-	sigAlgo, err := SignatureAlgorithm(crt)
+	pubKeyAlgo, sigAlgo, err := SignatureAlgorithm(crt)
 	if err != nil {
 		return nil, err
 	}
@@ -147,11 +148,13 @@ func GenerateTemplate(issuer v1alpha1.GenericIssuer, crt *v1alpha1.Certificate) 
 	if crt.Spec.IsCA {
 		keyUsages |= x509.KeyUsageCertSign
 	}
+
 	return &x509.Certificate{
 		Version:               3,
 		BasicConstraintsValid: true,
 		SerialNumber:          serialNumber,
 		SignatureAlgorithm:    sigAlgo,
+		PublicKeyAlgorithm:    pubKeyAlgo,
 		IsCA:                  crt.Spec.IsCA,
 		Subject: pkix.Name{
 			Organization: organization,
@@ -227,34 +230,40 @@ func EncodeX509(cert *x509.Certificate) ([]byte, error) {
 // SignatureAlgorithm will determine the appropriate signature algorithm for
 // the given certificate.
 // Adapted from https://github.com/cloudflare/cfssl/blob/master/csr/csr.go#L102
-func SignatureAlgorithm(crt *v1alpha1.Certificate) (x509.SignatureAlgorithm, error) {
+func SignatureAlgorithm(crt *v1alpha1.Certificate) (x509.PublicKeyAlgorithm, x509.SignatureAlgorithm, error) {
+	var sigAlgo x509.SignatureAlgorithm
+	var pubKeyAlgo x509.PublicKeyAlgorithm
 	switch crt.Spec.KeyAlgorithm {
 	case v1alpha1.KeyAlgorithm(""):
 		// If keyAlgorithm is not specified, we default to rsa with keysize 2048
-		return x509.SHA256WithRSA, nil
+		pubKeyAlgo = x509.RSA
+		sigAlgo = x509.SHA256WithRSA
 	case v1alpha1.RSAKeyAlgorithm:
+		pubKeyAlgo = x509.RSA
 		switch {
 		case crt.Spec.KeySize >= 4096:
-			return x509.SHA512WithRSA, nil
+			sigAlgo = x509.SHA512WithRSA
 		case crt.Spec.KeySize >= 3072:
-			return x509.SHA384WithRSA, nil
+			sigAlgo = x509.SHA384WithRSA
 		case crt.Spec.KeySize >= 2048:
-			return x509.SHA256WithRSA, nil
+			sigAlgo = x509.SHA256WithRSA
 		default:
-			return x509.UnknownSignatureAlgorithm, fmt.Errorf("unsupported rsa keysize specified: %d. min keysize %d", crt.Spec.KeySize, MinRSAKeySize)
+			return x509.UnknownPublicKeyAlgorithm, x509.UnknownSignatureAlgorithm, fmt.Errorf("unsupported rsa keysize specified: %d. min keysize %d", crt.Spec.KeySize, MinRSAKeySize)
 		}
 	case v1alpha1.ECDSAKeyAlgorithm:
+		pubKeyAlgo = x509.ECDSA
 		switch crt.Spec.KeySize {
 		case 521:
-			return x509.ECDSAWithSHA512, nil
+			sigAlgo = x509.ECDSAWithSHA512
 		case 384:
-			return x509.ECDSAWithSHA384, nil
+			sigAlgo = x509.ECDSAWithSHA384
 		case 256:
-			return x509.ECDSAWithSHA256, nil
+			sigAlgo = x509.ECDSAWithSHA256
 		default:
-			return x509.UnknownSignatureAlgorithm, fmt.Errorf("unsupported ecdsa keysize specified: %d", crt.Spec.KeySize)
+			return x509.UnknownPublicKeyAlgorithm, x509.UnknownSignatureAlgorithm, fmt.Errorf("unsupported ecdsa keysize specified: %d", crt.Spec.KeySize)
 		}
 	default:
-		return x509.UnknownSignatureAlgorithm, fmt.Errorf("unsupported algorithm specified: %s. should be either 'ecdsa' or 'rsa", crt.Spec.KeyAlgorithm)
+		return x509.UnknownPublicKeyAlgorithm, x509.UnknownSignatureAlgorithm, fmt.Errorf("unsupported algorithm specified: %s. should be either 'ecdsa' or 'rsa", crt.Spec.KeyAlgorithm)
 	}
+	return pubKeyAlgo, sigAlgo, nil
 }
