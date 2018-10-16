@@ -209,7 +209,7 @@ func TestSyncHappyPath(t *testing.T) {
 							gen.SetChallengeState(v1alpha1.Invalid),
 							gen.SetChallengeType("http-01"),
 							gen.SetChallengePresented(true),
-							gen.SetChallengeReason("Authorization status is \"invalid\" and not 'valid'"),
+							gen.SetChallengeReason("Error accepting authorization: acme: authorization for identifier example.com is invalid"),
 						))),
 				},
 			},
@@ -221,12 +221,19 @@ func TestSyncHappyPath(t *testing.T) {
 					return &acmeapi.Challenge{Status: acmeapi.StatusPending}, nil
 				},
 				FakeWaitAuthorization: func(context.Context, string) (*acmeapi.Authorization, error) {
-					return &acmeapi.Authorization{Status: acmeapi.StatusInvalid}, nil
+					return nil, acmeapi.AuthorizationError{
+						Authorization: &acmeapi.Authorization{
+							Status: acmeapi.StatusInvalid,
+							Identifier: acmeapi.AuthzID{
+								Value: "example.com",
+							},
+						},
+					}
 				},
 			},
 			CheckFn: func(t *testing.T, s *controllerFixture, args ...interface{}) {
 			},
-			Err: true,
+			Err: false,
 		},
 		"do nothing if the challenge is valid": {
 			Issuer: testIssuerHTTP01Enabled,
