@@ -28,7 +28,6 @@ import (
 	"time"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
-	"github.com/jetstack/cert-manager/pkg/util"
 )
 
 // CommonNameForCertificate returns the common name that should be used for the
@@ -53,9 +52,23 @@ func DNSNamesForCertificate(crt *v1alpha1.Certificate) []string {
 		return []string{crt.Spec.CommonName}
 	}
 	if crt.Spec.CommonName != "" {
-		return util.RemoveDuplicates(append([]string{crt.Spec.CommonName}, crt.Spec.DNSNames...))
+		return removeDuplicates(append([]string{crt.Spec.CommonName}, crt.Spec.DNSNames...))
 	}
 	return crt.Spec.DNSNames
+}
+
+func removeDuplicates(in []string) []string {
+	var found []string
+Outer:
+	for _, i := range in {
+		for _, i2 := range found {
+			if i2 == i {
+				continue Outer
+			}
+		}
+		found = append(found, i)
+	}
+	return found
 }
 
 const defaultOrganization = "cert-manager"
@@ -165,8 +178,7 @@ func SignCertificate(template *x509.Certificate, issuerCert *x509.Certificate, p
 		return nil, nil, fmt.Errorf("error creating x509 certificate: %s", err.Error())
 	}
 
-	cert, err := DecodeDERCertificateBytes(derBytes)
-
+	cert, err := x509.ParseCertificate(derBytes)
 	if err != nil {
 		return nil, nil, fmt.Errorf("error decoding DER certificate bytes: %s", err.Error())
 	}

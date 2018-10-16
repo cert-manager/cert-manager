@@ -93,7 +93,3 @@ func DecodeX509CertificateBytes(certBytes []byte) (*x509.Certificate, error) {
 
 	return cert, nil
 }
-
-func DecodeDERCertificateBytes(derBytes []byte) (*x509.Certificate, error) {
-	return x509.ParseCertificate(derBytes)
-}
