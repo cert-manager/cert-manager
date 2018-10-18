@@ -30,6 +30,8 @@ import (
 type Chart struct {
 	config        *config.Config
 	tillerDetails *tiller.Details
+	// temporary directory used as the --home flag to Helm
+	home string
 
 	// Tiller is the tiller instance to submit the release to
 	Tiller *tiller.Tiller
@@ -90,11 +92,21 @@ func (c *Chart) Setup(cfg *config.Config) error {
 		return err
 	}
 
+	c.home, err = ioutil.TempDir("", "helm-chart-install")
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
 // Provision an instance of tiller-deploy
 func (c *Chart) Provision() error {
+	err := c.runHelmClientInit()
+	if err != nil {
+		return fmt.Errorf("error running 'helm init': %v", err)
+	}
+
 	if c.UpdateDeps {
 		err := c.runDepUpdate()
 		if err != nil {
@@ -102,11 +114,19 @@ func (c *Chart) Provision() error {
 		}
 	}
 
-	err := c.runInstall()
+	err = c.runInstall()
 	if err != nil {
 		return fmt.Errorf("error install helm chart: %v", err)
 	}
 
+	return nil
+}
+
+func (c *Chart) runHelmClientInit() error {
+	err := c.buildHelmCmd("init", "--client-only").Run()
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -143,6 +163,7 @@ func (c *Chart) runInstall() error {
 
 func (c *Chart) buildHelmCmd(args ...string) *exec.Cmd {
 	args = append([]string{
+		"--home", c.home,
 		"--kubeconfig", c.tillerDetails.KubeConfig,
 		"--kube-context", c.tillerDetails.KubeContext,
 		"--tiller-namespace", c.tillerDetails.Namespace,
@@ -183,6 +204,10 @@ func (c *Chart) Deprovision() error {
 		// TODO: only ignore failed to delete because it doesn't exist errors
 		return nil
 	}
+
+	// attempt to cleanup
+	os.RemoveAll(c.home)
+
 	// TODO: delete namespace manually too
 	return nil
 }
