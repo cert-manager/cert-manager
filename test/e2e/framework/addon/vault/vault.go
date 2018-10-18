@@ -151,7 +151,7 @@ func (v *Vault) Provision() error {
 				return fmt.Errorf("failed to create vault pod within 10s")
 			}
 			retries--
-			time.Sleep(2)
+			time.Sleep(time.Second * 2)
 			continue
 		}
 		vaultPod := pods.Items[0]
@@ -159,7 +159,7 @@ func (v *Vault) Provision() error {
 		// it a bit longer.
 		if len(vaultPod.Status.ContainerStatuses) == 0 || !vaultPod.Status.ContainerStatuses[0].Ready {
 			retries--
-			time.Sleep(5)
+			time.Sleep(time.Second * 5)
 			continue
 		}
 		v.details.PodName = vaultPod.Name
