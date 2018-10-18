@@ -14,70 +14,71 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package certificate
+package rbac
 
 import (
-	"github.com/jetstack/cert-manager/test/e2e/framework"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+
+	"github.com/jetstack/cert-manager/test/e2e/framework"
 )
 
-var _ = framework.CertManagerDescribe("Service Account", func() {
-	f := framework.NewDefaultFramework("certificate-rbac")
-	resource := "certificates" // this file is related to certificates
+var _ = RBACDescribe("Issuers", func() {
+	f := framework.NewDefaultFramework("rbac-issuers")
+	resource := "issuers" // this file is related to issuers
 
 	Context("with namespace view access", func() {
 		clusterRole := "view"
-		It("shouldn't be able to create certificates", func() {
+		It("shouldn't be able to create issuers", func() {
 			verb := "create"
 
 			hasAccess := framework.RbacClusterRoleHasAccessToResource(f, clusterRole, verb, resource)
 			Expect(hasAccess).Should(BeFalse())
 		})
 
-		It("shouldn't be able to delete certificates", func() {
+		It("shouldn't be able to delete issuers", func() {
 			verb := "delete"
 
 			hasAccess := framework.RbacClusterRoleHasAccessToResource(f, clusterRole, verb, resource)
 			Expect(hasAccess).Should(BeFalse())
 		})
 
-		It("shouldn't be able to delete collections of certificates", func() {
+		It("shouldn't be able to delete collections of issuers", func() {
 			verb := "deletecollection"
 
 			hasAccess := framework.RbacClusterRoleHasAccessToResource(f, clusterRole, verb, resource)
 			Expect(hasAccess).Should(BeFalse())
 		})
 
-		It("shouldn't be able to patch certificates", func() {
+		It("shouldn't be able to patch issuers", func() {
 			verb := "patch"
 
 			hasAccess := framework.RbacClusterRoleHasAccessToResource(f, clusterRole, verb, resource)
 			Expect(hasAccess).Should(BeFalse())
 		})
 
-		It("shouldn't be able to update certificates", func() {
+		It("shouldn't be able to update issuers", func() {
 			verb := "update"
 
 			hasAccess := framework.RbacClusterRoleHasAccessToResource(f, clusterRole, verb, resource)
 			Expect(hasAccess).Should(BeFalse())
 		})
 
-		It("should be able to get certificates", func() {
+		It("should be able to get issuers", func() {
 			verb := "get"
 
 			hasAccess := framework.RbacClusterRoleHasAccessToResource(f, clusterRole, verb, resource)
 			Expect(hasAccess).Should(BeTrue())
 		})
 
-		It("should be able to list certificates", func() {
+		It("should be able to list issuers", func() {
 			verb := "list"
 
 			hasAccess := framework.RbacClusterRoleHasAccessToResource(f, clusterRole, verb, resource)
 			Expect(hasAccess).Should(BeTrue())
 		})
 
-		It("should be able to watch certificates", func() {
+		It("should be able to watch issuers", func() {
 			verb := "watch"
 
 			hasAccess := framework.RbacClusterRoleHasAccessToResource(f, clusterRole, verb, resource)
@@ -86,56 +87,56 @@ var _ = framework.CertManagerDescribe("Service Account", func() {
 	})
 	Context("with namespace edit access", func() {
 		clusterRole := "edit"
-		It("should be able to create certificates", func() {
+		It("should be able to create issuers", func() {
 			verb := "create"
 
 			hasAccess := framework.RbacClusterRoleHasAccessToResource(f, clusterRole, verb, resource)
 			Expect(hasAccess).Should(BeTrue())
 		})
 
-		It("should be able to delete certificates", func() {
+		It("should be able to delete issuers", func() {
 			verb := "delete"
 
 			hasAccess := framework.RbacClusterRoleHasAccessToResource(f, clusterRole, verb, resource)
 			Expect(hasAccess).Should(BeTrue())
 		})
 
-		It("should be able to delete collections of certificates", func() {
+		It("should be able to delete collections of issuers", func() {
 			verb := "deletecollection"
 
 			hasAccess := framework.RbacClusterRoleHasAccessToResource(f, clusterRole, verb, resource)
 			Expect(hasAccess).Should(BeTrue())
 		})
 
-		It("should be able to patch certificates", func() {
+		It("should be able to patch issuers", func() {
 			verb := "patch"
 
 			hasAccess := framework.RbacClusterRoleHasAccessToResource(f, clusterRole, verb, resource)
 			Expect(hasAccess).Should(BeTrue())
 		})
 
-		It("should be able to update certificates", func() {
+		It("should be able to update issuers", func() {
 			verb := "update"
 
 			hasAccess := framework.RbacClusterRoleHasAccessToResource(f, clusterRole, verb, resource)
 			Expect(hasAccess).Should(BeTrue())
 		})
 
-		It("should be able to get certificates", func() {
+		It("should be able to get issuers", func() {
 			verb := "get"
 
 			hasAccess := framework.RbacClusterRoleHasAccessToResource(f, clusterRole, verb, resource)
 			Expect(hasAccess).Should(BeTrue())
 		})
 
-		It("should be able to list certificates", func() {
+		It("should be able to list issuers", func() {
 			verb := "list"
 
 			hasAccess := framework.RbacClusterRoleHasAccessToResource(f, clusterRole, verb, resource)
 			Expect(hasAccess).Should(BeTrue())
 		})
 
-		It("should be able to watch certificates", func() {
+		It("should be able to watch issuers", func() {
 			verb := "watch"
 
 			hasAccess := framework.RbacClusterRoleHasAccessToResource(f, clusterRole, verb, resource)
@@ -145,56 +146,56 @@ var _ = framework.CertManagerDescribe("Service Account", func() {
 
 	Context("with namespace admin access", func() {
 		clusterRole := "admin"
-		It("should be able to create certificates", func() {
+		It("should be able to create issuers", func() {
 			verb := "create"
 
 			hasAccess := framework.RbacClusterRoleHasAccessToResource(f, clusterRole, verb, resource)
 			Expect(hasAccess).Should(BeTrue())
 		})
 
-		It("should be able to delete certificates", func() {
+		It("should be able to delete issuers", func() {
 			verb := "delete"
 
 			hasAccess := framework.RbacClusterRoleHasAccessToResource(f, clusterRole, verb, resource)
 			Expect(hasAccess).Should(BeTrue())
 		})
 
-		It("should be able to delete collections of certificates", func() {
+		It("should be able to delete collections of issuers", func() {
 			verb := "deletecollection"
 
 			hasAccess := framework.RbacClusterRoleHasAccessToResource(f, clusterRole, verb, resource)
 			Expect(hasAccess).Should(BeTrue())
 		})
 
-		It("should be able to patch certificates", func() {
+		It("should be able to patch issuers", func() {
 			verb := "patch"
 
 			hasAccess := framework.RbacClusterRoleHasAccessToResource(f, clusterRole, verb, resource)
 			Expect(hasAccess).Should(BeTrue())
 		})
 
-		It("should be able to update certificates", func() {
+		It("should be able to update issuers", func() {
 			verb := "update"
 
 			hasAccess := framework.RbacClusterRoleHasAccessToResource(f, clusterRole, verb, resource)
 			Expect(hasAccess).Should(BeTrue())
 		})
 
-		It("should be able to get certificates", func() {
+		It("should be able to get issuers", func() {
 			verb := "get"
 
 			hasAccess := framework.RbacClusterRoleHasAccessToResource(f, clusterRole, verb, resource)
 			Expect(hasAccess).Should(BeTrue())
 		})
 
-		It("should be able to list certificates", func() {
+		It("should be able to list issuers", func() {
 			verb := "list"
 
 			hasAccess := framework.RbacClusterRoleHasAccessToResource(f, clusterRole, verb, resource)
 			Expect(hasAccess).Should(BeTrue())
 		})
 
-		It("should be able to watch certificates", func() {
+		It("should be able to watch issuers", func() {
 			verb := "watch"
 
 			hasAccess := framework.RbacClusterRoleHasAccessToResource(f, clusterRole, verb, resource)

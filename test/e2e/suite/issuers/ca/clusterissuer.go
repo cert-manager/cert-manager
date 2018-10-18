@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package issuer
+package ca
 
 import (
 	. "github.com/onsi/ginkgo"
@@ -25,29 +25,33 @@ import (
 	"github.com/jetstack/cert-manager/test/util"
 )
 
-var _ = framework.CertManagerDescribe("CA Issuer", func() {
-	f := framework.NewDefaultFramework("create-ca-issuer")
+const clusterResourceNamespace = "cert-manager"
 
-	issuerName := "test-ca-issuer"
-	secretName := "ca-issuer-signing-keypair"
+var _ = framework.CertManagerDescribe("CA ClusterIssuer", func() {
+	f := framework.NewDefaultFramework("create-ca-clusterissuer")
+
+	issuerName := "test-ca-clusterissuer"
+	secretName := "ca-clusterissuer-signing-keypair"
 
 	BeforeEach(func() {
 		By("Creating a signing keypair fixture")
-		_, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Create(util.NewSigningKeypairSecret(secretName))
+		_, err := f.KubeClientSet.CoreV1().Secrets(clusterResourceNamespace).Create(util.NewSigningKeypairSecret(secretName))
 		Expect(err).NotTo(HaveOccurred())
 	})
 
 	AfterEach(func() {
 		By("Cleaning up")
-		f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Delete(secretName, nil)
+		f.KubeClientSet.CoreV1().Secrets(clusterResourceNamespace).Delete(secretName, nil)
 	})
 
-	It("should generate a signing keypair", func() {
+	It("should validate a signing keypair", func() {
 		By("Creating an Issuer")
-		_, err := f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Create(util.NewCertManagerCAIssuer(issuerName, secretName))
+		clusterIssuer := util.NewCertManagerCAClusterIssuer(issuerName, secretName)
+		_, err := f.CertManagerClientSet.CertmanagerV1alpha1().ClusterIssuers().Create(clusterIssuer)
 		Expect(err).NotTo(HaveOccurred())
+		defer f.CertManagerClientSet.CertmanagerV1alpha1().ClusterIssuers().Delete(clusterIssuer.Name, nil)
 		By("Waiting for Issuer to become Ready")
-		err = util.WaitForIssuerCondition(f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name),
+		err = util.WaitForClusterIssuerCondition(f.CertManagerClientSet.CertmanagerV1alpha1().ClusterIssuers(),
 			issuerName,
 			v1alpha1.IssuerCondition{
 				Type:   v1alpha1.IssuerConditionReady,
