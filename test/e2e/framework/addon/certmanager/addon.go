@@ -51,6 +51,7 @@ type Certmanager struct {
 
 // Details return the details about the certmanager instance deployed
 type Details struct {
+	ClusterResourceNamespace string
 }
 
 func (p *Certmanager) Setup(cfg *config.Config) error {
@@ -95,7 +96,9 @@ func (p *Certmanager) Provision() error {
 
 // Details returns details that can be used to utilise the instance of Pebble.
 func (p *Certmanager) Details() *Details {
-	return &Details{}
+	return &Details{
+		ClusterResourceNamespace: p.Namespace,
+	}
 }
 
 // Deprovision will destroy this instance of Pebble
