@@ -93,6 +93,7 @@ func (b *Cloudflare) Provision() error {
 			},
 		},
 	}
+	b.details.BaseDomain = b.cf.Domain
 
 	return nil
 }
