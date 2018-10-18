@@ -26,7 +26,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
-	cmutil "github.com/jetstack/cert-manager/pkg/util"
 	"github.com/jetstack/cert-manager/test/e2e/framework"
 	"github.com/jetstack/cert-manager/test/e2e/suite/issuers/acme/dnsproviders"
 	"github.com/jetstack/cert-manager/test/util"
@@ -49,9 +48,11 @@ var _ = framework.CertManagerDescribe("ACME Certificate (DNS01)", func() {
 	certificateName := "test-acme-certificate"
 	certificateSecretName := "test-acme-certificate"
 	var providerDetails *dnsproviders.Details
+	dnsDomain := ""
 
 	BeforeEach(func() {
 		providerDetails = cloudflareProvider.Details()
+		dnsDomain = providerDetails.NewTestDomain()
 
 		By("Creating an Issuer")
 		issuer := generate.Issuer(generate.IssuerConfig{
@@ -110,13 +111,12 @@ var _ = framework.CertManagerDescribe("ACME Certificate (DNS01)", func() {
 		certClient := f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name)
 		secretClient := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name)
 
-		dnsName := cmutil.RandStringRunes(5) + "." + providerDetails.Domain
 		cert := generate.Certificate(generate.CertificateConfig{
 			Name:       certificateName,
 			Namespace:  f.Namespace.Name,
 			SecretName: certificateSecretName,
 			IssuerName: issuerName,
-			DNSNames:   []string{dnsName},
+			DNSNames:   []string{dnsDomain},
 			SolverConfig: v1alpha1.SolverConfig{
 				DNS01: &v1alpha1.DNS01SolverConfig{
 					Provider: providerDetails.ProviderConfig.Name,
@@ -135,13 +135,12 @@ var _ = framework.CertManagerDescribe("ACME Certificate (DNS01)", func() {
 		certClient := f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name)
 		secretClient := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name)
 
-		dnsName := cmutil.RandStringRunes(5) + "." + providerDetails.Domain
 		cert := generate.Certificate(generate.CertificateConfig{
 			Name:       certificateName,
 			Namespace:  f.Namespace.Name,
 			SecretName: certificateSecretName,
 			IssuerName: issuerName,
-			DNSNames:   []string{"*." + dnsName},
+			DNSNames:   []string{"*." + dnsDomain},
 			SolverConfig: v1alpha1.SolverConfig{
 				DNS01: &v1alpha1.DNS01SolverConfig{
 					Provider: providerDetails.ProviderConfig.Name,
@@ -166,13 +165,12 @@ var _ = framework.CertManagerDescribe("ACME Certificate (DNS01)", func() {
 		certClient := f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name)
 		secretClient := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name)
 
-		dnsName := cmutil.RandStringRunes(5) + "." + providerDetails.Domain
 		cert := generate.Certificate(generate.CertificateConfig{
 			Name:       certificateName,
 			Namespace:  f.Namespace.Name,
 			SecretName: certificateSecretName,
 			IssuerName: issuerName,
-			DNSNames:   []string{"*." + dnsName, dnsName},
+			DNSNames:   []string{"*." + dnsDomain, dnsDomain},
 			SolverConfig: v1alpha1.SolverConfig{
 				DNS01: &v1alpha1.DNS01SolverConfig{
 					Provider: providerDetails.ProviderConfig.Name,

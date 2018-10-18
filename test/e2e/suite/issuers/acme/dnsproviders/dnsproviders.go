@@ -20,8 +20,25 @@ limitations under the License.
 // test suite.
 package dnsproviders
 
-import "fmt"
+import (
+	"fmt"
+
+	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	cmutil "github.com/jetstack/cert-manager/pkg/util"
+)
 
 var (
 	ErrNoCredentials = fmt.Errorf("no credentials provided for provider")
 )
+
+type Details struct {
+	// Domain is a domain that can be validated using these credentials
+	BaseDomain string
+
+	// ProviderConfig is the issuer config needed to use these newly created credentials
+	ProviderConfig cmapi.ACMEIssuerDNS01Provider
+}
+
+func (d *Details) NewTestDomain() string {
+	return fmt.Sprintf("%s.%s", cmutil.RandStringRunes(5), d.BaseDomain)
+}
