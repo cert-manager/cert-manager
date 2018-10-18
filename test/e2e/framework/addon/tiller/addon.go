@@ -268,7 +268,7 @@ func (t *Tiller) Provision() error {
 				return fmt.Errorf("failed to create tiller pod within 10s")
 			}
 			retries--
-			time.Sleep(2)
+			time.Sleep(time.Second * 2)
 			continue
 		}
 		tillerPod := pods.Items[0]
@@ -276,7 +276,7 @@ func (t *Tiller) Provision() error {
 		// it a bit longer.
 		if len(tillerPod.Status.ContainerStatuses) == 0 || !tillerPod.Status.ContainerStatuses[0].Ready {
 			retries--
-			time.Sleep(5)
+			time.Sleep(time.Second * 5)
 			continue
 		}
 		break
