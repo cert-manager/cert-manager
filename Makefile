@@ -124,9 +124,9 @@ e2e_test:
 			--tiller-image-tag=v2.10.0 \
 			--global-nginx-ingress-domain=$(E2E_NGINX_CERTIFICATE_DOMAIN) \
 			--global-nginx-ingress-ip-address=$(E2E_NGINX_CERTIFICATE_IP) \
-			--suite.acme-cloudflare-domain=$(CLOUDFLARE_E2E_DOMAIN) \
-			--suite.acme-cloudflare-api-key=$(CLOUDFLARE_E2E_API_TOKEN) \
-			--suite.acme-cloudflare-email=$(CLOUDFLARE_E2E_EMAIL) \
+			--suite.acme-cloudflare-domain=$${CLOUDFLARE_E2E_DOMAIN} \
+			--suite.acme-cloudflare-api-key=$${CLOUDFLARE_E2E_API_TOKEN} \
+			--suite.acme-cloudflare-email=$${CLOUDFLARE_E2E_EMAIL} \
 			--repo-root="$$(pwd)" \
 			--report-dir="$${ARTIFACTS:-./_artifacts}"
 
