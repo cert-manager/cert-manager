@@ -18,6 +18,7 @@ package e2e
 
 import (
 	"flag"
+	"fmt"
 	"path"
 	"testing"
 	"time"
@@ -61,7 +62,7 @@ func TestE2E(t *testing.T) {
 
 	var r []ginkgo.Reporter
 	if framework.DefaultConfig.Ginkgo.ReportDirectory != "" {
-		r = append(r, reporters.NewJUnitReporter(path.Join(framework.DefaultConfig.Ginkgo.ReportDirectory, "junit_00.xml")))
+		r = append(r, reporters.NewJUnitReporter(path.Join(framework.DefaultConfig.Ginkgo.ReportDirectory, fmt.Sprintf("junit_%02d.xml", ginkgoconfig.GinkgoConfig.ParallelNode))))
 	}
 
 	ginkgo.RunSpecsWithDefaultAndCustomReporters(t, "cert-manager e2e suite", r)
