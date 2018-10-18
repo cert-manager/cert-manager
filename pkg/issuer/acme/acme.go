@@ -39,6 +39,7 @@ type Acme struct {
 
 	secretsLister corelisters.SecretLister
 	orderLister   cmlisters.OrderLister
+
 	// used for testing
 	clock clock.Clock
 }
@@ -62,6 +63,7 @@ func New(ctx *controller.Context, issuer v1alpha1.GenericIssuer) (issuer.Interfa
 
 		secretsLister: secretsLister,
 		orderLister:   orderLister,
+		clock:         clock.RealClock{},
 	}
 
 	return a, nil
