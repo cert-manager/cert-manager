@@ -7,6 +7,7 @@ go_library(
     tags = ["manual"],
     visibility = ["//visibility:public"],
     deps = [
+        "//pkg/util:go_default_library",
         "//test/e2e/framework/addon/chart:go_default_library",
         "//test/e2e/framework/addon/tiller:go_default_library",
         "//test/e2e/framework/config:go_default_library",

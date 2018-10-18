@@ -101,7 +101,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 	})
 
 	JustBeforeEach(func() {
-		acmeIngressDomain = addon.NginxIngress.Details().Domain
+		acmeIngressDomain = addon.NginxIngress.Details().NewTestDomain()
 		acmeIngressClass = addon.NginxIngress.Details().IngressClass
 	})
 

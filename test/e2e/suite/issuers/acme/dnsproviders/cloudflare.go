@@ -40,14 +40,6 @@ type Cloudflare struct {
 	createdSecret *corev1.Secret
 }
 
-type Details struct {
-	// Domain is a domain that can be validated using these credentials
-	Domain string
-
-	// ProviderConfig is the issuer config needed to use these newly created credentials
-	ProviderConfig cmapi.ACMEIssuerDNS01Provider
-}
-
 func (b *Cloudflare) Setup(c *config.Config) error {
 	if c.Suite.ACME.Cloudflare.APIKey == "" ||
 		c.Suite.ACME.Cloudflare.Domain == "" ||

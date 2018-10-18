@@ -20,6 +20,7 @@ package nginxingress
 import (
 	"fmt"
 
+	cmutil "github.com/jetstack/cert-manager/pkg/util"
 	"github.com/jetstack/cert-manager/test/e2e/framework/addon/chart"
 	"github.com/jetstack/cert-manager/test/e2e/framework/addon/tiller"
 	"github.com/jetstack/cert-manager/test/e2e/framework/config"
@@ -54,10 +55,10 @@ type Nginx struct {
 }
 
 type Details struct {
-	// Domain is a domain name that can be used during e2e tests.
+	// BaseDomain is a domain name that can be used during e2e tests.
 	// This domain should have records for *.example.com and example.com pointing
 	// to the IP listed above.
-	Domain string
+	BaseDomain string
 
 	// IngressClass configured for this controller
 	IngressClass string
@@ -118,7 +119,7 @@ func (n *Nginx) Provision() error {
 // Details returns details that can be used to utilise the instance of nginx ingress.
 func (n *Nginx) Details() *Details {
 	return &Details{
-		Domain:       n.Domain,
+		BaseDomain:   n.Domain,
 		IngressClass: "nginx",
 	}
 }
@@ -141,4 +142,8 @@ func (n *Nginx) SupportsGlobal() bool {
 	// nginx does support a global configuration, as the 'usage details' for
 	// it are deterministic (i.e. not a result of the call to helm install).
 	return true
+}
+
+func (d *Details) NewTestDomain() string {
+	return fmt.Sprintf("%s.%s", cmutil.RandStringRunes(5), d.BaseDomain)
 }
