@@ -17,19 +17,19 @@ limitations under the License.
 package certificate
 
 import (
-	"flag"
 	"fmt"
 	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	corev1 "k8s.io/api/core/v1"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	cmutil "github.com/jetstack/cert-manager/pkg/util"
 	"github.com/jetstack/cert-manager/test/e2e/framework"
+	"github.com/jetstack/cert-manager/test/e2e/framework/addon"
+	"github.com/jetstack/cert-manager/test/e2e/framework/addon/pebble"
+	"github.com/jetstack/cert-manager/test/e2e/framework/addon/tiller"
 	"github.com/jetstack/cert-manager/test/util"
 )
 
@@ -38,29 +38,41 @@ const testingACMEEmail = "e2e@cert-manager.io"
 const testingACMEPrivateKey = "test-acme-private-key"
 const foreverTestTimeout = time.Second * 60
 
-var acmeIngressClass string
-
-func init() {
-	flag.StringVar(&acmeIngressClass, "acme-nginx-ingress-class", "nginx", ""+
-		"The ingress class for the nginx ingress controller")
-}
-
 var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 	f := framework.NewDefaultFramework("create-acme-certificate-http01")
 
+	var (
+		tiller = &tiller.Tiller{
+			Name:               "tiller-deploy",
+			ClusterPermissions: false,
+		}
+		pebble = &pebble.Pebble{
+			Tiller: tiller,
+			Name:   "cm-e2e-create-acme-issuer",
+		}
+	)
+
+	BeforeEach(func() {
+		tiller.Namespace = f.Namespace.Name
+		pebble.Namespace = f.Namespace.Name
+	})
+
+	f.RequireGlobalAddon(addon.NginxIngress)
+	f.RequireAddon(tiller)
+	f.RequireAddon(pebble)
+
+	var acmeIngressDomain string
+	var acmeIngressClass string
 	issuerName := "test-acme-issuer"
 	certificateName := "test-acme-certificate"
 	certificateSecretName := "test-acme-certificate"
 
 	BeforeEach(func() {
-		By("Verifying there is no existing ACME private key")
-		_, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Get(testingACMEPrivateKey, metav1.GetOptions{})
-		Expect(err).To(MatchError(apierrors.NewNotFound(corev1.Resource("secrets"), testingACMEPrivateKey)))
-		By("Verifying there is no existing TLS certificate secret")
-		_, err = f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Get(certificateSecretName, metav1.GetOptions{})
-		Expect(err).To(MatchError(apierrors.NewNotFound(corev1.Resource("secrets"), certificateSecretName)))
+		acmeURL := pebble.Details().Host
+		acmeIssuer := util.NewCertManagerACMEIssuer(issuerName, acmeURL, testingACMEEmail, testingACMEPrivateKey)
+
 		By("Creating an Issuer")
-		_, err = f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Create(util.NewCertManagerACMEIssuer(issuerName, framework.TestContext.ACMEURL, testingACMEEmail, testingACMEPrivateKey))
+		_, err := f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Create(acmeIssuer)
 		Expect(err).NotTo(HaveOccurred())
 		By("Waiting for Issuer to become Ready")
 		err = util.WaitForIssuerCondition(f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name),
@@ -88,6 +100,11 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		}
 	})
 
+	JustBeforeEach(func() {
+		acmeIngressDomain = addon.NginxIngress.Details().Domain
+		acmeIngressClass = addon.NginxIngress.Details().IngressClass
+	})
+
 	AfterEach(func() {
 		By("Cleaning up")
 		f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Delete(issuerName, nil)
@@ -99,7 +116,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		secretClient := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name)
 
 		By("Creating a Certificate")
-		_, err := certClient.Create(util.NewCertManagerACMECertificate(certificateName, certificateSecretName, issuerName, v1alpha1.IssuerKind, acmeIngressClass, util.ACMECertificateDomain))
+		_, err := certClient.Create(util.NewCertManagerACMECertificate(certificateName, certificateSecretName, issuerName, v1alpha1.IssuerKind, acmeIngressClass, acmeIngressDomain))
 		Expect(err).NotTo(HaveOccurred())
 		By("Verifying the Certificate is valid")
 		err = util.WaitCertificateIssuedValid(certClient, secretClient, certificateName, time.Minute*5)
@@ -113,7 +130,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		// the maximum length of a single segment of the domain being requested
 		const maxLengthOfDomainSegment = 63
 		By("Creating a Certificate")
-		_, err := certClient.Create(util.NewCertManagerACMECertificate(certificateName, certificateSecretName, issuerName, v1alpha1.IssuerKind, acmeIngressClass, fmt.Sprintf("%s.%s", cmutil.RandStringRunes(maxLengthOfDomainSegment), util.ACMECertificateDomain)))
+		_, err := certClient.Create(util.NewCertManagerACMECertificate(certificateName, certificateSecretName, issuerName, v1alpha1.IssuerKind, acmeIngressClass, fmt.Sprintf("%s.%s", cmutil.RandStringRunes(maxLengthOfDomainSegment), acmeIngressDomain)))
 		Expect(err).NotTo(HaveOccurred())
 		err = util.WaitCertificateIssuedValid(certClient, secretClient, certificateName, time.Minute*5)
 		Expect(err).NotTo(HaveOccurred())
@@ -124,7 +141,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		secretClient := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name)
 
 		By("Creating a Certificate")
-		_, err := certClient.Create(util.NewCertManagerACMECertificate(certificateName, certificateSecretName, issuerName, v1alpha1.IssuerKind, acmeIngressClass, util.ACMECertificateDomain, fmt.Sprintf("%s.%s", cmutil.RandStringRunes(5), util.ACMECertificateDomain)))
+		_, err := certClient.Create(util.NewCertManagerACMECertificate(certificateName, certificateSecretName, issuerName, v1alpha1.IssuerKind, acmeIngressClass, acmeIngressDomain, fmt.Sprintf("%s.%s", cmutil.RandStringRunes(5), acmeIngressDomain)))
 		Expect(err).NotTo(HaveOccurred())
 		By("Verifying the Certificate is valid")
 		err = util.WaitCertificateIssuedValid(certClient, secretClient, certificateName, time.Minute*5)
@@ -136,7 +153,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		secretClient := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name)
 
 		By("Creating a Certificate")
-		cert, err := certClient.Create(util.NewCertManagerACMECertificate(certificateName, certificateSecretName, issuerName, v1alpha1.IssuerKind, acmeIngressClass, util.ACMECertificateDomain, fmt.Sprintf("%s.%s", cmutil.RandStringRunes(5), util.ACMECertificateDomain)))
+		cert, err := certClient.Create(util.NewCertManagerACMECertificate(certificateName, certificateSecretName, issuerName, v1alpha1.IssuerKind, acmeIngressClass, acmeIngressDomain, fmt.Sprintf("%s.%s", cmutil.RandStringRunes(5), acmeIngressDomain)))
 		Expect(err).NotTo(HaveOccurred())
 		By("Verifying the Certificate is valid")
 		err = util.WaitCertificateIssuedValid(certClient, secretClient, certificateName, time.Minute*5)
@@ -147,7 +164,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Adding an additional dnsName to the Certificate")
-		newDNSName := fmt.Sprintf("%s.%s", cmutil.RandStringRunes(5), util.ACMECertificateDomain)
+		newDNSName := fmt.Sprintf("%s.%s", cmutil.RandStringRunes(5), acmeIngressDomain)
 		cert.Spec.DNSNames = append(cert.Spec.DNSNames, newDNSName)
 		cert.Spec.ACME.Config[0].Domains = append(cert.Spec.ACME.Config[0].Domains, newDNSName)
 
@@ -160,6 +177,8 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 	})
 
 	It("should fail to obtain a certificate for an invalid ACME dns name", func() {
+		Skip("Poorly designed test skipped until it can be rewritten")
+
 		By("Creating a Certificate")
 		_, err := f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name).Create(util.NewCertManagerACMECertificate(certificateName, certificateSecretName, issuerName, v1alpha1.IssuerKind, acmeIngressClass, "google.com"))
 		Expect(err).NotTo(HaveOccurred())
@@ -191,7 +210,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		_, err := ingClient.Create(util.NewIngress(certificateSecretName, certificateSecretName, map[string]string{
 			"certmanager.k8s.io/issuer":                  issuerName,
 			"certmanager.k8s.io/acme-challenge-provider": "http01",
-		}, util.ACMECertificateDomain))
+		}, acmeIngressDomain))
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Waiting for Certificate to exist")

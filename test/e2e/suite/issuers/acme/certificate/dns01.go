@@ -17,66 +17,41 @@ limitations under the License.
 package certificate
 
 import (
-	"flag"
 	"time"
 
 	"github.com/jetstack/cert-manager/test/util/generate"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	corev1 "k8s.io/api/core/v1"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	cmutil "github.com/jetstack/cert-manager/pkg/util"
 	"github.com/jetstack/cert-manager/test/e2e/framework"
+	"github.com/jetstack/cert-manager/test/e2e/suite/issuers/acme/dnsproviders"
 	"github.com/jetstack/cert-manager/test/util"
 )
-
-var cloudflareEmail string
-var cloudflareAPIKey string
-
-func init() {
-	flag.StringVar(&cloudflareEmail, "cloudflare-email", "", ""+
-		"The cloud API email address. If not specified, DNS tests will be skipped")
-	flag.StringVar(&cloudflareAPIKey, "cloudflare-api-key", "", ""+
-		"The cloudflare API key. If not specified, DNS tests will be skipped")
-}
 
 var _ = framework.CertManagerDescribe("ACME Certificate (DNS01)", func() {
 	f := framework.NewDefaultFramework("create-acme-certificate-dns01")
 
+	var (
+		cloudflareProvider = &dnsproviders.Cloudflare{}
+	)
+
+	BeforeEach(func() {
+		cloudflareProvider.Namespace = f.Namespace.Name
+	})
+
+	f.RequireAddon(cloudflareProvider)
+
 	issuerName := "test-acme-issuer"
 	certificateName := "test-acme-certificate"
 	certificateSecretName := "test-acme-certificate"
-	cloudflareSecretName := "cloudflare-api-token"
+	var providerDetails *dnsproviders.Details
 
 	BeforeEach(func() {
-		if cloudflareAPIKey == "" {
-			framework.Skipf("Skipping DNS01 provider tests as cloudflare api key is blank")
-			return
-		}
-
-		By("Verifying there is no existing ACME private key")
-		_, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Get(testingACMEPrivateKey, metav1.GetOptions{})
-		Expect(err).To(MatchError(apierrors.NewNotFound(corev1.Resource("secrets"), testingACMEPrivateKey)))
-		By("Verifying there is no existing TLS certificate secret")
-		_, err = f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Get(certificateSecretName, metav1.GetOptions{})
-		Expect(err).To(MatchError(apierrors.NewNotFound(corev1.Resource("secrets"), certificateSecretName)))
-
-		By("Creating the cloudflare api key fixture")
-		cfSecret := &corev1.Secret{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      cloudflareSecretName,
-				Namespace: f.Namespace.Name,
-			},
-			Data: map[string][]byte{
-				"api-key": []byte(cloudflareAPIKey),
-			},
-		}
-		_, err = f.KubeClientSet.CoreV1().Secrets(cfSecret.Namespace).Create(cfSecret)
-		Expect(err).NotTo(HaveOccurred())
+		providerDetails = cloudflareProvider.Details()
 
 		By("Creating an Issuer")
 		issuer := generate.Issuer(generate.IssuerConfig{
@@ -90,22 +65,11 @@ var _ = framework.CertManagerDescribe("ACME Certificate (DNS01)", func() {
 			ACMEPrivateKeyName: testingACMEPrivateKey,
 			DNS01: &v1alpha1.ACMEIssuerDNS01Config{
 				Providers: []v1alpha1.ACMEIssuerDNS01Provider{
-					{
-						Name: "cloudflare",
-						Cloudflare: &v1alpha1.ACMEIssuerDNS01ProviderCloudflare{
-							Email: cloudflareEmail,
-							APIKey: v1alpha1.SecretKeySelector{
-								LocalObjectReference: v1alpha1.LocalObjectReference{
-									Name: cloudflareSecretName,
-								},
-								Key: "api-key",
-							},
-						},
-					},
+					providerDetails.ProviderConfig,
 				},
 			},
 		})
-		issuer, err = f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Create(issuer)
+		issuer, err := f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Create(issuer)
 		Expect(err).NotTo(HaveOccurred())
 		By("Waiting for Issuer to become Ready")
 		err = util.WaitForIssuerCondition(f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name),
@@ -137,7 +101,6 @@ var _ = framework.CertManagerDescribe("ACME Certificate (DNS01)", func() {
 		By("Cleaning up")
 		f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Delete(issuerName, nil)
 		f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Delete(testingACMEPrivateKey, nil)
-		f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Delete(cloudflareSecretName, nil)
 		f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Delete(certificateSecretName, nil)
 	})
 
@@ -147,7 +110,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (DNS01)", func() {
 		certClient := f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name)
 		secretClient := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name)
 
-		dnsName := cmutil.RandStringRunes(5) + "." + util.ACMECloudflareDomain
+		dnsName := cmutil.RandStringRunes(5) + "." + providerDetails.Domain
 		cert := generate.Certificate(generate.CertificateConfig{
 			Name:       certificateName,
 			Namespace:  f.Namespace.Name,
@@ -156,7 +119,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (DNS01)", func() {
 			DNSNames:   []string{dnsName},
 			SolverConfig: v1alpha1.SolverConfig{
 				DNS01: &v1alpha1.DNS01SolverConfig{
-					Provider: "cloudflare",
+					Provider: providerDetails.ProviderConfig.Name,
 				},
 			},
 		})
@@ -172,7 +135,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (DNS01)", func() {
 		certClient := f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name)
 		secretClient := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name)
 
-		dnsName := cmutil.RandStringRunes(5) + "." + util.ACMECloudflareDomain
+		dnsName := cmutil.RandStringRunes(5) + "." + providerDetails.Domain
 		cert := generate.Certificate(generate.CertificateConfig{
 			Name:       certificateName,
 			Namespace:  f.Namespace.Name,
@@ -181,7 +144,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (DNS01)", func() {
 			DNSNames:   []string{"*." + dnsName},
 			SolverConfig: v1alpha1.SolverConfig{
 				DNS01: &v1alpha1.DNS01SolverConfig{
-					Provider: "cloudflare",
+					Provider: providerDetails.ProviderConfig.Name,
 				},
 			},
 		})
@@ -203,7 +166,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (DNS01)", func() {
 		certClient := f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name)
 		secretClient := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name)
 
-		dnsName := cmutil.RandStringRunes(5) + "." + util.ACMECloudflareDomain
+		dnsName := cmutil.RandStringRunes(5) + "." + providerDetails.Domain
 		cert := generate.Certificate(generate.CertificateConfig{
 			Name:       certificateName,
 			Namespace:  f.Namespace.Name,
@@ -212,7 +175,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (DNS01)", func() {
 			DNSNames:   []string{"*." + dnsName, dnsName},
 			SolverConfig: v1alpha1.SolverConfig{
 				DNS01: &v1alpha1.DNS01SolverConfig{
-					Provider: "cloudflare",
+					Provider: providerDetails.ProviderConfig.Name,
 				},
 			},
 		})

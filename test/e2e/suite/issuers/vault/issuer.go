@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package issuer
+package vault
 
 import (
 	"path"
@@ -25,13 +25,32 @@ import (
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	"github.com/jetstack/cert-manager/test/e2e/framework"
+	"github.com/jetstack/cert-manager/test/e2e/framework/addon/tiller"
+	vaultaddon "github.com/jetstack/cert-manager/test/e2e/framework/addon/vault"
 	"github.com/jetstack/cert-manager/test/util"
-	"github.com/jetstack/cert-manager/test/util/vault"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var _ = framework.CertManagerDescribe("Vault Issuer", func() {
 	f := framework.NewDefaultFramework("create-vault-issuer")
+
+	var (
+		tiller = &tiller.Tiller{
+			Name:               "tiller-deploy",
+			ClusterPermissions: false,
+		}
+		vault = &vaultaddon.Vault{
+			Tiller: tiller,
+			Name:   "cm-e2e-create-vault-issuer",
+		}
+	)
+
+	BeforeEach(func() {
+		tiller.Namespace = f.Namespace.Name
+		vault.Namespace = f.Namespace.Name
+	})
+
+	f.RequireAddon(tiller)
+	f.RequireAddon(vault)
 
 	issuerName := "test-vault-issuer"
 	rootMount := "root-ca"
@@ -42,14 +61,18 @@ var _ = framework.CertManagerDescribe("Vault Issuer", func() {
 	vaultPath := path.Join(intermediateMount, "sign", role)
 	authPath := "approle"
 	var roleId, secretId string
-	var vaultInit *vault.VaultInitializer
+	var vaultInit *vaultaddon.VaultInitializer
 
 	BeforeEach(func() {
 		By("Configuring the Vault server")
-		podList, err := f.KubeClientSet.CoreV1().Pods("vault").List(metav1.ListOptions{})
-		Expect(err).NotTo(HaveOccurred())
-		vaultPodName := podList.Items[0].Name
-		vaultInit, err = vault.NewVaultInitializer(vaultPodName, rootMount, intermediateMount, role, authPath)
+		vaultInit = &vaultaddon.VaultInitializer{
+			Details:           *vault.Details(),
+			RootMount:         rootMount,
+			IntermediateMount: intermediateMount,
+			Role:              role,
+			AuthPath:          authPath,
+		}
+		err := vaultInit.Init()
 		Expect(err).NotTo(HaveOccurred())
 		err = vaultInit.Setup()
 		Expect(err).NotTo(HaveOccurred())
@@ -67,13 +90,12 @@ var _ = framework.CertManagerDescribe("Vault Issuer", func() {
 
 	const vaultDefaultDuration = time.Hour * 24 * 90
 
-	vaultURL := "https://vault.vault:8200"
 	It("should be ready with a valid AppRole", func() {
-		_, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Create(vault.NewVaultAppRoleSecret(vaultSecretAppRoleName, secretId))
+		_, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Create(vaultaddon.NewVaultAppRoleSecret(vaultSecretAppRoleName, secretId))
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Creating an Issuer")
-		_, err = f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Create(util.NewCertManagerVaultIssuerAppRole(issuerName, vaultURL, vaultPath, roleId, vaultSecretAppRoleName, authPath, vault.VaultCA))
+		_, err = f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Create(util.NewCertManagerVaultIssuerAppRole(issuerName, vault.Details().Host, vaultPath, roleId, vaultSecretAppRoleName, authPath, vault.Details().VaultCA))
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Waiting for Issuer to become Ready")
@@ -88,7 +110,7 @@ var _ = framework.CertManagerDescribe("Vault Issuer", func() {
 
 	It("should fail to init with missing Vault AppRole", func() {
 		By("Creating an Issuer")
-		_, err := f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Create(util.NewCertManagerVaultIssuerAppRole(issuerName, vaultURL, vaultPath, roleId, vaultSecretAppRoleName, authPath, vault.VaultCA))
+		_, err := f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Create(util.NewCertManagerVaultIssuerAppRole(issuerName, vault.Details().Host, vaultPath, roleId, vaultSecretAppRoleName, authPath, vault.Details().VaultCA))
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Waiting for Issuer to become Ready")
@@ -103,7 +125,7 @@ var _ = framework.CertManagerDescribe("Vault Issuer", func() {
 
 	It("should fail to init with missing Vault Token", func() {
 		By("Creating an Issuer")
-		_, err := f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Create(util.NewCertManagerVaultIssuerToken(issuerName, vaultURL, vaultPath, vaultSecretTokenName, authPath, vault.VaultCA))
+		_, err := f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Create(util.NewCertManagerVaultIssuerToken(issuerName, vault.Details().Host, vaultPath, vaultSecretTokenName, authPath, vault.Details().VaultCA))
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Waiting for Issuer to become Ready")
