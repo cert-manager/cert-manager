@@ -114,19 +114,20 @@ $(CMDS):
 
 e2e_test:
 	mkdir -p "$$(pwd)/_artifacts"
-	bazel build //test/e2e:e2e.test
+	bazel build //hack/bin:helm //test/e2e:e2e.test
 	# Run e2e tests
 	KUBECONFIG=$(KUBECONFIG) \
 		bazel run //vendor/github.com/onsi/ginkgo/ginkgo -- \
 			-nodes 20 \
 			$$(bazel info bazel-genfiles)/test/e2e/e2e.test \
 			-- \
-			--tiller-image-tag=v2.10.0 \
 			--global-nginx-ingress-domain=$(E2E_NGINX_CERTIFICATE_DOMAIN) \
 			--global-nginx-ingress-ip-address=$(E2E_NGINX_CERTIFICATE_IP) \
 			--suite.acme-cloudflare-domain=$${CLOUDFLARE_E2E_DOMAIN} \
 			--suite.acme-cloudflare-api-key=$${CLOUDFLARE_E2E_API_TOKEN} \
 			--suite.acme-cloudflare-email=$${CLOUDFLARE_E2E_EMAIL} \
+			--helm-binary-path=$$(bazel info bazel-genfiles)/hack/bin/helm \
+			--tiller-image-tag=$$($$(bazel info bazel-genfiles)/hack/bin/helm version --client --template '{{.Client.SemVer}}') \
 			--repo-root="$$(pwd)" \
 			--report-dir="$${ARTIFACTS:-./_artifacts}"
 
