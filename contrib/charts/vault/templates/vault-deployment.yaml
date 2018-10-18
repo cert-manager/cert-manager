@@ -23,6 +23,13 @@ spec:
         - containerPort: 8200
           name: vaultport
           protocol: TCP
+        resources:
+          requests:
+            cpu: 50m
+            memory: 64Mi
+          limits:
+            cpu: 200m
+            memory: 256Mi
         securityContext:
          capabilities:
            add:
