@@ -537,11 +537,18 @@
   revision = "00c29f56e2386353d58c599509e8dc3801b0d716"
 
 [[projects]]
-  digest = "1:4357ebc50d5ea13cb9b527a195e5481e557339694fcbbeaf2e688ce61e9e25dd"
+  digest = "1:028e42a44d5c2a3de7a75112567fca72564c3253f3b3334777fb3dadc966f18e"
   name = "github.com/onsi/ginkgo"
   packages = [
     ".",
     "config",
+    "ginkgo",
+    "ginkgo/convert",
+    "ginkgo/interrupthandler",
+    "ginkgo/nodot",
+    "ginkgo/testrunner",
+    "ginkgo/testsuite",
+    "ginkgo/watch",
     "internal/codelocation",
     "internal/containernode",
     "internal/failer",
@@ -1390,6 +1397,7 @@
     "github.com/miekg/dns",
     "github.com/onsi/ginkgo",
     "github.com/onsi/ginkgo/config",
+    "github.com/onsi/ginkgo/ginkgo",
     "github.com/onsi/ginkgo/reporters",
     "github.com/onsi/gomega",
     "github.com/openshift/generic-admission-server/pkg/cmd",
@@ -1405,11 +1413,11 @@
     "golang.org/x/oauth2/google",
     "google.golang.org/api/dns/v1",
     "k8s.io/api/admission/v1beta1",
+    "k8s.io/api/apps/v1",
     "k8s.io/api/authorization/v1",
     "k8s.io/api/core/v1",
     "k8s.io/api/extensions/v1beta1",
     "k8s.io/api/rbac/v1",
-    "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1",
     "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset",
     "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/typed/apiextensions/v1beta1",
     "k8s.io/apimachinery/pkg/api/errors",
@@ -1428,7 +1436,6 @@
     "k8s.io/apimachinery/pkg/util/intstr",
     "k8s.io/apimachinery/pkg/util/runtime",
     "k8s.io/apimachinery/pkg/util/sets",
-    "k8s.io/apimachinery/pkg/util/uuid",
     "k8s.io/apimachinery/pkg/util/validation/field",
     "k8s.io/apimachinery/pkg/util/wait",
     "k8s.io/apimachinery/pkg/watch",
