@@ -17,39 +17,20 @@ limitations under the License.
 package vault
 
 import (
-	"crypto/rand"
-	"crypto/rsa"
-	"crypto/tls"
 	"crypto/x509"
-	"crypto/x509/pkix"
-	"encoding/pem"
 	"fmt"
-	"math/big"
-	"net"
+	"math/rand"
 	"net/http"
 	"os/exec"
 	"path"
 	"time"
 
-	"github.com/golang/glog"
 	vault "github.com/hashicorp/vault/api"
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 const vaultToken = "vault-root-token"
-
-var (
-	VaultCA             []byte
-	VaultCAPrivateKey   []byte
-	VaultCert           []byte
-	VaultCertPrivateKey []byte
-)
-
-func init() {
-	generateCA()
-	generateCert()
-}
 
 func NewVaultTokenSecret(name string) *v1.Secret {
 	return &v1.Secret{
@@ -74,58 +55,65 @@ func NewVaultAppRoleSecret(name, secretId string) *v1.Secret {
 }
 
 type VaultInitializer struct {
-	proxyCmd          *exec.Cmd
-	client            *vault.Client
-	rootMount         string
-	intermediateMount string
-	role              string
-	authPath          string
+	proxyCmd *exec.Cmd
+	client   *vault.Client
+
+	Details
+
+	RootMount         string
+	IntermediateMount string
+	Role              string
+	AuthPath          string
 }
 
-func NewVaultInitializer(container, rootMount, intermediateMount, role, authPath string) (*VaultInitializer, error) {
-	args := []string{"port-forward", "-n", "vault", container, "8200:8200"}
+func (v *VaultInitializer) Init() error {
+	rand.Seed(time.Now().UnixNano())
+	listenPort := 30000 + rand.Intn(5000)
+
+	// TODO: we need to make this port-forward more robust.
+	// Currently, it's possible that the connection gets dropped causing later
+	// init commands to fail.
+	args := []string{"port-forward", "-n", v.Details.Namespace, v.Details.PodName, fmt.Sprintf("%d:8200", listenPort)}
 	cmd := exec.Command("kubectl", args...)
 	err := cmd.Start()
 	if err != nil {
-		glog.Fatalf("Error starting port-forward: %s", err.Error())
+		return fmt.Errorf("Error starting port-forward: %s", err.Error())
 	}
 
-	time.Sleep(3 * time.Second)
+	if v.AuthPath == "" {
+		v.AuthPath = "approle"
+	}
+
+	// Wait for 7s to allow port-forward to actually start.
+	// We wait longer than expected, as in highly parallel e2e runs this may
+	// take some time to start.
+	time.Sleep(7 * time.Second)
+
+	// Cross our fingers and hope that it's started :this_is_fine:
 
 	cfg := vault.DefaultConfig()
-	cfg.Address = "https://127.0.0.1:8200"
+	cfg.Address = fmt.Sprintf("https://127.0.0.1:%d", listenPort)
 
 	caCertPool := x509.NewCertPool()
-	ok := caCertPool.AppendCertsFromPEM(VaultCA)
+	ok := caCertPool.AppendCertsFromPEM(v.VaultCA)
 	if ok == false {
-		glog.Fatal("error loading Vault CA bundle")
+		return fmt.Errorf("error loading Vault CA bundle")
 	}
 
 	cfg.HttpClient.Transport.(*http.Transport).TLSClientConfig.RootCAs = caCertPool
 
 	client, err := vault.NewClient(cfg)
 	if err != nil {
-		return nil, fmt.Errorf("Unable to initialize vault client: %s", err.Error())
+		return fmt.Errorf("Unable to initialize vault client: %s", err.Error())
 	}
 
 	client.SetToken(vaultToken)
-
-	if authPath == "" {
-		authPath = "approle"
-	}
-
-	return &VaultInitializer{
-		proxyCmd:          cmd,
-		client:            client,
-		rootMount:         rootMount,
-		intermediateMount: intermediateMount,
-		role:              role,
-		authPath:          authPath,
-	}, nil
+	v.client = client
+	return nil
 }
 
 func (v *VaultInitializer) Setup() error {
-	if err := v.mountPKI(v.rootMount, "87600h"); err != nil {
+	if err := v.mountPKI(v.RootMount, "87600h"); err != nil {
 		return err
 	}
 
@@ -134,12 +122,12 @@ func (v *VaultInitializer) Setup() error {
 		return err
 	}
 
-	if err := v.configureCert(v.rootMount); err != nil {
+	if err := v.configureCert(v.RootMount); err != nil {
 		return err
 
 	}
 
-	if err := v.mountPKI(v.intermediateMount, "43800h"); err != nil {
+	if err := v.mountPKI(v.IntermediateMount, "43800h"); err != nil {
 		return err
 	}
 
@@ -153,11 +141,11 @@ func (v *VaultInitializer) Setup() error {
 		return err
 	}
 
-	if err := v.importSignIntermediate(intermediateCa, rootCa, v.intermediateMount); err != nil {
+	if err := v.importSignIntermediate(intermediateCa, rootCa, v.IntermediateMount); err != nil {
 		return err
 	}
 
-	if err := v.configureCert(v.intermediateMount); err != nil {
+	if err := v.configureCert(v.IntermediateMount); err != nil {
 		return err
 	}
 
@@ -169,11 +157,11 @@ func (v *VaultInitializer) Setup() error {
 }
 
 func (v *VaultInitializer) Clean() error {
-	if err := v.client.Sys().Unmount("/" + v.intermediateMount); err != nil {
-		return fmt.Errorf("Unable to unmount %v: %v", v.intermediateMount, err)
+	if err := v.client.Sys().Unmount("/" + v.IntermediateMount); err != nil {
+		return fmt.Errorf("Unable to unmount %v: %v", v.IntermediateMount, err)
 	}
-	if err := v.client.Sys().Unmount("/" + v.rootMount); err != nil {
-		return fmt.Errorf("Unable to unmount %v: %v", v.rootMount, err)
+	if err := v.client.Sys().Unmount("/" + v.RootMount); err != nil {
+		return fmt.Errorf("Unable to unmount %v: %v", v.RootMount, err)
 	}
 
 	v.proxyCmd.Process.Kill()
@@ -184,9 +172,9 @@ func (v *VaultInitializer) Clean() error {
 
 func (v *VaultInitializer) CreateAppRole() (string, string, error) {
 	// create policy
-	role_path := path.Join(v.intermediateMount, "sign", v.role)
+	role_path := path.Join(v.IntermediateMount, "sign", v.Role)
 	policy := fmt.Sprintf("path \"%s\" { capabilities = [ \"create\", \"update\" ] }", role_path)
-	err := v.client.Sys().PutPolicy(v.role, policy)
+	err := v.client.Sys().PutPolicy(v.Role, policy)
 	if err != nil {
 		return "", "", fmt.Errorf("Error creating policy: %s", err.Error())
 	}
@@ -194,10 +182,10 @@ func (v *VaultInitializer) CreateAppRole() (string, string, error) {
 	// # create approle
 	params := map[string]string{
 		"period":   "24h",
-		"policies": v.role,
+		"policies": v.Role,
 	}
 
-	baseUrl := path.Join("/v1", "auth", v.authPath, "role", v.role)
+	baseUrl := path.Join("/v1", "auth", v.AuthPath, "role", v.Role)
 	_, err = v.callVault("POST", baseUrl, "", params)
 	if err != nil {
 		return "", "", fmt.Errorf("Error creating approle: %s", err.Error())
@@ -221,13 +209,13 @@ func (v *VaultInitializer) CreateAppRole() (string, string, error) {
 }
 
 func (v *VaultInitializer) CleanAppRole() error {
-	url := path.Join("/v1", "auth", v.authPath, "role", v.role)
+	url := path.Join("/v1", "auth", v.AuthPath, "role", v.Role)
 	_, err := v.callVault("DELETE", url, "", map[string]string{})
 	if err != nil {
 		return fmt.Errorf("Error deleting AppRole: %s", err.Error())
 	}
 
-	err = v.client.Sys().DeletePolicy(v.role)
+	err = v.client.Sys().DeletePolicy(v.Role)
 	if err != nil {
 		return fmt.Errorf("Error deleting policy: %s", err.Error())
 	}
@@ -255,7 +243,7 @@ func (v *VaultInitializer) generateRootCert() (string, error) {
 		"ttl":         "87600h",
 		"exclude_cn_from_sans": "true",
 	}
-	url := path.Join("/v1", v.rootMount, "root", "generate", "internal")
+	url := path.Join("/v1", v.RootMount, "root", "generate", "internal")
 
 	cert, err := v.callVault("POST", url, "certificate", params)
 	if err != nil {
@@ -271,7 +259,7 @@ func (v *VaultInitializer) generateIntermediateSigningReq() (string, error) {
 		"ttl":         "43800h",
 		"exclude_cn_from_sans": "true",
 	}
-	url := path.Join("/v1", v.intermediateMount, "intermediate", "generate", "internal")
+	url := path.Join("/v1", v.IntermediateMount, "intermediate", "generate", "internal")
 
 	csr, err := v.callVault("POST", url, "csr", params)
 	if err != nil {
@@ -288,7 +276,7 @@ func (v *VaultInitializer) signCertificate(csr string) (string, error) {
 		"exclude_cn_from_sans": "true",
 		"csr": csr,
 	}
-	url := path.Join("/v1", v.rootMount, "root", "sign-intermediate")
+	url := path.Join("/v1", v.RootMount, "root", "sign-intermediate")
 
 	cert, err := v.callVault("POST", url, "certificate", params)
 	if err != nil {
@@ -334,9 +322,9 @@ func (v *VaultInitializer) setupRole() error {
 		return fmt.Errorf("Error fetching auth mounts: %s", err.Error())
 	}
 
-	if _, ok := auths[v.authPath+"/"]; !ok {
+	if _, ok := auths[v.AuthPath+"/"]; !ok {
 		options := &vault.EnableAuthOptions{Type: "approle"}
-		if err := v.client.Sys().EnableAuthWithOptions(v.authPath, options); err != nil {
+		if err := v.client.Sys().EnableAuthWithOptions(v.AuthPath, options); err != nil {
 			return fmt.Errorf("Error enabling approle: %s", err.Error())
 		}
 	}
@@ -345,11 +333,11 @@ func (v *VaultInitializer) setupRole() error {
 		"allow_any_name": "true",
 		"max_ttl":        "2160h",
 	}
-	url := path.Join("/v1", v.intermediateMount, "roles", v.role)
+	url := path.Join("/v1", v.IntermediateMount, "roles", v.Role)
 
 	_, err = v.callVault("POST", url, "", params)
 	if err != nil {
-		return fmt.Errorf("Error creating role %s: %s", v.role, err.Error())
+		return fmt.Errorf("Error creating role %s: %s", v.Role, err.Error())
 	}
 
 	return nil
@@ -382,79 +370,4 @@ func (v *VaultInitializer) callVault(method, url, field string, params map[strin
 	}
 
 	return fieldData, err
-}
-
-func generateCA() {
-	ca := &x509.Certificate{
-		SerialNumber: big.NewInt(1653),
-		Subject: pkix.Name{
-			Organization: []string{"cert-manager test"},
-		},
-		NotBefore:             time.Now(),
-		NotAfter:              time.Now().AddDate(10, 0, 0),
-		IsCA:                  true,
-		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth, x509.ExtKeyUsageServerAuth},
-		KeyUsage:              x509.KeyUsageDigitalSignature | x509.KeyUsageCertSign,
-		BasicConstraintsValid: true,
-	}
-
-	privateKey, _ := rsa.GenerateKey(rand.Reader, 2048)
-	pubKey := &privateKey.PublicKey
-	caBytes, err := x509.CreateCertificate(rand.Reader, ca, ca, pubKey, privateKey)
-	if err != nil {
-		glog.Fatalf("create ca failed: %s", err.Error())
-	}
-
-	VaultCA = encodePublicKey(caBytes)
-	VaultCAPrivateKey = encodePrivateKey(privateKey)
-}
-
-func generateCert() {
-	catls, err := tls.X509KeyPair(VaultCA, VaultCAPrivateKey)
-	if err != nil {
-		glog.Fatalf("parsing ca key pair failed: %s", err.Error())
-	}
-	ca, err := x509.ParseCertificate(catls.Certificate[0])
-	if err != nil {
-		glog.Fatalf("parsing ca failed: %s", err.Error())
-	}
-
-	cert := &x509.Certificate{
-		SerialNumber: big.NewInt(1658),
-		Subject: pkix.Name{
-			CommonName:   "vault.vault",
-			Organization: []string{"cert-manager vault server"},
-		},
-		NotBefore:    time.Now(),
-		NotAfter:     time.Now().AddDate(10, 0, 0),
-		SubjectKeyId: []byte{1, 2, 3, 4, 6},
-		ExtKeyUsage:  []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth, x509.ExtKeyUsageServerAuth},
-		KeyUsage:     x509.KeyUsageDigitalSignature,
-		IPAddresses:  []net.IP{net.IPv4(127, 0, 0, 1)},
-		DNSNames:     []string{"vault.vault"},
-	}
-	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
-	if err != nil {
-		glog.Fatalf("private key generation failed: %s", err.Error())
-	}
-
-	publicKey := &privateKey.PublicKey
-
-	certBytes, err := x509.CreateCertificate(rand.Reader, cert, ca, publicKey, catls.PrivateKey)
-	if err != nil {
-		glog.Fatal(err)
-	}
-
-	VaultCert = encodePublicKey(certBytes)
-	VaultCertPrivateKey = encodePrivateKey(privateKey)
-}
-
-func encodePublicKey(pub []byte) []byte {
-	return pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: pub})
-}
-
-func encodePrivateKey(priv *rsa.PrivateKey) []byte {
-	block := &pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(priv)}
-
-	return pem.EncodeToMemory(block)
 }
