@@ -121,7 +121,6 @@ e2e_test:
 			-nodes 20 \
 			$$(bazel info bazel-genfiles)/test/e2e/e2e.test \
 			-- \
-			--ginkgo.skip="RBAC" \
 			--global-nginx-ingress-domain=$(E2E_NGINX_CERTIFICATE_DOMAIN) \
 			--global-nginx-ingress-ip-address=$(E2E_NGINX_CERTIFICATE_IP) \
 			--suite.acme-cloudflare-domain=$(CLOUDFLARE_E2E_DOMAIN) \
