@@ -21,17 +21,24 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	cmutil "github.com/jetstack/cert-manager/pkg/util"
 	"github.com/jetstack/cert-manager/test/e2e/framework"
+	"github.com/jetstack/cert-manager/test/e2e/framework/addon"
 	"github.com/jetstack/cert-manager/test/util"
 )
-
-const clusterResourceNamespace = "cert-manager"
 
 var _ = framework.CertManagerDescribe("CA ClusterIssuer", func() {
 	f := framework.NewDefaultFramework("create-ca-clusterissuer")
 
-	issuerName := "test-ca-clusterissuer"
-	secretName := "ca-clusterissuer-signing-keypair"
+	issuerName := "test-ca-clusterissuer" + cmutil.RandStringRunes(5)
+	secretName := "ca-clusterissuer-signing-keypair-" + cmutil.RandStringRunes(5)
+	clusterResourceNamespace := ""
+
+	f.RequireGlobalAddon(addon.CertManager)
+
+	BeforeEach(func() {
+		clusterResourceNamespace = addon.CertManager.Details().ClusterResourceNamespace
+	})
 
 	BeforeEach(func() {
 		By("Creating a signing keypair fixture")
@@ -42,6 +49,7 @@ var _ = framework.CertManagerDescribe("CA ClusterIssuer", func() {
 	AfterEach(func() {
 		By("Cleaning up")
 		f.KubeClientSet.CoreV1().Secrets(clusterResourceNamespace).Delete(secretName, nil)
+		f.CertManagerClientSet.CertmanagerV1alpha1().ClusterIssuers().Delete(issuerName, nil)
 	})
 
 	It("should validate a signing keypair", func() {
@@ -49,7 +57,6 @@ var _ = framework.CertManagerDescribe("CA ClusterIssuer", func() {
 		clusterIssuer := util.NewCertManagerCAClusterIssuer(issuerName, secretName)
 		_, err := f.CertManagerClientSet.CertmanagerV1alpha1().ClusterIssuers().Create(clusterIssuer)
 		Expect(err).NotTo(HaveOccurred())
-		defer f.CertManagerClientSet.CertmanagerV1alpha1().ClusterIssuers().Delete(clusterIssuer.Name, nil)
 		By("Waiting for Issuer to become Ready")
 		err = util.WaitForClusterIssuerCondition(f.CertManagerClientSet.CertmanagerV1alpha1().ClusterIssuers(),
 			issuerName,
