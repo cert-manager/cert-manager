@@ -61,29 +61,6 @@ deploy_kind() {
     kubectl get nodes
 }
 
-# install_tiller will install tiller with the cluster-admin role bound to its
-# service account
-install_tiller() {
-    # Install tiller with admin permissions
-    kubectl create serviceaccount -n kube-system tiller
-    # Bind the tiller service account to the cluster-admin role
-    kubectl create clusterrolebinding tiller-binding --clusterrole=cluster-admin --serviceaccount kube-system:tiller
-    # Deploy tiller
-    helm init --service-account tiller --wait
-}
-
-# install_nginx will install nginx-ingress in the cluster and expose it on the
-# fixed cluster IP of 10.0.0.15
-install_nginx() {
-    # Install nginx-ingress with fixed IP
-    helm install stable/nginx-ingress \
-        --name nginx-ingress \
-        --namespace kube-system \
-        --set controller.service.clusterIP=10.0.0.15 \
-        --set controller.service.type=ClusterIP \
-        --wait
-}
-
 # build_images will build cert-manager docker images and copy them across to the
 # kind docker container running the cluster, so they are available to the
 # cluster's docker daemon.
@@ -100,8 +77,7 @@ build_images() {
 }
 
 deploy_kind
-install_tiller
-install_nginx
 build_images
 
-make e2e_test E2E_NGINX_CERTIFICATE_DOMAIN=certmanager.kubernetes.network KUBECONFIG=${KUBECONFIG}
+make e2e_test \
+    KUBECONFIG=${KUBECONFIG}
