@@ -17,32 +17,52 @@ limitations under the License.
 package e2e
 
 import (
+	"flag"
+	"path"
 	"testing"
 	"time"
 
-	"github.com/golang/glog"
+	"github.com/onsi/ginkgo"
+	ginkgoconfig "github.com/onsi/ginkgo/config"
+	"github.com/onsi/ginkgo/reporters"
+	"github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/util/wait"
-	"k8s.io/client-go/tools/clientcmd"
 
 	"github.com/jetstack/cert-manager/test/e2e/framework"
+	_ "github.com/jetstack/cert-manager/test/e2e/suite"
 )
 
 func init() {
-	framework.RegisterParseFlags()
+	framework.DefaultConfig.AddFlags(flag.CommandLine)
+	flag.Parse()
+
+	// Turn on verbose by default to get spec names
+	ginkgoconfig.DefaultReporterConfig.Verbose = true
+	// Turn on EmitSpecProgress to get spec progress (especially on interrupt)
+	ginkgoconfig.GinkgoConfig.EmitSpecProgress = true
+	// Randomize specs as well as suites
+	ginkgoconfig.GinkgoConfig.RandomizeAllSpecs = true
 
 	wait.ForeverTestTimeout = time.Second * 60
-
-	if "" == framework.TestContext.KubeConfig {
-		glog.Fatalf("environment variable %v must be set", clientcmd.RecommendedConfigPathEnvVar)
-	}
-	if "" == framework.TestContext.CertManagerConfig {
-		glog.Fatalf("environment variable %v must be set", framework.RecommendedConfigPathEnvVar)
-	}
-	if "" == framework.TestContext.ACMEURL {
-		glog.Fatalf("flag -acme-url must be set")
-	}
 }
 
 func TestE2E(t *testing.T) {
-	RunE2ETests(t)
+	if err := framework.DefaultConfig.Validate(); err != nil {
+		t.Errorf("Invalid test config: %v", err)
+		t.Fail()
+	}
+
+	gomega.RegisterFailHandler(ginkgo.Fail)
+
+	// Disable skipped tests unless they are explicitly requested.
+	if ginkgoconfig.GinkgoConfig.FocusString == "" && ginkgoconfig.GinkgoConfig.SkipString == "" {
+		ginkgoconfig.GinkgoConfig.SkipString = `\[Flaky\]|\[Feature:.+\]`
+	}
+
+	var r []ginkgo.Reporter
+	if framework.DefaultConfig.Ginkgo.ReportDirectory != "" {
+		r = append(r, reporters.NewJUnitReporter(path.Join(framework.DefaultConfig.Ginkgo.ReportDirectory, "junit_00.xml")))
+	}
+
+	ginkgo.RunSpecsWithDefaultAndCustomReporters(t, "cert-manager e2e suite", r)
 }
