@@ -1430,6 +1430,7 @@
     "github.com/onsi/ginkgo/ginkgo",
     "github.com/onsi/ginkgo/reporters",
     "github.com/onsi/gomega",
+    "github.com/onsi/gomega/types",
     "github.com/openshift/generic-admission-server/pkg/cmd",
     "github.com/pkg/errors",
     "github.com/prometheus/client_golang/prometheus",
