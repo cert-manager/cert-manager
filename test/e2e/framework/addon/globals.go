@@ -30,7 +30,7 @@ import (
 	"github.com/jetstack/cert-manager/test/e2e/framework/config"
 )
 
-type addon interface {
+type Addon interface {
 	Setup(*config.Config) error
 	Provision() error
 	Deprovision() error
@@ -54,10 +54,10 @@ var (
 
 	// allAddons is populated by InitGlobals and defines the order in which
 	// addons will be provisioned
-	allAddons []addon
+	allAddons []Addon
 
 	// provisioned is used internally to track which addons have been provisioned
-	provisioned []addon
+	provisioned []Addon
 )
 
 // InitGlobals actually allocates the addon values that are defined above.
@@ -83,7 +83,7 @@ func InitGlobals(cfg *config.Config) {
 		Name:      "cert-manager",
 		Namespace: "cm-e2e-global-cert-manager",
 	}
-	allAddons = []addon{
+	allAddons = []Addon{
 		Base,
 		Tiller,
 		CertManager,
@@ -136,7 +136,7 @@ func DeprovisionGlobals(cfg *config.Config) error {
 	return utilerrors.NewAggregate(errs)
 }
 
-func provisionGlobal(a addon, cfg *config.Config) error {
+func provisionGlobal(a Addon, cfg *config.Config) error {
 	if err := a.Setup(cfg); err != nil {
 		return err
 	}

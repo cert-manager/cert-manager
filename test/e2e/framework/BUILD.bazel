@@ -13,6 +13,7 @@ go_library(
     visibility = ["//visibility:public"],
     deps = [
         "//pkg/client/clientset/versioned:go_default_library",
+        "//test/e2e/framework/addon:go_default_library",
         "//test/e2e/framework/config:go_default_library",
         "//test/e2e/framework/util:go_default_library",
         "//vendor/github.com/onsi/ginkgo:go_default_library",
