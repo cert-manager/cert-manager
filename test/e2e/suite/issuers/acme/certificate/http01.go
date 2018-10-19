@@ -182,8 +182,9 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 	It("should fail to obtain a certificate for an invalid ACME dns name", func() {
 		// create test fixture
 		cert := util.NewCertManagerACMECertificate(certificateName, certificateSecretName, issuerName, v1alpha1.IssuerKind, nil, nil, acmeIngressClass, "google.com")
+		cert, err := f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name).Create(cert)
+		Expect(err).NotTo(HaveOccurred())
 
-		Expect(f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name).Create(cert))
 		Consistently(cert, "1m", "10s").Should(HaveCondition(f, v1alpha1.CertificateCondition{
 			Type:   v1alpha1.CertificateConditionReady,
 			Status: v1alpha1.ConditionFalse,
