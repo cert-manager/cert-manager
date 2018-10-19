@@ -1,3 +1,11 @@
+// +skip_license_check
+
+/*
+This file contains portions of code directly taken from the 'xenolf/lego' project.
+A copy of the license for this code can be found in the file named LICENSE in
+this directory.
+*/
+
 // Package cloudflare implements a DNS provider for solving the DNS-01
 // challenge using cloudflare DNS.
 package cloudflare
@@ -22,29 +30,31 @@ const CloudFlareAPIURL = "https://api.cloudflare.com/client/v4"
 
 // DNSProvider is an implementation of the acme.ChallengeProvider interface
 type DNSProvider struct {
-	authEmail string
-	authKey   string
+	dns01Nameservers []string
+	authEmail        string
+	authKey          string
 }
 
 // NewDNSProvider returns a DNSProvider instance configured for cloudflare.
 // Credentials must be passed in the environment variables: CLOUDFLARE_EMAIL
 // and CLOUDFLARE_API_KEY.
-func NewDNSProvider() (*DNSProvider, error) {
+func NewDNSProvider(dns01Nameservers []string) (*DNSProvider, error) {
 	email := os.Getenv("CLOUDFLARE_EMAIL")
 	key := os.Getenv("CLOUDFLARE_API_KEY")
-	return NewDNSProviderCredentials(email, key)
+	return NewDNSProviderCredentials(email, key, dns01Nameservers)
 }
 
 // NewDNSProviderCredentials uses the supplied credentials to return a
 // DNSProvider instance configured for cloudflare.
-func NewDNSProviderCredentials(email, key string) (*DNSProvider, error) {
+func NewDNSProviderCredentials(email, key string, dns01Nameservers []string) (*DNSProvider, error) {
 	if email == "" || key == "" {
 		return nil, fmt.Errorf("CloudFlare credentials missing")
 	}
 
 	return &DNSProvider{
-		authEmail: email,
-		authKey:   key,
+		authEmail:        email,
+		authKey:          key,
+		dns01Nameservers: dns01Nameservers,
 	}, nil
 }
 
@@ -56,7 +66,10 @@ func (c *DNSProvider) Timeout() (timeout, interval time.Duration) {
 
 // Present creates a TXT record to fulfil the dns-01 challenge
 func (c *DNSProvider) Present(domain, token, keyAuth string) error {
-	fqdn, value, _ := util.DNS01Record(domain, keyAuth)
+	fqdn, value, _, err := util.DNS01Record(domain, keyAuth, c.dns01Nameservers)
+	if err != nil {
+		return err
+	}
 
 	zoneID, err := c.getHostedZoneID(fqdn)
 	if err != nil {
@@ -102,9 +115,16 @@ func (c *DNSProvider) Present(domain, token, keyAuth string) error {
 
 // CleanUp removes the TXT record matching the specified parameters
 func (c *DNSProvider) CleanUp(domain, token, keyAuth string) error {
-	fqdn, _, _ := util.DNS01Record(domain, keyAuth)
+	fqdn, _, _, err := util.DNS01Record(domain, keyAuth, c.dns01Nameservers)
+	if err != nil {
+		return err
+	}
 
 	record, err := c.findTxtRecord(fqdn)
+	// Nothing to cleanup
+	if err == errNoExistingRecord {
+		return nil
+	}
 	if err != nil {
 		return err
 	}

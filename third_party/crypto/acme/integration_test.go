@@ -23,9 +23,9 @@ import (
 )
 
 // This test works with Pebble and Let's Encrypt staging.
-// For pebble use: ACME_DIRECTORY_URL=https://localhost:14000/dir go test
+// For pebble use: ACME_DIRECTORY_URL=https://localhost:14000/dir go test -tags integration_test
 // For Let's Encrypt you'll need a publicly accessible HTTP server like `ngrok http 8080` and then
-// TEST_HOST=xxx.ngrok.io:8080 ACME_DIRECTORY_URL=https://acme-staging-v02.api.letsencrypt.org/directory TEST_ACCOUNT_GET=1 TEST_REVOKE=1 go test
+// TEST_HOST=xxx.ngrok.io:8080 ACME_DIRECTORY_URL=https://acme-staging-v02.api.letsencrypt.org/directory TEST_ACCOUNT_GET=1 TEST_REVOKE=1 go test -tags integration_test
 func TestIntegration(t *testing.T) {
 	dir := os.Getenv("ACME_DIRECTORY_URL")
 	testAccountGet := os.Getenv("TEST_ACCOUNT_GET") != ""

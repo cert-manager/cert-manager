@@ -1,50 +1,47 @@
+/*
+Copyright 2018 The Jetstack cert-manager contributors.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 package selfsigned
 
 import (
-	"k8s.io/client-go/kubernetes"
 	corelisters "k8s.io/client-go/listers/core/v1"
-	"k8s.io/client-go/tools/record"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
-	clientset "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
+	"github.com/jetstack/cert-manager/pkg/controller"
 	"github.com/jetstack/cert-manager/pkg/issuer"
 )
 
 // SelfSigned is an Issuer implementation the simply self-signs Certificates.
 type SelfSigned struct {
-	issuer        v1alpha1.GenericIssuer
-	cl            kubernetes.Interface
-	cmclient      clientset.Interface
-	recorder      record.EventRecorder
+	*controller.Context
+	issuer v1alpha1.GenericIssuer
+
 	secretsLister corelisters.SecretLister
 }
 
-func NewSelfSigned(issuer v1alpha1.GenericIssuer,
-	cl kubernetes.Interface,
-	cmclient clientset.Interface,
-	recorder record.EventRecorder,
-	secretsLister corelisters.SecretLister) (issuer.Interface, error) {
+func NewSelfSigned(ctx *controller.Context, issuer v1alpha1.GenericIssuer) (issuer.Interface, error) {
+	secretsLister := ctx.KubeSharedInformerFactory.Core().V1().Secrets().Lister()
+
 	return &SelfSigned{
+		Context:       ctx,
 		issuer:        issuer,
-		cl:            cl,
-		cmclient:      cmclient,
-		recorder:      recorder,
 		secretsLister: secretsLister,
 	}, nil
 }
 
-const (
-	ControllerName = "selfsigned"
-)
-
 func init() {
-	issuer.Register(ControllerName, func(issuer v1alpha1.GenericIssuer, ctx *issuer.Context) (issuer.Interface, error) {
-		return NewSelfSigned(
-			issuer,
-			ctx.Client,
-			ctx.CMClient,
-			ctx.Recorder,
-			ctx.KubeSharedInformerFactory.Core().V1().Secrets().Lister(),
-		)
-	})
+	controller.RegisterIssuer(controller.IssuerSelfSigned, NewSelfSigned)
 }

@@ -1,3 +1,11 @@
+// +skip_license_check
+
+/*
+This file contains portions of code directly taken from the 'xenolf/lego' project.
+A copy of the license for this code can be found in the file named LICENSE in
+this directory.
+*/
+
 // Package clouddns implements a DNS provider for solving the DNS-01
 // challenge using Google Cloud DNS.
 package clouddns
@@ -18,25 +26,46 @@ import (
 
 // DNSProvider is an implementation of the DNSProvider interface.
 type DNSProvider struct {
-	project string
-	client  *dns.Service
+	dns01Nameservers []string
+	project          string
+	client           *dns.Service
 }
 
-// NewDNSProvider returns a DNSProvider instance configured for Google Cloud
+func NewDNSProvider(project string, saBytes []byte, dns01Nameservers []string, ambient bool) (*DNSProvider, error) {
+	// project is a required field
+	if project == "" {
+		return nil, fmt.Errorf("Google Cloud project name missing")
+	}
+	// if the service account bytes are not provided, we will attempt to instantiate
+	// with 'ambient credentials' (if they are allowed/enabled)
+	if len(saBytes) == 0 {
+		if !ambient {
+			return nil, fmt.Errorf("unable to construct clouddns provider: empty credentials; perhaps you meant to enable ambient credentials?")
+		}
+		return NewDNSProviderCredentials(project, dns01Nameservers)
+	}
+	// if service account data is provided, we instantiate using that
+	if len(saBytes) != 0 {
+		return NewDNSProviderServiceAccountBytes(project, saBytes, dns01Nameservers)
+	}
+	return nil, fmt.Errorf("missing Google Cloud DNS provider credentials")
+}
+
+// NewDNSProviderEnvironment returns a DNSProvider instance configured for Google Cloud
 // DNS. Project name must be passed in the environment variable: GCE_PROJECT.
 // A Service Account file can be passed in the environment variable:
 // GCE_SERVICE_ACCOUNT_FILE
-func NewDNSProvider() (*DNSProvider, error) {
+func NewDNSProviderEnvironment(dns01Nameservers []string) (*DNSProvider, error) {
 	project := os.Getenv("GCE_PROJECT")
 	if saFile, ok := os.LookupEnv("GCE_SERVICE_ACCOUNT_FILE"); ok {
-		return NewDNSProviderServiceAccount(project, saFile)
+		return NewDNSProviderServiceAccount(project, saFile, dns01Nameservers)
 	}
-	return NewDNSProviderCredentials(project)
+	return NewDNSProviderCredentials(project, dns01Nameservers)
 }
 
 // NewDNSProviderCredentials uses the supplied credentials to return a
 // DNSProvider instance configured for Google Cloud DNS.
-func NewDNSProviderCredentials(project string) (*DNSProvider, error) {
+func NewDNSProviderCredentials(project string, dns01Nameservers []string) (*DNSProvider, error) {
 	if project == "" {
 		return nil, fmt.Errorf("Google Cloud project name missing")
 	}
@@ -50,14 +79,15 @@ func NewDNSProviderCredentials(project string) (*DNSProvider, error) {
 		return nil, fmt.Errorf("Unable to create Google Cloud DNS service: %v", err)
 	}
 	return &DNSProvider{
-		project: project,
-		client:  svc,
+		project:          project,
+		client:           svc,
+		dns01Nameservers: dns01Nameservers,
 	}, nil
 }
 
 // NewDNSProviderServiceAccount uses the supplied service account JSON file to
 // return a DNSProvider instance configured for Google Cloud DNS.
-func NewDNSProviderServiceAccount(project string, saFile string) (*DNSProvider, error) {
+func NewDNSProviderServiceAccount(project string, saFile string, dns01Nameservers []string) (*DNSProvider, error) {
 	if project == "" {
 		return nil, fmt.Errorf("Google Cloud project name missing")
 	}
@@ -69,12 +99,12 @@ func NewDNSProviderServiceAccount(project string, saFile string) (*DNSProvider, 
 	if err != nil {
 		return nil, fmt.Errorf("Unable to read Service Account file: %v", err)
 	}
-	return NewDNSProviderServiceAccountBytes(project, dat)
+	return NewDNSProviderServiceAccountBytes(project, dat, dns01Nameservers)
 }
 
 // NewDNSProviderServiceAccountBytes uses the supplied service account JSON
 // file data to return a DNSProvider instance configured for Google Cloud DNS.
-func NewDNSProviderServiceAccountBytes(project string, saBytes []byte) (*DNSProvider, error) {
+func NewDNSProviderServiceAccountBytes(project string, saBytes []byte, dns01Nameservers []string) (*DNSProvider, error) {
 	if project == "" {
 		return nil, fmt.Errorf("Google Cloud project name missing")
 	}
@@ -93,16 +123,20 @@ func NewDNSProviderServiceAccountBytes(project string, saBytes []byte) (*DNSProv
 		return nil, fmt.Errorf("Unable to create Google Cloud DNS service: %v", err)
 	}
 	return &DNSProvider{
-		project: project,
-		client:  svc,
+		project:          project,
+		client:           svc,
+		dns01Nameservers: dns01Nameservers,
 	}, nil
 }
 
 // Present creates a TXT record to fulfil the dns-01 challenge.
 func (c *DNSProvider) Present(domain, token, key string) error {
-	fqdn, value, ttl := util.DNS01Record(domain, key)
+	fqdn, value, ttl, err := util.DNS01Record(domain, key, c.dns01Nameservers)
+	if err != nil {
+		return err
+	}
 
-	zone, err := c.getHostedZone(domain)
+	zone, err := c.getHostedZone(fqdn)
 	if err != nil {
 		return err
 	}
@@ -147,9 +181,12 @@ func (c *DNSProvider) Present(domain, token, key string) error {
 
 // CleanUp removes the TXT record matching the specified parameters.
 func (c *DNSProvider) CleanUp(domain, token, key string) error {
-	fqdn, _, _ := util.DNS01Record(domain, key)
+	fqdn, _, _, err := util.DNS01Record(domain, key, c.dns01Nameservers)
+	if err != nil {
+		return err
+	}
 
-	zone, err := c.getHostedZone(domain)
+	zone, err := c.getHostedZone(fqdn)
 	if err != nil {
 		return err
 	}

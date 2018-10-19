@@ -1,7 +1,24 @@
+/*
+Copyright 2018 The Jetstack cert-manager contributors.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 package issuers
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 
 	"github.com/golang/glog"
@@ -9,51 +26,63 @@ import (
 	"k8s.io/apimachinery/pkg/util/errors"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	"github.com/jetstack/cert-manager/pkg/apis/certmanager/validation"
 )
 
 const (
 	errorInitIssuer = "ErrInitIssuer"
+	errorConfig     = "ConfigError"
 
 	messageErrorInitIssuer = "Error initializing issuer: "
 )
 
-func (c *Controller) Sync(ctx context.Context, iss *v1alpha1.Issuer) (err error) {
+func (c *Controller) Sync(ctx context.Context, iss *v1alpha1.Issuer) (forceAdd bool, err error) {
 	issuerCopy := iss.DeepCopy()
-	i, err := c.issuerFactory.IssuerFor(issuerCopy)
-
-	if err != nil {
-		return err
-	}
-
-	err = i.Setup(ctx)
 	defer func() {
-		// TODO: replace this with more efficient comparison?
-		if reflect.DeepEqual(issuerCopy.Status, iss.Status) {
-			return
-		}
-		if saveErr := c.updateIssuerStatus(issuerCopy); saveErr != nil {
-			errs := []error{saveErr}
-			if err != nil {
-				errs = append(errs, err)
-			}
-			err = errors.NewAggregate(errs)
+		if _, saveErr := c.updateIssuerStatus(iss, issuerCopy); saveErr != nil {
+			err = errors.NewAggregate([]error{saveErr, err})
 		}
 	}()
 
+	el := validation.ValidateIssuer(issuerCopy)
+	if len(el) > 0 {
+		msg := fmt.Sprintf("Resource validation failed: %v", el.ToAggregate())
+		issuerCopy.UpdateStatusCondition(v1alpha1.IssuerConditionReady, v1alpha1.ConditionFalse, errorConfig, msg)
+		return
+	} else {
+		for i, c := range issuerCopy.Status.Conditions {
+			if c.Type == v1alpha1.IssuerConditionReady {
+				if c.Reason == errorConfig && c.Status == v1alpha1.ConditionFalse {
+					issuerCopy.Status.Conditions = append(issuerCopy.Status.Conditions[:i], issuerCopy.Status.Conditions[i+1:]...)
+					break
+				}
+			}
+		}
+	}
+
+	i, err := c.IssuerFactory().IssuerFor(issuerCopy)
+
+	if err != nil {
+		return false, err
+	}
+
+	resp, err := i.Setup(ctx)
 	if err != nil {
 		s := messageErrorInitIssuer + err.Error()
 		glog.Info(s)
-		c.recorder.Event(issuerCopy, v1.EventTypeWarning, errorInitIssuer, s)
-		return err
+		c.Recorder.Event(issuerCopy, v1.EventTypeWarning, errorInitIssuer, s)
+		return false, err
 	}
 
-	return nil
+	return resp.Requeue, nil
 }
 
-func (c *Controller) updateIssuerStatus(iss *v1alpha1.Issuer) error {
+func (c *Controller) updateIssuerStatus(old, new *v1alpha1.Issuer) (*v1alpha1.Issuer, error) {
+	if reflect.DeepEqual(old.Status, new.Status) {
+		return nil, nil
+	}
 	// TODO: replace Update call with UpdateStatus. This requires a custom API
 	// server with the /status subresource enabled and/or subresource support
 	// for CRDs (https://github.com/kubernetes/kubernetes/issues/38113)
-	_, err := c.cmClient.CertmanagerV1alpha1().Issuers(iss.Namespace).Update(iss)
-	return err
+	return c.CMClient.CertmanagerV1alpha1().Issuers(new.Namespace).Update(new)
 }

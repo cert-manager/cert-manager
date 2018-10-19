@@ -1,3 +1,19 @@
+/*
+Copyright 2018 The Jetstack cert-manager contributors.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 // Package akamai implements a DNS provider for solving the DNS-01
 // challenge using Akamai FastDNS.
 // See https://developer.akamai.com/api/luna/config-dns/overview.html
@@ -21,6 +37,7 @@ import (
 
 // DNSProvider is an implementation of the acme.ChallengeProvider interface
 type DNSProvider struct {
+	dns01Nameservers []string
 	// serviceConsumerDomain as issued by Akamai Luna Control Center.
 	// The ServiceConsumerDomain is the base URL.
 	serviceConsumerDomain string
@@ -32,8 +49,9 @@ type DNSProvider struct {
 }
 
 // NewDNSProvider returns a DNSProvider instance configured for Akamai.
-func NewDNSProvider(serviceConsumerDomain, clientToken, clientSecret, accessToken string) (*DNSProvider, error) {
+func NewDNSProvider(serviceConsumerDomain, clientToken, clientSecret, accessToken string, dns01Nameservers []string) (*DNSProvider, error) {
 	return &DNSProvider{
+		dns01Nameservers,
 		serviceConsumerDomain,
 		NewEdgeGridAuth(clientToken, clientSecret, accessToken),
 		http.DefaultTransport,
@@ -58,13 +76,21 @@ func (a *DNSProvider) Timeout() (timeout, interval time.Duration) {
 
 // Present creates a TXT record to fulfil the dns-01 challenge
 func (a *DNSProvider) Present(domain, token, keyAuth string) error {
-	fqdn, value, ttl := util.DNS01Record(domain, keyAuth)
+	fqdn, value, ttl, err := util.DNS01Record(domain, keyAuth, a.dns01Nameservers)
+	if err != nil {
+		return err
+	}
+
 	return a.setTxtRecord(fqdn, &dns01Record{value, ttl})
 }
 
 // CleanUp removes the TXT record matching the specified parameters
 func (a *DNSProvider) CleanUp(domain, token, keyAuth string) error {
-	fqdn, _, _ := util.DNS01Record(domain, keyAuth)
+	fqdn, _, _, err := util.DNS01Record(domain, keyAuth, a.dns01Nameservers)
+	if err != nil {
+		return err
+	}
+
 	return a.setTxtRecord(fqdn, nil)
 }
 

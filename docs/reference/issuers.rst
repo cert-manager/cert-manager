@@ -34,8 +34,8 @@ An example of an Issuer type is ACME. A simple ACME issuer could be defined as:
 This is the simplest of ACME issuers - it specifies no DNS-01 challenge
 providers. HTTP-01 validation can be performed through using Ingress
 resources by enabling the HTTP-01 challenge mechanism (with the ``http01: {}``
-field). More information on configuring ACME Issuers can be in later sections
-of this document.
+field). More information on configuring ACME Issuers can be found :doc:`here <issuers/acme/index>`.
+
 
 ***********
 Namespacing
@@ -141,6 +141,7 @@ for the ACME issuer, or ``spec.ca`` for the CA based issuer.
    issuers/acme/index
    issuers/ca/index
    issuers/vault/index
+   issuers/selfsigned/index
 
 .. _`Let's Encrypt`: https://letsencrypt.org
 .. _kube2iam: https://github.com/jtblin/kube2iam

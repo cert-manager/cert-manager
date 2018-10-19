@@ -1,0 +1,63 @@
+licenses(["notice"])
+
+sh_binary(
+    name = "generate-groups",
+    srcs = ["generate-groups.sh"],
+    data = [
+        ":client",
+        ":deepcopy",
+        ":informer",
+        ":lister",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+genrule(
+    name = "deepcopy",
+    srcs = ["//vendor/k8s.io/code-generator/cmd/deepcopy-gen"],
+    outs = ["deepcopy-gen"],
+    cmd = "cp $(SRCS) $@",
+)
+
+genrule(
+    name = "informer",
+    srcs = ["//vendor/k8s.io/code-generator/cmd/informer-gen"],
+    outs = ["informer-gen"],
+    cmd = "cp $(SRCS) $@",
+)
+
+genrule(
+    name = "client",
+    srcs = ["//vendor/k8s.io/code-generator/cmd/client-gen"],
+    outs = ["client-gen"],
+    cmd = "cp $(SRCS) $@",
+)
+
+genrule(
+    name = "lister",
+    srcs = ["//vendor/k8s.io/code-generator/cmd/lister-gen"],
+    outs = ["lister-gen"],
+    cmd = "cp $(SRCS) $@",
+)
+
+genrule(
+    name = "openapi",
+    srcs = ["//vendor/k8s.io/code-generator/cmd/openapi-gen"],
+    outs = ["openapi-gen"],
+    cmd = "cp $(SRCS) $@",
+    visibility = ["//visibility:public"],
+)
+
+filegroup(
+    name = "package-srcs",
+    srcs = glob(["**"]),
+    tags = ["automanaged"],
+    visibility = ["//visibility:private"],
+)
+
+filegroup(
+    name = "all-srcs",
+    srcs = [":package-srcs"],
+    tags = ["automanaged"],
+    visibility = ["//visibility:public"],
+)

@@ -1,0 +1,45 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "fastwalk.go",
+        "fastwalk_dirent_fileno.go",
+        "fastwalk_dirent_ino.go",
+        "fastwalk_portable.go",
+        "fastwalk_unix.go",
+        "fix.go",
+        "imports.go",
+        "sortimports.go",
+        "zstdlib.go",
+    ],
+    importmap = "github.com/jetstack/cert-manager/vendor/golang.org/x/tools/imports",
+    importpath = "golang.org/x/tools/imports",
+    tags = ["manual"],
+    visibility = ["//visibility:public"],
+    deps = ["//vendor/golang.org/x/tools/go/ast/astutil:go_default_library"],
+)
+
+go_test(
+    name = "go_default_test",
+    srcs = [
+        "fastwalk_test.go",
+        "fix_test.go",
+    ],
+    embed = [":go_default_library"],
+    tags = ["manual"],
+)
+
+filegroup(
+    name = "package-srcs",
+    srcs = glob(["**"]),
+    tags = ["automanaged"],
+    visibility = ["//visibility:private"],
+)
+
+filegroup(
+    name = "all-srcs",
+    srcs = [":package-srcs"],
+    tags = ["automanaged"],
+    visibility = ["//visibility:public"],
+)

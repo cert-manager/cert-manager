@@ -1,3 +1,11 @@
+// +skip_license_check
+
+/*
+This file contains portions of code directly taken from the 'xenolf/lego' project.
+A copy of the license for this code can be found in the file named LICENSE in
+this directory.
+*/
+
 package azuredns
 
 import (
@@ -5,6 +13,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -36,7 +45,7 @@ func TestLiveAzureDnsPresent(t *testing.T) {
 	if !azureLiveTest {
 		t.Skip("skipping live test")
 	}
-	provider, err := NewDNSProviderCredentials(azureClientID, azureClientSecret, azuresubscriptionID, azureTenantID, azureResourceGroupName, azureHostedZoneName)
+	provider, err := NewDNSProviderCredentials(azureClientID, azureClientSecret, azuresubscriptionID, azureTenantID, azureResourceGroupName, azureHostedZoneName, util.RecursiveNameservers)
 	assert.NoError(t, err)
 
 	err = provider.Present(azureDomain, "", "123d==")
@@ -50,7 +59,7 @@ func TestLiveAzureDnsCleanUp(t *testing.T) {
 
 	time.Sleep(time.Second * 5)
 
-	provider, err := NewDNSProviderCredentials(azureClientID, azureClientSecret, azuresubscriptionID, azureTenantID, azureResourceGroupName, azureHostedZoneName)
+	provider, err := NewDNSProviderCredentials(azureClientID, azureClientSecret, azuresubscriptionID, azureTenantID, azureResourceGroupName, azureHostedZoneName, util.RecursiveNameservers)
 	assert.NoError(t, err)
 
 	err = provider.CleanUp(azureDomain, "", "123d==")

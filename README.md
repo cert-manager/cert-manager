@@ -14,16 +14,13 @@ and has borrowed some wisdom from other similar projects e.g.
 
 ## Current status
 
-This project is not yet ready to be a component in a critical production stack,
-however it *is* at a point where it offers comparable features to other
-projects in the space. If you have a non-critical piece of infrastructure, or
-are feeling brave, please do try cert-manager and report your experience here
-in the issue section.
+As this project is pre-1.0, we do not currently offer strong guarantees around our
+API stability.
 
-**NOTE:** currently we provide no guarantees on our API stability. This means
-there may be breaking changes that will require changes to *all*
-`Issuer`/`Certificate` resources you have already created. We aim to provide a
-stable API after a 1.0 release.
+Notably, we may choose to make breaking changes to our API specification (i.e. the
+Issuer, ClusterIssuer and Certificate resources) in new minor releases.
+
+These will always be clearly documented in the [upgrade section of the documentation](https://cert-manager.readthedocs.io/en/latest/admin/upgrading/index.html)
 
 ## Documentation
 
@@ -33,8 +30,25 @@ the bottom left of the page.
 
 ## Troubleshooting
 
-If you encounter any issues whilst using cert-manager, and your issue is not
-documented, please [file an issue](https://github.com/jetstack/cert-manager/issues).
+If you encounter any issues whilst using cert-manager, we have a number of places you
+can use to try and get help.
+
+The quickest way to ask a question is to first post on our Slack channel (#cert-manager)
+on the [Kubernetes Slack](http://slack.kubernetes.io/).
+There are a lot of community members in this channel, and you can often get an answer
+to your question straight away!
+
+You can also try [searching for an existing issue](https://github.com/jetstack/cert-manager/issues).
+Properly searching for an existing issue will help reduce the number of duplicates,
+and help you find the answer you are looking for quicker.
+
+Please also make sure to read through the relevant pages in the [documentation](https://cert-manager.readthedocs.io/en/latest/)
+before opening an issue. You can also search the documentation using the search box on the
+top left of the page.
+
+If you believe you have encountered a bug, and cannot find an existing issue similar to your
+own, you may [open a new issue](https://github.com/jetstack/cert-manager/issues).
+Please be sure to include as much information as possible about your environment.
 
 ## Community
 

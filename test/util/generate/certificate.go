@@ -1,3 +1,19 @@
+/*
+Copyright 2018 The Jetstack cert-manager contributors.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 package generate
 
 import (
@@ -17,8 +33,7 @@ type CertificateConfig struct {
 	DNSNames               []string
 
 	// ACME parameters
-	ACMESolverConfig v1alpha1.ACMESolverConfig
-	ACMEOrderURL     string
+	SolverConfig v1alpha1.SolverConfig
 }
 
 func Certificate(cfg CertificateConfig) *v1alpha1.Certificate {
@@ -36,20 +51,14 @@ func Certificate(cfg CertificateConfig) *v1alpha1.Certificate {
 			CommonName: cfg.CommonName,
 			DNSNames:   cfg.DNSNames,
 			ACME: &v1alpha1.ACMECertificateConfig{
-				Config: []v1alpha1.ACMECertificateDomainConfig{
+				Config: []v1alpha1.DomainSolverConfig{
 					{
-						Domains:          cfg.DNSNames,
-						ACMESolverConfig: cfg.ACMESolverConfig,
+						Domains:      cfg.DNSNames,
+						SolverConfig: cfg.SolverConfig,
 					},
 				},
 			},
 		},
-		Status: v1alpha1.CertificateStatus{
-			ACME: &v1alpha1.CertificateACMEStatus{
-				Order: v1alpha1.ACMEOrderStatus{
-					URL: cfg.ACMEOrderURL,
-				},
-			},
-		},
+		Status: v1alpha1.CertificateStatus{},
 	}
 }

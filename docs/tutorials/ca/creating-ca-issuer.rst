@@ -100,6 +100,8 @@ desired certificate. You can read more about the Certificate resource in
        # The default value is Issuer (i.e. a locally namespaced Issuer)
        kind: Issuer
      commonName: example.com
+     organization:
+     - Example CA
      dnsNames:
      - example.com
      - www.example.com

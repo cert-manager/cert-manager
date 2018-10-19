@@ -1,5 +1,5 @@
 /*
-Copyright 2018 Jetstack Ltd.
+Copyright 2018 The Jetstack cert-manager contributors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+
 package v1alpha1
 
 // CertificateListerExpansion allows custom methods to be added to
@@ -22,6 +23,14 @@ type CertificateListerExpansion interface{}
 // CertificateNamespaceListerExpansion allows custom methods to be added to
 // CertificateNamespaceLister.
 type CertificateNamespaceListerExpansion interface{}
+
+// ChallengeListerExpansion allows custom methods to be added to
+// ChallengeLister.
+type ChallengeListerExpansion interface{}
+
+// ChallengeNamespaceListerExpansion allows custom methods to be added to
+// ChallengeNamespaceLister.
+type ChallengeNamespaceListerExpansion interface{}
 
 // ClusterIssuerListerExpansion allows custom methods to be added to
 // ClusterIssuerLister.
@@ -34,3 +43,11 @@ type IssuerListerExpansion interface{}
 // IssuerNamespaceListerExpansion allows custom methods to be added to
 // IssuerNamespaceLister.
 type IssuerNamespaceListerExpansion interface{}
+
+// OrderListerExpansion allows custom methods to be added to
+// OrderLister.
+type OrderListerExpansion interface{}
+
+// OrderNamespaceListerExpansion allows custom methods to be added to
+// OrderNamespaceLister.
+type OrderNamespaceListerExpansion interface{}

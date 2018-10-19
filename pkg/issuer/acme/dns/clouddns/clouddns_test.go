@@ -1,3 +1,11 @@
+// +skip_license_check
+
+/*
+This file contains portions of code directly taken from the 'xenolf/lego' project.
+A copy of the license for this code can be found in the file named LICENSE in
+this directory.
+*/
+
 package clouddns
 
 import (
@@ -9,6 +17,7 @@ import (
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/dns/v1"
 
+	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -36,7 +45,7 @@ func TestNewDNSProviderValid(t *testing.T) {
 		t.Skip("skipping live test (requires credentials)")
 	}
 	os.Setenv("GCE_PROJECT", "")
-	_, err := NewDNSProviderCredentials("my-project")
+	_, err := NewDNSProviderCredentials("my-project", util.RecursiveNameservers)
 	assert.NoError(t, err)
 	restoreGCloudEnv()
 }
@@ -46,14 +55,14 @@ func TestNewDNSProviderValidEnv(t *testing.T) {
 		t.Skip("skipping live test (requires credentials)")
 	}
 	os.Setenv("GCE_PROJECT", "my-project")
-	_, err := NewDNSProvider()
+	_, err := NewDNSProviderEnvironment(util.RecursiveNameservers)
 	assert.NoError(t, err)
 	restoreGCloudEnv()
 }
 
 func TestNewDNSProviderMissingCredErr(t *testing.T) {
 	os.Setenv("GCE_PROJECT", "")
-	_, err := NewDNSProvider()
+	_, err := NewDNSProviderEnvironment(util.RecursiveNameservers)
 	assert.EqualError(t, err, "Google Cloud project name missing")
 	restoreGCloudEnv()
 }
@@ -63,7 +72,7 @@ func TestLiveGoogleCloudPresent(t *testing.T) {
 		t.Skip("skipping live test")
 	}
 
-	provider, err := NewDNSProviderCredentials(gcloudProject)
+	provider, err := NewDNSProviderCredentials(gcloudProject, util.RecursiveNameservers)
 	assert.NoError(t, err)
 
 	err = provider.Present(gcloudDomain, "", "123d==")
@@ -75,7 +84,7 @@ func TestLiveGoogleCloudPresentMultiple(t *testing.T) {
 		t.Skip("skipping live test")
 	}
 
-	provider, err := NewDNSProviderCredentials(gcloudProject)
+	provider, err := NewDNSProviderCredentials(gcloudProject, util.RecursiveNameservers)
 	assert.NoError(t, err)
 
 	// Check that we're able to create multiple entries
@@ -91,7 +100,7 @@ func TestLiveGoogleCloudCleanUp(t *testing.T) {
 
 	time.Sleep(time.Second * 1)
 
-	provider, err := NewDNSProviderCredentials(gcloudProject)
+	provider, err := NewDNSProviderCredentials(gcloudProject, util.RecursiveNameservers)
 	assert.NoError(t, err)
 
 	err = provider.CleanUp(gcloudDomain, "", "123d==")

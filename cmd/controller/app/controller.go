@@ -1,3 +1,19 @@
+/*
+Copyright 2018 The Jetstack cert-manager contributors.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 package app
 
 import (
@@ -8,6 +24,7 @@ import (
 
 	"github.com/golang/glog"
 	"k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
@@ -22,7 +39,8 @@ import (
 	intscheme "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/scheme"
 	informers "github.com/jetstack/cert-manager/pkg/client/informers/externalversions"
 	"github.com/jetstack/cert-manager/pkg/controller"
-	"github.com/jetstack/cert-manager/pkg/issuer"
+	dnsutil "github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
+	"github.com/jetstack/cert-manager/pkg/util"
 	"github.com/jetstack/cert-manager/pkg/util/kube"
 	kubeinformers "k8s.io/client-go/informers"
 )
@@ -39,10 +57,16 @@ func Run(opts *options.ControllerOptions, stopCh <-chan struct{}) {
 	run := func(_ <-chan struct{}) {
 		var wg sync.WaitGroup
 		for n, fn := range controller.Known() {
+			// only run a controller if it's been enabled
+			if !util.Contains(opts.EnabledControllers, n) {
+				glog.Infof("%s controller is not in list of controllers to enable, so not enabling it", n)
+				continue
+			}
+
 			wg.Add(1)
 			go func(n string, fn controller.Interface) {
 				defer wg.Done()
-				glog.V(4).Infof("Starting %s controller", n)
+				glog.Infof("Starting %s controller", n)
 
 				err := fn(5, stopCh)
 
@@ -95,6 +119,33 @@ func buildControllerContext(opts *options.ControllerOptions) (*controller.Contex
 		return nil, nil, fmt.Errorf("error creating kubernetes client: %s", err.Error())
 	}
 
+	nameservers := opts.DNS01Nameservers
+	if len(nameservers) == 0 {
+		nameservers = dnsutil.RecursiveNameservers
+	}
+
+	glog.Infof("Using the following nameservers for DNS01 checks: %v", nameservers)
+
+	HTTP01SolverResourceRequestCPU, err := resource.ParseQuantity(opts.ACMEHTTP01SolverResourceRequestCPU)
+	if err != nil {
+		return nil, nil, fmt.Errorf("error parsing ACMEHTTP01SolverResourceRequestCPU: %s", err.Error())
+	}
+
+	HTTP01SolverResourceRequestMemory, err := resource.ParseQuantity(opts.ACMEHTTP01SolverResourceRequestMemory)
+	if err != nil {
+		return nil, nil, fmt.Errorf("error parsing ACMEHTTP01SolverResourceRequestMemory: %s", err.Error())
+	}
+
+	HTTP01SolverResourceLimitsCPU, err := resource.ParseQuantity(opts.ACMEHTTP01SolverResourceLimitsCPU)
+	if err != nil {
+		return nil, nil, fmt.Errorf("error parsing ACMEHTTP01SolverResourceLimitsCPU: %s", err.Error())
+	}
+
+	HTTP01SolverResourceLimitsMemory, err := resource.ParseQuantity(opts.ACMEHTTP01SolverResourceLimitsMemory)
+	if err != nil {
+		return nil, nil, fmt.Errorf("error parsing ACMEHTTP01SolverResourceLimitsMemory: %s", err.Error())
+	}
+
 	// Create event broadcaster
 	// Add cert-manager types to the default Kubernetes Scheme so Events can be
 	// logged properly
@@ -113,22 +164,26 @@ func buildControllerContext(opts *options.ControllerOptions) (*controller.Contex
 		Recorder:                  recorder,
 		KubeSharedInformerFactory: kubeSharedInformerFactory,
 		SharedInformerFactory:     sharedInformerFactory,
-		IssuerFactory: issuer.NewFactory(&issuer.Context{
-			Client:                          cl,
-			CMClient:                        intcl,
-			Recorder:                        recorder,
-			KubeSharedInformerFactory:       kubeSharedInformerFactory,
-			SharedInformerFactory:           sharedInformerFactory,
-			ClusterResourceNamespace:        opts.ClusterResourceNamespace,
-			ACMEHTTP01SolverImage:           opts.ACMEHTTP01SolverImage,
+		ACMEOptions: controller.ACMEOptions{
+			HTTP01SolverImage:                 opts.ACMEHTTP01SolverImage,
+			HTTP01SolverResourceRequestCPU:    HTTP01SolverResourceRequestCPU,
+			HTTP01SolverResourceRequestMemory: HTTP01SolverResourceRequestMemory,
+			HTTP01SolverResourceLimitsCPU:     HTTP01SolverResourceLimitsCPU,
+			HTTP01SolverResourceLimitsMemory:  HTTP01SolverResourceLimitsMemory,
+			DNS01Nameservers:                  nameservers,
+		},
+		IssuerOptions: controller.IssuerOptions{
 			ClusterIssuerAmbientCredentials: opts.ClusterIssuerAmbientCredentials,
 			IssuerAmbientCredentials:        opts.IssuerAmbientCredentials,
-		}),
-		ClusterResourceNamespace:           opts.ClusterResourceNamespace,
-		DefaultIssuerName:                  opts.DefaultIssuerName,
-		DefaultIssuerKind:                  opts.DefaultIssuerKind,
-		DefaultACMEIssuerChallengeType:     opts.DefaultACMEIssuerChallengeType,
-		DefaultACMEIssuerDNS01ProviderName: opts.DefaultACMEIssuerDNS01ProviderName,
+			ClusterResourceNamespace:        opts.ClusterResourceNamespace,
+			RenewBeforeExpiryDuration:       opts.RenewBeforeExpiryDuration,
+		},
+		IngressShimOptions: controller.IngressShimOptions{
+			DefaultIssuerName:                  opts.DefaultIssuerName,
+			DefaultIssuerKind:                  opts.DefaultIssuerKind,
+			DefaultACMEIssuerChallengeType:     opts.DefaultACMEIssuerChallengeType,
+			DefaultACMEIssuerDNS01ProviderName: opts.DefaultACMEIssuerDNS01ProviderName,
+		},
 	}, kubeCfg, nil
 }
 

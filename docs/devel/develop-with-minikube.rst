@@ -30,6 +30,25 @@ First, run minikube, and configure your local kubectl command to work with minik
    $ helm init
 
 
+Install local development tools
+===============================
+
+You will need the following tools to build cert-manager:
+
+* Bazel_
+* Docker_ (and enable for non-root user)
+
+These instructions have only been tested on Linux; Windows and MacOS may
+require further changes.
+
+If you need to add dependencies, you will additionally need:
+
+* Git_
+* Mercurial_
+
+You can then run ``bazel run //hack:update-deps`` to regenerate any
+dependencies, and ``bazel build :images`` to build the docker images.
+
 Build a dev version of cert-manager
 ===================================
 
@@ -72,3 +91,9 @@ However, if you make changes to the helm chart or wish to change the controller'
         --set extraArgs="{-v=5}"
         --set image.tag=build
         ./contrib/charts/cert-manager
+
+
+.. _Bazel: https://docs.bazel.build/versions/master/install.html
+.. _Docker: https://store.docker.com/search?type=edition&offering=community
+.. _Git: https://git-scm.com/downloads
+.. _Mercurial: https://www.mercurial-scm.org/

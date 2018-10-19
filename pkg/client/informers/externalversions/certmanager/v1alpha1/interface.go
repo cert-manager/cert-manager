@@ -1,5 +1,5 @@
 /*
-Copyright 2018 Jetstack Ltd.
+Copyright 2018 The Jetstack cert-manager contributors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+
 package v1alpha1
 
 import (
@@ -23,10 +24,14 @@ import (
 type Interface interface {
 	// Certificates returns a CertificateInformer.
 	Certificates() CertificateInformer
+	// Challenges returns a ChallengeInformer.
+	Challenges() ChallengeInformer
 	// ClusterIssuers returns a ClusterIssuerInformer.
 	ClusterIssuers() ClusterIssuerInformer
 	// Issuers returns a IssuerInformer.
 	Issuers() IssuerInformer
+	// Orders returns a OrderInformer.
+	Orders() OrderInformer
 }
 
 type version struct {
@@ -45,6 +50,11 @@ func (v *version) Certificates() CertificateInformer {
 	return &certificateInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }
 
+// Challenges returns a ChallengeInformer.
+func (v *version) Challenges() ChallengeInformer {
+	return &challengeInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+}
+
 // ClusterIssuers returns a ClusterIssuerInformer.
 func (v *version) ClusterIssuers() ClusterIssuerInformer {
 	return &clusterIssuerInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
@@ -53,4 +63,9 @@ func (v *version) ClusterIssuers() ClusterIssuerInformer {
 // Issuers returns a IssuerInformer.
 func (v *version) Issuers() IssuerInformer {
 	return &issuerInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+}
+
+// Orders returns a OrderInformer.
+func (v *version) Orders() OrderInformer {
+	return &orderInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }

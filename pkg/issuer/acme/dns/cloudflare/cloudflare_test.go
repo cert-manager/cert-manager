@@ -1,3 +1,11 @@
+// +skip_license_check
+
+/*
+This file contains portions of code directly taken from the 'xenolf/lego' project.
+A copy of the license for this code can be found in the file named LICENSE in
+this directory.
+*/
+
 package cloudflare
 
 import (
@@ -5,6 +13,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -32,7 +41,7 @@ func restoreCloudFlareEnv() {
 func TestNewDNSProviderValid(t *testing.T) {
 	os.Setenv("CLOUDFLARE_EMAIL", "")
 	os.Setenv("CLOUDFLARE_API_KEY", "")
-	_, err := NewDNSProviderCredentials("123", "123")
+	_, err := NewDNSProviderCredentials("123", "123", util.RecursiveNameservers)
 	assert.NoError(t, err)
 	restoreCloudFlareEnv()
 }
@@ -40,7 +49,7 @@ func TestNewDNSProviderValid(t *testing.T) {
 func TestNewDNSProviderValidEnv(t *testing.T) {
 	os.Setenv("CLOUDFLARE_EMAIL", "test@example.com")
 	os.Setenv("CLOUDFLARE_API_KEY", "123")
-	_, err := NewDNSProvider()
+	_, err := NewDNSProvider(util.RecursiveNameservers)
 	assert.NoError(t, err)
 	restoreCloudFlareEnv()
 }
@@ -48,7 +57,7 @@ func TestNewDNSProviderValidEnv(t *testing.T) {
 func TestNewDNSProviderMissingCredErr(t *testing.T) {
 	os.Setenv("CLOUDFLARE_EMAIL", "")
 	os.Setenv("CLOUDFLARE_API_KEY", "")
-	_, err := NewDNSProvider()
+	_, err := NewDNSProvider(util.RecursiveNameservers)
 	assert.EqualError(t, err, "CloudFlare credentials missing")
 	restoreCloudFlareEnv()
 }
@@ -58,7 +67,7 @@ func TestCloudFlarePresent(t *testing.T) {
 		t.Skip("skipping live test")
 	}
 
-	provider, err := NewDNSProviderCredentials(cflareEmail, cflareAPIKey)
+	provider, err := NewDNSProviderCredentials(cflareEmail, cflareAPIKey, util.RecursiveNameservers)
 	assert.NoError(t, err)
 
 	err = provider.Present(cflareDomain, "", "123d==")
@@ -72,7 +81,7 @@ func TestCloudFlareCleanUp(t *testing.T) {
 
 	time.Sleep(time.Second * 2)
 
-	provider, err := NewDNSProviderCredentials(cflareEmail, cflareAPIKey)
+	provider, err := NewDNSProviderCredentials(cflareEmail, cflareAPIKey, util.RecursiveNameservers)
 	assert.NoError(t, err)
 
 	err = provider.CleanUp(cflareDomain, "", "123d==")

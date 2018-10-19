@@ -1,0 +1,180 @@
+package(default_visibility = ["//visibility:public"])
+
+# General repo verification targets
+
+py_test(
+    name = "verify-boilerplate",
+    srcs = ["verify_boilerplate.py"],
+    data = ["//:all-srcs"],
+    main = "verify_boilerplate.py",
+    tags = ["lint"],
+)
+
+sh_test(
+    name = "verify-errexit",
+    srcs = ["verify-errexit.sh"],
+    data = [
+        "//:all-srcs",
+    ],
+    tags = ["lint"],
+)
+
+sh_test(
+    name = "verify-links",
+    srcs = ["verify-links.sh"],
+    data = [
+        "//:all-srcs",
+    ],
+    tags = ["lint"],
+)
+
+# Bazel file generation rules
+
+sh_binary(
+    name = "update-bazel",
+    srcs = ["update-bazel.sh"],
+    data = [
+        "//hack/bin:buildozer",
+        "//hack/bin:gazelle",
+        "//hack/bin:kazel",
+    ],
+)
+
+sh_test(
+    name = "verify-bazel",
+    srcs = ["verify-bazel.sh"],
+    data = [
+        ":update-bazel",
+        "//:all-srcs",
+    ],
+)
+
+# Dep/vendor rules
+
+sh_binary(
+    name = "update-deps",
+    srcs = ["update-deps.sh"],
+    data = [
+        ":update-bazel",
+        "//hack/bin:dep",
+    ],
+)
+
+sh_test(
+    name = "verify-deps",
+    timeout = "long",
+    srcs = ["verify-deps.sh"],
+    data = [
+        ":update-deps",
+        "//:all-srcs",
+    ],
+    tags = ["manual"],
+)
+
+# Kubernetes codegen rules
+
+sh_binary(
+    name = "update-codegen",
+    srcs = ["update-codegen.sh"],
+    data = [
+        "//hack:update-bazel",
+        "//hack/boilerplate:all-srcs",
+        "//third_party/k8s.io/code-generator:generate-groups",
+        "//third_party/k8s.io/code-generator:openapi-gen",
+    ],
+)
+
+sh_test(
+    name = "verify-codegen",
+    srcs = ["verify-codegen.sh"],
+    data = [
+        ":update-codegen",
+        "//:all-srcs",
+    ],
+)
+
+# Static deployment manifests rules
+
+sh_binary(
+    name = "update-deploy-gen",
+    srcs = ["update-deploy-gen.sh"],
+    data = [
+        "//hack/bin:helm",
+    ],
+)
+
+sh_test(
+    name = "verify-deploy-gen",
+    srcs = ["verify-deploy-gen.sh"],
+    data = [
+        ":update-deploy-gen",
+        "//contrib:all-srcs",
+        "//hack/deploy:all-srcs",
+    ],
+)
+
+# Reference docs generation rules
+
+sh_binary(
+    name = "update-reference-docs",
+    srcs = ["update-reference-docs.sh"],
+    data = [
+        "//hack/bin:gen-apidocs",
+        "//hack/bin:swagger-gen",
+        "//hack/brodocs",
+    ],
+    deps = [
+        "@bazel_tools//tools/bash/runfiles",
+    ],
+)
+
+sh_test(
+    name = "verify-reference-docs",
+    srcs = ["verify-reference-docs.sh"],
+    data = [
+        ":update-reference-docs",
+        "//:all-srcs",
+    ],
+    deps = [
+        "@bazel_tools//tools/bash/runfiles",
+    ],
+)
+
+# Gofmt rules
+
+sh_binary(
+    name = "update-gofmt",
+    srcs = ["update-gofmt.sh"],
+    data = [
+        "//hack/bin:goimports",
+    ],
+)
+
+sh_test(
+    name = "verify-gofmt",
+    srcs = ["verify-gofmt.sh"],
+    data = [
+        "//:all-srcs",
+        "//hack/bin:goimports",
+    ],
+)
+
+filegroup(
+    name = "package-srcs",
+    srcs = glob(["**"]),
+    tags = ["automanaged"],
+    visibility = ["//visibility:private"],
+)
+
+filegroup(
+    name = "all-srcs",
+    srcs = [
+        ":package-srcs",
+        "//hack/bin:all-srcs",
+        "//hack/boilerplate:all-srcs",
+        "//hack/brodocs:all-srcs",
+        "//hack/deploy:all-srcs",
+    ],
+    tags = ["automanaged"],
+    visibility = ["//visibility:public"],
+)

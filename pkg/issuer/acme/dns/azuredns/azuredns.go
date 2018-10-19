@@ -1,3 +1,11 @@
+// +skip_license_check
+
+/*
+This file contains portions of code directly taken from the 'xenolf/lego' project.
+A copy of the license for this code can be found in the file named LICENSE in
+this directory.
+*/
+
 // Package azuredns implements a DNS provider for solving the DNS-01 challenge
 // using Azure DNS.
 package azuredns
@@ -19,6 +27,7 @@ import (
 
 // DNSProvider implements the util.ChallengeProvider interface
 type DNSProvider struct {
+	dns01Nameservers  []string
 	recordClient      dns.RecordSetsClient
 	zoneClient        dns.ZonesClient
 	resourceGroupName string
@@ -28,7 +37,7 @@ type DNSProvider struct {
 // NewDNSProvider returns a DNSProvider instance configured for the Azure
 // DNS service.
 // Credentials are automatically detected from environment variables
-func NewDNSProvider() (*DNSProvider, error) {
+func NewDNSProvider(dns01Nameservers []string) (*DNSProvider, error) {
 
 	clientID := os.Getenv("AZURE_CLIENT_ID")
 	clientSecret := os.Getenv("AZURE_CLIENT_SECRET")
@@ -37,12 +46,12 @@ func NewDNSProvider() (*DNSProvider, error) {
 	resourceGroupName := ("AZURE_RESOURCE_GROUP")
 	zoneName := ("AZURE_ZONE_NAME")
 
-	return NewDNSProviderCredentials(clientID, clientSecret, subscriptionID, tenantID, resourceGroupName, zoneName)
+	return NewDNSProviderCredentials(clientID, clientSecret, subscriptionID, tenantID, resourceGroupName, zoneName, dns01Nameservers)
 }
 
 // NewDNSProviderCredentials returns a DNSProvider instance configured for the Azure
 // DNS service using static credentials from its parameters
-func NewDNSProviderCredentials(clientID, clientSecret, subscriptionID, tenantID, resourceGroupName, zoneName string) (*DNSProvider, error) {
+func NewDNSProviderCredentials(clientID, clientSecret, subscriptionID, tenantID, resourceGroupName, zoneName string, dns01Nameservers []string) (*DNSProvider, error) {
 	oauthConfig, err := adal.NewOAuthConfig(azure.PublicCloud.ActiveDirectoryEndpoint, tenantID)
 	if err != nil {
 		return nil, err
@@ -60,6 +69,7 @@ func NewDNSProviderCredentials(clientID, clientSecret, subscriptionID, tenantID,
 	zc.Authorizer = autorest.NewBearerAuthorizer(spt)
 
 	return &DNSProvider{
+		dns01Nameservers:  dns01Nameservers,
 		recordClient:      rc,
 		zoneClient:        zc,
 		resourceGroupName: resourceGroupName,
@@ -69,14 +79,20 @@ func NewDNSProviderCredentials(clientID, clientSecret, subscriptionID, tenantID,
 
 // Present creates a TXT record using the specified parameters
 func (c *DNSProvider) Present(domain, token, keyAuth string) error {
-	fqdn, value, ttl := util.DNS01Record(domain, keyAuth)
+	fqdn, value, ttl, err := util.DNS01Record(domain, keyAuth, c.dns01Nameservers)
+	if err != nil {
+		return err
+	}
 
 	return c.createRecord(fqdn, value, ttl)
 }
 
 // CleanUp removes the TXT record matching the specified parameters
 func (c *DNSProvider) CleanUp(domain, token, keyAuth string) error {
-	fqdn, _, _ := util.DNS01Record(domain, keyAuth)
+	fqdn, _, _, err := util.DNS01Record(domain, keyAuth, c.dns01Nameservers)
+	if err != nil {
+		return err
+	}
 
 	z, err := c.getHostedZoneName(fqdn)
 	if err != nil {

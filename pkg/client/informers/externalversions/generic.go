@@ -1,5 +1,5 @@
 /*
-Copyright 2018 Jetstack Ltd.
+Copyright 2018 The Jetstack cert-manager contributors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+
 package externalversions
 
 import (
@@ -52,10 +53,14 @@ func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource
 	// Group=certmanager.k8s.io, Version=v1alpha1
 	case v1alpha1.SchemeGroupVersion.WithResource("certificates"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Certmanager().V1alpha1().Certificates().Informer()}, nil
+	case v1alpha1.SchemeGroupVersion.WithResource("challenges"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Certmanager().V1alpha1().Challenges().Informer()}, nil
 	case v1alpha1.SchemeGroupVersion.WithResource("clusterissuers"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Certmanager().V1alpha1().ClusterIssuers().Informer()}, nil
 	case v1alpha1.SchemeGroupVersion.WithResource("issuers"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Certmanager().V1alpha1().Issuers().Informer()}, nil
+	case v1alpha1.SchemeGroupVersion.WithResource("orders"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Certmanager().V1alpha1().Orders().Informer()}, nil
 
 	}
 

@@ -1,3 +1,19 @@
+/*
+Copyright 2018 The Jetstack cert-manager contributors.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 package controller
 
 import (
@@ -113,11 +129,11 @@ func TestBuildCertificates(t *testing.T) {
 							Kind: "ClusterIssuer",
 						},
 						ACME: &v1alpha1.ACMECertificateConfig{
-							Config: []v1alpha1.ACMECertificateDomainConfig{
+							Config: []v1alpha1.DomainSolverConfig{
 								{
 									Domains: []string{"example.com", "www.example.com"},
-									ACMESolverConfig: v1alpha1.ACMESolverConfig{
-										HTTP01: &v1alpha1.ACMECertificateHTTP01Config{
+									SolverConfig: v1alpha1.SolverConfig{
+										HTTP01: &v1alpha1.HTTP01SolverConfig{
 											Ingress: "ingress-name",
 										},
 									},
@@ -164,11 +180,11 @@ func TestBuildCertificates(t *testing.T) {
 							Kind: "ClusterIssuer",
 						},
 						ACME: &v1alpha1.ACMECertificateConfig{
-							Config: []v1alpha1.ACMECertificateDomainConfig{
+							Config: []v1alpha1.DomainSolverConfig{
 								{
 									Domains: []string{"example.com", "www.example.com"},
-									ACMESolverConfig: v1alpha1.ACMESolverConfig{
-										HTTP01: &v1alpha1.ACMECertificateHTTP01Config{},
+									SolverConfig: v1alpha1.SolverConfig{
+										HTTP01: &v1alpha1.HTTP01SolverConfig{},
 									},
 								},
 							},
@@ -214,11 +230,11 @@ func TestBuildCertificates(t *testing.T) {
 							Kind: "ClusterIssuer",
 						},
 						ACME: &v1alpha1.ACMECertificateConfig{
-							Config: []v1alpha1.ACMECertificateDomainConfig{
+							Config: []v1alpha1.DomainSolverConfig{
 								{
 									Domains: []string{"example.com", "www.example.com"},
-									ACMESolverConfig: v1alpha1.ACMESolverConfig{
-										HTTP01: &v1alpha1.ACMECertificateHTTP01Config{
+									SolverConfig: v1alpha1.SolverConfig{
+										HTTP01: &v1alpha1.HTTP01SolverConfig{
 											IngressClass: strPtr("nginx-ing"),
 										},
 									},
@@ -267,11 +283,11 @@ func TestBuildCertificates(t *testing.T) {
 							Kind: "ClusterIssuer",
 						},
 						ACME: &v1alpha1.ACMECertificateConfig{
-							Config: []v1alpha1.ACMECertificateDomainConfig{
+							Config: []v1alpha1.DomainSolverConfig{
 								{
 									Domains: []string{"example.com", "www.example.com"},
-									ACMESolverConfig: v1alpha1.ACMESolverConfig{
-										HTTP01: &v1alpha1.ACMECertificateHTTP01Config{
+									SolverConfig: v1alpha1.SolverConfig{
+										HTTP01: &v1alpha1.HTTP01SolverConfig{
 											IngressClass: strPtr("nginx-ing"),
 										},
 									},
@@ -366,11 +382,11 @@ func TestBuildCertificates(t *testing.T) {
 							Kind: "ClusterIssuer",
 						},
 						ACME: &v1alpha1.ACMECertificateConfig{
-							Config: []v1alpha1.ACMECertificateDomainConfig{
+							Config: []v1alpha1.DomainSolverConfig{
 								{
 									Domains: []string{"example.com", "www.example.com"},
-									ACMESolverConfig: v1alpha1.ACMESolverConfig{
-										DNS01: &v1alpha1.ACMECertificateDNS01Config{
+									SolverConfig: v1alpha1.SolverConfig{
+										DNS01: &v1alpha1.DNS01SolverConfig{
 											Provider: "fake-dns",
 										},
 									},
@@ -529,6 +545,18 @@ func TestBuildCertificates(t *testing.T) {
 							Name: "issuer-name",
 							Kind: "Issuer",
 						},
+						ACME: &v1alpha1.ACMECertificateConfig{
+							Config: []v1alpha1.DomainSolverConfig{
+								{
+									Domains: []string{"example.com"},
+									SolverConfig: v1alpha1.SolverConfig{
+										HTTP01: &v1alpha1.HTTP01SolverConfig{
+											Ingress: "",
+										},
+									},
+								},
+							},
+						},
 					},
 				},
 			},
@@ -567,6 +595,166 @@ func TestBuildCertificates(t *testing.T) {
 						IssuerRef: v1alpha1.ObjectReference{
 							Name: "issuer-name",
 							Kind: "Issuer",
+						},
+						ACME: &v1alpha1.ACMECertificateConfig{
+							Config: []v1alpha1.DomainSolverConfig{
+								{
+									Domains: []string{"example.com"},
+									SolverConfig: v1alpha1.SolverConfig{
+										HTTP01: &v1alpha1.HTTP01SolverConfig{
+											Ingress: "",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			Name: "should update a certificate's config if an incorrect Certificate exists",
+			Ingress: &extv1beta1.Ingress{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "ingress-name",
+					Namespace: "ingress-namespace",
+					Annotations: map[string]string{
+						issuerNameAnnotation:              "issuer-name",
+						acmeIssuerChallengeTypeAnnotation: "http01",
+						ingressClassAnnotation:            "toot-ing",
+					},
+				},
+				Spec: extv1beta1.IngressSpec{
+					TLS: []extv1beta1.IngressTLS{
+						{
+							Hosts:      []string{"example.com"},
+							SecretName: "existing-crt",
+						},
+					},
+				},
+			},
+			IssuerLister: []*v1alpha1.Issuer{buildACMEIssuer("issuer-name", "ingress-namespace")},
+			CertificateLister: []*v1alpha1.Certificate{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "existing-crt",
+						Namespace: "ingress-namespace",
+					},
+					Spec: v1alpha1.CertificateSpec{
+						DNSNames:   []string{"example.com"},
+						SecretName: "existing-crt",
+						IssuerRef: v1alpha1.ObjectReference{
+							Name: "issuer-name",
+							Kind: "Issuer",
+						},
+						ACME: &v1alpha1.ACMECertificateConfig{
+							Config: []v1alpha1.DomainSolverConfig{
+								{
+									Domains: []string{"wrong-example.com"},
+									SolverConfig: v1alpha1.SolverConfig{
+										HTTP01: &v1alpha1.HTTP01SolverConfig{
+											Ingress: "wrong-ingress",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			ExpectedUpdate: []*v1alpha1.Certificate{
+				&v1alpha1.Certificate{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "existing-crt",
+						Namespace: "ingress-namespace",
+					},
+					Spec: v1alpha1.CertificateSpec{
+						DNSNames:   []string{"example.com"},
+						SecretName: "existing-crt",
+						IssuerRef: v1alpha1.ObjectReference{
+							Name: "issuer-name",
+							Kind: "Issuer",
+						},
+						ACME: &v1alpha1.ACMECertificateConfig{
+							Config: []v1alpha1.DomainSolverConfig{
+								{
+									Domains: []string{"example.com"},
+									SolverConfig: v1alpha1.SolverConfig{
+										HTTP01: &v1alpha1.HTTP01SolverConfig{
+											Ingress:      "",
+											IngressClass: strPtr("toot-ing"),
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			Name: "should update a Certificate correctly if an existing one of a different type exists",
+			Ingress: &extv1beta1.Ingress{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "ingress-name",
+					Namespace: "ingress-namespace",
+					Annotations: map[string]string{
+						issuerNameAnnotation:              "issuer-name",
+						acmeIssuerChallengeTypeAnnotation: "http01",
+						ingressClassAnnotation:            "toot-ing",
+					},
+				},
+				Spec: extv1beta1.IngressSpec{
+					TLS: []extv1beta1.IngressTLS{
+						{
+							Hosts:      []string{"example.com"},
+							SecretName: "existing-crt",
+						},
+					},
+				},
+			},
+			IssuerLister: []*v1alpha1.Issuer{buildACMEIssuer("issuer-name", "ingress-namespace")},
+			CertificateLister: []*v1alpha1.Certificate{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "existing-crt",
+						Namespace: "ingress-namespace",
+					},
+					Spec: v1alpha1.CertificateSpec{
+						DNSNames:   []string{"example.com"},
+						SecretName: "existing-crt",
+						IssuerRef: v1alpha1.ObjectReference{
+							Name: "issuer-name",
+							Kind: "Issuer",
+						},
+					},
+				},
+			},
+			ExpectedUpdate: []*v1alpha1.Certificate{
+				&v1alpha1.Certificate{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "existing-crt",
+						Namespace: "ingress-namespace",
+					},
+					Spec: v1alpha1.CertificateSpec{
+						DNSNames:   []string{"example.com"},
+						SecretName: "existing-crt",
+						IssuerRef: v1alpha1.ObjectReference{
+							Name: "issuer-name",
+							Kind: "Issuer",
+						},
+						ACME: &v1alpha1.ACMECertificateConfig{
+							Config: []v1alpha1.DomainSolverConfig{
+								{
+									Domains: []string{"example.com"},
+									SolverConfig: v1alpha1.SolverConfig{
+										HTTP01: &v1alpha1.HTTP01SolverConfig{
+											Ingress:      "",
+											IngressClass: strPtr("toot-ing"),
+										},
+									},
+								},
+							},
 						},
 					},
 				},

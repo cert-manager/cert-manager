@@ -13,11 +13,32 @@ How it works
 ingress-shim watches Ingress resources across your cluster. If it observes an
 Ingress with *any* of the annotations described in the 'Usage' section, it will
 ensure a Certificate resource with the same name as the Ingress, and configured
-as described on the Ingress exists.
+as described on the Ingress exists. For example:
 
-As of the time of writing, it **will not** update Certificate resources if your
-Ingress resource changes. It is up to yourself to ensure the corresponding
-Certificate resource is as required.
+.. code-block:: yaml
+
+  apiVersion: extensions/v1beta1
+  kind: Ingress
+  metadata:
+    annotations:
+      # add an annotation indicating the issuer to use.
+      certmanager.k8s.io/cluster-issuer: nameOfClusterIssuer
+    name: myIngress
+    namespace: myIngress
+  spec:
+    rules:
+    - host: myingress.com
+      http:
+        paths:
+        - backend:
+            serviceName: myservice
+            servicePort: 80
+          path: /
+    tls: # < placing a host in the TLS config will indicate a cert should be created
+    - hosts:
+      - myingress.com
+      secretName: myingress-cert # < cert-manager will store the created certificate in this secret.
+
 
 Configuration
 =============

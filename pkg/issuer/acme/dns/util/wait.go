@@ -1,3 +1,11 @@
+// +skip_license_check
+
+/*
+This file contains portions of code directly taken from the 'xenolf/lego' project.
+A copy of the license for this code can be found in the file named LICENSE in
+this directory.
+*/
+
 package util
 
 import (
@@ -10,7 +18,7 @@ import (
 	"github.com/miekg/dns"
 )
 
-type preCheckDNSFunc func(fqdn, value string) (bool, error)
+type preCheckDNSFunc func(fqdn, value string, nameservers []string) (bool, error)
 
 var (
 	// PreCheckDNS checks DNS propagation before notifying ACME that
@@ -50,26 +58,33 @@ func getNameservers(path string, defaults []string) []string {
 	return systemNameservers
 }
 
-// checkDNSPropagation checks if the expected TXT record has been propagated to all authoritative nameservers.
-func checkDNSPropagation(fqdn, value string) (bool, error) {
-	// Initial attempt to resolve at the recursive NS
-	r, err := dnsQuery(fqdn, dns.TypeTXT, RecursiveNameservers, true)
-	if err != nil {
-		return false, err
-	}
-	if r.Rcode == dns.RcodeSuccess {
-		// If we see a CNAME here then use the alias
-		for _, rr := range r.Answer {
-			if cn, ok := rr.(*dns.CNAME); ok {
-				if cn.Hdr.Name == fqdn {
-					fqdn = cn.Target
-					break
-				}
+// Update FQDN with CNAME if any
+func updateDomainWithCName(r *dns.Msg, fqdn string) string {
+	for _, rr := range r.Answer {
+		if cn, ok := rr.(*dns.CNAME); ok {
+			if cn.Hdr.Name == fqdn {
+				glog.Infof("Updating FQDN: %s with it's CNAME: %s", fqdn, cn.Target)
+				fqdn = cn.Target
+				break
 			}
 		}
 	}
 
-	authoritativeNss, err := lookupNameservers(fqdn)
+	return fqdn
+}
+
+// checkDNSPropagation checks if the expected TXT record has been propagated to all authoritative nameservers.
+func checkDNSPropagation(fqdn, value string, nameservers []string) (bool, error) {
+	// Initial attempt to resolve at the recursive NS
+	r, err := dnsQuery(fqdn, dns.TypeTXT, nameservers, true)
+	if err != nil {
+		return false, err
+	}
+	if r.Rcode == dns.RcodeSuccess {
+		fqdn = updateDomainWithCName(r, fqdn)
+	}
+
+	authoritativeNss, err := lookupNameservers(fqdn, nameservers)
 	if err != nil {
 		return false, err
 	}
@@ -140,15 +155,15 @@ func dnsQuery(fqdn string, rtype uint16, nameservers []string, recursive bool) (
 }
 
 // lookupNameservers returns the authoritative nameservers for the given fqdn.
-func lookupNameservers(fqdn string) ([]string, error) {
+func lookupNameservers(fqdn string, nameservers []string) ([]string, error) {
 	var authoritativeNss []string
 
-	zone, err := FindZoneByFqdn(fqdn, RecursiveNameservers)
+	zone, err := FindZoneByFqdn(fqdn, nameservers)
 	if err != nil {
 		return nil, fmt.Errorf("Could not determine the zone: %v", err)
 	}
 
-	r, err := dnsQuery(zone, dns.TypeNS, RecursiveNameservers, true)
+	r, err := dnsQuery(zone, dns.TypeNS, nameservers, true)
 	if err != nil {
 		return nil, err
 	}

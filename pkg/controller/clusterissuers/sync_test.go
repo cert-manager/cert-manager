@@ -1,3 +1,19 @@
+/*
+Copyright 2018 The Jetstack cert-manager contributors.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 package clusterissuers
 
 import (
@@ -10,7 +26,6 @@ import (
 	clientgotesting "k8s.io/client-go/testing"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
-	"github.com/jetstack/cert-manager/pkg/client/clientset/versioned/fake"
 )
 
 func newFakeIssuerWithStatus(name string, status v1alpha1.IssuerStatus) *v1alpha1.ClusterIssuer {
@@ -27,18 +42,20 @@ func TestSync(t *testing.T) {
 }
 
 func TestUpdateIssuerStatus(t *testing.T) {
-	cmClient := fake.NewSimpleClientset()
-	c := &Controller{
-		cmClient: cmClient,
-	}
-	assertNumberOfActions(t, fatalf, cmClient.Actions(), 0)
+	f := &controllerFixture{}
+	f.Setup(t)
+	defer f.Finish(t)
+
+	c := f.Controller
+	fakeClient := f.Builder.FakeCMClient()
+	assertNumberOfActions(t, fatalf, filter(fakeClient.Actions()), 0)
 
 	originalIssuer := newFakeIssuerWithStatus("test", v1alpha1.IssuerStatus{})
 
-	issuer, err := cmClient.CertmanagerV1alpha1().ClusterIssuers().Create(originalIssuer)
+	issuer, err := fakeClient.CertmanagerV1alpha1().ClusterIssuers().Create(originalIssuer)
 	assertErrIsNil(t, fatalf, err)
 
-	assertNumberOfActions(t, fatalf, cmClient.Actions(), 1)
+	assertNumberOfActions(t, fatalf, filter(fakeClient.Actions()), 1)
 
 	newStatus := v1alpha1.IssuerStatus{
 		Conditions: []v1alpha1.IssuerCondition{
@@ -51,10 +68,10 @@ func TestUpdateIssuerStatus(t *testing.T) {
 
 	issuerCopy := issuer.DeepCopy()
 	issuerCopy.Status = newStatus
-	err = c.updateIssuerStatus(issuerCopy)
+	_, err = c.updateIssuerStatus(issuer, issuerCopy)
 	assertErrIsNil(t, fatalf, err)
 
-	actions := cmClient.Actions()
+	actions := filter(fakeClient.Actions())
 	assertNumberOfActions(t, fatalf, actions, 2)
 
 	action := actions[1]
@@ -98,6 +115,16 @@ func assertDeepEqual(t *testing.T, f failfFunc, left, right interface{}) {
 	if !reflect.DeepEqual(left, right) {
 		f(t, "object '%#v' does not equal '%#v'", left, right)
 	}
+}
+
+func filter(in []clientgotesting.Action) []clientgotesting.Action {
+	var out []clientgotesting.Action
+	for _, i := range in {
+		if i.GetVerb() != "list" && i.GetVerb() != "watch" {
+			out = append(out, i)
+		}
+	}
+	return out
 }
 
 // failfFunc is a type that defines the common signatures of T.Fatalf and

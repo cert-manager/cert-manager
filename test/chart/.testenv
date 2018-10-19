@@ -1,0 +1,25 @@
+# The name of the Git remote
+# Omitted to ensure it is provided on the CLI
+# REMOTE=upstream
+
+# The name of the Git target branch
+# Omitted to ensure it is provided on the CLI
+# TARGET_BRANCH=master
+
+# Chart directories separated by a space
+CHART_DIRS=(
+    contrib/charts
+)
+
+# Charts that should be skipped
+EXCLUDED_CHARTS=(
+    contrib/charts/pebble
+    contrib/charts/vault
+)
+
+# Additional chart repos to add (<name>=<url>), separated by a space
+CHART_REPOS=(
+    incubator=https://kubernetes-charts-incubator.storage.googleapis.com/
+)
+
+TIMEOUT=600

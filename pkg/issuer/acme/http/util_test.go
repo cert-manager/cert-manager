@@ -1,3 +1,19 @@
+/*
+Copyright 2018 The Jetstack cert-manager contributors.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 package http
 
 import (
@@ -5,10 +21,8 @@ import (
 
 	"github.com/jetstack/cert-manager/test/util/generate"
 
-	"k8s.io/apimachinery/pkg/runtime"
-
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
-	"github.com/jetstack/cert-manager/test/unit"
+	"github.com/jetstack/cert-manager/pkg/controller/test"
 )
 
 const (
@@ -22,34 +36,23 @@ const (
 type solverFixture struct {
 	// The Solver under test
 	Solver *Solver
+	*test.Builder
 
-	// List of Kubernetes resources to pre-load into the clientset
-	KubeObjects []runtime.Object
-	// List of cert manager resources to pre-load into the clientset
-	CMObjects []runtime.Object
-	// Issuer that should be set on the Solver (a default will be used if nil)
+	// Issuer to be passed to functions on the Solver (a default will be used if nil)
 	Issuer v1alpha1.GenericIssuer
-	// Certificate resource to use during tests
-	Certificate *v1alpha1.Certificate
 	// Challenge resource to use during tests
-	Challenge v1alpha1.ACMEOrderChallenge
+	Challenge *v1alpha1.Challenge
 
 	// PreFn will run before the test is run, but after the fixture has been initialised.
 	// This is useful if you want to load the clientset with some resources *after* the
 	// fixture has been created.
-	PreFn func(*solverFixture)
+	PreFn func(*testing.T, *solverFixture)
 	// CheckFn should performs checks to ensure the output of the test is as expected.
 	// Optional additional values may be provided, which represent the output of the
 	// function under test.
-	CheckFn func(*solverFixture, ...interface{})
+	CheckFn func(*testing.T, *solverFixture, ...interface{})
 	// Err should be true if an error is expected from the function under test
 	Err bool
-	// Namespace is an optional namespace to operate within. If not set, a default
-	// will be used.
-	Namespace string
-
-	// f is the integration test fixture being used for this test
-	f *unit.Fixture
 
 	// testResources is used to store references to resources used or created during
 	// the test.
@@ -63,45 +66,33 @@ func (s *solverFixture) Setup(t *testing.T) {
 			Namespace: defaultTestNamespace,
 		})
 	}
-	if s.Namespace == "" {
-		s.Namespace = defaultTestNamespace
-	}
 	if s.testResources == nil {
 		s.testResources = map[string]interface{}{}
 	}
-	s.f = &unit.Fixture{
-		T:                  t,
-		KubeObjects:        s.KubeObjects,
-		CertManagerObjects: s.CMObjects,
+	if s.Builder == nil {
+		s.Builder = &test.Builder{}
 	}
-	// start the fixture to initialise the informer factories
-	s.f.Start()
-	s.Solver = buildFakeSolver(s.f, s.Issuer)
+	s.Solver = buildFakeSolver(s.Builder)
 	if s.PreFn != nil {
-		s.PreFn(s)
-		s.f.Sync()
+		s.PreFn(t, s)
+		s.Builder.Sync()
 	}
 }
 
 func (s *solverFixture) Finish(t *testing.T, args ...interface{}) {
-	defer s.f.Stop()
+	defer s.Builder.Stop()
 	// resync listers before running checks
-	s.f.Sync()
+	s.Builder.Sync()
 	// run custom checks
 	if s.CheckFn != nil {
-		s.CheckFn(s, args...)
+		s.CheckFn(t, s, args...)
 	}
 }
 
-func buildFakeSolver(f *unit.Fixture, issuer v1alpha1.GenericIssuer) *Solver {
-	s := &Solver{
-		issuer:        issuer,
-		client:        f.KubeClient(),
-		podLister:     f.KubeInformerFactory().Core().V1().Pods().Lister(),
-		serviceLister: f.KubeInformerFactory().Core().V1().Services().Lister(),
-		ingressLister: f.KubeInformerFactory().Extensions().V1beta1().Ingresses().Lister(),
-	}
-	f.Sync()
+func buildFakeSolver(b *test.Builder) *Solver {
+	b.Start()
+	s := NewSolver(b.Context)
+	b.Sync()
 	return s
 }
 

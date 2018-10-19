@@ -1,3 +1,19 @@
+/*
+Copyright 2018 The Jetstack cert-manager contributors.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 package http
 
 import (
@@ -10,11 +26,11 @@ import (
 
 	"github.com/golang/glog"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
-	"k8s.io/client-go/kubernetes"
 	corev1listers "k8s.io/client-go/listers/core/v1"
 	extv1beta1listers "k8s.io/client-go/listers/extensions/v1beta1"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	"github.com/jetstack/cert-manager/pkg/controller"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/http/solver"
 )
 
@@ -30,14 +46,12 @@ const (
 )
 
 var (
-	certificateGvk = v1alpha1.SchemeGroupVersion.WithKind("Certificate")
+	challengeGvk = v1alpha1.SchemeGroupVersion.WithKind("Challenge")
 )
 
 // Solver is an implementation of the acme http-01 challenge solver protocol
 type Solver struct {
-	issuer      v1alpha1.GenericIssuer
-	client      kubernetes.Interface
-	solverImage string
+	*controller.Context
 
 	podLister     corev1listers.PodLister
 	serviceLister corev1listers.ServiceLister
@@ -51,14 +65,12 @@ type reachabilityTest func(ctx context.Context, domain, path, key string) (bool,
 
 // NewSolver returns a new ACME HTTP01 solver for the given Issuer and client.
 // TODO: refactor this to have fewer args
-func NewSolver(issuer v1alpha1.GenericIssuer, client kubernetes.Interface, podLister corev1listers.PodLister, serviceLister corev1listers.ServiceLister, ingressLister extv1beta1listers.IngressLister, solverImage string) *Solver {
+func NewSolver(ctx *controller.Context) *Solver {
 	return &Solver{
-		issuer:           issuer,
-		client:           client,
-		podLister:        podLister,
-		serviceLister:    serviceLister,
-		ingressLister:    ingressLister,
-		solverImage:      solverImage,
+		Context:          ctx,
+		podLister:        ctx.KubeSharedInformerFactory.Core().V1().Pods().Lister(),
+		serviceLister:    ctx.KubeSharedInformerFactory.Core().V1().Services().Lister(),
+		ingressLister:    ctx.KubeSharedInformerFactory.Extensions().V1beta1().Ingresses().Lister(),
 		testReachability: testReachability,
 		requiredPasses:   5,
 	}
@@ -67,21 +79,21 @@ func NewSolver(issuer v1alpha1.GenericIssuer, client kubernetes.Interface, podLi
 // Present will realise the resources required to solve the given HTTP01
 // challenge validation in the apiserver. If those resources already exist, it
 // will return nil (i.e. this function is idempotent).
-func (s *Solver) Present(ctx context.Context, crt *v1alpha1.Certificate, ch v1alpha1.ACMEOrderChallenge) error {
-	_, podErr := s.ensurePod(crt, ch)
-	svc, svcErr := s.ensureService(crt, ch)
+func (s *Solver) Present(ctx context.Context, issuer v1alpha1.GenericIssuer, ch *v1alpha1.Challenge) error {
+	_, podErr := s.ensurePod(ch)
+	svc, svcErr := s.ensureService(issuer, ch)
 	if svcErr != nil {
 		return utilerrors.NewAggregate([]error{podErr, svcErr})
 	}
-	_, ingressErr := s.ensureIngress(crt, svc.Name, ch)
+	_, ingressErr := s.ensureIngress(ch, svc.Name)
 	return utilerrors.NewAggregate([]error{podErr, svcErr, ingressErr})
 }
 
-func (s *Solver) Check(ch v1alpha1.ACMEOrderChallenge) (bool, error) {
+func (s *Solver) Check(ch *v1alpha1.Challenge) (bool, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), HTTP01Timeout)
 	defer cancel()
 	for i := 0; i < s.requiredPasses; i++ {
-		ok, err := s.testReachability(ctx, ch.Domain, fmt.Sprintf("%s/%s", solver.HTTPChallengePath, ch.Token), ch.Key)
+		ok, err := s.testReachability(ctx, ch.Spec.DNSName, fmt.Sprintf("%s/%s", solver.HTTPChallengePath, ch.Spec.Token), ch.Spec.Key)
 		if err != nil {
 			return false, err
 		}
@@ -95,11 +107,11 @@ func (s *Solver) Check(ch v1alpha1.ACMEOrderChallenge) (bool, error) {
 
 // CleanUp will ensure the created service, ingress and pod are clean/deleted of any
 // cert-manager created data.
-func (s *Solver) CleanUp(ctx context.Context, crt *v1alpha1.Certificate, ch v1alpha1.ACMEOrderChallenge) error {
+func (s *Solver) CleanUp(ctx context.Context, issuer v1alpha1.GenericIssuer, ch *v1alpha1.Challenge) error {
 	var errs []error
-	errs = append(errs, s.cleanupPods(crt, ch))
-	errs = append(errs, s.cleanupServices(crt, ch))
-	errs = append(errs, s.cleanupIngresses(crt, ch))
+	errs = append(errs, s.cleanupPods(ch))
+	errs = append(errs, s.cleanupServices(ch))
+	errs = append(errs, s.cleanupIngresses(ch))
 	return utilerrors.NewAggregate(errs)
 }
 
