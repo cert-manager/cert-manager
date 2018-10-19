@@ -27,160 +27,171 @@ import (
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	"github.com/jetstack/cert-manager/test/e2e/framework"
+	"github.com/jetstack/cert-manager/test/e2e/framework/addon"
 	"github.com/jetstack/cert-manager/test/e2e/suite/issuers/acme/dnsproviders"
 	"github.com/jetstack/cert-manager/test/util"
 )
 
+type dns01Provider interface {
+	Details() *dnsproviders.Details
+	SetNamespace(string)
+
+	addon.Addon
+}
+
 var _ = framework.CertManagerDescribe("ACME Certificate (DNS01)", func() {
-	f := framework.NewDefaultFramework("create-acme-certificate-dns01")
+	// TODO: add additional DNS provider configs here
+	cf := &dnsproviders.Cloudflare{}
 
-	var (
-		cloudflareProvider = &dnsproviders.Cloudflare{}
-	)
-
-	BeforeEach(func() {
-		cloudflareProvider.Namespace = f.Namespace.Name
-	})
-
-	f.RequireAddon(cloudflareProvider)
-
-	issuerName := "test-acme-issuer"
-	certificateName := "test-acme-certificate"
-	certificateSecretName := "test-acme-certificate"
-	var providerDetails *dnsproviders.Details
-	dnsDomain := ""
-
-	BeforeEach(func() {
-		providerDetails = cloudflareProvider.Details()
-		dnsDomain = providerDetails.NewTestDomain()
-
-		By("Creating an Issuer")
-		issuer := generate.Issuer(generate.IssuerConfig{
-			Name:              issuerName,
-			Namespace:         f.Namespace.Name,
-			ACMESkipTLSVerify: true,
-			// Hardcode this to the acme staging endpoint now due to issues with pebble dns resolution
-			ACMEServer: "https://acme-staging-v02.api.letsencrypt.org/directory",
-			// ACMEServer:         framework.TestContext.ACMEURL,
-			ACMEEmail:          testingACMEEmail,
-			ACMEPrivateKeyName: testingACMEPrivateKey,
-			DNS01: &v1alpha1.ACMEIssuerDNS01Config{
-				Providers: []v1alpha1.ACMEIssuerDNS01Provider{
-					providerDetails.ProviderConfig,
-				},
-			},
-		})
-		issuer, err := f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Create(issuer)
-		Expect(err).NotTo(HaveOccurred())
-		By("Waiting for Issuer to become Ready")
-		err = util.WaitForIssuerCondition(f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name),
-			issuerName,
-			v1alpha1.IssuerCondition{
-				Type:   v1alpha1.IssuerConditionReady,
-				Status: v1alpha1.ConditionTrue,
-			})
-		Expect(err).NotTo(HaveOccurred())
-		By("Verifying the ACME account URI is set")
-		err = util.WaitForIssuerStatusFunc(f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name),
-			issuerName,
-			func(i *v1alpha1.Issuer) (bool, error) {
-				if i.GetStatus().ACMEStatus().URI == "" {
-					return false, nil
-				}
-				return true, nil
-			})
-		Expect(err).NotTo(HaveOccurred())
-		By("Verifying ACME account private key exists")
-		secret, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Get(testingACMEPrivateKey, metav1.GetOptions{})
-		Expect(err).NotTo(HaveOccurred())
-		if len(secret.Data) != 1 {
-			Fail("Expected 1 key in ACME account private key secret, but there was %d", len(secret.Data))
-		}
-	})
-
-	AfterEach(func() {
-		By("Cleaning up")
-		f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Delete(issuerName, nil)
-		f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Delete(testingACMEPrivateKey, nil)
-		f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Delete(certificateSecretName, nil)
-	})
-
-	It("should obtain a signed certificate for a regular domain", func() {
-		By("Creating a Certificate")
-
-		certClient := f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name)
-		secretClient := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name)
-
-		cert := generate.Certificate(generate.CertificateConfig{
-			Name:       certificateName,
-			Namespace:  f.Namespace.Name,
-			SecretName: certificateSecretName,
-			IssuerName: issuerName,
-			DNSNames:   []string{dnsDomain},
-			SolverConfig: v1alpha1.SolverConfig{
-				DNS01: &v1alpha1.DNS01SolverConfig{
-					Provider: providerDetails.ProviderConfig.Name,
-				},
-			},
-		})
-		cert, err := certClient.Create(cert)
-		Expect(err).NotTo(HaveOccurred())
-		err = util.WaitCertificateIssuedValid(certClient, secretClient, certificateName, time.Minute*5)
-		Expect(err).NotTo(HaveOccurred())
-	})
-
-	It("should obtain a signed certificate for a wildcard domain", func() {
-		By("Creating a Certificate")
-
-		certClient := f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name)
-		secretClient := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name)
-
-		cert := generate.Certificate(generate.CertificateConfig{
-			Name:       certificateName,
-			Namespace:  f.Namespace.Name,
-			SecretName: certificateSecretName,
-			IssuerName: issuerName,
-			DNSNames:   []string{"*." + dnsDomain},
-			SolverConfig: v1alpha1.SolverConfig{
-				DNS01: &v1alpha1.DNS01SolverConfig{
-					Provider: providerDetails.ProviderConfig.Name,
-				},
-			},
-		})
-		cert, err := f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name).Create(cert)
-		Expect(err).NotTo(HaveOccurred())
-		err = util.WaitCertificateIssuedValid(certClient, secretClient, certificateName, time.Minute*5)
-		Expect(err).NotTo(HaveOccurred())
-	})
-
-	It("should obtain a signed certificate for a wildcard and apex domain", func() {
-		// We skip this test for now, as it will always fail until we implement
-		// 'serial' solving of ACME challenges.
-		// See https://github.com/jetstack/cert-manager/issues/951 for more info.
-		// This test **must** be enabled before a new release can be cut.
-		Skip("Test disabled pending #951 being implemented")
-
-		By("Creating a Certificate")
-
-		certClient := f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name)
-		secretClient := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name)
-
-		cert := generate.Certificate(generate.CertificateConfig{
-			Name:       certificateName,
-			Namespace:  f.Namespace.Name,
-			SecretName: certificateSecretName,
-			IssuerName: issuerName,
-			DNSNames:   []string{"*." + dnsDomain, dnsDomain},
-			SolverConfig: v1alpha1.SolverConfig{
-				DNS01: &v1alpha1.DNS01SolverConfig{
-					Provider: providerDetails.ProviderConfig.Name,
-				},
-			},
-		})
-		cert, err := f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name).Create(cert)
-		Expect(err).NotTo(HaveOccurred())
-		// use a longer timeout for this, as it requires performing 2 dns validations in serial
-		err = util.WaitCertificateIssuedValid(certClient, secretClient, certificateName, time.Minute*10)
-		Expect(err).NotTo(HaveOccurred())
-	})
+	testDNSProvider("cloudflare", cf)
 })
+
+func testDNSProvider(name string, p dns01Provider) bool {
+	return Context("With "+name+" credentials configured", func() {
+		f := framework.NewDefaultFramework("create-acme-certificate-dns01-" + name)
+
+		BeforeEach(func() {
+			p.SetNamespace(f.Namespace.Name)
+		})
+
+		f.RequireAddon(p)
+
+		issuerName := "test-acme-issuer"
+		certificateName := "test-acme-certificate"
+		certificateSecretName := "test-acme-certificate"
+		dnsDomain := ""
+
+		BeforeEach(func() {
+			dnsDomain = p.Details().NewTestDomain()
+
+			By("Creating an Issuer")
+			issuer := generate.Issuer(generate.IssuerConfig{
+				Name:              issuerName,
+				Namespace:         f.Namespace.Name,
+				ACMESkipTLSVerify: true,
+				// Hardcode this to the acme staging endpoint now due to issues with pebble dns resolution
+				ACMEServer: "https://acme-staging-v02.api.letsencrypt.org/directory",
+				// ACMEServer:         framework.TestContext.ACMEURL,
+				ACMEEmail:          testingACMEEmail,
+				ACMEPrivateKeyName: testingACMEPrivateKey,
+				DNS01: &v1alpha1.ACMEIssuerDNS01Config{
+					Providers: []v1alpha1.ACMEIssuerDNS01Provider{
+						p.Details().ProviderConfig,
+					},
+				},
+			})
+			issuer, err := f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Create(issuer)
+			Expect(err).NotTo(HaveOccurred())
+			By("Waiting for Issuer to become Ready")
+			err = util.WaitForIssuerCondition(f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name),
+				issuerName,
+				v1alpha1.IssuerCondition{
+					Type:   v1alpha1.IssuerConditionReady,
+					Status: v1alpha1.ConditionTrue,
+				})
+			Expect(err).NotTo(HaveOccurred())
+			By("Verifying the ACME account URI is set")
+			err = util.WaitForIssuerStatusFunc(f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name),
+				issuerName,
+				func(i *v1alpha1.Issuer) (bool, error) {
+					if i.GetStatus().ACMEStatus().URI == "" {
+						return false, nil
+					}
+					return true, nil
+				})
+			Expect(err).NotTo(HaveOccurred())
+			By("Verifying ACME account private key exists")
+			secret, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Get(testingACMEPrivateKey, metav1.GetOptions{})
+			Expect(err).NotTo(HaveOccurred())
+			if len(secret.Data) != 1 {
+				Fail("Expected 1 key in ACME account private key secret, but there was %d", len(secret.Data))
+			}
+		})
+
+		AfterEach(func() {
+			By("Cleaning up")
+			f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Delete(issuerName, nil)
+			f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Delete(testingACMEPrivateKey, nil)
+			f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Delete(certificateSecretName, nil)
+		})
+
+		It("should obtain a signed certificate for a regular domain", func() {
+			By("Creating a Certificate")
+
+			certClient := f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name)
+			secretClient := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name)
+
+			cert := generate.Certificate(generate.CertificateConfig{
+				Name:       certificateName,
+				Namespace:  f.Namespace.Name,
+				SecretName: certificateSecretName,
+				IssuerName: issuerName,
+				DNSNames:   []string{dnsDomain},
+				SolverConfig: v1alpha1.SolverConfig{
+					DNS01: &v1alpha1.DNS01SolverConfig{
+						Provider: p.Details().ProviderConfig.Name,
+					},
+				},
+			})
+			cert, err := certClient.Create(cert)
+			Expect(err).NotTo(HaveOccurred())
+			err = util.WaitCertificateIssuedValid(certClient, secretClient, certificateName, time.Minute*5)
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("should obtain a signed certificate for a wildcard domain", func() {
+			By("Creating a Certificate")
+
+			certClient := f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name)
+			secretClient := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name)
+
+			cert := generate.Certificate(generate.CertificateConfig{
+				Name:       certificateName,
+				Namespace:  f.Namespace.Name,
+				SecretName: certificateSecretName,
+				IssuerName: issuerName,
+				DNSNames:   []string{"*." + dnsDomain},
+				SolverConfig: v1alpha1.SolverConfig{
+					DNS01: &v1alpha1.DNS01SolverConfig{
+						Provider: p.Details().ProviderConfig.Name,
+					},
+				},
+			})
+			cert, err := f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name).Create(cert)
+			Expect(err).NotTo(HaveOccurred())
+			err = util.WaitCertificateIssuedValid(certClient, secretClient, certificateName, time.Minute*5)
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("should obtain a signed certificate for a wildcard and apex domain", func() {
+			// We skip this test for now, as it will always fail until we implement
+			// 'serial' solving of ACME challenges.
+			// See https://github.com/jetstack/cert-manager/issues/951 for more info.
+			// This test **must** be enabled before a new release can be cut.
+			Skip("Test disabled pending #951 being implemented")
+
+			By("Creating a Certificate")
+
+			certClient := f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name)
+			secretClient := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name)
+
+			cert := generate.Certificate(generate.CertificateConfig{
+				Name:       certificateName,
+				Namespace:  f.Namespace.Name,
+				SecretName: certificateSecretName,
+				IssuerName: issuerName,
+				DNSNames:   []string{"*." + dnsDomain, dnsDomain},
+				SolverConfig: v1alpha1.SolverConfig{
+					DNS01: &v1alpha1.DNS01SolverConfig{
+						Provider: p.Details().ProviderConfig.Name,
+					},
+				},
+			})
+			cert, err := f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name).Create(cert)
+			Expect(err).NotTo(HaveOccurred())
+			// use a longer timeout for this, as it requires performing 2 dns validations in serial
+			err = util.WaitCertificateIssuedValid(certClient, secretClient, certificateName, time.Minute*10)
+			Expect(err).NotTo(HaveOccurred())
+		})
+	})
+}
