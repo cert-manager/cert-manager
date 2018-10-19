@@ -286,10 +286,12 @@ func TestSolveForDigitalOcean(t *testing.T) {
 				},
 			},
 		}),
-		Challenge: v1alpha1.ACMEOrderChallenge{
-			SolverConfig: v1alpha1.SolverConfig{
-				DNS01: &v1alpha1.DNS01SolverConfig{
-					Provider: "fake-digitalocean",
+		Challenge: &v1alpha1.Challenge{
+			Spec: v1alpha1.ChallengeSpec{
+				Config: v1alpha1.SolverConfig{
+					DNS01: &v1alpha1.DNS01SolverConfig{
+						Provider: "fake-digitalocean",
+					},
 				},
 			},
 		},
@@ -300,7 +302,7 @@ func TestSolveForDigitalOcean(t *testing.T) {
 	defer f.Finish(t)
 
 	s := f.Solver
-	_, err := s.solverForIssuerProvider(f.Issuer, f.Challenge.SolverConfig.DNS01.Provider)
+	_, err := s.solverForChallenge(f.Issuer, f.Challenge)
 	if err != nil {
 		t.Fatalf("expected solverFor to not error, but got: %s", err)
 	}
