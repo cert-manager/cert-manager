@@ -185,10 +185,12 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		cert, err := f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name).Create(cert)
 		Expect(err).NotTo(HaveOccurred())
 
-		Consistently(cert, "1m", "10s").Should(HaveCondition(f, v1alpha1.CertificateCondition{
+		notReadyCondition := v1alpha1.CertificateCondition{
 			Type:   v1alpha1.CertificateConditionReady,
 			Status: v1alpha1.ConditionFalse,
-		}))
+		}
+		Eventually(cert, "30s", "1s").Should(HaveCondition(f, notReadyCondition))
+		Consistently(cert, "1m", "10s").Should(HaveCondition(f, notReadyCondition))
 
 		By("Verifying TLS certificate secret does not exist")
 		d, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Get(certificateSecretName, metav1.GetOptions{})
