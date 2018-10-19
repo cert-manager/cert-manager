@@ -256,7 +256,11 @@ func (c *Controller) updateSecret(crt *v1alpha1.Certificate, namespace string, c
 				Namespace: namespace,
 			},
 			Type: api.SecretTypeTLS,
-			Data: map[string][]byte{},
+			Data: map[string][]byte{
+				api.TLSCertKey:       []byte{},
+				api.TLSPrivateKeyKey: []byte{},
+				TLSCAKey:             []byte{},
+			},
 		}
 	}
 
