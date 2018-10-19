@@ -16,9 +16,10 @@ limitations under the License.
 
 package util
 
+// TODO: we should break this file apart into separate more sane/reusable parts
+
 import (
 	"crypto/x509"
-	"flag"
 	"fmt"
 	"time"
 
@@ -40,17 +41,6 @@ import (
 	"github.com/jetstack/cert-manager/pkg/util"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 )
-
-var ACMECertificateDomain string
-var ACMECloudflareDomain string
-
-func init() {
-	flag.StringVar(&ACMECertificateDomain, "acme-nginx-certificate-domain", "",
-		"The provided domain and all sub-domains should resolve to the nginx ingress controller")
-	flag.StringVar(&ACMECloudflareDomain, "acme-cloudflare-domain", "",
-		"A domain name manageable using the test cloudflare api token to be used for testing "+
-			"the DNS01 provider")
-}
 
 func CertificateOnlyValidForDomains(cert *x509.Certificate, commonName string, dnsNames ...string) bool {
 	if commonName != cert.Subject.CommonName || !util.EqualUnsorted(cert.DNSNames, dnsNames) {

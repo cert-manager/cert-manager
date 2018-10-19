@@ -33,7 +33,6 @@ go_library(
         "//pkg/issuer/ca:go_default_library",
         "//pkg/issuer/selfsigned:go_default_library",
         "//pkg/issuer/vault:go_default_library",
-        "//pkg/logs:go_default_library",
         "//pkg/util:go_default_library",
         "//vendor/github.com/golang/glog:go_default_library",
         "//vendor/github.com/gorilla/mux:go_default_library",

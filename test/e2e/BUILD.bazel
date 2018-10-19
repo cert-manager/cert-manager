@@ -3,10 +3,10 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 # we add this rule so users can `bazel build //test/e2e` to run a
 # platform-independent version of the e2e test binary
 genrule(
-    name = "build_e2e",
+    name = "e2e.test",
     testonly = True,
     srcs = [":go_default_test"],
-    outs = ["e2e"],
+    outs = ["e2e.test"],
     cmd = "cp $(SRCS) $@",
     visibility = ["//visibility:public"],
 )
@@ -18,18 +18,9 @@ go_library(
     tags = ["manual"],
     visibility = ["//visibility:public"],
     deps = [
-        "//pkg/logs:go_default_library",
-        "//test/e2e/certificate:go_default_library",
-        "//test/e2e/clusterissuer:go_default_library",
         "//test/e2e/framework:go_default_library",
-        "//test/e2e/issuer:go_default_library",
-        "//test/util/vault:go_default_library",
-        "//vendor/github.com/golang/glog:go_default_library",
+        "//test/e2e/framework/addon:go_default_library",
         "//vendor/github.com/onsi/ginkgo:go_default_library",
-        "//vendor/github.com/onsi/ginkgo/config:go_default_library",
-        "//vendor/github.com/onsi/ginkgo/reporters:go_default_library",
-        "//vendor/github.com/onsi/gomega:go_default_library",
-        "//vendor/k8s.io/client-go/plugin/pkg/client/auth:go_default_library",
     ],
 )
 
@@ -40,9 +31,12 @@ go_test(
     tags = ["manual"],
     deps = [
         "//test/e2e/framework:go_default_library",
-        "//vendor/github.com/golang/glog:go_default_library",
+        "//test/e2e/suite:go_default_library",
+        "//vendor/github.com/onsi/ginkgo:go_default_library",
+        "//vendor/github.com/onsi/ginkgo/config:go_default_library",
+        "//vendor/github.com/onsi/ginkgo/reporters:go_default_library",
+        "//vendor/github.com/onsi/gomega:go_default_library",
         "//vendor/k8s.io/apimachinery/pkg/util/wait:go_default_library",
-        "//vendor/k8s.io/client-go/tools/clientcmd:go_default_library",
     ],
 )
 
@@ -57,10 +51,8 @@ filegroup(
     name = "all-srcs",
     srcs = [
         ":package-srcs",
-        "//test/e2e/certificate:all-srcs",
-        "//test/e2e/clusterissuer:all-srcs",
         "//test/e2e/framework:all-srcs",
-        "//test/e2e/issuer:all-srcs",
+        "//test/e2e/suite:all-srcs",
     ],
     tags = ["automanaged"],
     visibility = ["//visibility:public"],

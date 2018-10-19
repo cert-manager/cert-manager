@@ -21,7 +21,13 @@ HACK_DIR ?= hack
 # Domain name to use in e2e tests. This is important for ACME HTTP01 e2e tests,
 # which require a domain that resolves to the ingress controller to be used for
 # e2e tests.
-E2E_NGINX_CERTIFICATE_DOMAIN=
+# The IP address provided *must* be the IP that the domain, and all of its subdomains
+# point to.
+# When using the local testing environment, we use the certmanager.kubernetes.network
+# domain name which has been fixed to resolve to 10.0.0.15.
+E2E_NGINX_CERTIFICATE_DOMAIN=certmanager.kubernetes.network
+E2E_NGINX_CERTIFICATE_IP=10.0.0.15
+
 KUBECONFIG ?= $$HOME/.kube/config
 PEBBLE_IMAGE_REPO=quay.io/munnerz/pebble
 
@@ -108,16 +114,22 @@ $(CMDS):
 
 e2e_test:
 	mkdir -p "$$(pwd)/_artifacts"
-	bazel build //test/e2e
+	bazel build //hack/bin:helm //test/e2e:e2e.test
 	# Run e2e tests
-	KUBECONFIG=$(KUBECONFIG) CERTMANAGERCONFIG=$(KUBECONFIG) \
-		bazel-genfiles/test/e2e/e2e \
-			-acme-nginx-certificate-domain=$(E2E_NGINX_CERTIFICATE_DOMAIN) \
-			-cloudflare-email=$${CLOUDFLARE_E2E_EMAIL} \
-			-cloudflare-api-key=$${CLOUDFLARE_E2E_API_TOKEN} \
-			-acme-cloudflare-domain=$${CLOUDFLARE_E2E_DOMAIN} \
-			-pebble-image-repo=$(PEBBLE_IMAGE_REPO) \
-			-report-dir="$${ARTIFACTS:-./_artifacts}"
+	KUBECONFIG=$(KUBECONFIG) \
+		bazel run //vendor/github.com/onsi/ginkgo/ginkgo -- \
+			-nodes 20 \
+			$$(bazel info bazel-genfiles)/test/e2e/e2e.test \
+			-- \
+			--global-nginx-ingress-domain=$(E2E_NGINX_CERTIFICATE_DOMAIN) \
+			--global-nginx-ingress-ip-address=$(E2E_NGINX_CERTIFICATE_IP) \
+			--suite.acme-cloudflare-domain=$${CLOUDFLARE_E2E_DOMAIN} \
+			--suite.acme-cloudflare-api-key=$${CLOUDFLARE_E2E_API_TOKEN} \
+			--suite.acme-cloudflare-email=$${CLOUDFLARE_E2E_EMAIL} \
+			--helm-binary-path=$$(bazel info bazel-genfiles)/hack/bin/helm \
+			--tiller-image-tag=$$($$(bazel info bazel-genfiles)/hack/bin/helm version --client --template '{{.Client.SemVer}}') \
+			--repo-root="$$(pwd)" \
+			--report-dir="$${ARTIFACTS:-./_artifacts}"
 
 # Generate targets
 ##################
