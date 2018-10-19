@@ -110,3 +110,7 @@ func (b *Cloudflare) Details() *Details {
 func (b *Cloudflare) SupportsGlobal() bool {
 	return false
 }
+
+func (b *Cloudflare) SetNamespace(s string) {
+	b.Namespace = s
+}
