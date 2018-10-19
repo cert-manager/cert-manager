@@ -18,6 +18,7 @@ package dns
 
 import (
 	"errors"
+	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/digitalocean"
 	"testing"
 
 	"github.com/jetstack/cert-manager/test/util/generate"
@@ -160,6 +161,10 @@ func newFakeDNSProviders() *fakeDNSProviders {
 		},
 		rfc2136: func(nameserver, tsigAlgorithm, tsigKeyName, tsigSecret string, dns01Nameservers []string) (*rfc2136.DNSProvider, error) {
 			f.call("rfc2136", nameserver, tsigAlgorithm, tsigKeyName, tsigSecret, util.RecursiveNameservers)
+			return nil, nil
+		},
+		digitalOcean: func(token string, dns01Nameservers []string) (*digitalocean.DNSProvider, error) {
+			f.call("digitalocean", token, util.RecursiveNameservers)
 			return nil, nil
 		},
 	}

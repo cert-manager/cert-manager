@@ -264,6 +264,60 @@ func TestSolverFor(t *testing.T) {
 	}
 }
 
+func TestSolveForDigitalOcean(t *testing.T) {
+	f := &solverFixture{
+		Builder: &test.Builder{
+			KubeObjects: []runtime.Object{
+				newSecret("digitalocean", "default", map[string][]byte{
+					"token": []byte("FAKE-TOKEN"),
+				}),
+			},
+		},
+		Issuer: newIssuer("test", "default", []v1alpha1.ACMEIssuerDNS01Provider{
+			{
+				Name: "fake-digitalocean",
+				DigitalOcean: &v1alpha1.ACMEIssuerDNS01ProviderDigitalOcean{
+					Token: v1alpha1.SecretKeySelector{
+						LocalObjectReference: v1alpha1.LocalObjectReference{
+							Name: "digitalocean",
+						},
+						Key: "token",
+					},
+				},
+			},
+		}),
+		Challenge: v1alpha1.ACMEOrderChallenge{
+			SolverConfig: v1alpha1.SolverConfig{
+				DNS01: &v1alpha1.DNS01SolverConfig{
+					Provider: "fake-digitalocean",
+				},
+			},
+		},
+		dnsProviders: newFakeDNSProviders(),
+	}
+
+	f.Setup(t)
+	defer f.Finish(t)
+
+	s := f.Solver
+	_, err := s.solverForIssuerProvider(f.Issuer, f.Challenge.SolverConfig.DNS01.Provider)
+	if err != nil {
+		t.Fatalf("expected solverFor to not error, but got: %s", err)
+	}
+
+	expectedDOCall := []fakeDNSProviderCall{
+		{
+			name: "digitalocean",
+			args: []interface{}{"FAKE-TOKEN", util.RecursiveNameservers},
+		},
+	}
+
+	if !reflect.DeepEqual(expectedDOCall, f.dnsProviders.calls) {
+		t.Fatalf("expected %+v == %+v", expectedDOCall, f.dnsProviders.calls)
+	}
+
+}
+
 func TestRoute53TrimCreds(t *testing.T) {
 	f := &solverFixture{
 		Builder: &test.Builder{

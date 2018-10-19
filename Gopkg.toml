@@ -37,6 +37,10 @@ required = [
   version = "v12.0.0-beta"
 
 [[constraint]]
+  name = "github.com/digitalocean/godo"
+  version = "v1.6.0"
+
+[[constraint]]
   name = "github.com/openshift/generic-admission-server"
   revision = "76d182e57ce628bbf6eb266a7d26cf6c52adf551"
 
