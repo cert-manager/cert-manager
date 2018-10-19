@@ -25,6 +25,7 @@ import (
 	"k8s.io/client-go/rest"
 
 	clientset "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
+	"github.com/jetstack/cert-manager/test/e2e/framework/addon"
 	"github.com/jetstack/cert-manager/test/e2e/framework/config"
 	"github.com/jetstack/cert-manager/test/e2e/framework/util"
 )
@@ -120,20 +121,13 @@ func (f *Framework) AfterEach() {
 	Expect(err).NotTo(HaveOccurred())
 }
 
-type addon interface {
-	Setup(*config.Config) error
-	SupportsGlobal() bool
-	Provision() error
-	Deprovision() error
-}
-
 // RequireGlobalAddon calls Setup on the given addon.
 // This should be called in specs or describe blocks that require access to any
 // of the global/shared addons in order to ensure their details are available.
 // This method should only ever be called with addons defined in the 'addons' that
 // are present in the 'globals' variable, as they will not be Provisioned properly
 // otherwise.
-func (f *Framework) RequireGlobalAddon(a addon) {
+func (f *Framework) RequireGlobalAddon(a addon.Addon) {
 	BeforeEach(func() {
 		By("Setting up access for global shared addon")
 		err := a.Setup(f.Config)
@@ -144,7 +138,7 @@ func (f *Framework) RequireGlobalAddon(a addon) {
 // RequireAddon calls the Setup and Provision method on the given addon, failing
 // the spec if provisioning fails.
 // It returns the addons deprovision function as a convinience.
-func (f *Framework) RequireAddon(a addon) {
+func (f *Framework) RequireAddon(a addon.Addon) {
 	BeforeEach(func() {
 		By("Provisioning test-scoped addon")
 		err := a.Setup(f.Config)
