@@ -68,3 +68,4 @@ and provider specific notes regarding their usage.
    cloudflare
    google
    route53
+   digitalocean

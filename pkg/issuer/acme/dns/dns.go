@@ -33,6 +33,7 @@ import (
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/azuredns"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/clouddns"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/cloudflare"
+	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/digitalocean"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/rfc2136"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/route53"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
@@ -52,12 +53,13 @@ type solver interface {
 // It is useful for mocking out a given provider since an alternate set of
 // constructors may be set.
 type dnsProviderConstructors struct {
-	cloudDNS   func(project string, serviceAccount []byte, dns01Nameservers []string, ambient bool) (*clouddns.DNSProvider, error)
-	cloudFlare func(email, apikey string, dns01Nameservers []string) (*cloudflare.DNSProvider, error)
-	route53    func(accessKey, secretKey, hostedZoneID, region string, ambient bool, dns01Nameservers []string) (*route53.DNSProvider, error)
-	azureDNS   func(clientID, clientSecret, subscriptionID, tenentID, resourceGroupName, hostedZoneName string, dns01Nameservers []string) (*azuredns.DNSProvider, error)
-	acmeDNS    func(host string, accountJson []byte, dns01Nameservers []string) (*acmedns.DNSProvider, error)
-	rfc2136    func(nameserver, tsigAlgorithm, tsigKeyName, tsigSecret string, dns01Nameservers []string) (*rfc2136.DNSProvider, error)
+	cloudDNS     func(project string, serviceAccount []byte, dns01Nameservers []string, ambient bool) (*clouddns.DNSProvider, error)
+	cloudFlare   func(email, apikey string, dns01Nameservers []string) (*cloudflare.DNSProvider, error)
+	route53      func(accessKey, secretKey, hostedZoneID, region string, ambient bool, dns01Nameservers []string) (*route53.DNSProvider, error)
+	azureDNS     func(clientID, clientSecret, subscriptionID, tenentID, resourceGroupName, hostedZoneName string, dns01Nameservers []string) (*azuredns.DNSProvider, error)
+	acmeDNS      func(host string, accountJson []byte, dns01Nameservers []string) (*acmedns.DNSProvider, error)
+	rfc2136      func(nameserver, tsigAlgorithm, tsigKeyName, tsigSecret string, dns01Nameservers []string) (*rfc2136.DNSProvider, error)
+	digitalOcean func(token string, dns01Nameservers []string) (*digitalocean.DNSProvider, error)
 }
 
 // Solver is a solver for the acme dns01 challenge.
@@ -206,6 +208,18 @@ func (s *Solver) solverForChallenge(issuer v1alpha1.GenericIssuer, ch *v1alpha1.
 		if err != nil {
 			return nil, fmt.Errorf("error instantiating cloudflare challenge solver: %s", err)
 		}
+	case providerConfig.DigitalOcean != nil:
+		apiTokenSecret, err := s.secretLister.Secrets(resourceNamespace).Get(providerConfig.DigitalOcean.Token.Name)
+		if err != nil {
+			return nil, fmt.Errorf("error getting digitalocean token: %s", err)
+		}
+
+		apiToken := string(apiTokenSecret.Data[providerConfig.DigitalOcean.Token.Key])
+
+		impl, err = s.dnsProviderConstructors.digitalOcean(strings.TrimSpace(apiToken), s.DNS01Nameservers)
+		if err != nil {
+			return nil, fmt.Errorf("error instantiating digitalocean challenge solver: %s", err.Error())
+		}
 	case providerConfig.Route53 != nil:
 		secretAccessKey := ""
 		if providerConfig.Route53.SecretAccessKey.Name != "" {
@@ -318,6 +332,7 @@ func NewSolver(ctx *controller.Context) *Solver {
 			azuredns.NewDNSProviderCredentials,
 			acmedns.NewDNSProviderHostBytes,
 			rfc2136.NewDNSProviderCredentials,
+			digitalocean.NewDNSProviderCredentials,
 		},
 	}
 }
