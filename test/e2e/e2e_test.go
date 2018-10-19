@@ -55,10 +55,11 @@ func TestE2E(t *testing.T) {
 
 	gomega.RegisterFailHandler(ginkgo.Fail)
 
+	// TODO: properly make use of default SkipString
 	// Disable skipped tests unless they are explicitly requested.
-	if ginkgoconfig.GinkgoConfig.FocusString == "" && ginkgoconfig.GinkgoConfig.SkipString == "" {
-		ginkgoconfig.GinkgoConfig.SkipString = `\[Flaky\]|\[Feature:.+\]`
-	}
+	// if ginkgoconfig.GinkgoConfig.FocusString == "" && ginkgoconfig.GinkgoConfig.SkipString == "" {
+	// 	ginkgoconfig.GinkgoConfig.SkipString = `\[Flaky\]|\[Feature:.+\]`
+	// }
 
 	var r []ginkgo.Reporter
 	if framework.DefaultConfig.Ginkgo.ReportDirectory != "" {
