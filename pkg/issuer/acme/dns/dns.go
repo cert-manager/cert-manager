@@ -34,6 +34,7 @@ import (
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/clouddns"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/cloudflare"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/digitalocean"
+	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/execute"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/rfc2136"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/route53"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
@@ -60,6 +61,7 @@ type dnsProviderConstructors struct {
 	acmeDNS      func(host string, accountJson []byte, dns01Nameservers []string) (*acmedns.DNSProvider, error)
 	rfc2136      func(nameserver, tsigAlgorithm, tsigKeyName, tsigSecret string, dns01Nameservers []string) (*rfc2136.DNSProvider, error)
 	digitalOcean func(token string, dns01Nameservers []string) (*digitalocean.DNSProvider, error)
+	execute      func(pluginName string, pluginDirectory string, configJson []byte, dns01Nameservers []string) (*execute.DNSProvider, error)
 }
 
 // Solver is a solver for the acme dns01 challenge.
@@ -312,6 +314,34 @@ func (s *Solver) solverForChallenge(issuer v1alpha1.GenericIssuer, ch *v1alpha1.
 		if err != nil {
 			return nil, fmt.Errorf("error instantiating rfc2136 challenge solver: %s", err.Error())
 		}
+	case providerConfig.Execute != nil:
+		var configJson []byte
+		var ok bool
+
+		if providerConfig.Execute.ConfigSecret.Name != "" {
+			clientSecret, err := s.secretLister.Secrets(resourceNamespace).Get(providerConfig.Execute.ConfigSecret.Name)
+			if err != nil {
+				return nil, fmt.Errorf("error getting execute secret: %s", err)
+			}
+			if len(clientSecret.Data) == 0 {
+				return nil, fmt.Errorf("error getting execute secret '%s': \"data\" field is empty", err)
+			}
+			configJson, ok = clientSecret.Data["configJson"]
+			if ok == false {
+				return nil, fmt.Errorf("error getting execute secret '%s': \"data.configJson\" field is empty", clientSecret.Name)
+			}
+		}
+
+		impl, err = s.dnsProviderConstructors.execute(
+			providerConfig.Execute.PluginName,
+			s.DNS01ExecuteIssuerPluginDirectory,
+			configJson,
+			s.DNS01Nameservers,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("error instantiating execute challenge solver: %s", err)
+		}
+
 	default:
 		return nil, fmt.Errorf("no dns provider config specified for provider %q", providerName)
 	}
@@ -333,6 +363,7 @@ func NewSolver(ctx *controller.Context) *Solver {
 			acmedns.NewDNSProviderHostBytes,
 			rfc2136.NewDNSProviderCredentials,
 			digitalocean.NewDNSProviderCredentials,
+			execute.NewDNSProviderCredentials,
 		},
 	}
 }

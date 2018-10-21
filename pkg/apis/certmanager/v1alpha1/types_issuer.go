@@ -163,6 +163,7 @@ type ACMEIssuerDNS01Provider struct {
 	DigitalOcean *ACMEIssuerDNS01ProviderDigitalOcean `json:"digitalocean,omitempty"`
 	AcmeDNS      *ACMEIssuerDNS01ProviderAcmeDNS      `json:"acmedns,omitempty"`
 	RFC2136      *ACMEIssuerDNS01ProviderRFC2136      `json:"rfc2136,omitempty"`
+	Execute      *ACMEIssuerDNS01ProviderExecute      `json:"execute,omitempty"`
 }
 
 // ACMEIssuerDNS01ProviderAkamai is a structure containing the DNS
@@ -246,6 +247,13 @@ type ACMEIssuerDNS01ProviderRFC2136 struct {
 	// ``HMACSHA1``, ``HMACSHA256`` or ``HMACSHA512``.
 	// +optional
 	TSIGAlgorithm string `json:"tsigAlgorithm"`
+}
+
+type ACMEIssuerDNS01ProviderExecute struct {
+	PluginName string `json:"pluginName"`
+
+	// + optional
+	ConfigSecret SecretKeySelector `json:"configSecretSecretRef"`
 }
 
 // IssuerStatus contains status information about an Issuer

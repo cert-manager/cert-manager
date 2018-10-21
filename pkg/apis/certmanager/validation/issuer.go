@@ -26,10 +26,14 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
+	"regexp"
+
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 )
 
 // Validation functions for cert-manager v1alpha1 Issuer types
+
+var executePluginNameRegex = regexp.MustCompile(`^[[:alnum:]]+$`)
 
 func ValidateIssuer(iss *v1alpha1.Issuer) field.ErrorList {
 	allErrs := ValidateIssuerSpec(&iss.Spec, field.NewPath("spec"))
@@ -285,6 +289,24 @@ func ValidateACMEIssuerDNS01Config(iss *v1alpha1.ACMEIssuerDNS01Config, fldPath 
 						el = append(el, field.Required(fldPath.Child("rfc2136", "tsigKeyName"), ""))
 					}
 
+				}
+			}
+		}
+		if p.Execute != nil {
+			if numProviders > 0 {
+				el = append(el, field.Forbidden(fldPath.Child("execute"), "may not specify more than one provider type"))
+			} else {
+				numProviders++
+				fldPath = fldPath.Child("execute")
+				if len(p.Execute.ConfigSecret.Name) > 0 {
+					if len(ValidateSecretKeySelector(&p.Execute.ConfigSecret, fldPath)) > 0 {
+						el = append(el, field.Required(fldPath.Child("configSecretSecretRef"), ""))
+					}
+				}
+				if len(p.Execute.PluginName) == 0 {
+					el = append(el, field.Required(fldPath.Child("pluginName"), ""))
+				} else if match := executePluginNameRegex.MatchString(p.Execute.PluginName); !match {
+					el = append(el, field.Forbidden(fldPath.Child("pluginName"), "pluginName field contains invalid characters"))
 				}
 			}
 		}

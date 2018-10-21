@@ -19,6 +19,7 @@ package options
 import (
 	"fmt"
 	"net"
+	"os"
 	"time"
 
 	"github.com/spf13/pflag"
@@ -63,6 +64,10 @@ type ControllerOptions struct {
 
 	// DNS01Nameservers allows specifying a list of custom nameservers to perform DNS checks
 	DNS01Nameservers []string
+
+	// DNS01ExecuteIssuerPluginDirectory allows specifiyng a path to a directory, contains executables used by
+	// DNS01 Execute Provider
+	DNS01ExecuteIssuerPluginDirectory string
 }
 
 const (
@@ -120,6 +125,7 @@ func NewControllerOptions() *ControllerOptions {
 		DefaultACMEIssuerChallengeType:     defaultACMEIssuerChallengeType,
 		DefaultACMEIssuerDNS01ProviderName: defaultACMEIssuerDNS01ProviderName,
 		DNS01Nameservers:                   []string{},
+		DNS01ExecuteIssuerPluginDirectory:  "",
 	}
 }
 
@@ -193,6 +199,9 @@ func (s *ControllerOptions) AddFlags(fs *pflag.FlagSet) {
 	fs.StringSliceVar(&s.DNS01Nameservers, "dns01-self-check-nameservers", []string{}, ""+
 		"A list of comma seperated DNS server endpoints used for DNS01 check requests. "+
 		"This should be a list containing IP address and port, for example: 8.8.8.8:53,8.8.4.4:53")
+	fs.StringVar(&s.DNS01ExecuteIssuerPluginDirectory, "dns01-execute-issuer-plugin-directory", "", ""+
+		"An absolute path to a directory, that contains executables used by Execute DNS01 Provider. "+
+		"This option is required when using Execute DNS01 Provider. If specified directory does not exist, the program exits.")
 }
 
 func (o *ControllerOptions) Validate() error {
@@ -214,5 +223,22 @@ func (o *ControllerOptions) Validate() error {
 			return fmt.Errorf("invalid IP address: %v", host)
 		}
 	}
+
+	// validate that we can access Execute plugin directory
+	if o.DNS01ExecuteIssuerPluginDirectory != "" {
+		pwd, err := os.Getwd()
+		if err != nil {
+			return fmt.Errorf("can't get current working directory: %s", err)
+		}
+
+		if err := os.Chdir(o.DNS01ExecuteIssuerPluginDirectory); err != nil {
+			return fmt.Errorf("can't change directory to the provided execute plugin directory: ", err)
+		}
+
+		if err := os.Chdir(pwd); err != nil {
+			return fmt.Errorf("can't change directory back to the original cwd: ", err)
+		}
+	}
+
 	return nil
 }

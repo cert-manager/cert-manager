@@ -96,6 +96,10 @@ type ACMEOptions struct {
 	// DNS01Nameservers is a list of nameservers to use when performing self-checks
 	// for ACME DNS01 validations.
 	DNS01Nameservers []string
+
+	// DNS01ExecuteIssuerPluginDirectory allows specifiyng a path to a directory, that contains executables used by
+	// DNS01 Execute Provider
+	DNS01ExecuteIssuerPluginDirectory string
 }
 
 type IngressShimOptions struct {
