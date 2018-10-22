@@ -35,14 +35,14 @@ KIND_IMAGE=${KIND_IMAGE:-eu.gcr.io/jetstack-build-infra-images/kind:1.11.2-0}
 # cleanup will call kind delete - it will absorb errors
 cleanup() {
     # Ignore errors here
-    kind delete --name="${KIND_CLUSTER_NAME}" || true
+    kind delete cluster --name="${KIND_CLUSTER_NAME}" || true
 }
 trap cleanup EXIT
 
 # deploy_kind will deploy a kubernetes-in-docker cluster
 deploy_kind() {
     # create the kind cluster
-    kind create \
+    kind create cluster \
         --name="${KIND_CLUSTER_NAME}" \
         --image="${KIND_IMAGE}" \
         --config "${REPO_ROOT}"/test/fixtures/kind-config.yaml
