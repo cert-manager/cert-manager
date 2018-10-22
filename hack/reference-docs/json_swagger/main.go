@@ -26,7 +26,7 @@ import (
 	"github.com/go-openapi/spec"
 	"k8s.io/kube-openapi/pkg/common"
 
-	"github.com/jetstack/cert-manager/docs/generated/reference/openapi"
+	openapi "github.com/jetstack/cert-manager/hack/reference-docs/go_openapi"
 )
 
 func main() {
@@ -47,13 +47,7 @@ func WriteOpenAPI(openapi func(ref common.ReferenceCallback) map[string]common.O
 		log.Fatalf("Could not Marshal JSON %v\n%v", err, defs)
 	}
 
-	// wd, err := os.Getwd()
-	// if err != nil {
-	// 	log.Fatalf("Error getting working directory: %v", err)
-	// }
-
 	_, err = os.Stdout.Write(o)
-	// err = ioutil.WriteFile(filepath.Join(wd, "docs", "generated", "reference", "openapi-spec", "swagger.json"), o, 0700)
 	if err != nil {
 		log.Fatalf("%v", err)
 	}
