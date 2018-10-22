@@ -1,10 +1,10 @@
 example_location: "examples"
-api_groups: 
+api_groups:
   - "Certmanager"
-resource_categories: 
+resource_categories:
 - name: "Certmanager"
   include: "certmanager"
-  resources: 
+  resources:
   - name: "Certificate"
     version: "v1alpha1"
     group: "certmanager"
