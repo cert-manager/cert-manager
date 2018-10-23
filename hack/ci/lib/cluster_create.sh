@@ -21,10 +21,14 @@ set -o pipefail
 SCRIPT_ROOT=$(dirname "${BASH_SOURCE}")
 source "${SCRIPT_ROOT}/lib.sh"
 
+# build 'kind'
+bazel build //hack/bin:kind
+KIND="$(bazel info bazel-genfiles)/hack/bin/kind"
+
 # deploy_kind will deploy a kubernetes-in-docker cluster
 deploy_kind() {
     # create the kind cluster
-    kind create cluster \
+    "${KIND}" create cluster \
         --name="${KIND_CLUSTER_NAME}" \
         --image="${KIND_IMAGE}" \
         --config "${REPO_ROOT}"/test/fixtures/kind-config.yaml
