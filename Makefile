@@ -17,6 +17,8 @@ DOCKER_REPO :=
 APP_VERSION := canary
 HACK_DIR ?= hack
 
+GINKGO_SKIP :=
+
 ## e2e test vars
 KUBECONFIG ?= $$HOME/.kube/config
 
@@ -113,7 +115,8 @@ e2e_test:
 			--helm-binary-path=$$(bazel info bazel-genfiles)/hack/bin/helm \
 			--tiller-image-tag=$$($$(bazel info bazel-genfiles)/hack/bin/helm version --client --template '{{.Client.SemVer}}') \
 			--repo-root="$$(pwd)" \
-			--report-dir="$${ARTIFACTS:-./_artifacts}"
+			--report-dir="$${ARTIFACTS:-./_artifacts}" \
+			--ginkgo.skip="$(GINKGO_SKIP)"
 
 # Generate targets
 ##################
