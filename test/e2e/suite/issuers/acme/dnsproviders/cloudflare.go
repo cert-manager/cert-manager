@@ -23,6 +23,7 @@ import (
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	"github.com/jetstack/cert-manager/test/e2e/framework/addon/base"
 	"github.com/jetstack/cert-manager/test/e2e/framework/config"
+	"github.com/jetstack/cert-manager/test/e2e/framework/util/errors"
 )
 
 // Cloudflare provisions cloudflare credentials in a namespace for cert-manager
@@ -44,7 +45,7 @@ func (b *Cloudflare) Setup(c *config.Config) error {
 	if c.Suite.ACME.Cloudflare.APIKey == "" ||
 		c.Suite.ACME.Cloudflare.Domain == "" ||
 		c.Suite.ACME.Cloudflare.Email == "" {
-		return ErrNoCredentials
+		return errors.NewSkip(ErrNoCredentials)
 	}
 
 	if b.Base == nil {

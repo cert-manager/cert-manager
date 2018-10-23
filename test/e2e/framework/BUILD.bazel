@@ -18,6 +18,7 @@ go_library(
         "//test/e2e/framework/helper:go_default_library",
         "//test/e2e/framework/log:go_default_library",
         "//test/e2e/framework/util:go_default_library",
+        "//test/e2e/framework/util/errors:go_default_library",
         "//vendor/github.com/onsi/ginkgo:go_default_library",
         "//vendor/github.com/onsi/gomega:go_default_library",
         "//vendor/k8s.io/api/authorization/v1:go_default_library",

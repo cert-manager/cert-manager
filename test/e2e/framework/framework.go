@@ -29,6 +29,7 @@ import (
 	"github.com/jetstack/cert-manager/test/e2e/framework/addon"
 	"github.com/jetstack/cert-manager/test/e2e/framework/config"
 	"github.com/jetstack/cert-manager/test/e2e/framework/util"
+	"github.com/jetstack/cert-manager/test/e2e/framework/util/errors"
 )
 
 // DefaultConfig contains the default shared config the is likely parsed from
@@ -143,6 +144,9 @@ func (f *Framework) RequireAddon(a addon.Addon) {
 	BeforeEach(func() {
 		By("Provisioning test-scoped addon")
 		err := a.Setup(f.Config)
+		if errors.IsSkip(err) {
+			Skipf("Skipping test as addon could not be setup: %v", err)
+		}
 		Expect(err).NotTo(HaveOccurred())
 
 		err = a.Provision()
