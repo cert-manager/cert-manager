@@ -42,7 +42,7 @@ Docker, helm and kubectl should be installed through your preferred means.
 
 .. code-block:: shell
 
-   go install k8s.io/test-infra/kind
+   go install github.com/kubernetes-sigs/kind
 
 Run end-to-end tests
 ====================
