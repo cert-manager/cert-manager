@@ -16,7 +16,10 @@ limitations under the License.
 
 package config
 
-import "flag"
+import (
+	"flag"
+	"os"
+)
 
 type Suite struct {
 	ACME ACME
@@ -47,15 +50,14 @@ func (c *ACME) AddFlags(fs *flag.FlagSet) {
 }
 
 func (c *ACME) Validate() []error {
-	// TODO: validate Cloudflare config
 	return nil
 }
 
 func (c *Cloudflare) AddFlags(fs *flag.FlagSet) {
-	fs.StringVar(&c.Domain, "suite.acme-cloudflare-domain", "", ""+
+	fs.StringVar(&c.Domain, "suite.acme-cloudflare-domain", os.Getenv("CLOUDFLARE_E2E_DOMAIN"), ""+
 		"The cloudflare API domain name. If not specified, DNS tests will be skipped")
-	fs.StringVar(&c.Email, "suite.acme-cloudflare-email", "", ""+
+	fs.StringVar(&c.Email, "suite.acme-cloudflare-email", os.Getenv("CLOUDFLARE_E2E_EMAIL"), ""+
 		"The cloudflare API email address. If not specified, DNS tests will be skipped")
-	fs.StringVar(&c.APIKey, "suite.acme-cloudflare-api-key", "", ""+
+	fs.StringVar(&c.APIKey, "suite.acme-cloudflare-api-key", os.Getenv("CLOUDFLARE_E2E_API_TOKEN"), ""+
 		"The cloudflare API key. If not specified, DNS tests will be skipped")
 }
