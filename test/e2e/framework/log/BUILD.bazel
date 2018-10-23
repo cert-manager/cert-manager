@@ -2,16 +2,11 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 
 go_library(
     name = "go_default_library",
-    srcs = ["base.go"],
-    importpath = "github.com/jetstack/cert-manager/test/e2e/framework/addon/base",
+    srcs = ["log.go"],
+    importpath = "github.com/jetstack/cert-manager/test/e2e/framework/log",
     tags = ["manual"],
     visibility = ["//visibility:public"],
-    deps = [
-        "//test/e2e/framework/config:go_default_library",
-        "//test/e2e/framework/helper:go_default_library",
-        "//test/e2e/framework/util:go_default_library",
-        "//vendor/k8s.io/client-go/kubernetes:go_default_library",
-    ],
+    deps = ["//vendor/github.com/onsi/ginkgo:go_default_library"],
 )
 
 filegroup(
