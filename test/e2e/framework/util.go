@@ -29,42 +29,27 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
-)
 
-const (
-	// How often to poll for conditions
-	Poll = 2 * time.Second
-
-	// Default time to wait for operations to complete
-	defaultTimeout = 30 * time.Second
-
-	longTimeout = 5 * time.Minute
+	. "github.com/jetstack/cert-manager/test/e2e/framework/log"
 )
 
 func nowStamp() string {
 	return time.Now().Format(time.StampMilli)
 }
 
-func log(level string, format string, args ...interface{}) {
-	fmt.Fprintf(GinkgoWriter, nowStamp()+": "+level+": "+format+"\n", args...)
-}
-
-func Logf(format string, args ...interface{}) {
-	log("INFO", format, args...)
-}
-
 func Failf(format string, args ...interface{}) {
 	msg := fmt.Sprintf(format, args...)
-	log("INFO", msg)
+	Logf(msg)
 	Fail(nowStamp()+": "+msg, 1)
 }
 
 func Skipf(format string, args ...interface{}) {
 	msg := fmt.Sprintf(format, args...)
-	log("INFO", msg)
+	Logf("INFO", msg)
 	Skip(nowStamp() + ": " + msg)
 }
 
+// TODO: move this function into a different package
 func RbacClusterRoleHasAccessToResource(f *Framework, clusterRole string, verb string, resource string) bool {
 	By("Creating a service account")
 	viewServiceAccount := &v1.ServiceAccount{

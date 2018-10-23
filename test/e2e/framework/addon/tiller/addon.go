@@ -18,7 +18,6 @@ package tiller
 
 import (
 	"fmt"
-	"time"
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -254,32 +253,9 @@ func (t *Tiller) Provision() error {
 	}
 
 	// otherwise lookup the newly created pods name
-	kubeClient := t.Base.Details().KubeClient
-	retries := 10
-	for {
-		pods, err := kubeClient.CoreV1().Pods(t.Namespace).List(metav1.ListOptions{
-			LabelSelector: "name=tiller",
-		})
-		if err != nil {
-			return err
-		}
-		if len(pods.Items) == 0 {
-			if retries == 0 {
-				return fmt.Errorf("failed to create tiller pod within 10s")
-			}
-			retries--
-			time.Sleep(time.Second * 2)
-			continue
-		}
-		tillerPod := pods.Items[0]
-		// If the vault pod exists but is just waiting to be created, we allow
-		// it a bit longer.
-		if len(tillerPod.Status.ContainerStatuses) == 0 || !tillerPod.Status.ContainerStatuses[0].Ready {
-			retries--
-			time.Sleep(time.Second * 5)
-			continue
-		}
-		break
+	err = t.Base.Details().Helper().WaitForAllPodsRunningInNamespace(t.Namespace)
+	if err != nil {
+		return err
 	}
 
 	return nil

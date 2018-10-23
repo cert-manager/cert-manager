@@ -30,6 +30,11 @@ import (
 
 // Defines methods that help provision test environments
 
+const (
+	// How often to poll for conditions
+	Poll = 2 * time.Second
+)
+
 // CreateKubeNamespace creates a new Kubernetes Namespace for a test.
 func (f *Framework) CreateKubeNamespace(baseName string) (*v1.Namespace, error) {
 	ns := &v1.Namespace{

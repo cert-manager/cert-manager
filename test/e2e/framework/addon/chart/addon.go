@@ -123,6 +123,11 @@ func (c *Chart) Provision() error {
 		return fmt.Errorf("error install helm chart: %v", err)
 	}
 
+	err = c.Tiller.Base.Details().Helper().WaitForAllPodsRunningInNamespace(c.Namespace)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 

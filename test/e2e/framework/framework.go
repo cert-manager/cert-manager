@@ -17,6 +17,7 @@ limitations under the License.
 package framework
 
 import (
+	"github.com/jetstack/cert-manager/test/e2e/framework/helper"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"k8s.io/api/core/v1"
@@ -159,6 +160,12 @@ func (f *Framework) RequireAddon(a addon.Addon) {
 		err := a.Deprovision()
 		Expect(err).NotTo(HaveOccurred())
 	})
+}
+
+func (f *Framework) Helper() *helper.Helper {
+	return &helper.Helper{
+		KubeClient: f.KubeClientSet,
+	}
 }
 
 // CertManagerDescribe is a wrapper function for ginkgo describe. Adds namespacing.
