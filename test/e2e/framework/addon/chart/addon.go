@@ -144,7 +144,7 @@ func (c *Chart) runDepUpdate() error {
 
 func (c *Chart) runInstall() error {
 	args := []string{"install", c.ChartName,
-		// "--wait",
+		"--wait",
 		"--namespace", c.Namespace,
 		"--name", c.ReleaseName}
 
