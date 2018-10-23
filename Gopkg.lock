@@ -167,6 +167,14 @@
   version = "v3.0.0"
 
 [[projects]]
+  digest = "1:d24ceb47adebda5503a07b88ec532bfc155ea2004ce87151ddf5e2bc6120141d"
+  name = "github.com/digitalocean/godo"
+  packages = ["."]
+  pruneopts = "U"
+  revision = "d29fc3d82041712620b923e8330eddb8a364840b"
+  version = "v1.6.0"
+
+[[projects]]
   digest = "1:f4f6279cb37479954644babd8f8ef00584ff9fa63555d2c6718c1c3517170202"
   name = "github.com/elazarl/go-bindata-assetfs"
   packages = ["."]
@@ -306,6 +314,14 @@
   packages = ["."]
   pruneopts = "U"
   revision = "553a641470496b2327abcac10b36396bd98e45c9"
+
+[[projects]]
+  digest = "1:b08ee366b946aaf9fc34ae3db6b6efa8caa193f30e119e02d2751e56737f482a"
+  name = "github.com/google/go-querystring"
+  packages = ["query"]
+  pruneopts = "U"
+  revision = "44c6ddd0a2342c386950e880b658017258da92fc"
+  version = "v1.0.0"
 
 [[projects]]
   branch = "master"
@@ -708,6 +724,14 @@
   pruneopts = "U"
   revision = "69483b4bd14f5845b5a1e55bca19e954e827f1d0"
   version = "v1.1.4"
+
+[[projects]]
+  branch = "master"
+  digest = "1:81f435c83e3523a7ee3f277769727f73ca66218ca8188d96a0935a4841b47a76"
+  name = "github.com/tent/http-link-go"
+  packages = ["."]
+  pruneopts = "U"
+  revision = "ac974c61c2f990f4115b119354b5e0b47550e888"
 
 [[projects]]
   digest = "1:62c701abe81873c12bc5da5c3f204d7293bb88e31977d5e7e258cfbbd2ca496a"
@@ -1388,6 +1412,7 @@
     "github.com/aws/aws-sdk-go/aws/session",
     "github.com/aws/aws-sdk-go/service/route53",
     "github.com/cpu/goacmedns",
+    "github.com/digitalocean/godo",
     "github.com/go-openapi/spec",
     "github.com/golang/glog",
     "github.com/gorilla/mux",

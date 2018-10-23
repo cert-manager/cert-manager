@@ -18,8 +18,9 @@ package dns
 
 import (
 	"errors"
-	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/digitalocean"
 	"testing"
+
+	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/digitalocean"
 
 	"github.com/jetstack/cert-manager/test/util/generate"
 
