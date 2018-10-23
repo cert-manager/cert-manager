@@ -19,10 +19,20 @@ spec:
         - name: {{ .Chart.Name }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
-          # readinessProbe:
-          #   httpGet:
-          #     path: /
-          #     port: {{ .Values.service.internalPort }}
+          readinessProbe:
+            tcpSocket:
+              port: 14000
+            initialDelaySeconds: 1
+            periodSeconds: 1
+            failureThreshold: 10
+            successThreshold: 1
+          livenessProbe:
+            tcpSocket:
+              port: 14000
+            initialDelaySeconds: 1
+            periodSeconds: 1
+            failureThreshold: 10
+            successThreshold: 1
           resources:
 {{ toYaml .Values.resources | indent 12 }}
     {{- if .Values.nodeSelector }}

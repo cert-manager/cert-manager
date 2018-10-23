@@ -19,6 +19,7 @@ limitations under the License.
 package base
 
 import (
+	"github.com/jetstack/cert-manager/test/e2e/framework/helper"
 	"k8s.io/client-go/kubernetes"
 
 	"github.com/jetstack/cert-manager/test/e2e/framework/config"
@@ -40,6 +41,12 @@ type Details struct {
 
 	// KubeClient is a configured Kubernetes clientset for addons to use.
 	KubeClient kubernetes.Interface
+}
+
+func (d *Details) Helper() *helper.Helper {
+	return &helper.Helper{
+		KubeClient: d.KubeClient,
+	}
 }
 
 func (b *Base) Setup(c *config.Config) error {
