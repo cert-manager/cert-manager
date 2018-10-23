@@ -84,6 +84,10 @@ type Details struct {
 func (c *Chart) Setup(cfg *config.Config) error {
 	var err error
 
+	c.config = cfg
+	if c.config.Addons.Helm.Path == "" {
+		return fmt.Errorf("--helm-binary-path must be set")
+	}
 	if c.Tiller == nil {
 		return fmt.Errorf("tiller base addon must be provided")
 	}
@@ -168,7 +172,7 @@ func (c *Chart) buildHelmCmd(args ...string) *exec.Cmd {
 		"--kube-context", c.tillerDetails.KubeContext,
 		"--tiller-namespace", c.tillerDetails.Namespace,
 	}, args...)
-	cmd := exec.Command("helm", args...)
+	cmd := exec.Command(c.config.Addons.Helm.Path, args...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	return cmd
