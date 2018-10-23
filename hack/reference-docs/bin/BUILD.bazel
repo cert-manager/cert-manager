@@ -3,7 +3,6 @@ load("@build_bazel_rules_nodejs//:defs.bzl", "nodejs_binary")
 nodejs_binary(
     name = "brodocs",
     data = [
-        "//docs/generated/reference:all-srcs",
         "@brodocs//:all-srcs",
     ],
     entry_point = "brodocs/brodoc",
