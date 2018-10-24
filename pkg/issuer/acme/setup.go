@@ -68,22 +68,29 @@ func (a *Acme) Setup(ctx context.Context) (issuer.SetupResponse, error) {
 		ns = a.IssuerOptions.ClusterResourceNamespace
 	}
 
-	// attempt to obtain the ACME client for this issuer using the 'acme helper'.
-	// This will will attempt to retrieve the ACME private key from the apiserver.
-	// If retrieving the private key fails, we catch this case and generate a
-	// new key.
-	cl, err := a.helper.ClientForIssuer(a.issuer)
-	if k8sErrors.IsNotFound(err) || errors.IsInvalidData(err) {
+	// attempt to obtain the existing private key, if it does not exist then
+	// we generate one
+	pk, err := a.helper.ReadPrivateKey(a.issuer.GetSpec().ACME.PrivateKey, ns)
+	if err != nil {
+		if !k8sErrors.IsNotFound(err) && !errors.IsInvalidData(err) {
+			s := messageAccountVerificationFailed + err.Error()
+			a.issuer.UpdateStatusCondition(v1alpha1.IssuerConditionReady, v1alpha1.ConditionFalse, errorAccountVerificationFailed, s)
+			return issuer.SetupResponse{Requeue: true}, fmt.Errorf(s)
+		}
+
 		glog.Infof("%s: generating acme account private key %q", a.issuer.GetObjectMeta().Name, a.issuer.GetSpec().ACME.PrivateKey.Name)
-		accountPrivKey, err := a.createAccountPrivateKey(a.issuer.GetSpec().ACME.PrivateKey, ns)
+		pk, err = a.createAccountPrivateKey(a.issuer.GetSpec().ACME.PrivateKey, ns)
 		if err != nil {
 			s := messageAccountRegistrationFailed + err.Error()
 			a.issuer.UpdateStatusCondition(v1alpha1.IssuerConditionReady, v1alpha1.ConditionFalse, errorAccountRegistrationFailed, s)
 			return issuer.SetupResponse{Requeue: true}, fmt.Errorf(s)
 		}
+
 		a.issuer.GetStatus().ACMEStatus().URI = ""
-		cl, err = acme.ClientWithKey(a.issuer, accountPrivKey)
-	} else if err != nil {
+	}
+
+	cl, err := acme.ClientWithKey(a.issuer, pk)
+	if err != nil {
 		s := messageAccountVerificationFailed + err.Error()
 		glog.V(4).Infof("%s: %s", a.issuer.GetObjectMeta().Name, s)
 		a.Recorder.Event(a.issuer, v1.EventTypeWarning, errorAccountVerificationFailed, s)
