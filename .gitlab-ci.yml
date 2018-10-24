@@ -1,4 +1,4 @@
-image: eu.gcr.io/jetstack-build-infra-images/cert-manager-e2e:v20180910-b8de01d-0.16.1
+image: eu.gcr.io/jetstack-build-infra-images/cert-manager-e2e:v20181022-34682de-0.18.0
 
 variables:
   DOCKER_DRIVER: overlay
