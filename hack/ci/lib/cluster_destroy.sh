@@ -14,27 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# This script will provision an end-to-end testing environment using 'kind'
-# (kubernetes-in-docker).
-#
-# It requires 'kind', 'helm', 'kubectl' and 'docker' to be installed.
-# kubectl will be automatically installed if not found when on linux
-
-set -o errexit
-set -o nounset
-set -o pipefail
-
 SCRIPT_ROOT=$(dirname "${BASH_SOURCE}")
-source "${SCRIPT_ROOT}/lib/lib.sh"
+source "${SCRIPT_ROOT}/lib.sh"
 
-cleanup() {
-    # Ignore errors here
-    "${SCRIPT_ROOT}/lib/cluster_destroy.sh" || true
-}
-trap cleanup EXIT
-
-"${SCRIPT_ROOT}/lib/cluster_create.sh"
-"${SCRIPT_ROOT}/lib/build_images.sh"
-
-make e2e_test \
-    KUBECONFIG=${KUBECONFIG}
+kind delete cluster --name="${KIND_CLUSTER_NAME}"
