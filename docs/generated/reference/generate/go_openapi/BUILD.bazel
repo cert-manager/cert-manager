@@ -2,7 +2,7 @@
 
 package(default_visibility = ["//visibility:public"])
 
-load("//hack/reference-docs/go_openapi:def.bzl", "openapi_library")
+load("//docs/generated/reference/generate/go_openapi:def.bzl", "openapi_library")
 
 openapi_library(
     name = "go_default_library",
@@ -11,7 +11,7 @@ openapi_library(
     openapi_targets = [
         "pkg/apis/certmanager/v1alpha1",
     ],
-    tags = ["manual"],
+    tags = ["docs"],
     vendor_targets = [
         "k8s.io/apimachinery/pkg/apis/meta/v1",
         "k8s.io/apimachinery/pkg/runtime",

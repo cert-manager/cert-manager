@@ -1,9 +1,9 @@
 genrule(
     name = "__internal_markdown_tar",
     srcs = [
-        "//hack/reference-docs:config.yaml",
-        "//hack/reference-docs/static_includes:all-srcs",
-        "//hack/reference-docs/json_swagger:swagger.json",
+        "//docs/generated/reference/generate:config.yaml",
+        "//docs/generated/reference/generate/static_includes:all-srcs",
+        "//docs/generated/reference/generate/json_swagger:swagger.json",
     ],
     outs = ["defs.tar.gz"],
     cmd = "; ".join([
@@ -11,9 +11,9 @@ genrule(
         "mkdir -p \"$$tmpdir/static_includes/\"",
         "mkdir -p \"$$tmpdir/includes/\"",
         "mkdir -p \"$$tmpdir/openapi-spec/\"",
-        "cp -L \"$(location //hack/reference-docs/json_swagger:swagger.json)\" \"$$tmpdir/openapi-spec/\"",
-        "cp -L \"$(location //hack/reference-docs:config.yaml)\" \"$$tmpdir/\"",
-        "cp -LR $(locations //hack/reference-docs/static_includes:all-srcs) \"$$tmpdir/static_includes/\"",
+        "cp -L \"$(location //docs/generated/reference/generate/json_swagger:swagger.json)\" \"$$tmpdir/openapi-spec/\"",
+        "cp -L \"$(location //docs/generated/reference/generate:config.yaml)\" \"$$tmpdir/\"",
+        "cp -LR $(locations //docs/generated/reference/generate/static_includes:all-srcs) \"$$tmpdir/static_includes/\"",
         "rm \"$$tmpdir/static_includes/BUILD.bazel\"",
         "$(location @io_kubernetes_incubator_reference_docs//gen-apidocs) --copyright \"<a href=\\\"https://jetstack.io\\\">Copyright 2018 Jetstack Ltd.</a>\" --title \"Cert-manager API Reference\" -config-dir $$tmpdir",
         "orig=$$(pwd)",
@@ -29,7 +29,7 @@ genrule(
 genrule(
     name = "__internal_brodocs_out",
     srcs = [
-        "//hack/reference-docs:__internal_markdown_tar",
+        "//docs/generated/reference/generate:__internal_markdown_tar",
     ],
     outs = [
         "index.html",
@@ -38,13 +38,13 @@ genrule(
     cmd = "; ".join([
         "input=$$(mktemp -d)",
         "output=$$(mktemp -d)",
-        "tar -C \"$$input\" -xf $(location //hack/reference-docs:__internal_markdown_tar)",
-        "$(location //hack/reference-docs/bin:brodocs) \"$$input/manifest.json\" \"$$input/includes\" \"$$output\"",
+        "tar -C \"$$input\" -xf $(location //docs/generated/reference/generate:__internal_markdown_tar)",
+        "$(location //docs/generated/reference/generate/bin:brodocs) \"$$input/manifest.json\" \"$$input/includes\" \"$$output\"",
         "cp $$output/index.html $(@D)",
         "cp $$output/navData.js $(@D)",
     ]),
     tools = [
-        "//hack/reference-docs/bin:brodocs",
+        "//docs/generated/reference/generate/bin:brodocs",
     ],
     visibility = ["//visibility:private"],
 )
@@ -54,7 +54,7 @@ genrule(
 # The output this script is then consumed by the hack/update-reference-docs.sh
 # to place the data into the correct directory to be displayed by readthedocs.
 genrule(
-    name = "reference-docs",
+    name = "generate",
     srcs = [
         ":__internal_brodocs_out",
         "@brodocs//:static",
@@ -94,10 +94,10 @@ filegroup(
     name = "all-srcs",
     srcs = [
         ":package-srcs",
-        "//hack/reference-docs/bin:all-srcs",
-        "//hack/reference-docs/go_openapi:all-srcs",
-        "//hack/reference-docs/json_swagger:all-srcs",
-        "//hack/reference-docs/static_includes:all-srcs",
+        "//docs/generated/reference/generate/bin:all-srcs",
+        "//docs/generated/reference/generate/go_openapi:all-srcs",
+        "//docs/generated/reference/generate/json_swagger:all-srcs",
+        "//docs/generated/reference/generate/static_includes:all-srcs",
     ],
     tags = ["automanaged"],
     visibility = ["//visibility:public"],

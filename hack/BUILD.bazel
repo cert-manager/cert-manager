@@ -118,10 +118,7 @@ sh_binary(
     name = "update-reference-docs",
     srcs = ["update-reference-docs.sh"],
     data = [
-        "//hack/reference-docs",
-    ],
-    deps = [
-        "@bazel_tools//tools/bash/runfiles",
+        "//docs/generated/reference/generate",
     ],
 )
 
@@ -129,12 +126,9 @@ sh_test(
     name = "verify-reference-docs",
     srcs = ["verify-reference-docs.sh"],
     data = [
-        "//docs/generated/reference:all-srcs",
+        "//docs/generated/reference:output",
+        "//docs/generated/reference/generate",
         "//hack:update-reference-docs.sh",
-        "//hack/reference-docs",
-    ],
-    deps = [
-        "@bazel_tools//tools/bash/runfiles",
     ],
 )
 
@@ -171,7 +165,6 @@ filegroup(
         "//hack/bin:all-srcs",
         "//hack/boilerplate:all-srcs",
         "//hack/deploy:all-srcs",
-        "//hack/reference-docs:all-srcs",
     ],
     tags = ["automanaged"],
     visibility = ["//visibility:public"],

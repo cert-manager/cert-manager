@@ -191,7 +191,7 @@ load("@build_bazel_rules_nodejs//:defs.bzl", "npm_install")
 npm_install(
     name = "brodocs_modules",
     package_json = "@brodocs//:package.json",
-    package_lock_json = "//hack/reference-docs/bin:package-lock.json",
+    package_lock_json = "//docs/generated/reference/generate/bin:package-lock.json",
 )
 
 # Load kubernetes-incubator/reference-docs, to be used as part of the docs
