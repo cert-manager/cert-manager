@@ -82,20 +82,19 @@ func (c *Controller) Sync(ctx context.Context, crt *v1alpha1.Certificate) (reque
 		msg := fmt.Sprintf("Resource validation failed: %v", el.ToAggregate())
 		crtCopy.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse, errorConfig, msg, false)
 		return
-	} else {
-		for i, c := range crtCopy.Status.Conditions {
-			if c.Type == v1alpha1.CertificateConditionReady {
-				if c.Reason == errorConfig && c.Status == v1alpha1.ConditionFalse {
-					crtCopy.Status.Conditions = append(crtCopy.Status.Conditions[:i], crtCopy.Status.Conditions[i+1:]...)
-					break
-				}
+	}
+
+	for i, c := range crtCopy.Status.Conditions {
+		if c.Type == v1alpha1.CertificateConditionReady {
+			if c.Reason == errorConfig && c.Status == v1alpha1.ConditionFalse {
+				crtCopy.Status.Conditions = append(crtCopy.Status.Conditions[:i], crtCopy.Status.Conditions[i+1:]...)
+				break
 			}
 		}
 	}
 
 	// step zero: check if the referenced issuer exists and is ready
 	issuerObj, err := c.getGenericIssuer(crtCopy)
-
 	if err != nil {
 		s := fmt.Sprintf("Issuer %s does not exist", err.Error())
 		glog.Info(s)
@@ -108,13 +107,13 @@ func (c *Controller) Sync(ctx context.Context, crt *v1alpha1.Certificate) (reque
 		msg := fmt.Sprintf("Resource validation failed: %v", el.ToAggregate())
 		crtCopy.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse, errorConfig, msg, false)
 		return
-	} else {
-		for i, c := range crtCopy.Status.Conditions {
-			if c.Type == v1alpha1.CertificateConditionReady {
-				if c.Reason == errorConfig && c.Status == v1alpha1.ConditionFalse {
-					crtCopy.Status.Conditions = append(crtCopy.Status.Conditions[:i], crtCopy.Status.Conditions[i+1:]...)
-					break
-				}
+	}
+
+	for i, c := range crtCopy.Status.Conditions {
+		if c.Type == v1alpha1.CertificateConditionReady {
+			if c.Reason == errorConfig && c.Status == v1alpha1.ConditionFalse {
+				crtCopy.Status.Conditions = append(crtCopy.Status.Conditions[:i], crtCopy.Status.Conditions[i+1:]...)
+				break
 			}
 		}
 	}
