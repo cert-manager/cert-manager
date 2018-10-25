@@ -54,6 +54,9 @@ const (
 	// acmeIssuerDNS01ProviderNameAnnotation can be used to override the default dns01 provider
 	// configured on the issuer if the challenge type is set to dns01
 	acmeIssuerDNS01ProviderNameAnnotation = "certmanager.k8s.io/acme-dns01-provider"
+	// acmeIssuerHTTP01IngressClassAnnotation can be used to override the http01 ingressClass
+	// if the challenge type is set to http01
+	acmeIssuerHTTP01IngressClassAnnotation = "certmanager.k8s.io/acme-http01-ingress-class"
 
 	ingressClassAnnotation = class.IngressKey
 )
@@ -229,9 +232,14 @@ func (c *Controller) setIssuerSpecificConfig(crt *v1alpha1.Certificate, issuer v
 			if ok && editInPlace == "true" {
 				domainCfg.HTTP01.Ingress = ing.Name
 			} else {
-				ingressClass, ok := ingAnnotations[ingressClassAnnotation]
+				ingressClass, ok := ingAnnotations[acmeIssuerHTTP01IngressClassAnnotation]
 				if ok {
 					domainCfg.HTTP01.IngressClass = &ingressClass
+				} else {
+					ingressClass, ok := ingAnnotations[ingressClassAnnotation]
+					if ok {
+						domainCfg.HTTP01.IngressClass = &ingressClass
+					}
 				}
 			}
 		case "dns01":
