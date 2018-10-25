@@ -139,40 +139,58 @@ func (c *Controller) Sync(ctx context.Context, crt *v1alpha1.Certificate) (reque
 	}
 
 	key, err := kube.SecretTLSKey(c.secretLister, crtCopy.Namespace, crtCopy.Name)
-	if err != nil && !k8sErrors.IsNotFound(err) && !errors.IsInvalidData(err) {
+	// if we don't have a private key, we need to trigger a re-issue immediately
+	if k8sErrors.IsNotFound(err) || errors.IsInvalidData(err) {
+		return c.issue(ctx, i, crtCopy)
+	}
+	if err != nil {
 		return false, err
 	}
 
 	// grab existing certificate and validate private key
 	cert, err := kube.SecretTLSCert(c.secretLister, crtCopy.Namespace, crtCopy.Spec.SecretName)
-	// if an error is returned, and that error is something other than
-	// IsNotFound or invalid data, then we should return the error.
-	if err != nil && !k8sErrors.IsNotFound(err) && !errors.IsInvalidData(err) {
+	// if we don't have a certificate, we need to trigger a re-issue immediately
+	if k8sErrors.IsNotFound(err) || errors.IsInvalidData(err) {
+		return c.issue(ctx, i, crtCopy)
+	}
+	if err != nil {
 		return false, err
 	}
 
-	if cert != nil && key != nil {
-		matches, err := pki.PublicKeyMatchesCertificate(key.Public(), cert)
-		if err != nil {
-			return false, err
-		}
-		if !matches {
-			return c.issue(ctx, i, crtCopy)
-		}
+	// begin checking if the TLS certificate is valid/needs a re-issue or renew
+
+	// check if the private key is the corresponding pair to the certificate
+	matches, err := pki.PublicKeyMatchesCertificate(key.Public(), cert)
+	if err != nil {
+		return false, err
 	}
-
-	expectedCN := pki.CommonNameForCertificate(crtCopy)
-	expectedDNSNames := pki.DNSNamesForCertificate(crtCopy)
-
-	// if the certificate was not found, or the certificate data is invalid, we
-	// should issue a new certificate.
-	// if the certificate is valid for a list of domains other than those
-	// listed in the certificate spec, we should re-issue the certificate.
-	if k8sErrors.IsNotFound(err) || errors.IsInvalidData(err) ||
-		expectedCN != cert.Subject.CommonName || !util.EqualUnsorted(cert.DNSNames, expectedDNSNames) ||
-		c.Context.IssuerOptions.CertificateNeedsRenew(cert) {
+	if !matches {
 		return c.issue(ctx, i, crtCopy)
 	}
+
+	// validate the common name is correct
+	expectedCN := pki.CommonNameForCertificate(crtCopy)
+	if expectedCN != cert.Subject.CommonName {
+		return c.issue(ctx, i, crtCopy)
+	}
+
+	// validate the dns names are correct
+	expectedDNSNames := pki.DNSNamesForCertificate(crtCopy)
+	if !util.EqualUnsorted(cert.DNSNames, expectedDNSNames) {
+		return c.issue(ctx, i, crtCopy)
+	}
+
+	// check if the certificate needs renewal
+	needsRenew := c.Context.IssuerOptions.CertificateNeedsRenew(cert)
+	if needsRenew {
+		return c.issue(ctx, i, crtCopy)
+	}
+
+	// TODO: add checks for KeySize, KeyAlgorithm fields
+	// TODO: add checks for Organization field
+	// TODO: add checks for IsCA field
+
+	// end checking if the TLS certificate is valid/needs a re-issue or renew
 
 	return false, nil
 }
