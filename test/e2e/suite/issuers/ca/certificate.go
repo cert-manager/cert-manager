@@ -71,4 +71,21 @@ var _ = framework.CertManagerDescribe("CA Certificate", func() {
 		Expect(err).NotTo(HaveOccurred())
 	})
 
+	It("should be able to obtain an ECDSA key from a RSA backed issuer", func() {
+		certClient := f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name)
+		secretClient := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name)
+
+		crt := util.NewCertManagerBasicCertificate(certificateName, certificateSecretName, issuerName, v1alpha1.IssuerKind)
+		crt.Spec.KeyAlgorithm = v1alpha1.ECDSAKeyAlgorithm
+		crt.Spec.KeySize = 521
+
+		By("Creating a Certificate")
+		_, err := certClient.Create(crt)
+		Expect(err).NotTo(HaveOccurred())
+
+		By("Verifying the Certificate is valid")
+		err = util.WaitCertificateIssuedValid(certClient, secretClient, certificateName, time.Second*30)
+		Expect(err).NotTo(HaveOccurred())
+	})
+
 })
