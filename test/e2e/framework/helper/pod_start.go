@@ -34,7 +34,7 @@ const (
 	Poll = time.Second * 2
 
 	// PodStartTimeout is the default amount of time to wait in pod start operations
-	PodStartTimeout = time.Minute
+	PodStartTimeout = time.Minute * 2
 )
 
 // WaitForAllPodsRunningInNamespace waits default amount of time (PodStartTimeout)
