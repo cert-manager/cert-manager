@@ -14,6 +14,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+set -o errexit
+set -o nounset
+set -o pipefail
+
 # build_images will build Docker images for all of cert-manager's components.
 # It will transfer them to the 'kind' docker container so they are available
 # in a testing environment.
