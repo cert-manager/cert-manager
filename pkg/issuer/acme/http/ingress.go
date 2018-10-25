@@ -113,9 +113,11 @@ func buildIngressResource(ch *v1alpha1.Challenge, svcName string) *extv1beta1.In
 
 	podLabels := podLabels(ch)
 	// TODO: add additional annotations to help workaround problematic ingress controller behaviours
-	ingAnnotaions := make(map[string]string)
+	ingAnnotations := make(map[string]string)
+	ingAnnotations["nginx.ingress.kubernetes.io/whitelist-source-range"] = "0.0.0.0/0"
+
 	if ingClass != nil {
-		ingAnnotaions[class.IngressKey] = *ingClass
+		ingAnnotations[class.IngressKey] = *ingClass
 	}
 
 	ingPathToAdd := ingressPath(ch.Spec.Token, svcName)
@@ -125,7 +127,7 @@ func buildIngressResource(ch *v1alpha1.Challenge, svcName string) *extv1beta1.In
 			GenerateName:    "cm-acme-http-solver-",
 			Namespace:       ch.Namespace,
 			Labels:          podLabels,
-			Annotations:     ingAnnotaions,
+			Annotations:     ingAnnotations,
 			OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(ch, challengeGvk)},
 		},
 		Spec: extv1beta1.IngressSpec{
