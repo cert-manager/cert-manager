@@ -246,6 +246,59 @@ func TestBuildCertificates(t *testing.T) {
 			},
 		},
 		{
+			Name: "return a single HTTP01 Certificate for an ingress with a single valid TLS entry and HTTP01 annotations with a certificate ingress class",
+			Ingress: &extv1beta1.Ingress{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "ingress-name",
+					Namespace: "ingress-namespace",
+					Annotations: map[string]string{
+						clusterIssuerNameAnnotation:            "issuer-name",
+						acmeIssuerChallengeTypeAnnotation:      "http01",
+						acmeIssuerHTTP01IngressClassAnnotation: "cert-ing",
+						ingressClassAnnotation:                 "nginx-ing",
+					},
+				},
+				Spec: extv1beta1.IngressSpec{
+					TLS: []extv1beta1.IngressTLS{
+						{
+							Hosts:      []string{"example.com", "www.example.com"},
+							SecretName: "example-com-tls",
+						},
+					},
+				},
+			},
+			ClusterIssuerLister: []*v1alpha1.ClusterIssuer{buildACMEClusterIssuer("issuer-name")},
+			ExpectedCreate: []*v1alpha1.Certificate{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:            "example-com-tls",
+						Namespace:       "ingress-namespace",
+						OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(buildIngress("ingress-name", "ingress-namespace", nil), ingressGVK)},
+					},
+					Spec: v1alpha1.CertificateSpec{
+						DNSNames:   []string{"example.com", "www.example.com"},
+						SecretName: "example-com-tls",
+						IssuerRef: v1alpha1.ObjectReference{
+							Name: "issuer-name",
+							Kind: "ClusterIssuer",
+						},
+						ACME: &v1alpha1.ACMECertificateConfig{
+							Config: []v1alpha1.DomainSolverConfig{
+								{
+									Domains: []string{"example.com", "www.example.com"},
+									SolverConfig: v1alpha1.SolverConfig{
+										HTTP01: &v1alpha1.HTTP01SolverConfig{
+											IngressClass: strPtr("cert-ing"),
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
 			Name: "edit-in-place set to false should not trigger editing the ingress in-place",
 			Ingress: &extv1beta1.Ingress{
 				ObjectMeta: metav1.ObjectMeta{

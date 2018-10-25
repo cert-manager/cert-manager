@@ -86,6 +86,14 @@ Certificate resources to be automatically created:
   cert-manager which DNS provider (as configured on the specified Issuer resource)
   should be used. This field is required if the challenge type is set to DNS01.
 
+* ``certmanager.k8s.io/acme-http01-ingress-class`` - if the ACME challenge type has
+  been set to http01, this annotation allows you to configure ingress class
+  that will be used to solve challenges for this ingress. Customising this is useful
+  when you are trying to secure internal services, and need to solve challenges
+  using different ingress class to that of the ingress. If not specified and
+  the 'acme-http01-edit-in-place' annotation is not set, this defaults to the ingress
+  class of the ingress resource.
+
 * ``kubernetes.io/tls-acme: "true"`` - this annotation requires additional
   configuration of the ingress-shim (see above). Namely, a default issuer must be
   specified as arguments to the ingress-shim container.
