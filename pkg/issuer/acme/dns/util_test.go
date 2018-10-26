@@ -20,6 +20,8 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/digitalocean"
+
 	"github.com/jetstack/cert-manager/test/util/generate"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
@@ -160,6 +162,10 @@ func newFakeDNSProviders() *fakeDNSProviders {
 		},
 		rfc2136: func(nameserver, tsigAlgorithm, tsigKeyName, tsigSecret string, dns01Nameservers []string) (*rfc2136.DNSProvider, error) {
 			f.call("rfc2136", nameserver, tsigAlgorithm, tsigKeyName, tsigSecret, util.RecursiveNameservers)
+			return nil, nil
+		},
+		digitalOcean: func(token string, dns01Nameservers []string) (*digitalocean.DNSProvider, error) {
+			f.call("digitalocean", token, util.RecursiveNameservers)
 			return nil, nil
 		},
 	}
