@@ -109,10 +109,6 @@ func buildProbe(path string) *corev1.Probe {
 }
 
 // Tiller defines an addon that installs an instance of tiller in the target cluster.
-// Currently, only one instance of Tiller can be deployed in a single invocation
-// of the test suite (i.e. it *must* be instantiated globally).
-// In future we can restrict Tiller to a single namespace in order to enforce
-// isolation between tests.
 type Tiller struct {
 	config      *config.Config
 	baseDetails *base.Details
