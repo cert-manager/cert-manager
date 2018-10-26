@@ -25,6 +25,7 @@ import (
 	"net/url"
 	"time"
 
+	corev1 "k8s.io/api/core/v1"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	corev1listers "k8s.io/client-go/listers/core/v1"
 	extv1beta1listers "k8s.io/client-go/listers/extensions/v1beta1"
@@ -61,7 +62,7 @@ type Solver struct {
 	requiredPasses   int
 }
 
-type reachabilityTest func(ctx context.Context, url *url.URL, key string) error
+type reachabilityTest func(ctx context.Context, url *url.URL, domain, key string) error
 
 // NewSolver returns a new ACME HTTP01 solver for the given Issuer and client.
 // TODO: refactor this to have fewer args
@@ -107,7 +108,7 @@ func (s *Solver) Check(ctx context.Context, issuer v1alpha1.GenericIssuer, ch *v
 	url := s.buildChallengeUrl(ch)
 
 	for i := 0; i < s.requiredPasses; i++ {
-		err := s.testReachability(ctx, url, ch.Spec.Key)
+		err := s.testReachability(ctx, url, ch.Spec.DNSName, ch.Spec.Key)
 		if err != nil {
 			return err
 		}
@@ -127,23 +128,128 @@ func (s *Solver) CleanUp(ctx context.Context, issuer v1alpha1.GenericIssuer, ch 
 }
 
 func (s *Solver) buildChallengeUrl(ch *v1alpha1.Challenge) *url.URL {
+	host := ch.Spec.DNSName
+	http01 := ch.Spec.Config.HTTP01
+	if http01 != nil && http01.SelfCheckHostSource != nil {
+		source := http01.SelfCheckHostSource
+		if source.Ingress != nil {
+			config := source.Ingress
+			existingIngresses, err := s.getIngressesForChallenge(ch)
+			if err == nil && len(existingIngresses) == 1 {
+				lbStatus := existingIngresses[0].Status.LoadBalancer
+				if config.Field == "hostname" {
+					for _, lbIngress := range lbStatus.Ingress {
+						if len(lbIngress.Hostname) > 0 {
+							host = lbIngress.Hostname
+							break
+						}
+					}
+				} else if config.Field == "ip" {
+					for _, lbIngress := range lbStatus.Ingress {
+						if len(lbIngress.IP) > 0 {
+							host = lbIngress.IP
+							break
+						}
+					}
+				} else if len(config.Field) == 0 {
+					for _, lbIngress := range lbStatus.Ingress {
+						if len(lbIngress.IP) > 0 {
+							host = lbIngress.IP
+							break
+						} else if len(lbIngress.Hostname) > 0 {
+							host = lbIngress.Hostname
+							break
+						}
+					}
+				}
+			}
+		} else if source.Service != nil {
+			config := source.Service
+			service := s.getSelfCheckService(ch, config)
+			if service != nil {
+				if config.Field == "clusterIP" {
+					host = service.Spec.ClusterIP
+				} else if config.Field == "externalIPs" {
+					if len(service.Spec.ExternalIPs) > 0 {
+						host = service.Spec.ExternalIPs[0]
+					}
+				} else if config.Field == "loadBalancerIP" {
+					host = service.Spec.LoadBalancerIP
+				} else if config.Field == "hostname" {
+					for _, lbIngress := range service.Status.LoadBalancer.Ingress {
+						if len(lbIngress.Hostname) > 0 {
+							host = lbIngress.Hostname
+							break
+						}
+					}
+				} else if config.Field == "ip" {
+					for _, lbIngress := range service.Status.LoadBalancer.Ingress {
+						if len(lbIngress.IP) > 0 {
+							host = lbIngress.IP
+							break
+						}
+					}
+				} else if len(config.Field) == 0 {
+					notFound := true
+					for _, lbIngress := range service.Status.LoadBalancer.Ingress {
+						if len(lbIngress.IP) > 0 {
+							host = lbIngress.IP
+							notFound = false
+							break
+						} else if len(lbIngress.Hostname) > 0 {
+							host = lbIngress.Hostname
+							notFound = false
+							break
+						}
+					}
+					if notFound {
+						if len(service.Spec.LoadBalancerIP) > 0 {
+							host = service.Spec.LoadBalancerIP
+						} else if len(service.Spec.ExternalIPs) > 0 {
+							host = service.Spec.ExternalIPs[0]
+						} else if len(service.Spec.ClusterIP) > 0 && service.Spec.ClusterIP != "None" {
+							host = service.Spec.ClusterIP
+						}
+					}
+				}
+			}
+		} else if len(source.Manual) > 0 {
+			host = source.Manual
+		}
+	}
 	url := &url.URL{}
 	url.Scheme = "http"
-	url.Host = ch.Spec.DNSName
+	url.Host = host
 	url.Path = fmt.Sprintf("%s/%s", solver.HTTPChallengePath, ch.Spec.Token)
 
 	return url
 }
 
+func (s *Solver) getSelfCheckService(ch *v1alpha1.Challenge, config *v1alpha1.HTTP01SolverSelfCheckService) *corev1.Service {
+	if len(config.Name) > 0 {
+		service, err := s.serviceLister.Services(config.Namespace).Get(config.Name)
+		if err == nil && service != nil {
+			return service
+		}
+	} else {
+		existingServices, err := s.getServicesForChallenge(ch)
+		if err == nil && len(existingServices) == 1 {
+			return existingServices[0]
+		}
+	}
+	return nil
+}
+
 // testReachability will attempt to connect to the 'domain' with 'path' and
 // check if the returned body equals 'key'
-func testReachability(ctx context.Context, url *url.URL, key string) error {
+func testReachability(ctx context.Context, url *url.URL, domain, key string) error {
 	req := &http.Request{
 		Method: http.MethodGet,
 		URL:    url,
 	}
 
 	req = req.WithContext(ctx)
+	req.Host = domain
 
 	// ACME spec says that a verifier should try
 	// on http port 80 first, but follow any redirects may be thrown its way

@@ -28,9 +28,9 @@ import (
 // countReachabilityTestCalls is a wrapper function that allows us to count the number
 // of calls to a reachabilityTest.
 func countReachabilityTestCalls(counter *int, t reachabilityTest) reachabilityTest {
-	return func(ctx context.Context, url *url.URL, key string) error {
+	return func(ctx context.Context, url *url.URL, domain, key string) error {
 		*counter++
-		return t(ctx, url, key)
+		return t(ctx, url, domain, key)
 	}
 }
 
@@ -44,14 +44,14 @@ func TestCheck(t *testing.T) {
 	tests := []testT{
 		{
 			name: "should pass",
-			reachabilityTest: func(context.Context, *url.URL, string) error {
+			reachabilityTest: func(context.Context, *url.URL, string, string) error {
 				return nil
 			},
 			expectedErr: false,
 		},
 		{
 			name: "should error",
-			reachabilityTest: func(context.Context, *url.URL, string) error {
+			reachabilityTest: func(context.Context, *url.URL, string, string) error {
 				return fmt.Errorf("failed")
 			},
 			expectedErr: true,

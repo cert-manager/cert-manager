@@ -215,6 +215,35 @@ type HTTP01SolverConfig struct {
 	// If this field is specified, 'ingress' **must not** be specified.
 	// +optional
 	IngressClass *string `json:"ingressClass,omitempty"`
+
+	// SelfCheckHostSource configuration allows to make acme challenge self-check successful
+	// when it is not possible to test reachability from internet. For example,
+	// 1) you have a service exposed with internal ingress controller (not reachable from internet),
+	// 2) you want to secure it by serving acme challenge with external ingress controller,
+	// 3) external controller has internal IP (.Status.LoadBalancer.Ingress[0].IP),
+	// 4) you have external IP translated (NAT) to internal IP,
+	// 5) external IP is not reachable from cluster,
+	// - in this case with SelfCheckHostSource: { ingress: {} } self-check request will be sent
+	// to internal IP of external ingress controller with Host header set. So self-check
+	// will ensure that acme solver service is ready but external controller reachability
+	// from internet and DNS configuration will not be checked.
+	SelfCheckHostSource *HTTP01SolverSelfCheckHostSource `json:"selfCheckHostSource,omitempty"`
+}
+
+type HTTP01SolverSelfCheckHostSource struct {
+	Ingress *HTTP01SolverSelfCheckIngress `json:"ingress,omitempty"`
+	Service *HTTP01SolverSelfCheckService `json:"service,omitempty"`
+	Manual  string                        `json:"manual,omitempty"`
+}
+
+type HTTP01SolverSelfCheckIngress struct {
+	Field string `json:"field,omitempty"`
+}
+
+type HTTP01SolverSelfCheckService struct {
+	Name      string `json:"name,omitempty"`
+	Namespace string `json:"namespace,omitempty"`
+	Field     string `json:"field,omitempty"`
 }
 
 // DNS01SolverConfig contains solver configuration for DNS01 challenges.

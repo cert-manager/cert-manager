@@ -54,6 +54,12 @@ const (
 	// if the challenge type is set to http01
 	acmeIssuerHTTP01IngressClassAnnotation = "certmanager.k8s.io/acme-http01-ingress-class"
 
+	acmeIssuerHTTP01SelfCheckHostSourceAnnotation       = "certmanager.k8s.io/acme-http01-self-check-host-source"
+	acmeIssuerHTTP01SelfCheckIngressFieldAnnotation     = "certmanager.k8s.io/acme-http01-self-check-ingress-field"
+	acmeIssuerHTTP01SelfCheckServiceNameAnnotation      = "certmanager.k8s.io/acme-http01-self-check-service-name"
+	acmeIssuerHTTP01SelfCheckServiceNamespaceAnnotation = "certmanager.k8s.io/acme-http01-self-check-service-namespace"
+	acmeIssuerHTTP01SelfCheckServiceFieldAnnotation     = "certmanager.k8s.io/acme-http01-self-check-service-field"
+
 	ingressClassAnnotation = util.IngressKey
 )
 
@@ -276,6 +282,35 @@ func (c *Controller) setIssuerSpecificConfig(crt *v1alpha1.Certificate, issuer v
 					ingressClass, ok := ingAnnotations[ingressClassAnnotation]
 					if ok {
 						domainCfg.HTTP01.IngressClass = &ingressClass
+					}
+				}
+				if s, ok := ingAnnotations[acmeIssuerHTTP01SelfCheckHostSourceAnnotation]; ok {
+					if s == "ingress" {
+						selfCheckIngress := &v1alpha1.HTTP01SolverSelfCheckIngress{}
+						if s, ok := ingAnnotations[acmeIssuerHTTP01SelfCheckIngressFieldAnnotation]; ok {
+							selfCheckIngress.Field = s
+						}
+						domainCfg.HTTP01.SelfCheckHostSource = &v1alpha1.HTTP01SolverSelfCheckHostSource{
+							Ingress: selfCheckIngress,
+						}
+					} else if s == "service" {
+						selfCheckService := &v1alpha1.HTTP01SolverSelfCheckService{}
+						if s, ok := ingAnnotations[acmeIssuerHTTP01SelfCheckServiceNameAnnotation]; ok {
+							selfCheckService.Name = s
+						}
+						if s, ok := ingAnnotations[acmeIssuerHTTP01SelfCheckServiceNamespaceAnnotation]; ok {
+							selfCheckService.Namespace = s
+						}
+						if s, ok := ingAnnotations[acmeIssuerHTTP01SelfCheckServiceFieldAnnotation]; ok {
+							selfCheckService.Field = s
+						}
+						domainCfg.HTTP01.SelfCheckHostSource = &v1alpha1.HTTP01SolverSelfCheckHostSource{
+							Service: selfCheckService,
+						}
+					} else if s == "manual" {
+						domainCfg.HTTP01.SelfCheckHostSource = &v1alpha1.HTTP01SolverSelfCheckHostSource{
+							Manual: s,
+						}
 					}
 				}
 			}
