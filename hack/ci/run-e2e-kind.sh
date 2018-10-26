@@ -17,7 +17,7 @@
 # This script will provision an end-to-end testing environment using 'kind'
 # (kubernetes-in-docker).
 #
-# It requires 'kind', 'helm', 'kubectl' and 'docker' to be installed.
+# It requires kubectl, docker and bazel to be installed.
 # kubectl will be automatically installed if not found when on linux
 
 set -o errexit

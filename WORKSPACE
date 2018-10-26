@@ -114,6 +114,13 @@ filegroup(
 """,
 )
 
+## Install 'kind', for creating kubernetes-in-docker clusters
+go_repository(
+    name = "io_kubernetes_sigs_kind",
+    commit = "35d67a6310dd76e7737c44ebb6164fc757e1f919",
+    importpath = "sigs.k8s.io/kind",
+)
+
 ## Install buildozer, for mass-editing BUILD files
 http_file(
     name = "buildozer_darwin",
