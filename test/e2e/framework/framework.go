@@ -17,6 +17,7 @@ limitations under the License.
 package framework
 
 import (
+	"github.com/jetstack/cert-manager/test/e2e/framework/helper"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"k8s.io/api/core/v1"
@@ -28,6 +29,7 @@ import (
 	"github.com/jetstack/cert-manager/test/e2e/framework/addon"
 	"github.com/jetstack/cert-manager/test/e2e/framework/config"
 	"github.com/jetstack/cert-manager/test/e2e/framework/util"
+	"github.com/jetstack/cert-manager/test/e2e/framework/util/errors"
 )
 
 // DefaultConfig contains the default shared config the is likely parsed from
@@ -142,6 +144,9 @@ func (f *Framework) RequireAddon(a addon.Addon) {
 	BeforeEach(func() {
 		By("Provisioning test-scoped addon")
 		err := a.Setup(f.Config)
+		if errors.IsSkip(err) {
+			Skipf("Skipping test as addon could not be setup: %v", err)
+		}
 		Expect(err).NotTo(HaveOccurred())
 
 		err = a.Provision()
@@ -155,6 +160,12 @@ func (f *Framework) RequireAddon(a addon.Addon) {
 		err := a.Deprovision()
 		Expect(err).NotTo(HaveOccurred())
 	})
+}
+
+func (f *Framework) Helper() *helper.Helper {
+	return &helper.Helper{
+		KubeClient: f.KubeClientSet,
+	}
 }
 
 // CertManagerDescribe is a wrapper function for ginkgo describe. Adds namespacing.

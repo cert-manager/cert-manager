@@ -17,6 +17,8 @@ limitations under the License.
 package main
 
 import (
+	"flag"
+
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/validation/webhooks"
 	"github.com/openshift/generic-admission-server/pkg/cmd"
 )
@@ -26,6 +28,9 @@ var issuerHook cmd.ValidatingAdmissionHook = &webhooks.IssuerAdmissionHook{}
 var clusterIssuerHook cmd.ValidatingAdmissionHook = &webhooks.ClusterIssuerAdmissionHook{}
 
 func main() {
+	// Avoid "logging before flag.Parse" errors from glog
+	flag.CommandLine.Parse([]string{})
+
 	cmd.RunAdmissionServer(
 		certHook,
 		issuerHook,

@@ -17,19 +17,10 @@ DOCKER_REPO :=
 APP_VERSION := canary
 HACK_DIR ?= hack
 
-## e2e test vars
-# Domain name to use in e2e tests. This is important for ACME HTTP01 e2e tests,
-# which require a domain that resolves to the ingress controller to be used for
-# e2e tests.
-# The IP address provided *must* be the IP that the domain, and all of its subdomains
-# point to.
-# When using the local testing environment, we use the certmanager.kubernetes.network
-# domain name which has been fixed to resolve to 10.0.0.15.
-E2E_NGINX_CERTIFICATE_DOMAIN=certmanager.kubernetes.network
-E2E_NGINX_CERTIFICATE_IP=10.0.0.15
+GINKGO_SKIP :=
 
+## e2e test vars
 KUBECONFIG ?= $$HOME/.kube/config
-PEBBLE_IMAGE_REPO=quay.io/munnerz/pebble
 
 # Get a list of all binaries to be built
 CMDS := $(shell find ./cmd/ -maxdepth 1 -type d -exec basename {} \; | grep -v cmd)
@@ -121,15 +112,11 @@ e2e_test:
 			-nodes 20 \
 			$$(bazel info bazel-genfiles)/test/e2e/e2e.test \
 			-- \
-			--global-nginx-ingress-domain=$(E2E_NGINX_CERTIFICATE_DOMAIN) \
-			--global-nginx-ingress-ip-address=$(E2E_NGINX_CERTIFICATE_IP) \
-			--suite.acme-cloudflare-domain=$${CLOUDFLARE_E2E_DOMAIN} \
-			--suite.acme-cloudflare-api-key=$${CLOUDFLARE_E2E_API_TOKEN} \
-			--suite.acme-cloudflare-email=$${CLOUDFLARE_E2E_EMAIL} \
 			--helm-binary-path=$$(bazel info bazel-genfiles)/hack/bin/helm \
 			--tiller-image-tag=$$($$(bazel info bazel-genfiles)/hack/bin/helm version --client --template '{{.Client.SemVer}}') \
 			--repo-root="$$(pwd)" \
-			--report-dir="$${ARTIFACTS:-./_artifacts}"
+			--report-dir="$${ARTIFACTS:-./_artifacts}" \
+			--ginkgo.skip="$(GINKGO_SKIP)"
 
 # Generate targets
 ##################

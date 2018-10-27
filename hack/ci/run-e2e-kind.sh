@@ -17,7 +17,7 @@
 # This script will provision an end-to-end testing environment using 'kind'
 # (kubernetes-in-docker).
 #
-# It requires 'kind', 'helm', 'kubectl' and 'docker' to be installed.
+# It requires kubectl, docker and bazel to be installed.
 # kubectl will be automatically installed if not found when on linux
 
 set -o errexit
@@ -25,59 +25,29 @@ set -o nounset
 set -o pipefail
 
 SCRIPT_ROOT=$(dirname "${BASH_SOURCE}")
-REPO_ROOT="${SCRIPT_ROOT}/../.."
+source "${SCRIPT_ROOT}/lib/lib.sh"
 
-KIND_CLUSTER_NAME="cm-e2e"
-# TODO: can we rely on this being fixed as such?
-KIND_CONTAINER_NAME="kind-${KIND_CLUSTER_NAME}-control-plane"
-KIND_IMAGE=${KIND_IMAGE:-eu.gcr.io/jetstack-build-infra-images/kind:1.11.2-0}
-
-# cleanup will call kind delete - it will absorb errors
 cleanup() {
     # Ignore errors here
-    kind delete --name="${KIND_CLUSTER_NAME}" || true
+    "${SCRIPT_ROOT}/lib/cluster_destroy.sh" || true
 }
 trap cleanup EXIT
 
-# deploy_kind will deploy a kubernetes-in-docker cluster
-deploy_kind() {
-    # create the kind cluster
-    kind create \
-        --name="${KIND_CLUSTER_NAME}" \
-        --image="${KIND_IMAGE}" \
-        --config "${REPO_ROOT}"/test/fixtures/kind-config.yaml
+"${SCRIPT_ROOT}/lib/cluster_create.sh"
 
-    export KUBECONFIG="${HOME}/.kube/kind-config-${KIND_CLUSTER_NAME}"
+# copy kubectl out of the kind container if kubectl is not installed on the
+# host machine. This will *only* work on Linux :this_is_fine:
+if ! which kubectl; then
+    tmp_path=$(mktemp -d)
+    export PATH="${tmp_path}:${PATH}"
+    docker cp "${KIND_CONTAINER_NAME}":"$(docker exec "${KIND_CONTAINER_NAME}" which kubectl)" "${tmp_path}/kubectl"
+fi
 
-    # copy kubectl out of the kind container if kubectl is not installed on the
-    # host machine. This will *only* work on Linux :this_is_fine:
-    if ! which kubectl; then
-        tmp_path=$(mktemp -d)
-        export PATH="${tmp_path}:${PATH}"
-        docker cp "${KIND_CONTAINER_NAME}":"$(docker exec "${KIND_CONTAINER_NAME}" which kubectl)" "${tmp_path}/kubectl"
-    fi
+export KUBECONFIG="${HOME}/.kube/kind-config-${KIND_CLUSTER_NAME}"
+# Ensure the apiserver is responding
+kubectl get nodes
 
-    # Ensure the apiserver is responding
-    kubectl get nodes
-}
-
-# build_images will build cert-manager docker images and copy them across to the
-# kind docker container running the cluster, so they are available to the
-# cluster's docker daemon.
-build_images() {
-    # Build cert-manager binaries & docker image
-    make images APP_VERSION=build
-
-    local TMP_DIR=$(mktemp -d)
-    local BUNDLE_FILE="${TMP_DIR}"/cmbundle.tar.gz
-    docker save quay.io/jetstack/cert-manager-controller:build quay.io/jetstack/cert-manager-acmesolver:build quay.io/jetstack/cert-manager-webhook:build -o "${BUNDLE_FILE}"
-    docker cp "${BUNDLE_FILE}" "${KIND_CONTAINER_NAME}":/cmbundle.tar.gz
-    docker exec "${KIND_CONTAINER_NAME}" docker load -i /cmbundle.tar.gz
-    rm -Rf "${TMP_DIR}"
-}
-
-deploy_kind
-build_images
+"${SCRIPT_ROOT}/lib/build_images.sh"
 
 make e2e_test \
     KUBECONFIG=${KUBECONFIG}

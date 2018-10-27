@@ -1,0 +1,26 @@
+load("@build_bazel_rules_nodejs//:defs.bzl", "nodejs_binary")
+
+nodejs_binary(
+    name = "brodocs",
+    data = [
+        "@brodocs//:all-srcs",
+    ],
+    entry_point = "brodocs/brodoc",
+    # Ordinarily this defaults to //:node_modules
+    node_modules = "@brodocs_modules//:node_modules",
+    visibility = ["//visibility:public"],
+)
+
+filegroup(
+    name = "package-srcs",
+    srcs = glob(["**"]),
+    tags = ["automanaged"],
+    visibility = ["//visibility:private"],
+)
+
+filegroup(
+    name = "all-srcs",
+    srcs = [":package-srcs"],
+    tags = ["automanaged"],
+    visibility = ["//visibility:public"],
+)

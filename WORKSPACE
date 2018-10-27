@@ -114,6 +114,13 @@ filegroup(
 """,
 )
 
+## Install 'kind', for creating kubernetes-in-docker clusters
+go_repository(
+    name = "io_kubernetes_sigs_kind",
+    commit = "35d67a6310dd76e7737c44ebb6164fc757e1f919",
+    importpath = "sigs.k8s.io/kind",
+)
+
 ## Install buildozer, for mass-editing BUILD files
 http_file(
     name = "buildozer_darwin",
@@ -157,6 +164,17 @@ filegroup(
     srcs = glob(["**/*"]),
     visibility = ["//visibility:public"],
 )
+
+filegroup(
+    name = "static",
+    srcs = [
+        "stylesheet.css",
+        "scroll.js",
+        "actions.js",
+        "tabvisibility.js",
+    ],
+    visibility = ["//visibility:public"],
+)
 """,
 )
 
@@ -164,7 +182,7 @@ filegroup(
 git_repository(
     name = "build_bazel_rules_nodejs",
     remote = "https://github.com/bazelbuild/rules_nodejs.git",
-    tag = "0.11.5",  # check for the latest tag when you install
+    tag = "0.15.0",  # check for the latest tag when you install
 )
 
 load("@build_bazel_rules_nodejs//:package.bzl", "rules_nodejs_dependencies")
@@ -182,7 +200,7 @@ load("@build_bazel_rules_nodejs//:defs.bzl", "npm_install")
 npm_install(
     name = "brodocs_modules",
     package_json = "@brodocs//:package.json",
-    package_lock_json = "//hack/brodocs:package-lock.json",
+    package_lock_json = "//hack/reference-docs/bin:package-lock.json",
 )
 
 # Load kubernetes-incubator/reference-docs, to be used as part of the docs
