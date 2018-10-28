@@ -184,7 +184,7 @@ func buildControllerContext(opts *options.ControllerOptions) (*controller.Contex
 			DefaultACMEIssuerChallengeType:     opts.DefaultACMEIssuerChallengeType,
 			DefaultACMEIssuerDNS01ProviderName: opts.DefaultACMEIssuerDNS01ProviderName,
 		},
-		CertifcateOptions: controller.CertificateOptions{
+		CertificateOptions: controller.CertificateOptions{
 			EnableOwnerRef: opts.EnableCertificateOwnerRef,
 		},
 	}, kubeCfg, nil
