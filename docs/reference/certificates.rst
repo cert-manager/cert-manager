@@ -32,6 +32,8 @@ A simple Certificate could be defined as:
        # We can reference ClusterIssuers by changing the kind here.
        # The default value is Issuer (i.e. a locally namespaced Issuer)
        kind: Issuer
+     labels:
+       env: production
 
 This Certificate will tell cert-manager to attempt to use the Issuer
 named ``letsencrypt-prod`` to obtain a certificate key pair for the
@@ -47,7 +49,14 @@ first element in the list will be the common name.
 The referenced Issuer must exist in the same namespace as the Certificate. A
 Certificate can alternatively reference a ClusterIssuer which is non-namespaced.
 
+The ``labels` fiels specifies a list of `Labels`__ to be
+added to the certificate. A default label ``certmanager.k8s.io/certificate-name``
+is added with the name of the ``Certificate``as value.
+``Labels`` can be used to filter and group secrets by usage, like listing all the
+``production`` certificates.
+
 .. _`Subject Alternative Names`: https://en.wikipedia.org/wiki/Subject_Alternative_Name
+.. __`Labels`: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels
 
 .. toctree::
    :maxdepth: 1
