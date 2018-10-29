@@ -359,8 +359,8 @@ func NewCertManagerBasicCertificate(name, secretName, issuerName string, issuerK
 			CommonName:   "test.domain.com",
 			Organization: []string{"test-org"},
 			SecretName:   secretName,
-			Duration:     metav1.Duration{duration},
-			RenewBefore:  metav1.Duration{renewBefore},
+			Duration:     &metav1.Duration{duration},
+			RenewBefore:  &metav1.Duration{renewBefore},
 			IssuerRef: v1alpha1.ObjectReference{
 				Name: issuerName,
 				Kind: issuerKind,
@@ -378,8 +378,8 @@ func NewCertManagerACMECertificate(name, secretName, issuerName string, issuerKi
 			CommonName:  cn,
 			DNSNames:    dnsNames,
 			SecretName:  secretName,
-			Duration:    metav1.Duration{duration},
-			RenewBefore: metav1.Duration{renewBefore},
+			Duration:    &metav1.Duration{duration},
+			RenewBefore: &metav1.Duration{renewBefore},
 			IssuerRef: v1alpha1.ObjectReference{
 				Name: issuerName,
 				Kind: issuerKind,
@@ -408,8 +408,8 @@ func NewCertManagerVaultCertificate(name, secretName, issuerName string, issuerK
 		Spec: v1alpha1.CertificateSpec{
 			CommonName:  "test.domain.com",
 			SecretName:  secretName,
-			Duration:    metav1.Duration{duration},
-			RenewBefore: metav1.Duration{renewBefore},
+			Duration:    &metav1.Duration{duration},
+			RenewBefore: &metav1.Duration{renewBefore},
 			IssuerRef: v1alpha1.ObjectReference{
 				Name: issuerName,
 				Kind: issuerKind,
