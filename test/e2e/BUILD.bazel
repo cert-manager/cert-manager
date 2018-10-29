@@ -53,7 +53,6 @@ filegroup(
     srcs = [
         ":package-srcs",
         "//test/e2e/framework:all-srcs",
-        "//test/e2e/issuer:all-srcs",
         "//test/e2e/suite:all-srcs",
     ],
     tags = ["automanaged"],
