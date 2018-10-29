@@ -38,7 +38,6 @@ import (
 	"github.com/jetstack/cert-manager/test/e2e/framework/config"
 	"github.com/jetstack/cert-manager/test/e2e/framework/util"
 	"github.com/jetstack/cert-manager/test/e2e/framework/util/errors"
-	"github.com/jetstack/cert-manager/test/util"
 )
 
 // DefaultConfig contains the default shared config the is likely parsed from
