@@ -551,7 +551,7 @@ func TestValidateHTTP01SolverConfig(t *testing.T) {
 }
 
 func TestValidateDuration(t *testing.T) {
-	usefulDurations := map[string]metav1.Duration{
+	usefulDurations := map[string]*metav1.Duration{
 		"one second":  {Duration: time.Second},
 		"ten minutes": {Duration: time.Minute * 10},
 		"half hour":   {Duration: time.Minute * 30},

@@ -70,7 +70,7 @@ func ValidateCertificateSpec(crt *v1alpha1.CertificateSpec, fldPath *field.Path)
 		el = append(el, field.Invalid(fldPath.Child("keyAlgorithm"), crt.KeyAlgorithm, "must be either empty or one of rsa or ecdsa"))
 	}
 
-	if crt.Duration.Duration != 0 || crt.RenewBefore.Duration != 0 {
+	if crt.Duration != nil || crt.RenewBefore != nil {
 		el = append(el, ValidateDuration(crt, fldPath)...)
 	}
 
@@ -156,13 +156,13 @@ func ValidateHTTP01SolverConfig(a *v1alpha1.HTTP01SolverConfig, fldPath *field.P
 func ValidateDuration(crt *v1alpha1.CertificateSpec, fldPath *field.Path) field.ErrorList {
 	el := field.ErrorList{}
 
-	duration := crt.Duration.Duration
-	if duration == 0 {
-		duration = v1alpha1.DefaultCertificateDuration
+	duration := v1alpha1.DefaultCertificateDuration
+	if crt.Duration != nil && crt.Duration.Duration != 0 {
+		duration = crt.Duration.Duration
 	}
-	renewBefore := crt.RenewBefore.Duration
-	if renewBefore == 0 {
-		renewBefore = v1alpha1.DefaultRenewBefore
+	renewBefore := v1alpha1.DefaultRenewBefore
+	if crt.RenewBefore != nil && crt.RenewBefore.Duration != 0 {
+		renewBefore = crt.RenewBefore.Duration
 	}
 	if duration < v1alpha1.MinimumCertificateDuration {
 		el = append(el, field.Invalid(fldPath.Child("duration"), duration, fmt.Sprintf("certificate duration must be greater than %s", v1alpha1.MinimumCertificateDuration)))

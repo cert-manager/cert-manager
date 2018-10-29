@@ -90,8 +90,8 @@ func TestCalculateTimeBeforeExpiry(t *testing.T) {
 	for k, v := range tests {
 		cert := &v1alpha1.Certificate{
 			Spec: v1alpha1.CertificateSpec{
-				Duration:    metav1.Duration{v.duration},
-				RenewBefore: metav1.Duration{v.renewBefore},
+				Duration:    &metav1.Duration{v.duration},
+				RenewBefore: &metav1.Duration{v.renewBefore},
 			},
 		}
 		x509Cert := &x509.Certificate{NotBefore: v.notBefore, NotAfter: v.notAfter}

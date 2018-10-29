@@ -468,8 +468,24 @@ func (in *CertificateSpec) DeepCopyInto(out *CertificateSpec) {
 		*out = make([]string, len(*in))
 		copy(*out, *in)
 	}
-	out.Duration = in.Duration
-	out.RenewBefore = in.RenewBefore
+	if in.Duration != nil {
+		in, out := &in.Duration, &out.Duration
+		if *in == nil {
+			*out = nil
+		} else {
+			*out = new(v1.Duration)
+			**out = **in
+		}
+	}
+	if in.RenewBefore != nil {
+		in, out := &in.RenewBefore, &out.RenewBefore
+		if *in == nil {
+			*out = nil
+		} else {
+			*out = new(v1.Duration)
+			**out = **in
+		}
+	}
 	if in.DNSNames != nil {
 		in, out := &in.DNSNames, &out.DNSNames
 		*out = make([]string, len(*in))

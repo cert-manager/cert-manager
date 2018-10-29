@@ -194,7 +194,7 @@ func (c *Controller) Sync(ctx context.Context, crt *v1alpha1.Certificate) (reque
 	// listed in the certificate spec, we should re-issue the certificate.
 	if k8sErrors.IsNotFound(err) || errors.IsInvalidData(err) ||
 		expectedCN != cert.Subject.CommonName || !util.EqualUnsorted(cert.DNSNames, expectedDNSNames) ||
-		c.Context.IssuerOptions.CertificateNeedsRenew(cert, crt.Spec.RenewBefore.Duration) {
+		c.Context.IssuerOptions.CertificateNeedsRenew(cert, crt.Spec.RenewBefore) {
 		return c.issue(ctx, i, crtCopy)
 	}
 

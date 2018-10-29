@@ -58,10 +58,10 @@ type CertificateSpec struct {
 	Organization []string `json:"organization,omitempty"`
 
 	// Certificate default Duration
-	Duration metav1.Duration `json:"duration,omitempty"`
+	Duration *metav1.Duration `json:"duration,omitempty"`
 
 	// Certificate renew before expiration duration
-	RenewBefore metav1.Duration `json:"renewBefore,omitempty"`
+	RenewBefore *metav1.Duration `json:"renewBefore,omitempty"`
 
 	// DNSNames is a list of subject alt names to be used on the Certificate
 	DNSNames []string `json:"dnsNames,omitempty"`

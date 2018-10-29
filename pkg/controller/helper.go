@@ -23,6 +23,7 @@ import (
 
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	cmlisters "github.com/jetstack/cert-manager/pkg/client/listers/certmanager/v1alpha1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type Helper interface {
@@ -90,16 +91,17 @@ func (o IssuerOptions) CanUseAmbientCredentials(iss cmapi.GenericIssuer) bool {
 	return false
 }
 
-func (o IssuerOptions) CertificateNeedsRenew(cert *x509.Certificate, renewBefore time.Duration) bool {
-	if renewBefore == 0 {
-		renewBefore = o.RenewBeforeExpiryDuration
+func (o IssuerOptions) CertificateNeedsRenew(cert *x509.Certificate, renewBefore *metav1.Duration) bool {
+	renewBeforeDuration := o.RenewBeforeExpiryDuration
+	if renewBefore != nil && renewBefore.Duration != 0 {
+		renewBeforeDuration = renewBefore.Duration
 	}
 
 	// calculate the amount of time until expiry
 	durationUntilExpiry := cert.NotAfter.Sub(time.Now())
 	// calculate how long until we should start attempting to renew the
 	// certificate
-	renewIn := durationUntilExpiry - renewBefore
+	renewIn := durationUntilExpiry - renewBeforeDuration
 	// if we should being attempting to renew now, then trigger a renewal
 	if renewIn <= 0 {
 		return true

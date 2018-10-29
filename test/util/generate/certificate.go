@@ -31,8 +31,8 @@ type CertificateConfig struct {
 	SecretName             string
 	CommonName             string
 	DNSNames               []string
-	Duration               metav1.Duration
-	RenewBefore            metav1.Duration
+	Duration               *metav1.Duration
+	RenewBefore            *metav1.Duration
 
 	// ACME parameters
 	SolverConfig v1alpha1.SolverConfig
