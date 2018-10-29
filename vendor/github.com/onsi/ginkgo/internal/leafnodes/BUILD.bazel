@@ -1,4 +1,4 @@
-load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
 
 go_library(
     name = "go_default_library",
@@ -21,30 +21,6 @@ go_library(
         "//vendor/github.com/onsi/ginkgo/internal/codelocation:go_default_library",
         "//vendor/github.com/onsi/ginkgo/internal/failer:go_default_library",
         "//vendor/github.com/onsi/ginkgo/types:go_default_library",
-    ],
-)
-
-go_test(
-    name = "go_default_test",
-    srcs = [
-        "it_node_test.go",
-        "leaf_node_suite_test.go",
-        "measure_node_test.go",
-        "setup_nodes_test.go",
-        "shared_runner_test.go",
-        "suite_nodes_test.go",
-        "synchronized_after_suite_node_test.go",
-        "synchronized_before_suite_node_test.go",
-    ],
-    embed = [":go_default_library"],
-    tags = ["manual"],
-    deps = [
-        "//vendor/github.com/onsi/ginkgo:go_default_library",
-        "//vendor/github.com/onsi/ginkgo/internal/codelocation:go_default_library",
-        "//vendor/github.com/onsi/ginkgo/internal/failer:go_default_library",
-        "//vendor/github.com/onsi/ginkgo/types:go_default_library",
-        "//vendor/github.com/onsi/gomega:go_default_library",
-        "//vendor/github.com/onsi/gomega/ghttp:go_default_library",
     ],
 )
 
