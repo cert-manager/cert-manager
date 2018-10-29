@@ -2,19 +2,13 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 
 go_library(
     name = "go_default_library",
-    srcs = [
-        "certificate.go",
-        "clusterissuer.go",
-        "issuer.go",
-    ],
-    importpath = "github.com/jetstack/cert-manager/test/e2e/suite/issuers/ca",
+    srcs = ["issuer_selfsigned.go"],
+    importpath = "github.com/jetstack/cert-manager/test/e2e/issuer",
     tags = ["manual"],
     visibility = ["//visibility:public"],
     deps = [
         "//pkg/apis/certmanager/v1alpha1:go_default_library",
-        "//pkg/util:go_default_library",
         "//test/e2e/framework:go_default_library",
-        "//test/e2e/framework/addon:go_default_library",
         "//test/util:go_default_library",
         "//vendor/github.com/onsi/ginkgo:go_default_library",
         "//vendor/github.com/onsi/gomega:go_default_library",

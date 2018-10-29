@@ -17,10 +17,11 @@ limitations under the License.
 package framework
 
 import (
+	"time"
+
 	"github.com/jetstack/cert-manager/test/e2e/framework/helper"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"time"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
@@ -38,7 +39,6 @@ import (
 	"github.com/jetstack/cert-manager/test/e2e/framework/util"
 	"github.com/jetstack/cert-manager/test/e2e/framework/util/errors"
 	"github.com/jetstack/cert-manager/test/util"
-
 )
 
 // DefaultConfig contains the default shared config the is likely parsed from

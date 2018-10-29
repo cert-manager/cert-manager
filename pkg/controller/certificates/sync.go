@@ -182,7 +182,7 @@ func (c *Controller) Sync(ctx context.Context, crt *v1alpha1.Certificate) (reque
 	if !util.EqualUnsorted(cert.DNSNames, expectedDNSNames) {
 		return c.issue(ctx, i, crtCopy)
 	}
-	
+
 	// as there is an existing certificate, or we may create one below, we will
 	// run scheduleRenewal to schedule a renewal if required at the end of
 	// execution.
@@ -356,7 +356,7 @@ func (c *Controller) updateCertificateStatus(old, new *v1alpha1.Certificate) (*v
 
 func (c *Controller) calculateTimeBeforeExpiry(cert *x509.Certificate, crt *v1alpha1.Certificate) time.Duration {
 	messageCertificateDuration := "Certificate received from server has a validity duration of %s. The requested certificate validity duration was %s"
-	messageScheduleModified    := "Certificate renewal duration was changed to fit inside the received certificate validity duration from issuer."
+	messageScheduleModified := "Certificate renewal duration was changed to fit inside the received certificate validity duration from issuer."
 
 	// validate if the certificate received was with the issuer configured
 	// duration. If not we generate an event to warn the user of that fact.
