@@ -98,6 +98,9 @@ type CertificateSpec struct {
 	// key size of 256 will be used for "ecdsa" key algorithm and
 	// key size of 2048 will be used for "rsa" key algorithm.
 	KeyAlgorithm KeyAlgorithm `json:"keyAlgorithm,omitempty"`
+
+	// Labels is a list of labels to be added to the secret SecretName
+	Labels map[string]string `json:"labels,omitempty"`
 }
 
 // ACMECertificateConfig contains the configuration for the ACME certificate provider

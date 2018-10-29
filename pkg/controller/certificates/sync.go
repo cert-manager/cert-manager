@@ -330,6 +330,11 @@ func (c *Controller) updateSecret(crt *v1alpha1.Certificate, namespace string, c
 	}
 	secret.Labels[v1alpha1.CertificateNameKey] = crt.Name
 
+	// set Labels based on Certificate request
+	for key, val := range crt.Spec.Labels {
+		secret.Labels[key] = val
+	}
+
 	// if it is a new resource
 	if secret.SelfLink == "" {
 		enableOwner := c.CertificateOptions.EnableOwnerRef
