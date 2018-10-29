@@ -22,11 +22,6 @@ import (
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 )
 
-const (
-	// Error reason generated when duration or renewBefore is invalid
-	ErrorDurationInvalid = "ErrDurationInvalid"
-)
-
 type Interface interface {
 	// Setup initialises the issuer. This may include registering accounts with
 	// a service, creating a CA and storing it somewhere, or verifying

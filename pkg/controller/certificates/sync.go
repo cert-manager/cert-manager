@@ -58,9 +58,6 @@ const (
 	messageIssuingCertificate  = "Issuing certificate..."
 	messageRenewingCertificate = "Renewing certificate..."
 
-	infoCertificateDuration = "WarnCertificateDuration"
-	infoScheduleModified    = "WarnScheduleModified"
-
 	messageCertificateIssued  = "Certificate issued successfully"
 	messageCertificateRenewed = "Certificate renewed successfully"
 
