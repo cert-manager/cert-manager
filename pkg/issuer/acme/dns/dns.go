@@ -26,6 +26,8 @@ import (
 	"github.com/pkg/errors"
 	corev1listers "k8s.io/client-go/listers/core/v1"
 
+	"cert-manager/pkg/issuer/acme/dns/transip"
+
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	"github.com/jetstack/cert-manager/pkg/controller"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/acmedns"
@@ -60,6 +62,7 @@ type dnsProviderConstructors struct {
 	acmeDNS      func(host string, accountJson []byte, dns01Nameservers []string) (*acmedns.DNSProvider, error)
 	rfc2136      func(nameserver, tsigAlgorithm, tsigKeyName, tsigSecret string, dns01Nameservers []string) (*rfc2136.DNSProvider, error)
 	digitalOcean func(token string, dns01Nameservers []string) (*digitalocean.DNSProvider, error)
+	transip      func(accountName string, PrivateKey []byte, dns01Nameservers []string) (*transip.DNSProvider, error)
 }
 
 // Solver is a solver for the acme dns01 challenge.
@@ -145,6 +148,19 @@ func (s *Solver) solverForChallenge(issuer v1alpha1.GenericIssuer, ch *v1alpha1.
 
 	var impl solver
 	switch {
+	case providerConfig.Transip != nil:
+		privateKey, err := s.loadSecretData(&providerConfig.Transip.PrivateKey, resourceNamespace)
+		if err != nil {
+			return nil, errors.Wrap(err, "error getting transip private key")
+		}
+
+		impl, err = transip.NewDNSProvider(
+			providerConfig.Transip.AccountName,
+			privateKey,
+			s.DNS01Nameservers)
+		if err != nil {
+			return nil, errors.Wrap(err, "error instantiating transip challenge solver")
+		}
 	case providerConfig.Akamai != nil:
 		clientToken, err := s.loadSecretData(&providerConfig.Akamai.ClientToken, resourceNamespace)
 		if err != nil {
@@ -333,6 +349,7 @@ func NewSolver(ctx *controller.Context) *Solver {
 			acmedns.NewDNSProviderHostBytes,
 			rfc2136.NewDNSProviderCredentials,
 			digitalocean.NewDNSProviderCredentials,
+			transip.NewDNSProvider,
 		},
 	}
 }

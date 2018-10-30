@@ -156,6 +156,7 @@ type ACMEIssuerDNS01Provider struct {
 	Name string `json:"name"`
 
 	Akamai       *ACMEIssuerDNS01ProviderAkamai       `json:"akamai,omitempty"`
+	Transip      *ACMEIssuerDNS01ProviderTransip      `json:"transip,omitempy"`
 	CloudDNS     *ACMEIssuerDNS01ProviderCloudDNS     `json:"clouddns,omitempty"`
 	Cloudflare   *ACMEIssuerDNS01ProviderCloudflare   `json:"cloudflare,omitempty"`
 	Route53      *ACMEIssuerDNS01ProviderRoute53      `json:"route53,omitempty"`
@@ -172,6 +173,13 @@ type ACMEIssuerDNS01ProviderAkamai struct {
 	ClientToken           SecretKeySelector `json:"clientTokenSecretRef"`
 	ClientSecret          SecretKeySelector `json:"clientSecretSecretRef"`
 	AccessToken           SecretKeySelector `json:"accessTokenSecretRef"`
+}
+
+// ACMEIssuerDNS01ProviderTransip is a structure containing the DNS
+// configuration for Transip DNS Management API
+type ACMEIssuerDNS01ProviderTransip struct {
+	AccountName string            `json:"accountName"`
+	PrivateKey  SecretKeySelector `json:"privateKeyRef"`
 }
 
 // ACMEIssuerDNS01ProviderCloudDNS is a structure containing the DNS
