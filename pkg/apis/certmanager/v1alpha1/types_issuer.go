@@ -156,7 +156,7 @@ type ACMEIssuerDNS01Provider struct {
 	Name string `json:"name"`
 
 	Akamai       *ACMEIssuerDNS01ProviderAkamai       `json:"akamai,omitempty"`
-	Transip      *ACMEIssuerDNS01ProviderTransip      `json:"transip,omitempy"`
+	Transip      *ACMEIssuerDNS01ProviderTransip      `json:"transip,omitempty"`
 	CloudDNS     *ACMEIssuerDNS01ProviderCloudDNS     `json:"clouddns,omitempty"`
 	Cloudflare   *ACMEIssuerDNS01ProviderCloudflare   `json:"cloudflare,omitempty"`
 	Route53      *ACMEIssuerDNS01ProviderRoute53      `json:"route53,omitempty"`
