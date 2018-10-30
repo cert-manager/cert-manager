@@ -1,0 +1,26 @@
+{{- if and .Values.createCustomResource .Values.certificates -}}
+apiVersion: v1
+kind: List
+items:
+{{- range .Values.certificates }}
+- apiVersion: certmanager.k8s.io/v1alpha1
+  kind: Certificate
+  metadata:
+    name: "{{ .name }}"
+    namespace: "{{ .namespace }}"
+    annotations:
+      "helm.sh/hook": post-install    
+  spec:
+    acme:
+      config:
+{{ toYaml .spec.acme.config |indent 6 }}
+    commonName: "{{ .spec.commonName }}"
+    dnsNames:
+{{ toYaml .spec.dnsNames |indent 6 }}
+    issuerRef:
+      kind: "{{ .spec.issuerRef.kind }}"
+      name: "{{ .spec.issuerRef.name }}"
+    secretName: "{{ .spec.secretName }}"
+    
+{{- end -}}
+{{- end -}}

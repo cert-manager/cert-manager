@@ -103,3 +103,62 @@ affinity: {}
 #     value: master
 #     effect: NoSchedule
 tolerations: []
+
+
+clusterIssuer: {}
+# name: letsencrypt-prod
+# spec:
+#   acme:
+#     server: https://acme-v02.api.letsencrypt.org/directory
+#     email:
+#     privateKeySecretRef:
+#       key: ""
+#       name: letsencrypt-prod
+#     dns01:
+#       providers:
+#       - name: route53
+#         route53:
+#           region: eu-west-1
+#           accessKeyID: KEY
+#           hostedZoneID: ZONE1
+#           secretAccessKeySecretRef:
+#             name: custom_secret
+#             key: secret-access-key
+#      - http01:
+#          ingressClass: nginx
+#        domains:
+#        - example.com
+
+certificates: []
+# - name: 'fake-domain.com'
+#   namespace: kube-system
+#   spec:
+#     acme:
+#       config:
+#       - dns01:
+#           provider: route53
+#         domains:
+#         - 'fake-domain.com'
+#     commonName: 'fake-domain.com'
+#     dnsNames:
+#       - 'fake-domain.com'
+#     issuerRef:
+#       kind: ClusterIssuer
+#       name: letsencrypt-prod
+#     secretName: fake-domain.com
+# - name: 'fake-domain.com'
+#   namespace: nginx-ingress
+#   spec:
+#     acme:
+#       config:
+#       - dns01:
+#           provider: aws-route53
+#         domains:
+#         - 'fake-domain.com'
+#     commonName: 'fake-domain.com'
+#     dnsNames:
+#       - 'fake-domain.com'
+#     issuerRef:
+#       kind: ClusterIssuer
+#       name: letsencrypt-prod
+#     secretName: fake-domain.com

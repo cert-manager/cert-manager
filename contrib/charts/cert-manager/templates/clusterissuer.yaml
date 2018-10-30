@@ -1,0 +1,21 @@
+{{- if and .Values.createCustomResource .Values.clusterIssuer -}}
+apiVersion: certmanager.k8s.io/v1alpha1
+kind: ClusterIssuer
+metadata:
+  name: {{ .Values.clusterIssuer.name }}
+spec:
+  acme:
+    server: {{ .Values.clusterIssuer.spec.acme.server }}
+    email: {{ .Values.clusterIssuer.spec.acme.email }}
+    privateKeySecretRef:
+      key: {{ .Values.clusterIssuer.spec.acme.privateKeySecretRef.key }}
+      name: {{ .Values.clusterIssuer.spec.acme.privateKeySecretRef.name }}
+{{- if .Values.clusterIssuer.spec.acme.dns01 }}    
+    dns01:
+{{ toYaml .Values.clusterIssuer.spec.acme.dns01 | indent 6 }}
+{{- end -}}
+{{- if .Values.clusterIssuer.spec.acme.http01 }}    
+    http01:
+{{ toYaml .Values.clusterIssuer.spec.acme.http01 | indent 6 }}
+{{- end -}}
+{{- end -}}
