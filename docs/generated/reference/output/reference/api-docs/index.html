@@ -785,6 +785,10 @@ Appears In:
 <td></td>
 </tr>
 <tr>
+<td><code>infoblox</code><br /> <em><a href="#acmeissuerdns01providerinfoblox-v1alpha1">ACMEIssuerDNS01ProviderInfoblox</a></em></td>
+<td></td>
+</tr>
+<tr>
 <td><code>name</code><br /> <em>string</em></td>
 <td></td>
 </tr>
@@ -1072,6 +1076,65 @@ Appears In:
 <tbody>
 <tr>
 <td><code>tokenSecretRef</code><br /> <em><a href="#secretkeyselector-v1alpha1">SecretKeySelector</a></em></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h2 id="acmeissuerdns01providerinfoblox-v1alpha1">ACMEIssuerDNS01ProviderInfoblox v1alpha1</h2>
+<table>
+<thead>
+<tr>
+<th>Group</th>
+<th>Version</th>
+<th>Kind</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>certmanager</code></td>
+<td><code>v1alpha1</code></td>
+<td><code>ACMEIssuerDNS01ProviderInfoblox</code></td>
+</tr>
+</tbody>
+</table>
+<p>ACMEIssuerDNS01ProviderInfoblox is a structure containing the configuration for Infoblox DNS servers</p>
+<aside class="notice">
+Appears In:
+
+<ul> 
+<li><a href="#acmeissuerdns01provider-v1alpha1">ACMEIssuerDNS01Provider v1alpha1</a></li>
+</ul></aside>
+
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>gridHost</code><br /> <em>string</em></td>
+<td></td>
+</tr>
+<tr>
+<td><code>sslVerify</code><br /> <em>boolean</em></td>
+<td></td>
+</tr>
+<tr>
+<td><code>wapiPasswordSecret</code><br /> <em><a href="#secretkeyselector-v1alpha1">SecretKeySelector</a></em></td>
+<td></td>
+</tr>
+<tr>
+<td><code>wapiPort</code><br /> <em>integer</em></td>
+<td></td>
+</tr>
+<tr>
+<td><code>wapiUsername</code><br /> <em>string</em></td>
+<td></td>
+</tr>
+<tr>
+<td><code>wapiVersion</code><br /> <em>string</em></td>
 <td></td>
 </tr>
 </tbody>
@@ -1900,6 +1963,7 @@ Appears In:
 <li><a href="#acmeissuerdns01providerclouddns-v1alpha1">ACMEIssuerDNS01ProviderCloudDNS v1alpha1</a></li>
 <li><a href="#acmeissuerdns01providercloudflare-v1alpha1">ACMEIssuerDNS01ProviderCloudflare v1alpha1</a></li>
 <li><a href="#acmeissuerdns01providerdigitalocean-v1alpha1">ACMEIssuerDNS01ProviderDigitalOcean v1alpha1</a></li>
+<li><a href="#acmeissuerdns01providerinfoblox-v1alpha1">ACMEIssuerDNS01ProviderInfoblox v1alpha1</a></li>
 <li><a href="#acmeissuerdns01providerrfc2136-v1alpha1">ACMEIssuerDNS01ProviderRFC2136 v1alpha1</a></li>
 <li><a href="#acmeissuerdns01providerroute53-v1alpha1">ACMEIssuerDNS01ProviderRoute53 v1alpha1</a></li>
 <li><a href="#vaultapprole-v1alpha1">VaultAppRole v1alpha1</a></li>
