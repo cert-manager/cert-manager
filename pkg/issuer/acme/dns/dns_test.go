@@ -264,6 +264,67 @@ func TestSolverFor(t *testing.T) {
 	}
 }
 
+func TestSolveForInfoblox(t *testing.T) {
+	f := &solverFixture{
+		Builder: &test.Builder{
+			KubeObjects: []runtime.Object{
+				newSecret("infoblox", "default", map[string][]byte{
+					"password": []byte("FAKE-PASSWORD"),
+				}),
+			},
+		},
+		Issuer: newIssuer("test", "default", []v1alpha1.ACMEIssuerDNS01Provider{
+			{
+				Name: "fake-infoblox",
+				Infoblox: &v1alpha1.ACMEIssuerDNS01ProviderInfoblox{
+					WapiPasswordSecret: v1alpha1.SecretKeySelector{
+						LocalObjectReference: v1alpha1.LocalObjectReference{
+							Name: "infoblox",
+						},
+						Key: "password",
+					},
+					GridHost:     "infoblox.example.com",
+					WapiUsername: "infoblox",
+					WapiPort:     443,
+					WapiVersion:  "2.7.3",
+					SslVerify:    true,
+				},
+			},
+		}),
+		Challenge: &v1alpha1.Challenge{
+			Spec: v1alpha1.ChallengeSpec{
+				Config: v1alpha1.SolverConfig{
+					DNS01: &v1alpha1.DNS01SolverConfig{
+						Provider: "fake-infoblox",
+					},
+				},
+			},
+		},
+		dnsProviders: newFakeDNSProviders(),
+	}
+
+	f.Setup(t)
+	defer f.Finish(t)
+
+	s := f.Solver
+	_, err := s.solverForChallenge(f.Issuer, f.Challenge)
+	if err != nil {
+		t.Fatalf("expected solverFor to not error, but got: %s", err)
+	}
+
+	expectedDOCall := []fakeDNSProviderCall{
+		{
+			name: "infoblox",
+			args: []interface{}{"infoblox.example.com", "infoblox", "FAKE-PASSWORD", 443, "2.7.3", true, util.RecursiveNameservers},
+		},
+	}
+
+	if !reflect.DeepEqual(expectedDOCall, f.dnsProviders.calls) {
+		t.Fatalf("expected %+v == %+v", expectedDOCall, f.dnsProviders.calls)
+	}
+
+}
+
 func TestSolveForDigitalOcean(t *testing.T) {
 	f := &solverFixture{
 		Builder: &test.Builder{

@@ -163,6 +163,7 @@ type ACMEIssuerDNS01Provider struct {
 	DigitalOcean *ACMEIssuerDNS01ProviderDigitalOcean `json:"digitalocean,omitempty"`
 	AcmeDNS      *ACMEIssuerDNS01ProviderAcmeDNS      `json:"acmedns,omitempty"`
 	RFC2136      *ACMEIssuerDNS01ProviderRFC2136      `json:"rfc2136,omitempty"`
+	Infoblox     *ACMEIssuerDNS01ProviderInfoblox     `json:"infoblox,omitempty"`
 }
 
 // ACMEIssuerDNS01ProviderAkamai is a structure containing the DNS
@@ -221,6 +222,17 @@ type ACMEIssuerDNS01ProviderAzureDNS struct {
 type ACMEIssuerDNS01ProviderAcmeDNS struct {
 	Host          string            `json:"host"`
 	AccountSecret SecretKeySelector `json:"accountSecretRef"`
+}
+
+// ACMEIssuerDNS01ProviderInfoblox is a structure containing the
+// configuration for Infoblox DNS servers
+type ACMEIssuerDNS01ProviderInfoblox struct {
+	GridHost           string            `json:"gridHost"`
+	WapiUsername       string            `json:"wapiUsername"`
+	WapiPasswordSecret SecretKeySelector `json:"wapiPasswordSecret"`
+	WapiPort           int               `json:"wapiPort"`
+	WapiVersion        string            `json:"wapiVersion"`
+	SslVerify          bool              `json:"sslVerify"`
 }
 
 // ACMEIssuerDNS01ProviderRFC2136 is a structure containing the

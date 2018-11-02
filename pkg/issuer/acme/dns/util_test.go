@@ -30,6 +30,7 @@ import (
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/azuredns"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/clouddns"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/cloudflare"
+	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/infobloxdns"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/rfc2136"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/route53"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
@@ -166,6 +167,10 @@ func newFakeDNSProviders() *fakeDNSProviders {
 		},
 		digitalOcean: func(token string, dns01Nameservers []string) (*digitalocean.DNSProvider, error) {
 			f.call("digitalocean", token, util.RecursiveNameservers)
+			return nil, nil
+		},
+		infobloxDNS: func(gridHost string, username string, secret string, port int, version string, sslVerify bool, dns01Nameservers []string) (*infobloxdns.DNSProvider, error) {
+			f.call("infoblox", gridHost, username, secret, port, version, sslVerify, util.RecursiveNameservers)
 			return nil, nil
 		},
 	}

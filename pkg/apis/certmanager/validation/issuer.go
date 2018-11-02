@@ -226,6 +226,25 @@ func ValidateACMEIssuerDNS01Config(iss *v1alpha1.ACMEIssuerDNS01Config, fldPath 
 				}
 			}
 		}
+		if p.Infoblox != nil {
+			if numProviders > 0 {
+				el = append(el, field.Forbidden(fldPath.Child("infoblox"), "may not specify more than one provider type"))
+			} else {
+				numProviders++
+				if len(p.Infoblox.GridHost) == 0 {
+					el = append(el, field.Required(fldPath.Child("infoblox", "gridHost"), ""))
+				}
+				if len(p.Infoblox.WapiUsername) == 0 {
+					el = append(el, field.Required(fldPath.Child("infoblox", "wapiUsername"), ""))
+				}
+				if len(p.Infoblox.WapiVersion) == 0 {
+					el = append(el, field.Required(fldPath.Child("infoblox", "wapiVersion"), ""))
+				}
+				if p.Infoblox.WapiPort == 0 {
+					el = append(el, field.Required(fldPath.Child("infoblox", "wapiPort"), ""))
+				}
+			}
+		}
 		if p.Route53 != nil {
 			if numProviders > 0 {
 				el = append(el, field.Forbidden(fldPath.Child("route53"), "may not specify more than one provider type"))
