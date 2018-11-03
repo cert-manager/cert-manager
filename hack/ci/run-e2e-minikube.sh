@@ -31,20 +31,6 @@ echo "Waiting for minikube cluster to be ready..."
 
 while true; do if kubectl get nodes; then break; fi; echo "Waiting 5s for kubernetes to be ready..."; sleep 5; done
 
-# Install tiller with admin permissions
-kubectl create serviceaccount -n kube-system tiller
-# Bind the tiller service account to the cluster-admin role
-kubectl create clusterrolebinding tiller-binding --clusterrole=cluster-admin --serviceaccount kube-system:tiller
-# Deploy tiller
-helm init --service-account tiller --wait
-
-echo "Exposing nginx-ingress service with a stable IP (10.0.0.15)"
-# Setup service for nginx ingress controller. A DNS entry for *.certmanager.kubernetes.network has been setup to point to 10.0.0.15 for e2e tests
-while true; do if kubectl get rc nginx-ingress-controller -n kube-system; then break; fi; echo "Waiting 5s for nginx-ingress-controller rc to be installed..."; sleep 5; done
-kubectl expose -n kube-system --port 80 --target-port 80 --type ClusterIP rc nginx-ingress-controller --cluster-ip 10.0.0.15
-
-echo "Waiting for Tiller to be ready..."
-while true; do if timeout 5 helm version; then break; fi; echo "Waiting 5s for tiller to be ready..."; sleep 5; done
-
 echo "Running e2e tests"
-make e2e_test E2E_NGINX_CERTIFICATE_DOMAIN=certmanager.kubernetes.network
+# Skip RBAC tests as they do not pass on Kubernetes <1.9
+make e2e_test GINKGO_SKIP="RBAC"

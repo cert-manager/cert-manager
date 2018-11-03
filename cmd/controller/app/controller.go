@@ -24,6 +24,7 @@ import (
 
 	"github.com/golang/glog"
 	"k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
@@ -125,6 +126,26 @@ func buildControllerContext(opts *options.ControllerOptions) (*controller.Contex
 
 	glog.Infof("Using the following nameservers for DNS01 checks: %v", nameservers)
 
+	HTTP01SolverResourceRequestCPU, err := resource.ParseQuantity(opts.ACMEHTTP01SolverResourceRequestCPU)
+	if err != nil {
+		return nil, nil, fmt.Errorf("error parsing ACMEHTTP01SolverResourceRequestCPU: %s", err.Error())
+	}
+
+	HTTP01SolverResourceRequestMemory, err := resource.ParseQuantity(opts.ACMEHTTP01SolverResourceRequestMemory)
+	if err != nil {
+		return nil, nil, fmt.Errorf("error parsing ACMEHTTP01SolverResourceRequestMemory: %s", err.Error())
+	}
+
+	HTTP01SolverResourceLimitsCPU, err := resource.ParseQuantity(opts.ACMEHTTP01SolverResourceLimitsCPU)
+	if err != nil {
+		return nil, nil, fmt.Errorf("error parsing ACMEHTTP01SolverResourceLimitsCPU: %s", err.Error())
+	}
+
+	HTTP01SolverResourceLimitsMemory, err := resource.ParseQuantity(opts.ACMEHTTP01SolverResourceLimitsMemory)
+	if err != nil {
+		return nil, nil, fmt.Errorf("error parsing ACMEHTTP01SolverResourceLimitsMemory: %s", err.Error())
+	}
+
 	// Create event broadcaster
 	// Add cert-manager types to the default Kubernetes Scheme so Events can be
 	// logged properly
@@ -144,8 +165,12 @@ func buildControllerContext(opts *options.ControllerOptions) (*controller.Contex
 		KubeSharedInformerFactory: kubeSharedInformerFactory,
 		SharedInformerFactory:     sharedInformerFactory,
 		ACMEOptions: controller.ACMEOptions{
-			HTTP01SolverImage: opts.ACMEHTTP01SolverImage,
-			DNS01Nameservers:  nameservers,
+			HTTP01SolverImage:                 opts.ACMEHTTP01SolverImage,
+			HTTP01SolverResourceRequestCPU:    HTTP01SolverResourceRequestCPU,
+			HTTP01SolverResourceRequestMemory: HTTP01SolverResourceRequestMemory,
+			HTTP01SolverResourceLimitsCPU:     HTTP01SolverResourceLimitsCPU,
+			HTTP01SolverResourceLimitsMemory:  HTTP01SolverResourceLimitsMemory,
+			DNS01Nameservers:                  nameservers,
 		},
 		IssuerOptions: controller.IssuerOptions{
 			ClusterIssuerAmbientCredentials: opts.ClusterIssuerAmbientCredentials,

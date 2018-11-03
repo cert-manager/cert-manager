@@ -47,11 +47,24 @@ func init() {
 type Builder struct {
 	KubeObjects        []runtime.Object
 	CertManagerObjects []runtime.Object
+	ExpectedActions    []Action
+	StringGenerator    StringGenerator
 
-	stopCh chan struct{}
-	events []string
+	stopCh           chan struct{}
+	events           []string
+	requiredReactors map[string]bool
 
 	*controller.Context
+}
+
+func (b *Builder) generateNameReactor(action coretesting.Action) (handled bool, ret runtime.Object, err error) {
+	obj := action.(coretesting.CreateAction).GetObject().(metav1.Object)
+	genName := obj.GetGenerateName()
+	if genName != "" {
+		obj.SetName(genName + b.StringGenerator(5))
+		return false, obj.(runtime.Object), nil
+	}
+	return false, obj.(runtime.Object), nil
 }
 
 const informerResyncPeriod = time.Millisecond * 500
@@ -62,7 +75,10 @@ func (b *Builder) Start() {
 	if b.Context == nil {
 		b.Context = &controller.Context{}
 	}
-
+	if b.StringGenerator == nil {
+		b.StringGenerator = RandStringBytes
+	}
+	b.requiredReactors = make(map[string]bool)
 	b.Client = kubefake.NewSimpleClientset(b.KubeObjects...)
 	b.CMClient = cmfake.NewSimpleClientset(b.CertManagerObjects...)
 	// create a fake recorder with a buffer of 5.
@@ -70,20 +86,11 @@ func (b *Builder) Start() {
 	// produce more than 5 events
 	b.Recorder = record.NewFakeRecorder(5)
 
-	b.FakeKubeClient().PrependReactor("create", "*", func(action coretesting.Action) (handled bool, ret runtime.Object, err error) {
-		obj := action.(coretesting.CreateAction).GetObject().(metav1.Object)
-		genName := obj.GetGenerateName()
-		if genName != "" {
-			obj.SetName(genName + RandStringBytes(5))
-			return false, obj.(runtime.Object), nil
-		}
-		return false, obj.(runtime.Object), nil
-	})
+	b.FakeKubeClient().PrependReactor("create", "*", b.generateNameReactor)
+	b.FakeCMClient().PrependReactor("create", "*", b.generateNameReactor)
 	b.KubeSharedInformerFactory = kubeinformers.NewSharedInformerFactory(b.Client, informerResyncPeriod)
 	b.SharedInformerFactory = informers.NewSharedInformerFactory(b.CMClient, informerResyncPeriod)
 	b.stopCh = make(chan struct{})
-	b.KubeSharedInformerFactory.Start(b.stopCh)
-	b.SharedInformerFactory.Start(b.stopCh)
 	go b.readEvents()
 }
 
@@ -101,6 +108,66 @@ func (b *Builder) FakeCMClient() *cmfake.Clientset {
 
 func (b *Builder) FakeCMInformerFactory() informers.SharedInformerFactory {
 	return b.Context.SharedInformerFactory
+}
+
+func (b *Builder) EnsureReactorCalled(testName string, fn coretesting.ReactionFunc) coretesting.ReactionFunc {
+	b.requiredReactors[testName] = false
+	return func(action coretesting.Action) (handled bool, ret runtime.Object, err error) {
+		handled, ret, err = fn(action)
+		if !handled {
+			return
+		}
+		b.requiredReactors[testName] = true
+		return
+	}
+}
+
+func (b *Builder) AllReactorsCalled() error {
+	var errs []error
+	for n, reactorCalled := range b.requiredReactors {
+		if !reactorCalled {
+			errs = append(errs, fmt.Errorf("reactor not called: %s", n))
+		}
+	}
+	return utilerrors.NewAggregate(errs)
+}
+
+func (b *Builder) AllActionsExecuted() error {
+	firedActions := b.FakeCMClient().Actions()
+	firedActions = append(firedActions, b.FakeKubeClient().Actions()...)
+
+	var unexpectedActions []coretesting.Action
+	missingActions := make([]Action, len(b.ExpectedActions))
+	copy(missingActions, b.ExpectedActions)
+	for _, a := range firedActions {
+		// skip list and watch actions
+		if a.GetVerb() == "list" || a.GetVerb() == "watch" {
+			continue
+		}
+		found := false
+		for i, expA := range missingActions {
+			if expA.Matches(a) {
+				missingActions = append(missingActions[:i], missingActions[i+1:]...)
+				found = true
+				break
+			}
+		}
+		if !found {
+			unexpectedActions = append(unexpectedActions, a)
+		}
+	}
+	var errs []error
+	for _, a := range missingActions {
+		errs = append(errs, fmt.Errorf("missing action: %v", actionToString(a.Action())))
+	}
+	for _, a := range unexpectedActions {
+		errs = append(errs, fmt.Errorf("unexpected action: %v", actionToString(a)))
+	}
+	return utilerrors.NewAggregate(errs)
+}
+
+func actionToString(a coretesting.Action) string {
+	return fmt.Sprintf("%s %q in namespace %s", a.GetVerb(), a.GetResource(), a.GetNamespace())
 }
 
 // Stop will signal the informers to stop watching changes
@@ -123,10 +190,10 @@ func (b *Builder) WaitForResync() {
 
 func (b *Builder) Sync() {
 	b.KubeSharedInformerFactory.Start(b.stopCh)
+	b.SharedInformerFactory.Start(b.stopCh)
 	if err := mustAllSync(b.KubeSharedInformerFactory.WaitForCacheSync(b.stopCh)); err != nil {
 		panic("Error waiting for kubeSharedInformerFactory to sync: " + err.Error())
 	}
-	b.SharedInformerFactory.Start(b.stopCh)
 	if err := mustAllSync(b.SharedInformerFactory.WaitForCacheSync(b.stopCh)); err != nil {
 		panic("Error waiting for SharedInformerFactory to sync: " + err.Error())
 	}

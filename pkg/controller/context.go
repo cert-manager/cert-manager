@@ -19,6 +19,7 @@ package controller
 import (
 	"time"
 
+	"k8s.io/apimachinery/pkg/api/resource"
 	kubeinformers "k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/record"
@@ -79,6 +80,18 @@ type ACMEOptions struct {
 	// ACMEHTTP01SolverImage is the image to use for solving ACME HTTP01
 	// challenges
 	HTTP01SolverImage string
+
+	// HTTP01SolverResourceRequestCPU defines the ACME pod's resource request CPU size
+	HTTP01SolverResourceRequestCPU resource.Quantity
+
+	// HTTP01SolverResourceRequestMemory defines the ACME pod's resource request Memory size
+	HTTP01SolverResourceRequestMemory resource.Quantity
+
+	// HTTP01SolverResourceLimitsCPU defines the ACME pod's resource limits CPU size
+	HTTP01SolverResourceLimitsCPU resource.Quantity
+
+	// HTTP01SolverResourceLimitsMemory defines the ACME pod's resource limits Memory size
+	HTTP01SolverResourceLimitsMemory resource.Quantity
 
 	// DNS01Nameservers is a list of nameservers to use when performing self-checks
 	// for ACME DNS01 validations.

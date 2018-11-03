@@ -4,8 +4,6 @@ go_library(
     name = "go_default_library",
     srcs = [
         "issue.go",
-        "prepare.go",
-        "renew.go",
         "selfsigned.go",
         "setup.go",
     ],

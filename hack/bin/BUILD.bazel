@@ -55,20 +55,10 @@ genrule(
     visibility = ["//visibility:public"],
 )
 
-# We include these rules here to make PATH mapping easier, and to provide a
-# stable arch-independent target for generating swagger.json & apidocs.
 genrule(
-    name = "fetch_swagger-gen",
-    srcs = ["//docs/generated/reference/swagger-gen"],
-    outs = ["swagger-gen"],
-    cmd = "cp $(SRCS) $@",
-    visibility = ["//visibility:public"],
-)
-
-genrule(
-    name = "fetch_gen-apidocs",
-    srcs = ["@io_kubernetes_incubator_reference_docs//gen-apidocs"],
-    outs = ["gen-apidocs"],
+    name = "fetch_kind",
+    srcs = ["@io_kubernetes_sigs_kind//:kind"],
+    outs = ["kind"],
     cmd = "cp $(SRCS) $@",
     visibility = ["//visibility:public"],
 )

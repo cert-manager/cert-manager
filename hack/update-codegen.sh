@@ -30,20 +30,4 @@ generate-groups.sh "deepcopy,client,informer,lister" \
   --output-base "${GOPATH}/src/" \
   --go-header-file "${runfiles}/hack/boilerplate/boilerplate.go.txt"
 
-OPENAPI_PATH_SEGMENT="docs/generated/reference/openapi"
-OPENAPI_OUTPUT_DIR="${REPO_ROOT}/${OPENAPI_PATH_SEGMENT}"
-# Create all required directories
-mkdir -p "${OPENAPI_OUTPUT_DIR}"
-if [ ! -f "${OPENAPI_OUTPUT_DIR}/openapi_generated.go" ]; then
-    # Create a placeholder .go file to prevent issues with openapi-gen
-    echo "package openapi" > "${OPENAPI_OUTPUT_DIR}/openapi_generated.go"
-fi
-
-echo "+++ Generating openapi_generated.go into 'github.com/jetstack/cert-manager/${OPENAPI_PATH_SEGMENT}'"
-# Generate Golang types for OpenAPI spec
-openapi-gen \
-        --input-dirs github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1,k8s.io/apimachinery/pkg/apis/meta/v1,k8s.io/apimachinery/pkg/runtime,k8s.io/apimachinery/pkg/version \
-        --go-header-file "${runfiles}/hack/boilerplate/boilerplate.go.txt" \
-        --output-package "github.com/jetstack/cert-manager/${OPENAPI_PATH_SEGMENT}"
-
 update-bazel.sh

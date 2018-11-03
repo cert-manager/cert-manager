@@ -16,9 +16,10 @@ limitations under the License.
 
 package util
 
+// TODO: we should break this file apart into separate more sane/reusable parts
+
 import (
 	"crypto/x509"
-	"flag"
 	"fmt"
 	"time"
 
@@ -40,17 +41,6 @@ import (
 	"github.com/jetstack/cert-manager/pkg/util"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 )
-
-var ACMECertificateDomain string
-var ACMECloudflareDomain string
-
-func init() {
-	flag.StringVar(&ACMECertificateDomain, "acme-nginx-certificate-domain", "",
-		"The provided domain and all sub-domains should resolve to the nginx ingress controller")
-	flag.StringVar(&ACMECloudflareDomain, "acme-cloudflare-domain", "",
-		"A domain name manageable using the test cloudflare api token to be used for testing "+
-			"the DNS01 provider")
-}
 
 func CertificateOnlyValidForDomains(cert *x509.Certificate, commonName string, dnsNames ...string) bool {
 	if commonName != cert.Subject.CommonName || !util.EqualUnsorted(cert.DNSNames, dnsNames) {
@@ -235,7 +225,7 @@ func WaitCertificateIssuedValid(certClient clientset.CertificateInterface, secre
 
 				return false, err
 			}
-			if len(secret.Data) != 2 {
+			if !(len(secret.Data) == 2 || len(secret.Data) == 3) {
 				glog.Infof("Expected 2 keys in certificate secret, but there was %d", len(secret.Data))
 				return false, nil
 			}
@@ -473,7 +463,7 @@ func NewCertManagerSelfSignedIssuer(name string) *v1alpha1.Issuer {
 	}
 }
 
-func NewCertManagerVaultIssuerToken(name, vaultURL, vaultPath, vaultSecretToken string) *v1alpha1.Issuer {
+func NewCertManagerVaultIssuerToken(name, vaultURL, vaultPath, vaultSecretToken, authPath string, caBundle []byte) *v1alpha1.Issuer {
 	return &v1alpha1.Issuer{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: name,
@@ -481,8 +471,9 @@ func NewCertManagerVaultIssuerToken(name, vaultURL, vaultPath, vaultSecretToken 
 		Spec: v1alpha1.IssuerSpec{
 			IssuerConfig: v1alpha1.IssuerConfig{
 				Vault: &v1alpha1.VaultIssuer{
-					Server: vaultURL,
-					Path:   vaultPath,
+					Server:   vaultURL,
+					Path:     vaultPath,
+					CABundle: caBundle,
 					Auth: v1alpha1.VaultAuth{
 						TokenSecretRef: v1alpha1.SecretKeySelector{
 							Key: "secretkey",
@@ -497,7 +488,7 @@ func NewCertManagerVaultIssuerToken(name, vaultURL, vaultPath, vaultSecretToken 
 	}
 }
 
-func NewCertManagerVaultIssuerAppRole(name, vaultURL, vaultPath, roleId, vaultSecretAppRole, authPath string) *v1alpha1.Issuer {
+func NewCertManagerVaultIssuerAppRole(name, vaultURL, vaultPath, roleId, vaultSecretAppRole string, authPath string, caBundle []byte) *v1alpha1.Issuer {
 	return &v1alpha1.Issuer{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: name,
@@ -505,8 +496,9 @@ func NewCertManagerVaultIssuerAppRole(name, vaultURL, vaultPath, roleId, vaultSe
 		Spec: v1alpha1.IssuerSpec{
 			IssuerConfig: v1alpha1.IssuerConfig{
 				Vault: &v1alpha1.VaultIssuer{
-					Server: vaultURL,
-					Path:   vaultPath,
+					Server:   vaultURL,
+					Path:     vaultPath,
+					CABundle: caBundle,
 					Auth: v1alpha1.VaultAuth{
 						AppRole: v1alpha1.VaultAppRole{
 							Path:   authPath,

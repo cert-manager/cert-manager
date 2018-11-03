@@ -46,7 +46,7 @@ const (
 )
 
 var (
-	certificateGvk = v1alpha1.SchemeGroupVersion.WithKind("Certificate")
+	challengeGvk = v1alpha1.SchemeGroupVersion.WithKind("Challenge")
 )
 
 // Solver is an implementation of the acme http-01 challenge solver protocol
@@ -61,7 +61,16 @@ type Solver struct {
 	requiredPasses   int
 }
 
-type reachabilityTest func(ctx context.Context, domain, path, key string) (bool, error)
+type reachabilityTest func(ctx context.Context, url, key string) (bool, error)
+
+// absorbErr wraps an error to mark it as absorbable (log and handle as nil)
+type absorbErr struct {
+	err error
+}
+
+func (ae *absorbErr) Error() string {
+	return ae.err.Error()
+}
 
 // NewSolver returns a new ACME HTTP01 solver for the given Issuer and client.
 // TODO: refactor this to have fewer args
@@ -79,22 +88,28 @@ func NewSolver(ctx *controller.Context) *Solver {
 // Present will realise the resources required to solve the given HTTP01
 // challenge validation in the apiserver. If those resources already exist, it
 // will return nil (i.e. this function is idempotent).
-func (s *Solver) Present(ctx context.Context, issuer v1alpha1.GenericIssuer, crt *v1alpha1.Certificate, ch v1alpha1.ACMEOrderChallenge) error {
-	_, podErr := s.ensurePod(crt, ch)
-	svc, svcErr := s.ensureService(crt, ch)
+func (s *Solver) Present(ctx context.Context, issuer v1alpha1.GenericIssuer, ch *v1alpha1.Challenge) error {
+	_, podErr := s.ensurePod(ch)
+	svc, svcErr := s.ensureService(issuer, ch)
 	if svcErr != nil {
 		return utilerrors.NewAggregate([]error{podErr, svcErr})
 	}
-	_, ingressErr := s.ensureIngress(crt, svc.Name, ch)
+	_, ingressErr := s.ensureIngress(ch, svc.Name)
 	return utilerrors.NewAggregate([]error{podErr, svcErr, ingressErr})
 }
 
-func (s *Solver) Check(ch v1alpha1.ACMEOrderChallenge) (bool, error) {
+func (s *Solver) Check(ch *v1alpha1.Challenge) (bool, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), HTTP01Timeout)
 	defer cancel()
+
+	url := s.buildChallengeUrl(ch)
+
 	for i := 0; i < s.requiredPasses; i++ {
-		ok, err := s.testReachability(ctx, ch.Domain, fmt.Sprintf("%s/%s", solver.HTTPChallengePath, ch.Token), ch.Key)
-		if err != nil {
+		ok, err := s.testReachability(ctx, url, ch.Spec.Key)
+		if absorbedErr, wasAbsorbed := err.(*absorbErr); wasAbsorbed {
+			glog.Infof("could not reach '%s': %v", url, absorbedErr.err)
+			return false, nil
+		} else if err != nil {
 			return false, err
 		}
 		if !ok {
@@ -107,43 +122,50 @@ func (s *Solver) Check(ch v1alpha1.ACMEOrderChallenge) (bool, error) {
 
 // CleanUp will ensure the created service, ingress and pod are clean/deleted of any
 // cert-manager created data.
-func (s *Solver) CleanUp(ctx context.Context, issuer v1alpha1.GenericIssuer, crt *v1alpha1.Certificate, ch v1alpha1.ACMEOrderChallenge) error {
+func (s *Solver) CleanUp(ctx context.Context, issuer v1alpha1.GenericIssuer, ch *v1alpha1.Challenge) error {
 	var errs []error
-	errs = append(errs, s.cleanupPods(crt, ch))
-	errs = append(errs, s.cleanupServices(crt, ch))
-	errs = append(errs, s.cleanupIngresses(crt, ch))
+	errs = append(errs, s.cleanupPods(ch))
+	errs = append(errs, s.cleanupServices(ch))
+	errs = append(errs, s.cleanupIngresses(ch))
 	return utilerrors.NewAggregate(errs)
+}
+
+func (s *Solver) buildChallengeUrl(ch *v1alpha1.Challenge) string {
+	url := &url.URL{}
+	url.Scheme = "http"
+	url.Host = ch.Spec.DNSName
+	url.Path = fmt.Sprintf("%s/%s", solver.HTTPChallengePath, ch.Spec.Token)
+
+	return url.String()
 }
 
 // testReachability will attempt to connect to the 'domain' with 'path' and
 // check if the returned body equals 'key'
-func testReachability(ctx context.Context, domain, path, key string) (bool, error) {
-	url := &url.URL{}
-	url.Scheme = "http"
-	url.Host = domain
-	url.Path = path
-
-	response, err := http.Get(url.String())
+func testReachability(ctx context.Context, url string, key string) (bool, error) {
+	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
-		// absorb http client errors
-		return false, nil
+		return false, fmt.Errorf("failed to build request: %v", err)
+	}
+
+	req = req.WithContext(ctx)
+
+	response, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return false, &absorbErr{err: fmt.Errorf("failed to GET '%s': %v", url, err)}
 	}
 
 	if response.StatusCode != http.StatusOK {
-		// TODO: log this elsewhere
-		glog.Infof("wrong status code '%d'", response.StatusCode)
-		return false, nil
+		return false, &absorbErr{err: fmt.Errorf("wrong status code '%d', expected '%d'", response.StatusCode, http.StatusOK)}
 	}
 
 	defer response.Body.Close()
 	presentedKey, err := ioutil.ReadAll(response.Body)
 	if err != nil {
-		return false, err
+		return false, fmt.Errorf("failed to read response body: %v", err)
 	}
 
 	if string(presentedKey) != key {
-		glog.Infof("presented key (%s) did not match expected (%s)", presentedKey, key)
-		return false, nil
+		return false, &absorbErr{err: fmt.Errorf("presented key (%s) did not match expected (%s)", presentedKey, key)}
 	}
 
 	return true, nil
