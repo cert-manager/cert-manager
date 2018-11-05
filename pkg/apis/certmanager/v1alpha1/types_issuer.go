@@ -227,12 +227,23 @@ type ACMEIssuerDNS01ProviderAcmeDNS struct {
 // ACMEIssuerDNS01ProviderInfoblox is a structure containing the
 // configuration for Infoblox DNS servers
 type ACMEIssuerDNS01ProviderInfoblox struct {
-	GridHost           string            `json:"gridHost"`
-	WapiUsername       string            `json:"wapiUsername"`
+	// GridHost contains the url including the port of the Infoblox
+	// server.
+	GridHost string `json:"gridHost"`
+
+	// WapiUsername contains the username that will be used
+	// in order to access Infoblox WAPI.
+	WapiUsername string `json:"wapiUsername"`
+
+	// WapiUsername contains a SecretKeySelector which contains the
+	// password needed in order to access Infoblox WAPI.
 	WapiPasswordSecret SecretKeySelector `json:"wapiPasswordSecret"`
-	WapiPort           int               `json:"wapiPort"`
-	WapiVersion        string            `json:"wapiVersion"`
-	SslVerify          bool              `json:"sslVerify"`
+
+	// WapiVersion contains the WAPI version.
+	WapiVersion string `json:"wapiVersion"`
+
+	// SSLVerify is used to do the Infoblox Certificate validation.
+	SSLVerify bool `json:"sslVerify"`
 }
 
 // ACMEIssuerDNS01ProviderRFC2136 is a structure containing the

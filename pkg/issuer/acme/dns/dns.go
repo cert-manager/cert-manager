@@ -61,7 +61,7 @@ type dnsProviderConstructors struct {
 	acmeDNS      func(host string, accountJson []byte, dns01Nameservers []string) (*acmedns.DNSProvider, error)
 	rfc2136      func(nameserver, tsigAlgorithm, tsigKeyName, tsigSecret string, dns01Nameservers []string) (*rfc2136.DNSProvider, error)
 	digitalOcean func(token string, dns01Nameservers []string) (*digitalocean.DNSProvider, error)
-	infobloxDNS  func(gridHost string, username string, secret string, port int, version string, sslVerify bool, dns01Nameservers []string) (*infobloxdns.DNSProvider, error)
+	infobloxDNS  func(gridHost string, username string, secret string, port string, version string, sslVerify bool, dns01Nameservers []string) (*infobloxdns.DNSProvider, error)
 }
 
 // Solver is a solver for the acme dns01 challenge.
@@ -207,12 +207,11 @@ func (s *Solver) solverForChallenge(issuer v1alpha1.GenericIssuer, ch *v1alpha1.
 			return nil, fmt.Errorf("error getting secret key: key '%s' not found in secret", providerConfig.Infoblox.WapiPasswordSecret.Key)
 		}
 		secret := string(secretBytes)
-
-		gridHost := providerConfig.Infoblox.GridHost
+		gridHost := strings.Split(providerConfig.Infoblox.GridHost, ":")[0]
 		username := providerConfig.Infoblox.WapiUsername
-		port := providerConfig.Infoblox.WapiPort
+		port := strings.Split(providerConfig.Infoblox.GridHost, ":")[1]
 		version := providerConfig.Infoblox.WapiVersion
-		sslVerify := providerConfig.Infoblox.SslVerify
+		sslVerify := providerConfig.Infoblox.SSLVerify
 
 		impl, err = s.dnsProviderConstructors.infobloxDNS(gridHost, username, secret, port, version, sslVerify, s.DNS01Nameservers)
 		if err != nil {

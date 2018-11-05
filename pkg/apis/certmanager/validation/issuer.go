@@ -19,6 +19,7 @@ package validation
 import (
 	"crypto/x509"
 	"fmt"
+	"regexp"
 	"strings"
 
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/rfc2136"
@@ -233,15 +234,27 @@ func ValidateACMEIssuerDNS01Config(iss *v1alpha1.ACMEIssuerDNS01Config, fldPath 
 				numProviders++
 				if len(p.Infoblox.GridHost) == 0 {
 					el = append(el, field.Required(fldPath.Child("infoblox", "gridHost"), ""))
+				} else {
+					matched, err := regexp.MatchString(":\\/\\/", p.Infoblox.GridHost)
+					if err != nil {
+						el = append(el, field.Required(fldPath.Child("infoblox", "gridHost"), err.Error()))
+					}
+					if matched && err == nil {
+						el = append(el, field.Required(fldPath.Child("infoblox", "gridHost"), "should not contain protocol"))
+					}
+					matched, err = regexp.MatchString(":[0-9]+", p.Infoblox.GridHost)
+					if err != nil {
+						el = append(el, field.Required(fldPath.Child("infoblox", "gridHost"), err.Error()))
+					}
+					if !matched && err == nil {
+						el = append(el, field.Required(fldPath.Child("infoblox", "gridHost"), "should contain port"))
+					}
 				}
 				if len(p.Infoblox.WapiUsername) == 0 {
 					el = append(el, field.Required(fldPath.Child("infoblox", "wapiUsername"), ""))
 				}
 				if len(p.Infoblox.WapiVersion) == 0 {
 					el = append(el, field.Required(fldPath.Child("infoblox", "wapiVersion"), ""))
-				}
-				if p.Infoblox.WapiPort == 0 {
-					el = append(el, field.Required(fldPath.Child("infoblox", "wapiPort"), ""))
 				}
 			}
 		}

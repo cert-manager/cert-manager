@@ -4,7 +4,6 @@ package infobloxdns
 
 import (
 	"os"
-	"strconv"
 	"testing"
 	"time"
 
@@ -18,7 +17,7 @@ var (
 	gridHost     string
 	wapiUsername string
 	wapiPassword string
-	wapiPort     int
+	wapiPort     string
 	wapiVersion  string
 	sslVerify    bool
 
@@ -32,9 +31,9 @@ func init() {
 	wapiVersion = os.Getenv("INFOBLOX_WAPI_VERSION")
 
 	if len(os.Getenv("INFOBLOX_WAPI_PORT")) > 0 {
-		wapiPort, _ = strconv.Atoi(os.Getenv("INFOBLOX_WAPI_PORT"))
+		wapiPort = os.Getenv("INFOBLOX_WAPI_PORT")
 	} else {
-		wapiPort = 80
+		wapiPort = "80"
 	}
 
 	if len(os.Getenv("INFOBLOX_SSL_VERIFY")) > 0 {

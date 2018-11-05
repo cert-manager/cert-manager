@@ -29,10 +29,10 @@ type DNSProvider struct {
 }
 
 // NewDNSProvider returns a DNSProvider instance configured for Infoblox.
-func NewDNSProvider(gridHost string, username string, secret string, port int, version string, sslVerify bool, dns01Nameservers []string) (*DNSProvider, error) {
+func NewDNSProvider(gridHost string, username string, secret string, port string, version string, sslVerify bool, dns01Nameservers []string) (*DNSProvider, error) {
 	hostConfig := ibclient.HostConfig{
 		Host:     gridHost,
-		Port:     strconv.Itoa(port),
+		Port:     port,
 		Username: username,
 		Password: secret,
 		Version:  version,
@@ -88,7 +88,7 @@ func (c *DNSProvider) Present(domain, token, keyAuth string) error {
 
 	ref, err := c.client.CreateObject(rt)
 	if err != nil {
-		return nil
+		return err
 	}
 
 	glog.Infof("INFOBLOX: created TXT record %v, %s -> %s", rt, token, ref)
@@ -120,6 +120,10 @@ func (c *DNSProvider) CleanUp(domain, token, keyAuth string) error {
 				ref = rec.Ref
 				break
 			}
+		}
+
+		if len(ref) == 0 {
+			return nil
 		}
 
 	}

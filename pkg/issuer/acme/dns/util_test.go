@@ -169,7 +169,7 @@ func newFakeDNSProviders() *fakeDNSProviders {
 			f.call("digitalocean", token, util.RecursiveNameservers)
 			return nil, nil
 		},
-		infobloxDNS: func(gridHost string, username string, secret string, port int, version string, sslVerify bool, dns01Nameservers []string) (*infobloxdns.DNSProvider, error) {
+		infobloxDNS: func(gridHost string, username string, secret string, port string, version string, sslVerify bool, dns01Nameservers []string) (*infobloxdns.DNSProvider, error) {
 			f.call("infoblox", gridHost, username, secret, port, version, sslVerify, util.RecursiveNameservers)
 			return nil, nil
 		},

@@ -283,11 +283,10 @@ func TestSolveForInfoblox(t *testing.T) {
 						},
 						Key: "password",
 					},
-					GridHost:     "infoblox.example.com",
+					GridHost:     "infoblox.example.com:443",
 					WapiUsername: "infoblox",
-					WapiPort:     443,
 					WapiVersion:  "2.7.3",
-					SslVerify:    true,
+					SSLVerify:    true,
 				},
 			},
 		}),
@@ -315,12 +314,54 @@ func TestSolveForInfoblox(t *testing.T) {
 	expectedDOCall := []fakeDNSProviderCall{
 		{
 			name: "infoblox",
-			args: []interface{}{"infoblox.example.com", "infoblox", "FAKE-PASSWORD", 443, "2.7.3", true, util.RecursiveNameservers},
+			args: []interface{}{"infoblox.example.com", "infoblox", "FAKE-PASSWORD", "443", "2.7.3", true, util.RecursiveNameservers},
 		},
 	}
 
 	if !reflect.DeepEqual(expectedDOCall, f.dnsProviders.calls) {
 		t.Fatalf("expected %+v == %+v", expectedDOCall, f.dnsProviders.calls)
+	}
+
+}
+
+func TestSolveForInfobloxIfNoSecret(t *testing.T) {
+	f := &solverFixture{
+		Issuer: newIssuer("test", "default", []v1alpha1.ACMEIssuerDNS01Provider{
+			{
+				Name: "fake-infoblox",
+				Infoblox: &v1alpha1.ACMEIssuerDNS01ProviderInfoblox{
+					WapiPasswordSecret: v1alpha1.SecretKeySelector{
+						LocalObjectReference: v1alpha1.LocalObjectReference{
+							Name: "infoblox",
+						},
+						Key: "password",
+					},
+					GridHost:     "infoblox.example.com:443",
+					WapiUsername: "infoblox",
+					WapiVersion:  "2.7.3",
+					SSLVerify:    true,
+				},
+			},
+		}),
+		Challenge: &v1alpha1.Challenge{
+			Spec: v1alpha1.ChallengeSpec{
+				Config: v1alpha1.SolverConfig{
+					DNS01: &v1alpha1.DNS01SolverConfig{
+						Provider: "fake-infoblox",
+					},
+				},
+			},
+		},
+		dnsProviders: newFakeDNSProviders(),
+	}
+
+	f.Setup(t)
+	defer f.Finish(t)
+
+	s := f.Solver
+	_, err := s.solverForChallenge(f.Issuer, f.Challenge)
+	if err == nil {
+		t.Fatalf("expected solverFor to error since there is no secret.")
 	}
 
 }

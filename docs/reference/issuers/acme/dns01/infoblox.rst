@@ -11,9 +11,8 @@ and have a subkey ``password`` with the password in it.
 .. code-block:: yaml
 
    infoblox:
-     gridHost: "infoblox.example.com"
+     gridHost: "infoblox.example.com:443"
      wapiUsername: "infoblox_user"
-     wapiPort: 443
      wapiVersion: "2.7.3"
      sslVerify: true
      wapiPasswordSecret:
