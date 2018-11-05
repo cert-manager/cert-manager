@@ -1,4 +1,4 @@
-load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
 
 go_library(
     name = "go_default_library",
@@ -18,17 +18,6 @@ go_library(
         "//vendor/github.com/davecgh/go-spew/spew:go_default_library",
         "//vendor/github.com/pmezard/go-difflib/difflib:go_default_library",
     ],
-)
-
-go_test(
-    name = "go_default_test",
-    srcs = [
-        "assertions_test.go",
-        "forward_assertions_test.go",
-        "http_assertions_test.go",
-    ],
-    embed = [":go_default_library"],
-    tags = ["manual"],
 )
 
 filegroup(

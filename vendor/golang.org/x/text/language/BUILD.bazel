@@ -1,4 +1,4 @@
-load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
 
 go_library(
     name = "go_default_library",
@@ -20,26 +20,6 @@ go_library(
     tags = ["manual"],
     visibility = ["//visibility:public"],
     deps = ["//vendor/golang.org/x/text/internal/tag:go_default_library"],
-)
-
-go_test(
-    name = "go_default_test",
-    srcs = [
-        "coverage_test.go",
-        "data_test.go",
-        "examples_test.go",
-        "httpexample_test.go",
-        "language_test.go",
-        "lookup_test.go",
-        "match_test.go",
-        "parse_test.go",
-    ],
-    embed = [":go_default_library"],
-    tags = ["manual"],
-    deps = [
-        "//vendor/golang.org/x/text/internal/tag:go_default_library",
-        "//vendor/golang.org/x/text/internal/testtext:go_default_library",
-    ],
 )
 
 filegroup(
