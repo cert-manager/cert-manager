@@ -1,4 +1,4 @@
-load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
 
 go_library(
     name = "go_default_library",
@@ -56,63 +56,6 @@ go_library(
         ],
         "@io_bazel_rules_go//go/platform:windows": [
             "//vendor/github.com/konsorten/go-windows-terminal-sequences:go_default_library",
-        ],
-        "//conditions:default": [],
-    }),
-)
-
-go_test(
-    name = "go_default_test",
-    srcs = [
-        "alt_exit_test.go",
-        "entry_test.go",
-        "example_basic_test.go",
-        "example_global_hook_test.go",
-        "example_hook_test.go",
-        "formatter_bench_test.go",
-        "hook_test.go",
-        "json_formatter_test.go",
-        "logger_bench_test.go",
-        "logger_test.go",
-        "logrus_test.go",
-        "text_formatter_test.go",
-    ],
-    embed = [":go_default_library"],
-    tags = ["manual"],
-    deps = [
-        "//vendor/github.com/sirupsen/logrus/internal/testutils:go_default_library",
-        "//vendor/github.com/stretchr/testify/assert:go_default_library",
-        "//vendor/github.com/stretchr/testify/require:go_default_library",
-    ] + select({
-        "@io_bazel_rules_go//go/platform:android": [
-            "//vendor/github.com/sirupsen/logrus/hooks/syslog:go_default_library",
-        ],
-        "@io_bazel_rules_go//go/platform:darwin": [
-            "//vendor/github.com/sirupsen/logrus/hooks/syslog:go_default_library",
-        ],
-        "@io_bazel_rules_go//go/platform:dragonfly": [
-            "//vendor/github.com/sirupsen/logrus/hooks/syslog:go_default_library",
-        ],
-        "@io_bazel_rules_go//go/platform:freebsd": [
-            "//vendor/github.com/sirupsen/logrus/hooks/syslog:go_default_library",
-        ],
-        "@io_bazel_rules_go//go/platform:linux": [
-            "//vendor/github.com/sirupsen/logrus/hooks/syslog:go_default_library",
-        ],
-        "@io_bazel_rules_go//go/platform:nacl": [
-            "//vendor/github.com/sirupsen/logrus/hooks/syslog:go_default_library",
-        ],
-        "@io_bazel_rules_go//go/platform:netbsd": [
-            "//vendor/github.com/sirupsen/logrus/hooks/syslog:go_default_library",
-        ],
-        "@io_bazel_rules_go//go/platform:openbsd": [
-            "//vendor/github.com/sirupsen/logrus/hooks/syslog:go_default_library",
-        ],
-        "@io_bazel_rules_go//go/platform:plan9": [
-            "//vendor/github.com/sirupsen/logrus/hooks/syslog:go_default_library",
-        ],
-        "@io_bazel_rules_go//go/platform:solaris": [
-            "//vendor/github.com/sirupsen/logrus/hooks/syslog:go_default_library",
         ],
         "//conditions:default": [],
     }),
