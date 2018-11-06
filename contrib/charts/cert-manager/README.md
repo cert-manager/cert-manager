@@ -89,6 +89,9 @@ The following table lists the configurable parameters of the cert-manager chart 
 | `webhook.image.repository` | Webhook image repository | `quay.io/jetstack/cert-manager-webhook` |
 | `webhook.image.tag` | Webhook image tag | `v0.5.0` |
 | `webhook.image.pullPolicy` | Webhook image pull policy | `IfNotPresent` |
+| `webhook.caSyncImage.repository` | CA sync image repository | `quay.io/munnerz/apiextensions-ca-helper` |
+| `webhook.caSyncImage.tag` | CA sync image tag | `v0.1.0` |
+| `webhook.caSyncImage.pullPolicy` | CA sync image pull policy | `IfNotPresent` |
 
 Specify each parameter using the `--set key=value[,key=value]` argument to `helm install`.
 
