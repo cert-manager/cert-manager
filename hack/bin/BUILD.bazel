@@ -48,9 +48,9 @@ genrule(
 )
 
 genrule(
-    name = "fetch_goimports",
-    srcs = ["@org_golang_x_tools//cmd/goimports"],
-    outs = ["goimports"],
+    name = "fetch_gofmt",
+    srcs = ["@go_sdk//:bin/gofmt"],
+    outs = ["gofmt"],
     cmd = "cp $(SRCS) $@",
     visibility = ["//visibility:public"],
 )
