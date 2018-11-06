@@ -54,7 +54,7 @@ type Controller struct {
 func New(ctx *controllerpkg.Context) *Controller {
 	ctrl := &Controller{Context: *ctx}
 	ctrl.syncHandler = ctrl.processNextWorkItem
-	ctrl.queue = workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "clusterissuers")
+	ctrl.queue = workqueue.NewNamedRateLimitingQueue(workqueue.NewItemExponentialFailureRateLimiter(time.Second*5, time.Minute*1), "clusterissuers")
 
 	clusterIssuerInformer := ctrl.SharedInformerFactory.Certmanager().V1alpha1().ClusterIssuers()
 	clusterIssuerInformer.Informer().AddEventHandler(&controllerpkg.QueuingEventHandler{Queue: ctrl.queue})
