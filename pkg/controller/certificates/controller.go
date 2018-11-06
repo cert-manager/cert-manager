@@ -41,6 +41,8 @@ type Controller struct {
 	*controllerpkg.Context
 	helper controllerpkg.Helper
 
+	helper controllerpkg.Helper
+
 	// To allow injection for testing.
 	syncHandler func(ctx context.Context, key string) error
 
@@ -97,6 +99,7 @@ func New(ctx *controllerpkg.Context) *Controller {
 
 	ctrl.helper = controllerpkg.NewHelper(ctrl.issuerLister, ctrl.clusterIssuerLister)
 	ctrl.metrics = metrics.Default
+	ctrl.helper = controllerpkg.NewHelper(ctrl.issuerLister, ctrl.clusterIssuerLister)
 
 	return ctrl
 }

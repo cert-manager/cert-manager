@@ -253,9 +253,8 @@ func (c *Controller) scheduleRenewal(crt *v1alpha1.Certificate) {
 func issuerKind(crt *v1alpha1.Certificate) string {
 	if crt.Spec.IssuerRef.Kind == "" {
 		return v1alpha1.IssuerKind
-	} else {
-		return crt.Spec.IssuerRef.Kind
 	}
+	return crt.Spec.IssuerRef.Kind
 }
 
 func ownerRef(crt *v1alpha1.Certificate) metav1.OwnerReference {
