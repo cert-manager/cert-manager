@@ -57,6 +57,12 @@ func (c *Controller) Sync(ctx context.Context, ch *cmapi.Challenge) (err error) 
 	oldChal := ch
 	ch = ch.DeepCopy()
 
+	// bail out early on if processing=false, as this challenge has not been
+	// scheduled yet.
+	if ch.Status.Processing == false {
+		return nil
+	}
+
 	defer func() {
 		// TODO: replace with more efficient comparison
 		if reflect.DeepEqual(oldChal.Status, ch.Status) {
@@ -71,6 +77,8 @@ func (c *Controller) Sync(ctx context.Context, ch *cmapi.Challenge) (err error) 
 	// if a challenge is in a final state, we bail out early as there is nothing
 	// left for us to do here.
 	if acme.IsFinalState(ch.Status.State) {
+		// we set processing to false now, as this item has finished being processed.
+		ch.Status.Processing = false
 		return nil
 	}
 

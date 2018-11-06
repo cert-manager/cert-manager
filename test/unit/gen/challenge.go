@@ -81,3 +81,9 @@ func SetChallengeURL(s string) ChallengeModifier {
 		ch.Spec.URL = s
 	}
 }
+
+func SetChallengeProcessing(b bool) ChallengeModifier {
+	return func(ch *v1alpha1.Challenge) {
+		ch.Status.Processing = b
+	}
+}
