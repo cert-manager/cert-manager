@@ -24,5 +24,5 @@ runfiles="$(pwd)"
 export PATH="${runfiles}/hack/bin:${PATH}"
 cd "${REPO_ROOT}"
 
-echo "+++ Running goimports"
-find . -type f -name '*.go' | grep -v 'vendor/' | xargs goimports -w
+echo "+++ Running gofmt"
+find . -type f -name '*.go' | grep -v 'vendor/' | xargs gofmt -s -w
