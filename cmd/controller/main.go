@@ -23,9 +23,13 @@ import (
 	"syscall"
 
 	"github.com/golang/glog"
+
+	"github.com/jetstack/cert-manager/pkg/logs"
 )
 
 func main() {
+	logs.InitLogs()
+	defer logs.FlushLogs()
 	stopCh := SetupSignalHandler()
 
 	cmd := NewCommandStartCertManagerController(os.Stdout, os.Stderr, stopCh)
