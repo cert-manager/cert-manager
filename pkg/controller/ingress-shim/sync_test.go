@@ -586,7 +586,7 @@ func TestBuildCertificates(t *testing.T) {
 			},
 			IssuerLister: []*v1alpha1.Issuer{buildACMEIssuer("issuer-name", "ingress-namespace")},
 			CertificateLister: []*v1alpha1.Certificate{
-				&v1alpha1.Certificate{
+				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "existing-crt",
 						Namespace: "ingress-namespace",
@@ -637,7 +637,7 @@ func TestBuildCertificates(t *testing.T) {
 			IssuerLister:      []*v1alpha1.Issuer{buildACMEIssuer("issuer-name", "ingress-namespace")},
 			CertificateLister: []*v1alpha1.Certificate{buildCertificate("existing-crt", "ingress-namespace")},
 			ExpectedUpdate: []*v1alpha1.Certificate{
-				&v1alpha1.Certificate{
+				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "existing-crt",
 						Namespace: "ingress-namespace",
@@ -716,7 +716,7 @@ func TestBuildCertificates(t *testing.T) {
 				},
 			},
 			ExpectedUpdate: []*v1alpha1.Certificate{
-				&v1alpha1.Certificate{
+				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "existing-crt",
 						Namespace: "ingress-namespace",
@@ -784,7 +784,7 @@ func TestBuildCertificates(t *testing.T) {
 				},
 			},
 			ExpectedUpdate: []*v1alpha1.Certificate{
-				&v1alpha1.Certificate{
+				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "existing-crt",
 						Namespace: "ingress-namespace",

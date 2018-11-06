@@ -316,7 +316,7 @@ func TestSolverConfigurationForAuthorization(t *testing.T) {
 		expectedErr bool
 	}
 	tests := map[string]testT{
-		"correctly selects normal domain": testT{
+		"correctly selects normal domain": {
 			cfg: []v1alpha1.DomainSolverConfig{
 				{
 					Domains: []string{"example.com"},
@@ -338,7 +338,7 @@ func TestSolverConfigurationForAuthorization(t *testing.T) {
 				},
 			},
 		},
-		"correctly selects normal domain with multiple domains configured": testT{
+		"correctly selects normal domain with multiple domains configured": {
 			cfg: []v1alpha1.DomainSolverConfig{
 				{
 					Domains: []string{"notexample.com", "example.com"},
@@ -360,7 +360,7 @@ func TestSolverConfigurationForAuthorization(t *testing.T) {
 				},
 			},
 		},
-		"correctly selects normal domain with multiple domains configured separately": testT{
+		"correctly selects normal domain with multiple domains configured separately": {
 			cfg: []v1alpha1.DomainSolverConfig{
 				{
 					Domains: []string{"example.com"},
@@ -390,7 +390,7 @@ func TestSolverConfigurationForAuthorization(t *testing.T) {
 				},
 			},
 		},
-		"correctly selects configuration for wildcard domain": testT{
+		"correctly selects configuration for wildcard domain": {
 			cfg: []v1alpha1.DomainSolverConfig{
 				{
 					Domains: []string{"example.com"},
@@ -423,7 +423,7 @@ func TestSolverConfigurationForAuthorization(t *testing.T) {
 				},
 			},
 		},
-		"returns an error when configuration for the domain is not found": testT{
+		"returns an error when configuration for the domain is not found": {
 			cfg: []v1alpha1.DomainSolverConfig{
 				{
 					Domains: []string{"notexample.com"},
