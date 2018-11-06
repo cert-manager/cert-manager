@@ -58,21 +58,33 @@ func (a *Acme) Setup(ctx context.Context) error {
 		return nil
 	}
 
-	cl, err := a.helper.ClientForIssuer(a.issuer)
-	if k8sErrors.IsNotFound(err) || errors.IsInvalidData(err) {
+	// if the namespace field is not set, we are working on a ClusterIssuer resource
+	// therefore we should check for the ACME private key in the 'cluster resource namespace'.
+	ns := a.Context.ResourceNamespace(a.issuer)
+
+	// attempt to obtain the existing private key, if it does not exist then
+	// we generate one
+	pk, err := a.helper.ReadPrivateKey(a.issuer.GetSpec().ACME.PrivateKey, ns)
+	if err != nil {
+		if !k8sErrors.IsNotFound(err) && !errors.IsInvalidData(err) {
+			s := messageAccountVerificationFailed + err.Error()
+			a.issuer.UpdateStatusCondition(v1alpha1.IssuerConditionReady, v1alpha1.ConditionFalse, errorAccountVerificationFailed, s)
+			return fmt.Errorf(s)
+		}
+
 		glog.Infof("%s: generating acme account private key %q", a.issuer.GetObjectMeta().Name, a.issuer.GetSpec().ACME.PrivateKey.Name)
-		accountPrivKey, err := a.createAccountPrivateKey(a.issuer.GetSpec().ACME.PrivateKey)
+		pk, err = a.createAccountPrivateKey(a.issuer.GetSpec().ACME.PrivateKey)
 		if err != nil {
 			s := messageAccountRegistrationFailed + err.Error()
 			a.issuer.UpdateStatusCondition(v1alpha1.IssuerConditionReady, v1alpha1.ConditionFalse, errorAccountRegistrationFailed, s)
 			return fmt.Errorf(s)
 		}
+
 		a.issuer.GetStatus().ACMEStatus().URI = ""
-		cl, err = acme.ClientWithKey(a.issuer, accountPrivKey)
-		if err != nil {
-			return err
-		}
-	} else if err != nil {
+	}
+
+	cl, err := acme.ClientWithKey(a.issuer, pk)
+	if err != nil {
 		s := messageAccountVerificationFailed + err.Error()
 		glog.V(4).Infof("%s: %s", a.issuer.GetObjectMeta().Name, s)
 		a.Recorder.Event(a.issuer, v1.EventTypeWarning, errorAccountVerificationFailed, s)
