@@ -18,6 +18,7 @@ go_library(
     visibility = ["//visibility:private"],
     deps = [
         "//pkg/apis/certmanager/validation/webhooks:go_default_library",
+        "//pkg/logs:go_default_library",
         "//vendor/github.com/openshift/generic-admission-server/pkg/cmd:go_default_library",
     ],
 )

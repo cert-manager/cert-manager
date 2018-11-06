@@ -16,7 +16,10 @@ go_library(
     srcs = ["main.go"],
     importpath = "github.com/jetstack/cert-manager/cmd/acmesolver",
     visibility = ["//visibility:private"],
-    deps = ["//pkg/issuer/acme/http/solver:go_default_library"],
+    deps = [
+        "//pkg/issuer/acme/http/solver:go_default_library",
+        "//pkg/logs:go_default_library",
+    ],
 )
 
 go_binary(
