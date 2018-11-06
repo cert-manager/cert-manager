@@ -29,48 +29,48 @@ func TestVersion(t *testing.T) {
 		description     string
 	}
 	tests := []testT{
-		testT{
+		{
 			appVersion:      "canary",
 			expectedVersion: "canary",
 			description:     "canary version with no commit hash and no git state",
 		},
-		testT{
+		{
 			appVersion:      "canary",
 			appGitCommit:    "abc123",
 			expectedVersion: "canary-abc123",
 			description:     "canary version with a commit hash and no git state",
 		},
-		testT{
+		{
 			appVersion:      "canary",
 			appGitState:     "dirty",
 			expectedVersion: "canary (dirty)",
 			description:     "canary version with no commit hash and a git state",
 		},
-		testT{
+		{
 			appVersion:      "canary",
 			appGitCommit:    "abc123",
 			appGitState:     "dirty",
 			expectedVersion: "canary-abc123 (dirty)",
 			description:     "canary version with a commit hash and a git state",
 		},
-		testT{
+		{
 			appVersion:      "v0.3.0",
 			expectedVersion: "v0.3.0",
 			description:     "semver version with no commit hash and no git state",
 		},
-		testT{
+		{
 			appVersion:      "v0.3.0",
 			appGitCommit:    "abc123",
 			expectedVersion: "v0.3.0",
 			description:     "semver version with a commit hash and no git state",
 		},
-		testT{
+		{
 			appVersion:      "v0.3.0",
 			appGitState:     "dirty",
 			expectedVersion: "v0.3.0 (dirty)",
 			description:     "semver version with no commit hash and a git state",
 		},
-		testT{
+		{
 			appVersion:      "v0.3.0",
 			appGitCommit:    "abc123",
 			appGitState:     "dirty",
