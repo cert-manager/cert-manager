@@ -137,7 +137,7 @@ func (c *Controller) Sync(ctx context.Context, crt *v1alpha1.Certificate) (reque
 		return false, err
 	}
 
-	key, err := kube.SecretTLSKey(c.secretLister, crtCopy.Namespace, crtCopy.Name)
+	key, err := kube.SecretTLSKey(c.secretLister, crtCopy.Namespace, crtCopy.Spec.SecretName)
 	// if we don't have a private key, we need to trigger a re-issue immediately
 	if k8sErrors.IsNotFound(err) || errors.IsInvalidData(err) {
 		return c.issue(ctx, i, crtCopy)
