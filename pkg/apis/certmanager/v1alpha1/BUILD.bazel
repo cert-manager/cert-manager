@@ -11,6 +11,7 @@ go_library(
         "types.go",
         "types_certificate.go",
         "types_challenge.go",
+        "types_config.go",
         "types_issuer.go",
         "types_order.go",
         "zz_generated.deepcopy.go",

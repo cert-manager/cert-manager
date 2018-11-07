@@ -28,6 +28,7 @@ type CertmanagerV1alpha1Interface interface {
 	CertificatesGetter
 	ChallengesGetter
 	ClusterIssuersGetter
+	ConfigsGetter
 	IssuersGetter
 	OrdersGetter
 }
@@ -47,6 +48,10 @@ func (c *CertmanagerV1alpha1Client) Challenges(namespace string) ChallengeInterf
 
 func (c *CertmanagerV1alpha1Client) ClusterIssuers() ClusterIssuerInterface {
 	return newClusterIssuers(c)
+}
+
+func (c *CertmanagerV1alpha1Client) Configs(namespace string) ConfigInterface {
+	return newConfigs(c, namespace)
 }
 
 func (c *CertmanagerV1alpha1Client) Issuers(namespace string) IssuerInterface {

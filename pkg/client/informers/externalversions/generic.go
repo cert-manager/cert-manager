@@ -57,6 +57,8 @@ func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Certmanager().V1alpha1().Challenges().Informer()}, nil
 	case v1alpha1.SchemeGroupVersion.WithResource("clusterissuers"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Certmanager().V1alpha1().ClusterIssuers().Informer()}, nil
+	case v1alpha1.SchemeGroupVersion.WithResource("configs"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Certmanager().V1alpha1().Configs().Informer()}, nil
 	case v1alpha1.SchemeGroupVersion.WithResource("issuers"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Certmanager().V1alpha1().Issuers().Informer()}, nil
 	case v1alpha1.SchemeGroupVersion.WithResource("orders"):

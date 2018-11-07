@@ -28,6 +28,8 @@ type Interface interface {
 	Challenges() ChallengeInformer
 	// ClusterIssuers returns a ClusterIssuerInformer.
 	ClusterIssuers() ClusterIssuerInformer
+	// Configs returns a ConfigInformer.
+	Configs() ConfigInformer
 	// Issuers returns a IssuerInformer.
 	Issuers() IssuerInformer
 	// Orders returns a OrderInformer.
@@ -58,6 +60,11 @@ func (v *version) Challenges() ChallengeInformer {
 // ClusterIssuers returns a ClusterIssuerInformer.
 func (v *version) ClusterIssuers() ClusterIssuerInformer {
 	return &clusterIssuerInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
+}
+
+// Configs returns a ConfigInformer.
+func (v *version) Configs() ConfigInformer {
+	return &configInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }
 
 // Issuers returns a IssuerInformer.

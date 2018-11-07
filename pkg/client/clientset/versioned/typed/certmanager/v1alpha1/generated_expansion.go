@@ -22,6 +22,8 @@ type ChallengeExpansion interface{}
 
 type ClusterIssuerExpansion interface{}
 
+type ConfigExpansion interface{}
+
 type IssuerExpansion interface{}
 
 type OrderExpansion interface{}

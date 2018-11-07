@@ -8,6 +8,7 @@ go_library(
         "fake_certmanager_client.go",
         "fake_challenge.go",
         "fake_clusterissuer.go",
+        "fake_config.go",
         "fake_issuer.go",
         "fake_order.go",
     ],

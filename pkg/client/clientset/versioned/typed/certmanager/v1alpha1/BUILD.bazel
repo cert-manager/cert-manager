@@ -7,6 +7,7 @@ go_library(
         "certmanager_client.go",
         "challenge.go",
         "clusterissuer.go",
+        "config.go",
         "doc.go",
         "generated_expansion.go",
         "issuer.go",

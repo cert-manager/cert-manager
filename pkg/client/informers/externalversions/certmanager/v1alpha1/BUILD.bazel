@@ -6,6 +6,7 @@ go_library(
         "certificate.go",
         "challenge.go",
         "clusterissuer.go",
+        "config.go",
         "interface.go",
         "issuer.go",
         "order.go",
