@@ -29,6 +29,7 @@ import (
 	"github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/util/wait"
 
+	"github.com/jetstack/cert-manager/pkg/logs"
 	"github.com/jetstack/cert-manager/test/e2e/framework"
 	_ "github.com/jetstack/cert-manager/test/e2e/suite"
 )
@@ -48,6 +49,9 @@ func init() {
 }
 
 func TestE2E(t *testing.T) {
+	logs.InitLogs()
+	defer logs.FlushLogs()
+
 	if err := framework.DefaultConfig.Validate(); err != nil {
 		t.Errorf("Invalid test config: %v", err)
 		t.Fail()
