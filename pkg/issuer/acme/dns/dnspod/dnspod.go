@@ -1,3 +1,11 @@
+// +skip_license_check
+
+/*
+This file contains portions of code directly taken from the 'xenolf/lego' project.
+A copy of the license for this code can be found in the file named LICENSE in
+this directory.
+*/
+
 // Package dnspod implements a DNS provider for solving the DNS-01 challenge
 // using dnspod DNS.
 package dnspod
@@ -8,7 +16,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/decker502/dnspod-go"
+	dnspod "github.com/decker502/dnspod-go"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
 )
 
