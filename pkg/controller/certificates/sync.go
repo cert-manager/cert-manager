@@ -300,11 +300,11 @@ func (c *Controller) updateSecret(crt *v1alpha1.Certificate, namespace string, c
 
 	// if it is a new resource
 	if secret.SelfLink == "" {
-		secret, err = c.Client.CoreV1().Secrets(namespace).Create(secret)
 		enableOwner := c.CertificateOptions.EnableOwnerRef
 		if enableOwner {
 			secret.SetOwnerReferences(append(secret.GetOwnerReferences(), ownerRef(crt)))
 		}
+		secret, err = c.Client.CoreV1().Secrets(namespace).Create(secret)
 	} else {
 		secret, err = c.Client.CoreV1().Secrets(namespace).Update(secret)
 	}
