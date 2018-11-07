@@ -12,8 +12,8 @@ resources: {}
 
 image:
   repository: quay.io/jetstack/cert-manager-webhook
-  tag: v0.5.0
-  pullPolicy: IfNotPresent
+  tag: canary
+  pullPolicy: Always
 
 caSyncImage:
   repository: quay.io/munnerz/apiextensions-ca-helper
