@@ -19,6 +19,8 @@ package util
 // TODO: we should break this file apart into separate more sane/reusable parts
 
 import (
+	"crypto/ecdsa"
+	"crypto/rsa"
 	"crypto/x509"
 	"fmt"
 	"time"
@@ -229,15 +231,48 @@ func WaitCertificateIssuedValid(certClient clientset.CertificateInterface, secre
 				glog.Infof("Expected 2 keys in certificate secret, but there was %d", len(secret.Data))
 				return false, nil
 			}
+
+			keyBytes, ok := secret.Data[v1.TLSPrivateKeyKey]
+			if !ok {
+				glog.Infof("No private key data found for Certificate %q (secret %q)", name, certificate.Spec.SecretName)
+				return false, nil
+			}
+			key, err := pki.DecodePrivateKeyBytes(keyBytes)
+			if err != nil {
+				return false, err
+			}
+
+			// validate private key is of the correct type (rsa or ecdsa)
+			switch certificate.Spec.KeyAlgorithm {
+			case v1alpha1.KeyAlgorithm(""),
+				v1alpha1.RSAKeyAlgorithm:
+				_, ok := key.(*rsa.PrivateKey)
+				if !ok {
+					glog.Infof("Expected private key of type RSA, but it was: %T", key)
+					return false, nil
+				}
+			case v1alpha1.ECDSAKeyAlgorithm:
+				_, ok := key.(*ecdsa.PrivateKey)
+				if !ok {
+					glog.Infof("Expected private key of type ECDSA, but it was: %T", key)
+					return false, nil
+				}
+			default:
+				return false, fmt.Errorf("unrecognised requested private key algorithm %q", certificate.Spec.KeyAlgorithm)
+			}
+
+			// TODO: validate private key KeySize
+
+			// check the provided certificate is valid
+			expectedCN := pki.CommonNameForCertificate(certificate)
+			expectedOrganization := pki.OrganizationForCertificate(certificate)
+			expectedDNSNames := pki.DNSNamesForCertificate(certificate)
+
 			certBytes, ok := secret.Data[v1.TLSCertKey]
 			if !ok {
 				glog.Infof("No certificate data found for Certificate %q (secret %q)", name, certificate.Spec.SecretName)
 				return false, nil
 			}
-			// check the provided certificate is valid
-			expectedCN := pki.CommonNameForCertificate(certificate)
-			expectedOrganization := pki.OrganizationForCertificate(certificate)
-			expectedDNSNames := pki.DNSNamesForCertificate(certificate)
 
 			cert, err := pki.DecodeX509CertificateBytes(certBytes)
 			if err != nil {

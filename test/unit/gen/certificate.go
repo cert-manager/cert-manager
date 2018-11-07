@@ -54,6 +54,30 @@ func SetCertificateDNSNames(dnsNames ...string) CertificateModifier {
 	}
 }
 
+func SetCertificateCommonName(commonName string) CertificateModifier {
+	return func(crt *v1alpha1.Certificate) {
+		crt.Spec.CommonName = commonName
+	}
+}
+
+func SetCertificateIsCA(isCA bool) CertificateModifier {
+	return func(crt *v1alpha1.Certificate) {
+		crt.Spec.IsCA = isCA
+	}
+}
+
+func SetCertificateKeyAlgorithm(keyAlgorithm v1alpha1.KeyAlgorithm) CertificateModifier {
+	return func(crt *v1alpha1.Certificate) {
+		crt.Spec.KeyAlgorithm = keyAlgorithm
+	}
+}
+
+func SetCertificateKeySize(keySize int) CertificateModifier {
+	return func(crt *v1alpha1.Certificate) {
+		crt.Spec.KeySize = keySize
+	}
+}
+
 func SetCertificateSecretName(secretName string) CertificateModifier {
 	return func(crt *v1alpha1.Certificate) {
 		crt.Spec.SecretName = secretName
