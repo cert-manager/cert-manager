@@ -139,7 +139,7 @@ func GenerateTemplate(issuer v1alpha1.GenericIssuer, crt *v1alpha1.Certificate) 
 		return nil, fmt.Errorf("failed to generate serial number: %s", err.Error())
 	}
 
-	pubKeyAlgo, sigAlgo, err := SignatureAlgorithm(crt)
+	pubKeyAlgo, _, err := SignatureAlgorithm(crt)
 	if err != nil {
 		return nil, err
 	}
@@ -153,7 +153,6 @@ func GenerateTemplate(issuer v1alpha1.GenericIssuer, crt *v1alpha1.Certificate) 
 		Version:               3,
 		BasicConstraintsValid: true,
 		SerialNumber:          serialNumber,
-		SignatureAlgorithm:    sigAlgo,
 		PublicKeyAlgorithm:    pubKeyAlgo,
 		IsCA:                  crt.Spec.IsCA,
 		Subject: pkix.Name{
