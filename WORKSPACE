@@ -35,15 +35,6 @@ load(
 
 gazelle_dependencies()
 
-## Load go tools repo for goimports
-# This the git commit hash **must** be updated when the r
-go_repository(
-    name = "org_golang_x_tools",
-    commit = "156d532d4f67148ceab07c3b59ed7fa13bdbf00c",
-    remote = "https://github.com/golang/tools.git",
-    importpath = "golang.org/x/tools",
-)
-
 ## Load kubernetes repo-infra for tools like kazel
 git_repository(
     name = "io_kubernetes_build",
