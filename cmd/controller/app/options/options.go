@@ -65,6 +65,8 @@ type ControllerOptions struct {
 
 	// DNS01Nameservers allows specifying a list of custom nameservers to perform DNS checks
 	DNS01Nameservers []string
+	
+	ACMEDNS01EnableDelegationViaCNAME bool
 }
 
 const (
@@ -85,6 +87,8 @@ const (
 	defaultTLSACMEIssuerKind           = "Issuer"
 	defaultACMEIssuerChallengeType     = "http01"
 	defaultACMEIssuerDNS01ProviderName = ""
+	
+	defaultACMEDNS01EnableDelegationViaCNAME = false
 )
 
 var (
@@ -201,6 +205,10 @@ func (s *ControllerOptions) AddFlags(fs *pflag.FlagSet) {
 	fs.StringSliceVar(&s.DNS01Nameservers, "dns01-self-check-nameservers", []string{}, ""+
 		"A list of comma seperated DNS server endpoints used for DNS01 check requests. "+
 		"This should be a list containing IP address and port, for example: 8.8.8.8:53,8.8.4.4:53")
+	
+	fs.BoolVar(&s.ACMEDNS01EnableDelegationViaCNAME, "acme-dns01-enable-delegation-via-cname", defaultACMEDNS01EnableDelegationViaCNAME, ""+
+		"Whether to enable support for domains that have delegated DNS01 challenges to another zone/provider, using a CNAME record."+
+		"Warning: this feature is not compatible with domains that use a wildcard CNAME record.")
 }
 
 func (o *ControllerOptions) Validate() error {

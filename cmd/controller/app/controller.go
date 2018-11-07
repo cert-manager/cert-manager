@@ -176,6 +176,7 @@ func buildControllerContext(opts *options.ControllerOptions) (*controller.Contex
 			HTTP01SolverResourceLimitsCPU:     HTTP01SolverResourceLimitsCPU,
 			HTTP01SolverResourceLimitsMemory:  HTTP01SolverResourceLimitsMemory,
 			DNS01Nameservers:                  nameservers,
+			DNS01EnableDelegationViaCNAME:     opts.ACMEDNS01EnableDelegationViaCNAME,
 		},
 		IssuerOptions: controller.IssuerOptions{
 			ClusterIssuerAmbientCredentials: opts.ClusterIssuerAmbientCredentials,

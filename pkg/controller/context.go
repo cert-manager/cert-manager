@@ -96,6 +96,9 @@ type ACMEOptions struct {
 	// DNS01Nameservers is a list of nameservers to use when performing self-checks
 	// for ACME DNS01 validations.
 	DNS01Nameservers []string
+
+	// DNS01EnableDelegationViaCNAME enables/disables challenge delegation via CNAME
+	DNS01EnableDelegationViaCNAME bool
 }
 
 type IngressShimOptions struct {
