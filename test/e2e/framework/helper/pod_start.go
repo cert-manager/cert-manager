@@ -63,6 +63,10 @@ func (h *Helper) WaitForAllPodsRunningInNamespaceTimeout(ns string, timeout time
 				errs = append(errs, fmt.Sprintf("Pod %q not ready (no Ready condition)", p.Name))
 				continue
 			}
+			if c.Reason == "PodCompleted" {
+				Logf("Pod %q has Completed, assuming it is ready/expected", p.Name)
+				continue
+			}
 			// This pod does not have the ready condition set to True
 			if c.Status != corev1.ConditionTrue {
 				errs = append(errs, fmt.Sprintf("Pod %q not ready: %s", p.Name, c.String()))
