@@ -2,4 +2,4 @@ apiVersion: v1
 appVersion: "v0.6.0-dev.1"
 description: A Helm chart for deploying the cert-manager webhook component
 name: webhook
-version: "v0.6.0-dev.1"
+version: "v0.6.0-dev.2"
