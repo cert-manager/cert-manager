@@ -19,8 +19,8 @@ difficult to find.
 
 ## Proposed solution
 
-We will add two new resource types, `Order` and `Challenge` in order to mirror
-their counterpart resource types in the ACME server.
+We will add two new resource types (CRDs), `Order` and `Challenge` in order to
+mirror their counterpart resource types in the ACME server.
 
 The `spec` fields of these two resources will be **immutable** - that is, changes
 to `spec` fields will not be allowed after the resource is initially created.
@@ -128,8 +128,8 @@ type OrderStatus struct {
 	// the current state.
 	Reason string `json:"reason"`
 
-	// Challenges is a list of ChallengeSpecs for Challenges that must exist
-	// and be in a 'valid' state in order to complete this order.
+	// Challenges is a list of ChallengeSpecs for Challenges that must be created
+	// in order to complete this Order.
 	Challenges []ChallengeSpec `json:"challenges,omitempty"`
 
 	// FailureTime stores the time that this order failed.
@@ -155,18 +155,14 @@ const (
 
 	// Valid signifies that an ACME resource is in a valid state.
 	// If an Order is marked 'valid', all validations on that Order
-    // have been completed successfully and the order has been finalized
-    // with a CSR.
-    // You should perform a GET on the 'CertificateURL' in order to retrieve
-    // the existing certificate.
-	// This is a final state.
+	// have been completed successfully.
+	// This is a transient state as of ACME draft-12
 	Valid State = "valid"
 
 	// Ready signifies that an ACME resource is in a ready state.
-    // If an Order is marked 'Ready', the order is ready to be finalized.
-    // The order must be finalized with a CSR, and once finalization succeeds,
-    // the order will transition into a 'valid' state.
-	// This is a transient state.
+	// If an Order is marked 'Ready', the corresponding certificate
+	// is ready and can be obtained.
+	// This is a final state.
 	Ready State = "ready"
 
 	// Pending signifies that an ACME resource is still pending and is not yet ready.
@@ -179,10 +175,10 @@ const (
 	// This is a transient state.
 	Processing State = "processing"
 
-	// Failed signifies that an ACME resource has failed for some reason.
-	// If an Order is marked 'Failed', one of its validations may have failed for some reason.
+	// Invalid signifies that an ACME resource is invalid for some reason.
+	// If an Order is marked 'invalid', one of its validations be have invalid for some reason.
 	// This is a final state.
-	Failed State = "failed"
+	Invalid State = "invalid"
 
 	// Expired signifies that an ACME resource has expired.
 	// If an Order is marked 'Expired', one of its validations may have expired or the Order itself.
@@ -218,13 +214,30 @@ type ChallengeList struct {
 }
 
 type ChallengeSpec struct {
+	// AuthzURL is the URL to the ACME Authorization resource that this
+	// challenge is a part of.
 	AuthzURL string `json:"authzURL"`
-	Type     string `json:"type"`
-	URL      string `json:"url"`
-	DNSName  string `json:"dnsName"`
-	Token    string `json:"token"`
-	Key      string `json:"key"`
-	Wildcard bool   `json:"wildcard"`
+
+	// Type is the type of ACME challenge this resource represents, e.g. "dns01"
+	// or "http01"
+	Type string `json:"type"`
+
+	// URL is the URL of the ACME Challenge resource for this challenge.
+	// This can be used to lookup details about the status of this challenge.
+	URL string `json:"url"`
+
+	// DNSName is the identifier that this challenge is for, e.g. example.com.
+	DNSName string `json:"dnsName"`
+
+	// Token is the ACME challenge token for this challenge.
+	Token string `json:"token"`
+
+	// Key is the ACME challenge key for this challenge
+	Key string `json:"key"`
+
+	// Wildcard will be true if this challenge is for a wildcard identifier,
+	// for example '*.example.com'
+	Wildcard bool `json:"wildcard"`
 
 	// Config specifies the solver configuration for this challenge.
 	Config SolverConfig `json:"config"`
@@ -238,9 +251,30 @@ type ChallengeSpec struct {
 }
 
 type ChallengeStatus struct {
-	Presented bool   `json:"presented"`
-	Reason    string `json:"reason"`
-	State     State  `json:"state"`
+	// Processing is used to denote whether this challenge should be processed
+	// or not.
+	// This field will only be set to true by the 'scheduling' component.
+	// It will only be set to false by the 'challenges' controller, after the
+	// challenge has reached a final state or timed out.
+	// If this field is set to false, the challenge controller will not take
+	// any more action.
+	Processing bool `json:"processing"`
+
+	// Presented will be set to true if the challenge values for this challenge
+	// are currently 'presented'.
+	// This *does not* imply the self check is passing. Only that the values
+	// have been 'submitted' for the appropriate challenge mechanism (i.e. the
+	// DNS01 TXT record has been presented, or the HTTP01 configuration has been
+	// configured).
+	Presented bool `json:"presented"`
+
+	// Reason contains human readable information on why the Challenge is in the
+	// current state.
+	Reason string `json:"reason"`
+
+	// State contains the current 'state' of the challenge.
+	// If not set, the state of the challenge is unknown.
+	State State `json:"state"`
 }
 ```
 
@@ -256,23 +290,12 @@ should be able to tolerate this change seamlessly.
 // CertificateStatus defines the observed state of Certificate
 type CertificateStatus struct {
 	Conditions      []CertificateCondition `json:"conditions,omitempty"`
-    ACME            *CertificateACMEStatus `json:"acme,omitempty"`
-    /////// NEW FIELD ///////
+
+	/////// REMOVED FIELD ///////
+	// ACME            *CertificateACMEStatus `json:"acme,omitempty"`
+
+	/////// NEW FIELD ///////
 	LastFailureTime *metav1.Time           `json:"lastFailureTime,omitempty"`
-}
-
-// CertificateACMEStatus holds the status for an ACME issuer
-type CertificateACMEStatus struct {
-    /////// REMOVED ALL OLD FIELDS ///////
-
-    /////// NEW FIELD ///////
-	// Order contains details about the current in-progress ACME Order.
-	// If this field is not set, an Order is not in progress.
-	// This field may point to a failed or inactive Order.
-	// It is not sufficient to check for the presence of this field in order to
-	// determine whether an order is in progress.
-	// +optional
-	OrderRef *LocalObjectReference `json:"orderRef,omitempty"`
 }
 ```
 
