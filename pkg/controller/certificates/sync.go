@@ -257,9 +257,9 @@ func (c *Controller) updateSecret(crt *v1alpha1.Certificate, namespace string, c
 			},
 			Type: api.SecretTypeTLS,
 			Data: map[string][]byte{
-				api.TLSCertKey:       []byte{},
-				api.TLSPrivateKeyKey: []byte{},
-				TLSCAKey:             []byte{},
+				api.TLSCertKey:       {},
+				api.TLSPrivateKeyKey: {},
+				TLSCAKey:             {},
 			},
 		}
 	}
