@@ -19,10 +19,10 @@ extraArgs:
 - --leader-election-retry-period=2s
 
 webhook:
-  # enabled: true
-  # image:
-  #   tag: build
-  #   pullPolicy: Never
+  enabled: true
+  image:
+    tag: build
+    pullPolicy: Never
   resources:
     requests:
       cpu: 10m

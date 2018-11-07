@@ -22,7 +22,6 @@ import (
 	"github.com/openshift/generic-admission-server/pkg/cmd"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/validation/webhooks"
-	"github.com/jetstack/cert-manager/pkg/logs"
 )
 
 var certHook cmd.ValidatingAdmissionHook = &webhooks.CertificateAdmissionHook{}
@@ -30,9 +29,6 @@ var issuerHook cmd.ValidatingAdmissionHook = &webhooks.IssuerAdmissionHook{}
 var clusterIssuerHook cmd.ValidatingAdmissionHook = &webhooks.ClusterIssuerAdmissionHook{}
 
 func main() {
-	logs.InitLogs()
-	defer logs.FlushLogs()
-
 	// Avoid "logging before flag.Parse" errors from glog
 	flag.CommandLine.Parse([]string{})
 
