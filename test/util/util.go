@@ -230,7 +230,7 @@ func WaitCertificateIssuedValid(certClient clientset.CertificateInterface, secre
 				return false, nil
 			}
 			certBytes, ok := secret.Data[v1.TLSCertKey]
-			if !ok {
+			if !ok || len(certBytes) == 0 {
 				glog.Infof("No certificate data found for Certificate %q (secret %q)", name, certificate.Spec.SecretName)
 				return false, nil
 			}
