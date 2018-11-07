@@ -19,7 +19,7 @@ metadata:
     "helm.sh/hook": crd-install
   labels:
     app: cert-manager
-    chart: cert-manager-v0.6.0-dev.4
+    chart: cert-manager-v0.6.0-alpha.0
     release: cert-manager
     heritage: Tiller
 spec:
@@ -41,7 +41,7 @@ metadata:
   name: challenges.certmanager.k8s.io
   labels:
     app: cert-manager
-    chart: cert-manager-v0.6.0-dev.4
+    chart: cert-manager-v0.6.0-alpha.0
     release: cert-manager
     heritage: Tiller
 spec:
@@ -61,7 +61,7 @@ metadata:
     "helm.sh/hook": crd-install
   labels:
     app: cert-manager
-    chart: cert-manager-v0.6.0-dev.4
+    chart: cert-manager-v0.6.0-alpha.0
     release: cert-manager
     heritage: Tiller
 spec:
@@ -81,7 +81,7 @@ metadata:
     "helm.sh/hook": crd-install
   labels:
     app: cert-manager
-    chart: cert-manager-v0.6.0-dev.4
+    chart: cert-manager-v0.6.0-alpha.0
     release: cert-manager
     heritage: Tiller
 spec:
@@ -99,7 +99,7 @@ metadata:
   name: orders.certmanager.k8s.io
   labels:
     app: cert-manager
-    chart: cert-manager-v0.6.0-dev.4
+    chart: cert-manager-v0.6.0-alpha.0
     release: cert-manager
     heritage: Tiller
 spec:
@@ -118,7 +118,7 @@ metadata:
   namespace: "cert-manager"
   labels:
     app: cert-manager
-    chart: cert-manager-v0.6.0-dev.4
+    chart: cert-manager-v0.6.0-alpha.0
     release: cert-manager
     heritage: Tiller
 spec:
@@ -137,7 +137,7 @@ spec:
       serviceAccountName: default
       containers:
         - name: cert-manager
-          image: "quay.io/jetstack/cert-manager-controller:v0.5.0"
+          image: "quay.io/jetstack/cert-manager-controller:v0.6.0-alpha.0"
           imagePullPolicy: IfNotPresent
           args:
           - --cluster-resource-namespace=$(POD_NAMESPACE)
