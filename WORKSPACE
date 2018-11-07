@@ -17,7 +17,7 @@ load(
 go_rules_dependencies()
 
 go_register_toolchains(
-    go_version = "1.10.4",
+    go_version = "1.11.2",
 )
 
 ## Load gazelle and dependencies
