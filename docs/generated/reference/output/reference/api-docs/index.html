@@ -570,6 +570,10 @@ Appears In:
 <td>Presented will be set to true if the challenge values for this challenge are currently &#39;presented&#39;. This <em>does not</em> imply the self check is passing. Only that the values have been &#39;submitted&#39; for the appropriate challenge mechanism (i.e. the DNS01 TXT record has been presented, or the HTTP01 configuration has been configured).</td>
 </tr>
 <tr>
+<td><code>processing</code><br /> <em>boolean</em></td>
+<td>Processing is used to denote whether this challenge should be processed or not. This field will only be set to true by the &#39;scheduling&#39; component. It will only be set to false by the &#39;challenges&#39; controller, after the challenge has reached a final state or timed out. If this field is set to false, the challenge controller will not take any more action.</td>
+</tr>
+<tr>
 <td><code>reason</code><br /> <em>string</em></td>
 <td>Reason contains human readable information on why the Challenge is in the current state.</td>
 </tr>
