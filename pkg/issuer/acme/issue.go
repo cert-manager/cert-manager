@@ -302,11 +302,12 @@ func (a *Acme) createNewOrder(crt *v1alpha1.Certificate, template *v1alpha1.Orde
 	// set the CSR field on the order to be created
 	template.Spec.CSR = csrBytes
 
-	_, err = a.CMClient.CertmanagerV1alpha1().Orders(template.Namespace).Create(template)
+	o, err := a.CMClient.CertmanagerV1alpha1().Orders(template.Namespace).Create(template)
 	if err != nil {
 		return err
 	}
 
+	a.Recorder.Eventf(crt, corev1.EventTypeNormal, "OrderCreated", "Create Order resource %q", o.Name)
 	glog.V(4).Infof("Created new Order resource named %q for Certificate %s/%s", template.Name, crt.Namespace, crt.Name)
 
 	return nil
