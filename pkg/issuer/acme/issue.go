@@ -120,13 +120,14 @@ func (a *Acme) Issue(ctx context.Context, crt *v1alpha1.Certificate) (issuer.Iss
 		return issuer.IssueResponse{}, err
 	}
 	if !validForKey {
-		glog.V(4).Infof("CSR on existing order resource does not match certificate %s/%s private key. Creating new order.", crt.Namespace, crt.Name)
+		glog.V(4).Infof("CSR on existing order resource does not match certificate %s/%s private key", crt.Namespace, crt.Name)
 		return a.retryOrder(crt, existingOrder)
 	}
 
 	// If the existing order has expired, we should create a new one
 	// TODO: implement setting this order state in the acmeorders controller
 	if existingOrder.Status.State == v1alpha1.Expired {
+		a.Recorder.Eventf(crt, corev1.EventTypeNormal, "OrderExpired", "Existing certificate for Order %q expired", existingOrder.Name)
 		return a.retryOrder(crt, existingOrder)
 	}
 
@@ -166,16 +167,19 @@ func (a *Acme) Issue(ctx context.Context, crt *v1alpha1.Certificate) (issuer.Iss
 		return issuer.IssueResponse{}, err
 	}
 
-	// We check the current Order's Certificate resource to see if it's nearing expiry.
-	// If it is, this implies that it is an old order that is now out of date.
+	// Check the current Order's Certificate resource to see if it's nearing expiry.
+	// If it is, this implies that it is an old order that is now out of date so
+	// we retry the order.
 	certSlice, err := cl.GetCertificate(ctx, existingOrder.Status.CertificateURL)
 	if err != nil {
-		// TODO: parse returned ACME error and potentially re-create order.
+		a.Recorder.Eventf(crt, corev1.EventTypeWarning, "Failed to retrieve Certificate for Order %q (%s): %v", existingOrder.Name, existingOrder.Status.CertificateURL, err)
 		return issuer.IssueResponse{}, err
 	}
 
-	// TODO: this is a weird error we'd not expect to see
+	// TODO: retry the order?
+	// this is a weird error we'd not expect to see
 	if len(certSlice) == 0 {
+		a.Recorder.Eventf(crt, corev1.EventTypeWarning, "BadCertificate", "Empty certificate data retrieved from ACME server")
 		return issuer.IssueResponse{}, fmt.Errorf("invalid certificate returned from acme server")
 	}
 
