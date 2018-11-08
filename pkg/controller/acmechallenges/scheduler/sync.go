@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/tools/cache"
 
@@ -78,10 +79,12 @@ func (c *Controller) Sync(ctx context.Context, ch *cmapi.Challenge) error {
 	// if there are no 'conflicts' detected above, then we can mark this challenge
 	// as processing.
 	ch.Status.Processing = true
-	_, err = c.CMClient.CertmanagerV1alpha1().Challenges(ch.Namespace).Update(ch)
+	ch, err = c.CMClient.CertmanagerV1alpha1().Challenges(ch.Namespace).Update(ch)
 	if err != nil {
 		return err
 	}
+
+	c.Recorder.Event(ch, corev1.EventTypeNormal, "Started", "Challenge scheduled for processing")
 
 	// we ignore the return value from waitForCacheSync - if it is false, the
 	// controller will shutdown anyway.
