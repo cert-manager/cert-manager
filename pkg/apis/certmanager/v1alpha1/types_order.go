@@ -162,6 +162,12 @@ const (
 	// If an Order is marked 'Expired', one of its validations may have expired or the Order itself.
 	// This is a final state.
 	Expired State = "expired"
+
+	// Errored signifies that the ACME resource has errored for some reason.
+	// This is a catch-all state, and is used for marking internal cert-manager
+	// errors such as validation failures.
+	// This is a final state.
+	Errored State = "errored"
 )
 
 // SolverConfig is a container type holding the configuration for either a
