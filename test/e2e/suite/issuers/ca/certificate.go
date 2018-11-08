@@ -75,7 +75,7 @@ var _ = framework.CertManagerDescribe("CA Certificate", func() {
 		certClient := f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name)
 		secretClient := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name)
 
-		crt := util.NewCertManagerBasicCertificate(certificateName, certificateSecretName, issuerName, v1alpha1.IssuerKind)
+		crt := util.NewCertManagerBasicCertificate(certificateName, certificateSecretName, issuerName, v1alpha1.IssuerKind, 0, 0)
 		crt.Spec.KeyAlgorithm = v1alpha1.ECDSAKeyAlgorithm
 		crt.Spec.KeySize = 521
 
