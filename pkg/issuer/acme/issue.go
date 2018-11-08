@@ -61,6 +61,7 @@ func (a *Acme) Issue(ctx context.Context, crt *v1alpha1.Certificate) (issuer.Iss
 		// If we have generated a new private key, we return here to ensure we
 		// successfully persist the key before creating any CSRs with it.
 		glog.V(4).Infof("Storing new certificate private key for %s/%s", crt.Namespace, crt.Name)
+		a.Recorder.Eventf(crt, corev1.EventTypeNormal, "Generated", "Generated new private key")
 
 		keyPem, err := pki.EncodePrivateKey(key)
 		if err != nil {
@@ -156,6 +157,8 @@ func (a *Acme) Issue(ctx context.Context, crt *v1alpha1.Certificate) (issuer.Iss
 		return issuer.IssueResponse{}, nil
 	}
 
+	a.Recorder.Eventf(crt, corev1.EventTypeNormal, "Order %q completed successfully", existingOrder.Name)
+
 	// If the order is valid, we can attempt to retrieve the Certificate.
 	// First obtain an ACME client to make this easier.
 	cl, err := a.helper.ClientForIssuer(a.issuer)
@@ -171,8 +174,8 @@ func (a *Acme) Issue(ctx context.Context, crt *v1alpha1.Certificate) (issuer.Iss
 		return issuer.IssueResponse{}, err
 	}
 
+	// TODO: this is a weird error we'd not expect to see
 	if len(certSlice) == 0 {
-		// TODO: parse returned ACME error and potentially re-create order.
 		return issuer.IssueResponse{}, fmt.Errorf("invalid certificate returned from acme server")
 	}
 
@@ -182,6 +185,8 @@ func (a *Acme) Issue(ctx context.Context, crt *v1alpha1.Certificate) (issuer.Iss
 		return a.retryOrder(crt, existingOrder)
 	}
 
+	// Check if the currently available Certificate from the Order is up to date.
+	// This may not be the case at renewal time if the old order is still available.
 	if a.Context.IssuerOptions.CertificateNeedsRenew(x509Cert, crt.Spec.RenewBefore) {
 		// existing order's certificate is near expiry
 		return a.retryOrder(crt, existingOrder)
