@@ -25,7 +25,7 @@ REPO_ROOT="${_SCRIPT_ROOT}/../../.."
 
 KIND_CLUSTER_NAME="${KIND_CLUSTER_NAME:-cm-local-cluster}"
 KIND_CONTAINER_NAME="kind-${KIND_CLUSTER_NAME}-control-plane"
-KIND_IMAGE=${KIND_IMAGE:-eu.gcr.io/jetstack-build-infra-images/kind:1.11.2-0}
+KIND_IMAGE=${KIND_IMAGE:-eu.gcr.io/jetstack-build-infra-images/kind:1.11.4-1}
 
 # DOCKER_REPO is the docker repo to use for cert-manager images, either when
 # building or deploying cert-manager using these scripts.
