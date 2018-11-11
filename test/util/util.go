@@ -375,11 +375,9 @@ func NewCertManagerACMECertificate(name, secretName, issuerName string, issuerKi
 			Name: name,
 		},
 		Spec: v1alpha1.CertificateSpec{
-			CommonName:  cn,
-			DNSNames:    dnsNames,
-			SecretName:  secretName,
-			Duration:    &metav1.Duration{duration},
-			RenewBefore: &metav1.Duration{renewBefore},
+			CommonName: cn,
+			DNSNames:   dnsNames,
+			SecretName: secretName,
 			IssuerRef: v1alpha1.ObjectReference{
 				Name: issuerName,
 				Kind: issuerKind,
