@@ -157,11 +157,11 @@ func ValidateDuration(crt *v1alpha1.CertificateSpec, fldPath *field.Path) field.
 	el := field.ErrorList{}
 
 	duration := v1alpha1.DefaultCertificateDuration
-	if crt.Duration != nil && crt.Duration.Duration != 0 {
+	if crt.Duration != nil {
 		duration = crt.Duration.Duration
 	}
 	renewBefore := v1alpha1.DefaultRenewBefore
-	if crt.RenewBefore != nil && crt.RenewBefore.Duration != 0 {
+	if crt.RenewBefore != nil {
 		renewBefore = crt.RenewBefore.Duration
 	}
 	if duration < v1alpha1.MinimumCertificateDuration {

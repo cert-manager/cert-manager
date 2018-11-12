@@ -137,7 +137,7 @@ func GenerateTemplate(issuer v1alpha1.GenericIssuer, crt *v1alpha1.Certificate) 
 	}
 
 	certDuration := v1alpha1.DefaultCertificateDuration
-	if crt.Spec.Duration != nil && crt.Spec.Duration.Duration != 0 {
+	if crt.Spec.Duration != nil {
 		certDuration = crt.Spec.Duration.Duration
 	}
 

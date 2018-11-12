@@ -361,9 +361,7 @@ func (c *Controller) calculateTimeBeforeExpiry(cert *x509.Certificate, crt *v1al
 	// validate if the certificate received was with the issuer configured
 	// duration. If not we generate an event to warn the user of that fact.
 	certDuration := cert.NotAfter.Sub(cert.NotBefore)
-	if crt.Spec.Duration != nil &&
-		crt.Spec.Duration.Duration != 0 &&
-		certDuration < crt.Spec.Duration.Duration {
+	if crt.Spec.Duration != nil && certDuration < crt.Spec.Duration.Duration {
 		s := fmt.Sprintf(messageCertificateDuration, certDuration, crt.Spec.Duration.Duration)
 		glog.Info(s)
 		// TODO Use the message as the reason in a 'renewal status' condition
@@ -371,7 +369,7 @@ func (c *Controller) calculateTimeBeforeExpiry(cert *x509.Certificate, crt *v1al
 	// renew is the duration before the certificate expiration that cert-manager
 	// will start to try renewing the certificate.
 	renew := v1alpha1.DefaultRenewBefore
-	if crt.Spec.RenewBefore != nil && crt.Spec.RenewBefore.Duration != 0 {
+	if crt.Spec.RenewBefore != nil {
 		renew = crt.Spec.RenewBefore.Duration
 	}
 	// Verify that the renewBefore duration is inside the certificate validity duration.
