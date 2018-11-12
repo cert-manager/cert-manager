@@ -28,6 +28,7 @@ import (
 	"github.com/jetstack/cert-manager/test/e2e/framework/addon/tiller"
 	vaultaddon "github.com/jetstack/cert-manager/test/e2e/framework/addon/vault"
 	"github.com/jetstack/cert-manager/test/util"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var _ = framework.CertManagerDescribe("Vault Certificate (AppRole)", func() {
@@ -111,7 +112,7 @@ var _ = framework.CertManagerDescribe("Vault Certificate (AppRole)", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Creating a Certificate")
-		_, err = certClient.Create(util.NewCertManagerVaultCertificate(certificateName, certificateSecretName, issuerName, v1alpha1.IssuerKind, 0, 0))
+		_, err = certClient.Create(util.NewCertManagerVaultCertificate(certificateName, certificateSecretName, issuerName, v1alpha1.IssuerKind, nil, nil))
 		Expect(err).NotTo(HaveOccurred())
 
 		err = util.WaitCertificateIssuedValid(certClient, secretClient, certificateName, time.Minute*5)
@@ -120,33 +121,33 @@ var _ = framework.CertManagerDescribe("Vault Certificate (AppRole)", func() {
 	})
 
 	cases := []struct {
-		inputDuration    time.Duration
-		inputRenewBefore time.Duration
+		inputDuration    *metav1.Duration
+		inputRenewBefore *metav1.Duration
 		expectedDuration time.Duration
 		label            string
 		event            string
 	}{
 		{
-			inputDuration:    time.Hour * 24 * 35,
-			inputRenewBefore: 0,
+			inputDuration:    &metav1.Duration{time.Hour * 24 * 35},
+			inputRenewBefore: nil,
 			expectedDuration: time.Hour * 24 * 35,
 			label:            "valid for 35 days",
 		},
 		{
-			inputDuration:    0,
-			inputRenewBefore: 0,
+			inputDuration:    nil,
+			inputRenewBefore: nil,
 			expectedDuration: time.Hour * 24 * 90,
 			label:            "valid for the default value (90 days)",
 		},
 		{
-			inputDuration:    time.Hour * 24 * 365,
-			inputRenewBefore: 0,
+			inputDuration:    &metav1.Duration{time.Hour * 24 * 365},
+			inputRenewBefore: nil,
 			expectedDuration: time.Hour * 24 * 90,
 			label:            "with Vault configured maximum TTL duration (90 days) when requested duration is greater than TTL",
 		},
 		{
-			inputDuration:    time.Hour * 24 * 240,
-			inputRenewBefore: time.Hour * 24 * 120,
+			inputDuration:    &metav1.Duration{time.Hour * 24 * 240},
+			inputRenewBefore: &metav1.Duration{time.Hour * 24 * 120},
 			expectedDuration: time.Hour * 24 * 90,
 			label:            "with a warning event when renewBefore is bigger than the duration",
 		},

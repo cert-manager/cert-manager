@@ -26,6 +26,7 @@ import (
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	"github.com/jetstack/cert-manager/test/e2e/framework"
 	"github.com/jetstack/cert-manager/test/util"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var _ = framework.CertManagerDescribe("Self Signed Certificate", func() {
@@ -52,27 +53,27 @@ var _ = framework.CertManagerDescribe("Self Signed Certificate", func() {
 			})
 		Expect(err).NotTo(HaveOccurred())
 		By("Creating a Certificate")
-		_, err = certClient.Create(util.NewCertManagerBasicCertificate(certificateName, certificateSecretName, issuerName, v1alpha1.IssuerKind, 0, 0))
+		_, err = certClient.Create(util.NewCertManagerBasicCertificate(certificateName, certificateSecretName, issuerName, v1alpha1.IssuerKind, nil, nil))
 		Expect(err).NotTo(HaveOccurred())
 		err = util.WaitCertificateIssuedValid(certClient, secretClient, certificateName, time.Minute*5)
 		Expect(err).NotTo(HaveOccurred())
 	})
 
 	cases := []struct {
-		inputDuration    time.Duration
-		inputRenewBefore time.Duration
+		inputDuration    *metav1.Duration
+		inputRenewBefore *metav1.Duration
 		expectedDuration time.Duration
 		label            string
 	}{
 		{
-			inputDuration:    time.Hour * 24 * 35,
-			inputRenewBefore: 0,
+			inputDuration:    &metav1.Duration{time.Hour * 24 * 35},
+			inputRenewBefore: nil,
 			expectedDuration: time.Hour * 24 * 35,
 			label:            "35 days",
 		},
 		{
-			inputDuration:    0,
-			inputRenewBefore: 0,
+			inputDuration:    nil,
+			inputRenewBefore: nil,
 			expectedDuration: time.Hour * 24 * 90,
 			label:            "the default duration (90 days)",
 		},

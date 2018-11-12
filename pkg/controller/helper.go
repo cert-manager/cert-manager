@@ -93,7 +93,7 @@ func (o IssuerOptions) CanUseAmbientCredentials(iss cmapi.GenericIssuer) bool {
 
 func (o IssuerOptions) CertificateNeedsRenew(cert *x509.Certificate, renewBefore *metav1.Duration) bool {
 	renewBeforeDuration := o.RenewBeforeExpiryDuration
-	if renewBefore != nil  {
+	if renewBefore != nil {
 		renewBeforeDuration = renewBefore.Duration
 	}
 
