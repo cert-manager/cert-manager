@@ -97,7 +97,7 @@ func (v *Vault) obtainCertificate(ctx context.Context, crt *v1alpha1.Certificate
 	}
 
 	certDuration := v1alpha1.DefaultCertificateDuration
-	if crt.Spec.Duration.Duration != 0 {
+	if crt.Spec.Duration != nil {
 		certDuration = crt.Spec.Duration.Duration
 	}
 
