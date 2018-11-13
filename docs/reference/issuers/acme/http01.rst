@@ -29,6 +29,7 @@ using Ingress resources
 In rare cases it might be not possible/desired to use NodePort as type for the http01 challenge response service, e.g. because of Kubernetes limit restrictions. To define which Kubernetes service type to use during challenge response specify the following http01 config
 
 .. code-block:: yaml
+
        http01:
          # Valid values are ClusterIP and NodePort
          serviceType: ClusterIP
