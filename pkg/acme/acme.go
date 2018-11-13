@@ -87,9 +87,10 @@ func (h *helperImpl) ReadPrivateKey(sel cmapi.SecretKeySelector, ns string) (*rs
 
 	data, ok := s.Data[sel.Key]
 	if !ok {
-		return nil, cmerrors.NewInvalidData(fmt.Sprintf("no secret data found for key %q in secret %q", sel.Key, sel.Name))
+		return nil, cmerrors.NewInvalidData("No secret data found for key %q in secret %q", sel.Key, sel.Name)
 	}
 
+	// DecodePrivateKeyBytes already wraps errors with NewInvalidData.
 	pk, err := pki.DecodePrivateKeyBytes(data)
 	if err != nil {
 		return nil, err
@@ -97,7 +98,7 @@ func (h *helperImpl) ReadPrivateKey(sel cmapi.SecretKeySelector, ns string) (*rs
 
 	rsaKey, ok := pk.(*rsa.PrivateKey)
 	if !ok {
-		return nil, fmt.Errorf("ACME private key in %q is not of type RSA", sel.Name)
+		return nil, cmerrors.NewInvalidData("ACME private key in %q is not of type RSA", sel.Name)
 	}
 
 	return rsaKey, nil
