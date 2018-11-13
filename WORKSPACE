@@ -108,7 +108,7 @@ filegroup(
 ## Install 'kind', for creating kubernetes-in-docker clusters
 go_repository(
     name = "io_kubernetes_sigs_kind",
-    commit = "35d67a6310dd76e7737c44ebb6164fc757e1f919",
+    commit = "e0e26dae2dab662a3d06756ed668f47b2a0515cc",
     importpath = "sigs.k8s.io/kind",
 )
 
