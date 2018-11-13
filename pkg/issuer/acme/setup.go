@@ -102,6 +102,7 @@ func (a *Acme) Setup(ctx context.Context) (issuer.SetupResponse, error) {
 		s := messageAccountVerificationFailed + err.Error()
 		glog.Infof("%s: %s", a.issuer.GetObjectMeta().Name, s)
 		a.Recorder.Event(a.issuer, v1.EventTypeWarning, errorAccountVerificationFailed, s)
+		a.issuer.UpdateStatusCondition(v1alpha1.IssuerConditionReady, v1alpha1.ConditionFalse, errorAccountVerificationFailed, s)
 		return issuer.SetupResponse{Requeue: true}, err
 	}
 
@@ -116,8 +117,10 @@ func (a *Acme) Setup(ctx context.Context) (issuer.SetupResponse, error) {
 	rawServerURL := a.issuer.GetSpec().ACME.Server
 	parsedServerURL, err := url.Parse(a.issuer.GetStatus().ACMEStatus().URI)
 	if err != nil {
-		a.Recorder.Eventf(a.issuer, v1.EventTypeWarning, "InvalidURL",
-			"Failed to parse existing ACME server URI %q: %v", rawServerURL, err)
+		r := "InvalidURL"
+		s := fmt.Sprintf("Failed to parse existing ACME server URI %q: %v", rawServerURL, err)
+		a.Recorder.Eventf(a.issuer, v1.EventTypeWarning, r, s)
+		a.issuer.UpdateStatusCondition(v1alpha1.IssuerConditionReady, v1alpha1.ConditionFalse, r, s)
 		// absorb errors as retrying will not help resolve this error
 		return issuer.SetupResponse{}, nil
 	}
@@ -125,8 +128,10 @@ func (a *Acme) Setup(ctx context.Context) (issuer.SetupResponse, error) {
 	rawAccountURL := a.issuer.GetStatus().ACMEStatus().URI
 	parsedAccountURL, err := url.Parse(a.issuer.GetStatus().ACMEStatus().URI)
 	if err != nil {
-		a.Recorder.Eventf(a.issuer, v1.EventTypeWarning, "InvalidURL",
-			"Failed to parse existing ACME account URI %q: %v", rawAccountURL, err)
+		r := "InvalidURL"
+		s := fmt.Sprintf("Failed to parse existing ACME account URI %q: %v", rawAccountURL, err)
+		a.Recorder.Eventf(a.issuer, v1.EventTypeWarning, r, s)
+		a.issuer.UpdateStatusCondition(v1alpha1.IssuerConditionReady, v1alpha1.ConditionFalse, r, s)
 		// absorb errors as retrying will not help resolve this error
 		return issuer.SetupResponse{}, nil
 	}
