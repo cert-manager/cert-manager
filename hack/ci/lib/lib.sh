@@ -35,3 +35,10 @@ DOCKER_REPO="quay.io/jetstack"
 # This defaults to 'build' so it doesn't conflict with images built for any
 # other purpose
 DOCKER_TAG="build"
+
+function kubeVersion() {
+    echo $(docker run \
+        --entrypoint="cat" \
+        "${KIND_IMAGE}" \
+        /kind/version)
+}
