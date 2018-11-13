@@ -56,6 +56,7 @@ type Controller struct {
 
 	watchedInformers []cache.InformerSynced
 	queue            workqueue.RateLimitingInterface
+
 	// used for testing
 	clock clock.Clock
 }
@@ -97,6 +98,7 @@ func New(ctx *controllerpkg.Context) *Controller {
 
 	ctrl.helper = controllerpkg.NewHelper(ctrl.issuerLister, ctrl.clusterIssuerLister)
 	ctrl.acmeHelper = acme.NewHelper(ctrl.secretLister, ctrl.Context.ClusterResourceNamespace)
+	ctrl.clock = clock.RealClock{}
 
 	return ctrl
 }
