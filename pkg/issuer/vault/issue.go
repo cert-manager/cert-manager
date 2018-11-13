@@ -36,6 +36,7 @@ import (
 	"github.com/jetstack/cert-manager/pkg/util/kube"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 const (
@@ -102,6 +103,9 @@ func (v *Vault) obtainCertificate(ctx context.Context, crt *v1alpha1.Certificate
 	if err != nil {
 		return nil, nil, nil, err
 	}
+
+	metaExpireTime := metav1.NewTime(time.Now().Add(defaultCertificateDuration))
+	crt.Status.NotAfter = &metaExpireTime
 
 	keyBytes, err := pki.EncodePrivateKey(signeeKey)
 	if err != nil {

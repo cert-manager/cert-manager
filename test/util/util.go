@@ -283,6 +283,11 @@ func WaitCertificateIssuedValid(certClient clientset.CertificateInterface, secre
 				return false, nil
 			}
 
+			if !cert.NotAfter.Equal(certificate.Status.NotAfter.Time) {
+				glog.Info("Expected certificate expire date to be %v, but got %v", certificate.Status.NotAfter, cert.NotAfter)
+				return false, nil
+			}
+
 			label, ok := secret.Labels[v1alpha1.CertificateNameKey]
 			if !ok {
 				return false, fmt.Errorf("Expected secret to have certificate-name label, but had none")

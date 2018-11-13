@@ -103,6 +103,7 @@ type ACMECertificateConfig struct {
 type CertificateStatus struct {
 	Conditions      []CertificateCondition `json:"conditions,omitempty"`
 	LastFailureTime *metav1.Time           `json:"lastFailureTime,omitempty"`
+	NotAfter        *metav1.Time           `json:"notAfter,omitempty"`
 }
 
 // CertificateCondition contains condition information for an Certificate.
