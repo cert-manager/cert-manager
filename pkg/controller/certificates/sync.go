@@ -230,7 +230,7 @@ func (c *Controller) scheduleRenewal(crt *v1alpha1.Certificate) {
 		return
 	}
 
-	renewIn := c.calculateTimeBeforeExpiry(cert, crt)
+	renewIn := c.calculateDurationUntilRenew(cert, crt)
 
 	c.scheduledWorkQueue.Add(key, renewIn)
 
@@ -345,7 +345,9 @@ func (c *Controller) updateCertificateStatus(old, new *v1alpha1.Certificate) (*v
 	return c.CMClient.CertmanagerV1alpha1().Certificates(new.Namespace).Update(new)
 }
 
-func (c *Controller) calculateTimeBeforeExpiry(cert *x509.Certificate, crt *v1alpha1.Certificate) time.Duration {
+// calculateDurationUntilRenew calculates how long cert-manager should wait to
+// until attempting to renew this certificate resource.
+func (c *Controller) calculateDurationUntilRenew(cert *x509.Certificate, crt *v1alpha1.Certificate) time.Duration {
 	messageCertificateDuration := "Certificate received from server has a validity duration of %s. The requested certificate validity duration was %s"
 	messageScheduleModified := "Certificate renewal duration was changed to fit inside the received certificate validity duration from issuer."
 
@@ -357,25 +359,28 @@ func (c *Controller) calculateTimeBeforeExpiry(cert *x509.Certificate, crt *v1al
 		glog.Info(s)
 		// TODO Use the message as the reason in a 'renewal status' condition
 	}
+
 	// renew is the duration before the certificate expiration that cert-manager
 	// will start to try renewing the certificate.
-	renew := v1alpha1.DefaultRenewBefore
+	renewBefore := v1alpha1.DefaultRenewBefore
 	if crt.Spec.RenewBefore != nil {
-		renew = crt.Spec.RenewBefore.Duration
+		renewBefore = crt.Spec.RenewBefore.Duration
 	}
+
 	// Verify that the renewBefore duration is inside the certificate validity duration.
 	// If not we notify with an event that we will renew the certificate
 	// before (certificate duration / 3) of its expiration duration.
-	if renew > certDuration {
+	if renewBefore > certDuration {
 		glog.Info(messageScheduleModified)
 		// TODO Use the message as the reason in a 'renewal status' condition
 		// We will renew 1/3 before the expiration date.
-		renew = certDuration / 3
+		renewBefore = certDuration / 3
 	}
+
 	// calculate the amount of time until expiry
 	durationUntilExpiry := cert.NotAfter.Sub(now())
-	// calculate how long until we should start attempting to renew the
-	// certificate
-	renewIn := durationUntilExpiry - renew
+	// calculate how long until we should start attempting to renew the certificate
+	renewIn := durationUntilExpiry - renewBefore
+
 	return renewIn
 }

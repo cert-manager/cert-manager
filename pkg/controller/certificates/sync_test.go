@@ -25,7 +25,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func TestCalculateTimeBeforeExpiry(t *testing.T) {
+func TestCalculateDurationUntilRenew(t *testing.T) {
 	c := &Controller{}
 	currentTime := time.Now()
 	now = func() time.Time { return currentTime }
@@ -95,7 +95,7 @@ func TestCalculateTimeBeforeExpiry(t *testing.T) {
 			},
 		}
 		x509Cert := &x509.Certificate{NotBefore: v.notBefore, NotAfter: v.notAfter}
-		duration := c.calculateTimeBeforeExpiry(x509Cert, cert)
+		duration := c.calculateDurationUntilRenew(x509Cert, cert)
 		if duration != v.expectedExpiry {
 			t.Errorf("test # %d - %s: got %v, expected %v", k, v.desc, duration, v.expectedExpiry)
 		}
