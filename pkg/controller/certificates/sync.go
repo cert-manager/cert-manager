@@ -183,18 +183,9 @@ func (c *Controller) Sync(ctx context.Context, crt *v1alpha1.Certificate) (reque
 		return c.issue(ctx, i, crtCopy)
 	}
 
-	// as there is an existing certificate, or we may create one below, we will
-	// run scheduleRenewal to schedule a renewal if required at the end of
-	// execution.
-	defer c.scheduleRenewal(crtCopy)
-
-	// if the certificate was not found, or the certificate data is invalid, we
-	// should issue a new certificate.
-	// if the certificate is valid for a list of domains other than those
-	// listed in the certificate spec, we should re-issue the certificate.
-	if k8sErrors.IsNotFound(err) || errors.IsInvalidData(err) ||
-		expectedCN != cert.Subject.CommonName || !util.EqualUnsorted(cert.DNSNames, expectedDNSNames) ||
-		c.Context.IssuerOptions.CertificateNeedsRenew(cert, crt.Spec.RenewBefore) {
+	// check if the certificate needs renewal
+	needsRenew := c.Context.IssuerOptions.CertificateNeedsRenew(cert, crt.Spec.RenewBefore)
+	if needsRenew {
 		return c.issue(ctx, i, crtCopy)
 	}
 
