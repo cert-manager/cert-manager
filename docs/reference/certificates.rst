@@ -76,7 +76,7 @@ by issuer types:
 ===========  ============================================================
 Issuer       Description
 ===========  ============================================================
-ACME         Not supported
+ACME         Only 'renewBefore' supported
 CA           Fully supported
 Vault        Fully supported (although the requested duration must be lower
              than the configured Vault role's TTL)

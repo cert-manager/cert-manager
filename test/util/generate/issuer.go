@@ -29,8 +29,6 @@ type IssuerConfig struct {
 	ACMEServer, ACMEEmail, ACMEPrivateKeyName string
 	HTTP01                                    *v1alpha1.ACMEIssuerHTTP01Config
 	DNS01                                     *v1alpha1.ACMEIssuerDNS01Config
-	Duration                                  metav1.Duration
-	RenewBefore                               metav1.Duration
 }
 
 func Issuer(cfg IssuerConfig) *v1alpha1.Issuer {
