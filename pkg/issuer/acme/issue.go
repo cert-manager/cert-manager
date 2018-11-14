@@ -182,9 +182,6 @@ func (a *Acme) Issue(ctx context.Context, crt *v1alpha1.Certificate) (issuer.Iss
 		return a.retryOrder(crt, existingOrder)
 	}
 
-	metaExpireTime := metav1.NewTime(x509Cert.NotAfter)
-	crt.Status.NotAfter = &metaExpireTime
-
 	if a.Context.IssuerOptions.CertificateNeedsRenew(x509Cert) {
 		// existing order's certificate is near expiry
 		return a.retryOrder(crt, existingOrder)
