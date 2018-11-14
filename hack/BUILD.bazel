@@ -34,7 +34,6 @@ sh_binary(
     name = "update-bazel",
     srcs = ["update-bazel.sh"],
     data = [
-        "//hack/bin:buildozer",
         "//hack/bin:gazelle",
         "//hack/bin:kazel",
     ],
