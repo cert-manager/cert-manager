@@ -350,7 +350,7 @@ func NewCertManagerCAClusterIssuer(name, secretName string) *v1alpha1.ClusterIss
 	}
 }
 
-func NewCertManagerBasicCertificate(name, secretName, issuerName string, issuerKind string) *v1alpha1.Certificate {
+func NewCertManagerBasicCertificate(name, secretName, issuerName string, issuerKind string, duration, renewBefore *metav1.Duration) *v1alpha1.Certificate {
 	return &v1alpha1.Certificate{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: name,
@@ -359,6 +359,8 @@ func NewCertManagerBasicCertificate(name, secretName, issuerName string, issuerK
 			CommonName:   "test.domain.com",
 			Organization: []string{"test-org"},
 			SecretName:   secretName,
+			Duration:     duration,
+			RenewBefore:  renewBefore,
 			IssuerRef: v1alpha1.ObjectReference{
 				Name: issuerName,
 				Kind: issuerKind,
@@ -367,15 +369,17 @@ func NewCertManagerBasicCertificate(name, secretName, issuerName string, issuerK
 	}
 }
 
-func NewCertManagerACMECertificate(name, secretName, issuerName string, issuerKind string, ingressClass string, cn string, dnsNames ...string) *v1alpha1.Certificate {
+func NewCertManagerACMECertificate(name, secretName, issuerName string, issuerKind string, duration, renewBefore *metav1.Duration, ingressClass string, cn string, dnsNames ...string) *v1alpha1.Certificate {
 	return &v1alpha1.Certificate{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: name,
 		},
 		Spec: v1alpha1.CertificateSpec{
-			CommonName: cn,
-			DNSNames:   dnsNames,
-			SecretName: secretName,
+			CommonName:  cn,
+			DNSNames:    dnsNames,
+			SecretName:  secretName,
+			Duration:    duration,
+			RenewBefore: renewBefore,
 			IssuerRef: v1alpha1.ObjectReference{
 				Name: issuerName,
 				Kind: issuerKind,
@@ -396,14 +400,16 @@ func NewCertManagerACMECertificate(name, secretName, issuerName string, issuerKi
 	}
 }
 
-func NewCertManagerVaultCertificate(name, secretName, issuerName string, issuerKind string) *v1alpha1.Certificate {
+func NewCertManagerVaultCertificate(name, secretName, issuerName string, issuerKind string, duration, renewBefore *metav1.Duration) *v1alpha1.Certificate {
 	return &v1alpha1.Certificate{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: name,
 		},
 		Spec: v1alpha1.CertificateSpec{
-			CommonName: "test.domain.com",
-			SecretName: secretName,
+			CommonName:  "test.domain.com",
+			SecretName:  secretName,
+			Duration:    duration,
+			RenewBefore: renewBefore,
 			IssuerRef: v1alpha1.ObjectReference{
 				Name: issuerName,
 				Kind: issuerKind,

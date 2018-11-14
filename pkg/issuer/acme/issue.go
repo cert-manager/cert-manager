@@ -182,7 +182,7 @@ func (a *Acme) Issue(ctx context.Context, crt *v1alpha1.Certificate) (issuer.Iss
 		return a.retryOrder(crt, existingOrder)
 	}
 
-	if a.Context.IssuerOptions.CertificateNeedsRenew(x509Cert) {
+	if a.Context.IssuerOptions.CertificateNeedsRenew(x509Cert, crt.Spec.RenewBefore) {
 		// existing order's certificate is near expiry
 		return a.retryOrder(crt, existingOrder)
 	}
