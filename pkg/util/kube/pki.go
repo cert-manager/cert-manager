@@ -56,7 +56,7 @@ func SecretTLSKey(secretLister corelisters.SecretLister, namespace, name string)
 	return SecretTLSKeyRef(secretLister, namespace, name, api.TLSPrivateKeyKey)
 }
 
-func SecretTLSCert(secretLister corelisters.SecretLister, namespace, name string) (*x509.Certificate, error) {
+func SecretTLSCertChain(secretLister corelisters.SecretLister, namespace, name string) ([]*x509.Certificate, error) {
 	secret, err := secretLister.Secrets(namespace).Get(name)
 	if err != nil {
 		return nil, err
@@ -64,9 +64,9 @@ func SecretTLSCert(secretLister corelisters.SecretLister, namespace, name string
 
 	certBytes, ok := secret.Data[api.TLSCertKey]
 	if !ok {
-		return nil, fmt.Errorf("no data for %q in secret '%s/%s'", api.TLSCertKey, namespace, name)
+		return nil, errors.NewInvalidData("no data for %q in secret '%s/%s'", api.TLSCertKey, namespace, name)
 	}
-	cert, err := pki.DecodeX509CertificateBytes(certBytes)
+	cert, err := pki.DecodeX509CertificateChainBytes(certBytes)
 	if err != nil {
 		return cert, errors.NewInvalidData(err.Error())
 	}
@@ -74,7 +74,7 @@ func SecretTLSCert(secretLister corelisters.SecretLister, namespace, name string
 	return cert, nil
 }
 
-func SecretTLSKeyPair(secretLister corelisters.SecretLister, namespace, name string) (*x509.Certificate, crypto.Signer, error) {
+func SecretTLSKeyPair(secretLister corelisters.SecretLister, namespace, name string) ([]*x509.Certificate, crypto.Signer, error) {
 	secret, err := secretLister.Secrets(namespace).Get(name)
 	if err != nil {
 		return nil, nil, err
@@ -93,10 +93,19 @@ func SecretTLSKeyPair(secretLister corelisters.SecretLister, namespace, name str
 	if !ok {
 		return nil, key, errors.NewInvalidData("no certificate data for %q in secret '%s/%s'", api.TLSCertKey, namespace, name)
 	}
-	cert, err := pki.DecodeX509CertificateBytes(certBytes)
+	cert, err := pki.DecodeX509CertificateChainBytes(certBytes)
 	if err != nil {
 		return nil, key, errors.NewInvalidData(err.Error())
 	}
 
 	return cert, key, nil
+}
+
+func SecretTLSCert(secretLister corelisters.SecretLister, namespace, name string) (*x509.Certificate, error) {
+	certs, err := SecretTLSCertChain(secretLister, namespace, name)
+	if err != nil {
+		return nil, err
+	}
+
+	return certs[0], nil
 }

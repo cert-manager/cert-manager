@@ -70,7 +70,7 @@ func (c *CA) Issue(ctx context.Context, crt *v1alpha1.Certificate) (*issuer.Issu
 	}
 
 	// get a copy of the CA certificate named on the Issuer
-	caCert, caKey, err := kube.SecretTLSKeyPair(c.secretsLister, c.resourceNamespace, c.issuer.GetSpec().CA.SecretName)
+	caCerts, caKey, err := kube.SecretTLSKeyPair(c.secretsLister, c.resourceNamespace, c.issuer.GetSpec().CA.SecretName)
 	if err != nil {
 		glog.Errorf("Error getting signing CA for Issuer: %v", err)
 		return nil, err
@@ -83,12 +83,23 @@ func (c *CA) Issue(ctx context.Context, crt *v1alpha1.Certificate) (*issuer.Issu
 		return nil, err
 	}
 
+	caCert := caCerts[0]
+
 	// sign and encode the certificate
 	certPem, _, err := pki.SignCertificate(template, caCert, signeePublicKey, caKey)
 	if err != nil {
 		c.Recorder.Eventf(crt, corev1.EventTypeWarning, "ErrorSigning", "Error signing certificate: %v", err)
 		return nil, err
 	}
+
+	// encode the chain
+	// TODO: replace caCerts with caCerts[1:]?
+	chainPem, err := pki.EncodeX509Chain(caCerts)
+	if err != nil {
+		return nil, err
+	}
+
+	certPem = append(certPem, chainPem)
 
 	// Encode output private key and CA cert ready for return
 	keyPem, err := pki.EncodePrivateKey(signeeKey)
@@ -98,7 +109,7 @@ func (c *CA) Issue(ctx context.Context, crt *v1alpha1.Certificate) (*issuer.Issu
 	}
 
 	// encode the CA certificate to be bundled in the output
-	caPem, err := pki.EncodeX509(caCert)
+	caPem, err := pki.EncodeX509(caCerts[0])
 	if err != nil {
 		c.Recorder.Eventf(crt, corev1.EventTypeWarning, "ErrorSigning", "Error encoding certificate: %v", err)
 		return nil, err
