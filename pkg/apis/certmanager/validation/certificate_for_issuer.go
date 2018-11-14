@@ -63,10 +63,6 @@ func ValidateCertificateForACMEIssuer(crt *v1alpha1.CertificateSpec, issuer *v1a
 		el = append(el, field.Invalid(specPath.Child("duration"), crt.Duration, "ACME does not support certificate durations"))
 	}
 
-	if crt.RenewBefore != nil {
-		el = append(el, field.Invalid(specPath.Child("renewBefore"), crt.RenewBefore, "ACME does not support certificate renewal times"))
-	}
-
 	return el
 }
 

@@ -179,9 +179,7 @@ func TestValidateCertificateForIssuer(t *testing.T) {
 				Name:      defaultTestIssuerName,
 				Namespace: defaultTestNamespace,
 			}),
-			errs: []*field.Error{
-				field.Invalid(fldPath.Child("renewBefore"), &metav1.Duration{Duration: time.Minute * 60}, "ACME does not support certificate renewal times"),
-			},
+			errs: []*field.Error{},
 		},
 		"certificate with unspecified issuer type": {
 			crt: &v1alpha1.Certificate{
