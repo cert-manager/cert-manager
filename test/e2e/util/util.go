@@ -203,7 +203,7 @@ func wrapErrorWithCertificateStatusCondition(client clientset.CertificateInterfa
 // WaitCertificateIssuedValid waits for the given Certificate to be
 // 'Ready' and ensures the stored certificate is valid for the specified
 // domains.
-func WaitCertificateIssuedValid(certClient clientset.CertificateInterface, secretClient corecs.SecretInterface, name string, timeout time.Duration) error {
+func WaitCertificateIssuedValidTLS(certClient clientset.CertificateInterface, secretClient corecs.SecretInterface, name string, timeout time.Duration, validateTLS bool) error {
 	return wait.PollImmediate(time.Second, timeout,
 		func() (bool, error) {
 			log.Logf("Waiting for Certificate %v to be ready", name)
@@ -301,9 +301,30 @@ func WaitCertificateIssuedValid(certClient clientset.CertificateInterface, secre
 				return false, fmt.Errorf("Expected secret to have certificate-name label with a value of %q, but got %q", certificate.Name, label)
 			}
 
+			// Run TLS Verification
+			if validateTLS {
+				rootCertPool := x509.NewCertPool()
+				rootCertPool.AppendCertsFromPEM([]byte(rootCert))
+				intermediateCertPool := x509.NewCertPool()
+				intermediateCertPool.AppendCertsFromPEM(certBytes)
+				opts := x509.VerifyOptions{
+					DNSName:       expectedDNSNames[0],
+					Intermediates: intermediateCertPool,
+					Roots:         rootCertPool,
+				}
+
+				if _, err := cert.Verify(opts); err != nil {
+					return false, err
+				}
+			}
+
 			return true, nil
 		},
 	)
+}
+
+func WaitCertificateIssuedValid(certClient clientset.CertificateInterface, secretClient corecs.SecretInterface, name string, timeout time.Duration) error {
+	return WaitCertificateIssuedValidTLS(certClient, secretClient, name, timeout, false)
 }
 
 // WaitForCertificateToExist waits for the named certificate to exist
@@ -567,13 +588,7 @@ func NewCertManagerVaultIssuerAppRole(name, vaultURL, vaultPath, roleId, vaultSe
 	}
 }
 
-func NewSigningKeypairSecret(name string) *v1.Secret {
-	return &v1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: name,
-		},
-		StringData: map[string]string{
-			v1.TLSCertKey: `-----BEGIN CERTIFICATE-----
+const rootCert = `-----BEGIN CERTIFICATE-----
 MIID4DCCAsigAwIBAgIJAJzTROInmDkQMA0GCSqGSIb3DQEBCwUAMFMxCzAJBgNV
 BAYTAlVLMQswCQYDVQQIEwJOQTEVMBMGA1UEChMMY2VydC1tYW5hZ2VyMSAwHgYD
 VQQDExdjZXJ0LW1hbmFnZXIgdGVzdGluZyBDQTAeFw0xNzA5MTAxODMzNDNaFw0y
@@ -595,8 +610,9 @@ H4/uvJps4SpVCB7+T/orcTjZ2ewT23mQAQg+B+iwX9VCof+fadkYOg1XD9/eaj6E
 9McXID3iuCXg02RmEOwVMrTggHPwHrOGAilSaZc58cJZHmMYlT5rGrJcWS/AyXnH
 VOodKC004yjh7w9aSbCCbAL0tDEnhm4Jrb8cxt7pDWbdEVUeuk9LZRQtluYBnmJU
 kQ7ALfUfUh/RUpCV4uI6sEI3NDX2YqQbOtsBD/hNaL1F85FA
------END CERTIFICATE-----`,
-			v1.TLSPrivateKeyKey: `-----BEGIN RSA PRIVATE KEY-----
+-----END CERTIFICATE-----`
+
+const rootKey = `-----BEGIN RSA PRIVATE KEY-----
 MIIEpAIBAAKCAQEAz5DYA7iEBFq/SrCOTsjiYSHlHbTUdLyzselos5cE2++Huon3
 InPqMupiDoS8/Qr9srnoKnah7aKB3sY7GlXdg85zcIbQIKocymsRy/GPbEEpfTRG
 1yfihUuEM+EBvQFX9Hs0Ut5bHOH6CC88jVebWotpZiphkQnlsGxhcPe091LgYYg1
@@ -622,7 +638,16 @@ jKQvgbUk9SBSBaRrvLNJ8csCgYAYnrZEnGo+ZcEHRxl+ZdSCwRkSl3SCTRiphJtD
 ThS+sQKBgQDh0+cVo1mfYiCkp3IQPB8QYiJ/g2/UBk6pH8ZZDZ+A5td6NveiWO1y
 wTEUWkX2qyz9SLxWDGOhdKqxNrLCUSYSOV/5/JQEtBm6K50ArFtrY40JP/T/5KvM
 tSK2ayFX1wQ3PuEmewAogy/20tWo80cr556AXA62Utl2PzLK30Db8w==
------END RSA PRIVATE KEY-----`,
+-----END RSA PRIVATE KEY-----`
+
+func NewSigningKeypairSecret(name string) *v1.Secret {
+	return &v1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: name,
+		},
+		StringData: map[string]string{
+			v1.TLSCertKey: rootCert,
+			v1.TLSPrivateKeyKey: rootKey,
 		},
 	}
 }

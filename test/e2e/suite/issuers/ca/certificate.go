@@ -68,7 +68,7 @@ var _ = framework.CertManagerDescribe("CA Certificate", func() {
 		_, err := certClient.Create(util.NewCertManagerBasicCertificate(certificateName, certificateSecretName, issuerName, v1alpha1.IssuerKind, nil, nil))
 		Expect(err).NotTo(HaveOccurred())
 		By("Verifying the Certificate is valid")
-		err = util.WaitCertificateIssuedValid(certClient, secretClient, certificateName, time.Second*30)
+		err = util.WaitCertificateIssuedValidTLS(certClient, secretClient, certificateName, time.Second*30, true)
 		Expect(err).NotTo(HaveOccurred())
 	})
 
@@ -85,7 +85,7 @@ var _ = framework.CertManagerDescribe("CA Certificate", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Verifying the Certificate is valid")
-		err = util.WaitCertificateIssuedValid(certClient, secretClient, certificateName, time.Second*30)
+		err = util.WaitCertificateIssuedValidTLS(certClient, secretClient, certificateName, time.Second*30, true)
 		Expect(err).NotTo(HaveOccurred())
 	})
 
