@@ -283,6 +283,10 @@ func WaitCertificateIssuedValid(certClient clientset.CertificateInterface, secre
 				return false, nil
 			}
 
+			if certificate.Status.NotAfter == nil {
+				glog.Infof("No certificate expiration found for Certificate %q", name)
+				return false, nil
+			}
 			if !cert.NotAfter.Equal(certificate.Status.NotAfter.Time) {
 				glog.Info("Expected certificate expire date to be %v, but got %v", certificate.Status.NotAfter, cert.NotAfter)
 				return false, nil
