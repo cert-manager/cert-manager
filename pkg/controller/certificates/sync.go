@@ -179,6 +179,9 @@ func (c *Controller) Sync(ctx context.Context, crt *v1alpha1.Certificate) (reque
 		return c.issue(ctx, i, crtCopy)
 	}
 
+	metaNotAfter := metav1.NewTime(cert.NotAfter)
+	crtCopy.Status.NotAfter = &metaNotAfter
+
 	// check if the certificate needs renewal
 	needsRenew := c.Context.IssuerOptions.CertificateNeedsRenew(cert)
 	if needsRenew {
@@ -190,9 +193,6 @@ func (c *Controller) Sync(ctx context.Context, crt *v1alpha1.Certificate) (reque
 	// TODO: add checks for IsCA field
 
 	// end checking if the TLS certificate is valid/needs a re-issue or renew
-
-	metaNotAfter := metav1.NewTime(cert.NotAfter)
-	crtCopy.Status.NotAfter = &metaNotAfter
 
 	return false, nil
 }
