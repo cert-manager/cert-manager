@@ -111,7 +111,7 @@ var _ = framework.CertManagerDescribe("Vault Certificate (AppRole with a custom 
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Creating a Certificate")
-		_, err = certClient.Create(util.NewCertManagerVaultCertificate(certificateName, certificateSecretName, issuerName, v1alpha1.IssuerKind))
+		_, err = certClient.Create(util.NewCertManagerVaultCertificate(certificateName, certificateSecretName, issuerName, v1alpha1.IssuerKind, nil, nil))
 		Expect(err).NotTo(HaveOccurred())
 
 		err = util.WaitCertificateIssuedValid(certClient, secretClient, certificateName, time.Minute*5)

@@ -239,8 +239,8 @@ func (v *VaultInitializer) mountPKI(mount, ttl string) error {
 
 func (v *VaultInitializer) generateRootCert() (string, error) {
 	params := map[string]string{
-		"common_name": "Root CA",
-		"ttl":         "87600h",
+		"common_name":          "Root CA",
+		"ttl":                  "87600h",
 		"exclude_cn_from_sans": "true",
 	}
 	url := path.Join("/v1", v.RootMount, "root", "generate", "internal")
@@ -255,8 +255,8 @@ func (v *VaultInitializer) generateRootCert() (string, error) {
 
 func (v *VaultInitializer) generateIntermediateSigningReq() (string, error) {
 	params := map[string]string{
-		"common_name": "Intermediate CA",
-		"ttl":         "43800h",
+		"common_name":          "Intermediate CA",
+		"ttl":                  "43800h",
 		"exclude_cn_from_sans": "true",
 	}
 	url := path.Join("/v1", v.IntermediateMount, "intermediate", "generate", "internal")
@@ -271,10 +271,10 @@ func (v *VaultInitializer) generateIntermediateSigningReq() (string, error) {
 
 func (v *VaultInitializer) signCertificate(csr string) (string, error) {
 	params := map[string]string{
-		"use_csr_values": "true",
-		"ttl":            "43800h",
+		"use_csr_values":       "true",
+		"ttl":                  "43800h",
 		"exclude_cn_from_sans": "true",
-		"csr": csr,
+		"csr":                  csr,
 	}
 	url := path.Join("/v1", v.RootMount, "root", "sign-intermediate")
 

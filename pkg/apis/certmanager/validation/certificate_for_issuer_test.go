@@ -19,10 +19,13 @@ package validation
 import (
 	"reflect"
 	"testing"
+	"time"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	"github.com/jetstack/cert-manager/test/util/generate"
 	"k8s.io/apimachinery/pkg/util/validation/field"
+
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 const (
@@ -129,6 +132,54 @@ func TestValidateCertificateForIssuer(t *testing.T) {
 			errs: []*field.Error{
 				field.Invalid(fldPath.Child("organization"), []string{"shouldfailorg"}, "ACME does not support setting the organization name"),
 			},
+		},
+		"acme certificate with duration set": {
+			crt: &v1alpha1.Certificate{
+				Spec: v1alpha1.CertificateSpec{
+					Duration:  &metav1.Duration{Duration: time.Minute * 60},
+					IssuerRef: validIssuerRef,
+					ACME: &v1alpha1.ACMECertificateConfig{
+						Config: []v1alpha1.DomainSolverConfig{
+							{
+								Domains: []string{"example.com"},
+								SolverConfig: v1alpha1.SolverConfig{
+									HTTP01: &v1alpha1.HTTP01SolverConfig{},
+								},
+							},
+						},
+					},
+				},
+			},
+			issuer: generate.Issuer(generate.IssuerConfig{
+				Name:      defaultTestIssuerName,
+				Namespace: defaultTestNamespace,
+			}),
+			errs: []*field.Error{
+				field.Invalid(fldPath.Child("duration"), &metav1.Duration{Duration: time.Minute * 60}, "ACME does not support certificate durations"),
+			},
+		},
+		"acme certificate with renewBefore set": {
+			crt: &v1alpha1.Certificate{
+				Spec: v1alpha1.CertificateSpec{
+					RenewBefore: &metav1.Duration{Duration: time.Minute * 60},
+					IssuerRef:   validIssuerRef,
+					ACME: &v1alpha1.ACMECertificateConfig{
+						Config: []v1alpha1.DomainSolverConfig{
+							{
+								Domains: []string{"example.com"},
+								SolverConfig: v1alpha1.SolverConfig{
+									HTTP01: &v1alpha1.HTTP01SolverConfig{},
+								},
+							},
+						},
+					},
+				},
+			},
+			issuer: generate.Issuer(generate.IssuerConfig{
+				Name:      defaultTestIssuerName,
+				Namespace: defaultTestNamespace,
+			}),
+			errs: []*field.Error{},
 		},
 		"certificate with unspecified issuer type": {
 			crt: &v1alpha1.Certificate{

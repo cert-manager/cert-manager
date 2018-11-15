@@ -57,6 +57,12 @@ func (c *Controller) Sync(ctx context.Context, ch *cmapi.Challenge) (err error) 
 	oldChal := ch
 	ch = ch.DeepCopy()
 
+	// bail out early on if processing=false, as this challenge has not been
+	// scheduled yet.
+	if ch.Status.Processing == false {
+		return nil
+	}
+
 	defer func() {
 		// TODO: replace with more efficient comparison
 		if reflect.DeepEqual(oldChal.Status, ch.Status) {
@@ -71,6 +77,8 @@ func (c *Controller) Sync(ctx context.Context, ch *cmapi.Challenge) (err error) 
 	// if a challenge is in a final state, we bail out early as there is nothing
 	// left for us to do here.
 	if acme.IsFinalState(ch.Status.State) {
+		// we set processing to false now, as this item has finished being processed.
+		ch.Status.Processing = false
 		return nil
 	}
 
@@ -116,6 +124,7 @@ func (c *Controller) Sync(ctx context.Context, ch *cmapi.Challenge) (err error) 
 		}
 
 		ch.Status.Presented = true
+		c.Recorder.Eventf(ch, corev1.EventTypeNormal, "Presented", "Presented challenge using %s challenge mechanism", ch.Spec.Type)
 	}
 
 	ok, err := solver.Check(ch)
@@ -195,6 +204,8 @@ func (c *Controller) acceptChallenge(ctx context.Context, cl acmecl.Interface, c
 
 		ch.Status.State = cmapi.State(authErr.Authorization.Status)
 		ch.Status.Reason = fmt.Sprintf("Error accepting authorization: %v", authErr)
+
+		c.Recorder.Eventf(ch, corev1.EventTypeWarning, "Failed", "Accepting challenge authorization failed: %v", authErr)
 
 		// return nil here, as accepting the challenge did not error, the challenge
 		// simply failed

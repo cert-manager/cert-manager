@@ -1,0 +1,104 @@
+genrule(
+    name = "__internal_markdown_tar",
+    srcs = [
+        "//docs/generated/reference/generate:config.yaml",
+        "//docs/generated/reference/generate/static_includes:all-srcs",
+        "//docs/generated/reference/generate/json_swagger:swagger.json",
+    ],
+    outs = ["defs.tar.gz"],
+    cmd = "; ".join([
+        "tmpdir=$$(mktemp -d)",
+        "mkdir -p \"$$tmpdir/static_includes/\"",
+        "mkdir -p \"$$tmpdir/includes/\"",
+        "mkdir -p \"$$tmpdir/openapi-spec/\"",
+        "cp -L \"$(location //docs/generated/reference/generate/json_swagger:swagger.json)\" \"$$tmpdir/openapi-spec/\"",
+        "cp -L \"$(location //docs/generated/reference/generate:config.yaml)\" \"$$tmpdir/\"",
+        "cp -LR $(locations //docs/generated/reference/generate/static_includes:all-srcs) \"$$tmpdir/static_includes/\"",
+        "rm \"$$tmpdir/static_includes/BUILD.bazel\"",
+        "$(location @io_kubernetes_incubator_reference_docs//gen-apidocs) --copyright \"<a href=\\\"https://jetstack.io\\\">Copyright 2018 Jetstack Ltd.</a>\" --title \"Cert-manager API Reference\" -config-dir $$tmpdir",
+        "orig=$$(pwd)",
+        "cd $$tmpdir",
+        "tar -cf \"$$orig/$@\" ./manifest.json ./includes/",
+    ]),
+    tools = [
+        "@io_kubernetes_incubator_reference_docs//gen-apidocs",
+    ],
+    visibility = ["//visibility:private"],
+)
+
+genrule(
+    name = "__internal_brodocs_out",
+    srcs = [
+        "//docs/generated/reference/generate:__internal_markdown_tar",
+    ],
+    outs = [
+        "index.html",
+        "navData.js",
+    ],
+    cmd = "; ".join([
+        "input=$$(mktemp -d)",
+        "output=$$(mktemp -d)",
+        "tar -C \"$$input\" -xf $(location //docs/generated/reference/generate:__internal_markdown_tar)",
+        "$(location //docs/generated/reference/generate/bin:brodocs) \"$$input/manifest.json\" \"$$input/includes\" \"$$output\"",
+        "cp $$output/index.html $(@D)",
+        "cp $$output/navData.js $(@D)",
+    ]),
+    tools = [
+        "//docs/generated/reference/generate/bin:brodocs",
+    ],
+    visibility = ["//visibility:private"],
+)
+
+# This file constructs an archive containing the full generated reference docs
+# website, including all required node_modules.
+# The output this script is then consumed by the hack/update-reference-docs.sh
+# to place the data into the correct directory to be displayed by readthedocs.
+genrule(
+    name = "generate",
+    srcs = [
+        ":__internal_brodocs_out",
+        "@brodocs//:static",
+        "@brodocs_modules//node_modules/jquery:jquery__files",
+        "@brodocs_modules//node_modules/bootstrap:bootstrap__files",
+        "@brodocs_modules//node_modules/font-awesome:font-awesome__files",
+        "@brodocs_modules//node_modules/highlight.js:highlight.js__files",
+        "@brodocs_modules//node_modules/jquery.scrollto:jquery.scrollto__files",
+    ],
+    outs = ["generated.tar.gz"],
+    cmd = "; ".join([
+        "bm=external/brodocs_modules",
+        "out=$$(mktemp -d)",
+        "cp -L $(locations :__internal_brodocs_out) $$out",
+        "cp -L $(locations @brodocs//:static) $$out",
+        "p=node_modules/jquery/dist; mkdir -p $$out/$$p && cp -L $$bm/$$p/jquery.min.js $$out/$$p",
+        "p=node_modules/bootstrap/dist/css; mkdir -p $$out/$$p && cp -L $$bm/$$p/bootstrap.min.css $$out/$$p",
+        "p=node_modules/font-awesome/css; mkdir -p $$out/$$p && cp -L $$bm/$$p/* $$out/$$p",
+        "p=node_modules/font-awesome/fonts; mkdir -p $$out/$$p && cp -L $$bm/$$p/* $$out/$$p",
+        "p=node_modules/highlight.js/styles; mkdir -p $$out/$$p && cp -L $$bm/$$p/default.css $$out/$$p",
+        "p=node_modules/jquery.scrollto; mkdir -p $$out/$$p && cp -L $$bm/$$p/jquery.scrollTo.min.js $$out/$$p",
+        "orig=$$(pwd)",
+        "cd $$out",
+        "tar -cf $$orig/$@ ./",
+    ]),
+    visibility = ["//visibility:public"],
+)
+
+filegroup(
+    name = "package-srcs",
+    srcs = glob(["**"]),
+    tags = ["automanaged"],
+    visibility = ["//visibility:private"],
+)
+
+filegroup(
+    name = "all-srcs",
+    srcs = [
+        ":package-srcs",
+        "//docs/generated/reference/generate/bin:all-srcs",
+        "//docs/generated/reference/generate/go_openapi:all-srcs",
+        "//docs/generated/reference/generate/json_swagger:all-srcs",
+        "//docs/generated/reference/generate/static_includes:all-srcs",
+    ],
+    tags = ["automanaged"],
+    visibility = ["//visibility:public"],
+)

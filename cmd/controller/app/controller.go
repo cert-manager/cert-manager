@@ -39,6 +39,7 @@ import (
 	intscheme "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/scheme"
 	informers "github.com/jetstack/cert-manager/pkg/client/informers/externalversions"
 	"github.com/jetstack/cert-manager/pkg/controller"
+	"github.com/jetstack/cert-manager/pkg/controller/acmechallenges/scheduler"
 	dnsutil "github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
 	"github.com/jetstack/cert-manager/pkg/util"
 	"github.com/jetstack/cert-manager/pkg/util/kube"
@@ -68,7 +69,11 @@ func Run(opts *options.ControllerOptions, stopCh <-chan struct{}) {
 				defer wg.Done()
 				glog.Infof("Starting %s controller", n)
 
-				err := fn(5, stopCh)
+				workers := 5
+				if n == scheduler.ControllerName {
+					workers = 1
+				}
+				err := fn(workers, stopCh)
 
 				if err != nil {
 					glog.Fatalf("error running %s controller: %s", n, err.Error())
@@ -181,6 +186,7 @@ func buildControllerContext(opts *options.ControllerOptions) (*controller.Contex
 		IngressShimOptions: controller.IngressShimOptions{
 			DefaultIssuerName:                  opts.DefaultIssuerName,
 			DefaultIssuerKind:                  opts.DefaultIssuerKind,
+			DefaultAutoCertificateAnnotations:  opts.DefaultAutoCertificateAnnotations,
 			DefaultACMEIssuerChallengeType:     opts.DefaultACMEIssuerChallengeType,
 			DefaultACMEIssuerDNS01ProviderName: opts.DefaultACMEIssuerDNS01ProviderName,
 		},

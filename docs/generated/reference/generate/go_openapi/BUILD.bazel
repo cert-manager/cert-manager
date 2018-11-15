@@ -1,0 +1,33 @@
+# gazelle:exclude doc.go
+
+package(default_visibility = ["//visibility:public"])
+
+load("//docs/generated/reference/generate/go_openapi:def.bzl", "openapi_library")
+
+openapi_library(
+    name = "go_default_library",
+    srcs = ["doc.go"],
+    go_prefix = "github.com/jetstack/cert-manager/",
+    openapi_targets = [
+        "pkg/apis/certmanager/v1alpha1",
+    ],
+    tags = ["docs"],
+    vendor_targets = [
+        "k8s.io/apimachinery/pkg/apis/meta/v1",
+        "k8s.io/apimachinery/pkg/runtime",
+        "k8s.io/apimachinery/pkg/version",
+    ],
+)
+
+filegroup(
+    name = "package-srcs",
+    srcs = glob(["**"]),
+    tags = ["automanaged"],
+    visibility = ["//visibility:private"],
+)
+
+filegroup(
+    name = "all-srcs",
+    srcs = [":package-srcs"],
+    tags = ["automanaged"],
+)

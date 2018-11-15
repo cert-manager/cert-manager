@@ -72,6 +72,7 @@ required = [
 
 [prune]
   unused-packages = true
+  go-tests = true
   [[prune.project]]
     name = "github.com/hashicorp/vault"
     non-go = true

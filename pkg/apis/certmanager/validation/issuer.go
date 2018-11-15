@@ -80,6 +80,7 @@ func ValidateIssuerConfig(iss *v1alpha1.IssuerConfig, fldPath *field.Path) field
 	if numConfigs == 0 {
 		el = append(el, field.Required(fldPath, "at least one issuer must be configured"))
 	}
+
 	return el
 }
 

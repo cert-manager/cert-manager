@@ -94,7 +94,6 @@ var _ = framework.CertManagerDescribe("Vault Issuer", func() {
 		_, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Create(vaultaddon.NewVaultAppRoleSecret(vaultSecretAppRoleName, secretId))
 		Expect(err).NotTo(HaveOccurred())
 
-		By("Creating an Issuer")
 		_, err = f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Create(util.NewCertManagerVaultIssuerAppRole(issuerName, vault.Details().Host, vaultPath, roleId, vaultSecretAppRoleName, authPath, vault.Details().VaultCA))
 		Expect(err).NotTo(HaveOccurred())
 

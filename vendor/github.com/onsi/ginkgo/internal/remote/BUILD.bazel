@@ -1,4 +1,4 @@
-load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
 
 go_library(
     name = "go_default_library",
@@ -29,28 +29,6 @@ go_library(
         ],
         "//conditions:default": [],
     }),
-)
-
-go_test(
-    name = "go_default_test",
-    srcs = [
-        "aggregator_test.go",
-        "fake_output_interceptor_test.go",
-        "fake_poster_test.go",
-        "forwarding_reporter_test.go",
-        "remote_suite_test.go",
-        "server_test.go",
-    ],
-    embed = [":go_default_library"],
-    tags = ["manual"],
-    deps = [
-        "//vendor/github.com/onsi/ginkgo:go_default_library",
-        "//vendor/github.com/onsi/ginkgo/config:go_default_library",
-        "//vendor/github.com/onsi/ginkgo/reporters:go_default_library",
-        "//vendor/github.com/onsi/ginkgo/reporters/stenographer:go_default_library",
-        "//vendor/github.com/onsi/ginkgo/types:go_default_library",
-        "//vendor/github.com/onsi/gomega:go_default_library",
-    ],
 )
 
 filegroup(

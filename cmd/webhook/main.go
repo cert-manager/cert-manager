@@ -19,8 +19,9 @@ package main
 import (
 	"flag"
 
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager/validation/webhooks"
 	"github.com/openshift/generic-admission-server/pkg/cmd"
+
+	"github.com/jetstack/cert-manager/pkg/apis/certmanager/validation/webhooks"
 )
 
 var certHook cmd.ValidatingAdmissionHook = &webhooks.CertificateAdmissionHook{}
