@@ -132,7 +132,7 @@ spec:
       serviceAccountName: webhook
       containers:
         - name: webhook
-          image: "quay.io/jetstack/cert-manager-webhook:v0.5.0"
+          image: "quay.io/jetstack/cert-manager-webhook:v0.5.1"
           imagePullPolicy: IfNotPresent
           args:
           - --v=12
