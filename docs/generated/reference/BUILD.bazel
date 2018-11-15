@@ -7,7 +7,16 @@ filegroup(
 
 filegroup(
     name = "all-srcs",
-    srcs = [":package-srcs"],
+    srcs = [
+        ":package-srcs",
+        "//docs/generated/reference/generate:all-srcs",
+    ],
     tags = ["automanaged"],
+    visibility = ["//visibility:public"],
+)
+
+filegroup(
+    name = "output",
+    srcs = glob(["output/**/*"]),
     visibility = ["//visibility:public"],
 )

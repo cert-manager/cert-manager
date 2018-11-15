@@ -23,7 +23,7 @@ def openapi_library(name, tags, srcs, go_prefix, openapi_targets = [], vendor_ta
     go_library(
         name = name,
         srcs = srcs + [":zz_generated.openapi"],
-        importpath = go_prefix + "hack/reference-docs/go_openapi",
+        importpath = go_prefix + "docs/generated/reference/generate/go_openapi",
         tags = tags,
         deps = deps,
     )
@@ -42,10 +42,10 @@ def openapi_library(name, tags, srcs, go_prefix, openapi_targets = [], vendor_ta
             "--logtostderr",
             "--go-header-file $$GO_GENRULE_EXECROOT/$(location //hack/boilerplate:boilerplate.go.txt)",
             "--output-file-base zz_generated.openapi",
-            "--output-package " + go_prefix + "hack/reference-docs/go_openapi",
+            "--output-package " + go_prefix + "docs/generated/reference/generate/go_openapi",
             # "--report-filename tmp_api_violations.report",
             "--input-dirs " + ",".join([go_prefix + target for target in openapi_targets] + [go_prefix + "vendor/" + target for target in vendor_targets]),
-            "&& cp $$GOPATH/src/" + go_prefix + "hack/reference-docs/go_openapi/zz_generated.openapi.go $$GO_GENRULE_EXECROOT/$(location :zz_generated.openapi.go)",
+            "&& cp $$GOPATH/src/" + go_prefix + "docs/generated/reference/generate/go_openapi/zz_generated.openapi.go $$GO_GENRULE_EXECROOT/$(location :zz_generated.openapi.go)",
         ]),
         go_deps = deps,
         tools = ["//vendor/k8s.io/kube-openapi/example/openapi-gen"],

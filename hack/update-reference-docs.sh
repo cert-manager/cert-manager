@@ -28,7 +28,7 @@ OUTPUT_DIR="$(cd "${REPO_ROOT}/docs/generated/reference/output/reference/api-doc
 
 TMP_OUTPUT="$(mktemp -d)"
 
-tar -C "${TMP_OUTPUT}" -xf "${SCRIPT_RUNFILES}/hack/reference-docs/generated.tar.gz"
+tar -C "${TMP_OUTPUT}" -xf "${SCRIPT_RUNFILES}/docs/generated/reference/generate/generated.tar.gz"
 
 rm -Rf "${OUTPUT_DIR}"
 mkdir -p "${OUTPUT_DIR}"

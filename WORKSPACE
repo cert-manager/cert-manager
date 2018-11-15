@@ -112,21 +112,6 @@ go_repository(
     importpath = "sigs.k8s.io/kind",
 )
 
-## Install buildozer, for mass-editing BUILD files
-http_file(
-    name = "buildozer_darwin",
-    executable = 1,
-    sha256 = "294357ff92e7bb36c62f964ecb90e935312671f5a41a7a9f2d77d8d0d4bd217d",
-    urls = ["https://github.com/bazelbuild/buildtools/releases/download/0.15.0/buildozer.osx"],
-)
-
-http_file(
-    name = "buildozer_linux",
-    executable = 1,
-    sha256 = "be07a37307759c68696c989058b3446390dd6e8aa6fdca6f44f04ae3c37212c5",
-    urls = ["https://github.com/bazelbuild/buildtools/releases/download/0.15.0/buildozer"],
-)
-
 ## Install dep for dependency management
 http_file(
     name = "dep_darwin",
@@ -191,7 +176,7 @@ load("@build_bazel_rules_nodejs//:defs.bzl", "npm_install")
 npm_install(
     name = "brodocs_modules",
     package_json = "@brodocs//:package.json",
-    package_lock_json = "//hack/reference-docs/bin:package-lock.json",
+    package_lock_json = "//docs/generated/reference/generate/bin:package-lock.json",
 )
 
 # Load kubernetes-incubator/reference-docs, to be used as part of the docs
