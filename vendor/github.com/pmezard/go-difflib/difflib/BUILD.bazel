@@ -5,6 +5,7 @@ go_library(
     srcs = ["difflib.go"],
     importmap = "github.com/jetstack/cert-manager/vendor/github.com/pmezard/go-difflib/difflib",
     importpath = "github.com/pmezard/go-difflib/difflib",
+    tags = ["manual"],
     visibility = ["//visibility:public"],
 )
 

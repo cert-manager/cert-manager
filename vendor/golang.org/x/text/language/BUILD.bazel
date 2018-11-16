@@ -17,6 +17,7 @@ go_library(
     ],
     importmap = "github.com/jetstack/cert-manager/vendor/golang.org/x/text/language",
     importpath = "golang.org/x/text/language",
+    tags = ["manual"],
     visibility = ["//visibility:public"],
     deps = ["//vendor/golang.org/x/text/internal/tag:go_default_library"],
 )

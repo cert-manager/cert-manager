@@ -12,6 +12,7 @@ go_library(
     ],
     importmap = "github.com/jetstack/cert-manager/vendor/github.com/gophercloud/gophercloud/pagination",
     importpath = "github.com/gophercloud/gophercloud/pagination",
+    tags = ["manual"],
     visibility = ["//visibility:public"],
     deps = ["//vendor/github.com/gophercloud/gophercloud:go_default_library"],
 )

@@ -11,6 +11,7 @@ go_library(
     ],
     importmap = "github.com/jetstack/cert-manager/vendor/golang.org/x/net/websocket",
     importpath = "golang.org/x/net/websocket",
+    tags = ["manual"],
     visibility = ["//visibility:public"],
 )
 

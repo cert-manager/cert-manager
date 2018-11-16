@@ -10,6 +10,7 @@ go_library(
     ],
     importmap = "github.com/jetstack/cert-manager/vendor/github.com/coreos/etcd/etcdserver/etcdserverpb",
     importpath = "github.com/coreos/etcd/etcdserver/etcdserverpb",
+    tags = ["manual"],
     visibility = ["//visibility:public"],
     deps = [
         "//vendor/github.com/coreos/etcd/auth/authpb:go_default_library",

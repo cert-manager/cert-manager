@@ -5,6 +5,7 @@ go_library(
     srcs = ["auth.pb.go"],
     importmap = "github.com/jetstack/cert-manager/vendor/github.com/coreos/etcd/auth/authpb",
     importpath = "github.com/coreos/etcd/auth/authpb",
+    tags = ["manual"],
     visibility = ["//visibility:public"],
     deps = [
         "//vendor/github.com/gogo/protobuf/gogoproto:go_default_library",

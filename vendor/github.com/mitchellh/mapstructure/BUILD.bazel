@@ -9,6 +9,7 @@ go_library(
     ],
     importmap = "github.com/jetstack/cert-manager/vendor/github.com/mitchellh/mapstructure",
     importpath = "github.com/mitchellh/mapstructure",
+    tags = ["manual"],
     visibility = ["//visibility:public"],
 )
 

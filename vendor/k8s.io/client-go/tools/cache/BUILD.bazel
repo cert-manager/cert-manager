@@ -25,6 +25,7 @@ go_library(
     ],
     importmap = "github.com/jetstack/cert-manager/vendor/k8s.io/client-go/tools/cache",
     importpath = "k8s.io/client-go/tools/cache",
+    tags = ["manual"],
     visibility = ["//visibility:public"],
     deps = [
         "//vendor/github.com/golang/glog:go_default_library",

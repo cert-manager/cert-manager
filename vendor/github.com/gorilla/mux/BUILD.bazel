@@ -12,6 +12,7 @@ go_library(
     ],
     importmap = "github.com/jetstack/cert-manager/vendor/github.com/gorilla/mux",
     importpath = "github.com/gorilla/mux",
+    tags = ["manual"],
     visibility = ["//visibility:public"],
     deps = ["//vendor/github.com/gorilla/context:go_default_library"],
 )

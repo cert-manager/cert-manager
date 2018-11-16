@@ -5,6 +5,7 @@ go_library(
     srcs = ["suite.go"],
     importmap = "github.com/jetstack/cert-manager/vendor/github.com/onsi/ginkgo/internal/suite",
     importpath = "github.com/onsi/ginkgo/internal/suite",
+    tags = ["manual"],
     visibility = ["//vendor/github.com/onsi/ginkgo:__subpackages__"],
     deps = [
         "//vendor/github.com/onsi/ginkgo/config:go_default_library",

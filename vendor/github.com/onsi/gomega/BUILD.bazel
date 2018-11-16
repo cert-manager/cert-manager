@@ -8,6 +8,7 @@ go_library(
     ],
     importmap = "github.com/jetstack/cert-manager/vendor/github.com/onsi/gomega",
     importpath = "github.com/onsi/gomega",
+    tags = ["manual"],
     visibility = ["//visibility:public"],
     deps = [
         "//vendor/github.com/onsi/gomega/internal/assertion:go_default_library",

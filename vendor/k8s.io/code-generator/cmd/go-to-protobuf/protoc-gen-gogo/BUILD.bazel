@@ -5,6 +5,7 @@ go_library(
     srcs = ["main.go"],
     importmap = "github.com/jetstack/cert-manager/vendor/k8s.io/code-generator/cmd/go-to-protobuf/protoc-gen-gogo",
     importpath = "k8s.io/code-generator/cmd/go-to-protobuf/protoc-gen-gogo",
+    tags = ["manual"],
     visibility = ["//visibility:private"],
     deps = [
         "//vendor/github.com/gogo/protobuf/gogoproto:go_default_library",
@@ -17,6 +18,7 @@ go_library(
 go_binary(
     name = "protoc-gen-gogo",
     embed = [":go_default_library"],
+    tags = ["manual"],
     visibility = ["//visibility:public"],
 )
 

@@ -18,6 +18,7 @@ go_library(
     ],
     importmap = "github.com/jetstack/cert-manager/vendor/k8s.io/apiserver/pkg/server",
     importpath = "k8s.io/apiserver/pkg/server",
+    tags = ["manual"],
     visibility = ["//visibility:public"],
     deps = [
         "//vendor/github.com/coreos/go-systemd/daemon:go_default_library",

@@ -5,6 +5,7 @@ go_library(
     srcs = ["gcp.go"],
     importmap = "github.com/jetstack/cert-manager/vendor/k8s.io/client-go/plugin/pkg/client/auth/gcp",
     importpath = "k8s.io/client-go/plugin/pkg/client/auth/gcp",
+    tags = ["manual"],
     visibility = ["//visibility:public"],
     deps = [
         "//vendor/github.com/golang/glog:go_default_library",

@@ -15,6 +15,7 @@ go_library(
     ],
     importmap = "github.com/jetstack/cert-manager/vendor/github.com/gophercloud/gophercloud",
     importpath = "github.com/gophercloud/gophercloud",
+    tags = ["manual"],
     visibility = ["//visibility:public"],
 )
 

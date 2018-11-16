@@ -9,6 +9,7 @@ go_library(
     ],
     importmap = "github.com/jetstack/cert-manager/vendor/github.com/coreos/etcd/etcdserver/api/v3rpc/rpctypes",
     importpath = "github.com/coreos/etcd/etcdserver/api/v3rpc/rpctypes",
+    tags = ["manual"],
     visibility = ["//visibility:public"],
     deps = [
         "//vendor/google.golang.org/grpc/codes:go_default_library",

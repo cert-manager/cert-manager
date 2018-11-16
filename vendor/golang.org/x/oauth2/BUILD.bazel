@@ -9,6 +9,7 @@ go_library(
     ],
     importmap = "github.com/jetstack/cert-manager/vendor/golang.org/x/oauth2",
     importpath = "golang.org/x/oauth2",
+    tags = ["manual"],
     visibility = ["//visibility:public"],
     deps = [
         "//vendor/golang.org/x/net/context:go_default_library",

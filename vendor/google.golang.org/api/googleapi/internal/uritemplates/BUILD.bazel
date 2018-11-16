@@ -8,6 +8,7 @@ go_library(
     ],
     importmap = "github.com/jetstack/cert-manager/vendor/google.golang.org/api/googleapi/internal/uritemplates",
     importpath = "google.golang.org/api/googleapi/internal/uritemplates",
+    tags = ["manual"],
     visibility = ["//vendor/google.golang.org/api/googleapi:__subpackages__"],
 )
 

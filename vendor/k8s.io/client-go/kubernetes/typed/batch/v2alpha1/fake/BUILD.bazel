@@ -9,6 +9,7 @@ go_library(
     ],
     importmap = "github.com/jetstack/cert-manager/vendor/k8s.io/client-go/kubernetes/typed/batch/v2alpha1/fake",
     importpath = "k8s.io/client-go/kubernetes/typed/batch/v2alpha1/fake",
+    tags = ["manual"],
     visibility = ["//visibility:public"],
     deps = [
         "//vendor/k8s.io/api/batch/v2alpha1:go_default_library",

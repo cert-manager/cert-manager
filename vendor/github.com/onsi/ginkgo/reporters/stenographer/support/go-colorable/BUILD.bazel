@@ -9,6 +9,7 @@ go_library(
     ],
     importmap = "github.com/jetstack/cert-manager/vendor/github.com/onsi/ginkgo/reporters/stenographer/support/go-colorable",
     importpath = "github.com/onsi/ginkgo/reporters/stenographer/support/go-colorable",
+    tags = ["manual"],
     visibility = ["//visibility:public"],
     deps = select({
         "@io_bazel_rules_go//go/platform:windows": [

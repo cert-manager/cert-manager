@@ -5,6 +5,7 @@ go_library(
     srcs = ["lru.go"],
     importmap = "github.com/jetstack/cert-manager/vendor/github.com/hashicorp/golang-lru/simplelru",
     importpath = "github.com/hashicorp/golang-lru/simplelru",
+    tags = ["manual"],
     visibility = ["//visibility:public"],
 )
 

@@ -5,6 +5,7 @@ go_library(
     srcs = ["aggregator.go"],
     importmap = "github.com/jetstack/cert-manager/vendor/k8s.io/kube-openapi/pkg/aggregator",
     importpath = "k8s.io/kube-openapi/pkg/aggregator",
+    tags = ["manual"],
     visibility = ["//visibility:public"],
     deps = [
         "//vendor/github.com/go-openapi/spec:go_default_library",

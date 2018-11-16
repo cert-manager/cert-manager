@@ -5,6 +5,7 @@ go_library(
     srcs = ["webhook.go"],
     importmap = "github.com/jetstack/cert-manager/vendor/k8s.io/apiserver/plugin/pkg/authenticator/token/webhook",
     importpath = "k8s.io/apiserver/plugin/pkg/authenticator/token/webhook",
+    tags = ["manual"],
     visibility = ["//visibility:public"],
     deps = [
         "//vendor/k8s.io/api/authentication/v1beta1:go_default_library",

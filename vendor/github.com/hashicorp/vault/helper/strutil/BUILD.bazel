@@ -5,6 +5,7 @@ go_library(
     srcs = ["strutil.go"],
     importmap = "github.com/jetstack/cert-manager/vendor/github.com/hashicorp/vault/helper/strutil",
     importpath = "github.com/hashicorp/vault/helper/strutil",
+    tags = ["manual"],
     visibility = ["//visibility:public"],
     deps = ["//vendor/github.com/ryanuber/go-glob:go_default_library"],
 )

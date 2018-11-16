@@ -11,6 +11,7 @@ go_library(
     ],
     importmap = "github.com/jetstack/cert-manager/vendor/k8s.io/apiserver/pkg/storage/etcd3",
     importpath = "k8s.io/apiserver/pkg/storage/etcd3",
+    tags = ["manual"],
     visibility = ["//visibility:public"],
     deps = [
         "//vendor/github.com/coreos/etcd/clientv3:go_default_library",

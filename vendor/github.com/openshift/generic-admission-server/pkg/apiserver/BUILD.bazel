@@ -5,6 +5,7 @@ go_library(
     srcs = ["apiserver.go"],
     importmap = "github.com/jetstack/cert-manager/vendor/github.com/openshift/generic-admission-server/pkg/apiserver",
     importpath = "github.com/openshift/generic-admission-server/pkg/apiserver",
+    tags = ["manual"],
     visibility = ["//visibility:public"],
     deps = [
         "//vendor/github.com/openshift/generic-admission-server/pkg/registry/admissionreview:go_default_library",

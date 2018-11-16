@@ -5,6 +5,7 @@ go_library(
     srcs = ["semantic.go"],
     importmap = "github.com/jetstack/cert-manager/vendor/k8s.io/apimachinery/pkg/api/equality",
     importpath = "k8s.io/apimachinery/pkg/api/equality",
+    tags = ["manual"],
     visibility = ["//visibility:public"],
     deps = [
         "//vendor/k8s.io/apimachinery/pkg/api/resource:go_default_library",

@@ -5,6 +5,7 @@ go_library(
     srcs = ["defaulter.go"],
     importmap = "github.com/jetstack/cert-manager/vendor/k8s.io/gengo/examples/defaulter-gen/generators",
     importpath = "k8s.io/gengo/examples/defaulter-gen/generators",
+    tags = ["manual"],
     visibility = ["//visibility:public"],
     deps = [
         "//vendor/github.com/golang/glog:go_default_library",

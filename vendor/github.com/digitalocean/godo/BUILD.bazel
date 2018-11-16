@@ -33,6 +33,7 @@ go_library(
     ],
     importmap = "github.com/jetstack/cert-manager/vendor/github.com/digitalocean/godo",
     importpath = "github.com/digitalocean/godo",
+    tags = ["manual"],
     visibility = ["//visibility:public"],
     deps = [
         "//vendor/github.com/google/go-querystring/query:go_default_library",

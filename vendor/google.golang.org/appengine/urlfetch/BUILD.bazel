@@ -5,6 +5,7 @@ go_library(
     srcs = ["urlfetch.go"],
     importmap = "github.com/jetstack/cert-manager/vendor/google.golang.org/appengine/urlfetch",
     importpath = "google.golang.org/appengine/urlfetch",
+    tags = ["manual"],
     visibility = ["//visibility:public"],
     deps = [
         "//vendor/github.com/golang/protobuf/proto:go_default_library",

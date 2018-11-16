@@ -5,6 +5,7 @@ go_library(
     srcs = ["ginkgo_dsl.go"],
     importmap = "github.com/jetstack/cert-manager/vendor/github.com/onsi/ginkgo",
     importpath = "github.com/onsi/ginkgo",
+    tags = ["manual"],
     visibility = ["//visibility:public"],
     deps = [
         "//vendor/github.com/onsi/ginkgo/config:go_default_library",

@@ -9,6 +9,7 @@ go_library(
     ],
     importmap = "github.com/jetstack/cert-manager/vendor/github.com/onsi/ginkgo/ginkgo/testrunner",
     importpath = "github.com/onsi/ginkgo/ginkgo/testrunner",
+    tags = ["manual"],
     visibility = ["//visibility:public"],
     deps = [
         "//vendor/github.com/onsi/ginkgo/config:go_default_library",

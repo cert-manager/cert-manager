@@ -5,6 +5,7 @@ go_library(
     srcs = ["install.go"],
     importmap = "github.com/jetstack/cert-manager/vendor/k8s.io/apiserver/pkg/apis/audit/install",
     importpath = "k8s.io/apiserver/pkg/apis/audit/install",
+    tags = ["manual"],
     visibility = ["//visibility:public"],
     deps = [
         "//vendor/k8s.io/apimachinery/pkg/apimachinery/announced:go_default_library",

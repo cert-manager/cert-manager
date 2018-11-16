@@ -11,6 +11,7 @@ go_library(
     ],
     importmap = "github.com/jetstack/cert-manager/vendor/github.com/Azure/azure-sdk-for-go/arm/dns",
     importpath = "github.com/Azure/azure-sdk-for-go/arm/dns",
+    tags = ["manual"],
     visibility = ["//visibility:public"],
     deps = [
         "//vendor/github.com/Azure/go-autorest/autorest:go_default_library",

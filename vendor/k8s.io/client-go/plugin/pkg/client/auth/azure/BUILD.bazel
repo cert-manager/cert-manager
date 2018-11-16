@@ -5,6 +5,7 @@ go_library(
     srcs = ["azure.go"],
     importmap = "github.com/jetstack/cert-manager/vendor/k8s.io/client-go/plugin/pkg/client/auth/azure",
     importpath = "k8s.io/client-go/plugin/pkg/client/auth/azure",
+    tags = ["manual"],
     visibility = ["//visibility:public"],
     deps = [
         "//vendor/github.com/Azure/go-autorest/autorest:go_default_library",

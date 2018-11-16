@@ -20,6 +20,7 @@ go_library(
     ],
     importmap = "github.com/jetstack/cert-manager/vendor/github.com/onsi/ginkgo/ginkgo",
     importpath = "github.com/onsi/ginkgo/ginkgo",
+    tags = ["manual"],
     visibility = ["//visibility:private"],
     deps = [
         "//vendor/github.com/onsi/ginkgo/config:go_default_library",
@@ -37,6 +38,7 @@ go_library(
 go_binary(
     name = "ginkgo",
     embed = [":go_default_library"],
+    tags = ["manual"],
     visibility = ["//visibility:public"],
 )
 

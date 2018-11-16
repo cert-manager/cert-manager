@@ -5,6 +5,7 @@ go_library(
     srcs = ["ring_growing.go"],
     importmap = "github.com/jetstack/cert-manager/vendor/k8s.io/client-go/util/buffer",
     importpath = "k8s.io/client-go/util/buffer",
+    tags = ["manual"],
     visibility = ["//visibility:public"],
 )
 

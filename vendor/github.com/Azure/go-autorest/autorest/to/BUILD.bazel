@@ -5,6 +5,7 @@ go_library(
     srcs = ["convert.go"],
     importmap = "github.com/jetstack/cert-manager/vendor/github.com/Azure/go-autorest/autorest/to",
     importpath = "github.com/Azure/go-autorest/autorest/to",
+    tags = ["manual"],
     visibility = ["//visibility:public"],
 )
 

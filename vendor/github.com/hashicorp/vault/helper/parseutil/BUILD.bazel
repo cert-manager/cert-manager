@@ -5,6 +5,7 @@ go_library(
     srcs = ["parseutil.go"],
     importmap = "github.com/jetstack/cert-manager/vendor/github.com/hashicorp/vault/helper/parseutil",
     importpath = "github.com/hashicorp/vault/helper/parseutil",
+    tags = ["manual"],
     visibility = ["//visibility:public"],
     deps = [
         "//vendor/github.com/hashicorp/vault/helper/strutil:go_default_library",

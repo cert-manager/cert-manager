@@ -11,6 +11,7 @@ go_library(
     ],
     importmap = "github.com/jetstack/cert-manager/vendor/github.com/aws/aws-sdk-go/service/sts",
     importpath = "github.com/aws/aws-sdk-go/service/sts",
+    tags = ["manual"],
     visibility = ["//visibility:public"],
     deps = [
         "//vendor/github.com/aws/aws-sdk-go/aws:go_default_library",

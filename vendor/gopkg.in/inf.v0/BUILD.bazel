@@ -8,6 +8,7 @@ go_library(
     ],
     importmap = "github.com/jetstack/cert-manager/vendor/gopkg.in/inf.v0",
     importpath = "gopkg.in/inf.v0",
+    tags = ["manual"],
     visibility = ["//visibility:public"],
 )
 

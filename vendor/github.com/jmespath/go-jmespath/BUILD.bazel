@@ -14,6 +14,7 @@ go_library(
     ],
     importmap = "github.com/jetstack/cert-manager/vendor/github.com/jmespath/go-jmespath",
     importpath = "github.com/jmespath/go-jmespath",
+    tags = ["manual"],
     visibility = ["//visibility:public"],
 )
 

@@ -11,6 +11,7 @@ go_library(
     ],
     importmap = "github.com/jetstack/cert-manager/vendor/github.com/Azure/go-autorest/autorest/date",
     importpath = "github.com/Azure/go-autorest/autorest/date",
+    tags = ["manual"],
     visibility = ["//visibility:public"],
 )
 

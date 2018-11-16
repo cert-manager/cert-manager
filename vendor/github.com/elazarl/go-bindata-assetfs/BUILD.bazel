@@ -8,6 +8,7 @@ go_library(
     ],
     importmap = "github.com/jetstack/cert-manager/vendor/github.com/elazarl/go-bindata-assetfs",
     importpath = "github.com/elazarl/go-bindata-assetfs",
+    tags = ["manual"],
     visibility = ["//visibility:public"],
 )
 

@@ -8,6 +8,7 @@ go_library(
     ],
     importmap = "github.com/jetstack/cert-manager/vendor/golang.org/x/text/encoding/internal/identifier",
     importpath = "golang.org/x/text/encoding/internal/identifier",
+    tags = ["manual"],
     visibility = ["//vendor/golang.org/x/text/encoding:__subpackages__"],
 )
 

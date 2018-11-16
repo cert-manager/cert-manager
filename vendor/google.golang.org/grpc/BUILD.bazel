@@ -24,6 +24,7 @@ go_library(
     ],
     importmap = "github.com/jetstack/cert-manager/vendor/google.golang.org/grpc",
     importpath = "google.golang.org/grpc",
+    tags = ["manual"],
     visibility = ["//visibility:public"],
     deps = [
         "//vendor/github.com/golang/protobuf/proto:go_default_library",

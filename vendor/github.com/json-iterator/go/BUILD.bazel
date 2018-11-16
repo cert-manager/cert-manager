@@ -44,6 +44,7 @@ go_library(
     ],
     importmap = "github.com/jetstack/cert-manager/vendor/github.com/json-iterator/go",
     importpath = "github.com/json-iterator/go",
+    tags = ["manual"],
     visibility = ["//visibility:public"],
 )
 

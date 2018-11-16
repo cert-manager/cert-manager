@@ -5,6 +5,7 @@ go_library(
     srcs = ["json.go"],
     importmap = "github.com/jetstack/cert-manager/vendor/k8s.io/apimachinery/pkg/util/json",
     importpath = "k8s.io/apimachinery/pkg/util/json",
+    tags = ["manual"],
     visibility = ["//visibility:public"],
 )
 

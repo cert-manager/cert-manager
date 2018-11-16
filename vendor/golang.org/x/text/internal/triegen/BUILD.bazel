@@ -9,6 +9,7 @@ go_library(
     ],
     importmap = "github.com/jetstack/cert-manager/vendor/golang.org/x/text/internal/triegen",
     importpath = "golang.org/x/text/internal/triegen",
+    tags = ["manual"],
     visibility = ["//vendor/golang.org/x/text:__subpackages__"],
 )
 

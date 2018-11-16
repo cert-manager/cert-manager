@@ -5,6 +5,7 @@ go_library(
     srcs = ["generate.go"],
     importmap = "github.com/jetstack/cert-manager/vendor/k8s.io/apiserver/pkg/storage/names",
     importpath = "k8s.io/apiserver/pkg/storage/names",
+    tags = ["manual"],
     visibility = ["//visibility:public"],
     deps = ["//vendor/k8s.io/apimachinery/pkg/util/rand:go_default_library"],
 )

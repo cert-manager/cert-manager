@@ -5,6 +5,7 @@ go_library(
     srcs = ["checks.go"],
     importmap = "github.com/jetstack/cert-manager/vendor/k8s.io/apiserver/pkg/storage/etcd3/preflight",
     importpath = "k8s.io/apiserver/pkg/storage/etcd3/preflight",
+    tags = ["manual"],
     visibility = ["//visibility:public"],
 )
 

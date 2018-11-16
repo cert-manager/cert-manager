@@ -15,6 +15,7 @@ go_library(
     ],
     importmap = "github.com/jetstack/cert-manager/vendor/github.com/onsi/ginkgo/internal/remote",
     importpath = "github.com/onsi/ginkgo/internal/remote",
+    tags = ["manual"],
     visibility = ["//vendor/github.com/onsi/ginkgo:__subpackages__"],
     deps = [
         "//vendor/github.com/onsi/ginkgo/config:go_default_library",

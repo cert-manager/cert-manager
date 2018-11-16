@@ -10,6 +10,7 @@ go_library(
     ],
     importmap = "github.com/jetstack/cert-manager/vendor/github.com/hashicorp/hcl",
     importpath = "github.com/hashicorp/hcl",
+    tags = ["manual"],
     visibility = ["//visibility:public"],
     deps = [
         "//vendor/github.com/hashicorp/hcl/hcl/ast:go_default_library",

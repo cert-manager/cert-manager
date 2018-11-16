@@ -5,6 +5,7 @@ go_library(
     srcs = ["fields.go"],
     importmap = "github.com/jetstack/cert-manager/vendor/k8s.io/apimachinery/third_party/forked/golang/json",
     importpath = "k8s.io/apimachinery/third_party/forked/golang/json",
+    tags = ["manual"],
     visibility = ["//visibility:public"],
 )
 

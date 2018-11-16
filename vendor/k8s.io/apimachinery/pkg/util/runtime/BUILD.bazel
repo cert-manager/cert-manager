@@ -5,6 +5,7 @@ go_library(
     srcs = ["runtime.go"],
     importmap = "github.com/jetstack/cert-manager/vendor/k8s.io/apimachinery/pkg/util/runtime",
     importpath = "k8s.io/apimachinery/pkg/util/runtime",
+    tags = ["manual"],
     visibility = ["//visibility:public"],
     deps = ["//vendor/github.com/golang/glog:go_default_library"],
 )

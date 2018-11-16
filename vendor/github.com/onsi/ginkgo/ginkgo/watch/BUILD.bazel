@@ -12,6 +12,7 @@ go_library(
     ],
     importmap = "github.com/jetstack/cert-manager/vendor/github.com/onsi/ginkgo/ginkgo/watch",
     importpath = "github.com/onsi/ginkgo/ginkgo/watch",
+    tags = ["manual"],
     visibility = ["//visibility:public"],
     deps = ["//vendor/github.com/onsi/ginkgo/ginkgo/testsuite:go_default_library"],
 )

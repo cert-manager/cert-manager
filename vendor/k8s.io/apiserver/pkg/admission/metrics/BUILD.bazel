@@ -5,6 +5,7 @@ go_library(
     srcs = ["metrics.go"],
     importmap = "github.com/jetstack/cert-manager/vendor/k8s.io/apiserver/pkg/admission/metrics",
     importpath = "k8s.io/apiserver/pkg/admission/metrics",
+    tags = ["manual"],
     visibility = ["//visibility:public"],
     deps = [
         "//vendor/github.com/prometheus/client_golang/prometheus:go_default_library",

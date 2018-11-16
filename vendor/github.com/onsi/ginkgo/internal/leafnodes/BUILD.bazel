@@ -15,6 +15,7 @@ go_library(
     ],
     importmap = "github.com/jetstack/cert-manager/vendor/github.com/onsi/ginkgo/internal/leafnodes",
     importpath = "github.com/onsi/ginkgo/internal/leafnodes",
+    tags = ["manual"],
     visibility = ["//vendor/github.com/onsi/ginkgo:__subpackages__"],
     deps = [
         "//vendor/github.com/onsi/ginkgo/internal/codelocation:go_default_library",

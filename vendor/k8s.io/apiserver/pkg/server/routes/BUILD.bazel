@@ -14,6 +14,7 @@ go_library(
     ],
     importmap = "github.com/jetstack/cert-manager/vendor/k8s.io/apiserver/pkg/server/routes",
     importpath = "k8s.io/apiserver/pkg/server/routes",
+    tags = ["manual"],
     visibility = ["//visibility:public"],
     deps = [
         "//vendor/github.com/elazarl/go-bindata-assetfs:go_default_library",

@@ -5,6 +5,7 @@ go_library(
     srcs = ["writer.go"],
     importmap = "github.com/jetstack/cert-manager/vendor/github.com/mailru/easyjson/jwriter",
     importpath = "github.com/mailru/easyjson/jwriter",
+    tags = ["manual"],
     visibility = ["//visibility:public"],
     deps = ["//vendor/github.com/mailru/easyjson/buffer:go_default_library"],
 )
