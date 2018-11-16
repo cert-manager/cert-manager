@@ -261,6 +261,9 @@ type ACMEIssuerDNS01Provider struct {
 
 	// +optional
 	RFC2136 *ACMEIssuerDNS01ProviderRFC2136 `json:"rfc2136,omitempty"`
+
+	// +optional
+	Godaddy *ACMEIssuerDNS01ProviderGodaddy `json:"godaddy,omitempty"`
 }
 
 // CNAMEStrategy configures how the DNS01 provider should handle CNAME records
@@ -308,6 +311,13 @@ type ACMEIssuerDNS01ProviderCloudflare struct {
 // configuration for DigitalOcean Domains
 type ACMEIssuerDNS01ProviderDigitalOcean struct {
 	Token SecretKeySelector `json:"tokenSecretRef"`
+}
+
+// ACMEIssuerDNS01ProviderGodaddy is a structure containing the DNS
+// configuration for Godaddy Domains
+type ACMEIssuerDNS01ProviderGodaddy struct {
+	APIKey         string            `json:"apiKey"`
+	APISecretStore SecretKeySelector `json:"apiSecretStoreSecretRef"`
 }
 
 // ACMEIssuerDNS01ProviderRoute53 is a structure containing the Route 53
