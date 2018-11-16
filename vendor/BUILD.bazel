@@ -118,7 +118,7 @@ filegroup(
         "//vendor/github.com/stretchr/testify/require:all-srcs",
         "//vendor/github.com/tent/http-link-go:all-srcs",
         "//vendor/github.com/ugorji/go/codec:all-srcs",
-        "//vendor/github.com/xenolf/lego:all-srcs",
+        "//vendor/github.com/xenolf/lego/platform/tester:all-srcs",
         "//vendor/golang.org/x/crypto/acme:all-srcs",
         "//vendor/golang.org/x/crypto/ssh/terminal:all-srcs",
         "//vendor/golang.org/x/net/context:all-srcs",
