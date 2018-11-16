@@ -513,6 +513,15 @@ func (in *CertificateStatus) DeepCopyInto(out *CertificateStatus) {
 			**out = **in
 		}
 	}
+	if in.NotAfter != nil {
+		in, out := &in.NotAfter, &out.NotAfter
+		if *in == nil {
+			*out = nil
+		} else {
+			*out = new(v1.Time)
+			(*in).DeepCopyInto(*out)
+		}
+	}
 	return
 }
 

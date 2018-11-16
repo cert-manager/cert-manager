@@ -160,6 +160,9 @@ func (c *Controller) Sync(ctx context.Context, crt *v1alpha1.Certificate) (reque
 		return false, err
 	}
 
+	metaNotAfter := metav1.NewTime(cert.NotAfter)
+	crtCopy.Status.NotAfter = &metaNotAfter
+
 	// begin checking if the TLS certificate is valid/needs a re-issue or renew
 
 	// check if the private key is the corresponding pair to the certificate

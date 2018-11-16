@@ -239,6 +239,87 @@ func TestCleanupIngresses(t *testing.T) {
 				}
 			},
 		},
+		"should clean up an ingress with a single challenge path inserted without removing second HTTP rule": {
+			Builder: &test.Builder{
+				KubeObjects: []runtime.Object{
+					&v1beta1.Ingress{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "testingress",
+							Namespace: defaultTestNamespace,
+						},
+						Spec: v1beta1.IngressSpec{
+							Backend: &v1beta1.IngressBackend{
+								ServiceName: "testsvc",
+								ServicePort: intstr.FromInt(8080),
+							},
+							Rules: []v1beta1.IngressRule{
+								{
+									Host: "example.com",
+									IngressRuleValue: v1beta1.IngressRuleValue{
+										HTTP: &v1beta1.HTTPIngressRuleValue{
+											Paths: []v1beta1.HTTPIngressPath{
+												{
+													Path: "/.well-known/acme-challenge/abcd",
+													Backend: v1beta1.IngressBackend{
+														ServiceName: "solversvc",
+														ServicePort: intstr.FromInt(8081),
+													},
+												},
+											},
+										},
+									},
+								},
+								{
+									Host: "a.example.com",
+									IngressRuleValue: v1beta1.IngressRuleValue{
+										HTTP: &v1beta1.HTTPIngressRuleValue{
+											Paths: []v1beta1.HTTPIngressPath{
+												{
+													Path: "/",
+													Backend: v1beta1.IngressBackend{
+														ServiceName: "real-backend-svc",
+														ServicePort: intstr.FromInt(8081),
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			Challenge: &v1alpha1.Challenge{
+				Spec: v1alpha1.ChallengeSpec{
+					DNSName: "example.com",
+					Token:   "abcd",
+					Config: v1alpha1.SolverConfig{
+						HTTP01: &v1alpha1.HTTP01SolverConfig{
+							Ingress: "testingress",
+						},
+					},
+				},
+			},
+			PreFn: func(t *testing.T, s *solverFixture) {
+			},
+			CheckFn: func(t *testing.T, s *solverFixture, args ...interface{}) {
+				expectedIng := s.KubeObjects[0].(*v1beta1.Ingress).DeepCopy()
+				expectedIng.Spec.Rules = []v1beta1.IngressRule{expectedIng.Spec.Rules[1]}
+
+				actualIng, err := s.Builder.FakeKubeClient().ExtensionsV1beta1().Ingresses(s.Challenge.Namespace).Get(expectedIng.Name, metav1.GetOptions{})
+				if apierrors.IsNotFound(err) {
+					t.Errorf("expected ingress resource %q to not be deleted, but it was deleted", expectedIng.Name)
+				}
+				if err != nil {
+					t.Errorf("error getting ingress resource: %v", err)
+				}
+
+				if !reflect.DeepEqual(expectedIng, actualIng) {
+					t.Errorf("expected did not match actual: %v", diff.ObjectDiff(expectedIng, actualIng))
+				}
+			},
+		},
 		"should return an error if a delete fails": {
 			Challenge: &v1alpha1.Challenge{
 				Spec: v1alpha1.ChallengeSpec{
