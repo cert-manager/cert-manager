@@ -237,24 +237,29 @@ func (s *Solver) cleanupIngresses(crt *v1alpha1.Certificate, ch v1alpha1.ACMEOrd
 	var ingRules []extv1beta1.IngressRule
 
 	for _, rule := range ing.Spec.Rules {
-		if rule.Host == ch.Domain {
-			// if the 'http' stanza is not set, we will retain the rule as it is
-			// not managed by cert-manager
-			if rule.HTTP == nil {
-				ingRules = append(ingRules, rule)
-				continue
+		// always retain rules that are not for the same DNSName
+		if rule.Host != ch.Spec.DNSName {
+			ingRules = append(ingRules, rule)
+			continue
+		}
+
+		// always retain rules that don't specify `HTTP`
+		if rule.HTTP == nil {
+			ingRules = append(ingRules, rule)
+			continue
+		}
+
+		// check the rule for paths. If we find the ingress path we need to
+		// delete here, delete it
+		for i, path := range rule.HTTP.Paths {
+			if path.Path == ingPathToDel {
+				rule.HTTP.Paths = append(rule.HTTP.Paths[:i], rule.HTTP.Paths[i+1:]...)
 			}
-			// check the rule for paths. If we find the ingress path we need to
-			// delete here, delete it
-			for i, path := range rule.HTTP.Paths {
-				if path.Path == ingPathToDel {
-					rule.HTTP.Paths = append(rule.HTTP.Paths[:i], rule.HTTP.Paths[i+1:]...)
-				}
-			}
-			// if there are still paths level on this rule, we should retain it
-			if len(rule.HTTP.Paths) > 0 {
-				ingRules = append(ingRules, rule)
-			}
+		}
+
+		// if there are still paths level on this rule, we should retain it
+		if len(rule.HTTP.Paths) > 0 {
+			ingRules = append(ingRules, rule)
 		}
 	}
 
