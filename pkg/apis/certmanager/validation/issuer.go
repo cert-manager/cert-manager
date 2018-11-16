@@ -253,6 +253,16 @@ func ValidateACMEIssuerDNS01Config(iss *v1alpha1.ACMEIssuerDNS01Config, fldPath 
 				el = append(el, ValidateSecretKeySelector(&p.DigitalOcean.Token, fldPath.Child("digitalocean", "tokenSecretRef"))...)
 			}
 		}
+		if p.Godaddy != nil {
+			if numProviders > 0 {
+				el = append(el, field.Forbidden(fldPath.Child("godaddy"), "may not specify more than one provider type"))
+			} else {
+				numProviders++
+				if len(p.Godaddy.APIKey) == 0 {
+					el = append(el, field.Required(fldPath.Child("godaddy", "apiKey"), "apiKey is required"))
+				}
+			}
+		}
 		if p.RFC2136 != nil {
 			if numProviders > 0 {
 				el = append(el, field.Forbidden(fldPath.Child("rfc2136"), "may not specify more than one provider type"))

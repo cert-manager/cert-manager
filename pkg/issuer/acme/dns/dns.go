@@ -24,6 +24,7 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
+
 	corev1listers "k8s.io/client-go/listers/core/v1"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
@@ -34,6 +35,7 @@ import (
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/clouddns"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/cloudflare"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/digitalocean"
+	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/godaddy"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/rfc2136"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/route53"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
@@ -60,6 +62,7 @@ type dnsProviderConstructors struct {
 	acmeDNS      func(host string, accountJson []byte, dns01Nameservers []string) (*acmedns.DNSProvider, error)
 	rfc2136      func(nameserver, tsigAlgorithm, tsigKeyName, tsigSecret string, dns01Nameservers []string) (*rfc2136.DNSProvider, error)
 	digitalOcean func(token string, dns01Nameservers []string) (*digitalocean.DNSProvider, error)
+	godaddy      func(apiKey, apiSecret string, dns01Nameservers []string) (*godaddy.DNSProvider, error)
 }
 
 // Solver is a solver for the acme dns01 challenge.
@@ -220,6 +223,27 @@ func (s *Solver) solverForChallenge(issuer v1alpha1.GenericIssuer, ch *v1alpha1.
 		if err != nil {
 			return nil, fmt.Errorf("error instantiating digitalocean challenge solver: %s", err.Error())
 		}
+	case providerConfig.Godaddy != nil:
+		apiSecret := ""
+		if providerConfig.Godaddy.APISecretStore.Name != "" {
+			apiSecretStore, err := s.secretLister.Secrets(resourceNamespace).Get(providerConfig.Godaddy.APISecretStore.Name)
+			if err != nil {
+				return nil, fmt.Errorf("error getting godaddy secret apiSecret: %s", err)
+			}
+
+			apiSecretBytes, ok := apiSecretStore.Data[providerConfig.Godaddy.APISecretStore.Key]
+			if !ok {
+				return nil, fmt.Errorf("error getting godaddy secret apiSecret '%s' not found in secrete", providerConfig.Godaddy.APISecretStore.Key)
+			}
+			apiSecret = string(apiSecretBytes)
+		}
+		akey := strings.TrimSpace(providerConfig.Godaddy.APIKey)
+		asecret := strings.TrimSpace(apiSecret)
+		impl, err = s.dnsProviderConstructors.godaddy(akey, asecret, s.DNS01Nameservers)
+		if err != nil {
+			return nil, fmt.Errorf("error instantiating godaddy challenge solver: %s", err)
+		}
+
 	case providerConfig.Route53 != nil:
 		secretAccessKey := ""
 		if providerConfig.Route53.SecretAccessKey.Name != "" {
@@ -333,6 +357,7 @@ func NewSolver(ctx *controller.Context) *Solver {
 			acmedns.NewDNSProviderHostBytes,
 			rfc2136.NewDNSProviderCredentials,
 			digitalocean.NewDNSProviderCredentials,
+			godaddy.NewDNSProvider,
 		},
 	}
 }

@@ -21,6 +21,7 @@ import (
 	"testing"
 
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/digitalocean"
+	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/godaddy"
 
 	"github.com/jetstack/cert-manager/test/util/generate"
 
@@ -166,6 +167,10 @@ func newFakeDNSProviders() *fakeDNSProviders {
 		},
 		digitalOcean: func(token string, dns01Nameservers []string) (*digitalocean.DNSProvider, error) {
 			f.call("digitalocean", token, util.RecursiveNameservers)
+			return nil, nil
+		},
+		godaddy: func(apiKey, apiSecret string, dns01Nameservers []string) (*godaddy.DNSProvider, error) {
+			f.call("godaddy", apiKey, apiSecret, util.RecursiveNameservers)
 			return nil, nil
 		},
 	}

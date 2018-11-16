@@ -320,6 +320,63 @@ func TestSolveForDigitalOcean(t *testing.T) {
 
 }
 
+func TestSolveForGodaddy(t *testing.T) {
+	f := &solverFixture{
+		Builder: &test.Builder{
+			KubeObjects: []runtime.Object{
+				newSecret("godaddy", "default", map[string][]byte{
+					"secret": []byte(" FAKE-SECreT  "),
+				}),
+			},
+		},
+		Issuer: newIssuer("test", "default", []v1alpha1.ACMEIssuerDNS01Provider{
+			{
+				Name: "fake-godaddy",
+				Godaddy: &v1alpha1.ACMEIssuerDNS01ProviderGodaddy{
+					APIKey: "  test_with_spaces  ",
+					APISecretStore: v1alpha1.SecretKeySelector{
+						LocalObjectReference: v1alpha1.LocalObjectReference{
+							Name: "godaddy",
+						},
+						Key: "secret",
+					},
+				},
+			},
+		}),
+		Challenge: &v1alpha1.Challenge{
+			Spec: v1alpha1.ChallengeSpec{
+				Config: v1alpha1.SolverConfig{
+					DNS01: &v1alpha1.DNS01SolverConfig{
+						Provider: "fake-godaddy",
+					},
+				},
+			},
+		},
+		dnsProviders: newFakeDNSProviders(),
+	}
+
+	f.Setup(t)
+	defer f.Finish(t)
+
+	s := f.Solver
+	_, err := s.solverForChallenge(f.Issuer, f.Challenge)
+	if err != nil {
+		t.Fatalf("expected solverFor to not error, but got: %s", err)
+	}
+
+	expectedGDCall := []fakeDNSProviderCall{
+		{
+			name: "godaddy",
+			args: []interface{}{"test_with_spaces", "FAKE-SECreT", util.RecursiveNameservers},
+		},
+	}
+
+	if !reflect.DeepEqual(expectedGDCall, f.dnsProviders.calls) {
+		t.Fatalf("expected %+v == %+v", expectedGDCall, f.dnsProviders.calls)
+	}
+
+}
+
 func TestRoute53TrimCreds(t *testing.T) {
 	f := &solverFixture{
 		Builder: &test.Builder{

@@ -161,6 +161,7 @@ type ACMEIssuerDNS01Provider struct {
 	Route53      *ACMEIssuerDNS01ProviderRoute53      `json:"route53,omitempty"`
 	AzureDNS     *ACMEIssuerDNS01ProviderAzureDNS     `json:"azuredns,omitempty"`
 	DigitalOcean *ACMEIssuerDNS01ProviderDigitalOcean `json:"digitalocean,omitempty"`
+	Godaddy      *ACMEIssuerDNS01ProviderGodaddy      `json:"godaddy,omitempty"`
 	AcmeDNS      *ACMEIssuerDNS01ProviderAcmeDNS      `json:"acmedns,omitempty"`
 	RFC2136      *ACMEIssuerDNS01ProviderRFC2136      `json:"rfc2136,omitempty"`
 }
@@ -192,6 +193,13 @@ type ACMEIssuerDNS01ProviderCloudflare struct {
 // configuration for DigitalOcean Domains
 type ACMEIssuerDNS01ProviderDigitalOcean struct {
 	Token SecretKeySelector `json:"tokenSecretRef"`
+}
+
+// ACMEIssuerDNS01ProviderGodaddy is a structure containing the DNS
+// configuration for Godaddy Domains
+type ACMEIssuerDNS01ProviderGodaddy struct {
+	APIKey         string            `json:"apiKey"`
+	APISecretStore SecretKeySelector `json:"apiSecretStoreSecretRef"`
 }
 
 // ACMEIssuerDNS01ProviderRoute53 is a structure containing the Route 53
