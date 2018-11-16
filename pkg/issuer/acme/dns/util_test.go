@@ -30,6 +30,7 @@ import (
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/azuredns"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/clouddns"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/cloudflare"
+	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/ovh"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/rfc2136"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/route53"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
@@ -166,6 +167,10 @@ func newFakeDNSProviders() *fakeDNSProviders {
 		},
 		digitalOcean: func(token string, dns01Nameservers []string) (*digitalocean.DNSProvider, error) {
 			f.call("digitalocean", token, util.RecursiveNameservers)
+			return nil, nil
+		},
+		ovh: func(endpoint, applicationKey, applicationSecret, consumerKey string, dns01Nameservers []string) (*ovh.DNSProvider, error) {
+			f.call("ovh", endpoint, applicationKey, applicationSecret, consumerKey, dns01Nameservers)
 			return nil, nil
 		},
 	}

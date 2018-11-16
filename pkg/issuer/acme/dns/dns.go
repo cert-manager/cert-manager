@@ -34,6 +34,7 @@ import (
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/clouddns"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/cloudflare"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/digitalocean"
+	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/ovh"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/rfc2136"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/route53"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
@@ -60,6 +61,7 @@ type dnsProviderConstructors struct {
 	acmeDNS      func(host string, accountJson []byte, dns01Nameservers []string) (*acmedns.DNSProvider, error)
 	rfc2136      func(nameserver, tsigAlgorithm, tsigKeyName, tsigSecret string, dns01Nameservers []string) (*rfc2136.DNSProvider, error)
 	digitalOcean func(token string, dns01Nameservers []string) (*digitalocean.DNSProvider, error)
+	ovh          func(endpoint, applicationKey, applicationSecret, consumerKey string, dns01Nameservers []string) (*ovh.DNSProvider, error)
 }
 
 // Solver is a solver for the acme dns01 challenge.
@@ -333,6 +335,7 @@ func NewSolver(ctx *controller.Context) *Solver {
 			acmedns.NewDNSProviderHostBytes,
 			rfc2136.NewDNSProviderCredentials,
 			digitalocean.NewDNSProviderCredentials,
+			ovh.NewDNSProvider,
 		},
 	}
 }
