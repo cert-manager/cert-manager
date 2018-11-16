@@ -5,7 +5,6 @@ go_library(
     srcs = ["remote_api.pb.go"],
     importmap = "github.com/jetstack/cert-manager/vendor/google.golang.org/appengine/internal/remote_api",
     importpath = "google.golang.org/appengine/internal/remote_api",
-    tags = ["manual"],
     visibility = ["//vendor/google.golang.org/appengine:__subpackages__"],
     deps = ["//vendor/github.com/golang/protobuf/proto:go_default_library"],
 )

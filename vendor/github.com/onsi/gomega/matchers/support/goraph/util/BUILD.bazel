@@ -5,7 +5,6 @@ go_library(
     srcs = ["util.go"],
     importmap = "github.com/jetstack/cert-manager/vendor/github.com/onsi/gomega/matchers/support/goraph/util",
     importpath = "github.com/onsi/gomega/matchers/support/goraph/util",
-    tags = ["manual"],
     visibility = ["//visibility:public"],
 )
 

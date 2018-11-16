@@ -5,7 +5,6 @@ go_library(
     srcs = ["status.pb.go"],
     importmap = "github.com/jetstack/cert-manager/vendor/google.golang.org/genproto/googleapis/rpc/status",
     importpath = "google.golang.org/genproto/googleapis/rpc/status",
-    tags = ["manual"],
     visibility = ["//visibility:public"],
     deps = [
         "//vendor/github.com/golang/protobuf/proto:go_default_library",

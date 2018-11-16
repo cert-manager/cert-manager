@@ -5,7 +5,6 @@ go_library(
     srcs = ["pointer.go"],
     importmap = "github.com/jetstack/cert-manager/vendor/github.com/go-openapi/jsonpointer",
     importpath = "github.com/go-openapi/jsonpointer",
-    tags = ["manual"],
     visibility = ["//visibility:public"],
     deps = ["//vendor/github.com/go-openapi/swag:go_default_library"],
 )

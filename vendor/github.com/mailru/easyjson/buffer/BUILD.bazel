@@ -5,7 +5,6 @@ go_library(
     srcs = ["pool.go"],
     importmap = "github.com/jetstack/cert-manager/vendor/github.com/mailru/easyjson/buffer",
     importpath = "github.com/mailru/easyjson/buffer",
-    tags = ["manual"],
     visibility = ["//visibility:public"],
 )
 

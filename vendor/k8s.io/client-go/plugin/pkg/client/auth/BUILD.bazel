@@ -5,7 +5,6 @@ go_library(
     srcs = ["plugins.go"],
     importmap = "github.com/jetstack/cert-manager/vendor/k8s.io/client-go/plugin/pkg/client/auth",
     importpath = "k8s.io/client-go/plugin/pkg/client/auth",
-    tags = ["manual"],
     visibility = ["//visibility:public"],
     deps = [
         "//vendor/k8s.io/client-go/plugin/pkg/client/auth/azure:go_default_library",

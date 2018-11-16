@@ -5,7 +5,6 @@ go_library(
     srcs = ["validation.go"],
     importmap = "github.com/jetstack/cert-manager/vendor/k8s.io/apiserver/pkg/apis/audit/validation",
     importpath = "k8s.io/apiserver/pkg/apis/audit/validation",
-    tags = ["manual"],
     visibility = ["//visibility:public"],
     deps = [
         "//vendor/k8s.io/apimachinery/pkg/api/validation:go_default_library",

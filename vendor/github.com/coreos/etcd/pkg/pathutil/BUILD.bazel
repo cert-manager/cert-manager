@@ -5,7 +5,6 @@ go_library(
     srcs = ["path.go"],
     importmap = "github.com/jetstack/cert-manager/vendor/github.com/coreos/etcd/pkg/pathutil",
     importpath = "github.com/coreos/etcd/pkg/pathutil",
-    tags = ["manual"],
     visibility = ["//visibility:public"],
 )
 

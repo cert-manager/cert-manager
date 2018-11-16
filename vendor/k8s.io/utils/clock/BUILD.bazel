@@ -5,7 +5,6 @@ go_library(
     srcs = ["clock.go"],
     importmap = "github.com/jetstack/cert-manager/vendor/k8s.io/utils/clock",
     importpath = "k8s.io/utils/clock",
-    tags = ["manual"],
     visibility = ["//visibility:public"],
 )
 

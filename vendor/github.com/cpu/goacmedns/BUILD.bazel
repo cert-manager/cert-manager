@@ -9,7 +9,6 @@ go_library(
     ],
     importmap = "github.com/jetstack/cert-manager/vendor/github.com/cpu/goacmedns",
     importpath = "github.com/cpu/goacmedns",
-    tags = ["manual"],
     visibility = ["//visibility:public"],
 )
 

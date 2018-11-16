@@ -5,7 +5,6 @@ go_library(
     srcs = ["discovery.go"],
     importmap = "github.com/jetstack/cert-manager/vendor/k8s.io/client-go/discovery/fake",
     importpath = "k8s.io/client-go/discovery/fake",
-    tags = ["manual"],
     visibility = ["//visibility:public"],
     deps = [
         "//vendor/github.com/googleapis/gnostic/OpenAPIv2:go_default_library",

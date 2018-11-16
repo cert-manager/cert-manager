@@ -5,7 +5,6 @@ go_library(
     srcs = ["shared_config.go"],
     importmap = "github.com/jetstack/cert-manager/vendor/github.com/aws/aws-sdk-go/internal/shareddefaults",
     importpath = "github.com/aws/aws-sdk-go/internal/shareddefaults",
-    tags = ["manual"],
     visibility = ["//vendor/github.com/aws/aws-sdk-go:__subpackages__"],
 )
 

@@ -5,7 +5,6 @@ go_library(
     srcs = ["kv.pb.go"],
     importmap = "github.com/jetstack/cert-manager/vendor/github.com/coreos/etcd/mvcc/mvccpb",
     importpath = "github.com/coreos/etcd/mvcc/mvccpb",
-    tags = ["manual"],
     visibility = ["//visibility:public"],
     deps = [
         "//vendor/github.com/gogo/protobuf/gogoproto:go_default_library",

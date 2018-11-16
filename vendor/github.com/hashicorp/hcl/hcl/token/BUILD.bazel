@@ -8,7 +8,6 @@ go_library(
     ],
     importmap = "github.com/jetstack/cert-manager/vendor/github.com/hashicorp/hcl/hcl/token",
     importpath = "github.com/hashicorp/hcl/hcl/token",
-    tags = ["manual"],
     visibility = ["//visibility:public"],
     deps = ["//vendor/github.com/hashicorp/hcl/hcl/strconv:go_default_library"],
 )

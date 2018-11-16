@@ -5,7 +5,6 @@ go_library(
     srcs = ["purell.go"],
     importmap = "github.com/jetstack/cert-manager/vendor/github.com/PuerkitoBio/purell",
     importpath = "github.com/PuerkitoBio/purell",
-    tags = ["manual"],
     visibility = ["//visibility:public"],
     deps = [
         "//vendor/github.com/PuerkitoBio/urlesc:go_default_library",

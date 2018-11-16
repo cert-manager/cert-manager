@@ -46,7 +46,6 @@ go_library(
     ],
     importmap = "github.com/jetstack/cert-manager/vendor/github.com/miekg/dns",
     importpath = "github.com/miekg/dns",
-    tags = ["manual"],
     visibility = ["//visibility:public"],
 )
 

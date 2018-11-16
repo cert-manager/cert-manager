@@ -5,7 +5,6 @@ go_library(
     srcs = ["util.go"],
     importmap = "github.com/jetstack/cert-manager/vendor/k8s.io/apiserver/pkg/authentication/serviceaccount",
     importpath = "k8s.io/apiserver/pkg/authentication/serviceaccount",
-    tags = ["manual"],
     visibility = ["//visibility:public"],
     deps = ["//vendor/k8s.io/apimachinery/pkg/api/validation:go_default_library"],
 )

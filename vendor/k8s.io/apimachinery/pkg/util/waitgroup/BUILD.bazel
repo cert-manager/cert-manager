@@ -8,7 +8,6 @@ go_library(
     ],
     importmap = "github.com/jetstack/cert-manager/vendor/k8s.io/apimachinery/pkg/util/waitgroup",
     importpath = "k8s.io/apimachinery/pkg/util/waitgroup",
-    tags = ["manual"],
     visibility = ["//visibility:public"],
 )
 

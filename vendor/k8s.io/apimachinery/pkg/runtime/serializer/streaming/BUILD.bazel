@@ -5,7 +5,6 @@ go_library(
     srcs = ["streaming.go"],
     importmap = "github.com/jetstack/cert-manager/vendor/k8s.io/apimachinery/pkg/runtime/serializer/streaming",
     importpath = "k8s.io/apimachinery/pkg/runtime/serializer/streaming",
-    tags = ["manual"],
     visibility = ["//visibility:public"],
     deps = [
         "//vendor/k8s.io/apimachinery/pkg/runtime:go_default_library",

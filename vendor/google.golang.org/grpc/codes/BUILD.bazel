@@ -8,7 +8,6 @@ go_library(
     ],
     importmap = "github.com/jetstack/cert-manager/vendor/google.golang.org/grpc/codes",
     importpath = "google.golang.org/grpc/codes",
-    tags = ["manual"],
     visibility = ["//visibility:public"],
 )
 

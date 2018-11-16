@@ -5,7 +5,6 @@ go_library(
     srcs = ["ucd.go"],
     importmap = "github.com/jetstack/cert-manager/vendor/golang.org/x/text/internal/ucd",
     importpath = "golang.org/x/text/internal/ucd",
-    tags = ["manual"],
     visibility = ["//vendor/golang.org/x/text:__subpackages__"],
 )
 

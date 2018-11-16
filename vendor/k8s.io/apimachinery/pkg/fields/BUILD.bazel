@@ -10,7 +10,6 @@ go_library(
     ],
     importmap = "github.com/jetstack/cert-manager/vendor/k8s.io/apimachinery/pkg/fields",
     importpath = "k8s.io/apimachinery/pkg/fields",
-    tags = ["manual"],
     visibility = ["//visibility:public"],
     deps = ["//vendor/k8s.io/apimachinery/pkg/selection:go_default_library"],
 )

@@ -5,7 +5,6 @@ go_library(
     srcs = ["factory_interfaces.go"],
     importmap = "github.com/jetstack/cert-manager/vendor/k8s.io/client-go/informers/internalinterfaces",
     importpath = "k8s.io/client-go/informers/internalinterfaces",
-    tags = ["manual"],
     visibility = ["//visibility:public"],
     deps = [
         "//vendor/k8s.io/apimachinery/pkg/apis/meta/v1:go_default_library",

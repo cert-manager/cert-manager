@@ -5,7 +5,6 @@ go_library(
     srcs = ["operator.go"],
     importmap = "github.com/jetstack/cert-manager/vendor/k8s.io/apimachinery/pkg/selection",
     importpath = "k8s.io/apimachinery/pkg/selection",
-    tags = ["manual"],
     visibility = ["//visibility:public"],
 )
 

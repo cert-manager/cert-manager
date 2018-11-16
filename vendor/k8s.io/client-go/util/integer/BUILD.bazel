@@ -5,7 +5,6 @@ go_library(
     srcs = ["integer.go"],
     importmap = "github.com/jetstack/cert-manager/vendor/k8s.io/client-go/util/integer",
     importpath = "k8s.io/client-go/util/integer",
-    tags = ["manual"],
     visibility = ["//visibility:public"],
 )
 

@@ -5,7 +5,6 @@ go_library(
     srcs = ["admission_review.go"],
     importmap = "github.com/jetstack/cert-manager/vendor/github.com/openshift/generic-admission-server/pkg/registry/admissionreview",
     importpath = "github.com/openshift/generic-admission-server/pkg/registry/admissionreview",
-    tags = ["manual"],
     visibility = ["//visibility:public"],
     deps = [
         "//vendor/k8s.io/api/admission/v1beta1:go_default_library",

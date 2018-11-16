@@ -33,7 +33,6 @@ go_library(
     ],
     importmap = "github.com/jetstack/cert-manager/vendor/github.com/hashicorp/vault/api",
     importpath = "github.com/hashicorp/vault/api",
-    tags = ["manual"],
     visibility = ["//visibility:public"],
     deps = [
         "//vendor/github.com/fatih/structs:go_default_library",

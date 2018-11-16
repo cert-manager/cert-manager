@@ -5,7 +5,6 @@ go_library(
     srcs = ["client_info.go"],
     importmap = "github.com/jetstack/cert-manager/vendor/github.com/aws/aws-sdk-go/aws/client/metadata",
     importpath = "github.com/aws/aws-sdk-go/aws/client/metadata",
-    tags = ["manual"],
     visibility = ["//visibility:public"],
 )
 

@@ -9,7 +9,6 @@ go_library(
     ],
     importmap = "github.com/jetstack/cert-manager/vendor/github.com/coreos/etcd/pkg/tlsutil",
     importpath = "github.com/coreos/etcd/pkg/tlsutil",
-    tags = ["manual"],
     visibility = ["//visibility:public"],
 )
 

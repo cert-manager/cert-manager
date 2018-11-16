@@ -5,7 +5,6 @@ go_library(
     srcs = ["encoding.go"],
     importmap = "github.com/jetstack/cert-manager/vendor/golang.org/x/text/encoding",
     importpath = "golang.org/x/text/encoding",
-    tags = ["manual"],
     visibility = ["//visibility:public"],
     deps = [
         "//vendor/golang.org/x/text/encoding/internal/identifier:go_default_library",

@@ -5,7 +5,6 @@ go_library(
     srcs = ["webhook.go"],
     importmap = "github.com/jetstack/cert-manager/vendor/k8s.io/apiserver/plugin/pkg/authorizer/webhook",
     importpath = "k8s.io/apiserver/plugin/pkg/authorizer/webhook",
-    tags = ["manual"],
     visibility = ["//visibility:public"],
     deps = [
         "//vendor/github.com/golang/glog:go_default_library",

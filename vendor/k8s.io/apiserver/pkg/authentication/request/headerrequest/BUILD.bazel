@@ -5,7 +5,6 @@ go_library(
     srcs = ["requestheader.go"],
     importmap = "github.com/jetstack/cert-manager/vendor/k8s.io/apiserver/pkg/authentication/request/headerrequest",
     importpath = "k8s.io/apiserver/pkg/authentication/request/headerrequest",
-    tags = ["manual"],
     visibility = ["//visibility:public"],
     deps = [
         "//vendor/k8s.io/apimachinery/pkg/util/sets:go_default_library",

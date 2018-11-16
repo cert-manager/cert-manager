@@ -8,7 +8,6 @@ go_library(
     ],
     importmap = "github.com/jetstack/cert-manager/vendor/k8s.io/apiserver/pkg/authorization/authorizer",
     importpath = "k8s.io/apiserver/pkg/authorization/authorizer",
-    tags = ["manual"],
     visibility = ["//visibility:public"],
     deps = ["//vendor/k8s.io/apiserver/pkg/authentication/user:go_default_library"],
 )

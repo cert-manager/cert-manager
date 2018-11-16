@@ -5,7 +5,6 @@ go_library(
     srcs = ["handler.go"],
     importmap = "github.com/jetstack/cert-manager/vendor/k8s.io/kube-openapi/pkg/handler",
     importpath = "k8s.io/kube-openapi/pkg/handler",
-    tags = ["manual"],
     visibility = ["//visibility:public"],
     deps = [
         "//vendor/bitbucket.org/ww/goautoneg:go_default_library",

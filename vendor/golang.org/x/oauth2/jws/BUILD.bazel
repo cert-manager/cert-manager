@@ -5,7 +5,6 @@ go_library(
     srcs = ["jws.go"],
     importmap = "github.com/jetstack/cert-manager/vendor/golang.org/x/oauth2/jws",
     importpath = "golang.org/x/oauth2/jws",
-    tags = ["manual"],
     visibility = ["//visibility:public"],
 )
 

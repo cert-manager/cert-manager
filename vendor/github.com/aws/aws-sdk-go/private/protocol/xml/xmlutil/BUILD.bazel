@@ -9,7 +9,6 @@ go_library(
     ],
     importmap = "github.com/jetstack/cert-manager/vendor/github.com/aws/aws-sdk-go/private/protocol/xml/xmlutil",
     importpath = "github.com/aws/aws-sdk-go/private/protocol/xml/xmlutil",
-    tags = ["manual"],
     visibility = ["//visibility:public"],
     deps = ["//vendor/github.com/aws/aws-sdk-go/private/protocol:go_default_library"],
 )

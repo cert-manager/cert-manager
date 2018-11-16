@@ -5,7 +5,6 @@ go_library(
     srcs = ["modules_service.pb.go"],
     importmap = "github.com/jetstack/cert-manager/vendor/google.golang.org/appengine/internal/modules",
     importpath = "google.golang.org/appengine/internal/modules",
-    tags = ["manual"],
     visibility = ["//vendor/google.golang.org/appengine:__subpackages__"],
     deps = ["//vendor/github.com/golang/protobuf/proto:go_default_library"],
 )

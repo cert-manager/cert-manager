@@ -5,7 +5,6 @@ go_library(
     srcs = ["versioning.go"],
     importmap = "github.com/jetstack/cert-manager/vendor/k8s.io/apimachinery/pkg/runtime/serializer/versioning",
     importpath = "k8s.io/apimachinery/pkg/runtime/serializer/versioning",
-    tags = ["manual"],
     visibility = ["//visibility:public"],
     deps = [
         "//vendor/k8s.io/apimachinery/pkg/runtime:go_default_library",

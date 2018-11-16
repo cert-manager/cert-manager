@@ -5,7 +5,6 @@ go_library(
     srcs = ["urlesc.go"],
     importmap = "github.com/jetstack/cert-manager/vendor/github.com/PuerkitoBio/urlesc",
     importpath = "github.com/PuerkitoBio/urlesc",
-    tags = ["manual"],
     visibility = ["//visibility:public"],
 )
 

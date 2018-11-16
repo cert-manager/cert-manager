@@ -5,7 +5,6 @@ go_library(
     srcs = ["tags.go"],
     importmap = "github.com/jetstack/cert-manager/vendor/k8s.io/code-generator/cmd/client-gen/generators/util",
     importpath = "k8s.io/code-generator/cmd/client-gen/generators/util",
-    tags = ["manual"],
     visibility = ["//visibility:public"],
     deps = ["//vendor/k8s.io/gengo/types:go_default_library"],
 )

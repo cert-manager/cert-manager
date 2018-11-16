@@ -5,7 +5,6 @@ go_library(
     srcs = ["trace.go"],
     importmap = "github.com/jetstack/cert-manager/vendor/k8s.io/apiserver/pkg/util/trace",
     importpath = "k8s.io/apiserver/pkg/util/trace",
-    tags = ["manual"],
     visibility = ["//visibility:public"],
     deps = ["//vendor/github.com/golang/glog:go_default_library"],
 )

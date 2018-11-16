@@ -12,7 +12,6 @@ go_library(
     ],
     importmap = "github.com/jetstack/cert-manager/vendor/golang.org/x/text/unicode/bidi",
     importpath = "golang.org/x/text/unicode/bidi",
-    tags = ["manual"],
     visibility = ["//visibility:public"],
 )
 

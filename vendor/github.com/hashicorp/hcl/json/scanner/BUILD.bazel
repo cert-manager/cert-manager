@@ -5,7 +5,6 @@ go_library(
     srcs = ["scanner.go"],
     importmap = "github.com/jetstack/cert-manager/vendor/github.com/hashicorp/hcl/json/scanner",
     importpath = "github.com/hashicorp/hcl/json/scanner",
-    tags = ["manual"],
     visibility = ["//visibility:public"],
     deps = ["//vendor/github.com/hashicorp/hcl/json/token:go_default_library"],
 )

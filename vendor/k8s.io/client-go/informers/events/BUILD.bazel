@@ -5,7 +5,6 @@ go_library(
     srcs = ["interface.go"],
     importmap = "github.com/jetstack/cert-manager/vendor/k8s.io/client-go/informers/events",
     importpath = "k8s.io/client-go/informers/events",
-    tags = ["manual"],
     visibility = ["//visibility:public"],
     deps = [
         "//vendor/k8s.io/client-go/informers/events/v1beta1:go_default_library",

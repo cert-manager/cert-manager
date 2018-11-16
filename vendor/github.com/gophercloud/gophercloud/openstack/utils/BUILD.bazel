@@ -5,7 +5,6 @@ go_library(
     srcs = ["choose_version.go"],
     importmap = "github.com/jetstack/cert-manager/vendor/github.com/gophercloud/gophercloud/openstack/utils",
     importpath = "github.com/gophercloud/gophercloud/openstack/utils",
-    tags = ["manual"],
     visibility = ["//visibility:public"],
     deps = ["//vendor/github.com/gophercloud/gophercloud:go_default_library"],
 )

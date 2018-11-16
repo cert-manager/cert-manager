@@ -5,7 +5,6 @@ go_library(
     srcs = ["openapi.go"],
     importmap = "github.com/jetstack/cert-manager/vendor/k8s.io/kube-openapi/pkg/util/proto/testing",
     importpath = "k8s.io/kube-openapi/pkg/util/proto/testing",
-    tags = ["manual"],
     visibility = ["//visibility:public"],
     deps = [
         "//vendor/github.com/googleapis/gnostic/OpenAPIv2:go_default_library",
