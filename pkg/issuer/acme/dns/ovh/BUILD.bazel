@@ -11,16 +11,6 @@ go_library(
     ],
 )
 
-go_test(
-    name = "go_default_test",
-    srcs = ["ovh_test.go"],
-    embed = [":go_default_library"],
-    deps = [
-        "//vendor/github.com/stretchr/testify/assert:go_default_library",
-        "//vendor/github.com/stretchr/testify/require:go_default_library",
-    ],
-)
-
 filegroup(
     name = "package-srcs",
     srcs = glob(["**"]),
@@ -33,4 +23,15 @@ filegroup(
     srcs = [":package-srcs"],
     tags = ["automanaged"],
     visibility = ["//visibility:public"],
+)
+
+go_test(
+    name = "go_default_test",
+    srcs = ["ovh_test.go"],
+    embed = [":go_default_library"],
+    deps = [
+        "//pkg/issuer/acme/dns/util:go_default_library",
+        "//vendor/github.com/stretchr/testify/require:go_default_library",
+        "//vendor/github.com/xenolf/lego/platform/tester:go_default_library",
+    ],
 )

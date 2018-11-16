@@ -23,7 +23,7 @@ go_test(
         "bench_test.go",
         "file_test.go",
         "ini_internal_test.go",
-        "init_test.go",
+        "ini_test.go",
         "key_test.go",
         "parser_test.go",
         "section_test.go",
@@ -31,7 +31,7 @@ go_test(
     ],
     embed = [":go_default_library"],
     tags = ["manual"],
-    deps = ["//vendor/gopkg.in/check.v1:go_default_library"],
+    deps = ["//vendor/github.com/smartystreets/goconvey/convey:go_default_library"],
 )
 
 filegroup(

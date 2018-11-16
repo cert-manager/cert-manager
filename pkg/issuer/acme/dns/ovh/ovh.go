@@ -22,7 +22,7 @@ import (
 	"github.com/ovh/go-ovh/ovh"
 )
 
-// OVH API reference:       https://eu.api.ovh.com/
+// OVH API reference:		https://eu.api.ovh.com/
 // Create a Token:			https://eu.api.ovh.com/createToken/
 
 // Config is used to configure the creation of the DNSProvider
