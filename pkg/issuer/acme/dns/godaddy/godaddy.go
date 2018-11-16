@@ -140,7 +140,6 @@ func (d *DNSProvider) getZone(fqdn string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-
 	return util.UnFqdn(authZone), nil
 }
 
