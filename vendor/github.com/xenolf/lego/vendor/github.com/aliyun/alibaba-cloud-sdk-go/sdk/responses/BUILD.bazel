@@ -1,0 +1,30 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "json_parser.go",
+        "response.go",
+    ],
+    importmap = "github.com/xenolf/lego/vendor/github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses",
+    importpath = "github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//vendor/github.com/xenolf/lego/vendor/github.com/aliyun/alibaba-cloud-sdk-go/sdk/errors:go_default_library",
+        "//vendor/github.com/xenolf/lego/vendor/github.com/json-iterator/go:go_default_library",
+    ],
+)
+
+filegroup(
+    name = "package-srcs",
+    srcs = glob(["**"]),
+    tags = ["automanaged"],
+    visibility = ["//visibility:private"],
+)
+
+filegroup(
+    name = "all-srcs",
+    srcs = [":package-srcs"],
+    tags = ["automanaged"],
+    visibility = ["//visibility:public"],
+)

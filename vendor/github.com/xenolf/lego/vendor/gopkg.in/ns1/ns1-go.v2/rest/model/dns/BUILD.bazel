@@ -1,0 +1,32 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "answer.go",
+        "doc.go",
+        "record.go",
+        "zone.go",
+    ],
+    importmap = "github.com/xenolf/lego/vendor/gopkg.in/ns1/ns1-go.v2/rest/model/dns",
+    importpath = "gopkg.in/ns1/ns1-go.v2/rest/model/dns",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//vendor/github.com/xenolf/lego/vendor/gopkg.in/ns1/ns1-go.v2/rest/model/data:go_default_library",
+        "//vendor/github.com/xenolf/lego/vendor/gopkg.in/ns1/ns1-go.v2/rest/model/filter:go_default_library",
+    ],
+)
+
+filegroup(
+    name = "package-srcs",
+    srcs = glob(["**"]),
+    tags = ["automanaged"],
+    visibility = ["//visibility:private"],
+)
+
+filegroup(
+    name = "all-srcs",
+    srcs = [":package-srcs"],
+    tags = ["automanaged"],
+    visibility = ["//visibility:public"],
+)

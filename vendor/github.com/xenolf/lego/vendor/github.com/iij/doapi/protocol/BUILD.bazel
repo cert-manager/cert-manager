@@ -1,0 +1,32 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "Commit.go",
+        "RecordAdd.go",
+        "RecordDelete.go",
+        "RecordGet.go",
+        "RecordListGet.go",
+        "Reset.go",
+        "ZoneListGet.go",
+        "common.go",
+    ],
+    importmap = "github.com/xenolf/lego/vendor/github.com/iij/doapi/protocol",
+    importpath = "github.com/iij/doapi/protocol",
+    visibility = ["//visibility:public"],
+)
+
+filegroup(
+    name = "package-srcs",
+    srcs = glob(["**"]),
+    tags = ["automanaged"],
+    visibility = ["//visibility:private"],
+)
+
+filegroup(
+    name = "all-srcs",
+    srcs = [":package-srcs"],
+    tags = ["automanaged"],
+    visibility = ["//visibility:public"],
+)

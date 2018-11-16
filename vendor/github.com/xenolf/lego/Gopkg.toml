@@ -1,0 +1,94 @@
+# Gopkg.toml example
+#
+# Refer to https://github.com/golang/dep/blob/master/docs/Gopkg.toml.md
+# for detailed Gopkg.toml documentation.
+#
+# required = ["github.com/user/thing/cmd/thing"]
+# ignored = ["github.com/user/project/pkgX", "bitbucket.org/user/project/pkgA/pkgY"]
+#
+# [[constraint]]
+#   name = "github.com/user/project"
+#   version = "1.0.0"
+#
+# [[constraint]]
+#   name = "github.com/user/project2"
+#   branch = "dev"
+#   source = "github.com/myfork/project2"
+#
+# [[override]]
+#   name = "github.com/x/y"
+#   version = "2.4.0"
+#
+# [prune]
+#   non-go = false
+#   go-tests = true
+#   unused-packages = true
+
+[prune]
+  non-go = true
+  go-tests = true
+  unused-packages = true
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/decker502/dnspod-go"
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/dnsimple/dnsimple-go"
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/namedotcom/go"
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/ovh/go-ovh"
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/rainycape/memcache"
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/timewasted/linode"
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/smueller18/goinwx"
+
+[[constraint]]
+  version = "0.5.1"
+  name = "github.com/linode/linodego"
+
+[[constraint]]
+  branch = "master"
+  name = "golang.org/x/crypto"
+
+[[constraint]]
+  branch = "master"
+  name = "golang.org/x/net"
+
+[[constraint]]
+  branch = "master"
+  name = "golang.org/x/oauth2"
+
+[[constraint]]
+  branch = "master"
+  name = "google.golang.org/api"
+
+[[constraint]]
+  branch = "v2"
+  name = "gopkg.in/ns1/ns1-go.v2"
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/sacloud/libsacloud"
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/transip/gotransip"
+
+[[constraint]]
+  version = "0.11.1"
+  name = "github.com/exoscale/egoscale"

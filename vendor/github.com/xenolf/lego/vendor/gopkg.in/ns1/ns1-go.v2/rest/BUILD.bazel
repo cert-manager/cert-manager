@@ -1,0 +1,52 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "account_apikey.go",
+        "account_setting.go",
+        "account_team.go",
+        "account_user.go",
+        "account_warning.go",
+        "client.go",
+        "data_feed.go",
+        "data_source.go",
+        "doc.go",
+        "monitor_job.go",
+        "monitor_notify.go",
+        "record.go",
+        "stat.go",
+        "util.go",
+        "zone.go",
+    ],
+    importmap = "github.com/xenolf/lego/vendor/gopkg.in/ns1/ns1-go.v2/rest",
+    importpath = "gopkg.in/ns1/ns1-go.v2/rest",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//vendor/github.com/xenolf/lego/vendor/gopkg.in/ns1/ns1-go.v2/rest/model/account:go_default_library",
+        "//vendor/github.com/xenolf/lego/vendor/gopkg.in/ns1/ns1-go.v2/rest/model/data:go_default_library",
+        "//vendor/github.com/xenolf/lego/vendor/gopkg.in/ns1/ns1-go.v2/rest/model/dns:go_default_library",
+        "//vendor/github.com/xenolf/lego/vendor/gopkg.in/ns1/ns1-go.v2/rest/model/monitor:go_default_library",
+    ],
+)
+
+filegroup(
+    name = "package-srcs",
+    srcs = glob(["**"]),
+    tags = ["automanaged"],
+    visibility = ["//visibility:private"],
+)
+
+filegroup(
+    name = "all-srcs",
+    srcs = [
+        ":package-srcs",
+        "//vendor/github.com/xenolf/lego/vendor/gopkg.in/ns1/ns1-go.v2/rest/model/account:all-srcs",
+        "//vendor/github.com/xenolf/lego/vendor/gopkg.in/ns1/ns1-go.v2/rest/model/data:all-srcs",
+        "//vendor/github.com/xenolf/lego/vendor/gopkg.in/ns1/ns1-go.v2/rest/model/dns:all-srcs",
+        "//vendor/github.com/xenolf/lego/vendor/gopkg.in/ns1/ns1-go.v2/rest/model/filter:all-srcs",
+        "//vendor/github.com/xenolf/lego/vendor/gopkg.in/ns1/ns1-go.v2/rest/model/monitor:all-srcs",
+    ],
+    tags = ["automanaged"],
+    visibility = ["//visibility:public"],
+)

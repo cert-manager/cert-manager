@@ -1,0 +1,37 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "endpoints_config.go",
+        "local_global_resolver.go",
+        "local_regional_resolver.go",
+        "location_resolver.go",
+        "mapping_resolver.go",
+        "resolver.go",
+        "simple_host_resolver.go",
+    ],
+    importmap = "github.com/xenolf/lego/vendor/github.com/aliyun/alibaba-cloud-sdk-go/sdk/endpoints",
+    importpath = "github.com/aliyun/alibaba-cloud-sdk-go/sdk/endpoints",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//vendor/github.com/xenolf/lego/vendor/github.com/aliyun/alibaba-cloud-sdk-go/sdk/errors:go_default_library",
+        "//vendor/github.com/xenolf/lego/vendor/github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests:go_default_library",
+        "//vendor/github.com/xenolf/lego/vendor/github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses:go_default_library",
+        "//vendor/github.com/xenolf/lego/vendor/github.com/jmespath/go-jmespath:go_default_library",
+    ],
+)
+
+filegroup(
+    name = "package-srcs",
+    srcs = glob(["**"]),
+    tags = ["automanaged"],
+    visibility = ["//visibility:private"],
+)
+
+filegroup(
+    name = "all-srcs",
+    srcs = [":package-srcs"],
+    tags = ["automanaged"],
+    visibility = ["//visibility:public"],
+)

@@ -1,0 +1,108 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "client.go",
+        "clientconfig.go",
+        "dane.go",
+        "defaults.go",
+        "dns.go",
+        "dnssec.go",
+        "dnssec_keygen.go",
+        "dnssec_keyscan.go",
+        "dnssec_privkey.go",
+        "doc.go",
+        "edns.go",
+        "format.go",
+        "generate.go",
+        "labels.go",
+        "msg.go",
+        "msg_helpers.go",
+        "nsecx.go",
+        "privaterr.go",
+        "rawmsg.go",
+        "reverse.go",
+        "sanitize.go",
+        "scan.go",
+        "scan_rr.go",
+        "scanner.go",
+        "server.go",
+        "sig0.go",
+        "singleinflight.go",
+        "smimea.go",
+        "tlsa.go",
+        "tsig.go",
+        "types.go",
+        "udp.go",
+        "udp_windows.go",
+        "update.go",
+        "version.go",
+        "xfr.go",
+        "zcompress.go",
+        "zmsg.go",
+        "ztypes.go",
+    ],
+    importmap = "github.com/xenolf/lego/vendor/github.com/miekg/dns",
+    importpath = "github.com/miekg/dns",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//vendor/github.com/xenolf/lego/vendor/golang.org/x/crypto/ed25519:go_default_library",
+    ] + select({
+        "@io_bazel_rules_go//go/platform:android": [
+            "//vendor/github.com/xenolf/lego/vendor/golang.org/x/net/ipv4:go_default_library",
+            "//vendor/github.com/xenolf/lego/vendor/golang.org/x/net/ipv6:go_default_library",
+        ],
+        "@io_bazel_rules_go//go/platform:darwin": [
+            "//vendor/github.com/xenolf/lego/vendor/golang.org/x/net/ipv4:go_default_library",
+            "//vendor/github.com/xenolf/lego/vendor/golang.org/x/net/ipv6:go_default_library",
+        ],
+        "@io_bazel_rules_go//go/platform:dragonfly": [
+            "//vendor/github.com/xenolf/lego/vendor/golang.org/x/net/ipv4:go_default_library",
+            "//vendor/github.com/xenolf/lego/vendor/golang.org/x/net/ipv6:go_default_library",
+        ],
+        "@io_bazel_rules_go//go/platform:freebsd": [
+            "//vendor/github.com/xenolf/lego/vendor/golang.org/x/net/ipv4:go_default_library",
+            "//vendor/github.com/xenolf/lego/vendor/golang.org/x/net/ipv6:go_default_library",
+        ],
+        "@io_bazel_rules_go//go/platform:linux": [
+            "//vendor/github.com/xenolf/lego/vendor/golang.org/x/net/ipv4:go_default_library",
+            "//vendor/github.com/xenolf/lego/vendor/golang.org/x/net/ipv6:go_default_library",
+        ],
+        "@io_bazel_rules_go//go/platform:nacl": [
+            "//vendor/github.com/xenolf/lego/vendor/golang.org/x/net/ipv4:go_default_library",
+            "//vendor/github.com/xenolf/lego/vendor/golang.org/x/net/ipv6:go_default_library",
+        ],
+        "@io_bazel_rules_go//go/platform:netbsd": [
+            "//vendor/github.com/xenolf/lego/vendor/golang.org/x/net/ipv4:go_default_library",
+            "//vendor/github.com/xenolf/lego/vendor/golang.org/x/net/ipv6:go_default_library",
+        ],
+        "@io_bazel_rules_go//go/platform:openbsd": [
+            "//vendor/github.com/xenolf/lego/vendor/golang.org/x/net/ipv4:go_default_library",
+            "//vendor/github.com/xenolf/lego/vendor/golang.org/x/net/ipv6:go_default_library",
+        ],
+        "@io_bazel_rules_go//go/platform:plan9": [
+            "//vendor/github.com/xenolf/lego/vendor/golang.org/x/net/ipv4:go_default_library",
+            "//vendor/github.com/xenolf/lego/vendor/golang.org/x/net/ipv6:go_default_library",
+        ],
+        "@io_bazel_rules_go//go/platform:solaris": [
+            "//vendor/github.com/xenolf/lego/vendor/golang.org/x/net/ipv4:go_default_library",
+            "//vendor/github.com/xenolf/lego/vendor/golang.org/x/net/ipv6:go_default_library",
+        ],
+        "//conditions:default": [],
+    }),
+)
+
+filegroup(
+    name = "package-srcs",
+    srcs = glob(["**"]),
+    tags = ["automanaged"],
+    visibility = ["//visibility:private"],
+)
+
+filegroup(
+    name = "all-srcs",
+    srcs = [":package-srcs"],
+    tags = ["automanaged"],
+    visibility = ["//visibility:public"],
+)
