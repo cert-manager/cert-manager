@@ -318,14 +318,23 @@ func TestCleanupIngresses(t *testing.T) {
 					},
 				},
 			},
-			Challenge: &v1alpha1.Challenge{
-				Spec: v1alpha1.ChallengeSpec{
-					DNSName: "example.com",
-					Token:   "abcd",
-					Config: v1alpha1.SolverConfig{
-						HTTP01: &v1alpha1.HTTP01SolverConfig{
-							Ingress: "testingress",
-						},
+			Certificate: generate.Certificate(generate.CertificateConfig{
+				Name:         "test",
+				Namespace:    defaultTestNamespace,
+				DNSNames:     []string{"example.com"},
+				ACMEOrderURL: "testurl",
+				SolverConfig: v1alpha1.SolverConfig{
+					HTTP01: &v1alpha1.HTTP01SolverConfig{
+						Ingress: "testingress",
+					},
+				},
+			}),
+			Challenge: v1alpha1.ACMEOrderChallenge{
+				Domain: "example.com",
+				Token:  "abcd",
+				SolverConfig: v1alpha1.SolverConfig{
+					HTTP01: &v1alpha1.HTTP01SolverConfig{
+						Ingress: "testingress",
 					},
 				},
 			},
@@ -335,7 +344,7 @@ func TestCleanupIngresses(t *testing.T) {
 				expectedIng := s.KubeObjects[0].(*v1beta1.Ingress).DeepCopy()
 				expectedIng.Spec.Rules = []v1beta1.IngressRule{expectedIng.Spec.Rules[1]}
 
-				actualIng, err := s.Builder.FakeKubeClient().ExtensionsV1beta1().Ingresses(s.Challenge.Namespace).Get(expectedIng.Name, metav1.GetOptions{})
+				actualIng, err := s.Builder.FakeKubeClient().ExtensionsV1beta1().Ingresses(s.Certificate.Namespace).Get(expectedIng.Name, metav1.GetOptions{})
 				if apierrors.IsNotFound(err) {
 					t.Errorf("expected ingress resource %q to not be deleted, but it was deleted", expectedIng.Name)
 				}

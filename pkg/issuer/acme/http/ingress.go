@@ -238,7 +238,7 @@ func (s *Solver) cleanupIngresses(crt *v1alpha1.Certificate, ch v1alpha1.ACMEOrd
 
 	for _, rule := range ing.Spec.Rules {
 		// always retain rules that are not for the same DNSName
-		if rule.Host != ch.Spec.DNSName {
+		if rule.Host != ch.Domain {
 			ingRules = append(ingRules, rule)
 			continue
 		}
