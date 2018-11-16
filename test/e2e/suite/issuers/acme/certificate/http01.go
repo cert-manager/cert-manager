@@ -116,7 +116,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		secretClient := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name)
 
 		By("Creating a Certificate")
-		_, err := certClient.Create(util.NewCertManagerACMECertificate(certificateName, certificateSecretName, issuerName, v1alpha1.IssuerKind, acmeIngressClass, acmeIngressDomain))
+		_, err := certClient.Create(util.NewCertManagerACMECertificate(certificateName, certificateSecretName, issuerName, v1alpha1.IssuerKind, nil, nil, acmeIngressClass, acmeIngressDomain))
 		Expect(err).NotTo(HaveOccurred())
 		By("Verifying the Certificate is valid")
 		err = util.WaitCertificateIssuedValid(certClient, secretClient, certificateName, time.Minute*5)
@@ -130,7 +130,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		// the maximum length of a single segment of the domain being requested
 		const maxLengthOfDomainSegment = 63
 		By("Creating a Certificate")
-		_, err := certClient.Create(util.NewCertManagerACMECertificate(certificateName, certificateSecretName, issuerName, v1alpha1.IssuerKind, acmeIngressClass, fmt.Sprintf("%s.%s", cmutil.RandStringRunes(maxLengthOfDomainSegment), acmeIngressDomain)))
+		_, err := certClient.Create(util.NewCertManagerACMECertificate(certificateName, certificateSecretName, issuerName, v1alpha1.IssuerKind, nil, nil, acmeIngressClass, fmt.Sprintf("%s.%s", cmutil.RandStringRunes(maxLengthOfDomainSegment), acmeIngressDomain)))
 		Expect(err).NotTo(HaveOccurred())
 		err = util.WaitCertificateIssuedValid(certClient, secretClient, certificateName, time.Minute*5)
 		Expect(err).NotTo(HaveOccurred())
@@ -141,7 +141,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		secretClient := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name)
 
 		By("Creating a Certificate")
-		_, err := certClient.Create(util.NewCertManagerACMECertificate(certificateName, certificateSecretName, issuerName, v1alpha1.IssuerKind, acmeIngressClass, acmeIngressDomain, fmt.Sprintf("%s.%s", cmutil.RandStringRunes(5), acmeIngressDomain)))
+		_, err := certClient.Create(util.NewCertManagerACMECertificate(certificateName, certificateSecretName, issuerName, v1alpha1.IssuerKind, nil, nil, acmeIngressClass, acmeIngressDomain, fmt.Sprintf("%s.%s", cmutil.RandStringRunes(5), acmeIngressDomain)))
 		Expect(err).NotTo(HaveOccurred())
 		By("Verifying the Certificate is valid")
 		err = util.WaitCertificateIssuedValid(certClient, secretClient, certificateName, time.Minute*5)
@@ -153,7 +153,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		secretClient := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name)
 
 		By("Creating a Certificate")
-		cert, err := certClient.Create(util.NewCertManagerACMECertificate(certificateName, certificateSecretName, issuerName, v1alpha1.IssuerKind, acmeIngressClass, acmeIngressDomain, fmt.Sprintf("%s.%s", cmutil.RandStringRunes(5), acmeIngressDomain)))
+		cert, err := certClient.Create(util.NewCertManagerACMECertificate(certificateName, certificateSecretName, issuerName, v1alpha1.IssuerKind, nil, nil, acmeIngressClass, acmeIngressDomain, fmt.Sprintf("%s.%s", cmutil.RandStringRunes(5), acmeIngressDomain)))
 		Expect(err).NotTo(HaveOccurred())
 		By("Verifying the Certificate is valid")
 		err = util.WaitCertificateIssuedValid(certClient, secretClient, certificateName, time.Minute*5)
@@ -180,7 +180,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		Skip("Poorly designed test skipped until it can be rewritten")
 
 		By("Creating a Certificate")
-		_, err := f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name).Create(util.NewCertManagerACMECertificate(certificateName, certificateSecretName, issuerName, v1alpha1.IssuerKind, acmeIngressClass, "google.com"))
+		_, err := f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name).Create(util.NewCertManagerACMECertificate(certificateName, certificateSecretName, issuerName, v1alpha1.IssuerKind, nil, nil, acmeIngressClass, "google.com"))
 		Expect(err).NotTo(HaveOccurred())
 		By("Waiting for the Certificate to not have a ready condition")
 		err = util.WaitForCertificateCondition(f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name),

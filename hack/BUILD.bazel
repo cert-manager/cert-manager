@@ -34,7 +34,6 @@ sh_binary(
     name = "update-bazel",
     srcs = ["update-bazel.sh"],
     data = [
-        "//hack/bin:buildozer",
         "//hack/bin:gazelle",
         "//hack/bin:kazel",
     ],
@@ -118,10 +117,7 @@ sh_binary(
     name = "update-reference-docs",
     srcs = ["update-reference-docs.sh"],
     data = [
-        "//hack/reference-docs",
-    ],
-    deps = [
-        "@bazel_tools//tools/bash/runfiles",
+        "//docs/generated/reference/generate",
     ],
 )
 
@@ -129,12 +125,9 @@ sh_test(
     name = "verify-reference-docs",
     srcs = ["verify-reference-docs.sh"],
     data = [
-        "//docs/generated/reference:all-srcs",
+        "//docs/generated/reference:output",
+        "//docs/generated/reference/generate",
         "//hack:update-reference-docs.sh",
-        "//hack/reference-docs",
-    ],
-    deps = [
-        "@bazel_tools//tools/bash/runfiles",
     ],
 )
 
@@ -144,7 +137,7 @@ sh_binary(
     name = "update-gofmt",
     srcs = ["update-gofmt.sh"],
     data = [
-        "//hack/bin:goimports",
+        "//hack/bin:gofmt",
     ],
 )
 
@@ -153,7 +146,7 @@ sh_test(
     srcs = ["verify-gofmt.sh"],
     data = [
         "//:all-srcs",
-        "//hack/bin:goimports",
+        "//hack/bin:gofmt",
     ],
 )
 
@@ -171,7 +164,6 @@ filegroup(
         "//hack/bin:all-srcs",
         "//hack/boilerplate:all-srcs",
         "//hack/deploy:all-srcs",
-        "//hack/reference-docs:all-srcs",
     ],
     tags = ["automanaged"],
     visibility = ["//visibility:public"],

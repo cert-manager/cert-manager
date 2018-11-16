@@ -70,15 +70,18 @@ func TestSyncHappyPath(t *testing.T) {
 		"update status if state is unknown": {
 			Issuer: testIssuerHTTP01Enabled,
 			Challenge: gen.Challenge("testchal",
+				gen.SetChallengeProcessing(true),
 				gen.SetChallengeURL("testurl"),
 			),
 			Builder: &testpkg.Builder{
 				CertManagerObjects: []runtime.Object{gen.Challenge("testchal",
+					gen.SetChallengeProcessing(true),
 					gen.SetChallengeURL("testurl"),
 				)},
 				ExpectedActions: []testpkg.Action{
 					testpkg.NewAction(coretesting.NewUpdateAction(v1alpha1.SchemeGroupVersion.WithResource("challenges"), gen.DefaultTestNamespace,
 						gen.Challenge("testchal",
+							gen.SetChallengeProcessing(true),
 							gen.SetChallengeURL("testurl"),
 							gen.SetChallengeState(v1alpha1.Pending),
 						))),
@@ -96,6 +99,7 @@ func TestSyncHappyPath(t *testing.T) {
 		"call Present and update challenge status to presented": {
 			Issuer: testIssuerHTTP01Enabled,
 			Challenge: gen.Challenge("testchal",
+				gen.SetChallengeProcessing(true),
 				gen.SetChallengeURL("testurl"),
 				gen.SetChallengeState(v1alpha1.Pending),
 				gen.SetChallengeType("http-01"),
@@ -110,6 +114,7 @@ func TestSyncHappyPath(t *testing.T) {
 			},
 			Builder: &testpkg.Builder{
 				CertManagerObjects: []runtime.Object{gen.Challenge("testchal",
+					gen.SetChallengeProcessing(true),
 					gen.SetChallengeURL("testurl"),
 					gen.SetChallengeState(v1alpha1.Pending),
 					gen.SetChallengeType("http-01"),
@@ -117,6 +122,7 @@ func TestSyncHappyPath(t *testing.T) {
 				ExpectedActions: []testpkg.Action{
 					testpkg.NewAction(coretesting.NewUpdateAction(v1alpha1.SchemeGroupVersion.WithResource("challenges"), gen.DefaultTestNamespace,
 						gen.Challenge("testchal",
+							gen.SetChallengeProcessing(true),
 							gen.SetChallengeURL("testurl"),
 							gen.SetChallengeState(v1alpha1.Pending),
 							gen.SetChallengePresented(true),
@@ -133,6 +139,7 @@ func TestSyncHappyPath(t *testing.T) {
 		"accept the challenge if the self check is passing": {
 			Issuer: testIssuerHTTP01Enabled,
 			Challenge: gen.Challenge("testchal",
+				gen.SetChallengeProcessing(true),
 				gen.SetChallengeURL("testurl"),
 				gen.SetChallengeState(v1alpha1.Pending),
 				gen.SetChallengeType("http-01"),
@@ -148,6 +155,7 @@ func TestSyncHappyPath(t *testing.T) {
 			},
 			Builder: &testpkg.Builder{
 				CertManagerObjects: []runtime.Object{gen.Challenge("testchal",
+					gen.SetChallengeProcessing(true),
 					gen.SetChallengeURL("testurl"),
 					gen.SetChallengeState(v1alpha1.Pending),
 					gen.SetChallengeType("http-01"),
@@ -156,6 +164,7 @@ func TestSyncHappyPath(t *testing.T) {
 				ExpectedActions: []testpkg.Action{
 					testpkg.NewAction(coretesting.NewUpdateAction(v1alpha1.SchemeGroupVersion.WithResource("challenges"), gen.DefaultTestNamespace,
 						gen.Challenge("testchal",
+							gen.SetChallengeProcessing(true),
 							gen.SetChallengeURL("testurl"),
 							gen.SetChallengeState(v1alpha1.Valid),
 							gen.SetChallengeType("http-01"),
@@ -182,6 +191,7 @@ func TestSyncHappyPath(t *testing.T) {
 		"mark certificate as failed if accepting the authorization fails": {
 			Issuer: testIssuerHTTP01Enabled,
 			Challenge: gen.Challenge("testchal",
+				gen.SetChallengeProcessing(true),
 				gen.SetChallengeURL("testurl"),
 				gen.SetChallengeState(v1alpha1.Pending),
 				gen.SetChallengeType("http-01"),
@@ -197,6 +207,7 @@ func TestSyncHappyPath(t *testing.T) {
 			},
 			Builder: &testpkg.Builder{
 				CertManagerObjects: []runtime.Object{gen.Challenge("testchal",
+					gen.SetChallengeProcessing(true),
 					gen.SetChallengeURL("testurl"),
 					gen.SetChallengeState(v1alpha1.Pending),
 					gen.SetChallengeType("http-01"),
@@ -205,6 +216,7 @@ func TestSyncHappyPath(t *testing.T) {
 				ExpectedActions: []testpkg.Action{
 					testpkg.NewAction(coretesting.NewUpdateAction(v1alpha1.SchemeGroupVersion.WithResource("challenges"), gen.DefaultTestNamespace,
 						gen.Challenge("testchal",
+							gen.SetChallengeProcessing(true),
 							gen.SetChallengeURL("testurl"),
 							gen.SetChallengeState(v1alpha1.Invalid),
 							gen.SetChallengeType("http-01"),
@@ -235,26 +247,40 @@ func TestSyncHappyPath(t *testing.T) {
 			},
 			Err: false,
 		},
-		"do nothing if the challenge is valid": {
+		"mark the challenge as not processing if it is already valid": {
 			Issuer: testIssuerHTTP01Enabled,
 			Challenge: gen.Challenge("testchal",
+				gen.SetChallengeProcessing(true),
 				gen.SetChallengeURL("testurl"),
 				gen.SetChallengeState(v1alpha1.Valid),
 				gen.SetChallengeType("http-01"),
 				gen.SetChallengePresented(true),
 			),
+
 			Builder: &testpkg.Builder{
 				CertManagerObjects: []runtime.Object{gen.Challenge("testchal",
+					gen.SetChallengeProcessing(true),
 					gen.SetChallengeURL("testurl"),
 					gen.SetChallengeState(v1alpha1.Valid),
 					gen.SetChallengeType("http-01"),
 					gen.SetChallengePresented(true),
 				)},
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(coretesting.NewUpdateAction(v1alpha1.SchemeGroupVersion.WithResource("challenges"), gen.DefaultTestNamespace,
+						gen.Challenge("testchal",
+							gen.SetChallengeProcessing(false),
+							gen.SetChallengeURL("testurl"),
+							gen.SetChallengeState(v1alpha1.Valid),
+							gen.SetChallengeType("http-01"),
+							gen.SetChallengePresented(true),
+						))),
+				},
 			},
 		},
-		"do nothing if the challenge is failed": {
+		"mark the challenge as not processing if it is already failed": {
 			Issuer: testIssuerHTTP01Enabled,
 			Challenge: gen.Challenge("testchal",
+				gen.SetChallengeProcessing(true),
 				gen.SetChallengeURL("testurl"),
 				gen.SetChallengeState(v1alpha1.Invalid),
 				gen.SetChallengeType("http-01"),
@@ -262,11 +288,22 @@ func TestSyncHappyPath(t *testing.T) {
 			),
 			Builder: &testpkg.Builder{
 				CertManagerObjects: []runtime.Object{gen.Challenge("testchal",
+					gen.SetChallengeProcessing(true),
 					gen.SetChallengeURL("testurl"),
 					gen.SetChallengeState(v1alpha1.Invalid),
 					gen.SetChallengeType("http-01"),
 					gen.SetChallengePresented(true),
 				)},
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(coretesting.NewUpdateAction(v1alpha1.SchemeGroupVersion.WithResource("challenges"), gen.DefaultTestNamespace,
+						gen.Challenge("testchal",
+							gen.SetChallengeProcessing(false),
+							gen.SetChallengeURL("testurl"),
+							gen.SetChallengeState(v1alpha1.Invalid),
+							gen.SetChallengeType("http-01"),
+							gen.SetChallengePresented(true),
+						))),
+				},
 			},
 		},
 	}

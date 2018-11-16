@@ -240,7 +240,7 @@ func signTestCert(key crypto.Signer) *x509.Certificate {
 			CommonName:   commonName,
 		},
 		NotBefore: time.Now(),
-		NotAfter:  time.Now().Add(defaultNotAfter),
+		NotAfter:  time.Now().Add(v1alpha1.DefaultCertificateDuration),
 		// see http://golang.org/pkg/crypto/x509/#KeyUsage
 		KeyUsage: x509.KeyUsageDigitalSignature | x509.KeyUsageKeyEncipherment,
 	}

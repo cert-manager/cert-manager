@@ -10,17 +10,6 @@ genrule(
 )
 
 genrule(
-    name = "fetch_buildozer",
-    srcs = select({
-        ":darwin": ["@buildozer_darwin//file"],
-        ":k8": ["@buildozer_linux//file"],
-    }),
-    outs = ["buildozer"],
-    cmd = "cp $(SRCS) $@",
-    visibility = ["//visibility:public"],
-)
-
-genrule(
     name = "fetch_kazel",
     srcs = ["@io_kubernetes_build//kazel"],
     outs = ["kazel"],
@@ -48,9 +37,9 @@ genrule(
 )
 
 genrule(
-    name = "fetch_goimports",
-    srcs = ["@org_golang_x_tools//cmd/goimports"],
-    outs = ["goimports"],
+    name = "fetch_gofmt",
+    srcs = ["@go_sdk//:bin/gofmt"],
+    outs = ["gofmt"],
     cmd = "cp $(SRCS) $@",
     visibility = ["//visibility:public"],
 )

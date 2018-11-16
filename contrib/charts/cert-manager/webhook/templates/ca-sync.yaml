@@ -25,8 +25,8 @@ spec:
           restartPolicy: OnFailure
           containers:
           - name: ca-helper
-            image: quay.io/munnerz/apiextensions-ca-helper:v0.1.0
-            imagePullPolicy: IfNotPresent
+            image: {{ .Values.caSyncImage.repository }}:{{ .Values.caSyncImage.tag }}
+            imagePullPolicy: {{ .Values.caSyncImage.pullPolicy }}
             args:
             - -config=/config/config
             volumeMounts:
@@ -64,8 +64,8 @@ spec:
       restartPolicy: OnFailure
       containers:
       - name: ca-helper
-        image: quay.io/munnerz/apiextensions-ca-helper:canary
-        imagePullPolicy: IfNotPresent
+        image: {{ .Values.caSyncImage.repository }}:{{ .Values.caSyncImage.tag }}
+        imagePullPolicy: {{ .Values.caSyncImage.pullPolicy }}
         args:
         - -config=/config/config
         volumeMounts:

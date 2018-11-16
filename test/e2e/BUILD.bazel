@@ -30,6 +30,7 @@ go_test(
     embed = [":go_default_library"],
     tags = ["manual"],
     deps = [
+        "//pkg/logs:go_default_library",
         "//test/e2e/framework:go_default_library",
         "//test/e2e/suite:go_default_library",
         "//vendor/github.com/onsi/ginkgo:go_default_library",

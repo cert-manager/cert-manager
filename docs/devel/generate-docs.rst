@@ -2,8 +2,10 @@
 Generating Documentation
 =====================
 
-The documentation uses `Sphinx`_ (via `Read The Docs`_) to generate markdown
-from `reStructured Text`_.
+The documentation is generated from `reStructured Text`_ by `Sphinx`_
+(via `Read The Docs`_). If you're unfamiliar with `reStructured Text`_,
+the files typically have the extension `.rst`. You can find more details
+in the `reStructured Text Basics`_.
 
 Installation instructions
 =========================
@@ -29,6 +31,7 @@ open with your browser.
 Note that you do not need to add these files to your git client, as
 *Read The Docs* will generate the HTML on the fly.
 
-.. _`Sphinx`: http://www.sphinx-doc.org/
+.. _`Sphinx`: https://www.sphinx-doc.org/
 .. _`Read The Docs`: https://readthedocs.org/
-.. _`reStructured Text`: http://www.sphinx-doc.org/en/master/usage/restructuredtext/index.html
+.. _`reStructured Text`: https://www.sphinx-doc.org/en/master/usage/restructuredtext/index.html
+.. _`reStructured Text Basics`: https://www.sphinx-doc.org/en/master/usage/restructuredtext/basics.html

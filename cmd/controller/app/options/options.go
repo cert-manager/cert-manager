@@ -26,6 +26,7 @@ import (
 	"github.com/jetstack/cert-manager/pkg/util"
 
 	challengescontroller "github.com/jetstack/cert-manager/pkg/controller/acmechallenges"
+	"github.com/jetstack/cert-manager/pkg/controller/acmechallenges/scheduler"
 	orderscontroller "github.com/jetstack/cert-manager/pkg/controller/acmeorders"
 	certificatescontroller "github.com/jetstack/cert-manager/pkg/controller/certificates"
 	clusterissuerscontroller "github.com/jetstack/cert-manager/pkg/controller/clusterissuers"
@@ -58,6 +59,7 @@ type ControllerOptions struct {
 	// Default issuer/certificates details consumed by ingress-shim
 	DefaultIssuerName                  string
 	DefaultIssuerKind                  string
+	DefaultAutoCertificateAnnotations  []string
 	DefaultACMEIssuerChallengeType     string
 	DefaultACMEIssuerDNS01ProviderName string
 
@@ -92,6 +94,8 @@ var (
 	defaultACMEHTTP01SolverResourceLimitsCPU     = "10m"
 	defaultACMEHTTP01SolverResourceLimitsMemory  = "64Mi"
 
+	defaultAutoCertificateAnnotations = []string{"kubernetes.io/tls-acme"}
+
 	defaultEnabledControllers = []string{
 		issuerscontroller.ControllerName,
 		clusterissuerscontroller.ControllerName,
@@ -99,6 +103,7 @@ var (
 		ingressshimcontroller.ControllerName,
 		orderscontroller.ControllerName,
 		challengescontroller.ControllerName,
+		scheduler.ControllerName,
 	}
 )
 
@@ -117,6 +122,7 @@ func NewControllerOptions() *ControllerOptions {
 		RenewBeforeExpiryDuration:          defaultRenewBeforeExpiryDuration,
 		DefaultIssuerName:                  defaultTLSACMEIssuerName,
 		DefaultIssuerKind:                  defaultTLSACMEIssuerKind,
+		DefaultAutoCertificateAnnotations:  defaultAutoCertificateAnnotations,
 		DefaultACMEIssuerChallengeType:     defaultACMEIssuerChallengeType,
 		DefaultACMEIssuerDNS01ProviderName: defaultACMEIssuerDNS01ProviderName,
 		DNS01Nameservers:                   []string{},
@@ -180,6 +186,8 @@ func (s *ControllerOptions) AddFlags(fs *pflag.FlagSet) {
 		"The default 'renew before expiry' time for Certificates. "+
 		"Once a certificate is within this duration until expiry, a new Certificate "+
 		"will be attempted to be issued.")
+	fs.StringSliceVar(&s.DefaultAutoCertificateAnnotations, "auto-certificate-annotations", defaultAutoCertificateAnnotations, ""+
+		"The annotation consumed by the ingress-shim controller to indicate a ingress is requesting a certificate")
 
 	fs.StringVar(&s.DefaultIssuerName, "default-issuer-name", defaultTLSACMEIssuerName, ""+
 		"Name of the Issuer to use when the tls is requested but issuer name is not specified on the ingress resource.")

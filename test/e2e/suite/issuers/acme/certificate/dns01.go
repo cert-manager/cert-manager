@@ -164,12 +164,6 @@ func testDNSProvider(name string, p dns01Provider) bool {
 		})
 
 		It("should obtain a signed certificate for a wildcard and apex domain", func() {
-			// We skip this test for now, as it will always fail until we implement
-			// 'serial' solving of ACME challenges.
-			// See https://github.com/jetstack/cert-manager/issues/951 for more info.
-			// This test **must** be enabled before a new release can be cut.
-			Skip("Test disabled pending #951 being implemented")
-
 			By("Creating a Certificate")
 
 			certClient := f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name)

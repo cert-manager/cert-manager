@@ -27,11 +27,20 @@ KIND="$(bazel info bazel-genfiles)/hack/bin/kind"
 
 # deploy_kind will deploy a kubernetes-in-docker cluster
 deploy_kind() {
+    # default to v1alpha3, if 1.11.x then use v1alpha2
+    vers="$(kubeVersion)"
+    config="v1alpha3"
+    if [[ "$vers" =~ v1\.11\..+ ]]; then
+        config="v1alpha2"
+    fi
+    echo "Booting Kubernetes version: $vers"
+    echo "Using kubeadm config api version '$config'"
+
     # create the kind cluster
     "${KIND}" create cluster \
         --name="${KIND_CLUSTER_NAME}" \
         --image="${KIND_IMAGE}" \
-        --config "${REPO_ROOT}"/test/fixtures/kind-config.yaml
+        --config "${REPO_ROOT}"/test/fixtures/kind/config-"$config".yaml
 }
 
 deploy_kind

@@ -1,4 +1,4 @@
-load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
 
 go_library(
     name = "go_default_library",
@@ -18,30 +18,6 @@ go_library(
         "//vendor/github.com/onsi/ginkgo/internal/writer:go_default_library",
         "//vendor/github.com/onsi/ginkgo/reporters:go_default_library",
         "//vendor/github.com/onsi/ginkgo/types:go_default_library",
-    ],
-)
-
-go_test(
-    name = "go_default_test",
-    srcs = [
-        "spec_runner_suite_test.go",
-        "spec_runner_test.go",
-    ],
-    embed = [":go_default_library"],
-    tags = ["manual"],
-    deps = [
-        "//vendor/github.com/onsi/ginkgo:go_default_library",
-        "//vendor/github.com/onsi/ginkgo/config:go_default_library",
-        "//vendor/github.com/onsi/ginkgo/internal/codelocation:go_default_library",
-        "//vendor/github.com/onsi/ginkgo/internal/containernode:go_default_library",
-        "//vendor/github.com/onsi/ginkgo/internal/failer:go_default_library",
-        "//vendor/github.com/onsi/ginkgo/internal/leafnodes:go_default_library",
-        "//vendor/github.com/onsi/ginkgo/internal/spec:go_default_library",
-        "//vendor/github.com/onsi/ginkgo/internal/spec_iterator:go_default_library",
-        "//vendor/github.com/onsi/ginkgo/internal/writer:go_default_library",
-        "//vendor/github.com/onsi/ginkgo/reporters:go_default_library",
-        "//vendor/github.com/onsi/ginkgo/types:go_default_library",
-        "//vendor/github.com/onsi/gomega:go_default_library",
     ],
 )
 
