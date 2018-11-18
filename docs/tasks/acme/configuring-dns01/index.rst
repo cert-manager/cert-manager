@@ -69,4 +69,5 @@ and provider specific notes regarding their usage.
    google
    route53
    digitalocean
+   dnspod
    rfc2136

@@ -379,6 +379,7 @@ type ACMEIssuerDNS01ProviderRFC2136 struct {
 // ACMEIssuerDNS01ProviderDNSPod is a structure containing the
 // configuration for DNSPod
 type ACMEIssuerDNS01ProviderDNSPod struct {
+	// The name of the secret containing the DNSPod api key value.
 	APIKey SecretKeySelector `json:"apiKeySecretRef"`
 }
 
