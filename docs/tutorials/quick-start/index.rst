@@ -523,13 +523,15 @@ cert-manager will create or update the secret defined in the certificate.
 
     The secret that is used in the ingress should match the secret defined in the certificate.
     There isn't any explicit checking, so a typo will resut in the nginx-ingress-controller
-    falling back to its self-signed certificate.
+    falling back to its self-signed certificate. In our example, we are using annotations on
+    the ingress (and ingress-shim) which will create the correct secrets on your behalf.
 
 Edit the ingress add the annotations that were commented out in our earlier
 example:
 
 .. literalinclude:: example/ingress-tls.yaml
    :language: yaml
+   :emphasize-lines: 6-8
 
 and apply it:
 
@@ -652,7 +654,81 @@ can update the annotations in the ingress to specify the production issuer:
 
    $ kubectl apply -f ingress.yaml
 
+   ingress.extensions "kuard" configured
+
+You will also need to delete the existing secret, which cert-manager is watching
+and will cause it to reprocess the request with the updated issuer.
+
+.. code-block:: shell
+
+   $ kubectl delete secret quickstart-example-tls
+
+   secret "quickstart-example-tls" deleted
+
 This will start the process to get a new certificate, and using describe
 you can see the status. Once the production certificate has been updated,
 you should see the example KUARD running at your domain with a signed TLS
 certificate.
+
+.. code-block:: shell
+   :emphasize-lines: 55-59
+
+    $ kubectl describe certificate
+
+    Name:         quickstart-example-tls
+    Namespace:    default
+    Labels:       <none>
+    Annotations:  <none>
+    API Version:  certmanager.k8s.io/v1alpha1
+    Kind:         Certificate
+    Metadata:
+      Cluster Name:
+      Creation Timestamp:  2018-11-17T18:36:48Z
+      Generation:          0
+      Owner References:
+        API Version:           extensions/v1beta1
+        Block Owner Deletion:  true
+        Controller:            true
+        Kind:                  Ingress
+        Name:                  kuard
+        UID:                   a3e9f935-ea87-11e8-82f8-42010a8a00b5
+      Resource Version:        283686
+      Self Link:               /apis/certmanager.k8s.io/v1alpha1/namespaces/default/certificates/quickstart-example-tls
+      UID:                     bdd93b32-ea97-11e8-82f8-42010a8a00b5
+    Spec:
+      Acme:
+        Config:
+          Domains:
+            example.your-domain.com
+          Http 01:
+            Ingress:
+            Ingress Class:  nginx
+      Dns Names:
+        example.your-domain.com
+      Issuer Ref:
+        Kind:       Issuer
+        Name:       letsencrypt-prod
+      Secret Name:  quickstart-example-tls
+    Status:
+      Acme:
+        Order:
+          URL:  https://acme-v02.api.letsencrypt.org/acme/order/45980184/182533829
+      Conditions:
+        Last Transition Time:  2018-11-19T19:16:10Z
+        Message:               Certificate issued successfully
+        Reason:                CertIssued
+        Status:                True
+        Type:                  Ready
+        Last Transition Time:  <nil>
+        Message:               Order validated
+        Reason:                OrderValidated
+        Status:                False
+        Type:                  ValidateFailed
+    Events:
+      Type    Reason          Age   From          Message
+      ----    ------          ----  ----          -------
+      Normal  CreateOrder     26s   cert-manager  Created new ACME order, attempting validation...
+      Normal  DomainVerified  9s    cert-manager  Domain "example.your-domain.com" verified with "http-01" validation
+      Normal  IssueCert       8s    cert-manager  Issuing certificate...
+      Normal  CertObtained    6s    cert-manager  Obtained certificate from ACME server
+      Normal  CertIssued      6s    cert-manager  Certificate issued successfully
