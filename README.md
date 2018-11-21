@@ -33,11 +33,9 @@ Ingress resources, aka a [kube-lego](https://github.com/jetstack/kube-lego)
 replacement, see the [cert-manager nginx ingress quick start
 guide](docs/tutorials/quick-start/index.rst).
 
-## Images
-
-Prebuilt images for cert-manager are available. Bitnami images are available on
-[Dockerhub](https://hub.docker.com/r/bitnami/cert-manager/) and
-images from Jetstack are available on [Quay](https://quay.io/jetstack/cert-manager-controller).
+See [Installing cert-manager](https://cert-manager.readthedocs.io/en/latest/getting-started/2-installing.html)
+within the [documentation]((https://cert-manager.readthedocs.io/en/latest/))
+for installation instructions.
 
 ## Troubleshooting
 

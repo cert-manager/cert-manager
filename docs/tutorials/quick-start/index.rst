@@ -268,21 +268,13 @@ A sample ingress you can start with is:
 .. _`ingress.yaml`: https://raw.githubusercontent.com/jetstack/cert-manager/master/docs/tutorials/quick-start/example/ingress.yaml
 .. _`ingress resource`: https://kubernetes.io/docs/concepts/services-networking/ingress/
 
-You can download the sample manifest from github with the command:
+You can download the sample manifest from github, edit it, and submit the manifest to Kubernetes with the command:
 
 .. code-block:: shell
 
-   $ curl -O https://raw.githubusercontent.com/jetstack/cert-manager/master/docs/tutorials/quick-start/example/ingress.yaml
-
-     % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
-                                     Dload  Upload   Total   Spent    Left  Speed
-    100   455  100   455    0     0   2136      0 --:--:-- --:--:-- --:--:--  2146
-
-Edit the file `ingress` locally and then deploy it as your ingress:
-
-.. code-block:: shell
-
-   $ kubectl apply -f ingress.yaml
+   $ kubectl create --edit -f https://raw.githubusercontent.com/jetstack/cert-manager/master/docs/tutorials/quick-start/example/ingress.yaml
+   
+   # edit the file in your editor, and once it is saved:
    ingress.extensions "kuard" created
 
 .. note::
@@ -358,11 +350,11 @@ install cert-manager. This example installed cert-manager into the
 
 .. code-block:: shell
 
-    $ helm install --name cert-manager --namespace kube-system stable/cert-manager
+    $ helm install --name cert-manager --namespace cert-manager stable/cert-manager
 
     NAME:   cert-manager
     LAST DEPLOYED: Sat Nov 17 09:09:02 2018
-    NAMESPACE: kube-system
+    NAMESPACE: cert-manager
     STATUS: DEPLOYED
 
     RESOURCES:
