@@ -33,8 +33,8 @@ Ingress resources, aka a [kube-lego](https://github.com/jetstack/kube-lego)
 replacement, see the [cert-manager nginx ingress quick start
 guide](docs/tutorials/quick-start/index.rst).
 
-See [Installing cert-manager](https://cert-manager.readthedocs.io/en/latest/getting-started/2-installing.html)
-within the [documentation]((https://cert-manager.readthedocs.io/en/latest/))
+See [Getting started](https://cert-manager.readthedocs.io/en/latest/getting-started/)
+within the [documentation](https://cert-manager.readthedocs.io/en/latest/))
 for installation instructions.
 
 ## Troubleshooting
