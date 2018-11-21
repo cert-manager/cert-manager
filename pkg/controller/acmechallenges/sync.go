@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"reflect"
+	"time"
 
 	"github.com/golang/glog"
 	corev1 "k8s.io/api/core/v1"
@@ -28,6 +29,7 @@ import (
 	"github.com/jetstack/cert-manager/pkg/acme"
 	acmecl "github.com/jetstack/cert-manager/pkg/acme/client"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
 	acmeapi "github.com/jetstack/cert-manager/third_party/crypto/acme"
 )
 
@@ -133,7 +135,17 @@ func (c *Controller) Sync(ctx context.Context, ch *cmapi.Challenge) (err error) 
 	}
 	if !ok {
 		ch.Status.Reason = fmt.Sprintf("Waiting for %s challenge propagation", ch.Spec.Type)
-		return fmt.Errorf(ch.Status.Reason)
+
+		key, err := controllerpkg.KeyFunc(ch)
+		// This is an unexpected edge case and should never occur
+		if err != nil {
+			return err
+		}
+
+		// retry after 5s
+		c.queue.AddAfter(key, time.Second*5)
+
+		return nil
 	}
 
 	err = c.acceptChallenge(ctx, cl, ch)

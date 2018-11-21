@@ -134,7 +134,7 @@ func TestSyncHappyPath(t *testing.T) {
 			Client: &acmecl.FakeACME{},
 			CheckFn: func(t *testing.T, s *controllerFixture, args ...interface{}) {
 			},
-			Err: true,
+			Err: false,
 		},
 		"accept the challenge if the self check is passing": {
 			Issuer: testIssuerHTTP01Enabled,
