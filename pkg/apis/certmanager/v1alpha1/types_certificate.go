@@ -109,6 +109,10 @@ type ACMECertificateConfig struct {
 type CertificateStatus struct {
 	Conditions      []CertificateCondition `json:"conditions,omitempty"`
 	LastFailureTime *metav1.Time           `json:"lastFailureTime,omitempty"`
+
+	// The expiration time of the certificate stored in the secret named
+	// by this resource in spec.secretName.
+	NotAfter *metav1.Time `json:"notAfter,omitempty"`
 }
 
 // CertificateCondition contains condition information for an Certificate.
