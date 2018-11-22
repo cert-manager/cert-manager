@@ -17,166 +17,126 @@ limitations under the License.
 package transip
 
 import (
-	"bytes"
-	"encoding/json"
-	"io/ioutil"
-	"net/http"
-	"strings"
+	"cert-manager/bazel-cert-manager/external/go_sdk/src/fmt"
+	"github.com/transip/gotransip/domain"
 	"testing"
 
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
 	"github.com/stretchr/testify/assert"
 )
 
-const sampleZoneData = `{
-    "token": "a184671d5307a388180fbf7f11dbdf46",
-    "zone": {
-        "name": "example.com",
-        "soa": {
-            "contact": "hostmaster.transip.com.",
-            "expire": 604800,
-            "minimum": 180,
-            "originserver": "use4.transip.com.",
-            "refresh": 900,
-            "retry": 300,
-            "serial": 1271354824,
-            "ttl": 900
-        },
-        "ns": [
-            {
-                "active": true,
-                "name": "",
-                "target": "use4.akam.net.",
-                "ttl": 3600
-            },
-            {
-                "active": true,
-                "name": "",
-                "target": "use3.akam.net.",
-                "ttl": 3600
-            }
-        ]
-    }
-}`
 
-const sampleZoneDataWithTxt = `{
-    "token": "a184671d5307a388180fbf7f11dbdf46",
-    "zone": {
-        "name": "example.com",
-        "soa": {
-            "contact": "hostmaster.transip.com.",
-            "expire": 604800,
-            "minimum": 180,
-            "originserver": "use4.transip.com.",
-            "refresh": 900,
-            "retry": 300,
-            "serial": 1271354825,
-            "ttl": 900
-        },
-        "ns": [
-            {
-                "active": true,
-                "name": "",
-                "target": "use4.akam.net.",
-                "ttl": 3600
-            },
-            {
-                "active": true,
-                "name": "",
-                "target": "use3.akam.net.",
-                "ttl": 3600
-            }
-        ],
-        "txt": [
-            {
-                "active": true,
-                "name" :"_acme-challenge.test",
-                "target": "dns01-key",
-                "ttl": 60
-            }
-        ]
-    }
-}`
+const fqdn = "_acme-challenge.test.example.com."
+const dn = "test.example.com"
 
-type httpResponder func(req *http.Request) (*http.Response, error)
 
-func (r httpResponder) RoundTrip(req *http.Request) (*http.Response, error) {
-	return r(req)
-}
 
-//NewDNSProvider(accountName string, PrivateKey []byte, dns01Nameservers []string) (*DNSProvider, error) {
 
 func TestPresent(t *testing.T) {
-	transip, err := NewDNSProvider("exampleaccount", "token", util.RecursiveNameservers)
+
+	fmt.Println(util.RecursiveNameservers)
+
+	transip, err := NewDNSProvider("exampleaccount", []byte("token"), util.RecursiveNameservers)
 	assert.NoError(t, err)
 
-	var response []byte
-	mockTransport(t, transip, "example.com", sampleZoneData, &response)
+	assert.NoError(t, mockup(t, transip))
 
-	assert.NoError(t, transip.Present("test.example.com", "dns01-token", "dns01-key"))
+	a,b,err := transip.findDomain(dn)
+	assert.NoError(t, err, "failure finding domain")
+	fmt.Println(a)
+	fmt.Println(b)
 
-	var expected, actual map[string]interface{}
-	assert.NoError(t, json.Unmarshal([]byte(sampleZoneDataWithTxt), &expected))
-	assert.NoError(t, json.Unmarshal(response, &actual))
-	assert.EqualValues(t, expected, actual)
+	entries, err := transip.changeRecord(dn, fqdn, "dns01-token", 60)
+	assert.NoError(t, err)
+	assert.EqualValues(t, 1, len(entries))
+	assert.EqualValues(t, "_acme-challenge.test", entries[0].Name)
+	assert.EqualValues(t, "dns01-token", entries[0].Content)
+
+
 }
 
 func TestCleanUp(t *testing.T) {
-	transip, err := NewDNSProvider("transip.example.com", "token", util.RecursiveNameservers)
+
+	transip, err := NewDNSProvider("exampleaccount", []byte("token"), util.RecursiveNameservers)
 	assert.NoError(t, err)
 
-	var response []byte
-	mockTransport(t, transip, "example.com", sampleZoneDataWithTxt, &response)
+	assert.NoError(t, mockup(t, transip))
 
-	assert.NoError(t, transip.CleanUp("test.example.com", "dns01-token", "dns01-key"))
+	a,b,err := transip.findDomain(dn)
+	assert.NoError(t, err, "failure finding domain")
+	fmt.Println(a)
+	fmt.Println(b)
 
-	var expected, actual map[string]interface{}
-	assert.NoError(t, json.Unmarshal([]byte(sampleZoneData), &expected))
-	expected["zone"].(map[string]interface{})["soa"].(map[string]interface{})["serial"] = 1271354826.
-	assert.NoError(t, json.Unmarshal(response, &actual))
-	assert.EqualValues(t, expected, actual)
+	entries, err := transip.changeRecord(dn, fqdn, "dns01-token", 0)
+	assert.NoError(t, err)
+	assert.EqualValues(t, 0, len(entries))
+
+
 }
 
-func mockTransport(t *testing.T, transip *DNSProvider, domain, data string, response *[]byte) {
-	transip.transport = httpResponder(func(req *http.Request) (*http.Response, error) {
-		defer req.Body.Close()
 
-		if req.URL.String() != "https://transip.example.com/config-dns/v1/zones/"+domain {
-			return &http.Response{
-				StatusCode: http.StatusNotFound,
-				Body:       http.NoBody,
-			}, nil
-		}
 
-		if req.Method == http.MethodGet {
-			return &http.Response{
-				StatusCode: http.StatusOK,
-				Body:       ioutil.NopCloser(bytes.NewReader([]byte(data))),
-			}, nil
-		}
 
-		if req.Method == http.MethodPost {
-			if req.Header.Get("Content-Type") != "application/json" {
-				t.Fatalf("usupported Content Type: %v", req.Header.Get("Content-Type"))
-			}
+func TestLive(t *testing.T) {
 
-			var err error
-			*response, err = ioutil.ReadAll(req.Body)
-			assert.NoError(t, err)
+	var accountName = ""
+	var privateKey = []byte("")
+	var domain = "example.com"
+	var subdomain = "test." + domain
 
-			return &http.Response{
-				StatusCode: http.StatusNoContent,
-				Body:       http.NoBody,
-			}, nil
-		}
+	var value = "dnstest_333452452345234"
 
-		t.Fatalf("unexpected method: %v", req.Method)
-		return nil, nil
-	})
-	transip.findHostedDomainByFqdn = func(fqdn string) (string, error) {
-		if !strings.HasSuffix(fqdn, domain+".") {
-			t.Fatalf("unexpected fqdn: %s", fqdn)
-		}
-		return domain, nil
+
+	if (accountName != "") {
+
+		transip, err := NewDNSProvider(accountName, privateKey, util.RecursiveNameservers)
+		assert.NoError(t, err)
+
+		//assert.NoError(t, mockup(t, transip))
+
+		transip.waitTime = 1
+
+		err = transip.Present(domain, "", value)
+		assert.NoError(t, err, "failure adding to domain")
+
+		err = transip.Present(subdomain, "", value)
+		assert.NoError(t, err, "failure adding to subdomain")
+
+		err = transip.CleanUp(domain, "", value)
+		assert.NoError(t, err, "failure removing from domain")
+
+		err = transip.CleanUp(subdomain, "", value)
+		assert.NoError(t, err, "failure removing from subdomain")
+	} else {
+		t.Skipf("Skipped live testing, no accountname set")
 	}
+
+
 }
+
+
+
+func mockup(t *testing.T, transip *DNSProvider) (error) {
+
+	transip.mockup = true
+
+	var domExample = domain.Domain{}
+
+	domExample.Name = "example.com"
+	domExample.DNSEntries = append(domExample.DNSEntries, domain.DNSEntry{
+		"_acme-challenge.test",
+		3600,
+		"TXT",
+		"dns01-token",
+	})
+
+	transip.mockupDomains = append(
+		transip.mockupDomains,
+		domExample,
+	)
+
+
+	return nil
+
+}
+

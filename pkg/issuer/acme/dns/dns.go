@@ -26,7 +26,7 @@ import (
 	"github.com/pkg/errors"
 	corev1listers "k8s.io/client-go/listers/core/v1"
 
-	"cert-manager/pkg/issuer/acme/dns/transip"
+	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/transip"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	"github.com/jetstack/cert-manager/pkg/controller"
