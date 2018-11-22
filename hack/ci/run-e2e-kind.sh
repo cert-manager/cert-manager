@@ -27,27 +27,44 @@ set -o pipefail
 SCRIPT_ROOT=$(dirname "${BASH_SOURCE}")
 source "${SCRIPT_ROOT}/lib/lib.sh"
 
-cleanup() {
-    # Ignore errors here
-    "${SCRIPT_ROOT}/lib/cluster_destroy.sh" || true
-}
-trap cleanup EXIT
+buildDeps
+
+if [ "${RETAIN:-}" != "" ]; then
+    echo "RETAIN set. Skipping cluster cleanup."
+else
+    cleanup() {
+        # Ignore errors here
+        "${SCRIPT_ROOT}/lib/cluster_destroy.sh" || true
+    }
+    trap cleanup EXIT
+fi
 
 "${SCRIPT_ROOT}/lib/cluster_create.sh"
 
+### BEGIN COPYING KUBECTL OUT OF CONTAINER
 # copy kubectl out of the kind container if kubectl is not installed on the
 # host machine. This will *only* work on Linux :this_is_fine:
+# TODO: use bazel to version/fetch kubectl
 if ! which kubectl; then
     tmp_path=$(mktemp -d)
     export PATH="${tmp_path}:${PATH}"
     docker cp "${KIND_CONTAINER_NAME}":"$(docker exec "${KIND_CONTAINER_NAME}" which kubectl)" "${tmp_path}/kubectl"
 fi
 
-export KUBECONFIG="${HOME}/.kube/kind-config-${KIND_CLUSTER_NAME}"
+# Configure KUBECONFIG
+export KUBECONFIG="$(${KIND} get kubeconfig-path --name ${KIND_CLUSTER_NAME})"
 # Ensure the apiserver is responding
 kubectl get nodes
 
 "${SCRIPT_ROOT}/lib/build_images.sh"
 
-make e2e_test \
-    KUBECONFIG=${KUBECONFIG}
+# Run e2e tests
+"${GINKGO}" \
+    -nodes 20 \
+    "${E2E_TEST}" \
+    -- \
+    --helm-binary-path="${HELM}" \
+    --tiller-image-tag=$("${HELM}" version --client --template '{{.Client.SemVer}}') \
+    --repo-root="${REPO_ROOT}" \
+    --report-dir="${ARTIFACTS:-}" \
+    --ginkgo.skip="${GINKGO_SKIP:-}"

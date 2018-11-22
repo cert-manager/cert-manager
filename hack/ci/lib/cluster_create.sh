@@ -21,9 +21,7 @@ set -o pipefail
 SCRIPT_ROOT=$(dirname "${BASH_SOURCE}")
 source "${SCRIPT_ROOT}/lib.sh"
 
-# build 'kind'
-bazel build //hack/bin:kind
-KIND="$(bazel info bazel-genfiles)/hack/bin/kind"
+buildDeps
 
 # deploy_kind will deploy a kubernetes-in-docker cluster
 deploy_kind() {
@@ -42,5 +40,10 @@ deploy_kind() {
         --image="${KIND_IMAGE}" \
         --config "${REPO_ROOT}"/test/fixtures/kind/config-"$config".yaml
 }
+
+if [ "$(${KIND} get clusters | grep ${KIND_CLUSTER_NAME})" == "${KIND_CLUSTER_NAME}" ]; then
+    echo "Existing kind cluster '${KIND_CLUSTER_NAME}' already exists, skipping creating cluster."
+    exit 0
+fi
 
 deploy_kind

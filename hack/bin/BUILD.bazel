@@ -52,6 +52,14 @@ genrule(
     visibility = ["//visibility:public"],
 )
 
+genrule(
+    name = "fetch_ginkgo",
+    srcs = ["//vendor/github.com/onsi/ginkgo/ginkgo"],
+    outs = ["ginkgo"],
+    cmd = "cp $(SRCS) $@",
+    visibility = ["//visibility:public"],
+)
+
 config_setting(
     name = "k8",
     values = {"host_cpu": "k8"},

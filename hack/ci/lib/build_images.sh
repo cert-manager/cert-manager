@@ -26,14 +26,11 @@ SCRIPT_ROOT=$(dirname "${BASH_SOURCE}")
 source "${SCRIPT_ROOT}/lib.sh"
 
 build_images() {
-    # Build cert-manager binaries & docker image
-    APP_VERSION="${DOCKER_TAG}" \
-    DOCKER_REPO="${DOCKER_REPO}" \
-    DOCKER_TAG="${DOCKER_TAG}" \
-    bazel run //:images
-
     local TMP_DIR=$(mktemp -d)
     local BUNDLE_FILE="${TMP_DIR}"/cmbundle.tar.gz
+
+    # Build & export cert-manager docker images to docker daemon
+    bazel run //:images
 
     # Create an archive of docker images
     docker save \

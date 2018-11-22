@@ -72,6 +72,20 @@ container_pull(
     tag = "3.7-v20180822-0201cfb11",
 )
 
+container_pull(
+    name = "kind-1.12",
+    registry = "eu.gcr.io",
+    repository = "jetstack-build-infra-images/kind",
+    tag = "1.12.2-1",
+)
+
+container_pull(
+    name = "kind-1.11",
+    registry = "eu.gcr.io",
+    repository = "jetstack-build-infra-images/kind",
+    tag = "1.11.4-1",
+)
+
 ## Fetch helm for use in template generation and testing
 new_http_archive(
     name = "helm_darwin",
@@ -108,7 +122,7 @@ filegroup(
 ## Install 'kind', for creating kubernetes-in-docker clusters
 go_repository(
     name = "io_kubernetes_sigs_kind",
-    commit = "e0e26dae2dab662a3d06756ed668f47b2a0515cc",
+    commit = "f8aa772a580596b7abc4c9a84e791640b4c604d0",
     importpath = "sigs.k8s.io/kind",
 )
 

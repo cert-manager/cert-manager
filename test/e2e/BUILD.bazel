@@ -1,14 +1,30 @@
 load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
+load("@io_bazel_rules_docker//container:container.bzl", "container_bundle")
 
 # we add this rule so users can `bazel build //test/e2e` to run a
 # platform-independent version of the e2e test binary
 genrule(
-    name = "e2e.test",
+    name = "e2e",
     testonly = True,
     srcs = [":go_default_test"],
     outs = ["e2e.test"],
     cmd = "cp $(SRCS) $@",
     visibility = ["//visibility:public"],
+)
+
+# Images used for e2e testing
+container_bundle(
+    name = "kind-1.11",
+    images = {
+        "test/e2e/kind:1.11": "@kind-1.11//image",
+    },
+)
+
+container_bundle(
+    name = "kind-1.12",
+    images = {
+        "test/e2e/kind:1.12": "@kind-1.12//image",
+    },
 )
 
 go_library(

@@ -33,10 +33,8 @@ help:
 	#
 	### Verify targets
 	#
-	# verify_lint       - run 'lint' targets
-	# verify_unit       - run unit tests
+	# verify            - run all test targets excluding deps
 	# verify_deps       - verifiy vendor/ and Gopkg.lock is up to date
-	# verify_codegen    - verify generated code, including 'static deploy manifests', is up to date
 	# verify_docs       - verify the generated reference docs for API types is up to date
 	# verify_chart      - runs Helm chart linter (e.g. ensuring version has been bumped etc)
 	#
@@ -49,8 +47,7 @@ help:
 	# controller        - build a binary of the 'controller'
 	# webhook           - build a binary of the 'webhook'
 	# acmesolver        - build a binary of the 'acmesolver'
-	# e2e_test          - builds and runs end-to-end tests.
-	#                     NOTE: you probably want to execute ./hack/ci/run-e2e-kind.sh instead of this target
+	# e2e_test          - builds and runs end-to-end tests. (DEPRECATED in favour of ./hack/ci/run-e2e-kind.sh)
 	# images            - builds docker images for all of the components, saving them in your Docker daemon
 	# images_push       - pushes docker images to the target registry
 	#
@@ -66,32 +63,19 @@ build: images
 verify: verify_lint verify_codegen verify_deps verify_unit verify_docs
 push: docker_push
 
-verify_lint:
-	bazel test \
-		//hack:verify-boilerplate \
-		//hack:verify-links \
-		//hack:verify-errexit \
-		//hack:verify-gofmt
-
-verify_unit:
-	bazel test \
-		$$(bazel query 'kind("go._*test", "...")' \
-			| grep -v //vendor/ \
-			| grep -v //test/e2e \
-		)
+verify:
+	bazel test //...
 
 verify_deps:
 	bazel test \
 		//hack:verify-deps
 
-verify_codegen:
-	bazel test \
-		//hack:verify-codegen \
-		//hack:verify-deploy-gen
-
 verify_docs:
 	bazel test \
-		//hack:verify-reference-docs
+		//hack:verify-reference-docs \
+		//hack:verify-boilerplate \
+		//hack:verify-links \
+		//hack:verify-errexit
 
 # requires docker
 verify_chart:
@@ -102,21 +86,6 @@ verify_chart:
 $(CMDS):
 	bazel build \
 		//cmd/$@
-
-e2e_test:
-	mkdir -p "$$(pwd)/_artifacts"
-	bazel build //hack/bin:helm //test/e2e:e2e.test
-	# Run e2e tests
-	KUBECONFIG=$(KUBECONFIG) \
-		bazel run //vendor/github.com/onsi/ginkgo/ginkgo -- \
-			-nodes 20 \
-			$$(bazel info bazel-genfiles)/test/e2e/e2e.test \
-			-- \
-			--helm-binary-path=$$(bazel info bazel-genfiles)/hack/bin/helm \
-			--tiller-image-tag=$$($$(bazel info bazel-genfiles)/hack/bin/helm version --client --template '{{.Client.SemVer}}') \
-			--repo-root="$$(pwd)" \
-			--report-dir="$${ARTIFACTS:-./_artifacts}" \
-			--ginkgo.skip="$(GINKGO_SKIP)"
 
 # Generate targets
 ##################
@@ -129,10 +98,16 @@ generate:
 	bazel run //hack:update-reference-docs
 	bazel run //hack:update-deps
 
+e2e_test:
+	@echo
+	@echo "+++ The 'make e2e_test' target is deprecated. Use \"./hack/ci/run-e2e-kind.sh\" instead."
+	@echo
+	./hack/ci/run-e2e-kind.sh
+
 # Docker targets
 ################
 
-BAZEL_IMAGE_ENV := APP_VERSION=$(APP_VERSION) DOCKER_REPO=$(DOCKER_REPO) DOCKER_TAG=$(APP_VERSION)
+BAZEL_IMAGE_ENV := APP_VERSION=$(APP_VERSION) DOCKER_REPO=$(DOCKER_REPO)
 images:
 	$(BAZEL_IMAGE_ENV) \
 		bazel run //:images

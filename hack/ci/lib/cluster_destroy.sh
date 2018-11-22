@@ -21,8 +21,6 @@ set -o pipefail
 SCRIPT_ROOT=$(dirname "${BASH_SOURCE}")
 source "${SCRIPT_ROOT}/lib.sh"
 
-# build 'kind'
-bazel build //hack/bin:kind
-KIND="$(bazel info bazel-genfiles)/hack/bin/kind"
+buildDeps
 
 "${KIND}" delete cluster --name="${KIND_CLUSTER_NAME}"
