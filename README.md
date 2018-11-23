@@ -34,7 +34,7 @@ replacement, see the [cert-manager nginx ingress quick start
 guide](docs/tutorials/quick-start/index.rst).
 
 See [Getting started](https://cert-manager.readthedocs.io/en/latest/getting-started/)
-within the [documentation](https://cert-manager.readthedocs.io/en/latest/))
+within the [documentation](https://cert-manager.readthedocs.io/en/latest/)
 for installation instructions.
 
 ## Troubleshooting
