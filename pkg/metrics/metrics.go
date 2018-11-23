@@ -139,10 +139,6 @@ func (m *Metrics) UpdateCertificateExpiry(crt *v1alpha1.Certificate, secretListe
 func updateX509Expiry(name, namespace string, cert *x509.Certificate) {
 	// set certificate expiry time
 	expiryTime := cert.NotAfter
-	if expiryTime.IsZero() {
-		return
-	}
-
 	CertificateExpiryTimeSeconds.With(prometheus.Labels{
 		"name":      name,
 		"namespace": namespace}).Set(float64(expiryTime.Unix()))
