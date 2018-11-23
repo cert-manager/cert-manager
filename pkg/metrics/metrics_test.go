@@ -22,7 +22,7 @@ func TestUpdateCertificateExpiry(t *testing.T) {
 		cert      *x509.Certificate
 	}
 	tests := map[string]testT{
-		"first": testT{
+		"first": {
 			name:      "something",
 			namespace: "default",
 			expected: `
