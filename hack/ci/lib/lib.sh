@@ -33,13 +33,13 @@ KIND_IMAGE="${KIND_IMAGE:-test/e2e/kind:${KUBE_VERSION}}"
 
 # DOCKER_REPO is the docker repo to use for cert-manager images, either when
 # building or deploying cert-manager using these scripts.
-DOCKER_REPO="quay.io/jetstack"
+export DOCKER_REPO="quay.io/jetstack"
 
 # DOCKER_TAG is the docker tag to use for the cert-manager images.
 # This defaults to 'build' so it doesn't conflict with images built for any
 # other purpose
-DOCKER_TAG="build"
-APP_VERSION="${DOCKER_TAG}"
+export DOCKER_TAG="build"
+export APP_VERSION="${DOCKER_TAG}"
 
 function kubeVersion() {
     echo $(docker run \
