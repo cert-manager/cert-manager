@@ -30,10 +30,12 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/util/runtime"
 	corelisters "k8s.io/client-go/listers/core/v1"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	"github.com/jetstack/cert-manager/pkg/util/errors"
 	"github.com/jetstack/cert-manager/pkg/util/kube"
 )
 
@@ -129,7 +131,9 @@ func (m *Metrics) UpdateCertificateExpiry(crt *v1alpha1.Certificate, secretListe
 	// grab existing certificate and validate private key
 	cert, err := kube.SecretTLSCert(secretLister, crt.Namespace, crt.Spec.SecretName)
 	if err != nil {
-		runtime.HandleError(fmt.Errorf("[%s/%s] Error getting certificate '%s': %s", crt.Namespace, crt.Name, crt.Spec.SecretName, err.Error()))
+		if !apierrors.IsNotFound(err) && !errors.IsInvalidData(err) {
+			runtime.HandleError(fmt.Errorf("[%s/%s] Error getting certificate '%s': %s", crt.Namespace, crt.Name, crt.Spec.SecretName, err.Error()))
+		}
 		return
 	}
 
