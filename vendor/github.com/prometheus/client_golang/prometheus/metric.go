@@ -17,7 +17,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/gogo/protobuf/proto"
+	"github.com/golang/protobuf/proto"
 
 	dto "github.com/prometheus/client_model/go"
 )
@@ -59,8 +59,9 @@ type Metric interface {
 // implementation XXX has its own XXXOpts type, but in most cases, it is just be
 // an alias of this type (which might change when the requirement arises.)
 //
-// It is mandatory to set Name and Help to a non-empty string. All other fields
-// are optional and can safely be left at their zero value.
+// It is mandatory to set Name to a non-empty string. All other fields are
+// optional and can safely be left at their zero value, although it is strongly
+// encouraged to set a Help string.
 type Opts struct {
 	// Namespace, Subsystem, and Name are components of the fully-qualified
 	// name of the Metric (created by joining these components with
@@ -71,7 +72,7 @@ type Opts struct {
 	Subsystem string
 	Name      string
 
-	// Help provides information about this metric. Mandatory!
+	// Help provides information about this metric.
 	//
 	// Metrics with the same fully-qualified name must have the same Help
 	// string.

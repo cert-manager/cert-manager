@@ -23,6 +23,7 @@ go_library(
         "untyped.go",
         "value.go",
         "vec.go",
+        "wrap.go",
     ],
     importmap = "github.com/jetstack/cert-manager/vendor/github.com/prometheus/client_golang/prometheus",
     importpath = "github.com/prometheus/client_golang/prometheus",
@@ -30,7 +31,6 @@ go_library(
     visibility = ["//visibility:public"],
     deps = [
         "//vendor/github.com/beorn7/perks/quantile:go_default_library",
-        "//vendor/github.com/gogo/protobuf/proto:go_default_library",
         "//vendor/github.com/golang/protobuf/proto:go_default_library",
         "//vendor/github.com/prometheus/client_golang/prometheus/internal:go_default_library",
         "//vendor/github.com/prometheus/client_model/go:go_default_library",
@@ -38,46 +38,6 @@ go_library(
         "//vendor/github.com/prometheus/common/model:go_default_library",
         "//vendor/github.com/prometheus/procfs:go_default_library",
     ],
-)
-
-go_test(
-    name = "go_default_test",
-    srcs = [
-        "benchmark_test.go",
-        "collector_test.go",
-        "counter_test.go",
-        "desc_test.go",
-        "example_clustermanager_test.go",
-        "example_timer_complex_test.go",
-        "example_timer_gauge_test.go",
-        "example_timer_test.go",
-        "examples_test.go",
-        "expvar_collector_test.go",
-        "gauge_test.go",
-        "go_collector_test.go",
-        "histogram_test.go",
-        "http_test.go",
-        "metric_test.go",
-        "process_collector_test.go",
-        "registry_test.go",
-        "summary_test.go",
-        "timer_test.go",
-        "value_test.go",
-        "vec_test.go",
-    ],
-    embed = [":go_default_library"],
-    tags = ["manual"],
-    deps = [
-        "//vendor/github.com/golang/protobuf/proto:go_default_library",
-        "//vendor/github.com/prometheus/client_golang/prometheus/promhttp:go_default_library",
-        "//vendor/github.com/prometheus/client_model/go:go_default_library",
-        "//vendor/github.com/prometheus/common/expfmt:go_default_library",
-    ] + select({
-        "@io_bazel_rules_go//go/platform:linux": [
-            "//vendor/github.com/prometheus/procfs:go_default_library",
-        ],
-        "//conditions:default": [],
-    }),
 )
 
 filegroup(

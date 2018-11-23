@@ -35,8 +35,5 @@ go_test(
     name = "go_default_test",
     srcs = ["metrics_test.go"],
     embed = [":go_default_library"],
-    deps = [
-        "//vendor/github.com/prometheus/client_golang/prometheus:go_default_library",
-        "//vendor/github.com/prometheus/client_golang/prometheus/testutil:go_default_library",
-    ],
+    deps = ["//vendor/github.com/prometheus/client_golang/prometheus/testutil:go_default_library"],
 )

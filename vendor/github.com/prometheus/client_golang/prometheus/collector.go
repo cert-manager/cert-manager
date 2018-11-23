@@ -40,7 +40,8 @@ type Collector interface {
 	// Collector may yield any Metric it sees fit in its Collect method.
 	//
 	// This method idempotently sends the same descriptors throughout the
-	// lifetime of the Collector.
+	// lifetime of the Collector. It may be called concurrently and
+	// therefore must be implemented in a concurrency safe way.
 	//
 	// If a Collector encounters an error while executing this method, it
 	// must send an invalid descriptor (created with NewInvalidDesc) to
@@ -81,6 +82,8 @@ type Collector interface {
 // it might even get registered as an unchecked Collecter (cf. the Register
 // method of the Registerer interface). Hence, only use this shortcut
 // implementation of Describe if you are certain to fulfill the contract.
+//
+// The Collector example demonstrates a use of DescribeByCollect.
 func DescribeByCollect(c Collector, descs chan<- *Desc) {
 	metrics := make(chan Metric)
 	go func() {
