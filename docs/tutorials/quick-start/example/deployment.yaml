@@ -1,18 +1,17 @@
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
-  name: echoserver
-  namespace: default
+  name: kuard
 spec:
   replicas: 1
   template:
     metadata:
       labels:
-        app: echoserver
+        app: kuard
     spec:
       containers:
-      - image: gcr.io/google_containers/echoserver:1.0
+      - image: gcr.io/kuar-demo/kuard-amd64:1
         imagePullPolicy: Always
-        name: echoserver
+        name: kuard
         ports:
         - containerPort: 8080

@@ -8,6 +8,7 @@ cert-manager.
 .. toctree::
    :maxdepth: 2
 
+   quick-start/index
    acme/index
    ca/index
    vault/index
