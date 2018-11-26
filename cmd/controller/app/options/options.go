@@ -65,6 +65,8 @@ type ControllerOptions struct {
 
 	// DNS01Nameservers allows specifying a list of custom nameservers to perform DNS checks
 	DNS01Nameservers []string
+
+	EnableCertificateOwnerRef bool
 }
 
 const (
@@ -85,6 +87,7 @@ const (
 	defaultTLSACMEIssuerKind           = "Issuer"
 	defaultACMEIssuerChallengeType     = "http01"
 	defaultACMEIssuerDNS01ProviderName = ""
+	defaultEnableCertificateOwnerRef   = false
 )
 
 var (
@@ -126,6 +129,7 @@ func NewControllerOptions() *ControllerOptions {
 		DefaultACMEIssuerChallengeType:     defaultACMEIssuerChallengeType,
 		DefaultACMEIssuerDNS01ProviderName: defaultACMEIssuerDNS01ProviderName,
 		DNS01Nameservers:                   []string{},
+		EnableCertificateOwnerRef:          defaultEnableCertificateOwnerRef,
 	}
 }
 
@@ -201,6 +205,9 @@ func (s *ControllerOptions) AddFlags(fs *pflag.FlagSet) {
 	fs.StringSliceVar(&s.DNS01Nameservers, "dns01-self-check-nameservers", []string{}, ""+
 		"A list of comma seperated DNS server endpoints used for DNS01 check requests. "+
 		"This should be a list containing IP address and port, for example: 8.8.8.8:53,8.8.4.4:53")
+	fs.BoolVar(&s.EnableCertificateOwnerRef, "enable-certificate-owner-ref", defaultEnableCertificateOwnerRef, ""+
+		"Whether to set the certificate resource as an owner of secret where the tls certificate is stored. "+
+		"When this flag is enabled, the secret will be automatically removed when the certificate resource is deleted.")
 }
 
 func (o *ControllerOptions) Validate() error {

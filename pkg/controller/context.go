@@ -50,6 +50,7 @@ type Context struct {
 	IssuerOptions
 	ACMEOptions
 	IngressShimOptions
+	CertificateOptions
 }
 
 func (c *Context) IssuerFactory() IssuerFactory {
@@ -105,4 +106,10 @@ type IngressShimOptions struct {
 	DefaultACMEIssuerChallengeType     string
 	DefaultACMEIssuerDNS01ProviderName string
 	DefaultAutoCertificateAnnotations  []string
+}
+
+type CertificateOptions struct {
+	// EnableOwnerRef controls wheter wheter the certificate is configured as an owner of
+	// secret where the effective TLS certificate is stored.
+	EnableOwnerRef bool
 }
