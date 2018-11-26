@@ -163,6 +163,9 @@ func (c *Controller) Sync(ctx context.Context, crt *v1alpha1.Certificate) (reque
 	metaNotAfter := metav1.NewTime(cert.NotAfter)
 	crtCopy.Status.NotAfter = &metaNotAfter
 
+	// update certificate expiry metric
+	defer c.metrics.UpdateCertificateExpiry(crt, c.secretLister)
+
 	// begin checking if the TLS certificate is valid/needs a re-issue or renew
 
 	// check if the private key is the corresponding pair to the certificate
@@ -185,9 +188,6 @@ func (c *Controller) Sync(ctx context.Context, crt *v1alpha1.Certificate) (reque
 	if !util.EqualUnsorted(cert.DNSNames, expectedDNSNames) {
 		return c.issue(ctx, i, crtCopy)
 	}
-
-	// update certificate expiry metric
-	defer c.metrics.UpdateCertificateExpiry(crt, c.secretLister)
 
 	// check if the certificate needs renewal
 	needsRenew := c.Context.IssuerOptions.CertificateNeedsRenew(cert, crt.Spec.RenewBefore)
