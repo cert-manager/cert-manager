@@ -16,7 +16,7 @@ limitations under the License.
 
 // Package metrics contains global structures related to metrics collection
 // cert-manager exposes the following metrics:
-// certificate_expiration_seconds{name, namespace}
+// certificate_expiration_timestamp_seconds{name, namespace}
 package metrics
 
 import (
@@ -55,7 +55,7 @@ var Default = New()
 var CertificateExpiryTimeSeconds = prometheus.NewGaugeVec(
 	prometheus.GaugeOpts{
 		Namespace: namespace,
-		Name:      "certificate_expiration_seconds",
+		Name:      "certificate_expiration_timestamp_seconds",
 		Help:      "The date after which the certificate expires. Expressed as a Unix Epoch Time.",
 	},
 	[]string{"name", "namespace"},

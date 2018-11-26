@@ -27,8 +27,8 @@ import (
 
 func TestUpdateCertificateExpiry(t *testing.T) {
 	const metadata = `
-	# HELP certmanager_certificate_expiration_seconds The date after which the certificate expires. Expressed as a Unix Epoch Time.
-	# TYPE certmanager_certificate_expiration_seconds gauge
+	# HELP certmanager_certificate_expiration_timestamp_seconds The date after which the certificate expires. Expressed as a Unix Epoch Time.
+	# TYPE certmanager_certificate_expiration_timestamp_seconds gauge
 `
 
 	type testT struct {
@@ -42,7 +42,7 @@ func TestUpdateCertificateExpiry(t *testing.T) {
 			name:      "something",
 			namespace: "default",
 			expected: `
-	certmanager_certificate_expiration_seconds{name="something",namespace="default"} 2.208988804e+09
+	certmanager_certificate_expiration_timestamp_seconds{name="something",namespace="default"} 2.208988804e+09
 `,
 			cert: &x509.Certificate{
 				// fixed expiry time for testing
@@ -57,7 +57,7 @@ func TestUpdateCertificateExpiry(t *testing.T) {
 			if err := testutil.CollectAndCompare(
 				CertificateExpiryTimeSeconds,
 				strings.NewReader(metadata+test.expected),
-				"certmanager_certificate_expiration_seconds",
+				"certmanager_certificate_expiration_timestamp_seconds",
 			); err != nil {
 				t.Errorf("unexpected collecting result:\n%s", err)
 			}
