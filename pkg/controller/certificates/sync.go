@@ -198,6 +198,10 @@ func (c *Controller) Sync(ctx context.Context, crt *v1alpha1.Certificate) (reque
 
 	// end checking if the TLS certificate is valid/needs a re-issue or renew
 
+	// If the Certificate is valid and up to date, we schedule a renewal in
+	// the future.
+	c.scheduleRenewal(crt)
+
 	return false, nil
 }
 
