@@ -67,7 +67,7 @@ func New(ctx *controllerpkg.Context) *Controller {
 	ctrl.syncHandler = ctrl.processNextWorkItem
 
 	// exponentially back-off self checks, with a base of 2s and max wait of 20s
-	ctrl.queue = workqueue.NewNamedRateLimitingQueue(workqueue.NewItemExponentialFailureRateLimiter(time.Second*2, time.Second*20), "challenges")
+	ctrl.queue = workqueue.NewNamedRateLimitingQueue(controllerpkg.DefaultItemBasedRateLimiter(), "challenges")
 
 	challengeInformer := ctrl.SharedInformerFactory.Certmanager().V1alpha1().Challenges()
 	challengeInformer.Informer().AddEventHandler(&controllerpkg.QueuingEventHandler{Queue: ctrl.queue})

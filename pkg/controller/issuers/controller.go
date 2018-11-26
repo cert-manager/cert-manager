@@ -55,7 +55,7 @@ func New(ctx *controllerpkg.Context) *Controller {
 	}
 
 	ctrl.syncHandler = ctrl.processNextWorkItem
-	ctrl.queue = workqueue.NewNamedRateLimitingQueue(workqueue.NewItemExponentialFailureRateLimiter(time.Second*5, time.Minute*1), "issuers")
+	ctrl.queue = workqueue.NewNamedRateLimitingQueue(controllerpkg.DefaultItemBasedRateLimiter(), "issuers")
 
 	issuerInformer := ctrl.SharedInformerFactory.Certmanager().V1alpha1().Issuers()
 	issuerInformer.Informer().AddEventHandler(&controllerpkg.QueuingEventHandler{Queue: ctrl.queue})

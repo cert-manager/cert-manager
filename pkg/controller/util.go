@@ -18,6 +18,7 @@ package controller
 
 import (
 	"reflect"
+	"time"
 
 	"k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/tools/cache"
@@ -27,6 +28,10 @@ import (
 var (
 	KeyFunc = cache.DeletionHandlingMetaNamespaceKeyFunc
 )
+
+func DefaultItemBasedRateLimiter() workqueue.RateLimiter {
+	return workqueue.NewItemExponentialFailureRateLimiter(time.Second*5, time.Minute*5)
+}
 
 // QueuingEventHandler is an implementation of cache.ResourceEventHandler that
 // simply queues objects that are added/updated/deleted.
