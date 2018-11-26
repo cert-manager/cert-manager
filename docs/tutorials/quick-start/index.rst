@@ -215,7 +215,7 @@ control, for example as `example.your-domain.com`.
 This quickstart assumes you know how to assign a DNS entry to an IP address and
 will do so.
 
-Step 2 - Deploy an Example Service
+Step 4 - Deploy an Example Service
 ==================================
 
 Your service may have its own chart, or you may be deploying it directly with
@@ -340,7 +340,7 @@ for our site.
     process of issuing a certificate uses that valdiation as proof that the request for
     the domain belongs to someone with sufficient control over the domain.
 
-Step 3 - Deploy Cert Manager
+Step 5 - Deploy Cert Manager
 ============================
 
 We need to install cert-manager to do the work with kubernetes to request a
@@ -414,7 +414,7 @@ are:
 .. _`CRD`: https://kubernetes.io/docs/concepts/extend-kubernetes/api-extension/custom-resources/
 
 
-Step 4 - Configure Let's Encrypt Issuer
+Step 6 - Configure Let's Encrypt Issuer
 =======================================
 
 We will set up two issuers for Let's Encrypt in this example. The Let's Encrypt
@@ -497,7 +497,7 @@ Check on the status of the issuer after you create it:
 
 You should see the issuer listed with a registered account.
 
-Step 5 - Deploy a TLS Ingress Resource
+Step 7 - Deploy a TLS Ingress Resource
 ======================================
 
 With all the pre-requisite configuration in place, we can now do the pieces
