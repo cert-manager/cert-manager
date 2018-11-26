@@ -85,7 +85,7 @@ const (
 	defaultTLSACMEIssuerKind           = "Issuer"
 	defaultACMEIssuerChallengeType     = "http01"
 	defaultACMEIssuerDNS01ProviderName = ""
-	defaultEnableCertificateOwnerRef   = true
+	defaultEnableCertificateOwnerRef   = false
 )
 
 var (
