@@ -91,12 +91,11 @@ type OrderStatus struct {
 	// This is used to obtain certificates for this order once it has been completed.
 	FinalizeURL string `json:"finalizeURL"`
 
-	// CertificateURL is a URL that can be used to retrieve a copy of the signed
-	// TLS certificate for this order.
-	// It will be populated automatically once the order has completed successfully
-	// and the certificate is available for retrieval.
-	// +optional
-	CertificateURL string `json:"certificateURL,omitempty"`
+	// Certificate is a copy of the PEM encoded certificate for this Order.
+	// This field will be populated after the order has been successfully
+	// finalized with the ACME server, and the order has transitioned to the
+	// 'valid' state.
+	Certificate []byte `json:"certificate"`
 
 	// State contains the current state of this Order resource.
 	// States 'success' and 'expired' are 'final'
@@ -112,17 +111,14 @@ type OrderStatus struct {
 
 	// FailureTime stores the time that this order failed.
 	// This is used to influence garbage collection and back-off.
-	// The order resource will be automatically deleted after 30 minutes has
-	// passed since the failure time.
-	// +optional
 	FailureTime *metav1.Time `json:"failureTime,omitempty"`
 }
 
 // State represents the state of an ACME resource, such as an Order.
 // The possible options here map to the corresponding values in the
 // ACME specification.
-// Full details of these values can be found there.
-// Clients utilising this type **must** also gracefully handle unknown
+// Full details of these values can be found here: https://tools.ietf.org/html/draft-ietf-acme-acme-15#section-7.1.6
+// Clients utilising this type must also gracefully handle unknown
 // values, as the contents of this enumeration may be added to over time.
 type State string
 
@@ -132,15 +128,17 @@ const (
 	Unknown State = ""
 
 	// Valid signifies that an ACME resource is in a valid state.
-	// If an Order is marked 'valid', all validations on that Order
-	// have been completed successfully.
-	// This is a transient state as of ACME draft-12
+	// If an order is 'valid', it has been finalized with the ACME server and
+	// the certificate can be retrieved from the ACME server using the
+	// certificate URL stored in the Order's status subresource.
+	// This is a final state.
 	Valid State = "valid"
 
 	// Ready signifies that an ACME resource is in a ready state.
-	// If an Order is marked 'Ready', the corresponding certificate
-	// is ready and can be obtained.
-	// This is a final state.
+	// If an order is 'ready', all of its challenges have been completed
+	// successfully and the order is ready to be finalized.
+	// Once finalized, it will transition to the Valid state.
+	// This is a transient state.
 	Ready State = "ready"
 
 	// Pending signifies that an ACME resource is still pending and is not yet ready.

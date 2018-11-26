@@ -17,7 +17,9 @@ limitations under the License.
 package acmeorders
 
 import (
+	"bytes"
 	"context"
+	"encoding/pem"
 	"fmt"
 	"reflect"
 
@@ -99,6 +101,8 @@ func (c *Controller) Sync(ctx context.Context, o *cmapi.Order) (err error) {
 	// left for us to do here.
 	// TODO: we should find a way to periodically update the state of the resource
 	// to reflect the current/actual state in the ACME server.
+	// TODO: if the certificate bytes are nil, we should attempt to retrieve
+	// the certificate for the order using GetCertificate
 	if acme.IsFinalState(o.Status.State) {
 		existingChallenges, err := c.listChallengesForOrder(o)
 		if err != nil {
@@ -153,16 +157,35 @@ func (c *Controller) Sync(ctx context.Context, o *cmapi.Order) (err error) {
 	// if the current state is 'ready', we need to generate a CSR and finalize
 	// the order
 	case cmapi.Ready:
-		_, err := cl.FinalizeOrder(ctx, o.Status.FinalizeURL, o.Spec.CSR)
+		// TODO: we could retrieve a copy of the certificate resource here and
+		// stored it on the Order resource to prevent extra calls to the API
+		certSlice, err := cl.FinalizeOrder(ctx, o.Status.FinalizeURL, o.Spec.CSR)
+
+		// always update the order status after calling Finalize - this allows
+		// us to record the current orders status on this order resource
+		// despite it not being returned directly by the acme client.
 		errUpdate := c.syncOrderStatus(ctx, cl, o)
 		if errUpdate != nil {
 			// TODO: mark permenant failure?
 			return fmt.Errorf("error syncing order status: %v", errUpdate)
 		}
+
+		// check for errors from FinalizeOrder
 		if err != nil {
 			return fmt.Errorf("error finalizing order: %v", err)
 		}
 
+		// encode the retrieved certificates (including the chain)
+		certBuffer := bytes.NewBuffer([]byte{})
+		for _, cert := range certSlice {
+			err := pem.Encode(certBuffer, &pem.Block{Type: "CERTIFICATE", Bytes: cert})
+			if err != nil {
+				// TODO: something else?
+				return err
+			}
+		}
+
+		o.Status.Certificate = certBuffer.Bytes()
 		c.Recorder.Event(o, corev1.EventTypeNormal, "OrderValid", "Order completed successfully")
 
 		return nil
@@ -433,7 +456,6 @@ func (c *Controller) setOrderStatus(o *cmapi.OrderStatus, acmeOrder *acmeapi.Ord
 
 	o.URL = acmeOrder.URL
 	o.FinalizeURL = acmeOrder.FinalizeURL
-	o.CertificateURL = acmeOrder.CertificateURL
 }
 
 func challengeLabelsForOrder(o *cmapi.Order) map[string]string {
