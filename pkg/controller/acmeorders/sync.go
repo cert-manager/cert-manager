@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"reflect"
 
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/selection"
@@ -209,6 +210,12 @@ func (c *Controller) Sync(ctx context.Context, o *cmapi.Order) (err error) {
 			errs = append(errs, err)
 			continue
 		}
+
+		domainName := spec.DNSName
+		if spec.Wildcard {
+			domainName = "*." + domainName
+		}
+		c.Recorder.Eventf(ch, corev1.EventTypeNormal, "Created", "Created Challenge resource %q for domain %q", ch.Name, ch.Spec.DNSName)
 
 		existingChallenges = append(existingChallenges, ch)
 	}

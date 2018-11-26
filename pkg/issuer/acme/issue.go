@@ -61,6 +61,7 @@ func (a *Acme) Issue(ctx context.Context, crt *v1alpha1.Certificate) (issuer.Iss
 		// If we have generated a new private key, we return here to ensure we
 		// successfully persist the key before creating any CSRs with it.
 		glog.V(4).Infof("Storing new certificate private key for %s/%s", crt.Namespace, crt.Name)
+		a.Recorder.Eventf(crt, corev1.EventTypeNormal, "Generated", "Generated new private key")
 
 		keyPem, err := pki.EncodePrivateKey(key)
 		if err != nil {
@@ -119,13 +120,14 @@ func (a *Acme) Issue(ctx context.Context, crt *v1alpha1.Certificate) (issuer.Iss
 		return issuer.IssueResponse{}, err
 	}
 	if !validForKey {
-		glog.V(4).Infof("CSR on existing order resource does not match certificate %s/%s private key. Creating new order.", crt.Namespace, crt.Name)
+		glog.V(4).Infof("CSR on existing order resource does not match certificate %s/%s private key", crt.Namespace, crt.Name)
 		return a.retryOrder(crt, existingOrder)
 	}
 
 	// If the existing order has expired, we should create a new one
 	// TODO: implement setting this order state in the acmeorders controller
 	if existingOrder.Status.State == v1alpha1.Expired {
+		a.Recorder.Eventf(crt, corev1.EventTypeNormal, "OrderExpired", "Existing certificate for Order %q expired", existingOrder.Name)
 		return a.retryOrder(crt, existingOrder)
 	}
 
@@ -156,6 +158,8 @@ func (a *Acme) Issue(ctx context.Context, crt *v1alpha1.Certificate) (issuer.Iss
 		return issuer.IssueResponse{}, nil
 	}
 
+	a.Recorder.Eventf(crt, corev1.EventTypeNormal, "Order %q completed successfully", existingOrder.Name)
+
 	// If the order is valid, we can attempt to retrieve the Certificate.
 	// First obtain an ACME client to make this easier.
 	cl, err := a.helper.ClientForIssuer(a.issuer)
@@ -163,16 +167,19 @@ func (a *Acme) Issue(ctx context.Context, crt *v1alpha1.Certificate) (issuer.Iss
 		return issuer.IssueResponse{}, err
 	}
 
-	// We check the current Order's Certificate resource to see if it's nearing expiry.
-	// If it is, this implies that it is an old order that is now out of date.
+	// Check the current Order's Certificate resource to see if it's nearing expiry.
+	// If it is, this implies that it is an old order that is now out of date so
+	// we retry the order.
 	certSlice, err := cl.GetCertificate(ctx, existingOrder.Status.CertificateURL)
 	if err != nil {
-		// TODO: parse returned ACME error and potentially re-create order.
+		a.Recorder.Eventf(crt, corev1.EventTypeWarning, "Failed to retrieve Certificate for Order %q (%s): %v", existingOrder.Name, existingOrder.Status.CertificateURL, err)
 		return issuer.IssueResponse{}, err
 	}
 
+	// TODO: retry the order?
+	// this is a weird error we'd not expect to see
 	if len(certSlice) == 0 {
-		// TODO: parse returned ACME error and potentially re-create order.
+		a.Recorder.Eventf(crt, corev1.EventTypeWarning, "BadCertificate", "Empty certificate data retrieved from ACME server")
 		return issuer.IssueResponse{}, fmt.Errorf("invalid certificate returned from acme server")
 	}
 
@@ -182,6 +189,8 @@ func (a *Acme) Issue(ctx context.Context, crt *v1alpha1.Certificate) (issuer.Iss
 		return a.retryOrder(crt, existingOrder)
 	}
 
+	// Check if the currently available Certificate from the Order is up to date.
+	// This may not be the case at renewal time if the old order is still available.
 	if a.Context.IssuerOptions.CertificateNeedsRenew(x509Cert, crt.Spec.RenewBefore) {
 		// existing order's certificate is near expiry
 		return a.retryOrder(crt, existingOrder)
@@ -302,11 +311,12 @@ func (a *Acme) createNewOrder(crt *v1alpha1.Certificate, template *v1alpha1.Orde
 	// set the CSR field on the order to be created
 	template.Spec.CSR = csrBytes
 
-	_, err = a.CMClient.CertmanagerV1alpha1().Orders(template.Namespace).Create(template)
+	o, err := a.CMClient.CertmanagerV1alpha1().Orders(template.Namespace).Create(template)
 	if err != nil {
 		return err
 	}
 
+	a.Recorder.Eventf(crt, corev1.EventTypeNormal, "OrderCreated", "Create Order resource %q", o.Name)
 	glog.V(4).Infof("Created new Order resource named %q for Certificate %s/%s", template.Name, crt.Namespace, crt.Name)
 
 	return nil
