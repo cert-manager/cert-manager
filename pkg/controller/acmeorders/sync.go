@@ -71,11 +71,22 @@ func (c *Controller) Sync(ctx context.Context, o *cmapi.Order) (err error) {
 
 	if o.Status.URL == "" {
 		err := c.createOrder(ctx, cl, genericIssuer, o)
-		// TODO: check for error types (perm or transient?)
+
 		if err != nil {
-			// TODO: check for acmeerrors.IsMalformed and mark the Order as failed
+			// If we get a 4xx error, we mark the Order as 'error'.
+			// 4xx error codes include rate limit errors (429).
+			// This will cause the Certificate controller to retry the Order
+			// after the regular back-off algorithm has been applied.
+			acmeErr, ok := err.(*acmeapi.Error)
+			if ok && acmeErr.StatusCode >= 400 && acmeErr.StatusCode < 500 {
+				c.setOrderState(&o.Status, cmapi.Errored)
+				o.Status.Reason = fmt.Sprintf("Failed to create order: %v", err)
+				return err
+			}
+
 			return err
 		}
+
 		// Return here and allow the updating of the Status field to trigger
 		// a resync.
 		// This ensures we have observed the `status.url` field being set, preventing
@@ -99,14 +110,27 @@ func (c *Controller) Sync(ctx context.Context, o *cmapi.Order) (err error) {
 	case cmapi.Unknown:
 		err := c.syncOrderStatus(ctx, cl, o)
 		if err != nil {
+			// If we get a 4xx error, we mark the Order as 'error'.
+			// 4xx error codes include rate limit errors (429).
+			// This will cause the Certificate controller to retry the Order
+			// after the regular back-off algorithm has been applied.
+			acmeErr, ok := err.(*acmeapi.Error)
+			if ok && acmeErr.StatusCode >= 400 && acmeErr.StatusCode < 500 {
+				c.setOrderState(&o.Status, cmapi.Errored)
+				o.Status.Reason = fmt.Sprintf("Failed to create order: %v", err)
+				return nil
+			}
+
 			return err
 		}
+
 		// If the state has changed, return nil here as the change in state will
 		// cause the controller to sync again once the new state has been observed
 		// by the informer.
 		if o.Status.State != cmapi.Unknown {
 			return nil
 		}
+
 		// Return an error if the state is still unknown. This is an edge case
 		// that *should* be unreachable, but in case it does happen we will requeue
 		// the order to attempt to get a valid state after applying a back-off.
@@ -347,7 +371,6 @@ func (c *Controller) syncOrderStatus(ctx context.Context, cl acmecl.Interface, o
 
 	acmeOrder, err := cl.GetOrder(ctx, o.Status.URL)
 	if err != nil {
-		// TODO: handle 404 acme responses and mark the order as failed
 		return err
 	}
 
