@@ -20,7 +20,25 @@ import (
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 )
 
-type IssuerModifier func(*v1alpha1.Issuer)
+type IssuerModifier func(v1alpha1.GenericIssuer)
+
+func ClusterIssuer(name string, mods ...IssuerModifier) *v1alpha1.ClusterIssuer {
+	c := &v1alpha1.ClusterIssuer{
+		ObjectMeta: ObjectMeta(name),
+	}
+	c.ObjectMeta.Namespace = ""
+	for _, mod := range mods {
+		mod(c)
+	}
+	return c
+}
+
+func ClusterIssuerFrom(iss *v1alpha1.ClusterIssuer, mods ...IssuerModifier) *v1alpha1.ClusterIssuer {
+	for _, mod := range mods {
+		mod(iss)
+	}
+	return iss
+}
 
 func Issuer(name string, mods ...IssuerModifier) *v1alpha1.Issuer {
 	c := &v1alpha1.Issuer{
@@ -40,25 +58,25 @@ func IssuerFrom(iss *v1alpha1.Issuer, mods ...IssuerModifier) *v1alpha1.Issuer {
 }
 
 func SetIssuerACME(a v1alpha1.ACMEIssuer) IssuerModifier {
-	return func(iss *v1alpha1.Issuer) {
-		iss.Spec.ACME = &a
+	return func(iss v1alpha1.GenericIssuer) {
+		iss.GetSpec().ACME = &a
 	}
 }
 
 func SetIssuerCA(a v1alpha1.CAIssuer) IssuerModifier {
-	return func(iss *v1alpha1.Issuer) {
-		iss.Spec.CA = &a
+	return func(iss v1alpha1.GenericIssuer) {
+		iss.GetSpec().CA = &a
 	}
 }
 
 func SetIssuerSelfSigned(a v1alpha1.SelfSignedIssuer) IssuerModifier {
-	return func(iss *v1alpha1.Issuer) {
-		iss.Spec.SelfSigned = &a
+	return func(iss v1alpha1.GenericIssuer) {
+		iss.GetSpec().SelfSigned = &a
 	}
 }
 
 func AddIssuerCondition(c v1alpha1.IssuerCondition) IssuerModifier {
-	return func(iss *v1alpha1.Issuer) {
-		iss.Status.Conditions = append(iss.Status.Conditions, c)
+	return func(iss v1alpha1.GenericIssuer) {
+		iss.GetStatus().Conditions = append(iss.GetStatus().Conditions, c)
 	}
 }
