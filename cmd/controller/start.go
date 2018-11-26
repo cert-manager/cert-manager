@@ -80,8 +80,6 @@ to renew certificates at an appropriate time before expiry.`,
 			}
 
 			glog.Infof("starting cert-manager %s (revision %s)", util.AppVersion, util.AppGitCommit)
-
-			go StartPrometheusMetricsServer(stopCh)
 			o.RunCertManagerController(stopCh)
 		},
 	}
