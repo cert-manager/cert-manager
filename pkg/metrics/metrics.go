@@ -128,7 +128,7 @@ func (m *Metrics) Start(stopCh <-chan struct{}) {
 // UpdateCertificateExpiry updates the expiry time of a certificate
 func (m *Metrics) UpdateCertificateExpiry(crt *v1alpha1.Certificate, secretLister corelisters.SecretLister) {
 
-	// grab existing certificate and validate private key
+	// grab existing certificate
 	cert, err := kube.SecretTLSCert(secretLister, crt.Namespace, crt.Spec.SecretName)
 	if err != nil {
 		if !apierrors.IsNotFound(err) && !errors.IsInvalidData(err) {
