@@ -19,6 +19,7 @@ package e2e
 import (
 	"flag"
 	"fmt"
+	"log"
 	"path"
 	"testing"
 	"time"
@@ -73,5 +74,9 @@ func TestE2E(t *testing.T) {
 				ginkgoconfig.GinkgoConfig.ParallelNode))))
 	}
 
-	ginkgo.RunSpecsWithDefaultAndCustomReporters(t, "cert-manager e2e suite", r)
+	if !ginkgo.RunSpecsWithDefaultAndCustomReporters(t, "cert-manager e2e suite", r) {
+		if len(globalLogs) > 0 {
+			log.Printf("Test suite failed, global addon logs: \n%v", globalLogs)
+		}
+	}
 }

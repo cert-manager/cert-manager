@@ -21,6 +21,10 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
+	"strings"
+
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/jetstack/cert-manager/test/e2e/framework/addon/tiller"
 	"github.com/jetstack/cert-manager/test/e2e/framework/config"
@@ -241,4 +245,40 @@ func (c *Chart) SupportsGlobal() bool {
 	}
 
 	return true
+}
+
+func (c *Chart) Logs() (string, error) {
+	kc := c.Tiller.Base.Details().KubeClient
+	pods, err := kc.CoreV1().Pods(c.Namespace).List(metav1.ListOptions{LabelSelector: "release=" + c.ReleaseName})
+	if err != nil {
+		return "", err
+	}
+
+	builder := strings.Builder{}
+	for _, pod := range pods.Items {
+		containerName := pod.Spec.Containers[0].Name
+		resp := kc.CoreV1().Pods(pod.Namespace).GetLogs(pod.Name, &corev1.PodLogOptions{
+			Container: containerName,
+		}).Do()
+
+		err := resp.Error()
+		if err != nil {
+			return "", err
+		}
+
+		logs, err := resp.Raw()
+		if err != nil {
+			return "", err
+		}
+
+		_, err = builder.WriteString(fmt.Sprintf("Pod logs for %s:\n", pod.Name))
+		if err != nil {
+			return "", err
+		}
+		_, err = builder.Write(logs)
+		if err != nil {
+			return "", err
+		}
+	}
+	return builder.String(), nil
 }

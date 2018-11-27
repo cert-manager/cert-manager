@@ -49,13 +49,20 @@ var _ = ginkgo.SynchronizedBeforeSuite(func() []byte {
 	}
 })
 
+var globalLogs string
+
 var _ = ginkgo.SynchronizedAfterSuite(func() {},
 	func() {
-		ginkgo.By("Cleaning up the provisioned globals")
+		ginkgo.By("Retrieving logs for global addons")
+		var err error
+		globalLogs, err = addon.GlobalLogs()
+		if err != nil {
+			ginkgo.GinkgoWriter.Write([]byte("Failed to retrieve global addon logs: " + err.Error()))
+		}
 
-		err := addon.DeprovisionGlobals(cfg)
+		ginkgo.By("Cleaning up the provisioned globals")
+		err = addon.DeprovisionGlobals(cfg)
 		if err != nil {
 			framework.Failf("Error deprovisioning global addons: %v", err)
 		}
-
 	})
