@@ -18,7 +18,9 @@ go_test(
     embed = [":go_default_library"],
     deps = [
         "//pkg/issuer/acme/dns/util:go_default_library",
+        "//vendor/cert-manager/bazel-cert-manager/external/go_sdk/src/fmt:go_default_library",
         "//vendor/github.com/stretchr/testify/assert:go_default_library",
+        "//vendor/github.com/transip/gotransip/domain:go_default_library",
     ],
 )
 
