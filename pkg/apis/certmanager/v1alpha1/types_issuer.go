@@ -212,6 +212,9 @@ type ACMEIssuerDNS01Provider struct {
 
 	// +optional
 	RFC2136 *ACMEIssuerDNS01ProviderRFC2136 `json:"rfc2136,omitempty"`
+
+	//+optional
+	Selectel *ACMEIssuerDNS01ProviderSelectel `json:"selectel,omitempty"`
 }
 
 // CNAMEStrategy configures how the DNS01 provider should handle CNAME records
@@ -322,6 +325,12 @@ type ACMEIssuerDNS01ProviderRFC2136 struct {
 	// ``HMACSHA1``, ``HMACSHA256`` or ``HMACSHA512``.
 	// +optional
 	TSIGAlgorithm string `json:"tsigAlgorithm,omitempty"`
+}
+
+// ACMEIssuerDNS01ProviderSelectel is a structure containing the DNS
+// configuration for Selectel Domains
+type ACMEIssuerDNS01ProviderSelectel struct {
+	APIToken SecretKeySelector `json:"apiTokenSecretRef"`
 }
 
 // IssuerStatus contains status information about an Issuer

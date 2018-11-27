@@ -596,6 +596,20 @@ func TestValidateACMEIssuerDNS01Config(t *testing.T) {
 				field.Required(providersPath.Index(0).Child("rfc2136", "tsigKeyName"), ""),
 			},
 		},
+		"missing selectel token": {
+			cfg: &v1alpha1.ACMEIssuerDNS01Config{
+				Providers: []v1alpha1.ACMEIssuerDNS01Provider{
+					{
+						Name:     "a name",
+						Selectel: &v1alpha1.ACMEIssuerDNS01ProviderSelectel{},
+					},
+				},
+			},
+			errs: []*field.Error{
+				field.Required(providersPath.Index(0).Child("selectel", "apiTokenSecretRef", "name"), "secret name is required"),
+				field.Required(providersPath.Index(0).Child("selectel", "apiTokenSecretRef", "key"), "secret key is required"),
+			},
+		},
 		"multiple providers configured": {
 			cfg: &v1alpha1.ACMEIssuerDNS01Config{
 				Providers: []v1alpha1.ACMEIssuerDNS01Provider{

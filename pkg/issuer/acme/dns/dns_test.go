@@ -20,6 +20,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/selectel"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -197,6 +198,140 @@ func TestSolverFor(t *testing.T) {
 						Config: v1alpha1.SolverConfig{
 							DNS01: &v1alpha1.DNS01SolverConfig{
 								Provider: "fake-cloudflare-oops",
+							},
+						},
+					},
+				},
+			},
+			domain:    "example.com",
+			expectErr: true,
+		},
+		"loads secret for selectel provider": {
+			solverFixture: &solverFixture{
+				Builder: &test.Builder{
+					KubeObjects: []runtime.Object{
+						newSecret("selectel-api-token", "default", map[string][]byte{
+							"api-token": []byte("a-selectel-api-token"),
+						}),
+					},
+				},
+				Issuer: newIssuer("test", "default", []v1alpha1.ACMEIssuerDNS01Provider{
+					{
+						Name: "fake-selectel",
+						Selectel: &v1alpha1.ACMEIssuerDNS01ProviderSelectel{
+							APIToken: v1alpha1.SecretKeySelector{
+								LocalObjectReference: v1alpha1.LocalObjectReference{
+									Name: "selectel-api-token",
+								},
+								Key: "api-token",
+							},
+						},
+					},
+				}),
+				Challenge: &v1alpha1.Challenge{
+					Spec: v1alpha1.ChallengeSpec{
+						Config: v1alpha1.SolverConfig{
+							DNS01: &v1alpha1.DNS01SolverConfig{
+								Provider: "fake-selectel",
+							},
+						},
+					},
+				},
+			},
+			domain:             "example.com",
+			expectedSolverType: reflect.TypeOf(&selectel.DNSProvider{}),
+		},
+		"fails to load a selectel provider with a missing secret": {
+			solverFixture: &solverFixture{
+				Issuer: newIssuer("test", "default", []v1alpha1.ACMEIssuerDNS01Provider{
+					{
+						Name: "fake-selectel",
+						Selectel: &v1alpha1.ACMEIssuerDNS01ProviderSelectel{
+							APIToken: v1alpha1.SecretKeySelector{
+								LocalObjectReference: v1alpha1.LocalObjectReference{
+									Name: "selectel-api-token",
+								},
+								Key: "api-token",
+							},
+						},
+					},
+				}),
+				// don't include any secrets in the lister
+				Challenge: &v1alpha1.Challenge{
+					Spec: v1alpha1.ChallengeSpec{
+						Config: v1alpha1.SolverConfig{
+							DNS01: &v1alpha1.DNS01SolverConfig{
+								Provider: "fake-selectel",
+							},
+						},
+					},
+				},
+			},
+			domain:    "example.com",
+			expectErr: true,
+		},
+		"fails to load a selectel provider with an invalid secret": {
+			solverFixture: &solverFixture{
+				Builder: &test.Builder{
+					KubeObjects: []runtime.Object{
+						newSecret("selectel-token", "default", map[string][]byte{
+							"api-key-oops": []byte("a-selectel-api-token"),
+						}),
+					},
+				},
+				Issuer: newIssuer("test", "default", []v1alpha1.ACMEIssuerDNS01Provider{
+					{
+						Name: "fake-selectel",
+						Selectel: &v1alpha1.ACMEIssuerDNS01ProviderSelectel{
+							APIToken: v1alpha1.SecretKeySelector{
+								LocalObjectReference: v1alpha1.LocalObjectReference{
+									Name: "selectel-key",
+								},
+								Key: "api-token",
+							},
+						},
+					},
+				}),
+				Challenge: &v1alpha1.Challenge{
+					Spec: v1alpha1.ChallengeSpec{
+						Config: v1alpha1.SolverConfig{
+							DNS01: &v1alpha1.DNS01SolverConfig{
+								Provider: "fake-selectel",
+							},
+						},
+					},
+				},
+			},
+			domain:    "example.com",
+			expectErr: true,
+		},
+		"fails to load a selectel provider with a non-existent provider set for the domain": {
+			solverFixture: &solverFixture{
+				Builder: &test.Builder{
+					KubeObjects: []runtime.Object{
+						newSecret("selectel-token", "default", map[string][]byte{
+							"api-token": []byte("a-selectel-api-token"),
+						}),
+					},
+				},
+				Issuer: newIssuer("test", "default", []v1alpha1.ACMEIssuerDNS01Provider{
+					{
+						Name: "fake-cloudflare",
+						Selectel: &v1alpha1.ACMEIssuerDNS01ProviderSelectel{
+							APIToken: v1alpha1.SecretKeySelector{
+								LocalObjectReference: v1alpha1.LocalObjectReference{
+									Name: "selectel-token",
+								},
+								Key: "api-token",
+							},
+						},
+					},
+				}),
+				Challenge: &v1alpha1.Challenge{
+					Spec: v1alpha1.ChallengeSpec{
+						Config: v1alpha1.SolverConfig{
+							DNS01: &v1alpha1.DNS01SolverConfig{
+								Provider: "fake-selectel-oops",
 							},
 						},
 					},
