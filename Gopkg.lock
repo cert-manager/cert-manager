@@ -530,11 +530,11 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:e35b22fd32c416ec3d5977cf1e2d8399f81e2bb9458e04541a25b6e68d52fda1"
+  digest = "1:049ac741970f87dd49e05b58291e6843546775e89343831ba5c9c7ca82f22025"
   name = "github.com/miekg/dns"
   packages = ["."]
   pruneopts = "UT"
-  revision = "0f3adef2e2201d72e50309a36fc99d8a9d1a4960"
+  revision = "8f269a6b16e03c80db1d823c86591177b533cc3a"
 
 [[projects]]
   branch = "master"
@@ -748,20 +748,23 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:ed1124c473eac604bca20b7f77229d61da2b96789f2a98f19765ffa4df552d71"
+  digest = "1:d009af06feb3ec507e13a4ab006efd58cfc8fd69a38ff7ffae5e452d6fed81f2"
   name = "golang.org/x/crypto"
   packages = [
     "acme",
+    "ed25519",
+    "ed25519/internal/edwards25519",
     "ssh/terminal",
   ]
   pruneopts = "UT"
-  revision = "6914964337150723782436d56b3f21610a74ce7b"
+  revision = "eb0de9b17e854e9b1ccd9963efafc79862359959"
 
 [[projects]]
   branch = "master"
-  digest = "1:42bdd4721ba5544f3631a0570cebf50da808b10f66676aea588d0a88f0a19884"
+  digest = "1:1168bec07dc7aea636c8784bb9c3b263af70d798df1cffb36a87c44e04928683"
   name = "golang.org/x/net"
   packages = [
+    "bpf",
     "context",
     "context/ctxhttp",
     "html",
@@ -770,7 +773,11 @@
     "http2",
     "http2/hpack",
     "idna",
+    "internal/iana",
+    "internal/socket",
     "internal/timeseries",
+    "ipv4",
+    "ipv6",
     "lex/httplex",
     "trace",
     "websocket",
