@@ -28,6 +28,7 @@ import (
 
 	"github.com/jetstack/cert-manager/test/e2e/framework/addon/tiller"
 	"github.com/jetstack/cert-manager/test/e2e/framework/config"
+	"github.com/jetstack/cert-manager/test/e2e/framework/log"
 )
 
 // Chart is a generic Helm chart addon for the test environment
@@ -182,8 +183,8 @@ func (c *Chart) buildHelmCmd(args ...string) *exec.Cmd {
 		"--tiller-namespace", c.tillerDetails.Namespace,
 	}, args...)
 	cmd := exec.Command(c.config.Addons.Helm.Path, args...)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
+	cmd.Stdout = log.Writer
+	cmd.Stderr = log.Writer
 	return cmd
 }
 

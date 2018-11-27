@@ -20,13 +20,12 @@ import (
 	"fmt"
 	"time"
 
-	. "github.com/onsi/ginkgo"
-
+	"github.com/onsi/ginkgo"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 
-	. "github.com/jetstack/cert-manager/test/e2e/framework/log"
+	"github.com/jetstack/cert-manager/test/e2e/framework/log"
 )
 
 const (
@@ -44,7 +43,7 @@ func (h *Helper) WaitForAllPodsRunningInNamespace(ns string) error {
 }
 
 func (h *Helper) WaitForAllPodsRunningInNamespaceTimeout(ns string, timeout time.Duration) error {
-	By("Waiting " + timeout.String() + " for all pods in namespace '" + ns + "' to be Ready")
+	ginkgo.By("Waiting " + timeout.String() + " for all pods in namespace '" + ns + "' to be Ready")
 	return wait.PollImmediate(Poll, timeout, func() (bool, error) {
 		pods, err := h.KubeClient.CoreV1().Pods(ns).List(metav1.ListOptions{})
 		if err != nil {
@@ -52,7 +51,7 @@ func (h *Helper) WaitForAllPodsRunningInNamespaceTimeout(ns string, timeout time
 		}
 
 		if len(pods.Items) == 0 {
-			Logf("No pods found in namespace %s - checking again...")
+			log.Logf("No pods found in namespace %s - checking again...")
 			return false, nil
 		}
 
@@ -64,7 +63,7 @@ func (h *Helper) WaitForAllPodsRunningInNamespaceTimeout(ns string, timeout time
 				continue
 			}
 			if c.Reason == "PodCompleted" {
-				Logf("Pod %q has Completed, assuming it is ready/expected", p.Name)
+				log.Logf("Pod %q has Completed, assuming it is ready/expected", p.Name)
 				continue
 			}
 			// This pod does not have the ready condition set to True
@@ -75,7 +74,7 @@ func (h *Helper) WaitForAllPodsRunningInNamespaceTimeout(ns string, timeout time
 
 		if len(errs) > 0 {
 			for _, err := range errs {
-				Logf(err)
+				log.Logf(err)
 			}
 			return false, nil
 		}
