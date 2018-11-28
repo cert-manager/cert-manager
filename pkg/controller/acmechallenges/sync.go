@@ -58,12 +58,6 @@ func (c *Controller) Sync(ctx context.Context, ch *cmapi.Challenge) (err error) 
 	oldChal := ch
 	ch = ch.DeepCopy()
 
-	// bail out early on if processing=false, as this challenge has not been
-	// scheduled yet.
-	if ch.Status.Processing == false {
-		return nil
-	}
-
 	defer func() {
 		// TODO: replace with more efficient comparison
 		if reflect.DeepEqual(oldChal.Status, ch.Status) && len(oldChal.Finalizers) == len(ch.Finalizers) {
@@ -77,6 +71,12 @@ func (c *Controller) Sync(ctx context.Context, ch *cmapi.Challenge) (err error) 
 
 	if ch.DeletionTimestamp != nil {
 		return c.handleFinalizer(ctx, ch)
+	}
+
+	// bail out early on if processing=false, as this challenge has not been
+	// scheduled yet.
+	if ch.Status.Processing == false {
+		return nil
 	}
 
 	genericIssuer, err := c.helper.GetGenericIssuer(ch.Spec.IssuerRef, ch.Namespace)
@@ -176,11 +176,6 @@ func (c *Controller) Sync(ctx context.Context, ch *cmapi.Challenge) (err error) 
 }
 
 func (c *Controller) handleFinalizer(ctx context.Context, ch *cmapi.Challenge) error {
-	genericIssuer, err := c.helper.GetGenericIssuer(ch.Spec.IssuerRef, ch.Namespace)
-	if err != nil {
-		return fmt.Errorf("error reading (cluster)issuer %q: %v", ch.Spec.IssuerRef.Name, err)
-	}
-
 	if len(ch.Finalizers) == 0 {
 		return nil
 	}
@@ -189,6 +184,15 @@ func (c *Controller) handleFinalizer(ctx context.Context, ch *cmapi.Challenge) e
 		return nil
 	}
 	ch.Finalizers = ch.Finalizers[1:]
+
+	if !ch.Status.Processing {
+		return nil
+	}
+
+	genericIssuer, err := c.helper.GetGenericIssuer(ch.Spec.IssuerRef, ch.Namespace)
+	if err != nil {
+		return fmt.Errorf("error reading (cluster)issuer %q: %v", ch.Spec.IssuerRef.Name, err)
+	}
 
 	solver, err := c.solverFor(ch.Spec.Type)
 	if err != nil {
