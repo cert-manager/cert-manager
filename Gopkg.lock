@@ -620,6 +620,14 @@
   revision = "76d182e57ce628bbf6eb266a7d26cf6c52adf551"
 
 [[projects]]
+  branch = "master"
+  digest = "1:f703c1f05c29329026c4f49bd6c71442537e1f964d3a4f310982702a293f28c6"
+  name = "github.com/ovh/go-ovh"
+  packages = ["ovh"]
+  pruneopts = "UT"
+  revision = "ba5adb4cf0148a3dbdbd30586f075266256a77b1"
+
+[[projects]]
   digest = "1:361de06aa7ae272616cbe71c3994a654cc6316324e30998e650f7765b20c5b33"
   name = "github.com/pborman/uuid"
   packages = ["."]
@@ -740,6 +748,14 @@
   pruneopts = "UT"
   revision = "b4c50a2b199d93b13dc15e78929cfb23bfdf21ab"
   version = "v1.1.1"
+
+[[projects]]
+  digest = "1:96db0493679e1549dc1c2df5cefae4e1af19debf25aa58884822cbce5f027460"
+  name = "github.com/xenolf/lego"
+  packages = ["platform/tester"]
+  pruneopts = "UT"
+  revision = "286c44337e7fb0b3aceaf71c42448e887a6db218"
+  version = "v1.2.1"
 
 [[projects]]
   branch = "master"
@@ -919,6 +935,14 @@
   pruneopts = "UT"
   revision = "3887ee99ecf07df5b447e9b00d9c0b2adaa9f3e4"
   version = "v0.9.0"
+
+[[projects]]
+  digest = "1:15e27372d379b45b18ac917b9dafc45c45485239490ece18cca97a12f9591146"
+  name = "gopkg.in/ini.v1"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "9c8236e659b76e87bf02044d06fde8683008ff3e"
+  version = "v1.39.0"
 
 [[projects]]
   digest = "1:c805e517269b0ba4c21ded5836019ed7d16953d4026cb7d00041d039c7906be9"
@@ -1426,12 +1450,14 @@
     "github.com/onsi/ginkgo/reporters",
     "github.com/onsi/gomega",
     "github.com/openshift/generic-admission-server/pkg/cmd",
+    "github.com/ovh/go-ovh/ovh",
     "github.com/pkg/errors",
     "github.com/prometheus/client_golang/prometheus",
     "github.com/spf13/cobra",
     "github.com/spf13/pflag",
     "github.com/stretchr/testify/assert",
     "github.com/stretchr/testify/require",
+    "github.com/xenolf/lego/platform/tester",
     "golang.org/x/crypto/acme",
     "golang.org/x/net/context",
     "golang.org/x/oauth2",
