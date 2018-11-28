@@ -147,6 +147,7 @@ func TestIssueHappyPath(t *testing.T) {
 	testCertPendingOrder.Status.State = v1alpha1.Pending
 	testCertValidOrder := testCertEmptyOrder.DeepCopy()
 	testCertValidOrder.Status.State = v1alpha1.Valid
+	testCertValidOrder.Status.Certificate = testCertSignedBytesPEM
 
 	tests := map[string]acmeFixture{
 		"generate a new private key if one does not exist": {
