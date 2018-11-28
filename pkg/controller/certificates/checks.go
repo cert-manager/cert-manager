@@ -29,6 +29,28 @@ import (
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 )
 
+func (c *Controller) handleGenericIssuer(obj interface{}) {
+	iss, ok := obj.(cmapi.GenericIssuer)
+	if !ok {
+		runtime.HandleError(fmt.Errorf("Object does not implement GenericIssuer %#v", obj))
+		return
+	}
+
+	certs, err := c.certificatesForGenericIssuer(iss)
+	if err != nil {
+		runtime.HandleError(fmt.Errorf("Error looking up Certificates observing Issuer/ClusterIssuer: %s/%s", iss.GetObjectMeta().Namespace, iss.GetObjectMeta().Name))
+		return
+	}
+	for _, crt := range certs {
+		key, err := keyFunc(crt)
+		if err != nil {
+			runtime.HandleError(err)
+			continue
+		}
+		c.queue.Add(key)
+	}
+}
+
 func (c *Controller) handleSecretResource(obj interface{}) {
 	var secret *corev1.Secret
 	var ok bool
@@ -67,6 +89,34 @@ func (c *Controller) certificatesForSecret(secret *corev1.Secret) ([]*cmapi.Cert
 		if crt.Spec.SecretName == secret.Name {
 			affected = append(affected, crt)
 		}
+	}
+
+	return affected, nil
+}
+
+func (c *Controller) certificatesForGenericIssuer(iss cmapi.GenericIssuer) ([]*cmapi.Certificate, error) {
+	crts, err := c.certificateLister.List(labels.NewSelector())
+
+	if err != nil {
+		return nil, fmt.Errorf("error listing certificiates: %s", err.Error())
+	}
+
+	_, isClusterIssuer := iss.(*cmapi.ClusterIssuer)
+
+	var affected []*cmapi.Certificate
+	for _, crt := range crts {
+		if isClusterIssuer && crt.Spec.IssuerRef.Kind != cmapi.ClusterIssuerKind {
+			continue
+		}
+		if !isClusterIssuer {
+			if crt.Namespace != iss.GetObjectMeta().Namespace {
+				continue
+			}
+		}
+		if crt.Spec.IssuerRef.Name != iss.GetObjectMeta().Name {
+			continue
+		}
+		affected = append(affected, crt)
 	}
 
 	return affected, nil
