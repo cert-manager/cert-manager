@@ -177,10 +177,10 @@ var _ = framework.CertManagerDescribe("Vault Certificate (AppRole)", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			err = util.WaitCertificateIssuedValid(certClient, secretClient, certificateName, time.Minute*5)
+			Expect(err).NotTo(HaveOccurred())
 
 			// Vault substract 30 seconds to the NotBefore date.
 			f.CertificateDurationValid(cert, v.expectedDuration+(30*time.Second))
-			Expect(err).NotTo(HaveOccurred())
 		})
 	}
 })
