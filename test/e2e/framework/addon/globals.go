@@ -18,13 +18,13 @@ package addon
 
 import (
 	"fmt"
-
-	"github.com/jetstack/cert-manager/test/e2e/framework/addon/certmanager"
+	"strings"
 
 	"github.com/golang/glog"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 
 	"github.com/jetstack/cert-manager/test/e2e/framework/addon/base"
+	"github.com/jetstack/cert-manager/test/e2e/framework/addon/certmanager"
 	"github.com/jetstack/cert-manager/test/e2e/framework/addon/nginxingress"
 	"github.com/jetstack/cert-manager/test/e2e/framework/addon/tiller"
 	"github.com/jetstack/cert-manager/test/e2e/framework/config"
@@ -117,6 +117,29 @@ func SetupGlobals(cfg *config.Config) error {
 		}
 	}
 	return nil
+}
+
+type loggableAddon interface {
+	Logs() (string, error)
+}
+
+func GlobalLogs() (string, error) {
+	b := &strings.Builder{}
+	for _, p := range provisioned {
+		if p, ok := p.(loggableAddon); ok {
+			l, err := p.Logs()
+
+			if err != nil {
+				return "", err
+			}
+
+			_, err = b.WriteString(fmt.Sprintf("Got pods logs for addon: \n%s\n\n", l))
+			if err != nil {
+				return "", err
+			}
+		}
+	}
+	return b.String(), nil
 }
 
 // DeprovisionGlobals deprovisions all of the global addons.

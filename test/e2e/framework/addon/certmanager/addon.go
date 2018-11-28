@@ -111,3 +111,7 @@ func (p *Certmanager) SupportsGlobal() bool {
 	// it are deterministic (i.e. not a result of the call to helm install).
 	return true
 }
+
+func (p *Certmanager) Logs() (string, error) {
+	return p.chart.Logs()
+}

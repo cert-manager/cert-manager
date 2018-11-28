@@ -101,3 +101,7 @@ func (p *Pebble) SupportsGlobal() bool {
 	// it are deterministic (i.e. not a result of the call to helm install).
 	return true
 }
+
+func (p *Pebble) Logs() (string, error) {
+	return p.chart.Logs()
+}

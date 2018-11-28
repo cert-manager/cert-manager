@@ -144,6 +144,10 @@ func (n *Nginx) SupportsGlobal() bool {
 	return true
 }
 
+func (n *Nginx) Logs() (string, error) {
+	return n.chart.Logs()
+}
+
 func (d *Details) NewTestDomain() string {
 	return fmt.Sprintf("%s.%s", cmutil.RandStringRunes(5), d.BaseDomain)
 }

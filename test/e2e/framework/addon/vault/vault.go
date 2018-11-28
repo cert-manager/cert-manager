@@ -188,6 +188,10 @@ func (v *Vault) SupportsGlobal() bool {
 	return false
 }
 
+func (v *Vault) Logs() (string, error) {
+	return v.chart.Logs()
+}
+
 func (v *Vault) generateCA() ([]byte, []byte, error) {
 	ca := &x509.Certificate{
 		SerialNumber: big.NewInt(1653),
