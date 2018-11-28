@@ -61,7 +61,7 @@ type dnsProviderConstructors struct {
 	acmeDNS      func(host string, accountJson []byte, dns01Nameservers []string) (*acmedns.DNSProvider, error)
 	rfc2136      func(nameserver, tsigAlgorithm, tsigKeyName, tsigSecret string, dns01Nameservers []string) (*rfc2136.DNSProvider, error)
 	digitalOcean func(token string, dns01Nameservers []string) (*digitalocean.DNSProvider, error)
-	ovh          func(endpoint, applicationKey, applicationSecret, consumerKey string, dns01Nameservers []string) (*ovh.DNSProvider, error)
+	OVH          func(endpoint, applicationKey, applicationSecret, consumerKey string, dns01Nameservers []string) (*ovh.DNSProvider, error)
 }
 
 // Solver is a solver for the acme dns01 challenge.
@@ -313,6 +313,41 @@ func (s *Solver) solverForChallenge(issuer v1alpha1.GenericIssuer, ch *v1alpha1.
 		)
 		if err != nil {
 			return nil, fmt.Errorf("error instantiating rfc2136 challenge solver: %s", err.Error())
+		}
+	case providerConfig.OVH != nil:
+		applicationSecret := ""
+		if providerConfig.OVH.ApplicationSecret.Name != "" {
+			secret, err := s.secretLister.Secrets(resourceNamespace).Get(providerConfig.OVH.ApplicationSecret.Name)
+			if err != nil {
+				return nil, fmt.Errorf("error getting ovh secret applicationSecret: %s", err)
+			}
+			secretBytes, ok := secret.Data[providerConfig.OVH.ApplicationSecret.Key]
+			if !ok {
+				return nil, fmt.Errorf("error getting ovh secret applicationSecret: key '%s' not found in secret", providerConfig.OVH.ApplicationSecret.Key)
+			}
+			applicationSecret = string(secretBytes)
+		}
+		consumerKey := ""
+		if providerConfig.OVH.ConsumerKey.Name != "" {
+			secret, err := s.secretLister.Secrets(resourceNamespace).Get(providerConfig.OVH.ConsumerKey.Name)
+			if err != nil {
+				return nil, fmt.Errorf("error getting ovh secret consumerKey: %s", err)
+			}
+			secretBytes, ok := secret.Data[providerConfig.OVH.ConsumerKey.Key]
+			if !ok {
+				return nil, fmt.Errorf("error getting ovh secret consumerKey: key '%s' not found in secret", providerConfig.OVH.ConsumerKey.Key)
+			}
+			consumerKey = string(secretBytes)
+		}
+		impl, err = s.dnsProviderConstructors.OVH(
+			strings.TrimSpace(providerConfig.OVH.Endpoint),
+			strings.TrimSpace(providerConfig.OVH.ApplicationKey),
+			strings.TrimSpace(applicationSecret),
+			strings.TrimSpace(consumerKey),
+			s.DNS01Nameservers,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("error instantiating ovh challenge solver: %s", err)
 		}
 	default:
 		return nil, fmt.Errorf("no dns provider config specified for provider %q", providerName)
