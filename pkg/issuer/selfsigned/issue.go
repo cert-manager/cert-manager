@@ -18,9 +18,9 @@ package selfsigned
 
 import (
 	"context"
-	"crypto"
-	"time"
 
+	"github.com/golang/glog"
+	corev1 "k8s.io/api/core/v1"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
@@ -30,76 +30,56 @@ import (
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 )
 
-const (
-	errorGetCertKeyPair   = "ErrGetKey"
-	errorIssueCert        = "ErrIssueCert"
-	errorEncodePrivateKey = "ErrEncodePrivateKey"
-
-	successCertIssued = "CertIssueSuccess"
-
-	messageErrorGetCertKeyPair   = "Error getting keypair for certificate: "
-	messageErrorIssueCert        = "Error issuing TLS certificate: "
-	messageErrorEncodePrivateKey = "Error encoding private key: "
-
-	messageCertIssued = "Certificate issued successfully"
-)
-
-const (
-	// certificateDuration of 1 year
-	certificateDuration = time.Hour * 24 * 365
-	defaultOrganization = "cert-manager"
-)
-
 func (c *SelfSigned) Issue(ctx context.Context, crt *v1alpha1.Certificate) (issuer.IssueResponse, error) {
-	signeeKey, err := kube.SecretTLSKey(c.secretsLister, crt.Namespace, crt.Spec.SecretName)
+	// get a copy of the existing/currently issued Certificate's private key
+	signeePrivateKey, err := kube.SecretTLSKey(c.secretsLister, crt.Namespace, crt.Spec.SecretName)
 	if k8sErrors.IsNotFound(err) || errors.IsInvalidData(err) {
-		signeeKey, err = pki.GeneratePrivateKeyForCertificate(crt)
+		// if one does not already exist, generate a new one
+		signeePrivateKey, err = pki.GeneratePrivateKeyForCertificate(crt)
+		if err != nil {
+			c.Recorder.Eventf(crt, corev1.EventTypeWarning, "PrivateKeyError", "Error generating certificate private key: %v", err)
+			// don't trigger a retry. An error from this function implies some
+			// invalid input parameters, and retrying without updating the
+			// resource will not help.
+			return issuer.IssueResponse{}, nil
+		}
 	}
-
 	if err != nil {
-		s := messageErrorGetCertKeyPair + err.Error()
-		crt.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse, errorGetCertKeyPair, s, false)
+		glog.Errorf("Error getting private key %q for certificate: %v", crt.Spec.SecretName, err)
 		return issuer.IssueResponse{}, err
 	}
 
-	certPem, err := c.obtainCertificate(crt, signeeKey)
+	// extract the public component of the key
+	signeePublicKey, err := pki.PublicKeyForPrivateKey(signeePrivateKey)
 	if err != nil {
-		s := messageErrorIssueCert + err.Error()
-		crt.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse, errorIssueCert, s, false)
+		glog.Errorf("Error getting public key from private key: %v", err)
 		return issuer.IssueResponse{}, err
 	}
 
-	crt.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionTrue, successCertIssued, messageCertIssued, true)
-
-	keyPem, err := pki.EncodePrivateKey(signeeKey)
+	// generate a x509 certificate template for this Certificate
+	template, err := pki.GenerateTemplate(c.issuer, crt)
 	if err != nil {
-		s := messageErrorEncodePrivateKey + err.Error()
-		crt.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse, errorEncodePrivateKey, s, false)
+		c.Recorder.Eventf(crt, corev1.EventTypeWarning, "ErrorSigning", "Error signing certificate: %v", err)
+		return issuer.IssueResponse{}, err
+	}
+
+	// sign and encode the certificate
+	certPem, _, err := pki.SignCertificate(template, template, signeePublicKey, signeePrivateKey)
+	if err != nil {
+		c.Recorder.Eventf(crt, corev1.EventTypeWarning, "ErrorSigning", "Error signing certificate: %v", err)
+		return issuer.IssueResponse{}, err
+	}
+
+	// Encode output private key
+	keyPem, err := pki.EncodePrivateKey(signeePrivateKey)
+	if err != nil {
+		c.Recorder.Eventf(crt, corev1.EventTypeWarning, "ErrorPrivateKey", "Error encoding private key: %v", err)
 		return issuer.IssueResponse{}, err
 	}
 
 	return issuer.IssueResponse{
-		Certificate: certPem,
 		PrivateKey:  keyPem,
+		Certificate: certPem,
 		CA:          certPem,
 	}, nil
-}
-
-func (c *SelfSigned) obtainCertificate(crt *v1alpha1.Certificate, privateKey crypto.PrivateKey) ([]byte, error) {
-	publicKey, err := pki.PublicKeyForPrivateKey(privateKey)
-	if err != nil {
-		return nil, err
-	}
-
-	template, err := pki.GenerateTemplate(c.issuer, crt)
-	if err != nil {
-		return nil, err
-	}
-
-	crtPem, _, err := pki.SignCertificate(template, template, publicKey, privateKey)
-	if err != nil {
-		return nil, err
-	}
-
-	return crtPem, nil
 }
