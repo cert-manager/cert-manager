@@ -142,7 +142,6 @@ func GenerateTemplate(issuer v1alpha1.GenericIssuer, crt *v1alpha1.Certificate) 
 	}
 
 	pubKeyAlgo, _, err := SignatureAlgorithm(crt)
-
 	if err != nil {
 		return nil, err
 	}
@@ -176,7 +175,7 @@ func GenerateTemplate(issuer v1alpha1.GenericIssuer, crt *v1alpha1.Certificate) 
 // key of the signer.
 // It returns a PEM encoded copy of the Certificate as well as a *x509.Certificate
 // which can be used for reading the encoded values.
-func SignCertificate(template *x509.Certificate, issuerCert *x509.Certificate, publicKey interface{}, signerKey interface{}) ([]byte, *x509.Certificate, error) {
+func SignCertificate(template *x509.Certificate, issuerCert *x509.Certificate, publicKey crypto.PublicKey, signerKey interface{}) ([]byte, *x509.Certificate, error) {
 	derBytes, err := x509.CreateCertificate(rand.Reader, template, issuerCert, publicKey, signerKey)
 
 	if err != nil {
