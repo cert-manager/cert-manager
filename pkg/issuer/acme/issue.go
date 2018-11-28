@@ -158,7 +158,7 @@ func (a *Acme) Issue(ctx context.Context, crt *v1alpha1.Certificate) (issuer.Iss
 		return issuer.IssueResponse{}, nil
 	}
 
-	a.Recorder.Eventf(crt, corev1.EventTypeNormal, "Order %q completed successfully", existingOrder.Name)
+	a.Recorder.Eventf(crt, corev1.EventTypeNormal, "OrderComplete", "Order %q completed successfully", existingOrder.Name)
 
 	// If the order is valid, we can attempt to retrieve the Certificate.
 	// First obtain an ACME client to make this easier.
@@ -316,7 +316,7 @@ func (a *Acme) createNewOrder(crt *v1alpha1.Certificate, template *v1alpha1.Orde
 		return err
 	}
 
-	a.Recorder.Eventf(crt, corev1.EventTypeNormal, "OrderCreated", "Create Order resource %q", o.Name)
+	a.Recorder.Eventf(crt, corev1.EventTypeNormal, "OrderCreated", "Created Order resource %q", o.Name)
 	glog.V(4).Infof("Created new Order resource named %q for Certificate %s/%s", template.Name, crt.Namespace, crt.Name)
 
 	return nil

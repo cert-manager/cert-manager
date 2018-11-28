@@ -150,6 +150,8 @@ func (c *Controller) Sync(ctx context.Context, o *cmapi.Order) (err error) {
 			return fmt.Errorf("error finalizing order: %v", err)
 		}
 
+		c.Recorder.Event(o, corev1.EventTypeNormal, "OrderValid", "Order completed successfully")
+
 		return nil
 
 	// if the order is still pending or processing, we should continue to check
@@ -215,7 +217,7 @@ func (c *Controller) Sync(ctx context.Context, o *cmapi.Order) (err error) {
 		if spec.Wildcard {
 			domainName = "*." + domainName
 		}
-		c.Recorder.Eventf(ch, corev1.EventTypeNormal, "Created", "Created Challenge resource %q for domain %q", ch.Name, ch.Spec.DNSName)
+		c.Recorder.Eventf(o, corev1.EventTypeNormal, "Created", "Created Challenge resource %q for domain %q", ch.Name, ch.Spec.DNSName)
 
 		existingChallenges = append(existingChallenges, ch)
 	}
