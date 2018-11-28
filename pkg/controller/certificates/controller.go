@@ -73,10 +73,12 @@ func New(ctx *controllerpkg.Context) *Controller {
 	ctrl.syncedFuncs = append(ctrl.syncedFuncs, certificateInformer.Informer().HasSynced)
 
 	issuerInformer := ctrl.SharedInformerFactory.Certmanager().V1alpha1().Issuers()
+	issuerInformer.Informer().AddEventHandler(&controllerpkg.BlockingEventHandler{WorkFunc: ctrl.handleGenericIssuer})
 	ctrl.issuerLister = issuerInformer.Lister()
 	ctrl.syncedFuncs = append(ctrl.syncedFuncs, issuerInformer.Informer().HasSynced)
 
 	clusterIssuerInformer := ctrl.SharedInformerFactory.Certmanager().V1alpha1().ClusterIssuers()
+	clusterIssuerInformer.Informer().AddEventHandler(&controllerpkg.BlockingEventHandler{WorkFunc: ctrl.handleGenericIssuer})
 	ctrl.clusterIssuerLister = clusterIssuerInformer.Lister()
 	ctrl.syncedFuncs = append(ctrl.syncedFuncs, clusterIssuerInformer.Informer().HasSynced)
 
