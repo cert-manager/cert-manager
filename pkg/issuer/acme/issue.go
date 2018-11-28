@@ -164,13 +164,16 @@ func (a *Acme) Issue(ctx context.Context, crt *v1alpha1.Certificate) (issuer.Iss
 		return issuer.IssueResponse{}, fmt.Errorf("Order in a valid state but certificate data not set")
 	}
 
-	x509Certs, err := x509.ParseCertificates(existingOrder.Status.Certificate)
+	// TODO: replace with a call to a function that returns the whole chain
+	x509Certs, err := pki.DecodeX509CertificateBytes(existingOrder.Status.Certificate)
 	if err != nil {
+		glog.Infof("Error parsing existing x509 certificate on Order resource %q: %v", existingOrder.Name, err)
 		// if parsing the certificate fails, recreate the order
 		return a.retryOrder(crt, existingOrder)
 	}
 
-	x509Cert := x509Certs[0]
+	// x509Cert := x509Certs[0]
+	x509Cert := x509Certs
 
 	// we check if the certificate stored on the existing order resource is
 	// nearing expiry.

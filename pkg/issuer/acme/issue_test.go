@@ -18,7 +18,6 @@ package acme
 
 import (
 	"bytes"
-	"context"
 	"crypto"
 	"crypto/rand"
 	"crypto/rsa"
@@ -37,7 +36,6 @@ import (
 	coretesting "k8s.io/client-go/testing"
 	fakeclock "k8s.io/utils/clock/testing"
 
-	acmecl "github.com/jetstack/cert-manager/pkg/acme/client"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	"github.com/jetstack/cert-manager/pkg/controller"
 	testpkg "github.com/jetstack/cert-manager/pkg/controller/test"
@@ -140,14 +138,16 @@ func TestIssueHappyPath(t *testing.T) {
 		},
 	}
 
-	testCertSignedBytesDER, testCertSignedBytesPEM := generateSelfSignedCert(t, testCert, pk, time.Hour*24*365)
-	testCertExpiringSignedBytesDER, _ := generateSelfSignedCert(t, testCert, pk, time.Minute*5)
+	_, testCertSignedBytesPEM := generateSelfSignedCert(t, testCert, pk, time.Hour*24*365)
+	_, testCertExpiringSignedBytesPEM := generateSelfSignedCert(t, testCert, pk, time.Minute*5)
 	testCertEmptyOrder, _ := buildOrder(testCert, testCertCSR)
 	testCertPendingOrder := testCertEmptyOrder.DeepCopy()
 	testCertPendingOrder.Status.State = v1alpha1.Pending
 	testCertValidOrder := testCertEmptyOrder.DeepCopy()
 	testCertValidOrder.Status.State = v1alpha1.Valid
 	testCertValidOrder.Status.Certificate = testCertSignedBytesPEM
+	testCertExpiredCertOrder := testCertValidOrder.DeepCopy()
+	testCertExpiredCertOrder.Status.Certificate = testCertExpiringSignedBytesPEM
 
 	tests := map[string]acmeFixture{
 		"generate a new private key if one does not exist": {
@@ -229,17 +229,12 @@ func TestIssueHappyPath(t *testing.T) {
 			},
 			Err: false,
 		},
-		"call GetCertificate and return the Certificate bytes if the order is 'valid'": {
+		"retrieve the Certificate bytes from the Order if it is 'valid'": {
 			Certificate: testCert,
 			Builder: &testpkg.Builder{
 				CertManagerObjects: []runtime.Object{testCertValidOrder},
 				KubeObjects:        []runtime.Object{testCertPrivateKeySecret},
 				ExpectedActions:    []testpkg.Action{},
-			},
-			Client: &acmecl.FakeACME{
-				FakeGetCertificate: func(ctx context.Context, url string) ([][]byte, error) {
-					return [][]byte{testCertSignedBytesDER}, nil
-				},
 			},
 			PreFn: func(t *testing.T, s *acmeFixture) {
 			},
@@ -271,17 +266,12 @@ func TestIssueHappyPath(t *testing.T) {
 						RenewBeforeExpiryDuration: time.Hour * 2,
 					},
 				},
-				CertManagerObjects: []runtime.Object{testCertValidOrder},
+				CertManagerObjects: []runtime.Object{testCertExpiredCertOrder},
 				KubeObjects:        []runtime.Object{testCertPrivateKeySecret},
 				ExpectedActions: []testpkg.Action{
 					testpkg.NewAction(
 						coretesting.NewDeleteAction(v1alpha1.SchemeGroupVersion.WithResource("orders"), testCertValidOrder.Namespace, testCertValidOrder.Name),
 					),
-				},
-			},
-			Client: &acmecl.FakeACME{
-				FakeGetCertificate: func(ctx context.Context, url string) ([][]byte, error) {
-					return [][]byte{testCertExpiringSignedBytesDER}, nil
 				},
 			},
 			PreFn: func(t *testing.T, s *acmeFixture) {
