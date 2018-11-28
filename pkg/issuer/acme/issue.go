@@ -178,6 +178,8 @@ func (a *Acme) Issue(ctx context.Context, crt *v1alpha1.Certificate) (issuer.Iss
 	// If not, we return the existing order's certificate to save additional
 	// orders.
 	if a.Context.IssuerOptions.CertificateNeedsRenew(x509Cert, crt.Spec.RenewBefore) {
+		a.Recorder.Eventf(crt, corev1.EventTypeNormal, "OrderExpired", "Order %q contains a certificate nearing expiry. "+
+			"Creating new order...")
 		// existing order's certificate is near expiry
 		return a.retryOrder(crt, existingOrder)
 	}
