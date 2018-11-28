@@ -18,19 +18,20 @@ package certificates
 
 import (
 	"context"
+	"crypto"
 	"crypto/x509"
 	"fmt"
 	"reflect"
 	"strings"
 	"time"
 
+	"github.com/golang/glog"
 	corev1 "k8s.io/api/core/v1"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/apimachinery/pkg/util/runtime"
 
-	"github.com/golang/glog"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/validation"
 	"github.com/jetstack/cert-manager/pkg/issuer"
@@ -82,7 +83,7 @@ func (c *Controller) Sync(ctx context.Context, crt *v1alpha1.Certificate) (reque
 	}()
 
 	// grab existing certificate and validate private key
-	cert, err := kube.SecretTLSCert(c.secretLister, crtCopy.Namespace, crtCopy.Spec.SecretName)
+	cert, key, err := kube.SecretTLSKeyPair(c.secretLister, crtCopy.Namespace, crtCopy.Spec.SecretName)
 	// if we don't have a certificate, we need to trigger a re-issue immediately
 	if err != nil && !(k8sErrors.IsNotFound(err) || errors.IsInvalidData(err)) {
 		return false, err
@@ -90,7 +91,7 @@ func (c *Controller) Sync(ctx context.Context, crt *v1alpha1.Certificate) (reque
 
 	// update certificate expiry metric
 	defer c.metrics.UpdateCertificateExpiry(crtCopy, c.secretLister)
-	c.setCertificateStatus(crtCopy, cert)
+	c.setCertificateStatus(crtCopy, key, cert)
 
 	el := validation.ValidateCertificate(crtCopy)
 	if len(el) > 0 {
@@ -129,44 +130,15 @@ func (c *Controller) Sync(ctx context.Context, crt *v1alpha1.Certificate) (reque
 		return false, nil
 	}
 
-	key, err := kube.SecretTLSKey(c.secretLister, crtCopy.Namespace, crtCopy.Spec.SecretName)
-	// if we don't have a private key, we need to trigger a re-issue immediately
-	if k8sErrors.IsNotFound(err) || errors.IsInvalidData(err) {
-		glog.V(4).Infof("Invoking issue function due to certificate private not found or invalid")
-		return c.issue(ctx, i, crtCopy)
-	}
-	if err != nil {
-		return false, err
-	}
-
-	if cert == nil {
+	if key == nil || cert == nil {
 		glog.V(4).Infof("Invoking issue function as existing certificate does not exist")
 		return c.issue(ctx, i, crtCopy)
 	}
 
 	// begin checking if the TLS certificate is valid/needs a re-issue or renew
-
-	// check if the private key is the corresponding pair to the certificate
-	matches, err := pki.PublicKeyMatchesCertificate(key.Public(), cert)
-	if err != nil {
-		return false, err
-	}
+	matches, matchErrs := c.certificateMatchesSpec(crtCopy, key, cert)
 	if !matches {
-		glog.V(4).Infof("Invoking issue function due to certificate private key not matching certificate")
-		return c.issue(ctx, i, crtCopy)
-	}
-
-	// validate the common name is correct
-	expectedCN := pki.CommonNameForCertificate(crtCopy)
-	if expectedCN != cert.Subject.CommonName {
-		glog.V(4).Infof("Invoking issue function due to certificate common name not matching spec")
-		return c.issue(ctx, i, crtCopy)
-	}
-
-	// validate the dns names are correct
-	expectedDNSNames := pki.DNSNamesForCertificate(crtCopy)
-	if !util.EqualUnsorted(cert.DNSNames, expectedDNSNames) {
-		glog.V(4).Infof("Invoking issue function due to certificate dns names not matching spec")
+		glog.V(4).Infof("Invoking issue function due to certificate not matching spec: %s", strings.Join(matchErrs, ", "))
 		return c.issue(ctx, i, crtCopy)
 	}
 
@@ -182,11 +154,6 @@ func (c *Controller) Sync(ctx context.Context, crt *v1alpha1.Certificate) (reque
 		glog.V(4).Infof("Invoking issue function due to certificate needing renewal")
 		return c.issue(ctx, i, crtCopy)
 	}
-
-	// TODO: add checks for KeySize, KeyAlgorithm fields
-	// TODO: add checks for Organization field
-	// TODO: add checks for IsCA field
-
 	// end checking if the TLS certificate is valid/needs a re-issue or renew
 
 	// If the Certificate is valid and up to date, we schedule a renewal in
@@ -198,8 +165,8 @@ func (c *Controller) Sync(ctx context.Context, crt *v1alpha1.Certificate) (reque
 
 // setCertificateStatus will update the status subresource of the certificate.
 // It will not actually submit the resource to the apiserver.
-func (c *Controller) setCertificateStatus(crt *v1alpha1.Certificate, cert *x509.Certificate) {
-	if cert == nil {
+func (c *Controller) setCertificateStatus(crt *v1alpha1.Certificate, key crypto.Signer, cert *x509.Certificate) {
+	if key == nil || cert == nil {
 		crt.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse, "NotFound", "Certificate does not exist", false)
 		return
 	}
@@ -208,7 +175,7 @@ func (c *Controller) setCertificateStatus(crt *v1alpha1.Certificate, cert *x509.
 	crt.Status.NotAfter = &metaNotAfter
 
 	// Derive & set 'Ready' condition on Certificate resource
-	matches, matchErrs := c.certificateMatchesSpec(crt, cert)
+	matches, matchErrs := c.certificateMatchesSpec(crt, key, cert)
 	reason := "Ready"
 	if cert.NotAfter.Before(now()) {
 		reason = "Expired"
@@ -227,8 +194,21 @@ func (c *Controller) setCertificateStatus(crt *v1alpha1.Certificate, cert *x509.
 	return
 }
 
-func (c *Controller) certificateMatchesSpec(crt *v1alpha1.Certificate, cert *x509.Certificate) (bool, []string) {
+func (c *Controller) certificateMatchesSpec(crt *v1alpha1.Certificate, key crypto.Signer, cert *x509.Certificate) (bool, []string) {
 	var errs []string
+
+	// TODO: add checks for KeySize, KeyAlgorithm fields
+	// TODO: add checks for Organization field
+	// TODO: add checks for IsCA field
+
+	// check if the private key is the corresponding pair to the certificate
+	matches, err := pki.PublicKeyMatchesCertificate(key.Public(), cert)
+	if err != nil {
+		errs = append(errs, err.Error())
+	} else if !matches {
+		errs = append(errs, fmt.Sprintf("Certificate private key does not match certificate"))
+	}
+
 	// validate the common name is correct
 	expectedCN := pki.CommonNameForCertificate(crt)
 	if expectedCN != cert.Subject.CommonName {
