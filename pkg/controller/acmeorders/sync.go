@@ -100,6 +100,19 @@ func (c *Controller) Sync(ctx context.Context, o *cmapi.Order) (err error) {
 	// TODO: we should find a way to periodically update the state of the resource
 	// to reflect the current/actual state in the ACME server.
 	if acme.IsFinalState(o.Status.State) {
+		existingChallenges, err := c.listChallengesForOrder(o)
+		if err != nil {
+			return err
+		}
+
+		// Cleanup challenge resources once a final state has been reached
+		for _, ch := range existingChallenges {
+			err := c.CMClient.CertmanagerV1alpha1().Challenges(ch.Namespace).Delete(ch.Name, nil)
+			if err != nil {
+				return err
+			}
+		}
+
 		return nil
 	}
 
@@ -164,14 +177,8 @@ func (c *Controller) Sync(ctx context.Context, o *cmapi.Order) (err error) {
 		return fmt.Errorf("unknown order state %q", o.Status.State)
 	}
 
-	// create a selector that we can use to find all existing Challenges for the order
-	sel, err := challengeSelectorForOrder(o)
-	if err != nil {
-		return err
-	}
-
 	// get the list of exising challenges for this order
-	existingChallenges, err := c.challengeLister.Challenges(o.Namespace).List(sel)
+	existingChallenges, err := c.listChallengesForOrder(o)
 	if err != nil {
 		return err
 	}
@@ -255,6 +262,17 @@ func (c *Controller) Sync(ctx context.Context, o *cmapi.Order) (err error) {
 	glog.Infof("Waiting for all challenges for order %q to enter 'valid' state", o.Name)
 
 	return nil
+}
+
+func (c *Controller) listChallengesForOrder(o *cmapi.Order) ([]*cmapi.Challenge, error) {
+	// create a selector that we can use to find all existing Challenges for the order
+	sel, err := challengeSelectorForOrder(o)
+	if err != nil {
+		return nil, err
+	}
+
+	// get the list of exising challenges for this order
+	return c.challengeLister.Challenges(o.Namespace).List(sel)
 }
 
 const (
@@ -398,6 +416,7 @@ func buildChallenge(i int, o *cmapi.Order, chalSpec cmapi.ChallengeSpec) *cmapi.
 			Namespace:       o.Namespace,
 			Labels:          challengeLabelsForOrder(o),
 			OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(o, orderGvk)},
+			Finalizers:      []string{cmapi.ACMEFinalizer},
 		},
 		Spec: chalSpec,
 	}
