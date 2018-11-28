@@ -143,13 +143,11 @@ type CertificateCondition struct {
 type CertificateConditionType string
 
 const (
-	// CertificateConditionReady represents the fact that a given Certificate condition
-	// is in ready state.
+	// CertificateConditionReady indicates that a certificate is ready for use.
+	// This is defined as:
+	// - The target secret exists
+	// - The target secret contains a certificate that has not expired
+	// - The target secret contains a private key valid for the certificate
+	// - The commonName and dnsNames attributes match those specified on the Certificate
 	CertificateConditionReady CertificateConditionType = "Ready"
-
-	// CertificateConditionValidationFailed is used to indicate whether a
-	// validation for a Certificate has failed.
-	// This is currently used by the ACME issuer to track when the last
-	// validation was attempted.
-	CertificateConditionValidationFailed CertificateConditionType = "ValidateFailed"
 )
