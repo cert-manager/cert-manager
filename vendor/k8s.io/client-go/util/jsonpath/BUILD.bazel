@@ -10,7 +10,6 @@ go_library(
     ],
     importmap = "github.com/jetstack/cert-manager/vendor/k8s.io/client-go/util/jsonpath",
     importpath = "k8s.io/client-go/util/jsonpath",
-    tags = ["manual"],
     visibility = ["//visibility:public"],
     deps = ["//vendor/k8s.io/client-go/third_party/forked/golang/template:go_default_library"],
 )

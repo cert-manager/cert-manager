@@ -5,7 +5,6 @@ go_library(
     srcs = ["glob.go"],
     importmap = "github.com/jetstack/cert-manager/vendor/github.com/ryanuber/go-glob",
     importpath = "github.com/ryanuber/go-glob",
-    tags = ["manual"],
     visibility = ["//visibility:public"],
 )
 

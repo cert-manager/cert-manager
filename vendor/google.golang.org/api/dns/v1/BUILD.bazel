@@ -5,7 +5,6 @@ go_library(
     srcs = ["dns-gen.go"],
     importmap = "github.com/jetstack/cert-manager/vendor/google.golang.org/api/dns/v1",
     importpath = "google.golang.org/api/dns/v1",
-    tags = ["manual"],
     visibility = ["//visibility:public"],
     deps = [
         "//vendor/golang.org/x/net/context:go_default_library",

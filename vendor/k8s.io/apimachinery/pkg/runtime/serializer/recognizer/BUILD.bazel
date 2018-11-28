@@ -5,7 +5,6 @@ go_library(
     srcs = ["recognizer.go"],
     importmap = "github.com/jetstack/cert-manager/vendor/k8s.io/apimachinery/pkg/runtime/serializer/recognizer",
     importpath = "k8s.io/apimachinery/pkg/runtime/serializer/recognizer",
-    tags = ["manual"],
     visibility = ["//visibility:public"],
     deps = [
         "//vendor/k8s.io/apimachinery/pkg/runtime:go_default_library",

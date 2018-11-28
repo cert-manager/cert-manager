@@ -12,7 +12,6 @@ go_library(
     ],
     importmap = "github.com/jetstack/cert-manager/vendor/github.com/coreos/etcd/pkg/types",
     importpath = "github.com/coreos/etcd/pkg/types",
-    tags = ["manual"],
     visibility = ["//visibility:public"],
 )
 

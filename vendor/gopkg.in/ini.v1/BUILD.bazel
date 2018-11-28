@@ -1,4 +1,4 @@
-load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
 
 go_library(
     name = "go_default_library",
@@ -13,26 +13,7 @@ go_library(
     ],
     importmap = "github.com/jetstack/cert-manager/vendor/gopkg.in/ini.v1",
     importpath = "gopkg.in/ini.v1",
-    tags = ["manual"],
     visibility = ["//visibility:public"],
-)
-
-go_test(
-    name = "go_default_test",
-    srcs = [
-        "bench_test.go",
-        "file_test.go",
-        "ini_internal_test.go",
-        "ini_test.go",
-        "key_test.go",
-        "parser_test.go",
-        "section_test.go",
-        "struct_test.go",
-    ],
-    data = glob(["testdata/**"]),
-    embed = [":go_default_library"],
-    tags = ["manual"],
-    deps = ["//vendor/github.com/smartystreets/goconvey/convey:go_default_library"],
 )
 
 filegroup(

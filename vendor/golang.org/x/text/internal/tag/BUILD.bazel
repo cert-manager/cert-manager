@@ -5,7 +5,6 @@ go_library(
     srcs = ["tag.go"],
     importmap = "github.com/jetstack/cert-manager/vendor/golang.org/x/text/internal/tag",
     importpath = "golang.org/x/text/internal/tag",
-    tags = ["manual"],
     visibility = ["//vendor/golang.org/x/text:__subpackages__"],
 )
 

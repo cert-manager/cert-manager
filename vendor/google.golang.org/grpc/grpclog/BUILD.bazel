@@ -9,7 +9,6 @@ go_library(
     ],
     importmap = "github.com/jetstack/cert-manager/vendor/google.golang.org/grpc/grpclog",
     importpath = "google.golang.org/grpc/grpclog",
-    tags = ["manual"],
     visibility = ["//visibility:public"],
 )
 

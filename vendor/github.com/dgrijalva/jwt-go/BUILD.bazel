@@ -20,7 +20,6 @@ go_library(
     ],
     importmap = "github.com/jetstack/cert-manager/vendor/github.com/dgrijalva/jwt-go",
     importpath = "github.com/dgrijalva/jwt-go",
-    tags = ["manual"],
     visibility = ["//visibility:public"],
 )
 

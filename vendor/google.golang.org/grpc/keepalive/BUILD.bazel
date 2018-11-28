@@ -5,7 +5,6 @@ go_library(
     srcs = ["keepalive.go"],
     importmap = "github.com/jetstack/cert-manager/vendor/google.golang.org/grpc/keepalive",
     importpath = "google.golang.org/grpc/keepalive",
-    tags = ["manual"],
     visibility = ["//visibility:public"],
 )
 

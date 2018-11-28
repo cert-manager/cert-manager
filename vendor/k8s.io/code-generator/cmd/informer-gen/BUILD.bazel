@@ -5,7 +5,6 @@ go_library(
     srcs = ["main.go"],
     importmap = "github.com/jetstack/cert-manager/vendor/k8s.io/code-generator/cmd/informer-gen",
     importpath = "k8s.io/code-generator/cmd/informer-gen",
-    tags = ["manual"],
     visibility = ["//visibility:private"],
     deps = [
         "//vendor/github.com/golang/glog:go_default_library",
@@ -20,7 +19,6 @@ go_library(
 go_binary(
     name = "informer-gen",
     embed = [":go_default_library"],
-    tags = ["manual"],
     visibility = ["//visibility:public"],
 )
 

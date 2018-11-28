@@ -10,7 +10,6 @@ go_library(
     ],
     importmap = "github.com/jetstack/cert-manager/vendor/github.com/hashicorp/go-rootcerts",
     importpath = "github.com/hashicorp/go-rootcerts",
-    tags = ["manual"],
     visibility = ["//visibility:public"],
     deps = select({
         "@io_bazel_rules_go//go/platform:darwin": [

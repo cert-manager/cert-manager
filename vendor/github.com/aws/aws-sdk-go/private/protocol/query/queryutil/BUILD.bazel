@@ -5,7 +5,6 @@ go_library(
     srcs = ["queryutil.go"],
     importmap = "github.com/jetstack/cert-manager/vendor/github.com/aws/aws-sdk-go/private/protocol/query/queryutil",
     importpath = "github.com/aws/aws-sdk-go/private/protocol/query/queryutil",
-    tags = ["manual"],
     visibility = ["//visibility:public"],
     deps = ["//vendor/github.com/aws/aws-sdk-go/private/protocol:go_default_library"],
 )

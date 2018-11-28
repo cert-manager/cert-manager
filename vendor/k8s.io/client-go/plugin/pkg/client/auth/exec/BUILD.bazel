@@ -5,7 +5,6 @@ go_library(
     srcs = ["exec.go"],
     importmap = "github.com/jetstack/cert-manager/vendor/k8s.io/client-go/plugin/pkg/client/auth/exec",
     importpath = "k8s.io/client-go/plugin/pkg/client/auth/exec",
-    tags = ["manual"],
     visibility = ["//visibility:public"],
     deps = [
         "//vendor/github.com/golang/glog:go_default_library",

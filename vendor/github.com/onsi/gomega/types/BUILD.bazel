@@ -5,7 +5,6 @@ go_library(
     srcs = ["types.go"],
     importmap = "github.com/jetstack/cert-manager/vendor/github.com/onsi/gomega/types",
     importpath = "github.com/onsi/gomega/types",
-    tags = ["manual"],
     visibility = ["//visibility:public"],
 )
 

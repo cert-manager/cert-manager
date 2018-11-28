@@ -5,7 +5,6 @@ go_library(
     srcs = ["anonymous.go"],
     importmap = "github.com/jetstack/cert-manager/vendor/k8s.io/apiserver/pkg/authentication/request/anonymous",
     importpath = "k8s.io/apiserver/pkg/authentication/request/anonymous",
-    tags = ["manual"],
     visibility = ["//visibility:public"],
     deps = [
         "//vendor/k8s.io/apiserver/pkg/authentication/authenticator:go_default_library",

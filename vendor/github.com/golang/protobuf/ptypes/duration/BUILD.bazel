@@ -5,7 +5,6 @@ go_library(
     srcs = ["duration.pb.go"],
     importmap = "github.com/jetstack/cert-manager/vendor/github.com/golang/protobuf/ptypes/duration",
     importpath = "github.com/golang/protobuf/ptypes/duration",
-    tags = ["manual"],
     visibility = ["//visibility:public"],
     deps = ["//vendor/github.com/golang/protobuf/proto:go_default_library"],
 )

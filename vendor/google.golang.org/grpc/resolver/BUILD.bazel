@@ -5,7 +5,6 @@ go_library(
     srcs = ["resolver.go"],
     importmap = "github.com/jetstack/cert-manager/vendor/google.golang.org/grpc/resolver",
     importpath = "google.golang.org/grpc/resolver",
-    tags = ["manual"],
     visibility = ["//visibility:public"],
 )
 

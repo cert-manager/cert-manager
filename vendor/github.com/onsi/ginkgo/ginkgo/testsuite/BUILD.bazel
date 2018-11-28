@@ -9,7 +9,6 @@ go_library(
     ],
     importmap = "github.com/jetstack/cert-manager/vendor/github.com/onsi/ginkgo/ginkgo/testsuite",
     importpath = "github.com/onsi/ginkgo/ginkgo/testsuite",
-    tags = ["manual"],
     visibility = ["//visibility:public"],
 )
 

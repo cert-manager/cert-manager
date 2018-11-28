@@ -5,7 +5,6 @@ go_library(
     srcs = ["homedir.go"],
     importmap = "github.com/jetstack/cert-manager/vendor/k8s.io/client-go/util/homedir",
     importpath = "k8s.io/client-go/util/homedir",
-    tags = ["manual"],
     visibility = ["//visibility:public"],
 )
 

@@ -10,7 +10,6 @@ go_library(
     ],
     importmap = "github.com/jetstack/cert-manager/vendor/k8s.io/client-go/kubernetes/typed/scheduling/v1alpha1",
     importpath = "k8s.io/client-go/kubernetes/typed/scheduling/v1alpha1",
-    tags = ["manual"],
     visibility = ["//visibility:public"],
     deps = [
         "//vendor/k8s.io/api/scheduling/v1alpha1:go_default_library",

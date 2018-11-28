@@ -5,7 +5,6 @@ go_library(
     srcs = ["utf8internal.go"],
     importmap = "github.com/jetstack/cert-manager/vendor/golang.org/x/text/internal/utf8internal",
     importpath = "golang.org/x/text/internal/utf8internal",
-    tags = ["manual"],
     visibility = ["//vendor/golang.org/x/text:__subpackages__"],
 )
 

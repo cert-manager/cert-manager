@@ -5,7 +5,6 @@ go_library(
     srcs = ["datafile.go"],
     importmap = "github.com/jetstack/cert-manager/vendor/k8s.io/apiserver/pkg/server/routes/data/swagger",
     importpath = "k8s.io/apiserver/pkg/server/routes/data/swagger",
-    tags = ["manual"],
     visibility = ["//visibility:public"],
 )
 

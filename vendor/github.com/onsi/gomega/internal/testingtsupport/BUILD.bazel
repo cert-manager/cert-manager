@@ -5,7 +5,6 @@ go_library(
     srcs = ["testing_t_support.go"],
     importmap = "github.com/jetstack/cert-manager/vendor/github.com/onsi/gomega/internal/testingtsupport",
     importpath = "github.com/onsi/gomega/internal/testingtsupport",
-    tags = ["manual"],
     visibility = ["//vendor/github.com/onsi/gomega:__subpackages__"],
     deps = ["//vendor/github.com/onsi/gomega/types:go_default_library"],
 )

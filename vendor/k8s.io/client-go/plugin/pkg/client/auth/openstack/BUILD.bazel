@@ -5,7 +5,6 @@ go_library(
     srcs = ["openstack.go"],
     importmap = "github.com/jetstack/cert-manager/vendor/k8s.io/client-go/plugin/pkg/client/auth/openstack",
     importpath = "k8s.io/client-go/plugin/pkg/client/auth/openstack",
-    tags = ["manual"],
     visibility = ["//visibility:public"],
     deps = [
         "//vendor/github.com/golang/glog:go_default_library",

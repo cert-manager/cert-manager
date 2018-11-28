@@ -5,7 +5,6 @@ go_library(
     srcs = ["metrics.go"],
     importmap = "github.com/jetstack/cert-manager/vendor/k8s.io/apiserver/pkg/endpoints/metrics",
     importpath = "k8s.io/apiserver/pkg/endpoints/metrics",
-    tags = ["manual"],
     visibility = ["//visibility:public"],
     deps = [
         "//vendor/github.com/emicklei/go-restful:go_default_library",

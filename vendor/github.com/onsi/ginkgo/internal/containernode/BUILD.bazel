@@ -5,7 +5,6 @@ go_library(
     srcs = ["container_node.go"],
     importmap = "github.com/jetstack/cert-manager/vendor/github.com/onsi/ginkgo/internal/containernode",
     importpath = "github.com/onsi/ginkgo/internal/containernode",
-    tags = ["manual"],
     visibility = ["//vendor/github.com/onsi/ginkgo:__subpackages__"],
     deps = [
         "//vendor/github.com/onsi/ginkgo/internal/leafnodes:go_default_library",

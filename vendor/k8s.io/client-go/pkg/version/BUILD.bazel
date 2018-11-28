@@ -9,7 +9,6 @@ go_library(
     ],
     importmap = "github.com/jetstack/cert-manager/vendor/k8s.io/client-go/pkg/version",
     importpath = "k8s.io/client-go/pkg/version",
-    tags = ["manual"],
     visibility = ["//visibility:public"],
     deps = ["//vendor/k8s.io/apimachinery/pkg/version:go_default_library"],
 )

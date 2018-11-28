@@ -16,7 +16,6 @@ go_library(
     ],
     importmap = "github.com/jetstack/cert-manager/vendor/k8s.io/apiserver/pkg/endpoints/handlers",
     importpath = "k8s.io/apiserver/pkg/endpoints/handlers",
-    tags = ["manual"],
     visibility = ["//visibility:public"],
     deps = [
         "//vendor/github.com/evanphx/json-patch:go_default_library",

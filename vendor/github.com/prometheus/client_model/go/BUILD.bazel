@@ -5,7 +5,6 @@ go_library(
     srcs = ["metrics.pb.go"],
     importmap = "github.com/jetstack/cert-manager/vendor/github.com/prometheus/client_model/go",
     importpath = "github.com/prometheus/client_model/go",
-    tags = ["manual"],
     visibility = ["//visibility:public"],
     deps = ["//vendor/github.com/golang/protobuf/proto:go_default_library"],
 )

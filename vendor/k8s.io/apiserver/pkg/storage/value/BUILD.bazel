@@ -5,7 +5,6 @@ go_library(
     srcs = ["transformer.go"],
     importmap = "github.com/jetstack/cert-manager/vendor/k8s.io/apiserver/pkg/storage/value",
     importpath = "k8s.io/apiserver/pkg/storage/value",
-    tags = ["manual"],
     visibility = ["//visibility:public"],
 )
 

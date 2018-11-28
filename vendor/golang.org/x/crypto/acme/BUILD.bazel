@@ -9,7 +9,6 @@ go_library(
     ],
     importmap = "github.com/jetstack/cert-manager/vendor/golang.org/x/crypto/acme",
     importpath = "golang.org/x/crypto/acme",
-    tags = ["manual"],
     visibility = ["//visibility:public"],
 )
 

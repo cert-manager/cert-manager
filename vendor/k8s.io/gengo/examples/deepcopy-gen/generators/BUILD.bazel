@@ -5,7 +5,6 @@ go_library(
     srcs = ["deepcopy.go"],
     importmap = "github.com/jetstack/cert-manager/vendor/k8s.io/gengo/examples/deepcopy-gen/generators",
     importpath = "k8s.io/gengo/examples/deepcopy-gen/generators",
-    tags = ["manual"],
     visibility = ["//visibility:public"],
     deps = [
         "//vendor/github.com/golang/glog:go_default_library",

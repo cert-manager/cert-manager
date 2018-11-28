@@ -5,7 +5,6 @@ go_library(
     srcs = ["initialization.go"],
     importmap = "github.com/jetstack/cert-manager/vendor/k8s.io/apiserver/pkg/admission/plugin/initialization",
     importpath = "k8s.io/apiserver/pkg/admission/plugin/initialization",
-    tags = ["manual"],
     visibility = ["//visibility:public"],
     deps = [
         "//vendor/github.com/golang/glog:go_default_library",

@@ -15,7 +15,6 @@ go_library(
     ],
     importmap = "github.com/jetstack/cert-manager/vendor/k8s.io/apiserver/pkg/registry/rest",
     importpath = "k8s.io/apiserver/pkg/registry/rest",
-    tags = ["manual"],
     visibility = ["//visibility:public"],
     deps = [
         "//vendor/k8s.io/apimachinery/pkg/api/errors:go_default_library",

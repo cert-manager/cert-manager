@@ -9,7 +9,6 @@ go_library(
     ],
     importmap = "github.com/jetstack/cert-manager/vendor/k8s.io/apimachinery/pkg/runtime/serializer",
     importpath = "k8s.io/apimachinery/pkg/runtime/serializer",
-    tags = ["manual"],
     visibility = ["//visibility:public"],
     deps = [
         "//vendor/k8s.io/apimachinery/pkg/runtime:go_default_library",

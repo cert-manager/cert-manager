@@ -10,7 +10,6 @@ go_library(
     ],
     importmap = "github.com/jetstack/cert-manager/vendor/k8s.io/gengo/types",
     importpath = "k8s.io/gengo/types",
-    tags = ["manual"],
     visibility = ["//visibility:public"],
 )
 

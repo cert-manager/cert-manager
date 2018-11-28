@@ -1,20 +1,11 @@
-load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
 
 go_library(
     name = "go_default_library",
     srcs = ["env.go"],
     importmap = "github.com/jetstack/cert-manager/vendor/github.com/xenolf/lego/platform/tester",
     importpath = "github.com/xenolf/lego/platform/tester",
-    tags = ["manual"],
     visibility = ["//visibility:public"],
-)
-
-go_test(
-    name = "go_default_test",
-    srcs = ["env_test.go"],
-    embed = [":go_default_library"],
-    tags = ["manual"],
-    deps = ["//vendor/github.com/stretchr/testify/assert:go_default_library"],
 )
 
 filegroup(

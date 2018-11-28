@@ -32,7 +32,6 @@ go_library(
     ],
     importmap = "github.com/jetstack/cert-manager/vendor/github.com/spf13/pflag",
     importpath = "github.com/spf13/pflag",
-    tags = ["manual"],
     visibility = ["//visibility:public"],
 )
 

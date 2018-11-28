@@ -8,7 +8,6 @@ go_library(
     ],
     importmap = "github.com/jetstack/cert-manager/vendor/github.com/onsi/ginkgo/internal/spec",
     importpath = "github.com/onsi/ginkgo/internal/spec",
-    tags = ["manual"],
     visibility = ["//vendor/github.com/onsi/ginkgo:__subpackages__"],
     deps = [
         "//vendor/github.com/onsi/ginkgo/internal/containernode:go_default_library",

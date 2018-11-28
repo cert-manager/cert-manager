@@ -8,7 +8,6 @@ go_library(
     ],
     importmap = "github.com/jetstack/cert-manager/vendor/github.com/ghodss/yaml",
     importpath = "github.com/ghodss/yaml",
-    tags = ["manual"],
     visibility = ["//visibility:public"],
     deps = ["//vendor/gopkg.in/yaml.v2:go_default_library"],
 )

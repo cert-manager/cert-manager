@@ -5,7 +5,6 @@ go_library(
     srcs = ["code_location.go"],
     importmap = "github.com/jetstack/cert-manager/vendor/github.com/onsi/ginkgo/internal/codelocation",
     importpath = "github.com/onsi/ginkgo/internal/codelocation",
-    tags = ["manual"],
     visibility = ["//vendor/github.com/onsi/ginkgo:__subpackages__"],
     deps = ["//vendor/github.com/onsi/ginkgo/types:go_default_library"],
 )

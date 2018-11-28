@@ -5,7 +5,6 @@ go_library(
     srcs = ["fake_clock.go"],
     importmap = "github.com/jetstack/cert-manager/vendor/k8s.io/utils/clock/testing",
     importpath = "k8s.io/utils/clock/testing",
-    tags = ["manual"],
     visibility = ["//visibility:public"],
     deps = ["//vendor/k8s.io/utils/clock:go_default_library"],
 )

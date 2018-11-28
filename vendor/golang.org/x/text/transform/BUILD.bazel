@@ -5,7 +5,6 @@ go_library(
     srcs = ["transform.go"],
     importmap = "github.com/jetstack/cert-manager/vendor/golang.org/x/text/transform",
     importpath = "golang.org/x/text/transform",
-    tags = ["manual"],
     visibility = ["//visibility:public"],
 )
 

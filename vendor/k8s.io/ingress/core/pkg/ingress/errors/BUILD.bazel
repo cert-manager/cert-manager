@@ -5,7 +5,6 @@ go_library(
     srcs = ["errors.go"],
     importmap = "github.com/jetstack/cert-manager/vendor/k8s.io/ingress/core/pkg/ingress/errors",
     importpath = "k8s.io/ingress/core/pkg/ingress/errors",
-    tags = ["manual"],
     visibility = ["//visibility:public"],
     deps = ["//vendor/github.com/pkg/errors:go_default_library"],
 )

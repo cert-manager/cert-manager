@@ -5,7 +5,6 @@ go_library(
     srcs = ["interface.go"],
     importmap = "github.com/jetstack/cert-manager/vendor/k8s.io/client-go/informers/admissionregistration",
     importpath = "k8s.io/client-go/informers/admissionregistration",
-    tags = ["manual"],
     visibility = ["//visibility:public"],
     deps = [
         "//vendor/k8s.io/client-go/informers/admissionregistration/v1alpha1:go_default_library",

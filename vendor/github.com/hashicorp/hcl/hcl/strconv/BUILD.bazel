@@ -5,7 +5,6 @@ go_library(
     srcs = ["quote.go"],
     importmap = "github.com/jetstack/cert-manager/vendor/github.com/hashicorp/hcl/hcl/strconv",
     importpath = "github.com/hashicorp/hcl/hcl/strconv",
-    tags = ["manual"],
     visibility = ["//visibility:public"],
 )
 

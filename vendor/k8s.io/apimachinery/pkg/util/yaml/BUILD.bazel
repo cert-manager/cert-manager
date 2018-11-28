@@ -5,7 +5,6 @@ go_library(
     srcs = ["decoder.go"],
     importmap = "github.com/jetstack/cert-manager/vendor/k8s.io/apimachinery/pkg/util/yaml",
     importpath = "k8s.io/apimachinery/pkg/util/yaml",
-    tags = ["manual"],
     visibility = ["//visibility:public"],
     deps = [
         "//vendor/github.com/ghodss/yaml:go_default_library",
