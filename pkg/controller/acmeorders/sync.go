@@ -182,10 +182,13 @@ func (c *Controller) Sync(ctx context.Context, o *cmapi.Order) (err error) {
 	// therefore, if there is a cache timing issue, the Create will fail as the
 	// challenge with that name will already exist.
 	specsToCreate := make(map[int]cmapi.ChallengeSpec)
+	// TODO: we could potentially parse the challenge's name to find the index
+	// expected here instead of iterating over both lists
 	for i, s := range o.Status.Challenges {
 		create := true
 		for _, ch := range existingChallenges {
-			if s.DNSName == ch.Spec.DNSName {
+			if s.Wildcard == ch.Spec.Wildcard &&
+				s.DNSName == ch.Spec.DNSName {
 				create = false
 				break
 			}
