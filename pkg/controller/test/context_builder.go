@@ -19,6 +19,7 @@ package test
 import (
 	"flag"
 	"fmt"
+	"log"
 	"reflect"
 	"time"
 
@@ -85,6 +86,19 @@ func (b *Builder) Start() {
 	// this may need to be increased in future to acomodate tests that
 	// produce more than 5 events
 	b.Recorder = record.NewFakeRecorder(5)
+	// read all events out of the recorder and just log for now
+	// TODO: validate logged events
+	go func() {
+		r, ok := b.Recorder.(*record.FakeRecorder)
+		if !ok {
+			return
+		}
+
+		// exits when r.Events is closed in Finish
+		for e := range r.Events {
+			log.Printf("Event logged: %v", e)
+		}
+	}()
 
 	b.FakeKubeClient().PrependReactor("create", "*", b.generateNameReactor)
 	b.FakeCMClient().PrependReactor("create", "*", b.generateNameReactor)
@@ -178,6 +192,10 @@ func (b *Builder) Stop() {
 	}
 
 	close(b.stopCh)
+
+	if r, ok := b.Recorder.(*record.FakeRecorder); ok {
+		close(r.Events)
+	}
 }
 
 // WaitForResync will wait for the informer factory informer duration by
