@@ -421,8 +421,8 @@ Appears In:
 </thead>
 <tbody>
 <tr>
-<td><code>certificateURL</code><br /> <em>string</em></td>
-<td>CertificateURL is a URL that can be used to retrieve a copy of the signed TLS certificate for this order. It will be populated automatically once the order has completed successfully and the certificate is available for retrieval.</td>
+<td><code>certificate</code><br /> <em>string</em></td>
+<td>Certificate is a copy of the PEM encoded certificate for this Order. This field will be populated after the order has been successfully finalized with the ACME server, and the order has transitioned to the &#39;valid&#39; state.</td>
 </tr>
 <tr>
 <td><code>challenges</code><br /> <em><a href="#challengespec-v1alpha1">ChallengeSpec</a> array</em></td>
@@ -430,7 +430,7 @@ Appears In:
 </tr>
 <tr>
 <td><code>failureTime</code><br /> <em><a href="#time-v1">Time</a></em></td>
-<td>FailureTime stores the time that this order failed. This is used to influence garbage collection and back-off. The order resource will be automatically deleted after 30 minutes has passed since the failure time.</td>
+<td>FailureTime stores the time that this order failed. This is used to influence garbage collection and back-off.</td>
 </tr>
 <tr>
 <td><code>finalizeURL</code><br /> <em>string</em></td>

@@ -17,12 +17,10 @@ limitations under the License.
 package acme
 
 import (
-	"bytes"
 	"context"
 	"crypto"
 	"crypto/x509"
 	"encoding/json"
-	"encoding/pem"
 	"fmt"
 	"hash/fnv"
 	"time"
@@ -160,49 +158,33 @@ func (a *Acme) Issue(ctx context.Context, crt *v1alpha1.Certificate) (issuer.Iss
 
 	a.Recorder.Eventf(crt, corev1.EventTypeNormal, "OrderComplete", "Order %q completed successfully", existingOrder.Name)
 
-	// If the order is valid, we can attempt to retrieve the Certificate.
-	// First obtain an ACME client to make this easier.
-	cl, err := a.helper.ClientForIssuer(a.issuer)
-	if err != nil {
-		return issuer.IssueResponse{}, err
-	}
-
-	// Check the current Order's Certificate resource to see if it's nearing expiry.
-	// If it is, this implies that it is an old order that is now out of date so
-	// we retry the order.
-	certSlice, err := cl.GetCertificate(ctx, existingOrder.Status.CertificateURL)
-	if err != nil {
-		a.Recorder.Eventf(crt, corev1.EventTypeWarning, "Failed to retrieve Certificate for Order %q (%s): %v", existingOrder.Name, existingOrder.Status.CertificateURL, err)
-		return issuer.IssueResponse{}, err
-	}
-
-	// TODO: retry the order?
-	// this is a weird error we'd not expect to see
-	if len(certSlice) == 0 {
+	// this should never happen
+	if existingOrder.Status.Certificate == nil {
 		a.Recorder.Eventf(crt, corev1.EventTypeWarning, "BadCertificate", "Empty certificate data retrieved from ACME server")
-		return issuer.IssueResponse{}, fmt.Errorf("invalid certificate returned from acme server")
+		return issuer.IssueResponse{}, fmt.Errorf("Order in a valid state but certificate data not set")
 	}
 
-	x509Cert, err := x509.ParseCertificate(certSlice[0])
+	// TODO: replace with a call to a function that returns the whole chain
+	x509Certs, err := pki.DecodeX509CertificateBytes(existingOrder.Status.Certificate)
 	if err != nil {
+		glog.Infof("Error parsing existing x509 certificate on Order resource %q: %v", existingOrder.Name, err)
 		// if parsing the certificate fails, recreate the order
 		return a.retryOrder(crt, existingOrder)
 	}
 
-	// Check if the currently available Certificate from the Order is up to date.
-	// This may not be the case at renewal time if the old order is still available.
+	// x509Cert := x509Certs[0]
+	x509Cert := x509Certs
+
+	// we check if the certificate stored on the existing order resource is
+	// nearing expiry.
+	// If it is, we recreate the order so we can obtain a fresh certificate.
+	// If not, we return the existing order's certificate to save additional
+	// orders.
 	if a.Context.IssuerOptions.CertificateNeedsRenew(x509Cert, crt.Spec.RenewBefore) {
+		a.Recorder.Eventf(crt, corev1.EventTypeNormal, "OrderExpired", "Order %q contains a certificate nearing expiry. "+
+			"Creating new order...")
 		// existing order's certificate is near expiry
 		return a.retryOrder(crt, existingOrder)
-	}
-
-	// encode the retrieved certificates (including the chain)
-	certBuffer := bytes.NewBuffer([]byte{})
-	for _, cert := range certSlice {
-		err := pem.Encode(certBuffer, &pem.Block{Type: "CERTIFICATE", Bytes: cert})
-		if err != nil {
-			return issuer.IssueResponse{}, err
-		}
 	}
 
 	// encode the private key and return
@@ -213,7 +195,7 @@ func (a *Acme) Issue(ctx context.Context, crt *v1alpha1.Certificate) (issuer.Iss
 	}
 
 	return issuer.IssueResponse{
-		Certificate: certBuffer.Bytes(),
+		Certificate: existingOrder.Status.Certificate,
 		PrivateKey:  keyPem,
 	}, nil
 }
