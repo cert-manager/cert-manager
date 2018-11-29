@@ -381,20 +381,20 @@ func TestValidateCertificate(t *testing.T) {
 					IssuerRef:   validIssuerRef,
 				},
 			},
-		},	
+		},
 		"certificate with invalid ipAddresses": {
 			cfg: &v1alpha1.Certificate{
 				Spec: v1alpha1.CertificateSpec{
-					CommonName:   "testcn",
-					IPAddresses: []string{"blah"},					
-					SecretName:   "abc",
-					IssuerRef:    validIssuerRef,
+					CommonName:  "testcn",
+					IPAddresses: []string{"blah"},
+					SecretName:  "abc",
+					IssuerRef:   validIssuerRef,
 				},
 			},
 			errs: []*field.Error{
 				field.Invalid(fldPath.Child("ipAddresses").Index(0), "blah", "Invalid IP Address"),
 			},
-		},			
+		},
 	}
 	for n, s := range scenarios {
 		t.Run(n, func(t *testing.T) {

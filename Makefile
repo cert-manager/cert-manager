@@ -74,7 +74,7 @@ verify_lint:
 		//hack:verify-gofmt
 
 verify_unit:
-	bazel test \
+	bazel test --cpu k8 \
 		$$(bazel query 'kind("go._*test", "...")' \
 			| grep -v //vendor/ \
 			| grep -v //test/e2e \

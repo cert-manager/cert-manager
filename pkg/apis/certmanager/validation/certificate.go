@@ -52,7 +52,7 @@ func ValidateCertificateSpec(crt *v1alpha1.CertificateSpec, fldPath *field.Path)
 	}
 	if len(crt.IPAddresses) > 0 {
 		el = append(el, validateIPAddresses(crt, fldPath)...)
-	}	
+	}
 	if crt.ACME != nil {
 		el = append(el, validateACMEConfigForAllDNSNames(crt, fldPath)...)
 		el = append(el, ValidateACMECertificateConfig(crt.ACME, fldPath.Child("acme"))...)

@@ -25,8 +25,8 @@ import (
 	"encoding/pem"
 	"fmt"
 	"math/big"
-	"time"
 	"net"
+	"time"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 )
@@ -63,7 +63,7 @@ func IPAddressesForCertificate(crt *v1alpha1.Certificate) []net.IP {
 	for _, ip := range crt.Spec.IPAddresses {
 		ipAddresses = append(ipAddresses, net.ParseIP(ip))
 	}
-	return ipAddresses	
+	return ipAddresses
 }
 
 func removeDuplicates(in []string) []string {
@@ -122,7 +122,7 @@ func GenerateCSR(issuer v1alpha1.GenericIssuer, crt *v1alpha1.Certificate) (*x50
 			Organization: organization,
 			CommonName:   commonName,
 		},
-		DNSNames: dnsNames,
+		DNSNames:    dnsNames,
 		IPAddresses: iPAddresses,
 		// TODO: work out how best to handle extensions/key usages here
 		ExtraExtensions: []pkix.Extension{},
@@ -177,8 +177,8 @@ func GenerateTemplate(issuer v1alpha1.GenericIssuer, crt *v1alpha1.Certificate) 
 		NotBefore: time.Now(),
 		NotAfter:  time.Now().Add(certDuration),
 		// see http://golang.org/pkg/crypto/x509/#KeyUsage
-		KeyUsage: keyUsages,
-		DNSNames: dnsNames,
+		KeyUsage:    keyUsages,
+		DNSNames:    dnsNames,
 		IPAddresses: iPAddresses,
 	}, nil
 }

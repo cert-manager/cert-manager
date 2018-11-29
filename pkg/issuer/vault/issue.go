@@ -233,7 +233,7 @@ func (v *Vault) requestVaultCert(commonName string, certDuration time.Duration, 
 	parameters := map[string]string{
 		"common_name":          commonName,
 		"alt_names":            strings.Join(altNames, ","),
-		"ip_sans":     strings.Join(ipSans, ","),		
+		"ip_sans":              strings.Join(ipSans, ","),
 		"ttl":                  certDuration.String(),
 		"csr":                  string(csr),
 		"exclude_cn_from_sans": "true",
