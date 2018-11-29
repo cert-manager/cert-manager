@@ -39,7 +39,6 @@ import (
 	intscheme "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/scheme"
 	informers "github.com/jetstack/cert-manager/pkg/client/informers/externalversions"
 	"github.com/jetstack/cert-manager/pkg/controller"
-	"github.com/jetstack/cert-manager/pkg/controller/acmechallenges/scheduler"
 	dnsutil "github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
 	"github.com/jetstack/cert-manager/pkg/metrics"
 	"github.com/jetstack/cert-manager/pkg/util"
@@ -76,9 +75,6 @@ func Run(opts *options.ControllerOptions, stopCh <-chan struct{}) {
 				glog.Infof("Starting %s controller", n)
 
 				workers := 5
-				if n == scheduler.ControllerName {
-					workers = 1
-				}
 				err := fn(workers, stopCh)
 
 				if err != nil {
