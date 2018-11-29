@@ -119,8 +119,8 @@ var _ = framework.CertManagerDescribe("CA Certificate", func() {
 			Expect(err).NotTo(HaveOccurred())
 			By("Verifying the Certificate is valid")
 			err = util.WaitCertificateIssuedValid(certClient, secretClient, certificateName, time.Second*30)
-			f.CertificateDurationValid(cert, v.expectedDuration)
 			Expect(err).NotTo(HaveOccurred())
+			f.CertificateDurationValid(cert, v.expectedDuration)
 		})
 	}
 

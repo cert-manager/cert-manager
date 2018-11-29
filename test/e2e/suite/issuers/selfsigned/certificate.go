@@ -101,8 +101,8 @@ var _ = framework.CertManagerDescribe("Self Signed Certificate", func() {
 			cert, err := certClient.Create(util.NewCertManagerBasicCertificate(certificateName, certificateSecretName, issuerDurationName, v1alpha1.IssuerKind, v.inputDuration, v.inputRenewBefore))
 			Expect(err).NotTo(HaveOccurred())
 			err = util.WaitCertificateIssuedValid(certClient, secretClient, certificateName, time.Second*30)
-			f.CertificateDurationValid(cert, v.expectedDuration)
 			Expect(err).NotTo(HaveOccurred())
+			f.CertificateDurationValid(cert, v.expectedDuration)
 		})
 	}
 })
