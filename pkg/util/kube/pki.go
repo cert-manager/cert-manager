@@ -82,7 +82,7 @@ func SecretTLSKeyPair(secretLister corelisters.SecretLister, namespace, name str
 
 	keyBytes, ok := secret.Data[api.TLSPrivateKeyKey]
 	if !ok {
-		return nil, nil, fmt.Errorf("no private key data for %q in secret '%s/%s'", api.TLSCertKey, namespace, name)
+		return nil, nil, errors.NewInvalidData("no private key data for %q in secret '%s/%s'", api.TLSCertKey, namespace, name)
 	}
 	key, err := pki.DecodePrivateKeyBytes(keyBytes)
 	if err != nil {
@@ -91,7 +91,7 @@ func SecretTLSKeyPair(secretLister corelisters.SecretLister, namespace, name str
 
 	certBytes, ok := secret.Data[api.TLSCertKey]
 	if !ok {
-		return nil, key, fmt.Errorf("no certificate data for %q in secret '%s/%s'", api.TLSCertKey, namespace, name)
+		return nil, key, errors.NewInvalidData("no certificate data for %q in secret '%s/%s'", api.TLSCertKey, namespace, name)
 	}
 	cert, err := pki.DecodeX509CertificateBytes(certBytes)
 	if err != nil {
