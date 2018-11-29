@@ -36,7 +36,7 @@ const (
 	messageErrorInitIssuer = "Error initializing issuer: "
 )
 
-func (c *Controller) Sync(ctx context.Context, iss *v1alpha1.Issuer) (forceAdd bool, err error) {
+func (c *Controller) Sync(ctx context.Context, iss *v1alpha1.Issuer) (err error) {
 	issuerCopy := iss.DeepCopy()
 	defer func() {
 		if _, saveErr := c.updateIssuerStatus(iss, issuerCopy); saveErr != nil {
@@ -49,13 +49,13 @@ func (c *Controller) Sync(ctx context.Context, iss *v1alpha1.Issuer) (forceAdd b
 		msg := fmt.Sprintf("Resource validation failed: %v", el.ToAggregate())
 		issuerCopy.UpdateStatusCondition(v1alpha1.IssuerConditionReady, v1alpha1.ConditionFalse, errorConfig, msg)
 		return
-	} else {
-		for i, c := range issuerCopy.Status.Conditions {
-			if c.Type == v1alpha1.IssuerConditionReady {
-				if c.Reason == errorConfig && c.Status == v1alpha1.ConditionFalse {
-					issuerCopy.Status.Conditions = append(issuerCopy.Status.Conditions[:i], issuerCopy.Status.Conditions[i+1:]...)
-					break
-				}
+	}
+
+	for i, c := range issuerCopy.Status.Conditions {
+		if c.Type == v1alpha1.IssuerConditionReady {
+			if c.Reason == errorConfig && c.Status == v1alpha1.ConditionFalse {
+				issuerCopy.Status.Conditions = append(issuerCopy.Status.Conditions[:i], issuerCopy.Status.Conditions[i+1:]...)
+				break
 			}
 		}
 	}
@@ -63,18 +63,18 @@ func (c *Controller) Sync(ctx context.Context, iss *v1alpha1.Issuer) (forceAdd b
 	i, err := c.IssuerFactory().IssuerFor(issuerCopy)
 
 	if err != nil {
-		return false, err
+		return err
 	}
 
-	resp, err := i.Setup(ctx)
+	err = i.Setup(ctx)
 	if err != nil {
 		s := messageErrorInitIssuer + err.Error()
 		glog.Info(s)
 		c.Recorder.Event(issuerCopy, v1.EventTypeWarning, errorInitIssuer, s)
-		return false, err
+		return err
 	}
 
-	return resp.Requeue, nil
+	return nil
 }
 
 func (c *Controller) updateIssuerStatus(old, new *v1alpha1.Issuer) (*v1alpha1.Issuer, error) {

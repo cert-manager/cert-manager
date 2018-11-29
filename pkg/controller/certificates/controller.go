@@ -41,7 +41,7 @@ type Controller struct {
 	*controllerpkg.Context
 
 	// To allow injection for testing.
-	syncHandler func(ctx context.Context, key string) (bool, error)
+	syncHandler func(ctx context.Context, key string) error
 
 	issuerLister        cmlisters.IssuerLister
 	clusterIssuerLister cmlisters.ClusterIssuerLister
@@ -129,44 +129,34 @@ func (c *Controller) worker(stopCh <-chan struct{}) {
 		}
 
 		var key string
-		forceAdd, err := func(obj interface{}) (bool, error) {
+		// use an inlined function so we can use defer
+		func() {
 			defer c.queue.Done(obj)
 			var ok bool
 			if key, ok = obj.(string); !ok {
-				return false, nil
+				return
 			}
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
 			ctx = util.ContextWithStopCh(ctx, stopCh)
 			glog.Infof("%s controller: syncing item '%s'", ControllerName, key)
-
-			forceAdd, err := c.syncHandler(ctx, key)
-			if err == nil {
-				c.queue.Forget(obj)
+			if err := c.syncHandler(ctx, key); err != nil {
+				glog.Errorf("%s controller: Re-queuing item %q due to error processing: %s", ControllerName, key, err.Error())
+				c.queue.AddRateLimited(obj)
+				return
 			}
-			return forceAdd, err
-		}(obj)
-
-		if err != nil {
-			glog.Errorf("%s controller: Re-queuing item %q due to error processing: %s", ControllerName, key, err.Error())
-			c.queue.AddRateLimited(obj)
-			continue
-		}
-
-		if forceAdd {
-			c.queue.Add(obj)
-		}
-
-		glog.Infof("%s controller: Finished processing work item %q", ControllerName, key)
+			glog.Infof("%s controller: Finished processing work item %q", ControllerName, key)
+			c.queue.Forget(obj)
+		}()
 	}
 	glog.V(4).Infof("Exiting %q worker loop", ControllerName)
 }
 
-func (c *Controller) processNextWorkItem(ctx context.Context, key string) (bool, error) {
+func (c *Controller) processNextWorkItem(ctx context.Context, key string) error {
 	namespace, name, err := cache.SplitMetaNamespaceKey(key)
 	if err != nil {
 		runtime.HandleError(fmt.Errorf("invalid resource key: %s", key))
-		return false, nil
+		return nil
 	}
 
 	crt, err := c.certificateLister.Certificates(namespace).Get(name)
@@ -175,10 +165,10 @@ func (c *Controller) processNextWorkItem(ctx context.Context, key string) (bool,
 		if k8sErrors.IsNotFound(err) {
 			c.scheduledWorkQueue.Forget(key)
 			runtime.HandleError(fmt.Errorf("certificate '%s' in work queue no longer exists", key))
-			return false, nil
+			return nil
 		}
 
-		return false, err
+		return err
 	}
 
 	return c.Sync(ctx, crt)
