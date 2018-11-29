@@ -93,9 +93,6 @@ func allFieldsSetCheck(expectedCA []byte) func(t *testing.T, s *caFixture, args 
 		if resp.CA == nil || !reflect.DeepEqual(expectedCA, resp.CA) {
 			t.Errorf("expected CA certificate to be returned")
 		}
-		if resp.Requeue == true {
-			t.Errorf("expected certificate to not be requeued")
-		}
 	}
 }
 
@@ -212,15 +209,7 @@ func TestIssue(t *testing.T) {
 			if err == nil && test.Err {
 				t.Errorf("Expected function to get an error, but got: %v", err)
 			}
-			if resp.Requeue == true {
-				if !reflect.DeepEqual(test.Certificate, certCopy) {
-					t.Errorf("Requeue should never be true if the Certificate is modified to prevent race conditions")
-				}
 
-				if err != nil {
-					t.Errorf("Requeue cannot be true if err is true")
-				}
-			}
 			test.Finish(t, certCopy, resp, err)
 		})
 	}

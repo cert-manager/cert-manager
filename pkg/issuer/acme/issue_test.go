@@ -165,9 +165,6 @@ func TestIssueHappyPath(t *testing.T) {
 				if resp.PrivateKey == nil {
 					t.Errorf("expected new private key to be generated")
 				}
-				if resp.Requeue == true {
-					t.Errorf("expected certificate to not be requeued")
-				}
 			},
 			Err: false,
 		},
@@ -197,9 +194,6 @@ func TestIssueHappyPath(t *testing.T) {
 				if resp.PrivateKey != nil {
 					t.Errorf("unexpected PrivateKey response set")
 				}
-				if resp.Requeue == true {
-					t.Errorf("expected certificate to not be requeued")
-				}
 				if !reflect.DeepEqual(returnedCert, testCert) {
 					t.Errorf("output was not as expected: %s", pretty.Diff(returnedCert, testCert))
 				}
@@ -222,9 +216,6 @@ func TestIssueHappyPath(t *testing.T) {
 				if resp.PrivateKey != nil {
 					t.Errorf("unexpected PrivateKey response set")
 				}
-				if resp.Requeue == true {
-					t.Errorf("expected certificate to not be requeued")
-				}
 				if !reflect.DeepEqual(returnedCert, testCert) {
 					t.Errorf("output was not as expected: %s", pretty.Diff(returnedCert, testCert))
 				}
@@ -245,9 +236,6 @@ func TestIssueHappyPath(t *testing.T) {
 				resp := args[1].(issuer.IssueResponse)
 				// err := args[2].(error)
 
-				if resp.Requeue == true {
-					t.Errorf("expected certificate to not be requeued")
-				}
 				if !reflect.DeepEqual(returnedCert, testCert) {
 					t.Errorf("output was not as expected: %s", pretty.Diff(returnedCert, testCert))
 				}
@@ -289,9 +277,6 @@ func TestIssueHappyPath(t *testing.T) {
 				if resp.PrivateKey != nil {
 					t.Errorf("unexpected private key data")
 				}
-				if resp.Requeue == true {
-					t.Errorf("expected certificate to not be requeued")
-				}
 				if !reflect.DeepEqual(returnedCert, testCert) {
 					t.Errorf("output was not as expected: %s", pretty.Diff(returnedCert, testCert))
 				}
@@ -313,15 +298,6 @@ func TestIssueHappyPath(t *testing.T) {
 			}
 			if err == nil && test.Err {
 				t.Errorf("Expected function to get an error, but got: %v", err)
-			}
-			if resp.Requeue == true {
-				if !reflect.DeepEqual(test.Certificate, certCopy) {
-					t.Errorf("Requeue should never be true if the Certificate is modified to prevent race conditions")
-				}
-
-				if err != nil {
-					t.Errorf("Requeue cannot be true if err is true")
-				}
 			}
 			test.Finish(t, certCopy, resp, err)
 		})
@@ -444,9 +420,6 @@ func TestIssueRetryCases(t *testing.T) {
 				if resp.Certificate != nil {
 					t.Errorf("unexpected Certificate response set")
 				}
-				if resp.Requeue == true {
-					t.Errorf("expected certificate to not be requeued")
-				}
 				// the orderRef field should be set to nil
 				if !reflect.DeepEqual(returnedCert, testCert) {
 					t.Errorf("expected certificate order ref to be nil: %s", pretty.Diff(returnedCert, testCert))
@@ -478,9 +451,6 @@ func TestIssueRetryCases(t *testing.T) {
 				}
 				if resp.Certificate != nil {
 					t.Errorf("unexpected Certificate response set")
-				}
-				if resp.Requeue == true {
-					t.Errorf("expected certificate to not be requeued")
 				}
 				// the orderRef field should be set to nil
 				if !reflect.DeepEqual(returnedCert, testCert) {
@@ -514,9 +484,6 @@ func TestIssueRetryCases(t *testing.T) {
 				if resp.Certificate != nil {
 					t.Errorf("unexpected Certificate response set")
 				}
-				if resp.Requeue == true {
-					t.Errorf("expected certificate to not be requeued")
-				}
 				// the orderRef field should be set to nil
 				if !reflect.DeepEqual(returnedCert, testCert) {
 					t.Errorf("expected certificate order ref to be nil: %s", pretty.Diff(returnedCert, testCert))
@@ -549,9 +516,6 @@ func TestIssueRetryCases(t *testing.T) {
 				if resp.Certificate != nil {
 					t.Errorf("unexpected Certificate response set")
 				}
-				if resp.Requeue == true {
-					t.Errorf("expected certificate to not be requeued")
-				}
 				// the orderRef field should be set to nil
 				if !reflect.DeepEqual(returnedCert, testCert) {
 					t.Errorf("expected certificate order ref to be nil: %s", pretty.Diff(returnedCert, testCert))
@@ -579,9 +543,6 @@ func TestIssueRetryCases(t *testing.T) {
 				}
 				if resp.Certificate != nil {
 					t.Errorf("unexpected Certificate response set")
-				}
-				if resp.Requeue == true {
-					t.Errorf("expected certificate to not be immediately requeued")
 				}
 				// the resource should not be changed
 				if !reflect.DeepEqual(returnedCert, recentlyFailedCertificate) {
@@ -611,9 +572,6 @@ func TestIssueRetryCases(t *testing.T) {
 				if resp.Certificate != nil {
 					t.Errorf("unexpected Certificate response set")
 				}
-				if resp.Requeue == true {
-					t.Errorf("expected certificate to not be immediately requeued")
-				}
 				// the resource should have the last failure time set
 				if !reflect.DeepEqual(returnedCert, recentlyFailedCertificate) {
 					t.Errorf("expected certificate order ref to be nil: %s", pretty.Diff(returnedCert, recentlyFailedCertificate))
@@ -638,15 +596,6 @@ func TestIssueRetryCases(t *testing.T) {
 			}
 			if err == nil && test.Err {
 				t.Errorf("Expected function to get an error, but got: %v", err)
-			}
-			if resp.Requeue == true {
-				if !reflect.DeepEqual(test.Certificate, certCopy) {
-					t.Errorf("Requeue should never be true if the Certificate is modified to prevent race conditions")
-				}
-
-				if err != nil {
-					t.Errorf("Requeue cannot be true if err is true")
-				}
 			}
 			test.Finish(t, certCopy, resp, err)
 		})
