@@ -30,12 +30,14 @@ import (
 	"github.com/golang/glog"
 	vault "github.com/hashicorp/vault/api"
 	"github.com/hashicorp/vault/helper/certutil"
+	corev1 "k8s.io/api/core/v1"
+	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
+
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	"github.com/jetstack/cert-manager/pkg/issuer"
 	"github.com/jetstack/cert-manager/pkg/util/errors"
 	"github.com/jetstack/cert-manager/pkg/util/kube"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
-	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 )
 
 const (
@@ -50,69 +52,65 @@ const (
 )
 
 func (v *Vault) Issue(ctx context.Context, crt *v1alpha1.Certificate) (issuer.IssueResponse, error) {
-	key, certPem, caPem, err := v.obtainCertificate(ctx, crt)
+	// get a copy of the existing/currently issued Certificate's private key
+	signeePrivateKey, err := kube.SecretTLSKey(v.secretsLister, crt.Namespace, crt.Spec.SecretName)
+	if k8sErrors.IsNotFound(err) || errors.IsInvalidData(err) {
+		// if one does not already exist, generate a new one
+		signeePrivateKey, err = pki.GeneratePrivateKeyForCertificate(crt)
+		if err != nil {
+			v.Recorder.Eventf(crt, corev1.EventTypeWarning, "PrivateKeyError", "Error generating certificate private key: %v", err)
+			// don't trigger a retry. An error from this function implies some
+			// invalid input parameters, and retrying without updating the
+			// resource will not help.
+			return issuer.IssueResponse{}, nil
+		}
+	}
 	if err != nil {
-		s := messageErrorIssueCert + err.Error()
-		crt.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse, errorIssueCert, s, false)
+		glog.Errorf("Error getting private key %q for certificate: %v", crt.Spec.SecretName, err)
 		return issuer.IssueResponse{}, err
 	}
 
-	crt.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionTrue, successCertIssued, messageCertIssued, true)
+	/// BEGIN building CSR
+	// TODO: we should probably surface some of these errors to users
+	template, err := pki.GenerateCSR(v.issuer, crt)
+	if err != nil {
+		return issuer.IssueResponse{}, err
+	}
+	derBytes, err := pki.EncodeCSR(template, signeePrivateKey)
+	if err != nil {
+		return issuer.IssueResponse{}, err
+	}
+	pemRequestBuf := &bytes.Buffer{}
+	err = pem.Encode(pemRequestBuf, &pem.Block{Type: "CERTIFICATE REQUEST", Bytes: derBytes})
+	if err != nil {
+		return issuer.IssueResponse{}, fmt.Errorf("error encoding certificate request: %s", err.Error())
+	}
+	/// END building CSR
+
+	/// BEGIN requesting certificate
+	certDuration := v1alpha1.DefaultCertificateDuration
+	if crt.Spec.Duration != nil {
+		certDuration = crt.Spec.Duration.Duration
+	}
+
+	certPem, caPem, err := v.requestVaultCert(template.Subject.CommonName, certDuration, template.DNSNames, pemRequestBuf.Bytes())
+	if err != nil {
+		v.Recorder.Eventf(crt, corev1.EventTypeWarning, "ErrorSigning", "Failed to request certificate: %v", err)
+		return issuer.IssueResponse{}, err
+	}
+	/// END requesting certificate
+
+	key, err := pki.EncodePrivateKey(signeePrivateKey)
+	if err != nil {
+		v.Recorder.Eventf(crt, corev1.EventTypeWarning, "ErrorPrivateKey", "Error encoding private key: %v", err)
+		return issuer.IssueResponse{}, err
+	}
 
 	return issuer.IssueResponse{
 		PrivateKey:  key,
 		Certificate: certPem,
 		CA:          caPem,
 	}, nil
-}
-
-func (v *Vault) obtainCertificate(ctx context.Context, crt *v1alpha1.Certificate) ([]byte, []byte, []byte, error) {
-	// get existing certificate private key
-	signeeKey, err := kube.SecretTLSKey(v.secretsLister, crt.Namespace, crt.Spec.SecretName)
-	if k8sErrors.IsNotFound(err) || errors.IsInvalidData(err) {
-		signeeKey, err = pki.GeneratePrivateKeyForCertificate(crt)
-		if err != nil {
-			return nil, nil, nil, fmt.Errorf("error generating private key: %s", err.Error())
-		}
-	}
-
-	if err != nil {
-		return nil, nil, nil, fmt.Errorf("error getting certificate private key: %s", err.Error())
-	}
-
-	template, err := pki.GenerateCSR(v.issuer, crt)
-	if err != nil {
-		return nil, nil, nil, err
-	}
-
-	derBytes, err := pki.EncodeCSR(template, signeeKey)
-	if err != nil {
-		return nil, nil, nil, err
-	}
-
-	pemRequestBuf := &bytes.Buffer{}
-	err = pem.Encode(pemRequestBuf, &pem.Block{Type: "CERTIFICATE REQUEST", Bytes: derBytes})
-	if err != nil {
-		return nil, nil, nil, fmt.Errorf("error encoding certificate request: %s", err.Error())
-	}
-
-	certDuration := v1alpha1.DefaultCertificateDuration
-	if crt.Spec.Duration != nil {
-		certDuration = crt.Spec.Duration.Duration
-	}
-
-	crtBytes, caBytes, err := v.requestVaultCert(template.Subject.CommonName, certDuration, template.DNSNames, pemRequestBuf.Bytes())
-
-	if err != nil {
-		return nil, nil, nil, err
-	}
-
-	keyBytes, err := pki.EncodePrivateKey(signeeKey)
-	if err != nil {
-		return nil, nil, nil, err
-	}
-
-	return keyBytes, crtBytes, caBytes, nil
 }
 
 func (v *Vault) configureCertPool(cfg *vault.Config) error {

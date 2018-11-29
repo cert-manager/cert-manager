@@ -72,26 +72,22 @@ func New(ctx *controllerpkg.Context) *Controller {
 	ctrl.watchedInformers = append(ctrl.watchedInformers, orderInformer.Informer().HasSynced)
 	ctrl.orderLister = orderInformer.Lister()
 
-	// issuerInformer.Informer().AddEventHandler(&controllerpkg.QueuingEventHandler{Queue: ctrl.queue})
 	issuerInformer := ctrl.SharedInformerFactory.Certmanager().V1alpha1().Issuers()
+	issuerInformer.Informer().AddEventHandler(&controllerpkg.BlockingEventHandler{WorkFunc: ctrl.handleGenericIssuer})
 	ctrl.watchedInformers = append(ctrl.watchedInformers, issuerInformer.Informer().HasSynced)
 	ctrl.issuerLister = issuerInformer.Lister()
 
-	// clusterIssuerInformer.Informer().AddEventHandler(&controllerpkg.QueuingEventHandler{Queue: ctrl.queue})
 	clusterIssuerInformer := ctrl.SharedInformerFactory.Certmanager().V1alpha1().ClusterIssuers()
+	clusterIssuerInformer.Informer().AddEventHandler(&controllerpkg.BlockingEventHandler{WorkFunc: ctrl.handleGenericIssuer})
 	ctrl.watchedInformers = append(ctrl.watchedInformers, clusterIssuerInformer.Informer().HasSynced)
 	ctrl.clusterIssuerLister = clusterIssuerInformer.Lister()
 
-	// TODO: the same problem here as with Certificates creating Orders occurs.
-	// The informer notices the new challenge resources which causes a resync
-	// of the owning Order resource before the order.status.url field is set.
-	// we need to detect this and not sync the order again automatically to
-	// prevent another order being created with the acme server.
 	challengeInformer := ctrl.SharedInformerFactory.Certmanager().V1alpha1().Challenges()
 	challengeInformer.Informer().AddEventHandler(&controllerpkg.BlockingEventHandler{WorkFunc: ctrl.handleOwnedResource})
 	ctrl.watchedInformers = append(ctrl.watchedInformers, challengeInformer.Informer().HasSynced)
 	ctrl.challengeLister = challengeInformer.Lister()
 
+	// TODO: detect changes to secrets referenced by order's issuers.
 	secretInformer := ctrl.KubeSharedInformerFactory.Core().V1().Secrets()
 	ctrl.watchedInformers = append(ctrl.watchedInformers, secretInformer.Informer().HasSynced)
 	ctrl.secretLister = secretInformer.Lister()
