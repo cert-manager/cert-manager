@@ -45,7 +45,7 @@ func (q *QueuingEventHandler) Enqueue(obj interface{}) {
 		runtime.HandleError(err)
 		return
 	}
-	q.Queue.AddRateLimited(key)
+	q.Queue.Add(key)
 }
 
 func (q *QueuingEventHandler) OnAdd(obj interface{}) {
