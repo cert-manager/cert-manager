@@ -23,7 +23,6 @@ import (
 	"k8s.io/api/core/v1"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
-	"github.com/jetstack/cert-manager/pkg/issuer"
 	"github.com/jetstack/cert-manager/pkg/util/kube"
 )
 
@@ -39,14 +38,14 @@ const (
 	messageKeyPairVerified = "Signing CA verified"
 )
 
-func (c *CA) Setup(ctx context.Context) (issuer.SetupResponse, error) {
+func (c *CA) Setup(ctx context.Context) error {
 	cert, err := kube.SecretTLSCert(c.secretsLister, c.resourceNamespace, c.issuer.GetSpec().CA.SecretName)
 	if err != nil {
 		s := messageErrorGetKeyPair + err.Error()
 		glog.Info(s)
 		c.Recorder.Event(c.issuer, v1.EventTypeWarning, errorGetKeyPair, s)
 		c.issuer.UpdateStatusCondition(v1alpha1.IssuerConditionReady, v1alpha1.ConditionFalse, errorGetKeyPair, s)
-		return issuer.SetupResponse{}, err
+		return err
 	}
 
 	_, err = kube.SecretTLSKey(c.secretsLister, c.resourceNamespace, c.issuer.GetSpec().CA.SecretName)
@@ -55,7 +54,7 @@ func (c *CA) Setup(ctx context.Context) (issuer.SetupResponse, error) {
 		glog.Info(s)
 		c.Recorder.Event(c.issuer, v1.EventTypeWarning, errorGetKeyPair, s)
 		c.issuer.UpdateStatusCondition(v1alpha1.IssuerConditionReady, v1alpha1.ConditionFalse, errorGetKeyPair, s)
-		return issuer.SetupResponse{}, err
+		return err
 	}
 
 	if !cert.IsCA {
@@ -64,12 +63,12 @@ func (c *CA) Setup(ctx context.Context) (issuer.SetupResponse, error) {
 		c.Recorder.Event(c.issuer, v1.EventTypeWarning, errorInvalidKeyPair, s)
 		c.issuer.UpdateStatusCondition(v1alpha1.IssuerConditionReady, v1alpha1.ConditionFalse, errorInvalidKeyPair, s)
 		// Don't return an error here as there is nothing more we can do
-		return issuer.SetupResponse{}, nil
+		return nil
 	}
 
 	glog.Info(messageKeyPairVerified)
 	c.Recorder.Event(c.issuer, v1.EventTypeNormal, successKeyPairVerified, messageKeyPairVerified)
 	c.issuer.UpdateStatusCondition(v1alpha1.IssuerConditionReady, v1alpha1.ConditionTrue, successKeyPairVerified, messageKeyPairVerified)
 
-	return issuer.SetupResponse{}, nil
+	return nil
 }

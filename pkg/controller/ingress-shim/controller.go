@@ -157,30 +157,25 @@ func (c *Controller) worker(stopCh <-chan struct{}) {
 		}
 
 		var key string
-		err := func(obj interface{}) error {
+		// use an inlined function so we can use defer
+		func() {
 			defer c.queue.Done(obj)
 			var ok bool
 			if key, ok = obj.(string); !ok {
-				return nil
+				return
 			}
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
 			ctx = util.ContextWithStopCh(ctx, stopCh)
 			glog.Infof("%s controller: syncing item '%s'", ControllerName, key)
 			if err := c.syncHandler(ctx, key); err != nil {
-				return err
+				glog.Errorf("%s controller: Re-queuing item %q due to error processing: %s", ControllerName, key, err.Error())
+				c.queue.AddRateLimited(obj)
+				return
 			}
+			glog.Infof("%s controller: Finished processing work item %q", ControllerName, key)
 			c.queue.Forget(obj)
-			return nil
-		}(obj)
-
-		if err != nil {
-			glog.Errorf("%s controller: Re-queuing item %q due to error processing: %s", ControllerName, key, err.Error())
-			c.queue.AddRateLimited(obj)
-			continue
-		}
-
-		glog.Infof("%s controller: Finished processing work item %q", ControllerName, key)
+		}()
 	}
 	glog.V(4).Infof("Exiting %q worker loop", ControllerName)
 }

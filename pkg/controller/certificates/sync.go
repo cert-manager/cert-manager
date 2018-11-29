@@ -74,7 +74,7 @@ var (
 // to help testing
 var now = time.Now
 
-func (c *Controller) Sync(ctx context.Context, crt *v1alpha1.Certificate) (requeue bool, err error) {
+func (c *Controller) Sync(ctx context.Context, crt *v1alpha1.Certificate) (err error) {
 	crtCopy := crt.DeepCopy()
 	defer func() {
 		if _, saveErr := c.updateCertificateStatus(crt, crtCopy); saveErr != nil {
@@ -86,7 +86,7 @@ func (c *Controller) Sync(ctx context.Context, crt *v1alpha1.Certificate) (reque
 	cert, key, err := kube.SecretTLSKeyPair(c.secretLister, crtCopy.Namespace, crtCopy.Spec.SecretName)
 	// if we don't have a certificate, we need to trigger a re-issue immediately
 	if err != nil && !(k8sErrors.IsNotFound(err) || errors.IsInvalidData(err)) {
-		return false, err
+		return err
 	}
 
 	// update certificate expiry metric
@@ -96,30 +96,30 @@ func (c *Controller) Sync(ctx context.Context, crt *v1alpha1.Certificate) (reque
 	el := validation.ValidateCertificate(crtCopy)
 	if len(el) > 0 {
 		c.Recorder.Eventf(crtCopy, corev1.EventTypeWarning, "BadConfig", "Resource validation failed: %v", el.ToAggregate())
-		return false, nil
+		return nil
 	}
 
 	// step zero: check if the referenced issuer exists and is ready
 	issuerObj, err := c.getGenericIssuer(crtCopy)
 	if k8sErrors.IsNotFound(err) {
 		c.Recorder.Eventf(crtCopy, corev1.EventTypeWarning, errorIssuerNotFound, err.Error())
-		return false, nil
+		return nil
 	}
 	if err != nil {
-		return false, err
+		return err
 	}
 
 	el = validation.ValidateCertificateForIssuer(crtCopy, issuerObj)
 	if len(el) > 0 {
 		c.Recorder.Eventf(crtCopy, corev1.EventTypeWarning, "BadConfig", "Resource validation failed: %v", el.ToAggregate())
-		return false, nil
+		return nil
 	}
 
 	// If this is an ACME certificate, ensure the certificate.spec.acme field is
 	// non-nil
 	if issuerObj.GetSpec().ACME != nil && crtCopy.Spec.ACME == nil {
 		c.Recorder.Eventf(crtCopy, corev1.EventTypeWarning, "BadConfig", "spec.acme field must be set")
-		return false, nil
+		return nil
 	}
 
 	issuerReady := issuerObj.HasCondition(v1alpha1.IssuerCondition{
@@ -128,13 +128,13 @@ func (c *Controller) Sync(ctx context.Context, crt *v1alpha1.Certificate) (reque
 	})
 	if !issuerReady {
 		c.Recorder.Eventf(crtCopy, corev1.EventTypeWarning, errorIssuerNotReady, "Issuer %s not ready", issuerObj.GetObjectMeta().Name)
-		return false, nil
+		return nil
 	}
 
 	i, err := c.IssuerFactory().IssuerFor(issuerObj)
 	if err != nil {
 		c.Recorder.Eventf(crtCopy, corev1.EventTypeWarning, errorIssuerInit, "Internal error initialising issuer: %v", err)
-		return false, nil
+		return nil
 	}
 
 	if key == nil || cert == nil {
@@ -161,7 +161,7 @@ func (c *Controller) Sync(ctx context.Context, crt *v1alpha1.Certificate) (reque
 	// the future.
 	c.scheduleRenewal(crt)
 
-	return false, nil
+	return nil
 }
 
 // setCertificateStatus will update the status subresource of the certificate.
@@ -346,22 +346,22 @@ func (c *Controller) updateSecret(crt *v1alpha1.Certificate, namespace string, c
 
 // return an error on failure. If retrieval is succesful, the certificate data
 // and private key will be stored in the named secret
-func (c *Controller) issue(ctx context.Context, issuer issuer.Interface, crt *v1alpha1.Certificate) (bool, error) {
+func (c *Controller) issue(ctx context.Context, issuer issuer.Interface, crt *v1alpha1.Certificate) error {
 	resp, err := issuer.Issue(ctx, crt)
 	if err != nil {
 		glog.Infof("Error issuing certificate for %s/%s: %v", crt.Namespace, crt.Name, err)
-		return false, err
+		return err
 	}
 
 	if resp.PrivateKey == nil {
-		return resp.Requeue, nil
+		return nil
 	}
 
 	if _, err := c.updateSecret(crt, crt.Namespace, resp.Certificate, resp.PrivateKey, resp.CA); err != nil {
 		s := messageErrorSavingCertificate + err.Error()
 		glog.Info(s)
 		c.Recorder.Event(crt, corev1.EventTypeWarning, errorSavingCertificate, s)
-		return false, err
+		return err
 	}
 
 	if len(resp.Certificate) > 0 {
@@ -374,7 +374,7 @@ func (c *Controller) issue(ctx context.Context, issuer issuer.Interface, crt *v1
 		c.scheduleRenewal(crt)
 	}
 
-	return resp.Requeue, nil
+	return nil
 }
 
 func (c *Controller) updateCertificateStatus(old, new *v1alpha1.Certificate) (*v1alpha1.Certificate, error) {
