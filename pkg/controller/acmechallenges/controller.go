@@ -23,6 +23,7 @@ import (
 	"time"
 
 	"github.com/golang/glog"
+	corev1 "k8s.io/api/core/v1"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -33,6 +34,7 @@ import (
 	"github.com/jetstack/cert-manager/pkg/acme"
 	cmlisters "github.com/jetstack/cert-manager/pkg/client/listers/certmanager/v1alpha1"
 	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
+	"github.com/jetstack/cert-manager/pkg/controller/acmechallenges/scheduler"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/http"
 	"github.com/jetstack/cert-manager/pkg/util"
@@ -60,6 +62,8 @@ type Controller struct {
 
 	watchedInformers []cache.InformerSynced
 	queue            workqueue.RateLimitingInterface
+
+	scheduler *scheduler.Scheduler
 }
 
 func New(ctx *controllerpkg.Context) *Controller {
@@ -101,6 +105,7 @@ func New(ctx *controllerpkg.Context) *Controller {
 
 	ctrl.httpSolver = http.NewSolver(ctx)
 	ctrl.dnsSolver = dns.NewSolver(ctx)
+	ctrl.scheduler = scheduler.New(ctrl.challengeLister)
 
 	return ctrl
 }
@@ -123,6 +128,10 @@ func (c *Controller) Run(workers int, stopCh <-chan struct{}) error {
 		},
 			time.Second, stopCh)
 	}
+	// TODO: properly plumb in stopCh and WaitGroup to scheduler
+	// Run the scheduler once per second
+	go wait.Until(c.runScheduler, time.Second*1, stopCh)
+
 	<-stopCh
 	glog.V(4).Infof("Shutting down queue as workqueue signaled shutdown")
 	c.queue.ShutDown()
@@ -130,6 +139,47 @@ func (c *Controller) Run(workers int, stopCh <-chan struct{}) error {
 	wg.Wait()
 	glog.V(4).Infof("Workers exited.")
 	return nil
+}
+
+// MaxChallengesPerSchedule is the maximum number of challenges that can be
+// scheduled with a single call to the scheduler.
+// This provides a very crude rate limit on how many challenges we will schedule
+// per second. It may be better to remove this altogether in favour of some
+// other method of rate limiting creations.
+// TODO: make this configurable
+const MaxChallengesPerSchedule = 20
+
+// runScheduler will execute the scheduler's ScheduleN function to determine
+// which, if any, challenges should be rescheduled.
+// TODO: it should also only re-run the scheduler if a change to challenges has
+// been observed, to save needless work
+func (c *Controller) runScheduler() {
+	toSchedule, err := c.scheduler.ScheduleN(MaxChallengesPerSchedule)
+	if err != nil {
+		runtime.HandleError(fmt.Errorf("Error determining set of challenges that should be scheduled for processing: %v", err))
+		return
+	}
+
+	for _, ch := range toSchedule {
+		ch = ch.DeepCopy()
+		ch.Status.Processing = true
+
+		_, err := c.CMClient.CertmanagerV1alpha1().Challenges(ch.Namespace).Update(ch)
+		if err != nil {
+			runtime.HandleError(fmt.Errorf("Error scheduling challenge %s/%s for processing: %v", ch.Namespace, ch.Name, err))
+			return
+		}
+
+		c.Recorder.Event(ch, corev1.EventTypeNormal, "Started", "Challenge scheduled for processing")
+	}
+
+	if len(toSchedule) > 0 {
+		plural := ""
+		if len(toSchedule) > 1 {
+			plural = "s"
+		}
+		glog.V(4).Infof("Scheduled %d challenge%s for processing", len(toSchedule), plural)
+	}
 }
 
 func (c *Controller) worker(stopCh <-chan struct{}) {
