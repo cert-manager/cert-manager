@@ -25,6 +25,9 @@ import (
 
 	"github.com/jetstack/cert-manager/pkg/util"
 
+	challengescontroller "github.com/jetstack/cert-manager/pkg/controller/acmechallenges"
+	"github.com/jetstack/cert-manager/pkg/controller/acmechallenges/scheduler"
+	orderscontroller "github.com/jetstack/cert-manager/pkg/controller/acmeorders"
 	certificatescontroller "github.com/jetstack/cert-manager/pkg/controller/certificates"
 	clusterissuerscontroller "github.com/jetstack/cert-manager/pkg/controller/clusterissuers"
 	ingressshimcontroller "github.com/jetstack/cert-manager/pkg/controller/ingress-shim"
@@ -43,7 +46,11 @@ type ControllerOptions struct {
 
 	EnabledControllers []string
 
-	ACMEHTTP01SolverImage string
+	ACMEHTTP01SolverImage                 string
+	ACMEHTTP01SolverResourceRequestCPU    string
+	ACMEHTTP01SolverResourceRequestMemory string
+	ACMEHTTP01SolverResourceLimitsCPU     string
+	ACMEHTTP01SolverResourceLimitsMemory  string
 
 	ClusterIssuerAmbientCredentials bool
 	IssuerAmbientCredentials        bool
@@ -52,11 +59,14 @@ type ControllerOptions struct {
 	// Default issuer/certificates details consumed by ingress-shim
 	DefaultIssuerName                  string
 	DefaultIssuerKind                  string
+	DefaultAutoCertificateAnnotations  []string
 	DefaultACMEIssuerChallengeType     string
 	DefaultACMEIssuerDNS01ProviderName string
 
 	// DNS01Nameservers allows specifying a list of custom nameservers to perform DNS checks
 	DNS01Nameservers []string
+
+	EnableCertificateOwnerRef bool
 }
 
 const (
@@ -77,16 +87,26 @@ const (
 	defaultTLSACMEIssuerKind           = "Issuer"
 	defaultACMEIssuerChallengeType     = "http01"
 	defaultACMEIssuerDNS01ProviderName = ""
+	defaultEnableCertificateOwnerRef   = false
 )
 
 var (
-	defaultACMEHTTP01SolverImage = fmt.Sprintf("quay.io/jetstack/cert-manager-acmesolver:%s", util.AppVersion)
+	defaultACMEHTTP01SolverImage                 = fmt.Sprintf("quay.io/jetstack/cert-manager-acmesolver:%s", util.AppVersion)
+	defaultACMEHTTP01SolverResourceRequestCPU    = "10m"
+	defaultACMEHTTP01SolverResourceRequestMemory = "64Mi"
+	defaultACMEHTTP01SolverResourceLimitsCPU     = "10m"
+	defaultACMEHTTP01SolverResourceLimitsMemory  = "64Mi"
+
+	defaultAutoCertificateAnnotations = []string{"kubernetes.io/tls-acme"}
 
 	defaultEnabledControllers = []string{
 		issuerscontroller.ControllerName,
 		clusterissuerscontroller.ControllerName,
 		certificatescontroller.ControllerName,
 		ingressshimcontroller.ControllerName,
+		orderscontroller.ControllerName,
+		challengescontroller.ControllerName,
+		scheduler.ControllerName,
 	}
 )
 
@@ -105,9 +125,11 @@ func NewControllerOptions() *ControllerOptions {
 		RenewBeforeExpiryDuration:          defaultRenewBeforeExpiryDuration,
 		DefaultIssuerName:                  defaultTLSACMEIssuerName,
 		DefaultIssuerKind:                  defaultTLSACMEIssuerKind,
+		DefaultAutoCertificateAnnotations:  defaultAutoCertificateAnnotations,
 		DefaultACMEIssuerChallengeType:     defaultACMEIssuerChallengeType,
 		DefaultACMEIssuerDNS01ProviderName: defaultACMEIssuerDNS01ProviderName,
 		DNS01Nameservers:                   []string{},
+		EnableCertificateOwnerRef:          defaultEnableCertificateOwnerRef,
 	}
 }
 
@@ -144,6 +166,18 @@ func (s *ControllerOptions) AddFlags(fs *pflag.FlagSet) {
 		"The docker image to use to solve ACME HTTP01 challenges. You most likely will not "+
 		"need to change this parameter unless you are testing a new feature or developing cert-manager.")
 
+	fs.StringVar(&s.ACMEHTTP01SolverResourceRequestCPU, "acme-http01-solver-resource-request-cpu", defaultACMEHTTP01SolverResourceRequestCPU, ""+
+		"Defines the resource request CPU size when spawning new ACME HTTP01 challenge solver pods.")
+
+	fs.StringVar(&s.ACMEHTTP01SolverResourceRequestMemory, "acme-http01-solver-resource-request-memory", defaultACMEHTTP01SolverResourceRequestMemory, ""+
+		"Defines the resource request Memory size when spawning new ACME HTTP01 challenge solver pods.")
+
+	fs.StringVar(&s.ACMEHTTP01SolverResourceLimitsCPU, "acme-http01-solver-resource-limits-cpu", defaultACMEHTTP01SolverResourceLimitsCPU, ""+
+		"Defines the resource limits CPU size when spawning new ACME HTTP01 challenge solver pods.")
+
+	fs.StringVar(&s.ACMEHTTP01SolverResourceLimitsMemory, "acme-http01-solver-resource-limits-memory", defaultACMEHTTP01SolverResourceLimitsMemory, ""+
+		"Defines the resource limits Memory size when spawning new ACME HTTP01 challenge solver pods.")
+
 	fs.BoolVar(&s.ClusterIssuerAmbientCredentials, "cluster-issuer-ambient-credentials", defaultClusterIssuerAmbientCredentials, ""+
 		"Whether a cluster-issuer may make use of ambient credentials for issuers. 'Ambient Credentials' are credentials drawn from the environment, metadata services, or local files which are not explicitly configured in the ClusterIssuer API object. "+
 		"When this flag is enabled, the following sources for credentials are also used: "+
@@ -156,6 +190,8 @@ func (s *ControllerOptions) AddFlags(fs *pflag.FlagSet) {
 		"The default 'renew before expiry' time for Certificates. "+
 		"Once a certificate is within this duration until expiry, a new Certificate "+
 		"will be attempted to be issued.")
+	fs.StringSliceVar(&s.DefaultAutoCertificateAnnotations, "auto-certificate-annotations", defaultAutoCertificateAnnotations, ""+
+		"The annotation consumed by the ingress-shim controller to indicate a ingress is requesting a certificate")
 
 	fs.StringVar(&s.DefaultIssuerName, "default-issuer-name", defaultTLSACMEIssuerName, ""+
 		"Name of the Issuer to use when the tls is requested but issuer name is not specified on the ingress resource.")
@@ -169,6 +205,9 @@ func (s *ControllerOptions) AddFlags(fs *pflag.FlagSet) {
 	fs.StringSliceVar(&s.DNS01Nameservers, "dns01-self-check-nameservers", []string{}, ""+
 		"A list of comma seperated DNS server endpoints used for DNS01 check requests. "+
 		"This should be a list containing IP address and port, for example: 8.8.8.8:53,8.8.4.4:53")
+	fs.BoolVar(&s.EnableCertificateOwnerRef, "enable-certificate-owner-ref", defaultEnableCertificateOwnerRef, ""+
+		"Whether to set the certificate resource as an owner of secret where the tls certificate is stored. "+
+		"When this flag is enabled, the secret will be automatically removed when the certificate resource is deleted.")
 }
 
 func (o *ControllerOptions) Validate() error {

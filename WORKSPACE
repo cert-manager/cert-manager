@@ -4,8 +4,8 @@ load("@bazel_tools//tools/build_defs/repo:git.bzl", "new_git_repository")
 ## Load rules_go and dependencies
 http_archive(
     name = "io_bazel_rules_go",
-    urls = ["https://github.com/bazelbuild/rules_go/releases/download/0.15.3/rules_go-0.15.3.tar.gz"],
-    sha256 = "97cf62bdef33519412167fd1e4b0810a318a7c234f5f8dc4f53e2da86241c492",
+    urls = ["https://github.com/bazelbuild/rules_go/releases/download/0.16.2/rules_go-0.16.2.tar.gz"],
+    sha256 = "f87fa87475ea107b3c69196f39c82b7bbf58fe27c62a338684c20ca17d1d8613",
 )
 
 load(
@@ -17,14 +17,14 @@ load(
 go_rules_dependencies()
 
 go_register_toolchains(
-    go_version = "1.10.4",
+    go_version = "1.11.2",
 )
 
 ## Load gazelle and dependencies
 http_archive(
     name = "bazel_gazelle",
-    url = "https://github.com/bazelbuild/bazel-gazelle/releases/download/0.14.0/bazel-gazelle-0.14.0.tar.gz",
-    sha256 = "c0a5739d12c6d05b6c1ad56f2200cb0b57c5a70e03ebd2f7b87ce88cabf09c7b",
+    url = "https://github.com/bazelbuild/bazel-gazelle/releases/download/0.15.0/bazel-gazelle-0.15.0.tar.gz",
+    sha256 = "6e875ab4b6bf64a38c352887760f21203ab054676d9c1b274963907e0768740d",
 )
 
 load(
@@ -34,15 +34,6 @@ load(
 )
 
 gazelle_dependencies()
-
-## Load go tools repo for goimports
-# This the git commit hash **must** be updated when the r
-go_repository(
-    name = "org_golang_x_tools",
-    commit = "156d532d4f67148ceab07c3b59ed7fa13bdbf00c",
-    remote = "https://github.com/golang/tools.git",
-    importpath = "golang.org/x/tools",
-)
 
 ## Load kubernetes repo-infra for tools like kazel
 git_repository(
@@ -114,6 +105,13 @@ filegroup(
 """,
 )
 
+## Install 'kind', for creating kubernetes-in-docker clusters
+go_repository(
+    name = "io_kubernetes_sigs_kind",
+    commit = "e0e26dae2dab662a3d06756ed668f47b2a0515cc",
+    importpath = "sigs.k8s.io/kind",
+)
+
 ## Install buildozer, for mass-editing BUILD files
 http_file(
     name = "buildozer_darwin",
@@ -157,6 +155,17 @@ filegroup(
     srcs = glob(["**/*"]),
     visibility = ["//visibility:public"],
 )
+
+filegroup(
+    name = "static",
+    srcs = [
+        "stylesheet.css",
+        "scroll.js",
+        "actions.js",
+        "tabvisibility.js",
+    ],
+    visibility = ["//visibility:public"],
+)
 """,
 )
 
@@ -164,7 +173,7 @@ filegroup(
 git_repository(
     name = "build_bazel_rules_nodejs",
     remote = "https://github.com/bazelbuild/rules_nodejs.git",
-    tag = "0.11.5",  # check for the latest tag when you install
+    tag = "0.15.0",  # check for the latest tag when you install
 )
 
 load("@build_bazel_rules_nodejs//:package.bzl", "rules_nodejs_dependencies")
@@ -182,7 +191,7 @@ load("@build_bazel_rules_nodejs//:defs.bzl", "npm_install")
 npm_install(
     name = "brodocs_modules",
     package_json = "@brodocs//:package.json",
-    package_lock_json = "//hack/brodocs:package-lock.json",
+    package_lock_json = "//docs/generated/reference/generate/bin:package-lock.json",
 )
 
 # Load kubernetes-incubator/reference-docs, to be used as part of the docs

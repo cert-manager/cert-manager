@@ -28,9 +28,13 @@ Process
 The process for cutting a minor release is as follows:
 
 #. Ensure upgrading document exists in docs/admin/upgrading
+
 #. Create a new release branch (e.g. ```release-0.5```)
+
 #. Push it to the ```jetstack/cert-manager`` repository
+
 #. Create a pull-request updating the Helm chart version and merge it:
+
    * Update contrib/charts/cert-manager/README.md
    * Update contrib/charts/cert-manager/Chart.yaml
    * Update contrib/charts/cert-manager/values.yaml
@@ -40,17 +44,19 @@ The process for cutting a minor release is as follows:
    * Run ```helm dep update``` in the contrib/charts/cert-manager directory
    * Run ```./hack/update-deploy-gen.sh``` in the root of the repository
 #. Gather release notes since the previous release:
+
    * Run ```relnotes -repo cert-manager -owner jetstack release-0.5```
    * Write up appropriate notes, similar to previous releases
+
 #. Submit the Helm chart changes to the upstream ```helm/charts``` repo:
 
-.. code:: shell
+   .. code:: shell
 
-   TARGET_REPO_REMOTE=upstream \
-   SOURCE_REPO_REMOTE=upstream \
-   SOURCE_REPO_REF=release-0.5 \
-   GITHUB_USER=munnerz \
-   ./hack/create-chart-pr.sh
+      TARGET_REPO_REMOTE=upstream \
+      SOURCE_REPO_REMOTE=upstream \
+      SOURCE_REPO_REF=release-0.5 \
+      GITHUB_USER=munnerz \
+      ./hack/create-chart-pr.sh
 
 #. Iterate on review feedback (hopefully this will be minimal) and submit
    changes to ```master``` of cert-manager, performing a rebase of release-x.y
@@ -90,6 +96,7 @@ this repository.
 The process for cutting a patch release is as follows:
 
 #. Create a PR against the **release branch** to bump the chart version:
+
    * Update contrib/charts/cert-manager/README.md
    * Update contrib/charts/cert-manager/Chart.yaml
    * Update contrib/charts/cert-manager/values.yaml
@@ -98,21 +105,25 @@ The process for cutting a patch release is as follows:
    * Update contrib/charts/cert-manager/webhook/values.yaml
    * Run ```helm dep update``` in the contrib/charts/cert-manager directory
    * Run ```./hack/update-deploy-gen.sh``` in the root of the repository
+
 #. Submit the Helm chart changes to the upstream ```helm/charts``` repo:
 
-.. code:: shell
+   .. code:: shell
 
-   TARGET_REPO_REMOTE=upstream \
-   SOURCE_REPO_REMOTE=upstream \
-   SOURCE_REPO_REF=release-0.5 \
-   GITHUB_USER=munnerz \
-   ./hack/create-chart-pr.sh
+      TARGET_REPO_REMOTE=upstream \
+      SOURCE_REPO_REMOTE=upstream \
+      SOURCE_REPO_REF=release-0.5 \
+      GITHUB_USER=munnerz \
+      ./hack/create-chart-pr.sh
 
 #. Iterate on review feedback (hopefully this will be minimal) and submit
    changes to ```master``` of cert-manager, performing a rebase of release-x.y
    and re-run of the ```create-chart-pr.sh``` script after each cycle to gather
    more feedback.
+
 #. Gather release notes since the previous release:
+
    * Run ```relnotes -repo cert-manager -owner jetstack release-0.5```
    * Write up appropriate notes, similar to previous patch releases
+
 #. Create a new tag taken from the release branch, e.g. ```v0.5.1```.

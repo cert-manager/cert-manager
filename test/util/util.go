@@ -16,9 +16,12 @@ limitations under the License.
 
 package util
 
+// TODO: we should break this file apart into separate more sane/reusable parts
+
 import (
+	"crypto/ecdsa"
+	"crypto/rsa"
 	"crypto/x509"
-	"flag"
 	"fmt"
 	"time"
 
@@ -40,17 +43,6 @@ import (
 	"github.com/jetstack/cert-manager/pkg/util"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 )
-
-var ACMECertificateDomain string
-var ACMECloudflareDomain string
-
-func init() {
-	flag.StringVar(&ACMECertificateDomain, "acme-nginx-certificate-domain", "",
-		"The provided domain and all sub-domains should resolve to the nginx ingress controller")
-	flag.StringVar(&ACMECloudflareDomain, "acme-cloudflare-domain", "",
-		"A domain name manageable using the test cloudflare api token to be used for testing "+
-			"the DNS01 provider")
-}
 
 func CertificateOnlyValidForDomains(cert *x509.Certificate, commonName string, dnsNames ...string) bool {
 	if commonName != cert.Subject.CommonName || !util.EqualUnsorted(cert.DNSNames, dnsNames) {
@@ -235,19 +227,52 @@ func WaitCertificateIssuedValid(certClient clientset.CertificateInterface, secre
 
 				return false, err
 			}
-			if len(secret.Data) != 2 {
+			if !(len(secret.Data) == 2 || len(secret.Data) == 3) {
 				glog.Infof("Expected 2 keys in certificate secret, but there was %d", len(secret.Data))
 				return false, nil
 			}
+
+			keyBytes, ok := secret.Data[v1.TLSPrivateKeyKey]
+			if !ok {
+				glog.Infof("No private key data found for Certificate %q (secret %q)", name, certificate.Spec.SecretName)
+				return false, nil
+			}
+			key, err := pki.DecodePrivateKeyBytes(keyBytes)
+			if err != nil {
+				return false, err
+			}
+
+			// validate private key is of the correct type (rsa or ecdsa)
+			switch certificate.Spec.KeyAlgorithm {
+			case v1alpha1.KeyAlgorithm(""),
+				v1alpha1.RSAKeyAlgorithm:
+				_, ok := key.(*rsa.PrivateKey)
+				if !ok {
+					glog.Infof("Expected private key of type RSA, but it was: %T", key)
+					return false, nil
+				}
+			case v1alpha1.ECDSAKeyAlgorithm:
+				_, ok := key.(*ecdsa.PrivateKey)
+				if !ok {
+					glog.Infof("Expected private key of type ECDSA, but it was: %T", key)
+					return false, nil
+				}
+			default:
+				return false, fmt.Errorf("unrecognised requested private key algorithm %q", certificate.Spec.KeyAlgorithm)
+			}
+
+			// TODO: validate private key KeySize
+
+			// check the provided certificate is valid
+			expectedCN := pki.CommonNameForCertificate(certificate)
+			expectedOrganization := pki.OrganizationForCertificate(certificate)
+			expectedDNSNames := pki.DNSNamesForCertificate(certificate)
+
 			certBytes, ok := secret.Data[v1.TLSCertKey]
 			if !ok {
 				glog.Infof("No certificate data found for Certificate %q (secret %q)", name, certificate.Spec.SecretName)
 				return false, nil
 			}
-			// check the provided certificate is valid
-			expectedCN := pki.CommonNameForCertificate(certificate)
-			expectedOrganization := pki.OrganizationForCertificate(certificate)
-			expectedDNSNames := pki.DNSNamesForCertificate(certificate)
 
 			cert, err := pki.DecodeX509CertificateBytes(certBytes)
 			if err != nil {
@@ -255,6 +280,15 @@ func WaitCertificateIssuedValid(certClient clientset.CertificateInterface, secre
 			}
 			if expectedCN != cert.Subject.CommonName || !util.EqualUnsorted(cert.DNSNames, expectedDNSNames) || !(len(cert.Subject.Organization) == 0 || util.EqualUnsorted(cert.Subject.Organization, expectedOrganization)) {
 				glog.Infof("Expected certificate valid for CN %q, O %v, dnsNames %v but got a certificate valid for CN %q, O %v, dnsNames %v", expectedCN, expectedOrganization, expectedDNSNames, cert.Subject.CommonName, cert.Subject.Organization, cert.DNSNames)
+				return false, nil
+			}
+
+			if certificate.Status.NotAfter == nil {
+				glog.Infof("No certificate expiration found for Certificate %q", name)
+				return false, nil
+			}
+			if !cert.NotAfter.Equal(certificate.Status.NotAfter.Time) {
+				glog.Info("Expected certificate expire date to be %v, but got %v", certificate.Status.NotAfter, cert.NotAfter)
 				return false, nil
 			}
 
@@ -325,7 +359,7 @@ func NewCertManagerCAClusterIssuer(name, secretName string) *v1alpha1.ClusterIss
 	}
 }
 
-func NewCertManagerBasicCertificate(name, secretName, issuerName string, issuerKind string) *v1alpha1.Certificate {
+func NewCertManagerBasicCertificate(name, secretName, issuerName string, issuerKind string, duration, renewBefore *metav1.Duration) *v1alpha1.Certificate {
 	return &v1alpha1.Certificate{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: name,
@@ -334,6 +368,8 @@ func NewCertManagerBasicCertificate(name, secretName, issuerName string, issuerK
 			CommonName:   "test.domain.com",
 			Organization: []string{"test-org"},
 			SecretName:   secretName,
+			Duration:     duration,
+			RenewBefore:  renewBefore,
 			IssuerRef: v1alpha1.ObjectReference{
 				Name: issuerName,
 				Kind: issuerKind,
@@ -342,15 +378,17 @@ func NewCertManagerBasicCertificate(name, secretName, issuerName string, issuerK
 	}
 }
 
-func NewCertManagerACMECertificate(name, secretName, issuerName string, issuerKind string, ingressClass string, cn string, dnsNames ...string) *v1alpha1.Certificate {
+func NewCertManagerACMECertificate(name, secretName, issuerName string, issuerKind string, duration, renewBefore *metav1.Duration, ingressClass string, cn string, dnsNames ...string) *v1alpha1.Certificate {
 	return &v1alpha1.Certificate{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: name,
 		},
 		Spec: v1alpha1.CertificateSpec{
-			CommonName: cn,
-			DNSNames:   dnsNames,
-			SecretName: secretName,
+			CommonName:  cn,
+			DNSNames:    dnsNames,
+			SecretName:  secretName,
+			Duration:    duration,
+			RenewBefore: renewBefore,
 			IssuerRef: v1alpha1.ObjectReference{
 				Name: issuerName,
 				Kind: issuerKind,
@@ -371,14 +409,16 @@ func NewCertManagerACMECertificate(name, secretName, issuerName string, issuerKi
 	}
 }
 
-func NewCertManagerVaultCertificate(name, secretName, issuerName string, issuerKind string) *v1alpha1.Certificate {
+func NewCertManagerVaultCertificate(name, secretName, issuerName string, issuerKind string, duration, renewBefore *metav1.Duration) *v1alpha1.Certificate {
 	return &v1alpha1.Certificate{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: name,
 		},
 		Spec: v1alpha1.CertificateSpec{
-			CommonName: "test.domain.com",
-			SecretName: secretName,
+			CommonName:  "test.domain.com",
+			SecretName:  secretName,
+			Duration:    duration,
+			RenewBefore: renewBefore,
 			IssuerRef: v1alpha1.ObjectReference{
 				Name: issuerName,
 				Kind: issuerKind,
@@ -473,7 +513,7 @@ func NewCertManagerSelfSignedIssuer(name string) *v1alpha1.Issuer {
 	}
 }
 
-func NewCertManagerVaultIssuerToken(name, vaultURL, vaultPath, vaultSecretToken string) *v1alpha1.Issuer {
+func NewCertManagerVaultIssuerToken(name, vaultURL, vaultPath, vaultSecretToken, authPath string, caBundle []byte) *v1alpha1.Issuer {
 	return &v1alpha1.Issuer{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: name,
@@ -481,8 +521,9 @@ func NewCertManagerVaultIssuerToken(name, vaultURL, vaultPath, vaultSecretToken 
 		Spec: v1alpha1.IssuerSpec{
 			IssuerConfig: v1alpha1.IssuerConfig{
 				Vault: &v1alpha1.VaultIssuer{
-					Server: vaultURL,
-					Path:   vaultPath,
+					Server:   vaultURL,
+					Path:     vaultPath,
+					CABundle: caBundle,
 					Auth: v1alpha1.VaultAuth{
 						TokenSecretRef: v1alpha1.SecretKeySelector{
 							Key: "secretkey",
@@ -497,7 +538,7 @@ func NewCertManagerVaultIssuerToken(name, vaultURL, vaultPath, vaultSecretToken 
 	}
 }
 
-func NewCertManagerVaultIssuerAppRole(name, vaultURL, vaultPath, roleId, vaultSecretAppRole, authPath string) *v1alpha1.Issuer {
+func NewCertManagerVaultIssuerAppRole(name, vaultURL, vaultPath, roleId, vaultSecretAppRole string, authPath string, caBundle []byte) *v1alpha1.Issuer {
 	return &v1alpha1.Issuer{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: name,
@@ -505,8 +546,9 @@ func NewCertManagerVaultIssuerAppRole(name, vaultURL, vaultPath, roleId, vaultSe
 		Spec: v1alpha1.IssuerSpec{
 			IssuerConfig: v1alpha1.IssuerConfig{
 				Vault: &v1alpha1.VaultIssuer{
-					Server: vaultURL,
-					Path:   vaultPath,
+					Server:   vaultURL,
+					Path:     vaultPath,
+					CABundle: caBundle,
 					Auth: v1alpha1.VaultAuth{
 						AppRole: v1alpha1.VaultAppRole{
 							Path:   authPath,

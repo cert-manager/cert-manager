@@ -27,9 +27,9 @@ import (
 // countReachabilityTestCalls is a wrapper function that allows us to count the number
 // of calls to a reachabilityTest.
 func countReachabilityTestCalls(counter *int, t reachabilityTest) reachabilityTest {
-	return func(ctx context.Context, domain, path, key string) (bool, error) {
+	return func(ctx context.Context, url, key string) (bool, error) {
 		*counter++
-		return t(ctx, domain, path, key)
+		return t(ctx, url, key)
 	}
 }
 
@@ -37,27 +37,33 @@ func TestCheck(t *testing.T) {
 	type testT struct {
 		name             string
 		reachabilityTest reachabilityTest
-		challenge        v1alpha1.ACMEOrderChallenge
+		challenge        *v1alpha1.Challenge
 		expectedErr      bool
 		expectedOk       bool
 	}
 	tests := []testT{
 		{
 			name: "should pass",
-			reachabilityTest: func(context.Context, string, string, string) (bool, error) {
+			reachabilityTest: func(context.Context, string, string) (bool, error) {
 				return true, nil
 			},
 			expectedOk: true,
 		},
 		{
 			name: "should fail",
-			reachabilityTest: func(context.Context, string, string, string) (bool, error) {
+			reachabilityTest: func(context.Context, string, string) (bool, error) {
 				return false, nil
 			},
 		},
 		{
+			name: "should fail with absorbed error",
+			reachabilityTest: func(context.Context, string, string) (bool, error) {
+				return false, &absorbErr{err: fmt.Errorf("failed")}
+			},
+		},
+		{
 			name: "should error",
-			reachabilityTest: func(context.Context, string, string, string) (bool, error) {
+			reachabilityTest: func(context.Context, string, string) (bool, error) {
 				return false, fmt.Errorf("failed")
 			},
 			expectedErr: true,
@@ -68,7 +74,10 @@ func TestCheck(t *testing.T) {
 		test := tests[i]
 		t.Run(test.name, func(t *testing.T) {
 			calls := 0
-			requiredCallsForPass := 5
+			requiredCallsForPass := 2
+			if test.challenge == nil {
+				test.challenge = &v1alpha1.Challenge{}
+			}
 			s := Solver{
 				testReachability: countReachabilityTestCalls(&calls, test.reachabilityTest),
 				requiredPasses:   requiredCallsForPass,

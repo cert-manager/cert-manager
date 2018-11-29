@@ -1,4 +1,4 @@
-load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
 
 go_library(
     name = "go_default_library",
@@ -18,25 +18,6 @@ go_library(
     visibility = ["//visibility:public"],
     deps = [
         "//vendor/github.com/gogo/protobuf/proto:go_default_library",
-        "//vendor/github.com/spf13/pflag:go_default_library",
-        "//vendor/gopkg.in/inf.v0:go_default_library",
-    ],
-)
-
-go_test(
-    name = "go_default_test",
-    srcs = [
-        "amount_test.go",
-        "math_test.go",
-        "quantity_example_test.go",
-        "quantity_proto_test.go",
-        "quantity_test.go",
-        "scale_int_test.go",
-    ],
-    embed = [":go_default_library"],
-    tags = ["manual"],
-    deps = [
-        "//vendor/github.com/google/gofuzz:go_default_library",
         "//vendor/github.com/spf13/pflag:go_default_library",
         "//vendor/gopkg.in/inf.v0:go_default_library",
     ],

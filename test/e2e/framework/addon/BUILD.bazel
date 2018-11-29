@@ -1,0 +1,41 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = ["globals.go"],
+    importpath = "github.com/jetstack/cert-manager/test/e2e/framework/addon",
+    tags = ["manual"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//test/e2e/framework/addon/base:go_default_library",
+        "//test/e2e/framework/addon/certmanager:go_default_library",
+        "//test/e2e/framework/addon/nginxingress:go_default_library",
+        "//test/e2e/framework/addon/tiller:go_default_library",
+        "//test/e2e/framework/config:go_default_library",
+        "//vendor/github.com/golang/glog:go_default_library",
+        "//vendor/k8s.io/apimachinery/pkg/util/errors:go_default_library",
+    ],
+)
+
+filegroup(
+    name = "package-srcs",
+    srcs = glob(["**"]),
+    tags = ["automanaged"],
+    visibility = ["//visibility:private"],
+)
+
+filegroup(
+    name = "all-srcs",
+    srcs = [
+        ":package-srcs",
+        "//test/e2e/framework/addon/base:all-srcs",
+        "//test/e2e/framework/addon/certmanager:all-srcs",
+        "//test/e2e/framework/addon/chart:all-srcs",
+        "//test/e2e/framework/addon/nginxingress:all-srcs",
+        "//test/e2e/framework/addon/pebble:all-srcs",
+        "//test/e2e/framework/addon/tiller:all-srcs",
+        "//test/e2e/framework/addon/vault:all-srcs",
+    ],
+    tags = ["automanaged"],
+    visibility = ["//visibility:public"],
+)

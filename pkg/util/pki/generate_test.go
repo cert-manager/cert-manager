@@ -240,7 +240,7 @@ func signTestCert(key crypto.Signer) *x509.Certificate {
 			CommonName:   commonName,
 		},
 		NotBefore: time.Now(),
-		NotAfter:  time.Now().Add(defaultNotAfter),
+		NotAfter:  time.Now().Add(v1alpha1.DefaultCertificateDuration),
 		// see http://golang.org/pkg/crypto/x509/#KeyUsage
 		KeyUsage: x509.KeyUsageDigitalSignature | x509.KeyUsageKeyEncipherment,
 	}
@@ -275,6 +275,59 @@ func TestPublicKeyMatchesCertificate(t *testing.T) {
 	}
 
 	matches, err = PublicKeyMatchesCertificate(privKey1.Public(), testCert2)
+	if err != nil {
+		t.Errorf("expected no error, but got: %v", err)
+	}
+	if matches {
+		t.Errorf("expected private key to not match certificate, but it did")
+	}
+}
+
+func TestPublicKeyMatchesCertificateRequest(t *testing.T) {
+	privKey1, err := GenerateRSAPrivateKey(2048)
+	if err != nil {
+		t.Errorf("error generating private key: %v", err)
+	}
+	privKey2, err := GenerateRSAPrivateKey(2048)
+	if err != nil {
+		t.Errorf("error generating private key: %v", err)
+	}
+
+	template := &x509.CertificateRequest{
+		Version: 3,
+		// SignatureAlgorithm: sigAlgo,
+		Subject: pkix.Name{
+			CommonName: "cn",
+		},
+	}
+
+	csr1, err := x509.CreateCertificateRequest(rand.Reader, template, privKey1)
+	if err != nil {
+		t.Errorf("error generating csr1: %v", err)
+	}
+	csr2, err := x509.CreateCertificateRequest(rand.Reader, template, privKey2)
+	if err != nil {
+		t.Errorf("error generating csr2: %v", err)
+	}
+
+	parsedCSR1, err := x509.ParseCertificateRequest(csr1)
+	if err != nil {
+		t.Errorf("error parsing csr1: %v", err)
+	}
+	parsedCSR2, err := x509.ParseCertificateRequest(csr2)
+	if err != nil {
+		t.Errorf("error parsing csr2: %v", err)
+	}
+
+	matches, err := PublicKeyMatchesCSR(privKey1.Public(), parsedCSR1)
+	if err != nil {
+		t.Errorf("expected no error, but got: %v", err)
+	}
+	if !matches {
+		t.Errorf("expected private key to match certificate, but it did not")
+	}
+
+	matches, err = PublicKeyMatchesCSR(privKey1.Public(), parsedCSR2)
 	if err != nil {
 		t.Errorf("expected no error, but got: %v", err)
 	}

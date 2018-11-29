@@ -1,4 +1,4 @@
-load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
 
 go_library(
     name = "go_default_library",
@@ -48,35 +48,6 @@ go_library(
         "//vendor/github.com/mitchellh/mapstructure:go_default_library",
         "//vendor/github.com/sethgrid/pester:go_default_library",
         "//vendor/golang.org/x/net/http2:go_default_library",
-    ],
-)
-
-go_test(
-    name = "go_default_test",
-    srcs = [
-        "api_integration_test.go",
-        "api_test.go",
-        "client_test.go",
-        "renewer_integration_test.go",
-        "renewer_test.go",
-        "request_test.go",
-        "secret_test.go",
-        "ssh_agent_test.go",
-    ],
-    embed = [":go_default_library"],
-    tags = ["manual"],
-    deps = [
-        "//vendor/github.com/hashicorp/vault/audit:go_default_library",
-        "//vendor/github.com/hashicorp/vault/builtin/audit/file:go_default_library",
-        "//vendor/github.com/hashicorp/vault/builtin/credential/userpass:go_default_library",
-        "//vendor/github.com/hashicorp/vault/builtin/logical/database:go_default_library",
-        "//vendor/github.com/hashicorp/vault/builtin/logical/pki:go_default_library",
-        "//vendor/github.com/hashicorp/vault/builtin/logical/transit:go_default_library",
-        "//vendor/github.com/hashicorp/vault/http:go_default_library",
-        "//vendor/github.com/hashicorp/vault/logical:go_default_library",
-        "//vendor/github.com/hashicorp/vault/vault:go_default_library",
-        "//vendor/github.com/mgutz/logxi/v1:go_default_library",
-        "//vendor/gopkg.in/ory-am/dockertest.v3:go_default_library",
     ],
 )
 

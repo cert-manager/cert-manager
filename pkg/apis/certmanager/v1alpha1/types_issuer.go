@@ -17,6 +17,7 @@ limitations under the License.
 package v1alpha1
 
 import (
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -90,6 +91,11 @@ type VaultIssuer struct {
 	Server string `json:"server"`
 	// Vault URL path to the certificate role
 	Path string `json:"path"`
+	// Base64 encoded CA bundle to validate Vault server certificate. Only used
+	// if the Server URL is using HTTPS protocol. This parameter is ignored for
+	// plain HTTP protocol connection. If not set the system root certificates
+	// are used to validate the TLS connection.
+	CABundle []byte `json:"caBundle,omitempty"`
 }
 
 // Vault authentication  can be configured:
@@ -128,13 +134,16 @@ type ACMEIssuer struct {
 	// PrivateKey is the name of a secret containing the private key for this
 	// user account.
 	PrivateKey SecretKeySelector `json:"privateKeySecretRef"`
-	// HTTP01 config
+	// HTTP-01 config
 	HTTP01 *ACMEIssuerHTTP01Config `json:"http01,omitempty"`
 	// DNS-01 config
 	DNS01 *ACMEIssuerDNS01Config `json:"dns01,omitempty"`
 }
 
+// ACMEIssuerHTTP01Config is a structure containing the ACME HTTP configuration options
 type ACMEIssuerHTTP01Config struct {
+	// Optional service type for Kubernetes solver service
+	ServiceType corev1.ServiceType `json:"serviceType,omitempty"`
 }
 
 // ACMEIssuerDNS01Config is a structure containing the ACME DNS configuration
@@ -146,13 +155,14 @@ type ACMEIssuerDNS01Config struct {
 type ACMEIssuerDNS01Provider struct {
 	Name string `json:"name"`
 
-	Akamai     *ACMEIssuerDNS01ProviderAkamai     `json:"akamai,omitempty"`
-	CloudDNS   *ACMEIssuerDNS01ProviderCloudDNS   `json:"clouddns,omitempty"`
-	Cloudflare *ACMEIssuerDNS01ProviderCloudflare `json:"cloudflare,omitempty"`
-	Route53    *ACMEIssuerDNS01ProviderRoute53    `json:"route53,omitempty"`
-	AzureDNS   *ACMEIssuerDNS01ProviderAzureDNS   `json:"azuredns,omitempty"`
-	AcmeDNS    *ACMEIssuerDNS01ProviderAcmeDNS    `json:"acmedns,omitempty"`
-	RFC2136    *ACMEIssuerDNS01ProviderRFC2136    `json:"rfc2136,omitempty"`
+	Akamai       *ACMEIssuerDNS01ProviderAkamai       `json:"akamai,omitempty"`
+	CloudDNS     *ACMEIssuerDNS01ProviderCloudDNS     `json:"clouddns,omitempty"`
+	Cloudflare   *ACMEIssuerDNS01ProviderCloudflare   `json:"cloudflare,omitempty"`
+	Route53      *ACMEIssuerDNS01ProviderRoute53      `json:"route53,omitempty"`
+	AzureDNS     *ACMEIssuerDNS01ProviderAzureDNS     `json:"azuredns,omitempty"`
+	DigitalOcean *ACMEIssuerDNS01ProviderDigitalOcean `json:"digitalocean,omitempty"`
+	AcmeDNS      *ACMEIssuerDNS01ProviderAcmeDNS      `json:"acmedns,omitempty"`
+	RFC2136      *ACMEIssuerDNS01ProviderRFC2136      `json:"rfc2136,omitempty"`
 }
 
 // ACMEIssuerDNS01ProviderAkamai is a structure containing the DNS
@@ -176,6 +186,12 @@ type ACMEIssuerDNS01ProviderCloudDNS struct {
 type ACMEIssuerDNS01ProviderCloudflare struct {
 	Email  string            `json:"email"`
 	APIKey SecretKeySelector `json:"apiKeySecretRef"`
+}
+
+// ACMEIssuerDNS01ProviderDigitalOcean is a structure containing the DNS
+// configuration for DigitalOcean Domains
+type ACMEIssuerDNS01ProviderDigitalOcean struct {
+	Token SecretKeySelector `json:"tokenSecretRef"`
 }
 
 // ACMEIssuerDNS01ProviderRoute53 is a structure containing the Route 53

@@ -4,11 +4,29 @@ image:
   tag: build
   pullPolicy: Never
 
+resources:
+  requests:
+    cpu: 100m
+    memory: 50Mi
+  limits:
+    cpu: 200m
+    memory: 200Mi
+
 extraArgs:
 - --v=4
+- --leader-election-lease-duration=10s
+- --leader-election-renew-deadline=3s
+- --leader-election-retry-period=2s
 
 webhook:
   enabled: true
   image:
     tag: build
     pullPolicy: Never
+  resources:
+    requests:
+      cpu: 10m
+      memory: 40Mi
+    limits:
+      cpu: 100m
+      memory: 256Mi

@@ -22,11 +22,16 @@ import (
 
 	extv1beta1 "k8s.io/api/extensions/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	cmfake "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/fake"
 	cminformers "github.com/jetstack/cert-manager/pkg/client/informers/externalversions"
+	"github.com/jetstack/cert-manager/pkg/controller/test"
+	"github.com/jetstack/cert-manager/test/unit/gen"
 )
+
+const testAcmeTLSAnnotation = "kubernetes.io/tls-acme"
 
 func strPtr(s string) *string {
 	return &s
@@ -47,15 +52,15 @@ func TestShouldSync(t *testing.T) {
 			ShouldSync:  true,
 		},
 		{
-			Annotations: map[string]string{tlsACMEAnnotation: "true"},
+			Annotations: map[string]string{testAcmeTLSAnnotation: "true"},
 			ShouldSync:  true,
 		},
 		{
-			Annotations: map[string]string{tlsACMEAnnotation: "false"},
+			Annotations: map[string]string{testAcmeTLSAnnotation: "false"},
 			ShouldSync:  false,
 		},
 		{
-			Annotations: map[string]string{tlsACMEAnnotation: ""},
+			Annotations: map[string]string{testAcmeTLSAnnotation: ""},
 			ShouldSync:  false,
 		},
 		{
@@ -71,7 +76,7 @@ func TestShouldSync(t *testing.T) {
 		},
 	}
 	for _, test := range tests {
-		shouldSync := shouldSync(buildIngress("", "", test.Annotations))
+		shouldSync := shouldSync(buildIngress("", "", test.Annotations), []string{"kubernetes.io/tls-acme"})
 		if shouldSync != test.ShouldSync {
 			t.Errorf("Expected shouldSync=%v for annotations %#v", test.ShouldSync, test.Annotations)
 		}
@@ -79,9 +84,13 @@ func TestShouldSync(t *testing.T) {
 }
 
 func TestBuildCertificates(t *testing.T) {
+	clusterIssuer := gen.ClusterIssuer("issuer-name")
+	acmeIssuer := gen.Issuer("issuer-name", gen.SetIssuerACME(v1alpha1.ACMEIssuer{}))
+	acmeClusterIssuer := gen.ClusterIssuer("issuer-name", gen.SetIssuerACME(v1alpha1.ACMEIssuer{}))
 	type testT struct {
 		Name                string
 		Ingress             *extv1beta1.Ingress
+		Issuer              v1alpha1.GenericIssuer
 		IssuerLister        []*v1alpha1.Issuer
 		ClusterIssuerLister []*v1alpha1.ClusterIssuer
 		CertificateLister   []*v1alpha1.Certificate
@@ -93,11 +102,12 @@ func TestBuildCertificates(t *testing.T) {
 	}
 	tests := []testT{
 		{
-			Name: "return a single HTTP01 Certificate for an ingress with a single valid TLS entry and HTTP01 annotations using edit-in-place",
+			Name:   "return a single HTTP01 Certificate for an ingress with a single valid TLS entry and HTTP01 annotations using edit-in-place",
+			Issuer: acmeClusterIssuer,
 			Ingress: &extv1beta1.Ingress{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "ingress-name",
-					Namespace: "ingress-namespace",
+					Namespace: gen.DefaultTestNamespace,
 					Annotations: map[string]string{
 						clusterIssuerNameAnnotation:       "issuer-name",
 						acmeIssuerChallengeTypeAnnotation: "http01",
@@ -113,13 +123,13 @@ func TestBuildCertificates(t *testing.T) {
 					},
 				},
 			},
-			ClusterIssuerLister: []*v1alpha1.ClusterIssuer{buildACMEClusterIssuer("issuer-name")},
+			ClusterIssuerLister: []*v1alpha1.ClusterIssuer{acmeClusterIssuer},
 			ExpectedCreate: []*v1alpha1.Certificate{
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:            "example-com-tls",
-						Namespace:       "ingress-namespace",
-						OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(buildIngress("ingress-name", "ingress-namespace", nil), ingressGVK)},
+						Namespace:       gen.DefaultTestNamespace,
+						OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(buildIngress("ingress-name", gen.DefaultTestNamespace, nil), ingressGVK)},
 					},
 					Spec: v1alpha1.CertificateSpec{
 						DNSNames:   []string{"example.com", "www.example.com"},
@@ -145,11 +155,12 @@ func TestBuildCertificates(t *testing.T) {
 			},
 		},
 		{
-			Name: "return a single HTTP01 Certificate for an ingress with a single valid TLS entry and HTTP01 annotations with no ingress class set",
+			Name:   "return a single HTTP01 Certificate for an ingress with a single valid TLS entry and HTTP01 annotations with no ingress class set",
+			Issuer: acmeClusterIssuer,
 			Ingress: &extv1beta1.Ingress{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "ingress-name",
-					Namespace: "ingress-namespace",
+					Namespace: gen.DefaultTestNamespace,
 					Annotations: map[string]string{
 						clusterIssuerNameAnnotation:       "issuer-name",
 						acmeIssuerChallengeTypeAnnotation: "http01",
@@ -164,13 +175,13 @@ func TestBuildCertificates(t *testing.T) {
 					},
 				},
 			},
-			ClusterIssuerLister: []*v1alpha1.ClusterIssuer{buildACMEClusterIssuer("issuer-name")},
+			ClusterIssuerLister: []*v1alpha1.ClusterIssuer{acmeClusterIssuer},
 			ExpectedCreate: []*v1alpha1.Certificate{
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:            "example-com-tls",
-						Namespace:       "ingress-namespace",
-						OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(buildIngress("ingress-name", "ingress-namespace", nil), ingressGVK)},
+						Namespace:       gen.DefaultTestNamespace,
+						OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(buildIngress("ingress-name", gen.DefaultTestNamespace, nil), ingressGVK)},
 					},
 					Spec: v1alpha1.CertificateSpec{
 						DNSNames:   []string{"example.com", "www.example.com"},
@@ -194,11 +205,12 @@ func TestBuildCertificates(t *testing.T) {
 			},
 		},
 		{
-			Name: "return a single HTTP01 Certificate for an ingress with a single valid TLS entry and HTTP01 annotations with a custom ingress class",
+			Name:   "return a single HTTP01 Certificate for an ingress with a single valid TLS entry and HTTP01 annotations with a custom ingress class",
+			Issuer: acmeClusterIssuer,
 			Ingress: &extv1beta1.Ingress{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "ingress-name",
-					Namespace: "ingress-namespace",
+					Namespace: gen.DefaultTestNamespace,
 					Annotations: map[string]string{
 						clusterIssuerNameAnnotation:       "issuer-name",
 						acmeIssuerChallengeTypeAnnotation: "http01",
@@ -214,13 +226,13 @@ func TestBuildCertificates(t *testing.T) {
 					},
 				},
 			},
-			ClusterIssuerLister: []*v1alpha1.ClusterIssuer{buildACMEClusterIssuer("issuer-name")},
+			ClusterIssuerLister: []*v1alpha1.ClusterIssuer{acmeClusterIssuer},
 			ExpectedCreate: []*v1alpha1.Certificate{
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:            "example-com-tls",
-						Namespace:       "ingress-namespace",
-						OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(buildIngress("ingress-name", "ingress-namespace", nil), ingressGVK)},
+						Namespace:       gen.DefaultTestNamespace,
+						OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(buildIngress("ingress-name", gen.DefaultTestNamespace, nil), ingressGVK)},
 					},
 					Spec: v1alpha1.CertificateSpec{
 						DNSNames:   []string{"example.com", "www.example.com"},
@@ -246,11 +258,66 @@ func TestBuildCertificates(t *testing.T) {
 			},
 		},
 		{
-			Name: "edit-in-place set to false should not trigger editing the ingress in-place",
+			Name:   "return a single HTTP01 Certificate for an ingress with a single valid TLS entry and HTTP01 annotations with a certificate ingress class",
+			Issuer: acmeClusterIssuer,
 			Ingress: &extv1beta1.Ingress{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "ingress-name",
-					Namespace: "ingress-namespace",
+					Namespace: gen.DefaultTestNamespace,
+					Annotations: map[string]string{
+						clusterIssuerNameAnnotation:            "issuer-name",
+						acmeIssuerChallengeTypeAnnotation:      "http01",
+						acmeIssuerHTTP01IngressClassAnnotation: "cert-ing",
+						ingressClassAnnotation:                 "nginx-ing",
+					},
+				},
+				Spec: extv1beta1.IngressSpec{
+					TLS: []extv1beta1.IngressTLS{
+						{
+							Hosts:      []string{"example.com", "www.example.com"},
+							SecretName: "example-com-tls",
+						},
+					},
+				},
+			},
+			ClusterIssuerLister: []*v1alpha1.ClusterIssuer{acmeClusterIssuer},
+			ExpectedCreate: []*v1alpha1.Certificate{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:            "example-com-tls",
+						Namespace:       gen.DefaultTestNamespace,
+						OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(buildIngress("ingress-name", gen.DefaultTestNamespace, nil), ingressGVK)},
+					},
+					Spec: v1alpha1.CertificateSpec{
+						DNSNames:   []string{"example.com", "www.example.com"},
+						SecretName: "example-com-tls",
+						IssuerRef: v1alpha1.ObjectReference{
+							Name: "issuer-name",
+							Kind: "ClusterIssuer",
+						},
+						ACME: &v1alpha1.ACMECertificateConfig{
+							Config: []v1alpha1.DomainSolverConfig{
+								{
+									Domains: []string{"example.com", "www.example.com"},
+									SolverConfig: v1alpha1.SolverConfig{
+										HTTP01: &v1alpha1.HTTP01SolverConfig{
+											IngressClass: strPtr("cert-ing"),
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			Name:   "edit-in-place set to false should not trigger editing the ingress in-place",
+			Issuer: acmeClusterIssuer,
+			Ingress: &extv1beta1.Ingress{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "ingress-name",
+					Namespace: gen.DefaultTestNamespace,
 					Annotations: map[string]string{
 						clusterIssuerNameAnnotation:       "issuer-name",
 						acmeIssuerChallengeTypeAnnotation: "http01",
@@ -267,13 +334,13 @@ func TestBuildCertificates(t *testing.T) {
 					},
 				},
 			},
-			ClusterIssuerLister: []*v1alpha1.ClusterIssuer{buildACMEClusterIssuer("issuer-name")},
+			ClusterIssuerLister: []*v1alpha1.ClusterIssuer{acmeClusterIssuer},
 			ExpectedCreate: []*v1alpha1.Certificate{
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:            "example-com-tls",
-						Namespace:       "ingress-namespace",
-						OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(buildIngress("ingress-name", "ingress-namespace", nil), ingressGVK)},
+						Namespace:       gen.DefaultTestNamespace,
+						OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(buildIngress("ingress-name", gen.DefaultTestNamespace, nil), ingressGVK)},
 					},
 					Spec: v1alpha1.CertificateSpec{
 						DNSNames:   []string{"example.com", "www.example.com"},
@@ -299,12 +366,13 @@ func TestBuildCertificates(t *testing.T) {
 			},
 		},
 		{
-			Name: "should error when an ingress specifies dns01 challenge type but no challenge provider",
-			Err:  true,
+			Name:   "should error when an ingress specifies dns01 challenge type but no challenge provider",
+			Issuer: acmeClusterIssuer,
+			Err:    true,
 			Ingress: &extv1beta1.Ingress{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "ingress-name",
-					Namespace: "ingress-namespace",
+					Namespace: gen.DefaultTestNamespace,
 					Annotations: map[string]string{
 						clusterIssuerNameAnnotation:       "issuer-name",
 						acmeIssuerChallengeTypeAnnotation: "dns01",
@@ -319,15 +387,16 @@ func TestBuildCertificates(t *testing.T) {
 					},
 				},
 			},
-			ClusterIssuerLister: []*v1alpha1.ClusterIssuer{buildACMEClusterIssuer("issuer-name")},
+			ClusterIssuerLister: []*v1alpha1.ClusterIssuer{acmeClusterIssuer},
 		},
 		{
-			Name: "should error when an invalid ACME challenge type is specified",
-			Err:  true,
+			Name:   "should error when an invalid ACME challenge type is specified",
+			Issuer: acmeClusterIssuer,
+			Err:    true,
 			Ingress: &extv1beta1.Ingress{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "ingress-name",
-					Namespace: "ingress-namespace",
+					Namespace: gen.DefaultTestNamespace,
 					Annotations: map[string]string{
 						clusterIssuerNameAnnotation:       "issuer-name",
 						acmeIssuerChallengeTypeAnnotation: "invalid-challenge-type",
@@ -342,15 +411,16 @@ func TestBuildCertificates(t *testing.T) {
 					},
 				},
 			},
-			ClusterIssuerLister: []*v1alpha1.ClusterIssuer{buildACMEClusterIssuer("issuer-name")},
+			ClusterIssuerLister: []*v1alpha1.ClusterIssuer{acmeClusterIssuer},
 		},
 		{
-			Name: "return a single DNS01 Certificate for an ingress with a single valid TLS entry and DNS01 annotations",
-			Err:  true,
+			Name:   "return a single DNS01 Certificate for an ingress with a single valid TLS entry and DNS01 annotations",
+			Issuer: acmeClusterIssuer,
+			Err:    true,
 			Ingress: &extv1beta1.Ingress{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "ingress-name",
-					Namespace: "ingress-namespace",
+					Namespace: gen.DefaultTestNamespace,
 					Annotations: map[string]string{
 						clusterIssuerNameAnnotation:           "issuer-name",
 						acmeIssuerChallengeTypeAnnotation:     "dns01",
@@ -366,13 +436,13 @@ func TestBuildCertificates(t *testing.T) {
 					},
 				},
 			},
-			ClusterIssuerLister: []*v1alpha1.ClusterIssuer{buildACMEClusterIssuer("issuer-name")},
+			ClusterIssuerLister: []*v1alpha1.ClusterIssuer{acmeClusterIssuer},
 			ExpectedCreate: []*v1alpha1.Certificate{
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:            "example-com-tls",
-						Namespace:       "ingress-namespace",
-						OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(buildIngress("ingress-name", "ingress-namespace", nil), ingressGVK)},
+						Namespace:       gen.DefaultTestNamespace,
+						OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(buildIngress("ingress-name", gen.DefaultTestNamespace, nil), ingressGVK)},
 					},
 					Spec: v1alpha1.CertificateSpec{
 						DNSNames:   []string{"example.com", "www.example.com"},
@@ -398,12 +468,13 @@ func TestBuildCertificates(t *testing.T) {
 			},
 		},
 		{
-			Name: "should error when no challenge type is provided",
-			Err:  true,
+			Name:   "should error when no challenge type is provided",
+			Issuer: acmeClusterIssuer,
+			Err:    true,
 			Ingress: &extv1beta1.Ingress{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "ingress-name",
-					Namespace: "ingress-namespace",
+					Namespace: gen.DefaultTestNamespace,
 					Annotations: map[string]string{
 						clusterIssuerNameAnnotation: "issuer-name",
 					},
@@ -417,16 +488,18 @@ func TestBuildCertificates(t *testing.T) {
 					},
 				},
 			},
-			ClusterIssuerLister: []*v1alpha1.ClusterIssuer{buildACMEClusterIssuer("issuer-name")},
+			ClusterIssuerLister: []*v1alpha1.ClusterIssuer{acmeClusterIssuer},
 		},
 		{
-			Name:              "should return a basic certificate when no provider specific config is provided",
-			DefaultIssuerName: "issuer-name",
-			DefaultIssuerKind: "ClusterIssuer",
+			Name:                "should return a basic certificate when no provider specific config is provided",
+			Issuer:              clusterIssuer,
+			DefaultIssuerName:   "issuer-name",
+			DefaultIssuerKind:   "ClusterIssuer",
+			ClusterIssuerLister: []*v1alpha1.ClusterIssuer{clusterIssuer},
 			Ingress: &extv1beta1.Ingress{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "ingress-name",
-					Namespace: "ingress-namespace",
+					Namespace: gen.DefaultTestNamespace,
 				},
 				Spec: extv1beta1.IngressSpec{
 					TLS: []extv1beta1.IngressTLS{
@@ -437,13 +510,12 @@ func TestBuildCertificates(t *testing.T) {
 					},
 				},
 			},
-			ClusterIssuerLister: []*v1alpha1.ClusterIssuer{buildClusterIssuer("issuer-name")},
 			ExpectedCreate: []*v1alpha1.Certificate{
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:            "example-com-tls",
-						Namespace:       "ingress-namespace",
-						OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(buildIngress("ingress-name", "ingress-namespace", nil), ingressGVK)},
+						Namespace:       gen.DefaultTestNamespace,
+						OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(buildIngress("ingress-name", gen.DefaultTestNamespace, nil), ingressGVK)},
 					},
 					Spec: v1alpha1.CertificateSpec{
 						DNSNames:   []string{"example.com", "www.example.com"},
@@ -457,12 +529,14 @@ func TestBuildCertificates(t *testing.T) {
 			},
 		},
 		{
-			Name: "should return an error when no TLS hosts are specified",
-			Err:  true,
+			Name:         "should return an error when no TLS hosts are specified",
+			Issuer:       acmeIssuer,
+			IssuerLister: []*v1alpha1.Issuer{acmeIssuer},
+			Err:          true,
 			Ingress: &extv1beta1.Ingress{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "ingress-name",
-					Namespace: "ingress-namespace",
+					Namespace: gen.DefaultTestNamespace,
 					Annotations: map[string]string{
 						issuerNameAnnotation: "issuer-name",
 					},
@@ -475,15 +549,15 @@ func TestBuildCertificates(t *testing.T) {
 					},
 				},
 			},
-			IssuerLister: []*v1alpha1.Issuer{buildACMEIssuer("issuer-name", "ingress-namespace")},
 		},
 		{
-			Name: "should return an error when no TLS secret name is specified",
-			Err:  true,
+			Name:   "should return an error when no TLS secret name is specified",
+			Issuer: acmeIssuer,
+			Err:    true,
 			Ingress: &extv1beta1.Ingress{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "ingress-name",
-					Namespace: "ingress-namespace",
+					Namespace: gen.DefaultTestNamespace,
 					Annotations: map[string]string{
 						issuerNameAnnotation: "issuer-name",
 					},
@@ -496,7 +570,7 @@ func TestBuildCertificates(t *testing.T) {
 					},
 				},
 			},
-			IssuerLister: []*v1alpha1.Issuer{buildACMEIssuer("issuer-name", "ingress-namespace")},
+			IssuerLister: []*v1alpha1.Issuer{acmeIssuer},
 		},
 		{
 			Name: "should error if the specified issuer is not found",
@@ -504,7 +578,7 @@ func TestBuildCertificates(t *testing.T) {
 			Ingress: &extv1beta1.Ingress{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "ingress-name",
-					Namespace: "ingress-namespace",
+					Namespace: gen.DefaultTestNamespace,
 					Annotations: map[string]string{
 						issuerNameAnnotation: "invalid-issuer-name",
 					},
@@ -512,11 +586,13 @@ func TestBuildCertificates(t *testing.T) {
 			},
 		},
 		{
-			Name: "should not return any certificates if a correct Certificate already exists",
+			Name:         "should not return any certificates if a correct Certificate already exists",
+			Issuer:       acmeIssuer,
+			IssuerLister: []*v1alpha1.Issuer{acmeIssuer},
 			Ingress: &extv1beta1.Ingress{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "ingress-name",
-					Namespace: "ingress-namespace",
+					Namespace: gen.DefaultTestNamespace,
 					Annotations: map[string]string{
 						issuerNameAnnotation:              "issuer-name",
 						acmeIssuerChallengeTypeAnnotation: "http01",
@@ -531,12 +607,11 @@ func TestBuildCertificates(t *testing.T) {
 					},
 				},
 			},
-			IssuerLister: []*v1alpha1.Issuer{buildACMEIssuer("issuer-name", "ingress-namespace")},
 			CertificateLister: []*v1alpha1.Certificate{
-				&v1alpha1.Certificate{
+				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "existing-crt",
-						Namespace: "ingress-namespace",
+						Namespace: gen.DefaultTestNamespace,
 					},
 					Spec: v1alpha1.CertificateSpec{
 						DNSNames:   []string{"example.com"},
@@ -562,11 +637,13 @@ func TestBuildCertificates(t *testing.T) {
 			},
 		},
 		{
-			Name: "should update a certificate if an incorrect Certificate exists",
+			Name:         "should update a certificate if an incorrect Certificate exists",
+			Issuer:       acmeIssuer,
+			IssuerLister: []*v1alpha1.Issuer{acmeIssuer},
 			Ingress: &extv1beta1.Ingress{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "ingress-name",
-					Namespace: "ingress-namespace",
+					Namespace: gen.DefaultTestNamespace,
 					Annotations: map[string]string{
 						issuerNameAnnotation:              "issuer-name",
 						acmeIssuerChallengeTypeAnnotation: "http01",
@@ -581,13 +658,12 @@ func TestBuildCertificates(t *testing.T) {
 					},
 				},
 			},
-			IssuerLister:      []*v1alpha1.Issuer{buildACMEIssuer("issuer-name", "ingress-namespace")},
-			CertificateLister: []*v1alpha1.Certificate{buildCertificate("existing-crt", "ingress-namespace")},
+			CertificateLister: []*v1alpha1.Certificate{buildCertificate("existing-crt", gen.DefaultTestNamespace)},
 			ExpectedUpdate: []*v1alpha1.Certificate{
-				&v1alpha1.Certificate{
+				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "existing-crt",
-						Namespace: "ingress-namespace",
+						Namespace: gen.DefaultTestNamespace,
 					},
 					Spec: v1alpha1.CertificateSpec{
 						DNSNames:   []string{"example.com"},
@@ -613,11 +689,13 @@ func TestBuildCertificates(t *testing.T) {
 			},
 		},
 		{
-			Name: "should update a certificate's config if an incorrect Certificate exists",
+			Name:         "should update a certificate's config if an incorrect Certificate exists",
+			Issuer:       acmeIssuer,
+			IssuerLister: []*v1alpha1.Issuer{acmeIssuer},
 			Ingress: &extv1beta1.Ingress{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "ingress-name",
-					Namespace: "ingress-namespace",
+					Namespace: gen.DefaultTestNamespace,
 					Annotations: map[string]string{
 						issuerNameAnnotation:              "issuer-name",
 						acmeIssuerChallengeTypeAnnotation: "http01",
@@ -633,12 +711,11 @@ func TestBuildCertificates(t *testing.T) {
 					},
 				},
 			},
-			IssuerLister: []*v1alpha1.Issuer{buildACMEIssuer("issuer-name", "ingress-namespace")},
 			CertificateLister: []*v1alpha1.Certificate{
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "existing-crt",
-						Namespace: "ingress-namespace",
+						Namespace: gen.DefaultTestNamespace,
 					},
 					Spec: v1alpha1.CertificateSpec{
 						DNSNames:   []string{"example.com"},
@@ -663,10 +740,10 @@ func TestBuildCertificates(t *testing.T) {
 				},
 			},
 			ExpectedUpdate: []*v1alpha1.Certificate{
-				&v1alpha1.Certificate{
+				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "existing-crt",
-						Namespace: "ingress-namespace",
+						Namespace: gen.DefaultTestNamespace,
 					},
 					Spec: v1alpha1.CertificateSpec{
 						DNSNames:   []string{"example.com"},
@@ -693,11 +770,13 @@ func TestBuildCertificates(t *testing.T) {
 			},
 		},
 		{
-			Name: "should update a Certificate correctly if an existing one of a different type exists",
+			Name:         "should update a Certificate correctly if an existing one of a different type exists",
+			Issuer:       acmeIssuer,
+			IssuerLister: []*v1alpha1.Issuer{acmeIssuer},
 			Ingress: &extv1beta1.Ingress{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "ingress-name",
-					Namespace: "ingress-namespace",
+					Namespace: gen.DefaultTestNamespace,
 					Annotations: map[string]string{
 						issuerNameAnnotation:              "issuer-name",
 						acmeIssuerChallengeTypeAnnotation: "http01",
@@ -713,12 +792,11 @@ func TestBuildCertificates(t *testing.T) {
 					},
 				},
 			},
-			IssuerLister: []*v1alpha1.Issuer{buildACMEIssuer("issuer-name", "ingress-namespace")},
 			CertificateLister: []*v1alpha1.Certificate{
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "existing-crt",
-						Namespace: "ingress-namespace",
+						Namespace: gen.DefaultTestNamespace,
 					},
 					Spec: v1alpha1.CertificateSpec{
 						DNSNames:   []string{"example.com"},
@@ -731,10 +809,10 @@ func TestBuildCertificates(t *testing.T) {
 				},
 			},
 			ExpectedUpdate: []*v1alpha1.Certificate{
-				&v1alpha1.Certificate{
+				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "existing-crt",
-						Namespace: "ingress-namespace",
+						Namespace: gen.DefaultTestNamespace,
 					},
 					Spec: v1alpha1.CertificateSpec{
 						DNSNames:   []string{"example.com"},
@@ -786,7 +864,11 @@ func TestBuildCertificates(t *testing.T) {
 					issuerKind: test.DefaultIssuerKind,
 				},
 			}
-			createCrts, updateCrts, err := c.buildCertificates(test.Ingress)
+			issuerKind := "Issuer"
+			if _, ok := test.Issuer.(*v1alpha1.ClusterIssuer); ok {
+				issuerKind = "ClusterIssuer"
+			}
+			createCrts, updateCrts, err := c.buildCertificates(test.Ingress, test.Issuer, issuerKind)
 			if err != nil && !test.Err {
 				t.Errorf("Expected no error, but got: %s", err)
 			}
@@ -829,7 +911,7 @@ func TestIssuerForIngress(t *testing.T) {
 		},
 		{
 			Ingress: buildIngress("name", "namespace", map[string]string{
-				tlsACMEAnnotation: "true",
+				testAcmeTLSAnnotation: "true",
 			}),
 			DefaultName:  "default-name",
 			DefaultKind:  "ClusterIssuer",
@@ -864,25 +946,24 @@ func TestGetGenericIssuer(t *testing.T) {
 		Name                   string
 		Kind                   string
 		Namespace              string
-		IssuerLister           []*v1alpha1.Issuer
-		ClusterIssuerLister    []*v1alpha1.ClusterIssuer
+		CMObjects              []runtime.Object
 		NilClusterIssuerLister bool
 		Err                    bool
 		Expected               v1alpha1.GenericIssuer
 	}
 	tests := []testT{
 		{
-			Name:         "name",
-			Kind:         "Issuer",
-			Namespace:    "namespace",
-			IssuerLister: []*v1alpha1.Issuer{buildIssuer("name", "namespace")},
-			Expected:     buildIssuer("name", "namespace"),
+			Name:      "name-of-issuer",
+			Kind:      "Issuer",
+			Namespace: gen.DefaultTestNamespace,
+			CMObjects: []runtime.Object{gen.Issuer("name-of-issuer")},
+			Expected:  gen.Issuer("name-of-issuer"),
 		},
 		{
-			Name:                "name",
-			Kind:                "ClusterIssuer",
-			ClusterIssuerLister: []*v1alpha1.ClusterIssuer{buildClusterIssuer("name")},
-			Expected:            buildClusterIssuer("name"),
+			Name:      "name-of-clusterissuer",
+			Kind:      "ClusterIssuer",
+			CMObjects: []runtime.Object{gen.ClusterIssuer("name-of-clusterissuer")},
+			Expected:  gen.ClusterIssuer("name-of-clusterissuer"),
 		},
 		{
 			Name:     "name",
@@ -901,48 +982,42 @@ func TestGetGenericIssuer(t *testing.T) {
 			Err:  true,
 		},
 		{
-			Name: "name",
-			Kind: "ClusterIssuer",
+			Name:                   "name",
+			Kind:                   "ClusterIssuer",
 			NilClusterIssuerLister: true,
-			Err: true,
+			Err:                    true,
 		},
 	}
 
-	for _, test := range tests {
-		cmClient := cmfake.NewSimpleClientset()
-		factory := cminformers.NewSharedInformerFactory(cmClient, 0)
-		issuerInformer := factory.Certmanager().V1alpha1().Issuers()
-		clusterIssuerInformer := factory.Certmanager().V1alpha1().ClusterIssuers()
-		for _, i := range test.IssuerLister {
-			issuerInformer.Informer().GetIndexer().Add(i)
+	for _, row := range tests {
+		b := test.Builder{
+			CertManagerObjects: row.CMObjects,
 		}
-		for _, i := range test.ClusterIssuerLister {
-			clusterIssuerInformer.Informer().GetIndexer().Add(i)
-		}
+		b.Start()
 		c := &Controller{
-			issuerLister:        issuerInformer.Lister(),
-			clusterIssuerLister: clusterIssuerInformer.Lister(),
+			issuerLister:        b.FakeCMInformerFactory().Certmanager().V1alpha1().Issuers().Lister(),
+			clusterIssuerLister: b.FakeCMInformerFactory().Certmanager().V1alpha1().ClusterIssuers().Lister(),
 		}
-		if test.NilClusterIssuerLister {
-			c.clusterIssuerLister = nil
-		}
-		actual, err := c.getGenericIssuer(test.Namespace, test.Name, test.Kind)
-		if err != nil && !test.Err {
-			t.Errorf("Expected no error, but got: %s", err)
-			continue
-		}
-		if !reflect.DeepEqual(actual, test.Expected) {
-			t.Errorf("Expected %#v but got %#v", test.Expected, actual)
-		}
-	}
-}
 
-func buildIssuer(name, namespace string) *v1alpha1.Issuer {
-	return &v1alpha1.Issuer{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: namespace,
-		},
+		func() {
+			b.Sync()
+			defer b.Stop()
+
+			if row.NilClusterIssuerLister {
+				c.clusterIssuerLister = nil
+			}
+
+			stopCh := make(chan struct{})
+			defer close(stopCh)
+
+			actual, err := c.getGenericIssuer(row.Namespace, row.Name, row.Kind)
+			if err != nil && !row.Err {
+				t.Errorf("Expected no error, but got: %s", err)
+			}
+			if !reflect.DeepEqual(actual, row.Expected) {
+				t.Errorf("Expected %#v but got %#v", row.Expected, actual)
+			}
+		}()
 	}
 }
 
@@ -965,27 +1040,6 @@ func buildACMEIssuer(name, namespace string) *v1alpha1.Issuer {
 			IssuerConfig: v1alpha1.IssuerConfig{
 				ACME: &v1alpha1.ACMEIssuer{},
 			},
-		},
-	}
-}
-
-func buildACMEClusterIssuer(name string) *v1alpha1.ClusterIssuer {
-	return &v1alpha1.ClusterIssuer{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: name,
-		},
-		Spec: v1alpha1.IssuerSpec{
-			IssuerConfig: v1alpha1.IssuerConfig{
-				ACME: &v1alpha1.ACMEIssuer{},
-			},
-		},
-	}
-}
-
-func buildClusterIssuer(name string) *v1alpha1.ClusterIssuer {
-	return &v1alpha1.ClusterIssuer{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: name,
 		},
 	}
 }

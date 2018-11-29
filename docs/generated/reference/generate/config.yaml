@@ -1,0 +1,22 @@
+example_location: "examples"
+api_groups:
+  - "Certmanager"
+resource_categories:
+- name: "Certmanager"
+  include: "certmanager"
+  resources:
+  - name: "Certificate"
+    version: "v1alpha1"
+    group: "certmanager"
+  - name: "ClusterIssuer"
+    version: "v1alpha1"
+    group: "certmanager"
+  - name: "Issuer"
+    version: "v1alpha1"
+    group: "certmanager"
+  - name: "Order"
+    version: "v1alpha1"
+    group: "certmanager"
+  - name: "Challenge"
+    version: "v1alpha1"
+    group: "certmanager"

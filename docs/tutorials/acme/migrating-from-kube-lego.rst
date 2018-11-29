@@ -54,7 +54,7 @@ deployment YAMLs, a command like so should do:
 
    $ kubectl scale deployment kube-lego \
        --namespace kube-lego \
-       --replicas=0 \
+       --replicas=0
 
 You can then verify your kube-lego pod is no longer running with:
 
@@ -246,16 +246,13 @@ There should be an entry for each ingress in your cluster with the kube-lego
 annotation.
 
 We can also verify that cert-manager has 'adopted' the old TLS certificates by
-'describing' one of these newly created certificates:
+viewing the logs for cert-manager:
 
 .. code-block:: shell
 
-   $ kubectl describe certificate my-example-certificate
+   $ kubectl logs -n kube-system -l app=cert-manager -c cert-manager
    ...
-   Events:
-     Type    Reason            Age                 From                     Message
-     ----    ------            ----                ----                     -------
-     Normal  RenewalScheduled  1m                  cert-manager-controller  Certificate scheduled for renewal in 292 hours
+   I1025 21:54:02.869269       1 sync.go:206] Certificate my-example-certificate scheduled for renewal in 292 hours
 
 Here we can see cert-manager has verified the existing TLS certificate and
 scheduled it to be renewed in 292h time.

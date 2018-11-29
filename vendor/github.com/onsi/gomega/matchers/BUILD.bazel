@@ -1,4 +1,4 @@
-load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
 
 go_library(
     name = "go_default_library",
@@ -54,58 +54,6 @@ go_library(
         "//vendor/github.com/onsi/gomega/types:go_default_library",
         "//vendor/golang.org/x/net/html/charset:go_default_library",
         "//vendor/gopkg.in/yaml.v2:go_default_library",
-    ],
-)
-
-go_test(
-    name = "go_default_test",
-    srcs = [
-        "and_test.go",
-        "assignable_to_type_of_matcher_test.go",
-        "be_a_directory_test.go",
-        "be_a_regular_file_test.go",
-        "be_an_existing_file_test.go",
-        "be_closed_matcher_test.go",
-        "be_empty_matcher_test.go",
-        "be_equivalent_to_matcher_test.go",
-        "be_false_matcher_test.go",
-        "be_identical_to_test.go",
-        "be_nil_matcher_test.go",
-        "be_numerically_matcher_test.go",
-        "be_sent_matcher_test.go",
-        "be_temporally_matcher_test.go",
-        "be_true_matcher_test.go",
-        "be_zero_matcher_test.go",
-        "consist_of_test.go",
-        "contain_element_matcher_test.go",
-        "contain_substring_matcher_test.go",
-        "equal_matcher_test.go",
-        "have_cap_matcher_test.go",
-        "have_key_matcher_test.go",
-        "have_key_with_value_matcher_test.go",
-        "have_len_matcher_test.go",
-        "have_occurred_matcher_test.go",
-        "have_prefix_matcher_test.go",
-        "have_suffix_matcher_test.go",
-        "match_error_matcher_test.go",
-        "match_json_matcher_test.go",
-        "match_regexp_matcher_test.go",
-        "match_xml_matcher_test.go",
-        "match_yaml_matcher_test.go",
-        "matcher_tests_suite_test.go",
-        "not_test.go",
-        "or_test.go",
-        "panic_matcher_test.go",
-        "receive_matcher_test.go",
-        "succeed_matcher_test.go",
-        "with_transform_test.go",
-    ],
-    embed = [":go_default_library"],
-    tags = ["manual"],
-    deps = [
-        "//vendor/github.com/onsi/ginkgo:go_default_library",
-        "//vendor/github.com/onsi/gomega:go_default_library",
-        "//vendor/github.com/onsi/gomega/types:go_default_library",
     ],
 )
 

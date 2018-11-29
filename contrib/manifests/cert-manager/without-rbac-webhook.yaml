@@ -7,7 +7,7 @@ metadata:
   namespace: "cert-manager"
   labels:
     app: webhook
-    chart: webhook-v0.6.0-dev.0
+    chart: webhook-v0.6.0-dev.3
     release: webhook
     heritage: Tiller
 
@@ -23,7 +23,7 @@ metadata:
   name: webhook:auth-delegator
   labels:
     app: webhook
-    chart: webhook-v0.6.0-dev.0
+    chart: webhook-v0.6.0-dev.3
     release: webhook
     heritage: Tiller
 roleRef:
@@ -48,7 +48,7 @@ metadata:
   namespace: kube-system
   labels:
     app: webhook
-    chart: webhook-v0.6.0-dev.0
+    chart: webhook-v0.6.0-dev.3
     release: webhook
     heritage: Tiller
 roleRef:
@@ -69,7 +69,7 @@ metadata:
   name: webhook:webhook-requester
   labels:
     app: webhook
-    chart: webhook-v0.6.0-dev.0
+    chart: webhook-v0.6.0-dev.3
     release: webhook
     heritage: Tiller
 rules:
@@ -91,7 +91,7 @@ metadata:
   namespace: "cert-manager"
   labels:
     app: webhook
-    chart: webhook-v0.6.0-dev.0
+    chart: webhook-v0.6.0-dev.3
     release: webhook
     heritage: Tiller
 spec:
@@ -113,7 +113,7 @@ metadata:
   namespace: "cert-manager"
   labels:
     app: webhook
-    chart: webhook-v0.6.0-dev.0
+    chart: webhook-v0.6.0-dev.3
     release: webhook
     heritage: Tiller
 spec:
@@ -132,8 +132,8 @@ spec:
       serviceAccountName: webhook
       containers:
         - name: webhook
-          image: "quay.io/jetstack/cert-manager-webhook:v0.5.0"
-          imagePullPolicy: IfNotPresent
+          image: "quay.io/jetstack/cert-manager-webhook:canary"
+          imagePullPolicy: Always
           args:
           - --v=12
           - --secure-port=6443
@@ -171,7 +171,7 @@ metadata:
   namespace: "cert-manager"
   labels:
     app: webhook
-    chart: webhook-v0.6.0-dev.0
+    chart: webhook-v0.6.0-dev.3
     release: webhook
     heritage: Tiller
 spec:
@@ -213,7 +213,7 @@ metadata:
   namespace: "cert-manager"
   labels:
     app: webhook
-    chart: webhook-v0.6.0-dev.0
+    chart: webhook-v0.6.0-dev.3
     release: webhook
     heritage: Tiller
 spec:
@@ -226,7 +226,7 @@ spec:
       restartPolicy: OnFailure
       containers:
       - name: ca-helper
-        image: quay.io/munnerz/apiextensions-ca-helper:canary
+        image: quay.io/munnerz/apiextensions-ca-helper:v0.1.0
         imagePullPolicy: IfNotPresent
         args:
         - -config=/config/config
@@ -252,7 +252,7 @@ metadata:
   namespace: "cert-manager"
   labels:
     app: webhook
-    chart: webhook-v0.6.0-dev.0
+    chart: webhook-v0.6.0-dev.3
     release: webhook
     heritage: Tiller
 data:
@@ -285,7 +285,7 @@ metadata:
   namespace: "cert-manager"
   labels:
     app: webhook
-    chart: webhook-v0.6.0-dev.0
+    chart: webhook-v0.6.0-dev.3
     release: webhook
     heritage: Tiller
 ---
@@ -295,7 +295,7 @@ metadata:
   name: webhook-ca-sync
   labels:
     app: webhook
-    chart: webhook-v0.6.0-dev.0
+    chart: webhook-v0.6.0-dev.3
     release: webhook
     heritage: Tiller
 rules:
@@ -321,7 +321,7 @@ metadata:
   name: webhook-ca-sync
   labels:
     app: webhook
-    chart: webhook-v0.6.0-dev.0
+    chart: webhook-v0.6.0-dev.3
     release: webhook
     heritage: Tiller
 roleRef:
@@ -341,7 +341,7 @@ metadata:
   name: v1beta1.admission.certmanager.k8s.io
   labels:
     app: webhook
-    chart: webhook-v0.6.0-dev.0
+    chart: webhook-v0.6.0-dev.3
     release: webhook
     heritage: Tiller
 spec:
@@ -365,7 +365,7 @@ metadata:
   namespace: "cert-manager"
   labels:
     app: webhook
-    chart: webhook-v0.6.0-dev.0
+    chart: webhook-v0.6.0-dev.3
     release: webhook
     heritage: Tiller
 spec:
@@ -381,7 +381,7 @@ metadata:
   namespace: "cert-manager"
   labels:
     app: webhook
-    chart: webhook-v0.6.0-dev.0
+    chart: webhook-v0.6.0-dev.3
     release: webhook
     heritage: Tiller
 spec:
@@ -401,7 +401,7 @@ metadata:
   namespace: "cert-manager"
   labels:
     app: webhook
-    chart: webhook-v0.6.0-dev.0
+    chart: webhook-v0.6.0-dev.3
     release: webhook
     heritage: Tiller
 spec:
@@ -418,7 +418,7 @@ metadata:
   namespace: "cert-manager"
   labels:
     app: webhook
-    chart: webhook-v0.6.0-dev.0
+    chart: webhook-v0.6.0-dev.3
     release: webhook
     heritage: Tiller
 spec:
@@ -438,7 +438,7 @@ metadata:
   name: webhook
   labels:
     app: webhook
-    chart: webhook-v0.6.0-dev.0
+    chart: webhook-v0.6.0-dev.3
     release: webhook
     heritage: Tiller
 webhooks:

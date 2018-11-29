@@ -51,16 +51,16 @@ func ValidateCertificateForIssuer(crt *v1alpha1.Certificate, issuerObj v1alpha1.
 func ValidateCertificateForACMEIssuer(crt *v1alpha1.CertificateSpec, issuer *v1alpha1.IssuerSpec, specPath *field.Path) field.ErrorList {
 	el := field.ErrorList{}
 
-	if crt.KeyAlgorithm != v1alpha1.KeyAlgorithm("") && crt.KeyAlgorithm != v1alpha1.RSAKeyAlgorithm {
-		el = append(el, field.Invalid(specPath.Child("keyAlgorithm"), crt.KeyAlgorithm, "ACME key algorithm must be RSA"))
-	}
-
 	if crt.IsCA {
 		el = append(el, field.Invalid(specPath.Child("isCA"), crt.KeyAlgorithm, "ACME does not support CA certificates"))
 	}
 
 	if len(crt.Organization) != 0 {
 		el = append(el, field.Invalid(specPath.Child("organization"), crt.Organization, "ACME does not support setting the organization name"))
+	}
+
+	if crt.Duration != nil {
+		el = append(el, field.Invalid(specPath.Child("duration"), crt.Duration, "ACME does not support certificate durations"))
 	}
 
 	return el

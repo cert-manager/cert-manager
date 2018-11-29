@@ -23,7 +23,6 @@ import (
 	"time"
 
 	"github.com/golang/glog"
-	corev1 "k8s.io/api/core/v1"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -33,6 +32,7 @@ import (
 
 	cmlisters "github.com/jetstack/cert-manager/pkg/client/listers/certmanager/v1alpha1"
 	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
+	"github.com/jetstack/cert-manager/pkg/metrics"
 	"github.com/jetstack/cert-manager/pkg/scheduler"
 	"github.com/jetstack/cert-manager/pkg/util"
 )
@@ -41,7 +41,7 @@ type Controller struct {
 	*controllerpkg.Context
 
 	// To allow injection for testing.
-	syncHandler func(ctx context.Context, key string) error
+	syncHandler func(ctx context.Context, key string) (bool, error)
 
 	issuerLister        cmlisters.IssuerLister
 	clusterIssuerLister cmlisters.ClusterIssuerLister
@@ -52,6 +52,7 @@ type Controller struct {
 	scheduledWorkQueue scheduler.ScheduledWorkQueue
 	workerWg           sync.WaitGroup
 	syncedFuncs        []cache.InformerSynced
+	metrics            *metrics.Metrics
 }
 
 // New returns a new Certificates controller. It sets up the informer handler
@@ -59,7 +60,8 @@ type Controller struct {
 func New(ctx *controllerpkg.Context) *Controller {
 	ctrl := &Controller{Context: ctx}
 	ctrl.syncHandler = ctrl.processNextWorkItem
-	ctrl.queue = workqueue.NewNamedRateLimitingQueue(workqueue.NewItemExponentialFailureRateLimiter(time.Second*2, time.Minute*1), "certificates")
+	ctrl.queue = workqueue.NewNamedRateLimitingQueue(controllerpkg.DefaultItemBasedRateLimiter(), "certificates")
+
 	// Create a scheduled work queue that calls the ctrl.queue.Add method for
 	// each object in the queue. This is used to schedule re-checks of
 	// Certificate resources when they get near to expiry
@@ -79,51 +81,17 @@ func New(ctx *controllerpkg.Context) *Controller {
 	ctrl.syncedFuncs = append(ctrl.syncedFuncs, clusterIssuerInformer.Informer().HasSynced)
 
 	secretsInformer := ctrl.KubeSharedInformerFactory.Core().V1().Secrets()
-	secretsInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
-		DeleteFunc: ctrl.secretDeleted,
-	})
+	secretsInformer.Informer().AddEventHandler(&controllerpkg.BlockingEventHandler{WorkFunc: ctrl.handleSecretResource})
 	ctrl.secretLister = secretsInformer.Lister()
 	ctrl.syncedFuncs = append(ctrl.syncedFuncs, secretsInformer.Informer().HasSynced)
 
-	// We add pod, service and ingress informers to the list of informers to sync.
-	// They are not actually used directly by the Certificates controller,
-	// however the ACME HTTP challenge solver *does* require a Pod and Secret
-	// lister, and due to the way the instantiation of issuers is performed it
-	// is far more performant to perform the sync here.
-	// This will be refactored into a dedicated 'challenges' controller in future.
-	ingressInformer := ctrl.KubeSharedInformerFactory.Extensions().V1beta1().Ingresses()
-	podsInformer := ctrl.KubeSharedInformerFactory.Core().V1().Pods()
-	serviceInformer := ctrl.KubeSharedInformerFactory.Core().V1().Services()
+	ordersInformer := ctrl.SharedInformerFactory.Certmanager().V1alpha1().Orders()
+	ordersInformer.Informer().AddEventHandler(&controllerpkg.BlockingEventHandler{WorkFunc: ctrl.handleOwnedResource})
+	ctrl.syncedFuncs = append(ctrl.syncedFuncs, ordersInformer.Informer().HasSynced)
 
-	ctrl.syncedFuncs = append(ctrl.syncedFuncs, ingressInformer.Informer().HasSynced)
-	ctrl.syncedFuncs = append(ctrl.syncedFuncs, podsInformer.Informer().HasSynced)
-	ctrl.syncedFuncs = append(ctrl.syncedFuncs, serviceInformer.Informer().HasSynced)
+	ctrl.metrics = metrics.Default
 
 	return ctrl
-}
-
-// TODO: replace with generic handleObjet function (like Navigator)
-func (c *Controller) secretDeleted(obj interface{}) {
-	var secret *corev1.Secret
-	var ok bool
-	secret, ok = obj.(*corev1.Secret)
-	if !ok {
-		runtime.HandleError(fmt.Errorf("Object is not a Secret object %#v", obj))
-		return
-	}
-	crts, err := c.certificatesForSecret(secret)
-	if err != nil {
-		runtime.HandleError(fmt.Errorf("Error looking up Certificates observing Secret: %s/%s", secret.Namespace, secret.Name))
-		return
-	}
-	for _, crt := range crts {
-		key, err := keyFunc(crt)
-		if err != nil {
-			runtime.HandleError(err)
-			continue
-		}
-		c.queue.AddRateLimited(key)
-	}
 }
 
 func (c *Controller) Run(workers int, stopCh <-chan struct{}) error {
@@ -159,21 +127,22 @@ func (c *Controller) worker(stopCh <-chan struct{}) {
 		}
 
 		var key string
-		err := func(obj interface{}) error {
+		forceAdd, err := func(obj interface{}) (bool, error) {
 			defer c.queue.Done(obj)
 			var ok bool
 			if key, ok = obj.(string); !ok {
-				return nil
+				return false, nil
 			}
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
 			ctx = util.ContextWithStopCh(ctx, stopCh)
 			glog.Infof("%s controller: syncing item '%s'", ControllerName, key)
-			if err := c.syncHandler(ctx, key); err != nil {
-				return err
+
+			forceAdd, err := c.syncHandler(ctx, key)
+			if err == nil {
+				c.queue.Forget(obj)
 			}
-			c.queue.Forget(obj)
-			return nil
+			return forceAdd, err
 		}(obj)
 
 		if err != nil {
@@ -182,16 +151,20 @@ func (c *Controller) worker(stopCh <-chan struct{}) {
 			continue
 		}
 
+		if forceAdd {
+			c.queue.Add(obj)
+		}
+
 		glog.Infof("%s controller: Finished processing work item %q", ControllerName, key)
 	}
 	glog.V(4).Infof("Exiting %q worker loop", ControllerName)
 }
 
-func (c *Controller) processNextWorkItem(ctx context.Context, key string) error {
+func (c *Controller) processNextWorkItem(ctx context.Context, key string) (bool, error) {
 	namespace, name, err := cache.SplitMetaNamespaceKey(key)
 	if err != nil {
 		runtime.HandleError(fmt.Errorf("invalid resource key: %s", key))
-		return nil
+		return false, nil
 	}
 
 	crt, err := c.certificateLister.Certificates(namespace).Get(name)
@@ -200,10 +173,10 @@ func (c *Controller) processNextWorkItem(ctx context.Context, key string) error 
 		if k8sErrors.IsNotFound(err) {
 			c.scheduledWorkQueue.Forget(key)
 			runtime.HandleError(fmt.Errorf("certificate '%s' in work queue no longer exists", key))
-			return nil
+			return false, nil
 		}
 
-		return err
+		return false, err
 	}
 
 	return c.Sync(ctx, crt)

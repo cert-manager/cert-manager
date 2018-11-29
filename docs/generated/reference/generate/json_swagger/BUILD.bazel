@@ -1,0 +1,45 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
+
+filegroup(
+    name = "package-srcs",
+    srcs = glob(["**"]),
+    tags = ["automanaged"],
+    visibility = ["//visibility:private"],
+)
+
+filegroup(
+    name = "all-srcs",
+    srcs = [":package-srcs"],
+    tags = ["automanaged"],
+    visibility = ["//visibility:public"],
+)
+
+go_library(
+    name = "go_default_library",
+    srcs = ["main.go"],
+    importpath = "github.com/jetstack/cert-manager/docs/generated/reference/generate/json_swagger",
+    tags = ["manual"],
+    visibility = ["//visibility:private"],
+    deps = [
+        "//docs/generated/reference/generate/go_openapi:go_default_library",
+        "//vendor/github.com/go-openapi/spec:go_default_library",
+        "//vendor/k8s.io/kube-openapi/pkg/common:go_default_library",
+    ],
+)
+
+go_binary(
+    name = "generator",
+    embed = [":go_default_library"],
+    tags = ["manual"],
+    visibility = ["//visibility:private"],
+)
+
+genrule(
+    name = "swagger",
+    outs = ["swagger.json"],
+    cmd = "; ".join([
+        "$(locations //docs/generated/reference/generate/json_swagger:generator) > $@",
+    ]),
+    tools = [":generator"],
+    visibility = ["//visibility:public"],
+)

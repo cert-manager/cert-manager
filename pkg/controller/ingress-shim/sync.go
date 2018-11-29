@@ -27,17 +27,13 @@ import (
 	extv1beta1 "k8s.io/api/extensions/v1beta1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/ingress/core/pkg/ingress/annotations/class"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 )
 
 const (
-	// tlsACMEAnnotation is here for compatibility with kube-lego style
-	// ingress resources. When set to "true", a Certificate resource with
-	// the default configuration provided to ingress-annotation should be
-	// created.
-	tlsACMEAnnotation = "kubernetes.io/tls-acme"
 	// editInPlaceAnnotation is used to toggle the use of ingressClass instead
 	// of ingress on the created Certificate resource
 	editInPlaceAnnotation = "certmanager.k8s.io/acme-http01-edit-in-place"
@@ -54,6 +50,9 @@ const (
 	// acmeIssuerDNS01ProviderNameAnnotation can be used to override the default dns01 provider
 	// configured on the issuer if the challenge type is set to dns01
 	acmeIssuerDNS01ProviderNameAnnotation = "certmanager.k8s.io/acme-dns01-provider"
+	// acmeIssuerHTTP01IngressClassAnnotation can be used to override the http01 ingressClass
+	// if the challenge type is set to http01
+	acmeIssuerHTTP01IngressClassAnnotation = "certmanager.k8s.io/acme-http01-ingress-class"
 
 	ingressClassAnnotation = class.IngressKey
 )
@@ -61,12 +60,37 @@ const (
 var ingressGVK = extv1beta1.SchemeGroupVersion.WithKind("Ingress")
 
 func (c *Controller) Sync(ctx context.Context, ing *extv1beta1.Ingress) error {
-	if !shouldSync(ing) {
+	if !shouldSync(ing, c.defaults.autoCertificateAnnotations) {
 		glog.Infof("Not syncing ingress %s/%s as it does not contain necessary annotations", ing.Namespace, ing.Name)
 		return nil
 	}
 
-	newCrts, updateCrts, err := c.buildCertificates(ing)
+	issuerName, issuerKind := c.issuerForIngress(ing)
+	if issuerName == "" {
+		c.Recorder.Eventf(ing, corev1.EventTypeWarning, "BadConfig", "Issuer name annotation is not set and a default issuer has not been configured")
+		return nil
+	}
+
+	issuer, err := c.getGenericIssuer(ing.Namespace, issuerName, issuerKind)
+	if apierrors.IsNotFound(err) {
+		c.Recorder.Eventf(ing, corev1.EventTypeWarning, "BadConfig", "%s resource %q not found", issuerKind, issuerName)
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+
+	errs := c.validateIngress(ing)
+	if len(errs) > 0 {
+		errMsg := errs[0].Error()
+		if len(errs) > 1 {
+			errMsg = utilerrors.NewAggregate(errs).Error()
+		}
+		c.Recorder.Eventf(ing, corev1.EventTypeWarning, "BadConfig", errMsg)
+		return nil
+	}
+
+	newCrts, updateCrts, err := c.buildCertificates(ing, issuer, issuerKind)
 	if err != nil {
 		return err
 	}
@@ -90,24 +114,37 @@ func (c *Controller) Sync(ctx context.Context, ing *extv1beta1.Ingress) error {
 	return nil
 }
 
-func (c *Controller) buildCertificates(ing *extv1beta1.Ingress) (new, update []*v1alpha1.Certificate, _ error) {
-	issuerName, issuerKind := c.issuerForIngress(ing)
-	issuer, err := c.getGenericIssuer(ing.Namespace, issuerName, issuerKind)
-	if err != nil {
-		return nil, nil, err
+func (c *Controller) validateIngress(ing *extv1beta1.Ingress) []error {
+	var errs []error
+	if ing.Annotations != nil {
+		challengeType := ing.Annotations[acmeIssuerChallengeTypeAnnotation]
+		switch challengeType {
+		case "", "http01":
+		case "dns01":
+			providerName := ing.Annotations[acmeIssuerDNS01ProviderNameAnnotation]
+			if providerName == "" {
+				errs = append(errs, fmt.Errorf("No acme dns01 challenge provider specified"))
+			}
+		default:
+			errs = append(errs, fmt.Errorf("Invalid acme challenge type specified %q", challengeType))
+		}
 	}
-
-	var newCrts []*v1alpha1.Certificate
-	var updateCrts []*v1alpha1.Certificate
 	for i, tls := range ing.Spec.TLS {
 		// validate the ingress TLS block
 		if len(tls.Hosts) == 0 {
-			return nil, nil, fmt.Errorf("secret %q for ingress %q has no hosts specified", tls.SecretName, ing.Name)
+			errs = append(errs, fmt.Errorf("Secret %q for ingress TLS has no hosts specified", tls.SecretName))
 		}
 		if tls.SecretName == "" {
-			return nil, nil, fmt.Errorf("TLS entry %d for ingress %q must specify a secretName", i, ing.Name)
+			errs = append(errs, fmt.Errorf("TLS entry %d for hosts %v must specify a secretName", i, tls.Hosts))
 		}
+	}
+	return errs
+}
 
+func (c *Controller) buildCertificates(ing *extv1beta1.Ingress, issuer v1alpha1.GenericIssuer, issuerKind string) (new, update []*v1alpha1.Certificate, _ error) {
+	var newCrts []*v1alpha1.Certificate
+	var updateCrts []*v1alpha1.Certificate
+	for _, tls := range ing.Spec.TLS {
 		existingCrt, err := c.certificateLister.Certificates(ing.Namespace).Get(tls.SecretName)
 		if !apierrors.IsNotFound(err) && err != nil {
 			return nil, nil, err
@@ -123,7 +160,7 @@ func (c *Controller) buildCertificates(ing *extv1beta1.Ingress) (new, update []*
 				DNSNames:   tls.Hosts,
 				SecretName: tls.SecretName,
 				IssuerRef: v1alpha1.ObjectReference{
-					Name: issuerName,
+					Name: issuer.GetObjectMeta().Name,
 					Kind: issuerKind,
 				},
 			},
@@ -148,7 +185,7 @@ func (c *Controller) buildCertificates(ing *extv1beta1.Ingress) (new, update []*
 
 			updateCrt.Spec.DNSNames = tls.Hosts
 			updateCrt.Spec.SecretName = tls.SecretName
-			updateCrt.Spec.IssuerRef.Name = issuerName
+			updateCrt.Spec.IssuerRef.Name = issuer.GetObjectMeta().Name
 			updateCrt.Spec.IssuerRef.Kind = issuerKind
 			err = c.setIssuerSpecificConfig(updateCrt, issuer, ing, tls)
 			if err != nil {
@@ -229,9 +266,14 @@ func (c *Controller) setIssuerSpecificConfig(crt *v1alpha1.Certificate, issuer v
 			if ok && editInPlace == "true" {
 				domainCfg.HTTP01.Ingress = ing.Name
 			} else {
-				ingressClass, ok := ingAnnotations[ingressClassAnnotation]
+				ingressClass, ok := ingAnnotations[acmeIssuerHTTP01IngressClassAnnotation]
 				if ok {
 					domainCfg.HTTP01.IngressClass = &ingressClass
+				} else {
+					ingressClass, ok := ingAnnotations[ingressClassAnnotation]
+					if ok {
+						domainCfg.HTTP01.IngressClass = &ingressClass
+					}
 				}
 			}
 		case "dns01":
@@ -253,7 +295,7 @@ func (c *Controller) setIssuerSpecificConfig(crt *v1alpha1.Certificate, issuer v
 
 // shouldSync returns true if this ingress should have a Certificate resource
 // created for it
-func shouldSync(ing *extv1beta1.Ingress) bool {
+func shouldSync(ing *extv1beta1.Ingress, autoCertificateAnnotations []string) bool {
 	annotations := ing.Annotations
 	if annotations == nil {
 		annotations = map[string]string{}
@@ -264,9 +306,11 @@ func shouldSync(ing *extv1beta1.Ingress) bool {
 	if _, ok := annotations[clusterIssuerNameAnnotation]; ok {
 		return true
 	}
-	if s, ok := annotations[tlsACMEAnnotation]; ok {
-		if b, _ := strconv.ParseBool(s); b {
-			return true
+	for _, x := range autoCertificateAnnotations {
+		if s, ok := annotations[x]; ok {
+			if b, _ := strconv.ParseBool(s); b {
+				return true
+			}
 		}
 	}
 	if _, ok := annotations[acmeIssuerChallengeTypeAnnotation]; ok {

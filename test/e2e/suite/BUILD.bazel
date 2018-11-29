@@ -1,0 +1,31 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = ["doc.go"],
+    importpath = "github.com/jetstack/cert-manager/test/e2e/suite",
+    tags = ["manual"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//test/e2e/suite/conformance:go_default_library",
+        "//test/e2e/suite/issuers:go_default_library",
+    ],
+)
+
+filegroup(
+    name = "package-srcs",
+    srcs = glob(["**"]),
+    tags = ["automanaged"],
+    visibility = ["//visibility:private"],
+)
+
+filegroup(
+    name = "all-srcs",
+    srcs = [
+        ":package-srcs",
+        "//test/e2e/suite/conformance:all-srcs",
+        "//test/e2e/suite/issuers:all-srcs",
+    ],
+    tags = ["automanaged"],
+    visibility = ["//visibility:public"],
+)

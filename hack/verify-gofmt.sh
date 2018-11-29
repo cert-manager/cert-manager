@@ -36,8 +36,8 @@ mkdir -p "$(dirname ${TMP_DIFFROOT})"
 ln -s "$(pwd)" "${TMP_DIFFROOT}"
 cd "${TMP_DIFFROOT}"
 
-echo "+++ Running goimports"
-output=$(find . -name '*.go' | grep -v 'vendor/' | xargs goimports -d -e)
+echo "+++ Running gofmt"
+output=$(find . -name '*.go' | grep -v 'vendor/' | xargs gofmt -s -d)
 if [ ! -z "${output}" ]; then
     echo "${output}"
     echo "Please run 'bazel run //hack:update-gofmt'"

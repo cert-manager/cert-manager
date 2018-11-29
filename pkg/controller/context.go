@@ -19,6 +19,7 @@ package controller
 import (
 	"time"
 
+	"k8s.io/apimachinery/pkg/api/resource"
 	kubeinformers "k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/record"
@@ -49,6 +50,7 @@ type Context struct {
 	IssuerOptions
 	ACMEOptions
 	IngressShimOptions
+	CertificateOptions
 }
 
 func (c *Context) IssuerFactory() IssuerFactory {
@@ -80,6 +82,18 @@ type ACMEOptions struct {
 	// challenges
 	HTTP01SolverImage string
 
+	// HTTP01SolverResourceRequestCPU defines the ACME pod's resource request CPU size
+	HTTP01SolverResourceRequestCPU resource.Quantity
+
+	// HTTP01SolverResourceRequestMemory defines the ACME pod's resource request Memory size
+	HTTP01SolverResourceRequestMemory resource.Quantity
+
+	// HTTP01SolverResourceLimitsCPU defines the ACME pod's resource limits CPU size
+	HTTP01SolverResourceLimitsCPU resource.Quantity
+
+	// HTTP01SolverResourceLimitsMemory defines the ACME pod's resource limits Memory size
+	HTTP01SolverResourceLimitsMemory resource.Quantity
+
 	// DNS01Nameservers is a list of nameservers to use when performing self-checks
 	// for ACME DNS01 validations.
 	DNS01Nameservers []string
@@ -87,8 +101,15 @@ type ACMEOptions struct {
 
 type IngressShimOptions struct {
 	// Default issuer/certificates details consumed by ingress-shim
-	DefaultIssuerName                  string
 	DefaultIssuerKind                  string
+	DefaultIssuerName                  string
 	DefaultACMEIssuerChallengeType     string
 	DefaultACMEIssuerDNS01ProviderName string
+	DefaultAutoCertificateAnnotations  []string
+}
+
+type CertificateOptions struct {
+	// EnableOwnerRef controls wheter wheter the certificate is configured as an owner of
+	// secret where the effective TLS certificate is stored.
+	EnableOwnerRef bool
 }

@@ -24,6 +24,7 @@ import (
 
 	"github.com/golang/glog"
 	"k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
@@ -38,7 +39,9 @@ import (
 	intscheme "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/scheme"
 	informers "github.com/jetstack/cert-manager/pkg/client/informers/externalversions"
 	"github.com/jetstack/cert-manager/pkg/controller"
+	"github.com/jetstack/cert-manager/pkg/controller/acmechallenges/scheduler"
 	dnsutil "github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
+	"github.com/jetstack/cert-manager/pkg/metrics"
 	"github.com/jetstack/cert-manager/pkg/util"
 	"github.com/jetstack/cert-manager/pkg/util/kube"
 	kubeinformers "k8s.io/client-go/informers"
@@ -55,6 +58,11 @@ func Run(opts *options.ControllerOptions, stopCh <-chan struct{}) {
 
 	run := func(_ <-chan struct{}) {
 		var wg sync.WaitGroup
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			metrics.Default.Start(stopCh)
+		}()
 		for n, fn := range controller.Known() {
 			// only run a controller if it's been enabled
 			if !util.Contains(opts.EnabledControllers, n) {
@@ -67,7 +75,11 @@ func Run(opts *options.ControllerOptions, stopCh <-chan struct{}) {
 				defer wg.Done()
 				glog.Infof("Starting %s controller", n)
 
-				err := fn(5, stopCh)
+				workers := 5
+				if n == scheduler.ControllerName {
+					workers = 1
+				}
+				err := fn(workers, stopCh)
 
 				if err != nil {
 					glog.Fatalf("error running %s controller: %s", n, err.Error())
@@ -125,6 +137,26 @@ func buildControllerContext(opts *options.ControllerOptions) (*controller.Contex
 
 	glog.Infof("Using the following nameservers for DNS01 checks: %v", nameservers)
 
+	HTTP01SolverResourceRequestCPU, err := resource.ParseQuantity(opts.ACMEHTTP01SolverResourceRequestCPU)
+	if err != nil {
+		return nil, nil, fmt.Errorf("error parsing ACMEHTTP01SolverResourceRequestCPU: %s", err.Error())
+	}
+
+	HTTP01SolverResourceRequestMemory, err := resource.ParseQuantity(opts.ACMEHTTP01SolverResourceRequestMemory)
+	if err != nil {
+		return nil, nil, fmt.Errorf("error parsing ACMEHTTP01SolverResourceRequestMemory: %s", err.Error())
+	}
+
+	HTTP01SolverResourceLimitsCPU, err := resource.ParseQuantity(opts.ACMEHTTP01SolverResourceLimitsCPU)
+	if err != nil {
+		return nil, nil, fmt.Errorf("error parsing ACMEHTTP01SolverResourceLimitsCPU: %s", err.Error())
+	}
+
+	HTTP01SolverResourceLimitsMemory, err := resource.ParseQuantity(opts.ACMEHTTP01SolverResourceLimitsMemory)
+	if err != nil {
+		return nil, nil, fmt.Errorf("error parsing ACMEHTTP01SolverResourceLimitsMemory: %s", err.Error())
+	}
+
 	// Create event broadcaster
 	// Add cert-manager types to the default Kubernetes Scheme so Events can be
 	// logged properly
@@ -144,8 +176,12 @@ func buildControllerContext(opts *options.ControllerOptions) (*controller.Contex
 		KubeSharedInformerFactory: kubeSharedInformerFactory,
 		SharedInformerFactory:     sharedInformerFactory,
 		ACMEOptions: controller.ACMEOptions{
-			HTTP01SolverImage: opts.ACMEHTTP01SolverImage,
-			DNS01Nameservers:  nameservers,
+			HTTP01SolverImage:                 opts.ACMEHTTP01SolverImage,
+			HTTP01SolverResourceRequestCPU:    HTTP01SolverResourceRequestCPU,
+			HTTP01SolverResourceRequestMemory: HTTP01SolverResourceRequestMemory,
+			HTTP01SolverResourceLimitsCPU:     HTTP01SolverResourceLimitsCPU,
+			HTTP01SolverResourceLimitsMemory:  HTTP01SolverResourceLimitsMemory,
+			DNS01Nameservers:                  nameservers,
 		},
 		IssuerOptions: controller.IssuerOptions{
 			ClusterIssuerAmbientCredentials: opts.ClusterIssuerAmbientCredentials,
@@ -156,8 +192,12 @@ func buildControllerContext(opts *options.ControllerOptions) (*controller.Contex
 		IngressShimOptions: controller.IngressShimOptions{
 			DefaultIssuerName:                  opts.DefaultIssuerName,
 			DefaultIssuerKind:                  opts.DefaultIssuerKind,
+			DefaultAutoCertificateAnnotations:  opts.DefaultAutoCertificateAnnotations,
 			DefaultACMEIssuerChallengeType:     opts.DefaultACMEIssuerChallengeType,
 			DefaultACMEIssuerDNS01ProviderName: opts.DefaultACMEIssuerDNS01ProviderName,
+		},
+		CertificateOptions: controller.CertificateOptions{
+			EnableOwnerRef: opts.EnableCertificateOwnerRef,
 		},
 	}, kubeCfg, nil
 }

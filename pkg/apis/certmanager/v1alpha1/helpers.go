@@ -59,17 +59,6 @@ func ConfigForDomain(cfgs []DomainSolverConfig, domain string) *DomainSolverConf
 	return &DomainSolverConfig{}
 }
 
-func (c *CertificateStatus) ACMEStatus() *CertificateACMEStatus {
-	// this is an edge case, but this will prevent panics
-	if c == nil {
-		return &CertificateACMEStatus{}
-	}
-	if c.ACME == nil {
-		c.ACME = &CertificateACMEStatus{}
-	}
-	return c.ACME
-}
-
 func (iss *Issuer) HasCondition(condition IssuerCondition) bool {
 	// this is an edge case, but this will prevent panics
 	if iss == nil {

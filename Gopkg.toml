@@ -5,6 +5,7 @@ required = [
   "k8s.io/code-generator/cmd/defaulter-gen",
   "k8s.io/code-generator/cmd/informer-gen",
   "k8s.io/code-generator/cmd/lister-gen",
+  "github.com/onsi/ginkgo/ginkgo",
 ]
 
 [[constraint]]
@@ -34,6 +35,10 @@ required = [
 [[constraint]]
   name = "github.com/Azure/azure-sdk-for-go"
   version = "v12.0.0-beta"
+
+[[constraint]]
+  name = "github.com/digitalocean/godo"
+  version = "v1.6.0"
 
 [[constraint]]
   name = "github.com/openshift/generic-admission-server"
@@ -67,6 +72,7 @@ required = [
 
 [prune]
   unused-packages = true
+  go-tests = true
   [[prune.project]]
     name = "github.com/hashicorp/vault"
     non-go = true

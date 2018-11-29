@@ -20,7 +20,7 @@ You can also mass sign-off a whole PR with ``git rebase --signoff master``,
 replacing ``master`` with the branch you are creating a pull request again if
 not master.
 
-By doing this you state that you can certify the following (from https://developercertificate.org/):
+By doing this you state that you certify the following (from https://developercertificate.org/):
 
 .. code::
 

@@ -46,6 +46,7 @@ const (
 )
 
 type defaults struct {
+	autoCertificateAnnotations  []string
 	issuerName, issuerKind      string
 	acmeIssuerChallengeType     string
 	acmeIssuerDNS01ProviderName string
@@ -84,7 +85,7 @@ func New(
 ) *Controller {
 	ctrl := &Controller{Client: client, CMClient: cmClient, Recorder: recorder, defaults: defaults}
 	ctrl.syncHandler = ctrl.processNextWorkItem
-	ctrl.queue = workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "ingresses")
+	ctrl.queue = workqueue.NewNamedRateLimitingQueue(controllerpkg.DefaultItemBasedRateLimiter(), "ingresses")
 
 	ingressInformer.Informer().AddEventHandler(&controllerpkg.QueuingEventHandler{Queue: ctrl.queue})
 	ctrl.ingressLister = ingressInformer.Lister()
@@ -217,7 +218,7 @@ func init() {
 			ctx.Client,
 			ctx.CMClient,
 			ctx.Recorder,
-			defaults{ctx.DefaultIssuerName, ctx.DefaultIssuerKind, ctx.DefaultACMEIssuerChallengeType, ctx.DefaultACMEIssuerDNS01ProviderName},
+			defaults{ctx.DefaultAutoCertificateAnnotations, ctx.DefaultIssuerName, ctx.DefaultIssuerKind, ctx.DefaultACMEIssuerChallengeType, ctx.DefaultACMEIssuerDNS01ProviderName},
 		).Run
 	})
 }

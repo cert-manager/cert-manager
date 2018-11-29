@@ -1,13 +1,9 @@
-load("@io_bazel_rules_docker//go:image.bzl", "go_image")
 load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
+load("//hack:def.bzl", "stamped_image")
 
-go_image(
+stamped_image(
     name = "image",
     base = "@alpine//image",
-    embed = [":go_default_library"],
-    goarch = "amd64",
-    goos = "linux",
-    pure = "on",
     visibility = ["//visibility:public"],
 )
 
@@ -15,7 +11,6 @@ go_library(
     name = "go_default_library",
     srcs = [
         "main.go",
-        "server.go",
         "start.go",
     ],
     importpath = "github.com/jetstack/cert-manager/cmd/controller",
@@ -23,6 +18,9 @@ go_library(
     deps = [
         "//cmd/controller/app:go_default_library",
         "//cmd/controller/app/options:go_default_library",
+        "//pkg/controller/acmechallenges:go_default_library",
+        "//pkg/controller/acmechallenges/scheduler:go_default_library",
+        "//pkg/controller/acmeorders:go_default_library",
         "//pkg/controller/certificates:go_default_library",
         "//pkg/controller/clusterissuers:go_default_library",
         "//pkg/controller/ingress-shim:go_default_library",
@@ -34,8 +32,6 @@ go_library(
         "//pkg/logs:go_default_library",
         "//pkg/util:go_default_library",
         "//vendor/github.com/golang/glog:go_default_library",
-        "//vendor/github.com/gorilla/mux:go_default_library",
-        "//vendor/github.com/prometheus/client_golang/prometheus:go_default_library",
         "//vendor/github.com/spf13/cobra:go_default_library",
         "//vendor/k8s.io/apimachinery/pkg/util/errors:go_default_library",
         "//vendor/k8s.io/client-go/plugin/pkg/client/auth:go_default_library",

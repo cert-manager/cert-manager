@@ -17,10 +17,13 @@ limitations under the License.
 package validation
 
 import (
+	"crypto/x509"
+	"fmt"
 	"strings"
 
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/rfc2136"
 
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
@@ -77,6 +80,7 @@ func ValidateIssuerConfig(iss *v1alpha1.IssuerConfig, fldPath *field.Path) field
 	if numConfigs == 0 {
 		el = append(el, field.Required(fldPath, "at least one issuer must be configured"))
 	}
+
 	return el
 }
 
@@ -120,12 +124,42 @@ func ValidateVaultIssuerConfig(iss *v1alpha1.VaultIssuer, fldPath *field.Path) f
 	if len(iss.Path) == 0 {
 		el = append(el, field.Required(fldPath.Child("path"), ""))
 	}
+
+	// check if caBundle is valid
+	certs := iss.CABundle
+	if len(certs) > 0 {
+		caCertPool := x509.NewCertPool()
+		ok := caCertPool.AppendCertsFromPEM(certs)
+		if !ok {
+			el = append(el, field.Invalid(fldPath.Child("caBundle"), "", "Specified CA bundle is invalid"))
+		}
+	}
+
 	return el
 	// TODO: add validation for Vault authentication types
 }
 
 func ValidateACMEIssuerHTTP01Config(iss *v1alpha1.ACMEIssuerHTTP01Config, fldPath *field.Path) field.ErrorList {
-	return nil
+	el := field.ErrorList{}
+
+	if len(iss.ServiceType) > 0 {
+		validTypes := []corev1.ServiceType{
+			corev1.ServiceTypeClusterIP,
+			corev1.ServiceTypeNodePort,
+		}
+		validType := false
+		for _, validTypeName := range validTypes {
+			if iss.ServiceType == validTypeName {
+				validType = true
+				break
+			}
+		}
+		if !validType {
+			el = append(el, field.Invalid(fldPath.Child("serviceType"), iss.ServiceType, fmt.Sprintf("optional field serviceType must be one of %q", validTypes)))
+		}
+	}
+
+	return el
 }
 
 func ValidateACMEIssuerDNS01Config(iss *v1alpha1.ACMEIssuerDNS01Config, fldPath *field.Path) field.ErrorList {
@@ -208,6 +242,15 @@ func ValidateACMEIssuerDNS01Config(iss *v1alpha1.ACMEIssuerDNS01Config, fldPath 
 			el = append(el, ValidateSecretKeySelector(&p.AcmeDNS.AccountSecret, fldPath.Child("acmedns", "accountSecretRef"))...)
 			if len(p.AcmeDNS.Host) == 0 {
 				el = append(el, field.Required(fldPath.Child("acmedns", "host"), ""))
+			}
+		}
+
+		if p.DigitalOcean != nil {
+			if numProviders > 0 {
+				el = append(el, field.Forbidden(fldPath.Child("digitalocean"), "may not specify more than one provider type"))
+			} else {
+				numProviders++
+				el = append(el, ValidateSecretKeySelector(&p.DigitalOcean.Token, fldPath.Child("digitalocean", "tokenSecretRef"))...)
 			}
 		}
 		if p.RFC2136 != nil {

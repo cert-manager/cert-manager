@@ -36,7 +36,6 @@ filegroup(
     srcs = [
         ":package-srcs",
         "//test/util/generate:all-srcs",
-        "//test/util/vault:all-srcs",
     ],
     tags = ["automanaged"],
     visibility = ["//visibility:public"],

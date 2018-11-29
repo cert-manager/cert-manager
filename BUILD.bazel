@@ -1,6 +1,8 @@
 load("@io_bazel_rules_docker//container:container.bzl", "container_bundle")
 load("@io_bazel_rules_docker//contrib:push-all.bzl", "docker_push")
 
+# gazelle:proto disable_global
+
 container_bundle(
     name = "images",
     images = {
@@ -47,9 +49,11 @@ filegroup(
         "//pkg/controller:all-srcs",
         "//pkg/issuer:all-srcs",
         "//pkg/logs:all-srcs",
+        "//pkg/metrics:all-srcs",
         "//pkg/scheduler:all-srcs",
         "//pkg/util:all-srcs",
         "//test/e2e:all-srcs",
+        "//test/unit/gen:all-srcs",
         "//test/util:all-srcs",
         "//third_party:all-srcs",
         "//vendor:all-srcs",

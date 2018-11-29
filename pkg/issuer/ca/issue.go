@@ -18,94 +18,116 @@ package ca
 
 import (
 	"context"
+	"crypto/x509"
 	"fmt"
 
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	"github.com/jetstack/cert-manager/pkg/issuer"
 	"github.com/jetstack/cert-manager/pkg/util/errors"
 	"github.com/jetstack/cert-manager/pkg/util/kube"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 )
 
 const (
-	errorGetCertKeyPair   = "ErrGetCertKeyPair"
-	errorIssueCert        = "ErrIssueCert"
-	errorGetPublicKey     = "ErrGetPublicKey"
-	errorEncodePrivateKey = "ErrEncodePrivateKey"
-
-	successCertIssued = "CertIssueSuccess"
-
-	messageErrorGetCertKeyPair   = "Error getting keypair for certificate: "
-	messageErrorIssueCert        = "Error issuing TLS certificate: "
-	messageErrorPublicKey        = "Error getting public key from private key: "
-	messageErrorEncodePrivateKey = "Error encoding private key: "
-
-	messageCertIssued = "Certificate issued successfully"
+	reasonPending         = "Pending"
+	reasonErrorPrivateKey = "ErrorPrivateKey"
+	reasonErrorCA         = "ErrorCA"
+	reasonErrorSigning    = "ErrorSigning"
 )
 
-func (c *CA) Issue(ctx context.Context, crt *v1alpha1.Certificate) ([]byte, []byte, error) {
+// Issue will issue a certificate using the CA issuer contained in CA.
+// It uses the 'Ready' status condition to convey the majority of failures, and
+// treats them all as errors to be retried.
+// If there are any failures, they are likely caused by missing or invalid
+// supporting resources, and to ensure we re-attempt issuance when these resources
+// are fixed, it always returns an error on any failure.
+func (c *CA) Issue(ctx context.Context, crt *v1alpha1.Certificate) (issuer.IssueResponse, error) {
+	// get a copy of the existing/currently issued Certificate's private key
 	signeeKey, err := kube.SecretTLSKey(c.secretsLister, crt.Namespace, crt.Spec.SecretName)
-
 	if k8sErrors.IsNotFound(err) || errors.IsInvalidData(err) {
+		// if one does not already exist, generate a new one
 		signeeKey, err = pki.GeneratePrivateKeyForCertificate(crt)
+		if err != nil {
+			crt.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse,
+				reasonErrorPrivateKey, fmt.Sprintf("Error generating private key for certificate: %v", err), false)
+			return issuer.IssueResponse{}, err
+		}
 	}
-
 	if err != nil {
-		s := messageErrorGetCertKeyPair + err.Error()
-		crt.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse, errorGetCertKeyPair, s, false)
-		return nil, nil, err
+		crt.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse,
+			reasonErrorPrivateKey, fmt.Sprintf("Error getting private key for certificate: %v", err), false)
+		return issuer.IssueResponse{}, err
 	}
 
+	// extract the public component of the key
 	publicKey, err := pki.PublicKeyForPrivateKey(signeeKey)
 	if err != nil {
-		s := messageErrorPublicKey + err.Error()
-		crt.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse, errorGetPublicKey, s, false)
-		return nil, nil, err
+		crt.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse,
+			reasonErrorPrivateKey, fmt.Sprintf("Error getting public key from private key: %v", err), false)
+		return issuer.IssueResponse{}, err
 	}
 
-	certPem, err := c.obtainCertificate(crt, publicKey)
-
+	// get a copy of the *CA* certificate named on the Issuer
+	caCert, err := kube.SecretTLSCert(c.secretsLister, c.resourceNamespace, c.issuer.GetSpec().CA.SecretName)
 	if err != nil {
-		s := messageErrorIssueCert + err.Error()
-		crt.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse, errorIssueCert, s, false)
-		return nil, nil, err
+		crt.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse,
+			reasonErrorCA, fmt.Sprintf("Error getting signing CA: %v", err), false)
+		return issuer.IssueResponse{}, err
 	}
 
-	crt.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionTrue, successCertIssued, messageCertIssued, true)
+	// actually sign the certificate
+	certPem, err := c.obtainCertificate(crt, publicKey, caCert)
+	if err != nil {
+		crt.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse,
+			reasonErrorSigning, fmt.Sprintf("Error signing certificate: %v", err), false)
+		return issuer.IssueResponse{}, err
+	}
 
+	// Encode output private key and CA cert ready for return
 	keyPem, err := pki.EncodePrivateKey(signeeKey)
 	if err != nil {
-		s := messageErrorEncodePrivateKey + err.Error()
-		crt.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse, errorEncodePrivateKey, s, false)
-		return nil, nil, err
+		crt.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse,
+			reasonErrorPrivateKey, fmt.Sprintf("Error encoding certificate private key: %v", err), false)
+		return issuer.IssueResponse{}, err
 	}
 
-	return keyPem, certPem, nil
+	// encode the CA certificate to be bundled in the output
+	caPem, err := pki.EncodeX509(caCert)
+	if err != nil {
+		crt.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse,
+			reasonErrorSigning, fmt.Sprintf("Error encoding certificate: %v", err), false)
+		return issuer.IssueResponse{}, err
+	}
+
+	return issuer.IssueResponse{
+		PrivateKey:  keyPem,
+		Certificate: certPem,
+		CA:          caPem,
+	}, nil
 }
 
-func (c *CA) obtainCertificate(crt *v1alpha1.Certificate, signeeKey interface{}) ([]byte, error) {
+func (c *CA) obtainCertificate(crt *v1alpha1.Certificate, signeeKey interface{}, signerCert *x509.Certificate) ([]byte, error) {
 	commonName := crt.Spec.CommonName
 	altNames := crt.Spec.DNSNames
 	if len(commonName) == 0 && len(altNames) == 0 {
 		return nil, fmt.Errorf("no domains specified on certificate")
 	}
 
-	signerCert, err := kube.SecretTLSCert(c.secretsLister, c.resourceNamespace, c.issuer.GetSpec().CA.SecretName)
-	if err != nil {
-		return nil, fmt.Errorf("error getting issuer certificate: %s", err.Error())
-	}
-
+	// get a copy of the CAs private key
 	signerKey, err := kube.SecretTLSKey(c.secretsLister, c.resourceNamespace, c.issuer.GetSpec().CA.SecretName)
 	if err != nil {
 		return nil, fmt.Errorf("error getting issuer private key: %s", err.Error())
 	}
 
-	template, err := pki.GenerateTemplate(c.issuer, crt, nil)
+	// generate a x509 certificate template for this Certificate
+	template, err := pki.GenerateTemplate(c.issuer, crt)
 	if err != nil {
 		return nil, err
 	}
 
+	// sign and encode the certificate
 	crtPem, _, err := pki.SignCertificate(template, signerCert, signeeKey, signerKey)
 	if err != nil {
 		return nil, err

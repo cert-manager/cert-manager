@@ -22,6 +22,7 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	"github.com/jetstack/cert-manager/pkg/issuer"
 )
 
 const (
@@ -39,11 +40,11 @@ const (
 	messageAuthFieldRequired             = "Vault tokenSecretRef and appRole cannot be set on the same issuer"
 )
 
-func (v *Vault) Setup(ctx context.Context) error {
+func (v *Vault) Setup(ctx context.Context) (issuer.SetupResponse, error) {
 	if v.issuer.GetSpec().Vault == nil {
 		glog.Infof("%s: %s", v.issuer.GetObjectMeta().Name, messageVaultConfigRequired)
 		v.issuer.UpdateStatusCondition(v1alpha1.IssuerConditionReady, v1alpha1.ConditionFalse, errorVault, messageVaultConfigRequired)
-		return fmt.Errorf(messageVaultConfigRequired)
+		return issuer.SetupResponse{}, nil
 	}
 
 	// check if Vault server info is specified.
@@ -51,7 +52,7 @@ func (v *Vault) Setup(ctx context.Context) error {
 		v.issuer.GetSpec().Vault.Path == "" {
 		glog.Infof("%s: %s", v.issuer.GetObjectMeta().Name, messageServerAndPathRequired)
 		v.issuer.UpdateStatusCondition(v1alpha1.IssuerConditionReady, v1alpha1.ConditionFalse, errorVault, messageServerAndPathRequired)
-		return fmt.Errorf(messageVaultConfigRequired)
+		return issuer.SetupResponse{}, nil
 	}
 
 	// check if at least one auth method is specified.
@@ -60,7 +61,7 @@ func (v *Vault) Setup(ctx context.Context) error {
 		v.issuer.GetSpec().Vault.Auth.AppRole.SecretRef.Name == "" {
 		glog.Infof("%s: %s", v.issuer.GetObjectMeta().Name, messsageAuthFieldsRequired)
 		v.issuer.UpdateStatusCondition(v1alpha1.IssuerConditionReady, v1alpha1.ConditionFalse, errorVault, messsageAuthFieldsRequired)
-		return fmt.Errorf(messsageAuthFieldsRequired)
+		return issuer.SetupResponse{}, nil
 	}
 
 	// check if only token auth method is set.
@@ -69,7 +70,7 @@ func (v *Vault) Setup(ctx context.Context) error {
 			v.issuer.GetSpec().Vault.Auth.AppRole.SecretRef.Name != "") {
 		glog.Infof("%s: %s", v.issuer.GetObjectMeta().Name, messageAuthFieldRequired)
 		v.issuer.UpdateStatusCondition(v1alpha1.IssuerConditionReady, v1alpha1.ConditionFalse, errorVault, messageAuthFieldRequired)
-		return fmt.Errorf(messageAuthFieldRequired)
+		return issuer.SetupResponse{}, nil
 	}
 
 	// check if all mandatory Vault appRole fields are set.
@@ -78,7 +79,7 @@ func (v *Vault) Setup(ctx context.Context) error {
 			v.issuer.GetSpec().Vault.Auth.AppRole.SecretRef.Name == "") {
 		glog.Infof("%s: %s", v.issuer.GetObjectMeta().Name, messageAuthFieldRequired)
 		v.issuer.UpdateStatusCondition(v1alpha1.IssuerConditionReady, v1alpha1.ConditionFalse, errorVault, messageAuthFieldRequired)
-		return fmt.Errorf(messageAuthFieldRequired)
+		return issuer.SetupResponse{}, nil
 	}
 
 	client, err := v.initVaultClient()
@@ -86,7 +87,7 @@ func (v *Vault) Setup(ctx context.Context) error {
 		s := messageVaultClientInitFailed + err.Error()
 		glog.V(4).Infof("%s: %s", v.issuer.GetObjectMeta().Name, s)
 		v.issuer.UpdateStatusCondition(v1alpha1.IssuerConditionReady, v1alpha1.ConditionFalse, errorVault, s)
-		return err
+		return issuer.SetupResponse{}, err
 	}
 
 	health, err := client.Sys().Health()
@@ -94,16 +95,16 @@ func (v *Vault) Setup(ctx context.Context) error {
 		s := messageVaultHealthCheckFailed + err.Error()
 		glog.V(4).Infof("%s: %s", v.issuer.GetObjectMeta().Name, s)
 		v.issuer.UpdateStatusCondition(v1alpha1.IssuerConditionReady, v1alpha1.ConditionFalse, errorVault, s)
-		return err
+		return issuer.SetupResponse{}, err
 	}
 
 	if !health.Initialized || health.Sealed {
 		glog.V(4).Infof("%s: %s: health: %v", v.issuer.GetObjectMeta().Name, messageVaultStatusVerificationFailed, health)
 		v.issuer.UpdateStatusCondition(v1alpha1.IssuerConditionReady, v1alpha1.ConditionFalse, errorVault, messageVaultStatusVerificationFailed)
-		return fmt.Errorf(messageVaultStatusVerificationFailed)
+		return issuer.SetupResponse{}, fmt.Errorf(messageVaultStatusVerificationFailed)
 	}
 
 	glog.Info(messageVaultVerified)
 	v.issuer.UpdateStatusCondition(v1alpha1.IssuerConditionReady, v1alpha1.ConditionTrue, successVaultVerified, messageVaultVerified)
-	return nil
+	return issuer.SetupResponse{}, nil
 }
