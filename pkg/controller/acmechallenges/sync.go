@@ -53,21 +53,14 @@ type solver interface {
 }
 
 // Sync will process this ACME Challenge.
-// It is the core control function for ACME challenges, and handles:
-// - TODO
+// It is the core control function for ACME challenges.
 func (c *Controller) Sync(ctx context.Context, ch *cmapi.Challenge) (err error) {
 	oldChal := ch
 	ch = ch.DeepCopy()
 
-	// bail out early on if processing=false, as this challenge has not been
-	// scheduled yet.
-	if ch.Status.Processing == false {
-		return nil
-	}
-
 	defer func() {
 		// TODO: replace with more efficient comparison
-		if reflect.DeepEqual(oldChal.Status, ch.Status) {
+		if reflect.DeepEqual(oldChal.Status, ch.Status) && len(oldChal.Finalizers) == len(ch.Finalizers) {
 			return
 		}
 		_, updateErr := c.CMClient.CertmanagerV1alpha1().Challenges(ch.Namespace).Update(ch)
@@ -76,17 +69,43 @@ func (c *Controller) Sync(ctx context.Context, ch *cmapi.Challenge) (err error) 
 		}
 	}()
 
-	// if a challenge is in a final state, we bail out early as there is nothing
-	// left for us to do here.
-	if acme.IsFinalState(ch.Status.State) {
-		// we set processing to false now, as this item has finished being processed.
-		ch.Status.Processing = false
+	if ch.DeletionTimestamp != nil {
+		return c.handleFinalizer(ctx, ch)
+	}
+
+	// bail out early on if processing=false, as this challenge has not been
+	// scheduled yet.
+	if ch.Status.Processing == false {
 		return nil
 	}
 
 	genericIssuer, err := c.helper.GetGenericIssuer(ch.Spec.IssuerRef, ch.Namespace)
 	if err != nil {
 		return fmt.Errorf("error reading (cluster)issuer %q: %v", ch.Spec.IssuerRef.Name, err)
+	}
+
+	// if a challenge is in a final state, we bail out early as there is nothing
+	// left for us to do here.
+	if acme.IsFinalState(ch.Status.State) {
+		if ch.Status.Presented {
+			solver, err := c.solverFor(ch.Spec.Type)
+			if err != nil {
+				glog.Errorf("Error getting solver for challenge %q (type %q): %v", ch.Name, ch.Spec.Type, err)
+				return err
+			}
+
+			err = solver.CleanUp(ctx, genericIssuer, ch)
+			if err != nil {
+				glog.Errorf("Error cleaning up challenge %q on deletion: %v", ch.Name, err)
+				return err
+			}
+
+			ch.Status.Presented = false
+		}
+
+		ch.Status.Processing = false
+
+		return nil
 	}
 
 	cl, err := c.acmeHelper.ClientForIssuer(genericIssuer)
@@ -153,10 +172,38 @@ func (c *Controller) Sync(ctx context.Context, ch *cmapi.Challenge) (err error) 
 		return err
 	}
 
-	glog.Infof("Cleaning up challenge %s/%s", ch.Namespace, ch.Name)
+	return nil
+}
+
+func (c *Controller) handleFinalizer(ctx context.Context, ch *cmapi.Challenge) error {
+	if len(ch.Finalizers) == 0 {
+		return nil
+	}
+	if ch.Finalizers[0] != cmapi.ACMEFinalizer {
+		glog.V(4).Infof("Waiting to run challenge %q finalization...", ch.Name)
+		return nil
+	}
+	ch.Finalizers = ch.Finalizers[1:]
+
+	if !ch.Status.Processing {
+		return nil
+	}
+
+	genericIssuer, err := c.helper.GetGenericIssuer(ch.Spec.IssuerRef, ch.Namespace)
+	if err != nil {
+		return fmt.Errorf("error reading (cluster)issuer %q: %v", ch.Spec.IssuerRef.Name, err)
+	}
+
+	solver, err := c.solverFor(ch.Spec.Type)
+	if err != nil {
+		glog.Errorf("Error getting solver for challenge %q (type %q): %v", ch.Name, ch.Spec.Type, err)
+		return nil
+	}
+
 	err = solver.CleanUp(ctx, genericIssuer, ch)
 	if err != nil {
-		return err
+		glog.Errorf("Error cleaning up challenge %q on deletion: %v", ch.Name, err)
+		return nil
 	}
 
 	return nil

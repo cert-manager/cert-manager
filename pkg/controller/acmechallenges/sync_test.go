@@ -256,7 +256,11 @@ func TestSyncHappyPath(t *testing.T) {
 				gen.SetChallengeType("http-01"),
 				gen.SetChallengePresented(true),
 			),
-
+			HTTP01: &fakeSolver{
+				fakeCleanUp: func(ctx context.Context, issuer v1alpha1.GenericIssuer, ch *v1alpha1.Challenge) error {
+					return nil
+				},
+			},
 			Builder: &testpkg.Builder{
 				CertManagerObjects: []runtime.Object{gen.Challenge("testchal",
 					gen.SetChallengeProcessing(true),
@@ -272,7 +276,7 @@ func TestSyncHappyPath(t *testing.T) {
 							gen.SetChallengeURL("testurl"),
 							gen.SetChallengeState(v1alpha1.Valid),
 							gen.SetChallengeType("http-01"),
-							gen.SetChallengePresented(true),
+							gen.SetChallengePresented(false),
 						))),
 				},
 			},
@@ -286,6 +290,11 @@ func TestSyncHappyPath(t *testing.T) {
 				gen.SetChallengeType("http-01"),
 				gen.SetChallengePresented(true),
 			),
+			HTTP01: &fakeSolver{
+				fakeCleanUp: func(ctx context.Context, issuer v1alpha1.GenericIssuer, ch *v1alpha1.Challenge) error {
+					return nil
+				},
+			},
 			Builder: &testpkg.Builder{
 				CertManagerObjects: []runtime.Object{gen.Challenge("testchal",
 					gen.SetChallengeProcessing(true),
@@ -301,7 +310,7 @@ func TestSyncHappyPath(t *testing.T) {
 							gen.SetChallengeURL("testurl"),
 							gen.SetChallengeState(v1alpha1.Invalid),
 							gen.SetChallengeType("http-01"),
-							gen.SetChallengePresented(true),
+							gen.SetChallengePresented(false),
 						))),
 				},
 			},

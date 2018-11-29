@@ -31,3 +31,7 @@ const (
 	// Default duration before certificate expiration if  Issuer.spec.renewBefore is not set
 	DefaultRenewBefore = time.Hour * 24 * 30
 )
+
+const (
+	ACMEFinalizer = "finalizer.acme.cert-manager.io"
+)
