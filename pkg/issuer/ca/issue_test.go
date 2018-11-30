@@ -82,7 +82,7 @@ func generateSelfSignedCert(t *testing.T, crt *v1alpha1.Certificate, key crypto.
 
 func allFieldsSetCheck(expectedCA []byte) func(t *testing.T, s *caFixture, args ...interface{}) {
 	return func(t *testing.T, s *caFixture, args ...interface{}) {
-		resp := args[1].(issuer.IssueResponse)
+		resp := args[1].(*issuer.IssueResponse)
 
 		if resp.PrivateKey == nil {
 			t.Errorf("expected new private key to be generated")

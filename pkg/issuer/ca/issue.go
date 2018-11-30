@@ -43,7 +43,7 @@ const (
 // If there are any failures, they are likely caused by missing or invalid
 // supporting resources, and to ensure we re-attempt issuance when these resources
 // are fixed, it always returns an error on any failure.
-func (c *CA) Issue(ctx context.Context, crt *v1alpha1.Certificate) (issuer.IssueResponse, error) {
+func (c *CA) Issue(ctx context.Context, crt *v1alpha1.Certificate) (*issuer.IssueResponse, error) {
 	// get a copy of the existing/currently issued Certificate's private key
 	signeeKey, err := kube.SecretTLSKey(c.secretsLister, crt.Namespace, crt.Spec.SecretName)
 	if k8sErrors.IsNotFound(err) || errors.IsInvalidData(err) {
@@ -54,57 +54,57 @@ func (c *CA) Issue(ctx context.Context, crt *v1alpha1.Certificate) (issuer.Issue
 			// don't trigger a retry. An error from this function implies some
 			// invalid input parameters, and retrying without updating the
 			// resource will not help.
-			return issuer.IssueResponse{}, nil
+			return nil, nil
 		}
 	}
 	if err != nil {
 		glog.Errorf("Error getting private key %q for certificate: %v", crt.Spec.SecretName, err)
-		return issuer.IssueResponse{}, err
+		return nil, err
 	}
 
 	// extract the public component of the key
 	signeePublicKey, err := pki.PublicKeyForPrivateKey(signeeKey)
 	if err != nil {
 		glog.Errorf("Error getting public key from private key: %v", err)
-		return issuer.IssueResponse{}, err
+		return nil, err
 	}
 
 	// get a copy of the CA certificate named on the Issuer
 	caCert, caKey, err := kube.SecretTLSKeyPair(c.secretsLister, c.resourceNamespace, c.issuer.GetSpec().CA.SecretName)
 	if err != nil {
 		glog.Errorf("Error getting signing CA for Issuer: %v", err)
-		return issuer.IssueResponse{}, err
+		return nil, err
 	}
 
 	// generate a x509 certificate template for this Certificate
 	template, err := pki.GenerateTemplate(c.issuer, crt)
 	if err != nil {
 		c.Recorder.Eventf(crt, corev1.EventTypeWarning, "ErrorSigning", "Error signing certificate: %v", err)
-		return issuer.IssueResponse{}, err
+		return nil, err
 	}
 
 	// sign and encode the certificate
 	certPem, _, err := pki.SignCertificate(template, caCert, signeePublicKey, caKey)
 	if err != nil {
 		c.Recorder.Eventf(crt, corev1.EventTypeWarning, "ErrorSigning", "Error signing certificate: %v", err)
-		return issuer.IssueResponse{}, err
+		return nil, err
 	}
 
 	// Encode output private key and CA cert ready for return
 	keyPem, err := pki.EncodePrivateKey(signeeKey)
 	if err != nil {
 		c.Recorder.Eventf(crt, corev1.EventTypeWarning, "ErrorPrivateKey", "Error encoding private key: %v", err)
-		return issuer.IssueResponse{}, err
+		return nil, err
 	}
 
 	// encode the CA certificate to be bundled in the output
 	caPem, err := pki.EncodeX509(caCert)
 	if err != nil {
 		c.Recorder.Eventf(crt, corev1.EventTypeWarning, "ErrorSigning", "Error encoding certificate: %v", err)
-		return issuer.IssueResponse{}, err
+		return nil, err
 	}
 
-	return issuer.IssueResponse{
+	return &issuer.IssueResponse{
 		PrivateKey:  keyPem,
 		Certificate: certPem,
 		CA:          caPem,

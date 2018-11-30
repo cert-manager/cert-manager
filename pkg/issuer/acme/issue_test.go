@@ -159,7 +159,7 @@ func TestIssueHappyPath(t *testing.T) {
 			},
 			CheckFn: func(t *testing.T, s *acmeFixture, args ...interface{}) {
 				// returnedCert := args[0].(*v1alpha1.Certificate)
-				resp := args[1].(issuer.IssueResponse)
+				resp := args[1].(*issuer.IssueResponse)
 				// err := args[2].(error)
 
 				if resp.PrivateKey == nil {
@@ -188,11 +188,11 @@ func TestIssueHappyPath(t *testing.T) {
 			},
 			CheckFn: func(t *testing.T, s *acmeFixture, args ...interface{}) {
 				returnedCert := args[0].(*v1alpha1.Certificate)
-				resp := args[1].(issuer.IssueResponse)
+				resp := args[1].(*issuer.IssueResponse)
 				// err := args[2].(error)
 
-				if resp.PrivateKey != nil {
-					t.Errorf("unexpected PrivateKey response set")
+				if resp != nil {
+					t.Errorf("expected IssuerResponse to be nil")
 				}
 				if !reflect.DeepEqual(returnedCert, testCert) {
 					t.Errorf("output was not as expected: %s", pretty.Diff(returnedCert, testCert))
@@ -210,11 +210,11 @@ func TestIssueHappyPath(t *testing.T) {
 			},
 			CheckFn: func(t *testing.T, s *acmeFixture, args ...interface{}) {
 				returnedCert := args[0].(*v1alpha1.Certificate)
-				resp := args[1].(issuer.IssueResponse)
+				resp := args[1].(*issuer.IssueResponse)
 				// err := args[2].(error)
 
-				if resp.PrivateKey != nil {
-					t.Errorf("unexpected PrivateKey response set")
+				if resp != nil {
+					t.Errorf("expected IssuerResponse to be nil")
 				}
 				if !reflect.DeepEqual(returnedCert, testCert) {
 					t.Errorf("output was not as expected: %s", pretty.Diff(returnedCert, testCert))
@@ -233,7 +233,7 @@ func TestIssueHappyPath(t *testing.T) {
 			},
 			CheckFn: func(t *testing.T, s *acmeFixture, args ...interface{}) {
 				returnedCert := args[0].(*v1alpha1.Certificate)
-				resp := args[1].(issuer.IssueResponse)
+				resp := args[1].(*issuer.IssueResponse)
 				// err := args[2].(error)
 
 				if !reflect.DeepEqual(returnedCert, testCert) {
@@ -268,14 +268,11 @@ func TestIssueHappyPath(t *testing.T) {
 			},
 			CheckFn: func(t *testing.T, s *acmeFixture, args ...interface{}) {
 				returnedCert := args[0].(*v1alpha1.Certificate)
-				resp := args[1].(issuer.IssueResponse)
+				resp := args[1].(*issuer.IssueResponse)
 				// err := args[2].(error)
 
-				if resp.Certificate != nil {
-					t.Errorf("unexpected certificate data")
-				}
-				if resp.PrivateKey != nil {
-					t.Errorf("unexpected private key data")
+				if resp != nil {
+					t.Errorf("expected IssuerResponse to be nil")
 				}
 				if !reflect.DeepEqual(returnedCert, testCert) {
 					t.Errorf("output was not as expected: %s", pretty.Diff(returnedCert, testCert))
@@ -411,16 +408,12 @@ func TestIssueRetryCases(t *testing.T) {
 			},
 			CheckFn: func(t *testing.T, s *acmeFixture, args ...interface{}) {
 				returnedCert := args[0].(*v1alpha1.Certificate)
-				resp := args[1].(issuer.IssueResponse)
+				resp := args[1].(*issuer.IssueResponse)
 				// err := args[2].(error)
 
-				if resp.PrivateKey != nil {
-					t.Errorf("unexpected PrivateKey response set")
+				if resp != nil {
+					t.Errorf("expected IssuerResponse to be nil")
 				}
-				if resp.Certificate != nil {
-					t.Errorf("unexpected Certificate response set")
-				}
-				// the orderRef field should be set to nil
 				if !reflect.DeepEqual(returnedCert, testCert) {
 					t.Errorf("expected certificate order ref to be nil: %s", pretty.Diff(returnedCert, testCert))
 				}
@@ -443,16 +436,12 @@ func TestIssueRetryCases(t *testing.T) {
 			},
 			CheckFn: func(t *testing.T, s *acmeFixture, args ...interface{}) {
 				returnedCert := args[0].(*v1alpha1.Certificate)
-				resp := args[1].(issuer.IssueResponse)
+				resp := args[1].(*issuer.IssueResponse)
 				// err := args[2].(error)
 
-				if resp.PrivateKey != nil {
-					t.Errorf("unexpected PrivateKey response set")
+				if resp != nil {
+					t.Errorf("expected IssuerResponse to be nil")
 				}
-				if resp.Certificate != nil {
-					t.Errorf("unexpected Certificate response set")
-				}
-				// the orderRef field should be set to nil
 				if !reflect.DeepEqual(returnedCert, testCert) {
 					t.Errorf("expected certificate order ref to be nil: %s", pretty.Diff(returnedCert, testCert))
 				}
@@ -475,16 +464,12 @@ func TestIssueRetryCases(t *testing.T) {
 			},
 			CheckFn: func(t *testing.T, s *acmeFixture, args ...interface{}) {
 				returnedCert := args[0].(*v1alpha1.Certificate)
-				resp := args[1].(issuer.IssueResponse)
+				resp := args[1].(*issuer.IssueResponse)
 				// err := args[2].(error)
 
-				if resp.PrivateKey != nil {
-					t.Errorf("unexpected PrivateKey response set")
+				if resp != nil {
+					t.Errorf("expected IssuerResponse to be nil")
 				}
-				if resp.Certificate != nil {
-					t.Errorf("unexpected Certificate response set")
-				}
-				// the orderRef field should be set to nil
 				if !reflect.DeepEqual(returnedCert, testCert) {
 					t.Errorf("expected certificate order ref to be nil: %s", pretty.Diff(returnedCert, testCert))
 				}
@@ -507,16 +492,12 @@ func TestIssueRetryCases(t *testing.T) {
 			},
 			CheckFn: func(t *testing.T, s *acmeFixture, args ...interface{}) {
 				returnedCert := args[0].(*v1alpha1.Certificate)
-				resp := args[1].(issuer.IssueResponse)
+				resp := args[1].(*issuer.IssueResponse)
 				// err := args[2].(error)
 
-				if resp.PrivateKey != nil {
-					t.Errorf("unexpected PrivateKey response set")
+				if resp != nil {
+					t.Errorf("expected IssuerResponse to be nil")
 				}
-				if resp.Certificate != nil {
-					t.Errorf("unexpected Certificate response set")
-				}
-				// the orderRef field should be set to nil
 				if !reflect.DeepEqual(returnedCert, testCert) {
 					t.Errorf("expected certificate order ref to be nil: %s", pretty.Diff(returnedCert, testCert))
 				}
@@ -535,14 +516,11 @@ func TestIssueRetryCases(t *testing.T) {
 			},
 			CheckFn: func(t *testing.T, s *acmeFixture, args ...interface{}) {
 				returnedCert := args[0].(*v1alpha1.Certificate)
-				resp := args[1].(issuer.IssueResponse)
+				resp := args[1].(*issuer.IssueResponse)
 				// err := args[2].(error)
 
-				if resp.PrivateKey != nil {
-					t.Errorf("unexpected PrivateKey response set")
-				}
-				if resp.Certificate != nil {
-					t.Errorf("unexpected Certificate response set")
+				if resp != nil {
+					t.Errorf("expected IssuerResponse to be nil")
 				}
 				// the resource should not be changed
 				if !reflect.DeepEqual(returnedCert, recentlyFailedCertificate) {
@@ -563,14 +541,11 @@ func TestIssueRetryCases(t *testing.T) {
 			},
 			CheckFn: func(t *testing.T, s *acmeFixture, args ...interface{}) {
 				returnedCert := args[0].(*v1alpha1.Certificate)
-				resp := args[1].(issuer.IssueResponse)
+				resp := args[1].(*issuer.IssueResponse)
 				// err := args[2].(error)
 
-				if resp.PrivateKey != nil {
-					t.Errorf("unexpected PrivateKey response set")
-				}
-				if resp.Certificate != nil {
-					t.Errorf("unexpected Certificate response set")
+				if resp != nil {
+					t.Errorf("expected IssuerResponse to be nil")
 				}
 				// the resource should have the last failure time set
 				if !reflect.DeepEqual(returnedCert, recentlyFailedCertificate) {
