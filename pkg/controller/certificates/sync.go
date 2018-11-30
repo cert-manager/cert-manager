@@ -293,33 +293,33 @@ func (c *Controller) updateSecret(crt *v1alpha1.Certificate, namespace string, c
 			Data: map[string][]byte{},
 		}
 	}
+
 	secret.Data[corev1.TLSCertKey] = cert
 	secret.Data[corev1.TLSPrivateKeyKey] = key
-
-	if ca != nil {
-		secret.Data[TLSCAKey] = ca
-	}
+	secret.Data[TLSCAKey] = ca
 
 	if secret.Annotations == nil {
 		secret.Annotations = make(map[string]string)
 	}
 
-	// Note: since this sets annotations based on certificate resource, incorrect
-	// annotations will be set if resource and actual certificate somehow get out
-	// of sync
-	dnsNames := pki.DNSNamesForCertificate(crt)
-	cn := pki.CommonNameForCertificate(crt)
+	// If we are updating the Certificate, we update the secret metadata to
+	// reflect the actual certificate it contains
+	if cert != nil {
+		x509Cert, err := pki.DecodeX509CertificateBytes(cert)
+		if err != nil {
+			return nil, fmt.Errorf("invalid certificate data: %v", err)
+		}
 
-	secret.Annotations[v1alpha1.AltNamesAnnotationKey] = strings.Join(dnsNames, ",")
-	secret.Annotations[v1alpha1.CommonNameAnnotationKey] = cn
+		secret.Annotations[v1alpha1.IssuerNameAnnotationKey] = crt.Spec.IssuerRef.Name
+		secret.Annotations[v1alpha1.IssuerKindAnnotationKey] = issuerKind(crt)
+		secret.Annotations[v1alpha1.CommonNameAnnotationKey] = x509Cert.Subject.CommonName
+		secret.Annotations[v1alpha1.AltNamesAnnotationKey] = strings.Join(x509Cert.DNSNames, ",")
+	}
 
-	secret.Annotations[v1alpha1.IssuerNameAnnotationKey] = crt.Spec.IssuerRef.Name
-	secret.Annotations[v1alpha1.IssuerKindAnnotationKey] = issuerKind(crt)
-
+	// Always set the certificate name label on the target secret
 	if secret.Labels == nil {
 		secret.Labels = make(map[string]string)
 	}
-
 	secret.Labels[v1alpha1.CertificateNameKey] = crt.Name
 
 	// if it is a new resource
@@ -347,7 +347,7 @@ func (c *Controller) issue(ctx context.Context, issuer issuer.Interface, crt *v1
 		return err
 	}
 
-	if resp.PrivateKey == nil {
+	if resp == nil {
 		return nil
 	}
 

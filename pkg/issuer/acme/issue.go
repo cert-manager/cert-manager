@@ -49,11 +49,11 @@ var (
 	certificateGvk = v1alpha1.SchemeGroupVersion.WithKind("Certificate")
 )
 
-func (a *Acme) Issue(ctx context.Context, crt *v1alpha1.Certificate) (issuer.IssueResponse, error) {
+func (a *Acme) Issue(ctx context.Context, crt *v1alpha1.Certificate) (*issuer.IssueResponse, error) {
 	key, generated, err := a.getCertificatePrivateKey(crt)
 	if err != nil {
 		glog.Errorf("Error getting certificate private key: %v", err)
-		return issuer.IssueResponse{}, err
+		return nil, err
 	}
 	if generated {
 		// If we have generated a new private key, we return here to ensure we
@@ -63,10 +63,11 @@ func (a *Acme) Issue(ctx context.Context, crt *v1alpha1.Certificate) (issuer.Iss
 
 		keyPem, err := pki.EncodePrivateKey(key)
 		if err != nil {
-			return issuer.IssueResponse{}, err
+			return nil, err
 		}
 
-		return issuer.IssueResponse{
+		// Replace the existing secret with one containing only the new private key.
+		return &issuer.IssueResponse{
 			PrivateKey: keyPem,
 		}, nil
 	}
@@ -78,7 +79,7 @@ func (a *Acme) Issue(ctx context.Context, crt *v1alpha1.Certificate) (issuer.Iss
 	// exists.
 	expectedOrder, err := buildOrder(crt, nil)
 	if err != nil {
-		return issuer.IssueResponse{}, err
+		return nil, err
 	}
 
 	// Cleanup Order resources that are owned by this Certificate but are not
@@ -89,7 +90,7 @@ func (a *Acme) Issue(ctx context.Context, crt *v1alpha1.Certificate) (issuer.Iss
 	err = a.cleanupOwnedOrders(crt, expectedOrder.Name)
 	if err != nil {
 		glog.Errorf("Error cleaning up old orders: %v", err)
-		return issuer.IssueResponse{}, err
+		return nil, err
 	}
 
 	// Obtain the existing Order for this Certificate from the API server.
@@ -98,10 +99,10 @@ func (a *Acme) Issue(ctx context.Context, crt *v1alpha1.Certificate) (issuer.Iss
 	existingOrder, err := a.orderLister.Orders(expectedOrder.Namespace).Get(expectedOrder.Name)
 	if err != nil && !apierrors.IsNotFound(err) {
 		glog.Errorf("Error getting existing Order resource: %v", err)
-		return issuer.IssueResponse{}, err
+		return nil, err
 	}
 	if existingOrder == nil {
-		return issuer.IssueResponse{}, a.createNewOrder(crt, expectedOrder, key)
+		return nil, a.createNewOrder(crt, expectedOrder, key)
 	}
 
 	// if there is an existing order, we check to make sure it is up to date
@@ -115,18 +116,18 @@ func (a *Acme) Issue(ctx context.Context, crt *v1alpha1.Certificate) (issuer.Iss
 
 	validForKey, err := existingOrderIsValidForKey(existingOrder, key)
 	if err != nil {
-		return issuer.IssueResponse{}, err
+		return nil, err
 	}
 	if !validForKey {
 		glog.V(4).Infof("CSR on existing order resource does not match certificate %s/%s private key", crt.Namespace, crt.Name)
-		return a.retryOrder(crt, existingOrder)
+		return nil, a.retryOrder(crt, existingOrder)
 	}
 
 	// If the existing order has expired, we should create a new one
 	// TODO: implement setting this order state in the acmeorders controller
 	if existingOrder.Status.State == v1alpha1.Expired {
 		a.Recorder.Eventf(crt, corev1.EventTypeNormal, "OrderExpired", "Existing certificate for Order %q expired", existingOrder.Name)
-		return a.retryOrder(crt, existingOrder)
+		return nil, a.retryOrder(crt, existingOrder)
 	}
 
 	// If the existing order has failed, we should check if the Certificate
@@ -142,10 +143,10 @@ func (a *Acme) Issue(ctx context.Context, crt *v1alpha1.Certificate) (issuer.Iss
 		}
 
 		if time.Now().Sub(crt.Status.LastFailureTime.Time) < createOrderWaitDuration {
-			return issuer.IssueResponse{}, fmt.Errorf("applying acme order back-off for certificate %s/%s because it has failed within the last %s", crt.Namespace, crt.Name, createOrderWaitDuration)
+			return nil, fmt.Errorf("applying acme order back-off for certificate %s/%s because it has failed within the last %s", crt.Namespace, crt.Name, createOrderWaitDuration)
 		}
 
-		return a.retryOrder(crt, existingOrder)
+		return nil, a.retryOrder(crt, existingOrder)
 	}
 
 	if existingOrder.Status.State != v1alpha1.Valid {
@@ -153,7 +154,7 @@ func (a *Acme) Issue(ctx context.Context, crt *v1alpha1.Certificate) (issuer.Iss
 
 		// We don't immediately requeue, as the change to the Order resource on
 		// transition should trigger the certificate to be re-synced.
-		return issuer.IssueResponse{}, nil
+		return nil, nil
 	}
 
 	a.Recorder.Eventf(crt, corev1.EventTypeNormal, "OrderComplete", "Order %q completed successfully", existingOrder.Name)
@@ -161,7 +162,7 @@ func (a *Acme) Issue(ctx context.Context, crt *v1alpha1.Certificate) (issuer.Iss
 	// this should never happen
 	if existingOrder.Status.Certificate == nil {
 		a.Recorder.Eventf(crt, corev1.EventTypeWarning, "BadCertificate", "Empty certificate data retrieved from ACME server")
-		return issuer.IssueResponse{}, fmt.Errorf("Order in a valid state but certificate data not set")
+		return nil, fmt.Errorf("Order in a valid state but certificate data not set")
 	}
 
 	// TODO: replace with a call to a function that returns the whole chain
@@ -169,7 +170,7 @@ func (a *Acme) Issue(ctx context.Context, crt *v1alpha1.Certificate) (issuer.Iss
 	if err != nil {
 		glog.Infof("Error parsing existing x509 certificate on Order resource %q: %v", existingOrder.Name, err)
 		// if parsing the certificate fails, recreate the order
-		return a.retryOrder(crt, existingOrder)
+		return nil, a.retryOrder(crt, existingOrder)
 	}
 
 	// x509Cert := x509Certs[0]
@@ -184,17 +185,17 @@ func (a *Acme) Issue(ctx context.Context, crt *v1alpha1.Certificate) (issuer.Iss
 		a.Recorder.Eventf(crt, corev1.EventTypeNormal, "OrderExpired", "Order %q contains a certificate nearing expiry. "+
 			"Creating new order...")
 		// existing order's certificate is near expiry
-		return a.retryOrder(crt, existingOrder)
+		return nil, a.retryOrder(crt, existingOrder)
 	}
 
 	// encode the private key and return
 	keyPem, err := pki.EncodePrivateKey(key)
 	if err != nil {
 		// TODO: this is probably an internal error - we should fail safer here
-		return issuer.IssueResponse{}, err
+		return nil, err
 	}
 
-	return issuer.IssueResponse{
+	return &issuer.IssueResponse{
 		Certificate: existingOrder.Status.Certificate,
 		PrivateKey:  keyPem,
 	}, nil
@@ -308,13 +309,13 @@ func (a *Acme) createNewOrder(crt *v1alpha1.Certificate, template *v1alpha1.Orde
 // deletion policy.
 // If delete successfully (i.e. cleaned up), the order name will be
 // reset to empty and a resync of the resource will begin.
-func (a *Acme) retryOrder(crt *v1alpha1.Certificate, existingOrder *v1alpha1.Order) (issuer.IssueResponse, error) {
+func (a *Acme) retryOrder(crt *v1alpha1.Certificate, existingOrder *v1alpha1.Order) error {
 	foregroundDeletion := metav1.DeletePropagationForeground
 	err := a.CMClient.CertmanagerV1alpha1().Orders(existingOrder.Namespace).Delete(existingOrder.Name, &metav1.DeleteOptions{
 		PropagationPolicy: &foregroundDeletion,
 	})
 	if err != nil {
-		return issuer.IssueResponse{}, err
+		return err
 	}
 
 	crt.Status.LastFailureTime = nil
@@ -323,7 +324,7 @@ func (a *Acme) retryOrder(crt *v1alpha1.Certificate, existingOrder *v1alpha1.Ord
 	// has been observed by the informer.
 	// If we set Requeue: true here, we may cause a race where the lister has
 	// not observed the updated orderRef.
-	return issuer.IssueResponse{}, nil
+	return nil
 }
 
 func existingOrderIsValidForKey(o *v1alpha1.Order, key crypto.Signer) (bool, error) {

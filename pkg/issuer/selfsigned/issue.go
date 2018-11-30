@@ -30,7 +30,7 @@ import (
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 )
 
-func (c *SelfSigned) Issue(ctx context.Context, crt *v1alpha1.Certificate) (issuer.IssueResponse, error) {
+func (c *SelfSigned) Issue(ctx context.Context, crt *v1alpha1.Certificate) (*issuer.IssueResponse, error) {
 	// get a copy of the existing/currently issued Certificate's private key
 	signeePrivateKey, err := kube.SecretTLSKey(c.secretsLister, crt.Namespace, crt.Spec.SecretName)
 	if k8sErrors.IsNotFound(err) || errors.IsInvalidData(err) {
@@ -41,43 +41,43 @@ func (c *SelfSigned) Issue(ctx context.Context, crt *v1alpha1.Certificate) (issu
 			// don't trigger a retry. An error from this function implies some
 			// invalid input parameters, and retrying without updating the
 			// resource will not help.
-			return issuer.IssueResponse{}, nil
+			return nil, nil
 		}
 	}
 	if err != nil {
 		glog.Errorf("Error getting private key %q for certificate: %v", crt.Spec.SecretName, err)
-		return issuer.IssueResponse{}, err
+		return nil, err
 	}
 
 	// extract the public component of the key
 	signeePublicKey, err := pki.PublicKeyForPrivateKey(signeePrivateKey)
 	if err != nil {
 		glog.Errorf("Error getting public key from private key: %v", err)
-		return issuer.IssueResponse{}, err
+		return nil, err
 	}
 
 	// generate a x509 certificate template for this Certificate
 	template, err := pki.GenerateTemplate(c.issuer, crt)
 	if err != nil {
 		c.Recorder.Eventf(crt, corev1.EventTypeWarning, "ErrorSigning", "Error signing certificate: %v", err)
-		return issuer.IssueResponse{}, err
+		return nil, err
 	}
 
 	// sign and encode the certificate
 	certPem, _, err := pki.SignCertificate(template, template, signeePublicKey, signeePrivateKey)
 	if err != nil {
 		c.Recorder.Eventf(crt, corev1.EventTypeWarning, "ErrorSigning", "Error signing certificate: %v", err)
-		return issuer.IssueResponse{}, err
+		return nil, err
 	}
 
 	// Encode output private key
 	keyPem, err := pki.EncodePrivateKey(signeePrivateKey)
 	if err != nil {
 		c.Recorder.Eventf(crt, corev1.EventTypeWarning, "ErrorPrivateKey", "Error encoding private key: %v", err)
-		return issuer.IssueResponse{}, err
+		return nil, err
 	}
 
-	return issuer.IssueResponse{
+	return &issuer.IssueResponse{
 		PrivateKey:  keyPem,
 		Certificate: certPem,
 		CA:          certPem,
