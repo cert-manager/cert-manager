@@ -57,6 +57,7 @@ var serialNumberLimit = new(big.Int).Lsh(big.NewInt(1), 128)
 func generateSelfSignedCert(t *testing.T, crt *v1alpha1.Certificate, key crypto.Signer, duration time.Duration) (derBytes, pemBytes []byte) {
 	commonName := pki.CommonNameForCertificate(crt)
 	dnsNames := pki.DNSNamesForCertificate(crt)
+	ipAddresses := pki.IPAddressesForCertificate(crt)
 
 	serialNumber, err := rand.Int(rand.Reader, serialNumberLimit)
 	if err != nil {
@@ -76,6 +77,7 @@ func generateSelfSignedCert(t *testing.T, crt *v1alpha1.Certificate, key crypto.
 		// see http://golang.org/pkg/crypto/x509/#KeyUsage
 		KeyUsage: x509.KeyUsageDigitalSignature | x509.KeyUsageKeyEncipherment,
 		DNSNames: dnsNames,
+		IPAddresses: ipAddresses,
 	}
 
 	derBytes, err = x509.CreateCertificate(rand.Reader, template, template, key.Public(), key)

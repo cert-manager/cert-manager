@@ -26,6 +26,7 @@ import (
 	"path"
 	"strings"
 	"time"
+	"net"
 
 	"github.com/golang/glog"
 	vault "github.com/hashicorp/vault/api"
@@ -93,7 +94,7 @@ func (v *Vault) Issue(ctx context.Context, crt *v1alpha1.Certificate) (*issuer.I
 		certDuration = crt.Spec.Duration.Duration
 	}
 
-	certPem, caPem, err := v.requestVaultCert(template.Subject.CommonName, certDuration, template.DNSNames, pemRequestBuf.Bytes())
+	certPem, caPem, err := v.requestVaultCert(template.Subject.CommonName, certDuration, template.DNSNames, ipAddressesToString(template.IPAddresses), pemRequestBuf.Bytes())
 	if err != nil {
 		v.Recorder.Eventf(crt, corev1.EventTypeWarning, "ErrorSigning", "Failed to request certificate: %v", err)
 		return nil, err
@@ -214,17 +215,19 @@ func (v *Vault) requestTokenWithAppRoleRef(client *vault.Client, appRole *v1alph
 	return token, nil
 }
 
-func (v *Vault) requestVaultCert(commonName string, certDuration time.Duration, altNames []string, csr []byte) ([]byte, []byte, error) {
+func (v *Vault) requestVaultCert(commonName string, certDuration time.Duration, altNames []string, ipSans []string, csr []byte) ([]byte, []byte, error) {
+
 	client, err := v.initVaultClient()
 	if err != nil {
 		return nil, nil, err
 	}
 
-	glog.V(4).Infof("Vault certificate request for commonName %s altNames: %q", commonName, altNames)
+	glog.V(4).Infof("Vault certificate request for commonName %s altNames: %q ipSans: %q", commonName, altNames, ipSans)
 
 	parameters := map[string]string{
 		"common_name":          commonName,
 		"alt_names":            strings.Join(altNames, ","),
+		"ip_sans":              strings.Join(ipSans, ","),
 		"ttl":                  certDuration.String(),
 		"csr":                  string(csr),
 		"exclude_cn_from_sans": "true",
@@ -313,4 +316,12 @@ func (v *Vault) vaultTokenRef(name, key string) (string, error) {
 	token = strings.TrimSpace(token)
 
 	return token, nil
+}
+
+func ipAddressesToString(ipAddresses []net.IP) []string {
+	var ipNames []string
+	for _, ip := range ipAddresses {
+		ipNames = append(ipNames, ip.String())
+	}
+	return ipNames
 }

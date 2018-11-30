@@ -216,6 +216,12 @@ func (c *Controller) certificateMatchesSpec(crt *v1alpha1.Certificate, key crypt
 		errs = append(errs, fmt.Sprintf("DNS names on TLS certificate not up to date: %q", cert.DNSNames))
 	}
 
+	// validate the ip addresses are correct
+	expectedIPAddresses := pki.IPAddressesNameForCertificate(crt)
+	if !util.EqualUnsorted(util.IPAddressesToString(cert.IPAddresses), expectedIPAddresses) {
+		errs = append(errs, fmt.Sprintf("IP Addresses on TLS certificate not up to date: %q", util.IPAddressesToString(cert.IPAddresses)))
+	}
+
 	return len(errs) == 0, errs
 }
 
@@ -314,6 +320,7 @@ func (c *Controller) updateSecret(crt *v1alpha1.Certificate, namespace string, c
 		secret.Annotations[v1alpha1.IssuerKindAnnotationKey] = issuerKind(crt)
 		secret.Annotations[v1alpha1.CommonNameAnnotationKey] = x509Cert.Subject.CommonName
 		secret.Annotations[v1alpha1.AltNamesAnnotationKey] = strings.Join(x509Cert.DNSNames, ",")
+	    secret.Annotations[v1alpha1.IpSansAnnotationKey] = strings.Join(util.IPAddressesToString(x509Cert.IPAddresses), ",")		
 	}
 
 	// Always set the certificate name label on the target secret
