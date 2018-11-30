@@ -100,7 +100,7 @@ verify_chart:
 # Go targets
 ############
 $(CMDS):
-	bazel build --cpu k8 \
+	bazel build \
 		//cmd/$@
 
 e2e_test:
