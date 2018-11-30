@@ -74,7 +74,7 @@ verify_lint:
 		//hack:verify-gofmt
 
 verify_unit:
-	bazel test --cpu k8 \
+	bazel test \
 		$$(bazel query 'kind("go._*test", "...")' \
 			| grep -v //vendor/ \
 			| grep -v //test/e2e \
@@ -135,7 +135,7 @@ generate:
 BAZEL_IMAGE_ENV := APP_VERSION=$(APP_VERSION) DOCKER_REPO=$(DOCKER_REPO) DOCKER_TAG=$(APP_VERSION)
 images:
 	$(BAZEL_IMAGE_ENV) \
-		bazel run //:images
+		bazel run  --cpu k8 //:images
 
 images_push: images
 	# we do not use the :push target as Quay.io does not support v2.2

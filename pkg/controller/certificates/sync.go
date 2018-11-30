@@ -297,9 +297,11 @@ func (c *Controller) updateSecret(crt *v1alpha1.Certificate, namespace string, c
 	// annotations will be set if resource and actual certificate somehow get out
 	// of sync
 	dnsNames := pki.DNSNamesForCertificate(crt)
+	ipAddresses := pki.IPAddressesNameForCertificate(crt)
 	cn := pki.CommonNameForCertificate(crt)
 
 	secret.Annotations[v1alpha1.AltNamesAnnotationKey] = strings.Join(dnsNames, ",")
+	secret.Annotations[v1alpha1.IpSansAnnotationKey] = strings.Join(ipAddresses, ",")
 	secret.Annotations[v1alpha1.CommonNameAnnotationKey] = cn
 
 	secret.Annotations[v1alpha1.IssuerNameAnnotationKey] = crt.Spec.IssuerRef.Name

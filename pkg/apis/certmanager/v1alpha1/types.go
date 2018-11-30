@@ -18,6 +18,7 @@ package v1alpha1
 
 const (
 	AltNamesAnnotationKey   = "certmanager.k8s.io/alt-names"
+	IpSansAnnotationKey     = "certmanager.k8s.io/ip-sans"
 	CommonNameAnnotationKey = "certmanager.k8s.io/common-name"
 	IssuerNameAnnotationKey = "certmanager.k8s.io/issuer-name"
 	IssuerKindAnnotationKey = "certmanager.k8s.io/issuer-kind"
