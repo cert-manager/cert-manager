@@ -51,7 +51,7 @@ const (
 	messageCertIssued = "Certificate issued successfully"
 )
 
-func (v *Vault) Issue(ctx context.Context, crt *v1alpha1.Certificate) (issuer.IssueResponse, error) {
+func (v *Vault) Issue(ctx context.Context, crt *v1alpha1.Certificate) (*issuer.IssueResponse, error) {
 	// get a copy of the existing/currently issued Certificate's private key
 	signeePrivateKey, err := kube.SecretTLSKey(v.secretsLister, crt.Namespace, crt.Spec.SecretName)
 	if k8sErrors.IsNotFound(err) || errors.IsInvalidData(err) {
@@ -62,28 +62,28 @@ func (v *Vault) Issue(ctx context.Context, crt *v1alpha1.Certificate) (issuer.Is
 			// don't trigger a retry. An error from this function implies some
 			// invalid input parameters, and retrying without updating the
 			// resource will not help.
-			return issuer.IssueResponse{}, nil
+			return nil, nil
 		}
 	}
 	if err != nil {
 		glog.Errorf("Error getting private key %q for certificate: %v", crt.Spec.SecretName, err)
-		return issuer.IssueResponse{}, err
+		return nil, err
 	}
 
 	/// BEGIN building CSR
 	// TODO: we should probably surface some of these errors to users
 	template, err := pki.GenerateCSR(v.issuer, crt)
 	if err != nil {
-		return issuer.IssueResponse{}, err
+		return nil, err
 	}
 	derBytes, err := pki.EncodeCSR(template, signeePrivateKey)
 	if err != nil {
-		return issuer.IssueResponse{}, err
+		return nil, err
 	}
 	pemRequestBuf := &bytes.Buffer{}
 	err = pem.Encode(pemRequestBuf, &pem.Block{Type: "CERTIFICATE REQUEST", Bytes: derBytes})
 	if err != nil {
-		return issuer.IssueResponse{}, fmt.Errorf("error encoding certificate request: %s", err.Error())
+		return nil, fmt.Errorf("error encoding certificate request: %s", err.Error())
 	}
 	/// END building CSR
 
@@ -96,17 +96,17 @@ func (v *Vault) Issue(ctx context.Context, crt *v1alpha1.Certificate) (issuer.Is
 	certPem, caPem, err := v.requestVaultCert(template.Subject.CommonName, certDuration, template.DNSNames, pemRequestBuf.Bytes())
 	if err != nil {
 		v.Recorder.Eventf(crt, corev1.EventTypeWarning, "ErrorSigning", "Failed to request certificate: %v", err)
-		return issuer.IssueResponse{}, err
+		return nil, err
 	}
 	/// END requesting certificate
 
 	key, err := pki.EncodePrivateKey(signeePrivateKey)
 	if err != nil {
 		v.Recorder.Eventf(crt, corev1.EventTypeWarning, "ErrorPrivateKey", "Error encoding private key: %v", err)
-		return issuer.IssueResponse{}, err
+		return nil, err
 	}
 
-	return issuer.IssueResponse{
+	return &issuer.IssueResponse{
 		PrivateKey:  key,
 		Certificate: certPem,
 		CA:          caPem,
