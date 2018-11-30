@@ -189,6 +189,12 @@ func (c *Controller) Sync(ctx context.Context, crt *v1alpha1.Certificate) (reque
 		return c.issue(ctx, i, crtCopy)
 	}
 
+	// validate the ip addresses are correct
+	expectedIPAddresses := pki.IPAddressesNameForCertificate(crtCopy)
+	if !util.EqualUnsorted(util.IPAddressesToString(cert.IPAddresses), expectedIPAddresses) {
+		return c.issue(ctx, i, crtCopy)
+	}
+
 	// check if the certificate needs renewal
 	needsRenew := c.Context.IssuerOptions.CertificateNeedsRenew(cert, crt.Spec.RenewBefore)
 	if needsRenew {

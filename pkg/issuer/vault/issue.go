@@ -26,6 +26,7 @@ import (
 	"path"
 	"strings"
 	"time"
+	"net"
 
 	"github.com/golang/glog"
 	vault "github.com/hashicorp/vault/api"
@@ -96,17 +97,12 @@ func (v *Vault) obtainCertificate(ctx context.Context, crt *v1alpha1.Certificate
 		return nil, nil, nil, fmt.Errorf("error encoding certificate request: %s", err.Error())
 	}
 
-	var ipSans []string
-	for _, ip := range template.IPAddresses {
-		ipSans = append(ipSans, ip.String())
-	}
-
 	certDuration := v1alpha1.DefaultCertificateDuration
 	if crt.Spec.Duration != nil {
 		certDuration = crt.Spec.Duration.Duration
 	}
 
-	crtBytes, caBytes, err := v.requestVaultCert(template.Subject.CommonName, certDuration, template.DNSNames, ipSans, pemRequestBuf.Bytes())
+	crtBytes, caBytes, err := v.requestVaultCert(template.Subject.CommonName, certDuration, template.DNSNames, ipAddressesToString(template.IPAddresses), pemRequestBuf.Bytes())
 
 	if err != nil {
 		return nil, nil, nil, err
@@ -322,4 +318,12 @@ func (v *Vault) vaultTokenRef(name, key string) (string, error) {
 	token = strings.TrimSpace(token)
 
 	return token, nil
+}
+
+func ipAddressesToString(ipAddresses []net.IP) []string {
+	var ipNames []string
+	for _, ip := range ipAddresses {
+		ipNames = append(ipNames, ip.String())
+	}
+	return ipNames
 }
