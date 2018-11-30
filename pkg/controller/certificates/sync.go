@@ -55,12 +55,6 @@ const (
 	successCertificateRenewed = "CertRenewed"
 
 	messageErrorSavingCertificate = "Error saving TLS certificate: "
-
-	messageIssuingCertificate  = "Issuing certificate..."
-	messageRenewingCertificate = "Renewing certificate..."
-
-	messageCertificateIssued  = "Certificate issued successfully"
-	messageCertificateRenewed = "Certificate renewed successfully"
 )
 
 const (
@@ -373,11 +367,7 @@ func (c *Controller) issue(ctx context.Context, issuer issuer.Interface, crt *v1
 	}
 
 	if len(resp.Certificate) > 0 {
-		s := messageCertificateIssued
-		glog.Info(s)
-		c.Recorder.Event(crt, corev1.EventTypeNormal, successCertificateIssued, s)
-		crt.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionTrue, successCertificateIssued, s, true)
-
+		c.Recorder.Event(crt, corev1.EventTypeNormal, successCertificateIssued, "Certificate issued successfully")
 		// as we have just written a certificate, we should schedule it for renewal
 		c.scheduleRenewal(crt)
 	}
