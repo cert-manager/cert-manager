@@ -143,12 +143,6 @@ func (c *Controller) Sync(ctx context.Context, crt *v1alpha1.Certificate) (err e
 		return c.issue(ctx, i, crtCopy)
 	}
 
-	// validate the ip addresses are correct
-	expectedIPAddresses := pki.IPAddressesNameForCertificate(crtCopy)
-	if !util.EqualUnsorted(util.IPAddressesToString(cert.IPAddresses), expectedIPAddresses) {
-		return c.issue(ctx, i, crtCopy)
-	}
-
 	// check if the certificate needs renewal
 	needsRenew := c.Context.IssuerOptions.CertificateNeedsRenew(cert, crt.Spec.RenewBefore)
 	if needsRenew {
@@ -220,6 +214,12 @@ func (c *Controller) certificateMatchesSpec(crt *v1alpha1.Certificate, key crypt
 	expectedDNSNames := pki.DNSNamesForCertificate(crt)
 	if !util.EqualUnsorted(cert.DNSNames, expectedDNSNames) {
 		errs = append(errs, fmt.Sprintf("DNS names on TLS certificate not up to date: %q", cert.DNSNames))
+	}
+
+	// validate the ip addresses are correct
+	expectedIPAddresses := pki.IPAddressesNameForCertificate(crt)
+	if !util.EqualUnsorted(util.IPAddressesToString(cert.IPAddresses), expectedIPAddresses) {
+		errs = append(errs, fmt.Sprintf("IP Addresses on TLS certificate not up to date: %q", util.IPAddressesToString(cert.IPAddresses)))
 	}
 
 	return len(errs) == 0, errs

@@ -95,7 +95,6 @@ func (v *Vault) Issue(ctx context.Context, crt *v1alpha1.Certificate) (*issuer.I
 	}
 
 	certPem, caPem, err := v.requestVaultCert(template.Subject.CommonName, certDuration, template.DNSNames, ipAddressesToString(template.IPAddresses), pemRequestBuf.Bytes())
-
 	if err != nil {
 		v.Recorder.Eventf(crt, corev1.EventTypeWarning, "ErrorSigning", "Failed to request certificate: %v", err)
 		return nil, err
