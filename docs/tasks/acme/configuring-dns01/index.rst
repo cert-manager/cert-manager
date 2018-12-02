@@ -66,7 +66,7 @@ and provider specific notes regarding their usage.
    akamai
    azuredns
    cloudflare
+   digitalocean
+   dnsimple
    google
    route53
-   digitalocean
-   rfc2136

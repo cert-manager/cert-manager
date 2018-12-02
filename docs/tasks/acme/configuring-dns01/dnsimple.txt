@@ -1,0 +1,22 @@
+=========================
+DNSimple
+=========================
+
+This provider uses a Kubernetes ``Secret`` resource to access
+the DNSimple API Token. In this example the ``Secret`` must be
+named ``dnsimple-oauth-token`` with the token stored in the
+data key ``oauth-token``
+
+
+Please review the `DNSimple documentation <https://support.dnsimple.com/articles/api-access-token/>`_
+for help on issuing a DNSimple API token.
+
+
+
+ .. code-block:: yaml
+   dnsimple:
+    oauthTokenSecretRef:
+      name: dnsimple-oauth-token
+      key: oauth-token
+
+.. _`Let's Encrypt`: https://letsencrypt.org
