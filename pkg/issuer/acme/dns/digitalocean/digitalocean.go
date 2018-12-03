@@ -23,7 +23,6 @@ import (
 	"fmt"
 	"os"
 	"strings"
-	"time"
 
 	"github.com/digitalocean/godo"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
@@ -61,19 +60,8 @@ func NewDNSProviderCredentials(token string, dns01Nameservers []string) (*DNSPro
 	}, nil
 }
 
-// Timeout returns the timeout and interval to use when checking for DNS
-// propagation. Adjusting here to cope with spikes in propagation times.
-func (c *DNSProvider) Timeout() (timeout, interval time.Duration) {
-	return 120 * time.Second, 2 * time.Second
-}
-
 // Present creates a TXT record to fulfil the dns-01 challenge
-func (c *DNSProvider) Present(domain, token, keyAuth string) error {
-	fqdn, value, ttl, err := util.DNS01Record(domain, keyAuth, c.dns01Nameservers)
-	if err != nil {
-		return err
-	}
-
+func (c *DNSProvider) Present(domain, fqdn, value string) error {
 	// if DigitalOcean does not have this zone then we will find out later
 	zoneName, err := util.FindZoneByFqdn(fqdn, c.dns01Nameservers)
 	if err != nil {
@@ -83,7 +71,7 @@ func (c *DNSProvider) Present(domain, token, keyAuth string) error {
 	// check if the record has already been created
 	records, err := c.findTxtRecord(fqdn)
 	for _, record := range records {
-		if record.Type == "TXT" && record.Data == keyAuth {
+		if record.Type == "TXT" && record.Data == value {
 			return nil
 		}
 
@@ -93,7 +81,7 @@ func (c *DNSProvider) Present(domain, token, keyAuth string) error {
 		Type: "TXT",
 		Name: fqdn,
 		Data: value,
-		TTL:  ttl,
+		TTL:  60,
 	}
 
 	_, _, err = c.client.Domains.CreateRecord(
@@ -110,12 +98,7 @@ func (c *DNSProvider) Present(domain, token, keyAuth string) error {
 }
 
 // CleanUp removes the TXT record matching the specified parameters
-func (c *DNSProvider) CleanUp(domain, token, keyAuth string) error {
-	fqdn, _, _, err := util.DNS01Record(domain, keyAuth, c.dns01Nameservers)
-	if err != nil {
-		return err
-	}
-
+func (c *DNSProvider) CleanUp(domain, fqdn, value string) error {
 	zoneName, err := util.FindZoneByFqdn(fqdn, c.dns01Nameservers)
 
 	records, err := c.findTxtRecord(fqdn)

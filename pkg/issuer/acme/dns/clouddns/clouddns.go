@@ -130,12 +130,7 @@ func NewDNSProviderServiceAccountBytes(project string, saBytes []byte, dns01Name
 }
 
 // Present creates a TXT record to fulfil the dns-01 challenge.
-func (c *DNSProvider) Present(domain, token, key string) error {
-	fqdn, value, ttl, err := util.DNS01Record(domain, key, c.dns01Nameservers)
-	if err != nil {
-		return err
-	}
-
+func (c *DNSProvider) Present(domain, fqdn, value string) error {
 	zone, err := c.getHostedZone(fqdn)
 	if err != nil {
 		return err
@@ -144,7 +139,7 @@ func (c *DNSProvider) Present(domain, token, key string) error {
 	rec := &dns.ResourceRecordSet{
 		Name:    fqdn,
 		Rrdatas: []string{value},
-		Ttl:     int64(ttl),
+		Ttl:     int64(60),
 		Type:    "TXT",
 	}
 	change := &dns.Change{
@@ -180,12 +175,7 @@ func (c *DNSProvider) Present(domain, token, key string) error {
 }
 
 // CleanUp removes the TXT record matching the specified parameters.
-func (c *DNSProvider) CleanUp(domain, token, key string) error {
-	fqdn, _, _, err := util.DNS01Record(domain, key, c.dns01Nameservers)
-	if err != nil {
-		return err
-	}
-
+func (c *DNSProvider) CleanUp(domain, fqdn, value string) error {
 	zone, err := c.getHostedZone(fqdn)
 	if err != nil {
 		return err
@@ -206,12 +196,6 @@ func (c *DNSProvider) CleanUp(domain, token, key string) error {
 		}
 	}
 	return nil
-}
-
-// Timeout customizes the timeout values used by the ACME package for checking
-// DNS record validity.
-func (c *DNSProvider) Timeout() (timeout, interval time.Duration) {
-	return 180 * time.Second, 5 * time.Second
 }
 
 // getHostedZone returns the managed-zone

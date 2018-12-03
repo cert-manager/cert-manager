@@ -38,8 +38,8 @@ func (f *fakeSolver) Present(ctx context.Context, issuer v1alpha1.GenericIssuer,
 // Check should return Error only if propagation check cannot be performed.
 // It MUST return `false, nil` if can contact all relevant services and all is
 // doing is waiting for propagation
-func (f *fakeSolver) Check(ch *v1alpha1.Challenge) (bool, error) {
-	return f.fakeCheck(ch)
+func (f *fakeSolver) Check(ctx context.Context, issuer v1alpha1.GenericIssuer, ch *v1alpha1.Challenge) (bool, error) {
+	return f.fakeCheck(ctx, issuer, ch)
 }
 
 // CleanUp will remove challenge records for a given solver.
@@ -51,7 +51,7 @@ func (f *fakeSolver) CleanUp(ctx context.Context, issuer v1alpha1.GenericIssuer,
 
 type fakeSolver struct {
 	fakePresent func(ctx context.Context, issuer v1alpha1.GenericIssuer, ch *v1alpha1.Challenge) error
-	fakeCheck   func(ch *v1alpha1.Challenge) (bool, error)
+	fakeCheck   func(ctx context.Context, issuer v1alpha1.GenericIssuer, ch *v1alpha1.Challenge) (bool, error)
 	fakeCleanUp func(ctx context.Context, issuer v1alpha1.GenericIssuer, ch *v1alpha1.Challenge) error
 }
 
@@ -108,7 +108,7 @@ func TestSyncHappyPath(t *testing.T) {
 				fakePresent: func(ctx context.Context, issuer v1alpha1.GenericIssuer, ch *v1alpha1.Challenge) error {
 					return nil
 				},
-				fakeCheck: func(ch *v1alpha1.Challenge) (bool, error) {
+				fakeCheck: func(ctx context.Context, issuer v1alpha1.GenericIssuer, ch *v1alpha1.Challenge) (bool, error) {
 					return false, nil
 				},
 			},
@@ -146,7 +146,7 @@ func TestSyncHappyPath(t *testing.T) {
 				gen.SetChallengePresented(true),
 			),
 			HTTP01: &fakeSolver{
-				fakeCheck: func(ch *v1alpha1.Challenge) (bool, error) {
+				fakeCheck: func(ctx context.Context, issuer v1alpha1.GenericIssuer, ch *v1alpha1.Challenge) (bool, error) {
 					return true, nil
 				},
 				fakeCleanUp: func(context.Context, v1alpha1.GenericIssuer, *v1alpha1.Challenge) error {
@@ -198,7 +198,7 @@ func TestSyncHappyPath(t *testing.T) {
 				gen.SetChallengePresented(true),
 			),
 			HTTP01: &fakeSolver{
-				fakeCheck: func(ch *v1alpha1.Challenge) (bool, error) {
+				fakeCheck: func(ctx context.Context, issuer v1alpha1.GenericIssuer, ch *v1alpha1.Challenge) (bool, error) {
 					return true, nil
 				},
 				fakeCleanUp: func(context.Context, v1alpha1.GenericIssuer, *v1alpha1.Challenge) error {

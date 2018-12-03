@@ -152,8 +152,16 @@ type ACMEIssuerDNS01Config struct {
 	Providers []ACMEIssuerDNS01Provider `json:"providers"`
 }
 
+// ACMEIssuerDNS01Provider contains configuration for a DNS provider that can
+// be used to solve ACME DNS01 challenges.
 type ACMEIssuerDNS01Provider struct {
+	// Name is the name of the DNS provider, which should be used to reference
+	// this DNS provider configuration on Certificate resources.
 	Name string `json:"name"`
+
+	// CNAMEStrategy configures how the DNS01 provider should handle CNAME
+	// records when found in DNS zones.
+	CNAMEStrategy CNAMEStrategy `json:"cnameStrategy"`
 
 	Akamai       *ACMEIssuerDNS01ProviderAkamai       `json:"akamai,omitempty"`
 	CloudDNS     *ACMEIssuerDNS01ProviderCloudDNS     `json:"clouddns,omitempty"`
@@ -164,6 +172,24 @@ type ACMEIssuerDNS01Provider struct {
 	AcmeDNS      *ACMEIssuerDNS01ProviderAcmeDNS      `json:"acmedns,omitempty"`
 	RFC2136      *ACMEIssuerDNS01ProviderRFC2136      `json:"rfc2136,omitempty"`
 }
+
+// CNAMEStrategy configures how the DNS01 provider should handle CNAME records
+// when found in DNS zones.
+// By default, the None strategy will be applied (i.e. do not follow CNAMEs).
+type CNAMEStrategy string
+
+const (
+	// NoneStrategy indicates that no CNAME resolution strategy should be used
+	// when determining which DNS zone to update during DNS01 challenges.
+	NoneStrategy = "None"
+
+	// FollowStrategy will cause cert-manager to recurse through CNAMEs in
+	// order to determine which DNS zone to update during DNS01 challenges.
+	// This is useful if you do not want to grant cert-manager access to your
+	// root DNS zone, and instead delegate the _acme-challenge.example.com
+	// subdomain to some other, less privileged domain.
+	FollowStrategy = "Follow"
+)
 
 // ACMEIssuerDNS01ProviderAkamai is a structure containing the DNS
 // configuration for Akamai DNS—Zone Record Management API

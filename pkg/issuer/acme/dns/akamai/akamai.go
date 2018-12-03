@@ -68,29 +68,13 @@ func findHostedDomainByFqdn(fqdn string) (string, error) {
 	return util.UnFqdn(zone), nil
 }
 
-// Timeout returns the timeout and interval to use when checking for DNS
-// propagation. Adjusting here to cope with spikes in propagation times.
-func (a *DNSProvider) Timeout() (timeout, interval time.Duration) {
-	return 5 * time.Minute, 5 * time.Second
-}
-
 // Present creates a TXT record to fulfil the dns-01 challenge
-func (a *DNSProvider) Present(domain, token, keyAuth string) error {
-	fqdn, value, ttl, err := util.DNS01Record(domain, keyAuth, a.dns01Nameservers)
-	if err != nil {
-		return err
-	}
-
-	return a.setTxtRecord(fqdn, &dns01Record{value, ttl})
+func (a *DNSProvider) Present(domain, fqdn, value string) error {
+	return a.setTxtRecord(fqdn, &dns01Record{value, 60})
 }
 
 // CleanUp removes the TXT record matching the specified parameters
-func (a *DNSProvider) CleanUp(domain, token, keyAuth string) error {
-	fqdn, _, _, err := util.DNS01Record(domain, keyAuth, a.dns01Nameservers)
-	if err != nil {
-		return err
-	}
-
+func (a *DNSProvider) CleanUp(domain, fqdn, value string) error {
 	return a.setTxtRecord(fqdn, nil)
 }
 

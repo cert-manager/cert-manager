@@ -25,10 +25,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"time"
 
 	"github.com/cpu/goacmedns"
-	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
 )
 
 // DNSProvider is an implementation of the acme.ChallengeProvider interface
@@ -65,14 +63,7 @@ func NewDNSProviderHostBytes(host string, accountJson []byte, dns01Nameservers [
 }
 
 // Present creates a TXT record to fulfil the dns-01 challenge
-func (c *DNSProvider) Present(domain, token, keyAuth string) error {
-	// fqdn, ttl are unused by ACME DNS
-	_, value, _, err := util.DNS01Record(domain, keyAuth, c.dns01Nameservers)
-
-	if err != nil {
-		return err
-	}
-
+func (c *DNSProvider) Present(domain, fqdn, value string) error {
 	if account, exists := c.accounts[domain]; exists {
 		// Update the acme-dns TXT record.
 		return c.client.UpdateTXTRecord(account, value)
@@ -87,10 +78,4 @@ func (c *DNSProvider) CleanUp(_, _, _ string) error {
 	// ACME-DNS doesn't support the notion of removing a record. For users of
 	// ACME-DNS it is expected the stale records remain in-place.
 	return nil
-}
-
-// Timeout returns the timeout and interval to use when checking for DNS
-// propagation. Adjusting here to cope with spikes in propagation times.
-func (c *DNSProvider) Timeout() (timeout, interval time.Duration) {
-	return 120 * time.Second, 2 * time.Second
 }
