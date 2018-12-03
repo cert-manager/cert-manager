@@ -75,8 +75,8 @@ func generateSelfSignedCert(t *testing.T, crt *v1alpha1.Certificate, key crypto.
 		NotBefore: time.Now(),
 		NotAfter:  time.Now().Add(duration),
 		// see http://golang.org/pkg/crypto/x509/#KeyUsage
-		KeyUsage: x509.KeyUsageDigitalSignature | x509.KeyUsageKeyEncipherment,
-		DNSNames: dnsNames,
+		KeyUsage:    x509.KeyUsageDigitalSignature | x509.KeyUsageKeyEncipherment,
+		DNSNames:    dnsNames,
 		IPAddresses: ipAddresses,
 	}
 

@@ -22,11 +22,11 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
+	"net"
 	"net/http"
 	"path"
 	"strings"
 	"time"
-	"net"
 
 	"github.com/golang/glog"
 	vault "github.com/hashicorp/vault/api"

@@ -18,9 +18,9 @@ package util
 
 import (
 	"math/rand"
+	"net"
 	"sort"
 	"time"
-	"net"
 )
 
 func OnlyOneNotNil(items ...interface{}) (any bool, one bool) {
