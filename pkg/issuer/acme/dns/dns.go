@@ -37,6 +37,7 @@ import (
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/rfc2136"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/route53"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
+	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/webhook"
 )
 
 const (
@@ -59,6 +60,7 @@ type dnsProviderConstructors struct {
 	acmeDNS      func(host string, accountJson []byte, dns01Nameservers []string) (*acmedns.DNSProvider, error)
 	rfc2136      func(nameserver, tsigAlgorithm, tsigKeyName, tsigSecret string, dns01Nameservers []string) (*rfc2136.DNSProvider, error)
 	digitalOcean func(token string, dns01Nameservers []string) (*digitalocean.DNSProvider, error)
+	webhook      func(url string, metadata map[string]string, skipTLSVerify bool, webhookCA []byte, dns01Nameservers []string) (*webhook.DNSProvider, error)
 }
 
 // Solver is a solver for the acme dns01 challenge.
@@ -329,6 +331,27 @@ func (s *Solver) solverForChallenge(issuer v1alpha1.GenericIssuer, ch *v1alpha1.
 		if err != nil {
 			return nil, nil, fmt.Errorf("error instantiating rfc2136 challenge solver: %s", err.Error())
 		}
+	case providerConfig.Webhook != nil:
+		var CA []byte
+
+		if len(providerConfig.Webhook.WebhookCASecret.Name) > 0 {
+			CA, err = s.loadSecretData(&providerConfig.Webhook.WebhookCASecret, resourceNamespace)
+			if err != nil {
+				return nil, nil, errors.Wrap(err, "error getting webhook CA secret")
+			}
+		}
+
+		impl, err = s.dnsProviderConstructors.webhook(
+			providerConfig.Webhook.URL,
+			providerConfig.Webhook.Metadata,
+			providerConfig.Webhook.SkipTLSVerify,
+			CA,
+			s.DNS01Nameservers,
+		)
+		if err != nil {
+			return nil, nil, fmt.Errorf("error instantiating webhook challenge solver: %s", err)
+		}
+
 	default:
 		return nil, nil, fmt.Errorf("no dns provider config specified for provider %q", providerName)
 	}
@@ -350,6 +373,7 @@ func NewSolver(ctx *controller.Context) *Solver {
 			acmedns.NewDNSProviderHostBytes,
 			rfc2136.NewDNSProviderCredentials,
 			digitalocean.NewDNSProviderCredentials,
+			webhook.NewDNSProvider,
 		},
 	}
 }

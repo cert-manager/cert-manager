@@ -596,6 +596,75 @@ func TestValidateACMEIssuerDNS01Config(t *testing.T) {
 				field.Required(providersPath.Index(0).Child("rfc2136", "tsigKeyName"), ""),
 			},
 		},
+		"webhook provider url field empty": {
+			cfg: &v1alpha1.ACMEIssuerDNS01Config{
+				Providers: []v1alpha1.ACMEIssuerDNS01Provider{
+					{
+						Name: "a name",
+						Webhook: &v1alpha1.ACMEIssuerDNS01ProviderWebhook{
+							URL:      "",
+							Metadata: map[string]string{"test": "test"},
+						},
+					},
+				},
+			},
+			errs: []*field.Error{
+				field.Required(providersPath.Index(0).Child("webhook", "url"), ""),
+			},
+		},
+		"webhook provider url field does not contain a valid URL": {
+			cfg: &v1alpha1.ACMEIssuerDNS01Config{
+				Providers: []v1alpha1.ACMEIssuerDNS01Provider{
+					{
+						Name: "a name",
+						Webhook: &v1alpha1.ACMEIssuerDNS01ProviderWebhook{
+							URL: "invalid",
+						},
+					},
+				},
+			},
+			errs: []*field.Error{
+				field.Invalid(providersPath.Index(0).Child("webhook", "url"), "", "\"url\" field does not contain correct URL"),
+			},
+		},
+		"missing webhook CA secret key": {
+			cfg: &v1alpha1.ACMEIssuerDNS01Config{
+				Providers: []v1alpha1.ACMEIssuerDNS01Provider{
+					{
+						Name: "a name",
+						Webhook: &v1alpha1.ACMEIssuerDNS01ProviderWebhook{
+							URL: "http://valid/",
+							WebhookCASecret: v1alpha1.SecretKeySelector{
+								LocalObjectReference: v1alpha1.LocalObjectReference{Name: "something"},
+								Key:                  "",
+							},
+						},
+					},
+				},
+			},
+			errs: []*field.Error{
+				field.Required(providersPath.Index(0).Child("webhook", "webhookCASecretSecretRef", "key"), "secret key is required"),
+			},
+		},
+		"missing webhook CA secret name": {
+			cfg: &v1alpha1.ACMEIssuerDNS01Config{
+				Providers: []v1alpha1.ACMEIssuerDNS01Provider{
+					{
+						Name: "a name",
+						Webhook: &v1alpha1.ACMEIssuerDNS01ProviderWebhook{
+							URL: "http://valid/",
+							WebhookCASecret: v1alpha1.SecretKeySelector{
+								LocalObjectReference: v1alpha1.LocalObjectReference{Name: ""},
+								Key:                  "something",
+							},
+						},
+					},
+				},
+			},
+			errs: []*field.Error{
+				field.Required(providersPath.Index(0).Child("webhook", "webhookCASecretSecretRef", "name"), "secret name is required"),
+			},
+		},
 		"multiple providers configured": {
 			cfg: &v1alpha1.ACMEIssuerDNS01Config{
 				Providers: []v1alpha1.ACMEIssuerDNS01Provider{

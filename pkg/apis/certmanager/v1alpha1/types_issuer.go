@@ -212,6 +212,9 @@ type ACMEIssuerDNS01Provider struct {
 
 	// +optional
 	RFC2136 *ACMEIssuerDNS01ProviderRFC2136 `json:"rfc2136,omitempty"`
+
+	// +optional
+	Webhook      *ACMEIssuerDNS01ProviderWebhook      `json:"execute,omitempty"`
 }
 
 // CNAMEStrategy configures how the DNS01 provider should handle CNAME records
@@ -322,6 +325,19 @@ type ACMEIssuerDNS01ProviderRFC2136 struct {
 	// ``HMACSHA1``, ``HMACSHA256`` or ``HMACSHA512``.
 	// +optional
 	TSIGAlgorithm string `json:"tsigAlgorithm,omitempty"`
+}
+
+type ACMEIssuerDNS01ProviderWebhook struct {
+	URL string `json:"url"`
+
+	// + optional
+	Metadata map[string]string `json:"metadata"`
+
+	// +optional
+	SkipTLSVerify bool `json:"skipTLSVerify"`
+
+	// +optional
+	WebhookCASecret SecretKeySelector `json:"webhookCASecretSecretRef"`
 }
 
 // IssuerStatus contains status information about an Issuer
