@@ -48,6 +48,12 @@ required = [
   name = "github.com/hashicorp/vault"
   version = "v0.9.3"
 
+# Use the GitHub mirror of goautoneg to save issues with bitbucket being down
+[[override]]
+  name = "bitbucket.org/ww/goautoneg"
+  revision = "a547fc61f48d567d5b4ec6f8aee5573d8efce11d"
+  source = "https://github.com/munnerz/goautoneg.git"
+
 ### Overrides for transitive kubernetes dependencies
 ### These should be updated whenever we bump the kubernetes version we depend on
 [[override]]
