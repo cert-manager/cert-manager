@@ -45,7 +45,7 @@ export BUILD_WORKSPACE_DIRECTORY="$(pwd)"
 
 echo "diffing ${DIFFROOT} against freshly generated deploy-gen"
 ret=0
-diff --exclude=__main__ -Naupr "${DIFFROOT}/contrib/manifests" "${TMP_DIFFROOT}/contrib/manifests" || ret=$?
+diff --exclude=__main__ -Naupr "${DIFFROOT}/deploy/manifests" "${TMP_DIFFROOT}/deploy/manifests" || ret=$?
 if [[ $ret -eq 0 ]]
 then
   echo "${DIFFROOT} up to date."

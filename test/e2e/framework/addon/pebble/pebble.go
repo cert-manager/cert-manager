@@ -68,7 +68,7 @@ func (p *Pebble) Setup(cfg *config.Config) error {
 		Tiller:      p.Tiller,
 		ReleaseName: "chart-pebble-" + p.Name,
 		Namespace:   p.Namespace,
-		ChartName:   cfg.RepoRoot + "/contrib/charts/pebble",
+		ChartName:   cfg.RepoRoot + "/test/e2e/charts/pebble",
 		// doesn't matter when installing from disk
 		ChartVersion: "0",
 	}

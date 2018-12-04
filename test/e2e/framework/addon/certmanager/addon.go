@@ -18,6 +18,7 @@ package certmanager
 
 import (
 	"fmt"
+	"os/exec"
 
 	"github.com/jetstack/cert-manager/test/e2e/framework/addon/chart"
 	"github.com/jetstack/cert-manager/test/e2e/framework/addon/tiller"
@@ -42,11 +43,6 @@ type Certmanager struct {
 
 	// Required namespace to deploy Certmanager into.
 	Namespace string
-
-	// Config is a reference to the overall test config structure with flags
-	// parsed from the CLI.
-	// This is used for global configuration settings.
-	Config *config.Config
 }
 
 // Details return the details about the certmanager instance deployed
@@ -71,11 +67,12 @@ func (p *Certmanager) Setup(cfg *config.Config) error {
 	if err != nil {
 		return err
 	}
+	p.config = cfg
 	p.chart = &chart.Chart{
 		Tiller:      p.Tiller,
 		ReleaseName: "chart-certmanager-" + p.Name,
 		Namespace:   p.Namespace,
-		ChartName:   cfg.RepoRoot + "/contrib/charts/cert-manager",
+		ChartName:   cfg.RepoRoot + "/deploy/chart",
 		// TODO: move resource requests/limits into Vars so they are always set
 		Values: []string{cfg.RepoRoot + "/test/fixtures/cert-manager-values.yaml"},
 		// doesn't matter when installing from disk
@@ -91,6 +88,10 @@ func (p *Certmanager) Setup(cfg *config.Config) error {
 
 // Provision will actually deploy this instance of Pebble-ingress to the cluster.
 func (p *Certmanager) Provision() error {
+	if err := exec.Command("kubectl", "apply", "-f", p.config.RepoRoot+"/deploy/manifests/00-crds.yaml").Run(); err != nil {
+		return fmt.Errorf("Error install cert-manager CRD manifests: %v", err)
+	}
+
 	return p.chart.Provision()
 }
 

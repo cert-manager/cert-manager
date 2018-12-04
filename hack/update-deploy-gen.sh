@@ -34,7 +34,7 @@ gen() {
 	TMP_OUTPUT_WEBHOOK=$(mktemp)
 	mkdir -p "$(dirname ${OUTPUT})"
 	helm template \
-		"${REPO_ROOT}/contrib/charts/cert-manager" \
+		"${REPO_ROOT}/deploy/chart" \
 		--values "${REPO_ROOT}/hack/deploy/${VALUES}.yaml" \
 		--kube-version "${KUBE_VERSION}" \
 		--namespace "cert-manager" \
@@ -42,7 +42,7 @@ gen() {
 		--set "fullnameOverride=cert-manager" \
 		--set "createNamespaceResource=true" > "${TMP_OUTPUT}"
 	helm template \
-		"${REPO_ROOT}/contrib/charts/cert-manager/webhook" \
+		"${REPO_ROOT}/deploy/chart/webhook" \
 		--values "${REPO_ROOT}/hack/deploy/${VALUES}.yaml" \
 		--kube-version "${KUBE_VERSION}" \
 		--namespace "cert-manager" \
@@ -53,6 +53,6 @@ gen() {
 
 export HELM_HOME="$(mktemp -d)"
 helm init --client-only
-helm dep update "${REPO_ROOT}/contrib/charts/cert-manager"
-gen rbac-values "${REPO_ROOT}/contrib/manifests/cert-manager/with-rbac"
-gen without-rbac-values "${REPO_ROOT}/contrib/manifests/cert-manager/without-rbac"
+helm dep update "${REPO_ROOT}/deploy/chart"
+gen rbac-values "${REPO_ROOT}/deploy/manifests/with-rbac"
+gen without-rbac-values "${REPO_ROOT}/deploy/manifests/without-rbac"

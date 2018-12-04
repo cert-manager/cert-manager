@@ -108,7 +108,7 @@ sh_test(
     srcs = ["verify-deploy-gen.sh"],
     data = [
         ":update-deploy-gen",
-        "//contrib:all-srcs",
+        "//deploy:all-srcs",
         "//hack/deploy:all-srcs",
     ],
 )
