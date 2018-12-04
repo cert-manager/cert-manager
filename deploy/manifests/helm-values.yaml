@@ -1,3 +1,5 @@
+fullnameOverride: cert-manager
+
 resources:
   requests:
     cpu: 10m

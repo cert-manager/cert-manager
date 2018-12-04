@@ -109,7 +109,6 @@ sh_test(
     data = [
         ":update-deploy-gen",
         "//deploy:all-srcs",
-        "//hack/deploy:all-srcs",
     ],
 )
 
@@ -164,7 +163,6 @@ filegroup(
         ":package-srcs",
         "//hack/bin:all-srcs",
         "//hack/boilerplate:all-srcs",
-        "//hack/deploy:all-srcs",
     ],
     tags = ["automanaged"],
     visibility = ["//visibility:public"],
