@@ -75,7 +75,7 @@ func TestLiveGoogleCloudPresent(t *testing.T) {
 	provider, err := NewDNSProviderCredentials(gcloudProject, util.RecursiveNameservers)
 	assert.NoError(t, err)
 
-	err = provider.Present(gcloudDomain, "", "123d==")
+	err = provider.Present(gcloudDomain, "_acme-challenge."+gcloudDomain+".", "123d==")
 	assert.NoError(t, err)
 }
 
@@ -88,8 +88,8 @@ func TestLiveGoogleCloudPresentMultiple(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Check that we're able to create multiple entries
-	err = provider.Present(gcloudDomain, "1", "123d==")
-	err = provider.Present(gcloudDomain, "2", "123d==")
+	err = provider.Present(gcloudDomain, "_acme-challenge."+gcloudDomain+".", "123d==")
+	err = provider.Present(gcloudDomain, "_acme-challenge."+gcloudDomain+".", "1123d==")
 	assert.NoError(t, err)
 }
 
@@ -103,6 +103,6 @@ func TestLiveGoogleCloudCleanUp(t *testing.T) {
 	provider, err := NewDNSProviderCredentials(gcloudProject, util.RecursiveNameservers)
 	assert.NoError(t, err)
 
-	err = provider.CleanUp(gcloudDomain, "", "123d==")
+	err = provider.CleanUp(gcloudDomain, "_acme-challenge."+gcloudDomain+".", "123d==")
 	assert.NoError(t, err)
 }

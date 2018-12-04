@@ -745,6 +745,7 @@ Appears In:
 </tr>
 </tbody>
 </table>
+<p>ACMEIssuerDNS01Provider contains configuration for a DNS provider that can be used to solve ACME DNS01 challenges.</p>
 <aside class="notice">
 Appears In:
 
@@ -781,12 +782,16 @@ Appears In:
 <td></td>
 </tr>
 <tr>
+<td><code>cnameStrategy</code><br /> <em>string</em></td>
+<td>CNAMEStrategy configures how the DNS01 provider should handle CNAME records when found in DNS zones.</td>
+</tr>
+<tr>
 <td><code>digitalocean</code><br /> <em><a href="#acmeissuerdns01providerdigitalocean-v1alpha1">ACMEIssuerDNS01ProviderDigitalOcean</a></em></td>
 <td></td>
 </tr>
 <tr>
 <td><code>name</code><br /> <em>string</em></td>
-<td></td>
+<td>Name is the name of the DNS provider, which should be used to reference this DNS provider configuration on Certificate resources.</td>
 </tr>
 <tr>
 <td><code>rfc2136</code><br /> <em><a href="#acmeissuerdns01providerrfc2136-v1alpha1">ACMEIssuerDNS01ProviderRFC2136</a></em></td>

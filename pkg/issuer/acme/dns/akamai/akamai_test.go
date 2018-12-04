@@ -111,7 +111,7 @@ func TestPresent(t *testing.T) {
 	var response []byte
 	mockTransport(t, akamai, "example.com", sampleZoneData, &response)
 
-	assert.NoError(t, akamai.Present("test.example.com", "dns01-token", "dns01-key"))
+	assert.NoError(t, akamai.Present("test.example.com", "_acme-challenge.test.example.com.", "dns01-key"))
 
 	var expected, actual map[string]interface{}
 	assert.NoError(t, json.Unmarshal([]byte(sampleZoneDataWithTxt), &expected))
@@ -126,7 +126,7 @@ func TestCleanUp(t *testing.T) {
 	var response []byte
 	mockTransport(t, akamai, "example.com", sampleZoneDataWithTxt, &response)
 
-	assert.NoError(t, akamai.CleanUp("test.example.com", "dns01-token", "dns01-key"))
+	assert.NoError(t, akamai.CleanUp("test.example.com", "_acme-challenge.test.example.com.", "dns01-key"))
 
 	var expected, actual map[string]interface{}
 	assert.NoError(t, json.Unmarshal([]byte(sampleZoneData), &expected))

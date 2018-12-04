@@ -98,7 +98,7 @@ func (s *Solver) Present(ctx context.Context, issuer v1alpha1.GenericIssuer, ch 
 	return utilerrors.NewAggregate([]error{podErr, svcErr, ingressErr})
 }
 
-func (s *Solver) Check(ch *v1alpha1.Challenge) (bool, error) {
+func (s *Solver) Check(ctx context.Context, issuer v1alpha1.GenericIssuer, ch *v1alpha1.Challenge) (bool, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), HTTP01Timeout)
 	defer cancel()
 

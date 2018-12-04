@@ -85,7 +85,7 @@ func TestRFC2136ServerSuccess(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Expected NewDNSProviderCredentials() to return no error but the error was -> %v", err)
 	}
-	if err := provider.Present(rfc2136TestDomain, "", rfc2136TestKeyAuth); err != nil {
+	if err := provider.Present(rfc2136TestDomain, "_acme-challenge."+rfc2136TestDomain+".", rfc2136TestKeyAuth); err != nil {
 		t.Errorf("Expected Present() to return no error but the error was -> %v", err)
 	}
 }
@@ -104,7 +104,7 @@ func TestRFC2136ServerError(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Expected NewDNSProviderCredentials() to return no error but the error was -> %v", err)
 	}
-	if err := provider.Present(rfc2136TestDomain, "", rfc2136TestKeyAuth); err == nil {
+	if err := provider.Present(rfc2136TestDomain, "_acme-challenge."+rfc2136TestDomain+".", rfc2136TestKeyAuth); err == nil {
 		t.Errorf("Expected Present() to return an error but it did not.")
 	} else if !strings.Contains(err.Error(), "NOTZONE") {
 		t.Errorf("Expected Present() to return an error with the 'NOTZONE' rcode string but it did not.")
@@ -125,7 +125,7 @@ func TestRFC2136TsigClient(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Expected NewDNSProviderCredentials() to return no error but the error was -> %v", err)
 	}
-	if err := provider.Present(rfc2136TestDomain, "", rfc2136TestKeyAuth); err != nil {
+	if err := provider.Present(rfc2136TestDomain, "_acme-challenge."+rfc2136TestDomain+".", rfc2136TestKeyAuth); err != nil {
 		t.Errorf("Expected Present() to return no error but the error was -> %v", err)
 	}
 }
@@ -234,7 +234,7 @@ func TestRFC2136ValidUpdatePacket(t *testing.T) {
 		t.Fatalf("Expected NewDNSProviderCredentials() to return no error but the error was -> %v", err)
 	}
 
-	if err := provider.Present(rfc2136TestDomain, "", rfc2136TestValue); err != nil {
+	if err := provider.Present(rfc2136TestDomain, "_acme-challenge."+rfc2136TestDomain+".", rfc2136TestValue); err != nil {
 		t.Errorf("Expected Present() to return no error but the error was -> %v", err)
 	}
 

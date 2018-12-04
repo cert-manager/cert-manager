@@ -45,7 +45,7 @@ type solver interface {
 	// Check should return Error only if propagation check cannot be performed.
 	// It MUST return `false, nil` if can contact all relevant services and all is
 	// doing is waiting for propagation
-	Check(ch *cmapi.Challenge) (bool, error)
+	Check(ctx context.Context, issuer cmapi.GenericIssuer, ch *cmapi.Challenge) (bool, error)
 	// CleanUp will remove challenge records for a given solver.
 	// This may involve deleting resources in the Kubernetes API Server, or
 	// communicating with other external components (e.g. DNS providers).
@@ -148,7 +148,7 @@ func (c *Controller) Sync(ctx context.Context, ch *cmapi.Challenge) (err error) 
 		c.Recorder.Eventf(ch, corev1.EventTypeNormal, "Presented", "Presented challenge using %s challenge mechanism", ch.Spec.Type)
 	}
 
-	ok, err := solver.Check(ch)
+	ok, err := solver.Check(ctx, genericIssuer, ch)
 	if err != nil {
 		return err
 	}
