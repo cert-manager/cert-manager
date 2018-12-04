@@ -30,7 +30,6 @@ KUBE_VERSION=1.9
 gen() {
 	OUTPUT=$1
 	TMP_OUTPUT=$(mktemp)
-	TMP_OUTPUT_WEBHOOK=$(mktemp)
 	mkdir -p "$(dirname ${OUTPUT})"
 	helm template \
 		"${REPO_ROOT}/deploy/chart" \
@@ -39,17 +38,10 @@ gen() {
 		--namespace "cert-manager" \
 		--name "cert-manager" \
 		--set "createNamespaceResource=true" > "${TMP_OUTPUT}"
-	helm template \
-		"${REPO_ROOT}/deploy/chart/webhook" \
-		--values "${REPO_ROOT}/deploy/manifests/helm-values.yaml" \
-		--kube-version "${KUBE_VERSION}" \
-		--namespace "cert-manager" \
-		--name "webhook" > "${TMP_OUTPUT_WEBHOOK}"
-	mv "${TMP_OUTPUT}" "${OUTPUT}.yaml"
-	mv "${TMP_OUTPUT_WEBHOOK}" "${OUTPUT}-webhook.yaml"
+	mv "${TMP_OUTPUT}" "${OUTPUT}"
 }
 
 export HELM_HOME="$(mktemp -d)"
 helm init --client-only
 helm dep update "${REPO_ROOT}/deploy/chart"
-gen "${REPO_ROOT}/deploy/manifests/cert-manager"
+gen "${REPO_ROOT}/deploy/manifests/cert-manager.yaml"
