@@ -27,6 +27,8 @@ name of your Helm release for cert-manager (usually this is ``cert-manager``):
    $ kubectl apply \
         -f https://raw.githubusercontent.com/jetstack/cert-manager/${VERSION}/deploy/manifests/00-crds.yaml
 
+   $ kubectl label namespace cert-manager certmanager.k8s.io/disable-validation=true
+
    $ helm upgrade --version ${VERSION} <release_name> stable/cert-manager
 
 This will upgrade you to the latest version of cert-manager, as listed in the
@@ -53,6 +55,9 @@ version number you want to install:
 
    $ kubectl apply \
         -f https://raw.githubusercontent.com/jetstack/cert-manager/${VERSION}/deploy/manifests/00-crds.yaml
+
+   # Ensure resource validation is disabled on the cert-manager namespace
+   $ kubectl label namespace cert-manager certmanager.k8s.io/disable-validation=true
 
    $ kubectl apply \
         -f https://raw.githubusercontent.com/jetstack/cert-manager/${VERSION}/deploy/manifests/cert-manager.yaml

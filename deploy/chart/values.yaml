@@ -74,11 +74,6 @@ ingressShim: {}
 webhook:
   enabled: true
 
-# This is used by the static manifest generator in order to create a static
-# namespace manifest for the namespace that cert-manager is being installed
-# within. It should **not** be used if you are using Helm for deployment.
-createNamespaceResource: false
-
 # Use these variables to configure the HTTP_PROXY environment variables
 # http_proxy: "http://proxy:8080"
 # http_proxy: "http://proxy:8080"

@@ -59,6 +59,12 @@ To install cert-manager using the static manifests, you should run:
    $ kubectl apply \
         -f https://raw.githubusercontent.com/jetstack/cert-manager/v0.6.0/deploy/manifests/00-crds.yaml
 
+   # Create a namespace to run cert-manager in
+   $ kubectl create namespace cert-manager
+
+   # Disable resource validation on the cert-manager namespace
+   $ kubectl label namespace cert-manager certmanager.k8s.io/disable-validation=true
+
    # Install cert-manager
    $ kubectl apply \
         -f https://raw.githubusercontent.com/jetstack/cert-manager/v0.6.0/deploy/manifests/cert-manager.yaml
