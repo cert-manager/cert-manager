@@ -18,6 +18,11 @@ functionality in cert-manager can be found in the [getting started docs](https:/
 To install the chart with the release name `my-release`:
 
 ```console
+## IMPORTANT: you MUST install the cert-manager CRDs **before** installing the
+## cert-manager Helm chart
+$ kubectl apply \
+    -f https://raw.githubusercontent.com/jetstack/cert-manager/v0.6.0/deploy/manifests/00-crds.yaml
+
 $ helm install --name my-release stable/cert-manager
 ```
 
@@ -36,6 +41,12 @@ documentation:
 https://cert-manager.readthedocs.io/en/latest/reference/ingress-shim.html
 
 > **Tip**: List all releases using `helm list`
+
+## Upgrading the Chart
+
+Special considerations may be required when upgrading the Helm chart, and these
+are documented in our full [upgrading guide](https://cert-manager.readthedocs.io/en/latest/admin/upgrading/index.html).
+Please check here before perform upgrades!
 
 ## Uninstalling the Chart
 
