@@ -17,7 +17,6 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/infobloxopen/infoblox-go-client"
-	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
 )
 
 // DNSProvider is an implementation of the DNSProvider interface.
@@ -25,7 +24,6 @@ type DNSProvider struct {
 	dns01Nameservers []string
 	client           ibclient.IBConnector
 	host             string
-	refs             map[string]string
 }
 
 // NewDNSProvider returns a DNSProvider instance configured for Infoblox.
@@ -59,25 +57,23 @@ func NewDNSProvider(gridHost string, username string, secret string, port string
 		dns01Nameservers: dns01Nameservers,
 		client:           client,
 		host:             gridHost,
-		refs:             map[string]string{},
 	}, nil
 }
 
 // Present creates a TXT record to fulfil the dns-01 challenge.
-func (c *DNSProvider) Present(domain, token, keyAuth string) error {
-	fqdn, value, _, err := util.DNS01Record(domain, keyAuth, c.dns01Nameservers)
+func (c *DNSProvider) Present(domain, fqdn, value string) error {
 	fqdn = strings.TrimSuffix(fqdn, ".")
 
 	rt := ibclient.NewRecordTXT(ibclient.RecordTXT{Name: fqdn})
 
 	var records []ibclient.RecordTXT
-	err = c.client.GetObject(rt, "", &records)
+	err := c.client.GetObject(rt, "", &records)
 	if err != nil {
 		return err
 	}
 
 	for _, rec := range records {
-		if rec.Text == keyAuth {
+		if rec.Text == value {
 			return nil
 		}
 	}
@@ -91,51 +87,42 @@ func (c *DNSProvider) Present(domain, token, keyAuth string) error {
 		return err
 	}
 
-	glog.Infof("INFOBLOX: created TXT record %v, %s -> %s", rt, token, ref)
-	c.refs[token] = ref
+	glog.Infof("INFOBLOX: created TXT record %v, %s -> %s", rt, value, ref)
 
 	return nil
 }
 
 // CleanUp removes the TXT record matching the specified parameters
-func (c *DNSProvider) CleanUp(domain, token, keyAuth string) error {
-	ref, found := c.refs[token]
-	if !found {
-		fqdn, _, _, err := util.DNS01Record(domain, keyAuth, c.dns01Nameservers)
-		if err != nil {
-			return err
-		}
+func (c *DNSProvider) CleanUp(domain, fqdn, value string) error {
 
-		fqdn = strings.TrimSuffix(fqdn, ".")
-		rt := ibclient.NewRecordTXT(ibclient.RecordTXT{Name: fqdn})
+	fqdn = strings.TrimSuffix(fqdn, ".")
+	rt := ibclient.NewRecordTXT(ibclient.RecordTXT{Name: fqdn})
 
-		var records []ibclient.RecordTXT
-		err = c.client.GetObject(rt, "", &records)
-		if err != nil {
-			return err
-		}
-
-		for _, rec := range records {
-			if rec.Text == keyAuth {
-				ref = rec.Ref
-				break
-			}
-		}
-
-		if len(ref) == 0 {
-			return nil
-		}
-
-	}
-
-	_, err := c.client.DeleteObject(ref)
+	var records []ibclient.RecordTXT
+	err := c.client.GetObject(rt, "", &records)
 	if err != nil {
 		return err
 	}
 
-	glog.Infof("INFOBLOX: deleting TXT record %s, %s -> %s", domain, token, ref)
+	var ref string
+	for _, rec := range records {
+		if rec.Text == value {
+			ref = rec.Ref
+			break
+		}
+	}
 
-	delete(c.refs, token)
+	if len(ref) == 0 {
+		return nil
+	}
+
+	_, err = c.client.DeleteObject(ref)
+	if err != nil {
+		return err
+	}
+
+	glog.Infof("INFOBLOX: deleting TXT record %s, %s -> %s", domain, value, ref)
+
 	return nil
 }
 

@@ -200,11 +200,11 @@ func (s *Solver) solverForChallenge(issuer v1alpha1.GenericIssuer, ch *v1alpha1.
 	case providerConfig.Infoblox != nil:
 		apiKeySecret, err := s.secretLister.Secrets(resourceNamespace).Get(providerConfig.Infoblox.WapiPasswordSecret.Name)
 		if err != nil {
-			return nil, fmt.Errorf("error getting service account: %s", err.Error())
+			return nil, nil, fmt.Errorf("error getting service account: %s", err.Error())
 		}
 		secretBytes, ok := apiKeySecret.Data[providerConfig.Infoblox.WapiPasswordSecret.Key]
 		if !ok {
-			return nil, fmt.Errorf("error getting secret key: key '%s' not found in secret", providerConfig.Infoblox.WapiPasswordSecret.Key)
+			return nil, nil, fmt.Errorf("error getting secret key: key '%s' not found in secret", providerConfig.Infoblox.WapiPasswordSecret.Key)
 		}
 		secret := string(secretBytes)
 		gridHost := strings.Split(providerConfig.Infoblox.GridHost, ":")[0]
@@ -215,7 +215,7 @@ func (s *Solver) solverForChallenge(issuer v1alpha1.GenericIssuer, ch *v1alpha1.
 
 		impl, err = s.dnsProviderConstructors.infobloxDNS(gridHost, username, secret, port, version, sslVerify, s.DNS01Nameservers)
 		if err != nil {
-			return nil, fmt.Errorf("error instantiating infoblox challenge solver: %s", err)
+			return nil, nil, fmt.Errorf("error instantiating infoblox challenge solver: %s", err)
 		}
 	case providerConfig.Cloudflare != nil:
 		apiKeySecret, err := s.secretLister.Secrets(resourceNamespace).Get(providerConfig.Cloudflare.APIKey.Name)

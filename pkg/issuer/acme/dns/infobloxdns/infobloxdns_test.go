@@ -57,7 +57,7 @@ func TestInfobloxPresent(t *testing.T) {
 	provider, err := NewDNSProvider(gridHost, wapiUsername, wapiPassword, wapiPort, wapiVersion, sslVerify, util.RecursiveNameservers)
 	assert.NoError(t, err)
 
-	err = provider.Present(domain, "", "123d==")
+	err = provider.Present(domain, "_acme-challenge."+domain+".", "123d==")
 	assert.NoError(t, err)
 }
 
@@ -70,6 +70,6 @@ func TestInfobloxCleanUp(t *testing.T) {
 	provider, err := NewDNSProvider(gridHost, wapiUsername, wapiPassword, wapiPort, wapiVersion, sslVerify, util.RecursiveNameservers)
 	assert.NoError(t, err)
 
-	err = provider.CleanUp(domain, "", "123d==")
+	err = provider.CleanUp(domain, "_acme-challenge."+domain+".", "123d==")
 	assert.NoError(t, err)
 }

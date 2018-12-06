@@ -306,7 +306,7 @@ func TestSolveForInfoblox(t *testing.T) {
 	defer f.Finish(t)
 
 	s := f.Solver
-	_, err := s.solverForChallenge(f.Issuer, f.Challenge)
+	_, _, err := s.solverForChallenge(f.Issuer, f.Challenge)
 	if err != nil {
 		t.Fatalf("expected solverFor to not error, but got: %s", err)
 	}
@@ -359,7 +359,7 @@ func TestSolveForInfobloxIfNoSecret(t *testing.T) {
 	defer f.Finish(t)
 
 	s := f.Solver
-	_, err := s.solverForChallenge(f.Issuer, f.Challenge)
+	_, _, err := s.solverForChallenge(f.Issuer, f.Challenge)
 	if err == nil {
 		t.Fatalf("expected solverFor to error since there is no secret.")
 	}
