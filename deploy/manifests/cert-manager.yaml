@@ -1,18 +1,102 @@
 ---
-# Source: webhook/templates/serviceaccount.yaml
+# Source: cert-manager/charts/webhook/templates/serviceaccount.yaml
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: webhook
+  name: cert-manager-webhook
   namespace: "cert-manager"
   labels:
     app: webhook
     chart: webhook-v0.6.0-dev.3
-    release: webhook
+    release: cert-manager
     heritage: Tiller
 
 ---
-# Source: webhook/templates/rbac.yaml
+# Source: cert-manager/templates/serviceaccount.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: cert-manager
+  namespace: "cert-manager"
+  labels:
+    app: cert-manager
+    chart: cert-manager-v0.6.0-dev.6
+    release: cert-manager
+    heritage: Tiller
+---
+# Source: cert-manager/templates/rbac.yaml
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRole
+metadata:
+  name: cert-manager
+  labels:
+    app: cert-manager
+    chart: cert-manager-v0.6.0-dev.6
+    release: cert-manager
+    heritage: Tiller
+rules:
+  - apiGroups: ["certmanager.k8s.io"]
+    resources: ["certificates", "issuers", "clusterissuers", "orders", "challenges"]
+    verbs: ["*"]
+  - apiGroups: [""]
+    resources: ["configmaps", "secrets", "events", "services", "pods"]
+    verbs: ["*"]
+  - apiGroups: ["extensions"]
+    resources: ["ingresses"]
+    verbs: ["*"]
+---
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRoleBinding
+metadata:
+  name: cert-manager
+  labels:
+    app: cert-manager
+    chart: cert-manager-v0.6.0-dev.6
+    release: cert-manager
+    heritage: Tiller
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cert-manager
+subjects:
+  - name: cert-manager
+    namespace: "cert-manager"
+    kind: ServiceAccount
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: cert-manager-view
+  labels:
+    app: cert-manager
+    chart: cert-manager-v0.6.0-dev.6
+    release: cert-manager
+    heritage: Tiller
+    rbac.authorization.k8s.io/aggregate-to-view: "true"
+    rbac.authorization.k8s.io/aggregate-to-edit: "true"
+    rbac.authorization.k8s.io/aggregate-to-admin: "true"
+rules:
+  - apiGroups: ["certmanager.k8s.io"]
+    resources: ["certificates", "issuers"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: cert-manager-edit
+  labels:
+    app: cert-manager
+    chart: cert-manager-v0.6.0-dev.6
+    release: cert-manager
+    heritage: Tiller
+    rbac.authorization.k8s.io/aggregate-to-edit: "true"
+    rbac.authorization.k8s.io/aggregate-to-admin: "true"
+rules:
+  - apiGroups: ["certmanager.k8s.io"]
+    resources: ["certificates", "issuers"]
+    verbs: ["create", "delete", "deletecollection", "patch", "update"]
+---
+# Source: cert-manager/charts/webhook/templates/rbac.yaml
 ### Webhook ###
 ---
 # apiserver gets the auth-delegator role to delegate auth decisions to
@@ -20,11 +104,11 @@ metadata:
 apiVersion: rbac.authorization.k8s.io/v1beta1
 kind: ClusterRoleBinding
 metadata:
-  name: webhook:auth-delegator
+  name: cert-manager-webhook:auth-delegator
   labels:
     app: webhook
     chart: webhook-v0.6.0-dev.3
-    release: webhook
+    release: cert-manager
     heritage: Tiller
 roleRef:
   apiGroup: rbac.authorization.k8s.io
@@ -33,7 +117,7 @@ roleRef:
 subjects:
 - apiGroup: ""
   kind: ServiceAccount
-  name: webhook
+  name: cert-manager-webhook
   namespace: cert-manager
 
 ---
@@ -44,12 +128,12 @@ subjects:
 apiVersion: rbac.authorization.k8s.io/v1beta1
 kind: RoleBinding
 metadata:
-  name: webhook:webhook-authentication-reader
+  name: cert-manager-webhook:webhook-authentication-reader
   namespace: kube-system
   labels:
     app: webhook
     chart: webhook-v0.6.0-dev.3
-    release: webhook
+    release: cert-manager
     heritage: Tiller
 roleRef:
   apiGroup: rbac.authorization.k8s.io
@@ -58,7 +142,7 @@ roleRef:
 subjects:
 - apiGroup: ""
   kind: ServiceAccount
-  name: webhook
+  name: cert-manager-webhook
   namespace: cert-manager
 
 ---
@@ -66,11 +150,11 @@ subjects:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: webhook:webhook-requester
+  name: cert-manager-webhook:webhook-requester
   labels:
     app: webhook
     chart: webhook-v0.6.0-dev.3
-    release: webhook
+    release: cert-manager
     heritage: Tiller
 rules:
 - apiGroups:
@@ -83,16 +167,16 @@ rules:
   - create
 
 ---
-# Source: webhook/templates/service.yaml
+# Source: cert-manager/charts/webhook/templates/service.yaml
 apiVersion: v1
 kind: Service
 metadata:
-  name: webhook
+  name: cert-manager-webhook
   namespace: "cert-manager"
   labels:
     app: webhook
     chart: webhook-v0.6.0-dev.3
-    release: webhook
+    release: cert-manager
     heritage: Tiller
 spec:
   type: ClusterIP
@@ -102,34 +186,34 @@ spec:
     targetPort: 6443
   selector:
     app: webhook
-    release: webhook
+    release: cert-manager
 
 ---
-# Source: webhook/templates/deployment.yaml
+# Source: cert-manager/charts/webhook/templates/deployment.yaml
 apiVersion: apps/v1beta1
 kind: Deployment
 metadata:
-  name: webhook
+  name: cert-manager-webhook
   namespace: "cert-manager"
   labels:
     app: webhook
     chart: webhook-v0.6.0-dev.3
-    release: webhook
+    release: cert-manager
     heritage: Tiller
 spec:
   replicas: 1
   selector:
     matchLabels:
       app: webhook
-      release: webhook
+      release: cert-manager
   template:
     metadata:
       labels:
         app: webhook
-        release: webhook
+        release: cert-manager
       annotations:
     spec:
-      serviceAccountName: webhook
+      serviceAccountName: cert-manager-webhook
       containers:
         - name: webhook
           image: "quay.io/jetstack/cert-manager-webhook:canary"
@@ -146,9 +230,7 @@ spec:
               fieldRef:
                 fieldPath: metadata.namespace
           resources:
-            requests:
-              cpu: 10m
-              memory: 32Mi
+            {}
             
           volumeMounts:
           - name: certs
@@ -156,10 +238,54 @@ spec:
       volumes:
       - name: certs
         secret:
-          secretName: webhook-webhook-tls
+          secretName: cert-manager-webhook-webhook-tls
 
 ---
-# Source: webhook/templates/ca-sync.yaml
+# Source: cert-manager/templates/deployment.yaml
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  name: cert-manager
+  namespace: "cert-manager"
+  labels:
+    app: cert-manager
+    chart: cert-manager-v0.6.0-dev.6
+    release: cert-manager
+    heritage: Tiller
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cert-manager
+      release: cert-manager
+  template:
+    metadata:
+      labels:
+        app: cert-manager
+        release: cert-manager
+      annotations:
+    spec:
+      serviceAccountName: cert-manager
+      containers:
+        - name: cert-manager
+          image: "quay.io/jetstack/cert-manager-controller:canary"
+          imagePullPolicy: Always
+          args:
+          - --cluster-resource-namespace=$(POD_NAMESPACE)
+          - --leader-election-namespace=$(POD_NAMESPACE)
+          env:
+          - name: POD_NAMESPACE
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.namespace
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            
+
+---
+# Source: cert-manager/charts/webhook/templates/ca-sync.yaml
 ## This file contains a CronJob that runs every 24h to automatically update the
 ## caBundle set on the APIService and ValidatingWebhookConfiguration resource.
 ## This allows us to store the CA bundle in a Secret resource which is
@@ -167,12 +293,12 @@ spec:
 apiVersion: batch/v1beta1
 kind: CronJob
 metadata:
-  name: webhook-ca-sync
+  name: cert-manager-webhook-ca-sync
   namespace: "cert-manager"
   labels:
     app: webhook
     chart: webhook-v0.6.0-dev.3
-    release: webhook
+    release: cert-manager
     heritage: Tiller
 spec:
   schedule: "* * */24 * *"
@@ -183,7 +309,7 @@ spec:
           labels:
             app: ca-helper
         spec:
-          serviceAccountName: webhook-ca-sync
+          serviceAccountName: cert-manager-webhook-ca-sync
           restartPolicy: OnFailure
           containers:
           - name: ca-helper
@@ -204,17 +330,17 @@ spec:
           volumes:
           - name: config
             configMap:
-              name: webhook-ca-sync
+              name: cert-manager-webhook-ca-sync
 ---
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: webhook-ca-sync
+  name: cert-manager-webhook-ca-sync
   namespace: "cert-manager"
   labels:
     app: webhook
     chart: webhook-v0.6.0-dev.3
-    release: webhook
+    release: cert-manager
     heritage: Tiller
 spec:
   template:
@@ -222,7 +348,7 @@ spec:
       labels:
         app: ca-helper
     spec:
-      serviceAccountName: webhook-ca-sync
+      serviceAccountName: cert-manager-webhook-ca-sync
       restartPolicy: OnFailure
       containers:
       - name: ca-helper
@@ -243,17 +369,17 @@ spec:
       volumes:
       - name: config
         configMap:
-          name: webhook-ca-sync
+          name: cert-manager-webhook-ca-sync
 ---
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: webhook-ca-sync
+  name: cert-manager-webhook-ca-sync
   namespace: "cert-manager"
   labels:
     app: webhook
     chart: webhook-v0.6.0-dev.3
-    release: webhook
+    release: cert-manager
     heritage: Tiller
 data:
   config: |-
@@ -262,7 +388,7 @@ data:
             {
                 "name": "v1beta1.admission.certmanager.k8s.io",
                 "secret": {
-                    "name": "webhook-ca",
+                    "name": "cert-manager-webhook-ca",
                     "namespace": "cert-manager",
                     "key": "tls.crt"
                 }
@@ -270,7 +396,7 @@ data:
         ],
         "validatingWebhookConfigurations": [
             {
-                "name": "webhook",
+                "name": "cert-manager-webhook",
                 "file": {
                     "path": "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
                 }
@@ -281,34 +407,34 @@ data:
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: webhook-ca-sync
+  name: cert-manager-webhook-ca-sync
   namespace: "cert-manager"
   labels:
     app: webhook
     chart: webhook-v0.6.0-dev.3
-    release: webhook
+    release: cert-manager
     heritage: Tiller
 ---
 apiVersion: rbac.authorization.k8s.io/v1beta1
 kind: ClusterRole
 metadata:
-  name: webhook-ca-sync
+  name: cert-manager-webhook-ca-sync
   labels:
     app: webhook
     chart: webhook-v0.6.0-dev.3
-    release: webhook
+    release: cert-manager
     heritage: Tiller
 rules:
   - apiGroups: [""]
     resources: ["secrets"]
     verbs: ["get"]
     resourceNames:
-    - webhook-ca
+    - cert-manager-webhook-ca
   - apiGroups: ["admissionregistration.k8s.io"]
     resources: ["validatingwebhookconfigurations", "mutatingwebhookconfigurations"]
     verbs: ["get", "update"]
     resourceNames:
-    - webhook
+    - cert-manager-webhook
   - apiGroups: ["apiregistration.k8s.io"]
     resources: ["apiservices"]
     verbs: ["get", "update"]
@@ -318,23 +444,23 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1beta1
 kind: ClusterRoleBinding
 metadata:
-  name: webhook-ca-sync
+  name: cert-manager-webhook-ca-sync
   labels:
     app: webhook
     chart: webhook-v0.6.0-dev.3
-    release: webhook
+    release: cert-manager
     heritage: Tiller
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: webhook-ca-sync
+  name: cert-manager-webhook-ca-sync
 subjects:
-  - name: webhook-ca-sync
+  - name: cert-manager-webhook-ca-sync
     namespace: cert-manager
     kind: ServiceAccount
 
 ---
-# Source: webhook/templates/apiservice.yaml
+# Source: cert-manager/charts/webhook/templates/apiservice.yaml
 apiVersion: apiregistration.k8s.io/v1beta1
 kind: APIService
 metadata:
@@ -342,31 +468,31 @@ metadata:
   labels:
     app: webhook
     chart: webhook-v0.6.0-dev.3
-    release: webhook
+    release: cert-manager
     heritage: Tiller
 spec:
   group: admission.certmanager.k8s.io
   groupPriorityMinimum: 1000
   versionPriority: 15
   service:
-    name: webhook
+    name: cert-manager-webhook
     namespace: "cert-manager"
   version: v1beta1
 
 ---
-# Source: webhook/templates/pki.yaml
+# Source: cert-manager/charts/webhook/templates/pki.yaml
 ---
 # Create a selfsigned Issuer, in order to create a root CA certificate for
 # signing webhook serving certificates
 apiVersion: certmanager.k8s.io/v1alpha1
 kind: Issuer
 metadata:
-  name: webhook-selfsign
+  name: cert-manager-webhook-selfsign
   namespace: "cert-manager"
   labels:
     app: webhook
     chart: webhook-v0.6.0-dev.3
-    release: webhook
+    release: cert-manager
     heritage: Tiller
 spec:
   selfsigned: {}
@@ -377,17 +503,17 @@ spec:
 apiVersion: certmanager.k8s.io/v1alpha1
 kind: Certificate
 metadata:
-  name: webhook-ca
+  name: cert-manager-webhook-ca
   namespace: "cert-manager"
   labels:
     app: webhook
     chart: webhook-v0.6.0-dev.3
-    release: webhook
+    release: cert-manager
     heritage: Tiller
 spec:
-  secretName: webhook-ca
+  secretName: cert-manager-webhook-ca
   issuerRef:
-    name: webhook-selfsign
+    name: cert-manager-webhook-selfsign
   commonName: "ca.webhook.cert-manager"
   isCA: true
 
@@ -397,16 +523,16 @@ spec:
 apiVersion: certmanager.k8s.io/v1alpha1
 kind: Issuer
 metadata:
-  name: webhook-ca
+  name: cert-manager-webhook-ca
   namespace: "cert-manager"
   labels:
     app: webhook
     chart: webhook-v0.6.0-dev.3
-    release: webhook
+    release: cert-manager
     heritage: Tiller
 spec:
   ca:
-    secretName: webhook-ca
+    secretName: cert-manager-webhook-ca
 
 ---
 
@@ -414,32 +540,32 @@ spec:
 apiVersion: certmanager.k8s.io/v1alpha1
 kind: Certificate
 metadata:
-  name: webhook-webhook-tls
+  name: cert-manager-webhook-webhook-tls
   namespace: "cert-manager"
   labels:
     app: webhook
     chart: webhook-v0.6.0-dev.3
-    release: webhook
+    release: cert-manager
     heritage: Tiller
 spec:
-  secretName: webhook-webhook-tls
+  secretName: cert-manager-webhook-webhook-tls
   issuerRef:
-    name: webhook-ca
+    name: cert-manager-webhook-ca
   dnsNames:
-  - webhook
-  - webhook.cert-manager
-  - webhook.cert-manager.svc
+  - cert-manager-webhook
+  - cert-manager-webhook.cert-manager
+  - cert-manager-webhook.cert-manager.svc
 
 ---
-# Source: webhook/templates/validating-webhook.yaml
+# Source: cert-manager/charts/webhook/templates/validating-webhook.yaml
 apiVersion: admissionregistration.k8s.io/v1beta1
 kind: ValidatingWebhookConfiguration
 metadata:
-  name: webhook
+  name: cert-manager-webhook
   labels:
     app: webhook
     chart: webhook-v0.6.0-dev.3
-    release: webhook
+    release: cert-manager
     heritage: Tiller
 webhooks:
   - name: certificates.admission.certmanager.k8s.io

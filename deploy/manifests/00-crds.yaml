@@ -1,0 +1,91 @@
+## THIS FILE IS MANUALLY WRITTEN AND NOT AUTOMATICALLY GENERATED
+##
+## You should install this file with "kubectl apply -f" before installing the
+## cert-manager Helm chart or applying the "deploy/manifests/cert-manager.yaml"
+## file.
+##
+
+---
+
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  name: certificates.certmanager.k8s.io
+  labels:
+    app: cert-manager
+spec:
+  group: certmanager.k8s.io
+  version: v1alpha1
+  scope: Namespaced
+  names:
+    kind: Certificate
+    plural: certificates
+    shortNames:
+    - cert
+    - certs
+
+---
+
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  name: issuers.certmanager.k8s.io
+  labels:
+    app: cert-manager
+spec:
+  group: certmanager.k8s.io
+  version: v1alpha1
+  names:
+    kind: Issuer
+    plural: issuers
+  scope: Namespaced
+
+---
+
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  name: clusterissuers.certmanager.k8s.io
+  labels:
+    app: cert-manager
+spec:
+  group: certmanager.k8s.io
+  version: v1alpha1
+  names:
+    kind: ClusterIssuer
+    plural: clusterissuers
+  scope: Cluster
+
+---
+
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  name: orders.certmanager.k8s.io
+  labels:
+    app: cert-manager
+spec:
+  group: certmanager.k8s.io
+  version: v1alpha1
+  names:
+    kind: Order
+    plural: orders
+  scope: Namespaced
+
+---
+
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  name: challenges.certmanager.k8s.io
+  labels:
+    app: cert-manager
+spec:
+  group: certmanager.k8s.io
+  version: v1alpha1
+  names:
+    kind: Challenge
+    plural: challenges
+  scope: Namespaced
+
+---

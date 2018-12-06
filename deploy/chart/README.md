@@ -18,6 +18,11 @@ functionality in cert-manager can be found in the [getting started docs](https:/
 To install the chart with the release name `my-release`:
 
 ```console
+## IMPORTANT: you MUST install the cert-manager CRDs **before** installing the
+## cert-manager Helm chart
+$ kubectl apply \
+    -f https://raw.githubusercontent.com/jetstack/cert-manager/v0.6.0/deploy/manifests/00-crds.yaml
+
 $ helm install --name my-release stable/cert-manager
 ```
 
@@ -36,6 +41,12 @@ documentation:
 https://cert-manager.readthedocs.io/en/latest/reference/ingress-shim.html
 
 > **Tip**: List all releases using `helm list`
+
+## Upgrading the Chart
+
+Special considerations may be required when upgrading the Helm chart, and these
+are documented in our full [upgrading guide](https://cert-manager.readthedocs.io/en/latest/admin/upgrading/index.html).
+Please check here before perform upgrades!
 
 ## Uninstalling the Chart
 
@@ -57,10 +68,8 @@ The following table lists the configurable parameters of the cert-manager chart 
 | `image.tag` | Image tag | `canary` |
 | `image.pullPolicy` | Image pull policy | `Always` |
 | `replicaCount`  | Number of cert-manager replicas  | `1` |
-| `createCustomResource` | Create CRD/TPR with this release | `true` |
 | `clusterResourceNamespace` | Override the namespace used to store DNS provider credentials etc. for ClusterIssuer resources | Same namespace as cert-manager pod
 | `leaderElection.Namespace` | Override the namespace used to store the ConfigMap for leader election | Same namespace as cert-manager pod
-| `certificateResourceShortNames` | Custom aliases for Certificate CRD | `["cert", "certs"]` |
 | `extraArgs` | Optional flags for cert-manager | `[]` |
 | `extraEnv` | Optional environment variables for cert-manager | `[]` |
 | `rbac.create` | If `true`, create and use RBAC resources | `true` |
@@ -81,7 +90,7 @@ The following table lists the configurable parameters of the cert-manager chart 
 | `http_proxy` | Value of the `HTTP_PROXY` environment variable in the cert-manager pod | |
 | `https_proxy` | Value of the `HTTPS_PROXY` environment variable in the cert-manager pod | |
 | `no_proxy` | Value of the `NO_PROXY` environment variable in the cert-manager pod | |
-| `webhook.enabled` | Toggles whether the validating webhook component should be installed | `false` |
+| `webhook.enabled` | Toggles whether the validating webhook component should be installed | `true` |
 | `webhook.replicaCount` | Number of cert-manager webhook replicas | `1` |
 | `webhook.podAnnotations` | Annotations to add to the webhook pods | `{}` |
 | `webhook.extraArgs` | Optional flags for cert-manager webhook component | `[]` |

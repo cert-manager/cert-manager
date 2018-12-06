@@ -108,8 +108,7 @@ sh_test(
     srcs = ["verify-deploy-gen.sh"],
     data = [
         ":update-deploy-gen",
-        "//contrib:all-srcs",
-        "//hack/deploy:all-srcs",
+        "//deploy:all-srcs",
     ],
 )
 
@@ -164,7 +163,6 @@ filegroup(
         ":package-srcs",
         "//hack/bin:all-srcs",
         "//hack/boilerplate:all-srcs",
-        "//hack/deploy:all-srcs",
     ],
     tags = ["automanaged"],
     visibility = ["//visibility:public"],
