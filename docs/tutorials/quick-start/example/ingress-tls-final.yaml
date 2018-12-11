@@ -11,7 +11,7 @@ spec:
   tls:
   - hosts:
     - example.example.com
-    secretName: quickstart-example-tls
+    secretName: letsencrypt-prod
   rules:
   - host: example.example.com
     http:
