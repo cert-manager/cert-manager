@@ -19,6 +19,7 @@ load("@io_bazel_rules_docker//go:image.bzl", "go_image")
 def stamped_image(
     name, # use "image"
     base = None,
+    user = "1000",
     stamp = True,  # stamp by default, but allow overrides
     **kwargs):
   go_image(
@@ -33,5 +34,6 @@ def stamped_image(
   container_image(
       name = name,
       base = ":%s.app" % name,
+      user = user,
       stamp = stamp,
       **kwargs)
