@@ -529,7 +529,7 @@ and apply it:
 
 .. code-block:: shell
 
-   $ kubectl apply -f ingress.yaml
+   $ kubectl apply -f ingress-tls.yaml
    ingress.extensions "kuard" configured
 
 Cert-manager will read these annotations and use them to create a certificate,
