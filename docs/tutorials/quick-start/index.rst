@@ -182,7 +182,7 @@ Use ``helm`` to install an Nginx Ingress controller:
 
 It can take a minute or two for the cloud provider to provide and link a public
 IP address. When it is complete, you can see the external IP address using the
-``kubectl`` command:
+``kubectl`` command: ``kubectl --namespace default get services -o wide``.
 
 .. code-block:: shell
     :emphasize-lines: 4
