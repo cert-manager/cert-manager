@@ -64,3 +64,44 @@ func TestUpdateCertificateExpiry(t *testing.T) {
 		})
 	}
 }
+
+func TestUpdateCertificateIssuedLatency(t *testing.T) {
+	const metadata = `
+	# HELP certmanager_certificate_issued_latency_seconds The amount of time for a namespace secret to be issued after a certificate has been created.
+	# TYPE certmanager_certificate_issued_latency_seconds histogram
+`
+
+	type testT struct {
+		expected string
+		latency  time.Duration
+	}
+	tests := map[string]testT{
+		"latency is calculated correctly": {
+			expected: `
+	certmanager_certificate_issued_latency_seconds_bucket{le="30"} 0
+	certmanager_certificate_issued_latency_seconds_bucket{le="60"} 1
+	certmanager_certificate_issued_latency_seconds_bucket{le="120"} 1
+	certmanager_certificate_issued_latency_seconds_bucket{le="180"} 1
+	certmanager_certificate_issued_latency_seconds_bucket{le="240"} 1
+	certmanager_certificate_issued_latency_seconds_bucket{le="300"} 1
+	certmanager_certificate_issued_latency_seconds_bucket{le="+Inf"} 1
+	certmanager_certificate_issued_latency_seconds_sum 60
+	certmanager_certificate_issued_latency_seconds_count 1
+`,
+			latency: time.Duration(60000000000),
+		},
+	}
+	for n, test := range tests {
+		t.Run(n, func(t *testing.T) {
+			Default.UpdateCertificateIssuedLatency(test.latency)
+
+			if err := testutil.CollectAndCompare(
+				CertificateIssuedLatency,
+				strings.NewReader(metadata+test.expected),
+				"certmanager_certificate_issued_latency_seconds",
+			); err != nil {
+				t.Errorf("unexpected collecting result:\n%s", err)
+			}
+		})
+	}
+}

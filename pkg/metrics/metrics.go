@@ -86,6 +86,17 @@ var ACMEClientRequestDurationSeconds = prometheus.NewSummaryVec(
 	[]string{"scheme", "host", "path", "method", "status"},
 )
 
+// CertificateIssuedLatency is a Prometheus histogram to collect duration
+// betwween initial certificate requests and issuance.
+var CertificateIssuedLatency = prometheus.NewHistogram(
+	prometheus.HistogramOpts{
+		Namespace: namespace,
+		Name:      "certificate_issued_latency_seconds",
+		Buckets:   []float64{30, 60, 120, 180, 240, 300},
+		Help:      "The amount of time for a namespace secret to be issued after a certificate has been created.",
+	},
+)
+
 type Metrics struct {
 	http.Server
 
@@ -94,6 +105,7 @@ type Metrics struct {
 	CertificateExpiryTimeSeconds     *prometheus.GaugeVec
 	ACMEClientRequestDurationSeconds *prometheus.SummaryVec
 	ACMEClientRequestCount           *prometheus.CounterVec
+	CertificateIssuedLatency         *prometheus.Histogram
 }
 
 func New() *Metrics {
@@ -113,6 +125,7 @@ func New() *Metrics {
 		CertificateExpiryTimeSeconds:     CertificateExpiryTimeSeconds,
 		ACMEClientRequestDurationSeconds: ACMEClientRequestDurationSeconds,
 		ACMEClientRequestCount:           ACMEClientRequestCount,
+		CertificateIssuedLatency:         &CertificateIssuedLatency,
 	}
 
 	router.Handle("/metrics", promhttp.HandlerFor(s.registry, promhttp.HandlerOpts{}))
@@ -139,6 +152,7 @@ func (m *Metrics) Start(stopCh <-chan struct{}) {
 	m.registry.MustRegister(m.CertificateExpiryTimeSeconds)
 	m.registry.MustRegister(m.ACMEClientRequestDurationSeconds)
 	m.registry.MustRegister(m.ACMEClientRequestCount)
+	m.registry.MustRegister(*m.CertificateIssuedLatency)
 
 	go func() {
 
@@ -176,4 +190,10 @@ func updateX509Expiry(name, namespace string, cert *x509.Certificate) {
 	CertificateExpiryTimeSeconds.With(prometheus.Labels{
 		"name":      name,
 		"namespace": namespace}).Set(float64(expiryTime.Unix()))
+}
+
+// UpdateCertificateIssuedLatency updates the amount of time for a namespace secret to be issued after a certificate has been created.
+func (m *Metrics) UpdateCertificateIssuedLatency(latency time.Duration) {
+	latencyInSeconds := float64(latency) / 1000000000
+	CertificateIssuedLatency.Observe(latencyInSeconds)
 }

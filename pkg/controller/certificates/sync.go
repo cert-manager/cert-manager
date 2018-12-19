@@ -349,6 +349,7 @@ func (c *Controller) updateSecret(crt *v1alpha1.Certificate, namespace string, c
 // return an error on failure. If retrieval is succesful, the certificate data
 // and private key will be stored in the named secret
 func (c *Controller) issue(ctx context.Context, issuer issuer.Interface, crt *v1alpha1.Certificate) error {
+	startTime := time.Now()
 	resp, err := issuer.Issue(ctx, crt)
 	if err != nil {
 		glog.Infof("Error issuing certificate for %s/%s: %v", crt.Namespace, crt.Name, err)
@@ -365,6 +366,9 @@ func (c *Controller) issue(ctx context.Context, issuer issuer.Interface, crt *v1
 		c.Recorder.Event(crt, corev1.EventTypeWarning, errorSavingCertificate, s)
 		return err
 	}
+
+	latency := time.Since(startTime)
+	c.metrics.UpdateCertificateIssuedLatency(latency)
 
 	if len(resp.Certificate) > 0 {
 		c.Recorder.Event(crt, corev1.EventTypeNormal, successCertificateIssued, "Certificate issued successfully")
