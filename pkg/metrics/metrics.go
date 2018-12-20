@@ -93,7 +93,7 @@ var CertificateIssuedLatency = prometheus.NewHistogram(
 		Namespace: namespace,
 		Name:      "certificate_issued_latency_seconds",
 		Buckets:   []float64{30, 60, 120, 180, 240, 300},
-		Help:      "The amount of time for a namespace secret to be issued after a certificate has been created.",
+		Help:      "The amount of time for a certificate to be issued in the case of nonexistance, invalid spec match, or expiration.",
 	},
 )
 

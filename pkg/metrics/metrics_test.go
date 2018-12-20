@@ -67,7 +67,7 @@ func TestUpdateCertificateExpiry(t *testing.T) {
 
 func TestUpdateCertificateIssuedLatency(t *testing.T) {
 	const metadata = `
-	# HELP certmanager_certificate_issued_latency_seconds The amount of time for a namespace secret to be issued after a certificate has been created.
+	# HELP certmanager_certificate_issued_latency_seconds The amount of time for a certificate to be issued in the case of nonexistance, invalid spec match, or expiration.
 	# TYPE certmanager_certificate_issued_latency_seconds histogram
 `
 
