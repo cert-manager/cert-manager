@@ -1,3 +1,13 @@
+// +skip_license_check
+
+/*
+This file contains portions of code directly taken from the 'xenolf/lego' project.
+A copy of the license for this code can be found in the file named LICENSE in
+this directory.
+*/
+
+// Package AlibabaDNS implements a DNS provider for solving the DNS-01 challenge
+// using Alibaba Cloud DNS.
 package alibabadns
 
 import (
@@ -5,7 +15,7 @@ import (
 	"os"
 )
 
-// 定义一个实体
+// DNSProvider implements the util.ChallengeProvider interface
 type DNSProvider struct {
 	dnsClient        *alidns.Client
 	dns01Nameservers []string
@@ -20,7 +30,8 @@ func NewDNSProvider(dns01Nameservers []string) (*DNSProvider, error) {
 	return NewDNSProviderCredentials(accessKeyID, accessKeySecret, dns01Nameservers)
 }
 
-// 新建一个请求DNS
+// NewDNSProviderCredentials returns a DNSProvider instance configured for the AlibabaDNS
+// DNS service using static credentials from its parameters
 func NewDNSProviderCredentials(accessKeyID, accessKeySecret string, dns01Nameservers []string) (*DNSProvider, error) {
 
 	aliDNSClient, err := alidns.NewClientWithAccessKey(
@@ -41,7 +52,7 @@ func (a *DNSProvider) Present(domain, fqdn, value string) error {
 	return a.setTxtRecord(domain, fqdn, value)
 }
 
-// 设置DNS解析
+// Set the Txt Record
 func (a *DNSProvider) setTxtRecord(domain, fqdn, value string) error {
 	domainRecord := alidns.CreateAddDomainRecordRequest()
 	domainRecord.Type = "TXT"
