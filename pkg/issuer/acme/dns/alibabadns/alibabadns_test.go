@@ -35,7 +35,7 @@ func TestLiveAlibabaDnsPresent(t *testing.T) {
 }
 
 //
-func TestLiveAzureDnsCleanUp(t *testing.T) {
+func TestLiveAlibabaDnsCleanUp(t *testing.T) {
 	if !alibabaLiveTest {
 		t.Skip("skipping live test")
 	}

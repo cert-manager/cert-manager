@@ -24,8 +24,8 @@ func NewDNSProvider(dns01Nameservers []string) (*DNSProvider, error) {
 func NewDNSProviderCredentials(accessKeyID, accessKeySecret string, dns01Nameservers []string) (*DNSProvider, error) {
 
 	aliDNSClient, err := alidns.NewClientWithAccessKey(
-		"cn-hangzhou",   // Your Region ID
-		accessKeyID,     // Your AccessKey ID
+		"cn-hangzhou", // Your Region ID
+		accessKeyID,   // Your AccessKey ID
 		accessKeySecret) // Your AccessKey Secret
 	if err != nil {
 		return &DNSProvider{}, nil
@@ -43,12 +43,11 @@ func (a *DNSProvider) Present(domain, fqdn, value string) error {
 
 // 设置DNS解析
 func (a *DNSProvider) setTxtRecord(domain, fqdn, value string) error {
-	domainRecord := &alidns.AddDomainRecordRequest{
-		DomainName: domain,
-		RR:         fqdn,
-		Type:       "TXT",
-		Value:      value,
-	}
+	domainRecord := alidns.CreateAddDomainRecordRequest()
+	domainRecord.Type = "TXT"
+	domainRecord.RR = fqdn
+	domainRecord.Value = value
+	domainRecord.DomainName = domain
 	_, err := a.dnsClient.AddDomainRecord(domainRecord)
 	return err
 }
@@ -60,11 +59,10 @@ func (a *DNSProvider) CleanUp(domain, fqdn, value string) error {
 
 // remove TXT record
 func (a *DNSProvider) removeTxt(domain, fqdn string) error {
-	removeRecord := &alidns.DeleteSubDomainRecordsRequest{
-		DomainName: domain,
-		RR:         fqdn,
-		Type:       "TXT",
-	}
+	removeRecord := alidns.CreateDeleteSubDomainRecordsRequest()
+	removeRecord.DomainName = domain
+	removeRecord.RR = fqdn
+	removeRecord.Type = "TXT"
 	_, err := a.dnsClient.DeleteSubDomainRecords(removeRecord)
 	return err
 }
