@@ -19,6 +19,7 @@ package dns
 import (
 	"context"
 	"fmt"
+	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/alidns"
 	"strings"
 	"time"
 
@@ -59,6 +60,7 @@ type dnsProviderConstructors struct {
 	acmeDNS      func(host string, accountJson []byte, dns01Nameservers []string) (*acmedns.DNSProvider, error)
 	rfc2136      func(nameserver, tsigAlgorithm, tsigKeyName, tsigSecret string, dns01Nameservers []string) (*rfc2136.DNSProvider, error)
 	digitalOcean func(token string, dns01Nameservers []string) (*digitalocean.DNSProvider, error)
+	alidns       func(accessKeyID, accessKeySecret string, dns01Namespaces []string) (*alidns.DNSProvider, error)
 }
 
 // Solver is a solver for the acme dns01 challenge.
@@ -338,6 +340,27 @@ func (s *Solver) solverForChallenge(issuer v1alpha1.GenericIssuer, ch *v1alpha1.
 		if err != nil {
 			return nil, nil, fmt.Errorf("error instantiating rfc2136 challenge solver: %s", err.Error())
 		}
+	case providerConfig.Alidns != nil:
+		var secret string
+		if len(providerConfig.Alidns.AccessKeySecret.Name) > 0 {
+			accessKeySecret, err := s.secretLister.Secrets(resourceNamespace).Get(providerConfig.Alidns.AccessKeySecret.Name)
+			if err != nil {
+				return nil, nil, fmt.Errorf("error getting alibaba dns service account: %s", err.Error())
+			}
+			secretBytes, ok := accessKeySecret.Data[providerConfig.Alidns.AccessKeySecret.Key]
+			if !ok {
+				return nil, nil, fmt.Errorf("error getting alibaba dns secret key: key '%s' not found in secret", providerConfig.Alidns.AccessKeySecret.Key)
+			}
+			secret = string(secretBytes)
+		}
+		impl, err = s.dnsProviderConstructors.alidns(
+			providerConfig.Alidns.AccessKeyID,
+			secret,
+			s.DNS01Nameservers,
+		)
+		if err != nil {
+			return nil, nil, fmt.Errorf("error instantiating rfc2136 challenge solver: %s", err.Error())
+		}
 	default:
 		return nil, nil, fmt.Errorf("no dns provider config specified for provider %q", providerName)
 	}
@@ -359,6 +382,7 @@ func NewSolver(ctx *controller.Context) *Solver {
 			acmedns.NewDNSProviderHostBytes,
 			rfc2136.NewDNSProviderCredentials,
 			digitalocean.NewDNSProviderCredentials,
+			alidns.NewDNSProviderCredentials,
 		},
 	}
 }
