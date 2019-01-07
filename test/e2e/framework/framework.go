@@ -115,6 +115,8 @@ func (f *Framework) BeforeEach() {
 	f.Namespace, err = f.CreateKubeNamespace(f.BaseName)
 	Expect(err).NotTo(HaveOccurred())
 
+	By("Using the namespace " + f.Namespace.Name)
+
 	By("Building a ResourceQuota api object")
 	_, err = f.CreateKubeResourceQuota()
 	Expect(err).NotTo(HaveOccurred())
