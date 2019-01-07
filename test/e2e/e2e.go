@@ -66,7 +66,7 @@ var _ = ginkgo.SynchronizedAfterSuite(func() {},
 		}
 
 		for k, v := range globalLogs {
-			outPath := path.Join(framework.DefaultConfig.Ginkgo.ReportDirectory, k)
+			outPath := path.Join(framework.DefaultConfig.Ginkgo.ReportDirectory, "logs", k)
 			// Create a directory for the file if needed
 			err := os.MkdirAll(path.Dir(outPath), 0755)
 			if err != nil {
