@@ -52,7 +52,7 @@ func CertificateOnlyValidForDomains(cert *x509.Certificate, commonName string, d
 }
 
 func WaitForIssuerStatusFunc(client clientset.IssuerInterface, name string, fn func(*v1alpha1.Issuer) (bool, error)) error {
-	return wait.PollImmediate(500*time.Millisecond, wait.ForeverTestTimeout,
+	return wait.PollImmediate(500*time.Millisecond, time.Minute,
 		func() (bool, error) {
 			issuer, err := client.Get(name, metav1.GetOptions{})
 			if err != nil {
@@ -65,7 +65,7 @@ func WaitForIssuerStatusFunc(client clientset.IssuerInterface, name string, fn f
 // WaitForIssuerCondition waits for the status of the named issuer to contain
 // a condition whose type and status matches the supplied one.
 func WaitForIssuerCondition(client clientset.IssuerInterface, name string, condition v1alpha1.IssuerCondition) error {
-	pollErr := wait.PollImmediate(500*time.Millisecond, wait.ForeverTestTimeout,
+	pollErr := wait.PollImmediate(500*time.Millisecond, time.Minute,
 		func() (bool, error) {
 			glog.V(5).Infof("Waiting for issuer %v condition %#v", name, condition)
 			issuer, err := client.Get(name, metav1.GetOptions{})
@@ -103,7 +103,7 @@ func wrapErrorWithIssuerStatusCondition(client clientset.IssuerInterface, pollEr
 // WaitForClusterIssuerCondition waits for the status of the named issuer to contain
 // a condition whose type and status matches the supplied one.
 func WaitForClusterIssuerCondition(client clientset.ClusterIssuerInterface, name string, condition v1alpha1.IssuerCondition) error {
-	pollErr := wait.PollImmediate(500*time.Millisecond, wait.ForeverTestTimeout,
+	pollErr := wait.PollImmediate(500*time.Millisecond, time.Minute,
 		func() (bool, error) {
 			glog.V(5).Infof("Waiting for clusterissuer %v condition %#v", name, condition)
 			issuer, err := client.Get(name, metav1.GetOptions{})
@@ -327,7 +327,7 @@ func WaitForCertificateToExist(client clientset.CertificateInterface, name strin
 // WaitForCRDToNotExist waits for the CRD with the given name to no
 // longer exist.
 func WaitForCRDToNotExist(client apiextcs.CustomResourceDefinitionInterface, name string) error {
-	return wait.PollImmediate(500*time.Millisecond, wait.ForeverTestTimeout,
+	return wait.PollImmediate(500*time.Millisecond, time.Minute,
 		func() (bool, error) {
 			glog.V(5).Infof("Waiting for CRD %v to not exist", name)
 			_, err := client.Get(name, metav1.GetOptions{})

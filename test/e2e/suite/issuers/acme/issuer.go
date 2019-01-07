@@ -28,7 +28,7 @@ import (
 	"github.com/jetstack/cert-manager/test/e2e/framework/addon"
 	"github.com/jetstack/cert-manager/test/e2e/framework/addon/pebble"
 	"github.com/jetstack/cert-manager/test/e2e/framework/addon/tiller"
-	"github.com/jetstack/cert-manager/test/util"
+	"github.com/jetstack/cert-manager/test/e2e/util"
 )
 
 const invalidACMEURL = "http://not-a-real-acme-url.com"
