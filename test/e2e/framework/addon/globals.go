@@ -19,7 +19,6 @@ package addon
 import (
 	"fmt"
 
-	"github.com/golang/glog"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 
 	"github.com/jetstack/cert-manager/test/e2e/framework/addon/base"
@@ -27,6 +26,7 @@ import (
 	"github.com/jetstack/cert-manager/test/e2e/framework/addon/nginxingress"
 	"github.com/jetstack/cert-manager/test/e2e/framework/addon/tiller"
 	"github.com/jetstack/cert-manager/test/e2e/framework/config"
+	"github.com/jetstack/cert-manager/test/e2e/framework/log"
 )
 
 type Addon interface {
@@ -150,7 +150,7 @@ func GlobalLogs() (map[string]string, error) {
 // all global addons are cleaned up after a run.
 func DeprovisionGlobals(cfg *config.Config) error {
 	if !cfg.Cleanup {
-		glog.Infof("Skipping deprovisioning as cleanup set to false.")
+		log.Logf("Skipping deprovisioning as cleanup set to false.")
 		return nil
 	}
 	var errs []error

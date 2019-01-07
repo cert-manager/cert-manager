@@ -26,7 +26,6 @@ import (
 	"time"
 
 	intscheme "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/scheme"
-	"github.com/onsi/ginkgo"
 	"k8s.io/api/core/v1"
 	extv1beta1 "k8s.io/api/extensions/v1beta1"
 	apiextcs "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/typed/apiextensions/v1beta1"
@@ -42,6 +41,7 @@ import (
 	clientset "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/typed/certmanager/v1alpha1"
 	"github.com/jetstack/cert-manager/pkg/util"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
+	"github.com/jetstack/cert-manager/test/e2e/framework/log"
 )
 
 func CertificateOnlyValidForDomains(cert *x509.Certificate, commonName string, dnsNames ...string) bool {
@@ -67,7 +67,7 @@ func WaitForIssuerStatusFunc(client clientset.IssuerInterface, name string, fn f
 func WaitForIssuerCondition(client clientset.IssuerInterface, name string, condition v1alpha1.IssuerCondition) error {
 	pollErr := wait.PollImmediate(500*time.Millisecond, time.Minute,
 		func() (bool, error) {
-			ginkgo.GinkgoWriter.Write([]byte(fmt.Sprintf("Waiting for issuer %v condition %#v", name, condition)))
+			log.Logf("Waiting for issuer %v condition %#v", name, condition)
 			issuer, err := client.Get(name, metav1.GetOptions{})
 			if nil != err {
 				return false, fmt.Errorf("error getting Issuer %q: %v", name, err)
@@ -105,7 +105,7 @@ func wrapErrorWithIssuerStatusCondition(client clientset.IssuerInterface, pollEr
 func WaitForClusterIssuerCondition(client clientset.ClusterIssuerInterface, name string, condition v1alpha1.IssuerCondition) error {
 	pollErr := wait.PollImmediate(500*time.Millisecond, time.Minute,
 		func() (bool, error) {
-			ginkgo.GinkgoWriter.Write([]byte(fmt.Sprintf("Waiting for clusterissuer %v condition %#v", name, condition)))
+			log.Logf("Waiting for clusterissuer %v condition %#v", name, condition)
 			issuer, err := client.Get(name, metav1.GetOptions{})
 			if nil != err {
 				return false, fmt.Errorf("error getting ClusterIssuer %v: %v", name, err)
@@ -143,7 +143,7 @@ func wrapErrorWithClusterIssuerStatusCondition(client clientset.ClusterIssuerInt
 func WaitForCertificateCondition(client clientset.CertificateInterface, name string, condition v1alpha1.CertificateCondition, timeout time.Duration) error {
 	pollErr := wait.PollImmediate(500*time.Millisecond, timeout,
 		func() (bool, error) {
-			ginkgo.GinkgoWriter.Write([]byte(fmt.Sprintf("Waiting for Certificate %v condition %#v", name, condition)))
+			log.Logf("Waiting for Certificate %v condition %#v", name, condition)
 			certificate, err := client.Get(name, metav1.GetOptions{})
 			if nil != err {
 				return false, fmt.Errorf("error getting Certificate %v: %v", name, err)
@@ -160,7 +160,7 @@ func WaitForCertificateCondition(client clientset.CertificateInterface, name str
 func WaitForCertificateEvent(client kubernetes.Interface, cert *v1alpha1.Certificate, reason string, timeout time.Duration) error {
 	return wait.PollImmediate(500*time.Millisecond, timeout,
 		func() (bool, error) {
-			ginkgo.GinkgoWriter.Write([]byte(fmt.Sprintf("Waiting for Certificate event %v reason %#v", cert.Name, reason)))
+			log.Logf("Waiting for Certificate event %v reason %#v", cert.Name, reason)
 			evts, err := client.Core().Events(cert.Namespace).Search(intscheme.Scheme, cert)
 			if err != nil {
 				return false, fmt.Errorf("error getting Certificate %v: %v", cert.Name, err)
@@ -206,7 +206,7 @@ func wrapErrorWithCertificateStatusCondition(client clientset.CertificateInterfa
 func WaitCertificateIssuedValid(certClient clientset.CertificateInterface, secretClient corecs.SecretInterface, name string, timeout time.Duration) error {
 	return wait.PollImmediate(time.Second, timeout,
 		func() (bool, error) {
-			ginkgo.GinkgoWriter.Write([]byte(fmt.Sprintf("Waiting for Certificate %v to be ready", name)))
+			log.Logf("Waiting for Certificate %v to be ready", name)
 			certificate, err := certClient.Get(name, metav1.GetOptions{})
 			if err != nil {
 				return false, fmt.Errorf("error getting Certificate %v: %v", name, err)
@@ -218,7 +218,7 @@ func WaitCertificateIssuedValid(certClient clientset.CertificateInterface, secre
 			if !isReady {
 				return false, nil
 			}
-			ginkgo.GinkgoWriter.Write([]byte(fmt.Sprintf("Getting the TLS certificate Secret resource")))
+			log.Logf("Getting the TLS certificate Secret resource")
 			secret, err := secretClient.Get(certificate.Spec.SecretName, metav1.GetOptions{})
 			if err != nil {
 				if apierrors.IsNotFound(err) {
@@ -228,13 +228,13 @@ func WaitCertificateIssuedValid(certClient clientset.CertificateInterface, secre
 				return false, err
 			}
 			if !(len(secret.Data) == 2 || len(secret.Data) == 3) {
-				ginkgo.GinkgoWriter.Write([]byte(fmt.Sprintf("Expected 2 keys in certificate secret, but there was %d", len(secret.Data))))
+				log.Logf("Expected 2 keys in certificate secret, but there was %d", len(secret.Data))
 				return false, nil
 			}
 
 			keyBytes, ok := secret.Data[v1.TLSPrivateKeyKey]
 			if !ok {
-				ginkgo.GinkgoWriter.Write([]byte(fmt.Sprintf("No private key data found for Certificate %q (secret %q)", name, certificate.Spec.SecretName)))
+				log.Logf("No private key data found for Certificate %q (secret %q)", name, certificate.Spec.SecretName)
 				return false, nil
 			}
 			key, err := pki.DecodePrivateKeyBytes(keyBytes)
@@ -248,13 +248,13 @@ func WaitCertificateIssuedValid(certClient clientset.CertificateInterface, secre
 				v1alpha1.RSAKeyAlgorithm:
 				_, ok := key.(*rsa.PrivateKey)
 				if !ok {
-					ginkgo.GinkgoWriter.Write([]byte(fmt.Sprintf("Expected private key of type RSA, but it was: %T", key)))
+					log.Logf("Expected private key of type RSA, but it was: %T", key)
 					return false, nil
 				}
 			case v1alpha1.ECDSAKeyAlgorithm:
 				_, ok := key.(*ecdsa.PrivateKey)
 				if !ok {
-					ginkgo.GinkgoWriter.Write([]byte(fmt.Sprintf("Expected private key of type ECDSA, but it was: %T", key)))
+					log.Logf("Expected private key of type ECDSA, but it was: %T", key)
 					return false, nil
 				}
 			default:
@@ -270,7 +270,7 @@ func WaitCertificateIssuedValid(certClient clientset.CertificateInterface, secre
 
 			certBytes, ok := secret.Data[v1.TLSCertKey]
 			if !ok {
-				ginkgo.GinkgoWriter.Write([]byte(fmt.Sprintf("No certificate data found for Certificate %q (secret %q)", name, certificate.Spec.SecretName)))
+				log.Logf("No certificate data found for Certificate %q (secret %q)", name, certificate.Spec.SecretName)
 				return false, nil
 			}
 
@@ -279,16 +279,16 @@ func WaitCertificateIssuedValid(certClient clientset.CertificateInterface, secre
 				return false, err
 			}
 			if expectedCN != cert.Subject.CommonName || !util.EqualUnsorted(cert.DNSNames, expectedDNSNames) || !(len(cert.Subject.Organization) == 0 || util.EqualUnsorted(cert.Subject.Organization, expectedOrganization)) {
-				ginkgo.GinkgoWriter.Write([]byte(fmt.Sprintf("Expected certificate valid for CN %q, O %v, dnsNames %v but got a certificate valid for CN %q, O %v, dnsNames %v", expectedCN, expectedOrganization, expectedDNSNames, cert.Subject.CommonName, cert.Subject.Organization, cert.DNSNames)))
+				log.Logf("Expected certificate valid for CN %q, O %v, dnsNames %v but got a certificate valid for CN %q, O %v, dnsNames %v", expectedCN, expectedOrganization, expectedDNSNames, cert.Subject.CommonName, cert.Subject.Organization, cert.DNSNames)
 				return false, nil
 			}
 
 			if certificate.Status.NotAfter == nil {
-				ginkgo.GinkgoWriter.Write([]byte(fmt.Sprintf("No certificate expiration found for Certificate %q", name)))
+				log.Logf("No certificate expiration found for Certificate %q", name)
 				return false, nil
 			}
 			if !cert.NotAfter.Equal(certificate.Status.NotAfter.Time) {
-				ginkgo.GinkgoWriter.Write([]byte(fmt.Sprintf("Expected certificate expiry date to be %v, but got %v", certificate.Status.NotAfter, cert.NotAfter)))
+				log.Logf("Expected certificate expiry date to be %v, but got %v", certificate.Status.NotAfter, cert.NotAfter)
 				return false, nil
 			}
 
@@ -310,7 +310,7 @@ func WaitCertificateIssuedValid(certClient clientset.CertificateInterface, secre
 func WaitForCertificateToExist(client clientset.CertificateInterface, name string, timeout time.Duration) error {
 	return wait.PollImmediate(500*time.Millisecond, timeout,
 		func() (bool, error) {
-			ginkgo.GinkgoWriter.Write([]byte(fmt.Sprintf("Waiting for Certificate %v to exist", name)))
+			log.Logf("Waiting for Certificate %v to exist", name)
 			_, err := client.Get(name, metav1.GetOptions{})
 			if errors.IsNotFound(err) {
 				return false, nil
@@ -329,7 +329,7 @@ func WaitForCertificateToExist(client clientset.CertificateInterface, name strin
 func WaitForCRDToNotExist(client apiextcs.CustomResourceDefinitionInterface, name string) error {
 	return wait.PollImmediate(500*time.Millisecond, time.Minute,
 		func() (bool, error) {
-			ginkgo.GinkgoWriter.Write([]byte(fmt.Sprintf("Waiting for CRD %v to not exist", name)))
+			log.Logf("Waiting for CRD %v to not exist", name)
 			_, err := client.Get(name, metav1.GetOptions{})
 			if nil == err {
 				return false, nil
