@@ -60,6 +60,8 @@ var _ = ginkgo.SynchronizedAfterSuite(func() {},
 			ginkgo.GinkgoWriter.Write([]byte("Failed to retrieve global addon logs: " + err.Error()))
 		}
 
+		ginkgo.GinkgoWriter.Write([]byte(globalLogs))
+
 		ginkgo.By("Cleaning up the provisioned globals")
 		err = addon.DeprovisionGlobals(cfg)
 		if err != nil {
