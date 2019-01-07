@@ -113,6 +113,6 @@ func (p *Certmanager) SupportsGlobal() bool {
 	return true
 }
 
-func (p *Certmanager) Logs() (string, error) {
+func (p *Certmanager) Logs() (map[string]string, error) {
 	return p.chart.Logs()
 }

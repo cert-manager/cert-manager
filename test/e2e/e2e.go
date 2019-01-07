@@ -17,6 +17,11 @@ limitations under the License.
 package e2e
 
 import (
+	"fmt"
+	"io/ioutil"
+	"os"
+	"path"
+
 	"github.com/onsi/ginkgo"
 
 	"github.com/jetstack/cert-manager/test/e2e/framework"
@@ -49,7 +54,7 @@ var _ = ginkgo.SynchronizedBeforeSuite(func() []byte {
 	}
 })
 
-var globalLogs string
+var globalLogs map[string]string
 
 var _ = ginkgo.SynchronizedAfterSuite(func() {},
 	func() {
@@ -60,7 +65,21 @@ var _ = ginkgo.SynchronizedAfterSuite(func() {},
 			ginkgo.GinkgoWriter.Write([]byte("Failed to retrieve global addon logs: " + err.Error()))
 		}
 
-		ginkgo.GinkgoWriter.Write([]byte(globalLogs))
+		for k, v := range globalLogs {
+			outPath := path.Join(framework.DefaultConfig.Ginkgo.ReportDirectory, k)
+			// Create a directory for the file if needed
+			err := os.MkdirAll(path.Dir(outPath), 0755)
+			if err != nil {
+				ginkgo.GinkgoWriter.Write([]byte(fmt.Sprintf("Failed to create directory for logs: %v", err)))
+				continue
+			}
+
+			err = ioutil.WriteFile(outPath, []byte(v), 0644)
+			if err != nil {
+				ginkgo.GinkgoWriter.Write([]byte(fmt.Sprintf("Failed to write log file: %v", err)))
+				continue
+			}
+		}
 
 		ginkgo.By("Cleaning up the provisioned globals")
 		err = addon.DeprovisionGlobals(cfg)

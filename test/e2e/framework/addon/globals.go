@@ -18,7 +18,6 @@ package addon
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/golang/glog"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
@@ -120,26 +119,30 @@ func SetupGlobals(cfg *config.Config) error {
 }
 
 type loggableAddon interface {
-	Logs() (string, error)
+	Logs() (map[string]string, error)
 }
 
-func GlobalLogs() (string, error) {
-	b := &strings.Builder{}
+func GlobalLogs() (map[string]string, error) {
+	out := make(map[string]string)
 	for _, p := range provisioned {
-		if p, ok := p.(loggableAddon); ok {
-			l, err := p.Logs()
+		p, ok := p.(loggableAddon)
+		if !ok {
+			continue
+		}
 
-			if err != nil {
-				return "", err
-			}
+		l, err := p.Logs()
+		if err != nil {
+			return nil, err
+		}
 
-			_, err = b.WriteString(fmt.Sprintf("Got pods logs for addon: \n%s\n\n", l))
-			if err != nil {
-				return "", err
-			}
+		// TODO: namespace logs from each addon to their addon type to avoid
+		// conflicts. Realistically, it's unlikely a conflict will occur though
+		// so this will probably be fine for now.
+		for k, v := range l {
+			out[k] = v
 		}
 	}
-	return b.String(), nil
+	return out, nil
 }
 
 // DeprovisionGlobals deprovisions all of the global addons.

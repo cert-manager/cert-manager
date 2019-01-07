@@ -21,7 +21,7 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
-	"strings"
+	"path"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -247,15 +247,17 @@ func (c *Chart) SupportsGlobal() bool {
 	return true
 }
 
-func (c *Chart) Logs() (string, error) {
+func (c *Chart) Logs() (map[string]string, error) {
 	kc := c.Tiller.Base.Details().KubeClient
 	pods, err := kc.CoreV1().Pods(c.Namespace).List(metav1.ListOptions{LabelSelector: "release=" + c.ReleaseName})
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	builder := strings.Builder{}
+	out := make(map[string]string)
 	for _, pod := range pods.Items {
+		// Only grab logs from the first container in the pod
+		// TODO: grab logs from all containers
 		containerName := pod.Spec.Containers[0].Name
 		resp := kc.CoreV1().Pods(pod.Namespace).GetLogs(pod.Name, &corev1.PodLogOptions{
 			Container: containerName,
@@ -263,22 +265,16 @@ func (c *Chart) Logs() (string, error) {
 
 		err := resp.Error()
 		if err != nil {
-			return "", err
+			return nil, err
 		}
 
 		logs, err := resp.Raw()
 		if err != nil {
-			return "", err
+			return nil, err
 		}
 
-		_, err = builder.WriteString(fmt.Sprintf("Pod logs for %s:\n", pod.Name))
-		if err != nil {
-			return "", err
-		}
-		_, err = builder.Write(logs)
-		if err != nil {
-			return "", err
-		}
+		outPath := path.Join(c.Namespace, pod.Name)
+		out[outPath] = string(logs)
 	}
-	return builder.String(), nil
+	return out, nil
 }
