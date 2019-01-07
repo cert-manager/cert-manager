@@ -1,4 +1,6 @@
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
+load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_file")
+load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
 load("@bazel_tools//tools/build_defs/repo:git.bzl", "new_git_repository")
 
 ## Load rules_go and dependencies
@@ -73,7 +75,7 @@ container_pull(
 )
 
 ## Fetch helm for use in template generation and testing
-new_http_archive(
+http_archive(
     name = "helm_darwin",
     sha256 = "7c4e6bfbc211d6b984ffb4fa490ce9ac112cc4b9b8d859ece27045b8514c1ed1",
     urls = ["https://storage.googleapis.com/kubernetes-helm/helm-v2.10.0-darwin-amd64.tar.gz"],
@@ -89,7 +91,7 @@ filegroup(
 """,
 )
 
-new_http_archive(
+http_archive(
     name = "helm_linux",
     sha256 = "0fa2ed4983b1e4a3f90f776d08b88b0c73fd83f305b5b634175cb15e61342ffe",
     urls = ["https://storage.googleapis.com/kubernetes-helm/helm-v2.10.0-linux-amd64.tar.gz"],
