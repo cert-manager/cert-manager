@@ -64,6 +64,7 @@ The following table lists the configurable parameters of the cert-manager chart 
 
 | Parameter | Description | Default |
 | --------- | ----------- | ------- |
+| `global.imagePullSecrets` | Reference to one or more secrets to be used when pulling images | `[]` |
 | `image.repository` | Image repository | `quay.io/jetstack/cert-manager-controller` |
 | `image.tag` | Image tag | `canary` |
 | `image.pullPolicy` | Image pull policy | `Always` |
