@@ -64,6 +64,12 @@ func SetChallengePresented(p bool) ChallengeModifier {
 	}
 }
 
+func SetChallengeWildcard(p bool) ChallengeModifier {
+	return func(ch *v1alpha1.Challenge) {
+		ch.Spec.Wildcard = p
+	}
+}
+
 func SetChallengeState(s v1alpha1.State) ChallengeModifier {
 	return func(ch *v1alpha1.Challenge) {
 		ch.Status.State = s
