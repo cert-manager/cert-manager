@@ -17,7 +17,6 @@ limitations under the License.
 package framework
 
 import (
-	"fmt"
 	"time"
 
 	. "github.com/onsi/ginkgo"
@@ -36,6 +35,7 @@ import (
 	"github.com/jetstack/cert-manager/test/e2e/framework/addon"
 	"github.com/jetstack/cert-manager/test/e2e/framework/config"
 	"github.com/jetstack/cert-manager/test/e2e/framework/helper"
+	"github.com/jetstack/cert-manager/test/e2e/framework/log"
 	"github.com/jetstack/cert-manager/test/e2e/framework/util"
 	"github.com/jetstack/cert-manager/test/e2e/framework/util/errors"
 )
@@ -115,6 +115,8 @@ func (f *Framework) BeforeEach() {
 	f.Namespace, err = f.CreateKubeNamespace(f.BaseName)
 	Expect(err).NotTo(HaveOccurred())
 
+	By("Using the namespace " + f.Namespace.Name)
+
 	By("Building a ResourceQuota api object")
 	_, err = f.CreateKubeResourceQuota()
 	Expect(err).NotTo(HaveOccurred())
@@ -142,7 +144,8 @@ func (f *Framework) printAddonLogs() {
 				l, err := a.Logs()
 				Expect(err).NotTo(HaveOccurred())
 
-				GinkgoWriter.Write([]byte(fmt.Sprintf("Got pod logs for addon: \n%s", l)))
+				// TODO: replace with writing logs to a file
+				log.Logf("Got pod logs for addon: \n%s", l)
 			}
 		}
 	}

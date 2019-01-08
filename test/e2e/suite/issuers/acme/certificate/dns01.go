@@ -29,7 +29,7 @@ import (
 	"github.com/jetstack/cert-manager/test/e2e/framework"
 	"github.com/jetstack/cert-manager/test/e2e/framework/addon"
 	"github.com/jetstack/cert-manager/test/e2e/suite/issuers/acme/dnsproviders"
-	"github.com/jetstack/cert-manager/test/util"
+	"github.com/jetstack/cert-manager/test/e2e/util"
 )
 
 type dns01Provider interface {

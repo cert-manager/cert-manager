@@ -24,7 +24,7 @@ import (
 	cmutil "github.com/jetstack/cert-manager/pkg/util"
 	"github.com/jetstack/cert-manager/test/e2e/framework"
 	"github.com/jetstack/cert-manager/test/e2e/framework/addon"
-	"github.com/jetstack/cert-manager/test/util"
+	"github.com/jetstack/cert-manager/test/e2e/util"
 )
 
 var _ = framework.CertManagerDescribe("CA ClusterIssuer", func() {

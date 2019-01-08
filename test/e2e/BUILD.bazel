@@ -20,6 +20,7 @@ go_library(
     deps = [
         "//test/e2e/framework:go_default_library",
         "//test/e2e/framework/addon:go_default_library",
+        "//test/e2e/framework/log:go_default_library",
         "//vendor/github.com/onsi/ginkgo:go_default_library",
     ],
 )
@@ -54,6 +55,7 @@ filegroup(
         ":package-srcs",
         "//test/e2e/framework:all-srcs",
         "//test/e2e/suite:all-srcs",
+        "//test/e2e/util:all-srcs",
     ],
     tags = ["automanaged"],
     visibility = ["//visibility:public"],

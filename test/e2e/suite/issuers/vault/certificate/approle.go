@@ -27,7 +27,7 @@ import (
 	"github.com/jetstack/cert-manager/test/e2e/framework"
 	"github.com/jetstack/cert-manager/test/e2e/framework/addon/tiller"
 	vaultaddon "github.com/jetstack/cert-manager/test/e2e/framework/addon/vault"
-	"github.com/jetstack/cert-manager/test/util"
+	"github.com/jetstack/cert-manager/test/e2e/util"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 

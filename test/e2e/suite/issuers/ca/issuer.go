@@ -22,7 +22,7 @@ import (
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	"github.com/jetstack/cert-manager/test/e2e/framework"
-	"github.com/jetstack/cert-manager/test/util"
+	"github.com/jetstack/cert-manager/test/e2e/util"
 )
 
 var _ = framework.CertManagerDescribe("CA Issuer", func() {
