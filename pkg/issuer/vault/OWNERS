@@ -3,5 +3,6 @@ approvers:
 reviewers:
 - munnerz
 - vdesjardins
+- DanielMorsing
 labels:
 - area/provider-vault
