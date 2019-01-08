@@ -25,9 +25,6 @@ var lookupNameserversTestsOK = []struct {
 	{"www.google.com.",
 		[]string{"ns1.google.com.", "ns2.google.com.", "ns3.google.com.", "ns4.google.com."},
 	},
-	{"physics.georgetown.edu.",
-		[]string{"ns1.georgetown.edu.", "ns2.georgetown.edu.", "ns3.georgetown.edu."},
-	},
 }
 
 var lookupNameserversTestsErr = []struct {
