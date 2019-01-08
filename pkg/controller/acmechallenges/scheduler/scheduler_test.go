@@ -227,6 +227,33 @@ func TestScheduleN(t *testing.T) {
 					gen.SetChallengeType("http01")),
 			},
 		},
+		// this test case replicates a failure seen in CI
+		{
+			name: "schedule a challenge when other challenges are already in progress",
+			n:    5,
+			challenges: []*cmapi.Challenge{
+				gen.Challenge("test1-0",
+					gen.SetChallengeDNSName("rvrko.certmanager.kubernetes.network"),
+					gen.SetChallengeType("dns-01"),
+					gen.SetChallengeWildcard(true)),
+				gen.Challenge("test1-1",
+					gen.SetChallengeDNSName("rvrko.certmanager.kubernetes.network"),
+					gen.SetChallengeType("dns-01"),
+					gen.SetChallengeWildcard(false),
+					// the non-wildcard version *is* processing
+					gen.SetChallengeProcessing(true)),
+				gen.Challenge("should-schedule",
+					gen.SetChallengeDNSName("aodob.certmanager.kubernetes.network"),
+					gen.SetChallengeType("dns-01"),
+					gen.SetChallengeWildcard(true)),
+			},
+			expected: []*cmapi.Challenge{
+				gen.Challenge("should-schedule",
+					gen.SetChallengeDNSName("aodob.certmanager.kubernetes.network"),
+					gen.SetChallengeType("dns-01"),
+					gen.SetChallengeWildcard(true)),
+			},
+		},
 		{
 			name: "don't schedule when total number of scheduled challenges exceeds global maximum",
 			n:    5,
