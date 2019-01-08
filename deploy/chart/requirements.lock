@@ -1,6 +1,6 @@
 dependencies:
 - name: webhook
   repository: file://webhook
-  version: v0.6.0-alpha.0
-digest: sha256:14b94c9813490feca44262a3bf1846e7dc458a52b14746053844a91f79b89f0a
-generated: 2019-01-08T16:42:33.905664717Z
+  version: v0.6.0-alpha.1
+digest: sha256:9fea4877357e5486c332beedab74db6389f0feb3e48959a5915843ccb732e4ba
+generated: 2019-01-08T23:30:18.622382Z
