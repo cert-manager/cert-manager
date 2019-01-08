@@ -17,7 +17,6 @@ limitations under the License.
 package e2e
 
 import (
-	"fmt"
 	"io/ioutil"
 	"os"
 	"path"
@@ -26,6 +25,7 @@ import (
 
 	"github.com/jetstack/cert-manager/test/e2e/framework"
 	"github.com/jetstack/cert-manager/test/e2e/framework/addon"
+	"github.com/jetstack/cert-manager/test/e2e/framework/log"
 )
 
 var (
@@ -62,7 +62,7 @@ var _ = ginkgo.SynchronizedAfterSuite(func() {},
 		var err error
 		globalLogs, err = addon.GlobalLogs()
 		if err != nil {
-			ginkgo.GinkgoWriter.Write([]byte("Failed to retrieve global addon logs: " + err.Error()))
+			log.Logf("Failed to retrieve global addon logs: " + err.Error())
 		}
 
 		for k, v := range globalLogs {
@@ -70,13 +70,13 @@ var _ = ginkgo.SynchronizedAfterSuite(func() {},
 			// Create a directory for the file if needed
 			err := os.MkdirAll(path.Dir(outPath), 0755)
 			if err != nil {
-				ginkgo.GinkgoWriter.Write([]byte(fmt.Sprintf("Failed to create directory for logs: %v", err)))
+				log.Logf("Failed to create directory for logs: %v", err)
 				continue
 			}
 
 			err = ioutil.WriteFile(outPath, []byte(v), 0644)
 			if err != nil {
-				ginkgo.GinkgoWriter.Write([]byte(fmt.Sprintf("Failed to write log file: %v", err)))
+				log.Logf("Failed to write log file: %v", err)
 				continue
 			}
 		}
