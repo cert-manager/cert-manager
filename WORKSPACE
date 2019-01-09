@@ -114,6 +114,16 @@ go_repository(
     importpath = "sigs.k8s.io/kind",
 )
 
+## Fetch pebble, for use during e2e tests
+go_repository(
+    name = "org_letsencrypt_pebble",
+    commit = "2132a88193fdf0d7c0d93c33fce61db43d630fd4",
+    importpath = "github.com/letsencrypt/pebble",
+    build_external = "vendored",
+    # Expose the generated go_default_library as 'public' visibility
+    patch_cmds = ["sed -i -e 's/private/public/g' 'cmd/pebble/BUILD.bazel'"],
+)
+
 ## Install buildozer, for mass-editing BUILD files
 http_file(
     name = "buildozer_darwin",

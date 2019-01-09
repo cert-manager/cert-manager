@@ -31,6 +31,8 @@ build_images() {
     DOCKER_REPO="${DOCKER_REPO}" \
     DOCKER_TAG="${DOCKER_TAG}" \
     bazel run //:images
+    # Build e2e test images
+    bazel run //test/e2e/charts:images
 
     local TMP_DIR=$(mktemp -d)
     local BUNDLE_FILE="${TMP_DIR}"/cmbundle.tar.gz
@@ -40,6 +42,7 @@ build_images() {
         "${DOCKER_REPO}"/cert-manager-controller:"${DOCKER_TAG}" \
         "${DOCKER_REPO}"/cert-manager-acmesolver:"${DOCKER_TAG}" \
         "${DOCKER_REPO}"/cert-manager-webhook:"${DOCKER_TAG}" \
+        "pebble:bazel" \
         -o "${BUNDLE_FILE}"
 
     # Copy docker archive into the kind container

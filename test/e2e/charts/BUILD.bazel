@@ -1,0 +1,9 @@
+load("@io_bazel_rules_docker//container:bundle.bzl", "container_bundle")
+
+container_bundle(
+    name = "images",
+    images = {
+        # A set of images to bundle up into a single tarball.
+        "pebble:bazel": "//test/e2e/charts/pebble:image",
+    }
+)
