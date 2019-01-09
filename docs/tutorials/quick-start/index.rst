@@ -96,7 +96,7 @@ Use ``helm`` to install an Nginx Ingress controller:
 .. code-block:: shell
 
     $ helm install stable/nginx-ingress --name quickstart
-    
+
     NAME:   quickstart
     LAST DEPLOYED: Sat Nov 10 10:25:06 2018
     NAMESPACE: default
@@ -273,7 +273,7 @@ You can download the sample manifest from github, edit it, and submit the manife
 .. code-block:: shell
 
    $ kubectl create --edit -f https://raw.githubusercontent.com/jetstack/cert-manager/master/docs/tutorials/quick-start/example/ingress.yaml
-   
+
    # edit the file in your editor, and once it is saved:
    ingress.extensions "kuard" created
 
@@ -350,32 +350,87 @@ install cert-manager. This example installed cert-manager into the
 
 .. code-block:: shell
 
-    $ helm install --name cert-manager --namespace cert-manager stable/cert-manager
+    # Install the cert-manager CRDs. We must do this before installing the Helm
+    # chart in the next step
+    $ kubectl apply -f https://raw.githubusercontent.com/jetstack/cert-manager/v0.6.0-alpha.0/deploy/manifests/00-crds.yaml
+
+    # Install cert-manager
+    $ helm install --name cert-manager --namespace cert-manager --version v0.6.0-alpha.0 stable/cert-manager
 
     NAME:   cert-manager
-    LAST DEPLOYED: Sat Nov 17 09:09:02 2018
+    LAST DEPLOYED: Wed Jan  9 13:36:13 2019
     NAMESPACE: cert-manager
     STATUS: DEPLOYED
 
     RESOURCES:
-    ==> v1/Pod(related)
-    NAME                           READY  STATUS             RESTARTS  AGE
-    cert-manager-6f9ffcc9cc-rfwn5  0/1    ContainerCreating  0         0s
+    ==> v1beta1/ClusterRoleBinding
+    NAME                                 AGE
+    cert-manager-webhook-ca-sync         2s
+    cert-manager-webhook:auth-delegator  2s
+    cert-manager                         2s
+
+    ==> v1beta1/APIService
+    NAME                                  AGE
+    v1beta1.admission.certmanager.k8s.io  2s
+
+    ==> v1alpha1/Certificate
+    cert-manager-webhook-webhook-tls  1s
+    cert-manager-webhook-ca           1s
+
+    ==> v1beta1/ValidatingWebhookConfiguration
+    cert-manager-webhook  1s
 
     ==> v1/ServiceAccount
+    NAME                          SECRETS  AGE
+    cert-manager-webhook-ca-sync  1        2s
+    cert-manager-webhook          1        2s
+    cert-manager                  1        2s
 
-    NAME          AGE
-    cert-manager  0s
-
-    ==> v1beta1/ClusterRole
-    cert-manager  0s
-
-    ==> v1beta1/ClusterRoleBinding
-    cert-manager  0s
+    ==> v1beta1/RoleBinding
+    NAME                                                AGE
+    cert-manager-webhook:webhook-authentication-reader  2s
 
     ==> v1beta1/Deployment
-    cert-manager  0s
+    NAME                  DESIRED  CURRENT  UP-TO-DATE  AVAILABLE  AGE
+    cert-manager-webhook  1        1        1           0          2s
+    cert-manager          1        1        1           0          2s
 
+    ==> v1/Job
+    NAME                          DESIRED  SUCCESSFUL  AGE
+    cert-manager-webhook-ca-sync  1        0           2s
+
+    ==> v1beta1/CronJob
+    NAME                          SCHEDULE      SUSPEND  ACTIVE  LAST SCHEDULE  AGE
+    cert-manager-webhook-ca-sync  * * */24 * *  False    0       <none>         2s
+
+    ==> v1beta1/ClusterRole
+    NAME                          AGE
+    cert-manager-webhook-ca-sync  2s
+    cert-manager                  2s
+
+    ==> v1/ClusterRole
+    cert-manager-webhook:webhook-requester  2s
+    cert-manager-view                       2s
+    cert-manager-edit                       2s
+
+    ==> v1/Service
+    NAME                  TYPE       CLUSTER-IP    EXTERNAL-IP  PORT(S)  AGE
+    cert-manager-webhook  ClusterIP  10.3.244.237  <none>       443/TCP  2s
+
+    ==> v1/ConfigMap
+    NAME                          DATA  AGE
+    cert-manager-webhook-ca-sync  1     2s
+
+    ==> v1alpha1/Issuer
+    NAME                           AGE
+    cert-manager-webhook-ca        1s
+    cert-manager-webhook-selfsign  1s
+
+    ==> v1/Pod(related)
+    NAME                                   READY  STATUS             RESTARTS  AGE
+    cert-manager-webhook-745b49d445-rnxm2  0/1    ContainerCreating  0         2s
+    cert-manager-9cdd9f774-t856z           0/1    ContainerCreating  0         2s
+    cert-manager-webhook-ca-sync-ddf4b     0/1    ContainerCreating  0         2s
 
     NOTES:
     cert-manager has been deployed successfully!
@@ -396,8 +451,7 @@ install cert-manager. This example installed cert-manager into the
 
 Cert-manager uses two different custom resources, also known as `CRD`_'s,
 to configure and control how it operates, as well as share status of its
-operation. These two resources
-are:
+operation. These two resources are:
 
 :doc:`Issuers </reference/issuers>` (or :doc:`ClusterIssuers </reference/clusterissuers>`)
 
@@ -702,25 +756,106 @@ certificate.
         Name:       letsencrypt-prod
       Secret Name:  quickstart-example-tls
     Status:
-      Acme:
-        Order:
-          URL:  https://acme-v02.api.letsencrypt.org/acme/order/45980184/182533829
       Conditions:
-        Last Transition Time:  2018-11-19T19:16:10Z
-        Message:               Certificate issued successfully
-        Reason:                CertIssued
-        Status:                True
-        Type:                  Ready
-        Last Transition Time:  <nil>
-        Message:               Order validated
-        Reason:                OrderValidated
+        Last Transition Time:  2019-01-09T13:52:05Z
+        Message:               Certificate does not exist
+        Reason:                NotFound
         Status:                False
-        Type:                  ValidateFailed
+        Type:                  Ready
+    Events:
+      Type    Reason        Age   From          Message
+      ----    ------        ----  ----          -------
+      Normal  Generated     18s   cert-manager  Generated new private key
+      Normal  OrderCreated  18s   cert-manager  Created Order resource "quickstart-example-tls-889745041"
+
+You can monitor the progress of your ACME Order by 'describing' the Order
+resource that cert-manager has created for your Certificate:
+
+.. code-block:: shell
+
+    $ kubectl describe order quickstart-example-tls-889745041
+    ...
+    Events:
+      Type    Reason      Age   From          Message
+      ----    ------      ----  ----          -------
+      Normal  Created     90s   cert-manager  Created Challenge resource "quickstart-example-tls-889745041-0" for domain "example.your-domain.com"
+
+Here, we can see that cert-manager has created 1 'Challenge' resource in order
+to fulfill the Order. You can dig into the state of the current ACME challenge
+by 'describing' the challenge resource:
+
+.. code-block:: shell
+
+    $ kubectl describe challenge quickstart-example-tls-889745041-0
+    ...
+
+    Status:
+      Presented:   true
+      Processing:  true
+      Reason:      Waiting for http-01 challenge propagation
+      State:       pending
+    Events:
+      Type    Reason     Age   From          Message
+      ----    ------     ----  ----          -------
+      Normal  Started    15s   cert-manager  Challenge scheduled for processing
+      Normal  Presented  14s   cert-manager  Presented challenge using http-01 challenge mechanism
+
+From above, we can see that the challenge has been 'presented' and cert-manager
+is waiting for the challenge record to propagate to the ingress controller.
+You should keep an eye out for new events on the challenge resource, as a
+'success' event should be printed after a minute or so (depending on how fast
+your ingress controller is at updating rules):
+
+.. code-block:: shell
+
+    $ kubectl describe challenge quickstart-example-tls-889745041-0
+    ...
+
+    Status:
+      Presented:   false
+      Processing:  false
+      Reason:      Successfully authorized domain
+      State:       valid
     Events:
       Type    Reason          Age   From          Message
       ----    ------          ----  ----          -------
-      Normal  CreateOrder     26s   cert-manager  Created new ACME order, attempting validation...
-      Normal  DomainVerified  9s    cert-manager  Domain "example.your-domain.com" verified with "http-01" validation
-      Normal  IssueCert       8s    cert-manager  Issuing certificate...
-      Normal  CertObtained    6s    cert-manager  Obtained certificate from ACME server
-      Normal  CertIssued      6s    cert-manager  Certificate issued successfully
+      Normal  Started         71s   cert-manager  Challenge scheduled for processing
+      Normal  Presented       70s   cert-manager  Presented challenge using http-01 challenge mechanism
+      Normal  DomainVerified  2s    cert-manager  Domain "example.your-domain.com" verified with "http-01" validation
+
+Once the challenge(s) have been completed, their corresponding challenge
+resources will be *deleted*, and the 'Order' will be updated to reflect the
+new state of the Order:
+
+.. code-block:: shell
+
+    $ kubectl describe order quickstart-example-tls-889745041
+    ...
+    Events:
+      Type    Reason      Age   From          Message
+      ----    ------      ----  ----          -------
+      Normal  Created     90s   cert-manager  Created Challenge resource "quickstart-example-tls-889745041-0" for domain "example.your-domain.com"
+      Normal  OrderValid  16s   cert-manager  Order completed successfully
+
+Finally, the 'Certificate' resource will be updated to reflect the state of the
+issuance process. If all is well, you should be able to 'describe' the Certificate
+and see something like the below:
+
+.. code-block:: shell
+
+    $ kubectl describe certificate quickstart-example-tls
+
+    Status:
+      Conditions:
+        Last Transition Time:  2019-01-09T13:57:52Z
+        Message:               Certificate is up to date and has not expired
+        Reason:                Ready
+        Status:                True
+        Type:                  Ready
+      Not After:               2019-04-09T12:57:50Z
+    Events:
+      Type    Reason         Age                  From          Message
+      ----    ------         ----                 ----          -------
+      Normal  Generated      11m                  cert-manager  Generated new private key
+      Normal  OrderCreated   11m                  cert-manager  Created Order resource "quickstart-example-tls-889745041"
+      Normal  OrderComplete  10m                  cert-manager  Order "quickstart-example-tls-889745041" completed successfully
