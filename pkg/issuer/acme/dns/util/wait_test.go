@@ -53,15 +53,15 @@ var checkAuthoritativeNssTests = []struct {
 	ok          bool
 }{
 	// TXT RR w/ expected value
-	{"8.8.8.8.asn.routeviews.org.", "151698.8.8.024", []string{"asnums.routeviews.org."},
+	{"8.8.8.8.asn.routeviews.org.", "151698.8.8.024", []string{"asnums.routeviews.org.:53"},
 		true,
 	},
 	// No TXT RR
-	{"ns1.google.com.", "", []string{"ns2.google.com."},
+	{"ns1.google.com.", "", []string{"ns2.google.com.:53"},
 		false,
 	},
 	// TXT RR /w unexpected value
-	{"8.8.8.8.asn.routeviews.org.", "fe01=", []string{"asnums.routeviews.org."},
+	{"8.8.8.8.asn.routeviews.org.", "fe01=", []string{"asnums.routeviews.org.:53"},
 		false,
 	},
 }
@@ -88,7 +88,15 @@ var checkResolvConfServersTests = []struct {
 
 func TestPreCheckDNS(t *testing.T) {
 	// TODO: find a better TXT record to use in tests
-	ok, err := PreCheckDNS("google.com.", "v=spf1 include:_spf.google.com ~all", []string{"8.8.8.8:53"})
+	ok, err := PreCheckDNS("google.com.", "v=spf1 include:_spf.google.com ~all", []string{"8.8.8.8:53"}, true)
+	if err != nil || !ok {
+		t.Errorf("preCheckDNS failed for acme-staging.api.letsencrypt.org: %s", err.Error())
+	}
+}
+
+func TestPreCheckDNSNonAuthoritative(t *testing.T) {
+	// TODO: find a better TXT record to use in tests
+	ok, err := PreCheckDNS("google.com.", "v=spf1 include:_spf.google.com ~all", []string{"1.1.1.1:53"}, false)
 	if err != nil || !ok {
 		t.Errorf("preCheckDNS failed for acme-staging.api.letsencrypt.org: %s", err.Error())
 	}

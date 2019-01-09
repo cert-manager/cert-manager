@@ -94,6 +94,10 @@ type ACMEOptions struct {
 	// HTTP01SolverResourceLimitsMemory defines the ACME pod's resource limits Memory size
 	HTTP01SolverResourceLimitsMemory resource.Quantity
 
+	// DNS01CheckAuthoritative is a flag for controlling if auth nss are used
+	// for checking propogation of an RR. This is the ideal scenario
+	DNS01CheckAuthoritative bool
+
 	// DNS01Nameservers is a list of nameservers to use when performing self-checks
 	// for ACME DNS01 validations.
 	DNS01Nameservers []string

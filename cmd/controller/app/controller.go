@@ -126,7 +126,7 @@ func buildControllerContext(opts *options.ControllerOptions) (*controller.Contex
 		return nil, nil, fmt.Errorf("error creating kubernetes client: %s", err.Error())
 	}
 
-	nameservers := opts.DNS01Nameservers
+	nameservers := opts.DNS01RecursiveNameservers
 	if len(nameservers) == 0 {
 		nameservers = dnsutil.RecursiveNameservers
 	}
@@ -177,6 +177,7 @@ func buildControllerContext(opts *options.ControllerOptions) (*controller.Contex
 			HTTP01SolverResourceRequestMemory: HTTP01SolverResourceRequestMemory,
 			HTTP01SolverResourceLimitsCPU:     HTTP01SolverResourceLimitsCPU,
 			HTTP01SolverResourceLimitsMemory:  HTTP01SolverResourceLimitsMemory,
+			DNS01CheckAuthoritative:           !opts.DNS01RecursiveNameserversOnly,
 			DNS01Nameservers:                  nameservers,
 		},
 		IssuerOptions: controller.IssuerOptions{
