@@ -77,10 +77,13 @@ func New(ctx *controllerpkg.Context) *Controller {
 	ctrl.issuerLister = issuerInformer.Lister()
 	ctrl.syncedFuncs = append(ctrl.syncedFuncs, issuerInformer.Informer().HasSynced)
 
-	clusterIssuerInformer := ctrl.SharedInformerFactory.Certmanager().V1alpha1().ClusterIssuers()
-	clusterIssuerInformer.Informer().AddEventHandler(&controllerpkg.BlockingEventHandler{WorkFunc: ctrl.handleGenericIssuer})
-	ctrl.clusterIssuerLister = clusterIssuerInformer.Lister()
-	ctrl.syncedFuncs = append(ctrl.syncedFuncs, clusterIssuerInformer.Informer().HasSynced)
+	// if scoped to a single namespace
+	if ctx.Namespace == "" {
+		clusterIssuerInformer := ctrl.SharedInformerFactory.Certmanager().V1alpha1().ClusterIssuers()
+		clusterIssuerInformer.Informer().AddEventHandler(&controllerpkg.BlockingEventHandler{WorkFunc: ctrl.handleGenericIssuer})
+		ctrl.clusterIssuerLister = clusterIssuerInformer.Lister()
+		ctrl.syncedFuncs = append(ctrl.syncedFuncs, clusterIssuerInformer.Informer().HasSynced)
+	}
 
 	secretsInformer := ctrl.KubeSharedInformerFactory.Core().V1().Secrets()
 	secretsInformer.Informer().AddEventHandler(&controllerpkg.BlockingEventHandler{WorkFunc: ctrl.handleSecretResource})

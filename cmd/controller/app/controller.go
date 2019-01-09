@@ -23,7 +23,7 @@ import (
 	"time"
 
 	"github.com/golang/glog"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -39,6 +39,7 @@ import (
 	intscheme "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/scheme"
 	informers "github.com/jetstack/cert-manager/pkg/client/informers/externalversions"
 	"github.com/jetstack/cert-manager/pkg/controller"
+	"github.com/jetstack/cert-manager/pkg/controller/clusterissuers"
 	dnsutil "github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
 	"github.com/jetstack/cert-manager/pkg/metrics"
 	"github.com/jetstack/cert-manager/pkg/util"
@@ -66,6 +67,12 @@ func Run(opts *options.ControllerOptions, stopCh <-chan struct{}) {
 			// only run a controller if it's been enabled
 			if !util.Contains(opts.EnabledControllers, n) {
 				glog.Infof("%s controller is not in list of controllers to enable, so not enabling it", n)
+				continue
+			}
+
+			// don't run clusterissuers controller if scoped to a single namespace
+			if ctx.Namespace != "" && n == clusterissuers.ControllerName {
+				glog.Infof("Skipping ClusterIssuer controller as cert-manager is scoped to a single namespace")
 				continue
 			}
 
@@ -163,14 +170,15 @@ func buildControllerContext(opts *options.ControllerOptions) (*controller.Contex
 	eventBroadcaster.StartRecordingToSink(&corev1.EventSinkImpl{Interface: cl.CoreV1().Events("")})
 	recorder := eventBroadcaster.NewRecorder(scheme.Scheme, v1.EventSource{Component: controllerAgentName})
 
-	sharedInformerFactory := informers.NewSharedInformerFactory(intcl, time.Second*30)
-	kubeSharedInformerFactory := kubeinformers.NewSharedInformerFactory(cl, time.Second*30)
+	sharedInformerFactory := informers.NewFilteredSharedInformerFactory(intcl, time.Second*30, opts.Namespace, nil)
+	kubeSharedInformerFactory := kubeinformers.NewFilteredSharedInformerFactory(cl, time.Second*30, opts.Namespace, nil)
 	return &controller.Context{
 		Client:                    cl,
 		CMClient:                  intcl,
 		Recorder:                  recorder,
 		KubeSharedInformerFactory: kubeSharedInformerFactory,
 		SharedInformerFactory:     sharedInformerFactory,
+		Namespace:                 opts.Namespace,
 		ACMEOptions: controller.ACMEOptions{
 			HTTP01SolverImage:                 opts.ACMEHTTP01SolverImage,
 			HTTP01SolverResourceRequestCPU:    HTTP01SolverResourceRequestCPU,
