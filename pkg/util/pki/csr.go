@@ -193,16 +193,6 @@ func SignCertificate(template *x509.Certificate, issuerCert *x509.Certificate, p
 		return nil, nil, fmt.Errorf("error encoding certificate PEM: %s", err.Error())
 	}
 
-	// don't bundle the CA for selfsigned certificates
-	// TODO: better comparison method here? for now we can just compare pointers.
-	if issuerCert != template {
-		// bundle the CA
-		err = pem.Encode(pemBytes, &pem.Block{Type: "CERTIFICATE", Bytes: issuerCert.Raw})
-		if err != nil {
-			return nil, nil, fmt.Errorf("error encoding issuer cetificate PEM: %s", err.Error())
-		}
-	}
-
 	return pemBytes.Bytes(), cert, err
 }
 
@@ -223,6 +213,23 @@ func EncodeX509(cert *x509.Certificate) ([]byte, error) {
 	err := pem.Encode(caPem, &pem.Block{Type: "CERTIFICATE", Bytes: cert.Raw})
 	if err != nil {
 		return nil, err
+	}
+
+	return caPem.Bytes(), nil
+}
+
+// EncodeX509Chain will encode an *x509.Certificate chain into PEM format.
+func EncodeX509Chain(certs []*x509.Certificate) ([]byte, error) {
+	caPem := bytes.NewBuffer([]byte{})
+	for _, cert := range certs {
+		if bytes.Equal(cert.RawIssuer, cert.RawSubject) {
+			// Don't include self-signed certificate
+			continue
+		}
+		err := pem.Encode(caPem, &pem.Block{Type: "CERTIFICATE", Bytes: cert.Raw})
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return caPem.Bytes(), nil
