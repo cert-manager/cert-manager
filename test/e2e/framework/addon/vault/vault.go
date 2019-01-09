@@ -188,7 +188,7 @@ func (v *Vault) SupportsGlobal() bool {
 	return false
 }
 
-func (v *Vault) Logs() (string, error) {
+func (v *Vault) Logs() (map[string]string, error) {
 	return v.chart.Logs()
 }
 

@@ -102,6 +102,6 @@ func (p *Pebble) SupportsGlobal() bool {
 	return true
 }
 
-func (p *Pebble) Logs() (string, error) {
+func (p *Pebble) Logs() (map[string]string, error) {
 	return p.chart.Logs()
 }

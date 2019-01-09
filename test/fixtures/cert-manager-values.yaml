@@ -13,7 +13,7 @@ resources:
     memory: 200Mi
 
 extraArgs:
-- --v=4
+- --v=10
 - --leader-election-lease-duration=10s
 - --leader-election-renew-deadline=3s
 - --leader-election-retry-period=2s

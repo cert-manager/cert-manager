@@ -144,7 +144,7 @@ func (n *Nginx) SupportsGlobal() bool {
 	return true
 }
 
-func (n *Nginx) Logs() (string, error) {
+func (n *Nginx) Logs() (map[string]string, error) {
 	return n.chart.Logs()
 }
 

@@ -19,10 +19,10 @@ limitations under the License.
 package base
 
 import (
-	"github.com/jetstack/cert-manager/test/e2e/framework/helper"
 	"k8s.io/client-go/kubernetes"
 
 	"github.com/jetstack/cert-manager/test/e2e/framework/config"
+	"github.com/jetstack/cert-manager/test/e2e/framework/helper"
 	"github.com/jetstack/cert-manager/test/e2e/framework/util"
 )
 
