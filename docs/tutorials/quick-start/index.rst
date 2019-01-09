@@ -768,8 +768,8 @@ certificate.
       Normal  Generated     18s   cert-manager  Generated new private key
       Normal  OrderCreated  18s   cert-manager  Created Order resource "quickstart-example-tls-889745041"
 
-You can monitor the progress of your ACME Order by 'describing' the Order
-resource that cert-manager has created for your Certificate:
+You can monitor the progress of the ACME Order by running ``kubectl describe``
+on the Order resource that cert-manager has created for your Certificate:
 
 .. code-block:: shell
 
@@ -780,9 +780,9 @@ resource that cert-manager has created for your Certificate:
       ----    ------      ----  ----          -------
       Normal  Created     90s   cert-manager  Created Challenge resource "quickstart-example-tls-889745041-0" for domain "example.your-domain.com"
 
-Here, we can see that cert-manager has created 1 'Challenge' resource in order
-to fulfill the Order. You can dig into the state of the current ACME challenge
-by 'describing' the challenge resource:
+Here, we can see that cert-manager has created 1 'Challenge' resource to fulfil
+the Order. You can dig into the state of the current ACME challenge by running
+``kubectl describe`` on the automatically created Challenge resource:
 
 .. code-block:: shell
 
