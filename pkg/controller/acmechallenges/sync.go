@@ -224,16 +224,15 @@ func (c *Controller) syncChallengeStatus(ctx context.Context, cl acmecl.Interfac
 
 	// TODO: should we validate the State returned by the ACME server here?
 	cmState := cmapi.State(acmeChallenge.Status)
-	if cmState == cmapi.Invalid {
-		// be nice to our users and check if there is an error that we
-		// can tell them about in the reason field
-		// TODO(dmo): problems may be compound and they may be tagged with
-		// a type field that suggests changes we should make (like provisioning
-		// an account). We might be able to handle errors more gracefully using
-		// this info
-		if acmeChallenge.Error != nil {
-			ch.Status.Reason = acmeChallenge.Error.Detail
-		}
+	// be nice to our users and check if there is an error that we
+	// can tell them about in the reason field
+	// TODO(dmo): problems may be compound and they may be tagged with
+	// a type field that suggests changes we should make (like provisioning
+	// an account). We might be able to handle errors more gracefully using
+	// this info
+	ch.Status.Reason = ""
+	if acmeChallenge.Error != nil {
+		ch.Status.Reason = acmeChallenge.Error.Detail
 	}
 	ch.Status.State = cmState
 
