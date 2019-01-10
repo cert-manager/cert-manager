@@ -142,7 +142,7 @@ func (s *ControllerOptions) AddFlags(fs *pflag.FlagSet) {
 		"Namespace to store resources owned by cluster scoped resources such as ClusterIssuer in. "+
 		"This must be specified if ClusterIssuers are enabled.")
 	fs.StringVar(&s.Namespace, "namespace", defaultNamespace, ""+
-		"If set, this limits the scope of cert-manager to a single namespace. "+
+		"If set, this limits the scope of cert-manager to a single namespace and ClusterIssuers are disabled. "+
 		"If not specified, all namespaces will be watched")
 	fs.BoolVar(&s.LeaderElect, "leader-elect", true, ""+
 		"If true, cert-manager will perform leader election between instances to ensure no more "+
