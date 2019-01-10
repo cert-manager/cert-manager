@@ -452,6 +452,16 @@ func buildChallenge(i int, o *cmapi.Order, chalSpec cmapi.ChallengeSpec) *cmapi.
 func (c *Controller) setOrderStatus(o *cmapi.OrderStatus, acmeOrder *acmeapi.Order) {
 	// TODO: should we validate the State returned by the ACME server here?
 	cmState := cmapi.State(acmeOrder.Status)
+	// be nice to our users and check if there is an error that we
+	// can tell them about in the reason field
+	// TODO(dmo): problems may be compound and they may be tagged with
+	// a type field that suggests changes we should make (like provisioning
+	// an account). We might be able to handle errors more gracefully using
+	// this info
+	o.Reason = ""
+	if acmeOrder.Error != nil {
+		o.Reason = acmeOrder.Error.Detail
+	}
 	c.setOrderState(o, cmState)
 
 	o.URL = acmeOrder.URL
