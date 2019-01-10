@@ -65,6 +65,9 @@ podLabels: {}
 
 nodeSelector: {}
 
+priorityClassName: ""
+
+
 ingressShim: {}
   # defaultIssuerName: ""
   # defaultIssuerKind: ""
