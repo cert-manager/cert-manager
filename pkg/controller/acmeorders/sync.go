@@ -318,10 +318,7 @@ func (c *Controller) createOrder(ctx context.Context, cl acmecl.Interface, issue
 		return fmt.Errorf("error creating new order: %v", err)
 	}
 
-	err = c.setOrderStatus(&o.Status, acmeOrder)
-	if err != nil {
-		return err
-	}
+	c.setOrderStatus(&o.Status, acmeOrder)
 
 	chals := make([]cmapi.ChallengeSpec, len(acmeOrder.Authorizations))
 	// we only set the status.challenges field when we first create the order,
@@ -430,7 +427,9 @@ func (c *Controller) syncOrderStatus(ctx context.Context, cl acmecl.Interface, o
 		return err
 	}
 
-	return c.setOrderStatus(&o.Status, acmeOrder)
+	c.setOrderStatus(&o.Status, acmeOrder)
+
+	return nil
 }
 
 func buildChallenge(i int, o *cmapi.Order, chalSpec cmapi.ChallengeSpec) *cmapi.Challenge {
@@ -450,14 +449,8 @@ func buildChallenge(i int, o *cmapi.Order, chalSpec cmapi.ChallengeSpec) *cmapi.
 
 // setOrderStatus will populate the given OrderStatus struct with the details from
 // the provided ACME Order.
-func (c *Controller) setOrderStatus(o *cmapi.OrderStatus, acmeOrder *acmeapi.Order) error {
-	switch acmeOrder.Status {
-	case acmeapi.StatusPending, acmeapi.StatusReady, acmeapi.StatusProcessing, acmeapi.StatusValid, acmeapi.StatusInvalid:
-		// do nothing
-	default:
-		// bogus status from acme API that we can't handle.
-		return fmt.Errorf("acme api returned bogus status for order: %v", acmeOrder.Status)
-	}
+func (c *Controller) setOrderStatus(o *cmapi.OrderStatus, acmeOrder *acmeapi.Order) {
+	// TODO: should we validate the State returned by the ACME server here?
 	cmState := cmapi.State(acmeOrder.Status)
 	if cmState == cmapi.Invalid {
 		// be nice to our users and check if there is an error that we
@@ -474,8 +467,6 @@ func (c *Controller) setOrderStatus(o *cmapi.OrderStatus, acmeOrder *acmeapi.Ord
 
 	o.URL = acmeOrder.URL
 	o.FinalizeURL = acmeOrder.FinalizeURL
-
-	return nil
 }
 
 func challengeLabelsForOrder(o *cmapi.Order) map[string]string {

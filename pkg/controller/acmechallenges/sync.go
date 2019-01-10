@@ -222,13 +222,7 @@ func (c *Controller) syncChallengeStatus(ctx context.Context, cl acmecl.Interfac
 		return err
 	}
 
-	switch acmeChallenge.Status {
-	case acmeapi.StatusPending, acmeapi.StatusValid, acmeapi.StatusInvalid:
-		// do nothing
-	default:
-		// bogus status from acme API that we can't handle.
-		return fmt.Errorf("acme api returned bogus status for challenge: %v", acmeChallenge.Status)
-	}
+	// TODO: should we validate the State returned by the ACME server here?
 	cmState := cmapi.State(acmeChallenge.Status)
 	if cmState == cmapi.Invalid {
 		// be nice to our users and check if there is an error that we
