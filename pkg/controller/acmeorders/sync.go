@@ -318,7 +318,10 @@ func (c *Controller) createOrder(ctx context.Context, cl acmecl.Interface, issue
 		return fmt.Errorf("error creating new order: %v", err)
 	}
 
-	c.setOrderStatus(&o.Status, acmeOrder)
+	err = c.setOrderStatus(&o.Status, acmeOrder)
+	if err != nil {
+		return err
+	}
 
 	chals := make([]cmapi.ChallengeSpec, len(acmeOrder.Authorizations))
 	// we only set the status.challenges field when we first create the order,
@@ -427,9 +430,7 @@ func (c *Controller) syncOrderStatus(ctx context.Context, cl acmecl.Interface, o
 		return err
 	}
 
-	c.setOrderStatus(&o.Status, acmeOrder)
-
-	return nil
+	return c.setOrderStatus(&o.Status, acmeOrder)
 }
 
 func buildChallenge(i int, o *cmapi.Order, chalSpec cmapi.ChallengeSpec) *cmapi.Challenge {
@@ -449,13 +450,32 @@ func buildChallenge(i int, o *cmapi.Order, chalSpec cmapi.ChallengeSpec) *cmapi.
 
 // setOrderStatus will populate the given OrderStatus struct with the details from
 // the provided ACME Order.
-func (c *Controller) setOrderStatus(o *cmapi.OrderStatus, acmeOrder *acmeapi.Order) {
-	// TODO: should we validate the State returned by the ACME server here?
+func (c *Controller) setOrderStatus(o *cmapi.OrderStatus, acmeOrder *acmeapi.Order) error {
+	switch acmeOrder.Status {
+	case acmeapi.StatusPending, acmeapi.StatusReady, acmeapi.StatusProcessing, acmeapi.StatusValid, acmeapi.StatusInvalid:
+		// do nothing
+	default:
+		// bogus status from acme API that we can't handle.
+		return fmt.Errorf("acme api returned bogus status for order: %v", acmeOrder.Status)
+	}
 	cmState := cmapi.State(acmeOrder.Status)
+	if cmState == cmapi.Invalid {
+		// be nice to our users and check if there is an error that we
+		// can tell them about in the reason field
+		// TODO(dmo): problems may be compound and they may be tagged with
+		// a type field that suggests changes we should make (like provisioning
+		// an account). We might be able to handle errors more gracefully using
+		// this info
+		if acmeOrder.Error != nil {
+			o.Reason = acmeOrder.Error.Detail
+		}
+	}
 	c.setOrderState(o, cmState)
 
 	o.URL = acmeOrder.URL
 	o.FinalizeURL = acmeOrder.FinalizeURL
+
+	return nil
 }
 
 func challengeLabelsForOrder(o *cmapi.Order) map[string]string {
