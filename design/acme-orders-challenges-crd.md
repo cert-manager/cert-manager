@@ -32,6 +32,8 @@ These two resources are **not intended to be created by users**. Rather, the
 ACME issuer will be modified to manage and monitor the lifecycle of Order
 resources in an attempt to obtain a valid TLS certificate as requested by the
 user with a Certificate resource, as is already today.
+The new Orders controller will then create and monitor Challenge resources to
+fulfil the ACME authorizations needed to complete the Order.
 
 ## Required changes
 
@@ -113,12 +115,11 @@ type OrderStatus struct {
 	// This is used to obtain certificates for this order once it has been completed.
 	FinalizeURL string `json:"finalizeURL"`
 
-	// CertificateURL is a URL that can be used to retrieve a copy of the signed
-	// TLS certificate for this order.
-	// It will be populated automatically once the order has completed successfully
-	// and the certificate is available for retrieval.
-	// +optional
-	CertificateURL string `json:"certificateURL,omitempty"`
+	// Certificate is a copy of the PEM encoded certificate for this Order.
+	// This field will be populated after the order has been successfully
+	// finalized with the ACME server, and the order has transitioned to the
+	// 'valid' state.
+	Certificate []byte `json:"certificate"`
 
 	// State contains the current state of this Order resource.
 	// States 'success' and 'expired' are 'final'
@@ -134,9 +135,6 @@ type OrderStatus struct {
 
 	// FailureTime stores the time that this order failed.
 	// This is used to influence garbage collection and back-off.
-	// The order resource will be automatically deleted after 30 minutes has
-	// passed since the failure time.
-	// +optional
 	FailureTime *metav1.Time `json:"failureTime,omitempty"`
 }
 
@@ -183,7 +181,15 @@ const (
 	// Expired signifies that an ACME resource has expired.
 	// If an Order is marked 'Expired', one of its validations may have expired or the Order itself.
 	// This is a final state.
-	Expired State = "expired"
+    Expired State = "expired"
+
+	// Errored signifies that the ACME resource has errored for some reason.
+	// This is a catch-all state, and is used for marking internal cert-manager
+	// errors such as validation failures.
+	// 'Errored' is treated similarly to 'Invalid', in that failing Order's will
+	// be tried after a period of time has passed since failure.
+	// This is a final state.
+	Errored State = "errored"
 )
 ```
 
@@ -309,32 +315,37 @@ the `Prepare` function of the ACME issuer.
 
 #### Order controller
 
-When an order is created, all of the spec fields must be defined.
+When an order is created, all of the spec fields must be defined, including CSR.
 The Order controller will be responsible for handling the entirety of an ACME
 order.
-The 'spec' describes an order to be created. The controller will keep the 'status'
-fields up to date by periodically syncing with the ACME server.
+The 'spec' describes an order to be created. The controller will update the
+'status' fields of the Order, sometimes by re-checking the order status with
+the ACME server, throughout the Order handling flow.
 
 * The Order controller will attempt to create a new order with the ACME server
-if the `status.url` field is not set. It will copy details of the order back
-onto the Order resoure, to save subsequent calls to the ACME server when not required.
+if the `status.url` field is not set. It will copy details of the order, e.g.
+the list of authorizations that must be completed, back
+onto the Order resource's 'status' block, to save subsequent calls to the ACME
+server for this information.
 
-* If the orders 'state' is 'final' (i.e. one of valid, invalid or expired) then
-the controller will take no further action and return. (TODO: should we delete challenge
-resources for this order here too?)
+* If the order's state is 'final' (i.e. one of valid, invalid, expired, errored)
+then the controller will take no further action and return. Any Challenge
+resources that were created for this Order will also be cleaned up if they
+exist.
 
 * For each authorization on the Order, the order controller will select a challenge
 type to use to solve the authorization (based on the Issuer config and Order's
 SolverConfig) and then ensure a Challenge resource for each authorization exists.
 
 * The order controller will check the status of the Challenge resources that are
-related to it, and if any of them have changed state, it will 'resync' the order
-status with the ACME server.
+related to it, and once all of them are 'valid', will resync the Order state
+with the ACME server to confirm it has entered the 'Ready' state.
 
 * If the order is 'ready', the order controller will attempt to 'finalize' the
 order using the CSR as specified on the Order resource (i.e. `spec.csr`).
 After this finalization has completed, the order status will be updated and the
-order's `status.certificateURL` field will be set.
+order's `status.certificate` field will be set to the encoded PEM certificate
+data.
 
 #### Challenge controller
 
@@ -358,8 +369,10 @@ avoid introducing a third resource type (i.e. `Authorization`), the Challenge
 controller is responsible for accepting the **authorization** associated with
 the challenge.
 
-After the authorization has been accepted, the `status.state` field will be set
-to the state of the **authorization** and not the challenge.
+After the authorization has been accepted, the `status.state` field of the
+Challenge resource will be set to the state of the **authorization**. The state
+of a Challenge resource will only be 'valid' when its corresponding ACME
+authorization is 'valid'.
 
 Authorization & challenge status is closely related, so this should not bring any
 unexpected surprises (i.e. if a challenge is 'invalid', the authorization will also
