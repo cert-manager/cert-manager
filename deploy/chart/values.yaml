@@ -67,7 +67,6 @@ nodeSelector: {}
 
 priorityClassName: ""
 
-
 ingressShim: {}
   # defaultIssuerName: ""
   # defaultIssuerKind: ""
