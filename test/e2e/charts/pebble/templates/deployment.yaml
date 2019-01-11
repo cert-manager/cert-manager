@@ -21,6 +21,7 @@ spec:
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           args:
           - -config=/config/config.json
+          - -strict={{ .Values.strict }}
           volumeMounts:
           - name: config
             mountPath: /config

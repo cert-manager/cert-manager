@@ -28,9 +28,13 @@ type Pebble struct {
 
 	// // ImageTag for Pebble
 	// ImageTag string
+
+	// Strict enables Pebble's 'strict mode'
+	Strict bool
 }
 
 func (p *Pebble) AddFlags(fs *flag.FlagSet) {
+	fs.BoolVar(&p.Strict, "pebble-strict", true, "If true, tests using Pebble will have strict mode enabled")
 	// fs.StringVar(&p.ImageRepo, "pebble-image-repo", "", "The container image repository for pebble to use in e2e tests")
 	// fs.StringVar(&p.ImageTag, "pebble-image-tag", "", "The container image tag for pebble to use in e2e tests")
 }
