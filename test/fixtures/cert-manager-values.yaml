@@ -6,10 +6,10 @@ image:
 
 resources:
   requests:
-    cpu: 100m
-    memory: 50Mi
+    cpu: 500m
+    memory: 200Mi
   limits:
-    cpu: 200m
+    cpu: 1
     memory: 200Mi
 
 extraArgs:
@@ -25,8 +25,8 @@ webhook:
     pullPolicy: Never
   resources:
     requests:
-      cpu: 10m
+      cpu: 100m
       memory: 40Mi
     limits:
-      cpu: 100m
+      cpu: 200m
       memory: 256Mi
