@@ -36,8 +36,8 @@ func DecodePrivateKeyBytes(keyBytes []byte) (crypto.Signer, error) {
 	if block == nil {
 		return nil, errors.NewInvalidData("error decoding private key PEM block")
 	}
-	glog.Infof("Decoding private key block %+v", block)
-
+	glog.Infof("Decoding private key bytes")
+	glog.Infof("BLOCK: %+v", block)
 	switch block.Type {
 	case "PRIVATE KEY":
 		key, err := x509.ParsePKCS8PrivateKey(block.Bytes)
@@ -55,7 +55,7 @@ func DecodePrivateKeyBytes(keyBytes []byte) (crypto.Signer, error) {
 		if err != nil {
 			return nil, errors.NewInvalidData("error parsing ecdsa private key: %s", err.Error())
 		}
-
+		glog.Infof("EC Private key: %+v", key)
 		return key, nil
 	case "RSA PRIVATE KEY":
 		key, err := x509.ParsePKCS1PrivateKey(block.Bytes)
@@ -67,23 +67,23 @@ func DecodePrivateKeyBytes(keyBytes []byte) (crypto.Signer, error) {
 		if err != nil {
 			return nil, errors.NewInvalidData("rsa private key failed validation: %s", err.Error())
 		}
-
+		glog.Infof("RSA Private: %+v", key)
 		return key, nil
 	case "PRIVATE KEY":
 		glog.Infof("Decoding private key pkcs8")
 		key, err := x509.ParsePKCS8PrivateKey(block.Bytes)
 		if err != nil {
-			return nil, errors.NewInvalidData("error parsing pkcs8 private key: %s", err.Error())
+			return nil, errors.NewInvalidData("error parsing rsa pkcs8 private key: %s", err.Error())
 		}
 		key, err := keys.NewSignerFromKey(key)
 		if err != nil {
 			return nil, errors.NewInvalidData("error converting pkcs8 key to crypto.Signer: %s", err.Error())
 		}
-
 		return key, nil
 	default:
 		return nil, errors.NewInvalidData("unknown private key type: %s", block.Type)
 	}
+
 }
 
 // DecodePKCS1PrivateKeyBytes will decode a PEM encoded RSA private key.

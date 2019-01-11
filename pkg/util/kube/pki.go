@@ -23,6 +23,7 @@ import (
 	api "k8s.io/api/core/v1"
 	corelisters "k8s.io/client-go/listers/core/v1"
 
+	"github.com/golang/glog"
 	"github.com/jetstack/cert-manager/pkg/util/errors"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 )
@@ -31,16 +32,20 @@ import (
 // secret with 'name' in 'namespace'. It will read the private key data from the secret
 // entry with name 'keyName'.
 func SecretTLSKeyRef(secretLister corelisters.SecretLister, namespace, name, keyName string) (crypto.Signer, error) {
+	glog.Infof("In kube secret tls key ref")
 	secret, err := secretLister.Secrets(namespace).Get(name)
 	if err != nil {
 		return nil, err
 	}
 
 	keyBytes, ok := secret.Data[keyName]
+	glog.Infof("In kube secret tls key ref, go the keyBytes")
 	if !ok {
 		return nil, errors.NewInvalidData("no data for %q in secret '%s/%s'", keyName, namespace, name)
 	}
+	glog.Infof("In kube secret tls key ref decoding")
 	key, err := pki.DecodePrivateKeyBytes(keyBytes)
+	glog.Infof("finished decoding")
 	if err != nil {
 		return key, errors.NewInvalidData(err.Error())
 	}
