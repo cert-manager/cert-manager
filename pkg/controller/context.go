@@ -47,6 +47,10 @@ type Context struct {
 	// instances
 	SharedInformerFactory informers.SharedInformerFactory
 
+	// Namespace is the namespace to operate within.
+	// If unset, operates on all namespaces
+	Namespace string
+
 	IssuerOptions
 	ACMEOptions
 	IngressShimOptions
