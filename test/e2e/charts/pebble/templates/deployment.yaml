@@ -19,6 +19,8 @@ spec:
         - name: {{ .Chart.Name }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
+          args:
+          - -strict={{ .Values.strict }}
           readinessProbe:
             tcpSocket:
               port: 14000

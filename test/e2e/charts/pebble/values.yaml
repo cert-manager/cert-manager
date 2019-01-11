@@ -12,3 +12,5 @@ resources:
   limits:
     cpu: 100m
     memory: 100Mi
+
+strict: "false"

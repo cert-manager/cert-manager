@@ -40,6 +40,9 @@ type Pebble struct {
 
 	// Namespace is the namespace to deploy Pebble into
 	Namespace string
+
+	// Strict will set the 'strict' flag on pebble
+	Strict bool
 }
 
 type Details struct {
@@ -69,6 +72,12 @@ func (p *Pebble) Setup(cfg *config.Config) error {
 		ReleaseName: "chart-pebble-" + p.Name,
 		Namespace:   p.Namespace,
 		ChartName:   cfg.RepoRoot + "/test/e2e/charts/pebble",
+		Vars: []chart.StringTuple{
+			{
+				Key:   "strict",
+				Value: fmt.Sprintf("%t", p.Strict),
+			},
+		},
 		// doesn't matter when installing from disk
 		ChartVersion: "0",
 	}

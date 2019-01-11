@@ -49,5 +49,7 @@ kubectl get nodes
 
 "${SCRIPT_ROOT}/lib/build_images.sh"
 
+PEBBLE_STRICT="${PEBBLE_STRICT:-false}"
 make e2e_test \
-    KUBECONFIG=${KUBECONFIG}
+    KUBECONFIG=${KUBECONFIG} \
+    PEBBLE_STRICT="${PEBBLE_STRICT}"

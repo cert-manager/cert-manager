@@ -18,6 +18,7 @@ APP_VERSION := canary
 HACK_DIR ?= hack
 
 GINKGO_SKIP :=
+PEBBLE_STRICT ?= false
 
 ## e2e test vars
 KUBECONFIG ?= $$HOME/.kube/config
@@ -116,7 +117,8 @@ e2e_test:
 			--tiller-image-tag=$$($$(bazel info bazel-genfiles)/hack/bin/helm version --client --template '{{.Client.SemVer}}') \
 			--repo-root="$$(pwd)" \
 			--report-dir="$${ARTIFACTS:-./_artifacts}" \
-			--ginkgo.skip="$(GINKGO_SKIP)"
+			--ginkgo.skip="$(GINKGO_SKIP)" \
+			--pebble-strict=$(PEBBLE_STRICT)
 
 # Generate targets
 ##################
