@@ -20,7 +20,7 @@ import (
 	"crypto"
 	"crypto/rsa"
 	"crypto/x509"
-	"crypto/keys"
+	"crypto/ssh/keys"
 	"encoding/pem"
 
 	"github.com/golang/glog"
