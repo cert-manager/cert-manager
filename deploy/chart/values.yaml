@@ -65,8 +65,6 @@ podLabels: {}
 
 nodeSelector: {}
 
-priorityClassName: ""
-
 ingressShim: {}
   # defaultIssuerName: ""
   # defaultIssuerKind: ""
@@ -102,3 +100,6 @@ affinity: {}
 #     value: master
 #     effect: NoSchedule
 tolerations: []
+
+global:
+  priorityClassName: ""
