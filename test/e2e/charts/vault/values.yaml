@@ -1,6 +1,6 @@
 image:
   repository: vault
-  tag: "0.9.3"
+  tag: "bazel"
 
 vault:
   publicKey:

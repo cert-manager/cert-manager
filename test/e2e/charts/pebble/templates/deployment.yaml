@@ -19,6 +19,12 @@ spec:
         - name: {{ .Chart.Name }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
+          args:
+          - -config=/config/config.json
+          volumeMounts:
+          - name: config
+            mountPath: /config
+            readOnly: true
           readinessProbe:
             tcpSocket:
               port: 14000
@@ -28,7 +34,11 @@ spec:
             successThreshold: 1
           resources:
 {{ toYaml .Values.resources | indent 12 }}
-    {{- if .Values.nodeSelector }}
+      volumes:
+      - name: config
+        configMap:
+          name: {{ template "fullname" . }}
+      {{- if .Values.nodeSelector }}
       nodeSelector:
 {{ toYaml .Values.nodeSelector | indent 8 }}
     {{- end }}
