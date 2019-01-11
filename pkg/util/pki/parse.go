@@ -23,6 +23,7 @@ import (
 	"crypto/keys"
 	"encoding/pem"
 
+	"github.com/golang/glog"
 	"github.com/jetstack/cert-manager/pkg/util/errors"
 )
 
@@ -34,7 +35,8 @@ func DecodePrivateKeyBytes(keyBytes []byte) (crypto.Signer, error) {
 	if block == nil {
 		return nil, errors.NewInvalidData("error decoding private key PEM block")
 	}
-
+	glog.Infof("Decoding private key block %+v", block)
+	
 	switch block.Type {
 	case "EC PRIVATE KEY":
 		key, err := x509.ParseECPrivateKey(block.Bytes)
@@ -56,6 +58,7 @@ func DecodePrivateKeyBytes(keyBytes []byte) (crypto.Signer, error) {
 
 		return key, nil
 	case "PRIVATE KEY":
+		glog.Infof("Decoding private key pkcs8")
 		key, err := x509.ParsePKCS8PrivateKey(block.Bytes)
 		if err != nil {
 			return nil, errors.NewInvalidData("error parsing pkcs8 private key: %s", err.Error())
@@ -64,7 +67,7 @@ func DecodePrivateKeyBytes(keyBytes []byte) (crypto.Signer, error) {
 		if err != nil {
 			return nil, errors.NewInvalidData("error converting pkcs8 key to crypto.Signer: %s", err.Error())
 		}
-		
+
 		return key, nil
 	default:
 		return nil, errors.NewInvalidData("unknown private key type: %s", block.Type)
