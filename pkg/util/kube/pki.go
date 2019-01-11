@@ -89,7 +89,9 @@ func SecretTLSKeyPair(secretLister corelisters.SecretLister, namespace, name str
 	if !ok {
 		return nil, nil, errors.NewInvalidData("no private key data for %q in secret '%s/%s'", api.TLSCertKey, namespace, name)
 	}
+	glog.Infof("Kube pki secret tls key pair before decode private key %+v", keyBytes)
 	key, err := pki.DecodePrivateKeyBytes(keyBytes)
+	glog.Infof("Kube pki secret tls key pair after decode private key")
 	if err != nil {
 		return nil, nil, errors.NewInvalidData(err.Error())
 	}
