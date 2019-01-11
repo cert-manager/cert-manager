@@ -2,7 +2,7 @@ replicaCount: 1
 image:
   repository: pebble
   tag: "bazel"
-  pullPolicy: IfNotPresent
+  pullPolicy: Never
 service:
   type: ClusterIP
 resources:

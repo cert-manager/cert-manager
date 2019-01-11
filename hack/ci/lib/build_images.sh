@@ -43,6 +43,10 @@ build_images() {
         "${DOCKER_REPO}"/cert-manager-acmesolver:"${DOCKER_TAG}" \
         "${DOCKER_REPO}"/cert-manager-webhook:"${DOCKER_TAG}" \
         "pebble:bazel" \
+        "quay.io/kubernetes-ingress-controller/nginx-ingress-controller:0.21.0" \
+        "k8s.gcr.io/defaultbackend:bazel" \
+        "vault:bazel" \
+        "gcr.io/kubernetes-helm/tiller:bazel" \
         -o "${BUNDLE_FILE}"
 
     # Copy docker archive into the kind container

@@ -74,7 +74,9 @@ container_pull(
     tag = "3.7-v20180822-0201cfb11",
 )
 
-## Fetch helm for use in template generation and testing
+## Fetch helm & tiller for use in template generation and testing
+## You can bump the version of Helm & Tiller used during e2e tests by tweaking
+## the version numbers in these rules.
 http_archive(
     name = "helm_darwin",
     sha256 = "7c4e6bfbc211d6b984ffb4fa490ce9ac112cc4b9b8d859ece27045b8514c1ed1",
@@ -107,6 +109,13 @@ filegroup(
 """,
 )
 
+container_pull(
+    name = "io_gcr_helm_tiller",
+    registry = "gcr.io",
+    repository = "kubernetes-helm/tiller",
+    tag = "v2.10.0",
+)
+
 ## Install 'kind', for creating kubernetes-in-docker clusters
 go_repository(
     name = "io_kubernetes_sigs_kind",
@@ -114,7 +123,9 @@ go_repository(
     importpath = "sigs.k8s.io/kind",
 )
 
-## Fetch pebble, for use during e2e tests
+## Fetch pebble for use during e2e tests
+## You can change the version of Pebble used for tests by changing the 'commit'
+## field in this rule
 go_repository(
     name = "org_letsencrypt_pebble",
     commit = "2132a88193fdf0d7c0d93c33fce61db43d630fd4",
@@ -122,6 +133,33 @@ go_repository(
     build_external = "vendored",
     # Expose the generated go_default_library as 'public' visibility
     patch_cmds = ["sed -i -e 's/private/public/g' 'cmd/pebble/BUILD.bazel'"],
+)
+
+## Fetch nginx-ingress for use during e2e tests
+## You can change the version of nginx-ingress used for tests by changing the
+## 'tag' field in this rule
+container_pull(
+    name = "io_kubernetes_ingress-nginx",
+    registry = "quay.io",
+    repository = "kubernetes-ingress-controller/nginx-ingress-controller",
+    tag = "0.21.0",
+)
+
+container_pull(
+    name = "io_gcr_k8s_defaultbackend",
+    registry = "k8s.gcr.io",
+    repository = "defaultbackend",
+    tag = "1.4",
+)
+
+## Fetch vault for use during e2e tests
+## You can change the version of vault used for tests by changing the 'tag'
+## field in this rule
+container_pull(
+    name = "com_hashicorp_vault",
+    registry = "index.docker.io",
+    repository = "library/vault",
+    tag = "0.9.3",
 )
 
 ## Install buildozer, for mass-editing BUILD files

@@ -113,7 +113,6 @@ e2e_test:
 			$$(bazel info bazel-genfiles)/test/e2e/e2e.test \
 			-- \
 			--helm-binary-path=$$(bazel info bazel-genfiles)/hack/bin/helm \
-			--tiller-image-tag=$$($$(bazel info bazel-genfiles)/hack/bin/helm version --client --template '{{.Client.SemVer}}') \
 			--repo-root="$$(pwd)" \
 			--report-dir="$${ARTIFACTS:-./_artifacts}" \
 			--ginkgo.skip="$(GINKGO_SKIP)"
