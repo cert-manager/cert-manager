@@ -6,21 +6,32 @@ metadata:
     app: cert-manager
 spec:
   additionalPrinterColumns:
-  - JSONPath: .spec.commonName
-    name: Common Name
-    type: string
-  - JSONPath: .spec.dnsNames
-    name: DNS Names
-    type: string
-  - JSONPath: .spec.issuerRef.name
-    name: Issuer
+  - JSONPath: .status.conditions[?(@.type=="Ready")].status
+    name: Ready
     type: string
   - JSONPath: .spec.secretName
     name: Secret
     type: string
+  - JSONPath: .spec.issuerRef.name
+    name: Issuer
+    type: string
+    priority: 1
+  - JSONPath: .spec.commonName
+    name: Common Name
+    type: string
+    priority: 1
+  - JSONPath: .spec.dnsNames
+    name: DNS Names
+    type: string
+    priority: 1
+  - JSONPath: .status.conditions[?(@.type=="Ready")].message
+    name: Status
+    type: string
+    priority: 1
   - JSONPath: .status.lastFailureTime
     name: Last Failure
     type: date
+    priority: 1
   - JSONPath: .metadata.creationTimestamp
     description: |-
       CreationTimestamp is a timestamp representing the server time when this object was created. It is not guaranteed to be set in happens-before order across separate operations. Clients may not set this value. It is represented in RFC3339 form and is in UTC.
