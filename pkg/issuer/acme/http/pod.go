@@ -86,7 +86,7 @@ func (s *Solver) getPodsForChallenge(ch *v1alpha1.Challenge) ([]*corev1.Pod, err
 	var relevantPods []*corev1.Pod
 	for _, pod := range podList {
 		if !metav1.IsControlledBy(pod, ch) {
-			glog.Infof("Found pod %q with acme-order-url annotation set to that of Certificate %q"+
+			glog.Infof("Found pod %q with acme-order-url annotation set to that of Certificate %q "+
 				"but it is not owned by the Certificate resource, so skipping it.", pod.Namespace+"/"+pod.Name, ch.Namespace+"/"+ch.Name)
 			continue
 		}
