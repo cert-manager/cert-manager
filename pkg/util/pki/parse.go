@@ -20,6 +20,7 @@ import (
 	"crypto"
 	"crypto/rsa"
 	"crypto/x509"
+	"crypto/keys"
 	"encoding/pem"
 
 	"github.com/jetstack/cert-manager/pkg/util/errors"
@@ -69,6 +70,10 @@ func DecodePrivateKeyBytes(keyBytes []byte) (crypto.Signer, error) {
 		key, err := x509.ParsePKCS8PrivateKey(block.Bytes)
 		if err != nil {
 			return nil, errors.NewInvalidData("error parsing pkcs8 private key: %s", err.Error())
+		}
+		key, err := keys.NewSignerFromKey(key)
+		if err != nil {
+			return nil, errors.NewInvalidData("error converting pkcs8 key to crypto.Signer: %s", err.Error())
 		}
 		
 		return key, nil
