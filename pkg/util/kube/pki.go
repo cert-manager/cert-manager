@@ -57,6 +57,7 @@ func SecretTLSKeyRef(secretLister corelisters.SecretLister, namespace, name, key
 // secret with 'name' in 'namespace'. It will read the private key data from the secret
 // entry with name 'keyName'.
 func SecretTLSKey(secretLister corelisters.SecretLister, namespace, name string) (crypto.Signer, error) {
+	glog.Infof("In secret tls key in kube pki")
 	return SecretTLSKeyRef(secretLister, namespace, name, api.TLSPrivateKeyKey)
 }
 
