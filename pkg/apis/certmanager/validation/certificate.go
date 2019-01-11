@@ -78,6 +78,12 @@ func ValidateCertificateSpec(crt *v1alpha1.CertificateSpec, fldPath *field.Path)
 		el = append(el, ValidateDuration(crt, fldPath)...)
 	}
 
+	switch crt.KeyEncoding {
+	case 0, 1, 8:
+	default:
+		el = append(el, field.Invalid(fldPath.Child("keyEncoding"), crt.KeyEncoding, "must be either empty or one of 1 or 8"))
+	}
+	
 	return el
 }
 
