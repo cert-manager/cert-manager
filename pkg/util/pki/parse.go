@@ -54,6 +54,13 @@ func DecodePrivateKeyBytes(keyBytes []byte) (crypto.Signer, error) {
 		}
 
 		return key, nil
+	case "PRIVATE KEY":
+		key, err := x509.ParsePKCS8PrivateKey(block.Bytes)
+		if err != nil {
+			return nil, errors.NewInvalidData("error parsing pkcs8 private key: %s", err.Error())
+		}
+		
+		return key, nil
 	default:
 		return nil, errors.NewInvalidData("unknown private key type: %s", block.Type)
 	}
