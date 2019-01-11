@@ -20,7 +20,7 @@ import (
 	"crypto"
 	"crypto/rsa"
 	"crypto/x509"
-	"crypto/ssh/keys"
+	"crypto/ssh"
 	"encoding/pem"
 
 	"github.com/golang/glog"
@@ -75,7 +75,7 @@ func DecodePrivateKeyBytes(keyBytes []byte) (crypto.Signer, error) {
 		if err != nil {
 			return nil, errors.NewInvalidData("error parsing rsa pkcs8 private key: %s", err.Error())
 		}
-		key, err := keys.NewSignerFromKey(key)
+		key, err := ssh.NewSignerFromKey(key)
 		if err != nil {
 			return nil, errors.NewInvalidData("error converting pkcs8 key to crypto.Signer: %s", err.Error())
 		}
