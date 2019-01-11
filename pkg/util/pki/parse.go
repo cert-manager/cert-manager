@@ -30,13 +30,14 @@ import (
 // DecodePrivateKeyBytes will decode a PEM encoded private key into a crypto.Signer.
 // It supports ECDSA and RSA private keys only. All other types will return err.
 func DecodePrivateKeyBytes(keyBytes []byte) (crypto.Signer, error) {
+	glog.Infof("Decoding private key bytes before block")
 	// decode the private key pem
 	block, _ := pem.Decode(keyBytes)
 	if block == nil {
 		return nil, errors.NewInvalidData("error decoding private key PEM block")
 	}
 	glog.Infof("Decoding private key block %+v", block)
-	
+
 	switch block.Type {
 	case "PRIVATE KEY":
 		key, err := x509.ParsePKCS8PrivateKey(block.Bytes)
