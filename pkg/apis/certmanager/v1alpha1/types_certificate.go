@@ -98,6 +98,12 @@ type CertificateSpec struct {
 	// key size of 256 will be used for "ecdsa" key algorithm and
 	// key size of 2048 will be used for "rsa" key algorithm.
 	KeyAlgorithm KeyAlgorithm `json:"keyAlgorithm,omitempty"`
+
+	// KeyEncoding is the private key cryptography standards (PKCS) number
+	// for this certificate's private key to be encoded in. If provided, allowed
+	// values are 1 and 8 standing for PKCS#1 and PKCS#8, respectively.
+	// If KeyEncoding is not specified, then PKCS#1 will be used by default.
+	KeyEncoding int `json:"keyEncoding,omitempty"`
 }
 
 // ACMECertificateConfig contains the configuration for the ACME certificate provider
