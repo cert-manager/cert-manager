@@ -109,6 +109,13 @@ func (c *Controller) Sync(ctx context.Context, o *cmapi.Order) (err error) {
 			return err
 		}
 
+		// Don't cleanup challenge resources if the order has failed.
+		// This will make it easier for users to debug failing challenges.
+		// The challenge resources will be cleaned up when the Order is deleted.
+		if acme.IsFailureState(o.Status.State) {
+			return nil
+		}
+
 		// Cleanup challenge resources once a final state has been reached
 		for _, ch := range existingChallenges {
 			err := c.CMClient.CertmanagerV1alpha1().Challenges(ch.Namespace).Delete(ch.Name, nil)
