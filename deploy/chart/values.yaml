@@ -107,3 +107,6 @@ affinity: {}
 #     value: master
 #     effect: NoSchedule
 tolerations: []
+
+global:
+  priorityClassName: ""

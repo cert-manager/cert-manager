@@ -29,6 +29,9 @@ spec:
       {{- end }}
     spec:
       serviceAccountName: {{ include "webhook.fullname" . }}
+      {{- if .Values.global.priorityClassName }}
+      priorityClassName: {{ .Values.global.priorityClassName | quote }}
+      {{- end }}
       containers:
         - name: {{ .Chart.Name }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
