@@ -18,6 +18,7 @@ package pki
 
 import (
 	"crypto/x509"
+	"net"
 	"testing"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
@@ -28,6 +29,15 @@ func buildCertificate(cn string, dnsNames ...string) *v1alpha1.Certificate {
 		Spec: v1alpha1.CertificateSpec{
 			CommonName: cn,
 			DNSNames:   dnsNames,
+		},
+	}
+}
+
+func buildCertificateIPAddresses(cn string, ipAddresses ...string) *v1alpha1.Certificate {
+	return &v1alpha1.Certificate{
+		Spec: v1alpha1.CertificateSpec{
+			CommonName:  cn,
+			IPAddresses: ipAddresses,
 		},
 	}
 }
@@ -128,6 +138,59 @@ func TestDNSNamesForCertificate(t *testing.T) {
 			for i, actual := range actualDNSNames {
 				if test.expectDNSNames[i] != actual {
 					t.Errorf("expected %q but got %q", test.expectDNSNames, actualDNSNames)
+					return
+				}
+			}
+		}
+	}
+	for _, test := range tests {
+		t.Run(test.name, testFn(test))
+	}
+}
+
+func TestIPAddressesForCertificate(t *testing.T) {
+	type testT struct {
+		name              string
+		crtCN             string
+		crtIPAddresses    []string
+		expectIPAddresses []net.IP
+	}
+	tests := []testT{
+		{
+			name:              "certificate with one IP address set",
+			crtCN:             "cn",
+			crtIPAddresses:    []string{"127.0.0.1"},
+			expectIPAddresses: []net.IP{net.ParseIP("127.0.0.1")},
+		},
+		{
+			name:              "certificate with multiple IP addresses set",
+			crtCN:             "cn",
+			crtIPAddresses:    []string{"127.0.0.1", "1.1.1.1"},
+			expectIPAddresses: []net.IP{net.ParseIP("127.0.0.1"), net.ParseIP("1.1.1.1")},
+		},
+		{
+			name:              "certificate with invalid IP addresses set",
+			crtCN:             "cn",
+			crtIPAddresses:    []string{"invalid", "address"},
+			expectIPAddresses: []net.IP{},
+		},
+		{
+			name:              "certificate with a mix of valid and invalid IP addresses set",
+			crtCN:             "cn",
+			crtIPAddresses:    []string{"invalid", "127.0.0.1"},
+			expectIPAddresses: []net.IP{net.ParseIP("127.0.0.1")},
+		},
+	}
+	testFn := func(test testT) func(*testing.T) {
+		return func(t *testing.T) {
+			actualIPAddresses := IPAddressesForCertificate(buildCertificateIPAddresses(test.crtCN, test.crtIPAddresses...))
+			if len(actualIPAddresses) != len(test.expectIPAddresses) {
+				t.Errorf("expected %q items but got %q", len(test.expectIPAddresses), len(actualIPAddresses))
+				return
+			}
+			for i, actual := range actualIPAddresses {
+				if !test.expectIPAddresses[i].Equal(actual) {
+					t.Errorf("expected %q but got %q", test.expectIPAddresses, actualIPAddresses)
 					return
 				}
 			}

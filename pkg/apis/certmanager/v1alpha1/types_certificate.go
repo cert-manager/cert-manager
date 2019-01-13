@@ -57,8 +57,11 @@ type CertificateSpec struct {
 	// Organization is the organization to be used on the Certificate
 	Organization []string `json:"organization,omitempty"`
 
-	// DNSNames is a list of subject alt names to be used on the Certificate
+	// DNSNames is a list of DNS SANs to be used on the Certificate
 	DNSNames []string `json:"dnsNames,omitempty"`
+
+	// IPAddresses is a list of IP address SANs to be used on the Certificate
+	IPAddresses []string `json:"ipAddresses,omitempty"`
 
 	// SecretName is the name of the secret resource to store this secret in
 	SecretName string `json:"secretName"`

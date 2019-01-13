@@ -24,6 +24,7 @@ import (
 	"encoding/pem"
 	"fmt"
 	"math/big"
+	"net"
 	"time"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
@@ -53,6 +54,20 @@ func DNSNamesForCertificate(crt *v1alpha1.Certificate) []string {
 	return crt.Spec.DNSNames
 }
 
+func IPAddressesForCertificate(crt *v1alpha1.Certificate) []net.IP {
+	addresses := make([]net.IP, 0)
+
+	for _, i := range crt.Spec.IPAddresses {
+		address := net.ParseIP(i)
+
+		if address != nil {
+			addresses = append(addresses, address)
+		}
+	}
+
+	return addresses
+}
+
 const defaultOrganization = "cert-manager"
 
 func OrganizationForCertificate(crt *v1alpha1.Certificate) []string {
@@ -71,6 +86,7 @@ const defaultNotAfter = time.Hour * 24 * 365
 func GenerateCSR(issuer v1alpha1.GenericIssuer, crt *v1alpha1.Certificate) (*x509.CertificateRequest, error) {
 	commonName := CommonNameForCertificate(crt)
 	dnsNames := DNSNamesForCertificate(crt)
+	ipAddresses := IPAddressesForCertificate(crt)
 	organization := OrganizationForCertificate(crt)
 
 	if len(commonName) == 0 && len(dnsNames) == 0 {
@@ -89,7 +105,8 @@ func GenerateCSR(issuer v1alpha1.GenericIssuer, crt *v1alpha1.Certificate) (*x50
 			Organization: organization,
 			CommonName:   commonName,
 		},
-		DNSNames: dnsNames,
+		DNSNames:    dnsNames,
+		IPAddresses: ipAddresses,
 		// TODO: work out how best to handle extensions/key usages here
 		ExtraExtensions: []pkix.Extension{},
 	}, nil

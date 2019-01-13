@@ -44,6 +44,9 @@ The ``dnsNames`` field specifies a list of `Subject Alternative Names`_ to be
 associated with the certificate. If the ``commonName`` field is omitted, the
 first element in the list will be the common name.
 
+The ``ipAddresses`` field specifies a list of `Subject Alternative Names`_ to be
+associated with the certificate and labeled as IP addresses.
+
 The referenced Issuer must exist in the same namespace as the Certificate. A
 Certificate can alternatively reference a ClusterIssuer which is non-namespaced.
 
