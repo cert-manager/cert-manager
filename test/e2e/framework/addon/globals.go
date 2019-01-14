@@ -59,10 +59,16 @@ var (
 	provisioned []Addon
 )
 
+var globalsInited = false
+
 // InitGlobals actually allocates the addon values that are defined above.
 // We do this here so that we can access the suites config structure during
 // the definition of global addons.
 func InitGlobals(cfg *config.Config) {
+	if globalsInited {
+		return
+	}
+	globalsInited = true
 	*Base = base.Base{}
 	*Tiller = tiller.Tiller{
 		Base:               Base,
