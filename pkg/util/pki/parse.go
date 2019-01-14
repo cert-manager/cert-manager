@@ -30,21 +30,18 @@ import (
 // DecodePrivateKeyBytes will decode a PEM encoded private key into a crypto.Signer.
 // It supports ECDSA and RSA private keys only. All other types will return err.
 func DecodePrivateKeyBytes(keyBytes []byte) (crypto.Signer, error) {
-	glog.Infof("Decoding private key bytes before block")
 	// decode the private key pem
 	block, _ := pem.Decode(keyBytes)
 	if block == nil {
 		return nil, errors.NewInvalidData("error decoding private key PEM block")
 	}
-	glog.Infof("Decoding private key bytes")
-	glog.Infof("BLOCK: %+v", block)
+	
 	switch block.Type {
 	case "EC PRIVATE KEY":
 		key, err := x509.ParseECPrivateKey(block.Bytes)
 		if err != nil {
 			return nil, errors.NewInvalidData("error parsing ecdsa private key: %s", err.Error())
 		}
-		glog.Infof("EC Private key: %+v", key)
 		return key, nil
 	case "RSA PRIVATE KEY":
 		key, err := x509.ParsePKCS1PrivateKey(block.Bytes)
@@ -56,10 +53,10 @@ func DecodePrivateKeyBytes(keyBytes []byte) (crypto.Signer, error) {
 		if err != nil {
 			return nil, errors.NewInvalidData("rsa private key failed validation: %s", err.Error())
 		}
-		glog.Infof("RSA Private: %+v", key)
 		return key, nil
 	case "PRIVATE KEY":
 		glog.Infof("Decoding private key pkcs8")
+		glog.Infof("BLOCK: %s", block.Type)
 		pkey8, err := x509.ParsePKCS8PrivateKey(block.Bytes)
 		if err != nil {
 			return nil, errors.NewInvalidData("error parsing rsa pkcs8 private key: %s", err.Error())
@@ -70,24 +67,8 @@ func DecodePrivateKeyBytes(keyBytes []byte) (crypto.Signer, error) {
 		if err != nil {
 			return nil, errors.NewInvalidData("error converting from pkcs8 to pkcs1 %s", err.Error())
 		}
+		glog.Infof("Convert PKCS8 to crypto.Signer: %+v", key)
 		return key, nil
-		// keySigner, fail := key.(*rsa.PrivateKey)
-		// if fail {
-			// return nil, errors.NewInvalidData("error converting pkcs8 key to rsa.PrivateKey ")
-		// }
-		//glog.Infof("Convert to crypto.Signer complete for private key pkcs8")
-		//return keySigner, nil
-		// key, err := x509.ParsePKCS1PrivateKey(block.Bytes)
-		// if err != nil {
-			// return nil, errors.NewInvalidData("error parsing rsa private key: %s", err.Error())
-		// }
-
-		// err = key.Validate()
-		// if err != nil {
-			// return nil, errors.NewInvalidData("rsa private key failed validation: %s", err.Error())
-		// }
-		// glog.Infof("PKCS8 RSA Private: %+v", key)
-		// return key, nil
 	default:
 		return nil, errors.NewInvalidData("unknown private key type: %s", block.Type)
 	}
