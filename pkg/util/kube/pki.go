@@ -84,9 +84,7 @@ func SecretTLSKeyPair(secretLister corelisters.SecretLister, namespace, name str
 	if !ok {
 		return nil, nil, errors.NewInvalidData("no private key data for %q in secret '%s/%s'", api.TLSCertKey, namespace, name)
 	}
-
 	key, err := pki.DecodePrivateKeyBytes(keyBytes)
-
 	if err != nil {
 		return nil, nil, errors.NewInvalidData(err.Error())
 	}
