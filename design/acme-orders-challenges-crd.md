@@ -313,6 +313,36 @@ types.
 This two controllers will take the majority of the logic that used to exist in
 the `Prepare` function of the ACME issuer.
 
+#### ACME Issuer
+
+The ACME issuer is modified to manage Order resources instead of actually
+performing the ACME validation flow.
+
+Each time the Issue function is called, the controller will check the state
+of the Order resource that it has created on a previous invocaction of the
+Issue function, and if it is valid then return the Certificate as stored on
+`order.status.certificate'. It will also verify that the Certificate stored on
+that Order resource is 'up to date' (taking into account the Certificate's
+configured `renewBefore`).
+
+An Order resource remains even after the Certificate has been issued
+successfully. This allows users to delete their Secret resource and have the
+same certificate re-issued so long as that certificate is still within the
+bounds of 'valid' (as dictated by the renewBefore field on the Certificate).
+If a user wants to force a new Order (i.e. new x509 certificate), they should
+delete the Order resource that exists for the Certificate.
+
+If the Order for a Certificate fails, the ACME issuer will:
+
+* Record the `certificate.status.lastFailureTime` as `time.Now()` if it is not
+already set.
+
+* Prevent creation of a new Order resource until 1h after the recorded `lastFailureTime`.
+
+Just before retrying the Order, the old Order resource will be deleted to
+ensure we don't accumulate too many Order & Challenge resources when an issuance
+keeps failing.
+
 #### Order controller
 
 When an order is created, all of the spec fields must be defined, including CSR.
@@ -324,14 +354,15 @@ the ACME server, throughout the Order handling flow.
 
 * The Order controller will attempt to create a new order with the ACME server
 if the `status.url` field is not set. It will copy details of the order, e.g.
-the list of authorizations that must be completed, back
-onto the Order resource's 'status' block, to save subsequent calls to the ACME
-server for this information.
+the list of authorizations that must be completed, back onto the Order
+resource's 'status' block, to save subsequent calls to the ACME server for this
+information.
 
 * If the order's state is 'final' (i.e. one of valid, invalid, expired, errored)
-then the controller will take no further action and return. Any Challenge
-resources that were created for this Order will also be cleaned up if they
-exist.
+then the controller will take no further action and return. If the Order has
+succeeded, it will delete all Challenge resources it has created for the Order.
+If the Order fails for any reason, the Challenge resources will be retained
+to allow users to debug the failures.
 
 * For each authorization on the Order, the order controller will select a challenge
 type to use to solve the authorization (based on the Issuer config and Order's
@@ -346,6 +377,23 @@ order using the CSR as specified on the Order resource (i.e. `spec.csr`).
 After this finalization has completed, the order status will be updated and the
 order's `status.certificate` field will be set to the encoded PEM certificate
 data.
+
+* If the order is 'invalid' (or any other failed state), the order controller
+will take no further action - this prevents additional ACME API calls, and
+allows users to debug failures easily. It also enables predictable retries of
+Orders, as a single Order resource represents a single ACME order.
+
+In its current implementation, it is unlikely that cert-manager will observe
+an Order transitioning into an 'expired' or 'revoked' state.
+
+This is because once an Order enters a 'valid' or 'invalid' state, its status
+will no longer be synced with the ACME server. This should not cause an issue
+as once a certificate is nearing expiry, we will force a new order to be
+created anyway.
+
+We may need to consider mechanisms for periodically updating the Order's state
+in future, but such an implementation would require special consideration to
+ensure we don't query the ACME API too aggressively.
 
 #### Challenge controller
 
@@ -366,8 +414,8 @@ vs authorizations.
 
 Whilst this controller works with a single ACME *Challenge* only, in order to
 avoid introducing a third resource type (i.e. `Authorization`), the Challenge
-controller is responsible for accepting the **authorization** associated with
-the challenge.
+controller is responsible for accepting the **ACME authorization** associated
+with the challenge.
 
 After the authorization has been accepted, the `status.state` field of the
 Challenge resource will be set to the state of the **authorization**. The state
