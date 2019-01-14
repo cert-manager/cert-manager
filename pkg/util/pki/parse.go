@@ -75,7 +75,7 @@ func DecodePrivateKeyBytes(keyBytes []byte) (crypto.Signer, error) {
 		if err != nil {
 			return nil, errors.NewInvalidData("error parsing rsa pkcs8 private key: %s", err.Error())
 		}
-		keySigner, fail := key.(crypto.Signer)
+		keySigner, fail := key.(*rsa.PrivateKey)
 		if fail {
 			return nil, errors.NewInvalidData("error converting pkcs8 key to crypto.Signer ")
 		}
