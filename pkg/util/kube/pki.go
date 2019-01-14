@@ -23,7 +23,6 @@ import (
 	api "k8s.io/api/core/v1"
 	corelisters "k8s.io/client-go/listers/core/v1"
 
-	"github.com/golang/glog"
 	"github.com/jetstack/cert-manager/pkg/util/errors"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 )
@@ -32,20 +31,16 @@ import (
 // secret with 'name' in 'namespace'. It will read the private key data from the secret
 // entry with name 'keyName'.
 func SecretTLSKeyRef(secretLister corelisters.SecretLister, namespace, name, keyName string) (crypto.Signer, error) {
-	glog.Infof("In kube secret tls key ref")
 	secret, err := secretLister.Secrets(namespace).Get(name)
 	if err != nil {
 		return nil, err
 	}
 
 	keyBytes, ok := secret.Data[keyName]
-	glog.Infof("In kube secret tls key ref, go the keyBytes")
 	if !ok {
 		return nil, errors.NewInvalidData("no data for %q in secret '%s/%s'", keyName, namespace, name)
 	}
-	glog.Infof("In kube secret tls key ref decoding")
 	key, err := pki.DecodePrivateKeyBytes(keyBytes)
-	glog.Infof("finished decoding")
 	if err != nil {
 		return key, errors.NewInvalidData(err.Error())
 	}
@@ -57,7 +52,6 @@ func SecretTLSKeyRef(secretLister corelisters.SecretLister, namespace, name, key
 // secret with 'name' in 'namespace'. It will read the private key data from the secret
 // entry with name 'keyName'.
 func SecretTLSKey(secretLister corelisters.SecretLister, namespace, name string) (crypto.Signer, error) {
-	glog.Infof("In secret tls key in kube pki")
 	return SecretTLSKeyRef(secretLister, namespace, name, api.TLSPrivateKeyKey)
 }
 
@@ -89,9 +83,9 @@ func SecretTLSKeyPair(secretLister corelisters.SecretLister, namespace, name str
 	if !ok {
 		return nil, nil, errors.NewInvalidData("no private key data for %q in secret '%s/%s'", api.TLSCertKey, namespace, name)
 	}
-	glog.Infof("Kube pki secret tls key pair before decode private key %+v", keyBytes)
+
 	key, err := pki.DecodePrivateKeyBytes(keyBytes)
-	glog.Infof("Kube pki secret tls key pair after decode private key")
+
 	if err != nil {
 		return nil, nil, errors.NewInvalidData(err.Error())
 	}
