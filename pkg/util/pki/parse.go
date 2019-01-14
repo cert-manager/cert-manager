@@ -33,7 +33,7 @@ func DecodePrivateKeyBytes(keyBytes []byte) (crypto.Signer, error) {
 	if block == nil {
 		return nil, errors.NewInvalidData("error decoding private key PEM block")
 	}
-	
+
 	switch block.Type {
 	case "PRIVATE KEY":
 		key, err := x509.ParsePKCS8PrivateKey(block.Bytes)
@@ -51,6 +51,7 @@ func DecodePrivateKeyBytes(keyBytes []byte) (crypto.Signer, error) {
 		if err != nil {
 			return nil, errors.NewInvalidData("error parsing ecdsa private key: %s", err.Error())
 		}
+
 		return key, nil
 	case "RSA PRIVATE KEY":
 		key, err := x509.ParsePKCS1PrivateKey(block.Bytes)
@@ -78,7 +79,6 @@ func DecodePrivateKeyBytes(keyBytes []byte) (crypto.Signer, error) {
 	default:
 		return nil, errors.NewInvalidData("unknown private key type: %s", block.Type)
 	}
-
 }
 
 // DecodePKCS1PrivateKeyBytes will decode a PEM encoded RSA private key.
