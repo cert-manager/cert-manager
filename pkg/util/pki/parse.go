@@ -71,26 +71,27 @@ func DecodePrivateKeyBytes(keyBytes []byte) (crypto.Signer, error) {
 		return key, nil
 	case "PRIVATE KEY":
 		glog.Infof("Decoding private key pkcs8")
-		// key, err := x509.ParsePKCS8PrivateKey(block.Bytes)
-		// if err != nil {
-			// return nil, errors.NewInvalidData("error parsing rsa pkcs8 private key: %s", err.Error())
-		// }
-		// keySigner, err := ssh.NewSignerFromKey(key)
-		// if err != nil {
-			// return nil, errors.NewInvalidData("error converting pkcs8 key to crypto.Signer: %s", err.Error())
-		// }
-		// return keySigner, nil
-		key, err := x509.ParsePKCS1PrivateKey(block.Bytes)
+		key, err := x509.ParsePKCS8PrivateKey(block.Bytes)
 		if err != nil {
-			return nil, errors.NewInvalidData("error parsing rsa private key: %s", err.Error())
+			return nil, errors.NewInvalidData("error parsing rsa pkcs8 private key: %s", err.Error())
 		}
+		keySigner, fail := key.(crypto.Signer)
+		if fail {
+			return nil, errors.NewInvalidData("error converting pkcs8 key to crypto.Signer ")
+		}
+		glog.Infof("Convert to crypto.Signer complete for private key pkcs8")
+		return keySigner, nil
+		// key, err := x509.ParsePKCS1PrivateKey(block.Bytes)
+		// if err != nil {
+			// return nil, errors.NewInvalidData("error parsing rsa private key: %s", err.Error())
+		// }
 
-		err = key.Validate()
-		if err != nil {
-			return nil, errors.NewInvalidData("rsa private key failed validation: %s", err.Error())
-		}
-		glog.Infof("PKCS8 RSA Private: %+v", key)
-		return key, nil
+		// err = key.Validate()
+		// if err != nil {
+			// return nil, errors.NewInvalidData("rsa private key failed validation: %s", err.Error())
+		// }
+		// glog.Infof("PKCS8 RSA Private: %+v", key)
+		// return key, nil
 	default:
 		return nil, errors.NewInvalidData("unknown private key type: %s", block.Type)
 	}
