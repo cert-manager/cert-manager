@@ -32,7 +32,7 @@ func generatePrivateKeyBytes(keyAlgo v1alpha1.KeyAlgorithm, keySize int) ([]byte
 		return nil, err
 	}
 
-	return EncodePrivateKey(privateKey)
+	return EncodePrivateKey(privateKey, 0)
 }
 
 func TestDecodePrivateKeyBytes(t *testing.T) {
