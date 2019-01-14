@@ -144,6 +144,15 @@ images_push: images
 	# https://github.com/moby/buildkit/issues/409#issuecomment-394757219
 	# source the bazel workspace environment
 	eval $$($(BAZEL_IMAGE_ENV) ./hack/print-workspace-status.sh | tr ' ' '='); \
+	docker tag "$${STABLE_DOCKER_REPO}/cert-manager-acmesolver-amd64:$${STABLE_DOCKER_TAG}" "$${STABLE_DOCKER_REPO}/cert-manager-acmesolver:$${STABLE_DOCKER_TAG}"; \
+	docker tag "$${STABLE_DOCKER_REPO}/cert-manager-controller-amd64:$${STABLE_DOCKER_TAG}" "$${STABLE_DOCKER_REPO}/cert-manager-controller:$${STABLE_DOCKER_TAG}"; \
+	docker tag "$${STABLE_DOCKER_REPO}/cert-manager-webhook-amd64:$${STABLE_DOCKER_TAG}" "$${STABLE_DOCKER_REPO}/cert-manager-webhook:$${STABLE_DOCKER_TAG}"; \
 	docker push "$${STABLE_DOCKER_REPO}/cert-manager-acmesolver:$${STABLE_DOCKER_TAG}"; \
 	docker push "$${STABLE_DOCKER_REPO}/cert-manager-controller:$${STABLE_DOCKER_TAG}"; \
-	docker push "$${STABLE_DOCKER_REPO}/cert-manager-webhook:$${STABLE_DOCKER_TAG}"
+	docker push "$${STABLE_DOCKER_REPO}/cert-manager-webhook:$${STABLE_DOCKER_TAG}"; \
+	docker push "$${STABLE_DOCKER_REPO}/cert-manager-acmesolver-arm64:$${STABLE_DOCKER_TAG}"; \
+	docker push "$${STABLE_DOCKER_REPO}/cert-manager-controller-arm64:$${STABLE_DOCKER_TAG}"; \
+	docker push "$${STABLE_DOCKER_REPO}/cert-manager-webhook-arm64:$${STABLE_DOCKER_TAG}";
+	docker push "$${STABLE_DOCKER_REPO}/cert-manager-acmesolver-arm:$${STABLE_DOCKER_TAG}"; \
+	docker push "$${STABLE_DOCKER_REPO}/cert-manager-controller-arm:$${STABLE_DOCKER_TAG}"; \
+	docker push "$${STABLE_DOCKER_REPO}/cert-manager-webhook-arm:$${STABLE_DOCKER_TAG}";
