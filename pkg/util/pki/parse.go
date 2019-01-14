@@ -20,10 +20,8 @@ import (
 	"crypto"
 	"crypto/rsa"
 	"crypto/x509"
-	
 	"encoding/pem"
 
-	"github.com/golang/glog"
 	"github.com/jetstack/cert-manager/pkg/util/errors"
 )
 
@@ -66,19 +64,16 @@ func DecodePrivateKeyBytes(keyBytes []byte) (crypto.Signer, error) {
 		}
 		return key, nil
 	case "PRIVATE KEY":
-		glog.Infof("Decoding private key pkcs8")
-		glog.Infof("BLOCK: %s", block.Type)
 		pkey8, err := x509.ParsePKCS8PrivateKey(block.Bytes)
 		if err != nil {
 			return nil, errors.NewInvalidData("error parsing rsa pkcs8 private key: %s", err.Error())
 		}
-		glog.Infof("PKCS8 private: %+v", pkey8)
+
 		pkey1 := x509.MarshalPKCS1PrivateKey(pkey8.(*rsa.PrivateKey))
 		key, err := x509.ParsePKCS1PrivateKey(pkey1)
 		if err != nil {
-			return nil, errors.NewInvalidData("error converting from pkcs8 to pkcs1 %s", err.Error())
+			return nil, errors.NewInvalidData("error converting from parsing from PKCS8 to PKCS1 %s", err.Error())
 		}
-		glog.Infof("Convert PKCS8 to crypto.Signer: %+v", key)
 		return key, nil
 	default:
 		return nil, errors.NewInvalidData("unknown private key type: %s", block.Type)
