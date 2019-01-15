@@ -19,7 +19,6 @@ package kube
 import (
 	"crypto"
 	"crypto/x509"
-	"fmt"
 
 	api "k8s.io/api/core/v1"
 	corelisters "k8s.io/client-go/listers/core/v1"
@@ -39,7 +38,7 @@ func SecretTLSKeyRef(secretLister corelisters.SecretLister, namespace, name, key
 
 	keyBytes, ok := secret.Data[keyName]
 	if !ok {
-		return nil, fmt.Errorf("no data for %q in secret '%s/%s'", keyName, namespace, name)
+		return nil, errors.NewInvalidData("no data for %q in secret '%s/%s'", keyName, namespace, name)
 	}
 	key, err := pki.DecodePrivateKeyBytes(keyBytes)
 	if err != nil {
