@@ -1,0 +1,21 @@
+load("//hack/def:kind.bzl", "kind_cluster")
+
+kind_cluster(
+    name = "dev",
+    config = "//test/fixtures/kind:config-v1alpha2.yaml",
+    version = "1.11.4-1",
+)
+
+filegroup(
+    name = "package-srcs",
+    srcs = glob(["**"]),
+    tags = ["automanaged"],
+    visibility = ["//visibility:private"],
+)
+
+filegroup(
+    name = "all-srcs",
+    srcs = [":package-srcs"],
+    tags = ["automanaged"],
+    visibility = ["//visibility:public"],
+)

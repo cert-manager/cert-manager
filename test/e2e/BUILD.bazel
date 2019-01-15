@@ -1,4 +1,18 @@
 load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
+load("@io_bazel_rules_docker//container:bundle.bzl", "container_bundle")
+load("//hack/def:kind.bzl", "kind_cluster")
+
+kind_cluster(
+    name = "e2e-1.11",
+    config = "//test/fixtures/kind:config-v1alpha2.yaml",
+    version = "1.11.4-1",
+)
+
+kind_cluster(
+    name = "e2e-1.12",
+    config = "//test/fixtures/kind:config-v1alpha3.yaml",
+    version = "1.12.2-1",
+)
 
 # we add this rule so users can `bazel build //test/e2e` to run a
 # platform-independent version of the e2e test binary
@@ -53,6 +67,7 @@ filegroup(
     name = "all-srcs",
     srcs = [
         ":package-srcs",
+        "//test/e2e/charts:all-srcs",
         "//test/e2e/framework:all-srcs",
         "//test/e2e/suite:all-srcs",
         "//test/e2e/util:all-srcs",

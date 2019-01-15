@@ -33,8 +33,6 @@ cleanup() {
 }
 trap cleanup EXIT
 
-"${SCRIPT_ROOT}/lib/cluster_create.sh"
-
 # copy kubectl out of the kind container if kubectl is not installed on the
 # host machine. This will *only* work on Linux :this_is_fine:
 if ! which kubectl; then
@@ -43,11 +41,13 @@ if ! which kubectl; then
     docker cp "${KIND_CONTAINER_NAME}":"$(docker exec "${KIND_CONTAINER_NAME}" which kubectl)" "${tmp_path}/kubectl"
 fi
 
-export KUBECONFIG="${HOME}/.kube/kind-config-${KIND_CLUSTER_NAME}"
+echo "Testing kind apiserver connectivity"
 # Ensure the apiserver is responding
 kubectl get nodes
 
+echo "Building test images..."
 "${SCRIPT_ROOT}/lib/build_images.sh"
 
+echo "Running e2e tests..."
 make e2e_test \
     KUBECONFIG=${KUBECONFIG}

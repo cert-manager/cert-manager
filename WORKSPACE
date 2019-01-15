@@ -119,7 +119,7 @@ container_pull(
 ## Install 'kind', for creating kubernetes-in-docker clusters
 go_repository(
     name = "io_kubernetes_sigs_kind",
-    commit = "e0e26dae2dab662a3d06756ed668f47b2a0515cc",
+    commit = "70ce5c71c1c57599ef92c3a7d96184cdb1a6a1ea",
     importpath = "sigs.k8s.io/kind",
 )
 

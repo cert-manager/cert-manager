@@ -26,17 +26,16 @@ SCRIPT_ROOT=$(dirname "${BASH_SOURCE}")
 source "${SCRIPT_ROOT}/lib.sh"
 
 build_images() {
-    # Build cert-manager binaries & docker image
-    APP_VERSION="${DOCKER_TAG}" \
-    DOCKER_REPO="${DOCKER_REPO}" \
-    DOCKER_TAG="${DOCKER_TAG}" \
+    # Export images used during e2e tests
+    echo "Exporting e2e test images to local docker daemon"
     bazel run //:images
-    # Build e2e test images
     bazel run //test/e2e/charts:images
 
+    echo "Creating temporary directory"
     local TMP_DIR=$(mktemp -d)
     local BUNDLE_FILE="${TMP_DIR}"/cmbundle.tar.gz
 
+    echo "Creating bundle archive containing all test images"
     # Create an archive of docker images
     docker save \
         "${DOCKER_REPO}"/cert-manager-controller:"${DOCKER_TAG}" \
@@ -49,9 +48,11 @@ build_images() {
         "gcr.io/kubernetes-helm/tiller:bazel" \
         -o "${BUNDLE_FILE}"
 
+    echo "Copying bundle file into kind container"
     # Copy docker archive into the kind container
     docker cp "${BUNDLE_FILE}" "${KIND_CONTAINER_NAME}":/cmbundle.tar.gz
 
+    echo "Importing test image bundle file into kind docker daemon"
     # Import file into kind docker daemon
     docker exec "${KIND_CONTAINER_NAME}" docker load -i /cmbundle.tar.gz
 

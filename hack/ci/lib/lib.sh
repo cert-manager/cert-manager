@@ -23,22 +23,32 @@ REPO_ROOT="${_SCRIPT_ROOT}/../../.."
 
 # This file contains common definitions that are re-used in other scripts
 
-KIND_CLUSTER_NAME="${KIND_CLUSTER_NAME:-cm-local-cluster}"
+KIND_TARGET="${KIND_TARGET:-//test/e2e:e2e-1.11}"
+KIND_CLUSTER_NAME="${KIND_TARGET##*:}"
 KIND_CONTAINER_NAME="kind-${KIND_CLUSTER_NAME}-control-plane"
-KIND_IMAGE=${KIND_IMAGE:-eu.gcr.io/jetstack-build-infra-images/kind:1.11.4-1}
 
 # DOCKER_REPO is the docker repo to use for cert-manager images, either when
 # building or deploying cert-manager using these scripts.
-DOCKER_REPO="quay.io/jetstack"
+export DOCKER_REPO="quay.io/jetstack"
 
 # DOCKER_TAG is the docker tag to use for the cert-manager images.
 # This defaults to 'build' so it doesn't conflict with images built for any
 # other purpose
-DOCKER_TAG="build"
+export DOCKER_TAG="build"
+export APP_VERSION="${DOCKER_TAG}"
 
-function kubeVersion() {
-    echo $(docker run \
-        --entrypoint="cat" \
-        "${KIND_IMAGE}" \
-        /kind/version)
-}
+if [ ! "${CM_DEPS_LOADED:-}" = "1" ]; then
+    # Build all e2e test dependencies
+    bazel build \
+        //hack/bin:helm \
+        //test/e2e:e2e.test \
+        //test/e2e/charts:images \
+        "${KIND_TARGET}"
+
+    genfiles="$(bazel info bazel-genfiles)"
+    # build 'kind'
+    export KIND="${genfiles}/hack/bin/kind"
+    export KUBECONFIG="${genfiles}/test/e2e/${KIND_CLUSTER_NAME}.kubeconfig"
+
+    export CM_DEPS_LOADED="1"
+fi

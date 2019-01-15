@@ -163,6 +163,8 @@ filegroup(
         ":package-srcs",
         "//hack/bin:all-srcs",
         "//hack/boilerplate:all-srcs",
+        "//hack/ci:all-srcs",
+        "//hack/def:all-srcs",
     ],
     tags = ["automanaged"],
     visibility = ["//visibility:public"],

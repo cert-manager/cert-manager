@@ -35,6 +35,11 @@ if [ ! -z "$(git status --porcelain)" ]; then
     GIT_STATE="dirty"
 fi
 
+KIND_STATE=""
+if docker version > /dev/null 2>&1; then
+    KIND_STATE=$(docker ps -f 'label=io.k8s.sigs.kind.cluster' --format='{{.ID}}' | tr '\n' '_')
+fi
+
 # TODO: properly configure this file
 cat <<EOF
 STABLE_DOCKER_REPO ${DOCKER_REPO:-quay.io/jetstack}
@@ -42,4 +47,5 @@ STABLE_DOCKER_TAG ${DOCKER_TAG:-$APP_VERSION}
 STABLE_APP_GIT_COMMIT ${APP_GIT_COMMIT}
 STABLE_APP_GIT_STATE ${GIT_STATE}
 STABLE_APP_VERSION ${APP_VERSION}
+STABLE_E2E_STATE "${KIND_STATE}"
 EOF

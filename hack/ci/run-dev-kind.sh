@@ -22,11 +22,9 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
+export KIND_TARGET="//hack/ci:dev"
 SCRIPT_ROOT=$(dirname "${BASH_SOURCE}")
 source "${SCRIPT_ROOT}/lib/lib.sh"
-
-echo "+++ Creating cluster using kind"
-"${SCRIPT_ROOT}/lib/cluster_create.sh"
 
 echo "+++ Building cert-manager images from source and exporting them to the development cluster"
 "${SCRIPT_ROOT}/lib/build_images.sh"
@@ -41,7 +39,7 @@ echo ""
 echo "You should now configure your shell to use the KUBECONFIG file that has"
 echo "been generated in order to access this cluster:"
 echo ""
-echo "  export KUBECONFIG=\$HOME/.kube/kind-config-${KIND_CLUSTER_NAME}"
+echo "  export KUBECONFIG=${KUBECONFIG}"
 echo ""
 echo ""
 echo "A freshly built copy of the cert-manager images have also been exported to"

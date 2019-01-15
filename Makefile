@@ -107,12 +107,13 @@ e2e_test:
 	mkdir -p "$$(pwd)/_artifacts"
 	bazel build //hack/bin:helm //test/e2e:e2e.test
 	# Run e2e tests
+	GENFILES=$$(bazel info bazel-genfiles); \
 	KUBECONFIG=$(KUBECONFIG) \
 		bazel run //vendor/github.com/onsi/ginkgo/ginkgo -- \
 			-nodes 20 \
-			$$(bazel info bazel-genfiles)/test/e2e/e2e.test \
+			$${GENFILES}/test/e2e/e2e.test \
 			-- \
-			--helm-binary-path=$$(bazel info bazel-genfiles)/hack/bin/helm \
+			--helm-binary-path=$${GENFILES}/hack/bin/helm \
 			--repo-root="$$(pwd)" \
 			--report-dir="$${ARTIFACTS:-./_artifacts}" \
 			--ginkgo.skip="$(GINKGO_SKIP)"
