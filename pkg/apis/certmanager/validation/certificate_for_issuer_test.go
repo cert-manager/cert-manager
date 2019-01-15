@@ -158,6 +158,31 @@ func TestValidateCertificateForIssuer(t *testing.T) {
 				field.Invalid(fldPath.Child("duration"), &metav1.Duration{Duration: time.Minute * 60}, "ACME does not support certificate durations"),
 			},
 		},
+		"acme certificate with ipAddresses set": {
+			crt: &v1alpha1.Certificate{
+				Spec: v1alpha1.CertificateSpec{
+					IPAddresses: []string{"127.0.0.1"},
+					IssuerRef:   validIssuerRef,
+					ACME: &v1alpha1.ACMECertificateConfig{
+						Config: []v1alpha1.DomainSolverConfig{
+							{
+								Domains: []string{"example.com"},
+								SolverConfig: v1alpha1.SolverConfig{
+									HTTP01: &v1alpha1.HTTP01SolverConfig{},
+								},
+							},
+						},
+					},
+				},
+			},
+			issuer: generate.Issuer(generate.IssuerConfig{
+				Name:      defaultTestIssuerName,
+				Namespace: defaultTestNamespace,
+			}),
+			errs: []*field.Error{
+				field.Invalid(fldPath.Child("ipAddresses"), []string{"127.0.0.1"}, "ACME does not support certificate ip addresses"),
+			},
+		},
 		"acme certificate with renewBefore set": {
 			crt: &v1alpha1.Certificate{
 				Spec: v1alpha1.CertificateSpec{

@@ -60,8 +60,12 @@ func DNSNamesForCertificate(crt *v1alpha1.Certificate) []string {
 
 func IPAddressesForCertificate(crt *v1alpha1.Certificate) []net.IP {
 	var ipAddresses []net.IP
-	for _, ip := range IPAddressesNameForCertificate(crt) {
-		ipAddresses = append(ipAddresses, net.ParseIP(ip))
+	var ip net.IP
+	for _, ipName := range IPAddressesNameForCertificate(crt) {
+		ip = net.ParseIP(ipName)
+		if ip != nil {
+			ipAddresses = append(ipAddresses, ip)
+		}
 	}
 	return ipAddresses
 }
@@ -144,7 +148,7 @@ func GenerateCSR(issuer v1alpha1.GenericIssuer, crt *v1alpha1.Certificate) (*x50
 func GenerateTemplate(issuer v1alpha1.GenericIssuer, crt *v1alpha1.Certificate) (*x509.Certificate, error) {
 	commonName := CommonNameForCertificate(crt)
 	dnsNames := DNSNamesForCertificate(crt)
-	iPAddresses := IPAddressesForCertificate(crt)
+	ipAddresses := IPAddressesForCertificate(crt)
 	organization := OrganizationForCertificate(crt)
 
 	if len(commonName) == 0 && len(dnsNames) == 0 {
@@ -186,7 +190,7 @@ func GenerateTemplate(issuer v1alpha1.GenericIssuer, crt *v1alpha1.Certificate) 
 		// see http://golang.org/pkg/crypto/x509/#KeyUsage
 		KeyUsage:    keyUsages,
 		DNSNames:    dnsNames,
-		IPAddresses: iPAddresses,
+		IPAddresses: ipAddresses,
 	}, nil
 }
 

@@ -63,6 +63,10 @@ func ValidateCertificateForACMEIssuer(crt *v1alpha1.CertificateSpec, issuer *v1a
 		el = append(el, field.Invalid(specPath.Child("duration"), crt.Duration, "ACME does not support certificate durations"))
 	}
 
+	if len(crt.IPAddresses) != 0 {
+		el = append(el, field.Invalid(specPath.Child("ipAddresses"), crt.IPAddresses, "ACME does not support certificate ip addresses"))
+	}
+
 	return el
 }
 

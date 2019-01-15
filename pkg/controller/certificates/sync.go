@@ -320,7 +320,7 @@ func (c *Controller) updateSecret(crt *v1alpha1.Certificate, namespace string, c
 		secret.Annotations[v1alpha1.IssuerKindAnnotationKey] = issuerKind(crt)
 		secret.Annotations[v1alpha1.CommonNameAnnotationKey] = x509Cert.Subject.CommonName
 		secret.Annotations[v1alpha1.AltNamesAnnotationKey] = strings.Join(x509Cert.DNSNames, ",")
-		secret.Annotations[v1alpha1.IpSansAnnotationKey] = strings.Join(util.IPAddressesToString(x509Cert.IPAddresses), ",")
+		secret.Annotations[v1alpha1.IPSANAnnotationKey] = strings.Join(util.IPAddressesToString(x509Cert.IPAddresses), ",")
 	}
 
 	// Always set the certificate name label on the target secret
