@@ -35,7 +35,7 @@ the challenge using the configured solver, one of HTTP01 or DNS01.
 Once the challenge has been 'presented', it will set ``status.presented=true``.
 
 Once 'presented', the challenge controller will perform a 'self check' to
-ensure that the challenge has 'propegated' (i.e. the authoritve DNS servers
+ensure that the challenge has 'propagated' (i.e. the authoritve DNS servers
 have been updated to respond correctly, or the changes to the ingress resources
 have been observed and in-use by the ingress controller).
 
