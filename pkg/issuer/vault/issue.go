@@ -316,4 +316,3 @@ func (v *Vault) vaultTokenRef(name, key string) (string, error) {
 
 	return token, nil
 }
-
