@@ -18,6 +18,7 @@ package http
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -149,7 +150,22 @@ func testReachability(ctx context.Context, url string, key string) (bool, error)
 
 	req = req.WithContext(ctx)
 
-	response, err := http.DefaultClient.Do(req)
+	// ACME spec says that a verifier should try
+	// on http port 80 first, but follow any redirects may be thrown its way
+	// The redirects may be HTTPS and its certificate may be invalid (they are trying to get a
+	// certificate after all).
+	// TODO(dmo): figure out if we need to add a more specific timeout for
+	// individual checks
+	transport := &http.Transport{
+		TLSClientConfig: &tls.Config{
+			InsecureSkipVerify: true,
+		},
+	}
+	client := http.Client{
+		Transport: transport,
+	}
+
+	response, err := client.Do(req)
 	if err != nil {
 		return false, &absorbErr{err: fmt.Errorf("failed to GET '%s': %v", url, err)}
 	}
