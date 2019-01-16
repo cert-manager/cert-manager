@@ -111,13 +111,20 @@ func ClientWithKey(iss cmapi.GenericIssuer, pk *rsa.PrivateKey) (acme.Interface,
 	if acmeSpec == nil {
 		return nil, fmt.Errorf("issuer %q is not an ACME issuer. Ensure the 'acme' stanza is correctly specified on your Issuer resource", iss.GetObjectMeta().Name)
 	}
-
-	return acmemw.NewLogger(&acmecl.Client{
+	acmeStatus := iss.GetStatus().ACME
+	accountURI := ""
+	if acmeStatus != nil || acmeStatus.URI != "" {
+		accountURI = acmeStatus.URI
+	}
+	acmeCl := &acmecl.Client{
 		HTTPClient:   buildHTTPClient(acmeSpec.SkipTLSVerify),
 		Key:          pk,
 		DirectoryURL: acmeSpec.Server,
 		UserAgent:    util.CertManagerUserAgent,
-	}), nil
+	}
+	acmeCl.SetAccountURL(accountURI)
+
+	return acmemw.NewLogger(acmeCl), nil
 }
 
 // ClientForIssuer will return a properly configure ACME client for the given
