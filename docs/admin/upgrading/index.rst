@@ -69,6 +69,14 @@ version number you want to install:
    $ kubectl apply \
         -f https://raw.githubusercontent.com/jetstack/cert-manager/<version>/deploy/manifests/cert-manager.yaml
 
+.. note::
+   If you are running kubectl v1.12 or below, you will need to add the
+   ``--validate=false`` flag to your ``kubectl apply`` command above else you
+   will receive a validation error relating to the ``caBundle`` field of the
+   ``ValidatingWebhookConfiguration`` resource.
+   This issue is resolved in Kubernetes 1.13 onwards. More details can be found
+   in `kubernetes/kubernetes#69590`_.
+
 .. toctree::
    :maxdepth: 1
 
@@ -79,3 +87,4 @@ version number you want to install:
 
 .. _`official Helm charts repository`: https://github.com/helm/charts
 .. _`static deployment manifests`: https://github.com/jetstack/cert-manager/blob/master/contrib/manifests/cert-manager
+.. _`kubernetes/kubernetes#69590`: https://github.com/kubernetes/kubernetes/issues/69590
