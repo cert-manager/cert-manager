@@ -78,6 +78,14 @@ func IPAddressesNameForCertificate(crt *v1alpha1.Certificate) []string {
 	return removeDuplicates(ipAddressNames)
 }
 
+func IPAddressesToString(ipAddresses []net.IP) []string {
+	var ipNames []string
+	for _, ip := range ipAddresses {
+		ipNames = append(ipNames, ip.String())
+	}
+	return ipNames
+}
+
 func removeDuplicates(in []string) []string {
 	var found []string
 Outer:

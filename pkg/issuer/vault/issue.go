@@ -22,7 +22,6 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
-	"net"
 	"net/http"
 	"path"
 	"strings"
@@ -94,7 +93,7 @@ func (v *Vault) Issue(ctx context.Context, crt *v1alpha1.Certificate) (*issuer.I
 		certDuration = crt.Spec.Duration.Duration
 	}
 
-	certPem, caPem, err := v.requestVaultCert(template.Subject.CommonName, certDuration, template.DNSNames, ipAddressesToString(template.IPAddresses), pemRequestBuf.Bytes())
+	certPem, caPem, err := v.requestVaultCert(template.Subject.CommonName, certDuration, template.DNSNames, pki.IPAddressesToString(template.IPAddresses), pemRequestBuf.Bytes())
 	if err != nil {
 		v.Recorder.Eventf(crt, corev1.EventTypeWarning, "ErrorSigning", "Failed to request certificate: %v", err)
 		return nil, err
@@ -318,10 +317,3 @@ func (v *Vault) vaultTokenRef(name, key string) (string, error) {
 	return token, nil
 }
 
-func ipAddressesToString(ipAddresses []net.IP) []string {
-	var ipNames []string
-	for _, ip := range ipAddresses {
-		ipNames = append(ipNames, ip.String())
-	}
-	return ipNames
-}

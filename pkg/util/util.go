@@ -18,7 +18,6 @@ package util
 
 import (
 	"math/rand"
-	"net"
 	"sort"
 	"time"
 )
@@ -77,10 +76,3 @@ func Contains(ss []string, s string) bool {
 	return false
 }
 
-func IPAddressesToString(ipAddresses []net.IP) []string {
-	var ipNames []string
-	for _, ip := range ipAddresses {
-		ipNames = append(ipNames, ip.String())
-	}
-	return ipNames
-}
