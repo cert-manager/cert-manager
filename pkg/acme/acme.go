@@ -150,7 +150,7 @@ func (h *helperImpl) ClientForIssuer(iss cmapi.GenericIssuer) (acme.Interface, e
 // In future, we may change to having two global HTTP clients - one that ignores
 // TLS connection errors, and the other that does not.
 func buildHTTPClient(skipTLSVerify bool) *http.Client {
-	return &http.Client{
+	return acme.NewInstrumentedClient(&http.Client{
 		Transport: &http.Transport{
 			Proxy:                 http.ProxyFromEnvironment,
 			DialContext:           dialTimeout,
@@ -161,7 +161,7 @@ func buildHTTPClient(skipTLSVerify bool) *http.Client {
 			ExpectContinueTimeout: 1 * time.Second,
 		},
 		Timeout: time.Second * 30,
-	}
+	})
 }
 
 var timeout = time.Duration(5 * time.Second)
