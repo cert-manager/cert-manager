@@ -128,7 +128,7 @@ go_repository(
 ## field in this rule
 go_repository(
     name = "org_letsencrypt_pebble",
-    commit = "2132a88193fdf0d7c0d93c33fce61db43d630fd4",
+    commit = "cdd3ed3ddfdf9da7ab27fbe1fe032d0865b65376",
     importpath = "github.com/letsencrypt/pebble",
     build_external = "vendored",
     # Expose the generated go_default_library as 'public' visibility
