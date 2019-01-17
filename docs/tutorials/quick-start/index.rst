@@ -352,10 +352,13 @@ install cert-manager. This example installed cert-manager into the
 
     # Install the cert-manager CRDs. We must do this before installing the Helm
     # chart in the next step
-    $ kubectl apply -f https://raw.githubusercontent.com/jetstack/cert-manager/v0.6.0-alpha.0/deploy/manifests/00-crds.yaml
+    $ kubectl apply -f https://raw.githubusercontent.com/jetstack/cert-manager/release-0.6/deploy/manifests/00-crds.yaml
+
+    # Update your local Helm chart repositories
+    $ helm repo update
 
     # Install cert-manager
-    $ helm install --name cert-manager --namespace cert-manager --version v0.6.0-alpha.0 stable/cert-manager
+    $ helm install --name cert-manager --namespace cert-manager stable/cert-manager
 
     NAME:   cert-manager
     LAST DEPLOYED: Wed Jan  9 13:36:13 2019
@@ -768,7 +771,7 @@ certificate.
       Normal  Generated     18s   cert-manager  Generated new private key
       Normal  OrderCreated  18s   cert-manager  Created Order resource "quickstart-example-tls-889745041"
 
-You can monitor the progress of the ACME Order by running ``kubectl describe``
+You can see the current state of the ACME Order by running ``kubectl describe``
 on the Order resource that cert-manager has created for your Certificate:
 
 .. code-block:: shell
@@ -822,6 +825,13 @@ your ingress controller is at updating rules):
       Normal  Started         71s   cert-manager  Challenge scheduled for processing
       Normal  Presented       70s   cert-manager  Presented challenge using http-01 challenge mechanism
       Normal  DomainVerified  2s    cert-manager  Domain "example.your-domain.com" verified with "http-01" validation
+
+.. note::
+   If your challenges are not becoming 'valid' and remain in the 'pending'
+   state (or enter into a 'failed' state), it is likely there is some kind of
+   configuration error.
+   Read the :doc:`Challenge resource reference docs </reference/challenges>`
+   for more information on debugging failing challenges.
 
 Once the challenge(s) have been completed, their corresponding challenge
 resources will be *deleted*, and the 'Order' will be updated to reflect the
