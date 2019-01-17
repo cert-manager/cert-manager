@@ -157,6 +157,9 @@ func testReachability(ctx context.Context, url string, key string) (bool, error)
 	// TODO(dmo): figure out if we need to add a more specific timeout for
 	// individual checks
 	transport := &http.Transport{
+		// we're only doing 1 request, make the code around this
+		// simpler by disabling keepalives
+		DisableKeepAlives: true,
 		TLSClientConfig: &tls.Config{
 			InsecureSkipVerify: true,
 		},
