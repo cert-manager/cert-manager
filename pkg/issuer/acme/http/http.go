@@ -61,7 +61,7 @@ type Solver struct {
 	requiredPasses   int
 }
 
-type reachabilityTest func(ctx context.Context, url, key string) (bool, error)
+type reachabilityTest func(ctx context.Context, url *url.URL, key string) (bool, error)
 
 // absorbErr wraps an error to mark it as absorbable (log and handle as nil)
 type absorbErr struct {
@@ -130,21 +130,21 @@ func (s *Solver) CleanUp(ctx context.Context, issuer v1alpha1.GenericIssuer, ch 
 	return utilerrors.NewAggregate(errs)
 }
 
-func (s *Solver) buildChallengeUrl(ch *v1alpha1.Challenge) string {
+func (s *Solver) buildChallengeUrl(ch *v1alpha1.Challenge) *url.URL {
 	url := &url.URL{}
 	url.Scheme = "http"
 	url.Host = ch.Spec.DNSName
 	url.Path = fmt.Sprintf("%s/%s", solver.HTTPChallengePath, ch.Spec.Token)
 
-	return url.String()
+	return url
 }
 
 // testReachability will attempt to connect to the 'domain' with 'path' and
 // check if the returned body equals 'key'
-func testReachability(ctx context.Context, url string, key string) (bool, error) {
-	req, err := http.NewRequest(http.MethodGet, url, nil)
-	if err != nil {
-		return false, fmt.Errorf("failed to build request: %v", err)
+func testReachability(ctx context.Context, url *url.URL, key string) (bool, error) {
+	req := &http.Request{
+		Method: http.MethodGet,
+		URL:    url,
 	}
 
 	req = req.WithContext(ctx)
