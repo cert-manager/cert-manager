@@ -84,7 +84,7 @@ func TestCheck(t *testing.T) {
 				requiredPasses:   requiredCallsForPass,
 			}
 
-			ok, err := s.Check(nil, nil, test.challenge)
+			ok, err := s.Check(context.Background(), nil, test.challenge)
 			if err != nil && !test.expectedErr {
 				t.Errorf("Expected Check to return non-nil error, but got %v", err)
 				return
