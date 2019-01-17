@@ -97,6 +97,32 @@ func (c *Controller) Sync(ctx context.Context, o *cmapi.Order) (err error) {
 		return nil
 	}
 
+	// Handle an edge case where the Order has entered a 'valid' state but the
+	// actual Certificate resource has not been set on the Order.
+	// This shouldn't ever really happen, but can occasionally occur if
+	// cert-manager has failed to persist the Certificate and/or status field
+	// for whatever reason.
+	if o.Status.State == acmeapi.StatusValid && o.Status.Certificate == nil {
+		acmeOrder, err := cl.GetOrder(ctx, o.Status.URL)
+		if err != nil {
+			// TODO: mark the order as 'errored' if this is a 404 or similar
+			return err
+		}
+
+		certs, err := cl.GetCertificate(ctx, acmeOrder.CertificateURL)
+		if err != nil {
+			// TODO: mark the order as 'errored' if this is a 404 or similar
+			return err
+		}
+
+		err = c.storeCertificateOnStatus(o, certs)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	}
+
 	// If an order is in a final state, we bail out early as there is nothing
 	// left for us to do here.
 	// TODO: we should find a way to periodically update the state of the resource
@@ -171,6 +197,9 @@ func (c *Controller) Sync(ctx context.Context, o *cmapi.Order) (err error) {
 		// always update the order status after calling Finalize - this allows
 		// us to record the current orders status on this order resource
 		// despite it not being returned directly by the acme client.
+		// This will catch cases where the Order cannot be finalized because it
+		// if it is already in the 'valid' state, as upon retry we will
+		// then retrieve the Certificate resource.
 		errUpdate := c.syncOrderStatus(ctx, cl, o)
 		if errUpdate != nil {
 			// TODO: mark permenant failure?
@@ -179,21 +208,15 @@ func (c *Controller) Sync(ctx context.Context, o *cmapi.Order) (err error) {
 
 		// check for errors from FinalizeOrder
 		if err != nil {
+			// TODO: check for acme error type and potentially mark order as errored
 			return fmt.Errorf("error finalizing order: %v", err)
 		}
 
-		// encode the retrieved certificates (including the chain)
-		certBuffer := bytes.NewBuffer([]byte{})
-		for _, cert := range certSlice {
-			err := pem.Encode(certBuffer, &pem.Block{Type: "CERTIFICATE", Bytes: cert})
-			if err != nil {
-				// TODO: something else?
-				return err
-			}
+		err = c.storeCertificateOnStatus(o, certSlice)
+		if err != nil {
+			// TODO: mark Order as 'errored'
+			return err
 		}
-
-		o.Status.Certificate = certBuffer.Bytes()
-		c.Recorder.Event(o, corev1.EventTypeNormal, "OrderValid", "Order completed successfully")
 
 		return nil
 
@@ -431,6 +454,7 @@ func (c *Controller) syncOrderStatus(ctx context.Context, cl acmecl.Interface, o
 
 	acmeOrder, err := cl.GetOrder(ctx, o.Status.URL)
 	if err != nil {
+		// TODO: mark the order as errored if this is a 404 or similar
 		return err
 	}
 
@@ -506,4 +530,21 @@ func (c *Controller) setOrderState(o *cmapi.OrderStatus, s cmapi.State) {
 		t := metav1.NewTime(c.clock.Now())
 		o.FailureTime = &t
 	}
+}
+
+func (c *Controller) storeCertificateOnStatus(o *cmapi.Order, certs [][]byte) error {
+	// encode the retrieved certificates (including the chain)
+	certBuffer := bytes.NewBuffer([]byte{})
+	for _, cert := range certs {
+		err := pem.Encode(certBuffer, &pem.Block{Type: "CERTIFICATE", Bytes: cert})
+		if err != nil {
+			// TODO: something else?
+			return err
+		}
+	}
+
+	o.Status.Certificate = certBuffer.Bytes()
+	c.Recorder.Event(o, corev1.EventTypeNormal, "OrderValid", "Order completed successfully")
+
+	return nil
 }
