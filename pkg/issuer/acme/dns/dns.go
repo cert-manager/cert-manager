@@ -92,17 +92,8 @@ func (s *Solver) Present(ctx context.Context, issuer v1alpha1.GenericIssuer, ch 
 
 // Check verifies that the DNS records for the ACME challenge have propagated.
 func (s *Solver) Check(ctx context.Context, issuer v1alpha1.GenericIssuer, ch *v1alpha1.Challenge) (bool, error) {
-	providerName := ch.Spec.Config.DNS01.Provider
-	if providerName == "" {
-		return false, fmt.Errorf("dns01 challenge provider name must be set")
-	}
 
-	providerConfig, err := issuer.GetSpec().ACME.DNS01.Provider(providerName)
-	if err != nil {
-		return false, err
-	}
-
-	fqdn, value, ttl, err := util.DNS01Record(ch.Spec.DNSName, ch.Spec.Key, s.DNS01Nameservers, followCNAME(providerConfig.CNAMEStrategy))
+	fqdn, value, ttl, err := util.DNS01Record(ch.Spec.DNSName, ch.Spec.Key, s.DNS01Nameservers, false)
 	if err != nil {
 		return false, err
 	}
