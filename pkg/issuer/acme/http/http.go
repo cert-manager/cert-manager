@@ -61,16 +61,7 @@ type Solver struct {
 	requiredPasses   int
 }
 
-type reachabilityTest func(ctx context.Context, url *url.URL, key string) (bool, error)
-
-// absorbErr wraps an error to mark it as absorbable (log and handle as nil)
-type absorbErr struct {
-	err error
-}
-
-func (ae *absorbErr) Error() string {
-	return ae.err.Error()
-}
+type reachabilityTest func(ctx context.Context, url *url.URL, key string) error
 
 // NewSolver returns a new ACME HTTP01 solver for the given Issuer and client.
 // TODO: refactor this to have fewer args
@@ -105,14 +96,9 @@ func (s *Solver) Check(ctx context.Context, issuer v1alpha1.GenericIssuer, ch *v
 	url := s.buildChallengeUrl(ch)
 
 	for i := 0; i < s.requiredPasses; i++ {
-		ok, err := s.testReachability(ctx, url, ch.Spec.Key)
-		if absorbedErr, wasAbsorbed := err.(*absorbErr); wasAbsorbed {
-			glog.Infof("could not reach '%s': %v", url, absorbedErr.err)
-			return false, nil
-		} else if err != nil {
-			return false, err
-		}
-		if !ok {
+		err := s.testReachability(ctx, url, ch.Spec.Key)
+		if err != nil {
+			glog.Infof("could not reach '%s': %v", url, err)
 			return false, nil
 		}
 		time.Sleep(time.Second * 2)
@@ -141,7 +127,7 @@ func (s *Solver) buildChallengeUrl(ch *v1alpha1.Challenge) *url.URL {
 
 // testReachability will attempt to connect to the 'domain' with 'path' and
 // check if the returned body equals 'key'
-func testReachability(ctx context.Context, url *url.URL, key string) (bool, error) {
+func testReachability(ctx context.Context, url *url.URL, key string) error {
 	req := &http.Request{
 		Method: http.MethodGet,
 		URL:    url,
@@ -151,22 +137,22 @@ func testReachability(ctx context.Context, url *url.URL, key string) (bool, erro
 
 	response, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return false, &absorbErr{err: fmt.Errorf("failed to GET '%s': %v", url, err)}
+		return fmt.Errorf("failed to GET '%s': %v", url, err)
 	}
 
 	if response.StatusCode != http.StatusOK {
-		return false, &absorbErr{err: fmt.Errorf("wrong status code '%d', expected '%d'", response.StatusCode, http.StatusOK)}
+		return fmt.Errorf("wrong status code '%d', expected '%d'", response.StatusCode, http.StatusOK)
 	}
 
 	defer response.Body.Close()
 	presentedKey, err := ioutil.ReadAll(response.Body)
 	if err != nil {
-		return false, fmt.Errorf("failed to read response body: %v", err)
+		return fmt.Errorf("failed to read response body: %v", err)
 	}
 
 	if string(presentedKey) != key {
-		return false, &absorbErr{err: fmt.Errorf("presented key (%s) did not match expected (%s)", presentedKey, key)}
+		return fmt.Errorf("presented key (%s) did not match expected (%s)", presentedKey, key)
 	}
 
-	return true, nil
+	return nil
 }
