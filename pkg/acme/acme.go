@@ -113,7 +113,7 @@ func ClientWithKey(iss cmapi.GenericIssuer, pk *rsa.PrivateKey) (acme.Interface,
 	}
 	acmeStatus := iss.GetStatus().ACME
 	accountURI := ""
-	if acmeStatus != nil || acmeStatus.URI != "" {
+	if acmeStatus != nil && acmeStatus.URI != "" {
 		accountURI = acmeStatus.URI
 	}
 	acmeCl := &acmecl.Client{
