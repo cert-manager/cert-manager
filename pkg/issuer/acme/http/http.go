@@ -24,7 +24,6 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/golang/glog"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	corev1listers "k8s.io/client-go/listers/core/v1"
 	extv1beta1listers "k8s.io/client-go/listers/extensions/v1beta1"
@@ -89,7 +88,7 @@ func (s *Solver) Present(ctx context.Context, issuer v1alpha1.GenericIssuer, ch 
 	return utilerrors.NewAggregate([]error{podErr, svcErr, ingressErr})
 }
 
-func (s *Solver) Check(ctx context.Context, issuer v1alpha1.GenericIssuer, ch *v1alpha1.Challenge) (bool, error) {
+func (s *Solver) Check(ctx context.Context, issuer v1alpha1.GenericIssuer, ch *v1alpha1.Challenge) error {
 	ctx, cancel := context.WithTimeout(ctx, HTTP01Timeout)
 	defer cancel()
 
@@ -98,12 +97,11 @@ func (s *Solver) Check(ctx context.Context, issuer v1alpha1.GenericIssuer, ch *v
 	for i := 0; i < s.requiredPasses; i++ {
 		err := s.testReachability(ctx, url, ch.Spec.Key)
 		if err != nil {
-			glog.Infof("could not reach '%s': %v", url, err)
-			return false, nil
+			return err
 		}
 		time.Sleep(time.Second * 2)
 	}
-	return true, nil
+	return nil
 }
 
 // CleanUp will ensure the created service, ingress and pod are clean/deleted of any
