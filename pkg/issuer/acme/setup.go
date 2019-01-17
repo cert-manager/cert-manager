@@ -154,6 +154,7 @@ func (a *Acme) Setup(ctx context.Context) error {
 	if parsedAccountURL.Host != parsedServerURL.Host {
 		glog.Infof("ACME server URL host and ACME private key registration " +
 			"host differ. Re-checking ACME account registration.")
+		a.issuer.GetStatus().ACMEStatus().URI = ""
 	}
 
 	// registerAccount will also verify the account exists if it already
