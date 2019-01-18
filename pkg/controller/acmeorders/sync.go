@@ -109,6 +109,14 @@ func (c *Controller) Sync(ctx context.Context, o *cmapi.Order) (err error) {
 			return err
 		}
 
+		// If the Order state has actually changed and we've not observed it,
+		// update the order status and let the change in the resource trigger
+		// a resync
+		if acmeOrder.Status != acmeapi.StatusValid {
+			c.setOrderStatus(&o.Status, acmeOrder)
+			return nil
+		}
+
 		certs, err := cl.GetCertificate(ctx, acmeOrder.CertificateURL)
 		if err != nil {
 			// TODO: mark the order as 'errored' if this is a 404 or similar
