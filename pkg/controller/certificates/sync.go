@@ -299,6 +299,9 @@ func (c *Controller) updateSecret(crt *v1alpha1.Certificate, namespace string, c
 		}
 	}
 
+	if secret.Data == nil {
+		secret.Data = map[string][]byte{}
+	}
 	secret.Data[corev1.TLSCertKey] = cert
 	secret.Data[corev1.TLSPrivateKeyKey] = key
 	secret.Data[TLSCAKey] = ca
