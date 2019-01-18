@@ -8,13 +8,11 @@
 
 # Chart directories separated by a space
 CHART_DIRS=(
-    contrib/charts
+    deploy/charts
 )
 
 # Charts that should be skipped
 EXCLUDED_CHARTS=(
-    contrib/charts/pebble
-    contrib/charts/vault
 )
 
 # Additional chart repos to add (<name>=<url>), separated by a space
