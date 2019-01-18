@@ -115,4 +115,4 @@ $ helm install --name my-release -f values.yaml .
 
 ## Contributing
 
-This chart is maintained at [github.com/jetstack/cert-manager](https://github.com/jetstack/cert-manager/tree/master/deploy/chart).
+This chart is maintained at [github.com/jetstack/cert-manager](https://github.com/jetstack/cert-manager/tree/master/deploy/charts/cert-manager).

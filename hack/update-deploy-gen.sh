@@ -32,7 +32,7 @@ gen() {
 	TMP_OUTPUT=$(mktemp)
 	mkdir -p "$(dirname ${OUTPUT})"
 	helm template \
-		"${REPO_ROOT}/deploy/chart" \
+		"${REPO_ROOT}/deploy/charts/cert-manager" \
 		--values "${REPO_ROOT}/deploy/manifests/helm-values.yaml" \
 		--kube-version "${KUBE_VERSION}" \
 		--namespace "cert-manager" \
@@ -44,5 +44,5 @@ gen() {
 
 export HELM_HOME="$(mktemp -d)"
 helm init --client-only
-helm dep update "${REPO_ROOT}/deploy/chart"
+helm dep update "${REPO_ROOT}/deploy/charts/cert-manager"
 gen "${REPO_ROOT}/deploy/manifests/cert-manager.yaml"
