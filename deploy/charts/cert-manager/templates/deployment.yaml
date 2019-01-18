@@ -35,6 +35,11 @@ spec:
       {{- if .Values.global.priorityClassName }}
       priorityClassName: {{ .Values.global.priorityClassName | quote }}
       {{- end }}
+      {{- if .Values.securityContext.enabled }}
+      securityContext:
+        fsGroup: {{ .Values.securityContext.fsGroup }}
+        runAsUser: {{ .Values.securityContext.runAsUser }}
+      {{- end }}
       containers:
         - name: {{ .Chart.Name }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
