@@ -40,7 +40,6 @@ func TestCheck(t *testing.T) {
 		reachabilityTest reachabilityTest
 		challenge        *v1alpha1.Challenge
 		expectedErr      bool
-		expectedOk       bool
 	}
 	tests := []testT{
 		{
@@ -48,14 +47,14 @@ func TestCheck(t *testing.T) {
 			reachabilityTest: func(context.Context, *url.URL, string) error {
 				return nil
 			},
-			expectedOk: true,
+			expectedErr: false,
 		},
 		{
 			name: "should error",
 			reachabilityTest: func(context.Context, *url.URL, string) error {
 				return fmt.Errorf("failed")
 			},
-			expectedErr: false,
+			expectedErr: true,
 		},
 	}
 
@@ -72,7 +71,7 @@ func TestCheck(t *testing.T) {
 				requiredPasses:   requiredCallsForPass,
 			}
 
-			ok, err := s.Check(context.Background(), nil, test.challenge)
+			err := s.Check(context.Background(), nil, test.challenge)
 			if err != nil && !test.expectedErr {
 				t.Errorf("Expected Check to return non-nil error, but got %v", err)
 				return
@@ -81,10 +80,7 @@ func TestCheck(t *testing.T) {
 				t.Errorf("Expected error from Check, but got none")
 				return
 			}
-			if test.expectedOk != ok {
-				t.Errorf("Expected ok=%t but got ok=%t", test.expectedOk, ok)
-			}
-			if test.expectedOk && calls != requiredCallsForPass {
+			if !test.expectedErr && calls != requiredCallsForPass {
 				t.Errorf("Expected Wait to verify reachability test passes %d times, but only checked %d", requiredCallsForPass, calls)
 				return
 			}
