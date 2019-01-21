@@ -149,7 +149,7 @@ func (c *Controller) Sync(ctx context.Context, ch *cmapi.Challenge) (err error) 
 	err = solver.Check(ctx, genericIssuer, ch)
 	if err != nil {
 		glog.Infof("propagation check failed: %v", err)
-		ch.Status.Reason = fmt.Sprintf("Waiting for %s challenge propagation", ch.Spec.Type)
+		ch.Status.Reason = fmt.Sprintf("Waiting for %s challenge propagation: %s", ch.Spec.Type, err)
 
 		key, err := controllerpkg.KeyFunc(ch)
 		// This is an unexpected edge case and should never occur
