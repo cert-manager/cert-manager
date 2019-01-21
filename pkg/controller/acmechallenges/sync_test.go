@@ -128,7 +128,7 @@ func TestSyncHappyPath(t *testing.T) {
 							gen.SetChallengeState(v1alpha1.Pending),
 							gen.SetChallengePresented(true),
 							gen.SetChallengeType("http-01"),
-							gen.SetChallengeReason("Waiting for http-01 challenge propagation"),
+							gen.SetChallengeReason("Waiting for http-01 challenge propagation: some error"),
 						))),
 				},
 			},
