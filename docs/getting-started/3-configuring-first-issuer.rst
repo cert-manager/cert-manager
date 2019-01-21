@@ -2,8 +2,9 @@
 3. Configuring your first Issuer or ClusterIssuer
 =================================================
 
-Before you can issue any Certificates, you will need to configure an :doc:`Issuer </reference/issuers>`
-or :doc:`ClusterIssuer </reference/clusterissuers>` resource.
+Before you can issue any Certificates, you will need to configure an
+:doc:`Issuer </reference/issuers>` or
+:doc:`ClusterIssuer </reference/clusterissuers>` resource.
 
 These represent a certificate authority from which signed x509 certificates can
 be obtained, such as Let's Encrypt, or your own signing key pair stored in a
