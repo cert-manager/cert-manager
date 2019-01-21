@@ -452,6 +452,7 @@ spec:
   schedule: "@weekly"
   jobTemplate:
     spec:
+      backoffLimit: 20
       template:
         metadata:
           labels:
@@ -491,6 +492,7 @@ metadata:
     release: cert-manager
     heritage: Tiller
 spec:
+  backoffLimit: 20
   template:
     metadata:
       labels:
