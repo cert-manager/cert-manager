@@ -75,7 +75,7 @@ chartlib::detect_changed_directories() {
     ## subdirectory, we must modify the below line from $1/$2 to be $1/$2/$3.
     ## In future, we should PR upstream so we no longer hardcode the depth of
     ## directories required for this script.
-    done < <(git diff --find-renames --name-only "$merge_base" "${CHART_DIRS[@]}" | awk -F/ '{ print $1"/"$2 }' | uniq)
+    done < <(git diff --find-renames --name-only "$merge_base" "${CHART_DIRS[@]}" | awk -F/ '{ print $1"/"$2"/"$3 }' | uniq)
 
     echo "${changed_dirs[@]}"
 }
