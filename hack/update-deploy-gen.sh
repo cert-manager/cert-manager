@@ -29,6 +29,7 @@ KUBE_VERSION=1.9
 
 gen() {
 	OUTPUT=$1
+	shift
 	TMP_OUTPUT=$(mktemp)
 	mkdir -p "$(dirname ${OUTPUT})"
 	helm template \
@@ -36,7 +37,8 @@ gen() {
 		--values "${REPO_ROOT}/deploy/manifests/helm-values.yaml" \
 		--kube-version "${KUBE_VERSION}" \
 		--namespace "cert-manager" \
-		--name "cert-manager" > "${TMP_OUTPUT}"
+		--name "cert-manager" \
+        "$@" > "${TMP_OUTPUT}"
     cat "${REPO_ROOT}/deploy/manifests/00-crds.yaml" \
         "${REPO_ROOT}/deploy/manifests/01-namespace.yaml" \
         "${TMP_OUTPUT}" > "${OUTPUT}"
@@ -46,3 +48,4 @@ export HELM_HOME="$(mktemp -d)"
 helm init --client-only
 helm dep update "${REPO_ROOT}/deploy/charts/cert-manager"
 gen "${REPO_ROOT}/deploy/manifests/cert-manager.yaml"
+gen "${REPO_ROOT}/deploy/manifests/cert-manager-no-webhook.yaml" --set webhook.enabled=false
