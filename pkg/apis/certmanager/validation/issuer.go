@@ -77,6 +77,14 @@ func ValidateIssuerConfig(iss *v1alpha1.IssuerConfig, fldPath *field.Path) field
 			el = append(el, ValidateVaultIssuerConfig(iss.Vault, fldPath.Child("vault"))...)
 		}
 	}
+	if iss.Venafi != nil {
+		if numConfigs > 0 {
+			el = append(el, field.Forbidden(fldPath.Child("venafi"), "may not specify more than one issuer type"))
+		} else {
+			numConfigs++
+			el = append(el, ValidateVenafiIssuerConfig(iss.Venafi, fldPath.Child("venafi"))...)
+		}
+	}
 	if numConfigs == 0 {
 		el = append(el, field.Required(fldPath, "at least one issuer must be configured"))
 	}
@@ -137,6 +145,11 @@ func ValidateVaultIssuerConfig(iss *v1alpha1.VaultIssuer, fldPath *field.Path) f
 
 	return el
 	// TODO: add validation for Vault authentication types
+}
+
+func ValidateVenafiIssuerConfig(iss *v1alpha1.VenafiIssuer, fldPath *field.Path) field.ErrorList {
+	//TODO: make extended validation fro fake\tpp\cloud modes
+	return nil
 }
 
 func ValidateACMEIssuerHTTP01Config(iss *v1alpha1.ACMEIssuerHTTP01Config, fldPath *field.Path) field.ErrorList {
