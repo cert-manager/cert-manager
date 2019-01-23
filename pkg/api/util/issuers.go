@@ -31,6 +31,8 @@ const (
 	IssuerVault string = "vault"
 	// IssuerSelfSigned is a self signing issuer
 	IssuerSelfSigned string = "selfsigned"
+	// IssuerVenafi uses Venafi Trust Protection Platform and Venafi Cloud
+	IssuerVenafi string = "venafi"
 )
 
 // NameForIssuer determines the name of the Issuer implementation given an
@@ -45,6 +47,8 @@ func NameForIssuer(i cmapi.GenericIssuer) (string, error) {
 		return IssuerVault, nil
 	case i.GetSpec().SelfSigned != nil:
 		return IssuerSelfSigned, nil
+	case i.GetSpec().Venafi != nil:
+		return IssuerVenafi, nil
 	}
 	return "", fmt.Errorf("no issuer specified for Issuer '%s/%s'", i.GetObjectMeta().Namespace, i.GetObjectMeta().Name)
 }
