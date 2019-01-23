@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The Jetstack cert-manager contributors.
+Copyright 2018 The Jetstack cert-manager contributors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,12 +14,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package suite
+// Package tpp implements tests for the Venafi TPP issuer
+package tpp
 
 import (
-	_ "github.com/jetstack/cert-manager/test/e2e/suite/issuers/acme"
-	_ "github.com/jetstack/cert-manager/test/e2e/suite/issuers/ca"
-	_ "github.com/jetstack/cert-manager/test/e2e/suite/issuers/selfsigned"
-	_ "github.com/jetstack/cert-manager/test/e2e/suite/issuers/vault"
-	_ "github.com/jetstack/cert-manager/test/e2e/suite/issuers/venafi"
+	"github.com/jetstack/cert-manager/test/e2e/framework"
 )
+
+func TPPDescribe(name string, body func()) bool {
+	return framework.CertManagerDescribe("[Venafi] [TPP] "+name, body)
+}
