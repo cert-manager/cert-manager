@@ -89,6 +89,21 @@
 
 [[projects]]
   branch = "master"
+  digest = "1:00e4da50917ef06d0e5f182821963dc960675e1ab41416360168ef7539474189"
+  name = "github.com/Venafi/vcert"
+  packages = [
+    ".",
+    "pkg/certificate",
+    "pkg/endpoint",
+    "pkg/venafi/cloud",
+    "pkg/venafi/fake",
+    "pkg/venafi/tpp",
+  ]
+  pruneopts = "UT"
+  revision = "5068538d4d655c48e1eda72d2b681e063a71575c"
+
+[[projects]]
+  branch = "master"
   digest = "1:4c25fed407775a136849b6421e208dc124f746726688fdf141454f609560db4e"
   name = "github.com/aws/aws-sdk-go"
   packages = [
@@ -1000,6 +1015,14 @@
   version = "v0.9.0"
 
 [[projects]]
+  digest = "1:15e27372d379b45b18ac917b9dafc45c45485239490ece18cca97a12f9591146"
+  name = "gopkg.in/ini.v1"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "9c8236e659b76e87bf02044d06fde8683008ff3e"
+  version = "v1.39.0"
+
+[[projects]]
   digest = "1:c805e517269b0ba4c21ded5836019ed7d16953d4026cb7d00041d039c7906be9"
   name = "gopkg.in/natefinch/lumberjack.v2"
   packages = ["."]
@@ -1572,6 +1595,10 @@
     "github.com/Azure/go-autorest/autorest/adal",
     "github.com/Azure/go-autorest/autorest/azure",
     "github.com/Azure/go-autorest/autorest/to",
+    "github.com/Venafi/vcert",
+    "github.com/Venafi/vcert/pkg/certificate",
+    "github.com/Venafi/vcert/pkg/endpoint",
+    "github.com/Venafi/vcert/pkg/venafi/fake",
     "github.com/aws/aws-sdk-go/aws",
     "github.com/aws/aws-sdk-go/aws/awserr",
     "github.com/aws/aws-sdk-go/aws/client",
