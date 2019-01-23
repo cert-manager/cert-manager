@@ -19,6 +19,7 @@ package http
 import (
 	"context"
 	"fmt"
+	"net/url"
 	"testing"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
@@ -27,7 +28,7 @@ import (
 // countReachabilityTestCalls is a wrapper function that allows us to count the number
 // of calls to a reachabilityTest.
 func countReachabilityTestCalls(counter *int, t reachabilityTest) reachabilityTest {
-	return func(ctx context.Context, url, key string) (bool, error) {
+	return func(ctx context.Context, url *url.URL, key string) error {
 		*counter++
 		return t(ctx, url, key)
 	}
@@ -39,32 +40,19 @@ func TestCheck(t *testing.T) {
 		reachabilityTest reachabilityTest
 		challenge        *v1alpha1.Challenge
 		expectedErr      bool
-		expectedOk       bool
 	}
 	tests := []testT{
 		{
 			name: "should pass",
-			reachabilityTest: func(context.Context, string, string) (bool, error) {
-				return true, nil
+			reachabilityTest: func(context.Context, *url.URL, string) error {
+				return nil
 			},
-			expectedOk: true,
-		},
-		{
-			name: "should fail",
-			reachabilityTest: func(context.Context, string, string) (bool, error) {
-				return false, nil
-			},
-		},
-		{
-			name: "should fail with absorbed error",
-			reachabilityTest: func(context.Context, string, string) (bool, error) {
-				return false, &absorbErr{err: fmt.Errorf("failed")}
-			},
+			expectedErr: false,
 		},
 		{
 			name: "should error",
-			reachabilityTest: func(context.Context, string, string) (bool, error) {
-				return false, fmt.Errorf("failed")
+			reachabilityTest: func(context.Context, *url.URL, string) error {
+				return fmt.Errorf("failed")
 			},
 			expectedErr: true,
 		},
@@ -83,7 +71,7 @@ func TestCheck(t *testing.T) {
 				requiredPasses:   requiredCallsForPass,
 			}
 
-			ok, err := s.Check(nil, nil, test.challenge)
+			err := s.Check(context.Background(), nil, test.challenge)
 			if err != nil && !test.expectedErr {
 				t.Errorf("Expected Check to return non-nil error, but got %v", err)
 				return
@@ -92,10 +80,7 @@ func TestCheck(t *testing.T) {
 				t.Errorf("Expected error from Check, but got none")
 				return
 			}
-			if test.expectedOk != ok {
-				t.Errorf("Expected ok=%t but got ok=%t", test.expectedOk, ok)
-			}
-			if test.expectedOk && calls != requiredCallsForPass {
+			if !test.expectedErr && calls != requiredCallsForPass {
 				t.Errorf("Expected Wait to verify reachability test passes %d times, but only checked %d", requiredCallsForPass, calls)
 				return
 			}

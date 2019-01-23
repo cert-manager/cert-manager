@@ -18,6 +18,7 @@ package acmechallenges
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"k8s.io/apimachinery/pkg/runtime"
@@ -38,7 +39,7 @@ func (f *fakeSolver) Present(ctx context.Context, issuer v1alpha1.GenericIssuer,
 // Check should return Error only if propagation check cannot be performed.
 // It MUST return `false, nil` if can contact all relevant services and all is
 // doing is waiting for propagation
-func (f *fakeSolver) Check(ctx context.Context, issuer v1alpha1.GenericIssuer, ch *v1alpha1.Challenge) (bool, error) {
+func (f *fakeSolver) Check(ctx context.Context, issuer v1alpha1.GenericIssuer, ch *v1alpha1.Challenge) error {
 	return f.fakeCheck(ctx, issuer, ch)
 }
 
@@ -51,7 +52,7 @@ func (f *fakeSolver) CleanUp(ctx context.Context, issuer v1alpha1.GenericIssuer,
 
 type fakeSolver struct {
 	fakePresent func(ctx context.Context, issuer v1alpha1.GenericIssuer, ch *v1alpha1.Challenge) error
-	fakeCheck   func(ctx context.Context, issuer v1alpha1.GenericIssuer, ch *v1alpha1.Challenge) (bool, error)
+	fakeCheck   func(ctx context.Context, issuer v1alpha1.GenericIssuer, ch *v1alpha1.Challenge) error
 	fakeCleanUp func(ctx context.Context, issuer v1alpha1.GenericIssuer, ch *v1alpha1.Challenge) error
 }
 
@@ -108,8 +109,8 @@ func TestSyncHappyPath(t *testing.T) {
 				fakePresent: func(ctx context.Context, issuer v1alpha1.GenericIssuer, ch *v1alpha1.Challenge) error {
 					return nil
 				},
-				fakeCheck: func(ctx context.Context, issuer v1alpha1.GenericIssuer, ch *v1alpha1.Challenge) (bool, error) {
-					return false, nil
+				fakeCheck: func(ctx context.Context, issuer v1alpha1.GenericIssuer, ch *v1alpha1.Challenge) error {
+					return fmt.Errorf("some error")
 				},
 			},
 			Builder: &testpkg.Builder{
@@ -127,7 +128,7 @@ func TestSyncHappyPath(t *testing.T) {
 							gen.SetChallengeState(v1alpha1.Pending),
 							gen.SetChallengePresented(true),
 							gen.SetChallengeType("http-01"),
-							gen.SetChallengeReason("Waiting for http-01 challenge propagation"),
+							gen.SetChallengeReason("Waiting for http-01 challenge propagation: some error"),
 						))),
 				},
 			},
@@ -146,8 +147,8 @@ func TestSyncHappyPath(t *testing.T) {
 				gen.SetChallengePresented(true),
 			),
 			HTTP01: &fakeSolver{
-				fakeCheck: func(ctx context.Context, issuer v1alpha1.GenericIssuer, ch *v1alpha1.Challenge) (bool, error) {
-					return true, nil
+				fakeCheck: func(ctx context.Context, issuer v1alpha1.GenericIssuer, ch *v1alpha1.Challenge) error {
+					return nil
 				},
 				fakeCleanUp: func(context.Context, v1alpha1.GenericIssuer, *v1alpha1.Challenge) error {
 					return nil
@@ -198,8 +199,8 @@ func TestSyncHappyPath(t *testing.T) {
 				gen.SetChallengePresented(true),
 			),
 			HTTP01: &fakeSolver{
-				fakeCheck: func(ctx context.Context, issuer v1alpha1.GenericIssuer, ch *v1alpha1.Challenge) (bool, error) {
-					return true, nil
+				fakeCheck: func(ctx context.Context, issuer v1alpha1.GenericIssuer, ch *v1alpha1.Challenge) error {
+					return nil
 				},
 				fakeCleanUp: func(context.Context, v1alpha1.GenericIssuer, *v1alpha1.Challenge) error {
 					return nil
