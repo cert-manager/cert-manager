@@ -28,6 +28,7 @@ go_library(
         "//pkg/issuer/ca:go_default_library",
         "//pkg/issuer/selfsigned:go_default_library",
         "//pkg/issuer/vault:go_default_library",
+        "//pkg/issuer/venafi:go_default_library",
         "//pkg/logs:go_default_library",
         "//pkg/util:go_default_library",
         "//vendor/github.com/spf13/cobra:go_default_library",
