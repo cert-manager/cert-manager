@@ -171,7 +171,7 @@ func mockTransport(t *testing.T, akamai *DNSProvider, domain, data string, respo
 		t.Fatalf("unexpected method: %v", req.Method)
 		return nil, nil
 	})
-	akamai.findHostedDomainByFqdn = func(fqdn string) (string, error) {
+	akamai.findHostedDomainByFqdn = func(fqdn string, _ []string) (string, error) {
 		if !strings.HasSuffix(fqdn, domain+".") {
 			t.Fatalf("unexpected fqdn: %s", fqdn)
 		}
