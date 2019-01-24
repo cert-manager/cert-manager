@@ -65,9 +65,6 @@ var (
 	certificateGvk = v1alpha1.SchemeGroupVersion.WithKind("Certificate")
 )
 
-// to help testing
-var now = time.Now
-
 func (c *Controller) Sync(ctx context.Context, crt *v1alpha1.Certificate) (err error) {
 	crtCopy := crt.DeepCopy()
 	defer func() {
@@ -149,7 +146,7 @@ func (c *Controller) Sync(ctx context.Context, crt *v1alpha1.Certificate) (err e
 	}
 
 	// check if the certificate needs renewal
-	needsRenew := c.Context.IssuerOptions.CertificateNeedsRenew(cert, crt.Spec.RenewBefore)
+	needsRenew := c.Context.IssuerOptions.CertificateNeedsRenew(cert, crt)
 	if needsRenew {
 		glog.V(4).Infof("Invoking issue function due to certificate needing renewal")
 		return c.issue(ctx, i, crtCopy)
@@ -177,7 +174,7 @@ func (c *Controller) setCertificateStatus(crt *v1alpha1.Certificate, key crypto.
 	// Derive & set 'Ready' condition on Certificate resource
 	matches, matchErrs := c.certificateMatchesSpec(crt, key, cert)
 	reason := "Ready"
-	if cert.NotAfter.Before(now()) {
+	if cert.NotAfter.Before(time.Now()) {
 		reason = "Expired"
 		matchErrs = append(matchErrs, fmt.Sprintf("Certificate has expired"))
 	}
@@ -261,8 +258,7 @@ func (c *Controller) scheduleRenewal(crt *v1alpha1.Certificate) {
 		return
 	}
 
-	renewIn := c.calculateDurationUntilRenew(cert, crt)
-
+	renewIn := c.Context.IssuerOptions.CalculateDurationUntilRenew(cert, crt)
 	c.scheduledWorkQueue.Add(key, renewIn)
 
 	glog.Infof("Certificate %s/%s scheduled for renewal in %s", crt.Namespace, crt.Name, renewIn.String())
@@ -389,44 +385,4 @@ func (c *Controller) updateCertificateStatus(old, new *v1alpha1.Certificate) (*v
 	// server with the /status subresource enabled and/or subresource support
 	// for CRDs (https://github.com/kubernetes/kubernetes/issues/38113)
 	return c.CMClient.CertmanagerV1alpha1().Certificates(new.Namespace).Update(new)
-}
-
-// calculateDurationUntilRenew calculates how long cert-manager should wait to
-// until attempting to renew this certificate resource.
-func (c *Controller) calculateDurationUntilRenew(cert *x509.Certificate, crt *v1alpha1.Certificate) time.Duration {
-	messageCertificateDuration := "Certificate received from server has a validity duration of %s. The requested certificate validity duration was %s"
-	messageScheduleModified := "Certificate renewal duration was changed to fit inside the received certificate validity duration from issuer."
-
-	// validate if the certificate received was with the issuer configured
-	// duration. If not we generate an event to warn the user of that fact.
-	certDuration := cert.NotAfter.Sub(cert.NotBefore)
-	if crt.Spec.Duration != nil && certDuration < crt.Spec.Duration.Duration {
-		s := fmt.Sprintf(messageCertificateDuration, certDuration, crt.Spec.Duration.Duration)
-		glog.Info(s)
-		// TODO Use the message as the reason in a 'renewal status' condition
-	}
-
-	// renew is the duration before the certificate expiration that cert-manager
-	// will start to try renewing the certificate.
-	renewBefore := v1alpha1.DefaultRenewBefore
-	if crt.Spec.RenewBefore != nil {
-		renewBefore = crt.Spec.RenewBefore.Duration
-	}
-
-	// Verify that the renewBefore duration is inside the certificate validity duration.
-	// If not we notify with an event that we will renew the certificate
-	// before (certificate duration / 3) of its expiration duration.
-	if renewBefore > certDuration {
-		glog.Info(messageScheduleModified)
-		// TODO Use the message as the reason in a 'renewal status' condition
-		// We will renew 1/3 before the expiration date.
-		renewBefore = certDuration / 3
-	}
-
-	// calculate the amount of time until expiry
-	durationUntilExpiry := cert.NotAfter.Sub(now())
-	// calculate how long until we should start attempting to renew the certificate
-	renewIn := durationUntilExpiry - renewBefore
-
-	return renewIn
 }

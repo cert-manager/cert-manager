@@ -21,9 +21,10 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/golang/glog"
+
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	cmlisters "github.com/jetstack/cert-manager/pkg/client/listers/certmanager/v1alpha1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type Helper interface {
@@ -91,20 +92,49 @@ func (o IssuerOptions) CanUseAmbientCredentials(iss cmapi.GenericIssuer) bool {
 	return false
 }
 
-func (o IssuerOptions) CertificateNeedsRenew(cert *x509.Certificate, renewBefore *metav1.Duration) bool {
-	renewBeforeDuration := o.RenewBeforeExpiryDuration
-	if renewBefore != nil {
-		renewBeforeDuration = renewBefore.Duration
+func (o IssuerOptions) CertificateNeedsRenew(cert *x509.Certificate, crt *cmapi.Certificate) bool {
+	return o.CalculateDurationUntilRenew(cert, crt) <= 0
+}
+
+// to help testing
+var now = time.Now
+
+// CalculateDurationUntilRenew calculates how long cert-manager should wait to
+// until attempting to renew this certificate resource.
+func (o IssuerOptions) CalculateDurationUntilRenew(cert *x509.Certificate, crt *cmapi.Certificate) time.Duration {
+	messageCertificateDuration := "Certificate received from server has a validity duration of %s. The requested certificate validity duration was %s"
+	messageScheduleModified := "Certificate renewal duration was changed to fit inside the received certificate validity duration from issuer."
+
+	// validate if the certificate received was with the issuer configured
+	// duration. If not we generate an event to warn the user of that fact.
+	certDuration := cert.NotAfter.Sub(cert.NotBefore)
+	if crt.Spec.Duration != nil && certDuration < crt.Spec.Duration.Duration {
+		s := fmt.Sprintf(messageCertificateDuration, certDuration, crt.Spec.Duration.Duration)
+		glog.Info(s)
+		// TODO Use the message as the reason in a 'renewal status' condition
+	}
+
+	// renew is the duration before the certificate expiration that cert-manager
+	// will start to try renewing the certificate.
+	renewBefore := cmapi.DefaultRenewBefore
+	if crt.Spec.RenewBefore != nil {
+		renewBefore = crt.Spec.RenewBefore.Duration
+	}
+
+	// Verify that the renewBefore duration is inside the certificate validity duration.
+	// If not we notify with an event that we will renew the certificate
+	// before (certificate duration / 3) of its expiration duration.
+	if renewBefore > certDuration {
+		glog.Info(messageScheduleModified)
+		// TODO Use the message as the reason in a 'renewal status' condition
+		// We will renew 1/3 before the expiration date.
+		renewBefore = certDuration / 3
 	}
 
 	// calculate the amount of time until expiry
-	durationUntilExpiry := cert.NotAfter.Sub(time.Now())
-	// calculate how long until we should start attempting to renew the
-	// certificate
-	renewIn := durationUntilExpiry - renewBeforeDuration
-	// if we should being attempting to renew now, then trigger a renewal
-	if renewIn <= 0 {
-		return true
-	}
-	return false
+	durationUntilExpiry := cert.NotAfter.Sub(now())
+	// calculate how long until we should start attempting to renew the certificate
+	renewIn := durationUntilExpiry - renewBefore
+
+	return renewIn
 }
