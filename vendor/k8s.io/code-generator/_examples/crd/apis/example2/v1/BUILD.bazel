@@ -7,6 +7,7 @@ go_library(
         "register.go",
         "types.go",
         "zz_generated.deepcopy.go",
+        "zz_generated.defaults.go",
     ],
     importmap = "github.com/jetstack/cert-manager/vendor/k8s.io/code-generator/_examples/crd/apis/example2/v1",
     importpath = "k8s.io/code-generator/_examples/crd/apis/example2/v1",

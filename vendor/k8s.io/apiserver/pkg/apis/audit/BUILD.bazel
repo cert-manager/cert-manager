@@ -33,6 +33,7 @@ filegroup(
     srcs = [
         ":package-srcs",
         "//vendor/k8s.io/apiserver/pkg/apis/audit/install:all-srcs",
+        "//vendor/k8s.io/apiserver/pkg/apis/audit/v1:all-srcs",
         "//vendor/k8s.io/apiserver/pkg/apis/audit/v1alpha1:all-srcs",
         "//vendor/k8s.io/apiserver/pkg/apis/audit/v1beta1:all-srcs",
         "//vendor/k8s.io/apiserver/pkg/apis/audit/validation:all-srcs",
