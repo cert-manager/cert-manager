@@ -23,6 +23,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	cmutil "github.com/jetstack/cert-manager/pkg/util"
 	"github.com/jetstack/cert-manager/test/e2e/framework"
 	vaddon "github.com/jetstack/cert-manager/test/e2e/suite/issuers/venafi/addon"
 	"github.com/jetstack/cert-manager/test/e2e/util"
@@ -72,11 +73,13 @@ var _ = TPPDescribe("with a properly configured Issuer", func() {
 	It("should obtain a signed certificate for a single domain", func() {
 		certClient := f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name)
 
+		crt := util.NewCertManagerBasicCertificate(certificateName, certificateSecretName, issuer.Name, cmapi.IssuerKind, nil, nil)
+		crt.Spec.CommonName = cmutil.RandStringRunes(10) + ".venafi-e2e.example"
+
 		By("Creating a Certificate")
-		_, err := certClient.Create(
-			util.NewCertManagerBasicCertificate(certificateName, certificateSecretName, issuer.Name, cmapi.IssuerKind, nil, nil),
-		)
+		_, err := certClient.Create(crt)
 		Expect(err).NotTo(HaveOccurred())
+
 		By("Verifying the Certificate is valid")
 		err = h.WaitCertificateIssuedValid(f.Namespace.Name, certificateName, time.Second*30)
 		Expect(err).NotTo(HaveOccurred())
