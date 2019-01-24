@@ -193,6 +193,12 @@ func lookupClient(spec *cmapi.ACMEIssuer, status *cmapi.ACMEIssuerStatus, pk *rs
 	return acmeCl
 }
 
+func ClearClientCache() {
+	clientRepoMu.Lock()
+	defer clientRepoMu.Unlock()
+	clientRepo = nil
+}
+
 // buildHTTPClient returns an HTTP client to be used by the ACME client.
 // For the time being, we construct a new HTTP client on each invocation.
 // This is because we need to set the 'skipTLSVerify' flag on the HTTP client

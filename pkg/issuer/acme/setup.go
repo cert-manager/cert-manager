@@ -96,6 +96,8 @@ func (a *Acme) Setup(ctx context.Context) error {
 
 	}
 
+	acme.ClearClientCache()
+
 	cl, err := acme.ClientWithKey(a.issuer, pk)
 	if err != nil {
 		s := messageAccountVerificationFailed + err.Error()
