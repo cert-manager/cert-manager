@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"sync"
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
@@ -112,17 +113,7 @@ func ClientWithKey(iss cmapi.GenericIssuer, pk *rsa.PrivateKey) (acme.Interface,
 		return nil, fmt.Errorf("issuer %q is not an ACME issuer. Ensure the 'acme' stanza is correctly specified on your Issuer resource", iss.GetObjectMeta().Name)
 	}
 	acmeStatus := iss.GetStatus().ACME
-	accountURI := ""
-	if acmeStatus != nil && acmeStatus.URI != "" {
-		accountURI = acmeStatus.URI
-	}
-	acmeCl := &acmecl.Client{
-		HTTPClient:   buildHTTPClient(acmeSpec.SkipTLSVerify),
-		Key:          pk,
-		DirectoryURL: acmeSpec.Server,
-		UserAgent:    util.CertManagerUserAgent,
-	}
-	acmeCl.SetAccountURL(accountURI)
+	acmeCl := lookupClient(acmeSpec, acmeStatus, pk)
 
 	return acmemw.NewLogger(acmeCl), nil
 }
@@ -148,6 +139,58 @@ func (h *helperImpl) ClientForIssuer(iss cmapi.GenericIssuer) (acme.Interface, e
 	}
 
 	return ClientWithKey(iss, pk)
+}
+
+// clientRepo is a collection of acme clients indexed
+// by the options used to create them. This is used so
+// that the cert-manager controllers can concurrently access
+// the anti-replay nonces and directory information.
+var (
+	clientRepo   map[repoKey]*acmecl.Client
+	clientRepoMu sync.Mutex
+)
+
+type repoKey struct {
+	accounturi string
+	skiptls    bool
+	server     string
+	publickey  string
+	exponent   int
+}
+
+func lookupClient(spec *cmapi.ACMEIssuer, status *cmapi.ACMEIssuerStatus, pk *rsa.PrivateKey) *acmecl.Client {
+	clientRepoMu.Lock()
+	defer clientRepoMu.Unlock()
+	if clientRepo == nil {
+		clientRepo = make(map[repoKey]*acmecl.Client)
+	}
+	accountURI := ""
+	if status != nil && status.URI != "" {
+		accountURI = status.URI
+	}
+	repokey := repoKey{
+		accounturi: accountURI,
+		skiptls:    spec.SkipTLSVerify,
+		server:     spec.Server,
+	}
+	// Encoding a big.Int cannot fail
+	pkbytes, _ := pk.PublicKey.N.GobEncode()
+	repokey.publickey = string(pkbytes)
+	repokey.exponent = pk.PublicKey.E
+
+	client := clientRepo[repokey]
+	if client != nil {
+		return client
+	}
+	acmeCl := &acmecl.Client{
+		HTTPClient:   buildHTTPClient(spec.SkipTLSVerify),
+		Key:          pk,
+		DirectoryURL: spec.Server,
+		UserAgent:    util.CertManagerUserAgent,
+	}
+	acmeCl.SetAccountURL(accountURI)
+	clientRepo[repokey] = acmeCl
+	return acmeCl
 }
 
 // buildHTTPClient returns an HTTP client to be used by the ACME client.
