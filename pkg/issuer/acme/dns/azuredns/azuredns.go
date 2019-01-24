@@ -11,13 +11,14 @@ this directory.
 package azuredns
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"strings"
 
 	"github.com/golang/glog"
 
-	"github.com/Azure/azure-sdk-for-go/arm/dns"
+	"github.com/Azure/azure-sdk-for-go/services/dns/mgmt/2017-10-01/dns"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/adal"
 	"github.com/Azure/go-autorest/autorest/azure"
@@ -91,6 +92,7 @@ func (c *DNSProvider) CleanUp(domain, fqdn, value string) error {
 	}
 
 	_, err = c.recordClient.Delete(
+		context.TODO(),
 		c.resourceGroupName,
 		z,
 		c.trimFqdn(fqdn),
@@ -119,6 +121,7 @@ func (c *DNSProvider) createRecord(fqdn, value string, ttl int) error {
 	}
 
 	_, err = c.recordClient.CreateOrUpdate(
+		context.TODO(),
 		c.resourceGroupName,
 		z,
 		c.trimFqdn(fqdn),
@@ -145,7 +148,7 @@ func (c *DNSProvider) getHostedZoneName(fqdn string) (string, error) {
 		return "", fmt.Errorf("Zone %s not found for domain %s", z, fqdn)
 	}
 
-	_, err = c.zoneClient.Get(c.resourceGroupName, util.UnFqdn(z))
+	_, err = c.zoneClient.Get(context.TODO(), c.resourceGroupName, util.UnFqdn(z))
 
 	if err != nil {
 		return "", fmt.Errorf("Zone %s not found in AzureDNS for domain %s. Err: %v", z, fqdn, err)

@@ -17,6 +17,7 @@ limitations under the License.
 package app
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"sync"
@@ -56,7 +57,7 @@ func Run(opts *options.ControllerOptions, stopCh <-chan struct{}) {
 		glog.Fatalf(err.Error())
 	}
 
-	run := func(_ <-chan struct{}) {
+	run := func(_ context.Context) {
 		var wg sync.WaitGroup
 		wg.Add(1)
 		go func() {
@@ -97,7 +98,7 @@ func Run(opts *options.ControllerOptions, stopCh <-chan struct{}) {
 	}
 
 	if !opts.LeaderElect {
-		run(stopCh)
+		run(context.TODO())
 		return
 	}
 
@@ -207,7 +208,7 @@ func buildControllerContext(opts *options.ControllerOptions) (*controller.Contex
 	}, kubeCfg, nil
 }
 
-func startLeaderElection(opts *options.ControllerOptions, leaderElectionClient kubernetes.Interface, recorder record.EventRecorder, run func(<-chan struct{})) {
+func startLeaderElection(opts *options.ControllerOptions, leaderElectionClient kubernetes.Interface, recorder record.EventRecorder, run func(context.Context)) {
 	// Identity used to distinguish between multiple controller manager instances
 	id, err := os.Hostname()
 	if err != nil {
@@ -228,7 +229,7 @@ func startLeaderElection(opts *options.ControllerOptions, leaderElectionClient k
 	}
 
 	// Try and become the leader and start controller manager loops
-	leaderelection.RunOrDie(leaderelection.LeaderElectionConfig{
+	leaderelection.RunOrDie(context.TODO(), leaderelection.LeaderElectionConfig{
 		Lock:          &rl,
 		LeaseDuration: opts.LeaderElectionLeaseDuration,
 		RenewDeadline: opts.LeaderElectionRenewDeadline,

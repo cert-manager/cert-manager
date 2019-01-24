@@ -7,7 +7,7 @@ go_library(
     visibility = ["//visibility:public"],
     deps = [
         "//pkg/issuer/acme/dns/util:go_default_library",
-        "//vendor/github.com/Azure/azure-sdk-for-go/arm/dns:go_default_library",
+        "//vendor/github.com/Azure/azure-sdk-for-go/services/dns/mgmt/2017-10-01/dns:go_default_library",
         "//vendor/github.com/Azure/go-autorest/autorest:go_default_library",
         "//vendor/github.com/Azure/go-autorest/autorest/adal:go_default_library",
         "//vendor/github.com/Azure/go-autorest/autorest/azure:go_default_library",
