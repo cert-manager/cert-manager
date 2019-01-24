@@ -2,7 +2,7 @@ load("@io_bazel_rules_docker//container:container.bzl", "container_bundle")
 load("@io_bazel_rules_docker//contrib:push-all.bzl", "docker_push")
 
 # gazelle:proto disable_global
-
+ 
 container_bundle(
     name = "images",
     images = {
