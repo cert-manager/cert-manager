@@ -182,7 +182,7 @@ func (r *DNSProvider) getHostedZoneID(fqdn string) (string, error) {
 		return r.hostedZoneID, nil
 	}
 
-	authZone, err := util.FindZoneByFqdn(fqdn, util.RecursiveNameservers)
+	authZone, err := util.FindZoneByFqdn(fqdn, r.dns01Nameservers)
 	if err != nil {
 		return "", fmt.Errorf("error finding zone from fqdn: %v", err)
 	}

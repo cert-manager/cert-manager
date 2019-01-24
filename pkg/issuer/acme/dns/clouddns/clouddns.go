@@ -200,7 +200,7 @@ func (c *DNSProvider) CleanUp(domain, fqdn, value string) error {
 
 // getHostedZone returns the managed-zone
 func (c *DNSProvider) getHostedZone(domain string) (string, error) {
-	authZone, err := util.FindZoneByFqdn(util.ToFqdn(domain), util.RecursiveNameservers)
+	authZone, err := util.FindZoneByFqdn(util.ToFqdn(domain), c.dns01Nameservers)
 	if err != nil {
 		return "", err
 	}

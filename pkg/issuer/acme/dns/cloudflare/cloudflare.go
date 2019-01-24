@@ -128,7 +128,7 @@ func (c *DNSProvider) getHostedZoneID(fqdn string) (string, error) {
 		Name string `json:"name"`
 	}
 
-	authZone, err := util.FindZoneByFqdn(fqdn, util.RecursiveNameservers)
+	authZone, err := util.FindZoneByFqdn(fqdn, c.dns01Nameservers)
 	if err != nil {
 		return "", err
 	}
