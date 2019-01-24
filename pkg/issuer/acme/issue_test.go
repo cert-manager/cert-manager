@@ -54,7 +54,7 @@ func generatePrivateKey(t *testing.T) *rsa.PrivateKey {
 
 var serialNumberLimit = new(big.Int).Lsh(big.NewInt(1), 128)
 
-func generateSelfSignedCert(t *testing.T, crt *v1alpha1.Certificate, key crypto.Signer, duration time.Duration) (derBytes, pemBytes []byte) {
+func generateSelfSignedCert(t *testing.T, crt *v1alpha1.Certificate, key crypto.Signer, notBefore time.Time, duration time.Duration) (derBytes, pemBytes []byte) {
 	commonName := pki.CommonNameForCertificate(crt)
 	dnsNames := pki.DNSNamesForCertificate(crt)
 	ipAddresses := pki.IPAddressesForCertificate(crt)
@@ -72,8 +72,8 @@ func generateSelfSignedCert(t *testing.T, crt *v1alpha1.Certificate, key crypto.
 		Subject: pkix.Name{
 			CommonName: commonName,
 		},
-		NotBefore: time.Now(),
-		NotAfter:  time.Now().Add(duration),
+		NotBefore: notBefore,
+		NotAfter:  notBefore.Add(duration),
 		// see http://golang.org/pkg/crypto/x509/#KeyUsage
 		KeyUsage:    x509.KeyUsageDigitalSignature | x509.KeyUsageKeyEncipherment,
 		DNSNames:    dnsNames,
@@ -140,8 +140,8 @@ func TestIssueHappyPath(t *testing.T) {
 		},
 	}
 
-	_, testCertSignedBytesPEM := generateSelfSignedCert(t, testCert, pk, time.Hour*24*365)
-	_, testCertExpiringSignedBytesPEM := generateSelfSignedCert(t, testCert, pk, time.Minute*5)
+	_, testCertSignedBytesPEM := generateSelfSignedCert(t, testCert, pk, time.Now(), time.Hour*24*365)
+	_, testCertExpiringSignedBytesPEM := generateSelfSignedCert(t, testCert, pk, time.Now().Add(-4*time.Minute), time.Minute*5)
 	testCertEmptyOrder, _ := buildOrder(testCert, testCertCSR)
 	testCertPendingOrder := testCertEmptyOrder.DeepCopy()
 	testCertPendingOrder.Status.State = v1alpha1.Pending
@@ -272,7 +272,7 @@ func TestIssueHappyPath(t *testing.T) {
 				// err := args[2].(error)
 
 				if resp != nil {
-					t.Errorf("expected IssuerResponse to be nil")
+					t.Errorf("expected IssuerResponse to be nil, but was: %v", resp)
 				}
 				if !reflect.DeepEqual(returnedCert, testCert) {
 					t.Errorf("output was not as expected: %s", pretty.Diff(returnedCert, testCert))
