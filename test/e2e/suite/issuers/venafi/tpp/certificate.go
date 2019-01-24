@@ -30,6 +30,7 @@ import (
 
 var _ = TPPDescribe("with a properly configured Issuer", func() {
 	f := framework.NewDefaultFramework("venafi-tpp-certificate")
+	h := f.Helper()
 
 	var (
 		issuer                *cmapi.Issuer
@@ -70,7 +71,6 @@ var _ = TPPDescribe("with a properly configured Issuer", func() {
 
 	It("should obtain a signed certificate for a single domain", func() {
 		certClient := f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name)
-		secretClient := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name)
 
 		By("Creating a Certificate")
 		_, err := certClient.Create(
@@ -78,7 +78,7 @@ var _ = TPPDescribe("with a properly configured Issuer", func() {
 		)
 		Expect(err).NotTo(HaveOccurred())
 		By("Verifying the Certificate is valid")
-		err = util.WaitCertificateIssuedValid(certClient, secretClient, certificateName, time.Second*30)
+		err = h.WaitCertificateIssuedValid(f.Namespace.Name, certificateName, time.Second*30)
 		Expect(err).NotTo(HaveOccurred())
 	})
 })
