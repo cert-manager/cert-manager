@@ -124,6 +124,7 @@ when creating the resource, the deployment should be good to go!
      name: test-selfsigned
    spec:
      selfSigned: {}
+   EOF
 
    # Create the new ClusterIssuer (if this step fails, please read the resource
    # validation webhook doc linked in the note above)
