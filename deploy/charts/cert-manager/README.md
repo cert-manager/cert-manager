@@ -23,6 +23,12 @@ To install the chart with the release name `my-release`:
 $ kubectl apply \
     -f https://raw.githubusercontent.com/jetstack/cert-manager/release-0.6/deploy/manifests/00-crds.yaml
 
+## IMPORTANT: if you are deploying into a namespace that **already exists**,
+## you MUST ensure the namespace has an additional label on it in order for
+## the deployment to succeed
+$ kubectl label namespace <deployment-namespace> certmanager.k8s.io/disable-validation="true"
+
+## Install the cert-manager helm chart
 $ helm install --name my-release stable/cert-manager
 ```
 
