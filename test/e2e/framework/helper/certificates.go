@@ -64,6 +64,37 @@ func (h *Helper) WaitForCertificateReady(ns, name string, timeout time.Duration)
 	return certificate, nil
 }
 
+// WaitForCertificateNotReady waits for the certificate resource to enter a
+// non-Ready state.
+func (h *Helper) WaitForCertificateNotReady(ns, name string, timeout time.Duration) (*v1alpha1.Certificate, error) {
+	var certificate *v1alpha1.Certificate
+	err := wait.PollImmediate(time.Second, timeout,
+		func() (bool, error) {
+			var err error
+			log.Logf("Waiting for Certificate %v to be ready", name)
+			certificate, err = h.CMClient.CertmanagerV1alpha1().Certificates(ns).Get(name, metav1.GetOptions{})
+			if err != nil {
+				return false, fmt.Errorf("error getting Certificate %v: %v", name, err)
+			}
+			isReady := certificate.HasCondition(v1alpha1.CertificateCondition{
+				Type:   v1alpha1.CertificateConditionReady,
+				Status: v1alpha1.ConditionFalse,
+			})
+			if !isReady {
+				log.Logf("Expected Certificate to have Ready condition 'true' but it has: %v", certificate.Status.Conditions)
+				return false, nil
+			}
+			return true, nil
+		},
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return certificate, nil
+}
+
 // ValidateIssuedCertificate will ensure that the given Certificate has a
 // certificate issued for it, and that the details on the x509 certificate are
 // correct as defined by the Certificate's spec.

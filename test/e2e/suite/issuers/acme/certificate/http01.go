@@ -169,6 +169,11 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		cert, err = certClient.Update(cert)
 		Expect(err).NotTo(HaveOccurred())
 
+		By("Waiting for the Certificate to be not ready")
+		_, err = h.WaitForCertificateNotReady(f.Namespace.Name, certificateName, time.Minute*5)
+		Expect(err).NotTo(HaveOccurred())
+
+		By("Waiting for the Certificate to become ready & valid")
 		err = h.WaitCertificateIssuedValid(f.Namespace.Name, certificateName, time.Minute*5)
 		Expect(err).NotTo(HaveOccurred())
 	})
