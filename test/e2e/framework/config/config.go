@@ -28,6 +28,7 @@ import (
 type Config struct {
 	KubeConfig  string
 	KubeContext string
+	Kubectl     string
 
 	// If Cleanup is true, addons will be cleaned up both before and after provisioning
 	Cleanup bool
@@ -64,6 +65,7 @@ func (c *Config) AddFlags(fs *flag.FlagSet) {
 	// Kubernetes API server config
 	fs.StringVar(&c.KubeConfig, "kubernetes-config", os.Getenv(clientcmd.RecommendedConfigPathEnvVar), "Path to config containing embedded authinfo for kubernetes. Default value is from environment variable "+clientcmd.RecommendedConfigPathEnvVar)
 	fs.StringVar(&c.KubeContext, "kubernetes-context", "", "config context to use for kuberentes. If unset, will use value from 'current-context'")
+	fs.StringVar(&c.Kubectl, "kubectl-path", "kubectl", "path to the kubectl binary to use during e2e tests.")
 	fs.BoolVar(&c.Cleanup, "cleanup", true, "If true, addons will be cleaned up both before and after provisioning")
 
 	// TODO: get rid of this variable by bundling required files as part of test suite

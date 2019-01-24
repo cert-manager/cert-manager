@@ -49,6 +49,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (DNS01)", func() {
 func testDNSProvider(name string, p dns01Provider) bool {
 	return Context("With "+name+" credentials configured", func() {
 		f := framework.NewDefaultFramework("create-acme-certificate-dns01-" + name)
+		h := f.Helper()
 
 		BeforeEach(func() {
 			p.SetNamespace(f.Namespace.Name)
@@ -119,7 +120,6 @@ func testDNSProvider(name string, p dns01Provider) bool {
 			By("Creating a Certificate")
 
 			certClient := f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name)
-			secretClient := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name)
 
 			cert := generate.Certificate(generate.CertificateConfig{
 				Name:       certificateName,
@@ -135,15 +135,12 @@ func testDNSProvider(name string, p dns01Provider) bool {
 			})
 			cert, err := certClient.Create(cert)
 			Expect(err).NotTo(HaveOccurred())
-			err = util.WaitCertificateIssuedValid(certClient, secretClient, certificateName, time.Minute*5)
+			err = h.WaitCertificateIssuedValid(f.Namespace.Name, certificateName, time.Minute*5)
 			Expect(err).NotTo(HaveOccurred())
 		})
 
 		It("should obtain a signed certificate for a wildcard domain", func() {
 			By("Creating a Certificate")
-
-			certClient := f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name)
-			secretClient := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name)
 
 			cert := generate.Certificate(generate.CertificateConfig{
 				Name:       certificateName,
@@ -159,15 +156,12 @@ func testDNSProvider(name string, p dns01Provider) bool {
 			})
 			cert, err := f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name).Create(cert)
 			Expect(err).NotTo(HaveOccurred())
-			err = util.WaitCertificateIssuedValid(certClient, secretClient, certificateName, time.Minute*5)
+			err = h.WaitCertificateIssuedValid(f.Namespace.Name, certificateName, time.Minute*5)
 			Expect(err).NotTo(HaveOccurred())
 		})
 
 		It("should obtain a signed certificate for a wildcard and apex domain", func() {
 			By("Creating a Certificate")
-
-			certClient := f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name)
-			secretClient := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name)
 
 			cert := generate.Certificate(generate.CertificateConfig{
 				Name:       certificateName,
@@ -184,7 +178,7 @@ func testDNSProvider(name string, p dns01Provider) bool {
 			cert, err := f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name).Create(cert)
 			Expect(err).NotTo(HaveOccurred())
 			// use a longer timeout for this, as it requires performing 2 dns validations in serial
-			err = util.WaitCertificateIssuedValid(certClient, secretClient, certificateName, time.Minute*10)
+			err = h.WaitCertificateIssuedValid(f.Namespace.Name, certificateName, time.Minute*10)
 			Expect(err).NotTo(HaveOccurred())
 		})
 	})

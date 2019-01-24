@@ -33,6 +33,7 @@ import (
 
 var _ = framework.CertManagerDescribe("Vault Certificate (AppRole)", func() {
 	f := framework.NewDefaultFramework("create-vault-certificate")
+	h := f.Helper()
 
 	var (
 		tiller = &tiller.Tiller{
@@ -96,7 +97,6 @@ var _ = framework.CertManagerDescribe("Vault Certificate (AppRole)", func() {
 		vaultURL := vault.Details().Host
 
 		certClient := f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name)
-		secretClient := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name)
 
 		_, err := f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Create(util.NewCertManagerVaultIssuerAppRole(issuerName, vaultURL, vaultPath, roleId, vaultSecretAppRoleName, authPath, vault.Details().VaultCA))
 
@@ -115,7 +115,7 @@ var _ = framework.CertManagerDescribe("Vault Certificate (AppRole)", func() {
 		_, err = certClient.Create(util.NewCertManagerVaultCertificate(certificateName, certificateSecretName, issuerName, v1alpha1.IssuerKind, nil, nil))
 		Expect(err).NotTo(HaveOccurred())
 
-		err = util.WaitCertificateIssuedValid(certClient, secretClient, certificateName, time.Minute*5)
+		err = h.WaitCertificateIssuedValid(f.Namespace.Name, certificateName, time.Minute*5)
 		Expect(err).NotTo(HaveOccurred())
 
 	})
@@ -157,9 +157,6 @@ var _ = framework.CertManagerDescribe("Vault Certificate (AppRole)", func() {
 		v := v
 		It("should generate a new certificate "+v.label, func() {
 			By("Creating an Issuer")
-			certClient := f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name)
-			secretClient := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name)
-
 			_, err := f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Create(util.NewCertManagerVaultIssuerAppRole(issuerName, vault.Details().Host, vaultPath, roleId, vaultSecretAppRoleName, authPath, vault.Details().VaultCA))
 			Expect(err).NotTo(HaveOccurred())
 
@@ -176,7 +173,7 @@ var _ = framework.CertManagerDescribe("Vault Certificate (AppRole)", func() {
 			cert, err := f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name).Create(util.NewCertManagerVaultCertificate(certificateName, certificateSecretName, issuerName, v1alpha1.IssuerKind, v.inputDuration, v.inputRenewBefore))
 			Expect(err).NotTo(HaveOccurred())
 
-			err = util.WaitCertificateIssuedValid(certClient, secretClient, certificateName, time.Minute*5)
+			err = h.WaitCertificateIssuedValid(f.Namespace.Name, certificateName, time.Minute*5)
 			Expect(err).NotTo(HaveOccurred())
 
 			// Vault substract 30 seconds to the NotBefore date.

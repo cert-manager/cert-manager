@@ -31,6 +31,7 @@ import (
 
 var _ = framework.CertManagerDescribe("Self Signed Certificate", func() {
 	f := framework.NewDefaultFramework("create-selfsigned-certificate")
+	h := f.Helper()
 
 	issuerName := "test-selfsigned-issuer"
 	certificateName := "test-selfsigned-certificate"
@@ -40,7 +41,6 @@ var _ = framework.CertManagerDescribe("Self Signed Certificate", func() {
 		By("Creating an Issuer")
 
 		certClient := f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name)
-		secretClient := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name)
 
 		_, err := f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Create(util.NewCertManagerSelfSignedIssuer(issuerName))
 		Expect(err).NotTo(HaveOccurred())
@@ -55,7 +55,7 @@ var _ = framework.CertManagerDescribe("Self Signed Certificate", func() {
 		By("Creating a Certificate")
 		_, err = certClient.Create(util.NewCertManagerBasicCertificate(certificateName, certificateSecretName, issuerName, v1alpha1.IssuerKind, nil, nil))
 		Expect(err).NotTo(HaveOccurred())
-		err = util.WaitCertificateIssuedValid(certClient, secretClient, certificateName, time.Minute*5)
+		err = h.WaitCertificateIssuedValid(f.Namespace.Name, certificateName, time.Minute*5)
 		Expect(err).NotTo(HaveOccurred())
 	})
 
@@ -82,7 +82,6 @@ var _ = framework.CertManagerDescribe("Self Signed Certificate", func() {
 		v := v
 		It("should generate a signed keypair valid for "+v.label, func() {
 			certClient := f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name)
-			secretClient := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name)
 
 			By("Creating an Issuer")
 			issuerDurationName := fmt.Sprintf("%s-%d", issuerName, v.expectedDuration)
@@ -100,7 +99,7 @@ var _ = framework.CertManagerDescribe("Self Signed Certificate", func() {
 			By("Creating a Certificate")
 			cert, err := certClient.Create(util.NewCertManagerBasicCertificate(certificateName, certificateSecretName, issuerDurationName, v1alpha1.IssuerKind, v.inputDuration, v.inputRenewBefore))
 			Expect(err).NotTo(HaveOccurred())
-			err = util.WaitCertificateIssuedValid(certClient, secretClient, certificateName, time.Second*30)
+			err = h.WaitCertificateIssuedValid(f.Namespace.Name, certificateName, time.Second*30)
 			Expect(err).NotTo(HaveOccurred())
 			f.CertificateDurationValid(cert, v.expectedDuration)
 		})
