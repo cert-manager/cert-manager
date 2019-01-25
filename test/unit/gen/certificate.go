@@ -35,6 +35,7 @@ func Certificate(name string, mods ...CertificateModifier) *v1alpha1.Certificate
 }
 
 func CertificateFrom(crt *v1alpha1.Certificate, mods ...CertificateModifier) *v1alpha1.Certificate {
+	crt = crt.DeepCopy()
 	for _, mod := range mods {
 		mod(crt)
 	}
@@ -103,5 +104,11 @@ func SetCertificateStatusCondition(c v1alpha1.CertificateCondition) CertificateM
 func SetCertificateLastFailureTime(p metav1.Time) CertificateModifier {
 	return func(crt *v1alpha1.Certificate) {
 		crt.Status.LastFailureTime = &p
+	}
+}
+
+func SetCertificateNotAfter(p metav1.Time) CertificateModifier {
+	return func(crt *v1alpha1.Certificate) {
+		crt.Status.NotAfter = &p
 	}
 }
