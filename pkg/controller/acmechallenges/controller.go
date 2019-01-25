@@ -35,6 +35,7 @@ import (
 	cmlisters "github.com/jetstack/cert-manager/pkg/client/listers/certmanager/v1alpha1"
 	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
 	"github.com/jetstack/cert-manager/pkg/controller/acmechallenges/scheduler"
+	"github.com/jetstack/cert-manager/pkg/issuer"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/http"
 	"github.com/jetstack/cert-manager/pkg/util"
@@ -43,7 +44,7 @@ import (
 type Controller struct {
 	controllerpkg.Context
 
-	helper     controllerpkg.Helper
+	helper     issuer.Helper
 	acmeHelper acme.Helper
 
 	// To allow injection for testing.
@@ -101,7 +102,7 @@ func New(ctx *controllerpkg.Context) *Controller {
 	ctrl.watchedInformers = append(ctrl.watchedInformers, serviceInformer.Informer().HasSynced)
 	ctrl.watchedInformers = append(ctrl.watchedInformers, ingressInformer.Informer().HasSynced)
 
-	ctrl.helper = controllerpkg.NewHelper(ctrl.issuerLister, ctrl.clusterIssuerLister)
+	ctrl.helper = issuer.NewHelper(ctrl.issuerLister, ctrl.clusterIssuerLister)
 	ctrl.acmeHelper = acme.NewHelper(ctrl.secretLister, ctrl.Context.ClusterResourceNamespace)
 
 	ctrl.httpSolver = http.NewSolver(ctx)

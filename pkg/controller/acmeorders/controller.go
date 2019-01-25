@@ -36,13 +36,14 @@ import (
 	"github.com/jetstack/cert-manager/pkg/acme"
 	cmlisters "github.com/jetstack/cert-manager/pkg/client/listers/certmanager/v1alpha1"
 	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
+	"github.com/jetstack/cert-manager/pkg/issuer"
 	"github.com/jetstack/cert-manager/pkg/util"
 )
 
 type Controller struct {
 	controllerpkg.Context
 
-	helper     controllerpkg.Helper
+	helper     issuer.Helper
 	acmeHelper acme.Helper
 
 	// To allow injection for testing.
@@ -94,7 +95,7 @@ func New(ctx *controllerpkg.Context) *Controller {
 	ctrl.watchedInformers = append(ctrl.watchedInformers, secretInformer.Informer().HasSynced)
 	ctrl.secretLister = secretInformer.Lister()
 
-	ctrl.helper = controllerpkg.NewHelper(ctrl.issuerLister, ctrl.clusterIssuerLister)
+	ctrl.helper = issuer.NewHelper(ctrl.issuerLister, ctrl.clusterIssuerLister)
 	ctrl.acmeHelper = acme.NewHelper(ctrl.secretLister, ctrl.Context.ClusterResourceNamespace)
 	ctrl.clock = clock.RealClock{}
 

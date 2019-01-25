@@ -23,7 +23,6 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
-	"time"
 
 	"github.com/golang/glog"
 	corev1 "k8s.io/api/core/v1"
@@ -32,6 +31,7 @@ import (
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/apimachinery/pkg/util/runtime"
 
+	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/validation"
 	"github.com/jetstack/cert-manager/pkg/issuer"
@@ -118,7 +118,7 @@ func (c *Controller) Sync(ctx context.Context, crt *v1alpha1.Certificate) (err e
 		return nil
 	}
 
-	issuerReady := issuerObj.HasCondition(v1alpha1.IssuerCondition{
+	issuerReady := apiutil.IssuerHasCondition(issuerObj, v1alpha1.IssuerCondition{
 		Type:   v1alpha1.IssuerConditionReady,
 		Status: v1alpha1.ConditionTrue,
 	})
@@ -127,7 +127,7 @@ func (c *Controller) Sync(ctx context.Context, crt *v1alpha1.Certificate) (err e
 		return nil
 	}
 
-	i, err := c.IssuerFactory().IssuerFor(issuerObj)
+	i, err := c.issuerFactory.IssuerFor(issuerObj)
 	if err != nil {
 		c.Recorder.Eventf(crtCopy, corev1.EventTypeWarning, errorIssuerInit, "Internal error initialising issuer: %v", err)
 		return nil
@@ -164,7 +164,7 @@ func (c *Controller) Sync(ctx context.Context, crt *v1alpha1.Certificate) (err e
 // It will not actually submit the resource to the apiserver.
 func (c *Controller) setCertificateStatus(crt *v1alpha1.Certificate, key crypto.Signer, cert *x509.Certificate) {
 	if key == nil || cert == nil {
-		crt.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse, "NotFound", "Certificate does not exist", false)
+		apiutil.SetCertificateCondition(crt, v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse, "NotFound", "Certificate does not exist")
 		return
 	}
 
@@ -174,7 +174,7 @@ func (c *Controller) setCertificateStatus(crt *v1alpha1.Certificate, key crypto.
 	// Derive & set 'Ready' condition on Certificate resource
 	matches, matchErrs := c.certificateMatchesSpec(crt, key, cert)
 	reason := "Ready"
-	if cert.NotAfter.Before(time.Now()) {
+	if cert.NotAfter.Before(c.clock.Now()) {
 		reason = "Expired"
 		matchErrs = append(matchErrs, fmt.Sprintf("Certificate has expired"))
 	}
@@ -182,11 +182,11 @@ func (c *Controller) setCertificateStatus(crt *v1alpha1.Certificate, key crypto.
 		reason = "DoesNotMatch"
 	}
 	if len(matchErrs) > 0 {
-		crt.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse, reason, strings.Join(matchErrs, ", "), false)
+		apiutil.SetCertificateCondition(crt, v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse, reason, strings.Join(matchErrs, ", "))
 		return
 	}
 
-	crt.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionTrue, reason, "Certificate is up to date and has not expired", false)
+	apiutil.SetCertificateCondition(crt, v1alpha1.CertificateConditionReady, v1alpha1.ConditionTrue, reason, "Certificate is up to date and has not expired")
 
 	return
 }

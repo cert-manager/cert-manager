@@ -19,8 +19,8 @@ package validation
 import (
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
+	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
-	"github.com/jetstack/cert-manager/pkg/controller"
 )
 
 func ValidateCertificateForIssuer(crt *v1alpha1.Certificate, issuerObj v1alpha1.GenericIssuer) field.ErrorList {
@@ -28,20 +28,20 @@ func ValidateCertificateForIssuer(crt *v1alpha1.Certificate, issuerObj v1alpha1.
 
 	path := field.NewPath("spec")
 
-	issuerType, err := controller.NameForIssuer(issuerObj)
+	issuerType, err := apiutil.NameForIssuer(issuerObj)
 	if err != nil {
 		el = append(el, field.Invalid(path, err.Error(), err.Error()))
 		return el
 	}
 
 	switch issuerType {
-	case controller.IssuerACME:
+	case apiutil.IssuerACME:
 		el = append(el, ValidateCertificateForACMEIssuer(&crt.Spec, issuerObj.GetSpec(), path)...)
-	case controller.IssuerCA:
+	case apiutil.IssuerCA:
 		el = append(el, ValidateCertificateForCAIssuer(&crt.Spec, issuerObj.GetSpec(), path)...)
-	case controller.IssuerVault:
+	case apiutil.IssuerVault:
 		el = append(el, ValidateCertificateForVaultIssuer(&crt.Spec, issuerObj.GetSpec(), path)...)
-	case controller.IssuerSelfSigned:
+	case apiutil.IssuerSelfSigned:
 		el = append(el, ValidateCertificateForSelfSignedIssuer(&crt.Spec, issuerObj.GetSpec(), path)...)
 	}
 

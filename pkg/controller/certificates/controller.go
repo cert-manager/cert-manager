@@ -29,9 +29,11 @@ import (
 	corelisters "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
+	"k8s.io/utils/clock"
 
 	cmlisters "github.com/jetstack/cert-manager/pkg/client/listers/certmanager/v1alpha1"
 	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
+	"github.com/jetstack/cert-manager/pkg/issuer"
 	"github.com/jetstack/cert-manager/pkg/metrics"
 	"github.com/jetstack/cert-manager/pkg/scheduler"
 	"github.com/jetstack/cert-manager/pkg/util"
@@ -39,9 +41,9 @@ import (
 
 type Controller struct {
 	*controllerpkg.Context
-	helper controllerpkg.Helper
 
-	helper controllerpkg.Helper
+	helper        issuer.Helper
+	issuerFactory issuer.IssuerFactory
 
 	// To allow injection for testing.
 	syncHandler func(ctx context.Context, key string) error
@@ -56,6 +58,9 @@ type Controller struct {
 	workerWg           sync.WaitGroup
 	syncedFuncs        []cache.InformerSynced
 	metrics            *metrics.Metrics
+
+	// used for testing
+	clock clock.Clock
 }
 
 // New returns a new Certificates controller. It sets up the informer handler
@@ -97,9 +102,11 @@ func New(ctx *controllerpkg.Context) *Controller {
 	ordersInformer.Informer().AddEventHandler(&controllerpkg.BlockingEventHandler{WorkFunc: ctrl.handleOwnedResource})
 	ctrl.syncedFuncs = append(ctrl.syncedFuncs, ordersInformer.Informer().HasSynced)
 
-	ctrl.helper = controllerpkg.NewHelper(ctrl.issuerLister, ctrl.clusterIssuerLister)
+	ctrl.helper = issuer.NewHelper(ctrl.issuerLister, ctrl.clusterIssuerLister)
 	ctrl.metrics = metrics.Default
-	ctrl.helper = controllerpkg.NewHelper(ctrl.issuerLister, ctrl.clusterIssuerLister)
+	ctrl.helper = issuer.NewHelper(ctrl.issuerLister, ctrl.clusterIssuerLister)
+	ctrl.issuerFactory = issuer.NewIssuerFactory(ctx)
+	ctrl.clock = clock.RealClock{}
 
 	return ctrl
 }
