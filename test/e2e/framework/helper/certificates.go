@@ -31,6 +31,7 @@ import (
 	"github.com/jetstack/cert-manager/pkg/util"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 	"github.com/jetstack/cert-manager/test/e2e/framework/log"
+	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 )
 
 // WaitForCertificateReady waits for the certificate resource to enter a Ready
@@ -45,7 +46,7 @@ func (h *Helper) WaitForCertificateReady(ns, name string, timeout time.Duration)
 			if err != nil {
 				return false, fmt.Errorf("error getting Certificate %v: %v", name, err)
 			}
-			isReady := certificate.HasCondition(v1alpha1.CertificateCondition{
+			isReady := apiutil.CertificateHasCondition(certificate, v1alpha1.CertificateCondition{
 				Type:   v1alpha1.CertificateConditionReady,
 				Status: v1alpha1.ConditionTrue,
 			})
@@ -76,7 +77,7 @@ func (h *Helper) WaitForCertificateNotReady(ns, name string, timeout time.Durati
 			if err != nil {
 				return false, fmt.Errorf("error getting Certificate %v: %v", name, err)
 			}
-			isReady := certificate.HasCondition(v1alpha1.CertificateCondition{
+			isReady := apiutil.CertificateHasCondition(certificate, v1alpha1.CertificateCondition{
 				Type:   v1alpha1.CertificateConditionReady,
 				Status: v1alpha1.ConditionFalse,
 			})

@@ -33,6 +33,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 
+	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	clientset "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/typed/certmanager/v1alpha1"
 	"github.com/jetstack/cert-manager/pkg/util"
@@ -68,7 +69,7 @@ func WaitForIssuerCondition(client clientset.IssuerInterface, name string, condi
 				return false, fmt.Errorf("error getting Issuer %q: %v", name, err)
 			}
 
-			return issuer.HasCondition(condition), nil
+			return apiutil.IssuerHasCondition(issuer, condition), nil
 		},
 	)
 	return wrapErrorWithIssuerStatusCondition(client, pollErr, name, condition.Type)
@@ -106,7 +107,7 @@ func WaitForClusterIssuerCondition(client clientset.ClusterIssuerInterface, name
 				return false, fmt.Errorf("error getting ClusterIssuer %v: %v", name, err)
 			}
 
-			return issuer.HasCondition(condition), nil
+			return apiutil.IssuerHasCondition(issuer, condition), nil
 		},
 	)
 	return wrapErrorWithClusterIssuerStatusCondition(client, pollErr, name, condition.Type)
@@ -144,7 +145,7 @@ func WaitForCertificateCondition(client clientset.CertificateInterface, name str
 				return false, fmt.Errorf("error getting Certificate %v: %v", name, err)
 			}
 
-			return certificate.HasCondition(condition), nil
+			return apiutil.CertificateHasCondition(certificate, condition), nil
 		},
 	)
 	return wrapErrorWithCertificateStatusCondition(client, pollErr, name, condition.Type)
