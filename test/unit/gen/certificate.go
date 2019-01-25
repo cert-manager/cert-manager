@@ -84,6 +84,22 @@ func SetCertificateSecretName(secretName string) CertificateModifier {
 	}
 }
 
+func SetCertificateStatusCondition(c v1alpha1.CertificateCondition) CertificateModifier {
+	return func(crt *v1alpha1.Certificate) {
+		if len(crt.Status.Conditions) == 0 {
+			crt.Status.Conditions = []v1alpha1.CertificateCondition{c}
+			return
+		}
+		for i, existingC := range crt.Status.Conditions {
+			if existingC.Type == c.Type {
+				crt.Status.Conditions[i] = c
+				return
+			}
+		}
+		crt.Status.Conditions = append(crt.Status.Conditions, c)
+	}
+}
+
 func SetCertificateLastFailureTime(p metav1.Time) CertificateModifier {
 	return func(crt *v1alpha1.Certificate) {
 		crt.Status.LastFailureTime = &p

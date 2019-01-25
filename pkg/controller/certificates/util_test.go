@@ -19,9 +19,15 @@ package certificates
 import (
 	"context"
 	"testing"
+	"time"
 
+	realclock "k8s.io/utils/clock"
+	clock "k8s.io/utils/clock/testing"
+
+	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	"github.com/jetstack/cert-manager/pkg/controller/test"
+	"github.com/jetstack/cert-manager/pkg/issuer"
 )
 
 type controllerFixture struct {
@@ -30,6 +36,8 @@ type controllerFixture struct {
 
 	Issuer      v1alpha1.GenericIssuer
 	Certificate v1alpha1.Certificate
+	IssuerImpl  issuer.Interface
+	Clock       *clock.FakeClock
 
 	PreFn   func(*testing.T, *controllerFixture)
 	CheckFn func(*testing.T, *controllerFixture, ...interface{})
@@ -58,6 +66,10 @@ func (f *controllerFixture) Setup(t *testing.T) {
 		f.PreFn(t, f)
 		f.Builder.Sync()
 	}
+
+	// Fix the clock used in apiutil so that calls to set status conditions
+	// can be predictably tested
+	apiutil.Clock = f.Controller.clock
 }
 
 func (f *controllerFixture) Finish(t *testing.T, args ...interface{}) {
@@ -75,16 +87,28 @@ func (f *controllerFixture) Finish(t *testing.T, args ...interface{}) {
 	if f.CheckFn != nil {
 		f.CheckFn(t, f, args...)
 	}
+
+	// Reset the clock used in apiutil back to the real system clock
+	apiutil.Clock = realclock.RealClock{}
 }
 
 func (f *controllerFixture) buildFakeController(b *test.Builder, issuer v1alpha1.GenericIssuer) *Controller {
 	b.Start()
 	c := New(b.Context)
 	c.helper = f
+	c.issuerFactory = f
+	c.clock = f.Clock
+	if c.clock == nil {
+		c.clock = clock.NewFakeClock(time.Now())
+	}
 	b.Sync()
 	return c
 }
 
 func (f *controllerFixture) GetGenericIssuer(ref v1alpha1.ObjectReference, ns string) (v1alpha1.GenericIssuer, error) {
 	return f.Issuer, nil
+}
+
+func (f *controllerFixture) IssuerFor(v1alpha1.GenericIssuer) (issuer.Interface, error) {
+	return f.IssuerImpl, nil
 }

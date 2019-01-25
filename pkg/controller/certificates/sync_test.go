@@ -17,25 +17,30 @@ limitations under the License.
 package certificates
 
 import (
+	"context"
 	"testing"
+	"time"
 
-	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	coretesting "k8s.io/client-go/testing"
+	clock "k8s.io/utils/clock/testing"
 
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	testpkg "github.com/jetstack/cert-manager/pkg/controller/test"
+	"github.com/jetstack/cert-manager/pkg/issuer"
+	"github.com/jetstack/cert-manager/pkg/issuer/fake"
 	_ "github.com/jetstack/cert-manager/pkg/issuer/selfsigned"
 	"github.com/jetstack/cert-manager/test/unit/gen"
 )
 
-func TestSyncHappyPath(t *testing.T) {
-	// nowTime := time.Now()
-	// nowMetaTime := metav1.NewTime(nowTime)
-	// fixedClock := fakeclock.NewFakeClock(nowTime)
+func TestSync(t *testing.T) {
+	nowTime := time.Now()
+	nowMetaTime := metav1.NewTime(nowTime)
+	fixedClock := clock.NewFakeClock(nowTime)
 
 	tests := map[string]controllerFixture{
-		"nothing": {
+		"should update certificate with NotExists if issuer does not return a keypair": {
 			Issuer: gen.Issuer("test",
 				gen.AddIssuerCondition(cmapi.IssuerCondition{
 					Type:   cmapi.IssuerConditionReady,
@@ -48,13 +53,30 @@ func TestSyncHappyPath(t *testing.T) {
 				gen.SetCertificateIssuer(cmapi.ObjectReference{Name: "test"}),
 				gen.SetCertificateSecretName("output"),
 			),
+			IssuerImpl: &fake.Issuer{
+				FakeIssue: func(context.Context, *cmapi.Certificate) (*issuer.IssueResponse, error) {
+					return nil, nil
+				},
+			},
 			Builder: &testpkg.Builder{
 				CertManagerObjects: []runtime.Object{gen.Certificate("test")},
 				ExpectedActions: []testpkg.Action{
-					testpkg.NewCustomMatch(coretesting.NewCreateAction(corev1.SchemeGroupVersion.WithResource("secrets"), gen.DefaultTestNamespace, nil),
-						func(exp, _ coretesting.Action) bool {
-							return false
-						}),
+					testpkg.NewAction(coretesting.NewUpdateAction(
+						cmapi.SchemeGroupVersion.WithResource("certificates"),
+						gen.DefaultTestNamespace,
+						gen.Certificate("test",
+							gen.SetCertificateDNSNames("example.com"),
+							gen.SetCertificateIssuer(cmapi.ObjectReference{Name: "test"}),
+							gen.SetCertificateSecretName("output"),
+							gen.SetCertificateStatusCondition(cmapi.CertificateCondition{
+								Type:               cmapi.CertificateConditionReady,
+								Status:             cmapi.ConditionFalse,
+								Reason:             "NotFound",
+								Message:            "Certificate does not exist",
+								LastTransitionTime: nowMetaTime,
+							}),
+						),
+					)),
 				},
 			},
 			CheckFn: func(t *testing.T, s *controllerFixture, args ...interface{}) {
@@ -67,6 +89,7 @@ func TestSyncHappyPath(t *testing.T) {
 			if test.Builder == nil {
 				test.Builder = &testpkg.Builder{}
 			}
+			test.Clock = fixedClock
 			test.Setup(t)
 			crtCopy := test.Certificate.DeepCopy()
 			err := test.Controller.Sync(test.Ctx, crtCopy)
