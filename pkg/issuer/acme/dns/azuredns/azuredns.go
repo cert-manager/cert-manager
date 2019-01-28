@@ -136,7 +136,7 @@ func (c *DNSProvider) getHostedZoneName(fqdn string) (string, error) {
 	if c.zoneName != "" {
 		return c.zoneName, nil
 	}
-	z, err := util.FindZoneByFqdn(fqdn, util.RecursiveNameservers)
+	z, err := util.FindZoneByFqdn(fqdn, c.dns01Nameservers)
 	if err != nil {
 		return "", err
 	}
