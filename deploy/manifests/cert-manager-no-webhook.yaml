@@ -155,7 +155,7 @@ metadata:
   namespace: "cert-manager"
   labels:
     app: cert-manager
-    chart: cert-manager-v0.6.1
+    chart: cert-manager-v0.6.2
     release: cert-manager
     heritage: Tiller
 ---
@@ -166,12 +166,12 @@ metadata:
   name: cert-manager
   labels:
     app: cert-manager
-    chart: cert-manager-v0.6.1
+    chart: cert-manager-v0.6.2
     release: cert-manager
     heritage: Tiller
 rules:
   - apiGroups: ["certmanager.k8s.io"]
-    resources: ["certificates", "issuers", "clusterissuers", "orders", "challenges"]
+    resources: ["certificates", "certificates/finalizers", "issuers", "clusterissuers", "orders", "orders/finalizers", "challenges"]
     verbs: ["*"]
   - apiGroups: [""]
     resources: ["configmaps", "secrets", "events", "services", "pods"]
@@ -186,7 +186,7 @@ metadata:
   name: cert-manager
   labels:
     app: cert-manager
-    chart: cert-manager-v0.6.1
+    chart: cert-manager-v0.6.2
     release: cert-manager
     heritage: Tiller
 roleRef:
@@ -204,7 +204,7 @@ metadata:
   name: cert-manager-view
   labels:
     app: cert-manager
-    chart: cert-manager-v0.6.1
+    chart: cert-manager-v0.6.2
     release: cert-manager
     heritage: Tiller
     rbac.authorization.k8s.io/aggregate-to-view: "true"
@@ -221,7 +221,7 @@ metadata:
   name: cert-manager-edit
   labels:
     app: cert-manager
-    chart: cert-manager-v0.6.1
+    chart: cert-manager-v0.6.2
     release: cert-manager
     heritage: Tiller
     rbac.authorization.k8s.io/aggregate-to-edit: "true"
@@ -239,7 +239,7 @@ metadata:
   namespace: "cert-manager"
   labels:
     app: cert-manager
-    chart: cert-manager-v0.6.1
+    chart: cert-manager-v0.6.2
     release: cert-manager
     heritage: Tiller
 spec:
