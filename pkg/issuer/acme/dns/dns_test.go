@@ -19,6 +19,7 @@ package dns
 import (
 	"reflect"
 	"testing"
+	"time"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -475,4 +476,61 @@ func TestRoute53AmbientCreds(t *testing.T) {
 			}
 		}
 	}
+}
+
+func TestSolveForDPDNS(t *testing.T) {
+	f := &solverFixture{
+		Builder: &test.Builder{
+			KubeObjects: []runtime.Object{
+				newSecret("pdns", "default", map[string][]byte{
+					"token": []byte("FAKE-TOKEN"),
+				}),
+			},
+		},
+		Issuer: newIssuer("test", "default", []v1alpha1.ACMEIssuerDNS01Provider{
+			{
+				Name: "fake-pdns",
+				PowerDNS: &v1alpha1.ACMEIssuerDNS01ProviderPowerDNS{
+					Host: "http://localhost:8080",
+					APIKey: v1alpha1.SecretKeySelector{
+						LocalObjectReference: v1alpha1.LocalObjectReference{
+							Name: "pdns",
+						},
+						Key: "token",
+					},
+				},
+			},
+		}),
+		Challenge: &v1alpha1.Challenge{
+			Spec: v1alpha1.ChallengeSpec{
+				Config: v1alpha1.SolverConfig{
+					DNS01: &v1alpha1.DNS01SolverConfig{
+						Provider: "fake-pdns",
+					},
+				},
+			},
+		},
+		dnsProviders: newFakeDNSProviders(),
+	}
+
+	f.Setup(t)
+	defer f.Finish(t)
+
+	s := f.Solver
+	_, _, err := s.solverForChallenge(f.Issuer, f.Challenge)
+	if err != nil {
+		t.Fatalf("expected solverFor to not error, but got: %s", err)
+	}
+
+	expectedPDNSCall := []fakeDNSProviderCall{
+		{
+			name: "pdns",
+			args: []interface{}{"http://localhost:8080", "FAKE-TOKEN", 0, 0 * time.Second, 0 * time.Second, 0 * time.Second, util.RecursiveNameservers},
+		},
+	}
+
+	if !reflect.DeepEqual(expectedPDNSCall, f.dnsProviders.calls) {
+		t.Fatalf("expected %+v == %+v", expectedPDNSCall, f.dnsProviders.calls)
+	}
+
 }

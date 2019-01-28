@@ -261,6 +261,9 @@ type ACMEIssuerDNS01Provider struct {
 
 	// +optional
 	RFC2136 *ACMEIssuerDNS01ProviderRFC2136 `json:"rfc2136,omitempty"`
+
+	// +optional
+	PowerDNS *ACMEIssuerDNS01ProviderPowerDNS `json:"pdns,omitempty"`
 }
 
 // CNAMEStrategy configures how the DNS01 provider should handle CNAME records
@@ -371,6 +374,25 @@ type ACMEIssuerDNS01ProviderRFC2136 struct {
 	// ``HMACSHA1``, ``HMACSHA256`` or ``HMACSHA512``.
 	// +optional
 	TSIGAlgorithm string `json:"tsigAlgorithm,omitempty"`
+}
+
+// ACMEIssuerDNS01ProviderPowerDNS is a structure containing the
+// configuration for PowerDNS servers
+type ACMEIssuerDNS01ProviderPowerDNS struct {
+	Host   string            `json:"host"`
+	APIKey SecretKeySelector `json:"apiKeySecretRef"`
+
+	// +optional
+	TTL int `json:"ttl"`
+
+	// +optional
+	Timeout int `json:"timeout"`
+
+	// +optional
+	PropagationTimeout int `json:"propagationTimeout"`
+
+	// +optional
+	PollingInterval int `json:"pollingInterval"`
 }
 
 // IssuerStatus contains status information about an Issuer

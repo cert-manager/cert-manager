@@ -19,6 +19,7 @@ package dns
 import (
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/digitalocean"
 
@@ -30,6 +31,7 @@ import (
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/azuredns"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/clouddns"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/cloudflare"
+	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/pdns"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/rfc2136"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/route53"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
@@ -169,6 +171,10 @@ func newFakeDNSProviders() *fakeDNSProviders {
 		},
 		digitalOcean: func(token string, dns01Nameservers []string) (*digitalocean.DNSProvider, error) {
 			f.call("digitalocean", token, util.RecursiveNameservers)
+			return nil, nil
+		},
+		pdns: func(host, apiKey string, ttl int, timeout, propagationTimeout, pollingInterval time.Duration, dns01Nameservers []string) (*pdns.DNSProvider, error) {
+			f.call("pdns", host, apiKey, ttl, timeout, propagationTimeout, pollingInterval, util.RecursiveNameservers)
 			return nil, nil
 		},
 	}

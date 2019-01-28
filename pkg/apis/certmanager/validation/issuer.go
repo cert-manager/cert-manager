@@ -312,6 +312,18 @@ func ValidateACMEIssuerDNS01Config(iss *v1alpha1.ACMEIssuerDNS01Config, fldPath 
 				}
 			}
 		}
+		if p.PowerDNS != nil {
+			if numProviders > 0 {
+				el = append(el, field.Forbidden(fldPath.Child("pdns"), "may not specify more than one provider type"))
+			} else {
+				numProviders++
+
+				if len(p.PowerDNS.Host) == 0 {
+					el = append(el, field.Required(fldPath.Child("pdns", "host"), ""))
+				}
+				el = append(el, ValidateSecretKeySelector(&p.PowerDNS.APIKey, fldPath.Child("pdns", "apiKeySecretRef"))...)
+			}
+		}
 		if numProviders == 0 {
 			el = append(el, field.Required(fldPath, "at least one provider must be configured"))
 		}
