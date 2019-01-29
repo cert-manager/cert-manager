@@ -25,7 +25,7 @@ Due to issues with the way Helm handles CRD resources in Helm charts, we have
 now moved the installation of these resources into a separate YAML manifest
 that must be installed with ``kubectl apply`` before upgrading the chart.
 
-You can follow the :doc:`regular upgrade guide </admin/upgrading/index>` as
+You can follow the :doc:`regular upgrade guide <./index>` as
 usual in order to upgrade from v0.5 to v0.6.
 
 Upgrading with static manifests
@@ -38,7 +38,7 @@ We now also no longer ship different manifests for different configurations, in
 favour of a single ``cert-manager.yaml`` file which should work for all
 Kubernetes clusters from Kubernetes v1.9 onwards.
 
-You can follow the :doc:`regular upgrade guide </admin/upgrading/index>` as
+You can follow the :doc:`regular upgrade guide <./index>` as
 usual in order to upgrade from v0.5 to v0.6.
 
 Upgrading from older versions using Helm
@@ -73,7 +73,7 @@ Before upgrading you will need to:
        clusterissuers.certmanager.k8s.io
 
 3. Perform a fresh install (as per the
-   :doc:`installation guide </getting-started/2-installing>`):
+   :doc:`installation guide </getting-started/install>`):
 
 .. code-block:: shell
 

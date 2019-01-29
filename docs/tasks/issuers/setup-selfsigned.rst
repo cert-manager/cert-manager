@@ -1,6 +1,6 @@
-=========================
-Self-signed Configuration
-=========================
+===============================
+Setting up self signing Issuers
+===============================
 
 .. toctree::
    :maxdepth: 1
@@ -8,9 +8,7 @@ Self-signed Configuration
 Self signed Issuers will issue self signed certificates.
 
 This is useful when building PKI within Kubernetes, or as a means to generate a
-root CA for use with the :doc:`CA Issuer </reference/issuers/ca/index>` once
-cert-manager supports setting the ``isCA`` flag on Certificate resources
-(`#85`_).
+root CA for use with the :doc:`CA Issuer <./setup-ca>`.
 
 A self-signed Issuer contains no additional configuration fields, and can be
 created with a resource like so:
@@ -39,10 +37,8 @@ referencing the newly created Issuer in your ``issuerRef``:
      name: example-crt
    spec:
      secretName: my-selfsigned-cert
-     dnsNames:
-     - example.com
+     commonName: "my-selfsigned-root-ca"
+     isCA: true
      issuerRef:
        name: selfsigning-issuer
        kind: ClusterIssuer
-
-.. _`#85`: https://github.com/jetstack/cert-manager/issues/85
