@@ -20,7 +20,7 @@ For example, on macOS:
    $ brew install kubernetes-helm
 
 .. _`Helm`: https://helm.sh
-.. _`Helm installation instructions`: https://github.com/kubernetes/helm/blob/master/docs/install.md
+.. _`Helm installation instructions`: https://github.com/helm/helm/blob/master/docs/install.md
 
 Step 1 - Installer Tiller
 =========================
@@ -236,8 +236,8 @@ sample deployment and an associated service:
 .. literalinclude:: example/service.yaml
    :language: yaml
 
-.. _`deployment.yaml`: https://raw.githubusercontent.com/jetstack/cert-manager/master/docs/tutorials/quick-start/example/deployment.yaml
-.. _`service.yaml`: https://raw.githubusercontent.com/jetstack/cert-manager/master/docs/tutorials/quick-start/example/service.yaml
+.. _`deployment.yaml`: https://raw.githubusercontent.com/jetstack/cert-manager/master/docs/tutorials/acme/quick-start/example/deployment.yaml
+.. _`service.yaml`: https://raw.githubusercontent.com/jetstack/cert-manager/master/docs/tutorials/acme/quick-start/example/service.yaml
 .. _`kuard`: https://github.com/kubernetes-up-and-running/kuard
 
 You can create download and reference these files locally, or you can
@@ -247,10 +247,10 @@ you may use the commands:
 
 .. code-block:: shell
 
-   $ kubectl apply -f https://raw.githubusercontent.com/jetstack/cert-manager/master/docs/tutorials/quick-start/example/deployment.yaml
+   $ kubectl apply -f https://raw.githubusercontent.com/jetstack/cert-manager/master/docs/tutorials/acme/quick-start/example/deployment.yaml
    deployment.extensions "kuard" created
 
-   $ kubectl apply -f https://raw.githubusercontent.com/jetstack/cert-manager/master/docs/tutorials/quick-start/example/service.yaml
+   $ kubectl apply -f https://raw.githubusercontent.com/jetstack/cert-manager/master/docs/tutorials/acme/quick-start/example/service.yaml
    service "kuard" created
 
 An `ingress resource`_ is what Kubernetes uses to expose this example service
@@ -265,14 +265,14 @@ A sample ingress you can start with is:
 .. literalinclude:: example/ingress.yaml
    :language: yaml
 
-.. _`ingress.yaml`: https://raw.githubusercontent.com/jetstack/cert-manager/master/docs/tutorials/quick-start/example/ingress.yaml
+.. _`ingress.yaml`: https://raw.githubusercontent.com/jetstack/cert-manager/master/docs/tutorials/acme/quick-start/example/ingress.yaml
 .. _`ingress resource`: https://kubernetes.io/docs/concepts/services-networking/ingress/
 
 You can download the sample manifest from github, edit it, and submit the manifest to Kubernetes with the command:
 
 .. code-block:: shell
 
-   $ kubectl create --edit -f https://raw.githubusercontent.com/jetstack/cert-manager/master/docs/tutorials/quick-start/example/ingress.yaml
+   $ kubectl create --edit -f https://raw.githubusercontent.com/jetstack/cert-manager/master/docs/tutorials/acme/quick-start/example/ingress.yaml
 
    # edit the file in your editor, and once it is saved:
    ingress.extensions "kuard" created
@@ -511,7 +511,7 @@ will need to update this example and add in your own email address.
     issuer.certmanager.k8s.io "letsencrypt-prod" created
 
 Both of these issuers are configured to use the
-:doc:`HTTP01 </reference/issuers/acme/http01>` challenge provider.
+:doc:`HTTP01 </tasks/acme/configuring-http01>` challenge provider.
 
 Check on the status of the issuer after you create it:
 

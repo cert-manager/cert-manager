@@ -50,12 +50,6 @@ non-namespaced.
 
 .. _`Subject Alternative Names`: https://en.wikipedia.org/wiki/Subject_Alternative_Name
 
-.. toctree::
-   :maxdepth: 1
-   :hidden:
-
-   certificates/issuer-specific-config/acme
-
 ***************************************
 Certificate Duration and Renewal Window
 ***************************************

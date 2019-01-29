@@ -1,6 +1,7 @@
-=================================
-Creating a simple CA based issuer
-=================================
+=====================
+Setting up CA Issuers
+=====================
+
 
 cert-manager can be used to obtain certificates using an arbitrary signing
 key pair stored in a Kubernetes Secret resource.
