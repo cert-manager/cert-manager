@@ -12,6 +12,20 @@ for more information about the API.
 .. code-block:: yaml
 
    pdns:
+     host: http://pdns.example.com:8080
      tokenSecretRef:
        name: pdns-dns
        key: api-key
+
+     # The following values are options
+     # Record TTL (in seconds)
+     ttl: 60
+
+     # API timeout (in seconds)
+     timeout: 30
+
+     # Record propagation timeout (in seconds)
+     propagationTimeout: 120
+
+     # Record propagation polling interval (in seconds)
+     pollingInterval: 2
