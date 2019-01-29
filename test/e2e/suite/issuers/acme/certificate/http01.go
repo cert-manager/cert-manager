@@ -22,7 +22,9 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	ext "k8s.io/api/extensions/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	cmutil "github.com/jetstack/cert-manager/pkg/util"
@@ -221,4 +223,58 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		err = util.WaitCertificateIssuedValid(certClient, secretClient, certificateName, time.Minute*5)
 		Expect(err).NotTo(HaveOccurred())
 	})
+
+	It("should obtain a signed certificate with a single CN from the ACME server when redirected", func() {
+		certClient := f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name)
+		secretClient := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name)
+
+		// create an ingress that points at nothing, but has the TLS redirect annotation set
+		const ingressname = "httpsingress"
+		ingress := f.KubeClientSet.ExtensionsV1beta1().Ingresses(f.Namespace.Name)
+		_, err := ingress.Create(&ext.Ingress{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: ingressname,
+				Annotations: map[string]string{
+					"nginx.ingress.kubernetes.io/force-ssl-redirect": "true",
+					"kubernetes.io/ingress.class":                    "nginx",
+				},
+			},
+			Spec: ext.IngressSpec{
+				Rules: []ext.IngressRule{
+					ext.IngressRule{
+						Host: acmeIngressDomain,
+						IngressRuleValue: ext.IngressRuleValue{
+							HTTP: &ext.HTTPIngressRuleValue{
+								Paths: []ext.HTTPIngressPath{
+									{
+										Path: "/",
+										Backend: ext.IngressBackend{
+											ServiceName: "doesnotexist",
+											ServicePort: intstr.FromInt(443),
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		})
+		Expect(err).NotTo(HaveOccurred())
+
+		By("Creating a Certificate")
+		// This is a special cert for the test suite, where we specify an ingress rather than a
+		// class
+		cert := util.NewCertManagerACMECertificate(certificateName, certificateSecretName, issuerName, v1alpha1.IssuerKind, nil, nil, acmeIngressClass, acmeIngressDomain)
+		http01 := cert.Spec.ACME.Config[0].SolverConfig.HTTP01
+		http01.IngressClass = nil
+		http01.Ingress = ingressname
+
+		_, err = certClient.Create(cert)
+		Expect(err).NotTo(HaveOccurred())
+		By("Verifying the Certificate is valid")
+		err = util.WaitCertificateIssuedValid(certClient, secretClient, certificateName, time.Minute*5)
+		Expect(err).NotTo(HaveOccurred())
+	})
+
 })
