@@ -35,7 +35,7 @@ This is the simplest of ACME issuers - it specifies no DNS-01 challenge
 providers. HTTP-01 validation can be performed through using Ingress
 resources by enabling the HTTP-01 challenge mechanism (with the ``http01: {}``
 field).
-More information on configuring ACME Issuers can be found :doc:`here <tasks/acme/index>`.
+More information on configuring ACME Issuers can be found :doc:`here </tasks/acme/index>`.
 
 ***********
 Namespacing
@@ -117,19 +117,19 @@ Supported Issuer types
 cert-manager has been designed to support pluggable Issuer backends. The
 currently supported Issuer types are:
 
-+-----------------------------------------------------+----------------------------------------------------------------------+
-| Name                                                | Description                                                          |
-+=====================================================+======================================================================+
-| :doc:`ACME </tasks/issuers/setup-acme>`             | Supports obtaining certificates from an ACME server, validating with |
-|                                                     | HTTP01 or DNS01                                                      |
-+-----------------------------------------------------+----------------------------------------------------------------------+
-| :doc:`CA <tasks/issuers/setup-ca>`                  | Supports issuing certificates using a simple signing keypair, stored |
-|                                                     | in a Secret in the Kubernetes API server                             |
-+-----------------------------------------------------+----------------------------------------------------------------------+
-| :doc:`Vault <tasks/issuers/setup-vault>`            | Supports issuing certificates using HashiCorp Vault.                 |
-+-----------------------------------------------------+----------------------------------------------------------------------+
-| :doc:`Self signed <tasks/issuers/setup-selfsigned>` | Supports issuing self signed certificates                            |
-+-----------------------------------------------------+----------------------------------------------------------------------+
++------------------------------------------------------+----------------------------------------------------------------------+
+| Name                                                 | Description                                                          |
++======================================================+======================================================================+
+| :doc:`ACME </tasks/issuers/setup-acme>`              | Supports obtaining certificates from an ACME server, validating with |
+|                                                      | HTTP01 or DNS01                                                      |
++------------------------------------------------------+----------------------------------------------------------------------+
+| :doc:`CA </tasks/issuers/setup-ca>`                  | Supports issuing certificates using a simple signing keypair, stored |
+|                                                      | in a Secret in the Kubernetes API server                             |
++------------------------------------------------------+----------------------------------------------------------------------+
+| :doc:`Vault </tasks/issuers/setup-vault>`            | Supports issuing certificates using HashiCorp Vault.                 |
++------------------------------------------------------+----------------------------------------------------------------------+
+| :doc:`Self signed </tasks/issuers/setup-selfsigned>` | Supports issuing self signed certificates                            |
++------------------------------------------------------+----------------------------------------------------------------------+
 
 Each Issuer resource is of one, and only one type. The type of an Issuer is
 inferred by which field it specifies in its spec, such as ``spec.acme``

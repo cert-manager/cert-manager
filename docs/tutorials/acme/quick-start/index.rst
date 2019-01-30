@@ -185,7 +185,7 @@ IP address. When it is complete, you can see the external IP address using the
 ``kubectl`` command:
 
 .. code-block:: shell
-    :emphasize-lines: 4
+    :emphasize-lines: 5
 
     $ kubectl get svc
 
@@ -603,7 +603,7 @@ certificate object. You can view this information using the
 `kubectl describe` command:
 
 .. code-block:: shell
-   :emphasize-lines: 55-59
+   :emphasize-lines: 50-54
 
     $ kubectl describe certificate quickstart-example-tls
 
@@ -651,11 +651,6 @@ certificate object. You can view this information using the
         Reason:                CertIssued
         Status:                True
         Type:                  Ready
-        Last Transition Time:  <nil>
-        Message:               Order validated
-        Reason:                OrderValidated
-        Status:                False
-        Type:                  ValidateFailed
     Events:
       Type     Reason          Age                From          Message
       ----     ------          ----               ----          -------
@@ -720,7 +715,7 @@ you should see the example KUARD running at your domain with a signed TLS
 certificate.
 
 .. code-block:: shell
-   :emphasize-lines: 55-59
+   :emphasize-lines: 47-48
 
     $ kubectl describe certificate
 
