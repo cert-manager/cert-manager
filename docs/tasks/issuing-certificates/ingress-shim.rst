@@ -1,6 +1,6 @@
-============
-ingress-shim
-============
+=========================================================
+Automatically creating Certificates for Ingress resources
+=========================================================
 
 cert-manager can be configured to automatically provision TLS certificates for
 Ingress resources via annotations on your Ingresses.
