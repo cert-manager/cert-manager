@@ -233,18 +233,9 @@ Configuring your first Issuer
 Before you can begin issuing certificates, you must configure at least one
 Issuer or ClusterIssuer resource in your cluster.
 
-These represent a certificate authority from which signed x509 certificates can
-be obtained, such as Let's Encrypt, or your own signing key pair stored in a
-Kubernetes Secret resource. They are referenced by Certificate resources in
-order to request certificates from them.
-
-For example, users often create ``letsencrypt-staging`` and
-``letsencrypt-prod`` ClusterIssuers if they operate a single-tenant environment
-and want to expose a cluster-wide mechanism for obtaining TLS certificates
-from `Let's Encrypt`_.
-
-More information on configuring different Issuer types can be found in the
-:doc:`tasks section </tasks/issuers/index>`.
+You should read the :doc:`Setting up Issuers </tasks/issuers/index>` guide to
+learn how to configure cert-manager to issue certificates from one of the
+supported backends.
 
 Debugging installation issues
 =============================
