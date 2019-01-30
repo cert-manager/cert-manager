@@ -10,6 +10,7 @@ want to configure.
    :maxdepth: 2
 
    issuing-certificates
+   backup-restore-crds
    issuers/index
    acme/index
    upgrading/index
