@@ -26,7 +26,7 @@ The below example configures a ClusterIssuer named ``letsencrypt-staging`` that
 is configured to enable the HTTP01 challenge validation mechanism **only**.
 
 You should copy and paste this example into a new file named
-``letsencrypt-staging.yaml`` and update the ``spec.acme.email` field to be your
+``letsencrypt-staging.yaml`` and update the ``spec.acme.email`` field to be your
 own email address.
 
 .. code-block:: yaml
