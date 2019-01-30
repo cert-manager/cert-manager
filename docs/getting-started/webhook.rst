@@ -233,3 +233,4 @@ Once you have re-installed cert-manager, you should then
 .. _`cert-manager.yaml`: https://github.com/jetstack/cert-manager/blob/release-0.6/deploy/manifests/cert-manager.yaml
 .. _`cert-manager-no-webhook.yaml`: https://github.com/jetstack/cert-manager/blob/release-0.6/deploy/manifests/cert-manager-no-webhook.yaml
 .. _`GKE docs`: https://cloud.google.com/kubernetes-engine/docs/how-to/private-clusters#add_firewall_rules
+.. _`ValidatingWebhookConfiguration`: https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers/

@@ -48,6 +48,8 @@ cert-manager runs in:
    # Disable resource validation on the cert-manager namespace
    kubectl label namespace cert-manager certmanager.k8s.io/disable-validation=true
 
+You can read more about the webhook on the :doc:`webhook document <./webhook>`.
+
 We can now go ahead and install cert-manager. This is a two-stage process where
 we first install the CustomResourceDefinition resources, and then afterwards
 install cert-manager along with the webhook component:
@@ -55,10 +57,10 @@ install cert-manager along with the webhook component:
 .. code-block:: shell
 
    # Install the CustomResourceDefinition resources
-   kubectl apply -f https://raw.githubusercontent.com/jetstack/cert-manager/v0.6.0/deploy/manifests/00-crds.yaml
+   kubectl apply -f https://raw.githubusercontent.com/jetstack/cert-manager/release-0.6/deploy/manifests/00-crds.yaml
 
    # Install cert-manager itself
-   kubectl apply -f https://raw.githubusercontent.com/jetstack/cert-manager/v0.6.0/deploy/manifests/cert-manager.yaml
+   kubectl apply -f https://raw.githubusercontent.com/jetstack/cert-manager/release-0.6/deploy/manifests/cert-manager.yaml
 
 .. note::
    If you are running kubectl v1.12 or below, you will need to add the
@@ -118,7 +120,7 @@ In order to install the Helm chart, you must run:
 .. code-block:: shell
 
    # Install the CustomResourceDefinition resources separately
-   kubectl apply -f https://raw.githubusercontent.com/jetstack/cert-manager/v0.6.0/deploy/manifests/00-crds.yaml
+   kubectl apply -f https://raw.githubusercontent.com/jetstack/cert-manager/release-0.6/deploy/manifests/00-crds.yaml
 
    # Create the namespace for cert-manager
    kubectl create namespace cert-manager
@@ -262,3 +264,4 @@ If you have any issues with your installation, please refer to the
 .. _`installing helm docs`: https://github.com/kubernetes/helm/blob/master/docs/install.md
 .. _Tiller: https://github.com/helm/helm
 .. _`Tillerless Helm v2`: https://rimusz.net/tillerless-helm/
+.. _`Let's Encrypt`: https://letsencrypt.org
