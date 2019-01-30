@@ -559,8 +559,9 @@ Step 7 - Deploy a TLS Ingress Resource
 
 With all the pre-requisite configuration in place, we can now do the pieces
 to request the TLS certificate. There are two primary ways to do this: using
-annotations on the ingress with :doc:`ingress-shim </reference/ingress-shim>`
-or directly creating a certificate resource.
+annotations on the ingress with
+:doc:`ingress-shim </tasks/issuing-certificates/ingress-shim>` or directly
+creating a certificate resource.
 
 In this example, we will add annotations to the ingress, and take advantage
 of ingress-shim to have it create the certificate resource on our behalf.
