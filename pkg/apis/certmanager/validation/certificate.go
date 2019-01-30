@@ -116,7 +116,7 @@ func validateIPAddresses(a *v1alpha1.CertificateSpec, fldPath *field.Path) field
 	for i, d := range a.IPAddresses {
 		ip := net.ParseIP(d)
 		if ip == nil {
-			el = append(el, field.Invalid(fldPath.Child("ipAddresses").Index(i), d, "Invalid IP Address"))
+			el = append(el, field.Invalid(fldPath.Child("ipAddresses").Index(i), d, "invalid IP address"))
 		}
 	}
 	return el

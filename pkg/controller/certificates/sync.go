@@ -217,9 +217,8 @@ func (c *Controller) certificateMatchesSpec(crt *v1alpha1.Certificate, key crypt
 	}
 
 	// validate the ip addresses are correct
-	expectedIPAddresses := pki.IPAddressesNameForCertificate(crt)
-	if !util.EqualUnsorted(pki.IPAddressesToString(cert.IPAddresses), expectedIPAddresses) {
-		errs = append(errs, fmt.Sprintf("IP Addresses on TLS certificate not up to date: %q", pki.IPAddressesToString(cert.IPAddresses)))
+	if !util.EqualUnsorted(pki.IPAddressesToString(cert.IPAddresses), crt.Spec.IPAddresses) {
+		errs = append(errs, fmt.Sprintf("IP addresses on TLS certificate not up to date: %q", pki.IPAddressesToString(cert.IPAddresses)))
 	}
 
 	return len(errs) == 0, errs

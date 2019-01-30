@@ -61,21 +61,13 @@ func DNSNamesForCertificate(crt *v1alpha1.Certificate) []string {
 func IPAddressesForCertificate(crt *v1alpha1.Certificate) []net.IP {
 	var ipAddresses []net.IP
 	var ip net.IP
-	for _, ipName := range IPAddressesNameForCertificate(crt) {
+	for _, ipName := range crt.Spec.IPAddresses {
 		ip = net.ParseIP(ipName)
 		if ip != nil {
 			ipAddresses = append(ipAddresses, ip)
 		}
 	}
 	return ipAddresses
-}
-
-func IPAddressesNameForCertificate(crt *v1alpha1.Certificate) []string {
-	var ipAddressNames []string
-	for _, ip := range crt.Spec.IPAddresses {
-		ipAddressNames = append(ipAddressNames, ip)
-	}
-	return removeDuplicates(ipAddressNames)
 }
 
 func IPAddressesToString(ipAddresses []net.IP) []string {

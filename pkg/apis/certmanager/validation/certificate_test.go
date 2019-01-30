@@ -392,7 +392,7 @@ func TestValidateCertificate(t *testing.T) {
 				},
 			},
 			errs: []*field.Error{
-				field.Invalid(fldPath.Child("ipAddresses").Index(0), "blah", "Invalid IP Address"),
+				field.Invalid(fldPath.Child("ipAddresses").Index(0), "blah", "invalid IP address"),
 			},
 		},
 	}
