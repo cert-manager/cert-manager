@@ -228,10 +228,35 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		certClient := f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name)
 		secretClient := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name)
 
+		// force-ssl-redirect should make every request turn into a redirect,
+		// but I haven't been able to make this happen. Create a TLS cert via
+		// the self-sign issuer to make it have a "proper" TLS cert
+
+		_, err := f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Create(util.NewCertManagerSelfSignedIssuer("selfsign"))
+		Expect(err).NotTo(HaveOccurred())
+		By("Waiting for (self-sign) Issuer to become Ready")
+		err = util.WaitForIssuerCondition(f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name),
+			issuerName,
+			v1alpha1.IssuerCondition{
+				Type:   v1alpha1.IssuerConditionReady,
+				Status: v1alpha1.ConditionTrue,
+			})
+		Expect(err).NotTo(HaveOccurred())
+
+		const dummycert = "dummy-tls"
+		const secretname = "dummy-tls-secret"
+		selfcert := util.NewCertManagerBasicCertificate("dummy-tls", secretname, "selfsign", v1alpha1.IssuerKind, nil, nil)
+		selfcert.Spec.CommonName = acmeIngressDomain
+		_, err = certClient.Create(selfcert)
+		Expect(err).NotTo(HaveOccurred())
+		err = util.WaitCertificateIssuedValid(certClient, secretClient, dummycert, time.Minute*5)
+		Expect(err).NotTo(HaveOccurred())
+
 		// create an ingress that points at nothing, but has the TLS redirect annotation set
+		// using the TLS secret that we just got from the self-sign
 		const ingressname = "httpsingress"
 		ingress := f.KubeClientSet.ExtensionsV1beta1().Ingresses(f.Namespace.Name)
-		_, err := ingress.Create(&ext.Ingress{
+		_, err = ingress.Create(&ext.Ingress{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: ingressname,
 				Annotations: map[string]string{
@@ -240,6 +265,12 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 				},
 			},
 			Spec: ext.IngressSpec{
+				TLS: []ext.IngressTLS{
+					{
+						Hosts:      []string{acmeIngressDomain},
+						SecretName: secretname,
+					},
+				},
 				Rules: []ext.IngressRule{
 					ext.IngressRule{
 						Host: acmeIngressDomain,
