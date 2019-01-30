@@ -76,13 +76,11 @@ install cert-manager along with the webhook component:
    nuance of the way GKE handles RBAC and IAM permissions, and as such you
    should 'elevate' your own privileges to that of a 'cluster-admin' **before**
    running the above commands. If you have already run the above commands, you
-   should run them again after elevating your permissions:
+   should run them again after elevating your permissions::
 
-.. code-block:: shell
-
-   kubectl create clusterrolebinding cluster-admin-binding \
-    --clusterrole=cluster-admin \
-    --user=$(gcloud config get-value core/account)
+       kubectl create clusterrolebinding cluster-admin-binding \
+         --clusterrole=cluster-admin \
+         --user=$(gcloud config get-value core/account)
 
 Installing with Helm
 ====================
@@ -163,8 +161,8 @@ but the ``cert-manager`` pod has recently started, wait a few minutes for the
 If you experience problems, please check the
 :doc:`troubleshooting guide <./troubleshooting>`.
 
-The following steps will confirm that cert-manager is set up and correctly and
-able to issue basic certificate types:
+The following steps will confirm that cert-manager is set up correctly and able
+to issue basic certificate types:
 
 .. code-block:: shell
 
