@@ -31,8 +31,8 @@ Supported issuer types
 cert-manager supports a number of different issuer backends, each with their
 own different types of configuration.
 
-Please follow one of the below linked guides for to learn how to set up
-the issuer types you require:
+Please follow one of the below linked guides to learn how to set up the issuer
+types you require:
 
 * :doc:`CA <./setup-ca>` - issue certificates signed by a X509 signing keypair,
   stored in a Secret in the Kubernetes API server.
