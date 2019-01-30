@@ -2,6 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
+    app.kubernetes.io/component: controller
     app.kubernetes.io/name: cert-manager
   name: cert-manager
   namespace: cert-manager
@@ -9,10 +10,12 @@ spec:
   replicas: 1
   selector:
     matchLabels:
+      app.kubernetes.io/component: controller
       app.kubernetes.io/name: cert-manager
   template:
     metadata:
       labels:
+        app.kubernetes.io/component: controller
         app.kubernetes.io/name: cert-manager
     spec:
       serviceAccountName: cert-manager
