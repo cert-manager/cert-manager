@@ -118,6 +118,10 @@ func (n *Nginx) Setup(cfg *config.Config) error {
 				Key:   "controller.service.type",
 				Value: "ClusterIP",
 			},
+			{
+				Key:   "controller.config.no-tls-redirect-locations",
+				Value: "",
+			},
 		},
 	}
 	err = n.chart.Setup(cfg)
