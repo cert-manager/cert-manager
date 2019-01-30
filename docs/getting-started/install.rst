@@ -91,7 +91,7 @@ official Helm chart for installing cert-manager.
 Pre-requisites
 --------------
 
-* Helm_ and Tiller installed
+* Helm_ and Tiller installed (or alternatively, use `Tillerless Helm v2`_)
 * `cluster-admin privileges bound to the Tiller pod`_
 
 Foreword
@@ -261,3 +261,4 @@ If you have any issues with your installation, please refer to the
 .. _`helm RBAC docs`: https://github.com/helm/helm/blob/master/docs/rbac.md
 .. _`installing helm docs`: https://github.com/kubernetes/helm/blob/master/docs/install.md
 .. _Tiller: https://github.com/helm/helm
+.. _`Tillerless Helm v2`: https://rimusz.net/tillerless-helm/
