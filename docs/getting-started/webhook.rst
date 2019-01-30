@@ -3,16 +3,21 @@ Webhook component
 =================
 
 In order to provide advanced resource validation, cert-manager includes a
-ValidatingWebhookConfiguration which is deployed into the cluster as its own
-pod.
+ValidatingWebhookConfiguration_ resource which is deployed into the cluster.
 
-This feature requires Kubernetes v1.9 or greater. If you disable the webhook
-component, cert-manager will still perform the same resource validation however
-will not reject 'create' events when submitting resources to the API server.
-This can still cause issues if invalid resources are submitted however, so it
-is advised to keep the webhook enabled.
+This allows cert-manager to validate that Issuer, ClusterIssuer and Certificate
+resources that are submitted to the apiserver are syntactically valid, and
+catch issues with your resources early on.
 
-The webhook component is enabled by default, but can be disabled.
+If you disable the webhook component, cert-manager will still perform the
+same resource validation however it will not reject 'create' events when the
+resources are submitted to the apiserver if they are invalid.
+This means it may be possible for a user to submit a resource that renders
+the controller inoperable.
+For this reason, it is strongly advised to keep the webhook **enabled**.
+
+.. note::
+   This feature requires Kubernetes v1.9 or greater.
 
 How it works
 ============
