@@ -9,8 +9,8 @@ want to configure.
 .. toctree::
    :maxdepth: 2
 
-   issuing-certificates/index
-   backup-restore-crds
    issuers/index
+   issuing-certificates/index
    acme/index
+   backup-restore-crds
    upgrading/index
