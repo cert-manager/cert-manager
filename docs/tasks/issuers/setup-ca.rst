@@ -118,13 +118,13 @@ the Issuer ``ca-issuer`` to obtain a certificate. If successful, the
 certificate will be stored in a Secret resource named ``example-com-tls`` in
 the same namespace as the Certificate resource (``default``).
 
-Note that since we have specified the ``commonName`` field, ``example.com``
-will be the common name for our certificate and both the common name and all
-the elements of the ``dnsNames`` array will be `Subject Alternative Names`_
-(SANs).
-If we had not specified the common name then the first element of the
-``dnsNames`` list would be used as the common name and all elements of the
-``dnsNames`` list would also be SANs.
+The example above explicitly sets the ``commonName`` field to ``example.com``.
+cert-manager automatically adds the ``commonName`` field as a `DNS SAN`_ if it
+is not already contained in the ``dnsNames`` field.
+
+If we had **not** specified the ``commonName`` field, then the **first** DNS
+SAN that is specified (under ``dnsNames``) would be used as the certificate's
+common name.
 
 After creating the above Certificate, we can check whether it has been obtained
 successfully like so:
@@ -153,4 +153,4 @@ field set to the current time plus 365 days.
 
 .. _openssl: https://github.com/openssl/openssl
 .. _cfssl: https://github.com/cloudflare/cfssl
-.. _`Subject Alternative Names`: https://en.wikipedia.org/wiki/Subject_Alternative_Name
+.. _`DNS SAN`: https://en.wikipedia.org/wiki/Subject_Alternative_Name
