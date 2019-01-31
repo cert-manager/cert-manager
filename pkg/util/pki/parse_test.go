@@ -35,6 +35,14 @@ func generatePrivateKeyBytes(keyAlgo v1alpha1.KeyAlgorithm, keySize int) ([]byte
 	return EncodePrivateKey(privateKey)
 }
 
+func generatePKCS8PrivateKey(keyAlgo v1alpha1.KeyAlgorithm, keySize int) ([]byte, error) {
+	privateKey, err := GeneratePrivateKeyForCertificate(buildCertificateWithKeyParams(keyAlgo, keySize))
+	if err != nil {
+		return nil, err
+	}
+	return EncodePKCS8PrivateKey(privateKey)
+}
+
 func TestDecodePrivateKeyBytes(t *testing.T) {
 	type testT struct {
 		name         string
@@ -50,7 +58,19 @@ func TestDecodePrivateKeyBytes(t *testing.T) {
 		return
 	}
 
+	pkcs8RsaKeyBytes, err := generatePKCS8PrivateKey(v1alpha1.RSAKeyAlgorithm, MinRSAKeySize)
+	if err != nil {
+		t.Errorf("error generating key bytes: %s", err)
+		return
+	}
+
 	ecdsaKeyBytes, err := generatePrivateKeyBytes(v1alpha1.ECDSAKeyAlgorithm, 256)
+	if err != nil {
+		t.Errorf("error generating key bytes: %s", err)
+		return
+	}
+
+	pkcs8EcdsaKeyBytes, err := generatePKCS8PrivateKey(v1alpha1.ECDSAKeyAlgorithm, 256)
 	if err != nil {
 		t.Errorf("error generating key bytes: %s", err)
 		return
@@ -58,6 +78,9 @@ func TestDecodePrivateKeyBytes(t *testing.T) {
 
 	block := &pem.Block{Type: "BLAH BLAH BLAH", Bytes: []byte("blahblahblah")}
 	blahKeyBytes := pem.EncodeToMemory(block)
+
+	privateKeyBlock := &pem.Block{Type: "PRIVATE KEY", Bytes: []byte("blahblahblah")}
+	blahPrivateKeyBytes := pem.EncodeToMemory(privateKeyBlock)
 
 	invalidKeyBytes := []byte("blah-blah-invalid")
 
@@ -69,8 +92,20 @@ func TestDecodePrivateKeyBytes(t *testing.T) {
 			expectErr: false,
 		},
 		{
+			name:      "decode pkcs#8 encoded rsa private key bytes",
+			keyBytes:  pkcs8RsaKeyBytes,
+			keyAlgo:   v1alpha1.RSAKeyAlgorithm,
+			expectErr: false,
+		},
+		{
 			name:      "decode pem encoded ecdsa private key bytes",
 			keyBytes:  ecdsaKeyBytes,
+			keyAlgo:   v1alpha1.ECDSAKeyAlgorithm,
+			expectErr: false,
+		},
+		{
+			name:      "decode pkcs#8 encoded ecdsa private key bytes",
+			keyBytes:  pkcs8EcdsaKeyBytes,
 			keyAlgo:   v1alpha1.ECDSAKeyAlgorithm,
 			expectErr: false,
 		},
@@ -79,6 +114,12 @@ func TestDecodePrivateKeyBytes(t *testing.T) {
 			keyBytes:     blahKeyBytes,
 			expectErr:    true,
 			expectErrStr: "unknown private key type",
+		},
+		{
+			name:         "fail to decode unknown pkcs#8 encoded key bytes",
+			keyBytes:     blahPrivateKeyBytes,
+			expectErr:    true,
+			expectErrStr: "error parsing pkcs#8 private key: asn1: structure error:",
 		},
 		{
 			name:         "fail to decode unknown not pem encoded key bytes",

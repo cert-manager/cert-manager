@@ -128,6 +128,17 @@ func EncodePKCS1PrivateKey(pk *rsa.PrivateKey) []byte {
 	return pem.EncodeToMemory(block)
 }
 
+// EncodePKCS8PrivateKey will marshal a private key into x509 PEM format.
+func EncodePKCS8PrivateKey(pk interface{}) ([]byte, error) {
+	keyBytes, err := x509.MarshalPKCS8PrivateKey(pk)
+	if err != nil {
+		return nil, err
+	}
+	block := &pem.Block{Type: "PRIVATE KEY", Bytes: keyBytes}
+
+	return pem.EncodeToMemory(block), nil
+}
+
 // EncodeECPrivateKey will marshal an ECDSA private key into x509 PEM format.
 func EncodeECPrivateKey(pk *ecdsa.PrivateKey) ([]byte, error) {
 	asnBytes, err := x509.MarshalECPrivateKey(pk)
