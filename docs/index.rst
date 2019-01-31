@@ -29,8 +29,8 @@ a source of references when seeking help with the project.
    :caption: Contents:
 
    getting-started/index
-   tasks/index
    tutorials/index
+   tasks/index
    reference/index
    devel/index
 
