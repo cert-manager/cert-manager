@@ -23,7 +23,9 @@ REPO_ROOT="${_SCRIPT_ROOT}/../../.."
 
 # This file contains common definitions that are re-used in other scripts
 
-KIND_TARGET="${KIND_TARGET:-//test/e2e:e2e-1.11}"
+K8S_VERSION="${K8S_VERSION:-1.11}"
+KIND_TARGET="${KIND_TARGET:-//test/e2e:e2e-${K8S_VERSION}}"
+KUBECTL_TARGET="${KUBECTL_TARGET:-//test/e2e/bin:kubectl-${K8S_VERSION}}"
 KIND_CLUSTER_NAME="${KIND_TARGET##*:}"
 KIND_CONTAINER_NAME="kind-${KIND_CLUSTER_NAME}-control-plane"
 
@@ -40,14 +42,16 @@ export APP_VERSION="${DOCKER_TAG}"
 if [ ! "${CM_DEPS_LOADED:-}" = "1" ]; then
     # Build all e2e test dependencies
     bazel build \
+        "${KUBECTL_TARGET}" \
+        "${KIND_TARGET}" \
         //hack/bin:helm \
         //test/e2e:e2e.test \
-        //test/e2e/charts:images \
-        "${KIND_TARGET}"
+        //test/e2e/charts:images
 
     genfiles="$(bazel info bazel-genfiles)"
     # build 'kind'
     export KIND="${genfiles}/hack/bin/kind"
+    export KUBECTL="${genfiles}/test/e2e/bin/kubectl-${K8S_VERSION}"
     export KUBECONFIG="${genfiles}/test/e2e/${KIND_CLUSTER_NAME}.kubeconfig"
 
     export CM_DEPS_LOADED="1"

@@ -53,6 +53,7 @@ filegroup(
         "//pkg/scheduler:all-srcs",
         "//pkg/util:all-srcs",
         "//test/e2e:all-srcs",
+        "//test/fixtures/kind:all-srcs",
         "//test/unit/gen:all-srcs",
         "//test/util:all-srcs",
         "//third_party:all-srcs",

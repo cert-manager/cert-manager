@@ -20,6 +20,7 @@ HACK_DIR ?= hack
 GINKGO_SKIP :=
 
 ## e2e test vars
+KUBECTL ?= kubectl
 KUBECONFIG ?= $$HOME/.kube/config
 
 # Get a list of all binaries to be built
@@ -116,7 +117,8 @@ e2e_test:
 			--helm-binary-path=$${GENFILES}/hack/bin/helm \
 			--repo-root="$$(pwd)" \
 			--report-dir="$${ARTIFACTS:-./_artifacts}" \
-			--ginkgo.skip="$(GINKGO_SKIP)"
+			--ginkgo.skip="$(GINKGO_SKIP)" \
+			--kubectl-path="$(KUBECTL)"
 
 # Generate targets
 ##################

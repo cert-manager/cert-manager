@@ -23,6 +23,8 @@ set -o nounset
 set -o pipefail
 
 export KIND_TARGET="//hack/ci:dev"
+export KUBECTL_TARGET="//test/e2e/bin:kubectl-1.13"
+
 SCRIPT_ROOT=$(dirname "${BASH_SOURCE}")
 source "${SCRIPT_ROOT}/lib/lib.sh"
 
