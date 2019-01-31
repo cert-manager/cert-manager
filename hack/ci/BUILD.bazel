@@ -2,8 +2,8 @@ load("//hack/def:kind.bzl", "kind_cluster")
 
 kind_cluster(
     name = "dev",
-    config = "//test/fixtures/kind:config-v1alpha2.yaml",
-    version = "1.11.4-1",
+    config = "//test/fixtures/kind:config-v1beta1.yaml",
+    version = "v1.13.2",
 )
 
 filegroup(

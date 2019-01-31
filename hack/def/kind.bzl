@@ -14,9 +14,9 @@
 
 def kind_cluster(
     name,
-    version = "1.11.4-1",
+    version,
     config = None):
-  image = "eu.gcr.io/jetstack-build-infra-images/kind:%s" % version
+  image = "kindest/node:%s" % version
 
   native.genrule(
     name = name,

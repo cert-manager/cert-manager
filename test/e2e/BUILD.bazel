@@ -5,13 +5,19 @@ load("//hack/def:kind.bzl", "kind_cluster")
 kind_cluster(
     name = "e2e-1.11",
     config = "//test/fixtures/kind:config-v1alpha2.yaml",
-    version = "1.11.4-1",
+    version = "v1.11.3",
 )
 
 kind_cluster(
     name = "e2e-1.12",
     config = "//test/fixtures/kind:config-v1alpha3.yaml",
-    version = "1.12.2-1",
+    version = "v1.12.3",
+)
+
+kind_cluster(
+    name = "e2e-1.13",
+    config = "//test/fixtures/kind:config-v1beta1.yaml",
+    version = "v1.13.2",
 )
 
 # we add this rule so users can `bazel build //test/e2e` to run a
