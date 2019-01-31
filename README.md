@@ -31,7 +31,7 @@ the bottom left of the page.
 For the common use-case of automatically issuing TLS certificates to
 Ingress resources, aka a [kube-lego](https://github.com/jetstack/kube-lego)
 replacement, see the [cert-manager nginx ingress quick start
-guide](docs/tutorials/quick-start/index.rst).
+guide](docs/tutorials/acme/quick-start/index.rst).
 
 See [Getting started](https://cert-manager.readthedocs.io/en/latest/getting-started/)
 within the [documentation](https://cert-manager.readthedocs.io/en/latest/)

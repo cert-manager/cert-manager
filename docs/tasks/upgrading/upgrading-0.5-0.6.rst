@@ -25,7 +25,7 @@ Due to issues with the way Helm handles CRD resources in Helm charts, we have
 now moved the installation of these resources into a separate YAML manifest
 that must be installed with ``kubectl apply`` before upgrading the chart.
 
-You can follow the :doc:`regular upgrade guide </admin/upgrading/index>` as
+You can follow the :doc:`regular upgrade guide <./index>` as
 usual in order to upgrade from v0.5 to v0.6.
 
 Upgrading with static manifests
@@ -38,7 +38,7 @@ We now also no longer ship different manifests for different configurations, in
 favour of a single ``cert-manager.yaml`` file which should work for all
 Kubernetes clusters from Kubernetes v1.9 onwards.
 
-You can follow the :doc:`regular upgrade guide </admin/upgrading/index>` as
+You can follow the :doc:`regular upgrade guide <./index>` as
 usual in order to upgrade from v0.5 to v0.6.
 
 Upgrading from older versions using Helm
@@ -46,17 +46,14 @@ Upgrading from older versions using Helm
 
 If you are upgrading from a version **older than v0.5** and
 **have installed with Helm**, you will need to perform a fresh installation of
-cert-manager due to issues with Helm. This will involve the
-**removal of all cert-manager custom resources**. This **will not** delete the
-Secret resources being used to serve your websites with.
+cert-manager due to issues with the Helm upgrade process.
+This will involve the **removal of all cert-manager custom resources**.
+This **will not** delete the Secret resources being used by your apps.
 
 Before upgrading you will need to:
 
-1. Backup all Certificate, Issuer and ClusterIssuer resources:
-
-.. code-block:: shell
-
-   $ kubectl get certificate,issuer,clusterissuer -o yaml --all-namespaces > cert-manager-backup.yaml
+1. Read and follow the :doc:`backup guide <../backup-restore-crds>` to create a
+   backup of your configuration.
 
 2. Delete the existing cert-manager Helm release (replacing 'cert-manager' with
    the name of your Helm release):
@@ -73,7 +70,7 @@ Before upgrading you will need to:
        clusterissuers.certmanager.k8s.io
 
 3. Perform a fresh install (as per the
-   :doc:`installation guide </getting-started/2-installing>`):
+   :doc:`installation guide </getting-started/install>`):
 
 .. code-block:: shell
 
@@ -91,11 +88,8 @@ Before upgrading you will need to:
         --version v0.6.0 \
         stable/cert-manager
 
-4. Restore the previously backed up cert-manager resources:
-
-.. code-block:: shell
-
-   $ kubectl apply -f cert-manager-backup.yaml
+4. Follow the steps in the :doc:`restore guide <../backup-restore-crds>` to
+   restore your configuration.
 
 5. Verify that your Issuers and Certificate resources are 'Ready':
 

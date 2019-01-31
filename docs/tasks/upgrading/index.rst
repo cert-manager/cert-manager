@@ -6,6 +6,12 @@ This section contains information on upgrading cert-manager.
 It also contains documents detailing breaking changes between cert-manager
 versions, and information on things to look out for when upgrading.
 
+.. note::
+   Before performing upgrades of cert-manager, it is advised to take a backup
+   of all your cert-manager resources just in case an issue occurs whilst
+   upgrading. You can read how to backup and restore cert-manager in the
+   :doc:`../backup-restore-crds` guide.
+
 Upgrading with Helm
 ===================
 
@@ -26,18 +32,18 @@ version number you want to install:
 
    # Install the cert-manager CustomResourceDefinition resources before
    # upgrading the Helm chart
-   $ kubectl apply \
+   kubectl apply \
         -f https://raw.githubusercontent.com/jetstack/cert-manager/<version>/deploy/manifests/00-crds.yaml
 
    # Ensure the local Helm chart repository cache is up to date
-   $ helm repo update
+   helm repo update
 
    # If you are upgrading from v0.5 or below, you should manually add this
    # label to your cert-manager namespace to ensure the `webhook component`_
    # can provision correctly.
-   $ kubectl label namespace cert-manager certmanager.k8s.io/disable-validation=true
+   kubectl label namespace cert-manager certmanager.k8s.io/disable-validation=true
 
-   $ helm upgrade --version <version> <release_name> stable/cert-manager
+   helm upgrade --version <version> <release_name> stable/cert-manager
 
 This will upgrade you to the latest version of cert-manager, as listed in the
 `official Helm charts repository`_.
@@ -64,9 +70,9 @@ version number you want to install:
    # If you are upgrading from v0.5 or below, you should manually add this
    # label to your cert-manager namespace to ensure the `webhook component`_
    # can provision correctly.
-   $ kubectl label namespace cert-manager certmanager.k8s.io/disable-validation=true
+   kubectl label namespace cert-manager certmanager.k8s.io/disable-validation=true
 
-   $ kubectl apply \
+   kubectl apply \
         -f https://raw.githubusercontent.com/jetstack/cert-manager/<version>/deploy/manifests/cert-manager.yaml
 
 .. note::
@@ -86,5 +92,5 @@ version number you want to install:
    upgrading-0.5-0.6
 
 .. _`official Helm charts repository`: https://github.com/helm/charts
-.. _`static deployment manifests`: https://github.com/jetstack/cert-manager/blob/master/contrib/manifests/cert-manager
+.. _`static deployment manifests`: https://github.com/jetstack/cert-manager/blob/release-0.6/deploy/manifests
 .. _`kubernetes/kubernetes#69590`: https://github.com/kubernetes/kubernetes/issues/69590

@@ -2,10 +2,6 @@
 Issuing an ACME certificate using HTTP validation
 =================================================
 
-.. todo::
-   This guide needs rewriting to be clearer, splitting into sections and
-   potentially rewriting altogether.
-
 cert-manager can be used to obtain certificates from a CA using the ACME_ protocol.
 The ACME protocol supports various challenge mechanisms which are used to prove
 ownership of a domain so that a valid certificate can be issued for that domain.
@@ -163,7 +159,7 @@ You should see a base64 encoded signed TLS key pair.
 Once our certificate has been obtained, cert-manager will periodically check its
 validity and attempt to renew it if it gets close to expiry.
 cert-manager considers certificates to be close to expiry when the 'Not After'
-field on the certificate is less than the current time plus 30 days. 
+field on the certificate is less than the current time plus 30 days.
 
 .. _ACME: https://en.wikipedia.org/wiki/Automated_Certificate_Management_Environment
 .. _`staging environment`: https://letsencrypt.org/docs/staging-environment/
