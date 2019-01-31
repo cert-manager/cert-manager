@@ -51,6 +51,7 @@ type Details struct {
 }
 
 func (p *Certmanager) Setup(cfg *config.Config) error {
+	p.config = cfg
 	if p.Name == "" {
 		return fmt.Errorf("Name field must be set on Certmanager addon")
 	}
@@ -62,12 +63,14 @@ func (p *Certmanager) Setup(cfg *config.Config) error {
 	if p.Tiller == nil {
 		return fmt.Errorf("Tiller field must be set on Certmanager addon")
 	}
+	if p.config.Kubectl == "" {
+		return fmt.Errorf("path to kubectl must be provided")
+	}
 	var err error
 	p.tillerDetails, err = p.Tiller.Details()
 	if err != nil {
 		return err
 	}
-	p.config = cfg
 	p.chart = &chart.Chart{
 		Tiller:      p.Tiller,
 		ReleaseName: "chart-certmanager-" + p.Name,
@@ -88,7 +91,7 @@ func (p *Certmanager) Setup(cfg *config.Config) error {
 
 // Provision will actually deploy this instance of Pebble-ingress to the cluster.
 func (p *Certmanager) Provision() error {
-	if err := exec.Command("kubectl", "apply", "-f", p.config.RepoRoot+"/deploy/manifests/00-crds.yaml").Run(); err != nil {
+	if err := exec.Command(p.config.Kubectl, "apply", "-f", p.config.RepoRoot+"/deploy/manifests/00-crds.yaml").Run(); err != nil {
 		return fmt.Errorf("Error install cert-manager CRD manifests: %v", err)
 	}
 
