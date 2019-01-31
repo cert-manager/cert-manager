@@ -54,8 +54,8 @@ the :doc:`../issuers/setup-acme` guide:
        # Enable the HTTP01 challenge mechanism for this Issuer
        http01: {}
 
-We must configure our Certificate resource with the 'ingress class' to use to
-solve the ACME HTTP01 challenges:
+We must configure our Certificate resource with the 'ingress class' that will
+be used to solve the ACME HTTP01 challenges:
 
 .. code-block:: yaml
    :linenos:
@@ -99,3 +99,71 @@ solve the ACME HTTP01 challenges:
 
 Using DNS01 challenges
 -----------------------
+
+In order to use DNS01 validation, you must first configure your Issuer resource
+with credentials and connection information needed to access your DNS
+provider's administrative console.
+
+You can find more information on the different supported DNS providers and how
+to configure them in the :doc:`./configuring-dns01/index` documentation.
+
+The example Issuer on the :doc:`./configuring-dns01/index` page is configured
+with credentials for a Google Cloud DNS account:
+
+.. code-block:: yaml
+   :linenos:
+   :emphasize-lines: 7, 13-18
+
+   apiVersion: certmanager.k8s.io/v1alpha1
+   kind: ClusterIssuer
+   metadata:
+     name: letsencrypt-staging
+   spec:
+     acme:
+       email: user@example.com
+       server: https://acme-staging-v02.api.letsencrypt.org/directory
+       privateKeySecretRef:
+         name: example-issuer-account-key
+       dns01:
+         providers:
+         - name: prod-clouddns
+           clouddns:
+             project: my-project
+             serviceAccountSecretRef:
+               name: prod-clouddns-svc-acct-secret
+               key: service-account.json
+
+In the above example on line 13, you can see we have named this DNS provider
+``prod-clouddns``.
+
+When creating Certificates that intend to utilise this DNS01 provider for
+validations, we must remember to include this "provider name" in our
+Certificate's spec:
+
+.. code-block:: yaml
+   :linenos:
+   :emphasize-lines: 17
+
+   apiVersion: certmanager.k8s.io/v1alpha1
+   kind: Certificate
+   metadata:
+     name: example-com
+     namespace: default
+   spec:
+     secretName: example-com-tls
+     issuerRef:
+       name: letsencrypt-staging
+     commonName: example.com
+     dnsNames:
+     - example.com
+     - www.example.com
+     acme:
+       config:
+       - dns01:
+           provider: prod-clouddns
+         domains:
+         - example.com
+         - www.example.com
+
+If you do not specify a provider name, cert-manager will not know how to solve
+challenges for your domains and the issuance process **will not succeed**.
