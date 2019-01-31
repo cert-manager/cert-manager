@@ -30,6 +30,7 @@ import (
 
 var _ = framework.CertManagerDescribe("CA Certificate", func() {
 	f := framework.NewDefaultFramework("create-ca-certificate")
+	h := f.Helper()
 
 	issuerName := "test-ca-issuer"
 	issuerSecretName := "ca-issuer-signing-keypair"
@@ -59,25 +60,23 @@ var _ = framework.CertManagerDescribe("CA Certificate", func() {
 	Context("when the CA is the root", func() {
 		BeforeEach(func() {
 			By("Creating a signing keypair fixture")
-			_, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Create(util.NewSigningKeypairSecret(issuerSecretName))
+			_, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Create(newSigningKeypairSecret(issuerSecretName))
 			Expect(err).NotTo(HaveOccurred())
 		})
 
 		It("should generate a signed keypair", func() {
 			certClient := f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name)
-			secretClient := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name)
 
 			By("Creating a Certificate")
 			_, err := certClient.Create(util.NewCertManagerBasicCertificate(certificateName, certificateSecretName, issuerName, v1alpha1.IssuerKind, nil, nil))
 			Expect(err).NotTo(HaveOccurred())
 			By("Verifying the Certificate is valid")
-			err = util.WaitCertificateIssuedValidTLS(certClient, secretClient, certificateName, time.Second*30, true)
+			err = h.WaitCertificateIssuedValidTLS(f.Namespace.Name, certificateName, time.Second*30, []byte(rootCert))
 			Expect(err).NotTo(HaveOccurred())
 		})
 
 		It("should be able to obtain an ECDSA key from a RSA backed issuer", func() {
 			certClient := f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name)
-			secretClient := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name)
 
 			crt := util.NewCertManagerBasicCertificate(certificateName, certificateSecretName, issuerName, v1alpha1.IssuerKind, nil, nil)
 			crt.Spec.KeyAlgorithm = v1alpha1.ECDSAKeyAlgorithm
@@ -88,7 +87,7 @@ var _ = framework.CertManagerDescribe("CA Certificate", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Verifying the Certificate is valid")
-			err = util.WaitCertificateIssuedValidTLS(certClient, secretClient, certificateName, time.Second*30, true)
+			err = h.WaitCertificateIssuedValidTLS(f.Namespace.Name, certificateName, time.Second*30, []byte(rootCert))
 			Expect(err).NotTo(HaveOccurred())
 		})
 
@@ -115,13 +114,12 @@ var _ = framework.CertManagerDescribe("CA Certificate", func() {
 			v := v
 			It("should generate a signed keypair valid for "+v.label, func() {
 				certClient := f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name)
-				secretClient := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name)
 
 				By("Creating a Certificate")
 				cert, err := certClient.Create(util.NewCertManagerBasicCertificate(certificateName, certificateSecretName, issuerName, v1alpha1.IssuerKind, v.inputDuration, v.inputRenewBefore))
 				Expect(err).NotTo(HaveOccurred())
 				By("Verifying the Certificate is valid")
-				err = util.WaitCertificateIssuedValid(certClient, secretClient, certificateName, time.Second*30)
+				err = h.WaitCertificateIssuedValid(f.Namespace.Name, certificateName, time.Second*30)
 				Expect(err).NotTo(HaveOccurred())
 				f.CertificateDurationValid(cert, v.expectedDuration)
 			})
@@ -131,19 +129,18 @@ var _ = framework.CertManagerDescribe("CA Certificate", func() {
 	Context("when the CA is an issuer", func() {
 		BeforeEach(func() {
 			By("Creating a signing keypair fixture")
-			_, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Create(util.NewSigningIssuer1KeypairSecret(issuerSecretName))
+			_, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Create(newSigningIssuer1KeypairSecret(issuerSecretName))
 			Expect(err).NotTo(HaveOccurred())
 		})
 
 		It("should generate a signed keypair", func() {
 			certClient := f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name)
-			secretClient := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name)
 
 			By("Creating a Certificate")
 			_, err := certClient.Create(util.NewCertManagerBasicCertificate(certificateName, certificateSecretName, issuerName, v1alpha1.IssuerKind, nil, nil))
 			Expect(err).NotTo(HaveOccurred())
 			By("Verifying the Certificate is valid")
-			err = util.WaitCertificateIssuedValidTLS(certClient, secretClient, certificateName, time.Second*30, true)
+			err = h.WaitCertificateIssuedValidTLS(f.Namespace.Name, certificateName, time.Second*30, []byte(rootCert))
 			Expect(err).NotTo(HaveOccurred())
 		})
 	})
@@ -151,19 +148,18 @@ var _ = framework.CertManagerDescribe("CA Certificate", func() {
 	Context("when the CA is a second level issuer", func() {
 		BeforeEach(func() {
 			By("Creating a signing keypair fixture")
-			_, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Create(util.NewSigningIssuer2KeypairSecret(issuerSecretName))
+			_, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Create(newSigningIssuer2KeypairSecret(issuerSecretName))
 			Expect(err).NotTo(HaveOccurred())
 		})
 
 		It("should generate a signed keypair", func() {
 			certClient := f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name)
-			secretClient := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name)
 
 			By("Creating a Certificate")
 			_, err := certClient.Create(util.NewCertManagerBasicCertificate(certificateName, certificateSecretName, issuerName, v1alpha1.IssuerKind, nil, nil))
 			Expect(err).NotTo(HaveOccurred())
 			By("Verifying the Certificate is valid")
-			err = util.WaitCertificateIssuedValidTLS(certClient, secretClient, certificateName, time.Second*30, true)
+			err = h.WaitCertificateIssuedValidTLS(f.Namespace.Name, certificateName, time.Second*30, []byte(rootCert))
 			Expect(err).NotTo(HaveOccurred())
 		})
 	})

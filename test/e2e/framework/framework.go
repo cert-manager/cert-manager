@@ -67,6 +67,7 @@ type Framework struct {
 	cleanupHandle CleanupActionHandle
 
 	requiredAddons []addon.Addon
+	helper         *helper.Helper
 }
 
 // NewDefaultFramework makes a new framework for you, similar to NewFramework.
@@ -85,6 +86,7 @@ func NewFramework(baseName string, cfg *config.Config) *Framework {
 		BaseName: baseName,
 	}
 
+	f.helper = helper.NewHelper(cfg)
 	BeforeEach(f.BeforeEach)
 	AfterEach(f.AfterEach)
 
@@ -120,6 +122,9 @@ func (f *Framework) BeforeEach() {
 	By("Building a ResourceQuota api object")
 	_, err = f.CreateKubeResourceQuota()
 	Expect(err).NotTo(HaveOccurred())
+
+	f.helper.CMClient = f.CertManagerClientSet
+	f.helper.KubeClient = f.KubeClientSet
 }
 
 // AfterEach deletes the namespace, after reading its events.
@@ -196,9 +201,7 @@ func (f *Framework) RequireAddon(a addon.Addon) {
 }
 
 func (f *Framework) Helper() *helper.Helper {
-	return &helper.Helper{
-		KubeClient: f.KubeClientSet,
-	}
+	return f.helper
 }
 
 func (f *Framework) CertificateDurationValid(c *v1alpha1.Certificate, duration time.Duration) {

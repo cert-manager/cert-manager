@@ -74,7 +74,7 @@ func (v *VaultInitializer) Init() error {
 	// Currently, it's possible that the connection gets dropped causing later
 	// init commands to fail.
 	args := []string{"port-forward", "-n", v.Details.Namespace, v.Details.PodName, fmt.Sprintf("%d:8200", listenPort)}
-	cmd := exec.Command("kubectl", args...)
+	cmd := exec.Command(v.Details.Kubectl, args...)
 	err := cmd.Start()
 	if err != nil {
 		return fmt.Errorf("Error starting port-forward: %s", err.Error())
