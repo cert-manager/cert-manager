@@ -109,8 +109,7 @@ to choose a new name or delete the old job resource else you will receive an
 'AlreadyExists' error.
 
 .. note::
-
-   The --from flag was only introduced in kubectl v1.11
+   The ``--from`` flag was only introduced in kubectl v1.11
 
 The code for this component can be found at `munnerz/apiextensions-ca-helper`_
 
