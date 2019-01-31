@@ -25,6 +25,7 @@ import (
 	"encoding/pem"
 	"fmt"
 	"math/big"
+	"net"
 	"time"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
@@ -55,6 +56,26 @@ func DNSNamesForCertificate(crt *v1alpha1.Certificate) []string {
 		return removeDuplicates(append([]string{crt.Spec.CommonName}, crt.Spec.DNSNames...))
 	}
 	return crt.Spec.DNSNames
+}
+
+func IPAddressesForCertificate(crt *v1alpha1.Certificate) []net.IP {
+	var ipAddresses []net.IP
+	var ip net.IP
+	for _, ipName := range crt.Spec.IPAddresses {
+		ip = net.ParseIP(ipName)
+		if ip != nil {
+			ipAddresses = append(ipAddresses, ip)
+		}
+	}
+	return ipAddresses
+}
+
+func IPAddressesToString(ipAddresses []net.IP) []string {
+	var ipNames []string
+	for _, ip := range ipAddresses {
+		ipNames = append(ipNames, ip.String())
+	}
+	return ipNames
 }
 
 func removeDuplicates(in []string) []string {
@@ -93,6 +114,7 @@ var serialNumberLimit = new(big.Int).Lsh(big.NewInt(1), 128)
 func GenerateCSR(issuer v1alpha1.GenericIssuer, crt *v1alpha1.Certificate) (*x509.CertificateRequest, error) {
 	commonName := CommonNameForCertificate(crt)
 	dnsNames := DNSNamesForCertificate(crt)
+	iPAddresses := IPAddressesForCertificate(crt)
 	organization := OrganizationForCertificate(crt)
 
 	if len(commonName) == 0 && len(dnsNames) == 0 {
@@ -112,7 +134,8 @@ func GenerateCSR(issuer v1alpha1.GenericIssuer, crt *v1alpha1.Certificate) (*x50
 			Organization: organization,
 			CommonName:   commonName,
 		},
-		DNSNames: dnsNames,
+		DNSNames:    dnsNames,
+		IPAddresses: iPAddresses,
 		// TODO: work out how best to handle extensions/key usages here
 		ExtraExtensions: []pkix.Extension{},
 	}, nil
@@ -125,6 +148,7 @@ func GenerateCSR(issuer v1alpha1.GenericIssuer, crt *v1alpha1.Certificate) (*x50
 func GenerateTemplate(issuer v1alpha1.GenericIssuer, crt *v1alpha1.Certificate) (*x509.Certificate, error) {
 	commonName := CommonNameForCertificate(crt)
 	dnsNames := DNSNamesForCertificate(crt)
+	ipAddresses := IPAddressesForCertificate(crt)
 	organization := OrganizationForCertificate(crt)
 
 	if len(commonName) == 0 && len(dnsNames) == 0 {
@@ -164,8 +188,9 @@ func GenerateTemplate(issuer v1alpha1.GenericIssuer, crt *v1alpha1.Certificate) 
 		NotBefore: time.Now(),
 		NotAfter:  time.Now().Add(certDuration),
 		// see http://golang.org/pkg/crypto/x509/#KeyUsage
-		KeyUsage: keyUsages,
-		DNSNames: dnsNames,
+		KeyUsage:    keyUsages,
+		DNSNames:    dnsNames,
+		IPAddresses: ipAddresses,
 	}, nil
 }
 

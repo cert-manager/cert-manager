@@ -372,6 +372,29 @@ func TestValidateCertificate(t *testing.T) {
 				field.Invalid(fldPath.Child("keyAlgorithm"), v1alpha1.KeyAlgorithm("blah"), "must be either empty or one of rsa or ecdsa"),
 			},
 		},
+		"valid certificate with ipAddresses": {
+			cfg: &v1alpha1.Certificate{
+				Spec: v1alpha1.CertificateSpec{
+					CommonName:  "testcn",
+					IPAddresses: []string{"127.0.0.1"},
+					SecretName:  "abc",
+					IssuerRef:   validIssuerRef,
+				},
+			},
+		},
+		"certificate with invalid ipAddresses": {
+			cfg: &v1alpha1.Certificate{
+				Spec: v1alpha1.CertificateSpec{
+					CommonName:  "testcn",
+					IPAddresses: []string{"blah"},
+					SecretName:  "abc",
+					IssuerRef:   validIssuerRef,
+				},
+			},
+			errs: []*field.Error{
+				field.Invalid(fldPath.Child("ipAddresses").Index(0), "blah", "invalid IP address"),
+			},
+		},
 	}
 	for n, s := range scenarios {
 		t.Run(n, func(t *testing.T) {
