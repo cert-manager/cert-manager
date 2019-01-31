@@ -6,6 +6,12 @@ This section contains information on upgrading cert-manager.
 It also contains documents detailing breaking changes between cert-manager
 versions, and information on things to look out for when upgrading.
 
+.. note::
+   Before performing upgrades of cert-manager, it is advised to take a backup
+   of all your cert-manager resources just in case an issue occurs whilst
+   upgrading. You can read how to backup and restore cert-manager in the
+   :doc:`../backup-restore-crds` guide.
+
 Upgrading with Helm
 ===================
 

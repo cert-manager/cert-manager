@@ -46,17 +46,14 @@ Upgrading from older versions using Helm
 
 If you are upgrading from a version **older than v0.5** and
 **have installed with Helm**, you will need to perform a fresh installation of
-cert-manager due to issues with Helm. This will involve the
-**removal of all cert-manager custom resources**. This **will not** delete the
-Secret resources being used to serve your websites with.
+cert-manager due to issues with the Helm upgrade process.
+This will involve the **removal of all cert-manager custom resources**.
+This **will not** delete the Secret resources being used by your apps.
 
 Before upgrading you will need to:
 
-1. Backup all Certificate, Issuer and ClusterIssuer resources:
-
-.. code-block:: shell
-
-   $ kubectl get certificate,issuer,clusterissuer -o yaml --all-namespaces > cert-manager-backup.yaml
+1. Read and follow the :doc:`backup guide <../backup-restore-crds>` to create a
+   backup of your configuration.
 
 2. Delete the existing cert-manager Helm release (replacing 'cert-manager' with
    the name of your Helm release):
@@ -91,11 +88,8 @@ Before upgrading you will need to:
         --version v0.6.0 \
         stable/cert-manager
 
-4. Restore the previously backed up cert-manager resources:
-
-.. code-block:: shell
-
-   $ kubectl apply -f cert-manager-backup.yaml
+4. Follow the steps in the :doc:`restore guide <../backup-restore-crds>` to
+   restore your configuration.
 
 5. Verify that your Issuers and Certificate resources are 'Ready':
 
