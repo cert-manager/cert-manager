@@ -39,13 +39,6 @@ DOCKER_REPO="quay.io/jetstack"
 # other purpose
 DOCKER_TAG="build"
 
-function kubeVersion() {
-    echo $(docker run \
-        --entrypoint="cat" \
-        "${KIND_IMAGE}" \
-        /kind/version)
-}
-
 if [ ! "${CM_DEPS_LOADED:-}" = "1" ]; then
     # Build all e2e test dependencies
     bazel build \
@@ -61,3 +54,10 @@ if [ ! "${CM_DEPS_LOADED:-}" = "1" ]; then
 
     export CM_DEPS_LOADED="1"
 fi
+
+function kubeVersion() {
+    echo $(docker run \
+        --entrypoint="cat" \
+        "${KIND_IMAGE}" \
+        /kind/version)
+}

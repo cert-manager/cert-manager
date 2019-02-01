@@ -25,9 +25,12 @@ source "${SCRIPT_ROOT}/lib.sh"
 deploy_kind() {
     # default to v1alpha3, if 1.11.x then use v1alpha2
     vers="$(kubeVersion)"
-    config="v1alpha3"
+    config="v1beta1"
     if [[ "$vers" =~ v1\.11\..+ ]]; then
         config="v1alpha2"
+    fi
+    if [[ "$vers" =~ v1\.12\..+ ]]; then
+        config="v1alpha3"
     fi
 
     echo "Exporting kind image to docker daemon..."
