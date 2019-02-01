@@ -12,7 +12,7 @@ metadata:
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
 spec:
-  selfsigned: {}
+  selfSigned: {}
 
 ---
 
