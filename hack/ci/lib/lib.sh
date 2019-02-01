@@ -54,10 +54,3 @@ if [ ! "${CM_DEPS_LOADED:-}" = "1" ]; then
 
     export CM_DEPS_LOADED="1"
 fi
-
-function kubeVersion() {
-    echo $(docker run \
-        --entrypoint="cat" \
-        "${KIND_IMAGE}" \
-        /kind/version)
-}

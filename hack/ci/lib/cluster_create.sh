@@ -23,6 +23,16 @@ source "${SCRIPT_ROOT}/lib.sh"
 
 # deploy_kind will deploy a kubernetes-in-docker cluster
 deploy_kind() {
+    echo "Exporting kind image to docker daemon..."
+    bazel run "${KIND_IMAGE_TARGET}"
+
+    function kubeVersion() {
+        echo $(docker run \
+            --entrypoint="cat" \
+            "${KIND_IMAGE}" \
+            /kind/version)
+    }
+
     # default to v1alpha3, if 1.11.x then use v1alpha2
     vers="$(kubeVersion)"
     config="v1beta1"
@@ -33,8 +43,6 @@ deploy_kind() {
         config="v1alpha3"
     fi
 
-    echo "Exporting kind image to docker daemon..."
-    bazel run "${KIND_IMAGE_TARGET}"
 
     echo "Booting Kubernetes version: $vers"
     echo "Using kubeadm config api version '$config'"
