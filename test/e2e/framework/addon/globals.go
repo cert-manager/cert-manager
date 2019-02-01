@@ -22,7 +22,6 @@ import (
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 
 	"github.com/jetstack/cert-manager/test/e2e/framework/addon/base"
-	"github.com/jetstack/cert-manager/test/e2e/framework/addon/certmanager"
 	"github.com/jetstack/cert-manager/test/e2e/framework/addon/nginxingress"
 	"github.com/jetstack/cert-manager/test/e2e/framework/addon/tiller"
 	"github.com/jetstack/cert-manager/test/e2e/framework/config"
@@ -48,8 +47,6 @@ var (
 	Tiller = &tiller.Tiller{}
 	// NginxIngress installs nginx-ingress as a helm chart
 	NginxIngress = &nginxingress.Nginx{}
-	// Certmanager install cert-manager as a helm chart
-	CertManager = &certmanager.Certmanager{}
 
 	// allAddons is populated by InitGlobals and defines the order in which
 	// addons will be provisioned
@@ -83,15 +80,9 @@ func InitGlobals(cfg *config.Config) {
 		IPAddress: cfg.Addons.Nginx.Global.IPAddress,
 		Domain:    cfg.Addons.Nginx.Global.Domain,
 	}
-	*CertManager = certmanager.Certmanager{
-		Tiller:    Tiller,
-		Name:      "cert-manager",
-		Namespace: "cm-e2e-global-cert-manager",
-	}
 	allAddons = []Addon{
 		Base,
 		Tiller,
-		CertManager,
 		NginxIngress,
 	}
 }

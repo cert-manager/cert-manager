@@ -19,6 +19,7 @@ package certmanager
 import (
 	"fmt"
 	"os/exec"
+	"strings"
 
 	"github.com/jetstack/cert-manager/test/e2e/framework/addon/chart"
 	"github.com/jetstack/cert-manager/test/e2e/framework/addon/tiller"
@@ -43,6 +44,11 @@ type Certmanager struct {
 
 	// Required namespace to deploy Certmanager into.
 	Namespace string
+
+	// NamespaceScoped controls whether the --namespace flag is set on the
+	// controller. If true, the deployed instance will only work within
+	// name --namespace provided above and ClusterIssuers will be disabled.
+	NamespaceScoped bool
 }
 
 // Details return the details about the certmanager instance deployed
@@ -71,6 +77,15 @@ func (p *Certmanager) Setup(cfg *config.Config) error {
 	if err != nil {
 		return err
 	}
+	extraArgs := []string{
+		"--v=10",
+		"--leader-election-lease-duration=10s",
+		"--leader-election-renew-deadline=3s",
+		"--leader-election-retry-period=2s",
+	}
+	if p.NamespaceScoped {
+		extraArgs = append(extraArgs, "--namespace="+p.Namespace)
+	}
 	p.chart = &chart.Chart{
 		Tiller:      p.Tiller,
 		ReleaseName: "chart-certmanager-" + p.Name,
@@ -78,6 +93,12 @@ func (p *Certmanager) Setup(cfg *config.Config) error {
 		ChartName:   cfg.RepoRoot + "/deploy/charts/cert-manager",
 		// TODO: move resource requests/limits into Vars so they are always set
 		Values: []string{cfg.RepoRoot + "/test/fixtures/cert-manager-values.yaml"},
+		Vars: []chart.StringTuple{
+			{
+				Key: "extraArgs",
+				Value: constructExtraArgsVar(extraArgs),
+			},
+		},
 		// doesn't matter when installing from disk
 		ChartVersion: "0",
 		UpdateDeps:   true,
@@ -87,6 +108,10 @@ func (p *Certmanager) Setup(cfg *config.Config) error {
 		return err
 	}
 	return nil
+}
+
+func constructExtraArgsVar(args []string) string {
+	return fmt.Sprintf("{%s}", strings.Join(args, ","))
 }
 
 // Provision will actually deploy this instance of Pebble-ingress to the cluster.

@@ -33,6 +33,7 @@ import (
 	clientset "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 	"github.com/jetstack/cert-manager/test/e2e/framework/addon"
+	"github.com/jetstack/cert-manager/test/e2e/framework/addon/certmanager"
 	"github.com/jetstack/cert-manager/test/e2e/framework/config"
 	"github.com/jetstack/cert-manager/test/e2e/framework/helper"
 	"github.com/jetstack/cert-manager/test/e2e/framework/log"
@@ -125,6 +126,18 @@ func (f *Framework) BeforeEach() {
 
 	f.helper.CMClient = f.CertManagerClientSet
 	f.helper.KubeClient = f.KubeClientSet
+
+	f.requireGlobalAddon(addon.Tiller)
+	// TODO: allow additional controls over the parameters passed to the
+	// cert-manager addon
+	certManagerAddon := &certmanager.Certmanager{
+		Tiller: addon.Tiller,
+		Name: f.Namespace.Name + "-cm",
+		Namespace: f.Namespace.Name,
+		NamespaceScoped: true,
+	}
+
+	f.requireAddon(certManagerAddon)
 }
 
 // AfterEach deletes the namespace, after reading its events.
@@ -132,6 +145,7 @@ func (f *Framework) AfterEach() {
 	RemoveCleanupAction(f.cleanupHandle)
 
 	f.printAddonLogs()
+	f.cleanupAddons()
 
 	By("Deleting test namespace")
 	err := f.DeleteKubeNamespace(f.Namespace.Name)
@@ -164,10 +178,14 @@ func (f *Framework) printAddonLogs() {
 // otherwise.
 func (f *Framework) RequireGlobalAddon(a addon.Addon) {
 	BeforeEach(func() {
-		By("Setting up access for global shared addon")
-		err := a.Setup(f.Config)
-		Expect(err).NotTo(HaveOccurred())
+		f.requireGlobalAddon(a)
 	})
+}
+
+func (f *Framework) requireGlobalAddon(a addon.Addon) {
+	By("Setting up access for global shared addon")
+	err := a.Setup(f.Config)
+	Expect(err).NotTo(HaveOccurred())
 }
 
 type loggableAddon interface {
@@ -177,27 +195,33 @@ type loggableAddon interface {
 // RequireAddon calls the Setup and Provision method on the given addon, failing
 // the spec if provisioning fails.
 func (f *Framework) RequireAddon(a addon.Addon) {
+	BeforeEach(func() {
+		f.requireAddon(a)
+	})
+}
+
+func (f *Framework) requireAddon(a addon.Addon) {
 	f.requiredAddons = append(f.requiredAddons, a)
 
-	BeforeEach(func() {
-		By("Provisioning test-scoped addon")
-		err := a.Setup(f.Config)
-		if errors.IsSkip(err) {
-			Skipf("Skipping test as addon could not be setup: %v", err)
-		}
-		Expect(err).NotTo(HaveOccurred())
+	By("Provisioning test-scoped addon")
+	err := a.Setup(f.Config)
+	if errors.IsSkip(err) {
+		Skipf("Skipping test as addon could not be setup: %v", err)
+	}
+	Expect(err).NotTo(HaveOccurred())
 
-		err = a.Provision()
-		Expect(err).NotTo(HaveOccurred())
-	})
+	err = a.Provision()
+	Expect(err).NotTo(HaveOccurred())
+}
 
-	AfterEach(func() {
-		if !f.Config.Cleanup {
-			return
-		}
+func (f *Framework) cleanupAddons() {
+	if !f.Config.Cleanup {
+		return
+	}
+	for _, a := range f.requiredAddons {
 		err := a.Deprovision()
 		Expect(err).NotTo(HaveOccurred())
-	})
+	}
 }
 
 func (f *Framework) Helper() *helper.Helper {

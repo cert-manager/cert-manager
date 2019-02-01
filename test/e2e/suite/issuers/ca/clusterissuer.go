@@ -17,16 +17,17 @@ limitations under the License.
 package ca
 
 import (
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
-
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
-	cmutil "github.com/jetstack/cert-manager/pkg/util"
-	"github.com/jetstack/cert-manager/test/e2e/framework"
-	"github.com/jetstack/cert-manager/test/e2e/framework/addon"
-	"github.com/jetstack/cert-manager/test/e2e/util"
+	//. "github.com/onsi/ginkgo"
+	//. "github.com/onsi/gomega"
+	//
+	//"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	//cmutil "github.com/jetstack/cert-manager/pkg/util"
+	//"github.com/jetstack/cert-manager/test/e2e/framework"
+	//"github.com/jetstack/cert-manager/test/e2e/framework/addon"
+	//"github.com/jetstack/cert-manager/test/e2e/util"
 )
 
+/*
 var _ = framework.CertManagerDescribe("CA ClusterIssuer", func() {
 	f := framework.NewDefaultFramework("create-ca-clusterissuer")
 
@@ -67,3 +68,4 @@ var _ = framework.CertManagerDescribe("CA ClusterIssuer", func() {
 		Expect(err).NotTo(HaveOccurred())
 	})
 })
+*/

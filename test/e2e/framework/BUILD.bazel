@@ -16,6 +16,7 @@ go_library(
         "//pkg/client/clientset/versioned:go_default_library",
         "//pkg/util/pki:go_default_library",
         "//test/e2e/framework/addon:go_default_library",
+        "//test/e2e/framework/addon/certmanager:go_default_library",
         "//test/e2e/framework/config:go_default_library",
         "//test/e2e/framework/helper:go_default_library",
         "//test/e2e/framework/log:go_default_library",
