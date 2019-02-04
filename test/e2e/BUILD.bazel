@@ -53,6 +53,7 @@ filegroup(
     name = "all-srcs",
     srcs = [
         ":package-srcs",
+        "//test/e2e/charts:all-srcs",
         "//test/e2e/framework:all-srcs",
         "//test/e2e/suite:all-srcs",
         "//test/e2e/util:all-srcs",
