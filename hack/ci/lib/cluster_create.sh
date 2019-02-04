@@ -33,7 +33,7 @@ deploy_kind() {
             /kind/version)
     }
 
-    # default to v1alpha3, if 1.11.x then use v1alpha2
+    # default to v1beta1, if 1.12.x then use v1alpha3, if 1.11.x then use v1alpha2
     vers="$(kubeVersion)"
     config="v1beta1"
     if [[ "$vers" =~ v1\.11\..+ ]]; then
