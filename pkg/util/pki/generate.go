@@ -157,16 +157,6 @@ func EncodeECPrivateKey(pk *ecdsa.PrivateKey) ([]byte, error) {
 	return pem.EncodeToMemory(block), nil
 }
 
-// EncodePKCS8PrivateKey will marshal a private key into x509 PEM format.
-func EncodePKCS8PrivateKey(pk crypto.PrivateKey) ([]byte, error) {
-	bytes, err := x509.MarshalPKCS8PrivateKey(pk)
-	if err != nil {
-		return nil, fmt.Errorf("error encoding private key: %s", err.Error())
-	}
-
-	block := &pem.Block{Type: "PRIVATE KEY", Bytes: bytes}
-	return pem.EncodeToMemory(block), nil
-}
 // PublicKeyForPrivateKey will return the crypto.PublicKey for the given
 // crypto.PrivateKey. It only supports RSA and ECDSA keys.
 func PublicKeyForPrivateKey(pk crypto.PrivateKey) (crypto.PublicKey, error) {

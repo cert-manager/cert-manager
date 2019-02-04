@@ -64,18 +64,6 @@ func DecodePrivateKeyBytes(keyBytes []byte) (crypto.Signer, error) {
 			return nil, errors.NewInvalidData("rsa private key failed validation: %s", err.Error())
 		}
 		return key, nil
-	case "PRIVATE KEY":
-		pkey8, err := x509.ParsePKCS8PrivateKey(block.Bytes)
-		if err != nil {
-			return nil, errors.NewInvalidData("error parsing rsa pkcs8 private key: %s", err.Error())
-		}
-
-		pkey1 := x509.MarshalPKCS1PrivateKey(pkey8.(*rsa.PrivateKey))
-		key, err := x509.ParsePKCS1PrivateKey(pkey1)
-		if err != nil {
-			return nil, errors.NewInvalidData("error converting from parsing from PKCS8 to PKCS1 %s", err.Error())
-		}
-		return key, nil
 	default:
 		return nil, errors.NewInvalidData("unknown private key type: %s", block.Type)
 	}
