@@ -96,7 +96,7 @@ func (c *Controller) Sync(ctx context.Context, crt *v1alpha1.Certificate) (err e
 	}
 
 	// step zero: check if the referenced issuer exists and is ready
-	issuerObj, err := c.getGenericIssuer(crtCopy)
+	issuerObj, err := c.helper.GetGenericIssuer(crtCopy.Spec.IssuerRef, crtCopy.Namespace)
 	if k8sErrors.IsNotFound(err) {
 		c.Recorder.Eventf(crtCopy, corev1.EventTypeWarning, errorIssuerNotFound, err.Error())
 		return nil
@@ -224,21 +224,6 @@ func (c *Controller) certificateMatchesSpec(crt *v1alpha1.Certificate, key crypt
 	}
 
 	return len(errs) == 0, errs
-}
-
-// TODO: replace with a call to controllerpkg.Helper.GetGenericIssuer
-func (c *Controller) getGenericIssuer(crt *v1alpha1.Certificate) (v1alpha1.GenericIssuer, error) {
-	switch crt.Spec.IssuerRef.Kind {
-	case "", v1alpha1.IssuerKind:
-		return c.issuerLister.Issuers(crt.Namespace).Get(crt.Spec.IssuerRef.Name)
-	case v1alpha1.ClusterIssuerKind:
-		if c.clusterIssuerLister == nil {
-			return nil, fmt.Errorf("cannot get ClusterIssuer for %q as cert-manager is scoped to a single namespace", crt.Name)
-		}
-		return c.clusterIssuerLister.Get(crt.Spec.IssuerRef.Name)
-	default:
-		return nil, fmt.Errorf(`invalid value %q for certificate issuer kind. Must be empty, %q or %q`, crt.Spec.IssuerRef.Kind, v1alpha1.IssuerKind, v1alpha1.ClusterIssuerKind)
-	}
 }
 
 func (c *Controller) scheduleRenewal(crt *v1alpha1.Certificate) {

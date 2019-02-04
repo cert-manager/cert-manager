@@ -20,15 +20,12 @@ import (
 	"reflect"
 	"testing"
 
-	extv1beta1 "k8s.io/api/extensions/v1beta1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	cmfake "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/fake"
 	cminformers "github.com/jetstack/cert-manager/pkg/client/informers/externalversions"
-	"github.com/jetstack/cert-manager/pkg/controller/test"
 	"github.com/jetstack/cert-manager/test/unit/gen"
+	extv1beta1 "k8s.io/api/extensions/v1beta1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 const testAcmeTLSAnnotation = "kubernetes.io/tls-acme"
@@ -936,88 +933,6 @@ func TestIssuerForIngress(t *testing.T) {
 		if kind != test.ExpectedKind {
 			t.Errorf("expected kind to be %q but got %q", test.ExpectedKind, kind)
 		}
-	}
-}
-
-func TestGetGenericIssuer(t *testing.T) {
-	var nilIssuer *v1alpha1.Issuer
-	var nilClusterIssuer *v1alpha1.ClusterIssuer
-	type testT struct {
-		Name                   string
-		Kind                   string
-		Namespace              string
-		CMObjects              []runtime.Object
-		NilClusterIssuerLister bool
-		Err                    bool
-		Expected               v1alpha1.GenericIssuer
-	}
-	tests := []testT{
-		{
-			Name:      "name-of-issuer",
-			Kind:      "Issuer",
-			Namespace: gen.DefaultTestNamespace,
-			CMObjects: []runtime.Object{gen.Issuer("name-of-issuer")},
-			Expected:  gen.Issuer("name-of-issuer"),
-		},
-		{
-			Name:      "name-of-clusterissuer",
-			Kind:      "ClusterIssuer",
-			CMObjects: []runtime.Object{gen.ClusterIssuer("name-of-clusterissuer")},
-			Expected:  gen.ClusterIssuer("name-of-clusterissuer"),
-		},
-		{
-			Name:     "name",
-			Kind:     "Issuer",
-			Err:      true,
-			Expected: nilIssuer,
-		},
-		{
-			Name:     "name",
-			Kind:     "ClusterIssuer",
-			Err:      true,
-			Expected: nilClusterIssuer,
-		},
-		{
-			Name: "name",
-			Err:  true,
-		},
-		{
-			Name:                   "name",
-			Kind:                   "ClusterIssuer",
-			NilClusterIssuerLister: true,
-			Err:                    true,
-		},
-	}
-
-	for _, row := range tests {
-		b := test.Builder{
-			CertManagerObjects: row.CMObjects,
-		}
-		b.Start()
-		c := &Controller{
-			issuerLister:        b.FakeCMInformerFactory().Certmanager().V1alpha1().Issuers().Lister(),
-			clusterIssuerLister: b.FakeCMInformerFactory().Certmanager().V1alpha1().ClusterIssuers().Lister(),
-		}
-
-		func() {
-			b.Sync()
-			defer b.Stop()
-
-			if row.NilClusterIssuerLister {
-				c.clusterIssuerLister = nil
-			}
-
-			stopCh := make(chan struct{})
-			defer close(stopCh)
-
-			actual, err := c.getGenericIssuer(row.Namespace, row.Name, row.Kind)
-			if err != nil && !row.Err {
-				t.Errorf("Expected no error, but got: %s", err)
-			}
-			if !reflect.DeepEqual(actual, row.Expected) {
-				t.Errorf("Expected %#v but got %#v", row.Expected, actual)
-			}
-		}()
 	}
 }
 

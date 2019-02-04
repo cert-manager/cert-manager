@@ -57,6 +57,8 @@ type Controller struct {
 	CMClient clientset.Interface
 	Recorder record.EventRecorder
 
+	helper controllerpkg.Helper
+
 	// To allow injection for testing.
 	syncHandler func(ctx context.Context, key string) error
 
@@ -102,6 +104,8 @@ func New(
 		ctrl.clusterIssuerLister = clusterIssuerInformer.Lister()
 		ctrl.syncedFuncs = append(ctrl.syncedFuncs, clusterIssuerInformer.Informer().HasSynced)
 	}
+
+	ctrl.helper = controllerpkg.NewHelper(ctrl.issuerLister, ctrl.clusterIssuerLister)
 
 	return ctrl
 }

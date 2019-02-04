@@ -18,11 +18,17 @@ package controller
 
 import (
 	"crypto/x509"
+	"reflect"
 	"testing"
 	"time"
 
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+
+	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	cmfake "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/fake"
+	informers "github.com/jetstack/cert-manager/pkg/client/informers/externalversions"
+	"github.com/jetstack/cert-manager/test/unit/gen"
 )
 
 func TestCalculateDurationUntilRenew(t *testing.T) {
@@ -101,5 +107,85 @@ func TestCalculateDurationUntilRenew(t *testing.T) {
 		if duration != v.expectedExpiry {
 			t.Errorf("test # %d - %s: got %v, expected %v", k, v.desc, duration, v.expectedExpiry)
 		}
+	}
+}
+
+func TestGetGenericIssuer(t *testing.T) {
+	var nilIssuer *v1alpha1.Issuer
+	var nilClusterIssuer *v1alpha1.ClusterIssuer
+	type testT struct {
+		Name                   string
+		Kind                   string
+		Namespace              string
+		CMObjects              []runtime.Object
+		NilClusterIssuerLister bool
+		Err                    bool
+		Expected               v1alpha1.GenericIssuer
+	}
+	tests := map[string]testT{
+		"get a named Issuer resource": {
+			Name:      "name-of-issuer",
+			Kind:      "Issuer",
+			Namespace: gen.DefaultTestNamespace,
+			CMObjects: []runtime.Object{gen.Issuer("name-of-issuer")},
+			Expected:  gen.Issuer("name-of-issuer"),
+		},
+		"get a named ClusterIssuer resource": {
+			Name:      "name-of-clusterissuer",
+			Kind:      "ClusterIssuer",
+			CMObjects: []runtime.Object{gen.ClusterIssuer("name-of-clusterissuer")},
+			Expected:  gen.ClusterIssuer("name-of-clusterissuer"),
+		},
+		"fail to get a Issuer": {
+			Name:     "name",
+			Kind:     "Issuer",
+			Err:      true,
+			Expected: nilIssuer,
+		},
+		"fail to get a ClusterIssuer": {
+			Name:     "name",
+			Kind:     "ClusterIssuer",
+			Err:      true,
+			Expected: nilClusterIssuer,
+		},
+		"fail when no kind is specified": {
+			Name:     "name",
+			Err:      true,
+			Expected: nilIssuer,
+		},
+		"fail to get clusterissuer when clusterissuer lister is nil": {
+			Name:                   "name",
+			Kind:                   "ClusterIssuer",
+			NilClusterIssuerLister: true,
+			Err:                    true,
+		},
+	}
+
+	for n, row := range tests {
+		t.Run(n, func(t *testing.T) {
+			cl := cmfake.NewSimpleClientset(row.CMObjects...)
+			f := informers.NewSharedInformerFactory(cl, 0)
+
+			h := &helperImpl{
+				issuerLister:        f.Certmanager().V1alpha1().Issuers().Lister(),
+				clusterIssuerLister: f.Certmanager().V1alpha1().ClusterIssuers().Lister(),
+			}
+			if row.NilClusterIssuerLister {
+				h.clusterIssuerLister = nil
+			}
+
+			stopCh := make(chan struct{})
+			defer close(stopCh)
+			f.Start(stopCh)
+			f.WaitForCacheSync(stopCh)
+
+			actual, err := h.GetGenericIssuer(v1alpha1.ObjectReference{Name: row.Name, Kind: row.Kind}, row.Namespace)
+			if err != nil && !row.Err {
+				t.Errorf("Expected no error, but got: %s", err)
+			}
+			if !reflect.DeepEqual(actual, row.Expected) {
+				t.Errorf("Expected %#v but got %#v", row.Expected, actual)
+			}
+		})
 	}
 }
