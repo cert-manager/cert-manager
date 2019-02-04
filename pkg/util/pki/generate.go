@@ -124,7 +124,7 @@ func EncodePrivateKey(pk crypto.PrivateKey, crt *v1alpha1.Certificate) ([]byte, 
 	case v1alpha1.PKCS8:
 		return EncodePKCS8PrivateKey(pk)
 	default:
-		return nil, fmt.Errorf("error encoding private key: unknown key encoding: %d", crt.Spec.KeyEncoding)
+		return nil, fmt.Errorf("error encoding private key: unknown key encoding: %s", crt.Spec.KeyEncoding)
 	}
 }
 
