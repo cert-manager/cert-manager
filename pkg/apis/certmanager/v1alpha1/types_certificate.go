@@ -49,6 +49,12 @@ const (
 	ECDSAKeyAlgorithm KeyAlgorithm = "ecdsa"
 )
 
+type KeyEncoding string
+
+const (
+	PKCS1 KeyEncoding = "pkcs1"
+	PKCS8 KeyEncoding = "pkcs8"
+)
 // CertificateSpec defines the desired state of Certificate
 type CertificateSpec struct {
 	// CommonName is a common name to be used on the Certificate
@@ -102,11 +108,11 @@ type CertificateSpec struct {
 	// key size of 2048 will be used for "rsa" key algorithm.
 	KeyAlgorithm KeyAlgorithm `json:"keyAlgorithm,omitempty"`
 
-	// KeyEncoding is the private key cryptography standards (PKCS) number
+	// KeyEncoding is the private key cryptography standards (PKCS)
 	// for this certificate's private key to be encoded in. If provided, allowed
-	// values are 1 and 8 standing for PKCS#1 and PKCS#8, respectively.
+	// values are "pkcs1" and "pkcs8" standing for PKCS#1 and PKCS#8, respectively.
 	// If KeyEncoding is not specified, then PKCS#1 will be used by default.
-	KeyEncoding int `json:"keyEncoding,omitempty"`
+	KeyEncoding KeyEncoding `json:"keyEncoding,omitempty"`
 }
 
 // ACMECertificateConfig contains the configuration for the ACME certificate provider

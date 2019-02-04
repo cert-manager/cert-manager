@@ -79,9 +79,9 @@ func ValidateCertificateSpec(crt *v1alpha1.CertificateSpec, fldPath *field.Path)
 	}
 
 	switch crt.KeyEncoding {
-	case 0, 1, 8:
+	case v1alpha1.KeyEncoding(""), v1alpha1.PKCS1, v1alpha1.PKCS8:
 	default:
-		el = append(el, field.Invalid(fldPath.Child("keyEncoding"), crt.KeyEncoding, "must be either empty or one of 1 or 8"))
+		el = append(el, field.Invalid(fldPath.Child("keyEncoding"), crt.KeyEncoding, "must be either empty or one of pkcs1 or pkcs8"))
 	}
 	
 	return el
