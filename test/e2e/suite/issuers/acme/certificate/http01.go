@@ -225,6 +225,8 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 	})
 
 	It("should obtain a signed certificate with a single CN from the ACME server when redirected", func() {
+		Skip("nginx-ingress bug stops pebble from getting a certificate https://github.com/kubernetes/ingress-nginx/issues/3192")
+
 		certClient := f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name)
 		secretClient := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name)
 
