@@ -42,7 +42,7 @@ var _ = framework.CertManagerDescribe("CA ClusterIssuer", func() {
 
 	BeforeEach(func() {
 		By("Creating a signing keypair fixture")
-		_, err := f.KubeClientSet.CoreV1().Secrets(clusterResourceNamespace).Create(util.NewSigningKeypairSecret(secretName))
+		_, err := f.KubeClientSet.CoreV1().Secrets(clusterResourceNamespace).Create(newSigningKeypairSecret(secretName))
 		Expect(err).NotTo(HaveOccurred())
 	})
 

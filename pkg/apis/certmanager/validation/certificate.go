@@ -18,6 +18,7 @@ package validation
 
 import (
 	"fmt"
+	"net"
 
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
@@ -48,6 +49,9 @@ func ValidateCertificateSpec(crt *v1alpha1.CertificateSpec, fldPath *field.Path)
 	}
 	if len(crt.CommonName) == 0 && len(crt.DNSNames) == 0 {
 		el = append(el, field.Required(fldPath.Child("dnsNames"), "at least one dnsName is required if commonName is not set"))
+	}
+	if len(crt.IPAddresses) > 0 {
+		el = append(el, validateIPAddresses(crt, fldPath)...)
 	}
 	if crt.ACME != nil {
 		el = append(el, validateACMEConfigForAllDNSNames(crt, fldPath)...)
@@ -99,6 +103,20 @@ func validateACMEConfigForAllDNSNames(a *v1alpha1.CertificateSpec, fldPath *fiel
 		cfg := v1alpha1.ConfigForDomain(a.ACME.Config, d)
 		if cfg == nil || len(cfg.Domains) == 0 {
 			el = append(el, field.Required(acmeFldPath.Child("config"), errFn(d)))
+		}
+	}
+	return el
+}
+
+func validateIPAddresses(a *v1alpha1.CertificateSpec, fldPath *field.Path) field.ErrorList {
+	if len(a.IPAddresses) <= 0 {
+		return nil
+	}
+	el := field.ErrorList{}
+	for i, d := range a.IPAddresses {
+		ip := net.ParseIP(d)
+		if ip == nil {
+			el = append(el, field.Invalid(fldPath.Child("ipAddresses").Index(i), d, "invalid IP address"))
 		}
 	}
 	return el

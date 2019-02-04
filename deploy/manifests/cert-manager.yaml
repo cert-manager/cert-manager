@@ -155,7 +155,7 @@ metadata:
   namespace: "cert-manager"
   labels:
     app: webhook
-    chart: webhook-v0.6.0
+    chart: webhook-v0.6.2
     release: cert-manager
     heritage: Tiller
 
@@ -168,7 +168,7 @@ metadata:
   namespace: "cert-manager"
   labels:
     app: cert-manager
-    chart: cert-manager-v0.6.1
+    chart: cert-manager-v0.6.4
     release: cert-manager
     heritage: Tiller
 ---
@@ -179,12 +179,12 @@ metadata:
   name: cert-manager
   labels:
     app: cert-manager
-    chart: cert-manager-v0.6.1
+    chart: cert-manager-v0.6.4
     release: cert-manager
     heritage: Tiller
 rules:
   - apiGroups: ["certmanager.k8s.io"]
-    resources: ["certificates", "issuers", "clusterissuers", "orders", "challenges"]
+    resources: ["certificates", "certificates/finalizers", "issuers", "clusterissuers", "orders", "orders/finalizers", "challenges"]
     verbs: ["*"]
   - apiGroups: [""]
     resources: ["configmaps", "secrets", "events", "services", "pods"]
@@ -199,7 +199,7 @@ metadata:
   name: cert-manager
   labels:
     app: cert-manager
-    chart: cert-manager-v0.6.1
+    chart: cert-manager-v0.6.4
     release: cert-manager
     heritage: Tiller
 roleRef:
@@ -217,7 +217,7 @@ metadata:
   name: cert-manager-view
   labels:
     app: cert-manager
-    chart: cert-manager-v0.6.1
+    chart: cert-manager-v0.6.4
     release: cert-manager
     heritage: Tiller
     rbac.authorization.k8s.io/aggregate-to-view: "true"
@@ -234,7 +234,7 @@ metadata:
   name: cert-manager-edit
   labels:
     app: cert-manager
-    chart: cert-manager-v0.6.1
+    chart: cert-manager-v0.6.4
     release: cert-manager
     heritage: Tiller
     rbac.authorization.k8s.io/aggregate-to-edit: "true"
@@ -255,7 +255,7 @@ metadata:
   name: cert-manager-webhook:auth-delegator
   labels:
     app: webhook
-    chart: webhook-v0.6.0
+    chart: webhook-v0.6.2
     release: cert-manager
     heritage: Tiller
 roleRef:
@@ -280,7 +280,7 @@ metadata:
   namespace: kube-system
   labels:
     app: webhook
-    chart: webhook-v0.6.0
+    chart: webhook-v0.6.2
     release: cert-manager
     heritage: Tiller
 roleRef:
@@ -301,7 +301,7 @@ metadata:
   name: cert-manager-webhook:webhook-requester
   labels:
     app: webhook
-    chart: webhook-v0.6.0
+    chart: webhook-v0.6.2
     release: cert-manager
     heritage: Tiller
 rules:
@@ -323,7 +323,7 @@ metadata:
   namespace: "cert-manager"
   labels:
     app: webhook
-    chart: webhook-v0.6.0
+    chart: webhook-v0.6.2
     release: cert-manager
     heritage: Tiller
 spec:
@@ -345,7 +345,7 @@ metadata:
   namespace: "cert-manager"
   labels:
     app: webhook
-    chart: webhook-v0.6.0
+    chart: webhook-v0.6.2
     release: cert-manager
     heritage: Tiller
 spec:
@@ -397,7 +397,7 @@ metadata:
   namespace: "cert-manager"
   labels:
     app: cert-manager
-    chart: cert-manager-v0.6.1
+    chart: cert-manager-v0.6.4
     release: cert-manager
     heritage: Tiller
 spec:
@@ -445,7 +445,7 @@ metadata:
   namespace: "cert-manager"
   labels:
     app: webhook
-    chart: webhook-v0.6.0
+    chart: webhook-v0.6.2
     release: cert-manager
     heritage: Tiller
 spec:
@@ -488,7 +488,7 @@ metadata:
   namespace: "cert-manager"
   labels:
     app: webhook
-    chart: webhook-v0.6.0
+    chart: webhook-v0.6.2
     release: cert-manager
     heritage: Tiller
 spec:
@@ -528,7 +528,7 @@ metadata:
   namespace: "cert-manager"
   labels:
     app: webhook
-    chart: webhook-v0.6.0
+    chart: webhook-v0.6.2
     release: cert-manager
     heritage: Tiller
 data:
@@ -561,7 +561,7 @@ metadata:
   namespace: "cert-manager"
   labels:
     app: webhook
-    chart: webhook-v0.6.0
+    chart: webhook-v0.6.2
     release: cert-manager
     heritage: Tiller
 ---
@@ -571,7 +571,7 @@ metadata:
   name: cert-manager-webhook-ca-sync
   labels:
     app: webhook
-    chart: webhook-v0.6.0
+    chart: webhook-v0.6.2
     release: cert-manager
     heritage: Tiller
 rules:
@@ -597,7 +597,7 @@ metadata:
   name: cert-manager-webhook-ca-sync
   labels:
     app: webhook
-    chart: webhook-v0.6.0
+    chart: webhook-v0.6.2
     release: cert-manager
     heritage: Tiller
 roleRef:
@@ -617,7 +617,7 @@ metadata:
   name: v1beta1.admission.certmanager.k8s.io
   labels:
     app: webhook
-    chart: webhook-v0.6.0
+    chart: webhook-v0.6.2
     release: cert-manager
     heritage: Tiller
 spec:
@@ -641,11 +641,11 @@ metadata:
   namespace: "cert-manager"
   labels:
     app: webhook
-    chart: webhook-v0.6.0
+    chart: webhook-v0.6.2
     release: cert-manager
     heritage: Tiller
 spec:
-  selfsigned: {}
+  selfSigned: {}
 
 ---
 
@@ -657,11 +657,12 @@ metadata:
   namespace: "cert-manager"
   labels:
     app: webhook
-    chart: webhook-v0.6.0
+    chart: webhook-v0.6.2
     release: cert-manager
     heritage: Tiller
 spec:
   secretName: cert-manager-webhook-ca
+  duration: 43800h # 5y
   issuerRef:
     name: cert-manager-webhook-selfsign
   commonName: "ca.webhook.cert-manager"
@@ -677,7 +678,7 @@ metadata:
   namespace: "cert-manager"
   labels:
     app: webhook
-    chart: webhook-v0.6.0
+    chart: webhook-v0.6.2
     release: cert-manager
     heritage: Tiller
 spec:
@@ -694,11 +695,12 @@ metadata:
   namespace: "cert-manager"
   labels:
     app: webhook
-    chart: webhook-v0.6.0
+    chart: webhook-v0.6.2
     release: cert-manager
     heritage: Tiller
 spec:
   secretName: cert-manager-webhook-webhook-tls
+  duration: 8760h # 1y
   issuerRef:
     name: cert-manager-webhook-ca
   dnsNames:
@@ -714,7 +716,7 @@ metadata:
   name: cert-manager-webhook
   labels:
     app: webhook
-    chart: webhook-v0.6.0
+    chart: webhook-v0.6.2
     release: cert-manager
     heritage: Tiller
 webhooks:

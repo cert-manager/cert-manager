@@ -42,6 +42,7 @@ const foreverTestTimeout = time.Second * 60
 
 var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 	f := framework.NewDefaultFramework("create-acme-certificate-http01")
+	h := f.Helper()
 
 	var (
 		tiller = &tiller.Tiller{
@@ -115,50 +116,46 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 
 	It("should obtain a signed certificate with a single CN from the ACME server", func() {
 		certClient := f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name)
-		secretClient := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name)
 
 		By("Creating a Certificate")
 		_, err := certClient.Create(util.NewCertManagerACMECertificate(certificateName, certificateSecretName, issuerName, v1alpha1.IssuerKind, nil, nil, acmeIngressClass, acmeIngressDomain))
 		Expect(err).NotTo(HaveOccurred())
 		By("Verifying the Certificate is valid")
-		err = util.WaitCertificateIssuedValid(certClient, secretClient, certificateName, time.Minute*5)
+		err = h.WaitCertificateIssuedValid(f.Namespace.Name, certificateName, time.Minute*5)
 		Expect(err).NotTo(HaveOccurred())
 	})
 
 	It("should obtain a signed certificate for a long domain using http01 validation", func() {
 		certClient := f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name)
-		secretClient := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name)
 
 		// the maximum length of a single segment of the domain being requested
 		const maxLengthOfDomainSegment = 63
 		By("Creating a Certificate")
 		_, err := certClient.Create(util.NewCertManagerACMECertificate(certificateName, certificateSecretName, issuerName, v1alpha1.IssuerKind, nil, nil, acmeIngressClass, fmt.Sprintf("%s.%s", cmutil.RandStringRunes(maxLengthOfDomainSegment), acmeIngressDomain)))
 		Expect(err).NotTo(HaveOccurred())
-		err = util.WaitCertificateIssuedValid(certClient, secretClient, certificateName, time.Minute*5)
+		err = h.WaitCertificateIssuedValid(f.Namespace.Name, certificateName, time.Minute*5)
 		Expect(err).NotTo(HaveOccurred())
 	})
 
 	It("should obtain a signed certificate with a CN and single subdomain as dns name from the ACME server", func() {
 		certClient := f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name)
-		secretClient := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name)
 
 		By("Creating a Certificate")
 		_, err := certClient.Create(util.NewCertManagerACMECertificate(certificateName, certificateSecretName, issuerName, v1alpha1.IssuerKind, nil, nil, acmeIngressClass, acmeIngressDomain, fmt.Sprintf("%s.%s", cmutil.RandStringRunes(5), acmeIngressDomain)))
 		Expect(err).NotTo(HaveOccurred())
 		By("Verifying the Certificate is valid")
-		err = util.WaitCertificateIssuedValid(certClient, secretClient, certificateName, time.Minute*5)
+		err = h.WaitCertificateIssuedValid(f.Namespace.Name, certificateName, time.Minute*5)
 		Expect(err).NotTo(HaveOccurred())
 	})
 
 	It("should allow updating an existing certificate with a new dns name", func() {
 		certClient := f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name)
-		secretClient := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name)
 
 		By("Creating a Certificate")
 		cert, err := certClient.Create(util.NewCertManagerACMECertificate(certificateName, certificateSecretName, issuerName, v1alpha1.IssuerKind, nil, nil, acmeIngressClass, acmeIngressDomain, fmt.Sprintf("%s.%s", cmutil.RandStringRunes(5), acmeIngressDomain)))
 		Expect(err).NotTo(HaveOccurred())
 		By("Verifying the Certificate is valid")
-		err = util.WaitCertificateIssuedValid(certClient, secretClient, certificateName, time.Minute*5)
+		err = h.WaitCertificateIssuedValid(f.Namespace.Name, certificateName, time.Minute*5)
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Getting the latest version of the Certificate")
@@ -174,7 +171,12 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		cert, err = certClient.Update(cert)
 		Expect(err).NotTo(HaveOccurred())
 
-		err = util.WaitCertificateIssuedValid(certClient, secretClient, certificateName, time.Minute*5)
+		By("Waiting for the Certificate to be not ready")
+		_, err = h.WaitForCertificateNotReady(f.Namespace.Name, certificateName, time.Minute*5)
+		Expect(err).NotTo(HaveOccurred())
+
+		By("Waiting for the Certificate to become ready & valid")
+		err = h.WaitCertificateIssuedValid(f.Namespace.Name, certificateName, time.Minute*5)
 		Expect(err).NotTo(HaveOccurred())
 	})
 
@@ -206,7 +208,6 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 	It("should obtain a signed certificate with a single CN from the ACME server when putting an annotation on an ingress resource", func() {
 		ingClient := f.KubeClientSet.ExtensionsV1beta1().Ingresses(f.Namespace.Name)
 		certClient := f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name)
-		secretClient := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name)
 
 		By("Creating an Ingress with the issuer name annotation set")
 		_, err := ingClient.Create(util.NewIngress(certificateSecretName, certificateSecretName, map[string]string{
@@ -220,7 +221,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Verifying the Certificate is valid")
-		err = util.WaitCertificateIssuedValid(certClient, secretClient, certificateName, time.Minute*5)
+		err = h.WaitCertificateIssuedValid(f.Namespace.Name, certificateName, time.Minute*5)
 		Expect(err).NotTo(HaveOccurred())
 	})
 
@@ -228,7 +229,6 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		Skip("nginx-ingress bug stops pebble from getting a certificate https://github.com/kubernetes/ingress-nginx/issues/3192")
 
 		certClient := f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name)
-		secretClient := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name)
 
 		// force-ssl-redirect should make every request turn into a redirect,
 		// but I haven't been able to make this happen. Create a TLS cert via
@@ -251,7 +251,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		selfcert.Spec.CommonName = acmeIngressDomain
 		_, err = certClient.Create(selfcert)
 		Expect(err).NotTo(HaveOccurred())
-		err = util.WaitCertificateIssuedValid(certClient, secretClient, dummycert, time.Minute*5)
+		err = h.WaitCertificateIssuedValid(f.Namespace.Name, dummycert, time.Minute*5)
 		Expect(err).NotTo(HaveOccurred())
 
 		// create an ingress that points at nothing, but has the TLS redirect annotation set
@@ -306,7 +306,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		_, err = certClient.Create(cert)
 		Expect(err).NotTo(HaveOccurred())
 		By("Verifying the Certificate is valid")
-		err = util.WaitCertificateIssuedValid(certClient, secretClient, certificateName, time.Minute*5)
+		err = h.WaitCertificateIssuedValid(f.Namespace.Name, certificateName, time.Minute*5)
 		Expect(err).NotTo(HaveOccurred())
 	})
 

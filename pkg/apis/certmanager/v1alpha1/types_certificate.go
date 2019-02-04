@@ -66,6 +66,9 @@ type CertificateSpec struct {
 	// DNSNames is a list of subject alt names to be used on the Certificate
 	DNSNames []string `json:"dnsNames,omitempty"`
 
+	// IPAddresses is a list of IP addresses to be used on the Certificate
+	IPAddresses []string `json:"ipAddresses,omitempty"`
+
 	// SecretName is the name of the secret resource to store this secret in
 	SecretName string `json:"secretName"`
 

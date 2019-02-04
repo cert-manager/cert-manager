@@ -17,5 +17,4 @@ Step by step user guides and tutorials can be found in the
    challenges
    issuers
    clusterissuers
-   ingress-shim
    api-docs/index
