@@ -37,7 +37,7 @@ func generatePrivateKeyBytes(keyAlgo v1alpha1.KeyAlgorithm, keySize int) ([]byte
 }
 
 func generatePKCS8PrivateKey(keyAlgo v1alpha1.KeyAlgorithm, keySize int) ([]byte, error) {
-	privateKey, err := GeneratePrivateKeyForCertificate(cert := buildCertificateWithKeyParams(keyAlgo, keySize))
+	privateKey, err := GeneratePrivateKeyForCertificate(buildCertificateWithKeyParams(keyAlgo, keySize))
 	if err != nil {
 		return nil, err
 	}
