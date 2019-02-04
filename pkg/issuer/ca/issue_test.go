@@ -127,7 +127,7 @@ func TestIssue(t *testing.T) {
 	rootECDSACrt := gen.Certificate("test-root-ca",
 		gen.SetCertificateCommonName("root-ca"),
 		gen.SetCertificateIsCA(true),
-		gen.SetCertificateKeyEncoding(v1alpha1.PKCS1)
+		gen.SetCertificateKeyEncoding(v1alpha1.PKCS1),
 	)
 
 	ecdsaPKBytes, err := pki.EncodePrivateKey(ecdsaPK, rootECDSACrt)
