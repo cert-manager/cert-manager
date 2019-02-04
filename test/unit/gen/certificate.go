@@ -78,6 +78,12 @@ func SetCertificateKeySize(keySize int) CertificateModifier {
 	}
 }
 
+func SetCertificateKeyEncoding(keyEncoding v1alpha1.KeyEncoding) CertificateModifier {
+	return func(crt *v1alpha1.Certificate) {
+		crt.Spec.KeyEncoding = keyEncoding
+	}
+}
+
 func SetCertificateSecretName(secretName string) CertificateModifier {
 	return func(crt *v1alpha1.Certificate) {
 		crt.Spec.SecretName = secretName
