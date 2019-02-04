@@ -71,7 +71,7 @@ func (c *SelfSigned) Issue(ctx context.Context, crt *v1alpha1.Certificate) (*iss
 	}
 
 	// Encode output private key
-	keyPem, err := pki.EncodePrivateKey(signeePrivateKey, crt.Spec.KeyEncoding)
+	keyPem, err := pki.EncodePrivateKey(signeePrivateKey, crt)
 	if err != nil {
 		c.Recorder.Eventf(crt, corev1.EventTypeWarning, "ErrorPrivateKey", "Error encoding private key: %v", err)
 		return nil, err
