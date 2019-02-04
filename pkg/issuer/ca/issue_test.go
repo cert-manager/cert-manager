@@ -120,10 +120,6 @@ func TestIssue(t *testing.T) {
 	// Build root ECDSA CA
 	ecdsaPK := generateECDSAPrivateKey(t)
 	
-	if err != nil {
-		t.Errorf("Error encoding private key: %v", err)
-		t.FailNow()
-	}
 	rootECDSACrt := gen.Certificate("test-root-ca",
 		gen.SetCertificateCommonName("root-ca"),
 		gen.SetCertificateIsCA(true),
@@ -132,6 +128,11 @@ func TestIssue(t *testing.T) {
 
 	ecdsaPKBytes, err := pki.EncodePrivateKey(ecdsaPK, rootECDSACrt)
 
+	if err != nil {
+		t.Errorf("Error encoding private key: %v", err)
+		t.FailNow()
+	}
+	
 	// generate a self signed root ca valid for 60d
 	_, ecdsaPEMCert := generateSelfSignedCert(t, rootECDSACrt, ecdsaPK, time.Hour*24*60)
 	rootECDSACASecret := &corev1.Secret{
