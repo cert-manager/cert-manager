@@ -280,6 +280,9 @@ func SignatureAlgorithm(crt *v1alpha1.Certificate) (x509.PublicKeyAlgorithm, x50
 			sigAlgo = x509.SHA384WithRSA
 		case crt.Spec.KeySize >= 2048:
 			sigAlgo = x509.SHA256WithRSA
+		// 0 == not set
+		case crt.Spec.KeySize == 0:
+			sigAlgo = x509.SHA256WithRSA
 		default:
 			return x509.UnknownPublicKeyAlgorithm, x509.UnknownSignatureAlgorithm, fmt.Errorf("unsupported rsa keysize specified: %d. min keysize %d", crt.Spec.KeySize, MinRSAKeySize)
 		}
@@ -291,6 +294,8 @@ func SignatureAlgorithm(crt *v1alpha1.Certificate) (x509.PublicKeyAlgorithm, x50
 		case 384:
 			sigAlgo = x509.ECDSAWithSHA384
 		case 256:
+			sigAlgo = x509.ECDSAWithSHA256
+		case 0:
 			sigAlgo = x509.ECDSAWithSHA256
 		default:
 			return x509.UnknownPublicKeyAlgorithm, x509.UnknownSignatureAlgorithm, fmt.Errorf("unsupported ecdsa keysize specified: %d", crt.Spec.KeySize)
