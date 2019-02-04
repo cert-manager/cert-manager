@@ -55,6 +55,7 @@ const (
 	PKCS1 KeyEncoding = "pkcs1"
 	PKCS8 KeyEncoding = "pkcs8"
 )
+
 // CertificateSpec defines the desired state of Certificate
 type CertificateSpec struct {
 	// CommonName is a common name to be used on the Certificate
