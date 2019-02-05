@@ -83,7 +83,6 @@ func ValidateCertificateSpec(crt *v1alpha1.CertificateSpec, fldPath *field.Path)
 	default:
 		el = append(el, field.Invalid(fldPath.Child("keyEncoding"), crt.KeyEncoding, "must be either empty or one of pkcs1 or pkcs8"))
 	}
-	
 	return el
 }
 
