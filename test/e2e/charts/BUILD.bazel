@@ -9,5 +9,22 @@ container_bundle(
         "k8s.gcr.io/defaultbackend:bazel": "@io_gcr_k8s_defaultbackend//image",
         "vault:bazel": "@com_hashicorp_vault//image",
         "gcr.io/kubernetes-helm/tiller:bazel": "@io_gcr_helm_tiller//image",
-    }
+    },
+)
+
+filegroup(
+    name = "package-srcs",
+    srcs = glob(["**"]),
+    tags = ["automanaged"],
+    visibility = ["//visibility:private"],
+)
+
+filegroup(
+    name = "all-srcs",
+    srcs = [
+        ":package-srcs",
+        "//test/e2e/charts/pebble:all-srcs",
+    ],
+    tags = ["automanaged"],
+    visibility = ["//visibility:public"],
 )
