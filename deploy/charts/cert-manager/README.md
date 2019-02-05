@@ -13,7 +13,7 @@ to renew certificates at an appropriate time before expiry.
 ## Installing the Chart
 
 Full installation instructions, including details on how to configure extra
-functionality in cert-manager can be found in the [getting started docs](https://cert-manager.readthedocs.io/en/latest/getting-started/).
+functionality in cert-manager can be found in the [getting started docs](https://docs.cert-manager.io/en/latest/getting-started/).
 
 To install the chart with the release name `my-release`:
 
@@ -38,20 +38,20 @@ or Issuer resource (for example, by creating a 'letsencrypt-staging' issuer).
 More information on the different types of issuers and how to configure them
 can be found in our documentation:
 
-https://cert-manager.readthedocs.io/en/latest/reference/issuers.html
+https://docs.cert-manager.io/en/latest/reference/issuers.html
 
 For information on how to configure cert-manager to automatically provision
 Certificates for Ingress resources, take a look at the `ingress-shim`
 documentation:
 
-https://cert-manager.readthedocs.io/en/latest/reference/ingress-shim.html
+https://docs.cert-manager.io/en/latest/reference/ingress-shim.html
 
 > **Tip**: List all releases using `helm list`
 
 ## Upgrading the Chart
 
 Special considerations may be required when upgrading the Helm chart, and these
-are documented in our full [upgrading guide](https://cert-manager.readthedocs.io/en/latest/admin/upgrading/index.html).
+are documented in our full [upgrading guide](https://docs.cert-manager.io/en/latest/admin/upgrading/index.html).
 Please check here before perform upgrades!
 
 ## Uninstalling the Chart
