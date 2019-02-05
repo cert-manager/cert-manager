@@ -91,6 +91,12 @@ func (c *Controller) Sync(ctx context.Context, crt *v1alpha1.Certificate) (err e
 	// update certificate expiry metric
 	defer c.metrics.UpdateCertificateExpiry(crtCopy, c.secretLister)
 	c.setCertificateStatus(crtCopy, key, cert)
+	if !reflect.DeepEqual(crt.Status, crtCopy.Status) {
+		// If the certificate status has changed, we return now so it can be
+		// be persisted to the apiserver to avoid cache timing issues that
+		// can result in multiple certificates being issued at once.
+		return nil
+	}
 
 	el := validation.ValidateCertificate(crtCopy)
 	if len(el) > 0 {
