@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Jetstack cert-manager contributors.
+Copyright 2019 The Jetstack cert-manager contributors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -18,9 +18,7 @@ package addon
 
 import (
 	"fmt"
-	"strings"
 
-	"github.com/golang/glog"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 
 	"github.com/jetstack/cert-manager/test/e2e/framework/addon/base"
@@ -28,6 +26,7 @@ import (
 	"github.com/jetstack/cert-manager/test/e2e/framework/addon/nginxingress"
 	"github.com/jetstack/cert-manager/test/e2e/framework/addon/tiller"
 	"github.com/jetstack/cert-manager/test/e2e/framework/config"
+	"github.com/jetstack/cert-manager/test/e2e/framework/log"
 )
 
 type Addon interface {
@@ -60,10 +59,16 @@ var (
 	provisioned []Addon
 )
 
+var globalsInited = false
+
 // InitGlobals actually allocates the addon values that are defined above.
 // We do this here so that we can access the suites config structure during
 // the definition of global addons.
 func InitGlobals(cfg *config.Config) {
+	if globalsInited {
+		return
+	}
+	globalsInited = true
 	*Base = base.Base{}
 	*Tiller = tiller.Tiller{
 		Base:               Base,
@@ -120,26 +125,30 @@ func SetupGlobals(cfg *config.Config) error {
 }
 
 type loggableAddon interface {
-	Logs() (string, error)
+	Logs() (map[string]string, error)
 }
 
-func GlobalLogs() (string, error) {
-	b := &strings.Builder{}
+func GlobalLogs() (map[string]string, error) {
+	out := make(map[string]string)
 	for _, p := range provisioned {
-		if p, ok := p.(loggableAddon); ok {
-			l, err := p.Logs()
+		p, ok := p.(loggableAddon)
+		if !ok {
+			continue
+		}
 
-			if err != nil {
-				return "", err
-			}
+		l, err := p.Logs()
+		if err != nil {
+			return nil, err
+		}
 
-			_, err = b.WriteString(fmt.Sprintf("Got pods logs for addon: \n%s\n\n", l))
-			if err != nil {
-				return "", err
-			}
+		// TODO: namespace logs from each addon to their addon type to avoid
+		// conflicts. Realistically, it's unlikely a conflict will occur though
+		// so this will probably be fine for now.
+		for k, v := range l {
+			out[k] = v
 		}
 	}
-	return b.String(), nil
+	return out, nil
 }
 
 // DeprovisionGlobals deprovisions all of the global addons.
@@ -147,7 +156,7 @@ func GlobalLogs() (string, error) {
 // all global addons are cleaned up after a run.
 func DeprovisionGlobals(cfg *config.Config) error {
 	if !cfg.Cleanup {
-		glog.Infof("Skipping deprovisioning as cleanup set to false.")
+		log.Logf("Skipping deprovisioning as cleanup set to false.")
 		return nil
 	}
 	var errs []error

@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Jetstack cert-manager contributors.
+Copyright 2019 The Jetstack cert-manager contributors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -61,12 +61,39 @@ var CertificateExpiryTimeSeconds = prometheus.NewGaugeVec(
 	[]string{"name", "namespace"},
 )
 
+// ACMEClientRequestCount is a Prometheus summary to collect the number of
+// requests made to each endpoint with the ACME client.
+var ACMEClientRequestCount = prometheus.NewCounterVec(
+	prometheus.CounterOpts{
+		Namespace: namespace,
+		Name:      "acme_client_request_count",
+		Help:      "The number of requests made by the ACME client.",
+		Subsystem: "http",
+	},
+	[]string{"scheme", "host", "path", "method", "status"},
+)
+
+// ACMEClientRequestDurationSeconds is a Prometheus summary to collect request
+// times for the ACME client.
+var ACMEClientRequestDurationSeconds = prometheus.NewSummaryVec(
+	prometheus.SummaryOpts{
+		Namespace:  namespace,
+		Name:       "acme_client_request_duration_seconds",
+		Help:       "The HTTP request latencies in seconds for the ACME client.",
+		Subsystem:  "http",
+		Objectives: map[float64]float64{0.5: 0.05, 0.9: 0.01, 0.99: 0.001},
+	},
+	[]string{"scheme", "host", "path", "method", "status"},
+)
+
 type Metrics struct {
 	http.Server
 
 	// TODO (@dippynark): switch this to use an interface to make it testable
-	registry                     *prometheus.Registry
-	CertificateExpiryTimeSeconds *prometheus.GaugeVec
+	registry                         *prometheus.Registry
+	CertificateExpiryTimeSeconds     *prometheus.GaugeVec
+	ACMEClientRequestDurationSeconds *prometheus.SummaryVec
+	ACMEClientRequestCount           *prometheus.CounterVec
 }
 
 func New() *Metrics {
@@ -82,8 +109,10 @@ func New() *Metrics {
 			MaxHeaderBytes: prometheusMetricsServerMaxHeaderBytes,
 			Handler:        router,
 		},
-		registry:                     prometheus.NewRegistry(),
-		CertificateExpiryTimeSeconds: CertificateExpiryTimeSeconds,
+		registry:                         prometheus.NewRegistry(),
+		CertificateExpiryTimeSeconds:     CertificateExpiryTimeSeconds,
+		ACMEClientRequestDurationSeconds: ACMEClientRequestDurationSeconds,
+		ACMEClientRequestCount:           ACMEClientRequestCount,
 	}
 
 	router.Handle("/metrics", promhttp.HandlerFor(s.registry, promhttp.HandlerOpts{}))
@@ -107,8 +136,9 @@ func (m *Metrics) waitShutdown(stopCh <-chan struct{}) {
 }
 
 func (m *Metrics) Start(stopCh <-chan struct{}) {
-
 	m.registry.MustRegister(m.CertificateExpiryTimeSeconds)
+	m.registry.MustRegister(m.ACMEClientRequestDurationSeconds)
+	m.registry.MustRegister(m.ACMEClientRequestCount)
 
 	go func() {
 

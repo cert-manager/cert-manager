@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Jetstack cert-manager contributors.
+Copyright 2019 The Jetstack cert-manager contributors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -93,38 +93,29 @@ func (s *Solver) Present(ctx context.Context, issuer v1alpha1.GenericIssuer, ch 
 }
 
 // Check verifies that the DNS records for the ACME challenge have propagated.
-func (s *Solver) Check(ctx context.Context, issuer v1alpha1.GenericIssuer, ch *v1alpha1.Challenge) (bool, error) {
-	providerName := ch.Spec.Config.DNS01.Provider
-	if providerName == "" {
-		return false, fmt.Errorf("dns01 challenge provider name must be set")
-	}
+func (s *Solver) Check(ctx context.Context, issuer v1alpha1.GenericIssuer, ch *v1alpha1.Challenge) error {
 
-	providerConfig, err := issuer.GetSpec().ACME.DNS01.Provider(providerName)
+	fqdn, value, ttl, err := util.DNS01Record(ch.Spec.DNSName, ch.Spec.Key, s.DNS01Nameservers, false)
 	if err != nil {
-		return false, err
-	}
-
-	fqdn, value, ttl, err := util.DNS01Record(ch.Spec.DNSName, ch.Spec.Key, s.DNS01Nameservers, followCNAME(providerConfig.CNAMEStrategy))
-	if err != nil {
-		return false, err
+		return err
 	}
 
 	glog.Infof("Checking DNS propagation for %q using name servers: %v", ch.Spec.DNSName, s.Context.DNS01Nameservers)
 
-	ok, err := util.PreCheckDNS(fqdn, value, s.Context.DNS01Nameservers)
+	ok, err := util.PreCheckDNS(fqdn, value, s.Context.DNS01Nameservers,
+		s.Context.DNS01CheckAuthoritative)
 	if err != nil {
-		return false, err
+		return err
 	}
 	if !ok {
-		glog.Infof("DNS record for %q not yet propagated", ch.Spec.DNSName)
-		return false, nil
+		return fmt.Errorf("DNS record for %q not yet propagated", ch.Spec.DNSName)
 	}
 
 	glog.Infof("Waiting DNS record TTL (%ds) to allow propagation of DNS record for domain %q", ttl, fqdn)
 	time.Sleep(time.Second * time.Duration(ttl))
 	glog.Infof("ACME DNS01 validation record propagated for %q", fqdn)
 
-	return true, nil
+	return nil
 }
 
 // CleanUp removes DNS records which are no longer needed after

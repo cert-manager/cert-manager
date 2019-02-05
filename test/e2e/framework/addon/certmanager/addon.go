@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Jetstack cert-manager contributors.
+Copyright 2019 The Jetstack cert-manager contributors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -51,6 +51,7 @@ type Details struct {
 }
 
 func (p *Certmanager) Setup(cfg *config.Config) error {
+	p.config = cfg
 	if p.Name == "" {
 		return fmt.Errorf("Name field must be set on Certmanager addon")
 	}
@@ -62,17 +63,19 @@ func (p *Certmanager) Setup(cfg *config.Config) error {
 	if p.Tiller == nil {
 		return fmt.Errorf("Tiller field must be set on Certmanager addon")
 	}
+	if p.config.Kubectl == "" {
+		return fmt.Errorf("path to kubectl must be provided")
+	}
 	var err error
 	p.tillerDetails, err = p.Tiller.Details()
 	if err != nil {
 		return err
 	}
-	p.config = cfg
 	p.chart = &chart.Chart{
 		Tiller:      p.Tiller,
 		ReleaseName: "chart-certmanager-" + p.Name,
 		Namespace:   p.Namespace,
-		ChartName:   cfg.RepoRoot + "/deploy/chart",
+		ChartName:   cfg.RepoRoot + "/deploy/charts/cert-manager",
 		// TODO: move resource requests/limits into Vars so they are always set
 		Values: []string{cfg.RepoRoot + "/test/fixtures/cert-manager-values.yaml"},
 		// doesn't matter when installing from disk
@@ -88,7 +91,7 @@ func (p *Certmanager) Setup(cfg *config.Config) error {
 
 // Provision will actually deploy this instance of Pebble-ingress to the cluster.
 func (p *Certmanager) Provision() error {
-	if err := exec.Command("kubectl", "apply", "-f", p.config.RepoRoot+"/deploy/manifests/00-crds.yaml").Run(); err != nil {
+	if err := exec.Command(p.config.Kubectl, "apply", "-f", p.config.RepoRoot+"/deploy/manifests/00-crds.yaml").Run(); err != nil {
 		return fmt.Errorf("Error install cert-manager CRD manifests: %v", err)
 	}
 
@@ -113,6 +116,6 @@ func (p *Certmanager) SupportsGlobal() bool {
 	return true
 }
 
-func (p *Certmanager) Logs() (string, error) {
+func (p *Certmanager) Logs() (map[string]string, error) {
 	return p.chart.Logs()
 }

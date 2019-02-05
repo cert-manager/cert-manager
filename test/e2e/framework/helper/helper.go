@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Jetstack cert-manager contributors.
+Copyright 2019 The Jetstack cert-manager contributors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -16,9 +16,23 @@ limitations under the License.
 
 package helper
 
-import "k8s.io/client-go/kubernetes"
+import (
+	"k8s.io/client-go/kubernetes"
+
+	cmclient "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
+	"github.com/jetstack/cert-manager/test/e2e/framework/config"
+)
 
 // Helper provides methods for common operations needed during tests.
 type Helper struct {
+	cfg *config.Config
+
 	KubeClient kubernetes.Interface
+	CMClient   cmclient.Interface
+}
+
+func NewHelper(cfg *config.Config) *Helper {
+	return &Helper{
+		cfg: cfg,
+	}
 }

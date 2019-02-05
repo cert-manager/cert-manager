@@ -18,6 +18,7 @@ spec:
       containers:
       - name: vault
         image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        imagePullPolicy: Never
         command: ["vault", "server", "-dev", "-dev-listen-address=[::]:8202", "-config", "/vault/config/config.json"]
         # command: ["/bin/sh", "-c", "sleep 9999"]
         ports:

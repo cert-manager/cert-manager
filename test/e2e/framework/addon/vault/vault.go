@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Jetstack cert-manager contributors.
+Copyright 2019 The Jetstack cert-manager contributors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -57,6 +57,9 @@ type Vault struct {
 }
 
 type Details struct {
+	// Kubectl is the path to kubectl
+	Kubectl string
+
 	// Host is the hostname that can be used to connect to Pebble
 	Host string
 
@@ -98,7 +101,10 @@ func (v *Vault) Setup(cfg *config.Config) error {
 	if err != nil {
 		return err
 	}
-
+	if cfg.Kubectl == "" {
+		return fmt.Errorf("path to kubectl must be set")
+	}
+	v.details.Kubectl = cfg.Kubectl
 	v.tillerDetails, err = v.Tiller.Details()
 	if err != nil {
 		return err
@@ -188,7 +194,7 @@ func (v *Vault) SupportsGlobal() bool {
 	return false
 }
 
-func (v *Vault) Logs() (string, error) {
+func (v *Vault) Logs() (map[string]string, error) {
 	return v.chart.Logs()
 }
 

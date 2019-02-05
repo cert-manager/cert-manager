@@ -19,7 +19,8 @@ import (
 	"github.com/miekg/dns"
 )
 
-type preCheckDNSFunc func(fqdn, value string, nameservers []string) (bool, error)
+type preCheckDNSFunc func(fqdn, value string, nameservers []string,
+	useAuthoritative bool) (bool, error)
 
 var (
 	// PreCheckDNS checks DNS propagation before notifying ACME that
@@ -77,7 +78,8 @@ func updateDomainWithCName(r *dns.Msg, fqdn string) string {
 }
 
 // checkDNSPropagation checks if the expected TXT record has been propagated to all authoritative nameservers.
-func checkDNSPropagation(fqdn, value string, nameservers []string) (bool, error) {
+func checkDNSPropagation(fqdn, value string, nameservers []string,
+	useAuthoritative bool) (bool, error) {
 	// Initial attempt to resolve at the recursive NS
 	r, err := dnsQuery(fqdn, dns.TypeTXT, nameservers, true)
 	if err != nil {
@@ -87,18 +89,25 @@ func checkDNSPropagation(fqdn, value string, nameservers []string) (bool, error)
 		fqdn = updateDomainWithCName(r, fqdn)
 	}
 
+	if !useAuthoritative {
+		return checkAuthoritativeNss(fqdn, value, nameservers)
+	}
+
 	authoritativeNss, err := lookupNameservers(fqdn, nameservers)
 	if err != nil {
 		return false, err
 	}
 
+	for i, ans := range authoritativeNss {
+		authoritativeNss[i] = net.JoinHostPort(ans, "53")
+	}
 	return checkAuthoritativeNss(fqdn, value, authoritativeNss)
 }
 
 // checkAuthoritativeNss queries each of the given nameservers for the expected TXT record.
 func checkAuthoritativeNss(fqdn, value string, nameservers []string) (bool, error) {
 	for _, ns := range nameservers {
-		r, err := dnsQuery(fqdn, dns.TypeTXT, []string{net.JoinHostPort(ns, "53")}, false)
+		r, err := dnsQuery(fqdn, dns.TypeTXT, []string{ns}, true)
 		if err != nil {
 			return false, err
 		}

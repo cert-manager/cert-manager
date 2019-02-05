@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Jetstack cert-manager contributors.
+Copyright 2019 The Jetstack cert-manager contributors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -77,10 +77,15 @@ func (c *Controller) Sync(ctx context.Context, crt *v1alpha1.Certificate) (err e
 	}()
 
 	// grab existing certificate and validate private key
-	cert, key, err := kube.SecretTLSKeyPair(c.secretLister, crtCopy.Namespace, crtCopy.Spec.SecretName)
+	certs, key, err := kube.SecretTLSKeyPair(c.secretLister, crtCopy.Namespace, crtCopy.Spec.SecretName)
 	// if we don't have a certificate, we need to trigger a re-issue immediately
 	if err != nil && !(k8sErrors.IsNotFound(err) || errors.IsInvalidData(err)) {
 		return err
+	}
+
+	var cert *x509.Certificate
+	if len(certs) > 0 {
+		cert = certs[0]
 	}
 
 	// update certificate expiry metric
@@ -216,6 +221,11 @@ func (c *Controller) certificateMatchesSpec(crt *v1alpha1.Certificate, key crypt
 		errs = append(errs, fmt.Sprintf("DNS names on TLS certificate not up to date: %q", cert.DNSNames))
 	}
 
+	// validate the ip addresses are correct
+	if !util.EqualUnsorted(pki.IPAddressesToString(cert.IPAddresses), crt.Spec.IPAddresses) {
+		errs = append(errs, fmt.Sprintf("IP addresses on TLS certificate not up to date: %q", pki.IPAddressesToString(cert.IPAddresses)))
+	}
+
 	return len(errs) == 0, errs
 }
 
@@ -294,6 +304,9 @@ func (c *Controller) updateSecret(crt *v1alpha1.Certificate, namespace string, c
 		}
 	}
 
+	if secret.Data == nil {
+		secret.Data = map[string][]byte{}
+	}
 	secret.Data[corev1.TLSCertKey] = cert
 	secret.Data[corev1.TLSPrivateKeyKey] = key
 	secret.Data[TLSCAKey] = ca
@@ -314,6 +327,7 @@ func (c *Controller) updateSecret(crt *v1alpha1.Certificate, namespace string, c
 		secret.Annotations[v1alpha1.IssuerKindAnnotationKey] = issuerKind(crt)
 		secret.Annotations[v1alpha1.CommonNameAnnotationKey] = x509Cert.Subject.CommonName
 		secret.Annotations[v1alpha1.AltNamesAnnotationKey] = strings.Join(x509Cert.DNSNames, ",")
+		secret.Annotations[v1alpha1.IPSANAnnotationKey] = strings.Join(pki.IPAddressesToString(x509Cert.IPAddresses), ",")
 	}
 
 	// Always set the certificate name label on the target secret

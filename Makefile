@@ -1,4 +1,4 @@
-# Copyright 2018 The Jetstack cert-manager contributors.
+# Copyright 2019 The Jetstack cert-manager contributors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ HACK_DIR ?= hack
 GINKGO_SKIP :=
 
 ## e2e test vars
+KUBECTL ?= kubectl
 KUBECONFIG ?= $$HOME/.kube/config
 
 # Get a list of all binaries to be built
@@ -113,10 +114,10 @@ e2e_test:
 			$$(bazel info bazel-genfiles)/test/e2e/e2e.test \
 			-- \
 			--helm-binary-path=$$(bazel info bazel-genfiles)/hack/bin/helm \
-			--tiller-image-tag=$$($$(bazel info bazel-genfiles)/hack/bin/helm version --client --template '{{.Client.SemVer}}') \
 			--repo-root="$$(pwd)" \
 			--report-dir="$${ARTIFACTS:-./_artifacts}" \
-			--ginkgo.skip="$(GINKGO_SKIP)"
+			--ginkgo.skip="$(GINKGO_SKIP)" \
+			--kubectl-path="$(KUBECTL)"
 
 # Generate targets
 ##################

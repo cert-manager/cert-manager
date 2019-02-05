@@ -24,13 +24,13 @@ This is the full technical documentation for the project, and should be used as
 a source of references when seeking help with the project.
 
 .. toctree::
-   :maxdepth: 5
+   :maxdepth: 2
    :titlesonly:
    :caption: Contents:
 
    getting-started/index
    tutorials/index
-   admin/index
+   tasks/index
    reference/index
    devel/index
 

@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Jetstack cert-manager contributors.
+Copyright 2019 The Jetstack cert-manager contributors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -97,8 +97,11 @@ func New(
 
 	ctrl.issuerLister = issuerInformer.Lister()
 	ctrl.syncedFuncs = append(ctrl.syncedFuncs, issuerInformer.Informer().HasSynced)
-	ctrl.clusterIssuerLister = clusterIssuerInformer.Lister()
-	ctrl.syncedFuncs = append(ctrl.syncedFuncs, clusterIssuerInformer.Informer().HasSynced)
+
+	if clusterIssuerInformer != nil {
+		ctrl.clusterIssuerLister = clusterIssuerInformer.Lister()
+		ctrl.syncedFuncs = append(ctrl.syncedFuncs, clusterIssuerInformer.Informer().HasSynced)
+	}
 
 	return ctrl
 }
@@ -205,11 +208,15 @@ var keyFunc = controllerpkg.KeyFunc
 
 func init() {
 	controllerpkg.Register(ControllerName, func(ctx *controllerpkg.Context) controllerpkg.Interface {
+		var clusterIssuerInformer cminformers.ClusterIssuerInformer
+		if ctx.Namespace == "" {
+			clusterIssuerInformer = ctx.SharedInformerFactory.Certmanager().V1alpha1().ClusterIssuers()
+		}
 		return New(
 			ctx.SharedInformerFactory.Certmanager().V1alpha1().Certificates(),
 			ctx.KubeSharedInformerFactory.Extensions().V1beta1().Ingresses(),
 			ctx.SharedInformerFactory.Certmanager().V1alpha1().Issuers(),
-			ctx.SharedInformerFactory.Certmanager().V1alpha1().ClusterIssuers(),
+			clusterIssuerInformer,
 			ctx.Client,
 			ctx.CMClient,
 			ctx.Recorder,

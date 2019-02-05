@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Jetstack cert-manager contributors.
+Copyright 2019 The Jetstack cert-manager contributors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -95,6 +95,22 @@ func (n *Nginx) Setup(cfg *config.Config) error {
 		ChartVersion: cfg.Addons.Nginx.ChartVersion,
 		Vars: []chart.StringTuple{
 			{
+				Key:   "controller.image.pullPolicy",
+				Value: "Never",
+			},
+			{
+				Key:   "controller.image.tag",
+				Value: "0.21.0",
+			},
+			{
+				Key:   "defaultBackend.image.pullPolicy",
+				Value: "Never",
+			},
+			{
+				Key:   "defaultBackend.image.tag",
+				Value: "bazel",
+			},
+			{
 				Key:   "controller.service.clusterIP",
 				Value: n.IPAddress,
 			},
@@ -144,7 +160,7 @@ func (n *Nginx) SupportsGlobal() bool {
 	return true
 }
 
-func (n *Nginx) Logs() (string, error) {
+func (n *Nginx) Logs() (map[string]string, error) {
 	return n.chart.Logs()
 }
 

@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Jetstack cert-manager contributors.
+Copyright 2019 The Jetstack cert-manager contributors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -19,7 +19,6 @@ package e2e
 import (
 	"flag"
 	"fmt"
-	"log"
 	"path"
 	"testing"
 	"time"
@@ -74,9 +73,5 @@ func TestE2E(t *testing.T) {
 				ginkgoconfig.GinkgoConfig.ParallelNode))))
 	}
 
-	if !ginkgo.RunSpecsWithDefaultAndCustomReporters(t, "cert-manager e2e suite", r) {
-		if len(globalLogs) > 0 {
-			log.Printf("Test suite failed, global addon logs: \n%v", globalLogs)
-		}
-	}
+	ginkgo.RunSpecsWithDefaultAndCustomReporters(t, "cert-manager e2e suite", r)
 }

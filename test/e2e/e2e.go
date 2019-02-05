@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Jetstack cert-manager contributors.
+Copyright 2019 The Jetstack cert-manager contributors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -17,10 +17,15 @@ limitations under the License.
 package e2e
 
 import (
+	"io/ioutil"
+	"os"
+	"path"
+
 	"github.com/onsi/ginkgo"
 
 	"github.com/jetstack/cert-manager/test/e2e/framework"
 	"github.com/jetstack/cert-manager/test/e2e/framework/addon"
+	"github.com/jetstack/cert-manager/test/e2e/framework/log"
 )
 
 var (
@@ -49,7 +54,7 @@ var _ = ginkgo.SynchronizedBeforeSuite(func() []byte {
 	}
 })
 
-var globalLogs string
+var globalLogs map[string]string
 
 var _ = ginkgo.SynchronizedAfterSuite(func() {},
 	func() {
@@ -57,7 +62,23 @@ var _ = ginkgo.SynchronizedAfterSuite(func() {},
 		var err error
 		globalLogs, err = addon.GlobalLogs()
 		if err != nil {
-			ginkgo.GinkgoWriter.Write([]byte("Failed to retrieve global addon logs: " + err.Error()))
+			log.Logf("Failed to retrieve global addon logs: " + err.Error())
+		}
+
+		for k, v := range globalLogs {
+			outPath := path.Join(framework.DefaultConfig.Ginkgo.ReportDirectory, "logs", k)
+			// Create a directory for the file if needed
+			err := os.MkdirAll(path.Dir(outPath), 0755)
+			if err != nil {
+				log.Logf("Failed to create directory for logs: %v", err)
+				continue
+			}
+
+			err = ioutil.WriteFile(outPath, []byte(v), 0644)
+			if err != nil {
+				log.Logf("Failed to write log file: %v", err)
+				continue
+			}
 		}
 
 		ginkgo.By("Cleaning up the provisioned globals")

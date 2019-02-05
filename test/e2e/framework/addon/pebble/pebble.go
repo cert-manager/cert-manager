@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Jetstack cert-manager contributors.
+Copyright 2019 The Jetstack cert-manager contributors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -102,6 +102,6 @@ func (p *Pebble) SupportsGlobal() bool {
 	return true
 }
 
-func (p *Pebble) Logs() (string, error) {
+func (p *Pebble) Logs() (map[string]string, error) {
 	return p.chart.Logs()
 }

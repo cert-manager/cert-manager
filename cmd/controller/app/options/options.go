@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Jetstack cert-manager contributors.
+Copyright 2019 The Jetstack cert-manager contributors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -36,6 +36,7 @@ import (
 type ControllerOptions struct {
 	APIServerHost            string
 	ClusterResourceNamespace string
+	Namespace                string
 
 	LeaderElect                 bool
 	LeaderElectionNamespace     string
@@ -62,8 +63,11 @@ type ControllerOptions struct {
 	DefaultACMEIssuerChallengeType     string
 	DefaultACMEIssuerDNS01ProviderName string
 
-	// DNS01Nameservers allows specifying a list of custom nameservers to perform DNS checks
-	DNS01Nameservers []string
+	// Allows specifying a list of custom nameservers to perform DNS checks on.
+	DNS01RecursiveNameservers []string
+	// Allows controlling if recursive nameservers are only used for all checks.
+	// Normally authoritative nameservers are used for checking propagation.
+	DNS01RecursiveNameserversOnly bool
 
 	EnableCertificateOwnerRef bool
 }
@@ -71,6 +75,7 @@ type ControllerOptions struct {
 const (
 	defaultAPIServerHost            = ""
 	defaultClusterResourceNamespace = "kube-system"
+	defaultNamespace                = ""
 
 	defaultLeaderElect                 = true
 	defaultLeaderElectionNamespace     = "kube-system"
@@ -87,6 +92,8 @@ const (
 	defaultACMEIssuerChallengeType     = "http01"
 	defaultACMEIssuerDNS01ProviderName = ""
 	defaultEnableCertificateOwnerRef   = false
+
+	defaultDNS01RecursiveNameserversOnly = false
 )
 
 var (
@@ -112,6 +119,7 @@ func NewControllerOptions() *ControllerOptions {
 	return &ControllerOptions{
 		APIServerHost:                      defaultAPIServerHost,
 		ClusterResourceNamespace:           defaultClusterResourceNamespace,
+		Namespace:                          defaultNamespace,
 		LeaderElect:                        defaultLeaderElect,
 		LeaderElectionNamespace:            defaultLeaderElectionNamespace,
 		LeaderElectionLeaseDuration:        defaultLeaderElectionLeaseDuration,
@@ -126,7 +134,8 @@ func NewControllerOptions() *ControllerOptions {
 		DefaultAutoCertificateAnnotations:  defaultAutoCertificateAnnotations,
 		DefaultACMEIssuerChallengeType:     defaultACMEIssuerChallengeType,
 		DefaultACMEIssuerDNS01ProviderName: defaultACMEIssuerDNS01ProviderName,
-		DNS01Nameservers:                   []string{},
+		DNS01RecursiveNameservers:          []string{},
+		DNS01RecursiveNameserversOnly:      defaultDNS01RecursiveNameserversOnly,
 		EnableCertificateOwnerRef:          defaultEnableCertificateOwnerRef,
 	}
 }
@@ -138,6 +147,9 @@ func (s *ControllerOptions) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVar(&s.ClusterResourceNamespace, "cluster-resource-namespace", defaultClusterResourceNamespace, ""+
 		"Namespace to store resources owned by cluster scoped resources such as ClusterIssuer in. "+
 		"This must be specified if ClusterIssuers are enabled.")
+	fs.StringVar(&s.Namespace, "namespace", defaultNamespace, ""+
+		"If set, this limits the scope of cert-manager to a single namespace and ClusterIssuers are disabled. "+
+		"If not specified, all namespaces will be watched")
 	fs.BoolVar(&s.LeaderElect, "leader-elect", true, ""+
 		"If true, cert-manager will perform leader election between instances to ensure no more "+
 		"than one instance of cert-manager operates at a time")
@@ -200,9 +212,22 @@ func (s *ControllerOptions) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVar(&s.DefaultACMEIssuerDNS01ProviderName, "default-acme-issuer-dns01-provider-name", defaultACMEIssuerDNS01ProviderName, ""+
 		"Required if --default-acme-issuer-challenge-type is set to dns01. The DNS01 provider to use for ingresses using ACME dns01 "+
 		"validation that do not explicitly state a dns provider.")
-	fs.StringSliceVar(&s.DNS01Nameservers, "dns01-self-check-nameservers", []string{}, ""+
-		"A list of comma seperated DNS server endpoints used for DNS01 check requests. "+
-		"This should be a list containing IP address and port, for example: 8.8.8.8:53,8.8.4.4:53")
+	fs.StringSliceVar(&s.DNS01RecursiveNameservers, "dns01-recursive-nameservers",
+		[]string{}, "A list of comma seperated dns server endpoints used for "+
+			"DNS01 check requests. This should be a list containing IP address and "+
+			"port, for example 8.8.8.8:53,8.8.4.4:53")
+	fs.BoolVar(&s.DNS01RecursiveNameserversOnly, "dns01-recursive-nameservers-only",
+		defaultDNS01RecursiveNameserversOnly,
+		"When true, cert-manager will only ever query the configured DNS resolvers "+
+			"to perform the ACME DNS01 self check. This is useful in DNS constrained "+
+			"environments, where access to authoritative nameservers is restricted. "+
+			"Enabling this option could cause the DNS01 self check to take longer "+
+			"due to caching performed by the recursive nameservers.")
+	fs.StringSliceVar(&s.DNS01RecursiveNameservers, "dns01-self-check-nameservers",
+		[]string{}, "A list of comma seperated dns server endpoints used for "+
+			"DNS01 check requests. This should be a list containing IP address and "+
+			"port, for example 8.8.8.8:53,8.8.4.4:53")
+	fs.MarkDeprecated("dns01-self-check-nameservers", "Deprecated in favour of dns01-recursive-nameservers")
 	fs.BoolVar(&s.EnableCertificateOwnerRef, "enable-certificate-owner-ref", defaultEnableCertificateOwnerRef, ""+
 		"Whether to set the certificate resource as an owner of secret where the tls certificate is stored. "+
 		"When this flag is enabled, the secret will be automatically removed when the certificate resource is deleted.")
@@ -216,7 +241,7 @@ func (o *ControllerOptions) Validate() error {
 		return fmt.Errorf("invalid default issuer kind: %v", o.DefaultIssuerKind)
 	}
 
-	for _, server := range o.DNS01Nameservers {
+	for _, server := range o.DNS01RecursiveNameservers {
 		// ensure all servers have a port number
 		host, _, err := net.SplitHostPort(server)
 		if err != nil {

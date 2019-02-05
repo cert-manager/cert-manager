@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Jetstack cert-manager contributors.
+Copyright 2019 The Jetstack cert-manager contributors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -47,6 +47,10 @@ type Context struct {
 	// instances
 	SharedInformerFactory informers.SharedInformerFactory
 
+	// Namespace is the namespace to operate within.
+	// If unset, operates on all namespaces
+	Namespace string
+
 	IssuerOptions
 	ACMEOptions
 	IngressShimOptions
@@ -93,6 +97,10 @@ type ACMEOptions struct {
 
 	// HTTP01SolverResourceLimitsMemory defines the ACME pod's resource limits Memory size
 	HTTP01SolverResourceLimitsMemory resource.Quantity
+
+	// DNS01CheckAuthoritative is a flag for controlling if auth nss are used
+	// for checking propogation of an RR. This is the ideal scenario
+	DNS01CheckAuthoritative bool
 
 	// DNS01Nameservers is a list of nameservers to use when performing self-checks
 	// for ACME DNS01 validations.
