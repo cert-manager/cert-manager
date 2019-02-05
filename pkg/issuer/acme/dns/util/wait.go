@@ -168,6 +168,58 @@ func dnsQuery(fqdn string, rtype uint16, nameservers []string, recursive bool) (
 	return
 }
 
+func ValidateCAA(domain string, issuerID []string, iswildcard bool) error {
+	// see https://tools.ietf.org/html/rfc6844#section-4
+	// for more information about how CAA lookup is performed
+	fqdn := ToFqdn(domain)
+
+	issuerSet := make(map[string]bool)
+	for _, s := range issuerID {
+		issuerSet[s] = true
+	}
+
+	//TODO(dmo): figure out if we need these servers to be configurable as well
+	msg, err := dnsQuery(fqdn, dns.TypeCAA, RecursiveNameservers, true)
+	if err != nil {
+		return fmt.Errorf("Could not validate CAA record: %s", err)
+	}
+	//TODO(dmo): follow CNAMES
+	//TODO(dmo): look at labels above this one
+	caas := make([]*dns.CAA, 0, len(msg.Answer))
+	for _, rr := range msg.Answer {
+		caa, ok := rr.(*dns.CAA)
+		if !ok {
+			continue
+		}
+		caas = append(caas, caa)
+	}
+	if len(caas) == 0 {
+		// TODO(dmo): work up in the label
+		return nil
+	}
+	if !matchCAA(caas, issuerSet, iswildcard) {
+		// TODO(dmo): better error message
+		return fmt.Errorf("CAA record does not match issuer")
+	}
+	return nil
+}
+
+func matchCAA(caas []*dns.CAA, issuerIDs map[string]bool, iswildcard bool) bool {
+	expectedTag := "issue"
+	if iswildcard {
+		expectedTag = "issuewild"
+	}
+	for _, caa := range caas {
+		if caa.Tag != expectedTag {
+			continue
+		}
+		if issuerIDs[caa.Value] {
+			return true
+		}
+	}
+	return false
+}
+
 // lookupNameservers returns the authoritative nameservers for the given fqdn.
 func lookupNameservers(fqdn string, nameservers []string) ([]string, error) {
 	var authoritativeNss []string
