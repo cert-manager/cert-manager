@@ -299,6 +299,18 @@ func ValidateACMEIssuerDNS01Config(iss *v1alpha1.ACMEIssuerDNS01Config, fldPath 
 				}
 			}
 		}
+		if p.Alidns != nil {
+			if numProviders > 0 {
+				el = append(el, field.Forbidden(fldPath.Child("alidns"), "may not specify more than one provider type"))
+			} else {
+				numProviders++
+				if len(p.Alidns.AccessKeyID) == 0 {
+					el = append(el, field.Required(fldPath.Child("alidns", "accessKeyID"), ""))
+				}
+				el = append(el, ValidateSecretKeySelector(&p.Alidns.AccessKeySecret, fldPath.Child("alidns", "accessKeySecretRef"))...)
+			}
+		}
+
 		if numProviders == 0 {
 			el = append(el, field.Required(fldPath, "at least one provider must be configured"))
 		}
