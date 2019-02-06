@@ -222,7 +222,7 @@ to issue basic certificate types:
    # Clean up the test resources
    kubectl delete -f test-resources.yaml
 
-If all the above steps have completed with error, you are good to go!
+If all the above steps have completed without error, you are good to go!
 
 If you experience problems, please check the
 :doc:`troubleshooting guide <./troubleshooting>`.
