@@ -139,5 +139,7 @@ func (f *FakeACME) Discover(ctx context.Context) (acme.Directory, error) {
 	if f.FakeDiscover != nil {
 		return f.FakeDiscover(ctx)
 	}
-	return acme.Directory{}, fmt.Errorf("Discover not implemented")
+	// We only use Discover to find CAAIdentities, so returning an
+	// empty directory here will be fine
+	return acme.Directory{}, nil
 }
