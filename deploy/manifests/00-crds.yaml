@@ -86,7 +86,7 @@ spec:
               type: array
             duration:
               description: Certificate default Duration
-              type: object
+              type: string
             ipAddresses:
               description: IPAddresses is a list of IP addresses to be used on the
                 Certificate
@@ -134,7 +134,7 @@ spec:
               type: array
             renewBefore:
               description: Certificate renew before expiration duration
-              type: object
+              type: string
             secretName:
               description: SecretName is the name of the secret resource to store
                 this secret in

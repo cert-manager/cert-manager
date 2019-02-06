@@ -312,7 +312,9 @@ npm_install(
 # Load the controller-tools repository in order to build the crd generator tool
 go_repository(
     name = "io_kubernetes_sigs_controller-tools",
-    commit = "94656be085bdbd48c49be0a41c91e4fc5ea5b1ee",
+    commit = "f4d9479179e084fc66c814ce0201eec3898e1b00",
+    remote = "https://github.com/munnerz/controller-tools",
+    vcs = "git",
     importpath = "sigs.k8s.io/controller-tools",
 )
 
