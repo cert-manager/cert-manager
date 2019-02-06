@@ -285,7 +285,7 @@ func ownerRef(crt *v1alpha1.Certificate) metav1.OwnerReference {
 }
 
 func (c *Controller) updateSecret(crt *v1alpha1.Certificate, namespace string, cert, key, ca []byte) (*corev1.Secret, error) {
-	secret, err := c.Client.CoreV1().Secrets(namespace).Get(crt.Spec.SecretName, metav1.GetOptions{})
+	secret, err := c.secretLister.Secrets(namespace).Get(crt.Spec.SecretName)
 	if err != nil && !k8sErrors.IsNotFound(err) {
 		return nil, err
 	}
