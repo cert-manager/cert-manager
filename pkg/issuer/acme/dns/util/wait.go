@@ -178,25 +178,54 @@ func ValidateCAA(domain string, issuerID []string, iswildcard bool) error {
 		issuerSet[s] = true
 	}
 
-	//TODO(dmo): figure out if we need these servers to be configurable as well
-	msg, err := dnsQuery(fqdn, dns.TypeCAA, RecursiveNameservers, true)
-	if err != nil {
-		return fmt.Errorf("Could not validate CAA record: %s", err)
-	}
-	//TODO(dmo): follow CNAMES
-	//TODO(dmo): look at labels above this one
-	caas := make([]*dns.CAA, 0, len(msg.Answer))
-	for _, rr := range msg.Answer {
-		caa, ok := rr.(*dns.CAA)
-		if !ok {
-			continue
+	var caas []*dns.CAA
+	for {
+		// follow at most 8 cnames per label
+		queryDomain := fqdn
+		var msg *dns.Msg
+		var err error
+		for i := 0; i < 8; i++ {
+			//TODO(dmo): figure out if we need these servers to be configurable as well
+			msg, err = dnsQuery(queryDomain, dns.TypeCAA, RecursiveNameservers, true)
+			if err != nil {
+				return fmt.Errorf("Could not validate CAA record: %s", err)
+			}
+			// we expect the domain to exist, but it might not have a CAA record
+			// (this is the root domain that we're validating, if it errors, then
+			// there are bigger problems)
+			if msg.Rcode != dns.RcodeSuccess {
+				return fmt.Errorf("Could not validate CAA: domain %q not found", domain)
+			}
+			oldQuery := queryDomain
+			queryDomain = updateDomainWithCName(msg, queryDomain)
+			if queryDomain == oldQuery {
+				break
+			}
 		}
-		caas = append(caas, caa)
+		// we have a response that's not a CNAME. It might be empty.
+		// if it is, go up a label and ask again
+		for _, rr := range msg.Answer {
+			caa, ok := rr.(*dns.CAA)
+			if !ok {
+				continue
+			}
+			caas = append(caas, caa)
+		}
+		if len(caas) != 0 {
+			break
+		}
+
+		index := strings.Index(fqdn, ".")
+		if index == -1 {
+			panic("should never happen")
+		}
+		fqdn = fqdn[index+1:]
+		if len(fqdn) == 0 {
+			// we reached the root with no CAA, don't bother asking
+			return nil
+		}
 	}
-	if len(caas) == 0 {
-		// TODO(dmo): work up in the label
-		return nil
-	}
+
 	if !matchCAA(caas, issuerSet, iswildcard) {
 		// TODO(dmo): better error message
 		return fmt.Errorf("CAA record does not match issuer")
