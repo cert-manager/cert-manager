@@ -20,17 +20,6 @@ build:
   - master
   - tags
 
-master_push:
-  tags:
-  - docker
-  script:
-  - mkdir -p ~/.docker && echo "${DOCKER_AUTH_CONFIG}" > ~/.docker/config.json && chmod 600 ~/.docker/config.json
-  - make verify
-  - make images_push APP_VERSION="${CI_BUILD_REF_SLUG}-${CI_PIPELINE_ID}"
-  - make images_push APP_VERSION="canary"
-  only:
-  - master
-
 release_push:
   tags:
   - docker
