@@ -76,13 +76,13 @@ type IssuerSpec struct {
 
 type IssuerConfig struct {
 	// +optional
-	ACME       *ACMEIssuer       `json:"acme,omitempty"`
+	ACME *ACMEIssuer `json:"acme,omitempty"`
 
 	// +optional
-	CA         *CAIssuer         `json:"ca,omitempty"`
+	CA *CAIssuer `json:"ca,omitempty"`
 
 	// +optional
-	Vault      *VaultIssuer      `json:"vault,omitempty"`
+	Vault *VaultIssuer `json:"vault,omitempty"`
 
 	// +optional
 	SelfSigned *SelfSignedIssuer `json:"selfSigned,omitempty"`
@@ -190,28 +190,28 @@ type ACMEIssuerDNS01Provider struct {
 	CNAMEStrategy CNAMEStrategy `json:"cnameStrategy,omitempty"`
 
 	// +optional
-	Akamai       *ACMEIssuerDNS01ProviderAkamai       `json:"akamai,omitempty"`
+	Akamai *ACMEIssuerDNS01ProviderAkamai `json:"akamai,omitempty"`
 
 	// +optional
-	CloudDNS     *ACMEIssuerDNS01ProviderCloudDNS     `json:"clouddns,omitempty"`
+	CloudDNS *ACMEIssuerDNS01ProviderCloudDNS `json:"clouddns,omitempty"`
 
 	// +optional
-	Cloudflare   *ACMEIssuerDNS01ProviderCloudflare   `json:"cloudflare,omitempty"`
+	Cloudflare *ACMEIssuerDNS01ProviderCloudflare `json:"cloudflare,omitempty"`
 
 	// +optional
-	Route53      *ACMEIssuerDNS01ProviderRoute53      `json:"route53,omitempty"`
+	Route53 *ACMEIssuerDNS01ProviderRoute53 `json:"route53,omitempty"`
 
 	// +optional
-	AzureDNS     *ACMEIssuerDNS01ProviderAzureDNS     `json:"azuredns,omitempty"`
+	AzureDNS *ACMEIssuerDNS01ProviderAzureDNS `json:"azuredns,omitempty"`
 
 	// +optional
 	DigitalOcean *ACMEIssuerDNS01ProviderDigitalOcean `json:"digitalocean,omitempty"`
 
 	// +optional
-	AcmeDNS      *ACMEIssuerDNS01ProviderAcmeDNS      `json:"acmedns,omitempty"`
+	AcmeDNS *ACMEIssuerDNS01ProviderAcmeDNS `json:"acmedns,omitempty"`
 
 	// +optional
-	RFC2136      *ACMEIssuerDNS01ProviderRFC2136      `json:"rfc2136,omitempty"`
+	RFC2136 *ACMEIssuerDNS01ProviderRFC2136 `json:"rfc2136,omitempty"`
 }
 
 // CNAMEStrategy configures how the DNS01 provider should handle CNAME records
@@ -264,28 +264,28 @@ type ACMEIssuerDNS01ProviderDigitalOcean struct {
 // ACMEIssuerDNS01ProviderRoute53 is a structure containing the Route 53
 // configuration for AWS
 type ACMEIssuerDNS01ProviderRoute53 struct {
-	AccessKeyID     string            `json:"accessKeyID"`
+	AccessKeyID string `json:"accessKeyID"`
 
 	SecretAccessKey SecretKeySelector `json:"secretAccessKeySecretRef"`
 
 	// +optional
-	HostedZoneID    string            `json:"hostedZoneID,omitempty"`
+	HostedZoneID string `json:"hostedZoneID,omitempty"`
 
-	Region          string            `json:"region"`
+	Region string `json:"region"`
 }
 
 // ACMEIssuerDNS01ProviderAzureDNS is a structure containing the
 // configuration for Azure DNS
 type ACMEIssuerDNS01ProviderAzureDNS struct {
-	ClientID          string            `json:"clientID"`
+	ClientID string `json:"clientID"`
 
-	ClientSecret      SecretKeySelector `json:"clientSecretSecretRef"`
+	ClientSecret SecretKeySelector `json:"clientSecretSecretRef"`
 
-	SubscriptionID    string            `json:"subscriptionID"`
+	SubscriptionID string `json:"subscriptionID"`
 
-	TenantID          string            `json:"tenantID"`
+	TenantID string `json:"tenantID"`
 
-	ResourceGroupName string            `json:"resourceGroupName"`
+	ResourceGroupName string `json:"resourceGroupName"`
 
 	// +optional
 	HostedZoneName string `json:"hostedZoneName,omitempty"`
@@ -294,7 +294,7 @@ type ACMEIssuerDNS01ProviderAzureDNS struct {
 // ACMEIssuerDNS01ProviderAcmeDNS is a structure containing the
 // configuration for ACME-DNS servers
 type ACMEIssuerDNS01ProviderAcmeDNS struct {
-	Host          string            `json:"host"`
+	Host string `json:"host"`
 
 	AccountSecret SecretKeySelector `json:"accountSecretRef"`
 }
@@ -330,7 +330,7 @@ type IssuerStatus struct {
 	Conditions []IssuerCondition `json:"conditions,omitempty"`
 
 	// +optional
-	ACME       *ACMEIssuerStatus `json:"acme,omitempty"`
+	ACME *ACMEIssuerStatus `json:"acme,omitempty"`
 }
 
 type ACMEIssuerStatus struct {
