@@ -24,9 +24,14 @@ import (
 // coupling between ACME Issuers and their solver configurations (see: Solver proposal)
 
 // +genclient
-// +k8s:openapi-gen=true
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
+// Challenge is a type to represent a Challenge request with an ACME server
+// +k8s:openapi-gen=true
+// +kubebuilder:printcolumn:name="State",type="string",JSONPath=".status.state"
+// +kubebuilder:printcolumn:name="Domain",type="string",JSONPath=".spec.dnsName"
+// +kubebuilder:printcolumn:name="Reason",type="string",JSONPath=".status.reason",description="",priority=1
+// +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp",description="CreationTimestamp is a timestamp representing the server time when this object was created. It is not guaranteed to be set in happens-before order across separate operations. Clients may not set this value. It is represented in RFC3339 form and is in UTC."
 // +kubebuilder:resource:path=challenges
 type Challenge struct {
 	metav1.TypeMeta   `json:",inline"`
