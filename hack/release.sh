@@ -31,6 +31,7 @@ Environments:
     DOCKER_CONFIG               optional docker config location
     CONFIRM                     set this to skip confirmation
     ALLOW_DIRTY                 by default, git repo must be clean, set this to skip this check (debug only)
+    ALLOW_OVERWRITE             by default, if an existing image exists with the same tag then pushing will be aborted, set this to skip this check
     SKIP_REF_TAG                skip creating a commit ref docker tag
 Examples:
 1) Release to your own registry for testing
@@ -69,6 +70,7 @@ export VERSION=${VERSION:-}
 export DOCKER_REPO=${REGISTRY:-quay.io/jetstack}
 export DOCKER_CONFIG=${DOCKER_CONFIG:-}
 export ALLOW_DIRTY=${ALLOW_DIRTY:-}
+export ALLOW_OVERWRITE=${ALLOW_OVERWRITE:-}
 export CHART_PATH=${CHART_PATH:-deploy/charts/cert-manager}
 # remove trailing `/` if present
 export DOCKER_REPO=${DOCKER_REPO%/}
@@ -132,17 +134,42 @@ fi
 
 green "Publishing release ${VERSION}"
 
+# quay.io/api/v1/repository/jetstack/cert-manager-controller/tag/v0.6.1/images
+function allowed() {
+    local image_name="$1"
+    local image_tag="$2"
+    if [ ! -z "${ALLOW_OVERWRITE}" ]; then
+        return 0
+    fi
+    if [ "${STABLE_DOCKER_REPO:0:7}" != "quay.io" ]; then
+        error "checking for existing tags is only supported with quay.io, set ALLOW_OVERWRITE=1 to skip check."
+        exit 1
+    fi
+
+    local org="${STABLE_DOCKER_REPO:8}"
+    info "checking if image quay.io/$org/$image_name:$image_tag already exists"
+    resp=$(curl -so /dev/null -w '%{http_code}' -IL quay.io/api/v1/repository/$org/$image_name/tag/$image_tag/images)
+    if [ "$resp" != "404" ]; then
+        error "skipping image as tag already exists"
+        return 1
+    fi
+    info "existing image quay.io/$org/$image_name:$image_tag not found"
+}
+
 # Push docker images
 # We use the docker CLI to push images as quay.io does not support the v2 API
 for c in "${COMPONENTS[@]}"; do
-    info "Pushing image ${STABLE_DOCKER_REPO}/cert-manager-$c:${STABLE_DOCKER_TAG}"
-    docker "${docker_args[@]}" push "${STABLE_DOCKER_REPO}/cert-manager-$c:${STABLE_DOCKER_TAG}"
+    if allowed "cert-manager-$c" "${STABLE_DOCKER_TAG}"; then
+        info "Pushing image ${STABLE_DOCKER_REPO}/cert-manager-$c:${STABLE_DOCKER_TAG}"
+        docker "${docker_args[@]}" push "${STABLE_DOCKER_REPO}/cert-manager-$c:${STABLE_DOCKER_TAG}"
+    fi
     if [ -z "${SKIP_REF_TAG}" ]; then
-        info "Pushing image ${docker_args[@]}" push "${STABLE_DOCKER_REPO}/cert-manager-$c:${COMMIT_REF}"
-        docker tag "${STABLE_DOCKER_REPO}/cert-manager-$c:${STABLE_DOCKER_TAG}"  "${STABLE_DOCKER_REPO}/cert-manager-$c:${COMMIT_REF}"
-        docker "${docker_args[@]}" push "${STABLE_DOCKER_REPO}/cert-manager-$c:${COMMIT_REF}"
+        if allowed "cert-manager-$c" "${COMMIT_REF}"; then
+            info "Pushing image ${docker_args[@]}" push "${STABLE_DOCKER_REPO}/cert-manager-$c:${COMMIT_REF}"
+            docker tag "${STABLE_DOCKER_REPO}/cert-manager-$c:${STABLE_DOCKER_TAG}"  "${STABLE_DOCKER_REPO}/cert-manager-$c:${COMMIT_REF}"
+            docker "${docker_args[@]}" push "${STABLE_DOCKER_REPO}/cert-manager-$c:${COMMIT_REF}"
+        fi
     fi
 done
 
-echo
 green "Published all images!"
