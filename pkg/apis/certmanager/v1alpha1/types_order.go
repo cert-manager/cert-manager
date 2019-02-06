@@ -109,7 +109,7 @@ type OrderStatus struct {
 
 	// State contains the current state of this Order resource.
 	// States 'success' and 'expired' are 'final'
-	// +kubebuilder:validation:Enum=valid,ready,pending,processing,invalid,expired,errored
+	// +kubebuilder:validation:Enum=,valid,ready,pending,processing,invalid,expired,errored
 	// +optional
 	State State `json:"state,omitempty"`
 
