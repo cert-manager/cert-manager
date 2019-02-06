@@ -522,8 +522,6 @@ spec:
                 - message
                 type: object
               type: array
-          required:
-          - conditions
           type: object
   version: v1alpha1
 status:
@@ -716,8 +714,6 @@ spec:
                 - message
                 type: object
               type: array
-          required:
-          - conditions
           type: object
   version: v1alpha1
 status:

@@ -67,16 +67,18 @@ type OrderSpec struct {
 	// CommonName is the common name as specified on the DER encoded CSR.
 	// If CommonName is not specified, the first DNSName specified will be used
 	// as the CommonName.
-	// At least on of CommonName or a DNSName must be set.
+	// At least one of CommonName or a DNSNames must be set.
 	// This field must match the corresponding field on the DER encoded CSR.
+	// +optional
 	CommonName string `json:"commonName,omitempty"`
 
 	// DNSNames is a list of DNS names that should be included as part of the Order
 	// validation process.
 	// If CommonName is not specified, the first DNSName specified will be used
 	// as the CommonName.
-	// At least on of CommonName or a DNSName must be set.
+	// At least one of CommonName or a DNSNames must be set.
 	// This field must match the corresponding field on the DER encoded CSR.
+	// +optional
 	DNSNames []string `json:"dnsNames,omitempty"`
 
 	// Config specifies a mapping from DNS identifiers to how those identifiers
@@ -90,32 +92,40 @@ type OrderStatus struct {
 	// This will initially be empty when the resource is first created.
 	// The Order controller will populate this field when the Order is first processed.
 	// This field will be immutable after it is initially set.
-	URL string `json:"url"`
+	// +optional
+	URL string `json:"url,omitempty"`
 
 	// FinalizeURL of the Order.
 	// This is used to obtain certificates for this order once it has been completed.
-	FinalizeURL string `json:"finalizeURL"`
+	// +optional
+	FinalizeURL string `json:"finalizeURL,omitempty"`
 
 	// Certificate is a copy of the PEM encoded certificate for this Order.
 	// This field will be populated after the order has been successfully
 	// finalized with the ACME server, and the order has transitioned to the
 	// 'valid' state.
-	Certificate []byte `json:"certificate"`
+	// +optional
+	Certificate []byte `json:"certificate,omitempty"`
 
 	// State contains the current state of this Order resource.
 	// States 'success' and 'expired' are 'final'
-	State State `json:"state"`
+	// +kubebuilder:validation:Enum=valid,ready,pending,processing,invalid,expired,errored
+	// +optional
+	State State `json:"state,omitempty"`
 
 	// Reason optionally provides more information about a why the order is in
 	// the current state.
-	Reason string `json:"reason"`
+	// +optional
+	Reason string `json:"reason,omitempty"`
 
 	// Challenges is a list of ChallengeSpecs for Challenges that must be created
 	// in order to complete this Order.
+	// +optional
 	Challenges []ChallengeSpec `json:"challenges,omitempty"`
 
 	// FailureTime stores the time that this order failed.
 	// This is used to influence garbage collection and back-off.
+	// +optional
 	FailureTime *metav1.Time `json:"failureTime,omitempty"`
 }
 
@@ -178,9 +188,11 @@ const (
 // Only one of HTTP01 or DNS01 should be non-nil.
 type SolverConfig struct {
 	// HTTP01 contains HTTP01 challenge solving configuration
+	// +optional
 	HTTP01 *HTTP01SolverConfig `json:"http01,omitempty"`
 
 	// DNS01 contains DNS01 challenge solving configuration
+	// +optional
 	DNS01 *DNS01SolverConfig `json:"dns01,omitempty"`
 }
 
@@ -190,7 +202,8 @@ type HTTP01SolverConfig struct {
 	// the ACME HTTP01 'well-known' challenge path in order to solve HTTP01
 	// challenges.
 	// If this field is specified, 'ingressClass' **must not** be specified.
-	Ingress string `json:"ingress"`
+	// +optional
+	Ingress string `json:"ingress,omitempty"`
 
 	// IngressClass is the ingress class that should be set on new ingress
 	// resources that are created in order to solve HTTP01 challenges.
@@ -200,6 +213,7 @@ type HTTP01SolverConfig struct {
 	// If this field is not set, and 'ingress' is not set, then ingresses
 	// without an ingress class set will be created to solve HTTP01 challenges.
 	// If this field is specified, 'ingress' **must not** be specified.
+	// +optional
 	IngressClass *string `json:"ingressClass,omitempty"`
 }
 

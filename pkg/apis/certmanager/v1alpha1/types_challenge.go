@@ -75,6 +75,7 @@ type ChallengeSpec struct {
 
 	// Wildcard will be true if this challenge is for a wildcard identifier,
 	// for example '*.example.com'
+	// +optional
 	Wildcard bool `json:"wildcard"`
 
 	// Config specifies the solver configuration for this challenge.
@@ -96,6 +97,7 @@ type ChallengeStatus struct {
 	// challenge has reached a final state or timed out.
 	// If this field is set to false, the challenge controller will not take
 	// any more action.
+	// +optional
 	Processing bool `json:"processing"`
 
 	// Presented will be set to true if the challenge values for this challenge
@@ -104,13 +106,17 @@ type ChallengeStatus struct {
 	// have been 'submitted' for the appropriate challenge mechanism (i.e. the
 	// DNS01 TXT record has been presented, or the HTTP01 configuration has been
 	// configured).
+	// +optional
 	Presented bool `json:"presented"`
 
 	// Reason contains human readable information on why the Challenge is in the
 	// current state.
+	// +optional
 	Reason string `json:"reason"`
 
 	// State contains the current 'state' of the challenge.
 	// If not set, the state of the challenge is unknown.
+	// +kubebuilder:validation:Enum=valid,ready,pending,processing,invalid,expired,errored
+	// +optional
 	State State `json:"state"`
 }

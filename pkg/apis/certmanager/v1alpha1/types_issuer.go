@@ -75,9 +75,16 @@ type IssuerSpec struct {
 }
 
 type IssuerConfig struct {
+	// +optional
 	ACME       *ACMEIssuer       `json:"acme,omitempty"`
+
+	// +optional
 	CA         *CAIssuer         `json:"ca,omitempty"`
+
+	// +optional
 	Vault      *VaultIssuer      `json:"vault,omitempty"`
+
+	// +optional
 	SelfSigned *SelfSignedIssuer `json:"selfSigned,omitempty"`
 }
 
@@ -87,14 +94,18 @@ type SelfSignedIssuer struct {
 type VaultIssuer struct {
 	// Vault authentication
 	Auth VaultAuth `json:"auth"`
+
 	// Server is the vault connection address
 	Server string `json:"server"`
+
 	// Vault URL path to the certificate role
 	Path string `json:"path"`
+
 	// Base64 encoded CA bundle to validate Vault server certificate. Only used
 	// if the Server URL is using HTTPS protocol. This parameter is ignored for
 	// plain HTTP protocol connection. If not set the system root certificates
 	// are used to validate the TLS connection.
+	// +optional
 	CABundle []byte `json:"caBundle,omitempty"`
 }
 
@@ -104,8 +115,11 @@ type VaultIssuer struct {
 //   Vault and retrieve a token.
 type VaultAuth struct {
 	// This Secret contains the Vault token key
+	// +optional
 	TokenSecretRef SecretKeySelector `json:"tokenSecretRef,omitempty"`
+
 	// This Secret contains a AppRole and Secret
+	// +optional
 	AppRole VaultAppRole `json:"appRole,omitempty"`
 }
 
@@ -127,29 +141,39 @@ type CAIssuer struct {
 type ACMEIssuer struct {
 	// Email is the email for this account
 	Email string `json:"email"`
+
 	// Server is the ACME server URL
 	Server string `json:"server"`
+
 	// If true, skip verifying the ACME server TLS certificate
+	// +optional
 	SkipTLSVerify bool `json:"skipTLSVerify,omitempty"`
+
 	// PrivateKey is the name of a secret containing the private key for this
 	// user account.
 	PrivateKey SecretKeySelector `json:"privateKeySecretRef"`
+
 	// HTTP-01 config
+	// +optional
 	HTTP01 *ACMEIssuerHTTP01Config `json:"http01,omitempty"`
+
 	// DNS-01 config
+	// +optional
 	DNS01 *ACMEIssuerDNS01Config `json:"dns01,omitempty"`
 }
 
 // ACMEIssuerHTTP01Config is a structure containing the ACME HTTP configuration options
 type ACMEIssuerHTTP01Config struct {
 	// Optional service type for Kubernetes solver service
+	// +optional
 	ServiceType corev1.ServiceType `json:"serviceType,omitempty"`
 }
 
 // ACMEIssuerDNS01Config is a structure containing the ACME DNS configuration
 // options
 type ACMEIssuerDNS01Config struct {
-	Providers []ACMEIssuerDNS01Provider `json:"providers"`
+	// +optional
+	Providers []ACMEIssuerDNS01Provider `json:"providers,omitempty"`
 }
 
 // ACMEIssuerDNS01Provider contains configuration for a DNS provider that can
@@ -161,15 +185,32 @@ type ACMEIssuerDNS01Provider struct {
 
 	// CNAMEStrategy configures how the DNS01 provider should handle CNAME
 	// records when found in DNS zones.
-	CNAMEStrategy CNAMEStrategy `json:"cnameStrategy"`
+	// +optional
+	// +kubebuilder:validation:Enum=None,Follow
+	CNAMEStrategy CNAMEStrategy `json:"cnameStrategy,omitempty"`
 
+	// +optional
 	Akamai       *ACMEIssuerDNS01ProviderAkamai       `json:"akamai,omitempty"`
+
+	// +optional
 	CloudDNS     *ACMEIssuerDNS01ProviderCloudDNS     `json:"clouddns,omitempty"`
+
+	// +optional
 	Cloudflare   *ACMEIssuerDNS01ProviderCloudflare   `json:"cloudflare,omitempty"`
+
+	// +optional
 	Route53      *ACMEIssuerDNS01ProviderRoute53      `json:"route53,omitempty"`
+
+	// +optional
 	AzureDNS     *ACMEIssuerDNS01ProviderAzureDNS     `json:"azuredns,omitempty"`
+
+	// +optional
 	DigitalOcean *ACMEIssuerDNS01ProviderDigitalOcean `json:"digitalocean,omitempty"`
+
+	// +optional
 	AcmeDNS      *ACMEIssuerDNS01ProviderAcmeDNS      `json:"acmedns,omitempty"`
+
+	// +optional
 	RFC2136      *ACMEIssuerDNS01ProviderRFC2136      `json:"rfc2136,omitempty"`
 }
 
@@ -224,8 +265,12 @@ type ACMEIssuerDNS01ProviderDigitalOcean struct {
 // configuration for AWS
 type ACMEIssuerDNS01ProviderRoute53 struct {
 	AccessKeyID     string            `json:"accessKeyID"`
+
 	SecretAccessKey SecretKeySelector `json:"secretAccessKeySecretRef"`
-	HostedZoneID    string            `json:"hostedZoneID"`
+
+	// +optional
+	HostedZoneID    string            `json:"hostedZoneID,omitempty"`
+
 	Region          string            `json:"region"`
 }
 
@@ -233,19 +278,24 @@ type ACMEIssuerDNS01ProviderRoute53 struct {
 // configuration for Azure DNS
 type ACMEIssuerDNS01ProviderAzureDNS struct {
 	ClientID          string            `json:"clientID"`
+
 	ClientSecret      SecretKeySelector `json:"clientSecretSecretRef"`
+
 	SubscriptionID    string            `json:"subscriptionID"`
+
 	TenantID          string            `json:"tenantID"`
+
 	ResourceGroupName string            `json:"resourceGroupName"`
 
-	// + optional
-	HostedZoneName string `json:"hostedZoneName"`
+	// +optional
+	HostedZoneName string `json:"hostedZoneName,omitempty"`
 }
 
 // ACMEIssuerDNS01ProviderAcmeDNS is a structure containing the
 // configuration for ACME-DNS servers
 type ACMEIssuerDNS01ProviderAcmeDNS struct {
 	Host          string            `json:"host"`
+
 	AccountSecret SecretKeySelector `json:"accountSecretRef"`
 }
 
@@ -259,31 +309,35 @@ type ACMEIssuerDNS01ProviderRFC2136 struct {
 	// The name of the secret containing the TSIG value.
 	// If ``tsigKeyName`` is defined, this field is required.
 	// +optional
-	TSIGSecret SecretKeySelector `json:"tsigSecretSecretRef"`
+	TSIGSecret SecretKeySelector `json:"tsigSecretSecretRef,omitempty"`
 
 	// The TSIG Key name configured in the DNS.
 	// If ``tsigSecretSecretRef`` is defined, this field is required.
 	// +optional
-	TSIGKeyName string `json:"tsigKeyName"`
+	TSIGKeyName string `json:"tsigKeyName,omitempty"`
 
 	// The TSIG Algorithm configured in the DNS supporting RFC2136. Used only
 	// when ``tsigSecretSecretRef`` and ``tsigKeyName`` are defined.
 	// Supported values are (case-insensitive): ``HMACMD5`` (default),
 	// ``HMACSHA1``, ``HMACSHA256`` or ``HMACSHA512``.
 	// +optional
-	TSIGAlgorithm string `json:"tsigAlgorithm"`
+	TSIGAlgorithm string `json:"tsigAlgorithm,omitempty"`
 }
 
 // IssuerStatus contains status information about an Issuer
 type IssuerStatus struct {
-	Conditions []IssuerCondition `json:"conditions"`
+	// +optional
+	Conditions []IssuerCondition `json:"conditions,omitempty"`
+
+	// +optional
 	ACME       *ACMEIssuerStatus `json:"acme,omitempty"`
 }
 
 type ACMEIssuerStatus struct {
 	// URI is the unique account identifier, which can also be used to retrieve
 	// account details from the CA
-	URI string `json:"uri"`
+	// +optional
+	URI string `json:"uri,omitempty"`
 }
 
 // IssuerCondition contains condition information for an Issuer.
@@ -292,6 +346,7 @@ type IssuerCondition struct {
 	Type IssuerConditionType `json:"type"`
 
 	// Status of the condition, one of ('True', 'False', 'Unknown').
+	// +kubebuilder:validation:Enum=True,False,Unknown
 	Status ConditionStatus `json:"status"`
 
 	// LastTransitionTime is the timestamp corresponding to the last status
