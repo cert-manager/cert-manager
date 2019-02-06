@@ -118,6 +118,9 @@ spec:
                 either "rsa" or "ecdsa" If KeyAlgorithm is specified and KeySize is
                 not provided, key size of 256 will be used for "ecdsa" key algorithm
                 and key size of 2048 will be used for "rsa" key algorithm.
+              enum:
+              - rsa
+              - ecdsa
               type: string
             keySize:
               description: KeySize is the key bit size of the corresponding private
@@ -164,6 +167,10 @@ spec:
                   status:
                     description: Status of the condition, one of ('True', 'False',
                       'Unknown').
+                    enum:
+                    - "True"
+                    - "False"
+                    - Unknown
                     type: string
                   type:
                     description: Type of the condition, currently ('Ready').
@@ -320,6 +327,14 @@ spec:
             state:
               description: State contains the current 'state' of the challenge. If
                 not set, the state of the challenge is unknown.
+              enum:
+              - valid
+              - ready
+              - pending
+              - processing
+              - invalid
+              - expired
+              - errored
               type: string
           required:
           - processing
@@ -379,8 +394,8 @@ spec:
                     key for this user account.
                   properties:
                     key:
-                      description: The key of the secret to select from.  Must be
-                        a valid secret key.
+                      description: The key of the secret to select from. Must be a
+                        valid secret key.
                       type: string
                     name:
                       description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
@@ -388,7 +403,6 @@ spec:
                       type: string
                   required:
                   - name
-                  - key
                   type: object
                 server:
                   description: Server is the ACME server URL
@@ -429,7 +443,7 @@ spec:
                         secretRef:
                           properties:
                             key:
-                              description: The key of the secret to select from.  Must
+                              description: The key of the secret to select from. Must
                                 be a valid secret key.
                               type: string
                             name:
@@ -438,7 +452,6 @@ spec:
                               type: string
                           required:
                           - name
-                          - key
                           type: object
                       required:
                       - path
@@ -449,7 +462,7 @@ spec:
                       description: This Secret contains the Vault token key
                       properties:
                         key:
-                          description: The key of the secret to select from.  Must
+                          description: The key of the secret to select from. Must
                             be a valid secret key.
                           type: string
                         name:
@@ -458,7 +471,6 @@ spec:
                           type: string
                       required:
                       - name
-                      - key
                       type: object
                   type: object
                 caBundle:
@@ -488,8 +500,6 @@ spec:
                   description: URI is the unique account identifier, which can also
                     be used to retrieve account details from the CA
                   type: string
-              required:
-              - uri
               type: object
             conditions:
               items:
@@ -510,6 +520,10 @@ spec:
                   status:
                     description: Status of the condition, one of ('True', 'False',
                       'Unknown').
+                    enum:
+                    - "True"
+                    - "False"
+                    - Unknown
                     type: string
                   type:
                     description: Type of the condition, currently ('Ready').
@@ -571,8 +585,8 @@ spec:
                     key for this user account.
                   properties:
                     key:
-                      description: The key of the secret to select from.  Must be
-                        a valid secret key.
+                      description: The key of the secret to select from. Must be a
+                        valid secret key.
                       type: string
                     name:
                       description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
@@ -580,7 +594,6 @@ spec:
                       type: string
                   required:
                   - name
-                  - key
                   type: object
                 server:
                   description: Server is the ACME server URL
@@ -621,7 +634,7 @@ spec:
                         secretRef:
                           properties:
                             key:
-                              description: The key of the secret to select from.  Must
+                              description: The key of the secret to select from. Must
                                 be a valid secret key.
                               type: string
                             name:
@@ -630,7 +643,6 @@ spec:
                               type: string
                           required:
                           - name
-                          - key
                           type: object
                       required:
                       - path
@@ -641,7 +653,7 @@ spec:
                       description: This Secret contains the Vault token key
                       properties:
                         key:
-                          description: The key of the secret to select from.  Must
+                          description: The key of the secret to select from. Must
                             be a valid secret key.
                           type: string
                         name:
@@ -650,7 +662,6 @@ spec:
                           type: string
                       required:
                       - name
-                      - key
                       type: object
                   type: object
                 caBundle:
@@ -680,8 +691,6 @@ spec:
                   description: URI is the unique account identifier, which can also
                     be used to retrieve account details from the CA
                   type: string
-              required:
-              - uri
               type: object
             conditions:
               items:
@@ -702,6 +711,10 @@ spec:
                   status:
                     description: Status of the condition, one of ('True', 'False',
                       'Unknown').
+                    enum:
+                    - "True"
+                    - "False"
+                    - Unknown
                     type: string
                   type:
                     description: Type of the condition, currently ('Ready').
@@ -775,7 +788,7 @@ spec:
             commonName:
               description: CommonName is the common name as specified on the DER encoded
                 CSR. If CommonName is not specified, the first DNSName specified will
-                be used as the CommonName. At least on of CommonName or a DNSName
+                be used as the CommonName. At least one of CommonName or a DNSNames
                 must be set. This field must match the corresponding field on the
                 DER encoded CSR.
               type: string
@@ -805,8 +818,8 @@ spec:
               description: DNSNames is a list of DNS names that should be included
                 as part of the Order validation process. If CommonName is not specified,
                 the first DNSName specified will be used as the CommonName. At least
-                on of CommonName or a DNSName must be set. This field must match the
-                corresponding field on the DER encoded CSR.
+                one of CommonName or a DNSNames must be set. This field must match
+                the corresponding field on the DER encoded CSR.
               items:
                 type: string
               type: array
@@ -916,6 +929,14 @@ spec:
             state:
               description: State contains the current state of this Order resource.
                 States 'success' and 'expired' are 'final'
+              enum:
+              - valid
+              - ready
+              - pending
+              - processing
+              - invalid
+              - expired
+              - errored
               type: string
             url:
               description: URL of the Order. This will initially be empty when the
@@ -923,12 +944,6 @@ spec:
                 field when the Order is first processed. This field will be immutable
                 after it is initially set.
               type: string
-          required:
-          - url
-          - finalizeURL
-          - certificate
-          - state
-          - reason
           type: object
       required:
       - metadata
