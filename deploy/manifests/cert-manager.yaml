@@ -328,6 +328,7 @@ spec:
               description: State contains the current 'state' of the challenge. If
                 not set, the state of the challenge is unknown.
               enum:
+              - ""
               - valid
               - ready
               - pending
@@ -340,7 +341,6 @@ spec:
           - processing
           - presented
           - reason
-          - state
           type: object
       required:
       - metadata
@@ -930,6 +930,7 @@ spec:
               description: State contains the current state of this Order resource.
                 States 'success' and 'expired' are 'final'
               enum:
+              - ""
               - valid
               - ready
               - pending
