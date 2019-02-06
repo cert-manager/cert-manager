@@ -26,7 +26,9 @@ import (
 )
 
 func TestCalculateDurationUntilRenew(t *testing.T) {
-	c := IssuerOptions{}
+	c := IssuerOptions{
+		RenewBeforeExpiryDuration: v1alpha1.DefaultRenewBefore,
+	}
 	currentTime := time.Now()
 	now = func() time.Time { return currentTime }
 	defer func() { now = time.Now }()

@@ -23,14 +23,14 @@ import (
 
 	"github.com/spf13/pflag"
 
-	"github.com/jetstack/cert-manager/pkg/util"
-
+	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	challengescontroller "github.com/jetstack/cert-manager/pkg/controller/acmechallenges"
 	orderscontroller "github.com/jetstack/cert-manager/pkg/controller/acmeorders"
 	certificatescontroller "github.com/jetstack/cert-manager/pkg/controller/certificates"
 	clusterissuerscontroller "github.com/jetstack/cert-manager/pkg/controller/clusterissuers"
 	ingressshimcontroller "github.com/jetstack/cert-manager/pkg/controller/ingress-shim"
 	issuerscontroller "github.com/jetstack/cert-manager/pkg/controller/issuers"
+	"github.com/jetstack/cert-manager/pkg/util"
 )
 
 type ControllerOptions struct {
@@ -85,7 +85,7 @@ const (
 
 	defaultClusterIssuerAmbientCredentials = true
 	defaultIssuerAmbientCredentials        = false
-	defaultRenewBeforeExpiryDuration       = time.Hour * 24 * 30
+	defaultRenewBeforeExpiryDuration       = cmapi.DefaultRenewBefore
 
 	defaultTLSACMEIssuerName           = ""
 	defaultTLSACMEIssuerKind           = "Issuer"

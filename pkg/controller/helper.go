@@ -116,7 +116,7 @@ func (o IssuerOptions) CalculateDurationUntilRenew(cert *x509.Certificate, crt *
 
 	// renew is the duration before the certificate expiration that cert-manager
 	// will start to try renewing the certificate.
-	renewBefore := cmapi.DefaultRenewBefore
+	renewBefore := o.RenewBeforeExpiryDuration
 	if crt.Spec.RenewBefore != nil {
 		renewBefore = crt.Spec.RenewBefore.Duration
 	}
