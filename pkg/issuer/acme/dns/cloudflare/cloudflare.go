@@ -65,21 +65,14 @@ func (c *DNSProvider) Present(domain, fqdn, value string) error {
 		return err
 	}
 
-	record, err := c.findTxtRecord(fqdn)
+	record, err := c.findTxtRecord(fqdn, value)
 	if err != nil && err != errNoExistingRecord {
 		// this is a real error
 		return err
 	}
-	if record != nil {
-		if record.Content == value {
-			// the record is already set to the desired value
-			return nil
-		}
-
-		_, err = c.makeRequest("DELETE", fmt.Sprintf("/zones/%s/dns_records/%s", record.ZoneID, record.ID), nil)
-		if err != nil {
-			return err
-		}
+	if record != nil && record.Content == value {
+		// the record is already exists for the desired value
+		return nil
 	}
 
 	rec := cloudFlareRecord{
@@ -104,7 +97,7 @@ func (c *DNSProvider) Present(domain, fqdn, value string) error {
 
 // CleanUp removes the TXT record matching the specified parameters
 func (c *DNSProvider) CleanUp(domain, fqdn, value string) error {
-	record, err := c.findTxtRecord(fqdn)
+	record, err := c.findTxtRecord(fqdn, value)
 	// Nothing to cleanup
 	if err == errNoExistingRecord {
 		return nil
@@ -153,7 +146,7 @@ func (c *DNSProvider) getHostedZoneID(fqdn string) (string, error) {
 
 var errNoExistingRecord = errors.New("No existing record found")
 
-func (c *DNSProvider) findTxtRecord(fqdn string) (*cloudFlareRecord, error) {
+func (c *DNSProvider) findTxtRecord(fqdn string, value string) (*cloudFlareRecord, error) {
 	zoneID, err := c.getHostedZoneID(fqdn)
 	if err != nil {
 		return nil, err
@@ -175,7 +168,7 @@ func (c *DNSProvider) findTxtRecord(fqdn string) (*cloudFlareRecord, error) {
 	}
 
 	for _, rec := range records {
-		if rec.Name == util.UnFqdn(fqdn) {
+		if rec.Name == util.UnFqdn(fqdn) && rec.Content == value {
 			return &rec, nil
 		}
 	}
