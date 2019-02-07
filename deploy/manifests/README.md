@@ -2,7 +2,7 @@
 
 This directory contains the Kubernetes manifests needed to deploy cert-manager.
 
-For full information on deploying cert-manager, see the [getting started guide](https://cert-manager.readthedocs.io/en/latest/getting-started/index.html).
+For full information on deploying cert-manager, see the [getting started guide](https://docs.cert-manager.io/en/latest/getting-started/index.html).
 
 ## Where do these come from?
 

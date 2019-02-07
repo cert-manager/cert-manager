@@ -444,13 +444,13 @@ install cert-manager. This example installed cert-manager into the
     More information on the different types of issuers and how to configure them
     can be found in our documentation:
 
-    https://cert-manager.readthedocs.io/en/latest/reference/issuers.html
+    https://docs.cert-manager.io/en/latest/reference/issuers.html
 
     For information on how to configure cert-manager to automatically provision
     Certificates for Ingress resources, take a look at the `ingress-shim`
     documentation:
 
-    https://cert-manager.readthedocs.io/en/latest/reference/ingress-shim.html
+    https://docs.cert-manager.io/en/latest/reference/ingress-shim.html
 
 Cert-manager uses two different custom resources, also known as `CRD`_'s,
 to configure and control how it operates, as well as share status of its
