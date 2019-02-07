@@ -8,7 +8,7 @@ tutorials/ca/creating-ca-issuer.rst tasks/issuers/setup-ca.rst
 tutorials/ca/index.rst tasks/issuers/setup-ca.rst
 tutorials/vault/creating-vault-issuers.rst tasks/issuers/setup-vault.rst
 tutorials/vault/index.rst tasks/issuers/setup-vault.rst
-reference/ingress-shim.rst tasks/ingress-shim.rst
+reference/ingress-shim.rst tasks/issuing-certificates/ingress-shim.rst
 reference/issuers/acme/index.rst tasks/acme/index.rst
 reference/issuers/acme/dns01/index.rst tasks/acme/configuring-dns01/index.rst
 reference/issuers/acme/http01.rst tasks/acme/configuring-http01.rst
