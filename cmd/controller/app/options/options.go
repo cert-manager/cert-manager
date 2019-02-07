@@ -100,7 +100,7 @@ var (
 	defaultACMEHTTP01SolverImage                 = fmt.Sprintf("quay.io/jetstack/cert-manager-acmesolver:%s", util.AppVersion)
 	defaultACMEHTTP01SolverResourceRequestCPU    = "10m"
 	defaultACMEHTTP01SolverResourceRequestMemory = "64Mi"
-	defaultACMEHTTP01SolverResourceLimitsCPU     = "10m"
+	defaultACMEHTTP01SolverResourceLimitsCPU     = "100m"
 	defaultACMEHTTP01SolverResourceLimitsMemory  = "64Mi"
 
 	defaultAutoCertificateAnnotations = []string{"kubernetes.io/tls-acme"}
