@@ -159,7 +159,7 @@ metadata:
     app.kubernetes.io/name: cert-manager
 rules:
   - apiGroups: ["certmanager.k8s.io"]
-    resources: ["certificates", "issuers", "clusterissuers", "orders", "challenges"]
+    resources: ["certificates", "certificates/finalizers", "issuers", "clusterissuers", "orders", "orders/finalizers", "challenges"]
     verbs: ["*"]
   - apiGroups: [""]
     resources: ["configmaps", "secrets", "events", "services", "pods"]
@@ -237,7 +237,7 @@ spec:
       serviceAccountName: cert-manager
       containers:
         - name: cert-manager
-          image: "quay.io/jetstack/cert-manager-controller:v0.6.0"
+          image: "quay.io/jetstack/cert-manager-controller:v0.6.1"
           imagePullPolicy: IfNotPresent
           args:
           - --cluster-resource-namespace=$(POD_NAMESPACE)
