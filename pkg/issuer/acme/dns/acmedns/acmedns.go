@@ -64,6 +64,9 @@ func NewDNSProviderHostBytes(host string, accountJson []byte, dns01Nameservers [
 
 // Present creates a TXT record to fulfil the dns-01 challenge
 func (c *DNSProvider) Present(domain, fqdn, value string) error {
+	// NOTE: acme-dns doesn't allow setting multiple TXT records
+	// via the HTTP interface. If multiple domains are validated
+	// on the same label, it will fail
 	if account, exists := c.accounts[domain]; exists {
 		// Update the acme-dns TXT record.
 		return c.client.UpdateTXTRecord(account, value)
