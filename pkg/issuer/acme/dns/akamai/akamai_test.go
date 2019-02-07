@@ -98,6 +98,51 @@ const sampleZoneDataWithTxt = `{
     }
 }`
 
+const sampleZoneDataWithMultipleTxt = `{
+    "token": "a184671d5307a388180fbf7f11dbdf46",
+    "zone": {
+        "name": "example.com",
+        "soa": {
+            "contact": "hostmaster.akamai.com.",
+            "expire": 604800,
+            "minimum": 180,
+            "originserver": "use4.akamai.com.",
+            "refresh": 900,
+            "retry": 300,
+            "serial": 1271354826,
+            "ttl": 900
+        },
+        "ns": [
+            {
+                "active": true,
+                "name": "",
+                "target": "use4.akam.net.",
+                "ttl": 3600
+            },
+            {
+                "active": true,
+                "name": "",
+                "target": "use3.akam.net.",
+                "ttl": 3600
+            }
+        ],
+        "txt": [
+            {
+                "active": true,
+                "name" :"_acme-challenge.test",
+                "target": "dns01-key",
+                "ttl": 60
+            },
+            {
+                "active": true,
+                "name" :"_acme-challenge.test",
+                "target": "dns01-key2",
+                "ttl": 60
+            }
+        ]
+    }
+}`
+
 type httpResponder func(req *http.Request) (*http.Response, error)
 
 func (r httpResponder) RoundTrip(req *http.Request) (*http.Response, error) {
@@ -119,6 +164,21 @@ func TestPresent(t *testing.T) {
 	assert.EqualValues(t, expected, actual)
 }
 
+func TestPresentRecordPresent(t *testing.T) {
+	akamai, err := NewDNSProvider("akamai.example.com", "token", "secret", "access-token", util.RecursiveNameservers)
+	assert.NoError(t, err)
+
+	var response []byte
+	mockTransport(t, akamai, "example.com", sampleZoneDataWithTxt, &response)
+
+	assert.NoError(t, akamai.Present("test.example.com", "_acme-challenge.test.example.com.", "dns01-key2"))
+
+	var expected, actual map[string]interface{}
+	assert.NoError(t, json.Unmarshal([]byte(sampleZoneDataWithMultipleTxt), &expected))
+	assert.NoError(t, json.Unmarshal(response, &actual))
+	assert.EqualValues(t, expected, actual)
+}
+
 func TestCleanUp(t *testing.T) {
 	akamai, err := NewDNSProvider("akamai.example.com", "token", "secret", "access-token", util.RecursiveNameservers)
 	assert.NoError(t, err)
@@ -131,6 +191,22 @@ func TestCleanUp(t *testing.T) {
 	var expected, actual map[string]interface{}
 	assert.NoError(t, json.Unmarshal([]byte(sampleZoneData), &expected))
 	expected["zone"].(map[string]interface{})["soa"].(map[string]interface{})["serial"] = 1271354826.
+	assert.NoError(t, json.Unmarshal(response, &actual))
+	assert.EqualValues(t, expected, actual)
+}
+
+func TestCleanupMultipleRecords(t *testing.T) {
+	akamai, err := NewDNSProvider("akamai.example.com", "token", "secret", "access-token", util.RecursiveNameservers)
+	assert.NoError(t, err)
+
+	var response []byte
+	mockTransport(t, akamai, "example.com", sampleZoneDataWithMultipleTxt, &response)
+
+	assert.NoError(t, akamai.CleanUp("test.example.com", "_acme-challenge.test.example.com.", "dns01-key2"))
+
+	var expected, actual map[string]interface{}
+	assert.NoError(t, json.Unmarshal([]byte(sampleZoneDataWithTxt), &expected))
+	expected["zone"].(map[string]interface{})["soa"].(map[string]interface{})["serial"] = 1271354827.
 	assert.NoError(t, json.Unmarshal(response, &actual))
 	assert.EqualValues(t, expected, actual)
 }

@@ -70,12 +70,12 @@ func findHostedDomainByFqdn(fqdn string, ns []string) (string, error) {
 
 // Present creates a TXT record to fulfil the dns-01 challenge
 func (a *DNSProvider) Present(domain, fqdn, value string) error {
-	return a.setTxtRecord(fqdn, &dns01Record{value, 60})
+	return a.addTxtRecord(fqdn, &dns01Record{value, 60})
 }
 
 // CleanUp removes the TXT record matching the specified parameters
 func (a *DNSProvider) CleanUp(domain, fqdn, value string) error {
-	return a.setTxtRecord(fqdn, nil)
+	return a.removeTxtRecord(fqdn, value)
 }
 
 type dns01Record struct {
@@ -83,15 +83,10 @@ type dns01Record struct {
 	ttl   int
 }
 
-func (a *DNSProvider) setTxtRecord(fqdn string, dns01Record *dns01Record) error {
-	hostedDomain, err := a.findHostedDomainByFqdn(fqdn, a.dns01Nameservers)
+func (a *DNSProvider) addTxtRecord(fqdn string, dns01Record *dns01Record) error {
+	zoneData, hostedDomain, err := a.findAndLoadZone(fqdn)
 	if err != nil {
-		return errors.Wrapf(err, "failed to determine hosted domain for %q", fqdn)
-	}
-
-	zoneData, err := a.loadZoneData(hostedDomain)
-	if err != nil {
-		return errors.Wrapf(err, "failed to load zone data for %q", hostedDomain)
+		return err
 	}
 
 	recordName, err := makeTxtRecordName(fqdn, hostedDomain)
@@ -99,25 +94,65 @@ func (a *DNSProvider) setTxtRecord(fqdn string, dns01Record *dns01Record) error 
 		return errors.Wrapf(err, "failed to create TXT record name")
 	}
 
-	if updated, err := zoneData.setTxtRecord(recordName, dns01Record); !updated || err != nil {
-		if err != nil {
-			return errors.Wrapf(err, "failed to set TXT record in %q", hostedDomain)
-		}
-
-		return errors.Errorf("no %q TXT record found in %q", recordName, hostedDomain)
+	updated, err := zoneData.setTxtRecord(recordName, dns01Record)
+	if err != nil {
+		return errors.Wrapf(err, "failed to set TXT record in %q", hostedDomain)
+	}
+	if !updated {
+		// don't bother talking to akamai if we don't need to add the zone
+		return nil
 	}
 
-	newSerial, err := zoneData.incSoaSerial()
+	return a.updateZone(hostedDomain, zoneData)
+}
+
+func (a *DNSProvider) removeTxtRecord(fqdn string, value string) error {
+	zoneData, hostedDomain, err := a.findAndLoadZone(fqdn)
+	if err != nil {
+		return err
+	}
+
+	recordName, err := makeTxtRecordName(fqdn, hostedDomain)
+	if err != nil {
+		return errors.Wrapf(err, "failed to create TXT record name")
+	}
+
+	updated, err := zoneData.removeTxtRecord(recordName, value)
+	if err != nil {
+		return errors.Wrapf(err, "failed to remove TXT record in %q", hostedDomain)
+	}
+	if !updated {
+		// don't bother talking to akamai if we don't need to remove the zone
+		return nil
+	}
+
+	return a.updateZone(hostedDomain, zoneData)
+}
+
+func (a *DNSProvider) findAndLoadZone(fqdn string) (zoneData, string, error) {
+	hostedDomain, err := a.findHostedDomainByFqdn(fqdn, a.dns01Nameservers)
+	if err != nil {
+		return nil, "", errors.Wrapf(err, "failed to determine hosted domain for %q", fqdn)
+	}
+
+	zoneData, err := a.loadZoneData(hostedDomain)
+	if err != nil {
+		return nil, "", errors.Wrapf(err, "failed to load zone data for %q", hostedDomain)
+	}
+	return zoneData, hostedDomain, nil
+}
+
+func (a *DNSProvider) updateZone(hostedDomain string, zonedata zoneData) error {
+	newSerial, err := zonedata.incSoaSerial()
 	if err != nil {
 		return errors.Wrapf(err, "failed to increment SOA serial for %q", hostedDomain)
 	}
 
-	if err := a.saveZoneData(hostedDomain, zoneData); err != nil {
+	if err := a.saveZoneData(hostedDomain, zonedata); err != nil {
 		return errors.Wrapf(err, "failed to save zone data for %q", hostedDomain)
 	}
 
-	glog.V(4).Infof("Updated Akamai TXT record for %q on %q using SOA serial of %d", recordName, hostedDomain, newSerial)
-
+	glog.V(4).Infof("Updated Akamai TXT record on %q using SOA serial of %d", hostedDomain, newSerial)
 	return nil
 }
 
@@ -213,38 +248,106 @@ func (a *DNSProvider) makeRequest(req *http.Request) ([]byte, error) {
 type zoneData map[string]interface{}
 
 func (z zoneData) setTxtRecord(name string, dns01Record *dns01Record) (bool, error) {
+	txtRecords, err := z.getTxts()
+	if err != nil {
+		return false, err
+	}
+	index, err := findRecordIndex(txtRecords, name, dns01Record.value)
+	if err != nil {
+		return false, err
+	}
+	if index != -1 {
+		// we already have this txt record
+		return false, nil
+	}
+
+	txtRecords = append(txtRecords, map[string]interface{}{
+		"name":   name,
+		"ttl":    dns01Record.ttl,
+		"active": true,
+		"target": dns01Record.value,
+	})
+
+	return true, z.setTxts(txtRecords)
+}
+
+func (z zoneData) removeTxtRecord(recordname string, value string) (bool, error) {
+	txtRecords, err := z.getTxts()
+	if err != nil {
+		return false, err
+	}
+	index, err := findRecordIndex(txtRecords, recordname, value)
+	if err != nil {
+		return false, err
+	}
+	if index == -1 {
+		// nothing to do
+		return false, nil
+	}
+	newTxts := make([]interface{}, 0, len(txtRecords)-1)
+	for i := 0; i < len(txtRecords); i++ {
+		if index != i {
+			newTxts = append(newTxts, txtRecords[i])
+		}
+	}
+	err = z.setTxts(newTxts)
+	if err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
+func findRecordIndex(txtRecords []interface{}, recordname string, value string) (int, error) {
+	for i, txtRaw := range txtRecords {
+		txt, ok := txtRaw.(map[string]interface{})
+		if !ok {
+			return -1, errors.New("malformed TXT record from Akamai API")
+		}
+		name, ok := txt["name"].(string)
+		if !ok {
+			return -1, errors.New("malformed TXT record from Akamai API")
+		}
+		if name != recordname {
+			continue
+		}
+		v, ok := txt["target"].(string)
+		if !ok {
+			return -1, errors.New("malformed TXT record from Akamai API")
+		}
+		if v == value {
+			return i, nil
+		}
+	}
+	return -1, nil
+}
+
+func (z zoneData) getTxts() ([]interface{}, error) {
 	zone, ok := z["zone"].(map[string]interface{})
 	if !ok {
-		return false, errors.New("failed to retrieve zone from zone data")
+		return nil, errors.New("failed to retrieve zone from zone data")
 	}
 
 	var txtRecords []interface{}
 	if txtNode, ok := zone["txt"]; ok {
 		if txtRecords, ok = txtNode.([]interface{}); !ok {
-			return false, errors.New("failed to retrieve TXT records from zone data")
+			return nil, errors.New("failed to retrieve TXT records from zone data")
 		}
+		return txtRecords, nil
 	}
+	return nil, nil
+}
 
-	if dns01Record == nil {
-		if txtRecords = deleteRecord(txtRecords, name); txtRecords == nil {
-			return false, nil
-		}
+func (z zoneData) setTxts(txtRecs []interface{}) error {
+	zone, ok := z["zone"].(map[string]interface{})
+	if !ok {
+		return errors.New("failed to set zone data on zone")
+	}
+	if len(txtRecs) > 0 {
+		zone["txt"] = txtRecs
 	} else {
-		txtRecords = updateRecord(txtRecords, name, map[string]interface{}{
-			"name":   name,
-			"ttl":    dns01Record.ttl,
-			"active": true,
-			"target": dns01Record.value,
-		})
-	}
-
-	if len(txtRecords) < 1 {
 		delete(zone, "txt")
-	} else {
-		zone["txt"] = txtRecords
 	}
-
-	return true, nil
+	return nil
 }
 
 func (z zoneData) incSoaSerial() (uint64, error) {
