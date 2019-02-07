@@ -1,9 +1,0 @@
-commonLabels:
-  app.kubernetes.io/name: cert-manager
-
-namespace: cert-manager
-
-resources:
-- crds.yaml
-- deployment.yaml
-- rbac.yaml

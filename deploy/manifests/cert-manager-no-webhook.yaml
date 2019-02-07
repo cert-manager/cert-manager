@@ -232,7 +232,7 @@ rules:
     verbs: ["create", "delete", "deletecollection", "patch", "update"]
 ---
 # Source: cert-manager/templates/deployment.yaml
-apiVersion: apps/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: cert-manager
@@ -253,7 +253,6 @@ spec:
       labels:
         app: cert-manager
         release: cert-manager
-      annotations:
     spec:
       serviceAccountName: cert-manager
       containers:

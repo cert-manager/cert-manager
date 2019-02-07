@@ -27,21 +27,30 @@ cd "${REPO_ROOT}"
 # This will set Capabilities.KubeVersion.Major/Minor when generating manifests
 KUBE_VERSION=1.9
 
-gen() {
+gen_helm() {
 	OUTPUT=$1
 	shift
-	TMP_OUTPUT=$(mktemp)
-	mkdir -p "$(dirname ${OUTPUT})"
 	helm template \
 		"${REPO_ROOT}/deploy/charts/cert-manager" \
 		--values "${REPO_ROOT}/deploy/manifests/helm-values.yaml" \
 		--kube-version "${KUBE_VERSION}" \
 		--namespace "cert-manager" \
 		--name "cert-manager" \
-        "$@" > "${TMP_OUTPUT}"
-    cat "${REPO_ROOT}/deploy/manifests/00-crds.yaml" \
-        "${REPO_ROOT}/deploy/manifests/01-namespace.yaml" \
-        "${TMP_OUTPUT}" > "${OUTPUT}"
+		"$@" >> "${OUTPUT}"
+}
+
+gen() {
+	mkdir -p "$(dirname $1)"
+	cat "${REPO_ROOT}/deploy/manifests/00-crds.yaml" \
+		"${REPO_ROOT}/deploy/manifests/01-namespace.yaml" > "$1"
+	gen_helm "$@"
+}
+
+gen_kustomize() {
+	mkdir -p "$(dirname $1)"
+	sed 's|\(app\):|\1.kubernetes.io/name:|g' \
+		"${REPO_ROOT}/deploy/manifests/00-crds.yaml" > "$1"
+	gen_helm "$@"
 }
 
 export HELM_HOME="$(mktemp -d)"
@@ -49,3 +58,5 @@ helm init --client-only
 helm dep update "${REPO_ROOT}/deploy/charts/cert-manager"
 gen "${REPO_ROOT}/deploy/manifests/cert-manager.yaml"
 gen "${REPO_ROOT}/deploy/manifests/cert-manager-no-webhook.yaml" --set webhook.enabled=false
+
+gen_kustomize "${REPO_ROOT}/deploy/manifests/controller/controller.yaml" --set webhook.enabled=false,kustomizeGen=true
