@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Jetstack cert-manager contributors.
+Copyright 2019 The Jetstack cert-manager contributors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -65,6 +65,9 @@ type CertificateSpec struct {
 
 	// DNSNames is a list of subject alt names to be used on the Certificate
 	DNSNames []string `json:"dnsNames,omitempty"`
+
+	// IPAddresses is a list of IP addresses to be used on the Certificate
+	IPAddresses []string `json:"ipAddresses,omitempty"`
 
 	// SecretName is the name of the secret resource to store this secret in
 	SecretName string `json:"secretName"`

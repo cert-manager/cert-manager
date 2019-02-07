@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Jetstack cert-manager contributors.
+Copyright 2019 The Jetstack cert-manager contributors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -96,6 +96,8 @@ func (a *Acme) Setup(ctx context.Context) error {
 
 	}
 
+	acme.ClearClientCache()
+
 	cl, err := acme.ClientWithKey(a.issuer, pk)
 	if err != nil {
 		s := messageAccountVerificationFailed + err.Error()
@@ -154,6 +156,7 @@ func (a *Acme) Setup(ctx context.Context) error {
 	if parsedAccountURL.Host != parsedServerURL.Host {
 		glog.Infof("ACME server URL host and ACME private key registration " +
 			"host differ. Re-checking ACME account registration.")
+		a.issuer.GetStatus().ACMEStatus().URI = ""
 	}
 
 	// registerAccount will also verify the account exists if it already

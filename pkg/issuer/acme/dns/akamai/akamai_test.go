@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Jetstack cert-manager contributors.
+Copyright 2019 The Jetstack cert-manager contributors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -171,7 +171,7 @@ func mockTransport(t *testing.T, akamai *DNSProvider, domain, data string, respo
 		t.Fatalf("unexpected method: %v", req.Method)
 		return nil, nil
 	})
-	akamai.findHostedDomainByFqdn = func(fqdn string) (string, error) {
+	akamai.findHostedDomainByFqdn = func(fqdn string, _ []string) (string, error) {
 		if !strings.HasSuffix(fqdn, domain+".") {
 			t.Fatalf("unexpected fqdn: %s", fqdn)
 		}

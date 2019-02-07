@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Jetstack cert-manager contributors.
+Copyright 2019 The Jetstack cert-manager contributors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -17,7 +17,6 @@ limitations under the License.
 package framework
 
 import (
-	"fmt"
 	"time"
 
 	. "github.com/onsi/ginkgo"
@@ -36,6 +35,7 @@ import (
 	"github.com/jetstack/cert-manager/test/e2e/framework/addon"
 	"github.com/jetstack/cert-manager/test/e2e/framework/config"
 	"github.com/jetstack/cert-manager/test/e2e/framework/helper"
+	"github.com/jetstack/cert-manager/test/e2e/framework/log"
 	"github.com/jetstack/cert-manager/test/e2e/framework/util"
 	"github.com/jetstack/cert-manager/test/e2e/framework/util/errors"
 )
@@ -67,6 +67,7 @@ type Framework struct {
 	cleanupHandle CleanupActionHandle
 
 	requiredAddons []addon.Addon
+	helper         *helper.Helper
 }
 
 // NewDefaultFramework makes a new framework for you, similar to NewFramework.
@@ -85,6 +86,7 @@ func NewFramework(baseName string, cfg *config.Config) *Framework {
 		BaseName: baseName,
 	}
 
+	f.helper = helper.NewHelper(cfg)
 	BeforeEach(f.BeforeEach)
 	AfterEach(f.AfterEach)
 
@@ -115,9 +117,14 @@ func (f *Framework) BeforeEach() {
 	f.Namespace, err = f.CreateKubeNamespace(f.BaseName)
 	Expect(err).NotTo(HaveOccurred())
 
+	By("Using the namespace " + f.Namespace.Name)
+
 	By("Building a ResourceQuota api object")
 	_, err = f.CreateKubeResourceQuota()
 	Expect(err).NotTo(HaveOccurred())
+
+	f.helper.CMClient = f.CertManagerClientSet
+	f.helper.KubeClient = f.KubeClientSet
 }
 
 // AfterEach deletes the namespace, after reading its events.
@@ -142,7 +149,8 @@ func (f *Framework) printAddonLogs() {
 				l, err := a.Logs()
 				Expect(err).NotTo(HaveOccurred())
 
-				GinkgoWriter.Write([]byte(fmt.Sprintf("Got pod logs for addon: \n%s", l)))
+				// TODO: replace with writing logs to a file
+				log.Logf("Got pod logs for addon: \n%s", l)
 			}
 		}
 	}
@@ -193,9 +201,7 @@ func (f *Framework) RequireAddon(a addon.Addon) {
 }
 
 func (f *Framework) Helper() *helper.Helper {
-	return &helper.Helper{
-		KubeClient: f.KubeClientSet,
-	}
+	return f.helper
 }
 
 func (f *Framework) CertificateDurationValid(c *v1alpha1.Certificate, duration time.Duration) {

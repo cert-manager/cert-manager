@@ -1,0 +1,276 @@
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  name: certificates.certmanager.k8s.io
+  labels:
+    app: cert-manager
+spec:
+  additionalPrinterColumns:
+  - JSONPath: .status.conditions[?(@.type=="Ready")].status
+    name: Ready
+    type: string
+  - JSONPath: .spec.secretName
+    name: Secret
+    type: string
+  - JSONPath: .spec.issuerRef.name
+    name: Issuer
+    type: string
+    priority: 1
+  - JSONPath: .status.conditions[?(@.type=="Ready")].message
+    name: Status
+    type: string
+    priority: 1
+  - JSONPath: .metadata.creationTimestamp
+    description: |-
+      CreationTimestamp is a timestamp representing the server time when this object was created. It is not guaranteed to be set in happens-before order across separate operations. Clients may not set this value. It is represented in RFC3339 form and is in UTC.
+
+      Populated by the system. Read-only. Null for lists. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#metadata
+    name: Age
+    type: date
+  group: certmanager.k8s.io
+  version: v1alpha1
+  scope: Namespaced
+  names:
+    kind: Certificate
+    plural: certificates
+    shortNames:
+    - cert
+    - certs
+
+---
+
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  name: issuers.certmanager.k8s.io
+  labels:
+    app: cert-manager
+spec:
+  group: certmanager.k8s.io
+  version: v1alpha1
+  names:
+    kind: Issuer
+    plural: issuers
+  scope: Namespaced
+
+---
+
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  name: clusterissuers.certmanager.k8s.io
+  labels:
+    app: cert-manager
+spec:
+  group: certmanager.k8s.io
+  version: v1alpha1
+  names:
+    kind: ClusterIssuer
+    plural: clusterissuers
+  scope: Cluster
+
+---
+
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  name: orders.certmanager.k8s.io
+  labels:
+    app: cert-manager
+spec:
+  additionalPrinterColumns:
+  - JSONPath: .status.state
+    name: State
+    type: string
+  - JSONPath: .spec.issuerRef.name
+    name: Issuer
+    type: string
+    priority: 1
+  - JSONPath: .status.reason
+    name: Reason
+    type: string
+    priority: 1
+  - JSONPath: .metadata.creationTimestamp
+    description: |-
+      CreationTimestamp is a timestamp representing the server time when this object was created. It is not guaranteed to be set in happens-before order across separate operations. Clients may not set this value. It is represented in RFC3339 form and is in UTC.
+
+      Populated by the system. Read-only. Null for lists. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#metadata
+    name: Age
+    type: date
+  group: certmanager.k8s.io
+  version: v1alpha1
+  names:
+    kind: Order
+    plural: orders
+  scope: Namespaced
+
+---
+
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  name: challenges.certmanager.k8s.io
+  labels:
+    app: cert-manager
+spec:
+  additionalPrinterColumns:
+  - JSONPath: .status.state
+    name: State
+    type: string
+  - JSONPath: .spec.dnsName
+    name: Domain
+    type: string
+  - JSONPath: .status.reason
+    name: Reason
+    type: string
+  - JSONPath: .metadata.creationTimestamp
+    description: |-
+      CreationTimestamp is a timestamp representing the server time when this object was created. It is not guaranteed to be set in happens-before order across separate operations. Clients may not set this value. It is represented in RFC3339 form and is in UTC.
+
+      Populated by the system. Read-only. Null for lists. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#metadata
+    name: Age
+    type: date
+  group: certmanager.k8s.io
+  version: v1alpha1
+  names:
+    kind: Challenge
+    plural: challenges
+  scope: Namespaced
+
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: cert-manager
+  labels:
+    certmanager.k8s.io/disable-validation: "true"
+
+---
+---
+# Source: cert-manager/templates/serviceaccount.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: cert-manager
+  namespace: "cert-manager"
+  labels:
+    app: cert-manager
+    chart: cert-manager-v0.6.5
+    release: cert-manager
+    heritage: Tiller
+---
+# Source: cert-manager/templates/rbac.yaml
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRole
+metadata:
+  name: cert-manager
+  labels:
+    app: cert-manager
+    chart: cert-manager-v0.6.5
+    release: cert-manager
+    heritage: Tiller
+rules:
+  - apiGroups: ["certmanager.k8s.io"]
+    resources: ["certificates", "certificates/finalizers", "issuers", "clusterissuers", "orders", "orders/finalizers", "challenges"]
+    verbs: ["*"]
+  - apiGroups: [""]
+    resources: ["configmaps", "secrets", "events", "services", "pods"]
+    verbs: ["*"]
+  - apiGroups: ["extensions"]
+    resources: ["ingresses"]
+    verbs: ["*"]
+---
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRoleBinding
+metadata:
+  name: cert-manager
+  labels:
+    app: cert-manager
+    chart: cert-manager-v0.6.5
+    release: cert-manager
+    heritage: Tiller
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cert-manager
+subjects:
+  - name: cert-manager
+    namespace: "cert-manager"
+    kind: ServiceAccount
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: cert-manager-view
+  labels:
+    app: cert-manager
+    chart: cert-manager-v0.6.5
+    release: cert-manager
+    heritage: Tiller
+    rbac.authorization.k8s.io/aggregate-to-view: "true"
+    rbac.authorization.k8s.io/aggregate-to-edit: "true"
+    rbac.authorization.k8s.io/aggregate-to-admin: "true"
+rules:
+  - apiGroups: ["certmanager.k8s.io"]
+    resources: ["certificates", "issuers"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: cert-manager-edit
+  labels:
+    app: cert-manager
+    chart: cert-manager-v0.6.5
+    release: cert-manager
+    heritage: Tiller
+    rbac.authorization.k8s.io/aggregate-to-edit: "true"
+    rbac.authorization.k8s.io/aggregate-to-admin: "true"
+rules:
+  - apiGroups: ["certmanager.k8s.io"]
+    resources: ["certificates", "issuers"]
+    verbs: ["create", "delete", "deletecollection", "patch", "update"]
+---
+# Source: cert-manager/templates/deployment.yaml
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  name: cert-manager
+  namespace: "cert-manager"
+  labels:
+    app: cert-manager
+    chart: cert-manager-v0.6.5
+    release: cert-manager
+    heritage: Tiller
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cert-manager
+      release: cert-manager
+  template:
+    metadata:
+      labels:
+        app: cert-manager
+        release: cert-manager
+      annotations:
+    spec:
+      serviceAccountName: cert-manager
+      containers:
+        - name: cert-manager
+          image: "quay.io/jetstack/cert-manager-controller:v0.6.1"
+          imagePullPolicy: IfNotPresent
+          args:
+          - --cluster-resource-namespace=$(POD_NAMESPACE)
+          - --leader-election-namespace=$(POD_NAMESPACE)
+          env:
+          - name: POD_NAMESPACE
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.namespace
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            
+

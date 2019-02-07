@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright 2018 The Jetstack cert-manager contributors.
+# Copyright 2019 The Jetstack cert-manager contributors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -29,19 +29,23 @@ KUBE_VERSION=1.9
 
 gen() {
 	OUTPUT=$1
+	shift
 	TMP_OUTPUT=$(mktemp)
 	mkdir -p "$(dirname ${OUTPUT})"
 	helm template \
-		"${REPO_ROOT}/deploy/chart" \
+		"${REPO_ROOT}/deploy/charts/cert-manager" \
 		--values "${REPO_ROOT}/deploy/manifests/helm-values.yaml" \
 		--kube-version "${KUBE_VERSION}" \
 		--namespace "cert-manager" \
 		--name "cert-manager" \
-		--set "createNamespaceResource=true" > "${TMP_OUTPUT}"
-	mv "${TMP_OUTPUT}" "${OUTPUT}"
+        "$@" > "${TMP_OUTPUT}"
+    cat "${REPO_ROOT}/deploy/manifests/00-crds.yaml" \
+        "${REPO_ROOT}/deploy/manifests/01-namespace.yaml" \
+        "${TMP_OUTPUT}" > "${OUTPUT}"
 }
 
 export HELM_HOME="$(mktemp -d)"
 helm init --client-only
-helm dep update "${REPO_ROOT}/deploy/chart"
+helm dep update "${REPO_ROOT}/deploy/charts/cert-manager"
 gen "${REPO_ROOT}/deploy/manifests/cert-manager.yaml"
+gen "${REPO_ROOT}/deploy/manifests/cert-manager-no-webhook.yaml" --set webhook.enabled=false

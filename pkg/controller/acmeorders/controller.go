@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Jetstack cert-manager contributors.
+Copyright 2019 The Jetstack cert-manager contributors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -65,7 +65,7 @@ func New(ctx *controllerpkg.Context) *Controller {
 	ctrl := &Controller{Context: *ctx}
 	ctrl.syncHandler = ctrl.processNextWorkItem
 
-	ctrl.queue = workqueue.NewNamedRateLimitingQueue(controllerpkg.DefaultItemBasedRateLimiter(), "orders")
+	ctrl.queue = workqueue.NewNamedRateLimitingQueue(workqueue.NewItemExponentialFailureRateLimiter(time.Second*5, time.Minute*30), "orders")
 
 	orderInformer := ctrl.SharedInformerFactory.Certmanager().V1alpha1().Orders()
 	orderInformer.Informer().AddEventHandler(&controllerpkg.QueuingEventHandler{Queue: ctrl.queue})
@@ -77,10 +77,12 @@ func New(ctx *controllerpkg.Context) *Controller {
 	ctrl.watchedInformers = append(ctrl.watchedInformers, issuerInformer.Informer().HasSynced)
 	ctrl.issuerLister = issuerInformer.Lister()
 
-	clusterIssuerInformer := ctrl.SharedInformerFactory.Certmanager().V1alpha1().ClusterIssuers()
-	clusterIssuerInformer.Informer().AddEventHandler(&controllerpkg.BlockingEventHandler{WorkFunc: ctrl.handleGenericIssuer})
-	ctrl.watchedInformers = append(ctrl.watchedInformers, clusterIssuerInformer.Informer().HasSynced)
-	ctrl.clusterIssuerLister = clusterIssuerInformer.Lister()
+	if ctx.Namespace == "" {
+		clusterIssuerInformer := ctrl.SharedInformerFactory.Certmanager().V1alpha1().ClusterIssuers()
+		clusterIssuerInformer.Informer().AddEventHandler(&controllerpkg.BlockingEventHandler{WorkFunc: ctrl.handleGenericIssuer})
+		ctrl.watchedInformers = append(ctrl.watchedInformers, clusterIssuerInformer.Informer().HasSynced)
+		ctrl.clusterIssuerLister = clusterIssuerInformer.Lister()
+	}
 
 	challengeInformer := ctrl.SharedInformerFactory.Certmanager().V1alpha1().Challenges()
 	challengeInformer.Informer().AddEventHandler(&controllerpkg.BlockingEventHandler{WorkFunc: ctrl.handleOwnedResource})

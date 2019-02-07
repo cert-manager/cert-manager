@@ -34,7 +34,8 @@ By the end of the guide, we should have:
 4. Created an ACME ClusterIssuer using this private key, to issue certificates
    throughout your cluster
 
-5. Configured cert-manager's :doc:`ingress-shim </reference/ingress-shim>` to
+5. Configured cert-manager's
+   :doc:`ingress-shim </tasks/issuing-certificates/ingress-shim>` to
    automatically provision Certificate resources for all Ingress resources with
    the ``kubernetes.io/tls-acme: "true"`` annotation, using the ClusterIssuer
    we have created
@@ -214,9 +215,10 @@ cert-manager) to automatically create Certificate resources for all Ingress
 resources it finds with appropriate annotations.
 
 More information on the role of ingress-shim can be found
-:doc:`in the docs </reference/ingress-shim>`, but for now we can just run a
-``helm upgrade`` in order to add a few additional flags. Assuming you've named
-your ClusterIssuer ``letsencrypt-staging`` (as above), run:
+:doc:`in the docs </tasks/issuing-certificates/ingress-shim>`, but for now we
+can just run a ``helm upgrade`` in order to add a few additional flags.
+Assuming you've named your ClusterIssuer ``letsencrypt-staging`` (as above),
+run:
 
 .. code-block:: shell
 

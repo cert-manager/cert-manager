@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Jetstack cert-manager contributors.
+Copyright 2019 The Jetstack cert-manager contributors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -42,7 +42,7 @@ import (
 )
 
 const (
-	createOrderWaitDuration = time.Minute * 5
+	createOrderWaitDuration = time.Hour * 1
 )
 
 var (
@@ -140,6 +140,7 @@ func (a *Acme) Issue(ctx context.Context, crt *v1alpha1.Certificate) (*issuer.Is
 		if crt.Status.LastFailureTime == nil {
 			nowTime := metav1.NewTime(a.clock.Now())
 			crt.Status.LastFailureTime = &nowTime
+			a.Recorder.Eventf(crt, corev1.EventTypeWarning, "FailedOrder", "Order %q failed. Waiting %s before retrying issuance.", existingOrder.Name, createOrderWaitDuration)
 		}
 
 		if time.Now().Sub(crt.Status.LastFailureTime.Time) < createOrderWaitDuration {
@@ -181,7 +182,7 @@ func (a *Acme) Issue(ctx context.Context, crt *v1alpha1.Certificate) (*issuer.Is
 	// If it is, we recreate the order so we can obtain a fresh certificate.
 	// If not, we return the existing order's certificate to save additional
 	// orders.
-	if a.Context.IssuerOptions.CertificateNeedsRenew(x509Cert, crt.Spec.RenewBefore) {
+	if a.Context.IssuerOptions.CertificateNeedsRenew(x509Cert, crt) {
 		a.Recorder.Eventf(crt, corev1.EventTypeNormal, "OrderExpired", "Order %q contains a certificate nearing expiry. "+
 			"Creating new order...")
 		// existing order's certificate is near expiry

@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Jetstack cert-manager contributors.
+Copyright 2019 The Jetstack cert-manager contributors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -42,10 +42,8 @@ const (
 type solver interface {
 	// Present the challenge value with the given solver.
 	Present(ctx context.Context, issuer cmapi.GenericIssuer, ch *cmapi.Challenge) error
-	// Check should return Error only if propagation check cannot be performed.
-	// It MUST return `false, nil` if can contact all relevant services and all is
-	// doing is waiting for propagation
-	Check(ctx context.Context, issuer cmapi.GenericIssuer, ch *cmapi.Challenge) (bool, error)
+	// Check returns an Error if the propagation check didn't succeed.
+	Check(ctx context.Context, issuer cmapi.GenericIssuer, ch *cmapi.Challenge) error
 	// CleanUp will remove challenge records for a given solver.
 	// This may involve deleting resources in the Kubernetes API Server, or
 	// communicating with other external components (e.g. DNS providers).
@@ -148,12 +146,10 @@ func (c *Controller) Sync(ctx context.Context, ch *cmapi.Challenge) (err error) 
 		c.Recorder.Eventf(ch, corev1.EventTypeNormal, "Presented", "Presented challenge using %s challenge mechanism", ch.Spec.Type)
 	}
 
-	ok, err := solver.Check(ctx, genericIssuer, ch)
+	err = solver.Check(ctx, genericIssuer, ch)
 	if err != nil {
-		return err
-	}
-	if !ok {
-		ch.Status.Reason = fmt.Sprintf("Waiting for %s challenge propagation", ch.Spec.Type)
+		glog.Infof("propagation check failed: %v", err)
+		ch.Status.Reason = fmt.Sprintf("Waiting for %s challenge propagation: %s", ch.Spec.Type, err)
 
 		key, err := controllerpkg.KeyFunc(ch)
 		// This is an unexpected edge case and should never occur
@@ -161,8 +157,8 @@ func (c *Controller) Sync(ctx context.Context, ch *cmapi.Challenge) (err error) 
 			return err
 		}
 
-		// retry after 5s
-		c.queue.AddAfter(key, time.Second*5)
+		// retry after 10s
+		c.queue.AddAfter(key, time.Second*10)
 
 		return nil
 	}
@@ -224,6 +220,16 @@ func (c *Controller) syncChallengeStatus(ctx context.Context, cl acmecl.Interfac
 
 	// TODO: should we validate the State returned by the ACME server here?
 	cmState := cmapi.State(acmeChallenge.Status)
+	// be nice to our users and check if there is an error that we
+	// can tell them about in the reason field
+	// TODO(dmo): problems may be compound and they may be tagged with
+	// a type field that suggests changes we should make (like provisioning
+	// an account). We might be able to handle errors more gracefully using
+	// this info
+	ch.Status.Reason = ""
+	if acmeChallenge.Error != nil {
+		ch.Status.Reason = acmeChallenge.Error.Detail
+	}
 	ch.Status.State = cmState
 
 	return nil

@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Jetstack cert-manager contributors.
+Copyright 2019 The Jetstack cert-manager contributors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -28,7 +28,7 @@ import (
 	"github.com/jetstack/cert-manager/test/e2e/framework/addon"
 	"github.com/jetstack/cert-manager/test/e2e/framework/addon/pebble"
 	"github.com/jetstack/cert-manager/test/e2e/framework/addon/tiller"
-	"github.com/jetstack/cert-manager/test/util"
+	"github.com/jetstack/cert-manager/test/e2e/util"
 )
 
 const invalidACMEURL = "http://not-a-real-acme-url.com"

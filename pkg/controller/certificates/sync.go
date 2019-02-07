@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Jetstack cert-manager contributors.
+Copyright 2019 The Jetstack cert-manager contributors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -65,9 +65,6 @@ var (
 	certificateGvk = v1alpha1.SchemeGroupVersion.WithKind("Certificate")
 )
 
-// to help testing
-var now = time.Now
-
 func (c *Controller) Sync(ctx context.Context, crt *v1alpha1.Certificate) (err error) {
 	crtCopy := crt.DeepCopy()
 	defer func() {
@@ -77,10 +74,15 @@ func (c *Controller) Sync(ctx context.Context, crt *v1alpha1.Certificate) (err e
 	}()
 
 	// grab existing certificate and validate private key
-	cert, key, err := kube.SecretTLSKeyPair(c.secretLister, crtCopy.Namespace, crtCopy.Spec.SecretName)
+	certs, key, err := kube.SecretTLSKeyPair(c.secretLister, crtCopy.Namespace, crtCopy.Spec.SecretName)
 	// if we don't have a certificate, we need to trigger a re-issue immediately
 	if err != nil && !(k8sErrors.IsNotFound(err) || errors.IsInvalidData(err)) {
 		return err
+	}
+
+	var cert *x509.Certificate
+	if len(certs) > 0 {
+		cert = certs[0]
 	}
 
 	// update certificate expiry metric
@@ -144,7 +146,7 @@ func (c *Controller) Sync(ctx context.Context, crt *v1alpha1.Certificate) (err e
 	}
 
 	// check if the certificate needs renewal
-	needsRenew := c.Context.IssuerOptions.CertificateNeedsRenew(cert, crt.Spec.RenewBefore)
+	needsRenew := c.Context.IssuerOptions.CertificateNeedsRenew(cert, crt)
 	if needsRenew {
 		glog.V(4).Infof("Invoking issue function due to certificate needing renewal")
 		return c.issue(ctx, i, crtCopy)
@@ -172,7 +174,7 @@ func (c *Controller) setCertificateStatus(crt *v1alpha1.Certificate, key crypto.
 	// Derive & set 'Ready' condition on Certificate resource
 	matches, matchErrs := c.certificateMatchesSpec(crt, key, cert)
 	reason := "Ready"
-	if cert.NotAfter.Before(now()) {
+	if cert.NotAfter.Before(time.Now()) {
 		reason = "Expired"
 		matchErrs = append(matchErrs, fmt.Sprintf("Certificate has expired"))
 	}
@@ -216,6 +218,11 @@ func (c *Controller) certificateMatchesSpec(crt *v1alpha1.Certificate, key crypt
 		errs = append(errs, fmt.Sprintf("DNS names on TLS certificate not up to date: %q", cert.DNSNames))
 	}
 
+	// validate the ip addresses are correct
+	if !util.EqualUnsorted(pki.IPAddressesToString(cert.IPAddresses), crt.Spec.IPAddresses) {
+		errs = append(errs, fmt.Sprintf("IP addresses on TLS certificate not up to date: %q", pki.IPAddressesToString(cert.IPAddresses)))
+	}
+
 	return len(errs) == 0, errs
 }
 
@@ -251,8 +258,7 @@ func (c *Controller) scheduleRenewal(crt *v1alpha1.Certificate) {
 		return
 	}
 
-	renewIn := c.calculateDurationUntilRenew(cert, crt)
-
+	renewIn := c.Context.IssuerOptions.CalculateDurationUntilRenew(cert, crt)
 	c.scheduledWorkQueue.Add(key, renewIn)
 
 	glog.Infof("Certificate %s/%s scheduled for renewal in %s", crt.Namespace, crt.Name, renewIn.String())
@@ -279,7 +285,7 @@ func ownerRef(crt *v1alpha1.Certificate) metav1.OwnerReference {
 }
 
 func (c *Controller) updateSecret(crt *v1alpha1.Certificate, namespace string, cert, key, ca []byte) (*corev1.Secret, error) {
-	secret, err := c.Client.CoreV1().Secrets(namespace).Get(crt.Spec.SecretName, metav1.GetOptions{})
+	secret, err := c.secretLister.Secrets(namespace).Get(crt.Spec.SecretName)
 	if err != nil && !k8sErrors.IsNotFound(err) {
 		return nil, err
 	}
@@ -294,6 +300,9 @@ func (c *Controller) updateSecret(crt *v1alpha1.Certificate, namespace string, c
 		}
 	}
 
+	if secret.Data == nil {
+		secret.Data = map[string][]byte{}
+	}
 	secret.Data[corev1.TLSCertKey] = cert
 	secret.Data[corev1.TLSPrivateKeyKey] = key
 	secret.Data[TLSCAKey] = ca
@@ -314,6 +323,7 @@ func (c *Controller) updateSecret(crt *v1alpha1.Certificate, namespace string, c
 		secret.Annotations[v1alpha1.IssuerKindAnnotationKey] = issuerKind(crt)
 		secret.Annotations[v1alpha1.CommonNameAnnotationKey] = x509Cert.Subject.CommonName
 		secret.Annotations[v1alpha1.AltNamesAnnotationKey] = strings.Join(x509Cert.DNSNames, ",")
+		secret.Annotations[v1alpha1.IPSANAnnotationKey] = strings.Join(pki.IPAddressesToString(x509Cert.IPAddresses), ",")
 	}
 
 	// Always set the certificate name label on the target secret
@@ -375,44 +385,4 @@ func (c *Controller) updateCertificateStatus(old, new *v1alpha1.Certificate) (*v
 	// server with the /status subresource enabled and/or subresource support
 	// for CRDs (https://github.com/kubernetes/kubernetes/issues/38113)
 	return c.CMClient.CertmanagerV1alpha1().Certificates(new.Namespace).Update(new)
-}
-
-// calculateDurationUntilRenew calculates how long cert-manager should wait to
-// until attempting to renew this certificate resource.
-func (c *Controller) calculateDurationUntilRenew(cert *x509.Certificate, crt *v1alpha1.Certificate) time.Duration {
-	messageCertificateDuration := "Certificate received from server has a validity duration of %s. The requested certificate validity duration was %s"
-	messageScheduleModified := "Certificate renewal duration was changed to fit inside the received certificate validity duration from issuer."
-
-	// validate if the certificate received was with the issuer configured
-	// duration. If not we generate an event to warn the user of that fact.
-	certDuration := cert.NotAfter.Sub(cert.NotBefore)
-	if crt.Spec.Duration != nil && certDuration < crt.Spec.Duration.Duration {
-		s := fmt.Sprintf(messageCertificateDuration, certDuration, crt.Spec.Duration.Duration)
-		glog.Info(s)
-		// TODO Use the message as the reason in a 'renewal status' condition
-	}
-
-	// renew is the duration before the certificate expiration that cert-manager
-	// will start to try renewing the certificate.
-	renewBefore := v1alpha1.DefaultRenewBefore
-	if crt.Spec.RenewBefore != nil {
-		renewBefore = crt.Spec.RenewBefore.Duration
-	}
-
-	// Verify that the renewBefore duration is inside the certificate validity duration.
-	// If not we notify with an event that we will renew the certificate
-	// before (certificate duration / 3) of its expiration duration.
-	if renewBefore > certDuration {
-		glog.Info(messageScheduleModified)
-		// TODO Use the message as the reason in a 'renewal status' condition
-		// We will renew 1/3 before the expiration date.
-		renewBefore = certDuration / 3
-	}
-
-	// calculate the amount of time until expiry
-	durationUntilExpiry := cert.NotAfter.Sub(now())
-	// calculate how long until we should start attempting to renew the certificate
-	renewIn := durationUntilExpiry - renewBefore
-
-	return renewIn
 }

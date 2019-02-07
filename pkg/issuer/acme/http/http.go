@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Jetstack cert-manager contributors.
+Copyright 2019 The Jetstack cert-manager contributors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -18,13 +18,13 @@ package http
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/url"
 	"time"
 
-	"github.com/golang/glog"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	corev1listers "k8s.io/client-go/listers/core/v1"
 	extv1beta1listers "k8s.io/client-go/listers/extensions/v1beta1"
@@ -61,16 +61,7 @@ type Solver struct {
 	requiredPasses   int
 }
 
-type reachabilityTest func(ctx context.Context, url, key string) (bool, error)
-
-// absorbErr wraps an error to mark it as absorbable (log and handle as nil)
-type absorbErr struct {
-	err error
-}
-
-func (ae *absorbErr) Error() string {
-	return ae.err.Error()
-}
+type reachabilityTest func(ctx context.Context, url *url.URL, key string) error
 
 // NewSolver returns a new ACME HTTP01 solver for the given Issuer and client.
 // TODO: refactor this to have fewer args
@@ -98,26 +89,20 @@ func (s *Solver) Present(ctx context.Context, issuer v1alpha1.GenericIssuer, ch 
 	return utilerrors.NewAggregate([]error{podErr, svcErr, ingressErr})
 }
 
-func (s *Solver) Check(ctx context.Context, issuer v1alpha1.GenericIssuer, ch *v1alpha1.Challenge) (bool, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), HTTP01Timeout)
+func (s *Solver) Check(ctx context.Context, issuer v1alpha1.GenericIssuer, ch *v1alpha1.Challenge) error {
+	ctx, cancel := context.WithTimeout(ctx, HTTP01Timeout)
 	defer cancel()
 
 	url := s.buildChallengeUrl(ch)
 
 	for i := 0; i < s.requiredPasses; i++ {
-		ok, err := s.testReachability(ctx, url, ch.Spec.Key)
-		if absorbedErr, wasAbsorbed := err.(*absorbErr); wasAbsorbed {
-			glog.Infof("could not reach '%s': %v", url, absorbedErr.err)
-			return false, nil
-		} else if err != nil {
-			return false, err
-		}
-		if !ok {
-			return false, nil
+		err := s.testReachability(ctx, url, ch.Spec.Key)
+		if err != nil {
+			return err
 		}
 		time.Sleep(time.Second * 2)
 	}
-	return true, nil
+	return nil
 }
 
 // CleanUp will ensure the created service, ingress and pod are clean/deleted of any
@@ -130,43 +115,61 @@ func (s *Solver) CleanUp(ctx context.Context, issuer v1alpha1.GenericIssuer, ch 
 	return utilerrors.NewAggregate(errs)
 }
 
-func (s *Solver) buildChallengeUrl(ch *v1alpha1.Challenge) string {
+func (s *Solver) buildChallengeUrl(ch *v1alpha1.Challenge) *url.URL {
 	url := &url.URL{}
 	url.Scheme = "http"
 	url.Host = ch.Spec.DNSName
 	url.Path = fmt.Sprintf("%s/%s", solver.HTTPChallengePath, ch.Spec.Token)
 
-	return url.String()
+	return url
 }
 
 // testReachability will attempt to connect to the 'domain' with 'path' and
 // check if the returned body equals 'key'
-func testReachability(ctx context.Context, url string, key string) (bool, error) {
-	req, err := http.NewRequest(http.MethodGet, url, nil)
-	if err != nil {
-		return false, fmt.Errorf("failed to build request: %v", err)
+func testReachability(ctx context.Context, url *url.URL, key string) error {
+	req := &http.Request{
+		Method: http.MethodGet,
+		URL:    url,
 	}
 
 	req = req.WithContext(ctx)
 
-	response, err := http.DefaultClient.Do(req)
+	// ACME spec says that a verifier should try
+	// on http port 80 first, but follow any redirects may be thrown its way
+	// The redirects may be HTTPS and its certificate may be invalid (they are trying to get a
+	// certificate after all).
+	// TODO(dmo): figure out if we need to add a more specific timeout for
+	// individual checks
+	transport := &http.Transport{
+		// we're only doing 1 request, make the code around this
+		// simpler by disabling keepalives
+		DisableKeepAlives: true,
+		TLSClientConfig: &tls.Config{
+			InsecureSkipVerify: true,
+		},
+	}
+	client := http.Client{
+		Transport: transport,
+	}
+
+	response, err := client.Do(req)
 	if err != nil {
-		return false, &absorbErr{err: fmt.Errorf("failed to GET '%s': %v", url, err)}
+		return fmt.Errorf("failed to GET '%s': %v", url, err)
 	}
 
 	if response.StatusCode != http.StatusOK {
-		return false, &absorbErr{err: fmt.Errorf("wrong status code '%d', expected '%d'", response.StatusCode, http.StatusOK)}
+		return fmt.Errorf("wrong status code '%d', expected '%d'", response.StatusCode, http.StatusOK)
 	}
 
 	defer response.Body.Close()
 	presentedKey, err := ioutil.ReadAll(response.Body)
 	if err != nil {
-		return false, fmt.Errorf("failed to read response body: %v", err)
+		return fmt.Errorf("failed to read response body: %v", err)
 	}
 
 	if string(presentedKey) != key {
-		return false, &absorbErr{err: fmt.Errorf("presented key (%s) did not match expected (%s)", presentedKey, key)}
+		return fmt.Errorf("presented key (%s) did not match expected (%s)", presentedKey, key)
 	}
 
-	return true, nil
+	return nil
 }

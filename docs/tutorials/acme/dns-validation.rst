@@ -146,7 +146,7 @@ be cleaned up.
 
 .. note::
    It is your responsibility to ensure the selected provider is authoritative for
-   your domain. 
+   your domain.
 
 After creating the above Certificate, we can check whether it has been obtained
 successfully using ``kubectl describe``:

@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Jetstack cert-manager contributors.
+Copyright 2019 The Jetstack cert-manager contributors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -124,7 +124,7 @@ func (s *Scheduler) determineChallengeCandidates(allChallenges []*cmapi.Challeng
 
 	// If there are any already in-progress challenges for a domain and type,
 	// filter them out.
-	candidates := quickFilterChallenges(dedupedCandidates, func(ch *cmapi.Challenge) bool {
+	candidates := filterChallenges(dedupedCandidates, func(ch *cmapi.Challenge) bool {
 		for _, inPCh := range inProgress {
 			if compareChallenges(ch, inPCh) == 0 {
 				glog.V(6).Infof("There is already a challenge processing for domain %q (type %q)", ch.Spec.DNSName, ch.Spec.Type)
@@ -149,7 +149,7 @@ func sortChallengesByTimestamp(chs []*cmapi.Challenge) {
 // notProcessingChallenges will filter out challenges from the given slice
 // that have status.processing set to true.
 func notProcessingChallenges(chs []*cmapi.Challenge) []*cmapi.Challenge {
-	return quickFilterChallenges(chs, func(ch *cmapi.Challenge) bool {
+	return filterChallenges(chs, func(ch *cmapi.Challenge) bool {
 		return !ch.Status.Processing
 	})
 }
@@ -157,7 +157,7 @@ func notProcessingChallenges(chs []*cmapi.Challenge) []*cmapi.Challenge {
 // processingChallenges will filter out challenges from the given slice
 // that have status.processing set to false.
 func processingChallenges(chs []*cmapi.Challenge) []*cmapi.Challenge {
-	return quickFilterChallenges(chs, func(ch *cmapi.Challenge) bool {
+	return filterChallenges(chs, func(ch *cmapi.Challenge) bool {
 		return ch.Status.Processing
 	})
 }
@@ -165,20 +165,18 @@ func processingChallenges(chs []*cmapi.Challenge) []*cmapi.Challenge {
 // incompleteChallenges will filter out challenges from the given slice
 // that are in a 'final' state
 func incompleteChallenges(chs []*cmapi.Challenge) []*cmapi.Challenge {
-	return quickFilterChallenges(chs, func(ch *cmapi.Challenge) bool {
+	return filterChallenges(chs, func(ch *cmapi.Challenge) bool {
 		return !acme.IsFinalState(ch.Status.State)
 	})
 }
 
-// https://github.com/golang/go/wiki/SliceTricks#Filtering-without-allocating
-func quickFilterChallenges(chs []*cmapi.Challenge, fn func(ch *cmapi.Challenge) bool) []*cmapi.Challenge {
-	ret := chs[:0]
+func filterChallenges(chs []*cmapi.Challenge, fn func(ch *cmapi.Challenge) bool) []*cmapi.Challenge {
+	ret := []*cmapi.Challenge{}
 	for _, ch := range chs {
 		if fn(ch) {
 			ret = append(ret, ch)
 		}
 	}
-
 	return ret
 }
 

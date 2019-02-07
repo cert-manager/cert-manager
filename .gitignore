@@ -7,3 +7,5 @@
 .vscode
 .venv
 bazel-*
+/.settings/
+/.project

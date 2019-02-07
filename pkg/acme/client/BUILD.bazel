@@ -4,11 +4,15 @@ go_library(
     name = "go_default_library",
     srcs = [
         "fake.go",
+        "http.go",
         "interfaces.go",
     ],
     importpath = "github.com/jetstack/cert-manager/pkg/acme/client",
     visibility = ["//visibility:public"],
-    deps = ["//third_party/crypto/acme:go_default_library"],
+    deps = [
+        "//pkg/metrics:go_default_library",
+        "//third_party/crypto/acme:go_default_library",
+    ],
 )
 
 filegroup(

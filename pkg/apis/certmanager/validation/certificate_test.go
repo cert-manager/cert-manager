@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Jetstack cert-manager contributors.
+Copyright 2019 The Jetstack cert-manager contributors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -370,6 +370,29 @@ func TestValidateCertificate(t *testing.T) {
 			},
 			errs: []*field.Error{
 				field.Invalid(fldPath.Child("keyAlgorithm"), v1alpha1.KeyAlgorithm("blah"), "must be either empty or one of rsa or ecdsa"),
+			},
+		},
+		"valid certificate with ipAddresses": {
+			cfg: &v1alpha1.Certificate{
+				Spec: v1alpha1.CertificateSpec{
+					CommonName:  "testcn",
+					IPAddresses: []string{"127.0.0.1"},
+					SecretName:  "abc",
+					IssuerRef:   validIssuerRef,
+				},
+			},
+		},
+		"certificate with invalid ipAddresses": {
+			cfg: &v1alpha1.Certificate{
+				Spec: v1alpha1.CertificateSpec{
+					CommonName:  "testcn",
+					IPAddresses: []string{"blah"},
+					SecretName:  "abc",
+					IssuerRef:   validIssuerRef,
+				},
+			},
+			errs: []*field.Error{
+				field.Invalid(fldPath.Child("ipAddresses").Index(0), "blah", "invalid IP address"),
 			},
 		},
 	}

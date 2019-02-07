@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Jetstack cert-manager contributors.
+Copyright 2019 The Jetstack cert-manager contributors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -45,7 +45,7 @@ type DNSProvider struct {
 	auth *EdgeGridAuth
 
 	transport              http.RoundTripper
-	findHostedDomainByFqdn func(string) (string, error)
+	findHostedDomainByFqdn func(string, []string) (string, error)
 }
 
 // NewDNSProvider returns a DNSProvider instance configured for Akamai.
@@ -59,8 +59,8 @@ func NewDNSProvider(serviceConsumerDomain, clientToken, clientSecret, accessToke
 	}, nil
 }
 
-func findHostedDomainByFqdn(fqdn string) (string, error) {
-	zone, err := util.FindZoneByFqdn(fqdn, util.RecursiveNameservers)
+func findHostedDomainByFqdn(fqdn string, ns []string) (string, error) {
+	zone, err := util.FindZoneByFqdn(fqdn, ns)
 	if err != nil {
 		return "", err
 	}
@@ -84,7 +84,7 @@ type dns01Record struct {
 }
 
 func (a *DNSProvider) setTxtRecord(fqdn string, dns01Record *dns01Record) error {
-	hostedDomain, err := a.findHostedDomainByFqdn(fqdn)
+	hostedDomain, err := a.findHostedDomainByFqdn(fqdn, a.dns01Nameservers)
 	if err != nil {
 		return errors.Wrapf(err, "failed to determine hosted domain for %q", fqdn)
 	}

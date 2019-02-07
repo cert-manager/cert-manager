@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright 2018 The Jetstack cert-manager contributors.
+# Copyright 2019 The Jetstack cert-manager contributors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -31,6 +31,8 @@ build_images() {
     DOCKER_REPO="${DOCKER_REPO}" \
     DOCKER_TAG="${DOCKER_TAG}" \
     bazel run //:images
+    # Build e2e test images
+    bazel run //test/e2e/charts:images
 
     local TMP_DIR=$(mktemp -d)
     local BUNDLE_FILE="${TMP_DIR}"/cmbundle.tar.gz
@@ -40,6 +42,11 @@ build_images() {
         "${DOCKER_REPO}"/cert-manager-controller:"${DOCKER_TAG}" \
         "${DOCKER_REPO}"/cert-manager-acmesolver:"${DOCKER_TAG}" \
         "${DOCKER_REPO}"/cert-manager-webhook:"${DOCKER_TAG}" \
+        "pebble:bazel" \
+        "quay.io/kubernetes-ingress-controller/nginx-ingress-controller:0.21.0" \
+        "k8s.gcr.io/defaultbackend:bazel" \
+        "vault:bazel" \
+        "gcr.io/kubernetes-helm/tiller:bazel" \
         -o "${BUNDLE_FILE}"
 
     # Copy docker archive into the kind container

@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Jetstack cert-manager contributors.
+Copyright 2019 The Jetstack cert-manager contributors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -70,8 +70,7 @@ func New(ctx *controllerpkg.Context) *Controller {
 	ctrl := &Controller{Context: *ctx}
 	ctrl.syncHandler = ctrl.processNextWorkItem
 
-	// exponentially back-off self checks, with a base of 2s and max wait of 20s
-	ctrl.queue = workqueue.NewNamedRateLimitingQueue(controllerpkg.DefaultItemBasedRateLimiter(), "challenges")
+	ctrl.queue = workqueue.NewNamedRateLimitingQueue(workqueue.NewItemExponentialFailureRateLimiter(time.Second*5, time.Minute*30), "challenges")
 
 	challengeInformer := ctrl.SharedInformerFactory.Certmanager().V1alpha1().Challenges()
 	challengeInformer.Informer().AddEventHandler(&controllerpkg.QueuingEventHandler{Queue: ctrl.queue})
@@ -83,10 +82,12 @@ func New(ctx *controllerpkg.Context) *Controller {
 	ctrl.watchedInformers = append(ctrl.watchedInformers, issuerInformer.Informer().HasSynced)
 	ctrl.issuerLister = issuerInformer.Lister()
 
-	// clusterIssuerInformer.Informer().AddEventHandler(&controllerpkg.QueuingEventHandler{Queue: ctrl.queue})
-	clusterIssuerInformer := ctrl.SharedInformerFactory.Certmanager().V1alpha1().ClusterIssuers()
-	ctrl.watchedInformers = append(ctrl.watchedInformers, clusterIssuerInformer.Informer().HasSynced)
-	ctrl.clusterIssuerLister = clusterIssuerInformer.Lister()
+	if ctx.Namespace == "" {
+		// clusterIssuerInformer.Informer().AddEventHandler(&controllerpkg.QueuingEventHandler{Queue: ctrl.queue})
+		clusterIssuerInformer := ctrl.SharedInformerFactory.Certmanager().V1alpha1().ClusterIssuers()
+		ctrl.watchedInformers = append(ctrl.watchedInformers, clusterIssuerInformer.Informer().HasSynced)
+		ctrl.clusterIssuerLister = clusterIssuerInformer.Lister()
+	}
 
 	secretInformer := ctrl.KubeSharedInformerFactory.Core().V1().Secrets()
 	ctrl.watchedInformers = append(ctrl.watchedInformers, secretInformer.Informer().HasSynced)

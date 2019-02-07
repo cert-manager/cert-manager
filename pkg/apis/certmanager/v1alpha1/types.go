@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Jetstack cert-manager contributors.
+Copyright 2019 The Jetstack cert-manager contributors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package v1alpha1
 
 const (
 	AltNamesAnnotationKey   = "certmanager.k8s.io/alt-names"
+	IPSANAnnotationKey      = "certmanager.k8s.io/ip-sans"
 	CommonNameAnnotationKey = "certmanager.k8s.io/common-name"
 	IssuerNameAnnotationKey = "certmanager.k8s.io/issuer-name"
 	IssuerKindAnnotationKey = "certmanager.k8s.io/issuer-kind"
