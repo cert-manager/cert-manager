@@ -18,7 +18,7 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-SCRIPT_ROOT=$(dirname "${BASH_SOURCE}")
+SCRIPT_ROOT=$(dirname "${BASH_SOURCE[0]}")
 source "${SCRIPT_ROOT}/lib.sh"
 
 # deploy_kind will deploy a kubernetes-in-docker cluster
@@ -27,10 +27,10 @@ deploy_kind() {
     bazel run "${KIND_IMAGE_TARGET}"
 
     function kubeVersion() {
-        echo $(docker run \
+        docker run \
             --entrypoint="cat" \
             "${KIND_IMAGE}" \
-            /kind/version)
+            /kind/version
     }
 
     # default to v1beta1, if 1.12.x then use v1alpha3, if 1.11.x then use v1alpha2

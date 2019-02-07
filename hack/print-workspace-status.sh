@@ -20,8 +20,6 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-SCRIPT_ROOT=$(dirname ${BASH_SOURCE})/../..
-
 # AppVersion is set as the AppVersion to be compiled into the controller binary.
 # It's used as the default version of the 'acmesolver' image to use for ACME
 # challenge requests, and any other future provider that requires additional
@@ -31,7 +29,7 @@ if [ -z "${APP_VERSION:-}" ]; then
 fi
 APP_GIT_COMMIT=${APP_GIT_COMMIT:-$(git rev-parse HEAD)}
 GIT_STATE=""
-if [ ! -z "$(git status --porcelain)" ]; then
+if [ -n "$(git status --porcelain)" ]; then
     GIT_STATE="dirty"
 fi
 

@@ -26,7 +26,7 @@ set -o pipefail
 
 RULE_NAME="bazel"
 
-SCRIPT_ROOT=$(dirname "${BASH_SOURCE}")/..
+SCRIPT_ROOT=$(dirname "${BASH_SOURCE[0]}")/..
 
 _tmp="$(mktemp -d)"
 DIFFROOT="${SCRIPT_ROOT}/"
@@ -45,7 +45,8 @@ rsync -avvL "${DIFFROOT}"/ "${TMP_DIFFROOT}" >/dev/null
 rm -Rf "${TMP_DIFFROOT}/__main__"
 
 cd "${TMP_DIFFROOT}"
-export BUILD_WORKSPACE_DIRECTORY="$(pwd)"
+BUILD_WORKSPACE_DIRECTORY="$(pwd)"
+export BUILD_WORKSPACE_DIRECTORY
 "hack/update-${RULE_NAME}.sh"
 
 echo "diffing ${DIFFROOT} against freshly generated codegen"

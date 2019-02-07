@@ -28,7 +28,7 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-REPO_ROOT=$(dirname "${BASH_SOURCE}")/..
+REPO_ROOT=$(dirname "${BASH_SOURCE[0]}")/..
 
 if [ "$*" != "" ]; then
   args="$*"
@@ -42,39 +42,39 @@ tmp=$(mktemp)
 
 for file in ${mdFiles}; do
   # echo scanning $file
-  dir=$(dirname $file)
+  dir=$(dirname "$file")
 
   # Replace ) with )\n so that each possible href is on its own line.
   # Then only grab lines that have [..](..) in them - put results in tmp file.
   # If the file doesn't have any lines with [..](..) then skip this file
-  sed "s/)/)\n/g" < $file | grep "\[.*\](.*)" > ${tmp}1 || continue
+  sed "s/)/)\n/g" < "$file" | grep "\[.*\](.*)" > "${tmp}1" || continue
 
   # This sed will extract the href portion of the [..](..) - meaning
   # the stuff in the parens.
-  sed "s/.*\(\[[^\[\]*\]([^()]*)\)/\1/" < ${tmp}1 > ${tmp}2  || continue
+  sed "s/.*\(\[[^\[\]*\]([^()]*)\)/\1/" < "${tmp}1" > "${tmp}2"  || continue
 
   # Extract all headings/anchors.
   # And strip off the leading #'s and leading/trailing blanks
-  grep "^ *#" < $file | sed "s/ *#* *\(.*\) *$/\1/" > ${tmp}anchors
+  grep "^ *#" < "$file" | sed "s/ *#* *\(.*\) *$/\1/" > "${tmp}anchors"
 
   # Now convert the header to what the anchor will look like.
   # - lower case stuff
   # - convert spaces to -'s
   # - remove punctuation marks (only accept 0-9, a-z
-  cat ${tmp}anchors | \
+  cat "${tmp}anchors" | \
     tr '[:upper:]' '[:lower:]' | \
 	sed "s/ /-/g" | \
-    sed "s/[^-a-zA-Z0-9]//g" > ${tmp}anchors1
+    sed "s/[^-a-zA-Z0-9]//g" > "${tmp}anchors1"
 
-  cat ${tmp}2 | while read line ; do
+  cat "${tmp}2" | while read -r line ; do
     # Strip off the leading and trailing parens
     ref=${line#*(}
 	ref=${ref%)*}
 
 	# An external href (ie. starts with http)
 	if [ "${ref:0:4}" == "http" ]; then
-	  if ! wget --timeout 10 -o /dev/null ${ref} > /dev/null 2>&1 ; then
-	    echo $file: Can\'t load: url ${ref} | tee -a ${tmp}3
+	  if ! wget --timeout 10 -o /dev/null "${ref}" > /dev/null 2>&1 ; then
+	    echo "$file: Can't load: url ${ref}" | tee -a "${tmp}3"
 	  fi
 	  continue
 	fi
@@ -83,8 +83,8 @@ for file in ${mdFiles}; do
 	# TODO add support for checking these
 	if [ "${ref:0:1}" == "#" ]; then
 	  ref=${ref:1}
-	  if ! grep "^$ref$" ${tmp}anchors1 > /dev/null 2>&1 ; then
-	    echo $file: Can\'t find anchor \'\#${ref}\' | tee -a ${tmp}3
+	  if ! grep "^$ref$" "${tmp}anchors1" > /dev/null 2>&1 ; then
+	    echo "$file: Can't find anchor '#${ref}'" | tee -a "${tmp}3"
 	  fi
 	  continue
 	fi
@@ -96,14 +96,14 @@ for file in ${mdFiles}; do
 	# And finally make sure the file is there
 	# debug line: echo ref: $ref "->" $newPath
 	if ! ls "${newPath}" > /dev/null 2>&1 ; then
-	  echo $file: Can\'t find: ${newPath} | tee -a ${tmp}3
+	  echo "$file: Can't find: ${newPath}" | tee -a "${tmp}3"
 	  failed=true
 	fi
   done
 done
 rc=0
-if [ -a ${tmp}3 ]; then
+if [ -a "${tmp}3" ]; then
   rc=1
 fi
-rm -f ${tmp}*
+rm -f "${tmp}*"
 exit $rc

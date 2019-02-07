@@ -18,7 +18,7 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-SCRIPT_ROOT=$(dirname "${BASH_SOURCE}")
+SCRIPT_ROOT=$(dirname "${BASH_SOURCE[0]}")
 source "${SCRIPT_ROOT}/lib.sh"
 
 "${KIND}" delete cluster --name="${KIND_CLUSTER_NAME}"

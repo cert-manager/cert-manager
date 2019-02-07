@@ -18,7 +18,6 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-SCRIPT_ROOT=$(dirname "${BASH_SOURCE}")/..
 # This script should be run via `bazel run //hack:update-deps`
 runfiles="$(pwd)"
 export PATH="${runfiles}/hack/bin:${PATH}"
@@ -32,13 +31,13 @@ trap "cleanup" EXIT SIGINT
 # Create a fake GOPATH
 export GOPATH="${_tmp}"
 TMP_DIFFROOT="${GOPATH}/src/github.com/jetstack/cert-manager"
-mkdir -p "$(dirname ${TMP_DIFFROOT})"
+mkdir -p "$(dirname "${TMP_DIFFROOT}")"
 ln -s "$(pwd)" "${TMP_DIFFROOT}"
 cd "${TMP_DIFFROOT}"
 
 echo "+++ Running gofmt"
 output=$(find . -name '*.go' | grep -v 'vendor/' | xargs gofmt -s -d)
-if [ ! -z "${output}" ]; then
+if [ -n "${output}" ]; then
     echo "${output}"
     echo "Please run 'bazel run //hack:update-gofmt'"
     exit 1

@@ -22,7 +22,7 @@ set -o pipefail
 # It will transfer them to the 'kind' docker container so they are available
 # in a testing environment.
 
-SCRIPT_ROOT=$(dirname "${BASH_SOURCE}")
+SCRIPT_ROOT=$(dirname "${BASH_SOURCE[0]}")
 source "${SCRIPT_ROOT}/lib.sh"
 
 build_images() {

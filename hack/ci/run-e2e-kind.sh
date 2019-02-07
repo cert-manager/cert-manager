@@ -24,7 +24,7 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-SCRIPT_ROOT=$(dirname "${BASH_SOURCE}")
+SCRIPT_ROOT=$(dirname "${BASH_SOURCE[0]}")
 source "${SCRIPT_ROOT}/lib/lib.sh"
 
 cleanup() {
@@ -44,5 +44,5 @@ echo "Testing kind apiserver connectivity"
 "${SCRIPT_ROOT}/lib/build_images.sh"
 
 make e2e_test \
-    KUBECONFIG=${KUBECONFIG} \
-    KUBECTL=${KUBECTL}
+    KUBECONFIG="${KUBECONFIG}" \
+    KUBECTL="${KUBECTL}"

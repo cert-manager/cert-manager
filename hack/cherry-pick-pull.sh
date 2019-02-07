@@ -25,11 +25,14 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-declare -r KUBE_ROOT="$(dirname "${BASH_SOURCE}")/.."
+KUBE_ROOT="$(dirname "${BASH_SOURCE[0]}")/.."
 cd "${KUBE_ROOT}"
 
-declare -r STARTINGBRANCH=$(git symbolic-ref --short HEAD)
-declare -r REBASEMAGIC="${KUBE_ROOT}/.git/rebase-apply"
+STARTINGBRANCH=$(git symbolic-ref --short HEAD)
+REBASEMAGIC="${KUBE_ROOT}/.git/rebase-apply"
+declare -r STARTINGBRANCH
+declare -r REBASEMAGIC
+
 DRY_RUN=${DRY_RUN:-""}
 REGENERATE_DOCS=${REGENERATE_DOCS:-""}
 UPSTREAM_REMOTE=${UPSTREAM_REMOTE:-upstream}
@@ -75,14 +78,17 @@ if [[ -e "${REBASEMAGIC}" ]]; then
   exit 1
 fi
 
-declare -r BRANCH="$1"
+BRANCH="$1"
 shift 1
-declare -r PULLS=( "$@" )
+PULLS=( "$@" )
+declare -r BRANCH
+declare -r PULLS
 
 function join { local IFS="$1"; shift; echo "$*"; }
-declare -r PULLDASH=$(join - "${PULLS[@]/#/#}") # Generates something like "#12345-#56789"
-declare -r PULLSUBJ=$(join " " "${PULLS[@]/#/#}") # Generates something like "#12345 #56789"
-
+PULLDASH=$(join - "${PULLS[@]/#/#}") # Generates something like "#12345-#56789"
+PULLSUBJ=$(join " " "${PULLS[@]/#/#}") # Generates something like "#12345 #56789"
+declare -r PULLDASH
+declare -r PULLSUBJ
 echo "+++ Updating remotes..."
 git remote update "${UPSTREAM_REMOTE}" "${FORK_REMOTE}"
 
@@ -92,9 +98,12 @@ if ! git log -n1 --format=%H "${BRANCH}" >/dev/null 2>&1; then
   exit 1
 fi
 
-declare -r NEWBRANCHREQ="automated-cherry-pick-of-${PULLDASH}" # "Required" portion for tools.
-declare -r NEWBRANCH="$(echo "${NEWBRANCHREQ}-${BRANCH}" | sed 's/\//-/g')"
-declare -r NEWBRANCHUNIQ="${NEWBRANCH}-$(date +%s)"
+NEWBRANCHREQ="automated-cherry-pick-of-${PULLDASH}" # "Required" portion for tools.
+NEWBRANCH="$(echo "${NEWBRANCHREQ}-${BRANCH}" | sed 's/\//-/g')"
+NEWBRANCHUNIQ="${NEWBRANCH}-$(date +%s)"
+declare -r NEWBRANCHREQ
+declare -r NEWBRANCH
+declare -r NEWBRANCHUNIQ
 echo "+++ Creating local branch ${NEWBRANCHUNIQ}"
 
 cleanbranch=""
@@ -124,7 +133,8 @@ trap return_to_kansas EXIT
 
 SUBJECTS=()
 function make-a-pr() {
-  local rel="$(basename "${BRANCH}")"
+  rel="$(basename "${BRANCH}")"
+  local rel
   echo
   echo "+++ Creating a pull request on GitHub at ${GITHUB_USER}:${NEWBRANCH}"
 
@@ -212,7 +222,7 @@ if [[ -n "${DRY_RUN}" ]]; then
   exit 0
 fi
 
-if git remote -v | grep ^${FORK_REMOTE} | grep kubernetes/kubernetes.git; then
+if git remote -v | grep "^${FORK_REMOTE}" | grep kubernetes/kubernetes.git; then
   echo "!!! You have ${FORK_REMOTE} configured as your kubernetes/kubernetes.git"
   echo "This isn't normal. Leaving you with push instructions:"
   echo

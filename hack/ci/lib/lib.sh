@@ -19,14 +19,12 @@ set -o nounset
 set -o pipefail
 
 _SCRIPT_ROOT=$(dirname "${BASH_SOURCE}")
-REPO_ROOT="${_SCRIPT_ROOT}/../../.."
+export REPO_ROOT="${_SCRIPT_ROOT}/../../.."
 
 # This file contains common definitions that are re-used in other scripts
-
 export K8S_VERSION="${K8S_VERSION:-1.11}"
-KUBECTL_TARGET="${KUBECTL_TARGET:-//test/e2e/bin:kubectl-${K8S_VERSION}}"
-KIND_IMAGE_TARGET="${KIND_IMAGE_TARGET:-@kind-${K8S_VERSION}//image}"
-
+export KUBECTL_TARGET="${KUBECTL_TARGET:-//test/e2e/bin:kubectl-${K8S_VERSION}}"
+export KIND_IMAGE_TARGET="${KIND_IMAGE_TARGET:-@kind-${K8S_VERSION}//image}"
 export KIND_CLUSTER_NAME="${KIND_CLUSTER_NAME:-cm-local-cluster}"
 export KIND_CONTAINER_NAME="kind-${KIND_CLUSTER_NAME}-control-plane"
 

@@ -26,7 +26,7 @@ set -o pipefail
 
 if [ "$#" -lt 4 ] || [ "${1}" == "--help" ]; then
   cat <<EOF
-Usage: $(basename $0) <generators> <output-package> <apis-package> <groups-versions> ...
+Usage: $(basename "$0") <generators> <output-package> <apis-package> <groups-versions> ...
 
   <generators>        the generators comma separated to run (deepcopy,defaulter,client,lister,informer) or "all".
   <output-package>    the output package name (e.g. github.com/example/project/pkg/generated).
@@ -37,8 +37,8 @@ Usage: $(basename $0) <generators> <output-package> <apis-package> <groups-versi
 
 
 Examples:
-  $(basename $0) all             github.com/example/project/pkg/client github.com/example/project/pkg/apis "foo:v1 bar:v1alpha1,v1beta1"
-  $(basename $0) deepcopy,client github.com/example/project/pkg/client github.com/example/project/pkg/apis "foo:v1 bar:v1alpha1,v1beta1"
+  $(basename "$0") all             github.com/example/project/pkg/client github.com/example/project/pkg/apis "foo:v1 bar:v1alpha1,v1beta1"
+  $(basename "$0") deepcopy,client github.com/example/project/pkg/client github.com/example/project/pkg/apis "foo:v1 bar:v1alpha1,v1beta1"
 EOF
   exit 0
 fi
@@ -54,36 +54,36 @@ function codegen::join() { local IFS="$1"; shift; echo "$*"; }
 # enumerate group versions
 FQ_APIS=() # e.g. k8s.io/api/apps/v1
 for GVs in ${GROUPS_WITH_VERSIONS}; do
-  IFS=: read G Vs <<<"${GVs}"
+  IFS=: read -r G Vs <<<"${GVs}"
 
   # enumerate versions
   for V in ${Vs//,/ }; do
-    FQ_APIS+=(${APIS_PKG}/${G}/${V})
+    FQ_APIS+=("${APIS_PKG}/${G}/${V}")
   done
 done
 
 # Build all generator binaries
 if [ "${GENS}" = "all" ] || grep -qw "deepcopy" <<<"${GENS}"; then
   echo "Generating deepcopy funcs"
-  deepcopy-gen --input-dirs $(codegen::join , "${FQ_APIS[@]}") -O zz_generated.deepcopy --bounding-dirs ${APIS_PKG} "$@"
+  deepcopy-gen --input-dirs "$(codegen::join , "${FQ_APIS[@]}")" -O zz_generated.deepcopy --bounding-dirs "${APIS_PKG}" "$@"
 fi
 
 if [ "${GENS}" = "all" ] || grep -qw "client" <<<"${GENS}"; then
   echo "Generating clientset for ${GROUPS_WITH_VERSIONS} at ${OUTPUT_PKG}/clientset"
-  client-gen --clientset-name versioned --input-base "" --input $(codegen::join , "${FQ_APIS[@]}") --output-package ${OUTPUT_PKG}/clientset "$@"
+  client-gen --clientset-name versioned --input-base "" --input "$(codegen::join , "${FQ_APIS[@]}")" --output-package "${OUTPUT_PKG}/clientset" "$@"
 fi
 
 if [ "${GENS}" = "all" ] || grep -qw "lister" <<<"${GENS}"; then
   echo "Generating listers for ${GROUPS_WITH_VERSIONS} at ${OUTPUT_PKG}/listers"
-  lister-gen --input-dirs $(codegen::join , "${FQ_APIS[@]}") --output-package ${OUTPUT_PKG}/listers "$@"
+  lister-gen --input-dirs "$(codegen::join , "${FQ_APIS[@]}")" --output-package "${OUTPUT_PKG}/listers" "$@"
 fi
 
 if [ "${GENS}" = "all" ] || grep -qw "informer" <<<"${GENS}"; then
   echo "Generating informers for ${GROUPS_WITH_VERSIONS} at ${OUTPUT_PKG}/informers"
   informer-gen \
-    --input-dirs $(codegen::join , "${FQ_APIS[@]}") \
-    --versioned-clientset-package ${OUTPUT_PKG}/clientset/versioned \
-    --listers-package ${OUTPUT_PKG}/listers \
-    --output-package ${OUTPUT_PKG}/informers \
+    --input-dirs "$(codegen::join , "${FQ_APIS[@]}")" \
+    --versioned-clientset-package "${OUTPUT_PKG}/clientset/versioned" \
+    --listers-package "${OUTPUT_PKG}/listers" \
+    --output-package "${OUTPUT_PKG}/informers" \
     "$@"
 fi

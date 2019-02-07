@@ -20,7 +20,7 @@ set -o pipefail
 
 RULE_NAME="reference-docs"
 
-SCRIPT_ROOT=$(dirname "${BASH_SOURCE}")/..
+SCRIPT_ROOT=$(dirname "${BASH_SOURCE[0]}")/..
 
 _tmp="$(mktemp -d)"
 DIFFROOT="${SCRIPT_ROOT}/"
@@ -37,9 +37,11 @@ TMP_DIFFROOT="${GOPATH}/src/github.com/jetstack/cert-manager"
 mkdir -p "${TMP_DIFFROOT}"
 rsync -avvL "${DIFFROOT}"/ "${TMP_DIFFROOT}" >/dev/null
 
-export runfiles="$(pwd)"
+runfiles="$(pwd)"
+export runfiles
 cd "${TMP_DIFFROOT}"
-export BUILD_WORKSPACE_DIRECTORY="$(pwd)"
+BUILD_WORKSPACE_DIRECTORY="$(pwd)"
+export BUILD_WORKSPACE_DIRECTORY
 "hack/update-${RULE_NAME}.sh"
 
 echo "diffing ${DIFFROOT} against freshly generated ${RULE_NAME}"

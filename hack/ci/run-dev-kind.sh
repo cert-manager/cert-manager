@@ -22,7 +22,7 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-SCRIPT_ROOT=$(dirname "${BASH_SOURCE}")
+SCRIPT_ROOT=$(dirname "${BASH_SOURCE[0]}")
 source "${SCRIPT_ROOT}/lib/lib.sh"
 
 echo "+++ Creating cluster using kind"

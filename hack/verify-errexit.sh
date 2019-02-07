@@ -26,7 +26,7 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-REPO_ROOT=$(dirname "${BASH_SOURCE}")/..
+REPO_ROOT=$(dirname "${BASH_SOURCE[0]}")/..
 
 if [ "$*" != "" ]; then
   args="$*"
@@ -36,22 +36,22 @@ fi
 
 # Gather the list of files that appear to be shell scripts.
 # Meaning they have some form of "#!...sh" as a line in them.
-shFiles=$(grep -Rrl '^#!.*sh$' $args)
+shFiles=$(grep -Rrl '^#!.*sh$' "$args")
 
 tmp=$(mktemp)
 # Delete the temporary file as it should only exist if errors have occurred.
-rm $tmp
+rm "$tmp"
 
 for file in ${shFiles}; do
-  grep "set -o errexit" $file > /dev/null 2>&1 && continue
-  grep "set -[a-z]*e" $file > /dev/null 2>&1 && continue
+  grep "set -o errexit" "$file" > /dev/null 2>&1 && continue
+  grep "set -[a-z]*e" "$file" > /dev/null 2>&1 && continue
 
-  echo $file: appears to be missing \"set -o errexit\" | tee -a $tmp
+  echo "$file: appears to be missing \"set -o errexit\"" | tee -a "$tmp"
 done
 
 rc="0"
 if [ -e "$tmp" ]; then
   rc="1"
 fi
-rm -f $tmp
-exit $rc
+rm -f "$tmp"
+exit "$rc"
