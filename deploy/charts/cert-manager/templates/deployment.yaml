@@ -4,16 +4,12 @@ metadata:
   name: {{ template "cert-manager.fullname" . }}
   namespace: {{ .Release.Namespace | quote }}
   labels:
-    app: {{ template "cert-manager.name" . }}
-    chart: {{ template "cert-manager.chart" . }}
-    release: {{ .Release.Name }}
-    heritage: {{ .Release.Service }}
+{{ include "cert-manager.resourceLabels" . | indent 4 }}
 spec:
   replicas: {{ .Values.replicaCount }}
   selector:
     matchLabels:
-      app: {{ template "cert-manager.name" . }}
-      release: {{ .Release.Name }}
+{{ include "cert-manager.selectorLabels" . | indent 6 }}
   {{- with .Values.strategy }}
   strategy:
     {{- . | toYaml | nindent 4 }}
@@ -21,8 +17,7 @@ spec:
   template:
     metadata:
       labels:
-        app: {{ template "cert-manager.name" . }}
-        release: {{ .Release.Name }}
+{{ include "cert-manager.selectorLabels" . | indent 8 }}
 {{- if .Values.podLabels }}
 {{ toYaml .Values.podLabels | indent 8 }}
 {{- end }}

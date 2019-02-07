@@ -4,10 +4,7 @@ kind: ClusterRole
 metadata:
   name: {{ template "cert-manager.fullname" . }}
   labels:
-    app: {{ template "cert-manager.name" . }}
-    chart: {{ template "cert-manager.chart" . }}
-    release: {{ .Release.Name }}
-    heritage: {{ .Release.Service }}
+{{ include "cert-manager.resourceLabels" . | indent 4 }}
 rules:
   - apiGroups: ["certmanager.k8s.io"]
     resources: ["certificates", "certificates/finalizers", "issuers", "clusterissuers", "orders", "orders/finalizers", "challenges"]
@@ -24,10 +21,7 @@ kind: ClusterRoleBinding
 metadata:
   name: {{ template "cert-manager.fullname" . }}
   labels:
-    app: {{ template "cert-manager.name" . }}
-    chart: {{ template "cert-manager.chart" . }}
-    release: {{ .Release.Name }}
-    heritage: {{ .Release.Service }}
+{{ include "cert-manager.resourceLabels" . | indent 4 }}
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
@@ -42,10 +36,7 @@ kind: ClusterRole
 metadata:
   name: {{ template "cert-manager.fullname" . }}-view
   labels:
-    app: {{ template "cert-manager.name" . }}
-    chart: {{ template "cert-manager.chart" . }}
-    release: {{ .Release.Name }}
-    heritage: {{ .Release.Service }}
+{{ include "cert-manager.resourceLabels" . | indent 4 }}
     rbac.authorization.k8s.io/aggregate-to-view: "true"
     rbac.authorization.k8s.io/aggregate-to-edit: "true"
     rbac.authorization.k8s.io/aggregate-to-admin: "true"
@@ -59,10 +50,7 @@ kind: ClusterRole
 metadata:
   name: {{ template "cert-manager.fullname" . }}-edit
   labels:
-    app: {{ template "cert-manager.name" . }}
-    chart: {{ template "cert-manager.chart" . }}
-    release: {{ .Release.Name }}
-    heritage: {{ .Release.Service }}
+{{ include "cert-manager.resourceLabels" . | indent 4 }}
     rbac.authorization.k8s.io/aggregate-to-edit: "true"
     rbac.authorization.k8s.io/aggregate-to-admin: "true"
 rules:

@@ -40,3 +40,31 @@ Create the name of the service account to use
     {{ default "default" .Values.serviceAccount.name }}
 {{- end -}}
 {{- end -}}
+
+{{/*
+Generate labels to be added to each resource.
+*/}}
+{{- define "cert-manager.resourceLabels" -}}
+{{- if .Values.kustomizeGen -}}
+app.kubernetes.io/component: controller
+app.kubernetes.io/name: {{ include "cert-manager.name" . }}
+{{- else -}}
+app: {{ include "cert-manager.name" . }}
+chart: {{ include "cert-manager.chart" . }}
+release: {{ .Release.Name }}
+heritage: {{ .Release.Service }}
+{{- end -}}
+{{- end -}}
+
+{{/*
+Generate labels to be added to Deployment selector and PodSpec.
+*/}}
+{{- define "cert-manager.selectorLabels" -}}
+{{- if .Values.kustomizeGen -}}
+app.kubernetes.io/component: controller
+app.kubernetes.io/name: {{ include "cert-manager.name" . }}
+{{- else -}}
+app: {{ include "cert-manager.name" . }}
+release: {{ .Release.Name }}
+{{- end -}}
+{{- end -}}
