@@ -110,8 +110,8 @@ func GenerateECPrivateKey(keySize int) (*ecdsa.PrivateKey, error) {
 // EncodePrivateKey will encode a given crypto.PrivateKey by first inspecting
 // the type of key encoding and then inspecting the type of key provided.
 // It only supports encoding RSA or ECDSA keys.
-func EncodePrivateKey(pk crypto.PrivateKey, crt *v1alpha1.Certificate) ([]byte, error) {
-	switch crt.Spec.KeyEncoding {
+func EncodePrivateKey(pk crypto.PrivateKey, keyEncoding KeyEncoding) ([]byte, error) {
+	switch keyEncoding {
 	case v1alpha1.KeyEncoding(""), v1alpha1.PKCS1:
 		switch k := pk.(type) {
 		case *rsa.PrivateKey:
@@ -124,7 +124,7 @@ func EncodePrivateKey(pk crypto.PrivateKey, crt *v1alpha1.Certificate) ([]byte, 
 	case v1alpha1.PKCS8:
 		return EncodePKCS8PrivateKey(pk)
 	default:
-		return nil, fmt.Errorf("error encoding private key: unknown key encoding: %s", crt.Spec.KeyEncoding)
+		return nil, fmt.Errorf("error encoding private key: unknown key encoding: %s", keyEncoding)
 	}
 }
 
