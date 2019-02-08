@@ -258,6 +258,7 @@ filegroup(
         "//vendor/k8s.io/apiserver/pkg/util/wsstream:all-srcs",
         "//vendor/k8s.io/apiserver/plugin/pkg/audit/buffered:all-srcs",
         "//vendor/k8s.io/apiserver/plugin/pkg/audit/log:all-srcs",
+        "//vendor/k8s.io/apiserver/plugin/pkg/audit/truncate:all-srcs",
         "//vendor/k8s.io/apiserver/plugin/pkg/audit/webhook:all-srcs",
         "//vendor/k8s.io/apiserver/plugin/pkg/authenticator/token/webhook:all-srcs",
         "//vendor/k8s.io/apiserver/plugin/pkg/authorizer/webhook:all-srcs",
