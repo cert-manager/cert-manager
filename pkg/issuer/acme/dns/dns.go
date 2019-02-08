@@ -332,12 +332,13 @@ func (s *Solver) solverForChallenge(issuer v1alpha1.GenericIssuer, ch *v1alpha1.
 			return nil, nil, fmt.Errorf("error instantiating rfc2136 challenge solver: %s", err.Error())
 		}
 	case providerConfig.Webhook != nil:
-		var CA []byte
-
-		if len(providerConfig.Webhook.WebhookCASecret.Name) > 0 {
-			CA, err = s.loadSecretData(&providerConfig.Webhook.WebhookCASecret, resourceNamespace)
-			if err != nil {
-				return nil, nil, errors.Wrap(err, "error getting webhook CA secret")
+		var caBytes []byte
+		if !providerConfig.Webhook.SkipTLSVerify {
+			if len(providerConfig.Webhook.CaSecret.Name) > 0 {
+				caBytes, err = s.loadSecretData(&providerConfig.Webhook.CaSecret, resourceNamespace)
+				if err != nil {
+					return nil, nil, errors.Wrap(err, "error getting webhook CA secret")
+				}
 			}
 		}
 
@@ -345,7 +346,7 @@ func (s *Solver) solverForChallenge(issuer v1alpha1.GenericIssuer, ch *v1alpha1.
 			providerConfig.Webhook.URL,
 			providerConfig.Webhook.Metadata,
 			providerConfig.Webhook.SkipTLSVerify,
-			CA,
+			caBytes,
 			s.DNS01Nameservers,
 		)
 		if err != nil {

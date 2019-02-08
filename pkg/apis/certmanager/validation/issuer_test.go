@@ -624,7 +624,7 @@ func TestValidateACMEIssuerDNS01Config(t *testing.T) {
 				},
 			},
 			errs: []*field.Error{
-				field.Invalid(providersPath.Index(0).Child("webhook", "url"), "", "\"url\" field does not contain correct URL"),
+				field.Invalid(providersPath.Index(0).Child("webhook", "url"), "", "\"url\" field does not contain a valid URL: parse invalid: invalid URI for request"),
 			},
 		},
 		"missing webhook CA secret key": {
@@ -634,7 +634,7 @@ func TestValidateACMEIssuerDNS01Config(t *testing.T) {
 						Name: "a name",
 						Webhook: &v1alpha1.ACMEIssuerDNS01ProviderWebhook{
 							URL: "http://valid/",
-							WebhookCASecret: v1alpha1.SecretKeySelector{
+							CaSecret: v1alpha1.SecretKeySelector{
 								LocalObjectReference: v1alpha1.LocalObjectReference{Name: "something"},
 								Key:                  "",
 							},
@@ -643,7 +643,7 @@ func TestValidateACMEIssuerDNS01Config(t *testing.T) {
 				},
 			},
 			errs: []*field.Error{
-				field.Required(providersPath.Index(0).Child("webhook", "webhookCASecretSecretRef", "key"), "secret key is required"),
+				field.Required(providersPath.Index(0).Child("webhook", "CaSecretRef", "key"), "secret key is required"),
 			},
 		},
 		"missing webhook CA secret name": {
@@ -653,7 +653,7 @@ func TestValidateACMEIssuerDNS01Config(t *testing.T) {
 						Name: "a name",
 						Webhook: &v1alpha1.ACMEIssuerDNS01ProviderWebhook{
 							URL: "http://valid/",
-							WebhookCASecret: v1alpha1.SecretKeySelector{
+							CaSecret: v1alpha1.SecretKeySelector{
 								LocalObjectReference: v1alpha1.LocalObjectReference{Name: ""},
 								Key:                  "something",
 							},
@@ -662,7 +662,7 @@ func TestValidateACMEIssuerDNS01Config(t *testing.T) {
 				},
 			},
 			errs: []*field.Error{
-				field.Required(providersPath.Index(0).Child("webhook", "webhookCASecretSecretRef", "name"), "secret name is required"),
+				field.Required(providersPath.Index(0).Child("webhook", "CaSecretRef", "name"), "secret name is required"),
 			},
 		},
 		"multiple providers configured": {

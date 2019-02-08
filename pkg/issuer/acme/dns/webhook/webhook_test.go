@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Jetstack cert-manager contributors.
+Copyright 2019 The Jetstack cert-manager contributors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -19,8 +19,6 @@ package webhook
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
-	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
 	"io/ioutil"
 	"net"
 	"net/http"
@@ -28,61 +26,84 @@ import (
 	"testing"
 	"time"
 
+	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
+
 	"github.com/stretchr/testify/assert"
 )
 
 var webhookRequestScenarios = map[string]struct {
-	status    int
-	payload   WebhookPayload
-	timeout   time.Duration
-	expectErr bool
+	httpStatus int
+	response   v1alpha1.WebhookResponse
+	payload    v1alpha1.WebhookPayload
+	timeout    time.Duration
+	expectErr  bool
 }{
-	"status 200": {
-		status: http.StatusOK,
-		payload: WebhookPayload{
-			Operation:  presentOperation,
-			Identifier: "_acme-challenge.example.com",
-			Key:        "123",
-			Metadata:   map[string]string{"test": "test"},
+	"HTTP 200, status \"success\"": {
+		httpStatus: 200,
+		payload: v1alpha1.WebhookPayload{
+			Operation: v1alpha1.WebhookPresentOperation,
+			FQDN:      "_acme-challenge.example.com",
+			Domain:    "_acme-challenge",
+			Value:     "123",
+			Metadata:  map[string]string{"test": "test"},
+		},
+		response: v1alpha1.WebhookResponse{
+			Result: v1alpha1.WebhookResponseResultSuccess,
 		},
 		timeout:   0,
 		expectErr: false,
 	},
-	"status 404": {
-		status: http.StatusNotFound,
-		payload: WebhookPayload{
-			Operation:  presentOperation,
-			Identifier: "_acme-challenge.example.com",
-			Key:        "123",
-			Metadata:   map[string]string{"test": "test"},
+	"HTTP 200, status \"failure\", reason \"Mars Attacks!\"": {
+		httpStatus: 200,
+		payload: v1alpha1.WebhookPayload{
+			Operation: v1alpha1.WebhookPresentOperation,
+			FQDN:      "_acme-challenge.example.com",
+			Domain:    "_acme-challenge",
+			Value:     "123",
+			Metadata:  map[string]string{"test": "test"},
+		},
+		response: v1alpha1.WebhookResponse{
+			Result: v1alpha1.WebhookResponseResultSuccess,
+			Reason: "Mars Attacks!",
 		},
 		timeout:   0,
-		expectErr: true,
+		expectErr: false,
 	},
-	"status 500": {
-		status: http.StatusInternalServerError,
-		payload: WebhookPayload{
-			Operation:  presentOperation,
-			Identifier: "_acme-challenge.example.com",
-			Key:        "123",
-			Metadata:   map[string]string{"test": "test"},
+	"HTTP 500, reason \"cosmic rays\"": {
+		httpStatus: 200,
+		payload: v1alpha1.WebhookPayload{
+			Operation: v1alpha1.WebhookPresentOperation,
+			FQDN:      "_acme-challenge.example.com",
+			Domain:    "_acme-challenge",
+			Value:     "123",
+			Metadata:  map[string]string{"test": "test"},
+		},
+		response: v1alpha1.WebhookResponse{
+			Result: v1alpha1.WebhookResponseResultFailure,
+			Reason: "cosmic rays",
 		},
 		timeout:   0,
 		expectErr: true,
 	},
 	"timeout": {
-		status: http.StatusRequestTimeout,
-		payload: WebhookPayload{
-			Operation:  presentOperation,
-			Identifier: "_acme-challenge.example.com",
-			Key:        "123",
-			Metadata:   map[string]string{"test": "test"},
+		httpStatus: 200,
+		payload: v1alpha1.WebhookPayload{
+			Operation: v1alpha1.WebhookPresentOperation,
+			FQDN:      "_acme-challenge.example.com",
+			Domain:    "_acme-challenge",
+			Value:     "123",
+			Metadata:  map[string]string{"test": "test"},
+		},
+		response: v1alpha1.WebhookResponse{
+			Result: v1alpha1.WebhookResponseResultSuccess,
 		},
 		timeout:   2 * time.Second,
 		expectErr: true,
 	},
 }
 
+// the following machinery fakes a successful response
 type RoundTripFunc func(req *http.Request) *http.Response
 
 func (f RoundTripFunc) RoundTrip(req *http.Request) (*http.Response, error) {
@@ -90,11 +111,15 @@ func (f RoundTripFunc) RoundTrip(req *http.Request) (*http.Response, error) {
 }
 
 func newFakeHTTPClient() *http.Client {
+	jsonBytes, _ := json.Marshal(v1alpha1.WebhookResponse{
+		Result: "success",
+	})
+
 	return &http.Client{
 		Transport: RoundTripFunc(func(req *http.Request) *http.Response {
 			return &http.Response{
 				StatusCode: 200,
-				Body:       ioutil.NopCloser(bytes.NewBufferString("OK")),
+				Body:       ioutil.NopCloser(bytes.NewReader(jsonBytes)),
 				// Must be set to non-nil value or it panics
 				Header: make(http.Header),
 			}
@@ -103,12 +128,12 @@ func newFakeHTTPClient() *http.Client {
 }
 
 func TestNewDNSProviderValid(t *testing.T) {
-	_, err := NewDNSProvider("http://example.com/", map[string]string{"test": "test"}, false, []byte{}, util.RecursiveNameservers)
+	_, err := NewDNSProvider("http://example.com/", map[string]string{"test": "test"}, true, []byte{}, util.RecursiveNameservers)
 	assert.NoError(t, err)
 }
 
-func TestWebhookPresent(t *testing.T) {
-	provider, err := NewDNSProvider("http://example.com/", map[string]string{"test": "test"}, false, []byte{}, util.RecursiveNameservers)
+func TestWebhookFakePresent(t *testing.T) {
+	provider, err := NewDNSProvider("http://example.com/", map[string]string{"test": "test"}, true, []byte{}, util.RecursiveNameservers)
 	assert.NoError(t, err)
 
 	provider.httpClient = newFakeHTTPClient()
@@ -116,8 +141,8 @@ func TestWebhookPresent(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestWebhookCleanUp(t *testing.T) {
-	provider, err := NewDNSProvider("http://example.com/", map[string]string{"test": "test"}, false, []byte{}, util.RecursiveNameservers)
+func TestWebhookFakeCleanUp(t *testing.T) {
+	provider, err := NewDNSProvider("http://example.com/", map[string]string{"test": "test"}, true, []byte{}, util.RecursiveNameservers)
 	assert.NoError(t, err)
 
 	provider.httpClient = newFakeHTTPClient()
@@ -125,7 +150,22 @@ func TestWebhookCleanUp(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestWebhookRequest(t *testing.T) {
+func TestWebhookSendPostFake(t *testing.T) {
+	provider, err := NewDNSProvider("http://example.com/", map[string]string{"test": "test"}, true, []byte{}, util.RecursiveNameservers)
+	assert.NoError(t, err)
+
+	provider.httpClient = newFakeHTTPClient()
+	httpResponse, err := sendPost(provider.httpClient, "http://example.com", []byte{})
+	assert.NoError(t, err)
+
+	jsonBytes, _ := json.Marshal(v1alpha1.WebhookResponse{
+		Result: "success",
+	})
+	assert.Equal(t, jsonBytes, httpResponse.body)
+	assert.Equal(t, 200, httpResponse.httpStatusCode)
+}
+
+func TestWebhookPresent(t *testing.T) {
 	if testing.Short() == true {
 		return
 	}
@@ -138,28 +178,31 @@ func TestWebhookRequest(t *testing.T) {
 					return
 				}
 
-				assert.Equal(t, r.Method, "POST")
+				assert.Equal(t, "POST", r.Method)
 
 				body, err := ioutil.ReadAll(r.Body)
 				assert.NoError(t, err)
 
 				jsonPayload, err := json.Marshal(s.payload)
 				assert.NoError(t, err)
+				assert.Equal(t, jsonPayload, body)
 
-				assert.Equal(t, body, jsonPayload)
+				jsonResponse, err := json.Marshal(s.response)
+				assert.NoError(t, err)
 
-				w.WriteHeader(s.status)
-				fmt.Fprintln(w, jsonPayload)
+				w.WriteHeader(s.httpStatus)
+				_, err = w.Write(jsonResponse)
+				assert.NoError(t, err)
 			}))
 			defer ts.Close()
 			defer ts.CloseClientConnections()
 
-			provider, err := NewDNSProvider(ts.URL, s.payload.Metadata, false, []byte{}, util.RecursiveNameservers)
+			provider, err := NewDNSProvider(ts.URL, s.payload.Metadata, true, []byte{}, util.RecursiveNameservers)
 			assert.NoError(t, err)
 
 			provider.httpClient.Timeout = s.timeout
 
-			err = provider.Present("example.com", s.payload.Identifier, s.payload.Key)
+			err = provider.Present(s.payload.Domain, s.payload.FQDN, s.payload.Value)
 			if s.timeout != 0 {
 				err, ok := err.(net.Error)
 				assert.True(t, ok)

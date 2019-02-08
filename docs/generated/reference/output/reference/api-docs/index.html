@@ -1210,6 +1210,7 @@ Appears In:
 </tr>
 </tbody>
 </table>
+<p>ACMEIssuerDNS01ProviderWebhook is a structure containing the configuration for Webhook DNS</p>
 <aside class="notice">
 Appears In:
 
@@ -1226,20 +1227,20 @@ Appears In:
 </thead>
 <tbody>
 <tr>
+<td><code>CaSecretRef</code><br /> <em><a href="#secretkeyselector-v1alpha1">SecretKeySelector</a></em></td>
+<td>Certificate Authority used to verify webook certificate Required if &#34;skipTLSVerify&#34; is &#34;false&#34;</td>
+</tr>
+<tr>
 <td><code>metadata</code><br /> <em>object</em></td>
-<td></td>
+<td>Provide arbitrary k/v metadata in a request to webhook</td>
 </tr>
 <tr>
 <td><code>skipTLSVerify</code><br /> <em>boolean</em></td>
-<td></td>
+<td>Skip verification of a TLS certificate presented by webhook</td>
 </tr>
 <tr>
 <td><code>url</code><br /> <em>string</em></td>
-<td></td>
-</tr>
-<tr>
-<td><code>webhookCASecretSecretRef</code><br /> <em><a href="#secretkeyselector-v1alpha1">SecretKeySelector</a></em></td>
-<td></td>
+<td>URL of a webhook</td>
 </tr>
 </tbody>
 </table>

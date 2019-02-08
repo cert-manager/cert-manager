@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Jetstack cert-manager contributors.
+Copyright 2019 The Jetstack cert-manager contributors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -22,37 +22,17 @@ import (
 	"crypto/x509"
 	"encoding/json"
 	"fmt"
-	"github.com/golang/glog"
 	"io/ioutil"
 	"net/http"
 	"time"
 
+	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
 )
 
 const (
 	maxBodyLength = 5 * 1024 * 1024
-
-	presentOperation operation = "present"
-	cleanupOperation operation = "cleanup"
 )
-
-type operation string
-
-type WebhookPayload struct {
-	Operation operation `json:"operation"`
-
-	// Identifier is the record that should have a TXT record set for, e.g. _acme-challenge.example.com
-	Identifier string `json:"identifier"`
-
-	// Key is the value that the TXT record should hold for this domain
-	Key string `json:"key"`
-
-	// Metadata is arbitrary additional metadata passed to the plugin from the Issuer resource.
-	// This may contain a reference to a secret resource, containing secret data specific to this
-	// configuration of the plugin.
-	Metadata map[string]string `json:"metadata,omitempty"`
-}
 
 type DNSProvider struct {
 	httpClient       *http.Client
@@ -61,14 +41,19 @@ type DNSProvider struct {
 	dns01Nameservers []string
 }
 
-func NewDNSProvider(url string, metadata map[string]string, skipTLSVerify bool, webhookCA []byte, dns01Nameservers []string) (*DNSProvider, error) {
-	rootCAs, err := x509.SystemCertPool()
-	if rootCAs == nil || err != nil {
-		glog.Errorf("can't instantiate system CA pool, falling back to empty CA pool: %s", err)
-	}
+type httpResponse struct {
+	httpStatusCode int
+	body           []byte
+	truncated      bool
+}
 
-	if ok := rootCAs.AppendCertsFromPEM(webhookCA); !ok {
-		glog.Infof("no certs appended, using system certs only")
+func NewDNSProvider(url string, metadata map[string]string, skipTLSVerify bool, webhookCA []byte, dns01Nameservers []string) (*DNSProvider, error) {
+	rootCAs := x509.NewCertPool()
+
+	if !skipTLSVerify {
+		if ok := rootCAs.AppendCertsFromPEM(webhookCA); !ok {
+			return nil, fmt.Errorf("failed to parse CA certificate")
+		}
 	}
 
 	tlsConfig := &tls.Config{ClientCAs: rootCAs, InsecureSkipVerify: skipTLSVerify}
@@ -76,7 +61,7 @@ func NewDNSProvider(url string, metadata map[string]string, skipTLSVerify bool, 
 		Transport: &http.Transport{
 			TLSClientConfig: tlsConfig,
 		},
-		Timeout: time.Duration(30 * time.Second),
+		Timeout: time.Duration(10 * time.Second),
 	}
 
 	return &DNSProvider{
@@ -88,44 +73,72 @@ func NewDNSProvider(url string, metadata map[string]string, skipTLSVerify bool, 
 }
 
 func (c *DNSProvider) Present(domain, fqdn, value string) error {
-	body, err := c.sendRequest(WebhookPayload{Operation: presentOperation, Identifier: util.UnFqdn(fqdn), Key: value, Metadata: c.metadata})
-	if len(body) > 0 {
-		glog.Infof("response body: %q", body)
-	}
+	err := c.sendRequest(v1alpha1.WebhookPayload{
+		Operation: v1alpha1.WebhookPresentOperation,
+		FQDN:      util.UnFqdn(fqdn),
+		Domain:    domain,
+		Value:     value,
+		Metadata:  c.metadata,
+	})
 
 	return err
 }
 
 func (c *DNSProvider) CleanUp(domain, fqdn, value string) error {
-	body, err := c.sendRequest(WebhookPayload{Operation: cleanupOperation, Identifier: util.UnFqdn(fqdn), Key: value, Metadata: c.metadata})
-	if len(body) > 0 {
-		glog.Infof("response body: %q", body)
-	}
+	err := c.sendRequest(v1alpha1.WebhookPayload{
+		Operation: v1alpha1.WebhookCleanupOperation,
+		FQDN:      util.UnFqdn(fqdn),
+		Domain:    domain,
+		Value:     value,
+		Metadata:  c.metadata,
+	})
 
 	return err
 }
 
-func (c *DNSProvider) sendRequest(payload WebhookPayload) (responseBody string, err error) {
-	jsonString, err := json.Marshal(payload)
+func (c *DNSProvider) sendRequest(payload v1alpha1.WebhookPayload) error {
+	jsonBytes, err := json.Marshal(payload)
 	if err != nil {
-		return "", err
+		return err
 	}
 
-	response, err := c.httpClient.Post(c.url, "application/json", bytes.NewReader(jsonString))
+	httpResponse, err := sendPost(c.httpClient, c.url, jsonBytes)
 	if err != nil {
-		return "", err
-	}
-	if response.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("non-200 HTTP code returned: %d", response.StatusCode)
+		return err
 	}
 
+	webhookResponse := new(v1alpha1.WebhookResponse)
+	err = json.Unmarshal(httpResponse.body, webhookResponse)
+	if err != nil {
+		return fmt.Errorf("webhook returned http code \"%v\". failed to unmarshal webhook response: %v", httpResponse.httpStatusCode, err)
+	}
+
+	if webhookResponse.Result != v1alpha1.WebhookResponseResultSuccess {
+		return fmt.Errorf("webhook returned non-successful status %q with the following reason: %s", webhookResponse.Result, webhookResponse.Reason)
+	}
+
+	return nil
+}
+
+func sendPost(client *http.Client, url string, payload []byte) (*httpResponse, error) {
+	response, err := client.Post(url, "application/json", bytes.NewReader(payload))
+	if err != nil {
+		return nil, err
+	}
 	defer response.Body.Close()
 
+	// truncate body if it exceeds maxBodyLength and set the appropriate flag
+	var truncated bool
 	response.Body = http.MaxBytesReader(nil, response.Body, maxBodyLength)
 	buf, err := ioutil.ReadAll(response.Body)
 	if err != nil {
-		return fmt.Sprintf("truncated: %s", buf), nil
+		truncated = true
 	}
 
-	return string(buf), nil
+	return &httpResponse{
+		httpStatusCode: response.StatusCode,
+		body:           buf,
+		truncated:      truncated,
+	}, nil
+
 }

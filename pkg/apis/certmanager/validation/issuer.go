@@ -19,9 +19,10 @@ package validation
 import (
 	"crypto/x509"
 	"fmt"
-	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/rfc2136"
 	"net/url"
 	"strings"
+
+	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/rfc2136"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/validation/field"
@@ -309,11 +310,11 @@ func ValidateACMEIssuerDNS01Config(iss *v1alpha1.ACMEIssuerDNS01Config, fldPath 
 				if len(p.Webhook.URL) == 0 {
 					el = append(el, field.Required(fldPath.Child("url"), ""))
 				} else if _, err := url.ParseRequestURI(p.Webhook.URL); err != nil {
-					el = append(el, field.Invalid(fldPath.Child("url"), "", fmt.Sprintf("\"url\" field does not contain correct URL")))
+					el = append(el, field.Invalid(fldPath.Child("url"), "", fmt.Sprintf("\"url\" field does not contain a valid URL: %v", err)))
 				}
 
-				if len(p.Webhook.WebhookCASecret.Name) > 0 || len(p.Webhook.WebhookCASecret.Key) > 0 {
-					el = append(el, ValidateSecretKeySelector(&p.Webhook.WebhookCASecret, fldPath.Child("webhookCASecretSecretRef"))...)
+				if len(p.Webhook.CaSecret.Name) > 0 || len(p.Webhook.CaSecret.Key) > 0 {
+					el = append(el, ValidateSecretKeySelector(&p.Webhook.CaSecret, fldPath.Child("CaSecretRef"))...)
 				}
 			}
 		}

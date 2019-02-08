@@ -214,7 +214,7 @@ type ACMEIssuerDNS01Provider struct {
 	RFC2136 *ACMEIssuerDNS01ProviderRFC2136 `json:"rfc2136,omitempty"`
 
 	// +optional
-	Webhook      *ACMEIssuerDNS01ProviderWebhook      `json:"execute,omitempty"`
+	Webhook *ACMEIssuerDNS01ProviderWebhook `json:"execute,omitempty"`
 }
 
 // CNAMEStrategy configures how the DNS01 provider should handle CNAME records
@@ -327,17 +327,24 @@ type ACMEIssuerDNS01ProviderRFC2136 struct {
 	TSIGAlgorithm string `json:"tsigAlgorithm,omitempty"`
 }
 
+// ACMEIssuerDNS01ProviderWebhook is a structure containing the
+// configuration for Webhook DNS
 type ACMEIssuerDNS01ProviderWebhook struct {
+	// URL of a webhook
 	URL string `json:"url"`
 
-	// + optional
-	Metadata map[string]string `json:"metadata"`
+	// Provide arbitrary k/v metadata in a request to webhook
+	// +optional
+	Metadata map[string]string `json:"metadata,omitempty"`
 
+	// Skip verification of a TLS certificate presented by webhook
 	// +optional
 	SkipTLSVerify bool `json:"skipTLSVerify"`
 
+	// Certificate Authority used to verify webook certificate
+	// Required if "skipTLSVerify" is "false"
 	// +optional
-	WebhookCASecret SecretKeySelector `json:"webhookCASecretSecretRef"`
+	CaSecret SecretKeySelector `json:"CaSecretRef"`
 }
 
 // IssuerStatus contains status information about an Issuer
