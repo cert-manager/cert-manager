@@ -45,7 +45,6 @@ import (
 	"github.com/jetstack/cert-manager/test/unit/gen"
 )
 
-
 func generatePrivateKey(t *testing.T) *rsa.PrivateKey {
 	pk, err := pki.GenerateRSAPrivateKey(2048)
 	if err != nil {
@@ -315,7 +314,7 @@ func TestSync(t *testing.T) {
 								Annotations: map[string]string{
 									"certmanager.k8s.io/alt-names":   "example.com",
 									"certmanager.k8s.io/common-name": "example.com",
-									"certmanager.k8s.io/ip-sans": "",
+									"certmanager.k8s.io/ip-sans":     "",
 									"certmanager.k8s.io/issuer-kind": "Issuer",
 									"certmanager.k8s.io/issuer-name": "test",
 								},
@@ -386,7 +385,7 @@ func TestSync(t *testing.T) {
 									"testannotation":                 "true",
 									"certmanager.k8s.io/alt-names":   "example.com",
 									"certmanager.k8s.io/common-name": "example.com",
-									"certmanager.k8s.io/ip-sans": "",
+									"certmanager.k8s.io/ip-sans":     "",
 									"certmanager.k8s.io/issuer-kind": "Issuer",
 									"certmanager.k8s.io/issuer-name": "test",
 								},
@@ -470,7 +469,7 @@ func TestSync(t *testing.T) {
 									"testannotation":                 "true",
 									"certmanager.k8s.io/alt-names":   "example.com",
 									"certmanager.k8s.io/common-name": "example.com",
-									"certmanager.k8s.io/ip-sans": "",
+									"certmanager.k8s.io/ip-sans":     "",
 									"certmanager.k8s.io/issuer-kind": "Issuer",
 									"certmanager.k8s.io/issuer-name": "test",
 								},
@@ -516,7 +515,7 @@ func TestSync(t *testing.T) {
 								"testannotation":                 "true",
 								"certmanager.k8s.io/alt-names":   "example.com",
 								"certmanager.k8s.io/common-name": "example.com",
-								"certmanager.k8s.io/ip-sans": "",
+								"certmanager.k8s.io/ip-sans":     "",
 								"certmanager.k8s.io/issuer-kind": "Issuer",
 								"certmanager.k8s.io/issuer-name": "test",
 							},
