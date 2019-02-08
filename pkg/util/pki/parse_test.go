@@ -33,7 +33,7 @@ func generatePrivateKeyBytes(keyAlgo v1alpha1.KeyAlgorithm, keySize int) ([]byte
 		return nil, err
 	}
 
-	return EncodePrivateKey(privateKey, cert)
+	return EncodePrivateKey(privateKey, cert.Spec.KeyEncoding)
 }
 
 func generatePKCS8PrivateKey(keyAlgo v1alpha1.KeyAlgorithm, keySize int) ([]byte, error) {
