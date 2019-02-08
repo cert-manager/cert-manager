@@ -76,6 +76,10 @@ required = [
   name = "google.golang.org/genproto"
   revision = "09f6ed296fc66555a25fe4ce95173148778dfa85"
 
+[[override]]
+  name = "github.com/json-iterator/go"
+  revision = "f2b4162afba35581b6d4a50d3b8f34e33c144682"
+
 [prune]
   unused-packages = true
   go-tests = true
