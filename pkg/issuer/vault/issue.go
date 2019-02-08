@@ -100,7 +100,7 @@ func (v *Vault) Issue(ctx context.Context, crt *v1alpha1.Certificate) (*issuer.I
 	}
 	/// END requesting certificate
 
-	key, err := pki.EncodePrivateKey(signeePrivateKey, crt)
+	key, err := pki.EncodePrivateKey(signeePrivateKey, crt.Spec.KeyEncoding)
 	if err != nil {
 		v.Recorder.Eventf(crt, corev1.EventTypeWarning, "ErrorPrivateKey", "Error encoding private key: %v", err)
 		return nil, err
