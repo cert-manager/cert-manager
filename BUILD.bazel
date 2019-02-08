@@ -37,6 +37,7 @@ filegroup(
         "//cmd/acmesolver:all-srcs",
         "//cmd/controller:all-srcs",
         "//cmd/webhook:all-srcs",
+        "//contrib/sample-webhook-dns01-solver:all-srcs",
         "//deploy:all-srcs",
         "//docs/generated/reference:all-srcs",
         "//hack:all-srcs",

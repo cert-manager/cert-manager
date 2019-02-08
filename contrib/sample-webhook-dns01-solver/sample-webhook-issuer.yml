@@ -1,0 +1,16 @@
+apiVersion: certmanager.k8s.io/v1alpha1
+kind: Issuer
+metadata:
+  name: sample-webhook
+  namespace: default
+spec:
+  acme:
+    server: https://acme-staging-v02.api.letsencrypt.org/directory
+    email: nobody@something.com
+    privateKeySecretRef:
+      name: letsencrypt-staging
+    dns01:
+      providers:
+      - name: webhook
+        webhook:
+          url: "http://localhost:3030"
