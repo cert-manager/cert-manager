@@ -190,11 +190,6 @@ func TestSync(t *testing.T) {
 						gen.DefaultTestNamespace,
 						exampleCertNotFoundCondition,
 					)),
-					testpkg.NewAction(coretesting.NewGetAction(
-						corev1.SchemeGroupVersion.WithResource("secrets"),
-						gen.DefaultTestNamespace,
-						"output",
-					)),
 					testpkg.NewAction(coretesting.NewCreateAction(
 						corev1.SchemeGroupVersion.WithResource("secrets"),
 						gen.DefaultTestNamespace,
@@ -257,11 +252,6 @@ func TestSync(t *testing.T) {
 						gen.DefaultTestNamespace,
 						exampleCertNotFoundCondition,
 					)),
-					testpkg.NewAction(coretesting.NewGetAction(
-						corev1.SchemeGroupVersion.WithResource("secrets"),
-						gen.DefaultTestNamespace,
-						"output",
-					)),
 					testpkg.NewAction(coretesting.NewUpdateAction(
 						corev1.SchemeGroupVersion.WithResource("secrets"),
 						gen.DefaultTestNamespace,
@@ -312,11 +302,6 @@ func TestSync(t *testing.T) {
 						gen.DefaultTestNamespace,
 						exampleCertNotFoundCondition,
 					)),
-					testpkg.NewAction(coretesting.NewGetAction(
-						corev1.SchemeGroupVersion.WithResource("secrets"),
-						gen.DefaultTestNamespace,
-						"output",
-					)),
 					testpkg.NewAction(coretesting.NewCreateAction(
 						corev1.SchemeGroupVersion.WithResource("secrets"),
 						gen.DefaultTestNamespace,
@@ -330,6 +315,7 @@ func TestSync(t *testing.T) {
 								Annotations: map[string]string{
 									"certmanager.k8s.io/alt-names":   "example.com",
 									"certmanager.k8s.io/common-name": "example.com",
+									"certmanager.k8s.io/ip-sans": "",
 									"certmanager.k8s.io/issuer-kind": "Issuer",
 									"certmanager.k8s.io/issuer-name": "test",
 								},
@@ -385,11 +371,6 @@ func TestSync(t *testing.T) {
 						gen.DefaultTestNamespace,
 						exampleCertNotFoundCondition,
 					)),
-					testpkg.NewAction(coretesting.NewGetAction(
-						corev1.SchemeGroupVersion.WithResource("secrets"),
-						gen.DefaultTestNamespace,
-						"output",
-					)),
 					testpkg.NewAction(coretesting.NewUpdateAction(
 						corev1.SchemeGroupVersion.WithResource("secrets"),
 						gen.DefaultTestNamespace,
@@ -405,6 +386,7 @@ func TestSync(t *testing.T) {
 									"testannotation":                 "true",
 									"certmanager.k8s.io/alt-names":   "example.com",
 									"certmanager.k8s.io/common-name": "example.com",
+									"certmanager.k8s.io/ip-sans": "",
 									"certmanager.k8s.io/issuer-kind": "Issuer",
 									"certmanager.k8s.io/issuer-name": "test",
 								},
@@ -473,11 +455,6 @@ func TestSync(t *testing.T) {
 							gen.SetCertificateNotAfter(metav1.NewTime(cert2.NotAfter)),
 						),
 					)),
-					testpkg.NewAction(coretesting.NewGetAction(
-						corev1.SchemeGroupVersion.WithResource("secrets"),
-						gen.DefaultTestNamespace,
-						"output",
-					)),
 					testpkg.NewAction(coretesting.NewUpdateAction(
 						corev1.SchemeGroupVersion.WithResource("secrets"),
 						gen.DefaultTestNamespace,
@@ -493,6 +470,7 @@ func TestSync(t *testing.T) {
 									"testannotation":                 "true",
 									"certmanager.k8s.io/alt-names":   "example.com",
 									"certmanager.k8s.io/common-name": "example.com",
+									"certmanager.k8s.io/ip-sans": "",
 									"certmanager.k8s.io/issuer-kind": "Issuer",
 									"certmanager.k8s.io/issuer-name": "test",
 								},
@@ -538,6 +516,7 @@ func TestSync(t *testing.T) {
 								"testannotation":                 "true",
 								"certmanager.k8s.io/alt-names":   "example.com",
 								"certmanager.k8s.io/common-name": "example.com",
+								"certmanager.k8s.io/ip-sans": "",
 								"certmanager.k8s.io/issuer-kind": "Issuer",
 								"certmanager.k8s.io/issuer-name": "test",
 							},
