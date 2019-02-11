@@ -485,12 +485,11 @@
   version = "0.2.2"
 
 [[projects]]
-  digest = "1:7e6e47e0b76236cddff4b012732bcaba6543177066e060957a082a72d3f2bbbb"
+  digest = "1:bb3cc4c1b21ea18cfa4e3e47440fc74d316ab25b0cf42927e8c1274917bd9891"
   name = "github.com/json-iterator/go"
   packages = ["."]
   pruneopts = "UT"
-  revision = "6240e1e7983a85228f7fd9c3e1b6932d46ec58e2"
-  version = "1.0.3"
+  revision = "f2b4162afba35581b6d4a50d3b8f34e33c144682"
 
 [[projects]]
   digest = "1:ca955a9cd5b50b0f43d2cc3aeb35c951473eeca41b34eb67507f1dbcc0542394"
@@ -551,6 +550,22 @@
   packages = ["."]
   pruneopts = "UT"
   revision = "00c29f56e2386353d58c599509e8dc3801b0d716"
+
+[[projects]]
+  digest = "1:33422d238f147d247752996a26574ac48dcf472976eda7f5134015f06bf16563"
+  name = "github.com/modern-go/concurrent"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "bacd9c7ef1dd9b15be4a9909b8ac7a4e313eec94"
+  version = "1.0.3"
+
+[[projects]]
+  digest = "1:e32bdbdb7c377a07a9a46378290059822efdce5c8d96fe71940d87cb4f918855"
+  name = "github.com/modern-go/reflect2"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "4b7aa43c6742a2c18fdef89dd197aaae7dac7ccd"
+  version = "1.0.1"
 
 [[projects]]
   digest = "1:9422368b1aa123a27f1c4d12b63a7d70bc503f3ce7022931ae4881e29ea275b9"
@@ -942,7 +957,7 @@
   revision = "25c4ec802a7d637f88d584ab26798e94ad14c13b"
 
 [[projects]]
-  digest = "1:0c6fdb651f6eed551609ea9a851728e018beaf45e6f058a848e853803da5c737"
+  digest = "1:c31ee01c0f45b87f07c168af27ad01a066858bf6b34093e038685983aa7bd886"
   name = "k8s.io/api"
   packages = [
     "admission/v1beta1",
@@ -976,11 +991,11 @@
     "storage/v1beta1",
   ]
   pruneopts = "UT"
-  revision = "73d903622b7391f3312dcbac6483fed484e185f8"
-  version = "kubernetes-1.10.0"
+  revision = "38287c0991a57e8e741db42c0c4eca21386722b8"
+  version = "kubernetes-1.10.12"
 
 [[projects]]
-  digest = "1:4e8deaa716545831d05cdacdd8184c5fd44c8546137aabefe06c04bd9114e92a"
+  digest = "1:5ee2cb6f6c4e473d255d7b06032862ccf8a0d7048819497669f05f5590929cfd"
   name = "k8s.io/apiextensions-apiserver"
   packages = [
     "pkg/apis/apiextensions",
@@ -990,11 +1005,11 @@
     "pkg/client/clientset/clientset/typed/apiextensions/v1beta1",
   ]
   pruneopts = "UT"
-  revision = "750feebe2038bad00fdf68ba37c31f62c4f1f891"
-  version = "kubernetes-1.10.0"
+  revision = "e7665d7940e92d5aad7a564dab894fa39ae2a1d3"
+  version = "kubernetes-1.10.12"
 
 [[projects]]
-  digest = "1:cb06f529b787bb0ee2178b9733ab71a04add4f4b149395cfd9f08cf4c05ace3a"
+  digest = "1:9abc4be3488cd72dc9c7c95c9e32806ec80e527decfd4b552110d980370e4175"
   name = "k8s.io/apimachinery"
   packages = [
     "pkg/api/equality",
@@ -1050,11 +1065,11 @@
     "third_party/forked/golang/reflect",
   ]
   pruneopts = "UT"
-  revision = "302974c03f7e50f16561ba237db776ab93594ef6"
-  version = "kubernetes-1.10.0"
+  revision = "688d824527473e1e3f6c3f0b01171308393bdfe3"
+  version = "kubernetes-1.10.12"
 
 [[projects]]
-  digest = "1:88fb3e20e1243e97a0c17a3960647e251fecee83d702aa278564b6af659829ff"
+  digest = "1:d75e1ecada79399fa40d061992063d5b2db00fbd932968093b6d34e53a09a54f"
   name = "k8s.io/apiserver"
   packages = [
     "pkg/admission",
@@ -1141,16 +1156,17 @@
     "pkg/util/wsstream",
     "plugin/pkg/audit/buffered",
     "plugin/pkg/audit/log",
+    "plugin/pkg/audit/truncate",
     "plugin/pkg/audit/webhook",
     "plugin/pkg/authenticator/token/webhook",
     "plugin/pkg/authorizer/webhook",
   ]
   pruneopts = "UT"
-  revision = "5ae41ac86efd753e2ba012f097b83a914b268236"
-  version = "kubernetes-1.10.0"
+  revision = "b00d9c75903a9448a5ecf0e385861592ea1bc2c4"
+  version = "kubernetes-1.10.12"
 
 [[projects]]
-  digest = "1:08c79e61915eaf2086697d8ce78ed1486cfcace56acde67da8d6ade102a79f37"
+  digest = "1:a3110622ce97b9e7c93327698f4efa78f39ae4f77f8cc16021dbca39895a47b0"
   name = "k8s.io/client-go"
   packages = [
     "discovery",
@@ -1314,11 +1330,11 @@
     "util/workqueue",
   ]
   pruneopts = "UT"
-  revision = "23781f4d6632d88e869066eaebb743857aa1ef9b"
-  version = "kubernetes-1.10.0"
+  revision = "569d08962b07b8dff24e7772e7d360f73158898a"
+  version = "kubernetes-1.10.12"
 
 [[projects]]
-  digest = "1:b6d40560bfc8ef1300dbec6fae898810b59f26b1fd62d16692ab9befe8694dfc"
+  digest = "1:a088ae5b4645569ec8b0c1e05c4c79f2459d2a2fcc17345c1ef4661dc7a8df03"
   name = "k8s.io/code-generator"
   packages = [
     "cmd/client-gen",
@@ -1345,8 +1361,8 @@
     "pkg/util",
   ]
   pruneopts = "T"
-  revision = "7ead8f38b01cf8653249f5af80ce7b2c8aba12e2"
-  version = "kubernetes-1.10.0"
+  revision = "9de8e796a74d16d2a285165727d04c185ebca6dc"
+  version = "kubernetes-1.10.12"
 
 [[projects]]
   digest = "1:721053d09232080be6cc67720e51b6137e235afcbd3229942e6486b6d7c37db6"

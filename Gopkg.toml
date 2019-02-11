@@ -10,27 +10,27 @@ required = [
 
 [[constraint]]
   name = "k8s.io/api"
-  version = "kubernetes-1.10.0"
+  version = "kubernetes-1.10.12"
 
 [[constraint]]
   name = "k8s.io/apimachinery"
-  version = "kubernetes-1.10.0"
+  version = "kubernetes-1.10.12"
 
 [[constraint]]
   name = "k8s.io/client-go"
-  version = "kubernetes-1.10.0"
+  version = "kubernetes-1.10.12"
 
 [[constraint]]
   name = "k8s.io/code-generator"
-  version = "kubernetes-1.10.0"
+  version = "kubernetes-1.10.12"
 
 [[constraint]]
   name = "k8s.io/apiextensions-apiserver"
-  version = "kubernetes-1.10.0"
+  version = "kubernetes-1.10.12"
 
 [[override]]
   name = "k8s.io/apiserver"
-  version = "kubernetes-1.10.0"
+  version = "kubernetes-1.10.12"
 
 [[constraint]]
   name = "github.com/Azure/azure-sdk-for-go"
@@ -75,6 +75,10 @@ required = [
 [[override]]
   name = "google.golang.org/genproto"
   revision = "09f6ed296fc66555a25fe4ce95173148778dfa85"
+
+[[override]]
+  name = "github.com/json-iterator/go"
+  revision = "f2b4162afba35581b6d4a50d3b8f34e33c144682"
 
 [prune]
   unused-packages = true
