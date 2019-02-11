@@ -346,7 +346,7 @@ func TestPrivateKeyEncodings(t *testing.T){
 		expectErrStr string
 	}
 
-	const privateKey := []byte("-----BEGIN PRIVATE KEY-----
+	const privateKey = []byte("-----BEGIN PRIVATE KEY-----
 	MIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQC0sETnD5CNh/VZ
 	K3F3snYlD4t39YL30s56SiNmAOftZEvPkDqMzZh11/DlUggR9kQh/SpIQr/Gxg3o
 	TVG22AnjJynxlw1ikMNUa/Emq2of+MrEpn9oBKl+qproA07UrcVYuMrcPd7qRAco
