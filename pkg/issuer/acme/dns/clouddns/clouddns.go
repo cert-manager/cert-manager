@@ -151,11 +151,16 @@ func (c *DNSProvider) Present(domain, fqdn, value string) error {
 	if err != nil {
 		return err
 	}
-	if len(list.Rrsets) > 0 {
-		// Attempt to delete the existing records when adding our new one.
-		change.Deletions = list.Rrsets
+	// the length of the RR set should be 1 if it exists
+	// check to see if we already presented this data
+	if len(list.Rrsets) != 0 {
+		for _, record := range list.Rrsets[0].Rrdatas {
+			if record == value {
+				// value already presented
+				return nil
+			}
+		}
 	}
-
 	chg, err := c.client.Changes.Create(c.project, zone, change).Do()
 	if err != nil {
 		return err
@@ -181,19 +186,14 @@ func (c *DNSProvider) CleanUp(domain, fqdn, value string) error {
 		return err
 	}
 
-	records, err := c.findTxtRecords(zone, fqdn)
+	change, err := c.txtDeleteChange(zone, fqdn, value)
 	if err != nil {
 		return err
 	}
 
-	for _, rec := range records {
-		change := &dns.Change{
-			Deletions: []*dns.ResourceRecordSet{rec},
-		}
-		_, err = c.client.Changes.Create(c.project, zone, change).Do()
-		if err != nil {
-			return err
-		}
+	_, err = c.client.Changes.Create(c.project, zone, change).Do()
+	if err != nil {
+		return err
 	}
 	return nil
 }
@@ -220,19 +220,44 @@ func (c *DNSProvider) getHostedZone(domain string) (string, error) {
 	return zones.ManagedZones[0].Name, nil
 }
 
-func (c *DNSProvider) findTxtRecords(zone, fqdn string) ([]*dns.ResourceRecordSet, error) {
+func (c *DNSProvider) txtDeleteChange(zone, fqdn, value string) (*dns.Change, error) {
 
-	recs, err := c.client.ResourceRecordSets.List(c.project, zone).Do()
+	recs, err := c.client.ResourceRecordSets.List(c.project, zone).Name(fqdn).Type("TXT").Do()
 	if err != nil {
 		return nil, err
 	}
 
-	found := []*dns.ResourceRecordSet{}
-	for _, r := range recs.Rrsets {
-		if r.Type == "TXT" && r.Name == fqdn {
-			found = append(found, r)
+	// There should be either 0 or 1 *ResourceRecordSet
+	if len(recs.Rrsets) == 0 {
+		// no TXT records
+		return nil, nil
+	}
+	rrset := recs.Rrsets[0]
+
+	newDatas := make([]string, 0, len(rrset.Rrdatas))
+	for _, v := range rrset.Rrdatas {
+		if v != value {
+			newDatas = append(newDatas, v)
 		}
 	}
-
-	return found, nil
+	// we didn't have a txt record matching the value, so
+	// do nothing
+	if len(newDatas) == len(rrset.Rrdatas) {
+		return nil, nil
+	}
+	var additions []*dns.ResourceRecordSet
+	if len(newDatas) > 0 {
+		newRec := &dns.ResourceRecordSet{
+			Name:    fqdn,
+			Rrdatas: newDatas,
+			Ttl:     rrset.Ttl,
+			Type:    "TXT",
+		}
+		additions = []*dns.ResourceRecordSet{newRec}
+	}
+	change := &dns.Change{
+		Additions: additions,
+		Deletions: []*dns.ResourceRecordSet{rrset},
+	}
+	return change, nil
 }
