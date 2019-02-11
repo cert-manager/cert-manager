@@ -346,13 +346,13 @@ func TestPrivateKeyEncodings(t *testing.T){
 		expectErrStr string
 	}
 
-	const privateKey = []byte("-----BEGIN RSA PRIVATE KEY-----MIIEogIBAAKCAQEAtLBE5w+QjYf1WStxd7J2JQ+Ld/WC99LOekojZgDn7WRLz5A6jM2Yddfw5VIIEfZEIf0qSEK/xsYN6E1RttgJ4ycp8ZcNYpDDVGvxJqtqH/jKxKZ/aASpfqqa6ANO1K3FWLjK3D3e6kQHKNoMAciACdriAUejlDvG48FIV5WeFIvGalcGQ+Y2viJZpR6R+VA4MxO1Ni+z3wh1mcE3Nq7ZYI+lNqkK8Uzph7IsCejvMI6EfOF1LczwgGB7ofKRG0WcAwP6VYxaQPfu8CaikoXMpEp/REHQhLhBtqGD9tgGfvl/JC+4UIspw1qKWFwdd+MB5c+X+Wqze86ZqJc1kI/0kQIDAQABAoIBAD59wDbRsULhxL8kQUgOlsHWkHvak4M2i2bMAVYj9hKqX3XYAgf0i0gmeRA2wMfFjmba8iavvzf2A5VWOG6uZS0EvILrpRtzybqG4o5nNnr8RtSgaOwGwMAoLQ8VJcx0lQ5MSwzE8TXAdWFxmDl9qJq/8u5SYoa/7deTX3u7KUMdR6f5U2TtNSzGtrGrtSt1MlDu2/3x5n4kw67t1JX+zL133UTNAnFJHVVQjLDVJrkK1WlyTrlh8ZZ8RB78v/yo4qNRH6udkAoOb+Zja5YleEvhZ/+KyioNchLjB0Fy9Q29FVVOrbBAFoWNsp2m9jMtB88o/vpcT+Lwmru7Nh2axIECgYEA2guA28JgBSAeLf8KuLXxT+slkNTx3R4iVptFQaKIg/U4OvQK9lpZshCg9Q6BKOoQN8YCmK2lfQhqA7CLsx8ecP7Aj9A3XEdgjiuSXD8KOkI8wj1r6kihVNmER/Qp4gXjWf8vG0WNj8cX/lH2TKMQZyIAUe37GeWoXCE/6lxM4bkCgYEA1CQYJ8UUrvaWsCagXV9ar48MpjY1/t7zVmh6ETq/89UM+fDR6GzN3sa3jzLc5ymhN4udsL/Y5gMW5jr8k0pHNP+obClWCPrlZoqUHethkSXhVHl85wQNB6aBHvSsN3woNECJwxJ4V0MHS1w9hNFxan2BAGNFBF9pMpG7hb7P9ZkCgYB4gy8fRxlG++9yQKouWPEc2LyUhf1/1u3nrD3k/u4w8NG5U7TTYDB/CE3N48xjTqrUCK7ar+7tYj8l9uffgm2Sylqnoc9XQ2QMb+ye64C9nmpyePwyKx5wBSDlm/+iGtsDnNTuX8zUEJgkSiy1QtMIDXTb04qbT6Fz+jSXVZhwkQKBgDfY7LcDjidlaVQkRxFtuez/xr+3A83+GaeEx6XjhocFbm4aNNhwVF4yiD5dkIQWlIeP7MqMJuiepZekrbuE0WwlZcxbsXeZvWyaTNX3km7ovwJDHVuf2GJMNi/VD8VnnRnsZ5gAM8gdMD1pohRmIup68cwNVi0JhSM39FsIWaz5AoGAH8Ryw3Y0nw6dslerLhRVcMK//c9x3nflwkL5fkkljQd8fYHuKt5l4fl5mJFS9eODATtvighDWRyR2bBzykfQ5Tn1Ub23ZBZ8j2NNyHED6Ton09ltMnU2j9NsaqnmdbPWX8kFjRArfhOkkMBrYJAt5zu1pw5/J7ixXVvjc82yK08=-----END RSA PRIVATE KEY-----")
+	privateKey := []byte("-----BEGIN RSA PRIVATE KEY-----MIIEogIBAAKCAQEAtLBE5w+QjYf1WStxd7J2JQ+Ld/WC99LOekojZgDn7WRLz5A6jM2Yddfw5VIIEfZEIf0qSEK/xsYN6E1RttgJ4ycp8ZcNYpDDVGvxJqtqH/jKxKZ/aASpfqqa6ANO1K3FWLjK3D3e6kQHKNoMAciACdriAUejlDvG48FIV5WeFIvGalcGQ+Y2viJZpR6R+VA4MxO1Ni+z3wh1mcE3Nq7ZYI+lNqkK8Uzph7IsCejvMI6EfOF1LczwgGB7ofKRG0WcAwP6VYxaQPfu8CaikoXMpEp/REHQhLhBtqGD9tgGfvl/JC+4UIspw1qKWFwdd+MB5c+X+Wqze86ZqJc1kI/0kQIDAQABAoIBAD59wDbRsULhxL8kQUgOlsHWkHvak4M2i2bMAVYj9hKqX3XYAgf0i0gmeRA2wMfFjmba8iavvzf2A5VWOG6uZS0EvILrpRtzybqG4o5nNnr8RtSgaOwGwMAoLQ8VJcx0lQ5MSwzE8TXAdWFxmDl9qJq/8u5SYoa/7deTX3u7KUMdR6f5U2TtNSzGtrGrtSt1MlDu2/3x5n4kw67t1JX+zL133UTNAnFJHVVQjLDVJrkK1WlyTrlh8ZZ8RB78v/yo4qNRH6udkAoOb+Zja5YleEvhZ/+KyioNchLjB0Fy9Q29FVVOrbBAFoWNsp2m9jMtB88o/vpcT+Lwmru7Nh2axIECgYEA2guA28JgBSAeLf8KuLXxT+slkNTx3R4iVptFQaKIg/U4OvQK9lpZshCg9Q6BKOoQN8YCmK2lfQhqA7CLsx8ecP7Aj9A3XEdgjiuSXD8KOkI8wj1r6kihVNmER/Qp4gXjWf8vG0WNj8cX/lH2TKMQZyIAUe37GeWoXCE/6lxM4bkCgYEA1CQYJ8UUrvaWsCagXV9ar48MpjY1/t7zVmh6ETq/89UM+fDR6GzN3sa3jzLc5ymhN4udsL/Y5gMW5jr8k0pHNP+obClWCPrlZoqUHethkSXhVHl85wQNB6aBHvSsN3woNECJwxJ4V0MHS1w9hNFxan2BAGNFBF9pMpG7hb7P9ZkCgYB4gy8fRxlG++9yQKouWPEc2LyUhf1/1u3nrD3k/u4w8NG5U7TTYDB/CE3N48xjTqrUCK7ar+7tYj8l9uffgm2Sylqnoc9XQ2QMb+ye64C9nmpyePwyKx5wBSDlm/+iGtsDnNTuX8zUEJgkSiy1QtMIDXTb04qbT6Fz+jSXVZhwkQKBgDfY7LcDjidlaVQkRxFtuez/xr+3A83+GaeEx6XjhocFbm4aNNhwVF4yiD5dkIQWlIeP7MqMJuiepZekrbuE0WwlZcxbsXeZvWyaTNX3km7ovwJDHVuf2GJMNi/VD8VnnRnsZ5gAM8gdMD1pohRmIup68cwNVi0JhSM39FsIWaz5AoGAH8Ryw3Y0nw6dslerLhRVcMK//c9x3nflwkL5fkkljQd8fYHuKt5l4fl5mJFS9eODATtvighDWRyR2bBzykfQ5Tn1Ub23ZBZ8j2NNyHED6Ton09ltMnU2j9NsaqnmdbPWX8kFjRArfhOkkMBrYJAt5zu1pw5/J7ixXVvjc82yK08=-----END RSA PRIVATE KEY-----")
 
 	tests := []testT{
 		{
 			name: "rsa 2048 private key with empty key encoding",
 			key: privateKey,
-			keyEncoding: v1alpha1.keyEncoding(""),
+			keyEncoding: v1alpha1.KeyEncoding(""),
 			expectErr: false,
 		},
 		{
@@ -371,8 +371,8 @@ func TestPrivateKeyEncodings(t *testing.T){
 
 	testFn := func(test testT) func(*testing.T) {
 		return func(t *testing.T) {
-			decodedKey, err := DecodePrivateKeyBytes(t.key)
-			encodedKey, err := EncodePrivateKey(decodedKey, t.keyEncoding)
+			decodedKey, err := DecodePrivateKeyBytes(test.key)
+			encodedKey, err := EncodePrivateKey(decodedKey, test.keyEncoding)
 
 			if test.expectErr {
 				if err == nil {
@@ -392,7 +392,7 @@ func TestPrivateKeyEncodings(t *testing.T){
 					return
 				}
 
-				expectedEncoding := t.keyEncoding
+				expectedEncoding := test.keyEncoding
 				block, _ := pem.Decode(encodedKey)
 
 				switch block.Type {
