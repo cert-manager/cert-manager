@@ -274,7 +274,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 					},
 				},
 				Rules: []ext.IngressRule{
-					ext.IngressRule{
+					{
 						Host: acmeIngressDomain,
 						IngressRuleValue: ext.IngressRuleValue{
 							HTTP: &ext.HTTPIngressRuleValue{
