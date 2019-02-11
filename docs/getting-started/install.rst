@@ -50,16 +50,13 @@ cert-manager runs in:
 
 You can read more about the webhook on the :doc:`webhook document <./webhook>`.
 
-We can now go ahead and install cert-manager. This is a two-stage process where
-we first install the CustomResourceDefinition resources, and then afterwards
-install cert-manager along with the webhook component:
+We can now go ahead and install cert-manager. All resources
+(the CustomResourceDefinitions, cert-manager, and the webhook component)
+are included in a single YAML manifest file:
 
 .. code-block:: shell
 
-   # Install the CustomResourceDefinition resources
-   kubectl apply -f https://raw.githubusercontent.com/jetstack/cert-manager/release-0.6/deploy/manifests/00-crds.yaml
-
-   # Install cert-manager itself
+   # Install the CustomResourceDefinitions and cert-manager itself
    kubectl apply -f https://raw.githubusercontent.com/jetstack/cert-manager/release-0.6/deploy/manifests/cert-manager.yaml
 
 .. note::
@@ -75,7 +72,7 @@ install cert-manager along with the webhook component:
    'permission denied' error when creating some of these resources. This is a
    nuance of the way GKE handles RBAC and IAM permissions, and as such you
    should 'elevate' your own privileges to that of a 'cluster-admin' **before**
-   running the above commands. If you have already run the above commands, you
+   running the above command. If you have already run the above command, you
    should run them again after elevating your permissions::
 
        kubectl create clusterrolebinding cluster-admin-binding \
@@ -133,7 +130,7 @@ In order to install the Helm chart, you must run:
    helm install \
      --name cert-manager \
      --namespace cert-manager \
-     --version v0.6.0 \
+     --version v0.6.1 \
      stable/cert-manager
 
 The default cert-manager configuration is good for the majority of users, but a
@@ -222,7 +219,7 @@ to issue basic certificate types:
    # Clean up the test resources
    kubectl delete -f test-resources.yaml
 
-If all the above steps have completed with error, you are good to go!
+If all the above steps have completed without error, you are good to go!
 
 If you experience problems, please check the
 :doc:`troubleshooting guide <./troubleshooting>`.

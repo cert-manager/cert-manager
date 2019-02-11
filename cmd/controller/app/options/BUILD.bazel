@@ -6,6 +6,7 @@ go_library(
     importpath = "github.com/jetstack/cert-manager/cmd/controller/app/options",
     visibility = ["//visibility:public"],
     deps = [
+        "//pkg/apis/certmanager/v1alpha1:go_default_library",
         "//pkg/controller/acmechallenges:go_default_library",
         "//pkg/controller/acmeorders:go_default_library",
         "//pkg/controller/certificates:go_default_library",

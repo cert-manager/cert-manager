@@ -20,11 +20,11 @@ API stability.
 Notably, we may choose to make breaking changes to our API specification (i.e. the
 Issuer, ClusterIssuer and Certificate resources) in new minor releases.
 
-These will always be clearly documented in the [upgrade section of the documentation](https://cert-manager.readthedocs.io/en/latest/admin/upgrading/index.html)
+These will always be clearly documented in the [upgrade section of the documentation](https://docs.cert-manager.io/en/latest/admin/upgrading/index.html)
 
 ## Documentation
 
-Documentation for cert-manager can be found at [cert-manager.readthedocs.io](https://cert-manager.readthedocs.io/en/latest/).
+Documentation for cert-manager can be found at [docs.cert-manager.io](https://docs.cert-manager.io/en/latest/).
 Please make sure to select the correct version of the documentation to view on
 the bottom left of the page.
 
@@ -33,8 +33,8 @@ Ingress resources, aka a [kube-lego](https://github.com/jetstack/kube-lego)
 replacement, see the [cert-manager nginx ingress quick start
 guide](docs/tutorials/acme/quick-start/index.rst).
 
-See [Getting started](https://cert-manager.readthedocs.io/en/latest/getting-started/)
-within the [documentation](https://cert-manager.readthedocs.io/en/latest/)
+See [Getting started](https://docs.cert-manager.io/en/latest/getting-started/)
+within the [documentation](https://docs.cert-manager.io/en/latest/)
 for installation instructions.
 
 ## Troubleshooting
@@ -51,7 +51,7 @@ You can also try [searching for an existing issue](https://github.com/jetstack/c
 Properly searching for an existing issue will help reduce the number of duplicates,
 and help you find the answer you are looking for quicker.
 
-Please also make sure to read through the relevant pages in the [documentation](https://cert-manager.readthedocs.io/en/latest/)
+Please also make sure to read through the relevant pages in the [documentation](https://docs.cert-manager.io/en/latest/)
 before opening an issue. You can also search the documentation using the search box on the
 top left of the page.
 
@@ -84,7 +84,7 @@ if you are unsure where to start with getting involved!
 We also use the #cert-manager channel on kubernetes.slack.com for chat relating to
 the project.
 
-Developer documentation is available in the [official documentation](http://cert-manager.readthedocs.io/en/latest/devel/index.html).
+Developer documentation is available in the [official documentation](https://docs.cert-manager.io/en/latest/devel/index.html).
 
 ## Changelog
 

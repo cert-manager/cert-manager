@@ -6,8 +6,8 @@ load("@bazel_tools//tools/build_defs/repo:git.bzl", "new_git_repository")
 ## Load rules_go and dependencies
 http_archive(
     name = "io_bazel_rules_go",
-    urls = ["https://github.com/bazelbuild/rules_go/releases/download/0.16.5/rules_go-0.16.5.tar.gz"],
-    sha256 = "7be7dc01f1e0afdba6c8eb2b43d2fa01c743be1b9273ab1eaf6c233df078d705",
+    urls = ["https://github.com/bazelbuild/rules_go/releases/download/0.16.6/rules_go-0.16.6.tar.gz"],
+    sha256 = "ade51a315fa17347e5c31201fdc55aa5ffb913377aa315dceb56ee9725e620ee",
 )
 
 load(
@@ -19,7 +19,7 @@ load(
 go_rules_dependencies()
 
 go_register_toolchains(
-    go_version = "1.11.4",
+    go_version = "1.11.5",
 )
 
 ## Load gazelle and dependencies
@@ -119,7 +119,7 @@ container_pull(
 ## Install 'kind', for creating kubernetes-in-docker clusters
 go_repository(
     name = "io_kubernetes_sigs_kind",
-    commit = "e0e26dae2dab662a3d06756ed668f47b2a0515cc",
+    commit = "9307ec01e70ffd56d3a5bc16fb977d4f557a615f",
     importpath = "sigs.k8s.io/kind",
 )
 
@@ -160,6 +160,71 @@ container_pull(
     registry = "index.docker.io",
     repository = "library/vault",
     tag = "0.9.3",
+)
+
+## Fetch kind images used during e2e tests
+container_pull(
+    name = "kind-1.11",
+    registry = "index.docker.io",
+    repository = "kindest/node",
+    tag = "v1.11.3",
+)
+
+container_pull(
+    name = "kind-1.12",
+    registry = "index.docker.io",
+    repository = "kindest/node",
+    tag = "v1.12.3",
+)
+
+container_pull(
+    name = "kind-1.13",
+    registry = "index.docker.io",
+    repository = "kindest/node",
+    tag = "v1.13.2",
+)
+
+## Fetch kubectl for use during e2e tests
+http_file(
+    name = "kubectl_1_11_darwin",
+    executable = 1,
+    sha256 = "cf1feeac2fdedfb069131e7d62735b99b49ec43bf0d7565a30379c35056906c4",
+    urls = ["https://storage.googleapis.com/kubernetes-release/release/v1.11.3/bin/darwin/amd64/kubectl"],
+)
+
+http_file(
+    name = "kubectl_1_11_linux",
+    executable = 1,
+    sha256 = "0d4c70484e90d4310f03f997b4432e0a97a7f5b5be5c31d281f3d05919f8b46c",
+    urls = ["https://storage.googleapis.com/kubernetes-release/release/v1.11.3/bin/linux/amd64/kubectl"],
+)
+
+http_file(
+    name = "kubectl_1_12_darwin",
+    executable = 1,
+    sha256 = "ccddf5b78cd24d5782f4fbe436eee974ca3d901a2d850c24693efa8824737979",
+    urls = ["https://storage.googleapis.com/kubernetes-release/release/v1.12.3/bin/darwin/amd64/kubectl"],
+)
+
+http_file(
+    name = "kubectl_1_12_linux",
+    executable = 1,
+    sha256 = "a93cd2ffd146bbffb6ea651b71b57fe377ba1f158c7c0eb16c14aa93394cd576",
+    urls = ["https://storage.googleapis.com/kubernetes-release/release/v1.12.3/bin/linux/amd64/kubectl"],
+)
+
+http_file(
+    name = "kubectl_1_13_darwin",
+    executable = 1,
+    sha256 = "e656a8ac9272d04febf2ed29b2e8866bfdb73f55e098026384268851d7aeba74",
+    urls = ["https://storage.googleapis.com/kubernetes-release/release/v1.13.2/bin/darwin/amd64/kubectl"],
+)
+
+http_file(
+    name = "kubectl_1_13_linux",
+    executable = 1,
+    sha256 = "2c7ab398559c7f4f91102c4a65184e0a5a3a137060c3179e9361d9c20b467181",
+    urls = ["https://storage.googleapis.com/kubernetes-release/release/v1.13.2/bin/linux/amd64/kubectl"],
 )
 
 ## Install buildozer, for mass-editing BUILD files

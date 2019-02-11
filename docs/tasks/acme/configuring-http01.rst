@@ -42,7 +42,7 @@ The HTTP01 Issuer supports a number of additional options.
 For full details on the range of options available, read the
 `reference documentation`_.
 
-.. _`reference documentation`: https://cert-manager.readthedocs.io/en/latest/reference/api-docs/index.html#acmeissuerhttp01config-v1alpha1
+.. _`reference documentation`: https://docs.cert-manager.io/en/latest/reference/api-docs/index.html#acmeissuerhttp01config-v1alpha1
 
 servicePort
 -----------

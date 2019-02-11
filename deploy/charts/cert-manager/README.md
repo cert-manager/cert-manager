@@ -13,7 +13,7 @@ to renew certificates at an appropriate time before expiry.
 ## Installing the Chart
 
 Full installation instructions, including details on how to configure extra
-functionality in cert-manager can be found in the [getting started docs](https://cert-manager.readthedocs.io/en/latest/getting-started/).
+functionality in cert-manager can be found in the [getting started docs](https://docs.cert-manager.io/en/latest/getting-started/).
 
 To install the chart with the release name `my-release`:
 
@@ -38,20 +38,20 @@ or Issuer resource (for example, by creating a 'letsencrypt-staging' issuer).
 More information on the different types of issuers and how to configure them
 can be found in our documentation:
 
-https://cert-manager.readthedocs.io/en/latest/reference/issuers.html
+https://docs.cert-manager.io/en/latest/reference/issuers.html
 
 For information on how to configure cert-manager to automatically provision
 Certificates for Ingress resources, take a look at the `ingress-shim`
 documentation:
 
-https://cert-manager.readthedocs.io/en/latest/reference/ingress-shim.html
+https://docs.cert-manager.io/en/latest/reference/ingress-shim.html
 
 > **Tip**: List all releases using `helm list`
 
 ## Upgrading the Chart
 
 Special considerations may be required when upgrading the Helm chart, and these
-are documented in our full [upgrading guide](https://cert-manager.readthedocs.io/en/latest/admin/upgrading/index.html).
+are documented in our full [upgrading guide](https://docs.cert-manager.io/en/latest/admin/upgrading/index.html).
 Please check here before perform upgrades!
 
 ## Uninstalling the Chart
@@ -72,7 +72,7 @@ The following table lists the configurable parameters of the cert-manager chart 
 | --------- | ----------- | ------- |
 | `global.imagePullSecrets` | Reference to one or more secrets to be used when pulling images | `[]` |
 | `image.repository` | Image repository | `quay.io/jetstack/cert-manager-controller` |
-| `image.tag` | Image tag | `v0.6.0` |
+| `image.tag` | Image tag | `v0.6.1` |
 | `image.pullPolicy` | Image pull policy | `IfNotPresent` |
 | `replicaCount`  | Number of cert-manager replicas  | `1` |
 | `clusterResourceNamespace` | Override the namespace used to store DNS provider credentials etc. for ClusterIssuer resources | Same namespace as cert-manager pod
@@ -107,7 +107,7 @@ The following table lists the configurable parameters of the cert-manager chart 
 | `webhook.extraArgs` | Optional flags for cert-manager webhook component | `[]` |
 | `webhook.resources` | CPU/memory resource requests/limits for the webhook pods | |
 | `webhook.image.repository` | Webhook image repository | `quay.io/jetstack/cert-manager-webhook` |
-| `webhook.image.tag` | Webhook image tag | `v0.6.0` |
+| `webhook.image.tag` | Webhook image tag | `v0.6.1` |
 | `webhook.image.pullPolicy` | Webhook image pull policy | `IfNotPresent` |
 | `webhook.caSyncImage.repository` | CA sync image repository | `quay.io/munnerz/apiextensions-ca-helper` |
 | `webhook.caSyncImage.tag` | CA sync image tag | `v0.1.0` |

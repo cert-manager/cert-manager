@@ -21,21 +21,31 @@ set -o pipefail
 SCRIPT_ROOT=$(dirname "${BASH_SOURCE}")
 source "${SCRIPT_ROOT}/lib.sh"
 
-# build 'kind'
-bazel build //hack/bin:kind
-KIND="$(bazel info bazel-genfiles)/hack/bin/kind"
-
 # deploy_kind will deploy a kubernetes-in-docker cluster
 deploy_kind() {
-    # default to v1alpha3, if 1.11.x then use v1alpha2
+    echo "Exporting kind image to docker daemon..."
+    bazel run "${KIND_IMAGE_TARGET}"
+
+    function kubeVersion() {
+        echo $(docker run \
+            --entrypoint="cat" \
+            "${KIND_IMAGE}" \
+            /kind/version)
+    }
+
+    # default to v1beta1, if 1.12.x then use v1alpha3, if 1.11.x then use v1alpha2
     vers="$(kubeVersion)"
-    config="v1alpha3"
+    config="v1beta1"
     if [[ "$vers" =~ v1\.11\..+ ]]; then
         config="v1alpha2"
     fi
+    if [[ "$vers" =~ v1\.12\..+ ]]; then
+        config="v1alpha3"
+    fi
+
+
     echo "Booting Kubernetes version: $vers"
     echo "Using kubeadm config api version '$config'"
-
     # create the kind cluster
     "${KIND}" create cluster \
         --name="${KIND_CLUSTER_NAME}" \
