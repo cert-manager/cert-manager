@@ -346,24 +346,53 @@ func TestPrivateKeyEncodings(t *testing.T){
 		expectErrStr string
 	}
 
-	privateKey := []byte("-----BEGIN RSA PRIVATE KEY-----MIIEogIBAAKCAQEAtLBE5w+QjYf1WStxd7J2JQ+Ld/WC99LOekojZgDn7WRLz5A6jM2Yddfw5VIIEfZEIf0qSEK/xsYN6E1RttgJ4ycp8ZcNYpDDVGvxJqtqH/jKxKZ/aASpfqqa6ANO1K3FWLjK3D3e6kQHKNoMAciACdriAUejlDvG48FIV5WeFIvGalcGQ+Y2viJZpR6R+VA4MxO1Ni+z3wh1mcE3Nq7ZYI+lNqkK8Uzph7IsCejvMI6EfOF1LczwgGB7ofKRG0WcAwP6VYxaQPfu8CaikoXMpEp/REHQhLhBtqGD9tgGfvl/JC+4UIspw1qKWFwdd+MB5c+X+Wqze86ZqJc1kI/0kQIDAQABAoIBAD59wDbRsULhxL8kQUgOlsHWkHvak4M2i2bMAVYj9hKqX3XYAgf0i0gmeRA2wMfFjmba8iavvzf2A5VWOG6uZS0EvILrpRtzybqG4o5nNnr8RtSgaOwGwMAoLQ8VJcx0lQ5MSwzE8TXAdWFxmDl9qJq/8u5SYoa/7deTX3u7KUMdR6f5U2TtNSzGtrGrtSt1MlDu2/3x5n4kw67t1JX+zL133UTNAnFJHVVQjLDVJrkK1WlyTrlh8ZZ8RB78v/yo4qNRH6udkAoOb+Zja5YleEvhZ/+KyioNchLjB0Fy9Q29FVVOrbBAFoWNsp2m9jMtB88o/vpcT+Lwmru7Nh2axIECgYEA2guA28JgBSAeLf8KuLXxT+slkNTx3R4iVptFQaKIg/U4OvQK9lpZshCg9Q6BKOoQN8YCmK2lfQhqA7CLsx8ecP7Aj9A3XEdgjiuSXD8KOkI8wj1r6kihVNmER/Qp4gXjWf8vG0WNj8cX/lH2TKMQZyIAUe37GeWoXCE/6lxM4bkCgYEA1CQYJ8UUrvaWsCagXV9ar48MpjY1/t7zVmh6ETq/89UM+fDR6GzN3sa3jzLc5ymhN4udsL/Y5gMW5jr8k0pHNP+obClWCPrlZoqUHethkSXhVHl85wQNB6aBHvSsN3woNECJwxJ4V0MHS1w9hNFxan2BAGNFBF9pMpG7hb7P9ZkCgYB4gy8fRxlG++9yQKouWPEc2LyUhf1/1u3nrD3k/u4w8NG5U7TTYDB/CE3N48xjTqrUCK7ar+7tYj8l9uffgm2Sylqnoc9XQ2QMb+ye64C9nmpyePwyKx5wBSDlm/+iGtsDnNTuX8zUEJgkSiy1QtMIDXTb04qbT6Fz+jSXVZhwkQKBgDfY7LcDjidlaVQkRxFtuez/xr+3A83+GaeEx6XjhocFbm4aNNhwVF4yiD5dkIQWlIeP7MqMJuiepZekrbuE0WwlZcxbsXeZvWyaTNX3km7ovwJDHVuf2GJMNi/VD8VnnRnsZ5gAM8gdMD1pohRmIup68cwNVi0JhSM39FsIWaz5AoGAH8Ryw3Y0nw6dslerLhRVcMK//c9x3nflwkL5fkkljQd8fYHuKt5l4fl5mJFS9eODATtvighDWRyR2bBzykfQ5Tn1Ub23ZBZ8j2NNyHED6Ton09ltMnU2j9NsaqnmdbPWX8kFjRArfhOkkMBrYJAt5zu1pw5/J7ixXVvjc82yK08=-----END RSA PRIVATE KEY-----")
+	const privKey = `
+-----BEGIN PRIVATE KEY-----
+MIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQC0sETnD5CNh/VZ
+K3F3snYlD4t39YL30s56SiNmAOftZEvPkDqMzZh11/DlUggR9kQh/SpIQr/Gxg3o
+TVG22AnjJynxlw1ikMNUa/Emq2of+MrEpn9oBKl+qproA07UrcVYuMrcPd7qRAco
+2gwByIAJ2uIBR6OUO8bjwUhXlZ4Ui8ZqVwZD5ja+IlmlHpH5UDgzE7U2L7PfCHWZ
+wTc2rtlgj6U2qQrxTOmHsiwJ6O8wjoR84XUtzPCAYHuh8pEbRZwDA/pVjFpA9+7w
+JqKShcykSn9EQdCEuEG2oYP22AZ++X8kL7hQiynDWopYXB134wHlz5f5arN7zpmo
+lzWQj/SRAgMBAAECggEAPn3ANtGxQuHEvyRBSA6WwdaQe9qTgzaLZswBViP2Eqpf
+ddgCB/SLSCZ5EDbAx8WOZtryJq+/N/YDlVY4bq5lLQS8guulG3PJuobijmc2evxG
+1KBo7AbAwCgtDxUlzHSVDkxLDMTxNcB1YXGYOX2omr/y7lJihr/t15Nfe7spQx1H
+p/lTZO01LMa2sau1K3UyUO7b/fHmfiTDru3Ulf7MvXfdRM0CcUkdVVCMsNUmuQrV
+aXJOuWHxlnxEHvy//Kjio1Efq52QCg5v5mNrliV4S+Fn/4rKKg1yEuMHQXL1Db0V
+VU6tsEAWhY2ynab2My0Hzyj++lxP4vCau7s2HZrEgQKBgQDaC4DbwmAFIB4t/wq4
+tfFP6yWQ1PHdHiJWm0VBooiD9Tg69Ar2WlmyEKD1DoEo6hA3xgKYraV9CGoDsIuz
+Hx5w/sCP0DdcR2COK5JcPwo6QjzCPWvqSKFU2YRH9CniBeNZ/y8bRY2Pxxf+UfZM
+oxBnIgBR7fsZ5ahcIT/qXEzhuQKBgQDUJBgnxRSu9pawJqBdX1qvjwymNjX+3vNW
+aHoROr/z1Qz58NHobM3exrePMtznKaE3i52wv9jmAxbmOvyTSkc0/6hsKVYI+uVm
+ipQd62GRJeFUeXznBA0HpoEe9Kw3fCg0QInDEnhXQwdLXD2E0XFqfYEAY0UEX2ky
+kbuFvs/1mQKBgHiDLx9HGUb773JAqi5Y8RzYvJSF/X/W7eesPeT+7jDw0blTtNNg
+MH8ITc3jzGNOqtQIrtqv7u1iPyX259+CbZLKWqehz1dDZAxv7J7rgL2eanJ4/DIr
+HnAFIOWb/6Ia2wOc1O5fzNQQmCRKLLVC0wgNdNvTiptPoXP6NJdVmHCRAoGAN9js
+twOOJ2VpVCRHEW257P/Gv7cDzf4Zp4THpeOGhwVubho02HBUXjKIPl2QhBaUh4/s
+yowm6J6ll6Stu4TRbCVlzFuxd5m9bJpM1feSbui/AkMdW5/YYkw2L9UPxWedGexn
+mAAzyB0wPWmiFGYi6nrxzA1WLQmFIzf0WwhZrPkCgYAfxHLDdjSfDp2yV6suFFVw
+wr/9z3Hed+XCQvl+SSWNB3x9ge4q3mXh+XmYkVL144MBO2+KCENZHJHZsHPKR9Dl
+OfVRvbdkFnyPY03IcQPpOifT2W0ydTaP02xqqeZ1s9ZfyQWNECt+E6SQwGtgkC3n
+O7WnDn8nuLFdW+NzzbIrTw==
+-----END PRIVATE KEY-----`
+	privateKeyBytes := []byte(privKey)
 
 	tests := []testT{
 		{
 			name: "rsa 2048 private key with empty key encoding",
-			key: privateKey,
-			keyEncoding: v1alpha1.KeyEncoding(""),
+			key: privateKeyBytes,
+			keyEncoding: v1alpha1.PKCS1,
 			expectErr: false,
 		},
 		{
 			name: "rsa 2048 private key with pkcs1 key encoding",
-			key: privateKey,
+			key: privateKeyBytes,
 			keyEncoding: v1alpha1.PKCS1,
 			expectErr: false,
 		},
 		{
 			name: "rsa 2048 private key with pkcs8 key encoding",
-			key: privateKey,
+			key: privateKeyBytes,
 			keyEncoding: v1alpha1.PKCS8,
 			expectErr: false,
 		},
@@ -371,7 +400,8 @@ func TestPrivateKeyEncodings(t *testing.T){
 
 	testFn := func(test testT) func(*testing.T) {
 		return func(t *testing.T) {
-			decodedKey, err := DecodePrivateKeyBytes(test.key)
+			block, _ := pem.Decode(privateKeyBytes)
+			decodedKey, err := x509.ParsePKCS8PrivateKey(block.Bytes)
 			encodedKey, err := EncodePrivateKey(decodedKey, test.keyEncoding)
 
 			if test.expectErr {
