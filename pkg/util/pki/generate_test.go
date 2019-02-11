@@ -393,15 +393,16 @@ func TestPrivateKeyEncodings(t *testing.T){
 				}
 
 				expectedEncoding := test.keyEncoding
+				actualEncoding := ""
 				block, _ := pem.Decode(encodedKey)
 
 				switch block.Type {
 				case "PRIVATE KEY":
-					actualEncoding := v1alpha1.PKCS8
+					actualEncoding = v1alpha1.PKCS8
 				case "RSA PRIVATE KEY":
-					actualEncoding := v1alpha1.PKCS1
+					actualEncoding = v1alpha1.PKCS1
 				case "EC PRIVATE KEY":
-					actualEncoding := v1alpha1.PKCS1
+					actualEncoding = v1alpha1.PKCS1
 				default: 
 					err := "unknown key encoding for private key"
 					t.Errorf("%s", err)
