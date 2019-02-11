@@ -337,10 +337,10 @@ func TestPublicKeyMatchesCertificateRequest(t *testing.T) {
 	}
 }
 
-func TestPrivateKeyEncodings(t *testing.T){
+func TestPrivateKeyEncodings(t *testing.T) {
 	type testT struct {
 		name         string
-		key			 []byte
+		key          []byte
 		keyEncoding  v1alpha1.KeyEncoding
 		expectErr    bool
 		expectErrStr string
@@ -379,22 +379,22 @@ O7WnDn8nuLFdW+NzzbIrTw==
 
 	tests := []testT{
 		{
-			name: "rsa 2048 private key with empty key encoding",
-			key: privateKeyBytes,
+			name:        "rsa 2048 private key with empty key encoding",
+			key:         privateKeyBytes,
 			keyEncoding: v1alpha1.PKCS1,
-			expectErr: false,
+			expectErr:   false,
 		},
 		{
-			name: "rsa 2048 private key with pkcs1 key encoding",
-			key: privateKeyBytes,
+			name:        "rsa 2048 private key with pkcs1 key encoding",
+			key:         privateKeyBytes,
 			keyEncoding: v1alpha1.PKCS1,
-			expectErr: false,
+			expectErr:   false,
 		},
 		{
-			name: "rsa 2048 private key with pkcs8 key encoding",
-			key: privateKeyBytes,
+			name:        "rsa 2048 private key with pkcs8 key encoding",
+			key:         privateKeyBytes,
 			keyEncoding: v1alpha1.PKCS8,
-			expectErr: false,
+			expectErr:   false,
 		},
 	}
 
@@ -433,7 +433,7 @@ O7WnDn8nuLFdW+NzzbIrTw==
 					actualEncoding = v1alpha1.PKCS1
 				case "EC PRIVATE KEY":
 					actualEncoding = v1alpha1.PKCS1
-				default: 
+				default:
 					err := "unknown key encoding for private key"
 					t.Errorf("%s", err)
 				}
@@ -445,7 +445,7 @@ O7WnDn8nuLFdW+NzzbIrTw==
 			}
 		}
 	}
-	
+
 	for _, test := range tests {
 		t.Run(test.name, testFn(test))
 	}
