@@ -106,7 +106,12 @@ var _ = framework.CertManagerDescribe("Self Signed Certificate", func() {
 	}
 
 	It("should correctly encode a certificate's private key based on the key encoding", func() {
+		By("Creating an Issuer")
+
 		certClient := f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name)
+
+		_, err := f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Create(util.NewCertManagerSelfSignedIssuer(issuerName))
+		Expect(err).NotTo(HaveOccurred())
 
 		crt := util.NewCertManagerBasicCertificate(certificateName, certificateSecretName, issuerName, v1alpha1.IssuerKind, nil, nil)
 		crt.Spec.KeyEncoding = v1alpha1.PKCS8
