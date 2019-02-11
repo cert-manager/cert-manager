@@ -146,7 +146,7 @@ func (c *Controller) Sync(ctx context.Context, ch *cmapi.Challenge) (err error) 
 	// means no CAA check is performed by ACME server or if any valid
 	// CAA would stop issuance (strongly suspect the former)
 	if len(dir.CAA) != 0 {
-		err := dnsutil.ValidateCAA(ch.Spec.DNSName, dir.CAA, ch.Spec.Wildcard)
+		err := dnsutil.ValidateCAA(ch.Spec.DNSName, dir.CAA, ch.Spec.Wildcard, c.Context.DNS01Nameservers)
 		if err != nil {
 			ch.Status.Reason = fmt.Sprintf("CAA self-check failed: %s", err)
 			return err

@@ -168,7 +168,7 @@ func dnsQuery(fqdn string, rtype uint16, nameservers []string, recursive bool) (
 	return
 }
 
-func ValidateCAA(domain string, issuerID []string, iswildcard bool) error {
+func ValidateCAA(domain string, issuerID []string, iswildcard bool, nameservers []string) error {
 	// see https://tools.ietf.org/html/rfc6844#section-4
 	// for more information about how CAA lookup is performed
 	fqdn := ToFqdn(domain)
@@ -186,7 +186,7 @@ func ValidateCAA(domain string, issuerID []string, iswildcard bool) error {
 		var err error
 		for i := 0; i < 8; i++ {
 			//TODO(dmo): figure out if we need these servers to be configurable as well
-			msg, err = dnsQuery(queryDomain, dns.TypeCAA, RecursiveNameservers, true)
+			msg, err = dnsQuery(queryDomain, dns.TypeCAA, nameservers, true)
 			if err != nil {
 				return fmt.Errorf("Could not validate CAA record: %s", err)
 			}
