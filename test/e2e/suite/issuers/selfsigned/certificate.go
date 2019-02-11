@@ -104,4 +104,19 @@ var _ = framework.CertManagerDescribe("Self Signed Certificate", func() {
 			f.CertificateDurationValid(cert, v.expectedDuration)
 		})
 	}
+
+	It("should correctly encode a certificate's private key based on the key encoding", func() {
+		certClient := f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name)
+
+		crt := util.NewCertManagerBasicCertificate(certificateName, certificateSecretName, issuerName, v1alpha1.IssuerKind, nil, nil)
+		crt.Spec.KeyEncoding = v1alpha1.PKCS8
+
+		By("Creating a Certificate")
+		cert, err := certClient.Create(crt)
+		Expect(err).NotTo(HaveOccurred())
+
+		By("Verifying the Certificate is valid")
+		err = h.WaitCertificateIssuedValid(f.Namespace.Name, certificateName, time.Minute*5)
+		Expect(err).NotTo(HaveOccurred())
+	})
 })
