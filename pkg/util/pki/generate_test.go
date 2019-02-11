@@ -393,7 +393,7 @@ func TestPrivateKeyEncodings(t *testing.T){
 				}
 
 				expectedEncoding := test.keyEncoding
-				var actualEncoding
+				var actualEncoding = nil
 				block, _ := pem.Decode(encodedKey)
 
 				switch block.Type {
