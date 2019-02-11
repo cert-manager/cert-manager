@@ -404,6 +404,7 @@ func TestPrivateKeyEncodings(t *testing.T){
 					actualEncoding := v1alpha1.PKCS1
 				default: 
 					err := "unknown key encoding for private key"
+					t.Errorf("%s", err)
 				}
 
 				if expectedEncoding != actualEncoding {
