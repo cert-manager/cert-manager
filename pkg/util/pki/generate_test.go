@@ -33,14 +33,13 @@ import (
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 )
 
-func buildCertificateWithKeyParams(keyAlgo v1alpha1.KeyAlgorithm, keySize int, keyEncoding v1alpha1.KeyEncoding) *v1alpha1.Certificate {
+func buildCertificateWithKeyParams(keyAlgo v1alpha1.KeyAlgorithm, keySize int) *v1alpha1.Certificate {
 	return &v1alpha1.Certificate{
 		Spec: v1alpha1.CertificateSpec{
 			CommonName:   "test",
 			DNSNames:     []string{"test.test"},
 			KeyAlgorithm: keyAlgo,
 			KeySize:      keySize,
-			KeyEncoding: keyEncoding
 		},
 	}
 }
@@ -63,7 +62,6 @@ func TestGeneratePrivateKeyForCertificate(t *testing.T) {
 		name         string
 		keyAlgo      v1alpha1.KeyAlgorithm
 		keySize      int
-		keyEncoding  v1alpha1.KeyEncoding
 		expectErr    bool
 		expectErrStr string
 	}
