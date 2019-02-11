@@ -69,12 +69,9 @@ func (c *DNSProvider) Present(domain, fqdn, value string) error {
 	}
 
 	// check if the record has already been created
-	records, err := c.findTxtRecord(fqdn)
-	for _, record := range records {
-		if record.Type == "TXT" && record.Data == value {
-			return nil
-		}
-
+	record, err := c.findTxtRecord(fqdn, value)
+	if record != nil {
+		return nil
 	}
 
 	createRequest := &godo.DomainRecordEditRequest{
@@ -101,23 +98,23 @@ func (c *DNSProvider) Present(domain, fqdn, value string) error {
 func (c *DNSProvider) CleanUp(domain, fqdn, value string) error {
 	zoneName, err := util.FindZoneByFqdn(fqdn, c.dns01Nameservers)
 
-	records, err := c.findTxtRecord(fqdn)
+	record, err := c.findTxtRecord(fqdn, value)
 	if err != nil {
 		return err
 	}
+	if record == nil {
+		return nil
+	}
 
-	for _, record := range records {
-		_, err = c.client.Domains.DeleteRecord(context.Background(), util.UnFqdn(zoneName), record.ID)
-
-		if err != nil {
-			return err
-		}
+	_, err = c.client.Domains.DeleteRecord(context.Background(), util.UnFqdn(zoneName), record.ID)
+	if err != nil {
+		return err
 	}
 
 	return nil
 }
 
-func (c *DNSProvider) findTxtRecord(fqdn string) ([]godo.DomainRecord, error) {
+func (c *DNSProvider) findTxtRecord(fqdn string, value string) (*godo.DomainRecord, error) {
 
 	zoneName, err := util.FindZoneByFqdn(fqdn, c.dns01Nameservers)
 	if err != nil {
@@ -130,8 +127,6 @@ func (c *DNSProvider) findTxtRecord(fqdn string) ([]godo.DomainRecord, error) {
 		nil,
 	)
 
-	var records []godo.DomainRecord
-
 	// The record Name doesn't contain the zoneName, so
 	// lets remove it before filtering the array of record
 	targetName := fqdn
@@ -140,10 +135,10 @@ func (c *DNSProvider) findTxtRecord(fqdn string) ([]godo.DomainRecord, error) {
 	}
 
 	for _, record := range allRecords {
-		if util.ToFqdn(record.Name) == targetName {
-			records = append(records, record)
+		if util.ToFqdn(record.Name) == targetName && record.Type == "TXT" && record.Data == value {
+			return &record, nil
 		}
 	}
 
-	return records, err
+	return nil, nil
 }
