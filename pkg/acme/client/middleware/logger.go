@@ -98,3 +98,8 @@ func (l *Logger) DNS01ChallengeRecord(token string) (string, error) {
 	glog.Infof("Calling DNS01ChallengeRecord")
 	return l.baseCl.DNS01ChallengeRecord(token)
 }
+
+func (l *Logger) Discover(ctx context.Context) (acme.Directory, error) {
+	glog.Infof("Calling Discover")
+	return l.baseCl.Discover(ctx)
+}

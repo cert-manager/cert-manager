@@ -31,6 +31,8 @@ import (
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
 	acmeapi "github.com/jetstack/cert-manager/third_party/crypto/acme"
+
+	dnsutil "github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
 )
 
 const (
@@ -129,6 +131,26 @@ func (c *Controller) Sync(ctx context.Context, ch *cmapi.Challenge) (err error) 
 		// due to the http01 solver creating resources that this controller
 		// watches/syncs on
 		return nil
+	}
+
+	// check for CAA records.
+	// CAA records are static, so we don't have to present anything
+	// before we check for them.
+
+	// Find out which identity the ACME server says it will use.
+	dir, err := cl.Discover(ctx)
+	if err != nil {
+		return err
+	}
+	// TODO(dmo): figure out if missing CAA identity in directory
+	// means no CAA check is performed by ACME server or if any valid
+	// CAA would stop issuance (strongly suspect the former)
+	if len(dir.CAA) != 0 {
+		err := dnsutil.ValidateCAA(ch.Spec.DNSName, dir.CAA, ch.Spec.Wildcard, c.Context.DNS01Nameservers)
+		if err != nil {
+			ch.Status.Reason = fmt.Sprintf("CAA self-check failed: %s", err)
+			return err
+		}
 	}
 
 	solver, err := c.solverFor(ch.Spec.Type)

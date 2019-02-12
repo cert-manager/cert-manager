@@ -36,6 +36,7 @@ type Interface interface {
 	GetAccount(ctx context.Context) (*acme.Account, error)
 	HTTP01ChallengeResponse(token string) (string, error)
 	DNS01ChallengeRecord(token string) (string, error)
+	Discover(ctx context.Context) (acme.Directory, error)
 }
 
 var _ Interface = &acme.Client{}
