@@ -117,35 +117,66 @@ func NewDNSProvider(accessKeyID, secretAccessKey, hostedZoneID, region string, a
 // Present creates a TXT record using the specified parameters
 func (r *DNSProvider) Present(domain, fqdn, value string) error {
 	value = `"` + value + `"`
-	return r.changeRecord(route53.ChangeActionUpsert, fqdn, value, route53TTL)
+	return r.addRecord(fqdn, value, route53TTL)
 }
 
 // CleanUp removes the TXT record matching the specified parameters
 func (r *DNSProvider) CleanUp(domain, fqdn, value string) error {
 	value = `"` + value + `"`
-	return r.changeRecord(route53.ChangeActionDelete, fqdn, value, route53TTL)
+	return r.removeRecord(fqdn, value, route53TTL)
 }
 
-func (r *DNSProvider) changeRecord(action, fqdn, value string, ttl int) error {
+func (r *DNSProvider) addRecord(fqdn, value string, ttl int) error {
 	hostedZoneID, err := r.getHostedZoneID(fqdn)
 	if err != nil {
 		return fmt.Errorf("Failed to determine Route 53 hosted zone ID: %v", err)
 	}
 
-	recordSet := newTXTRecordSet(fqdn, value, ttl)
+	rrset, err := r.fetchRRSet(fqdn, hostedZoneID)
+	if err != nil {
+		return err
+	}
+	recordSet := addTXTRecord(fqdn, value, ttl, rrset)
+	return r.performChange(recordSet, hostedZoneID, route53.ChangeActionUpsert)
+}
+
+func (r *DNSProvider) removeRecord(fqdn, value string, ttl int) error {
+	hostedZoneID, err := r.getHostedZoneID(fqdn)
+	if err != nil {
+		return fmt.Errorf("Failed to determine Route 53 hosted zone ID: %v", err)
+	}
+
+	rrset, err := r.fetchRRSet(fqdn, hostedZoneID)
+	if err != nil {
+		return err
+	}
+	newRRSet := removeTXTRecord(value, rrset)
+	if newRRSet != nil {
+		// record doesn't exist
+		return nil
+	}
+	
+	changeaction := route53.ChangeActionDelete
+	if len(newRRSet) > 0 {
+		changeaction = route53.ChangeActionUpsert
+		rrset.ResourceRecords = newRRSet
+	}
+	return r.performChange(rrset, hostedZoneID, changeaction)
+}
+
+func (r *DNSProvider) performChange(recordSet *route53.ResourceRecordSet, hostedZoneID string, action string) error {
 	reqParams := &route53.ChangeResourceRecordSetsInput{
 		HostedZoneId: aws.String(hostedZoneID),
 		ChangeBatch: &route53.ChangeBatch{
 			Comment: aws.String("Managed by cert-manager"),
 			Changes: []*route53.Change{
 				{
-					Action:            &action,
+					Action:            aws.String(action),
 					ResourceRecordSet: recordSet,
 				},
 			},
 		},
 	}
-
 	resp, err := r.client.ChangeResourceRecordSets(reqParams)
 	if err != nil {
 		if awserr, ok := err.(awserr.Error); ok {
@@ -216,13 +247,60 @@ func (r *DNSProvider) getHostedZoneID(fqdn string) (string, error) {
 	return hostedZoneID, nil
 }
 
-func newTXTRecordSet(fqdn, value string, ttl int) *route53.ResourceRecordSet {
-	return &route53.ResourceRecordSet{
-		Name: aws.String(fqdn),
-		Type: aws.String(route53.RRTypeTxt),
-		TTL:  aws.Int64(int64(ttl)),
-		ResourceRecords: []*route53.ResourceRecord{
-			{Value: aws.String(value)},
-		},
+func (r *DNSProvider) fetchRRSet(fqdn string, hostedZoneID string) (*route53.ResourceRecordSet, error) {
+	// AWS doesn't let you just ask for a single RRSet, instead you get a window
+	// into a sorted zonefile. Ask for 1 record set starting at TXT records, then check if we
+	// got a hit
+	rrsets, err := r.client.ListResourceRecordSets(&route53.ListResourceRecordSetsInput{
+		HostedZoneId:    aws.String(hostedZoneID),
+		StartRecordName: aws.String(fqdn),
+		StartRecordType: aws.String("TXT"),
+		MaxItems:        aws.String("1"),
+	})
+	// TODO(dmo): figure out what AWS does here when there are no records
+	if err != nil {
+		return nil, fmt.Errorf("Failed to list Route 53 hosted zone: %v", err)
 	}
+	if len(rrsets.ResourceRecordSets) == 1 {
+		// check if this is a TXT record and for the
+		// FQDN
+		set := rrsets.ResourceRecordSets[0]
+		if *set.Name == fqdn && *set.Type == "TXT" {
+			return set, nil
+		}
+	}
+	return nil, nil
+}
+
+func addTXTRecord(fqdn, value string, ttl int, oldSet *route53.ResourceRecordSet) *route53.ResourceRecordSet {
+	var txtrr []*route53.ResourceRecord
+	if oldSet != nil {
+		txtrr = oldSet.ResourceRecords
+	}
+	txtrr = append(txtrr, &route53.ResourceRecord{
+		Value: aws.String(value),
+	})
+	return &route53.ResourceRecordSet{
+		Name:            aws.String(fqdn),
+		Type:            aws.String(route53.RRTypeTxt),
+		TTL:             aws.Int64(int64(ttl)),
+		ResourceRecords: txtrr,
+	}
+}
+
+func removeTXTRecord(value string, oldSet *route53.ResourceRecordSet) []*route53.ResourceRecord {
+	if oldSet == nil {
+		return nil
+	}
+	newValues := make([]*route53.ResourceRecord, 0, len(oldSet.ResourceRecords))
+	for _, rr := range oldSet.ResourceRecords {
+		if *rr.Value != value {
+			newValues = append(newValues, rr)
+		}
+	}
+	if len(newValues) == len(oldSet.ResourceRecords) {
+		// nothing to be done
+		return nil
+	}
+	return newValues
 }
