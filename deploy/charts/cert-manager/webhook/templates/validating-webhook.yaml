@@ -32,8 +32,8 @@ webhooks:
     failurePolicy: Fail
     clientConfig:
       service:
-        name: kubernetes
-        namespace: default
+        name: {{ include "webhook.fullname" . }}
+        namespace: {{ .Release.Namespace | quote }}
         path: /apis/admission.certmanager.k8s.io/v1beta1/certificates
   - name: issuers.admission.certmanager.k8s.io
     namespaceSelector:
@@ -59,8 +59,8 @@ webhooks:
     failurePolicy: Fail
     clientConfig:
       service:
-        name: kubernetes
-        namespace: default
+        name: {{ include "webhook.fullname" . }}
+        namespace: {{ .Release.Namespace | quote }}
         path: /apis/admission.certmanager.k8s.io/v1beta1/issuers
   - name: clusterissuers.admission.certmanager.k8s.io
     namespaceSelector:
@@ -86,6 +86,6 @@ webhooks:
     failurePolicy: Fail
     clientConfig:
       service:
-        name: kubernetes
-        namespace: default
+        name: {{ include "webhook.fullname" . }}
+        namespace: {{ .Release.Namespace | quote }}
         path: /apis/admission.certmanager.k8s.io/v1beta1/clusterissuers
