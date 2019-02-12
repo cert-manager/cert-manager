@@ -62,20 +62,27 @@ Build a dev version of cert-manager
 
    # Build cert-manager binaries and docker images. Full output omitted for brevity
    $ make build
-   Successfully tagged quay.io/jetstack/cert-manager-controller:build
+   Successfully tagged quay.io/jetstack/cert-manager-controller:canary
 
 
 Deploy that version with helm
 =============================
 
 .. code-block:: shell
+   # Install custom resources before running helm
+   $ kubectl apply -f deploy/manifests/00-crds.yaml
+
+   # IMPORTANT: if you are deploying into a namespace that **already exists**,
+   # you MUST ensure the namespace has an additional label on it in order for
+   # the deployment to succeed
+   $ kubectl label namespace <deployment-namespace> certmanager.k8s.io/disable-validation="true"
 
    # Install our freshly built cert-manager image
    $ helm install \
-        --set image.tag=build \
+        --set image.tag=canary \
         --set image.pullPolicy=Never \
         --name cert-manager \
-        ./contrib/charts/cert-manager
+        ./deploy/charts/cert-manager
 
 From here, you should be able to do whatever manual testing or development you wish to.
 
