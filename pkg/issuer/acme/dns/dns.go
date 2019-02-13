@@ -332,32 +332,32 @@ func (s *Solver) solverForChallenge(issuer v1alpha1.GenericIssuer, ch *v1alpha1.
 			return nil, nil, fmt.Errorf("error instantiating rfc2136 challenge solver: %s", err.Error())
 		}
 	case providerConfig.Inwx != nil:
-		accountSecret, err := s.secretLister.Secrets(resourceNamespace).Get(providerConfig.Inwx.AccountSecret.Name)
+		accountSecret, err := s.secretLister.Secrets(resourceNamespace).Get(providerConfig.Inwx.CredentialSecret.Name)
 		if err != nil {
 			return nil, nil, fmt.Errorf("error getting inwx accounts secret: %s", err)
 		}
 
-		if providerConfig.Inwx.AccountSecret.Username == "" {
-			providerConfig.Inwx.AccountSecret.Username = "username"
+		if providerConfig.Inwx.CredentialSecret.Username == "" {
+			providerConfig.Inwx.CredentialSecret.Username = "username"
 		}
 
-		if providerConfig.Inwx.AccountSecret.Password == "" {
-			providerConfig.Inwx.AccountSecret.Password = "password"
+		if providerConfig.Inwx.CredentialSecret.Password == "" {
+			providerConfig.Inwx.CredentialSecret.Password = "password"
 		}
 
-		accountSecretUsername, ok := accountSecret.Data[providerConfig.Inwx.AccountSecret.Username]
+		accountUsername, ok := accountSecret.Data[providerConfig.Inwx.CredentialSecret.Username]
 		if !ok {
-			return nil, nil, fmt.Errorf("error getting inwx accounts secret: key '%s' not found in secret", providerConfig.Inwx.AccountSecret.Username)
+			return nil, nil, fmt.Errorf("error getting inwx accounts secret: key '%s' not found in secret", providerConfig.Inwx.CredentialSecret.Username)
 		}
 
-		accountSecretPassword, ok := accountSecret.Data[providerConfig.Inwx.AccountSecret.Password]
+		accountPassword, ok := accountSecret.Data[providerConfig.Inwx.CredentialSecret.Password]
 		if !ok {
-			return nil, nil, fmt.Errorf("error getting inwx accounts secret: key '%s' not found in secret", providerConfig.Inwx.AccountSecret.Password)
+			return nil, nil, fmt.Errorf("error getting inwx accounts secret: key '%s' not found in secret", providerConfig.Inwx.CredentialSecret.Password)
 		}
 
 		impl, err = s.dnsProviderConstructors.inwx(
-			string(accountSecretUsername),
-			string(accountSecretPassword),
+			string(accountUsername),
+			string(accountPassword),
 		)
 		if err != nil {
 			return nil, nil, fmt.Errorf("error instantiating inwx challenge solver: %s", err)
