@@ -80,4 +80,3 @@ type CredentialSecretSelector struct {
 	// The field containing the password
 	Password string `json:"passwordKey,omitempty"`
 }
-
