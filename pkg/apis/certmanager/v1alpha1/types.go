@@ -76,7 +76,9 @@ type CredentialSecretSelector struct {
 	// The name of the secret in the pod's namespace to select from.
 	LocalObjectReference `json:",inline"`
 	// The field containing the username
+	// +optional
 	Username string `json:"usernameKey,omitempty"`
 	// The field containing the password
+	// +optional
 	Password string `json:"passwordKey,omitempty"`
 }

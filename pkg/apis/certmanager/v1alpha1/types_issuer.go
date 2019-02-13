@@ -212,6 +212,9 @@ type ACMEIssuerDNS01Provider struct {
 
 	// +optional
 	RFC2136 *ACMEIssuerDNS01ProviderRFC2136 `json:"rfc2136,omitempty"`
+
+	// +optional
+	Inwx *ACMEIssuerDNS01ProviderInwx `json:"inwx,omitempty"`
 }
 
 // CNAMEStrategy configures how the DNS01 provider should handle CNAME records
@@ -327,6 +330,7 @@ type ACMEIssuerDNS01ProviderRFC2136 struct {
 // ACMEIssuerDNS01ProviderInwx is a structure containing the
 // configuration for Inwx DNS
 type ACMEIssuerDNS01ProviderInwx struct {
+	// The name of the secret containing the credential for inwx.
 	CredentialSecret CredentialSecretSelector `json:"credentialSecretRef"`
 }
 
