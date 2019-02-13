@@ -79,6 +79,7 @@ func (a *Acme) Issue(ctx context.Context, crt *v1alpha1.Certificate) (*issuer.Is
 	// exists.
 	expectedOrder, err := buildOrder(crt, nil)
 	if err != nil {
+		a.Recorder.Eventf(crt, corev1.EventTypeWarning, "Unknown", "Error building Order resource: %v", err)
 		return nil, err
 	}
 
@@ -89,7 +90,7 @@ func (a *Acme) Issue(ctx context.Context, crt *v1alpha1.Certificate) (*issuer.Is
 	// have the same name.
 	err = a.cleanupOwnedOrders(crt, expectedOrder.Name)
 	if err != nil {
-		glog.Errorf("Error cleaning up old orders: %v", err)
+		a.Recorder.Eventf(crt, corev1.EventTypeWarning, "CleanupError", "Cleaning up existing Order resources failed: %v", err)
 		return nil, err
 	}
 
@@ -102,7 +103,12 @@ func (a *Acme) Issue(ctx context.Context, crt *v1alpha1.Certificate) (*issuer.Is
 		return nil, err
 	}
 	if existingOrder == nil {
-		return nil, a.createNewOrder(crt, expectedOrder, key)
+		err := a.createNewOrder(crt, expectedOrder, key)
+		if err != nil {
+			a.Recorder.Eventf(crt, corev1.EventTypeWarning, "CreateError", "Failed to create Order resource: %v", err)
+			return nil, err
+		}
+		return nil, nil
 	}
 
 	// if there is an existing order, we check to make sure it is up to date
@@ -158,21 +164,22 @@ func (a *Acme) Issue(ctx context.Context, crt *v1alpha1.Certificate) (*issuer.Is
 		return nil, nil
 	}
 
-	a.Recorder.Eventf(crt, corev1.EventTypeNormal, "OrderComplete", "Order %q completed successfully", existingOrder.Name)
-
 	// this should never happen
 	if existingOrder.Status.Certificate == nil {
-		a.Recorder.Eventf(crt, corev1.EventTypeWarning, "BadCertificate", "Empty certificate data retrieved from ACME server")
-		return nil, fmt.Errorf("Order in a valid state but certificate data not set")
+		a.Recorder.Eventf(crt, corev1.EventTypeWarning, "NoCertificate", "Empty certificate data retrieved from ACME server")
+		return nil, fmt.Errorf("order in a valid state but certificate data not set")
 	}
 
 	// TODO: replace with a call to a function that returns the whole chain
 	x509Certs, err := pki.DecodeX509CertificateBytes(existingOrder.Status.Certificate)
 	if err != nil {
 		glog.Infof("Error parsing existing x509 certificate on Order resource %q: %v", existingOrder.Name, err)
+		a.Recorder.Eventf(crt, corev1.EventTypeWarning, "ParseError", "Error decoding certificate issued by Order: %v", err)
 		// if parsing the certificate fails, recreate the order
 		return nil, a.retryOrder(crt, existingOrder)
 	}
+
+	a.Recorder.Eventf(crt, corev1.EventTypeNormal, "OrderComplete", "Order %q completed successfully", existingOrder.Name)
 
 	// x509Cert := x509Certs[0]
 	x509Cert := x509Certs
@@ -337,7 +344,7 @@ func existingOrderIsValidForKey(o *v1alpha1.Order, key crypto.Signer) (bool, err
 	}
 	existingCSR, err := x509.ParseCertificateRequest(csrBytes)
 	if err != nil {
-		// Absorb invalid CSR datas as 'not valid'
+		// Absorb invalid CSR data as 'not valid'
 		return false, nil
 	}
 
