@@ -324,6 +324,12 @@ type ACMEIssuerDNS01ProviderRFC2136 struct {
 	TSIGAlgorithm string `json:"tsigAlgorithm,omitempty"`
 }
 
+// ACMEIssuerDNS01ProviderInwx is a structure containing the
+// configuration for Inwx DNS
+type ACMEIssuerDNS01ProviderInwx struct {
+	CredentialSecret CredentialSecretSelector `json:"credentialSecretRef"`
+}
+
 // IssuerStatus contains status information about an Issuer
 type IssuerStatus struct {
 	// +optional

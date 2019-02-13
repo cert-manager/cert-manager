@@ -71,3 +71,13 @@ type SecretKeySelector struct {
 	// +optional
 	Key string `json:"key,omitempty"`
 }
+
+type CredentialSecretSelector struct {
+	// The name of the secret in the pod's namespace to select from.
+	LocalObjectReference `json:",inline"`
+	// The field containing the username
+	Username string `json:"usernameKey,omitempty"`
+	// The field containing the password
+	Password string `json:"passwordKey,omitempty"`
+}
+
