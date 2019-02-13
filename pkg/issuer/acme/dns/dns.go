@@ -34,6 +34,7 @@ import (
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/clouddns"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/cloudflare"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/digitalocean"
+	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/inwx"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/rfc2136"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/route53"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
@@ -59,6 +60,7 @@ type dnsProviderConstructors struct {
 	acmeDNS      func(host string, accountJson []byte, dns01Nameservers []string) (*acmedns.DNSProvider, error)
 	rfc2136      func(nameserver, tsigAlgorithm, tsigKeyName, tsigSecret string, dns01Nameservers []string) (*rfc2136.DNSProvider, error)
 	digitalOcean func(token string, dns01Nameservers []string) (*digitalocean.DNSProvider, error)
+	inwx         func(username, password string) (*inwx.DNSProvider, error)
 }
 
 // Solver is a solver for the acme dns01 challenge.
@@ -329,6 +331,38 @@ func (s *Solver) solverForChallenge(issuer v1alpha1.GenericIssuer, ch *v1alpha1.
 		if err != nil {
 			return nil, nil, fmt.Errorf("error instantiating rfc2136 challenge solver: %s", err.Error())
 		}
+	case providerConfig.Inwx != nil:
+		accountSecret, err := s.secretLister.Secrets(resourceNamespace).Get(providerConfig.Inwx.AccountSecret.Name)
+		if err != nil {
+			return nil, nil, fmt.Errorf("error getting inwx accounts secret: %s", err)
+		}
+
+		if providerConfig.Inwx.AccountSecret.Username == "" {
+			providerConfig.Inwx.AccountSecret.Username = "username"
+		}
+
+		if providerConfig.Inwx.AccountSecret.Password == "" {
+			providerConfig.Inwx.AccountSecret.Password = "password"
+		}
+
+		accountSecretUsername, ok := accountSecret.Data[providerConfig.Inwx.AccountSecret.Username]
+		if !ok {
+			return nil, nil, fmt.Errorf("error getting inwx accounts secret: key '%s' not found in secret", providerConfig.Inwx.AccountSecret.Username)
+		}
+
+		accountSecretPassword, ok := accountSecret.Data[providerConfig.Inwx.AccountSecret.Password]
+		if !ok {
+			return nil, nil, fmt.Errorf("error getting inwx accounts secret: key '%s' not found in secret", providerConfig.Inwx.AccountSecret.Password)
+		}
+
+		impl, err = s.dnsProviderConstructors.inwx(
+			string(accountSecretUsername),
+			string(accountSecretPassword),
+		)
+		if err != nil {
+			return nil, nil, fmt.Errorf("error instantiating inwx challenge solver: %s", err)
+		}
+
 	default:
 		return nil, nil, fmt.Errorf("no dns provider config specified for provider %q", providerName)
 	}
@@ -350,6 +384,7 @@ func NewSolver(ctx *controller.Context) *Solver {
 			acmedns.NewDNSProviderHostBytes,
 			rfc2136.NewDNSProviderCredentials,
 			digitalocean.NewDNSProviderCredentials,
+			inwx.NewDNSProvider,
 		},
 	}
 }
