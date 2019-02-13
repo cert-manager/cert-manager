@@ -30,9 +30,8 @@ build_images() {
     APP_VERSION="${DOCKER_TAG}" \
     DOCKER_REPO="${DOCKER_REPO}" \
     DOCKER_TAG="${DOCKER_TAG}" \
-    bazel run //:images
-    # Build e2e test images
-    bazel run //test/e2e/charts:images
+    # Build images used during e2e tests
+    bazel run //test/e2e:images
 
     local TMP_DIR=$(mktemp -d)
     local BUNDLE_FILE="${TMP_DIR}"/cmbundle.tar.gz

@@ -112,6 +112,7 @@ fi
 
 if [ "$GIT_DIRTY" != "clean" ]; then
     VERSION="${VERSION}-dirty"
+    COMMIT_REF="${COMMIT_REF}-dirty"
     info "appended '-dirty' suffix to version"
 fi
 
@@ -125,14 +126,7 @@ eval $(./hack/print-workspace-status.sh | tr ' ' '=' | sed 's/^/export /')
 info "building release images"
 bazel run //:images
 
-green "Built release images"
-
-if [ ! "${CONFIRM}" ]; then
-    green "Skipping publishing. Set CONFIRM=1 to publish release."
-    exit 0
-fi
-
-green "Publishing release ${VERSION}"
+green "Built release images. Publishing release ${VERSION}"
 
 # quay.io/api/v1/repository/jetstack/cert-manager-controller/tag/v0.6.1/images
 function allowed() {
@@ -156,20 +150,47 @@ function allowed() {
     info "existing image quay.io/$org/$image_name:$image_tag not found"
 }
 
+function push() {
+    local image_repo="$1"
+    local image_name="$2"
+    local image_tag="$3"
+
+    if [ -z "${CONFIRM}" ]; then
+        info "(would) push image $image_repo/$image_name:$image_tag"
+        info "(would) push image $image_repo/$image_name:$COMMIT_REF"
+        return 0
+    fi
+
+    if allowed "$image_name" "$image_tag"; then
+        info "Pushing image $image_repo/$image_name:$image_tag"
+        docker "${docker_args[@]}" push "$image_repo/$image_name:$image_tag"
+    fi
+
+    if [ -z "${SKIP_REF_TAG}" ]; then
+        if allowed "$image_name" "${COMMIT_REF}"; then
+            info "Pushing image ${docker_args[@]}" push "$image_repo/$image_name:${COMMIT_REF}"
+            docker tag "$image_repo/$image_name:$image_tag"  "$image_repo/$image_name:${COMMIT_REF}"
+            docker "${docker_args[@]}" push "$image_repo/$image_name:${COMMIT_REF}"
+        fi
+    fi
+}
+
 # Push docker images
 # We use the docker CLI to push images as quay.io does not support the v2 API
 for c in "${COMPONENTS[@]}"; do
-    if allowed "cert-manager-$c" "${STABLE_DOCKER_TAG}"; then
-        info "Pushing image ${STABLE_DOCKER_REPO}/cert-manager-$c:${STABLE_DOCKER_TAG}"
-        docker "${docker_args[@]}" push "${STABLE_DOCKER_REPO}/cert-manager-$c:${STABLE_DOCKER_TAG}"
-    fi
-    if [ -z "${SKIP_REF_TAG}" ]; then
-        if allowed "cert-manager-$c" "${COMMIT_REF}"; then
-            info "Pushing image ${docker_args[@]}" push "${STABLE_DOCKER_REPO}/cert-manager-$c:${COMMIT_REF}"
-            docker tag "${STABLE_DOCKER_REPO}/cert-manager-$c:${STABLE_DOCKER_TAG}"  "${STABLE_DOCKER_REPO}/cert-manager-$c:${COMMIT_REF}"
-            docker "${docker_args[@]}" push "${STABLE_DOCKER_REPO}/cert-manager-$c:${COMMIT_REF}"
-        fi
-    fi
+    image_name="cert-manager-$c"
+    image_repo="${STABLE_DOCKER_REPO}"
+    image_tag="${STABLE_DOCKER_TAG}"
+
+    # the amd64 images get pushed to a docker repo *without* the arch prefix
+    # for compatibility reasons, so we have special handling to retag it here
+    docker tag "${image_repo}/${image_name}-amd64:${image_tag}" "${image_repo}/${image_name}:${image_tag}"
+    push "$image_repo" "$image_name" "$image_tag"
+
+    # push arm64 and arm image targets
+    for arch in arm64 arm; do
+        push "$image_repo" "$image_name-$arch" "$image_tag"
+    done
 done
 
 green "Published all images!"

@@ -1,9 +1,9 @@
 load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
-load("//hack:def.bzl", "stamped_image")
+load("//hack:def.bzl", "multiarch_image")
 
-stamped_image(
+# Expands to target names such as 'image.linux-amd64', 'image.linux-arm64'
+multiarch_image(
     name = "image",
-    base = "@alpine//image",
     visibility = ["//visibility:public"],
 )
 
