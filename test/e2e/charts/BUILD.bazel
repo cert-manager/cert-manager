@@ -10,6 +10,7 @@ container_bundle(
         "vault:bazel": "@com_hashicorp_vault//image",
         "gcr.io/kubernetes-helm/tiller:bazel": "@io_gcr_helm_tiller//image",
     },
+    tags = ["manual"],
 )
 
 filegroup(
