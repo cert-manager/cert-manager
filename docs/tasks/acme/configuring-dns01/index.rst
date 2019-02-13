@@ -70,3 +70,4 @@ and provider specific notes regarding their usage.
    route53
    digitalocean
    rfc2136
+   inwx
