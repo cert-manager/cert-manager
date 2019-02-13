@@ -51,6 +51,7 @@ filegroup(
         "//test/e2e/framework/config:all-srcs",
         "//test/e2e/framework/helper:all-srcs",
         "//test/e2e/framework/log:all-srcs",
+        "//test/e2e/framework/matcher:all-srcs",
         "//test/e2e/framework/util:all-srcs",
     ],
     tags = ["automanaged"],
