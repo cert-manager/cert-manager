@@ -326,6 +326,13 @@ npm_install(
     package_lock_json = "//docs/generated/reference/generate/bin:package-lock.json",
 )
 
+# Load the controller-tools repository in order to build the crd generator tool
+go_repository(
+    name = "io_kubernetes_sigs_controller-tools",
+    commit = "538db3af1387ce55d50b93e500a49925a5768c82",
+    importpath = "sigs.k8s.io/controller-tools",
+)
+
 # Load kubernetes-incubator/reference-docs, to be used as part of the docs
 # generation pipeline.
 # This involves quite a few dependencies, hence the long list of go_repository

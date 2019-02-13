@@ -340,6 +340,7 @@ Appears In:
 </tr>
 </tbody>
 </table>
+<p>Order is a type to represent an Order with an ACME server</p>
 <table>
 <thead>
 <tr>
@@ -388,7 +389,7 @@ Appears In:
 <tbody>
 <tr>
 <td><code>commonName</code><br /> <em>string</em></td>
-<td>CommonName is the common name as specified on the DER encoded CSR. If CommonName is not specified, the first DNSName specified will be used as the CommonName. At least on of CommonName or a DNSName must be set. This field must match the corresponding field on the DER encoded CSR.</td>
+<td>CommonName is the common name as specified on the DER encoded CSR. If CommonName is not specified, the first DNSName specified will be used as the CommonName. At least one of CommonName or a DNSNames must be set. This field must match the corresponding field on the DER encoded CSR.</td>
 </tr>
 <tr>
 <td><code>config</code><br /> <em><a href="#domainsolverconfig-v1alpha1">DomainSolverConfig</a> array</em></td>
@@ -400,7 +401,7 @@ Appears In:
 </tr>
 <tr>
 <td><code>dnsNames</code><br /> <em>string array</em></td>
-<td>DNSNames is a list of DNS names that should be included as part of the Order validation process. If CommonName is not specified, the first DNSName specified will be used as the CommonName. At least on of CommonName or a DNSName must be set. This field must match the corresponding field on the DER encoded CSR.</td>
+<td>DNSNames is a list of DNS names that should be included as part of the Order validation process. If CommonName is not specified, the first DNSName specified will be used as the CommonName. At least one of CommonName or a DNSNames must be set. This field must match the corresponding field on the DER encoded CSR.</td>
 </tr>
 <tr>
 <td><code>issuerRef</code><br /> <em><a href="#objectreference-v1alpha1">ObjectReference</a></em></td>
@@ -472,6 +473,7 @@ Appears In:
 </tr>
 </tbody>
 </table>
+<p>Challenge is a type to represent a Challenge request with an ACME server</p>
 <table>
 <thead>
 <tr>
@@ -1925,7 +1927,7 @@ Appears In:
 <tbody>
 <tr>
 <td><code>key</code><br /> <em>string</em></td>
-<td>The key of the secret to select from.  Must be a valid secret key.</td>
+<td>The key of the secret to select from. Must be a valid secret key.</td>
 </tr>
 <tr>
 <td><code>name</code><br /> <em>string</em></td>
