@@ -299,9 +299,25 @@ func ValidateACMEIssuerDNS01Config(iss *v1alpha1.ACMEIssuerDNS01Config, fldPath 
 				}
 			}
 		}
+		if p.Inwx != nil {
+			if numProviders > 0 {
+				el = append(el, field.Forbidden(fldPath.Child("inwx"), "may not specify more than one provider type"))
+			} else {
+				numProviders++
+				el = append(el, ValidateCredentialKeySelector(&p.Inwx.CredentialSecret, fldPath.Child("inwx", "credentialSecretRef"))...)
+			}
+		}
 		if numProviders == 0 {
 			el = append(el, field.Required(fldPath, "at least one provider must be configured"))
 		}
+	}
+	return el
+}
+
+func ValidateCredentialKeySelector(sks *v1alpha1.CredentialSecretSelector, fldPath *field.Path) field.ErrorList {
+	el := field.ErrorList{}
+	if sks.Name == "" {
+		el = append(el, field.Required(fldPath.Child("name"), "secret name is required"))
 	}
 	return el
 }
