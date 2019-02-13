@@ -71,7 +71,10 @@ func (c *Controller) Sync(ctx context.Context, ing *extv1beta1.Ingress) error {
 		return nil
 	}
 
-	issuer, err := c.getGenericIssuer(ing.Namespace, issuerName, issuerKind)
+	issuer, err := c.helper.GetGenericIssuer(v1alpha1.ObjectReference{
+		Name: issuerName,
+		Kind: issuerKind,
+	}, ing.Namespace)
 	if apierrors.IsNotFound(err) {
 		c.Recorder.Eventf(ing, corev1.EventTypeWarning, "BadConfig", "%s resource %q not found", issuerKind, issuerName)
 		return nil
@@ -341,18 +344,4 @@ func (c *Controller) issuerForIngress(ing *extv1beta1.Ingress) (name string, kin
 		kind = v1alpha1.ClusterIssuerKind
 	}
 	return name, kind
-}
-
-func (c *Controller) getGenericIssuer(namespace, name, kind string) (v1alpha1.GenericIssuer, error) {
-	switch kind {
-	case v1alpha1.IssuerKind:
-		return c.issuerLister.Issuers(namespace).Get(name)
-	case v1alpha1.ClusterIssuerKind:
-		if c.clusterIssuerLister == nil {
-			return nil, fmt.Errorf("cannot get ClusterIssuer for %q as ingress-shim is scoped to a single namespace", name)
-		}
-		return c.clusterIssuerLister.Get(name)
-	default:
-		return nil, fmt.Errorf(`invalid value %q for issuer kind. Must be empty, %q or %q`, kind, v1alpha1.IssuerKind, v1alpha1.ClusterIssuerKind)
-	}
 }
