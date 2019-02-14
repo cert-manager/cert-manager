@@ -20,11 +20,14 @@ import (
 	"bytes"
 	"context"
 	"crypto/x509"
+	"encoding/json"
 	"encoding/pem"
 	"fmt"
 	"net/http"
 	"path"
+	"reflect"
 	"strings"
+	"sync"
 	"time"
 
 	vault "github.com/hashicorp/vault/api"
@@ -130,10 +133,191 @@ func (v *Vault) configureCertPool(cfg *vault.Config) error {
 	return nil
 }
 
+// clientRepo is a collection of vault clients indexed
+// by the options used to create them. This is used so
+// that the cert-manager controllers can re-use already
+// authenticated vault client
+var (
+	clientRepo   map[repoKey]*vault.Client
+	clientRepoMu sync.Mutex
+)
+
+type appRoleAuth struct {
+	path, roleId, secretId string
+	secretRef              secretRef
+}
+
+type secretRef struct {
+	key, name string
+}
+
+type tokenSecretRef struct {
+	key, name, token string
+}
+
+type repoKey struct {
+	addr        string
+	appRoleAuth appRoleAuth
+	tokenAuth   tokenSecretRef
+}
+
+func (v *Vault) renewToken(vaultClient *vault.Client) {
+	resp, err := vaultClient.Auth().Token().LookupSelf()
+	if err != nil {
+		klog.Warningf("vault: lookup-self failed, token renewal is disabled: %s", err)
+		return
+	}
+
+	// resp.Data is a *api.Secret type which Unmarshal doesn't take; hence,
+	// passing it to Marsha to produce byte arrays to be consumed by Unmarshal
+	b, err := json.Marshal(resp.Data)
+	var data struct {
+		TTL         int       `json:"ttl"`
+		CreationTTL int       `json:"creation_ttl"`
+		Renewable   bool      `json:"renewable"`
+		ExpireTime  time.Time `json:"expire_time"`
+	}
+	if err := json.Unmarshal(b, &data); err != nil {
+		klog.Warningf("vault: lookup-self failed, token renewal is disabled: %s", err)
+		return
+	}
+	if err != nil {
+		klog.Warningf("vault: failed to unpack response from LookupSelf(): %s", err)
+	}
+
+	switch {
+	case data.Renewable:
+		// renewable token, proceed further
+	case data.ExpireTime.IsZero():
+		// nothing to do. token doesn't expire
+		return
+	default:
+		ttl := time.Until(data.ExpireTime) / time.Second * time.Second // truncate to secs
+		klog.Warningf("vault: Token is not renewable and it will expire %s from now at %s",
+			ttl, data.ExpireTime.Format(time.RFC3339))
+		return
+	}
+
+	ttl := time.Duration(data.TTL) * time.Second
+	timer := time.NewTimer(ttl / 2)
+
+	// make a copy of the current repo key for the given vault
+	// client so that it can be used to detect if the vault client changed
+	// during token renewal loop
+	initialRepoKey, err := v.lookupRepoKey()
+	if err != nil {
+		vaultClient.ClearToken()
+		klog.Warningf("vault client no longer exist or failed to look up vault client")
+		return
+	}
+
+	for range timer.C {
+		curRepoKey, err := v.lookupRepoKey()
+		if err != nil {
+			vaultClient.ClearToken()
+			klog.Warningf("vault client no longer exist or failed to look up vault client", err)
+			return
+		}
+
+		// current client has updated configs: secret, vault addr and etc
+		// if config changes detected, it's time to remove the token so
+		// that this client will no longer be used.
+		if !reflect.DeepEqual(curRepoKey, initialRepoKey) {
+			vaultClient.ClearToken()
+			klog.Infof("vault client config changed. Token removed from current client")
+			return
+		}
+
+		resp, err := vaultClient.Auth().Token().RenewSelf(data.CreationTTL)
+		if err != nil {
+			vaultClient.ClearToken()
+			klog.Warningf("vault: Failed to renew token: %s. Removed it from client", err)
+			return
+		}
+
+		if !resp.Auth.Renewable || resp.Auth.LeaseDuration == 0 {
+			klog.Infof("vault: token is no longer renewable so removed it from client")
+			vaultClient.ClearToken()
+			return
+		}
+
+		// setting new ttl based on the new lease duration
+		ttl = time.Duration(resp.Auth.LeaseDuration) * time.Second
+		klog.V(4).Infof("Token renewed. New renewal in %s.", ttl/2)
+		timer.Reset(ttl / 2)
+	}
+}
+
+func (v *Vault) lookupRepoKey() (repoKey, error) {
+	// Generate vault client repo lookup keys based on vault configurations
+
+	vaultRepo := repoKey{addr: v.issuer.GetSpec().Vault.Server}
+	tokenRef := v.issuer.GetSpec().Vault.Auth.TokenSecretRef
+	if tokenRef.Name != "" {
+		token, err := v.vaultTokenRef(tokenRef.Name, tokenRef.Key)
+		vaultRepo.tokenAuth = tokenSecretRef{
+			name: tokenRef.Name,
+			key:  tokenRef.Key,
+		}
+		if err != nil {
+			return repoKey{}, fmt.Errorf("error reading Vault token from secret %s/%s: %s", v.resourceNamespace, tokenRef.Name, err.Error())
+		}
+		vaultRepo.tokenAuth.token = token
+		return vaultRepo, nil
+	}
+
+	appRole := v.issuer.GetSpec().Vault.Auth.AppRole
+	if appRole.RoleId != "" {
+		roleId, secretId, err := v.appRoleRef(&appRole)
+		if err != nil {
+			return repoKey{}, fmt.Errorf("error reading Vault AppRole from secret: %s/%s: %s", appRole.SecretRef.Name, v.resourceNamespace, err.Error())
+		}
+		vaultRepo.appRoleAuth = appRoleAuth{
+			roleId:   roleId,
+			secretId: secretId,
+		}
+
+		vaultRepo.appRoleAuth.path = "approle"
+		if appRole.Path != "approle" {
+			vaultRepo.appRoleAuth.path = appRole.Path
+		}
+
+		vaultRepo.appRoleAuth.secretRef = secretRef{key: "secretId"}
+		if appRole.SecretRef.Key != "secretId" {
+			vaultRepo.appRoleAuth.secretRef.key = appRole.SecretRef.Key
+		}
+
+		vaultRepo.appRoleAuth.secretRef.name = appRole.SecretRef.Name
+		return vaultRepo, nil
+	}
+	return vaultRepo, fmt.Errorf("error initializing Vault client. tokenSecretRef or appRoleSecretRef not set")
+}
+
 func (v *Vault) initVaultClient() (*vault.Client, error) {
+	clientRepoMu.Lock()
+	defer clientRepoMu.Unlock()
+
+	if clientRepo == nil {
+		clientRepo = make(map[repoKey]*vault.Client)
+	}
+
+	vaultRepoKey, err := v.lookupRepoKey()
+	if err != nil {
+		klog.Warningf("failed to gen keys for clientRepo: %s", err.Error())
+	}
+
+	if clientRepo[vaultRepoKey] != nil {
+		if len(clientRepo[vaultRepoKey].Token()) > 0 {
+			klog.V(4).Info("Using cached client")
+			return clientRepo[vaultRepoKey], nil
+		}
+		delete(clientRepo, vaultRepoKey)
+		klog.V(4).Infof("Token is gone for cached client so removed it from clientRepo")
+	}
+
 	vaultCfg := vault.DefaultConfig()
 	vaultCfg.Address = v.issuer.GetSpec().Vault.Server
-	err := v.configureCertPool(vaultCfg)
+	err = v.configureCertPool(vaultCfg)
 	if err != nil {
 		return nil, err
 	}
@@ -150,8 +334,14 @@ func (v *Vault) initVaultClient() (*vault.Client, error) {
 			return nil, fmt.Errorf("error reading Vault token from secret %s/%s: %s", v.resourceNamespace, tokenRef.Name, err.Error())
 		}
 		client.SetToken(token)
-
-		return client, nil
+		if vaultRepoKey != (repoKey{}) {
+			// only store authenticated client if repoKey is not empty
+			// because otherwise we don't know how to look up the client
+			// in successive runs
+			clientRepo[vaultRepoKey] = client
+			go v.renewToken(client)
+			return client, nil
+		}
 	}
 
 	appRole := v.issuer.GetSpec().Vault.Auth.AppRole
@@ -161,8 +351,11 @@ func (v *Vault) initVaultClient() (*vault.Client, error) {
 			return nil, fmt.Errorf("error reading Vault token from AppRole: %s", err.Error())
 		}
 		client.SetToken(token)
-
-		return client, nil
+		if vaultRepoKey != (repoKey{}) {
+			clientRepo[vaultRepoKey] = client
+			go v.renewToken(client)
+			return client, nil
+		}
 	}
 
 	return nil, fmt.Errorf("error initializing Vault client. tokenSecretRef or appRoleSecretRef not set")
