@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Jetstack cert-manager contributors.
+Copyright 2019 The Jetstack cert-manager contributors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -61,6 +61,10 @@ func ValidateCertificateForACMEIssuer(crt *v1alpha1.CertificateSpec, issuer *v1a
 
 	if crt.Duration != nil {
 		el = append(el, field.Invalid(specPath.Child("duration"), crt.Duration, "ACME does not support certificate durations"))
+	}
+
+	if len(crt.IPAddresses) != 0 {
+		el = append(el, field.Invalid(specPath.Child("ipAddresses"), crt.IPAddresses, "ACME does not support certificate ip addresses"))
 	}
 
 	return el

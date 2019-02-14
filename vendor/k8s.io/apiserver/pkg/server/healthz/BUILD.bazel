@@ -9,7 +9,10 @@ go_library(
     importmap = "github.com/jetstack/cert-manager/vendor/k8s.io/apiserver/pkg/server/healthz",
     importpath = "k8s.io/apiserver/pkg/server/healthz",
     visibility = ["//visibility:public"],
-    deps = ["//vendor/github.com/golang/glog:go_default_library"],
+    deps = [
+        "//vendor/github.com/golang/glog:go_default_library",
+        "//vendor/k8s.io/apimachinery/pkg/util/sets:go_default_library",
+    ],
 )
 
 filegroup(

@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Jetstack cert-manager contributors.
+Copyright 2019 The Jetstack cert-manager contributors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -19,12 +19,9 @@ package framework
 import (
 	"time"
 
-	"github.com/jetstack/cert-manager/test/e2e/framework/helper"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
-	"github.com/jetstack/cert-manager/pkg/util/pki"
 	"k8s.io/api/core/v1"
 	api "k8s.io/api/core/v1"
 	apiextcs "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
@@ -32,10 +29,13 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 
+	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	clientset "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
-
+	"github.com/jetstack/cert-manager/pkg/util/pki"
 	"github.com/jetstack/cert-manager/test/e2e/framework/addon"
 	"github.com/jetstack/cert-manager/test/e2e/framework/config"
+	"github.com/jetstack/cert-manager/test/e2e/framework/helper"
+	"github.com/jetstack/cert-manager/test/e2e/framework/log"
 	"github.com/jetstack/cert-manager/test/e2e/framework/util"
 	"github.com/jetstack/cert-manager/test/e2e/framework/util/errors"
 )
@@ -65,6 +65,9 @@ type Framework struct {
 	// we install a Cleanup action before each test and clear it after.  If we
 	// should abort, the AfterSuite hook should run all Cleanup actions.
 	cleanupHandle CleanupActionHandle
+
+	requiredAddons []addon.Addon
+	helper         *helper.Helper
 }
 
 // NewDefaultFramework makes a new framework for you, similar to NewFramework.
@@ -83,6 +86,7 @@ func NewFramework(baseName string, cfg *config.Config) *Framework {
 		BaseName: baseName,
 	}
 
+	f.helper = helper.NewHelper(cfg)
 	BeforeEach(f.BeforeEach)
 	AfterEach(f.AfterEach)
 
@@ -113,14 +117,21 @@ func (f *Framework) BeforeEach() {
 	f.Namespace, err = f.CreateKubeNamespace(f.BaseName)
 	Expect(err).NotTo(HaveOccurred())
 
+	By("Using the namespace " + f.Namespace.Name)
+
 	By("Building a ResourceQuota api object")
 	_, err = f.CreateKubeResourceQuota()
 	Expect(err).NotTo(HaveOccurred())
+
+	f.helper.CMClient = f.CertManagerClientSet
+	f.helper.KubeClient = f.KubeClientSet
 }
 
 // AfterEach deletes the namespace, after reading its events.
 func (f *Framework) AfterEach() {
 	RemoveCleanupAction(f.cleanupHandle)
+
+	f.printAddonLogs()
 
 	By("Deleting test namespace")
 	err := f.DeleteKubeNamespace(f.Namespace.Name)
@@ -129,6 +140,20 @@ func (f *Framework) AfterEach() {
 	By("Waiting for test namespace to no longer exist")
 	err = f.WaitForKubeNamespaceNotExist(f.Namespace.Name)
 	Expect(err).NotTo(HaveOccurred())
+}
+
+func (f *Framework) printAddonLogs() {
+	if CurrentGinkgoTestDescription().Failed {
+		for _, a := range f.requiredAddons {
+			if a, ok := a.(loggableAddon); ok {
+				l, err := a.Logs()
+				Expect(err).NotTo(HaveOccurred())
+
+				// TODO: replace with writing logs to a file
+				log.Logf("Got pod logs for addon: \n%s", l)
+			}
+		}
+	}
 }
 
 // RequireGlobalAddon calls Setup on the given addon.
@@ -145,10 +170,15 @@ func (f *Framework) RequireGlobalAddon(a addon.Addon) {
 	})
 }
 
+type loggableAddon interface {
+	Logs() (string, error)
+}
+
 // RequireAddon calls the Setup and Provision method on the given addon, failing
 // the spec if provisioning fails.
-// It returns the addons deprovision function as a convinience.
 func (f *Framework) RequireAddon(a addon.Addon) {
+	f.requiredAddons = append(f.requiredAddons, a)
+
 	BeforeEach(func() {
 		By("Provisioning test-scoped addon")
 		err := a.Setup(f.Config)
@@ -171,9 +201,7 @@ func (f *Framework) RequireAddon(a addon.Addon) {
 }
 
 func (f *Framework) Helper() *helper.Helper {
-	return &helper.Helper{
-		KubeClient: f.KubeClientSet,
-	}
+	return f.helper
 }
 
 func (f *Framework) CertificateDurationValid(c *v1alpha1.Certificate, duration time.Duration) {

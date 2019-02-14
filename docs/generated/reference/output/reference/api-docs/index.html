@@ -18,7 +18,7 @@
 <hr>
 <p>This page contains reference documentation for cert-manager API types.</p>
 <p>For full documentation on how to use cert-manager, please view our
-<a href="https://cert-manager.readthedocs.io/">official documentation</a>.</p>
+<a href="https://docs.cert-manager.io/">official documentation</a>.</p>
 <hr>
 <h1 id="certificate-v1alpha1">Certificate v1alpha1</h1>
 <table>
@@ -99,6 +99,10 @@ Appears In:
 <tr>
 <td><code>duration</code><br /> <em><a href="#duration-v1">Duration</a></em></td>
 <td>Certificate default Duration</td>
+</tr>
+<tr>
+<td><code>ipAddresses</code><br /> <em>string array</em></td>
+<td>IPAddresses is a list of IP addresses to be used on the Certificate</td>
 </tr>
 <tr>
 <td><code>isCA</code><br /> <em>boolean</em></td>
@@ -336,6 +340,7 @@ Appears In:
 </tr>
 </tbody>
 </table>
+<p>Order is a type to represent an Order with an ACME server</p>
 <table>
 <thead>
 <tr>
@@ -384,7 +389,7 @@ Appears In:
 <tbody>
 <tr>
 <td><code>commonName</code><br /> <em>string</em></td>
-<td>CommonName is the common name as specified on the DER encoded CSR. If CommonName is not specified, the first DNSName specified will be used as the CommonName. At least on of CommonName or a DNSName must be set. This field must match the corresponding field on the DER encoded CSR.</td>
+<td>CommonName is the common name as specified on the DER encoded CSR. If CommonName is not specified, the first DNSName specified will be used as the CommonName. At least one of CommonName or a DNSNames must be set. This field must match the corresponding field on the DER encoded CSR.</td>
 </tr>
 <tr>
 <td><code>config</code><br /> <em><a href="#domainsolverconfig-v1alpha1">DomainSolverConfig</a> array</em></td>
@@ -396,7 +401,7 @@ Appears In:
 </tr>
 <tr>
 <td><code>dnsNames</code><br /> <em>string array</em></td>
-<td>DNSNames is a list of DNS names that should be included as part of the Order validation process. If CommonName is not specified, the first DNSName specified will be used as the CommonName. At least on of CommonName or a DNSName must be set. This field must match the corresponding field on the DER encoded CSR.</td>
+<td>DNSNames is a list of DNS names that should be included as part of the Order validation process. If CommonName is not specified, the first DNSName specified will be used as the CommonName. At least one of CommonName or a DNSNames must be set. This field must match the corresponding field on the DER encoded CSR.</td>
 </tr>
 <tr>
 <td><code>issuerRef</code><br /> <em><a href="#objectreference-v1alpha1">ObjectReference</a></em></td>
@@ -421,8 +426,8 @@ Appears In:
 </thead>
 <tbody>
 <tr>
-<td><code>certificateURL</code><br /> <em>string</em></td>
-<td>CertificateURL is a URL that can be used to retrieve a copy of the signed TLS certificate for this order. It will be populated automatically once the order has completed successfully and the certificate is available for retrieval.</td>
+<td><code>certificate</code><br /> <em>string</em></td>
+<td>Certificate is a copy of the PEM encoded certificate for this Order. This field will be populated after the order has been successfully finalized with the ACME server, and the order has transitioned to the &#39;valid&#39; state.</td>
 </tr>
 <tr>
 <td><code>challenges</code><br /> <em><a href="#challengespec-v1alpha1">ChallengeSpec</a> array</em></td>
@@ -430,7 +435,7 @@ Appears In:
 </tr>
 <tr>
 <td><code>failureTime</code><br /> <em><a href="#time-v1">Time</a></em></td>
-<td>FailureTime stores the time that this order failed. This is used to influence garbage collection and back-off. The order resource will be automatically deleted after 30 minutes has passed since the failure time.</td>
+<td>FailureTime stores the time that this order failed. This is used to influence garbage collection and back-off.</td>
 </tr>
 <tr>
 <td><code>finalizeURL</code><br /> <em>string</em></td>
@@ -468,6 +473,7 @@ Appears In:
 </tr>
 </tbody>
 </table>
+<p>Challenge is a type to represent a Challenge request with an ACME server</p>
 <table>
 <thead>
 <tr>
@@ -745,6 +751,7 @@ Appears In:
 </tr>
 </tbody>
 </table>
+<p>ACMEIssuerDNS01Provider contains configuration for a DNS provider that can be used to solve ACME DNS01 challenges.</p>
 <aside class="notice">
 Appears In:
 
@@ -781,12 +788,16 @@ Appears In:
 <td></td>
 </tr>
 <tr>
+<td><code>cnameStrategy</code><br /> <em>string</em></td>
+<td>CNAMEStrategy configures how the DNS01 provider should handle CNAME records when found in DNS zones.</td>
+</tr>
+<tr>
 <td><code>digitalocean</code><br /> <em><a href="#acmeissuerdns01providerdigitalocean-v1alpha1">ACMEIssuerDNS01ProviderDigitalOcean</a></em></td>
 <td></td>
 </tr>
 <tr>
 <td><code>name</code><br /> <em>string</em></td>
-<td></td>
+<td>Name is the name of the DNS provider, which should be used to reference this DNS provider configuration on Certificate resources.</td>
 </tr>
 <tr>
 <td><code>ovh</code><br /> <em><a href="#acmeissuerdns01providerovh-v1alpha1">ACMEIssuerDNS01ProviderOVH</a></em></td>
@@ -1972,7 +1983,7 @@ Appears In:
 <tbody>
 <tr>
 <td><code>key</code><br /> <em>string</em></td>
-<td>The key of the secret to select from.  Must be a valid secret key.</td>
+<td>The key of the secret to select from. Must be a valid secret key.</td>
 </tr>
 <tr>
 <td><code>name</code><br /> <em>string</em></td>

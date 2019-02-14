@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Jetstack cert-manager contributors.
+Copyright 2019 The Jetstack cert-manager contributors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -97,4 +97,9 @@ func (l *Logger) HTTP01ChallengeResponse(token string) (string, error) {
 func (l *Logger) DNS01ChallengeRecord(token string) (string, error) {
 	glog.Infof("Calling DNS01ChallengeRecord")
 	return l.baseCl.DNS01ChallengeRecord(token)
+}
+
+func (l *Logger) Discover(ctx context.Context) (acme.Directory, error) {
+	glog.Infof("Calling Discover")
+	return l.baseCl.Discover(ctx)
 }

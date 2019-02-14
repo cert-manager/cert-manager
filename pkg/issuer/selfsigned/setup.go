@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Jetstack cert-manager contributors.
+Copyright 2019 The Jetstack cert-manager contributors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -20,14 +20,13 @@ import (
 	"context"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
-	"github.com/jetstack/cert-manager/pkg/issuer"
 )
 
 const (
 	successReady = "IsReady"
 )
 
-func (c *SelfSigned) Setup(ctx context.Context) (issuer.SetupResponse, error) {
+func (c *SelfSigned) Setup(ctx context.Context) error {
 	c.issuer.UpdateStatusCondition(v1alpha1.IssuerConditionReady, v1alpha1.ConditionTrue, successReady, "")
-	return issuer.SetupResponse{}, nil
+	return nil
 }

@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Jetstack cert-manager contributors.
+Copyright 2019 The Jetstack cert-manager contributors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -82,7 +82,7 @@ func generateSelfSignedCert(t *testing.T, crt *v1alpha1.Certificate, key crypto.
 
 func allFieldsSetCheck(expectedCA []byte) func(t *testing.T, s *caFixture, args ...interface{}) {
 	return func(t *testing.T, s *caFixture, args ...interface{}) {
-		resp := args[1].(issuer.IssueResponse)
+		resp := args[1].(*issuer.IssueResponse)
 
 		if resp.PrivateKey == nil {
 			t.Errorf("expected new private key to be generated")
@@ -92,9 +92,6 @@ func allFieldsSetCheck(expectedCA []byte) func(t *testing.T, s *caFixture, args 
 		}
 		if resp.CA == nil || !reflect.DeepEqual(expectedCA, resp.CA) {
 			t.Errorf("expected CA certificate to be returned")
-		}
-		if resp.Requeue == true {
-			t.Errorf("expected certificate to not be requeued")
 		}
 	}
 }
@@ -212,15 +209,7 @@ func TestIssue(t *testing.T) {
 			if err == nil && test.Err {
 				t.Errorf("Expected function to get an error, but got: %v", err)
 			}
-			if resp.Requeue == true {
-				if !reflect.DeepEqual(test.Certificate, certCopy) {
-					t.Errorf("Requeue should never be true if the Certificate is modified to prevent race conditions")
-				}
 
-				if err != nil {
-					t.Errorf("Requeue cannot be true if err is true")
-				}
-			}
 			test.Finish(t, certCopy, resp, err)
 		})
 	}

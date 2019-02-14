@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Jetstack cert-manager contributors.
+Copyright 2019 The Jetstack cert-manager contributors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"reflect"
+	"time"
 
 	"github.com/golang/glog"
 	corev1 "k8s.io/api/core/v1"
@@ -28,7 +29,10 @@ import (
 	"github.com/jetstack/cert-manager/pkg/acme"
 	acmecl "github.com/jetstack/cert-manager/pkg/acme/client"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
 	acmeapi "github.com/jetstack/cert-manager/third_party/crypto/acme"
+
+	dnsutil "github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
 )
 
 const (
@@ -40,10 +44,8 @@ const (
 type solver interface {
 	// Present the challenge value with the given solver.
 	Present(ctx context.Context, issuer cmapi.GenericIssuer, ch *cmapi.Challenge) error
-	// Check should return Error only if propagation check cannot be performed.
-	// It MUST return `false, nil` if can contact all relevant services and all is
-	// doing is waiting for propagation
-	Check(ch *cmapi.Challenge) (bool, error)
+	// Check returns an Error if the propagation check didn't succeed.
+	Check(ctx context.Context, issuer cmapi.GenericIssuer, ch *cmapi.Challenge) error
 	// CleanUp will remove challenge records for a given solver.
 	// This may involve deleting resources in the Kubernetes API Server, or
 	// communicating with other external components (e.g. DNS providers).
@@ -51,21 +53,14 @@ type solver interface {
 }
 
 // Sync will process this ACME Challenge.
-// It is the core control function for ACME challenges, and handles:
-// - TODO
+// It is the core control function for ACME challenges.
 func (c *Controller) Sync(ctx context.Context, ch *cmapi.Challenge) (err error) {
 	oldChal := ch
 	ch = ch.DeepCopy()
 
-	// bail out early on if processing=false, as this challenge has not been
-	// scheduled yet.
-	if ch.Status.Processing == false {
-		return nil
-	}
-
 	defer func() {
 		// TODO: replace with more efficient comparison
-		if reflect.DeepEqual(oldChal.Status, ch.Status) {
+		if reflect.DeepEqual(oldChal.Status, ch.Status) && len(oldChal.Finalizers) == len(ch.Finalizers) {
 			return
 		}
 		_, updateErr := c.CMClient.CertmanagerV1alpha1().Challenges(ch.Namespace).Update(ch)
@@ -74,17 +69,43 @@ func (c *Controller) Sync(ctx context.Context, ch *cmapi.Challenge) (err error) 
 		}
 	}()
 
-	// if a challenge is in a final state, we bail out early as there is nothing
-	// left for us to do here.
-	if acme.IsFinalState(ch.Status.State) {
-		// we set processing to false now, as this item has finished being processed.
-		ch.Status.Processing = false
+	if ch.DeletionTimestamp != nil {
+		return c.handleFinalizer(ctx, ch)
+	}
+
+	// bail out early on if processing=false, as this challenge has not been
+	// scheduled yet.
+	if ch.Status.Processing == false {
 		return nil
 	}
 
 	genericIssuer, err := c.helper.GetGenericIssuer(ch.Spec.IssuerRef, ch.Namespace)
 	if err != nil {
 		return fmt.Errorf("error reading (cluster)issuer %q: %v", ch.Spec.IssuerRef.Name, err)
+	}
+
+	// if a challenge is in a final state, we bail out early as there is nothing
+	// left for us to do here.
+	if acme.IsFinalState(ch.Status.State) {
+		if ch.Status.Presented {
+			solver, err := c.solverFor(ch.Spec.Type)
+			if err != nil {
+				glog.Errorf("Error getting solver for challenge %q (type %q): %v", ch.Name, ch.Spec.Type, err)
+				return err
+			}
+
+			err = solver.CleanUp(ctx, genericIssuer, ch)
+			if err != nil {
+				glog.Errorf("Error cleaning up challenge %q on deletion: %v", ch.Name, err)
+				return err
+			}
+
+			ch.Status.Presented = false
+		}
+
+		ch.Status.Processing = false
+
+		return nil
 	}
 
 	cl, err := c.acmeHelper.ClientForIssuer(genericIssuer)
@@ -112,6 +133,26 @@ func (c *Controller) Sync(ctx context.Context, ch *cmapi.Challenge) (err error) 
 		return nil
 	}
 
+	// check for CAA records.
+	// CAA records are static, so we don't have to present anything
+	// before we check for them.
+
+	// Find out which identity the ACME server says it will use.
+	dir, err := cl.Discover(ctx)
+	if err != nil {
+		return err
+	}
+	// TODO(dmo): figure out if missing CAA identity in directory
+	// means no CAA check is performed by ACME server or if any valid
+	// CAA would stop issuance (strongly suspect the former)
+	if len(dir.CAA) != 0 {
+		err := dnsutil.ValidateCAA(ch.Spec.DNSName, dir.CAA, ch.Spec.Wildcard, c.Context.DNS01Nameservers)
+		if err != nil {
+			ch.Status.Reason = fmt.Sprintf("CAA self-check failed: %s", err)
+			return err
+		}
+	}
+
 	solver, err := c.solverFor(ch.Spec.Type)
 	if err != nil {
 		return err
@@ -127,13 +168,21 @@ func (c *Controller) Sync(ctx context.Context, ch *cmapi.Challenge) (err error) 
 		c.Recorder.Eventf(ch, corev1.EventTypeNormal, "Presented", "Presented challenge using %s challenge mechanism", ch.Spec.Type)
 	}
 
-	ok, err := solver.Check(ch)
+	err = solver.Check(ctx, genericIssuer, ch)
 	if err != nil {
-		return err
-	}
-	if !ok {
-		ch.Status.Reason = fmt.Sprintf("Waiting for %s challenge propagation", ch.Spec.Type)
-		return fmt.Errorf(ch.Status.Reason)
+		glog.Infof("propagation check failed: %v", err)
+		ch.Status.Reason = fmt.Sprintf("Waiting for %s challenge propagation: %s", ch.Spec.Type, err)
+
+		key, err := controllerpkg.KeyFunc(ch)
+		// This is an unexpected edge case and should never occur
+		if err != nil {
+			return err
+		}
+
+		// retry after 10s
+		c.queue.AddAfter(key, time.Second*10)
+
+		return nil
 	}
 
 	err = c.acceptChallenge(ctx, cl, ch)
@@ -141,10 +190,38 @@ func (c *Controller) Sync(ctx context.Context, ch *cmapi.Challenge) (err error) 
 		return err
 	}
 
-	glog.Infof("Cleaning up challenge %s/%s", ch.Namespace, ch.Name)
+	return nil
+}
+
+func (c *Controller) handleFinalizer(ctx context.Context, ch *cmapi.Challenge) error {
+	if len(ch.Finalizers) == 0 {
+		return nil
+	}
+	if ch.Finalizers[0] != cmapi.ACMEFinalizer {
+		glog.V(4).Infof("Waiting to run challenge %q finalization...", ch.Name)
+		return nil
+	}
+	ch.Finalizers = ch.Finalizers[1:]
+
+	if !ch.Status.Processing {
+		return nil
+	}
+
+	genericIssuer, err := c.helper.GetGenericIssuer(ch.Spec.IssuerRef, ch.Namespace)
+	if err != nil {
+		return fmt.Errorf("error reading (cluster)issuer %q: %v", ch.Spec.IssuerRef.Name, err)
+	}
+
+	solver, err := c.solverFor(ch.Spec.Type)
+	if err != nil {
+		glog.Errorf("Error getting solver for challenge %q (type %q): %v", ch.Name, ch.Spec.Type, err)
+		return nil
+	}
+
 	err = solver.CleanUp(ctx, genericIssuer, ch)
 	if err != nil {
-		return err
+		glog.Errorf("Error cleaning up challenge %q on deletion: %v", ch.Name, err)
+		return nil
 	}
 
 	return nil
@@ -165,6 +242,16 @@ func (c *Controller) syncChallengeStatus(ctx context.Context, cl acmecl.Interfac
 
 	// TODO: should we validate the State returned by the ACME server here?
 	cmState := cmapi.State(acmeChallenge.Status)
+	// be nice to our users and check if there is an error that we
+	// can tell them about in the reason field
+	// TODO(dmo): problems may be compound and they may be tagged with
+	// a type field that suggests changes we should make (like provisioning
+	// an account). We might be able to handle errors more gracefully using
+	// this info
+	ch.Status.Reason = ""
+	if acmeChallenge.Error != nil {
+		ch.Status.Reason = acmeChallenge.Error.Detail
+	}
 	ch.Status.State = cmState
 
 	return nil

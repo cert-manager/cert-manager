@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Jetstack cert-manager contributors.
+Copyright 2019 The Jetstack cert-manager contributors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -65,33 +65,31 @@ func New(ctx *controllerpkg.Context) *Controller {
 	ctrl := &Controller{Context: *ctx}
 	ctrl.syncHandler = ctrl.processNextWorkItem
 
-	ctrl.queue = workqueue.NewNamedRateLimitingQueue(workqueue.NewItemExponentialFailureRateLimiter(time.Second*2, time.Minute*1), "orders")
+	ctrl.queue = workqueue.NewNamedRateLimitingQueue(workqueue.NewItemExponentialFailureRateLimiter(time.Second*5, time.Minute*30), "orders")
 
 	orderInformer := ctrl.SharedInformerFactory.Certmanager().V1alpha1().Orders()
 	orderInformer.Informer().AddEventHandler(&controllerpkg.QueuingEventHandler{Queue: ctrl.queue})
 	ctrl.watchedInformers = append(ctrl.watchedInformers, orderInformer.Informer().HasSynced)
 	ctrl.orderLister = orderInformer.Lister()
 
-	// issuerInformer.Informer().AddEventHandler(&controllerpkg.QueuingEventHandler{Queue: ctrl.queue})
 	issuerInformer := ctrl.SharedInformerFactory.Certmanager().V1alpha1().Issuers()
+	issuerInformer.Informer().AddEventHandler(&controllerpkg.BlockingEventHandler{WorkFunc: ctrl.handleGenericIssuer})
 	ctrl.watchedInformers = append(ctrl.watchedInformers, issuerInformer.Informer().HasSynced)
 	ctrl.issuerLister = issuerInformer.Lister()
 
-	// clusterIssuerInformer.Informer().AddEventHandler(&controllerpkg.QueuingEventHandler{Queue: ctrl.queue})
-	clusterIssuerInformer := ctrl.SharedInformerFactory.Certmanager().V1alpha1().ClusterIssuers()
-	ctrl.watchedInformers = append(ctrl.watchedInformers, clusterIssuerInformer.Informer().HasSynced)
-	ctrl.clusterIssuerLister = clusterIssuerInformer.Lister()
+	if ctx.Namespace == "" {
+		clusterIssuerInformer := ctrl.SharedInformerFactory.Certmanager().V1alpha1().ClusterIssuers()
+		clusterIssuerInformer.Informer().AddEventHandler(&controllerpkg.BlockingEventHandler{WorkFunc: ctrl.handleGenericIssuer})
+		ctrl.watchedInformers = append(ctrl.watchedInformers, clusterIssuerInformer.Informer().HasSynced)
+		ctrl.clusterIssuerLister = clusterIssuerInformer.Lister()
+	}
 
-	// TODO: the same problem here as with Certificates creating Orders occurs.
-	// The informer notices the new challenge resources which causes a resync
-	// of the owning Order resource before the order.status.url field is set.
-	// we need to detect this and not sync the order again automatically to
-	// prevent another order being created with the acme server.
 	challengeInformer := ctrl.SharedInformerFactory.Certmanager().V1alpha1().Challenges()
 	challengeInformer.Informer().AddEventHandler(&controllerpkg.BlockingEventHandler{WorkFunc: ctrl.handleOwnedResource})
 	ctrl.watchedInformers = append(ctrl.watchedInformers, challengeInformer.Informer().HasSynced)
 	ctrl.challengeLister = challengeInformer.Lister()
 
+	// TODO: detect changes to secrets referenced by order's issuers.
 	secretInformer := ctrl.KubeSharedInformerFactory.Core().V1().Secrets()
 	ctrl.watchedInformers = append(ctrl.watchedInformers, secretInformer.Informer().HasSynced)
 	ctrl.secretLister = secretInformer.Lister()
@@ -172,30 +170,25 @@ func (c *Controller) worker(stopCh <-chan struct{}) {
 		}
 
 		var key string
-		err := func(obj interface{}) error {
+		// use an inlined function so we can use defer
+		func() {
 			defer c.queue.Done(obj)
 			var ok bool
 			if key, ok = obj.(string); !ok {
-				return nil
+				return
 			}
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
 			ctx = util.ContextWithStopCh(ctx, stopCh)
 			glog.Infof("%s controller: syncing item '%s'", ControllerName, key)
 			if err := c.syncHandler(ctx, key); err != nil {
-				return err
+				glog.Errorf("%s controller: Re-queuing item %q due to error processing: %s", ControllerName, key, err.Error())
+				c.queue.AddRateLimited(obj)
+				return
 			}
+			glog.Infof("%s controller: Finished processing work item %q", ControllerName, key)
 			c.queue.Forget(obj)
-			return nil
-		}(obj)
-
-		if err != nil {
-			glog.Errorf("%s controller: Re-queuing item %q due to error processing: %s", ControllerName, key, err.Error())
-			c.queue.AddRateLimited(obj)
-			continue
-		}
-
-		glog.Infof("%s controller: Finished processing work item %q", ControllerName, key)
+		}()
 	}
 	glog.V(4).Infof("Exiting %q worker loop", ControllerName)
 }

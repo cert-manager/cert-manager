@@ -13,7 +13,8 @@ Step by step user guides and tutorials can be found in the
    :caption: Contents:
 
    certificates
+   orders
+   challenges
    issuers
    clusterissuers
-   ingress-shim
    api-docs/index

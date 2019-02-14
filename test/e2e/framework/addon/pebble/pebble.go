@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Jetstack cert-manager contributors.
+Copyright 2019 The Jetstack cert-manager contributors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -68,7 +68,7 @@ func (p *Pebble) Setup(cfg *config.Config) error {
 		Tiller:      p.Tiller,
 		ReleaseName: "chart-pebble-" + p.Name,
 		Namespace:   p.Namespace,
-		ChartName:   cfg.RepoRoot + "/contrib/charts/pebble",
+		ChartName:   cfg.RepoRoot + "/test/e2e/charts/pebble",
 		// doesn't matter when installing from disk
 		ChartVersion: "0",
 	}
@@ -100,4 +100,8 @@ func (p *Pebble) SupportsGlobal() bool {
 	// Pebble does support a global configuration, as the 'usage details' for
 	// it are deterministic (i.e. not a result of the call to helm install).
 	return true
+}
+
+func (p *Pebble) Logs() (map[string]string, error) {
+	return p.chart.Logs()
 }

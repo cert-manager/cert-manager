@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Jetstack cert-manager contributors.
+Copyright 2019 The Jetstack cert-manager contributors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -36,7 +36,7 @@ const (
 	messageErrorInitIssuer = "Error initializing issuer: "
 )
 
-func (c *Controller) Sync(ctx context.Context, iss *v1alpha1.ClusterIssuer) (requeue bool, err error) {
+func (c *Controller) Sync(ctx context.Context, iss *v1alpha1.ClusterIssuer) (err error) {
 	issuerCopy := iss.DeepCopy()
 	defer func() {
 		if _, saveErr := c.updateIssuerStatus(iss, issuerCopy); saveErr != nil {
@@ -62,18 +62,18 @@ func (c *Controller) Sync(ctx context.Context, iss *v1alpha1.ClusterIssuer) (req
 
 	i, err := c.IssuerFactory().IssuerFor(issuerCopy)
 	if err != nil {
-		return false, err
+		return err
 	}
 
-	resp, err := i.Setup(ctx)
+	err = i.Setup(ctx)
 	if err != nil {
 		s := messageErrorInitIssuer + err.Error()
 		glog.Info(s)
 		c.Recorder.Event(issuerCopy, v1.EventTypeWarning, errorInitIssuer, s)
-		return false, err
+		return err
 	}
 
-	return resp.Requeue, nil
+	return nil
 }
 
 func (c *Controller) updateIssuerStatus(old, new *v1alpha1.ClusterIssuer) (*v1alpha1.ClusterIssuer, error) {

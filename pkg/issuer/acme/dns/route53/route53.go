@@ -114,30 +114,14 @@ func NewDNSProvider(accessKeyID, secretAccessKey, hostedZoneID, region string, a
 	}, nil
 }
 
-// Timeout returns the timeout and interval to use when checking for DNS
-// propagation. Adjusting here to cope with spikes in propagation times.
-func (*DNSProvider) Timeout() (timeout, interval time.Duration) {
-	return 120 * time.Second, 2 * time.Second
-}
-
 // Present creates a TXT record using the specified parameters
-func (r *DNSProvider) Present(domain, token, keyAuth string) error {
-	fqdn, value, _, err := util.DNS01Record(domain, keyAuth, r.dns01Nameservers)
-	if err != nil {
-		return err
-	}
-
+func (r *DNSProvider) Present(domain, fqdn, value string) error {
 	value = `"` + value + `"`
 	return r.changeRecord(route53.ChangeActionUpsert, fqdn, value, route53TTL)
 }
 
 // CleanUp removes the TXT record matching the specified parameters
-func (r *DNSProvider) CleanUp(domain, token, keyAuth string) error {
-	fqdn, value, _, err := util.DNS01Record(domain, keyAuth, r.dns01Nameservers)
-	if err != nil {
-		return err
-	}
-
+func (r *DNSProvider) CleanUp(domain, fqdn, value string) error {
 	value = `"` + value + `"`
 	return r.changeRecord(route53.ChangeActionDelete, fqdn, value, route53TTL)
 }
@@ -198,7 +182,7 @@ func (r *DNSProvider) getHostedZoneID(fqdn string) (string, error) {
 		return r.hostedZoneID, nil
 	}
 
-	authZone, err := util.FindZoneByFqdn(fqdn, util.RecursiveNameservers)
+	authZone, err := util.FindZoneByFqdn(fqdn, r.dns01Nameservers)
 	if err != nil {
 		return "", fmt.Errorf("error finding zone from fqdn: %v", err)
 	}

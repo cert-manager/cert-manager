@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Jetstack cert-manager contributors.
+Copyright 2019 The Jetstack cert-manager contributors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -18,7 +18,6 @@ package acme
 
 import (
 	"bytes"
-	"context"
 	"crypto"
 	"crypto/rand"
 	"crypto/rsa"
@@ -37,7 +36,6 @@ import (
 	coretesting "k8s.io/client-go/testing"
 	fakeclock "k8s.io/utils/clock/testing"
 
-	acmecl "github.com/jetstack/cert-manager/pkg/acme/client"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	"github.com/jetstack/cert-manager/pkg/controller"
 	testpkg "github.com/jetstack/cert-manager/pkg/controller/test"
@@ -56,9 +54,10 @@ func generatePrivateKey(t *testing.T) *rsa.PrivateKey {
 
 var serialNumberLimit = new(big.Int).Lsh(big.NewInt(1), 128)
 
-func generateSelfSignedCert(t *testing.T, crt *v1alpha1.Certificate, key crypto.Signer, duration time.Duration) (derBytes, pemBytes []byte) {
+func generateSelfSignedCert(t *testing.T, crt *v1alpha1.Certificate, key crypto.Signer, notBefore time.Time, duration time.Duration) (derBytes, pemBytes []byte) {
 	commonName := pki.CommonNameForCertificate(crt)
 	dnsNames := pki.DNSNamesForCertificate(crt)
+	ipAddresses := pki.IPAddressesForCertificate(crt)
 
 	serialNumber, err := rand.Int(rand.Reader, serialNumberLimit)
 	if err != nil {
@@ -73,11 +72,12 @@ func generateSelfSignedCert(t *testing.T, crt *v1alpha1.Certificate, key crypto.
 		Subject: pkix.Name{
 			CommonName: commonName,
 		},
-		NotBefore: time.Now(),
-		NotAfter:  time.Now().Add(duration),
+		NotBefore: notBefore,
+		NotAfter:  notBefore.Add(duration),
 		// see http://golang.org/pkg/crypto/x509/#KeyUsage
-		KeyUsage: x509.KeyUsageDigitalSignature | x509.KeyUsageKeyEncipherment,
-		DNSNames: dnsNames,
+		KeyUsage:    x509.KeyUsageDigitalSignature | x509.KeyUsageKeyEncipherment,
+		DNSNames:    dnsNames,
+		IPAddresses: ipAddresses,
 	}
 
 	derBytes, err = x509.CreateCertificate(rand.Reader, template, template, key.Public(), key)
@@ -140,13 +140,16 @@ func TestIssueHappyPath(t *testing.T) {
 		},
 	}
 
-	testCertSignedBytesDER, testCertSignedBytesPEM := generateSelfSignedCert(t, testCert, pk, time.Hour*24*365)
-	testCertExpiringSignedBytesDER, _ := generateSelfSignedCert(t, testCert, pk, time.Minute*5)
+	_, testCertSignedBytesPEM := generateSelfSignedCert(t, testCert, pk, time.Now(), time.Hour*24*365)
+	_, testCertExpiringSignedBytesPEM := generateSelfSignedCert(t, testCert, pk, time.Now().Add(-4*time.Minute), time.Minute*5)
 	testCertEmptyOrder, _ := buildOrder(testCert, testCertCSR)
 	testCertPendingOrder := testCertEmptyOrder.DeepCopy()
 	testCertPendingOrder.Status.State = v1alpha1.Pending
 	testCertValidOrder := testCertEmptyOrder.DeepCopy()
 	testCertValidOrder.Status.State = v1alpha1.Valid
+	testCertValidOrder.Status.Certificate = testCertSignedBytesPEM
+	testCertExpiredCertOrder := testCertValidOrder.DeepCopy()
+	testCertExpiredCertOrder.Status.Certificate = testCertExpiringSignedBytesPEM
 
 	tests := map[string]acmeFixture{
 		"generate a new private key if one does not exist": {
@@ -156,14 +159,11 @@ func TestIssueHappyPath(t *testing.T) {
 			},
 			CheckFn: func(t *testing.T, s *acmeFixture, args ...interface{}) {
 				// returnedCert := args[0].(*v1alpha1.Certificate)
-				resp := args[1].(issuer.IssueResponse)
+				resp := args[1].(*issuer.IssueResponse)
 				// err := args[2].(error)
 
 				if resp.PrivateKey == nil {
 					t.Errorf("expected new private key to be generated")
-				}
-				if resp.Requeue == true {
-					t.Errorf("expected certificate to not be requeued")
 				}
 			},
 			Err: false,
@@ -188,14 +188,11 @@ func TestIssueHappyPath(t *testing.T) {
 			},
 			CheckFn: func(t *testing.T, s *acmeFixture, args ...interface{}) {
 				returnedCert := args[0].(*v1alpha1.Certificate)
-				resp := args[1].(issuer.IssueResponse)
+				resp := args[1].(*issuer.IssueResponse)
 				// err := args[2].(error)
 
-				if resp.PrivateKey != nil {
-					t.Errorf("unexpected PrivateKey response set")
-				}
-				if resp.Requeue == true {
-					t.Errorf("expected certificate to not be requeued")
+				if resp != nil {
+					t.Errorf("expected IssuerResponse to be nil")
 				}
 				if !reflect.DeepEqual(returnedCert, testCert) {
 					t.Errorf("output was not as expected: %s", pretty.Diff(returnedCert, testCert))
@@ -213,14 +210,11 @@ func TestIssueHappyPath(t *testing.T) {
 			},
 			CheckFn: func(t *testing.T, s *acmeFixture, args ...interface{}) {
 				returnedCert := args[0].(*v1alpha1.Certificate)
-				resp := args[1].(issuer.IssueResponse)
+				resp := args[1].(*issuer.IssueResponse)
 				// err := args[2].(error)
 
-				if resp.PrivateKey != nil {
-					t.Errorf("unexpected PrivateKey response set")
-				}
-				if resp.Requeue == true {
-					t.Errorf("expected certificate to not be requeued")
+				if resp != nil {
+					t.Errorf("expected IssuerResponse to be nil")
 				}
 				if !reflect.DeepEqual(returnedCert, testCert) {
 					t.Errorf("output was not as expected: %s", pretty.Diff(returnedCert, testCert))
@@ -228,28 +222,20 @@ func TestIssueHappyPath(t *testing.T) {
 			},
 			Err: false,
 		},
-		"call GetCertificate and return the Certificate bytes if the order is 'valid'": {
+		"retrieve the Certificate bytes from the Order if it is 'valid'": {
 			Certificate: testCert,
 			Builder: &testpkg.Builder{
 				CertManagerObjects: []runtime.Object{testCertValidOrder},
 				KubeObjects:        []runtime.Object{testCertPrivateKeySecret},
 				ExpectedActions:    []testpkg.Action{},
 			},
-			Client: &acmecl.FakeACME{
-				FakeGetCertificate: func(ctx context.Context, url string) ([][]byte, error) {
-					return [][]byte{testCertSignedBytesDER}, nil
-				},
-			},
 			PreFn: func(t *testing.T, s *acmeFixture) {
 			},
 			CheckFn: func(t *testing.T, s *acmeFixture, args ...interface{}) {
 				returnedCert := args[0].(*v1alpha1.Certificate)
-				resp := args[1].(issuer.IssueResponse)
+				resp := args[1].(*issuer.IssueResponse)
 				// err := args[2].(error)
 
-				if resp.Requeue == true {
-					t.Errorf("expected certificate to not be requeued")
-				}
 				if !reflect.DeepEqual(returnedCert, testCert) {
 					t.Errorf("output was not as expected: %s", pretty.Diff(returnedCert, testCert))
 				}
@@ -270,7 +256,7 @@ func TestIssueHappyPath(t *testing.T) {
 						RenewBeforeExpiryDuration: time.Hour * 2,
 					},
 				},
-				CertManagerObjects: []runtime.Object{testCertValidOrder},
+				CertManagerObjects: []runtime.Object{testCertExpiredCertOrder},
 				KubeObjects:        []runtime.Object{testCertPrivateKeySecret},
 				ExpectedActions: []testpkg.Action{
 					testpkg.NewAction(
@@ -278,26 +264,15 @@ func TestIssueHappyPath(t *testing.T) {
 					),
 				},
 			},
-			Client: &acmecl.FakeACME{
-				FakeGetCertificate: func(ctx context.Context, url string) ([][]byte, error) {
-					return [][]byte{testCertExpiringSignedBytesDER}, nil
-				},
-			},
 			PreFn: func(t *testing.T, s *acmeFixture) {
 			},
 			CheckFn: func(t *testing.T, s *acmeFixture, args ...interface{}) {
 				returnedCert := args[0].(*v1alpha1.Certificate)
-				resp := args[1].(issuer.IssueResponse)
+				resp := args[1].(*issuer.IssueResponse)
 				// err := args[2].(error)
 
-				if resp.Certificate != nil {
-					t.Errorf("unexpected certificate data")
-				}
-				if resp.PrivateKey != nil {
-					t.Errorf("unexpected private key data")
-				}
-				if resp.Requeue == true {
-					t.Errorf("expected certificate to not be requeued")
+				if resp != nil {
+					t.Errorf("expected IssuerResponse to be nil, but was: %v", resp)
 				}
 				if !reflect.DeepEqual(returnedCert, testCert) {
 					t.Errorf("output was not as expected: %s", pretty.Diff(returnedCert, testCert))
@@ -320,15 +295,6 @@ func TestIssueHappyPath(t *testing.T) {
 			}
 			if err == nil && test.Err {
 				t.Errorf("Expected function to get an error, but got: %v", err)
-			}
-			if resp.Requeue == true {
-				if !reflect.DeepEqual(test.Certificate, certCopy) {
-					t.Errorf("Requeue should never be true if the Certificate is modified to prevent race conditions")
-				}
-
-				if err != nil {
-					t.Errorf("Requeue cannot be true if err is true")
-				}
 			}
 			test.Finish(t, certCopy, resp, err)
 		})
@@ -442,19 +408,12 @@ func TestIssueRetryCases(t *testing.T) {
 			},
 			CheckFn: func(t *testing.T, s *acmeFixture, args ...interface{}) {
 				returnedCert := args[0].(*v1alpha1.Certificate)
-				resp := args[1].(issuer.IssueResponse)
+				resp := args[1].(*issuer.IssueResponse)
 				// err := args[2].(error)
 
-				if resp.PrivateKey != nil {
-					t.Errorf("unexpected PrivateKey response set")
+				if resp != nil {
+					t.Errorf("expected IssuerResponse to be nil")
 				}
-				if resp.Certificate != nil {
-					t.Errorf("unexpected Certificate response set")
-				}
-				if resp.Requeue == true {
-					t.Errorf("expected certificate to not be requeued")
-				}
-				// the orderRef field should be set to nil
 				if !reflect.DeepEqual(returnedCert, testCert) {
 					t.Errorf("expected certificate order ref to be nil: %s", pretty.Diff(returnedCert, testCert))
 				}
@@ -477,19 +436,12 @@ func TestIssueRetryCases(t *testing.T) {
 			},
 			CheckFn: func(t *testing.T, s *acmeFixture, args ...interface{}) {
 				returnedCert := args[0].(*v1alpha1.Certificate)
-				resp := args[1].(issuer.IssueResponse)
+				resp := args[1].(*issuer.IssueResponse)
 				// err := args[2].(error)
 
-				if resp.PrivateKey != nil {
-					t.Errorf("unexpected PrivateKey response set")
+				if resp != nil {
+					t.Errorf("expected IssuerResponse to be nil")
 				}
-				if resp.Certificate != nil {
-					t.Errorf("unexpected Certificate response set")
-				}
-				if resp.Requeue == true {
-					t.Errorf("expected certificate to not be requeued")
-				}
-				// the orderRef field should be set to nil
 				if !reflect.DeepEqual(returnedCert, testCert) {
 					t.Errorf("expected certificate order ref to be nil: %s", pretty.Diff(returnedCert, testCert))
 				}
@@ -512,19 +464,12 @@ func TestIssueRetryCases(t *testing.T) {
 			},
 			CheckFn: func(t *testing.T, s *acmeFixture, args ...interface{}) {
 				returnedCert := args[0].(*v1alpha1.Certificate)
-				resp := args[1].(issuer.IssueResponse)
+				resp := args[1].(*issuer.IssueResponse)
 				// err := args[2].(error)
 
-				if resp.PrivateKey != nil {
-					t.Errorf("unexpected PrivateKey response set")
+				if resp != nil {
+					t.Errorf("expected IssuerResponse to be nil")
 				}
-				if resp.Certificate != nil {
-					t.Errorf("unexpected Certificate response set")
-				}
-				if resp.Requeue == true {
-					t.Errorf("expected certificate to not be requeued")
-				}
-				// the orderRef field should be set to nil
 				if !reflect.DeepEqual(returnedCert, testCert) {
 					t.Errorf("expected certificate order ref to be nil: %s", pretty.Diff(returnedCert, testCert))
 				}
@@ -547,19 +492,12 @@ func TestIssueRetryCases(t *testing.T) {
 			},
 			CheckFn: func(t *testing.T, s *acmeFixture, args ...interface{}) {
 				returnedCert := args[0].(*v1alpha1.Certificate)
-				resp := args[1].(issuer.IssueResponse)
+				resp := args[1].(*issuer.IssueResponse)
 				// err := args[2].(error)
 
-				if resp.PrivateKey != nil {
-					t.Errorf("unexpected PrivateKey response set")
+				if resp != nil {
+					t.Errorf("expected IssuerResponse to be nil")
 				}
-				if resp.Certificate != nil {
-					t.Errorf("unexpected Certificate response set")
-				}
-				if resp.Requeue == true {
-					t.Errorf("expected certificate to not be requeued")
-				}
-				// the orderRef field should be set to nil
 				if !reflect.DeepEqual(returnedCert, testCert) {
 					t.Errorf("expected certificate order ref to be nil: %s", pretty.Diff(returnedCert, testCert))
 				}
@@ -578,17 +516,11 @@ func TestIssueRetryCases(t *testing.T) {
 			},
 			CheckFn: func(t *testing.T, s *acmeFixture, args ...interface{}) {
 				returnedCert := args[0].(*v1alpha1.Certificate)
-				resp := args[1].(issuer.IssueResponse)
+				resp := args[1].(*issuer.IssueResponse)
 				// err := args[2].(error)
 
-				if resp.PrivateKey != nil {
-					t.Errorf("unexpected PrivateKey response set")
-				}
-				if resp.Certificate != nil {
-					t.Errorf("unexpected Certificate response set")
-				}
-				if resp.Requeue == true {
-					t.Errorf("expected certificate to not be immediately requeued")
+				if resp != nil {
+					t.Errorf("expected IssuerResponse to be nil")
 				}
 				// the resource should not be changed
 				if !reflect.DeepEqual(returnedCert, recentlyFailedCertificate) {
@@ -609,17 +541,11 @@ func TestIssueRetryCases(t *testing.T) {
 			},
 			CheckFn: func(t *testing.T, s *acmeFixture, args ...interface{}) {
 				returnedCert := args[0].(*v1alpha1.Certificate)
-				resp := args[1].(issuer.IssueResponse)
+				resp := args[1].(*issuer.IssueResponse)
 				// err := args[2].(error)
 
-				if resp.PrivateKey != nil {
-					t.Errorf("unexpected PrivateKey response set")
-				}
-				if resp.Certificate != nil {
-					t.Errorf("unexpected Certificate response set")
-				}
-				if resp.Requeue == true {
-					t.Errorf("expected certificate to not be immediately requeued")
+				if resp != nil {
+					t.Errorf("expected IssuerResponse to be nil")
 				}
 				// the resource should have the last failure time set
 				if !reflect.DeepEqual(returnedCert, recentlyFailedCertificate) {
@@ -645,15 +571,6 @@ func TestIssueRetryCases(t *testing.T) {
 			}
 			if err == nil && test.Err {
 				t.Errorf("Expected function to get an error, but got: %v", err)
-			}
-			if resp.Requeue == true {
-				if !reflect.DeepEqual(test.Certificate, certCopy) {
-					t.Errorf("Requeue should never be true if the Certificate is modified to prevent race conditions")
-				}
-
-				if err != nil {
-					t.Errorf("Requeue cannot be true if err is true")
-				}
 			}
 			test.Finish(t, certCopy, resp, err)
 		})

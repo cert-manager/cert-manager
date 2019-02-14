@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Jetstack cert-manager contributors.
+Copyright 2019 The Jetstack cert-manager contributors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -21,9 +21,14 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
+	"path"
+
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/jetstack/cert-manager/test/e2e/framework/addon/tiller"
 	"github.com/jetstack/cert-manager/test/e2e/framework/config"
+	"github.com/jetstack/cert-manager/test/e2e/framework/log"
 )
 
 // Chart is a generic Helm chart addon for the test environment
@@ -178,8 +183,8 @@ func (c *Chart) buildHelmCmd(args ...string) *exec.Cmd {
 		"--tiller-namespace", c.tillerDetails.Namespace,
 	}, args...)
 	cmd := exec.Command(c.config.Addons.Helm.Path, args...)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
+	cmd.Stdout = log.Writer
+	cmd.Stderr = log.Writer
 	return cmd
 }
 
@@ -241,4 +246,36 @@ func (c *Chart) SupportsGlobal() bool {
 	}
 
 	return true
+}
+
+func (c *Chart) Logs() (map[string]string, error) {
+	kc := c.Tiller.Base.Details().KubeClient
+	pods, err := kc.CoreV1().Pods(c.Namespace).List(metav1.ListOptions{LabelSelector: "release=" + c.ReleaseName})
+	if err != nil {
+		return nil, err
+	}
+
+	out := make(map[string]string)
+	for _, pod := range pods.Items {
+		// Only grab logs from the first container in the pod
+		// TODO: grab logs from all containers
+		containerName := pod.Spec.Containers[0].Name
+		resp := kc.CoreV1().Pods(pod.Namespace).GetLogs(pod.Name, &corev1.PodLogOptions{
+			Container: containerName,
+		}).Do()
+
+		err := resp.Error()
+		if err != nil {
+			return nil, err
+		}
+
+		logs, err := resp.Raw()
+		if err != nil {
+			return nil, err
+		}
+
+		outPath := path.Join(c.Namespace, pod.Name)
+		out[outPath] = string(logs)
+	}
+	return out, nil
 }

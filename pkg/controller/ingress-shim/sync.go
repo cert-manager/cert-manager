@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Jetstack cert-manager contributors.
+Copyright 2019 The Jetstack cert-manager contributors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -27,6 +27,7 @@ import (
 	extv1beta1 "k8s.io/api/extensions/v1beta1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/ingress/core/pkg/ingress/annotations/class"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
@@ -64,7 +65,35 @@ func (c *Controller) Sync(ctx context.Context, ing *extv1beta1.Ingress) error {
 		return nil
 	}
 
-	newCrts, updateCrts, err := c.buildCertificates(ing)
+	issuerName, issuerKind := c.issuerForIngress(ing)
+	if issuerName == "" {
+		c.Recorder.Eventf(ing, corev1.EventTypeWarning, "BadConfig", "Issuer name annotation is not set and a default issuer has not been configured")
+		return nil
+	}
+
+	issuer, err := c.helper.GetGenericIssuer(v1alpha1.ObjectReference{
+		Name: issuerName,
+		Kind: issuerKind,
+	}, ing.Namespace)
+	if apierrors.IsNotFound(err) {
+		c.Recorder.Eventf(ing, corev1.EventTypeWarning, "BadConfig", "%s resource %q not found", issuerKind, issuerName)
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+
+	errs := c.validateIngress(ing)
+	if len(errs) > 0 {
+		errMsg := errs[0].Error()
+		if len(errs) > 1 {
+			errMsg = utilerrors.NewAggregate(errs).Error()
+		}
+		c.Recorder.Eventf(ing, corev1.EventTypeWarning, "BadConfig", errMsg)
+		return nil
+	}
+
+	newCrts, updateCrts, err := c.buildCertificates(ing, issuer, issuerKind)
 	if err != nil {
 		return err
 	}
@@ -88,24 +117,37 @@ func (c *Controller) Sync(ctx context.Context, ing *extv1beta1.Ingress) error {
 	return nil
 }
 
-func (c *Controller) buildCertificates(ing *extv1beta1.Ingress) (new, update []*v1alpha1.Certificate, _ error) {
-	issuerName, issuerKind := c.issuerForIngress(ing)
-	issuer, err := c.getGenericIssuer(ing.Namespace, issuerName, issuerKind)
-	if err != nil {
-		return nil, nil, err
+func (c *Controller) validateIngress(ing *extv1beta1.Ingress) []error {
+	var errs []error
+	if ing.Annotations != nil {
+		challengeType := ing.Annotations[acmeIssuerChallengeTypeAnnotation]
+		switch challengeType {
+		case "", "http01":
+		case "dns01":
+			providerName := ing.Annotations[acmeIssuerDNS01ProviderNameAnnotation]
+			if providerName == "" {
+				errs = append(errs, fmt.Errorf("No acme dns01 challenge provider specified"))
+			}
+		default:
+			errs = append(errs, fmt.Errorf("Invalid acme challenge type specified %q", challengeType))
+		}
 	}
-
-	var newCrts []*v1alpha1.Certificate
-	var updateCrts []*v1alpha1.Certificate
 	for i, tls := range ing.Spec.TLS {
 		// validate the ingress TLS block
 		if len(tls.Hosts) == 0 {
-			return nil, nil, fmt.Errorf("secret %q for ingress %q has no hosts specified", tls.SecretName, ing.Name)
+			errs = append(errs, fmt.Errorf("Secret %q for ingress TLS has no hosts specified", tls.SecretName))
 		}
 		if tls.SecretName == "" {
-			return nil, nil, fmt.Errorf("TLS entry %d for ingress %q must specify a secretName", i, ing.Name)
+			errs = append(errs, fmt.Errorf("TLS entry %d for hosts %v must specify a secretName", i, tls.Hosts))
 		}
+	}
+	return errs
+}
 
+func (c *Controller) buildCertificates(ing *extv1beta1.Ingress, issuer v1alpha1.GenericIssuer, issuerKind string) (new, update []*v1alpha1.Certificate, _ error) {
+	var newCrts []*v1alpha1.Certificate
+	var updateCrts []*v1alpha1.Certificate
+	for _, tls := range ing.Spec.TLS {
 		existingCrt, err := c.certificateLister.Certificates(ing.Namespace).Get(tls.SecretName)
 		if !apierrors.IsNotFound(err) && err != nil {
 			return nil, nil, err
@@ -121,7 +163,7 @@ func (c *Controller) buildCertificates(ing *extv1beta1.Ingress) (new, update []*
 				DNSNames:   tls.Hosts,
 				SecretName: tls.SecretName,
 				IssuerRef: v1alpha1.ObjectReference{
-					Name: issuerName,
+					Name: issuer.GetObjectMeta().Name,
 					Kind: issuerKind,
 				},
 			},
@@ -146,7 +188,7 @@ func (c *Controller) buildCertificates(ing *extv1beta1.Ingress) (new, update []*
 
 			updateCrt.Spec.DNSNames = tls.Hosts
 			updateCrt.Spec.SecretName = tls.SecretName
-			updateCrt.Spec.IssuerRef.Name = issuerName
+			updateCrt.Spec.IssuerRef.Name = issuer.GetObjectMeta().Name
 			updateCrt.Spec.IssuerRef.Kind = issuerKind
 			err = c.setIssuerSpecificConfig(updateCrt, issuer, ing, tls)
 			if err != nil {
@@ -302,18 +344,4 @@ func (c *Controller) issuerForIngress(ing *extv1beta1.Ingress) (name string, kin
 		kind = v1alpha1.ClusterIssuerKind
 	}
 	return name, kind
-}
-
-func (c *Controller) getGenericIssuer(namespace, name, kind string) (v1alpha1.GenericIssuer, error) {
-	switch kind {
-	case v1alpha1.IssuerKind:
-		return c.issuerLister.Issuers(namespace).Get(name)
-	case v1alpha1.ClusterIssuerKind:
-		if c.clusterIssuerLister == nil {
-			return nil, fmt.Errorf("cannot get ClusterIssuer for %q as ingress-shim is scoped to a single namespace", name)
-		}
-		return c.clusterIssuerLister.Get(name)
-	default:
-		return nil, fmt.Errorf(`invalid value %q for issuer kind. Must be empty, %q or %q`, kind, v1alpha1.IssuerKind, v1alpha1.ClusterIssuerKind)
-	}
 }

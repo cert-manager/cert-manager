@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Jetstack cert-manager contributors.
+Copyright 2019 The Jetstack cert-manager contributors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -42,7 +42,7 @@ type Controller struct {
 	helper *controllerpkg.Helper
 
 	// To allow injection for testing.
-	syncHandler func(ctx context.Context, key string) (bool, error)
+	syncHandler func(ctx context.Context, key string) error
 
 	clusterIssuerLister cmlisters.ClusterIssuerLister
 	secretLister        corelisters.SecretLister
@@ -54,7 +54,7 @@ type Controller struct {
 func New(ctx *controllerpkg.Context) *Controller {
 	ctrl := &Controller{Context: *ctx}
 	ctrl.syncHandler = ctrl.processNextWorkItem
-	ctrl.queue = workqueue.NewNamedRateLimitingQueue(workqueue.NewItemExponentialFailureRateLimiter(time.Second*5, time.Minute*1), "clusterissuers")
+	ctrl.queue = workqueue.NewNamedRateLimitingQueue(controllerpkg.DefaultItemBasedRateLimiter(), "clusterissuers")
 
 	clusterIssuerInformer := ctrl.SharedInformerFactory.Certmanager().V1alpha1().ClusterIssuers()
 	clusterIssuerInformer.Informer().AddEventHandler(&controllerpkg.QueuingEventHandler{Queue: ctrl.queue})
@@ -128,43 +128,34 @@ func (c *Controller) worker(stopCh <-chan struct{}) {
 		}
 
 		var key string
-		forceAdd, err := func(obj interface{}) (bool, error) {
+		// use an inlined function so we can use defer
+		func() {
 			defer c.queue.Done(obj)
 			var ok bool
 			if key, ok = obj.(string); !ok {
-				return false, nil
+				return
 			}
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
 			ctx = util.ContextWithStopCh(ctx, stopCh)
 			glog.Infof("%s controller: syncing item '%s'", ControllerName, key)
-			forceAdd, err := c.syncHandler(ctx, key)
-			if err == nil {
-				c.queue.Forget(obj)
+			if err := c.syncHandler(ctx, key); err != nil {
+				glog.Errorf("%s controller: Re-queuing item %q due to error processing: %s", ControllerName, key, err.Error())
+				c.queue.AddRateLimited(obj)
+				return
 			}
-			return forceAdd, err
-		}(obj)
-
-		if err != nil {
-			glog.Errorf("%s controller: Re-queuing item %q due to error processing: %s", ControllerName, key, err.Error())
-			c.queue.AddRateLimited(obj)
-			continue
-		}
-
-		if forceAdd {
-			c.queue.Add(obj)
-		}
-
-		glog.Infof("%s controller: Finished processing work item %q", ControllerName, key)
+			glog.Infof("%s controller: Finished processing work item %q", ControllerName, key)
+			c.queue.Forget(obj)
+		}()
 	}
 	glog.V(4).Infof("Exiting %q worker loop", ControllerName)
 }
 
-func (c *Controller) processNextWorkItem(ctx context.Context, key string) (bool, error) {
+func (c *Controller) processNextWorkItem(ctx context.Context, key string) error {
 	_, name, err := cache.SplitMetaNamespaceKey(key)
 	if err != nil {
 		runtime.HandleError(fmt.Errorf("invalid resource key: %s", key))
-		return false, nil
+		return nil
 	}
 
 	issuer, err := c.clusterIssuerLister.Get(name)
@@ -172,10 +163,10 @@ func (c *Controller) processNextWorkItem(ctx context.Context, key string) (bool,
 	if err != nil {
 		if k8sErrors.IsNotFound(err) {
 			runtime.HandleError(fmt.Errorf("issuer %q in work queue no longer exists", key))
-			return false, nil
+			return nil
 		}
 
-		return false, err
+		return err
 	}
 
 	return c.Sync(ctx, issuer)

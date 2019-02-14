@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Jetstack cert-manager contributors.
+Copyright 2019 The Jetstack cert-manager contributors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -45,7 +45,7 @@ type DNSProvider struct {
 	auth *EdgeGridAuth
 
 	transport              http.RoundTripper
-	findHostedDomainByFqdn func(string) (string, error)
+	findHostedDomainByFqdn func(string, []string) (string, error)
 }
 
 // NewDNSProvider returns a DNSProvider instance configured for Akamai.
@@ -59,8 +59,8 @@ func NewDNSProvider(serviceConsumerDomain, clientToken, clientSecret, accessToke
 	}, nil
 }
 
-func findHostedDomainByFqdn(fqdn string) (string, error) {
-	zone, err := util.FindZoneByFqdn(fqdn, util.RecursiveNameservers)
+func findHostedDomainByFqdn(fqdn string, ns []string) (string, error) {
+	zone, err := util.FindZoneByFqdn(fqdn, ns)
 	if err != nil {
 		return "", err
 	}
@@ -68,29 +68,13 @@ func findHostedDomainByFqdn(fqdn string) (string, error) {
 	return util.UnFqdn(zone), nil
 }
 
-// Timeout returns the timeout and interval to use when checking for DNS
-// propagation. Adjusting here to cope with spikes in propagation times.
-func (a *DNSProvider) Timeout() (timeout, interval time.Duration) {
-	return 5 * time.Minute, 5 * time.Second
-}
-
 // Present creates a TXT record to fulfil the dns-01 challenge
-func (a *DNSProvider) Present(domain, token, keyAuth string) error {
-	fqdn, value, ttl, err := util.DNS01Record(domain, keyAuth, a.dns01Nameservers)
-	if err != nil {
-		return err
-	}
-
-	return a.setTxtRecord(fqdn, &dns01Record{value, ttl})
+func (a *DNSProvider) Present(domain, fqdn, value string) error {
+	return a.setTxtRecord(fqdn, &dns01Record{value, 60})
 }
 
 // CleanUp removes the TXT record matching the specified parameters
-func (a *DNSProvider) CleanUp(domain, token, keyAuth string) error {
-	fqdn, _, _, err := util.DNS01Record(domain, keyAuth, a.dns01Nameservers)
-	if err != nil {
-		return err
-	}
-
+func (a *DNSProvider) CleanUp(domain, fqdn, value string) error {
 	return a.setTxtRecord(fqdn, nil)
 }
 
@@ -100,7 +84,7 @@ type dns01Record struct {
 }
 
 func (a *DNSProvider) setTxtRecord(fqdn string, dns01Record *dns01Record) error {
-	hostedDomain, err := a.findHostedDomainByFqdn(fqdn)
+	hostedDomain, err := a.findHostedDomainByFqdn(fqdn, a.dns01Nameservers)
 	if err != nil {
 		return errors.Wrapf(err, "failed to determine hosted domain for %q", fqdn)
 	}

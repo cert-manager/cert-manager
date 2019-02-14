@@ -6,6 +6,7 @@ go_library(
         "compact.go",
         "errors.go",
         "event.go",
+        "lease_manager.go",
         "store.go",
         "watcher.go",
     ],

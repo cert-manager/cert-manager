@@ -12,10 +12,10 @@ package azuredns
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"strings"
-	"time"
+
+	"github.com/golang/glog"
 
 	"github.com/Azure/azure-sdk-for-go/arm/dns"
 	"github.com/Azure/go-autorest/autorest"
@@ -78,25 +78,15 @@ func NewDNSProviderCredentials(clientID, clientSecret, subscriptionID, tenantID,
 }
 
 // Present creates a TXT record using the specified parameters
-func (c *DNSProvider) Present(domain, token, keyAuth string) error {
-	fqdn, value, ttl, err := util.DNS01Record(domain, keyAuth, c.dns01Nameservers)
-	if err != nil {
-		return err
-	}
-
-	return c.createRecord(fqdn, value, ttl)
+func (c *DNSProvider) Present(domain, fqdn, value string) error {
+	return c.createRecord(fqdn, value, 60)
 }
 
 // CleanUp removes the TXT record matching the specified parameters
-func (c *DNSProvider) CleanUp(domain, token, keyAuth string) error {
-	fqdn, _, _, err := util.DNS01Record(domain, keyAuth, c.dns01Nameservers)
-	if err != nil {
-		return err
-	}
-
+func (c *DNSProvider) CleanUp(domain, fqdn, value string) error {
 	z, err := c.getHostedZoneName(fqdn)
 	if err != nil {
-		log.Fatalf("Error getting hosted zone name for: %s, %v", fqdn, err)
+		glog.Infof("Error getting hosted zone name for: %s, %v", fqdn, err)
 		return err
 	}
 
@@ -112,12 +102,6 @@ func (c *DNSProvider) CleanUp(domain, token, keyAuth string) error {
 	return nil
 }
 
-// Timeout returns the timeout and interval to use when checking for DNS
-// propagation. Adjusting here to cope with spikes in propagation times.
-func (c *DNSProvider) Timeout() (timeout, interval time.Duration) {
-	return 120 * time.Second, 2 * time.Second
-}
-
 func (c *DNSProvider) createRecord(fqdn, value string, ttl int) error {
 	rparams := &dns.RecordSet{
 		RecordSetProperties: &dns.RecordSetProperties{
@@ -130,7 +114,7 @@ func (c *DNSProvider) createRecord(fqdn, value string, ttl int) error {
 
 	z, err := c.getHostedZoneName(fqdn)
 	if err != nil {
-		log.Fatalf("Error getting hosted zone name for: %s, %v", fqdn, err)
+		glog.Infof("Error getting hosted zone name for: %s, %v", fqdn, err)
 		return err
 	}
 
@@ -142,7 +126,7 @@ func (c *DNSProvider) createRecord(fqdn, value string, ttl int) error {
 		*rparams, "", "")
 
 	if err != nil {
-		log.Fatalf("Error creating TXT: %s, %v", c.zoneName, err)
+		glog.Infof("Error creating TXT: %s, %v", c.zoneName, err)
 		return err
 	}
 	return nil
@@ -152,7 +136,7 @@ func (c *DNSProvider) getHostedZoneName(fqdn string) (string, error) {
 	if c.zoneName != "" {
 		return c.zoneName, nil
 	}
-	z, err := util.FindZoneByFqdn(fqdn, util.RecursiveNameservers)
+	z, err := util.FindZoneByFqdn(fqdn, c.dns01Nameservers)
 	if err != nil {
 		return "", err
 	}

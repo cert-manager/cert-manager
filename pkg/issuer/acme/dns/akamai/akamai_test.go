@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Jetstack cert-manager contributors.
+Copyright 2019 The Jetstack cert-manager contributors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -111,7 +111,7 @@ func TestPresent(t *testing.T) {
 	var response []byte
 	mockTransport(t, akamai, "example.com", sampleZoneData, &response)
 
-	assert.NoError(t, akamai.Present("test.example.com", "dns01-token", "dns01-key"))
+	assert.NoError(t, akamai.Present("test.example.com", "_acme-challenge.test.example.com.", "dns01-key"))
 
 	var expected, actual map[string]interface{}
 	assert.NoError(t, json.Unmarshal([]byte(sampleZoneDataWithTxt), &expected))
@@ -126,7 +126,7 @@ func TestCleanUp(t *testing.T) {
 	var response []byte
 	mockTransport(t, akamai, "example.com", sampleZoneDataWithTxt, &response)
 
-	assert.NoError(t, akamai.CleanUp("test.example.com", "dns01-token", "dns01-key"))
+	assert.NoError(t, akamai.CleanUp("test.example.com", "_acme-challenge.test.example.com.", "dns01-key"))
 
 	var expected, actual map[string]interface{}
 	assert.NoError(t, json.Unmarshal([]byte(sampleZoneData), &expected))
@@ -171,7 +171,7 @@ func mockTransport(t *testing.T, akamai *DNSProvider, domain, data string, respo
 		t.Fatalf("unexpected method: %v", req.Method)
 		return nil, nil
 	})
-	akamai.findHostedDomainByFqdn = func(fqdn string) (string, error) {
+	akamai.findHostedDomainByFqdn = func(fqdn string, _ []string) (string, error) {
 		if !strings.HasSuffix(fqdn, domain+".") {
 			t.Fatalf("unexpected fqdn: %s", fqdn)
 		}

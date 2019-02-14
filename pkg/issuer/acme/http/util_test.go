@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Jetstack cert-manager contributors.
+Copyright 2019 The Jetstack cert-manager contributors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -72,6 +72,10 @@ func (s *solverFixture) Setup(t *testing.T) {
 	if s.Builder == nil {
 		s.Builder = &test.Builder{}
 	}
+	if s.Builder.T == nil {
+		s.Builder.T = t
+	}
+	s.Builder.Start()
 	s.Solver = buildFakeSolver(s.Builder)
 	if s.PreFn != nil {
 		s.PreFn(t, s)

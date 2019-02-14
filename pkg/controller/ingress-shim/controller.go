@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Jetstack cert-manager contributors.
+Copyright 2019 The Jetstack cert-manager contributors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -57,6 +57,8 @@ type Controller struct {
 	CMClient clientset.Interface
 	Recorder record.EventRecorder
 
+	helper controllerpkg.Helper
+
 	// To allow injection for testing.
 	syncHandler func(ctx context.Context, key string) error
 
@@ -85,7 +87,7 @@ func New(
 ) *Controller {
 	ctrl := &Controller{Client: client, CMClient: cmClient, Recorder: recorder, defaults: defaults}
 	ctrl.syncHandler = ctrl.processNextWorkItem
-	ctrl.queue = workqueue.NewNamedRateLimitingQueue(workqueue.NewItemExponentialFailureRateLimiter(time.Second*5, time.Minute*1), "ingresses")
+	ctrl.queue = workqueue.NewNamedRateLimitingQueue(controllerpkg.DefaultItemBasedRateLimiter(), "ingresses")
 
 	ingressInformer.Informer().AddEventHandler(&controllerpkg.QueuingEventHandler{Queue: ctrl.queue})
 	ctrl.ingressLister = ingressInformer.Lister()
@@ -97,8 +99,13 @@ func New(
 
 	ctrl.issuerLister = issuerInformer.Lister()
 	ctrl.syncedFuncs = append(ctrl.syncedFuncs, issuerInformer.Informer().HasSynced)
-	ctrl.clusterIssuerLister = clusterIssuerInformer.Lister()
-	ctrl.syncedFuncs = append(ctrl.syncedFuncs, clusterIssuerInformer.Informer().HasSynced)
+
+	if clusterIssuerInformer != nil {
+		ctrl.clusterIssuerLister = clusterIssuerInformer.Lister()
+		ctrl.syncedFuncs = append(ctrl.syncedFuncs, clusterIssuerInformer.Informer().HasSynced)
+	}
+
+	ctrl.helper = controllerpkg.NewHelper(ctrl.issuerLister, ctrl.clusterIssuerLister)
 
 	return ctrl
 }
@@ -157,30 +164,25 @@ func (c *Controller) worker(stopCh <-chan struct{}) {
 		}
 
 		var key string
-		err := func(obj interface{}) error {
+		// use an inlined function so we can use defer
+		func() {
 			defer c.queue.Done(obj)
 			var ok bool
 			if key, ok = obj.(string); !ok {
-				return nil
+				return
 			}
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
 			ctx = util.ContextWithStopCh(ctx, stopCh)
 			glog.Infof("%s controller: syncing item '%s'", ControllerName, key)
 			if err := c.syncHandler(ctx, key); err != nil {
-				return err
+				glog.Errorf("%s controller: Re-queuing item %q due to error processing: %s", ControllerName, key, err.Error())
+				c.queue.AddRateLimited(obj)
+				return
 			}
+			glog.Infof("%s controller: Finished processing work item %q", ControllerName, key)
 			c.queue.Forget(obj)
-			return nil
-		}(obj)
-
-		if err != nil {
-			glog.Errorf("%s controller: Re-queuing item %q due to error processing: %s", ControllerName, key, err.Error())
-			c.queue.AddRateLimited(obj)
-			continue
-		}
-
-		glog.Infof("%s controller: Finished processing work item %q", ControllerName, key)
+		}()
 	}
 	glog.V(4).Infof("Exiting %q worker loop", ControllerName)
 }
@@ -210,11 +212,15 @@ var keyFunc = controllerpkg.KeyFunc
 
 func init() {
 	controllerpkg.Register(ControllerName, func(ctx *controllerpkg.Context) controllerpkg.Interface {
+		var clusterIssuerInformer cminformers.ClusterIssuerInformer
+		if ctx.Namespace == "" {
+			clusterIssuerInformer = ctx.SharedInformerFactory.Certmanager().V1alpha1().ClusterIssuers()
+		}
 		return New(
 			ctx.SharedInformerFactory.Certmanager().V1alpha1().Certificates(),
 			ctx.KubeSharedInformerFactory.Extensions().V1beta1().Ingresses(),
 			ctx.SharedInformerFactory.Certmanager().V1alpha1().Issuers(),
-			ctx.SharedInformerFactory.Certmanager().V1alpha1().ClusterIssuers(),
+			clusterIssuerInformer,
 			ctx.Client,
 			ctx.CMClient,
 			ctx.Recorder,

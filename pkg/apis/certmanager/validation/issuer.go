@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Jetstack cert-manager contributors.
+Copyright 2019 The Jetstack cert-manager contributors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -169,6 +169,16 @@ func ValidateACMEIssuerDNS01Config(iss *v1alpha1.ACMEIssuerDNS01Config, fldPath 
 		fldPath := providersFldPath.Index(i)
 		if len(p.Name) == 0 {
 			el = append(el, field.Required(fldPath.Child("name"), "name must be specified"))
+		}
+		// allow empty values for now, until we have a MutatingWebhook to apply
+		// default values to fields.
+		if len(p.CNAMEStrategy) > 0 {
+			switch p.CNAMEStrategy {
+			case v1alpha1.NoneStrategy:
+			case v1alpha1.FollowStrategy:
+			default:
+				el = append(el, field.Invalid(fldPath.Child("cnameStrategy"), p.CNAMEStrategy, fmt.Sprintf("must be one of %q or %q", v1alpha1.NoneStrategy, v1alpha1.FollowStrategy)))
+			}
 		}
 		numProviders := 0
 		if p.Akamai != nil {

@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Jetstack cert-manager contributors.
+Copyright 2019 The Jetstack cert-manager contributors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -32,15 +32,17 @@ import (
 
 	cmlisters "github.com/jetstack/cert-manager/pkg/client/listers/certmanager/v1alpha1"
 	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
+	"github.com/jetstack/cert-manager/pkg/metrics"
 	"github.com/jetstack/cert-manager/pkg/scheduler"
 	"github.com/jetstack/cert-manager/pkg/util"
 )
 
 type Controller struct {
 	*controllerpkg.Context
+	helper controllerpkg.Helper
 
 	// To allow injection for testing.
-	syncHandler func(ctx context.Context, key string) (bool, error)
+	syncHandler func(ctx context.Context, key string) error
 
 	issuerLister        cmlisters.IssuerLister
 	clusterIssuerLister cmlisters.ClusterIssuerLister
@@ -51,6 +53,7 @@ type Controller struct {
 	scheduledWorkQueue scheduler.ScheduledWorkQueue
 	workerWg           sync.WaitGroup
 	syncedFuncs        []cache.InformerSynced
+	metrics            *metrics.Metrics
 }
 
 // New returns a new Certificates controller. It sets up the informer handler
@@ -58,7 +61,7 @@ type Controller struct {
 func New(ctx *controllerpkg.Context) *Controller {
 	ctrl := &Controller{Context: ctx}
 	ctrl.syncHandler = ctrl.processNextWorkItem
-	ctrl.queue = workqueue.NewNamedRateLimitingQueue(workqueue.NewItemExponentialFailureRateLimiter(time.Second*2, time.Minute*1), "certificates")
+	ctrl.queue = workqueue.NewNamedRateLimitingQueue(controllerpkg.DefaultItemBasedRateLimiter(), "certificates")
 
 	// Create a scheduled work queue that calls the ctrl.queue.Add method for
 	// each object in the queue. This is used to schedule re-checks of
@@ -71,12 +74,17 @@ func New(ctx *controllerpkg.Context) *Controller {
 	ctrl.syncedFuncs = append(ctrl.syncedFuncs, certificateInformer.Informer().HasSynced)
 
 	issuerInformer := ctrl.SharedInformerFactory.Certmanager().V1alpha1().Issuers()
+	issuerInformer.Informer().AddEventHandler(&controllerpkg.BlockingEventHandler{WorkFunc: ctrl.handleGenericIssuer})
 	ctrl.issuerLister = issuerInformer.Lister()
 	ctrl.syncedFuncs = append(ctrl.syncedFuncs, issuerInformer.Informer().HasSynced)
 
-	clusterIssuerInformer := ctrl.SharedInformerFactory.Certmanager().V1alpha1().ClusterIssuers()
-	ctrl.clusterIssuerLister = clusterIssuerInformer.Lister()
-	ctrl.syncedFuncs = append(ctrl.syncedFuncs, clusterIssuerInformer.Informer().HasSynced)
+	// if scoped to a single namespace
+	if ctx.Namespace == "" {
+		clusterIssuerInformer := ctrl.SharedInformerFactory.Certmanager().V1alpha1().ClusterIssuers()
+		clusterIssuerInformer.Informer().AddEventHandler(&controllerpkg.BlockingEventHandler{WorkFunc: ctrl.handleGenericIssuer})
+		ctrl.clusterIssuerLister = clusterIssuerInformer.Lister()
+		ctrl.syncedFuncs = append(ctrl.syncedFuncs, clusterIssuerInformer.Informer().HasSynced)
+	}
 
 	secretsInformer := ctrl.KubeSharedInformerFactory.Core().V1().Secrets()
 	secretsInformer.Informer().AddEventHandler(&controllerpkg.BlockingEventHandler{WorkFunc: ctrl.handleSecretResource})
@@ -86,6 +94,9 @@ func New(ctx *controllerpkg.Context) *Controller {
 	ordersInformer := ctrl.SharedInformerFactory.Certmanager().V1alpha1().Orders()
 	ordersInformer.Informer().AddEventHandler(&controllerpkg.BlockingEventHandler{WorkFunc: ctrl.handleOwnedResource})
 	ctrl.syncedFuncs = append(ctrl.syncedFuncs, ordersInformer.Informer().HasSynced)
+
+	ctrl.helper = controllerpkg.NewHelper(ctrl.issuerLister, ctrl.clusterIssuerLister)
+	ctrl.metrics = metrics.Default
 
 	return ctrl
 }
@@ -123,44 +134,34 @@ func (c *Controller) worker(stopCh <-chan struct{}) {
 		}
 
 		var key string
-		forceAdd, err := func(obj interface{}) (bool, error) {
+		// use an inlined function so we can use defer
+		func() {
 			defer c.queue.Done(obj)
 			var ok bool
 			if key, ok = obj.(string); !ok {
-				return false, nil
+				return
 			}
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
 			ctx = util.ContextWithStopCh(ctx, stopCh)
 			glog.Infof("%s controller: syncing item '%s'", ControllerName, key)
-
-			forceAdd, err := c.syncHandler(ctx, key)
-			if err == nil {
-				c.queue.Forget(obj)
+			if err := c.syncHandler(ctx, key); err != nil {
+				glog.Errorf("%s controller: Re-queuing item %q due to error processing: %s", ControllerName, key, err.Error())
+				c.queue.AddRateLimited(obj)
+				return
 			}
-			return forceAdd, err
-		}(obj)
-
-		if err != nil {
-			glog.Errorf("%s controller: Re-queuing item %q due to error processing: %s", ControllerName, key, err.Error())
-			c.queue.AddRateLimited(obj)
-			continue
-		}
-
-		if forceAdd {
-			c.queue.Add(obj)
-		}
-
-		glog.Infof("%s controller: Finished processing work item %q", ControllerName, key)
+			glog.Infof("%s controller: Finished processing work item %q", ControllerName, key)
+			c.queue.Forget(obj)
+		}()
 	}
 	glog.V(4).Infof("Exiting %q worker loop", ControllerName)
 }
 
-func (c *Controller) processNextWorkItem(ctx context.Context, key string) (bool, error) {
+func (c *Controller) processNextWorkItem(ctx context.Context, key string) error {
 	namespace, name, err := cache.SplitMetaNamespaceKey(key)
 	if err != nil {
 		runtime.HandleError(fmt.Errorf("invalid resource key: %s", key))
-		return false, nil
+		return nil
 	}
 
 	crt, err := c.certificateLister.Certificates(namespace).Get(name)
@@ -169,10 +170,10 @@ func (c *Controller) processNextWorkItem(ctx context.Context, key string) (bool,
 		if k8sErrors.IsNotFound(err) {
 			c.scheduledWorkQueue.Forget(key)
 			runtime.HandleError(fmt.Errorf("certificate '%s' in work queue no longer exists", key))
-			return false, nil
+			return nil
 		}
 
-		return false, err
+		return err
 	}
 
 	return c.Sync(ctx, crt)

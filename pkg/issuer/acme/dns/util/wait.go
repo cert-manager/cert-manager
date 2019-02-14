@@ -19,7 +19,8 @@ import (
 	"github.com/miekg/dns"
 )
 
-type preCheckDNSFunc func(fqdn, value string, nameservers []string) (bool, error)
+type preCheckDNSFunc func(fqdn, value string, nameservers []string,
+	useAuthoritative bool) (bool, error)
 
 var (
 	// PreCheckDNS checks DNS propagation before notifying ACME that
@@ -77,7 +78,8 @@ func updateDomainWithCName(r *dns.Msg, fqdn string) string {
 }
 
 // checkDNSPropagation checks if the expected TXT record has been propagated to all authoritative nameservers.
-func checkDNSPropagation(fqdn, value string, nameservers []string) (bool, error) {
+func checkDNSPropagation(fqdn, value string, nameservers []string,
+	useAuthoritative bool) (bool, error) {
 	// Initial attempt to resolve at the recursive NS
 	r, err := dnsQuery(fqdn, dns.TypeTXT, nameservers, true)
 	if err != nil {
@@ -87,18 +89,25 @@ func checkDNSPropagation(fqdn, value string, nameservers []string) (bool, error)
 		fqdn = updateDomainWithCName(r, fqdn)
 	}
 
+	if !useAuthoritative {
+		return checkAuthoritativeNss(fqdn, value, nameservers)
+	}
+
 	authoritativeNss, err := lookupNameservers(fqdn, nameservers)
 	if err != nil {
 		return false, err
 	}
 
+	for i, ans := range authoritativeNss {
+		authoritativeNss[i] = net.JoinHostPort(ans, "53")
+	}
 	return checkAuthoritativeNss(fqdn, value, authoritativeNss)
 }
 
 // checkAuthoritativeNss queries each of the given nameservers for the expected TXT record.
 func checkAuthoritativeNss(fqdn, value string, nameservers []string) (bool, error) {
 	for _, ns := range nameservers {
-		r, err := dnsQuery(fqdn, dns.TypeTXT, []string{net.JoinHostPort(ns, "53")}, false)
+		r, err := dnsQuery(fqdn, dns.TypeTXT, []string{ns}, true)
 		if err != nil {
 			return false, err
 		}
@@ -144,7 +153,9 @@ func dnsQuery(fqdn string, rtype uint16, nameservers []string, recursive bool) (
 		udp := &dns.Client{Net: "udp", Timeout: DNSTimeout}
 		in, _, err = udp.Exchange(m, ns)
 
-		if err == dns.ErrTruncated {
+		if err == dns.ErrTruncated ||
+			(err != nil && strings.HasPrefix(err.Error(), "read udp") && strings.HasSuffix(err.Error(), "i/o timeout")) {
+			glog.V(6).Infof("UDP dns lookup failed, retrying with TCP: %v", err)
 			tcp := &dns.Client{Net: "tcp", Timeout: DNSTimeout}
 			// If the TCP request succeeds, the err will reset to nil
 			in, _, err = tcp.Exchange(m, ns)
@@ -155,6 +166,87 @@ func dnsQuery(fqdn string, rtype uint16, nameservers []string, recursive bool) (
 		}
 	}
 	return
+}
+
+func ValidateCAA(domain string, issuerID []string, iswildcard bool, nameservers []string) error {
+	// see https://tools.ietf.org/html/rfc6844#section-4
+	// for more information about how CAA lookup is performed
+	fqdn := ToFqdn(domain)
+
+	issuerSet := make(map[string]bool)
+	for _, s := range issuerID {
+		issuerSet[s] = true
+	}
+
+	var caas []*dns.CAA
+	for {
+		// follow at most 8 cnames per label
+		queryDomain := fqdn
+		var msg *dns.Msg
+		var err error
+		for i := 0; i < 8; i++ {
+			//TODO(dmo): figure out if we need these servers to be configurable as well
+			msg, err = dnsQuery(queryDomain, dns.TypeCAA, nameservers, true)
+			if err != nil {
+				return fmt.Errorf("Could not validate CAA record: %s", err)
+			}
+			// we expect the domain to exist, but it might not have a CAA record
+			// (this is the root domain that we're validating, if it errors, then
+			// there are bigger problems)
+			if msg.Rcode != dns.RcodeSuccess {
+				return fmt.Errorf("Could not validate CAA: domain %q not found", domain)
+			}
+			oldQuery := queryDomain
+			queryDomain = updateDomainWithCName(msg, queryDomain)
+			if queryDomain == oldQuery {
+				break
+			}
+		}
+		// we have a response that's not a CNAME. It might be empty.
+		// if it is, go up a label and ask again
+		for _, rr := range msg.Answer {
+			caa, ok := rr.(*dns.CAA)
+			if !ok {
+				continue
+			}
+			caas = append(caas, caa)
+		}
+		if len(caas) != 0 {
+			break
+		}
+
+		index := strings.Index(fqdn, ".")
+		if index == -1 {
+			panic("should never happen")
+		}
+		fqdn = fqdn[index+1:]
+		if len(fqdn) == 0 {
+			// we reached the root with no CAA, don't bother asking
+			return nil
+		}
+	}
+
+	if !matchCAA(caas, issuerSet, iswildcard) {
+		// TODO(dmo): better error message
+		return fmt.Errorf("CAA record does not match issuer")
+	}
+	return nil
+}
+
+func matchCAA(caas []*dns.CAA, issuerIDs map[string]bool, iswildcard bool) bool {
+	expectedTag := "issue"
+	if iswildcard {
+		expectedTag = "issuewild"
+	}
+	for _, caa := range caas {
+		if caa.Tag != expectedTag {
+			continue
+		}
+		if issuerIDs[caa.Value] {
+			return true
+		}
+	}
+	return false
 }
 
 // lookupNameservers returns the authoritative nameservers for the given fqdn.
