@@ -341,14 +341,14 @@ func (s *Solver) solverForChallenge(issuer v1alpha1.GenericIssuer, ch *v1alpha1.
 	case providerConfig.DNSPod != nil:
 		apiKeySecret, err := s.secretLister.Secrets(resourceNamespace).Get(providerConfig.DNSPod.APIKey.Name)
 		if err != nil {
-			return nil, fmt.Errorf("error getting dnspod service account: %s", err.Error())
+			return nil, nil, fmt.Errorf("error getting dnspod service account: %s", err.Error())
 		}
 
 		apiKey := string(apiKeySecret.Data[providerConfig.DNSPod.APIKey.Key])
 
 		impl, err = s.dnsProviderConstructors.dnspod(apiKey)
 		if err != nil {
-			return nil, fmt.Errorf("error instantiating dnspod challenge solver: %s", err.Error())
+			return nil, nil, fmt.Errorf("error instantiating dnspod challenge solver: %s", err.Error())
 		}
 	default:
 		return nil, nil, fmt.Errorf("no dns provider config specified for provider %q", providerName)

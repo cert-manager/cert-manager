@@ -46,17 +46,13 @@ func NewDNSProviderCredentials(key string) (*DNSProvider, error) {
 }
 
 // Present creates a TXT record to fulfil the dns-01 challenge.
-func (c *DNSProvider) Present(domain, token, keyAuth string) error {
-	fqdn, value, ttl, err := util.DNS01Record(domain, keyAuth, util.RecursiveNameservers)
-	if err != nil {
-		return err
-	}
+func (c *DNSProvider) Present(domain, fqdn, value string) error {
 	zoneID, zoneName, err := c.getHostedZone(domain)
 	if err != nil {
 		return err
 	}
 
-	recordAttributes := c.newTxtRecord(zoneName, fqdn, value, ttl)
+	recordAttributes := c.newTxtRecord(zoneName, fqdn, value, 600)
 	_, _, err = c.client.Domains.CreateRecord(zoneID, *recordAttributes)
 	if err != nil {
 		return fmt.Errorf("dnspod API call failed: %v", err)
@@ -66,12 +62,7 @@ func (c *DNSProvider) Present(domain, token, keyAuth string) error {
 }
 
 // CleanUp removes the TXT record matching the specified parameters.
-func (c *DNSProvider) CleanUp(domain, token, keyAuth string) error {
-	fqdn, _, _, err := util.DNS01Record(domain, keyAuth, util.RecursiveNameservers)
-	if err != nil {
-		return err
-	}
-
+func (c *DNSProvider) CleanUp(domain, fqdn, value string) error {
 	records, err := c.findTxtRecords(domain, fqdn)
 	if err != nil {
 		return err
