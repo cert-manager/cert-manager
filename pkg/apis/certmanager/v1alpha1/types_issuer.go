@@ -327,6 +327,8 @@ type ACMEIssuerDNS01ProviderRFC2136 struct {
 	TSIGAlgorithm string `json:"tsigAlgorithm,omitempty"`
 }
 
+// ACMEIssuerDNS01ProviderDNSimple is a structure containing the
+// configuration for DNSimple DNS
 type ACMEIssuerDNS01ProviderDNSimple struct {
 	OAuthToken SecretKeySelector `json:"oauthTokenSecretRef"`
 }

@@ -22,7 +22,6 @@ import (
 	"os"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/dnsimple/dnsimple-go/dnsimple"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
@@ -88,43 +87,28 @@ func NewDNSProviderCredentials(oauthToken string, dns01Nameservers []string) (*D
 }
 
 // Present creates a TXT record using the specified parameters
-func (c *DNSProvider) Present(domain, token, keyAuth string) error {
-	fqdn, value, ttl, err := util.DNS01Record(domain, keyAuth, c.dns01Nameservers)
-
-	if err != nil {
-		return err
-	}
-
-	return c.createRecord(fqdn, value, ttl)
+func (c *DNSProvider) Present(domain, fqdn, value string) error {
+	return c.createRecord(fqdn, value, 60)
 }
 
-func (c *DNSProvider) CleanUp(domain, token, keyAuth string) error {
-	fqdn, _, _, err := util.DNS01Record(domain, keyAuth, c.dns01Nameservers)
-	if err != nil {
-		return err
-	}
-
+// CleanUp removes the TXT record matching the specified parameters
+func (c *DNSProvider) CleanUp(domain, fqdn, value string) error {
 	return c.removeRecord(fqdn)
 }
 
-func (c *DNSProvider) Timeout() (timeout, interval time.Duration) {
-	return 120 * time.Second, 2 * time.Second
-}
-
 func (c *DNSProvider) createRecord(fqdn, value string, ttl int) error {
-	zone, err := util.FindZoneByFqdn(fqdn, util.RecursiveNameservers)
+	zone, err := util.FindZoneByFqdn(fqdn, c.dns01Nameservers)
 	if err != nil {
 		return err
 	}
 
 	zoneID := util.UnFqdn(zone)
-
 	verifiedZoneID, err := c.getZoneID(zoneID)
 	if err != nil {
 		return err
 	}
 
-	recordName := c.extractRecordName(fqdn, zoneID)
+	recordName := c.extractRecordName(fqdn, verifiedZoneID)
 	recordID, err := c.getRecordID(verifiedZoneID, recordName)
 	// Do not attempt to create an existing record
 	if recordID != 0 {

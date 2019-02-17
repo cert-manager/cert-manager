@@ -25,15 +25,21 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+const (
+	testingACMEChallengeValue = "123d=="
+)
+
 var (
 	dnsimpleLiveTest   bool
 	dnsimpleOauthToken string
 	dnsimpleDomain     string
+	dnsimpleTestFQDN   string
 )
 
 func init() {
 	dnsimpleOauthToken = getOauthToken()
 	dnsimpleDomain = os.Getenv("DNSIMPLE_DOMAIN")
+	dnsimpleTestFQDN = "_acme-challenge." + dnsimpleDomain + "."
 
 	if dnsimpleOauthToken != "" && dnsimpleDomain != "" {
 		dnsimpleLiveTest = true
@@ -48,7 +54,7 @@ func TestLiveDNSimpleDnsPresent(t *testing.T) {
 	provider, err := NewDNSProviderCredentials(dnsimpleOauthToken, util.RecursiveNameservers)
 	assert.NoError(t, err)
 
-	err = provider.Present(dnsimpleDomain, "", "123d==")
+	err = provider.Present(dnsimpleDomain, dnsimpleTestFQDN, testingACMEChallengeValue)
 	assert.NoError(t, err)
 }
 
@@ -66,7 +72,7 @@ func TestLiveDNSimpleDnsCleanUp(t *testing.T) {
 	provider, err := NewDNSProviderCredentials(dnsimpleOauthToken, util.RecursiveNameservers)
 	assert.NoError(t, err)
 
-	err = provider.CleanUp(dnsimpleDomain, "", "123d==")
+	err = provider.CleanUp(dnsimpleDomain, dnsimpleTestFQDN, testingACMEChallengeValue)
 	assert.NoError(t, err)
 }
 

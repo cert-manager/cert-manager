@@ -334,12 +334,12 @@ func (s *Solver) solverForChallenge(issuer v1alpha1.GenericIssuer, ch *v1alpha1.
 	case providerConfig.DNSimple != nil:
 		oauthSecret, err := s.secretLister.Secrets(resourceNamespace).Get(providerConfig.DNSimple.OAuthToken.Name)
 		if err != nil {
-			return nil, fmt.Errorf("error getting DNSimple OAuth token: %s", err.Error())
+			return nil, nil, fmt.Errorf("error getting DNSimple OAuth token: %s", err.Error())
 		}
 		oauthToken := string(oauthSecret.Data[providerConfig.DNSimple.OAuthToken.Key])
 		impl, err = s.dnsProviderConstructors.dnsimple(oauthToken, s.DNS01Nameservers)
 		if err != nil {
-			return nil, fmt.Errorf("error instantiating DNSimple challenge solver: %s", err.Error())
+			return nil, nil, fmt.Errorf("error instantiating DNSimple challenge solver: %s", err.Error())
 		}
 	default:
 		return nil, nil, fmt.Errorf("no dns provider config specified for provider %q", providerName)
