@@ -515,7 +515,7 @@ Both of these issuers are configured to use the
 
 Check on the status of the issuer after you create it:
 
-.. code-block::shell
+.. code-block:: shell
   :emphasize-lines: 28-32
 
     $ kubectl describe issuer letsencrypt-staging
