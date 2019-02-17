@@ -19,4 +19,11 @@ for help on issuing a DNSimple API token.
       name: dnsimple-oauth-token
       key: oauth-token
 
-.. _`Let's Encrypt`: https://letsencrypt.org
+If your Kubernetes cluster is having issues resolving
+CAA queries for your DNSimple domain, you may add the DNSimple
+nameservers for resolution or another set of nameservers.
+
+ .. code-block:: sh
+  --dns01-recursive-nameservers=ns1.dnsimple.com:53,ns2.dnsimple.com:53,ns3.dnsimple.com:53,ns4.dnsimple.com:53,
+  # OR
+  --dns01-recursive-nameservers=8.8.8.8:53,1.1.1.1:53
