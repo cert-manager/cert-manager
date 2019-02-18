@@ -69,6 +69,7 @@ Deploy that version with helm
 =============================
 
 .. code-block:: shell
+
    # Install custom resources before running helm
    $ kubectl apply -f deploy/manifests/00-crds.yaml
 
