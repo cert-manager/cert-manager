@@ -485,7 +485,7 @@ Because of this, we will start with the Let's Encrypt staging issuer, and once
 that is working switch to a production issuer.
 
 Create this definition locally and update the email address to your own. This
-email required by Let's Encryppt and used to notify you of certificate
+email required by Let's Encrypt and used to notify you of certificate
 expirations and updates.
 
 .. literalinclude:: example/staging-issuer.yaml
