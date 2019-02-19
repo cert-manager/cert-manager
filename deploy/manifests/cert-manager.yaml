@@ -975,7 +975,7 @@ metadata:
   namespace: "cert-manager"
   labels:
     app: webhook
-    chart: webhook-v0.6.3
+    chart: webhook-v0.6.4
     release: cert-manager
     heritage: Tiller
 
@@ -988,7 +988,7 @@ metadata:
   namespace: "cert-manager"
   labels:
     app: cert-manager
-    chart: cert-manager-v0.6.6
+    chart: cert-manager-v0.6.7
     release: cert-manager
     heritage: Tiller
 ---
@@ -999,7 +999,7 @@ metadata:
   name: cert-manager
   labels:
     app: cert-manager
-    chart: cert-manager-v0.6.6
+    chart: cert-manager-v0.6.7
     release: cert-manager
     heritage: Tiller
 rules:
@@ -1019,7 +1019,7 @@ metadata:
   name: cert-manager
   labels:
     app: cert-manager
-    chart: cert-manager-v0.6.6
+    chart: cert-manager-v0.6.7
     release: cert-manager
     heritage: Tiller
 roleRef:
@@ -1037,7 +1037,7 @@ metadata:
   name: cert-manager-view
   labels:
     app: cert-manager
-    chart: cert-manager-v0.6.6
+    chart: cert-manager-v0.6.7
     release: cert-manager
     heritage: Tiller
     rbac.authorization.k8s.io/aggregate-to-view: "true"
@@ -1054,7 +1054,7 @@ metadata:
   name: cert-manager-edit
   labels:
     app: cert-manager
-    chart: cert-manager-v0.6.6
+    chart: cert-manager-v0.6.7
     release: cert-manager
     heritage: Tiller
     rbac.authorization.k8s.io/aggregate-to-edit: "true"
@@ -1075,7 +1075,7 @@ metadata:
   name: cert-manager-webhook:auth-delegator
   labels:
     app: webhook
-    chart: webhook-v0.6.3
+    chart: webhook-v0.6.4
     release: cert-manager
     heritage: Tiller
 roleRef:
@@ -1100,7 +1100,7 @@ metadata:
   namespace: kube-system
   labels:
     app: webhook
-    chart: webhook-v0.6.3
+    chart: webhook-v0.6.4
     release: cert-manager
     heritage: Tiller
 roleRef:
@@ -1121,7 +1121,7 @@ metadata:
   name: cert-manager-webhook:webhook-requester
   labels:
     app: webhook
-    chart: webhook-v0.6.3
+    chart: webhook-v0.6.4
     release: cert-manager
     heritage: Tiller
 rules:
@@ -1133,7 +1133,6 @@ rules:
   - clusterissuers
   verbs:
   - create
-
 ---
 # Source: cert-manager/charts/webhook/templates/service.yaml
 apiVersion: v1
@@ -1143,7 +1142,7 @@ metadata:
   namespace: "cert-manager"
   labels:
     app: webhook
-    chart: webhook-v0.6.3
+    chart: webhook-v0.6.4
     release: cert-manager
     heritage: Tiller
 spec:
@@ -1165,7 +1164,7 @@ metadata:
   namespace: "cert-manager"
   labels:
     app: webhook
-    chart: webhook-v0.6.3
+    chart: webhook-v0.6.4
     release: cert-manager
     heritage: Tiller
 spec:
@@ -1217,7 +1216,7 @@ metadata:
   namespace: "cert-manager"
   labels:
     app: cert-manager
-    chart: cert-manager-v0.6.6
+    chart: cert-manager-v0.6.7
     release: cert-manager
     heritage: Tiller
 spec:
@@ -1265,7 +1264,7 @@ metadata:
   namespace: "cert-manager"
   labels:
     app: webhook
-    chart: webhook-v0.6.3
+    chart: webhook-v0.6.4
     release: cert-manager
     heritage: Tiller
 spec:
@@ -1308,7 +1307,7 @@ metadata:
   namespace: "cert-manager"
   labels:
     app: webhook
-    chart: webhook-v0.6.3
+    chart: webhook-v0.6.4
     release: cert-manager
     heritage: Tiller
 spec:
@@ -1348,7 +1347,7 @@ metadata:
   namespace: "cert-manager"
   labels:
     app: webhook
-    chart: webhook-v0.6.3
+    chart: webhook-v0.6.4
     release: cert-manager
     heritage: Tiller
 data:
@@ -1381,9 +1380,10 @@ metadata:
   namespace: "cert-manager"
   labels:
     app: webhook
-    chart: webhook-v0.6.3
+    chart: webhook-v0.6.4
     release: cert-manager
     heritage: Tiller
+
 ---
 apiVersion: rbac.authorization.k8s.io/v1beta1
 kind: ClusterRole
@@ -1391,7 +1391,7 @@ metadata:
   name: cert-manager-webhook-ca-sync
   labels:
     app: webhook
-    chart: webhook-v0.6.3
+    chart: webhook-v0.6.4
     release: cert-manager
     heritage: Tiller
 rules:
@@ -1417,7 +1417,7 @@ metadata:
   name: cert-manager-webhook-ca-sync
   labels:
     app: webhook
-    chart: webhook-v0.6.3
+    chart: webhook-v0.6.4
     release: cert-manager
     heritage: Tiller
 roleRef:
@@ -1428,7 +1428,6 @@ subjects:
   - name: cert-manager-webhook-ca-sync
     namespace: cert-manager
     kind: ServiceAccount
-
 ---
 # Source: cert-manager/charts/webhook/templates/apiservice.yaml
 apiVersion: apiregistration.k8s.io/v1beta1
@@ -1437,7 +1436,7 @@ metadata:
   name: v1beta1.admission.certmanager.k8s.io
   labels:
     app: webhook
-    chart: webhook-v0.6.3
+    chart: webhook-v0.6.4
     release: cert-manager
     heritage: Tiller
 spec:
@@ -1461,7 +1460,7 @@ metadata:
   namespace: "cert-manager"
   labels:
     app: webhook
-    chart: webhook-v0.6.3
+    chart: webhook-v0.6.4
     release: cert-manager
     heritage: Tiller
 spec:
@@ -1477,7 +1476,7 @@ metadata:
   namespace: "cert-manager"
   labels:
     app: webhook
-    chart: webhook-v0.6.3
+    chart: webhook-v0.6.4
     release: cert-manager
     heritage: Tiller
 spec:
@@ -1498,7 +1497,7 @@ metadata:
   namespace: "cert-manager"
   labels:
     app: webhook
-    chart: webhook-v0.6.3
+    chart: webhook-v0.6.4
     release: cert-manager
     heritage: Tiller
 spec:
@@ -1515,7 +1514,7 @@ metadata:
   namespace: "cert-manager"
   labels:
     app: webhook
-    chart: webhook-v0.6.3
+    chart: webhook-v0.6.4
     release: cert-manager
     heritage: Tiller
 spec:
@@ -1536,7 +1535,7 @@ metadata:
   name: cert-manager-webhook
   labels:
     app: webhook
-    chart: webhook-v0.6.3
+    chart: webhook-v0.6.4
     release: cert-manager
     heritage: Tiller
 webhooks:
