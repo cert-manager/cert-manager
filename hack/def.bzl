@@ -41,6 +41,7 @@ def stamped_image(
 
 def multiarch_image(
     name,
+    embed = [":go_default_library"],
     goarch = ["amd64", "arm64", "arm"],
     goos = ["linux"],
     user = "1000",
@@ -52,7 +53,7 @@ def multiarch_image(
       go_image(
           name = "%s.app_%s-%s" % (name, os, arch),
           base = "@alpine_%s-%s//image" % (os, arch),
-          embed = [":go_default_library"],
+          embed = embed,
           goarch = arch,
           goos = os,
           pure = "on",

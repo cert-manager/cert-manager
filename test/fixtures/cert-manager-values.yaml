@@ -23,6 +23,9 @@ webhook:
   image:
     tag: build
     pullPolicy: Never
+  caSyncImage:
+    tag: build
+    pullPolicy: Never
   resources:
     requests:
       cpu: 100m

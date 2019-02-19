@@ -34,6 +34,6 @@ image:
   pullPolicy: IfNotPresent
 
 caSyncImage:
-  repository: quay.io/munnerz/apiextensions-ca-helper
-  tag: v0.1.0
+  repository: quay.io/jetstack/cert-manager-ca-sync
+  tag: v0.6.1
   pullPolicy: IfNotPresent

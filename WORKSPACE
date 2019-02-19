@@ -274,6 +274,15 @@ http_file(
     urls = ["https://github.com/golang/dep/releases/download/v0.5.0/dep-linux-amd64"],
 )
 
+# the apiextensions-ca-helper project is bundled as part of the release build
+go_repository(
+    name = "com_github_munnerz_apiextensions-ca-helper",
+    commit = "9be50e3422109916fa939a2ef9f1f5876cc9a8b2",
+    importpath = "github.com/munnerz/apiextensions-ca-helper",
+    # Expose the generated go_default_library as 'public' visibility
+    patch_cmds = ["sed -i -e 's/private/public/g' 'BUILD.bazel'"],
+)
+
 ## Brodocs and associated dependencies
 new_git_repository(
     name = "brodocs",

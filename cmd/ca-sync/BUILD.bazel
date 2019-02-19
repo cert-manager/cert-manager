@@ -1,0 +1,29 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_binary")
+load("//hack:def.bzl", "multiarch_image")
+
+# Expands to target names such as 'image.linux-amd64', 'image.linux-arm64'
+multiarch_image(
+    name = "image",
+    embed = ["@com_github_munnerz_apiextensions-ca-helper//:go_default_library"],
+    visibility = ["//visibility:public"],
+)
+
+go_binary(
+    name = "ca-sync",
+    embed = ["@com_github_munnerz_apiextensions-ca-helper//:go_default_library"],
+    visibility = ["//visibility:public"],
+)
+
+filegroup(
+    name = "package-srcs",
+    srcs = glob(["**"]),
+    tags = ["automanaged"],
+    visibility = ["//visibility:private"],
+)
+
+filegroup(
+    name = "all-srcs",
+    srcs = [":package-srcs"],
+    tags = ["automanaged"],
+    visibility = ["//visibility:public"],
+)
