@@ -20,12 +20,13 @@ import (
 	"reflect"
 	"testing"
 
+	extv1beta1 "k8s.io/api/extensions/v1beta1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	cmfake "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/fake"
 	cminformers "github.com/jetstack/cert-manager/pkg/client/informers/externalversions"
 	"github.com/jetstack/cert-manager/test/unit/gen"
-	extv1beta1 "k8s.io/api/extensions/v1beta1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 const testAcmeTLSAnnotation = "kubernetes.io/tls-acme"

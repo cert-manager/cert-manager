@@ -33,13 +33,13 @@ import (
 
 	cmlisters "github.com/jetstack/cert-manager/pkg/client/listers/certmanager/v1alpha1"
 	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
+	"github.com/jetstack/cert-manager/pkg/issuer"
 	"github.com/jetstack/cert-manager/pkg/util"
 )
 
 type Controller struct {
 	controllerpkg.Context
-
-	helper *controllerpkg.Helper
+	issuerFactory issuer.IssuerFactory
 
 	// To allow injection for testing.
 	syncHandler func(ctx context.Context, key string) error
@@ -65,6 +65,7 @@ func New(ctx *controllerpkg.Context) *Controller {
 	secretsInformer.Informer().AddEventHandler(&controllerpkg.BlockingEventHandler{WorkFunc: ctrl.secretDeleted})
 	ctrl.watchedInformers = append(ctrl.watchedInformers, secretsInformer.Informer().HasSynced)
 	ctrl.secretLister = secretsInformer.Lister()
+	ctrl.issuerFactory = issuer.NewIssuerFactory(ctx)
 
 	return ctrl
 }

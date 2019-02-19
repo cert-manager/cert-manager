@@ -37,6 +37,7 @@ import (
 	cminformers "github.com/jetstack/cert-manager/pkg/client/informers/externalversions/certmanager/v1alpha1"
 	cmlisters "github.com/jetstack/cert-manager/pkg/client/listers/certmanager/v1alpha1"
 	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
+	"github.com/jetstack/cert-manager/pkg/issuer"
 	"github.com/jetstack/cert-manager/pkg/util"
 	extinformers "k8s.io/client-go/informers/extensions/v1beta1"
 )
@@ -57,7 +58,7 @@ type Controller struct {
 	CMClient clientset.Interface
 	Recorder record.EventRecorder
 
-	helper controllerpkg.Helper
+	helper issuer.Helper
 
 	// To allow injection for testing.
 	syncHandler func(ctx context.Context, key string) error
@@ -105,7 +106,7 @@ func New(
 		ctrl.syncedFuncs = append(ctrl.syncedFuncs, clusterIssuerInformer.Informer().HasSynced)
 	}
 
-	ctrl.helper = controllerpkg.NewHelper(ctrl.issuerLister, ctrl.clusterIssuerLister)
+	ctrl.helper = issuer.NewHelper(ctrl.issuerLister, ctrl.clusterIssuerLister)
 
 	return ctrl
 }

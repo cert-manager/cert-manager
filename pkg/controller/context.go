@@ -57,10 +57,6 @@ type Context struct {
 	CertificateOptions
 }
 
-func (c *Context) IssuerFactory() IssuerFactory {
-	return NewIssuerFactory(c)
-}
-
 type IssuerOptions struct {
 	// ClusterResourceNamespace is the namespace to store resources created by
 	// non-namespaced resources (e.g. ClusterIssuer) in.
