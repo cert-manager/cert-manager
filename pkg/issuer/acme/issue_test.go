@@ -24,6 +24,7 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/pem"
+	"fmt"
 	"math/big"
 	"reflect"
 	"testing"
@@ -175,12 +176,15 @@ func TestIssueHappyPath(t *testing.T) {
 				KubeObjects:        []runtime.Object{testCertPrivateKeySecret},
 				ExpectedActions: []testpkg.Action{
 					testpkg.NewCustomMatch(coretesting.NewCreateAction(v1alpha1.SchemeGroupVersion.WithResource("orders"), testCertEmptyOrder.Namespace, testCertEmptyOrder),
-						func(exp, actual coretesting.Action) bool {
+						func(exp, actual coretesting.Action) error {
 							expOrder := exp.(coretesting.CreateAction).GetObject().(*v1alpha1.Order)
 							actOrder := actual.(coretesting.CreateAction).GetObject().(*v1alpha1.Order)
 							expOrderCopy := expOrder.DeepCopy()
 							expOrderCopy.Spec.CSR = actOrder.Spec.CSR
-							return reflect.DeepEqual(expOrderCopy, actOrder)
+							if !reflect.DeepEqual(expOrderCopy, actOrder) {
+								return fmt.Errorf("unexpected difference: %s", pretty.Diff(expOrderCopy, actOrder))
+							}
+							return nil
 						}),
 				},
 			},
@@ -395,12 +399,15 @@ func TestIssueRetryCases(t *testing.T) {
 						coretesting.NewDeleteAction(v1alpha1.SchemeGroupVersion.WithResource("orders"), invalidTestOrder.Namespace, invalidTestOrder.Name),
 					),
 					testpkg.NewCustomMatch(coretesting.NewCreateAction(v1alpha1.SchemeGroupVersion.WithResource("orders"), testOrder.Namespace, testOrder),
-						func(exp, actual coretesting.Action) bool {
+						func(exp, actual coretesting.Action) error {
 							expOrder := exp.(coretesting.CreateAction).GetObject().(*v1alpha1.Order)
 							actOrder := actual.(coretesting.CreateAction).GetObject().(*v1alpha1.Order)
 							expOrderCopy := expOrder.DeepCopy()
 							expOrderCopy.Spec.CSR = actOrder.Spec.CSR
-							return reflect.DeepEqual(expOrderCopy, actOrder)
+							if !reflect.DeepEqual(expOrderCopy, actOrder) {
+								return fmt.Errorf("unexpected difference: %s", pretty.Diff(expOrderCopy, actOrder))
+							}
+							return nil
 						}),
 				},
 			},

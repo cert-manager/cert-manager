@@ -17,19 +17,18 @@ limitations under the License.
 package test
 
 import (
-	"encoding/json"
-	"log"
+	"fmt"
 	"reflect"
 
 	"github.com/kr/pretty"
 	coretesting "k8s.io/client-go/testing"
 )
 
-type ActionMatchFn func(coretesting.Action, coretesting.Action) bool
+type ActionMatchFn func(coretesting.Action, coretesting.Action) error
 
 type Action interface {
 	Action() coretesting.Action
-	Matches(coretesting.Action) bool
+	Matches(coretesting.Action) error
 }
 
 type customMatchAction struct {
@@ -50,7 +49,7 @@ func (a *customMatchAction) Action() coretesting.Action {
 	return a.action
 }
 
-func (a *customMatchAction) Matches(act coretesting.Action) bool {
+func (a *customMatchAction) Matches(act coretesting.Action) error {
 	return a.matchFn(a.action, act)
 }
 
@@ -70,26 +69,20 @@ func (a *action) Action() coretesting.Action {
 	return a.action
 }
 
-func (a *action) Matches(act coretesting.Action) bool {
+func (a *action) Matches(act coretesting.Action) error {
 	matches := reflect.DeepEqual(a.action, act)
 	if matches == true {
-		return true
+		return nil
 	}
 
 	objAct, ok := act.(coretesting.CreateAction)
 	if !ok {
-		return false
+		return nil
 	}
 	objExp, ok := a.action.(coretesting.CreateAction)
 	if !ok {
-		return false
+		return nil
 	}
 
-	bExp, _ := json.MarshalIndent(objExp, "", "\t")
-	bAct, _ := json.MarshalIndent(objAct, "", "\t")
-	log.Printf("Expected: %s", string(bExp))
-	log.Printf("Actual: %s", string(bAct))
-	log.Printf("Unexpected difference between actions: %s", pretty.Diff(objExp.GetObject(), objAct.GetObject()))
-
-	return false
+	return fmt.Errorf("unexpected difference between actions: %s", pretty.Diff(objExp.GetObject(), objAct.GetObject()))
 }

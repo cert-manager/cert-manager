@@ -159,6 +159,7 @@ func (b *Builder) AllActionsExecuted() error {
 	firedActions = append(firedActions, b.FakeKubeClient().Actions()...)
 
 	var unexpectedActions []coretesting.Action
+	var errs []error
 	missingActions := make([]Action, len(b.ExpectedActions))
 	copy(missingActions, b.ExpectedActions)
 	for _, a := range firedActions {
@@ -167,18 +168,34 @@ func (b *Builder) AllActionsExecuted() error {
 			continue
 		}
 		found := false
+		var err error
 		for i, expA := range missingActions {
-			if expA.Matches(a) {
-				missingActions = append(missingActions[:i], missingActions[i+1:]...)
-				found = true
-				break
+			if expA.Action().GetNamespace() != a.GetNamespace() ||
+				expA.Action().GetResource() != a.GetResource() ||
+				expA.Action().GetSubresource() != a.GetSubresource() ||
+				expA.Action().GetVerb() != a.GetVerb() {
+				continue
 			}
+
+			err = expA.Matches(a)
+			// if this action doesn't match, we record the error and continue
+			// as there may be multiple action matchers for the same resource
+			if err != nil {
+				continue
+			}
+
+			missingActions = append(missingActions[:i], missingActions[i+1:]...)
+			found = true
+			break
 		}
 		if !found {
 			unexpectedActions = append(unexpectedActions, a)
+
+			if err != nil {
+				errs = append(errs, err)
+			}
 		}
 	}
-	var errs []error
 	for _, a := range missingActions {
 		errs = append(errs, fmt.Errorf("missing action: %v", actionToString(a.Action())))
 	}
