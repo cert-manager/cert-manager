@@ -52,12 +52,13 @@ func (s *Solver) ensurePod(ch *v1alpha1.Challenge) (*corev1.Pod, error) {
 		return existingPods[0], nil
 	}
 	if len(existingPods) > 1 {
-		glog.Infof("multiple challenge solver pods found for certificate '%s/%s'. Cleaning up existing pods.", ch.Namespace, ch.Name)
+		errMsg := fmt.Sprintf("multiple challenge solver pods found for certificate '%s/%s'. Cleaning up existing pods.", ch.Namespace, ch.Name)
+		glog.Infof(errMsg)
 		err := s.cleanupPods(ch)
 		if err != nil {
 			return nil, err
 		}
-		return s.createPod(ch)
+		return nil, fmt.Errorf(errMsg)
 	}
 
 	glog.Infof("No existing HTTP01 challenge solver pod found for Certificate %q. One will be created.", ch.Namespace+"/"+ch.Name)
