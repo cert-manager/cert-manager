@@ -33,12 +33,16 @@ Environments:
     ALLOW_DIRTY                 by default, git repo must be clean, set this to skip this check (debug only)
     ALLOW_OVERWRITE             by default, if an existing image exists with the same tag then pushing will be aborted, set this to skip this check
     SKIP_REF_TAG                skip creating a commit ref docker tag
+    CHART_PATH                  custom path to the Helm chart within the cert-manager repository (debug only) (default: deploy/charts/cert-manager)
+    CHART_BUCKET                GCS bucket where the Helm chart should be published (default: jetstack-chart-museum)
+    CHART_SERVICE_ACCOUNT       optional path to a JSON formatted Google Cloud service account used by gsutil to publish the chart
+    SKIP_CHART                  skip publishing the Helm chart
 Examples:
 1) Release to your own registry for testing
     git tag v2.2.3
-    REGISTRY=quay.io/<yourname> ./hack/release.sh
+    REGISTRY=quay.io/<yourname> SKIP_CHART=1 ./hack/release.sh
 2) Release canary version
-    REGISTRY=quay.io/<yourname> VERSION=canary ./hack/release.sh
+    REGISTRY=quay.io/<yourname> VERSION=canary SKIP_CHART=1 ./hack/release.sh
 EOF
 }
 
@@ -65,13 +69,25 @@ while getopts "h?" opt; do
     esac
 done
 
+if ! command -v gsutil &>/dev/null; then
+  echo "Required tool 'gsutil' not found. Please install it:"
+  echo "See https://cloud.google.com/sdk/downloads for instructions."
+  exit 1
+fi
+
 export CONFIRM=${CONFIRM:-}
 export VERSION=${VERSION:-}
 export DOCKER_REPO=${REGISTRY:-quay.io/jetstack}
 export DOCKER_CONFIG=${DOCKER_CONFIG:-}
 export ALLOW_DIRTY=${ALLOW_DIRTY:-}
 export ALLOW_OVERWRITE=${ALLOW_OVERWRITE:-}
+
+# Helm chart packaging vars
 export CHART_PATH=${CHART_PATH:-deploy/charts/cert-manager}
+export CHART_BUCKET=${CHART_BUCKET:-jetstack-chart-museum}
+export CHART_SERVICE_ACCOUNT=${CHART_SERVICE_ACCOUNT:-}
+export SKIP_CHART="${SKIP_CHART:-}"
+
 # remove trailing `/` if present
 export DOCKER_REPO=${DOCKER_REPO%/}
 COMPONENTS=( acmesolver controller webhook )
@@ -126,9 +142,35 @@ eval $(./hack/print-workspace-status.sh | tr ' ' '=' | sed 's/^/export /')
 info "building release images"
 bazel run //:images
 
-green "Built release images. Publishing release ${VERSION}"
+green "Built release images!"
 
-# quay.io/api/v1/repository/jetstack/cert-manager-controller/tag/v0.6.1/images
+if [ -z "${SKIP_CHART}" ]; then
+    info "skipping building Helm chart package"
+else
+    info "Building Helm release package"
+    bazel build //hack/bin:helm
+    HELM="$(bazel info bazel-genfiles)/hack/bin/helm"
+    CHART_OUT="$(mktemp -d)"
+
+    "${HELM}" package \
+        --dependency-update \
+        --destination "${CHART_OUT}" \
+        "${CHART_PATH}"
+
+    # Find first file in the CHART_OUT directory. This should be the file generated
+    # by 'helm package' above
+    helmpkg="$(find "${CHART_OUT}" -type f  -print -quit)"
+
+    if [ -z "${helmpkg}" ]; then
+        error "Failed to generate Helm package"
+        exit 1
+    fi
+
+    green "Built Helm package"
+fi
+
+green "Publishing release with version '${VERSION}'"
+
 function allowed() {
     local image_name="$1"
     local image_tag="$2"
@@ -194,3 +236,19 @@ for c in "${COMPONENTS[@]}"; do
 done
 
 green "Published all images!"
+
+info "Publishing Helm chart"
+
+if [ ! -z "${SKIP_CHART}" ]; then
+    info "skipping publishing Helm chart"
+elif [ -z "${CONFIRM}" ]; then
+    info "(would) push helm package: gsutil cp \"${helmpkg}\" gs://"${CHART_BUCKET}"/"
+else
+    if [ ! -z "${CHART_SERVICE_ACCOUNT}" ]; then
+        gcloud auth activate-service-account --key-file "${CHART_SERVICE_ACCOUNT}"
+    fi
+    gsutil cp "${helmpkg}" gs://"${CHART_BUCKET}"/
+fi
+
+green "Published Helm chart!"
+info "Release complete"
