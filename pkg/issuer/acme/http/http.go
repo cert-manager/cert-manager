@@ -95,7 +95,7 @@ func (s *Solver) Check(ctx context.Context, issuer v1alpha1.GenericIssuer, ch *v
 	// Call present again to be certain.
 	// if the listers are nil, that means we're in the present checks
 	// test
-	if s.podLister != nil && s.serviceLister != nil && s.ingressLister == nil {
+	if s.podLister != nil && s.serviceLister != nil && s.ingressLister != nil {
 		err := s.Present(ctx, issuer, ch)
 		if err != nil {
 			return err
