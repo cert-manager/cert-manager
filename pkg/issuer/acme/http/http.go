@@ -90,6 +90,13 @@ func (s *Solver) Present(ctx context.Context, issuer v1alpha1.GenericIssuer, ch 
 }
 
 func (s *Solver) Check(ctx context.Context, issuer v1alpha1.GenericIssuer, ch *v1alpha1.Challenge) error {
+	// HTTP Present is idempotent and the state of the system may have
+	// changed since present was called by the controllers (killed pods, drained nodes)
+	// Call present again to be certain.
+	err := s.Present(ctx, issuer, ch)
+	if err != nil {
+		return err
+	}
 	ctx, cancel := context.WithTimeout(ctx, HTTP01Timeout)
 	defer cancel()
 
