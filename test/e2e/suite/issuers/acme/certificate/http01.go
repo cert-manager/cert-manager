@@ -227,7 +227,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		Expect(err).NotTo(HaveOccurred())
 	})
 
-	It("should obtain a signed certificate with a single CN from the ACME server after solver pod killed", func() {
+	It("should automatically recreate challenge pod and still obtain a certificate if it is manually deleted", func() {
 		certClient := f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name)
 
 		By("Creating a Certificate")
