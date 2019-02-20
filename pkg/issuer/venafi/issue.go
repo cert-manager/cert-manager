@@ -51,7 +51,6 @@ const (
 // - Wait for the request to be fulfilled and the certificate to be available
 func (v *Venafi) Issue(ctx context.Context, crt *v1alpha1.Certificate) (*issuer.IssueResponse, error) {
 	v.Recorder.Event(crt, corev1.EventTypeNormal, "Issuing", "Requesting new certificate...")
-	v.Recorder.Event(crt, corev1.EventTypeNormal, "GenerateKey", "Generating new private key")
 
 	// Always generate a new private key, as some Venafi configurations mandate
 	// unique private keys per issuance.
@@ -64,6 +63,7 @@ func (v *Venafi) Issue(ctx context.Context, crt *v1alpha1.Certificate) (*issuer.
 		// resource will not help.
 		return nil, nil
 	}
+	v.Recorder.Event(crt, corev1.EventTypeNormal, "GenerateKey", "Generated new private key")
 
 	// extract the public component of the key
 	signeePublicKey, err := pki.PublicKeyForPrivateKey(signeeKey)
@@ -115,6 +115,7 @@ func (v *Venafi) Issue(ctx context.Context, crt *v1alpha1.Certificate) (*issuer.
 		v.Recorder.Eventf(crt, corev1.EventTypeWarning, "Validate", "Failed to validate certificate against Venafi zone: %v", err)
 		return nil, err
 	}
+	v.Recorder.Eventf(crt, corev1.EventTypeNormal, "Validate", "Validated certificate request against Venafi zone policy")
 
 	// Generate the actual x509 CSR and set it on the vreq
 	err = certificate.GenerateRequest(vreq, signeeKey)
@@ -137,6 +138,7 @@ func (v *Venafi) Issue(ctx context.Context, crt *v1alpha1.Certificate) (*issuer.
 	// TODO: better set the timeout here. Right now, we'll block for this amount of time.
 	vreq.Timeout = time.Minute * 5
 
+	v.Recorder.Eventf(crt, corev1.EventTypeNormal, "Requesting", "Requesting certificate from Venafi server...")
 	// Actually send a request to the Venafi server for a certificate.
 	requestID, err := v.client.RequestCertificate(vreq, zoneName)
 	if err != nil {
@@ -167,6 +169,7 @@ func (v *Venafi) Issue(ctx context.Context, crt *v1alpha1.Certificate) (*issuer.
 		v.Recorder.Eventf(crt, corev1.EventTypeWarning, "Retrieve", "Failed to retrieve a certificate from Venafi: %v", err)
 		return nil, err
 	}
+	v.Recorder.Eventf(crt, corev1.EventTypeNormal, "Retrieve", "Retrieved certificate from Venafi server")
 
 	// Encode the private key ready to be saved
 	pk, err := pki.EncodePrivateKey(signeeKey)
