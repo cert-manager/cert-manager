@@ -237,7 +237,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		By("killing the solver pod")
 		podClient := f.KubeClientSet.CoreV1().Pods(f.Namespace.Name)
 		var pod corev1.Pod
-		err = wait.PollImmediate(500*time.Millisecond, time.Minute,
+		err = wait.PollImmediate(1*time.Second, time.Minute,
 			func() (bool, error) {
 				log.Logf("Waiting for solver pod to exist")
 				podlist, err := podClient.List(metav1.ListOptions{})
