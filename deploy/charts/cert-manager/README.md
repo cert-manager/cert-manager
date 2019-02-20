@@ -21,7 +21,7 @@ To install the chart with the release name `my-release`:
 ## IMPORTANT: you MUST install the cert-manager CRDs **before** installing the
 ## cert-manager Helm chart
 $ kubectl apply \
-    -f https://raw.githubusercontent.com/jetstack/cert-manager/release-0.6/deploy/manifests/00-crds.yaml
+    -f https://raw.githubusercontent.com/jetstack/cert-manager/release-0.7/deploy/manifests/00-crds.yaml
 
 ## IMPORTANT: if you are deploying into a namespace that **already exists**,
 ## you MUST ensure the namespace has an additional label on it in order for
@@ -73,7 +73,7 @@ The following table lists the configurable parameters of the cert-manager chart 
 | `global.imagePullSecrets` | Reference to one or more secrets to be used when pulling images | `[]` |
 | `global.rbac.create` | If `true`, create and use RBAC resources (includes sub-charts) | `true` |
 | `image.repository` | Image repository | `quay.io/jetstack/cert-manager-controller` |
-| `image.tag` | Image tag | `v0.6.1` |
+| `image.tag` | Image tag | `v0.7.0-alpha.0` |
 | `image.pullPolicy` | Image pull policy | `IfNotPresent` |
 | `replicaCount`  | Number of cert-manager replicas  | `1` |
 | `clusterResourceNamespace` | Override the namespace used to store DNS provider credentials etc. for ClusterIssuer resources | Same namespace as cert-manager pod
@@ -107,7 +107,7 @@ The following table lists the configurable parameters of the cert-manager chart 
 | `webhook.extraArgs` | Optional flags for cert-manager webhook component | `[]` |
 | `webhook.resources` | CPU/memory resource requests/limits for the webhook pods | |
 | `webhook.image.repository` | Webhook image repository | `quay.io/jetstack/cert-manager-webhook` |
-| `webhook.image.tag` | Webhook image tag | `v0.6.1` |
+| `webhook.image.tag` | Webhook image tag | `v0.7.0-alpha.0` |
 | `webhook.image.pullPolicy` | Webhook image pull policy | `IfNotPresent` |
 | `webhook.caSyncImage.repository` | CA sync image repository | `quay.io/munnerz/apiextensions-ca-helper` |
 | `webhook.caSyncImage.tag` | CA sync image tag | `v0.1.0` |

@@ -352,7 +352,7 @@ install cert-manager. This example installed cert-manager into the
 
     # Install the cert-manager CRDs. We must do this before installing the Helm
     # chart in the next step
-    $ kubectl apply -f https://raw.githubusercontent.com/jetstack/cert-manager/release-0.6/deploy/manifests/00-crds.yaml
+    $ kubectl apply -f https://raw.githubusercontent.com/jetstack/cert-manager/release-0.7/deploy/manifests/00-crds.yaml
 
     # Update your local Helm chart repositories
     $ helm repo update
