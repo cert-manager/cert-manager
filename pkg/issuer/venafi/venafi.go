@@ -25,6 +25,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	corelisters "k8s.io/client-go/listers/core/v1"
 
+	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	"github.com/jetstack/cert-manager/pkg/controller"
 	"github.com/jetstack/cert-manager/pkg/issuer"
@@ -147,5 +148,5 @@ func configForIssuer(iss cmapi.GenericIssuer, secretsLister corelisters.SecretLi
 }
 
 func init() {
-	controller.RegisterIssuer(controller.IssuerVenafi, NewVenafi)
+	issuer.RegisterIssuer(apiutil.IssuerVenafi, NewVenafi)
 }

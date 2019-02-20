@@ -43,7 +43,7 @@ func ValidateCertificateForIssuer(crt *v1alpha1.Certificate, issuerObj v1alpha1.
 		el = append(el, ValidateCertificateForVaultIssuer(&crt.Spec, issuerObj.GetSpec(), path)...)
 	case apiutil.IssuerSelfSigned:
 		el = append(el, ValidateCertificateForSelfSignedIssuer(&crt.Spec, issuerObj.GetSpec(), path)...)
-	case controller.IssuerVenafi:
+	case apiutil.IssuerVenafi:
 		el = append(el, ValidateCertificateForVenafiIssuer(&crt.Spec, issuerObj.GetSpec(), path)...)
 	}
 
