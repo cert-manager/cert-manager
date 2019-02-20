@@ -18,11 +18,14 @@ package certificate
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/wait"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	cmutil "github.com/jetstack/cert-manager/pkg/util"
@@ -30,6 +33,7 @@ import (
 	"github.com/jetstack/cert-manager/test/e2e/framework/addon"
 	"github.com/jetstack/cert-manager/test/e2e/framework/addon/pebble"
 	"github.com/jetstack/cert-manager/test/e2e/framework/addon/tiller"
+	"github.com/jetstack/cert-manager/test/e2e/framework/log"
 	. "github.com/jetstack/cert-manager/test/e2e/framework/matcher"
 	"github.com/jetstack/cert-manager/test/e2e/util"
 )
@@ -222,4 +226,49 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		err = h.WaitCertificateIssuedValid(f.Namespace.Name, certificateName, time.Minute*5)
 		Expect(err).NotTo(HaveOccurred())
 	})
+
+	It("should automatically recreate challenge pod and still obtain a certificate if it is manually deleted", func() {
+		certClient := f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name)
+
+		By("Creating a Certificate")
+		_, err := certClient.Create(util.NewCertManagerACMECertificate(certificateName, certificateSecretName, issuerName, v1alpha1.IssuerKind, nil, nil, acmeIngressClass, acmeIngressDomain))
+		Expect(err).NotTo(HaveOccurred())
+
+		By("killing the solver pod")
+		podClient := f.KubeClientSet.CoreV1().Pods(f.Namespace.Name)
+		var pod corev1.Pod
+		err = wait.PollImmediate(1*time.Second, time.Minute,
+			func() (bool, error) {
+				log.Logf("Waiting for solver pod to exist")
+				podlist, err := podClient.List(metav1.ListOptions{})
+				if err != nil {
+					return false, err
+				}
+
+				for _, p := range podlist.Items {
+					log.Logf("solver pod %s", p.Name)
+					// TODO(dmo): make this cleaner instead of just going by name
+					if strings.Contains(p.Name, "http-solver") {
+						pod = p
+						return true, nil
+					}
+				}
+				return false, nil
+
+			},
+		)
+		Expect(err).NotTo(HaveOccurred())
+
+		err = podClient.Delete(pod.Name, &metav1.DeleteOptions{})
+		Expect(err).NotTo(HaveOccurred())
+
+		// The pod should get remade and the certificate should be made valid.
+		// Killing the pod could potentially make the validation invalid if pebble
+		// were to ask us for the challenge after the pod was killed, but because
+		// we kill it so early, we should always be in the self-check phase
+		By("Verifying the Certificate is valid")
+		err = h.WaitCertificateIssuedValid(f.Namespace.Name, certificateName, time.Minute*5)
+		Expect(err).NotTo(HaveOccurred())
+	})
+
 })
