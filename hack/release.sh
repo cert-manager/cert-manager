@@ -144,7 +144,7 @@ bazel run //:images
 
 green "Built release images!"
 
-if [ -z "${SKIP_CHART}" ]; then
+if [ ! -z "${SKIP_CHART}" ]; then
     info "skipping building Helm chart package"
 else
     info "Building Helm release package"
