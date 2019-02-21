@@ -47,6 +47,7 @@ filegroup(
         ":package-srcs",
         "//cmd/acmesolver:all-srcs",
         "//cmd/controller:all-srcs",
+        "//cmd/injectorcontroller:all-srcs",
         "//cmd/webhook:all-srcs",
         "//deploy:all-srcs",
         "//docs/generated/reference:all-srcs",

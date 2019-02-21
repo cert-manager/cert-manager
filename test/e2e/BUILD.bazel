@@ -13,6 +13,7 @@ container_bundle(
         "{STABLE_DOCKER_REPO}/cert-manager-controller:{STABLE_DOCKER_TAG}": "//cmd/controller:image",
         "{STABLE_DOCKER_REPO}/cert-manager-acmesolver:{STABLE_DOCKER_TAG}": "//cmd/acmesolver:image",
         "{STABLE_DOCKER_REPO}/cert-manager-webhook:{STABLE_DOCKER_TAG}": "//cmd/webhook:image",
+        "{STABLE_DOCKER_REPO}/cert-manager-injectorcontroller:{STABLE_DOCKER_TAG}": "//cmd/injectorcontroller:image",
     },
 )
 

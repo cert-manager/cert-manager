@@ -14,10 +14,29 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package suite
+package main
 
 import (
-	_ "github.com/jetstack/cert-manager/test/e2e/suite/conformance"
-	_ "github.com/jetstack/cert-manager/test/e2e/suite/issuers"
-	_ "github.com/jetstack/cert-manager/test/e2e/suite/serving"
+	"flag"
+	"os"
+
+	"k8s.io/klog"
+	"k8s.io/klog/klogr"
+	ctrl "sigs.k8s.io/controller-runtime"
+
+	"github.com/jetstack/cert-manager/pkg/logs"
 )
+
+func main() {
+	logs.InitLogs()
+	defer logs.FlushLogs()
+	ctrl.SetLogger(klogr.New())
+	stopCh := ctrl.SetupSignalHandler()
+
+	cmd := NewCommandStartInjectorController(os.Stdout, os.Stderr, stopCh)
+	cmd.Flags().AddGoFlagSet(flag.CommandLine)
+	flag.CommandLine.Parse([]string{})
+	if err := cmd.Execute(); err != nil {
+		klog.Fatal(err)
+	}
+}
