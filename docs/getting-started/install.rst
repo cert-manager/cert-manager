@@ -57,7 +57,7 @@ are included in a single YAML manifest file:
 .. code-block:: shell
 
    # Install the CustomResourceDefinitions and cert-manager itself
-   kubectl apply -f https://raw.githubusercontent.com/jetstack/cert-manager/release-0.6/deploy/manifests/cert-manager.yaml
+   kubectl apply -f https://raw.githubusercontent.com/jetstack/cert-manager/release-0.7/deploy/manifests/cert-manager.yaml
 
 .. note::
    If you are running kubectl v1.12 or below, you will need to add the
@@ -115,7 +115,7 @@ In order to install the Helm chart, you must run:
 .. code-block:: shell
 
    # Install the CustomResourceDefinition resources separately
-   kubectl apply -f https://raw.githubusercontent.com/jetstack/cert-manager/release-0.6/deploy/manifests/00-crds.yaml
+   kubectl apply -f https://raw.githubusercontent.com/jetstack/cert-manager/release-0.7/deploy/manifests/00-crds.yaml
 
    # Create the namespace for cert-manager
    kubectl create namespace cert-manager
@@ -130,7 +130,7 @@ In order to install the Helm chart, you must run:
    helm install \
      --name cert-manager \
      --namespace cert-manager \
-     --version v0.6.1 \
+     --version v0.7.0-alpha.0 \
      stable/cert-manager
 
 The default cert-manager configuration is good for the majority of users, but a

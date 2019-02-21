@@ -92,5 +92,5 @@ version number you want to install:
    upgrading-0.5-0.6
 
 .. _`official Helm charts repository`: https://github.com/helm/charts
-.. _`static deployment manifests`: https://github.com/jetstack/cert-manager/blob/release-0.6/deploy/manifests
+.. _`static deployment manifests`: https://github.com/jetstack/cert-manager/blob/release-0.7/deploy/manifests
 .. _`kubernetes/kubernetes#69590`: https://github.com/kubernetes/kubernetes/issues/69590
