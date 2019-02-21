@@ -10,14 +10,19 @@ metadata:
     heritage: {{ .Release.Service }}
 rules:
   - apiGroups: ["certmanager.k8s.io"]
-    resources: ["certificates", "certificates/finalizers", "issuers", "clusterissuers", "orders", "orders/finalizers", "challenges"]
+    resources: ["certificates", "certificates/finalizers", "issuers", "issuers/finalizers","clusterissuers", "orders", "orders/finalizers", "challenges",  "challengesi/finalizers"]
     verbs: ["*"]
   - apiGroups: [""]
-    resources: ["configmaps", "secrets", "events", "services", "pods"]
+    resources: ["configmaps", "secrets", "secrets/finalizers","events", "services", "services/finalizers","pods", "pods/finalizers"]
     verbs: ["*"]
   - apiGroups: ["extensions"]
-    resources: ["ingresses"]
+    resources: ["ingresses", "ingresses/finalizers", "ingresses/status"]
     verbs: ["*"]
+{{- if .Values.global.isOpenshift }}
+  - apiGroups: ["route.openshift.io"]
+    resources: ["routes", "routes/custom-host", "routes/finalizers"]
+    verbs: ["*"]
+{{- end }}
 ---
 apiVersion: rbac.authorization.k8s.io/v1beta1
 kind: ClusterRoleBinding
