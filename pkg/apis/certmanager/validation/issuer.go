@@ -309,8 +309,14 @@ func ValidateACMEIssuerDNS01Config(iss *v1alpha1.ACMEIssuerDNS01Config, fldPath 
 
 				if len(p.Webhook.URL) == 0 {
 					el = append(el, field.Required(fldPath.Child("url"), ""))
-				} else if _, err := url.ParseRequestURI(p.Webhook.URL); err != nil {
-					el = append(el, field.Invalid(fldPath.Child("url"), "", fmt.Sprintf("\"url\" field does not contain a valid URL: %v", err)))
+				} else {
+					if parsedURL, err := url.Parse(p.Webhook.URL); err != nil {
+						el = append(el, field.Invalid(fldPath.Child("url"), "", fmt.Sprintf("\"url\" field does not contain a valid URL: %v", err)))
+					} else if parsedURL.Scheme == "" || parsedURL.Host == "" {
+						el = append(el, field.Invalid(fldPath.Child("url"), "", fmt.Sprintf("%q must be an absolute URL", p.Webhook.URL)))
+					} else if parsedURL.Scheme != "http" && parsedURL.Scheme != "https" {
+						el = append(el, field.Invalid(fldPath.Child("url"), "", fmt.Sprintf("%q must begin with either \"https\" or \"https\"", p.Webhook.URL)))
+					}
 				}
 
 				if len(p.Webhook.CaSecret.Name) > 0 || len(p.Webhook.CaSecret.Key) > 0 {

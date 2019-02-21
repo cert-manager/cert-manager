@@ -27,8 +27,6 @@ import (
 	"time"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
-	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
-
 	"github.com/stretchr/testify/assert"
 )
 
@@ -128,12 +126,12 @@ func newFakeHTTPClient() *http.Client {
 }
 
 func TestNewDNSProviderValid(t *testing.T) {
-	_, err := NewDNSProvider("http://example.com/", map[string]string{"test": "test"}, true, []byte{}, util.RecursiveNameservers)
+	_, err := NewDNSProvider("http://example.com/", map[string]string{"test": "test"}, true, []byte{})
 	assert.NoError(t, err)
 }
 
 func TestWebhookFakePresent(t *testing.T) {
-	provider, err := NewDNSProvider("http://example.com/", map[string]string{"test": "test"}, true, []byte{}, util.RecursiveNameservers)
+	provider, err := NewDNSProvider("http://example.com/", map[string]string{"test": "test"}, true, []byte{})
 	assert.NoError(t, err)
 
 	provider.httpClient = newFakeHTTPClient()
@@ -142,7 +140,7 @@ func TestWebhookFakePresent(t *testing.T) {
 }
 
 func TestWebhookFakeCleanUp(t *testing.T) {
-	provider, err := NewDNSProvider("http://example.com/", map[string]string{"test": "test"}, true, []byte{}, util.RecursiveNameservers)
+	provider, err := NewDNSProvider("http://example.com/", map[string]string{"test": "test"}, true, []byte{})
 	assert.NoError(t, err)
 
 	provider.httpClient = newFakeHTTPClient()
@@ -151,7 +149,7 @@ func TestWebhookFakeCleanUp(t *testing.T) {
 }
 
 func TestWebhookSendPostFake(t *testing.T) {
-	provider, err := NewDNSProvider("http://example.com/", map[string]string{"test": "test"}, true, []byte{}, util.RecursiveNameservers)
+	provider, err := NewDNSProvider("http://example.com/", map[string]string{"test": "test"}, true, []byte{})
 	assert.NoError(t, err)
 
 	provider.httpClient = newFakeHTTPClient()
@@ -197,7 +195,7 @@ func TestWebhookPresent(t *testing.T) {
 			defer ts.Close()
 			defer ts.CloseClientConnections()
 
-			provider, err := NewDNSProvider(ts.URL, s.payload.Metadata, true, []byte{}, util.RecursiveNameservers)
+			provider, err := NewDNSProvider(ts.URL, s.payload.Metadata, true, []byte{})
 			assert.NoError(t, err)
 
 			provider.httpClient.Timeout = s.timeout

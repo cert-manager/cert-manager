@@ -17,6 +17,7 @@ limitations under the License.
 package validation
 
 import (
+	"fmt"
 	"reflect"
 	"testing"
 
@@ -612,19 +613,49 @@ func TestValidateACMEIssuerDNS01Config(t *testing.T) {
 				field.Required(providersPath.Index(0).Child("webhook", "url"), ""),
 			},
 		},
-		"webhook provider url field does not contain a valid URL": {
+		"webhook provider url field scheme is empty": {
 			cfg: &v1alpha1.ACMEIssuerDNS01Config{
 				Providers: []v1alpha1.ACMEIssuerDNS01Provider{
 					{
 						Name: "a name",
 						Webhook: &v1alpha1.ACMEIssuerDNS01ProviderWebhook{
-							URL: "invalid",
+							URL: "example.com",
 						},
 					},
 				},
 			},
 			errs: []*field.Error{
-				field.Invalid(providersPath.Index(0).Child("webhook", "url"), "", "\"url\" field does not contain a valid URL: parse invalid: invalid URI for request"),
+				field.Invalid(providersPath.Index(0).Child("webhook", "url"), "", fmt.Sprintf("%q must be an absolute URL", "example.com")),
+			},
+		},
+		"webhook provider url field host is empty": {
+			cfg: &v1alpha1.ACMEIssuerDNS01Config{
+				Providers: []v1alpha1.ACMEIssuerDNS01Provider{
+					{
+						Name: "a name",
+						Webhook: &v1alpha1.ACMEIssuerDNS01ProviderWebhook{
+							URL: "http://",
+						},
+					},
+				},
+			},
+			errs: []*field.Error{
+				field.Invalid(providersPath.Index(0).Child("webhook", "url"), "", fmt.Sprintf("%q must be an absolute URL", "http://")),
+			},
+		},
+		"webhook provider url field invalid scheme": {
+			cfg: &v1alpha1.ACMEIssuerDNS01Config{
+				Providers: []v1alpha1.ACMEIssuerDNS01Provider{
+					{
+						Name: "a name",
+						Webhook: &v1alpha1.ACMEIssuerDNS01ProviderWebhook{
+							URL: "interstellar://example.com",
+						},
+					},
+				},
+			},
+			errs: []*field.Error{
+				field.Invalid(providersPath.Index(0).Child("webhook", "url"), "", fmt.Sprintf("%q must begin with either \"https\" or \"https\"", "interstellar://example.com")),
 			},
 		},
 		"missing webhook CA secret key": {

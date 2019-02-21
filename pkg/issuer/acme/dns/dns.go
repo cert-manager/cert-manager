@@ -60,7 +60,7 @@ type dnsProviderConstructors struct {
 	acmeDNS      func(host string, accountJson []byte, dns01Nameservers []string) (*acmedns.DNSProvider, error)
 	rfc2136      func(nameserver, tsigAlgorithm, tsigKeyName, tsigSecret string, dns01Nameservers []string) (*rfc2136.DNSProvider, error)
 	digitalOcean func(token string, dns01Nameservers []string) (*digitalocean.DNSProvider, error)
-	webhook      func(url string, metadata map[string]string, skipTLSVerify bool, webhookCA []byte, dns01Nameservers []string) (*webhook.DNSProvider, error)
+	webhook      func(url string, metadata map[string]string, skipTLSVerify bool, webhookCA []byte) (*webhook.DNSProvider, error)
 }
 
 // Solver is a solver for the acme dns01 challenge.
@@ -347,7 +347,6 @@ func (s *Solver) solverForChallenge(issuer v1alpha1.GenericIssuer, ch *v1alpha1.
 			providerConfig.Webhook.Metadata,
 			providerConfig.Webhook.SkipTLSVerify,
 			caBytes,
-			s.DNS01Nameservers,
 		)
 		if err != nil {
 			return nil, nil, fmt.Errorf("error instantiating webhook challenge solver: %s", err)

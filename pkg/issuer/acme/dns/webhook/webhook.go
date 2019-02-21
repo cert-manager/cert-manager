@@ -35,10 +35,9 @@ const (
 )
 
 type DNSProvider struct {
-	httpClient       *http.Client
-	url              string
-	metadata         map[string]string
-	dns01Nameservers []string
+	httpClient *http.Client
+	url        string
+	metadata   map[string]string
 }
 
 type httpResponse struct {
@@ -47,7 +46,7 @@ type httpResponse struct {
 	truncated      bool
 }
 
-func NewDNSProvider(url string, metadata map[string]string, skipTLSVerify bool, webhookCA []byte, dns01Nameservers []string) (*DNSProvider, error) {
+func NewDNSProvider(url string, metadata map[string]string, skipTLSVerify bool, webhookCA []byte) (*DNSProvider, error) {
 	rootCAs := x509.NewCertPool()
 
 	if !skipTLSVerify {
@@ -65,10 +64,9 @@ func NewDNSProvider(url string, metadata map[string]string, skipTLSVerify bool, 
 	}
 
 	return &DNSProvider{
-		httpClient:       client,
-		url:              url,
-		metadata:         metadata,
-		dns01Nameservers: dns01Nameservers,
+		httpClient: client,
+		url:        url,
+		metadata:   metadata,
 	}, nil
 }
 
