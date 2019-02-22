@@ -152,6 +152,8 @@ else
     HELM="$(bazel info bazel-genfiles)/hack/bin/helm"
     CHART_OUT="$(mktemp -d)"
 
+    "${HELM}" init --client-only
+
     "${HELM}" package \
         --dependency-update \
         --destination "${CHART_OUT}" \
