@@ -30,6 +30,7 @@ import (
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/http/solver"
+	"github.com/jetstack/cert-manager/pkg/util"
 )
 
 // getIngressesForChallenge returns a list of Ingresses that were created to solve
@@ -116,7 +117,7 @@ func buildIngressResource(ch *v1alpha1.Challenge, svcName string) *extv1beta1.In
 	ingAnnotations["nginx.ingress.kubernetes.io/whitelist-source-range"] = "0.0.0.0/0"
 
 	if ingClass != nil {
-		ingAnnotations[class.IngressKey] = *ingClass
+		ingAnnotations[util.IngressKey] = *ingClass
 	}
 
 	ingPathToAdd := ingressPath(ch.Spec.Token, svcName)

@@ -30,6 +30,7 @@ import (
 	"k8s.io/klog"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	"github.com/jetstack/cert-manager/pkg/util"
 )
 
 const (
@@ -53,7 +54,7 @@ const (
 	// if the challenge type is set to http01
 	acmeIssuerHTTP01IngressClassAnnotation = "certmanager.k8s.io/acme-http01-ingress-class"
 
-	ingressClassAnnotation = class.IngressKey
+	ingressClassAnnotation = util.IngressKey
 )
 
 var ingressGVK = extv1beta1.SchemeGroupVersion.WithKind("Ingress")
