@@ -22,13 +22,13 @@ import (
 	"sync"
 	"time"
 
-	"github.com/golang/glog"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
 	corelisters "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
+	"k8s.io/klog"
 	"k8s.io/utils/clock"
 
 	cmlisters "github.com/jetstack/cert-manager/pkg/client/listers/certmanager/v1alpha1"
@@ -112,13 +112,13 @@ func New(ctx *controllerpkg.Context) *Controller {
 }
 
 func (c *Controller) Run(workers int, stopCh <-chan struct{}) error {
-	glog.V(4).Infof("Starting %s control loop", ControllerName)
+	klog.V(4).Infof("Starting %s control loop", ControllerName)
 	// wait for all the informer caches we depend to sync
 	if !cache.WaitForCacheSync(stopCh, c.syncedFuncs...) {
 		return fmt.Errorf("error waiting for informer caches to sync")
 	}
 
-	glog.V(4).Infof("Synced all caches for %s control loop", ControllerName)
+	klog.V(4).Infof("Synced all caches for %s control loop", ControllerName)
 
 	for i := 0; i < workers; i++ {
 		c.workerWg.Add(1)
@@ -126,17 +126,17 @@ func (c *Controller) Run(workers int, stopCh <-chan struct{}) error {
 		go wait.Until(func() { c.worker(stopCh) }, time.Second, stopCh)
 	}
 	<-stopCh
-	glog.V(4).Infof("Shutting down queue as workqueue signaled shutdown")
+	klog.V(4).Infof("Shutting down queue as workqueue signaled shutdown")
 	c.queue.ShutDown()
-	glog.V(4).Infof("Waiting for workers to exit...")
+	klog.V(4).Infof("Waiting for workers to exit...")
 	c.workerWg.Wait()
-	glog.V(4).Infof("Workers exited.")
+	klog.V(4).Infof("Workers exited.")
 	return nil
 }
 
 func (c *Controller) worker(stopCh <-chan struct{}) {
 	defer c.workerWg.Done()
-	glog.V(4).Infof("Starting %q worker", ControllerName)
+	klog.V(4).Infof("Starting %q worker", ControllerName)
 	for {
 		obj, shutdown := c.queue.Get()
 		if shutdown {
@@ -154,17 +154,17 @@ func (c *Controller) worker(stopCh <-chan struct{}) {
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
 			ctx = util.ContextWithStopCh(ctx, stopCh)
-			glog.Infof("%s controller: syncing item '%s'", ControllerName, key)
+			klog.Infof("%s controller: syncing item '%s'", ControllerName, key)
 			if err := c.syncHandler(ctx, key); err != nil {
-				glog.Errorf("%s controller: Re-queuing item %q due to error processing: %s", ControllerName, key, err.Error())
+				klog.Errorf("%s controller: Re-queuing item %q due to error processing: %s", ControllerName, key, err.Error())
 				c.queue.AddRateLimited(obj)
 				return
 			}
-			glog.Infof("%s controller: Finished processing work item %q", ControllerName, key)
+			klog.Infof("%s controller: Finished processing work item %q", ControllerName, key)
 			c.queue.Forget(obj)
 		}()
 	}
-	glog.V(4).Infof("Exiting %q worker loop", ControllerName)
+	klog.V(4).Infof("Exiting %q worker loop", ControllerName)
 }
 
 func (c *Controller) processNextWorkItem(ctx context.Context, key string) error {

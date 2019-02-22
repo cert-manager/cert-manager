@@ -17,8 +17,8 @@ limitations under the License.
 package util
 
 import (
-	"github.com/golang/glog"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/klog"
 	"k8s.io/utils/clock"
 
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
@@ -77,7 +77,7 @@ func SetIssuerCondition(i cmapi.GenericIssuer, conditionType cmapi.IssuerConditi
 		if cond.Status == status {
 			newCondition.LastTransitionTime = cond.LastTransitionTime
 		} else {
-			glog.Infof("Found status change for Issuer %q condition %q: %q -> %q; setting lastTransitionTime to %v", i.GetObjectMeta().Name, conditionType, cond.Status, status, nowTime.Time)
+			klog.Infof("Found status change for Issuer %q condition %q: %q -> %q; setting lastTransitionTime to %v", i.GetObjectMeta().Name, conditionType, cond.Status, status, nowTime.Time)
 		}
 
 		// Overwrite the existing condition
@@ -88,7 +88,7 @@ func SetIssuerCondition(i cmapi.GenericIssuer, conditionType cmapi.IssuerConditi
 	// If we've not found an existing condition of this type, we simply insert
 	// the new condition into the slice.
 	i.GetStatus().Conditions = append(i.GetStatus().Conditions, newCondition)
-	glog.Infof("Setting lastTransitionTime for Issuer %q condition %q to %v", i.GetObjectMeta().Name, conditionType, nowTime.Time)
+	klog.Infof("Setting lastTransitionTime for Issuer %q condition %q to %v", i.GetObjectMeta().Name, conditionType, nowTime.Time)
 }
 
 // CertificateHasCondition will return true if the given Certificate has a
@@ -140,7 +140,7 @@ func SetCertificateCondition(crt *cmapi.Certificate, conditionType cmapi.Certifi
 		if cond.Status == status {
 			newCondition.LastTransitionTime = cond.LastTransitionTime
 		} else {
-			glog.Infof("Found status change for Certificate %q condition %q: %q -> %q; setting lastTransitionTime to %v", crt.Name, conditionType, cond.Status, status, nowTime.Time)
+			klog.Infof("Found status change for Certificate %q condition %q: %q -> %q; setting lastTransitionTime to %v", crt.Name, conditionType, cond.Status, status, nowTime.Time)
 		}
 
 		// Overwrite the existing condition
@@ -151,5 +151,5 @@ func SetCertificateCondition(crt *cmapi.Certificate, conditionType cmapi.Certifi
 	// If we've not found an existing condition of this type, we simply insert
 	// the new condition into the slice.
 	crt.Status.Conditions = append(crt.Status.Conditions, newCondition)
-	glog.Infof("Setting lastTransitionTime for Certificate %q condition %q to %v", crt.Name, conditionType, nowTime.Time)
+	klog.Infof("Setting lastTransitionTime for Certificate %q condition %q to %v", crt.Name, conditionType, nowTime.Time)
 }

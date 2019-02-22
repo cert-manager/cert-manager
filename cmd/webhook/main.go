@@ -21,8 +21,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/golang/glog"
 	"github.com/openshift/generic-admission-server/pkg/cmd"
+	"k8s.io/klog"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/validation/webhooks"
 )
@@ -70,7 +70,7 @@ func runfilewatch(filename string) {
 				// let the k8s scheduler restart us
 				// TODO(dmo): figure out if there's a way to do this with clean
 				// shutdown
-				glog.Info("Detected change in TLS certificate %s. Restarting to pick up new certificate", filename)
+				klog.Info("Detected change in TLS certificate %s. Restarting to pick up new certificate", filename)
 				os.Exit(0)
 			}
 		}

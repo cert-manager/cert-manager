@@ -19,9 +19,9 @@ package selfsigned
 import (
 	"context"
 
-	"github.com/golang/glog"
 	corev1 "k8s.io/api/core/v1"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/klog"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	"github.com/jetstack/cert-manager/pkg/issuer"
@@ -45,14 +45,14 @@ func (c *SelfSigned) Issue(ctx context.Context, crt *v1alpha1.Certificate) (*iss
 		}
 	}
 	if err != nil {
-		glog.Errorf("Error getting private key %q for certificate: %v", crt.Spec.SecretName, err)
+		klog.Errorf("Error getting private key %q for certificate: %v", crt.Spec.SecretName, err)
 		return nil, err
 	}
 
 	// extract the public component of the key
 	signeePublicKey, err := pki.PublicKeyForPrivateKey(signeePrivateKey)
 	if err != nil {
-		glog.Errorf("Error getting public key from private key: %v", err)
+		klog.Errorf("Error getting public key from private key: %v", err)
 		return nil, err
 	}
 

@@ -5,7 +5,7 @@ import (
 	"os"
 	"runtime"
 
-	"github.com/golang/glog"
+	"k8s.io/klog"
 
 	genericapiserver "k8s.io/apiserver/pkg/server"
 	"k8s.io/apiserver/pkg/util/logs"
@@ -39,6 +39,6 @@ func RunAdmissionServer(admissionHooks ...AdmissionHook) {
 	cmd := server.NewCommandStartAdmissionServer(os.Stdout, os.Stderr, stopCh, castSlice...)
 	cmd.Flags().AddGoFlagSet(flag.CommandLine)
 	if err := cmd.Execute(); err != nil {
-		glog.Fatal(err)
+		klog.Fatal(err)
 	}
 }

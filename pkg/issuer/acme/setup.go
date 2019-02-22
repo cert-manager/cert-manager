@@ -23,10 +23,10 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/golang/glog"
 	"k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/klog"
 
 	"github.com/jetstack/cert-manager/pkg/acme"
 	"github.com/jetstack/cert-manager/pkg/acme/client"
@@ -76,7 +76,7 @@ func (a *Acme) Setup(ctx context.Context) error {
 	pk, err := a.helper.ReadPrivateKey(a.issuer.GetSpec().ACME.PrivateKey, ns)
 	switch {
 	case apierrors.IsNotFound(err):
-		glog.Infof("%s: generating acme account private key %q", a.issuer.GetObjectMeta().Name, a.issuer.GetSpec().ACME.PrivateKey.Name)
+		klog.Infof("%s: generating acme account private key %q", a.issuer.GetObjectMeta().Name, a.issuer.GetSpec().ACME.PrivateKey.Name)
 		pk, err = a.createAccountPrivateKey(a.issuer.GetSpec().ACME.PrivateKey, ns)
 		if err != nil {
 			s := messageAccountRegistrationFailed + err.Error()
@@ -102,7 +102,7 @@ func (a *Acme) Setup(ctx context.Context) error {
 	cl, err := acme.ClientWithKey(a.issuer, pk)
 	if err != nil {
 		s := messageAccountVerificationFailed + err.Error()
-		glog.Infof("%s: %s", a.issuer.GetObjectMeta().Name, s)
+		klog.Infof("%s: %s", a.issuer.GetObjectMeta().Name, s)
 		a.Recorder.Event(a.issuer, v1.EventTypeWarning, errorAccountVerificationFailed, s)
 		apiutil.SetIssuerCondition(a.issuer, v1alpha1.IssuerConditionReady, v1alpha1.ConditionFalse, errorAccountVerificationFailed, s)
 		return err
@@ -149,13 +149,13 @@ func (a *Acme) Setup(ctx context.Context) error {
 	if hasReadyCondition &&
 		a.issuer.GetStatus().ACMEStatus().URI != "" &&
 		parsedAccountURL.Host == parsedServerURL.Host {
-		glog.Infof("Skipping re-verifying ACME account as cached registration " +
+		klog.Infof("Skipping re-verifying ACME account as cached registration " +
 			"details look sufficient.")
 		return nil
 	}
 
 	if parsedAccountURL.Host != parsedServerURL.Host {
-		glog.Infof("ACME server URL host and ACME private key registration " +
+		klog.Infof("ACME server URL host and ACME private key registration " +
 			"host differ. Re-checking ACME account registration.")
 		a.issuer.GetStatus().ACMEStatus().URI = ""
 	}
@@ -165,7 +165,7 @@ func (a *Acme) Setup(ctx context.Context) error {
 	account, err := a.registerAccount(ctx, cl)
 	if err != nil {
 		s := messageAccountVerificationFailed + err.Error()
-		glog.Infof("%s: %s", a.issuer.GetObjectMeta().Name, s)
+		klog.Infof("%s: %s", a.issuer.GetObjectMeta().Name, s)
 		a.Recorder.Event(a.issuer, v1.EventTypeWarning, errorAccountVerificationFailed, s)
 		apiutil.SetIssuerCondition(a.issuer, v1alpha1.IssuerConditionReady, v1alpha1.ConditionFalse, errorAccountRegistrationFailed, s)
 
@@ -179,7 +179,7 @@ func (a *Acme) Setup(ctx context.Context) error {
 		// as it implies that something about the request (i.e. email address or private key)
 		// is invalid.
 		if acmeErr.StatusCode >= 400 && acmeErr.StatusCode < 500 {
-			glog.Infof("Skipping retrying account registration as a BadRequest response was returned from the ACME server: %v", acmeErr)
+			klog.Infof("Skipping retrying account registration as a BadRequest response was returned from the ACME server: %v", acmeErr)
 			return nil
 		}
 
@@ -187,7 +187,7 @@ func (a *Acme) Setup(ctx context.Context) error {
 		return err
 	}
 
-	glog.Infof("%s: verified existing registration with ACME server", a.issuer.GetObjectMeta().Name)
+	klog.Infof("%s: verified existing registration with ACME server", a.issuer.GetObjectMeta().Name)
 	apiutil.SetIssuerCondition(a.issuer, v1alpha1.IssuerConditionReady, v1alpha1.ConditionTrue, successAccountRegistered, messageAccountRegistered)
 	a.issuer.GetStatus().ACMEStatus().URI = account.URL
 

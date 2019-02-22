@@ -24,12 +24,12 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/golang/glog"
 	corev1 "k8s.io/api/core/v1"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/apimachinery/pkg/util/runtime"
+	"k8s.io/klog"
 
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
@@ -134,21 +134,21 @@ func (c *Controller) Sync(ctx context.Context, crt *v1alpha1.Certificate) (err e
 	}
 
 	if key == nil || cert == nil {
-		glog.V(4).Infof("Invoking issue function as existing certificate does not exist")
+		klog.V(4).Infof("Invoking issue function as existing certificate does not exist")
 		return c.issue(ctx, i, crtCopy)
 	}
 
 	// begin checking if the TLS certificate is valid/needs a re-issue or renew
 	matches, matchErrs := c.certificateMatchesSpec(crtCopy, key, cert)
 	if !matches {
-		glog.V(4).Infof("Invoking issue function due to certificate not matching spec: %s", strings.Join(matchErrs, ", "))
+		klog.V(4).Infof("Invoking issue function due to certificate not matching spec: %s", strings.Join(matchErrs, ", "))
 		return c.issue(ctx, i, crtCopy)
 	}
 
 	// check if the certificate needs renewal
 	needsRenew := c.Context.IssuerOptions.CertificateNeedsRenew(cert, crt)
 	if needsRenew {
-		glog.V(4).Infof("Invoking issue function due to certificate needing renewal")
+		klog.V(4).Infof("Invoking issue function due to certificate needing renewal")
 		return c.issue(ctx, i, crtCopy)
 	}
 	// end checking if the TLS certificate is valid/needs a re-issue or renew
@@ -246,7 +246,7 @@ func (c *Controller) scheduleRenewal(crt *v1alpha1.Certificate) {
 	renewIn := c.Context.IssuerOptions.CalculateDurationUntilRenew(cert, crt)
 	c.scheduledWorkQueue.Add(key, renewIn)
 
-	glog.Infof("Certificate %s/%s scheduled for renewal in %s", crt.Namespace, crt.Name, renewIn.String())
+	klog.Infof("Certificate %s/%s scheduled for renewal in %s", crt.Namespace, crt.Name, renewIn.String())
 }
 
 // issuerKind returns the kind of issuer for a certificate
@@ -337,7 +337,7 @@ func (c *Controller) updateSecret(crt *v1alpha1.Certificate, namespace string, c
 func (c *Controller) issue(ctx context.Context, issuer issuer.Interface, crt *v1alpha1.Certificate) error {
 	resp, err := issuer.Issue(ctx, crt)
 	if err != nil {
-		glog.Infof("Error issuing certificate for %s/%s: %v", crt.Namespace, crt.Name, err)
+		klog.Infof("Error issuing certificate for %s/%s: %v", crt.Namespace, crt.Name, err)
 		return err
 	}
 
@@ -347,7 +347,7 @@ func (c *Controller) issue(ctx context.Context, issuer issuer.Interface, crt *v1
 
 	if _, err := c.updateSecret(crt, crt.Namespace, resp.Certificate, resp.PrivateKey, resp.CA); err != nil {
 		s := messageErrorSavingCertificate + err.Error()
-		glog.Info(s)
+		klog.Info(s)
 		c.Recorder.Event(crt, corev1.EventTypeWarning, errorSavingCertificate, s)
 		return err
 	}

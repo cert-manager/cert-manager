@@ -28,7 +28,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/golang/glog"
+	"k8s.io/klog"
 
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
 	pkgutil "github.com/jetstack/cert-manager/pkg/util"
@@ -116,7 +116,7 @@ func (a *DNSProvider) setTxtRecord(fqdn string, dns01Record *dns01Record) error 
 		return errors.Wrapf(err, "failed to save zone data for %q", hostedDomain)
 	}
 
-	glog.V(4).Infof("Updated Akamai TXT record for %q on %q using SOA serial of %d", recordName, hostedDomain, newSerial)
+	klog.V(4).Infof("Updated Akamai TXT record for %q on %q using SOA serial of %d", recordName, hostedDomain, newSerial)
 
 	return nil
 }

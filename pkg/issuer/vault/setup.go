@@ -20,7 +20,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/golang/glog"
+	"k8s.io/klog"
 
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
@@ -43,7 +43,7 @@ const (
 
 func (v *Vault) Setup(ctx context.Context) error {
 	if v.issuer.GetSpec().Vault == nil {
-		glog.Infof("%s: %s", v.issuer.GetObjectMeta().Name, messageVaultConfigRequired)
+		klog.Infof("%s: %s", v.issuer.GetObjectMeta().Name, messageVaultConfigRequired)
 		apiutil.SetIssuerCondition(v.issuer, v1alpha1.IssuerConditionReady, v1alpha1.ConditionFalse, errorVault, messageVaultConfigRequired)
 		return nil
 	}
@@ -51,7 +51,7 @@ func (v *Vault) Setup(ctx context.Context) error {
 	// check if Vault server info is specified.
 	if v.issuer.GetSpec().Vault.Server == "" ||
 		v.issuer.GetSpec().Vault.Path == "" {
-		glog.Infof("%s: %s", v.issuer.GetObjectMeta().Name, messageServerAndPathRequired)
+		klog.Infof("%s: %s", v.issuer.GetObjectMeta().Name, messageServerAndPathRequired)
 		apiutil.SetIssuerCondition(v.issuer, v1alpha1.IssuerConditionReady, v1alpha1.ConditionFalse, errorVault, messageServerAndPathRequired)
 		return nil
 	}
@@ -60,7 +60,7 @@ func (v *Vault) Setup(ctx context.Context) error {
 	if v.issuer.GetSpec().Vault.Auth.TokenSecretRef.Name == "" &&
 		v.issuer.GetSpec().Vault.Auth.AppRole.RoleId == "" &&
 		v.issuer.GetSpec().Vault.Auth.AppRole.SecretRef.Name == "" {
-		glog.Infof("%s: %s", v.issuer.GetObjectMeta().Name, messsageAuthFieldsRequired)
+		klog.Infof("%s: %s", v.issuer.GetObjectMeta().Name, messsageAuthFieldsRequired)
 		apiutil.SetIssuerCondition(v.issuer, v1alpha1.IssuerConditionReady, v1alpha1.ConditionFalse, errorVault, messsageAuthFieldsRequired)
 		return nil
 	}
@@ -69,7 +69,7 @@ func (v *Vault) Setup(ctx context.Context) error {
 	if v.issuer.GetSpec().Vault.Auth.TokenSecretRef.Name != "" &&
 		(v.issuer.GetSpec().Vault.Auth.AppRole.RoleId != "" ||
 			v.issuer.GetSpec().Vault.Auth.AppRole.SecretRef.Name != "") {
-		glog.Infof("%s: %s", v.issuer.GetObjectMeta().Name, messageAuthFieldRequired)
+		klog.Infof("%s: %s", v.issuer.GetObjectMeta().Name, messageAuthFieldRequired)
 		apiutil.SetIssuerCondition(v.issuer, v1alpha1.IssuerConditionReady, v1alpha1.ConditionFalse, errorVault, messageAuthFieldRequired)
 		return nil
 	}
@@ -78,7 +78,7 @@ func (v *Vault) Setup(ctx context.Context) error {
 	if v.issuer.GetSpec().Vault.Auth.TokenSecretRef.Name == "" &&
 		(v.issuer.GetSpec().Vault.Auth.AppRole.RoleId == "" ||
 			v.issuer.GetSpec().Vault.Auth.AppRole.SecretRef.Name == "") {
-		glog.Infof("%s: %s", v.issuer.GetObjectMeta().Name, messageAuthFieldRequired)
+		klog.Infof("%s: %s", v.issuer.GetObjectMeta().Name, messageAuthFieldRequired)
 		apiutil.SetIssuerCondition(v.issuer, v1alpha1.IssuerConditionReady, v1alpha1.ConditionFalse, errorVault, messageAuthFieldRequired)
 		return nil
 	}
@@ -86,7 +86,7 @@ func (v *Vault) Setup(ctx context.Context) error {
 	client, err := v.initVaultClient()
 	if err != nil {
 		s := messageVaultClientInitFailed + err.Error()
-		glog.V(4).Infof("%s: %s", v.issuer.GetObjectMeta().Name, s)
+		klog.V(4).Infof("%s: %s", v.issuer.GetObjectMeta().Name, s)
 		apiutil.SetIssuerCondition(v.issuer, v1alpha1.IssuerConditionReady, v1alpha1.ConditionFalse, errorVault, s)
 		return err
 	}
@@ -94,18 +94,18 @@ func (v *Vault) Setup(ctx context.Context) error {
 	health, err := client.Sys().Health()
 	if err != nil {
 		s := messageVaultHealthCheckFailed + err.Error()
-		glog.V(4).Infof("%s: %s", v.issuer.GetObjectMeta().Name, s)
+		klog.V(4).Infof("%s: %s", v.issuer.GetObjectMeta().Name, s)
 		apiutil.SetIssuerCondition(v.issuer, v1alpha1.IssuerConditionReady, v1alpha1.ConditionFalse, errorVault, s)
 		return err
 	}
 
 	if !health.Initialized || health.Sealed {
-		glog.V(4).Infof("%s: %s: health: %v", v.issuer.GetObjectMeta().Name, messageVaultStatusVerificationFailed, health)
+		klog.V(4).Infof("%s: %s: health: %v", v.issuer.GetObjectMeta().Name, messageVaultStatusVerificationFailed, health)
 		apiutil.SetIssuerCondition(v.issuer, v1alpha1.IssuerConditionReady, v1alpha1.ConditionFalse, errorVault, messageVaultStatusVerificationFailed)
 		return fmt.Errorf(messageVaultStatusVerificationFailed)
 	}
 
-	glog.Info(messageVaultVerified)
+	klog.Info(messageVaultVerified)
 	apiutil.SetIssuerCondition(v.issuer, v1alpha1.IssuerConditionReady, v1alpha1.ConditionTrue, successVaultVerified, messageVaultVerified)
 	return nil
 }

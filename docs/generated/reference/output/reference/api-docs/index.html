@@ -1664,7 +1664,7 @@ Appears In:
 <tbody>
 <tr>
 <td><code>continue</code><br /> <em>string</em></td>
-<td>continue may be set if the user set a limit on the number of items returned, and indicates that the server has more data available. The value is opaque and may be used to issue another request to the endpoint that served this list to retrieve the next set of available objects. Continuing a list may not be possible if the server configuration has changed or more than a few minutes have passed. The resourceVersion field returned when using this continue value will be identical to the value in the first response.</td>
+<td>continue may be set if the user set a limit on the number of items returned, and indicates that the server has more data available. The value is opaque and may be used to issue another request to the endpoint that served this list to retrieve the next set of available objects. Continuing a consistent list may not be possible if the server configuration has changed or more than a few minutes have passed. The resourceVersion field returned when using this continue value will be identical to the value in the first response, unless you have received this token from an error message.</td>
 </tr>
 <tr>
 <td><code>resourceVersion</code><br /> <em>string</em></td>
@@ -1841,7 +1841,7 @@ Appears In:
 </tr>
 </tbody>
 </table>
-<p>OwnerReference contains enough information to let you identify an owning object. Currently, an owning object must be in the same namespace, so there is no namespace field.</p>
+<p>OwnerReference contains enough information to let you identify an owning object. An owning object must be in the same namespace as the dependent, or be cluster-scoped, so there is no namespace field.</p>
 <aside class="notice">
 Appears In:
 
@@ -2205,6 +2205,7 @@ Appears In:
 </tr>
 </tbody>
 </table>
+<p>Time is a wrapper around time.Time which supports correct marshaling to YAML and JSON.  Wrappers are provided for many of the factory methods that the time package offers.</p>
 <aside class="notice">
 Appears In:
 

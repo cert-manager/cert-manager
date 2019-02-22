@@ -21,7 +21,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/golang/glog"
+	"k8s.io/klog"
 
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 )
@@ -62,7 +62,7 @@ func (o IssuerOptions) CalculateDurationUntilRenew(cert *x509.Certificate, crt *
 	certDuration := cert.NotAfter.Sub(cert.NotBefore)
 	if crt.Spec.Duration != nil && certDuration < crt.Spec.Duration.Duration {
 		s := fmt.Sprintf(messageCertificateDuration, certDuration, crt.Spec.Duration.Duration)
-		glog.Info(s)
+		klog.Info(s)
 		// TODO Use the message as the reason in a 'renewal status' condition
 	}
 
@@ -77,7 +77,7 @@ func (o IssuerOptions) CalculateDurationUntilRenew(cert *x509.Certificate, crt *
 	// If not we notify with an event that we will renew the certificate
 	// before (certificate duration / 3) of its expiration duration.
 	if renewBefore > certDuration {
-		glog.Info(messageScheduleModified)
+		klog.Info(messageScheduleModified)
 		// TODO Use the message as the reason in a 'renewal status' condition
 		// We will renew 1/3 before the expiration date.
 		renewBefore = certDuration / 3

@@ -26,8 +26,8 @@ import (
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
-	"github.com/golang/glog"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	"k8s.io/klog"
 )
 
 func (s *Solver) ensureService(issuer v1alpha1.GenericIssuer, ch *v1alpha1.Challenge) (*corev1.Service, error) {
@@ -40,7 +40,7 @@ func (s *Solver) ensureService(issuer v1alpha1.GenericIssuer, ch *v1alpha1.Chall
 	}
 	if len(existingServices) > 1 {
 		errMsg := fmt.Sprintf("multiple challenge solver services found for certificate '%s/%s'. Cleaning up existing services.", ch.Namespace, ch.Name)
-		glog.Infof(errMsg)
+		klog.Infof(errMsg)
 		err := s.cleanupServices(ch)
 		if err != nil {
 			return nil, err
@@ -48,7 +48,7 @@ func (s *Solver) ensureService(issuer v1alpha1.GenericIssuer, ch *v1alpha1.Chall
 		return nil, fmt.Errorf(errMsg)
 	}
 
-	glog.Infof("No existing HTTP01 challenge solver service found for Certificate %q. One will be created.", ch.Namespace+"/"+ch.Name)
+	klog.Infof("No existing HTTP01 challenge solver service found for Certificate %q. One will be created.", ch.Namespace+"/"+ch.Name)
 	return s.createService(issuer, ch)
 }
 
@@ -73,7 +73,7 @@ func (s *Solver) getServicesForChallenge(ch *v1alpha1.Challenge) ([]*corev1.Serv
 	var relevantServices []*corev1.Service
 	for _, service := range serviceList {
 		if !metav1.IsControlledBy(service, ch) {
-			glog.Infof("Found service %q with acme-order-url annotation set to that of Certificate %q"+
+			klog.Infof("Found service %q with acme-order-url annotation set to that of Certificate %q"+
 				"but it is not owned by the Certificate resource, so skipping it.", service.Namespace+"/"+service.Name, ch.Namespace+"/"+ch.Name)
 			continue
 		}
