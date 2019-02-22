@@ -28,6 +28,7 @@ import (
 	"github.com/jetstack/cert-manager/pkg/controller"
 	"github.com/jetstack/cert-manager/pkg/controller/test"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/acmedns"
+	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/alibabacloud"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/cloudflare"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
 )
@@ -240,6 +241,49 @@ func TestSolverFor(t *testing.T) {
 			},
 			domain:             "example.com",
 			expectedSolverType: reflect.TypeOf(&acmedns.DNSProvider{}),
+		},
+		"loads secret for alibaba cloud provider": {
+			solverFixture: &solverFixture{
+				Builder: &test.Builder{
+					KubeObjects: []runtime.Object{
+						newSecret("alibaba-cloud-secret", "default", map[string][]byte{
+							"access-token": []byte("an-alibaba-access-token"),
+							"secret-key":   []byte("an-alibaba-secret-key"),
+						}),
+					},
+				},
+				Issuer: newIssuer("test", "default", []v1alpha1.ACMEIssuerDNS01Provider{
+					{
+						Name: "fake-alibabacloud",
+						AlibabaCloudDNS: &v1alpha1.ACMEIssuerDNS01ProviderAlibabaCloudDNS{
+							AccessToken: v1alpha1.SecretKeySelector{
+								LocalObjectReference: v1alpha1.LocalObjectReference{
+									Name: "alibaba-cloud-secret",
+								},
+								Key: "access-token",
+							},
+							SecretToken: v1alpha1.SecretKeySelector{
+								LocalObjectReference: v1alpha1.LocalObjectReference{
+									Name: "alibaba-cloud-secret",
+								},
+								Key: "secret-key",
+							},
+							RegionId: "a-region",
+						},
+					},
+				}),
+				Challenge: &v1alpha1.Challenge{
+					Spec: v1alpha1.ChallengeSpec{
+						Config: v1alpha1.SolverConfig{
+							DNS01: &v1alpha1.DNS01SolverConfig{
+								Provider: "fake-alibabacloud",
+							},
+						},
+					},
+				},
+			},
+			domain:             "example.com",
+			expectedSolverType: reflect.TypeOf(&alibabacloud.DNSProvider{}),
 		},
 	}
 	testFn := func(test testT) func(*testing.T) {

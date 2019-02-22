@@ -194,6 +194,11 @@ func ValidateACMEIssuerDNS01Config(iss *v1alpha1.ACMEIssuerDNS01Config, fldPath 
 			}
 		}
 		numProviders := 0
+		if p.AlibabaCloudDNS != nil {
+			numProviders++
+			el = append(el, ValidateSecretKeySelector(&p.AlibabaCloudDNS.AccessToken, fldPath.Child("alibabacloud", "accessToken"))...)
+			el = append(el, ValidateSecretKeySelector(&p.AlibabaCloudDNS.SecretToken, fldPath.Child("alibabacloud", "secretKey"))...)
+		}
 		if p.Akamai != nil {
 			numProviders++
 			el = append(el, ValidateSecretKeySelector(&p.Akamai.AccessToken, fldPath.Child("akamai", "accessToken"))...)

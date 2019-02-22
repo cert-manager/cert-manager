@@ -239,6 +239,9 @@ type ACMEIssuerDNS01Provider struct {
 	CNAMEStrategy CNAMEStrategy `json:"cnameStrategy,omitempty"`
 
 	// +optional
+	AlibabaCloudDNS *ACMEIssuerDNS01ProviderAlibabaCloudDNS `json:"alibabacloud,omitempty"`
+
+	// +optional
 	Akamai *ACMEIssuerDNS01ProviderAkamai `json:"akamai,omitempty"`
 
 	// +optional
@@ -280,6 +283,14 @@ const (
 	// subdomain to some other, less privileged domain.
 	FollowStrategy = "Follow"
 )
+
+// ACMEIssuerDNS01ProviderCloudDNS is a structure containing the DNS
+// configuration for Alibaba Cloud DNS
+type ACMEIssuerDNS01ProviderAlibabaCloudDNS struct {
+	AccessToken SecretKeySelector `json:"accessTokenSecretRef"`
+	SecretToken SecretKeySelector `json:"secretKeySecretRef"`
+	RegionId    string            `json:"regionId"`
+}
 
 // ACMEIssuerDNS01ProviderAkamai is a structure containing the DNS
 // configuration for Akamai DNS—Zone Record Management API

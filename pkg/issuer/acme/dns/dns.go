@@ -30,6 +30,7 @@ import (
 	"github.com/jetstack/cert-manager/pkg/controller"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/acmedns"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/akamai"
+	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/alibabacloud"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/azuredns"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/clouddns"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/cloudflare"
@@ -52,6 +53,7 @@ type solver interface {
 // It is useful for mocking out a given provider since an alternate set of
 // constructors may be set.
 type dnsProviderConstructors struct {
+	alibabaCloud func(accessKey string, secretKey string, regionId string, dns01Nameservers []string) (*alibabacloud.DNSProvider, error)
 	cloudDNS     func(project string, serviceAccount []byte, dns01Nameservers []string, ambient bool) (*clouddns.DNSProvider, error)
 	cloudFlare   func(email, apikey string, dns01Nameservers []string) (*cloudflare.DNSProvider, error)
 	route53      func(accessKey, secretKey, hostedZoneID, region string, ambient bool, dns01Nameservers []string) (*route53.DNSProvider, error)
@@ -162,6 +164,28 @@ func (s *Solver) solverForChallenge(issuer v1alpha1.GenericIssuer, ch *v1alpha1.
 
 	var impl solver
 	switch {
+	case providerConfig.AlibabaCloudDNS != nil:
+		klog.V(5).Infof("Preparing to create AlibabaCloudDNS Provider")
+		accessToken, err := s.loadSecretData(&providerConfig.AlibabaCloudDNS.AccessToken, resourceNamespace)
+		if err != nil {
+			return nil, nil, errors.Wrap(err, "error getting alibaba access token")
+		}
+
+		secretKey, err := s.loadSecretData(&providerConfig.AlibabaCloudDNS.SecretToken, resourceNamespace)
+		if err != nil {
+			return nil, nil, errors.Wrap(err, "error getting alibaba secret key")
+		}
+
+		regionId := providerConfig.AlibabaCloudDNS.RegionId
+
+		impl, err = alibabacloud.NewDNSProvider(
+			string(accessToken),
+			string(secretKey),
+			string(regionId),
+			s.DNS01Nameservers)
+		if err != nil {
+			return nil, nil, errors.Wrap(err, "error instantiating alibaba challenge solver")
+		}
 	case providerConfig.Akamai != nil:
 		klog.V(5).Infof("Preparing to create Akamai Provider")
 		clientToken, err := s.loadSecretData(&providerConfig.Akamai.ClientToken, resourceNamespace)
@@ -350,6 +374,7 @@ func NewSolver(ctx *controller.Context) *Solver {
 		ctx,
 		ctx.KubeSharedInformerFactory.Core().V1().Secrets().Lister(),
 		dnsProviderConstructors{
+			alibabacloud.NewDNSProvider,
 			clouddns.NewDNSProvider,
 			cloudflare.NewDNSProviderCredentials,
 			route53.NewDNSProvider,

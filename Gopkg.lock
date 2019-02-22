@@ -88,6 +88,12 @@
   version = "v1.3.0"
 
 [[projects]]
+  name = "github.com/aliyun/alibaba-cloud-sdk-go"
+  packages = ["sdk","sdk/auth","sdk/auth/credentials","sdk/auth/signers","sdk/endpoints","sdk/errors","sdk/requests","sdk/responses","sdk/utils","services/alidns"]
+  revision = "2a066bb13e7cafa39736ba598badb7b3a37d27b5"
+  version = "1.53.2"
+
+[[projects]]
   branch = "master"
   digest = "1:00e4da50917ef06d0e5f182821963dc960675e1ab41416360168ef7539474189"
   name = "github.com/Venafi/vcert"
@@ -143,6 +149,14 @@
   packages = ["quantile"]
   pruneopts = "UT"
   revision = "4c0e84591b9aa9e6dcfdf3e020114cd81f89d5f9"
+
+[[projects]]
+  digest = "1:166438587ed45ac211dab8a3ecebf4fa0c186d0db63430fb9127bbc2e5fcdc67"
+  name = "github.com/cenkalti/backoff"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "1e4cf3da559842a91afcb6ea6141451e6c30c618"
+  version = "v2.1.1"
 
 [[projects]]
   digest = "1:8c99488f6d10d92104ee155409ae42ed65badf2a745cd7709c05cb48ef540e68"
@@ -585,12 +599,12 @@
   version = "v1.0.0"
 
 [[projects]]
-  branch = "master"
-  digest = "1:e35b22fd32c416ec3d5977cf1e2d8399f81e2bb9458e04541a25b6e68d52fda1"
+  digest = "1:1b46adc9e3d878cdf38a164cfdac2e19340f4d2662aa5bee88062f6ee08ac9df"
   name = "github.com/miekg/dns"
   packages = ["."]
   pruneopts = "UT"
-  revision = "0f3adef2e2201d72e50309a36fc99d8a9d1a4960"
+  revision = "8fc2e5773bbd308ca2fcc962fd8d25c1bd0f6743"
+  version = "v1.1.4"
 
 [[projects]]
   branch = "master"
@@ -785,6 +799,14 @@
   version = "v0.1"
 
 [[projects]]
+  digest = "1:274f67cb6fed9588ea2521ecdac05a6d62a8c51c074c1fccc6a49a40ba80e925"
+  name = "github.com/satori/go.uuid"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "f58768cc1a7a7e77a3bd49e98cdd21419399b6a3"
+  version = "v1.2.0"
+
+[[projects]]
   branch = "master"
   digest = "1:30cf61b9af8b874bf4f46b4b3e8598a5c480ea5959dcf2fda644f3523c57bb49"
   name = "github.com/sethgrid/pester"
@@ -829,10 +851,14 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:ed1124c473eac604bca20b7f77229d61da2b96789f2a98f19765ffa4df552d71"
+  digest = "1:0b00b995aec4cbf576d1ba9d989731fea80275df7f3a998489fb1ee3225de912"
   name = "golang.org/x/crypto"
   packages = [
     "acme",
+    "ed25519",
+    "ed25519/internal/edwards25519",
+    "ocsp",
+    "pbkdf2",
     "ssh/terminal",
   ]
   pruneopts = "UT"
@@ -840,9 +866,10 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:42bdd4721ba5544f3631a0570cebf50da808b10f66676aea588d0a88f0a19884"
+  digest = "1:1168bec07dc7aea636c8784bb9c3b263af70d798df1cffb36a87c44e04928683"
   name = "golang.org/x/net"
   packages = [
+    "bpf",
     "context",
     "context/ctxhttp",
     "html",
@@ -851,7 +878,11 @@
     "http2",
     "http2/hpack",
     "idna",
+    "internal/iana",
+    "internal/socket",
     "internal/timeseries",
+    "ipv4",
+    "ipv6",
     "lex/httplex",
     "trace",
     "websocket",
@@ -1029,6 +1060,18 @@
   pruneopts = "UT"
   revision = "a96e63847dc3c67d17befa69c303767e2f84e54f"
   version = "v2.1"
+
+[[projects]]
+  digest = "1:377f8ccfbf9d7ff3997ea7454b894de46cd1d9fe6ec1e724c93ad59eb716c5c0"
+  name = "gopkg.in/square/go-jose.v2"
+  packages = [
+    ".",
+    "cipher",
+    "json",
+  ]
+  pruneopts = "UT"
+  revision = "e94fb177d3668d35ab39c61cbb2f311550557e83"
+  version = "v2.2.2"
 
 [[projects]]
   branch = "v2"
@@ -1599,6 +1642,10 @@
     "github.com/Venafi/vcert/pkg/certificate",
     "github.com/Venafi/vcert/pkg/endpoint",
     "github.com/Venafi/vcert/pkg/venafi/fake",
+    "github.com/aliyun/alibaba-cloud-sdk-go/sdk",
+    "github.com/aliyun/alibaba-cloud-sdk-go/sdk/auth/credentials",
+    "github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests",
+    "github.com/aliyun/alibaba-cloud-sdk-go/services/alidns",
     "github.com/aws/aws-sdk-go/aws",
     "github.com/aws/aws-sdk-go/aws/awserr",
     "github.com/aws/aws-sdk-go/aws/client",
