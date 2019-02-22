@@ -21,9 +21,9 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/golang/glog"
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/errors"
+	"k8s.io/klog"
 
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
@@ -71,7 +71,7 @@ func (c *Controller) Sync(ctx context.Context, iss *v1alpha1.ClusterIssuer) (err
 	err = i.Setup(ctx)
 	if err != nil {
 		s := messageErrorInitIssuer + err.Error()
-		glog.Info(s)
+		klog.Info(s)
 		c.Recorder.Event(issuerCopy, v1.EventTypeWarning, errorInitIssuer, s)
 		return err
 	}

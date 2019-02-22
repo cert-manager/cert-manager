@@ -30,11 +30,11 @@ import (
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/apimachinery/pkg/util/sets"
 
-	"github.com/golang/glog"
 	"github.com/jetstack/cert-manager/pkg/acme"
 	acmecl "github.com/jetstack/cert-manager/pkg/acme/client"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	acmeapi "github.com/jetstack/cert-manager/third_party/crypto/acme"
+	"k8s.io/klog"
 )
 
 var (
@@ -271,7 +271,7 @@ func (c *Controller) Sync(ctx context.Context, o *cmapi.Order) (err error) {
 		specsToCreate[i] = s
 	}
 
-	glog.Infof("Need to create %d challenges", len(specsToCreate))
+	klog.Infof("Need to create %d challenges", len(specsToCreate))
 
 	// create a Challenge resource for each challenge we need to create.
 	var errs []error
@@ -320,7 +320,7 @@ func (c *Controller) Sync(ctx context.Context, o *cmapi.Order) (err error) {
 		return nil
 	}
 
-	glog.Infof("Waiting for all challenges for order %q to enter 'valid' state", o.Name)
+	klog.Infof("Waiting for all challenges for order %q to enter 'valid' state", o.Name)
 
 	return nil
 }

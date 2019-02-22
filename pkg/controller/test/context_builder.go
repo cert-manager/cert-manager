@@ -34,9 +34,11 @@ import (
 	cmfake "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/fake"
 	informers "github.com/jetstack/cert-manager/pkg/client/informers/externalversions"
 	"github.com/jetstack/cert-manager/pkg/controller"
+	"github.com/jetstack/cert-manager/pkg/logs"
 )
 
 func init() {
+	logs.InitLogs()
 	flag.Set("alsologtostderr", fmt.Sprintf("%t", true))
 	flag.Lookup("v").Value.Set("4")
 }

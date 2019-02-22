@@ -26,9 +26,8 @@ import (
 	"k8s.io/apimachinery/pkg/selection"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/apimachinery/pkg/util/intstr"
-	"k8s.io/ingress/core/pkg/ingress/annotations/class"
+	"k8s.io/klog"
 
-	"github.com/golang/glog"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/http/solver"
 )
@@ -46,7 +45,7 @@ func (s *Solver) getIngressesForChallenge(ch *v1alpha1.Challenge) ([]*extv1beta1
 		selector = selector.Add(*req)
 	}
 
-	glog.Infof("Looking up Ingresses for selector %v", selector)
+	klog.Infof("Looking up Ingresses for selector %v", selector)
 	ingressList, err := s.ingressLister.Ingresses(ch.Namespace).List(selector)
 	if err != nil {
 		return nil, err
@@ -55,7 +54,7 @@ func (s *Solver) getIngressesForChallenge(ch *v1alpha1.Challenge) ([]*extv1beta1
 	var relevantIngresses []*extv1beta1.Ingress
 	for _, ingress := range ingressList {
 		if !metav1.IsControlledBy(ingress, ch) {
-			glog.Infof("Found ingress %q with acme-order-url annotation set to that of Challenge %q "+
+			klog.Infof("Found ingress %q with acme-order-url annotation set to that of Challenge %q "+
 				"but it is not owned by the Challenge resource, so skipping it.", ingress.Namespace+"/"+ingress.Name, ch.Namespace+"/"+ch.Name)
 			continue
 		}
@@ -87,7 +86,7 @@ func (s *Solver) ensureIngress(ch *v1alpha1.Challenge, svcName string) (ing *ext
 	}
 	if len(existingIngresses) > 1 {
 		errMsg := fmt.Sprintf("multiple challenge solver ingresses found for Challenge '%s/%s'. Cleaning up existing pods.", ch.Namespace, ch.Name)
-		glog.Infof(errMsg)
+		klog.Infof(errMsg)
 		err := s.cleanupIngresses(ch)
 		if err != nil {
 			return nil, err
@@ -95,7 +94,7 @@ func (s *Solver) ensureIngress(ch *v1alpha1.Challenge, svcName string) (ing *ext
 		return nil, fmt.Errorf(errMsg)
 	}
 
-	glog.Infof("No existing HTTP01 challenge solver ingress found for Challenge %q. One will be created.", ch.Namespace+"/"+ch.Name)
+	klog.Infof("No existing HTTP01 challenge solver ingress found for Challenge %q. One will be created.", ch.Namespace+"/"+ch.Name)
 	return s.createIngress(ch, svcName)
 }
 
@@ -207,7 +206,7 @@ func (s *Solver) cleanupIngresses(ch *v1alpha1.Challenge) error {
 		if err != nil {
 			return err
 		}
-		glog.V(4).Infof("Found %d ingresses to clean up for certificate %q", len(ingresses), ch.Namespace+"/"+ch.Name)
+		klog.V(4).Infof("Found %d ingresses to clean up for certificate %q", len(ingresses), ch.Namespace+"/"+ch.Name)
 		var errs []error
 		for _, ingress := range ingresses {
 			// TODO: should we call DeleteCollection here? We'd need to somehow
@@ -223,7 +222,7 @@ func (s *Solver) cleanupIngresses(ch *v1alpha1.Challenge) error {
 	// otherwise, we need to remove any cert-manager added rules from the ingress resource
 	ing, err := s.Client.ExtensionsV1beta1().Ingresses(ch.Namespace).Get(existingIngressName, metav1.GetOptions{})
 	if k8sErrors.IsNotFound(err) {
-		glog.Infof("attempt to cleanup Ingress %q of ACME challenge path failed: %v", ch.Namespace+"/"+existingIngressName, err)
+		klog.Infof("attempt to cleanup Ingress %q of ACME challenge path failed: %v", ch.Namespace+"/"+existingIngressName, err)
 		return nil
 	}
 	if err != nil {

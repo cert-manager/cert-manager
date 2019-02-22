@@ -19,8 +19,8 @@ package scheduler
 import (
 	"sort"
 
-	"github.com/golang/glog"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/klog"
 
 	"github.com/jetstack/cert-manager/pkg/acme"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
@@ -108,7 +108,7 @@ func (s *Scheduler) determineChallengeCandidates(allChallenges []*cmapi.Challeng
 	// We perform this check here to avoid extra processing if we've already
 	// hit the maximum number of challenges.
 	if inProgressChallengeCount >= MaxConcurrentChallenges {
-		glog.V(4).Infof("There are currently %d running challenges, with a maximum configured of %d. Refusing to schedule more challenges.", len(inProgress), MaxConcurrentChallenges)
+		klog.V(4).Infof("There are currently %d running challenges, with a maximum configured of %d. Refusing to schedule more challenges.", len(inProgress), MaxConcurrentChallenges)
 		return []*cmapi.Challenge{}, inProgressChallengeCount, nil
 	}
 
@@ -127,7 +127,7 @@ func (s *Scheduler) determineChallengeCandidates(allChallenges []*cmapi.Challeng
 	candidates := filterChallenges(dedupedCandidates, func(ch *cmapi.Challenge) bool {
 		for _, inPCh := range inProgress {
 			if compareChallenges(ch, inPCh) == 0 {
-				glog.V(6).Infof("There is already a challenge processing for domain %q (type %q)", ch.Spec.DNSName, ch.Spec.Type)
+				klog.V(6).Infof("There is already a challenge processing for domain %q (type %q)", ch.Spec.DNSName, ch.Spec.Type)
 				return false
 			}
 		}

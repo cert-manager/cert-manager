@@ -16,7 +16,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/golang/glog"
+	"k8s.io/klog"
 
 	"github.com/Azure/azure-sdk-for-go/services/dns/mgmt/2017-10-01/dns"
 	"github.com/Azure/go-autorest/autorest"
@@ -87,7 +87,7 @@ func (c *DNSProvider) Present(domain, fqdn, value string) error {
 func (c *DNSProvider) CleanUp(domain, fqdn, value string) error {
 	z, err := c.getHostedZoneName(fqdn)
 	if err != nil {
-		glog.Infof("Error getting hosted zone name for: %s, %v", fqdn, err)
+		klog.Infof("Error getting hosted zone name for: %s, %v", fqdn, err)
 		return err
 	}
 
@@ -116,7 +116,7 @@ func (c *DNSProvider) createRecord(fqdn, value string, ttl int) error {
 
 	z, err := c.getHostedZoneName(fqdn)
 	if err != nil {
-		glog.Infof("Error getting hosted zone name for: %s, %v", fqdn, err)
+		klog.Infof("Error getting hosted zone name for: %s, %v", fqdn, err)
 		return err
 	}
 
@@ -129,7 +129,7 @@ func (c *DNSProvider) createRecord(fqdn, value string, ttl int) error {
 		*rparams, "", "")
 
 	if err != nil {
-		glog.Infof("Error creating TXT: %s, %v", c.zoneName, err)
+		klog.Infof("Error creating TXT: %s, %v", c.zoneName, err)
 		return err
 	}
 	return nil

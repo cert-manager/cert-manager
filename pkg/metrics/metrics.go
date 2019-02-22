@@ -26,13 +26,13 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/golang/glog"
 	"github.com/gorilla/mux"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/util/runtime"
 	corelisters "k8s.io/client-go/listers/core/v1"
+	"k8s.io/klog"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	"github.com/jetstack/cert-manager/pkg/util/errors"
@@ -122,17 +122,17 @@ func New() *Metrics {
 
 func (m *Metrics) waitShutdown(stopCh <-chan struct{}) {
 	<-stopCh
-	glog.Info("Stopping Prometheus metrics server...")
+	klog.Info("Stopping Prometheus metrics server...")
 
 	ctx, cancel := context.WithTimeout(context.Background(), prometheusMetricsServerShutdownTimeout)
 	defer cancel()
 
 	if err := m.Shutdown(ctx); err != nil {
-		glog.Errorf("Prometheus metrics server shutdown error: %v", err)
+		klog.Errorf("Prometheus metrics server shutdown error: %v", err)
 		return
 	}
 
-	glog.Info("Prometheus metrics server gracefully stopped")
+	klog.Info("Prometheus metrics server gracefully stopped")
 }
 
 func (m *Metrics) Start(stopCh <-chan struct{}) {
@@ -142,13 +142,13 @@ func (m *Metrics) Start(stopCh <-chan struct{}) {
 
 	go func() {
 
-		glog.Infof("Listening on http://%s", m.Addr)
+		klog.Infof("Listening on http://%s", m.Addr)
 		if err := m.ListenAndServe(); err != nil {
-			glog.Errorf("Error running prometheus metrics server: %s", err.Error())
+			klog.Errorf("Error running prometheus metrics server: %s", err.Error())
 			return
 		}
 
-		glog.Infof("Prometheus metrics server exited")
+		klog.Infof("Prometheus metrics server exited")
 
 	}()
 

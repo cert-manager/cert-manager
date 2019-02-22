@@ -15,8 +15,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/golang/glog"
 	"github.com/miekg/dns"
+	"k8s.io/klog"
 )
 
 type preCheckDNSFunc func(fqdn, value string, nameservers []string,
@@ -67,7 +67,7 @@ func updateDomainWithCName(r *dns.Msg, fqdn string) string {
 	for _, rr := range r.Answer {
 		if cn, ok := rr.(*dns.CNAME); ok {
 			if cn.Hdr.Name == fqdn {
-				glog.Infof("Updating FQDN: %s with it's CNAME: %s", fqdn, cn.Target)
+				klog.Infof("Updating FQDN: %s with it's CNAME: %s", fqdn, cn.Target)
 				fqdn = cn.Target
 				break
 			}
@@ -117,7 +117,7 @@ func checkAuthoritativeNss(fqdn, value string, nameservers []string) (bool, erro
 			return false, fmt.Errorf("NS %s returned %s for %s", ns, dns.RcodeToString[r.Rcode], fqdn)
 		}
 
-		glog.V(6).Infof("Looking up TXT records for %q", fqdn)
+		klog.V(6).Infof("Looking up TXT records for %q", fqdn)
 		var found bool
 		for _, rr := range r.Answer {
 			if txt, ok := rr.(*dns.TXT); ok {
@@ -155,7 +155,7 @@ func dnsQuery(fqdn string, rtype uint16, nameservers []string, recursive bool) (
 
 		if err == dns.ErrTruncated ||
 			(err != nil && strings.HasPrefix(err.Error(), "read udp") && strings.HasSuffix(err.Error(), "i/o timeout")) {
-			glog.V(6).Infof("UDP dns lookup failed, retrying with TCP: %v", err)
+			klog.V(6).Infof("UDP dns lookup failed, retrying with TCP: %v", err)
 			tcp := &dns.Client{Net: "tcp", Timeout: DNSTimeout}
 			// If the TCP request succeeds, the err will reset to nil
 			in, _, err = tcp.Exchange(m, ns)
@@ -253,7 +253,7 @@ func matchCAA(caas []*dns.CAA, issuerIDs map[string]bool, iswildcard bool) bool 
 func lookupNameservers(fqdn string, nameservers []string) ([]string, error) {
 	var authoritativeNss []string
 
-	glog.V(6).Infof("Searching fqdn %q using seed nameservers [%s]", fqdn, strings.Join(nameservers, ", "))
+	klog.V(6).Infof("Searching fqdn %q using seed nameservers [%s]", fqdn, strings.Join(nameservers, ", "))
 	zone, err := FindZoneByFqdn(fqdn, nameservers)
 	if err != nil {
 		return nil, fmt.Errorf("Could not determine the zone for %q: %v", fqdn, err)
@@ -271,7 +271,7 @@ func lookupNameservers(fqdn string, nameservers []string) ([]string, error) {
 	}
 
 	if len(authoritativeNss) > 0 {
-		glog.V(6).Infof("Returning authoritative nameservers [%s]", strings.Join(authoritativeNss, ", "))
+		klog.V(6).Infof("Returning authoritative nameservers [%s]", strings.Join(authoritativeNss, ", "))
 		return authoritativeNss, nil
 	}
 	return nil, fmt.Errorf("Could not determine authoritative nameservers for %q", fqdn)
@@ -284,7 +284,7 @@ func FindZoneByFqdn(fqdn string, nameservers []string) (string, error) {
 	// Do we have it cached?
 	if zone, ok := fqdnToZone[fqdn]; ok {
 		fqdnToZoneLock.RUnlock()
-		glog.V(6).Infof("Returning cached zone record %q for fqdn %q", zone, fqdn)
+		klog.V(6).Infof("Returning cached zone record %q for fqdn %q", zone, fqdn)
 		return zone, nil
 	}
 	fqdnToZoneLock.RUnlock()
@@ -320,7 +320,7 @@ func FindZoneByFqdn(fqdn string, nameservers []string) (string, error) {
 
 					zone := soa.Hdr.Name
 					fqdnToZone[fqdn] = zone
-					glog.V(6).Infof("Returning discovered zone record %q for fqdn %q", zone, fqdn)
+					klog.V(6).Infof("Returning discovered zone record %q for fqdn %q", zone, fqdn)
 					return zone, nil
 				}
 			}

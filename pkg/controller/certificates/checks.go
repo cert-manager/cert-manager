@@ -25,8 +25,8 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/runtime"
 
-	"github.com/golang/glog"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	"k8s.io/klog"
 )
 
 func (c *Controller) handleGenericIssuer(obj interface{}) {
@@ -125,7 +125,7 @@ func (c *Controller) certificatesForGenericIssuer(iss cmapi.GenericIssuer) ([]*c
 func (c *Controller) handleOwnedResource(obj interface{}) {
 	metaobj, ok := obj.(metav1.Object)
 	if !ok {
-		glog.Errorf("item passed to handleOwnedResource does not implement ObjectMetaAccessor")
+		klog.Errorf("item passed to handleOwnedResource does not implement ObjectMetaAccessor")
 		return
 	}
 
@@ -134,7 +134,7 @@ func (c *Controller) handleOwnedResource(obj interface{}) {
 		// Parse the Group out of the OwnerReference to compare it to what was parsed out of the requested OwnerType
 		refGV, err := schema.ParseGroupVersion(ref.APIVersion)
 		if err != nil {
-			glog.Errorf("Could not parse OwnerReference GroupVersion: %v", err)
+			klog.Errorf("Could not parse OwnerReference GroupVersion: %v", err)
 			continue
 		}
 
@@ -142,7 +142,7 @@ func (c *Controller) handleOwnedResource(obj interface{}) {
 			// TODO: how to handle namespace of owner references?
 			cert, err := c.certificateLister.Certificates(metaobj.GetNamespace()).Get(ref.Name)
 			if err != nil {
-				glog.Errorf("Error getting Certificate %q referenced by resource %q", ref.Name, metaobj.GetName())
+				klog.Errorf("Error getting Certificate %q referenced by resource %q", ref.Name, metaobj.GetName())
 				continue
 			}
 			objKey, err := keyFunc(cert)
