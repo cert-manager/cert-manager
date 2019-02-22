@@ -8,15 +8,18 @@ required = [
   "github.com/onsi/ginkgo/ginkgo",
 ]
 
-[[constraint]]
+
+# dep needs the following to be overrides to convince it that CR can work with these library versions,
+# because it doesn't understand the "kubernetes-x.y.z" tags.
+[[override]]
   name = "k8s.io/api"
   version = "kubernetes-1.13.2"
 
-[[constraint]]
+[[override]]
   name = "k8s.io/apimachinery"
   version = "kubernetes-1.13.2"
 
-[[constraint]]
+[[override]]
   name = "k8s.io/client-go"
   # Use the specific revision in client-go that fixes a regression in the
   # testing package
@@ -60,6 +63,10 @@ required = [
   name = "bitbucket.org/ww/goautoneg"
   revision = "a547fc61f48d567d5b4ec6f8aee5573d8efce11d"
   source = "https://github.com/munnerz/goautoneg.git"
+
+[[constraint]]
+  name = "sigs.k8s.io/controller-runtime"
+  branch = "master"
 
 ### Overrides for transitive kubernetes dependencies
 ### These should be updated whenever we bump the kubernetes version we depend on

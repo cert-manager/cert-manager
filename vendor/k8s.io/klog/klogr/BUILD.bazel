@@ -2,14 +2,15 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 
 go_library(
     name = "go_default_library",
-    srcs = [
-        "klog.go",
-        "klog_file.go",
-    ],
-    importmap = "github.com/jetstack/cert-manager/vendor/k8s.io/klog",
-    importpath = "k8s.io/klog",
+    srcs = ["klogr.go"],
+    importmap = "github.com/jetstack/cert-manager/vendor/k8s.io/klog/klogr",
+    importpath = "k8s.io/klog/klogr",
     tags = ["manual"],
     visibility = ["//visibility:public"],
+    deps = [
+        "//vendor/github.com/go-logr/logr:go_default_library",
+        "//vendor/k8s.io/klog:go_default_library",
+    ],
 )
 
 filegroup(
@@ -21,10 +22,7 @@ filegroup(
 
 filegroup(
     name = "all-srcs",
-    srcs = [
-        ":package-srcs",
-        "//vendor/k8s.io/klog/klogr:all-srcs",
-    ],
+    srcs = [":package-srcs"],
     tags = ["automanaged"],
     visibility = ["//visibility:public"],
 )
