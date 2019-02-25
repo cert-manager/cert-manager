@@ -25,13 +25,13 @@ import (
 	"hash/fnv"
 	"time"
 
-	"github.com/golang/glog"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/selection"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
+	"k8s.io/klog"
 
 	"github.com/jetstack/cert-manager/pkg/acme"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
@@ -52,13 +52,13 @@ var (
 func (a *Acme) Issue(ctx context.Context, crt *v1alpha1.Certificate) (*issuer.IssueResponse, error) {
 	key, generated, err := a.getCertificatePrivateKey(crt)
 	if err != nil {
-		glog.Errorf("Error getting certificate private key: %v", err)
+		klog.Errorf("Error getting certificate private key: %v", err)
 		return nil, err
 	}
 	if generated {
 		// If we have generated a new private key, we return here to ensure we
 		// successfully persist the key before creating any CSRs with it.
-		glog.V(4).Infof("Storing new certificate private key for %s/%s", crt.Namespace, crt.Name)
+		klog.V(4).Infof("Storing new certificate private key for %s/%s", crt.Namespace, crt.Name)
 		a.Recorder.Eventf(crt, corev1.EventTypeNormal, "Generated", "Generated new private key")
 
 		keyPem, err := pki.EncodePrivateKey(key)
@@ -79,6 +79,7 @@ func (a *Acme) Issue(ctx context.Context, crt *v1alpha1.Certificate) (*issuer.Is
 	// exists.
 	expectedOrder, err := buildOrder(crt, nil)
 	if err != nil {
+		a.Recorder.Eventf(crt, corev1.EventTypeWarning, "Unknown", "Error building Order resource: %v", err)
 		return nil, err
 	}
 
@@ -89,7 +90,7 @@ func (a *Acme) Issue(ctx context.Context, crt *v1alpha1.Certificate) (*issuer.Is
 	// have the same name.
 	err = a.cleanupOwnedOrders(crt, expectedOrder.Name)
 	if err != nil {
-		glog.Errorf("Error cleaning up old orders: %v", err)
+		a.Recorder.Eventf(crt, corev1.EventTypeWarning, "CleanupError", "Cleaning up existing Order resources failed: %v", err)
 		return nil, err
 	}
 
@@ -98,11 +99,16 @@ func (a *Acme) Issue(ctx context.Context, crt *v1alpha1.Certificate) (*issuer.Is
 	// the generated expectedOrder.
 	existingOrder, err := a.orderLister.Orders(expectedOrder.Namespace).Get(expectedOrder.Name)
 	if err != nil && !apierrors.IsNotFound(err) {
-		glog.Errorf("Error getting existing Order resource: %v", err)
+		klog.Errorf("Error getting existing Order resource: %v", err)
 		return nil, err
 	}
 	if existingOrder == nil {
-		return nil, a.createNewOrder(crt, expectedOrder, key)
+		err := a.createNewOrder(crt, expectedOrder, key)
+		if err != nil {
+			a.Recorder.Eventf(crt, corev1.EventTypeWarning, "CreateError", "Failed to create Order resource: %v", err)
+			return nil, err
+		}
+		return nil, nil
 	}
 
 	// if there is an existing order, we check to make sure it is up to date
@@ -112,14 +118,14 @@ func (a *Acme) Issue(ctx context.Context, crt *v1alpha1.Certificate) (*issuer.Is
 	// well as the back-off applied to failing ACME Orders.
 	// They should therefore *only* match on changes to the actual Certificate
 	// resource, or underlying Order (i.e. user interaction).
-	glog.V(4).Infof("Validating existing order CSR for Certificate %s/%s", crt.Namespace, crt.Name)
+	klog.V(4).Infof("Validating existing order CSR for Certificate %s/%s", crt.Namespace, crt.Name)
 
 	validForKey, err := existingOrderIsValidForKey(existingOrder, key)
 	if err != nil {
 		return nil, err
 	}
 	if !validForKey {
-		glog.V(4).Infof("CSR on existing order resource does not match certificate %s/%s private key", crt.Namespace, crt.Name)
+		klog.V(4).Infof("CSR on existing order resource does not match certificate %s/%s private key", crt.Namespace, crt.Name)
 		return nil, a.retryOrder(crt, existingOrder)
 	}
 
@@ -151,28 +157,29 @@ func (a *Acme) Issue(ctx context.Context, crt *v1alpha1.Certificate) (*issuer.Is
 	}
 
 	if existingOrder.Status.State != v1alpha1.Valid {
-		glog.Infof("Order %s/%s is not in 'valid' state. Waiting for Order to transition before attempting to issue Certificate.", existingOrder.Namespace, existingOrder.Name)
+		klog.Infof("Order %s/%s is not in 'valid' state. Waiting for Order to transition before attempting to issue Certificate.", existingOrder.Namespace, existingOrder.Name)
 
 		// We don't immediately requeue, as the change to the Order resource on
 		// transition should trigger the certificate to be re-synced.
 		return nil, nil
 	}
 
-	a.Recorder.Eventf(crt, corev1.EventTypeNormal, "OrderComplete", "Order %q completed successfully", existingOrder.Name)
-
 	// this should never happen
 	if existingOrder.Status.Certificate == nil {
-		a.Recorder.Eventf(crt, corev1.EventTypeWarning, "BadCertificate", "Empty certificate data retrieved from ACME server")
-		return nil, fmt.Errorf("Order in a valid state but certificate data not set")
+		a.Recorder.Eventf(crt, corev1.EventTypeWarning, "NoCertificate", "Empty certificate data retrieved from ACME server")
+		return nil, fmt.Errorf("order in a valid state but certificate data not set")
 	}
 
 	// TODO: replace with a call to a function that returns the whole chain
 	x509Certs, err := pki.DecodeX509CertificateBytes(existingOrder.Status.Certificate)
 	if err != nil {
-		glog.Infof("Error parsing existing x509 certificate on Order resource %q: %v", existingOrder.Name, err)
+		klog.Infof("Error parsing existing x509 certificate on Order resource %q: %v", existingOrder.Name, err)
+		a.Recorder.Eventf(crt, corev1.EventTypeWarning, "ParseError", "Error decoding certificate issued by Order: %v", err)
 		// if parsing the certificate fails, recreate the order
 		return nil, a.retryOrder(crt, existingOrder)
 	}
+
+	a.Recorder.Eventf(crt, corev1.EventTypeNormal, "OrderComplete", "Order %q completed successfully", existingOrder.Name)
 
 	// x509Cert := x509Certs[0]
 	x509Cert := x509Certs
@@ -226,18 +233,18 @@ func (a *Acme) cleanupOwnedOrders(crt *v1alpha1.Certificate, retain string) erro
 		}
 
 		if o.Name == retain {
-			glog.V(4).Infof("Skipping cleanup for active order resource %q", retain)
+			klog.V(4).Infof("Skipping cleanup for active order resource %q", retain)
 			continue
 		}
 
 		// delete any old order resources
-		glog.Infof("Deleting Order resource %s/%s", o.Namespace, o.Name)
+		klog.Infof("Deleting Order resource %s/%s", o.Namespace, o.Name)
 		a.Recorder.Eventf(crt, corev1.EventTypeNormal, "Cleanup",
 			fmt.Sprintf("Deleting old Order resource %q", o.Name))
 
 		err := a.CMClient.CertmanagerV1alpha1().Orders(o.Namespace).Delete(o.Name, nil)
 		if err != nil && !apierrors.IsNotFound(err) {
-			glog.Errorf("Error deleting Order resource %s/%s: %v", o.Namespace, o.Name, err)
+			klog.Errorf("Error deleting Order resource %s/%s: %v", o.Namespace, o.Name, err)
 			errs = append(errs, err)
 			continue
 		}
@@ -247,7 +254,7 @@ func (a *Acme) cleanupOwnedOrders(crt *v1alpha1.Certificate, retain string) erro
 }
 
 func (a *Acme) getCertificatePrivateKey(crt *v1alpha1.Certificate) (crypto.Signer, bool, error) {
-	glog.V(4).Infof("Attempting to fetch existing certificate private key")
+	klog.V(4).Infof("Attempting to fetch existing certificate private key")
 
 	// If a private key already exists, reuse it.
 	// TODO: if we have not observed the update to the Secret resource with the
@@ -266,7 +273,7 @@ func (a *Acme) getCertificatePrivateKey(crt *v1alpha1.Certificate) (crypto.Signe
 		return nil, false, err
 	}
 
-	glog.V(4).Infof("Generating new private key for %s/%s", crt.Namespace, crt.Name)
+	klog.V(4).Infof("Generating new private key for %s/%s", crt.Namespace, crt.Name)
 
 	// generate a new private key.
 	rsaKey, err := pki.GenerateRSAPrivateKey(2048)
@@ -278,7 +285,7 @@ func (a *Acme) getCertificatePrivateKey(crt *v1alpha1.Certificate) (crypto.Signe
 }
 
 func (a *Acme) createNewOrder(crt *v1alpha1.Certificate, template *v1alpha1.Order, key crypto.Signer) error {
-	glog.V(4).Infof("Creating new Order resource for Certificate %s/%s", crt.Namespace, crt.Name)
+	klog.V(4).Infof("Creating new Order resource for Certificate %s/%s", crt.Namespace, crt.Name)
 
 	csr, err := pki.GenerateCSR(a.issuer, crt)
 	if err != nil {
@@ -301,7 +308,7 @@ func (a *Acme) createNewOrder(crt *v1alpha1.Certificate, template *v1alpha1.Orde
 	}
 
 	a.Recorder.Eventf(crt, corev1.EventTypeNormal, "OrderCreated", "Created Order resource %q", o.Name)
-	glog.V(4).Infof("Created new Order resource named %q for Certificate %s/%s", template.Name, crt.Namespace, crt.Name)
+	klog.V(4).Infof("Created new Order resource named %q for Certificate %s/%s", template.Name, crt.Namespace, crt.Name)
 
 	return nil
 }
@@ -337,7 +344,7 @@ func existingOrderIsValidForKey(o *v1alpha1.Order, key crypto.Signer) (bool, err
 	}
 	existingCSR, err := x509.ParseCertificateRequest(csrBytes)
 	if err != nil {
-		// Absorb invalid CSR datas as 'not valid'
+		// Absorb invalid CSR data as 'not valid'
 		return false, nil
 	}
 

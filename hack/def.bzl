@@ -13,6 +13,7 @@
 # limitations under the License.
 
 load("@io_bazel_rules_docker//container:image.bzl", "container_image")
+load("@io_bazel_rules_docker//container:bundle.bzl", "container_bundle")
 load("@io_bazel_rules_docker//go:image.bzl", "go_image")
 
 ## stamped_image is a macro for creating :app and :image targets
@@ -37,3 +38,63 @@ def stamped_image(
       user = user,
       stamp = stamp,
       **kwargs)
+
+def multiarch_image(
+    name,
+    goarch = ["amd64", "arm64", "arm"],
+    goos = ["linux"],
+    user = "1000",
+    stamp = True,
+    **kwargs):
+
+  for arch in goarch:
+    for os in goos:
+      go_image(
+          name = "%s.app_%s-%s" % (name, os, arch),
+          base = "@alpine_%s-%s//image" % (os, arch),
+          embed = [":go_default_library"],
+          goarch = arch,
+          goos = os,
+          pure = "on",
+      )
+
+      container_image(
+          name = "%s.%s-%s" % (name, os, arch),
+          base = "%s.app_%s-%s" % (name, os, arch),
+          user = user,
+          stamp = stamp,
+          **kwargs)
+
+  container_image(
+      name = name,
+      base = "%s.%s-%s" % (name, goos[0], goarch[0]),
+      **kwargs)
+
+def multiarch_bundle(
+    name,
+    images,
+    os = ["linux"],
+    arch = ["amd64", "arm64", "arm"],
+    **kwargs):
+
+    all_images = {}
+    for a in arch:
+      for o in os:
+        oa_images = {}
+        for (k, v) in images.items():
+          image_name = k.replace("{arch}", a)
+          image_name = image_name.replace("{os}", o)
+
+          oa_images[image_name] = "%s.%s-%s" % (v, o, a)
+
+        container_bundle(
+            name = "%s.%s-%s" % (name, o, a),
+            images = oa_images,
+            **kwargs)
+
+        all_images += oa_images
+
+    container_bundle(
+        name = name,
+        images = all_images,
+        **kwargs)

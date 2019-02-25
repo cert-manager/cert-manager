@@ -7,6 +7,8 @@ global:
 
   # Optional priority class to be used for the cert-manager pods
   priorityClassName: ""
+  rbac:
+    create: true
 
 replicaCount: 1
 
@@ -28,7 +30,7 @@ resources: {}
 
 image:
   repository: quay.io/jetstack/cert-manager-webhook
-  tag: v0.6.1
+  tag: v0.7.0-alpha.0
   pullPolicy: IfNotPresent
 
 caSyncImage:

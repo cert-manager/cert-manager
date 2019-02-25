@@ -48,17 +48,20 @@ git_repository(
 git_repository(
     name = "io_bazel_rules_docker",
     remote = "https://github.com/bazelbuild/rules_docker.git",
-    tag = "v0.6.0",
+    tag = "v0.7.0",
 )
 
 load(
-    "@io_bazel_rules_docker//container:container.bzl",
-    "container_pull",
+    "@io_bazel_rules_docker//repositories:repositories.bzl",
     container_repositories = "repositories",
 )
 
 container_repositories()
 
+load(
+    "@io_bazel_rules_docker//container:container.bzl",
+    "container_pull",
+)
 load(
     "@io_bazel_rules_docker//go:image.bzl",
     _go_image_repos = "repositories",
@@ -68,10 +71,27 @@ _go_image_repos()
 
 ## Pull some standard base images
 container_pull(
-    name = "alpine",
-    registry = "gcr.io",
-    repository = "jetstack-build-infra/alpine",
-    tag = "3.7-v20180822-0201cfb11",
+    name = "alpine_linux-amd64",
+    digest = "sha256:cf2412cab4f40318e722d2604fa6c79b3d28a7cb37988d95ab2453577417359a",
+    registry = "index.docker.io",
+    repository = "munnerz/alpine",
+    tag = "3.8-amd64",
+)
+
+container_pull(
+    name = "alpine_linux-arm64",
+    digest = "sha256:4b8a5fc687674dd11ab769b8a711acba667c752b08697a03f6ffb1f1bcd123e5",
+    registry = "index.docker.io",
+    repository = "munnerz/alpine",
+    tag = "3.8-arm64",
+)
+
+container_pull(
+    name = "alpine_linux-arm",
+    digest = "sha256:185cad013588d77b0e78018b5f275a7849a63a33cd926405363825536597d9e2",
+    registry = "index.docker.io",
+    repository = "munnerz/alpine",
+    tag = "3.8-arm",
 )
 
 ## Fetch helm & tiller for use in template generation and testing
@@ -307,6 +327,13 @@ npm_install(
     name = "brodocs_modules",
     package_json = "@brodocs//:package.json",
     package_lock_json = "//docs/generated/reference/generate/bin:package-lock.json",
+)
+
+# Load the controller-tools repository in order to build the crd generator tool
+go_repository(
+    name = "io_kubernetes_sigs_controller-tools",
+    commit = "538db3af1387ce55d50b93e500a49925a5768c82",
+    importpath = "sigs.k8s.io/controller-tools",
 )
 
 # Load kubernetes-incubator/reference-docs, to be used as part of the docs

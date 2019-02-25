@@ -19,6 +19,7 @@ package ca
 import (
 	corelisters "k8s.io/client-go/listers/core/v1"
 
+	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	"github.com/jetstack/cert-manager/pkg/controller"
 	"github.com/jetstack/cert-manager/pkg/issuer"
@@ -50,5 +51,5 @@ func NewCA(ctx *controller.Context, issuer v1alpha1.GenericIssuer) (issuer.Inter
 }
 
 func init() {
-	controller.RegisterIssuer(controller.IssuerCA, NewCA)
+	issuer.RegisterIssuer(apiutil.IssuerCA, NewCA)
 }

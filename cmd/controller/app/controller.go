@@ -17,12 +17,12 @@ limitations under the License.
 package app
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"sync"
 	"time"
 
-	"github.com/golang/glog"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -33,6 +33,7 @@ import (
 	"k8s.io/client-go/tools/leaderelection"
 	"k8s.io/client-go/tools/leaderelection/resourcelock"
 	"k8s.io/client-go/tools/record"
+	"k8s.io/klog"
 
 	"github.com/jetstack/cert-manager/cmd/controller/app/options"
 	clientset "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
@@ -53,10 +54,10 @@ func Run(opts *options.ControllerOptions, stopCh <-chan struct{}) {
 	ctx, kubeCfg, err := buildControllerContext(opts)
 
 	if err != nil {
-		glog.Fatalf(err.Error())
+		klog.Fatalf(err.Error())
 	}
 
-	run := func(_ <-chan struct{}) {
+	run := func(_ context.Context) {
 		var wg sync.WaitGroup
 		wg.Add(1)
 		go func() {
@@ -66,45 +67,45 @@ func Run(opts *options.ControllerOptions, stopCh <-chan struct{}) {
 		for n, fn := range controller.Known() {
 			// only run a controller if it's been enabled
 			if !util.Contains(opts.EnabledControllers, n) {
-				glog.Infof("%s controller is not in list of controllers to enable, so not enabling it", n)
+				klog.Infof("%s controller is not in list of controllers to enable, so not enabling it", n)
 				continue
 			}
 
 			// don't run clusterissuers controller if scoped to a single namespace
 			if ctx.Namespace != "" && n == clusterissuers.ControllerName {
-				glog.Infof("Skipping ClusterIssuer controller as cert-manager is scoped to a single namespace")
+				klog.Infof("Skipping ClusterIssuer controller as cert-manager is scoped to a single namespace")
 				continue
 			}
 
 			wg.Add(1)
 			go func(n string, fn controller.Interface) {
 				defer wg.Done()
-				glog.Infof("Starting %s controller", n)
+				klog.Infof("Starting %s controller", n)
 
 				workers := 5
 				err := fn(workers, stopCh)
 
 				if err != nil {
-					glog.Fatalf("error running %s controller: %s", n, err.Error())
+					klog.Fatalf("error running %s controller: %s", n, err.Error())
 				}
 			}(n, fn(ctx))
 		}
-		glog.V(4).Infof("Starting shared informer factory")
+		klog.V(4).Infof("Starting shared informer factory")
 		ctx.SharedInformerFactory.Start(stopCh)
 		ctx.KubeSharedInformerFactory.Start(stopCh)
 		wg.Wait()
-		glog.Fatalf("Control loops exited")
+		klog.Fatalf("Control loops exited")
 	}
 
 	if !opts.LeaderElect {
-		run(stopCh)
+		run(context.TODO())
 		return
 	}
 
 	leaderElectionClient, err := kubernetes.NewForConfig(rest.AddUserAgent(kubeCfg, "leader-election"))
 
 	if err != nil {
-		glog.Fatalf("error creating leader election client: %s", err.Error())
+		klog.Fatalf("error creating leader election client: %s", err.Error())
 	}
 
 	startLeaderElection(opts, leaderElectionClient, ctx.Recorder, run)
@@ -138,7 +139,7 @@ func buildControllerContext(opts *options.ControllerOptions) (*controller.Contex
 		nameservers = dnsutil.RecursiveNameservers
 	}
 
-	glog.Infof("Using the following nameservers for DNS01 checks: %v", nameservers)
+	klog.Infof("Using the following nameservers for DNS01 checks: %v", nameservers)
 
 	HTTP01SolverResourceRequestCPU, err := resource.ParseQuantity(opts.ACMEHTTP01SolverResourceRequestCPU)
 	if err != nil {
@@ -164,9 +165,9 @@ func buildControllerContext(opts *options.ControllerOptions) (*controller.Contex
 	// Add cert-manager types to the default Kubernetes Scheme so Events can be
 	// logged properly
 	intscheme.AddToScheme(scheme.Scheme)
-	glog.V(4).Info("Creating event broadcaster")
+	klog.V(4).Info("Creating event broadcaster")
 	eventBroadcaster := record.NewBroadcaster()
-	eventBroadcaster.StartLogging(glog.V(4).Infof)
+	eventBroadcaster.StartLogging(klog.V(4).Infof)
 	eventBroadcaster.StartRecordingToSink(&corev1.EventSinkImpl{Interface: cl.CoreV1().Events("")})
 	recorder := eventBroadcaster.NewRecorder(scheme.Scheme, v1.EventSource{Component: controllerAgentName})
 
@@ -207,11 +208,11 @@ func buildControllerContext(opts *options.ControllerOptions) (*controller.Contex
 	}, kubeCfg, nil
 }
 
-func startLeaderElection(opts *options.ControllerOptions, leaderElectionClient kubernetes.Interface, recorder record.EventRecorder, run func(<-chan struct{})) {
+func startLeaderElection(opts *options.ControllerOptions, leaderElectionClient kubernetes.Interface, recorder record.EventRecorder, run func(context.Context)) {
 	// Identity used to distinguish between multiple controller manager instances
 	id, err := os.Hostname()
 	if err != nil {
-		glog.Fatalf("error getting hostname: %s", err.Error())
+		klog.Fatalf("error getting hostname: %s", err.Error())
 	}
 
 	// Lock required for leader election
@@ -228,7 +229,7 @@ func startLeaderElection(opts *options.ControllerOptions, leaderElectionClient k
 	}
 
 	// Try and become the leader and start controller manager loops
-	leaderelection.RunOrDie(leaderelection.LeaderElectionConfig{
+	leaderelection.RunOrDie(context.TODO(), leaderelection.LeaderElectionConfig{
 		Lock:          &rl,
 		LeaseDuration: opts.LeaderElectionLeaseDuration,
 		RenewDeadline: opts.LeaderElectionRenewDeadline,
@@ -236,7 +237,7 @@ func startLeaderElection(opts *options.ControllerOptions, leaderElectionClient k
 		Callbacks: leaderelection.LeaderCallbacks{
 			OnStartedLeading: run,
 			OnStoppedLeading: func() {
-				glog.Fatalf("leaderelection lost")
+				klog.Fatalf("leaderelection lost")
 			},
 		},
 	})

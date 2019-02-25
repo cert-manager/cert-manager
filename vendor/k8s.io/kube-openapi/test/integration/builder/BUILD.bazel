@@ -1,0 +1,38 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = ["main.go"],
+    importmap = "github.com/jetstack/cert-manager/vendor/k8s.io/kube-openapi/test/integration/builder",
+    importpath = "k8s.io/kube-openapi/test/integration/builder",
+    tags = ["manual"],
+    visibility = ["//visibility:private"],
+    deps = [
+        "//vendor/github.com/emicklei/go-restful:go_default_library",
+        "//vendor/github.com/go-openapi/spec:go_default_library",
+        "//vendor/k8s.io/kube-openapi/pkg/builder:go_default_library",
+        "//vendor/k8s.io/kube-openapi/pkg/common:go_default_library",
+        "//vendor/k8s.io/kube-openapi/test/integration/pkg/generated:go_default_library",
+    ],
+)
+
+go_binary(
+    name = "builder",
+    embed = [":go_default_library"],
+    tags = ["manual"],
+    visibility = ["//visibility:public"],
+)
+
+filegroup(
+    name = "package-srcs",
+    srcs = glob(["**"]),
+    tags = ["automanaged"],
+    visibility = ["//visibility:private"],
+)
+
+filegroup(
+    name = "all-srcs",
+    srcs = [":package-srcs"],
+    tags = ["automanaged"],
+    visibility = ["//visibility:public"],
+)

@@ -6,6 +6,7 @@ go_library(
         "cache.go",
         "config.go",
         "round_trippers.go",
+        "token_source.go",
         "transport.go",
     ],
     importmap = "github.com/jetstack/cert-manager/vendor/k8s.io/client-go/transport",
@@ -13,8 +14,9 @@ go_library(
     tags = ["manual"],
     visibility = ["//visibility:public"],
     deps = [
-        "//vendor/github.com/golang/glog:go_default_library",
+        "//vendor/golang.org/x/oauth2:go_default_library",
         "//vendor/k8s.io/apimachinery/pkg/util/net:go_default_library",
+        "//vendor/k8s.io/klog:go_default_library",
     ],
 )
 

@@ -23,15 +23,15 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
-	"time"
 
-	"github.com/golang/glog"
 	corev1 "k8s.io/api/core/v1"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/apimachinery/pkg/util/runtime"
+	"k8s.io/klog"
 
+	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/validation"
 	"github.com/jetstack/cert-manager/pkg/issuer"
@@ -96,7 +96,7 @@ func (c *Controller) Sync(ctx context.Context, crt *v1alpha1.Certificate) (err e
 	}
 
 	// step zero: check if the referenced issuer exists and is ready
-	issuerObj, err := c.getGenericIssuer(crtCopy)
+	issuerObj, err := c.helper.GetGenericIssuer(crtCopy.Spec.IssuerRef, crtCopy.Namespace)
 	if k8sErrors.IsNotFound(err) {
 		c.Recorder.Eventf(crtCopy, corev1.EventTypeWarning, errorIssuerNotFound, err.Error())
 		return nil
@@ -118,7 +118,7 @@ func (c *Controller) Sync(ctx context.Context, crt *v1alpha1.Certificate) (err e
 		return nil
 	}
 
-	issuerReady := issuerObj.HasCondition(v1alpha1.IssuerCondition{
+	issuerReady := apiutil.IssuerHasCondition(issuerObj, v1alpha1.IssuerCondition{
 		Type:   v1alpha1.IssuerConditionReady,
 		Status: v1alpha1.ConditionTrue,
 	})
@@ -127,28 +127,28 @@ func (c *Controller) Sync(ctx context.Context, crt *v1alpha1.Certificate) (err e
 		return nil
 	}
 
-	i, err := c.IssuerFactory().IssuerFor(issuerObj)
+	i, err := c.issuerFactory.IssuerFor(issuerObj)
 	if err != nil {
 		c.Recorder.Eventf(crtCopy, corev1.EventTypeWarning, errorIssuerInit, "Internal error initialising issuer: %v", err)
 		return nil
 	}
 
 	if key == nil || cert == nil {
-		glog.V(4).Infof("Invoking issue function as existing certificate does not exist")
+		klog.V(4).Infof("Invoking issue function as existing certificate does not exist")
 		return c.issue(ctx, i, crtCopy)
 	}
 
 	// begin checking if the TLS certificate is valid/needs a re-issue or renew
 	matches, matchErrs := c.certificateMatchesSpec(crtCopy, key, cert)
 	if !matches {
-		glog.V(4).Infof("Invoking issue function due to certificate not matching spec: %s", strings.Join(matchErrs, ", "))
+		klog.V(4).Infof("Invoking issue function due to certificate not matching spec: %s", strings.Join(matchErrs, ", "))
 		return c.issue(ctx, i, crtCopy)
 	}
 
 	// check if the certificate needs renewal
 	needsRenew := c.Context.IssuerOptions.CertificateNeedsRenew(cert, crt)
 	if needsRenew {
-		glog.V(4).Infof("Invoking issue function due to certificate needing renewal")
+		klog.V(4).Infof("Invoking issue function due to certificate needing renewal")
 		return c.issue(ctx, i, crtCopy)
 	}
 	// end checking if the TLS certificate is valid/needs a re-issue or renew
@@ -164,7 +164,7 @@ func (c *Controller) Sync(ctx context.Context, crt *v1alpha1.Certificate) (err e
 // It will not actually submit the resource to the apiserver.
 func (c *Controller) setCertificateStatus(crt *v1alpha1.Certificate, key crypto.Signer, cert *x509.Certificate) {
 	if key == nil || cert == nil {
-		crt.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse, "NotFound", "Certificate does not exist", false)
+		apiutil.SetCertificateCondition(crt, v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse, "NotFound", "Certificate does not exist")
 		return
 	}
 
@@ -174,7 +174,7 @@ func (c *Controller) setCertificateStatus(crt *v1alpha1.Certificate, key crypto.
 	// Derive & set 'Ready' condition on Certificate resource
 	matches, matchErrs := c.certificateMatchesSpec(crt, key, cert)
 	reason := "Ready"
-	if cert.NotAfter.Before(time.Now()) {
+	if cert.NotAfter.Before(c.clock.Now()) {
 		reason = "Expired"
 		matchErrs = append(matchErrs, fmt.Sprintf("Certificate has expired"))
 	}
@@ -182,11 +182,11 @@ func (c *Controller) setCertificateStatus(crt *v1alpha1.Certificate, key crypto.
 		reason = "DoesNotMatch"
 	}
 	if len(matchErrs) > 0 {
-		crt.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse, reason, strings.Join(matchErrs, ", "), false)
+		apiutil.SetCertificateCondition(crt, v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse, reason, strings.Join(matchErrs, ", "))
 		return
 	}
 
-	crt.UpdateStatusCondition(v1alpha1.CertificateConditionReady, v1alpha1.ConditionTrue, reason, "Certificate is up to date and has not expired", false)
+	apiutil.SetCertificateCondition(crt, v1alpha1.CertificateConditionReady, v1alpha1.ConditionTrue, reason, "Certificate is up to date and has not expired")
 
 	return
 }
@@ -226,21 +226,6 @@ func (c *Controller) certificateMatchesSpec(crt *v1alpha1.Certificate, key crypt
 	return len(errs) == 0, errs
 }
 
-// TODO: replace with a call to controllerpkg.Helper.GetGenericIssuer
-func (c *Controller) getGenericIssuer(crt *v1alpha1.Certificate) (v1alpha1.GenericIssuer, error) {
-	switch crt.Spec.IssuerRef.Kind {
-	case "", v1alpha1.IssuerKind:
-		return c.issuerLister.Issuers(crt.Namespace).Get(crt.Spec.IssuerRef.Name)
-	case v1alpha1.ClusterIssuerKind:
-		if c.clusterIssuerLister == nil {
-			return nil, fmt.Errorf("cannot get ClusterIssuer for %q as cert-manager is scoped to a single namespace", crt.Name)
-		}
-		return c.clusterIssuerLister.Get(crt.Spec.IssuerRef.Name)
-	default:
-		return nil, fmt.Errorf(`invalid value %q for certificate issuer kind. Must be empty, %q or %q`, crt.Spec.IssuerRef.Kind, v1alpha1.IssuerKind, v1alpha1.ClusterIssuerKind)
-	}
-}
-
 func (c *Controller) scheduleRenewal(crt *v1alpha1.Certificate) {
 	key, err := keyFunc(crt)
 
@@ -261,16 +246,15 @@ func (c *Controller) scheduleRenewal(crt *v1alpha1.Certificate) {
 	renewIn := c.Context.IssuerOptions.CalculateDurationUntilRenew(cert, crt)
 	c.scheduledWorkQueue.Add(key, renewIn)
 
-	glog.Infof("Certificate %s/%s scheduled for renewal in %s", crt.Namespace, crt.Name, renewIn.String())
+	klog.Infof("Certificate %s/%s scheduled for renewal in %s", crt.Namespace, crt.Name, renewIn.String())
 }
 
 // issuerKind returns the kind of issuer for a certificate
 func issuerKind(crt *v1alpha1.Certificate) string {
 	if crt.Spec.IssuerRef.Kind == "" {
 		return v1alpha1.IssuerKind
-	} else {
-		return crt.Spec.IssuerRef.Kind
 	}
+	return crt.Spec.IssuerRef.Kind
 }
 
 func ownerRef(crt *v1alpha1.Certificate) metav1.OwnerReference {
@@ -353,7 +337,7 @@ func (c *Controller) updateSecret(crt *v1alpha1.Certificate, namespace string, c
 func (c *Controller) issue(ctx context.Context, issuer issuer.Interface, crt *v1alpha1.Certificate) error {
 	resp, err := issuer.Issue(ctx, crt)
 	if err != nil {
-		glog.Infof("Error issuing certificate for %s/%s: %v", crt.Namespace, crt.Name, err)
+		klog.Infof("Error issuing certificate for %s/%s: %v", crt.Namespace, crt.Name, err)
 		return err
 	}
 
@@ -363,7 +347,7 @@ func (c *Controller) issue(ctx context.Context, issuer issuer.Interface, crt *v1
 
 	if _, err := c.updateSecret(crt, crt.Namespace, resp.Certificate, resp.PrivateKey, resp.CA); err != nil {
 		s := messageErrorSavingCertificate + err.Error()
-		glog.Info(s)
+		klog.Info(s)
 		c.Recorder.Event(crt, corev1.EventTypeWarning, errorSavingCertificate, s)
 		return err
 	}

@@ -67,6 +67,9 @@ func (s *controllerFixture) Setup(t *testing.T) {
 	if s.Builder == nil {
 		s.Builder = &test.Builder{}
 	}
+	if s.Builder.T == nil {
+		s.Builder.T = t
+	}
 	s.Builder.Start()
 	s.Controller = New(s.Builder.Context)
 	s.Builder.Sync()

@@ -30,6 +30,9 @@ spec:
       {{- if .Values.podAnnotations }}
 {{ toYaml .Values.podAnnotations | indent 8 }}
       {{- end }}
+        prometheus.io/path: "/metrics"
+        prometheus.io/scrape: 'true'
+        prometheus.io/port: '9402'
     spec:
       serviceAccountName: {{ template "cert-manager.serviceAccountName" . }}
       {{- if .Values.global.priorityClassName }}
@@ -72,6 +75,8 @@ spec:
           - --default-acme-issuer-dns01-provider-name={{ .defaultACMEDNS01ChallengeProvider }}
           {{- end }}
           {{- end }}
+          ports:
+          - containerPort: 9402
           env:
           - name: POD_NAMESPACE
             valueFrom:

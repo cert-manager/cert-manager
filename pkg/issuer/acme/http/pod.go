@@ -20,12 +20,12 @@ import (
 	"fmt"
 	"hash/adler32"
 
-	"github.com/golang/glog"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/selection"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
+	"k8s.io/klog"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 )
@@ -53,7 +53,7 @@ func (s *Solver) ensurePod(ch *v1alpha1.Challenge) (*corev1.Pod, error) {
 	}
 	if len(existingPods) > 1 {
 		errMsg := fmt.Sprintf("multiple challenge solver pods found for certificate '%s/%s'. Cleaning up existing pods.", ch.Namespace, ch.Name)
-		glog.Infof(errMsg)
+		klog.Infof(errMsg)
 		err := s.cleanupPods(ch)
 		if err != nil {
 			return nil, err
@@ -61,7 +61,7 @@ func (s *Solver) ensurePod(ch *v1alpha1.Challenge) (*corev1.Pod, error) {
 		return nil, fmt.Errorf(errMsg)
 	}
 
-	glog.Infof("No existing HTTP01 challenge solver pod found for Certificate %q. One will be created.", ch.Namespace+"/"+ch.Name)
+	klog.Infof("No existing HTTP01 challenge solver pod found for Certificate %q. One will be created.", ch.Namespace+"/"+ch.Name)
 	return s.createPod(ch)
 }
 
@@ -86,7 +86,7 @@ func (s *Solver) getPodsForChallenge(ch *v1alpha1.Challenge) ([]*corev1.Pod, err
 	var relevantPods []*corev1.Pod
 	for _, pod := range podList {
 		if !metav1.IsControlledBy(pod, ch) {
-			glog.Infof("Found pod %q with acme-order-url annotation set to that of Certificate %q"+
+			klog.Infof("Found pod %q with acme-order-url annotation set to that of Certificate %q"+
 				"but it is not owned by the Certificate resource, so skipping it.", pod.Namespace+"/"+pod.Name, ch.Namespace+"/"+ch.Name)
 			continue
 		}

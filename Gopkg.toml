@@ -10,39 +10,46 @@ required = [
 
 [[constraint]]
   name = "k8s.io/api"
-  version = "kubernetes-1.10.12"
+  version = "kubernetes-1.13.2"
 
 [[constraint]]
   name = "k8s.io/apimachinery"
-  version = "kubernetes-1.10.12"
+  version = "kubernetes-1.13.2"
 
 [[constraint]]
   name = "k8s.io/client-go"
-  version = "kubernetes-1.10.12"
+  # Use the specific revision in client-go that fixes a regression in the
+  # testing package
+  # We can remove this once 1.14 is released.
+  source = "https://github.com/munnerz/client-go.git"
+  revision = "6761e17484a547b310ba2418dc56b655901a73aa"
+  # version = "kubernetes-1.13.2"
 
 [[constraint]]
   name = "k8s.io/code-generator"
-  version = "kubernetes-1.10.12"
+  version = "kubernetes-1.13.2"
 
 [[constraint]]
   name = "k8s.io/apiextensions-apiserver"
-  version = "kubernetes-1.10.12"
+  version = "kubernetes-1.13.2"
 
 [[override]]
   name = "k8s.io/apiserver"
-  version = "kubernetes-1.10.12"
+  version = "kubernetes-1.13.2"
 
 [[constraint]]
   name = "github.com/Azure/azure-sdk-for-go"
-  version = "v12.0.0-beta"
+  version = "v21.3.0"
 
 [[constraint]]
   name = "github.com/digitalocean/godo"
   version = "v1.6.0"
 
+# Use a custom version of the library with https://github.com/openshift/generic-admission-server/pull/21
 [[constraint]]
   name = "github.com/openshift/generic-admission-server"
-  revision = "76d182e57ce628bbf6eb266a7d26cf6c52adf551"
+  revision = "b330fba6503b2a974b06d78fbd3566b74fc1425a"
+  source = "https://github.com/munnerz/generic-admission-server.git"
 
 [[constraint]]
   name = "github.com/hashicorp/vault"
@@ -58,19 +65,21 @@ required = [
 ### These should be updated whenever we bump the kubernetes version we depend on
 [[override]]
   name = "k8s.io/gengo"
-  revision = "b6c426f7730e6d66e6e476a85d1c3eb7633880e0"
+  revision = "51747d6e00da1fc578d5a333a93bb2abcbce7a95"
 
 [[override]]
   name = "google.golang.org/grpc"
-  revision = "5b3c4e850e90a4cf6a20ebd46c8b32a0a3afcb9e"
+  # version 1.13.0
+  revision = "168a6198bcb0ef175f7dacec0b8691fc141dc9b8"
 
 [[override]]
   name = "k8s.io/kube-openapi"
-  revision = "50ae88d24ede7b8bad68e23c805b5d3da5c8abaf"
+  revision = "c59034cc13d587f5ef4e85ca0ade0c1866ae8e1d"
 
 [[override]]
   name = "github.com/golang/protobuf"
-  revision = "1643683e1b54a9e88ad26d98f81400c8c9d9f4f9"
+  # version 1.1.0
+  revision = "b4deda0973fb4c70b50d226b1af49f3da59f5265"
 
 [[override]]
   name = "google.golang.org/genproto"
@@ -78,7 +87,11 @@ required = [
 
 [[override]]
   name = "github.com/json-iterator/go"
-  revision = "f2b4162afba35581b6d4a50d3b8f34e33c144682"
+  revision = "ab8a2e0c74be9d3be70b3184d9acc634935ded82"
+
+[[override]]
+  name = "github.com/Azure/go-autorest"
+  revision = "ea233b6412b0421a65dc6160e16c893364664a95"
 
 [prune]
   unused-packages = true

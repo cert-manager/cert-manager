@@ -27,11 +27,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/golang/glog"
 	vault "github.com/hashicorp/vault/api"
 	"github.com/hashicorp/vault/helper/certutil"
 	corev1 "k8s.io/api/core/v1"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/klog"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	"github.com/jetstack/cert-manager/pkg/issuer"
@@ -66,7 +66,7 @@ func (v *Vault) Issue(ctx context.Context, crt *v1alpha1.Certificate) (*issuer.I
 		}
 	}
 	if err != nil {
-		glog.Errorf("Error getting private key %q for certificate: %v", crt.Spec.SecretName, err)
+		klog.Errorf("Error getting private key %q for certificate: %v", crt.Spec.SecretName, err)
 		return nil, err
 	}
 
@@ -221,7 +221,7 @@ func (v *Vault) requestVaultCert(commonName string, certDuration time.Duration, 
 		return nil, nil, err
 	}
 
-	glog.V(4).Infof("Vault certificate request for commonName %s altNames: %q ipSans: %q", commonName, altNames, ipSans)
+	klog.V(4).Infof("Vault certificate request for commonName %s altNames: %q ipSans: %q", commonName, altNames, ipSans)
 
 	parameters := map[string]string{
 		"common_name":          commonName,

@@ -32,6 +32,7 @@ import (
 
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
 	"github.com/miekg/dns"
+	"k8s.io/klog"
 )
 
 var defaultPort = "53"
@@ -128,6 +129,7 @@ func NewDNSProvider(dns01Nameservers []string) (*DNSProvider, error) {
 // authentication, leave the TSIG parameters as empty strings.
 // nameserver must be a network address in the form "IP" or "IP:port".
 func NewDNSProviderCredentials(nameserver, tsigAlgorithm, tsigKeyName, tsigSecret string, dns01Nameservers []string) (*DNSProvider, error) {
+	klog.V(5).Infof("Creating RFC2136 Provider")
 
 	d := &DNSProvider{}
 
@@ -155,6 +157,20 @@ func NewDNSProviderCredentials(nameserver, tsigAlgorithm, tsigKeyName, tsigSecre
 	d.tsigAlgorithm = tsigAlgorithm
 
 	d.dns01Nameservers = dns01Nameservers
+
+	klog.V(5).Infof("DNSProvider nameserver:       %s\n", d.nameserver)
+	klog.V(5).Infof("            tsigAlgorithm:    %s\n", d.tsigAlgorithm)
+	klog.V(5).Infof("            tsigKeyName:      %s\n", d.tsigKeyName)
+	if klog.V(5) {
+		keyLen := len(d.tsigSecret)
+		mask := make([]rune, keyLen/2)
+		for i := range mask {
+			mask[i] = '*'
+		}
+		masked := d.tsigSecret[0:keyLen/4] + string(mask) + d.tsigSecret[keyLen/4*3:keyLen]
+		klog.Infof("            tsigSecret:       %s\n", masked)
+	}
+	klog.V(5).Infof("            dns01Nameservers: [%s]", strings.Join(d.dns01Nameservers, ", "))
 	return d, nil
 }
 

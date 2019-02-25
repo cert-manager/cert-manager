@@ -33,12 +33,16 @@ Environments:
     ALLOW_DIRTY                 by default, git repo must be clean, set this to skip this check (debug only)
     ALLOW_OVERWRITE             by default, if an existing image exists with the same tag then pushing will be aborted, set this to skip this check
     SKIP_REF_TAG                skip creating a commit ref docker tag
+    CHART_PATH                  custom path to the Helm chart within the cert-manager repository (debug only) (default: deploy/charts/cert-manager)
+    CHART_BUCKET                GCS bucket where the Helm chart should be published (default: jetstack-chart-museum)
+    CHART_SERVICE_ACCOUNT       optional path to a JSON formatted Google Cloud service account used by gsutil to publish the chart
+    SKIP_CHART                  skip publishing the Helm chart
 Examples:
 1) Release to your own registry for testing
     git tag v2.2.3
-    REGISTRY=quay.io/<yourname> ./hack/release.sh
+    REGISTRY=quay.io/<yourname> SKIP_CHART=1 ./hack/release.sh
 2) Release canary version
-    REGISTRY=quay.io/<yourname> VERSION=canary ./hack/release.sh
+    REGISTRY=quay.io/<yourname> VERSION=canary SKIP_CHART=1 ./hack/release.sh
 EOF
 }
 
@@ -65,13 +69,25 @@ while getopts "h?" opt; do
     esac
 done
 
+if ! command -v gsutil &>/dev/null; then
+  echo "Required tool 'gsutil' not found. Please install it:"
+  echo "See https://cloud.google.com/sdk/downloads for instructions."
+  exit 1
+fi
+
 export CONFIRM=${CONFIRM:-}
 export VERSION=${VERSION:-}
 export DOCKER_REPO=${REGISTRY:-quay.io/jetstack}
 export DOCKER_CONFIG=${DOCKER_CONFIG:-}
 export ALLOW_DIRTY=${ALLOW_DIRTY:-}
 export ALLOW_OVERWRITE=${ALLOW_OVERWRITE:-}
+
+# Helm chart packaging vars
 export CHART_PATH=${CHART_PATH:-deploy/charts/cert-manager}
+export CHART_BUCKET=${CHART_BUCKET:-jetstack-chart-museum}
+export CHART_SERVICE_ACCOUNT=${CHART_SERVICE_ACCOUNT:-}
+export SKIP_CHART="${SKIP_CHART:-}"
+
 # remove trailing `/` if present
 export DOCKER_REPO=${DOCKER_REPO%/}
 COMPONENTS=( acmesolver controller webhook )
@@ -112,6 +128,7 @@ fi
 
 if [ "$GIT_DIRTY" != "clean" ]; then
     VERSION="${VERSION}-dirty"
+    COMMIT_REF="${COMMIT_REF}-dirty"
     info "appended '-dirty' suffix to version"
 fi
 
@@ -125,16 +142,37 @@ eval $(./hack/print-workspace-status.sh | tr ' ' '=' | sed 's/^/export /')
 info "building release images"
 bazel run //:images
 
-green "Built release images"
+green "Built release images!"
 
-if [ ! "${CONFIRM}" ]; then
-    green "Skipping publishing. Set CONFIRM=1 to publish release."
-    exit 0
+if [ ! -z "${SKIP_CHART}" ]; then
+    info "skipping building Helm chart package"
+else
+    info "Building Helm release package"
+    bazel build //hack/bin:helm
+    HELM="$(bazel info bazel-genfiles)/hack/bin/helm"
+    CHART_OUT="$(mktemp -d)"
+
+    "${HELM}" init --client-only
+
+    "${HELM}" package \
+        --dependency-update \
+        --destination "${CHART_OUT}" \
+        "${CHART_PATH}"
+
+    # Find first file in the CHART_OUT directory. This should be the file generated
+    # by 'helm package' above
+    helmpkg="$(find "${CHART_OUT}" -type f  -print -quit)"
+
+    if [ -z "${helmpkg}" ]; then
+        error "Failed to generate Helm package"
+        exit 1
+    fi
+
+    green "Built Helm package"
 fi
 
-green "Publishing release ${VERSION}"
+green "Publishing release with version '${VERSION}'"
 
-# quay.io/api/v1/repository/jetstack/cert-manager-controller/tag/v0.6.1/images
 function allowed() {
     local image_name="$1"
     local image_tag="$2"
@@ -156,20 +194,63 @@ function allowed() {
     info "existing image quay.io/$org/$image_name:$image_tag not found"
 }
 
+function push() {
+    local image_repo="$1"
+    local image_name="$2"
+    local image_tag="$3"
+
+    if [ -z "${CONFIRM}" ]; then
+        info "(would) push image $image_repo/$image_name:$image_tag"
+        info "(would) push image $image_repo/$image_name:$COMMIT_REF"
+        return 0
+    fi
+
+    if allowed "$image_name" "$image_tag"; then
+        info "Pushing image $image_repo/$image_name:$image_tag"
+        docker "${docker_args[@]}" push "$image_repo/$image_name:$image_tag"
+    fi
+
+    if [ -z "${SKIP_REF_TAG}" ]; then
+        if allowed "$image_name" "${COMMIT_REF}"; then
+            info "Pushing image ${docker_args[@]}" push "$image_repo/$image_name:${COMMIT_REF}"
+            docker tag "$image_repo/$image_name:$image_tag"  "$image_repo/$image_name:${COMMIT_REF}"
+            docker "${docker_args[@]}" push "$image_repo/$image_name:${COMMIT_REF}"
+        fi
+    fi
+}
+
 # Push docker images
 # We use the docker CLI to push images as quay.io does not support the v2 API
 for c in "${COMPONENTS[@]}"; do
-    if allowed "cert-manager-$c" "${STABLE_DOCKER_TAG}"; then
-        info "Pushing image ${STABLE_DOCKER_REPO}/cert-manager-$c:${STABLE_DOCKER_TAG}"
-        docker "${docker_args[@]}" push "${STABLE_DOCKER_REPO}/cert-manager-$c:${STABLE_DOCKER_TAG}"
-    fi
-    if [ -z "${SKIP_REF_TAG}" ]; then
-        if allowed "cert-manager-$c" "${COMMIT_REF}"; then
-            info "Pushing image ${docker_args[@]}" push "${STABLE_DOCKER_REPO}/cert-manager-$c:${COMMIT_REF}"
-            docker tag "${STABLE_DOCKER_REPO}/cert-manager-$c:${STABLE_DOCKER_TAG}"  "${STABLE_DOCKER_REPO}/cert-manager-$c:${COMMIT_REF}"
-            docker "${docker_args[@]}" push "${STABLE_DOCKER_REPO}/cert-manager-$c:${COMMIT_REF}"
-        fi
-    fi
+    image_name="cert-manager-$c"
+    image_repo="${STABLE_DOCKER_REPO}"
+    image_tag="${STABLE_DOCKER_TAG}"
+
+    # the amd64 images get pushed to a docker repo *without* the arch prefix
+    # for compatibility reasons, so we have special handling to retag it here
+    docker tag "${image_repo}/${image_name}-amd64:${image_tag}" "${image_repo}/${image_name}:${image_tag}"
+    push "$image_repo" "$image_name" "$image_tag"
+
+    # push arm64 and arm image targets
+    for arch in arm64 arm; do
+        push "$image_repo" "$image_name-$arch" "$image_tag"
+    done
 done
 
 green "Published all images!"
+
+info "Publishing Helm chart"
+
+if [ ! -z "${SKIP_CHART}" ]; then
+    info "skipping publishing Helm chart"
+elif [ -z "${CONFIRM}" ]; then
+    info "(would) push helm package: gsutil cp \"${helmpkg}\" gs://"${CHART_BUCKET}"/"
+else
+    if [ ! -z "${CHART_SERVICE_ACCOUNT}" ]; then
+        gcloud auth activate-service-account --key-file "${CHART_SERVICE_ACCOUNT}"
+    fi
+    gsutil cp "${helmpkg}" gs://"${CHART_BUCKET}"/
+fi
+
+green "Published Helm chart!"
+info "Release complete"

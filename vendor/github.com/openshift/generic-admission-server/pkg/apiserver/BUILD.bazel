@@ -10,8 +10,6 @@ go_library(
     deps = [
         "//vendor/github.com/openshift/generic-admission-server/pkg/registry/admissionreview:go_default_library",
         "//vendor/k8s.io/api/admission/v1beta1:go_default_library",
-        "//vendor/k8s.io/apimachinery/pkg/api/meta:go_default_library",
-        "//vendor/k8s.io/apimachinery/pkg/apimachinery:go_default_library",
         "//vendor/k8s.io/apimachinery/pkg/apis/meta/v1:go_default_library",
         "//vendor/k8s.io/apimachinery/pkg/runtime:go_default_library",
         "//vendor/k8s.io/apimachinery/pkg/runtime/schema:go_default_library",

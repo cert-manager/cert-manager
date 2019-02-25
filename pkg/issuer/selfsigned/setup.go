@@ -19,6 +19,7 @@ package selfsigned
 import (
 	"context"
 
+	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 )
 
@@ -27,6 +28,6 @@ const (
 )
 
 func (c *SelfSigned) Setup(ctx context.Context) error {
-	c.issuer.UpdateStatusCondition(v1alpha1.IssuerConditionReady, v1alpha1.ConditionTrue, successReady, "")
+	apiutil.SetIssuerCondition(c.issuer, v1alpha1.IssuerConditionReady, v1alpha1.ConditionTrue, successReady, "")
 	return nil
 }

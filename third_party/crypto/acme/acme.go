@@ -90,15 +90,6 @@ type Client struct {
 	accountURL string
 }
 
-// SetAccountURL will set the account URL cached by the client.
-// This should be used with caution, in order to reduce the number of calls
-// made to the 'new-acct' endpoint in 'cacheAccountURL'
-func (c *Client) SetAccountURL(url string) {
-	c.urlMu.Lock()
-	defer c.urlMu.Unlock()
-	c.accountURL = url
-}
-
 // Discover performs ACME server discovery using c.DirectoryURL.
 //
 // It caches successful result. So, subsequent calls will not result in

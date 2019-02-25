@@ -23,7 +23,8 @@ A simple Certificate could be defined as:
      - bar.example.com
      acme:
        config:
-       - ingressClass: nginx
+       - http01:
+           ingressClass: nginx
          domains:
          - foo.example.com
          - bar.example.com

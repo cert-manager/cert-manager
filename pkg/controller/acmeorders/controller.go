@@ -22,7 +22,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/golang/glog"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -31,18 +30,20 @@ import (
 	corelisters "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
+	"k8s.io/klog"
 	"k8s.io/utils/clock"
 
 	"github.com/jetstack/cert-manager/pkg/acme"
 	cmlisters "github.com/jetstack/cert-manager/pkg/client/listers/certmanager/v1alpha1"
 	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
+	"github.com/jetstack/cert-manager/pkg/issuer"
 	"github.com/jetstack/cert-manager/pkg/util"
 )
 
 type Controller struct {
 	controllerpkg.Context
 
-	helper     controllerpkg.Helper
+	helper     issuer.Helper
 	acmeHelper acme.Helper
 
 	// To allow injection for testing.
@@ -94,7 +95,7 @@ func New(ctx *controllerpkg.Context) *Controller {
 	ctrl.watchedInformers = append(ctrl.watchedInformers, secretInformer.Informer().HasSynced)
 	ctrl.secretLister = secretInformer.Lister()
 
-	ctrl.helper = controllerpkg.NewHelper(ctrl.issuerLister, ctrl.clusterIssuerLister)
+	ctrl.helper = issuer.NewHelper(ctrl.issuerLister, ctrl.clusterIssuerLister)
 	ctrl.acmeHelper = acme.NewHelper(ctrl.secretLister, ctrl.Context.ClusterResourceNamespace)
 	ctrl.clock = clock.RealClock{}
 
@@ -104,7 +105,7 @@ func New(ctx *controllerpkg.Context) *Controller {
 func (c *Controller) handleOwnedResource(obj interface{}) {
 	metaobj, ok := obj.(metav1.Object)
 	if !ok {
-		glog.Errorf("item passed to handleOwnedResource does not implement ObjectMetaAccessor")
+		klog.Errorf("item passed to handleOwnedResource does not implement ObjectMetaAccessor")
 		return
 	}
 
@@ -113,7 +114,7 @@ func (c *Controller) handleOwnedResource(obj interface{}) {
 		// Parse the Group out of the OwnerReference to compare it to what was parsed out of the requested OwnerType
 		refGV, err := schema.ParseGroupVersion(ref.APIVersion)
 		if err != nil {
-			glog.Errorf("Could not parse OwnerReference GroupVersion: %v", err)
+			klog.Errorf("Could not parse OwnerReference GroupVersion: %v", err)
 			continue
 		}
 
@@ -121,7 +122,7 @@ func (c *Controller) handleOwnedResource(obj interface{}) {
 			// TODO: how to handle namespace of owner references?
 			order, err := c.orderLister.Orders(metaobj.GetNamespace()).Get(ref.Name)
 			if err != nil {
-				glog.Errorf("Error getting Order %q referenced by resource %q", ref.Name, metaobj.GetName())
+				klog.Errorf("Error getting Order %q referenced by resource %q", ref.Name, metaobj.GetName())
 				continue
 			}
 			objKey, err := keyFunc(order)
@@ -135,7 +136,7 @@ func (c *Controller) handleOwnedResource(obj interface{}) {
 }
 
 func (c *Controller) Run(workers int, stopCh <-chan struct{}) error {
-	glog.V(4).Infof("Starting %s control loop", ControllerName)
+	klog.V(4).Infof("Starting %s control loop", ControllerName)
 	// wait for all the informer caches we depend on are synced
 	if !cache.WaitForCacheSync(stopCh, c.watchedInformers...) {
 		// c.challengeInformerSynced) {
@@ -153,16 +154,16 @@ func (c *Controller) Run(workers int, stopCh <-chan struct{}) error {
 			time.Second, stopCh)
 	}
 	<-stopCh
-	glog.V(4).Infof("Shutting down queue as workqueue signaled shutdown")
+	klog.V(4).Infof("Shutting down queue as workqueue signaled shutdown")
 	c.queue.ShutDown()
-	glog.V(4).Infof("Waiting for workers to exit...")
+	klog.V(4).Infof("Waiting for workers to exit...")
 	wg.Wait()
-	glog.V(4).Infof("Workers exited.")
+	klog.V(4).Infof("Workers exited.")
 	return nil
 }
 
 func (c *Controller) worker(stopCh <-chan struct{}) {
-	glog.V(4).Infof("Starting %q worker", ControllerName)
+	klog.V(4).Infof("Starting %q worker", ControllerName)
 	for {
 		obj, shutdown := c.queue.Get()
 		if shutdown {
@@ -180,17 +181,17 @@ func (c *Controller) worker(stopCh <-chan struct{}) {
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
 			ctx = util.ContextWithStopCh(ctx, stopCh)
-			glog.Infof("%s controller: syncing item '%s'", ControllerName, key)
+			klog.Infof("%s controller: syncing item '%s'", ControllerName, key)
 			if err := c.syncHandler(ctx, key); err != nil {
-				glog.Errorf("%s controller: Re-queuing item %q due to error processing: %s", ControllerName, key, err.Error())
+				klog.Errorf("%s controller: Re-queuing item %q due to error processing: %s", ControllerName, key, err.Error())
 				c.queue.AddRateLimited(obj)
 				return
 			}
-			glog.Infof("%s controller: Finished processing work item %q", ControllerName, key)
+			klog.Infof("%s controller: Finished processing work item %q", ControllerName, key)
 			c.queue.Forget(obj)
 		}()
 	}
-	glog.V(4).Infof("Exiting %q worker loop", ControllerName)
+	klog.V(4).Infof("Exiting %q worker loop", ControllerName)
 }
 
 func (c *Controller) processNextWorkItem(ctx context.Context, key string) error {
