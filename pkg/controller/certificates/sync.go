@@ -449,8 +449,8 @@ func isTemporaryCertificate(cert *x509.Certificate) bool {
 	return cert.SerialNumber.Int64() == staticTemporarySerialNumber
 }
 
-func (c *Controller) generateTemporaryCertificate(crt *v1alpha1.Certificate, pk []byte) ([]byte, error) {
-	template, err := pki.GenerateTemplate(nil, crt)
+func generateSelfSignedTemporaryCertificate(crt *v1alpha1.Certificate, pk []byte) ([]byte, error) {
+	template, err := pki.GenerateTemplate(crt)
 	template.SerialNumber = big.NewInt(staticTemporarySerialNumber)
 
 	signer, err := pki.DecodePrivateKeyBytes(pk)
@@ -459,6 +459,52 @@ func (c *Controller) generateTemporaryCertificate(crt *v1alpha1.Certificate, pk 
 	}
 
 	b, _, err := pki.SignCertificate(template, template, signer.Public(), signer)
+	if err != nil {
+		return nil, err
+	}
+
+	return b, nil
+}
+
+// generateLocallySignedTemporaryCertificate signs a temporary certificate for
+// the given certificate resource using a one-use temporary CA that is then
+// discarded afterwards.
+// This is to mitigate a potential attack against x509 certificates that use a
+// predictable serial number and weak MD5 hashing algorithms.
+// In practice, this shouldn't really be a concern anyway.
+func generateLocallySignedTemporaryCertificate(crt *v1alpha1.Certificate, pk []byte) ([]byte, error) {
+	// generate a throwaway self-signed root CA
+	caPk, err := pki.GenerateECPrivateKey(pki.ECCurve521)
+	if err != nil {
+		return nil, err
+	}
+	caCertTemplate, err := pki.GenerateTemplate(&v1alpha1.Certificate{
+		Spec: v1alpha1.CertificateSpec{
+			CommonName: "cert-manager.local",
+			IsCA:       true,
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+	_, caCert, err := pki.SignCertificate(caCertTemplate, caCertTemplate, caPk.Public(), caPk)
+	if err != nil {
+		return nil, err
+	}
+
+	// sign a temporary certificate using the root CA
+	template, err := pki.GenerateTemplate(crt)
+	if err != nil {
+		return nil, err
+	}
+	template.SerialNumber = big.NewInt(staticTemporarySerialNumber)
+
+	signeeKey, err := pki.DecodePrivateKeyBytes(pk)
+	if err != nil {
+		return nil, err
+	}
+
+	b, _, err := pki.SignCertificate(template, caCert, signeeKey.Public(), caPk)
 	if err != nil {
 		return nil, err
 	}

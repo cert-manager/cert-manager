@@ -111,7 +111,7 @@ func New(ctx *controllerpkg.Context) *Controller {
 	ctrl.helper = issuer.NewHelper(ctrl.issuerLister, ctrl.clusterIssuerLister)
 	ctrl.issuerFactory = issuer.NewIssuerFactory(ctx)
 	ctrl.clock = clock.RealClock{}
-	ctrl.localTemporarySigner = ctrl.generateTemporaryCertificate
+	ctrl.localTemporarySigner = generateLocallySignedTemporaryCertificate
 
 	return ctrl
 }
