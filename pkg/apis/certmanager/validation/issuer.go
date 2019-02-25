@@ -312,6 +312,16 @@ func ValidateACMEIssuerDNS01Config(iss *v1alpha1.ACMEIssuerDNS01Config, fldPath 
 				}
 			}
 		}
+		if p.AutoDNS != nil {
+			if numProviders > 0 {
+				el = append(el, field.Forbidden(fldPath.Child("autodns"), "may not specify more than one provider type"))
+			} else {
+				numProviders++
+				el = append(el, ValidateSecretKeySelector(&p.AutoDNS.UsernameSecret, fldPath.Child("autodns", "usernameSecretRef"))...)
+				el = append(el, ValidateSecretKeySelector(&p.AutoDNS.PasswordSecret, fldPath.Child("autodns", "passwordSecretRef"))...)
+				el = append(el, ValidateSecretKeySelector(&p.AutoDNS.ContextSecret, fldPath.Child("autodns", "contextSecretRef"))...)
+			}
+		}
 		if numProviders == 0 {
 			el = append(el, field.Required(fldPath, "at least one provider must be configured"))
 		}

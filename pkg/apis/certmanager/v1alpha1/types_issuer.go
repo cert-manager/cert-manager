@@ -261,6 +261,9 @@ type ACMEIssuerDNS01Provider struct {
 
 	// +optional
 	RFC2136 *ACMEIssuerDNS01ProviderRFC2136 `json:"rfc2136,omitempty"`
+
+	// +optional
+	AutoDNS *ACMEIssuerDNS01ProviderAutoDNS `json:"autodns,omitempty"`
 }
 
 // CNAMEStrategy configures how the DNS01 provider should handle CNAME records
@@ -380,6 +383,19 @@ type IssuerStatus struct {
 
 	// +optional
 	ACME *ACMEIssuerStatus `json:"acme,omitempty"`
+}
+
+// ACMEIssuerDNS01ProviderAutoDNS is a structure containing the
+// configuration for AutoDNS
+type ACMEIssuerDNS01ProviderAutoDNS struct {
+	// The secret which contains the AutoDNS username
+	UsernameSecret SecretKeySelector `json:"usernameSecretRef"`
+
+	// The secret which contains the AutoDNS password
+	PasswordSecret SecretKeySelector `json:"passwordSecretRef"`
+
+	// The secret which contains the AutoDNS context
+	ContextSecret SecretKeySelector `json:"contextSecretRef"`
 }
 
 type ACMEIssuerStatus struct {

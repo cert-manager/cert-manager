@@ -103,6 +103,18 @@
   revision = "5068538d4d655c48e1eda72d2b681e063a71575c"
 
 [[projects]]
+  digest = "1:ba6859a804d6994a80909533c6323601802e133de0157cc7c4aa912964055066"
+  name = "github.com/actano/autodns-api-go"
+  packages = [
+    "pkg/api",
+    "pkg/client",
+    "pkg/zone",
+  ]
+  pruneopts = "UT"
+  revision = "2c175d3b1bb3de6aeb05dac626a0063987a65028"
+  version = "v0.2.0"
+
+[[projects]]
   branch = "master"
   digest = "1:4c25fed407775a136849b6421e208dc124f746726688fdf141454f609560db4e"
   name = "github.com/aws/aws-sdk-go"
@@ -1599,6 +1611,8 @@
     "github.com/Venafi/vcert/pkg/certificate",
     "github.com/Venafi/vcert/pkg/endpoint",
     "github.com/Venafi/vcert/pkg/venafi/fake",
+    "github.com/actano/autodns-api-go/pkg/client",
+    "github.com/actano/autodns-api-go/pkg/zone",
     "github.com/aws/aws-sdk-go/aws",
     "github.com/aws/aws-sdk-go/aws/awserr",
     "github.com/aws/aws-sdk-go/aws/client",

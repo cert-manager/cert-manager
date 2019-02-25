@@ -30,6 +30,7 @@ import (
 	"github.com/jetstack/cert-manager/pkg/controller"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/acmedns"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/akamai"
+	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/autodns"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/azuredns"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/clouddns"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/cloudflare"
@@ -59,6 +60,7 @@ type dnsProviderConstructors struct {
 	acmeDNS      func(host string, accountJson []byte, dns01Nameservers []string) (*acmedns.DNSProvider, error)
 	rfc2136      func(nameserver, tsigAlgorithm, tsigKeyName, tsigSecret string, dns01Nameservers []string) (*rfc2136.DNSProvider, error)
 	digitalOcean func(token string, dns01Nameservers []string) (*digitalocean.DNSProvider, error)
+	autoDNS      func(username, password, context string, dns01Nameservers []string) *autodns.DNSProvider
 }
 
 // Solver is a solver for the acme dns01 challenge.
@@ -336,6 +338,28 @@ func (s *Solver) solverForChallenge(issuer v1alpha1.GenericIssuer, ch *v1alpha1.
 		if err != nil {
 			return nil, nil, fmt.Errorf("error instantiating rfc2136 challenge solver: %s", err.Error())
 		}
+	case providerConfig.AutoDNS != nil:
+		username, err := s.loadSecretData(&providerConfig.AutoDNS.UsernameSecret, resourceNamespace)
+		if err != nil {
+			return nil, nil, errors.Wrap(err, "error getting autodns username")
+		}
+
+		password, err := s.loadSecretData(&providerConfig.AutoDNS.PasswordSecret, resourceNamespace)
+		if err != nil {
+			return nil, nil, errors.Wrap(err, "error getting autodns password")
+		}
+
+		ctx, err := s.loadSecretData(&providerConfig.AutoDNS.ContextSecret, resourceNamespace)
+		if err != nil {
+			return nil, nil, errors.Wrap(err, "error geetting autodns context")
+		}
+
+		impl = s.dnsProviderConstructors.autoDNS(
+			string(username),
+			string(password),
+			string(ctx),
+			s.DNS01Nameservers,
+		)
 	default:
 		return nil, nil, fmt.Errorf("no dns provider config specified for provider %q", providerName)
 	}
@@ -357,6 +381,7 @@ func NewSolver(ctx *controller.Context) *Solver {
 			acmedns.NewDNSProviderHostBytes,
 			rfc2136.NewDNSProviderCredentials,
 			digitalocean.NewDNSProviderCredentials,
+			autodns.NewDNSProvider,
 		},
 	}
 }

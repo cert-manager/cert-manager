@@ -64,6 +64,7 @@ and provider specific notes regarding their usage.
 
    acme-dns
    akamai
+   autodns
    azuredns
    cloudflare
    google
