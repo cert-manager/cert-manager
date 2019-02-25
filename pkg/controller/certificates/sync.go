@@ -21,8 +21,10 @@ import (
 	"crypto"
 	"crypto/x509"
 	"fmt"
+	"math/big"
 	"reflect"
 	"strings"
+	"time"
 
 	corev1 "k8s.io/api/core/v1"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
@@ -133,6 +135,10 @@ func (c *Controller) Sync(ctx context.Context, crt *v1alpha1.Certificate) (err e
 		return nil
 	}
 
+	if isTemporaryCertificate(cert) {
+		return c.issue(ctx, i, crtCopy)
+	}
+
 	if key == nil || cert == nil {
 		klog.V(4).Infof("Invoking issue function as existing certificate does not exist")
 		return c.issue(ctx, i, crtCopy)
@@ -173,20 +179,28 @@ func (c *Controller) setCertificateStatus(crt *v1alpha1.Certificate, key crypto.
 
 	// Derive & set 'Ready' condition on Certificate resource
 	matches, matchErrs := c.certificateMatchesSpec(crt, key, cert)
-	reason := "Ready"
-	if cert.NotAfter.Before(c.clock.Now()) {
+	ready := v1alpha1.ConditionFalse
+	reason := ""
+	message := ""
+	switch {
+	case isTemporaryCertificate(cert):
+		reason = "TemporaryCertificate"
+		message = "Certificate issuance in progress. Temporary certificate issued."
+		// clear the NotAfter field as it is not relevant to the user
+		crt.Status.NotAfter = nil
+	case cert.NotAfter.Before(c.clock.Now()):
 		reason = "Expired"
-		matchErrs = append(matchErrs, fmt.Sprintf("Certificate has expired"))
-	}
-	if !matches {
+		message = fmt.Sprintf("Certificate has expired on %s", cert.NotAfter.Format(time.RFC822))
+	case !matches:
 		reason = "DoesNotMatch"
-	}
-	if len(matchErrs) > 0 {
-		apiutil.SetCertificateCondition(crt, v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse, reason, strings.Join(matchErrs, ", "))
-		return
+		message = strings.Join(matchErrs, ", ")
+	default:
+		ready = v1alpha1.ConditionTrue
+		reason = "Ready"
+		message = "Certificate is up to date and has not expired"
 	}
 
-	apiutil.SetCertificateCondition(crt, v1alpha1.CertificateConditionReady, v1alpha1.ConditionTrue, reason, "Certificate is up to date and has not expired")
+	apiutil.SetCertificateCondition(crt, v1alpha1.CertificateConditionReady, ready, reason, message)
 
 	return
 }
@@ -268,12 +282,34 @@ func ownerRef(crt *v1alpha1.Certificate) metav1.OwnerReference {
 	}
 }
 
+// updateSecret will store the provided secret data into the target secret
+// named on the Certificate resource.
+// - If the secret is empty, a new one will be created containing the data
+// - If a secret already exists, its contents will be overwritten
+// - If the provided certificate is a temporary certificate and the certificate
+//   stored in the secret is already a temporary certificate, then the Secret
+//   **will not** be updated.
 func (c *Controller) updateSecret(crt *v1alpha1.Certificate, namespace string, cert, key, ca []byte) (*corev1.Secret, error) {
+	// if the key is not set, we bail out early.
+	// this function should always be called with at least a private key.
+	// in future we'll likely need to relax this requirement, but for now we'll
+	// keep this here to be safe.
+	if len(key) == 0 {
+		return nil, fmt.Errorf("private key data must be set")
+	}
+	privKey, err := pki.DecodePrivateKeyBytes(key)
+	if err != nil {
+		return nil, fmt.Errorf("error decoding private key: %v", err)
+	}
+
+	// get a copy of the current secret resource
 	secret, err := c.secretLister.Secrets(namespace).Get(crt.Spec.SecretName)
 	if err != nil && !k8sErrors.IsNotFound(err) {
 		return nil, err
 	}
-	if k8sErrors.IsNotFound(err) {
+
+	// if the resource does not already exist, we will create a new one
+	if secret == nil {
 		secret = &corev1.Secret{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      crt.Spec.SecretName,
@@ -283,38 +319,77 @@ func (c *Controller) updateSecret(crt *v1alpha1.Certificate, namespace string, c
 			Data: map[string][]byte{},
 		}
 	}
-
+	// include this clause in case the existing secret has nil data
 	if secret.Data == nil {
 		secret.Data = map[string][]byte{}
 	}
-	secret.Data[corev1.TLSCertKey] = cert
-	secret.Data[corev1.TLSPrivateKeyKey] = key
-	secret.Data[TLSCAKey] = ca
-
 	if secret.Annotations == nil {
 		secret.Annotations = make(map[string]string)
 	}
+	if secret.Labels == nil {
+		secret.Labels = make(map[string]string)
+	}
 
-	// If we are updating the Certificate, we update the secret metadata to
-	// reflect the actual certificate it contains
-	if cert != nil {
-		x509Cert, err := pki.DecodeX509CertificateBytes(cert)
+	var existingCert *x509.Certificate
+	existingCertData := secret.Data[corev1.TLSCertKey]
+	if len(existingCertData) > 0 {
+		existingCert, err = pki.DecodeX509CertificateBytes(existingCertData)
+		if err != nil {
+			klog.Errorf("error decoding existing x509 certificate bytes, continuing anyway: %v", err)
+		}
+	}
+
+	var x509Cert *x509.Certificate
+	switch {
+	case len(cert) > 0:
+		x509Cert, err = pki.DecodeX509CertificateBytes(cert)
+		if err != nil {
+			return nil, fmt.Errorf("invalid certificate data: %v", err)
+		}
+	case isTemporaryCertificate(existingCert):
+		matches, err := pki.PublicKeyMatchesCertificate(privKey.Public(), existingCert)
+		if err == nil && matches {
+			// if the existing certificate is a temporary one, and the certificate
+			// being written in this call to updateSecret is not set, then we do
+			// not want to keep re-issuing new temporary certificates
+			cert = existingCertData
+			x509Cert = existingCert
+			break
+		}
+		fallthrough
+	default:
+		// if the issuer returns a private key but not certificate data, we
+		// generate and store a temporary certificate that we can later
+		// recognise and force later calls to the issuer's Issue method
+		cert, err = c.localTemporarySigner(crt, key)
+		if err != nil {
+			return nil, fmt.Errorf("error signing locally generated certificate: %v", err)
+		}
+
+		x509Cert, err = pki.DecodeX509CertificateBytes(cert)
 		if err != nil {
 			return nil, fmt.Errorf("invalid certificate data: %v", err)
 		}
 
-		secret.Annotations[v1alpha1.IssuerNameAnnotationKey] = crt.Spec.IssuerRef.Name
-		secret.Annotations[v1alpha1.IssuerKindAnnotationKey] = issuerKind(crt)
-		secret.Annotations[v1alpha1.CommonNameAnnotationKey] = x509Cert.Subject.CommonName
-		secret.Annotations[v1alpha1.AltNamesAnnotationKey] = strings.Join(x509Cert.DNSNames, ",")
-		secret.Annotations[v1alpha1.IPSANAnnotationKey] = strings.Join(pki.IPAddressesToString(x509Cert.IPAddresses), ",")
+		c.Recorder.Event(crt, corev1.EventTypeNormal, "GenerateSelfSigned", "Generated temporary self signed certificate")
 	}
 
+	// TODO: move metadata setting out of this method, and support
+	// retrospectively adding metadata annotations on every Sync iteration and
+	// not just when a new certificate is issued
+	secret.Annotations[v1alpha1.IssuerNameAnnotationKey] = crt.Spec.IssuerRef.Name
+	secret.Annotations[v1alpha1.IssuerKindAnnotationKey] = issuerKind(crt)
+	secret.Annotations[v1alpha1.CommonNameAnnotationKey] = x509Cert.Subject.CommonName
+	secret.Annotations[v1alpha1.AltNamesAnnotationKey] = strings.Join(x509Cert.DNSNames, ",")
+	secret.Annotations[v1alpha1.IPSANAnnotationKey] = strings.Join(pki.IPAddressesToString(x509Cert.IPAddresses), ",")
+
 	// Always set the certificate name label on the target secret
-	if secret.Labels == nil {
-		secret.Labels = make(map[string]string)
-	}
 	secret.Labels[v1alpha1.CertificateNameKey] = crt.Name
+
+	// set the actual values in the secret
+	secret.Data[corev1.TLSCertKey] = cert
+	secret.Data[corev1.TLSPrivateKeyKey] = key
+	secret.Data[TLSCAKey] = ca
 
 	// if it is a new resource
 	if secret.SelfLink == "" {
@@ -340,7 +415,7 @@ func (c *Controller) issue(ctx context.Context, issuer issuer.Interface, crt *v1
 		klog.Infof("Error issuing certificate for %s/%s: %v", crt.Namespace, crt.Name, err)
 		return err
 	}
-
+	// if the issuer has not returned any data, exit early
 	if resp == nil {
 		return nil
 	}
@@ -359,6 +434,36 @@ func (c *Controller) issue(ctx context.Context, issuer issuer.Interface, crt *v1
 	}
 
 	return nil
+}
+
+// staticTemporarySerialNumber is a fixed serial number we check for when
+// updating the status of a certificate.
+// It is used to identify temporarily generated certificates, so that friendly
+// status messages can be displayed to users.
+const staticTemporarySerialNumber = 0x1234567890
+
+func isTemporaryCertificate(cert *x509.Certificate) bool {
+	if cert == nil {
+		return false
+	}
+	return cert.SerialNumber.Int64() == staticTemporarySerialNumber
+}
+
+func (c *Controller) generateTemporaryCertificate(crt *v1alpha1.Certificate, pk []byte) ([]byte, error) {
+	template, err := pki.GenerateTemplate(nil, crt)
+	template.SerialNumber = big.NewInt(staticTemporarySerialNumber)
+
+	signer, err := pki.DecodePrivateKeyBytes(pk)
+	if err != nil {
+		return nil, err
+	}
+
+	b, _, err := pki.SignCertificate(template, template, signer.Public(), signer)
+	if err != nil {
+		return nil, err
+	}
+
+	return b, nil
 }
 
 func (c *Controller) updateCertificateStatus(old, new *v1alpha1.Certificate) (*v1alpha1.Certificate, error) {
