@@ -24,7 +24,9 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
+	ext "k8s.io/api/extensions/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/wait"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
@@ -220,6 +222,93 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 
 		By("Waiting for Certificate to exist")
 		err = util.WaitForCertificateToExist(certClient, certificateSecretName, foreverTestTimeout)
+		Expect(err).NotTo(HaveOccurred())
+
+		By("Verifying the Certificate is valid")
+		err = h.WaitCertificateIssuedValid(f.Namespace.Name, certificateName, time.Minute*5)
+		Expect(err).NotTo(HaveOccurred())
+	})
+
+	It("should obtain a signed certificate with a single CN from the ACME server when redirected", func() {
+		// if this skip is removed, remember to re-enable no-tls-redirects in nginx-ingress addons
+		Skip("nginx-ingress bug stops pebble from getting a certificate https://github.com/kubernetes/ingress-nginx/issues/3192")
+
+		certClient := f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name)
+
+		// force-ssl-redirect should make every request turn into a redirect,
+		// but I haven't been able to make this happen. Create a TLS cert via
+		// the self-sign issuer to make it have a "proper" TLS cert
+
+		_, err := f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Create(util.NewCertManagerSelfSignedIssuer("selfsign"))
+		Expect(err).NotTo(HaveOccurred())
+		By("Waiting for (self-sign) Issuer to become Ready")
+		err = util.WaitForIssuerCondition(f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name),
+			issuerName,
+			v1alpha1.IssuerCondition{
+				Type:   v1alpha1.IssuerConditionReady,
+				Status: v1alpha1.ConditionTrue,
+			})
+		Expect(err).NotTo(HaveOccurred())
+
+		const dummycert = "dummy-tls"
+		const secretname = "dummy-tls-secret"
+		selfcert := util.NewCertManagerBasicCertificate("dummy-tls", secretname, "selfsign", v1alpha1.IssuerKind, nil, nil)
+		selfcert.Spec.CommonName = acmeIngressDomain
+		_, err = certClient.Create(selfcert)
+		Expect(err).NotTo(HaveOccurred())
+		err = h.WaitCertificateIssuedValid(f.Namespace.Name, dummycert, time.Minute*5)
+		Expect(err).NotTo(HaveOccurred())
+
+		// create an ingress that points at nothing, but has the TLS redirect annotation set
+		// using the TLS secret that we just got from the self-sign
+		const ingressname = "httpsingress"
+		ingress := f.KubeClientSet.ExtensionsV1beta1().Ingresses(f.Namespace.Name)
+		_, err = ingress.Create(&ext.Ingress{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: ingressname,
+				Annotations: map[string]string{
+					"nginx.ingress.kubernetes.io/force-ssl-redirect": "true",
+					"kubernetes.io/ingress.class":                    "nginx",
+				},
+			},
+			Spec: ext.IngressSpec{
+				TLS: []ext.IngressTLS{
+					{
+						Hosts:      []string{acmeIngressDomain},
+						SecretName: secretname,
+					},
+				},
+				Rules: []ext.IngressRule{
+					{
+						Host: acmeIngressDomain,
+						IngressRuleValue: ext.IngressRuleValue{
+							HTTP: &ext.HTTPIngressRuleValue{
+								Paths: []ext.HTTPIngressPath{
+									{
+										Path: "/",
+										Backend: ext.IngressBackend{
+											ServiceName: "doesnotexist",
+											ServicePort: intstr.FromInt(443),
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		})
+		Expect(err).NotTo(HaveOccurred())
+
+		By("Creating a Certificate")
+		// This is a special cert for the test suite, where we specify an ingress rather than a
+		// class
+		cert := util.NewCertManagerACMECertificate(certificateName, certificateSecretName, issuerName, v1alpha1.IssuerKind, nil, nil, acmeIngressClass, acmeIngressDomain)
+		http01 := cert.Spec.ACME.Config[0].SolverConfig.HTTP01
+		http01.IngressClass = nil
+		http01.Ingress = ingressname
+
+		_, err = certClient.Create(cert)
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Verifying the Certificate is valid")
