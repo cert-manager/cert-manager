@@ -33,7 +33,7 @@ go_library(
 )
 
 go_binary(
-    name = "injectorcontroller",
+    name = "cainjector",
     embed = [":go_default_library"],
     visibility = ["//visibility:public"],
 )

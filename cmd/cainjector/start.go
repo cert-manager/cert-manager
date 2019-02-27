@@ -81,7 +81,7 @@ func NewCommandStartInjectorController(out, errOut io.Writer, stopCh <-chan stru
 	o := NewInjectorControllerOptions(out, errOut)
 
 	cmd := &cobra.Command{
-		Use:   "ca-injector-controller",
+		Use:   "ca-injector",
 		Short: fmt.Sprintf("CA Injection Controller for Kubernetes (%s) (%s)", util.AppVersion, util.AppGitCommit),
 		Long: `
 cert-manager CA injector is a Kubernetes addon to automate the injection of CA data into
@@ -93,7 +93,7 @@ servers and webhook servers.`,
 
 		// TODO: Refactor this function from this package
 		Run: func(cmd *cobra.Command, args []string) {
-			klog.Infof("starting ca-injector-controller %s (revision %s)", util.AppVersion, util.AppGitCommit)
+			klog.Infof("starting ca-injector %s (revision %s)", util.AppVersion, util.AppGitCommit)
 			o.RunInjectorController(stopCh)
 		},
 	}
