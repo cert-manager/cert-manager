@@ -30,3 +30,16 @@ webhook:
     limits:
       cpu: 200m
       memory: 256Mi
+
+cainjector:
+  enabled: true
+  image:
+    tag: build
+    pullPolicy: Never
+  resources:
+    requests:
+      cpu: 100m
+      memory: 40Mi
+    limits:
+      cpu: 200m
+      memory: 256Mi

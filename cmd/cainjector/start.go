@@ -54,7 +54,7 @@ type InjectorControllerOptions struct {
 
 func (o *InjectorControllerOptions) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVar(&o.Namespace, "namespace", "", ""+
-		"If set, this limits the scope of cainjector to a single namespace. " +
+		"If set, this limits the scope of cainjector to a single namespace. "+
 		"If set, cainjector will not update resources with certificates outside of the "+
 		"configured namespace.")
 	fs.BoolVar(&o.LeaderElect, "leader-elect", true, ""+
