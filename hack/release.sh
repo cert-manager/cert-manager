@@ -90,7 +90,7 @@ export SKIP_CHART="${SKIP_CHART:-}"
 
 # remove trailing `/` if present
 export DOCKER_REPO=${DOCKER_REPO%/}
-COMPONENTS=( acmesolver controller webhook )
+COMPONENTS=( acmesolver controller webhook cainjector )
 SKIP_REF_TAG=${SKIP_REF_TAG:-}
 GIT_DIRTY=$(test -n "`git status --porcelain`" && echo "dirty" || echo "clean")
 if [ -z "$ALLOW_DIRTY" -a "$GIT_DIRTY" != "clean" ]; then
