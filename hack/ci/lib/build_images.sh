@@ -39,7 +39,7 @@ build_images() {
     # Create an archive of docker images
     docker save \
         "${DOCKER_REPO}"/cert-manager-controller:"${DOCKER_TAG}" \
-        "${DOCKER_REPO}"/cert-manager-injectorcontroller:"${DOCKER_TAG}" \
+        "${DOCKER_REPO}"/cert-manager-cainjector:"${DOCKER_TAG}" \
         "${DOCKER_REPO}"/cert-manager-acmesolver:"${DOCKER_TAG}" \
         "${DOCKER_REPO}"/cert-manager-webhook:"${DOCKER_TAG}" \
         "pebble:bazel" \
