@@ -13,6 +13,10 @@ global:
   rbac:
     create: true
 
+  leaderElection:
+    # Override the namespace used to store the ConfigMap for leader election
+    namespace: ""
+
 replicaCount: 1
 
 strategy: {}
@@ -31,10 +35,6 @@ image:
 # resources. By default, the same namespace as cert-manager is deployed within is
 # used. This namespace will not be automatically created by the Helm chart.
 clusterResourceNamespace: ""
-
-leaderElection:
-  # Override the namespace used to store the ConfigMap for leader election
-  namespace: ""
 
 serviceAccount:
   # Specifies whether a service account should be created
@@ -88,6 +88,9 @@ ingressShim: {}
   # defaultACMEDNS01ChallengeProvider: ""
 
 webhook:
+  enabled: true
+
+cainjector:
   enabled: true
 
 # Use these variables to configure the HTTP_PROXY environment variables

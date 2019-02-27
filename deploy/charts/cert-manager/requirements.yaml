@@ -4,3 +4,7 @@ dependencies:
   version: "v0.7.0-alpha.1"
   repository: "file://webhook"
   condition: webhook.enabled
+- name: cainjector
+  version: "v0.7.0-alpha.1"
+  repository: "file://cainjector"
+  condition: cainjector.enabled
