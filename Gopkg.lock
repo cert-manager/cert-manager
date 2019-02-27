@@ -88,8 +88,7 @@
   version = "v1.3.0"
 
 [[projects]]
-  branch = "master"
-  digest = "1:4c25fed407775a136849b6421e208dc124f746726688fdf141454f609560db4e"
+  digest = "1:cb1fd92d3c8d247eff308b508701a497a4d1055c4080e51c0046be8555e1b18a"
   name = "github.com/aws/aws-sdk-go"
   packages = [
     "aws",
@@ -101,25 +100,35 @@
     "aws/credentials",
     "aws/credentials/ec2rolecreds",
     "aws/credentials/endpointcreds",
+    "aws/credentials/processcreds",
     "aws/credentials/stscreds",
+    "aws/csm",
     "aws/defaults",
     "aws/ec2metadata",
     "aws/endpoints",
     "aws/request",
     "aws/session",
     "aws/signer/v4",
+    "internal/ini",
+    "internal/sdkio",
+    "internal/sdkrand",
+    "internal/sdkuri",
     "internal/shareddefaults",
     "private/protocol",
+    "private/protocol/json/jsonutil",
+    "private/protocol/jsonrpc",
     "private/protocol/query",
     "private/protocol/query/queryutil",
     "private/protocol/rest",
     "private/protocol/restxml",
     "private/protocol/xml/xmlutil",
+    "service/acmpca",
     "service/route53",
     "service/sts",
   ]
   pruneopts = "UT"
-  revision = "58f4800ac6e7100315f06b230b671cb087a90c88"
+  revision = "3248e106c35aafb9b982f5d086f0150faf24ee4e"
+  version = "v1.17.6"
 
 [[projects]]
   branch = "master"
@@ -239,14 +248,6 @@
   pruneopts = "UT"
   revision = "a720dfa8df582c51dee1b36feabb906bde1588bd"
   version = "v1.0"
-
-[[projects]]
-  digest = "1:a3a098fce1f66828ba26734275573da3b43e850e01b642e25d250ac68c51d4df"
-  name = "github.com/go-ini/ini"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "d3de07a94d22b4a0972deb4b96d790c2c0ce8333"
-  version = "v1.28.0"
 
 [[projects]]
   digest = "1:edd2fa4578eb086265db78a9201d15e76b298dfd0d5c379da83e9c61712cf6df"
@@ -511,12 +512,11 @@
   version = "v1.0"
 
 [[projects]]
-  digest = "1:b87714e57a511d88f307aba7d5b63522da12bed0a050889c81272fc50f71100e"
+  digest = "1:bb81097a5b62634f3e9fec1014657855610c82d19b9a40c17612e32651e35dca"
   name = "github.com/jmespath/go-jmespath"
   packages = ["."]
   pruneopts = "UT"
-  revision = "3433f3ea46d9f8019119e7dd41274e112a2359a9"
-  version = "0.2.2"
+  revision = "c2b33e84"
 
 [[projects]]
   digest = "1:eaefc85d32c03e5f0c2b88ea2f79fce3d993e2c78316d21319575dd4ea9153ca"
@@ -1578,6 +1578,7 @@
     "github.com/aws/aws-sdk-go/aws/credentials",
     "github.com/aws/aws-sdk-go/aws/request",
     "github.com/aws/aws-sdk-go/aws/session",
+    "github.com/aws/aws-sdk-go/service/acmpca",
     "github.com/aws/aws-sdk-go/service/route53",
     "github.com/cpu/goacmedns",
     "github.com/digitalocean/godo",

@@ -26,6 +26,7 @@ go_library(
         "//pkg/controller/issuers:go_default_library",
         "//pkg/issuer/acme:go_default_library",
         "//pkg/issuer/ca:go_default_library",
+        "//pkg/issuer/privateACM:go_default_library",
         "//pkg/issuer/selfsigned:go_default_library",
         "//pkg/issuer/vault:go_default_library",
         "//pkg/logs:go_default_library",

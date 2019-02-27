@@ -77,6 +77,14 @@ func ValidateIssuerConfig(iss *v1alpha1.IssuerConfig, fldPath *field.Path) field
 			el = append(el, ValidateVaultIssuerConfig(iss.Vault, fldPath.Child("vault"))...)
 		}
 	}
+	if iss.PrivateACM != nil {
+		if numConfigs > 0 {
+			el = append(el, field.Forbidden(fldPath.Child("privateACM"), "may not specify more than one issuer type"))
+		} else {
+			numConfigs++
+			el = append(el, ValidatePrivateACMIssuerConfig(iss.PrivateACM, fldPath.Child("vault"))...)
+		}
+	}
 	if numConfigs == 0 {
 		el = append(el, field.Required(fldPath, "at least one issuer must be configured"))
 	}
@@ -114,6 +122,36 @@ func ValidateCAIssuerConfig(iss *v1alpha1.CAIssuer, fldPath *field.Path) field.E
 
 func ValidateSelfSignedIssuerConfig(iss *v1alpha1.SelfSignedIssuer, fldPath *field.Path) field.ErrorList {
 	return nil
+}
+
+func ValidatePrivateACMIssuerConfig(iss *v1alpha1.PrivateACMIssuer, fldPath *field.Path) field.ErrorList {
+	el := field.ErrorList{}
+
+	if len(iss.AccessKeyIDRef.Name) == 0 {
+		el = append(el, field.Required(fldPath.Child("accessKeyIdRef", "name"), "access key id secret name is a required field"))
+	}
+
+	if len(iss.AccessKeyIDRef.Key) == 0 {
+		el = append(el, field.Required(fldPath.Child("accessKeyIdRef", "key"), "access key id secret key is a required field"))
+	}
+
+	if len(iss.SecretAccessKeyRef.Name) == 0 {
+		el = append(el, field.Required(fldPath.Child("secretAccessKeyRef", "name"), "secret key secret name is a required field"))
+	}
+
+	if len(iss.SecretAccessKeyRef.Key) == 0 {
+		el = append(el, field.Required(fldPath.Child("secretAccessKeyRef", "key"), "secret key secret key is a required field"))
+	}
+
+	if len(iss.CertificateAuthorityARN) == 0 {
+		el = append(el, field.Required(fldPath.Child("certificateAuthorityARN"), "certificate authority arn is a required field"))
+	}
+
+	if len(iss.Region) == 0 {
+		el = append(el, field.Required(fldPath.Child("region"), "region is a required field"))
+	}
+
+	return el
 }
 
 func ValidateVaultIssuerConfig(iss *v1alpha1.VaultIssuer, fldPath *field.Path) field.ErrorList {
