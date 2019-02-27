@@ -249,6 +249,14 @@
   version = "v1.28.0"
 
 [[projects]]
+  digest = "1:edd2fa4578eb086265db78a9201d15e76b298dfd0d5c379da83e9c61712cf6df"
+  name = "github.com/go-logr/logr"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "9fb12b3b21c5415d16ac18dc5cd42c1cfdd40c4e"
+  version = "v0.1.0"
+
+[[projects]]
   branch = "master"
   digest = "1:2997679181d901ac8aaf4330d11138ecf3974c6d3334995ff36f20cbd597daf8"
   name = "github.com/go-openapi/jsonpointer"
@@ -1228,11 +1236,12 @@
   version = "kubernetes-1.13.2"
 
 [[projects]]
-  digest = "1:05bd01cfae8787289bbc70b8518ffbb8bcf428e2ba8f93b319e52712f429550d"
+  digest = "1:c9b7847ca15c920cbee7d0064d875b64fa8fccb37a56a30cf3681ea35691afa8"
   name = "k8s.io/client-go"
   packages = [
     "discovery",
     "discovery/fake",
+    "dynamic",
     "informers",
     "informers/admissionregistration",
     "informers/admissionregistration/v1alpha1",
@@ -1386,6 +1395,7 @@
     "plugin/pkg/client/auth/openstack",
     "rest",
     "rest/watch",
+    "restmapper",
     "testing",
     "third_party/forked/golang/template",
     "tools/auth",
@@ -1463,12 +1473,26 @@
   revision = "51747d6e00da1fc578d5a333a93bb2abcbce7a95"
 
 [[projects]]
-  digest = "1:72fd56341405f53c745377e0ebc4abeff87f1a048e0eea6568a20212650f5a82"
+  digest = "1:ed455ccc8731bfd9299cbdaebd7a96da8097f5399f15ee4ec5d3ea3bcdff9f91"
   name = "k8s.io/klog"
-  packages = ["."]
+  packages = [
+    ".",
+    "klogr",
+  ]
   pruneopts = "UT"
   revision = "71442cd4037d612096940ceb0f3fec3f7fff66e0"
   version = "v0.2.0"
+
+[[projects]]
+  branch = "master"
+  digest = "1:659b3941473f78bfc1d138cf4af27f4bb6b44c43bcc970b7670675def57aba0f"
+  name = "k8s.io/kube-aggregator"
+  packages = [
+    "pkg/apis/apiregistration",
+    "pkg/apis/apiregistration/v1",
+  ]
+  pruneopts = "UT"
+  revision = "0b78038fe9e5eb5e2a4da82ce777efa9f0586d89"
 
 [[projects]]
   digest = "1:867966a68ff48186062e9b2604affd6a2e82ffec071d4f0b840539abcb1138af"
@@ -1493,6 +1517,43 @@
   ]
   pruneopts = "UT"
   revision = "045dc31ee5c40e8240241ce28dc24d7b56130373"
+
+[[projects]]
+  branch = "master"
+  digest = "1:6eae944186561a31c956f1242c07a7cefb6f91a66df51a55946e68b6ffea446f"
+  name = "sigs.k8s.io/controller-runtime"
+  packages = [
+    ".",
+    "pkg/builder",
+    "pkg/cache",
+    "pkg/cache/internal",
+    "pkg/client",
+    "pkg/client/apiutil",
+    "pkg/client/config",
+    "pkg/controller",
+    "pkg/controller/controllerutil",
+    "pkg/event",
+    "pkg/handler",
+    "pkg/internal/controller",
+    "pkg/internal/controller/metrics",
+    "pkg/internal/log",
+    "pkg/internal/objectutil",
+    "pkg/internal/recorder",
+    "pkg/leaderelection",
+    "pkg/log",
+    "pkg/manager",
+    "pkg/manager/signals",
+    "pkg/metrics",
+    "pkg/predicate",
+    "pkg/reconcile",
+    "pkg/recorder",
+    "pkg/runtime/inject",
+    "pkg/scheme",
+    "pkg/source",
+    "pkg/source/internal",
+  ]
+  pruneopts = "UT"
+  revision = "68ae79ea094aab567d78d7d8596accac2dc27fd0"
 
 [[projects]]
   digest = "1:7719608fe0b52a4ece56c2dde37bedd95b938677d1ab0f84b8a7852e4c59f849"
@@ -1520,6 +1581,7 @@
     "github.com/aws/aws-sdk-go/service/route53",
     "github.com/cpu/goacmedns",
     "github.com/digitalocean/godo",
+    "github.com/go-logr/logr",
     "github.com/go-openapi/spec",
     "github.com/gorilla/mux",
     "github.com/hashicorp/vault/api",
@@ -1547,6 +1609,7 @@
     "golang.org/x/oauth2/google",
     "google.golang.org/api/dns/v1",
     "k8s.io/api/admission/v1beta1",
+    "k8s.io/api/admissionregistration/v1beta1",
     "k8s.io/api/apps/v1",
     "k8s.io/api/authorization/v1",
     "k8s.io/api/core/v1",
@@ -1555,6 +1618,7 @@
     "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset",
     "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/typed/apiextensions/v1beta1",
     "k8s.io/apimachinery/pkg/api/errors",
+    "k8s.io/apimachinery/pkg/api/meta",
     "k8s.io/apimachinery/pkg/api/resource",
     "k8s.io/apimachinery/pkg/apis/meta/v1",
     "k8s.io/apimachinery/pkg/labels",
@@ -1599,9 +1663,15 @@
     "k8s.io/code-generator/cmd/informer-gen",
     "k8s.io/code-generator/cmd/lister-gen",
     "k8s.io/klog",
+    "k8s.io/klog/klogr",
+    "k8s.io/kube-aggregator/pkg/apis/apiregistration/v1",
     "k8s.io/kube-openapi/pkg/common",
     "k8s.io/utils/clock",
     "k8s.io/utils/clock/testing",
+    "sigs.k8s.io/controller-runtime",
+    "sigs.k8s.io/controller-runtime/pkg/client",
+    "sigs.k8s.io/controller-runtime/pkg/handler",
+    "sigs.k8s.io/controller-runtime/pkg/source",
   ]
   solver-name = "gps-cdcl"
   solver-version = 1

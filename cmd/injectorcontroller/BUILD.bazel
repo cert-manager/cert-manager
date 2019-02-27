@@ -1,0 +1,53 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
+load("//hack:def.bzl", "multiarch_image")
+
+# Expands to target names such as 'image.linux-amd64', 'image.linux-arm64'
+multiarch_image(
+    name = "image",
+    visibility = ["//visibility:public"],
+)
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "main.go",
+        "start.go",
+    ],
+    importpath = "github.com/jetstack/cert-manager/cmd/injectorcontroller",
+    visibility = ["//visibility:private"],
+    deps = [
+        "//pkg/client/clientset/versioned/scheme:go_default_library",
+        "//pkg/controller/cainjector:go_default_library",
+        "//pkg/logs:go_default_library",
+        "//pkg/util:go_default_library",
+        "//vendor/github.com/spf13/cobra:go_default_library",
+        "//vendor/github.com/spf13/pflag:go_default_library",
+        "//vendor/k8s.io/apimachinery/pkg/runtime:go_default_library",
+        "//vendor/k8s.io/client-go/kubernetes/scheme:go_default_library",
+        "//vendor/k8s.io/client-go/plugin/pkg/client/auth:go_default_library",
+        "//vendor/k8s.io/klog:go_default_library",
+        "//vendor/k8s.io/klog/klogr:go_default_library",
+        "//vendor/k8s.io/kube-aggregator/pkg/apis/apiregistration/v1:go_default_library",
+        "//vendor/sigs.k8s.io/controller-runtime:go_default_library",
+    ],
+)
+
+go_binary(
+    name = "injectorcontroller",
+    embed = [":go_default_library"],
+    visibility = ["//visibility:public"],
+)
+
+filegroup(
+    name = "package-srcs",
+    srcs = glob(["**"]),
+    tags = ["automanaged"],
+    visibility = ["//visibility:private"],
+)
+
+filegroup(
+    name = "all-srcs",
+    srcs = [":package-srcs"],
+    tags = ["automanaged"],
+    visibility = ["//visibility:public"],
+)

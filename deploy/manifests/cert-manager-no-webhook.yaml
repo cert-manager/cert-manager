@@ -967,6 +967,18 @@ metadata:
 
 ---
 ---
+# Source: cert-manager/templates/serviceaccount-injector.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: cert-manager-injector
+  namespace: "cert-manager"
+  labels:
+    app: cert-manager-injector
+    chart: cert-manager-v0.7.0-alpha.2
+    release: cert-manager
+    heritage: Tiller
+---
 # Source: cert-manager/templates/serviceaccount.yaml
 apiVersion: v1
 kind: ServiceAccount
@@ -975,9 +987,51 @@ metadata:
   namespace: "cert-manager"
   labels:
     app: cert-manager
-    chart: cert-manager-v0.7.0-alpha.1
+    chart: cert-manager-v0.7.0-alpha.2
     release: cert-manager
     heritage: Tiller
+---
+# Source: cert-manager/templates/rbac-injector.yaml
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRole
+metadata:
+  name: cert-manager-injector
+  labels:
+    app: cert-manager-injector
+    chart: cert-manager-v0.7.0-alpha.2
+    release: cert-manager
+    heritage: Tiller
+rules:
+  - apiGroups: ["certmanager.k8s.io"]
+    resources: ["certificates"]
+    verbs: ["*"]
+  - apiGroups: [""]
+    resources: ["secrets", "configmaps", "events"]
+    verbs: ["*"]
+  - apiGroups: ["admissionregistration.k8s.io"]
+    resources: ["validatingwebhookconfigurations", "mutatingwebhookconfigurations"]
+    verbs: ["*"]
+  - apiGroups: ["apiregistration.k8s.io"]
+    resources: ["apiservices"]
+    verbs: ["*"]
+---
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRoleBinding
+metadata:
+  name: cert-manager-injector
+  labels:
+    app: cert-manager-injector
+    chart: cert-manager-v0.7.0-alpha.2
+    release: cert-manager
+    heritage: Tiller
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cert-manager-injector
+subjects:
+  - name: cert-manager-injector
+    namespace: "cert-manager"
+    kind: ServiceAccount
 ---
 # Source: cert-manager/templates/rbac.yaml
 apiVersion: rbac.authorization.k8s.io/v1beta1
@@ -986,7 +1040,7 @@ metadata:
   name: cert-manager
   labels:
     app: cert-manager
-    chart: cert-manager-v0.7.0-alpha.1
+    chart: cert-manager-v0.7.0-alpha.2
     release: cert-manager
     heritage: Tiller
 rules:
@@ -1006,7 +1060,7 @@ metadata:
   name: cert-manager
   labels:
     app: cert-manager
-    chart: cert-manager-v0.7.0-alpha.1
+    chart: cert-manager-v0.7.0-alpha.2
     release: cert-manager
     heritage: Tiller
 roleRef:
@@ -1024,7 +1078,7 @@ metadata:
   name: cert-manager-view
   labels:
     app: cert-manager
-    chart: cert-manager-v0.7.0-alpha.1
+    chart: cert-manager-v0.7.0-alpha.2
     release: cert-manager
     heritage: Tiller
     rbac.authorization.k8s.io/aggregate-to-view: "true"
@@ -1041,7 +1095,7 @@ metadata:
   name: cert-manager-edit
   labels:
     app: cert-manager
-    chart: cert-manager-v0.7.0-alpha.1
+    chart: cert-manager-v0.7.0-alpha.2
     release: cert-manager
     heritage: Tiller
     rbac.authorization.k8s.io/aggregate-to-edit: "true"
@@ -1051,6 +1105,54 @@ rules:
     resources: ["certificates", "issuers"]
     verbs: ["create", "delete", "deletecollection", "patch", "update"]
 ---
+# Source: cert-manager/templates/deployment-injector.yaml
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  name: cert-manager-injector
+  namespace: "cert-manager"
+  labels:
+    app: cert-manager-injector
+    chart: cert-manager-v0.7.0-alpha.2
+    release: cert-manager
+    heritage: Tiller
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cert-manager-injector
+      release: cert-manager
+  template:
+    metadata:
+      labels:
+        app: cert-manager-injector
+        release: cert-manager
+      annotations:
+        prometheus.io/path: "/metrics"
+        prometheus.io/scrape: 'true'
+        prometheus.io/port: '9402'
+    spec:
+      serviceAccountName: cert-manager-injector
+      containers:
+        - name: cert-manager-injector
+          image:  "quay.io/jetstack/cert-manager-injectorcontroller:v0.7.0-alpha.0"
+          imagePullPolicy: IfNotPresent
+          args:
+          - --leader-election-namespace=$(POD_NAMESPACE)
+          ports:
+          - containerPort: 9402
+          env:
+          - name: POD_NAMESPACE
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.namespace
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            
+
+---
 # Source: cert-manager/templates/deployment.yaml
 apiVersion: apps/v1beta1
 kind: Deployment
@@ -1059,7 +1161,7 @@ metadata:
   namespace: "cert-manager"
   labels:
     app: cert-manager
-    chart: cert-manager-v0.7.0-alpha.1
+    chart: cert-manager-v0.7.0-alpha.2
     release: cert-manager
     heritage: Tiller
 spec:
