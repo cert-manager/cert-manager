@@ -21,8 +21,6 @@ import (
 	"strings"
 
 	"github.com/go-logr/logr"
-	certmanager "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
-	certctrl "github.com/jetstack/cert-manager/pkg/controller/certificates"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -31,6 +29,10 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	certmanager "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	certctrl "github.com/jetstack/cert-manager/pkg/controller/certificates"
+	logf "github.com/jetstack/cert-manager/pkg/logs"
 )
 
 var (
@@ -152,6 +154,8 @@ func (r *genericInjectReconciler) Reconcile(req ctrl.Request) (ctrl.Result, erro
 		log.Error(err, "unable to get metadata for object")
 		return ctrl.Result{}, err
 	}
+	log = logf.WithResource(r.log, metaObj)
+
 	certNameRaw := metaObj.GetAnnotations()[WantInjectAnnotation]
 	hasInjectAPIServerCA := metaObj.GetAnnotations()[WantInjectAPIServerCAAnnotation] == "true"
 	if certNameRaw != "" && hasInjectAPIServerCA {
