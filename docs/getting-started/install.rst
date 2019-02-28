@@ -234,6 +234,28 @@ You should read the :doc:`Setting up Issuers </tasks/issuers/index>` guide to
 learn how to configure cert-manager to issue certificates from one of the
 supported backends.
 
+Alternative installation methods
+================================
+
+kubeprod
+--------
+
+`Bitnami Kubernetes Production Runtime`_ (BKPR, ``kubeprod``) is a curated
+collection of the services you would need to deploy on top of your Kubernetes
+cluster to enable logging, monitoring, certificate management, automatic
+discovery of Kubernetes resources via public DNS servers and other common
+infrastructure needs.
+
+It depends on ``cert-manager`` for certificate management, and it is `regularly
+tested`_ so the components are known to work together for GKE and AKS clusters
+(EKS to be added soon). For its ingress stack it creates an DNS entry in the
+configured DNS zone and requests a TLS certificate to Let's Encrypt staging
+server.
+
+BKPR can be deployed using the ``kubeprod install`` command, which will deploy
+``cert-manager`` as part of it. Details available in the `BKPR installation guide`_.
+
+
 Debugging installation issues
 =============================
 
@@ -251,3 +273,6 @@ If you have any issues with your installation, please refer to the
 .. _Tiller: https://github.com/helm/helm
 .. _`Tillerless Helm v2`: https://rimusz.net/tillerless-helm/
 .. _`Let's Encrypt`: https://letsencrypt.org
+.. _`Bitnami Kubernetes Production Runtime`: https://github.com/bitnami/kube-prod-runtime/
+.. _`regularly tested`: https://github.com/bitnami/kube-prod-runtime/blob/master/Jenkinsfile
+.. _`BKPR installation guide`: https://github.com/bitnami/kube-prod-runtime/blob/master/docs/install.md
