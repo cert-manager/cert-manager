@@ -100,7 +100,7 @@ func (n *Nginx) Setup(cfg *config.Config) error {
 			},
 			{
 				Key:   "controller.image.tag",
-				Value: "0.21.0",
+				Value: "0.23.0",
 			},
 			{
 				Key:   "defaultBackend.image.pullPolicy",
@@ -120,15 +120,10 @@ func (n *Nginx) Setup(cfg *config.Config) error {
 			},
 			// nginx-ingress will by default not redirect http to https if
 			// the url is ".well-known"
-			// we should disable this behavior once nginx-ingress can handle
-			// redirects properly
-			// see https://github.com/kubernetes/ingress-nginx/issues/3192
-			/*
-				{
-					Key:   "controller.config.no-tls-redirect-locations",
-					Value: "",
-				},
-			*/
+			{
+				Key:   "controller.config.no-tls-redirect-locations",
+				Value: "",
+			},
 		},
 	}
 	err = n.chart.Setup(cfg)
