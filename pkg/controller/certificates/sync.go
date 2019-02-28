@@ -77,7 +77,7 @@ func (c *Controller) Sync(ctx context.Context, crt *v1alpha1.Certificate) (err e
 	}()
 
 	// grab existing certificate and validate private key
-	certs, key, err := kube.SecretTLSKeyPair(c.secretLister, crtCopy.Namespace, crtCopy.Spec.SecretName)
+	certs, key, err := kube.SecretTLSKeyPair(ctx, c.secretLister, crtCopy.Namespace, crtCopy.Spec.SecretName)
 	// if we don't have a certificate, we need to trigger a re-issue immediately
 	if err != nil && !(k8sErrors.IsNotFound(err) || errors.IsInvalidData(err)) {
 		return err
@@ -256,8 +256,7 @@ func (c *Controller) scheduleRenewal(ctx context.Context, crt *v1alpha1.Certific
 		return
 	}
 
-	cert, err := kube.SecretTLSCert(c.secretLister, crt.Namespace, crt.Spec.SecretName)
-
+	cert, err := kube.SecretTLSCert(ctx, c.secretLister, crt.Namespace, crt.Spec.SecretName)
 	if err != nil {
 		if !errors.IsInvalidData(err) {
 			log.Error(err, "error getting secret for certificate resource")

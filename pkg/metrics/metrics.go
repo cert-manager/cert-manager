@@ -165,7 +165,7 @@ func (m *Metrics) UpdateCertificateExpiry(crt *v1alpha1.Certificate, secretListe
 
 	log.V(logf.DebugLevel).Info("attempting to retrieve secret for certificate")
 	// grab existing certificate
-	cert, err := kube.SecretTLSCert(secretLister, crt.Namespace, crt.Spec.SecretName)
+	cert, err := kube.SecretTLSCert(m.ctx, secretLister, crt.Namespace, crt.Spec.SecretName)
 	if err != nil {
 		if !apierrors.IsNotFound(err) && !errors.IsInvalidData(err) {
 			log.Error(err, "error reading secret for certificate")

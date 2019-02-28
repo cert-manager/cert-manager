@@ -280,7 +280,7 @@ func (a *Acme) getCertificatePrivateKey(ctx context.Context, crt *v1alpha1.Certi
 	// private key yet, we may in some cases loop and re-generate the private key
 	// over and over. We could attempt to use the live clientset to read the
 	// private key too to avoid this case.
-	key, err := kube.SecretTLSKey(a.secretsLister, crt.Namespace, crt.Spec.SecretName)
+	key, err := kube.SecretTLSKey(ctx, a.secretsLister, crt.Namespace, crt.Spec.SecretName)
 	if err == nil {
 		return key, false, nil
 	}

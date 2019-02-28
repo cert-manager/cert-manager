@@ -48,7 +48,7 @@ func (c *CA) Issue(ctx context.Context, crt *v1alpha1.Certificate) (*issuer.Issu
 	log = logf.WithRelatedResourceName(log, crt.Spec.SecretName, crt.Namespace, "Secret")
 
 	// get a copy of the existing/currently issued Certificate's private key
-	signeeKey, err := kube.SecretTLSKey(c.secretsLister, crt.Namespace, crt.Spec.SecretName)
+	signeeKey, err := kube.SecretTLSKey(ctx, c.secretsLister, crt.Namespace, crt.Spec.SecretName)
 	if k8sErrors.IsNotFound(err) || errors.IsInvalidData(err) {
 		log.Info("generating new private key")
 		// if one does not already exist, generate a new one
@@ -75,7 +75,7 @@ func (c *CA) Issue(ctx context.Context, crt *v1alpha1.Certificate) (*issuer.Issu
 	}
 
 	// get a copy of the CA certificate named on the Issuer
-	caCerts, caKey, err := kube.SecretTLSKeyPair(c.secretsLister, c.resourceNamespace, c.issuer.GetSpec().CA.SecretName)
+	caCerts, caKey, err := kube.SecretTLSKeyPair(ctx, c.secretsLister, c.resourceNamespace, c.issuer.GetSpec().CA.SecretName)
 	if err != nil {
 		log := logf.WithRelatedResourceName(log, c.issuer.GetSpec().CA.SecretName, c.resourceNamespace, "Secret")
 		log.Info("error getting signing CA for Issuer")
