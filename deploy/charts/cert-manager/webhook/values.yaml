@@ -32,8 +32,3 @@ image:
   repository: quay.io/jetstack/cert-manager-webhook
   tag: v0.7.0-alpha.0
   pullPolicy: IfNotPresent
-
-caSyncImage:
-  repository: quay.io/munnerz/apiextensions-ca-helper
-  tag: v0.1.0
-  pullPolicy: IfNotPresent

@@ -109,9 +109,6 @@ The following table lists the configurable parameters of the cert-manager chart 
 | `webhook.image.repository` | Webhook image repository | `quay.io/jetstack/cert-manager-webhook` |
 | `webhook.image.tag` | Webhook image tag | `v0.7.0-alpha.0` |
 | `webhook.image.pullPolicy` | Webhook image pull policy | `IfNotPresent` |
-| `webhook.caSyncImage.repository` | CA sync image repository | `quay.io/munnerz/apiextensions-ca-helper` |
-| `webhook.caSyncImage.tag` | CA sync image tag | `v0.1.0` |
-| `webhook.caSyncImage.pullPolicy` | CA sync image pull policy | `IfNotPresent` |
 | `cainjector.enabled` | Toggles whether the cainjector component should be installed (required for the webhook component to work) | `true` |
 | `cainjector.replicaCount` | Number of cert-manager cainjector replicas | `1` |
 | `cainjector.podAnnotations` | Annotations to add to the cainjector pods | `{}` |
