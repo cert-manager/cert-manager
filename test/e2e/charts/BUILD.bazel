@@ -5,7 +5,7 @@ container_bundle(
     images = {
         # A set of images to bundle up into a single tarball.
         "pebble:bazel": "//test/e2e/charts/pebble:image",
-        "quay.io/kubernetes-ingress-controller/nginx-ingress-controller:0.21.0": "@io_kubernetes_ingress-nginx//image",
+        "quay.io/kubernetes-ingress-controller/nginx-ingress-controller:0.23.0": "@io_kubernetes_ingress-nginx//image",
         "k8s.gcr.io/defaultbackend:bazel": "@io_gcr_k8s_defaultbackend//image",
         "vault:bazel": "@com_hashicorp_vault//image",
         "gcr.io/kubernetes-helm/tiller:bazel": "@io_gcr_helm_tiller//image",

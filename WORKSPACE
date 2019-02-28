@@ -148,7 +148,7 @@ go_repository(
 ## field in this rule
 go_repository(
     name = "org_letsencrypt_pebble",
-    commit = "cdd3ed3ddfdf9da7ab27fbe1fe032d0865b65376",
+    commit = "2e69bb16af048c491720f23cb284fce685e65fec",
     importpath = "github.com/letsencrypt/pebble",
     build_external = "vendored",
     # Expose the generated go_default_library as 'public' visibility
@@ -162,7 +162,7 @@ container_pull(
     name = "io_kubernetes_ingress-nginx",
     registry = "quay.io",
     repository = "kubernetes-ingress-controller/nginx-ingress-controller",
-    tag = "0.21.0",
+    tag = "0.23.0",
 )
 
 container_pull(
