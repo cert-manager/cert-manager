@@ -52,13 +52,6 @@ spec:
                 fieldPath: metadata.namespace
           resources:
 {{ toYaml .Values.resources | indent 12 }}
-          volumeMounts:
-          - name: certs
-            mountPath: /certs
-      volumes:
-      - name: certs
-        secret:
-          secretName: {{ include "cainjector.servingCertificate" . }}
     {{- with .Values.nodeSelector }}
       nodeSelector:
 {{ toYaml . | indent 8 }}

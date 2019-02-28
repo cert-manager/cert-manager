@@ -1148,13 +1148,6 @@ spec:
           resources:
             {}
             
-          volumeMounts:
-          - name: certs
-            mountPath: /certs
-      volumes:
-      - name: certs
-        secret:
-          secretName: cert-manager-cainjector-cainjector-tls
 
 ---
 # Source: cert-manager/templates/deployment.yaml

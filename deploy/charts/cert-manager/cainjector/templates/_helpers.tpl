@@ -30,19 +30,3 @@ Create chart name and version as used by the chart label.
 {{- define "cainjector.chart" -}}
 {{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
-
-{{- define "cainjector.selfSignedIssuer" -}}
-{{ printf "%s-selfsign" (include "cainjector.fullname" .) }}
-{{- end -}}
-
-{{- define "cainjector.rootCAIssuer" -}}
-{{ printf "%s-ca" (include "cainjector.fullname" .) }}
-{{- end -}}
-
-{{- define "cainjector.rootCACertificate" -}}
-{{ printf "%s-ca" (include "cainjector.fullname" .) }}
-{{- end -}}
-
-{{- define "cainjector.servingCertificate" -}}
-{{ printf "%s-cainjector-tls" (include "cainjector.fullname" .) }}
-{{- end -}}
