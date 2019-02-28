@@ -81,6 +81,7 @@ func Register(mgr ctrl.Manager, setup injectorSetup) error {
 			}}).
 		Complete(&genericInjectReconciler{
 			Client:       mgr.GetClient(),
+			restConfig:   mgr.GetConfig(),
 			log:          ctrl.Log.WithName("inject-controller"),
 			resourceName: setup.resourceName,
 			injector:     setup.injector,

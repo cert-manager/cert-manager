@@ -29,6 +29,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -38,6 +39,12 @@ var (
 	// object wants injection of CAs.  It takes the form of a reference to a certificate
 	// as namespace/name.  The certificate is expected to have the is-serving-for annotations.
 	WantInjectAnnotation = "certmanager.k8s.io/inject-ca-from"
+
+	// WantInjectAPIServerCAAnnotation, if set to "true", will make the cainjector
+	// inject the CA certificate for the Kubernetes apiserver into the resource.
+	// It discovers the apiserver's CA by inspecting the service account credentials
+	// mounted into the
+	WantInjectAPIServerCAAnnotation = "certmanager.k8s.io/inject-apiserver-ca"
 )
 
 // dropNotFound ignores the given error if it's a not-found error,
@@ -104,6 +111,10 @@ type genericInjectReconciler struct {
 	log logr.Logger
 	client.Client
 
+	// restConfig is used to inject the kubernetes apiserver CA into resources
+	// with the 'inject-apiserver-ca' annotation
+	restConfig *rest.Config
+
 	resourceName string // just used for logging
 }
 
@@ -143,6 +154,22 @@ func (r *genericInjectReconciler) Reconcile(req ctrl.Request) (ctrl.Result, erro
 		return ctrl.Result{}, err
 	}
 	certNameRaw := metaObj.GetAnnotations()[WantInjectAnnotation]
+	hasInjectAPIServerCA := metaObj.GetAnnotations()[WantInjectAPIServerCAAnnotation] == "true"
+	if certNameRaw != "" && hasInjectAPIServerCA {
+		log.Info("object has both inject-ca-from and inject-apiserver-ca annotations, skipping")
+		return ctrl.Result{}, nil
+	}
+	if hasInjectAPIServerCA {
+		target.SetCA(r.restConfig.CAData)
+
+		// actually update with injected CA data
+		if err := r.Client.Update(ctx, target.AsObject()); err != nil {
+			log.Error(err, "unable to update target object with new CA data")
+			return ctrl.Result{}, err
+		}
+		log.V(1).Info("updated object")
+		return ctrl.Result{}, nil
+	}
 	if certNameRaw == "" {
 		log.V(1).Info("object does not want CA injection, skipping")
 		return ctrl.Result{}, nil
@@ -196,6 +223,5 @@ func (r *genericInjectReconciler) Reconcile(req ctrl.Request) (ctrl.Result, erro
 	}
 	log.V(1).Info("updated object")
 
-	// finally requeue if we had an error in the loop
 	return ctrl.Result{}, nil
 }
