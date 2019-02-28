@@ -158,5 +158,5 @@ func (c *DNSProvider) getHostedZoneName(fqdn string) (string, error) {
 }
 
 func (c *DNSProvider) trimFqdn(fqdn string) string {
-	return strings.TrimSuffix(strings.TrimSuffix(fqdn, "."), "."+c.zoneName)
+	return strings.TrimSuffix(strings.TrimSuffix(fqdn, "."), "."+strings.TrimPrefix(c.zoneName, "_acme-challenge.")
 }
