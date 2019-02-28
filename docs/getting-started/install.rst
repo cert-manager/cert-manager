@@ -248,9 +248,9 @@ infrastructure needs.
 
 It depends on ``cert-manager`` for certificate management, and it is `regularly
 tested`_ so the components are known to work together for GKE and AKS clusters
-(EKS to be added soon). For its ingress stack it creates an DNS entry in the
-configured DNS zone and requests a TLS certificate to Let's Encrypt staging
-server.
+(EKS to be added soon). For its ingress stack it creates a DNS entry in the
+configured DNS zone and requests a TLS certificate from the Let's Encrypt
+staging server.
 
 BKPR can be deployed using the ``kubeprod install`` command, which will deploy
 ``cert-manager`` as part of it. Details available in the `BKPR installation guide`_.
