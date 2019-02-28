@@ -29,7 +29,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -111,9 +110,9 @@ type genericInjectReconciler struct {
 	log logr.Logger
 	client.Client
 
-	// restConfig is used to inject the kubernetes apiserver CA into resources
-	// with the 'inject-apiserver-ca' annotation
-	restConfig *rest.Config
+	// apiserverCABundle is the ca bundle used by the apiserver.
+	// This will be injected into resources that have the `
+	apiserverCABundle []byte
 
 	resourceName string // just used for logging
 }
@@ -160,7 +159,8 @@ func (r *genericInjectReconciler) Reconcile(req ctrl.Request) (ctrl.Result, erro
 		return ctrl.Result{}, nil
 	}
 	if hasInjectAPIServerCA {
-		target.SetCA(r.restConfig.CAData)
+		log.V(1).Info("setting apiserver ca bundle on injectable")
+		target.SetCA(r.apiserverCABundle)
 
 		// actually update with injected CA data
 		if err := r.Client.Update(ctx, target.AsObject()); err != nil {
