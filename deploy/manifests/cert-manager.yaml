@@ -967,6 +967,19 @@ metadata:
 
 ---
 ---
+# Source: cert-manager/charts/cainjector/templates/serviceaccount.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: cert-manager-cainjector
+  namespace: "cert-manager"
+  labels:
+    app: cainjector
+    chart: cainjector-v0.7.0-alpha.2
+    release: cert-manager
+    heritage: Tiller
+
+---
 # Source: cert-manager/charts/webhook/templates/serviceaccount.yaml
 apiVersion: v1
 kind: ServiceAccount
@@ -975,22 +988,10 @@ metadata:
   namespace: "cert-manager"
   labels:
     app: webhook
-    chart: webhook-v0.7.0-alpha.1
+    chart: webhook-v0.7.0-alpha.2
     release: cert-manager
     heritage: Tiller
 
----
-# Source: cert-manager/templates/serviceaccount-injector.yaml
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: cert-manager-injector
-  namespace: "cert-manager"
-  labels:
-    app: cert-manager-injector
-    chart: cert-manager-v0.7.0-alpha.2
-    release: cert-manager
-    heritage: Tiller
 ---
 # Source: cert-manager/templates/serviceaccount.yaml
 apiVersion: v1
@@ -1000,26 +1001,29 @@ metadata:
   namespace: "cert-manager"
   labels:
     app: cert-manager
-    chart: cert-manager-v0.7.0-alpha.2
+    chart: cert-manager-v0.7.0-alpha.3
     release: cert-manager
     heritage: Tiller
 ---
-# Source: cert-manager/templates/rbac-injector.yaml
+# Source: cert-manager/charts/cainjector/templates/rbac.yaml
 apiVersion: rbac.authorization.k8s.io/v1beta1
 kind: ClusterRole
 metadata:
-  name: cert-manager-injector
+  name: cert-manager-cainjector
   labels:
-    app: cert-manager-injector
-    chart: cert-manager-v0.7.0-alpha.2
+    app: cainjector
+    chart: cainjector-v0.7.0-alpha.2
     release: cert-manager
     heritage: Tiller
 rules:
   - apiGroups: ["certmanager.k8s.io"]
     resources: ["certificates"]
-    verbs: ["*"]
+    verbs: ["get", "list", "watch"]
   - apiGroups: [""]
-    resources: ["secrets", "configmaps", "events"]
+    resources: ["secrets"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: [""]
+    resources: ["configmaps", "events"]
     verbs: ["*"]
   - apiGroups: ["admissionregistration.k8s.io"]
     resources: ["validatingwebhookconfigurations", "mutatingwebhookconfigurations"]
@@ -1031,18 +1035,18 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1beta1
 kind: ClusterRoleBinding
 metadata:
-  name: cert-manager-injector
+  name: cert-manager-cainjector
   labels:
-    app: cert-manager-injector
-    chart: cert-manager-v0.7.0-alpha.2
+    app: cainjector
+    chart: cainjector-v0.7.0-alpha.2
     release: cert-manager
     heritage: Tiller
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: cert-manager-injector
+  name: cert-manager-cainjector
 subjects:
-  - name: cert-manager-injector
+  - name: cert-manager-cainjector
     namespace: "cert-manager"
     kind: ServiceAccount
 ---
@@ -1053,7 +1057,7 @@ metadata:
   name: cert-manager
   labels:
     app: cert-manager
-    chart: cert-manager-v0.7.0-alpha.2
+    chart: cert-manager-v0.7.0-alpha.3
     release: cert-manager
     heritage: Tiller
 rules:
@@ -1073,7 +1077,7 @@ metadata:
   name: cert-manager
   labels:
     app: cert-manager
-    chart: cert-manager-v0.7.0-alpha.2
+    chart: cert-manager-v0.7.0-alpha.3
     release: cert-manager
     heritage: Tiller
 roleRef:
@@ -1091,7 +1095,7 @@ metadata:
   name: cert-manager-view
   labels:
     app: cert-manager
-    chart: cert-manager-v0.7.0-alpha.2
+    chart: cert-manager-v0.7.0-alpha.3
     release: cert-manager
     heritage: Tiller
     rbac.authorization.k8s.io/aggregate-to-view: "true"
@@ -1108,7 +1112,7 @@ metadata:
   name: cert-manager-edit
   labels:
     app: cert-manager
-    chart: cert-manager-v0.7.0-alpha.2
+    chart: cert-manager-v0.7.0-alpha.3
     release: cert-manager
     heritage: Tiller
     rbac.authorization.k8s.io/aggregate-to-edit: "true"
@@ -1129,7 +1133,7 @@ metadata:
   name: cert-manager-webhook:auth-delegator
   labels:
     app: webhook
-    chart: webhook-v0.7.0-alpha.1
+    chart: webhook-v0.7.0-alpha.2
     release: cert-manager
     heritage: Tiller
 roleRef:
@@ -1154,7 +1158,7 @@ metadata:
   namespace: kube-system
   labels:
     app: webhook
-    chart: webhook-v0.7.0-alpha.1
+    chart: webhook-v0.7.0-alpha.2
     release: cert-manager
     heritage: Tiller
 roleRef:
@@ -1175,7 +1179,7 @@ metadata:
   name: cert-manager-webhook:webhook-requester
   labels:
     app: webhook
-    chart: webhook-v0.7.0-alpha.1
+    chart: webhook-v0.7.0-alpha.2
     release: cert-manager
     heritage: Tiller
 rules:
@@ -1196,7 +1200,7 @@ metadata:
   namespace: "cert-manager"
   labels:
     app: webhook
-    chart: webhook-v0.7.0-alpha.1
+    chart: webhook-v0.7.0-alpha.2
     release: cert-manager
     heritage: Tiller
 spec:
@@ -1210,6 +1214,54 @@ spec:
     release: cert-manager
 
 ---
+# Source: cert-manager/charts/cainjector/templates/deployment.yaml
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  name: cert-manager-cainjector
+  namespace: "cert-manager"
+  labels:
+    app: cainjector
+    chart: cainjector-v0.7.0-alpha.2
+    release: cert-manager
+    heritage: Tiller
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cainjector
+      release: cert-manager
+  template:
+    metadata:
+      labels:
+        app: cainjector
+        release: cert-manager
+      annotations:
+    spec:
+      serviceAccountName: cert-manager-cainjector
+      containers:
+        - name: cainjector
+          image: "quay.io/jetstack/cert-manager-cainjector:v0.7.0-alpha.0"
+          imagePullPolicy: IfNotPresent
+          args:
+          - --leader-election-namespace=$(POD_NAMESPACE)
+          env:
+          - name: POD_NAMESPACE
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.namespace
+          resources:
+            {}
+            
+          volumeMounts:
+          - name: certs
+            mountPath: /certs
+      volumes:
+      - name: certs
+        secret:
+          secretName: cert-manager-cainjector-cainjector-tls
+
+---
 # Source: cert-manager/charts/webhook/templates/deployment.yaml
 apiVersion: apps/v1beta1
 kind: Deployment
@@ -1218,7 +1270,7 @@ metadata:
   namespace: "cert-manager"
   labels:
     app: webhook
-    chart: webhook-v0.7.0-alpha.1
+    chart: webhook-v0.7.0-alpha.2
     release: cert-manager
     heritage: Tiller
 spec:
@@ -1261,54 +1313,6 @@ spec:
           secretName: cert-manager-webhook-webhook-tls
 
 ---
-# Source: cert-manager/templates/deployment-injector.yaml
-apiVersion: apps/v1beta1
-kind: Deployment
-metadata:
-  name: cert-manager-injector
-  namespace: "cert-manager"
-  labels:
-    app: cert-manager-injector
-    chart: cert-manager-v0.7.0-alpha.2
-    release: cert-manager
-    heritage: Tiller
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: cert-manager-injector
-      release: cert-manager
-  template:
-    metadata:
-      labels:
-        app: cert-manager-injector
-        release: cert-manager
-      annotations:
-        prometheus.io/path: "/metrics"
-        prometheus.io/scrape: 'true'
-        prometheus.io/port: '9402'
-    spec:
-      serviceAccountName: cert-manager-injector
-      containers:
-        - name: cert-manager-injector
-          image:  "quay.io/jetstack/cert-manager-injectorcontroller:v0.7.0-alpha.0"
-          imagePullPolicy: IfNotPresent
-          args:
-          - --leader-election-namespace=$(POD_NAMESPACE)
-          ports:
-          - containerPort: 9402
-          env:
-          - name: POD_NAMESPACE
-            valueFrom:
-              fieldRef:
-                fieldPath: metadata.namespace
-          resources:
-            requests:
-              cpu: 10m
-              memory: 32Mi
-            
-
----
 # Source: cert-manager/templates/deployment.yaml
 apiVersion: apps/v1beta1
 kind: Deployment
@@ -1317,7 +1321,7 @@ metadata:
   namespace: "cert-manager"
   labels:
     app: cert-manager
-    chart: cert-manager-v0.7.0-alpha.2
+    chart: cert-manager-v0.7.0-alpha.3
     release: cert-manager
     heritage: Tiller
 spec:
@@ -1370,7 +1374,7 @@ metadata:
   namespace: "cert-manager"
   labels:
     app: webhook
-    chart: webhook-v0.7.0-alpha.1
+    chart: webhook-v0.7.0-alpha.2
     release: cert-manager
     heritage: Tiller
 spec:
@@ -1413,7 +1417,7 @@ metadata:
   namespace: "cert-manager"
   labels:
     app: webhook
-    chart: webhook-v0.7.0-alpha.1
+    chart: webhook-v0.7.0-alpha.2
     release: cert-manager
     heritage: Tiller
 spec:
@@ -1453,22 +1457,12 @@ metadata:
   namespace: "cert-manager"
   labels:
     app: webhook
-    chart: webhook-v0.7.0-alpha.1
+    chart: webhook-v0.7.0-alpha.2
     release: cert-manager
     heritage: Tiller
 data:
   config: |-
     {
-        "apiServices": [
-            {
-                "name": "v1beta1.admission.certmanager.k8s.io",
-                "secret": {
-                    "name": "cert-manager-webhook-ca",
-                    "namespace": "cert-manager",
-                    "key": "tls.crt"
-                }
-            }
-        ],
         "validatingWebhookConfigurations": [
             {
                 "name": "cert-manager-webhook",
@@ -1486,7 +1480,7 @@ metadata:
   namespace: "cert-manager"
   labels:
     app: webhook
-    chart: webhook-v0.7.0-alpha.1
+    chart: webhook-v0.7.0-alpha.2
     release: cert-manager
     heritage: Tiller
 
@@ -1497,25 +1491,15 @@ metadata:
   name: cert-manager-webhook-ca-sync
   labels:
     app: webhook
-    chart: webhook-v0.7.0-alpha.1
+    chart: webhook-v0.7.0-alpha.2
     release: cert-manager
     heritage: Tiller
 rules:
-  - apiGroups: [""]
-    resources: ["secrets"]
-    verbs: ["get"]
-    resourceNames:
-    - cert-manager-webhook-ca
   - apiGroups: ["admissionregistration.k8s.io"]
     resources: ["validatingwebhookconfigurations", "mutatingwebhookconfigurations"]
     verbs: ["get", "update"]
     resourceNames:
     - cert-manager-webhook
-  - apiGroups: ["apiregistration.k8s.io"]
-    resources: ["apiservices"]
-    verbs: ["get", "update"]
-    resourceNames:
-    - v1beta1.admission.certmanager.k8s.io
 ---
 apiVersion: rbac.authorization.k8s.io/v1beta1
 kind: ClusterRoleBinding
@@ -1523,7 +1507,7 @@ metadata:
   name: cert-manager-webhook-ca-sync
   labels:
     app: webhook
-    chart: webhook-v0.7.0-alpha.1
+    chart: webhook-v0.7.0-alpha.2
     release: cert-manager
     heritage: Tiller
 roleRef:
@@ -1542,9 +1526,11 @@ metadata:
   name: v1beta1.admission.certmanager.k8s.io
   labels:
     app: webhook
-    chart: webhook-v0.7.0-alpha.1
+    chart: webhook-v0.7.0-alpha.2
     release: cert-manager
     heritage: Tiller
+  annotations:
+    certmanager.k8s.io/inject-ca-from: "cert-manager/cert-manager-webhook-webhook-tls"
 spec:
   group: admission.certmanager.k8s.io
   groupPriorityMinimum: 1000
@@ -1566,7 +1552,7 @@ metadata:
   namespace: "cert-manager"
   labels:
     app: webhook
-    chart: webhook-v0.7.0-alpha.1
+    chart: webhook-v0.7.0-alpha.2
     release: cert-manager
     heritage: Tiller
 spec:
@@ -1582,7 +1568,7 @@ metadata:
   namespace: "cert-manager"
   labels:
     app: webhook
-    chart: webhook-v0.7.0-alpha.1
+    chart: webhook-v0.7.0-alpha.2
     release: cert-manager
     heritage: Tiller
 spec:
@@ -1603,7 +1589,7 @@ metadata:
   namespace: "cert-manager"
   labels:
     app: webhook
-    chart: webhook-v0.7.0-alpha.1
+    chart: webhook-v0.7.0-alpha.2
     release: cert-manager
     heritage: Tiller
 spec:
@@ -1620,7 +1606,7 @@ metadata:
   namespace: "cert-manager"
   labels:
     app: webhook
-    chart: webhook-v0.7.0-alpha.1
+    chart: webhook-v0.7.0-alpha.2
     release: cert-manager
     heritage: Tiller
 spec:
@@ -1641,7 +1627,7 @@ metadata:
   name: cert-manager-webhook
   labels:
     app: webhook
-    chart: webhook-v0.7.0-alpha.1
+    chart: webhook-v0.7.0-alpha.2
     release: cert-manager
     heritage: Tiller
 webhooks:
