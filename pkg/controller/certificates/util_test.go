@@ -18,6 +18,7 @@ package certificates
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
@@ -38,6 +39,9 @@ type controllerFixture struct {
 	Certificate v1alpha1.Certificate
 	IssuerImpl  issuer.Interface
 	Clock       *clock.FakeClock
+
+	// StaticTemporaryCert will be used as the 'localTemporarySigner' response
+	StaticTemporaryCert []byte
 
 	PreFn   func(*testing.T, *controllerFixture)
 	CheckFn func(*testing.T, *controllerFixture, ...interface{})
@@ -97,6 +101,7 @@ func (f *controllerFixture) buildFakeController(b *test.Builder, issuer v1alpha1
 	c := New(b.Context)
 	c.helper = f
 	c.issuerFactory = f
+	c.localTemporarySigner = f.localTemporarySigner
 	c.clock = f.Clock
 	if c.clock == nil {
 		c.clock = clock.NewFakeClock(time.Now())
@@ -111,4 +116,13 @@ func (f *controllerFixture) GetGenericIssuer(ref v1alpha1.ObjectReference, ns st
 
 func (f *controllerFixture) IssuerFor(v1alpha1.GenericIssuer) (issuer.Interface, error) {
 	return f.IssuerImpl, nil
+}
+
+// localTemporarySigner returns a fixed static certificate that can be compared
+// against in tests.
+func (f *controllerFixture) localTemporarySigner(crt *v1alpha1.Certificate, pk []byte) ([]byte, error) {
+	if f.StaticTemporaryCert == nil {
+		return nil, fmt.Errorf("localTemporarySigner not implemented")
+	}
+	return f.StaticTemporaryCert, nil
 }

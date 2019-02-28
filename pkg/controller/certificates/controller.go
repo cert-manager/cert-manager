@@ -31,6 +31,7 @@ import (
 	"k8s.io/klog"
 	"k8s.io/utils/clock"
 
+	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	cmlisters "github.com/jetstack/cert-manager/pkg/client/listers/certmanager/v1alpha1"
 	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
 	"github.com/jetstack/cert-manager/pkg/issuer"
@@ -61,6 +62,9 @@ type Controller struct {
 
 	// used for testing
 	clock clock.Clock
+
+	// localTemporarySigner signs a certificate that is stored temporarily
+	localTemporarySigner func(crt *v1alpha1.Certificate, pk []byte) ([]byte, error)
 }
 
 // New returns a new Certificates controller. It sets up the informer handler
@@ -107,6 +111,7 @@ func New(ctx *controllerpkg.Context) *Controller {
 	ctrl.helper = issuer.NewHelper(ctrl.issuerLister, ctrl.clusterIssuerLister)
 	ctrl.issuerFactory = issuer.NewIssuerFactory(ctx)
 	ctrl.clock = clock.RealClock{}
+	ctrl.localTemporarySigner = generateLocallySignedTemporaryCertificate
 
 	return ctrl
 }

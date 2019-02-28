@@ -35,7 +35,6 @@ import (
 	coretesting "k8s.io/client-go/testing"
 	clock "k8s.io/utils/clock/testing"
 
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	testpkg "github.com/jetstack/cert-manager/pkg/controller/test"
 	"github.com/jetstack/cert-manager/pkg/issuer"
@@ -56,20 +55,23 @@ func generatePrivateKey(t *testing.T) *rsa.PrivateKey {
 
 var serialNumberLimit = new(big.Int).Lsh(big.NewInt(1), 128)
 
-func generateSelfSignedCert(t *testing.T, crt *v1alpha1.Certificate, key crypto.Signer, notBefore, notAfter time.Time) []byte {
+func generateSelfSignedCert(t *testing.T, crt *cmapi.Certificate, sn *big.Int, key crypto.Signer, notBefore, notAfter time.Time) []byte {
 	commonName := pki.CommonNameForCertificate(crt)
 	dnsNames := pki.DNSNamesForCertificate(crt)
 
-	serialNumber, err := rand.Int(rand.Reader, serialNumberLimit)
-	if err != nil {
-		t.Errorf("failed to generate serial number: %v", err)
-		t.FailNow()
+	if sn == nil {
+		var err error
+		sn, err = rand.Int(rand.Reader, serialNumberLimit)
+		if err != nil {
+			t.Errorf("failed to generate serial number: %v", err)
+			t.FailNow()
+		}
 	}
 
 	template := &x509.Certificate{
 		Version:               3,
 		BasicConstraintsValid: true,
-		SerialNumber:          serialNumber,
+		SerialNumber:          sn,
 		Subject: pkix.Name{
 			CommonName: commonName,
 		},
@@ -115,9 +117,19 @@ func TestSync(t *testing.T) {
 			LastTransitionTime: nowMetaTime,
 		}),
 	)
+	exampleCertTemporaryCondition := gen.CertificateFrom(exampleCert,
+		gen.SetCertificateStatusCondition(cmapi.CertificateCondition{
+			Type:               cmapi.CertificateConditionReady,
+			Status:             cmapi.ConditionFalse,
+			Reason:             "TemporaryCertificate",
+			Message:            "Certificate issuance in progress. Temporary certificate issued.",
+			LastTransitionTime: nowMetaTime,
+		}),
+	)
+
 	pk1 := generatePrivateKey(t)
 	pk1PEM := pki.EncodePKCS1PrivateKey(pk1)
-	cert1PEM := generateSelfSignedCert(t, exampleCert, pk1, nowTime, nowTime.Add(time.Hour*12))
+	cert1PEM := generateSelfSignedCert(t, exampleCert, nil, pk1, nowTime, nowTime.Add(time.Hour*12))
 	cert1, err := pki.DecodeX509CertificateBytes(cert1PEM)
 	if err != nil {
 		t.Errorf("Error decoding test cert1 bytes: %v", err)
@@ -126,12 +138,14 @@ func TestSync(t *testing.T) {
 
 	pk2 := generatePrivateKey(t)
 	// pk2PEM := pki.EncodePKCS1PrivateKey(pk2)
-	cert2PEM := generateSelfSignedCert(t, exampleCert, pk2, nowTime, nowTime.Add(time.Hour*24))
+	cert2PEM := generateSelfSignedCert(t, exampleCert, nil, pk2, nowTime, nowTime.Add(time.Hour*24))
 	cert2, err := pki.DecodeX509CertificateBytes(cert2PEM)
 	if err != nil {
 		t.Errorf("Error decoding test cert2 bytes: %v", err)
 		t.FailNow()
 	}
+
+	localTempCert := generateSelfSignedCert(t, exampleCert, big.NewInt(staticTemporarySerialNumber), pk1, nowTime, nowTime)
 
 	tests := map[string]controllerFixture{
 		"should update certificate with NotExists if issuer does not return a keypair": {
@@ -181,6 +195,7 @@ func TestSync(t *testing.T) {
 					}, nil
 				},
 			},
+			StaticTemporaryCert: localTempCert,
 			Builder: &testpkg.Builder{
 				CertManagerObjects: []runtime.Object{gen.Certificate("test")},
 				ExpectedActions: []testpkg.Action{
@@ -199,11 +214,17 @@ func TestSync(t *testing.T) {
 								Labels: map[string]string{
 									cmapi.CertificateNameKey: "test",
 								},
-								Annotations: map[string]string{},
+								Annotations: map[string]string{
+									"certmanager.k8s.io/alt-names":   "example.com",
+									"certmanager.k8s.io/common-name": "example.com",
+									"certmanager.k8s.io/ip-sans":     "",
+									"certmanager.k8s.io/issuer-kind": "Issuer",
+									"certmanager.k8s.io/issuer-name": "test",
+								},
 							},
 							Type: corev1.SecretTypeTLS,
 							Data: map[string][]byte{
-								corev1.TLSCertKey:       nil,
+								corev1.TLSCertKey:       localTempCert,
 								corev1.TLSPrivateKeyKey: pk1PEM,
 								TLSCAKey:                nil,
 							},
@@ -228,6 +249,7 @@ func TestSync(t *testing.T) {
 					}, nil
 				},
 			},
+			StaticTemporaryCert: localTempCert,
 			Builder: &testpkg.Builder{
 				KubeObjects: []runtime.Object{
 					&corev1.Secret{
@@ -263,11 +285,16 @@ func TestSync(t *testing.T) {
 									cmapi.CertificateNameKey: "test",
 								},
 								Annotations: map[string]string{
-									"testannotation": "true",
+									"testannotation":                 "true",
+									"certmanager.k8s.io/alt-names":   "example.com",
+									"certmanager.k8s.io/common-name": "example.com",
+									"certmanager.k8s.io/ip-sans":     "",
+									"certmanager.k8s.io/issuer-kind": "Issuer",
+									"certmanager.k8s.io/issuer-name": "test",
 								},
 							},
 							Data: map[string][]byte{
-								corev1.TLSCertKey:       nil,
+								corev1.TLSCertKey:       localTempCert,
 								corev1.TLSPrivateKeyKey: pk1PEM,
 								TLSCAKey:                nil,
 							},
@@ -542,6 +569,84 @@ func TestSync(t *testing.T) {
 							}),
 							gen.SetCertificateNotAfter(metav1.NewTime(cert1.NotAfter)),
 						),
+					)),
+				},
+			},
+		},
+		"should update the reason field with temporary self signed cert text": {
+			Issuer: gen.Issuer("test",
+				gen.AddIssuerCondition(cmapi.IssuerCondition{
+					Type:   cmapi.IssuerConditionReady,
+					Status: cmapi.ConditionTrue,
+				}),
+				gen.SetIssuerSelfSigned(cmapi.SelfSignedIssuer{}),
+			),
+			Certificate: *exampleCert,
+			IssuerImpl: &fake.Issuer{
+				FakeIssue: func(context.Context, *cmapi.Certificate) (*issuer.IssueResponse, error) {
+					return &issuer.IssueResponse{
+						PrivateKey: pk1PEM,
+					}, nil
+				},
+			},
+			// set this to something other than localTempCert, so that we can
+			// assert that the controller doesn't enter in a loop updating the
+			// Secret resource with a newly generated certificate
+			StaticTemporaryCert: cert1PEM,
+			Builder: &testpkg.Builder{
+				KubeObjects: []runtime.Object{
+					&corev1.Secret{
+						ObjectMeta: metav1.ObjectMeta{
+							Namespace: gen.DefaultTestNamespace,
+							Name:      "output",
+							SelfLink:  "abc",
+							Labels: map[string]string{
+								cmapi.CertificateNameKey: "nottest",
+							},
+							Annotations: map[string]string{
+								"testannotation": "true",
+							},
+						},
+						Data: map[string][]byte{
+							corev1.TLSCertKey:       localTempCert,
+							corev1.TLSPrivateKeyKey: pk1PEM,
+							TLSCAKey:                nil,
+						},
+					},
+				},
+				CertManagerObjects: []runtime.Object{gen.Certificate("test")},
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(coretesting.NewUpdateAction(
+						corev1.SchemeGroupVersion.WithResource("secrets"),
+						gen.DefaultTestNamespace,
+						&corev1.Secret{
+							ObjectMeta: metav1.ObjectMeta{
+								Namespace: gen.DefaultTestNamespace,
+								Name:      "output",
+								SelfLink:  "abc",
+								Labels: map[string]string{
+									cmapi.CertificateNameKey: "test",
+								},
+								Annotations: map[string]string{
+									"testannotation":                 "true",
+									"certmanager.k8s.io/alt-names":   "example.com",
+									"certmanager.k8s.io/common-name": "example.com",
+									"certmanager.k8s.io/ip-sans":     "",
+									"certmanager.k8s.io/issuer-kind": "Issuer",
+									"certmanager.k8s.io/issuer-name": "test",
+								},
+							},
+							Data: map[string][]byte{
+								corev1.TLSCertKey:       localTempCert,
+								corev1.TLSPrivateKeyKey: pk1PEM,
+								TLSCAKey:                nil,
+							},
+						},
+					)),
+					testpkg.NewAction(coretesting.NewUpdateAction(
+						cmapi.SchemeGroupVersion.WithResource("certificates"),
+						gen.DefaultTestNamespace,
+						exampleCertTemporaryCondition,
 					)),
 				},
 			},

@@ -57,7 +57,7 @@ func (c *SelfSigned) Issue(ctx context.Context, crt *v1alpha1.Certificate) (*iss
 	}
 
 	// generate a x509 certificate template for this Certificate
-	template, err := pki.GenerateTemplate(c.issuer, crt)
+	template, err := pki.GenerateTemplate(crt)
 	if err != nil {
 		c.Recorder.Eventf(crt, corev1.EventTypeWarning, "ErrorSigning", "Error signing certificate: %v", err)
 		return nil, err
