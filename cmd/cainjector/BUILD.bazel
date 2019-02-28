@@ -13,7 +13,7 @@ go_library(
         "main.go",
         "start.go",
     ],
-    importpath = "github.com/jetstack/cert-manager/cmd/injectorcontroller",
+    importpath = "github.com/jetstack/cert-manager/cmd/cainjector",
     visibility = ["//visibility:private"],
     deps = [
         "//pkg/client/clientset/versioned/scheme:go_default_library",
@@ -33,7 +33,7 @@ go_library(
 )
 
 go_binary(
-    name = "injectorcontroller",
+    name = "cainjector",
     embed = [":go_default_library"],
     visibility = ["//visibility:public"],
 )

@@ -53,8 +53,8 @@ spec:
         {{- else }}
           - --cluster-resource-namespace=$(POD_NAMESPACE)
         {{- end }}
-        {{- if .Values.leaderElection.namespace }}
-          - --leader-election-namespace={{ .Values.leaderElection.namespace }}
+        {{- if .Values.global.leaderElection.namespace }}
+          - --leader-election-namespace={{ .Values.globa.leaderElection.namespace }}
         {{- else }}
           - --leader-election-namespace=$(POD_NAMESPACE)
         {{- end }}

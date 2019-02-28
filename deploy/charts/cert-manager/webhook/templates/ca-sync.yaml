@@ -98,16 +98,6 @@ metadata:
 data:
   config: |-
     {
-        "apiServices": [
-            {
-                "name": "v1beta1.admission.certmanager.k8s.io",
-                "secret": {
-                    "name": "{{ include "webhook.rootCACertificate" . }}",
-                    "namespace": "{{ .Release.Namespace }}",
-                    "key": "tls.crt"
-                }
-            }
-        ],
         "validatingWebhookConfigurations": [
             {
                 "name": "{{ include "webhook.fullname" . }}",
@@ -141,21 +131,11 @@ metadata:
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
 rules:
-  - apiGroups: [""]
-    resources: ["secrets"]
-    verbs: ["get"]
-    resourceNames:
-    - {{ include "webhook.rootCACertificate" . }}
   - apiGroups: ["admissionregistration.k8s.io"]
     resources: ["validatingwebhookconfigurations", "mutatingwebhookconfigurations"]
     verbs: ["get", "update"]
     resourceNames:
     - {{ include "webhook.fullname" . }}
-  - apiGroups: ["apiregistration.k8s.io"]
-    resources: ["apiservices"]
-    verbs: ["get", "update"]
-    resourceNames:
-    - v1beta1.admission.certmanager.k8s.io
 ---
 apiVersion: rbac.authorization.k8s.io/v1beta1
 kind: ClusterRoleBinding

@@ -54,15 +54,16 @@ type InjectorControllerOptions struct {
 
 func (o *InjectorControllerOptions) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVar(&o.Namespace, "namespace", "", ""+
-		"If set, this limits the scope of cert-manager to a single namespace and ClusterIssuers are disabled. "+
-		"If not specified, all namespaces will be watched")
+		"If set, this limits the scope of cainjector to a single namespace. "+
+		"If set, cainjector will not update resources with certificates outside of the "+
+		"configured namespace.")
 	fs.BoolVar(&o.LeaderElect, "leader-elect", true, ""+
-		"If true, cert-manager will perform leader election between instances to ensure no more "+
-		"than one instance of cert-manager operates at a time")
+		"If true, cainjector will perform leader election between instances to ensure no more "+
+		"than one instance of cainjector operates at a time")
 	fs.StringVar(&o.LeaderElectionNamespace, "leader-election-namespace", "", ""+
 		"Namespace used to perform leader election (defaults to controller's namespace). "+
 		"Only used if leader election is enabled")
-	fs.StringVar(&o.LeaderElectionNamespace, "leader-election-id", "", ""+
+	fs.StringVar(&o.LeaderElectionID, "leader-election-id", "", ""+
 		"Override the identifier to use in leader election.  Only used if leader election is enabled")
 }
 
@@ -80,7 +81,7 @@ func NewCommandStartInjectorController(out, errOut io.Writer, stopCh <-chan stru
 	o := NewInjectorControllerOptions(out, errOut)
 
 	cmd := &cobra.Command{
-		Use:   "ca-injector-controller",
+		Use:   "ca-injector",
 		Short: fmt.Sprintf("CA Injection Controller for Kubernetes (%s) (%s)", util.AppVersion, util.AppGitCommit),
 		Long: `
 cert-manager CA injector is a Kubernetes addon to automate the injection of CA data into
@@ -92,7 +93,7 @@ servers and webhook servers.`,
 
 		// TODO: Refactor this function from this package
 		Run: func(cmd *cobra.Command, args []string) {
-			klog.Infof("starting ca-injector-controller %s (revision %s)", util.AppVersion, util.AppGitCommit)
+			klog.Infof("starting ca-injector %s (revision %s)", util.AppVersion, util.AppGitCommit)
 			o.RunInjectorController(stopCh)
 		},
 	}

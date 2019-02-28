@@ -20,6 +20,7 @@ multiarch_bundle(
         "{STABLE_DOCKER_REPO}/cert-manager-controller-{arch}:{STABLE_DOCKER_TAG}": "//cmd/controller:image",
         "{STABLE_DOCKER_REPO}/cert-manager-acmesolver-{arch}:{STABLE_DOCKER_TAG}": "//cmd/acmesolver:image",
         "{STABLE_DOCKER_REPO}/cert-manager-webhook-{arch}:{STABLE_DOCKER_TAG}": "//cmd/webhook:image",
+        "{STABLE_DOCKER_REPO}/cert-manager-cainjector-{arch}:{STABLE_DOCKER_TAG}": "//cmd/cainjector:image",
     },
     os = ["linux"],
 )
@@ -46,8 +47,8 @@ filegroup(
     srcs = [
         ":package-srcs",
         "//cmd/acmesolver:all-srcs",
+        "//cmd/cainjector:all-srcs",
         "//cmd/controller:all-srcs",
-        "//cmd/injectorcontroller:all-srcs",
         "//cmd/webhook:all-srcs",
         "//deploy:all-srcs",
         "//docs/generated/reference:all-srcs",
