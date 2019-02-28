@@ -17,7 +17,6 @@ limitations under the License.
 package e2e
 
 import (
-	"flag"
 	"fmt"
 	"path"
 	"testing"
@@ -27,6 +26,7 @@ import (
 	ginkgoconfig "github.com/onsi/ginkgo/config"
 	"github.com/onsi/ginkgo/reporters"
 	"github.com/onsi/gomega"
+	flag "github.com/spf13/pflag"
 	"k8s.io/apimachinery/pkg/util/wait"
 
 	"github.com/jetstack/cert-manager/pkg/logs"
@@ -35,9 +35,6 @@ import (
 )
 
 func init() {
-	framework.DefaultConfig.AddFlags(flag.CommandLine)
-	flag.Parse()
-
 	// Turn on verbose by default to get spec names
 	ginkgoconfig.DefaultReporterConfig.Verbose = true
 	// Turn on EmitSpecProgress to get spec progress (especially on interrupt)
@@ -49,8 +46,11 @@ func init() {
 }
 
 func TestE2E(t *testing.T) {
-	logs.InitLogs()
+	logs.InitLogs(flag.CommandLine)
 	defer logs.FlushLogs()
+
+	framework.DefaultConfig.AddFlags(flag.CommandLine)
+	flag.Parse()
 
 	if err := framework.DefaultConfig.Validate(); err != nil {
 		t.Errorf("Invalid test config: %v", err)

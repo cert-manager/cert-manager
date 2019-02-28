@@ -17,12 +17,12 @@ limitations under the License.
 package test
 
 import (
-	"flag"
 	"fmt"
 	"reflect"
 	"testing"
 	"time"
 
+	flag "github.com/spf13/pflag"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
@@ -38,7 +38,7 @@ import (
 )
 
 func init() {
-	logs.InitLogs()
+	logs.InitLogs(nil)
 	flag.Set("alsologtostderr", fmt.Sprintf("%t", true))
 	flag.Lookup("v").Value.Set("4")
 }

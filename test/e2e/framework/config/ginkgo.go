@@ -16,7 +16,9 @@ limitations under the License.
 
 package config
 
-import "flag"
+import (
+	flag "github.com/spf13/pflag"
+)
 
 type Ginkgo struct {
 	ReportDirectory string
