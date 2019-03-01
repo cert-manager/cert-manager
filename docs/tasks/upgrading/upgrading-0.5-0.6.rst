@@ -85,7 +85,7 @@ Before upgrading you will need to:
     $ helm install \
         --name cert-manager \
         --namespace cert-manager \
-        --version v0.7.0-alpha.0 \
+        --version v0.7.0-beta.0 \
         stable/cert-manager
 
 4. Follow the steps in the :doc:`restore guide <../backup-restore-crds>` to
