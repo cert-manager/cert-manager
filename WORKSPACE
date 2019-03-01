@@ -15,7 +15,7 @@ load("@io_bazel_rules_go//go:deps.bzl", "go_rules_dependencies", "go_register_to
 go_rules_dependencies()
 
 go_register_toolchains(
-    go_version = "1.11.5",
+    go_version = "1.12",
 )
 
 ## Load gazelle and dependencies
