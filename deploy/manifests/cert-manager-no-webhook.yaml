@@ -497,9 +497,9 @@ spec:
                   description: Cloud specifies the Venafi cloud configuration settings.
                     Only one of TPP or Cloud may be specified.
                   properties:
-                    apiKeySecretRef:
-                      description: APIKeySecretRef is a secret key selector for the
-                        Venafi Cloud API token.
+                    apiTokenSecretRef:
+                      description: APITokenSecretRef is a secret key selector for
+                        the Venafi Cloud API token.
                       properties:
                         key:
                           description: The key of the secret to select from. Must
@@ -517,7 +517,7 @@ spec:
                       type: string
                   required:
                   - url
-                  - apiKeySecretRef
+                  - apiTokenSecretRef
                   type: object
                 tpp:
                   description: TPP specifies Trust Protection Platform configuration
@@ -525,7 +525,9 @@ spec:
                   properties:
                     caBundle:
                       description: CABundle is a PEM encoded TLS certifiate to use
-                        to verify connections to the TPP instance. If not specified,
+                        to verify connections to the TPP instance. If specified, system
+                        roots will not be used and the issuing CA for the TPP instance
+                        must be verifiable using the provided root. If not specified,
                         the connection will be verified using the cert-manager system
                         root certificates.
                       format: byte
@@ -549,10 +551,6 @@ spec:
                   - url
                   - credentialsRef
                   type: object
-                verbose:
-                  description: Verbose enables verbose mode on the Venafi endpoint
-                    connector
-                  type: boolean
                 zone:
                   description: Zone is the Venafi Policy Zone to use for this issuer.
                     All requests made to the Venafi platform will be restricted by
@@ -560,7 +558,6 @@ spec:
                   type: string
               required:
               - zone
-              - verbose
               type: object
           type: object
         status:
@@ -759,9 +756,9 @@ spec:
                   description: Cloud specifies the Venafi cloud configuration settings.
                     Only one of TPP or Cloud may be specified.
                   properties:
-                    apiKeySecretRef:
-                      description: APIKeySecretRef is a secret key selector for the
-                        Venafi Cloud API token.
+                    apiTokenSecretRef:
+                      description: APITokenSecretRef is a secret key selector for
+                        the Venafi Cloud API token.
                       properties:
                         key:
                           description: The key of the secret to select from. Must
@@ -779,7 +776,7 @@ spec:
                       type: string
                   required:
                   - url
-                  - apiKeySecretRef
+                  - apiTokenSecretRef
                   type: object
                 tpp:
                   description: TPP specifies Trust Protection Platform configuration
@@ -787,7 +784,9 @@ spec:
                   properties:
                     caBundle:
                       description: CABundle is a PEM encoded TLS certifiate to use
-                        to verify connections to the TPP instance. If not specified,
+                        to verify connections to the TPP instance. If specified, system
+                        roots will not be used and the issuing CA for the TPP instance
+                        must be verifiable using the provided root. If not specified,
                         the connection will be verified using the cert-manager system
                         root certificates.
                       format: byte
@@ -811,10 +810,6 @@ spec:
                   - url
                   - credentialsRef
                   type: object
-                verbose:
-                  description: Verbose enables verbose mode on the Venafi endpoint
-                    connector
-                  type: boolean
                 zone:
                   description: Zone is the Venafi Policy Zone to use for this issuer.
                     All requests made to the Venafi platform will be restricted by
@@ -822,7 +817,6 @@ spec:
                   type: string
               required:
               - zone
-              - verbose
               type: object
           type: object
         status:

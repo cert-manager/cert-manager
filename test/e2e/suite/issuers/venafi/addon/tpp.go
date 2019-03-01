@@ -90,8 +90,7 @@ func (v *VenafiTPP) Provision() error {
 
 	v.createdSecret = s
 	v.details.issuerTemplate = cmapi.VenafiIssuer{
-		Verbose: true,
-		Zone:    v.config.Addons.Venafi.TPP.Zone,
+		Zone: v.config.Addons.Venafi.TPP.Zone,
 		TPP: &cmapi.VenafiTPP{
 			URL: v.config.Addons.Venafi.TPP.URL,
 			CredentialsRef: cmapi.LocalObjectReference{

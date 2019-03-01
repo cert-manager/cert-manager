@@ -56,7 +56,7 @@ func (v *Venafi) Issue(ctx context.Context, crt *v1alpha1.Certificate) (*issuer.
 	// unique private keys per issuance.
 	signeeKey, err := pki.GeneratePrivateKeyForCertificate(crt)
 	if err != nil {
-		klog.Errorf("Error getting private key %q for certificate: %v", crt.Spec.SecretName, err)
+		klog.Errorf("Error generating private key %q for certificate: %v", crt.Spec.SecretName, err)
 		v.Recorder.Eventf(crt, corev1.EventTypeWarning, "PrivateKeyError", "Error generating certificate private key: %v", err)
 		// don't trigger a retry. An error from this function implies some
 		// invalid input parameters, and retrying without updating the

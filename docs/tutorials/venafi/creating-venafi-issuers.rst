@@ -38,7 +38,7 @@ certificates in the ``default`` namespace).
 
 .. code-block:: shell
 
-    kubectl create secret generic cloudsecret --from-literal=apikey='YOUR_CLOUD_API_KEY_HERE'
+    kubectl create secret generic cloudsecret --from-literal=apikey.txt='YOUR_CLOUD_API_KEY_HERE'
 
 Create the issuer, referencing the secret we just created:
 
@@ -52,9 +52,9 @@ Create the issuer, referencing the secret we just created:
       venafi:
         zone: "DevOps"
         cloud:
-          apiKeySecretRef:
+          apiTokenSecretRef:
             name: cloudsecret
-            key: apikey
+            key: apikey.txt
 
 You can create multiple issuers pointing to different Venafi Cloud zones, or
 even have 1 issuer pointing to Venafi Platform and another pointing to Venafi

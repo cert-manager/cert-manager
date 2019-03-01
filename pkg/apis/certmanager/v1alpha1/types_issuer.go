@@ -97,10 +97,6 @@ type VenafiIssuer struct {
 	// This field is required.
 	Zone string `json:"zone"`
 
-	// Verbose enables verbose mode on the Venafi endpoint connector
-	// +optional
-	Verbose bool `json:"verbose"`
-
 	// TPP specifies Trust Protection Platform configuration settings.
 	// Only one of TPP or Cloud may be specified.
 	// +optional
@@ -124,6 +120,8 @@ type VenafiTPP struct {
 
 	// CABundle is a PEM encoded TLS certifiate to use to verify connections to
 	// the TPP instance.
+	// If specified, system roots will not be used and the issuing CA for the
+	// TPP instance must be verifiable using the provided root.
 	// If not specified, the connection will be verified using the cert-manager
 	// system root certificates.
 	// +optional
@@ -135,8 +133,8 @@ type VenafiCloud struct {
 	// URL is the base URL for Venafi Cloud
 	URL string `json:"url"`
 
-	// APIKeySecretRef is a secret key selector for the Venafi Cloud API token.
-	APIKeySecretRef SecretKeySelector `json:"apiKeySecretRef"`
+	// APITokenSecretRef is a secret key selector for the Venafi Cloud API token.
+	APITokenSecretRef SecretKeySelector `json:"apiTokenSecretRef"`
 }
 
 type SelfSignedIssuer struct {

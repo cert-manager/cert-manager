@@ -2447,8 +2447,8 @@ Appears In:
 </thead>
 <tbody>
 <tr>
-<td><code>apiKeySecretRef</code><br /> <em><a href="#secretkeyselector-v1alpha1">SecretKeySelector</a></em></td>
-<td>APIKeySecretRef is a secret key selector for the Venafi Cloud API token.</td>
+<td><code>apiTokenSecretRef</code><br /> <em><a href="#secretkeyselector-v1alpha1">SecretKeySelector</a></em></td>
+<td>APITokenSecretRef is a secret key selector for the Venafi Cloud API token.</td>
 </tr>
 <tr>
 <td><code>url</code><br /> <em>string</em></td>
@@ -2498,10 +2498,6 @@ Appears In:
 <td>TPP specifies Trust Protection Platform configuration settings. Only one of TPP or Cloud may be specified.</td>
 </tr>
 <tr>
-<td><code>verbose</code><br /> <em>boolean</em></td>
-<td>Verbose enables verbose mode on the Venafi endpoint connector</td>
-</tr>
-<tr>
 <td><code>zone</code><br /> <em>string</em></td>
 <td>Zone is the Venafi Policy Zone to use for this issuer. All requests made to the Venafi platform will be restricted by the named zone policy. This field is required.</td>
 </tr>
@@ -2542,7 +2538,7 @@ Appears In:
 <tbody>
 <tr>
 <td><code>caBundle</code><br /> <em>string</em></td>
-<td>CABundle is a PEM encoded TLS certifiate to use to verify connections to the TPP instance. If not specified, the connection will be verified using the cert-manager system root certificates.</td>
+<td>CABundle is a PEM encoded TLS certifiate to use to verify connections to the TPP instance. If specified, system roots will not be used and the issuing CA for the TPP instance must be verifiable using the provided root. If not specified, the connection will be verified using the cert-manager system root certificates.</td>
 </tr>
 <tr>
 <td><code>credentialsRef</code><br /> <em><a href="#localobjectreference-v1alpha1">LocalObjectReference</a></em></td>

@@ -108,10 +108,11 @@ func configForIssuer(iss cmapi.GenericIssuer, secretsLister corelisters.SecretLi
 		}
 
 		return &vcert.Config{
-			ConnectorType:   endpoint.ConnectorTypeTPP,
-			BaseUrl:         tpp.URL,
-			Zone:            venCfg.Zone,
-			LogVerbose:      venCfg.Verbose,
+			ConnectorType: endpoint.ConnectorTypeTPP,
+			BaseUrl:       tpp.URL,
+			Zone:          venCfg.Zone,
+			// always enable verbose logging for now
+			LogVerbose:      true,
 			ConnectionTrust: caBundle,
 			Credentials: &endpoint.Authentication{
 				User:     string(username),
@@ -121,14 +122,14 @@ func configForIssuer(iss cmapi.GenericIssuer, secretsLister corelisters.SecretLi
 
 	case venCfg.Cloud != nil:
 		cloud := venCfg.Cloud
-		cloudSecret, err := secretsLister.Secrets(resourceNamespace).Get(cloud.APIKeySecretRef.Name)
+		cloudSecret, err := secretsLister.Secrets(resourceNamespace).Get(cloud.APITokenSecretRef.Name)
 		if err != nil {
 			return nil, fmt.Errorf("error loading TPP credentials: %v", err)
 		}
 
 		k := defaultAPIKeyKey
-		if cloud.APIKeySecretRef.Key != "" {
-			k = cloud.APIKeySecretRef.Key
+		if cloud.APITokenSecretRef.Key != "" {
+			k = cloud.APITokenSecretRef.Key
 		}
 		apiKey := cloudSecret.Data[k]
 
@@ -136,7 +137,8 @@ func configForIssuer(iss cmapi.GenericIssuer, secretsLister corelisters.SecretLi
 			ConnectorType: endpoint.ConnectorTypeCloud,
 			BaseUrl:       cloud.URL,
 			Zone:          venCfg.Zone,
-			LogVerbose:    venCfg.Verbose,
+			// always enable verbose logging for now
+			LogVerbose: true,
 			Credentials: &endpoint.Authentication{
 				APIKey: string(apiKey),
 			},
