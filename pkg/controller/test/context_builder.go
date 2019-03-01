@@ -17,12 +17,12 @@ limitations under the License.
 package test
 
 import (
+	"flag"
 	"fmt"
 	"reflect"
 	"testing"
 	"time"
 
-	flag "github.com/spf13/pflag"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
