@@ -18,7 +18,6 @@ package certificate
 
 import (
 	"context"
-	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -103,7 +102,7 @@ var _ = framework.CertManagerDescribe("CA Injector", func() {
 
 			By("grabbing the corresponding secret")
 			var secret corev1.Secret
-			Eventually(func() error { return f.CRClient.Get(context.Background(), secretName, &secret) }, 2*time.Second).Should(Succeed())
+			Eventually(func() error { return f.CRClient.Get(context.Background(), secretName, &secret) }, "10s", "2s").Should(Succeed())
 
 			By("checking that all webhooks have a populated CA")
 			caData := secret.Data["ca.crt"]
@@ -113,7 +112,7 @@ var _ = framework.CertManagerDescribe("CA Injector", func() {
 					return nil, err
 				}
 				return [][]byte{newHook.Webhooks[0].ClientConfig.CABundle, newHook.Webhooks[1].ClientConfig.CABundle}, nil
-			}, 2*time.Second).Should(Equal([][]byte{caData, caData}))
+			}, "10s", "2s").Should(Equal([][]byte{caData, caData}))
 
 			return hook, *cert, secret
 		}
@@ -175,7 +174,7 @@ var _ = framework.CertManagerDescribe("CA Injector", func() {
 
 			By("grabbing the new secret")
 			var secret corev1.Secret
-			Eventually(func() error { return f.CRClient.Get(context.Background(), secretName, &secret) }).Should(Succeed())
+			Eventually(func() error { return f.CRClient.Get(context.Background(), secretName, &secret) }, "10s", "2s").Should(Succeed())
 
 			By("verifying that the hooks have the new data")
 			caData := secret.Data["ca.crt"]
@@ -185,7 +184,7 @@ var _ = framework.CertManagerDescribe("CA Injector", func() {
 					return nil, err
 				}
 				return [][]byte{newHook.Webhooks[0].ClientConfig.CABundle, newHook.Webhooks[1].ClientConfig.CABundle}, nil
-			}, "2s").Should(Equal([][]byte{caData, caData}))
+			}, "10s", "2s").Should(Equal([][]byte{caData, caData}))
 		})
 
 		It("should ignore webhooks with invalid annotations", func() {
@@ -274,7 +273,7 @@ var _ = framework.CertManagerDescribe("CA Injector", func() {
 					return nil, err
 				}
 				return [][]byte{newHook.Webhooks[0].ClientConfig.CABundle, newHook.Webhooks[1].ClientConfig.CABundle}, nil
-			}, 10*time.Second, 1*time.Second).Should(Equal([][]byte{caData, caData}))
+			}, "10s", "2s").Should(Equal([][]byte{caData, caData}))
 		})
 	})
 })
