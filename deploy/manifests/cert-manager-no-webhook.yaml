@@ -975,7 +975,7 @@ metadata:
   namespace: "cert-manager"
   labels:
     app: cainjector
-    chart: cainjector-v0.7.0-alpha.2
+    chart: cainjector-v0.7.0-beta.0
     release: cert-manager
     heritage: Tiller
 
@@ -988,7 +988,7 @@ metadata:
   namespace: "cert-manager"
   labels:
     app: cert-manager
-    chart: cert-manager-v0.7.0-alpha.4
+    chart: cert-manager-v0.7.0-beta.0
     release: cert-manager
     heritage: Tiller
 ---
@@ -999,7 +999,7 @@ metadata:
   name: cert-manager-cainjector
   labels:
     app: cainjector
-    chart: cainjector-v0.7.0-alpha.2
+    chart: cainjector-v0.7.0-beta.0
     release: cert-manager
     heritage: Tiller
 rules:
@@ -1025,7 +1025,7 @@ metadata:
   name: cert-manager-cainjector
   labels:
     app: cainjector
-    chart: cainjector-v0.7.0-alpha.2
+    chart: cainjector-v0.7.0-beta.0
     release: cert-manager
     heritage: Tiller
 roleRef:
@@ -1044,7 +1044,7 @@ metadata:
   name: cert-manager
   labels:
     app: cert-manager
-    chart: cert-manager-v0.7.0-alpha.4
+    chart: cert-manager-v0.7.0-beta.0
     release: cert-manager
     heritage: Tiller
 rules:
@@ -1064,7 +1064,7 @@ metadata:
   name: cert-manager
   labels:
     app: cert-manager
-    chart: cert-manager-v0.7.0-alpha.4
+    chart: cert-manager-v0.7.0-beta.0
     release: cert-manager
     heritage: Tiller
 roleRef:
@@ -1082,7 +1082,7 @@ metadata:
   name: cert-manager-view
   labels:
     app: cert-manager
-    chart: cert-manager-v0.7.0-alpha.4
+    chart: cert-manager-v0.7.0-beta.0
     release: cert-manager
     heritage: Tiller
     rbac.authorization.k8s.io/aggregate-to-view: "true"
@@ -1099,7 +1099,7 @@ metadata:
   name: cert-manager-edit
   labels:
     app: cert-manager
-    chart: cert-manager-v0.7.0-alpha.4
+    chart: cert-manager-v0.7.0-beta.0
     release: cert-manager
     heritage: Tiller
     rbac.authorization.k8s.io/aggregate-to-edit: "true"
@@ -1117,7 +1117,7 @@ metadata:
   namespace: "cert-manager"
   labels:
     app: cainjector
-    chart: cainjector-v0.7.0-alpha.2
+    chart: cainjector-v0.7.0-beta.0
     release: cert-manager
     heritage: Tiller
 spec:
@@ -1136,7 +1136,7 @@ spec:
       serviceAccountName: cert-manager-cainjector
       containers:
         - name: cainjector
-          image: "quay.io/jetstack/cert-manager-cainjector:v0.7.0-alpha.0"
+          image: "quay.io/jetstack/cert-manager-cainjector:v0.7.0-beta.0"
           imagePullPolicy: IfNotPresent
           args:
           - --leader-election-namespace=$(POD_NAMESPACE)
@@ -1158,7 +1158,7 @@ metadata:
   namespace: "cert-manager"
   labels:
     app: cert-manager
-    chart: cert-manager-v0.7.0-alpha.4
+    chart: cert-manager-v0.7.0-beta.0
     release: cert-manager
     heritage: Tiller
 spec:
@@ -1180,7 +1180,7 @@ spec:
       serviceAccountName: cert-manager
       containers:
         - name: cert-manager
-          image: "quay.io/jetstack/cert-manager-controller:v0.7.0-alpha.0"
+          image: "quay.io/jetstack/cert-manager-controller:v0.7.0-beta.0"
           imagePullPolicy: IfNotPresent
           args:
           - --cluster-resource-namespace=$(POD_NAMESPACE)
