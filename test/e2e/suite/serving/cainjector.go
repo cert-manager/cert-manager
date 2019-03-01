@@ -231,5 +231,50 @@ var _ = framework.CertManagerDescribe("CA Injector", func() {
 			}).Should(Equal([][]byte{hook.Webhooks[0].ClientConfig.CABundle, hook.Webhooks[1].ClientConfig.CABundle}))
 
 		})
+
+		It("should inject the apiserver CA if the webhook as the inject-apiserver-ca annotation", func() {
+			if len(f.KubeClientConfig.CAData) == 0 {
+				Skip("skipping test as the kube client CA bundle is not set")
+			}
+			By("creating a vaidating webhook with the inject-apiserver-ca annotation")
+			someURL := "https://localhost:8675"
+			hook := admissionreg.ValidatingWebhookConfiguration{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "apiserver-ca-hook",
+					Annotations: map[string]string{
+						injctrl.WantInjectAPIServerCAAnnotation: "true",
+					},
+				},
+				Webhooks: []admissionreg.Webhook{
+					{
+						Name: "hook1.fake.k8s.io",
+						ClientConfig: admissionreg.WebhookClientConfig{
+							URL: &someURL,
+						},
+					},
+					{
+						Name: "hook2.fake.k8s.io",
+						ClientConfig: admissionreg.WebhookClientConfig{
+							Service: &admissionreg.ServiceReference{
+								Name:      "some-svc",
+								Namespace: f.Namespace.Name,
+							},
+						},
+					},
+				},
+			}
+			Expect(f.CRClient.Create(context.Background(), &hook)).To(Succeed())
+			hookToCleanUp = &hook
+
+			By("checking that all webhooks have a populated CA")
+			caData := f.KubeClientConfig.CAData
+			Eventually(func() ([][]byte, error) {
+				var newHook admissionreg.ValidatingWebhookConfiguration
+				if err := f.CRClient.Get(context.Background(), types.NamespacedName{Name: hook.Name}, &newHook); err != nil {
+					return nil, err
+				}
+				return [][]byte{newHook.Webhooks[0].ClientConfig.CABundle, newHook.Webhooks[1].ClientConfig.CABundle}, nil
+			}, 10*time.Second, 1*time.Second).Should(Equal([][]byte{caData, caData}))
+		})
 	})
 })

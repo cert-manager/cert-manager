@@ -17,9 +17,11 @@ limitations under the License.
 package cainjector
 
 import (
+	"io/ioutil"
+
 	admissionreg "k8s.io/api/admissionregistration/v1beta1"
 	corev1 "k8s.io/api/core/v1"
-	runtime "k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime"
 	apireg "k8s.io/kube-aggregator/pkg/apis/apiregistration/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
@@ -65,6 +67,12 @@ func Register(mgr ctrl.Manager, setup injectorSetup) error {
 		return err
 	}
 
+	cfg := mgr.GetConfig()
+	caBundle, err := dataFromSliceOrFile(cfg.CAData, cfg.CAFile)
+	if err != nil {
+		return err
+	}
+
 	return ctrl.NewControllerManagedBy(mgr).
 		For(typ).
 		Watches(&source.Kind{Type: &certmanager.Certificate{}},
@@ -80,11 +88,28 @@ func Register(mgr ctrl.Manager, setup injectorSetup) error {
 				toInjectable: certToInjectableFunc(setup.listType, setup.resourceName),
 			}}).
 		Complete(&genericInjectReconciler{
-			Client:       mgr.GetClient(),
-			log:          ctrl.Log.WithName("inject-controller"),
-			resourceName: setup.resourceName,
-			injector:     setup.injector,
+			Client:            mgr.GetClient(),
+			apiserverCABundle: caBundle,
+			log:               ctrl.Log.WithName("inject-controller"),
+			resourceName:      setup.resourceName,
+			injector:          setup.injector,
 		})
+}
+
+// dataFromSliceOrFile returns data from the slice (if non-empty), or from the file,
+// or an error if an error occurred reading the file
+func dataFromSliceOrFile(data []byte, file string) ([]byte, error) {
+	if len(data) > 0 {
+		return data, nil
+	}
+	if len(file) > 0 {
+		fileData, err := ioutil.ReadFile(file)
+		if err != nil {
+			return []byte{}, err
+		}
+		return fileData, nil
+	}
+	return nil, nil
 }
 
 // RegisterALL registers all known injection controllers with the given manager, and adds relevant indicides.
