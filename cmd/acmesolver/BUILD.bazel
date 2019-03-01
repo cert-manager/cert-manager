@@ -15,7 +15,6 @@ go_library(
     deps = [
         "//pkg/issuer/acme/http/solver:go_default_library",
         "//pkg/logs:go_default_library",
-        "//vendor/github.com/spf13/pflag:go_default_library",
     ],
 )
 
