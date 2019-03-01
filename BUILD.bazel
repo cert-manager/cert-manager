@@ -54,7 +54,7 @@ filegroup(
         "//docs/generated/reference:all-srcs",
         "//hack:all-srcs",
         "//pkg/acme:all-srcs",
-        "//pkg/api/util:all-srcs",
+        "//pkg/api:all-srcs",
         "//pkg/apis:all-srcs",
         "//pkg/client/clientset/versioned:all-srcs",
         "//pkg/client/informers/externalversions:all-srcs",

@@ -19,18 +19,19 @@ package logs
 import (
 	"context"
 	"flag"
-	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"log"
 	"time"
 
 	"github.com/go-logr/logr"
 	"github.com/spf13/pflag"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/wait"
-	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/klog"
 	"k8s.io/klog/klogr"
+
+	"github.com/jetstack/cert-manager/pkg/api"
 )
 
 var (
@@ -91,7 +92,7 @@ func WithResource(l logr.Logger, obj metav1.Object) logr.Logger {
 	var gvk schema.GroupVersionKind
 
 	if runtimeObj, ok := obj.(runtime.Object); ok {
-		gvks, _, _ := scheme.Scheme.ObjectKinds(runtimeObj)
+		gvks, _, _ := api.Scheme.ObjectKinds(runtimeObj)
 		if len(gvks) > 0 {
 			gvk = gvks[0]
 		}
@@ -109,7 +110,7 @@ func WithRelatedResource(l logr.Logger, obj metav1.Object) logr.Logger {
 	var gvk schema.GroupVersionKind
 
 	if runtimeObj, ok := obj.(runtime.Object); ok {
-		gvks, _, _ := scheme.Scheme.ObjectKinds(runtimeObj)
+		gvks, _, _ := api.Scheme.ObjectKinds(runtimeObj)
 		if len(gvks) > 0 {
 			gvk = gvks[0]
 		}
