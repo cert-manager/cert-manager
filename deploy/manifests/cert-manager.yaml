@@ -491,6 +491,74 @@ spec:
               - server
               - path
               type: object
+            venafi:
+              properties:
+                cloud:
+                  description: Cloud specifies the Venafi cloud configuration settings.
+                    Only one of TPP or Cloud may be specified.
+                  properties:
+                    apiTokenSecretRef:
+                      description: APITokenSecretRef is a secret key selector for
+                        the Venafi Cloud API token.
+                      properties:
+                        key:
+                          description: The key of the secret to select from. Must
+                            be a valid secret key.
+                          type: string
+                        name:
+                          description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                            TODO: Add other useful fields. apiVersion, kind, uid?'
+                          type: string
+                      required:
+                      - name
+                      type: object
+                    url:
+                      description: URL is the base URL for Venafi Cloud
+                      type: string
+                  required:
+                  - url
+                  - apiTokenSecretRef
+                  type: object
+                tpp:
+                  description: TPP specifies Trust Protection Platform configuration
+                    settings. Only one of TPP or Cloud may be specified.
+                  properties:
+                    caBundle:
+                      description: CABundle is a PEM encoded TLS certifiate to use
+                        to verify connections to the TPP instance. If specified, system
+                        roots will not be used and the issuing CA for the TPP instance
+                        must be verifiable using the provided root. If not specified,
+                        the connection will be verified using the cert-manager system
+                        root certificates.
+                      format: byte
+                      type: string
+                    credentialsRef:
+                      description: CredentialsRef is a reference to a Secret containing
+                        the username and password for the TPP server. The secret must
+                        contain two keys, 'username' and 'password'.
+                      properties:
+                        name:
+                          description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                            TODO: Add other useful fields. apiVersion, kind, uid?'
+                          type: string
+                      required:
+                      - name
+                      type: object
+                    url:
+                      description: URL is the base URL for the Venafi TPP instance
+                      type: string
+                  required:
+                  - url
+                  - credentialsRef
+                  type: object
+                zone:
+                  description: Zone is the Venafi Policy Zone to use for this issuer.
+                    All requests made to the Venafi platform will be restricted by
+                    the named zone policy. This field is required.
+                  type: string
+              required:
+              - zone
+              type: object
           type: object
         status:
           properties:
@@ -681,6 +749,74 @@ spec:
               - auth
               - server
               - path
+              type: object
+            venafi:
+              properties:
+                cloud:
+                  description: Cloud specifies the Venafi cloud configuration settings.
+                    Only one of TPP or Cloud may be specified.
+                  properties:
+                    apiTokenSecretRef:
+                      description: APITokenSecretRef is a secret key selector for
+                        the Venafi Cloud API token.
+                      properties:
+                        key:
+                          description: The key of the secret to select from. Must
+                            be a valid secret key.
+                          type: string
+                        name:
+                          description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                            TODO: Add other useful fields. apiVersion, kind, uid?'
+                          type: string
+                      required:
+                      - name
+                      type: object
+                    url:
+                      description: URL is the base URL for Venafi Cloud
+                      type: string
+                  required:
+                  - url
+                  - apiTokenSecretRef
+                  type: object
+                tpp:
+                  description: TPP specifies Trust Protection Platform configuration
+                    settings. Only one of TPP or Cloud may be specified.
+                  properties:
+                    caBundle:
+                      description: CABundle is a PEM encoded TLS certifiate to use
+                        to verify connections to the TPP instance. If specified, system
+                        roots will not be used and the issuing CA for the TPP instance
+                        must be verifiable using the provided root. If not specified,
+                        the connection will be verified using the cert-manager system
+                        root certificates.
+                      format: byte
+                      type: string
+                    credentialsRef:
+                      description: CredentialsRef is a reference to a Secret containing
+                        the username and password for the TPP server. The secret must
+                        contain two keys, 'username' and 'password'.
+                      properties:
+                        name:
+                          description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                            TODO: Add other useful fields. apiVersion, kind, uid?'
+                          type: string
+                      required:
+                      - name
+                      type: object
+                    url:
+                      description: URL is the base URL for the Venafi TPP instance
+                      type: string
+                  required:
+                  - url
+                  - credentialsRef
+                  type: object
+                zone:
+                  description: Zone is the Venafi Policy Zone to use for this issuer.
+                    All requests made to the Venafi platform will be restricted by
+                    the named zone policy. This field is required.
+                  type: string
+              required:
+              - zone
               type: object
           type: object
         status:

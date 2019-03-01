@@ -86,6 +86,55 @@ type IssuerConfig struct {
 
 	// +optional
 	SelfSigned *SelfSignedIssuer `json:"selfSigned,omitempty"`
+	Venafi     *VenafiIssuer     `json:"venafi,omitempty"`
+}
+
+// VenafiIssuer describes issuer configuration details for Venafi Cloud.
+type VenafiIssuer struct {
+	// Zone is the Venafi Policy Zone to use for this issuer.
+	// All requests made to the Venafi platform will be restricted by the named
+	// zone policy.
+	// This field is required.
+	Zone string `json:"zone"`
+
+	// TPP specifies Trust Protection Platform configuration settings.
+	// Only one of TPP or Cloud may be specified.
+	// +optional
+	TPP *VenafiTPP `json:"tpp,omitempty"`
+
+	// Cloud specifies the Venafi cloud configuration settings.
+	// Only one of TPP or Cloud may be specified.
+	// +optional
+	Cloud *VenafiCloud `json:"cloud,omitempty"`
+}
+
+// VenafiTPP defines connection configuration details for a Venafi TPP instance
+type VenafiTPP struct {
+	// URL is the base URL for the Venafi TPP instance
+	URL string `json:"url"`
+
+	// CredentialsRef is a reference to a Secret containing the username and
+	// password for the TPP server.
+	// The secret must contain two keys, 'username' and 'password'.
+	CredentialsRef LocalObjectReference `json:"credentialsRef"`
+
+	// CABundle is a PEM encoded TLS certifiate to use to verify connections to
+	// the TPP instance.
+	// If specified, system roots will not be used and the issuing CA for the
+	// TPP instance must be verifiable using the provided root.
+	// If not specified, the connection will be verified using the cert-manager
+	// system root certificates.
+	// +optional
+	CABundle []byte `json:"caBundle,omitempty"`
+}
+
+// VenafiCloud defines connection configuration details for Venafi Cloud
+type VenafiCloud struct {
+	// URL is the base URL for Venafi Cloud
+	URL string `json:"url"`
+
+	// APITokenSecretRef is a secret key selector for the Venafi Cloud API token.
+	APITokenSecretRef SecretKeySelector `json:"apiTokenSecretRef"`
 }
 
 type SelfSignedIssuer struct {
