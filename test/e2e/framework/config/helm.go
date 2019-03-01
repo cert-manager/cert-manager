@@ -19,7 +19,7 @@ package config
 import (
 	"fmt"
 
-	flag "github.com/spf13/pflag"
+	"flag"
 )
 
 type Helm struct {

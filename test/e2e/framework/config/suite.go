@@ -19,7 +19,7 @@ package config
 import (
 	"os"
 
-	flag "github.com/spf13/pflag"
+	"flag"
 )
 
 type Suite struct {

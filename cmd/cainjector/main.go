@@ -27,13 +27,14 @@ import (
 )
 
 func main() {
-	logs.InitLogs(nil)
+	logs.InitLogs(flag.CommandLine)
 	defer logs.FlushLogs()
 	ctrl.SetLogger(logs.Log)
-	stopCh := ctrl.SetupSignalHandler()
 
+	stopCh := ctrl.SetupSignalHandler()
 	cmd := NewCommandStartInjectorController(os.Stdout, os.Stderr, stopCh)
 	cmd.Flags().AddGoFlagSet(flag.CommandLine)
+
 	flag.CommandLine.Parse([]string{})
 	if err := cmd.Execute(); err != nil {
 		klog.Fatal(err)

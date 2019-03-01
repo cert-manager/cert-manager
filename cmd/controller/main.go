@@ -28,12 +28,12 @@ import (
 )
 
 func main() {
+	logf.InitLogs(flag.CommandLine)
+	defer logf.FlushLogs()
+
 	stopCh := SetupSignalHandler()
 	cmd := NewCommandStartCertManagerController(stopCh)
 	cmd.Flags().AddGoFlagSet(flag.CommandLine)
-
-	logf.InitLogs(cmd.Flags())
-	defer logf.FlushLogs()
 
 	flag.CommandLine.Parse([]string{})
 	if err := cmd.Execute(); err != nil {

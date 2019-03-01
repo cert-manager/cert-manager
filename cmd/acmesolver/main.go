@@ -17,9 +17,8 @@ limitations under the License.
 package main
 
 import (
+	"flag"
 	"log"
-
-	flag "github.com/spf13/pflag"
 
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/http/solver"
 	"github.com/jetstack/cert-manager/pkg/logs"

@@ -17,10 +17,10 @@ limitations under the License.
 package config
 
 import (
+	"flag"
 	"fmt"
 	"os"
 
-	"github.com/spf13/pflag"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/client-go/tools/clientcmd"
 )
@@ -61,7 +61,7 @@ func (c *Config) Validate() error {
 }
 
 // Register flags common to all e2e test suites.
-func (c *Config) AddFlags(fs *pflag.FlagSet) {
+func (c *Config) AddFlags(fs *flag.FlagSet) {
 	// Kubernetes API server config
 	fs.StringVar(&c.KubeConfig, "kubernetes-config", os.Getenv(clientcmd.RecommendedConfigPathEnvVar), "Path to config containing embedded authinfo for kubernetes. Default value is from environment variable "+clientcmd.RecommendedConfigPathEnvVar)
 	fs.StringVar(&c.KubeContext, "kubernetes-context", "", "config context to use for kuberentes. If unset, will use value from 'current-context'")

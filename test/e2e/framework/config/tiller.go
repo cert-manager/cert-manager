@@ -17,9 +17,8 @@ limitations under the License.
 package config
 
 import (
+	"flag"
 	"fmt"
-
-	flag "github.com/spf13/pflag"
 )
 
 type Tiller struct {

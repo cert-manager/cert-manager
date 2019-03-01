@@ -23,7 +23,6 @@ import (
 	"time"
 
 	"github.com/go-logr/logr"
-	"github.com/spf13/pflag"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -43,7 +42,7 @@ var (
 	DebugLevel = 3
 )
 
-var logFlushFreq = pflag.Duration("log-flush-frequency", 5*time.Second, "Maximum number of seconds between log flushes")
+var logFlushFreq = flag.Duration("log-flush-frequency", 5*time.Second, "Maximum number of seconds between log flushes")
 
 // GlogWriter serves as a bridge between the standard log package and the glog package.
 type GlogWriter struct{}
@@ -55,15 +54,11 @@ func (writer GlogWriter) Write(data []byte) (n int, err error) {
 }
 
 // InitLogs initializes logs the way we want for kubernetes.
-func InitLogs(fs *pflag.FlagSet) {
+func InitLogs(fs *flag.FlagSet) {
 	if fs == nil {
-		fs = pflag.CommandLine
+		fs = flag.CommandLine
 	}
-
-	gofs := &flag.FlagSet{}
-	klog.InitFlags(gofs)
-	fs.AddGoFlagSet(gofs)
-
+	klog.InitFlags(fs)
 	fs.Set("logtostderr", "true")
 
 	log.SetOutput(GlogWriter{})

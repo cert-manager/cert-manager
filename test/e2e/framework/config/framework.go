@@ -17,7 +17,7 @@ limitations under the License.
 package config
 
 import (
-	flag "github.com/spf13/pflag"
+	"flag"
 )
 
 type Framework struct {
