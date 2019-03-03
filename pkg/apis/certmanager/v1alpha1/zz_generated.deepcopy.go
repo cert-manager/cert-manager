@@ -143,12 +143,8 @@ func (in *ACMEIssuerDNS01Provider) DeepCopyInto(out *ACMEIssuerDNS01Provider) {
 	}
 	if in.DNSPod != nil {
 		in, out := &in.DNSPod, &out.DNSPod
-		if *in == nil {
-			*out = nil
-		} else {
-			*out = new(ACMEIssuerDNS01ProviderDNSPod)
-			**out = **in
-		}
+		*out = new(ACMEIssuerDNS01ProviderDNSPod)
+		**out = **in
 	}
 	return
 }
