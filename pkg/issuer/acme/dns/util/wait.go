@@ -190,11 +190,14 @@ func ValidateCAA(domain string, issuerID []string, iswildcard bool, nameservers 
 			if err != nil {
 				return fmt.Errorf("Could not validate CAA record: %s", err)
 			}
-			// we expect the domain to exist, but it might not have a CAA record
-			// (this is the root domain that we're validating, if it errors, then
-			// there are bigger problems)
+			// domain may not exist, which is fine. It will fail HTTP01 checks
+			// but DNS01 checks will create a proper domain
+			if msg.Rcode == dns.RcodeNameError {
+				break
+			}
 			if msg.Rcode != dns.RcodeSuccess {
-				return fmt.Errorf("Could not validate CAA: domain %q not found", domain)
+				return fmt.Errorf("Could not validate CAA: Unexpected response code '%s' for %s",
+					dns.RcodeToString[msg.Rcode], domain)
 			}
 			oldQuery := queryDomain
 			queryDomain = updateDomainWithCName(msg, queryDomain)
