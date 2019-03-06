@@ -73,45 +73,24 @@ check the :doc:`troubleshooting <./troubleshooting>` guide for help.
    ``kubectl describe`` instead of ``kubectl get`` as the
    'additionalPrinterColumns' functionality only moved to beta in v1.11.
 
-ca-sync CronJob
----------------
+cainjector
+----------
 
-In order to configure the Kubernetes apiserver with the generated root CA that
-the webhook uses, we also deploy a CronJob resource:
+The :doc:`cert-manager CA injector </reference/cainjector>` is responsible for
+injecting the two CA bundles above into the webhook's
+ValidatingWebhookConfiguration and APIService resource in order to allow the
+Kubernetes apiserver to 'trust' the webhook apiserver.
 
-.. code-block:: shell
+This component is configured using the ``certmanager.k8s.io/inject-apiserver-ca: "true"``
+and ``certmanager.k8s.io/inject-apiserver-ca: "true"`` annotations on the
+APIService and ValidatingWebhookConfiguration resources.
 
-   kubectl get cronjob
-   NAME                           SCHEDULE   SUSPEND   ACTIVE   LAST SCHEDULE   AGE
-   cert-manager-webhook-ca-sync   @weekly    False     0        2d21h           20d
-
-As you can see, this job runs weekly.
-
-It copies across the CA defined in the 'cert-manager-webhook-ca' secret
-generated above to the ``spec.caBundle`` field on the
-``v1beta1.admission.certmanager.k8s.io`` APIService resource.
-It also sets the ``webhooks.clientConfig.caBundle`` field on the
+It copies across the CA defined in the 'cert-manager-webhook-ca' Secret
+generated above to the ``caBundle`` field on the APIService resource.
+It also sets the webhook's ``clientConfig.caBundle`` field on the
 ``cert-manager-webhook`` ValidatingWebhookConfiguration resource to that of
-your Kubernetes API server.
-
-If the ca-sync job fails more than 20 times, it will not be retried until the
-next time the CronJob is scheduled. This may occur when you first setup
-cert-manager if you have run into issues during installation.
-
-You can manually trigger the ca-sync CronJob to run immediately using:
-
-.. code-block:: shell
-
-   kubectl create job ca-sync-manually-triggered --from cronjob/cert-manager-webhook-ca-sync
-
-If you have run the ``create job`` command above multiple times, you will need
-to choose a new name or delete the old job resource else you will receive an
-'AlreadyExists' error.
-
-.. note::
-   The ``--from`` flag was only introduced in kubectl v1.11
-
-The code for this component can be found at `munnerz/apiextensions-ca-helper`_
+your Kubernetes API server in order to support Kubernetes versions earlier than
+v1.11.
 
 Known issues
 ------------
@@ -232,7 +211,6 @@ To re-install cert-manager without the webhook, run:
 Once you have re-installed cert-manager, you should then
 :doc:`restore your configuration </tasks/backup-restore-crds>`.
 
-.. _`munnerz/apiextensions-ca-helper`: https://github.com/munnerz/apiextensions-ca-helper
 .. _`deploy directory`: https://github.com/jetstack/cert-manager/blob/release-0.7/deploy/manifests
 .. _`cert-manager.yaml`: https://github.com/jetstack/cert-manager/blob/release-0.7/deploy/manifests/cert-manager.yaml
 .. _`cert-manager-no-webhook.yaml`: https://github.com/jetstack/cert-manager/blob/release-0.7/deploy/manifests/cert-manager-no-webhook.yaml
