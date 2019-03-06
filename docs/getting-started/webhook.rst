@@ -142,17 +142,6 @@ You may need to wait a little while before cert-manager retries issuing the
 certificates if they have been failing for a while due to cert-manager's built
 in back-offs.
 
-Running on Amazon EKS
----------------------
-
-Unfortunately, Amazon EKS does not configure the options needed on the
-Kubernetes apiserver that are required for ValidatingWebhookConfiguration
-resources to work.
-
-This means there is currently no option other than disabling the webhook until
-this issue is resolved by Amazon.
-
-You can read how to `disable the webhook component`_ below.
 
 Running on private GKE clusters
 -------------------------------
