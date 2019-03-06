@@ -93,6 +93,11 @@ func (a *PrivateACM) Issue(ctx context.Context, crt *v1alpha1.Certificate) (*iss
 		return nil, err
 	}
 
+	certDuration := v1alpha1.DefaultCertificateDuration
+	if crt.Spec.Duration != nil {
+		certDuration = crt.Spec.Duration.Duration
+	}
+
 	issueCertInput := &acmpca.IssueCertificateInput{
 		CertificateAuthorityArn: aws.String(a.issuer.GetSpec().PrivateACM.CertificateAuthorityARN),
 		Csr:                     b.Bytes(),
@@ -100,7 +105,7 @@ func (a *PrivateACM) Issue(ctx context.Context, crt *v1alpha1.Certificate) (*iss
 		SigningAlgorithm:        aws.String(acmpca.SigningAlgorithmSha256withrsa), // TODO: make this configurable
 		Validity: &acmpca.Validity{
 			Type:  aws.String("DAYS"),
-			Value: aws.Int64(int64(math.Ceil(crt.Spec.Duration.Hours() / 24))),
+			Value: aws.Int64(int64(math.Ceil(certDuration.Hours() / 24))),
 		},
 	}
 	issueCertOutput, err := pca.IssueCertificate(issueCertInput)
