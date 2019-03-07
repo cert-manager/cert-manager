@@ -26,6 +26,7 @@ filegroup(
         "//pkg/acme/webhook/apiserver:all-srcs",
         "//pkg/acme/webhook/cmd:all-srcs",
         "//pkg/acme/webhook/registry/challengepayload:all-srcs",
+        "//pkg/acme/webhook/sample:all-srcs",
     ],
     tags = ["automanaged"],
     visibility = ["//visibility:public"],

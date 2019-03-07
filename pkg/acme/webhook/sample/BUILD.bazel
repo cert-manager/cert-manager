@@ -1,0 +1,42 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
+load("//hack:def.bzl", "multiarch_image")
+
+# Expands to target names such as 'image.linux-amd64', 'image.linux-arm64'
+multiarch_image(
+    name = "image",
+    visibility = ["//visibility:public"],
+)
+
+go_library(
+    name = "go_default_library",
+    srcs = ["main.go"],
+    importpath = "github.com/jetstack/cert-manager/pkg/acme/webhook/sample",
+    visibility = ["//visibility:private"],
+    deps = [
+        "//pkg/acme/webhook/cmd:go_default_library",
+        "//pkg/acme/webhook/sample/cloudflare:go_default_library",
+    ],
+)
+
+go_binary(
+    name = "sample",
+    embed = [":go_default_library"],
+    visibility = ["//visibility:public"],
+)
+
+filegroup(
+    name = "package-srcs",
+    srcs = glob(["**"]),
+    tags = ["automanaged"],
+    visibility = ["//visibility:private"],
+)
+
+filegroup(
+    name = "all-srcs",
+    srcs = [
+        ":package-srcs",
+        "//pkg/acme/webhook/sample/cloudflare:all-srcs",
+    ],
+    tags = ["automanaged"],
+    visibility = ["//visibility:public"],
+)
