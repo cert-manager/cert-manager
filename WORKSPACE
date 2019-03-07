@@ -308,7 +308,7 @@ filegroup(
 git_repository(
     name = "build_bazel_rules_nodejs",
     remote = "https://github.com/bazelbuild/rules_nodejs.git",
-    tag = "0.15.0",  # check for the latest tag when you install
+    tag = "0.26.0",  # check for the latest tag when you install
 )
 
 load("@build_bazel_rules_nodejs//:package.bzl", "rules_nodejs_dependencies")
