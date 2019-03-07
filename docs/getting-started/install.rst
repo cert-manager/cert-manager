@@ -133,7 +133,7 @@ In order to install the Helm chart, you must run:
    helm install \
      --name cert-manager \
      --namespace cert-manager \
-     --version v0.7.0-beta.0 \
+     --version v0.7.0 \
      jetstack/cert-manager
 
 The default cert-manager configuration is good for the majority of users, but a

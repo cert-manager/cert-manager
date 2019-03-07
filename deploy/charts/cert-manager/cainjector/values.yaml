@@ -34,5 +34,5 @@ resources: {}
 
 image:
   repository: quay.io/jetstack/cert-manager-cainjector
-  tag: v0.7.0-beta.0
+  tag: v0.7.0
   pullPolicy: IfNotPresent
