@@ -23,6 +23,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	kubeinformers "k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/record"
 
 	clientset "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
@@ -37,6 +38,8 @@ type Context struct {
 	// RootContext is the root context for the controller
 	RootContext context.Context
 
+	// RESTConfig is the loaded Kubernetes apiserver rest client configuration
+	RESTConfig *rest.Config
 	// Client is a Kubernetes clientset
 	Client kubernetes.Interface
 	// CMClient is a cert-manager clientset

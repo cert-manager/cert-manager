@@ -187,6 +187,7 @@ func buildControllerContext(ctx context.Context, opts *options.ControllerOptions
 	kubeSharedInformerFactory := kubeinformers.NewFilteredSharedInformerFactory(cl, time.Second*30, opts.Namespace, nil)
 	return &controller.Context{
 		RootContext:               ctx,
+		RESTConfig:                kubeCfg,
 		Client:                    cl,
 		CMClient:                  intcl,
 		Recorder:                  recorder,
