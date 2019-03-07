@@ -23,13 +23,15 @@ To install the chart with the release name `my-release`:
 $ kubectl apply \
     -f https://raw.githubusercontent.com/jetstack/cert-manager/release-0.7/deploy/manifests/00-crds.yaml
 
-## IMPORTANT: if you are deploying into a namespace that **already exists**,
-## you MUST ensure the namespace has an additional label on it in order for
-## the deployment to succeed
-$ kubectl label namespace <deployment-namespace> certmanager.k8s.io/disable-validation="true"
+## IMPORTANT: if the cert-manager namespace **already exists**, you MUST ensure
+## it has an additional label on it in order for the deployment to succeed
+$ kubectl label namespace cert-manager certmanager.k8s.io/disable-validation="true"
+
+## Add the Jetstack Helm repository
+$ helm repo add jetstack https://charts.jetstack.io
 
 ## Install the cert-manager helm chart
-$ helm install --name my-release stable/cert-manager
+$ helm install --name my-release --namespace cert-manager jetstack/cert-manager
 ```
 
 In order to begin issuing certificates, you will need to set up a ClusterIssuer
@@ -38,20 +40,20 @@ or Issuer resource (for example, by creating a 'letsencrypt-staging' issuer).
 More information on the different types of issuers and how to configure them
 can be found in our documentation:
 
-https://docs.cert-manager.io/en/latest/reference/issuers.html
+https://docs.cert-manager.io/en/latest/tasks/issuers/index.html
 
 For information on how to configure cert-manager to automatically provision
 Certificates for Ingress resources, take a look at the `ingress-shim`
 documentation:
 
-https://docs.cert-manager.io/en/latest/reference/ingress-shim.html
+https://docs.cert-manager.io/en/latest/tasks/issuing-certificates/ingress-shim.html
 
 > **Tip**: List all releases using `helm list`
 
 ## Upgrading the Chart
 
 Special considerations may be required when upgrading the Helm chart, and these
-are documented in our full [upgrading guide](https://docs.cert-manager.io/en/latest/admin/upgrading/index.html).
+are documented in our full [upgrading guide](https://docs.cert-manager.io/en/latest/tasks/upgrading/index.html).
 Please check here before perform upgrades!
 
 ## Uninstalling the Chart
