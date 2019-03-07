@@ -488,8 +488,12 @@ Create this definition locally and update the email address to your own. This
 email required by Let's Encrypt and used to notify you of certificate
 expirations and updates.
 
+- staging issuer: `staging-issuer.yaml`_
+
 .. literalinclude:: example/staging-issuer.yaml
    :language: yaml
+
+.. _`staging-issuer.yaml`: https://raw.githubusercontent.com/jetstack/cert-manager/master/docs/tutorials/acme/quick-start/example/staging-issuer.yaml
 
 Once edited, apply the custom resource:
 
@@ -501,9 +505,13 @@ Once edited, apply the custom resource:
 Also create a production issuer and deploy it. As with the staging issuer, you
 will need to update this example and add in your own email address.
 
+- production issuer: `production-issuer.yaml`_
+
 .. literalinclude:: example/production-issuer.yaml
    :language: yaml
    :emphasize-lines: 10
+   
+.. _`production-issuer.yaml`: https://raw.githubusercontent.com/jetstack/cert-manager/master/docs/tutorials/acme/quick-start/example/production-issuer.yaml
 
 .. code-block:: shell
 
@@ -579,9 +587,13 @@ cert-manager will create or update the secret defined in the certificate.
 Edit the ingress add the annotations that were commented out in our earlier
 example:
 
+- ingress tls: `ingress-tls.yaml`_
+
 .. literalinclude:: example/ingress-tls.yaml
    :language: yaml
    :emphasize-lines: 6-8
+
+.. _`ingress-tls.yaml`: https://raw.githubusercontent.com/jetstack/cert-manager/master/docs/tutorials/acme/quick-start/example/ingress-tls.yaml
 
 and apply it:
 
@@ -692,12 +704,16 @@ use the describe command as well to see some details:
 Now that we have confidence that everything is configured correctly, you
 can update the annotations in the ingress to specify the production issuer:
 
+- ingress tls final: `ingress-tls-final.yaml`_
+
 .. literalinclude:: example/ingress-tls-final.yaml
    :language: yaml
+   
+.. _`ingress-tls-final.yaml`: https://raw.githubusercontent.com/jetstack/cert-manager/master/docs/tutorials/acme/quick-start/example/ingress-tls-final.yaml
 
 .. code-block:: shell
 
-   $ kubectl apply -f ingress.yaml
+   $ kubectl apply -f ingress-tls-final.yaml
 
    ingress.extensions "kuard" configured
 
