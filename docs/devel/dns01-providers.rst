@@ -2,6 +2,12 @@
 Contributing DNS01 providers
 ============================
 
+----------
+ WARNING
+----------
+
+Because of the overwhelming number of PRs for new DNS providers, We're changing how we handle the DNS01 contributions. See `this post <https://groups.google.com/d/msg/cert-manager-dev/CgoMxSP6DSI/IyHp0BGfCQAJ>`_ on the mailing list for more information.
+
 Steps to add a ``FooDNS`` DNS-01 provider:
 
 1. Create a new package under ``pkg/issuer/acme/dns/foodns``.
