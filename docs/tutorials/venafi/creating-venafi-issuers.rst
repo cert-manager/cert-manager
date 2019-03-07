@@ -38,7 +38,7 @@ certificates in the ``default`` namespace).
 
 .. code-block:: shell
 
-    kubectl create secret generic cloudsecret --from-literal=apikey.txt='YOUR_CLOUD_API_KEY_HERE'
+    kubectl create secret generic cloudsecret --from-literal=apikey='YOUR_CLOUD_API_KEY_HERE'
 
 Create the issuer, referencing the secret we just created:
 
@@ -54,7 +54,7 @@ Create the issuer, referencing the secret we just created:
         cloud:
           apiTokenSecretRef:
             name: cloudsecret
-            key: apikey.txt
+            key: apikey
 
 You can create multiple issuers pointing to different Venafi Cloud zones, or
 even have 1 issuer pointing to Venafi Platform and another pointing to Venafi
@@ -124,7 +124,15 @@ Like before, we create a Secret resource containing our Venafi TPP credentials:
         --from-literal=user=admin \
         --from-literal=password=tpppassword
 
-Create Venafi Platform issuer
+**Optionally. Encode Venafi Platform CA bundle**
+
+To include CA bundle into venafi options you need to encode it into base64 encoded string. Example:
+
+.. code-block:: shell
+
+    cat /opt/venafi/bundle.pem | base64 | tr -d '\n'
+
+**Create Venafi Platform issuer**
 
 .. code-block:: yaml
 
@@ -133,10 +141,11 @@ Create Venafi Platform issuer
    metadata:
      name: tpp-venafi-issuer
    spec:
-     zone: devops\cert-manager # must exist in the TPP console
      venafi:
+       zone: devops\cert-manager # must exist in the TPP console
        tpp:
          url: https://tpp.venafi.example/vedsdk
+         caBundle: <base64 encoded string of caBundle PEM file>
          credentialsRef:
            name: tppsecret
 
@@ -155,4 +164,4 @@ TPP Issuer we just created:
      commonName: hellodemo.venafi.localhost
      secretName: hellodemo-venafi-localhost
      issuerRef:
-       name: tppvenafiissuer
+       name: tpp-venafi-issuer
