@@ -203,7 +203,8 @@ func buildControllerContext(opts *options.ControllerOptions) (*controller.Contex
 			DefaultACMEIssuerDNS01ProviderName: opts.DefaultACMEIssuerDNS01ProviderName,
 		},
 		CertificateOptions: controller.CertificateOptions{
-			EnableOwnerRef: opts.EnableCertificateOwnerRef,
+			EnableOwnerRef: 	opts.EnableCertificateOwnerRef,
+			EnablePodRefresh: 	opts.EnablePodRefresh,
 		},
 	}, kubeCfg, nil
 }
