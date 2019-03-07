@@ -6,6 +6,12 @@ The ACME issuer can also contain DNS provider configuration, which can be used
 by Certificates using this Issuer in order to validate DNS01 challenge
 requests:
 
+You can read about how the DNS01 challenge type works on the
+`Let's Encrypt challenge types page`_.
+
+.. _`Let's Encrypt challenge types page`: https://letsencrypt.org/docs/challenge-types/#dns-01-challenge
+
+
 .. code-block:: yaml
    :linenos:
    :emphasize-lines: 7
