@@ -12,4 +12,3 @@ For more information on performing individual tasks, read the
    :maxdepth: 2
 
    acme/index
-   venafi/index

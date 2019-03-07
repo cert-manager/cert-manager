@@ -41,12 +41,16 @@ types you require:
   challenge validations against an ACME server such as `Let's Encrypt`_.
 * :doc:`Vault <./setup-vault>`- issue certificates from a Vault instance
   configured with the `Vault PKI backend`_.
+* :doc:`Venafi <./setup-venafi>` - issue certificates from a Venafi_ Cloud
+  or Trust Protection Platform instance.
 
 Additional information
 ======================
 
 There are a few key things to know about Issuers, but for full information
 you can refer to the :doc:`Issuer reference docs </reference/issuers>`.
+
+.. _issuer_vs_clusterissuer:
 
 Difference between Issuers and ClusterIssuers
 ---------------------------------------------
@@ -72,6 +76,8 @@ Certificate resources.
    setup-ca
    setup-selfsigned
    setup-vault
+   setup-venafi
 
 .. _`Let's Encrypt`: https://letsencrypt.org
 .. _`Vault PKI backend`: https://www.vaultproject.io/docs/secrets/pki/index.html
+.. _Venafi: https://venafi.com
