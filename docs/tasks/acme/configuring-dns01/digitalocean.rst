@@ -11,8 +11,18 @@ Handy direct link: https://cloud.digitalocean.com/account/api/tokens/new
 
 
 .. code-block:: yaml
+   :emphasize-lines: 10-13
 
-   digitalocean:
-     tokenSecretRef:
-       name: digitalocean-dns
-       key: access-token
+   apiVersion: certmanager.k8s.io/v1alpha1
+   kind: Issuer
+   metadata:
+     name: example-issuer
+   spec:
+     acme:
+       ...
+       solvers:
+       - dns01:
+           digitalocean:
+             tokenSecretRef:
+               name: digitalocean-dns
+               key: access-token

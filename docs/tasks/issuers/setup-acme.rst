@@ -23,7 +23,8 @@ Creating a basic ACME Issuer
 ============================
 
 The below example configures a ClusterIssuer named ``letsencrypt-staging`` that
-is configured to enable the HTTP01 challenge validation mechanism **only**.
+is configured to HTTP01 challenge solving with configuration suitable for
+ingress controllers such as ingress-nginx_.
 
 You should copy and paste this example into a new file named
 ``letsencrypt-staging.yaml`` and update the ``spec.acme.email`` field to be your
@@ -31,7 +32,7 @@ own email address.
 
 .. code-block:: yaml
    :linenos:
-   :emphasize-lines: 7-10, 13-14, 15-16
+   :emphasize-lines: 7-10, 13-14, 19
 
    apiVersion: certmanager.k8s.io/v1alpha1
    kind: ClusterIssuer
@@ -47,10 +48,13 @@ own email address.
        privateKeySecretRef:
          # Secret resource used to store the account's private key.
          name: example-issuer-account-key
-       # Enable the HTTP01 challenge mechanism for this Issuer
-       http01: {}
+       # Add a single challenge solver, HTTP01 using nginx
+       solvers:
+       - http01:
+           ingress:
+             ingressClass: nginx
 
-You can then create this resource:
+You can then create this resource using ``kubectl apply``:
 
 .. code-block:: shell
 
@@ -73,38 +77,115 @@ To verify that the account has been registered successfully, you can run
        Status:                True
        Type:                  Ready
 
-Notes on issuing ACME certificates
-----------------------------------
+Any Certificate you create that references this Issuer resource will use the
+HTTP01 challenge solver you have configured above.
 
-Currently, there is some additional configuration needed on Certificate
-resources when issuing certificates from ACME issuers.
+.. note::
+   Let's Encrypt does not support issuing wildcard certificates with HTTP-01 challenges.
+   To issue wildcard certificates, you must use the DNS-01 challenge.
 
-You should read the
-:doc:`Issuing Certificates using ACME </tasks/acme/issuing-certificates>`
-documentation for more information on how to configure these additional fields.
+.. _multiple-solver-types:
 
-Advanced HTTP01 configuration
-=============================
+Adding multiple solver types
+============================
 
-There are a few additional options that can be set on the Issuer resource to
-alter the behaviour of the HTTP01 solver.
+You may want to use different types of challenge solver configuration for
+different ingress controllers, for example if you want to issue wildcard
+certificates using DNS01 alongside other certificates that are validated using
+HTTP01.
 
-For full details, read the
-:doc:`HTTP01 Challenge Provider </tasks/acme/configuring-http01>` documentation
-to learn about these options.
+The ``solvers`` stanza has an optional ``selector`` field, that can be used to
+specify which Certificates, and further, what DNS names **on those certificates**
+should be used to solve challenges.
 
-Configuring DNS01 providers
-===========================
+For example, to configure HTTP01 using nginx ingress as the default solver,
+along with a DNS01 solver that can be used for wildcard certificates:
 
-It is also possible to validate domain ownership using DNS01 validation.
+.. code-block:: yaml
+   :linenos:
+   :emphasize-lines: 14-15
 
-In order to do this, your Issuer resource must be configured with credentials
-for a supported DNS provider's account.
+   apiVersion: certmanager.k8s.io/v1alpha1
+   kind: ClusterIssuer
+   metadata:
+     name: letsencrypt-staging
+   spec:
+     acme:
+       ...
+       solvers:
+       - http01:
+           ingress:
+             ingressClass: nginx
+       - dns01:
+           selector:
+             matchLabels:
+               use-cloudflare-solver: "true"
+           cloudflare:
+             email: user@example.com
+             apiKeySecretRef:
+               name: cloudflare-apikey-secret
+               key: apikey
 
-The full list of support DNS providers, and information on how to configure
-them can be found in the
-:doc:`DNS01 Challenge Provider </tasks/acme/configuring-dns01/index>`
+In order to utilise the configured cloudflare DNS01 solver, you must add the
+``use-cloudflare-solver: "true"`` label to your Certificate resources.
+
+Using multiple solvers for a single certificate
+-----------------------------------------------
+
+The solver's ``selector`` stanza has an additional field ``dnsNames`` that
+further refines the set of domains that the solver configuration applies to.
+
+If any ``dnsNames`` are specified, then that challenge solver will be used if
+the domain being validated is named in that list.
+
+For example:
+
+.. code-block:: yaml
+   :linenos:
+   :emphasize-lines: 14-15
+
+   apiVersion: certmanager.k8s.io/v1alpha1
+   kind: ClusterIssuer
+   metadata:
+     name: letsencrypt-staging
+   spec:
+     acme:
+       ...
+       solvers:
+       - http01:
+           ingress:
+             ingressClass: nginx
+       - dns01:
+           selector:
+             dnsNames:
+             - '*.example.com'
+           cloudflare:
+             email: user@example.com
+             apiKeySecretRef:
+               name: cloudflare-apikey-secret
+               key: apikey
+
+In this instance, a Certificate that specified both ``*.example.com`` and
+``example.com`` would use the HTTP01 challenge solver for ``example.com`` and
+the DNS01 challenge solver for ``*.example.com``.
+
+It is possible to specify both ``matchLabels`` AND ``dnsNames`` on an ACME
+solver selector.
+
+HTTP01 configuration
+====================
+
+For more details on the available options for the ACME HTTP01 solver type, and
+for details on compatibility with your own ingress controller, read the
+:doc:`Configuring HTTP01 Ingress Provider </tasks/acme/configuring-http01>`
+documentation.
+
+DNS01 configuration
+===================
+
+For more details on the available options for the ACME DNS01 solver type,
+including a list of supported DNS providers, read the
+:doc:`Configuring DNS01 Providers </tasks/acme/configuring-dns01/index>`
 documentation.
 
 .. _`Let's Encrypt staging endpoint`: https://letsencrypt.org/docs/staging-environment/
-.. _`HTTP01 challenge type`:

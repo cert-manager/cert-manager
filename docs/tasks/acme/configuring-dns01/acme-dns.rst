@@ -3,12 +3,22 @@ ACME-DNS
 =========================
 
 .. code-block:: yaml
+   :emphasize-lines: 10-14
 
-    acmedns:
-      host: https://acme.example.com
-      accountSecretRef:
-        name: acme-dns
-        key: acmedns.json
+   apiVersion: certmanager.k8s.io/v1alpha1
+   kind: Issuer
+   metadata:
+     name: example-issuer
+   spec:
+     acme:
+       ...
+       solvers:
+       - dns01:
+           acmedns:
+             host: https://acme.example.com
+             accountSecretRef:
+               name: acme-dns
+               key: acmedns.json
 
 In general, clients to acme-dns perform registration on the users behalf and inform
 them of the CNAME entries they must create. This is not possible in cert-manager, it

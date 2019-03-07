@@ -91,16 +91,6 @@ After the real, valid certificate has been obtained, cert-manager will replace
 the temporary self signed certificate with the valid one, **but will retain the
 same private key**.
 
-Special fields on Certificate resources for ACME Issuers
-========================================================
-
-When creating Certificate resources that reference ACME Issuers, you must
-set an additional ``certificate.spec.acme`` stanza on the resource to configure
-what challenge mechanism to use for each DNS name specified on the certificate.
-
-More information on setting these fields can be found in the
-:doc:`../acme/issuing-certificates` guide.
-
 .. toctree::
    :maxdepth: 2
 

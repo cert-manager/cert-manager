@@ -1,10 +1,15 @@
-========================
-DNS01 Challenge Provider
-========================
+=====================================
+Configuring DNS01 Challenge Providers
+=====================================
 
-The ACME issuer can also contain DNS provider configuration, which can be used
-by Certificates using this Issuer in order to validate DNS01 challenge
-requests:
+This page contains details on the different options available on the Issuer's
+DNS01 challenge solver configuration.
+
+For more information on configuring ACME issuers and their API format, read the
+:doc:`Setting up ACME Issuers <./setup-acme>` documentation.
+
+DNS01 provider configuration must be specified on the Issuer resource, similar
+to the examples in the setting up documentation:
 
 You can read about how the DNS01 challenge type works on the
 `Let's Encrypt challenge types page`_.
@@ -14,7 +19,7 @@ You can read about how the DNS01 challenge type works on the
 
 .. code-block:: yaml
    :linenos:
-   :emphasize-lines: 7
+   :emphasize-lines: 12-17
 
    apiVersion: certmanager.k8s.io/v1alpha1
    kind: Issuer
@@ -26,9 +31,8 @@ You can read about how the DNS01 challenge type works on the
        server: https://acme-staging-v02.api.letsencrypt.org/directory
        privateKeySecretRef:
          name: example-issuer-account-key
-       dns01:
-         providers:
-         - name: prod-clouddns
+       solvers:
+       - dns01:
            clouddns:
              project: my-project
              serviceAccountSecretRef:
@@ -40,20 +44,23 @@ it is also possible to have multiple instances of the same DNS provider on a
 single Issuer (e.g. two clouddns accounts could be set, each with their own
 name).
 
+For more information on utilising multiple solver types on a single Issuer,
+read the multiple-solver-types_ section.
+
 Setting nameservers for DNS01 self check
 ========================================
 
-Cert-manager will check the correct DNS records exist before attempting a DNS01
-challenge.  By default, the DNS servers for this check will be taken from
-``/etc/resolv.conf``.  If this is not desired (for example with multiple
-authoritative nameservers or split-horizon DNS), the cert-manager controller
-provides the ``--dns01-self-check-nameservers`` flag, which allows overriding the default
-nameservers with a comma seperated list of custom nameservers.
+cert-manager will check the correct DNS records exist before attempting a DNS01
+challenge.
+By default, the DNS servers for this check will be taken from
+``/etc/resolv.conf``.
+If this is not desired (for example with multiple authoritative nameservers or
+split-horizon DNS), the cert-manager controller exposes a flag that allows you
+alter this behaviour:
 
 Example usage::
 
-    --dns01-self-check-nameservers "8.8.8.8:53,1.1.1.1:53"
-
+    --dns01-recursive-nameservers "8.8.8.8:53,1.1.1.1:53"
 
 .. _supported-dns01-providers:
 

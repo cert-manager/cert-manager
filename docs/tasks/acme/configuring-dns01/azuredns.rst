@@ -40,31 +40,27 @@ You can configure the issuer like so:
 
 .. code-block:: yaml
 
-  apiVersion: certmanager.k8s.io/v1alpha1
-  kind: ClusterIssuer
-  metadata:
-    name: letsencrypt-prod
-  spec:
-    acme:
-      server: https://acme-v02.api.letsencrypt.org/directory
-      email: example@example.com 
-      privateKeySecretRef:
-        name: letsencrypt-prod
-      dns01:
-          providers:
-              - name: azure
-                azuredns:
-                  # Service principal clientId (also called appId)
-                  clientID: AZURE_SERVICE_PRINCIPAL_ID
-                  # A secretKeyRef to a service principal ClientSecret (password)
-                  # ref: https://docs.microsoft.com/en-us/azure/container-service/kubernetes/container-service-kubernetes-service-principal
-                  clientSecretSecretRef:
-                    name: AZUREDNS_SECRET_KEY_NAME
-                    key: CLIENT_SECRET
-                  # Azure subscription Id
-                  subscriptionID: AZURE_SUBSCRIPTION_ID
-                  # Azure AD tenant Id
-                  tenantID: AZURE_TENANT_ID
-                  # ResourceGroup name where dns zone is provisioned
-                  resourceGroupName: AZURE_RESOURCE_GROUP
-                  hostedZoneName: AZURE_DNS_ZONE_NAME
+   apiVersion: certmanager.k8s.io/v1alpha1
+   kind: Issuer
+   metadata:
+     name: example-issuer
+   spec:
+     acme:
+       ...
+       solvers:
+       - dns01:
+           azuredns:
+             # Service principal clientId (also called appId)
+             clientID: AZURE_SERVICE_PRINCIPAL_ID
+             # A secretKeyRef to a service principal ClientSecret (password)
+             # ref: https://docs.microsoft.com/en-us/azure/container-service/kubernetes/container-service-kubernetes-service-principal
+             clientSecretSecretRef:
+               name: AZUREDNS_SECRET_KEY_NAME
+               key: CLIENT_SECRET
+             # Azure subscription Id
+             subscriptionID: AZURE_SUBSCRIPTION_ID
+             # Azure AD tenant Id
+             tenantID: AZURE_TENANT_ID
+             # ResourceGroup name where dns zone is provisioned
+             resourceGroupName: AZURE_RESOURCE_GROUP
+             hostedZoneName: AZURE_DNS_ZONE_NAME
