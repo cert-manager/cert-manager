@@ -261,6 +261,9 @@ type ACMEIssuerDNS01Provider struct {
 
 	// +optional
 	RFC2136 *ACMEIssuerDNS01ProviderRFC2136 `json:"rfc2136,omitempty"`
+
+	// +optional
+	Godaddy *ACMEIssuerDNS01ProviderGodaddy `json:"rfc2136,omitempty"`
 }
 
 // CNAMEStrategy configures how the DNS01 provider should handle CNAME records
@@ -371,6 +374,31 @@ type ACMEIssuerDNS01ProviderRFC2136 struct {
 	// ``HMACSHA1``, ``HMACSHA256`` or ``HMACSHA512``.
 	// +optional
 	TSIGAlgorithm string `json:"tsigAlgorithm,omitempty"`
+}
+
+// ACMEIssuerDNS01ProviderGodaddy is a structure containing the
+// configuration for Godaddy DNS
+type ACMEIssuerDNS01ProviderGodaddy struct {
+	// ApiKey is the GoDaddy API id
+	ApiKey string `json:"apiKey"`
+
+	// ApiSecret is the reference od the secret containing the GoDaddy API Secret
+	ApiSecretSecretRef SecretKeySelector `json:"apiSecretSecretRef"`
+
+	// TTL is the Time To Live of the HTTP session. Default to 600
+	Ttl string `json:"ttl"`
+
+	// PropagationTimeOut is the propagation time used to check DNS. Default to 120s
+	PropagationTimeOut string `json:"propagationTimeOut"`
+
+	// PollingInterval is the polling interval between DNS check. Default to 2s
+	PollingInterval string `json:"pollingInterval"`
+
+	// SequenceInterval is the interval of time between each DNS challenge iteration. Default to 60s
+	SequenceInterval string `json:"sequenceInterval"`
+
+	// HttpTimeOut is the HTTP Timeout of the HTTP client session with the Api server. Default to 30s
+	HttpTimeout string `json:"httpTimeout"`
 }
 
 // IssuerStatus contains status information about an Issuer

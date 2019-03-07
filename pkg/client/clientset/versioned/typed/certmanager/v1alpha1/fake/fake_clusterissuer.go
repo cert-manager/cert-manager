@@ -123,7 +123,7 @@ func (c *FakeClusterIssuers) DeleteCollection(options *v1.DeleteOptions, listOpt
 // Patch applies the patch and returns the patched clusterIssuer.
 func (c *FakeClusterIssuers) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v1alpha1.ClusterIssuer, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewRootPatchSubresourceAction(clusterissuersResource, name, pt, data, subresources...), &v1alpha1.ClusterIssuer{})
+		Invokes(testing.NewRootPatchSubresourceAction(clusterissuersResource, name, data, subresources...), &v1alpha1.ClusterIssuer{})
 	if obj == nil {
 		return nil, err
 	}
