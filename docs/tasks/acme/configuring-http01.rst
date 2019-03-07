@@ -32,8 +32,10 @@ using Ingress resources
 How HTTP01 validations work
 ===========================
 
-.. todo::
-   Write a full description of how HTTP01 challenge validation works
+You can read about how the HTTP01 challenge type works on the
+`Let's Encrypt challenge types page`_.
+
+.. _`Let's Encrypt challenge types page`: https://letsencrypt.org/docs/challenge-types/#http-01-challenge
 
 Extra options
 =============
