@@ -312,6 +312,14 @@ func ValidateACMEIssuerDNS01Config(iss *v1alpha1.ACMEIssuerDNS01Config, fldPath 
 				}
 			}
 		}
+		if p.Webhook != nil {
+			if numProviders > 0 {
+				el = append(el, field.Forbidden(fldPath.Child("webhook"), "may not specify more than one provider type"))
+			} else {
+				numProviders++
+				// TODO
+			}
+		}
 		if numProviders == 0 {
 			el = append(el, field.Required(fldPath, "at least one provider must be configured"))
 		}

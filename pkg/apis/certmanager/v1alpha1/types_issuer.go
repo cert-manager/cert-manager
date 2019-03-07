@@ -18,6 +18,7 @@ package v1alpha1
 
 import (
 	corev1 "k8s.io/api/core/v1"
+	apiext "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -261,6 +262,9 @@ type ACMEIssuerDNS01Provider struct {
 
 	// +optional
 	RFC2136 *ACMEIssuerDNS01ProviderRFC2136 `json:"rfc2136,omitempty"`
+
+	// +optional
+	Webhook *ACMEIssuerDNS01ProviderWebhook `json:"webhook,omitempty"`
 }
 
 // CNAMEStrategy configures how the DNS01 provider should handle CNAME records
@@ -371,6 +375,16 @@ type ACMEIssuerDNS01ProviderRFC2136 struct {
 	// ``HMACSHA1``, ``HMACSHA256`` or ``HMACSHA512``.
 	// +optional
 	TSIGAlgorithm string `json:"tsigAlgorithm,omitempty"`
+}
+
+type ACMEIssuerDNS01ProviderWebhook struct {
+	// +optional
+	GroupName string `json:"groupName,omitempty"`
+
+	SolverName string `json:"solverName"`
+
+	// +optional
+	Config *apiext.JSON `json:"config,omitempty"`
 }
 
 // IssuerStatus contains status information about an Issuer

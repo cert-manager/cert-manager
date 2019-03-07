@@ -59,6 +59,7 @@ func addKnownTypes(scheme *runtime.Scheme) error {
 		&OrderList{},
 		&Challenge{},
 		&ChallengeList{},
+		&ChallengePayload{},
 	)
 	metav1.AddToGroupVersion(scheme, SchemeGroupVersion)
 	return nil
