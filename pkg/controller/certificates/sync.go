@@ -26,6 +26,7 @@ import (
 	"strings"
 	"time"
 
+	v1 "k8s.io/client-go/kubernetes/typed/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -57,6 +58,8 @@ const (
 	successCertificateRenewed = "CertRenewed"
 
 	messageErrorSavingCertificate = "Error saving TLS certificate: "
+
+	restartLabel = "cert_manager_refresh"
 )
 
 const (
@@ -74,6 +77,8 @@ func (c *Controller) Sync(ctx context.Context, crt *v1alpha1.Certificate) (err e
 			err = utilerrors.NewAggregate([]error{saveErr, err})
 		}
 	}()
+
+	renew := len(crt.Status.Conditions)
 
 	// grab existing certificate and validate private key
 	certs, key, err := kube.SecretTLSKeyPair(c.secretLister, crtCopy.Namespace, crtCopy.Spec.SecretName)
@@ -141,21 +146,21 @@ func (c *Controller) Sync(ctx context.Context, crt *v1alpha1.Certificate) (err e
 
 	if key == nil || cert == nil {
 		klog.V(4).Infof("Invoking issue function as existing certificate does not exist")
-		return c.issue(ctx, i, crtCopy)
+		return c.issue(ctx, i, crtCopy, renew)
 	}
 
 	// begin checking if the TLS certificate is valid/needs a re-issue or renew
 	matches, matchErrs := c.certificateMatchesSpec(crtCopy, key, cert)
 	if !matches {
 		klog.V(4).Infof("Invoking issue function due to certificate not matching spec: %s", strings.Join(matchErrs, ", "))
-		return c.issue(ctx, i, crtCopy)
+		return c.issue(ctx, i, crtCopy, renew)
 	}
 
 	// check if the certificate needs renewal
 	needsRenew := c.Context.IssuerOptions.CertificateNeedsRenew(cert, crt)
 	if needsRenew {
 		klog.V(4).Infof("Invoking issue function due to certificate needing renewal")
-		return c.issue(ctx, i, crtCopy)
+		return c.issue(ctx, i, crtCopy, renew)
 	}
 	// end checking if the TLS certificate is valid/needs a re-issue or renew
 
@@ -404,12 +409,74 @@ func (c *Controller) updateSecret(crt *v1alpha1.Certificate, namespace string, c
 	if err != nil {
 		return nil, err
 	}
+	
+	if renew > 0 && c.CertificateOptions.EnablePodRefresh {
+		// Secret is updated and this is not a brand new certificate, refresh pods
+		deploymentsInterface := c.Client.AppsV1().Deployments(namespace)
+		statefulsetsInterface := c.Client.AppsV1().StatefulSets(namespace)
+		daemonsetsInterface  := c.Client.AppsV1().DaemonSets(namespace)
+		
+		restart(deploymentsInterface, statefulsetsInterface, daemonsetsInterface, secret.Name)
+	}
+
 	return secret, nil
+}
+
+func restart(deploymentsInterface v1.DeploymentInterface, statefulsetsInterface v1.StatefulSetInterface, daemonsetsInterface v1.DaemonSetInterface, secret string) {
+	listOptions := metav1.ListOptions{}
+	deployments, _ := deploymentsInterface.List(listOptions)
+	statefulsets, _ := statefulsetsInterface.List(listOptions)
+	daemonsets, _ := daemonsetsInterface.List(listOptions)
+
+	update := time.Now().Format("2006-1-2.1504")
+
+NEXT_DEPLOYMENT:
+	for _, deployment := range deployments.Items {
+		for _, volume := range deployment.Spec.Template.Spec.Volumes {
+			if volume.Secret != nil && volume.Secret.SecretName != "" && volume.Secret.SecretName == secret {
+				deployment.ObjectMeta.Labels[restartLabel] = update
+				deployment.Spec.Template.ObjectMeta.Labels[restartLabel] = update
+				_, err := deploymentsInterface.Update(&deployment)
+				if err != nil {
+					fmt.Errorf("Error updating deployment: %v", err)
+				}
+				continue NEXT_DEPLOYMENT
+			}
+		}
+	}
+NEXT_STATEFULSET:
+	for _, statefulset := range statefulsets.Items {
+		for _, volume := range statefulset.Spec.Template.Spec.Volumes {
+			if volume.Secret != nil && volume.Secret.SecretName != "" && volume.Secret.SecretName == secret {
+				statefulset.ObjectMeta.Labels[restartLabel] = update
+				statefulset.Spec.Template.ObjectMeta.Labels[restartLabel] = update
+				_, err := statefulsetsInterface.Update(&statefulset)
+				if err != nil {
+					fmt.Errorf("Error updating statefulset: %v", err)
+				}
+				continue NEXT_STATEFULSET
+			}
+		}
+	}
+NEXT_DAEMONSET:
+	for _, daemonset := range daemonsets.Items {
+		for _, volume := range daemonset.Spec.Template.Spec.Volumes {
+			if volume.Secret != nil && volume.Secret.SecretName != "" && volume.Secret.SecretName == secret {
+				daemonset.ObjectMeta.Labels[restartLabel] = update
+				daemonset.Spec.Template.ObjectMeta.Labels[restartLabel] = update
+				_, err := daemonsetsInterface.Update(&daemonset)
+				if err != nil {
+					fmt.Errorf("Error updating daemonset: %v", err)
+				}
+				continue NEXT_DAEMONSET
+			}
+		}
+	}
 }
 
 // return an error on failure. If retrieval is succesful, the certificate data
 // and private key will be stored in the named secret
-func (c *Controller) issue(ctx context.Context, issuer issuer.Interface, crt *v1alpha1.Certificate) error {
+func (c *Controller) issue(ctx context.Context, issuer issuer.Interface, crt *v1alpha1.Certificate, renew int) error {
 	resp, err := issuer.Issue(ctx, crt)
 	if err != nil {
 		klog.Infof("Error issuing certificate for %s/%s: %v", crt.Namespace, crt.Name, err)
@@ -420,7 +487,7 @@ func (c *Controller) issue(ctx context.Context, issuer issuer.Interface, crt *v1
 		return nil
 	}
 
-	if _, err := c.updateSecret(crt, crt.Namespace, resp.Certificate, resp.PrivateKey, resp.CA); err != nil {
+	if _, err := c.updateSecret(crt, crt.Namespace, resp.Certificate, resp.PrivateKey, resp.CA, renew); err != nil {
 		s := messageErrorSavingCertificate + err.Error()
 		klog.Info(s)
 		c.Recorder.Event(crt, corev1.EventTypeWarning, errorSavingCertificate, s)
