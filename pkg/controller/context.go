@@ -116,4 +116,7 @@ type CertificateOptions struct {
 	// EnableOwnerRef controls wheter wheter the certificate is configured as an owner of
 	// secret where the effective TLS certificate is stored.
 	EnableOwnerRef bool
+	// EnablePodRefresh controls whether renewing this certificate will cause all the pods that
+	// mount its secret to be refreshed by cert-manager.
+	EnablePodRefresh bool
 }

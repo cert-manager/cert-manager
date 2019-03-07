@@ -70,6 +70,8 @@ type ControllerOptions struct {
 	DNS01RecursiveNameserversOnly bool
 
 	EnableCertificateOwnerRef bool
+
+	EnablePodRefresh bool
 }
 
 const (
@@ -94,6 +96,8 @@ const (
 	defaultEnableCertificateOwnerRef   = false
 
 	defaultDNS01RecursiveNameserversOnly = false
+
+	defaultEnablePodRefresh	= false
 )
 
 var (
@@ -137,6 +141,7 @@ func NewControllerOptions() *ControllerOptions {
 		DNS01RecursiveNameservers:          []string{},
 		DNS01RecursiveNameserversOnly:      defaultDNS01RecursiveNameserversOnly,
 		EnableCertificateOwnerRef:          defaultEnableCertificateOwnerRef,
+		EnablePodRefresh:					defaultEnablePodRefresh,
 	}
 }
 
@@ -231,6 +236,8 @@ func (s *ControllerOptions) AddFlags(fs *pflag.FlagSet) {
 	fs.BoolVar(&s.EnableCertificateOwnerRef, "enable-certificate-owner-ref", defaultEnableCertificateOwnerRef, ""+
 		"Whether to set the certificate resource as an owner of secret where the tls certificate is stored. "+
 		"When this flag is enabled, the secret will be automatically removed when the certificate resource is deleted.")
+	fs.BoolVar(&s.EnablePodRefresh, "enable-pod-refresh", defaultEnablePodRefresh, "When true, anytime a certificate is regnerated " +
+		"the pods that mount that certificate will be restarted so the services can pick up the new certificate.")
 }
 
 func (o *ControllerOptions) Validate() error {
