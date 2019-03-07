@@ -236,8 +236,8 @@ sample deployment and an associated service:
 .. literalinclude:: example/service.yaml
    :language: yaml
 
-.. _`deployment.yaml`: https://raw.githubusercontent.com/jetstack/cert-manager/master/docs/tutorials/acme/quick-start/example/deployment.yaml
-.. _`service.yaml`: https://raw.githubusercontent.com/jetstack/cert-manager/master/docs/tutorials/acme/quick-start/example/service.yaml
+.. _`deployment.yaml`: https://raw.githubusercontent.com/jetstack/cert-manager/release-0.7/docs/tutorials/acme/quick-start/example/deployment.yaml
+.. _`service.yaml`: https://raw.githubusercontent.com/jetstack/cert-manager/release-0.7/docs/tutorials/acme/quick-start/example/service.yaml
 .. _`kuard`: https://github.com/kubernetes-up-and-running/kuard
 
 You can create download and reference these files locally, or you can
@@ -247,10 +247,10 @@ you may use the commands:
 
 .. code-block:: shell
 
-   $ kubectl apply -f https://raw.githubusercontent.com/jetstack/cert-manager/master/docs/tutorials/acme/quick-start/example/deployment.yaml
+   $ kubectl apply -f https://raw.githubusercontent.com/jetstack/cert-manager/release-0.7/docs/tutorials/acme/quick-start/example/deployment.yaml
    deployment.extensions "kuard" created
 
-   $ kubectl apply -f https://raw.githubusercontent.com/jetstack/cert-manager/master/docs/tutorials/acme/quick-start/example/service.yaml
+   $ kubectl apply -f https://raw.githubusercontent.com/jetstack/cert-manager/release-0.7/docs/tutorials/acme/quick-start/example/service.yaml
    service "kuard" created
 
 An `ingress resource`_ is what Kubernetes uses to expose this example service
@@ -265,14 +265,14 @@ A sample ingress you can start with is:
 .. literalinclude:: example/ingress.yaml
    :language: yaml
 
-.. _`ingress.yaml`: https://raw.githubusercontent.com/jetstack/cert-manager/master/docs/tutorials/acme/quick-start/example/ingress.yaml
+.. _`ingress.yaml`: https://raw.githubusercontent.com/jetstack/cert-manager/release-0.7/docs/tutorials/acme/quick-start/example/ingress.yaml
 .. _`ingress resource`: https://kubernetes.io/docs/concepts/services-networking/ingress/
 
 You can download the sample manifest from github, edit it, and submit the manifest to Kubernetes with the command:
 
 .. code-block:: shell
 
-   $ kubectl create --edit -f https://raw.githubusercontent.com/jetstack/cert-manager/master/docs/tutorials/acme/quick-start/example/ingress.yaml
+   $ kubectl create --edit -f https://raw.githubusercontent.com/jetstack/cert-manager/release-0.7/docs/tutorials/acme/quick-start/example/ingress.yaml
 
    # edit the file in your editor, and once it is saved:
    ingress.extensions "kuard" created
@@ -351,7 +351,7 @@ install cert-manager. This example installed cert-manager into the
 .. code-block:: shell
 
     # Install the cert-manager CRDs. We must do this before installing the Helm
-    # chart in the next step
+    # chart in the next step for `release-0.7` of cert-manager:
     $ kubectl apply -f https://raw.githubusercontent.com/jetstack/cert-manager/release-0.7/deploy/manifests/00-crds.yaml
 
     # Update your local Helm chart repositories
@@ -493,13 +493,13 @@ expirations and updates.
 .. literalinclude:: example/staging-issuer.yaml
    :language: yaml
 
-.. _`staging-issuer.yaml`: https://raw.githubusercontent.com/jetstack/cert-manager/master/docs/tutorials/acme/quick-start/example/staging-issuer.yaml
+.. _`staging-issuer.yaml`: https://raw.githubusercontent.com/jetstack/cert-manager/release-0.7/docs/tutorials/acme/quick-start/example/staging-issuer.yaml
 
 Once edited, apply the custom resource:
 
 .. code-block:: shell
 
-    $ kubectl apply -f staging-issuer.yaml
+    $ kubectl create --edit -f https://raw.githubusercontent.com/jetstack/cert-manager/release-0.7/docs/tutorials/acme/quick-start/example/staging-issuer.yaml
     issuer.certmanager.k8s.io "letsencrypt-staging" created
 
 Also create a production issuer and deploy it. As with the staging issuer, you
@@ -511,11 +511,11 @@ will need to update this example and add in your own email address.
    :language: yaml
    :emphasize-lines: 10
    
-.. _`production-issuer.yaml`: https://raw.githubusercontent.com/jetstack/cert-manager/master/docs/tutorials/acme/quick-start/example/production-issuer.yaml
+.. _`production-issuer.yaml`: https://raw.githubusercontent.com/jetstack/cert-manager/release-0.7/docs/tutorials/acme/quick-start/example/production-issuer.yaml
 
 .. code-block:: shell
 
-    $ kubectl apply -f production-issuer.yaml
+    $ kubectl create --edit -f https://raw.githubusercontent.com/jetstack/cert-manager/release-0.7/docs/tutorials/acme/quick-start/example/production-issuer.yaml
     issuer.certmanager.k8s.io "letsencrypt-prod" created
 
 Both of these issuers are configured to use the
@@ -593,13 +593,13 @@ example:
    :language: yaml
    :emphasize-lines: 6-8
 
-.. _`ingress-tls.yaml`: https://raw.githubusercontent.com/jetstack/cert-manager/master/docs/tutorials/acme/quick-start/example/ingress-tls.yaml
+.. _`ingress-tls.yaml`: https://raw.githubusercontent.com/jetstack/cert-manager/release-0.7/docs/tutorials/acme/quick-start/example/ingress-tls.yaml
 
 and apply it:
 
 .. code-block:: shell
 
-   $ kubectl apply -f ingress-tls.yaml
+   $ kubectl create --edit -f https://raw.githubusercontent.com/jetstack/cert-manager/release-0.7/docs/tutorials/acme/quick-start/example/ingress-tls.yaml
    ingress.extensions "kuard" configured
 
 Cert-manager will read these annotations and use them to create a certificate,
@@ -709,11 +709,11 @@ can update the annotations in the ingress to specify the production issuer:
 .. literalinclude:: example/ingress-tls-final.yaml
    :language: yaml
    
-.. _`ingress-tls-final.yaml`: https://raw.githubusercontent.com/jetstack/cert-manager/master/docs/tutorials/acme/quick-start/example/ingress-tls-final.yaml
+.. _`ingress-tls-final.yaml`: https://raw.githubusercontent.com/jetstack/cert-manager/release-0.7/docs/tutorials/acme/quick-start/example/ingress-tls-final.yaml
 
 .. code-block:: shell
 
-   $ kubectl apply -f ingress-tls-final.yaml
+   $ kubectl create --edit -f https://raw.githubusercontent.com/jetstack/cert-manager/release-0.7/docs/tutorials/acme/quick-start/example/ingress-tls-final.yaml
 
    ingress.extensions "kuard" configured
 
