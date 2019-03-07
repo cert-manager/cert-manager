@@ -19,6 +19,7 @@ package dns
 import (
 	"context"
 	"fmt"
+	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/godaddy"
 	"strings"
 	"time"
 
@@ -59,6 +60,7 @@ type dnsProviderConstructors struct {
 	acmeDNS      func(host string, accountJson []byte, dns01Nameservers []string) (*acmedns.DNSProvider, error)
 	rfc2136      func(nameserver, tsigAlgorithm, tsigKeyName, tsigSecret string, dns01Nameservers []string) (*rfc2136.DNSProvider, error)
 	digitalOcean func(token string, dns01Nameservers []string) (*digitalocean.DNSProvider, error)
+	godaddy      func(apiKey, apiSecret, ttl, propagationTimeout, pollingInterval, sequenceInterval, httpTimeout string, dns01Nameservers []string) (*godaddy.DNSProvider, error)
 }
 
 // Solver is a solver for the acme dns01 challenge.
@@ -336,6 +338,34 @@ func (s *Solver) solverForChallenge(issuer v1alpha1.GenericIssuer, ch *v1alpha1.
 		if err != nil {
 			return nil, nil, fmt.Errorf("error instantiating rfc2136 challenge solver: %s", err.Error())
 		}
+	case providerConfig.Godaddy != nil:
+		klog.V(5).Infof("Preparing to create GoDaddy Provider")
+		var secret string
+		if len(providerConfig.Godaddy.ApiSecretSecretRef.Name) > 0 {
+			apiSecret, err := s.secretLister.Secrets(resourceNamespace).Get(providerConfig.Godaddy.ApiSecretSecretRef.Name)
+			if err != nil {
+				return nil, nil, fmt.Errorf("error getting GoDaddy secret: %s", err.Error())
+			}
+			apiSecretBytes, ok := apiSecret.Data[providerConfig.Godaddy.ApiSecretSecretRef.Key]
+			if !ok {
+				return nil, nil, fmt.Errorf("error getting Godday secret key: key '%s' not found in secret", providerConfig.Godaddy.ApiSecretSecretRef.Key)
+			}
+			secret = string(apiSecretBytes)
+		}
+
+		impl, err = s.dnsProviderConstructors.godaddy(
+			providerConfig.Godaddy.ApiKey,
+			secret,
+			providerConfig.Godaddy.Ttl,
+			providerConfig.Godaddy.PropagationTimeOut,
+			providerConfig.Godaddy.PollingInterval,
+			providerConfig.Godaddy.SequenceInterval,
+			providerConfig.Godaddy.HttpTimeout,
+			s.DNS01Nameservers,
+		)
+		if err != nil {
+			return nil, nil, fmt.Errorf("error instantiating rfc2136 challenge solver: %s", err.Error())
+		}
 	default:
 		return nil, nil, fmt.Errorf("no dns provider config specified for provider %q", providerName)
 	}
@@ -357,6 +387,7 @@ func NewSolver(ctx *controller.Context) *Solver {
 			acmedns.NewDNSProviderHostBytes,
 			rfc2136.NewDNSProviderCredentials,
 			digitalocean.NewDNSProviderCredentials,
+			godaddy.NewDNSProviderCredentials,
 		},
 	}
 }

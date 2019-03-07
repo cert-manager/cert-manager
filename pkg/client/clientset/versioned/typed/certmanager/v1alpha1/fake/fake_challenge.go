@@ -131,7 +131,7 @@ func (c *FakeChallenges) DeleteCollection(options *v1.DeleteOptions, listOptions
 // Patch applies the patch and returns the patched challenge.
 func (c *FakeChallenges) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v1alpha1.Challenge, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewPatchSubresourceAction(challengesResource, c.ns, name, pt, data, subresources...), &v1alpha1.Challenge{})
+		Invokes(testing.NewPatchSubresourceAction(challengesResource, c.ns, name, data, subresources...), &v1alpha1.Challenge{})
 
 	if obj == nil {
 		return nil, err

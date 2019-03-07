@@ -131,7 +131,7 @@ func (c *FakeOrders) DeleteCollection(options *v1.DeleteOptions, listOptions v1.
 // Patch applies the patch and returns the patched order.
 func (c *FakeOrders) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v1alpha1.Order, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewPatchSubresourceAction(ordersResource, c.ns, name, pt, data, subresources...), &v1alpha1.Order{})
+		Invokes(testing.NewPatchSubresourceAction(ordersResource, c.ns, name, data, subresources...), &v1alpha1.Order{})
 
 	if obj == nil {
 		return nil, err

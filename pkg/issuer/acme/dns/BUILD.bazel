@@ -14,6 +14,7 @@ go_library(
         "//pkg/issuer/acme/dns/clouddns:go_default_library",
         "//pkg/issuer/acme/dns/cloudflare:go_default_library",
         "//pkg/issuer/acme/dns/digitalocean:go_default_library",
+        "//pkg/issuer/acme/dns/godaddy:go_default_library",
         "//pkg/issuer/acme/dns/rfc2136:go_default_library",
         "//pkg/issuer/acme/dns/route53:go_default_library",
         "//pkg/issuer/acme/dns/util:go_default_library",
