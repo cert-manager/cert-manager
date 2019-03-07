@@ -130,6 +130,8 @@ currently supported Issuer types are:
 +------------------------------------------------------+----------------------------------------------------------------------+
 | :doc:`Self signed </tasks/issuers/setup-selfsigned>` | Supports issuing self signed certificates                            |
 +------------------------------------------------------+----------------------------------------------------------------------+
+| :doc:`Venafi </tasks/issuers/setup-venafi>`          | Supports issuing certificates from Venafi Cloud & TPP                |
++------------------------------------------------------+----------------------------------------------------------------------+
 
 Each Issuer resource is of one, and only one type. The type of an Issuer is
 inferred by which field it specifies in its spec, such as ``spec.acme``
