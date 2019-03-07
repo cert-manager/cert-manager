@@ -23,7 +23,9 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	apiext "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	corev1listers "k8s.io/client-go/listers/core/v1"
+	"k8s.io/client-go/rest"
 	"k8s.io/klog"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
@@ -37,6 +39,7 @@ import (
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/rfc2136"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/route53"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
+	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/webhook"
 )
 
 const (
@@ -59,6 +62,7 @@ type dnsProviderConstructors struct {
 	acmeDNS      func(host string, accountJson []byte, dns01Nameservers []string) (*acmedns.DNSProvider, error)
 	rfc2136      func(nameserver, tsigAlgorithm, tsigKeyName, tsigSecret string, dns01Nameservers []string) (*rfc2136.DNSProvider, error)
 	digitalOcean func(token string, dns01Nameservers []string) (*digitalocean.DNSProvider, error)
+	webhook      func(issuer v1alpha1.GenericIssuer, resourceNamespace string, restConfig *rest.Config, groupName, solverName string, config *apiext.JSON) (*webhook.Webhook, error)
 }
 
 // Solver is a solver for the acme dns01 challenge.
@@ -337,6 +341,12 @@ func (s *Solver) solverForChallenge(issuer v1alpha1.GenericIssuer, ch *v1alpha1.
 		if err != nil {
 			return nil, nil, fmt.Errorf("error instantiating rfc2136 challenge solver: %s", err.Error())
 		}
+	case providerConfig.Webhook != nil:
+		klog.V(5).Infof("Preparing to create webhook provider")
+		impl, err = s.dnsProviderConstructors.webhook(issuer, resourceNamespace, s.Context.RESTConfig, providerConfig.Webhook.GroupName, providerConfig.Webhook.SolverName, providerConfig.Webhook.Config)
+		if err != nil {
+			return nil, nil, fmt.Errorf("error instantiating webhook challenge solver: %s", err.Error())
+		}
 	default:
 		return nil, nil, fmt.Errorf("no dns provider config specified for provider %q", providerName)
 	}
@@ -358,6 +368,7 @@ func NewSolver(ctx *controller.Context) *Solver {
 			acmedns.NewDNSProviderHostBytes,
 			rfc2136.NewDNSProviderCredentials,
 			digitalocean.NewDNSProviderCredentials,
+			webhook.NewWebhook,
 		},
 	}
 }
