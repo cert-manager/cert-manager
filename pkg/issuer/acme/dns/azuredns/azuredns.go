@@ -129,7 +129,7 @@ func (c *DNSProvider) createRecord(fqdn, value string, ttl int) error {
 		*rparams, "", "")
 
 	if err != nil {
-		klog.Infof("Error creating TXT: %s, %v", c.zoneName, err)
+		klog.Infof("Error creating TXT: %s, %v", z, err)
 		return err
 	}
 	return nil
@@ -157,6 +157,11 @@ func (c *DNSProvider) getHostedZoneName(fqdn string) (string, error) {
 	return util.UnFqdn(z), nil
 }
 
+// Trims DNS zone from the fqdn. Defaults to DNSProvider.zoneName if it is specified.
 func (c *DNSProvider) trimFqdn(fqdn string, zone string) string {
-	return strings.TrimSuffix(strings.TrimSuffix(fqdn, "."), "."+zone)
+	z := zone
+	if len(c.zoneName) > 0 {
+		z = c.zoneName
+	}
+	return strings.TrimSuffix(strings.TrimSuffix(fqdn, "."), "."+z)
 }
