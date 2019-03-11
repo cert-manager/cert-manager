@@ -95,7 +95,7 @@ func (c *DNSProvider) CleanUp(domain, fqdn, value string) error {
 		context.TODO(),
 		c.resourceGroupName,
 		z,
-		c.trimFqdn(fqdn),
+		c.trimFqdn(fqdn, z),
 		dns.TXT, "")
 
 	if err != nil {
@@ -124,7 +124,7 @@ func (c *DNSProvider) createRecord(fqdn, value string, ttl int) error {
 		context.TODO(),
 		c.resourceGroupName,
 		z,
-		c.trimFqdn(fqdn),
+		c.trimFqdn(fqdn, z),
 		dns.TXT,
 		*rparams, "", "")
 
@@ -157,6 +157,6 @@ func (c *DNSProvider) getHostedZoneName(fqdn string) (string, error) {
 	return util.UnFqdn(z), nil
 }
 
-func (c *DNSProvider) trimFqdn(fqdn string) string {
-	return strings.TrimSuffix(strings.TrimSuffix(fqdn, "."), "."+c.zoneName)
+func (c *DNSProvider) trimFqdn(fqdn string, zone string) string {
+	return strings.TrimSuffix(strings.TrimSuffix(fqdn, "."), "."+zone)
 }
