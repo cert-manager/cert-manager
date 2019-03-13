@@ -35,8 +35,8 @@ import (
 )
 
 func init() {
+	logs.InitLogs(flag.CommandLine)
 	framework.DefaultConfig.AddFlags(flag.CommandLine)
-	flag.Parse()
 
 	// Turn on verbose by default to get spec names
 	ginkgoconfig.DefaultReporterConfig.Verbose = true
@@ -49,8 +49,8 @@ func init() {
 }
 
 func TestE2E(t *testing.T) {
-	logs.InitLogs()
 	defer logs.FlushLogs()
+	flag.Parse()
 
 	if err := framework.DefaultConfig.Validate(); err != nil {
 		t.Errorf("Invalid test config: %v", err)

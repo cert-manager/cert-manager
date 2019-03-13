@@ -25,6 +25,8 @@ import (
 
 type GenericIssuer interface {
 	runtime.Object
+	metav1.Object
+
 	GetObjectMeta() *metav1.ObjectMeta
 	GetSpec() *IssuerSpec
 	GetStatus() *IssuerStatus

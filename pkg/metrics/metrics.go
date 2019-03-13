@@ -22,7 +22,6 @@ package metrics
 import (
 	"context"
 	"crypto/x509"
-	"fmt"
 	"net/http"
 	"time"
 
@@ -30,11 +29,10 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/util/runtime"
 	corelisters "k8s.io/client-go/listers/core/v1"
-	"k8s.io/klog"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	logf "github.com/jetstack/cert-manager/pkg/logs"
 	"github.com/jetstack/cert-manager/pkg/util/errors"
 	"github.com/jetstack/cert-manager/pkg/util/kube"
 )
@@ -50,7 +48,7 @@ const (
 )
 
 // Default set of metrics
-var Default = New()
+var Default = New(logf.NewContext(context.Background(), logf.Log.WithName("metrics")))
 
 var CertificateExpiryTimeSeconds = prometheus.NewGaugeVec(
 	prometheus.GaugeOpts{
@@ -87,6 +85,7 @@ var ACMEClientRequestDurationSeconds = prometheus.NewSummaryVec(
 )
 
 type Metrics struct {
+	ctx context.Context
 	http.Server
 
 	// TODO (@dippynark): switch this to use an interface to make it testable
@@ -96,12 +95,12 @@ type Metrics struct {
 	ACMEClientRequestCount           *prometheus.CounterVec
 }
 
-func New() *Metrics {
-
+func New(ctx context.Context) *Metrics {
 	router := mux.NewRouter()
 
 	// Create server and register prometheus metrics handler
 	s := &Metrics{
+		ctx: ctx,
 		Server: http.Server{
 			Addr:           prometheusMetricsServerAddress,
 			ReadTimeout:    prometheusMetricsServerReadTimeout,
@@ -121,34 +120,37 @@ func New() *Metrics {
 }
 
 func (m *Metrics) waitShutdown(stopCh <-chan struct{}) {
+	log := logf.FromContext(m.ctx)
 	<-stopCh
-	klog.Info("Stopping Prometheus metrics server...")
+	log.Info("stopping Prometheus metrics server...")
 
 	ctx, cancel := context.WithTimeout(context.Background(), prometheusMetricsServerShutdownTimeout)
 	defer cancel()
 
 	if err := m.Shutdown(ctx); err != nil {
-		klog.Errorf("Prometheus metrics server shutdown error: %v", err)
+		log.Error(err, "prometheus metrics server shutdown failed", err)
 		return
 	}
 
-	klog.Info("Prometheus metrics server gracefully stopped")
+	log.Info("prometheus metrics server gracefully stopped")
 }
 
 func (m *Metrics) Start(stopCh <-chan struct{}) {
+	log := logf.FromContext(m.ctx)
+
 	m.registry.MustRegister(m.CertificateExpiryTimeSeconds)
 	m.registry.MustRegister(m.ACMEClientRequestDurationSeconds)
 	m.registry.MustRegister(m.ACMEClientRequestCount)
 
 	go func() {
-
-		klog.Infof("Listening on http://%s", m.Addr)
+		log := log.WithValues("address", m.Addr)
+		log.Info("listening for connections on")
 		if err := m.ListenAndServe(); err != nil {
-			klog.Errorf("Error running prometheus metrics server: %s", err.Error())
+			log.Error(err, "error running prometheus metrics server")
 			return
 		}
 
-		klog.Infof("Prometheus metrics server exited")
+		log.Info("prometheus metrics server exited")
 
 	}()
 
@@ -157,12 +159,16 @@ func (m *Metrics) Start(stopCh <-chan struct{}) {
 
 // UpdateCertificateExpiry updates the expiry time of a certificate
 func (m *Metrics) UpdateCertificateExpiry(crt *v1alpha1.Certificate, secretLister corelisters.SecretLister) {
+	log := logf.FromContext(m.ctx)
+	log = logf.WithResource(log, crt)
+	log = logf.WithRelatedResourceName(log, crt.Spec.SecretName, crt.Namespace, "Secret")
 
+	log.V(logf.DebugLevel).Info("attempting to retrieve secret for certificate")
 	// grab existing certificate
-	cert, err := kube.SecretTLSCert(secretLister, crt.Namespace, crt.Spec.SecretName)
+	cert, err := kube.SecretTLSCert(m.ctx, secretLister, crt.Namespace, crt.Spec.SecretName)
 	if err != nil {
 		if !apierrors.IsNotFound(err) && !errors.IsInvalidData(err) {
-			runtime.HandleError(fmt.Errorf("[%s/%s] Error getting certificate '%s': %s", crt.Namespace, crt.Name, crt.Spec.SecretName, err.Error()))
+			log.Error(err, "error reading secret for certificate")
 		}
 		return
 	}

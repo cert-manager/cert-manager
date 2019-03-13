@@ -38,7 +38,7 @@ import (
 )
 
 func init() {
-	logs.InitLogs()
+	logs.InitLogs(nil)
 	flag.Set("alsologtostderr", fmt.Sprintf("%t", true))
 	flag.Lookup("v").Value.Set("4")
 }

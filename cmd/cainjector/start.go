@@ -22,25 +22,14 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
-	"k8s.io/apimachinery/pkg/runtime"
-	kscheme "k8s.io/client-go/kubernetes/scheme"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	"k8s.io/klog"
-	apireg "k8s.io/kube-aggregator/pkg/apis/apiregistration/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
 
-	certmgrscheme "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/scheme"
+	"github.com/jetstack/cert-manager/pkg/api"
 	"github.com/jetstack/cert-manager/pkg/controller/cainjector"
 	"github.com/jetstack/cert-manager/pkg/util"
 )
-
-var scheme = runtime.NewScheme()
-
-func init() {
-	kscheme.AddToScheme(scheme)
-	certmgrscheme.AddToScheme(scheme)
-	apireg.AddToScheme(scheme)
-}
 
 type InjectorControllerOptions struct {
 	Namespace               string
@@ -106,7 +95,7 @@ servers and webhook servers.`,
 
 func (o InjectorControllerOptions) RunInjectorController(stopCh <-chan struct{}) {
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
-		Scheme:                  scheme,
+		Scheme:                  api.Scheme,
 		Namespace:               o.Namespace,
 		LeaderElection:          o.LeaderElect,
 		LeaderElectionNamespace: o.LeaderElectionNamespace,

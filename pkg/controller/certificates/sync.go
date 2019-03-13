@@ -30,13 +30,12 @@ import (
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
-	"k8s.io/apimachinery/pkg/util/runtime"
-	"k8s.io/klog"
 
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/validation"
 	"github.com/jetstack/cert-manager/pkg/issuer"
+	logf "github.com/jetstack/cert-manager/pkg/logs"
 	"github.com/jetstack/cert-manager/pkg/util"
 	"github.com/jetstack/cert-manager/pkg/util/errors"
 	"github.com/jetstack/cert-manager/pkg/util/kube"
@@ -68,6 +67,8 @@ var (
 )
 
 func (c *Controller) Sync(ctx context.Context, crt *v1alpha1.Certificate) (err error) {
+	log := logf.FromContext(ctx)
+
 	crtCopy := crt.DeepCopy()
 	defer func() {
 		if _, saveErr := c.updateCertificateStatus(crt, crtCopy); saveErr != nil {
@@ -76,7 +77,7 @@ func (c *Controller) Sync(ctx context.Context, crt *v1alpha1.Certificate) (err e
 	}()
 
 	// grab existing certificate and validate private key
-	certs, key, err := kube.SecretTLSKeyPair(c.secretLister, crtCopy.Namespace, crtCopy.Spec.SecretName)
+	certs, key, err := kube.SecretTLSKeyPair(ctx, c.secretLister, crtCopy.Namespace, crtCopy.Spec.SecretName)
 	// if we don't have a certificate, we need to trigger a re-issue immediately
 	if err != nil && !(k8sErrors.IsNotFound(err) || errors.IsInvalidData(err)) {
 		return err
@@ -140,28 +141,29 @@ func (c *Controller) Sync(ctx context.Context, crt *v1alpha1.Certificate) (err e
 	}
 
 	if key == nil || cert == nil {
-		klog.V(4).Infof("Invoking issue function as existing certificate does not exist")
+		log.V(logf.DebugLevel).Info("invoking issue function as existing certificate does not exist")
 		return c.issue(ctx, i, crtCopy)
 	}
 
 	// begin checking if the TLS certificate is valid/needs a re-issue or renew
 	matches, matchErrs := c.certificateMatchesSpec(crtCopy, key, cert)
 	if !matches {
-		klog.V(4).Infof("Invoking issue function due to certificate not matching spec: %s", strings.Join(matchErrs, ", "))
+		log.WithValues("diff", strings.Join(matchErrs, ", ")).
+			V(logf.DebugLevel).Info("invoking issue function due to certificate not matching spec")
 		return c.issue(ctx, i, crtCopy)
 	}
 
 	// check if the certificate needs renewal
 	needsRenew := c.Context.IssuerOptions.CertificateNeedsRenew(cert, crt)
 	if needsRenew {
-		klog.V(4).Infof("Invoking issue function due to certificate needing renewal")
+		log.V(logf.DebugLevel).Info("invoking issue function due to certificate needing renewal")
 		return c.issue(ctx, i, crtCopy)
 	}
 	// end checking if the TLS certificate is valid/needs a re-issue or renew
 
 	// If the Certificate is valid and up to date, we schedule a renewal in
 	// the future.
-	c.scheduleRenewal(crt)
+	c.scheduleRenewal(ctx, crt)
 
 	return nil
 }
@@ -240,19 +242,24 @@ func (c *Controller) certificateMatchesSpec(crt *v1alpha1.Certificate, key crypt
 	return len(errs) == 0, errs
 }
 
-func (c *Controller) scheduleRenewal(crt *v1alpha1.Certificate) {
-	key, err := keyFunc(crt)
+func (c *Controller) scheduleRenewal(ctx context.Context, crt *v1alpha1.Certificate) {
+	log := logf.FromContext(ctx)
+	log = log.WithValues(
+		logf.RelatedResourceNameKey, crt.Spec.SecretName,
+		logf.RelatedResourceNamespaceKey, crt.Namespace,
+		logf.RelatedResourceKindKey, "Secret",
+	)
 
+	key, err := keyFunc(crt)
 	if err != nil {
-		runtime.HandleError(fmt.Errorf("error getting key for certificate resource: %s", err.Error()))
+		log.Error(err, "error getting key for certificate resource")
 		return
 	}
 
-	cert, err := kube.SecretTLSCert(c.secretLister, crt.Namespace, crt.Spec.SecretName)
-
+	cert, err := kube.SecretTLSCert(ctx, c.secretLister, crt.Namespace, crt.Spec.SecretName)
 	if err != nil {
 		if !errors.IsInvalidData(err) {
-			runtime.HandleError(fmt.Errorf("[%s/%s] Error getting certificate '%s': %s", crt.Namespace, crt.Name, crt.Spec.SecretName, err.Error()))
+			log.Error(err, "error getting secret for certificate resource")
 		}
 		return
 	}
@@ -260,7 +267,7 @@ func (c *Controller) scheduleRenewal(crt *v1alpha1.Certificate) {
 	renewIn := c.Context.IssuerOptions.CalculateDurationUntilRenew(cert, crt)
 	c.scheduledWorkQueue.Add(key, renewIn)
 
-	klog.Infof("Certificate %s/%s scheduled for renewal in %s", crt.Namespace, crt.Name, renewIn.String())
+	log.WithValues("duration_until_renewal", renewIn.String()).Info("certificate scheduled for renewal")
 }
 
 // issuerKind returns the kind of issuer for a certificate
@@ -289,7 +296,10 @@ func ownerRef(crt *v1alpha1.Certificate) metav1.OwnerReference {
 // - If the provided certificate is a temporary certificate and the certificate
 //   stored in the secret is already a temporary certificate, then the Secret
 //   **will not** be updated.
-func (c *Controller) updateSecret(crt *v1alpha1.Certificate, namespace string, cert, key, ca []byte) (*corev1.Secret, error) {
+func (c *Controller) updateSecret(ctx context.Context, crt *v1alpha1.Certificate, namespace string, cert, key, ca []byte) (*corev1.Secret, error) {
+	log := logf.FromContext(ctx, "updateSecret")
+	log = logf.WithRelatedResourceName(log, crt.Spec.SecretName, namespace, "Secret")
+
 	// if the key is not set, we bail out early.
 	// this function should always be called with at least a private key.
 	// in future we'll likely need to relax this requirement, but for now we'll
@@ -335,7 +345,7 @@ func (c *Controller) updateSecret(crt *v1alpha1.Certificate, namespace string, c
 	if len(existingCertData) > 0 {
 		existingCert, err = pki.DecodeX509CertificateBytes(existingCertData)
 		if err != nil {
-			klog.Errorf("error decoding existing x509 certificate bytes, continuing anyway: %v", err)
+			log.Error(err, "error decoding existing x509 certificate bytes, continuing anyway")
 		}
 	}
 
@@ -410,9 +420,11 @@ func (c *Controller) updateSecret(crt *v1alpha1.Certificate, namespace string, c
 // return an error on failure. If retrieval is succesful, the certificate data
 // and private key will be stored in the named secret
 func (c *Controller) issue(ctx context.Context, issuer issuer.Interface, crt *v1alpha1.Certificate) error {
+	log := logf.FromContext(ctx)
+
 	resp, err := issuer.Issue(ctx, crt)
 	if err != nil {
-		klog.Infof("Error issuing certificate for %s/%s: %v", crt.Namespace, crt.Name, err)
+		log.Error(err, "error issuing certificate")
 		return err
 	}
 	// if the issuer has not returned any data, exit early
@@ -420,9 +432,9 @@ func (c *Controller) issue(ctx context.Context, issuer issuer.Interface, crt *v1
 		return nil
 	}
 
-	if _, err := c.updateSecret(crt, crt.Namespace, resp.Certificate, resp.PrivateKey, resp.CA); err != nil {
+	if _, err := c.updateSecret(ctx, crt, crt.Namespace, resp.Certificate, resp.PrivateKey, resp.CA); err != nil {
 		s := messageErrorSavingCertificate + err.Error()
-		klog.Info(s)
+		log.Error(err, "error saving certificate")
 		c.Recorder.Event(crt, corev1.EventTypeWarning, errorSavingCertificate, s)
 		return err
 	}
@@ -430,7 +442,7 @@ func (c *Controller) issue(ctx context.Context, issuer issuer.Interface, crt *v1
 	if len(resp.Certificate) > 0 {
 		c.Recorder.Event(crt, corev1.EventTypeNormal, successCertificateIssued, "Certificate issued successfully")
 		// as we have just written a certificate, we should schedule it for renewal
-		c.scheduleRenewal(crt)
+		c.scheduleRenewal(ctx, crt)
 	}
 
 	return nil

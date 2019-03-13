@@ -23,11 +23,11 @@ import (
 
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/errors"
-	"k8s.io/klog"
 
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/validation"
+	logf "github.com/jetstack/cert-manager/pkg/logs"
 )
 
 const (
@@ -38,6 +38,8 @@ const (
 )
 
 func (c *Controller) Sync(ctx context.Context, iss *v1alpha1.ClusterIssuer) (err error) {
+	log := logf.FromContext(ctx)
+
 	issuerCopy := iss.DeepCopy()
 	defer func() {
 		if _, saveErr := c.updateIssuerStatus(iss, issuerCopy); saveErr != nil {
@@ -71,7 +73,7 @@ func (c *Controller) Sync(ctx context.Context, iss *v1alpha1.ClusterIssuer) (err
 	err = i.Setup(ctx)
 	if err != nil {
 		s := messageErrorInitIssuer + err.Error()
-		klog.Info(s)
+		log.Error(err, "error setting up issuer")
 		c.Recorder.Event(issuerCopy, v1.EventTypeWarning, errorInitIssuer, s)
 		return err
 	}

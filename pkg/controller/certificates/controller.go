@@ -23,24 +23,25 @@ import (
 	"time"
 
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
 	corelisters "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
-	"k8s.io/klog"
 	"k8s.io/utils/clock"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	cmlisters "github.com/jetstack/cert-manager/pkg/client/listers/certmanager/v1alpha1"
 	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
 	"github.com/jetstack/cert-manager/pkg/issuer"
+	logf "github.com/jetstack/cert-manager/pkg/logs"
 	"github.com/jetstack/cert-manager/pkg/metrics"
 	"github.com/jetstack/cert-manager/pkg/scheduler"
-	"github.com/jetstack/cert-manager/pkg/util"
 )
 
 type Controller struct {
+	// the controllers root context, containing a controller scoped logger
+	ctx context.Context
+
 	*controllerpkg.Context
 
 	helper        issuer.Helper
@@ -112,36 +113,42 @@ func New(ctx *controllerpkg.Context) *Controller {
 	ctrl.issuerFactory = issuer.NewIssuerFactory(ctx)
 	ctrl.clock = clock.RealClock{}
 	ctrl.localTemporarySigner = generateLocallySignedTemporaryCertificate
+	ctrl.ctx = logf.NewContext(ctx.RootContext, nil, ControllerName)
 
 	return ctrl
 }
 
 func (c *Controller) Run(workers int, stopCh <-chan struct{}) error {
-	klog.V(4).Infof("Starting %s control loop", ControllerName)
+	ctx, cancel := context.WithCancel(c.ctx)
+	defer cancel()
+	log := logf.FromContext(ctx)
+
+	log.Info("starting control loop")
 	// wait for all the informer caches we depend to sync
 	if !cache.WaitForCacheSync(stopCh, c.syncedFuncs...) {
 		return fmt.Errorf("error waiting for informer caches to sync")
 	}
 
-	klog.V(4).Infof("Synced all caches for %s control loop", ControllerName)
+	log.Info("synced all caches for control loop")
 
 	for i := 0; i < workers; i++ {
 		c.workerWg.Add(1)
 		// TODO (@munnerz): make time.Second duration configurable
-		go wait.Until(func() { c.worker(stopCh) }, time.Second, stopCh)
+		go wait.Until(func() { c.worker(ctx) }, time.Second, stopCh)
 	}
 	<-stopCh
-	klog.V(4).Infof("Shutting down queue as workqueue signaled shutdown")
+	log.V(logf.DebugLevel).Info("shutting down queue as workqueue signaled shutdown")
 	c.queue.ShutDown()
-	klog.V(4).Infof("Waiting for workers to exit...")
+	log.V(logf.DebugLevel).Info("waiting for workers to exit...")
 	c.workerWg.Wait()
-	klog.V(4).Infof("Workers exited.")
+	log.V(logf.DebugLevel).Info("workers exited")
 	return nil
 }
 
-func (c *Controller) worker(stopCh <-chan struct{}) {
+func (c *Controller) worker(ctx context.Context) {
+	log := logf.FromContext(ctx)
 	defer c.workerWg.Done()
-	klog.V(4).Infof("Starting %q worker", ControllerName)
+	log.V(logf.DebugLevel).Info("starting worker")
 	for {
 		obj, shutdown := c.queue.Get()
 		if shutdown {
@@ -156,41 +163,40 @@ func (c *Controller) worker(stopCh <-chan struct{}) {
 			if key, ok = obj.(string); !ok {
 				return
 			}
-			ctx, cancel := context.WithCancel(context.Background())
-			defer cancel()
-			ctx = util.ContextWithStopCh(ctx, stopCh)
-			klog.Infof("%s controller: syncing item '%s'", ControllerName, key)
+			log := log.WithValues("key", key)
+			log.Info("syncing resource")
 			if err := c.syncHandler(ctx, key); err != nil {
-				klog.Errorf("%s controller: Re-queuing item %q due to error processing: %s", ControllerName, key, err.Error())
+				log.Error(err, "re-queuing item  due to error processing")
 				c.queue.AddRateLimited(obj)
 				return
 			}
-			klog.Infof("%s controller: Finished processing work item %q", ControllerName, key)
+			log.Info("finished processing work item")
 			c.queue.Forget(obj)
 		}()
 	}
-	klog.V(4).Infof("Exiting %q worker loop", ControllerName)
+	log.V(logf.DebugLevel).Info("exiting worker loop")
 }
 
 func (c *Controller) processNextWorkItem(ctx context.Context, key string) error {
+	log := logf.FromContext(ctx)
 	namespace, name, err := cache.SplitMetaNamespaceKey(key)
 	if err != nil {
-		runtime.HandleError(fmt.Errorf("invalid resource key: %s", key))
+		log.Error(err, "invalid resource key")
 		return nil
 	}
 
 	crt, err := c.certificateLister.Certificates(namespace).Get(name)
-
 	if err != nil {
 		if k8sErrors.IsNotFound(err) {
 			c.scheduledWorkQueue.Forget(key)
-			runtime.HandleError(fmt.Errorf("certificate '%s' in work queue no longer exists", key))
+			log.Error(err, "certificate in work queue no longer exists")
 			return nil
 		}
 
 		return err
 	}
 
+	ctx = logf.NewContext(ctx, logf.WithResource(log, crt))
 	return c.Sync(ctx, crt)
 }
 

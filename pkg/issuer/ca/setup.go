@@ -20,10 +20,10 @@ import (
 	"context"
 
 	"k8s.io/api/core/v1"
-	"k8s.io/klog"
 
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	logf "github.com/jetstack/cert-manager/pkg/logs"
 	"github.com/jetstack/cert-manager/pkg/util/kube"
 )
 
@@ -40,34 +40,37 @@ const (
 )
 
 func (c *CA) Setup(ctx context.Context) error {
-	cert, err := kube.SecretTLSCert(c.secretsLister, c.resourceNamespace, c.issuer.GetSpec().CA.SecretName)
+	log := logf.FromContext(ctx, "setup")
+
+	cert, err := kube.SecretTLSCert(ctx, c.secretsLister, c.resourceNamespace, c.issuer.GetSpec().CA.SecretName)
 	if err != nil {
+		log.Error(err, "error getting signing CA TLS certificate")
 		s := messageErrorGetKeyPair + err.Error()
-		klog.Info(s)
 		c.Recorder.Event(c.issuer, v1.EventTypeWarning, errorGetKeyPair, s)
 		apiutil.SetIssuerCondition(c.issuer, v1alpha1.IssuerConditionReady, v1alpha1.ConditionFalse, errorGetKeyPair, s)
 		return err
 	}
 
-	_, err = kube.SecretTLSKey(c.secretsLister, c.resourceNamespace, c.issuer.GetSpec().CA.SecretName)
+	_, err = kube.SecretTLSKey(ctx, c.secretsLister, c.resourceNamespace, c.issuer.GetSpec().CA.SecretName)
 	if err != nil {
+		log.Error(err, "error getting signing CA private key")
 		s := messageErrorGetKeyPair + err.Error()
-		klog.Info(s)
 		c.Recorder.Event(c.issuer, v1.EventTypeWarning, errorGetKeyPair, s)
 		apiutil.SetIssuerCondition(c.issuer, v1alpha1.IssuerConditionReady, v1alpha1.ConditionFalse, errorGetKeyPair, s)
 		return err
 	}
 
+	log = logf.WithRelatedResourceName(log, c.issuer.GetSpec().CA.SecretName, c.resourceNamespace, "Secret")
 	if !cert.IsCA {
 		s := messageErrorGetKeyPair + "certificate is not a CA"
-		klog.Info(s)
+		log.Error(nil, "signing certificate is not a CA")
 		c.Recorder.Event(c.issuer, v1.EventTypeWarning, errorInvalidKeyPair, s)
 		apiutil.SetIssuerCondition(c.issuer, v1alpha1.IssuerConditionReady, v1alpha1.ConditionFalse, errorInvalidKeyPair, s)
 		// Don't return an error here as there is nothing more we can do
 		return nil
 	}
 
-	klog.Info(messageKeyPairVerified)
+	log.Info("signing CA verified")
 	c.Recorder.Event(c.issuer, v1.EventTypeNormal, successKeyPairVerified, messageKeyPairVerified)
 	apiutil.SetIssuerCondition(c.issuer, v1alpha1.IssuerConditionReady, v1alpha1.ConditionTrue, successKeyPairVerified, messageKeyPairVerified)
 

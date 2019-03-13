@@ -16,7 +16,9 @@ limitations under the License.
 
 package config
 
-import "flag"
+import (
+	"flag"
+)
 
 // Addons contains global configuration for instances of addons
 type Addons struct {

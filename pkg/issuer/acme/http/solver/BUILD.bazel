@@ -8,6 +8,7 @@ go_library(
     ],
     importpath = "github.com/jetstack/cert-manager/pkg/issuer/acme/http/solver",
     visibility = ["//visibility:public"],
+    deps = ["//pkg/logs:go_default_library"],
 )
 
 filegroup(

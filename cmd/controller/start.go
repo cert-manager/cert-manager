@@ -18,12 +18,10 @@ package main
 
 import (
 	"fmt"
-	"io"
 
 	"github.com/spf13/cobra"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
-	"k8s.io/klog"
 
 	"github.com/jetstack/cert-manager/cmd/controller/app"
 	"github.com/jetstack/cert-manager/cmd/controller/app/options"
@@ -38,30 +36,26 @@ import (
 	_ "github.com/jetstack/cert-manager/pkg/issuer/selfsigned"
 	_ "github.com/jetstack/cert-manager/pkg/issuer/vault"
 	_ "github.com/jetstack/cert-manager/pkg/issuer/venafi"
+
+	logf "github.com/jetstack/cert-manager/pkg/logs"
 	"github.com/jetstack/cert-manager/pkg/util"
 )
 
 type CertManagerControllerOptions struct {
 	ControllerOptions *options.ControllerOptions
-
-	StdOut io.Writer
-	StdErr io.Writer
 }
 
-func NewCertManagerControllerOptions(out, errOut io.Writer) *CertManagerControllerOptions {
+func NewCertManagerControllerOptions() *CertManagerControllerOptions {
 	o := &CertManagerControllerOptions{
 		ControllerOptions: options.NewControllerOptions(),
-
-		StdOut: out,
-		StdErr: errOut,
 	}
 
 	return o
 }
 
 // NewCommandStartCertManagerController is a CLI handler for starting cert-manager
-func NewCommandStartCertManagerController(out, errOut io.Writer, stopCh <-chan struct{}) *cobra.Command {
-	o := NewCertManagerControllerOptions(out, errOut)
+func NewCommandStartCertManagerController(stopCh <-chan struct{}) *cobra.Command {
+	o := NewCertManagerControllerOptions()
 
 	cmd := &cobra.Command{
 		Use:   "cert-manager-controller",
@@ -76,10 +70,10 @@ to renew certificates at an appropriate time before expiry.`,
 		// TODO: Refactor this function from this package
 		Run: func(cmd *cobra.Command, args []string) {
 			if err := o.Validate(args); err != nil {
-				klog.Fatalf("error validating options: %s", err.Error())
+				logf.Log.Error(err, "error validating options")
 			}
 
-			klog.Infof("starting cert-manager %s (revision %s)", util.AppVersion, util.AppGitCommit)
+			logf.Log.Info("starting controller", "version", util.AppVersion, "git-commit", util.AppGitCommit)
 			o.RunCertManagerController(stopCh)
 		},
 	}

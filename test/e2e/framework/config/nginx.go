@@ -17,8 +17,9 @@ limitations under the License.
 package config
 
 import (
-	"flag"
 	"fmt"
+
+	"flag"
 )
 
 type Nginx struct {

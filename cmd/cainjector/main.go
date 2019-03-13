@@ -21,20 +21,20 @@ import (
 	"os"
 
 	"k8s.io/klog"
-	"k8s.io/klog/klogr"
 	ctrl "sigs.k8s.io/controller-runtime"
 
 	"github.com/jetstack/cert-manager/pkg/logs"
 )
 
 func main() {
-	logs.InitLogs()
+	logs.InitLogs(flag.CommandLine)
 	defer logs.FlushLogs()
-	ctrl.SetLogger(klogr.New())
-	stopCh := ctrl.SetupSignalHandler()
+	ctrl.SetLogger(logs.Log)
 
+	stopCh := ctrl.SetupSignalHandler()
 	cmd := NewCommandStartInjectorController(os.Stdout, os.Stderr, stopCh)
 	cmd.Flags().AddGoFlagSet(flag.CommandLine)
+
 	flag.CommandLine.Parse([]string{})
 	if err := cmd.Execute(); err != nil {
 		klog.Fatal(err)

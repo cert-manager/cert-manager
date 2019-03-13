@@ -24,20 +24,20 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
 	corelisters "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
-	"k8s.io/klog"
 
 	cmlisters "github.com/jetstack/cert-manager/pkg/client/listers/certmanager/v1alpha1"
 	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
 	"github.com/jetstack/cert-manager/pkg/issuer"
-	"github.com/jetstack/cert-manager/pkg/util"
+	logf "github.com/jetstack/cert-manager/pkg/logs"
 )
 
 type Controller struct {
+	// the controllers root context, containing a controller scoped logger
+	ctx context.Context
 	*controllerpkg.Context
 	issuerFactory issuer.IssuerFactory
 
@@ -69,28 +69,32 @@ func New(ctx *controllerpkg.Context) *Controller {
 	ctrl.watchedInformers = append(ctrl.watchedInformers, secretsInformer.Informer().HasSynced)
 	ctrl.secretLister = secretsInformer.Lister()
 	ctrl.issuerFactory = issuer.NewIssuerFactory(ctx)
+	ctrl.ctx = logf.NewContext(ctx.RootContext, nil, ControllerName)
 
 	return ctrl
 }
 
 // TODO: replace with generic handleObjet function (like Navigator)
 func (c *Controller) secretDeleted(obj interface{}) {
+	log := logf.FromContext(c.ctx)
+
 	var secret *corev1.Secret
 	var ok bool
 	secret, ok = obj.(*corev1.Secret)
 	if !ok {
-		runtime.HandleError(fmt.Errorf("Object was not a Secret object %#v", obj))
+		log.Error(nil, "object was not a secret object")
 		return
 	}
+	log = logf.WithResource(log, secret)
 	issuers, err := c.issuersForSecret(secret)
 	if err != nil {
-		runtime.HandleError(fmt.Errorf("Error looking up issuers observing Secret: %s/%s", secret.Namespace, secret.Name))
+		log.Error(err, "error looking up issuers observing secret")
 		return
 	}
 	for _, iss := range issuers {
 		key, err := keyFunc(iss)
 		if err != nil {
-			runtime.HandleError(err)
+			log.Error(err, "error computing key for resource")
 			continue
 		}
 		c.queue.AddRateLimited(key)
@@ -98,7 +102,11 @@ func (c *Controller) secretDeleted(obj interface{}) {
 }
 
 func (c *Controller) Run(workers int, stopCh <-chan struct{}) error {
-	klog.V(4).Infof("Starting %s control loop", ControllerName)
+	ctx, cancel := context.WithCancel(c.ctx)
+	defer cancel()
+	log := logf.FromContext(ctx)
+
+	log.Info("starting control loop")
 	// wait for all the informer caches we depend on are synced
 	if !cache.WaitForCacheSync(stopCh, c.watchedInformers...) {
 		// TODO: replace with Errorf call to glog
@@ -111,20 +119,22 @@ func (c *Controller) Run(workers int, stopCh <-chan struct{}) error {
 		// TODO (@munnerz): make time.Second duration configurable
 		go wait.Until(func() {
 			defer wg.Done()
-			c.worker(stopCh)
+			c.worker(ctx)
 		}, time.Second, stopCh)
 	}
 	<-stopCh
-	klog.V(4).Infof("Shutting down queue as workqueue signaled shutdown")
+	log.Info("shutting down queue as workqueue signaled shutdown")
 	c.queue.ShutDown()
-	klog.V(4).Infof("Waiting for workers to exit...")
+	log.V(logf.DebugLevel).Info("waiting for workers to exit...")
 	wg.Wait()
-	klog.V(4).Infof("Workers exited.")
+	log.V(logf.DebugLevel).Info("workers exited")
 	return nil
 }
 
-func (c *Controller) worker(stopCh <-chan struct{}) {
-	klog.V(4).Infof("Starting %q worker", ControllerName)
+func (c *Controller) worker(ctx context.Context) {
+	log := logf.FromContext(c.ctx)
+
+	log.V(logf.DebugLevel).Info("starting worker")
 	for {
 		obj, shutdown := c.queue.Get()
 		if shutdown {
@@ -139,40 +149,39 @@ func (c *Controller) worker(stopCh <-chan struct{}) {
 			if key, ok = obj.(string); !ok {
 				return
 			}
-			ctx, cancel := context.WithCancel(context.Background())
-			defer cancel()
-			ctx = util.ContextWithStopCh(ctx, stopCh)
-			klog.Infof("%s controller: syncing item '%s'", ControllerName, key)
+			log := log.WithValues("key", key)
+			log.Info("syncing item")
 			if err := c.syncHandler(ctx, key); err != nil {
-				klog.Errorf("%s controller: Re-queuing item %q due to error processing: %s", ControllerName, key, err.Error())
+				log.Error(err, "re-queuing item  due to error processing")
 				c.queue.AddRateLimited(obj)
 				return
 			}
-			klog.Infof("%s controller: Finished processing work item %q", ControllerName, key)
+			log.Info("finished processing work item")
 			c.queue.Forget(obj)
 		}()
 	}
-	klog.V(4).Infof("Exiting %q worker loop", ControllerName)
+	log.V(logf.DebugLevel).Info("exiting worker loop")
 }
 
 func (c *Controller) processNextWorkItem(ctx context.Context, key string) error {
+	log := logf.FromContext(ctx)
 	namespace, name, err := cache.SplitMetaNamespaceKey(key)
 	if err != nil {
-		runtime.HandleError(fmt.Errorf("invalid resource key: %s", key))
+		log.Error(err, "invalid resource key")
 		return nil
 	}
 
 	issuer, err := c.issuerLister.Issuers(namespace).Get(name)
-
 	if err != nil {
 		if k8sErrors.IsNotFound(err) {
-			runtime.HandleError(fmt.Errorf("issuer '%s' in work queue no longer exists", key))
+			log.Error(err, "issuer in work queue no longer exists")
 			return nil
 		}
 
 		return err
 	}
 
+	ctx = logf.NewContext(ctx, logf.WithResource(log, issuer))
 	return c.Sync(ctx, issuer)
 }
 

@@ -62,6 +62,7 @@ const (
 	ClusterIssuerKind = "ClusterIssuer"
 	IssuerKind        = "Issuer"
 	CertificateKind   = "Certificate"
+	OrderKind         = "Order"
 )
 
 type SecretKeySelector struct {

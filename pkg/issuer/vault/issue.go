@@ -53,7 +53,7 @@ const (
 
 func (v *Vault) Issue(ctx context.Context, crt *v1alpha1.Certificate) (*issuer.IssueResponse, error) {
 	// get a copy of the existing/currently issued Certificate's private key
-	signeePrivateKey, err := kube.SecretTLSKey(v.secretsLister, crt.Namespace, crt.Spec.SecretName)
+	signeePrivateKey, err := kube.SecretTLSKey(ctx, v.secretsLister, crt.Namespace, crt.Spec.SecretName)
 	if k8sErrors.IsNotFound(err) || errors.IsInvalidData(err) {
 		// if one does not already exist, generate a new one
 		signeePrivateKey, err = pki.GeneratePrivateKeyForCertificate(crt)

@@ -36,10 +36,10 @@ var (
 )
 
 func main() {
-	logs.InitLogs()
+	logs.InitLogs(nil)
 	defer logs.FlushLogs()
-
 	flag.Parse()
+	ctx := logs.NewContext(nil, nil, "acmesolver")
 
 	s := &solver.HTTP01Solver{
 		ListenPort: *listenPort,
@@ -48,7 +48,7 @@ func main() {
 		Key:        *key,
 	}
 
-	if err := s.Listen(); err != nil {
+	if err := s.Listen(ctx); err != nil {
 		log.Fatalf("error listening for connections: %s", err.Error())
 	}
 }
