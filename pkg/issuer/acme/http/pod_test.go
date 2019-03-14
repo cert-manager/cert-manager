@@ -17,6 +17,7 @@ limitations under the License.
 package http
 
 import (
+	"context"
 	"reflect"
 	"testing"
 
@@ -162,7 +163,7 @@ func TestEnsurePod(t *testing.T) {
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			test.Setup(t)
-			resp, err := test.Solver.ensurePod(test.Challenge)
+			resp, err := test.Solver.ensurePod(context.TODO(), test.Challenge)
 			if err != nil && !test.Err {
 				t.Errorf("Expected function to not error, but got: %v", err)
 			}
@@ -240,7 +241,7 @@ func TestGetPodsForCertificate(t *testing.T) {
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			test.Setup(t)
-			resp, err := test.Solver.getPodsForChallenge(test.Challenge)
+			resp, err := test.Solver.getPodsForChallenge(context.TODO(), test.Challenge)
 			if err != nil && !test.Err {
 				t.Errorf("Expected function to not error, but got: %v", err)
 			}
