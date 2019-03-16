@@ -49,8 +49,8 @@ func ecCurveForKeySize(keySize int) (elliptic.Curve, error) {
 		return elliptic.P256(), nil
 	case ECCurve384:
 		return elliptic.P384(), nil
-	case ECCurve521:
-		return elliptic.P521(), nil
+	case ECCurve512:
+		return elliptic.P512(), nil
 	default:
 		return nil, fmt.Errorf("unknown ecdsa key size specified: %d", keySize)
 	}
@@ -119,9 +119,9 @@ func TestGeneratePrivateKeyForCertificate(t *testing.T) {
 			expectErr: false,
 		},
 		{
-			name:      "ecdsa key with keysize 521",
+			name:      "ecdsa key with keysize 512",
 			keyAlgo:   v1alpha1.ECDSAKeyAlgorithm,
-			keySize:   521,
+			keySize:   512,
 			expectErr: false,
 		},
 		{

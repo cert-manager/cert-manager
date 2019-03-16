@@ -42,8 +42,8 @@ const (
 	ECCurve256 = 256
 	// ECCurve384 represents a 384bit ECDSA key.
 	ECCurve384 = 384
-	// ECCurve521 represents a 521bit ECDSA key.
-	ECCurve521 = 521
+	// ECCurve512 represents a 512bit ECDSA key.
+	ECCurve512 = 512
 )
 
 // GeneratePrivateKeyForCertificate will generate a private key suitable for
@@ -89,7 +89,7 @@ func GenerateRSAPrivateKey(keySize int) (*rsa.PrivateKey, error) {
 }
 
 // GenerateECPrivateKey will generate an ECDSA private key of the given size.
-// It can be used to generate 256, 384 and 521 sized keys.
+// It can be used to generate 256, 384 and 512 sized keys.
 func GenerateECPrivateKey(keySize int) (*ecdsa.PrivateKey, error) {
 	var ecCurve elliptic.Curve
 
@@ -98,8 +98,8 @@ func GenerateECPrivateKey(keySize int) (*ecdsa.PrivateKey, error) {
 		ecCurve = elliptic.P256()
 	case ECCurve384:
 		ecCurve = elliptic.P384()
-	case ECCurve521:
-		ecCurve = elliptic.P521()
+	case ECCurve512:
+		ecCurve = elliptic.P512()
 	default:
 		return nil, fmt.Errorf("unsupported ecdsa key size specified: %d", keySize)
 	}

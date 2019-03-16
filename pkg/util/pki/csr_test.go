@@ -210,9 +210,9 @@ func TestSignatureAlgorithmForCertificate(t *testing.T) {
 			expectedKeyType: x509.ECDSA,
 		},
 		{
-			name:            "certificate with KeyAlgorithm ecdsa and size 521",
+			name:            "certificate with KeyAlgorithm ecdsa and size 512",
 			keyAlgo:         v1alpha1.ECDSAKeyAlgorithm,
-			keySize:         521,
+			keySize:         512,
 			expectedSigAlgo: x509.ECDSAWithSHA512,
 			expectedKeyType: x509.ECDSA,
 		},

@@ -486,7 +486,7 @@ func generateSelfSignedTemporaryCertificate(crt *v1alpha1.Certificate, pk []byte
 // In practice, this shouldn't really be a concern anyway.
 func generateLocallySignedTemporaryCertificate(crt *v1alpha1.Certificate, pk []byte) ([]byte, error) {
 	// generate a throwaway self-signed root CA
-	caPk, err := pki.GenerateECPrivateKey(pki.ECCurve521)
+	caPk, err := pki.GenerateECPrivateKey(pki.ECCurve512)
 	if err != nil {
 		return nil, err
 	}

@@ -105,7 +105,7 @@ type CertificateSpec struct {
 
 	// KeySize is the key bit size of the corresponding private key for this certificate.
 	// If provided, value must be between 2048 and 8192 inclusive when KeyAlgorithm is
-	// empty or is set to "rsa", and value must be one of (256, 384, 521) when
+	// empty or is set to "rsa", and value must be one of (256, 384, 512) when
 	// KeyAlgorithm is set to "ecdsa".
 	// +optional
 	KeySize int `json:"keySize,omitempty"`

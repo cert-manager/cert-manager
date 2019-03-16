@@ -289,7 +289,7 @@ func SignatureAlgorithm(crt *v1alpha1.Certificate) (x509.PublicKeyAlgorithm, x50
 	case v1alpha1.ECDSAKeyAlgorithm:
 		pubKeyAlgo = x509.ECDSA
 		switch crt.Spec.KeySize {
-		case 521:
+		case 512:
 			sigAlgo = x509.ECDSAWithSHA512
 		case 384:
 			sigAlgo = x509.ECDSAWithSHA384

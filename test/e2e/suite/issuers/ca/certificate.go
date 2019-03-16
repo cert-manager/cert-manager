@@ -80,7 +80,7 @@ var _ = framework.CertManagerDescribe("CA Certificate", func() {
 
 			crt := util.NewCertManagerBasicCertificate(certificateName, certificateSecretName, issuerName, v1alpha1.IssuerKind, nil, nil)
 			crt.Spec.KeyAlgorithm = v1alpha1.ECDSAKeyAlgorithm
-			crt.Spec.KeySize = 521
+			crt.Spec.KeySize = 512
 
 			By("Creating a Certificate")
 			_, err := certClient.Create(crt)

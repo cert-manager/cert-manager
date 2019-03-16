@@ -283,14 +283,14 @@ func TestValidateCertificate(t *testing.T) {
 				},
 			},
 		},
-		"valid certificate with ecdsa keyAlgorithm specified with keySize 521": {
+		"valid certificate with ecdsa keyAlgorithm specified with keySize 512": {
 			cfg: &v1alpha1.Certificate{
 				Spec: v1alpha1.CertificateSpec{
 					CommonName:   "testcn",
 					SecretName:   "abc",
 					IssuerRef:    validIssuerRef,
 					KeyAlgorithm: v1alpha1.ECDSAKeyAlgorithm,
-					KeySize:      521,
+					KeySize:      512,
 				},
 			},
 		},
@@ -356,7 +356,7 @@ func TestValidateCertificate(t *testing.T) {
 				},
 			},
 			errs: []*field.Error{
-				field.NotSupported(fldPath.Child("keySize"), 100, []string{"256", "384", "521"}),
+				field.NotSupported(fldPath.Child("keySize"), 100, []string{"256", "384", "512"}),
 			},
 		},
 		"certificate with invalid keyAlgorithm": {

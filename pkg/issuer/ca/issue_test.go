@@ -166,7 +166,7 @@ func TestIssue(t *testing.T) {
 				gen.SetCertificateSecretName("crt-output"),
 				gen.SetCertificateCommonName("testing-cn"),
 				gen.SetCertificateKeyAlgorithm(v1alpha1.ECDSAKeyAlgorithm),
-				gen.SetCertificateKeySize(521),
+				gen.SetCertificateKeySize(512),
 			),
 			Builder: &testpkg.Builder{
 				KubeObjects:        []runtime.Object{rootRSACASecret},
