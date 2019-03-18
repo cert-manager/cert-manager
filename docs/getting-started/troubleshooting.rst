@@ -28,12 +28,13 @@ following command to verify that your cert-manager namespace has the necessary
 label:
 
 .. code-block:: shell
-   :emphasize-lines: 4
 
-   kubectl get namespace
-
+   kubectl describe namespace cert-manager
+   
    Name:         cert-manager
    Labels:       certmanager.k8s.io/disable-validation=true
+   Annotations:  <none>
+   Status:       Active
    ...
 
 If you cannot see the ``certmanager.k8s.io/disable-validation=true`` label on
