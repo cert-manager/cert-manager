@@ -94,9 +94,6 @@ func ValidateIssuerConfig(iss *v1alpha1.IssuerConfig, fldPath *field.Path) field
 
 func ValidateACMEIssuerConfig(iss *v1alpha1.ACMEIssuer, fldPath *field.Path) field.ErrorList {
 	el := field.ErrorList{}
-	if len(iss.Email) == 0 {
-		el = append(el, field.Required(fldPath.Child("email"), "email address is a required field"))
-	}
 	if len(iss.PrivateKey.Name) == 0 {
 		el = append(el, field.Required(fldPath.Child("privateKeySecretRef", "name"), "private key secret name is a required field"))
 	}

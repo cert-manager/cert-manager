@@ -191,7 +191,8 @@ type CAIssuer struct {
 // ACMEIssuer contains the specification for an ACME issuer
 type ACMEIssuer struct {
 	// Email is the email for this account
-	Email string `json:"email"`
+	// +optional
+	Email string `json:"email,omitempty"`
 
 	// Server is the ACME server URL
 	Server string `json:"server"`
