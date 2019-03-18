@@ -112,7 +112,6 @@ func TestValidateACMEIssuerConfig(t *testing.T) {
 		"acme issuer with missing fields": {
 			spec: &v1alpha1.ACMEIssuer{},
 			errs: []*field.Error{
-				field.Required(fldPath.Child("email"), "email address is a required field"),
 				field.Required(fldPath.Child("privateKeySecretRef", "name"), "private key secret name is a required field"),
 				field.Required(fldPath.Child("server"), "acme server URL is a required field"),
 			},
