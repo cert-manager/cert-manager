@@ -49,6 +49,8 @@ const (
 // - Submit the request
 // - Wait for the request to be fulfilled and the certificate to be available
 func (v *Venafi) Issue(ctx context.Context, crt *v1alpha1.Certificate) (*issuer.IssueResponse, error) {
+	v.Recorder.Event(crt, corev1.EventTypeNormal, "Issuing", "Requesting new certificate...")
+
 	// Always generate a new private key, as some Venafi configurations mandate
 	// unique private keys per issuance.
 	signeeKey, err := pki.GeneratePrivateKeyForCertificate(crt)
