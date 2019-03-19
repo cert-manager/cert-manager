@@ -1,0 +1,38 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = ["openapi2smd.go"],
+    importmap = "github.com/jetstack/cert-manager/vendor/k8s.io/kube-openapi/cmd/openapi2smd",
+    importpath = "k8s.io/kube-openapi/cmd/openapi2smd",
+    tags = ["manual"],
+    visibility = ["//visibility:private"],
+    deps = [
+        "//vendor/github.com/googleapis/gnostic/OpenAPIv2:go_default_library",
+        "//vendor/github.com/googleapis/gnostic/compiler:go_default_library",
+        "//vendor/gopkg.in/yaml.v2:go_default_library",
+        "//vendor/k8s.io/kube-openapi/pkg/schemaconv:go_default_library",
+        "//vendor/k8s.io/kube-openapi/pkg/util/proto:go_default_library",
+    ],
+)
+
+go_binary(
+    name = "openapi2smd",
+    embed = [":go_default_library"],
+    tags = ["manual"],
+    visibility = ["//visibility:public"],
+)
+
+filegroup(
+    name = "package-srcs",
+    srcs = glob(["**"]),
+    tags = ["automanaged"],
+    visibility = ["//visibility:private"],
+)
+
+filegroup(
+    name = "all-srcs",
+    srcs = [":package-srcs"],
+    tags = ["automanaged"],
+    visibility = ["//visibility:public"],
+)

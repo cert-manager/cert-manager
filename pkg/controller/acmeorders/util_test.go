@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Jetstack cert-manager contributors.
+Copyright 2019 The Jetstack cert-manager contributors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -77,6 +77,9 @@ func (f *controllerFixture) Setup(t *testing.T) {
 		//		default dns01 nameservers
 		//		ambient credentials settings
 		f.Builder = &test.Builder{}
+	}
+	if f.Builder.T == nil {
+		f.Builder.T = t
 	}
 	f.Controller = f.buildFakeController(f.Builder, f.Issuer)
 	if f.PreFn != nil {

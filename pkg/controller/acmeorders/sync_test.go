@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Jetstack cert-manager contributors.
+Copyright 2019 The Jetstack cert-manager contributors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -88,6 +88,11 @@ func TestSyncHappyPath(t *testing.T) {
 	testOrderInvalid.Status.FailureTime = &nowMetaTime
 	testOrderValid := testOrderPending.DeepCopy()
 	testOrderValid.Status.State = v1alpha1.Valid
+	// pem encoded word 'test'
+	testOrderValid.Status.Certificate = []byte(`-----BEGIN CERTIFICATE-----
+dGVzdA==
+-----END CERTIFICATE-----
+`)
 	testOrderReady := testOrderPending.DeepCopy()
 	testOrderReady.Status.State = v1alpha1.Ready
 
@@ -219,9 +224,8 @@ func TestSyncHappyPath(t *testing.T) {
 					return testACMEOrderValid, nil
 				},
 				FakeFinalizeOrder: func(_ context.Context, url string, csr []byte) ([][]byte, error) {
-					// Order controller does not currently use the 'der' field, so
-					// for now we can return nil, nil.
-					return nil, nil
+					testData := []byte("test")
+					return [][]byte{testData}, nil
 				},
 			},
 			CheckFn: func(t *testing.T, s *controllerFixture, args ...interface{}) {

@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Jetstack cert-manager contributors.
+Copyright 2019 The Jetstack cert-manager contributors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -153,7 +153,14 @@ func TestSignatureAlgorithmForCertificate(t *testing.T) {
 		{
 			name:      "certificate with KeyAlgorithm rsa and size 1024",
 			keyAlgo:   v1alpha1.RSAKeyAlgorithm,
+			keySize:   1024,
 			expectErr: true,
+		},
+		{
+			name:            "certificate with KeyAlgorithm rsa and no size set should default to rsa256",
+			keyAlgo:         v1alpha1.RSAKeyAlgorithm,
+			expectedSigAlgo: x509.SHA256WithRSA,
+			expectedKeyType: x509.RSA,
 		},
 		{
 			name:            "certificate with KeyAlgorithm not set",
@@ -183,6 +190,12 @@ func TestSignatureAlgorithmForCertificate(t *testing.T) {
 			expectedKeyType: x509.RSA,
 		},
 		{
+			name:            "certificate with ecdsa key algorithm set and no key size default to ecdsa256",
+			keyAlgo:         v1alpha1.ECDSAKeyAlgorithm,
+			expectedSigAlgo: x509.ECDSAWithSHA256,
+			expectedKeyType: x509.ECDSA,
+		},
+		{
 			name:            "certificate with KeyAlgorithm ecdsa and size 256",
 			keyAlgo:         v1alpha1.ECDSAKeyAlgorithm,
 			keySize:         256,
@@ -206,6 +219,7 @@ func TestSignatureAlgorithmForCertificate(t *testing.T) {
 		{
 			name:      "certificate with KeyAlgorithm ecdsa and size 100",
 			keyAlgo:   v1alpha1.ECDSAKeyAlgorithm,
+			keySize:   100,
 			expectErr: true,
 		},
 		{

@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Jetstack cert-manager contributors.
+Copyright 2019 The Jetstack cert-manager contributors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -31,7 +31,7 @@ type Tiller struct {
 
 func (n *Tiller) AddFlags(fs *flag.FlagSet) {
 	fs.StringVar(&n.ImageRepo, "tiller-image-repo", "gcr.io/kubernetes-helm/tiller", "docker image repo for tiller-deploy")
-	fs.StringVar(&n.ImageTag, "tiller-image-tag", "v2.11.0", "docker image tag for tiller-deploy")
+	fs.StringVar(&n.ImageTag, "tiller-image-tag", "bazel", "docker image tag for tiller-deploy")
 }
 
 func (n *Tiller) Validate() []error {

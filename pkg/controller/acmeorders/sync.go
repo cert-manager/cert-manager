@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Jetstack cert-manager contributors.
+Copyright 2019 The Jetstack cert-manager contributors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -17,21 +17,24 @@ limitations under the License.
 package acmeorders
 
 import (
+	"bytes"
 	"context"
+	"encoding/pem"
 	"fmt"
 	"reflect"
 
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/selection"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/apimachinery/pkg/util/sets"
 
-	"github.com/golang/glog"
 	"github.com/jetstack/cert-manager/pkg/acme"
 	acmecl "github.com/jetstack/cert-manager/pkg/acme/client"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	acmeapi "github.com/jetstack/cert-manager/third_party/crypto/acme"
+	"k8s.io/klog"
 )
 
 var (
@@ -71,11 +74,22 @@ func (c *Controller) Sync(ctx context.Context, o *cmapi.Order) (err error) {
 
 	if o.Status.URL == "" {
 		err := c.createOrder(ctx, cl, genericIssuer, o)
-		// TODO: check for error types (perm or transient?)
+
 		if err != nil {
-			// TODO: check for acmeerrors.IsMalformed and mark the Order as failed
+			// If we get a 4xx error, we mark the Order as 'error'.
+			// 4xx error codes include rate limit errors (429).
+			// This will cause the Certificate controller to retry the Order
+			// after the regular back-off algorithm has been applied.
+			acmeErr, ok := err.(*acmeapi.Error)
+			if ok && acmeErr.StatusCode >= 400 && acmeErr.StatusCode < 500 {
+				c.setOrderState(&o.Status, cmapi.Errored)
+				o.Status.Reason = fmt.Sprintf("Failed to create order: %v", err)
+				return err
+			}
+
 			return err
 		}
+
 		// Return here and allow the updating of the Status field to trigger
 		// a resync.
 		// This ensures we have observed the `status.url` field being set, preventing
@@ -83,11 +97,67 @@ func (c *Controller) Sync(ctx context.Context, o *cmapi.Order) (err error) {
 		return nil
 	}
 
+	// Handle an edge case where the Order has entered a 'valid' state but the
+	// actual Certificate resource has not been set on the Order.
+	// This shouldn't ever really happen, but can occasionally occur if
+	// cert-manager has failed to persist the Certificate and/or status field
+	// for whatever reason.
+	if o.Status.State == acmeapi.StatusValid && o.Status.Certificate == nil {
+		acmeOrder, err := cl.GetOrder(ctx, o.Status.URL)
+		if err != nil {
+			// TODO: mark the order as 'errored' if this is a 404 or similar
+			return err
+		}
+
+		// If the Order state has actually changed and we've not observed it,
+		// update the order status and let the change in the resource trigger
+		// a resync
+		if acmeOrder.Status != acmeapi.StatusValid {
+			c.setOrderStatus(&o.Status, acmeOrder)
+			return nil
+		}
+
+		certs, err := cl.GetCertificate(ctx, acmeOrder.CertificateURL)
+		if err != nil {
+			// TODO: mark the order as 'errored' if this is a 404 or similar
+			return err
+		}
+
+		err = c.storeCertificateOnStatus(o, certs)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	}
+
 	// If an order is in a final state, we bail out early as there is nothing
 	// left for us to do here.
 	// TODO: we should find a way to periodically update the state of the resource
 	// to reflect the current/actual state in the ACME server.
+	// TODO: if the certificate bytes are nil, we should attempt to retrieve
+	// the certificate for the order using GetCertificate
 	if acme.IsFinalState(o.Status.State) {
+		existingChallenges, err := c.listChallengesForOrder(o)
+		if err != nil {
+			return err
+		}
+
+		// Don't cleanup challenge resources if the order has failed.
+		// This will make it easier for users to debug failing challenges.
+		// The challenge resources will be cleaned up when the Order is deleted.
+		if acme.IsFailureState(o.Status.State) {
+			return nil
+		}
+
+		// Cleanup challenge resources once a final state has been reached
+		for _, ch := range existingChallenges {
+			err := c.CMClient.CertmanagerV1alpha1().Challenges(ch.Namespace).Delete(ch.Name, nil)
+			if err != nil {
+				return err
+			}
+		}
+
 		return nil
 	}
 
@@ -99,14 +169,27 @@ func (c *Controller) Sync(ctx context.Context, o *cmapi.Order) (err error) {
 	case cmapi.Unknown:
 		err := c.syncOrderStatus(ctx, cl, o)
 		if err != nil {
+			// If we get a 4xx error, we mark the Order as 'error'.
+			// 4xx error codes include rate limit errors (429).
+			// This will cause the Certificate controller to retry the Order
+			// after the regular back-off algorithm has been applied.
+			acmeErr, ok := err.(*acmeapi.Error)
+			if ok && acmeErr.StatusCode >= 400 && acmeErr.StatusCode < 500 {
+				c.setOrderState(&o.Status, cmapi.Errored)
+				o.Status.Reason = fmt.Sprintf("Failed to create order: %v", err)
+				return nil
+			}
+
 			return err
 		}
+
 		// If the state has changed, return nil here as the change in state will
 		// cause the controller to sync again once the new state has been observed
 		// by the informer.
 		if o.Status.State != cmapi.Unknown {
 			return nil
 		}
+
 		// Return an error if the state is still unknown. This is an edge case
 		// that *should* be unreachable, but in case it does happen we will requeue
 		// the order to attempt to get a valid state after applying a back-off.
@@ -115,14 +198,32 @@ func (c *Controller) Sync(ctx context.Context, o *cmapi.Order) (err error) {
 	// if the current state is 'ready', we need to generate a CSR and finalize
 	// the order
 	case cmapi.Ready:
-		_, err := cl.FinalizeOrder(ctx, o.Status.FinalizeURL, o.Spec.CSR)
+		// TODO: we could retrieve a copy of the certificate resource here and
+		// stored it on the Order resource to prevent extra calls to the API
+		certSlice, err := cl.FinalizeOrder(ctx, o.Status.FinalizeURL, o.Spec.CSR)
+
+		// always update the order status after calling Finalize - this allows
+		// us to record the current orders status on this order resource
+		// despite it not being returned directly by the acme client.
+		// This will catch cases where the Order cannot be finalized because it
+		// if it is already in the 'valid' state, as upon retry we will
+		// then retrieve the Certificate resource.
 		errUpdate := c.syncOrderStatus(ctx, cl, o)
 		if errUpdate != nil {
 			// TODO: mark permenant failure?
 			return fmt.Errorf("error syncing order status: %v", errUpdate)
 		}
+
+		// check for errors from FinalizeOrder
 		if err != nil {
+			// TODO: check for acme error type and potentially mark order as errored
 			return fmt.Errorf("error finalizing order: %v", err)
+		}
+
+		err = c.storeCertificateOnStatus(o, certSlice)
+		if err != nil {
+			// TODO: mark Order as 'errored'
+			return err
 		}
 
 		return nil
@@ -137,14 +238,8 @@ func (c *Controller) Sync(ctx context.Context, o *cmapi.Order) (err error) {
 		return fmt.Errorf("unknown order state %q", o.Status.State)
 	}
 
-	// create a selector that we can use to find all existing Challenges for the order
-	sel, err := challengeSelectorForOrder(o)
-	if err != nil {
-		return err
-	}
-
 	// get the list of exising challenges for this order
-	existingChallenges, err := c.challengeLister.Challenges(o.Namespace).List(sel)
+	existingChallenges, err := c.listChallengesForOrder(o)
 	if err != nil {
 		return err
 	}
@@ -157,10 +252,13 @@ func (c *Controller) Sync(ctx context.Context, o *cmapi.Order) (err error) {
 	// therefore, if there is a cache timing issue, the Create will fail as the
 	// challenge with that name will already exist.
 	specsToCreate := make(map[int]cmapi.ChallengeSpec)
+	// TODO: we could potentially parse the challenge's name to find the index
+	// expected here instead of iterating over both lists
 	for i, s := range o.Status.Challenges {
 		create := true
 		for _, ch := range existingChallenges {
-			if s.DNSName == ch.Spec.DNSName {
+			if s.Wildcard == ch.Spec.Wildcard &&
+				s.DNSName == ch.Spec.DNSName {
 				create = false
 				break
 			}
@@ -173,7 +271,7 @@ func (c *Controller) Sync(ctx context.Context, o *cmapi.Order) (err error) {
 		specsToCreate[i] = s
 	}
 
-	glog.Infof("Need to create %d challenges", len(specsToCreate))
+	klog.Infof("Need to create %d challenges", len(specsToCreate))
 
 	// create a Challenge resource for each challenge we need to create.
 	var errs []error
@@ -185,6 +283,12 @@ func (c *Controller) Sync(ctx context.Context, o *cmapi.Order) (err error) {
 			errs = append(errs, err)
 			continue
 		}
+
+		domainName := spec.DNSName
+		if spec.Wildcard {
+			domainName = "*." + domainName
+		}
+		c.Recorder.Eventf(o, corev1.EventTypeNormal, "Created", "Created Challenge resource %q for domain %q", ch.Name, ch.Spec.DNSName)
 
 		existingChallenges = append(existingChallenges, ch)
 	}
@@ -216,9 +320,20 @@ func (c *Controller) Sync(ctx context.Context, o *cmapi.Order) (err error) {
 		return nil
 	}
 
-	glog.Infof("Waiting for all challenges for order %q to enter 'valid' state", o.Name)
+	klog.Infof("Waiting for all challenges for order %q to enter 'valid' state", o.Name)
 
 	return nil
+}
+
+func (c *Controller) listChallengesForOrder(o *cmapi.Order) ([]*cmapi.Challenge, error) {
+	// create a selector that we can use to find all existing Challenges for the order
+	sel, err := challengeSelectorForOrder(o)
+	if err != nil {
+		return nil, err
+	}
+
+	// get the list of exising challenges for this order
+	return c.challengeLister.Challenges(o.Namespace).List(sel)
 }
 
 const (
@@ -347,7 +462,7 @@ func (c *Controller) syncOrderStatus(ctx context.Context, cl acmecl.Interface, o
 
 	acmeOrder, err := cl.GetOrder(ctx, o.Status.URL)
 	if err != nil {
-		// TODO: handle 404 acme responses and mark the order as failed
+		// TODO: mark the order as errored if this is a 404 or similar
 		return err
 	}
 
@@ -363,6 +478,7 @@ func buildChallenge(i int, o *cmapi.Order, chalSpec cmapi.ChallengeSpec) *cmapi.
 			Namespace:       o.Namespace,
 			Labels:          challengeLabelsForOrder(o),
 			OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(o, orderGvk)},
+			Finalizers:      []string{cmapi.ACMEFinalizer},
 		},
 		Spec: chalSpec,
 	}
@@ -375,11 +491,20 @@ func buildChallenge(i int, o *cmapi.Order, chalSpec cmapi.ChallengeSpec) *cmapi.
 func (c *Controller) setOrderStatus(o *cmapi.OrderStatus, acmeOrder *acmeapi.Order) {
 	// TODO: should we validate the State returned by the ACME server here?
 	cmState := cmapi.State(acmeOrder.Status)
+	// be nice to our users and check if there is an error that we
+	// can tell them about in the reason field
+	// TODO(dmo): problems may be compound and they may be tagged with
+	// a type field that suggests changes we should make (like provisioning
+	// an account). We might be able to handle errors more gracefully using
+	// this info
+	o.Reason = ""
+	if acmeOrder.Error != nil {
+		o.Reason = acmeOrder.Error.Detail
+	}
 	c.setOrderState(o, cmState)
 
 	o.URL = acmeOrder.URL
 	o.FinalizeURL = acmeOrder.FinalizeURL
-	o.CertificateURL = acmeOrder.CertificateURL
 }
 
 func challengeLabelsForOrder(o *cmapi.Order) map[string]string {
@@ -413,4 +538,21 @@ func (c *Controller) setOrderState(o *cmapi.OrderStatus, s cmapi.State) {
 		t := metav1.NewTime(c.clock.Now())
 		o.FailureTime = &t
 	}
+}
+
+func (c *Controller) storeCertificateOnStatus(o *cmapi.Order, certs [][]byte) error {
+	// encode the retrieved certificates (including the chain)
+	certBuffer := bytes.NewBuffer([]byte{})
+	for _, cert := range certs {
+		err := pem.Encode(certBuffer, &pem.Block{Type: "CERTIFICATE", Bytes: cert})
+		if err != nil {
+			// TODO: something else?
+			return err
+		}
+	}
+
+	o.Status.Certificate = certBuffer.Bytes()
+	c.Recorder.Event(o, corev1.EventTypeNormal, "OrderValid", "Order completed successfully")
+
+	return nil
 }

@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Jetstack cert-manager contributors.
+Copyright 2019 The Jetstack cert-manager contributors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -36,10 +36,10 @@ var (
 )
 
 func main() {
-	logs.InitLogs()
+	logs.InitLogs(nil)
 	defer logs.FlushLogs()
-
 	flag.Parse()
+	ctx := logs.NewContext(nil, nil, "acmesolver")
 
 	s := &solver.HTTP01Solver{
 		ListenPort: *listenPort,
@@ -48,7 +48,7 @@ func main() {
 		Key:        *key,
 	}
 
-	if err := s.Listen(); err != nil {
+	if err := s.Listen(ctx); err != nil {
 		log.Fatalf("error listening for connections: %s", err.Error())
 	}
 }

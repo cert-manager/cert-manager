@@ -1,16 +1,16 @@
-===============
-Getting started
-===============
+===========
+Get started
+===========
 
-This contains information on getting started with cert-manager and deployment
-information.
+The guides in this section will explain how to install and set up cert-manager.
 
-New users should start here before proceeding to the :doc:`/tutorials/index` section,
-as the steps in this section are a prerequisite for all tutorials.
+If you run into issues deploying, upgrading or running cert-manager please
+check the :doc:`troubleshooting <./troubleshooting>` document.
 
 .. toctree::
    :maxdepth: 2
+   :caption: Contents:
 
-   1-configuring-helm
-   2-installing
-   3-configuring-first-issuer
+   install
+   webhook
+   troubleshooting

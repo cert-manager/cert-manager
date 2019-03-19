@@ -10,6 +10,17 @@ genrule(
 )
 
 genrule(
+    name = "fetch_buildozer",
+    srcs = select({
+        ":darwin": ["@buildozer_darwin//file"],
+        ":k8": ["@buildozer_linux//file"],
+    }),
+    outs = ["buildozer"],
+    cmd = "cp $(SRCS) $@",
+    visibility = ["//visibility:public"],
+)
+
+genrule(
     name = "fetch_kazel",
     srcs = ["@io_kubernetes_build//kazel"],
     outs = ["kazel"],
@@ -48,6 +59,14 @@ genrule(
     name = "fetch_kind",
     srcs = ["@io_kubernetes_sigs_kind//:kind"],
     outs = ["kind"],
+    cmd = "cp $(SRCS) $@",
+    visibility = ["//visibility:public"],
+)
+
+genrule(
+    name = "fetch_gencrd",
+    srcs = ["@io_kubernetes_sigs_controller-tools//cmd/crd"],
+    outs = ["gencrd"],
     cmd = "cp $(SRCS) $@",
     visibility = ["//visibility:public"],
 )

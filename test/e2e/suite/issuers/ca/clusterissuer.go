@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Jetstack cert-manager contributors.
+Copyright 2019 The Jetstack cert-manager contributors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -24,7 +24,7 @@ import (
 	cmutil "github.com/jetstack/cert-manager/pkg/util"
 	"github.com/jetstack/cert-manager/test/e2e/framework"
 	"github.com/jetstack/cert-manager/test/e2e/framework/addon"
-	"github.com/jetstack/cert-manager/test/util"
+	"github.com/jetstack/cert-manager/test/e2e/util"
 )
 
 var _ = framework.CertManagerDescribe("CA ClusterIssuer", func() {
@@ -42,7 +42,7 @@ var _ = framework.CertManagerDescribe("CA ClusterIssuer", func() {
 
 	BeforeEach(func() {
 		By("Creating a signing keypair fixture")
-		_, err := f.KubeClientSet.CoreV1().Secrets(clusterResourceNamespace).Create(util.NewSigningKeypairSecret(secretName))
+		_, err := f.KubeClientSet.CoreV1().Secrets(clusterResourceNamespace).Create(newSigningKeypairSecret(secretName))
 		Expect(err).NotTo(HaveOccurred())
 	})
 

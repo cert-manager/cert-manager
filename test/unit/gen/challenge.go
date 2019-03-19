@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Jetstack cert-manager contributors.
+Copyright 2019 The Jetstack cert-manager contributors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -61,6 +61,12 @@ func SetChallengeDNSName(dnsName string) ChallengeModifier {
 func SetChallengePresented(p bool) ChallengeModifier {
 	return func(ch *v1alpha1.Challenge) {
 		ch.Status.Presented = p
+	}
+}
+
+func SetChallengeWildcard(p bool) ChallengeModifier {
+	return func(ch *v1alpha1.Challenge) {
+		ch.Spec.Wildcard = p
 	}
 }
 

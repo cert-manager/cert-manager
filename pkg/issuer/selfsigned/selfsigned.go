@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Jetstack cert-manager contributors.
+Copyright 2019 The Jetstack cert-manager contributors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ package selfsigned
 import (
 	corelisters "k8s.io/client-go/listers/core/v1"
 
+	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	"github.com/jetstack/cert-manager/pkg/controller"
 	"github.com/jetstack/cert-manager/pkg/issuer"
@@ -43,5 +44,5 @@ func NewSelfSigned(ctx *controller.Context, issuer v1alpha1.GenericIssuer) (issu
 }
 
 func init() {
-	controller.RegisterIssuer(controller.IssuerSelfSigned, NewSelfSigned)
+	issuer.RegisterIssuer(apiutil.IssuerSelfSigned, NewSelfSigned)
 }
