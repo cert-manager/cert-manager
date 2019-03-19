@@ -20,6 +20,7 @@ import (
 	"crypto/x509"
 	"fmt"
 	"github.com/Venafi/vcert/pkg/certificate"
+	"log"
 	"regexp"
 	"sort"
 	"strings"
@@ -68,6 +69,7 @@ type Connector interface {
 	RevokeCertificate(req *certificate.RevocationRequest) error
 	RenewCertificate(req *certificate.RenewalRequest) (requestID string, err error)
 	ImportCertificate(req *certificate.ImportRequest) (*certificate.ImportResponse, error)
+	ReadPolicyConfiguration(zone string) (policy *Policy, err error)
 }
 
 // Authentication provides a data construct for authentication data
@@ -99,28 +101,31 @@ func (err ErrCertificatePending) Error() string {
 	return fmt.Sprintf("Issuance is pending. You may try retrieving the certificate later using Pickup ID: %s\n\tStatus: %s", err.CertificateID, err.Status)
 }
 
+type Policy struct {
+	SubjectCNRegexes         []string
+	SubjectORegexes          []string
+	SubjectOURegexes         []string
+	SubjectSTRegexes         []string
+	SubjectLRegexes          []string
+	SubjectCRegexes          []string
+	AllowedKeyConfigurations []AllowedKeyConfiguration
+	DnsSanRegExs             []string
+	IpSanRegExs              []string
+	EmailSanRegExs           []string
+	UriSanRegExs             []string
+	UpnSanRegExs             []string
+	AllowWildcards           bool
+	AllowKeyReuse            bool
+}
+
 // ZoneConfiguration provides a common structure for certificate request data provided by the remote endpoint
 type ZoneConfiguration struct {
 	Organization       string
-	OrganizationLocked bool
 	OrganizationalUnit []string
 	Country            string
-	CountryLocked      bool
 	Province           string
-	ProvinceLocked     bool
 	Locality           string
-	LocalityLocked     bool
-
-	SubjectCNRegexes []string
-	SubjectORegexes  []string
-	SubjectOURegexes []string
-	SubjectSTRegexes []string
-	SubjectLRegexes  []string
-	SubjectCRegexes  []string
-	SANRegexes       []string
-
-	AllowedKeyConfigurations []AllowedKeyConfiguration
-	KeySizeLocked            bool
+	Policy
 
 	HashAlgorithm x509.SignatureAlgorithm
 
@@ -162,9 +167,10 @@ func (z *ZoneConfiguration) ValidateCertificateRequest(request *certificate.Requ
 	if !isComponentValid(z.SubjectCRegexes, request.Subject.Country) {
 		return fmt.Errorf("The requested Country does not match any of the allowed Country regular expressions")
 	}
-	if !isComponentValid(z.SANRegexes, request.DNSNames) {
+	if !isComponentValid(z.DnsSanRegExs, request.DNSNames) {
 		return fmt.Errorf("The requested Subject Alternative Name does not match any of the allowed Country regular expressions")
 	}
+	//todo: add ip, email and over cheking
 
 	if z.AllowedKeyConfigurations != nil && len(z.AllowedKeyConfigurations) > 0 {
 		match := false
@@ -194,88 +200,80 @@ func (z *ZoneConfiguration) ValidateCertificateRequest(request *certificate.Requ
 }
 
 func isComponentValid(regexes []string, component []string) bool {
-	if regexes != nil && len(regexes) > 0 && component != nil {
-		regexOk := false
-		for _, subReg := range regexes {
-			matchedAny := false
-			reg := regexp.MustCompile(subReg)
-			for _, c := range component {
-				if reg.FindStringIndex(c) != nil {
-					matchedAny = true
-					break
-				}
-			}
-			if matchedAny {
-				regexOk = true
+	if len(regexes) == 0 || len(component) == 0 {
+		return true
+	}
+	regexOk := false
+	for _, subReg := range regexes {
+		matchedAny := false
+		reg, err := regexp.Compile(subReg)
+		if err != nil {
+			log.Printf("Bad regexp: %s", subReg)
+			return false
+		}
+		for _, c := range component {
+			if reg.FindStringIndex(c) != nil {
+				matchedAny = true
 				break
 			}
 		}
-		return regexOk
+		if matchedAny {
+			regexOk = true
+			break
+		}
 	}
-	return true
+	return regexOk
 }
 
 // UpdateCertificateRequest updates a certificate request based on the zone configurataion retrieved from the remote endpoint
 func (z *ZoneConfiguration) UpdateCertificateRequest(request *certificate.Request) {
-	if (request.Subject.Organization == nil || len(request.Subject.Organization) == 0) && z.Organization != "" {
+	if len(request.Subject.Organization) == 0 && z.Organization != "" {
 		request.Subject.Organization = []string{z.Organization}
-	} else {
-		if z.OrganizationLocked && !strings.EqualFold(request.Subject.Organization[0], z.Organization) {
-			request.Subject.Organization = []string{z.Organization}
-		}
+	} else if len(request.Subject.Organization) > 0 && !strings.EqualFold(request.Subject.Organization[0], z.Organization) {
+		request.Subject.Organization = []string{z.Organization}
+
 	}
-	if (request.Subject.OrganizationalUnit == nil || len(request.Subject.OrganizationalUnit) == 0) && z.OrganizationalUnit != nil {
+	if len(request.Subject.OrganizationalUnit) == 0 && z.OrganizationalUnit != nil {
 		request.Subject.OrganizationalUnit = z.OrganizationalUnit
 	}
 
-	if (request.Subject.Country == nil || len(request.Subject.Country) == 0) && z.Country != "" {
+	if len(request.Subject.Country) == 0 && z.Country != "" {
 		request.Subject.Country = []string{z.Country}
-	} else {
-		if z.CountryLocked && !strings.EqualFold(request.Subject.Country[0], z.Country) {
-			request.Subject.Country = []string{z.Country}
-		}
+	} else if len(request.Subject.Country) > 0 && !strings.EqualFold(request.Subject.Country[0], z.Country) {
+		request.Subject.Country = []string{z.Country}
+
 	}
-	if (request.Subject.Province == nil || len(request.Subject.Province) == 0) && z.Province != "" {
+	if len(request.Subject.Province) == 0 && z.Province != "" {
 		request.Subject.Province = []string{z.Province}
-	} else {
-		if z.ProvinceLocked && !strings.EqualFold(request.Subject.Province[0], z.Province) {
-			request.Subject.Province = []string{z.Province}
-		}
+	} else if len(request.Subject.Province) > 0 && !strings.EqualFold(request.Subject.Province[0], z.Province) {
+		request.Subject.Province = []string{z.Province}
 	}
-	if (request.Subject.Locality == nil || len(request.Subject.Locality) == 0) && z.Locality != "" {
+	if len(request.Subject.Locality) == 0 && z.Locality != "" {
 		request.Subject.Locality = []string{z.Locality}
-	} else {
-		if z.LocalityLocked && !strings.EqualFold(request.Subject.Locality[0], z.Locality) {
-			request.Subject.Locality = []string{z.Locality}
-		}
+	} else if len(request.Subject.Locality) > 0 && !strings.EqualFold(request.Subject.Locality[0], z.Locality) {
+		request.Subject.Locality = []string{z.Locality}
+
 	}
-	if z.HashAlgorithm != 0 {
+	if z.HashAlgorithm != x509.UnknownSignatureAlgorithm {
 		request.SignatureAlgorithm = z.HashAlgorithm
 	} else {
 		request.SignatureAlgorithm = x509.SHA256WithRSA
 	}
 
-	if z.KeySizeLocked {
-		for _, keyConf := range z.AllowedKeyConfigurations {
-			if keyConf.KeyType == request.KeyType {
-				sort.Sort(sort.Reverse(sort.IntSlice(keyConf.KeySizes)))
-				request.KeyLength = keyConf.KeySizes[0]
-			}
-		}
-	} else if z.AllowedKeyConfigurations != nil {
+	if len(z.AllowedKeyConfigurations) != 0 {
 		foundMatch := false
 		for _, keyConf := range z.AllowedKeyConfigurations {
 			if keyConf.KeyType == request.KeyType {
 				foundMatch = true
 				switch request.KeyType {
 				case certificate.KeyTypeECDSA:
-					if z.AllowedKeyConfigurations[0].KeyCurves != nil {
-						request.KeyCurve = z.AllowedKeyConfigurations[0].KeyCurves[0]
+					if len(keyConf.KeyCurves) != 0 {
+						request.KeyCurve = keyConf.KeyCurves[0]
 					} else {
-						request.KeyCurve = certificate.EllipticCurveP256
+						request.KeyCurve = certificate.EllipticCurveDefault
 					}
 				case certificate.KeyTypeRSA:
-					if keyConf.KeySizes != nil {
+					if len(keyConf.KeySizes) != 0 {
 						sizeOK := false
 						for _, size := range keyConf.KeySizes {
 							if size == request.KeyLength {
@@ -293,18 +291,19 @@ func (z *ZoneConfiguration) UpdateCertificateRequest(request *certificate.Reques
 			}
 		}
 		if !foundMatch {
-			request.KeyType = z.AllowedKeyConfigurations[0].KeyType
+			configuration := z.AllowedKeyConfigurations[0]
+			request.KeyType = configuration.KeyType
 			switch request.KeyType {
 			case certificate.KeyTypeECDSA:
-				if z.AllowedKeyConfigurations[0].KeyCurves != nil {
-					request.KeyCurve = z.AllowedKeyConfigurations[0].KeyCurves[0]
+				if len(configuration.KeyCurves) != 0 {
+					request.KeyCurve = configuration.KeyCurves[0]
 				} else {
-					request.KeyCurve = certificate.EllipticCurveP256
+					request.KeyCurve = certificate.EllipticCurveDefault
 				}
 			case certificate.KeyTypeRSA:
-				if z.AllowedKeyConfigurations[0].KeySizes != nil {
-					sort.Sort(sort.Reverse(sort.IntSlice(z.AllowedKeyConfigurations[0].KeySizes)))
-					request.KeyLength = z.AllowedKeyConfigurations[0].KeySizes[0]
+				if len(configuration.KeySizes) != 0 {
+					sort.Sort(sort.Reverse(sort.IntSlice(configuration.KeySizes)))
+					request.KeyLength = configuration.KeySizes[0]
 				} else {
 					request.KeyLength = 2048
 				}

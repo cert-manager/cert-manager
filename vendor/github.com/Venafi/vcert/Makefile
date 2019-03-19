@@ -45,3 +45,19 @@ cloud_test: get
 		-cloud-api-key "${VCERT_CLOUD_APIKEY}" \
 		-cloud-zone    "${VCERT_CLOUD_ZONE}"
 
+ifdef BUILD_NUMBER
+VERSION=`git describe --abbrev=0 --tags`+$(BUILD_NUMBER)
+else
+VERSION=`git describe --abbrev=0 --tags`
+endif
+
+collect_artifacts:
+	rm -rf artifcats
+	mkdir -p artifcats
+	VERSION=`git describe --abbrev=0 --tags`
+	mv bin/linux/vcert artifcats/vcert-$(VERSION)_linux
+	mv bin/linux/vcert86 artifcats/vcert-$(VERSION)_linux86
+	mv bin/darwin/vcert artifcats/vcert-$(VERSION)_darwin
+	mv bin/windows/vcert.exe artifcats/vcert-$(VERSION)_windows.exe
+	mv bin/windows/vcert86.exe artifcats/vcert-$(VERSION)_windows86.exe
+	cd artifcats; sha1sum * > hashsums.sha1

@@ -17,7 +17,6 @@
 package fake
 
 import (
-	"encoding/pem"
 	"fmt"
 	"github.com/Venafi/vcert/pkg/certificate"
 	"github.com/Venafi/vcert/pkg/endpoint"
@@ -32,25 +31,14 @@ func (c *Connector) GenerateRequest(config *endpoint.ZoneConfiguration, req *cer
 
 	switch req.CsrOrigin {
 	case certificate.LocalGeneratedCSR:
-		switch req.KeyType {
-		case certificate.KeyTypeECDSA:
-			req.PrivateKey, err = certificate.GenerateECDSAPrivateKey(req.KeyCurve)
-		case certificate.KeyTypeRSA:
-			if req.KeyLength == 0 {
-				req.KeyLength = 2048
-			}
-			req.PrivateKey, err = certificate.GenerateRSAPrivateKey(req.KeyLength)
-		default:
-			return fmt.Errorf("Unable to generate certificate request, key type %s is not supported", req.KeyType.String())
-		}
+		err = req.GeneratePrivateKey()
 		if err != nil {
 			return err
 		}
-		err = certificate.GenerateRequest(req, req.PrivateKey)
+		err = req.GenerateCSR()
 		if err != nil {
 			return err
 		}
-		req.CSR = pem.EncodeToMemory(certificate.GetCertificateRequestPEMBlock(req.CSR))
 
 	case certificate.UserProvidedCSR:
 		if req.CSR == nil {

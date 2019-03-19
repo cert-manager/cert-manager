@@ -58,6 +58,10 @@ required = [
   name = "github.com/hashicorp/vault"
   version = "v0.9.3"
 
+[[constraint]]
+  branch = "passthrough-private-key"
+  name = "github.com/Venafi/vcert"
+
 # Use the GitHub mirror of goautoneg to save issues with bitbucket being down
 [[override]]
   name = "bitbucket.org/ww/goautoneg"

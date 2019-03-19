@@ -88,8 +88,8 @@
   version = "v1.3.0"
 
 [[projects]]
-  branch = "master"
-  digest = "1:00e4da50917ef06d0e5f182821963dc960675e1ab41416360168ef7539474189"
+  branch = "passthrough-private-key"
+  digest = "1:e2d2dd4e8080806cc5a0f185abad8acb837ed81abce2d754d1ec750f6bc6e4ee"
   name = "github.com/Venafi/vcert"
   packages = [
     ".",
@@ -100,7 +100,7 @@
     "pkg/venafi/tpp",
   ]
   pruneopts = "UT"
-  revision = "5068538d4d655c48e1eda72d2b681e063a71575c"
+  revision = "8a406b18c93beb318f5738d33fb97c3d52dfa408"
 
 [[projects]]
   branch = "master"

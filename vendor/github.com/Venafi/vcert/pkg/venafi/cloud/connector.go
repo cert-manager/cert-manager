@@ -17,14 +17,11 @@
 package cloud
 
 import (
-	"bytes"
 	"crypto/x509"
 	"encoding/json"
 	"fmt"
 	"github.com/Venafi/vcert/pkg/certificate"
 	"github.com/Venafi/vcert/pkg/endpoint"
-	"io/ioutil"
-	"log"
 	"net/http"
 	"strings"
 	"time"
@@ -40,7 +37,7 @@ const (
 	urlResourceZones                              = "zones"
 	urlResourceZoneByTag                          = urlResourceZones + "/tag/%s"
 	urlResourceCertificatePolicies                = "certificatepolicies"
-	urlResourcePoliciesByID                       = urlResourceCertificatePolicies + "%s"
+	urlResourcePoliciesByID                       = urlResourceCertificatePolicies + "/%s"
 	urlResourcePoliciesForZoneByID                = urlResourceCertificatePolicies + "?zoneId=%s"
 	urlResourceCertificateRequests                = "certificaterequests"
 	urlResourceCertificateStatus                  = urlResourceCertificateRequests + "/%s"
@@ -103,77 +100,56 @@ func (c *Connector) Authenticate(auth *endpoint.Authentication) (err error) {
 	}
 	c.apiKey = auth.APIKey
 	url := c.getURL(urlResourceUserAccounts)
-	b := []byte{}
-	reader := bytes.NewReader(b)
-	request, err := http.NewRequest("GET", url, reader)
+	statusCode, status, body, err := c.request("GET", url, nil, true)
+	ud, err := parseUserDetailsResult(http.StatusOK, statusCode, status, body)
 	if err != nil {
-		return err
-	}
-	request.Header.Add("tppl-api-key", c.apiKey)
-	resp, err := http.DefaultClient.Do(request)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return err
-	}
-
-	ud, err := parseUserDetailsResult(http.StatusOK, resp.StatusCode, resp.Status, body)
-	if err != nil {
-		if c.verbose {
-			log.Printf("JSON sent for %s\n%s", url, b)
-		}
-
-		return err
+		return
 	}
 	c.user = ud
-	return nil
+	return
 }
 
 //Register registers a new user with Venafi Cloud
 func (c *Connector) Register(email string) (err error) {
-	b, err := json.Marshal(userAccount{Username: email, UserAccountType: "API"})
 
 	url := c.getURL(urlResourceUserAccounts)
-
-	reader := bytes.NewReader(b)
-	resp, err := http.Post(url, "application/json", reader)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return err
-	}
+	statusCode, status, body, err := c.request("POST", url, userAccount{Username: email, UserAccountType: "API"})
 
 	//the user has already been registered and there is nothing to parse
-	if resp.StatusCode == http.StatusAccepted {
+	if statusCode == http.StatusAccepted {
 		return nil
 	}
-	ud, err := parseUserDetailsResult(http.StatusCreated, resp.StatusCode, resp.Status, body)
+	ud, err := parseUserDetailsResult(http.StatusCreated, statusCode, status, body)
 	if err != nil {
-		if c.verbose {
-			log.Printf("JSON sent for %s\n%s", url, b)
-		}
-
 		return err
 	}
 	c.user = ud
 	return nil
 }
 
+func (c *Connector) ReadPolicyConfiguration(zone string) (policy *endpoint.Policy, err error) {
+	config, err := c.ReadZoneConfiguration(zone)
+	if err != nil {
+		return nil, err
+	}
+	policy = &config.Policy
+	return
+}
+
 //ReadZoneConfiguration reads the Zone information needed for generating and requesting a certificate from Venafi Cloud
 func (c *Connector) ReadZoneConfiguration(zone string) (config *endpoint.ZoneConfiguration, err error) {
+	if zone == "" {
+		return nil, fmt.Errorf("empty zone name")
+	}
 	z, err := c.getZoneByTag(zone)
 	if err != nil {
 		return nil, err
 	}
 	p, err := c.getPoliciesByID([]string{z.DefaultCertificateIdentityPolicy, z.DefaultCertificateUsePolicy})
-	config = z.GetZoneConfiguration(c.user, p)
+	if err != nil {
+		return
+	}
+	config = z.getZoneConfiguration(c.user, p)
 	return config, nil
 }
 
@@ -196,30 +172,14 @@ func (c *Connector) RequestCertificate(req *certificate.Request, zone string) (r
 	if err != nil {
 		return "", err
 	}
-	b, _ := json.Marshal(certificateRequest{ZoneID: z.ID, CSR: string(req.CSR)})
-	reader := bytes.NewReader(b)
-	request, err := http.NewRequest("POST", url, reader)
-	if err != nil {
-		return "", err
-	}
-	request.Header.Add("tppl-api-key", c.apiKey)
-	request.Header.Add("content-type", "application/json")
-	resp, err := http.DefaultClient.Do(request)
-	if err != nil {
-		return "", err
-	}
-	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return "", err
-	}
 
-	cr, err := parseCertificateRequestResult(resp.StatusCode, resp.Status, body)
-	if err != nil {
-		if c.verbose {
-			log.Printf("JSON sent for %s\n%s", url, b)
-		}
+	statusCode, status, body, err := c.request("POST", url, certificateRequest{ZoneID: z.ID, CSR: string(req.CSR)})
 
+	if err != nil {
+		return "", err
+	}
+	cr, err := parseCertificateRequestResult(statusCode, status, body)
+	if err != nil {
 		return "", err
 	}
 	requestID = cr.CertificateRequests[0].ID
@@ -227,51 +187,30 @@ func (c *Connector) RequestCertificate(req *certificate.Request, zone string) (r
 	return requestID, nil
 }
 
-func (c *Connector) getCertificateStatus(requestID string) (*certificateStatus, error) {
-	var err error
+func (c *Connector) getCertificateStatus(requestID string) (certStatus *certificateStatus, err error) {
 	url := c.getURL(urlResourceCertificateStatus)
-	if c.user == nil || c.user.Company == nil {
-		err = fmt.Errorf("Must be autheticated to retieve certificate")
-		return nil, err
-	}
 	url = fmt.Sprintf(url, requestID)
+	statusCode, _, body, err := c.request("GET", url, nil)
 
-	b := []byte{}
-	reader := bytes.NewReader(b)
-	request, err := http.NewRequest("GET", url, reader)
-	if err != nil {
-		return nil, err
-	}
-	request.Header.Add("tppl-api-key", c.apiKey)
-	request.Header.Add("Accept", "application/json")
-	resp, err := http.DefaultClient.Do(request)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
-
-	switch resp.StatusCode {
-	case http.StatusOK:
-		var data = &certificateStatus{}
-		err = json.Unmarshal(body, data)
+	if statusCode == http.StatusOK {
+		certStatus = &certificateStatus{}
+		err = json.Unmarshal(body, certStatus)
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse certificate request status response: %s", err)
 		}
-		return data, nil
-	default:
-		if body != nil {
-			respErrors, err := parseResponseErrors(body)
-			if err == nil {
-				respError := fmt.Sprintf("Unexpected status code on Venafi Cloud certificate search. Status: %d\n", resp.StatusCode)
-				for _, e := range respErrors {
-					respError += fmt.Sprintf("Error Code: %d Error: %s\n", e.Code, e.Message)
-				}
-				return nil, fmt.Errorf(respError)
-			}
-		}
-		return nil, fmt.Errorf("Unexpected status code on Venafi Cloud certificate search. Status: %d", resp.StatusCode)
+		return
 	}
+	respErrors, err := parseResponseErrors(body)
+	if err == nil {
+		respError := fmt.Sprintf("Unexpected status code on Venafi Cloud certificate search. Status: %d\n", statusCode)
+		for _, e := range respErrors {
+			respError += fmt.Sprintf("Error Code: %d Error: %s\n", e.Code, e.Message)
+		}
+		return nil, fmt.Errorf(respError)
+	}
+
+	return nil, fmt.Errorf("Unexpected status code on Venafi Cloud certificate search. Status: %d", statusCode)
+
 }
 
 //RetrieveCertificate retrieves the certificate for the specified ID
@@ -342,32 +281,21 @@ func (c *Connector) RetrieveCertificate(req *certificate.Request) (certificates 
 	default:
 		url = fmt.Sprintf(url, condorChainOptionRootLast)
 	}
-	b := []byte{}
-	reader := bytes.NewReader(b)
-	request, err := http.NewRequest("GET", url, reader)
+	statusCode, status, body, err := c.request("GET", url, nil)
 	if err != nil {
 		return nil, err
 	}
-	request.Header.Add("tppl-api-key", c.apiKey)
-	request.Header.Add("Accept", "text/plain")
-	resp, err := http.DefaultClient.Do(request)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-	if resp.StatusCode == http.StatusOK {
-		return newPEMCollectionFromResponse(body, req.ChainOption)
-	} else if resp.StatusCode == http.StatusConflict { // Http Status Code 409 means the certificate has not been signed by the ca yet.
+	if statusCode == http.StatusOK {
+		certificates, err = newPEMCollectionFromResponse(body, req.ChainOption)
+		if err != nil {
+			return
+		}
+		err = req.CheckCertificate(certificates.Certificate)
+		return
+	} else if statusCode == http.StatusConflict { // Http Status Code 409 means the certificate has not been signed by the ca yet.
 		return nil, endpoint.ErrCertificatePending{CertificateID: req.PickupID}
 	} else {
-		if c.verbose {
-			log.Printf("JSON sent for %s\n%s", url, b)
-		}
-		return nil, fmt.Errorf("Failed to retrieve certificate. StatusCode: %d -- Status: %s -- Server Data: %s", resp.StatusCode, resp.Status, body)
+		return nil, fmt.Errorf("Failed to retrieve certificate. StatusCode: %d -- Status: %s -- Server Data: %s", statusCode, status, body) //todo:remove body from err
 	}
 }
 
@@ -423,7 +351,7 @@ func (c *Connector) RenewCertificate(renewReq *certificate.RenewalRequest) (requ
 		return "", fmt.Errorf("failed to submit renewal request for certificate: ManagedCertificateId is empty, certificate status is %s", previousRequest.Status)
 	}
 
-	if managedCertificateId == "" {
+	if zoneId == "" {
 		return "", fmt.Errorf("failed to submit renewal request for certificate: ZoneId is empty, certificate status is %s", previousRequest.Status)
 	}
 
@@ -451,40 +379,20 @@ func (c *Connector) RenewCertificate(renewReq *certificate.RenewalRequest) (requ
 		return "", fmt.Errorf("Must be autheticated to request a certificate")
 	}
 
-	req := certificateRequest{
-		ZoneID: zoneId,
-		ExistingManagedCertificateId: managedCertificateId,
-	}
-	if renewReq.CertificateRequest != nil && 0 < len(renewReq.CertificateRequest.CSR) {
+	req := certificateRequest{ZoneID: zoneId, ExistingManagedCertificateId: managedCertificateId}
+	if renewReq.CertificateRequest != nil && len(renewReq.CertificateRequest.CSR) != 0 {
 		req.CSR = string(renewReq.CertificateRequest.CSR)
 		req.ReuseCSR = false
 	} else {
 		req.ReuseCSR = true
 	}
-	b, _ := json.Marshal(req)
-	reader := bytes.NewReader(b)
-	request, err := http.NewRequest("POST", url, reader)
+	statusCode, status, body, err := c.request("POST", url, req)
 	if err != nil {
-		return "", err
-	}
-	request.Header.Add("tppl-api-key", c.apiKey)
-	request.Header.Add("content-type", "application/json")
-	resp, err := http.DefaultClient.Do(request)
-	if err != nil {
-		return "", err
-	}
-	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return "", err
+		return
 	}
 
-	cr, err := parseCertificateRequestResult(resp.StatusCode, resp.Status, body)
+	cr, err := parseCertificateRequestResult(statusCode, status, body)
 	if err != nil {
-		if c.verbose {
-			log.Printf("JSON sent for %s\n%s", url, b)
-		}
-
 		return "", fmt.Errorf("Failed to renew certificate: %s", err)
 	}
 	return cr.CertificateRequests[0].ID, nil
@@ -496,28 +404,12 @@ func (c *Connector) getZoneByTag(tag string) (*zone, error) {
 		return nil, fmt.Errorf("Must be autheticated to read the zone configuration")
 	}
 	url = fmt.Sprintf(url, tag)
-	b := []byte{}
-	reader := bytes.NewReader(b)
-	request, err := http.NewRequest("GET", url, reader)
+	statusCode, status, body, err := c.request("GET", url, nil)
 	if err != nil {
 		return nil, err
 	}
-	request.Header.Add("tppl-api-key", c.apiKey)
-	resp, err := http.DefaultClient.Do(request)
+	z, err := parseZoneConfigurationResult(statusCode, status, body)
 	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-	z, err := parseZoneConfigurationResult(resp.StatusCode, resp.Status, body)
-	if err != nil {
-		if c.verbose {
-			log.Printf("JSON sent for %s\n%s", url, b)
-		}
-
 		return nil, err
 	}
 	return z, nil
@@ -525,34 +417,15 @@ func (c *Connector) getZoneByTag(tag string) (*zone, error) {
 
 func (c *Connector) getPoliciesByID(ids []string) (*certificatePolicy, error) {
 	policy := new(certificatePolicy)
-	url := c.getURL(urlResourcePoliciesByID)
 	if c.user == nil {
 		return nil, fmt.Errorf("Must be autheticated to read the zone configuration")
 	}
 	for _, id := range ids {
+		url := c.getURL(urlResourcePoliciesByID)
 		url = fmt.Sprintf(url, id)
-		b := []byte{}
-		reader := bytes.NewReader(b)
-		request, err := http.NewRequest("GET", url, reader)
+		statusCode, status, body, err := c.request("GET", url, nil)
+		p, err := parseCertificatePolicyResult(statusCode, status, body)
 		if err != nil {
-			return nil, err
-		}
-		request.Header.Add("tppl-api-key", c.apiKey)
-		resp, err := http.DefaultClient.Do(request)
-		if err != nil {
-			return nil, err
-		}
-		defer resp.Body.Close()
-		body, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			return nil, err
-		}
-		p, err := parseCertificatePolicyResult(resp.StatusCode, resp.Status, body)
-		if err != nil {
-			if c.verbose {
-				log.Printf("JSON sent for %s\n%s", url, b)
-			}
-
 			return nil, err
 		}
 		switch p.CertificatePolicyType {
@@ -564,11 +437,9 @@ func (c *Connector) getPoliciesByID(ids []string) (*certificatePolicy, error) {
 			policy.SubjectLRegexes = p.SubjectLRegexes
 			policy.SubjectCRegexes = p.SubjectCRegexes
 			policy.SANRegexes = p.SANRegexes
-			break
 		case certificatePolicyTypeUse:
 			policy.KeyTypes = p.KeyTypes
 			policy.KeyReuse = p.KeyReuse
-			break
 		}
 	}
 	return policy, nil
@@ -579,36 +450,9 @@ func (c *Connector) searchCertificates(req *SearchRequest) (*CertificateSearchRe
 	var err error
 
 	url := c.getURL(urlResourceCertificateSearch)
-	if c.user == nil || c.user.Company == nil {
-		err = fmt.Errorf("Must be autheticated")
-		return nil, err
-	}
+	statusCode, _, body, err := c.request("POST", url, req)
 
-	b, _ := json.Marshal(req)
-	reader := bytes.NewReader(b)
-	request, err := http.NewRequest("POST", url, reader)
-	if err != nil {
-		return nil, err
-	}
-	request.Header.Add("tppl-api-key", c.apiKey)
-	request.Header.Add("content-type", "application/json")
-	request.Header.Add("accept", "application/json")
-
-	resp, err := http.DefaultClient.Do(request)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-	if c.verbose {
-		fmt.Printf("REQ: %s\n", b)
-		fmt.Printf("RES: %s\n", body)
-	}
-
-	searchResult, err := ParseCertificateSearchResponse(resp.StatusCode, body)
+	searchResult, err := ParseCertificateSearchResponse(statusCode, body)
 	if err != nil {
 		return nil, err
 	}
@@ -655,33 +499,12 @@ func (c *Connector) getManagedCertificate(managedCertId string) (*managedCertifi
 	var err error
 	url := c.getURL(urlResourceManagedCertificateById)
 	url = fmt.Sprintf(url, managedCertId)
-	if c.user == nil || c.user.Company == nil {
-		err = fmt.Errorf("Must be autheticated")
-		return nil, err
-	}
-
-	request, err := http.NewRequest("GET", url, nil)
+	statusCode, _, body, err := c.request("GET", url, nil)
 	if err != nil {
 		return nil, err
 	}
-	request.Header.Add("tppl-api-key", c.apiKey)
-	request.Header.Add("accept", "application/json")
 
-	resp, err := http.DefaultClient.Do(request)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-	if c.verbose {
-		fmt.Printf("REQ: %s\n", url)
-		fmt.Printf("RES: %s\n", body)
-	}
-
-	switch resp.StatusCode {
+	switch statusCode {
 	case http.StatusOK:
 		var res = &managedCertificate{}
 		err = json.Unmarshal(body, res)
@@ -693,14 +516,14 @@ func (c *Connector) getManagedCertificate(managedCertId string) (*managedCertifi
 		if body != nil {
 			respErrors, err := parseResponseErrors(body)
 			if err == nil {
-				respError := fmt.Sprintf("Unexpected status code on Venafi Cloud certificate search. Status: %d\n", resp.StatusCode)
+				respError := fmt.Sprintf("Unexpected status code on Venafi Cloud certificate search. Status: %d\n", statusCode)
 				for _, e := range respErrors {
 					respError += fmt.Sprintf("Error Code: %d Error: %s\n", e.Code, e.Message)
 				}
 				return nil, fmt.Errorf(respError)
 			}
 		}
-		return nil, fmt.Errorf("Unexpected status code on Venafi Cloud certificate search. Status: %d", resp.StatusCode)
+		return nil, fmt.Errorf("Unexpected status code on Venafi Cloud certificate search. Status: %d", statusCode)
 	}
 
 }
