@@ -11,6 +11,7 @@ go_library(
         "//test/e2e/suite/issuers/ca:go_default_library",
         "//test/e2e/suite/issuers/selfsigned:go_default_library",
         "//test/e2e/suite/issuers/vault:go_default_library",
+        "//test/e2e/suite/issuers/venafi:go_default_library",
     ],
 )
 
@@ -29,6 +30,7 @@ filegroup(
         "//test/e2e/suite/issuers/ca:all-srcs",
         "//test/e2e/suite/issuers/selfsigned:all-srcs",
         "//test/e2e/suite/issuers/vault:all-srcs",
+        "//test/e2e/suite/issuers/venafi:all-srcs",
     ],
     tags = ["automanaged"],
     visibility = ["//visibility:public"],

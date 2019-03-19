@@ -1,0 +1,42 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "client.go",
+        "config.go",
+        "vcert.go",
+    ],
+    importmap = "github.com/jetstack/cert-manager/vendor/github.com/Venafi/vcert",
+    importpath = "github.com/Venafi/vcert",
+    tags = ["manual"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//vendor/github.com/Venafi/vcert/pkg/endpoint:go_default_library",
+        "//vendor/github.com/Venafi/vcert/pkg/venafi/cloud:go_default_library",
+        "//vendor/github.com/Venafi/vcert/pkg/venafi/fake:go_default_library",
+        "//vendor/github.com/Venafi/vcert/pkg/venafi/tpp:go_default_library",
+        "//vendor/gopkg.in/ini.v1:go_default_library",
+    ],
+)
+
+filegroup(
+    name = "package-srcs",
+    srcs = glob(["**"]),
+    tags = ["automanaged"],
+    visibility = ["//visibility:private"],
+)
+
+filegroup(
+    name = "all-srcs",
+    srcs = [
+        ":package-srcs",
+        "//vendor/github.com/Venafi/vcert/pkg/certificate:all-srcs",
+        "//vendor/github.com/Venafi/vcert/pkg/endpoint:all-srcs",
+        "//vendor/github.com/Venafi/vcert/pkg/venafi/cloud:all-srcs",
+        "//vendor/github.com/Venafi/vcert/pkg/venafi/fake:all-srcs",
+        "//vendor/github.com/Venafi/vcert/pkg/venafi/tpp:all-srcs",
+    ],
+    tags = ["automanaged"],
+    visibility = ["//visibility:public"],
+)

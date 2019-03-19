@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Jetstack cert-manager contributors.
+Copyright 2019 The Jetstack cert-manager contributors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -19,4 +19,5 @@ package suite
 import (
 	_ "github.com/jetstack/cert-manager/test/e2e/suite/conformance"
 	_ "github.com/jetstack/cert-manager/test/e2e/suite/issuers"
+	_ "github.com/jetstack/cert-manager/test/e2e/suite/serving"
 )

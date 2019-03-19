@@ -1,6 +1,6 @@
-=====================
+========================
 Generating Documentation
-=====================
+========================
 
 The documentation is generated from `reStructured Text`_ by `Sphinx`_
 (via `Read The Docs`_). If you're unfamiliar with `reStructured Text`_,
@@ -27,6 +27,10 @@ You can generate the documentation locally with the following command:
 
 This will create documentation in the ``_build`` directory which you can
 open with your browser.
+
+.. code-block: shell
+
+   open _build/html/index.html
 
 Note that you do not need to add these files to your git client, as
 *Read The Docs* will generate the HTML on the fly.

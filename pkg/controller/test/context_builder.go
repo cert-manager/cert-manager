@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Jetstack cert-manager contributors.
+Copyright 2019 The Jetstack cert-manager contributors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import (
 	"flag"
 	"fmt"
 	"reflect"
+	"testing"
 	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -33,9 +34,11 @@ import (
 	cmfake "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/fake"
 	informers "github.com/jetstack/cert-manager/pkg/client/informers/externalversions"
 	"github.com/jetstack/cert-manager/pkg/controller"
+	"github.com/jetstack/cert-manager/pkg/logs"
 )
 
 func init() {
+	logs.InitLogs(nil)
 	flag.Set("alsologtostderr", fmt.Sprintf("%t", true))
 	flag.Lookup("v").Value.Set("4")
 }
@@ -45,6 +48,8 @@ func init() {
 // These will be auto loaded into the constructed fake Clientsets.
 // Call ToContext() to construct a new context using the given values.
 type Builder struct {
+	T *testing.T
+
 	KubeObjects        []runtime.Object
 	CertManagerObjects []runtime.Object
 	ExpectedActions    []Action
@@ -55,6 +60,12 @@ type Builder struct {
 	requiredReactors map[string]bool
 
 	*controller.Context
+}
+
+func (b *Builder) logf(format string, args ...interface{}) {
+	if b.T != nil {
+		b.T.Logf(format, args...)
+	}
 }
 
 func (b *Builder) generateNameReactor(action coretesting.Action) (handled bool, ret runtime.Object, err error) {
@@ -85,6 +96,19 @@ func (b *Builder) Start() {
 	// this may need to be increased in future to acomodate tests that
 	// produce more than 5 events
 	b.Recorder = record.NewFakeRecorder(5)
+	// read all events out of the recorder and just log for now
+	// TODO: validate logged events
+	go func() {
+		r, ok := b.Recorder.(*record.FakeRecorder)
+		if !ok {
+			return
+		}
+
+		// exits when r.Events is closed in Finish
+		for e := range r.Events {
+			b.logf("Event logged: %v", e)
+		}
+	}()
 
 	b.FakeKubeClient().PrependReactor("create", "*", b.generateNameReactor)
 	b.FakeCMClient().PrependReactor("create", "*", b.generateNameReactor)
@@ -137,6 +161,7 @@ func (b *Builder) AllActionsExecuted() error {
 	firedActions = append(firedActions, b.FakeKubeClient().Actions()...)
 
 	var unexpectedActions []coretesting.Action
+	var errs []error
 	missingActions := make([]Action, len(b.ExpectedActions))
 	copy(missingActions, b.ExpectedActions)
 	for _, a := range firedActions {
@@ -145,18 +170,34 @@ func (b *Builder) AllActionsExecuted() error {
 			continue
 		}
 		found := false
+		var err error
 		for i, expA := range missingActions {
-			if expA.Matches(a) {
-				missingActions = append(missingActions[:i], missingActions[i+1:]...)
-				found = true
-				break
+			if expA.Action().GetNamespace() != a.GetNamespace() ||
+				expA.Action().GetResource() != a.GetResource() ||
+				expA.Action().GetSubresource() != a.GetSubresource() ||
+				expA.Action().GetVerb() != a.GetVerb() {
+				continue
 			}
+
+			err = expA.Matches(a)
+			// if this action doesn't match, we record the error and continue
+			// as there may be multiple action matchers for the same resource
+			if err != nil {
+				continue
+			}
+
+			missingActions = append(missingActions[:i], missingActions[i+1:]...)
+			found = true
+			break
 		}
 		if !found {
 			unexpectedActions = append(unexpectedActions, a)
+
+			if err != nil {
+				errs = append(errs, err)
+			}
 		}
 	}
-	var errs []error
 	for _, a := range missingActions {
 		errs = append(errs, fmt.Errorf("missing action: %v", actionToString(a.Action())))
 	}
@@ -178,6 +219,10 @@ func (b *Builder) Stop() {
 	}
 
 	close(b.stopCh)
+
+	if r, ok := b.Recorder.(*record.FakeRecorder); ok {
+		close(r.Events)
+	}
 }
 
 // WaitForResync will wait for the informer factory informer duration by

@@ -1,4 +1,4 @@
-# Copyright 2018 The Jetstack cert-manager contributors.
+# Copyright 2019 The Jetstack cert-manager contributors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ HACK_DIR ?= hack
 GINKGO_SKIP :=
 
 ## e2e test vars
+KUBECTL ?= kubectl
 KUBECONFIG ?= $$HOME/.kube/config
 
 # Get a list of all binaries to be built
@@ -33,26 +34,27 @@ help:
 	#
 	### Verify targets
 	#
-	# verify_lint       - run 'lint' targets
-	# verify_unit       - run unit tests
-	# verify_deps       - verifiy vendor/ and Gopkg.lock is up to date
-	# verify_codegen    - verify generated code, including 'static deploy manifests', is up to date
-	# verify_docs       - verify the generated reference docs for API types is up to date
-	# verify_chart      - runs Helm chart linter (e.g. ensuring version has been bumped etc)
+	# verify_lint        - run 'lint' targets
+	# verify_unit        - run unit tests
+	# verify_deps        - verifiy vendor/ and Gopkg.lock is up to date
+	# verify_codegen     - verify generated code, including 'static deploy manifests', is up to date
+	# verify_docs        - verify the generated reference docs for API types is up to date
+	# verify_chart       - runs Helm chart linter (e.g. ensuring version has been bumped etc)
 	#
 	### Generate targets
 	#
-	# generate          - regenerate all generated files
+	# generate           - regenerate all generated files
 	#
 	### Build targets
 	#
-	# controller        - build a binary of the 'controller'
-	# webhook           - build a binary of the 'webhook'
-	# acmesolver        - build a binary of the 'acmesolver'
-	# e2e_test          - builds and runs end-to-end tests.
-	#                     NOTE: you probably want to execute ./hack/ci/run-e2e-kind.sh instead of this target
-	# images            - builds docker images for all of the components, saving them in your Docker daemon
-	# images_push       - pushes docker images to the target registry
+	# controller         - build a binary of the 'controller'
+	# injectorcontroller - build a binary of the 'injectorcontroller'
+	# webhook            - build a binary of the 'webhook'
+	# acmesolver         - build a binary of the 'acmesolver'
+	# e2e_test           - builds and runs end-to-end tests.
+	#                      NOTE: you probably want to execute ./hack/ci/run-e2e-kind.sh instead of this target
+	# images             - builds docker images for all of the components, saving them in your Docker daemon
+	# images_push        - pushes docker images to the target registry
 	#
 	# Image targets can be run with optional args DOCKER_REPO and DOCKER_TAG:
 	#
@@ -113,10 +115,10 @@ e2e_test:
 			$$(bazel info bazel-genfiles)/test/e2e/e2e.test \
 			-- \
 			--helm-binary-path=$$(bazel info bazel-genfiles)/hack/bin/helm \
-			--tiller-image-tag=$$($$(bazel info bazel-genfiles)/hack/bin/helm version --client --template '{{.Client.SemVer}}') \
 			--repo-root="$$(pwd)" \
 			--report-dir="$${ARTIFACTS:-./_artifacts}" \
-			--ginkgo.skip="$(GINKGO_SKIP)"
+			--ginkgo.skip="$(GINKGO_SKIP)" \
+			--kubectl-path="$(KUBECTL)"
 
 # Generate targets
 ##################
@@ -143,6 +145,19 @@ images_push: images
 	# https://github.com/moby/buildkit/issues/409#issuecomment-394757219
 	# source the bazel workspace environment
 	eval $$($(BAZEL_IMAGE_ENV) ./hack/print-workspace-status.sh | tr ' ' '='); \
+	docker tag "$${STABLE_DOCKER_REPO}/cert-manager-acmesolver-amd64:$${STABLE_DOCKER_TAG}" "$${STABLE_DOCKER_REPO}/cert-manager-acmesolver:$${STABLE_DOCKER_TAG}"; \
+	docker tag "$${STABLE_DOCKER_REPO}/cert-manager-controller-amd64:$${STABLE_DOCKER_TAG}" "$${STABLE_DOCKER_REPO}/cert-manager-controller:$${STABLE_DOCKER_TAG}"; \
+	docker tag "$${STABLE_DOCKER_REPO}/cert-manager-injectorcontroller-amd64:$${STABLE_DOCKER_TAG}" "$${STABLE_DOCKER_REPO}/cert-manager-injectorcontroller:$${STABLE_DOCKER_TAG}"; \
+	docker tag "$${STABLE_DOCKER_REPO}/cert-manager-webhook-amd64:$${STABLE_DOCKER_TAG}" "$${STABLE_DOCKER_REPO}/cert-manager-webhook:$${STABLE_DOCKER_TAG}"; \
 	docker push "$${STABLE_DOCKER_REPO}/cert-manager-acmesolver:$${STABLE_DOCKER_TAG}"; \
 	docker push "$${STABLE_DOCKER_REPO}/cert-manager-controller:$${STABLE_DOCKER_TAG}"; \
-	docker push "$${STABLE_DOCKER_REPO}/cert-manager-webhook:$${STABLE_DOCKER_TAG}"
+	docker push "$${STABLE_DOCKER_REPO}/cert-manager-injectorcontroller:$${STABLE_DOCKER_TAG}"; \
+	docker push "$${STABLE_DOCKER_REPO}/cert-manager-webhook:$${STABLE_DOCKER_TAG}"; \
+	docker push "$${STABLE_DOCKER_REPO}/cert-manager-acmesolver-arm64:$${STABLE_DOCKER_TAG}"; \
+	docker push "$${STABLE_DOCKER_REPO}/cert-manager-controller-arm64:$${STABLE_DOCKER_TAG}"; \
+	docker push "$${STABLE_DOCKER_REPO}/cert-manager-injectorcontroller-arm64:$${STABLE_DOCKER_TAG}"; \
+	docker push "$${STABLE_DOCKER_REPO}/cert-manager-webhook-arm64:$${STABLE_DOCKER_TAG}";
+	docker push "$${STABLE_DOCKER_REPO}/cert-manager-acmesolver-arm:$${STABLE_DOCKER_TAG}"; \
+	docker push "$${STABLE_DOCKER_REPO}/cert-manager-controller-arm:$${STABLE_DOCKER_TAG}"; \
+	docker push "$${STABLE_DOCKER_REPO}/cert-manager-injectorcontroller-arm:$${STABLE_DOCKER_TAG}"; \
+	docker push "$${STABLE_DOCKER_REPO}/cert-manager-webhook-arm:$${STABLE_DOCKER_TAG}";

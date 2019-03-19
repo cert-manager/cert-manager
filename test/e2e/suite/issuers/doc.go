@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Jetstack cert-manager contributors.
+Copyright 2019 The Jetstack cert-manager contributors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -21,4 +21,5 @@ import (
 	_ "github.com/jetstack/cert-manager/test/e2e/suite/issuers/ca"
 	_ "github.com/jetstack/cert-manager/test/e2e/suite/issuers/selfsigned"
 	_ "github.com/jetstack/cert-manager/test/e2e/suite/issuers/vault"
+	_ "github.com/jetstack/cert-manager/test/e2e/suite/issuers/venafi"
 )

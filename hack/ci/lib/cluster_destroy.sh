@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright 2018 The Jetstack cert-manager contributors.
+# Copyright 2019 The Jetstack cert-manager contributors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -20,9 +20,5 @@ set -o pipefail
 
 SCRIPT_ROOT=$(dirname "${BASH_SOURCE}")
 source "${SCRIPT_ROOT}/lib.sh"
-
-# build 'kind'
-bazel build //hack/bin:kind
-KIND="$(bazel info bazel-genfiles)/hack/bin/kind"
 
 "${KIND}" delete cluster --name="${KIND_CLUSTER_NAME}"

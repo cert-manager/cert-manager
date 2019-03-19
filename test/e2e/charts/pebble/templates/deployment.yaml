@@ -1,0 +1,44 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: {{ template "fullname" . }}
+  labels:
+    app: {{ template "name" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  template:
+    metadata:
+      labels:
+        app: {{ template "name" . }}
+        release: {{ .Release.Name }}
+    spec:
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          args:
+          - -config=/config/config.json
+          volumeMounts:
+          - name: config
+            mountPath: /config
+            readOnly: true
+          readinessProbe:
+            tcpSocket:
+              port: 14000
+            initialDelaySeconds: 1
+            periodSeconds: 1
+            failureThreshold: 10
+            successThreshold: 1
+          resources:
+{{ toYaml .Values.resources | indent 12 }}
+      volumes:
+      - name: config
+        configMap:
+          name: {{ template "fullname" . }}
+      {{- if .Values.nodeSelector }}
+      nodeSelector:
+{{ toYaml .Values.nodeSelector | indent 8 }}
+    {{- end }}

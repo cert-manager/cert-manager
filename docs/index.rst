@@ -9,7 +9,7 @@ Welcome to cert-manager's documentation!
 
 cert-manager is a native Kubernetes_ certificate management controller.
 It can help with issuing certificates from a variety of sources, such as
-`Let's Encrypt`_, `HashiCorp Vault`_, a simple signing keypair, or self signed.
+`Let's Encrypt`_, `HashiCorp Vault`_, `Venafi`_, a simple signing keypair, or self signed.
 
 It will ensure certificates are valid and up to date, and attempt to renew
 certificates at a configured time before expiry.
@@ -24,13 +24,13 @@ This is the full technical documentation for the project, and should be used as
 a source of references when seeking help with the project.
 
 .. toctree::
-   :maxdepth: 5
+   :maxdepth: 2
    :titlesonly:
    :caption: Contents:
 
    getting-started/index
    tutorials/index
-   admin/index
+   tasks/index
    reference/index
    devel/index
 

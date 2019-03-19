@@ -70,7 +70,7 @@ func TestCloudFlarePresent(t *testing.T) {
 	provider, err := NewDNSProviderCredentials(cflareEmail, cflareAPIKey, util.RecursiveNameservers)
 	assert.NoError(t, err)
 
-	err = provider.Present(cflareDomain, "", "123d==")
+	err = provider.Present(cflareDomain, "_acme-challenge."+cflareDomain+".", "123d==")
 	assert.NoError(t, err)
 }
 
@@ -84,6 +84,6 @@ func TestCloudFlareCleanUp(t *testing.T) {
 	provider, err := NewDNSProviderCredentials(cflareEmail, cflareAPIKey, util.RecursiveNameservers)
 	assert.NoError(t, err)
 
-	err = provider.CleanUp(cflareDomain, "", "123d==")
+	err = provider.CleanUp(cflareDomain, "_acme-challenge."+cflareDomain+".", "123d==")
 	assert.NoError(t, err)
 }

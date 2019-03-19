@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Jetstack cert-manager contributors.
+Copyright 2019 The Jetstack cert-manager contributors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -26,7 +26,7 @@ import (
 // not for Orders.
 func IsFinalState(s v1alpha1.State) bool {
 	switch s {
-	case v1alpha1.Valid, v1alpha1.Invalid, v1alpha1.Expired:
+	case v1alpha1.Valid, v1alpha1.Invalid, v1alpha1.Expired, v1alpha1.Errored:
 		return true
 	}
 	return false
@@ -34,7 +34,7 @@ func IsFinalState(s v1alpha1.State) bool {
 
 func IsFailureState(s v1alpha1.State) bool {
 	switch s {
-	case v1alpha1.Invalid, v1alpha1.Expired:
+	case v1alpha1.Invalid, v1alpha1.Expired, v1alpha1.Errored:
 		return true
 	}
 	return false

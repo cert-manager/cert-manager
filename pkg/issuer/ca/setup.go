@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Jetstack cert-manager contributors.
+Copyright 2019 The Jetstack cert-manager contributors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -19,11 +19,11 @@ package ca
 import (
 	"context"
 
-	"github.com/golang/glog"
 	"k8s.io/api/core/v1"
 
+	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
-	"github.com/jetstack/cert-manager/pkg/issuer"
+	logf "github.com/jetstack/cert-manager/pkg/logs"
 	"github.com/jetstack/cert-manager/pkg/util/kube"
 )
 
@@ -39,37 +39,40 @@ const (
 	messageKeyPairVerified = "Signing CA verified"
 )
 
-func (c *CA) Setup(ctx context.Context) (issuer.SetupResponse, error) {
-	cert, err := kube.SecretTLSCert(c.secretsLister, c.resourceNamespace, c.issuer.GetSpec().CA.SecretName)
+func (c *CA) Setup(ctx context.Context) error {
+	log := logf.FromContext(ctx, "setup")
+
+	cert, err := kube.SecretTLSCert(ctx, c.secretsLister, c.resourceNamespace, c.issuer.GetSpec().CA.SecretName)
 	if err != nil {
+		log.Error(err, "error getting signing CA TLS certificate")
 		s := messageErrorGetKeyPair + err.Error()
-		glog.Info(s)
 		c.Recorder.Event(c.issuer, v1.EventTypeWarning, errorGetKeyPair, s)
-		c.issuer.UpdateStatusCondition(v1alpha1.IssuerConditionReady, v1alpha1.ConditionFalse, errorGetKeyPair, s)
-		return issuer.SetupResponse{}, err
+		apiutil.SetIssuerCondition(c.issuer, v1alpha1.IssuerConditionReady, v1alpha1.ConditionFalse, errorGetKeyPair, s)
+		return err
 	}
 
-	_, err = kube.SecretTLSKey(c.secretsLister, c.resourceNamespace, c.issuer.GetSpec().CA.SecretName)
+	_, err = kube.SecretTLSKey(ctx, c.secretsLister, c.resourceNamespace, c.issuer.GetSpec().CA.SecretName)
 	if err != nil {
+		log.Error(err, "error getting signing CA private key")
 		s := messageErrorGetKeyPair + err.Error()
-		glog.Info(s)
 		c.Recorder.Event(c.issuer, v1.EventTypeWarning, errorGetKeyPair, s)
-		c.issuer.UpdateStatusCondition(v1alpha1.IssuerConditionReady, v1alpha1.ConditionFalse, errorGetKeyPair, s)
-		return issuer.SetupResponse{}, err
+		apiutil.SetIssuerCondition(c.issuer, v1alpha1.IssuerConditionReady, v1alpha1.ConditionFalse, errorGetKeyPair, s)
+		return err
 	}
 
+	log = logf.WithRelatedResourceName(log, c.issuer.GetSpec().CA.SecretName, c.resourceNamespace, "Secret")
 	if !cert.IsCA {
 		s := messageErrorGetKeyPair + "certificate is not a CA"
-		glog.Info(s)
+		log.Error(nil, "signing certificate is not a CA")
 		c.Recorder.Event(c.issuer, v1.EventTypeWarning, errorInvalidKeyPair, s)
-		c.issuer.UpdateStatusCondition(v1alpha1.IssuerConditionReady, v1alpha1.ConditionFalse, errorInvalidKeyPair, s)
+		apiutil.SetIssuerCondition(c.issuer, v1alpha1.IssuerConditionReady, v1alpha1.ConditionFalse, errorInvalidKeyPair, s)
 		// Don't return an error here as there is nothing more we can do
-		return issuer.SetupResponse{}, nil
+		return nil
 	}
 
-	glog.Info(messageKeyPairVerified)
+	log.Info("signing CA verified")
 	c.Recorder.Event(c.issuer, v1.EventTypeNormal, successKeyPairVerified, messageKeyPairVerified)
-	c.issuer.UpdateStatusCondition(v1alpha1.IssuerConditionReady, v1alpha1.ConditionTrue, successKeyPairVerified, messageKeyPairVerified)
+	apiutil.SetIssuerCondition(c.issuer, v1alpha1.IssuerConditionReady, v1alpha1.ConditionTrue, successKeyPairVerified, messageKeyPairVerified)
 
-	return issuer.SetupResponse{}, nil
+	return nil
 }

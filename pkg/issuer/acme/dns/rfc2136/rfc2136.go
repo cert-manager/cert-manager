@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Jetstack cert-manager contributors.
+Copyright 2019 The Jetstack cert-manager contributors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -32,6 +32,7 @@ import (
 
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
 	"github.com/miekg/dns"
+	"k8s.io/klog"
 )
 
 var defaultPort = "53"
@@ -128,6 +129,7 @@ func NewDNSProvider(dns01Nameservers []string) (*DNSProvider, error) {
 // authentication, leave the TSIG parameters as empty strings.
 // nameserver must be a network address in the form "IP" or "IP:port".
 func NewDNSProviderCredentials(nameserver, tsigAlgorithm, tsigKeyName, tsigSecret string, dns01Nameservers []string) (*DNSProvider, error) {
+	klog.V(5).Infof("Creating RFC2136 Provider")
 
 	d := &DNSProvider{}
 
@@ -155,6 +157,20 @@ func NewDNSProviderCredentials(nameserver, tsigAlgorithm, tsigKeyName, tsigSecre
 	d.tsigAlgorithm = tsigAlgorithm
 
 	d.dns01Nameservers = dns01Nameservers
+
+	klog.V(5).Infof("DNSProvider nameserver:       %s\n", d.nameserver)
+	klog.V(5).Infof("            tsigAlgorithm:    %s\n", d.tsigAlgorithm)
+	klog.V(5).Infof("            tsigKeyName:      %s\n", d.tsigKeyName)
+	if klog.V(5) {
+		keyLen := len(d.tsigSecret)
+		mask := make([]rune, keyLen/2)
+		for i := range mask {
+			mask[i] = '*'
+		}
+		masked := d.tsigSecret[0:keyLen/4] + string(mask) + d.tsigSecret[keyLen/4*3:keyLen]
+		klog.Infof("            tsigSecret:       %s\n", masked)
+	}
+	klog.V(5).Infof("            dns01Nameservers: [%s]", strings.Join(d.dns01Nameservers, ", "))
 	return d, nil
 }
 
@@ -165,21 +181,13 @@ func (r *DNSProvider) Timeout() (timeout, interval time.Duration) {
 }
 
 // Present creates a TXT record using the specified parameters
-func (r *DNSProvider) Present(domain, token, keyAuth string) error {
-	fqdn, value, ttl, err := util.DNS01Record(domain, keyAuth, r.dns01Nameservers)
-	if err != nil {
-		return err
-	}
-	return r.changeRecord("INSERT", fqdn, value, ttl)
+func (r *DNSProvider) Present(domain, fqdn, value string) error {
+	return r.changeRecord("INSERT", fqdn, value, 60)
 }
 
 // CleanUp removes the TXT record matching the specified parameters
-func (r *DNSProvider) CleanUp(domain, token, keyAuth string) error {
-	fqdn, value, ttl, err := util.DNS01Record(domain, keyAuth, r.dns01Nameservers)
-	if err != nil {
-		return err
-	}
-	return r.changeRecord("REMOVE", fqdn, value, ttl)
+func (r *DNSProvider) CleanUp(domain, fqdn, value string) error {
+	return r.changeRecord("REMOVE", fqdn, value, 60)
 }
 
 func (r *DNSProvider) changeRecord(action, fqdn, value string, ttl int) error {
