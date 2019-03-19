@@ -112,6 +112,6 @@ func TestRoute53Present(t *testing.T) {
 	domain := "example.com"
 	keyAuth := "123456d=="
 
-	err := provider.Present(domain, "", keyAuth)
+	err := provider.Present(domain, "_acme-challenge."+domain+".", keyAuth)
 	assert.NoError(t, err, "Expected Present to return no error")
 }

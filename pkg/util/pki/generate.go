@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Jetstack cert-manager contributors.
+Copyright 2019 The Jetstack cert-manager contributors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -126,6 +126,17 @@ func EncodePKCS1PrivateKey(pk *rsa.PrivateKey) []byte {
 	block := &pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(pk)}
 
 	return pem.EncodeToMemory(block)
+}
+
+// EncodePKCS8PrivateKey will marshal a private key into x509 PEM format.
+func EncodePKCS8PrivateKey(pk interface{}) ([]byte, error) {
+	keyBytes, err := x509.MarshalPKCS8PrivateKey(pk)
+	if err != nil {
+		return nil, err
+	}
+	block := &pem.Block{Type: "PRIVATE KEY", Bytes: keyBytes}
+
+	return pem.EncodeToMemory(block), nil
 }
 
 // EncodeECPrivateKey will marshal an ECDSA private key into x509 PEM format.

@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Jetstack cert-manager contributors.
+Copyright 2019 The Jetstack cert-manager contributors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@ limitations under the License.
 package controller
 
 import (
+	"context"
 	"time"
 
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -33,6 +34,9 @@ import (
 // a reference to a SharedInformerFactory so that controllers can choose
 // themselves which listers are required.
 type Context struct {
+	// RootContext is the root context for the controller
+	RootContext context.Context
+
 	// Client is a Kubernetes clientset
 	Client kubernetes.Interface
 	// CMClient is a cert-manager clientset
@@ -47,13 +51,14 @@ type Context struct {
 	// instances
 	SharedInformerFactory informers.SharedInformerFactory
 
+	// Namespace is the namespace to operate within.
+	// If unset, operates on all namespaces
+	Namespace string
+
 	IssuerOptions
 	ACMEOptions
 	IngressShimOptions
-}
-
-func (c *Context) IssuerFactory() IssuerFactory {
-	return NewIssuerFactory(c)
+	CertificateOptions
 }
 
 type IssuerOptions struct {
@@ -93,6 +98,10 @@ type ACMEOptions struct {
 	// HTTP01SolverResourceLimitsMemory defines the ACME pod's resource limits Memory size
 	HTTP01SolverResourceLimitsMemory resource.Quantity
 
+	// DNS01CheckAuthoritative is a flag for controlling if auth nss are used
+	// for checking propogation of an RR. This is the ideal scenario
+	DNS01CheckAuthoritative bool
+
 	// DNS01Nameservers is a list of nameservers to use when performing self-checks
 	// for ACME DNS01 validations.
 	DNS01Nameservers []string
@@ -105,4 +114,10 @@ type IngressShimOptions struct {
 	DefaultACMEIssuerChallengeType     string
 	DefaultACMEIssuerDNS01ProviderName string
 	DefaultAutoCertificateAnnotations  []string
+}
+
+type CertificateOptions struct {
+	// EnableOwnerRef controls wheter wheter the certificate is configured as an owner of
+	// secret where the effective TLS certificate is stored.
+	EnableOwnerRef bool
 }

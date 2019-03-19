@@ -8,6 +8,7 @@ go_library(
     deps = [
         "//pkg/issuer/acme/dns/util:go_default_library",
         "//vendor/github.com/miekg/dns:go_default_library",
+        "//vendor/k8s.io/klog:go_default_library",
     ],
 )
 

@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Jetstack cert-manager contributors.
+Copyright 2019 The Jetstack cert-manager contributors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package controller
 
 import (
 	"reflect"
+	"time"
 
 	"k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/tools/cache"
@@ -27,6 +28,10 @@ import (
 var (
 	KeyFunc = cache.DeletionHandlingMetaNamespaceKeyFunc
 )
+
+func DefaultItemBasedRateLimiter() workqueue.RateLimiter {
+	return workqueue.NewItemExponentialFailureRateLimiter(time.Second*5, time.Minute*5)
+}
 
 // QueuingEventHandler is an implementation of cache.ResourceEventHandler that
 // simply queues objects that are added/updated/deleted.
@@ -40,7 +45,7 @@ func (q *QueuingEventHandler) Enqueue(obj interface{}) {
 		runtime.HandleError(err)
 		return
 	}
-	q.Queue.AddRateLimited(key)
+	q.Queue.Add(key)
 }
 
 func (q *QueuingEventHandler) OnAdd(obj interface{}) {

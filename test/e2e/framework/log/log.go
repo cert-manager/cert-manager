@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Jetstack cert-manager contributors.
+Copyright 2019 The Jetstack cert-manager contributors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -23,12 +23,14 @@ import (
 	"github.com/onsi/ginkgo"
 )
 
+var Writer = ginkgo.GinkgoWriter
+
 func nowStamp() string {
 	return time.Now().Format(time.StampMilli)
 }
 
 func log(level string, format string, args ...interface{}) {
-	fmt.Fprintf(ginkgo.GinkgoWriter, nowStamp()+": "+level+": "+format+"\n", args...)
+	fmt.Fprintf(Writer, nowStamp()+": "+level+": "+format+"\n", args...)
 }
 
 func Logf(format string, args ...interface{}) {

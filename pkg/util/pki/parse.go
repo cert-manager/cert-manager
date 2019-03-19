@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Jetstack cert-manager contributors.
+Copyright 2019 The Jetstack cert-manager contributors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -35,6 +35,17 @@ func DecodePrivateKeyBytes(keyBytes []byte) (crypto.Signer, error) {
 	}
 
 	switch block.Type {
+	case "PRIVATE KEY":
+		key, err := x509.ParsePKCS8PrivateKey(block.Bytes)
+		if err != nil {
+			return nil, errors.NewInvalidData("error parsing pkcs#8 private key: %s", err.Error())
+		}
+
+		signer, ok := key.(crypto.Signer)
+		if !ok {
+			return nil, errors.NewInvalidData("error parsing pkcs#8 private key: invalid key type")
+		}
+		return signer, nil
 	case "EC PRIVATE KEY":
 		key, err := x509.ParseECPrivateKey(block.Bytes)
 		if err != nil {
@@ -78,18 +89,40 @@ func DecodePKCS1PrivateKeyBytes(keyBytes []byte) (*rsa.PrivateKey, error) {
 	return key, nil
 }
 
-// DecodeX509CertificateBytes will decode a PEM encoded x509 Certificate.
-func DecodeX509CertificateBytes(certBytes []byte) (*x509.Certificate, error) {
-	// decode the tls certificate pem
-	block, _ := pem.Decode(certBytes)
-	if block == nil {
-		return nil, errors.NewInvalidData("error decoding cert PEM block")
-	}
-	// parse the tls certificate
-	cert, err := x509.ParseCertificate(block.Bytes)
-	if err != nil {
-		return nil, errors.NewInvalidData("error parsing TLS certificate: %s", err.Error())
+// DecodeX509CertificateChainBytes will decode a PEM encoded x509 Certificate chain.
+func DecodeX509CertificateChainBytes(certBytes []byte) ([]*x509.Certificate, error) {
+	certs := []*x509.Certificate{}
+
+	var block *pem.Block
+
+	for {
+		// decode the tls certificate pem
+		block, certBytes = pem.Decode(certBytes)
+		if block == nil {
+			break
+		}
+
+		// parse the tls certificate
+		cert, err := x509.ParseCertificate(block.Bytes)
+		if err != nil {
+			return nil, errors.NewInvalidData("error parsing TLS certificate: %s", err.Error())
+		}
+		certs = append(certs, cert)
 	}
 
-	return cert, nil
+	if len(certs) == 0 {
+		return nil, errors.NewInvalidData("error decoding cert PEM block")
+	}
+
+	return certs, nil
+}
+
+// DecodeX509CertificateBytes will decode a PEM encoded x509 Certificate.
+func DecodeX509CertificateBytes(certBytes []byte) (*x509.Certificate, error) {
+	certs, err := DecodeX509CertificateChainBytes(certBytes)
+	if err != nil {
+		return nil, err
+	}
+
+	return certs[0], nil
 }

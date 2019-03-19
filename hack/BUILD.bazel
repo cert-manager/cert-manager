@@ -34,6 +34,7 @@ sh_binary(
     name = "update-bazel",
     srcs = ["update-bazel.sh"],
     data = [
+        "//hack/bin:buildozer",
         "//hack/bin:gazelle",
         "//hack/bin:kazel",
     ],
@@ -107,8 +108,7 @@ sh_test(
     srcs = ["verify-deploy-gen.sh"],
     data = [
         ":update-deploy-gen",
-        "//contrib:all-srcs",
-        "//hack/deploy:all-srcs",
+        "//deploy:all-srcs",
     ],
 )
 
@@ -150,6 +150,30 @@ sh_test(
     ],
 )
 
+sh_binary(
+    name = "update-crds",
+    srcs = ["update-crds.sh"],
+    data = [
+        ":update-deploy-gen",
+        "//hack/bin:gencrd",
+        "//pkg/apis:all-srcs",
+        "//vendor/k8s.io/api/core/v1:go_default_library",
+        "//vendor/k8s.io/apimachinery/pkg/apis/meta/v1:all-srcs",
+        "//vendor/k8s.io/apimachinery/pkg/runtime:all-srcs",
+    ],
+)
+
+sh_test(
+    name = "verify-crds",
+    srcs = ["verify-crds.sh"],
+    data = [
+        ":update-crds",
+        "//deploy:all-srcs",
+        "//hack/bin:gencrd",
+        "//pkg/apis:all-srcs",
+    ],
+)
+
 filegroup(
     name = "package-srcs",
     srcs = glob(["**"]),
@@ -163,7 +187,6 @@ filegroup(
         ":package-srcs",
         "//hack/bin:all-srcs",
         "//hack/boilerplate:all-srcs",
-        "//hack/deploy:all-srcs",
     ],
     tags = ["automanaged"],
     visibility = ["//visibility:public"],

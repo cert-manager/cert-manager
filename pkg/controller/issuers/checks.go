@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Jetstack cert-manager contributors.
+Copyright 2019 The Jetstack cert-manager contributors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -39,7 +39,9 @@ func (c *Controller) issuersForSecret(secret *corev1.Secret) ([]*v1alpha1.Issuer
 		}
 		if (iss.Spec.ACME != nil && iss.Spec.ACME.PrivateKey.Name == secret.Name) ||
 			(iss.Spec.CA != nil && iss.Spec.CA.SecretName == secret.Name) ||
-			(iss.Spec.Vault != nil && iss.Spec.Vault.Auth.TokenSecretRef.Name == secret.Name) {
+			(iss.Spec.Vault != nil && iss.Spec.Vault.Auth.TokenSecretRef.Name == secret.Name) ||
+			(iss.Spec.Venafi != nil && iss.Spec.Venafi.TPP != nil && iss.Spec.Venafi.TPP.CredentialsRef.Name == secret.Name) ||
+			(iss.Spec.Venafi != nil && iss.Spec.Venafi.Cloud != nil && iss.Spec.Venafi.Cloud.APITokenSecretRef.Name == secret.Name) {
 			affected = append(affected, iss)
 			continue
 		}

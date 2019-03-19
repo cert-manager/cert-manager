@@ -1,0 +1,61 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "alias.go",
+        "doc.go",
+    ],
+    importmap = "github.com/jetstack/cert-manager/vendor/sigs.k8s.io/controller-runtime",
+    importpath = "sigs.k8s.io/controller-runtime",
+    tags = ["manual"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//vendor/k8s.io/apimachinery/pkg/apis/meta/v1:go_default_library",
+        "//vendor/k8s.io/apimachinery/pkg/runtime/schema:go_default_library",
+        "//vendor/sigs.k8s.io/controller-runtime/pkg/builder:go_default_library",
+        "//vendor/sigs.k8s.io/controller-runtime/pkg/client/config:go_default_library",
+        "//vendor/sigs.k8s.io/controller-runtime/pkg/controller/controllerutil:go_default_library",
+        "//vendor/sigs.k8s.io/controller-runtime/pkg/log:go_default_library",
+        "//vendor/sigs.k8s.io/controller-runtime/pkg/manager:go_default_library",
+        "//vendor/sigs.k8s.io/controller-runtime/pkg/manager/signals:go_default_library",
+        "//vendor/sigs.k8s.io/controller-runtime/pkg/reconcile:go_default_library",
+        "//vendor/sigs.k8s.io/controller-runtime/pkg/scheme:go_default_library",
+    ],
+)
+
+filegroup(
+    name = "package-srcs",
+    srcs = glob(["**"]),
+    tags = ["automanaged"],
+    visibility = ["//visibility:private"],
+)
+
+filegroup(
+    name = "all-srcs",
+    srcs = [
+        ":package-srcs",
+        "//vendor/sigs.k8s.io/controller-runtime/pkg/builder:all-srcs",
+        "//vendor/sigs.k8s.io/controller-runtime/pkg/cache:all-srcs",
+        "//vendor/sigs.k8s.io/controller-runtime/pkg/client:all-srcs",
+        "//vendor/sigs.k8s.io/controller-runtime/pkg/controller:all-srcs",
+        "//vendor/sigs.k8s.io/controller-runtime/pkg/event:all-srcs",
+        "//vendor/sigs.k8s.io/controller-runtime/pkg/handler:all-srcs",
+        "//vendor/sigs.k8s.io/controller-runtime/pkg/internal/controller:all-srcs",
+        "//vendor/sigs.k8s.io/controller-runtime/pkg/internal/log:all-srcs",
+        "//vendor/sigs.k8s.io/controller-runtime/pkg/internal/objectutil:all-srcs",
+        "//vendor/sigs.k8s.io/controller-runtime/pkg/internal/recorder:all-srcs",
+        "//vendor/sigs.k8s.io/controller-runtime/pkg/leaderelection:all-srcs",
+        "//vendor/sigs.k8s.io/controller-runtime/pkg/log:all-srcs",
+        "//vendor/sigs.k8s.io/controller-runtime/pkg/manager:all-srcs",
+        "//vendor/sigs.k8s.io/controller-runtime/pkg/metrics:all-srcs",
+        "//vendor/sigs.k8s.io/controller-runtime/pkg/predicate:all-srcs",
+        "//vendor/sigs.k8s.io/controller-runtime/pkg/reconcile:all-srcs",
+        "//vendor/sigs.k8s.io/controller-runtime/pkg/recorder:all-srcs",
+        "//vendor/sigs.k8s.io/controller-runtime/pkg/runtime/inject:all-srcs",
+        "//vendor/sigs.k8s.io/controller-runtime/pkg/scheme:all-srcs",
+        "//vendor/sigs.k8s.io/controller-runtime/pkg/source:all-srcs",
+    ],
+    tags = ["automanaged"],
+    visibility = ["//visibility:public"],
+)

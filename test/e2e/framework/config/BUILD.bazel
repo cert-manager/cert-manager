@@ -12,6 +12,7 @@ go_library(
         "pebble.go",
         "suite.go",
         "tiller.go",
+        "venafi.go",
     ],
     importpath = "github.com/jetstack/cert-manager/test/e2e/framework/config",
     tags = ["manual"],

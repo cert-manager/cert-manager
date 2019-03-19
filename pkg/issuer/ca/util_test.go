@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Jetstack cert-manager contributors.
+Copyright 2019 The Jetstack cert-manager contributors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -63,6 +63,9 @@ func (s *caFixture) Setup(t *testing.T) {
 		//		default dns01 nameservers
 		//		ambient credentials settings
 		s.Builder = &test.Builder{}
+	}
+	if s.Builder.T == nil {
+		s.Builder.T = t
 	}
 	s.CA = s.buildFakeCA(s.Builder, s.Issuer)
 	if s.PreFn != nil {

@@ -48,7 +48,7 @@ func TestLiveAzureDnsPresent(t *testing.T) {
 	provider, err := NewDNSProviderCredentials(azureClientID, azureClientSecret, azuresubscriptionID, azureTenantID, azureResourceGroupName, azureHostedZoneName, util.RecursiveNameservers)
 	assert.NoError(t, err)
 
-	err = provider.Present(azureDomain, "", "123d==")
+	err = provider.Present(azureDomain, "_acme-challenge."+azureDomain+".", "123d==")
 	assert.NoError(t, err)
 }
 
@@ -62,6 +62,6 @@ func TestLiveAzureDnsCleanUp(t *testing.T) {
 	provider, err := NewDNSProviderCredentials(azureClientID, azureClientSecret, azuresubscriptionID, azureTenantID, azureResourceGroupName, azureHostedZoneName, util.RecursiveNameservers)
 	assert.NoError(t, err)
 
-	err = provider.CleanUp(azureDomain, "", "123d==")
+	err = provider.CleanUp(azureDomain, "_acme-challenge."+azureDomain+".", "123d==")
 	assert.NoError(t, err)
 }
