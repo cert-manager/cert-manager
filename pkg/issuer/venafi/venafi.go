@@ -59,6 +59,7 @@ type connector interface {
 	ReadZoneConfiguration(zone string) (config *endpoint.ZoneConfiguration, err error)
 	RequestCertificate(req *certificate.Request, zone string) (requestID string, err error)
 	RetrieveCertificate(req *certificate.Request) (certificates *certificate.PEMCollection, err error)
+	GenerateRequest(config *endpoint.ZoneConfiguration, req *certificate.Request) (err error)
 	RenewCertificate(req *certificate.RenewalRequest) (requestID string, err error)
 }
 
