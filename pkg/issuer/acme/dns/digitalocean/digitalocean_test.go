@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Jetstack cert-manager contributors.
+Copyright 2019 The Jetstack cert-manager contributors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -72,7 +72,7 @@ func TestDigitalOceanPresent(t *testing.T) {
 	provider, err := NewDNSProviderCredentials(doToken, util.RecursiveNameservers)
 	assert.NoError(t, err)
 
-	err = provider.Present(doDomain, "", "123d==")
+	err = provider.Present(doDomain, "_acme-challenge."+doDomain+".", "123d==")
 	assert.NoError(t, err)
 }
 
@@ -86,7 +86,7 @@ func TestDigitalOceanCleanUp(t *testing.T) {
 	provider, err := NewDNSProviderCredentials(doToken, util.RecursiveNameservers)
 	assert.NoError(t, err)
 
-	err = provider.CleanUp(doDomain, "", "123d==")
+	err = provider.CleanUp(doDomain, "_acme-challenge."+doDomain+".", "123d==")
 	assert.NoError(t, err)
 }
 

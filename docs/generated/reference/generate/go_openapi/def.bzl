@@ -1,4 +1,4 @@
-# Copyright 2018 The Jetstack cert-manager contributors.
+# Copyright 2019 The Jetstack cert-manager contributors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -37,7 +37,7 @@ def openapi_library(name, tags, srcs, go_prefix, openapi_targets = [], vendor_ta
         # so we must save it first.
         cmd = " ".join([
             "cd $$GOPATH/src/" + go_prefix + ";",
-            "$$GO_GENRULE_EXECROOT/$(location //vendor/k8s.io/kube-openapi/example/openapi-gen)",
+            "$$GO_GENRULE_EXECROOT/$(location //vendor/k8s.io/kube-openapi/cmd/openapi-gen)",
             "--v 1",
             "--logtostderr",
             "--go-header-file $$GO_GENRULE_EXECROOT/$(location //hack/boilerplate:boilerplate.go.txt)",
@@ -48,5 +48,5 @@ def openapi_library(name, tags, srcs, go_prefix, openapi_targets = [], vendor_ta
             "&& cp $$GOPATH/src/" + go_prefix + "docs/generated/reference/generate/go_openapi/zz_generated.openapi.go $$GO_GENRULE_EXECROOT/$(location :zz_generated.openapi.go)",
         ]),
         go_deps = deps,
-        tools = ["//vendor/k8s.io/kube-openapi/example/openapi-gen"],
+        tools = ["//vendor/k8s.io/kube-openapi/cmd/openapi-gen"],
     )

@@ -9,6 +9,7 @@ go_library(
     importpath = "github.com/jetstack/cert-manager/pkg/util/kube",
     visibility = ["//visibility:public"],
     deps = [
+        "//pkg/logs:go_default_library",
         "//pkg/util:go_default_library",
         "//pkg/util/errors:go_default_library",
         "//pkg/util/pki:go_default_library",

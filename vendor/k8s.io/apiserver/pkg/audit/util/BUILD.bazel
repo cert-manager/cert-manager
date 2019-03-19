@@ -1,0 +1,28 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = ["conversion.go"],
+    importmap = "github.com/jetstack/cert-manager/vendor/k8s.io/apiserver/pkg/audit/util",
+    importpath = "k8s.io/apiserver/pkg/audit/util",
+    tags = ["manual"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//vendor/k8s.io/api/auditregistration/v1alpha1:go_default_library",
+        "//vendor/k8s.io/apiserver/pkg/util/webhook:go_default_library",
+    ],
+)
+
+filegroup(
+    name = "package-srcs",
+    srcs = glob(["**"]),
+    tags = ["automanaged"],
+    visibility = ["//visibility:private"],
+)
+
+filegroup(
+    name = "all-srcs",
+    srcs = [":package-srcs"],
+    tags = ["automanaged"],
+    visibility = ["//visibility:public"],
+)

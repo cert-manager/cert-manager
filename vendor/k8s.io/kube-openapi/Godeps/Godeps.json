@@ -59,10 +59,6 @@
 			"Rev": "1d0bd113de87027671077d3c71eb3ac5d7dbba72"
 		},
 		{
-			"ImportPath": "github.com/golang/glog",
-			"Rev": "44145f04b68cf362d9c4df2182967c2275eaefed"
-		},
-		{
 			"ImportPath": "github.com/golang/protobuf/proto",
 			"Rev": "4bd1920723d7b7c925de087aa32e2187708897f7"
 		},
@@ -396,6 +392,10 @@
 		{
 			"ImportPath": "k8s.io/gengo/types",
 			"Rev": "75356185a9af8f0464efa792e2e9508d5b4be83c"
+		},
+		{
+			"ImportPath": "k8s.io/klog",
+			"Rev": "b9b56d5dfc9208f60ea747056670942d8b0afdc8"
 		}
 	]
 }

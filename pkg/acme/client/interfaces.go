@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Jetstack cert-manager contributors.
+Copyright 2019 The Jetstack cert-manager contributors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -36,6 +36,7 @@ type Interface interface {
 	GetAccount(ctx context.Context) (*acme.Account, error)
 	HTTP01ChallengeResponse(token string) (string, error)
 	DNS01ChallengeRecord(token string) (string, error)
+	Discover(ctx context.Context) (acme.Directory, error)
 }
 
 var _ Interface = &acme.Client{}

@@ -1,0 +1,66 @@
+genrule(
+    name = "fetch_kind",
+    srcs = ["@io_kubernetes_sigs_kind//:kind"],
+    outs = ["kind"],
+    cmd = "cp $(SRCS) $@",
+    visibility = ["//visibility:public"],
+)
+
+genrule(
+    name = "fetch_kubectl_1_11",
+    srcs = select({
+        ":darwin": ["@kubectl_1_11_darwin//file"],
+        ":k8": ["@kubectl_1_11_linux//file"],
+    }),
+    outs = ["kubectl-1.11"],
+    cmd = "cp $(SRCS) $@",
+    visibility = ["//visibility:public"],
+)
+
+genrule(
+    name = "fetch_kubectl_1_12",
+    srcs = select({
+        ":darwin": ["@kubectl_1_12_darwin//file"],
+        ":k8": ["@kubectl_1_12_linux//file"],
+    }),
+    outs = ["kubectl-1.12"],
+    cmd = "cp $(SRCS) $@",
+    visibility = ["//visibility:public"],
+)
+
+genrule(
+    name = "fetch_kubectl_1_13",
+    srcs = select({
+        ":darwin": ["@kubectl_1_13_darwin//file"],
+        ":k8": ["@kubectl_1_13_linux//file"],
+    }),
+    outs = ["kubectl-1.13"],
+    cmd = "cp $(SRCS) $@",
+    visibility = ["//visibility:public"],
+)
+
+config_setting(
+    name = "k8",
+    values = {"host_cpu": "k8"},
+    visibility = ["//visibility:private"],
+)
+
+config_setting(
+    name = "darwin",
+    values = {"host_cpu": "darwin"},
+    visibility = ["//visibility:private"],
+)
+
+filegroup(
+    name = "package-srcs",
+    srcs = glob(["**"]),
+    tags = ["automanaged"],
+    visibility = ["//visibility:private"],
+)
+
+filegroup(
+    name = "all-srcs",
+    srcs = [":package-srcs"],
+    tags = ["automanaged"],
+    visibility = ["//visibility:public"],
+)

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright 2018 The Jetstack cert-manager contributors.
+# Copyright 2019 The Jetstack cert-manager contributors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -35,19 +35,14 @@ trap cleanup EXIT
 
 "${SCRIPT_ROOT}/lib/cluster_create.sh"
 
-# copy kubectl out of the kind container if kubectl is not installed on the
-# host machine. This will *only* work on Linux :this_is_fine:
-if ! which kubectl; then
-    tmp_path=$(mktemp -d)
-    export PATH="${tmp_path}:${PATH}"
-    docker cp "${KIND_CONTAINER_NAME}":"$(docker exec "${KIND_CONTAINER_NAME}" which kubectl)" "${tmp_path}/kubectl"
-fi
-
 export KUBECONFIG="${HOME}/.kube/kind-config-${KIND_CLUSTER_NAME}"
+
+echo "Testing kind apiserver connectivity"
 # Ensure the apiserver is responding
-kubectl get nodes
+"${KUBECTL}" get nodes
 
 "${SCRIPT_ROOT}/lib/build_images.sh"
 
 make e2e_test \
-    KUBECONFIG=${KUBECONFIG}
+    KUBECONFIG=${KUBECONFIG} \
+    KUBECTL=${KUBECTL}

@@ -23,7 +23,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/request"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/route53"
-	"github.com/golang/glog"
+	"k8s.io/klog"
 
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
 	pkgutil "github.com/jetstack/cert-manager/pkg/util"
@@ -84,12 +84,12 @@ func NewDNSProvider(accessKeyID, secretAccessKey, hostedZoneID, region string, a
 	sessionOpts := session.Options{}
 
 	if useAmbientCredentials {
-		glog.V(5).Infof("using ambient credentials")
+		klog.V(5).Infof("using ambient credentials")
 		// Leaving credentials unset results in a default credential chain being
 		// used; this chain is a reasonable default for getting ambient creds.
 		// https://docs.aws.amazon.com/sdk-for-go/v1/developer-guide/configuring-sdk.html#specifying-credentials
 	} else {
-		glog.V(5).Infof("not using ambient credentials")
+		klog.V(5).Infof("not using ambient credentials")
 		config.WithCredentials(credentials.NewStaticCredentials(accessKeyID, secretAccessKey, ""))
 		// also disable 'ambient' region sources
 		sessionOpts.SharedConfigState = session.SharedConfigDisable
@@ -114,30 +114,14 @@ func NewDNSProvider(accessKeyID, secretAccessKey, hostedZoneID, region string, a
 	}, nil
 }
 
-// Timeout returns the timeout and interval to use when checking for DNS
-// propagation. Adjusting here to cope with spikes in propagation times.
-func (*DNSProvider) Timeout() (timeout, interval time.Duration) {
-	return 120 * time.Second, 2 * time.Second
-}
-
 // Present creates a TXT record using the specified parameters
-func (r *DNSProvider) Present(domain, token, keyAuth string) error {
-	fqdn, value, _, err := util.DNS01Record(domain, keyAuth, r.dns01Nameservers)
-	if err != nil {
-		return err
-	}
-
+func (r *DNSProvider) Present(domain, fqdn, value string) error {
 	value = `"` + value + `"`
 	return r.changeRecord(route53.ChangeActionUpsert, fqdn, value, route53TTL)
 }
 
 // CleanUp removes the TXT record matching the specified parameters
-func (r *DNSProvider) CleanUp(domain, token, keyAuth string) error {
-	fqdn, value, _, err := util.DNS01Record(domain, keyAuth, r.dns01Nameservers)
-	if err != nil {
-		return err
-	}
-
+func (r *DNSProvider) CleanUp(domain, fqdn, value string) error {
 	value = `"` + value + `"`
 	return r.changeRecord(route53.ChangeActionDelete, fqdn, value, route53TTL)
 }
@@ -166,7 +150,7 @@ func (r *DNSProvider) changeRecord(action, fqdn, value string, ttl int) error {
 	if err != nil {
 		if awserr, ok := err.(awserr.Error); ok {
 			if action == route53.ChangeActionDelete && awserr.Code() == route53.ErrCodeInvalidChangeBatch {
-				glog.V(5).Infof("ignoring InvalidChangeBatch error: %v", err)
+				klog.V(5).Infof("ignoring InvalidChangeBatch error: %v", err)
 				// If we try to delete something and get a 'InvalidChangeBatch' that
 				// means it's already deleted, no need to consider it an error.
 				return nil
@@ -198,7 +182,7 @@ func (r *DNSProvider) getHostedZoneID(fqdn string) (string, error) {
 		return r.hostedZoneID, nil
 	}
 
-	authZone, err := util.FindZoneByFqdn(fqdn, util.RecursiveNameservers)
+	authZone, err := util.FindZoneByFqdn(fqdn, r.dns01Nameservers)
 	if err != nil {
 		return "", fmt.Errorf("error finding zone from fqdn: %v", err)
 	}

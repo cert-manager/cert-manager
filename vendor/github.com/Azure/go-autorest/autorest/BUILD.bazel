@@ -20,7 +20,11 @@ go_library(
     importpath = "github.com/Azure/go-autorest/autorest",
     tags = ["manual"],
     visibility = ["//visibility:public"],
-    deps = ["//vendor/github.com/Azure/go-autorest/autorest/adal:go_default_library"],
+    deps = [
+        "//vendor/github.com/Azure/go-autorest/autorest/adal:go_default_library",
+        "//vendor/github.com/Azure/go-autorest/logger:go_default_library",
+        "//vendor/github.com/Azure/go-autorest/version:go_default_library",
+    ],
 )
 
 filegroup(
@@ -38,6 +42,7 @@ filegroup(
         "//vendor/github.com/Azure/go-autorest/autorest/azure:all-srcs",
         "//vendor/github.com/Azure/go-autorest/autorest/date:all-srcs",
         "//vendor/github.com/Azure/go-autorest/autorest/to:all-srcs",
+        "//vendor/github.com/Azure/go-autorest/autorest/validation:all-srcs",
     ],
     tags = ["automanaged"],
     visibility = ["//visibility:public"],

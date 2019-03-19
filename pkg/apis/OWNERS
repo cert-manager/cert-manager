@@ -1,2 +1,4 @@
 required_reviewers:
 - munnerz
+labels:
+- area/api

@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Jetstack cert-manager contributors.
+Copyright 2019 The Jetstack cert-manager contributors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -95,12 +95,34 @@ func (n *Nginx) Setup(cfg *config.Config) error {
 		ChartVersion: cfg.Addons.Nginx.ChartVersion,
 		Vars: []chart.StringTuple{
 			{
+				Key:   "controller.image.pullPolicy",
+				Value: "Never",
+			},
+			{
+				Key:   "controller.image.tag",
+				Value: "0.23.0",
+			},
+			{
+				Key:   "defaultBackend.image.pullPolicy",
+				Value: "Never",
+			},
+			{
+				Key:   "defaultBackend.image.tag",
+				Value: "bazel",
+			},
+			{
 				Key:   "controller.service.clusterIP",
 				Value: n.IPAddress,
 			},
 			{
 				Key:   "controller.service.type",
 				Value: "ClusterIP",
+			},
+			// nginx-ingress will by default not redirect http to https if
+			// the url is ".well-known"
+			{
+				Key:   "controller.config.no-tls-redirect-locations",
+				Value: "",
 			},
 		},
 	}
@@ -142,6 +164,10 @@ func (n *Nginx) SupportsGlobal() bool {
 	// nginx does support a global configuration, as the 'usage details' for
 	// it are deterministic (i.e. not a result of the call to helm install).
 	return true
+}
+
+func (n *Nginx) Logs() (map[string]string, error) {
+	return n.chart.Logs()
 }
 
 func (d *Details) NewTestDomain() string {

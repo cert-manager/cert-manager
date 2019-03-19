@@ -1,0 +1,15 @@
+Go/bin/*
+Go/pkg/*
+Go/src/*
+.idea
+vCert
+/bin/
+aruba/tmp/
+aruba/bin/
+aruba/vcert
+vcert.exe
+Gemfile.lock
+aruba/features/step_definitions/0.endpoints.rb
+aruba/log.log
+/vars
+/exec

@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Jetstack cert-manager contributors.
+Copyright 2019 The Jetstack cert-manager contributors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"sync"
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
@@ -111,13 +112,9 @@ func ClientWithKey(iss cmapi.GenericIssuer, pk *rsa.PrivateKey) (acme.Interface,
 	if acmeSpec == nil {
 		return nil, fmt.Errorf("issuer %q is not an ACME issuer. Ensure the 'acme' stanza is correctly specified on your Issuer resource", iss.GetObjectMeta().Name)
 	}
+	acmeCl := lookupClient(acmeSpec, pk)
 
-	return acmemw.NewLogger(&acmecl.Client{
-		HTTPClient:   buildHTTPClient(acmeSpec.SkipTLSVerify),
-		Key:          pk,
-		DirectoryURL: acmeSpec.Server,
-		UserAgent:    util.CertManagerUserAgent,
-	}), nil
+	return acmemw.NewLogger(acmeCl), nil
 }
 
 // ClientForIssuer will return a properly configure ACME client for the given
@@ -143,6 +140,57 @@ func (h *helperImpl) ClientForIssuer(iss cmapi.GenericIssuer) (acme.Interface, e
 	return ClientWithKey(iss, pk)
 }
 
+// clientRepo is a collection of acme clients indexed
+// by the options used to create them. This is used so
+// that the cert-manager controllers can concurrently access
+// the anti-replay nonces and directory information.
+var (
+	clientRepo   map[repoKey]*acmecl.Client
+	clientRepoMu sync.Mutex
+)
+
+type repoKey struct {
+	skiptls   bool
+	server    string
+	publickey string
+	exponent  int
+}
+
+func lookupClient(spec *cmapi.ACMEIssuer, pk *rsa.PrivateKey) *acmecl.Client {
+	clientRepoMu.Lock()
+	defer clientRepoMu.Unlock()
+	if clientRepo == nil {
+		clientRepo = make(map[repoKey]*acmecl.Client)
+	}
+	repokey := repoKey{
+		skiptls: spec.SkipTLSVerify,
+		server:  spec.Server,
+	}
+	// Encoding a big.Int cannot fail
+	pkbytes, _ := pk.PublicKey.N.GobEncode()
+	repokey.publickey = string(pkbytes)
+	repokey.exponent = pk.PublicKey.E
+
+	client := clientRepo[repokey]
+	if client != nil {
+		return client
+	}
+	acmeCl := &acmecl.Client{
+		HTTPClient:   buildHTTPClient(spec.SkipTLSVerify),
+		Key:          pk,
+		DirectoryURL: spec.Server,
+		UserAgent:    util.CertManagerUserAgent,
+	}
+	clientRepo[repokey] = acmeCl
+	return acmeCl
+}
+
+func ClearClientCache() {
+	clientRepoMu.Lock()
+	defer clientRepoMu.Unlock()
+	clientRepo = nil
+}
+
 // buildHTTPClient returns an HTTP client to be used by the ACME client.
 // For the time being, we construct a new HTTP client on each invocation.
 // This is because we need to set the 'skipTLSVerify' flag on the HTTP client
@@ -150,7 +198,7 @@ func (h *helperImpl) ClientForIssuer(iss cmapi.GenericIssuer) (acme.Interface, e
 // In future, we may change to having two global HTTP clients - one that ignores
 // TLS connection errors, and the other that does not.
 func buildHTTPClient(skipTLSVerify bool) *http.Client {
-	return &http.Client{
+	return acme.NewInstrumentedClient(&http.Client{
 		Transport: &http.Transport{
 			Proxy:                 http.ProxyFromEnvironment,
 			DialContext:           dialTimeout,
@@ -161,7 +209,7 @@ func buildHTTPClient(skipTLSVerify bool) *http.Client {
 			ExpectContinueTimeout: 1 * time.Second,
 		},
 		Timeout: time.Second * 30,
-	}
+	})
 }
 
 var timeout = time.Duration(5 * time.Second)

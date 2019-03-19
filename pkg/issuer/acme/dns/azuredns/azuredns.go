@@ -11,13 +11,14 @@ this directory.
 package azuredns
 
 import (
+	"context"
 	"fmt"
-	"log"
 	"os"
 	"strings"
-	"time"
 
-	"github.com/Azure/azure-sdk-for-go/arm/dns"
+	"k8s.io/klog"
+
+	"github.com/Azure/azure-sdk-for-go/services/dns/mgmt/2017-10-01/dns"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/adal"
 	"github.com/Azure/go-autorest/autorest/azure"
@@ -78,44 +79,29 @@ func NewDNSProviderCredentials(clientID, clientSecret, subscriptionID, tenantID,
 }
 
 // Present creates a TXT record using the specified parameters
-func (c *DNSProvider) Present(domain, token, keyAuth string) error {
-	fqdn, value, ttl, err := util.DNS01Record(domain, keyAuth, c.dns01Nameservers)
-	if err != nil {
-		return err
-	}
-
-	return c.createRecord(fqdn, value, ttl)
+func (c *DNSProvider) Present(domain, fqdn, value string) error {
+	return c.createRecord(fqdn, value, 60)
 }
 
 // CleanUp removes the TXT record matching the specified parameters
-func (c *DNSProvider) CleanUp(domain, token, keyAuth string) error {
-	fqdn, _, _, err := util.DNS01Record(domain, keyAuth, c.dns01Nameservers)
-	if err != nil {
-		return err
-	}
-
+func (c *DNSProvider) CleanUp(domain, fqdn, value string) error {
 	z, err := c.getHostedZoneName(fqdn)
 	if err != nil {
-		log.Fatalf("Error getting hosted zone name for: %s, %v", fqdn, err)
+		klog.Infof("Error getting hosted zone name for: %s, %v", fqdn, err)
 		return err
 	}
 
 	_, err = c.recordClient.Delete(
+		context.TODO(),
 		c.resourceGroupName,
 		z,
-		c.trimFqdn(fqdn),
+		c.trimFqdn(fqdn, z),
 		dns.TXT, "")
 
 	if err != nil {
 		return err
 	}
 	return nil
-}
-
-// Timeout returns the timeout and interval to use when checking for DNS
-// propagation. Adjusting here to cope with spikes in propagation times.
-func (c *DNSProvider) Timeout() (timeout, interval time.Duration) {
-	return 120 * time.Second, 2 * time.Second
 }
 
 func (c *DNSProvider) createRecord(fqdn, value string, ttl int) error {
@@ -130,19 +116,20 @@ func (c *DNSProvider) createRecord(fqdn, value string, ttl int) error {
 
 	z, err := c.getHostedZoneName(fqdn)
 	if err != nil {
-		log.Fatalf("Error getting hosted zone name for: %s, %v", fqdn, err)
+		klog.Infof("Error getting hosted zone name for: %s, %v", fqdn, err)
 		return err
 	}
 
 	_, err = c.recordClient.CreateOrUpdate(
+		context.TODO(),
 		c.resourceGroupName,
 		z,
-		c.trimFqdn(fqdn),
+		c.trimFqdn(fqdn, z),
 		dns.TXT,
 		*rparams, "", "")
 
 	if err != nil {
-		log.Fatalf("Error creating TXT: %s, %v", c.zoneName, err)
+		klog.Infof("Error creating TXT: %s, %v", z, err)
 		return err
 	}
 	return nil
@@ -152,7 +139,7 @@ func (c *DNSProvider) getHostedZoneName(fqdn string) (string, error) {
 	if c.zoneName != "" {
 		return c.zoneName, nil
 	}
-	z, err := util.FindZoneByFqdn(fqdn, util.RecursiveNameservers)
+	z, err := util.FindZoneByFqdn(fqdn, c.dns01Nameservers)
 	if err != nil {
 		return "", err
 	}
@@ -161,7 +148,7 @@ func (c *DNSProvider) getHostedZoneName(fqdn string) (string, error) {
 		return "", fmt.Errorf("Zone %s not found for domain %s", z, fqdn)
 	}
 
-	_, err = c.zoneClient.Get(c.resourceGroupName, util.UnFqdn(z))
+	_, err = c.zoneClient.Get(context.TODO(), c.resourceGroupName, util.UnFqdn(z))
 
 	if err != nil {
 		return "", fmt.Errorf("Zone %s not found in AzureDNS for domain %s. Err: %v", z, fqdn, err)
@@ -170,6 +157,11 @@ func (c *DNSProvider) getHostedZoneName(fqdn string) (string, error) {
 	return util.UnFqdn(z), nil
 }
 
-func (c *DNSProvider) trimFqdn(fqdn string) string {
-	return strings.TrimSuffix(strings.TrimSuffix(fqdn, "."), "."+c.zoneName)
+// Trims DNS zone from the fqdn. Defaults to DNSProvider.zoneName if it is specified.
+func (c *DNSProvider) trimFqdn(fqdn string, zone string) string {
+	z := zone
+	if len(c.zoneName) > 0 {
+		z = c.zoneName
+	}
+	return strings.TrimSuffix(strings.TrimSuffix(fqdn, "."), "."+z)
 }
