@@ -18,6 +18,7 @@ package venafi
 
 import (
 	"context"
+	"crypto/x509"
 	"fmt"
 	"time"
 
@@ -92,9 +93,7 @@ func (v *Venafi) Issue(ctx context.Context, crt *v1alpha1.Certificate) (*issuer.
 	//// Begin building Venafi certificate Request
 
 	// Create a vcert Request structure
-	vreq := &certificate.Request{
-		Subject: tmpl.Subject,
-	}
+	vreq := newVRequest(tmpl)
 
 	// We mark the request as local generated CSR, because CSR was generated with VCert SDK.
 	vreq.CsrOrigin = certificate.LocalGeneratedCSR
@@ -163,3 +162,9 @@ func (v *Venafi) Issue(ctx context.Context, crt *v1alpha1.Certificate) (*issuer.
 	}, nil
 }
 
+func newVRequest(cert *x509.Certificate) *certificate.Request {
+	req := certificate.NewRequest(cert)
+	// overwrite entire Subject block
+	req.Subject = cert.Subject
+	return req
+}
