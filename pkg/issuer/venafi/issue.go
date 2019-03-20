@@ -172,7 +172,7 @@ func (v *Venafi) Issue(ctx context.Context, crt *v1alpha1.Certificate) (*issuer.
 	v.Recorder.Eventf(crt, corev1.EventTypeNormal, "Retrieve", "Retrieved certificate from Venafi server")
 
 	// Encode the private key ready to be saved
-	pk, err := pki.EncodePrivateKey(signeeKey)
+	pk, err := pki.EncodePrivateKey(signeeKey, crt.Spec.KeyEncoding)
 	if err != nil {
 		return nil, err
 	}
