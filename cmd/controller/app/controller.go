@@ -63,14 +63,15 @@ func Run(opts *options.ControllerOptions, stopCh <-chan struct{}) {
 		os.Exit(1)
 	}
 
-	run := func(_ context.Context) {
-		var wg sync.WaitGroup
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			metrics.Default.Start(stopCh)
-		}()
+	var wg sync.WaitGroup
+	wg.Add(1)
 
+	go func() {
+		defer wg.Done()
+		metrics.Default.Start(stopCh)
+	}()
+
+	run := func(_ context.Context) {
 		for n, fn := range controller.Known() {
 			log := log.WithValues("controller", n)
 
