@@ -145,6 +145,14 @@
   revision = "4c0e84591b9aa9e6dcfdf3e020114cd81f89d5f9"
 
 [[projects]]
+  digest = "1:9b61753fc44c21c3b64bfef0b4f6c8a764d65c246e0236d64d475404824468bb"
+  name = "github.com/cloudflare/cloudflare-go"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "1f9007fbecae20711133c60519338c41cef1ffb4"
+  version = "v0.8.5"
+
+[[projects]]
   digest = "1:8c99488f6d10d92104ee155409ae42ed65badf2a745cd7709c05cb48ef540e68"
   name = "github.com/coreos/etcd"
   packages = [
@@ -1606,6 +1614,7 @@
     "github.com/aws/aws-sdk-go/aws/request",
     "github.com/aws/aws-sdk-go/aws/session",
     "github.com/aws/aws-sdk-go/service/route53",
+    "github.com/cloudflare/cloudflare-go",
     "github.com/cpu/goacmedns",
     "github.com/digitalocean/godo",
     "github.com/go-logr/logr",
