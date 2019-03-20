@@ -59,7 +59,7 @@ func TestAmbientCredentialsFromEnv(t *testing.T) {
 	os.Setenv("AWS_REGION", "us-east-1")
 	defer restoreRoute53Env()
 
-	provider, err := NewDNSProvider("", "", "", "", true, util.RecursiveNameservers)
+	provider, err := NewDNSProvider("", "", "", "", true)
 	assert.NoError(t, err, "Expected no error constructing DNSProvider")
 
 	_, err = provider.client.Config.Credentials.Get()
@@ -73,7 +73,7 @@ func TestNoCredentialsFromEnv(t *testing.T) {
 	os.Setenv("AWS_REGION", "us-east-1")
 	defer restoreRoute53Env()
 
-	_, err := NewDNSProvider("", "", "", "", false, util.RecursiveNameservers)
+	_, err := NewDNSProvider("", "", "", "", false)
 	assert.Error(t, err, "Expected error constructing DNSProvider with no credentials and not ambient")
 }
 
@@ -81,7 +81,7 @@ func TestAmbientRegionFromEnv(t *testing.T) {
 	os.Setenv("AWS_REGION", "us-east-1")
 	defer restoreRoute53Env()
 
-	provider, err := NewDNSProvider("", "", "", "", true, util.RecursiveNameservers)
+	provider, err := NewDNSProvider("", "", "", "", true)
 	assert.NoError(t, err, "Expected no error constructing DNSProvider")
 
 	assert.Equal(t, "us-east-1", *provider.client.Config.Region, "Expected Region to be set from environment")
@@ -91,7 +91,7 @@ func TestNoRegionFromEnv(t *testing.T) {
 	os.Setenv("AWS_REGION", "us-east-1")
 	defer restoreRoute53Env()
 
-	provider, err := NewDNSProvider("marx", "swordfish", "", "", false, util.RecursiveNameservers)
+	provider, err := NewDNSProvider("marx", "swordfish", "", "", false)
 	assert.NoError(t, err, "Expected no error constructing DNSProvider")
 
 	assert.Equal(t, "", *provider.client.Config.Region, "Expected Region to not be set from environment")
@@ -112,6 +112,6 @@ func TestRoute53Present(t *testing.T) {
 	domain := "example.com"
 	keyAuth := "123456d=="
 
-	err := provider.Present(domain, "_acme-challenge."+domain+".", keyAuth)
+	err := provider.Present(domain, "_acme-challenge."+domain+".", domain, keyAuth)
 	assert.NoError(t, err, "Expected Present to return no error")
 }

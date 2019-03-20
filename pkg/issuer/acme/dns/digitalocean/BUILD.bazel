@@ -2,13 +2,22 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 
 go_library(
     name = "go_default_library",
-    srcs = ["digitalocean.go"],
+    srcs = [
+        "digitalocean.go",
+        "provider.go",
+    ],
     importpath = "github.com/jetstack/cert-manager/pkg/issuer/acme/dns/digitalocean",
     visibility = ["//visibility:public"],
     deps = [
+        "//pkg/apis/certmanager/v1alpha1:go_default_library",
         "//pkg/issuer/acme/dns/util:go_default_library",
         "//vendor/github.com/digitalocean/godo:go_default_library",
         "//vendor/golang.org/x/oauth2:go_default_library",
+        "//vendor/k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1:go_default_library",
+        "//vendor/k8s.io/client-go/informers:go_default_library",
+        "//vendor/k8s.io/client-go/kubernetes:go_default_library",
+        "//vendor/k8s.io/client-go/listers/core/v1:go_default_library",
+        "//vendor/k8s.io/client-go/rest:go_default_library",
     ],
 )
 
@@ -16,10 +25,7 @@ go_test(
     name = "go_default_test",
     srcs = ["digitalocean_test.go"],
     embed = [":go_default_library"],
-    deps = [
-        "//pkg/issuer/acme/dns/util:go_default_library",
-        "//vendor/github.com/stretchr/testify/assert:go_default_library",
-    ],
+    deps = ["//vendor/github.com/stretchr/testify/assert:go_default_library"],
 )
 
 filegroup(

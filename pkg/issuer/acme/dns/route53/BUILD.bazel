@@ -2,10 +2,14 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 
 go_library(
     name = "go_default_library",
-    srcs = ["route53.go"],
+    srcs = [
+        "provider.go",
+        "route53.go",
+    ],
     importpath = "github.com/jetstack/cert-manager/pkg/issuer/acme/dns/route53",
     visibility = ["//visibility:public"],
     deps = [
+        "//pkg/apis/certmanager/v1alpha1:go_default_library",
         "//pkg/issuer/acme/dns/util:go_default_library",
         "//pkg/util:go_default_library",
         "//vendor/github.com/aws/aws-sdk-go/aws:go_default_library",
@@ -15,6 +19,11 @@ go_library(
         "//vendor/github.com/aws/aws-sdk-go/aws/request:go_default_library",
         "//vendor/github.com/aws/aws-sdk-go/aws/session:go_default_library",
         "//vendor/github.com/aws/aws-sdk-go/service/route53:go_default_library",
+        "//vendor/k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1:go_default_library",
+        "//vendor/k8s.io/client-go/informers:go_default_library",
+        "//vendor/k8s.io/client-go/kubernetes:go_default_library",
+        "//vendor/k8s.io/client-go/listers/core/v1:go_default_library",
+        "//vendor/k8s.io/client-go/rest:go_default_library",
         "//vendor/k8s.io/klog:go_default_library",
     ],
 )

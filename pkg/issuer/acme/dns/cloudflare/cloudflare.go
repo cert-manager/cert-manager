@@ -17,7 +17,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"os"
 	"time"
 
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
@@ -30,23 +29,13 @@ const CloudFlareAPIURL = "https://api.cloudflare.com/client/v4"
 
 // DNSProvider is an implementation of the acme.ChallengeProvider interface
 type DNSProvider struct {
-	dns01Nameservers []string
-	authEmail        string
-	authKey          string
-}
-
-// NewDNSProvider returns a DNSProvider instance configured for cloudflare.
-// Credentials must be passed in the environment variables: CLOUDFLARE_EMAIL
-// and CLOUDFLARE_API_KEY.
-func NewDNSProvider(dns01Nameservers []string) (*DNSProvider, error) {
-	email := os.Getenv("CLOUDFLARE_EMAIL")
-	key := os.Getenv("CLOUDFLARE_API_KEY")
-	return NewDNSProviderCredentials(email, key, dns01Nameservers)
+	authEmail string
+	authKey   string
 }
 
 // NewDNSProviderCredentials uses the supplied credentials to return a
 // DNSProvider instance configured for cloudflare.
-func NewDNSProviderCredentials(email, key string, dns01Nameservers []string) (*DNSProvider, error) {
+func NewDNSProviderCredentials(email, key string) (*DNSProvider, error) {
 	if email == "" || key == "" {
 		return nil, fmt.Errorf("CloudFlare credentials missing")
 	}
@@ -61,26 +50,25 @@ func NewDNSProviderCredentials(email, key string, dns01Nameservers []string) (*D
 	}
 
 	return &DNSProvider{
-		authEmail:        email,
-		authKey:          key,
-		dns01Nameservers: dns01Nameservers,
+		authEmail: email,
+		authKey:   key,
 	}, nil
 }
 
 // Present creates a TXT record to fulfil the dns-01 challenge
-func (c *DNSProvider) Present(domain, fqdn, value string) error {
-	zoneID, err := c.getHostedZoneID(fqdn)
+func (c *DNSProvider) Present(domain, fqdn, zone, key string) error {
+	zoneID, err := c.getHostedZoneID(fqdn, zone)
 	if err != nil {
 		return err
 	}
 
-	record, err := c.findTxtRecord(fqdn)
+	record, err := c.findTxtRecord(fqdn, zone)
 	if err != nil && err != errNoExistingRecord {
 		// this is a real error
 		return err
 	}
 	if record != nil {
-		if record.Content == value {
+		if record.Content == key {
 			// the record is already set to the desired value
 			return nil
 		}
@@ -94,7 +82,7 @@ func (c *DNSProvider) Present(domain, fqdn, value string) error {
 	rec := cloudFlareRecord{
 		Type:    "TXT",
 		Name:    util.UnFqdn(fqdn),
-		Content: value,
+		Content: key,
 		TTL:     120,
 	}
 
@@ -112,8 +100,8 @@ func (c *DNSProvider) Present(domain, fqdn, value string) error {
 }
 
 // CleanUp removes the TXT record matching the specified parameters
-func (c *DNSProvider) CleanUp(domain, fqdn, value string) error {
-	record, err := c.findTxtRecord(fqdn)
+func (c *DNSProvider) CleanUp(domain, fqdn, zone, key string) error {
+	record, err := c.findTxtRecord(fqdn, zone)
 	// Nothing to cleanup
 	if err == errNoExistingRecord {
 		return nil
@@ -130,19 +118,14 @@ func (c *DNSProvider) CleanUp(domain, fqdn, value string) error {
 	return nil
 }
 
-func (c *DNSProvider) getHostedZoneID(fqdn string) (string, error) {
+func (c *DNSProvider) getHostedZoneID(fqdn, zone string) (string, error) {
 	// HostedZone represents a CloudFlare DNS zone
 	type HostedZone struct {
 		ID   string `json:"id"`
 		Name string `json:"name"`
 	}
 
-	authZone, err := util.FindZoneByFqdn(fqdn, c.dns01Nameservers)
-	if err != nil {
-		return "", err
-	}
-
-	result, err := c.makeRequest("GET", "/zones?name="+util.UnFqdn(authZone), nil)
+	result, err := c.makeRequest("GET", "/zones?name="+util.UnFqdn(zone), nil)
 	if err != nil {
 		return "", err
 	}
@@ -154,7 +137,7 @@ func (c *DNSProvider) getHostedZoneID(fqdn string) (string, error) {
 	}
 
 	if len(hostedZone) != 1 {
-		return "", fmt.Errorf("Zone %s not found in CloudFlare for domain %s", authZone, fqdn)
+		return "", fmt.Errorf("zone %s not found in CloudFlare for domain %s", zone, fqdn)
 	}
 
 	return hostedZone[0].ID, nil
@@ -162,8 +145,8 @@ func (c *DNSProvider) getHostedZoneID(fqdn string) (string, error) {
 
 var errNoExistingRecord = errors.New("No existing record found")
 
-func (c *DNSProvider) findTxtRecord(fqdn string) (*cloudFlareRecord, error) {
-	zoneID, err := c.getHostedZoneID(fqdn)
+func (c *DNSProvider) findTxtRecord(fqdn, zone string) (*cloudFlareRecord, error) {
+	zoneID, err := c.getHostedZoneID(fqdn, zone)
 	if err != nil {
 		return nil, err
 	}

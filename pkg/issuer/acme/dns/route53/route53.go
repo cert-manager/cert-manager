@@ -66,24 +66,13 @@ func (d customRetryer) RetryRules(r *request.Request) time.Duration {
 // NewDNSProvider returns a DNSProvider instance configured for the AWS
 // Route 53 service using static credentials from its parameters or, if they're
 // unset and the 'ambient' option is set, credentials from the environment.
-func NewDNSProvider(accessKeyID, secretAccessKey, hostedZoneID, region string, ambient bool, dns01Nameservers []string) (*DNSProvider, error) {
-	if accessKeyID == "" && secretAccessKey == "" {
-		if !ambient {
-			return nil, fmt.Errorf("unable to construct route53 provider: empty credentials; perhaps you meant to enable ambient credentials?")
-		}
-	} else if accessKeyID == "" || secretAccessKey == "" {
-		// It's always an error to set one of those but not the other
-		return nil, fmt.Errorf("unable to construct route53 provider: only one of access and secret key was provided")
-	}
-
-	useAmbientCredentials := ambient && (accessKeyID == "" && secretAccessKey == "")
-
+func NewDNSProvider(accessKeyID, secretAccessKey, hostedZoneID, region string, useAmbient bool) (*DNSProvider, error) {
 	r := customRetryer{}
 	r.NumMaxRetries = maxRetries
 	config := request.WithRetryer(aws.NewConfig(), r)
 	sessionOpts := session.Options{}
 
-	if useAmbientCredentials {
+	if useAmbient {
 		klog.V(5).Infof("using ambient credentials")
 		// Leaving credentials unset results in a default credential chain being
 		// used; this chain is a reasonable default for getting ambient creds.
@@ -93,13 +82,12 @@ func NewDNSProvider(accessKeyID, secretAccessKey, hostedZoneID, region string, a
 		config.WithCredentials(credentials.NewStaticCredentials(accessKeyID, secretAccessKey, ""))
 		// also disable 'ambient' region sources
 		sessionOpts.SharedConfigState = session.SharedConfigDisable
-	}
 
-	// If ambient credentials aren't permitted, always set the region, even if to
-	// empty string, to avoid it falling back on the environment.
-	if region != "" || !useAmbientCredentials {
+		// If ambient credentials aren't permitted, always set the region, even if to
+		// empty string, to avoid it falling back on the environment.
 		config.WithRegion(region)
 	}
+
 	sess, err := session.NewSessionWithOptions(sessionOpts)
 	if err != nil {
 		return nil, fmt.Errorf("unable to create aws session: %s", err)
@@ -108,26 +96,25 @@ func NewDNSProvider(accessKeyID, secretAccessKey, hostedZoneID, region string, a
 	client := route53.New(sess, config)
 
 	return &DNSProvider{
-		client:           client,
-		hostedZoneID:     hostedZoneID,
-		dns01Nameservers: dns01Nameservers,
+		client:       client,
+		hostedZoneID: hostedZoneID,
 	}, nil
 }
 
 // Present creates a TXT record using the specified parameters
-func (r *DNSProvider) Present(domain, fqdn, value string) error {
+func (r *DNSProvider) Present(domain, fqdn, zone, value string) error {
 	value = `"` + value + `"`
-	return r.changeRecord(route53.ChangeActionUpsert, fqdn, value, route53TTL)
+	return r.changeRecord(route53.ChangeActionUpsert, fqdn, zone, value, route53TTL)
 }
 
 // CleanUp removes the TXT record matching the specified parameters
-func (r *DNSProvider) CleanUp(domain, fqdn, value string) error {
+func (r *DNSProvider) CleanUp(domain, fqdn, zone, value string) error {
 	value = `"` + value + `"`
-	return r.changeRecord(route53.ChangeActionDelete, fqdn, value, route53TTL)
+	return r.changeRecord(route53.ChangeActionDelete, fqdn, zone, value, route53TTL)
 }
 
-func (r *DNSProvider) changeRecord(action, fqdn, value string, ttl int) error {
-	hostedZoneID, err := r.getHostedZoneID(fqdn)
+func (r *DNSProvider) changeRecord(action, fqdn, zone, value string, ttl int) error {
+	hostedZoneID, err := r.getHostedZoneID(fqdn, zone)
 	if err != nil {
 		return fmt.Errorf("Failed to determine Route 53 hosted zone ID: %v", err)
 	}
@@ -177,19 +164,14 @@ func (r *DNSProvider) changeRecord(action, fqdn, value string, ttl int) error {
 	})
 }
 
-func (r *DNSProvider) getHostedZoneID(fqdn string) (string, error) {
+func (r *DNSProvider) getHostedZoneID(fqdn, zone string) (string, error) {
 	if r.hostedZoneID != "" {
 		return r.hostedZoneID, nil
 	}
 
-	authZone, err := util.FindZoneByFqdn(fqdn, r.dns01Nameservers)
-	if err != nil {
-		return "", fmt.Errorf("error finding zone from fqdn: %v", err)
-	}
-
 	// .DNSName should not have a trailing dot
 	reqParams := &route53.ListHostedZonesByNameInput{
-		DNSName: aws.String(util.UnFqdn(authZone)),
+		DNSName: aws.String(util.UnFqdn(zone)),
 	}
 	resp, err := r.client.ListHostedZonesByName(reqParams)
 	if err != nil {
@@ -199,14 +181,14 @@ func (r *DNSProvider) getHostedZoneID(fqdn string) (string, error) {
 	var hostedZoneID string
 	for _, hostedZone := range resp.HostedZones {
 		// .Name has a trailing dot
-		if !*hostedZone.Config.PrivateZone && *hostedZone.Name == authZone {
+		if !*hostedZone.Config.PrivateZone && *hostedZone.Name == zone {
 			hostedZoneID = *hostedZone.Id
 			break
 		}
 	}
 
 	if len(hostedZoneID) == 0 {
-		return "", fmt.Errorf("Zone %s not found in Route 53 for domain %s", authZone, fqdn)
+		return "", fmt.Errorf("Zone %s not found in Route 53 for domain %s", zone, fqdn)
 	}
 
 	if strings.HasPrefix(hostedZoneID, "/hostedzone/") {

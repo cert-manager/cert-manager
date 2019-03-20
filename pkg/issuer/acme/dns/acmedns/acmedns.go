@@ -24,58 +24,39 @@ package acmedns
 import (
 	"encoding/json"
 	"fmt"
-	"os"
 
 	"github.com/cpu/goacmedns"
 )
 
 // DNSProvider is an implementation of the acme.ChallengeProvider interface
 type DNSProvider struct {
-	dns01Nameservers []string
-	client           goacmedns.Client
-	accounts         map[string]goacmedns.Account
-}
-
-// NewDNSProvider returns a DNSProvider instance configured for ACME DNS
-// Credentials and acme-dns server host are given in environment variables
-func NewDNSProvider(dns01Nameservers []string) (*DNSProvider, error) {
-	host := os.Getenv("ACME_DNS_HOST")
-	accountJson := os.Getenv("ACME_DNS_ACCOUNT_JSON")
-	return NewDNSProviderHostBytes(host, []byte(accountJson), dns01Nameservers)
+	client   goacmedns.Client
+	accounts map[string]goacmedns.Account
 }
 
 // NewDNSProviderHostBytes returns a DNSProvider instance configured for ACME DNS
 // acme-dns server host is given in a string
 // credentials are stored in json in the given string
-func NewDNSProviderHostBytes(host string, accountJson []byte, dns01Nameservers []string) (*DNSProvider, error) {
+func NewDNSProviderHostBytes(host string, accountJson []byte) (*DNSProvider, error) {
 	client := goacmedns.NewClient(host)
 
 	var accounts map[string]goacmedns.Account
 	if err := json.Unmarshal(accountJson, &accounts); err != nil {
-		return nil, fmt.Errorf("Error unmarshalling accountJson: %s", err)
+		return nil, fmt.Errorf("error unmarshalling accountJson: %s", err)
 	}
 
 	return &DNSProvider{
-		client:           client,
-		accounts:         accounts,
-		dns01Nameservers: dns01Nameservers,
+		client:   client,
+		accounts: accounts,
 	}, nil
 }
 
 // Present creates a TXT record to fulfil the dns-01 challenge
-func (c *DNSProvider) Present(domain, fqdn, value string) error {
+func (c *DNSProvider) Present(domain, value string) error {
 	if account, exists := c.accounts[domain]; exists {
 		// Update the acme-dns TXT record.
 		return c.client.UpdateTXTRecord(account, value)
 	}
 
 	return fmt.Errorf("account credentials not found for domain %s", domain)
-}
-
-// CleanUp removes the record matching the specified parameters. It is not
-// implemented for the ACME-DNS provider.
-func (c *DNSProvider) CleanUp(_, _, _ string) error {
-	// ACME-DNS doesn't support the notion of removing a record. For users of
-	// ACME-DNS it is expected the stale records remain in-place.
-	return nil
 }
