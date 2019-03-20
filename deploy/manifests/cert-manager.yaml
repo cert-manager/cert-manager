@@ -122,6 +122,13 @@ spec:
               - rsa
               - ecdsa
               type: string
+            keyEncoding:
+              description: KeyEncoding is the private key cryptography standards (PKCS)
+                for this certificate's private key to be encoded in. If provided,
+                allowed values are "pkcs1" and "pkcs8" standing for PKCS#1 and PKCS#8,
+                respectively. If KeyEncoding is not specified, then PKCS#1 will be
+                used by default.
+              type: string
             keySize:
               description: KeySize is the key bit size of the corresponding private
                 key for this certificate. If provided, value must be between 2048

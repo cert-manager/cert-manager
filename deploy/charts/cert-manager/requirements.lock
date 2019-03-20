@@ -5,5 +5,5 @@ dependencies:
 - name: cainjector
   repository: file://cainjector
   version: v0.7.0
-digest: sha256:23c28c105c2ad3eacb34a1e55275933bbc3e9ce5055cb7958a61932b31254231
-generated: 2019-03-01T17:13:42.517512942Z
+digest: sha256:7042a8ac7a0499463fc2c780575a9e8b964fa0edc3b194ecd34a7b3cf6ec225d
+generated: 2019-03-20T16:29:19.648477793Z
