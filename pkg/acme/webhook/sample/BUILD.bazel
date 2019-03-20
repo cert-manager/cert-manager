@@ -14,7 +14,15 @@ go_library(
     visibility = ["//visibility:private"],
     deps = [
         "//pkg/acme/webhook/cmd:go_default_library",
-        "//pkg/acme/webhook/sample/cloudflare:go_default_library",
+        "//pkg/issuer/acme/dns/acmedns:go_default_library",
+        "//pkg/issuer/acme/dns/akamai:go_default_library",
+        "//pkg/issuer/acme/dns/azuredns:go_default_library",
+        "//pkg/issuer/acme/dns/clouddns:go_default_library",
+        "//pkg/issuer/acme/dns/cloudflare:go_default_library",
+        "//pkg/issuer/acme/dns/digitalocean:go_default_library",
+        "//pkg/issuer/acme/dns/rfc2136:go_default_library",
+        "//pkg/issuer/acme/dns/route53:go_default_library",
+        "//pkg/issuer/acme/dns/webhook:go_default_library",
     ],
 )
 
