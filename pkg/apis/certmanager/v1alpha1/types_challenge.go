@@ -99,6 +99,22 @@ type ChallengeRequest struct {
 	// +optional
 	ResolvedFQDN string `json:"resolvedFQDN,omitempty"`
 
+	// ResolvedZone is the zone encompassing the ResolvedFQDN.
+	// This is included as part of the ChallengeRequest so that webhook
+	// implementers do not need to implement their own SOA recursion logic.
+	// This indicates the zone that the provided FQDN is encompassed within,
+	// determined by performing SOA record queries for each part of the FQDN
+	// until an authoritative zone is found.
+	ResolvedZone string `json:"resolvedZone,omitempty"`
+
+	// AllowAmbientCredentials advises webhook implementations that they can
+	// use 'ambient credentials' for authenticating with their respective
+	// DNS provider services.
+	// This field SHOULD be honoured by all DNS webhook implementations, but
+	// in certain instances where it does not make sense to honour this option,
+	// an implementation may ignore it.
+	AllowAmbientCredentials bool `json:"allowAmbientCredentials"`
+
 	// Config contains unstructured JSON configuration data that the webhook
 	// implementation can unmarshal in order to fetch secrets or configure
 	// connection details etc.

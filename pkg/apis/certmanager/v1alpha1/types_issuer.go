@@ -87,7 +87,9 @@ type IssuerConfig struct {
 
 	// +optional
 	SelfSigned *SelfSignedIssuer `json:"selfSigned,omitempty"`
-	Venafi     *VenafiIssuer     `json:"venafi,omitempty"`
+
+	// +optional
+	Venafi *VenafiIssuer `json:"venafi,omitempty"`
 }
 
 // VenafiIssuer describes issuer configuration details for Venafi Cloud.

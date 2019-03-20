@@ -38,6 +38,9 @@ type Context struct {
 	// RootContext is the root context for the controller
 	RootContext context.Context
 
+	// StopCh is a channel that will be closed when the controller is signalled
+	// to exit
+	StopCh <-chan struct{}
 	// RESTConfig is the loaded Kubernetes apiserver rest client configuration
 	RESTConfig *rest.Config
 	// Client is a Kubernetes clientset
