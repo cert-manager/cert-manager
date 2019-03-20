@@ -64,6 +64,9 @@ func (s *caFixture) Setup(t *testing.T) {
 		//		ambient credentials settings
 		s.Builder = &test.Builder{}
 	}
+	if s.Builder.T == nil {
+		s.Builder.T = t
+	}
 	s.CA = s.buildFakeCA(s.Builder, s.Issuer)
 	if s.PreFn != nil {
 		s.PreFn(t, s)

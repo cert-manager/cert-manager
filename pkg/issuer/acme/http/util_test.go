@@ -72,6 +72,10 @@ func (s *solverFixture) Setup(t *testing.T) {
 	if s.Builder == nil {
 		s.Builder = &test.Builder{}
 	}
+	if s.Builder.T == nil {
+		s.Builder.T = t
+	}
+	s.Builder.Start()
 	s.Solver = buildFakeSolver(s.Builder)
 	if s.PreFn != nil {
 		s.PreFn(t, s)

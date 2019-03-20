@@ -15,8 +15,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/golang/glog"
 	"github.com/miekg/dns"
+	"k8s.io/klog"
 )
 
 type preCheckDNSFunc func(fqdn, value string, nameservers []string,
@@ -67,7 +67,7 @@ func updateDomainWithCName(r *dns.Msg, fqdn string) string {
 	for _, rr := range r.Answer {
 		if cn, ok := rr.(*dns.CNAME); ok {
 			if cn.Hdr.Name == fqdn {
-				glog.Infof("Updating FQDN: %s with it's CNAME: %s", fqdn, cn.Target)
+				klog.Infof("Updating FQDN: %s with it's CNAME: %s", fqdn, cn.Target)
 				fqdn = cn.Target
 				break
 			}
@@ -117,7 +117,7 @@ func checkAuthoritativeNss(fqdn, value string, nameservers []string) (bool, erro
 			return false, fmt.Errorf("NS %s returned %s for %s", ns, dns.RcodeToString[r.Rcode], fqdn)
 		}
 
-		glog.V(6).Infof("Looking up TXT records for %q", fqdn)
+		klog.V(6).Infof("Looking up TXT records for %q", fqdn)
 		var found bool
 		for _, rr := range r.Answer {
 			if txt, ok := rr.(*dns.TXT); ok {
@@ -155,7 +155,7 @@ func dnsQuery(fqdn string, rtype uint16, nameservers []string, recursive bool) (
 
 		if err == dns.ErrTruncated ||
 			(err != nil && strings.HasPrefix(err.Error(), "read udp") && strings.HasSuffix(err.Error(), "i/o timeout")) {
-			glog.V(6).Infof("UDP dns lookup failed, retrying with TCP: %v", err)
+			klog.V(6).Infof("UDP dns lookup failed, retrying with TCP: %v", err)
 			tcp := &dns.Client{Net: "tcp", Timeout: DNSTimeout}
 			// If the TCP request succeeds, the err will reset to nil
 			in, _, err = tcp.Exchange(m, ns)
@@ -168,13 +168,98 @@ func dnsQuery(fqdn string, rtype uint16, nameservers []string, recursive bool) (
 	return
 }
 
+func ValidateCAA(domain string, issuerID []string, iswildcard bool, nameservers []string) error {
+	// see https://tools.ietf.org/html/rfc6844#section-4
+	// for more information about how CAA lookup is performed
+	fqdn := ToFqdn(domain)
+
+	issuerSet := make(map[string]bool)
+	for _, s := range issuerID {
+		issuerSet[s] = true
+	}
+
+	var caas []*dns.CAA
+	for {
+		// follow at most 8 cnames per label
+		queryDomain := fqdn
+		var msg *dns.Msg
+		var err error
+		for i := 0; i < 8; i++ {
+			//TODO(dmo): figure out if we need these servers to be configurable as well
+			msg, err = dnsQuery(queryDomain, dns.TypeCAA, nameservers, true)
+			if err != nil {
+				return fmt.Errorf("Could not validate CAA record: %s", err)
+			}
+			// domain may not exist, which is fine. It will fail HTTP01 checks
+			// but DNS01 checks will create a proper domain
+			if msg.Rcode == dns.RcodeNameError {
+				break
+			}
+			if msg.Rcode != dns.RcodeSuccess {
+				return fmt.Errorf("Could not validate CAA: Unexpected response code '%s' for %s",
+					dns.RcodeToString[msg.Rcode], domain)
+			}
+			oldQuery := queryDomain
+			queryDomain = updateDomainWithCName(msg, queryDomain)
+			if queryDomain == oldQuery {
+				break
+			}
+		}
+		// we have a response that's not a CNAME. It might be empty.
+		// if it is, go up a label and ask again
+		for _, rr := range msg.Answer {
+			caa, ok := rr.(*dns.CAA)
+			if !ok {
+				continue
+			}
+			caas = append(caas, caa)
+		}
+		if len(caas) != 0 {
+			break
+		}
+
+		index := strings.Index(fqdn, ".")
+		if index == -1 {
+			panic("should never happen")
+		}
+		fqdn = fqdn[index+1:]
+		if len(fqdn) == 0 {
+			// we reached the root with no CAA, don't bother asking
+			return nil
+		}
+	}
+
+	if !matchCAA(caas, issuerSet, iswildcard) {
+		// TODO(dmo): better error message
+		return fmt.Errorf("CAA record does not match issuer")
+	}
+	return nil
+}
+
+func matchCAA(caas []*dns.CAA, issuerIDs map[string]bool, iswildcard bool) bool {
+	expectedTag := "issue"
+	if iswildcard {
+		expectedTag = "issuewild"
+	}
+	for _, caa := range caas {
+		if caa.Tag != expectedTag {
+			continue
+		}
+		if issuerIDs[caa.Value] {
+			return true
+		}
+	}
+	return false
+}
+
 // lookupNameservers returns the authoritative nameservers for the given fqdn.
 func lookupNameservers(fqdn string, nameservers []string) ([]string, error) {
 	var authoritativeNss []string
 
+	klog.V(6).Infof("Searching fqdn %q using seed nameservers [%s]", fqdn, strings.Join(nameservers, ", "))
 	zone, err := FindZoneByFqdn(fqdn, nameservers)
 	if err != nil {
-		return nil, fmt.Errorf("Could not determine the zone: %v", err)
+		return nil, fmt.Errorf("Could not determine the zone for %q: %v", fqdn, err)
 	}
 
 	r, err := dnsQuery(zone, dns.TypeNS, nameservers, true)
@@ -189,9 +274,10 @@ func lookupNameservers(fqdn string, nameservers []string) ([]string, error) {
 	}
 
 	if len(authoritativeNss) > 0 {
+		klog.V(6).Infof("Returning authoritative nameservers [%s]", strings.Join(authoritativeNss, ", "))
 		return authoritativeNss, nil
 	}
-	return nil, fmt.Errorf("Could not determine authoritative nameservers")
+	return nil, fmt.Errorf("Could not determine authoritative nameservers for %q", fqdn)
 }
 
 // FindZoneByFqdn determines the zone apex for the given fqdn by recursing up the
@@ -201,6 +287,7 @@ func FindZoneByFqdn(fqdn string, nameservers []string) (string, error) {
 	// Do we have it cached?
 	if zone, ok := fqdnToZone[fqdn]; ok {
 		fqdnToZoneLock.RUnlock()
+		klog.V(6).Infof("Returning cached zone record %q for fqdn %q", zone, fqdn)
 		return zone, nil
 	}
 	fqdnToZoneLock.RUnlock()
@@ -236,6 +323,7 @@ func FindZoneByFqdn(fqdn string, nameservers []string) (string, error) {
 
 					zone := soa.Hdr.Name
 					fqdnToZone[fqdn] = zone
+					klog.V(6).Infof("Returning discovered zone record %q for fqdn %q", zone, fqdn)
 					return zone, nil
 				}
 			}

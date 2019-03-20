@@ -16,7 +16,9 @@ limitations under the License.
 
 package config
 
-import "flag"
+import (
+	"flag"
+)
 
 type Ginkgo struct {
 	ReportDirectory string

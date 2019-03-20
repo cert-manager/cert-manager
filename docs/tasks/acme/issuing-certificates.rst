@@ -8,10 +8,10 @@ resource that you create in order to determine how to solve the
 
 In future releases of cert-manager, this configuration is likely to move off of
 the Certificate resource and onto the Issuer resource in order to create a
-better separation of concerns. More info can be found on issue `#XXX`_.
+better separation of concerns. More info can be found on issue `#1450`_.
 
-.. _`ACME challenges`:
-.. _`#XXX`:
+.. _`ACME challenges`: https://letsencrypt.org/how-it-works/
+.. _`#1450`: https://github.com/jetstack/cert-manager/pull/1450
 
 Configuring Certificates for ACME issuance
 ==========================================

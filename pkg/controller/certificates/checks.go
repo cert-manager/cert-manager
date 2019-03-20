@@ -23,28 +23,31 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/apimachinery/pkg/util/runtime"
 
-	"github.com/golang/glog"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	logf "github.com/jetstack/cert-manager/pkg/logs"
 )
 
 func (c *Controller) handleGenericIssuer(obj interface{}) {
+	log := logf.FromContext(c.ctx, "handleGenericIssuer")
+
 	iss, ok := obj.(cmapi.GenericIssuer)
 	if !ok {
-		runtime.HandleError(fmt.Errorf("Object does not implement GenericIssuer %#v", obj))
+		log.Error(nil, "object does not implement GenericIssuer")
 		return
 	}
 
+	log = logf.WithResource(log, iss)
 	certs, err := c.certificatesForGenericIssuer(iss)
 	if err != nil {
-		runtime.HandleError(fmt.Errorf("Error looking up Certificates observing Issuer/ClusterIssuer: %s/%s", iss.GetObjectMeta().Namespace, iss.GetObjectMeta().Name))
+		log.Error(err, "error looking up certificates observing issuer or clusterissuer")
 		return
 	}
 	for _, crt := range certs {
+		log := logf.WithRelatedResource(log, crt)
 		key, err := keyFunc(crt)
 		if err != nil {
-			runtime.HandleError(err)
+			log.Error(err, "error computing key for resource")
 			continue
 		}
 		c.queue.Add(key)
@@ -52,22 +55,25 @@ func (c *Controller) handleGenericIssuer(obj interface{}) {
 }
 
 func (c *Controller) handleSecretResource(obj interface{}) {
-	var secret *corev1.Secret
-	var ok bool
-	secret, ok = obj.(*corev1.Secret)
+	log := logf.FromContext(c.ctx, "handleSecretResource")
+
+	secret, ok := obj.(*corev1.Secret)
 	if !ok {
-		runtime.HandleError(fmt.Errorf("Object is not a Secret object %#v", obj))
+		log.Error(nil, "object is not a Secret resource")
 		return
 	}
+	log = logf.WithResource(log, secret)
+
 	crts, err := c.certificatesForSecret(secret)
 	if err != nil {
-		runtime.HandleError(fmt.Errorf("Error looking up Certificates observing Secret: %s/%s", secret.Namespace, secret.Name))
+		log.Error(err, "error looking up Certificates observing Secret")
 		return
 	}
 	for _, crt := range crts {
+		log := logf.WithRelatedResource(log, crt)
 		key, err := keyFunc(crt)
 		if err != nil {
-			runtime.HandleError(err)
+			log.Error(err, "error computing key for resource")
 			continue
 		}
 		c.queue.Add(key)
@@ -123,18 +129,30 @@ func (c *Controller) certificatesForGenericIssuer(iss cmapi.GenericIssuer) ([]*c
 }
 
 func (c *Controller) handleOwnedResource(obj interface{}) {
+	log := logf.FromContext(c.ctx, "handleOwnedResource")
+
 	metaobj, ok := obj.(metav1.Object)
 	if !ok {
-		glog.Errorf("item passed to handleOwnedResource does not implement ObjectMetaAccessor")
+		log.Error(nil, "item passed to handleOwnedResource does not implement ObjectMetaAccessor")
 		return
 	}
 
+	log = logf.WithResource(log, metaobj)
+	log.V(logf.DebugLevel).Info("looking up owners for resource")
+
 	ownerRefs := metaobj.GetOwnerReferences()
 	for _, ref := range ownerRefs {
+		log := log.WithValues(
+			logf.RelatedResourceNamespaceKey, metaobj.GetNamespace(),
+			logf.RelatedResourceNameKey, ref.Name,
+			logf.RelatedResourceKindKey, ref.Kind,
+		)
+		log.V(logf.DebugLevel).Info("evaluating ownerRef on resource")
+
 		// Parse the Group out of the OwnerReference to compare it to what was parsed out of the requested OwnerType
 		refGV, err := schema.ParseGroupVersion(ref.APIVersion)
 		if err != nil {
-			glog.Errorf("Could not parse OwnerReference GroupVersion: %v", err)
+			log.Error(err, "could not parse ownerReference GroupVersion")
 			continue
 		}
 
@@ -142,12 +160,12 @@ func (c *Controller) handleOwnedResource(obj interface{}) {
 			// TODO: how to handle namespace of owner references?
 			cert, err := c.certificateLister.Certificates(metaobj.GetNamespace()).Get(ref.Name)
 			if err != nil {
-				glog.Errorf("Error getting Certificate %q referenced by resource %q", ref.Name, metaobj.GetName())
+				log.Error(err, "error getting owning certificate resource")
 				continue
 			}
 			objKey, err := keyFunc(cert)
 			if err != nil {
-				runtime.HandleError(err)
+				log.Error(err, "error computing key for resource")
 				continue
 			}
 			c.queue.Add(objKey)

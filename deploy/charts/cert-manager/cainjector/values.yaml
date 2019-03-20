@@ -1,0 +1,38 @@
+global:
+  ## Reference to one or more secrets to be used when pulling images
+  ## ref: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/
+  ##
+  imagePullSecrets: []
+  # - name: "image-pull-secret"
+
+  # Optional priority class to be used for the cert-manager pods
+  priorityClassName: ""
+  rbac:
+    create: true
+
+  leaderElection:
+    # Override the namespace used to store the ConfigMap for leader election
+    namespace: ""
+
+replicaCount: 1
+
+strategy: {}
+  # type: RollingUpdate
+  # rollingUpdate:
+  #   maxSurge: 0
+  #   maxUnavailable: 1
+
+podAnnotations: {}
+
+# Optional additional arguments for cainjector
+extraArgs: []
+
+resources: {}
+  # requests:
+  #   cpu: 10m
+  #   memory: 32Mi
+
+image:
+  repository: quay.io/jetstack/cert-manager-cainjector
+  tag: v0.7.0
+  pullPolicy: IfNotPresent

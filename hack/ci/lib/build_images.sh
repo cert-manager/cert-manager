@@ -30,9 +30,8 @@ build_images() {
     APP_VERSION="${DOCKER_TAG}" \
     DOCKER_REPO="${DOCKER_REPO}" \
     DOCKER_TAG="${DOCKER_TAG}" \
-    bazel run //:images
-    # Build e2e test images
-    bazel run //test/e2e/charts:images
+    # Build images used during e2e tests
+    bazel run //test/e2e:images
 
     local TMP_DIR=$(mktemp -d)
     local BUNDLE_FILE="${TMP_DIR}"/cmbundle.tar.gz
@@ -40,10 +39,11 @@ build_images() {
     # Create an archive of docker images
     docker save \
         "${DOCKER_REPO}"/cert-manager-controller:"${DOCKER_TAG}" \
+        "${DOCKER_REPO}"/cert-manager-cainjector:"${DOCKER_TAG}" \
         "${DOCKER_REPO}"/cert-manager-acmesolver:"${DOCKER_TAG}" \
         "${DOCKER_REPO}"/cert-manager-webhook:"${DOCKER_TAG}" \
         "pebble:bazel" \
-        "quay.io/kubernetes-ingress-controller/nginx-ingress-controller:0.21.0" \
+        "quay.io/kubernetes-ingress-controller/nginx-ingress-controller:0.23.0" \
         "k8s.gcr.io/defaultbackend:bazel" \
         "vault:bazel" \
         "gcr.io/kubernetes-helm/tiller:bazel" \

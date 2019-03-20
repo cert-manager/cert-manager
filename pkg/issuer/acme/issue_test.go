@@ -24,6 +24,7 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/pem"
+	"fmt"
 	"math/big"
 	"reflect"
 	"testing"
@@ -54,7 +55,7 @@ func generatePrivateKey(t *testing.T) *rsa.PrivateKey {
 
 var serialNumberLimit = new(big.Int).Lsh(big.NewInt(1), 128)
 
-func generateSelfSignedCert(t *testing.T, crt *v1alpha1.Certificate, key crypto.Signer, duration time.Duration) (derBytes, pemBytes []byte) {
+func generateSelfSignedCert(t *testing.T, crt *v1alpha1.Certificate, key crypto.Signer, notBefore time.Time, duration time.Duration) (derBytes, pemBytes []byte) {
 	commonName := pki.CommonNameForCertificate(crt)
 	dnsNames := pki.DNSNamesForCertificate(crt)
 	ipAddresses := pki.IPAddressesForCertificate(crt)
@@ -72,8 +73,8 @@ func generateSelfSignedCert(t *testing.T, crt *v1alpha1.Certificate, key crypto.
 		Subject: pkix.Name{
 			CommonName: commonName,
 		},
-		NotBefore: time.Now(),
-		NotAfter:  time.Now().Add(duration),
+		NotBefore: notBefore,
+		NotAfter:  notBefore.Add(duration),
 		// see http://golang.org/pkg/crypto/x509/#KeyUsage
 		KeyUsage:    x509.KeyUsageDigitalSignature | x509.KeyUsageKeyEncipherment,
 		DNSNames:    dnsNames,
@@ -140,8 +141,8 @@ func TestIssueHappyPath(t *testing.T) {
 		},
 	}
 
-	_, testCertSignedBytesPEM := generateSelfSignedCert(t, testCert, pk, time.Hour*24*365)
-	_, testCertExpiringSignedBytesPEM := generateSelfSignedCert(t, testCert, pk, time.Minute*5)
+	_, testCertSignedBytesPEM := generateSelfSignedCert(t, testCert, pk, time.Now(), time.Hour*24*365)
+	_, testCertExpiringSignedBytesPEM := generateSelfSignedCert(t, testCert, pk, time.Now().Add(-4*time.Minute), time.Minute*5)
 	testCertEmptyOrder, _ := buildOrder(testCert, testCertCSR)
 	testCertPendingOrder := testCertEmptyOrder.DeepCopy()
 	testCertPendingOrder.Status.State = v1alpha1.Pending
@@ -175,12 +176,15 @@ func TestIssueHappyPath(t *testing.T) {
 				KubeObjects:        []runtime.Object{testCertPrivateKeySecret},
 				ExpectedActions: []testpkg.Action{
 					testpkg.NewCustomMatch(coretesting.NewCreateAction(v1alpha1.SchemeGroupVersion.WithResource("orders"), testCertEmptyOrder.Namespace, testCertEmptyOrder),
-						func(exp, actual coretesting.Action) bool {
+						func(exp, actual coretesting.Action) error {
 							expOrder := exp.(coretesting.CreateAction).GetObject().(*v1alpha1.Order)
 							actOrder := actual.(coretesting.CreateAction).GetObject().(*v1alpha1.Order)
 							expOrderCopy := expOrder.DeepCopy()
 							expOrderCopy.Spec.CSR = actOrder.Spec.CSR
-							return reflect.DeepEqual(expOrderCopy, actOrder)
+							if !reflect.DeepEqual(expOrderCopy, actOrder) {
+								return fmt.Errorf("unexpected difference: %s", pretty.Diff(expOrderCopy, actOrder))
+							}
+							return nil
 						}),
 				},
 			},
@@ -272,7 +276,7 @@ func TestIssueHappyPath(t *testing.T) {
 				// err := args[2].(error)
 
 				if resp != nil {
-					t.Errorf("expected IssuerResponse to be nil")
+					t.Errorf("expected IssuerResponse to be nil, but was: %v", resp)
 				}
 				if !reflect.DeepEqual(returnedCert, testCert) {
 					t.Errorf("output was not as expected: %s", pretty.Diff(returnedCert, testCert))
@@ -395,12 +399,15 @@ func TestIssueRetryCases(t *testing.T) {
 						coretesting.NewDeleteAction(v1alpha1.SchemeGroupVersion.WithResource("orders"), invalidTestOrder.Namespace, invalidTestOrder.Name),
 					),
 					testpkg.NewCustomMatch(coretesting.NewCreateAction(v1alpha1.SchemeGroupVersion.WithResource("orders"), testOrder.Namespace, testOrder),
-						func(exp, actual coretesting.Action) bool {
+						func(exp, actual coretesting.Action) error {
 							expOrder := exp.(coretesting.CreateAction).GetObject().(*v1alpha1.Order)
 							actOrder := actual.(coretesting.CreateAction).GetObject().(*v1alpha1.Order)
 							expOrderCopy := expOrder.DeepCopy()
 							expOrderCopy.Spec.CSR = actOrder.Spec.CSR
-							return reflect.DeepEqual(expOrderCopy, actOrder)
+							if !reflect.DeepEqual(expOrderCopy, actOrder) {
+								return fmt.Errorf("unexpected difference: %s", pretty.Diff(expOrderCopy, actOrder))
+							}
+							return nil
 						}),
 				},
 			},

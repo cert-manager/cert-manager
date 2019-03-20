@@ -150,6 +150,30 @@ sh_test(
     ],
 )
 
+sh_binary(
+    name = "update-crds",
+    srcs = ["update-crds.sh"],
+    data = [
+        ":update-deploy-gen",
+        "//hack/bin:gencrd",
+        "//pkg/apis:all-srcs",
+        "//vendor/k8s.io/api/core/v1:go_default_library",
+        "//vendor/k8s.io/apimachinery/pkg/apis/meta/v1:all-srcs",
+        "//vendor/k8s.io/apimachinery/pkg/runtime:all-srcs",
+    ],
+)
+
+sh_test(
+    name = "verify-crds",
+    srcs = ["verify-crds.sh"],
+    data = [
+        ":update-crds",
+        "//deploy:all-srcs",
+        "//hack/bin:gencrd",
+        "//pkg/apis:all-srcs",
+    ],
+)
+
 filegroup(
     name = "package-srcs",
     srcs = glob(["**"]),

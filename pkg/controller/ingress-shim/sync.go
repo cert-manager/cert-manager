@@ -22,15 +22,15 @@ import (
 	"reflect"
 	"strconv"
 
-	"github.com/golang/glog"
 	corev1 "k8s.io/api/core/v1"
 	extv1beta1 "k8s.io/api/extensions/v1beta1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
-	"k8s.io/ingress/core/pkg/ingress/annotations/class"
+	"k8s.io/klog"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	"github.com/jetstack/cert-manager/pkg/util"
 )
 
 const (
@@ -54,14 +54,14 @@ const (
 	// if the challenge type is set to http01
 	acmeIssuerHTTP01IngressClassAnnotation = "certmanager.k8s.io/acme-http01-ingress-class"
 
-	ingressClassAnnotation = class.IngressKey
+	ingressClassAnnotation = util.IngressKey
 )
 
 var ingressGVK = extv1beta1.SchemeGroupVersion.WithKind("Ingress")
 
 func (c *Controller) Sync(ctx context.Context, ing *extv1beta1.Ingress) error {
 	if !shouldSync(ing, c.defaults.autoCertificateAnnotations) {
-		glog.Infof("Not syncing ingress %s/%s as it does not contain necessary annotations", ing.Namespace, ing.Name)
+		klog.Infof("Not syncing ingress %s/%s as it does not contain necessary annotations", ing.Namespace, ing.Name)
 		return nil
 	}
 
@@ -71,7 +71,10 @@ func (c *Controller) Sync(ctx context.Context, ing *extv1beta1.Ingress) error {
 		return nil
 	}
 
-	issuer, err := c.getGenericIssuer(ing.Namespace, issuerName, issuerKind)
+	issuer, err := c.helper.GetGenericIssuer(v1alpha1.ObjectReference{
+		Name: issuerName,
+		Kind: issuerKind,
+	}, ing.Namespace)
 	if apierrors.IsNotFound(err) {
 		c.Recorder.Eventf(ing, corev1.EventTypeWarning, "BadConfig", "%s resource %q not found", issuerKind, issuerName)
 		return nil
@@ -174,10 +177,10 @@ func (c *Controller) buildCertificates(ing *extv1beta1.Ingress, issuer v1alpha1.
 		// check if a Certificate for this TLS entry already exists, and if it
 		// does then skip this entry
 		if existingCrt != nil {
-			glog.Infof("Certificate %q for ingress %q already exists", tls.SecretName, ing.Name)
+			klog.Infof("Certificate %q for ingress %q already exists", tls.SecretName, ing.Name)
 
 			if !certNeedsUpdate(existingCrt, crt) {
-				glog.Infof("Certificate %q for ingress %q is up to date", tls.SecretName, ing.Name)
+				klog.Infof("Certificate %q for ingress %q is up to date", tls.SecretName, ing.Name)
 				continue
 			}
 
@@ -341,18 +344,4 @@ func (c *Controller) issuerForIngress(ing *extv1beta1.Ingress) (name string, kin
 		kind = v1alpha1.ClusterIssuerKind
 	}
 	return name, kind
-}
-
-func (c *Controller) getGenericIssuer(namespace, name, kind string) (v1alpha1.GenericIssuer, error) {
-	switch kind {
-	case v1alpha1.IssuerKind:
-		return c.issuerLister.Issuers(namespace).Get(name)
-	case v1alpha1.ClusterIssuerKind:
-		if c.clusterIssuerLister == nil {
-			return nil, fmt.Errorf("cannot get ClusterIssuer for %q as ingress-shim is scoped to a single namespace", name)
-		}
-		return c.clusterIssuerLister.Get(name)
-	default:
-		return nil, fmt.Errorf(`invalid value %q for issuer kind. Must be empty, %q or %q`, kind, v1alpha1.IssuerKind, v1alpha1.ClusterIssuerKind)
-	}
 }

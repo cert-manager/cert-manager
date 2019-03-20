@@ -26,11 +26,15 @@ import (
 	api "k8s.io/api/core/v1"
 	apiextcs "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
+	kscheme "k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
+	crclient "sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	clientset "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
+	certmgrscheme "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/scheme"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 	"github.com/jetstack/cert-manager/test/e2e/framework/addon"
 	"github.com/jetstack/cert-manager/test/e2e/framework/config"
@@ -39,6 +43,14 @@ import (
 	"github.com/jetstack/cert-manager/test/e2e/framework/util"
 	"github.com/jetstack/cert-manager/test/e2e/framework/util/errors"
 )
+
+// TODO: this really should be done somewhere in cert-manager proper
+var Scheme = runtime.NewScheme()
+
+func init() {
+	kscheme.AddToScheme(Scheme)
+	certmgrscheme.AddToScheme(Scheme)
+}
 
 // DefaultConfig contains the default shared config the is likely parsed from
 // command line arguments.
@@ -57,6 +69,9 @@ type Framework struct {
 	KubeClientSet          kubernetes.Interface
 	CertManagerClientSet   clientset.Interface
 	APIExtensionsClientSet apiextcs.Interface
+
+	// controller-runtime client for newer controllers
+	CRClient crclient.Client
 
 	// Namespace in which all test resources should reside
 	Namespace *v1.Namespace
@@ -111,6 +126,10 @@ func (f *Framework) BeforeEach() {
 
 	By("Creating a cert manager client")
 	f.CertManagerClientSet, err = clientset.NewForConfig(kubeConfig)
+	Expect(err).NotTo(HaveOccurred())
+
+	By("Creating a controller-runtime client")
+	f.CRClient, err = crclient.New(kubeConfig, crclient.Options{Scheme: Scheme})
 	Expect(err).NotTo(HaveOccurred())
 
 	By("Building a namespace api object")

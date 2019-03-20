@@ -5,6 +5,7 @@ go_library(
     srcs = [
         "interface.go",
         "storageclass.go",
+        "volumeattachment.go",
     ],
     importmap = "github.com/jetstack/cert-manager/vendor/k8s.io/client-go/informers/storage/v1",
     importpath = "k8s.io/client-go/informers/storage/v1",

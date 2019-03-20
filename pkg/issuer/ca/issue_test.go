@@ -58,8 +58,7 @@ func generateECDSAPrivateKey(t *testing.T) *ecdsa.PrivateKey {
 }
 
 func generateSelfSignedCert(t *testing.T, crt *v1alpha1.Certificate, key crypto.Signer, duration time.Duration) (derBytes, pemBytes []byte) {
-	selfSignedIssuer := gen.Issuer("test", gen.SetIssuerSelfSigned(v1alpha1.SelfSignedIssuer{}))
-	template, err := pki.GenerateTemplate(selfSignedIssuer, crt)
+	template, err := pki.GenerateTemplate(crt)
 	if err != nil {
 		t.Errorf("error generating template: %v", err)
 	}

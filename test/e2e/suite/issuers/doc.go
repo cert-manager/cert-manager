@@ -21,4 +21,5 @@ import (
 	_ "github.com/jetstack/cert-manager/test/e2e/suite/issuers/ca"
 	_ "github.com/jetstack/cert-manager/test/e2e/suite/issuers/selfsigned"
 	_ "github.com/jetstack/cert-manager/test/e2e/suite/issuers/vault"
+	_ "github.com/jetstack/cert-manager/test/e2e/suite/issuers/venafi"
 )

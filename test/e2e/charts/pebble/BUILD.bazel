@@ -2,10 +2,24 @@ load("@io_bazel_rules_docker//go:image.bzl", "go_image")
 
 go_image(
     name = "image",
-    base = "@alpine//image",
+    base = "@alpine_linux-amd64//image",
     embed = ["@org_letsencrypt_pebble//cmd/pebble:go_default_library"],
     goarch = "amd64",
     goos = "linux",
     pure = "on",
+    visibility = ["//visibility:public"],
+)
+
+filegroup(
+    name = "package-srcs",
+    srcs = glob(["**"]),
+    tags = ["automanaged"],
+    visibility = ["//visibility:private"],
+)
+
+filegroup(
+    name = "all-srcs",
+    srcs = [":package-srcs"],
+    tags = ["automanaged"],
     visibility = ["//visibility:public"],
 )

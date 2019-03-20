@@ -17,6 +17,7 @@ limitations under the License.
 package controller
 
 import (
+	"context"
 	"time"
 
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -33,6 +34,9 @@ import (
 // a reference to a SharedInformerFactory so that controllers can choose
 // themselves which listers are required.
 type Context struct {
+	// RootContext is the root context for the controller
+	RootContext context.Context
+
 	// Client is a Kubernetes clientset
 	Client kubernetes.Interface
 	// CMClient is a cert-manager clientset
@@ -55,10 +59,6 @@ type Context struct {
 	ACMEOptions
 	IngressShimOptions
 	CertificateOptions
-}
-
-func (c *Context) IssuerFactory() IssuerFactory {
-	return NewIssuerFactory(c)
 }
 
 type IssuerOptions struct {

@@ -72,7 +72,24 @@ A full list of the fields supported on the Certificate resource can be found in
 the `API reference documentation`_.
 
 .. _`#1269`: https://github.com/jetstack/cert-manager/issues/1269
-.. _`API reference documentation`: https://cert-manager.readthedocs.io/en/release-0.6/reference/api-docs/index.html#certificatespec-v1alpha1
+.. _`API reference documentation`: https://docs.cert-manager.io/en/release-0.7/reference/api-docs/index.html#certificatespec-v1alpha1
+
+Temporary certificates whilst issuing
+=====================================
+
+With some Issuer types, certificates can take a few minutes to be issued.
+
+A temporary untrusted certificate will be issued whilst this process takes
+places if another certificate does not already exist in the target Secret
+resource.
+
+This helps to improve compatibility with certain ingress controllers (e.g.
+ingress-gce_) which require a TLS certificate to be present at all times in
+order to function.
+
+After the real, valid certificate has been obtained, cert-manager will replace
+the temporary self signed certificate with the valid one, **but will retain the
+same private key**.
 
 Special fields on Certificate resources for ACME Issuers
 ========================================================
@@ -88,3 +105,5 @@ More information on setting these fields can be found in the
    :maxdepth: 2
 
    ingress-shim
+
+.. _ingress-gce: https://github.com/kubernetes/ingress-gce

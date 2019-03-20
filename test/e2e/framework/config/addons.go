@@ -16,7 +16,9 @@ limitations under the License.
 
 package config
 
-import "flag"
+import (
+	"flag"
+)
 
 // Addons contains global configuration for instances of addons
 type Addons struct {
@@ -34,6 +36,10 @@ type Addons struct {
 	// to the way we provision DNS, this structure currently also describes
 	// the runtime configuration for a global shared Nginx instance as well.
 	Nginx Nginx
+
+	// Venafi describes global configuration variables for the Venafi tests.
+	// This includes credentials for the Venafi TPP server to use during runs.
+	Venafi Venafi
 }
 
 func (a *Addons) AddFlags(fs *flag.FlagSet) {
@@ -41,6 +47,7 @@ func (a *Addons) AddFlags(fs *flag.FlagSet) {
 	a.Helm.AddFlags(fs)
 	a.Pebble.AddFlags(fs)
 	a.Nginx.AddFlags(fs)
+	a.Venafi.AddFlags(fs)
 }
 
 func (c *Addons) Validate() []error {
@@ -49,5 +56,6 @@ func (c *Addons) Validate() []error {
 	errs = append(errs, c.Helm.Validate()...)
 	errs = append(errs, c.Pebble.Validate()...)
 	errs = append(errs, c.Nginx.Validate()...)
+	errs = append(errs, c.Venafi.Validate()...)
 	return errs
 }

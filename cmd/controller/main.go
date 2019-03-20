@@ -22,21 +22,22 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/golang/glog"
+	"k8s.io/klog"
 
-	"github.com/jetstack/cert-manager/pkg/logs"
+	logf "github.com/jetstack/cert-manager/pkg/logs"
 )
 
 func main() {
-	logs.InitLogs()
-	defer logs.FlushLogs()
-	stopCh := SetupSignalHandler()
+	logf.InitLogs(flag.CommandLine)
+	defer logf.FlushLogs()
 
-	cmd := NewCommandStartCertManagerController(os.Stdout, os.Stderr, stopCh)
+	stopCh := SetupSignalHandler()
+	cmd := NewCommandStartCertManagerController(stopCh)
 	cmd.Flags().AddGoFlagSet(flag.CommandLine)
+
 	flag.CommandLine.Parse([]string{})
 	if err := cmd.Execute(); err != nil {
-		glog.Fatal(err)
+		klog.Fatal(err)
 	}
 }
 

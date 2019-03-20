@@ -22,10 +22,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/golang/glog"
 	corev1 "k8s.io/api/core/v1"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
 	corelisters "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/tools/cache"
@@ -35,15 +33,18 @@ import (
 	cmlisters "github.com/jetstack/cert-manager/pkg/client/listers/certmanager/v1alpha1"
 	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
 	"github.com/jetstack/cert-manager/pkg/controller/acmechallenges/scheduler"
+	"github.com/jetstack/cert-manager/pkg/issuer"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/http"
-	"github.com/jetstack/cert-manager/pkg/util"
+	logf "github.com/jetstack/cert-manager/pkg/logs"
 )
 
 type Controller struct {
+	// the controllers root context, containing a controller scoped logger
+	ctx context.Context
 	controllerpkg.Context
 
-	helper     controllerpkg.Helper
+	helper     issuer.Helper
 	acmeHelper acme.Helper
 
 	// To allow injection for testing.
@@ -101,18 +102,23 @@ func New(ctx *controllerpkg.Context) *Controller {
 	ctrl.watchedInformers = append(ctrl.watchedInformers, serviceInformer.Informer().HasSynced)
 	ctrl.watchedInformers = append(ctrl.watchedInformers, ingressInformer.Informer().HasSynced)
 
-	ctrl.helper = controllerpkg.NewHelper(ctrl.issuerLister, ctrl.clusterIssuerLister)
+	ctrl.helper = issuer.NewHelper(ctrl.issuerLister, ctrl.clusterIssuerLister)
 	ctrl.acmeHelper = acme.NewHelper(ctrl.secretLister, ctrl.Context.ClusterResourceNamespace)
 
 	ctrl.httpSolver = http.NewSolver(ctx)
 	ctrl.dnsSolver = dns.NewSolver(ctx)
 	ctrl.scheduler = scheduler.New(ctrl.challengeLister)
+	ctrl.ctx = logf.NewContext(ctx.RootContext, nil, ControllerName)
 
 	return ctrl
 }
 
 func (c *Controller) Run(workers int, stopCh <-chan struct{}) error {
-	glog.V(4).Infof("Starting %s control loop", ControllerName)
+	ctx, cancel := context.WithCancel(c.ctx)
+	defer cancel()
+	log := logf.FromContext(ctx)
+
+	log.V(logf.DebugLevel).Info("starting control loop")
 	// wait for all the informer caches we depend on are synced
 	if !cache.WaitForCacheSync(stopCh, c.watchedInformers...) {
 		// c.challengeInformerSynced) {
@@ -125,20 +131,20 @@ func (c *Controller) Run(workers int, stopCh <-chan struct{}) error {
 		// TODO (@munnerz): make time.Second duration configurable
 		go wait.Until(func() {
 			defer wg.Done()
-			c.worker(stopCh)
+			c.worker(ctx)
 		},
 			time.Second, stopCh)
 	}
 	// TODO: properly plumb in stopCh and WaitGroup to scheduler
 	// Run the scheduler once per second
-	go wait.Until(c.runScheduler, time.Second*1, stopCh)
+	go wait.Until(func() { c.runScheduler(ctx) }, time.Second*1, stopCh)
 
 	<-stopCh
-	glog.V(4).Infof("Shutting down queue as workqueue signaled shutdown")
+	log.V(logf.DebugLevel).Info("shutting down queue as workqueue signaled shutdown")
 	c.queue.ShutDown()
-	glog.V(4).Infof("Waiting for workers to exit...")
+	log.V(logf.DebugLevel).Info("waiting for workers to exit")
 	wg.Wait()
-	glog.V(4).Infof("Workers exited.")
+	log.V(logf.DebugLevel).Info("workers exited")
 	return nil
 }
 
@@ -154,20 +160,23 @@ const MaxChallengesPerSchedule = 20
 // which, if any, challenges should be rescheduled.
 // TODO: it should also only re-run the scheduler if a change to challenges has
 // been observed, to save needless work
-func (c *Controller) runScheduler() {
+func (c *Controller) runScheduler(ctx context.Context) {
+	log := logf.FromContext(ctx, "scheduler")
+
 	toSchedule, err := c.scheduler.ScheduleN(MaxChallengesPerSchedule)
 	if err != nil {
-		runtime.HandleError(fmt.Errorf("Error determining set of challenges that should be scheduled for processing: %v", err))
+		log.Error(err, "error determining set of challenges that should be scheduled for processing")
 		return
 	}
 
 	for _, ch := range toSchedule {
+		log := logf.WithResource(log, ch)
 		ch = ch.DeepCopy()
 		ch.Status.Processing = true
 
 		_, err := c.CMClient.CertmanagerV1alpha1().Challenges(ch.Namespace).Update(ch)
 		if err != nil {
-			runtime.HandleError(fmt.Errorf("Error scheduling challenge %s/%s for processing: %v", ch.Namespace, ch.Name, err))
+			log.Error(err, "error scheduling challenge for processing")
 			return
 		}
 
@@ -175,16 +184,13 @@ func (c *Controller) runScheduler() {
 	}
 
 	if len(toSchedule) > 0 {
-		plural := ""
-		if len(toSchedule) > 1 {
-			plural = "s"
-		}
-		glog.V(4).Infof("Scheduled %d challenge%s for processing", len(toSchedule), plural)
+		log.V(logf.DebugLevel).Info("scheduled challenges for processing", "number_scheduled", len(toSchedule))
 	}
 }
 
-func (c *Controller) worker(stopCh <-chan struct{}) {
-	glog.V(4).Infof("Starting %q worker", ControllerName)
+func (c *Controller) worker(ctx context.Context) {
+	log := logf.FromContext(ctx)
+	log.V(logf.DebugLevel).Info("starting worker")
 	for {
 		obj, shutdown := c.queue.Get()
 		if shutdown {
@@ -199,26 +205,25 @@ func (c *Controller) worker(stopCh <-chan struct{}) {
 			if key, ok = obj.(string); !ok {
 				return
 			}
-			ctx, cancel := context.WithCancel(context.Background())
-			defer cancel()
-			ctx = util.ContextWithStopCh(ctx, stopCh)
-			glog.Infof("%s controller: syncing item '%s'", ControllerName, key)
+			log := log.WithValues("key", key)
+			log.Info("syncing resource")
 			if err := c.syncHandler(ctx, key); err != nil {
-				glog.Errorf("%s controller: Re-queuing item %q due to error processing: %s", ControllerName, key, err.Error())
+				log.Error(err, "re-queuing item  due to error processing")
 				c.queue.AddRateLimited(obj)
 				return
 			}
-			glog.Infof("%s controller: Finished processing work item %q", ControllerName, key)
+			log.Info("finished processing work item")
 			c.queue.Forget(obj)
 		}()
 	}
-	glog.V(4).Infof("Exiting %q worker loop", ControllerName)
+	log.V(logf.DebugLevel).Info("exiting worker loop")
 }
 
 func (c *Controller) processNextWorkItem(ctx context.Context, key string) error {
+	log := logf.FromContext(ctx)
 	namespace, name, err := cache.SplitMetaNamespaceKey(key)
 	if err != nil {
-		runtime.HandleError(fmt.Errorf("invalid resource key: %s", key))
+		log.Error(err, "invalid resource key")
 		return nil
 	}
 
@@ -226,13 +231,14 @@ func (c *Controller) processNextWorkItem(ctx context.Context, key string) error 
 
 	if err != nil {
 		if k8sErrors.IsNotFound(err) {
-			runtime.HandleError(fmt.Errorf("ch '%s' in work queue no longer exists", key))
+			log.Error(err, "challenge in work queue no longer exists")
 			return nil
 		}
 
 		return err
 	}
 
+	ctx = logf.NewContext(ctx, logf.WithResource(log, ch))
 	return c.Sync(ctx, ch)
 }
 

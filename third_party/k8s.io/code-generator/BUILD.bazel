@@ -42,7 +42,7 @@ genrule(
 
 genrule(
     name = "openapi",
-    srcs = ["//vendor/k8s.io/code-generator/cmd/openapi-gen"],
+    srcs = ["//vendor/k8s.io/kube-openapi/cmd/openapi-gen"],
     outs = ["openapi-gen"],
     cmd = "cp $(SRCS) $@",
     visibility = ["//visibility:public"],

@@ -23,7 +23,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/request"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/route53"
-	"github.com/golang/glog"
+	"k8s.io/klog"
 
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
 	pkgutil "github.com/jetstack/cert-manager/pkg/util"
@@ -84,12 +84,12 @@ func NewDNSProvider(accessKeyID, secretAccessKey, hostedZoneID, region string, a
 	sessionOpts := session.Options{}
 
 	if useAmbientCredentials {
-		glog.V(5).Infof("using ambient credentials")
+		klog.V(5).Infof("using ambient credentials")
 		// Leaving credentials unset results in a default credential chain being
 		// used; this chain is a reasonable default for getting ambient creds.
 		// https://docs.aws.amazon.com/sdk-for-go/v1/developer-guide/configuring-sdk.html#specifying-credentials
 	} else {
-		glog.V(5).Infof("not using ambient credentials")
+		klog.V(5).Infof("not using ambient credentials")
 		config.WithCredentials(credentials.NewStaticCredentials(accessKeyID, secretAccessKey, ""))
 		// also disable 'ambient' region sources
 		sessionOpts.SharedConfigState = session.SharedConfigDisable
@@ -150,7 +150,7 @@ func (r *DNSProvider) changeRecord(action, fqdn, value string, ttl int) error {
 	if err != nil {
 		if awserr, ok := err.(awserr.Error); ok {
 			if action == route53.ChangeActionDelete && awserr.Code() == route53.ErrCodeInvalidChangeBatch {
-				glog.V(5).Infof("ignoring InvalidChangeBatch error: %v", err)
+				klog.V(5).Infof("ignoring InvalidChangeBatch error: %v", err)
 				// If we try to delete something and get a 'InvalidChangeBatch' that
 				// means it's already deleted, no need to consider it an error.
 				return nil

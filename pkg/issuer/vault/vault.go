@@ -19,6 +19,7 @@ package vault
 import (
 	corelisters "k8s.io/client-go/listers/core/v1"
 
+	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	"github.com/jetstack/cert-manager/pkg/controller"
 	"github.com/jetstack/cert-manager/pkg/issuer"
@@ -49,5 +50,5 @@ func NewVault(ctx *controller.Context, issuer v1alpha1.GenericIssuer) (issuer.In
 
 // Register this Issuer with the issuer factory
 func init() {
-	controller.RegisterIssuer(controller.IssuerVault, NewVault)
+	issuer.RegisterIssuer(apiutil.IssuerVault, NewVault)
 }

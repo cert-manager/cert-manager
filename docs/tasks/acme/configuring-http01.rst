@@ -32,8 +32,10 @@ using Ingress resources
 How HTTP01 validations work
 ===========================
 
-.. todo::
-   Write a full description of how HTTP01 challenge validation works
+You can read about how the HTTP01 challenge type works on the
+`Let's Encrypt challenge types page`_.
+
+.. _`Let's Encrypt challenge types page`: https://letsencrypt.org/docs/challenge-types/#http-01-challenge
 
 Extra options
 =============
@@ -42,7 +44,7 @@ The HTTP01 Issuer supports a number of additional options.
 For full details on the range of options available, read the
 `reference documentation`_.
 
-.. _`reference documentation`: https://cert-manager.readthedocs.io/en/latest/reference/api-docs/index.html#acmeissuerhttp01config-v1alpha1
+.. _`reference documentation`: https://docs.cert-manager.io/en/latest/reference/api-docs/index.html#acmeissuerhttp01config-v1alpha1
 
 servicePort
 -----------

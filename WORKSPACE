@@ -48,17 +48,20 @@ git_repository(
 git_repository(
     name = "io_bazel_rules_docker",
     remote = "https://github.com/bazelbuild/rules_docker.git",
-    tag = "v0.6.0",
+    tag = "v0.7.0",
 )
 
 load(
-    "@io_bazel_rules_docker//container:container.bzl",
-    "container_pull",
+    "@io_bazel_rules_docker//repositories:repositories.bzl",
     container_repositories = "repositories",
 )
 
 container_repositories()
 
+load(
+    "@io_bazel_rules_docker//container:container.bzl",
+    "container_pull",
+)
 load(
     "@io_bazel_rules_docker//go:image.bzl",
     _go_image_repos = "repositories",
@@ -68,10 +71,27 @@ _go_image_repos()
 
 ## Pull some standard base images
 container_pull(
-    name = "alpine",
-    registry = "gcr.io",
-    repository = "jetstack-build-infra/alpine",
-    tag = "3.7-v20180822-0201cfb11",
+    name = "alpine_linux-amd64",
+    digest = "sha256:cf2412cab4f40318e722d2604fa6c79b3d28a7cb37988d95ab2453577417359a",
+    registry = "index.docker.io",
+    repository = "munnerz/alpine",
+    tag = "3.8-amd64",
+)
+
+container_pull(
+    name = "alpine_linux-arm64",
+    digest = "sha256:4b8a5fc687674dd11ab769b8a711acba667c752b08697a03f6ffb1f1bcd123e5",
+    registry = "index.docker.io",
+    repository = "munnerz/alpine",
+    tag = "3.8-arm64",
+)
+
+container_pull(
+    name = "alpine_linux-arm",
+    digest = "sha256:185cad013588d77b0e78018b5f275a7849a63a33cd926405363825536597d9e2",
+    registry = "index.docker.io",
+    repository = "munnerz/alpine",
+    tag = "3.8-arm",
 )
 
 ## Fetch helm & tiller for use in template generation and testing
@@ -119,7 +139,7 @@ container_pull(
 ## Install 'kind', for creating kubernetes-in-docker clusters
 go_repository(
     name = "io_kubernetes_sigs_kind",
-    commit = "e0e26dae2dab662a3d06756ed668f47b2a0515cc",
+    commit = "9307ec01e70ffd56d3a5bc16fb977d4f557a615f",
     importpath = "sigs.k8s.io/kind",
 )
 
@@ -128,7 +148,7 @@ go_repository(
 ## field in this rule
 go_repository(
     name = "org_letsencrypt_pebble",
-    commit = "cdd3ed3ddfdf9da7ab27fbe1fe032d0865b65376",
+    commit = "2e69bb16af048c491720f23cb284fce685e65fec",
     importpath = "github.com/letsencrypt/pebble",
     build_external = "vendored",
     # Expose the generated go_default_library as 'public' visibility
@@ -142,7 +162,7 @@ container_pull(
     name = "io_kubernetes_ingress-nginx",
     registry = "quay.io",
     repository = "kubernetes-ingress-controller/nginx-ingress-controller",
-    tag = "0.21.0",
+    tag = "0.23.0",
 )
 
 container_pull(
@@ -160,6 +180,71 @@ container_pull(
     registry = "index.docker.io",
     repository = "library/vault",
     tag = "0.9.3",
+)
+
+## Fetch kind images used during e2e tests
+container_pull(
+    name = "kind-1.11",
+    registry = "index.docker.io",
+    repository = "kindest/node",
+    tag = "v1.11.3",
+)
+
+container_pull(
+    name = "kind-1.12",
+    registry = "index.docker.io",
+    repository = "kindest/node",
+    tag = "v1.12.3",
+)
+
+container_pull(
+    name = "kind-1.13",
+    registry = "index.docker.io",
+    repository = "kindest/node",
+    tag = "v1.13.2",
+)
+
+## Fetch kubectl for use during e2e tests
+http_file(
+    name = "kubectl_1_11_darwin",
+    executable = 1,
+    sha256 = "cf1feeac2fdedfb069131e7d62735b99b49ec43bf0d7565a30379c35056906c4",
+    urls = ["https://storage.googleapis.com/kubernetes-release/release/v1.11.3/bin/darwin/amd64/kubectl"],
+)
+
+http_file(
+    name = "kubectl_1_11_linux",
+    executable = 1,
+    sha256 = "0d4c70484e90d4310f03f997b4432e0a97a7f5b5be5c31d281f3d05919f8b46c",
+    urls = ["https://storage.googleapis.com/kubernetes-release/release/v1.11.3/bin/linux/amd64/kubectl"],
+)
+
+http_file(
+    name = "kubectl_1_12_darwin",
+    executable = 1,
+    sha256 = "ccddf5b78cd24d5782f4fbe436eee974ca3d901a2d850c24693efa8824737979",
+    urls = ["https://storage.googleapis.com/kubernetes-release/release/v1.12.3/bin/darwin/amd64/kubectl"],
+)
+
+http_file(
+    name = "kubectl_1_12_linux",
+    executable = 1,
+    sha256 = "a93cd2ffd146bbffb6ea651b71b57fe377ba1f158c7c0eb16c14aa93394cd576",
+    urls = ["https://storage.googleapis.com/kubernetes-release/release/v1.12.3/bin/linux/amd64/kubectl"],
+)
+
+http_file(
+    name = "kubectl_1_13_darwin",
+    executable = 1,
+    sha256 = "e656a8ac9272d04febf2ed29b2e8866bfdb73f55e098026384268851d7aeba74",
+    urls = ["https://storage.googleapis.com/kubernetes-release/release/v1.13.2/bin/darwin/amd64/kubectl"],
+)
+
+http_file(
+    name = "kubectl_1_13_linux",
+    executable = 1,
+    sha256 = "2c7ab398559c7f4f91102c4a65184e0a5a3a137060c3179e9361d9c20b467181",
+    urls = ["https://storage.googleapis.com/kubernetes-release/release/v1.13.2/bin/linux/amd64/kubectl"],
 )
 
 ## Install buildozer, for mass-editing BUILD files
@@ -223,7 +308,7 @@ filegroup(
 git_repository(
     name = "build_bazel_rules_nodejs",
     remote = "https://github.com/bazelbuild/rules_nodejs.git",
-    tag = "0.15.0",  # check for the latest tag when you install
+    tag = "0.26.0",  # check for the latest tag when you install
 )
 
 load("@build_bazel_rules_nodejs//:package.bzl", "rules_nodejs_dependencies")
@@ -242,6 +327,13 @@ npm_install(
     name = "brodocs_modules",
     package_json = "@brodocs//:package.json",
     package_lock_json = "//docs/generated/reference/generate/bin:package-lock.json",
+)
+
+# Load the controller-tools repository in order to build the crd generator tool
+go_repository(
+    name = "io_kubernetes_sigs_controller-tools",
+    commit = "538db3af1387ce55d50b93e500a49925a5768c82",
+    importpath = "sigs.k8s.io/controller-tools",
 )
 
 # Load kubernetes-incubator/reference-docs, to be used as part of the docs

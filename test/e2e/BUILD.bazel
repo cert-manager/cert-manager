@@ -1,4 +1,21 @@
 load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
+load("@io_bazel_rules_docker//container:bundle.bzl", "container_bundle")
+
+container_bundle(
+    name = "images",
+    images = {
+        # A set of images to bundle up into a single tarball.
+        "pebble:bazel": "//test/e2e/charts/pebble:image",
+        "quay.io/kubernetes-ingress-controller/nginx-ingress-controller:0.23.0": "@io_kubernetes_ingress-nginx//image",
+        "k8s.gcr.io/defaultbackend:bazel": "@io_gcr_k8s_defaultbackend//image",
+        "vault:bazel": "@com_hashicorp_vault//image",
+        "gcr.io/kubernetes-helm/tiller:bazel": "@io_gcr_helm_tiller//image",
+        "{STABLE_DOCKER_REPO}/cert-manager-controller:{STABLE_DOCKER_TAG}": "//cmd/controller:image",
+        "{STABLE_DOCKER_REPO}/cert-manager-acmesolver:{STABLE_DOCKER_TAG}": "//cmd/acmesolver:image",
+        "{STABLE_DOCKER_REPO}/cert-manager-webhook:{STABLE_DOCKER_TAG}": "//cmd/webhook:image",
+        "{STABLE_DOCKER_REPO}/cert-manager-cainjector:{STABLE_DOCKER_TAG}": "//cmd/cainjector:image",
+    },
+)
 
 # we add this rule so users can `bazel build //test/e2e` to run a
 # platform-independent version of the e2e test binary
@@ -53,6 +70,8 @@ filegroup(
     name = "all-srcs",
     srcs = [
         ":package-srcs",
+        "//test/e2e/bin:all-srcs",
+        "//test/e2e/charts:all-srcs",
         "//test/e2e/framework:all-srcs",
         "//test/e2e/suite:all-srcs",
         "//test/e2e/util:all-srcs",
