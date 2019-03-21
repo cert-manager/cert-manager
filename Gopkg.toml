@@ -59,7 +59,7 @@ required = [
   version = "v0.9.3"
 
 [[constraint]]
-  branch = "passthrough-private-key"
+  branch = "master"
   name = "github.com/Venafi/vcert"
 
 # Use the GitHub mirror of goautoneg to save issues with bitbucket being down

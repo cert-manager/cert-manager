@@ -18,6 +18,7 @@ package cloud
 
 import (
 	"bytes"
+	"crypto/sha1"
 	"encoding/json"
 	"fmt"
 	"github.com/Venafi/vcert/pkg/certificate"
@@ -94,6 +95,43 @@ type CertificateStatusErrorInformation struct {
 	Code    int      `json:"code,omitempty"`
 	Message string   `json:"message,omitempty"`
 	Args    []string `json:"args,omitempty"`
+}
+
+type importRequestEndpointCert struct {
+	Certificate string `json:"certificate"`
+	Fingerprint string `json:"fingerprint"`
+}
+
+type importRequestEndpointProtocol struct {
+	Certificates []string      `json:"certificates"`
+	Ciphers      []interface{} `json:"ciphers"` //todo: check type
+	Protocol     string        `json:"protocol"`
+}
+
+type importRequestEndpoint struct {
+	Alpn                bool                            `json:"alpn"`
+	Certificates        []importRequestEndpointCert     `json:"certificates"`
+	ClientRenegotiation bool                            `json:"clientRenegotiation"`
+	Drown               bool                            `json:"drown"`
+	Heartbleed          bool                            `json:"heartbleed"`
+	Host                string                          `json:"host"`
+	HSTS                bool                            `json:"hsts"`
+	IP                  string                          `json:"ip"`
+	LogJam              int                             `json:"logJam"`
+	Npn                 bool                            `json:"npn"`
+	OCSP                int                             `json:"ocsp"` //default 1
+	Poodle              bool                            `json:"poodle"`
+	PoodleTls           bool                            `json:"poodleTls"`
+	Port                int                             `json:"port"`
+	Protocols           []importRequestEndpointProtocol `json:"protocols"`
+	SecureRenegotiation bool                            `json:"secureRenegotiation"`
+	Sloth               bool                            `json:"sloth"`
+}
+
+type importRequest struct {
+	ZoneName  string                  `json:"zoneName"`
+	NetworkID string                  `json:"networkId"`
+	Endpoints []importRequestEndpoint `json:"endpoints"`
 }
 
 //GenerateRequest generates a CertificateRequest based on the zone configuration, and returns the request along with the private key.
@@ -395,4 +433,11 @@ func parseCertificateRequestData(b []byte) (*certificateRequestResponse, error) 
 
 func newPEMCollectionFromResponse(data []byte, chainOrder certificate.ChainOption) (*certificate.PEMCollection, error) {
 	return certificate.PEMCollectionFromBytes(data, chainOrder)
+}
+
+func certThumprint(asn1 []byte) string {
+	h := sha1.New()
+	h.Write(asn1)
+	s := h.Sum(nil)
+	return strings.ToUpper(fmt.Sprintf("%x", s))
 }

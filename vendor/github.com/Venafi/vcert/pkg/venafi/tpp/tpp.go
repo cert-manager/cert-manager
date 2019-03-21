@@ -520,10 +520,22 @@ func (sp serverPolicy) toZoneConfig(zc *endpoint.ZoneConfiguration) {
 }
 
 func (sp serverPolicy) toPolicy() (p endpoint.Policy) {
+	addStartEnd := func(s string) string {
+		if !strings.HasPrefix(s, "^") {
+			s = "^" + s
+		}
+		if !strings.HasSuffix(s, "$") {
+			s = s + "$"
+		}
+		return s
+	}
+	escapeOne := func(s string) string {
+		return addStartEnd(regexp.QuoteMeta(s))
+	}
 	escapeArray := func(l []string) []string {
 		escaped := make([]string, len(l))
 		for i, r := range l {
-			escaped[i] = regexp.QuoteMeta(r)
+			escaped[i] = escapeOne(r)
 		}
 		return escaped
 	}
@@ -534,9 +546,9 @@ func (sp serverPolicy) toPolicy() (p endpoint.Policy) {
 		p.SubjectCNRegexes = make([]string, len(sp.WhitelistedDomains))
 		for i, d := range sp.WhitelistedDomains {
 			if sp.WildcardsAllowed {
-				p.SubjectCNRegexes[i] = ".*" + regexp.QuoteMeta("."+d)
+				p.SubjectCNRegexes[i] = addStartEnd(".*" + regexp.QuoteMeta("."+d))
 			} else {
-				p.SubjectCNRegexes[i] = regexp.QuoteMeta(d)
+				p.SubjectCNRegexes[i] = escapeOne(d)
 			}
 		}
 	}
@@ -546,22 +558,22 @@ func (sp serverPolicy) toPolicy() (p endpoint.Policy) {
 		p.SubjectOURegexes = []string{allAllowedRegex}
 	}
 	if sp.Subject.Organization.Locked {
-		p.SubjectORegexes = []string{regexp.QuoteMeta(sp.Subject.Organization.Value)}
+		p.SubjectORegexes = []string{escapeOne(sp.Subject.Organization.Value)}
 	} else {
 		p.SubjectORegexes = []string{allAllowedRegex}
 	}
 	if sp.Subject.City.Locked {
-		p.SubjectLRegexes = []string{regexp.QuoteMeta(sp.Subject.City.Value)}
+		p.SubjectLRegexes = []string{escapeOne(sp.Subject.City.Value)}
 	} else {
 		p.SubjectLRegexes = []string{allAllowedRegex}
 	}
 	if sp.Subject.State.Locked {
-		p.SubjectSTRegexes = []string{regexp.QuoteMeta(sp.Subject.State.Value)}
+		p.SubjectSTRegexes = []string{escapeOne(sp.Subject.State.Value)}
 	} else {
 		p.SubjectSTRegexes = []string{allAllowedRegex}
 	}
 	if sp.Subject.Country.Locked {
-		p.SubjectCRegexes = []string{regexp.QuoteMeta(sp.Subject.Country.Value)}
+		p.SubjectCRegexes = []string{escapeOne(sp.Subject.Country.Value)}
 	} else {
 		p.SubjectCRegexes = []string{allAllowedRegex}
 	}
@@ -572,9 +584,9 @@ func (sp serverPolicy) toPolicy() (p endpoint.Policy) {
 			p.DnsSanRegExs = make([]string, len(sp.WhitelistedDomains))
 			for i, d := range sp.WhitelistedDomains {
 				if sp.WildcardsAllowed {
-					p.DnsSanRegExs[i] = ".*" + regexp.QuoteMeta("."+d)
+					p.DnsSanRegExs[i] = addStartEnd(".*" + regexp.QuoteMeta("."+d))
 				} else {
-					p.DnsSanRegExs[i] = regexp.QuoteMeta(d)
+					p.DnsSanRegExs[i] = escapeOne(d)
 				}
 			}
 		}

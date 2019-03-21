@@ -58,23 +58,39 @@ const (
 type keyType string
 
 func (cp certificatePolicy) toPolicy() (p endpoint.Policy) {
-	p.SubjectCNRegexes = cp.SubjectCNRegexes
-	p.SubjectOURegexes = cp.SubjectOURegexes
-	p.SubjectCRegexes = cp.SubjectCRegexes
-	p.SubjectSTRegexes = cp.SubjectSTRegexes
-	p.SubjectLRegexes = cp.SubjectLRegexes
-	p.SubjectORegexes = cp.SubjectORegexes
-	p.DnsSanRegExs = cp.SANRegexes
+	addStartEnd := func(s string) string {
+		if !strings.HasPrefix(s, "^") {
+			s = "^" + s
+		}
+		if !strings.HasSuffix(s, "$") {
+			s = s + "$"
+		}
+		return s
+	}
+	addStartEndToArray := func(ss []string) []string {
+		a := make([]string, len(ss))
+		for i, s := range ss {
+			a[i] = addStartEnd(s)
+		}
+		return a
+	}
+	p.SubjectCNRegexes = addStartEndToArray(cp.SubjectCNRegexes)
+	p.SubjectOURegexes = addStartEndToArray(cp.SubjectOURegexes)
+	p.SubjectCRegexes = addStartEndToArray(cp.SubjectCRegexes)
+	p.SubjectSTRegexes = addStartEndToArray(cp.SubjectSTRegexes)
+	p.SubjectLRegexes = addStartEndToArray(cp.SubjectLRegexes)
+	p.SubjectORegexes = addStartEndToArray(cp.SubjectORegexes)
+	p.DnsSanRegExs = addStartEndToArray(cp.SANRegexes)
 	p.AllowKeyReuse = cp.KeyReuse
 	allowWildCards := false
 	for _, s := range p.SubjectCNRegexes {
-		if strings.HasPrefix(s, ".*") {
+		if strings.HasPrefix(s, "^.*") {
 			allowWildCards = true
 		}
 	}
 	if !allowWildCards {
 		for _, s := range p.DnsSanRegExs {
-			if strings.HasPrefix(s, ".*") {
+			if strings.HasPrefix(s, "^.*") {
 				allowWildCards = true
 			}
 		}
