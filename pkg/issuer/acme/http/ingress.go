@@ -121,7 +121,7 @@ func buildIngressResource(ch *v1alpha1.Challenge, svcName string) *extv1beta1.In
 	podLabels := podLabels(ch)
 	// TODO: add additional annotations to help workaround problematic ingress controller behaviours
 	ingAnnotations := make(map[string]string)
-	ingAnnotations["nginx.ingress.kubernetes.io/whitelist-source-range"] = "0.0.0.0/0"
+	ingAnnotations["nginx.ingress.kubernetes.io/whitelist-source-range"] = "0.0.0.0/0,::/0"
 
 	if ingClass != nil {
 		ingAnnotations[util.IngressKey] = *ingClass
