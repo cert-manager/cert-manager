@@ -35,7 +35,7 @@ Steps to add a ``FooDNS`` DNS-01 provider:
      and constructing a new instance of the provider.
 
 6. Add coverage for the provider to ``pkg/issuer/acme/dns/dns_test.go``.
-7. Add example configuration for the new provider to ``docs/reference/issuers/acme/dns01/index.rst``.
+7. Add example configuration for the new provider to ``docs/tasks/acme/configuring-dns01/``.
    The more information here the better,
    this example and corresponding documentation should inform users how to use and configure this backend,
    as well as mentioning any nuances with using this particular provider.
