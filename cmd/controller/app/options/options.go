@@ -19,6 +19,7 @@ package options
 import (
 	"fmt"
 	"net"
+	"runtime"
 	"time"
 
 	"github.com/spf13/pflag"
@@ -96,8 +97,16 @@ const (
 	defaultDNS01RecursiveNameserversOnly = false
 )
 
+func computeACMEHTTP01SolverImage(arch string) string {
+	if arch == "amd64" {
+		return fmt.Sprintf("quay.io/jetstack/cert-manager-acmesolver:%s", util.AppVersion)
+	} else {
+		return fmt.Sprintf("quay.io/jetstack/cert-manager-acmesolver-%s:%s", runtime.GOARCH, util.AppVersion)
+	}
+}
+
 var (
-	defaultACMEHTTP01SolverImage                 = fmt.Sprintf("quay.io/jetstack/cert-manager-acmesolver:%s", util.AppVersion)
+	defaultACMEHTTP01SolverImage                 = computeACMEHTTP01SolverImage(runtime.GOARCH)
 	defaultACMEHTTP01SolverResourceRequestCPU    = "10m"
 	defaultACMEHTTP01SolverResourceRequestMemory = "64Mi"
 	defaultACMEHTTP01SolverResourceLimitsCPU     = "100m"
