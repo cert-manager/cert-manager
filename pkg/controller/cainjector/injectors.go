@@ -18,6 +18,7 @@ package cainjector
 
 import (
 	admissionreg "k8s.io/api/admissionregistration/v1beta1"
+	apiext "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	"k8s.io/apimachinery/pkg/runtime"
 	apireg "k8s.io/kube-aggregator/pkg/apis/apiregistration/v1beta1"
 )
@@ -93,3 +94,27 @@ func (t *apiServiceTarget) SetCA(data []byte) {
 }
 
 // TODO(directxman12): conversion webhooks
+// crdConversionInjector knows how to create an InjectTarget for CRD conversion webhooks
+type crdConversionInjector struct{}
+
+func (i crdConversionInjector) NewTarget() InjectTarget {
+	return &crdConversionTarget{}
+}
+
+// crdConversionTarget knows how to set CA data for the conversion webhook in CRDs
+type crdConversionTarget struct {
+	obj apiext.CustomResourceDefinition
+}
+
+func (t *crdConversionTarget) AsObject() runtime.Object {
+	return &t.obj
+}
+func (t *crdConversionTarget) SetCA(data []byte) {
+	if t.obj.Spec.Conversion == nil || t.obj.Spec.Conversion.Strategy != apiext.WebhookConverter {
+		return
+	}
+	if t.obj.Spec.Conversion.WebhookClientConfig == nil {
+		t.obj.Spec.Conversion.WebhookClientConfig = &apiext.WebhookClientConfig{}
+	}
+	t.obj.Spec.Conversion.WebhookClientConfig.CABundle = data
+}
