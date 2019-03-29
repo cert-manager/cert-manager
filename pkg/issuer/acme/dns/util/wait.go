@@ -67,7 +67,7 @@ func updateDomainWithCName(r *dns.Msg, fqdn string) string {
 	for _, rr := range r.Answer {
 		if cn, ok := rr.(*dns.CNAME); ok {
 			if cn.Hdr.Name == fqdn {
-				klog.Infof("Updating FQDN: %s with it's CNAME: %s", fqdn, cn.Target)
+				klog.Infof("Updating FQDN: %s with its CNAME: %s", fqdn, cn.Target)
 				fqdn = cn.Target
 				break
 			}
