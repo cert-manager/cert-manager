@@ -456,6 +456,9 @@ func TestSync(t *testing.T) {
 							},
 							Annotations: map[string]string{
 								"testannotation": "true",
+								// We want ONLY invalid key, issuer annotations should be correct
+								"certmanager.k8s.io/issuer-kind": "Issuer",
+								"certmanager.k8s.io/issuer-name": "test",
 							},
 						},
 						Data: map[string][]byte{
@@ -647,6 +650,92 @@ func TestSync(t *testing.T) {
 						cmapi.SchemeGroupVersion.WithResource("certificates"),
 						gen.DefaultTestNamespace,
 						exampleCertTemporaryCondition,
+					)),
+				},
+			},
+		},
+		"should mark certificate with wrong issuer name as DoesNotMatch": {
+			Issuer: gen.Issuer("test",
+				gen.AddIssuerCondition(cmapi.IssuerCondition{
+					Type:   cmapi.IssuerConditionReady,
+					Status: cmapi.ConditionTrue,
+				}),
+				gen.SetIssuerSelfSigned(cmapi.SelfSignedIssuer{}),
+			),
+			Certificate: *exampleCert,
+			IssuerImpl: &fake.Issuer{
+				FakeIssue: func(context.Context, *cmapi.Certificate) (*issuer.IssueResponse, error) {
+					return &issuer.IssueResponse{
+						PrivateKey:  pk1PEM,
+						Certificate: cert1PEM,
+					}, nil
+				},
+			},
+			Builder: &testpkg.Builder{
+				KubeObjects: []runtime.Object{
+					&corev1.Secret{
+						ObjectMeta: metav1.ObjectMeta{
+							Namespace: gen.DefaultTestNamespace,
+							Name:      "output",
+							SelfLink:  "abc",
+							Labels: map[string]string{
+								cmapi.CertificateNameKey: "test",
+							},
+							Annotations: map[string]string{
+								"testannotation":                 "true",
+								"certmanager.k8s.io/issuer-kind": "Issuer",
+								"certmanager.k8s.io/issuer-name": "not-test",
+							},
+						},
+						Data: map[string][]byte{
+							corev1.TLSCertKey:       cert1PEM,
+							corev1.TLSPrivateKeyKey: pk1PEM,
+							TLSCAKey:                nil,
+						},
+					},
+				},
+				CertManagerObjects: []runtime.Object{gen.Certificate("test")},
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(coretesting.NewUpdateAction(
+						cmapi.SchemeGroupVersion.WithResource("certificates"),
+						gen.DefaultTestNamespace,
+						gen.CertificateFrom(exampleCert,
+							gen.SetCertificateStatusCondition(cmapi.CertificateCondition{
+								Type:               cmapi.CertificateConditionReady,
+								Status:             cmapi.ConditionFalse,
+								Reason:             "DoesNotMatch",
+								Message:            "Issuer of the certificate is not up to date: \"not-test\"",
+								LastTransitionTime: nowMetaTime,
+							}),
+							gen.SetCertificateNotAfter(metav1.NewTime(cert1.NotAfter)),
+						),
+					)),
+					testpkg.NewAction(coretesting.NewUpdateAction(
+						corev1.SchemeGroupVersion.WithResource("secrets"),
+						gen.DefaultTestNamespace,
+						&corev1.Secret{
+							ObjectMeta: metav1.ObjectMeta{
+								Namespace: gen.DefaultTestNamespace,
+								Name:      "output",
+								SelfLink:  "abc",
+								Labels: map[string]string{
+									cmapi.CertificateNameKey: "test",
+								},
+								Annotations: map[string]string{
+									"testannotation":                 "true",
+									"certmanager.k8s.io/alt-names":   "example.com",
+									"certmanager.k8s.io/common-name": "example.com",
+									"certmanager.k8s.io/ip-sans":     "",
+									"certmanager.k8s.io/issuer-kind": "Issuer",
+									"certmanager.k8s.io/issuer-name": "test",
+								},
+							},
+							Data: map[string][]byte{
+								corev1.TLSCertKey:       cert1PEM,
+								corev1.TLSPrivateKeyKey: pk1PEM,
+								TLSCAKey:                nil,
+							},
+						},
 					)),
 				},
 			},
