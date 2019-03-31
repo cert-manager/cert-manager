@@ -12,3 +12,4 @@ This sections contains tutorials relating to the ACME issuer.
    dns-validation
    http-validation
    migrating-from-kube-lego
+   running-on-openshift
