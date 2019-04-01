@@ -31,7 +31,7 @@ Step 2 - Verify cert-manager is running
    NAME                                      READY     STATUS             RESTARTS   AGE
    cert-manager-589678351-vd599              1/1       Running            0          1h
 
-Step 3 - Ingress
+Step 3 - Ingress on OpenShift
 =============================
 
 OpenShift comes with HA Proxy out of the box which creates the `Route` object for accessing application endpoints.
