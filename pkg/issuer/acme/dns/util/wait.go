@@ -185,8 +185,18 @@ func ValidateCAA(domain string, issuerID []string, iswildcard bool, nameservers 
 		var msg *dns.Msg
 		var err error
 		for i := 0; i < 8; i++ {
-			//TODO(dmo): figure out if we need these servers to be configurable as well
-			msg, err = dnsQuery(queryDomain, dns.TypeCAA, nameservers, true)
+			// usually, we should be able to just ask the local recursive
+			// nameserver for CAA records, but some setups will return SERVFAIL
+			// on unknown types like CAA. Instead, ask the authoritative server
+			var authNS []string
+			authNS, err = lookupNameservers(queryDomain, nameservers)
+			if err != nil {
+				return fmt.Errorf("Could not validate CAA record: %s", err)
+			}
+			for i, ans := range authNS {
+				authNS[i] = net.JoinHostPort(ans, "53")
+			}
+			msg, err = dnsQuery(queryDomain, dns.TypeCAA, authNS, false)
 			if err != nil {
 				return fmt.Errorf("Could not validate CAA record: %s", err)
 			}
