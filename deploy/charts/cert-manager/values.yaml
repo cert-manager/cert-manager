@@ -25,6 +25,8 @@ strategy: {}
   #   maxSurge: 0
   #   maxUnavailable: 1
 
+logLevel: 2
+
 image:
   repository: quay.io/jetstack/cert-manager-controller
   tag: v0.7.0

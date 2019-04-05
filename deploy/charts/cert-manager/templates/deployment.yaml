@@ -48,6 +48,9 @@ spec:
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           args:
+        {{- if .Values.logLevel }}
+          - --v={{ .Values.logLevel }}
+        {{- else }}
         {{- if .Values.clusterResourceNamespace }}
           - --cluster-resource-namespace={{ .Values.clusterResourceNamespace }}
         {{- else }}
