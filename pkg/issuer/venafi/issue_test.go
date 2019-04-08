@@ -20,8 +20,6 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/Venafi/vcert/pkg/endpoint"
-
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	testpkg "github.com/jetstack/cert-manager/pkg/controller/test"
 	"github.com/jetstack/cert-manager/pkg/issuer"
@@ -81,57 +79,6 @@ func TestIssue(t *testing.T) {
 			),
 			CheckFn: checkCertificateIssued,
 			Err:     false,
-		},
-		"obtain a certificate with the organization field locked by the venafi zone": {
-			Certificate: gen.Certificate("testcrt",
-				gen.SetCertificateDNSNames("example.com"),
-			),
-			Client: fakeConnector{
-				ReadZoneConfigurationFunc: func(zone string) (*endpoint.ZoneConfiguration, error) {
-					return &endpoint.ZoneConfiguration{
-						Organization:       "testing-org",
-						OrganizationLocked: true,
-					}, nil
-				},
-			}.Default(),
-			CheckFn: func(t *testing.T, s *fixture, args ...interface{}) {
-				checkCertificateIssued(t, s, args...)
-				resp := args[1].(*issuer.IssueResponse)
-				x509Cert, err := pki.DecodeX509CertificateBytes(resp.Certificate)
-				if err != nil {
-					t.Errorf("could not decode x509 certificate bytes: %v", err)
-				}
-				if x509Cert.Subject.Organization[0] != "testing-org" {
-					t.Errorf("expected organization field to be 'testing-org' but got: %s", x509Cert.Subject.Organization[0])
-				}
-			},
-			Err: false,
-		},
-		"obtain a certificate with the organization field defaulted by the venafi zone": {
-			Certificate: gen.Certificate("testcrt",
-				gen.SetCertificateDNSNames("example.com"),
-			),
-			Client: fakeConnector{
-				ReadZoneConfigurationFunc: func(zone string) (*endpoint.ZoneConfiguration, error) {
-					return &endpoint.ZoneConfiguration{
-						Organization:       "testing-org",
-						OrganizationLocked: false,
-					}, nil
-				},
-			}.Default(),
-			CheckFn: func(t *testing.T, s *fixture, args ...interface{}) {
-				checkCertificateIssued(t, s, args...)
-
-				resp := args[1].(*issuer.IssueResponse)
-				x509Cert, err := pki.DecodeX509CertificateBytes(resp.Certificate)
-				if err != nil {
-					t.Errorf("could not decode x509 certificate bytes: %v", err)
-				}
-				if x509Cert.Subject.Organization[0] != "testing-org" {
-					t.Errorf("expected organization field to be 'testing-org' but got: %s", x509Cert.Subject.Organization[0])
-				}
-			},
-			Err: false,
 		},
 		"obtain a certificate with the organization field set by the certificate": {
 			Certificate: gen.Certificate("testcrt",
