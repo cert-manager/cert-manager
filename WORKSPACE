@@ -40,7 +40,7 @@ gazelle_dependencies()
 ## Load kubernetes repo-infra for tools like kazel
 git_repository(
     name = "io_kubernetes_build",
-    commit = "84d52408a061e87d45aebf5a0867246bdf66d180",
+    commit = "df02ded38f9506e5bbcbf21702034b4fef815f2f",
     remote = "https://github.com/kubernetes/repo-infra.git",
 )
 
