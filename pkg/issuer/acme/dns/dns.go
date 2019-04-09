@@ -23,10 +23,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pkg/errors"
-	apiext "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
-	corev1listers "k8s.io/client-go/listers/core/v1"
-
 	"github.com/jetstack/cert-manager/pkg/acme/webhook"
 	whapi "github.com/jetstack/cert-manager/pkg/acme/webhook/apis/acme/v1alpha1"
 	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1alpha2"
@@ -39,11 +35,15 @@ import (
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/clouddns"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/cloudflare"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/digitalocean"
+	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/rdns"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/rfc2136"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/route53"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
 	webhookslv "github.com/jetstack/cert-manager/pkg/issuer/acme/dns/webhook"
 	"github.com/jetstack/cert-manager/pkg/logs"
+	"github.com/pkg/errors"
+	apiext "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
+	corev1listers "k8s.io/client-go/listers/core/v1"
 )
 
 const (
@@ -67,6 +67,7 @@ type dnsProviderConstructors struct {
 	azureDNS     func(environment, clientID, clientSecret, subscriptionID, tenantID, resourceGroupName, hostedZoneName string, dns01Nameservers []string) (*azuredns.DNSProvider, error)
 	acmeDNS      func(host string, accountJson []byte, dns01Nameservers []string) (*acmedns.DNSProvider, error)
 	digitalOcean func(token string, dns01Nameservers []string) (*digitalocean.DNSProvider, error)
+	rDns         func(apiUrl, token string) (*rdns.DNSProvider, error)
 }
 
 // Solver is a solver for the acme dns01 challenge.
@@ -351,6 +352,19 @@ func (s *Solver) solverForChallenge(ctx context.Context, issuer v1alpha2.Generic
 		if err != nil {
 			return nil, providerConfig, fmt.Errorf("error instantiating acmedns challenge solver: %s", err)
 		}
+	case providerConfig.RDNS != nil:
+		rdnsSecret, err := s.secretLister.Secrets(resourceNamespace).Get(providerConfig.RDNS.ClientToken.Name)
+		if err != nil {
+			return nil, nil, fmt.Errorf("error getting rdns token: %s", err.Error())
+		}
+		data, ok := rdnsSecret.Data[providerConfig.RDNS.ClientToken.Name]
+		if !ok {
+			return nil, nil, fmt.Errorf("error getting rdns secret key: key '%s' not found in secret", providerConfig.RDNS.ClientToken.Name)
+		}
+		impl, err = s.dnsProviderConstructors.rDns(providerConfig.RDNS.APIEndpoint, string(data))
+		if err != nil {
+			return nil, nil, fmt.Errorf("error instantiating rdns challenge solver: %s", err.Error())
+		}
 	default:
 		return nil, providerConfig, fmt.Errorf("no dns provider config specified for challenge")
 	}
@@ -460,6 +474,7 @@ func NewSolver(ctx *controller.Context) (*Solver, error) {
 			azuredns.NewDNSProviderCredentials,
 			acmedns.NewDNSProviderHostBytes,
 			digitalocean.NewDNSProviderCredentials,
+			rdns.NewDNSProviderCredential,
 		},
 		webhookSolvers: initialized,
 	}, nil

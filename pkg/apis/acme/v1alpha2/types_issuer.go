@@ -193,6 +193,9 @@ type ACMEChallengeSolverDNS01 struct {
 	RFC2136 *ACMEIssuerDNS01ProviderRFC2136 `json:"rfc2136,omitempty"`
 
 	// +optional
+	RDNS *ACMEIssuerDNS01ProviderRDNS `json:"rdns,omitempty"`
+
+	// +optional
 	Webhook *ACMEIssuerDNS01ProviderWebhook `json:"webhook,omitempty"`
 }
 
@@ -331,6 +334,12 @@ type ACMEIssuerDNS01ProviderRFC2136 struct {
 	// ``HMACSHA1``, ``HMACSHA256`` or ``HMACSHA512``.
 	// +optional
 	TSIGAlgorithm string `json:"tsigAlgorithm,omitempty"`
+}
+
+// ACMEIssuerDNS01ProviderRDNS is a structure containing rancher dns config
+type ACMEIssuerDNS01ProviderRDNS struct {
+	APIEndpoint string                   `json:"apiEndpoint,omitempty"`
+	ClientToken cmmeta.SecretKeySelector `json:"clientTokenSecretRef,omitempty"`
 }
 
 // ACMEIssuerDNS01ProviderWebhook specifies configuration for a webhook DNS01
