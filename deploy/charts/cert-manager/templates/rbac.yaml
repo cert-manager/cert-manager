@@ -69,4 +69,4 @@ rules:
   - apiGroups: ["certmanager.k8s.io"]
     resources: ["certificates", "issuers"]
     verbs: ["create", "delete", "deletecollection", "patch", "update"]
-{{- end -}}
+{{- end }}

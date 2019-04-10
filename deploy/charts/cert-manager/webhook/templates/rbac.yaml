@@ -67,4 +67,4 @@ rules:
   - clusterissuers
   verbs:
   - create
-{{- end -}}
+{{- end }}
