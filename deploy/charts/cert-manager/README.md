@@ -120,6 +120,11 @@ The following table lists the configurable parameters of the cert-manager chart 
 | `cainjector.image.repository` | cainjector image repository | `quay.io/jetstack/cert-manager-cainjector` |
 | `cainjector.image.tag` | cainjector image tag | `v0.7.0` |
 | `cainjector.image.pullPolicy` | cainjector image pull policy | `IfNotPresent` |
+| `crds.create` | Create CRDs. If your Helm version < 2.10 you will have to either create the CRDs first | `true` |
+| `crds.cleanup` | Attempt to delete CRDs when the release is removed. | `false` |
+| `hyperkubeImage.repository` | Repository for hyperkube image used to perform maintenance tasks | `k8s.gcr.io/hyperkube` |
+| `hyperkubeImage.tag` | Tag for hyperkube image used to perform maintenance tasks | `v1.12.1` |
+| `hyperkubeImage.repository` | Image pull policy for hyperkube image used to perform maintenance tasks | `IfNotPresent` |
 
 Specify each parameter using the `--set key=value[,key=value]` argument to `helm install`.
 
