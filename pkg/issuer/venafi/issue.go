@@ -158,7 +158,7 @@ func (v *Venafi) Issue(ctx context.Context, crt *v1alpha1.Certificate) (*issuer.
 	return &issuer.IssueResponse{
 		PrivateKey:  pk,
 		Certificate: []byte(chain),
-		CA: []byte(pemCollection.Chain[0]),
+		CA:          []byte(pemCollection.Chain[0]),
 	}, nil
 }
 
