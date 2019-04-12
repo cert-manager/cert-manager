@@ -26,6 +26,7 @@ cd "${REPO_ROOT}"
 
 # Generate BUILD.bazel files for golang types
 gazelle fix \
+    -exclude docs/generated/reference/generate/json_swagger \
     -external vendored \
     -build_file_name BUILD.bazel \
     -go_prefix github.com/jetstack/cert-manager
