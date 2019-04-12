@@ -25,6 +25,7 @@ filegroup(
         "//pkg/acme/webhook/apis/acme:all-srcs",
         "//pkg/acme/webhook/apiserver:all-srcs",
         "//pkg/acme/webhook/cmd:all-srcs",
+        "//pkg/acme/webhook/example:all-srcs",
         "//pkg/acme/webhook/registry/challengepayload:all-srcs",
         "//pkg/acme/webhook/sample:all-srcs",
     ],
