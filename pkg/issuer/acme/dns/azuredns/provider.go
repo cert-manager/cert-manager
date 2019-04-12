@@ -128,7 +128,7 @@ func (s *Solver) buildDNSProvider(ch *cmapi.ChallengeRequest) (*DNSProvider, err
 		return nil, err
 	}
 
-	p, err := NewDNSProviderCredentials(cfg.ClientID, string(clientSecret), cfg.SubscriptionID, cfg.TenantID, cfg.ResourceGroupName, cfg.HostedZoneName)
+	p, err := NewDNSProviderCredentials(cfg.ClientID, string(clientSecret), cfg.SubscriptionID, cfg.TenantID, cfg.ResourceGroupName)
 	if err != nil {
 		return nil, fmt.Errorf("error initializing DNS provider: %v", err)
 	}

@@ -28,12 +28,11 @@ type DNSProvider struct {
 	recordClient      dns.RecordSetsClient
 	zoneClient        dns.ZonesClient
 	resourceGroupName string
-	zoneName          string
 }
 
 // NewDNSProviderCredentials returns a DNSProvider instance configured for the Azure
 // DNS service using static credentials from its parameters
-func NewDNSProviderCredentials(clientID, clientSecret, subscriptionID, tenantID, resourceGroupName, zoneName string) (*DNSProvider, error) {
+func NewDNSProviderCredentials(clientID, clientSecret, subscriptionID, tenantID, resourceGroupName string) (*DNSProvider, error) {
 	oauthConfig, err := adal.NewOAuthConfig(azure.PublicCloud.ActiveDirectoryEndpoint, tenantID)
 	if err != nil {
 		return nil, err
@@ -54,7 +53,6 @@ func NewDNSProviderCredentials(clientID, clientSecret, subscriptionID, tenantID,
 		recordClient:      rc,
 		zoneClient:        zc,
 		resourceGroupName: resourceGroupName,
-		zoneName:          zoneName,
 	}, nil
 }
 

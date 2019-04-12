@@ -13,7 +13,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -45,10 +44,10 @@ func TestLiveAzureDnsPresent(t *testing.T) {
 	if !azureLiveTest {
 		t.Skip("skipping live test")
 	}
-	provider, err := NewDNSProviderCredentials(azureClientID, azureClientSecret, azuresubscriptionID, azureTenantID, azureResourceGroupName, azureHostedZoneName, util.RecursiveNameservers)
+	provider, err := NewDNSProviderCredentials(azureClientID, azureClientSecret, azuresubscriptionID, azureTenantID, azureResourceGroupName)
 	assert.NoError(t, err)
 
-	err = provider.Present(azureDomain, "_acme-challenge."+azureDomain+".", "123d==")
+	err = provider.Present(azureDomain, "_acme-challenge."+azureDomain+".", azureHostedZoneName, "123d==")
 	assert.NoError(t, err)
 }
 
@@ -59,9 +58,9 @@ func TestLiveAzureDnsCleanUp(t *testing.T) {
 
 	time.Sleep(time.Second * 5)
 
-	provider, err := NewDNSProviderCredentials(azureClientID, azureClientSecret, azuresubscriptionID, azureTenantID, azureResourceGroupName, azureHostedZoneName, util.RecursiveNameservers)
+	provider, err := NewDNSProviderCredentials(azureClientID, azureClientSecret, azuresubscriptionID, azureTenantID, azureResourceGroupName)
 	assert.NoError(t, err)
 
-	err = provider.CleanUp(azureDomain, "_acme-challenge."+azureDomain+".", "123d==")
+	err = provider.CleanUp(azureDomain, "_acme-challenge."+azureDomain+".", azureHostedZoneName, "123d==")
 	assert.NoError(t, err)
 }

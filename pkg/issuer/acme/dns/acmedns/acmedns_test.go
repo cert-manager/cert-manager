@@ -20,7 +20,6 @@ import (
 	"os"
 	"testing"
 
-	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -49,20 +48,20 @@ func TestValidJsonAccount(t *testing.T) {
             "username": "usernom"
         }
     }`)
-	provider, err := NewDNSProviderHostBytes("http://localhost/", accountJson, util.RecursiveNameservers)
+	provider, err := NewDNSProviderHostBytes("http://localhost/", accountJson)
 	assert.NoError(t, err, "Expected no error constructing DNSProvider")
 	assert.Equal(t, provider.accounts["domain"].FullDomain, "fooldom")
 }
 
 func TestNoValidJsonAccount(t *testing.T) {
 	accountJson := []byte(`{"duck": "quack"}`)
-	_, err := NewDNSProviderHostBytes("http://localhost/", accountJson, util.RecursiveNameservers)
+	_, err := NewDNSProviderHostBytes("http://localhost/", accountJson)
 	assert.Error(t, err, "Expected error constructing DNSProvider from invalid accountJson")
 }
 
 func TestNoValidJson(t *testing.T) {
 	accountJson := []byte("b00m")
-	_, err := NewDNSProviderHostBytes("http://localhost/", accountJson, util.RecursiveNameservers)
+	_, err := NewDNSProviderHostBytes("http://localhost/", accountJson)
 	assert.Error(t, err, "Expected error constructing DNSProvider from invalid JSON")
 }
 
@@ -70,7 +69,7 @@ func TestLiveAcmeDnsPresent(t *testing.T) {
 	if !acmednsLiveTest {
 		t.Skip("skipping live test")
 	}
-	provider, err := NewDNSProviderHostBytes(acmednsHost, acmednsAccountJson, util.RecursiveNameservers)
+	provider, err := NewDNSProviderHostBytes(acmednsHost, acmednsAccountJson)
 	assert.NoError(t, err)
 
 	// ACME-DNS requires 43 character keys or it throws a bad TXT error
