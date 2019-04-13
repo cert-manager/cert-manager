@@ -21,12 +21,13 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/golang/glog"
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/errors"
 
+	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/validation"
+	logf "github.com/jetstack/cert-manager/pkg/logs"
 )
 
 const (
@@ -37,6 +38,8 @@ const (
 )
 
 func (c *Controller) Sync(ctx context.Context, iss *v1alpha1.Issuer) (err error) {
+	log := logf.FromContext(ctx)
+
 	issuerCopy := iss.DeepCopy()
 	defer func() {
 		if _, saveErr := c.updateIssuerStatus(iss, issuerCopy); saveErr != nil {
@@ -47,10 +50,11 @@ func (c *Controller) Sync(ctx context.Context, iss *v1alpha1.Issuer) (err error)
 	el := validation.ValidateIssuer(issuerCopy)
 	if len(el) > 0 {
 		msg := fmt.Sprintf("Resource validation failed: %v", el.ToAggregate())
-		issuerCopy.UpdateStatusCondition(v1alpha1.IssuerConditionReady, v1alpha1.ConditionFalse, errorConfig, msg)
+		apiutil.SetIssuerCondition(issuerCopy, v1alpha1.IssuerConditionReady, v1alpha1.ConditionFalse, errorConfig, msg)
 		return
 	}
 
+	// Remove existing ErrorConfig condition if it exists
 	for i, c := range issuerCopy.Status.Conditions {
 		if c.Type == v1alpha1.IssuerConditionReady {
 			if c.Reason == errorConfig && c.Status == v1alpha1.ConditionFalse {
@@ -60,7 +64,7 @@ func (c *Controller) Sync(ctx context.Context, iss *v1alpha1.Issuer) (err error)
 		}
 	}
 
-	i, err := c.IssuerFactory().IssuerFor(issuerCopy)
+	i, err := c.issuerFactory.IssuerFor(issuerCopy)
 
 	if err != nil {
 		return err
@@ -69,7 +73,7 @@ func (c *Controller) Sync(ctx context.Context, iss *v1alpha1.Issuer) (err error)
 	err = i.Setup(ctx)
 	if err != nil {
 		s := messageErrorInitIssuer + err.Error()
-		glog.Info(s)
+		log.Info(s)
 		c.Recorder.Event(issuerCopy, v1.EventTypeWarning, errorInitIssuer, s)
 		return err
 	}

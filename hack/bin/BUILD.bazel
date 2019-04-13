@@ -63,6 +63,14 @@ genrule(
     visibility = ["//visibility:public"],
 )
 
+genrule(
+    name = "fetch_gencrd",
+    srcs = ["@io_kubernetes_sigs_controller-tools//cmd/crd"],
+    outs = ["gencrd"],
+    cmd = "cp $(SRCS) $@",
+    visibility = ["//visibility:public"],
+)
+
 config_setting(
     name = "k8",
     values = {"host_cpu": "k8"},

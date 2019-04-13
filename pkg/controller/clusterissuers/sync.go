@@ -21,12 +21,13 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/golang/glog"
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/errors"
 
+	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/validation"
+	logf "github.com/jetstack/cert-manager/pkg/logs"
 )
 
 const (
@@ -37,6 +38,8 @@ const (
 )
 
 func (c *Controller) Sync(ctx context.Context, iss *v1alpha1.ClusterIssuer) (err error) {
+	log := logf.FromContext(ctx)
+
 	issuerCopy := iss.DeepCopy()
 	defer func() {
 		if _, saveErr := c.updateIssuerStatus(iss, issuerCopy); saveErr != nil {
@@ -47,20 +50,22 @@ func (c *Controller) Sync(ctx context.Context, iss *v1alpha1.ClusterIssuer) (err
 	el := validation.ValidateClusterIssuer(issuerCopy)
 	if len(el) > 0 {
 		msg := fmt.Sprintf("Resource validation failed: %v", el.ToAggregate())
-		issuerCopy.UpdateStatusCondition(v1alpha1.IssuerConditionReady, v1alpha1.ConditionFalse, errorConfig, msg)
+		apiutil.SetIssuerCondition(issuerCopy, v1alpha1.IssuerConditionReady, v1alpha1.ConditionFalse, errorConfig, msg)
 		return
-	} else {
-		for i, c := range issuerCopy.Status.Conditions {
-			if c.Type == v1alpha1.IssuerConditionReady {
-				if c.Reason == errorConfig && c.Status == v1alpha1.ConditionFalse {
-					issuerCopy.Status.Conditions = append(issuerCopy.Status.Conditions[:i], issuerCopy.Status.Conditions[i+1:]...)
-					break
-				}
+	}
+
+	// Remove existing ErrorConfig condition if it exists
+	for i, c := range issuerCopy.Status.Conditions {
+		if c.Type == v1alpha1.IssuerConditionReady {
+			if c.Reason == errorConfig && c.Status == v1alpha1.ConditionFalse {
+				issuerCopy.Status.Conditions = append(issuerCopy.Status.Conditions[:i], issuerCopy.Status.Conditions[i+1:]...)
+				break
 			}
 		}
 	}
 
-	i, err := c.IssuerFactory().IssuerFor(issuerCopy)
+	i, err := c.issuerFactory.IssuerFor(issuerCopy)
+
 	if err != nil {
 		return err
 	}
@@ -68,7 +73,7 @@ func (c *Controller) Sync(ctx context.Context, iss *v1alpha1.ClusterIssuer) (err
 	err = i.Setup(ctx)
 	if err != nil {
 		s := messageErrorInitIssuer + err.Error()
-		glog.Info(s)
+		log.Error(err, "error setting up issuer")
 		c.Recorder.Event(issuerCopy, v1.EventTypeWarning, errorInitIssuer, s)
 		return err
 	}

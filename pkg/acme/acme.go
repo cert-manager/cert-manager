@@ -112,8 +112,7 @@ func ClientWithKey(iss cmapi.GenericIssuer, pk *rsa.PrivateKey) (acme.Interface,
 	if acmeSpec == nil {
 		return nil, fmt.Errorf("issuer %q is not an ACME issuer. Ensure the 'acme' stanza is correctly specified on your Issuer resource", iss.GetObjectMeta().Name)
 	}
-	acmeStatus := iss.GetStatus().ACME
-	acmeCl := lookupClient(acmeSpec, acmeStatus, pk)
+	acmeCl := lookupClient(acmeSpec, pk)
 
 	return acmemw.NewLogger(acmeCl), nil
 }
@@ -151,27 +150,21 @@ var (
 )
 
 type repoKey struct {
-	accounturi string
-	skiptls    bool
-	server     string
-	publickey  string
-	exponent   int
+	skiptls   bool
+	server    string
+	publickey string
+	exponent  int
 }
 
-func lookupClient(spec *cmapi.ACMEIssuer, status *cmapi.ACMEIssuerStatus, pk *rsa.PrivateKey) *acmecl.Client {
+func lookupClient(spec *cmapi.ACMEIssuer, pk *rsa.PrivateKey) *acmecl.Client {
 	clientRepoMu.Lock()
 	defer clientRepoMu.Unlock()
 	if clientRepo == nil {
 		clientRepo = make(map[repoKey]*acmecl.Client)
 	}
-	accountURI := ""
-	if status != nil && status.URI != "" {
-		accountURI = status.URI
-	}
 	repokey := repoKey{
-		accounturi: accountURI,
-		skiptls:    spec.SkipTLSVerify,
-		server:     spec.Server,
+		skiptls: spec.SkipTLSVerify,
+		server:  spec.Server,
 	}
 	// Encoding a big.Int cannot fail
 	pkbytes, _ := pk.PublicKey.N.GobEncode()
@@ -188,7 +181,6 @@ func lookupClient(spec *cmapi.ACMEIssuer, status *cmapi.ACMEIssuerStatus, pk *rs
 		DirectoryURL: spec.Server,
 		UserAgent:    util.CertManagerUserAgent,
 	}
-	acmeCl.SetAccountURL(accountURI)
 	clientRepo[repokey] = acmeCl
 	return acmeCl
 }

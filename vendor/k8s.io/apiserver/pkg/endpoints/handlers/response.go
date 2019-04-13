@@ -17,6 +17,7 @@ limitations under the License.
 package handlers
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 
@@ -28,16 +29,17 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apiserver/pkg/endpoints/handlers/negotiation"
 	"k8s.io/apiserver/pkg/endpoints/handlers/responsewriters"
-	"k8s.io/apiserver/pkg/endpoints/request"
 )
 
 // transformResponseObject takes an object loaded from storage and performs any necessary transformations.
 // Will write the complete response object.
-func transformResponseObject(ctx request.Context, scope RequestScope, req *http.Request, w http.ResponseWriter, statusCode int, result runtime.Object) {
+func transformResponseObject(ctx context.Context, scope RequestScope, req *http.Request, w http.ResponseWriter, statusCode int, result runtime.Object) {
 	// TODO: fetch the media type much earlier in request processing and pass it into this method.
+	trace := scope.Trace
 	mediaType, _, err := negotiation.NegotiateOutputMediaType(req, scope.Serializer, &scope)
 	if err != nil {
 		status := responsewriters.ErrorToAPIStatus(err)
+		trace.Step("Writing raw JSON response")
 		responsewriters.WriteRawJSON(int(status.Code), status, w)
 		return
 	}
@@ -68,6 +70,7 @@ func transformResponseObject(ctx request.Context, scope RequestScope, req *http.
 				return
 			}
 			encoder := metainternalversion.Codecs.EncoderForVersion(info.Serializer, metav1beta1.SchemeGroupVersion)
+			trace.Step(fmt.Sprintf("Serializing response as type %s", info.MediaType))
 			responsewriters.SerializeObject(info.MediaType, encoder, w, req, statusCode, partial)
 			return
 
@@ -79,6 +82,7 @@ func transformResponseObject(ctx request.Context, scope RequestScope, req *http.
 				return
 			}
 			list := &metav1beta1.PartialObjectMetadataList{}
+			trace.Step("Processing list items")
 			err := meta.EachListItem(result, func(obj runtime.Object) error {
 				m, err := meta.Accessor(obj)
 				if err != nil {
@@ -101,6 +105,7 @@ func transformResponseObject(ctx request.Context, scope RequestScope, req *http.
 				return
 			}
 			encoder := metainternalversion.Codecs.EncoderForVersion(info.Serializer, metav1beta1.SchemeGroupVersion)
+			trace.Step(fmt.Sprintf("Serializing response as type %s", info.MediaType))
 			responsewriters.SerializeObject(info.MediaType, encoder, w, req, statusCode, list)
 			return
 
@@ -109,17 +114,20 @@ func transformResponseObject(ctx request.Context, scope RequestScope, req *http.
 			// TODO: skip if this is a status response (delete without body)?
 
 			opts := &metav1beta1.TableOptions{}
+			trace.Step("Decoding parameters")
 			if err := metav1beta1.ParameterCodec.DecodeParameters(req.URL.Query(), metav1beta1.SchemeGroupVersion, opts); err != nil {
 				scope.err(err, w, req)
 				return
 			}
 
+			trace.Step("Converting to table")
 			table, err := scope.TableConvertor.ConvertToTable(ctx, result, opts)
 			if err != nil {
 				scope.err(err, w, req)
 				return
 			}
 
+			trace.Step("Processing rows")
 			for i := range table.Rows {
 				item := &table.Rows[i]
 				switch opts.IncludeObject {
@@ -156,6 +164,7 @@ func transformResponseObject(ctx request.Context, scope RequestScope, req *http.
 				return
 			}
 			encoder := metainternalversion.Codecs.EncoderForVersion(info.Serializer, metav1beta1.SchemeGroupVersion)
+			trace.Step(fmt.Sprintf("Serializing response as type %s", info.MediaType))
 			responsewriters.SerializeObject(info.MediaType, encoder, w, req, statusCode, table)
 			return
 
@@ -164,12 +173,14 @@ func transformResponseObject(ctx request.Context, scope RequestScope, req *http.
 			accepted, _ := negotiation.MediaTypesForSerializer(metainternalversion.Codecs)
 			err := negotiation.NewNotAcceptableError(accepted)
 			status := responsewriters.ErrorToAPIStatus(err)
+			trace.Step("Writing raw JSON response")
 			responsewriters.WriteRawJSON(int(status.Code), status, w)
 			return
 		}
 	}
 
-	responsewriters.WriteObject(ctx, statusCode, scope.Kind.GroupVersion(), scope.Serializer, result, w, req)
+	trace.Step("Writing response")
+	responsewriters.WriteObject(statusCode, scope.Kind.GroupVersion(), scope.Serializer, result, w, req)
 }
 
 // errNotAcceptable indicates Accept negotiation has failed

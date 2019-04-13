@@ -23,7 +23,8 @@ A simple Certificate could be defined as:
      - bar.example.com
      acme:
        config:
-       - ingressClass: nginx
+       - http01:
+           ingressClass: nginx
          domains:
          - foo.example.com
          - bar.example.com
@@ -75,6 +76,7 @@ CA           Fully supported
 Vault        Fully supported (although the requested duration must be lower
              than the configured Vault role's TTL)
 Self Signed  Fully supported
+Venafi       Fully supported
 ===========  ============================================================
 
 The default duration for all certificates is 90 days and the default renewal

@@ -27,6 +27,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 
+	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	"github.com/jetstack/cert-manager/pkg/util"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
@@ -45,7 +46,7 @@ func (h *Helper) WaitForCertificateReady(ns, name string, timeout time.Duration)
 			if err != nil {
 				return false, fmt.Errorf("error getting Certificate %v: %v", name, err)
 			}
-			isReady := certificate.HasCondition(v1alpha1.CertificateCondition{
+			isReady := apiutil.CertificateHasCondition(certificate, v1alpha1.CertificateCondition{
 				Type:   v1alpha1.CertificateConditionReady,
 				Status: v1alpha1.ConditionTrue,
 			})
@@ -76,7 +77,7 @@ func (h *Helper) WaitForCertificateNotReady(ns, name string, timeout time.Durati
 			if err != nil {
 				return false, fmt.Errorf("error getting Certificate %v: %v", name, err)
 			}
-			isReady := certificate.HasCondition(v1alpha1.CertificateCondition{
+			isReady := apiutil.CertificateHasCondition(certificate, v1alpha1.CertificateCondition{
 				Type:   v1alpha1.CertificateConditionReady,
 				Status: v1alpha1.ConditionFalse,
 			})

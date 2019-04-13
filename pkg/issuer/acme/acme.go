@@ -23,6 +23,7 @@ import (
 	"k8s.io/utils/clock"
 
 	"github.com/jetstack/cert-manager/pkg/acme"
+	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	cmlisters "github.com/jetstack/cert-manager/pkg/client/listers/certmanager/v1alpha1"
 	"github.com/jetstack/cert-manager/pkg/controller"
@@ -71,5 +72,5 @@ func New(ctx *controller.Context, issuer v1alpha1.GenericIssuer) (issuer.Interfa
 
 // Register this Issuer with the issuer factory
 func init() {
-	controller.RegisterIssuer(controller.IssuerACME, New)
+	issuer.RegisterIssuer(apiutil.IssuerACME, New)
 }

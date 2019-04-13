@@ -78,6 +78,9 @@ func (f *controllerFixture) Setup(t *testing.T) {
 		//		ambient credentials settings
 		f.Builder = &test.Builder{}
 	}
+	if f.Builder.T == nil {
+		f.Builder.T = t
+	}
 	f.Controller = f.buildFakeController(f.Builder, f.Issuer)
 	if f.PreFn != nil {
 		f.PreFn(t, f)

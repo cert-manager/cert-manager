@@ -17,45 +17,139 @@ limitations under the License.
 package logs
 
 import (
+	"context"
 	"flag"
 	"log"
 	"time"
 
-	"github.com/golang/glog"
-	"github.com/spf13/pflag"
+	"github.com/go-logr/logr"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/klog"
+	"k8s.io/klog/klogr"
+
+	"github.com/jetstack/cert-manager/pkg/api"
 )
 
-var logFlushFreq = pflag.Duration("log-flush-frequency", 5*time.Second, "Maximum number of seconds between log flushes")
+var (
+	Log = klogr.New().WithName("cert-manager")
 
-// TODO(thockin): This is temporary until we agree on log dirs and put those into each cmd.
-func init() {
-	flag.Set("logtostderr", "true")
-}
+	ErrorLevel = 0
+	WarnLevel  = 1
+	InfoLevel  = 2
+	DebugLevel = 3
+)
+
+var logFlushFreq = flag.Duration("log-flush-frequency", 5*time.Second, "Maximum number of seconds between log flushes")
 
 // GlogWriter serves as a bridge between the standard log package and the glog package.
 type GlogWriter struct{}
 
 // Write implements the io.Writer interface.
 func (writer GlogWriter) Write(data []byte) (n int, err error) {
-	glog.Info(string(data))
+	klog.Info(string(data))
 	return len(data), nil
 }
 
 // InitLogs initializes logs the way we want for kubernetes.
-func InitLogs() {
+func InitLogs(fs *flag.FlagSet) {
+	if fs == nil {
+		fs = flag.CommandLine
+	}
+	klog.InitFlags(fs)
+	fs.Set("logtostderr", "true")
+
 	log.SetOutput(GlogWriter{})
 	log.SetFlags(0)
+
 	// The default glog flush interval is 30 seconds, which is frighteningly long.
-	go wait.Until(glog.Flush, *logFlushFreq, wait.NeverStop)
+	go wait.Until(klog.Flush, *logFlushFreq, wait.NeverStop)
 }
 
 // FlushLogs flushes logs immediately.
 func FlushLogs() {
-	glog.Flush()
+	klog.Flush()
 }
 
-// NewLogger creates a new log.Logger which sends logs to glog.Info.
-func NewLogger(prefix string) *log.Logger {
-	return log.New(GlogWriter{}, prefix, 0)
+const (
+	ResourceNameKey      = "resource_name"
+	ResourceNamespaceKey = "resource_namespace"
+	ResourceKindKey      = "resource_kind"
+
+	RelatedResourceNameKey      = "related_resource_name"
+	RelatedResourceNamespaceKey = "related_resource_namespace"
+	RelatedResourceKindKey      = "related_resource_kind"
+)
+
+func WithResource(l logr.Logger, obj metav1.Object) logr.Logger {
+	var gvk schema.GroupVersionKind
+
+	if runtimeObj, ok := obj.(runtime.Object); ok {
+		gvks, _, _ := api.Scheme.ObjectKinds(runtimeObj)
+		if len(gvks) > 0 {
+			gvk = gvks[0]
+		}
+	}
+
+	// TODO: add resource apiVersion
+	return l.WithValues(
+		ResourceNameKey, obj.GetName(),
+		ResourceNamespaceKey, obj.GetNamespace(),
+		ResourceKindKey, gvk.Kind,
+	)
+}
+
+func WithRelatedResource(l logr.Logger, obj metav1.Object) logr.Logger {
+	var gvk schema.GroupVersionKind
+
+	if runtimeObj, ok := obj.(runtime.Object); ok {
+		gvks, _, _ := api.Scheme.ObjectKinds(runtimeObj)
+		if len(gvks) > 0 {
+			gvk = gvks[0]
+		}
+	}
+
+	// TODO: add resource apiVersion
+	return l.WithValues(
+		RelatedResourceNameKey, obj.GetName(),
+		RelatedResourceNamespaceKey, obj.GetNamespace(),
+		RelatedResourceKindKey, gvk.Kind,
+	)
+}
+
+func WithRelatedResourceName(l logr.Logger, name, namespace, kind string) logr.Logger {
+	return l.WithValues(
+		RelatedResourceNameKey, name,
+		RelatedResourceNamespaceKey, namespace,
+		RelatedResourceKindKey, kind,
+	)
+}
+
+var contextKey = &struct{}{}
+
+func FromContext(ctx context.Context, names ...string) logr.Logger {
+	l := ctx.Value(contextKey)
+	if l == nil {
+		return Log
+	}
+	lT := l.(logr.Logger)
+	for _, n := range names {
+		lT = lT.WithName(n)
+	}
+	return lT
+}
+
+func NewContext(ctx context.Context, l logr.Logger, names ...string) context.Context {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	if l == nil {
+		l = FromContext(ctx)
+	}
+	for _, n := range names {
+		l = l.WithName(n)
+	}
+	return context.WithValue(ctx, contextKey, l)
 }

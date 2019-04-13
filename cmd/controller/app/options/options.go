@@ -19,18 +19,19 @@ package options
 import (
 	"fmt"
 	"net"
+	"runtime"
 	"time"
 
 	"github.com/spf13/pflag"
 
-	"github.com/jetstack/cert-manager/pkg/util"
-
+	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	challengescontroller "github.com/jetstack/cert-manager/pkg/controller/acmechallenges"
 	orderscontroller "github.com/jetstack/cert-manager/pkg/controller/acmeorders"
 	certificatescontroller "github.com/jetstack/cert-manager/pkg/controller/certificates"
 	clusterissuerscontroller "github.com/jetstack/cert-manager/pkg/controller/clusterissuers"
 	ingressshimcontroller "github.com/jetstack/cert-manager/pkg/controller/ingress-shim"
 	issuerscontroller "github.com/jetstack/cert-manager/pkg/controller/issuers"
+	"github.com/jetstack/cert-manager/pkg/util"
 )
 
 type ControllerOptions struct {
@@ -85,7 +86,7 @@ const (
 
 	defaultClusterIssuerAmbientCredentials = true
 	defaultIssuerAmbientCredentials        = false
-	defaultRenewBeforeExpiryDuration       = time.Hour * 24 * 30
+	defaultRenewBeforeExpiryDuration       = cmapi.DefaultRenewBefore
 
 	defaultTLSACMEIssuerName           = ""
 	defaultTLSACMEIssuerKind           = "Issuer"
@@ -96,11 +97,19 @@ const (
 	defaultDNS01RecursiveNameserversOnly = false
 )
 
+func computeACMEHTTP01SolverImage(arch string) string {
+	if arch == "amd64" {
+		return fmt.Sprintf("quay.io/jetstack/cert-manager-acmesolver:%s", util.AppVersion)
+	} else {
+		return fmt.Sprintf("quay.io/jetstack/cert-manager-acmesolver-%s:%s", runtime.GOARCH, util.AppVersion)
+	}
+}
+
 var (
-	defaultACMEHTTP01SolverImage                 = fmt.Sprintf("quay.io/jetstack/cert-manager-acmesolver:%s", util.AppVersion)
+	defaultACMEHTTP01SolverImage                 = computeACMEHTTP01SolverImage(runtime.GOARCH)
 	defaultACMEHTTP01SolverResourceRequestCPU    = "10m"
 	defaultACMEHTTP01SolverResourceRequestMemory = "64Mi"
-	defaultACMEHTTP01SolverResourceLimitsCPU     = "10m"
+	defaultACMEHTTP01SolverResourceLimitsCPU     = "100m"
 	defaultACMEHTTP01SolverResourceLimitsMemory  = "64Mi"
 
 	defaultAutoCertificateAnnotations = []string{"kubernetes.io/tls-acme"}

@@ -16,7 +16,9 @@ limitations under the License.
 
 package config
 
-import "flag"
+import (
+	"flag"
+)
 
 // Pebble global configuration for new Pebble instances
 type Pebble struct {

@@ -54,6 +54,7 @@ type LocalObjectReference struct {
 // ObjectReference is a reference to an object with a given name and kind.
 type ObjectReference struct {
 	Name string `json:"name"`
+	// +optional
 	Kind string `json:"kind,omitempty"`
 }
 
@@ -61,11 +62,13 @@ const (
 	ClusterIssuerKind = "ClusterIssuer"
 	IssuerKind        = "Issuer"
 	CertificateKind   = "Certificate"
+	OrderKind         = "Order"
 )
 
 type SecretKeySelector struct {
 	// The name of the secret in the pod's namespace to select from.
 	LocalObjectReference `json:",inline"`
-	// The key of the secret to select from.  Must be a valid secret key.
-	Key string `json:"key"`
+	// The key of the secret to select from. Must be a valid secret key.
+	// +optional
+	Key string `json:"key,omitempty"`
 }

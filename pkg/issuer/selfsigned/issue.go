@@ -19,9 +19,9 @@ package selfsigned
 import (
 	"context"
 
-	"github.com/golang/glog"
 	corev1 "k8s.io/api/core/v1"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/klog"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	"github.com/jetstack/cert-manager/pkg/issuer"
@@ -32,7 +32,7 @@ import (
 
 func (c *SelfSigned) Issue(ctx context.Context, crt *v1alpha1.Certificate) (*issuer.IssueResponse, error) {
 	// get a copy of the existing/currently issued Certificate's private key
-	signeePrivateKey, err := kube.SecretTLSKey(c.secretsLister, crt.Namespace, crt.Spec.SecretName)
+	signeePrivateKey, err := kube.SecretTLSKey(ctx, c.secretsLister, crt.Namespace, crt.Spec.SecretName)
 	if k8sErrors.IsNotFound(err) || errors.IsInvalidData(err) {
 		// if one does not already exist, generate a new one
 		signeePrivateKey, err = pki.GeneratePrivateKeyForCertificate(crt)
@@ -45,19 +45,19 @@ func (c *SelfSigned) Issue(ctx context.Context, crt *v1alpha1.Certificate) (*iss
 		}
 	}
 	if err != nil {
-		glog.Errorf("Error getting private key %q for certificate: %v", crt.Spec.SecretName, err)
+		klog.Errorf("Error getting private key %q for certificate: %v", crt.Spec.SecretName, err)
 		return nil, err
 	}
 
 	// extract the public component of the key
 	signeePublicKey, err := pki.PublicKeyForPrivateKey(signeePrivateKey)
 	if err != nil {
-		glog.Errorf("Error getting public key from private key: %v", err)
+		klog.Errorf("Error getting public key from private key: %v", err)
 		return nil, err
 	}
 
 	// generate a x509 certificate template for this Certificate
-	template, err := pki.GenerateTemplate(c.issuer, crt)
+	template, err := pki.GenerateTemplate(crt)
 	if err != nil {
 		c.Recorder.Eventf(crt, corev1.EventTypeWarning, "ErrorSigning", "Error signing certificate: %v", err)
 		return nil, err

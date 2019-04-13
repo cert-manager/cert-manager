@@ -266,16 +266,17 @@ func (c *Chart) Logs() (map[string]string, error) {
 
 		err := resp.Error()
 		if err != nil {
-			return nil, err
+			continue
 		}
 
 		logs, err := resp.Raw()
 		if err != nil {
-			return nil, err
+			continue
 		}
 
 		outPath := path.Join(c.Namespace, pod.Name)
 		out[outPath] = string(logs)
 	}
+
 	return out, nil
 }

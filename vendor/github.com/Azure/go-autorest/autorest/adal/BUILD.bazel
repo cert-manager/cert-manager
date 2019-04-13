@@ -5,8 +5,6 @@ go_library(
     srcs = [
         "config.go",
         "devicetoken.go",
-        "msi.go",
-        "msi_windows.go",
         "persist.go",
         "sender.go",
         "token.go",
@@ -17,6 +15,7 @@ go_library(
     visibility = ["//visibility:public"],
     deps = [
         "//vendor/github.com/Azure/go-autorest/autorest/date:go_default_library",
+        "//vendor/github.com/Azure/go-autorest/version:go_default_library",
         "//vendor/github.com/dgrijalva/jwt-go:go_default_library",
     ],
 )

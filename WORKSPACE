@@ -6,27 +6,23 @@ load("@bazel_tools//tools/build_defs/repo:git.bzl", "new_git_repository")
 ## Load rules_go and dependencies
 http_archive(
     name = "io_bazel_rules_go",
-    urls = ["https://github.com/bazelbuild/rules_go/releases/download/0.16.6/rules_go-0.16.6.tar.gz"],
-    sha256 = "ade51a315fa17347e5c31201fdc55aa5ffb913377aa315dceb56ee9725e620ee",
+    url = "https://github.com/bazelbuild/rules_go/releases/download/0.18.2/rules_go-0.18.2.tar.gz",
+    sha256 = "31f959ecf3687f6e0bb9d01e1e7a7153367ecd82816c9c0ae149cd0e5a92bf8c",
 )
 
-load(
-    "@io_bazel_rules_go//go:def.bzl",
-    "go_rules_dependencies",
-    "go_register_toolchains",
-)
+load("@io_bazel_rules_go//go:deps.bzl", "go_rules_dependencies", "go_register_toolchains")
 
 go_rules_dependencies()
 
 go_register_toolchains(
-    go_version = "1.11.5",
+    go_version = "1.12",
 )
 
 ## Load gazelle and dependencies
 http_archive(
     name = "bazel_gazelle",
-    url = "https://github.com/bazelbuild/bazel-gazelle/releases/download/0.16.0/bazel-gazelle-0.16.0.tar.gz",
-    sha256 = "7949fc6cc17b5b191103e97481cf8889217263acf52e00b560683413af204fcb",
+    url = "https://github.com/bazelbuild/bazel-gazelle/releases/download/0.17.0/bazel-gazelle-0.17.0.tar.gz",
+    sha256 = "3c681998538231a2d24d0c07ed5a7658cb72bfb5fd4bf9911157c0e9ac6a2687",
 )
 
 load(
@@ -40,7 +36,7 @@ gazelle_dependencies()
 ## Load kubernetes repo-infra for tools like kazel
 git_repository(
     name = "io_kubernetes_build",
-    commit = "84d52408a061e87d45aebf5a0867246bdf66d180",
+    commit = "df02ded38f9506e5bbcbf21702034b4fef815f2f",
     remote = "https://github.com/kubernetes/repo-infra.git",
 )
 
@@ -48,17 +44,20 @@ git_repository(
 git_repository(
     name = "io_bazel_rules_docker",
     remote = "https://github.com/bazelbuild/rules_docker.git",
-    tag = "v0.6.0",
+    tag = "v0.7.0",
 )
 
 load(
-    "@io_bazel_rules_docker//container:container.bzl",
-    "container_pull",
+    "@io_bazel_rules_docker//repositories:repositories.bzl",
     container_repositories = "repositories",
 )
 
 container_repositories()
 
+load(
+    "@io_bazel_rules_docker//container:container.bzl",
+    "container_pull",
+)
 load(
     "@io_bazel_rules_docker//go:image.bzl",
     _go_image_repos = "repositories",
@@ -68,10 +67,27 @@ _go_image_repos()
 
 ## Pull some standard base images
 container_pull(
-    name = "alpine",
-    registry = "gcr.io",
-    repository = "jetstack-build-infra/alpine",
-    tag = "3.7-v20180822-0201cfb11",
+    name = "alpine_linux-amd64",
+    digest = "sha256:cf2412cab4f40318e722d2604fa6c79b3d28a7cb37988d95ab2453577417359a",
+    registry = "index.docker.io",
+    repository = "munnerz/alpine",
+    tag = "3.8-amd64",
+)
+
+container_pull(
+    name = "alpine_linux-arm64",
+    digest = "sha256:4b8a5fc687674dd11ab769b8a711acba667c752b08697a03f6ffb1f1bcd123e5",
+    registry = "index.docker.io",
+    repository = "munnerz/alpine",
+    tag = "3.8-arm64",
+)
+
+container_pull(
+    name = "alpine_linux-arm",
+    digest = "sha256:185cad013588d77b0e78018b5f275a7849a63a33cd926405363825536597d9e2",
+    registry = "index.docker.io",
+    repository = "munnerz/alpine",
+    tag = "3.8-arm",
 )
 
 ## Fetch helm & tiller for use in template generation and testing
@@ -128,7 +144,7 @@ go_repository(
 ## field in this rule
 go_repository(
     name = "org_letsencrypt_pebble",
-    commit = "cdd3ed3ddfdf9da7ab27fbe1fe032d0865b65376",
+    commit = "2e69bb16af048c491720f23cb284fce685e65fec",
     importpath = "github.com/letsencrypt/pebble",
     build_external = "vendored",
     # Expose the generated go_default_library as 'public' visibility
@@ -142,7 +158,7 @@ container_pull(
     name = "io_kubernetes_ingress-nginx",
     registry = "quay.io",
     repository = "kubernetes-ingress-controller/nginx-ingress-controller",
-    tag = "0.21.0",
+    tag = "0.23.0",
 )
 
 container_pull(
@@ -288,12 +304,9 @@ filegroup(
 git_repository(
     name = "build_bazel_rules_nodejs",
     remote = "https://github.com/bazelbuild/rules_nodejs.git",
-    tag = "0.15.0",  # check for the latest tag when you install
+    commit = "11271418a6bbd2529170270a7e61dcc5167bb16d",
+    shallow_since = "1554849870 -0700",
 )
-
-load("@build_bazel_rules_nodejs//:package.bzl", "rules_nodejs_dependencies")
-
-rules_nodejs_dependencies()
 
 load("@build_bazel_rules_nodejs//:defs.bzl", "node_repositories")
 
@@ -307,6 +320,13 @@ npm_install(
     name = "brodocs_modules",
     package_json = "@brodocs//:package.json",
     package_lock_json = "//docs/generated/reference/generate/bin:package-lock.json",
+)
+
+# Load the controller-tools repository in order to build the crd generator tool
+go_repository(
+    name = "io_kubernetes_sigs_controller-tools",
+    commit = "538db3af1387ce55d50b93e500a49925a5768c82",
+    importpath = "sigs.k8s.io/controller-tools",
 )
 
 # Load kubernetes-incubator/reference-docs, to be used as part of the docs

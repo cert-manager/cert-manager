@@ -1,0 +1,42 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "doc.go",
+        "enqueue.go",
+        "enqueue_mapped.go",
+        "enqueue_owner.go",
+        "eventhandler.go",
+    ],
+    importmap = "github.com/jetstack/cert-manager/vendor/sigs.k8s.io/controller-runtime/pkg/handler",
+    importpath = "sigs.k8s.io/controller-runtime/pkg/handler",
+    tags = ["manual"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//vendor/k8s.io/apimachinery/pkg/api/meta:go_default_library",
+        "//vendor/k8s.io/apimachinery/pkg/apis/meta/v1:go_default_library",
+        "//vendor/k8s.io/apimachinery/pkg/runtime:go_default_library",
+        "//vendor/k8s.io/apimachinery/pkg/runtime/schema:go_default_library",
+        "//vendor/k8s.io/apimachinery/pkg/types:go_default_library",
+        "//vendor/k8s.io/client-go/util/workqueue:go_default_library",
+        "//vendor/sigs.k8s.io/controller-runtime/pkg/event:go_default_library",
+        "//vendor/sigs.k8s.io/controller-runtime/pkg/internal/log:go_default_library",
+        "//vendor/sigs.k8s.io/controller-runtime/pkg/reconcile:go_default_library",
+        "//vendor/sigs.k8s.io/controller-runtime/pkg/runtime/inject:go_default_library",
+    ],
+)
+
+filegroup(
+    name = "package-srcs",
+    srcs = glob(["**"]),
+    tags = ["automanaged"],
+    visibility = ["//visibility:private"],
+)
+
+filegroup(
+    name = "all-srcs",
+    srcs = [":package-srcs"],
+    tags = ["automanaged"],
+    visibility = ["//visibility:public"],
+)

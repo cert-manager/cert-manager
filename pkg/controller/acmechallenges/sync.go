@@ -22,7 +22,6 @@ import (
 	"reflect"
 	"time"
 
-	"github.com/golang/glog"
 	corev1 "k8s.io/api/core/v1"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 
@@ -30,6 +29,8 @@ import (
 	acmecl "github.com/jetstack/cert-manager/pkg/acme/client"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
+	dnsutil "github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
+	logf "github.com/jetstack/cert-manager/pkg/logs"
 	acmeapi "github.com/jetstack/cert-manager/third_party/crypto/acme"
 )
 
@@ -53,6 +54,8 @@ type solver interface {
 // Sync will process this ACME Challenge.
 // It is the core control function for ACME challenges.
 func (c *Controller) Sync(ctx context.Context, ch *cmapi.Challenge) (err error) {
+	log := logf.FromContext(ctx).WithValues("dnsName", ch.Spec.DNSName, "type", ch.Spec.Type)
+	ctx = logf.NewContext(ctx, log)
 	oldChal := ch
 	ch = ch.DeepCopy()
 
@@ -88,13 +91,13 @@ func (c *Controller) Sync(ctx context.Context, ch *cmapi.Challenge) (err error) 
 		if ch.Status.Presented {
 			solver, err := c.solverFor(ch.Spec.Type)
 			if err != nil {
-				glog.Errorf("Error getting solver for challenge %q (type %q): %v", ch.Name, ch.Spec.Type, err)
+				log.Error(err, "error getting solver for challenge")
 				return err
 			}
 
 			err = solver.CleanUp(ctx, genericIssuer, ch)
 			if err != nil {
-				glog.Errorf("Error cleaning up challenge %q on deletion: %v", ch.Name, err)
+				log.Error(err, "error cleaning up challenge")
 				return err
 			}
 
@@ -131,6 +134,26 @@ func (c *Controller) Sync(ctx context.Context, ch *cmapi.Challenge) (err error) 
 		return nil
 	}
 
+	// check for CAA records.
+	// CAA records are static, so we don't have to present anything
+	// before we check for them.
+
+	// Find out which identity the ACME server says it will use.
+	dir, err := cl.Discover(ctx)
+	if err != nil {
+		return err
+	}
+	// TODO(dmo): figure out if missing CAA identity in directory
+	// means no CAA check is performed by ACME server or if any valid
+	// CAA would stop issuance (strongly suspect the former)
+	if len(dir.CAA) != 0 {
+		err := dnsutil.ValidateCAA(ch.Spec.DNSName, dir.CAA, ch.Spec.Wildcard, c.Context.DNS01Nameservers)
+		if err != nil {
+			ch.Status.Reason = fmt.Sprintf("CAA self-check failed: %s", err)
+			return err
+		}
+	}
+
 	solver, err := c.solverFor(ch.Spec.Type)
 	if err != nil {
 		return err
@@ -148,7 +171,7 @@ func (c *Controller) Sync(ctx context.Context, ch *cmapi.Challenge) (err error) 
 
 	err = solver.Check(ctx, genericIssuer, ch)
 	if err != nil {
-		glog.Infof("propagation check failed: %v", err)
+		log.Error(err, "propagation check failed")
 		ch.Status.Reason = fmt.Sprintf("Waiting for %s challenge propagation: %s", ch.Spec.Type, err)
 
 		key, err := controllerpkg.KeyFunc(ch)
@@ -172,11 +195,12 @@ func (c *Controller) Sync(ctx context.Context, ch *cmapi.Challenge) (err error) 
 }
 
 func (c *Controller) handleFinalizer(ctx context.Context, ch *cmapi.Challenge) error {
+	log := logf.FromContext(ctx, "finalizer")
 	if len(ch.Finalizers) == 0 {
 		return nil
 	}
 	if ch.Finalizers[0] != cmapi.ACMEFinalizer {
-		glog.V(4).Infof("Waiting to run challenge %q finalization...", ch.Name)
+		log.V(logf.DebugLevel).Info("waiting to run challenge finalization...")
 		return nil
 	}
 	ch.Finalizers = ch.Finalizers[1:]
@@ -192,13 +216,13 @@ func (c *Controller) handleFinalizer(ctx context.Context, ch *cmapi.Challenge) e
 
 	solver, err := c.solverFor(ch.Spec.Type)
 	if err != nil {
-		glog.Errorf("Error getting solver for challenge %q (type %q): %v", ch.Name, ch.Spec.Type, err)
+		log.Error(err, "error getting solver for challenge")
 		return nil
 	}
 
 	err = solver.CleanUp(ctx, genericIssuer, ch)
 	if err != nil {
-		glog.Errorf("Error cleaning up challenge %q on deletion: %v", ch.Name, err)
+		log.Error(err, "error cleaning up challenge")
 		return nil
 	}
 
@@ -241,7 +265,9 @@ func (c *Controller) syncChallengeStatus(ctx context.Context, cl acmecl.Interfac
 // challenge if it failed, or the final state of the challenge's authorization
 // if accepting the challenge succeeds.
 func (c *Controller) acceptChallenge(ctx context.Context, cl acmecl.Interface, ch *cmapi.Challenge) error {
-	glog.Infof("Accepting challenge for domain %q", ch.Spec.DNSName)
+	log := logf.FromContext(ctx, "acceptChallenge")
+
+	log.Info("accepting challenge with ACME server")
 	// We manually construct an ACME challenge here from our own internal type
 	// to save additional round trips to the ACME server.
 	acmeChal := &acmeapi.Challenge{
@@ -253,17 +279,18 @@ func (c *Controller) acceptChallenge(ctx context.Context, cl acmecl.Interface, c
 		ch.Status.State = cmapi.State(acmeChal.Status)
 	}
 	if err != nil {
-		glog.Infof("%s: Error accepting challenge: %v", ch.Name, err)
+		log.Error(err, "error accepting challenge")
 		ch.Status.Reason = fmt.Sprintf("Error accepting challenge: %v", err)
 		return err
 	}
 
-	glog.Infof("Waiting for authorization for domain %q", ch.Spec.DNSName)
+	log.Info("waiting for authorization for domain")
 	authorization, err := cl.WaitAuthorization(ctx, ch.Spec.AuthzURL)
 	if err != nil {
+		log.Error(err, "error waiting for authorization")
+
 		authErr, ok := err.(acmeapi.AuthorizationError)
 		if !ok {
-			glog.Infof("%s: Unexpected error waiting for authorization: %v", ch.Name, err)
 			return err
 		}
 

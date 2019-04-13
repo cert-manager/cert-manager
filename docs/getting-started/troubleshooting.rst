@@ -103,7 +103,7 @@ the state of the pods that have been deployed:
    NAME                                            READY   STATUS      RESTARTS   AGE
    cert-manager-7cbdc48784-rpgnt                   1/1     Running     0          3m
    cert-manager-webhook-5b5dd6999-kst4x            1/1     Running     0          3m
-   cert-manager-webhook-ca-sync-1547942400-g6985   0/1     Completed   0          3m
+   cert-manager-cainjector-3ba5cd2bcd-de332x       1/1     Running     0          3m
 
 If the 'webhook' pod (2nd line) is in a ContainerCreating state, it may still
 be waiting for the Secret in step 2 to be mounted into the pod.
@@ -117,35 +117,3 @@ again.
 
      kubectl get secret cert-manager-webhook-webhook-tls
 
-
-If the ``ca-sync`` pod has not reached a Completed state, or has not been run,
-you may need to manually re-trigger it to run. You can read more on how to do
-this below.
-
-4. Manually trigger the ca-sync CronJob to run
-----------------------------------------------
-
-If the 'ca-sync' pod above does not show Completed, you may need to re-start
-the Job using the ``kubectl create job`` command:
-
-.. code-block:: shell
-
-   # Find the name of the CronJob resource
-   kubectl get cronjob --namespace cert-manager
-   NAME                           SCHEDULE   SUSPEND   ACTIVE   LAST SCHEDULE   AGE
-   cert-manager-webhook-ca-sync   @weekly    False     0                        3m
-
-   # Trigger the CronJob to run immediately
-   kubectl create job \
-        --namespace cert-manager \
-        --from cronjob/cert-manager-webhook-ca-sync \
-        ca-sync-manually-triggered
-
-This will trigger the cert-manager job to run again.
-
-.. note::
-   The ``--from`` flag was only introduced in kubectl v1.11
-
-.. note::
-   If the job continues to fail, please read the :doc:`Webhook <./webhook>`
-   docs for additional information.

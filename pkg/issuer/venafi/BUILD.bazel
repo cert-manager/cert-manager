@@ -1,0 +1,61 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "issue.go",
+        "setup.go",
+        "venafi.go",
+    ],
+    importpath = "github.com/jetstack/cert-manager/pkg/issuer/venafi",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//pkg/api/util:go_default_library",
+        "//pkg/apis/certmanager/v1alpha1:go_default_library",
+        "//pkg/controller:go_default_library",
+        "//pkg/issuer:go_default_library",
+        "//pkg/util/pki:go_default_library",
+        "//vendor/github.com/Venafi/vcert:go_default_library",
+        "//vendor/github.com/Venafi/vcert/pkg/certificate:go_default_library",
+        "//vendor/github.com/Venafi/vcert/pkg/endpoint:go_default_library",
+        "//vendor/k8s.io/api/core/v1:go_default_library",
+        "//vendor/k8s.io/client-go/listers/core/v1:go_default_library",
+        "//vendor/k8s.io/klog:go_default_library",
+    ],
+)
+
+filegroup(
+    name = "package-srcs",
+    srcs = glob(["**"]),
+    tags = ["automanaged"],
+    visibility = ["//visibility:private"],
+)
+
+filegroup(
+    name = "all-srcs",
+    srcs = [":package-srcs"],
+    tags = ["automanaged"],
+    visibility = ["//visibility:public"],
+)
+
+go_test(
+    name = "go_default_test",
+    srcs = [
+        "connector_test.go",
+        "fixture_test.go",
+        "issue_test.go",
+    ],
+    embed = [":go_default_library"],
+    deps = [
+        "//pkg/apis/certmanager/v1alpha1:go_default_library",
+        "//pkg/controller/test:go_default_library",
+        "//pkg/issuer:go_default_library",
+        "//pkg/util:go_default_library",
+        "//pkg/util/pki:go_default_library",
+        "//test/unit/gen:go_default_library",
+        "//vendor/github.com/Venafi/vcert/pkg/certificate:go_default_library",
+        "//vendor/github.com/Venafi/vcert/pkg/endpoint:go_default_library",
+        "//vendor/github.com/Venafi/vcert/pkg/venafi/fake:go_default_library",
+        "//vendor/github.com/kr/pretty:go_default_library",
+    ],
+)

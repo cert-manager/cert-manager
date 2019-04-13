@@ -4,6 +4,7 @@ go_library(
     name = "go_default_library",
     srcs = [
         "context.go",
+        "ingress.go",
         "useragent.go",
         "util.go",
         "version.go",

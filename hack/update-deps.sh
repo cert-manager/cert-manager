@@ -34,7 +34,9 @@ rm -Rf vendor/github.com/prometheus/procfs/fixtures \
        vendor/github.com/coreos/etcd/cmd/etcdctl \
        vendor/github.com/coreos/etcd/cmd/functional \
        vendor/github.com/coreos/etcd/cmd/tools \
-       vendor/github.com/coreos/etcd/cmd/etcd
+       vendor/github.com/coreos/etcd/cmd/etcd \
+       vendor/github.com/docker/docker/hack \
+       vendor/github.com/docker/docker/project
 
 echo "+++ Deleting bazel related data in vendor/"
 find vendor/ -type f \( -name BUILD -o -name BUILD.bazel -o -name WORKSPACE \) \

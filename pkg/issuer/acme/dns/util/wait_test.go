@@ -177,3 +177,24 @@ func TestResolveConfServers(t *testing.T) {
 		}
 	}
 }
+
+func TestValidateCAA(t *testing.T) {
+	// google installs a CAA record at google.com
+	// ask for the www.google.com record to test that
+	// we recurse up the labels
+	err := ValidateCAA("www.google.com", []string{"letsencrypt", "pki.goog"}, false, RecursiveNameservers)
+	if err != nil {
+		t.Fatalf("unexpected error: %s", err)
+	}
+	// now ask, expecting a CA that wont match
+	err = ValidateCAA("www.google.com", []string{"daniel.homebrew.ca"}, false, RecursiveNameservers)
+	if err == nil {
+		t.Fatalf("expected err, got success")
+	}
+	// ask for a domain you know does not have CAA records.
+	// it should succeed
+	err = ValidateCAA("www.example.org", []string{"daniel.homebrew.ca"}, false, RecursiveNameservers)
+	if err != nil {
+		t.Fatalf("expected err, got %s", err)
+	}
+}
