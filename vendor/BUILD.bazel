@@ -381,6 +381,7 @@ filegroup(
         "//vendor/sigs.k8s.io/structured-merge-diff/schema:all-srcs",
         "//vendor/sigs.k8s.io/structured-merge-diff/typed:all-srcs",
         "//vendor/sigs.k8s.io/structured-merge-diff/value:all-srcs",
+        "//vendor/sigs.k8s.io/testing_frameworks/integration:all-srcs",
         "//vendor/sigs.k8s.io/yaml:all-srcs",
     ],
     tags = ["automanaged"],

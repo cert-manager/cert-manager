@@ -32,21 +32,10 @@ go_test(
     ],
     embed = [":go_default_library"],
     deps = [
+        "//pkg/acme/webhook:go_default_library",
         "//pkg/apis/certmanager/v1alpha1:go_default_library",
-        "//pkg/controller:go_default_library",
-        "//pkg/controller/test:go_default_library",
-        "//pkg/issuer/acme/dns/acmedns:go_default_library",
-        "//pkg/issuer/acme/dns/azuredns:go_default_library",
-        "//pkg/issuer/acme/dns/clouddns:go_default_library",
-        "//pkg/issuer/acme/dns/cloudflare:go_default_library",
-        "//pkg/issuer/acme/dns/digitalocean:go_default_library",
-        "//pkg/issuer/acme/dns/rfc2136:go_default_library",
-        "//pkg/issuer/acme/dns/route53:go_default_library",
-        "//pkg/issuer/acme/dns/util:go_default_library",
-        "//test/util/generate:go_default_library",
         "//vendor/k8s.io/api/core/v1:go_default_library",
         "//vendor/k8s.io/apimachinery/pkg/apis/meta/v1:go_default_library",
-        "//vendor/k8s.io/apimachinery/pkg/runtime:go_default_library",
     ],
 )
 
