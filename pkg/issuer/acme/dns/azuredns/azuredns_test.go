@@ -10,10 +10,6 @@ package azuredns
 
 import (
 	"os"
-	"testing"
-	"time"
-
-	"github.com/stretchr/testify/assert"
 )
 
 var (
@@ -38,29 +34,4 @@ func init() {
 	if len(azureClientID) > 0 && len(azureClientSecret) > 0 && len(azureDomain) > 0 {
 		azureLiveTest = true
 	}
-}
-
-func TestLiveAzureDnsPresent(t *testing.T) {
-	if !azureLiveTest {
-		t.Skip("skipping live test")
-	}
-	provider, err := NewDNSProviderCredentials(azureClientID, azureClientSecret, azuresubscriptionID, azureTenantID, azureResourceGroupName)
-	assert.NoError(t, err)
-
-	err = provider.Present(azureDomain, "_acme-challenge."+azureDomain+".", azureHostedZoneName, "123d==")
-	assert.NoError(t, err)
-}
-
-func TestLiveAzureDnsCleanUp(t *testing.T) {
-	if !azureLiveTest {
-		t.Skip("skipping live test")
-	}
-
-	time.Sleep(time.Second * 5)
-
-	provider, err := NewDNSProviderCredentials(azureClientID, azureClientSecret, azuresubscriptionID, azureTenantID, azureResourceGroupName)
-	assert.NoError(t, err)
-
-	err = provider.CleanUp(azureDomain, "_acme-challenge."+azureDomain+".", azureHostedZoneName, "123d==")
-	assert.NoError(t, err)
 }

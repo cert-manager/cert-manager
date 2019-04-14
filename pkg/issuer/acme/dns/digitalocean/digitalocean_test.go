@@ -19,7 +19,6 @@ package digitalocean
 import (
 	"os"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -47,34 +46,4 @@ func TestNewDNSProviderValid(t *testing.T) {
 	_, err := NewDNSProviderCredentials("123")
 	assert.NoError(t, err)
 	restoreEnv()
-}
-
-func TestDigitalOceanPresent(t *testing.T) {
-	if !doLiveTest {
-		t.Skip("skipping live test")
-	}
-
-	provider, err := NewDNSProviderCredentials(doToken)
-	assert.NoError(t, err)
-
-	err = provider.Present(doDomain, "_acme-challenge."+doDomain+".", doDomain, "123d==")
-	assert.NoError(t, err)
-}
-
-func TestDigitalOceanCleanUp(t *testing.T) {
-	if !doLiveTest {
-		t.Skip("skipping live test")
-	}
-
-	time.Sleep(time.Second * 2)
-
-	provider, err := NewDNSProviderCredentials(doToken)
-	assert.NoError(t, err)
-
-	err = provider.CleanUp(doDomain, "_acme-challenge."+doDomain+".", doDomain, "123d==")
-	assert.NoError(t, err)
-}
-
-func TestDigitalOceanSolveForProvider(t *testing.T) {
-
 }

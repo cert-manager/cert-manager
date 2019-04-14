@@ -11,7 +11,6 @@ package clouddns
 import (
 	"os"
 	"testing"
-	"time"
 
 	"golang.org/x/net/context"
 	"golang.org/x/oauth2/google"
@@ -53,44 +52,4 @@ func TestNewDNSProviderMissingCredErr(t *testing.T) {
 	_, err := NewDNSProviderAmbientCredentials("")
 	assert.EqualError(t, err, "Google Cloud project name missing")
 	restoreGCloudEnv()
-}
-
-func TestLiveGoogleCloudPresent(t *testing.T) {
-	if !gcloudLiveTest {
-		t.Skip("skipping live test")
-	}
-
-	provider, err := NewDNSProviderAmbientCredentials(gcloudProject)
-	assert.NoError(t, err)
-
-	err = provider.Present(gcloudDomain, "_acme-challenge."+gcloudDomain+".", gcloudDomain, "123d==")
-	assert.NoError(t, err)
-}
-
-func TestLiveGoogleCloudPresentMultiple(t *testing.T) {
-	if !gcloudLiveTest {
-		t.Skip("skipping live test")
-	}
-
-	provider, err := NewDNSProviderAmbientCredentials(gcloudProject)
-	assert.NoError(t, err)
-
-	// Check that we're able to create multiple entries
-	err = provider.Present(gcloudDomain, "_acme-challenge."+gcloudDomain+".", gcloudDomain, "123d==")
-	err = provider.Present(gcloudDomain, "_acme-challenge."+gcloudDomain+".", gcloudDomain, "1123d==")
-	assert.NoError(t, err)
-}
-
-func TestLiveGoogleCloudCleanUp(t *testing.T) {
-	if !gcloudLiveTest {
-		t.Skip("skipping live test")
-	}
-
-	time.Sleep(time.Second * 1)
-
-	provider, err := NewDNSProviderAmbientCredentials(gcloudProject)
-	assert.NoError(t, err)
-
-	err = provider.CleanUp(gcloudDomain, "_acme-challenge."+gcloudDomain+".", gcloudDomain, "123d==")
-	assert.NoError(t, err)
 }
