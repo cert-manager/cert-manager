@@ -11,10 +11,7 @@ go_library(
     importpath = "github.com/onsi/ginkgo/reporters/stenographer",
     tags = ["manual"],
     visibility = ["//visibility:public"],
-    deps = [
-        "//vendor/github.com/onsi/ginkgo/reporters/stenographer/support/go-colorable:go_default_library",
-        "//vendor/github.com/onsi/ginkgo/types:go_default_library",
-    ],
+    deps = ["//vendor/github.com/onsi/ginkgo/types:go_default_library"],
 )
 
 filegroup(

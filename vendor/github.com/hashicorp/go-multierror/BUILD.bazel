@@ -8,6 +8,7 @@ go_library(
         "format.go",
         "multierror.go",
         "prefix.go",
+        "sort.go",
     ],
     importmap = "github.com/jetstack/cert-manager/vendor/github.com/hashicorp/go-multierror",
     importpath = "github.com/hashicorp/go-multierror",

@@ -50,7 +50,7 @@ type Controller interface {
 	//
 	// Watch may be provided one or more Predicates to filter events before
 	// they are given to the EventHandler.  Events will be passed to the
-	// EventHandler iff all provided Predicates evaluate to true.
+	// EventHandler if all provided Predicates evaluate to true.
 	Watch(src source.Source, eventhandler handler.EventHandler, predicates ...predicate.Predicate) error
 
 	// Start starts the controller.  Start blocks until stop is closed or a

@@ -1,0 +1,39 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "alias.go",
+        "doc.go",
+        "server.go",
+    ],
+    importmap = "github.com/jetstack/cert-manager/vendor/sigs.k8s.io/controller-runtime/pkg/webhook",
+    importpath = "sigs.k8s.io/controller-runtime/pkg/webhook",
+    tags = ["manual"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//vendor/github.com/appscode/jsonpatch:go_default_library",
+        "//vendor/sigs.k8s.io/controller-runtime/pkg/internal/log:go_default_library",
+        "//vendor/sigs.k8s.io/controller-runtime/pkg/runtime/inject:go_default_library",
+        "//vendor/sigs.k8s.io/controller-runtime/pkg/webhook/admission:go_default_library",
+        "//vendor/sigs.k8s.io/controller-runtime/pkg/webhook/internal/metrics:go_default_library",
+    ],
+)
+
+filegroup(
+    name = "package-srcs",
+    srcs = glob(["**"]),
+    tags = ["automanaged"],
+    visibility = ["//visibility:private"],
+)
+
+filegroup(
+    name = "all-srcs",
+    srcs = [
+        ":package-srcs",
+        "//vendor/sigs.k8s.io/controller-runtime/pkg/webhook/admission:all-srcs",
+        "//vendor/sigs.k8s.io/controller-runtime/pkg/webhook/internal/metrics:all-srcs",
+    ],
+    tags = ["automanaged"],
+    visibility = ["//visibility:public"],
+)

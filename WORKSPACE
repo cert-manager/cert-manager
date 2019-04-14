@@ -44,7 +44,8 @@ git_repository(
 git_repository(
     name = "io_bazel_rules_docker",
     remote = "https://github.com/bazelbuild/rules_docker.git",
-    tag = "v0.7.0",
+    commit = "3732c9d05315bef6a3dbd195c545d6fea3b86880",
+    shallow_since = "1547471117 +0100",
 )
 
 load(
@@ -247,15 +248,15 @@ http_file(
 http_file(
     name = "buildozer_darwin",
     executable = 1,
-    sha256 = "294357ff92e7bb36c62f964ecb90e935312671f5a41a7a9f2d77d8d0d4bd217d",
-    urls = ["https://github.com/bazelbuild/buildtools/releases/download/0.15.0/buildozer.osx"],
+    sha256 = "f2bcb59b96b1899bc27d5791f17a218f9ce76261f5dcdfdbd7ad678cf545803f",
+    urls = ["https://github.com/bazelbuild/buildtools/releases/download/0.22.0/buildozer.osx"],
 )
 
 http_file(
     name = "buildozer_linux",
     executable = 1,
-    sha256 = "be07a37307759c68696c989058b3446390dd6e8aa6fdca6f44f04ae3c37212c5",
-    urls = ["https://github.com/bazelbuild/buildtools/releases/download/0.15.0/buildozer"],
+    sha256 = "7750fe5bfb1247e8a858f3c87f63a5fb554ee43cb10efc1ce46c2387f1720064",
+    urls = ["https://github.com/bazelbuild/buildtools/releases/download/0.22.0/buildozer"],
 )
 
 ## Install dep for dependency management

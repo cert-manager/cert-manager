@@ -2,6 +2,9 @@ load("@io_bazel_rules_docker//container:container.bzl", "container_bundle")
 load("@io_bazel_rules_docker//contrib:push-all.bzl", "docker_push")
 load("//hack:def.bzl", "multiarch_bundle")
 
+# export WORKSPACE so workspace_binary rules can be used outside the root
+exports_files(["WORKSPACE"])
+
 # gazelle:proto disable_global
 
 # this target creates targets:

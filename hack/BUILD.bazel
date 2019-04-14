@@ -50,24 +50,17 @@ sh_test(
 )
 
 # Dep/vendor rules
-
+# These have been deprecated in favour of directly calling the shell scripts.
 sh_binary(
     name = "update-deps",
-    srcs = ["update-deps.sh"],
-    data = [
-        ":update-bazel",
-        "//hack/bin:dep",
-    ],
+    srcs = ["deprecated.sh"],
+    args = ["hack/update-vendor.sh"],
 )
 
 sh_test(
     name = "verify-deps",
-    timeout = "long",
-    srcs = ["verify-deps.sh"],
-    data = [
-        ":update-deps",
-        "//:all-srcs",
-    ],
+    srcs = ["deprecated.sh"],
+    args = ["hack/verify-vendor.sh"],
     tags = ["manual"],
 )
 
