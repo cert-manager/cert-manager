@@ -104,21 +104,21 @@ type client struct {
 }
 
 // Create implements client.Client
-func (c *client) Create(ctx context.Context, obj runtime.Object) error {
+func (c *client) Create(ctx context.Context, obj runtime.Object, opts ...CreateOptionFunc) error {
 	_, ok := obj.(*unstructured.Unstructured)
 	if ok {
-		return c.unstructuredClient.Create(ctx, obj)
+		return c.unstructuredClient.Create(ctx, obj, opts...)
 	}
-	return c.typedClient.Create(ctx, obj)
+	return c.typedClient.Create(ctx, obj, opts...)
 }
 
 // Update implements client.Client
-func (c *client) Update(ctx context.Context, obj runtime.Object) error {
+func (c *client) Update(ctx context.Context, obj runtime.Object, opts ...UpdateOptionFunc) error {
 	_, ok := obj.(*unstructured.Unstructured)
 	if ok {
-		return c.unstructuredClient.Update(ctx, obj)
+		return c.unstructuredClient.Update(ctx, obj, opts...)
 	}
-	return c.typedClient.Update(ctx, obj)
+	return c.typedClient.Update(ctx, obj, opts...)
 }
 
 // Delete implements client.Client
@@ -128,6 +128,15 @@ func (c *client) Delete(ctx context.Context, obj runtime.Object, opts ...DeleteO
 		return c.unstructuredClient.Delete(ctx, obj, opts...)
 	}
 	return c.typedClient.Delete(ctx, obj, opts...)
+}
+
+// Patch implements client.Client
+func (c *client) Patch(ctx context.Context, obj runtime.Object, patch Patch, opts ...PatchOptionFunc) error {
+	_, ok := obj.(*unstructured.Unstructured)
+	if ok {
+		return c.unstructuredClient.Patch(ctx, obj, patch, opts...)
+	}
+	return c.typedClient.Patch(ctx, obj, patch, opts...)
 }
 
 // Get implements client.Client

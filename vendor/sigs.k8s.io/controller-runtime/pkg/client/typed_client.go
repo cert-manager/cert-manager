@@ -30,31 +30,39 @@ type typedClient struct {
 }
 
 // Create implements client.Client
-func (c *typedClient) Create(ctx context.Context, obj runtime.Object) error {
+func (c *typedClient) Create(ctx context.Context, obj runtime.Object, opts ...CreateOptionFunc) error {
 	o, err := c.cache.getObjMeta(obj)
 	if err != nil {
 		return err
 	}
+
+	createOpts := &CreateOptions{}
+	createOpts.ApplyOptions(opts)
 	return o.Post().
 		NamespaceIfScoped(o.GetNamespace(), o.isNamespaced()).
 		Resource(o.resource()).
 		Body(obj).
+		VersionedParams(createOpts.AsCreateOptions(), c.paramCodec).
 		Context(ctx).
 		Do().
 		Into(obj)
 }
 
 // Update implements client.Client
-func (c *typedClient) Update(ctx context.Context, obj runtime.Object) error {
+func (c *typedClient) Update(ctx context.Context, obj runtime.Object, opts ...UpdateOptionFunc) error {
 	o, err := c.cache.getObjMeta(obj)
 	if err != nil {
 		return err
 	}
+
+	updateOpts := &UpdateOptions{}
+	updateOpts.ApplyOptions(opts)
 	return o.Put().
 		NamespaceIfScoped(o.GetNamespace(), o.isNamespaced()).
 		Resource(o.resource()).
 		Name(o.GetName()).
 		Body(obj).
+		VersionedParams(updateOpts.AsUpdateOptions(), c.paramCodec).
 		Context(ctx).
 		Do().
 		Into(obj)
@@ -76,6 +84,30 @@ func (c *typedClient) Delete(ctx context.Context, obj runtime.Object, opts ...De
 		Context(ctx).
 		Do().
 		Error()
+}
+
+// Patch implements client.Client
+func (c *typedClient) Patch(ctx context.Context, obj runtime.Object, patch Patch, opts ...PatchOptionFunc) error {
+	o, err := c.cache.getObjMeta(obj)
+	if err != nil {
+		return err
+	}
+
+	data, err := patch.Data(obj)
+	if err != nil {
+		return err
+	}
+
+	patchOpts := &PatchOptions{}
+	return o.Patch(patch.Type()).
+		NamespaceIfScoped(o.GetNamespace(), o.isNamespaced()).
+		Resource(o.resource()).
+		Name(o.GetName()).
+		VersionedParams(patchOpts.ApplyOptions(opts).AsPatchOptions(), c.paramCodec).
+		Body(data).
+		Context(ctx).
+		Do().
+		Into(obj)
 }
 
 // Get implements client.Client

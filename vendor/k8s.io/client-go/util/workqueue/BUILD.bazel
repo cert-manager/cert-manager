@@ -9,7 +9,7 @@ go_library(
         "metrics.go",
         "parallelizer.go",
         "queue.go",
-        "rate_limitting_queue.go",
+        "rate_limiting_queue.go",
     ],
     importmap = "github.com/jetstack/cert-manager/vendor/k8s.io/client-go/util/workqueue",
     importpath = "k8s.io/client-go/util/workqueue",

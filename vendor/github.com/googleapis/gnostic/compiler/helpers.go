@@ -20,7 +20,6 @@ import (
 	"regexp"
 	"sort"
 	"strconv"
-	"strings"
 )
 
 // compiler helper functions, usually called from generated code
@@ -84,23 +83,6 @@ func ConvertInterfaceArrayToStringArray(interfaceArray []interface{}) []string {
 	return stringArray
 }
 
-// PatternMatches matches strings against a specified pattern.
-func PatternMatches(pattern string, value string) bool {
-	// if pattern contains a subpattern like "{path}", replace it with ".*"
-	if pattern[0] != '^' {
-		subpatternPattern := regexp.MustCompile("^.*(\\{.*\\}).*$")
-		if matches := subpatternPattern.FindSubmatch([]byte(pattern)); matches != nil {
-			match := string(matches[1])
-			pattern = strings.Replace(pattern, match, ".*", -1)
-		}
-	}
-	matched, err := regexp.Match(pattern, []byte(value))
-	if err != nil {
-		panic(err)
-	}
-	return matched
-}
-
 // MissingKeysInMap identifies which keys from a list of required keys are not in a map.
 func MissingKeysInMap(m yaml.MapSlice, requiredKeys []string) []string {
 	missingKeys := make([]string, 0)
@@ -113,7 +95,7 @@ func MissingKeysInMap(m yaml.MapSlice, requiredKeys []string) []string {
 }
 
 // InvalidKeysInMap returns keys in a map that don't match a list of allowed keys and patterns.
-func InvalidKeysInMap(m yaml.MapSlice, allowedKeys []string, allowedPatterns []string) []string {
+func InvalidKeysInMap(m yaml.MapSlice, allowedKeys []string, allowedPatterns []*regexp.Regexp) []string {
 	invalidKeys := make([]string, 0)
 	for _, item := range m {
 		itemKey, ok := item.Key.(string)
@@ -130,7 +112,7 @@ func InvalidKeysInMap(m yaml.MapSlice, allowedKeys []string, allowedPatterns []s
 			if !found {
 				// does the key match an allowed pattern?
 				for _, allowedPattern := range allowedPatterns {
-					if PatternMatches(allowedPattern, key) {
+					if allowedPattern.MatchString(key) {
 						found = true
 						break
 					}

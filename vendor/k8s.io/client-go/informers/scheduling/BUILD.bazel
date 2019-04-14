@@ -9,6 +9,7 @@ go_library(
     visibility = ["//visibility:public"],
     deps = [
         "//vendor/k8s.io/client-go/informers/internalinterfaces:go_default_library",
+        "//vendor/k8s.io/client-go/informers/scheduling/v1:go_default_library",
         "//vendor/k8s.io/client-go/informers/scheduling/v1alpha1:go_default_library",
         "//vendor/k8s.io/client-go/informers/scheduling/v1beta1:go_default_library",
     ],
@@ -25,6 +26,7 @@ filegroup(
     name = "all-srcs",
     srcs = [
         ":package-srcs",
+        "//vendor/k8s.io/client-go/informers/scheduling/v1:all-srcs",
         "//vendor/k8s.io/client-go/informers/scheduling/v1alpha1:all-srcs",
         "//vendor/k8s.io/client-go/informers/scheduling/v1beta1:all-srcs",
     ],

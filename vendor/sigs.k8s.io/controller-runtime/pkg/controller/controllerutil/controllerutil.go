@@ -114,10 +114,11 @@ const ( // They should complete the sentence "Deployment default/foo has been ..
 	OperationResultUpdated OperationResult = "updated"
 )
 
-// CreateOrUpdate creates or updates the given object obj in the Kubernetes
-// cluster. The object's desired state should be reconciled with the existing
-// state using the passed in ReconcileFn. obj must be a struct pointer so that
-// obj can be updated with the content returned by the Server.
+// CreateOrUpdate creates or updates the given object in the Kubernetes
+// cluster. The object's desired state must be reconciled with the existing
+// state inside the passed in callback MutateFn.
+//
+// The MutateFn is called regardless of creating or updating an object.
 //
 // It returns the executed operation and an error.
 func CreateOrUpdate(ctx context.Context, c client.Client, obj runtime.Object, f MutateFn) (OperationResult, error) {
@@ -127,30 +128,25 @@ func CreateOrUpdate(ctx context.Context, c client.Client, obj runtime.Object, f 
 	}
 
 	if err := c.Get(ctx, key, obj); err != nil {
-		if errors.IsNotFound(err) {
-			if err := c.Create(ctx, obj); err != nil {
-				return OperationResultNone, err
-			}
-			return OperationResultCreated, nil
+		if !errors.IsNotFound(err) {
+			return OperationResultNone, err
 		}
-		return OperationResultNone, err
+		if err := mutate(f, key, obj); err != nil {
+			return OperationResultNone, err
+		}
+		if err := c.Create(ctx, obj); err != nil {
+			return OperationResultNone, err
+		}
+		return OperationResultCreated, nil
 	}
 
 	existing := obj.DeepCopyObject()
-	if err := f(obj); err != nil {
+	if err := mutate(f, key, obj); err != nil {
 		return OperationResultNone, err
 	}
 
 	if reflect.DeepEqual(existing, obj) {
 		return OperationResultNone, nil
-	}
-
-	newKey, err := client.ObjectKeyFromObject(obj)
-	if err != nil {
-		return OperationResultNone, err
-	}
-	if key != newKey {
-		return OperationResultNone, fmt.Errorf("MutateFn cannot mutate object namespace and/or object name")
 	}
 
 	if err := c.Update(ctx, obj); err != nil {
@@ -159,5 +155,16 @@ func CreateOrUpdate(ctx context.Context, c client.Client, obj runtime.Object, f 
 	return OperationResultUpdated, nil
 }
 
+// mutate wraps a MutateFn and applies validation to its result
+func mutate(f MutateFn, key client.ObjectKey, obj runtime.Object) error {
+	if err := f(); err != nil {
+		return err
+	}
+	if newKey, err := client.ObjectKeyFromObject(obj); err != nil || key != newKey {
+		return fmt.Errorf("MutateFn cannot mutate object name and/or object namespace")
+	}
+	return nil
+}
+
 // MutateFn is a function which mutates the existing object into it's desired state.
-type MutateFn func(existing runtime.Object) error
+type MutateFn func() error
