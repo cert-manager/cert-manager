@@ -19,6 +19,8 @@ set -o nounset
 set -o pipefail
 set -o xtrace
 
+REPO_ROOT="$(cd "$(dirname "$0")" && pwd -P)"/..
+
 prune-vendor() {
   find vendor -type f \
     -not -iname "*.c" \
@@ -41,5 +43,7 @@ bazel run //hack/bin:go -- mod tidy
 bazel run //hack/bin:go -- mod vendor
 prune-vendor
 bazel run //hack:update-bazel
+
+"${REPO_ROOT}"/hack/update-vendor-licenses.sh
 
 echo "SUCCESS"
