@@ -20,9 +20,11 @@ set -o pipefail
 
 # This script should be run via `bazel run //hack:update-bazel`
 REPO_ROOT=${BUILD_WORKSPACE_DIRECTORY:-"$(cd "$(dirname "$0")" && pwd -P)"/..}
-runfiles="$(pwd)"
+export runfiles="${runfiles:-$(pwd)}"
 export PATH="${runfiles}/hack/bin:${PATH}"
 cd "${REPO_ROOT}"
+
+touch vendor/BUILD.bazel
 
 # Generate BUILD.bazel files for golang types
 gazelle fix \
@@ -36,3 +38,5 @@ kazel
 
 # Add manual tags to all rules in vendor/
 buildozer -types 'go_library,go_binary,go_test' 'add tags manual' '//vendor/...:*' || [[ $? -eq 3 ]]
+
+echo "SUCCESS"
