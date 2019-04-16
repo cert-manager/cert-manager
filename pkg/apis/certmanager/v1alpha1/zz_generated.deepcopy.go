@@ -627,7 +627,6 @@ func (in *ChallengeRequest) DeepCopyInto(out *ChallengeRequest) {
 		*out = new(v1beta1.JSON)
 		(*in).DeepCopyInto(*out)
 	}
-	in.Challenge.DeepCopyInto(&out.Challenge)
 	return
 }
 
