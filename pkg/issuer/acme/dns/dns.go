@@ -170,11 +170,12 @@ func (s *Solver) prepareChallengeRequest(issuer v1alpha1.GenericIssuer, ch *v1al
 	}
 
 	req := &v1alpha1.ChallengeRequest{
+		Type:                    "dns-01",
 		ResolvedFQDN:            fqdn,
 		ResolvedZone:            zone,
 		AllowAmbientCredentials: canUseAmbientCredentials,
 		ResourceNamespace:       resourceNamespace,
-		Challenge:               *ch,
+		Key:                     ch.Spec.Key,
 		Config:                  &apiext.JSON{Raw: b},
 	}
 

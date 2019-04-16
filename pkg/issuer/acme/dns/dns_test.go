@@ -55,10 +55,10 @@ func newSecret(name, namespace string, data map[string][]byte) *corev1.Secret {
 }
 
 func TestPresent(t *testing.T) {
-	tests := map[string]struct{
-		solvers map[string]webhook.Solver
-		providers []v1alpha1.ACMEIssuerDNS01Provider
-		challenge v1alpha1.Challenge
+	tests := map[string]struct {
+		solvers       map[string]webhook.Solver
+		providers     []v1alpha1.ACMEIssuerDNS01Provider
+		challenge     v1alpha1.Challenge
 		expectedError bool
 	}{
 		"builds a basic challenge request": {
@@ -95,6 +95,7 @@ func TestPresent(t *testing.T) {
 func TestCleanUp(t *testing.T) {
 
 }
+
 //
 //func TestSolverFor(t *testing.T) {
 //	type testT struct {

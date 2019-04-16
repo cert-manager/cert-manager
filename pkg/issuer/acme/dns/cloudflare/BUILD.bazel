@@ -24,12 +24,7 @@ go_test(
     name = "go_default_test",
     srcs = ["provider_test.go"],
     embed = [":go_default_library"],
-    deps = [
-        "//pkg/apis/certmanager/v1alpha1:go_default_library",
-        "//test/acme/dns:go_default_library",
-        "//vendor/k8s.io/api/core/v1:go_default_library",
-        "//vendor/k8s.io/apimachinery/pkg/apis/meta/v1:go_default_library",
-    ],
+    deps = ["//test/acme/dns:go_default_library"],
 )
 
 filegroup(

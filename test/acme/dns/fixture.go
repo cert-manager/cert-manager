@@ -3,7 +3,6 @@ package dns
 import (
 	"flag"
 	"fmt"
-	"k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 	"sync"
 	"testing"
@@ -28,12 +27,13 @@ type fixture struct {
 	// It is set when calling the NewFixture function.
 	testSolver webhook.Solver
 
-	resolvedFQDN string
-	resolvedZone string
+	resolvedFQDN            string
+	resolvedZone            string
 	allowAmbientCredentials bool
-	jsonConfig *v1beta1.JSON
-	secretFixtures []*v1.Secret
-	strictMode bool
+	jsonConfig              *v1beta1.JSON
+	strictMode              bool
+	kubectlManifestsPath    string
+	binariesPath            string
 
 	// testDNSServer is the address:port of the DNS server to send requests to
 	// when validating that records are set as expected.
@@ -47,9 +47,10 @@ type fixture struct {
 	// test suite.
 	// It is constructed when a Run* method is called.
 	controlPlane *integration.ControlPlane
-	restConfig *rest.Config
-	clientset kubernetes.Interface
-	setupLock sync.Mutex
+	restConfig   *rest.Config
+	clientset    kubernetes.Interface
+	kubectl      *integration.KubeCtl
+	setupLock    sync.Mutex
 }
 
 var DefaultKubeAPIServerFlags = []string{
@@ -81,8 +82,13 @@ func (f *fixture) setup(t *testing.T) func() error {
 		return func() error { return nil }
 	}
 	f.controlPlane = &integration.ControlPlane{}
-	f.controlPlane.APIServer = &integration.APIServer{Args: DefaultKubeAPIServerFlags}
-	f.controlPlane.Etcd = &integration.Etcd{}
+	f.controlPlane.APIServer = &integration.APIServer{
+		Args: DefaultKubeAPIServerFlags,
+		Path: f.binariesPath + "/kube-apiserver",
+	}
+	f.controlPlane.Etcd = &integration.Etcd{
+		Path: f.binariesPath + "/etcd",
+	}
 	if err := f.controlPlane.Start(); err != nil {
 		t.Fatalf("error starting apiserver: %v", err)
 	}
@@ -98,6 +104,8 @@ func (f *fixture) setup(t *testing.T) func() error {
 	if f.clientset, err = kubernetes.NewForConfig(f.restConfig); err != nil {
 		t.Fatalf("error constructing clientset: %v", err)
 	}
+	f.kubectl = f.controlPlane.KubeCtl()
+	f.kubectl.Path = f.binariesPath + "/kubectl"
 
 	stopCh := make(chan struct{})
 	f.testSolver.Initialize(f.restConfig, stopCh)

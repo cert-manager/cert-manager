@@ -171,7 +171,7 @@ func (r *DNSProvider) changeRecord(action, fqdn, zone, value string, ttl int) er
 
 	// Create dynamic update packet
 	m := new(dns.Msg)
-	m.SetUpdate(zone)
+	m.SetUpdate(fqdn)
 	switch action {
 	case "INSERT":
 		// Always remove old challenge left over from who knows what.

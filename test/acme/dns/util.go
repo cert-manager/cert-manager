@@ -2,6 +2,8 @@ package dns
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -15,7 +17,7 @@ import (
 )
 
 var (
-	defaultPollInterval = time.Second * 5
+	defaultPollInterval     = time.Second * 5
 	defaultPropagationLimit = time.Minute * 2
 )
 
@@ -28,14 +30,33 @@ func (f *fixture) setupNamespace(t *testing.T, name string) (string, func()) {
 		t.Fatalf("error creating test namespace %q: %v", name, err)
 	}
 
-	for _, s := range f.secretFixtures {
-		s = s.DeepCopy()
-		s.Namespace = name
-		if _, err := f.clientset.CoreV1().Secrets(name).Create(s); err != nil {
-			t.Fatalf("error creating test secret fixture %q: %v", name, err)
+	if err := filepath.Walk(f.kubectlManifestsPath, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
 		}
+		if info.IsDir() || filepath.Base(path) == "config.json" {
+			return nil
+		}
+
+		switch filepath.Ext(path) {
+		case ".json", ".yaml", ".yml":
+		default:
+			t.Logf("skipping file %q with unrecognised extension", path)
+			return nil
+		}
+
+		_, _, err = f.kubectl.Run("apply", "--namespace", name, "-f", path)
+		if err != nil {
+			return err
+		}
+
+		t.Logf("created fixture %q", name)
+		return nil
+	}); err != nil {
+		t.Fatalf("error creating test fixtures: %v", err)
 	}
 
+	// wait for the test suite informers to relist
 	time.Sleep(time.Second * 1)
 
 	return name, func() {
@@ -45,11 +66,11 @@ func (f *fixture) setupNamespace(t *testing.T, name string) (string, func()) {
 
 func (f *fixture) buildChallengeRequest(t *testing.T, ns string) *cmapi.ChallengeRequest {
 	return &cmapi.ChallengeRequest{
-		ResourceNamespace: ns,
-		ResolvedFQDN: f.resolvedFQDN,
-		ResolvedZone: f.resolvedZone,
+		ResourceNamespace:       ns,
+		ResolvedFQDN:            f.resolvedFQDN,
+		ResolvedZone:            f.resolvedZone,
 		AllowAmbientCredentials: f.allowAmbientCredentials,
-		Config: f.jsonConfig,
+		Config:                  f.jsonConfig,
 		Challenge: cmapi.Challenge{
 			Spec: cmapi.ChallengeSpec{
 				Key: "testingkey123",

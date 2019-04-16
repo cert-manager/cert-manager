@@ -8,6 +8,12 @@ go_library(
         "suite.go",
         "util.go",
     ],
+    data = [
+        "//hack/bin:etcd",
+        "//hack/bin:kube-apiserver",
+        "//hack/bin:kubectl",
+        "//test/fixtures/acme/dns:all-srcs",
+    ],
     importpath = "github.com/jetstack/cert-manager/test/acme/dns",
     visibility = ["//visibility:public"],
     deps = [
