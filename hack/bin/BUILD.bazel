@@ -25,6 +25,39 @@ genrule(
 )
 
 genrule(
+    name = "fetch_etcd",
+    srcs = select({
+        ":darwin": ["@etcd_v3_3_darwin//:file"],
+        ":k8": ["@etcd_v3_3_linux//:file"],
+    }),
+    outs = ["etcd"],
+    cmd = "cp $(SRCS) $@",
+    visibility = ["//visibility:public"],
+)
+
+genrule(
+    name = "fetch_kube-apiserver",
+    srcs = select({
+        ":darwin": ["@kube-apiserver_1_14_darwin//file"],
+        ":k8": ["@kube-apiserver_1_14_linux//file"],
+    }),
+    outs = ["kube-apiserver"],
+    cmd = "cp $(SRCS) $@",
+    visibility = ["//visibility:public"],
+)
+
+genrule(
+    name = "fetch_kubectl",
+    srcs = select({
+        ":darwin": ["@kubectl_1_13_darwin//file"],
+        ":k8": ["@kubectl_1_13_linux//file"],
+    }),
+    outs = ["kubectl"],
+    cmd = "cp $(SRCS) $@",
+    visibility = ["//visibility:public"],
+)
+
+genrule(
     name = "fetch_buildozer",
     srcs = select({
         ":darwin": ["@buildozer_darwin//file"],
