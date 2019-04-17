@@ -18,6 +18,7 @@ require (
 	github.com/bitly/go-hostpool v0.0.0-20171023180738-a3a6125de932 // indirect
 	github.com/bmizerany/assert v0.0.0-20160611221934-b7ed37b82869 // indirect
 	github.com/cenkalti/backoff v2.1.1+incompatible // indirect
+	github.com/cloudflare/cfssl v0.0.0-20190409034051-768cd563887f
 	github.com/cloudflare/cloudflare-go v0.8.5
 	github.com/containerd/continuity v0.0.0-20181203112020-004b46473808 // indirect
 	github.com/cpu/goacmedns v0.0.0-20180701200144-565ecf2a84df
@@ -36,6 +37,7 @@ require (
 	github.com/go-openapi/swag v0.19.0 // indirect
 	github.com/go-sql-driver/mysql v1.4.1 // indirect
 	github.com/gocql/gocql v0.0.0-20190402132108-0e1d5de854df // indirect
+	github.com/google/certificate-transparency-go v1.0.21 // indirect
 	github.com/google/go-github v17.0.0+incompatible // indirect
 	github.com/google/go-querystring v1.0.0 // indirect
 	github.com/gorilla/mux v1.6.2

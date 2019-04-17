@@ -55,9 +55,8 @@ var (
 		Path:   "a/b/c",
 	}
 	validCFSSLIssuer = v1alpha1.CFSSLIssuer{
-		Server:    "valid-server",
-		APIPrefix: "valid-prefix",
-		AuthKey:   &validSecretKeyRef,
+		Server:  "valid-server",
+		AuthKey: &validSecretKeyRef,
 	}
 )
 
@@ -234,22 +233,19 @@ func TestValidateCFSSLIssuerConfig(t *testing.T) {
 		},
 		"cfssl issuer without authkey specified": {
 			spec: &v1alpha1.CFSSLIssuer{
-				Server:    "valid-server",
-				APIPrefix: "valid-prefix",
+				Server: "valid-server",
 			},
 		},
 		"cfssl issuer with missing fields": {
 			spec: &v1alpha1.CFSSLIssuer{},
 			errs: []*field.Error{
 				field.Required(fldPath.Child("server"), "cfssl server url is a required field"),
-				field.Required(fldPath.Child("apiPrefix"), "cfssl server apiPrefix is a required field"),
 			},
 		},
 		"cfssl issuer with missing authkey fields": {
 			spec: &v1alpha1.CFSSLIssuer{
-				Server:    "valid-server",
-				APIPrefix: "valid-prefix",
-				AuthKey:   &v1alpha1.SecretKeySelector{},
+				Server:  "valid-server",
+				AuthKey: &v1alpha1.SecretKeySelector{},
 			},
 			errs: []*field.Error{
 				field.Required(fldPath.Child("authKey", "name"), "secret name is required"),

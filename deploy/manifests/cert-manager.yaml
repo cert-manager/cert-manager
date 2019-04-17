@@ -437,12 +437,9 @@ spec:
               type: object
             cfssl:
               properties:
-                apiPrefix:
-                  description: APIPrefix is the prefix of cfssl api endpoints e.g
-                    /api/v1/cfssl
-                  type: string
                 authKeySecretRef:
-                  description: CFSSL Authentication
+                  description: This Secret contains the Authkey used to authenticate
+                    requests to cfssl
                   properties:
                     key:
                       description: The key of the secret to select from. Must be a
@@ -455,10 +452,16 @@ spec:
                   required:
                   - name
                   type: object
+                caBundle:
+                  description: Base64 encoded CA bundle to validate cfssl server certificate.
+                    Only used if the Server URL is using HTTPS protocol. This parameter
+                    is ignored for plain HTTP protocol connection. If not set the
+                    system root certificates are used to validate the TLS connection.
+                  format: byte
+                  type: string
                 server:
-                  description: Server is the cfssl connection address Cfssl servers
-                    using HTTP protocol is supported at the moment. Servers using
-                    HTTPS protocol are not yet supported
+                  description: Server is the cfssl connection address This field is
+                    required.
                   type: string
               required:
               - server
@@ -724,12 +727,9 @@ spec:
               type: object
             cfssl:
               properties:
-                apiPrefix:
-                  description: APIPrefix is the prefix of cfssl api endpoints e.g
-                    /api/v1/cfssl
-                  type: string
                 authKeySecretRef:
-                  description: CFSSL Authentication
+                  description: This Secret contains the Authkey used to authenticate
+                    requests to cfssl
                   properties:
                     key:
                       description: The key of the secret to select from. Must be a
@@ -742,10 +742,16 @@ spec:
                   required:
                   - name
                   type: object
+                caBundle:
+                  description: Base64 encoded CA bundle to validate cfssl server certificate.
+                    Only used if the Server URL is using HTTPS protocol. This parameter
+                    is ignored for plain HTTP protocol connection. If not set the
+                    system root certificates are used to validate the TLS connection.
+                  format: byte
+                  type: string
                 server:
-                  description: Server is the cfssl connection address Cfssl servers
-                    using HTTP protocol is supported at the moment. Servers using
-                    HTTPS protocol are not yet supported
+                  description: Server is the cfssl connection address This field is
+                    required.
                   type: string
               required:
               - server

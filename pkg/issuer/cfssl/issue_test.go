@@ -18,6 +18,10 @@ package cfssl
 
 import (
 	"context"
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -47,27 +51,27 @@ const (
 	invalidAuthKeySecretValue = "fooobaar" // Invalid hexadecimal string
 	certStr                   = "----BEGIN CERTIFICATE----blah blah blah-----END CERTIFICATE-----"
 	caCertStr                 = "----BEGIN CERTIFICATE----blah blah blah-----END CERTIFICATE-----"
+	signPath                  = "/api/v1/cfssl/sign"
+	authsignPath              = "/api/v1/cfssl/authsign"
+	infoPath                  = "/api/v1/cfssl/info"
 )
 
 const infoResponse = `{"success":true,"result":{"certificate":"-----BEGIN CERTIFICATE-----blah-----END CERTIFICATE-----"}}`
 
-type statusCodes struct {
-	info     int
-	sign     int
-	authSign int
+type authSignRequest struct {
+	Token   string `json:"token"`
+	Request string `json:"request"`
 }
 
 type testT struct {
-	algorithm           v1alpha1.KeyAlgorithm
-	expectedCrt         string
-	expectedRespBody    string
-	expectedErrStr      string
-	expectedStatusCodes statusCodes
-	authKeySecret       *corev1.Secret
-	tlsSecret           *corev1.Secret
-	apiPrefix           string
-	profile             string
-	label               string
+	algorithm        v1alpha1.KeyAlgorithm
+	expectedCrt      string
+	expectedRespBody string
+	expectedErrStr   string
+	authKeySecret    *corev1.Secret
+	tlsSecret        *corev1.Secret
+	profile          string
+	label            string
 }
 
 func TestCFSSLIssue(t *testing.T) {
@@ -75,38 +79,24 @@ func TestCFSSLIssue(t *testing.T) {
 		"fails when authkey secret is not a valid hexadecimal string": {
 			authKeySecret:  newSecret(authKeySecretName, "auth-key", invalidAuthKeySecretValue),
 			algorithm:      v1alpha1.ECDSAKeyAlgorithm,
-			expectedErrStr: messageAuthKeyFormat,
-			expectedStatusCodes: statusCodes{
-				info: http.StatusOK,
-				sign: http.StatusOK,
-			},
-			apiPrefix: "/v1/certs",
+			expectedErrStr: "error creating auth provider",
 		},
 		"fails when remote cfssl server response is not success": {
 			authKeySecret:    newSecret(authKeySecretName, "auth-key", validAuthKeySecretValue),
 			algorithm:        v1alpha1.ECDSAKeyAlgorithm,
 			expectedCrt:      certStr,
 			expectedRespBody: fmt.Sprintf(`{"success":false,"result":{"certificate":"%s"}}`, certStr),
-			expectedErrStr:   messageServerResponseNotSuccess,
-			expectedStatusCodes: statusCodes{
-				info: http.StatusOK,
-				sign: http.StatusOK,
-			},
-			apiPrefix: "/v1/certs",
+			expectedErrStr:   "server request failed",
 		},
-		"fails when remote cfssl server response status is not 200": {
-			authKeySecret:    newSecret(authKeySecretName, "auth-key", validAuthKeySecretValue),
-			algorithm:        v1alpha1.ECDSAKeyAlgorithm,
-			expectedCrt:      certStr,
-			expectedRespBody: `{"success":false,"result":{},"errors":[{"code":123, "message":"blah"}]}`,
-			expectedErrStr:   messageServerResponseNon2xx,
-			expectedStatusCodes: statusCodes{
-				info:     http.StatusOK,
-				sign:     http.StatusBadRequest,
-				authSign: http.StatusBadRequest,
-			},
-			apiPrefix: "/v1/certs",
-		},
+		// "fails when remote cfssl server response status is not 200": {
+		// 	authKeySecret:    newSecret(authKeySecretName, "auth-key", validAuthKeySecretValue),
+		// 	algorithm:        v1alpha1.ECDSAKeyAlgorithm,
+		// 	expectedCrt:      certStr,
+		// 	expectedRespBody: `{"success":false,"result":{},"errors":[{"code":123, "message":"blah"}]}`,
+		// 	expectedErrStr:   messageServerResponseNon2xx,
+		// 	path:             signPath,
+		// 	infoPath:         infoPath,
+		// },
 	}
 
 	successTests := map[string]*testT{
@@ -115,46 +105,22 @@ func TestCFSSLIssue(t *testing.T) {
 			algorithm:        v1alpha1.ECDSAKeyAlgorithm,
 			expectedCrt:      certStr,
 			expectedRespBody: fmt.Sprintf(`{"success":true,"result":{"certificate":"%s"}}`, certStr),
-			expectedStatusCodes: statusCodes{
-				info:     http.StatusOK,
-				sign:     http.StatusUnauthorized,
-				authSign: http.StatusOK,
-			},
-			apiPrefix: "/v1/certs",
 		},
 		"for new certificates, issues rsa based certs when authkey is provided": {
 			authKeySecret:    newSecret(authKeySecretName, "auth-key", validAuthKeySecretValue),
 			algorithm:        v1alpha1.RSAKeyAlgorithm,
 			expectedCrt:      certStr,
 			expectedRespBody: fmt.Sprintf(`{"success":true,"result":{"certificate":"%s"}}`, certStr),
-			expectedStatusCodes: statusCodes{
-				info:     http.StatusOK,
-				sign:     http.StatusUnauthorized,
-				authSign: http.StatusOK,
-			},
-			apiPrefix: "/v1/certs",
 		},
 		"for new certificates, issues ecdsa based certs when authkey is not provided": {
 			algorithm:        v1alpha1.ECDSAKeyAlgorithm,
 			expectedCrt:      certStr,
 			expectedRespBody: fmt.Sprintf(`{"success":true,"result":{"certificate":"%s"}}`, certStr),
-			expectedStatusCodes: statusCodes{
-				info:     http.StatusOK,
-				sign:     http.StatusOK,
-				authSign: http.StatusUnauthorized,
-			},
-			apiPrefix: "/v1/certs",
 		},
 		"for new certificates, issues rsa based certs when authkey is not provided": {
 			algorithm:        v1alpha1.RSAKeyAlgorithm,
 			expectedCrt:      certStr,
 			expectedRespBody: fmt.Sprintf(`{"success":true,"result":{"certificate":"%s"}}`, certStr),
-			expectedStatusCodes: statusCodes{
-				info:     http.StatusOK,
-				sign:     http.StatusOK,
-				authSign: http.StatusUnauthorized,
-			},
-			apiPrefix: "/v1/certs",
 		},
 		"for existing certificate, issues ecdsa based certs when authkey is provided": {
 			authKeySecret:    newSecret(authKeySecretName, "auth-key", validAuthKeySecretValue),
@@ -162,12 +128,6 @@ func TestCFSSLIssue(t *testing.T) {
 			algorithm:        v1alpha1.ECDSAKeyAlgorithm,
 			expectedCrt:      certStr,
 			expectedRespBody: fmt.Sprintf(`{"success":true,"result":{"certificate":"%s"}}`, certStr),
-			expectedStatusCodes: statusCodes{
-				info:     http.StatusOK,
-				sign:     http.StatusUnauthorized,
-				authSign: http.StatusOK,
-			},
-			apiPrefix: "/v1/certs",
 		},
 		"for existing certificates, issues rsa based certs when authkey is provided": {
 			authKeySecret:    newSecret(authKeySecretName, "auth-key", validAuthKeySecretValue),
@@ -175,36 +135,18 @@ func TestCFSSLIssue(t *testing.T) {
 			algorithm:        v1alpha1.RSAKeyAlgorithm,
 			expectedCrt:      certStr,
 			expectedRespBody: fmt.Sprintf(`{"success":true,"result":{"certificate":"%s"}}`, certStr),
-			expectedStatusCodes: statusCodes{
-				info:     http.StatusOK,
-				sign:     http.StatusUnauthorized,
-				authSign: http.StatusOK,
-			},
-			apiPrefix: "/v1/certs",
 		},
 		"for existing certificates, issues ecdsa based certs when authkey is not provided": {
 			tlsSecret:        newTLSSecret(t, tlsSecretName, v1alpha1.ECDSAKeyAlgorithm),
 			algorithm:        v1alpha1.ECDSAKeyAlgorithm,
 			expectedCrt:      certStr,
 			expectedRespBody: fmt.Sprintf(`{"success":true,"result":{"certificate":"%s"}}`, certStr),
-			expectedStatusCodes: statusCodes{
-				info:     http.StatusOK,
-				sign:     http.StatusOK,
-				authSign: http.StatusUnauthorized,
-			},
-			apiPrefix: "/v1/certs",
 		},
 		"for existing certificates, issues rsa based certs when authkey is not provided": {
 			tlsSecret:        newTLSSecret(t, tlsSecretName, v1alpha1.RSAKeyAlgorithm),
 			algorithm:        v1alpha1.RSAKeyAlgorithm,
 			expectedCrt:      certStr,
 			expectedRespBody: fmt.Sprintf(`{"success":true,"result":{"certificate":"%s"}}`, certStr),
-			expectedStatusCodes: statusCodes{
-				info:     http.StatusOK,
-				sign:     http.StatusOK,
-				authSign: http.StatusUnauthorized,
-			},
-			apiPrefix: "/v1/certs",
 		},
 		"sends the label & profile provided on the certificate with the server request": {
 			algorithm:        v1alpha1.RSAKeyAlgorithm,
@@ -212,45 +154,26 @@ func TestCFSSLIssue(t *testing.T) {
 			label:            "blah-label",
 			expectedCrt:      certStr,
 			expectedRespBody: fmt.Sprintf(`{"success":true,"result":{"certificate":"%s"}}`, certStr),
-			expectedStatusCodes: statusCodes{
-				info:     http.StatusOK,
-				sign:     http.StatusOK,
-				authSign: http.StatusUnauthorized,
-			},
-			apiPrefix: "/v1/certs",
-		},
-		"does not fail if APIPrefix does not start with '/'": {
-			algorithm:        v1alpha1.RSAKeyAlgorithm,
-			expectedCrt:      certStr,
-			expectedRespBody: fmt.Sprintf(`{"success":true,"result":{"certificate":"%s"}}`, certStr),
-			expectedStatusCodes: statusCodes{
-				info:     http.StatusOK,
-				sign:     http.StatusOK,
-				authSign: http.StatusUnauthorized,
-			},
-			apiPrefix: "v1/certs",
-		},
-		"does not fail if APIPrefix ends with '/'": {
-			algorithm:        v1alpha1.RSAKeyAlgorithm,
-			expectedCrt:      certStr,
-			expectedRespBody: fmt.Sprintf(`{"success":true,"result":{"certificate":"%s"}}`, certStr),
-			expectedStatusCodes: statusCodes{
-				info:     http.StatusOK,
-				sign:     http.StatusOK,
-				authSign: http.StatusUnauthorized,
-			},
-			apiPrefix: "v1/certs/",
 		},
 	}
 
 	for msg, test := range errorTests {
 		t.Run(msg, func(t *testing.T) {
-			server := testCFSSLServer(test.expectedRespBody, test.expectedStatusCodes, test.profile, test.label)
+			var server *httptest.Server
+
+			if test.authKeySecret != nil {
+				server = testAuthenticatedServer(test.expectedRespBody, validAuthKeySecretValue, test.profile, test.label)
+			} else {
+				server = testServer(test.expectedRespBody, test.profile, test.label)
+			}
 
 			certificate := newCertificate(test.algorithm, test.profile, test.label)
-			issuer, err := newIssuer(test.authKeySecret, test.tlsSecret, server.URL, test.apiPrefix)
+			issuer, err := newIssuer(test.authKeySecret, test.tlsSecret, server.URL)
 			if err != nil {
-				t.Fatalf(err.Error())
+				if !strings.Contains(strings.ToLower(err.Error()), strings.ToLower(test.expectedErrStr)) {
+					t.Fatalf(`expected err: "%s" to contain: "%s"`, err.Error(), test.expectedErrStr)
+				}
+				return
 			}
 
 			_, err = issuer.Issue(context.TODO(), certificate)
@@ -258,7 +181,7 @@ func TestCFSSLIssue(t *testing.T) {
 				t.Fatalf("expected error to occur: %s", err)
 			}
 
-			if !strings.Contains(err.Error(), test.expectedErrStr) {
+			if !strings.Contains(strings.ToLower(err.Error()), strings.ToLower(test.expectedErrStr)) {
 				t.Fatalf(`expected err: "%s" to contain: "%s"`, err.Error(), test.expectedErrStr)
 			}
 		})
@@ -266,10 +189,16 @@ func TestCFSSLIssue(t *testing.T) {
 
 	for msg, test := range successTests {
 		t.Run(msg, func(t *testing.T) {
-			server := testCFSSLServer(test.expectedRespBody, test.expectedStatusCodes, test.profile, test.label)
+			var server *httptest.Server
+
+			if test.authKeySecret != nil {
+				server = testAuthenticatedServer(test.expectedRespBody, validAuthKeySecretValue, test.profile, test.label)
+			} else {
+				server = testServer(test.expectedRespBody, test.profile, test.label)
+			}
 
 			certificate := newCertificate(test.algorithm, test.profile, test.label)
-			issuer, err := newIssuer(test.authKeySecret, test.tlsSecret, server.URL, test.apiPrefix)
+			issuer, err := newIssuer(test.authKeySecret, test.tlsSecret, server.URL)
 			if err != nil {
 				t.Fatalf(err.Error())
 			}
@@ -314,10 +243,9 @@ func newCertificate(keyAlgo v1alpha1.KeyAlgorithm, profile, label string) *v1alp
 	}
 }
 
-func newIssuer(authKeySecret, tlsSecret *corev1.Secret, serverURL, apiPrefix string) (issuer.Interface, error) {
+func newIssuer(authKeySecret, tlsSecret *corev1.Secret, serverURL string) (issuer.Interface, error) {
 	cfsslIssuer := &v1alpha1.CFSSLIssuer{
-		Server:    serverURL,
-		APIPrefix: apiPrefix,
+		Server: serverURL,
 	}
 
 	client := kubefake.NewSimpleClientset()
@@ -365,8 +293,7 @@ func newIssuer(authKeySecret, tlsSecret *corev1.Secret, serverURL, apiPrefix str
 	return NewCFSSL(ctx, issuer)
 }
 
-func testCFSSLServer(respBody string, codes statusCodes, profile, label string) *httptest.Server {
-	var resp string
+func testAuthenticatedServer(respBody, authKey, profile, label string) *httptest.Server {
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		requestBody, err := ioutil.ReadAll(r.Body)
 		if err != nil {
@@ -375,20 +302,49 @@ func testCFSSLServer(respBody string, codes statusCodes, profile, label string) 
 		}
 
 		switch r.RequestURI {
-		case "/v1/certs/info":
-			if codes.info > 0 {
-				w.WriteHeader(codes.info)
-			}
-			if codes.info == http.StatusOK {
-				resp = infoResponse
-			} else {
-				resp = "blah-blah"
-			}
-		case "/v1/certs/sign":
-			var request UnauthenticatedSignRequest
+		case infoPath:
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte(infoResponse))
+		case authsignPath:
+			var authRequest authSignRequest
+			var request signRequest
 
-			err := json.Unmarshal(requestBody, &request)
+			if err := json.Unmarshal(requestBody, &authRequest); err != nil {
+				http.Error(w, "error unmarshalling request body.", http.StatusBadRequest)
+				return
+			}
+
+			hexKey, err := hex.DecodeString(strings.TrimSpace(authKey))
 			if err != nil {
+				http.Error(w, "error hex decoding key.", http.StatusBadRequest)
+				return
+			}
+
+			decodedRequest, err := base64.StdEncoding.DecodeString(authRequest.Request)
+			if err != nil {
+				http.Error(w, "error base64 decoding request.", http.StatusBadRequest)
+				return
+			}
+
+			requestAuthToken, err := base64.StdEncoding.DecodeString(authRequest.Token)
+			if err != nil {
+				http.Error(w, "error base64 decoding token.", http.StatusBadRequest)
+				return
+			}
+
+			hash := hmac.New(sha256.New, hexKey)
+			if _, err := hash.Write(decodedRequest); err != nil {
+				http.Error(w, "error base64 decoding token.", http.StatusBadRequest)
+				return
+			}
+			actualAuthToken := hash.Sum(nil)
+
+			if len(actualAuthToken) != len(requestAuthToken) || !hmac.Equal(actualAuthToken, requestAuthToken) {
+				http.Error(w, "invalid token provided", http.StatusBadRequest)
+				return
+			}
+
+			if err := json.Unmarshal(decodedRequest, &request); err != nil {
 				http.Error(w, "error unmarshalling request body.", http.StatusBadRequest)
 				return
 			}
@@ -403,20 +359,53 @@ func testCFSSLServer(respBody string, codes statusCodes, profile, label string) 
 				return
 			}
 
-			if codes.sign > 0 {
-				w.WriteHeader(codes.sign)
-			}
-			resp = respBody
-		case "/v1/certs/authsign":
-			if codes.authSign > 0 {
-				w.WriteHeader(codes.authSign)
-			}
-			resp = respBody
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte(respBody))
 		default:
+			fmt.Printf("NOTFOUND: %s\n", r.RequestURI)
 			http.Error(w, "not found", http.StatusNotFound)
 			return
 		}
-		w.Write([]byte(resp))
+	}))
+}
+
+func testServer(respBody string, profile, label string) *httptest.Server {
+	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requestBody, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			http.Error(w, "error reading request body.", http.StatusInternalServerError)
+			return
+		}
+
+		switch r.RequestURI {
+		case infoPath:
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte(infoResponse))
+		case signPath:
+			var request signRequest
+
+			if err := json.Unmarshal(requestBody, &request); err != nil {
+				http.Error(w, "error unmarshalling request body.", http.StatusBadRequest)
+				return
+			}
+
+			if request.Label != label {
+				http.Error(w, fmt.Sprintf("expected label '%s', but got '%s'.", label, request.Label), http.StatusBadRequest)
+				return
+			}
+
+			if request.Profile != profile {
+				http.Error(w, fmt.Sprintf("expected profile '%s', but got '%s'.", profile, request.Profile), http.StatusBadRequest)
+				return
+			}
+
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte(respBody))
+		default:
+			fmt.Printf("NOTFOUND: %s\n", r.RequestURI)
+			http.Error(w, "not found", http.StatusNotFound)
+			return
+		}
 	}))
 }
 

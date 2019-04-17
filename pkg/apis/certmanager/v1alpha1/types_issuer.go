@@ -190,15 +190,21 @@ type CAIssuer struct {
 }
 
 type CFSSLIssuer struct {
-	// CFSSL Authentication
+	// This Secret contains the Authkey used to authenticate requests to
+	// cfssl
+	// +optional
 	AuthKey *SecretKeySelector `json:"authKeySecretRef,omitempty"`
+
 	// Server is the cfssl connection address
-	// Cfssl servers using HTTP protocol is supported at the moment. Servers using
-	// HTTPS protocol are not yet supported
+	// This field is required.
 	Server string `json:"server"`
-	// APIPrefix is the prefix of cfssl api endpoints
-	// e.g /api/v1/cfssl
-	APIPrefix string `json:"apiPrefix,omitempty"`
+
+	// Base64 encoded CA bundle to validate cfssl server certificate. Only used
+	// if the Server URL is using HTTPS protocol. This parameter is ignored for
+	// plain HTTP protocol connection. If not set the system root certificates
+	// are used to validate the TLS connection.
+	// +optional
+	CABundle []byte `json:"caBundle,omitempty"`
 }
 
 // ACMEIssuer contains the specification for an ACME issuer

@@ -19,9 +19,9 @@ package cfssl
 import (
 	"context"
 
-	"github.com/golang/glog"
-	"k8s.io/api/core/v1"
+	"k8s.io/klog"
 
+	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 )
 
@@ -31,8 +31,8 @@ const (
 	successFieldsVerified = "FieldsVerified"
 
 	messageIssuerConfig            = "Invalid config for CFSSL issuer: "
-	messageConfigRequired          = "CFSSL config cannot be empty"
-	messageServerRequired          = "CFSSL server is required"
+	messageConfigRequired          = "CFSSL issuer config cannot be empty"
+	messageServerAndPathRequired   = "CFSSL server, path and infoPath are required"
 	messageAuthKeyNameRequired     = "CFSSL authKey name is required"
 	messageAuthKeyKeyRequired      = "CFSSL authKey key is required"
 	messageAuthKeyKeyNotFound      = "CFSSL authKey must be provided"
@@ -41,36 +41,37 @@ const (
 )
 
 func (c *CFSSL) Setup(ctx context.Context) error {
-	if c.issuer.GetSpec().CFSSL == nil {
-		glog.Infof("%s: %s", c.issuer.GetObjectMeta().Name, messageConfigRequired)
-		c.issuer.UpdateStatusCondition(v1alpha1.IssuerConditionReady, v1alpha1.ConditionFalse, errorIssuerConfig, messageConfigRequired)
+	spec := c.issuer.GetSpec().CFSSL
+
+	if spec == nil {
+		klog.Infof("%s: %s", c.issuer.GetObjectMeta().Name, messageConfigRequired)
+		apiutil.SetIssuerCondition(c.issuer, v1alpha1.IssuerConditionReady, v1alpha1.ConditionFalse, errorIssuerConfig, messageConfigRequired)
 		return nil
 	}
 
-	spec := c.issuer.GetSpec().CFSSL
 	if spec.AuthKey != nil {
 		if spec.AuthKey.Name == "" {
-			glog.Infof("%s: %s", c.issuer.GetObjectMeta().Name, messageAuthKeyNameRequired)
-			c.issuer.UpdateStatusCondition(v1alpha1.IssuerConditionReady, v1alpha1.ConditionFalse, errorIssuerConfig, messageAuthKeyNameRequired)
+			klog.Infof("%s: %s", c.issuer.GetObjectMeta().Name, messageAuthKeyNameRequired)
+			apiutil.SetIssuerCondition(c.issuer, v1alpha1.IssuerConditionReady, v1alpha1.ConditionFalse, errorIssuerConfig, messageAuthKeyNameRequired)
 			return nil
 		}
 
 		if spec.AuthKey.Key == "" {
-			glog.Infof("%s: %s", c.issuer.GetObjectMeta().Name, messageAuthKeyKeyRequired)
-			c.issuer.UpdateStatusCondition(v1alpha1.IssuerConditionReady, v1alpha1.ConditionFalse, errorIssuerConfig, messageAuthKeyKeyRequired)
+			klog.Infof("%s: %s", c.issuer.GetObjectMeta().Name, messageAuthKeyKeyRequired)
+			klog.Info(messageAuthKeyKeyRequired)
+			apiutil.SetIssuerCondition(c.issuer, v1alpha1.IssuerConditionReady, v1alpha1.ConditionFalse, errorIssuerConfig, messageAuthKeyKeyRequired)
 			return nil
 		}
 	}
 
-	if spec.Server == "" {
-		glog.Infof("%s: %s", c.issuer.GetObjectMeta().Name, messageServerRequired)
-		c.issuer.UpdateStatusCondition(v1alpha1.IssuerConditionReady, v1alpha1.ConditionFalse, errorIssuerConfig, messageServerRequired)
+	if spec.Server == "" || spec.Path == "" || spec.InfoPath == "" {
+		klog.Infof("%s: %s", c.issuer.GetObjectMeta().Name, messageServerAndPathRequired)
+		apiutil.SetIssuerCondition(c.issuer, v1alpha1.IssuerConditionReady, v1alpha1.ConditionFalse, errorIssuerConfig, messageServerAndPathRequired)
 		return nil
 	}
 
-	glog.Info(messageFieldsVerified)
-	c.Recorder.Event(c.issuer, v1.EventTypeNormal, successFieldsVerified, messageFieldsVerified)
-	c.issuer.UpdateStatusCondition(v1alpha1.IssuerConditionReady, v1alpha1.ConditionTrue, successFieldsVerified, messageFieldsVerified)
+	klog.Info(messageFieldsVerified)
+	apiutil.SetIssuerCondition(c.issuer, v1alpha1.IssuerConditionReady, v1alpha1.ConditionTrue, successFieldsVerified, messageFieldsVerified)
 
 	return nil
 }

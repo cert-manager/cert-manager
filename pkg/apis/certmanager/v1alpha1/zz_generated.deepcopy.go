@@ -364,6 +364,11 @@ func (in *CFSSLIssuer) DeepCopyInto(out *CFSSLIssuer) {
 		*out = new(SecretKeySelector)
 		**out = **in
 	}
+	if in.CABundle != nil {
+		in, out := &in.CABundle, &out.CABundle
+		*out = make([]byte, len(*in))
+		copy(*out, *in)
+	}
 	return
 }
 

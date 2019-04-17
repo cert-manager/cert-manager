@@ -73,6 +73,7 @@ Issuer       Description
 ===========  ============================================================
 ACME         Only 'renewBefore' supported
 CA           Fully supported
+CFSSL        Fully supported
 Vault        Fully supported (although the requested duration must be lower
              than the configured Vault role's TTL)
 Self Signed  Fully supported

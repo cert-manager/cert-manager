@@ -17,8 +17,17 @@ limitations under the License.
 package cfssl
 
 import (
+	"crypto/tls"
+	"crypto/x509"
+	"fmt"
+
+	corev1 "k8s.io/api/core/v1"
 	corelisters "k8s.io/client-go/listers/core/v1"
 
+	cfsslclient "github.com/cloudflare/cfssl/api/client"
+	cfsslauth "github.com/cloudflare/cfssl/auth"
+
+	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	"github.com/jetstack/cert-manager/pkg/controller"
 	"github.com/jetstack/cert-manager/pkg/issuer"
@@ -35,61 +44,86 @@ type CFSSL struct {
 	// For Issuers, this will be the namespace of the Issuer.
 	// For ClusterIssuers, this will be the cluster resource namespace.
 	resourceNamespace string
+
+	client cfsslclient.Remote
 }
 
-// Request represents a CFSSL request which can either be authenticated or unauthenticated.
-type Request interface{}
-
-type ResponseMessage struct {
-	Code    int    `json:"code"`
-	Message string `json:"message"`
-}
-
-type ResponseResult struct {
-	Certificate string `json:"certificate"`
-}
-
-// Response defines the response body received from a remote cfssl ca server
-type Response struct {
-	Success  bool              `json:"success"`
-	Result   ResponseResult    `json:"result"`
-	Errors   []ResponseMessage `json:"errors"`
-	Messages []ResponseMessage `json:"messages"`
-}
-
-// InfoRequest defines the body of a "Info" request to send to a remote cfssl ca server
+// infoRequest defines the body of a "Info" request to send to a remote cfssl ca server
 // This response from the server contains the CA certificate
-type InfoRequest struct {
+type infoRequest struct {
 	Label   string `json:"label,omitempty"`
 	Profile string `json:"profile,omitempty"`
 }
 
-// UnauthenticatedRequest defines the body of an unauthenticated request to send to a remote cfssl ca server
-type UnauthenticatedSignRequest struct {
+// signRequest defines the body of a request to send to a remote cfssl ca server
+type signRequest struct {
 	Label              string `json:"label,omitempty"`
 	Profile            string `json:"profile,omitempty"`
 	CertificateRequest string `json:"certificate_request"`
 }
 
-// AuthenticatedRequest defines the body of an authenticated request to send to a remote cfssl ca server
-type AuthenticatedSignRequest struct {
-	Token   string `json:"token"`
-	Request string `json:"request"`
-}
-
 // NewCFSSL initializes a new CFSSL struct and returns a pointer to it
 func NewCFSSL(ctx *controller.Context, issuer v1alpha1.GenericIssuer) (issuer.Interface, error) {
 	secretsLister := ctx.KubeSharedInformerFactory.Core().V1().Secrets().Lister()
+	resourceNamespace := ctx.IssuerOptions.ResourceNamespace(issuer)
+
+	client, err := cfsslClient(issuer, secretsLister, resourceNamespace)
+	if err != nil {
+		ctx.Recorder.Eventf(issuer, corev1.EventTypeWarning, reasonErrorInitIssuer, "failed to initialise issuer: %v", err)
+		return nil, err
+	}
 
 	return &CFSSL{
 		Context:           ctx,
 		issuer:            issuer,
 		secretsLister:     secretsLister,
 		resourceNamespace: ctx.IssuerOptions.ResourceNamespace(issuer),
+		client:            client,
 	}, nil
+}
+
+func cfsslClient(issuer v1alpha1.GenericIssuer, secretsLister corelisters.SecretLister, resourceNamespace string) (cfsslclient.Remote, error) {
+	spec := issuer.GetSpec().CFSSL
+	if spec == nil {
+		return nil, fmt.Errorf("unexpected error: CFSSL issuer spec should not be nil")
+	}
+
+	if spec.AuthKey == nil {
+		return cfsslclient.NewServer(spec.Server), nil
+	}
+
+	secret, err := secretsLister.Secrets(resourceNamespace).Get(spec.AuthKey.Name)
+	if err != nil {
+		return nil, fmt.Errorf("error loading cfssl issuer authkey: %v", err)
+	}
+
+	keyBytes, ok := secret.Data[spec.AuthKey.Key]
+	if !ok {
+		return nil, fmt.Errorf("no data for %q in secret '%s/%s'", spec.AuthKey.Key, spec.AuthKey.Name, resourceNamespace)
+	}
+
+	var additionalData []byte
+
+	provider, err := cfsslauth.New(string(keyBytes), additionalData)
+	if err != nil {
+		return nil, fmt.Errorf("error creating auth provider: %v", err)
+	}
+
+	var tlsConfig *tls.Config
+
+	if len(spec.CABundle) > 0 {
+		caCertPool := x509.NewCertPool()
+		if ok := caCertPool.AppendCertsFromPEM(spec.CABundle); !ok {
+			return nil, fmt.Errorf("Error loading CFSSL CA bundle")
+		}
+
+		tlsConfig = &tls.Config{RootCAs: caCertPool}
+	}
+
+	return cfsslclient.NewAuthServer(spec.Server, tlsConfig, provider), nil
 }
 
 // Register CFSSL Issuer with the issuer factory
 func init() {
-	controller.RegisterIssuer(controller.IssuerCFSSL, NewCFSSL)
+	issuer.RegisterIssuer(apiutil.IssuerCFSSL, NewCFSSL)
 }

@@ -24,7 +24,7 @@ import (
 	"time"
 
 	intscheme "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/scheme"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	extv1beta1 "k8s.io/api/extensions/v1beta1"
 	apiextcs "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/typed/apiextensions/v1beta1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -419,10 +419,9 @@ func NewCertManagerSelfSignedIssuer(name string) *v1alpha1.Issuer {
 	}
 }
 
-func NewCertManagerCFSSLIssuer(name, serverURL, serverAPIPrefix, secretName string) *v1alpha1.Issuer {
+func NewCertManagerCFSSLIssuer(name, serverURL, secretName string) *v1alpha1.Issuer {
 	issuer := &v1alpha1.CFSSLIssuer{
-		Server:    serverURL,
-		APIPrefix: serverAPIPrefix,
+		Server: serverURL,
 	}
 
 	if len(secretName) > 0 {

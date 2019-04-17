@@ -46,9 +46,9 @@ var _ = framework.CertManagerDescribe("CFSSL Issuer", func() {
 		f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Delete(issuerAuthKeySecretName, nil)
 	})
 
-	It("should be ready with a valid serverurl and serverApiPrefix and missing authkey", func() {
+	It("should be ready with a valid serverurl and missing authkey", func() {
 		By("Creating an Issuer")
-		issuer := util.NewCertManagerCFSSLIssuer(issuerName, serverURL, serverAPIPrefix, "")
+		issuer := util.NewCertManagerCFSSLIssuer(issuerName, serverURL, "")
 		_, err := f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Create(issuer)
 		Expect(err).NotTo(HaveOccurred())
 
@@ -62,9 +62,9 @@ var _ = framework.CertManagerDescribe("CFSSL Issuer", func() {
 		Expect(err).NotTo(HaveOccurred())
 	})
 
-	It("should be ready with a valid serverurl, serverApiPrefix and authkey", func() {
+	It("should be ready with a valid serverurl and authkey", func() {
 		By("Creating an Issuer")
-		issuer := util.NewCertManagerCFSSLIssuer(issuerName, serverURL, serverAPIPrefix, issuerAuthKeySecretName)
+		issuer := util.NewCertManagerCFSSLIssuer(issuerName, serverURL, issuerAuthKeySecretName)
 		_, err := f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Create(issuer)
 		Expect(err).NotTo(HaveOccurred())
 

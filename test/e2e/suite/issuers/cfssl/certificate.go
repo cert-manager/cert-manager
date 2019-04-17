@@ -35,7 +35,6 @@ import (
 
 const (
 	issuerAuthKeySecret = "C0DEC0DEC0DEC0DEC0DEC0DE"
-	serverAPIPrefix     = "/api/v1/cfssl"
 )
 
 var _ = framework.CertManagerDescribe("CFSSL Certificate", func() {
@@ -111,7 +110,7 @@ var _ = framework.CertManagerDescribe("CFSSL Certificate", func() {
 				By("Creating a cfssl issuer")
 				serverURL := cfssl.Details().Host
 
-				issuer := util.NewCertManagerCFSSLIssuer(test.issuerName, serverURL, serverAPIPrefix, test.authKey)
+				issuer := util.NewCertManagerCFSSLIssuer(test.issuerName, serverURL, test.authKey)
 				_, err := f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Create(issuer)
 				Expect(err).NotTo(HaveOccurred())
 

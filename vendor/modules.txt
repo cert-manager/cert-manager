@@ -55,6 +55,13 @@ github.com/aws/aws-sdk-go/private/protocol/query/queryutil
 github.com/aws/aws-sdk-go/private/protocol
 # github.com/beorn7/perks v0.0.0-20180321164747-3a771d992973
 github.com/beorn7/perks/quantile
+# github.com/cloudflare/cfssl v0.0.0-20190409034051-768cd563887f
+github.com/cloudflare/cfssl/api/client
+github.com/cloudflare/cfssl/auth
+github.com/cloudflare/cfssl/api
+github.com/cloudflare/cfssl/errors
+github.com/cloudflare/cfssl/info
+github.com/cloudflare/cfssl/log
 # github.com/cloudflare/cloudflare-go v0.8.5
 github.com/cloudflare/cloudflare-go
 # github.com/coreos/etcd v3.3.10+incompatible

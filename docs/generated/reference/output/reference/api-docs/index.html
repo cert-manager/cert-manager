@@ -1354,16 +1354,16 @@ Appears In:
 </thead>
 <tbody>
 <tr>
-<td><code>apiPrefix</code><br /> <em>string</em></td>
-<td>APIPrefix is the prefix of cfssl api endpoints e.g /api/v1/cfssl</td>
+<td><code>authKeySecretRef</code><br /> <em><a href="#secretkeyselector-v1alpha1">SecretKeySelector</a></em></td>
+<td>This Secret contains the Authkey used to authenticate requests to cfssl</td>
 </tr>
 <tr>
-<td><code>authKeySecretRef</code><br /> <em><a href="#secretkeyselector-v1alpha1">SecretKeySelector</a></em></td>
-<td>CFSSL Authentication</td>
+<td><code>caBundle</code><br /> <em>string</em></td>
+<td>Base64 encoded CA bundle to validate cfssl server certificate. Only used if the Server URL is using HTTPS protocol. This parameter is ignored for plain HTTP protocol connection. If not set the system root certificates are used to validate the TLS connection.</td>
 </tr>
 <tr>
 <td><code>server</code><br /> <em>string</em></td>
-<td>Server is the cfssl connection address Cfssl servers using HTTP protocol is supported at the moment. Servers using HTTPS protocol are not yet supported</td>
+<td>Server is the cfssl connection address This field is required.</td>
 </tr>
 </tbody>
 </table>

@@ -125,11 +125,18 @@ func ValidateCFSSLIssuerConfig(iss *v1alpha1.CFSSLIssuer, fldPath *field.Path) f
 	if len(iss.Server) == 0 {
 		el = append(el, field.Required(fldPath.Child("server"), "cfssl server url is a required field"))
 	}
-	if len(iss.APIPrefix) == 0 {
-		el = append(el, field.Required(fldPath.Child("apiPrefix"), "cfssl server apiPrefix is a required field"))
-	}
 	if iss.AuthKey != nil {
 		el = append(el, ValidateSecretKeySelector(iss.AuthKey, fldPath.Child("authKey"))...)
+	}
+
+	// check if caBundle is valid
+	certs := iss.CABundle
+	if len(iss.CABundle) > 0 {
+		caCertPool := x509.NewCertPool()
+		ok := caCertPool.AppendCertsFromPEM(certs)
+		if !ok {
+			el = append(el, field.Invalid(fldPath.Child("caBundle"), "", "Specified CA bundle is invalid"))
+		}
 	}
 	return el
 }
