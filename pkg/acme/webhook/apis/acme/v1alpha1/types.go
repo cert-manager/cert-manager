@@ -60,6 +60,8 @@ type ChallengeRequest struct {
 
 	// DNSName is the name of the domain that is actually being validated, as
 	// requested by the user on the Certificate resource.
+	// This will be of the form 'example.com' from normal hostnames, and
+	// '*.example.com' for wildcards.
 	DNSName string `json:"dnsName"`
 
 	// Key is the key that should be presented.
@@ -78,7 +80,8 @@ type ChallengeRequest struct {
 
 	// ResolvedFQDN is the fully-qualified domain name that should be
 	// updated/presented after resolving all CNAMEs.
-	// This should be honoured when using the DNS01 solver type **only**
+	// This should be honoured when using the DNS01 solver type.
+	// This will be of the form '_acme-challenge.example.com.'.
 	// +optional
 	ResolvedFQDN string `json:"resolvedFQDN,omitempty"`
 
@@ -88,6 +91,7 @@ type ChallengeRequest struct {
 	// This indicates the zone that the provided FQDN is encompassed within,
 	// determined by performing SOA record queries for each part of the FQDN
 	// until an authoritative zone is found.
+	// This will be of the form 'example.com.'.
 	ResolvedZone string `json:"resolvedZone,omitempty"`
 
 	// AllowAmbientCredentials advises webhook implementations that they can
