@@ -33,6 +33,7 @@ filegroup(
     srcs = [
         ":package-srcs",
         "//pkg/acme/client:all-srcs",
+        "//pkg/acme/webhook:all-srcs",
     ],
     tags = ["automanaged"],
     visibility = ["//visibility:public"],
