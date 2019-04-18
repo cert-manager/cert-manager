@@ -140,25 +140,24 @@ func NewDNSProviderCredentials(nameserver, tsigAlgorithm, tsigKeyName, tsigSecre
 	klog.V(5).Infof("DNSProvider nameserver:       %s\n", d.nameserver)
 	klog.V(5).Infof("            tsigAlgorithm:    %s\n", d.tsigAlgorithm)
 	klog.V(5).Infof("            tsigKeyName:      %s\n", d.tsigKeyName)
-	if klog.V(5) {
-		keyLen := len(d.tsigSecret)
-		mask := make([]rune, keyLen/2)
-		for i := range mask {
-			mask[i] = '*'
-		}
-		masked := d.tsigSecret[0:keyLen/4] + string(mask) + d.tsigSecret[keyLen/4*3:keyLen]
-		klog.Infof("            tsigSecret:       %s\n", masked)
+	keyLen := len(d.tsigSecret)
+	mask := make([]rune, keyLen/2)
+	for i := range mask {
+		mask[i] = '*'
 	}
+	masked := d.tsigSecret[0:keyLen/4] + string(mask) + d.tsigSecret[keyLen/4*3:keyLen]
+	klog.V(5).Infof("            tsigSecret:       %s\n", masked)
+
 	return d, nil
 }
 
 // Present creates a TXT record using the specified parameters
-func (r *DNSProvider) Present(domain, fqdn, zone, value string) error {
+func (r *DNSProvider) Present(_, fqdn, zone, value string) error {
 	return r.changeRecord("INSERT", fqdn, zone, value, 60)
 }
 
 // CleanUp removes the TXT record matching the specified parameters
-func (r *DNSProvider) CleanUp(domain, fqdn, zone, value string) error {
+func (r *DNSProvider) CleanUp(_, fqdn, zone, value string) error {
 	return r.changeRecord("REMOVE", fqdn, zone, value, 60)
 }
 
@@ -171,7 +170,7 @@ func (r *DNSProvider) changeRecord(action, fqdn, zone, value string, ttl int) er
 
 	// Create dynamic update packet
 	m := new(dns.Msg)
-	m.SetUpdate(fqdn)
+	m.SetUpdate(zone)
 	switch action {
 	case "INSERT":
 		// Always remove old challenge left over from who knows what.

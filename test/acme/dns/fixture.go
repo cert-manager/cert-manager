@@ -32,6 +32,7 @@ type fixture struct {
 	allowAmbientCredentials bool
 	jsonConfig              *v1beta1.JSON
 	strictMode              bool
+	useAuthoritative        *bool
 	kubectlManifestsPath    string
 	binariesPath            string
 

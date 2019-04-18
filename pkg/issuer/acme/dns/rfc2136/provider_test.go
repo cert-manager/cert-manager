@@ -3,42 +3,72 @@ package rfc2136
 import (
 	"testing"
 
+	dnslib "github.com/miekg/dns"
+
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	"github.com/jetstack/cert-manager/test/acme/dns"
 )
 
-//var apiKeySecret = &v1.Secret{
-//	ObjectMeta: metav1.ObjectMeta{
-//		Name: "testing-api-key",
-//	},
-//	Data: map[string][]byte{
-//		"apikey": []byte(apiKey),
-//	},
-//}
+func TestRunSuiteWithTSIG(t *testing.T) {
+	dnslib.HandleFunc(rfc2136TestZone, (&basicStatefulServer{}).serverHandlerPassBackRequest)
+	defer dnslib.HandleRemove(rfc2136TestZone)
 
-func TestRunSuiteNoTSIG(t *testing.T) {
-	//if apiKey == "" {
-	//	t.Skip("skipping running test suite as api key is not provided")
-	//}
-	//if email == "" {
-	//	t.Skip("skipping running test suite as email is not provided")
-	//}
-
-	_, addrstr, err := runLocalDNSTestServer("127.0.0.1:0", false)
+	server, addrstr, err := runLocalDNSTestServer("127.0.0.1:0", true)
 	if err != nil {
 		t.Errorf("error starting test dns server: %v", err)
 		t.FailNow()
 	}
+	defer server.Shutdown()
+
+	var validConfig = cmapi.ACMEIssuerDNS01ProviderRFC2136{
+		Nameserver: addrstr,
+		TSIGSecret: cmapi.SecretKeySelector{
+			LocalObjectReference: cmapi.LocalObjectReference{
+				Name: "testkey",
+			},
+			Key: "value",
+		},
+		TSIGKeyName: rfc2136TestTsigKeyName,
+	}
+
+	fixture := dns.NewFixture(&Solver{},
+		dns.SetResolvedZone(rfc2136TestZone),
+		dns.SetResolvedFQDN(rfc2136TestFqdn),
+		dns.SetAllowAmbientCredentials(false),
+		dns.SetConfig(validConfig),
+		dns.SetDNSServer(addrstr),
+		dns.SetManifestPath("testdata"),
+		// Disable recursive NS lookups as we run a single authoritative NS per test
+		dns.SetUseAuthoritative(false),
+	)
+
+	fixture.RunConformance(t)
+}
+
+func TestRunSuiteNoTSIG(t *testing.T) {
+	dnslib.HandleFunc(rfc2136TestZone, (&basicStatefulServer{}).serverHandlerPassBackRequest)
+	defer dnslib.HandleRemove(rfc2136TestZone)
+
+	server, addrstr, err := runLocalDNSTestServer("127.0.0.1:0", false)
+	if err != nil {
+		t.Errorf("error starting test dns server: %v", err)
+		t.FailNow()
+	}
+	defer server.Shutdown()
 
 	var validConfig = cmapi.ACMEIssuerDNS01ProviderRFC2136{
 		Nameserver: addrstr,
 	}
 
 	fixture := dns.NewFixture(&Solver{},
-		dns.SetResolvedZone("example.com"),
+		dns.SetResolvedZone(rfc2136TestZone),
+		dns.SetResolvedFQDN(rfc2136TestFqdn),
 		dns.SetAllowAmbientCredentials(false),
 		dns.SetConfig(validConfig),
-		//dns.AddSecretFixture(apiKeySecret),
+		dns.SetDNSServer(addrstr),
+		dns.SetManifestPath("testdata"),
+		// Disable recursive NS lookups as we run a single authoritative NS per test
+		dns.SetUseAuthoritative(false),
 	)
 
 	fixture.RunConformance(t)

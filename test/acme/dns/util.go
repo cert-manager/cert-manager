@@ -12,12 +12,12 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	whapi "github.com/jetstack/cert-manager/pkg/acme/webhook/apis/acme/v1alpha1"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
 )
 
 var (
-	defaultPollInterval     = time.Second * 5
+	defaultPollInterval     = time.Second * 3
 	defaultPropagationLimit = time.Minute * 2
 )
 
@@ -64,18 +64,16 @@ func (f *fixture) setupNamespace(t *testing.T, name string) (string, func()) {
 	}
 }
 
-func (f *fixture) buildChallengeRequest(t *testing.T, ns string) *cmapi.ChallengeRequest {
-	return &cmapi.ChallengeRequest{
+func (f *fixture) buildChallengeRequest(t *testing.T, ns string) *whapi.ChallengeRequest {
+	return &whapi.ChallengeRequest{
 		ResourceNamespace:       ns,
 		ResolvedFQDN:            f.resolvedFQDN,
 		ResolvedZone:            f.resolvedZone,
 		AllowAmbientCredentials: f.allowAmbientCredentials,
 		Config:                  f.jsonConfig,
-		Challenge: cmapi.Challenge{
-			Spec: cmapi.ChallengeSpec{
-				Key: "testingkey123",
-			},
-		},
+		// TODO
+		DNSName: "example.com",
+		Key:     "123d==",
 	}
 }
 
@@ -102,13 +100,13 @@ func closingStopCh(t time.Duration) <-chan struct{} {
 
 func (f *fixture) recordHasPropagatedCheck(fqdn, value string) func() (bool, error) {
 	return func() (bool, error) {
-		return util.PreCheckDNS(fqdn, value, []string{f.testDNSServer}, true)
+		return util.PreCheckDNS(fqdn, value, []string{f.testDNSServer}, *f.useAuthoritative)
 	}
 }
 
 func (f *fixture) recordHasBeenDeletedCheck(fqdn, value string) func() (bool, error) {
 	return func() (bool, error) {
-		msg, err := util.DNSQuery(fqdn, dns.TypeTXT, []string{f.testDNSServer}, true)
+		msg, err := util.DNSQuery(fqdn, dns.TypeTXT, []string{f.testDNSServer}, *f.useAuthoritative)
 		if err != nil {
 			return false, err
 		}

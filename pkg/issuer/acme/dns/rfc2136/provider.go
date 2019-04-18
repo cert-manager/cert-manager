@@ -19,6 +19,7 @@ package rfc2136
 import (
 	"encoding/json"
 	"fmt"
+	"k8s.io/klog"
 	"time"
 
 	extapi "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
@@ -27,6 +28,7 @@ import (
 	corelisters "k8s.io/client-go/listers/core/v1"
 	restclient "k8s.io/client-go/rest"
 
+	whapi "github.com/jetstack/cert-manager/pkg/acme/webhook/apis/acme/v1alpha1"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 )
 
@@ -35,16 +37,16 @@ type Solver struct {
 }
 
 func (s *Solver) Name() string {
-	return "digitalocean"
+	return "rfc2136"
 }
 
-func (s *Solver) Present(ch *cmapi.ChallengeRequest) error {
+func (s *Solver) Present(ch *whapi.ChallengeRequest) error {
 	p, err := s.buildDNSProvider(ch)
 	if err != nil {
 		return err
 	}
 
-	err = p.Present(ch.Challenge.Spec.DNSName, ch.ResolvedFQDN, ch.ResolvedZone, ch.Challenge.Spec.Key)
+	err = p.Present(ch.DNSName, ch.ResolvedFQDN, ch.ResolvedZone, ch.Key)
 	if err != nil {
 		return err
 	}
@@ -52,13 +54,13 @@ func (s *Solver) Present(ch *cmapi.ChallengeRequest) error {
 	return nil
 }
 
-func (s *Solver) CleanUp(ch *cmapi.ChallengeRequest) error {
+func (s *Solver) CleanUp(ch *whapi.ChallengeRequest) error {
 	p, err := s.buildDNSProvider(ch)
 	if err != nil {
 		return err
 	}
 
-	err = p.CleanUp(ch.Challenge.Spec.DNSName, ch.ResolvedFQDN, ch.ResolvedZone, ch.Challenge.Spec.Key)
+	err = p.CleanUp(ch.DNSName, ch.ResolvedFQDN, ch.ResolvedZone, ch.Key)
 	if err != nil {
 		return err
 	}
@@ -93,7 +95,8 @@ func (s *Solver) loadConfig(cfgJSON extapi.JSON) (*cmapi.ACMEIssuerDNS01Provider
 
 func loadSecretKeySelector(l corelisters.SecretNamespaceLister, sks cmapi.SecretKeySelector, defaultKey string) ([]byte, error) {
 	if sks.Name == "" {
-		return nil, fmt.Errorf("secret name not specified")
+		klog.Info("rfc2136: secret name not specified")
+		return nil, nil
 	}
 	key := defaultKey
 	if sks.Key != "" {
@@ -112,7 +115,7 @@ func loadSecretKeySelector(l corelisters.SecretNamespaceLister, sks cmapi.Secret
 	return nil, fmt.Errorf("data entry with key %q not found in secret", key)
 }
 
-func (s *Solver) buildDNSProvider(ch *cmapi.ChallengeRequest) (*DNSProvider, error) {
+func (s *Solver) buildDNSProvider(ch *whapi.ChallengeRequest) (*DNSProvider, error) {
 	if ch.Config == nil {
 		return nil, fmt.Errorf("no challenge solver config provided")
 	}
@@ -127,6 +130,10 @@ func (s *Solver) buildDNSProvider(ch *cmapi.ChallengeRequest) (*DNSProvider, err
 	if err != nil {
 		return nil, err
 	}
+	key := ""
+	if len(secret) > 0 {
+		key = string(secret)
+	}
 
-	return NewDNSProviderCredentials(cfg.Nameserver, cfg.TSIGAlgorithm, cfg.TSIGKeyName, string(secret))
+	return NewDNSProviderCredentials(cfg.Nameserver, cfg.TSIGAlgorithm, cfg.TSIGKeyName, key)
 }

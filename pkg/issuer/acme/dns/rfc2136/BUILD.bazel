@@ -9,6 +9,7 @@ go_library(
     importpath = "github.com/jetstack/cert-manager/pkg/issuer/acme/dns/rfc2136",
     visibility = ["//visibility:public"],
     deps = [
+        "//pkg/acme/webhook/apis/acme/v1alpha1:go_default_library",
         "//pkg/apis/certmanager/v1alpha1:go_default_library",
         "//vendor/github.com/miekg/dns:go_default_library",
         "//vendor/k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1:go_default_library",
@@ -26,6 +27,7 @@ go_test(
         "provider_test.go",
         "rfc2136_test.go",
     ],
+    data = glob(["testdata/**"]),
     embed = [":go_default_library"],
     deps = [
         "//pkg/apis/certmanager/v1alpha1:go_default_library",

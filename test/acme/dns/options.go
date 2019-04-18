@@ -44,7 +44,7 @@ func applyDefaults(f *fixture) {
 	if f.kubectlManifestsPath == "" {
 		if runfiles != "" {
 			if f.testSolver != nil {
-				f.kubectlManifestsPath = runfiles + "__main__/test/fixtures/acme/dns/" + f.testSolver.Name()
+				f.kubectlManifestsPath = runfiles + "/__main__/test/fixtures/acme/dns/" + f.testSolver.Name()
 			}
 		}
 	}
@@ -57,6 +57,10 @@ func applyDefaults(f *fixture) {
 				}
 			}
 		}
+	}
+	if f.useAuthoritative == nil {
+		trueVal := true
+		f.useAuthoritative = &trueVal
 	}
 }
 
@@ -76,6 +80,9 @@ func validate(f *fixture) error {
 	}
 	if f.jsonConfig == nil {
 		errs = append(errs, fmt.Errorf("jsonConfig must be provided"))
+	}
+	if f.useAuthoritative == nil {
+		errs = append(errs, fmt.Errorf("useAuthoritative must be provided"))
 	}
 	if len(errs) > 0 {
 		return fmt.Errorf("%v", errs)
@@ -118,6 +125,12 @@ func SetStrict(s bool) Option {
 	}
 }
 
+func SetUseAuthoritative(s bool) Option {
+	return func(f *fixture) {
+		f.useAuthoritative = &s
+	}
+}
+
 func SetManifestPath(s string) Option {
 	return func(f *fixture) {
 		f.kubectlManifestsPath = s
@@ -127,5 +140,11 @@ func SetManifestPath(s string) Option {
 func SetDNSServer(s string) Option {
 	return func(f *fixture) {
 		f.testDNSServer = s
+	}
+}
+
+func SetBinariesPath(s string) Option {
+	return func(f *fixture) {
+		f.binariesPath = s
 	}
 }

@@ -18,6 +18,7 @@ func (f *fixture) TestBasicPresentRecord(t *testing.T) {
 	defer cleanup()
 	ch := f.buildChallengeRequest(t, ns)
 
+	t.Logf("Calling Present with ChallengeRequest: %#v", ch)
 	// present the record
 	if err := f.testSolver.Present(ch); err != nil {
 		t.Errorf("expected Present to not error, but got: %v", err)
@@ -27,7 +28,7 @@ func (f *fixture) TestBasicPresentRecord(t *testing.T) {
 
 	// wait until the record has propagated
 	if err := wait.PollUntil(defaultPollInterval,
-		f.recordHasPropagatedCheck(ch.ResolvedFQDN, ch.Challenge.Spec.Key),
+		f.recordHasPropagatedCheck(ch.ResolvedFQDN, ch.Key),
 		closingStopCh(defaultPropagationLimit)); err != nil {
 		t.Errorf("error waiting for DNS record propagation: %v", err)
 		return
@@ -40,7 +41,7 @@ func (f *fixture) TestBasicPresentRecord(t *testing.T) {
 
 	// wait until the record has been deleted
 	if err := wait.PollUntil(defaultPollInterval,
-		f.recordHasBeenDeletedCheck(ch.ResolvedFQDN, ch.Challenge.Spec.Key),
+		f.recordHasBeenDeletedCheck(ch.ResolvedFQDN, ch.Key),
 		closingStopCh(defaultPropagationLimit)); err != nil {
 		t.Errorf("error waiting for record to be deleted: %v", err)
 		return
@@ -60,7 +61,7 @@ func (f *fixture) TestExtendedDeletingOneRecordRetainsOthers(t *testing.T) {
 	defer cleanup()
 	ch := f.buildChallengeRequest(t, ns)
 	ch2 := f.buildChallengeRequest(t, ns)
-	ch2.Challenge.Spec.Key = "anothertestingkey"
+	ch2.Key = "anothertestingkey"
 
 	// present the first record
 	if err := f.testSolver.Present(ch); err != nil {
@@ -79,8 +80,8 @@ func (f *fixture) TestExtendedDeletingOneRecordRetainsOthers(t *testing.T) {
 	// wait until all records have propagated
 	if err := wait.PollUntil(defaultPollInterval,
 		allConditions(
-			f.recordHasPropagatedCheck(ch.ResolvedFQDN, ch.Challenge.Spec.Key),
-			f.recordHasPropagatedCheck(ch2.ResolvedFQDN, ch2.Challenge.Spec.Key),
+			f.recordHasPropagatedCheck(ch.ResolvedFQDN, ch.Key),
+			f.recordHasPropagatedCheck(ch2.ResolvedFQDN, ch2.Key),
 		),
 		closingStopCh(defaultPropagationLimit)); err != nil {
 		t.Errorf("error waiting for DNS record propagation: %v", err)
@@ -95,8 +96,8 @@ func (f *fixture) TestExtendedDeletingOneRecordRetainsOthers(t *testing.T) {
 	// wait until the second record has been deleted and the first one remains
 	if err := wait.PollUntil(defaultPollInterval,
 		allConditions(
-			f.recordHasBeenDeletedCheck(ch2.ResolvedFQDN, ch2.Challenge.Spec.Key),
-			f.recordHasPropagatedCheck(ch.ResolvedFQDN, ch.Challenge.Spec.Key),
+			f.recordHasBeenDeletedCheck(ch2.ResolvedFQDN, ch2.Key),
+			f.recordHasPropagatedCheck(ch.ResolvedFQDN, ch.Key),
 		),
 		closingStopCh(defaultPropagationLimit)); err != nil {
 		t.Errorf("error waiting for DNS record propagation: %v", err)

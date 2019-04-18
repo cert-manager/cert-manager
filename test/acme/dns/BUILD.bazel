@@ -18,7 +18,7 @@ go_library(
     visibility = ["//visibility:public"],
     deps = [
         "//pkg/acme/webhook:go_default_library",
-        "//pkg/apis/certmanager/v1alpha1:go_default_library",
+        "//pkg/acme/webhook/apis/acme/v1alpha1:go_default_library",
         "//pkg/issuer/acme/dns/util:go_default_library",
         "//vendor/github.com/miekg/dns:go_default_library",
         "//vendor/k8s.io/api/core/v1:go_default_library",
