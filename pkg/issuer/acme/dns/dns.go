@@ -81,26 +81,25 @@ func (s *Solver) Present(ctx context.Context, issuer v1alpha1.GenericIssuer, ch 
 		return err
 	}
 
-	fqdn, value, _, err := util.DNS01Record(ch.Spec.DNSName, ch.Spec.Key, s.DNS01Nameservers, followCNAME(providerConfig.CNAMEStrategy))
+	fqdn, err := util.DNS01LookupFQDN(ch.Spec.DNSName, followCNAME(providerConfig.CNAMEStrategy), s.DNS01Nameservers...)
 	if err != nil {
 		return err
 	}
 
 	klog.Infof("Presenting DNS01 challenge for domain %q", ch.Spec.DNSName)
-	return slv.Present(ch.Spec.DNSName, fqdn, value)
+	return slv.Present(ch.Spec.DNSName, fqdn, ch.Spec.Key)
 }
 
 // Check verifies that the DNS records for the ACME challenge have propagated.
 func (s *Solver) Check(ctx context.Context, issuer v1alpha1.GenericIssuer, ch *v1alpha1.Challenge) error {
-
-	fqdn, value, ttl, err := util.DNS01Record(ch.Spec.DNSName, ch.Spec.Key, s.DNS01Nameservers, false)
+	fqdn, err := util.DNS01LookupFQDN(ch.Spec.DNSName, false, s.DNS01Nameservers...)
 	if err != nil {
 		return err
 	}
 
 	klog.Infof("Checking DNS propagation for %q using name servers: %v", ch.Spec.DNSName, s.Context.DNS01Nameservers)
 
-	ok, err := util.PreCheckDNS(fqdn, value, s.Context.DNS01Nameservers,
+	ok, err := util.PreCheckDNS(fqdn, ch.Spec.Key, s.Context.DNS01Nameservers,
 		s.Context.DNS01CheckAuthoritative)
 	if err != nil {
 		return err
@@ -109,6 +108,7 @@ func (s *Solver) Check(ctx context.Context, issuer v1alpha1.GenericIssuer, ch *v
 		return fmt.Errorf("DNS record for %q not yet propagated", ch.Spec.DNSName)
 	}
 
+	ttl := 60
 	klog.Infof("Waiting DNS record TTL (%ds) to allow propagation of DNS record for domain %q", ttl, fqdn)
 	time.Sleep(time.Second * time.Duration(ttl))
 	klog.Infof("ACME DNS01 validation record propagated for %q", fqdn)
@@ -128,12 +128,12 @@ func (s *Solver) CleanUp(ctx context.Context, issuer v1alpha1.GenericIssuer, ch 
 		return err
 	}
 
-	fqdn, value, _, err := util.DNS01Record(ch.Spec.DNSName, ch.Spec.Key, s.DNS01Nameservers, followCNAME(providerConfig.CNAMEStrategy))
+	fqdn, err := util.DNS01LookupFQDN(ch.Spec.DNSName, followCNAME(providerConfig.CNAMEStrategy), s.DNS01Nameservers...)
 	if err != nil {
 		return err
 	}
 
-	return slv.CleanUp(ch.Spec.DNSName, fqdn, value)
+	return slv.CleanUp(ch.Spec.DNSName, fqdn, ch.Spec.Key)
 }
 
 func followCNAME(strategy v1alpha1.CNAMEStrategy) bool {
