@@ -106,7 +106,11 @@ func New(ctx *controllerpkg.Context) (*Controller, error) {
 	ctrl.acmeHelper = acme.NewHelper(ctrl.secretLister, ctrl.Context.ClusterResourceNamespace)
 
 	ctrl.httpSolver = http.NewSolver(ctx)
-	ctrl.dnsSolver = dns.NewSolver(ctx)
+	var err error
+	ctrl.dnsSolver, err = dns.NewSolver(ctx)
+	if err != nil {
+		return nil, err
+	}
 	ctrl.scheduler = scheduler.New(ctrl.challengeLister)
 	ctrl.ctx = logf.NewContext(ctx.RootContext, nil, ControllerName)
 
