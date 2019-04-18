@@ -21,7 +21,7 @@ func DNS01Record(domain, value string, nameservers []string, followCNAME bool) (
 
 	// Check if the domain has CNAME then return that
 	if followCNAME {
-		r, err := dnsQuery(fqdn, dns.TypeCNAME, nameservers, true)
+		r, err := DNSQuery(fqdn, dns.TypeCNAME, nameservers, true)
 		if err == nil && r.Rcode == dns.RcodeSuccess {
 			fqdn = updateDomainWithCName(r, fqdn)
 		}
