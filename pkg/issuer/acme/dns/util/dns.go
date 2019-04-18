@@ -14,9 +14,10 @@ import (
 	"github.com/miekg/dns"
 )
 
-// DNS01Record returns a DNS record which will fulfill the `dns-01` challenge
-// TODO: move this into a non-generic place by resolving import cycle in dns package
-func DNS01Record(domain, value string, nameservers []string, followCNAME bool) (string, string, int, error) {
+// DNS01LookupFQDN returns a DNS name which will be updated to solve the dns-01
+// challenge
+// TODO: move this into the pkg/acme package
+func DNS01LookupFQDN(domain string, followCNAME bool, nameservers ...string) (string, error) {
 	fqdn := fmt.Sprintf("_acme-challenge.%s.", domain)
 
 	// Check if the domain has CNAME then return that
@@ -26,9 +27,9 @@ func DNS01Record(domain, value string, nameservers []string, followCNAME bool) (
 			fqdn = updateDomainWithCName(r, fqdn)
 		}
 		if err != nil {
-			return "", "", 0, err
+			return "", err
 		}
 	}
 
-	return fqdn, value, 60, nil
+	return fqdn, nil
 }
