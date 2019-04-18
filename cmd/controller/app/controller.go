@@ -88,6 +88,11 @@ func Run(opts *options.ControllerOptions, stopCh <-chan struct{}) {
 			}
 
 			wg.Add(1)
+			iface, err := fn(ctx)
+			if err != nil {
+				log.Error(err, "error starting controller")
+				os.Exit(1)
+			}
 			go func(n string, fn controller.Interface) {
 				defer wg.Done()
 				log.Info("starting controller")
@@ -99,7 +104,7 @@ func Run(opts *options.ControllerOptions, stopCh <-chan struct{}) {
 					log.Error(err, "error starting controller")
 					os.Exit(1)
 				}
-			}(n, fn(ctx))
+			}(n, iface)
 		}
 
 		log.V(4).Info("starting shared informer factories")

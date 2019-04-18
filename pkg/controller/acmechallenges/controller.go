@@ -67,7 +67,7 @@ type Controller struct {
 	scheduler *scheduler.Scheduler
 }
 
-func New(ctx *controllerpkg.Context) *Controller {
+func New(ctx *controllerpkg.Context) (*Controller, error) {
 	ctrl := &Controller{Context: *ctx}
 	ctrl.syncHandler = ctrl.processNextWorkItem
 
@@ -110,7 +110,7 @@ func New(ctx *controllerpkg.Context) *Controller {
 	ctrl.scheduler = scheduler.New(ctrl.challengeLister)
 	ctrl.ctx = logf.NewContext(ctx.RootContext, nil, ControllerName)
 
-	return ctrl
+	return ctrl, nil
 }
 
 func (c *Controller) Run(workers int, stopCh <-chan struct{}) error {
@@ -249,7 +249,11 @@ const (
 )
 
 func init() {
-	controllerpkg.Register(ControllerName, func(ctx *controllerpkg.Context) controllerpkg.Interface {
-		return New(ctx).Run
+	controllerpkg.Register(ControllerName, func(ctx *controllerpkg.Context) (controllerpkg.Interface, error) {
+		i, err := New(ctx)
+		if err != nil {
+			return nil, err
+		}
+		return i.Run, nil
 	})
 }
