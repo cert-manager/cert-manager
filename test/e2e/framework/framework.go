@@ -24,12 +24,14 @@ import (
 
 	"k8s.io/api/core/v1"
 	api "k8s.io/api/core/v1"
+	apiext "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	apiextcs "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	kscheme "k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
+	apireg "k8s.io/kube-aggregator/pkg/apis/apiregistration/v1beta1"
 	crclient "sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
@@ -50,6 +52,8 @@ var Scheme = runtime.NewScheme()
 func init() {
 	kscheme.AddToScheme(Scheme)
 	certmgrscheme.AddToScheme(Scheme)
+	apiext.AddToScheme(Scheme)
+	apireg.AddToScheme(Scheme)
 }
 
 // DefaultConfig contains the default shared config the is likely parsed from
