@@ -95,9 +95,10 @@ require (
 	k8s.io/api v0.0.0-20190413052509-3cc1b3fb6d0f
 	k8s.io/apiextensions-apiserver v0.0.0-20190111034747-7d26de67f177
 	k8s.io/apimachinery v0.0.0-20190413052414-40a3f73b0fa2
-	k8s.io/apiserver v0.0.0-20190413053200-5b6ebd80335e // indirect
+	k8s.io/apiserver v0.0.0-20190413053200-5b6ebd80335e
 	k8s.io/client-go v0.0.0-20190413052642-108c485f896e
 	k8s.io/code-generator v0.0.0-20181117043124-c2090bec4d9b
+	k8s.io/component-base v0.0.0-20190413053003-a7e0d79a8811
 	k8s.io/gengo v0.0.0-20190327210449-e17681d19d3a // indirect
 	k8s.io/klog v0.2.0
 	k8s.io/kube-aggregator v0.0.0-20190222095010-0b78038fe9e5
