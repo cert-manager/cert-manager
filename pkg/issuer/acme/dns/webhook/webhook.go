@@ -4,14 +4,17 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
-	"github.com/jetstack/cert-manager/pkg/client/clientset/versioned/scheme"
+
 	apiext "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/client-go/rest"
 	"k8s.io/klog"
+
+	"github.com/jetstack/cert-manager/pkg/acme/webhook/apis/acme/v1alpha1"
+	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	"github.com/jetstack/cert-manager/pkg/client/clientset/versioned/scheme"
 )
 
 type Webhook struct {
@@ -130,8 +133,8 @@ func (r *Webhook) Initialize(kubeClientConfig *rest.Config, stopCh <-chan struct
 	return nil
 }
 
-func (r *Webhook) loadConfig(cfgJSON apiext.JSON) (*v1alpha1.ACMEIssuerDNS01ProviderWebhook, error) {
-	cfg := v1alpha1.ACMEIssuerDNS01ProviderWebhook{}
+func (r *Webhook) loadConfig(cfgJSON apiext.JSON) (*cmapi.ACMEIssuerDNS01ProviderWebhook, error) {
+	cfg := cmapi.ACMEIssuerDNS01ProviderWebhook{}
 	if err := json.Unmarshal(cfgJSON.Raw, &cfg); err != nil {
 		return nil, fmt.Errorf("error decoding solver config: %v", err)
 	}

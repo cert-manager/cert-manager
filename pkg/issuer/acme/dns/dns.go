@@ -26,7 +26,8 @@ import (
 	"k8s.io/klog"
 
 	"github.com/jetstack/cert-manager/pkg/acme/webhook"
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	whapi "github.com/jetstack/cert-manager/pkg/acme/webhook/apis/acme/v1alpha1"
+	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	"github.com/jetstack/cert-manager/pkg/controller"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/acmedns"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/akamai"
@@ -81,7 +82,7 @@ func NewSolver(ctx *controller.Context) (*Solver, error) {
 }
 
 // Present performs the work to configure DNS to resolve a DNS01 challenge.
-func (s *Solver) Present(ctx context.Context, issuer v1alpha1.GenericIssuer, ch *v1alpha1.Challenge) error {
+func (s *Solver) Present(ctx context.Context, issuer cmapi.GenericIssuer, ch *cmapi.Challenge) error {
 	if ch.Spec.Config.DNS01 == nil {
 		return fmt.Errorf("challenge dns config must be specified")
 	}
@@ -96,7 +97,7 @@ func (s *Solver) Present(ctx context.Context, issuer v1alpha1.GenericIssuer, ch 
 }
 
 // Check verifies that the DNS records for the ACME challenge have propagated.
-func (s *Solver) Check(ctx context.Context, issuer v1alpha1.GenericIssuer, ch *v1alpha1.Challenge) error {
+func (s *Solver) Check(ctx context.Context, issuer cmapi.GenericIssuer, ch *cmapi.Challenge) error {
 	fqdn, err := util.DNS01LookupFQDN(ch.Spec.DNSName, false, s.DNS01Nameservers...)
 	if err != nil {
 		return err
@@ -123,7 +124,7 @@ func (s *Solver) Check(ctx context.Context, issuer v1alpha1.GenericIssuer, ch *v
 
 // CleanUp removes DNS records which are no longer needed after
 // certificate issuance.
-func (s *Solver) CleanUp(ctx context.Context, issuer v1alpha1.GenericIssuer, ch *v1alpha1.Challenge) error {
+func (s *Solver) CleanUp(ctx context.Context, issuer cmapi.GenericIssuer, ch *cmapi.Challenge) error {
 	if ch.Spec.Config.DNS01 == nil {
 		return fmt.Errorf("challenge dns config must be specified")
 	}
@@ -137,7 +138,7 @@ func (s *Solver) CleanUp(ctx context.Context, issuer v1alpha1.GenericIssuer, ch 
 	return solver.Present(req)
 }
 
-func (s *Solver) prepareChallengeRequest(issuer v1alpha1.GenericIssuer, ch *v1alpha1.Challenge) (webhook.Solver, *v1alpha1.ChallengeRequest, error) {
+func (s *Solver) prepareChallengeRequest(issuer cmapi.GenericIssuer, ch *cmapi.Challenge) (webhook.Solver, *whapi.ChallengeRequest, error) {
 	dns01Config, err := s.dns01ConfigForChallenge(issuer, ch)
 	if err != nil {
 		return nil, nil, err
@@ -169,7 +170,7 @@ func (s *Solver) prepareChallengeRequest(issuer v1alpha1.GenericIssuer, ch *v1al
 		return nil, nil, err
 	}
 
-	req := &v1alpha1.ChallengeRequest{
+	req := &whapi.ChallengeRequest{
 		Type:                    "dns-01",
 		ResolvedFQDN:            fqdn,
 		ResolvedZone:            zone,
@@ -182,14 +183,14 @@ func (s *Solver) prepareChallengeRequest(issuer v1alpha1.GenericIssuer, ch *v1al
 	return webhookSolver, req, nil
 }
 
-func followCNAME(strategy v1alpha1.CNAMEStrategy) bool {
-	if strategy == v1alpha1.FollowStrategy {
+func followCNAME(strategy cmapi.CNAMEStrategy) bool {
+	if strategy == cmapi.FollowStrategy {
 		return true
 	}
 	return false
 }
 
-func (s *Solver) dns01SolverForConfig(config *v1alpha1.ACMEIssuerDNS01Provider) (webhook.Solver, interface{}, error) {
+func (s *Solver) dns01SolverForConfig(config *cmapi.ACMEIssuerDNS01Provider) (webhook.Solver, interface{}, error) {
 	solverName := ""
 	var c interface{}
 	switch {
@@ -231,7 +232,7 @@ func (s *Solver) dns01SolverForConfig(config *v1alpha1.ACMEIssuerDNS01Provider) 
 	return p, c, nil
 }
 
-func (s *Solver) dns01ConfigForChallenge(issuer v1alpha1.GenericIssuer, ch *v1alpha1.Challenge) (*v1alpha1.ACMEIssuerDNS01Provider, error) {
+func (s *Solver) dns01ConfigForChallenge(issuer cmapi.GenericIssuer, ch *cmapi.Challenge) (*cmapi.ACMEIssuerDNS01Provider, error) {
 	providerName := ch.Spec.Config.DNS01.Provider
 	if providerName == "" {
 		return nil, fmt.Errorf("dns01 challenge provider name must be set")

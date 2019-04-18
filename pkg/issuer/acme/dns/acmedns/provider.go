@@ -27,6 +27,7 @@ import (
 	corelisters "k8s.io/client-go/listers/core/v1"
 	restclient "k8s.io/client-go/rest"
 
+	whapi "github.com/jetstack/cert-manager/pkg/acme/webhook/apis/acme/v1alpha1"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 )
 
@@ -38,13 +39,13 @@ func (s *Solver) Name() string {
 	return "acmedns"
 }
 
-func (s *Solver) Present(ch *cmapi.ChallengeRequest) error {
+func (s *Solver) Present(ch *whapi.ChallengeRequest) error {
 	p, err := s.buildDNSProvider(ch)
 	if err != nil {
 		return err
 	}
 
-	err = p.Present(ch.Challenge.Spec.DNSName, ch.Challenge.Spec.Key)
+	err = p.Present(ch.DNSName, ch.Key)
 	if err != nil {
 		return err
 	}
@@ -52,7 +53,7 @@ func (s *Solver) Present(ch *cmapi.ChallengeRequest) error {
 	return nil
 }
 
-func (s *Solver) CleanUp(ch *cmapi.ChallengeRequest) error {
+func (s *Solver) CleanUp(ch *whapi.ChallengeRequest) error {
 	return nil
 }
 
@@ -81,7 +82,7 @@ func (s *Solver) loadConfig(cfgJSON extapi.JSON) (*cmapi.ACMEIssuerDNS01Provider
 	return &cfg, nil
 }
 
-func (s *Solver) loadAccountData(ch *cmapi.ChallengeRequest, cfg *cmapi.ACMEIssuerDNS01ProviderAcmeDNS) ([]byte, error) {
+func (s *Solver) loadAccountData(ch *whapi.ChallengeRequest, cfg *cmapi.ACMEIssuerDNS01ProviderAcmeDNS) ([]byte, error) {
 	secret, err := s.secretLister.Secrets(ch.ResourceNamespace).Get(cfg.AccountSecret.Name)
 	if err != nil {
 		return nil, err
@@ -93,7 +94,7 @@ func (s *Solver) loadAccountData(ch *cmapi.ChallengeRequest, cfg *cmapi.ACMEIssu
 	return accountData, nil
 }
 
-func (s *Solver) buildDNSProvider(ch *cmapi.ChallengeRequest) (*DNSProvider, error) {
+func (s *Solver) buildDNSProvider(ch *whapi.ChallengeRequest) (*DNSProvider, error) {
 	if ch.Config == nil {
 		return nil, fmt.Errorf("no challenge solver config provided")
 	}
