@@ -105,7 +105,7 @@ require (
 	k8s.io/kube-openapi v0.0.0-20190228160746-b3a7cee44a30
 	k8s.io/utils v0.0.0-20190221042446-c2654d5206da
 	sigs.k8s.io/controller-runtime v0.0.0-20190222182021-68ae79ea094a
-	sigs.k8s.io/testing_frameworks v0.1.1 // indirect
+	sigs.k8s.io/testing_frameworks v0.1.1
 )
 
 replace k8s.io/client-go => k8s.io/client-go v0.0.0-20190413052642-108c485f896e
