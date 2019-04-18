@@ -64,7 +64,6 @@ type dnsProviderConstructors struct {
 	route53      func(accessKey, secretKey, hostedZoneID, region string, ambient bool, dns01Nameservers []string) (*route53.DNSProvider, error)
 	azureDNS     func(clientID, clientSecret, subscriptionID, tenentID, resourceGroupName, hostedZoneName string, dns01Nameservers []string) (*azuredns.DNSProvider, error)
 	acmeDNS      func(host string, accountJson []byte, dns01Nameservers []string) (*acmedns.DNSProvider, error)
-	rfc2136      func(nameserver, tsigAlgorithm, tsigKeyName, tsigSecret string, dns01Nameservers []string) (*rfc2136.DNSProvider, error)
 	digitalOcean func(token string, dns01Nameservers []string) (*digitalocean.DNSProvider, error)
 }
 
@@ -332,31 +331,6 @@ func (s *Solver) solverForChallenge(issuer v1alpha1.GenericIssuer, ch *v1alpha1.
 		if err != nil {
 			return nil, nil, fmt.Errorf("error instantiating acmedns challenge solver: %s", err)
 		}
-	case providerConfig.RFC2136 != nil:
-		klog.V(5).Infof("Preparing to create RFC2136 Provider")
-		var secret string
-		if len(providerConfig.RFC2136.TSIGSecret.Name) > 0 {
-			tsigSecret, err := s.secretLister.Secrets(resourceNamespace).Get(providerConfig.RFC2136.TSIGSecret.Name)
-			if err != nil {
-				return nil, nil, fmt.Errorf("error getting rfc2136 service account: %s", err.Error())
-			}
-			secretBytes, ok := tsigSecret.Data[providerConfig.RFC2136.TSIGSecret.Key]
-			if !ok {
-				return nil, nil, fmt.Errorf("error getting rfc2136 secret key: key '%s' not found in secret", providerConfig.RFC2136.TSIGSecret.Key)
-			}
-			secret = string(secretBytes)
-		}
-
-		impl, err = s.dnsProviderConstructors.rfc2136(
-			providerConfig.RFC2136.Nameserver,
-			string(providerConfig.RFC2136.TSIGAlgorithm),
-			providerConfig.RFC2136.TSIGKeyName,
-			secret,
-			s.DNS01Nameservers,
-		)
-		if err != nil {
-			return nil, nil, fmt.Errorf("error instantiating rfc2136 challenge solver: %s", err.Error())
-		}
 	default:
 		return nil, nil, fmt.Errorf("no dns provider config specified for provider %q", ch.Spec.Config.DNS01.Provider)
 	}
@@ -445,6 +419,7 @@ func (s *Solver) dns01ConfigForChallenge(issuer v1alpha1.GenericIssuer, ch *v1al
 
 var WebhookSolvers = []webhook.Solver{
 	&webhookslv.Webhook{},
+	&rfc2136.Solver{},
 }
 
 // NewSolver creates a Solver which can instantiate the appropriate DNS
@@ -469,7 +444,6 @@ func NewSolver(ctx *controller.Context) (*Solver, error) {
 			route53.NewDNSProvider,
 			azuredns.NewDNSProviderCredentials,
 			acmedns.NewDNSProviderHostBytes,
-			rfc2136.NewDNSProviderCredentials,
 			digitalocean.NewDNSProviderCredentials,
 		},
 		webhookSolvers: initialized,
