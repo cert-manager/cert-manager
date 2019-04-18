@@ -97,7 +97,11 @@ func (f *controllerFixture) Finish(t *testing.T, args ...interface{}) {
 
 func (f *controllerFixture) buildFakeController(b *test.Builder, issuer v1alpha1.GenericIssuer) *Controller {
 	b.Start()
-	c := New(b.Context)
+	c, err := New(b.Context)
+	if err != nil {
+		b.T.Errorf("error constructing controller: %v", err)
+		b.T.FailNow()
+	}
 	c.acmeHelper = f
 	c.helper = f
 	c.httpSolver = f.HTTP01
