@@ -7,7 +7,7 @@ metadata:
   name: certificates.certmanager.k8s.io
 spec:
   additionalPrinterColumns:
-  - JSONPath: .status.conditions[?(@.type==\"Ready\")].status
+  - JSONPath: .status.conditions[?(@.type=="Ready")].status
     name: Ready
     type: string
   - JSONPath: .spec.secretName
@@ -17,7 +17,7 @@ spec:
     name: Issuer
     priority: 1
     type: string
-  - JSONPath: .status.conditions[?(@.type==\"Ready\")].message
+  - JSONPath: .status.conditions[?(@.type=="Ready")].message
     name: Status
     priority: 1
     type: string
