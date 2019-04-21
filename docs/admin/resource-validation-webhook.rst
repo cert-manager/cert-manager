@@ -60,7 +60,7 @@ TLS Configuration
 The ValidatingWebhookConfiguration resource requires that the webhook server
 uses TLS.
 
-cert-manager uses a commbination of the SelfSigned and CA Issuer types to
+cert-manager uses a combination of the SelfSigned and CA Issuer types to
 provision the resources required to do this.
 
 In order to do this, when installing with the Helm chart or static deployment
