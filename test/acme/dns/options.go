@@ -49,19 +49,12 @@ func applyDefaults(f *fixture) {
 		f.testDNSServer = "8.8.8.8:53"
 	}
 	if f.resolvedFQDN == "" {
-		f.resolvedFQDN = "cert-manager-dns01-tests." + f.resolvedZone + "."
+		f.resolvedFQDN = "cert-manager-dns01-tests." + f.resolvedZone
 	}
 	runfiles := os.Getenv("TEST_SRCDIR")
 	if f.binariesPath == "" {
 		if runfiles != "" {
 			f.binariesPath = runfiles + "/__main__/hack/bin"
-		}
-	}
-	if f.kubectlManifestsPath == "" {
-		if runfiles != "" {
-			if f.testSolver != nil {
-				f.kubectlManifestsPath = runfiles + "/__main__/test/fixtures/acme/dns/" + f.testSolver.Name()
-			}
 		}
 	}
 	if f.jsonConfig == nil {
