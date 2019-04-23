@@ -20,3 +20,9 @@ limitations under the License.
 // Projects built with the builder package can trivially be rebased on top of the underlying
 // packages if the project requires more customized behavior in the future.
 package builder
+
+import (
+	logf "sigs.k8s.io/controller-runtime/pkg/internal/log"
+)
+
+var log = logf.RuntimeLog.WithName("builder")

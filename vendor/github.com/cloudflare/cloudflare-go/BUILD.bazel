@@ -1,0 +1,51 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "cloudflare.go",
+        "cpage.go",
+        "custom_hostname.go",
+        "dns.go",
+        "errors.go",
+        "firewall.go",
+        "ips.go",
+        "keyless.go",
+        "load_balancing.go",
+        "lockdown.go",
+        "options.go",
+        "organizations.go",
+        "origin_ca.go",
+        "page_rules.go",
+        "railgun.go",
+        "rate_limiting.go",
+        "ssl.go",
+        "user.go",
+        "user_agent.go",
+        "virtualdns.go",
+        "waf.go",
+        "zone.go",
+    ],
+    importmap = "github.com/jetstack/cert-manager/vendor/github.com/cloudflare/cloudflare-go",
+    importpath = "github.com/cloudflare/cloudflare-go",
+    tags = ["manual"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//vendor/github.com/pkg/errors:go_default_library",
+        "//vendor/golang.org/x/time/rate:go_default_library",
+    ],
+)
+
+filegroup(
+    name = "package-srcs",
+    srcs = glob(["**"]),
+    tags = ["automanaged"],
+    visibility = ["//visibility:private"],
+)
+
+filegroup(
+    name = "all-srcs",
+    srcs = [":package-srcs"],
+    tags = ["automanaged"],
+    visibility = ["//visibility:public"],
+)

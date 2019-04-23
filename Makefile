@@ -83,8 +83,8 @@ verify_unit:
 		)
 
 verify_deps:
-	bazel test \
-		//hack:verify-deps
+	./hack/verify-vendor.sh
+	./hack/verify-vendor-licenses.sh
 
 verify_codegen:
 	bazel test \
@@ -129,7 +129,8 @@ generate:
 	bazel run //hack:update-codegen
 	bazel run //hack:update-deploy-gen
 	bazel run //hack:update-reference-docs
-	bazel run //hack:update-deps
+	./hack/update-vendor.sh
+	./hack/update-vendor-licenses.sh
 
 # Docker targets
 ################

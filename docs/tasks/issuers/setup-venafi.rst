@@ -119,7 +119,7 @@ create a Kubernetes Secret resource containing your Venafi TPP API credentials:
    kubectl create secret generic \
         tpp-secret \
         --namespace=<NAMESPACE OF YOUR ISSUER RESOURCE> \
-        --from-literal=user='YOUR_TPP_USERNAME_HERE' \
+        --from-literal=username='YOUR_TPP_USERNAME_HERE' \
         --from-literal=password='YOUR_TPP_PASSWORD_HERE'
 
 .. note::

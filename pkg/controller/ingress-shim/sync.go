@@ -202,7 +202,7 @@ func (c *Controller) buildCertificates(ing *extv1beta1.Ingress, issuer v1alpha1.
 	return newCrts, updateCrts, nil
 }
 
-// certNeedsUpdate checks and returns true if two Certificates are equal
+// certNeedsUpdate checks and returns true if two Certificates differ
 func certNeedsUpdate(a, b *v1alpha1.Certificate) bool {
 	if a.Name != b.Name {
 		return true

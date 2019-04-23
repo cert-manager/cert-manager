@@ -212,7 +212,7 @@ func (c *Controller) processNextWorkItem(ctx context.Context, key string) error 
 var keyFunc = controllerpkg.KeyFunc
 
 func init() {
-	controllerpkg.Register(ControllerName, func(ctx *controllerpkg.Context) controllerpkg.Interface {
+	controllerpkg.Register(ControllerName, func(ctx *controllerpkg.Context) (controllerpkg.Interface, error) {
 		var clusterIssuerInformer cminformers.ClusterIssuerInformer
 		if ctx.Namespace == "" {
 			clusterIssuerInformer = ctx.SharedInformerFactory.Certmanager().V1alpha1().ClusterIssuers()
@@ -226,6 +226,6 @@ func init() {
 			ctx.CMClient,
 			ctx.Recorder,
 			defaults{ctx.DefaultAutoCertificateAnnotations, ctx.DefaultIssuerName, ctx.DefaultIssuerKind, ctx.DefaultACMEIssuerChallengeType, ctx.DefaultACMEIssuerDNS01ProviderName},
-		).Run
+		).Run, nil
 	})
 }

@@ -239,6 +239,21 @@ func (c *Controller) certificateMatchesSpec(crt *v1alpha1.Certificate, key crypt
 		errs = append(errs, fmt.Sprintf("IP addresses on TLS certificate not up to date: %q", pki.IPAddressesToString(cert.IPAddresses)))
 	}
 
+	// get a copy of the current secret resource
+	// Note that we already know that it exists, no need to check for errors
+	// TODO: Refactor so that the secret is passed as argument?
+	secret, err := c.secretLister.Secrets(crt.Namespace).Get(crt.Spec.SecretName)
+
+	// validate that the issuer is correct
+	if crt.Spec.IssuerRef.Name != secret.Annotations[v1alpha1.IssuerNameAnnotationKey] {
+		errs = append(errs, fmt.Sprintf("Issuer of the certificate is not up to date: %q", secret.Annotations[v1alpha1.IssuerNameAnnotationKey]))
+	}
+
+	// validate that the issuer kind is correct
+	if issuerKind(crt) != secret.Annotations[v1alpha1.IssuerKindAnnotationKey] {
+		errs = append(errs, fmt.Sprintf("Issuer kind of the certificate is not up to date: %q", secret.Annotations[v1alpha1.IssuerKindAnnotationKey]))
+	}
+
 	return len(errs) == 0, errs
 }
 

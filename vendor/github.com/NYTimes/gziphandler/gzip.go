@@ -28,10 +28,9 @@ const (
 	// The examples seem to indicate that it is.
 	DefaultQValue = 1.0
 
-	// 1500 bytes is the MTU size for the internet since that is the largest size allowed at the network layer. 
-	// If you take a file that is 1300 bytes and compress it to 800 bytes, it’s still transmitted in that same 1500 byte packet regardless, so you’ve gained nothing. 
-	// That being the case, you should restrict the gzip compression to files with a size greater than a single packet, 1400 bytes (1.4KB) is a safe value.
-	DefaultMinSize = 1400
+	// DefaultMinSize defines the minimum size to reach to enable compression.
+	// It's 512 bytes.
+	DefaultMinSize = 512
 )
 
 // gzipWriterPools stores a sync.Pool for each compression level for reuse of
@@ -81,16 +80,6 @@ type GzipResponseWriter struct {
 
 	minSize int    // Specifed the minimum response size to gzip. If the response length is bigger than this value, it is compressed.
 	buf     []byte // Holds the first part of the write before reaching the minSize or the end of the write.
-
-	contentTypes []string // Only compress if the response is one of these content-types. All are accepted if empty.
-}
-
-type GzipResponseWriterWithCloseNotify struct {
-	*GzipResponseWriter
-}
-
-func (w GzipResponseWriterWithCloseNotify) CloseNotify() <-chan bool {
-	return w.ResponseWriter.(http.CloseNotifier).CloseNotify()
 }
 
 // Write appends data to the gzip writer.
@@ -111,10 +100,8 @@ func (w *GzipResponseWriter) Write(b []byte) (int, error) {
 	// On the first write, w.buf changes from nil to a valid slice
 	w.buf = append(w.buf, b...)
 
-	// If the global writes are bigger than the minSize and we're about to write
-	// a response containing a content type we want to handle, enable
-	// compression.
-	if len(w.buf) >= w.minSize && handleContentType(w.contentTypes, w) && w.Header().Get(contentEncoding) == "" {
+	// If the global writes are bigger than the minSize, compression is enable.
+	if len(w.buf) >= w.minSize {
 		err := w.startGzip()
 		if err != nil {
 			return 0, err
@@ -143,7 +130,7 @@ func (w *GzipResponseWriter) startGzip() error {
 	// Initialize the GZIP response.
 	w.init()
 
-	// Flush the buffer into the gzip response.
+	// Flush the buffer into the gzip reponse.
 	n, err := w.gw.Write(w.buf)
 
 	// This should never happen (per io.Writer docs), but if the write didn't
@@ -159,9 +146,7 @@ func (w *GzipResponseWriter) startGzip() error {
 
 // WriteHeader just saves the response code until close or GZIP effective writes.
 func (w *GzipResponseWriter) WriteHeader(code int) {
-	if w.code == 0 {
-		w.code = code
-	}
+	w.code = code
 }
 
 // init graps a new gzip writer from the gzipWriterPool and writes the correct
@@ -201,15 +186,9 @@ func (w *GzipResponseWriter) Close() error {
 // http.ResponseWriter if it is an http.Flusher. This makes GzipResponseWriter
 // an http.Flusher.
 func (w *GzipResponseWriter) Flush() {
-	if w.gw == nil {
-		// Only flush once startGzip has been called.
-		//
-		// Flush is thus a no-op until the written body
-		// exceeds minSize.
-		return
+	if w.gw != nil {
+		w.gw.Flush()
 	}
-
-	w.gw.Flush()
 
 	if fw, ok := w.ResponseWriter.(http.Flusher); ok {
 		fw.Flush()
@@ -251,91 +230,32 @@ func NewGzipLevelHandler(level int) (func(http.Handler) http.Handler, error) {
 // NewGzipLevelAndMinSize behave as NewGzipLevelHandler except it let the caller
 // specify the minimum size before compression.
 func NewGzipLevelAndMinSize(level, minSize int) (func(http.Handler) http.Handler, error) {
-	return GzipHandlerWithOpts(CompressionLevel(level), MinSize(minSize))
-}
-
-func GzipHandlerWithOpts(opts ...option) (func(http.Handler) http.Handler, error) {
-	c := &config{
-		level:   gzip.DefaultCompression,
-		minSize: DefaultMinSize,
+	if level != gzip.DefaultCompression && (level < gzip.BestSpeed || level > gzip.BestCompression) {
+		return nil, fmt.Errorf("invalid compression level requested: %d", level)
 	}
-
-	for _, o := range opts {
-		o(c)
+	if minSize < 0 {
+		return nil, fmt.Errorf("minimum size must be more than zero")
 	}
-
-	if err := c.validate(); err != nil {
-		return nil, err
-	}
-
 	return func(h http.Handler) http.Handler {
-		index := poolIndex(c.level)
+		index := poolIndex(level)
 
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Add(vary, acceptEncoding)
+
 			if acceptsGzip(r) {
 				gw := &GzipResponseWriter{
 					ResponseWriter: w,
 					index:          index,
-					minSize:        c.minSize,
-					contentTypes:   c.contentTypes,
+					minSize:        minSize,
 				}
 				defer gw.Close()
 
-				if _, ok := w.(http.CloseNotifier); ok {
-					gwcn := GzipResponseWriterWithCloseNotify{gw}
-					h.ServeHTTP(gwcn, r)
-				} else {
-					h.ServeHTTP(gw, r)
-				}
-
+				h.ServeHTTP(gw, r)
 			} else {
 				h.ServeHTTP(w, r)
 			}
 		})
 	}, nil
-}
-
-// Used for functional configuration.
-type config struct {
-	minSize      int
-	level        int
-	contentTypes []string
-}
-
-func (c *config) validate() error {
-	if c.level != gzip.DefaultCompression && (c.level < gzip.BestSpeed || c.level > gzip.BestCompression) {
-		return fmt.Errorf("invalid compression level requested: %d", c.level)
-	}
-
-	if c.minSize < 0 {
-		return fmt.Errorf("minimum size must be more than zero")
-	}
-
-	return nil
-}
-
-type option func(c *config)
-
-func MinSize(size int) option {
-	return func(c *config) {
-		c.minSize = size
-	}
-}
-
-func CompressionLevel(level int) option {
-	return func(c *config) {
-		c.level = level
-	}
-}
-
-func ContentTypes(types []string) option {
-	return func(c *config) {
-		c.contentTypes = []string{}
-		for _, v := range types {
-			c.contentTypes = append(c.contentTypes, strings.ToLower(v))
-		}
-	}
 }
 
 // GzipHandler wraps an HTTP handler, to transparently gzip the response body if
@@ -351,23 +271,6 @@ func GzipHandler(h http.Handler) http.Handler {
 func acceptsGzip(r *http.Request) bool {
 	acceptedEncodings, _ := parseEncodings(r.Header.Get(acceptEncoding))
 	return acceptedEncodings["gzip"] > 0.0
-}
-
-// returns true if we've been configured to compress the specific content type.
-func handleContentType(contentTypes []string, w http.ResponseWriter) bool {
-	// If contentTypes is empty we handle all content types.
-	if len(contentTypes) == 0 {
-		return true
-	}
-
-	ct := strings.ToLower(w.Header().Get(contentType))
-	for _, c := range contentTypes {
-		if c == ct {
-			return true
-		}
-	}
-
-	return false
 }
 
 // parseEncodings attempts to parse a list of codings, per RFC 2616, as might

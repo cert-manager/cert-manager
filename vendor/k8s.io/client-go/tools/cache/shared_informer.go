@@ -25,8 +25,8 @@ import (
 	"k8s.io/apimachinery/pkg/util/clock"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
-	"k8s.io/client-go/util/buffer"
 	"k8s.io/client-go/util/retry"
+	"k8s.io/utils/buffer"
 
 	"k8s.io/klog"
 )
@@ -555,7 +555,7 @@ func (p *processorListener) run() {
 				case deleteNotification:
 					p.handler.OnDelete(notification.oldObj)
 				default:
-					utilruntime.HandleError(fmt.Errorf("unrecognized notification: %#v", next))
+					utilruntime.HandleError(fmt.Errorf("unrecognized notification: %T", next))
 				}
 			}
 			// the only way to get here is if the p.nextCh is empty and closed

@@ -67,7 +67,7 @@ func updateDomainWithCName(r *dns.Msg, fqdn string) string {
 	for _, rr := range r.Answer {
 		if cn, ok := rr.(*dns.CNAME); ok {
 			if cn.Hdr.Name == fqdn {
-				klog.Infof("Updating FQDN: %s with it's CNAME: %s", fqdn, cn.Target)
+				klog.Infof("Updating FQDN: %s with its CNAME: %s", fqdn, cn.Target)
 				fqdn = cn.Target
 				break
 			}
@@ -81,7 +81,7 @@ func updateDomainWithCName(r *dns.Msg, fqdn string) string {
 func checkDNSPropagation(fqdn, value string, nameservers []string,
 	useAuthoritative bool) (bool, error) {
 	// Initial attempt to resolve at the recursive NS
-	r, err := dnsQuery(fqdn, dns.TypeTXT, nameservers, true)
+	r, err := DNSQuery(fqdn, dns.TypeTXT, nameservers, true)
 	if err != nil {
 		return false, err
 	}
@@ -107,7 +107,7 @@ func checkDNSPropagation(fqdn, value string, nameservers []string,
 // checkAuthoritativeNss queries each of the given nameservers for the expected TXT record.
 func checkAuthoritativeNss(fqdn, value string, nameservers []string) (bool, error) {
 	for _, ns := range nameservers {
-		r, err := dnsQuery(fqdn, dns.TypeTXT, []string{ns}, true)
+		r, err := DNSQuery(fqdn, dns.TypeTXT, []string{ns}, true)
 		if err != nil {
 			return false, err
 		}
@@ -136,9 +136,9 @@ func checkAuthoritativeNss(fqdn, value string, nameservers []string) (bool, erro
 	return true, nil
 }
 
-// dnsQuery will query a nameserver, iterating through the supplied servers as it retries
+// DNSQuery will query a nameserver, iterating through the supplied servers as it retries
 // The nameserver should include a port, to facilitate testing where we talk to a mock dns server.
-func dnsQuery(fqdn string, rtype uint16, nameservers []string, recursive bool) (in *dns.Msg, err error) {
+func DNSQuery(fqdn string, rtype uint16, nameservers []string, recursive bool) (in *dns.Msg, err error) {
 	m := new(dns.Msg)
 	m.SetQuestion(fqdn, rtype)
 	m.SetEdns0(4096, false)
@@ -185,8 +185,18 @@ func ValidateCAA(domain string, issuerID []string, iswildcard bool, nameservers 
 		var msg *dns.Msg
 		var err error
 		for i := 0; i < 8; i++ {
-			//TODO(dmo): figure out if we need these servers to be configurable as well
-			msg, err = dnsQuery(queryDomain, dns.TypeCAA, nameservers, true)
+			// usually, we should be able to just ask the local recursive
+			// nameserver for CAA records, but some setups will return SERVFAIL
+			// on unknown types like CAA. Instead, ask the authoritative server
+			var authNS []string
+			authNS, err = lookupNameservers(queryDomain, nameservers)
+			if err != nil {
+				return fmt.Errorf("Could not validate CAA record: %s", err)
+			}
+			for i, ans := range authNS {
+				authNS[i] = net.JoinHostPort(ans, "53")
+			}
+			msg, err = DNSQuery(queryDomain, dns.TypeCAA, authNS, false)
 			if err != nil {
 				return fmt.Errorf("Could not validate CAA record: %s", err)
 			}
@@ -262,7 +272,7 @@ func lookupNameservers(fqdn string, nameservers []string) ([]string, error) {
 		return nil, fmt.Errorf("Could not determine the zone for %q: %v", fqdn, err)
 	}
 
-	r, err := dnsQuery(zone, dns.TypeNS, nameservers, true)
+	r, err := DNSQuery(zone, dns.TypeNS, nameservers, true)
 	if err != nil {
 		return nil, err
 	}
@@ -296,7 +306,7 @@ func FindZoneByFqdn(fqdn string, nameservers []string) (string, error) {
 	for _, index := range labelIndexes {
 		domain := fqdn[index:]
 
-		in, err := dnsQuery(domain, dns.TypeSOA, nameservers, true)
+		in, err := DNSQuery(domain, dns.TypeSOA, nameservers, true)
 		if err != nil {
 			return "", err
 		}

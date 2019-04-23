@@ -17,6 +17,7 @@ limitations under the License.
 package http
 
 import (
+	"context"
 	"fmt"
 	"reflect"
 	"testing"
@@ -96,7 +97,7 @@ func TestGetIngressesForChallenge(t *testing.T) {
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			test.Setup(t)
-			resp, err := test.Solver.getIngressesForChallenge(test.Challenge)
+			resp, err := test.Solver.getIngressesForChallenge(context.TODO(), test.Challenge)
 			if err != nil && !test.Err {
 				t.Errorf("Expected function to not error, but got: %v", err)
 			}
@@ -349,7 +350,7 @@ func TestCleanupIngresses(t *testing.T) {
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			test.Setup(t)
-			err := test.Solver.cleanupIngresses(test.Challenge)
+			err := test.Solver.cleanupIngresses(context.TODO(), test.Challenge)
 			if err != nil && !test.Err {
 				t.Errorf("Expected function to not error, but got: %v", err)
 			}

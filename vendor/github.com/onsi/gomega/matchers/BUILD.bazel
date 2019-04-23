@@ -5,6 +5,7 @@ go_library(
     srcs = [
         "and.go",
         "assignable_to_type_of_matcher.go",
+        "attributes_slice.go",
         "be_a_directory.go",
         "be_a_regular_file.go",
         "be_an_existing_file.go",
@@ -39,6 +40,7 @@ go_library(
         "or.go",
         "panic_matcher.go",
         "receive_matcher.go",
+        "semi_structured_data_support.go",
         "succeed_matcher.go",
         "type_support.go",
         "with_transform.go",

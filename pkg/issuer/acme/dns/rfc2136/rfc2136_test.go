@@ -32,6 +32,7 @@ import (
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
 	"github.com/miekg/dns"
 	"github.com/stretchr/testify/assert"
+	"k8s.io/klog"
 )
 
 var (
@@ -44,8 +45,6 @@ var (
 	rfc2136TestTTL         = 60
 	rfc2136TestTsigSecret  = "IwBTJx9wrDp4Y1RyC3H0gA=="
 )
-
-var reqChan = make(chan *dns.Msg, 10)
 
 func TestRFC2136CanaryLocalTestServer(t *testing.T) {
 	dns.HandleFunc("example.com.", serverHandlerHello)
@@ -208,7 +207,7 @@ func TestRFC2136InvalidTSIGAlgorithm(t *testing.T) {
 }
 
 func TestRFC2136ValidUpdatePacket(t *testing.T) {
-	dns.HandleFunc(rfc2136TestZone, serverHandlerPassBackRequest)
+	dns.HandleFunc(rfc2136TestZone, (&basicStatefulServer{}).serverHandlerPassBackRequest)
 	defer dns.HandleRemove(rfc2136TestZone)
 
 	server, addrstr, err := runLocalDNSTestServer("127.0.0.1:0", false)
@@ -239,21 +238,6 @@ func TestRFC2136ValidUpdatePacket(t *testing.T) {
 	}
 
 	assert.NoError(t, err)
-	//rcvMsg := <-reqChan
-	//rcvMsg.Id = m.Id
-	//actual, err := rcvMsg.Pack()
-	//if err != nil {
-	//	t.Fatalf("Error packing actual msg: %v", err)
-	//}
-
-	//if !bytes.Equal(actual, expect) {
-	//	tmp := new(dns.Msg)
-	//	if err := tmp.Unpack(actual); err != nil {
-	//		t.Fatalf("Error unpacking actual msg: %v", err)
-	//	}
-	//	t.Errorf("Expected msg:\n%s", expectstr)
-	//	t.Errorf("Actual msg:\n%v", tmp)
-	//}
 }
 
 func runLocalDNSTestServer(listenAddr string, tsig bool) (*dns.Server, string, error) {
@@ -315,14 +299,18 @@ func serverHandlerReturnErr(w dns.ResponseWriter, req *dns.Msg) {
 	w.WriteMsg(m)
 }
 
-func serverHandlerPassBackRequest(w dns.ResponseWriter, req *dns.Msg) {
+type basicStatefulServer struct {
+	txtRecords map[string][]string
+}
+
+func (b *basicStatefulServer) serverHandlerPassBackRequest(w dns.ResponseWriter, req *dns.Msg) {
+	if b.txtRecords == nil {
+		b.txtRecords = make(map[string][]string)
+	}
+
 	m := new(dns.Msg)
 	m.SetReply(req)
-	if req.Opcode == dns.OpcodeQuery && req.Question[0].Qtype == dns.TypeSOA && req.Question[0].Qclass == dns.ClassINET {
-		// Return SOA to appease findZoneByFqdn()
-		soaRR, _ := dns.NewRR(fmt.Sprintf("%s %d IN SOA ns1.%s admin.%s 2016022801 28800 7200 2419200 1200", rfc2136TestZone, rfc2136TestTTL, rfc2136TestZone, rfc2136TestZone))
-		m.Answer = []dns.RR{soaRR}
-	}
+	defer w.WriteMsg(m)
 
 	if t := req.IsTsig(); t != nil {
 		if w.TsigStatus() == nil {
@@ -331,9 +319,35 @@ func serverHandlerPassBackRequest(w dns.ResponseWriter, req *dns.Msg) {
 		}
 	}
 
-	w.WriteMsg(m)
-	if req.Opcode != dns.OpcodeQuery || req.Question[0].Qtype != dns.TypeSOA || req.Question[0].Qclass != dns.ClassINET {
-		// Only talk back when it is not the SOA RR.
-		reqChan <- req
+	if (req.Opcode != dns.OpcodeUpdate && req.Opcode != dns.OpcodeQuery) || req.Question[0].Qclass != dns.ClassINET {
+		klog.Infof("skipping dns packet: %#v", req)
+		//m.Rcode = dns.RcodeServerFailure
+		return
+	}
+
+	if req.Opcode == dns.OpcodeUpdate {
+		for _, rr := range req.Ns {
+			txt := rr.(*dns.TXT)
+			if rr.Header().Class == dns.ClassNONE {
+				klog.Infof("deleting val %q", txt.Hdr.Name)
+				delete(b.txtRecords, txt.Hdr.Name)
+				continue
+			}
+			klog.Infof("setting value %q: %v", txt.Hdr.Name, txt.Txt)
+			b.txtRecords[txt.Hdr.Name] = txt.Txt
+		}
+	}
+
+	switch req.Question[0].Qtype {
+	case dns.TypeSOA:
+		// Return SOA to appease findZoneByFqdn()
+		soaRR, _ := dns.NewRR(fmt.Sprintf("%s %d IN SOA ns1.%s admin.%s 2016022801 28800 7200 2419200 1200", rfc2136TestZone, rfc2136TestTTL, rfc2136TestZone, rfc2136TestZone))
+		m.Answer = []dns.RR{soaRR}
+	case dns.TypeTXT:
+		for _, rr := range b.txtRecords[req.Question[0].Name] {
+			klog.Infof("returning %q", fmt.Sprintf("%s %d IN TXT %s", req.Question[0].Name, rfc2136TestTTL, rr))
+			txtRR, _ := dns.NewRR(fmt.Sprintf("%s %d IN TXT %s", req.Question[0].Name, rfc2136TestTTL, rr))
+			m.Answer = append(m.Answer, txtRR)
+		}
 	}
 }

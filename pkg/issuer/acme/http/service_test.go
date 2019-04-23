@@ -17,6 +17,7 @@ limitations under the License.
 package http
 
 import (
+	"context"
 	"reflect"
 	"testing"
 
@@ -156,7 +157,7 @@ func TestEnsureService(t *testing.T) {
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			test.Setup(t)
-			resp, err := test.Solver.ensureService(test.Issuer, test.Challenge)
+			resp, err := test.Solver.ensureService(context.TODO(), test.Issuer, test.Challenge)
 			if err != nil && !test.Err {
 				t.Errorf("Expected function to not error, but got: %v", err)
 			}
@@ -234,7 +235,7 @@ func TestGetServicesForCertificate(t *testing.T) {
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			test.Setup(t)
-			resp, err := test.Solver.getServicesForChallenge(test.Challenge)
+			resp, err := test.Solver.getServicesForChallenge(context.TODO(), test.Challenge)
 			if err != nil && !test.Err {
 				t.Errorf("Expected function to not error, but got: %v", err)
 			}

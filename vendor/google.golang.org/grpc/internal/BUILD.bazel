@@ -21,8 +21,13 @@ filegroup(
     srcs = [
         ":package-srcs",
         "//vendor/google.golang.org/grpc/internal/backoff:all-srcs",
+        "//vendor/google.golang.org/grpc/internal/binarylog:all-srcs",
         "//vendor/google.golang.org/grpc/internal/channelz:all-srcs",
+        "//vendor/google.golang.org/grpc/internal/envconfig:all-srcs",
         "//vendor/google.golang.org/grpc/internal/grpcrand:all-srcs",
+        "//vendor/google.golang.org/grpc/internal/grpcsync:all-srcs",
+        "//vendor/google.golang.org/grpc/internal/syscall:all-srcs",
+        "//vendor/google.golang.org/grpc/internal/transport:all-srcs",
     ],
     tags = ["automanaged"],
     visibility = ["//visibility:public"],

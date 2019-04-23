@@ -24,6 +24,12 @@ runfiles="$(pwd)"
 export PATH="${runfiles}/third_party/k8s.io/code-generator:${runfiles}/hack:${runfiles}/hack/bin:${PATH}"
 cd "${REPO_ROOT}"
 
+generate-groups.sh "deepcopy" \
+  github.com/jetstack/cert-manager/pkg/client github.com/jetstack/cert-manager/pkg/acme/webhook/apis \
+  acme:v1alpha1 \
+  --output-base "${GOPATH}/src/" \
+  --go-header-file "${runfiles}/hack/boilerplate/boilerplate.go.txt"
+
 generate-groups.sh "deepcopy,client,informer,lister" \
   github.com/jetstack/cert-manager/pkg/client github.com/jetstack/cert-manager/pkg/apis \
   certmanager:v1alpha1 \
