@@ -88,8 +88,8 @@
   version = "v1.3.0"
 
 [[projects]]
-  branch = "master-VEN-48675-arykalin-respect-unlocked-fields"
-  digest = "1:b051916493d5c668457408169cd17e881dd55f2e671a916f0307d34457d14516"
+  branch = "master"
+  digest = "1:83a32c4bf806855f8fc4abbb98f6be87380c5b89af1ad7f1f84d93127e6dba08"
   name = "github.com/Venafi/vcert"
   packages = [
     ".",
@@ -100,7 +100,7 @@
     "pkg/venafi/tpp",
   ]
   pruneopts = "UT"
-  revision = "24611d417b3c34d6e74aecbbf4b9c8be414e5412"
+  revision = "8b707f56fd39d99f09bb687138359bbd4e15abda"
 
 [[projects]]
   branch = "master"
