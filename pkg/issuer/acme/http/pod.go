@@ -34,13 +34,15 @@ import (
 func podLabels(ch *v1alpha1.Challenge) map[string]string {
 	domainHash := fmt.Sprintf("%d", adler32.Checksum([]byte(ch.Spec.DNSName)))
 	tokenHash := fmt.Sprintf("%d", adler32.Checksum([]byte(ch.Spec.Token)))
+	solverIdent := "acme-http-solver"
 	return map[string]string{
 		// TODO: we need to support domains longer than 63 characters
 		// this value should probably be hashed, and then the full plain text
 		// value stored as an annotation to make it easier for users to read
 		// see #425 for details: https://github.com/jetstack/cert-manager/issues/425
-		domainLabelKey: domainHash,
-		tokenLabelKey:  tokenHash,
+		domainLabelKey:               domainHash,
+		tokenLabelKey:                tokenHash,
+		solverIdentificationLabelKey: solverIdent,
 	}
 }
 
