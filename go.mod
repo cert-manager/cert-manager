@@ -112,7 +112,7 @@ replace k8s.io/client-go => k8s.io/client-go v0.0.0-20190413052642-108c485f896e
 
 replace github.com/openshift/generic-admission-server => github.com/openshift/generic-admission-server v1.14.0
 
-replace sigs.k8s.io/controller-runtime => github.com/adracus/controller-runtime v0.1.8-0.20190327145817-16c1164b0822
+replace sigs.k8s.io/controller-runtime => github.com/munnerz/controller-runtime v0.1.8-0.20190423203449-038d2c82607c
 
 replace github.com/evanphx/json-patch => github.com/evanphx/json-patch v0.0.0-20190203023257-5858425f7550
 

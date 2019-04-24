@@ -66,10 +66,13 @@ func GVKForObject(obj runtime.Object, scheme *runtime.Scheme) (schema.GroupVersi
 }
 
 // RESTClientForGVK constructs a new rest.Interface capable of accessing the resource associated
-// with the given GroupVersionKind.
+// with the given GroupVersionKind. The REST client will be configured to use the negotiated serializer from
+// baseConfig, if set, otherwise a default serializer will be set.
 func RESTClientForGVK(gvk schema.GroupVersionKind, baseConfig *rest.Config, codecs serializer.CodecFactory) (rest.Interface, error) {
 	cfg := createRestConfig(gvk, baseConfig)
-	cfg.NegotiatedSerializer = serializer.DirectCodecFactory{CodecFactory: codecs}
+	if cfg.NegotiatedSerializer == nil {
+		cfg.NegotiatedSerializer = serializer.DirectCodecFactory{CodecFactory: codecs}
+	}
 	return rest.RESTClientFor(cfg)
 }
 

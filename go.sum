@@ -32,8 +32,6 @@ github.com/Shopify/sarama v1.19.0/go.mod h1:FVkBWblsNy7DGZRfXLU0O9RCGt5g3g3yEuWX
 github.com/Shopify/toxiproxy v2.1.4+incompatible/go.mod h1:OXgGpZ6Cli1/URJOF1DMxUHB2q5Ap20/P/eIdh4G0pI=
 github.com/Venafi/vcert v0.0.0-20181029235941-5068538d4d65 h1:An1XpraQx4IkI2i0kcXFS+VjTSK/lRb1ZioZRmTdDMA=
 github.com/Venafi/vcert v0.0.0-20181029235941-5068538d4d65/go.mod h1:3dpfrCI+31cDZosD+1UX8GFziVFORaegByXtzT1dwNo=
-github.com/adracus/controller-runtime v0.1.8-0.20190327145817-16c1164b0822 h1:CmQWO1jlyoa3AGyempnO2gKgR7doQR+yQmmYh4t7MK0=
-github.com/adracus/controller-runtime v0.1.8-0.20190327145817-16c1164b0822/go.mod h1:NIkgGszoAA/mLRs7QwHqbt3RM4sC9HjqRT8oFixgl7M=
 github.com/alecthomas/template v0.0.0-20160405071501-a0175ee3bccc/go.mod h1:LOuyumcjzFXgccqObfd/Ljyb9UuFJ6TxHnclSeseNhc=
 github.com/alecthomas/units v0.0.0-20151022065526-2efee857e7cf/go.mod h1:ybxpYRFXyAe+OPACYpWeL0wqObRcbAqCMya13uyzqw0=
 github.com/apache/thrift v0.12.0/go.mod h1:cp2SuWMxlEZw2r+iP2GNCdIi4C1qmUzdZFSVb+bacwQ=
@@ -277,6 +275,8 @@ github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd h1:TRLaZ9cD/w
 github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd/go.mod h1:6dJC0mAP4ikYIbvyc7fijjWJddQyLn8Ig3JB5CqoB9Q=
 github.com/modern-go/reflect2 v1.0.1 h1:9f412s+6RmYXLWZSEzVVgPGK7C2PphHj5RJrvfx9AWI=
 github.com/modern-go/reflect2 v1.0.1/go.mod h1:bx2lNnkwVCuqBIxFjflWJWanXIb3RllmbCylyMrvgv0=
+github.com/munnerz/controller-runtime v0.1.8-0.20190423203449-038d2c82607c h1:KGxMYOdnEIhkmFUI3Rv6rgIc3FtJIjByVwLYDCAamoc=
+github.com/munnerz/controller-runtime v0.1.8-0.20190423203449-038d2c82607c/go.mod h1:l8sanoNLCwa2+TKPc1IV1c9gplcB+1AT1RgdhOvCIK8=
 github.com/munnerz/goautoneg v0.0.0-20190414153302-2ae31c8b6b30 h1:10VrZWOtDSvWhgViCi2J6VUp4p/B3pOA/efiMH3KjjI=
 github.com/munnerz/goautoneg v0.0.0-20190414153302-2ae31c8b6b30/go.mod h1:+n7T8mK8HuQTcFwEeznm/DIxMOiR9yIdICNftLE1DvQ=
 github.com/mwitkow/go-conntrack v0.0.0-20161129095857-cc309e4a2223/go.mod h1:qRWi+5nqEBWmkhHvq77mSJWrCKwh8bxhgT7d/eI7P4U=
