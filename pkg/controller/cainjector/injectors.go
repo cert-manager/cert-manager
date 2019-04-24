@@ -19,7 +19,7 @@ package cainjector
 import (
 	admissionreg "k8s.io/api/admissionregistration/v1beta1"
 	"k8s.io/apimachinery/pkg/runtime"
-	apireg "k8s.io/kube-aggregator/pkg/apis/apiregistration/v1"
+	apireg "k8s.io/kube-aggregator/pkg/apis/apiregistration/v1beta1"
 )
 
 // this contains implementations of CertInjector (and dependents)
