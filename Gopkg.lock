@@ -1508,11 +1508,11 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:659b3941473f78bfc1d138cf4af27f4bb6b44c43bcc970b7670675def57aba0f"
+  digest = "1:6944514ca2ab846d99070131312e57cf08a620dab5478097d763498876a5c8e8"
   name = "k8s.io/kube-aggregator"
   packages = [
     "pkg/apis/apiregistration",
-    "pkg/apis/apiregistration/v1",
+    "pkg/apis/apiregistration/v1beta1",
   ]
   pruneopts = "UT"
   revision = "0b78038fe9e5eb5e2a4da82ce777efa9f0586d89"
@@ -1691,7 +1691,7 @@
     "k8s.io/code-generator/cmd/lister-gen",
     "k8s.io/klog",
     "k8s.io/klog/klogr",
-    "k8s.io/kube-aggregator/pkg/apis/apiregistration/v1",
+    "k8s.io/kube-aggregator/pkg/apis/apiregistration/v1beta1",
     "k8s.io/kube-openapi/pkg/common",
     "k8s.io/utils/clock",
     "k8s.io/utils/clock/testing",
