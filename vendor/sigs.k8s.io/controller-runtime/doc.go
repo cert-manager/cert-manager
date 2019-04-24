@@ -45,7 +45,7 @@ limitations under the License.
 //
 // Frequently asked questions about using controller-runtime and designing
 // controllers can be found at
-// https://github.com/kubernetes-sigs/controller-runtime/blob/master/FAQ.
+// https://github.com/kubernetes-sigs/controller-runtime/blob/master/FAQ.md.
 //
 // Managers
 //

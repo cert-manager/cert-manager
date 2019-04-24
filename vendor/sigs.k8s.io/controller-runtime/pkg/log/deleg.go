@@ -17,6 +17,8 @@ limitations under the License.
 package log
 
 import (
+	"sync"
+
 	"github.com/go-logr/logr"
 )
 
@@ -25,6 +27,7 @@ import (
 type loggerPromise struct {
 	logger        *DelegatingLogger
 	childPromises []*loggerPromise
+	promisesLock  sync.Mutex
 
 	name *string
 	tags []interface{}
@@ -33,9 +36,13 @@ type loggerPromise struct {
 // WithName provides a new Logger with the name appended
 func (p *loggerPromise) WithName(l *DelegatingLogger, name string) *loggerPromise {
 	res := &loggerPromise{
-		logger: l,
-		name:   &name,
+		logger:       l,
+		name:         &name,
+		promisesLock: sync.Mutex{},
 	}
+
+	p.promisesLock.Lock()
+	defer p.promisesLock.Unlock()
 	p.childPromises = append(p.childPromises, res)
 	return res
 }
@@ -43,9 +50,13 @@ func (p *loggerPromise) WithName(l *DelegatingLogger, name string) *loggerPromis
 // WithValues provides a new Logger with the tags appended
 func (p *loggerPromise) WithValues(l *DelegatingLogger, tags ...interface{}) *loggerPromise {
 	res := &loggerPromise{
-		logger: l,
-		tags:   tags,
+		logger:       l,
+		tags:         tags,
+		promisesLock: sync.Mutex{},
 	}
+
+	p.promisesLock.Lock()
+	defer p.promisesLock.Unlock()
 	p.childPromises = append(p.childPromises, res)
 	return res
 }
@@ -119,7 +130,7 @@ func (l *DelegatingLogger) Fulfill(actual logr.Logger) {
 func NewDelegatingLogger(initial logr.Logger) *DelegatingLogger {
 	l := &DelegatingLogger{
 		Logger:  initial,
-		promise: &loggerPromise{},
+		promise: &loggerPromise{promisesLock: sync.Mutex{}},
 	}
 	l.promise.logger = l
 	return l

@@ -873,7 +873,7 @@ k8s.io/utils/integer
 k8s.io/utils/buffer
 k8s.io/utils/trace
 k8s.io/utils/clock/testing
-# sigs.k8s.io/controller-runtime v0.0.0-20190222182021-68ae79ea094a => github.com/adracus/controller-runtime v0.1.8-0.20190327145817-16c1164b0822
+# sigs.k8s.io/controller-runtime v0.0.0-20190222182021-68ae79ea094a => github.com/munnerz/controller-runtime v0.1.8-0.20190423203449-038d2c82607c
 sigs.k8s.io/controller-runtime
 sigs.k8s.io/controller-runtime/pkg/client
 sigs.k8s.io/controller-runtime/pkg/handler
