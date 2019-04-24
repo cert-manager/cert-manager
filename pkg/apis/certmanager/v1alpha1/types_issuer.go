@@ -400,15 +400,18 @@ type IssuerCondition struct {
 
 	// LastTransitionTime is the timestamp corresponding to the last status
 	// change of this condition.
-	LastTransitionTime metav1.Time `json:"lastTransitionTime"`
+	// +optional
+	LastTransitionTime metav1.Time `json:"lastTransitionTime,omitempty"`
 
 	// Reason is a brief machine readable explanation for the condition's last
 	// transition.
-	Reason string `json:"reason"`
+	// +optional
+	Reason string `json:"reason,omitempty"`
 
 	// Message is a human readable description of the details of the last
 	// transition, complementing reason.
-	Message string `json:"message"`
+	// +optional
+	Message string `json:"message,omitempty"`
 }
 
 // IssuerConditionType represents an Issuer condition value.
