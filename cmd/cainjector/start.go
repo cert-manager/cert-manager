@@ -26,7 +26,7 @@ import (
 	kscheme "k8s.io/client-go/kubernetes/scheme"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	"k8s.io/klog"
-	apireg "k8s.io/kube-aggregator/pkg/apis/apiregistration/v1"
+	apireg "k8s.io/kube-aggregator/pkg/apis/apiregistration/v1beta1"
 	ctrl "sigs.k8s.io/controller-runtime"
 
 	certmgrscheme "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/scheme"
