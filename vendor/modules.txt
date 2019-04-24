@@ -853,7 +853,7 @@ k8s.io/gengo/examples/set-gen/sets
 k8s.io/klog
 k8s.io/klog/klogr
 # k8s.io/kube-aggregator v0.0.0-20190222095010-0b78038fe9e5
-k8s.io/kube-aggregator/pkg/apis/apiregistration/v1
+k8s.io/kube-aggregator/pkg/apis/apiregistration/v1beta1
 k8s.io/kube-aggregator/pkg/apis/apiregistration
 # k8s.io/kube-openapi v0.0.0-20190228160746-b3a7cee44a30
 k8s.io/kube-openapi/pkg/common
