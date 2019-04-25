@@ -44,7 +44,7 @@ const (
 
 	domainLabelKey               = "certmanager.k8s.io/acme-http-domain"
 	tokenLabelKey                = "certmanager.k8s.io/acme-http-token"
-	solverIdentificationLabelKey = "certmanager.k8s.io/solver-app"
+	solverIdentificationLabelKey = "certmanager.k8s.io/acme-http01-solver"
 )
 
 var (

@@ -34,7 +34,7 @@ import (
 func podLabels(ch *v1alpha1.Challenge) map[string]string {
 	domainHash := fmt.Sprintf("%d", adler32.Checksum([]byte(ch.Spec.DNSName)))
 	tokenHash := fmt.Sprintf("%d", adler32.Checksum([]byte(ch.Spec.Token)))
-	solverIdent := "acme-http-solver"
+	solverIdent := "true"
 	return map[string]string{
 		// TODO: we need to support domains longer than 63 characters
 		// this value should probably be hashed, and then the full plain text
