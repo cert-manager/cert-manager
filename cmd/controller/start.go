@@ -21,6 +21,7 @@ import (
 
 	"github.com/spf13/cobra"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
+	"k8s.io/apiserver/pkg/util/feature"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
 	"github.com/jetstack/cert-manager/cmd/controller/app"
@@ -36,7 +37,6 @@ import (
 	_ "github.com/jetstack/cert-manager/pkg/issuer/selfsigned"
 	_ "github.com/jetstack/cert-manager/pkg/issuer/vault"
 	_ "github.com/jetstack/cert-manager/pkg/issuer/venafi"
-
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 	"github.com/jetstack/cert-manager/pkg/util"
 )
@@ -80,6 +80,7 @@ to renew certificates at an appropriate time before expiry.`,
 
 	flags := cmd.Flags()
 	o.ControllerOptions.AddFlags(flags)
+	feature.DefaultMutableFeatureGate.AddFlag(flags)
 
 	return cmd
 }
