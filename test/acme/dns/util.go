@@ -46,34 +46,36 @@ func (f *fixture) setupNamespace(t *testing.T, name string) (string, func()) {
 		t.Fatalf("error creating test namespace %q: %v", name, err)
 	}
 
-	if err := filepath.Walk(f.kubectlManifestsPath, func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
-		if info.IsDir() || filepath.Base(path) == "config.json" {
+	if f.kubectlManifestsPath != "" {
+		if err := filepath.Walk(f.kubectlManifestsPath, func(path string, info os.FileInfo, err error) error {
+			if err != nil {
+				return err
+			}
+			if info.IsDir() || filepath.Base(path) == "config.json" {
+				return nil
+			}
+
+			switch filepath.Ext(path) {
+			case ".json", ".yaml", ".yml":
+			default:
+				t.Logf("skipping file %q with unrecognised extension", path)
+				return nil
+			}
+
+			_, _, err = f.kubectl.Run("apply", "--namespace", name, "-f", path)
+			if err != nil {
+				return err
+			}
+
+			t.Logf("created fixture %q", name)
 			return nil
+		}); err != nil {
+			t.Fatalf("error creating test fixtures: %v", err)
 		}
 
-		switch filepath.Ext(path) {
-		case ".json", ".yaml", ".yml":
-		default:
-			t.Logf("skipping file %q with unrecognised extension", path)
-			return nil
-		}
-
-		_, _, err = f.kubectl.Run("apply", "--namespace", name, "-f", path)
-		if err != nil {
-			return err
-		}
-
-		t.Logf("created fixture %q", name)
-		return nil
-	}); err != nil {
-		t.Fatalf("error creating test fixtures: %v", err)
+		// wait for the test suite informers to relist
+		time.Sleep(time.Second * 1)
 	}
-
-	// wait for the test suite informers to relist
-	time.Sleep(time.Second * 1)
 
 	return name, func() {
 		f.clientset.CoreV1().Namespaces().Delete(name, nil)
