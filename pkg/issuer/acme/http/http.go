@@ -42,8 +42,9 @@ const (
 	// acmeSolverListenPort is the port acmesolver should listen on
 	acmeSolverListenPort = 8089
 
-	domainLabelKey = "certmanager.k8s.io/acme-http-domain"
-	tokenLabelKey  = "certmanager.k8s.io/acme-http-token"
+	domainLabelKey               = "certmanager.k8s.io/acme-http-domain"
+	tokenLabelKey                = "certmanager.k8s.io/acme-http-token"
+	solverIdentificationLabelKey = "certmanager.k8s.io/acme-http01-solver"
 )
 
 var (
