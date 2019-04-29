@@ -43,6 +43,7 @@ build_images() {
         "pebble:bazel" \
         "quay.io/kubernetes-ingress-controller/nginx-ingress-controller:0.23.0" \
         "k8s.gcr.io/defaultbackend:bazel" \
+        "sample-webhook:bazel" \
         "vault:bazel" \
         "gcr.io/kubernetes-helm/tiller:bazel" \
     ; do
