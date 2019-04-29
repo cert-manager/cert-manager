@@ -30,8 +30,8 @@ import (
 	restclient "k8s.io/client-go/rest"
 
 	"github.com/jetstack/cert-manager/pkg/acme/webhook"
+	whapi "github.com/jetstack/cert-manager/pkg/acme/webhook/apis/acme/v1alpha1"
 	"github.com/jetstack/cert-manager/pkg/acme/webhook/registry/challengepayload"
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 )
 
 var (
@@ -40,7 +40,7 @@ var (
 )
 
 func init() {
-	cmapi.AddToScheme(Scheme)
+	whapi.AddToScheme(Scheme)
 
 	// we need to add the options to empty v1
 	// TODO fix the server code to avoid this
