@@ -58,7 +58,7 @@ func (r *Webhook) Present(ch *v1alpha1.ChallengeRequest) error {
 		return err
 	}
 
-	result := cl.Post().Resource(cfg.SolverName).Body(&pl).Do()
+	result := cl.Post().Resource(cfg.SolverName).Body(pl).Do()
 	// we will check this error after parsing the response
 	resErr := result.Error()
 
@@ -104,7 +104,7 @@ func (r *Webhook) CleanUp(ch *v1alpha1.ChallengeRequest) error {
 		return err
 	}
 
-	result := cl.Post().Resource(cfg.SolverName).Body(&pl).Do()
+	result := cl.Post().Resource(cfg.SolverName).Body(pl).Do()
 	// we will check this error after parsing the response
 	resErr := result.Error()
 
