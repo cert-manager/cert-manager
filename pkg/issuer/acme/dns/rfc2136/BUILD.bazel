@@ -31,10 +31,11 @@ go_test(
     embed = [":go_default_library"],
     deps = [
         "//pkg/apis/certmanager/v1alpha1:go_default_library",
+        "//pkg/logs:go_default_library",
         "//test/acme/dns:go_default_library",
+        "//test/acme/dns/server:go_default_library",
         "//vendor/github.com/miekg/dns:go_default_library",
         "//vendor/github.com/stretchr/testify/assert:go_default_library",
-        "//vendor/k8s.io/klog:go_default_library",
     ],
 )
 
