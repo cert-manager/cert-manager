@@ -27,8 +27,8 @@ import (
 	genericapiserver "k8s.io/apiserver/pkg/server"
 	genericoptions "k8s.io/apiserver/pkg/server/options"
 
+	whapi "github.com/jetstack/cert-manager/pkg/acme/webhook/apis/acme/v1alpha1"
 	"github.com/jetstack/cert-manager/pkg/acme/webhook/apiserver"
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 )
 
 const defaultEtcdPathPrefix = "/registry/acme.cert-manager.io"
@@ -48,7 +48,7 @@ func NewWebhookServerOptions(out, errOut io.Writer, groupName string, solvers ..
 		// TODO we will nil out the etcd storage options.  This requires a later level of k8s.io/apiserver
 		RecommendedOptions: genericoptions.NewRecommendedOptions(
 			defaultEtcdPathPrefix,
-			apiserver.Codecs.LegacyCodec(cmapi.SchemeGroupVersion),
+			apiserver.Codecs.LegacyCodec(whapi.SchemeGroupVersion),
 			nil,
 		),
 
