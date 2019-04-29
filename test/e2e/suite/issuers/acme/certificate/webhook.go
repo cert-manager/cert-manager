@@ -17,10 +17,13 @@ limitations under the License.
 package certificate
 
 import (
+	"time"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/wait"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	"github.com/jetstack/cert-manager/test/e2e/framework"
@@ -28,6 +31,7 @@ import (
 	"github.com/jetstack/cert-manager/test/e2e/framework/addon/pebble"
 	"github.com/jetstack/cert-manager/test/e2e/framework/addon/samplewebhook"
 	"github.com/jetstack/cert-manager/test/e2e/framework/addon/tiller"
+	"github.com/jetstack/cert-manager/test/e2e/framework/log"
 	"github.com/jetstack/cert-manager/test/e2e/util"
 	"github.com/jetstack/cert-manager/test/util/generate"
 )
@@ -50,8 +54,8 @@ var _ = framework.CertManagerDescribe("ACME webhook DNS provider", func() {
 				Name:   "cm-e2e-acme-dns01-sample-webhook",
 			}
 			webhook = &samplewebhook.CertmanagerWebhook{
-				Name: "cm-e2e-acme-dns01-sample-webhook",
-				Tiller: tiller,
+				Name:        "cm-e2e-acme-dns01-sample-webhook",
+				Tiller:      tiller,
 				Certmanager: addon.CertManager,
 			}
 		)
@@ -68,7 +72,7 @@ var _ = framework.CertManagerDescribe("ACME webhook DNS provider", func() {
 		f.RequireAddon(webhook)
 
 		issuerName := "test-acme-issuer"
-		//certificateName := "test-acme-certificate"
+		certificateName := "test-acme-certificate"
 		certificateSecretName := "test-acme-certificate"
 		dnsDomain := ""
 
@@ -77,10 +81,10 @@ var _ = framework.CertManagerDescribe("ACME webhook DNS provider", func() {
 
 			By("Creating an Issuer")
 			issuer := generate.Issuer(generate.IssuerConfig{
-				Name:              issuerName,
-				Namespace:         f.Namespace.Name,
-				ACMESkipTLSVerify: true,
-				ACMEServer: pebble.Details().Host,
+				Name:               issuerName,
+				Namespace:          f.Namespace.Name,
+				ACMESkipTLSVerify:  true,
+				ACMEServer:         pebble.Details().Host,
 				ACMEEmail:          testingACMEEmail,
 				ACMEPrivateKeyName: testingACMEPrivateKey,
 				DNS01: &v1alpha1.ACMEIssuerDNS01Config{
@@ -88,7 +92,7 @@ var _ = framework.CertManagerDescribe("ACME webhook DNS provider", func() {
 						{
 							Name: "default",
 							Webhook: &v1alpha1.ACMEIssuerDNS01ProviderWebhook{
-								GroupName: webhook.Details().GroupName,
+								GroupName:  webhook.Details().GroupName,
 								SolverName: webhook.Details().SolverName,
 								Config: &v1beta1.JSON{
 									Raw: []byte(`{}`),
@@ -133,8 +137,73 @@ var _ = framework.CertManagerDescribe("ACME webhook DNS provider", func() {
 			f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Delete(certificateSecretName, nil)
 		})
 
-		It("should run before and after each", func() {
+		It("should call the dummy webhook provider and mark the challenges as presented=true", func() {
+			By("Creating a Certificate")
 
+			certClient := f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name)
+
+			cert := generate.Certificate(generate.CertificateConfig{
+				Name:       certificateName,
+				Namespace:  f.Namespace.Name,
+				SecretName: certificateSecretName,
+				IssuerName: issuerName,
+				DNSNames:   []string{dnsDomain},
+				SolverConfig: v1alpha1.SolverConfig{
+					DNS01: &v1alpha1.DNS01SolverConfig{
+						Provider: "default",
+					},
+				},
+			})
+			cert, err := certClient.Create(cert)
+			Expect(err).NotTo(HaveOccurred())
+
+			var order *v1alpha1.Order
+			pollErr := wait.PollImmediate(500*time.Millisecond, time.Second*30,
+				func() (bool, error) {
+					l, err := f.CertManagerClientSet.CertmanagerV1alpha1().Orders(f.Namespace.Name).List(metav1.ListOptions{
+						LabelSelector: "acme.cert-manager.io/certificate-name=" + cert.Name,
+					})
+					Expect(err).NotTo(HaveOccurred())
+
+					log.Logf("Found %d orders for certificate", len(l.Items))
+					if len(l.Items) == 1 {
+						order = &l.Items[0]
+						log.Logf("Found order named %q", order.Name)
+						return true, nil
+					}
+
+					return false, nil
+				},
+			)
+			Expect(pollErr).NotTo(HaveOccurred())
+
+			pollErr = wait.PollImmediate(500*time.Millisecond, time.Second*30,
+				func() (bool, error) {
+					l, err := f.CertManagerClientSet.CertmanagerV1alpha1().Challenges(f.Namespace.Name).List(metav1.ListOptions{
+						LabelSelector: "acme.cert-manager.io/order-name=" + order.Name,
+					})
+					Expect(err).NotTo(HaveOccurred())
+
+					log.Logf("Found %d challenges", len(l.Items))
+					if len(l.Items) == 0 {
+						log.Logf("Waiting for at least one challenge to exist")
+						return false, nil
+					}
+
+					allPresented := true
+					for _, ch := range l.Items {
+						log.Logf("Found challenge named %q", ch.Name)
+
+						if ch.Status.Presented == false {
+							log.Logf("Challenge %q has not been 'Presented'")
+							allPresented = false
+						}
+					}
+
+					return allPresented, nil
+				},
+			)
+			Expect(pollErr).NotTo(HaveOccurred())
 		})
 	})
 })
