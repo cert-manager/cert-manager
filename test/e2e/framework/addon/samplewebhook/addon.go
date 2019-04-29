@@ -47,7 +47,7 @@ type CertmanagerWebhook struct {
 
 // Details return the details about the webhook instance deployed
 type Details struct {
-	GroupName string
+	GroupName  string
 	SolverName string
 }
 
@@ -83,9 +83,10 @@ func (p *CertmanagerWebhook) Setup(cfg *config.Config) error {
 		ChartName:   cfg.RepoRoot + "/test/e2e/framework/addon/samplewebhook/sample/chart/example-webhook",
 		Vars: []chart.StringTuple{
 			{Key: "certManager.namespace", Value: p.Certmanager.Namespace},
+			{Key: "certManager.serviceAccountName", Value: p.Certmanager.Details().ServiceAccountName},
 			{Key: "image.repository", Value: "sample-webhook"},
 			{Key: "image.tag", Value: "bazel"},
-			{Key: "groupName", Value: "acme.example.com"},
+			{Key: "groupName", Value: p.GroupName},
 		},
 		Values: []string{cfg.RepoRoot + "/test/fixtures/example-webhook-values.yaml"},
 		// doesn't matter when installing from disk
@@ -107,7 +108,7 @@ func (p *CertmanagerWebhook) Provision() error {
 // Details returns details that can be used to utilise the instance of Pebble.
 func (p *CertmanagerWebhook) Details() *Details {
 	return &Details{
-		GroupName: p.GroupName,
+		GroupName:  p.GroupName,
 		SolverName: "my-custom-solver",
 	}
 }
