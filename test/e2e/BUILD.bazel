@@ -9,6 +9,7 @@ container_bundle(
         "quay.io/kubernetes-ingress-controller/nginx-ingress-controller:0.23.0": "@io_kubernetes_ingress-nginx//image",
         "k8s.gcr.io/defaultbackend:bazel": "@io_gcr_k8s_defaultbackend//image",
         "vault:bazel": "@com_hashicorp_vault//image",
+        "sample-webhook:bazel": "//test/e2e/framework/addon/samplewebhook/sample:image",
         "gcr.io/kubernetes-helm/tiller:bazel": "@io_gcr_helm_tiller//image",
         "{STABLE_DOCKER_REPO}/cert-manager-controller:{STABLE_DOCKER_TAG}": "//cmd/controller:image",
         "{STABLE_DOCKER_REPO}/cert-manager-acmesolver:{STABLE_DOCKER_TAG}": "//cmd/acmesolver:image",
