@@ -37,6 +37,9 @@ spec:
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           args:
+          {{- if .Values.global.logLevel }}
+          - --v={{ .Values.global.logLevel }}
+          {{- end }}
           {{- if .Values.global.leaderElection.namespace }}
           - --leader-election-namespace={{ .Values.global.leaderElection.namespace }}
           {{- else }}
