@@ -1384,7 +1384,7 @@ spec:
 
 ---
 # Source: cert-manager/charts/webhook/templates/deployment.yaml
-piVersion: apps/v1beta1
+apiVersion: apps/v1beta1
 kind: Deployment
 metadata:
   name: cert-manager-webhook
