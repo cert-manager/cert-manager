@@ -142,7 +142,7 @@ generate:
 BAZEL_IMAGE_ENV := APP_VERSION=$(APP_VERSION) DOCKER_REPO=$(DOCKER_REPO) DOCKER_TAG=$(APP_VERSION)
 images:
 	$(BAZEL_IMAGE_ENV) \
-		bazel run //:images
+		bazel run --platforms=@io_bazel_rules_go//go/toolchain:linux_amd64 //:images
 
 images_push: images
 	# we do not use the :push target as Quay.io does not support v2.2
