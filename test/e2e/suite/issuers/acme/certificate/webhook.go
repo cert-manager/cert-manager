@@ -148,7 +148,7 @@ var _ = framework.CertManagerDescribe("ACME webhook DNS provider", func() {
 				SecretName: certificateSecretName,
 				IssuerName: issuerName,
 				DNSNames:   []string{dnsDomain},
-				SolverConfig: v1alpha1.SolverConfig{
+				SolverConfig: &v1alpha1.SolverConfig{
 					DNS01: &v1alpha1.DNS01SolverConfig{
 						Provider: "default",
 					},

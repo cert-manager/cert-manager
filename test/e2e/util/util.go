@@ -249,13 +249,18 @@ func NewCertManagerCAClusterIssuer(name, secretName string) *v1alpha1.ClusterIss
 	}
 }
 
-func NewCertManagerBasicCertificate(name, secretName, issuerName string, issuerKind string, duration, renewBefore *metav1.Duration) *v1alpha1.Certificate {
+func NewCertManagerBasicCertificate(name, secretName, issuerName string, issuerKind string, duration, renewBefore *metav1.Duration, dnsNames ...string) *v1alpha1.Certificate {
+	cn := "test.domain.com"
+	if len(dnsNames) > 0 {
+		cn = dnsNames[0]
+	}
 	return &v1alpha1.Certificate{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: name,
 		},
 		Spec: v1alpha1.CertificateSpec{
-			CommonName:   "test.domain.com",
+			CommonName:   cn,
+			DNSNames:     dnsNames,
 			Organization: []string{"test-org"},
 			SecretName:   secretName,
 			Duration:     duration,
@@ -268,7 +273,7 @@ func NewCertManagerBasicCertificate(name, secretName, issuerName string, issuerK
 	}
 }
 
-func NewCertManagerACMECertificate(name, secretName, issuerName string, issuerKind string, duration, renewBefore *metav1.Duration, ingressClass string, cn string, dnsNames ...string) *v1alpha1.Certificate {
+func NewCertManagerACMECertificateOldFormat(name, secretName, issuerName string, issuerKind string, duration, renewBefore *metav1.Duration, ingressClass string, cn string, dnsNames ...string) *v1alpha1.Certificate {
 	return &v1alpha1.Certificate{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: name,

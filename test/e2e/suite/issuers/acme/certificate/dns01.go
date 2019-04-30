@@ -39,16 +39,16 @@ type dns01Provider interface {
 	addon.Addon
 }
 
-var _ = framework.CertManagerDescribe("ACME Certificate (DNS01)", func() {
+var _ = framework.CertManagerDescribe("ACME Certificate (DNS01) (Old format)", func() {
 	// TODO: add additional DNS provider configs here
 	cf := &dnsproviders.Cloudflare{}
 
-	testDNSProvider("cloudflare", cf)
+	testDNSProviderOldFormat("cloudflare", cf)
 })
 
-func testDNSProvider(name string, p dns01Provider) bool {
+func testDNSProviderOldFormat(name string, p dns01Provider) bool {
 	return Context("With "+name+" credentials configured", func() {
-		f := framework.NewDefaultFramework("create-acme-certificate-dns01-" + name)
+		f := framework.NewDefaultFramework("create-acme-certificate-dns01-" + name + "-old")
 		h := f.Helper()
 
 		BeforeEach(func() {
@@ -77,7 +77,7 @@ func testDNSProvider(name string, p dns01Provider) bool {
 				ACMEPrivateKeyName: testingACMEPrivateKey,
 				DNS01: &v1alpha1.ACMEIssuerDNS01Config{
 					Providers: []v1alpha1.ACMEIssuerDNS01Provider{
-						p.Details().ProviderConfig,
+						p.Details().ProviderConfigOldFormat,
 					},
 				},
 			})
@@ -127,9 +127,9 @@ func testDNSProvider(name string, p dns01Provider) bool {
 				SecretName: certificateSecretName,
 				IssuerName: issuerName,
 				DNSNames:   []string{dnsDomain},
-				SolverConfig: v1alpha1.SolverConfig{
+				SolverConfig: &v1alpha1.SolverConfig{
 					DNS01: &v1alpha1.DNS01SolverConfig{
-						Provider: p.Details().ProviderConfig.Name,
+						Provider: p.Details().ProviderConfigOldFormat.Name,
 					},
 				},
 			})
@@ -148,9 +148,9 @@ func testDNSProvider(name string, p dns01Provider) bool {
 				SecretName: certificateSecretName,
 				IssuerName: issuerName,
 				DNSNames:   []string{"*." + dnsDomain},
-				SolverConfig: v1alpha1.SolverConfig{
+				SolverConfig: &v1alpha1.SolverConfig{
 					DNS01: &v1alpha1.DNS01SolverConfig{
-						Provider: p.Details().ProviderConfig.Name,
+						Provider: p.Details().ProviderConfigOldFormat.Name,
 					},
 				},
 			})
@@ -169,9 +169,9 @@ func testDNSProvider(name string, p dns01Provider) bool {
 				SecretName: certificateSecretName,
 				IssuerName: issuerName,
 				DNSNames:   []string{"*." + dnsDomain, dnsDomain},
-				SolverConfig: v1alpha1.SolverConfig{
+				SolverConfig: &v1alpha1.SolverConfig{
 					DNS01: &v1alpha1.DNS01SolverConfig{
-						Provider: p.Details().ProviderConfig.Name,
+						Provider: p.Details().ProviderConfigOldFormat.Name,
 					},
 				},
 			})
