@@ -1137,7 +1137,7 @@ metadata:
   namespace: "cert-manager"
   labels:
     app: cert-manager
-    chart: cert-manager-v0.7.0
+    chart: cert-manager-v0.7.1
     release: cert-manager
     heritage: Tiller
 ---
@@ -1193,7 +1193,7 @@ metadata:
   name: cert-manager
   labels:
     app: cert-manager
-    chart: cert-manager-v0.7.0
+    chart: cert-manager-v0.7.1
     release: cert-manager
     heritage: Tiller
 rules:
@@ -1213,7 +1213,7 @@ metadata:
   name: cert-manager
   labels:
     app: cert-manager
-    chart: cert-manager-v0.7.0
+    chart: cert-manager-v0.7.1
     release: cert-manager
     heritage: Tiller
 roleRef:
@@ -1231,7 +1231,7 @@ metadata:
   name: cert-manager-view
   labels:
     app: cert-manager
-    chart: cert-manager-v0.7.0
+    chart: cert-manager-v0.7.1
     release: cert-manager
     heritage: Tiller
     rbac.authorization.k8s.io/aggregate-to-view: "true"
@@ -1248,7 +1248,7 @@ metadata:
   name: cert-manager-edit
   labels:
     app: cert-manager
-    chart: cert-manager-v0.7.0
+    chart: cert-manager-v0.7.1
     release: cert-manager
     heritage: Tiller
     rbac.authorization.k8s.io/aggregate-to-edit: "true"
@@ -1380,6 +1380,7 @@ spec:
           image: "quay.io/jetstack/cert-manager-cainjector:v0.7.0"
           imagePullPolicy: IfNotPresent
           args:
+          - --v=2
           - --leader-election-namespace=$(POD_NAMESPACE)
           env:
           - name: POD_NAMESPACE
@@ -1392,7 +1393,7 @@ spec:
 
 ---
 # Source: cert-manager/charts/webhook/templates/deployment.yaml
-apiVersion: apps/v1beta1
+piVersion: apps/v1beta1
 kind: Deployment
 metadata:
   name: cert-manager-webhook
@@ -1450,7 +1451,7 @@ metadata:
   namespace: "cert-manager"
   labels:
     app: cert-manager
-    chart: cert-manager-v0.7.0
+    chart: cert-manager-v0.7.1
     release: cert-manager
     heritage: Tiller
 spec:
@@ -1475,6 +1476,7 @@ spec:
           image: "quay.io/jetstack/cert-manager-controller:v0.7.0"
           imagePullPolicy: IfNotPresent
           args:
+          - --v=2
           - --cluster-resource-namespace=$(POD_NAMESPACE)
           - --leader-election-namespace=$(POD_NAMESPACE)
           ports:
