@@ -121,13 +121,6 @@ func (c *Controller) Sync(ctx context.Context, crt *v1alpha1.Certificate) (err e
 		return nil
 	}
 
-	// If this is an ACME certificate, ensure the certificate.spec.acme field is
-	// non-nil
-	if issuerObj.GetSpec().ACME != nil && crtCopy.Spec.ACME == nil {
-		c.Recorder.Eventf(crtCopy, corev1.EventTypeWarning, "BadConfig", "spec.acme field must be set")
-		return nil
-	}
-
 	dbg.Info("Certificate passed all validation checks")
 
 	issuerReady := apiutil.IssuerHasCondition(issuerObj, v1alpha1.IssuerCondition{
