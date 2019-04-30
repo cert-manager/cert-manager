@@ -136,7 +136,7 @@ container_pull(
 ## Install 'kind', for creating kubernetes-in-docker clusters
 go_repository(
     name = "io_kubernetes_sigs_kind",
-    commit = "9307ec01e70ffd56d3a5bc16fb977d4f557a615f",
+    commit = "161151a26faf0dbe962ac9f323cc0cdebac79ba8",
     importpath = "sigs.k8s.io/kind",
 )
 
@@ -191,14 +191,14 @@ container_pull(
     name = "kind-1.12",
     registry = "index.docker.io",
     repository = "kindest/node",
-    tag = "v1.12.3",
+    tag = "v1.12.5",
 )
 
 container_pull(
     name = "kind-1.13",
     registry = "index.docker.io",
     repository = "kindest/node",
-    tag = "v1.13.2",
+    tag = "v1.13.4",
 )
 
 ## Fetch kubectl for use during e2e tests
