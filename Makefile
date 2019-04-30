@@ -17,7 +17,9 @@ DOCKER_REPO :=
 APP_VERSION := canary
 HACK_DIR ?= hack
 
+SKIP_GLOBALS := false
 GINKGO_SKIP :=
+GINKGO_FOCUS :=
 
 ## e2e test vars
 KUBECTL ?= kubectl
@@ -118,6 +120,8 @@ e2e_test:
 			--repo-root="$$(pwd)" \
 			--report-dir="$${ARTIFACTS:-./_artifacts}" \
 			--ginkgo.skip="$(GINKGO_SKIP)" \
+			--ginkgo.focus="$(GINKGO_FOCUS)" \
+			--skip-globals=$(SKIP_GLOBALS) \
 			--kubectl-path="$(KUBECTL)"
 
 # Generate targets
