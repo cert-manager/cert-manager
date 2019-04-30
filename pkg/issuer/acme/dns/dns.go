@@ -18,14 +18,18 @@ package dns
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
 
 	"github.com/pkg/errors"
+	apiext "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	corev1listers "k8s.io/client-go/listers/core/v1"
 	"k8s.io/klog"
 
+	"github.com/jetstack/cert-manager/pkg/acme/webhook"
+	whapi "github.com/jetstack/cert-manager/pkg/acme/webhook/apis/acme/v1alpha1"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	"github.com/jetstack/cert-manager/pkg/controller"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/acmedns"
@@ -37,12 +41,15 @@ import (
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/rfc2136"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/route53"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
+	webhookslv "github.com/jetstack/cert-manager/pkg/issuer/acme/dns/webhook"
 )
 
 const (
 	cloudDNSServiceAccountKey = "service-account.json"
 )
 
+// solver is the old solver type interface.
+// All new solvers should be implemented using the new webhook.Solver interface.
 type solver interface {
 	Present(domain, fqdn, value string) error
 	CleanUp(domain, fqdn, value string) error
@@ -57,7 +64,6 @@ type dnsProviderConstructors struct {
 	route53      func(accessKey, secretKey, hostedZoneID, region string, ambient bool, dns01Nameservers []string) (*route53.DNSProvider, error)
 	azureDNS     func(clientID, clientSecret, subscriptionID, tenentID, resourceGroupName, hostedZoneName string, dns01Nameservers []string) (*azuredns.DNSProvider, error)
 	acmeDNS      func(host string, accountJson []byte, dns01Nameservers []string) (*acmedns.DNSProvider, error)
-	rfc2136      func(nameserver, tsigAlgorithm, tsigKeyName, tsigSecret string, dns01Nameservers []string) (*rfc2136.DNSProvider, error)
 	digitalOcean func(token string, dns01Nameservers []string) (*digitalocean.DNSProvider, error)
 }
 
@@ -68,6 +74,7 @@ type Solver struct {
 	*controller.Context
 	secretLister            corev1listers.SecretLister
 	dnsProviderConstructors dnsProviderConstructors
+	webhookSolvers          map[string]webhook.Solver
 }
 
 // Present performs the work to configure DNS to resolve a DNS01 challenge.
@@ -76,31 +83,39 @@ func (s *Solver) Present(ctx context.Context, issuer v1alpha1.GenericIssuer, ch 
 		return fmt.Errorf("challenge dns config must be specified")
 	}
 
+	webhookSolver, req, err := s.prepareChallengeRequest(issuer, ch)
+	if err != nil && err != errNotFound {
+		return err
+	}
+	if err == nil {
+		klog.Infof("Presenting DNS01 challenge for domain %q", ch.Spec.DNSName)
+		return webhookSolver.Present(req)
+	}
+
 	slv, providerConfig, err := s.solverForChallenge(issuer, ch)
 	if err != nil {
 		return err
 	}
 
-	fqdn, value, _, err := util.DNS01Record(ch.Spec.DNSName, ch.Spec.Key, s.DNS01Nameservers, followCNAME(providerConfig.CNAMEStrategy))
+	fqdn, err := util.DNS01LookupFQDN(ch.Spec.DNSName, followCNAME(providerConfig.CNAMEStrategy), s.DNS01Nameservers...)
 	if err != nil {
 		return err
 	}
 
 	klog.Infof("Presenting DNS01 challenge for domain %q", ch.Spec.DNSName)
-	return slv.Present(ch.Spec.DNSName, fqdn, value)
+	return slv.Present(ch.Spec.DNSName, fqdn, ch.Spec.Key)
 }
 
 // Check verifies that the DNS records for the ACME challenge have propagated.
 func (s *Solver) Check(ctx context.Context, issuer v1alpha1.GenericIssuer, ch *v1alpha1.Challenge) error {
-
-	fqdn, value, ttl, err := util.DNS01Record(ch.Spec.DNSName, ch.Spec.Key, s.DNS01Nameservers, false)
+	fqdn, err := util.DNS01LookupFQDN(ch.Spec.DNSName, false, s.DNS01Nameservers...)
 	if err != nil {
 		return err
 	}
 
 	klog.Infof("Checking DNS propagation for %q using name servers: %v", ch.Spec.DNSName, s.Context.DNS01Nameservers)
 
-	ok, err := util.PreCheckDNS(fqdn, value, s.Context.DNS01Nameservers,
+	ok, err := util.PreCheckDNS(fqdn, ch.Spec.Key, s.Context.DNS01Nameservers,
 		s.Context.DNS01CheckAuthoritative)
 	if err != nil {
 		return err
@@ -109,6 +124,7 @@ func (s *Solver) Check(ctx context.Context, issuer v1alpha1.GenericIssuer, ch *v
 		return fmt.Errorf("DNS record for %q not yet propagated", ch.Spec.DNSName)
 	}
 
+	ttl := 60
 	klog.Infof("Waiting DNS record TTL (%ds) to allow propagation of DNS record for domain %q", ttl, fqdn)
 	time.Sleep(time.Second * time.Duration(ttl))
 	klog.Infof("ACME DNS01 validation record propagated for %q", fqdn)
@@ -123,17 +139,26 @@ func (s *Solver) CleanUp(ctx context.Context, issuer v1alpha1.GenericIssuer, ch 
 		return fmt.Errorf("challenge dns config must be specified")
 	}
 
+	webhookSolver, req, err := s.prepareChallengeRequest(issuer, ch)
+	if err != nil && err != errNotFound {
+		return err
+	}
+	if err == nil {
+		klog.Infof("Cleaning up DNS01 challenge for domain %q", ch.Spec.DNSName)
+		return webhookSolver.CleanUp(req)
+	}
+
 	slv, providerConfig, err := s.solverForChallenge(issuer, ch)
 	if err != nil {
 		return err
 	}
 
-	fqdn, value, _, err := util.DNS01Record(ch.Spec.DNSName, ch.Spec.Key, s.DNS01Nameservers, followCNAME(providerConfig.CNAMEStrategy))
+	fqdn, err := util.DNS01LookupFQDN(ch.Spec.DNSName, followCNAME(providerConfig.CNAMEStrategy), s.DNS01Nameservers...)
 	if err != nil {
 		return err
 	}
 
-	return slv.CleanUp(ch.Spec.DNSName, fqdn, value)
+	return slv.CleanUp(ch.Spec.DNSName, fqdn, ch.Spec.Key)
 }
 
 func followCNAME(strategy v1alpha1.CNAMEStrategy) bool {
@@ -150,12 +175,7 @@ func (s *Solver) solverForChallenge(issuer v1alpha1.GenericIssuer, ch *v1alpha1.
 	resourceNamespace := s.ResourceNamespace(issuer)
 	canUseAmbientCredentials := s.CanUseAmbientCredentials(issuer)
 
-	providerName := ch.Spec.Config.DNS01.Provider
-	if providerName == "" {
-		return nil, nil, fmt.Errorf("dns01 challenge provider name must be set")
-	}
-
-	providerConfig, err := issuer.GetSpec().ACME.DNS01.Provider(providerName)
+	providerConfig, err := s.dns01ConfigForChallenge(issuer, ch)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -311,54 +331,123 @@ func (s *Solver) solverForChallenge(issuer v1alpha1.GenericIssuer, ch *v1alpha1.
 		if err != nil {
 			return nil, nil, fmt.Errorf("error instantiating acmedns challenge solver: %s", err)
 		}
-	case providerConfig.RFC2136 != nil:
-		klog.V(5).Infof("Preparing to create RFC2136 Provider")
-		var secret string
-		if len(providerConfig.RFC2136.TSIGSecret.Name) > 0 {
-			tsigSecret, err := s.secretLister.Secrets(resourceNamespace).Get(providerConfig.RFC2136.TSIGSecret.Name)
-			if err != nil {
-				return nil, nil, fmt.Errorf("error getting rfc2136 service account: %s", err.Error())
-			}
-			secretBytes, ok := tsigSecret.Data[providerConfig.RFC2136.TSIGSecret.Key]
-			if !ok {
-				return nil, nil, fmt.Errorf("error getting rfc2136 secret key: key '%s' not found in secret", providerConfig.RFC2136.TSIGSecret.Key)
-			}
-			secret = string(secretBytes)
-		}
-
-		impl, err = s.dnsProviderConstructors.rfc2136(
-			providerConfig.RFC2136.Nameserver,
-			string(providerConfig.RFC2136.TSIGAlgorithm),
-			providerConfig.RFC2136.TSIGKeyName,
-			secret,
-			s.DNS01Nameservers,
-		)
-		if err != nil {
-			return nil, nil, fmt.Errorf("error instantiating rfc2136 challenge solver: %s", err.Error())
-		}
 	default:
-		return nil, nil, fmt.Errorf("no dns provider config specified for provider %q", providerName)
+		return nil, nil, fmt.Errorf("no dns provider config specified for provider %q", ch.Spec.Config.DNS01.Provider)
 	}
 
 	return impl, providerConfig, nil
 }
 
+func (s *Solver) prepareChallengeRequest(issuer v1alpha1.GenericIssuer, ch *v1alpha1.Challenge) (webhook.Solver, *whapi.ChallengeRequest, error) {
+	dns01Config, err := s.dns01ConfigForChallenge(issuer, ch)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	webhookSolver, cfg, err := s.dns01SolverForConfig(dns01Config)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	fqdn, err := util.DNS01LookupFQDN(ch.Spec.DNSName, followCNAME(dns01Config.CNAMEStrategy), s.DNS01Nameservers...)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	zone, err := util.FindZoneByFqdn(fqdn, s.DNS01Nameservers)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	resourceNamespace := s.ResourceNamespace(issuer)
+	canUseAmbientCredentials := s.CanUseAmbientCredentials(issuer)
+
+	// construct a ChallengeRequest which can be passed to DNS solvers.
+	// The provided config will be encoded to JSON in order to avoid a coupling
+	// between cert-manager and any particular DNS provider implementation.
+	b, err := json.Marshal(cfg)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	req := &whapi.ChallengeRequest{
+		Type:                    "dns-01",
+		ResolvedFQDN:            fqdn,
+		ResolvedZone:            zone,
+		AllowAmbientCredentials: canUseAmbientCredentials,
+		ResourceNamespace:       resourceNamespace,
+		Key:                     ch.Spec.Key,
+		Config:                  &apiext.JSON{Raw: b},
+	}
+
+	return webhookSolver, req, nil
+}
+
+var errNotFound = fmt.Errorf("failed to determine DNS01 solver type")
+
+func (s *Solver) dns01SolverForConfig(config *v1alpha1.ACMEIssuerDNS01Provider) (webhook.Solver, interface{}, error) {
+	solverName := ""
+	var c interface{}
+	switch {
+	case config.Webhook != nil:
+		solverName = "webhook"
+		c = config.Webhook
+	}
+	if solverName == "" {
+		return nil, nil, errNotFound
+	}
+	p := s.webhookSolvers[solverName]
+	if p == nil {
+		return nil, c, fmt.Errorf("no solver provider configured for %q", solverName)
+	}
+	return p, c, nil
+}
+
+func (s *Solver) dns01ConfigForChallenge(issuer v1alpha1.GenericIssuer, ch *v1alpha1.Challenge) (*v1alpha1.ACMEIssuerDNS01Provider, error) {
+	providerName := ch.Spec.Config.DNS01.Provider
+	if providerName == "" {
+		return nil, fmt.Errorf("dns01 challenge provider name must be set")
+	}
+
+	dns01Config, err := issuer.GetSpec().ACME.DNS01.Provider(providerName)
+	if err != nil {
+		return nil, err
+	}
+
+	return dns01Config, nil
+}
+
+var WebhookSolvers = []webhook.Solver{
+	&webhookslv.Webhook{},
+	&rfc2136.Solver{},
+}
+
 // NewSolver creates a Solver which can instantiate the appropriate DNS
 // provider.
-func NewSolver(ctx *controller.Context) *Solver {
+func NewSolver(ctx *controller.Context) (*Solver, error) {
+	initialized := make(map[string]webhook.Solver)
+	// initialize all DNS providers
+	for _, s := range WebhookSolvers {
+		err := s.Initialize(ctx.RESTConfig, ctx.StopCh)
+		if err != nil {
+			return nil, fmt.Errorf("error intializing DNS provider %q: %v", s.Name(), err)
+		}
+		initialized[s.Name()] = s
+	}
+
 	return &Solver{
-		ctx,
-		ctx.KubeSharedInformerFactory.Core().V1().Secrets().Lister(),
-		dnsProviderConstructors{
+		Context:      ctx,
+		secretLister: ctx.KubeSharedInformerFactory.Core().V1().Secrets().Lister(),
+		dnsProviderConstructors: dnsProviderConstructors{
 			clouddns.NewDNSProvider,
 			cloudflare.NewDNSProviderCredentials,
 			route53.NewDNSProvider,
 			azuredns.NewDNSProviderCredentials,
 			acmedns.NewDNSProviderHostBytes,
-			rfc2136.NewDNSProviderCredentials,
 			digitalocean.NewDNSProviderCredentials,
 		},
-	}
+		webhookSolvers: initialized,
+	}, nil
 }
 
 func (s *Solver) loadSecretData(selector *v1alpha1.SecretKeySelector, ns string) ([]byte, error) {

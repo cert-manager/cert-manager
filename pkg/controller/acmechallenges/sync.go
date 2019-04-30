@@ -24,11 +24,13 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
+	utilfeature "k8s.io/apiserver/pkg/util/feature"
 
 	"github.com/jetstack/cert-manager/pkg/acme"
 	acmecl "github.com/jetstack/cert-manager/pkg/acme/client"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
+	"github.com/jetstack/cert-manager/pkg/feature"
 	dnsutil "github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 	acmeapi "github.com/jetstack/cert-manager/third_party/crypto/acme"
@@ -97,6 +99,8 @@ func (c *Controller) Sync(ctx context.Context, ch *cmapi.Challenge) (err error) 
 
 			err = solver.CleanUp(ctx, genericIssuer, ch)
 			if err != nil {
+				c.Recorder.Eventf(ch, corev1.EventTypeWarning, "CleanUpError", "Error cleaning up challenge: %v", err)
+				ch.Status.Reason = err.Error()
 				log.Error(err, "error cleaning up challenge")
 				return err
 			}
@@ -134,23 +138,25 @@ func (c *Controller) Sync(ctx context.Context, ch *cmapi.Challenge) (err error) 
 		return nil
 	}
 
-	// check for CAA records.
-	// CAA records are static, so we don't have to present anything
-	// before we check for them.
+	if utilfeature.DefaultFeatureGate.Enabled(feature.ValidateCAA) {
+		// check for CAA records.
+		// CAA records are static, so we don't have to present anything
+		// before we check for them.
 
-	// Find out which identity the ACME server says it will use.
-	dir, err := cl.Discover(ctx)
-	if err != nil {
-		return err
-	}
-	// TODO(dmo): figure out if missing CAA identity in directory
-	// means no CAA check is performed by ACME server or if any valid
-	// CAA would stop issuance (strongly suspect the former)
-	if len(dir.CAA) != 0 {
-		err := dnsutil.ValidateCAA(ch.Spec.DNSName, dir.CAA, ch.Spec.Wildcard, c.Context.DNS01Nameservers)
+		// Find out which identity the ACME server says it will use.
+		dir, err := cl.Discover(ctx)
 		if err != nil {
-			ch.Status.Reason = fmt.Sprintf("CAA self-check failed: %s", err)
 			return err
+		}
+		// TODO(dmo): figure out if missing CAA identity in directory
+		// means no CAA check is performed by ACME server or if any valid
+		// CAA would stop issuance (strongly suspect the former)
+		if len(dir.CAA) != 0 {
+			err := dnsutil.ValidateCAA(ch.Spec.DNSName, dir.CAA, ch.Spec.Wildcard, c.Context.DNS01Nameservers)
+			if err != nil {
+				ch.Status.Reason = fmt.Sprintf("CAA self-check failed: %s", err)
+				return err
+			}
 		}
 	}
 
@@ -162,6 +168,8 @@ func (c *Controller) Sync(ctx context.Context, ch *cmapi.Challenge) (err error) 
 	if !ch.Status.Presented {
 		err := solver.Present(ctx, genericIssuer, ch)
 		if err != nil {
+			c.Recorder.Eventf(ch, corev1.EventTypeWarning, "PresentError", "Error presenting challenge: %v", err)
+			ch.Status.Reason = err.Error()
 			return err
 		}
 
@@ -222,6 +230,8 @@ func (c *Controller) handleFinalizer(ctx context.Context, ch *cmapi.Challenge) e
 
 	err = solver.CleanUp(ctx, genericIssuer, ch)
 	if err != nil {
+		c.Recorder.Eventf(ch, corev1.EventTypeWarning, "CleanUpError", "Error cleaning up challenge: %v", err)
+		ch.Status.Reason = err.Error()
 		log.Error(err, "error cleaning up challenge")
 		return nil
 	}

@@ -29,7 +29,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/runtime/inject"
 	"sigs.k8s.io/controller-runtime/pkg/source/internal"
 
-	toolscache "k8s.io/client-go/tools/cache"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 )
@@ -243,8 +242,8 @@ func (cs *Channel) syncLoop() {
 
 // Informer is used to provide a source of events originating inside the cluster from Watches (e.g. Pod Create)
 type Informer struct {
-	// Informer is the generated client-go Informer
-	Informer toolscache.SharedIndexInformer
+	// Informer is the controller-runtime Informer
+	Informer cache.Informer
 }
 
 var _ Source = &Informer{}

@@ -31,6 +31,7 @@ go_library(
         "//vendor/sigs.k8s.io/controller-runtime/pkg/metrics:go_default_library",
         "//vendor/sigs.k8s.io/controller-runtime/pkg/recorder:go_default_library",
         "//vendor/sigs.k8s.io/controller-runtime/pkg/runtime/inject:go_default_library",
+        "//vendor/sigs.k8s.io/controller-runtime/pkg/webhook:go_default_library",
     ],
 )
 

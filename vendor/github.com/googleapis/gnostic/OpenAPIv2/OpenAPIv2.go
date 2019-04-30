@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"github.com/googleapis/gnostic/compiler"
 	"gopkg.in/yaml.v2"
+	"regexp"
 	"strings"
 )
 
@@ -84,7 +85,7 @@ func NewApiKeySecurity(in interface{}, context *compiler.Context) (*ApiKeySecuri
 			errors = append(errors, compiler.NewError(context, message))
 		}
 		allowedKeys := []string{"description", "in", "name", "type"}
-		allowedPatterns := []string{"^x-"}
+		allowedPatterns := []*regexp.Regexp{pattern0}
 		invalidKeys := compiler.InvalidKeysInMap(m, allowedKeys, allowedPatterns)
 		if len(invalidKeys) > 0 {
 			message := fmt.Sprintf("has invalid %s: %+v", compiler.PluralProperties(len(invalidKeys)), strings.Join(invalidKeys, ", "))
@@ -145,7 +146,7 @@ func NewApiKeySecurity(in interface{}, context *compiler.Context) (*ApiKeySecuri
 			k, ok := compiler.StringValue(item.Key)
 			if ok {
 				v := item.Value
-				if compiler.PatternMatches("^x-", k) {
+				if strings.HasPrefix(k, "x-") {
 					pair := &NamedAny{}
 					pair.Name = k
 					result := &Any{}
@@ -189,7 +190,7 @@ func NewBasicAuthenticationSecurity(in interface{}, context *compiler.Context) (
 			errors = append(errors, compiler.NewError(context, message))
 		}
 		allowedKeys := []string{"description", "type"}
-		allowedPatterns := []string{"^x-"}
+		allowedPatterns := []*regexp.Regexp{pattern0}
 		invalidKeys := compiler.InvalidKeysInMap(m, allowedKeys, allowedPatterns)
 		if len(invalidKeys) > 0 {
 			message := fmt.Sprintf("has invalid %s: %+v", compiler.PluralProperties(len(invalidKeys)), strings.Join(invalidKeys, ", "))
@@ -226,7 +227,7 @@ func NewBasicAuthenticationSecurity(in interface{}, context *compiler.Context) (
 			k, ok := compiler.StringValue(item.Key)
 			if ok {
 				v := item.Value
-				if compiler.PatternMatches("^x-", k) {
+				if strings.HasPrefix(k, "x-") {
 					pair := &NamedAny{}
 					pair.Name = k
 					result := &Any{}
@@ -270,7 +271,7 @@ func NewBodyParameter(in interface{}, context *compiler.Context) (*BodyParameter
 			errors = append(errors, compiler.NewError(context, message))
 		}
 		allowedKeys := []string{"description", "in", "name", "required", "schema"}
-		allowedPatterns := []string{"^x-"}
+		allowedPatterns := []*regexp.Regexp{pattern0}
 		invalidKeys := compiler.InvalidKeysInMap(m, allowedKeys, allowedPatterns)
 		if len(invalidKeys) > 0 {
 			message := fmt.Sprintf("has invalid %s: %+v", compiler.PluralProperties(len(invalidKeys)), strings.Join(invalidKeys, ", "))
@@ -334,7 +335,7 @@ func NewBodyParameter(in interface{}, context *compiler.Context) (*BodyParameter
 			k, ok := compiler.StringValue(item.Key)
 			if ok {
 				v := item.Value
-				if compiler.PatternMatches("^x-", k) {
+				if strings.HasPrefix(k, "x-") {
 					pair := &NamedAny{}
 					pair.Name = k
 					result := &Any{}
@@ -372,7 +373,7 @@ func NewContact(in interface{}, context *compiler.Context) (*Contact, error) {
 		errors = append(errors, compiler.NewError(context, message))
 	} else {
 		allowedKeys := []string{"email", "name", "url"}
-		allowedPatterns := []string{"^x-"}
+		allowedPatterns := []*regexp.Regexp{pattern0}
 		invalidKeys := compiler.InvalidKeysInMap(m, allowedKeys, allowedPatterns)
 		if len(invalidKeys) > 0 {
 			message := fmt.Sprintf("has invalid %s: %+v", compiler.PluralProperties(len(invalidKeys)), strings.Join(invalidKeys, ", "))
@@ -412,7 +413,7 @@ func NewContact(in interface{}, context *compiler.Context) (*Contact, error) {
 			k, ok := compiler.StringValue(item.Key)
 			if ok {
 				v := item.Value
-				if compiler.PatternMatches("^x-", k) {
+				if strings.HasPrefix(k, "x-") {
 					pair := &NamedAny{}
 					pair.Name = k
 					result := &Any{}
@@ -528,7 +529,7 @@ func NewDocument(in interface{}, context *compiler.Context) (*Document, error) {
 			errors = append(errors, compiler.NewError(context, message))
 		}
 		allowedKeys := []string{"basePath", "consumes", "definitions", "externalDocs", "host", "info", "parameters", "paths", "produces", "responses", "schemes", "security", "securityDefinitions", "swagger", "tags"}
-		allowedPatterns := []string{"^x-"}
+		allowedPatterns := []*regexp.Regexp{pattern0}
 		invalidKeys := compiler.InvalidKeysInMap(m, allowedKeys, allowedPatterns)
 		if len(invalidKeys) > 0 {
 			message := fmt.Sprintf("has invalid %s: %+v", compiler.PluralProperties(len(invalidKeys)), strings.Join(invalidKeys, ", "))
@@ -708,7 +709,7 @@ func NewDocument(in interface{}, context *compiler.Context) (*Document, error) {
 			k, ok := compiler.StringValue(item.Key)
 			if ok {
 				v := item.Value
-				if compiler.PatternMatches("^x-", k) {
+				if strings.HasPrefix(k, "x-") {
 					pair := &NamedAny{}
 					pair.Name = k
 					result := &Any{}
@@ -794,7 +795,7 @@ func NewExternalDocs(in interface{}, context *compiler.Context) (*ExternalDocs, 
 			errors = append(errors, compiler.NewError(context, message))
 		}
 		allowedKeys := []string{"description", "url"}
-		allowedPatterns := []string{"^x-"}
+		allowedPatterns := []*regexp.Regexp{pattern0}
 		invalidKeys := compiler.InvalidKeysInMap(m, allowedKeys, allowedPatterns)
 		if len(invalidKeys) > 0 {
 			message := fmt.Sprintf("has invalid %s: %+v", compiler.PluralProperties(len(invalidKeys)), strings.Join(invalidKeys, ", "))
@@ -825,7 +826,7 @@ func NewExternalDocs(in interface{}, context *compiler.Context) (*ExternalDocs, 
 			k, ok := compiler.StringValue(item.Key)
 			if ok {
 				v := item.Value
-				if compiler.PatternMatches("^x-", k) {
+				if strings.HasPrefix(k, "x-") {
 					pair := &NamedAny{}
 					pair.Name = k
 					result := &Any{}
@@ -869,7 +870,7 @@ func NewFileSchema(in interface{}, context *compiler.Context) (*FileSchema, erro
 			errors = append(errors, compiler.NewError(context, message))
 		}
 		allowedKeys := []string{"default", "description", "example", "externalDocs", "format", "readOnly", "required", "title", "type"}
-		allowedPatterns := []string{"^x-"}
+		allowedPatterns := []*regexp.Regexp{pattern0}
 		invalidKeys := compiler.InvalidKeysInMap(m, allowedKeys, allowedPatterns)
 		if len(invalidKeys) > 0 {
 			message := fmt.Sprintf("has invalid %s: %+v", compiler.PluralProperties(len(invalidKeys)), strings.Join(invalidKeys, ", "))
@@ -971,7 +972,7 @@ func NewFileSchema(in interface{}, context *compiler.Context) (*FileSchema, erro
 			k, ok := compiler.StringValue(item.Key)
 			if ok {
 				v := item.Value
-				if compiler.PatternMatches("^x-", k) {
+				if strings.HasPrefix(k, "x-") {
 					pair := &NamedAny{}
 					pair.Name = k
 					result := &Any{}
@@ -1009,7 +1010,7 @@ func NewFormDataParameterSubSchema(in interface{}, context *compiler.Context) (*
 		errors = append(errors, compiler.NewError(context, message))
 	} else {
 		allowedKeys := []string{"allowEmptyValue", "collectionFormat", "default", "description", "enum", "exclusiveMaximum", "exclusiveMinimum", "format", "in", "items", "maxItems", "maxLength", "maximum", "minItems", "minLength", "minimum", "multipleOf", "name", "pattern", "required", "type", "uniqueItems"}
-		allowedPatterns := []string{"^x-"}
+		allowedPatterns := []*regexp.Regexp{pattern0}
 		invalidKeys := compiler.InvalidKeysInMap(m, allowedKeys, allowedPatterns)
 		if len(invalidKeys) > 0 {
 			message := fmt.Sprintf("has invalid %s: %+v", compiler.PluralProperties(len(invalidKeys)), strings.Join(invalidKeys, ", "))
@@ -1295,7 +1296,7 @@ func NewFormDataParameterSubSchema(in interface{}, context *compiler.Context) (*
 			k, ok := compiler.StringValue(item.Key)
 			if ok {
 				v := item.Value
-				if compiler.PatternMatches("^x-", k) {
+				if strings.HasPrefix(k, "x-") {
 					pair := &NamedAny{}
 					pair.Name = k
 					result := &Any{}
@@ -1339,7 +1340,7 @@ func NewHeader(in interface{}, context *compiler.Context) (*Header, error) {
 			errors = append(errors, compiler.NewError(context, message))
 		}
 		allowedKeys := []string{"collectionFormat", "default", "description", "enum", "exclusiveMaximum", "exclusiveMinimum", "format", "items", "maxItems", "maxLength", "maximum", "minItems", "minLength", "minimum", "multipleOf", "pattern", "type", "uniqueItems"}
-		allowedPatterns := []string{"^x-"}
+		allowedPatterns := []*regexp.Regexp{pattern0}
 		invalidKeys := compiler.InvalidKeysInMap(m, allowedKeys, allowedPatterns)
 		if len(invalidKeys) > 0 {
 			message := fmt.Sprintf("has invalid %s: %+v", compiler.PluralProperties(len(invalidKeys)), strings.Join(invalidKeys, ", "))
@@ -1583,7 +1584,7 @@ func NewHeader(in interface{}, context *compiler.Context) (*Header, error) {
 			k, ok := compiler.StringValue(item.Key)
 			if ok {
 				v := item.Value
-				if compiler.PatternMatches("^x-", k) {
+				if strings.HasPrefix(k, "x-") {
 					pair := &NamedAny{}
 					pair.Name = k
 					result := &Any{}
@@ -1621,7 +1622,7 @@ func NewHeaderParameterSubSchema(in interface{}, context *compiler.Context) (*He
 		errors = append(errors, compiler.NewError(context, message))
 	} else {
 		allowedKeys := []string{"collectionFormat", "default", "description", "enum", "exclusiveMaximum", "exclusiveMinimum", "format", "in", "items", "maxItems", "maxLength", "maximum", "minItems", "minLength", "minimum", "multipleOf", "name", "pattern", "required", "type", "uniqueItems"}
-		allowedPatterns := []string{"^x-"}
+		allowedPatterns := []*regexp.Regexp{pattern0}
 		invalidKeys := compiler.InvalidKeysInMap(m, allowedKeys, allowedPatterns)
 		if len(invalidKeys) > 0 {
 			message := fmt.Sprintf("has invalid %s: %+v", compiler.PluralProperties(len(invalidKeys)), strings.Join(invalidKeys, ", "))
@@ -1898,7 +1899,7 @@ func NewHeaderParameterSubSchema(in interface{}, context *compiler.Context) (*He
 			k, ok := compiler.StringValue(item.Key)
 			if ok {
 				v := item.Value
-				if compiler.PatternMatches("^x-", k) {
+				if strings.HasPrefix(k, "x-") {
 					pair := &NamedAny{}
 					pair.Name = k
 					result := &Any{}
@@ -1972,7 +1973,7 @@ func NewInfo(in interface{}, context *compiler.Context) (*Info, error) {
 			errors = append(errors, compiler.NewError(context, message))
 		}
 		allowedKeys := []string{"contact", "description", "license", "termsOfService", "title", "version"}
-		allowedPatterns := []string{"^x-"}
+		allowedPatterns := []*regexp.Regexp{pattern0}
 		invalidKeys := compiler.InvalidKeysInMap(m, allowedKeys, allowedPatterns)
 		if len(invalidKeys) > 0 {
 			message := fmt.Sprintf("has invalid %s: %+v", compiler.PluralProperties(len(invalidKeys)), strings.Join(invalidKeys, ", "))
@@ -2039,7 +2040,7 @@ func NewInfo(in interface{}, context *compiler.Context) (*Info, error) {
 			k, ok := compiler.StringValue(item.Key)
 			if ok {
 				v := item.Value
-				if compiler.PatternMatches("^x-", k) {
+				if strings.HasPrefix(k, "x-") {
 					pair := &NamedAny{}
 					pair.Name = k
 					result := &Any{}
@@ -2102,7 +2103,7 @@ func NewJsonReference(in interface{}, context *compiler.Context) (*JsonReference
 			errors = append(errors, compiler.NewError(context, message))
 		}
 		allowedKeys := []string{"$ref", "description"}
-		allowedPatterns := []string{}
+		var allowedPatterns []*regexp.Regexp
 		invalidKeys := compiler.InvalidKeysInMap(m, allowedKeys, allowedPatterns)
 		if len(invalidKeys) > 0 {
 			message := fmt.Sprintf("has invalid %s: %+v", compiler.PluralProperties(len(invalidKeys)), strings.Join(invalidKeys, ", "))
@@ -2146,7 +2147,7 @@ func NewLicense(in interface{}, context *compiler.Context) (*License, error) {
 			errors = append(errors, compiler.NewError(context, message))
 		}
 		allowedKeys := []string{"name", "url"}
-		allowedPatterns := []string{"^x-"}
+		allowedPatterns := []*regexp.Regexp{pattern0}
 		invalidKeys := compiler.InvalidKeysInMap(m, allowedKeys, allowedPatterns)
 		if len(invalidKeys) > 0 {
 			message := fmt.Sprintf("has invalid %s: %+v", compiler.PluralProperties(len(invalidKeys)), strings.Join(invalidKeys, ", "))
@@ -2177,7 +2178,7 @@ func NewLicense(in interface{}, context *compiler.Context) (*License, error) {
 			k, ok := compiler.StringValue(item.Key)
 			if ok {
 				v := item.Value
-				if compiler.PatternMatches("^x-", k) {
+				if strings.HasPrefix(k, "x-") {
 					pair := &NamedAny{}
 					pair.Name = k
 					result := &Any{}
@@ -2215,7 +2216,7 @@ func NewNamedAny(in interface{}, context *compiler.Context) (*NamedAny, error) {
 		errors = append(errors, compiler.NewError(context, message))
 	} else {
 		allowedKeys := []string{"name", "value"}
-		allowedPatterns := []string{}
+		var allowedPatterns []*regexp.Regexp
 		invalidKeys := compiler.InvalidKeysInMap(m, allowedKeys, allowedPatterns)
 		if len(invalidKeys) > 0 {
 			message := fmt.Sprintf("has invalid %s: %+v", compiler.PluralProperties(len(invalidKeys)), strings.Join(invalidKeys, ", "))
@@ -2253,7 +2254,7 @@ func NewNamedHeader(in interface{}, context *compiler.Context) (*NamedHeader, er
 		errors = append(errors, compiler.NewError(context, message))
 	} else {
 		allowedKeys := []string{"name", "value"}
-		allowedPatterns := []string{}
+		var allowedPatterns []*regexp.Regexp
 		invalidKeys := compiler.InvalidKeysInMap(m, allowedKeys, allowedPatterns)
 		if len(invalidKeys) > 0 {
 			message := fmt.Sprintf("has invalid %s: %+v", compiler.PluralProperties(len(invalidKeys)), strings.Join(invalidKeys, ", "))
@@ -2291,7 +2292,7 @@ func NewNamedParameter(in interface{}, context *compiler.Context) (*NamedParamet
 		errors = append(errors, compiler.NewError(context, message))
 	} else {
 		allowedKeys := []string{"name", "value"}
-		allowedPatterns := []string{}
+		var allowedPatterns []*regexp.Regexp
 		invalidKeys := compiler.InvalidKeysInMap(m, allowedKeys, allowedPatterns)
 		if len(invalidKeys) > 0 {
 			message := fmt.Sprintf("has invalid %s: %+v", compiler.PluralProperties(len(invalidKeys)), strings.Join(invalidKeys, ", "))
@@ -2329,7 +2330,7 @@ func NewNamedPathItem(in interface{}, context *compiler.Context) (*NamedPathItem
 		errors = append(errors, compiler.NewError(context, message))
 	} else {
 		allowedKeys := []string{"name", "value"}
-		allowedPatterns := []string{}
+		var allowedPatterns []*regexp.Regexp
 		invalidKeys := compiler.InvalidKeysInMap(m, allowedKeys, allowedPatterns)
 		if len(invalidKeys) > 0 {
 			message := fmt.Sprintf("has invalid %s: %+v", compiler.PluralProperties(len(invalidKeys)), strings.Join(invalidKeys, ", "))
@@ -2367,7 +2368,7 @@ func NewNamedResponse(in interface{}, context *compiler.Context) (*NamedResponse
 		errors = append(errors, compiler.NewError(context, message))
 	} else {
 		allowedKeys := []string{"name", "value"}
-		allowedPatterns := []string{}
+		var allowedPatterns []*regexp.Regexp
 		invalidKeys := compiler.InvalidKeysInMap(m, allowedKeys, allowedPatterns)
 		if len(invalidKeys) > 0 {
 			message := fmt.Sprintf("has invalid %s: %+v", compiler.PluralProperties(len(invalidKeys)), strings.Join(invalidKeys, ", "))
@@ -2405,7 +2406,7 @@ func NewNamedResponseValue(in interface{}, context *compiler.Context) (*NamedRes
 		errors = append(errors, compiler.NewError(context, message))
 	} else {
 		allowedKeys := []string{"name", "value"}
-		allowedPatterns := []string{}
+		var allowedPatterns []*regexp.Regexp
 		invalidKeys := compiler.InvalidKeysInMap(m, allowedKeys, allowedPatterns)
 		if len(invalidKeys) > 0 {
 			message := fmt.Sprintf("has invalid %s: %+v", compiler.PluralProperties(len(invalidKeys)), strings.Join(invalidKeys, ", "))
@@ -2443,7 +2444,7 @@ func NewNamedSchema(in interface{}, context *compiler.Context) (*NamedSchema, er
 		errors = append(errors, compiler.NewError(context, message))
 	} else {
 		allowedKeys := []string{"name", "value"}
-		allowedPatterns := []string{}
+		var allowedPatterns []*regexp.Regexp
 		invalidKeys := compiler.InvalidKeysInMap(m, allowedKeys, allowedPatterns)
 		if len(invalidKeys) > 0 {
 			message := fmt.Sprintf("has invalid %s: %+v", compiler.PluralProperties(len(invalidKeys)), strings.Join(invalidKeys, ", "))
@@ -2481,7 +2482,7 @@ func NewNamedSecurityDefinitionsItem(in interface{}, context *compiler.Context) 
 		errors = append(errors, compiler.NewError(context, message))
 	} else {
 		allowedKeys := []string{"name", "value"}
-		allowedPatterns := []string{}
+		var allowedPatterns []*regexp.Regexp
 		invalidKeys := compiler.InvalidKeysInMap(m, allowedKeys, allowedPatterns)
 		if len(invalidKeys) > 0 {
 			message := fmt.Sprintf("has invalid %s: %+v", compiler.PluralProperties(len(invalidKeys)), strings.Join(invalidKeys, ", "))
@@ -2519,7 +2520,7 @@ func NewNamedString(in interface{}, context *compiler.Context) (*NamedString, er
 		errors = append(errors, compiler.NewError(context, message))
 	} else {
 		allowedKeys := []string{"name", "value"}
-		allowedPatterns := []string{}
+		var allowedPatterns []*regexp.Regexp
 		invalidKeys := compiler.InvalidKeysInMap(m, allowedKeys, allowedPatterns)
 		if len(invalidKeys) > 0 {
 			message := fmt.Sprintf("has invalid %s: %+v", compiler.PluralProperties(len(invalidKeys)), strings.Join(invalidKeys, ", "))
@@ -2557,7 +2558,7 @@ func NewNamedStringArray(in interface{}, context *compiler.Context) (*NamedStrin
 		errors = append(errors, compiler.NewError(context, message))
 	} else {
 		allowedKeys := []string{"name", "value"}
-		allowedPatterns := []string{}
+		var allowedPatterns []*regexp.Regexp
 		invalidKeys := compiler.InvalidKeysInMap(m, allowedKeys, allowedPatterns)
 		if len(invalidKeys) > 0 {
 			message := fmt.Sprintf("has invalid %s: %+v", compiler.PluralProperties(len(invalidKeys)), strings.Join(invalidKeys, ", "))
@@ -2669,7 +2670,7 @@ func NewOauth2AccessCodeSecurity(in interface{}, context *compiler.Context) (*Oa
 			errors = append(errors, compiler.NewError(context, message))
 		}
 		allowedKeys := []string{"authorizationUrl", "description", "flow", "scopes", "tokenUrl", "type"}
-		allowedPatterns := []string{"^x-"}
+		allowedPatterns := []*regexp.Regexp{pattern0}
 		invalidKeys := compiler.InvalidKeysInMap(m, allowedKeys, allowedPatterns)
 		if len(invalidKeys) > 0 {
 			message := fmt.Sprintf("has invalid %s: %+v", compiler.PluralProperties(len(invalidKeys)), strings.Join(invalidKeys, ", "))
@@ -2748,7 +2749,7 @@ func NewOauth2AccessCodeSecurity(in interface{}, context *compiler.Context) (*Oa
 			k, ok := compiler.StringValue(item.Key)
 			if ok {
 				v := item.Value
-				if compiler.PatternMatches("^x-", k) {
+				if strings.HasPrefix(k, "x-") {
 					pair := &NamedAny{}
 					pair.Name = k
 					result := &Any{}
@@ -2792,7 +2793,7 @@ func NewOauth2ApplicationSecurity(in interface{}, context *compiler.Context) (*O
 			errors = append(errors, compiler.NewError(context, message))
 		}
 		allowedKeys := []string{"description", "flow", "scopes", "tokenUrl", "type"}
-		allowedPatterns := []string{"^x-"}
+		allowedPatterns := []*regexp.Regexp{pattern0}
 		invalidKeys := compiler.InvalidKeysInMap(m, allowedKeys, allowedPatterns)
 		if len(invalidKeys) > 0 {
 			message := fmt.Sprintf("has invalid %s: %+v", compiler.PluralProperties(len(invalidKeys)), strings.Join(invalidKeys, ", "))
@@ -2862,7 +2863,7 @@ func NewOauth2ApplicationSecurity(in interface{}, context *compiler.Context) (*O
 			k, ok := compiler.StringValue(item.Key)
 			if ok {
 				v := item.Value
-				if compiler.PatternMatches("^x-", k) {
+				if strings.HasPrefix(k, "x-") {
 					pair := &NamedAny{}
 					pair.Name = k
 					result := &Any{}
@@ -2906,7 +2907,7 @@ func NewOauth2ImplicitSecurity(in interface{}, context *compiler.Context) (*Oaut
 			errors = append(errors, compiler.NewError(context, message))
 		}
 		allowedKeys := []string{"authorizationUrl", "description", "flow", "scopes", "type"}
-		allowedPatterns := []string{"^x-"}
+		allowedPatterns := []*regexp.Regexp{pattern0}
 		invalidKeys := compiler.InvalidKeysInMap(m, allowedKeys, allowedPatterns)
 		if len(invalidKeys) > 0 {
 			message := fmt.Sprintf("has invalid %s: %+v", compiler.PluralProperties(len(invalidKeys)), strings.Join(invalidKeys, ", "))
@@ -2976,7 +2977,7 @@ func NewOauth2ImplicitSecurity(in interface{}, context *compiler.Context) (*Oaut
 			k, ok := compiler.StringValue(item.Key)
 			if ok {
 				v := item.Value
-				if compiler.PatternMatches("^x-", k) {
+				if strings.HasPrefix(k, "x-") {
 					pair := &NamedAny{}
 					pair.Name = k
 					result := &Any{}
@@ -3020,7 +3021,7 @@ func NewOauth2PasswordSecurity(in interface{}, context *compiler.Context) (*Oaut
 			errors = append(errors, compiler.NewError(context, message))
 		}
 		allowedKeys := []string{"description", "flow", "scopes", "tokenUrl", "type"}
-		allowedPatterns := []string{"^x-"}
+		allowedPatterns := []*regexp.Regexp{pattern0}
 		invalidKeys := compiler.InvalidKeysInMap(m, allowedKeys, allowedPatterns)
 		if len(invalidKeys) > 0 {
 			message := fmt.Sprintf("has invalid %s: %+v", compiler.PluralProperties(len(invalidKeys)), strings.Join(invalidKeys, ", "))
@@ -3090,7 +3091,7 @@ func NewOauth2PasswordSecurity(in interface{}, context *compiler.Context) (*Oaut
 			k, ok := compiler.StringValue(item.Key)
 			if ok {
 				v := item.Value
-				if compiler.PatternMatches("^x-", k) {
+				if strings.HasPrefix(k, "x-") {
 					pair := &NamedAny{}
 					pair.Name = k
 					result := &Any{}
@@ -3160,7 +3161,7 @@ func NewOperation(in interface{}, context *compiler.Context) (*Operation, error)
 			errors = append(errors, compiler.NewError(context, message))
 		}
 		allowedKeys := []string{"consumes", "deprecated", "description", "externalDocs", "operationId", "parameters", "produces", "responses", "schemes", "security", "summary", "tags"}
-		allowedPatterns := []string{"^x-"}
+		allowedPatterns := []*regexp.Regexp{pattern0}
 		invalidKeys := compiler.InvalidKeysInMap(m, allowedKeys, allowedPatterns)
 		if len(invalidKeys) > 0 {
 			message := fmt.Sprintf("has invalid %s: %+v", compiler.PluralProperties(len(invalidKeys)), strings.Join(invalidKeys, ", "))
@@ -3309,7 +3310,7 @@ func NewOperation(in interface{}, context *compiler.Context) (*Operation, error)
 			k, ok := compiler.StringValue(item.Key)
 			if ok {
 				v := item.Value
-				if compiler.PatternMatches("^x-", k) {
+				if strings.HasPrefix(k, "x-") {
 					pair := &NamedAny{}
 					pair.Name = k
 					result := &Any{}
@@ -3457,7 +3458,7 @@ func NewPathItem(in interface{}, context *compiler.Context) (*PathItem, error) {
 		errors = append(errors, compiler.NewError(context, message))
 	} else {
 		allowedKeys := []string{"$ref", "delete", "get", "head", "options", "parameters", "patch", "post", "put"}
-		allowedPatterns := []string{"^x-"}
+		allowedPatterns := []*regexp.Regexp{pattern0}
 		invalidKeys := compiler.InvalidKeysInMap(m, allowedKeys, allowedPatterns)
 		if len(invalidKeys) > 0 {
 			message := fmt.Sprintf("has invalid %s: %+v", compiler.PluralProperties(len(invalidKeys)), strings.Join(invalidKeys, ", "))
@@ -3558,7 +3559,7 @@ func NewPathItem(in interface{}, context *compiler.Context) (*PathItem, error) {
 			k, ok := compiler.StringValue(item.Key)
 			if ok {
 				v := item.Value
-				if compiler.PatternMatches("^x-", k) {
+				if strings.HasPrefix(k, "x-") {
 					pair := &NamedAny{}
 					pair.Name = k
 					result := &Any{}
@@ -3602,7 +3603,7 @@ func NewPathParameterSubSchema(in interface{}, context *compiler.Context) (*Path
 			errors = append(errors, compiler.NewError(context, message))
 		}
 		allowedKeys := []string{"collectionFormat", "default", "description", "enum", "exclusiveMaximum", "exclusiveMinimum", "format", "in", "items", "maxItems", "maxLength", "maximum", "minItems", "minLength", "minimum", "multipleOf", "name", "pattern", "required", "type", "uniqueItems"}
-		allowedPatterns := []string{"^x-"}
+		allowedPatterns := []*regexp.Regexp{pattern0}
 		invalidKeys := compiler.InvalidKeysInMap(m, allowedKeys, allowedPatterns)
 		if len(invalidKeys) > 0 {
 			message := fmt.Sprintf("has invalid %s: %+v", compiler.PluralProperties(len(invalidKeys)), strings.Join(invalidKeys, ", "))
@@ -3879,7 +3880,7 @@ func NewPathParameterSubSchema(in interface{}, context *compiler.Context) (*Path
 			k, ok := compiler.StringValue(item.Key)
 			if ok {
 				v := item.Value
-				if compiler.PatternMatches("^x-", k) {
+				if strings.HasPrefix(k, "x-") {
 					pair := &NamedAny{}
 					pair.Name = k
 					result := &Any{}
@@ -3917,7 +3918,7 @@ func NewPaths(in interface{}, context *compiler.Context) (*Paths, error) {
 		errors = append(errors, compiler.NewError(context, message))
 	} else {
 		allowedKeys := []string{}
-		allowedPatterns := []string{"^x-", "^/"}
+		allowedPatterns := []*regexp.Regexp{pattern0, pattern1}
 		invalidKeys := compiler.InvalidKeysInMap(m, allowedKeys, allowedPatterns)
 		if len(invalidKeys) > 0 {
 			message := fmt.Sprintf("has invalid %s: %+v", compiler.PluralProperties(len(invalidKeys)), strings.Join(invalidKeys, ", "))
@@ -3930,7 +3931,7 @@ func NewPaths(in interface{}, context *compiler.Context) (*Paths, error) {
 			k, ok := compiler.StringValue(item.Key)
 			if ok {
 				v := item.Value
-				if compiler.PatternMatches("^x-", k) {
+				if strings.HasPrefix(k, "x-") {
 					pair := &NamedAny{}
 					pair.Name = k
 					result := &Any{}
@@ -3961,7 +3962,7 @@ func NewPaths(in interface{}, context *compiler.Context) (*Paths, error) {
 			k, ok := compiler.StringValue(item.Key)
 			if ok {
 				v := item.Value
-				if compiler.PatternMatches("^/", k) {
+				if strings.HasPrefix(k, "/") {
 					pair := &NamedPathItem{}
 					pair.Name = k
 					var err error
@@ -3987,7 +3988,7 @@ func NewPrimitivesItems(in interface{}, context *compiler.Context) (*PrimitivesI
 		errors = append(errors, compiler.NewError(context, message))
 	} else {
 		allowedKeys := []string{"collectionFormat", "default", "enum", "exclusiveMaximum", "exclusiveMinimum", "format", "items", "maxItems", "maxLength", "maximum", "minItems", "minLength", "minimum", "multipleOf", "pattern", "type", "uniqueItems"}
-		allowedPatterns := []string{"^x-"}
+		allowedPatterns := []*regexp.Regexp{pattern0}
 		invalidKeys := compiler.InvalidKeysInMap(m, allowedKeys, allowedPatterns)
 		if len(invalidKeys) > 0 {
 			message := fmt.Sprintf("has invalid %s: %+v", compiler.PluralProperties(len(invalidKeys)), strings.Join(invalidKeys, ", "))
@@ -4222,7 +4223,7 @@ func NewPrimitivesItems(in interface{}, context *compiler.Context) (*PrimitivesI
 			k, ok := compiler.StringValue(item.Key)
 			if ok {
 				v := item.Value
-				if compiler.PatternMatches("^x-", k) {
+				if strings.HasPrefix(k, "x-") {
 					pair := &NamedAny{}
 					pair.Name = k
 					result := &Any{}
@@ -4290,7 +4291,7 @@ func NewQueryParameterSubSchema(in interface{}, context *compiler.Context) (*Que
 		errors = append(errors, compiler.NewError(context, message))
 	} else {
 		allowedKeys := []string{"allowEmptyValue", "collectionFormat", "default", "description", "enum", "exclusiveMaximum", "exclusiveMinimum", "format", "in", "items", "maxItems", "maxLength", "maximum", "minItems", "minLength", "minimum", "multipleOf", "name", "pattern", "required", "type", "uniqueItems"}
-		allowedPatterns := []string{"^x-"}
+		allowedPatterns := []*regexp.Regexp{pattern0}
 		invalidKeys := compiler.InvalidKeysInMap(m, allowedKeys, allowedPatterns)
 		if len(invalidKeys) > 0 {
 			message := fmt.Sprintf("has invalid %s: %+v", compiler.PluralProperties(len(invalidKeys)), strings.Join(invalidKeys, ", "))
@@ -4576,7 +4577,7 @@ func NewQueryParameterSubSchema(in interface{}, context *compiler.Context) (*Que
 			k, ok := compiler.StringValue(item.Key)
 			if ok {
 				v := item.Value
-				if compiler.PatternMatches("^x-", k) {
+				if strings.HasPrefix(k, "x-") {
 					pair := &NamedAny{}
 					pair.Name = k
 					result := &Any{}
@@ -4620,7 +4621,7 @@ func NewResponse(in interface{}, context *compiler.Context) (*Response, error) {
 			errors = append(errors, compiler.NewError(context, message))
 		}
 		allowedKeys := []string{"description", "examples", "headers", "schema"}
-		allowedPatterns := []string{"^x-"}
+		allowedPatterns := []*regexp.Regexp{pattern0}
 		invalidKeys := compiler.InvalidKeysInMap(m, allowedKeys, allowedPatterns)
 		if len(invalidKeys) > 0 {
 			message := fmt.Sprintf("has invalid %s: %+v", compiler.PluralProperties(len(invalidKeys)), strings.Join(invalidKeys, ", "))
@@ -4669,7 +4670,7 @@ func NewResponse(in interface{}, context *compiler.Context) (*Response, error) {
 			k, ok := compiler.StringValue(item.Key)
 			if ok {
 				v := item.Value
-				if compiler.PatternMatches("^x-", k) {
+				if strings.HasPrefix(k, "x-") {
 					pair := &NamedAny{}
 					pair.Name = k
 					result := &Any{}
@@ -4777,7 +4778,7 @@ func NewResponses(in interface{}, context *compiler.Context) (*Responses, error)
 		errors = append(errors, compiler.NewError(context, message))
 	} else {
 		allowedKeys := []string{}
-		allowedPatterns := []string{"^([0-9]{3})$|^(default)$", "^x-"}
+		allowedPatterns := []*regexp.Regexp{pattern2, pattern0}
 		invalidKeys := compiler.InvalidKeysInMap(m, allowedKeys, allowedPatterns)
 		if len(invalidKeys) > 0 {
 			message := fmt.Sprintf("has invalid %s: %+v", compiler.PluralProperties(len(invalidKeys)), strings.Join(invalidKeys, ", "))
@@ -4790,7 +4791,7 @@ func NewResponses(in interface{}, context *compiler.Context) (*Responses, error)
 			k, ok := compiler.StringValue(item.Key)
 			if ok {
 				v := item.Value
-				if compiler.PatternMatches("^([0-9]{3})$|^(default)$", k) {
+				if pattern2.MatchString(k) {
 					pair := &NamedResponseValue{}
 					pair.Name = k
 					var err error
@@ -4809,7 +4810,7 @@ func NewResponses(in interface{}, context *compiler.Context) (*Responses, error)
 			k, ok := compiler.StringValue(item.Key)
 			if ok {
 				v := item.Value
-				if compiler.PatternMatches("^x-", k) {
+				if strings.HasPrefix(k, "x-") {
 					pair := &NamedAny{}
 					pair.Name = k
 					result := &Any{}
@@ -4847,7 +4848,7 @@ func NewSchema(in interface{}, context *compiler.Context) (*Schema, error) {
 		errors = append(errors, compiler.NewError(context, message))
 	} else {
 		allowedKeys := []string{"$ref", "additionalProperties", "allOf", "default", "description", "discriminator", "enum", "example", "exclusiveMaximum", "exclusiveMinimum", "externalDocs", "format", "items", "maxItems", "maxLength", "maxProperties", "maximum", "minItems", "minLength", "minProperties", "minimum", "multipleOf", "pattern", "properties", "readOnly", "required", "title", "type", "uniqueItems", "xml"}
-		allowedPatterns := []string{"^x-"}
+		allowedPatterns := []*regexp.Regexp{pattern0}
 		invalidKeys := compiler.InvalidKeysInMap(m, allowedKeys, allowedPatterns)
 		if len(invalidKeys) > 0 {
 			message := fmt.Sprintf("has invalid %s: %+v", compiler.PluralProperties(len(invalidKeys)), strings.Join(invalidKeys, ", "))
@@ -5200,7 +5201,7 @@ func NewSchema(in interface{}, context *compiler.Context) (*Schema, error) {
 			k, ok := compiler.StringValue(item.Key)
 			if ok {
 				v := item.Value
-				if compiler.PatternMatches("^x-", k) {
+				if strings.HasPrefix(k, "x-") {
 					pair := &NamedAny{}
 					pair.Name = k
 					result := &Any{}
@@ -5457,7 +5458,7 @@ func NewTag(in interface{}, context *compiler.Context) (*Tag, error) {
 			errors = append(errors, compiler.NewError(context, message))
 		}
 		allowedKeys := []string{"description", "externalDocs", "name"}
-		allowedPatterns := []string{"^x-"}
+		allowedPatterns := []*regexp.Regexp{pattern0}
 		invalidKeys := compiler.InvalidKeysInMap(m, allowedKeys, allowedPatterns)
 		if len(invalidKeys) > 0 {
 			message := fmt.Sprintf("has invalid %s: %+v", compiler.PluralProperties(len(invalidKeys)), strings.Join(invalidKeys, ", "))
@@ -5497,7 +5498,7 @@ func NewTag(in interface{}, context *compiler.Context) (*Tag, error) {
 			k, ok := compiler.StringValue(item.Key)
 			if ok {
 				v := item.Value
-				if compiler.PatternMatches("^x-", k) {
+				if strings.HasPrefix(k, "x-") {
 					pair := &NamedAny{}
 					pair.Name = k
 					result := &Any{}
@@ -5603,7 +5604,7 @@ func NewXml(in interface{}, context *compiler.Context) (*Xml, error) {
 		errors = append(errors, compiler.NewError(context, message))
 	} else {
 		allowedKeys := []string{"attribute", "name", "namespace", "prefix", "wrapped"}
-		allowedPatterns := []string{"^x-"}
+		allowedPatterns := []*regexp.Regexp{pattern0}
 		invalidKeys := compiler.InvalidKeysInMap(m, allowedKeys, allowedPatterns)
 		if len(invalidKeys) > 0 {
 			message := fmt.Sprintf("has invalid %s: %+v", compiler.PluralProperties(len(invalidKeys)), strings.Join(invalidKeys, ", "))
@@ -5661,7 +5662,7 @@ func NewXml(in interface{}, context *compiler.Context) (*Xml, error) {
 			k, ok := compiler.StringValue(item.Key)
 			if ok {
 				v := item.Value
-				if compiler.PatternMatches("^x-", k) {
+				if strings.HasPrefix(k, "x-") {
 					pair := &NamedAny{}
 					pair.Name = k
 					result := &Any{}
@@ -8719,3 +8720,9 @@ func (m *Xml) ToRawInfo() interface{} {
 	// &{Name:VendorExtension Type:NamedAny StringEnumValues:[] MapType:Any Repeated:true Pattern:^x- Implicit:true Description:}
 	return info
 }
+
+var (
+	pattern0 = regexp.MustCompile("^x-")
+	pattern1 = regexp.MustCompile("^/")
+	pattern2 = regexp.MustCompile("^([0-9]{3})$|^(default)$")
+)

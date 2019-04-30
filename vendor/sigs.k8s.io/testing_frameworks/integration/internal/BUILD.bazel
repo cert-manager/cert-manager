@@ -1,0 +1,35 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "apiserver.go",
+        "arguments.go",
+        "bin_path_finder.go",
+        "etcd.go",
+        "process.go",
+    ],
+    importmap = "github.com/jetstack/cert-manager/vendor/sigs.k8s.io/testing_frameworks/integration/internal",
+    importpath = "sigs.k8s.io/testing_frameworks/integration/internal",
+    tags = ["manual"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//vendor/github.com/onsi/gomega/gbytes:go_default_library",
+        "//vendor/github.com/onsi/gomega/gexec:go_default_library",
+        "//vendor/sigs.k8s.io/testing_frameworks/integration/addr:go_default_library",
+    ],
+)
+
+filegroup(
+    name = "package-srcs",
+    srcs = glob(["**"]),
+    tags = ["automanaged"],
+    visibility = ["//visibility:private"],
+)
+
+filegroup(
+    name = "all-srcs",
+    srcs = [":package-srcs"],
+    tags = ["automanaged"],
+    visibility = ["//visibility:public"],
+)

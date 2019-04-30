@@ -180,11 +180,6 @@ func (c *Controller) processNextWorkItem() bool {
 	}()
 
 	obj, shutdown := c.Queue.Get()
-	if obj == nil {
-		// Sometimes the Queue gives us nil items when it starts up
-		c.Queue.Forget(obj)
-	}
-
 	if shutdown {
 		// Stop working
 		return false

@@ -13,6 +13,7 @@ go_library(
         "toleration.go",
         "types.go",
         "types_swagger_doc_generated.go",
+        "well_known_labels.go",
         "zz_generated.deepcopy.go",
     ],
     importmap = "github.com/jetstack/cert-manager/vendor/k8s.io/api/core/v1",

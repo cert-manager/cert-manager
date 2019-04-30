@@ -6,6 +6,7 @@ go_library(
     importpath = "github.com/jetstack/cert-manager/pkg/api",
     visibility = ["//visibility:public"],
     deps = [
+        "//pkg/acme/webhook/apis/acme/v1alpha1:go_default_library",
         "//pkg/apis/certmanager/v1alpha1:go_default_library",
         "//vendor/k8s.io/apimachinery/pkg/apis/meta/v1:go_default_library",
         "//vendor/k8s.io/apimachinery/pkg/runtime:go_default_library",
@@ -13,7 +14,7 @@ go_library(
         "//vendor/k8s.io/apimachinery/pkg/runtime/serializer:go_default_library",
         "//vendor/k8s.io/apimachinery/pkg/util/runtime:go_default_library",
         "//vendor/k8s.io/client-go/kubernetes/scheme:go_default_library",
-        "//vendor/k8s.io/kube-aggregator/pkg/apis/apiregistration/v1:go_default_library",
+        "//vendor/k8s.io/kube-aggregator/pkg/apis/apiregistration/v1beta1:go_default_library",
     ],
 )
 

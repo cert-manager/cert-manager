@@ -55,6 +55,7 @@ filegroup(
         "//vendor/sigs.k8s.io/controller-runtime/pkg/runtime/inject:all-srcs",
         "//vendor/sigs.k8s.io/controller-runtime/pkg/scheme:all-srcs",
         "//vendor/sigs.k8s.io/controller-runtime/pkg/source:all-srcs",
+        "//vendor/sigs.k8s.io/controller-runtime/pkg/webhook:all-srcs",
     ],
     tags = ["automanaged"],
     visibility = ["//visibility:public"],

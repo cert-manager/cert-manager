@@ -17,7 +17,9 @@ DOCKER_REPO :=
 APP_VERSION := canary
 HACK_DIR ?= hack
 
+SKIP_GLOBALS := false
 GINKGO_SKIP :=
+GINKGO_FOCUS :=
 
 ## e2e test vars
 KUBECTL ?= kubectl
@@ -83,8 +85,8 @@ verify_unit:
 		)
 
 verify_deps:
-	bazel test \
-		//hack:verify-deps
+	./hack/verify-vendor.sh
+	./hack/verify-vendor-licenses.sh
 
 verify_codegen:
 	bazel test \
@@ -118,6 +120,8 @@ e2e_test:
 			--repo-root="$$(pwd)" \
 			--report-dir="$${ARTIFACTS:-./_artifacts}" \
 			--ginkgo.skip="$(GINKGO_SKIP)" \
+			--ginkgo.focus="$(GINKGO_FOCUS)" \
+			--skip-globals=$(SKIP_GLOBALS) \
 			--kubectl-path="$(KUBECTL)"
 
 # Generate targets
@@ -129,7 +133,8 @@ generate:
 	bazel run //hack:update-codegen
 	bazel run //hack:update-deploy-gen
 	bazel run //hack:update-reference-docs
-	bazel run //hack:update-deps
+	./hack/update-vendor.sh
+	./hack/update-vendor-licenses.sh
 
 # Docker targets
 ################

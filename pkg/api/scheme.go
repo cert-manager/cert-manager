@@ -23,8 +23,9 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	kscheme "k8s.io/client-go/kubernetes/scheme"
-	apiregv1 "k8s.io/kube-aggregator/pkg/apis/apiregistration/v1"
+	apireg "k8s.io/kube-aggregator/pkg/apis/apiregistration/v1beta1"
 
+	whapi "github.com/jetstack/cert-manager/pkg/acme/webhook/apis/acme/v1alpha1"
 	certmanagerv1alpha1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 )
 
@@ -33,8 +34,9 @@ var Codecs = serializer.NewCodecFactory(Scheme)
 var ParameterCodec = runtime.NewParameterCodec(Scheme)
 var localSchemeBuilder = runtime.SchemeBuilder{
 	certmanagerv1alpha1.AddToScheme,
+	whapi.AddToScheme,
 	kscheme.AddToScheme,
-	apiregv1.AddToScheme,
+	apireg.AddToScheme,
 }
 
 // AddToScheme adds all types of this clientset into the given scheme. This allows composition

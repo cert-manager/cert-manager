@@ -8,7 +8,7 @@ import (
 	"k8s.io/klog"
 
 	genericapiserver "k8s.io/apiserver/pkg/server"
-	"k8s.io/apiserver/pkg/util/logs"
+	"k8s.io/component-base/logs"
 
 	"github.com/openshift/generic-admission-server/pkg/apiserver"
 	"github.com/openshift/generic-admission-server/pkg/cmd/server"

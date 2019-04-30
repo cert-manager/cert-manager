@@ -152,6 +152,17 @@ func (f *Framework) AfterEach() {
 
 	f.printAddonLogs()
 
+	if !f.Config.Cleanup {
+		return
+	}
+
+	for i := len(f.requiredAddons) - 1; i >= 0; i-- {
+		a := f.requiredAddons[i]
+		By("De-provisioning test-scoped addon")
+		err := a.Deprovision()
+		Expect(err).NotTo(HaveOccurred())
+	}
+
 	By("Deleting test namespace")
 	err := f.DeleteKubeNamespace(f.Namespace.Name)
 	Expect(err).NotTo(HaveOccurred())
@@ -207,14 +218,6 @@ func (f *Framework) RequireAddon(a addon.Addon) {
 		Expect(err).NotTo(HaveOccurred())
 
 		err = a.Provision()
-		Expect(err).NotTo(HaveOccurred())
-	})
-
-	AfterEach(func() {
-		if !f.Config.Cleanup {
-			return
-		}
-		err := a.Deprovision()
 		Expect(err).NotTo(HaveOccurred())
 	})
 }

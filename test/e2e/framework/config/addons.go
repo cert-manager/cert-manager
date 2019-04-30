@@ -40,6 +40,10 @@ type Addons struct {
 	// Venafi describes global configuration variables for the Venafi tests.
 	// This includes credentials for the Venafi TPP server to use during runs.
 	Venafi Venafi
+
+	// If true, global addons will not be provisioned before running tests.
+	// This is useful when developing locally.
+	SkipGlobals bool
 }
 
 func (a *Addons) AddFlags(fs *flag.FlagSet) {
@@ -48,6 +52,9 @@ func (a *Addons) AddFlags(fs *flag.FlagSet) {
 	a.Pebble.AddFlags(fs)
 	a.Nginx.AddFlags(fs)
 	a.Venafi.AddFlags(fs)
+
+	fs.BoolVar(&a.SkipGlobals, "skip-globals", false, "If true, global addons will not be "+
+		"provisioned before running tests")
 }
 
 func (c *Addons) Validate() []error {
