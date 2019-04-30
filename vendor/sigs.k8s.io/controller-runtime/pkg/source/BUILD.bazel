@@ -13,7 +13,6 @@ go_library(
     deps = [
         "//vendor/k8s.io/apimachinery/pkg/api/meta:go_default_library",
         "//vendor/k8s.io/apimachinery/pkg/runtime:go_default_library",
-        "//vendor/k8s.io/client-go/tools/cache:go_default_library",
         "//vendor/k8s.io/client-go/util/workqueue:go_default_library",
         "//vendor/sigs.k8s.io/controller-runtime/pkg/cache:go_default_library",
         "//vendor/sigs.k8s.io/controller-runtime/pkg/event:go_default_library",

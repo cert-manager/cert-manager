@@ -28,7 +28,7 @@ type Interface func(workers int, stopCh <-chan struct{}) error
 
 // Constructor is a function that creates a new control loop given a
 // controller Context.
-type Constructor func(ctx *Context) Interface
+type Constructor func(ctx *Context) (Interface, error)
 
 var (
 	known = make(map[string]Constructor, 0)

@@ -56,7 +56,7 @@ func Run(opts *options.ControllerOptions, stopCh <-chan struct{}) {
 	rootCtx = logf.NewContext(rootCtx, nil, "controller")
 	log := logf.FromContext(rootCtx)
 
-	ctx, kubeCfg, err := buildControllerContext(rootCtx, opts)
+	ctx, kubeCfg, err := buildControllerContext(rootCtx, stopCh, opts)
 
 	if err != nil {
 		log.Error(err, "error building controller context", "options", opts)
@@ -88,6 +88,11 @@ func Run(opts *options.ControllerOptions, stopCh <-chan struct{}) {
 			}
 
 			wg.Add(1)
+			iface, err := fn(ctx)
+			if err != nil {
+				log.Error(err, "error starting controller")
+				os.Exit(1)
+			}
 			go func(n string, fn controller.Interface) {
 				defer wg.Done()
 				log.Info("starting controller")
@@ -99,7 +104,7 @@ func Run(opts *options.ControllerOptions, stopCh <-chan struct{}) {
 					log.Error(err, "error starting controller")
 					os.Exit(1)
 				}
-			}(n, fn(ctx))
+			}(n, iface)
 		}
 
 		log.V(4).Info("starting shared informer factories")
@@ -126,9 +131,8 @@ func Run(opts *options.ControllerOptions, stopCh <-chan struct{}) {
 	panic("unreachable")
 }
 
-func buildControllerContext(ctx context.Context, opts *options.ControllerOptions) (*controller.Context, *rest.Config, error) {
+func buildControllerContext(ctx context.Context, stopCh <-chan struct{}, opts *options.ControllerOptions) (*controller.Context, *rest.Config, error) {
 	log := logf.FromContext(ctx, "build-context")
-
 	// Load the users Kubernetes config
 	kubeCfg, err := kube.KubeConfig(opts.APIServerHost)
 	if err != nil {
@@ -187,6 +191,8 @@ func buildControllerContext(ctx context.Context, opts *options.ControllerOptions
 	kubeSharedInformerFactory := kubeinformers.NewFilteredSharedInformerFactory(cl, time.Second*30, opts.Namespace, nil)
 	return &controller.Context{
 		RootContext:               ctx,
+		StopCh:                    stopCh,
+		RESTConfig:                kubeCfg,
 		Client:                    cl,
 		CMClient:                  intcl,
 		Recorder:                  recorder,

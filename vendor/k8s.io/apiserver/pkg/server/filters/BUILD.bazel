@@ -4,6 +4,7 @@ go_library(
     name = "go_default_library",
     srcs = [
         "compression.go",
+        "content_type.go",
         "cors.go",
         "doc.go",
         "longrunning.go",

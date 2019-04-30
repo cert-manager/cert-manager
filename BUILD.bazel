@@ -2,6 +2,9 @@ load("@io_bazel_rules_docker//container:container.bzl", "container_bundle")
 load("@io_bazel_rules_docker//contrib:push-all.bzl", "docker_push")
 load("//hack:def.bzl", "multiarch_bundle")
 
+# export WORKSPACE so workspace_binary rules can be used outside the root
+exports_files(["WORKSPACE"])
+
 # gazelle:proto disable_global
 
 # this target creates targets:
@@ -65,6 +68,7 @@ filegroup(
         "//pkg/metrics:all-srcs",
         "//pkg/scheduler:all-srcs",
         "//pkg/util:all-srcs",
+        "//test/acme/dns:all-srcs",
         "//test/e2e:all-srcs",
         "//test/unit/gen:all-srcs",
         "//test/util:all-srcs",

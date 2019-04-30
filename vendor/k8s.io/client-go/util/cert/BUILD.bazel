@@ -12,6 +12,7 @@ go_library(
     importpath = "k8s.io/client-go/util/cert",
     tags = ["manual"],
     visibility = ["//visibility:public"],
+    deps = ["//vendor/k8s.io/client-go/util/keyutil:go_default_library"],
 )
 
 filegroup(

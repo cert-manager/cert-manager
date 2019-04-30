@@ -1,0 +1,47 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "decode.go",
+        "defaulter.go",
+        "doc.go",
+        "http.go",
+        "inject.go",
+        "multi.go",
+        "response.go",
+        "validator.go",
+        "webhook.go",
+    ],
+    importmap = "github.com/jetstack/cert-manager/vendor/sigs.k8s.io/controller-runtime/pkg/webhook/admission",
+    importpath = "sigs.k8s.io/controller-runtime/pkg/webhook/admission",
+    tags = ["manual"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//vendor/github.com/appscode/jsonpatch:go_default_library",
+        "//vendor/github.com/go-logr/logr:go_default_library",
+        "//vendor/k8s.io/api/admission/v1beta1:go_default_library",
+        "//vendor/k8s.io/apimachinery/pkg/apis/meta/v1:go_default_library",
+        "//vendor/k8s.io/apimachinery/pkg/apis/meta/v1/unstructured:go_default_library",
+        "//vendor/k8s.io/apimachinery/pkg/runtime:go_default_library",
+        "//vendor/k8s.io/apimachinery/pkg/runtime/serializer:go_default_library",
+        "//vendor/k8s.io/apimachinery/pkg/util/json:go_default_library",
+        "//vendor/k8s.io/apimachinery/pkg/util/runtime:go_default_library",
+        "//vendor/sigs.k8s.io/controller-runtime/pkg/internal/log:go_default_library",
+        "//vendor/sigs.k8s.io/controller-runtime/pkg/runtime/inject:go_default_library",
+    ],
+)
+
+filegroup(
+    name = "package-srcs",
+    srcs = glob(["**"]),
+    tags = ["automanaged"],
+    visibility = ["//visibility:private"],
+)
+
+filegroup(
+    name = "all-srcs",
+    srcs = [":package-srcs"],
+    tags = ["automanaged"],
+    visibility = ["//visibility:public"],
+)

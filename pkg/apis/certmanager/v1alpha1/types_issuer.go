@@ -18,6 +18,7 @@ package v1alpha1
 
 import (
 	corev1 "k8s.io/api/core/v1"
+	apiext "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -86,7 +87,9 @@ type IssuerConfig struct {
 
 	// +optional
 	SelfSigned *SelfSignedIssuer `json:"selfSigned,omitempty"`
-	Venafi     *VenafiIssuer     `json:"venafi,omitempty"`
+
+	// +optional
+	Venafi *VenafiIssuer `json:"venafi,omitempty"`
 }
 
 // VenafiIssuer describes issuer configuration details for Venafi Cloud.
@@ -137,8 +140,7 @@ type VenafiCloud struct {
 	APITokenSecretRef SecretKeySelector `json:"apiTokenSecretRef"`
 }
 
-type SelfSignedIssuer struct {
-}
+type SelfSignedIssuer struct{}
 
 type VaultIssuer struct {
 	// Vault authentication
@@ -261,6 +263,9 @@ type ACMEIssuerDNS01Provider struct {
 
 	// +optional
 	RFC2136 *ACMEIssuerDNS01ProviderRFC2136 `json:"rfc2136,omitempty"`
+
+	// +optional
+	Webhook *ACMEIssuerDNS01ProviderWebhook `json:"webhook,omitempty"`
 }
 
 // CNAMEStrategy configures how the DNS01 provider should handle CNAME records
@@ -373,6 +378,32 @@ type ACMEIssuerDNS01ProviderRFC2136 struct {
 	TSIGAlgorithm string `json:"tsigAlgorithm,omitempty"`
 }
 
+// ACMEIssuerDNS01ProviderWebhook specifies configuration for a webhook DNS01
+// provider, including where to POST ChallengePayload resources.
+type ACMEIssuerDNS01ProviderWebhook struct {
+	// The API group name that should be used when POSTing ChallengePayload
+	// resources to the webhook apiserver.
+	// This should be the same as the GroupName specified in the webhook
+	// provider implementation.
+	GroupName string `json:"groupName"`
+
+	// The name of the solver to use, as defined in the webhook provider
+	// implementation.
+	// This will typically be the name of the provider, e.g. 'cloudflare'.
+	SolverName string `json:"solverName"`
+
+	// Additional configuration that should be passed to the webhook apiserver
+	// when challenges are processed.
+	// This can contain arbitrary JSON data.
+	// Secret values should not be specified in this stanza.
+	// If secret values are needed (e.g. credentials for a DNS service), you
+	// should use a SecretKeySelector to reference a Secret resource.
+	// For details on the schema of this field, consult the webhook provider
+	// implementation's documentation.
+	// +optional
+	Config *apiext.JSON `json:"config,omitempty"`
+}
+
 // IssuerStatus contains status information about an Issuer
 type IssuerStatus struct {
 	// +optional
@@ -400,15 +431,18 @@ type IssuerCondition struct {
 
 	// LastTransitionTime is the timestamp corresponding to the last status
 	// change of this condition.
-	LastTransitionTime metav1.Time `json:"lastTransitionTime"`
+	// +optional
+	LastTransitionTime metav1.Time `json:"lastTransitionTime,omitempty"`
 
 	// Reason is a brief machine readable explanation for the condition's last
 	// transition.
-	Reason string `json:"reason"`
+	// +optional
+	Reason string `json:"reason,omitempty"`
 
 	// Message is a human readable description of the details of the last
 	// transition, complementing reason.
-	Message string `json:"message"`
+	// +optional
+	Message string `json:"message,omitempty"`
 }
 
 // IssuerConditionType represents an Issuer condition value.

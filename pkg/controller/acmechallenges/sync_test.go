@@ -27,6 +27,7 @@ import (
 	acmecl "github.com/jetstack/cert-manager/pkg/acme/client"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	testpkg "github.com/jetstack/cert-manager/pkg/controller/test"
+	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns"
 	"github.com/jetstack/cert-manager/test/unit/gen"
 	acmeapi "github.com/jetstack/cert-manager/third_party/crypto/acme"
 )
@@ -323,6 +324,10 @@ func TestSyncHappyPath(t *testing.T) {
 			if test.Builder == nil {
 				test.Builder = &testpkg.Builder{}
 			}
+			// Don't initialise webhook based DNS solvers during tests as we do
+			// not have a valid RESTConfig that can be used in the Initialize
+			// functions.
+			dns.WebhookSolvers = nil
 			test.Setup(t)
 			chalCopy := test.Challenge.DeepCopy()
 			err := test.Controller.Sync(test.Ctx, chalCopy)

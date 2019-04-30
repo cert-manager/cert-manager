@@ -31,6 +31,8 @@ filegroup(
     srcs = [
         ":package-srcs",
         "//vendor/github.com/onsi/gomega/format:all-srcs",
+        "//vendor/github.com/onsi/gomega/gbytes:all-srcs",
+        "//vendor/github.com/onsi/gomega/gexec:all-srcs",
         "//vendor/github.com/onsi/gomega/internal/assertion:all-srcs",
         "//vendor/github.com/onsi/gomega/internal/asyncassertion:all-srcs",
         "//vendor/github.com/onsi/gomega/internal/oraclematcher:all-srcs",

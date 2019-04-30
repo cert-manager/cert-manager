@@ -48,7 +48,8 @@ type Client struct {
 	wg *sync.WaitGroup
 
 	sync.Mutex
-	ErrLog []ErrEntry
+	ErrLog         []ErrEntry
+	RetryOnHTTP429 bool
 }
 
 // ErrEntry is used to provide the LogString() data and is populated
@@ -93,11 +94,12 @@ func init() {
 // New constructs a new DefaultClient with sensible default values
 func New() *Client {
 	return &Client{
-		Concurrency: DefaultClient.Concurrency,
-		MaxRetries:  DefaultClient.MaxRetries,
-		Backoff:     DefaultClient.Backoff,
-		ErrLog:      DefaultClient.ErrLog,
-		wg:          &sync.WaitGroup{},
+		Concurrency:    DefaultClient.Concurrency,
+		MaxRetries:     DefaultClient.MaxRetries,
+		Backoff:        DefaultClient.Backoff,
+		ErrLog:         DefaultClient.ErrLog,
+		wg:             &sync.WaitGroup{},
+		RetryOnHTTP429: false,
 	}
 }
 
@@ -279,7 +281,7 @@ func (c *Client) pester(p params) (*http.Response, error) {
 				// Early return if we have a valid result
 				// Only retry (ie, continue the loop) on 5xx status codes and 429
 
-				if err == nil && resp.StatusCode < 500 && resp.StatusCode != 429 {
+				if err == nil && resp.StatusCode < 500 && (resp.StatusCode != 429 || (resp.StatusCode == 429 && !c.RetryOnHTTP429)) {
 					multiplexCh <- result{resp: resp, err: err, req: n, retry: i}
 					return
 				}
@@ -420,6 +422,11 @@ func (c *Client) Post(url string, bodyType string, body io.Reader) (resp *http.R
 // PostForm provides the same functionality as http.Client.PostForm
 func (c *Client) PostForm(url string, data url.Values) (resp *http.Response, err error) {
 	return c.pester(params{method: "PostForm", url: url, data: data, verb: "POST"})
+}
+
+// set RetryOnHTTP429 for clients,
+func (c *Client) SetRetryOnHTTP429(flag bool) {
+	c.RetryOnHTTP429 = flag
 }
 
 ////////////////////////////////////////
