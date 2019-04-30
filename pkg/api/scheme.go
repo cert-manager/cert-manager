@@ -25,6 +25,7 @@ import (
 	kscheme "k8s.io/client-go/kubernetes/scheme"
 	apireg "k8s.io/kube-aggregator/pkg/apis/apiregistration/v1beta1"
 
+	whapi "github.com/jetstack/cert-manager/pkg/acme/webhook/apis/acme/v1alpha1"
 	certmanagerv1alpha1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 )
 
@@ -33,6 +34,7 @@ var Codecs = serializer.NewCodecFactory(Scheme)
 var ParameterCodec = runtime.NewParameterCodec(Scheme)
 var localSchemeBuilder = runtime.SchemeBuilder{
 	certmanagerv1alpha1.AddToScheme,
+	whapi.AddToScheme,
 	kscheme.AddToScheme,
 	apireg.AddToScheme,
 }
