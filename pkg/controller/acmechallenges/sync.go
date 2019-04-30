@@ -97,6 +97,8 @@ func (c *Controller) Sync(ctx context.Context, ch *cmapi.Challenge) (err error) 
 
 			err = solver.CleanUp(ctx, genericIssuer, ch)
 			if err != nil {
+				c.Recorder.Eventf(ch, corev1.EventTypeWarning, "CleanUpError", "Error cleaning up challenge: %v", err)
+				ch.Status.Reason = err.Error()
 				log.Error(err, "error cleaning up challenge")
 				return err
 			}
@@ -162,6 +164,8 @@ func (c *Controller) Sync(ctx context.Context, ch *cmapi.Challenge) (err error) 
 	if !ch.Status.Presented {
 		err := solver.Present(ctx, genericIssuer, ch)
 		if err != nil {
+			c.Recorder.Eventf(ch, corev1.EventTypeWarning, "PresentError", "Error presenting challenge: %v", err)
+			ch.Status.Reason = err.Error()
 			return err
 		}
 
@@ -222,6 +226,8 @@ func (c *Controller) handleFinalizer(ctx context.Context, ch *cmapi.Challenge) e
 
 	err = solver.CleanUp(ctx, genericIssuer, ch)
 	if err != nil {
+		c.Recorder.Eventf(ch, corev1.EventTypeWarning, "CleanUpError", "Error cleaning up challenge: %v", err)
+		ch.Status.Reason = err.Error()
 		log.Error(err, "error cleaning up challenge")
 		return nil
 	}
