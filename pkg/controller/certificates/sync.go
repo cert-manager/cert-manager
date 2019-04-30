@@ -20,12 +20,14 @@ import (
 	"context"
 	"crypto"
 	"crypto/x509"
+	"encoding/json"
 	"fmt"
 	"math/big"
 	"reflect"
 	"strings"
 	"time"
 
+	"github.com/kr/pretty"
 	corev1 "k8s.io/api/core/v1"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -68,14 +70,16 @@ var (
 
 func (c *Controller) Sync(ctx context.Context, crt *v1alpha1.Certificate) (err error) {
 	log := logf.FromContext(ctx)
+	dbg := log.V(logf.DebugLevel)
 
 	crtCopy := crt.DeepCopy()
 	defer func() {
-		if _, saveErr := c.updateCertificateStatus(crt, crtCopy); saveErr != nil {
+		if _, saveErr := c.updateCertificateStatus(ctx, crt, crtCopy); saveErr != nil {
 			err = utilerrors.NewAggregate([]error{saveErr, err})
 		}
 	}()
 
+	dbg.Info("Fetching existing certificate from secret", "name", crtCopy.Spec.SecretName)
 	// grab existing certificate and validate private key
 	certs, key, err := kube.SecretTLSKeyPair(ctx, c.secretLister, crtCopy.Namespace, crtCopy.Spec.SecretName)
 	// if we don't have a certificate, we need to trigger a re-issue immediately
@@ -85,11 +89,13 @@ func (c *Controller) Sync(ctx context.Context, crt *v1alpha1.Certificate) (err e
 
 	var cert *x509.Certificate
 	if len(certs) > 0 {
+		dbg.Info("Found existing certificate in secret")
 		cert = certs[0]
 	}
 
 	// update certificate expiry metric
 	defer c.metrics.UpdateCertificateExpiry(crtCopy, c.secretLister)
+	dbg.Info("Update certificate status if required")
 	c.setCertificateStatus(crtCopy, key, cert)
 
 	el := validation.ValidateCertificate(crtCopy)
@@ -107,6 +113,7 @@ func (c *Controller) Sync(ctx context.Context, crt *v1alpha1.Certificate) (err e
 	if err != nil {
 		return err
 	}
+	dbg.Info("Fetched issuer resource referenced by certificate", "issuer_name", crtCopy.Spec.IssuerRef.Name)
 
 	el = validation.ValidateCertificateForIssuer(crtCopy, issuerObj)
 	if len(el) > 0 {
@@ -120,6 +127,8 @@ func (c *Controller) Sync(ctx context.Context, crt *v1alpha1.Certificate) (err e
 		c.Recorder.Eventf(crtCopy, corev1.EventTypeWarning, "BadConfig", "spec.acme field must be set")
 		return nil
 	}
+
+	dbg.Info("Certificate passed all validation checks")
 
 	issuerReady := apiutil.IssuerHasCondition(issuerObj, v1alpha1.IssuerCondition{
 		Type:   v1alpha1.IssuerConditionReady,
@@ -137,30 +146,31 @@ func (c *Controller) Sync(ctx context.Context, crt *v1alpha1.Certificate) (err e
 	}
 
 	if isTemporaryCertificate(cert) {
+		dbg.Info("Temporary certificate found - calling 'issue'")
 		return c.issue(ctx, i, crtCopy)
 	}
 
 	if key == nil || cert == nil {
-		log.V(logf.DebugLevel).Info("invoking issue function as existing certificate does not exist")
+		dbg.Info("Invoking issue function as existing certificate does not exist")
 		return c.issue(ctx, i, crtCopy)
 	}
 
 	// begin checking if the TLS certificate is valid/needs a re-issue or renew
 	matches, matchErrs := c.certificateMatchesSpec(crtCopy, key, cert)
 	if !matches {
-		log.WithValues("diff", strings.Join(matchErrs, ", ")).
-			V(logf.DebugLevel).Info("invoking issue function due to certificate not matching spec")
+		dbg.Info("invoking issue function due to certificate not matching spec", "diff", strings.Join(matchErrs, ", "))
 		return c.issue(ctx, i, crtCopy)
 	}
 
 	// check if the certificate needs renewal
 	needsRenew := c.Context.IssuerOptions.CertificateNeedsRenew(cert, crt)
 	if needsRenew {
-		log.V(logf.DebugLevel).Info("invoking issue function due to certificate needing renewal")
+		dbg.Info("invoking issue function due to certificate needing renewal")
 		return c.issue(ctx, i, crtCopy)
 	}
 	// end checking if the TLS certificate is valid/needs a re-issue or renew
 
+	dbg.Info("Certificate does not need updating. Scheduling renewal.")
 	// If the Certificate is valid and up to date, we schedule a renewal in
 	// the future.
 	c.scheduleRenewal(ctx, crt)
@@ -539,10 +549,14 @@ func generateLocallySignedTemporaryCertificate(crt *v1alpha1.Certificate, pk []b
 	return b, nil
 }
 
-func (c *Controller) updateCertificateStatus(old, new *v1alpha1.Certificate) (*v1alpha1.Certificate, error) {
-	if reflect.DeepEqual(old.Status, new.Status) {
+func (c *Controller) updateCertificateStatus(ctx context.Context, old, new *v1alpha1.Certificate) (*v1alpha1.Certificate, error) {
+	log := logf.FromContext(ctx, "updateStatus")
+	oldBytes, _ := json.Marshal(old.Status)
+	newBytes, _ := json.Marshal(new.Status)
+	if reflect.DeepEqual(oldBytes, newBytes) {
 		return nil, nil
 	}
+	log.V(logf.DebugLevel).Info("updating resource due to change in status", "diff", pretty.Diff(string(oldBytes), string(newBytes)))
 	// TODO: replace Update call with UpdateStatus. This requires a custom API
 	// server with the /status subresource enabled and/or subresource support
 	// for CRDs (https://github.com/kubernetes/kubernetes/issues/38113)
