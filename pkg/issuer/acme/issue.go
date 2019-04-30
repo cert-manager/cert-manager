@@ -221,15 +221,14 @@ func (a *Acme) Issue(ctx context.Context, crt *v1alpha1.Certificate) (*issuer.Is
 func (a *Acme) cleanupOwnedOrders(ctx context.Context, crt *v1alpha1.Certificate, retain string) error {
 	log := logf.FromContext(ctx)
 
-	labelMap := certLabels(crt.Name)
-	selector := labels.NewSelector()
-	for k, v := range labelMap {
-		req, err := labels.NewRequirement(k, selection.Equals, []string{v})
-		if err != nil {
-			return err
-		}
-		selector.Add(*req)
+	// TODO: don't use a label selector at all here, instead we can index orders by their ownerRef and query based on owner reference alone
+	// construct a label selector
+	req, err := labels.NewRequirement(certificateNameLabelKey, selection.Equals, []string{crt.Name})
+	if err != nil {
+		return err
 	}
+	selector := labels.NewSelector().Add(*req)
+
 	existingOrders, err := a.orderLister.Orders(crt.Namespace).List(selector)
 	if err != nil {
 		return err
@@ -399,17 +398,27 @@ func buildOrder(crt *v1alpha1.Certificate, csr []byte) (*v1alpha1.Order, error) 
 		ObjectMeta: metav1.ObjectMeta{
 			Name:            fmt.Sprintf("%s-%d", crt.Name, hash),
 			Namespace:       crt.Namespace,
-			Labels:          certLabels(crt.Name),
+			Labels:          orderLabels(crt),
 			OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(crt, certificateGvk)},
 		},
 		Spec: spec,
 	}, nil
 }
 
-func certLabels(crtName string) map[string]string {
-	return map[string]string{
-		"acme.cert-manager.io/certificate-name": crtName,
+const certificateNameLabelKey = "acme.cert-manager.io/certificate-name"
+
+func orderLabels(crt *v1alpha1.Certificate) map[string]string {
+	lbls := make(map[string]string, len(crt.Labels)+1)
+	// copy across labels from the Certificate resource onto the Order.
+	// In future, determining which challenge solver to use will be solely
+	// calculated in the orders controller, and copying the label values
+	// across saves the Order controller depending on the existence of a
+	// Certificate resource in order to calculate challenge solvers to use.
+	for k, v := range crt.Labels {
+		lbls[k] = v
 	}
+	lbls[certificateNameLabelKey] = crt.Name
+	return lbls
 }
 
 func hashOrder(orderSpec v1alpha1.OrderSpec) (uint32, error) {
