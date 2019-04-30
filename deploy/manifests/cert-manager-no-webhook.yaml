@@ -1124,7 +1124,7 @@ metadata:
   namespace: "cert-manager"
   labels:
     app: cert-manager
-    chart: cert-manager-v0.7.1
+    chart: cert-manager-v0.7.2
     release: cert-manager
     heritage: Tiller
 ---
@@ -1180,7 +1180,7 @@ metadata:
   name: cert-manager
   labels:
     app: cert-manager
-    chart: cert-manager-v0.7.1
+    chart: cert-manager-v0.7.2
     release: cert-manager
     heritage: Tiller
 rules:
@@ -1200,7 +1200,7 @@ metadata:
   name: cert-manager
   labels:
     app: cert-manager
-    chart: cert-manager-v0.7.1
+    chart: cert-manager-v0.7.2
     release: cert-manager
     heritage: Tiller
 roleRef:
@@ -1218,7 +1218,7 @@ metadata:
   name: cert-manager-view
   labels:
     app: cert-manager
-    chart: cert-manager-v0.7.1
+    chart: cert-manager-v0.7.2
     release: cert-manager
     heritage: Tiller
     rbac.authorization.k8s.io/aggregate-to-view: "true"
@@ -1235,7 +1235,7 @@ metadata:
   name: cert-manager-edit
   labels:
     app: cert-manager
-    chart: cert-manager-v0.7.1
+    chart: cert-manager-v0.7.2
     release: cert-manager
     heritage: Tiller
     rbac.authorization.k8s.io/aggregate-to-edit: "true"
@@ -1295,7 +1295,7 @@ metadata:
   namespace: "cert-manager"
   labels:
     app: cert-manager
-    chart: cert-manager-v0.7.1
+    chart: cert-manager-v0.7.2
     release: cert-manager
     heritage: Tiller
 spec:
