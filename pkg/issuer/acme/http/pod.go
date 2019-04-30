@@ -17,6 +17,7 @@ limitations under the License.
 package http
 
 import (
+	"context"
 	"fmt"
 	"hash/adler32"
 
@@ -25,49 +26,56 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/selection"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
-	"k8s.io/klog"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	logf "github.com/jetstack/cert-manager/pkg/logs"
 )
 
 func podLabels(ch *v1alpha1.Challenge) map[string]string {
 	domainHash := fmt.Sprintf("%d", adler32.Checksum([]byte(ch.Spec.DNSName)))
 	tokenHash := fmt.Sprintf("%d", adler32.Checksum([]byte(ch.Spec.Token)))
+	solverIdent := "true"
 	return map[string]string{
 		// TODO: we need to support domains longer than 63 characters
 		// this value should probably be hashed, and then the full plain text
 		// value stored as an annotation to make it easier for users to read
 		// see #425 for details: https://github.com/jetstack/cert-manager/issues/425
-		domainLabelKey: domainHash,
-		tokenLabelKey:  tokenHash,
+		domainLabelKey:               domainHash,
+		tokenLabelKey:                tokenHash,
+		solverIdentificationLabelKey: solverIdent,
 	}
 }
 
-func (s *Solver) ensurePod(ch *v1alpha1.Challenge) (*corev1.Pod, error) {
-	existingPods, err := s.getPodsForChallenge(ch)
+func (s *Solver) ensurePod(ctx context.Context, ch *v1alpha1.Challenge) (*corev1.Pod, error) {
+	log := logf.FromContext(ctx).WithName("ensurePod")
+
+	log.V(logf.DebugLevel).Info("checking for existing HTTP01 solver pods")
+	existingPods, err := s.getPodsForChallenge(ctx, ch)
 	if err != nil {
 		return nil, err
 	}
 	if len(existingPods) == 1 {
+		logf.WithRelatedResource(log, existingPods[0]).Info("found one existing HTTP01 solver pod")
 		return existingPods[0], nil
 	}
 	if len(existingPods) > 1 {
-		errMsg := fmt.Sprintf("multiple challenge solver pods found for certificate '%s/%s'. Cleaning up existing pods.", ch.Namespace, ch.Name)
-		klog.Infof(errMsg)
-		err := s.cleanupPods(ch)
+		log.Info("multiple challenge solver pods found for challenge. cleaning up all existing pods.")
+		err := s.cleanupPods(ctx, ch)
 		if err != nil {
 			return nil, err
 		}
-		return nil, fmt.Errorf(errMsg)
+		return nil, fmt.Errorf("multiple existing challenge solver pods found and cleaned up. retrying challenge sync")
 	}
 
-	klog.Infof("No existing HTTP01 challenge solver pod found for Certificate %q. One will be created.", ch.Namespace+"/"+ch.Name)
+	log.Info("creating HTTP01 challenge solver pod")
 	return s.createPod(ch)
 }
 
 // getPodsForChallenge returns a list of pods that were created to solve
 // the given challenge
-func (s *Solver) getPodsForChallenge(ch *v1alpha1.Challenge) ([]*corev1.Pod, error) {
+func (s *Solver) getPodsForChallenge(ctx context.Context, ch *v1alpha1.Challenge) ([]*corev1.Pod, error) {
+	log := logf.FromContext(ctx)
+
 	podLabels := podLabels(ch)
 	orderSelector := labels.NewSelector()
 	for key, val := range podLabels {
@@ -86,8 +94,8 @@ func (s *Solver) getPodsForChallenge(ch *v1alpha1.Challenge) ([]*corev1.Pod, err
 	var relevantPods []*corev1.Pod
 	for _, pod := range podList {
 		if !metav1.IsControlledBy(pod, ch) {
-			klog.Infof("Found pod %q with acme-order-url annotation set to that of Certificate %q"+
-				"but it is not owned by the Certificate resource, so skipping it.", pod.Namespace+"/"+pod.Name, ch.Namespace+"/"+ch.Name)
+			logf.WithRelatedResource(log, pod).Info("found existing solver pod for this challenge resource, however " +
+				"it does not have an appropriate OwnerReference referencing this challenge. Skipping it altogether.")
 			continue
 		}
 		relevantPods = append(relevantPods, pod)
@@ -96,20 +104,27 @@ func (s *Solver) getPodsForChallenge(ch *v1alpha1.Challenge) ([]*corev1.Pod, err
 	return relevantPods, nil
 }
 
-func (s *Solver) cleanupPods(ch *v1alpha1.Challenge) error {
-	pods, err := s.getPodsForChallenge(ch)
+func (s *Solver) cleanupPods(ctx context.Context, ch *v1alpha1.Challenge) error {
+	log := logf.FromContext(ctx, "cleanupPods")
+
+	pods, err := s.getPodsForChallenge(ctx, ch)
 	if err != nil {
 		return err
 	}
 	var errs []error
 	for _, pod := range pods {
-		// TODO: should we call DeleteCollection here? We'd need to somehow
-		// also ensure ownership as part of that request using a FieldSelector.
+		log := logf.WithRelatedResource(log, pod).V(logf.DebugLevel)
+		log.Info("deleting pod resource")
+
 		err := s.Client.CoreV1().Pods(pod.Namespace).Delete(pod.Name, nil)
 		if err != nil {
+			log.Info("failed to delete pod resource", "error", err)
 			errs = append(errs, err)
+			continue
 		}
+		log.Info("successfully deleted pod resource")
 	}
+
 	return utilerrors.NewAggregate(errs)
 }
 

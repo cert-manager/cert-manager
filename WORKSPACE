@@ -6,27 +6,23 @@ load("@bazel_tools//tools/build_defs/repo:git.bzl", "new_git_repository")
 ## Load rules_go and dependencies
 http_archive(
     name = "io_bazel_rules_go",
-    urls = ["https://github.com/bazelbuild/rules_go/releases/download/0.16.6/rules_go-0.16.6.tar.gz"],
-    sha256 = "ade51a315fa17347e5c31201fdc55aa5ffb913377aa315dceb56ee9725e620ee",
+    url = "https://github.com/bazelbuild/rules_go/releases/download/0.18.2/rules_go-0.18.2.tar.gz",
+    sha256 = "31f959ecf3687f6e0bb9d01e1e7a7153367ecd82816c9c0ae149cd0e5a92bf8c",
 )
 
-load(
-    "@io_bazel_rules_go//go:def.bzl",
-    "go_rules_dependencies",
-    "go_register_toolchains",
-)
+load("@io_bazel_rules_go//go:deps.bzl", "go_rules_dependencies", "go_register_toolchains")
 
 go_rules_dependencies()
 
 go_register_toolchains(
-    go_version = "1.11.5",
+    go_version = "1.12",
 )
 
 ## Load gazelle and dependencies
 http_archive(
     name = "bazel_gazelle",
-    url = "https://github.com/bazelbuild/bazel-gazelle/releases/download/0.16.0/bazel-gazelle-0.16.0.tar.gz",
-    sha256 = "7949fc6cc17b5b191103e97481cf8889217263acf52e00b560683413af204fcb",
+    url = "https://github.com/bazelbuild/bazel-gazelle/releases/download/0.17.0/bazel-gazelle-0.17.0.tar.gz",
+    sha256 = "3c681998538231a2d24d0c07ed5a7658cb72bfb5fd4bf9911157c0e9ac6a2687",
 )
 
 load(
@@ -40,7 +36,7 @@ gazelle_dependencies()
 ## Load kubernetes repo-infra for tools like kazel
 git_repository(
     name = "io_kubernetes_build",
-    commit = "84d52408a061e87d45aebf5a0867246bdf66d180",
+    commit = "df02ded38f9506e5bbcbf21702034b4fef815f2f",
     remote = "https://github.com/kubernetes/repo-infra.git",
 )
 
@@ -48,7 +44,8 @@ git_repository(
 git_repository(
     name = "io_bazel_rules_docker",
     remote = "https://github.com/bazelbuild/rules_docker.git",
-    tag = "v0.7.0",
+    commit = "3732c9d05315bef6a3dbd195c545d6fea3b86880",
+    shallow_since = "1547471117 +0100",
 )
 
 load(
@@ -139,7 +136,7 @@ container_pull(
 ## Install 'kind', for creating kubernetes-in-docker clusters
 go_repository(
     name = "io_kubernetes_sigs_kind",
-    commit = "9307ec01e70ffd56d3a5bc16fb977d4f557a615f",
+    commit = "161151a26faf0dbe962ac9f323cc0cdebac79ba8",
     importpath = "sigs.k8s.io/kind",
 )
 
@@ -194,14 +191,14 @@ container_pull(
     name = "kind-1.12",
     registry = "index.docker.io",
     repository = "kindest/node",
-    tag = "v1.12.3",
+    tag = "v1.12.5",
 )
 
 container_pull(
     name = "kind-1.13",
     registry = "index.docker.io",
     repository = "kindest/node",
-    tag = "v1.13.2",
+    tag = "v1.13.4",
 )
 
 ## Fetch kubectl for use during e2e tests
@@ -247,19 +244,63 @@ http_file(
     urls = ["https://storage.googleapis.com/kubernetes-release/release/v1.13.2/bin/linux/amd64/kubectl"],
 )
 
+http_file(
+    name = "kube-apiserver_1_14_darwin",
+    executable = 1,
+    sha256 = "8a7a21a5683386998ebd3a4fe9af346626ebdaf84a59094a2b2188e59e13b6d6",
+    urls = ["https://storage.googleapis.com/cert-manager-testing-assets/kube-apiserver-1.14.1_darwin_amd64"],
+)
+
+http_file(
+    name = "kube-apiserver_1_14_linux",
+    executable = 1,
+    sha256 = "1ce67dda7b125dc1adadc10ab93fe339f6ce40211ae4f1552d6de177e36a430d",
+    urls = ["https://storage.googleapis.com/kubernetes-release/release/v1.14.1/bin/linux/amd64/kube-apiserver"],
+)
+
+http_archive(
+    name = "etcd_v3_3_darwin",
+    sha256 = "c8f36adf4f8fb7e974f9bafe6e390a03bc33e6e465719db71d7ed3c6447ce85a",
+    urls = ["https://github.com/etcd-io/etcd/releases/download/v3.3.12/etcd-v3.3.12-darwin-amd64.zip"],
+    build_file_content = """
+filegroup(
+    name = "file",
+    srcs = [
+        "etcd-v3.3.12-darwin-amd64/etcd",
+    ],
+    visibility = ["//visibility:public"],
+)
+""",
+)
+
+http_archive(
+    name = "etcd_v3_3_linux",
+    sha256 = "dc5d82df095dae0a2970e4d870b6929590689dd707ae3d33e7b86da0f7f211b6",
+    urls = ["https://github.com/etcd-io/etcd/releases/download/v3.3.12/etcd-v3.3.12-linux-amd64.tar.gz"],
+    build_file_content = """
+filegroup(
+    name = "file",
+    srcs = [
+        "etcd-v3.3.12-linux-amd64/etcd",
+    ],
+    visibility = ["//visibility:public"],
+)
+""",
+)
+
 ## Install buildozer, for mass-editing BUILD files
 http_file(
     name = "buildozer_darwin",
     executable = 1,
-    sha256 = "294357ff92e7bb36c62f964ecb90e935312671f5a41a7a9f2d77d8d0d4bd217d",
-    urls = ["https://github.com/bazelbuild/buildtools/releases/download/0.15.0/buildozer.osx"],
+    sha256 = "f2bcb59b96b1899bc27d5791f17a218f9ce76261f5dcdfdbd7ad678cf545803f",
+    urls = ["https://github.com/bazelbuild/buildtools/releases/download/0.22.0/buildozer.osx"],
 )
 
 http_file(
     name = "buildozer_linux",
     executable = 1,
-    sha256 = "be07a37307759c68696c989058b3446390dd6e8aa6fdca6f44f04ae3c37212c5",
-    urls = ["https://github.com/bazelbuild/buildtools/releases/download/0.15.0/buildozer"],
+    sha256 = "7750fe5bfb1247e8a858f3c87f63a5fb554ee43cb10efc1ce46c2387f1720064",
+    urls = ["https://github.com/bazelbuild/buildtools/releases/download/0.22.0/buildozer"],
 )
 
 ## Install dep for dependency management
@@ -275,6 +316,20 @@ http_file(
     executable = 1,
     sha256 = "287b08291e14f1fae8ba44374b26a2b12eb941af3497ed0ca649253e21ba2f83",
     urls = ["https://github.com/golang/dep/releases/download/v0.5.0/dep-linux-amd64"],
+)
+
+http_file(
+    name = "jq_linux",
+    executable = 1,
+    sha256 = "c6b3a7d7d3e7b70c6f51b706a3b90bd01833846c54d32ca32f0027f00226ff6d",
+    urls = ["https://github.com/stedolan/jq/releases/download/jq-1.5/jq-linux64"],
+)
+
+http_file(
+    name = "jq_osx",
+    executable = 1,
+    sha256 = "386e92c982a56fe4851468d7a931dfca29560cee306a0e66c6a1bd4065d3dac5",
+    urls = ["https://github.com/stedolan/jq/releases/download/jq-1.5/jq-osx-amd64"],
 )
 
 ## Brodocs and associated dependencies
@@ -308,12 +363,9 @@ filegroup(
 git_repository(
     name = "build_bazel_rules_nodejs",
     remote = "https://github.com/bazelbuild/rules_nodejs.git",
-    tag = "0.26.0",  # check for the latest tag when you install
+    commit = "11271418a6bbd2529170270a7e61dcc5167bb16d",
+    shallow_since = "1554849870 -0700",
 )
-
-load("@build_bazel_rules_nodejs//:package.bzl", "rules_nodejs_dependencies")
-
-rules_nodejs_dependencies()
 
 load("@build_bazel_rules_nodejs//:defs.bzl", "node_repositories")
 

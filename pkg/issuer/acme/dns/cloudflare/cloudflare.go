@@ -50,6 +50,15 @@ func NewDNSProviderCredentials(email, key string, dns01Nameservers []string) (*D
 	if email == "" || key == "" {
 		return nil, fmt.Errorf("CloudFlare credentials missing")
 	}
+	// cloudflare uses X-Auth-Key as a header for its
+	// authentication. However, if it's an invalid value, the go
+	// http library will "helpfully" print out the value to help with
+	// debugging.
+	//
+	// Check that the auth key is a valid header value before we leak it to the logs
+	if !validHeaderFieldValue(key) {
+		return nil, fmt.Errorf("Cloudflare key invalid (does the key contain a newline?)")
+	}
 
 	return &DNSProvider{
 		authEmail:        email,
@@ -249,3 +258,22 @@ type cloudFlareRecord struct {
 	TTL     int    `json:"ttl,omitempty"`
 	ZoneID  string `json:"zone_id,omitempty"`
 }
+
+// following functions are copy-pasted from go's internal
+// http server
+func validHeaderFieldValue(v string) bool {
+	for i := 0; i < len(v); i++ {
+		b := v[i]
+		if isCTL(b) && !isLWS(b) {
+			return false
+		}
+	}
+	return true
+}
+
+func isCTL(b byte) bool {
+	const del = 0x7f // a CTL
+	return b < ' ' || b == del
+}
+
+func isLWS(b byte) bool { return b == ' ' || b == '\t' }

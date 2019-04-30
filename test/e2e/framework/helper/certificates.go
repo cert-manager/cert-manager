@@ -200,6 +200,7 @@ func (h *Helper) WaitCertificateIssuedValidTLS(ns, name string, timeout time.Dur
 	if err != nil {
 		log.Logf("Error waiting for Certificate to become Ready: %v", err)
 		h.Kubectl(ns).DescribeResource("certificate", name)
+		h.Kubectl(ns).Describe("order", "challenge")
 		return err
 	}
 
@@ -207,6 +208,7 @@ func (h *Helper) WaitCertificateIssuedValidTLS(ns, name string, timeout time.Dur
 	if err != nil {
 		log.Logf("Error validating issued certificate: %v", err)
 		h.Kubectl(ns).DescribeResource("certificate", name)
+		h.Kubectl(ns).Describe("order", "challenge")
 		return err
 	}
 

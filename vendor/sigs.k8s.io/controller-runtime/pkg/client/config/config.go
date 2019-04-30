@@ -48,6 +48,9 @@ func init() {
 // If --kubeconfig is set, will use the kubeconfig file at that location.  Otherwise will assume running
 // in cluster and use the cluster provided kubeconfig.
 //
+// It also applies saner defaults for QPS and burst based on the Kubernetes
+// controller manager defaults (20 QPS, 30 burst)
+//
 // Config precedence
 //
 // * --kubeconfig flag pointing at a file
@@ -58,6 +61,21 @@ func init() {
 //
 // * $HOME/.kube/config if exists
 func GetConfig() (*rest.Config, error) {
+	cfg, err := loadConfig()
+	if err != nil {
+		return nil, err
+	}
+
+	if cfg.QPS == 0.0 {
+		cfg.QPS = 20.0
+		cfg.Burst = 30.0
+	}
+
+	return cfg, nil
+}
+
+// loadConfig loads a REST Config as per the rules specified in GetConfig
+func loadConfig() (*rest.Config, error) {
 	// If a flag is specified with the config location, use that
 	if len(kubeconfig) > 0 {
 		return clientcmd.BuildConfigFromFlags(apiServerURL, kubeconfig)

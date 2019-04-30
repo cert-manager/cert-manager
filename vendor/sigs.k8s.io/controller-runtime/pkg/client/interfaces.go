@@ -39,6 +39,14 @@ func ObjectKeyFromObject(obj runtime.Object) (ObjectKey, error) {
 	return ObjectKey{Namespace: accessor.GetNamespace(), Name: accessor.GetName()}, nil
 }
 
+// Patch is a patch that can be applied to a Kubernetes object.
+type Patch interface {
+	// Type is the PatchType of the patch.
+	Type() types.PatchType
+	// Data is the raw data representing the patch.
+	Data(obj runtime.Object) ([]byte, error)
+}
+
 // TODO(directxman12): is there a sane way to deal with get/delete options?
 
 // Reader knows how to read and list Kubernetes objects.
@@ -57,14 +65,18 @@ type Reader interface {
 // Writer knows how to create, delete, and update Kubernetes objects.
 type Writer interface {
 	// Create saves the object obj in the Kubernetes cluster.
-	Create(ctx context.Context, obj runtime.Object) error
+	Create(ctx context.Context, obj runtime.Object, opts ...CreateOptionFunc) error
 
 	// Delete deletes the given obj from Kubernetes cluster.
 	Delete(ctx context.Context, obj runtime.Object, opts ...DeleteOptionFunc) error
 
 	// Update updates the given obj in the Kubernetes cluster. obj must be a
 	// struct pointer so that obj can be updated with the content returned by the Server.
-	Update(ctx context.Context, obj runtime.Object) error
+	Update(ctx context.Context, obj runtime.Object, opts ...UpdateOptionFunc) error
+
+	// Patch patches the given obj in the Kubernetes cluster. obj must be a
+	// struct pointer so that obj can be updated with the content returned by the Server.
+	Patch(ctx context.Context, obj runtime.Object, patch Patch, opts ...PatchOptionFunc) error
 }
 
 // StatusClient knows how to create a client which can update status subresource
@@ -104,6 +116,57 @@ type FieldIndexer interface {
 	// The FieldIndexer will automatically take care of indexing over namespace
 	// and supporting efficient all-namespace queries.
 	IndexField(obj runtime.Object, field string, extractValue IndexerFunc) error
+}
+
+// CreateOptions contains options for create requests. It's generally a subset
+// of metav1.CreateOptions.
+type CreateOptions struct {
+	// When present, indicates that modifications should not be
+	// persisted. An invalid or unrecognized dryRun directive will
+	// result in an error response and no further processing of the
+	// request. Valid values are:
+	// - All: all dry run stages will be processed
+	DryRun []string
+
+	// Raw represents raw CreateOptions, as passed to the API server.
+	Raw *metav1.CreateOptions
+}
+
+// AsCreateOptions returns these options as a metav1.CreateOptions.
+// This may mutate the Raw field.
+func (o *CreateOptions) AsCreateOptions() *metav1.CreateOptions {
+
+	if o == nil {
+		return &metav1.CreateOptions{}
+	}
+	if o.Raw == nil {
+		o.Raw = &metav1.CreateOptions{}
+	}
+
+	o.Raw.DryRun = o.DryRun
+	return o.Raw
+}
+
+// ApplyOptions executes the given CreateOptionFuncs and returns the mutated
+// CreateOptions.
+func (o *CreateOptions) ApplyOptions(optFuncs []CreateOptionFunc) *CreateOptions {
+	for _, optFunc := range optFuncs {
+		optFunc(o)
+	}
+	return o
+}
+
+// CreateOptionFunc is a function that mutates a CreateOptions struct. It implements
+// the functional options pattern. See
+// https://github.com/tmrts/go-patterns/blob/master/idiom/functional-options.md.
+type CreateOptionFunc func(*CreateOptions)
+
+// CreateDryRunAll is a functional option that sets the DryRun
+// field of a CreateOptions struct to metav1.DryRunAll.
+func CreateDryRunAll() CreateOptionFunc {
+	return func(opts *CreateOptions) {
+		opts.DryRun = []string{metav1.DryRunAll}
+	}
 }
 
 // DeleteOptions contains options for delete requests. It's generally a subset
@@ -324,5 +387,120 @@ func InNamespace(ns string) ListOptionFunc {
 func UseListOptions(newOpts *ListOptions) ListOptionFunc {
 	return func(opts *ListOptions) {
 		*opts = *newOpts
+	}
+}
+
+// UpdateOptions contains options for create requests. It's generally a subset
+// of metav1.UpdateOptions.
+type UpdateOptions struct {
+	// When present, indicates that modifications should not be
+	// persisted. An invalid or unrecognized dryRun directive will
+	// result in an error response and no further processing of the
+	// request. Valid values are:
+	// - All: all dry run stages will be processed
+	DryRun []string
+
+	// Raw represents raw UpdateOptions, as passed to the API server.
+	Raw *metav1.UpdateOptions
+}
+
+// AsUpdateOptions returns these options as a metav1.UpdateOptions.
+// This may mutate the Raw field.
+func (o *UpdateOptions) AsUpdateOptions() *metav1.UpdateOptions {
+
+	if o == nil {
+		return &metav1.UpdateOptions{}
+	}
+	if o.Raw == nil {
+		o.Raw = &metav1.UpdateOptions{}
+	}
+
+	o.Raw.DryRun = o.DryRun
+	return o.Raw
+}
+
+// ApplyOptions executes the given UpdateOptionFuncs and returns the mutated
+// UpdateOptions.
+func (o *UpdateOptions) ApplyOptions(optFuncs []UpdateOptionFunc) *UpdateOptions {
+	for _, optFunc := range optFuncs {
+		optFunc(o)
+	}
+	return o
+}
+
+// UpdateOptionFunc is a function that mutates a UpdateOptions struct. It implements
+// the functional options pattern. See
+// https://github.com/tmrts/go-patterns/blob/master/idiom/functional-options.md.
+type UpdateOptionFunc func(*UpdateOptions)
+
+// UpdateDryRunAll is a functional option that sets the DryRun
+// field of a UpdateOptions struct to metav1.DryRunAll.
+func UpdateDryRunAll() UpdateOptionFunc {
+	return func(opts *UpdateOptions) {
+		opts.DryRun = []string{metav1.DryRunAll}
+	}
+}
+
+// PatchOptions contains options for patch requests.
+type PatchOptions struct {
+	// When present, indicates that modifications should not be
+	// persisted. An invalid or unrecognized dryRun directive will
+	// result in an error response and no further processing of the
+	// request. Valid values are:
+	// - All: all dry run stages will be processed
+	DryRun []string
+	// Force is going to "force" Apply requests. It means user will
+	// re-acquire conflicting fields owned by other people. Force
+	// flag must be unset for non-apply patch requests.
+	// +optional
+	Force *bool
+
+	// Raw represents raw PatchOptions, as passed to the API server.
+	Raw *metav1.PatchOptions
+}
+
+// ApplyOptions executes the given PatchOptionFuncs, mutating these PatchOptions.
+// It returns the mutated PatchOptions for convenience.
+func (o *PatchOptions) ApplyOptions(optFuncs []PatchOptionFunc) *PatchOptions {
+	for _, optFunc := range optFuncs {
+		optFunc(o)
+	}
+	return o
+}
+
+// AsPatchOptions returns these options as a metav1.PatchOptions.
+// This may mutate the Raw field.
+func (o *PatchOptions) AsPatchOptions() *metav1.PatchOptions {
+	if o == nil {
+		return &metav1.PatchOptions{}
+	}
+	if o.Raw == nil {
+		o.Raw = &metav1.PatchOptions{}
+	}
+
+	o.Raw.DryRun = o.DryRun
+	o.Raw.Force = o.Force
+	return o.Raw
+}
+
+// PatchOptionFunc is a function that mutates a PatchOptions struct. It implements
+// the functional options pattern. See
+// https://github.com/tmrts/go-patterns/blob/master/idiom/functional-options.md.
+type PatchOptionFunc func(*PatchOptions)
+
+// PatchDryRunAll is a functional option that sets the DryRun
+// field of a PatchOptions struct to metav1.DryRunAll.
+func PatchDryRunAll() PatchOptionFunc {
+	return func(opts *PatchOptions) {
+		opts.DryRun = []string{metav1.DryRunAll}
+	}
+}
+
+// PatchWithForce is a functional option that sets the Force
+// field of a PatchOptions struct to true.
+func PatchWithForce() PatchOptionFunc {
+	force := true
+	return func(opts *PatchOptions) {
+		opts.Force = &force
 	}
 }

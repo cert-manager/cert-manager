@@ -17,6 +17,7 @@ limitations under the License.
 package http
 
 import (
+	"context"
 	"fmt"
 
 	corev1 "k8s.io/api/core/v1"
@@ -27,34 +28,39 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
-	"k8s.io/klog"
+	logf "github.com/jetstack/cert-manager/pkg/logs"
 )
 
-func (s *Solver) ensureService(issuer v1alpha1.GenericIssuer, ch *v1alpha1.Challenge) (*corev1.Service, error) {
-	existingServices, err := s.getServicesForChallenge(ch)
+func (s *Solver) ensureService(ctx context.Context, issuer v1alpha1.GenericIssuer, ch *v1alpha1.Challenge) (*corev1.Service, error) {
+	log := logf.FromContext(ctx).WithName("ensureService")
+
+	log.V(logf.DebugLevel).Info("checking for existing HTTP01 solver services for challenge")
+	existingServices, err := s.getServicesForChallenge(ctx, ch)
 	if err != nil {
 		return nil, err
 	}
 	if len(existingServices) == 1 {
+		logf.WithRelatedResource(log, existingServices[0]).Info("found one existing HTTP01 solver Service for challenge resource")
 		return existingServices[0], nil
 	}
 	if len(existingServices) > 1 {
-		errMsg := fmt.Sprintf("multiple challenge solver services found for certificate '%s/%s'. Cleaning up existing services.", ch.Namespace, ch.Name)
-		klog.Infof(errMsg)
-		err := s.cleanupServices(ch)
+		log.Info("multiple challenge solver services found for challenge. cleaning up all existing services.")
+		err := s.cleanupServices(ctx, ch)
 		if err != nil {
 			return nil, err
 		}
-		return nil, fmt.Errorf(errMsg)
+		return nil, fmt.Errorf("multiple existing challenge solver services found and cleaned up. retrying challenge sync")
 	}
 
-	klog.Infof("No existing HTTP01 challenge solver service found for Certificate %q. One will be created.", ch.Namespace+"/"+ch.Name)
+	log.Info("creating HTTP01 challenge solver service")
 	return s.createService(issuer, ch)
 }
 
 // getServicesForChallenge returns a list of services that were created to solve
 // http challenges for the given domain
-func (s *Solver) getServicesForChallenge(ch *v1alpha1.Challenge) ([]*corev1.Service, error) {
+func (s *Solver) getServicesForChallenge(ctx context.Context, ch *v1alpha1.Challenge) ([]*corev1.Service, error) {
+	log := logf.FromContext(ctx)
+
 	podLabels := podLabels(ch)
 	selector := labels.NewSelector()
 	for key, val := range podLabels {
@@ -73,8 +79,8 @@ func (s *Solver) getServicesForChallenge(ch *v1alpha1.Challenge) ([]*corev1.Serv
 	var relevantServices []*corev1.Service
 	for _, service := range serviceList {
 		if !metav1.IsControlledBy(service, ch) {
-			klog.Infof("Found service %q with acme-order-url annotation set to that of Certificate %q"+
-				"but it is not owned by the Certificate resource, so skipping it.", service.Namespace+"/"+service.Name, ch.Namespace+"/"+ch.Name)
+			logf.WithRelatedResource(log, service).Info("found existing solver pod for this challenge resource, however " +
+				"it does not have an appropriate OwnerReference referencing this challenge. Skipping it altogether.")
 			continue
 		}
 		relevantServices = append(relevantServices, service)
@@ -122,19 +128,25 @@ func buildService(issuer v1alpha1.GenericIssuer, ch *v1alpha1.Challenge) *corev1
 	return service
 }
 
-func (s *Solver) cleanupServices(ch *v1alpha1.Challenge) error {
-	services, err := s.getServicesForChallenge(ch)
+func (s *Solver) cleanupServices(ctx context.Context, ch *v1alpha1.Challenge) error {
+	log := logf.FromContext(ctx, "cleanupPods")
+
+	services, err := s.getServicesForChallenge(ctx, ch)
 	if err != nil {
 		return err
 	}
 	var errs []error
 	for _, service := range services {
-		// TODO: should we call DeleteCollection here? We'd need to somehow
-		// also ensure ownership as part of that request using a FieldSelector.
+		log := logf.WithRelatedResource(log, service).V(logf.DebugLevel)
+		log.Info("deleting service resource")
+
 		err := s.Client.CoreV1().Services(service.Namespace).Delete(service.Name, nil)
 		if err != nil {
+			log.Info("failed to delete pod resource", "error", err)
 			errs = append(errs, err)
+			continue
 		}
+		log.Info("successfully deleted pod resource")
 	}
 	return utilerrors.NewAggregate(errs)
 }

@@ -185,9 +185,6 @@ spec:
                 required:
                 - type
                 - status
-                - lastTransitionTime
-                - reason
-                - message
                 type: object
               type: array
             lastFailureTime:
@@ -606,9 +603,6 @@ spec:
                 required:
                 - type
                 - status
-                - lastTransitionTime
-                - reason
-                - message
                 type: object
               type: array
           type: object
@@ -865,9 +859,6 @@ spec:
                 required:
                 - type
                 - status
-                - lastTransitionTime
-                - reason
-                - message
                 type: object
               type: array
           type: object

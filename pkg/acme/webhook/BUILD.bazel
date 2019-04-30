@@ -1,0 +1,32 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = ["webhook.go"],
+    importpath = "github.com/jetstack/cert-manager/pkg/acme/webhook",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//pkg/acme/webhook/apis/acme/v1alpha1:go_default_library",
+        "//vendor/k8s.io/client-go/rest:go_default_library",
+    ],
+)
+
+filegroup(
+    name = "package-srcs",
+    srcs = glob(["**"]),
+    tags = ["automanaged"],
+    visibility = ["//visibility:private"],
+)
+
+filegroup(
+    name = "all-srcs",
+    srcs = [
+        ":package-srcs",
+        "//pkg/acme/webhook/apis/acme:all-srcs",
+        "//pkg/acme/webhook/apiserver:all-srcs",
+        "//pkg/acme/webhook/cmd:all-srcs",
+        "//pkg/acme/webhook/registry/challengepayload:all-srcs",
+    ],
+    tags = ["automanaged"],
+    visibility = ["//visibility:public"],
+)

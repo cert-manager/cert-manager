@@ -7,6 +7,7 @@ go_library(
         "errors.go",
         "event.go",
         "lease_manager.go",
+        "logger.go",
         "store.go",
         "watcher.go",
     ],
@@ -26,9 +27,10 @@ go_library(
         "//vendor/k8s.io/apimachinery/pkg/watch:go_default_library",
         "//vendor/k8s.io/apiserver/pkg/storage:go_default_library",
         "//vendor/k8s.io/apiserver/pkg/storage/etcd:go_default_library",
+        "//vendor/k8s.io/apiserver/pkg/storage/etcd/metrics:go_default_library",
         "//vendor/k8s.io/apiserver/pkg/storage/value:go_default_library",
-        "//vendor/k8s.io/apiserver/pkg/util/trace:go_default_library",
         "//vendor/k8s.io/klog:go_default_library",
+        "//vendor/k8s.io/utils/trace:go_default_library",
     ],
 )
 

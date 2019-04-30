@@ -92,7 +92,7 @@ def multiarch_bundle(
             images = oa_images,
             **kwargs)
 
-        all_images += oa_images
+        all_images.update(oa_images)
 
     container_bundle(
         name = name,

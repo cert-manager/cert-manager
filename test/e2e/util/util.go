@@ -157,7 +157,7 @@ func WaitForCertificateEvent(client kubernetes.Interface, cert *v1alpha1.Certifi
 	return wait.PollImmediate(500*time.Millisecond, timeout,
 		func() (bool, error) {
 			log.Logf("Waiting for Certificate event %v reason %#v", cert.Name, reason)
-			evts, err := client.Core().Events(cert.Namespace).Search(intscheme.Scheme, cert)
+			evts, err := client.CoreV1().Events(cert.Namespace).Search(intscheme.Scheme, cert)
 			if err != nil {
 				return false, fmt.Errorf("error getting Certificate %v: %v", cert.Name, err)
 			}

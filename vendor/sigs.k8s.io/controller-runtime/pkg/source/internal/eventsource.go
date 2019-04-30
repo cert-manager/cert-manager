@@ -42,7 +42,7 @@ type EventHandler struct {
 	Predicates   []predicate.Predicate
 }
 
-// OnAdd creates and CreateEvent and calls Create on EventHandler
+// OnAdd creates CreateEvent and calls Create on EventHandler
 func (e EventHandler) OnAdd(obj interface{}) {
 	c := event.CreateEvent{}
 
@@ -74,7 +74,7 @@ func (e EventHandler) OnAdd(obj interface{}) {
 	e.EventHandler.Create(c, e.Queue)
 }
 
-// OnUpdate creates and UpdateEvent and calls Update on EventHandler
+// OnUpdate creates UpdateEvent and calls Update on EventHandler
 func (e EventHandler) OnUpdate(oldObj, newObj interface{}) {
 	u := event.UpdateEvent{}
 
@@ -124,7 +124,7 @@ func (e EventHandler) OnUpdate(oldObj, newObj interface{}) {
 	e.EventHandler.Update(u, e.Queue)
 }
 
-// OnDelete creates and DeleteEvent and calls Delete on EventHandler
+// OnDelete creates DeleteEvent and calls Delete on EventHandler
 func (e EventHandler) OnDelete(obj interface{}) {
 	d := event.DeleteEvent{}
 
