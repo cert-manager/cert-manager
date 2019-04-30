@@ -1421,7 +1421,7 @@ spec:
           image: "quay.io/jetstack/cert-manager-webhook:v0.7.0"
           imagePullPolicy: IfNotPresent
           args:
-          - --v=12
+          - --v=2
           - --secure-port=6443
           - --tls-cert-file=/certs/tls.crt
           - --tls-private-key-file=/certs/tls.key
