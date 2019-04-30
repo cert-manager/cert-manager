@@ -382,12 +382,16 @@ func existingOrderIsValidForKey(o *v1alpha1.Order, key crypto.Signer) (bool, err
 }
 
 func buildOrder(crt *v1alpha1.Certificate, csr []byte) (*v1alpha1.Order, error) {
+	var oldConfig []v1alpha1.DomainSolverConfig
+	if crt.Spec.ACME != nil {
+		oldConfig = crt.Spec.ACME.Config
+	}
 	spec := v1alpha1.OrderSpec{
 		CSR:        csr,
 		IssuerRef:  crt.Spec.IssuerRef,
 		CommonName: crt.Spec.CommonName,
 		DNSNames:   crt.Spec.DNSNames,
-		Config:     crt.Spec.ACME.Config,
+		Config:     oldConfig,
 	}
 	hash, err := hashOrder(spec)
 	if err != nil {
