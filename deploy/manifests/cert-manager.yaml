@@ -1128,7 +1128,7 @@ metadata:
   namespace: "cert-manager"
   labels:
     app: cert-manager
-    chart: cert-manager-v0.7.1
+    chart: cert-manager-v0.7.2
     release: cert-manager
     heritage: Tiller
 ---
@@ -1184,7 +1184,7 @@ metadata:
   name: cert-manager
   labels:
     app: cert-manager
-    chart: cert-manager-v0.7.1
+    chart: cert-manager-v0.7.2
     release: cert-manager
     heritage: Tiller
 rules:
@@ -1204,7 +1204,7 @@ metadata:
   name: cert-manager
   labels:
     app: cert-manager
-    chart: cert-manager-v0.7.1
+    chart: cert-manager-v0.7.2
     release: cert-manager
     heritage: Tiller
 roleRef:
@@ -1222,7 +1222,7 @@ metadata:
   name: cert-manager-view
   labels:
     app: cert-manager
-    chart: cert-manager-v0.7.1
+    chart: cert-manager-v0.7.2
     release: cert-manager
     heritage: Tiller
     rbac.authorization.k8s.io/aggregate-to-view: "true"
@@ -1239,7 +1239,7 @@ metadata:
   name: cert-manager-edit
   labels:
     app: cert-manager
-    chart: cert-manager-v0.7.1
+    chart: cert-manager-v0.7.2
     release: cert-manager
     heritage: Tiller
     rbac.authorization.k8s.io/aggregate-to-edit: "true"
@@ -1371,6 +1371,7 @@ spec:
           image: "quay.io/jetstack/cert-manager-cainjector:v0.7.0"
           imagePullPolicy: IfNotPresent
           args:
+          - --v=2
           - --leader-election-namespace=$(POD_NAMESPACE)
           env:
           - name: POD_NAMESPACE
@@ -1412,7 +1413,7 @@ spec:
           image: "quay.io/jetstack/cert-manager-webhook:v0.7.0"
           imagePullPolicy: IfNotPresent
           args:
-          - --v=12
+          - --v=2
           - --secure-port=6443
           - --tls-cert-file=/certs/tls.crt
           - --tls-private-key-file=/certs/tls.key
@@ -1441,7 +1442,7 @@ metadata:
   namespace: "cert-manager"
   labels:
     app: cert-manager
-    chart: cert-manager-v0.7.1
+    chart: cert-manager-v0.7.2
     release: cert-manager
     heritage: Tiller
 spec:
@@ -1466,6 +1467,7 @@ spec:
           image: "quay.io/jetstack/cert-manager-controller:v0.7.0"
           imagePullPolicy: IfNotPresent
           args:
+          - --v=2
           - --cluster-resource-namespace=$(POD_NAMESPACE)
           - --leader-election-namespace=$(POD_NAMESPACE)
           ports:
