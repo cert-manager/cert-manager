@@ -13,6 +13,8 @@ global:
   rbac:
     create: true
 
+  logLevel: 2
+
   leaderElection:
     # Override the namespace used to store the ConfigMap for leader election
     namespace: ""
@@ -25,8 +27,6 @@ strategy: {}
   #   maxSurge: 0
   #   maxUnavailable: 1
 
-  # global log level
-  logLevel: 2
 
 image:
   repository: quay.io/jetstack/cert-manager-controller
