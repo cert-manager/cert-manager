@@ -48,6 +48,7 @@ type Certmanager struct {
 // Details return the details about the certmanager instance deployed
 type Details struct {
 	ClusterResourceNamespace string
+	ServiceAccountName       string
 }
 
 func (p *Certmanager) Setup(cfg *config.Config) error {
@@ -78,6 +79,9 @@ func (p *Certmanager) Setup(cfg *config.Config) error {
 		ChartName:   cfg.RepoRoot + "/deploy/charts/cert-manager",
 		// TODO: move resource requests/limits into Vars so they are always set
 		Values: []string{cfg.RepoRoot + "/test/fixtures/cert-manager-values.yaml"},
+		Vars: []chart.StringTuple{
+			{Key: "serviceAccount.name", Value: "chart-certmanager-cert-manager"},
+		},
 		// doesn't matter when installing from disk
 		ChartVersion: "0",
 		UpdateDeps:   true,
@@ -92,7 +96,7 @@ func (p *Certmanager) Setup(cfg *config.Config) error {
 // Provision will actually deploy this instance of Pebble-ingress to the cluster.
 func (p *Certmanager) Provision() error {
 	if err := exec.Command(p.config.Kubectl, "apply", "-f", p.config.RepoRoot+"/deploy/manifests/00-crds.yaml").Run(); err != nil {
-		return fmt.Errorf("Error install cert-manager CRD manifests: %v", err)
+		return fmt.Errorf("error install cert-manager CRD manifests: %v", err)
 	}
 
 	return p.chart.Provision()
@@ -102,6 +106,7 @@ func (p *Certmanager) Provision() error {
 func (p *Certmanager) Details() *Details {
 	return &Details{
 		ClusterResourceNamespace: p.Namespace,
+		ServiceAccountName:       "chart-certmanager-cert-manager",
 	}
 }
 
