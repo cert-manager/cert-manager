@@ -121,9 +121,7 @@ func (c *Controller) Sync(ctx context.Context, ch *cmapi.Challenge) (err error) 
 	if ch.Status.State == "" {
 		err := c.syncChallengeStatus(ctx, cl, ch)
 		if err != nil {
-			// TODO: check acme error types and potentially mark the challenge
-			// as failed if there is some known error
-			return err
+			return handleError(ch, err)
 		}
 
 		// if the state has not changed, return an error
@@ -146,7 +144,7 @@ func (c *Controller) Sync(ctx context.Context, ch *cmapi.Challenge) (err error) 
 		// Find out which identity the ACME server says it will use.
 		dir, err := cl.Discover(ctx)
 		if err != nil {
-			return err
+			return handleError(ch, err)
 		}
 		// TODO(dmo): figure out if missing CAA identity in directory
 		// means no CAA check is performed by ACME server or if any valid
@@ -200,6 +198,35 @@ func (c *Controller) Sync(ctx context.Context, ch *cmapi.Challenge) (err error) 
 	}
 
 	return nil
+}
+
+// handleError will handle ACME error types, updating the challenge resource
+// with any new information found whilst inspecting the error response.
+// This may include marking the challenge as expired.
+func handleError(ch *cmapi.Challenge, err error) error {
+	if err == nil {
+		return nil
+	}
+
+	var acmeErr *acmeapi.Error
+	var ok bool
+	if acmeErr, ok = err.(*acmeapi.Error); !ok {
+		return err
+	}
+	switch acmeErr.Type {
+	// This response type is returned when an authorization has expired or the
+	// request is in some way malformed.
+	// In this case, we should mark the challenge as expired so that the order
+	// can be retried.
+	// TODO: don't mark *all* malformed errors as expired, we may be able to be
+	// more informative to the user by further inspecting the Error response.
+	case "urn:ietf:params:acme:error:malformed":
+		ch.Status.State = cmapi.Expired
+		// absorb the error as updating the challenge's status will trigger a sync
+		return nil
+	}
+
+	return err
 }
 
 func (c *Controller) handleFinalizer(ctx context.Context, ch *cmapi.Challenge) error {
@@ -291,7 +318,7 @@ func (c *Controller) acceptChallenge(ctx context.Context, cl acmecl.Interface, c
 	if err != nil {
 		log.Error(err, "error accepting challenge")
 		ch.Status.Reason = fmt.Sprintf("Error accepting challenge: %v", err)
-		return err
+		return handleError(ch, err)
 	}
 
 	log.Info("waiting for authorization for domain")
@@ -301,7 +328,7 @@ func (c *Controller) acceptChallenge(ctx context.Context, cl acmecl.Interface, c
 
 		authErr, ok := err.(acmeapi.AuthorizationError)
 		if !ok {
-			return err
+			return handleError(ch, err)
 		}
 
 		ch.Status.State = cmapi.State(authErr.Authorization.Status)
