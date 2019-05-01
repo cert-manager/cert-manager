@@ -38,6 +38,7 @@ import (
 	"github.com/jetstack/cert-manager/test/e2e/framework/log"
 	. "github.com/jetstack/cert-manager/test/e2e/framework/matcher"
 	"github.com/jetstack/cert-manager/test/e2e/util"
+	"github.com/jetstack/cert-manager/test/util/generate"
 )
 
 var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
@@ -143,7 +144,14 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		certClient := f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name)
 
 		By("Creating a Certificate")
-		_, err := certClient.Create(util.NewCertManagerBasicCertificate(certificateName, certificateSecretName, issuerName, v1alpha1.IssuerKind, nil, nil, acmeIngressDomain))
+		cert := generate.Certificate(generate.CertificateConfig{
+			Name:       certificateName,
+			Namespace:  f.Namespace.Name,
+			SecretName: certificateSecretName,
+			IssuerName: issuerName,
+			DNSNames:   []string{acmeIngressDomain},
+		})
+		_, err := certClient.Create(cert)
 		Expect(err).NotTo(HaveOccurred())
 		By("Verifying the Certificate is valid")
 		err = h.WaitCertificateIssuedValid(f.Namespace.Name, certificateName, time.Minute*5)
@@ -156,7 +164,14 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		// the maximum length of a single segment of the domain being requested
 		const maxLengthOfDomainSegment = 63
 		By("Creating a Certificate")
-		_, err := certClient.Create(util.NewCertManagerBasicCertificate(certificateName, certificateSecretName, issuerName, v1alpha1.IssuerKind, nil, nil, fmt.Sprintf("%s.%s", cmutil.RandStringRunes(maxLengthOfDomainSegment), acmeIngressDomain)))
+		cert := generate.Certificate(generate.CertificateConfig{
+			Name:       certificateName,
+			Namespace:  f.Namespace.Name,
+			SecretName: certificateSecretName,
+			IssuerName: issuerName,
+			DNSNames:   []string{fmt.Sprintf("%s.%s", cmutil.RandStringRunes(maxLengthOfDomainSegment), acmeIngressDomain)},
+		})
+		_, err := certClient.Create(cert)
 		Expect(err).NotTo(HaveOccurred())
 		err = h.WaitCertificateIssuedValid(f.Namespace.Name, certificateName, time.Minute*5)
 		Expect(err).NotTo(HaveOccurred())
@@ -166,7 +181,14 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		certClient := f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name)
 
 		By("Creating a Certificate")
-		_, err := certClient.Create(util.NewCertManagerBasicCertificate(certificateName, certificateSecretName, issuerName, v1alpha1.IssuerKind, nil, nil, acmeIngressDomain, fmt.Sprintf("%s.%s", cmutil.RandStringRunes(5), acmeIngressDomain)))
+		cert := generate.Certificate(generate.CertificateConfig{
+			Name:       certificateName,
+			Namespace:  f.Namespace.Name,
+			SecretName: certificateSecretName,
+			IssuerName: issuerName,
+			DNSNames:   []string{fmt.Sprintf("%s.%s", cmutil.RandStringRunes(5), acmeIngressDomain)},
+		})
+		_, err := certClient.Create(cert)
 		Expect(err).NotTo(HaveOccurred())
 		By("Verifying the Certificate is valid")
 		err = h.WaitCertificateIssuedValid(f.Namespace.Name, certificateName, time.Minute*5)
@@ -177,8 +199,16 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		certClient := f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name)
 
 		By("Creating a Certificate")
-		cert, err := certClient.Create(util.NewCertManagerBasicCertificate(certificateName, certificateSecretName, issuerName, v1alpha1.IssuerKind, nil, nil, acmeIngressDomain, fmt.Sprintf("%s.%s", cmutil.RandStringRunes(5), acmeIngressDomain)))
+		cert := generate.Certificate(generate.CertificateConfig{
+			Name:       certificateName,
+			Namespace:  f.Namespace.Name,
+			SecretName: certificateSecretName,
+			IssuerName: issuerName,
+			DNSNames:   []string{fmt.Sprintf("%s.%s", cmutil.RandStringRunes(5), acmeIngressDomain)},
+		})
+		_, err := certClient.Create(cert)
 		Expect(err).NotTo(HaveOccurred())
+
 		By("Verifying the Certificate is valid")
 		err = h.WaitCertificateIssuedValid(f.Namespace.Name, certificateName, time.Minute*5)
 		Expect(err).NotTo(HaveOccurred())
@@ -190,7 +220,6 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		By("Adding an additional dnsName to the Certificate")
 		newDNSName := fmt.Sprintf("%s.%s", cmutil.RandStringRunes(5), acmeIngressDomain)
 		cert.Spec.DNSNames = append(cert.Spec.DNSNames, newDNSName)
-		cert.Spec.ACME.Config[0].Domains = append(cert.Spec.ACME.Config[0].Domains, newDNSName)
 
 		By("Updating the Certificate in the apiserver")
 		cert, err = certClient.Update(cert)
@@ -207,7 +236,14 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 
 	It("should fail to obtain a certificate for an invalid ACME dns name", func() {
 		// create test fixture
-		cert := util.NewCertManagerBasicCertificate(certificateName, certificateSecretName, issuerName, v1alpha1.IssuerKind, nil, nil, "google.com")
+		By("Creating a Certificate")
+		cert := generate.Certificate(generate.CertificateConfig{
+			Name:       certificateName,
+			Namespace:  f.Namespace.Name,
+			SecretName: certificateSecretName,
+			IssuerName: issuerName,
+			DNSNames:   []string{"google.com"},
+		})
 		cert, err := f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name).Create(cert)
 		Expect(err).NotTo(HaveOccurred())
 
@@ -259,6 +295,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 
 		const dummycert = "dummy-tls"
 		const secretname = "dummy-tls-secret"
+
 		selfcert := util.NewCertManagerBasicCertificate("dummy-tls", secretname, "selfsign", v1alpha1.IssuerKind, nil, nil, acmeIngressDomain)
 		_, err = certClient.Create(selfcert)
 		Expect(err).NotTo(HaveOccurred())
@@ -308,7 +345,13 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		By("Creating a Certificate")
 		// This is a special cert for the test suite, where we specify an ingress rather than a
 		// class
-		cert := util.NewCertManagerBasicCertificate(certificateName, certificateSecretName, issuerName, v1alpha1.IssuerKind, nil, nil, acmeIngressDomain)
+		cert := generate.Certificate(generate.CertificateConfig{
+			Name:       certificateName,
+			Namespace:  f.Namespace.Name,
+			SecretName: certificateSecretName,
+			IssuerName: issuerName,
+			DNSNames:   []string{acmeIngressDomain},
+		})
 		cert.Labels = map[string]string{
 			"testing.cert-manager.io/fixed-ingress": "true",
 		}
@@ -325,7 +368,14 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		certClient := f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name)
 
 		By("Creating a Certificate")
-		_, err := certClient.Create(util.NewCertManagerBasicCertificate(certificateName, certificateSecretName, issuerName, v1alpha1.IssuerKind, nil, nil, acmeIngressDomain))
+		cert := generate.Certificate(generate.CertificateConfig{
+			Name:       certificateName,
+			Namespace:  f.Namespace.Name,
+			SecretName: certificateSecretName,
+			IssuerName: issuerName,
+			DNSNames:   []string{acmeIngressDomain},
+		})
+		_, err := certClient.Create(cert)
 		Expect(err).NotTo(HaveOccurred())
 
 		By("killing the solver pod")
