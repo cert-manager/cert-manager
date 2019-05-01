@@ -22,6 +22,7 @@ import (
 
 	"github.com/spf13/cobra"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
+	"k8s.io/apiserver/pkg/util/feature"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	"k8s.io/klog"
 
@@ -86,6 +87,7 @@ to renew certificates at an appropriate time before expiry.`,
 
 	flags := cmd.Flags()
 	o.ControllerOptions.AddFlags(flags)
+	feature.DefaultFeatureGate.AddFlag(flags)
 
 	return cmd
 }
