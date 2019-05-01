@@ -476,9 +476,8 @@ func TestSync(t *testing.T) {
 			},
 		},
 		{
-			Name:   "should error when no challenge type is provided",
+			Name:   "should return a certificate without the acme field set when no challenge type is provided",
 			Issuer: acmeClusterIssuer,
-			Err:    true,
 			Ingress: &extv1beta1.Ingress{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "ingress-name",
@@ -496,7 +495,24 @@ func TestSync(t *testing.T) {
 					},
 				},
 			},
-			ClusterIssuerLister: []*v1alpha1.ClusterIssuer{acmeClusterIssuer},
+			ClusterIssuerLister: []runtime.Object{acmeClusterIssuer},
+			ExpectedCreate: []*v1alpha1.Certificate{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:            "example-com-tls",
+						Namespace:       gen.DefaultTestNamespace,
+						OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(buildIngress("ingress-name", gen.DefaultTestNamespace, nil), ingressGVK)},
+					},
+					Spec: v1alpha1.CertificateSpec{
+						DNSNames:   []string{"example.com", "www.example.com"},
+						SecretName: "example-com-tls",
+						IssuerRef: v1alpha1.ObjectReference{
+							Name: "issuer-name",
+							Kind: "ClusterIssuer",
+						},
+					},
+				},
+			},
 		},
 		{
 			Name:                "should return a basic certificate when no provider specific config is provided",
@@ -508,6 +524,9 @@ func TestSync(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "ingress-name",
 					Namespace: gen.DefaultTestNamespace,
+					Annotations: map[string]string{
+						testAcmeTLSAnnotation: "true",
+					},
 				},
 				Spec: extv1beta1.IngressSpec{
 					TLS: []extv1beta1.IngressTLS{
