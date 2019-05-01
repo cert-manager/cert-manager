@@ -38,7 +38,7 @@ func TestEnsurePod(t *testing.T) {
 					DNSName: "example.com",
 					Token:   "token",
 					Key:     "key",
-					Config: v1alpha1.SolverConfig{
+					Config: &v1alpha1.SolverConfig{
 						HTTP01: &v1alpha1.HTTP01SolverConfig{},
 					},
 				},
@@ -79,7 +79,7 @@ func TestEnsurePod(t *testing.T) {
 					DNSName: "example.com",
 					Token:   "token",
 					Key:     "key",
-					Config: v1alpha1.SolverConfig{
+					Config: &v1alpha1.SolverConfig{
 						HTTP01: &v1alpha1.HTTP01SolverConfig{},
 					},
 				},
@@ -129,7 +129,7 @@ func TestEnsurePod(t *testing.T) {
 					DNSName: "example.com",
 					Token:   "token",
 					Key:     "key",
-					Config: v1alpha1.SolverConfig{
+					Config: &v1alpha1.SolverConfig{
 						HTTP01: &v1alpha1.HTTP01SolverConfig{},
 					},
 				},
@@ -182,7 +182,7 @@ func TestGetPodsForCertificate(t *testing.T) {
 			Challenge: &v1alpha1.Challenge{
 				Spec: v1alpha1.ChallengeSpec{
 					DNSName: "example.com",
-					Config: v1alpha1.SolverConfig{
+					Config: &v1alpha1.SolverConfig{
 						HTTP01: &v1alpha1.HTTP01SolverConfig{},
 					},
 				},
@@ -213,7 +213,7 @@ func TestGetPodsForCertificate(t *testing.T) {
 			Challenge: &v1alpha1.Challenge{
 				Spec: v1alpha1.ChallengeSpec{
 					DNSName: "example.com",
-					Config: v1alpha1.SolverConfig{
+					Config: &v1alpha1.SolverConfig{
 						HTTP01: &v1alpha1.HTTP01SolverConfig{},
 					},
 				},

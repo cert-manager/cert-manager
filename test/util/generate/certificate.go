@@ -35,10 +35,21 @@ type CertificateConfig struct {
 	RenewBefore            *metav1.Duration
 
 	// ACME parameters
-	SolverConfig v1alpha1.SolverConfig
+	SolverConfig *v1alpha1.SolverConfig
 }
 
 func Certificate(cfg CertificateConfig) *v1alpha1.Certificate {
+	var a *v1alpha1.ACMECertificateConfig
+	if cfg.SolverConfig != nil {
+		a = &v1alpha1.ACMECertificateConfig{
+			Config: []v1alpha1.DomainSolverConfig{
+				{
+					Domains:      cfg.DNSNames,
+					SolverConfig: *cfg.SolverConfig,
+				},
+			},
+		}
+	}
 	return &v1alpha1.Certificate{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      cfg.Name,
@@ -54,14 +65,7 @@ func Certificate(cfg CertificateConfig) *v1alpha1.Certificate {
 			},
 			CommonName: cfg.CommonName,
 			DNSNames:   cfg.DNSNames,
-			ACME: &v1alpha1.ACMECertificateConfig{
-				Config: []v1alpha1.DomainSolverConfig{
-					{
-						Domains:      cfg.DNSNames,
-						SolverConfig: cfg.SolverConfig,
-					},
-				},
-			},
+			ACME:       a,
 		},
 		Status: v1alpha1.CertificateStatus{},
 	}

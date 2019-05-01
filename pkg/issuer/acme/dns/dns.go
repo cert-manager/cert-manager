@@ -79,10 +79,6 @@ type Solver struct {
 
 // Present performs the work to configure DNS to resolve a DNS01 challenge.
 func (s *Solver) Present(ctx context.Context, issuer v1alpha1.GenericIssuer, ch *v1alpha1.Challenge) error {
-	if ch.Spec.Config.DNS01 == nil {
-		return fmt.Errorf("challenge dns config must be specified")
-	}
-
 	webhookSolver, req, err := s.prepareChallengeRequest(issuer, ch)
 	if err != nil && err != errNotFound {
 		return err
@@ -135,10 +131,6 @@ func (s *Solver) Check(ctx context.Context, issuer v1alpha1.GenericIssuer, ch *v
 // CleanUp removes DNS records which are no longer needed after
 // certificate issuance.
 func (s *Solver) CleanUp(ctx context.Context, issuer v1alpha1.GenericIssuer, ch *v1alpha1.Challenge) error {
-	if ch.Spec.Config.DNS01 == nil {
-		return fmt.Errorf("challenge dns config must be specified")
-	}
-
 	webhookSolver, req, err := s.prepareChallengeRequest(issuer, ch)
 	if err != nil && err != errNotFound {
 		return err
@@ -168,14 +160,52 @@ func followCNAME(strategy v1alpha1.CNAMEStrategy) bool {
 	return false
 }
 
+// extractChallengeSolverConfigOldOrNew will compute a new format ACMEChallengeSolverDNS01
+// structure for the given Issuer or Challenge resource.
+// If the solver configuration is provided in the old format, it will compute
+// and return configuration in the *new* format to make consumers of this
+// function easier to write.
+// This function can be removed once format for old style configuration is no
+// longer supported.
+func extractChallengeSolverConfigOldOrNew(issuer v1alpha1.GenericIssuer, ch *v1alpha1.Challenge) (*v1alpha1.ACMEChallengeSolverDNS01, error) {
+	switch {
+	case ch.Spec.Config != nil && ch.Spec.Solver != nil:
+		return nil, fmt.Errorf("both 'config' and 'solver' field on challenge cannot be set")
+	case ch.Spec.Solver != nil:
+		return ch.Spec.Solver.DNS01, nil
+	case ch.Spec.Config != nil:
+		if ch.Spec.Config.DNS01 == nil {
+			return nil, fmt.Errorf("old format dns01 config is missing")
+		}
+		p, err := issuer.GetSpec().ACME.DNS01.Provider(ch.Spec.Config.DNS01.Provider)
+		if err != nil {
+			return nil, fmt.Errorf("no challenge solver config for provider %q found on issuer resource", ch.Spec.Config.DNS01.Provider)
+		}
+		return &v1alpha1.ACMEChallengeSolverDNS01{
+			CNAMEStrategy: p.CNAMEStrategy,
+			Akamai:        p.Akamai,
+			CloudDNS:      p.CloudDNS,
+			Cloudflare:    p.Cloudflare,
+			Route53:       p.Route53,
+			AzureDNS:      p.AzureDNS,
+			DigitalOcean:  p.DigitalOcean,
+			AcmeDNS:       p.AcmeDNS,
+			RFC2136:       p.RFC2136,
+			Webhook:       p.Webhook,
+		}, nil
+	default:
+		return nil, fmt.Errorf("no dns01 challenge solver configuration found")
+	}
+}
+
 // solverForChallenge returns a Solver for the given providerName.
 // The providerName is the name of an ACME DNS-01 challenge provider as
 // specified on the Issuer resource for the Solver.
-func (s *Solver) solverForChallenge(issuer v1alpha1.GenericIssuer, ch *v1alpha1.Challenge) (solver, *v1alpha1.ACMEIssuerDNS01Provider, error) {
+func (s *Solver) solverForChallenge(issuer v1alpha1.GenericIssuer, ch *v1alpha1.Challenge) (solver, *v1alpha1.ACMEChallengeSolverDNS01, error) {
 	resourceNamespace := s.ResourceNamespace(issuer)
 	canUseAmbientCredentials := s.CanUseAmbientCredentials(issuer)
 
-	providerConfig, err := s.dns01ConfigForChallenge(issuer, ch)
+	providerConfig, err := extractChallengeSolverConfigOldOrNew(issuer, ch)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -329,17 +359,17 @@ func (s *Solver) solverForChallenge(issuer v1alpha1.GenericIssuer, ch *v1alpha1.
 			s.DNS01Nameservers,
 		)
 		if err != nil {
-			return nil, nil, fmt.Errorf("error instantiating acmedns challenge solver: %s", err)
+			return nil, providerConfig, fmt.Errorf("error instantiating acmedns challenge solver: %s", err)
 		}
 	default:
-		return nil, nil, fmt.Errorf("no dns provider config specified for provider %q", ch.Spec.Config.DNS01.Provider)
+		return nil, providerConfig, fmt.Errorf("no dns provider config specified for challenge")
 	}
 
 	return impl, providerConfig, nil
 }
 
 func (s *Solver) prepareChallengeRequest(issuer v1alpha1.GenericIssuer, ch *v1alpha1.Challenge) (webhook.Solver, *whapi.ChallengeRequest, error) {
-	dns01Config, err := s.dns01ConfigForChallenge(issuer, ch)
+	dns01Config, err := extractChallengeSolverConfigOldOrNew(issuer, ch)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -385,7 +415,7 @@ func (s *Solver) prepareChallengeRequest(issuer v1alpha1.GenericIssuer, ch *v1al
 
 var errNotFound = fmt.Errorf("failed to determine DNS01 solver type")
 
-func (s *Solver) dns01SolverForConfig(config *v1alpha1.ACMEIssuerDNS01Provider) (webhook.Solver, interface{}, error) {
+func (s *Solver) dns01SolverForConfig(config *v1alpha1.ACMEChallengeSolverDNS01) (webhook.Solver, interface{}, error) {
 	solverName := ""
 	var c interface{}
 	switch {
@@ -401,20 +431,6 @@ func (s *Solver) dns01SolverForConfig(config *v1alpha1.ACMEIssuerDNS01Provider) 
 		return nil, c, fmt.Errorf("no solver provider configured for %q", solverName)
 	}
 	return p, c, nil
-}
-
-func (s *Solver) dns01ConfigForChallenge(issuer v1alpha1.GenericIssuer, ch *v1alpha1.Challenge) (*v1alpha1.ACMEIssuerDNS01Provider, error) {
-	providerName := ch.Spec.Config.DNS01.Provider
-	if providerName == "" {
-		return nil, fmt.Errorf("dns01 challenge provider name must be set")
-	}
-
-	dns01Config, err := issuer.GetSpec().ACME.DNS01.Provider(providerName)
-	if err != nil {
-		return nil, err
-	}
-
-	return dns01Config, nil
 }
 
 var WebhookSolvers = []webhook.Solver{

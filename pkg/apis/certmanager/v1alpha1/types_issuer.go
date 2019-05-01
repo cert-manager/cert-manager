@@ -204,14 +204,120 @@ type ACMEIssuer struct {
 	// user account.
 	PrivateKey SecretKeySelector `json:"privateKeySecretRef"`
 
-	// HTTP-01 config
+	// Solvers is a list of challenge solvers that will be used to solve
+	// ACME challenges for the matching domains.
+	// +optional
+	Solvers []ACMEChallengeSolver `json:"solvers,omitempty"`
+
+	// DEPRECATED: HTTP-01 config
 	// +optional
 	HTTP01 *ACMEIssuerHTTP01Config `json:"http01,omitempty"`
 
-	// DNS-01 config
+	// DEPRECATED: DNS-01 config
 	// +optional
 	DNS01 *ACMEIssuerDNS01Config `json:"dns01,omitempty"`
 }
+
+type ACMEChallengeSolver struct {
+	// Selector selects a set of DNSNames on the Certificate resource that
+	// should be solved using this challenge solver.
+	Selector *CertificateDNSNameSelector `json:"selector,omitempty"`
+
+	// +optional
+	HTTP01 *ACMEChallengeSolverHTTP01 `json:"http01,omitempty"`
+
+	// +optional
+	DNS01 *ACMEChallengeSolverDNS01 `json:"dns01,omitempty"`
+}
+
+// CertificateDomainSelector selects certificates using a label selector, and
+// can optionally select individual DNS names within those certificates.
+// If both MatchLabels and DNSNames are empty, this selector will match all
+// certificates and DNS names within them.
+type CertificateDNSNameSelector struct {
+	// A label selector that is used to refine the set of certificate's that
+	// this challenge solver will apply to.
+	// TODO: use kubernetes standard types for matchLabels
+	// +optional
+	MatchLabels map[string]string `json:"matchLabels,omitempty"`
+
+	// List of DNSNames that can be used to further refine the domains that
+	// this solver applies to.
+	// +optional
+	DNSNames []string `json:"dnsNames,omitempty"`
+}
+
+// ACMEChallengeSolverHTTP01 contains configuration detailing how to solve
+// HTTP01 challenges within a Kubernetes cluster.
+// Typically this is accomplished through creating 'routes' of some description
+// that configure ingress controllers to direct traffic to 'solver pods', which
+// are responsible for responding to the ACME server's HTTP requests.
+type ACMEChallengeSolverHTTP01 struct {
+	// The ingress based HTTP01 challenge solver will solve challenges by
+	// creating or modifying Ingress resources in order to route requests for
+	// '/.well-known/acme-challenge/XYZ' to 'challenge solver' pods that are
+	// provisioned by cert-manager for each Challenge to be completed.
+	// +optional
+	Ingress *ACMEChallengeSolverHTTP01Ingress `json:"ingress"`
+}
+
+type ACMEChallengeSolverHTTP01Ingress struct {
+	// Optional service type for Kubernetes solver service
+	// +optional
+	ServiceType corev1.ServiceType `json:"serviceType,omitempty"`
+
+	// The ingress class to use when creating Ingress resources to solve ACME
+	// challenges that use this challenge solver.
+	// Only one of 'class' or 'name' may be specified.
+	// +optional
+	Class *string `json:"class,omitempty"`
+
+	// The name of the ingress resource that should have ACME challenge solving
+	// routes inserted into it in order to solve HTTP01 challenges.
+	// This is typically used in conjunction with ingress controllers like
+	// ingress-gce, which maintains a 1:1 mapping between external IPs and
+	// ingress resources.
+	// +optional
+	Name string `json:"name,omitempty"`
+}
+
+type ACMEChallengeSolverDNS01 struct {
+	// CNAMEStrategy configures how the DNS01 provider should handle CNAME
+	// records when found in DNS zones.
+	// +optional
+	// +kubebuilder:validation:Enum=None,Follow
+	CNAMEStrategy CNAMEStrategy `json:"cnameStrategy,omitempty"`
+
+	// +optional
+	Akamai *ACMEIssuerDNS01ProviderAkamai `json:"akamai,omitempty"`
+
+	// +optional
+	CloudDNS *ACMEIssuerDNS01ProviderCloudDNS `json:"clouddns,omitempty"`
+
+	// +optional
+	Cloudflare *ACMEIssuerDNS01ProviderCloudflare `json:"cloudflare,omitempty"`
+
+	// +optional
+	Route53 *ACMEIssuerDNS01ProviderRoute53 `json:"route53,omitempty"`
+
+	// +optional
+	AzureDNS *ACMEIssuerDNS01ProviderAzureDNS `json:"azuredns,omitempty"`
+
+	// +optional
+	DigitalOcean *ACMEIssuerDNS01ProviderDigitalOcean `json:"digitalocean,omitempty"`
+
+	// +optional
+	AcmeDNS *ACMEIssuerDNS01ProviderAcmeDNS `json:"acmedns,omitempty"`
+
+	// +optional
+	RFC2136 *ACMEIssuerDNS01ProviderRFC2136 `json:"rfc2136,omitempty"`
+
+	// +optional
+	Webhook *ACMEIssuerDNS01ProviderWebhook `json:"webhook,omitempty"`
+}
+
+/////// OLD TYPES
+// TODO: REMOVE THESE IN v0.9
 
 // ACMEIssuerHTTP01Config is a structure containing the ACME HTTP configuration options
 type ACMEIssuerHTTP01Config struct {
@@ -267,6 +373,8 @@ type ACMEIssuerDNS01Provider struct {
 	// +optional
 	Webhook *ACMEIssuerDNS01ProviderWebhook `json:"webhook,omitempty"`
 }
+
+//// END OLD TYPES
 
 // CNAMEStrategy configures how the DNS01 provider should handle CNAME records
 // when found in DNS zones.

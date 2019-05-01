@@ -116,16 +116,26 @@ the ``rfc2136`` provider. Since the documentation covers the other parts
 sufficiently, let’s focus on the provider here.
 
 .. code:: yaml
-       rfc2136:
-         nameserver: <address of authoritative nameserver configured above>
-         tsigKeyName: <key name used in `dnssec-keygen`, use something semantically meaningful in both environments>
-         tsigAlgorithm: HMACSHA512 // should be matched to the algo you chose in `dnssec-keygen`
-         tsigSecretSecretRef:
-           name: <the name of the k8s secret holding the TSIG key.. not the key itself!>
-           namespace: <define if not `default`>
-           key: <name of the key *inside* the secret>
+   :emphasize-lines: 10-16
 
-Example:
+   apiVersion: certmanager.k8s.io/v1alpha1
+   kind: Issuer
+   metadata:
+     name: example-issuer
+   spec:
+     acme:
+       ...
+       solvers:
+       - dns01:
+           rfc2136:
+             nameserver: <address of authoritative nameserver configured above>
+             tsigKeyName: <key name used in `dnssec-keygen`, use something semantically meaningful in both environments>
+             tsigAlgorithm: HMACSHA512 // should be matched to the algo you chose in `dnssec-keygen`
+             tsigSecretSecretRef:
+               name: <the name of the k8s secret holding the TSIG key.. not the key itself!>
+               key: <name of the key *inside* the secret>
+
+For example:
 
 .. code:: yaml
 
@@ -135,7 +145,6 @@ Example:
          tsigAlgorithm: HMACSHA512
          tsigSecretSecretRef:
            name: tsig-secret
-           namespace: cert-manager
            key: tsig-secret-key
 
 For this example configuration, we’ll need the following two commands.

@@ -29,6 +29,7 @@ type IssuerConfig struct {
 	ACMEServer, ACMEEmail, ACMEPrivateKeyName string
 	HTTP01                                    *v1alpha1.ACMEIssuerHTTP01Config
 	DNS01                                     *v1alpha1.ACMEIssuerDNS01Config
+	Solvers                                   []v1alpha1.ACMEChallengeSolver
 }
 
 func Issuer(cfg IssuerConfig) *v1alpha1.Issuer {
@@ -51,8 +52,9 @@ func Issuer(cfg IssuerConfig) *v1alpha1.Issuer {
 							Name: cfg.ACMEPrivateKeyName,
 						},
 					},
-					HTTP01: cfg.HTTP01,
-					DNS01:  cfg.DNS01,
+					Solvers: cfg.Solvers,
+					HTTP01:  cfg.HTTP01,
+					DNS01:   cfg.DNS01,
 				},
 			},
 		},

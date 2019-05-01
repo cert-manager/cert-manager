@@ -27,28 +27,20 @@ import (
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	"github.com/jetstack/cert-manager/test/e2e/framework"
-	"github.com/jetstack/cert-manager/test/e2e/framework/addon"
 	"github.com/jetstack/cert-manager/test/e2e/suite/issuers/acme/dnsproviders"
 	"github.com/jetstack/cert-manager/test/e2e/util"
 )
 
-type dns01Provider interface {
-	Details() *dnsproviders.Details
-	SetNamespace(string)
-
-	addon.Addon
-}
-
-var _ = framework.CertManagerDescribe("ACME Certificate (DNS01) (Old format)", func() {
+var _ = framework.CertManagerDescribe("ACME Certificate (DNS01)", func() {
 	// TODO: add additional DNS provider configs here
 	cf := &dnsproviders.Cloudflare{}
 
-	testDNSProviderOldFormat("cloudflare", cf)
+	testDNSProvider("cloudflare", cf)
 })
 
-func testDNSProviderOldFormat(name string, p dns01Provider) bool {
+func testDNSProvider(name string, p dns01Provider) bool {
 	return Context("With "+name+" credentials configured", func() {
-		f := framework.NewDefaultFramework("create-acme-certificate-dns01-" + name + "-old")
+		f := framework.NewDefaultFramework("create-acme-certificate-dns01-" + name)
 		h := f.Helper()
 
 		BeforeEach(func() {
@@ -75,9 +67,9 @@ func testDNSProviderOldFormat(name string, p dns01Provider) bool {
 				// ACMEServer:         framework.TestContext.ACMEURL,
 				ACMEEmail:          testingACMEEmail,
 				ACMEPrivateKeyName: testingACMEPrivateKey,
-				DNS01: &v1alpha1.ACMEIssuerDNS01Config{
-					Providers: []v1alpha1.ACMEIssuerDNS01Provider{
-						p.Details().ProviderConfigOldFormat,
+				Solvers: []v1alpha1.ACMEChallengeSolver{
+					{
+						DNS01: &p.Details().ProviderConfig,
 					},
 				},
 			})
@@ -127,11 +119,6 @@ func testDNSProviderOldFormat(name string, p dns01Provider) bool {
 				SecretName: certificateSecretName,
 				IssuerName: issuerName,
 				DNSNames:   []string{dnsDomain},
-				SolverConfig: &v1alpha1.SolverConfig{
-					DNS01: &v1alpha1.DNS01SolverConfig{
-						Provider: p.Details().ProviderConfigOldFormat.Name,
-					},
-				},
 			})
 			cert, err := certClient.Create(cert)
 			Expect(err).NotTo(HaveOccurred())
@@ -148,11 +135,6 @@ func testDNSProviderOldFormat(name string, p dns01Provider) bool {
 				SecretName: certificateSecretName,
 				IssuerName: issuerName,
 				DNSNames:   []string{"*." + dnsDomain},
-				SolverConfig: &v1alpha1.SolverConfig{
-					DNS01: &v1alpha1.DNS01SolverConfig{
-						Provider: p.Details().ProviderConfigOldFormat.Name,
-					},
-				},
 			})
 			cert, err := f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name).Create(cert)
 			Expect(err).NotTo(HaveOccurred())
@@ -169,11 +151,6 @@ func testDNSProviderOldFormat(name string, p dns01Provider) bool {
 				SecretName: certificateSecretName,
 				IssuerName: issuerName,
 				DNSNames:   []string{"*." + dnsDomain, dnsDomain},
-				SolverConfig: &v1alpha1.SolverConfig{
-					DNS01: &v1alpha1.DNS01SolverConfig{
-						Provider: p.Details().ProviderConfigOldFormat.Name,
-					},
-				},
 			})
 			cert, err := f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name).Create(cert)
 			Expect(err).NotTo(HaveOccurred())

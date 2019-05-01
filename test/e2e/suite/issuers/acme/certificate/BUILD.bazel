@@ -4,7 +4,9 @@ go_library(
     name = "go_default_library",
     srcs = [
         "dns01.go",
+        "dns01_new.go",
         "http01.go",
+        "http01_new.go",
         "webhook.go",
     ],
     importpath = "github.com/jetstack/cert-manager/test/e2e/suite/issuers/acme/certificate",

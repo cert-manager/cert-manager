@@ -47,25 +47,17 @@ Next, create an Issuer (or ClusterIssuer) with a ``clouddns`` provider. An examp
 
 .. code-block:: yaml
    :linenos:
-   :emphasize-lines: 16, 17, 18, 19, 20, 21, 22, 23, 24
+   :emphasize-lines: 10-16
 
    apiVersion: certmanager.k8s.io/v1alpha1
    kind: Issuer
    metadata:
-     name: letsencrypt-staging
+     name: example-issuer
    spec:
      acme:
-       # Replace with your email address so you can be notified of expiring certificates
-       email: user@example.com
-       # Use Let's Encrypt staging for testing as production enforces stricter usage limits
-       server: https://acme-staging-v02.api.letsencrypt.org/directory
-       privateKeySecretRef:
-         # The secret that holds the generated private key used to communicate with Let's Encrypt
-         name: letsencrypt-staging-account-key
-       dns01:
-         providers:
-         # The name given to this CloudDNS provider, multiple CloudDNS providers can be added with different names
-         - name: my-clouddns-provider
+       ...
+       solvers:
+       - dns01:
            clouddns:
              # The ID of the GCP project
              project: my-project-id
@@ -74,13 +66,13 @@ Next, create an Issuer (or ClusterIssuer) with a ``clouddns`` provider. An examp
                name: clouddns-dns01-solver-svc-acct
                key: key.json
 
-For more information about Issuers and ClusterIssuers, see :doc:`Setting Up Issuers</tasks/issuers/index>`.
+For more information about Issuers and ClusterIssuers, see :doc:`Setting Up Issuers </tasks/issuers/index>`.
 
 Once an Issuer (or ClusterIssuer) has been created successfully a Certificate can then be added to verify that everything works.
 
 .. code-block:: yaml
    :linenos:
-   :emphasize-lines: 9, 10, 18, 19
+   :emphasize-lines: 9-10
 
    apiVersion: certmanager.k8s.io/v1alpha1
    kind: Certificate
@@ -96,13 +88,5 @@ Once an Issuer (or ClusterIssuer) has been created successfully a Certificate ca
      dnsNames:
      - example.com
      - www.example.com
-     acme:
-       config:
-       - dns01:
-           # The provider in the previously created issuer
-           provider: my-clouddns-provider
-         domains:
-         - example.com
-         - www.example.com
 
-For more details about Certificates, see :doc:`Issuing Certificates</tasks/issuing-certificates/index>`.
+For more details about Certificates, see :doc:`Issuing Certificates </tasks/issuing-certificates/index>`.

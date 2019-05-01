@@ -3,16 +3,25 @@ Amazon Route53
 =========================
 
 
-.. code-block:: yaml
+.. code:: yaml
+   :emphasize-lines: 10-16
 
-   route53:
-     region: eu-west-1
-
-     # optional if ambient credentials are available; see ambient credentials documentation
-     accessKeyID: AKIAIOSFODNN7EXAMPLE
-     secretAccessKeySecretRef:
-       name: prod-route53-credentials-secret
-       key: secret-access-key
+   apiVersion: certmanager.k8s.io/v1alpha1
+   kind: Issuer
+   metadata:
+     name: example-issuer
+   spec:
+     acme:
+       ...
+       solvers:
+       - dns01:
+           route53:
+             region: eu-west-1
+             # optional if ambient credentials are available; see ambient credentials documentation
+             accessKeyID: AKIAIOSFODNN7EXAMPLE
+             secretAccessKeySecretRef:
+               name: prod-route53-credentials-secret
+               key: secret-access-key
 
 Cert-manager requires the following IAM policy.
 

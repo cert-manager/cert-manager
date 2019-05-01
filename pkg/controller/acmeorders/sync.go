@@ -284,10 +284,6 @@ func (c *Controller) Sync(ctx context.Context, o *cmapi.Order) (err error) {
 			continue
 		}
 
-		domainName := spec.DNSName
-		if spec.Wildcard {
-			domainName = "*." + domainName
-		}
 		c.Recorder.Eventf(o, corev1.EventTypeNormal, "Created", "Created Challenge resource %q for domain %q", ch.Name, ch.Spec.DNSName)
 
 		existingChallenges = append(existingChallenges, ch)
@@ -358,6 +354,7 @@ func (c *Controller) createOrder(ctx context.Context, cl acmecl.Interface, issue
 
 	c.setOrderStatus(&o.Status, acmeOrder)
 
+	useOldFormat := len(o.Spec.Config) > 0
 	chals := make([]cmapi.ChallengeSpec, len(acmeOrder.Authorizations))
 	// we only set the status.challenges field when we first create the order,
 	// because we only create one order per Order resource.
@@ -367,9 +364,17 @@ func (c *Controller) createOrder(ctx context.Context, cl acmecl.Interface, issue
 			return err
 		}
 
-		cs, err := c.challengeSpecForAuthorization(ctx, cl, issuer, o, authz)
-		if err != nil {
-			return fmt.Errorf("Error constructing Challenge resource for Authorization: %v", err)
+		var cs *cmapi.ChallengeSpec
+		if useOldFormat {
+			cs, err = c.oldFormatChallengeSpecForAuthorization(ctx, cl, issuer, o, authz)
+			if err != nil {
+				return fmt.Errorf("error constructing old format Challenge resource for authorization: %v", err)
+			}
+		} else {
+			cs, err = c.challengeSpecForAuthorization(ctx, cl, issuer, o, authz)
+			if err != nil {
+				return fmt.Errorf("error constructing Challenge resource for authorization: %v", err)
+			}
 		}
 
 		chals[i] = *cs
@@ -380,6 +385,163 @@ func (c *Controller) createOrder(ctx context.Context, cl acmecl.Interface, issue
 }
 
 func (c *Controller) challengeSpecForAuthorization(ctx context.Context, cl acmecl.Interface, issuer cmapi.GenericIssuer, o *cmapi.Order, authz *acmeapi.Authorization) (*cmapi.ChallengeSpec, error) {
+	// 1. fetch solvers from issuer
+	solvers := issuer.GetSpec().ACME.Solvers
+
+	// 2. filter solvers to only those that matchLabels
+	var candidates []cmapi.ACMEChallengeSolver
+	for _, cfg := range solvers {
+		// if this config has no selector at all, then it can be used for all
+		// domain authorizations, so we include it
+		if cfg.Selector == nil {
+			candidates = append(candidates, cfg)
+			continue
+		}
+		if !resourceMatchesSelector(o, cfg.Selector.MatchLabels) {
+			continue
+		}
+		if len(cfg.Selector.DNSNames) > 0 && !orderHasOneOfDNSNames(o, cfg.Selector.DNSNames...) {
+			continue
+		}
+		candidates = append(candidates, cfg)
+	}
+
+	// 3. iterate through each solver, finding the most specific match (taking account of dnsNames)
+	// if a solver config that matches all dns names is found, we'll use the
+	// one with the most labels, as this is the 'most specific match' for the
+	// certificate this order is fulfilling.
+	// the matchAll solver is only used if the domainToFind is not listed in
+	// any other solver's DNSNames list.
+	domainToFind := authz.Identifier.Value
+	if authz.Wildcard {
+		domainToFind = "*." + domainToFind
+	}
+	acmeCh, solverConfigToUse := determineSolverConfigToUse(candidates, authz, domainToFind)
+	if acmeCh == nil || solverConfigToUse == nil {
+		return nil, fmt.Errorf("solver configuration for domain %q not found. Ensure at least one Solver on your Issuer matches the order", domainToFind)
+	}
+
+	key, err := keyForChallenge(cl, acmeCh)
+	if err != nil {
+		return nil, err
+	}
+
+	// 4. construct Challenge resource with spec.solver field set
+	return &cmapi.ChallengeSpec{
+		AuthzURL:  authz.URL,
+		Type:      acmeCh.Type,
+		URL:       acmeCh.URL,
+		DNSName:   authz.Identifier.Value,
+		Token:     acmeCh.Token,
+		Key:       key,
+		Solver:    solverConfigToUse,
+		Wildcard:  authz.Wildcard,
+		IssuerRef: o.Spec.IssuerRef,
+	}, nil
+}
+
+// if a solver config that matches all dns names is found, we'll use the
+// one with the most labels, as this is the 'most specific match' for the
+// certificate this order is fulfilling.
+// the matchAll solver is only used if the domainToFind is not listed in
+// any other solver's DNSNames list.
+func determineSolverConfigToUse(candidates []cmapi.ACMEChallengeSolver, authz *acmeapi.Authorization, domainToFind string) (*acmeapi.Challenge, *cmapi.ACMEChallengeSolver) {
+	challengeForSolver := func(solver *cmapi.ACMEChallengeSolver) *acmeapi.Challenge {
+		for _, ch := range authz.Challenges {
+			switch {
+			case ch.Type == "http-01" && solver.HTTP01 != nil:
+				return ch
+			case ch.Type == "dns-01" && solver.DNS01 != nil:
+				return ch
+			}
+		}
+		return nil
+	}
+
+	// this variable tracks the number of labels that matched when a solver
+	// that specifically names the dnsName in the authorization matches.
+	// This is used to tie-break if two different solver configurations both
+	// explicitly name a dnsName
+	numLabelsSpecificMatch := 0
+	var specificMatch *cmapi.ACMEChallengeSolver
+	var specificMatchToSolve *acmeapi.Challenge
+
+	// this variable tracks the number of labels that matched when a solver
+	// that does NOT specifically list the authorization's dnsName matches.
+	// If no solver explicitly lists the dnsName then the solver that matches
+	// the most labels is used.
+	matchAllDomainsNumLabels := 0
+	// matchAll is the most-specific solver that matches the authorization,
+	// that does not list the authorization's dns name
+	var matchAll *cmapi.ACMEChallengeSolver
+	var matchAllToSolve *acmeapi.Challenge
+
+	for _, d := range candidates {
+		acmech := challengeForSolver(&d)
+		if acmech == nil {
+			continue
+		}
+
+		// empty selector/dnsName list matches all
+		if d.Selector == nil {
+			if matchAll == nil {
+				matchAllDomainsNumLabels = 0
+				matchAll = &d
+				matchAllToSolve = acmech
+			}
+			continue
+		}
+		if len(d.Selector.DNSNames) == 0 {
+			if len(d.Selector.MatchLabels) > matchAllDomainsNumLabels || matchAll == nil {
+				matchAll = &d
+				matchAllToSolve = acmech
+			}
+		}
+		for _, dom := range d.Selector.DNSNames {
+			if dom != domainToFind {
+				continue
+			}
+			if len(d.Selector.MatchLabels) > numLabelsSpecificMatch || specificMatch == nil {
+				specificMatch = &d
+				specificMatchToSolve = acmech
+				break
+			}
+		}
+	}
+	if specificMatch != nil {
+		return specificMatchToSolve, specificMatch
+	}
+	if matchAll != nil {
+		return matchAllToSolve, matchAll
+	}
+	return nil, nil
+}
+
+func resourceMatchesSelector(r metav1.Object, sel map[string]string) bool {
+	labels := r.GetLabels()
+	for k, v := range sel {
+		val, ok := labels[k]
+		if !ok || v != val {
+			return false
+		}
+	}
+	return true
+}
+
+func orderHasOneOfDNSNames(o *cmapi.Order, dnsNames ...string) bool {
+	dnsNameMap := map[string]struct{}{}
+	for _, d := range o.Spec.DNSNames {
+		dnsNameMap[d] = struct{}{}
+	}
+	for _, d := range dnsNames {
+		if _, ok := dnsNameMap[d]; ok {
+			return true
+		}
+	}
+	return false
+}
+
+func (c *Controller) oldFormatChallengeSpecForAuthorization(ctx context.Context, cl acmecl.Interface, issuer cmapi.GenericIssuer, o *cmapi.Order, authz *acmeapi.Authorization) (*cmapi.ChallengeSpec, error) {
 	cfg, err := solverConfigurationForAuthorization(o.Spec.Config, authz)
 	if err != nil {
 		return nil, err
@@ -417,7 +579,7 @@ func (c *Controller) challengeSpecForAuthorization(ctx context.Context, cl acmec
 		DNSName:   domain,
 		Token:     challenge.Token,
 		Key:       key,
-		Config:    *cfg,
+		Config:    cfg,
 		Wildcard:  authz.Wildcard,
 		IssuerRef: o.Spec.IssuerRef,
 	}, nil

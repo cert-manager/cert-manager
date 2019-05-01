@@ -1,33 +1,12 @@
-=========================
-HTTP01 Challenge Provider
-=========================
+===================================
+Configuring HTTP01 Ingress Provider
+===================================
 
-In order to allow HTTP01 challenges to be solved, we must enable the HTTP01
-challenge provider on our Issuer resource.
+This page contains details on the different options available on the ``Issuer``
+resource's HTTP01 challenge solver configuration.
 
-This is done through setting the ``http01`` field on the ``issuer.spec.acme``
-stanza. Cert-manager will then attempt to solve ACME HTTP-01 challenges by
-using Ingress resources
-
-.. code-block:: yaml
-   :linenos:
-   :emphasize-lines: 7, 11
-
-   apiVersion: certmanager.k8s.io/v1alpha1
-   kind: Issuer
-   metadata:
-     name: example-issuer
-   spec:
-     acme:
-       email: user@example.com
-       server: https://acme-staging-v02.api.letsencrypt.org/directory
-       privateKeySecretRef:
-         name: example-issuer-account-key
-       http01: {}
-
-.. note::
-   Let's Encrypt does not support issuing wildcard certificates with HTTP-01 challenges.
-   To issue wildcard certificates, you must use the DNS-01 challenge.
+For more information on configuring ACME issuers and their API format, read the
+:doc:`Setting up ACME Issuers <./setup-acme>` documentation.
 
 How HTTP01 validations work
 ===========================
@@ -37,14 +16,40 @@ You can read about how the HTTP01 challenge type works on the
 
 .. _`Let's Encrypt challenge types page`: https://letsencrypt.org/docs/challenge-types/#http-01-challenge
 
-Extra options
-=============
+Options
+=======
 
 The HTTP01 Issuer supports a number of additional options.
 For full details on the range of options available, read the
 `reference documentation`_.
 
 .. _`reference documentation`: https://docs.cert-manager.io/en/latest/reference/api-docs/index.html#acmeissuerhttp01config-v1alpha1
+
+ingressClass
+------------
+
+If the ``ingressClass`` field is specified, cert-manager will create new
+Ingress resources in order to route traffic to the 'acmesolver' pods, which
+are responsible for responding to ACME challenge validation requests.
+
+If this field is not specified, and ``ingressName`` is also not specified,
+cert-manager will default to create **new** ingress resources but will **not**
+set the ingress class on these resources, meaning **all** ingress controllers
+installed in your cluster will server traffic for the challenge solver,
+potentially occurring additional cost.
+
+ingressName
+-----------
+
+If the 'ingressName' field is specified, cert-manager will edit the named
+ingress resource in order to solve HTTP01 challenges.
+
+This is useful for compatibility with ingress controllers such as ingress-gce_,
+which utilise a unique IP address for each Ingress resource created.
+
+This mode should be avoided when using ingress controllers that expose a single
+IP for all ingress resources, as it can create compatibility problems with
+certain ingress-controller specific annotations.
 
 servicePort
 -----------
