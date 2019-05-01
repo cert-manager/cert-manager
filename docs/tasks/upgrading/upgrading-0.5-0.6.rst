@@ -76,7 +76,7 @@ Before upgrading you will need to:
 
     # Install the cert-manager CRDs
     $ kubectl apply \
-        -f https://raw.githubusercontent.com/jetstack/cert-manager/release-0.7/deploy/manifests/00-crds.yaml
+        -f https://raw.githubusercontent.com/jetstack/cert-manager/release-0.8/deploy/manifests/00-crds.yaml
 
     # Update helm repository cache
     $ helm repo update
