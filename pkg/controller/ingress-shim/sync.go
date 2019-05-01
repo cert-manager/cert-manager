@@ -267,6 +267,7 @@ func (c *Controller) setIssuerSpecificConfig(crt *v1alpha1.Certificate, issuer v
 			// If the HTTP01 issuer is not enabled, skip setting the ACME field
 			// on the Certificate resource.
 			if issuer.GetSpec().ACME.HTTP01 == nil {
+				crt.Spec.ACME = nil
 				return nil
 			}
 			domainCfg.HTTP01 = &v1alpha1.HTTP01SolverConfig{}
@@ -289,6 +290,7 @@ func (c *Controller) setIssuerSpecificConfig(crt *v1alpha1.Certificate, issuer v
 			// If the DNS01 issuer is not enabled, skip setting the ACME field
 			// on the Certificate resource.
 			if issuer.GetSpec().ACME.DNS01 == nil {
+				crt.Spec.ACME = nil
 				return nil
 			}
 			dnsProvider, ok := ingAnnotations[acmeIssuerDNS01ProviderNameAnnotation]
@@ -302,6 +304,7 @@ func (c *Controller) setIssuerSpecificConfig(crt *v1alpha1.Certificate, issuer v
 		// If no challenge type is specified, don't set the ACME field at all
 		// and instead rely on the 'new API format' to provide solver config.
 		case "":
+			crt.Spec.ACME = nil
 			return nil
 		default:
 			return fmt.Errorf("invalid acme issuer challenge type specified %q", challengeType)
