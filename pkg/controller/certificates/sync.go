@@ -20,6 +20,7 @@ import (
 	"context"
 	"crypto"
 	"crypto/x509"
+	"encoding/json"
 	"fmt"
 	"math/big"
 	"reflect"
@@ -513,7 +514,9 @@ func generateLocallySignedTemporaryCertificate(crt *v1alpha1.Certificate, pk []b
 }
 
 func (c *Controller) updateCertificateStatus(old, new *v1alpha1.Certificate) (*v1alpha1.Certificate, error) {
-	if reflect.DeepEqual(old.Status, new.Status) {
+	oldBytes, _ := json.Marshal(old.Status)
+	newBytes, _ := json.Marshal(new.Status)
+	if reflect.DeepEqual(oldBytes, newBytes) {
 		return nil, nil
 	}
 	// TODO: replace Update call with UpdateStatus. This requires a custom API
