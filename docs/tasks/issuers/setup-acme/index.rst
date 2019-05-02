@@ -172,20 +172,4 @@ the DNS01 challenge solver for ``*.example.com``.
 It is possible to specify both ``matchLabels`` AND ``dnsNames`` on an ACME
 solver selector.
 
-HTTP01 configuration
-====================
-
-For more details on the available options for the ACME HTTP01 solver type, and
-for details on compatibility with your own ingress controller, read the
-:doc:`Configuring HTTP01 Ingress Provider </tasks/acme/configuring-http01>`
-documentation.
-
-DNS01 configuration
-===================
-
-For more details on the available options for the ACME DNS01 solver type,
-including a list of supported DNS providers, read the
-:doc:`Configuring DNS01 Providers </tasks/acme/configuring-dns01/index>`
-documentation.
-
 .. _`Let's Encrypt staging endpoint`: https://letsencrypt.org/docs/staging-environment/
