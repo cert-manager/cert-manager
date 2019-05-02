@@ -1,0 +1,49 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = ["main.go"],
+    importpath = "github.com/jetstack/cert-manager/hack/release",
+    visibility = ["//visibility:private"],
+    deps = [
+        "//hack/release/pkg/bazel:go_default_library",
+        "//hack/release/pkg/build/chart:go_default_library",
+        "//hack/release/pkg/build/images:go_default_library",
+        "//hack/release/pkg/build/manifests:go_default_library",
+        "//hack/release/pkg/flags:go_default_library",
+        "//hack/release/pkg/helm:go_default_library",
+        "//hack/release/pkg/log:go_default_library",
+        "//vendor/github.com/spf13/pflag:go_default_library",
+        "//vendor/k8s.io/apimachinery/pkg/util/errors:go_default_library",
+    ],
+)
+
+go_binary(
+    name = "release",
+    embed = [":go_default_library"],
+    visibility = ["//visibility:public"],
+)
+
+filegroup(
+    name = "package-srcs",
+    srcs = glob(["**"]),
+    tags = ["automanaged"],
+    visibility = ["//visibility:private"],
+)
+
+filegroup(
+    name = "all-srcs",
+    srcs = [
+        ":package-srcs",
+        "//hack/release/pkg/bazel:all-srcs",
+        "//hack/release/pkg/build/chart:all-srcs",
+        "//hack/release/pkg/build/images:all-srcs",
+        "//hack/release/pkg/build/manifests:all-srcs",
+        "//hack/release/pkg/flags:all-srcs",
+        "//hack/release/pkg/helm:all-srcs",
+        "//hack/release/pkg/log:all-srcs",
+        "//hack/release/pkg/util:all-srcs",
+    ],
+    tags = ["automanaged"],
+    visibility = ["//visibility:public"],
+)

@@ -180,6 +180,7 @@ filegroup(
         ":package-srcs",
         "//hack/bin:all-srcs",
         "//hack/boilerplate:all-srcs",
+        "//hack/release:all-srcs",
     ],
     tags = ["automanaged"],
     visibility = ["//visibility:public"],
