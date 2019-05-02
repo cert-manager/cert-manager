@@ -11,6 +11,5 @@ want to configure.
 
    issuers/index
    issuing-certificates/index
-   acme/index
    backup-restore-crds
    upgrading/index

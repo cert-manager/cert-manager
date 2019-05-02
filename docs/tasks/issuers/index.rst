@@ -72,7 +72,7 @@ Certificate resources.
    :maxdepth: 2
    :caption: Contents:
 
-   setup-acme
+   setup-acme/index
    setup-ca
    setup-selfsigned
    setup-vault
