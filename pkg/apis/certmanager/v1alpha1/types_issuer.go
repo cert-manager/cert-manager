@@ -540,7 +540,7 @@ type IssuerCondition struct {
 	// LastTransitionTime is the timestamp corresponding to the last status
 	// change of this condition.
 	// +optional
-	LastTransitionTime metav1.Time `json:"lastTransitionTime,omitempty"`
+	LastTransitionTime *metav1.Time `json:"lastTransitionTime,omitempty"`
 
 	// Reason is a brief machine readable explanation for the condition's last
 	// transition.
