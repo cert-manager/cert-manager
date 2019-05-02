@@ -4,4 +4,6 @@ dependencies:
   version: v0.8.0-alpha.0
 - name: cainjector
   repository: file://cainjector
-
+  version: v0.8.0-alpha.0
+digest: sha256:7068b0db40ed5111f1db451e89a4d78af477c8220f881f30fdd87118f71f8cc5
+generated: 2019-05-02T07:58:26.426058917+02:00
