@@ -52,7 +52,7 @@ own email address.
        solvers:
        - http01:
            ingress:
-             ingressClass: nginx
+             class: nginx
 
 You can then create this resource using ``kubectl apply``:
 
@@ -115,7 +115,7 @@ along with a DNS01 solver that can be used for wildcard certificates:
        solvers:
        - http01:
            ingress:
-             ingressClass: nginx
+             class: nginx
        - dns01:
            selector:
              matchLabels:
@@ -154,7 +154,7 @@ For example:
        solvers:
        - http01:
            ingress:
-             ingressClass: nginx
+             class: nginx
        - dns01:
            selector:
              dnsNames:
