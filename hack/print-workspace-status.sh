@@ -29,7 +29,7 @@ SCRIPT_ROOT=$(dirname ${BASH_SOURCE})/../..
 if [ -z "${APP_VERSION:-}" ]; then
     APP_VERSION=canary
 fi
-APP_GIT_COMMIT=$(git rev-parse HEAD)
+APP_GIT_COMMIT=${APP_GIT_COMMIT:-$(git rev-parse HEAD)}
 GIT_STATE=""
 if [ ! -z "$(git status --porcelain)" ]; then
     GIT_STATE="dirty"
