@@ -23,12 +23,20 @@ To install the chart with the release name `my-release`:
 $ kubectl apply \
     -f https://raw.githubusercontent.com/jetstack/cert-manager/release-0.8/deploy/manifests/00-crds.yaml
 
+## If you are installing on openshift :
+$ oc create \
+    -f https://raw.githubusercontent.com/jetstack/cert-manager/release-0.7/deploy/manifests/00-crds.yaml
+
 ## IMPORTANT: if the cert-manager namespace **already exists**, you MUST ensure
 ## it has an additional label on it in order for the deployment to succeed
 $ kubectl label namespace cert-manager certmanager.k8s.io/disable-validation="true"
 
+## For openshift:
+$ oc label namespace cert-manager certmanager.k8s.io/disable-validation=true
+
 ## Add the Jetstack Helm repository
 $ helm repo add jetstack https://charts.jetstack.io
+
 
 ## Install the cert-manager helm chart
 $ helm install --name my-release --namespace cert-manager jetstack/cert-manager

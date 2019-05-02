@@ -6,6 +6,7 @@ global:
   ## ref: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/
   ##
   imagePullSecrets: []
+  isOpenshift: false
   # - name: "image-pull-secret"
 
   # Optional priority class to be used for the cert-manager pods

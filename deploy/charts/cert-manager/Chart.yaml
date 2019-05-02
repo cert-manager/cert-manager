@@ -1,5 +1,5 @@
 name: cert-manager
-version: v0.8.0-alpha.0
+version: v0.8.1-alpha.0
 appVersion: v0.8.0-alpha.0
 description: A Helm chart for cert-manager
 home: https://github.com/jetstack/cert-manager
