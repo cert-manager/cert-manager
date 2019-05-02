@@ -41,6 +41,7 @@ def stamped_image(
 
 def multiarch_image(
     name,
+    component,
     goarch = ["amd64", "arm64", "arm"],
     goos = ["linux"],
     user = "1000",
@@ -64,6 +65,15 @@ def multiarch_image(
           user = user,
           stamp = stamp,
           **kwargs)
+
+      container_bundle(
+          name = "%s.%s-%s.export" % (name, os, arch),
+          # TODO: append arch to image name if the arch is not amd64
+          images = {
+              ("{STABLE_DOCKER_REPO}/cert-manager-%s:{STABLE_APP_VERSION}" % component): ":%s.%s-%s" % (name, os, arch),
+              ("{STABLE_DOCKER_REPO}/cert-manager-%s:{STABLE_APP_GIT_COMMIT}" % component): ":%s.%s-%s" % (name, os, arch),
+          },
+      )
 
   container_image(
       name = name,

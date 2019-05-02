@@ -4,6 +4,7 @@ load("//hack:def.bzl", "multiarch_image")
 # Expands to target names such as 'image.linux-amd64', 'image.linux-arm64'
 multiarch_image(
     name = "image",
+    component = "controller",
     visibility = ["//visibility:public"],
 )
 
