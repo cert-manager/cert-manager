@@ -115,7 +115,7 @@ func (g *Global) Complete() error {
 		log := log.WithValues("flag", "app-version")
 
 		log.V(logf.LogLevelDebug).Info("fetching upstream git repo tags")
-		_, err := g.gitOutput("fetch", "--tags")
+		_, err := g.gitOutput("fetch", "--tags", g.UpstreamRepoURL)
 		if err != nil {
 			return fmt.Errorf("error fetching tags: %v", err)
 		}
