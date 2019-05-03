@@ -19,6 +19,7 @@ package bazel
 import (
 	"context"
 	"fmt"
+	"os"
 	"os/exec"
 
 	"github.com/go-logr/logr"
@@ -62,7 +63,7 @@ func (g *Bazel) Cmd(ctx context.Context, args ...string) *exec.Cmd {
 		ctx = context.Background()
 	}
 	cmd := exec.CommandContext(ctx, g.bazel, args...)
-	cmd.Env = append(cmd.Env,
+	cmd.Env = append(os.Environ(),
 		fmt.Sprintf("DOCKER_REPO=%s", flags.Default.DockerRepo),
 		fmt.Sprintf("APP_VERSION=%s", flags.Default.AppVersion),
 		fmt.Sprintf("APP_GIT_COMMIT=%s", flags.Default.GitCommitRef),
