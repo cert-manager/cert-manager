@@ -128,8 +128,8 @@ func (g *Global) Complete() error {
 		}
 
 		if g.AppVersion == "" {
-			// default to 'canary' if no tags point to the current ref
-			g.AppVersion = "canary"
+			// default to 'v0.0.0-experimental' if no tags point to the current ref
+			g.AppVersion = "v0.0.0-experimental"
 		}
 
 		log.WithValues("value", g.AppVersion).Info("set default value")
