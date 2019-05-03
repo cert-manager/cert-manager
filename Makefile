@@ -90,8 +90,7 @@ verify_deps:
 
 verify_codegen:
 	bazel test \
-		//hack:verify-codegen \
-		//hack:verify-deploy-gen
+		//hack:verify-codegen
 
 verify_docs:
 	bazel test \
@@ -131,7 +130,6 @@ generate:
 	bazel run //hack:update-bazel
 	bazel run //hack:update-gofmt
 	bazel run //hack:update-codegen
-	bazel run //hack:update-deploy-gen
 	bazel run //hack:update-reference-docs
 	./hack/update-vendor.sh
 	./hack/update-vendor-licenses.sh

@@ -86,25 +86,6 @@ sh_test(
     ],
 )
 
-# Static deployment manifests rules
-
-sh_binary(
-    name = "update-deploy-gen",
-    srcs = ["update-deploy-gen.sh"],
-    data = [
-        "//hack/bin:helm",
-    ],
-)
-
-sh_test(
-    name = "verify-deploy-gen",
-    srcs = ["verify-deploy-gen.sh"],
-    data = [
-        ":update-deploy-gen",
-        "//deploy:all-srcs",
-    ],
-)
-
 # Reference docs generation rules
 sh_binary(
     name = "update-reference-docs",
