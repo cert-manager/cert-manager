@@ -107,6 +107,9 @@ func (g *Global) Complete() error {
 
 		log.Info("set default value", "value", g.RepoRoot)
 	}
+	if err := os.Chdir(g.RepoRoot); err != nil {
+		return fmt.Errorf("error changing directory to --repo-root=%q: %v", g.RepoRoot, err)
+	}
 
 	if g.AppVersion == "" {
 		log := log.WithValues("flag", "app-version")
