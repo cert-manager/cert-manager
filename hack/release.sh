@@ -70,8 +70,16 @@ export CHART_SERVICE_ACCOUNT=${CHART_SERVICE_ACCOUNT:-}
 export SKIP_CHART="${SKIP_CHART:-}"
 export SKIP_MANIFESTS="${SKIP_MANIFESTS:-}"
 
+EXTRA_ARGS=""
 if [[ ! -z "${CONFIRM}" ]]; then
-    PUBLISH="--publish=true"
+    EXTRA_ARGS="${EXTRA_ARGS} --publish=true"
+fi
+if [[ -z "${SKIP_CHART}" ]]; then
+    EXTRA_ARGS="${EXTRA_ARGS} --chart"
+fi
+
+if [[ -z "${SKIP_MANIFESTS}" ]]; then
+    EXTRA_ARGS="${EXTRA_ARGS} --manifests"
 fi
 
 if [[ ! -z "${CHART_SERVICE_ACCOUNT}" ]]; then
@@ -79,19 +87,9 @@ if [[ ! -z "${CHART_SERVICE_ACCOUNT}" ]]; then
     gcloud auth activate-service-account --key-file "${CHART_SERVICE_ACCOUNT}"
 fi
 
-if [[ -z "${SKIP_CHART}" ]]; then
-    CHART="--chart"
-fi
-
-if [[ -z "${SKIP_MANIFESTS}" ]]; then
-    MANIFESTS="--manifests"
-fi
-
 # TODO: enable --manifests too
 bazel run //hack/release -- \
     --images \
-    "${CHART:-}" \
-    "${MANIFESTS:-}" \
     --docker-repo="${DOCKER_REPO}" \
     --helm.path="$(bazel info bazel-genfiles)/hack/bin/helm" \
     --chart.path="${CHART_PATH}" \
@@ -99,4 +97,4 @@ bazel run //hack/release -- \
     --app-version="${VERSION}" \
     --docker-repo="${DOCKER_REPO}" \
     --v=4 \
-    "${PUBLISH:-}"
+    "${EXTRA_ARGS}"
