@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
+	"path/filepath"
 	"strings"
 
 	"github.com/google/go-github/github"
@@ -106,6 +107,7 @@ func (p *Plugin) Build(ctx context.Context) error {
 			"--kube-version=1.9",
 			"--namespace=cert-manager",
 			"--name=cert-manager",
+			fmt.Sprintf("--values=%s", filepath.Join(flags.Default.RepoRoot, "deploy", "manifests", "helm-values.yaml")),
 		}, args...)...)
 		if err != nil {
 			return fmt.Errorf("error building manifest variant %q: %v", n, err)
