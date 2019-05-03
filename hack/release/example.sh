@@ -14,6 +14,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+set -o errexit
+set -o nounset
+set -o pipefail
+
 ## Sample bash script demonstrating how to use the release tool.
 
 ### Build a local copy of all amd64 image components using a custom repo name
