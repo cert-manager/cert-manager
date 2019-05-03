@@ -40,6 +40,7 @@ go_library(
         "//vendor/google.golang.org/grpc/grpclog:go_default_library",
         "//vendor/google.golang.org/grpc/internal:go_default_library",
         "//vendor/google.golang.org/grpc/internal/backoff:go_default_library",
+        "//vendor/google.golang.org/grpc/internal/balancerload:go_default_library",
         "//vendor/google.golang.org/grpc/internal/binarylog:go_default_library",
         "//vendor/google.golang.org/grpc/internal/channelz:go_default_library",
         "//vendor/google.golang.org/grpc/internal/envconfig:go_default_library",

@@ -1,21 +1,31 @@
 # Deployment files
 
-This directory contains the Kubernetes manifests needed to deploy cert-manager.
+This directory previously contained the Kubernetes manifests needed to deploy cert-manager.
 
 For full information on deploying cert-manager, see the [getting started guide](https://docs.cert-manager.io/en/latest/getting-started/index.html).
 
-## Where do these come from?
+## Where are the manifests now?
 
-The manifests in this are generated from the Helm chart automatically.
-The [helm-values.yaml](./helm-values.yaml) file in this directory is used to
-generate the [cert-manager.yaml](./cert-manager.yaml) manifest.
+From v0.8 onwards, the 'static deployment manifests' are generated
+automatically from the [official helm chart](../charts/cert-manager).
 
-They are automatically generated using `bazel run //hack:update-deploy-gen`.
+When a new release of cert-manager is cut, these manifests will be
+automatically generated and published as an asset **attached to the GitHub release**.
 
-The [cert-manager-no-webhook.yaml](./cert-manager-no-webhook.yaml) file should
-only be used in cases where you are deploying to a cluster **older than v1.9**
-or otherwise are not able to make use of ValidatingWebhookConfiguration
-resources due to your apiserver not being configured properly.
-For more information on the webhook component, please read the 'Resource
-Validation Webhook' document under the 'Administrative tasks' section of the
-documentation.
+## How can I generate my own manifests?
+
+If you want to build a copy of your own manifests for testing purposes, you
+can do so using the 'release' tool in this repository.
+
+To build the manifests, run:
+
+```bash
+$ bazel run //hack/release -- \
+    --manifests \
+    --app-version={image tag} \
+    --docker-repo=quay.io/myuser
+```
+
+This will generate static deployment manifests that are configured to use the
+specified image repository and tag, making it easy for you to test and
+distribute sample manifests.

@@ -10,6 +10,7 @@ go_library(
     importpath = "google.golang.org/grpc/stats",
     tags = ["manual"],
     visibility = ["//visibility:public"],
+    deps = ["//vendor/google.golang.org/grpc/metadata:go_default_library"],
 )
 
 filegroup(

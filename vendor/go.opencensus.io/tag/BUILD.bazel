@@ -8,6 +8,7 @@ go_library(
         "key.go",
         "map.go",
         "map_codec.go",
+        "metadata.go",
         "profile_19.go",
         "profile_not19.go",
         "validate.go",
