@@ -222,7 +222,7 @@ chartlib::validate_chart() {
 
     echo "Validating chart '$chart_dir'..."
 
-    chartlib::check_for_version_bump "$chart_dir" || error=true
+#    chartlib::check_for_version_bump "$chart_dir" || error=true
     chartlib::lint_yaml_file "$chart_dir/Chart.yaml" || error=true
     chartlib::lint_yaml_file "$chart_dir/values.yaml" || error=true
     chartlib::validate_chart_yaml "$chart_dir" || error=true
