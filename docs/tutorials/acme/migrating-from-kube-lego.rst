@@ -223,7 +223,7 @@ run:
 .. code-block:: shell
 
    helm upgrade cert-manager \
-       stable/cert-manager \
+       jetstack/cert-manager \
        --namespace kube-system \
        --set ingressShim.defaultIssuerName=letsencrypt-staging \
        --set ingressShim.defaultIssuerKind=ClusterIssuer
