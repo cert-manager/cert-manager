@@ -146,6 +146,7 @@ func main() {
 		<-stopCh
 	}()
 
+	log.Info("running all build targets")
 	// only run enabled plugins
 	for shouldPtr, p := range plugins {
 		if buildAll || *shouldPtr {
@@ -160,6 +161,7 @@ func main() {
 	var errs []error
 	for shouldPtr, p := range plugins {
 		if publish && (buildAll || *shouldPtr) {
+			log.Info("running InitPublish")
 			errs = append(errs, p.InitPublish()...)
 		}
 	}
@@ -172,6 +174,7 @@ func main() {
 	// only publish enabled plugins
 	for shouldPtr, p := range plugins {
 		if publish && (buildAll || *shouldPtr) {
+			log.Info("running Publish")
 			err := p.Publish(ctx)
 			if err != nil {
 				log.Error(err, "error running publish job")

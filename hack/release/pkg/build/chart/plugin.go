@@ -97,11 +97,14 @@ func (g *Plugin) Build(ctx context.Context) error {
 }
 
 func (g *Plugin) Publish(ctx context.Context) error {
+	log.Info("running publish for chart plugin")
 	// Creates a Bucket instance.
 	bucket := g.gcsClient.Bucket(g.Bucket)
+	log.Info("publishing to bucket", "bucket", g.Bucket)
 
 	filename := filepath.Base(g.outputFile)
 	w := bucket.Object(filename).NewWriter(ctx)
+	log.Info("writing output file to GCS", "name", filename)
 	defer w.Close()
 	in, err := os.Open(g.outputFile)
 	if err != nil {
@@ -110,7 +113,6 @@ func (g *Plugin) Publish(ctx context.Context) error {
 	if _, err := io.Copy(w, in); err != nil {
 		return fmt.Errorf("error writing file: %v", err)
 	}
-
 	if err := w.Close(); err != nil {
 		return fmt.Errorf("error closing file: %v", err)
 	}

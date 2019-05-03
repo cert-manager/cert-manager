@@ -118,6 +118,7 @@ func (g *Plugin) Build(ctx context.Context) error {
 }
 
 func (g *Plugin) Publish(ctx context.Context) error {
+	log.Info("running publish for image plugin")
 	// this case should never be reached, but we check it to be safe
 	if !g.built {
 		if _, err := g.build(ctx); err != nil {
@@ -125,6 +126,7 @@ func (g *Plugin) Publish(ctx context.Context) error {
 		}
 	}
 
+	log.Info("pushing images")
 	targets := g.generateTargets()
 	err := g.pushImages(ctx, targets)
 	if err != nil {
