@@ -128,7 +128,6 @@ sh_binary(
     name = "update-crds",
     srcs = ["update-crds.sh"],
     data = [
-        ":update-deploy-gen",
         "//hack/bin:gencrd",
         "//pkg/apis:all-srcs",
         "//vendor/k8s.io/api/core/v1:go_default_library",
