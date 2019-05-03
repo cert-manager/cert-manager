@@ -6,7 +6,7 @@ go_library(
     importpath = "github.com/jetstack/cert-manager/hack/release/pkg/helm",
     visibility = ["//visibility:public"],
     deps = [
-        "//hack/release/pkg/flags:go_default_library",
+        "//hack/release/pkg/bazel:go_default_library",
         "//hack/release/pkg/log:go_default_library",
         "//vendor/github.com/spf13/pflag:go_default_library",
     ],

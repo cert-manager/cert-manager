@@ -29,7 +29,7 @@ import (
 
 	flag "github.com/spf13/pflag"
 
-	"github.com/jetstack/cert-manager/hack/release/pkg/flags"
+	"github.com/jetstack/cert-manager/hack/release/pkg/bazel"
 	logf "github.com/jetstack/cert-manager/hack/release/pkg/log"
 )
 
@@ -39,20 +39,13 @@ var (
 )
 
 type Helm struct {
-	// Path to the helm binary
-	helm string
 }
 
 func (g *Helm) AddFlags(fs *flag.FlagSet) {
-	fs.StringVar(&g.helm, "helm.path", "helm", "path to the helm command")
 }
 
 func (g *Helm) Validate() []error {
 	var errs []error
-
-	if g.helm == "" {
-		errs = append(errs, fmt.Errorf("--helm.path must be specified"))
-	}
 
 	return errs
 }
@@ -65,9 +58,7 @@ func (g *Helm) Cmd(ctx context.Context, args ...string) *exec.Cmd {
 	if ctx == nil {
 		ctx = context.Background()
 	}
-	cmd := exec.CommandContext(ctx, g.helm, args...)
-	cmd.Dir = flags.Default.RepoRoot
-	return cmd
+	return bazel.Default.Run(ctx, "//hack/bin:helm", append([]string{"--"}, args...)...)
 }
 
 func (g *Helm) Init(ctx context.Context, clientOnly bool, args ...string) *exec.Cmd {

@@ -106,29 +106,29 @@ func (g *Bazel) BuildPlatformE(ctx context.Context, log logr.Logger, os, arch st
 // Run will construct a new exec.Cmd that will run the given targets
 // It will produce artifacts suitable for running on the current host OS.
 // The --platforms flag *will not* be set.
-func (g *Bazel) Run(ctx context.Context, target string) *exec.Cmd {
-	return g.Cmd(ctx, []string{"run", target}...)
+func (g *Bazel) Run(ctx context.Context, target string, args ...string) *exec.Cmd {
+	return g.Cmd(ctx, append([]string{"run", target}, args...)...)
 }
 
 // RunPlatform will construct a new exec.Cmd that will build the given
 // target for the provided os and architecture.
 // This is useful when producing cross-builds.
 // Bazel's --platforms variable will be set automatically.
-func (g *Bazel) RunPlatform(ctx context.Context, os, arch string, targets ...string) *exec.Cmd {
+func (g *Bazel) RunPlatform(ctx context.Context, os, arch, target string, args ...string) *exec.Cmd {
 	platform := fmt.Sprintf("--platforms=@io_bazel_rules_go//go/toolchain:%s_%s", os, arch)
-	return g.Cmd(ctx, append([]string{"run", platform}, targets...)...)
+	return g.Cmd(ctx, append([]string{"run", platform, target}, args...)...)
 }
 
 // RunE will run the given targets on the current host OS.
 // The --platforms flag *will not* be set.
-func (g *Bazel) RunE(ctx context.Context, log logr.Logger, target string) error {
-	return util.RunE(log, g.Run(ctx, target))
+func (g *Bazel) RunE(ctx context.Context, log logr.Logger, target string, args ...string) error {
+	return util.RunE(log, g.Run(ctx, target, args...))
 }
 
 // RunPlatformE will run the given target, built for the provided os and
 // architecture.
 // This is useful when producing cross-builds.
 // Bazel's --platforms variable will be set automatically.
-func (g *Bazel) RunPlatformE(ctx context.Context, log logr.Logger, os, arch string, target string) error {
-	return util.RunE(log, g.RunPlatform(ctx, os, arch, target))
+func (g *Bazel) RunPlatformE(ctx context.Context, log logr.Logger, os, arch, target string, args ...string) error {
+	return util.RunE(log, g.RunPlatform(ctx, os, arch, target, args...))
 }
