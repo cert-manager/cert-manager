@@ -17,7 +17,7 @@
 set -o errexit
 set -o nounset
 set -o pipefail
-
+set -o xtrace
 
 function usage() {
     cat <<'EOF'
@@ -68,22 +68,34 @@ export CHART_PATH=${CHART_PATH:-deploy/charts/cert-manager}
 export CHART_BUCKET=${CHART_BUCKET:-jetstack-chart-museum}
 export CHART_SERVICE_ACCOUNT=${CHART_SERVICE_ACCOUNT:-}
 export SKIP_CHART="${SKIP_CHART:-}"
+export SKIP_MANIFESTS="${SKIP_MANIFESTS:-}"
 
 if [[ ! -z "${CONFIRM}" ]]; then
     PUBLISH="--publish"
 fi
 
-if [ ! -z "${CHART_SERVICE_ACCOUNT}" ]; then
+if [[ ! -z "${CHART_SERVICE_ACCOUNT}" ]]; then
     export GOOGLE_APPLICATION_CREDENTIALS="${CHART_SERVICE_ACCOUNT}"
     gcloud auth activate-service-account --key-file "${CHART_SERVICE_ACCOUNT}"
+fi
+
+if [[ -z "${SKIP_CHART}" ]]; then
+    CHART="--chart"
+fi
+
+if [[ -z "${SKIP_MANIFESTS}" ]]; then
+    MANIFESTS="--manifests"
 fi
 
 # TODO: enable --manifests too
 bazel run //hack/release -- \
     --images \
-    --chart \
+    "${CHART:-}" \
+    "${MANIFESTS:-}" \
+    --docker-repo="${DOCKER_REPO}" \
     --helm.path="$(bazel info bazel-genfiles)/hack/bin/helm" \
     --chart.path="${CHART_PATH}" \
+    --chart.bucket="${CHART_BUCKET}" \
     --app-version="${VERSION}" \
     --docker-repo="${DOCKER_REPO}" \
     --v=4 \
