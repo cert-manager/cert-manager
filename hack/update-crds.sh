@@ -38,5 +38,3 @@ for file in ${output}/*; do
     cat "$file" >> "$out"
     echo "---" >> "$out"
 done
-
-hack/update-deploy-gen.sh
