@@ -19,29 +19,27 @@ set -o nounset
 set -o pipefail
 
 readonly REPO_ROOT=$(git rev-parse --show-toplevel)
-readonly UPSTREAM_REPO="https://github.com/jetstack/cert-manager.git"
 
-if [ -z "${PULL_BASE_REF:-}" ]; then
-    echo "PULL_BASE_REF must be set to a target branch name"
+chart_dir="deploy/charts/cert-manager"
+
+echo "Linting chart: ${chart_dir}"
+
+cleanup() {
+    rm "${REPO_ROOT}/${chart_dir}"/requirements.lock > /dev/null 2>&1 || true
+}
+
+cleanup
+trap cleanup EXIT
+
+if ! docker run -v ${REPO_ROOT}:/workspace --workdir /workspace \
+    quay.io/helmpack/chart-testing:v2.3.3 \
+    ct lint \
+        --check-version-increment=false \
+        --charts "/workspace/${chart_dir}" \
+        --validate-maintainers=false \
+        --debug; then
+    echo "Linting failed"
     exit 1
 fi
 
-if [ -z "${REMOTE:-}" ]; then
-    echo "+++ REMOTE not set - defaulting to 'upstream'"
-    export REMOTE="upstream"
-fi
-
-if ! git remote get-url "${REMOTE}" > /dev/null 2>&1; then
-    echo "+++ Remote '${REMOTE}' does not exist. Setting to ${UPSTREAM_REPO}"
-    git remote add "${REMOTE}" "${UPSTREAM_REPO}"
-fi
-
-git fetch "${REMOTE}"
-
-docker run --rm -v "${REPO_ROOT}:/workdir" --workdir /workdir \
-   -e REMOTE="${REMOTE}" \
-   -e TARGET_BRANCH="${PULL_BASE_REF}" \
-   gcr.io/kubernetes-charts-ci/chart-testing:v1.0.2 \
-   /workdir/test/chart/chart_test.sh \
-   --no-install \
-   --config test/chart/.testenv
+echo "Linting succeeded!"
