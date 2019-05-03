@@ -71,7 +71,7 @@ export SKIP_CHART="${SKIP_CHART:-}"
 export SKIP_MANIFESTS="${SKIP_MANIFESTS:-}"
 
 if [[ ! -z "${CONFIRM}" ]]; then
-    PUBLISH="--publish"
+    PUBLISH="--publish=true"
 fi
 
 if [[ ! -z "${CHART_SERVICE_ACCOUNT}" ]]; then
