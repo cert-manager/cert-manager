@@ -66,12 +66,15 @@ def multiarch_image(
           stamp = stamp,
           **kwargs)
 
+      suffix = ""
+      if arch != "amd64":
+        suffix = "-%s" % arch
+
       container_bundle(
           name = "%s.%s-%s.export" % (name, os, arch),
-          # TODO: append arch to image name if the arch is not amd64
           images = {
-              ("{STABLE_DOCKER_REPO}/cert-manager-%s:{STABLE_APP_VERSION}" % component): ":%s.%s-%s" % (name, os, arch),
-              ("{STABLE_DOCKER_REPO}/cert-manager-%s:{STABLE_APP_GIT_COMMIT}" % component): ":%s.%s-%s" % (name, os, arch),
+              ("{STABLE_DOCKER_REPO}/cert-manager-%s%s:{STABLE_APP_VERSION}" % (component, suffix)): ":%s.%s-%s" % (name, os, arch),
+              ("{STABLE_DOCKER_REPO}/cert-manager-%s%s:{STABLE_APP_GIT_COMMIT}" % (component, suffix)): ":%s.%s-%s" % (name, os, arch),
           },
       )
 
