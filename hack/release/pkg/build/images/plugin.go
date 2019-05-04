@@ -248,10 +248,11 @@ func (p *Plugin) pushImages(ctx context.Context, targets imageTargets) error {
 	for _, img := range images {
 		log := log.WithValues("image", img)
 		log.Info("pushing docker image")
-		args := []string{"push", img}
+		args := []string{}
 		if p.configFileName != "" {
 			args = append(args, "--config", p.configFileName)
 		}
+		args = append(args, "push", img)
 		cmd := exec.CommandContext(ctx, "docker", args...)
 		err := util.RunE(log, cmd)
 		if err != nil {
