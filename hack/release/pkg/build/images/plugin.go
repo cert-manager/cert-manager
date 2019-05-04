@@ -19,13 +19,16 @@ package images
 import (
 	"context"
 	"fmt"
-	"github.com/jetstack/cert-manager/hack/release/pkg/util"
-	flag "github.com/spf13/pflag"
+	"os"
 	"os/exec"
+	"path"
+
+	flag "github.com/spf13/pflag"
 
 	"github.com/jetstack/cert-manager/hack/release/pkg/bazel"
 	"github.com/jetstack/cert-manager/hack/release/pkg/flags"
 	logf "github.com/jetstack/cert-manager/hack/release/pkg/log"
+	"github.com/jetstack/cert-manager/hack/release/pkg/util"
 )
 
 var (
@@ -47,16 +50,23 @@ type Plugin struct {
 	// List of architectures to build images for
 	GoArch []string
 
+	// DockerConfig is a path to a directory containing a config.json file that
+	// is used for Docker authentication
+	DockerConfig string
+
 	// TODO: add GOOS support once the build system supports more than linux
 
 	// built is set to true if Build() has completed successfully
 	built bool
+	// configFileName is computed based on the DockerConfig field
+	configFileName string
 }
 
 func (g *Plugin) AddFlags(fs *flag.FlagSet) {
 	fs.BoolVar(&g.ExportToDocker, "images.export", false, "if true, images will be exported to the currently configured docker daemon")
 	fs.StringSliceVar(&g.Components, "images.components", []string{"acmesolver", "controller", "webhook"}, "the list of components to build images for")
 	fs.StringSliceVar(&g.GoArch, "images.goarch", []string{"amd64", "arm64", "arm"}, "list of architectures to build images for")
+	fs.StringVar(&g.DockerConfig, "images.docker-config", "", "path to a directory containing a docker config.json file used when pushing images")
 }
 
 func (g *Plugin) Validate() []error {
@@ -95,6 +105,20 @@ func (g *Plugin) Validate() []error {
 
 func (g *Plugin) InitPublish() []error {
 	var errs []error
+
+	if g.DockerConfig != "" {
+		// Hardcode the filename to be config.json for backwards compatibility
+		// with the old release.sh script.
+		configFileName := path.Join(g.DockerConfig, "config.json")
+		f, err := os.Stat(configFileName)
+		if err != nil {
+			return []error{fmt.Errorf("error checking config file: %v", err)}
+		}
+		if f.IsDir() {
+			return []error{fmt.Errorf("docker config.json is not a file")}
+		}
+		g.configFileName = configFileName
+	}
 
 	return errs
 }
@@ -139,6 +163,14 @@ func (g *Plugin) Publish(ctx context.Context) error {
 }
 
 func (g *Plugin) Complete() error {
+	log = log.WithName("default-flags")
+
+	if g.DockerConfig == "" {
+		g.DockerConfig = os.Getenv("DOCKER_CONFIG")
+		if g.DockerConfig != "" {
+			log.Info("set default value", "flag", "images.docker-config", "value", g.DockerConfig)
+		}
+	}
 	return nil
 }
 
@@ -216,7 +248,12 @@ func (p *Plugin) pushImages(ctx context.Context, targets imageTargets) error {
 	for _, img := range images {
 		log := log.WithValues("image", img)
 		log.Info("pushing docker image")
-		err := util.RunE(log, exec.CommandContext(ctx, "docker", "push", img))
+		args := []string{"push", img}
+		if p.configFileName != "" {
+			args = append(args, "--config", p.configFileName)
+		}
+		cmd := exec.CommandContext(ctx, "docker", args...)
+		err := util.RunE(log, cmd)
 		if err != nil {
 			return err
 		}
