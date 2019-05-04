@@ -168,7 +168,7 @@ func (g *Plugin) Complete() error {
 	if g.DockerConfig == "" {
 		g.DockerConfig = os.Getenv("DOCKER_CONFIG")
 		if g.DockerConfig != "" {
-			log.Info("set default value", "value", g.DockerConfig)
+			log.Info("set default value", "flag", "images.docker-config", "value", g.DockerConfig)
 		}
 	}
 	return nil
