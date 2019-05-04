@@ -338,7 +338,7 @@ new_git_repository(
     remote = "https://github.com/munnerz/brodocs.git",
     # We use this specific revision as it contains changes that allow us to
     # specify custom paths when building documentation.
-    commit = "94937a75f3fd680df04a2cfb06ea7299aad156e9",
+    commit = "28714834053271ebb5a6a5fe22af29f98fc0b6d0",
     build_file_content = """
 filegroup(
     name = "all-srcs",
