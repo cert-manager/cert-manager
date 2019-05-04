@@ -29,14 +29,12 @@
 <th>Kind</th>
 </tr>
 </thead>
-<tbody>
-<tr>
+<tbody><tr>
 <td><code>certmanager</code></td>
 <td><code>v1alpha1</code></td>
 <td><code>Certificate</code></td>
 </tr>
-</tbody>
-</table>
+</tbody></table>
 <p>Certificate is a type to represent a Certificate from ACME</p>
 <table>
 <thead>
@@ -45,8 +43,7 @@
 <th>Description</th>
 </tr>
 </thead>
-<tbody>
-<tr>
+<tbody><tr>
 <td><code>apiVersion</code><br /> <em>string</em></td>
 <td>APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: <a href="https://git.k8s.io/community/contributors/devel/api-conventions.md#resources">https://git.k8s.io/community/contributors/devel/api-conventions.md#resources</a></td>
 </tr>
@@ -55,19 +52,18 @@
 <td>Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: <a href="https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds">https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds</a></td>
 </tr>
 <tr>
-<td><code>metadata</code><br /> <em><a href="#objectmeta-v1">ObjectMeta</a></em></td>
+<td><code>metadata</code><br /> *<a href="#objectmeta-v1">ObjectMeta</a>*</td>
 <td></td>
 </tr>
 <tr>
-<td><code>spec</code><br /> <em><a href="#certificatespec-v1alpha1">CertificateSpec</a></em></td>
+<td><code>spec</code><br /> *<a href="#certificatespec-v1alpha1">CertificateSpec</a>*</td>
 <td></td>
 </tr>
 <tr>
-<td><code>status</code><br /> <em><a href="#certificatestatus-v1alpha1">CertificateStatus</a></em></td>
+<td><code>status</code><br /> *<a href="#certificatestatus-v1alpha1">CertificateStatus</a>*</td>
 <td></td>
 </tr>
-</tbody>
-</table>
+</tbody></table>
 <h3 id="certificatespec-v1alpha1">CertificateSpec v1alpha1</h3>
 <aside class="notice">
 Appears In:
@@ -83,9 +79,8 @@ Appears In:
 <th>Description</th>
 </tr>
 </thead>
-<tbody>
-<tr>
-<td><code>acme</code><br /> <em><a href="#acmecertificateconfig-v1alpha1">ACMECertificateConfig</a></em></td>
+<tbody><tr>
+<td><code>acme</code><br /> *<a href="#acmecertificateconfig-v1alpha1">ACMECertificateConfig</a>*</td>
 <td>ACME contains configuration specific to ACME Certificates. Notably, this contains details on how the domain names listed on this Certificate resource should be &#39;solved&#39;, i.e. mapping HTTP01 and DNS01 providers to DNS names.</td>
 </tr>
 <tr>
@@ -97,7 +92,7 @@ Appears In:
 <td>DNSNames is a list of subject alt names to be used on the Certificate</td>
 </tr>
 <tr>
-<td><code>duration</code><br /> <em><a href="#duration-v1">Duration</a></em></td>
+<td><code>duration</code><br /> *<a href="#duration-v1">Duration</a>*</td>
 <td>Certificate default Duration</td>
 </tr>
 <tr>
@@ -109,7 +104,7 @@ Appears In:
 <td>IsCA will mark this Certificate as valid for signing. This implies that the &#39;signing&#39; usage is set</td>
 </tr>
 <tr>
-<td><code>issuerRef</code><br /> <em><a href="#objectreference-v1alpha1">ObjectReference</a></em></td>
+<td><code>issuerRef</code><br /> *<a href="#objectreference-v1alpha1">ObjectReference</a>*</td>
 <td>IssuerRef is a reference to the issuer for this certificate. If the &#39;kind&#39; field is not set, or set to &#39;Issuer&#39;, an Issuer resource with the given name in the same namespace as the Certificate will be used. If the &#39;kind&#39; field is set to &#39;ClusterIssuer&#39;, a ClusterIssuer with the provided name will be used. The &#39;name&#39; field in this stanza is required at all times.</td>
 </tr>
 <tr>
@@ -125,15 +120,14 @@ Appears In:
 <td>Organization is the organization to be used on the Certificate</td>
 </tr>
 <tr>
-<td><code>renewBefore</code><br /> <em><a href="#duration-v1">Duration</a></em></td>
+<td><code>renewBefore</code><br /> *<a href="#duration-v1">Duration</a>*</td>
 <td>Certificate renew before expiration duration</td>
 </tr>
 <tr>
 <td><code>secretName</code><br /> <em>string</em></td>
 <td>SecretName is the name of the secret resource to store this secret in</td>
 </tr>
-</tbody>
-</table>
+</tbody></table>
 <h3 id="certificatestatus-v1alpha1">CertificateStatus v1alpha1</h3>
 <aside class="notice">
 Appears In:
@@ -149,21 +143,19 @@ Appears In:
 <th>Description</th>
 </tr>
 </thead>
-<tbody>
-<tr>
-<td><code>conditions</code><br /> <em><a href="#certificatecondition-v1alpha1">CertificateCondition</a> array</em></td>
+<tbody><tr>
+<td><code>conditions</code><br /> *<a href="#certificatecondition-v1alpha1">CertificateCondition</a> array*</td>
 <td></td>
 </tr>
 <tr>
-<td><code>lastFailureTime</code><br /> <em><a href="#time-v1">Time</a></em></td>
+<td><code>lastFailureTime</code><br /> *<a href="#time-v1">Time</a>*</td>
 <td></td>
 </tr>
 <tr>
-<td><code>notAfter</code><br /> <em><a href="#time-v1">Time</a></em></td>
+<td><code>notAfter</code><br /> *<a href="#time-v1">Time</a>*</td>
 <td>The expiration time of the certificate stored in the secret named by this resource in spec.secretName.</td>
 </tr>
-</tbody>
-</table>
+</tbody></table>
 <hr>
 <h1 id="clusterissuer-v1alpha1">ClusterIssuer v1alpha1</h1>
 <table>
@@ -174,14 +166,12 @@ Appears In:
 <th>Kind</th>
 </tr>
 </thead>
-<tbody>
-<tr>
+<tbody><tr>
 <td><code>certmanager</code></td>
 <td><code>v1alpha1</code></td>
 <td><code>ClusterIssuer</code></td>
 </tr>
-</tbody>
-</table>
+</tbody></table>
 <table>
 <thead>
 <tr>
@@ -189,8 +179,7 @@ Appears In:
 <th>Description</th>
 </tr>
 </thead>
-<tbody>
-<tr>
+<tbody><tr>
 <td><code>apiVersion</code><br /> <em>string</em></td>
 <td>APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: <a href="https://git.k8s.io/community/contributors/devel/api-conventions.md#resources">https://git.k8s.io/community/contributors/devel/api-conventions.md#resources</a></td>
 </tr>
@@ -199,19 +188,18 @@ Appears In:
 <td>Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: <a href="https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds">https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds</a></td>
 </tr>
 <tr>
-<td><code>metadata</code><br /> <em><a href="#objectmeta-v1">ObjectMeta</a></em></td>
+<td><code>metadata</code><br /> *<a href="#objectmeta-v1">ObjectMeta</a>*</td>
 <td></td>
 </tr>
 <tr>
-<td><code>spec</code><br /> <em><a href="#issuerspec-v1alpha1">IssuerSpec</a></em></td>
+<td><code>spec</code><br /> *<a href="#issuerspec-v1alpha1">IssuerSpec</a>*</td>
 <td></td>
 </tr>
 <tr>
-<td><code>status</code><br /> <em><a href="#issuerstatus-v1alpha1">IssuerStatus</a></em></td>
+<td><code>status</code><br /> *<a href="#issuerstatus-v1alpha1">IssuerStatus</a>*</td>
 <td></td>
 </tr>
-</tbody>
-</table>
+</tbody></table>
 <hr>
 <h1 id="issuer-v1alpha1">Issuer v1alpha1</h1>
 <table>
@@ -222,14 +210,12 @@ Appears In:
 <th>Kind</th>
 </tr>
 </thead>
-<tbody>
-<tr>
+<tbody><tr>
 <td><code>certmanager</code></td>
 <td><code>v1alpha1</code></td>
 <td><code>Issuer</code></td>
 </tr>
-</tbody>
-</table>
+</tbody></table>
 <table>
 <thead>
 <tr>
@@ -237,8 +223,7 @@ Appears In:
 <th>Description</th>
 </tr>
 </thead>
-<tbody>
-<tr>
+<tbody><tr>
 <td><code>apiVersion</code><br /> <em>string</em></td>
 <td>APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: <a href="https://git.k8s.io/community/contributors/devel/api-conventions.md#resources">https://git.k8s.io/community/contributors/devel/api-conventions.md#resources</a></td>
 </tr>
@@ -247,19 +232,18 @@ Appears In:
 <td>Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: <a href="https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds">https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds</a></td>
 </tr>
 <tr>
-<td><code>metadata</code><br /> <em><a href="#objectmeta-v1">ObjectMeta</a></em></td>
+<td><code>metadata</code><br /> *<a href="#objectmeta-v1">ObjectMeta</a>*</td>
 <td></td>
 </tr>
 <tr>
-<td><code>spec</code><br /> <em><a href="#issuerspec-v1alpha1">IssuerSpec</a></em></td>
+<td><code>spec</code><br /> *<a href="#issuerspec-v1alpha1">IssuerSpec</a>*</td>
 <td></td>
 </tr>
 <tr>
-<td><code>status</code><br /> <em><a href="#issuerstatus-v1alpha1">IssuerStatus</a></em></td>
+<td><code>status</code><br /> *<a href="#issuerstatus-v1alpha1">IssuerStatus</a>*</td>
 <td></td>
 </tr>
-</tbody>
-</table>
+</tbody></table>
 <h3 id="issuerspec-v1alpha1">IssuerSpec v1alpha1</h3>
 <aside class="notice">
 Appears In:
@@ -276,29 +260,27 @@ Appears In:
 <th>Description</th>
 </tr>
 </thead>
-<tbody>
-<tr>
-<td><code>acme</code><br /> <em><a href="#acmeissuer-v1alpha1">ACMEIssuer</a></em></td>
+<tbody><tr>
+<td><code>acme</code><br /> *<a href="#acmeissuer-v1alpha1">ACMEIssuer</a>*</td>
 <td></td>
 </tr>
 <tr>
-<td><code>ca</code><br /> <em><a href="#caissuer-v1alpha1">CAIssuer</a></em></td>
+<td><code>ca</code><br /> *<a href="#caissuer-v1alpha1">CAIssuer</a>*</td>
 <td></td>
 </tr>
 <tr>
-<td><code>selfSigned</code><br /> <em><a href="#selfsignedissuer-v1alpha1">SelfSignedIssuer</a></em></td>
+<td><code>selfSigned</code><br /> *<a href="#selfsignedissuer-v1alpha1">SelfSignedIssuer</a>*</td>
 <td></td>
 </tr>
 <tr>
-<td><code>vault</code><br /> <em><a href="#vaultissuer-v1alpha1">VaultIssuer</a></em></td>
+<td><code>vault</code><br /> *<a href="#vaultissuer-v1alpha1">VaultIssuer</a>*</td>
 <td></td>
 </tr>
 <tr>
-<td><code>venafi</code><br /> <em><a href="#venafiissuer-v1alpha1">VenafiIssuer</a></em></td>
+<td><code>venafi</code><br /> *<a href="#venafiissuer-v1alpha1">VenafiIssuer</a>*</td>
 <td></td>
 </tr>
-</tbody>
-</table>
+</tbody></table>
 <h3 id="issuerstatus-v1alpha1">IssuerStatus v1alpha1</h3>
 <aside class="notice">
 Appears In:
@@ -315,17 +297,15 @@ Appears In:
 <th>Description</th>
 </tr>
 </thead>
-<tbody>
-<tr>
-<td><code>acme</code><br /> <em><a href="#acmeissuerstatus-v1alpha1">ACMEIssuerStatus</a></em></td>
+<tbody><tr>
+<td><code>acme</code><br /> *<a href="#acmeissuerstatus-v1alpha1">ACMEIssuerStatus</a>*</td>
 <td></td>
 </tr>
 <tr>
-<td><code>conditions</code><br /> <em><a href="#issuercondition-v1alpha1">IssuerCondition</a> array</em></td>
+<td><code>conditions</code><br /> *<a href="#issuercondition-v1alpha1">IssuerCondition</a> array*</td>
 <td></td>
 </tr>
-</tbody>
-</table>
+</tbody></table>
 <hr>
 <h1 id="order-v1alpha1">Order v1alpha1</h1>
 <table>
@@ -336,14 +316,12 @@ Appears In:
 <th>Kind</th>
 </tr>
 </thead>
-<tbody>
-<tr>
+<tbody><tr>
 <td><code>certmanager</code></td>
 <td><code>v1alpha1</code></td>
 <td><code>Order</code></td>
 </tr>
-</tbody>
-</table>
+</tbody></table>
 <p>Order is a type to represent an Order with an ACME server</p>
 <table>
 <thead>
@@ -352,8 +330,7 @@ Appears In:
 <th>Description</th>
 </tr>
 </thead>
-<tbody>
-<tr>
+<tbody><tr>
 <td><code>apiVersion</code><br /> <em>string</em></td>
 <td>APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: <a href="https://git.k8s.io/community/contributors/devel/api-conventions.md#resources">https://git.k8s.io/community/contributors/devel/api-conventions.md#resources</a></td>
 </tr>
@@ -362,19 +339,18 @@ Appears In:
 <td>Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: <a href="https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds">https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds</a></td>
 </tr>
 <tr>
-<td><code>metadata</code><br /> <em><a href="#objectmeta-v1">ObjectMeta</a></em></td>
+<td><code>metadata</code><br /> *<a href="#objectmeta-v1">ObjectMeta</a>*</td>
 <td></td>
 </tr>
 <tr>
-<td><code>spec</code><br /> <em><a href="#orderspec-v1alpha1">OrderSpec</a></em></td>
+<td><code>spec</code><br /> *<a href="#orderspec-v1alpha1">OrderSpec</a>*</td>
 <td></td>
 </tr>
 <tr>
-<td><code>status</code><br /> <em><a href="#orderstatus-v1alpha1">OrderStatus</a></em></td>
+<td><code>status</code><br /> *<a href="#orderstatus-v1alpha1">OrderStatus</a>*</td>
 <td></td>
 </tr>
-</tbody>
-</table>
+</tbody></table>
 <h3 id="orderspec-v1alpha1">OrderSpec v1alpha1</h3>
 <aside class="notice">
 Appears In:
@@ -390,13 +366,12 @@ Appears In:
 <th>Description</th>
 </tr>
 </thead>
-<tbody>
-<tr>
+<tbody><tr>
 <td><code>commonName</code><br /> <em>string</em></td>
 <td>CommonName is the common name as specified on the DER encoded CSR. If CommonName is not specified, the first DNSName specified will be used as the CommonName. At least one of CommonName or a DNSNames must be set. This field must match the corresponding field on the DER encoded CSR.</td>
 </tr>
 <tr>
-<td><code>config</code><br /> <em><a href="#domainsolverconfig-v1alpha1">DomainSolverConfig</a> array</em></td>
+<td><code>config</code><br /> *<a href="#domainsolverconfig-v1alpha1">DomainSolverConfig</a> array*</td>
 <td>Config specifies a mapping from DNS identifiers to how those identifiers should be solved when performing ACME challenges. A config entry must exist for each domain listed in DNSNames and CommonName. Only <strong>one</strong> of &#39;config&#39; or &#39;solvers&#39; may be specified, and if both are specified then no action will be performed on the Order resource.  This field will be removed when support for solver config specified on the Certificate under certificate.spec.acme has been removed. DEPRECATED: this field will be removed in future. Solver configuration must instead be provided on ACME Issuer resources.</td>
 </tr>
 <tr>
@@ -408,11 +383,10 @@ Appears In:
 <td>DNSNames is a list of DNS names that should be included as part of the Order validation process. If CommonName is not specified, the first DNSName specified will be used as the CommonName. At least one of CommonName or a DNSNames must be set. This field must match the corresponding field on the DER encoded CSR.</td>
 </tr>
 <tr>
-<td><code>issuerRef</code><br /> <em><a href="#objectreference-v1alpha1">ObjectReference</a></em></td>
+<td><code>issuerRef</code><br /> *<a href="#objectreference-v1alpha1">ObjectReference</a>*</td>
 <td>IssuerRef references a properly configured ACME-type Issuer which should be used to create this Order. If the Issuer does not exist, processing will be retried. If the Issuer is not an &#39;ACME&#39; Issuer, an error will be returned and the Order will be marked as failed.</td>
 </tr>
-</tbody>
-</table>
+</tbody></table>
 <h3 id="orderstatus-v1alpha1">OrderStatus v1alpha1</h3>
 <aside class="notice">
 Appears In:
@@ -428,17 +402,16 @@ Appears In:
 <th>Description</th>
 </tr>
 </thead>
-<tbody>
-<tr>
+<tbody><tr>
 <td><code>certificate</code><br /> <em>string</em></td>
 <td>Certificate is a copy of the PEM encoded certificate for this Order. This field will be populated after the order has been successfully finalized with the ACME server, and the order has transitioned to the &#39;valid&#39; state.</td>
 </tr>
 <tr>
-<td><code>challenges</code><br /> <em><a href="#challengespec-v1alpha1">ChallengeSpec</a> array</em></td>
+<td><code>challenges</code><br /> *<a href="#challengespec-v1alpha1">ChallengeSpec</a> array*</td>
 <td>Challenges is a list of ChallengeSpecs for Challenges that must be created in order to complete this Order.</td>
 </tr>
 <tr>
-<td><code>failureTime</code><br /> <em><a href="#time-v1">Time</a></em></td>
+<td><code>failureTime</code><br /> *<a href="#time-v1">Time</a>*</td>
 <td>FailureTime stores the time that this order failed. This is used to influence garbage collection and back-off.</td>
 </tr>
 <tr>
@@ -457,8 +430,7 @@ Appears In:
 <td><code>url</code><br /> <em>string</em></td>
 <td>URL of the Order. This will initially be empty when the resource is first created. The Order controller will populate this field when the Order is first processed. This field will be immutable after it is initially set.</td>
 </tr>
-</tbody>
-</table>
+</tbody></table>
 <hr>
 <h1 id="challenge-v1alpha1">Challenge v1alpha1</h1>
 <table>
@@ -469,14 +441,12 @@ Appears In:
 <th>Kind</th>
 </tr>
 </thead>
-<tbody>
-<tr>
+<tbody><tr>
 <td><code>certmanager</code></td>
 <td><code>v1alpha1</code></td>
 <td><code>Challenge</code></td>
 </tr>
-</tbody>
-</table>
+</tbody></table>
 <p>Challenge is a type to represent a Challenge request with an ACME server</p>
 <table>
 <thead>
@@ -485,8 +455,7 @@ Appears In:
 <th>Description</th>
 </tr>
 </thead>
-<tbody>
-<tr>
+<tbody><tr>
 <td><code>apiVersion</code><br /> <em>string</em></td>
 <td>APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: <a href="https://git.k8s.io/community/contributors/devel/api-conventions.md#resources">https://git.k8s.io/community/contributors/devel/api-conventions.md#resources</a></td>
 </tr>
@@ -495,19 +464,18 @@ Appears In:
 <td>Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: <a href="https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds">https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds</a></td>
 </tr>
 <tr>
-<td><code>metadata</code><br /> <em><a href="#objectmeta-v1">ObjectMeta</a></em></td>
+<td><code>metadata</code><br /> *<a href="#objectmeta-v1">ObjectMeta</a>*</td>
 <td></td>
 </tr>
 <tr>
-<td><code>spec</code><br /> <em><a href="#challengespec-v1alpha1">ChallengeSpec</a></em></td>
+<td><code>spec</code><br /> *<a href="#challengespec-v1alpha1">ChallengeSpec</a>*</td>
 <td></td>
 </tr>
 <tr>
-<td><code>status</code><br /> <em><a href="#challengestatus-v1alpha1">ChallengeStatus</a></em></td>
+<td><code>status</code><br /> *<a href="#challengestatus-v1alpha1">ChallengeStatus</a>*</td>
 <td></td>
 </tr>
-</tbody>
-</table>
+</tbody></table>
 <h3 id="challengespec-v1alpha1">ChallengeSpec v1alpha1</h3>
 <aside class="notice">
 Appears In:
@@ -524,13 +492,12 @@ Appears In:
 <th>Description</th>
 </tr>
 </thead>
-<tbody>
-<tr>
+<tbody><tr>
 <td><code>authzURL</code><br /> <em>string</em></td>
 <td>AuthzURL is the URL to the ACME Authorization resource that this challenge is a part of.</td>
 </tr>
 <tr>
-<td><code>config</code><br /> <em><a href="#solverconfig-v1alpha1">SolverConfig</a></em></td>
+<td><code>config</code><br /> *<a href="#solverconfig-v1alpha1">SolverConfig</a>*</td>
 <td>Config specifies the solver configuration for this challenge. Only <strong>one</strong> of &#39;config&#39; or &#39;solver&#39; may be specified, and if both are specified then no action will be performed on the Challenge resource. DEPRECATED: the &#39;solver&#39; field should be specified instead</td>
 </tr>
 <tr>
@@ -538,7 +505,7 @@ Appears In:
 <td>DNSName is the identifier that this challenge is for, e.g. example.com.</td>
 </tr>
 <tr>
-<td><code>issuerRef</code><br /> <em><a href="#objectreference-v1alpha1">ObjectReference</a></em></td>
+<td><code>issuerRef</code><br /> *<a href="#objectreference-v1alpha1">ObjectReference</a>*</td>
 <td>IssuerRef references a properly configured ACME-type Issuer which should be used to create this Challenge. If the Issuer does not exist, processing will be retried. If the Issuer is not an &#39;ACME&#39; Issuer, an error will be returned and the Challenge will be marked as failed.</td>
 </tr>
 <tr>
@@ -546,7 +513,7 @@ Appears In:
 <td>Key is the ACME challenge key for this challenge</td>
 </tr>
 <tr>
-<td><code>solver</code><br /> <em><a href="#acmechallengesolver-v1alpha1">ACMEChallengeSolver</a></em></td>
+<td><code>solver</code><br /> *<a href="#acmechallengesolver-v1alpha1">ACMEChallengeSolver</a>*</td>
 <td>Solver contains the domain solving configuration that should be used to solve this challenge resource. Only <strong>one</strong> of &#39;config&#39; or &#39;solver&#39; may be specified, and if both are specified then no action will be performed on the Challenge resource.</td>
 </tr>
 <tr>
@@ -565,8 +532,7 @@ Appears In:
 <td><code>wildcard</code><br /> <em>boolean</em></td>
 <td>Wildcard will be true if this challenge is for a wildcard identifier, for example &#39;*.example.com&#39;</td>
 </tr>
-</tbody>
-</table>
+</tbody></table>
 <h3 id="challengestatus-v1alpha1">ChallengeStatus v1alpha1</h3>
 <aside class="notice">
 Appears In:
@@ -582,8 +548,7 @@ Appears In:
 <th>Description</th>
 </tr>
 </thead>
-<tbody>
-<tr>
+<tbody><tr>
 <td><code>presented</code><br /> <em>boolean</em></td>
 <td>Presented will be set to true if the challenge values for this challenge are currently &#39;presented&#39;. This <em>does not</em> imply the self check is passing. Only that the values have been &#39;submitted&#39; for the appropriate challenge mechanism (i.e. the DNS01 TXT record has been presented, or the HTTP01 configuration has been configured).</td>
 </tr>
@@ -599,8 +564,7 @@ Appears In:
 <td><code>state</code><br /> <em>string</em></td>
 <td>State contains the current &#39;state&#39; of the challenge. If not set, the state of the challenge is unknown.</td>
 </tr>
-</tbody>
-</table>
+</tbody></table>
 <h1 id="-strong-old-api-versions-strong-"><strong>Old API Versions</strong></h1>
 <hr>
 <h1 id="-strong-field-definitions-strong-"><strong>Field Definitions</strong></h1>
@@ -614,14 +578,12 @@ Appears In:
 <th>Kind</th>
 </tr>
 </thead>
-<tbody>
-<tr>
+<tbody><tr>
 <td><code>certmanager</code></td>
 <td><code>v1alpha1</code></td>
 <td><code>ACMECertificateConfig</code></td>
 </tr>
-</tbody>
-</table>
+</tbody></table>
 <p>ACMECertificateConfig contains the configuration for the ACME certificate provider</p>
 <aside class="notice">
 Appears In:
@@ -637,13 +599,11 @@ Appears In:
 <th>Description</th>
 </tr>
 </thead>
-<tbody>
-<tr>
-<td><code>config</code><br /> <em><a href="#domainsolverconfig-v1alpha1">DomainSolverConfig</a> array</em></td>
+<tbody><tr>
+<td><code>config</code><br /> *<a href="#domainsolverconfig-v1alpha1">DomainSolverConfig</a> array*</td>
 <td></td>
 </tr>
-</tbody>
-</table>
+</tbody></table>
 <h2 id="acmechallengesolver-v1alpha1">ACMEChallengeSolver v1alpha1</h2>
 <table>
 <thead>
@@ -653,14 +613,12 @@ Appears In:
 <th>Kind</th>
 </tr>
 </thead>
-<tbody>
-<tr>
+<tbody><tr>
 <td><code>certmanager</code></td>
 <td><code>v1alpha1</code></td>
 <td><code>ACMEChallengeSolver</code></td>
 </tr>
-</tbody>
-</table>
+</tbody></table>
 <aside class="notice">
 Appears In:
 
@@ -676,21 +634,19 @@ Appears In:
 <th>Description</th>
 </tr>
 </thead>
-<tbody>
-<tr>
-<td><code>dns01</code><br /> <em><a href="#acmechallengesolverdns01-v1alpha1">ACMEChallengeSolverDNS01</a></em></td>
+<tbody><tr>
+<td><code>dns01</code><br /> *<a href="#acmechallengesolverdns01-v1alpha1">ACMEChallengeSolverDNS01</a>*</td>
 <td></td>
 </tr>
 <tr>
-<td><code>http01</code><br /> <em><a href="#acmechallengesolverhttp01-v1alpha1">ACMEChallengeSolverHTTP01</a></em></td>
+<td><code>http01</code><br /> *<a href="#acmechallengesolverhttp01-v1alpha1">ACMEChallengeSolverHTTP01</a>*</td>
 <td></td>
 </tr>
 <tr>
-<td><code>selector</code><br /> <em><a href="#certificatednsnameselector-v1alpha1">CertificateDNSNameSelector</a></em></td>
+<td><code>selector</code><br /> *<a href="#certificatednsnameselector-v1alpha1">CertificateDNSNameSelector</a>*</td>
 <td>Selector selects a set of DNSNames on the Certificate resource that should be solved using this challenge solver.</td>
 </tr>
-</tbody>
-</table>
+</tbody></table>
 <h2 id="acmechallengesolverdns01-v1alpha1">ACMEChallengeSolverDNS01 v1alpha1</h2>
 <table>
 <thead>
@@ -700,14 +656,12 @@ Appears In:
 <th>Kind</th>
 </tr>
 </thead>
-<tbody>
-<tr>
+<tbody><tr>
 <td><code>certmanager</code></td>
 <td><code>v1alpha1</code></td>
 <td><code>ACMEChallengeSolverDNS01</code></td>
 </tr>
-</tbody>
-</table>
+</tbody></table>
 <aside class="notice">
 Appears In:
 
@@ -722,25 +676,24 @@ Appears In:
 <th>Description</th>
 </tr>
 </thead>
-<tbody>
-<tr>
-<td><code>acmedns</code><br /> <em><a href="#acmeissuerdns01provideracmedns-v1alpha1">ACMEIssuerDNS01ProviderAcmeDNS</a></em></td>
+<tbody><tr>
+<td><code>acmedns</code><br /> *<a href="#acmeissuerdns01provideracmedns-v1alpha1">ACMEIssuerDNS01ProviderAcmeDNS</a>*</td>
 <td></td>
 </tr>
 <tr>
-<td><code>akamai</code><br /> <em><a href="#acmeissuerdns01providerakamai-v1alpha1">ACMEIssuerDNS01ProviderAkamai</a></em></td>
+<td><code>akamai</code><br /> *<a href="#acmeissuerdns01providerakamai-v1alpha1">ACMEIssuerDNS01ProviderAkamai</a>*</td>
 <td></td>
 </tr>
 <tr>
-<td><code>azuredns</code><br /> <em><a href="#acmeissuerdns01providerazuredns-v1alpha1">ACMEIssuerDNS01ProviderAzureDNS</a></em></td>
+<td><code>azuredns</code><br /> *<a href="#acmeissuerdns01providerazuredns-v1alpha1">ACMEIssuerDNS01ProviderAzureDNS</a>*</td>
 <td></td>
 </tr>
 <tr>
-<td><code>clouddns</code><br /> <em><a href="#acmeissuerdns01providerclouddns-v1alpha1">ACMEIssuerDNS01ProviderCloudDNS</a></em></td>
+<td><code>clouddns</code><br /> *<a href="#acmeissuerdns01providerclouddns-v1alpha1">ACMEIssuerDNS01ProviderCloudDNS</a>*</td>
 <td></td>
 </tr>
 <tr>
-<td><code>cloudflare</code><br /> <em><a href="#acmeissuerdns01providercloudflare-v1alpha1">ACMEIssuerDNS01ProviderCloudflare</a></em></td>
+<td><code>cloudflare</code><br /> *<a href="#acmeissuerdns01providercloudflare-v1alpha1">ACMEIssuerDNS01ProviderCloudflare</a>*</td>
 <td></td>
 </tr>
 <tr>
@@ -748,23 +701,22 @@ Appears In:
 <td>CNAMEStrategy configures how the DNS01 provider should handle CNAME records when found in DNS zones.</td>
 </tr>
 <tr>
-<td><code>digitalocean</code><br /> <em><a href="#acmeissuerdns01providerdigitalocean-v1alpha1">ACMEIssuerDNS01ProviderDigitalOcean</a></em></td>
+<td><code>digitalocean</code><br /> *<a href="#acmeissuerdns01providerdigitalocean-v1alpha1">ACMEIssuerDNS01ProviderDigitalOcean</a>*</td>
 <td></td>
 </tr>
 <tr>
-<td><code>rfc2136</code><br /> <em><a href="#acmeissuerdns01providerrfc2136-v1alpha1">ACMEIssuerDNS01ProviderRFC2136</a></em></td>
+<td><code>rfc2136</code><br /> *<a href="#acmeissuerdns01providerrfc2136-v1alpha1">ACMEIssuerDNS01ProviderRFC2136</a>*</td>
 <td></td>
 </tr>
 <tr>
-<td><code>route53</code><br /> <em><a href="#acmeissuerdns01providerroute53-v1alpha1">ACMEIssuerDNS01ProviderRoute53</a></em></td>
+<td><code>route53</code><br /> *<a href="#acmeissuerdns01providerroute53-v1alpha1">ACMEIssuerDNS01ProviderRoute53</a>*</td>
 <td></td>
 </tr>
 <tr>
-<td><code>webhook</code><br /> <em><a href="#acmeissuerdns01providerwebhook-v1alpha1">ACMEIssuerDNS01ProviderWebhook</a></em></td>
+<td><code>webhook</code><br /> *<a href="#acmeissuerdns01providerwebhook-v1alpha1">ACMEIssuerDNS01ProviderWebhook</a>*</td>
 <td></td>
 </tr>
-</tbody>
-</table>
+</tbody></table>
 <h2 id="acmechallengesolverhttp01-v1alpha1">ACMEChallengeSolverHTTP01 v1alpha1</h2>
 <table>
 <thead>
@@ -774,14 +726,12 @@ Appears In:
 <th>Kind</th>
 </tr>
 </thead>
-<tbody>
-<tr>
+<tbody><tr>
 <td><code>certmanager</code></td>
 <td><code>v1alpha1</code></td>
 <td><code>ACMEChallengeSolverHTTP01</code></td>
 </tr>
-</tbody>
-</table>
+</tbody></table>
 <p>ACMEChallengeSolverHTTP01 contains configuration detailing how to solve HTTP01 challenges within a Kubernetes cluster. Typically this is accomplished through creating &#39;routes&#39; of some description that configure ingress controllers to direct traffic to &#39;solver pods&#39;, which are responsible for responding to the ACME server&#39;s HTTP requests.</p>
 <aside class="notice">
 Appears In:
@@ -797,13 +747,11 @@ Appears In:
 <th>Description</th>
 </tr>
 </thead>
-<tbody>
-<tr>
-<td><code>ingress</code><br /> <em><a href="#acmechallengesolverhttp01ingress-v1alpha1">ACMEChallengeSolverHTTP01Ingress</a></em></td>
+<tbody><tr>
+<td><code>ingress</code><br /> *<a href="#acmechallengesolverhttp01ingress-v1alpha1">ACMEChallengeSolverHTTP01Ingress</a>*</td>
 <td>The ingress based HTTP01 challenge solver will solve challenges by creating or modifying Ingress resources in order to route requests for &#39;/.well-known/acme-challenge/XYZ&#39; to &#39;challenge solver&#39; pods that are provisioned by cert-manager for each Challenge to be completed.</td>
 </tr>
-</tbody>
-</table>
+</tbody></table>
 <h2 id="acmechallengesolverhttp01ingress-v1alpha1">ACMEChallengeSolverHTTP01Ingress v1alpha1</h2>
 <table>
 <thead>
@@ -813,14 +761,12 @@ Appears In:
 <th>Kind</th>
 </tr>
 </thead>
-<tbody>
-<tr>
+<tbody><tr>
 <td><code>certmanager</code></td>
 <td><code>v1alpha1</code></td>
 <td><code>ACMEChallengeSolverHTTP01Ingress</code></td>
 </tr>
-</tbody>
-</table>
+</tbody></table>
 <aside class="notice">
 Appears In:
 
@@ -835,8 +781,7 @@ Appears In:
 <th>Description</th>
 </tr>
 </thead>
-<tbody>
-<tr>
+<tbody><tr>
 <td><code>class</code><br /> <em>string</em></td>
 <td>The ingress class to use when creating Ingress resources to solve ACME challenges that use this challenge solver. Only one of &#39;class&#39; or &#39;name&#39; may be specified.</td>
 </tr>
@@ -848,8 +793,7 @@ Appears In:
 <td><code>serviceType</code><br /> <em>string</em></td>
 <td>Optional service type for Kubernetes solver service</td>
 </tr>
-</tbody>
-</table>
+</tbody></table>
 <h2 id="acmeissuer-v1alpha1">ACMEIssuer v1alpha1</h2>
 <table>
 <thead>
@@ -859,14 +803,12 @@ Appears In:
 <th>Kind</th>
 </tr>
 </thead>
-<tbody>
-<tr>
+<tbody><tr>
 <td><code>certmanager</code></td>
 <td><code>v1alpha1</code></td>
 <td><code>ACMEIssuer</code></td>
 </tr>
-</tbody>
-</table>
+</tbody></table>
 <p>ACMEIssuer contains the specification for an ACME issuer</p>
 <aside class="notice">
 Appears In:
@@ -882,9 +824,8 @@ Appears In:
 <th>Description</th>
 </tr>
 </thead>
-<tbody>
-<tr>
-<td><code>dns01</code><br /> <em><a href="#acmeissuerdns01config-v1alpha1">ACMEIssuerDNS01Config</a></em></td>
+<tbody><tr>
+<td><code>dns01</code><br /> *<a href="#acmeissuerdns01config-v1alpha1">ACMEIssuerDNS01Config</a>*</td>
 <td>DEPRECATED: DNS-01 config</td>
 </tr>
 <tr>
@@ -892,11 +833,11 @@ Appears In:
 <td>Email is the email for this account</td>
 </tr>
 <tr>
-<td><code>http01</code><br /> <em><a href="#acmeissuerhttp01config-v1alpha1">ACMEIssuerHTTP01Config</a></em></td>
+<td><code>http01</code><br /> *<a href="#acmeissuerhttp01config-v1alpha1">ACMEIssuerHTTP01Config</a>*</td>
 <td>DEPRECATED: HTTP-01 config</td>
 </tr>
 <tr>
-<td><code>privateKeySecretRef</code><br /> <em><a href="#secretkeyselector-v1alpha1">SecretKeySelector</a></em></td>
+<td><code>privateKeySecretRef</code><br /> *<a href="#secretkeyselector-v1alpha1">SecretKeySelector</a>*</td>
 <td>PrivateKey is the name of a secret containing the private key for this user account.</td>
 </tr>
 <tr>
@@ -908,11 +849,10 @@ Appears In:
 <td>If true, skip verifying the ACME server TLS certificate</td>
 </tr>
 <tr>
-<td><code>solvers</code><br /> <em><a href="#acmechallengesolver-v1alpha1">ACMEChallengeSolver</a> array</em></td>
+<td><code>solvers</code><br /> *<a href="#acmechallengesolver-v1alpha1">ACMEChallengeSolver</a> array*</td>
 <td>Solvers is a list of challenge solvers that will be used to solve ACME challenges for the matching domains.</td>
 </tr>
-</tbody>
-</table>
+</tbody></table>
 <h2 id="acmeissuerdns01config-v1alpha1">ACMEIssuerDNS01Config v1alpha1</h2>
 <table>
 <thead>
@@ -922,14 +862,12 @@ Appears In:
 <th>Kind</th>
 </tr>
 </thead>
-<tbody>
-<tr>
+<tbody><tr>
 <td><code>certmanager</code></td>
 <td><code>v1alpha1</code></td>
 <td><code>ACMEIssuerDNS01Config</code></td>
 </tr>
-</tbody>
-</table>
+</tbody></table>
 <p>ACMEIssuerDNS01Config is a structure containing the ACME DNS configuration options</p>
 <aside class="notice">
 Appears In:
@@ -945,13 +883,11 @@ Appears In:
 <th>Description</th>
 </tr>
 </thead>
-<tbody>
-<tr>
-<td><code>providers</code><br /> <em><a href="#acmeissuerdns01provider-v1alpha1">ACMEIssuerDNS01Provider</a> array</em></td>
+<tbody><tr>
+<td><code>providers</code><br /> *<a href="#acmeissuerdns01provider-v1alpha1">ACMEIssuerDNS01Provider</a> array*</td>
 <td></td>
 </tr>
-</tbody>
-</table>
+</tbody></table>
 <h2 id="acmeissuerdns01provider-v1alpha1">ACMEIssuerDNS01Provider v1alpha1</h2>
 <table>
 <thead>
@@ -961,14 +897,12 @@ Appears In:
 <th>Kind</th>
 </tr>
 </thead>
-<tbody>
-<tr>
+<tbody><tr>
 <td><code>certmanager</code></td>
 <td><code>v1alpha1</code></td>
 <td><code>ACMEIssuerDNS01Provider</code></td>
 </tr>
-</tbody>
-</table>
+</tbody></table>
 <p>ACMEIssuerDNS01Provider contains configuration for a DNS provider that can be used to solve ACME DNS01 challenges.</p>
 <aside class="notice">
 Appears In:
@@ -984,25 +918,24 @@ Appears In:
 <th>Description</th>
 </tr>
 </thead>
-<tbody>
-<tr>
-<td><code>acmedns</code><br /> <em><a href="#acmeissuerdns01provideracmedns-v1alpha1">ACMEIssuerDNS01ProviderAcmeDNS</a></em></td>
+<tbody><tr>
+<td><code>acmedns</code><br /> *<a href="#acmeissuerdns01provideracmedns-v1alpha1">ACMEIssuerDNS01ProviderAcmeDNS</a>*</td>
 <td></td>
 </tr>
 <tr>
-<td><code>akamai</code><br /> <em><a href="#acmeissuerdns01providerakamai-v1alpha1">ACMEIssuerDNS01ProviderAkamai</a></em></td>
+<td><code>akamai</code><br /> *<a href="#acmeissuerdns01providerakamai-v1alpha1">ACMEIssuerDNS01ProviderAkamai</a>*</td>
 <td></td>
 </tr>
 <tr>
-<td><code>azuredns</code><br /> <em><a href="#acmeissuerdns01providerazuredns-v1alpha1">ACMEIssuerDNS01ProviderAzureDNS</a></em></td>
+<td><code>azuredns</code><br /> *<a href="#acmeissuerdns01providerazuredns-v1alpha1">ACMEIssuerDNS01ProviderAzureDNS</a>*</td>
 <td></td>
 </tr>
 <tr>
-<td><code>clouddns</code><br /> <em><a href="#acmeissuerdns01providerclouddns-v1alpha1">ACMEIssuerDNS01ProviderCloudDNS</a></em></td>
+<td><code>clouddns</code><br /> *<a href="#acmeissuerdns01providerclouddns-v1alpha1">ACMEIssuerDNS01ProviderCloudDNS</a>*</td>
 <td></td>
 </tr>
 <tr>
-<td><code>cloudflare</code><br /> <em><a href="#acmeissuerdns01providercloudflare-v1alpha1">ACMEIssuerDNS01ProviderCloudflare</a></em></td>
+<td><code>cloudflare</code><br /> *<a href="#acmeissuerdns01providercloudflare-v1alpha1">ACMEIssuerDNS01ProviderCloudflare</a>*</td>
 <td></td>
 </tr>
 <tr>
@@ -1010,7 +943,7 @@ Appears In:
 <td>CNAMEStrategy configures how the DNS01 provider should handle CNAME records when found in DNS zones.</td>
 </tr>
 <tr>
-<td><code>digitalocean</code><br /> <em><a href="#acmeissuerdns01providerdigitalocean-v1alpha1">ACMEIssuerDNS01ProviderDigitalOcean</a></em></td>
+<td><code>digitalocean</code><br /> *<a href="#acmeissuerdns01providerdigitalocean-v1alpha1">ACMEIssuerDNS01ProviderDigitalOcean</a>*</td>
 <td></td>
 </tr>
 <tr>
@@ -1018,19 +951,18 @@ Appears In:
 <td>Name is the name of the DNS provider, which should be used to reference this DNS provider configuration on Certificate resources.</td>
 </tr>
 <tr>
-<td><code>rfc2136</code><br /> <em><a href="#acmeissuerdns01providerrfc2136-v1alpha1">ACMEIssuerDNS01ProviderRFC2136</a></em></td>
+<td><code>rfc2136</code><br /> *<a href="#acmeissuerdns01providerrfc2136-v1alpha1">ACMEIssuerDNS01ProviderRFC2136</a>*</td>
 <td></td>
 </tr>
 <tr>
-<td><code>route53</code><br /> <em><a href="#acmeissuerdns01providerroute53-v1alpha1">ACMEIssuerDNS01ProviderRoute53</a></em></td>
+<td><code>route53</code><br /> *<a href="#acmeissuerdns01providerroute53-v1alpha1">ACMEIssuerDNS01ProviderRoute53</a>*</td>
 <td></td>
 </tr>
 <tr>
-<td><code>webhook</code><br /> <em><a href="#acmeissuerdns01providerwebhook-v1alpha1">ACMEIssuerDNS01ProviderWebhook</a></em></td>
+<td><code>webhook</code><br /> *<a href="#acmeissuerdns01providerwebhook-v1alpha1">ACMEIssuerDNS01ProviderWebhook</a>*</td>
 <td></td>
 </tr>
-</tbody>
-</table>
+</tbody></table>
 <h2 id="acmeissuerdns01provideracmedns-v1alpha1">ACMEIssuerDNS01ProviderAcmeDNS v1alpha1</h2>
 <table>
 <thead>
@@ -1040,14 +972,12 @@ Appears In:
 <th>Kind</th>
 </tr>
 </thead>
-<tbody>
-<tr>
+<tbody><tr>
 <td><code>certmanager</code></td>
 <td><code>v1alpha1</code></td>
 <td><code>ACMEIssuerDNS01ProviderAcmeDNS</code></td>
 </tr>
-</tbody>
-</table>
+</tbody></table>
 <p>ACMEIssuerDNS01ProviderAcmeDNS is a structure containing the configuration for ACME-DNS servers</p>
 <aside class="notice">
 Appears In:
@@ -1064,17 +994,15 @@ Appears In:
 <th>Description</th>
 </tr>
 </thead>
-<tbody>
-<tr>
-<td><code>accountSecretRef</code><br /> <em><a href="#secretkeyselector-v1alpha1">SecretKeySelector</a></em></td>
+<tbody><tr>
+<td><code>accountSecretRef</code><br /> *<a href="#secretkeyselector-v1alpha1">SecretKeySelector</a>*</td>
 <td></td>
 </tr>
 <tr>
 <td><code>host</code><br /> <em>string</em></td>
 <td></td>
 </tr>
-</tbody>
-</table>
+</tbody></table>
 <h2 id="acmeissuerdns01providerakamai-v1alpha1">ACMEIssuerDNS01ProviderAkamai v1alpha1</h2>
 <table>
 <thead>
@@ -1084,14 +1012,12 @@ Appears In:
 <th>Kind</th>
 </tr>
 </thead>
-<tbody>
-<tr>
+<tbody><tr>
 <td><code>certmanager</code></td>
 <td><code>v1alpha1</code></td>
 <td><code>ACMEIssuerDNS01ProviderAkamai</code></td>
 </tr>
-</tbody>
-</table>
+</tbody></table>
 <p>ACMEIssuerDNS01ProviderAkamai is a structure containing the DNS configuration for Akamai DNS—Zone Record Management API</p>
 <aside class="notice">
 Appears In:
@@ -1108,25 +1034,23 @@ Appears In:
 <th>Description</th>
 </tr>
 </thead>
-<tbody>
-<tr>
-<td><code>accessTokenSecretRef</code><br /> <em><a href="#secretkeyselector-v1alpha1">SecretKeySelector</a></em></td>
+<tbody><tr>
+<td><code>accessTokenSecretRef</code><br /> *<a href="#secretkeyselector-v1alpha1">SecretKeySelector</a>*</td>
 <td></td>
 </tr>
 <tr>
-<td><code>clientSecretSecretRef</code><br /> <em><a href="#secretkeyselector-v1alpha1">SecretKeySelector</a></em></td>
+<td><code>clientSecretSecretRef</code><br /> *<a href="#secretkeyselector-v1alpha1">SecretKeySelector</a>*</td>
 <td></td>
 </tr>
 <tr>
-<td><code>clientTokenSecretRef</code><br /> <em><a href="#secretkeyselector-v1alpha1">SecretKeySelector</a></em></td>
+<td><code>clientTokenSecretRef</code><br /> *<a href="#secretkeyselector-v1alpha1">SecretKeySelector</a>*</td>
 <td></td>
 </tr>
 <tr>
 <td><code>serviceConsumerDomain</code><br /> <em>string</em></td>
 <td></td>
 </tr>
-</tbody>
-</table>
+</tbody></table>
 <h2 id="acmeissuerdns01providerazuredns-v1alpha1">ACMEIssuerDNS01ProviderAzureDNS v1alpha1</h2>
 <table>
 <thead>
@@ -1136,14 +1060,12 @@ Appears In:
 <th>Kind</th>
 </tr>
 </thead>
-<tbody>
-<tr>
+<tbody><tr>
 <td><code>certmanager</code></td>
 <td><code>v1alpha1</code></td>
 <td><code>ACMEIssuerDNS01ProviderAzureDNS</code></td>
 </tr>
-</tbody>
-</table>
+</tbody></table>
 <p>ACMEIssuerDNS01ProviderAzureDNS is a structure containing the configuration for Azure DNS</p>
 <aside class="notice">
 Appears In:
@@ -1160,13 +1082,12 @@ Appears In:
 <th>Description</th>
 </tr>
 </thead>
-<tbody>
-<tr>
+<tbody><tr>
 <td><code>clientID</code><br /> <em>string</em></td>
 <td></td>
 </tr>
 <tr>
-<td><code>clientSecretSecretRef</code><br /> <em><a href="#secretkeyselector-v1alpha1">SecretKeySelector</a></em></td>
+<td><code>clientSecretSecretRef</code><br /> *<a href="#secretkeyselector-v1alpha1">SecretKeySelector</a>*</td>
 <td></td>
 </tr>
 <tr>
@@ -1185,8 +1106,7 @@ Appears In:
 <td><code>tenantID</code><br /> <em>string</em></td>
 <td></td>
 </tr>
-</tbody>
-</table>
+</tbody></table>
 <h2 id="acmeissuerdns01providerclouddns-v1alpha1">ACMEIssuerDNS01ProviderCloudDNS v1alpha1</h2>
 <table>
 <thead>
@@ -1196,14 +1116,12 @@ Appears In:
 <th>Kind</th>
 </tr>
 </thead>
-<tbody>
-<tr>
+<tbody><tr>
 <td><code>certmanager</code></td>
 <td><code>v1alpha1</code></td>
 <td><code>ACMEIssuerDNS01ProviderCloudDNS</code></td>
 </tr>
-</tbody>
-</table>
+</tbody></table>
 <p>ACMEIssuerDNS01ProviderCloudDNS is a structure containing the DNS configuration for Google Cloud DNS</p>
 <aside class="notice">
 Appears In:
@@ -1220,17 +1138,15 @@ Appears In:
 <th>Description</th>
 </tr>
 </thead>
-<tbody>
-<tr>
+<tbody><tr>
 <td><code>project</code><br /> <em>string</em></td>
 <td></td>
 </tr>
 <tr>
-<td><code>serviceAccountSecretRef</code><br /> <em><a href="#secretkeyselector-v1alpha1">SecretKeySelector</a></em></td>
+<td><code>serviceAccountSecretRef</code><br /> *<a href="#secretkeyselector-v1alpha1">SecretKeySelector</a>*</td>
 <td></td>
 </tr>
-</tbody>
-</table>
+</tbody></table>
 <h2 id="acmeissuerdns01providercloudflare-v1alpha1">ACMEIssuerDNS01ProviderCloudflare v1alpha1</h2>
 <table>
 <thead>
@@ -1240,14 +1156,12 @@ Appears In:
 <th>Kind</th>
 </tr>
 </thead>
-<tbody>
-<tr>
+<tbody><tr>
 <td><code>certmanager</code></td>
 <td><code>v1alpha1</code></td>
 <td><code>ACMEIssuerDNS01ProviderCloudflare</code></td>
 </tr>
-</tbody>
-</table>
+</tbody></table>
 <p>ACMEIssuerDNS01ProviderCloudflare is a structure containing the DNS configuration for Cloudflare</p>
 <aside class="notice">
 Appears In:
@@ -1264,17 +1178,15 @@ Appears In:
 <th>Description</th>
 </tr>
 </thead>
-<tbody>
-<tr>
-<td><code>apiKeySecretRef</code><br /> <em><a href="#secretkeyselector-v1alpha1">SecretKeySelector</a></em></td>
+<tbody><tr>
+<td><code>apiKeySecretRef</code><br /> *<a href="#secretkeyselector-v1alpha1">SecretKeySelector</a>*</td>
 <td></td>
 </tr>
 <tr>
 <td><code>email</code><br /> <em>string</em></td>
 <td></td>
 </tr>
-</tbody>
-</table>
+</tbody></table>
 <h2 id="acmeissuerdns01providerdigitalocean-v1alpha1">ACMEIssuerDNS01ProviderDigitalOcean v1alpha1</h2>
 <table>
 <thead>
@@ -1284,14 +1196,12 @@ Appears In:
 <th>Kind</th>
 </tr>
 </thead>
-<tbody>
-<tr>
+<tbody><tr>
 <td><code>certmanager</code></td>
 <td><code>v1alpha1</code></td>
 <td><code>ACMEIssuerDNS01ProviderDigitalOcean</code></td>
 </tr>
-</tbody>
-</table>
+</tbody></table>
 <p>ACMEIssuerDNS01ProviderDigitalOcean is a structure containing the DNS configuration for DigitalOcean Domains</p>
 <aside class="notice">
 Appears In:
@@ -1308,13 +1218,11 @@ Appears In:
 <th>Description</th>
 </tr>
 </thead>
-<tbody>
-<tr>
-<td><code>tokenSecretRef</code><br /> <em><a href="#secretkeyselector-v1alpha1">SecretKeySelector</a></em></td>
+<tbody><tr>
+<td><code>tokenSecretRef</code><br /> *<a href="#secretkeyselector-v1alpha1">SecretKeySelector</a>*</td>
 <td></td>
 </tr>
-</tbody>
-</table>
+</tbody></table>
 <h2 id="acmeissuerdns01providerrfc2136-v1alpha1">ACMEIssuerDNS01ProviderRFC2136 v1alpha1</h2>
 <table>
 <thead>
@@ -1324,14 +1232,12 @@ Appears In:
 <th>Kind</th>
 </tr>
 </thead>
-<tbody>
-<tr>
+<tbody><tr>
 <td><code>certmanager</code></td>
 <td><code>v1alpha1</code></td>
 <td><code>ACMEIssuerDNS01ProviderRFC2136</code></td>
 </tr>
-</tbody>
-</table>
+</tbody></table>
 <p>ACMEIssuerDNS01ProviderRFC2136 is a structure containing the configuration for RFC2136 DNS</p>
 <aside class="notice">
 Appears In:
@@ -1348,8 +1254,7 @@ Appears In:
 <th>Description</th>
 </tr>
 </thead>
-<tbody>
-<tr>
+<tbody><tr>
 <td><code>nameserver</code><br /> <em>string</em></td>
 <td>The IP address of the DNS supporting RFC2136. Required. Note: FQDN is not a valid value, only IP.</td>
 </tr>
@@ -1362,11 +1267,10 @@ Appears In:
 <td>The TSIG Key name configured in the DNS. If <code>tsigSecretSecretRef</code> is defined, this field is required.</td>
 </tr>
 <tr>
-<td><code>tsigSecretSecretRef</code><br /> <em><a href="#secretkeyselector-v1alpha1">SecretKeySelector</a></em></td>
+<td><code>tsigSecretSecretRef</code><br /> *<a href="#secretkeyselector-v1alpha1">SecretKeySelector</a>*</td>
 <td>The name of the secret containing the TSIG value. If <code>tsigKeyName</code> is defined, this field is required.</td>
 </tr>
-</tbody>
-</table>
+</tbody></table>
 <h2 id="acmeissuerdns01providerroute53-v1alpha1">ACMEIssuerDNS01ProviderRoute53 v1alpha1</h2>
 <table>
 <thead>
@@ -1376,14 +1280,12 @@ Appears In:
 <th>Kind</th>
 </tr>
 </thead>
-<tbody>
-<tr>
+<tbody><tr>
 <td><code>certmanager</code></td>
 <td><code>v1alpha1</code></td>
 <td><code>ACMEIssuerDNS01ProviderRoute53</code></td>
 </tr>
-</tbody>
-</table>
+</tbody></table>
 <p>ACMEIssuerDNS01ProviderRoute53 is a structure containing the Route 53 configuration for AWS</p>
 <aside class="notice">
 Appears In:
@@ -1400,8 +1302,7 @@ Appears In:
 <th>Description</th>
 </tr>
 </thead>
-<tbody>
-<tr>
+<tbody><tr>
 <td><code>accessKeyID</code><br /> <em>string</em></td>
 <td></td>
 </tr>
@@ -1414,11 +1315,10 @@ Appears In:
 <td></td>
 </tr>
 <tr>
-<td><code>secretAccessKeySecretRef</code><br /> <em><a href="#secretkeyselector-v1alpha1">SecretKeySelector</a></em></td>
+<td><code>secretAccessKeySecretRef</code><br /> *<a href="#secretkeyselector-v1alpha1">SecretKeySelector</a>*</td>
 <td></td>
 </tr>
-</tbody>
-</table>
+</tbody></table>
 <h2 id="acmeissuerdns01providerwebhook-v1alpha1">ACMEIssuerDNS01ProviderWebhook v1alpha1</h2>
 <table>
 <thead>
@@ -1428,14 +1328,12 @@ Appears In:
 <th>Kind</th>
 </tr>
 </thead>
-<tbody>
-<tr>
+<tbody><tr>
 <td><code>certmanager</code></td>
 <td><code>v1alpha1</code></td>
 <td><code>ACMEIssuerDNS01ProviderWebhook</code></td>
 </tr>
-</tbody>
-</table>
+</tbody></table>
 <p>ACMEIssuerDNS01ProviderWebhook specifies configuration for a webhook DNS01 provider, including where to POST ChallengePayload resources.</p>
 <aside class="notice">
 Appears In:
@@ -1452,8 +1350,7 @@ Appears In:
 <th>Description</th>
 </tr>
 </thead>
-<tbody>
-<tr>
+<tbody><tr>
 <td><code>config</code><br /> <em>JSON</em></td>
 <td>Additional configuration that should be passed to the webhook apiserver when challenges are processed. This can contain arbitrary JSON data. Secret values should not be specified in this stanza. If secret values are needed (e.g. credentials for a DNS service), you should use a SecretKeySelector to reference a Secret resource. For details on the schema of this field, consult the webhook provider implementation&#39;s documentation.</td>
 </tr>
@@ -1465,8 +1362,7 @@ Appears In:
 <td><code>solverName</code><br /> <em>string</em></td>
 <td>The name of the solver to use, as defined in the webhook provider implementation. This will typically be the name of the provider, e.g. &#39;cloudflare&#39;.</td>
 </tr>
-</tbody>
-</table>
+</tbody></table>
 <h2 id="acmeissuerhttp01config-v1alpha1">ACMEIssuerHTTP01Config v1alpha1</h2>
 <table>
 <thead>
@@ -1476,14 +1372,12 @@ Appears In:
 <th>Kind</th>
 </tr>
 </thead>
-<tbody>
-<tr>
+<tbody><tr>
 <td><code>certmanager</code></td>
 <td><code>v1alpha1</code></td>
 <td><code>ACMEIssuerHTTP01Config</code></td>
 </tr>
-</tbody>
-</table>
+</tbody></table>
 <p>ACMEIssuerHTTP01Config is a structure containing the ACME HTTP configuration options</p>
 <aside class="notice">
 Appears In:
@@ -1499,13 +1393,11 @@ Appears In:
 <th>Description</th>
 </tr>
 </thead>
-<tbody>
-<tr>
+<tbody><tr>
 <td><code>serviceType</code><br /> <em>string</em></td>
 <td>Optional service type for Kubernetes solver service</td>
 </tr>
-</tbody>
-</table>
+</tbody></table>
 <h2 id="caissuer-v1alpha1">CAIssuer v1alpha1</h2>
 <table>
 <thead>
@@ -1515,14 +1407,12 @@ Appears In:
 <th>Kind</th>
 </tr>
 </thead>
-<tbody>
-<tr>
+<tbody><tr>
 <td><code>certmanager</code></td>
 <td><code>v1alpha1</code></td>
 <td><code>CAIssuer</code></td>
 </tr>
-</tbody>
-</table>
+</tbody></table>
 <aside class="notice">
 Appears In:
 
@@ -1537,13 +1427,11 @@ Appears In:
 <th>Description</th>
 </tr>
 </thead>
-<tbody>
-<tr>
+<tbody><tr>
 <td><code>secretName</code><br /> <em>string</em></td>
 <td>SecretName is the name of the secret used to sign Certificates issued by this Issuer.</td>
 </tr>
-</tbody>
-</table>
+</tbody></table>
 <h2 id="certificatecondition-v1alpha1">CertificateCondition v1alpha1</h2>
 <table>
 <thead>
@@ -1553,14 +1441,12 @@ Appears In:
 <th>Kind</th>
 </tr>
 </thead>
-<tbody>
-<tr>
+<tbody><tr>
 <td><code>certmanager</code></td>
 <td><code>v1alpha1</code></td>
 <td><code>CertificateCondition</code></td>
 </tr>
-</tbody>
-</table>
+</tbody></table>
 <p>CertificateCondition contains condition information for an Certificate.</p>
 <aside class="notice">
 Appears In:
@@ -1576,9 +1462,8 @@ Appears In:
 <th>Description</th>
 </tr>
 </thead>
-<tbody>
-<tr>
-<td><code>lastTransitionTime</code><br /> <em><a href="#time-v1">Time</a></em></td>
+<tbody><tr>
+<td><code>lastTransitionTime</code><br /> *<a href="#time-v1">Time</a>*</td>
 <td>LastTransitionTime is the timestamp corresponding to the last status change of this condition.</td>
 </tr>
 <tr>
@@ -1597,8 +1482,7 @@ Appears In:
 <td><code>type</code><br /> <em>string</em></td>
 <td>Type of the condition, currently (&#39;Ready&#39;).</td>
 </tr>
-</tbody>
-</table>
+</tbody></table>
 <h2 id="certificatednsnameselector-v1alpha1">CertificateDNSNameSelector v1alpha1</h2>
 <table>
 <thead>
@@ -1608,14 +1492,12 @@ Appears In:
 <th>Kind</th>
 </tr>
 </thead>
-<tbody>
-<tr>
+<tbody><tr>
 <td><code>certmanager</code></td>
 <td><code>v1alpha1</code></td>
 <td><code>CertificateDNSNameSelector</code></td>
 </tr>
-</tbody>
-</table>
+</tbody></table>
 <p>CertificateDomainSelector selects certificates using a label selector, and can optionally select individual DNS names within those certificates. If both MatchLabels and DNSNames are empty, this selector will match all certificates and DNS names within them.</p>
 <aside class="notice">
 Appears In:
@@ -1631,8 +1513,7 @@ Appears In:
 <th>Description</th>
 </tr>
 </thead>
-<tbody>
-<tr>
+<tbody><tr>
 <td><code>dnsNames</code><br /> <em>string array</em></td>
 <td>List of DNSNames that can be used to further refine the domains that this solver applies to.</td>
 </tr>
@@ -1640,8 +1521,7 @@ Appears In:
 <td><code>matchLabels</code><br /> <em>object</em></td>
 <td>A label selector that is used to refine the set of certificate&#39;s that this challenge solver will apply to.</td>
 </tr>
-</tbody>
-</table>
+</tbody></table>
 <h2 id="dns01solverconfig-v1alpha1">DNS01SolverConfig v1alpha1</h2>
 <table>
 <thead>
@@ -1651,14 +1531,12 @@ Appears In:
 <th>Kind</th>
 </tr>
 </thead>
-<tbody>
-<tr>
+<tbody><tr>
 <td><code>certmanager</code></td>
 <td><code>v1alpha1</code></td>
 <td><code>DNS01SolverConfig</code></td>
 </tr>
-</tbody>
-</table>
+</tbody></table>
 <p>DNS01SolverConfig contains solver configuration for DNS01 challenges.</p>
 <aside class="notice">
 Appears In:
@@ -1675,13 +1553,11 @@ Appears In:
 <th>Description</th>
 </tr>
 </thead>
-<tbody>
-<tr>
+<tbody><tr>
 <td><code>provider</code><br /> <em>string</em></td>
 <td>Provider is the name of the DNS01 challenge provider to use, as configure on the referenced Issuer or ClusterIssuer resource.</td>
 </tr>
-</tbody>
-</table>
+</tbody></table>
 <h2 id="domainsolverconfig-v1alpha1">DomainSolverConfig v1alpha1</h2>
 <table>
 <thead>
@@ -1691,14 +1567,12 @@ Appears In:
 <th>Kind</th>
 </tr>
 </thead>
-<tbody>
-<tr>
+<tbody><tr>
 <td><code>certmanager</code></td>
 <td><code>v1alpha1</code></td>
 <td><code>DomainSolverConfig</code></td>
 </tr>
-</tbody>
-</table>
+</tbody></table>
 <p>DomainSolverConfig contains solver configuration for a set of domains.</p>
 <aside class="notice">
 Appears In:
@@ -1715,9 +1589,8 @@ Appears In:
 <th>Description</th>
 </tr>
 </thead>
-<tbody>
-<tr>
-<td><code>dns01</code><br /> <em><a href="#dns01solverconfig-v1alpha1">DNS01SolverConfig</a></em></td>
+<tbody><tr>
+<td><code>dns01</code><br /> *<a href="#dns01solverconfig-v1alpha1">DNS01SolverConfig</a>*</td>
 <td>DNS01 contains DNS01 challenge solving configuration</td>
 </tr>
 <tr>
@@ -1725,11 +1598,10 @@ Appears In:
 <td>Domains is the list of domains that this SolverConfig applies to.</td>
 </tr>
 <tr>
-<td><code>http01</code><br /> <em><a href="#http01solverconfig-v1alpha1">HTTP01SolverConfig</a></em></td>
+<td><code>http01</code><br /> *<a href="#http01solverconfig-v1alpha1">HTTP01SolverConfig</a>*</td>
 <td>HTTP01 contains HTTP01 challenge solving configuration</td>
 </tr>
-</tbody>
-</table>
+</tbody></table>
 <h2 id="duration-v1">Duration v1</h2>
 <table>
 <thead>
@@ -1739,14 +1611,12 @@ Appears In:
 <th>Kind</th>
 </tr>
 </thead>
-<tbody>
-<tr>
+<tbody><tr>
 <td><code>meta</code></td>
 <td><code>v1</code></td>
 <td><code>Duration</code></td>
 </tr>
-</tbody>
-</table>
+</tbody></table>
 <p>Duration is a wrapper around time.Duration which supports correct marshaling to YAML and JSON. In particular, it marshals into strings, which can be used as map keys in json.</p>
 <aside class="notice">
 Appears In:
@@ -1762,11 +1632,6 @@ Appears In:
 <th>Description</th>
 </tr>
 </thead>
-<tbody>
-<tr>
-<td></td>
-</tr>
-</tbody>
 </table>
 <h2 id="fields-v1">Fields v1</h2>
 <table>
@@ -1777,14 +1642,12 @@ Appears In:
 <th>Kind</th>
 </tr>
 </thead>
-<tbody>
-<tr>
+<tbody><tr>
 <td><code>meta</code></td>
 <td><code>v1</code></td>
 <td><code>Fields</code></td>
 </tr>
-</tbody>
-</table>
+</tbody></table>
 <p>Fields stores a set of fields in a data structure like a Trie. To understand how this is used, see: <a href="https://github.com/kubernetes-sigs/structured-merge-diff">https://github.com/kubernetes-sigs/structured-merge-diff</a></p>
 <aside class="notice">
 Appears In:
@@ -1800,11 +1663,6 @@ Appears In:
 <th>Description</th>
 </tr>
 </thead>
-<tbody>
-<tr>
-<td></td>
-</tr>
-</tbody>
 </table>
 <h2 id="http01solverconfig-v1alpha1">HTTP01SolverConfig v1alpha1</h2>
 <table>
@@ -1815,14 +1673,12 @@ Appears In:
 <th>Kind</th>
 </tr>
 </thead>
-<tbody>
-<tr>
+<tbody><tr>
 <td><code>certmanager</code></td>
 <td><code>v1alpha1</code></td>
 <td><code>HTTP01SolverConfig</code></td>
 </tr>
-</tbody>
-</table>
+</tbody></table>
 <p>HTTP01SolverConfig contains solver configuration for HTTP01 challenges.</p>
 <aside class="notice">
 Appears In:
@@ -1839,8 +1695,7 @@ Appears In:
 <th>Description</th>
 </tr>
 </thead>
-<tbody>
-<tr>
+<tbody><tr>
 <td><code>ingress</code><br /> <em>string</em></td>
 <td>Ingress is the name of an Ingress resource that will be edited to include the ACME HTTP01 &#39;well-known&#39; challenge path in order to solve HTTP01 challenges. If this field is specified, &#39;ingressClass&#39; <strong>must not</strong> be specified.</td>
 </tr>
@@ -1848,8 +1703,7 @@ Appears In:
 <td><code>ingressClass</code><br /> <em>string</em></td>
 <td>IngressClass is the ingress class that should be set on new ingress resources that are created in order to solve HTTP01 challenges. This field should be used when using an ingress controller such as nginx, which &#39;flattens&#39; ingress configuration instead of maintaining a 1:1 mapping between loadbalancer IP:ingress resources. If this field is not set, and &#39;ingress&#39; is not set, then ingresses without an ingress class set will be created to solve HTTP01 challenges. If this field is specified, &#39;ingress&#39; <strong>must not</strong> be specified.</td>
 </tr>
-</tbody>
-</table>
+</tbody></table>
 <h2 id="initializer-v1">Initializer v1</h2>
 <table>
 <thead>
@@ -1859,14 +1713,12 @@ Appears In:
 <th>Kind</th>
 </tr>
 </thead>
-<tbody>
-<tr>
+<tbody><tr>
 <td><code>meta</code></td>
 <td><code>v1</code></td>
 <td><code>Initializer</code></td>
 </tr>
-</tbody>
-</table>
+</tbody></table>
 <p>Initializer is information about an initializer that has not yet completed.</p>
 <aside class="notice">
 Appears In:
@@ -1882,13 +1734,11 @@ Appears In:
 <th>Description</th>
 </tr>
 </thead>
-<tbody>
-<tr>
+<tbody><tr>
 <td><code>name</code><br /> <em>string</em></td>
 <td>name of the process that is responsible for initializing this object.</td>
 </tr>
-</tbody>
-</table>
+</tbody></table>
 <h2 id="initializers-v1">Initializers v1</h2>
 <table>
 <thead>
@@ -1898,14 +1748,12 @@ Appears In:
 <th>Kind</th>
 </tr>
 </thead>
-<tbody>
-<tr>
+<tbody><tr>
 <td><code>meta</code></td>
 <td><code>v1</code></td>
 <td><code>Initializers</code></td>
 </tr>
-</tbody>
-</table>
+</tbody></table>
 <p>Initializers tracks the progress of initialization.</p>
 <aside class="notice">
 Appears In:
@@ -1921,17 +1769,15 @@ Appears In:
 <th>Description</th>
 </tr>
 </thead>
-<tbody>
-<tr>
-<td><code>pending</code><br /> <em><a href="#initializer-v1">Initializer</a> array</em>  <br /> <strong>patch type</strong>: <em>merge</em>  <br /> <strong>patch merge key</strong>: <em>name</em></td>
+<tbody><tr>
+<td><code>pending</code><br /> *<a href="#initializer-v1">Initializer</a> array*  <br /> <strong>patch type</strong>: <em>merge</em>  <br /> <strong>patch merge key</strong>: <em>name</em></td>
 <td>Pending is a list of initializers that must execute in order before this object is visible. When the last pending initializer is removed, and no failing result is set, the initializers struct will be set to nil and the object is considered as initialized and visible to all clients.</td>
 </tr>
 <tr>
-<td><code>result</code><br /> <em><a href="#status-v1">Status</a></em></td>
+<td><code>result</code><br /> *<a href="#status-v1">Status</a>*</td>
 <td>If result is set with the Failure field, the object will be persisted to storage and then deleted, ensuring that other clients can observe the deletion.</td>
 </tr>
-</tbody>
-</table>
+</tbody></table>
 <h2 id="issuercondition-v1alpha1">IssuerCondition v1alpha1</h2>
 <table>
 <thead>
@@ -1941,14 +1787,12 @@ Appears In:
 <th>Kind</th>
 </tr>
 </thead>
-<tbody>
-<tr>
+<tbody><tr>
 <td><code>certmanager</code></td>
 <td><code>v1alpha1</code></td>
 <td><code>IssuerCondition</code></td>
 </tr>
-</tbody>
-</table>
+</tbody></table>
 <p>IssuerCondition contains condition information for an Issuer.</p>
 <aside class="notice">
 Appears In:
@@ -1964,9 +1808,8 @@ Appears In:
 <th>Description</th>
 </tr>
 </thead>
-<tbody>
-<tr>
-<td><code>lastTransitionTime</code><br /> <em><a href="#time-v1">Time</a></em></td>
+<tbody><tr>
+<td><code>lastTransitionTime</code><br /> *<a href="#time-v1">Time</a>*</td>
 <td>LastTransitionTime is the timestamp corresponding to the last status change of this condition.</td>
 </tr>
 <tr>
@@ -1985,8 +1828,7 @@ Appears In:
 <td><code>type</code><br /> <em>string</em></td>
 <td>Type of the condition, currently (&#39;Ready&#39;).</td>
 </tr>
-</tbody>
-</table>
+</tbody></table>
 <h2 id="listmeta-v1">ListMeta v1</h2>
 <table>
 <thead>
@@ -1996,14 +1838,12 @@ Appears In:
 <th>Kind</th>
 </tr>
 </thead>
-<tbody>
-<tr>
+<tbody><tr>
 <td><code>meta</code></td>
 <td><code>v1</code></td>
 <td><code>ListMeta</code></td>
 </tr>
-</tbody>
-</table>
+</tbody></table>
 <p>ListMeta describes metadata that synthetic resources must have, including lists and various status objects. A resource may have only one of {ObjectMeta, ListMeta}.</p>
 <aside class="notice">
 Appears In:
@@ -2019,8 +1859,7 @@ Appears In:
 <th>Description</th>
 </tr>
 </thead>
-<tbody>
-<tr>
+<tbody><tr>
 <td><code>continue</code><br /> <em>string</em></td>
 <td>continue may be set if the user set a limit on the number of items returned, and indicates that the server has more data available. The value is opaque and may be used to issue another request to the endpoint that served this list to retrieve the next set of available objects. Continuing a consistent list may not be possible if the server configuration has changed or more than a few minutes have passed. The resourceVersion field returned when using this continue value will be identical to the value in the first response, unless you have received this token from an error message.</td>
 </tr>
@@ -2032,8 +1871,7 @@ Appears In:
 <td><code>selfLink</code><br /> <em>string</em></td>
 <td>selfLink is a URL representing this object. Populated by the system. Read-only.</td>
 </tr>
-</tbody>
-</table>
+</tbody></table>
 <h2 id="localobjectreference-v1alpha1">LocalObjectReference v1alpha1</h2>
 <table>
 <thead>
@@ -2043,14 +1881,12 @@ Appears In:
 <th>Kind</th>
 </tr>
 </thead>
-<tbody>
-<tr>
+<tbody><tr>
 <td><code>certmanager</code></td>
 <td><code>v1alpha1</code></td>
 <td><code>LocalObjectReference</code></td>
 </tr>
-</tbody>
-</table>
+</tbody></table>
 <aside class="notice">
 Appears In:
 
@@ -2065,13 +1901,11 @@ Appears In:
 <th>Description</th>
 </tr>
 </thead>
-<tbody>
-<tr>
+<tbody><tr>
 <td><code>name</code><br /> <em>string</em></td>
 <td>Name of the referent. More info: <a href="https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names">https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names</a></td>
 </tr>
-</tbody>
-</table>
+</tbody></table>
 <h2 id="managedfieldsentry-v1">ManagedFieldsEntry v1</h2>
 <table>
 <thead>
@@ -2081,14 +1915,12 @@ Appears In:
 <th>Kind</th>
 </tr>
 </thead>
-<tbody>
-<tr>
+<tbody><tr>
 <td><code>meta</code></td>
 <td><code>v1</code></td>
 <td><code>ManagedFieldsEntry</code></td>
 </tr>
-</tbody>
-</table>
+</tbody></table>
 <p>ManagedFieldsEntry is a workflow-id, a FieldSet and the group version of the resource that the fieldset applies to.</p>
 <aside class="notice">
 Appears In:
@@ -2104,13 +1936,12 @@ Appears In:
 <th>Description</th>
 </tr>
 </thead>
-<tbody>
-<tr>
+<tbody><tr>
 <td><code>apiVersion</code><br /> <em>string</em></td>
 <td>APIVersion defines the version of this resource that this field set applies to. The format is &#34;group/version&#34; just like the top-level APIVersion field. It is necessary to track the version of a field set because it cannot be automatically converted.</td>
 </tr>
 <tr>
-<td><code>fields</code><br /> <em><a href="#fields-v1">Fields</a></em></td>
+<td><code>fields</code><br /> *<a href="#fields-v1">Fields</a>*</td>
 <td>Fields identifies a set of fields.</td>
 </tr>
 <tr>
@@ -2122,11 +1953,10 @@ Appears In:
 <td>Operation is the type of operation which lead to this ManagedFieldsEntry being created. The only valid values for this field are &#39;Apply&#39; and &#39;Update&#39;.</td>
 </tr>
 <tr>
-<td><code>time</code><br /> <em><a href="#time-v1">Time</a></em></td>
+<td><code>time</code><br /> *<a href="#time-v1">Time</a>*</td>
 <td>Time is timestamp of when these fields were set. It should always be empty if Operation is &#39;Apply&#39;</td>
 </tr>
-</tbody>
-</table>
+</tbody></table>
 <h2 id="objectmeta-v1">ObjectMeta v1</h2>
 <table>
 <thead>
@@ -2136,14 +1966,12 @@ Appears In:
 <th>Kind</th>
 </tr>
 </thead>
-<tbody>
-<tr>
+<tbody><tr>
 <td><code>meta</code></td>
 <td><code>v1</code></td>
 <td><code>ObjectMeta</code></td>
 </tr>
-</tbody>
-</table>
+</tbody></table>
 <p>ObjectMeta is metadata that all persisted resources must have, which includes all objects users must create.</p>
 <aside class="notice">
 Appears In:
@@ -2163,8 +1991,7 @@ Appears In:
 <th>Description</th>
 </tr>
 </thead>
-<tbody>
-<tr>
+<tbody><tr>
 <td><code>annotations</code><br /> <em>object</em></td>
 <td>Annotations is an unstructured key value map stored with a resource that may be set by external tools to store and retrieve arbitrary metadata. They are not queryable and should be preserved when modifying objects. More info: <a href="http://kubernetes.io/docs/user-guide/annotations">http://kubernetes.io/docs/user-guide/annotations</a></td>
 </tr>
@@ -2173,7 +2000,7 @@ Appears In:
 <td>The name of the cluster which the object belongs to. This is used to distinguish resources with same name and namespace in different clusters. This field is not set anywhere right now and apiserver is going to ignore it if set in create or update request.</td>
 </tr>
 <tr>
-<td><code>creationTimestamp</code><br /> <em><a href="#time-v1">Time</a></em></td>
+<td><code>creationTimestamp</code><br /> *<a href="#time-v1">Time</a>*</td>
 <td>CreationTimestamp is a timestamp representing the server time when this object was created. It is not guaranteed to be set in happens-before order across separate operations. Clients may not set this value. It is represented in RFC3339 form and is in UTC.  Populated by the system. Read-only. Null for lists. More info: <a href="https://git.k8s.io/community/contributors/devel/api-conventions.md#metadata">https://git.k8s.io/community/contributors/devel/api-conventions.md#metadata</a></td>
 </tr>
 <tr>
@@ -2181,7 +2008,7 @@ Appears In:
 <td>Number of seconds allowed for this object to gracefully terminate before it will be removed from the system. Only set when deletionTimestamp is also set. May only be shortened. Read-only.</td>
 </tr>
 <tr>
-<td><code>deletionTimestamp</code><br /> <em><a href="#time-v1">Time</a></em></td>
+<td><code>deletionTimestamp</code><br /> *<a href="#time-v1">Time</a>*</td>
 <td>DeletionTimestamp is RFC 3339 date and time at which this resource will be deleted. This field is set by the server when a graceful deletion is requested by the user, and is not directly settable by a client. The resource is expected to be deleted (no longer visible from resource lists, and not reachable by name) after the time in this field, once the finalizers list is empty. As long as the finalizers list contains items, deletion is blocked. Once the deletionTimestamp is set, this value may not be unset or be set further into the future, although it may be shortened or the resource may be deleted prior to this time. For example, a user may request that a pod is deleted in 30 seconds. The Kubelet will react by sending a graceful termination signal to the containers in the pod. After that 30 seconds, the Kubelet will send a hard termination signal (SIGKILL) to the container and after cleanup, remove the pod from the API. In the presence of network partitions, this object may still exist after this timestamp, until an administrator or automated process can determine the resource is fully terminated. If not set, graceful deletion of the object has not been requested.  Populated by the system when a graceful deletion is requested. Read-only. More info: <a href="https://git.k8s.io/community/contributors/devel/api-conventions.md#metadata">https://git.k8s.io/community/contributors/devel/api-conventions.md#metadata</a></td>
 </tr>
 <tr>
@@ -2197,7 +2024,7 @@ Appears In:
 <td>A sequence number representing a specific generation of the desired state. Populated by the system. Read-only.</td>
 </tr>
 <tr>
-<td><code>initializers</code><br /> <em><a href="#initializers-v1">Initializers</a></em></td>
+<td><code>initializers</code><br /> *<a href="#initializers-v1">Initializers</a>*</td>
 <td>An initializer is a controller which enforces some system invariant at object creation time. This field is a list of initializers that have not yet acted on this object. If nil or empty, this object has been completely initialized. Otherwise, the object is considered uninitialized and is hidden (in list/watch and get calls) from clients that haven&#39;t explicitly asked to observe uninitialized objects.  When an object is created, the system will populate this list with the current set of initializers. Only privileged users may set or modify this list. Once it is empty, it may not be modified further by any user.  DEPRECATED - initializers are an alpha field and will be removed in v1.15.</td>
 </tr>
 <tr>
@@ -2205,7 +2032,7 @@ Appears In:
 <td>Map of string keys and values that can be used to organize and categorize (scope and select) objects. May match selectors of replication controllers and services. More info: <a href="http://kubernetes.io/docs/user-guide/labels">http://kubernetes.io/docs/user-guide/labels</a></td>
 </tr>
 <tr>
-<td><code>managedFields</code><br /> <em><a href="#managedfieldsentry-v1">ManagedFieldsEntry</a> array</em></td>
+<td><code>managedFields</code><br /> *<a href="#managedfieldsentry-v1">ManagedFieldsEntry</a> array*</td>
 <td>ManagedFields maps workflow-id and version to the set of fields that are managed by that workflow. This is mostly for internal housekeeping, and users typically shouldn&#39;t need to set or understand this field. A workflow can be the user&#39;s name, a controller&#39;s name, or the name of a specific apply path like &#34;ci-cd&#34;. The set of fields is always in the version that the workflow used when modifying the object.  This field is alpha and can be changed or removed without notice.</td>
 </tr>
 <tr>
@@ -2217,7 +2044,7 @@ Appears In:
 <td>Namespace defines the space within each name must be unique. An empty namespace is equivalent to the &#34;default&#34; namespace, but &#34;default&#34; is the canonical representation. Not all objects are required to be scoped to a namespace - the value of this field for those objects will be empty.  Must be a DNS_LABEL. Cannot be updated. More info: <a href="http://kubernetes.io/docs/user-guide/namespaces">http://kubernetes.io/docs/user-guide/namespaces</a></td>
 </tr>
 <tr>
-<td><code>ownerReferences</code><br /> <em><a href="#ownerreference-v1">OwnerReference</a> array</em>  <br /> <strong>patch type</strong>: <em>merge</em>  <br /> <strong>patch merge key</strong>: <em>uid</em></td>
+<td><code>ownerReferences</code><br /> *<a href="#ownerreference-v1">OwnerReference</a> array*  <br /> <strong>patch type</strong>: <em>merge</em>  <br /> <strong>patch merge key</strong>: <em>uid</em></td>
 <td>List of objects depended by this object. If ALL objects in the list have been deleted, this object will be garbage collected. If this object is managed by a controller, then an entry in this list will point to this controller, with the controller field set to true. There cannot be more than one managing controller.</td>
 </tr>
 <tr>
@@ -2232,8 +2059,7 @@ Appears In:
 <td><code>uid</code><br /> <em>string</em></td>
 <td>UID is the unique in time and space value for this object. It is typically generated by the server on successful creation of a resource and is not allowed to change on PUT operations.  Populated by the system. Read-only. More info: <a href="http://kubernetes.io/docs/user-guide/identifiers#uids">http://kubernetes.io/docs/user-guide/identifiers#uids</a></td>
 </tr>
-</tbody>
-</table>
+</tbody></table>
 <h2 id="objectreference-v1alpha1">ObjectReference v1alpha1</h2>
 <table>
 <thead>
@@ -2243,14 +2069,12 @@ Appears In:
 <th>Kind</th>
 </tr>
 </thead>
-<tbody>
-<tr>
+<tbody><tr>
 <td><code>certmanager</code></td>
 <td><code>v1alpha1</code></td>
 <td><code>ObjectReference</code></td>
 </tr>
-</tbody>
-</table>
+</tbody></table>
 <p>ObjectReference is a reference to an object with a given name and kind.</p>
 <aside class="notice">
 Appears In:
@@ -2268,8 +2092,7 @@ Appears In:
 <th>Description</th>
 </tr>
 </thead>
-<tbody>
-<tr>
+<tbody><tr>
 <td><code>kind</code><br /> <em>string</em></td>
 <td></td>
 </tr>
@@ -2277,8 +2100,7 @@ Appears In:
 <td><code>name</code><br /> <em>string</em></td>
 <td></td>
 </tr>
-</tbody>
-</table>
+</tbody></table>
 <h2 id="ownerreference-v1">OwnerReference v1</h2>
 <table>
 <thead>
@@ -2288,14 +2110,12 @@ Appears In:
 <th>Kind</th>
 </tr>
 </thead>
-<tbody>
-<tr>
+<tbody><tr>
 <td><code>meta</code></td>
 <td><code>v1</code></td>
 <td><code>OwnerReference</code></td>
 </tr>
-</tbody>
-</table>
+</tbody></table>
 <p>OwnerReference contains enough information to let you identify an owning object. An owning object must be in the same namespace as the dependent, or be cluster-scoped, so there is no namespace field.</p>
 <aside class="notice">
 Appears In:
@@ -2311,8 +2131,7 @@ Appears In:
 <th>Description</th>
 </tr>
 </thead>
-<tbody>
-<tr>
+<tbody><tr>
 <td><code>apiVersion</code><br /> <em>string</em></td>
 <td>API version of the referent.</td>
 </tr>
@@ -2336,8 +2155,7 @@ Appears In:
 <td><code>uid</code><br /> <em>string</em></td>
 <td>UID of the referent. More info: <a href="http://kubernetes.io/docs/user-guide/identifiers#uids">http://kubernetes.io/docs/user-guide/identifiers#uids</a></td>
 </tr>
-</tbody>
-</table>
+</tbody></table>
 <h2 id="secretkeyselector-v1alpha1">SecretKeySelector v1alpha1</h2>
 <table>
 <thead>
@@ -2347,14 +2165,12 @@ Appears In:
 <th>Kind</th>
 </tr>
 </thead>
-<tbody>
-<tr>
+<tbody><tr>
 <td><code>certmanager</code></td>
 <td><code>v1alpha1</code></td>
 <td><code>SecretKeySelector</code></td>
 </tr>
-</tbody>
-</table>
+</tbody></table>
 <aside class="notice">
 Appears In:
 
@@ -2380,8 +2196,7 @@ Appears In:
 <th>Description</th>
 </tr>
 </thead>
-<tbody>
-<tr>
+<tbody><tr>
 <td><code>key</code><br /> <em>string</em></td>
 <td>The key of the secret to select from. Must be a valid secret key.</td>
 </tr>
@@ -2389,8 +2204,7 @@ Appears In:
 <td><code>name</code><br /> <em>string</em></td>
 <td>Name of the referent. More info: <a href="https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names">https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names</a></td>
 </tr>
-</tbody>
-</table>
+</tbody></table>
 <h2 id="selfsignedissuer-v1alpha1">SelfSignedIssuer v1alpha1</h2>
 <table>
 <thead>
@@ -2400,14 +2214,12 @@ Appears In:
 <th>Kind</th>
 </tr>
 </thead>
-<tbody>
-<tr>
+<tbody><tr>
 <td><code>certmanager</code></td>
 <td><code>v1alpha1</code></td>
 <td><code>SelfSignedIssuer</code></td>
 </tr>
-</tbody>
-</table>
+</tbody></table>
 <aside class="notice">
 Appears In:
 
@@ -2422,11 +2234,6 @@ Appears In:
 <th>Description</th>
 </tr>
 </thead>
-<tbody>
-<tr>
-<td></td>
-</tr>
-</tbody>
 </table>
 <h2 id="solverconfig-v1alpha1">SolverConfig v1alpha1</h2>
 <table>
@@ -2437,14 +2244,12 @@ Appears In:
 <th>Kind</th>
 </tr>
 </thead>
-<tbody>
-<tr>
+<tbody><tr>
 <td><code>certmanager</code></td>
 <td><code>v1alpha1</code></td>
 <td><code>SolverConfig</code></td>
 </tr>
-</tbody>
-</table>
+</tbody></table>
 <p>SolverConfig is a container type holding the configuration for either a HTTP01 or DNS01 challenge. Only one of HTTP01 or DNS01 should be non-nil.</p>
 <aside class="notice">
 Appears In:
@@ -2460,17 +2265,15 @@ Appears In:
 <th>Description</th>
 </tr>
 </thead>
-<tbody>
-<tr>
-<td><code>dns01</code><br /> <em><a href="#dns01solverconfig-v1alpha1">DNS01SolverConfig</a></em></td>
+<tbody><tr>
+<td><code>dns01</code><br /> *<a href="#dns01solverconfig-v1alpha1">DNS01SolverConfig</a>*</td>
 <td>DNS01 contains DNS01 challenge solving configuration</td>
 </tr>
 <tr>
-<td><code>http01</code><br /> <em><a href="#http01solverconfig-v1alpha1">HTTP01SolverConfig</a></em></td>
+<td><code>http01</code><br /> *<a href="#http01solverconfig-v1alpha1">HTTP01SolverConfig</a>*</td>
 <td>HTTP01 contains HTTP01 challenge solving configuration</td>
 </tr>
-</tbody>
-</table>
+</tbody></table>
 <h2 id="status-v1">Status v1</h2>
 <table>
 <thead>
@@ -2480,14 +2283,12 @@ Appears In:
 <th>Kind</th>
 </tr>
 </thead>
-<tbody>
-<tr>
+<tbody><tr>
 <td><code>meta</code></td>
 <td><code>v1</code></td>
 <td><code>Status</code></td>
 </tr>
-</tbody>
-</table>
+</tbody></table>
 <p>Status is a return value for calls that don&#39;t return other objects.</p>
 <aside class="notice">
 Appears In:
@@ -2503,8 +2304,7 @@ Appears In:
 <th>Description</th>
 </tr>
 </thead>
-<tbody>
-<tr>
+<tbody><tr>
 <td><code>apiVersion</code><br /> <em>string</em></td>
 <td>APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: <a href="https://git.k8s.io/community/contributors/devel/api-conventions.md#resources">https://git.k8s.io/community/contributors/devel/api-conventions.md#resources</a></td>
 </tr>
@@ -2513,7 +2313,7 @@ Appears In:
 <td>Suggested HTTP return code for this status, 0 if not set.</td>
 </tr>
 <tr>
-<td><code>details</code><br /> <em><a href="#statusdetails-v1">StatusDetails</a></em></td>
+<td><code>details</code><br /> *<a href="#statusdetails-v1">StatusDetails</a>*</td>
 <td>Extended data associated with the reason.  Each reason may define its own extended details. This field is optional and the data returned is not guaranteed to conform to any schema except that defined by the reason type.</td>
 </tr>
 <tr>
@@ -2525,7 +2325,7 @@ Appears In:
 <td>A human-readable description of the status of this operation.</td>
 </tr>
 <tr>
-<td><code>metadata</code><br /> <em><a href="#listmeta-v1">ListMeta</a></em></td>
+<td><code>metadata</code><br /> *<a href="#listmeta-v1">ListMeta</a>*</td>
 <td>Standard list metadata. More info: <a href="https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds">https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds</a></td>
 </tr>
 <tr>
@@ -2536,8 +2336,7 @@ Appears In:
 <td><code>status</code><br /> <em>string</em></td>
 <td>Status of the operation. One of: &#34;Success&#34; or &#34;Failure&#34;. More info: <a href="https://git.k8s.io/community/contributors/devel/api-conventions.md#spec-and-status">https://git.k8s.io/community/contributors/devel/api-conventions.md#spec-and-status</a></td>
 </tr>
-</tbody>
-</table>
+</tbody></table>
 <h2 id="statuscause-v1">StatusCause v1</h2>
 <table>
 <thead>
@@ -2547,14 +2346,12 @@ Appears In:
 <th>Kind</th>
 </tr>
 </thead>
-<tbody>
-<tr>
+<tbody><tr>
 <td><code>meta</code></td>
 <td><code>v1</code></td>
 <td><code>StatusCause</code></td>
 </tr>
-</tbody>
-</table>
+</tbody></table>
 <p>StatusCause provides more information about an api.Status failure, including cases when multiple errors are encountered.</p>
 <aside class="notice">
 Appears In:
@@ -2570,8 +2367,7 @@ Appears In:
 <th>Description</th>
 </tr>
 </thead>
-<tbody>
-<tr>
+<tbody><tr>
 <td><code>field</code><br /> <em>string</em></td>
 <td>The field of the resource that has caused this error, as named by its JSON serialization. May include dot and postfix notation for nested attributes. Arrays are zero-indexed.  Fields may appear more than once in an array of causes due to fields having multiple errors. Optional.  Examples:   &#34;name&#34; - the field &#34;name&#34; on the current resource   &#34;items[0].name&#34; - the field &#34;name&#34; on the first array entry in &#34;items&#34;</td>
 </tr>
@@ -2583,8 +2379,7 @@ Appears In:
 <td><code>reason</code><br /> <em>string</em></td>
 <td>A machine-readable description of the cause of the error. If this value is empty there is no information available.</td>
 </tr>
-</tbody>
-</table>
+</tbody></table>
 <h2 id="statusdetails-v1">StatusDetails v1</h2>
 <table>
 <thead>
@@ -2594,14 +2389,12 @@ Appears In:
 <th>Kind</th>
 </tr>
 </thead>
-<tbody>
-<tr>
+<tbody><tr>
 <td><code>meta</code></td>
 <td><code>v1</code></td>
 <td><code>StatusDetails</code></td>
 </tr>
-</tbody>
-</table>
+</tbody></table>
 <p>StatusDetails is a set of additional properties that MAY be set by the server to provide additional information about a response. The Reason field of a Status object defines what attributes will be set. Clients must ignore fields that do not match the defined type of each attribute, and should assume that any attribute may be empty, invalid, or under defined.</p>
 <aside class="notice">
 Appears In:
@@ -2617,9 +2410,8 @@ Appears In:
 <th>Description</th>
 </tr>
 </thead>
-<tbody>
-<tr>
-<td><code>causes</code><br /> <em><a href="#statuscause-v1">StatusCause</a> array</em></td>
+<tbody><tr>
+<td><code>causes</code><br /> *<a href="#statuscause-v1">StatusCause</a> array*</td>
 <td>The Causes array includes more details associated with the StatusReason failure. Not all StatusReasons may provide detailed causes.</td>
 </tr>
 <tr>
@@ -2642,8 +2434,7 @@ Appears In:
 <td><code>uid</code><br /> <em>string</em></td>
 <td>UID of the resource. (when there is a single resource which can be described). More info: <a href="http://kubernetes.io/docs/user-guide/identifiers#uids">http://kubernetes.io/docs/user-guide/identifiers#uids</a></td>
 </tr>
-</tbody>
-</table>
+</tbody></table>
 <h2 id="time-v1">Time v1</h2>
 <table>
 <thead>
@@ -2653,14 +2444,12 @@ Appears In:
 <th>Kind</th>
 </tr>
 </thead>
-<tbody>
-<tr>
+<tbody><tr>
 <td><code>meta</code></td>
 <td><code>v1</code></td>
 <td><code>Time</code></td>
 </tr>
-</tbody>
-</table>
+</tbody></table>
 <p>Time is a wrapper around time.Time which supports correct marshaling to YAML and JSON.  Wrappers are provided for many of the factory methods that the time package offers.</p>
 <aside class="notice">
 Appears In:
@@ -2681,11 +2470,6 @@ Appears In:
 <th>Description</th>
 </tr>
 </thead>
-<tbody>
-<tr>
-<td></td>
-</tr>
-</tbody>
 </table>
 <h2 id="vaultapprole-v1alpha1">VaultAppRole v1alpha1</h2>
 <table>
@@ -2696,14 +2480,12 @@ Appears In:
 <th>Kind</th>
 </tr>
 </thead>
-<tbody>
-<tr>
+<tbody><tr>
 <td><code>certmanager</code></td>
 <td><code>v1alpha1</code></td>
 <td><code>VaultAppRole</code></td>
 </tr>
-</tbody>
-</table>
+</tbody></table>
 <aside class="notice">
 Appears In:
 
@@ -2718,8 +2500,7 @@ Appears In:
 <th>Description</th>
 </tr>
 </thead>
-<tbody>
-<tr>
+<tbody><tr>
 <td><code>path</code><br /> <em>string</em></td>
 <td>Where the authentication path is mounted in Vault.</td>
 </tr>
@@ -2728,11 +2509,10 @@ Appears In:
 <td></td>
 </tr>
 <tr>
-<td><code>secretRef</code><br /> <em><a href="#secretkeyselector-v1alpha1">SecretKeySelector</a></em></td>
+<td><code>secretRef</code><br /> *<a href="#secretkeyselector-v1alpha1">SecretKeySelector</a>*</td>
 <td></td>
 </tr>
-</tbody>
-</table>
+</tbody></table>
 <h2 id="vaultauth-v1alpha1">VaultAuth v1alpha1</h2>
 <table>
 <thead>
@@ -2742,14 +2522,12 @@ Appears In:
 <th>Kind</th>
 </tr>
 </thead>
-<tbody>
-<tr>
+<tbody><tr>
 <td><code>certmanager</code></td>
 <td><code>v1alpha1</code></td>
 <td><code>VaultAuth</code></td>
 </tr>
-</tbody>
-</table>
+</tbody></table>
 <p>Vault authentication  can be configured: - With a secret containing a token. Cert-manager is using this token as-is. - With a secret containing a AppRole. This AppRole is used to authenticate to
   Vault and retrieve a token.</p>
 <aside class="notice">
@@ -2766,17 +2544,15 @@ Appears In:
 <th>Description</th>
 </tr>
 </thead>
-<tbody>
-<tr>
-<td><code>appRole</code><br /> <em><a href="#vaultapprole-v1alpha1">VaultAppRole</a></em></td>
+<tbody><tr>
+<td><code>appRole</code><br /> *<a href="#vaultapprole-v1alpha1">VaultAppRole</a>*</td>
 <td>This Secret contains a AppRole and Secret</td>
 </tr>
 <tr>
-<td><code>tokenSecretRef</code><br /> <em><a href="#secretkeyselector-v1alpha1">SecretKeySelector</a></em></td>
+<td><code>tokenSecretRef</code><br /> *<a href="#secretkeyselector-v1alpha1">SecretKeySelector</a>*</td>
 <td>This Secret contains the Vault token key</td>
 </tr>
-</tbody>
-</table>
+</tbody></table>
 <h2 id="vaultissuer-v1alpha1">VaultIssuer v1alpha1</h2>
 <table>
 <thead>
@@ -2786,14 +2562,12 @@ Appears In:
 <th>Kind</th>
 </tr>
 </thead>
-<tbody>
-<tr>
+<tbody><tr>
 <td><code>certmanager</code></td>
 <td><code>v1alpha1</code></td>
 <td><code>VaultIssuer</code></td>
 </tr>
-</tbody>
-</table>
+</tbody></table>
 <aside class="notice">
 Appears In:
 
@@ -2808,9 +2582,8 @@ Appears In:
 <th>Description</th>
 </tr>
 </thead>
-<tbody>
-<tr>
-<td><code>auth</code><br /> <em><a href="#vaultauth-v1alpha1">VaultAuth</a></em></td>
+<tbody><tr>
+<td><code>auth</code><br /> *<a href="#vaultauth-v1alpha1">VaultAuth</a>*</td>
 <td>Vault authentication</td>
 </tr>
 <tr>
@@ -2825,8 +2598,7 @@ Appears In:
 <td><code>server</code><br /> <em>string</em></td>
 <td>Server is the vault connection address</td>
 </tr>
-</tbody>
-</table>
+</tbody></table>
 <h2 id="venaficloud-v1alpha1">VenafiCloud v1alpha1</h2>
 <table>
 <thead>
@@ -2836,14 +2608,12 @@ Appears In:
 <th>Kind</th>
 </tr>
 </thead>
-<tbody>
-<tr>
+<tbody><tr>
 <td><code>certmanager</code></td>
 <td><code>v1alpha1</code></td>
 <td><code>VenafiCloud</code></td>
 </tr>
-</tbody>
-</table>
+</tbody></table>
 <p>VenafiCloud defines connection configuration details for Venafi Cloud</p>
 <aside class="notice">
 Appears In:
@@ -2859,17 +2629,15 @@ Appears In:
 <th>Description</th>
 </tr>
 </thead>
-<tbody>
-<tr>
-<td><code>apiTokenSecretRef</code><br /> <em><a href="#secretkeyselector-v1alpha1">SecretKeySelector</a></em></td>
+<tbody><tr>
+<td><code>apiTokenSecretRef</code><br /> *<a href="#secretkeyselector-v1alpha1">SecretKeySelector</a>*</td>
 <td>APITokenSecretRef is a secret key selector for the Venafi Cloud API token.</td>
 </tr>
 <tr>
 <td><code>url</code><br /> <em>string</em></td>
 <td>URL is the base URL for Venafi Cloud</td>
 </tr>
-</tbody>
-</table>
+</tbody></table>
 <h2 id="venafiissuer-v1alpha1">VenafiIssuer v1alpha1</h2>
 <table>
 <thead>
@@ -2879,14 +2647,12 @@ Appears In:
 <th>Kind</th>
 </tr>
 </thead>
-<tbody>
-<tr>
+<tbody><tr>
 <td><code>certmanager</code></td>
 <td><code>v1alpha1</code></td>
 <td><code>VenafiIssuer</code></td>
 </tr>
-</tbody>
-</table>
+</tbody></table>
 <p>VenafiIssuer describes issuer configuration details for Venafi Cloud.</p>
 <aside class="notice">
 Appears In:
@@ -2902,21 +2668,19 @@ Appears In:
 <th>Description</th>
 </tr>
 </thead>
-<tbody>
-<tr>
-<td><code>cloud</code><br /> <em><a href="#venaficloud-v1alpha1">VenafiCloud</a></em></td>
+<tbody><tr>
+<td><code>cloud</code><br /> *<a href="#venaficloud-v1alpha1">VenafiCloud</a>*</td>
 <td>Cloud specifies the Venafi cloud configuration settings. Only one of TPP or Cloud may be specified.</td>
 </tr>
 <tr>
-<td><code>tpp</code><br /> <em><a href="#venafitpp-v1alpha1">VenafiTPP</a></em></td>
+<td><code>tpp</code><br /> *<a href="#venafitpp-v1alpha1">VenafiTPP</a>*</td>
 <td>TPP specifies Trust Protection Platform configuration settings. Only one of TPP or Cloud may be specified.</td>
 </tr>
 <tr>
 <td><code>zone</code><br /> <em>string</em></td>
 <td>Zone is the Venafi Policy Zone to use for this issuer. All requests made to the Venafi platform will be restricted by the named zone policy. This field is required.</td>
 </tr>
-</tbody>
-</table>
+</tbody></table>
 <h2 id="venafitpp-v1alpha1">VenafiTPP v1alpha1</h2>
 <table>
 <thead>
@@ -2926,14 +2690,12 @@ Appears In:
 <th>Kind</th>
 </tr>
 </thead>
-<tbody>
-<tr>
+<tbody><tr>
 <td><code>certmanager</code></td>
 <td><code>v1alpha1</code></td>
 <td><code>VenafiTPP</code></td>
 </tr>
-</tbody>
-</table>
+</tbody></table>
 <p>VenafiTPP defines connection configuration details for a Venafi TPP instance</p>
 <aside class="notice">
 Appears In:
@@ -2949,21 +2711,19 @@ Appears In:
 <th>Description</th>
 </tr>
 </thead>
-<tbody>
-<tr>
+<tbody><tr>
 <td><code>caBundle</code><br /> <em>string</em></td>
 <td>CABundle is a PEM encoded TLS certifiate to use to verify connections to the TPP instance. If specified, system roots will not be used and the issuing CA for the TPP instance must be verifiable using the provided root. If not specified, the connection will be verified using the cert-manager system root certificates.</td>
 </tr>
 <tr>
-<td><code>credentialsRef</code><br /> <em><a href="#localobjectreference-v1alpha1">LocalObjectReference</a></em></td>
+<td><code>credentialsRef</code><br /> *<a href="#localobjectreference-v1alpha1">LocalObjectReference</a>*</td>
 <td>CredentialsRef is a reference to a Secret containing the username and password for the TPP server. The secret must contain two keys, &#39;username&#39; and &#39;password&#39;.</td>
 </tr>
 <tr>
 <td><code>url</code><br /> <em>string</em></td>
 <td>URL is the base URL for the Venafi TPP instance</td>
 </tr>
-</tbody>
-</table>
+</tbody></table>
 </div>
 </div>
 <script src="node_modules/jquery/dist/jquery.min.js"></script>
