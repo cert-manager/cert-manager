@@ -107,8 +107,6 @@ func (g *Plugin) InitPublish() []error {
 	var errs []error
 
 	if g.DockerConfig != "" {
-		// Hardcode the filename to be config.json for backwards compatibility
-		// with the old release.sh script.
 		configFileName := path.Join(g.DockerConfig, "config.json")
 		f, err := os.Stat(configFileName)
 		if err != nil {
@@ -117,7 +115,7 @@ func (g *Plugin) InitPublish() []error {
 		if f.IsDir() {
 			return []error{fmt.Errorf("docker config.json is not a file")}
 		}
-		g.configFileName = configFileName
+		g.configFileName = g.DockerConfig
 	}
 
 	return errs
