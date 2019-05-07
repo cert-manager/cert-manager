@@ -255,6 +255,10 @@ func (c *Client) FinalizeOrder(ctx context.Context, finalizeURL string, csr []by
 // If a caller needs to poll an order until its status is final,
 // see the WaitOrder method.
 func (c *Client) GetOrder(ctx context.Context, url string) (*Order, error) {
+	if _, err := c.Discover(ctx); err != nil {
+		return nil, err
+	}
+
 	res, err := c.postWithJWSAccount(ctx, url, nil)
 	if err != nil {
 		return nil, err
@@ -373,6 +377,10 @@ func (c *Client) UpdateAccount(ctx context.Context, a *Account) (*Account, error
 // If a caller needs to poll an authorization until its status is final,
 // see the WaitAuthorization method.
 func (c *Client) GetAuthorization(ctx context.Context, url string) (*Authorization, error) {
+	if _, err := c.Discover(ctx); err != nil {
+		return nil, err
+	}
+
 	res, err := c.postWithJWSAccount(ctx, url, nil)
 	if err != nil {
 		return nil, err
@@ -397,6 +405,10 @@ func (c *Client) GetAuthorization(ctx context.Context, url string) (*Authorizati
 //
 // It does not revoke existing certificates.
 func (c *Client) DeactivateAuthorization(ctx context.Context, url string) error {
+	if _, err := c.Discover(ctx); err != nil {
+		return err
+	}
+
 	res, err := c.postWithJWSAccount(ctx, url, json.RawMessage(`{"status":"deactivated"}`))
 	if err != nil {
 		return err
@@ -417,6 +429,10 @@ func (c *Client) DeactivateAuthorization(ctx context.Context, url string) error 
 // If the Status is StatusInvalid, StatusDeactivated, or StatusRevoked the
 // returned error will be of type AuthorizationError.
 func (c *Client) WaitAuthorization(ctx context.Context, url string) (*Authorization, error) {
+	if _, err := c.Discover(ctx); err != nil {
+		return nil, err
+	}
+
 	sleep := sleeper(ctx)
 	for {
 		res, err := c.postWithJWSAccount(ctx, url, nil)
@@ -463,6 +479,10 @@ func (c *Client) WaitAuthorization(ctx context.Context, url string) (*Authorizat
 //
 // A client typically polls a challenge status using this method.
 func (c *Client) GetChallenge(ctx context.Context, url string) (*Challenge, error) {
+	if _, err := c.Discover(ctx); err != nil {
+		return nil, err
+	}
+
 	res, err := c.postWithJWSAccount(ctx, url, nil)
 	if err != nil {
 		return nil, err
@@ -811,6 +831,10 @@ func nonceFromHeader(h http.Header) string {
 }
 
 func (c *Client) GetCertificate(ctx context.Context, url string) ([][]byte, error) {
+	if _, err := c.Discover(ctx); err != nil {
+		return nil, err
+	}
+
 	res, err := c.postWithJWSAccount(ctx, url, nil)
 	if err != nil {
 		return nil, err
