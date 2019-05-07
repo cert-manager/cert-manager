@@ -57,7 +57,7 @@ are included in a single YAML manifest file:
 .. code-block:: shell
 
    # Install the CustomResourceDefinitions and cert-manager itself
-   kubectl apply -f https://raw.githubusercontent.com/jetstack/cert-manager/release-0.8/deploy/manifests/cert-manager.yaml
+   kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/v0.8.0-beta.0/cert-manager.yaml
 
 .. note::
    If you are running kubectl v1.12 or below, you will need to add the
