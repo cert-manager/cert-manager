@@ -33,6 +33,7 @@ filegroup(
         "//test/e2e/framework/addon/chart:all-srcs",
         "//test/e2e/framework/addon/nginxingress:all-srcs",
         "//test/e2e/framework/addon/pebble:all-srcs",
+        "//test/e2e/framework/addon/samplewebhook:all-srcs",
         "//test/e2e/framework/addon/tiller:all-srcs",
         "//test/e2e/framework/addon/vault:all-srcs",
     ],

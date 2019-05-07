@@ -82,6 +82,29 @@ func http01LogCtx(ctx context.Context) context.Context {
 	return logf.NewContext(ctx, nil, "http01")
 }
 
+func httpDomainCfgForChallenge(issuer v1alpha1.GenericIssuer, ch *v1alpha1.Challenge) (*v1alpha1.ACMEChallengeSolverHTTP01Ingress, error) {
+	if ch.Spec.Solver != nil {
+		if ch.Spec.Solver.HTTP01 == nil {
+			return nil, fmt.Errorf("challenge's 'solver' field is specified but not HTTP01 ingress config provided")
+		}
+		return ch.Spec.Solver.HTTP01.Ingress, nil
+	}
+	if ch.Spec.Config != nil {
+		if ch.Spec.Config.HTTP01 == nil {
+			return nil, fmt.Errorf("challenge's 'config' field is specified but not HTTP01 ingress config provided")
+		}
+		if issuer.GetSpec().ACME.HTTP01 == nil {
+			return nil, fmt.Errorf("issuer.spec.acme.http01 field is not specified, old format http01 issuer disabled")
+		}
+		return &v1alpha1.ACMEChallengeSolverHTTP01Ingress{
+			Name:        ch.Spec.Config.HTTP01.Ingress,
+			Class:       ch.Spec.Config.HTTP01.IngressClass,
+			ServiceType: issuer.GetSpec().ACME.HTTP01.ServiceType,
+		}, nil
+	}
+	return nil, fmt.Errorf("no HTTP01 ingress configuration found on challenge")
+}
+
 // Present will realise the resources required to solve the given HTTP01
 // challenge validation in the apiserver. If those resources already exist, it
 // will return nil (i.e. this function is idempotent).
@@ -93,7 +116,7 @@ func (s *Solver) Present(ctx context.Context, issuer v1alpha1.GenericIssuer, ch 
 	if svcErr != nil {
 		return utilerrors.NewAggregate([]error{podErr, svcErr})
 	}
-	_, ingressErr := s.ensureIngress(ctx, ch, svc.Name)
+	_, ingressErr := s.ensureIngress(ctx, issuer, ch, svc.Name)
 	return utilerrors.NewAggregate([]error{podErr, svcErr, ingressErr})
 }
 
@@ -142,7 +165,7 @@ func (s *Solver) CleanUp(ctx context.Context, issuer v1alpha1.GenericIssuer, ch 
 	var errs []error
 	errs = append(errs, s.cleanupPods(ctx, ch))
 	errs = append(errs, s.cleanupServices(ctx, ch))
-	errs = append(errs, s.cleanupIngresses(ctx, ch))
+	errs = append(errs, s.cleanupIngresses(ctx, issuer, ch))
 	return utilerrors.NewAggregate(errs)
 }
 

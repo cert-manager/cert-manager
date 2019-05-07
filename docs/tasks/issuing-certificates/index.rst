@@ -72,7 +72,7 @@ A full list of the fields supported on the Certificate resource can be found in
 the `API reference documentation`_.
 
 .. _`#1269`: https://github.com/jetstack/cert-manager/issues/1269
-.. _`API reference documentation`: https://docs.cert-manager.io/en/release-0.7/reference/api-docs/index.html#certificatespec-v1alpha1
+.. _`API reference documentation`: https://docs.cert-manager.io/en/release-0.8/reference/api-docs/index.html#certificatespec-v1alpha1
 
 Temporary certificates whilst issuing
 =====================================
@@ -90,16 +90,6 @@ order to function.
 After the real, valid certificate has been obtained, cert-manager will replace
 the temporary self signed certificate with the valid one, **but will retain the
 same private key**.
-
-Special fields on Certificate resources for ACME Issuers
-========================================================
-
-When creating Certificate resources that reference ACME Issuers, you must
-set an additional ``certificate.spec.acme`` stanza on the resource to configure
-what challenge mechanism to use for each DNS name specified on the certificate.
-
-More information on setting these fields can be found in the
-:doc:`../acme/issuing-certificates` guide.
 
 .. toctree::
    :maxdepth: 2

@@ -64,6 +64,7 @@ func (s *solverFixture) Setup(t *testing.T) {
 		s.Issuer = generate.Issuer(generate.IssuerConfig{
 			Name:      defaultTestIssuerName,
 			Namespace: defaultTestNamespace,
+			HTTP01:    &v1alpha1.ACMEIssuerHTTP01Config{},
 		})
 	}
 	if s.testResources == nil {

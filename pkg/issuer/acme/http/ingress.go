@@ -71,19 +71,17 @@ func (s *Solver) getIngressesForChallenge(ctx context.Context, ch *v1alpha1.Chal
 // ensureIngress will ensure the ingress required to solve this challenge
 // exists, or if an existing ingress is specified on the secret will ensure
 // that the ingress has an appropriate challenge path configured
-func (s *Solver) ensureIngress(ctx context.Context, ch *v1alpha1.Challenge, svcName string) (ing *extv1beta1.Ingress, err error) {
+func (s *Solver) ensureIngress(ctx context.Context, issuer v1alpha1.GenericIssuer, ch *v1alpha1.Challenge, svcName string) (ing *extv1beta1.Ingress, err error) {
 	log := logf.FromContext(ctx).WithName("ensureIngress")
-
-	httpDomainCfg := ch.Spec.Config.HTTP01
-	if httpDomainCfg == nil {
-		httpDomainCfg = &v1alpha1.HTTP01SolverConfig{}
+	httpDomainCfg, err := httpDomainCfgForChallenge(issuer, ch)
+	if err != nil {
+		return nil, err
 	}
-	if httpDomainCfg != nil &&
-		httpDomainCfg.Ingress != "" {
-		log := logf.WithRelatedResourceName(log, httpDomainCfg.Ingress, ch.Namespace, "Ingress")
+	if httpDomainCfg.Name != "" {
+		log := logf.WithRelatedResourceName(log, httpDomainCfg.Name, ch.Namespace, "Ingress")
 		ctx := logf.NewContext(ctx, log)
 		log.Info("adding solver paths to existing ingress resource")
-		return s.addChallengePathToIngress(ctx, ch, svcName)
+		return s.addChallengePathToIngress(ctx, issuer, ch, svcName)
 	}
 	existingIngresses, err := s.getIngressesForChallenge(ctx, ch)
 	if err != nil {
@@ -95,7 +93,7 @@ func (s *Solver) ensureIngress(ctx context.Context, ch *v1alpha1.Challenge, svcN
 	}
 	if len(existingIngresses) > 1 {
 		log.Info("multiple challenge solver ingresses found for challenge. cleaning up all existing ingresses.")
-		err := s.cleanupIngresses(ctx, ch)
+		err := s.cleanupIngresses(ctx, issuer, ch)
 		if err != nil {
 			return nil, err
 		}
@@ -103,19 +101,27 @@ func (s *Solver) ensureIngress(ctx context.Context, ch *v1alpha1.Challenge, svcN
 	}
 
 	log.Info("creating HTTP01 challenge solver ingress")
-	return s.createIngress(ch, svcName)
+	return s.createIngress(issuer, ch, svcName)
 }
 
 // createIngress will create a challenge solving pod for the given certificate,
 // domain, token and key.
-func (s *Solver) createIngress(ch *v1alpha1.Challenge, svcName string) (*extv1beta1.Ingress, error) {
-	return s.Client.ExtensionsV1beta1().Ingresses(ch.Namespace).Create(buildIngressResource(ch, svcName))
+func (s *Solver) createIngress(issuer v1alpha1.GenericIssuer, ch *v1alpha1.Challenge, svcName string) (*extv1beta1.Ingress, error) {
+	ing, err := buildIngressResource(issuer, ch, svcName)
+	if err != nil {
+		return nil, err
+	}
+	return s.Client.ExtensionsV1beta1().Ingresses(ch.Namespace).Create(ing)
 }
 
-func buildIngressResource(ch *v1alpha1.Challenge, svcName string) *extv1beta1.Ingress {
+func buildIngressResource(issuer v1alpha1.GenericIssuer, ch *v1alpha1.Challenge, svcName string) (*extv1beta1.Ingress, error) {
+	httpDomainCfg, err := httpDomainCfgForChallenge(issuer, ch)
+	if err != nil {
+		return nil, err
+	}
 	var ingClass *string
-	if ch.Spec.Config.HTTP01 != nil {
-		ingClass = ch.Spec.Config.HTTP01.IngressClass
+	if httpDomainCfg.Class != nil {
+		ingClass = httpDomainCfg.Class
 	}
 
 	podLabels := podLabels(ch)
@@ -149,11 +155,15 @@ func buildIngressResource(ch *v1alpha1.Challenge, svcName string) *extv1beta1.In
 				},
 			},
 		},
-	}
+	}, nil
 }
 
-func (s *Solver) addChallengePathToIngress(ctx context.Context, ch *v1alpha1.Challenge, svcName string) (*extv1beta1.Ingress, error) {
-	ingressName := ch.Spec.Config.HTTP01.Ingress
+func (s *Solver) addChallengePathToIngress(ctx context.Context, issuer v1alpha1.GenericIssuer, ch *v1alpha1.Challenge, svcName string) (*extv1beta1.Ingress, error) {
+	httpDomainCfg, err := httpDomainCfgForChallenge(issuer, ch)
+	if err != nil {
+		return nil, err
+	}
+	ingressName := httpDomainCfg.Name
 
 	ing, err := s.ingressLister.Ingresses(ch.Namespace).Get(ingressName)
 	if err != nil {
@@ -200,14 +210,14 @@ func (s *Solver) addChallengePathToIngress(ctx context.Context, ch *v1alpha1.Cha
 // cleanupIngresses will remove the rules added by cert-manager to an existing
 // ingress, or delete the ingress if an existing ingress name is not specified
 // on the certificate.
-func (s *Solver) cleanupIngresses(ctx context.Context, ch *v1alpha1.Challenge) error {
+func (s *Solver) cleanupIngresses(ctx context.Context, issuer v1alpha1.GenericIssuer, ch *v1alpha1.Challenge) error {
 	log := logf.FromContext(ctx, "cleanupPods")
 
-	httpDomainCfg := ch.Spec.Config.HTTP01
-	if httpDomainCfg == nil {
-		httpDomainCfg = &v1alpha1.HTTP01SolverConfig{}
+	httpDomainCfg, err := httpDomainCfgForChallenge(issuer, ch)
+	if err != nil {
+		return err
 	}
-	existingIngressName := httpDomainCfg.Ingress
+	existingIngressName := httpDomainCfg.Name
 
 	// if the 'ingress' field on the domain config is not set, we need to delete
 	// the ingress resources that cert-manager has created to solve the challenge

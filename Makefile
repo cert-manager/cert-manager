@@ -90,8 +90,7 @@ verify_deps:
 
 verify_codegen:
 	bazel test \
-		//hack:verify-codegen \
-		//hack:verify-deploy-gen
+		//hack:verify-codegen
 
 verify_docs:
 	bazel test \
@@ -131,7 +130,6 @@ generate:
 	bazel run //hack:update-bazel
 	bazel run //hack:update-gofmt
 	bazel run //hack:update-codegen
-	bazel run //hack:update-deploy-gen
 	bazel run //hack:update-reference-docs
 	./hack/update-vendor.sh
 	./hack/update-vendor-licenses.sh
@@ -141,28 +139,17 @@ generate:
 
 BAZEL_IMAGE_ENV := APP_VERSION=$(APP_VERSION) DOCKER_REPO=$(DOCKER_REPO) DOCKER_TAG=$(APP_VERSION)
 images:
-	$(BAZEL_IMAGE_ENV) \
-		bazel run //:images
+	bazel run //hack/release -- \
+		--repo-root "$$(pwd)" \
+		--images \
+		--images.goarch="amd64" \
+		--app-version="$(APP_VERSION)" \
+		--docker-repo="$(DOCKER_REPO)"
 
 images_push: images
-	# we do not use the :push target as Quay.io does not support v2.2
-	# manifests for Docker images, and rules_docker only supports 2.2+
-	# https://github.com/moby/buildkit/issues/409#issuecomment-394757219
-	# source the bazel workspace environment
-	eval $$($(BAZEL_IMAGE_ENV) ./hack/print-workspace-status.sh | tr ' ' '='); \
-	docker tag "$${STABLE_DOCKER_REPO}/cert-manager-acmesolver-amd64:$${STABLE_DOCKER_TAG}" "$${STABLE_DOCKER_REPO}/cert-manager-acmesolver:$${STABLE_DOCKER_TAG}"; \
-	docker tag "$${STABLE_DOCKER_REPO}/cert-manager-controller-amd64:$${STABLE_DOCKER_TAG}" "$${STABLE_DOCKER_REPO}/cert-manager-controller:$${STABLE_DOCKER_TAG}"; \
-	docker tag "$${STABLE_DOCKER_REPO}/cert-manager-injectorcontroller-amd64:$${STABLE_DOCKER_TAG}" "$${STABLE_DOCKER_REPO}/cert-manager-injectorcontroller:$${STABLE_DOCKER_TAG}"; \
-	docker tag "$${STABLE_DOCKER_REPO}/cert-manager-webhook-amd64:$${STABLE_DOCKER_TAG}" "$${STABLE_DOCKER_REPO}/cert-manager-webhook:$${STABLE_DOCKER_TAG}"; \
-	docker push "$${STABLE_DOCKER_REPO}/cert-manager-acmesolver:$${STABLE_DOCKER_TAG}"; \
-	docker push "$${STABLE_DOCKER_REPO}/cert-manager-controller:$${STABLE_DOCKER_TAG}"; \
-	docker push "$${STABLE_DOCKER_REPO}/cert-manager-injectorcontroller:$${STABLE_DOCKER_TAG}"; \
-	docker push "$${STABLE_DOCKER_REPO}/cert-manager-webhook:$${STABLE_DOCKER_TAG}"; \
-	docker push "$${STABLE_DOCKER_REPO}/cert-manager-acmesolver-arm64:$${STABLE_DOCKER_TAG}"; \
-	docker push "$${STABLE_DOCKER_REPO}/cert-manager-controller-arm64:$${STABLE_DOCKER_TAG}"; \
-	docker push "$${STABLE_DOCKER_REPO}/cert-manager-injectorcontroller-arm64:$${STABLE_DOCKER_TAG}"; \
-	docker push "$${STABLE_DOCKER_REPO}/cert-manager-webhook-arm64:$${STABLE_DOCKER_TAG}";
-	docker push "$${STABLE_DOCKER_REPO}/cert-manager-acmesolver-arm:$${STABLE_DOCKER_TAG}"; \
-	docker push "$${STABLE_DOCKER_REPO}/cert-manager-controller-arm:$${STABLE_DOCKER_TAG}"; \
-	docker push "$${STABLE_DOCKER_REPO}/cert-manager-injectorcontroller-arm:$${STABLE_DOCKER_TAG}"; \
-	docker push "$${STABLE_DOCKER_REPO}/cert-manager-webhook-arm:$${STABLE_DOCKER_TAG}";
+	bazel run //hack/release -- \
+		--repo-root "$$(pwd)" \
+		--images \
+		--publish \
+		--app-version="$(APP_VERSION)" \
+		--docker-repo="$(DOCKER_REPO)"

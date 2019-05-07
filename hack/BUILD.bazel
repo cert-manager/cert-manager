@@ -86,25 +86,6 @@ sh_test(
     ],
 )
 
-# Static deployment manifests rules
-
-sh_binary(
-    name = "update-deploy-gen",
-    srcs = ["update-deploy-gen.sh"],
-    data = [
-        "//hack/bin:helm",
-    ],
-)
-
-sh_test(
-    name = "verify-deploy-gen",
-    srcs = ["verify-deploy-gen.sh"],
-    data = [
-        ":update-deploy-gen",
-        "//deploy:all-srcs",
-    ],
-)
-
 # Reference docs generation rules
 sh_binary(
     name = "update-reference-docs",
@@ -147,7 +128,6 @@ sh_binary(
     name = "update-crds",
     srcs = ["update-crds.sh"],
     data = [
-        ":update-deploy-gen",
         "//hack/bin:gencrd",
         "//pkg/apis:all-srcs",
         "//vendor/k8s.io/api/core/v1:go_default_library",
@@ -180,6 +160,7 @@ filegroup(
         ":package-srcs",
         "//hack/bin:all-srcs",
         "//hack/boilerplate:all-srcs",
+        "//hack/release:all-srcs",
     ],
     tags = ["automanaged"],
     visibility = ["//visibility:public"],

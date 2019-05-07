@@ -21,6 +21,7 @@ filegroup(
     srcs = [
         ":package-srcs",
         "//vendor/google.golang.org/grpc/internal/backoff:all-srcs",
+        "//vendor/google.golang.org/grpc/internal/balancerload:all-srcs",
         "//vendor/google.golang.org/grpc/internal/binarylog:all-srcs",
         "//vendor/google.golang.org/grpc/internal/channelz:all-srcs",
         "//vendor/google.golang.org/grpc/internal/envconfig:all-srcs",

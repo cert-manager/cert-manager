@@ -17,7 +17,7 @@
 set -o errexit
 set -o nounset
 set -o pipefail
-
+set -o xtrace
 
 function usage() {
     cat <<'EOF'
@@ -28,7 +28,6 @@ Usage: hack/release.sh
 Environments:
     REGISTRY                    container registry without repo name (default: quay.io/external_storage)
     VERSION                     if set, use given version as image tag
-    DOCKER_CONFIG               optional docker config location
     CONFIRM                     set this to skip confirmation
     ALLOW_DIRTY                 by default, git repo must be clean, set this to skip this check (debug only)
     ALLOW_OVERWRITE             by default, if an existing image exists with the same tag then pushing will be aborted, set this to skip this check
@@ -46,20 +45,6 @@ Examples:
 EOF
 }
 
-function info() {
-    echo -e "\e[33minfo:\e[39m $@"
-}
-
-function green() {
-    echo
-    echo -e "\e[32m$@\e[39m"
-    echo
-}
-
-function error() {
-    echo -e "\e[31merror: $@\e[39m"
-}
-
 while getopts "h?" opt; do
     case "$opt" in
     h|\?)
@@ -69,17 +54,13 @@ while getopts "h?" opt; do
     esac
 done
 
-if ! command -v gsutil &>/dev/null; then
-  echo "Required tool 'gsutil' not found. Please install it:"
-  echo "See https://cloud.google.com/sdk/downloads for instructions."
-  exit 1
-fi
-
 export CONFIRM=${CONFIRM:-}
 export VERSION=${VERSION:-}
-export DOCKER_REPO=${REGISTRY:-quay.io/jetstack}
-export DOCKER_CONFIG=${DOCKER_CONFIG:-}
-export ALLOW_DIRTY=${ALLOW_DIRTY:-}
+DOCKER_REPO=${REGISTRY:-quay.io/jetstack}
+# remove trailing `/` if present
+export DOCKER_REPO=${DOCKER_REPO%/}
+
+# TODO: implement
 export ALLOW_OVERWRITE=${ALLOW_OVERWRITE:-}
 
 # Helm chart packaging vars
@@ -87,170 +68,35 @@ export CHART_PATH=${CHART_PATH:-deploy/charts/cert-manager}
 export CHART_BUCKET=${CHART_BUCKET:-jetstack-chart-museum}
 export CHART_SERVICE_ACCOUNT=${CHART_SERVICE_ACCOUNT:-}
 export SKIP_CHART="${SKIP_CHART:-}"
+export SKIP_MANIFESTS="${SKIP_MANIFESTS:-}"
 
-# remove trailing `/` if present
-export DOCKER_REPO=${DOCKER_REPO%/}
-COMPONENTS=( acmesolver controller webhook cainjector )
-SKIP_REF_TAG=${SKIP_REF_TAG:-}
-GIT_DIRTY=$(test -n "`git status --porcelain`" && echo "dirty" || echo "clean")
-if [ -z "$ALLOW_DIRTY" -a "$GIT_DIRTY" != "clean" ]; then
-    error "repo status is not clean, skipped"
-    exit 1
-fi
-COMMIT_REF=$(git rev-parse --short HEAD)
-
-docker_args=()
-if [ -n "$DOCKER_CONFIG" ]; then
-    if [ ! -d "$DOCKER_CONFIG" ]; then
-        error "DOCKER_CONFIG '$DOCKER_CONFIG' does not exist or not a directory"
-        exit 1
-    fi
-    if [ ! -f "$DOCKER_CONFIG/config.json" ]; then
-        error "docker config json '$DOCKER_CONFIG/config.json' does not exist"
-        exit 1
-    fi
-    docker_args+=(--config "$DOCKER_CONFIG")
+if [[ ! -z "${CONFIRM}" ]]; then
+    PUBLISH="--publish"
 fi
 
-if [ -z "$VERSION" ]; then
-    # our logic depends repo tags, make sure all tags are fetched
-    info "fetching all tags from official upstream"
-    git fetch --tags https://github.com/jetstack/cert-manager.git
-    info "VERSION is not specified, detect automatically"
-    # get version from tag
-    VERSION=$(git describe --tags --abbrev=0 --exact-match 2>/dev/null || true)
-    if [ -z "$VERSION" ]; then
-        VERSION="$COMMIT_REF"
-        SKIP_REF_TAG=1
-        info "defaulting VERSION to current commit ref"
-    fi
+if [[ ! -z "${CHART_SERVICE_ACCOUNT}" ]]; then
+    export GOOGLE_APPLICATION_CREDENTIALS="${CHART_SERVICE_ACCOUNT}"
+    gcloud auth activate-service-account --key-file "${CHART_SERVICE_ACCOUNT}"
 fi
 
-if [ "$GIT_DIRTY" != "clean" ]; then
-    VERSION="${VERSION}-dirty"
-    COMMIT_REF="${COMMIT_REF}-dirty"
-    info "appended '-dirty' suffix to version"
+if [[ -z "${SKIP_CHART}" ]]; then
+    CHART="--chart"
 fi
 
-info "releasing version $VERSION"
-export APP_VERSION="$VERSION"
-
-info "reading bazel workspace variables"
-# export the bazel workspace vars
-eval $(./hack/print-workspace-status.sh | tr ' ' '=' | sed 's/^/export /')
-
-info "building release images"
-bazel run //:images
-
-green "Built release images!"
-
-if [ ! -z "${SKIP_CHART}" ]; then
-    info "skipping building Helm chart package"
-else
-    info "Building Helm release package"
-    bazel build //hack/bin:helm
-    HELM="$(bazel info bazel-genfiles)/hack/bin/helm"
-    CHART_OUT="$(mktemp -d)"
-
-    "${HELM}" init --client-only
-
-    "${HELM}" package \
-        --dependency-update \
-        --destination "${CHART_OUT}" \
-        "${CHART_PATH}"
-
-    # Find first file in the CHART_OUT directory. This should be the file generated
-    # by 'helm package' above
-    helmpkg="$(find "${CHART_OUT}" -type f  -print -quit)"
-
-    if [ -z "${helmpkg}" ]; then
-        error "Failed to generate Helm package"
-        exit 1
-    fi
-
-    green "Built Helm package"
+if [[ -z "${SKIP_MANIFESTS}" ]]; then
+    MANIFESTS="--manifests"
 fi
 
-green "Publishing release with version '${VERSION}'"
-
-function allowed() {
-    local image_name="$1"
-    local image_tag="$2"
-    if [ ! -z "${ALLOW_OVERWRITE}" ]; then
-        return 0
-    fi
-    if [ "${STABLE_DOCKER_REPO:0:7}" != "quay.io" ]; then
-        error "checking for existing tags is only supported with quay.io, set ALLOW_OVERWRITE=1 to skip check."
-        exit 1
-    fi
-
-    local org="${STABLE_DOCKER_REPO:8}"
-    info "checking if image quay.io/$org/$image_name:$image_tag already exists"
-    resp=$(curl -so /dev/null -w '%{http_code}' -IL quay.io/api/v1/repository/$org/$image_name/tag/$image_tag/images)
-    if [ "$resp" != "404" ]; then
-        error "skipping image as tag already exists"
-        return 1
-    fi
-    info "existing image quay.io/$org/$image_name:$image_tag not found"
-}
-
-function push() {
-    local image_repo="$1"
-    local image_name="$2"
-    local image_tag="$3"
-
-    if [ -z "${CONFIRM}" ]; then
-        info "(would) push image $image_repo/$image_name:$image_tag"
-        info "(would) push image $image_repo/$image_name:$COMMIT_REF"
-        return 0
-    fi
-
-    if allowed "$image_name" "$image_tag"; then
-        info "Pushing image $image_repo/$image_name:$image_tag"
-        docker "${docker_args[@]}" push "$image_repo/$image_name:$image_tag"
-    fi
-
-    if [ -z "${SKIP_REF_TAG}" ]; then
-        if allowed "$image_name" "${COMMIT_REF}"; then
-            info "Pushing image ${docker_args[@]}" push "$image_repo/$image_name:${COMMIT_REF}"
-            docker tag "$image_repo/$image_name:$image_tag"  "$image_repo/$image_name:${COMMIT_REF}"
-            docker "${docker_args[@]}" push "$image_repo/$image_name:${COMMIT_REF}"
-        fi
-    fi
-}
-
-# Push docker images
-# We use the docker CLI to push images as quay.io does not support the v2 API
-for c in "${COMPONENTS[@]}"; do
-    image_name="cert-manager-$c"
-    image_repo="${STABLE_DOCKER_REPO}"
-    image_tag="${STABLE_DOCKER_TAG}"
-
-    # the amd64 images get pushed to a docker repo *without* the arch prefix
-    # for compatibility reasons, so we have special handling to retag it here
-    docker tag "${image_repo}/${image_name}-amd64:${image_tag}" "${image_repo}/${image_name}:${image_tag}"
-    push "$image_repo" "$image_name" "$image_tag"
-
-    # push arm64 and arm image targets
-    for arch in arm64 arm; do
-        push "$image_repo" "$image_name-$arch" "$image_tag"
-    done
-done
-
-green "Published all images!"
-
-info "Publishing Helm chart"
-
-if [ ! -z "${SKIP_CHART}" ]; then
-    info "skipping publishing Helm chart"
-elif [ -z "${CONFIRM}" ]; then
-    info "(would) push helm package: gsutil cp \"${helmpkg}\" gs://"${CHART_BUCKET}"/"
-else
-    if [ ! -z "${CHART_SERVICE_ACCOUNT}" ]; then
-        gcloud auth activate-service-account --key-file "${CHART_SERVICE_ACCOUNT}"
-    fi
-    gsutil cp "${helmpkg}" gs://"${CHART_BUCKET}"/
-fi
-
-green "Published Helm chart!"
-info "Release complete"
+# TODO: enable --manifests too
+bazel run //hack/release -- \
+    --images \
+    "${CHART:-}" \
+    "${MANIFESTS:-}" \
+    --docker-repo="${DOCKER_REPO}" \
+    --helm.path="$(bazel info bazel-genfiles)/hack/bin/helm" \
+    --chart.path="${CHART_PATH}" \
+    --chart.bucket="${CHART_BUCKET}" \
+    --app-version="${VERSION}" \
+    --docker-repo="${DOCKER_REPO}" \
+    --v=4 \
+    "${PUBLISH:-}"

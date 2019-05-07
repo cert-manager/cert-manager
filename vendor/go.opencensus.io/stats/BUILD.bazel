@@ -15,6 +15,7 @@ go_library(
     tags = ["manual"],
     visibility = ["//visibility:public"],
     deps = [
+        "//vendor/go.opencensus.io/metric/metricdata:go_default_library",
         "//vendor/go.opencensus.io/stats/internal:go_default_library",
         "//vendor/go.opencensus.io/tag:go_default_library",
     ],

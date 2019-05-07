@@ -7,7 +7,7 @@ metadata:
   name: certificates.certmanager.k8s.io
 spec:
   additionalPrinterColumns:
-  - JSONPath: .status.conditions[?(@.type==\"Ready\")].status
+  - JSONPath: .status.conditions[?(@.type=="Ready")].status
     name: Ready
     type: string
   - JSONPath: .spec.secretName
@@ -17,7 +17,7 @@ spec:
     name: Issuer
     priority: 1
     type: string
-  - JSONPath: .status.conditions[?(@.type==\"Ready\")].message
+  - JSONPath: .status.conditions[?(@.type=="Ready")].message
     name: Status
     priority: 1
     type: string
@@ -257,7 +257,10 @@ spec:
                 that this challenge is a part of.
               type: string
             config:
-              description: Config specifies the solver configuration for this challenge.
+              description: 'Config specifies the solver configuration for this challenge.
+                Only **one** of ''config'' or ''solver'' may be specified, and if
+                both are specified then no action will be performed on the Challenge
+                resource. DEPRECATED: the ''solver'' field should be specified instead'
               type: object
             dnsName:
               description: DNSName is the identifier that this challenge is for, e.g.
@@ -280,6 +283,29 @@ spec:
             key:
               description: Key is the ACME challenge key for this challenge
               type: string
+            solver:
+              description: Solver contains the domain solving configuration that should
+                be used to solve this challenge resource. Only **one** of 'config'
+                or 'solver' may be specified, and if both are specified then no action
+                will be performed on the Challenge resource.
+              properties:
+                selector:
+                  description: Selector selects a set of DNSNames on the Certificate
+                    resource that should be solved using this challenge solver.
+                  properties:
+                    dnsNames:
+                      description: List of DNSNames that can be used to further refine
+                        the domains that this solver applies to.
+                      items:
+                        type: string
+                      type: array
+                    matchLabels:
+                      description: 'A label selector that is used to refine the set
+                        of certificate''s that this challenge solver will apply to.
+                        TODO: use kubernetes standard types for matchLabels'
+                      type: object
+                  type: object
+              type: object
             token:
               description: Token is the ACME challenge token for this challenge.
               type: string
@@ -304,7 +330,6 @@ spec:
           - token
           - key
           - wildcard
-          - config
           - issuerRef
           type: object
         status:
@@ -414,8 +439,31 @@ spec:
                 skipTLSVerify:
                   description: If true, skip verifying the ACME server TLS certificate
                   type: boolean
+                solvers:
+                  description: Solvers is a list of challenge solvers that will be
+                    used to solve ACME challenges for the matching domains.
+                  items:
+                    properties:
+                      selector:
+                        description: Selector selects a set of DNSNames on the Certificate
+                          resource that should be solved using this challenge solver.
+                        properties:
+                          dnsNames:
+                            description: List of DNSNames that can be used to further
+                              refine the domains that this solver applies to.
+                            items:
+                              type: string
+                            type: array
+                          matchLabels:
+                            description: 'A label selector that is used to refine
+                              the set of certificate''s that this challenge solver
+                              will apply to. TODO: use kubernetes standard types for
+                              matchLabels'
+                            type: object
+                        type: object
+                    type: object
+                  type: array
               required:
-              - email
               - server
               - privateKeySecretRef
               type: object
@@ -670,8 +718,31 @@ spec:
                 skipTLSVerify:
                   description: If true, skip verifying the ACME server TLS certificate
                   type: boolean
+                solvers:
+                  description: Solvers is a list of challenge solvers that will be
+                    used to solve ACME challenges for the matching domains.
+                  items:
+                    properties:
+                      selector:
+                        description: Selector selects a set of DNSNames on the Certificate
+                          resource that should be solved using this challenge solver.
+                        properties:
+                          dnsNames:
+                            description: List of DNSNames that can be used to further
+                              refine the domains that this solver applies to.
+                            items:
+                              type: string
+                            type: array
+                          matchLabels:
+                            description: 'A label selector that is used to refine
+                              the set of certificate''s that this challenge solver
+                              will apply to. TODO: use kubernetes standard types for
+                              matchLabels'
+                            type: object
+                        type: object
+                    type: object
+                  type: array
               required:
-              - email
               - server
               - privateKeySecretRef
               type: object
@@ -927,9 +998,15 @@ spec:
                 DER encoded CSR.
               type: string
             config:
-              description: Config specifies a mapping from DNS identifiers to how
+              description: 'Config specifies a mapping from DNS identifiers to how
                 those identifiers should be solved when performing ACME challenges.
                 A config entry must exist for each domain listed in DNSNames and CommonName.
+                Only **one** of ''config'' or ''solvers'' may be specified, and if
+                both are specified then no action will be performed on the Order resource.  This
+                field will be removed when support for solver config specified on
+                the Certificate under certificate.spec.acme has been removed. DEPRECATED:
+                this field will be removed in future. Solver configuration must instead
+                be provided on ACME Issuer resources.'
               items:
                 properties:
                   domains:
@@ -974,7 +1051,6 @@ spec:
           required:
           - csr
           - issuerRef
-          - config
           type: object
         status:
           properties:
@@ -995,8 +1071,11 @@ spec:
                       that this challenge is a part of.
                     type: string
                   config:
-                    description: Config specifies the solver configuration for this
-                      challenge.
+                    description: 'Config specifies the solver configuration for this
+                      challenge. Only **one** of ''config'' or ''solver'' may be specified,
+                      and if both are specified then no action will be performed on
+                      the Challenge resource. DEPRECATED: the ''solver'' field should
+                      be specified instead'
                     type: object
                   dnsName:
                     description: DNSName is the identifier that this challenge is
@@ -1019,6 +1098,30 @@ spec:
                   key:
                     description: Key is the ACME challenge key for this challenge
                     type: string
+                  solver:
+                    description: Solver contains the domain solving configuration
+                      that should be used to solve this challenge resource. Only **one**
+                      of 'config' or 'solver' may be specified, and if both are specified
+                      then no action will be performed on the Challenge resource.
+                    properties:
+                      selector:
+                        description: Selector selects a set of DNSNames on the Certificate
+                          resource that should be solved using this challenge solver.
+                        properties:
+                          dnsNames:
+                            description: List of DNSNames that can be used to further
+                              refine the domains that this solver applies to.
+                            items:
+                              type: string
+                            type: array
+                          matchLabels:
+                            description: 'A label selector that is used to refine
+                              the set of certificate''s that this challenge solver
+                              will apply to. TODO: use kubernetes standard types for
+                              matchLabels'
+                            type: object
+                        type: object
+                    type: object
                   token:
                     description: Token is the ACME challenge token for this challenge.
                     type: string
@@ -1043,7 +1146,6 @@ spec:
                 - token
                 - key
                 - wildcard
-                - config
                 - issuerRef
                 type: object
               type: array

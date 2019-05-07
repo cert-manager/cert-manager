@@ -92,10 +92,14 @@ func (s *Solver) getServicesForChallenge(ctx context.Context, ch *v1alpha1.Chall
 // createService will create the service required to solve this challenge
 // in the target API server.
 func (s *Solver) createService(issuer v1alpha1.GenericIssuer, ch *v1alpha1.Challenge) (*corev1.Service, error) {
-	return s.Client.CoreV1().Services(ch.Namespace).Create(buildService(issuer, ch))
+	svc, err := buildService(issuer, ch)
+	if err != nil {
+		return nil, err
+	}
+	return s.Client.CoreV1().Services(ch.Namespace).Create(svc)
 }
 
-func buildService(issuer v1alpha1.GenericIssuer, ch *v1alpha1.Challenge) *corev1.Service {
+func buildService(issuer v1alpha1.GenericIssuer, ch *v1alpha1.Challenge) (*corev1.Service, error) {
 	podLabels := podLabels(ch)
 	service := &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
@@ -108,6 +112,7 @@ func buildService(issuer v1alpha1.GenericIssuer, ch *v1alpha1.Challenge) *corev1
 			OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(ch, challengeGvk)},
 		},
 		Spec: corev1.ServiceSpec{
+			Type: corev1.ServiceTypeNodePort,
 			Ports: []corev1.ServicePort{
 				{
 					Name:       "http",
@@ -120,12 +125,15 @@ func buildService(issuer v1alpha1.GenericIssuer, ch *v1alpha1.Challenge) *corev1
 	}
 
 	// checking for presence of http01 config and if set serviceType is set, override our default (NodePort)
-	service.Spec.Type = corev1.ServiceTypeNodePort
-	if issuer.GetSpec().ACME.HTTP01 != nil && issuer.GetSpec().ACME.HTTP01.ServiceType != "" {
-		service.Spec.Type = issuer.GetSpec().ACME.HTTP01.ServiceType
+	httpDomainCfg, err := httpDomainCfgForChallenge(issuer, ch)
+	if err != nil {
+		return nil, err
+	}
+	if httpDomainCfg.ServiceType != "" {
+		service.Spec.Type = httpDomainCfg.ServiceType
 	}
 
-	return service
+	return service, nil
 }
 
 func (s *Solver) cleanupServices(ctx context.Context, ch *v1alpha1.Challenge) error {

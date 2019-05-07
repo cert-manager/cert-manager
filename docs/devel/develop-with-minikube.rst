@@ -41,7 +41,7 @@ You will need the following tools to build cert-manager:
 * Bazel_
 * Docker_ (and enable for non-root user)
 
-These instructions have only been tested on Linux; Windows and MacOS may
+These instructions have only been tested on Linux and MacOS; Windows may
 require further changes.
 
 If you need to add dependencies, you will additionally need:
@@ -49,8 +49,8 @@ If you need to add dependencies, you will additionally need:
 * Git_
 * Mercurial_
 
-You can then run ``bazel run //hack:update-deps`` to regenerate any
-dependencies, and ``bazel build :images`` to build the docker images.
+You can then run ``./hack/update-vendor.sh`` to regenerate any
+dependencies, and ``make build`` to build the docker images.
 
 Build a dev version of cert-manager
 ===================================

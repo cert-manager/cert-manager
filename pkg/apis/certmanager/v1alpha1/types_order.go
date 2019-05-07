@@ -84,7 +84,15 @@ type OrderSpec struct {
 	// Config specifies a mapping from DNS identifiers to how those identifiers
 	// should be solved when performing ACME challenges.
 	// A config entry must exist for each domain listed in DNSNames and CommonName.
-	Config []DomainSolverConfig `json:"config"`
+	// Only **one** of 'config' or 'solvers' may be specified, and if both are
+	// specified then no action will be performed on the Order resource.
+	//
+	// This field will be removed when support for solver config specified on
+	// the Certificate under certificate.spec.acme has been removed.
+	// DEPRECATED: this field will be removed in future. Solver configuration
+	// must instead be provided on ACME Issuer resources.
+	// +optional
+	Config []DomainSolverConfig `json:"config,omitempty"`
 }
 
 type OrderStatus struct {

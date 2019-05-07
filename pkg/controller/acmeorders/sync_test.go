@@ -75,7 +75,7 @@ func TestSyncHappyPath(t *testing.T) {
 				Token:    "token",
 				DNSName:  "test.com",
 				Key:      "key",
-				Config: v1alpha1.SolverConfig{
+				Config: &v1alpha1.SolverConfig{
 					HTTP01: &v1alpha1.HTTP01SolverConfig{
 						Ingress: "",
 					},

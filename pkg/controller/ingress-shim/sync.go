@@ -157,6 +157,7 @@ func (c *Controller) buildCertificates(ing *extv1beta1.Ingress, issuer v1alpha1.
 			ObjectMeta: metav1.ObjectMeta{
 				Name:            tls.SecretName,
 				Namespace:       ing.Namespace,
+				Labels:          ing.Labels,
 				OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(ing, ingressGVK)},
 			},
 			Spec: v1alpha1.CertificateSpec{
@@ -263,6 +264,12 @@ func (c *Controller) setIssuerSpecificConfig(crt *v1alpha1.Certificate, issuer v
 		}
 		switch challengeType {
 		case "http01":
+			// If the HTTP01 issuer is not enabled, skip setting the ACME field
+			// on the Certificate resource.
+			if issuer.GetSpec().ACME.HTTP01 == nil {
+				crt.Spec.ACME = nil
+				return nil
+			}
 			domainCfg.HTTP01 = &v1alpha1.HTTP01SolverConfig{}
 			editInPlace, ok := ingAnnotations[editInPlaceAnnotation]
 			// If annotation isn't present, or it's set to true, edit the existing ingress
@@ -280,6 +287,12 @@ func (c *Controller) setIssuerSpecificConfig(crt *v1alpha1.Certificate, issuer v
 				}
 			}
 		case "dns01":
+			// If the DNS01 issuer is not enabled, skip setting the ACME field
+			// on the Certificate resource.
+			if issuer.GetSpec().ACME.DNS01 == nil {
+				crt.Spec.ACME = nil
+				return nil
+			}
 			dnsProvider, ok := ingAnnotations[acmeIssuerDNS01ProviderNameAnnotation]
 			if !ok {
 				dnsProvider = c.defaults.acmeIssuerDNS01ProviderName
@@ -288,6 +301,11 @@ func (c *Controller) setIssuerSpecificConfig(crt *v1alpha1.Certificate, issuer v
 				return fmt.Errorf("no acme issuer dns01 challenge provider specified")
 			}
 			domainCfg.DNS01 = &v1alpha1.DNS01SolverConfig{Provider: dnsProvider}
+		// If no challenge type is specified, don't set the ACME field at all
+		// and instead rely on the 'new API format' to provide solver config.
+		case "":
+			crt.Spec.ACME = nil
+			return nil
 		default:
 			return fmt.Errorf("invalid acme issuer challenge type specified %q", challengeType)
 		}

@@ -30,7 +30,6 @@ build_images() {
     APP_VERSION="${DOCKER_TAG}" \
     DOCKER_REPO="${DOCKER_REPO}" \
     DOCKER_TAG="${DOCKER_TAG}" \
-    # Build images used during e2e tests
     bazel run --platforms=@io_bazel_rules_go//go/toolchain:linux_amd64 //test/e2e:images
 
     echo "All images built"
@@ -43,6 +42,7 @@ build_images() {
         "pebble:bazel" \
         "quay.io/kubernetes-ingress-controller/nginx-ingress-controller:0.23.0" \
         "k8s.gcr.io/defaultbackend:bazel" \
+        "sample-webhook:bazel" \
         "vault:bazel" \
         "gcr.io/kubernetes-helm/tiller:bazel" \
     ; do

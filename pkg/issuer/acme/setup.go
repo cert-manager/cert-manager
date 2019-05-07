@@ -217,8 +217,13 @@ func (a *Acme) registerAccount(ctx context.Context, cl client.Interface) (*acmea
 		return nil, err
 	}
 
+	emailurl := []string(nil)
+	if a.issuer.GetSpec().ACME.Email != "" {
+		emailurl = []string{fmt.Sprintf("mailto:%s", strings.ToLower(a.issuer.GetSpec().ACME.Email))}
+	}
+
 	acc = &acmeapi.Account{
-		Contact:     []string{fmt.Sprintf("mailto:%s", strings.ToLower(a.issuer.GetSpec().ACME.Email))},
+		Contact:     emailurl,
 		TermsAgreed: true,
 	}
 

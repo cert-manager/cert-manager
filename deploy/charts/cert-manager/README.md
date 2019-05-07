@@ -21,14 +21,22 @@ To install the chart with the release name `my-release`:
 ## IMPORTANT: you MUST install the cert-manager CRDs **before** installing the
 ## cert-manager Helm chart
 $ kubectl apply \
+    -f https://raw.githubusercontent.com/jetstack/cert-manager/release-0.8/deploy/manifests/00-crds.yaml
+
+## If you are installing on openshift :
+$ oc create \
     -f https://raw.githubusercontent.com/jetstack/cert-manager/release-0.7/deploy/manifests/00-crds.yaml
 
 ## IMPORTANT: if the cert-manager namespace **already exists**, you MUST ensure
 ## it has an additional label on it in order for the deployment to succeed
 $ kubectl label namespace cert-manager certmanager.k8s.io/disable-validation="true"
 
+## For openshift:
+$ oc label namespace cert-manager certmanager.k8s.io/disable-validation=true
+
 ## Add the Jetstack Helm repository
 $ helm repo add jetstack https://charts.jetstack.io
+
 
 ## Install the cert-manager helm chart
 $ helm install --name my-release --namespace cert-manager jetstack/cert-manager
@@ -75,7 +83,7 @@ The following table lists the configurable parameters of the cert-manager chart 
 | `global.imagePullSecrets` | Reference to one or more secrets to be used when pulling images | `[]` |
 | `global.rbac.create` | If `true`, create and use RBAC resources (includes sub-charts) | `true` |
 | `image.repository` | Image repository | `quay.io/jetstack/cert-manager-controller` |
-| `image.tag` | Image tag | `v0.7.0` |
+| `image.tag` | Image tag | `v0.8.0-alpha.0` |
 | `image.pullPolicy` | Image pull policy | `IfNotPresent` |
 | `replicaCount`  | Number of cert-manager replicas  | `1` |
 | `clusterResourceNamespace` | Override the namespace used to store DNS provider credentials etc. for ClusterIssuer resources | Same namespace as cert-manager pod
@@ -109,7 +117,7 @@ The following table lists the configurable parameters of the cert-manager chart 
 | `webhook.extraArgs` | Optional flags for cert-manager webhook component | `[]` |
 | `webhook.resources` | CPU/memory resource requests/limits for the webhook pods | |
 | `webhook.image.repository` | Webhook image repository | `quay.io/jetstack/cert-manager-webhook` |
-| `webhook.image.tag` | Webhook image tag | `v0.7.0` |
+| `webhook.image.tag` | Webhook image tag | `v0.8.0-alpha.0` |
 | `webhook.image.pullPolicy` | Webhook image pull policy | `IfNotPresent` |
 | `webhook.injectAPIServerCA` | if true, the apiserver's CABundle will be automatically injected into the ValidatingWebhookConfiguration resource | `true` |
 | `cainjector.enabled` | Toggles whether the cainjector component should be installed (required for the webhook component to work) | `true` |
@@ -118,7 +126,7 @@ The following table lists the configurable parameters of the cert-manager chart 
 | `cainjector.extraArgs` | Optional flags for cert-manager cainjector component | `[]` |
 | `cainjector.resources` | CPU/memory resource requests/limits for the cainjector pods | |
 | `cainjector.image.repository` | cainjector image repository | `quay.io/jetstack/cert-manager-cainjector` |
-| `cainjector.image.tag` | cainjector image tag | `v0.7.0` |
+| `cainjector.image.tag` | cainjector image tag | `v0.8.0-alpha.0` |
 | `cainjector.image.pullPolicy` | cainjector image pull policy | `IfNotPresent` |
 
 Specify each parameter using the `--set key=value[,key=value]` argument to `helm install`.
