@@ -64,7 +64,7 @@ type Plugin struct {
 
 func (g *Plugin) AddFlags(fs *flag.FlagSet) {
 	fs.BoolVar(&g.ExportToDocker, "images.export", false, "if true, images will be exported to the currently configured docker daemon")
-	fs.StringSliceVar(&g.Components, "images.components", []string{"acmesolver", "controller", "webhook"}, "the list of components to build images for")
+	fs.StringSliceVar(&g.Components, "images.components", []string{"acmesolver", "controller", "webhook", "cainjector"}, "the list of components to build images for")
 	fs.StringSliceVar(&g.GoArch, "images.goarch", []string{"amd64", "arm64", "arm"}, "list of architectures to build images for")
 	fs.StringVar(&g.DockerConfig, "images.docker-config", "", "path to a directory containing a docker config.json file used when pushing images")
 }
