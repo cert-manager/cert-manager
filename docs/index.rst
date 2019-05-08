@@ -39,3 +39,4 @@ a source of references when seeking help with the project.
 .. _kube-cert-manager: https://github.com/PalmStoneGames/kube-cert-manager
 .. _`Let's Encrypt`: https://letsencrypt.org
 .. _`HashiCorp Vault`: https://www.vaultproject.io
+.. _`Venafi`: https://www.venafi.com/
