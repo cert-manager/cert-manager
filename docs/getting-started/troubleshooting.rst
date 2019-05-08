@@ -72,7 +72,7 @@ resources exist and have been issued correctly:
 
 .. code-block:: shell
 
-   kubectl get issuer,certificate
+   kubectl get issuer,certificate --namespace cert-manager
 
    NAME                                                      AGE
    issuer.certmanager.k8s.io/cert-manager-webhook-ca         22d
