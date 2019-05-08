@@ -1,6 +1,7 @@
 admin/resource-validation-webhook.rst getting-started/webhook.rst
 getting-started/1-configuring-helm.rst getting-started/install.rst
 getting-started/2-install.rst getting-started/install.rst
+getting-started/install.rst getting-started/install/index.rst
 getting-started/3-configuring-first-issuer.rst tasks/issuers/index.rst
 tasks/acme/issuing-certificates.rst tasks/issuers/setup-acme/index.rst
 tasks/issuers/setup-acme.rst tasks/issuers/setup-acme/index.rst
