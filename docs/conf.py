@@ -183,5 +183,7 @@ html_context = {
   'github_version': 'master/docs/'
 }
 
+linkcheck_anchors = False
+
 def setup(app):
     app.add_stylesheet('css/style.css')
