@@ -35,7 +35,7 @@ This is the simplest of ACME issuers - it specifies no DNS-01 challenge
 providers. HTTP-01 validation can be performed through using Ingress
 resources by enabling the HTTP-01 challenge mechanism (with the ``http01: {}``
 field).
-More information on configuring ACME Issuers can be found :doc:`here </tasks/acme/index>`.
+More information on configuring ACME Issuers can be found :doc:`here </tasks/issuers/setup-acme/index>`.
 
 ***********
 Namespacing
@@ -120,7 +120,7 @@ currently supported Issuer types are:
 +------------------------------------------------------+----------------------------------------------------------------------+
 | Name                                                 | Description                                                          |
 +======================================================+======================================================================+
-| :doc:`ACME </tasks/issuers/setup-acme>`              | Supports obtaining certificates from an ACME server, validating with |
+| :doc:`ACME </tasks/issuers/setup-acme/index>`        | Supports obtaining certificates from an ACME server, validating with |
 |                                                      | HTTP01 or DNS01                                                      |
 +------------------------------------------------------+----------------------------------------------------------------------+
 | :doc:`CA </tasks/issuers/setup-ca>`                  | Supports issuing certificates using a simple signing keypair, stored |

@@ -37,7 +37,7 @@ types you require:
 * :doc:`CA <./setup-ca>` - issue certificates signed by a X509 signing keypair,
   stored in a Secret in the Kubernetes API server.
 * :doc:`Self signed <./setup-selfsigned>` - issue self signed certificates.
-* :doc:`ACME <./setup-acme>` - issue certificates obtained by performing
+* :doc:`ACME <./setup-acme/index>` - issue certificates obtained by performing
   challenge validations against an ACME server such as `Let's Encrypt`_.
 * :doc:`Vault <./setup-vault>`- issue certificates from a Vault instance
   configured with the `Vault PKI backend`_.
