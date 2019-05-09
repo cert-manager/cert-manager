@@ -7,7 +7,7 @@ Installing Vault
 
 Vault installation is a complex subject. For a thorough tour of the subject
 you can read the official HashiCorp Vault
-`documentation <https://www.vaultproject.io/intro/getting-started/install.html>`__.
+`documentation <https://learn.hashicorp.com/vault/getting-started/install>`__.
 
 
 Vault PKI Backend

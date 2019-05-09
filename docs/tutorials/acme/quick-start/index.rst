@@ -525,7 +525,7 @@ will need to update this example and add in your own email address.
     issuer.certmanager.k8s.io "letsencrypt-prod" created
 
 Both of these issuers are configured to use the
-:doc:`HTTP01 </tasks/acme/configuring-http01>` challenge provider.
+:doc:`HTTP01 </tasks/issuers/setup-acme/http01/index>` challenge provider.
 
 Check on the status of the issuer after you create it:
 

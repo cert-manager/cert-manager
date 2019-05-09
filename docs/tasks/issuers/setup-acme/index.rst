@@ -11,10 +11,6 @@ which is used to identify you with the ACME server.
 To set up a basic ACME issuer, you should create a new Issuer or ClusterIssuer
 resource.
 
-In this example, we will create a non-namespaced ClusterIssuer resource for
-the `Let's Encrypt staging endpoint`_ that has only the
-:doc:`HTTP01 Challenge Provider </tasks/acme/configuring-http01>` enabled.
-
 You should read the guides linked at the bottom of this page to learn more
 about the ACME challenge validation mechanisms that cert-manager supports and
 how to configure the various DNS01 provider implementations.
@@ -171,5 +167,12 @@ the DNS01 challenge solver for ``*.example.com``.
 
 It is possible to specify both ``matchLabels`` AND ``dnsNames`` on an ACME
 solver selector.
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Contents:
+
+   http01/index
+   dns01/index
 
 .. _`Let's Encrypt staging endpoint`: https://letsencrypt.org/docs/staging-environment/

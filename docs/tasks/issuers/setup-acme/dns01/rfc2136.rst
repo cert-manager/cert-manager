@@ -192,7 +192,7 @@ What’s next?
 ------------
 
 This configuration so far will actually do nothing. You still have to
-request a certificate as in :doc:`dns-validation`. Once a certficate is requested,
+request a certificate as in :doc:`/tasks/issuing-certificates/index`. Once a certficate is requested,
 the provider will begin processing the request.
 
 Troubleshooting

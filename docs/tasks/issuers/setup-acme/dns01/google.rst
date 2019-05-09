@@ -2,7 +2,7 @@
 Google CloudDNS
 =========================
 
-This guide explains how to set up an Issuer, or ClusterIssuer, to use Google CloudDNS to solve DNS01 ACME challenges. It's advised you read the :doc:`DNS01 Challenge Provider </tasks/acme/configuring-dns01/index>` page first for a more general understanding of how cert-manager handles DNS01 challenges.
+This guide explains how to set up an Issuer, or ClusterIssuer, to use Google CloudDNS to solve DNS01 ACME challenges. It's advised you read the :doc:`DNS01 Challenge Provider <./index>` page first for a more general understanding of how cert-manager handles DNS01 challenges.
 
 .. note::
    This guide assumes that your cluster is hosted on Google Cloud Platform (GCP) and that you already have a domain set up with CloudDNS.

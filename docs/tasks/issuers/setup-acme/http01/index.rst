@@ -6,7 +6,7 @@ This page contains details on the different options available on the ``Issuer``
 resource's HTTP01 challenge solver configuration.
 
 For more information on configuring ACME issuers and their API format, read the
-:doc:`Setting up ACME Issuers <./setup-acme>` documentation.
+:doc:`Setting up ACME Issuers <../index>` documentation.
 
 How HTTP01 validations work
 ===========================
