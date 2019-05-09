@@ -2,7 +2,7 @@ load("@io_bazel_rules_docker//go:image.bzl", "go_image")
 
 go_image(
     name = "image",
-    base = "@alpine_linux-amd64//image",
+    base = "@static_base//image",
     embed = ["@org_letsencrypt_pebble//cmd/pebble:go_default_library"],
     goarch = "amd64",
     goos = "linux",
