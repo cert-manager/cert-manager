@@ -11,6 +11,6 @@ check the :doc:`troubleshooting <./troubleshooting>` document.
    :maxdepth: 2
    :caption: Contents:
 
-   install
+   install/index
    webhook
    troubleshooting

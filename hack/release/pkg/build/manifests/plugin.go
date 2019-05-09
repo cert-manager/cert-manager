@@ -38,6 +38,7 @@ var (
 	variants = map[string][]string{
 		"cert-manager.yaml":            {},
 		"cert-manager-no-webhook.yaml": {"--set=webhook.enabled=false"},
+		"cert-manager-openshift.yaml":  {"--set=global.isOpenshift=true"},
 	}
 
 	log = logf.Log.WithName("manifests")
