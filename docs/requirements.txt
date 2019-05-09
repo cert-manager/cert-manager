@@ -2,4 +2,4 @@ Sphinx==1.8.3
 sphinx-rtd-theme==0.4.2
 sphinxcontrib-spelling==4.2.0
 Pygments==2.3.1
-git+git://github.com/munnerz/redirects@2e3803b#egg=sphinxcontrib-redirects
+git+git://github.com/munnerz/redirects@ec26019#egg=sphinxcontrib-redirects

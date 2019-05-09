@@ -70,7 +70,7 @@ Before upgrading you will need to:
        clusterissuers.certmanager.k8s.io
 
 3. Perform a fresh install (as per the
-   :doc:`installation guide </getting-started/install>`):
+   :doc:`installation guide </getting-started/index>`):
 
 .. code-block:: shell
 
