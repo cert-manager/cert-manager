@@ -145,7 +145,7 @@ func TestSync(t *testing.T) {
 						Labels: map[string]string{
 							"my-test-label": "should be copied",
 						},
-						OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(buildIngress("ingress-name", gen.DefaultTestNamespace, nil), ingressGVK)},
+						OwnerReferences: buildOwnerReferences("ingress-name", gen.DefaultTestNamespace),
 					},
 					Spec: v1alpha1.CertificateSpec{
 						DNSNames:   []string{"example.com", "www.example.com"},
@@ -197,7 +197,7 @@ func TestSync(t *testing.T) {
 					ObjectMeta: metav1.ObjectMeta{
 						Name:            "example-com-tls",
 						Namespace:       gen.DefaultTestNamespace,
-						OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(buildIngress("ingress-name", gen.DefaultTestNamespace, nil), ingressGVK)},
+						OwnerReferences: buildOwnerReferences("ingress-name", gen.DefaultTestNamespace),
 					},
 					Spec: v1alpha1.CertificateSpec{
 						DNSNames:   []string{"example.com", "www.example.com"},
@@ -248,7 +248,7 @@ func TestSync(t *testing.T) {
 					ObjectMeta: metav1.ObjectMeta{
 						Name:            "example-com-tls",
 						Namespace:       gen.DefaultTestNamespace,
-						OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(buildIngress("ingress-name", gen.DefaultTestNamespace, nil), ingressGVK)},
+						OwnerReferences: buildOwnerReferences("ingress-name", gen.DefaultTestNamespace),
 					},
 					Spec: v1alpha1.CertificateSpec{
 						DNSNames:   []string{"example.com", "www.example.com"},
@@ -302,7 +302,7 @@ func TestSync(t *testing.T) {
 					ObjectMeta: metav1.ObjectMeta{
 						Name:            "example-com-tls",
 						Namespace:       gen.DefaultTestNamespace,
-						OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(buildIngress("ingress-name", gen.DefaultTestNamespace, nil), ingressGVK)},
+						OwnerReferences: buildOwnerReferences("ingress-name", gen.DefaultTestNamespace),
 					},
 					Spec: v1alpha1.CertificateSpec{
 						DNSNames:   []string{"example.com", "www.example.com"},
@@ -356,7 +356,7 @@ func TestSync(t *testing.T) {
 					ObjectMeta: metav1.ObjectMeta{
 						Name:            "example-com-tls",
 						Namespace:       gen.DefaultTestNamespace,
-						OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(buildIngress("ingress-name", gen.DefaultTestNamespace, nil), ingressGVK)},
+						OwnerReferences: buildOwnerReferences("ingress-name", gen.DefaultTestNamespace),
 					},
 					Spec: v1alpha1.CertificateSpec{
 						DNSNames:   []string{"example.com", "www.example.com"},
@@ -458,7 +458,7 @@ func TestSync(t *testing.T) {
 					ObjectMeta: metav1.ObjectMeta{
 						Name:            "example-com-tls",
 						Namespace:       gen.DefaultTestNamespace,
-						OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(buildIngress("ingress-name", gen.DefaultTestNamespace, nil), ingressGVK)},
+						OwnerReferences: buildOwnerReferences("ingress-name", gen.DefaultTestNamespace),
 					},
 					Spec: v1alpha1.CertificateSpec{
 						DNSNames:   []string{"example.com", "www.example.com"},
@@ -509,7 +509,7 @@ func TestSync(t *testing.T) {
 					ObjectMeta: metav1.ObjectMeta{
 						Name:            "example-com-tls",
 						Namespace:       gen.DefaultTestNamespace,
-						OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(buildIngress("ingress-name", gen.DefaultTestNamespace, nil), ingressGVK)},
+						OwnerReferences: buildOwnerReferences("ingress-name", gen.DefaultTestNamespace),
 					},
 					Spec: v1alpha1.CertificateSpec{
 						DNSNames:   []string{"example.com", "www.example.com"},
@@ -550,7 +550,7 @@ func TestSync(t *testing.T) {
 					ObjectMeta: metav1.ObjectMeta{
 						Name:            "example-com-tls",
 						Namespace:       gen.DefaultTestNamespace,
-						OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(buildIngress("ingress-name", gen.DefaultTestNamespace, nil), ingressGVK)},
+						OwnerReferences: buildOwnerReferences("ingress-name", gen.DefaultTestNamespace),
 					},
 					Spec: v1alpha1.CertificateSpec{
 						DNSNames:   []string{"example.com", "www.example.com"},
@@ -645,8 +645,9 @@ func TestSync(t *testing.T) {
 			CertificateLister: []runtime.Object{
 				&v1alpha1.Certificate{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:      "existing-crt",
-						Namespace: gen.DefaultTestNamespace,
+						Name:            "existing-crt",
+						Namespace:       gen.DefaultTestNamespace,
+						OwnerReferences: buildOwnerReferences("ingress-name", gen.DefaultTestNamespace),
 					},
 					Spec: v1alpha1.CertificateSpec{
 						DNSNames:   []string{"example.com"},
@@ -693,12 +694,19 @@ func TestSync(t *testing.T) {
 					},
 				},
 			},
-			CertificateLister: []runtime.Object{buildCertificate("existing-crt", gen.DefaultTestNamespace)},
+			CertificateLister: []runtime.Object{
+				buildCertificate("existing-crt",
+					gen.DefaultTestNamespace,
+					buildOwnerReferences("ingress-name", gen.DefaultTestNamespace),
+				),
+			},
+
 			ExpectedUpdate: []*v1alpha1.Certificate{
 				{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:      "existing-crt",
-						Namespace: gen.DefaultTestNamespace,
+						Name:            "existing-crt",
+						Namespace:       gen.DefaultTestNamespace,
+						OwnerReferences: buildOwnerReferences("ingress-name", gen.DefaultTestNamespace),
 					},
 					Spec: v1alpha1.CertificateSpec{
 						DNSNames:   []string{"example.com"},
@@ -749,8 +757,9 @@ func TestSync(t *testing.T) {
 			CertificateLister: []runtime.Object{
 				&v1alpha1.Certificate{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:      "existing-crt",
-						Namespace: gen.DefaultTestNamespace,
+						Name:            "existing-crt",
+						Namespace:       gen.DefaultTestNamespace,
+						OwnerReferences: buildOwnerReferences("ingress-name", gen.DefaultTestNamespace),
 					},
 					Spec: v1alpha1.CertificateSpec{
 						DNSNames:   []string{"example.com"},
@@ -777,8 +786,9 @@ func TestSync(t *testing.T) {
 			ExpectedUpdate: []*v1alpha1.Certificate{
 				{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:      "existing-crt",
-						Namespace: gen.DefaultTestNamespace,
+						Name:            "existing-crt",
+						Namespace:       gen.DefaultTestNamespace,
+						OwnerReferences: buildOwnerReferences("ingress-name", gen.DefaultTestNamespace),
 					},
 					Spec: v1alpha1.CertificateSpec{
 						DNSNames:   []string{"example.com"},
@@ -830,8 +840,9 @@ func TestSync(t *testing.T) {
 			CertificateLister: []runtime.Object{
 				&v1alpha1.Certificate{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:      "existing-crt",
-						Namespace: gen.DefaultTestNamespace,
+						Name:            "existing-crt",
+						Namespace:       gen.DefaultTestNamespace,
+						OwnerReferences: buildOwnerReferences("ingress-name", gen.DefaultTestNamespace),
 					},
 					Spec: v1alpha1.CertificateSpec{
 						DNSNames:   []string{"example.com"},
@@ -846,8 +857,9 @@ func TestSync(t *testing.T) {
 			ExpectedUpdate: []*v1alpha1.Certificate{
 				{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:      "existing-crt",
-						Namespace: gen.DefaultTestNamespace,
+						Name:            "existing-crt",
+						Namespace:       gen.DefaultTestNamespace,
+						OwnerReferences: buildOwnerReferences("ingress-name", gen.DefaultTestNamespace),
 					},
 					Spec: v1alpha1.CertificateSpec{
 						DNSNames:   []string{"example.com"},
@@ -1067,11 +1079,12 @@ func TestIssuerForIngress(t *testing.T) {
 	}
 }
 
-func buildCertificate(name, namespace string) *v1alpha1.Certificate {
+func buildCertificate(name, namespace string, ownerReferences []metav1.OwnerReference) *v1alpha1.Certificate {
 	return &v1alpha1.Certificate{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: namespace,
+			Name:            name,
+			Namespace:       namespace,
+			OwnerReferences: ownerReferences,
 		},
 	}
 }
@@ -1097,5 +1110,11 @@ func buildIngress(name, namespace string, annotations map[string]string) *extv1b
 			Namespace:   namespace,
 			Annotations: annotations,
 		},
+	}
+}
+
+func buildOwnerReferences(name, namespace string) []metav1.OwnerReference {
+	return []metav1.OwnerReference{
+		*metav1.NewControllerRef(buildIngress(name, namespace, nil), ingressGVK),
 	}
 }
