@@ -224,6 +224,9 @@ func buildControllerContext(ctx context.Context, stopCh <-chan struct{}, opts *o
 		CertificateOptions: controller.CertificateOptions{
 			EnableOwnerRef: opts.EnableCertificateOwnerRef,
 		},
+		SchedulerOptions: controller.SchedulerOptions{
+			MaxConcurrentChallenges: opts.MaxConcurrentChallenges,
+		},
 	}, kubeCfg, nil
 }
 
