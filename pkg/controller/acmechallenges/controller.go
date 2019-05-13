@@ -111,7 +111,7 @@ func New(ctx *controllerpkg.Context) (*Controller, error) {
 	if err != nil {
 		return nil, err
 	}
-	ctrl.scheduler = scheduler.New(ctrl.challengeLister)
+	ctrl.scheduler = scheduler.New(ctrl.challengeLister, ctx.SchedulerOptions.MaxConcurrentChallenges)
 	ctrl.ctx = logf.NewContext(ctx.RootContext, nil, ControllerName)
 
 	return ctrl, nil
