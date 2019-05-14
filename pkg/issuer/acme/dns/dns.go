@@ -416,13 +416,16 @@ func (s *Solver) prepareChallengeRequest(issuer v1alpha1.GenericIssuer, ch *v1al
 
 var errNotFound = fmt.Errorf("failed to determine DNS01 solver type")
 
-func (s *Solver) dns01SolverForConfig(config *v1alpha1.ACMEChallengeSolverDNS01) (webhook.Solver, *v1alpha1.ACMEIssuerDNS01ProviderWebhook, error) {
+func (s *Solver) dns01SolverForConfig(config *v1alpha1.ACMEChallengeSolverDNS01) (webhook.Solver, interface{}, error) {
 	solverName := ""
-	var c *v1alpha1.ACMEIssuerDNS01ProviderWebhook
+	var c interface{}
 	switch {
 	case config.Webhook != nil:
 		solverName = "webhook"
 		c = config.Webhook
+	case config.RFC2136 != nil:
+		solverName = "rfc2136"
+		c = config.RFC2136
 	}
 	if solverName == "" {
 		return nil, nil, errNotFound
