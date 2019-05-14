@@ -153,13 +153,12 @@ func (c *Controller) buildCertificates(ing *extv1beta1.Ingress, issuer v1alpha1.
 			return nil, nil, err
 		}
 
-		ingOwnerRef := *metav1.NewControllerRef(ing, ingressGVK)
 		crt := &v1alpha1.Certificate{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:            tls.SecretName,
 				Namespace:       ing.Namespace,
 				Labels:          ing.Labels,
-				OwnerReferences: []metav1.OwnerReference{ingOwnerRef},
+				OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(ing, ingressGVK)},
 			},
 			Spec: v1alpha1.CertificateSpec{
 				DNSNames:   tls.Hosts,
@@ -181,19 +180,13 @@ func (c *Controller) buildCertificates(ing *extv1beta1.Ingress, issuer v1alpha1.
 		if existingCrt != nil {
 			klog.Infof("Certificate %q for ingress %q already exists", tls.SecretName, ing.Name)
 
-			ownerRefs := existingCrt.GetOwnerReferences()
-			if len(ownerRefs) == 0 {
+			if metav1.GetControllerOf(existingCrt) == nil {
 				klog.Infof("Certificate %q has no owners and cannot be updated for ingress %q", tls.SecretName, ing.Name)
 				continue
 			}
 
-			notOwned := false
-			for _, ownerRef := range ownerRefs {
-				notOwned = notOwned || !reflect.DeepEqual(ingOwnerRef, ownerRef)
-			}
-
-			if notOwned {
-				klog.Infof("Certificate %q is not (solely) owned by ingress %q", tls.SecretName, ing.Name)
+			if !metav1.IsControlledBy(existingCrt, ing) {
+				klog.Infof("Certificate %q is not (solely) owned by ingress %q and cannot be updated", tls.SecretName, ing.Name)
 				continue
 			}
 

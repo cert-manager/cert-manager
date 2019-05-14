@@ -24,6 +24,7 @@ import (
 	extv1beta1 "k8s.io/api/extensions/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	types "k8s.io/apimachinery/pkg/types"
 	coretesting "k8s.io/client-go/testing"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
@@ -126,6 +127,7 @@ func TestSync(t *testing.T) {
 						acmeIssuerChallengeTypeAnnotation: "http01",
 						editInPlaceAnnotation:             "true",
 					},
+					UID: types.UID("ingress-name"),
 				},
 				Spec: extv1beta1.IngressSpec{
 					TLS: []extv1beta1.IngressTLS{
@@ -181,6 +183,7 @@ func TestSync(t *testing.T) {
 						clusterIssuerNameAnnotation:       "issuer-name",
 						acmeIssuerChallengeTypeAnnotation: "http01",
 					},
+					UID: types.UID("ingress-name"),
 				},
 				Spec: extv1beta1.IngressSpec{
 					TLS: []extv1beta1.IngressTLS{
@@ -232,6 +235,7 @@ func TestSync(t *testing.T) {
 						acmeIssuerChallengeTypeAnnotation: "http01",
 						ingressClassAnnotation:            "nginx-ing",
 					},
+					UID: types.UID("ingress-name"),
 				},
 				Spec: extv1beta1.IngressSpec{
 					TLS: []extv1beta1.IngressTLS{
@@ -286,6 +290,7 @@ func TestSync(t *testing.T) {
 						acmeIssuerHTTP01IngressClassAnnotation: "cert-ing",
 						ingressClassAnnotation:                 "nginx-ing",
 					},
+					UID: types.UID("ingress-name"),
 				},
 				Spec: extv1beta1.IngressSpec{
 					TLS: []extv1beta1.IngressTLS{
@@ -340,6 +345,7 @@ func TestSync(t *testing.T) {
 						ingressClassAnnotation:            "nginx-ing",
 						editInPlaceAnnotation:             "false",
 					},
+					UID: types.UID("ingress-name"),
 				},
 				Spec: extv1beta1.IngressSpec{
 					TLS: []extv1beta1.IngressTLS{
@@ -393,6 +399,7 @@ func TestSync(t *testing.T) {
 						clusterIssuerNameAnnotation:       "issuer-name",
 						acmeIssuerChallengeTypeAnnotation: "dns01",
 					},
+					UID: types.UID("ingress-name"),
 				},
 				Spec: extv1beta1.IngressSpec{
 					TLS: []extv1beta1.IngressTLS{
@@ -417,6 +424,7 @@ func TestSync(t *testing.T) {
 						clusterIssuerNameAnnotation:       "issuer-name",
 						acmeIssuerChallengeTypeAnnotation: "invalid-challenge-type",
 					},
+					UID: types.UID("ingress-name"),
 				},
 				Spec: extv1beta1.IngressSpec{
 					TLS: []extv1beta1.IngressTLS{
@@ -442,6 +450,7 @@ func TestSync(t *testing.T) {
 						acmeIssuerChallengeTypeAnnotation:     "dns01",
 						acmeIssuerDNS01ProviderNameAnnotation: "fake-dns",
 					},
+					UID: types.UID("ingress-name"),
 				},
 				Spec: extv1beta1.IngressSpec{
 					TLS: []extv1beta1.IngressTLS{
@@ -493,6 +502,7 @@ func TestSync(t *testing.T) {
 					Annotations: map[string]string{
 						clusterIssuerNameAnnotation: "issuer-name",
 					},
+					UID: types.UID("ingress-name"),
 				},
 				Spec: extv1beta1.IngressSpec{
 					TLS: []extv1beta1.IngressTLS{
@@ -535,6 +545,7 @@ func TestSync(t *testing.T) {
 					Annotations: map[string]string{
 						testAcmeTLSAnnotation: "true",
 					},
+					UID: types.UID("ingress-name"),
 				},
 				Spec: extv1beta1.IngressSpec{
 					TLS: []extv1beta1.IngressTLS{
@@ -575,6 +586,7 @@ func TestSync(t *testing.T) {
 					Annotations: map[string]string{
 						issuerNameAnnotation: "issuer-name",
 					},
+					UID: types.UID("ingress-name"),
 				},
 				Spec: extv1beta1.IngressSpec{
 					TLS: []extv1beta1.IngressTLS{
@@ -596,6 +608,7 @@ func TestSync(t *testing.T) {
 					Annotations: map[string]string{
 						issuerNameAnnotation: "issuer-name",
 					},
+					UID: types.UID("ingress-name"),
 				},
 				Spec: extv1beta1.IngressSpec{
 					TLS: []extv1beta1.IngressTLS{
@@ -617,6 +630,7 @@ func TestSync(t *testing.T) {
 					Annotations: map[string]string{
 						issuerNameAnnotation: "invalid-issuer-name",
 					},
+					UID: types.UID("ingress-name"),
 				},
 			},
 		},
@@ -632,6 +646,7 @@ func TestSync(t *testing.T) {
 						issuerNameAnnotation:              "issuer-name",
 						acmeIssuerChallengeTypeAnnotation: "http01",
 					},
+					UID: types.UID("ingress-name"),
 				},
 				Spec: extv1beta1.IngressSpec{
 					TLS: []extv1beta1.IngressTLS{
@@ -684,6 +699,7 @@ func TestSync(t *testing.T) {
 						issuerNameAnnotation:              "issuer-name",
 						acmeIssuerChallengeTypeAnnotation: "http01",
 					},
+					UID: types.UID("ingress-name"),
 				},
 				Spec: extv1beta1.IngressSpec{
 					TLS: []extv1beta1.IngressTLS{
@@ -744,6 +760,7 @@ func TestSync(t *testing.T) {
 						acmeIssuerChallengeTypeAnnotation: "http01",
 						ingressClassAnnotation:            "toot-ing",
 					},
+					UID: types.UID("ingress-name"),
 				},
 				Spec: extv1beta1.IngressSpec{
 					TLS: []extv1beta1.IngressTLS{
@@ -827,6 +844,7 @@ func TestSync(t *testing.T) {
 						acmeIssuerChallengeTypeAnnotation: "http01",
 						ingressClassAnnotation:            "toot-ing",
 					},
+					UID: types.UID("ingress-name"),
 				},
 				Spec: extv1beta1.IngressSpec{
 					TLS: []extv1beta1.IngressTLS{
@@ -959,7 +977,9 @@ func TestSync(t *testing.T) {
 					Annotations: map[string]string{
 						issuerNameAnnotation:              "issuer-name",
 						acmeIssuerChallengeTypeAnnotation: "http01",
+						ingressClassAnnotation:            "toot-ing",
 					},
+					UID: types.UID("ingress-name"),
 				},
 				Spec: extv1beta1.IngressSpec{
 					TLS: []extv1beta1.IngressTLS{
@@ -1011,7 +1031,9 @@ func TestSync(t *testing.T) {
 					Annotations: map[string]string{
 						issuerNameAnnotation:              "issuer-name",
 						acmeIssuerChallengeTypeAnnotation: "http01",
+						ingressClassAnnotation:            "toot-ing",
 					},
+					UID: types.UID("ingress-name"),
 				},
 				Spec: extv1beta1.IngressSpec{
 					TLS: []extv1beta1.IngressTLS{
@@ -1213,6 +1235,7 @@ func buildIngress(name, namespace string, annotations map[string]string) *extv1b
 			Name:        name,
 			Namespace:   namespace,
 			Annotations: annotations,
+			UID:         types.UID(name),
 		},
 	}
 }
