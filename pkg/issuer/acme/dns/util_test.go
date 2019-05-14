@@ -27,6 +27,7 @@ import (
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	"github.com/jetstack/cert-manager/pkg/controller/test"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/acmedns"
+	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/alidns"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/azuredns"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/clouddns"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/cloudflare"
@@ -139,6 +140,10 @@ func newFakeDNSProviders() *fakeDNSProviders {
 		calls: []fakeDNSProviderCall{},
 	}
 	f.constructors = dnsProviderConstructors{
+		aliDNS: func(regionId string, accessKeyId string, accessKeySecret string, dns01Nameservers []string) (*alidns.DNSProvider, error) {
+			f.call("alidns", regionId, accessKeyId, accessKeySecret, util.RecursiveNameservers)
+			return nil, nil
+		},
 		cloudDNS: func(project string, serviceAccount []byte, dns01Nameservers []string, ambient bool) (*clouddns.DNSProvider, error) {
 			f.call("clouddns", project, serviceAccount, util.RecursiveNameservers, ambient)
 			return nil, nil

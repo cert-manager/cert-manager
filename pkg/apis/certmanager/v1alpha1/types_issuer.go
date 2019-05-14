@@ -290,6 +290,9 @@ type ACMEChallengeSolverDNS01 struct {
 	CNAMEStrategy CNAMEStrategy `json:"cnameStrategy,omitempty"`
 
 	// +optional
+	AliDNS *ACMEIssuerDNS01ProviderAliDNS `json:"alidns,omitempty"`
+
+	// +optional
 	Akamai *ACMEIssuerDNS01ProviderAkamai `json:"akamai,omitempty"`
 
 	// +optional
@@ -348,6 +351,9 @@ type ACMEIssuerDNS01Provider struct {
 	CNAMEStrategy CNAMEStrategy `json:"cnameStrategy,omitempty"`
 
 	// +optional
+	AliDNS *ACMEIssuerDNS01ProviderAliDNS `json:"alidns,omitempty"`
+
+	// +optional
 	Akamai *ACMEIssuerDNS01ProviderAkamai `json:"akamai,omitempty"`
 
 	// +optional
@@ -394,6 +400,13 @@ const (
 	// subdomain to some other, less privileged domain.
 	FollowStrategy = "Follow"
 )
+
+// ACMEIssuerDNS01ProviderAliDNS is a structure containing the DNS
+// configuration for AliDNS DNS—Zone Record Management API
+type ACMEIssuerDNS01ProviderAliDNS struct {
+	AccessKeyId			  SecretKeySelector `json:"accessKeyIdSecretRef"`
+	AccessKeySecret		  SecretKeySelector `json:"accessKeySecretSecretRef"`
+}
 
 // ACMEIssuerDNS01ProviderAkamai is a structure containing the DNS
 // configuration for Akamai DNS—Zone Record Management API

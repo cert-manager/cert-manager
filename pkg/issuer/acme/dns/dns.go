@@ -34,6 +34,7 @@ import (
 	"github.com/jetstack/cert-manager/pkg/controller"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/acmedns"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/akamai"
+	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/alidns"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/azuredns"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/clouddns"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/cloudflare"
@@ -59,6 +60,7 @@ type solver interface {
 // It is useful for mocking out a given provider since an alternate set of
 // constructors may be set.
 type dnsProviderConstructors struct {
+	aliDNS       func(regionId string, accessKeyId string, accessKeySecret string, dns01Nameservers []string) (*alidns.DNSProvider, error)
 	cloudDNS     func(project string, serviceAccount []byte, dns01Nameservers []string, ambient bool) (*clouddns.DNSProvider, error)
 	cloudFlare   func(email, apikey string, dns01Nameservers []string) (*cloudflare.DNSProvider, error)
 	route53      func(accessKey, secretKey, hostedZoneID, region string, ambient bool, dns01Nameservers []string) (*route53.DNSProvider, error)
@@ -183,6 +185,7 @@ func extractChallengeSolverConfigOldOrNew(issuer v1alpha1.GenericIssuer, ch *v1a
 		}
 		return &v1alpha1.ACMEChallengeSolverDNS01{
 			CNAMEStrategy: p.CNAMEStrategy,
+			AliDNS: 	   p.AliDNS,
 			Akamai:        p.Akamai,
 			CloudDNS:      p.CloudDNS,
 			Cloudflare:    p.Cloudflare,
@@ -212,6 +215,27 @@ func (s *Solver) solverForChallenge(issuer v1alpha1.GenericIssuer, ch *v1alpha1.
 
 	var impl solver
 	switch {
+	case providerConfig.AliDNS != nil:
+		klog.V(5).Infof("Preparing to create AliDNS Provider")
+
+		accessKeyId, err := s.loadSecretData(&providerConfig.AliDNS.AccessKeyId, resourceNamespace)
+		if err != nil {
+			return nil, nil, errors.Wrap(err, "error getting alidns accessKeyId")
+		}
+
+		accessKeySecret, err := s.loadSecretData(&providerConfig.AliDNS.AccessKeySecret, resourceNamespace)
+		if err != nil {
+			return nil, nil, errors.Wrap(err, "error getting akamai accessKeySecret")
+		}
+
+		impl, err = s.dnsProviderConstructors.aliDNS(
+			"",
+			string(accessKeyId),
+			string(accessKeySecret),
+			s.DNS01Nameservers)
+		if err != nil {
+			return nil, nil, errors.Wrap(err, "error instantiating akamai challenge solver")
+		}
 	case providerConfig.Akamai != nil:
 		klog.V(5).Infof("Preparing to create Akamai Provider")
 		clientToken, err := s.loadSecretData(&providerConfig.Akamai.ClientToken, resourceNamespace)
@@ -455,6 +479,7 @@ func NewSolver(ctx *controller.Context) (*Solver, error) {
 		Context:      ctx,
 		secretLister: ctx.KubeSharedInformerFactory.Core().V1().Secrets().Lister(),
 		dnsProviderConstructors: dnsProviderConstructors{
+			alidns.NewDNSProvider,
 			clouddns.NewDNSProvider,
 			cloudflare.NewDNSProviderCredentials,
 			route53.NewDNSProvider,

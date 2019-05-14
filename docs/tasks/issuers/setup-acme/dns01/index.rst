@@ -77,6 +77,7 @@ and provider specific notes regarding their usage.
 
    acme-dns
    akamai
+   alidns
    azuredns
    cloudflare
    google
