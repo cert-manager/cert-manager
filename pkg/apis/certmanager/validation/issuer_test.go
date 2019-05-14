@@ -42,6 +42,10 @@ var (
 		APIKey: validSecretKeyRef,
 		Email:  "valid",
 	}
+	validAliDNSProvider = v1alpha1.ACMEIssuerDNS01ProviderAliDNS{
+		AccessKeyId:     validSecretKeyRef,
+		AccessKeySecret: validSecretKeyRef,
+	}
 	validACMEIssuer = v1alpha1.ACMEIssuer{
 		Email:      "valid-email",
 		Server:     "valid-server",
@@ -486,6 +490,17 @@ func TestValidateACMEIssuerDNS01Config(t *testing.T) {
 							ClientToken:           validSecretKeyRef,
 							ServiceConsumerDomain: "abc",
 						},
+					},
+				},
+			},
+			errs: []*field.Error{},
+		},
+		"valid alidns config": {
+			cfg: &v1alpha1.ACMEIssuerDNS01Config{
+				Providers: []v1alpha1.ACMEIssuerDNS01Provider{
+					{
+						Name:   "a name",
+						AliDNS: &validAliDNSProvider,
 					},
 				},
 			},

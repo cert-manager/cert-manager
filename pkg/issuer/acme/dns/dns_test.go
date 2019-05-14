@@ -59,6 +59,66 @@ func newSecret(name, namespace string, data map[string][]byte) *corev1.Secret {
 		Data: data,
 	}
 }
+
+func TestAliDNSWithSecret(t *testing.T) {
+	f := &solverFixture{
+		Builder: &test.Builder{
+			KubeObjects: []runtime.Object{
+				newSecret("alidns-access-key-id", "default", map[string][]byte{
+					"access-key-id": []byte("a-alidns-access-key-id"),
+				}),
+				newSecret("alidns-access-key-secret", "default", map[string][]byte{
+					"access-key-secret": []byte("a-alidns-access-key-secret"),
+				}),
+			},
+		},
+		Issuer: newIssuer("test", "default"),
+		Challenge: &v1alpha1.Challenge{
+			Spec: v1alpha1.ChallengeSpec{
+				Solver: &v1alpha1.ACMEChallengeSolver{
+					DNS01: &v1alpha1.ACMEChallengeSolverDNS01{
+						AliDNS: &v1alpha1.ACMEIssuerDNS01ProviderAliDNS{
+							AccessKeyId: v1alpha1.SecretKeySelector{
+								LocalObjectReference: v1alpha1.LocalObjectReference{
+									Name: "alidns-access-key-id",
+								},
+								Key: "access-key-id",
+							},
+							AccessKeySecret: v1alpha1.SecretKeySelector{
+								LocalObjectReference: v1alpha1.LocalObjectReference{
+									Name: "alidns-access-key-secret",
+								},
+								Key: "access-key-secret",
+							},
+						},
+					},
+				},
+			},
+		},
+		dnsProviders: newFakeDNSProviders(),
+	}
+
+	f.Setup(t)
+	defer f.Finish(t)
+
+	s := f.Solver
+	_, _, err := s.solverForChallenge(f.Issuer, f.Challenge)
+	if err != nil {
+		t.Fatalf("expected solverFor to not error, but got: %s", err)
+	}
+
+	expectedDOCall := []fakeDNSProviderCall{
+		{
+			name: "alidns",
+			args: []interface{}{"", "a-alidns-access-key-id", "a-alidns-access-key-secret", util.RecursiveNameservers},
+		},
+	}
+
+	if !reflect.DeepEqual(expectedDOCall, f.dnsProviders.calls) {
+		t.Fatalf("expected %+v == %+v", expectedDOCall, f.dnsProviders.calls)
+	}
+}
+
 func TestSolverFor(t *testing.T) {
 	type testT struct {
 		*solverFixture

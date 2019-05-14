@@ -200,6 +200,15 @@ func ValidateACMEIssuerDNS01Config(iss *v1alpha1.ACMEIssuerDNS01Config, fldPath 
 				el = append(el, field.Required(fldPath.Child("akamai", "serviceConsumerDomain"), ""))
 			}
 		}
+		if p.AliDNS != nil {
+			if numProviders > 0 {
+				el = append(el, field.Forbidden(fldPath.Child("alidns"), "may not specify more than one provider type"))
+			} else {
+				numProviders++
+				el = append(el, ValidateSecretKeySelector(&p.AliDNS.AccessKeyId, fldPath.Child("alidns", "accessKeyIdRef"))...)
+				el = append(el, ValidateSecretKeySelector(&p.AliDNS.AccessKeySecret, fldPath.Child("alidns", "accessKeySecretRef"))...)
+			}
+		}
 		if p.AzureDNS != nil {
 			if numProviders > 0 {
 				el = append(el, field.Forbidden(fldPath.Child("azuredns"), "may not specify more than one provider type"))
