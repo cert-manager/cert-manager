@@ -395,7 +395,7 @@ func (s *Solver) prepareChallengeRequest(issuer v1alpha1.GenericIssuer, ch *v1al
 	// construct a ChallengeRequest which can be passed to DNS solvers.
 	// The provided config will be encoded to JSON in order to avoid a coupling
 	// between cert-manager and any particular DNS provider implementation.
-	b, err := json.Marshal(cfg)
+	b, err := json.Marshal(cfg.Config)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -407,6 +407,7 @@ func (s *Solver) prepareChallengeRequest(issuer v1alpha1.GenericIssuer, ch *v1al
 		AllowAmbientCredentials: canUseAmbientCredentials,
 		ResourceNamespace:       resourceNamespace,
 		Key:                     ch.Spec.Key,
+		DNSName:                 ch.Spec.DNSName,
 		Config:                  &apiext.JSON{Raw: b},
 	}
 
@@ -415,9 +416,9 @@ func (s *Solver) prepareChallengeRequest(issuer v1alpha1.GenericIssuer, ch *v1al
 
 var errNotFound = fmt.Errorf("failed to determine DNS01 solver type")
 
-func (s *Solver) dns01SolverForConfig(config *v1alpha1.ACMEChallengeSolverDNS01) (webhook.Solver, interface{}, error) {
+func (s *Solver) dns01SolverForConfig(config *v1alpha1.ACMEChallengeSolverDNS01) (webhook.Solver, *v1alpha1.ACMEIssuerDNS01ProviderWebhook, error) {
 	solverName := ""
-	var c interface{}
+	var c *v1alpha1.ACMEIssuerDNS01ProviderWebhook
 	switch {
 	case config.Webhook != nil:
 		solverName = "webhook"
