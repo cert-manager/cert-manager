@@ -29,9 +29,11 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/labels"
 	corelisters "k8s.io/client-go/listers/core/v1"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	cmlisters "github.com/jetstack/cert-manager/pkg/client/listers/certmanager/v1alpha1"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 	"github.com/jetstack/cert-manager/pkg/util/errors"
 	"github.com/jetstack/cert-manager/pkg/util/kube"
@@ -93,9 +95,15 @@ var ControllerSyncCallCount = prometheus.NewCounterVec(
 	[]string{"controller"},
 )
 
+// RegisteredCertificates holds the set of all certificates which are currently
+// registered by Prometheus
+var RegisteredCertificates = make(map[*v1alpha1.Certificate]struct{})
+
 type Metrics struct {
 	ctx context.Context
 	http.Server
+
+	registeredCertificates map[*v1alpha1.Certificate]struct{}
 
 	// TODO (@dippynark): switch this to use an interface to make it testable
 	registry                         *prometheus.Registry
@@ -118,6 +126,7 @@ func New(ctx context.Context) *Metrics {
 			MaxHeaderBytes: prometheusMetricsServerMaxHeaderBytes,
 			Handler:        router,
 		},
+		registeredCertificates:           RegisteredCertificates,
 		registry:                         prometheus.NewRegistry(),
 		CertificateExpiryTimeSeconds:     CertificateExpiryTimeSeconds,
 		ACMEClientRequestDurationSeconds: ACMEClientRequestDurationSeconds,
@@ -185,15 +194,50 @@ func (m *Metrics) UpdateCertificateExpiry(crt *v1alpha1.Certificate, secretListe
 		return
 	}
 
-	updateX509Expiry(crt.Name, crt.Namespace, cert)
+	updateX509Expiry(crt, cert)
 }
 
-func updateX509Expiry(name, namespace string, cert *x509.Certificate) {
+func updateX509Expiry(crt *v1alpha1.Certificate, cert *x509.Certificate) {
 	// set certificate expiry time
 	expiryTime := cert.NotAfter
 	CertificateExpiryTimeSeconds.With(prometheus.Labels{
-		"name":      name,
-		"namespace": namespace}).Set(float64(expiryTime.Unix()))
+		"name":      crt.Name,
+		"namespace": crt.Namespace}).Set(float64(expiryTime.Unix()))
+	RegisteredCertificates[crt] = struct{}{}
+}
+
+func (m *Metrics) CleanUp(certificateLister cmlisters.CertificateLister) {
+	log := logf.FromContext(m.ctx)
+	log.V(logf.DebugLevel).Info("attempting to clean up deleted certificates")
+
+	activeCrts, err := certificateLister.List(labels.Everything())
+	if err != nil {
+		log.Error(err, "error retrieving active certificates")
+		return
+	}
+
+	cleanUpCertificates(activeCrts)
+}
+
+func cleanUpCertificates(activeCrts []*v1alpha1.Certificate) {
+	activeMap := make(map[*v1alpha1.Certificate]struct{}, len(activeCrts))
+	for _, crt := range activeCrts {
+		activeMap[crt] = struct{}{}
+	}
+	var toCleanUp []*v1alpha1.Certificate
+	for crt := range RegisteredCertificates {
+		if _, found := activeMap[crt]; !found {
+			toCleanUp = append(toCleanUp, crt)
+		}
+	}
+
+	for _, crt := range toCleanUp {
+		CertificateExpiryTimeSeconds.Delete(prometheus.Labels{
+			"name":      crt.Name,
+			"namespace": crt.Namespace,
+		})
+		delete(RegisteredCertificates, crt)
+	}
 }
 
 func (m *Metrics) IncrementSyncCallCount(controllerName string) {

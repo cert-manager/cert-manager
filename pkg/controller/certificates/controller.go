@@ -136,6 +136,7 @@ func (c *Controller) Run(workers int, stopCh <-chan struct{}) error {
 		// TODO (@munnerz): make time.Second duration configurable
 		go wait.Until(func() { c.worker(ctx) }, time.Second, stopCh)
 	}
+	go wait.Until(func() { c.metrics.CleanUp(c.certificateLister, c.secretLister) }, time.Minute*5, stopCh)
 	<-stopCh
 	log.V(logf.DebugLevel).Info("shutting down queue as workqueue signaled shutdown")
 	c.queue.ShutDown()
