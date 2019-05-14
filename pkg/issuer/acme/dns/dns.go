@@ -395,7 +395,7 @@ func (s *Solver) prepareChallengeRequest(issuer v1alpha1.GenericIssuer, ch *v1al
 	// construct a ChallengeRequest which can be passed to DNS solvers.
 	// The provided config will be encoded to JSON in order to avoid a coupling
 	// between cert-manager and any particular DNS provider implementation.
-	b, err := json.Marshal(cfg.Config)
+	b, err := json.Marshal(cfg)
 	if err != nil {
 		return nil, nil, err
 	}
