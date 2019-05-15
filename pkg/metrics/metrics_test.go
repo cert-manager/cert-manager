@@ -85,23 +85,23 @@ func TestCleanUp(t *testing.T) {
 	tests := map[string]testT{
 		"active and inactive": {
 			active: map[*v1alpha1.Certificate]*x509.Certificate{
-				&v1alpha1.Certificate{
+				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "something",
 						Namespace: "default",
 					},
-				}: &x509.Certificate{
+				}: {
 					// fixed expiry time for testing
 					NotAfter: time.Unix(2208988804, 0),
 				},
 			},
 			inactive: map[*v1alpha1.Certificate]*x509.Certificate{
-				&v1alpha1.Certificate{
+				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "something-else",
 						Namespace: "default",
 					},
-				}: &x509.Certificate{
+				}: {
 					// fixed expiry time for testing
 					NotAfter: time.Unix(2208988804, 0),
 				},
@@ -112,21 +112,21 @@ func TestCleanUp(t *testing.T) {
 		},
 		"only active": {
 			active: map[*v1alpha1.Certificate]*x509.Certificate{
-				&v1alpha1.Certificate{
+				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "something",
 						Namespace: "default",
 					},
-				}: &x509.Certificate{
+				}: {
 					// fixed expiry time for testing
 					NotAfter: time.Unix(2208988804, 0),
 				},
-				&v1alpha1.Certificate{
+				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "something-else",
 						Namespace: "default",
 					},
-				}: &x509.Certificate{
+				}: {
 					// fixed expiry time for testing
 					NotAfter: time.Unix(2208988804, 0),
 				},
@@ -140,21 +140,21 @@ func TestCleanUp(t *testing.T) {
 		"only inactive": {
 			active: map[*v1alpha1.Certificate]*x509.Certificate{},
 			inactive: map[*v1alpha1.Certificate]*x509.Certificate{
-				&v1alpha1.Certificate{
+				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "something",
 						Namespace: "default",
 					},
-				}: &x509.Certificate{
+				}: {
 					// fixed expiry time for testing
 					NotAfter: time.Unix(2208988804, 0),
 				},
-				&v1alpha1.Certificate{
+				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "something-else",
 						Namespace: "default",
 					},
-				}: &x509.Certificate{
+				}: {
 					// fixed expiry time for testing
 					NotAfter: time.Unix(2208988804, 0),
 				},
