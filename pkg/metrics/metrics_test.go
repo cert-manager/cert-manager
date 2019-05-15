@@ -23,6 +23,9 @@ import (
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus/testutil"
+
+	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func TestUpdateCertificateExpiry(t *testing.T) {
@@ -30,29 +33,149 @@ func TestUpdateCertificateExpiry(t *testing.T) {
 	# HELP certmanager_certificate_expiration_timestamp_seconds The date after which the certificate expires. Expressed as a Unix Epoch Time.
 	# TYPE certmanager_certificate_expiration_timestamp_seconds gauge
 `
-
 	type testT struct {
-		expected  string
-		name      string
-		namespace string
-		cert      *x509.Certificate
+		crt      *v1alpha1.Certificate
+		cert     *x509.Certificate
+		expected string
 	}
 	tests := map[string]testT{
 		"first": {
-			name:      "something",
-			namespace: "default",
-			expected: `
-	certmanager_certificate_expiration_timestamp_seconds{name="something",namespace="default"} 2.208988804e+09
-`,
+			crt: &v1alpha1.Certificate{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "something",
+					Namespace: "default",
+				},
+			},
 			cert: &x509.Certificate{
 				// fixed expiry time for testing
 				NotAfter: time.Unix(2208988804, 0),
 			},
+			expected: `
+	certmanager_certificate_expiration_timestamp_seconds{name="something",namespace="default"} 2.208988804e+09
+`,
 		},
 	}
 	for n, test := range tests {
 		t.Run(n, func(t *testing.T) {
-			updateX509Expiry(test.name, test.namespace, test.cert)
+			defer cleanUpCertificates(nil)
+
+			updateX509Expiry(test.crt, test.cert)
+
+			if err := testutil.CollectAndCompare(
+				CertificateExpiryTimeSeconds,
+				strings.NewReader(metadata+test.expected),
+				"certmanager_certificate_expiration_timestamp_seconds",
+			); err != nil {
+				t.Errorf("unexpected collecting result:\n%s", err)
+			}
+		})
+	}
+}
+
+func TestCleanUp(t *testing.T) {
+	const metadata = `
+	# HELP certmanager_certificate_expiration_timestamp_seconds The date after which the certificate expires. Expressed as a Unix Epoch Time.
+	# TYPE certmanager_certificate_expiration_timestamp_seconds gauge
+`
+	type testT struct {
+		active   map[*v1alpha1.Certificate]*x509.Certificate
+		inactive map[*v1alpha1.Certificate]*x509.Certificate
+		expected string
+	}
+	tests := map[string]testT{
+		"active and inactive": {
+			active: map[*v1alpha1.Certificate]*x509.Certificate{
+				&v1alpha1.Certificate{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "something",
+						Namespace: "default",
+					},
+				}: &x509.Certificate{
+					// fixed expiry time for testing
+					NotAfter: time.Unix(2208988804, 0),
+				},
+			},
+			inactive: map[*v1alpha1.Certificate]*x509.Certificate{
+				&v1alpha1.Certificate{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "something-else",
+						Namespace: "default",
+					},
+				}: &x509.Certificate{
+					// fixed expiry time for testing
+					NotAfter: time.Unix(2208988804, 0),
+				},
+			},
+			expected: `
+	certmanager_certificate_expiration_timestamp_seconds{name="something",namespace="default"} 2.208988804e+09
+`,
+		},
+		"only active": {
+			active: map[*v1alpha1.Certificate]*x509.Certificate{
+				&v1alpha1.Certificate{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "something",
+						Namespace: "default",
+					},
+				}: &x509.Certificate{
+					// fixed expiry time for testing
+					NotAfter: time.Unix(2208988804, 0),
+				},
+				&v1alpha1.Certificate{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "something-else",
+						Namespace: "default",
+					},
+				}: &x509.Certificate{
+					// fixed expiry time for testing
+					NotAfter: time.Unix(2208988804, 0),
+				},
+			},
+			inactive: map[*v1alpha1.Certificate]*x509.Certificate{},
+			expected: `
+	certmanager_certificate_expiration_timestamp_seconds{name="something",namespace="default"} 2.208988804e+09
+	certmanager_certificate_expiration_timestamp_seconds{name="something-else",namespace="default"} 2.208988804e+09
+`,
+		},
+		"only inactive": {
+			active: map[*v1alpha1.Certificate]*x509.Certificate{},
+			inactive: map[*v1alpha1.Certificate]*x509.Certificate{
+				&v1alpha1.Certificate{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "something",
+						Namespace: "default",
+					},
+				}: &x509.Certificate{
+					// fixed expiry time for testing
+					NotAfter: time.Unix(2208988804, 0),
+				},
+				&v1alpha1.Certificate{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "something-else",
+						Namespace: "default",
+					},
+				}: &x509.Certificate{
+					// fixed expiry time for testing
+					NotAfter: time.Unix(2208988804, 0),
+				},
+			},
+			expected: "",
+		},
+	}
+	for n, test := range tests {
+		t.Run(n, func(t *testing.T) {
+			defer cleanUpCertificates(nil)
+
+			var activeCrts []*v1alpha1.Certificate
+			for crt, cert := range test.active {
+				updateX509Expiry(crt, cert)
+				activeCrts = append(activeCrts, crt)
+			}
+			for crt, cert := range test.inactive {
+				updateX509Expiry(crt, cert)
+			}
+
+			cleanUpCertificates(activeCrts)
 
 			if err := testutil.CollectAndCompare(
 				CertificateExpiryTimeSeconds,
