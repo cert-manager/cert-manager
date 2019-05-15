@@ -23,6 +23,7 @@ import (
 	"context"
 	"crypto/x509"
 	"net/http"
+	"sync"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -95,15 +96,22 @@ var ControllerSyncCallCount = prometheus.NewCounterVec(
 	[]string{"controller"},
 )
 
+type registeredCertificates struct {
+	certificates map[*v1alpha1.Certificate]struct{}
+	mtx          sync.Mutex
+}
+
 // RegisteredCertificates holds the set of all certificates which are currently
 // registered by Prometheus
-var RegisteredCertificates = make(map[*v1alpha1.Certificate]struct{})
+var RegisteredCertificates = &registeredCertificates{
+	certificates: make(map[*v1alpha1.Certificate]struct{}),
+}
 
 type Metrics struct {
 	ctx context.Context
 	http.Server
 
-	registeredCertificates map[*v1alpha1.Certificate]struct{}
+	registeredCertificates *registeredCertificates
 
 	// TODO (@dippynark): switch this to use an interface to make it testable
 	registry                         *prometheus.Registry
@@ -200,10 +208,12 @@ func (m *Metrics) UpdateCertificateExpiry(crt *v1alpha1.Certificate, secretListe
 func updateX509Expiry(crt *v1alpha1.Certificate, cert *x509.Certificate) {
 	// set certificate expiry time
 	expiryTime := cert.NotAfter
+	RegisteredCertificates.mtx.Lock()
+	defer RegisteredCertificates.mtx.Unlock()
 	CertificateExpiryTimeSeconds.With(prometheus.Labels{
 		"name":      crt.Name,
 		"namespace": crt.Namespace}).Set(float64(expiryTime.Unix()))
-	RegisteredCertificates[crt] = struct{}{}
+	RegisteredCertificates.certificates[crt] = struct{}{}
 }
 
 func (m *Metrics) CleanUp(certificateLister cmlisters.CertificateLister) {
@@ -224,8 +234,11 @@ func cleanUpCertificates(activeCrts []*v1alpha1.Certificate) {
 	for _, crt := range activeCrts {
 		activeMap[crt] = struct{}{}
 	}
+
+	RegisteredCertificates.mtx.Lock()
+	defer RegisteredCertificates.mtx.Unlock()
 	var toCleanUp []*v1alpha1.Certificate
-	for crt := range RegisteredCertificates {
+	for crt := range RegisteredCertificates.certificates {
 		if _, found := activeMap[crt]; !found {
 			toCleanUp = append(toCleanUp, crt)
 		}
@@ -236,7 +249,7 @@ func cleanUpCertificates(activeCrts []*v1alpha1.Certificate) {
 			"name":      crt.Name,
 			"namespace": crt.Namespace,
 		})
-		delete(RegisteredCertificates, crt)
+		delete(RegisteredCertificates.certificates, crt)
 	}
 }
 
