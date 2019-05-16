@@ -190,7 +190,7 @@ func (s *Solver) addChallengePathToIngress(ctx context.Context, issuer v1alpha1.
 					return s.Client.ExtensionsV1beta1().Ingresses(ing.Namespace).Update(ing)
 				}
 			}
-			rule.HTTP.Paths = append(rule.HTTP.Paths, ingPathToAdd)
+			rule.HTTP.Paths = append([]extv1beta1.HTTPIngressPath{ingPathToAdd}, rule.HTTP.Paths...)
 			return s.Client.ExtensionsV1beta1().Ingresses(ing.Namespace).Update(ing)
 		}
 	}

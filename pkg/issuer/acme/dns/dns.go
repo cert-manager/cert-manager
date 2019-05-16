@@ -431,6 +431,7 @@ func (s *Solver) prepareChallengeRequest(issuer v1alpha1.GenericIssuer, ch *v1al
 		AllowAmbientCredentials: canUseAmbientCredentials,
 		ResourceNamespace:       resourceNamespace,
 		Key:                     ch.Spec.Key,
+		DNSName:                 ch.Spec.DNSName,
 		Config:                  &apiext.JSON{Raw: b},
 	}
 
@@ -446,6 +447,9 @@ func (s *Solver) dns01SolverForConfig(config *v1alpha1.ACMEChallengeSolverDNS01)
 	case config.Webhook != nil:
 		solverName = "webhook"
 		c = config.Webhook
+	case config.RFC2136 != nil:
+		solverName = "rfc2136"
+		c = config.RFC2136
 	}
 	if solverName == "" {
 		return nil, nil, errNotFound

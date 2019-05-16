@@ -71,6 +71,8 @@ type ControllerOptions struct {
 	DNS01RecursiveNameserversOnly bool
 
 	EnableCertificateOwnerRef bool
+
+	MaxConcurrentChallenges int
 }
 
 const (
@@ -95,6 +97,8 @@ const (
 	defaultEnableCertificateOwnerRef   = false
 
 	defaultDNS01RecursiveNameserversOnly = false
+
+	defaultMaxConcurrentChallenges = 60
 )
 
 func computeACMEHTTP01SolverImage(arch string) string {
@@ -240,6 +244,8 @@ func (s *ControllerOptions) AddFlags(fs *pflag.FlagSet) {
 	fs.BoolVar(&s.EnableCertificateOwnerRef, "enable-certificate-owner-ref", defaultEnableCertificateOwnerRef, ""+
 		"Whether to set the certificate resource as an owner of secret where the tls certificate is stored. "+
 		"When this flag is enabled, the secret will be automatically removed when the certificate resource is deleted.")
+	fs.IntVar(&s.MaxConcurrentChallenges, "max-concurrent-challenges", defaultMaxConcurrentChallenges, ""+
+		"The maximum number of challenges that can be scheduled as 'processing' at once.")
 }
 
 func (o *ControllerOptions) Validate() error {
