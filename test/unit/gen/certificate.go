@@ -118,3 +118,9 @@ func SetCertificateOrganization(orgs ...string) CertificateModifier {
 		ch.Spec.Organization = orgs
 	}
 }
+
+func SetCertificateNamespace(namespace string) CertificateModifier {
+	return func(crt *v1alpha1.Certificate) {
+		crt.ObjectMeta.Namespace = namespace
+	}
+}
