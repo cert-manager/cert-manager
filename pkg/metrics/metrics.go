@@ -31,7 +31,9 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/util/wait"
 	corelisters "k8s.io/client-go/listers/core/v1"
+	"k8s.io/client-go/tools/cache"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	cmlisters "github.com/jetstack/cert-manager/pkg/client/listers/certmanager/v1alpha1"
@@ -96,22 +98,21 @@ var ControllerSyncCallCount = prometheus.NewCounterVec(
 	[]string{"controller"},
 )
 
-type registeredCertificates struct {
-	certificates map[*v1alpha1.Certificate]struct{}
+// registeredCertificates holds the set of all certificates which are currently
+// registered by Prometheus
+var registeredCertificates = &struct {
+	certificates map[string]struct{}
 	mtx          sync.Mutex
+}{
+	certificates: make(map[string]struct{}),
 }
 
-// RegisteredCertificates holds the set of all certificates which are currently
-// registered by Prometheus
-var RegisteredCertificates = &registeredCertificates{
-	certificates: make(map[*v1alpha1.Certificate]struct{}),
-}
+var activeCertificates cmlisters.CertificateLister
 
 type Metrics struct {
 	ctx context.Context
 	http.Server
-
-	registeredCertificates *registeredCertificates
+	activeCertificates cmlisters.CertificateLister
 
 	// TODO (@dippynark): switch this to use an interface to make it testable
 	registry                         *prometheus.Registry
@@ -134,7 +135,7 @@ func New(ctx context.Context) *Metrics {
 			MaxHeaderBytes: prometheusMetricsServerMaxHeaderBytes,
 			Handler:        router,
 		},
-		registeredCertificates:           RegisteredCertificates,
+		activeCertificates:               nil,
 		registry:                         prometheus.NewRegistry(),
 		CertificateExpiryTimeSeconds:     CertificateExpiryTimeSeconds,
 		ACMEClientRequestDurationSeconds: ACMEClientRequestDurationSeconds,
@@ -183,6 +184,8 @@ func (m *Metrics) Start(stopCh <-chan struct{}) {
 
 	}()
 
+	go wait.Until(func() { m.cleanUp() }, time.Minute, stopCh)
+
 	m.waitShutdown(stopCh)
 }
 
@@ -206,21 +209,35 @@ func (m *Metrics) UpdateCertificateExpiry(crt *v1alpha1.Certificate, secretListe
 }
 
 func updateX509Expiry(crt *v1alpha1.Certificate, cert *x509.Certificate) {
-	// set certificate expiry time
 	expiryTime := cert.NotAfter
-	RegisteredCertificates.mtx.Lock()
-	defer RegisteredCertificates.mtx.Unlock()
+	key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(crt)
+	if err != nil {
+		return
+	}
+
+	registeredCertificates.mtx.Lock()
+	defer registeredCertificates.mtx.Unlock()
+	// set certificate expiry time
 	CertificateExpiryTimeSeconds.With(prometheus.Labels{
 		"name":      crt.Name,
 		"namespace": crt.Namespace}).Set(float64(expiryTime.Unix()))
-	RegisteredCertificates.certificates[crt] = struct{}{}
+	registeredCertificates.certificates[key] = struct{}{}
 }
 
-func (m *Metrics) CleanUp(certificateLister cmlisters.CertificateLister) {
-	log := logf.FromContext(m.ctx)
-	log.V(logf.DebugLevel).Info("attempting to clean up deleted certificates")
+func (m *Metrics) SetActiveCertificates(cl cmlisters.CertificateLister) {
+	m.activeCertificates = cl
+}
 
-	activeCrts, err := certificateLister.List(labels.Everything())
+func (m *Metrics) cleanUp() {
+	log := logf.FromContext(m.ctx)
+	log.V(logf.DebugLevel).Info("attempting to clean up metrics for recently deleted certificates")
+
+	if activeCertificates == nil {
+		log.V(logf.DebugLevel).Info("active certificates is still uninitialized")
+		return
+	}
+
+	activeCrts, err := activeCertificates.List(labels.Everything())
 	if err != nil {
 		log.Error(err, "error retrieving active certificates")
 		return
@@ -230,26 +247,36 @@ func (m *Metrics) CleanUp(certificateLister cmlisters.CertificateLister) {
 }
 
 func cleanUpCertificates(activeCrts []*v1alpha1.Certificate) {
-	activeMap := make(map[*v1alpha1.Certificate]struct{}, len(activeCrts))
+	activeMap := make(map[string]struct{}, len(activeCrts))
 	for _, crt := range activeCrts {
-		activeMap[crt] = struct{}{}
+		key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(crt)
+		if err != nil {
+			continue
+		}
+
+		activeMap[key] = struct{}{}
 	}
 
-	RegisteredCertificates.mtx.Lock()
-	defer RegisteredCertificates.mtx.Unlock()
-	var toCleanUp []*v1alpha1.Certificate
-	for crt := range RegisteredCertificates.certificates {
-		if _, found := activeMap[crt]; !found {
-			toCleanUp = append(toCleanUp, crt)
+	registeredCertificates.mtx.Lock()
+	defer registeredCertificates.mtx.Unlock()
+	var toCleanUp []string
+	for key := range registeredCertificates.certificates {
+		if _, found := activeMap[key]; !found {
+			toCleanUp = append(toCleanUp, key)
 		}
 	}
 
-	for _, crt := range toCleanUp {
+	for _, key := range toCleanUp {
+		namespace, name, err := cache.SplitMetaNamespaceKey(key)
+		if err != nil {
+			continue
+		}
+
 		CertificateExpiryTimeSeconds.Delete(prometheus.Labels{
-			"name":      crt.Name,
-			"namespace": crt.Namespace,
+			"name":      name,
+			"namespace": namespace,
 		})
-		delete(RegisteredCertificates.certificates, crt)
+		delete(registeredCertificates.certificates, key)
 	}
 }
 

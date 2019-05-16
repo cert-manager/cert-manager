@@ -109,6 +109,7 @@ func New(ctx *controllerpkg.Context) *Controller {
 
 	ctrl.helper = issuer.NewHelper(ctrl.issuerLister, ctrl.clusterIssuerLister)
 	ctrl.metrics = metrics.Default
+	ctrl.metrics.SetActiveCertificates(ctrl.certificateLister)
 	ctrl.helper = issuer.NewHelper(ctrl.issuerLister, ctrl.clusterIssuerLister)
 	ctrl.issuerFactory = issuer.NewIssuerFactory(ctx)
 	ctrl.clock = clock.RealClock{}
@@ -136,7 +137,6 @@ func (c *Controller) Run(workers int, stopCh <-chan struct{}) error {
 		// TODO (@munnerz): make time.Second duration configurable
 		go wait.Until(func() { c.worker(ctx) }, time.Second, stopCh)
 	}
-	go wait.Until(func() { c.metrics.CleanUp(c.certificateLister) }, time.Minute, stopCh)
 	<-stopCh
 	log.V(logf.DebugLevel).Info("shutting down queue as workqueue signaled shutdown")
 	c.queue.ShutDown()
