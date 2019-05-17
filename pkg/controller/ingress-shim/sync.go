@@ -60,6 +60,8 @@ const (
 var ingressGVK = extv1beta1.SchemeGroupVersion.WithKind("Ingress")
 
 func (c *Controller) Sync(ctx context.Context, ing *extv1beta1.Ingress) error {
+	c.metrics.ControllerSyncCallCount.WithLabelValues("ingress-shim").Inc()
+
 	if !shouldSync(ing, c.defaults.autoCertificateAnnotations) {
 		klog.Infof("Not syncing ingress %s/%s as it does not contain necessary annotations", ing.Namespace, ing.Name)
 		return nil

@@ -36,6 +36,7 @@ import (
 	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
 	"github.com/jetstack/cert-manager/pkg/issuer"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
+	"github.com/jetstack/cert-manager/pkg/metrics"
 )
 
 type Controller struct {
@@ -57,6 +58,7 @@ type Controller struct {
 
 	watchedInformers []cache.InformerSynced
 	queue            workqueue.RateLimitingInterface
+	metrics          *metrics.Metrics
 
 	// used for testing
 	clock clock.Clock
@@ -94,6 +96,7 @@ func New(ctx *controllerpkg.Context) *Controller {
 	secretInformer := ctrl.KubeSharedInformerFactory.Core().V1().Secrets()
 	ctrl.watchedInformers = append(ctrl.watchedInformers, secretInformer.Informer().HasSynced)
 	ctrl.secretLister = secretInformer.Lister()
+	ctrl.metrics = metrics.Default
 
 	ctrl.helper = issuer.NewHelper(ctrl.issuerLister, ctrl.clusterIssuerLister)
 	ctrl.acmeHelper = acme.NewHelper(ctrl.secretLister, ctrl.Context.ClusterResourceNamespace)

@@ -21,7 +21,7 @@ import (
 	"fmt"
 	"reflect"
 
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/errors"
 
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
@@ -38,6 +38,8 @@ const (
 )
 
 func (c *Controller) Sync(ctx context.Context, iss *v1alpha1.Issuer) (err error) {
+	c.metrics.ControllerSyncCallCount.WithLabelValues("issuers").Inc()
+
 	log := logf.FromContext(ctx)
 
 	issuerCopy := iss.DeepCopy()

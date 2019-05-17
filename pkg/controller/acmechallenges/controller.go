@@ -37,6 +37,7 @@ import (
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/http"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
+	"github.com/jetstack/cert-manager/pkg/metrics"
 )
 
 type Controller struct {
@@ -63,6 +64,7 @@ type Controller struct {
 
 	watchedInformers []cache.InformerSynced
 	queue            workqueue.RateLimitingInterface
+	metrics          *metrics.Metrics
 
 	scheduler *scheduler.Scheduler
 }
@@ -104,6 +106,7 @@ func New(ctx *controllerpkg.Context) (*Controller, error) {
 
 	ctrl.helper = issuer.NewHelper(ctrl.issuerLister, ctrl.clusterIssuerLister)
 	ctrl.acmeHelper = acme.NewHelper(ctrl.secretLister, ctrl.Context.ClusterResourceNamespace)
+	ctrl.metrics = metrics.Default
 
 	ctrl.httpSolver = http.NewSolver(ctx)
 	var err error
