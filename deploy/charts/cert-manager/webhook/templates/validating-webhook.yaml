@@ -39,6 +39,7 @@ webhooks:
         name: kubernetes
         namespace: default
         path: /apis/admission.certmanager.k8s.io/v1beta1/certificates
+      caBundle: ""
   - name: issuers.admission.certmanager.k8s.io
     namespaceSelector:
       matchExpressions:
@@ -66,6 +67,7 @@ webhooks:
         name: kubernetes
         namespace: default
         path: /apis/admission.certmanager.k8s.io/v1beta1/issuers
+      caBundle: ""
   - name: clusterissuers.admission.certmanager.k8s.io
     namespaceSelector:
       matchExpressions:
@@ -93,3 +95,4 @@ webhooks:
         name: kubernetes
         namespace: default
         path: /apis/admission.certmanager.k8s.io/v1beta1/clusterissuers
+      caBundle: ""
