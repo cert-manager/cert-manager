@@ -31,6 +31,18 @@ github.com/Venafi/vcert/pkg/endpoint
 github.com/Venafi/vcert/pkg/venafi/cloud
 github.com/Venafi/vcert/pkg/venafi/fake
 github.com/Venafi/vcert/pkg/venafi/tpp
+# github.com/aliyun/alibaba-cloud-sdk-go v0.0.0-20190516090809-48e613a21e5f
+github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests
+github.com/aliyun/alibaba-cloud-sdk-go/services/alidns
+github.com/aliyun/alibaba-cloud-sdk-go/sdk/errors
+github.com/aliyun/alibaba-cloud-sdk-go/sdk/utils
+github.com/aliyun/alibaba-cloud-sdk-go/sdk
+github.com/aliyun/alibaba-cloud-sdk-go/sdk/auth
+github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses
+github.com/aliyun/alibaba-cloud-sdk-go/sdk/auth/credentials
+github.com/aliyun/alibaba-cloud-sdk-go/sdk/auth/credentials/provider
+github.com/aliyun/alibaba-cloud-sdk-go/sdk/endpoints
+github.com/aliyun/alibaba-cloud-sdk-go/sdk/auth/signers
 # github.com/appscode/jsonpatch v0.0.0-20190108182946-7c0e3b262f30
 github.com/appscode/jsonpatch
 # github.com/aws/aws-sdk-go v0.0.0-20170809071707-58f4800ac6e7
@@ -280,6 +292,8 @@ github.com/prometheus/procfs/xfs
 github.com/prometheus/procfs/internal/util
 # github.com/ryanuber/go-glob v1.0.0
 github.com/ryanuber/go-glob
+# github.com/satori/go.uuid v1.2.0
+github.com/satori/go.uuid
 # github.com/sethgrid/pester v0.0.0-20190127155807-68a33a018ad0
 github.com/sethgrid/pester
 # github.com/spf13/cobra v0.0.0-20170905172051-b78744579491
