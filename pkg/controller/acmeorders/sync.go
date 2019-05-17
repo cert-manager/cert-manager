@@ -48,7 +48,7 @@ var (
 // - create a Challenge resource in order to fulfill required validations
 // - waiting for Challenge resources to enter the 'ready' state
 func (c *Controller) Sync(ctx context.Context, o *cmapi.Order) (err error) {
-	c.metrics.ControllerSyncCallCount.WithLabelValues("acmeorders").Inc()
+	c.metrics.ControllerSyncCallCount.WithLabelValues(ControllerName).Inc()
 
 	oldOrder := o
 	o = o.DeepCopy()

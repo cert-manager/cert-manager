@@ -38,7 +38,7 @@ const (
 )
 
 func (c *Controller) Sync(ctx context.Context, iss *v1alpha1.Issuer) (err error) {
-	c.metrics.ControllerSyncCallCount.WithLabelValues("issuers").Inc()
+	c.metrics.ControllerSyncCallCount.WithLabelValues(ControllerName).Inc()
 
 	log := logf.FromContext(ctx)
 

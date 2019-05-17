@@ -69,7 +69,7 @@ var (
 )
 
 func (c *Controller) Sync(ctx context.Context, crt *v1alpha1.Certificate) (err error) {
-	c.metrics.ControllerSyncCallCount.WithLabelValues("certificates").Inc()
+	c.metrics.ControllerSyncCallCount.WithLabelValues(ControllerName).Inc()
 
 	log := logf.FromContext(ctx)
 	dbg := log.V(logf.DebugLevel)
