@@ -22,6 +22,7 @@ go_library(
         "//pkg/issuer/acme/dns/util:go_default_library",
         "//pkg/issuer/acme/http:go_default_library",
         "//pkg/logs:go_default_library",
+        "//pkg/metrics:go_default_library",
         "//third_party/crypto/acme:go_default_library",
         "//vendor/k8s.io/api/core/v1:go_default_library",
         "//vendor/k8s.io/apimachinery/pkg/api/errors:go_default_library",

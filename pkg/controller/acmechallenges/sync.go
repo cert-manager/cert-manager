@@ -56,6 +56,8 @@ type solver interface {
 // Sync will process this ACME Challenge.
 // It is the core control function for ACME challenges.
 func (c *Controller) Sync(ctx context.Context, ch *cmapi.Challenge) (err error) {
+	c.metrics.ControllerSyncCallCount.WithLabelValues("acmechallenges").Inc()
+
 	log := logf.FromContext(ctx).WithValues("dnsName", ch.Spec.DNSName, "type", ch.Spec.Type)
 	ctx = logf.NewContext(ctx, log)
 	oldChal := ch
