@@ -264,16 +264,21 @@ func (c *Controller) setIssuerSpecificConfig(crt *v1alpha1.Certificate, issuer v
 		}
 		switch challengeType {
 		case "http01":
+			editInPlaceVal, ok := ingAnnotations[editInPlaceAnnotation]
+			editInPlace := editInPlaceVal == "true"
 			// If the HTTP01 issuer is not enabled, skip setting the ACME field
 			// on the Certificate resource.
 			if issuer.GetSpec().ACME.HTTP01 == nil {
+				if editInPlace {
+					c.Recorder.Eventf(ing, corev1.EventTypeWarning, "Unsupported", "%s annotation cannot be enabled when using new format solver type. "+
+						"Re-enable the old format HTTP01 solver, or otherwise create a specific HTTP01 solver for this Ingress.", editInPlaceAnnotation)
+				}
 				crt.Spec.ACME = nil
 				return nil
 			}
 			domainCfg.HTTP01 = &v1alpha1.HTTP01SolverConfig{}
-			editInPlace, ok := ingAnnotations[editInPlaceAnnotation]
 			// If annotation isn't present, or it's set to true, edit the existing ingress
-			if ok && editInPlace == "true" {
+			if ok && editInPlace {
 				domainCfg.HTTP01.Ingress = ing.Name
 			} else {
 				ingressClass, ok := ingAnnotations[acmeIssuerHTTP01IngressClassAnnotation]
