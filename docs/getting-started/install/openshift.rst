@@ -24,8 +24,8 @@ is configured to talk to your OpenShift cluster using the ``oc`` tool.
 
 .. code-block:: shell
 
-    # Login to the OpenShift cluster
-    oc login
+    # Login to the OpenShift cluster as the system:admin user
+    oc login -u system:admin
 
 Installing with regular manifests
 =================================
