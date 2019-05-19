@@ -191,6 +191,7 @@ func (c *Controller) buildCertificates(ing *extv1beta1.Ingress, issuer v1alpha1.
 			updateCrt.Spec.SecretName = tls.SecretName
 			updateCrt.Spec.IssuerRef.Name = issuer.GetObjectMeta().Name
 			updateCrt.Spec.IssuerRef.Kind = issuerKind
+			updateCrt.Labels = ing.Labels
 			err = c.setIssuerSpecificConfig(updateCrt, issuer, ing, tls)
 			if err != nil {
 				return nil, nil, err
@@ -206,6 +207,14 @@ func (c *Controller) buildCertificates(ing *extv1beta1.Ingress, issuer v1alpha1.
 // certNeedsUpdate checks and returns true if two Certificates differ
 func certNeedsUpdate(a, b *v1alpha1.Certificate) bool {
 	if a.Name != b.Name {
+		return true
+	}
+
+	// TODO: we may need to allow users to edit the managed Certificate resources
+	// to add their own labels directly.
+	// Right now, we'll reset/remove the label values back automatically.
+	// Let's hope no other controllers do this automatically, else we'll start fighting...
+	if !reflect.DeepEqual(a.Labels, b.Labels) {
 		return true
 	}
 

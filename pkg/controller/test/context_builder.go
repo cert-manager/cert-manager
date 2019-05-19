@@ -99,15 +99,19 @@ func (b *Builder) Start() {
 	// read all events out of the recorder and just log for now
 	// TODO: validate logged events
 	go func() {
-		r, ok := b.Recorder.(*record.FakeRecorder)
-		if !ok {
-			return
-		}
+		// Skip logging event messages due to a race/timing issue in the test
+		// framework that needs investigating, where log is called after the
+		// test has finished
+
+		//r, ok := b.Recorder.(*record.FakeRecorder)
+		//if !ok {
+		//	return
+		//}
 
 		// exits when r.Events is closed in Finish
-		for e := range r.Events {
-			b.logf("Event logged: %v", e)
-		}
+		//for e := range r.Events {
+		//	b.logf("Event logged: %v", e)
+		//}
 	}()
 
 	b.FakeKubeClient().PrependReactor("create", "*", b.generateNameReactor)
