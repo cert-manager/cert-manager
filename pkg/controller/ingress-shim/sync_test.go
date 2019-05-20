@@ -85,6 +85,8 @@ func TestShouldSync(t *testing.T) {
 
 func TestSync(t *testing.T) {
 	clusterIssuer := gen.ClusterIssuer("issuer-name")
+	acmeIssuerNewFormat := gen.Issuer("issuer-name",
+		gen.SetIssuerACME(v1alpha1.ACMEIssuer{}))
 	acmeIssuer := gen.Issuer("issuer-name",
 		gen.SetIssuerACME(v1alpha1.ACMEIssuer{
 			HTTP01: &v1alpha1.ACMEIssuerHTTP01Config{},
@@ -116,6 +118,9 @@ func TestSync(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "ingress-name",
 					Namespace: gen.DefaultTestNamespace,
+					Labels: map[string]string{
+						"my-test-label": "should be copied",
+					},
 					Annotations: map[string]string{
 						clusterIssuerNameAnnotation:       "issuer-name",
 						acmeIssuerChallengeTypeAnnotation: "http01",
@@ -135,8 +140,11 @@ func TestSync(t *testing.T) {
 			ExpectedCreate: []*v1alpha1.Certificate{
 				{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:            "example-com-tls",
-						Namespace:       gen.DefaultTestNamespace,
+						Name:      "example-com-tls",
+						Namespace: gen.DefaultTestNamespace,
+						Labels: map[string]string{
+							"my-test-label": "should be copied",
+						},
 						OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(buildIngress("ingress-name", gen.DefaultTestNamespace, nil), ingressGVK)},
 					},
 					Spec: v1alpha1.CertificateSpec{
@@ -860,6 +868,69 @@ func TestSync(t *testing.T) {
 									},
 								},
 							},
+						},
+					},
+				},
+			},
+		},
+		{
+			Name:         "should update an existing Certificate resource with new labels if they do not match those specified on the Ingress",
+			Issuer:       acmeIssuer,
+			IssuerLister: []runtime.Object{acmeIssuerNewFormat},
+			Ingress: &extv1beta1.Ingress{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "ingress-name",
+					Namespace: gen.DefaultTestNamespace,
+					Labels: map[string]string{
+						"my-test-label": "should be copied",
+					},
+					Annotations: map[string]string{
+						issuerNameAnnotation: "issuer-name",
+					},
+				},
+				Spec: extv1beta1.IngressSpec{
+					TLS: []extv1beta1.IngressTLS{
+						{
+							Hosts:      []string{"example.com"},
+							SecretName: "cert-secret-name",
+						},
+					},
+				},
+			},
+			CertificateLister: []runtime.Object{
+				&v1alpha1.Certificate{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "cert-secret-name",
+						Namespace: gen.DefaultTestNamespace,
+						Labels: map[string]string{
+							"a-different-value": "should be removed",
+						},
+					},
+					Spec: v1alpha1.CertificateSpec{
+						DNSNames:   []string{"example.com"},
+						SecretName: "cert-secret-name",
+						IssuerRef: v1alpha1.ObjectReference{
+							Name: "issuer-name",
+							Kind: "Issuer",
+						},
+					},
+				},
+			},
+			ExpectedUpdate: []*v1alpha1.Certificate{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "cert-secret-name",
+						Namespace: gen.DefaultTestNamespace,
+						Labels: map[string]string{
+							"my-test-label": "should be copied",
+						},
+					},
+					Spec: v1alpha1.CertificateSpec{
+						DNSNames:   []string{"example.com"},
+						SecretName: "cert-secret-name",
+						IssuerRef: v1alpha1.ObjectReference{
+							Name: "issuer-name",
+							Kind: "Issuer",
 						},
 					},
 				},
