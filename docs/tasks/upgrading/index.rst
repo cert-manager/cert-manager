@@ -90,6 +90,8 @@ version number you want to install:
    upgrading-0.3-0.4
    upgrading-0.4-0.5
    upgrading-0.5-0.6
+   upgrading-0.6-0.7
+   upgrading-0.7-0.8
 
 .. _`official Helm charts repository`: https://hub.helm.sh/charts/jetstack
 .. _`static deployment manifests`: https://github.com/jetstack/cert-manager/blob/release-0.8/deploy/manifests
