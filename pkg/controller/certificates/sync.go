@@ -115,9 +115,10 @@ func (c *Controller) Sync(ctx context.Context, crt *v1alpha1.Certificate) (err e
 	}
 	hasDuplicate := false
 	for _, otherCrt := range otherCrts {
-		hasDuplicate = hasDuplicate ||
-			(otherCrt.Name != crtCopy.Name &&
-				otherCrt.Spec.SecretName == crtCopy.Spec.SecretName)
+		if otherCrt.Name != crtCopy.Name && otherCrt.Spec.SecretName == crtCopy.Spec.SecretName {
+			hasDuplicate = true
+			break
+		}
 	}
 	if hasDuplicate {
 		c.Recorder.Eventf(crtCopy, corev1.EventTypeWarning, errorDuplicateSecretName, "Duplicate secretName %v", crtCopy.Spec.SecretName)
