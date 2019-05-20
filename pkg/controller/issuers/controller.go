@@ -33,7 +33,6 @@ import (
 	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
 	"github.com/jetstack/cert-manager/pkg/issuer"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
-	"github.com/jetstack/cert-manager/pkg/metrics"
 )
 
 type Controller struct {
@@ -50,7 +49,6 @@ type Controller struct {
 
 	watchedInformers []cache.InformerSynced
 	queue            workqueue.RateLimitingInterface
-	metrics          *metrics.Metrics
 }
 
 func New(ctx *controllerpkg.Context) *Controller {
@@ -72,7 +70,6 @@ func New(ctx *controllerpkg.Context) *Controller {
 	ctrl.secretLister = secretsInformer.Lister()
 	ctrl.issuerFactory = issuer.NewIssuerFactory(ctx)
 	ctrl.ctx = logf.NewContext(ctx.RootContext, nil, ControllerName)
-	ctrl.metrics = metrics.Default
 
 	return ctrl
 }

@@ -195,3 +195,9 @@ func updateX509Expiry(name, namespace string, cert *x509.Certificate) {
 		"name":      name,
 		"namespace": namespace}).Set(float64(expiryTime.Unix()))
 }
+
+func (m *Metrics) IncrementSyncCallCount(controllerName string) {
+	log := logf.FromContext(m.ctx)
+	log.V(logf.DebugLevel).Info("incrementing controller sync call count", "controllerName", controllerName)
+	ControllerSyncCallCount.WithLabelValues(controllerName).Inc()
+}

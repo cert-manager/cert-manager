@@ -33,6 +33,7 @@ import (
 	"github.com/jetstack/cert-manager/pkg/acme"
 	acmecl "github.com/jetstack/cert-manager/pkg/acme/client"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	"github.com/jetstack/cert-manager/pkg/metrics"
 	acmeapi "github.com/jetstack/cert-manager/third_party/crypto/acme"
 	"k8s.io/klog"
 )
@@ -48,7 +49,7 @@ var (
 // - create a Challenge resource in order to fulfill required validations
 // - waiting for Challenge resources to enter the 'ready' state
 func (c *Controller) Sync(ctx context.Context, o *cmapi.Order) (err error) {
-	c.metrics.ControllerSyncCallCount.WithLabelValues(ControllerName).Inc()
+	metrics.Default.IncrementSyncCallCount(ControllerName)
 
 	oldOrder := o
 	o = o.DeepCopy()

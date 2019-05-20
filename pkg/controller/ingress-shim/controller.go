@@ -38,7 +38,6 @@ import (
 	cmlisters "github.com/jetstack/cert-manager/pkg/client/listers/certmanager/v1alpha1"
 	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
 	"github.com/jetstack/cert-manager/pkg/issuer"
-	"github.com/jetstack/cert-manager/pkg/metrics"
 	"github.com/jetstack/cert-manager/pkg/util"
 	extinformers "k8s.io/client-go/informers/extensions/v1beta1"
 )
@@ -73,7 +72,6 @@ type Controller struct {
 	workerWg    sync.WaitGroup
 	syncedFuncs []cache.InformerSynced
 	defaults    defaults
-	metrics     *metrics.Metrics
 }
 
 // New returns a new Certificates controller. It sets up the informer handler
@@ -109,7 +107,6 @@ func New(
 	}
 
 	ctrl.helper = issuer.NewHelper(ctrl.issuerLister, ctrl.clusterIssuerLister)
-	ctrl.metrics = metrics.Default
 
 	return ctrl
 }

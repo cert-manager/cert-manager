@@ -28,6 +28,7 @@ import (
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/validation"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
+	"github.com/jetstack/cert-manager/pkg/metrics"
 )
 
 const (
@@ -38,7 +39,7 @@ const (
 )
 
 func (c *Controller) Sync(ctx context.Context, iss *v1alpha1.ClusterIssuer) (err error) {
-	c.metrics.ControllerSyncCallCount.WithLabelValues(ControllerName).Inc()
+	metrics.Default.IncrementSyncCallCount(ControllerName)
 
 	log := logf.FromContext(ctx)
 

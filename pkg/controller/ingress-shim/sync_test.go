@@ -28,7 +28,6 @@ import (
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	testpkg "github.com/jetstack/cert-manager/pkg/controller/test"
-	"github.com/jetstack/cert-manager/pkg/metrics"
 	"github.com/jetstack/cert-manager/test/unit/gen"
 )
 
@@ -911,8 +910,7 @@ func TestSync(t *testing.T) {
 					issuerKind:                 test.DefaultIssuerKind,
 					autoCertificateAnnotations: []string{testAcmeTLSAnnotation},
 				},
-				helper:  &fakeHelper{issuer: test.Issuer},
-				metrics: metrics.Default,
+				helper: &fakeHelper{issuer: test.Issuer},
 			}
 			b.Sync()
 
