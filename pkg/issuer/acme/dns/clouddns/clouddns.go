@@ -217,7 +217,13 @@ func (c *DNSProvider) getHostedZone(domain string) (string, error) {
 		return "", fmt.Errorf("No matching GoogleCloud domain found for domain %s", authZone)
 	}
 
-	return zones.ManagedZones[0].Name, nil
+	for _, zone := range zones.ManagedZones {
+		if zone.Visibility == "public" {
+			return zone.Name, nil
+		}
+	}
+
+	return "", fmt.Errorf("No matching public GoogleCloud managed-zone found for domain %s", authZone)
 }
 
 func (c *DNSProvider) findTxtRecords(zone, fqdn string) ([]*dns.ResourceRecordSet, error) {
