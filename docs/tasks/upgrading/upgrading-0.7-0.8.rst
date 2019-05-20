@@ -24,7 +24,7 @@ Issuer and Certificate resources to the :doc:`new format </tasks/issuers/setup-a
 We will be removing support for the old format ahead of the 1.0 release.
 
 The documentation has been updated to reflect configuring using the new format,
-and as such, exhaustive information can be found in the :doc:`</tasks/issuers/setup-acme/index>`
+and as such, exhaustive information can be found in the :doc:`/tasks/issuers/setup-acme/index`
 document.
 
 Performing an incremental switch to the new format
@@ -280,4 +280,4 @@ new solver entry per Ingress resource they want to use to solve challenges, or
 otherwise continue to use the **old format** until a suitable alternative
 appears in v0.9.
 
-.. _known issue: TODO
+.. _known issue: https://github.com/jetstack/cert-manager/issues/1666
