@@ -917,6 +917,7 @@ func TestSync(t *testing.T) {
 					Annotations: map[string]string{
 						issuerNameAnnotation: "issuer-name",
 					},
+					UID: types.UID("ingress-name"),
 				},
 				Spec: extv1beta1.IngressSpec{
 					TLS: []extv1beta1.IngressTLS{
@@ -935,6 +936,7 @@ func TestSync(t *testing.T) {
 						Labels: map[string]string{
 							"a-different-value": "should be removed",
 						},
+						OwnerReferences: buildOwnerReferences("ingress-name", gen.DefaultTestNamespace),
 					},
 					Spec: v1alpha1.CertificateSpec{
 						DNSNames:   []string{"example.com"},
@@ -954,6 +956,7 @@ func TestSync(t *testing.T) {
 						Labels: map[string]string{
 							"my-test-label": "should be copied",
 						},
+						OwnerReferences: buildOwnerReferences("ingress-name", gen.DefaultTestNamespace),
 					},
 					Spec: v1alpha1.CertificateSpec{
 						DNSNames:   []string{"example.com"},
