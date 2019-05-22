@@ -26,6 +26,8 @@ import (
 	"fmt"
 	"math/big"
 	"net"
+	"net/url"
+	"strings"
 	"time"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
@@ -46,16 +48,43 @@ func CommonNameForCertificate(crt *v1alpha1.Certificate) string {
 // DNSNamesForCertificate returns the DNS names that should be used for the
 // given Certificate resource, by inspecting the CommonName and DNSNames fields.
 func DNSNamesForCertificate(crt *v1alpha1.Certificate) []string {
-	if len(crt.Spec.DNSNames) == 0 {
-		if crt.Spec.CommonName == "" {
-			return []string{}
+	if crt.Spec.CommonName != "" && !crt.Spec.ExcludeCommonNameFromSANs {
+		return removeDuplicates(append(crt.Spec.DNSNames, crt.Spec.CommonName))
+	} else {
+		return crt.Spec.DNSNames
+	}
+}
+
+// EMailAddressesForCertificate returns the EMail Addresses that should be used for the
+// given Certificate resource, by inspecting the CommonName and EmailAddresses fields.
+func EMailAddressesForCertificate(crt *v1alpha1.Certificate) []string {
+	var emailSANFromCommonName string
+	if strings.Contains(crt.Spec.CommonName, "@") {
+		emailSANFromCommonName = crt.Spec.CommonName
+	} else {
+		emailSANFromCommonName = ""
+	}
+
+	if emailSANFromCommonName != "" && !crt.Spec.ExcludeCommonNameFromSANs {
+		return removeDuplicates(append(crt.Spec.EmailAddresses, emailSANFromCommonName))
+	} else {
+		return crt.Spec.EmailAddresses
+	}
+}
+
+// URIsForCertificate returns the URIs that should be used for the
+// given Certificate resource, for now just re-using whatever is in the CertificateSpec.
+func URIsForCertificate(crt *v1alpha1.Certificate) []*url.URL {
+	var uris []*url.URL
+	var uri *url.URL
+	var err error
+	for _, uriString := range crt.Spec.URIs {
+		uri, err = url.Parse(uriString)
+		if err != nil {
+			uris = append(uris, uri)
 		}
-		return []string{crt.Spec.CommonName}
 	}
-	if crt.Spec.CommonName != "" {
-		return removeDuplicates(append([]string{crt.Spec.CommonName}, crt.Spec.DNSNames...))
-	}
-	return crt.Spec.DNSNames
+	return uris
 }
 
 func IPAddressesForCertificate(crt *v1alpha1.Certificate) []net.IP {
@@ -76,6 +105,14 @@ func IPAddressesToString(ipAddresses []net.IP) []string {
 		ipNames = append(ipNames, ip.String())
 	}
 	return ipNames
+}
+
+func URIsToString(uris []*url.URL) []string {
+	var uriNames []string
+	for _, uri := range uris {
+		uriNames = append(uriNames, uri.String())
+	}
+	return uriNames
 }
 
 func removeDuplicates(in []string) []string {
@@ -115,6 +152,8 @@ func GenerateCSR(issuer v1alpha1.GenericIssuer, crt *v1alpha1.Certificate) (*x50
 	commonName := CommonNameForCertificate(crt)
 	dnsNames := DNSNamesForCertificate(crt)
 	iPAddresses := IPAddressesForCertificate(crt)
+	emailAddresses := EMailAddressesForCertificate(crt)
+	uris := URIsForCertificate(crt)
 	organization := OrganizationForCertificate(crt)
 
 	if len(commonName) == 0 && len(dnsNames) == 0 {
@@ -134,8 +173,10 @@ func GenerateCSR(issuer v1alpha1.GenericIssuer, crt *v1alpha1.Certificate) (*x50
 			Organization: organization,
 			CommonName:   commonName,
 		},
-		DNSNames:    dnsNames,
-		IPAddresses: iPAddresses,
+		DNSNames:       dnsNames,
+		IPAddresses:    iPAddresses,
+		EmailAddresses: emailAddresses,
+		URIs:           uris,
 		// TODO: work out how best to handle extensions/key usages here
 		ExtraExtensions: []pkix.Extension{},
 	}, nil

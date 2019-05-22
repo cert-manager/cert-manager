@@ -645,6 +645,16 @@ func (in *CertificateSpec) DeepCopyInto(out *CertificateSpec) {
 		*out = make([]string, len(*in))
 		copy(*out, *in)
 	}
+	if in.EmailAddresses != nil {
+		in, out := &in.EmailAddresses, &out.EmailAddresses
+		*out = make([]string, len(*in))
+		copy(*out, *in)
+	}
+	if in.URIs != nil {
+		in, out := &in.URIs, &out.URIs
+		*out = make([]string, len(*in))
+		copy(*out, *in)
+	}
 	out.IssuerRef = in.IssuerRef
 	if in.ACME != nil {
 		in, out := &in.ACME, &out.ACME

@@ -237,6 +237,17 @@ func (c *Controller) certificateMatchesSpec(crt *v1alpha1.Certificate, key crypt
 		errs = append(errs, fmt.Sprintf("DNS names on TLS certificate not up to date: %q", cert.DNSNames))
 	}
 
+	// validate the email SANs are correct
+	expectedEmailAddresses := pki.EMailAddressesForCertificate(crt)
+	if !util.EqualUnsorted(cert.EmailAddresses, expectedEmailAddresses) {
+		errs = append(errs, fmt.Sprintf("Email SANs on TLS certificate not up to date: %q", cert.EmailAddresses))
+	}
+
+	// validate the URI SANs are correct
+	if !util.EqualUnsorted(pki.URIsToString(cert.URIs), crt.Spec.URIs) {
+		errs = append(errs, fmt.Sprintf("URI SANs on TLS certificate not up to date: %q", cert.URIs))
+	}
+
 	// validate the ip addresses are correct
 	if !util.EqualUnsorted(pki.IPAddressesToString(cert.IPAddresses), crt.Spec.IPAddresses) {
 		errs = append(errs, fmt.Sprintf("IP addresses on TLS certificate not up to date: %q", pki.IPAddressesToString(cert.IPAddresses)))
