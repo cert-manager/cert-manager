@@ -156,7 +156,8 @@ func (c *Chart) runInstall() error {
 	args := []string{"install", c.ChartName,
 		"--wait",
 		"--namespace", c.Namespace,
-		"--name", c.ReleaseName}
+		"--name", c.ReleaseName,
+		"--version", c.ChartVersion}
 
 	for _, v := range c.Values {
 		args = append(args, "--values", v)
