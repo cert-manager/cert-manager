@@ -187,7 +187,7 @@ func (c *Controller) Sync(ctx context.Context, ch *cmapi.Challenge) (err error) 
 		}
 
 		// retry after 10s
-		c.queue.AddAfter(key, time.Second*10)
+		c.BaseController.Queue.AddAfter(key, time.Second*10)
 
 		return nil
 	}

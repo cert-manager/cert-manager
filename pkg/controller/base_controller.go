@@ -65,7 +65,7 @@ func (bctrl *BaseController) AddWatched(informers ...cache.SharedIndexInformer) 
 	}
 }
 
-func (bc *BaseController) Run(workers int, stopCh <-chan struct{}) error {
+func (bc *BaseController) RunWith(function func(context.Context), duration time.Duration, workers int, stopCh <-chan struct{}) error {
 	ctx, cancel := context.WithCancel(bc.Ctx)
 	defer cancel()
 	log := logf.FromContext(ctx)
@@ -86,6 +86,11 @@ func (bc *BaseController) Run(workers int, stopCh <-chan struct{}) error {
 			bc.worker(ctx)
 		}, time.Second, stopCh)
 	}
+
+	if function != nil {
+		go wait.Until(func() { function(ctx) }, duration, stopCh)
+	}
+
 	<-stopCh
 	log.Info("shutting down queue as workqueue signaled shutdown")
 	bc.Queue.ShutDown()
@@ -93,6 +98,10 @@ func (bc *BaseController) Run(workers int, stopCh <-chan struct{}) error {
 	wg.Wait()
 	log.V(logf.DebugLevel).Info("workers exited")
 	return nil
+}
+
+func (bc *BaseController) Run(workers int, stopCh <-chan struct{}) error {
+	return bc.RunWith(nil, 0, workers, stopCh)
 }
 
 func (bc *BaseController) worker(ctx context.Context) {

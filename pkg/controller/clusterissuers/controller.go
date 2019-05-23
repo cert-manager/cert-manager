@@ -18,16 +18,11 @@ package clusterissuers
 
 import (
 	"context"
-	"fmt"
-	"sync"
-	"time"
 
 	corev1 "k8s.io/api/core/v1"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/util/wait"
 	corelisters "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/tools/cache"
-	"k8s.io/client-go/util/workqueue"
 
 	cmlisters "github.com/jetstack/cert-manager/pkg/client/listers/certmanager/v1alpha1"
 	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
@@ -36,43 +31,35 @@ import (
 )
 
 type Controller struct {
-	ctx context.Context
-	controllerpkg.Context
-	issuerFactory issuer.IssuerFactory
+	*controllerpkg.BaseController
 
-	// To allow injection for testing.
-	syncHandler func(ctx context.Context, key string) error
+	issuerFactory issuer.IssuerFactory
 
 	clusterIssuerLister cmlisters.ClusterIssuerLister
 	secretLister        corelisters.SecretLister
-
-	watchedInformers []cache.InformerSynced
-	queue            workqueue.RateLimitingInterface
 }
 
 func New(ctx *controllerpkg.Context) *Controller {
-	ctrl := &Controller{Context: *ctx}
-	ctrl.syncHandler = ctrl.processNextWorkItem
-	ctrl.queue = workqueue.NewNamedRateLimitingQueue(controllerpkg.DefaultItemBasedRateLimiter(), "clusterissuers")
+	ctrl := &Controller{}
+	bctrl := controllerpkg.New(ctx, ControllerName, ctrl.processNextWorkItem)
 
-	clusterIssuerInformer := ctrl.SharedInformerFactory.Certmanager().V1alpha1().ClusterIssuers()
-	clusterIssuerInformer.Informer().AddEventHandler(&controllerpkg.QueuingEventHandler{Queue: ctrl.queue})
-	ctrl.watchedInformers = append(ctrl.watchedInformers, clusterIssuerInformer.Informer().HasSynced)
+	clusterIssuerInformer := ctx.SharedInformerFactory.Certmanager().V1alpha1().ClusterIssuers()
+	bctrl.AddQueuing(controllerpkg.DefaultItemBasedRateLimiter(), "clusterissuers", clusterIssuerInformer.Informer())
 	ctrl.clusterIssuerLister = clusterIssuerInformer.Lister()
 
-	secretsInformer := ctrl.KubeSharedInformerFactory.Core().V1().Secrets()
-	secretsInformer.Informer().AddEventHandler(&controllerpkg.BlockingEventHandler{WorkFunc: ctrl.secretDeleted})
-	ctrl.watchedInformers = append(ctrl.watchedInformers, secretsInformer.Informer().HasSynced)
+	secretsInformer := ctx.KubeSharedInformerFactory.Core().V1().Secrets()
+	bctrl.AddHandled(secretsInformer.Informer(), &controllerpkg.BlockingEventHandler{WorkFunc: ctrl.secretDeleted})
 	ctrl.secretLister = secretsInformer.Lister()
+
+	ctrl.BaseController = bctrl
 	ctrl.issuerFactory = issuer.NewIssuerFactory(ctx)
-	ctrl.ctx = logf.NewContext(ctx.RootContext, nil, ControllerName)
 
 	return ctrl
 }
 
 // TODO: replace with generic handleObjet function (like Navigator)
 func (c *Controller) secretDeleted(obj interface{}) {
-	log := logf.FromContext(c.ctx, "secretDeleted")
+	log := logf.FromContext(c.BaseController.Ctx, "secretDeleted")
 
 	var secret *corev1.Secret
 	var ok bool
@@ -95,69 +82,8 @@ func (c *Controller) secretDeleted(obj interface{}) {
 			log.Error(err, "error computing key for resource")
 			continue
 		}
-		c.queue.AddRateLimited(key)
+		c.BaseController.Queue.AddRateLimited(key)
 	}
-}
-
-func (c *Controller) Run(workers int, stopCh <-chan struct{}) error {
-	ctx, cancel := context.WithCancel(c.ctx)
-	defer cancel()
-	log := logf.FromContext(ctx)
-
-	log.Info("starting control loop")
-	// wait for all the informer caches we depend on are synced
-	if !cache.WaitForCacheSync(stopCh, c.watchedInformers...) {
-		// TODO: replace with Errorf call to glog
-		return fmt.Errorf("error waiting for informer caches to sync")
-	}
-
-	var wg sync.WaitGroup
-	for i := 0; i < workers; i++ {
-		wg.Add(1)
-		// TODO (@munnerz): make time.Second duration configurable
-		go wait.Until(func() {
-			defer wg.Done()
-			c.worker(ctx)
-		}, time.Second, stopCh)
-	}
-	<-stopCh
-	log.V(logf.DebugLevel).Info("shutting down queue as workqueue signaled shutdown")
-	c.queue.ShutDown()
-	log.V(logf.DebugLevel).Info("waiting for workers to exit...")
-	wg.Wait()
-	log.V(logf.DebugLevel).Info("workers exited.")
-	return nil
-}
-
-func (c *Controller) worker(ctx context.Context) {
-	log := logf.FromContext(ctx)
-	log.V(logf.DebugLevel).Info("starting worker")
-	for {
-		obj, shutdown := c.queue.Get()
-		if shutdown {
-			break
-		}
-
-		var key string
-		// use an inlined function so we can use defer
-		func() {
-			defer c.queue.Done(obj)
-			var ok bool
-			if key, ok = obj.(string); !ok {
-				return
-			}
-			log := log.WithValues("key", key)
-			log.Info("syncing resource")
-			if err := c.syncHandler(ctx, key); err != nil {
-				log.Error(err, "re-queuing item  due to error processing")
-				c.queue.AddRateLimited(obj)
-				return
-			}
-			log.Info("finished processing work item")
-			c.queue.Forget(obj)
-		}()
-	}
-	log.V(logf.DebugLevel).Info("exiting worker loop")
 }
 
 func (c *Controller) processNextWorkItem(ctx context.Context, key string) error {
@@ -191,6 +117,6 @@ const (
 
 func init() {
 	controllerpkg.Register(ControllerName, func(ctx *controllerpkg.Context) (controllerpkg.Interface, error) {
-		return New(ctx).Run, nil
+		return New(ctx).BaseController.Run, nil
 	})
 }
