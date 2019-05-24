@@ -161,7 +161,10 @@ Create a file named ``cluster-issuer.yaml``:
        privateKeySecretRef:
          name: letsencrypt-private-key
        # Enable the HTTP-01 challenge provider
-       http01: {}
+       solvers:
+       - http01:
+           ingress:
+             class: nginx
 
 We then submit this file to our Kubernetes cluster:
 
@@ -172,35 +175,14 @@ We then submit this file to our Kubernetes cluster:
 You should be able to verify the ACME account has been verified successfully:
 
 .. code-block:: shell
-   :emphasize-lines: 26-31
 
    $ kubectl describe clusterissuer letsencrypt-staging
-   Name:         letsencrypt-staging
-   Namespace:
-   Labels:       <none>
-   Annotations:  <none>
-   API Version:  certmanager.k8s.io/v1alpha1
-   Kind:         ClusterIssuer
-   Metadata:
-     Cluster Name:
-     Creation Timestamp:  2017-11-30T22:33:40Z
-     Generation:          0
-     Resource Version:    4450170
-     Self Link:           /apis/certmanager.k8s.io/v1alpha1/letsencrypt-staging
-     UID:                 83d04e6b-d61e-11e7-ac26-42010a840044
-   Spec:
-     Acme:
-       Email:  user@example.com
-       Http 01:
-       Private Key Secret Ref:
-         Key:
-         Name:  letsencrypt-private-key
-       Server:  https://acme-staging-v02.api.letsencrypt.org/directory
+   ...
    Status:
      Acme:
-       Uri:  https://acme-staging-v02.api.letsencrypt.org/acme/acct/11217539
+       Uri:  https://acme-staging-v02.api.letsencrypt.org/acme/acct/7571319
      Conditions:
-       Last Transition Time:  2018-04-12T17:32:30Z
+       Last Transition Time:  2019-01-30T14:52:03Z
        Message:               The ACME account was registered with the ACME server
        Reason:                ACMEAccountRegistered
        Status:                True
