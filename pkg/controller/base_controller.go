@@ -41,6 +41,7 @@ type BaseController struct {
 	Queue            workqueue.RateLimitingInterface
 }
 
+// New creates a basic BaseController, setting the sync call to the one given
 func New(ctx *Context, controllerName string, syncHandler func(ctx context.Context, key string) error) *BaseController {
 	bctrl := &BaseController{Context: ctx}
 	bctrl.syncHandler = syncHandler
@@ -48,23 +49,29 @@ func New(ctx *Context, controllerName string, syncHandler func(ctx context.Conte
 	return bctrl
 }
 
+// AddQueuing adds the Queue field onto the BaseController, sets the informer
+// to manage the queue, and sets the informer to be watched
 func (bctrl *BaseController) AddQueuing(rateLimiter workqueue.RateLimiter, name string, informer cache.SharedIndexInformer) {
 	bctrl.Queue = workqueue.NewNamedRateLimitingQueue(rateLimiter, name)
 	informer.AddEventHandler(&QueuingEventHandler{Queue: bctrl.Queue})
 	bctrl.watchedInformers = append(bctrl.watchedInformers, informer.HasSynced)
 }
 
+// AddHandled links an event handler to an informer, and sets the informer
+// to be watched
 func (bctrl *BaseController) AddHandled(informer cache.SharedIndexInformer, handler cache.ResourceEventHandler) {
 	informer.AddEventHandler(handler)
 	bctrl.watchedInformers = append(bctrl.watchedInformers, informer.HasSynced)
 }
 
+// AddWatched sets all informers to be watched
 func (bctrl *BaseController) AddWatched(informers ...cache.SharedIndexInformer) {
 	for _, informer := range informers {
 		bctrl.watchedInformers = append(bctrl.watchedInformers, informer.HasSynced)
 	}
 }
 
+// RunWith starts the controller loop, with an additional function to run alongside the loop
 func (bc *BaseController) RunWith(function func(context.Context), duration time.Duration, workers int, stopCh <-chan struct{}) error {
 	ctx, cancel := context.WithCancel(bc.Ctx)
 	defer cancel()
@@ -100,6 +107,7 @@ func (bc *BaseController) RunWith(function func(context.Context), duration time.
 	return nil
 }
 
+// Run starts the controller loop
 func (bc *BaseController) Run(workers int, stopCh <-chan struct{}) error {
 	return bc.RunWith(nil, 0, workers, stopCh)
 }
