@@ -113,17 +113,18 @@ func (c *Controller) Sync(ctx context.Context, crt *v1alpha1.Certificate) (err e
 	if err != nil {
 		return err
 	}
-	hasDuplicate := false
+	var duplicate *v1alpha1.Certificate
 	for _, otherCrt := range otherCrts {
 		if otherCrt.Name != crtCopy.Name && otherCrt.Spec.SecretName == crtCopy.Spec.SecretName {
-			hasDuplicate = true
+			duplicate = otherCrt
 			break
 		}
 	}
-	if hasDuplicate {
-		c.Recorder.Eventf(crtCopy, corev1.EventTypeWarning, errorDuplicateSecretName, "Duplicate secretName %v", crtCopy.Spec.SecretName)
+	if duplicate != nil {
+		c.Recorder.Eventf(crtCopy, corev1.EventTypeWarning, errorDuplicateSecretName, "Another Certificate %v already specifies spec.secretName %v, please update the secretName on either Certificate", duplicate.Name, crtCopy.Spec.SecretName)
 		key, err := cache.MetaNamespaceKeyFunc(crtCopy)
 		if err != nil {
+			c.Recorder.Eventf(crtCopy, corev1.EventTypeWarning, "KeyError", "Failed to create a key for the Certificate: %v", err)
 			return nil
 		}
 		c.scheduledWorkQueue.Forget(key)
