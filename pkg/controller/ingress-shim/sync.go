@@ -233,6 +233,7 @@ func (c *Controller) buildCertificates(ing *extv1beta1.Ingress, issuer v1alpha1.
 
 func (c *Controller) findUnrequiredCertificates(ing *extv1beta1.Ingress) ([]*v1alpha1.Certificate, error) {
 	var unrequired []*v1alpha1.Certificate
+	// TODO: investigate selector which filters for certificates controlled by the ingress
 	crts, err := c.certificateLister.Certificates(ing.Namespace).List(labels.Everything())
 	if err != nil {
 		return nil, err
