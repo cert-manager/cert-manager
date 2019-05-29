@@ -83,7 +83,7 @@ Once an Issuer (or ClusterIssuer) has been created successfully a Certificate ca
      secretName: example-com-tls
      issuerRef:
        # The issuer created previously
-       name: letsencrypt-staging
+       name: example-issuer
      commonName: example.com
      dnsNames:
      - example.com
