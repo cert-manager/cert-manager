@@ -145,7 +145,7 @@ func (r *genericInjectReconciler) Reconcile(req ctrl.Request) (ctrl.Result, erro
 	target := r.injector.NewTarget()
 	if err := r.Client.Get(ctx, req.NamespacedName, target.AsObject()); err != nil {
 		log.Error(err, "unable to fetch target object to inject into")
-		return ctrl.Result{}, err
+		return ctrl.Result{}, dropNotFound(err)
 	}
 
 	// ensure that it wants injection

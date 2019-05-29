@@ -56,7 +56,13 @@ var (
 		listType:     &apireg.APIServiceList{},
 	}
 
-	injectorSetups  = []injectorSetup{MutatingWebhookSetup, ValidatingWebhookSetup, APIServiceSetup}
+	SecretSetup = injectorSetup{
+		resourceName: "secret",
+		injector:     secretInjector{},
+		listType:     &corev1.SecretList{},
+	}
+
+	injectorSetups  = []injectorSetup{MutatingWebhookSetup, ValidatingWebhookSetup, APIServiceSetup, SecretSetup}
 	ControllerNames []string
 )
 

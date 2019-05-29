@@ -17,7 +17,9 @@ limitations under the License.
 package cainjector
 
 import (
+	certctrl "github.com/jetstack/cert-manager/pkg/controller/certificates"
 	admissionreg "k8s.io/api/admissionregistration/v1beta1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	apireg "k8s.io/kube-aggregator/pkg/apis/apiregistration/v1beta1"
 )
@@ -90,6 +92,29 @@ func (t *apiServiceTarget) AsObject() runtime.Object {
 }
 func (t *apiServiceTarget) SetCA(data []byte) {
 	t.obj.Spec.CABundle = data
+}
+
+// secretInjector knows how to create an InjectTarget for TLS Secrets
+type secretInjector struct{}
+
+func (i secretInjector) NewTarget() InjectTarget {
+	return &secretTarget{}
+}
+
+// secretTarget knows how to set CA data for the CA bundle in a TLS Secret.
+type secretTarget struct {
+	obj corev1.Secret
+}
+
+func (t *secretTarget) AsObject() runtime.Object {
+	return &t.obj
+}
+
+func (t *secretTarget) SetCA(data []byte) {
+	if t.obj.Data == nil {
+		t.obj.Data = make(map[string][]byte)
+	}
+	t.obj.Data[certctrl.TLSCAKey] = data
 }
 
 // TODO(directxman12): conversion webhooks
