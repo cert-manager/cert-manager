@@ -495,6 +495,7 @@ func determineSolverConfigToUse(candidates []cmapi.ACMEChallengeSolver, authz *a
 			if len(d.Selector.MatchLabels) > matchAllDomainsNumLabels || matchAll == nil {
 				matchAll = &d
 				matchAllToSolve = acmech
+				matchAllDomainsNumLabels = len(d.Selector.MatchLabels)
 			}
 		}
 		for _, dom := range d.Selector.DNSNames {
@@ -504,6 +505,7 @@ func determineSolverConfigToUse(candidates []cmapi.ACMEChallengeSolver, authz *a
 			if len(d.Selector.MatchLabels) > numLabelsSpecificMatch || specificMatch == nil {
 				specificMatch = &d
 				specificMatchToSolve = acmech
+				numLabelsSpecificMatch = len(d.Selector.MatchLabels)
 				break
 			}
 		}
