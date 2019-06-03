@@ -354,17 +354,24 @@ install cert-manager. This example installed cert-manager into the
     # chart in the next step for `release-0.8` of cert-manager:
     $ kubectl apply -f https://raw.githubusercontent.com/jetstack/cert-manager/release-0.8/deploy/manifests/00-crds.yaml
 
-    ## IMPORTANT: if the cert-manager namespace **already exists**, you MUST ensure
-    ## it has an additional label on it in order for the deployment to succeed
-    $ kubectl label namespace cert-manager certmanager.k8s.io/disable-validation="true"
+    # Create the namespace for cert-manager
+    $ kubectl create namespace cert-manager
+
+    # Label the cert-manager namespace to disable resource validation
+    $ kubectl label namespace cert-manager certmanager.k8s.io/disable-validation=true
 
     ## Add the Jetstack Helm repository
     $ helm repo add jetstack https://charts.jetstack.io
+    
     ## Updating the repo just incase it already existed
     $ helm repo update
 
     ## Install the cert-manager helm chart
-    $ helm install --name cert-manager --namespace cert-manager jetstack/cert-manager
+    $ helm install \
+      --name cert-manager \
+      --namespace cert-manager \
+      --version v0.8.0 \
+      jetstack/cert-manager
    
     NAME:   cert-manager
     LAST DEPLOYED: Wed Jan  9 13:36:13 2019
@@ -493,6 +500,15 @@ that is working switch to a production issuer.
 Create this definition locally and update the email address to your own. This
 email required by Let's Encrypt and used to notify you of certificate
 expirations and updates.
+
+.. note::
+
+    If you're using this document as a guide to configure cert-manager for your
+    own ingress, it's important to note that you must install the issuers in the
+    same namespace as your ingress. This example installs the ingress in the 
+    `default` namespace, so it doesn't need to be specified. If your ingress is in
+    another namespace add `-n my-namespace` to the `kubectl create` commands below.
+
 
 - staging issuer: `staging-issuer.yaml`_
 
