@@ -475,6 +475,19 @@ operation. These two resources are:
     certificates. An Issuer is specific to a single namespace in Kubernetes,
     and a ClusterIssuer is meant to be a cluster-wide definition for the same
     purpose.
+    
+    Note that if you're using this document as a guide to configure cert-manager
+    for your own Issuer, you must either create the Issuers in the same namespace
+    as your Ingress resouces, adding '-n my-namespace' to your 'kubectl create'
+    commands, or use a ClusterIssuer. ClusterIssuer resouces apply across all
+    Ingress resources in your cluster and don't have this namespace-matching
+    requirement.
+    
+    More information on the difference between Issuers and ClusterIssuers, how
+    to create ClusterIssuers, and when you might choose to use each can be found
+    at:
+    
+    https://docs.cert-manager.io/en/latest/tasks/issuers/index.html#difference-between-issuers-and-clusterissuers
 
 :doc:`Certificate </reference/certificates>`
 
@@ -500,15 +513,6 @@ that is working switch to a production issuer.
 Create this definition locally and update the email address to your own. This
 email required by Let's Encrypt and used to notify you of certificate
 expirations and updates.
-
-.. note::
-
-    If you're using this document as a guide to configure cert-manager for your
-    own ingress, it's important to note that you must install the issuers in the
-    same namespace as your ingress. This example installs the ingress in the 
-    `default` namespace, so it doesn't need to be specified. If your ingress is in
-    another namespace add `-n my-namespace` to the `kubectl create` commands below.
-
 
 - staging issuer: `staging-issuer.yaml`_
 
