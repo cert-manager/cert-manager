@@ -477,15 +477,14 @@ operation. These two resources are:
     purpose.
     
     Note that if you're using this document as a guide to configure cert-manager
-    for your own Issuer, you must either create the Issuers in the same namespace
-    as your Ingress resouces, adding '-n my-namespace' to your 'kubectl create'
-    commands, or use a ClusterIssuer. ClusterIssuer resouces apply across all
-    Ingress resources in your cluster and don't have this namespace-matching
-    requirement.
+    for your own Issuer, you must create the Issuers in the same namespace
+    as your Ingress resouces by adding '-n my-namespace' to your 'kubectl create'
+    commands. Your other option is to replace your Issuers with ClusterIssuers.
+    ClusterIssuer resources apply across all Ingress resources in your cluster
+    and don't have this namespace-matching requirement.
     
-    More information on the difference between Issuers and ClusterIssuers, how
-    to create ClusterIssuers, and when you might choose to use each can be found
-    at:
+    More information on the differences between Issuers and ClusterIssuers and
+    when you might choose to use each can be found at:
     
     https://docs.cert-manager.io/en/latest/tasks/issuers/index.html#difference-between-issuers-and-clusterissuers
 
