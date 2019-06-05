@@ -169,6 +169,24 @@ func ValidateACMEIssuerHTTP01Config(iss *v1alpha1.ACMEIssuerHTTP01Config, fldPat
 		}
 	}
 
+	// Validate incoming solver pod template
+	if len(iss.PodTemplate.Name) > 0 {
+		el = append(el, field.Invalid(fldPath.Child("podTemplate"), iss.PodTemplate, fmt.Sprintf("name cannot be set for solver pod template, got %s",
+			iss.PodTemplate.Name)))
+	}
+	if len(iss.PodTemplate.GenerateName) > 0 {
+		el = append(el, field.Invalid(fldPath.Child("podTemplate"), iss.PodTemplate, fmt.Sprintf("generateName cannot be set for solver pod template, got %s",
+			iss.PodTemplate.GenerateName)))
+	}
+	if len(iss.PodTemplate.OwnerReferences) > 0 {
+		var names []string
+		for _, o := range iss.PodTemplate.OwnerReferences {
+			names = append(names, o.Name)
+		}
+		el = append(el, field.Invalid(fldPath.Child("podTemplate"), iss.PodTemplate, fmt.Sprintf("owner references cannot be set for solver pod template, got %s",
+			names)))
+	}
+
 	return el
 }
 

@@ -325,6 +325,11 @@ type ACMEIssuerHTTP01Config struct {
 	// Optional service type for Kubernetes solver service
 	// +optional
 	ServiceType corev1.ServiceType `json:"serviceType,omitempty"`
+
+	// Optional template for configure the solver pods. Not all pod template
+	// options are valid (e.g. name)
+	// +optional
+	PodTemplate corev1.PodTemplate `json"podTemplate,omitempty"`
 }
 
 // ACMEIssuerDNS01Config is a structure containing the ACME DNS configuration

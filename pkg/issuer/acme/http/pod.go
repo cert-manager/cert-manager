@@ -46,7 +46,7 @@ func podLabels(ch *v1alpha1.Challenge) map[string]string {
 	}
 }
 
-func (s *Solver) ensurePod(ctx context.Context, ch *v1alpha1.Challenge) (*corev1.Pod, error) {
+func (s *Solver) ensurePod(ctx context.Context, issuer v1alpha1.GenericIssuer, ch *v1alpha1.Challenge) (*corev1.Pod, error) {
 	log := logf.FromContext(ctx).WithName("ensurePod")
 
 	log.V(logf.DebugLevel).Info("checking for existing HTTP01 solver pods")
@@ -68,7 +68,7 @@ func (s *Solver) ensurePod(ctx context.Context, ch *v1alpha1.Challenge) (*corev1
 	}
 
 	log.Info("creating HTTP01 challenge solver pod")
-	return s.createPod(ch)
+	return s.createPod(issuer, ch)
 }
 
 // getPodsForChallenge returns a list of pods that were created to solve
@@ -130,15 +130,21 @@ func (s *Solver) cleanupPods(ctx context.Context, ch *v1alpha1.Challenge) error 
 
 // createPod will create a challenge solving pod for the given certificate,
 // domain, token and key.
-func (s *Solver) createPod(ch *v1alpha1.Challenge) (*corev1.Pod, error) {
-	return s.Client.CoreV1().Pods(ch.Namespace).Create(s.buildPod(ch))
+func (s *Solver) createPod(issuer v1alpha1.GenericIssuer, ch *v1alpha1.Challenge) (*corev1.Pod, error) {
+	pod, err := s.buildPod(issuer, ch)
+	if err != nil {
+		return nil, err
+	}
+
+	return s.Client.CoreV1().Pods(ch.Namespace).Create(pod)
 }
 
 // buildPod will build a challenge solving pod for the given certificate,
 // domain, token and key. It will not create it in the API server
-func (s *Solver) buildPod(ch *v1alpha1.Challenge) *corev1.Pod {
+func (s *Solver) buildPod(issuer v1alpha1.GenericIssuer, ch *v1alpha1.Challenge) (*corev1.Pod, error) {
 	podLabels := podLabels(ch)
-	return &corev1.Pod{
+
+	pod := &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "cm-acme-http-solver-",
 			Namespace:    ch.Namespace,
@@ -183,4 +189,40 @@ func (s *Solver) buildPod(ch *v1alpha1.Challenge) *corev1.Pod {
 			},
 		},
 	}
+
+	// Override defaults if they have changed in the pod template.
+	pod = s.mergePodWithPodTemplate(pod,
+		issuer.GetSpec().ACME.HTTP01.PodTemplate.DeepCopy())
+
+	return pod, nil
+}
+
+func (s *Solver) mergePodWithPodTemplate(podDefault *corev1.Pod, podTempl *corev1.PodTemplate) *corev1.Pod {
+	mergedPod := podDefault.DeepCopy()
+
+	if len(podTempl.Namespace) > 0 {
+		mergedPod.Namespace = podTempl.Namespace
+	}
+
+	if len(podTempl.Annotations) > 0 {
+		mergedPod.Annotations = podTempl.Annotations
+	}
+
+	if len(podTempl.Labels) > 0 {
+		mergedPod.Labels = podTempl.Labels
+	}
+
+	// Set merged spec to be equal to the new template
+	mergedPod.Spec = podTempl.Template.Spec
+
+	// These are the only two specs set by default. If they exist in the
+	// template, take the template.
+	if len(podTempl.Template.Spec.RestartPolicy) > 0 {
+		mergedPod.Spec.RestartPolicy = podDefault.Spec.RestartPolicy
+	}
+	if len(podTempl.Template.Spec.Containers) == 0 {
+		mergedPod.Spec.Containers = podDefault.Spec.Containers
+	}
+
+	return mergedPod
 }
