@@ -362,7 +362,7 @@ install cert-manager. This example installed cert-manager into the
 
     ## Add the Jetstack Helm repository
     $ helm repo add jetstack https://charts.jetstack.io
-    
+
     ## Updating the repo just incase it already existed
     $ helm repo update
 
@@ -372,7 +372,7 @@ install cert-manager. This example installed cert-manager into the
       --namespace cert-manager \
       --version v0.8.0 \
       jetstack/cert-manager
-   
+
     NAME:   cert-manager
     LAST DEPLOYED: Wed Jan  9 13:36:13 2019
     NAMESPACE: cert-manager
@@ -535,7 +535,7 @@ will need to update this example and add in your own email address.
 .. literalinclude:: example/production-issuer.yaml
    :language: yaml
    :emphasize-lines: 10
-   
+
 .. _`production-issuer.yaml`: https://raw.githubusercontent.com/jetstack/cert-manager/release-0.8/docs/tutorials/acme/quick-start/example/production-issuer.yaml
 
 .. code-block:: shell
@@ -733,7 +733,7 @@ can update the annotations in the ingress to specify the production issuer:
 
 .. literalinclude:: example/ingress-tls-final.yaml
    :language: yaml
-   
+
 .. _`ingress-tls-final.yaml`: https://raw.githubusercontent.com/jetstack/cert-manager/release-0.8/docs/tutorials/acme/quick-start/example/ingress-tls-final.yaml
 
 .. code-block:: shell
