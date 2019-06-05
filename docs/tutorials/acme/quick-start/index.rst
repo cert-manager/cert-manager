@@ -550,11 +550,14 @@ Check on the status of the issuer after you create it:
     Spec:
       Acme:
         Email:  your.email@your-domain.com
-        Http 01:
         Private Key Secret Ref:
           Key:
           Name:  letsencrypt-staging
         Server:  https://acme-staging-v02.api.letsencrypt.org/directory
+        Solvers:
+          Http 01:
+            Ingress:
+              Class:  nginx
     Status:
       Acme:
         Uri:  https://acme-staging-v02.api.letsencrypt.org/acme/acct/7374163
@@ -647,13 +650,6 @@ certificate object. You can view this information using the
       Self Link:               /apis/certmanager.k8s.io/v1alpha1/namespaces/default/certificates/quickstart-example-tls
       UID:                     68d43400-ea92-11e8-82f8-42010a8a00b5
     Spec:
-      Acme:
-        Config:
-          Domains:
-            example.your-domain.com
-          Http 01:
-            Ingress:
-            Ingress Class:  nginx
       Dns Names:
         example.your-domain.com
       Issuer Ref:
@@ -763,13 +759,6 @@ certificate.
       Self Link:               /apis/certmanager.k8s.io/v1alpha1/namespaces/default/certificates/quickstart-example-tls
       UID:                     bdd93b32-ea97-11e8-82f8-42010a8a00b5
     Spec:
-      Acme:
-        Config:
-          Domains:
-            example.your-domain.com
-          Http 01:
-            Ingress:
-            Ingress Class:  nginx
       Dns Names:
         example.your-domain.com
       Issuer Ref:
@@ -785,7 +774,7 @@ certificate.
         Type:                  Ready
     Events:
       Type    Reason        Age   From          Message
-      ----    ------        ----  ----          -------
+   kubectl describe certificate quickstart-example-tls   ----    ------        ----  ----          -------
       Normal  Generated     18s   cert-manager  Generated new private key
       Normal  OrderCreated  18s   cert-manager  Created Order resource "quickstart-example-tls-889745041"
 
