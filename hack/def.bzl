@@ -52,7 +52,7 @@ def multiarch_image(
     for os in goos:
       go_image(
           name = "%s.app_%s-%s" % (name, os, arch),
-          base = "@alpine_%s-%s//image" % (os, arch),
+          base = "@static_base//image",
           embed = [":go_default_library"],
           goarch = arch,
           goos = os,

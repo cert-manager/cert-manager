@@ -66,29 +66,12 @@ load(
 
 _go_image_repos()
 
-## Pull some standard base images
+## Use 'static' distroless image for all builds
 container_pull(
-    name = "alpine_linux-amd64",
-    digest = "sha256:cf2412cab4f40318e722d2604fa6c79b3d28a7cb37988d95ab2453577417359a",
-    registry = "index.docker.io",
-    repository = "munnerz/alpine",
-    tag = "3.8-amd64",
-)
-
-container_pull(
-    name = "alpine_linux-arm64",
-    digest = "sha256:4b8a5fc687674dd11ab769b8a711acba667c752b08697a03f6ffb1f1bcd123e5",
-    registry = "index.docker.io",
-    repository = "munnerz/alpine",
-    tag = "3.8-arm64",
-)
-
-container_pull(
-    name = "alpine_linux-arm",
-    digest = "sha256:185cad013588d77b0e78018b5f275a7849a63a33cd926405363825536597d9e2",
-    registry = "index.docker.io",
-    repository = "munnerz/alpine",
-    tag = "3.8-arm",
+    name = "static_base",
+    registry = "gcr.io",
+    repository = "distroless/static",
+    digest = "sha256:cd0679a54d2abaf3644829f5e290ad8a10688847475f570fddb9963318cf9390",
 )
 
 ## Fetch helm & tiller for use in template generation and testing
