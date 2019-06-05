@@ -18,7 +18,6 @@ package certificates
 
 import (
 	"context"
-	"sync"
 
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	corelisters "k8s.io/client-go/listers/core/v1"
@@ -46,7 +45,6 @@ type Controller struct {
 	secretLister        corelisters.SecretLister
 
 	scheduledWorkQueue scheduler.ScheduledWorkQueue
-	workerWg           sync.WaitGroup
 	metrics            *metrics.Metrics
 
 	// used for testing
