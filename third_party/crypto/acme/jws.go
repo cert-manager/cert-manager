@@ -36,11 +36,14 @@ func jwsEncodeJSON(claimset interface{}, key crypto.Signer, accountURL, url, non
 		phead = fmt.Sprintf(`{"alg":%q,"kid":%q,"nonce":%q,"url":%q}`, alg, accountURL, nonce, url)
 	}
 	phead = base64.RawURLEncoding.EncodeToString([]byte(phead))
-	cs, err := json.Marshal(claimset)
-	if err != nil {
-		return nil, err
+	payload := ""
+	if claimset != nil {
+		cs, err := json.Marshal(claimset)
+		if err != nil {
+			return nil, err
+		}
+		payload = base64.RawURLEncoding.EncodeToString(cs)
 	}
-	payload := base64.RawURLEncoding.EncodeToString(cs)
 	hash := sha.New()
 	hash.Write([]byte(phead + "." + payload))
 	sig, err := jwsSign(key, sha, hash.Sum(nil))

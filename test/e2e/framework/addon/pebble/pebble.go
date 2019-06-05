@@ -69,6 +69,12 @@ func (p *Pebble) Setup(cfg *config.Config) error {
 		ReleaseName: "chart-pebble-" + p.Name,
 		Namespace:   p.Namespace,
 		ChartName:   cfg.RepoRoot + "/test/e2e/charts/pebble",
+		Vars: []chart.StringTuple{
+			{
+				Key:   "strict",
+				Value: fmt.Sprintf("%t", cfg.Addons.Pebble.Strict),
+			},
+		},
 		// doesn't matter when installing from disk
 		ChartVersion: "0",
 	}
