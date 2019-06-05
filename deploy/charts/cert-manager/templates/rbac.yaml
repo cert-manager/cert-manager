@@ -1,8 +1,27 @@
 {{- if .Values.global.rbac.create -}}
+
 apiVersion: rbac.authorization.k8s.io/v1beta1
 kind: ClusterRole
 metadata:
-  name: {{ template "cert-manager.fullname" . }}
+  name: {{ template "cert-manager.fullname" . }}-leaderelection
+  labels:
+    app: {{ template "cert-manager.name" . }}
+    chart: {{ template "cert-manager.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+rules:
+  # Used for leader election by the controller
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    verbs: ["get", "create", "update", "patch"]
+
+---
+
+# Issuer controller role
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRole
+metadata:
+  name: {{ template "cert-manager.fullname" . }}-controller-issuers
   labels:
     app: {{ template "cert-manager.name" . }}
     chart: {{ template "cert-manager.chart" . }}
@@ -10,24 +29,207 @@ metadata:
     heritage: {{ .Release.Service }}
 rules:
   - apiGroups: ["certmanager.k8s.io"]
-    resources: ["certificates", "certificates/finalizers", "issuers", "clusterissuers", "orders", "orders/finalizers", "challenges",  "challenges/finalizers"]
-    verbs: ["*"]
+    resources: ["issuers", "issuers/status"]
+    verbs: ["update"]
+  - apiGroups: ["certmanager.k8s.io"]
+    resources: ["issuers"]
+    verbs: ["get", "list", "watch"]
   - apiGroups: [""]
-    resources: ["configmaps", "secrets", "events", "services","pods"]
-    verbs: ["*"]
-  - apiGroups: ["extensions"]
-    resources: ["ingresses", "ingresses/finalizers"]
-    verbs: ["*"]
-{{- if .Values.global.isOpenshift }}
-  - apiGroups: ["route.openshift.io"]
-    resources: ["routes", "routes/custom-host", "routes/finalizers"]
-    verbs: ["*"]
-{{- end }}
+    resources: ["secrets"]
+    verbs: ["get", "list", "watch", "create", "update", "delete"]
+  - apiGroups: [""]
+    resources: ["events"]
+    verbs: ["create", "patch"]
+
 ---
+
+# ClusterIssuer controller role
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRole
+metadata:
+  name: {{ template "cert-manager.fullname" . }}-controller-clusterissuers
+  labels:
+    app: {{ template "cert-manager.name" . }}
+    chart: {{ template "cert-manager.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+rules:
+  - apiGroups: ["certmanager.k8s.io"]
+    resources: ["clusterissuers", "clusterissuers/status"]
+    verbs: ["update"]
+  - apiGroups: ["certmanager.k8s.io"]
+    resources: ["clusterissuers"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["get", "list", "watch", "create", "update", "delete"]
+  - apiGroups: [""]
+    resources: ["events"]
+    verbs: ["create", "patch"]
+
+---
+
+# Certificates controller role
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRole
+metadata:
+  name: {{ template "cert-manager.fullname" . }}-controller-certificates
+  labels:
+    app: {{ template "cert-manager.name" . }}
+    chart: {{ template "cert-manager.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+rules:
+  - apiGroups: ["certmanager.k8s.io"]
+    resources: ["certificates", "certificates/status"]
+    verbs: ["update"]
+  - apiGroups: ["certmanager.k8s.io"]
+    resources: ["certificates", "clusterissuers", "issuers", "orders"]
+    verbs: ["get", "list", "watch"]
+  # We require these rules to support users with the OwnerReferencesPermissionEnforcement
+  # admission controller enabled:
+  # https://kubernetes.io/docs/reference/access-authn-authz/admission-controllers/#ownerreferencespermissionenforcement
+  - apiGroups: ["certmanager.k8s.io"]
+    resources: ["certificates/finalizers"]
+    verbs: ["update"]
+  - apiGroups: ["certmanager.k8s.io"]
+    resources: ["orders"]
+    verbs: ["create", "delete"]
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["get", "list", "watch", "create", "update", "delete"]
+  - apiGroups: [""]
+    resources: ["events"]
+    verbs: ["create", "patch"]
+
+---
+
+# Orders controller role
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRole
+metadata:
+  name: {{ template "cert-manager.fullname" . }}-controller-orders
+  labels:
+    app: {{ template "cert-manager.name" . }}
+    chart: {{ template "cert-manager.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+rules:
+  - apiGroups: ["certmanager.k8s.io"]
+    resources: ["orders", "orders/status"]
+    verbs: ["update"]
+  - apiGroups: ["certmanager.k8s.io"]
+    resources: ["orders", "clusterissuers", "issuers", "challenges"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["certmanager.k8s.io"]
+    resources: ["challenges"]
+    verbs: ["create", "delete"]
+  # We require these rules to support users with the OwnerReferencesPermissionEnforcement
+  # admission controller enabled:
+  # https://kubernetes.io/docs/reference/access-authn-authz/admission-controllers/#ownerreferencespermissionenforcement
+  - apiGroups: ["certmanager.k8s.io"]
+    resources: ["orders/finalizers"]
+    verbs: ["update"]
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: [""]
+    resources: ["events"]
+    verbs: ["create", "patch"]
+
+---
+
+# Challenges controller role
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRole
+metadata:
+  name: {{ template "cert-manager.fullname" . }}-controller-challenges
+  labels:
+    app: {{ template "cert-manager.name" . }}
+    chart: {{ template "cert-manager.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+rules:
+  # Use to update challenge resource status
+  - apiGroups: ["certmanager.k8s.io"]
+    resources: ["challenges", "challenges/status"]
+    verbs: ["update"]
+  # Used to watch challenges, issuer and clusterissuer resources
+  - apiGroups: ["certmanager.k8s.io"]
+    resources: ["challenges", "issuers", "clusterissuers"]
+    verbs: ["get", "list", "watch"]
+  # Need to be able to retrieve ACME account private key to complete challenges
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["get", "list", "watch"]
+  # Used to create events
+  - apiGroups: [""]
+    resources: ["events"]
+    verbs: ["create", "patch"]
+  # HTTP01 rules
+  - apiGroups: [""]
+    resources: ["pods", "services"]
+    verbs: ["get", "list", "watch", "create", "delete"]
+  - apiGroups: ["extensions"]
+    resources: ["ingresses"]
+    verbs: ["get", "list", "watch", "create", "delete", "update"]
+{{- if .Values.global.isOpenshift }}
+  # We require the ability to specify a custom hostname when we are creating
+  # new ingress resources.
+  # See: https://github.com/openshift/origin/blob/21f191775636f9acadb44fa42beeb4f75b255532/pkg/route/apiserver/admission/ingress_admission.go#L84-L148
+  - apiGroups: ["route.openshift.io"]
+    resources: ["routes/custom-host"]
+    verbs: ["create"]
+{{- end }}
+  # We require these rules to support users with the OwnerReferencesPermissionEnforcement
+  # admission controller enabled:
+  # https://kubernetes.io/docs/reference/access-authn-authz/admission-controllers/#ownerreferencespermissionenforcement
+  - apiGroups: ["certmanager.k8s.io"]
+    resources: ["challenges/finalizers"]
+    verbs: ["update"]
+  # DNS01 rules (duplicated above)
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["get", "list", "watch"]
+
+---
+
+# ingress-shim controller role
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRole
+metadata:
+  name: {{ template "cert-manager.fullname" . }}-controller-ingress-shim
+  labels:
+    app: {{ template "cert-manager.name" . }}
+    chart: {{ template "cert-manager.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+rules:
+  - apiGroups: ["certmanager.k8s.io"]
+    resources: ["certificates"]
+    verbs: ["create", "update", "delete"]
+  - apiGroups: ["certmanager.k8s.io"]
+    resources: ["certificates", "issuers", "clusterissuers"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["extensions"]
+    resources: ["ingresses"]
+    verbs: ["get", "list", "watch"]
+  # We require these rules to support users with the OwnerReferencesPermissionEnforcement
+  # admission controller enabled:
+  # https://kubernetes.io/docs/reference/access-authn-authz/admission-controllers/#ownerreferencespermissionenforcement
+  - apiGroups: ["extensions"]
+    resources: ["ingresses/finalizers"]
+    verbs: ["update"]
+  - apiGroups: [""]
+    resources: ["events"]
+    verbs: ["create", "patch"]
+
+---
+
 apiVersion: rbac.authorization.k8s.io/v1beta1
 kind: ClusterRoleBinding
 metadata:
-  name: {{ template "cert-manager.fullname" . }}
+  name: {{ template "cert-manager.fullname" . }}-leaderelection
   labels:
     app: {{ template "cert-manager.name" . }}
     chart: {{ template "cert-manager.chart" . }}
@@ -36,12 +238,134 @@ metadata:
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: {{ template "cert-manager.fullname" . }}
+  name: {{ template "cert-manager.fullname" . }}-leaderelection
 subjects:
   - name: {{ template "cert-manager.serviceAccountName" . }}
     namespace: {{ .Release.Namespace | quote }}
     kind: ServiceAccount
+
 ---
+
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ template "cert-manager.fullname" . }}-controller-issuers
+  labels:
+    app: {{ template "cert-manager.name" . }}
+    chart: {{ template "cert-manager.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ template "cert-manager.fullname" . }}-controller-issuers
+subjects:
+  - name: {{ template "cert-manager.serviceAccountName" . }}
+    namespace: {{ .Release.Namespace | quote }}
+    kind: ServiceAccount
+
+---
+
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ template "cert-manager.fullname" . }}-controller-clusterissuers
+  labels:
+    app: {{ template "cert-manager.name" . }}
+    chart: {{ template "cert-manager.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ template "cert-manager.fullname" . }}-controller-clusterissuers
+subjects:
+  - name: {{ template "cert-manager.serviceAccountName" . }}
+    namespace: {{ .Release.Namespace | quote }}
+    kind: ServiceAccount
+
+---
+
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ template "cert-manager.fullname" . }}-controller-certificates
+  labels:
+    app: {{ template "cert-manager.name" . }}
+    chart: {{ template "cert-manager.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ template "cert-manager.fullname" . }}-controller-certificates
+subjects:
+  - name: {{ template "cert-manager.serviceAccountName" . }}
+    namespace: {{ .Release.Namespace | quote }}
+    kind: ServiceAccount
+
+---
+
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ template "cert-manager.fullname" . }}-controller-orders
+  labels:
+    app: {{ template "cert-manager.name" . }}
+    chart: {{ template "cert-manager.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ template "cert-manager.fullname" . }}-controller-orders
+subjects:
+  - name: {{ template "cert-manager.serviceAccountName" . }}
+    namespace: {{ .Release.Namespace | quote }}
+    kind: ServiceAccount
+
+---
+
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ template "cert-manager.fullname" . }}-controller-challenges
+  labels:
+    app: {{ template "cert-manager.name" . }}
+    chart: {{ template "cert-manager.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ template "cert-manager.fullname" . }}-controller-challenges
+subjects:
+  - name: {{ template "cert-manager.serviceAccountName" . }}
+    namespace: {{ .Release.Namespace | quote }}
+    kind: ServiceAccount
+
+---
+
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ template "cert-manager.fullname" . }}-controller-ingress-shim
+  labels:
+    app: {{ template "cert-manager.name" . }}
+    chart: {{ template "cert-manager.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ template "cert-manager.fullname" . }}-controller-ingress-shim
+subjects:
+  - name: {{ template "cert-manager.serviceAccountName" . }}
+    namespace: {{ .Release.Namespace | quote }}
+    kind: ServiceAccount
+
+---
+
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
@@ -58,7 +382,9 @@ rules:
   - apiGroups: ["certmanager.k8s.io"]
     resources: ["certificates", "issuers"]
     verbs: ["get", "list", "watch"]
+
 ---
+
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
@@ -74,4 +400,5 @@ rules:
   - apiGroups: ["certmanager.k8s.io"]
     resources: ["certificates", "issuers"]
     verbs: ["create", "delete", "deletecollection", "patch", "update"]
+
 {{- end }}

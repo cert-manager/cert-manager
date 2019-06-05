@@ -17,13 +17,13 @@ rules:
     verbs: ["get", "list", "watch"]
   - apiGroups: [""]
     resources: ["configmaps", "events"]
-    verbs: ["*"]
+    verbs: ["get", "create", "update", "patch"]
   - apiGroups: ["admissionregistration.k8s.io"]
     resources: ["validatingwebhookconfigurations", "mutatingwebhookconfigurations"]
-    verbs: ["*"]
+    verbs: ["get", "list", "watch", "update"]
   - apiGroups: ["apiregistration.k8s.io"]
     resources: ["apiservices"]
-    verbs: ["*"]
+    verbs: ["get", "list", "watch", "update"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1beta1
 kind: ClusterRoleBinding
