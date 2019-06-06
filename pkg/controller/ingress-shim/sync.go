@@ -183,6 +183,16 @@ func (c *Controller) buildCertificates(ing *extv1beta1.Ingress, issuer v1alpha1.
 		if existingCrt != nil {
 			klog.Infof("Certificate %q for ingress %q already exists", tls.SecretName, ing.Name)
 
+			if metav1.GetControllerOf(existingCrt) == nil {
+				klog.Infof("Certificate %q has no owners and cannot be updated for ingress %q", tls.SecretName, ing.Name)
+				continue
+			}
+
+			if !metav1.IsControlledBy(existingCrt, ing) {
+				klog.Infof("Certificate %q is not (solely) owned by ingress %q and cannot be updated", tls.SecretName, ing.Name)
+				continue
+			}
+
 			if !certNeedsUpdate(existingCrt, crt) {
 				klog.Infof("Certificate %q for ingress %q is up to date", tls.SecretName, ing.Name)
 				continue

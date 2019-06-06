@@ -24,6 +24,7 @@ import (
 	extv1beta1 "k8s.io/api/extensions/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	types "k8s.io/apimachinery/pkg/types"
 	coretesting "k8s.io/client-go/testing"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
@@ -126,6 +127,7 @@ func TestSync(t *testing.T) {
 						acmeIssuerChallengeTypeAnnotation: "http01",
 						editInPlaceAnnotation:             "true",
 					},
+					UID: types.UID("ingress-name"),
 				},
 				Spec: extv1beta1.IngressSpec{
 					TLS: []extv1beta1.IngressTLS{
@@ -145,7 +147,7 @@ func TestSync(t *testing.T) {
 						Labels: map[string]string{
 							"my-test-label": "should be copied",
 						},
-						OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(buildIngress("ingress-name", gen.DefaultTestNamespace, nil), ingressGVK)},
+						OwnerReferences: buildOwnerReferences("ingress-name", gen.DefaultTestNamespace),
 					},
 					Spec: v1alpha1.CertificateSpec{
 						DNSNames:   []string{"example.com", "www.example.com"},
@@ -181,6 +183,7 @@ func TestSync(t *testing.T) {
 						clusterIssuerNameAnnotation:       "issuer-name",
 						acmeIssuerChallengeTypeAnnotation: "http01",
 					},
+					UID: types.UID("ingress-name"),
 				},
 				Spec: extv1beta1.IngressSpec{
 					TLS: []extv1beta1.IngressTLS{
@@ -197,7 +200,7 @@ func TestSync(t *testing.T) {
 					ObjectMeta: metav1.ObjectMeta{
 						Name:            "example-com-tls",
 						Namespace:       gen.DefaultTestNamespace,
-						OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(buildIngress("ingress-name", gen.DefaultTestNamespace, nil), ingressGVK)},
+						OwnerReferences: buildOwnerReferences("ingress-name", gen.DefaultTestNamespace),
 					},
 					Spec: v1alpha1.CertificateSpec{
 						DNSNames:   []string{"example.com", "www.example.com"},
@@ -232,6 +235,7 @@ func TestSync(t *testing.T) {
 						acmeIssuerChallengeTypeAnnotation: "http01",
 						ingressClassAnnotation:            "nginx-ing",
 					},
+					UID: types.UID("ingress-name"),
 				},
 				Spec: extv1beta1.IngressSpec{
 					TLS: []extv1beta1.IngressTLS{
@@ -248,7 +252,7 @@ func TestSync(t *testing.T) {
 					ObjectMeta: metav1.ObjectMeta{
 						Name:            "example-com-tls",
 						Namespace:       gen.DefaultTestNamespace,
-						OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(buildIngress("ingress-name", gen.DefaultTestNamespace, nil), ingressGVK)},
+						OwnerReferences: buildOwnerReferences("ingress-name", gen.DefaultTestNamespace),
 					},
 					Spec: v1alpha1.CertificateSpec{
 						DNSNames:   []string{"example.com", "www.example.com"},
@@ -286,6 +290,7 @@ func TestSync(t *testing.T) {
 						acmeIssuerHTTP01IngressClassAnnotation: "cert-ing",
 						ingressClassAnnotation:                 "nginx-ing",
 					},
+					UID: types.UID("ingress-name"),
 				},
 				Spec: extv1beta1.IngressSpec{
 					TLS: []extv1beta1.IngressTLS{
@@ -302,7 +307,7 @@ func TestSync(t *testing.T) {
 					ObjectMeta: metav1.ObjectMeta{
 						Name:            "example-com-tls",
 						Namespace:       gen.DefaultTestNamespace,
-						OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(buildIngress("ingress-name", gen.DefaultTestNamespace, nil), ingressGVK)},
+						OwnerReferences: buildOwnerReferences("ingress-name", gen.DefaultTestNamespace),
 					},
 					Spec: v1alpha1.CertificateSpec{
 						DNSNames:   []string{"example.com", "www.example.com"},
@@ -340,6 +345,7 @@ func TestSync(t *testing.T) {
 						ingressClassAnnotation:            "nginx-ing",
 						editInPlaceAnnotation:             "false",
 					},
+					UID: types.UID("ingress-name"),
 				},
 				Spec: extv1beta1.IngressSpec{
 					TLS: []extv1beta1.IngressTLS{
@@ -356,7 +362,7 @@ func TestSync(t *testing.T) {
 					ObjectMeta: metav1.ObjectMeta{
 						Name:            "example-com-tls",
 						Namespace:       gen.DefaultTestNamespace,
-						OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(buildIngress("ingress-name", gen.DefaultTestNamespace, nil), ingressGVK)},
+						OwnerReferences: buildOwnerReferences("ingress-name", gen.DefaultTestNamespace),
 					},
 					Spec: v1alpha1.CertificateSpec{
 						DNSNames:   []string{"example.com", "www.example.com"},
@@ -393,6 +399,7 @@ func TestSync(t *testing.T) {
 						clusterIssuerNameAnnotation:       "issuer-name",
 						acmeIssuerChallengeTypeAnnotation: "dns01",
 					},
+					UID: types.UID("ingress-name"),
 				},
 				Spec: extv1beta1.IngressSpec{
 					TLS: []extv1beta1.IngressTLS{
@@ -417,6 +424,7 @@ func TestSync(t *testing.T) {
 						clusterIssuerNameAnnotation:       "issuer-name",
 						acmeIssuerChallengeTypeAnnotation: "invalid-challenge-type",
 					},
+					UID: types.UID("ingress-name"),
 				},
 				Spec: extv1beta1.IngressSpec{
 					TLS: []extv1beta1.IngressTLS{
@@ -442,6 +450,7 @@ func TestSync(t *testing.T) {
 						acmeIssuerChallengeTypeAnnotation:     "dns01",
 						acmeIssuerDNS01ProviderNameAnnotation: "fake-dns",
 					},
+					UID: types.UID("ingress-name"),
 				},
 				Spec: extv1beta1.IngressSpec{
 					TLS: []extv1beta1.IngressTLS{
@@ -458,7 +467,7 @@ func TestSync(t *testing.T) {
 					ObjectMeta: metav1.ObjectMeta{
 						Name:            "example-com-tls",
 						Namespace:       gen.DefaultTestNamespace,
-						OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(buildIngress("ingress-name", gen.DefaultTestNamespace, nil), ingressGVK)},
+						OwnerReferences: buildOwnerReferences("ingress-name", gen.DefaultTestNamespace),
 					},
 					Spec: v1alpha1.CertificateSpec{
 						DNSNames:   []string{"example.com", "www.example.com"},
@@ -493,6 +502,7 @@ func TestSync(t *testing.T) {
 					Annotations: map[string]string{
 						clusterIssuerNameAnnotation: "issuer-name",
 					},
+					UID: types.UID("ingress-name"),
 				},
 				Spec: extv1beta1.IngressSpec{
 					TLS: []extv1beta1.IngressTLS{
@@ -509,7 +519,7 @@ func TestSync(t *testing.T) {
 					ObjectMeta: metav1.ObjectMeta{
 						Name:            "example-com-tls",
 						Namespace:       gen.DefaultTestNamespace,
-						OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(buildIngress("ingress-name", gen.DefaultTestNamespace, nil), ingressGVK)},
+						OwnerReferences: buildOwnerReferences("ingress-name", gen.DefaultTestNamespace),
 					},
 					Spec: v1alpha1.CertificateSpec{
 						DNSNames:   []string{"example.com", "www.example.com"},
@@ -535,6 +545,7 @@ func TestSync(t *testing.T) {
 					Annotations: map[string]string{
 						testAcmeTLSAnnotation: "true",
 					},
+					UID: types.UID("ingress-name"),
 				},
 				Spec: extv1beta1.IngressSpec{
 					TLS: []extv1beta1.IngressTLS{
@@ -550,7 +561,7 @@ func TestSync(t *testing.T) {
 					ObjectMeta: metav1.ObjectMeta{
 						Name:            "example-com-tls",
 						Namespace:       gen.DefaultTestNamespace,
-						OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(buildIngress("ingress-name", gen.DefaultTestNamespace, nil), ingressGVK)},
+						OwnerReferences: buildOwnerReferences("ingress-name", gen.DefaultTestNamespace),
 					},
 					Spec: v1alpha1.CertificateSpec{
 						DNSNames:   []string{"example.com", "www.example.com"},
@@ -575,6 +586,7 @@ func TestSync(t *testing.T) {
 					Annotations: map[string]string{
 						issuerNameAnnotation: "issuer-name",
 					},
+					UID: types.UID("ingress-name"),
 				},
 				Spec: extv1beta1.IngressSpec{
 					TLS: []extv1beta1.IngressTLS{
@@ -596,6 +608,7 @@ func TestSync(t *testing.T) {
 					Annotations: map[string]string{
 						issuerNameAnnotation: "issuer-name",
 					},
+					UID: types.UID("ingress-name"),
 				},
 				Spec: extv1beta1.IngressSpec{
 					TLS: []extv1beta1.IngressTLS{
@@ -617,6 +630,7 @@ func TestSync(t *testing.T) {
 					Annotations: map[string]string{
 						issuerNameAnnotation: "invalid-issuer-name",
 					},
+					UID: types.UID("ingress-name"),
 				},
 			},
 		},
@@ -632,6 +646,7 @@ func TestSync(t *testing.T) {
 						issuerNameAnnotation:              "issuer-name",
 						acmeIssuerChallengeTypeAnnotation: "http01",
 					},
+					UID: types.UID("ingress-name"),
 				},
 				Spec: extv1beta1.IngressSpec{
 					TLS: []extv1beta1.IngressTLS{
@@ -645,8 +660,9 @@ func TestSync(t *testing.T) {
 			CertificateLister: []runtime.Object{
 				&v1alpha1.Certificate{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:      "existing-crt",
-						Namespace: gen.DefaultTestNamespace,
+						Name:            "existing-crt",
+						Namespace:       gen.DefaultTestNamespace,
+						OwnerReferences: buildOwnerReferences("ingress-name", gen.DefaultTestNamespace),
 					},
 					Spec: v1alpha1.CertificateSpec{
 						DNSNames:   []string{"example.com"},
@@ -683,6 +699,7 @@ func TestSync(t *testing.T) {
 						issuerNameAnnotation:              "issuer-name",
 						acmeIssuerChallengeTypeAnnotation: "http01",
 					},
+					UID: types.UID("ingress-name"),
 				},
 				Spec: extv1beta1.IngressSpec{
 					TLS: []extv1beta1.IngressTLS{
@@ -693,12 +710,19 @@ func TestSync(t *testing.T) {
 					},
 				},
 			},
-			CertificateLister: []runtime.Object{buildCertificate("existing-crt", gen.DefaultTestNamespace)},
+			CertificateLister: []runtime.Object{
+				buildCertificate("existing-crt",
+					gen.DefaultTestNamespace,
+					buildOwnerReferences("ingress-name", gen.DefaultTestNamespace),
+				),
+			},
+
 			ExpectedUpdate: []*v1alpha1.Certificate{
 				{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:      "existing-crt",
-						Namespace: gen.DefaultTestNamespace,
+						Name:            "existing-crt",
+						Namespace:       gen.DefaultTestNamespace,
+						OwnerReferences: buildOwnerReferences("ingress-name", gen.DefaultTestNamespace),
 					},
 					Spec: v1alpha1.CertificateSpec{
 						DNSNames:   []string{"example.com"},
@@ -736,6 +760,7 @@ func TestSync(t *testing.T) {
 						acmeIssuerChallengeTypeAnnotation: "http01",
 						ingressClassAnnotation:            "toot-ing",
 					},
+					UID: types.UID("ingress-name"),
 				},
 				Spec: extv1beta1.IngressSpec{
 					TLS: []extv1beta1.IngressTLS{
@@ -749,8 +774,9 @@ func TestSync(t *testing.T) {
 			CertificateLister: []runtime.Object{
 				&v1alpha1.Certificate{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:      "existing-crt",
-						Namespace: gen.DefaultTestNamespace,
+						Name:            "existing-crt",
+						Namespace:       gen.DefaultTestNamespace,
+						OwnerReferences: buildOwnerReferences("ingress-name", gen.DefaultTestNamespace),
 					},
 					Spec: v1alpha1.CertificateSpec{
 						DNSNames:   []string{"example.com"},
@@ -777,8 +803,9 @@ func TestSync(t *testing.T) {
 			ExpectedUpdate: []*v1alpha1.Certificate{
 				{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:      "existing-crt",
-						Namespace: gen.DefaultTestNamespace,
+						Name:            "existing-crt",
+						Namespace:       gen.DefaultTestNamespace,
+						OwnerReferences: buildOwnerReferences("ingress-name", gen.DefaultTestNamespace),
 					},
 					Spec: v1alpha1.CertificateSpec{
 						DNSNames:   []string{"example.com"},
@@ -817,6 +844,7 @@ func TestSync(t *testing.T) {
 						acmeIssuerChallengeTypeAnnotation: "http01",
 						ingressClassAnnotation:            "toot-ing",
 					},
+					UID: types.UID("ingress-name"),
 				},
 				Spec: extv1beta1.IngressSpec{
 					TLS: []extv1beta1.IngressTLS{
@@ -830,8 +858,9 @@ func TestSync(t *testing.T) {
 			CertificateLister: []runtime.Object{
 				&v1alpha1.Certificate{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:      "existing-crt",
-						Namespace: gen.DefaultTestNamespace,
+						Name:            "existing-crt",
+						Namespace:       gen.DefaultTestNamespace,
+						OwnerReferences: buildOwnerReferences("ingress-name", gen.DefaultTestNamespace),
 					},
 					Spec: v1alpha1.CertificateSpec{
 						DNSNames:   []string{"example.com"},
@@ -846,8 +875,9 @@ func TestSync(t *testing.T) {
 			ExpectedUpdate: []*v1alpha1.Certificate{
 				{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:      "existing-crt",
-						Namespace: gen.DefaultTestNamespace,
+						Name:            "existing-crt",
+						Namespace:       gen.DefaultTestNamespace,
+						OwnerReferences: buildOwnerReferences("ingress-name", gen.DefaultTestNamespace),
 					},
 					Spec: v1alpha1.CertificateSpec{
 						DNSNames:   []string{"example.com"},
@@ -887,6 +917,7 @@ func TestSync(t *testing.T) {
 					Annotations: map[string]string{
 						issuerNameAnnotation: "issuer-name",
 					},
+					UID: types.UID("ingress-name"),
 				},
 				Spec: extv1beta1.IngressSpec{
 					TLS: []extv1beta1.IngressTLS{
@@ -905,6 +936,7 @@ func TestSync(t *testing.T) {
 						Labels: map[string]string{
 							"a-different-value": "should be removed",
 						},
+						OwnerReferences: buildOwnerReferences("ingress-name", gen.DefaultTestNamespace),
 					},
 					Spec: v1alpha1.CertificateSpec{
 						DNSNames:   []string{"example.com"},
@@ -924,6 +956,7 @@ func TestSync(t *testing.T) {
 						Labels: map[string]string{
 							"my-test-label": "should be copied",
 						},
+						OwnerReferences: buildOwnerReferences("ingress-name", gen.DefaultTestNamespace),
 					},
 					Spec: v1alpha1.CertificateSpec{
 						DNSNames:   []string{"example.com"},
@@ -931,6 +964,114 @@ func TestSync(t *testing.T) {
 						IssuerRef: v1alpha1.ObjectReference{
 							Name: "issuer-name",
 							Kind: "Issuer",
+						},
+					},
+				},
+			},
+		},
+		{
+			Name:         "should not update certificate if it does not belong to any ingress",
+			Issuer:       acmeIssuer,
+			IssuerLister: []runtime.Object{acmeIssuer},
+			Ingress: &extv1beta1.Ingress{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "ingress-name",
+					Namespace: gen.DefaultTestNamespace,
+					Annotations: map[string]string{
+						issuerNameAnnotation:              "issuer-name",
+						acmeIssuerChallengeTypeAnnotation: "http01",
+						ingressClassAnnotation:            "toot-ing",
+					},
+					UID: types.UID("ingress-name"),
+				},
+				Spec: extv1beta1.IngressSpec{
+					TLS: []extv1beta1.IngressTLS{
+						{
+							Hosts:      []string{"example.com"},
+							SecretName: "existing-crt",
+						},
+					},
+				},
+			},
+			CertificateLister: []runtime.Object{
+				&v1alpha1.Certificate{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:            "existing-crt",
+						Namespace:       gen.DefaultTestNamespace,
+						OwnerReferences: []metav1.OwnerReference{},
+					},
+					Spec: v1alpha1.CertificateSpec{
+						DNSNames:   []string{"example.com"},
+						SecretName: "existing-crt",
+						IssuerRef: v1alpha1.ObjectReference{
+							Name: "issuer-name",
+							Kind: "Issuer",
+						},
+						ACME: &v1alpha1.ACMECertificateConfig{
+							Config: []v1alpha1.DomainSolverConfig{
+								{
+									Domains: []string{"example.com"},
+									SolverConfig: v1alpha1.SolverConfig{
+										HTTP01: &v1alpha1.HTTP01SolverConfig{
+											Ingress: "",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			Name:         "should not update certificate if it does not belong to the ingress",
+			Issuer:       acmeIssuer,
+			IssuerLister: []runtime.Object{acmeIssuer},
+			Ingress: &extv1beta1.Ingress{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "ingress-name",
+					Namespace: gen.DefaultTestNamespace,
+					Annotations: map[string]string{
+						issuerNameAnnotation:              "issuer-name",
+						acmeIssuerChallengeTypeAnnotation: "http01",
+						ingressClassAnnotation:            "toot-ing",
+					},
+					UID: types.UID("ingress-name"),
+				},
+				Spec: extv1beta1.IngressSpec{
+					TLS: []extv1beta1.IngressTLS{
+						{
+							Hosts:      []string{"example.com"},
+							SecretName: "existing-crt",
+						},
+					},
+				},
+			},
+			CertificateLister: []runtime.Object{
+				&v1alpha1.Certificate{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:            "existing-crt",
+						Namespace:       gen.DefaultTestNamespace,
+						OwnerReferences: buildOwnerReferences("not-ingress-name", gen.DefaultTestNamespace),
+					},
+					Spec: v1alpha1.CertificateSpec{
+						DNSNames:   []string{"example.com"},
+						SecretName: "existing-crt",
+						IssuerRef: v1alpha1.ObjectReference{
+							Name: "issuer-name",
+							Kind: "Issuer",
+						},
+						ACME: &v1alpha1.ACMECertificateConfig{
+							Config: []v1alpha1.DomainSolverConfig{
+								{
+									Domains: []string{"example.com"},
+									SolverConfig: v1alpha1.SolverConfig{
+										HTTP01: &v1alpha1.HTTP01SolverConfig{
+											Ingress: "",
+										},
+									},
+								},
+							},
 						},
 					},
 				},
@@ -1067,11 +1208,12 @@ func TestIssuerForIngress(t *testing.T) {
 	}
 }
 
-func buildCertificate(name, namespace string) *v1alpha1.Certificate {
+func buildCertificate(name, namespace string, ownerReferences []metav1.OwnerReference) *v1alpha1.Certificate {
 	return &v1alpha1.Certificate{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: namespace,
+			Name:            name,
+			Namespace:       namespace,
+			OwnerReferences: ownerReferences,
 		},
 	}
 }
@@ -1096,6 +1238,13 @@ func buildIngress(name, namespace string, annotations map[string]string) *extv1b
 			Name:        name,
 			Namespace:   namespace,
 			Annotations: annotations,
+			UID:         types.UID(name),
 		},
+	}
+}
+
+func buildOwnerReferences(name, namespace string) []metav1.OwnerReference {
+	return []metav1.OwnerReference{
+		*metav1.NewControllerRef(buildIngress(name, namespace, nil), ingressGVK),
 	}
 }
