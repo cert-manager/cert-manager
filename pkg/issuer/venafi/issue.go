@@ -94,8 +94,7 @@ func (v *Venafi) Issue(ctx context.Context, crt *v1alpha1.Certificate) (*issuer.
 	// Retrieve a copy of the Venafi zone.
 	// This contains default values and policy control info that we can apply
 	// and check against locally.
-	zoneName := v.issuer.GetSpec().Venafi.Zone
-	zoneCfg, err := v.client.ReadZoneConfiguration(zoneName)
+	zoneCfg, err := v.client.ReadZoneConfiguration()
 	if err != nil {
 		v.Recorder.Eventf(crt, corev1.EventTypeWarning, "ReadZone", "Failed to read Venafi zone configuration: %v", err)
 		return nil, err
@@ -140,7 +139,7 @@ func (v *Venafi) Issue(ctx context.Context, crt *v1alpha1.Certificate) (*issuer.
 
 	v.Recorder.Eventf(crt, corev1.EventTypeNormal, "Requesting", "Requesting certificate from Venafi server...")
 	// Actually send a request to the Venafi server for a certificate.
-	requestID, err := v.client.RequestCertificate(vreq, zoneName)
+	requestID, err := v.client.RequestCertificate(vreq)
 	if err != nil {
 		v.Recorder.Eventf(crt, corev1.EventTypeWarning, "Request", "Failed to request a certificate from Venafi: %v", err)
 		return nil, err

@@ -56,8 +56,8 @@ type Venafi struct {
 // out its functionality during tests easier.
 type connector interface {
 	Ping() (err error)
-	ReadZoneConfiguration(zone string) (config *endpoint.ZoneConfiguration, err error)
-	RequestCertificate(req *certificate.Request, zone string) (requestID string, err error)
+	ReadZoneConfiguration() (config *endpoint.ZoneConfiguration, err error)
+	RequestCertificate(req *certificate.Request) (requestID string, err error)
 	RetrieveCertificate(req *certificate.Request) (certificates *certificate.PEMCollection, err error)
 	RenewCertificate(req *certificate.RenewalRequest) (requestID string, err error)
 }
