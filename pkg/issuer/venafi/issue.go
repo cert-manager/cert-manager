@@ -31,6 +31,7 @@ import (
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	"github.com/jetstack/cert-manager/pkg/issuer"
+	logf "github.com/jetstack/cert-manager/pkg/logs"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 )
 
@@ -50,22 +51,32 @@ const (
 // - Submit the request
 // - Wait for the request to be fulfilled and the certificate to be available
 func (v *Venafi) Issue(ctx context.Context, crt *v1alpha1.Certificate) (*issuer.IssueResponse, error) {
+	log := logf.FromContext(ctx, "venafi")
+	log = logf.WithResource(log, crt)
+	log = log.WithValues(logf.RelatedResourceNameKey, crt.Spec.SecretName, logf.RelatedResourceKindKey, "Secret")
+	dbg := log.V(logf.DebugLevel)
+
+	dbg.Info("issue method called")
 	v.Recorder.Event(crt, corev1.EventTypeNormal, "Issuing", "Requesting new certificate...")
 
 	// Always generate a new private key, as some Venafi configurations mandate
 	// unique private keys per issuance.
+	dbg.Info("generating new private key for certificate")
 	signeeKey, err := pki.GeneratePrivateKeyForCertificate(crt)
 	if err != nil {
-		klog.Errorf("Error generating private key %q for certificate: %v", crt.Spec.SecretName, err)
+		log.Error(err, "failed to generate private key for certificate")
 		v.Recorder.Eventf(crt, corev1.EventTypeWarning, "PrivateKeyError", "Error generating certificate private key: %v", err)
 		// don't trigger a retry. An error from this function implies some
 		// invalid input parameters, and retrying without updating the
 		// resource will not help.
 		return nil, nil
 	}
+
+	dbg.Info("generated new private key")
 	v.Recorder.Event(crt, corev1.EventTypeNormal, "GenerateKey", "Generated new private key")
 
 	// extract the public component of the key
+	dbg.Info("extracting public key from private key")
 	signeePublicKey, err := pki.PublicKeyForPrivateKey(signeeKey)
 	if err != nil {
 		klog.Errorf("Error getting public key from private key: %v", err)
@@ -74,6 +85,7 @@ func (v *Venafi) Issue(ctx context.Context, crt *v1alpha1.Certificate) (*issuer.
 
 	// We build a x509.Certificate as the vcert library has support for converting
 	// this into its own internal Certificate Request type.
+	dbg.Info("constructing certificate request template to submit to venafi")
 	tmpl, err := pki.GenerateTemplate(crt)
 	if err != nil {
 		return nil, err
@@ -94,6 +106,7 @@ func (v *Venafi) Issue(ctx context.Context, crt *v1alpha1.Certificate) (*issuer.
 	// Retrieve a copy of the Venafi zone.
 	// This contains default values and policy control info that we can apply
 	// and check against locally.
+	dbg.Info("reading venafi zone configuration")
 	zoneCfg, err := v.client.ReadZoneConfiguration()
 	if err != nil {
 		v.Recorder.Eventf(crt, corev1.EventTypeWarning, "ReadZone", "Failed to read Venafi zone configuration: %v", err)
@@ -106,7 +119,10 @@ func (v *Venafi) Issue(ctx context.Context, crt *v1alpha1.Certificate) (*issuer.
 	vreq := newVRequest(tmpl)
 
 	// Apply default values from the Venafi zone
+	dbg.Info("applying default venafi zone values to request")
 	zoneCfg.UpdateCertificateRequest(vreq)
+
+	dbg.Info("validating venafi certificate request")
 	err = zoneCfg.ValidateCertificateRequest(vreq)
 	if err != nil {
 		// TODO: set a certificate status condition instead of firing an event
@@ -114,6 +130,7 @@ func (v *Venafi) Issue(ctx context.Context, crt *v1alpha1.Certificate) (*issuer.
 		v.Recorder.Eventf(crt, corev1.EventTypeWarning, "Validate", "Failed to validate certificate against Venafi zone: %v", err)
 		return nil, err
 	}
+	dbg.Info("validated venafi certificate request")
 	v.Recorder.Eventf(crt, corev1.EventTypeNormal, "Validate", "Validated certificate request against Venafi zone policy")
 
 	// Generate the actual x509 CSR and set it on the vreq
@@ -139,12 +156,14 @@ func (v *Venafi) Issue(ctx context.Context, crt *v1alpha1.Certificate) (*issuer.
 
 	v.Recorder.Eventf(crt, corev1.EventTypeNormal, "Requesting", "Requesting certificate from Venafi server...")
 	// Actually send a request to the Venafi server for a certificate.
+	dbg.Info("submitting generated CSR to venafi")
 	requestID, err := v.client.RequestCertificate(vreq)
 	if err != nil {
 		v.Recorder.Eventf(crt, corev1.EventTypeWarning, "Request", "Failed to request a certificate from Venafi: %v", err)
 		return nil, err
 	}
 
+	dbg.Info("successfully submitted request. attempting to pickup certificate from venafi server...")
 	// Set the PickupID so vcert does not have to look it up by the fingerprint
 	vreq.PickupID = requestID
 
@@ -157,25 +176,31 @@ func (v *Venafi) Issue(ctx context.Context, crt *v1alpha1.Certificate) (*issuer.
 
 	// Check some known error types
 	if err, ok := err.(endpoint.ErrCertificatePending); ok {
+		log.Error(err, "venafi certificate still in a pending state, the request will be retried")
 		v.Recorder.Eventf(crt, corev1.EventTypeWarning, "Retrieve", "Failed to retrieve a certificate from Venafi, still pending: %v", err)
 		return nil, fmt.Errorf("Venafi certificate still pending: %v", err)
 	}
 	if err, ok := err.(endpoint.ErrRetrieveCertificateTimeout); ok {
+		log.Error(err, "timed out waiting for venafi certificate, the request will be retried")
 		v.Recorder.Eventf(crt, corev1.EventTypeWarning, "Retrieve", "Failed to retrieve a certificate from Venafi, timed out: %v", err)
 		return nil, fmt.Errorf("Timed out waiting for certificate: %v", err)
 	}
 	if err != nil {
+		log.Error(err, "failed to obtain venafi certificate")
 		v.Recorder.Eventf(crt, corev1.EventTypeWarning, "Retrieve", "Failed to retrieve a certificate from Venafi: %v", err)
 		return nil, err
 	}
+	log.Info("successfully fetched signed certificate from venafi")
 	v.Recorder.Eventf(crt, corev1.EventTypeNormal, "Retrieve", "Retrieved certificate from Venafi server")
 
 	// Encode the private key ready to be saved
+	dbg.Info("encoding generated private key")
 	pk, err := pki.EncodePrivateKey(signeeKey)
 	if err != nil {
 		return nil, err
 	}
 
+	dbg.Info("constructing certificate chain PEM and returning data")
 	// Construct the certificate chain and return the new keypair
 	cs := append([]string{pemCollection.Certificate}, pemCollection.Chain...)
 	chain := strings.Join(cs, "\n")
