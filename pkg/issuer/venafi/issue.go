@@ -19,7 +19,6 @@ package venafi
 import (
 	"context"
 	"crypto/x509"
-	"encoding/pem"
 	"fmt"
 	"strings"
 	"time"
@@ -117,6 +116,7 @@ func (v *Venafi) Issue(ctx context.Context, crt *v1alpha1.Certificate) (*issuer.
 
 	// Create a vcert Request structure
 	vreq := newVRequest(tmpl)
+	vreq.PrivateKey = signeeKey
 
 	// Apply default values from the Venafi zone
 	dbg.Info("applying default venafi zone values to request")
@@ -134,18 +134,12 @@ func (v *Venafi) Issue(ctx context.Context, crt *v1alpha1.Certificate) (*issuer.
 	v.Recorder.Eventf(crt, corev1.EventTypeNormal, "Validate", "Validated certificate request against Venafi zone policy")
 
 	// Generate the actual x509 CSR and set it on the vreq
-	err = certificate.GenerateRequest(vreq, signeeKey)
+	dbg.Info("generating CSR to submit to venafi")
+	err = vreq.GenerateCSR()
 	if err != nil {
 		v.Recorder.Eventf(crt, corev1.EventTypeWarning, "GenerateCSR", "Failed to generate a CSR for the certificate: %v", err)
 		return nil, err
 	}
-
-	// certificate.GenerateRequest above sets the CSR field as der encoded bytes
-	// however, the library actually requires this field to be PEM encoded.
-	// We decode the DER bytes and run them through the PEM encoder and re-set the
-	// field before actually calling RequestCertificate.
-	// TODO: make this weird behaviour go away
-	vreq.CSR = pem.EncodeToMemory(certificate.GetCertificateRequestPEMBlock(vreq.CSR))
 
 	// We mark the request as having a user provided CSR, as we have manually
 	// generated it in the lines above.
