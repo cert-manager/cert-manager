@@ -17,17 +17,21 @@
 package tpp
 
 import (
+	"bytes"
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/base64"
 	"encoding/json"
-	"encoding/pem"
 	"fmt"
-	"github.com/Venafi/vcert/pkg/certificate"
-	"github.com/Venafi/vcert/pkg/endpoint"
+	"io"
+	"io/ioutil"
+	"log"
 	"net/http"
 	"regexp"
 	"strings"
+
+	"github.com/Venafi/vcert/pkg/certificate"
+	"github.com/Venafi/vcert/pkg/endpoint"
 )
 
 const defaultKeySize = 2048
@@ -73,7 +77,7 @@ type certificateRetrieveResponse struct {
 
 type RevocationReason int
 
-// this maps *certificate.RevocationRequest.Reason to TPP-specific webSDK codes
+// RevocationReasonsMap maps *certificate.RevocationRequest.Reason to TPP-specific webSDK codes
 var RevocationReasonsMap = map[string]RevocationReason{
 	"":                       0, // NoReason
 	"none":                   0, //
@@ -145,13 +149,14 @@ type urlResource string
 
 const (
 	urlResourceAuthorize           urlResource = "authorize/"
-	urlResourceCertificateRequest              = "certificates/request"
-	urlResourceCertificateRetrieve             = "certificates/retrieve"
-	urlResourceFindPolicy                      = "config/findpolicy"
-	urlResourceCertificateRevoke               = "certificates/revoke"
-	urlResourceCertificateRenew                = "certificates/renew"
-	urlResourceCertificateSearch               = "certificates/"
-	urlResourceCertificateImport               = "certificates/import"
+	urlResourceCertificateRequest  urlResource = "certificates/request"
+	urlResourceCertificateRetrieve urlResource = "certificates/retrieve"
+	urlResourceFindPolicy          urlResource = "config/findpolicy"
+	urlResourceCertificateRevoke   urlResource = "certificates/revoke"
+	urlResourceCertificateRenew    urlResource = "certificates/renew"
+	urlResourceCertificateSearch   urlResource = "certificates/"
+	urlResourceCertificateImport   urlResource = "certificates/import"
+	urlResourceCertificatePolicy   urlResource = "certificates/checkpolicy"
 )
 
 const (
@@ -201,36 +206,6 @@ func retrieveChainOptionFromString(order string) retrieveChainOption {
 	}
 }
 
-// SetBaseURL sets the base URL used to cummuncate with TPP
-func (c *Connector) SetBaseURL(url string) error {
-	modified := strings.ToLower(url)
-	reg := regexp.MustCompile("^http(|s)://")
-	if reg.FindStringIndex(modified) == nil {
-		modified = "https://" + modified
-	} else {
-		modified = reg.ReplaceAllString(modified, "https://")
-	}
-	reg = regexp.MustCompile("^https://.+?/")
-	if reg.FindStringIndex(modified) == nil {
-		modified = modified + "/"
-	}
-
-	reg = regexp.MustCompile("/vedsdk(|/)$")
-	if reg.FindStringIndex(modified) == nil {
-		modified += "vedsdk/"
-	} else {
-		modified = reg.ReplaceAllString(modified, "/vedsdk/")
-	}
-
-	reg = regexp.MustCompile("^https://[a-z\\d]+[-a-z\\d.]+[a-z\\d][:\\d]*/vedsdk/$")
-	if loc := reg.FindStringIndex(modified); loc == nil {
-		return fmt.Errorf("The specified TPP URL is invalid. %s\nExpected TPP URL format 'https://tpp.company.com/vedsdk/'", url)
-	}
-
-	c.baseURL = modified
-	return nil
-}
-
 func (c *Connector) getURL(resource urlResource) (string, error) {
 	if c.baseURL == "" {
 		return "", fmt.Errorf("The Host URL has not been set")
@@ -238,19 +213,70 @@ func (c *Connector) getURL(resource urlResource) (string, error) {
 	return fmt.Sprintf("%s%s", c.baseURL, resource), nil
 }
 
+func (c *Connector) request(method string, resource urlResource, data interface{}) (statusCode int, statusText string, body []byte, err error) {
+	url, err := c.getURL(resource)
+	if err != nil {
+		return
+	}
+	var payload io.Reader
+	var b []byte
+	if method == "POST" {
+		b, _ = json.Marshal(data)
+		payload = bytes.NewReader(b)
+	}
+
+	r, _ := http.NewRequest(method, url, payload)
+	if c.apiKey != "" {
+		r.Header.Add("x-venafi-api-key", c.apiKey)
+	}
+	r.Header.Add("content-type", "application/json")
+	r.Header.Add("cache-control", "no-cache")
+
+	res, err := c.getHTTPClient().Do(r)
+	if res != nil {
+		statusCode = res.StatusCode
+		statusText = res.Status
+	}
+	if err != nil {
+		return
+	}
+
+	defer res.Body.Close()
+	body, err = ioutil.ReadAll(res.Body)
+	// Do not enable trace in production
+	trace := false // IMPORTANT: sensitive information can be diclosured
+	// I hope you know what are you doing
+	if trace {
+		log.Println("#################")
+		if method == "POST" {
+			log.Printf("JSON sent for %s\n%s\n", url, string(b))
+		} else {
+			log.Printf("%s request sent to %s\n", method, url)
+		}
+		log.Printf("Response:\n%s\n", string(body))
+	} else if c.verbose {
+		log.Printf("Got %s status for %s %s\n", statusText, method, url)
+	}
+	return
+}
+
 func (c *Connector) getHTTPClient() *http.Client {
 	if c.trust != nil {
-		tr := &http.Transport{TLSClientConfig: &tls.Config{RootCAs: c.trust}}
-		return &http.Client{Transport: tr}
+		tlsConfig := http.DefaultTransport.(*http.Transport).TLSClientConfig
+		if tlsConfig == nil {
+			tlsConfig = &tls.Config{}
+		}
+		tlsConfig.RootCAs = c.trust
+		return &http.Client{Transport: &http.Transport{TLSClientConfig: tlsConfig}}
 	}
 
 	return http.DefaultClient
 }
 
-//GenerateRequest creates a new certificate request, based on the zone/policy configuration and the user data
+// GenerateRequest creates a new certificate request, based on the zone/policy configuration and the user data
 func (c *Connector) GenerateRequest(config *endpoint.ZoneConfiguration, req *certificate.Request) (err error) {
 	if config == nil {
-		config, err = c.ReadZoneConfiguration(c.zone)
+		config, err = c.ReadZoneConfiguration()
 		if err != nil {
 			return fmt.Errorf("could not read zone configuration: %s", err)
 		}
@@ -268,42 +294,32 @@ func (c *Connector) GenerateRequest(config *endpoint.ZoneConfiguration, req *cer
 		if config.CustomAttributeValues[tppAttributeManualCSR] == "0" {
 			return fmt.Errorf("Unable to request certificate by local generated CSR when zone configuration is 'Manual Csr' = 0")
 		}
-		switch req.KeyType {
-		case certificate.KeyTypeECDSA:
-			req.PrivateKey, err = certificate.GenerateECDSAPrivateKey(req.KeyCurve)
-		case certificate.KeyTypeRSA:
-			req.PrivateKey, err = certificate.GenerateRSAPrivateKey(req.KeyLength)
-		default:
-			return fmt.Errorf("Unable to generate certificate request, key type %s is not supported", req.KeyType.String())
-		}
+		err = req.GeneratePrivateKey()
 		if err != nil {
 			return err
 		}
-		err = certificate.GenerateRequest(req, req.PrivateKey)
+		err = req.GenerateCSR()
 		if err != nil {
 			return err
 		}
-		req.CSR = pem.EncodeToMemory(certificate.GetCertificateRequestPEMBlock(req.CSR))
-
 	case certificate.UserProvidedCSR:
 		if config.CustomAttributeValues[tppAttributeManualCSR] == "0" {
 			return fmt.Errorf("Unable to request certificate with user provided CSR when zone configuration is 'Manual Csr' = 0")
 		}
-		if req.CSR == nil || len(req.CSR) == 0 {
+		if len(req.GetCSR()) == 0 {
 			return fmt.Errorf("CSR was supposed to be provided by user, but it's empty")
 		}
 
 	case certificate.ServiceGeneratedCSR:
-		req.CSR = nil
 	}
 	return nil
 }
 
 func getPolicyDN(zone string) string {
 	modified := zone
-	reg := regexp.MustCompile("^\\\\VED\\\\Policy")
+	reg := regexp.MustCompile(`^\\VED\\Policy`)
 	if reg.FindStringIndex(modified) == nil {
-		reg = regexp.MustCompile("^\\\\")
+		reg = regexp.MustCompile(`^\\`)
 		if reg.FindStringIndex(modified) == nil {
 			modified = "\\" + modified
 		}
@@ -325,14 +341,9 @@ func parseAuthorizeResult(httpStatusCode int, httpStatus string, body []byte) (s
 	}
 }
 
-func parseAuthorizeData(b []byte) (authorizeResponse, error) {
-	var data authorizeResponse
-	err := json.Unmarshal(b, &data)
-	if err != nil {
-		return data, err
-	}
-
-	return data, nil
+func parseAuthorizeData(b []byte) (data authorizeResponse, err error) {
+	err = json.Unmarshal(b, &data)
+	return
 }
 
 func parseConfigResult(httpStatusCode int, httpStatus string, body []byte) (tppData tppPolicyData, err error) {
@@ -349,14 +360,9 @@ func parseConfigResult(httpStatusCode int, httpStatus string, body []byte) (tppD
 	}
 }
 
-func parseConfigData(b []byte) (tppPolicyData, error) {
-	var data tppPolicyData
-	err := json.Unmarshal(b, &data)
-	if err != nil {
-		return data, err
-	}
-
-	return data, nil
+func parseConfigData(b []byte) (data tppPolicyData, err error) {
+	err = json.Unmarshal(b, &data)
+	return
 }
 
 func parseRequestResult(httpStatusCode int, httpStatus string, body []byte) (string, error) {
@@ -372,14 +378,9 @@ func parseRequestResult(httpStatusCode int, httpStatus string, body []byte) (str
 	}
 }
 
-func parseRequestData(b []byte) (certificateRequestResponse, error) {
-	var data certificateRequestResponse
-	err := json.Unmarshal(b, &data)
-	if err != nil {
-		return data, err
-	}
-
-	return data, nil
+func parseRequestData(b []byte) (data certificateRequestResponse, err error) {
+	err = json.Unmarshal(b, &data)
+	return
 }
 
 func parseRetrieveResult(httpStatusCode int, httpStatus string, body []byte) (certificateRetrieveResponse, error) {
@@ -396,14 +397,9 @@ func parseRetrieveResult(httpStatusCode int, httpStatus string, body []byte) (ce
 	}
 }
 
-func parseRetrieveData(b []byte) (certificateRetrieveResponse, error) {
-	var data certificateRetrieveResponse
-	err := json.Unmarshal(b, &data)
-	if err != nil {
-		return data, err
-	}
-	// fmt.Printf("\n\n%s\n\n%+v\n\n", string(b), data)
-	return data, nil
+func parseRetrieveData(b []byte) (data certificateRetrieveResponse, err error) {
+	err = json.Unmarshal(b, &data)
+	return
 }
 
 func parseRevokeResult(httpStatusCode int, httpStatus string, body []byte) (certificateRevokeResponse, error) {
@@ -420,13 +416,9 @@ func parseRevokeResult(httpStatusCode int, httpStatus string, body []byte) (cert
 	}
 }
 
-func parseRevokeData(b []byte) (certificateRevokeResponse, error) {
-	var data certificateRevokeResponse
-	err := json.Unmarshal(b, &data)
-	if err != nil {
-		return data, err
-	}
-	return data, nil
+func parseRevokeData(b []byte) (data certificateRevokeResponse, err error) {
+	err = json.Unmarshal(b, &data)
+	return
 }
 
 func parseRenewResult(httpStatusCode int, httpStatus string, body []byte) (resp certificateRenewResponse, err error) {
@@ -437,10 +429,9 @@ func parseRenewResult(httpStatusCode int, httpStatus string, body []byte) (resp 
 	return resp, nil
 }
 
-func parseRenewData(b []byte) (certificateRenewResponse, error) {
-	var data certificateRenewResponse
-	err := json.Unmarshal(b, &data)
-	return data, err
+func parseRenewData(b []byte) (data certificateRenewResponse, err error) {
+	err = json.Unmarshal(b, &data)
+	return
 }
 
 func newPEMCollectionFromResponse(base64Response string, chainOrder certificate.ChainOption) (*certificate.PEMCollection, error) {
@@ -453,4 +444,192 @@ func newPEMCollectionFromResponse(base64Response string, chainOrder certificate.
 		return certificate.PEMCollectionFromBytes(certBytes, chainOrder)
 	}
 	return nil, nil
+}
+
+type _strValue struct {
+	Locked bool
+	Value  string
+}
+
+type serverPolicy struct {
+	CertificateAuthority _strValue
+	CsrGeneration        _strValue
+	KeyGeneration        _strValue
+	KeyPair              struct {
+		KeyAlgorithm _strValue
+		KeySize      struct {
+			Locked bool
+			Value  int
+		}
+		EllipticCurve struct {
+			Locked bool
+			Value  string
+		}
+	}
+	ManagementType _strValue
+
+	PrivateKeyReuseAllowed  bool
+	SubjAltNameDnsAllowed   bool
+	SubjAltNameEmailAllowed bool
+	SubjAltNameIpAllowed    bool
+	SubjAltNameUpnAllowed   bool
+	SubjAltNameUriAllowed   bool
+	Subject                 struct {
+		City               _strValue
+		Country            _strValue
+		Organization       _strValue
+		OrganizationalUnit struct {
+			Locked bool
+			Values []string
+		}
+
+		State _strValue
+	}
+	UniqueSubjectEnforced bool
+	WhitelistedDomains    []string
+	WildcardsAllowed      bool
+}
+
+func (sp serverPolicy) toZoneConfig(zc *endpoint.ZoneConfiguration) {
+	zc.Country = sp.Subject.Country.Value
+	zc.Organization = sp.Subject.Organization.Value
+	zc.OrganizationalUnit = sp.Subject.OrganizationalUnit.Values
+	zc.Province = sp.Subject.State.Value
+	zc.Locality = sp.Subject.City.Value
+}
+
+func (sp serverPolicy) toPolicy() (p endpoint.Policy) {
+	addStartEnd := func(s string) string {
+		if !strings.HasPrefix(s, "^") {
+			s = "^" + s
+		}
+		if !strings.HasSuffix(s, "$") {
+			s = s + "$"
+		}
+		return s
+	}
+	escapeOne := func(s string) string {
+		return addStartEnd(regexp.QuoteMeta(s))
+	}
+	escapeArray := func(l []string) []string {
+		escaped := make([]string, len(l))
+		for i, r := range l {
+			escaped[i] = escapeOne(r)
+		}
+		return escaped
+	}
+	const allAllowedRegex = ".*"
+	if len(sp.WhitelistedDomains) == 0 {
+		p.SubjectCNRegexes = []string{allAllowedRegex}
+	} else {
+		p.SubjectCNRegexes = make([]string, len(sp.WhitelistedDomains))
+		for i, d := range sp.WhitelistedDomains {
+			if sp.WildcardsAllowed {
+				p.SubjectCNRegexes[i] = addStartEnd(".*" + regexp.QuoteMeta("."+d))
+			} else {
+				p.SubjectCNRegexes[i] = escapeOne(d)
+			}
+		}
+	}
+	if sp.Subject.OrganizationalUnit.Locked {
+		p.SubjectOURegexes = escapeArray(sp.Subject.OrganizationalUnit.Values)
+	} else {
+		p.SubjectOURegexes = []string{allAllowedRegex}
+	}
+	if sp.Subject.Organization.Locked {
+		p.SubjectORegexes = []string{escapeOne(sp.Subject.Organization.Value)}
+	} else {
+		p.SubjectORegexes = []string{allAllowedRegex}
+	}
+	if sp.Subject.City.Locked {
+		p.SubjectLRegexes = []string{escapeOne(sp.Subject.City.Value)}
+	} else {
+		p.SubjectLRegexes = []string{allAllowedRegex}
+	}
+	if sp.Subject.State.Locked {
+		p.SubjectSTRegexes = []string{escapeOne(sp.Subject.State.Value)}
+	} else {
+		p.SubjectSTRegexes = []string{allAllowedRegex}
+	}
+	if sp.Subject.Country.Locked {
+		p.SubjectCRegexes = []string{escapeOne(sp.Subject.Country.Value)}
+	} else {
+		p.SubjectCRegexes = []string{allAllowedRegex}
+	}
+	if sp.SubjAltNameDnsAllowed {
+		if len(sp.WhitelistedDomains) == 0 {
+			p.DnsSanRegExs = []string{allAllowedRegex}
+		} else {
+			p.DnsSanRegExs = make([]string, len(sp.WhitelistedDomains))
+			for i, d := range sp.WhitelistedDomains {
+				if sp.WildcardsAllowed {
+					p.DnsSanRegExs[i] = addStartEnd(".*" + regexp.QuoteMeta("."+d))
+				} else {
+					p.DnsSanRegExs[i] = escapeOne(d)
+				}
+			}
+		}
+	} else {
+		p.DnsSanRegExs = []string{}
+	}
+	if sp.SubjAltNameIpAllowed {
+		p.IpSanRegExs = []string{allAllowedRegex}
+	} else {
+		p.IpSanRegExs = []string{}
+	}
+	if sp.SubjAltNameEmailAllowed {
+		p.EmailSanRegExs = []string{allAllowedRegex}
+	} else {
+		p.EmailSanRegExs = []string{}
+	}
+	if sp.SubjAltNameUriAllowed {
+		p.UriSanRegExs = []string{allAllowedRegex}
+	} else {
+		p.UriSanRegExs = []string{}
+	}
+	if sp.SubjAltNameUpnAllowed {
+		p.UpnSanRegExs = []string{allAllowedRegex}
+	} else {
+		p.UpnSanRegExs = []string{}
+	}
+	if sp.KeyPair.KeyAlgorithm.Locked {
+		var keyType certificate.KeyType
+		if err := keyType.Set(sp.KeyPair.KeyAlgorithm.Value); err != nil {
+			panic(err)
+		}
+		key := endpoint.AllowedKeyConfiguration{KeyType: keyType}
+		if keyType == certificate.KeyTypeRSA {
+			if sp.KeyPair.KeySize.Locked {
+				for _, i := range certificate.AllSupportedKeySizes() {
+					if i >= sp.KeyPair.KeySize.Value {
+						key.KeySizes = append(key.KeySizes, i)
+					}
+				}
+			} else {
+				key.KeySizes = certificate.AllSupportedKeySizes()
+			}
+		} else {
+			var curve certificate.EllipticCurve
+			if sp.KeyPair.EllipticCurve.Locked {
+				if err := curve.Set(sp.KeyPair.EllipticCurve.Value); err != nil {
+					panic(err)
+				}
+				key.KeyCurves = append(key.KeyCurves, curve)
+			} else {
+				key.KeyCurves = certificate.AllSupportedCurves()
+			}
+
+		}
+		p.AllowedKeyConfigurations = append(p.AllowedKeyConfigurations, key)
+	} else {
+		p.AllowedKeyConfigurations = append(p.AllowedKeyConfigurations, endpoint.AllowedKeyConfiguration{
+			KeyType: certificate.KeyTypeRSA, KeySizes: certificate.AllSupportedKeySizes(),
+		})
+		p.AllowedKeyConfigurations = append(p.AllowedKeyConfigurations, endpoint.AllowedKeyConfiguration{
+			KeyType: certificate.KeyTypeECDSA, KeyCurves: certificate.AllSupportedCurves(),
+		})
+	}
+	p.AllowWildcards = sp.WildcardsAllowed
+	p.AllowKeyReuse = sp.PrivateKeyReuseAllowed
+	return
 }

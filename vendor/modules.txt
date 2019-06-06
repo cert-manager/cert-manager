@@ -24,7 +24,7 @@ github.com/NYTimes/gziphandler
 github.com/PuerkitoBio/purell
 # github.com/PuerkitoBio/urlesc v0.0.0-20170810143723-de5bf2ad4578
 github.com/PuerkitoBio/urlesc
-# github.com/Venafi/vcert v0.0.0-20181029235941-5068538d4d65
+# github.com/Venafi/vcert v0.0.0-20190530133915-e207710a0ab9
 github.com/Venafi/vcert
 github.com/Venafi/vcert/pkg/certificate
 github.com/Venafi/vcert/pkg/endpoint

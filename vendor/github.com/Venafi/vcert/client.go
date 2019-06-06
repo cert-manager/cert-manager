@@ -25,32 +25,40 @@ import (
 	"github.com/Venafi/vcert/pkg/venafi/tpp"
 )
 
+// NewClient returns a connector for either Trust Protection Platform (TPP) or Venafi Cloud based on provided configuration.
+// Config should have Credentials compatible with the selected ConnectorType.
+// Returned connector is a concurrency-safe interface to TPP or Venafi Cloud that can be reused without restriction.
+// Connector can also be of type "fake" for local tests, which doesn`t connect to any backend and all certificates enroll locally.
 func NewClient(cfg *Config) (endpoint.Connector, error) {
 	var err error
 
 	var connectionTrustBundle *x509.CertPool
 	if cfg.ConnectionTrust != "" {
+		fmt.Println("You specified a trust bundle.")
 		connectionTrustBundle = x509.NewCertPool()
 		if !connectionTrustBundle.AppendCertsFromPEM([]byte(cfg.ConnectionTrust)) {
-			return nil, fmt.Errorf("failed to parse PEM trust bundle")
+			return nil, fmt.Errorf("Failed to parse PEM trust bundle")
 		}
 	}
 
 	var connector endpoint.Connector
 	switch cfg.ConnectorType {
 	case endpoint.ConnectorTypeCloud:
-		connector = cloud.NewConnector(cfg.LogVerbose, connectionTrustBundle)
+		connector, err = cloud.NewConnector(cfg.BaseUrl, cfg.Zone, cfg.LogVerbose, connectionTrustBundle)
+		if err != nil {
+			return nil, err
+		}
 	case endpoint.ConnectorTypeTPP:
-		connector = tpp.NewConnector(cfg.LogVerbose, connectionTrustBundle)
+		connector, err = tpp.NewConnector(cfg.BaseUrl, cfg.Zone, cfg.LogVerbose, connectionTrustBundle)
+		if err != nil {
+			return nil, err
+		}
 	case endpoint.ConnectorTypeFake:
 		connector = fake.NewConnector(cfg.LogVerbose, connectionTrustBundle)
 	default:
 		return nil, fmt.Errorf("ConnectorType is not defined")
 	}
 
-	if cfg.BaseUrl != "" {
-		connector.SetBaseURL(cfg.BaseUrl)
-	}
 	connector.SetZone(cfg.Zone)
 
 	err = connector.Authenticate(cfg.Credentials)
