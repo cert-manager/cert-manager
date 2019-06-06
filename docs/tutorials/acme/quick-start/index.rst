@@ -354,18 +354,25 @@ install cert-manager. This example installed cert-manager into the
     # chart in the next step for `release-0.8` of cert-manager:
     $ kubectl apply -f https://raw.githubusercontent.com/jetstack/cert-manager/release-0.8/deploy/manifests/00-crds.yaml
 
-    ## IMPORTANT: if the cert-manager namespace **already exists**, you MUST ensure
-    ## it has an additional label on it in order for the deployment to succeed
-    $ kubectl label namespace cert-manager certmanager.k8s.io/disable-validation="true"
+    # Create the namespace for cert-manager
+    $ kubectl create namespace cert-manager
+
+    # Label the cert-manager namespace to disable resource validation
+    $ kubectl label namespace cert-manager certmanager.k8s.io/disable-validation=true
 
     ## Add the Jetstack Helm repository
     $ helm repo add jetstack https://charts.jetstack.io
+
     ## Updating the repo just incase it already existed
     $ helm repo update
 
     ## Install the cert-manager helm chart
-    $ helm install --name cert-manager --namespace cert-manager jetstack/cert-manager
-   
+    $ helm install \
+      --name cert-manager \
+      --namespace cert-manager \
+      --version v0.8.0 \
+      jetstack/cert-manager
+
     NAME:   cert-manager
     LAST DEPLOYED: Wed Jan  9 13:36:13 2019
     NAMESPACE: cert-manager
@@ -468,6 +475,18 @@ operation. These two resources are:
     certificates. An Issuer is specific to a single namespace in Kubernetes,
     and a ClusterIssuer is meant to be a cluster-wide definition for the same
     purpose.
+    
+    Note that if you're using this document as a guide to configure cert-manager
+    for your own Issuer, you must create the Issuers in the same namespace
+    as your Ingress resouces by adding '-n my-namespace' to your 'kubectl create'
+    commands. Your other option is to replace your Issuers with ClusterIssuers.
+    ClusterIssuer resources apply across all Ingress resources in your cluster
+    and don't have this namespace-matching requirement.
+    
+    More information on the differences between Issuers and ClusterIssuers and
+    when you might choose to use each can be found at:
+    
+    https://docs.cert-manager.io/en/latest/tasks/issuers/index.html#difference-between-issuers-and-clusterissuers
 
 :doc:`Certificate </reference/certificates>`
 
@@ -516,7 +535,7 @@ will need to update this example and add in your own email address.
 .. literalinclude:: example/production-issuer.yaml
    :language: yaml
    :emphasize-lines: 10
-   
+
 .. _`production-issuer.yaml`: https://raw.githubusercontent.com/jetstack/cert-manager/release-0.8/docs/tutorials/acme/quick-start/example/production-issuer.yaml
 
 .. code-block:: shell
@@ -710,7 +729,7 @@ can update the annotations in the ingress to specify the production issuer:
 
 .. literalinclude:: example/ingress-tls-final.yaml
    :language: yaml
-   
+
 .. _`ingress-tls-final.yaml`: https://raw.githubusercontent.com/jetstack/cert-manager/release-0.8/docs/tutorials/acme/quick-start/example/ingress-tls-final.yaml
 
 .. code-block:: shell
