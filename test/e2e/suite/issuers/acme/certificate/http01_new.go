@@ -38,6 +38,7 @@ import (
 	"github.com/jetstack/cert-manager/test/e2e/framework/log"
 	. "github.com/jetstack/cert-manager/test/e2e/framework/matcher"
 	"github.com/jetstack/cert-manager/test/e2e/util"
+	"github.com/jetstack/cert-manager/test/unit/gen"
 	"github.com/jetstack/cert-manager/test/util/generate"
 )
 
@@ -154,6 +155,25 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		_, err := certClient.Create(cert)
 		Expect(err).NotTo(HaveOccurred())
 		By("Verifying the Certificate is valid")
+		err = h.WaitCertificateIssuedValid(f.Namespace.Name, certificateName, time.Minute*5)
+		Expect(err).NotTo(HaveOccurred())
+	})
+
+	It("should obtain a signed ecdsa certificate with a single CN from the ACME server", func() {
+		certClient := f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name)
+
+		By("Creating a Certificate")
+		cert := gen.Certificate(certificateName,
+			gen.SetCertificateSecretName(certificateSecretName),
+			gen.SetCertificateIssuer(v1alpha1.ObjectReference{
+				Name: issuerName,
+			}),
+			gen.SetCertificateDNSNames(acmeIngressDomain),
+			gen.SetCertificateKeyAlgorithm(v1alpha1.ECDSAKeyAlgorithm),
+		)
+		_, err := certClient.Create(cert)
+		Expect(err).NotTo(HaveOccurred())
+		By("Verifying the Certificate is valid and of type ECDSA")
 		err = h.WaitCertificateIssuedValid(f.Namespace.Name, certificateName, time.Minute*5)
 		Expect(err).NotTo(HaveOccurred())
 	})

@@ -294,12 +294,12 @@ func (a *Acme) getCertificatePrivateKey(ctx context.Context, crt *v1alpha1.Certi
 	log.V(4).Info("Generating new private key")
 
 	// generate a new private key.
-	rsaKey, err := pki.GenerateRSAPrivateKey(2048)
+	privateKey, err := pki.GeneratePrivateKeyForCertificate(crt)
 	if err != nil {
 		return nil, false, err
 	}
 
-	return rsaKey, true, nil
+	return privateKey, true, nil
 }
 
 func (a *Acme) createNewOrder(ctx context.Context, crt *v1alpha1.Certificate, template *v1alpha1.Order, key crypto.Signer) error {
