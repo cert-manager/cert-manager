@@ -17,17 +17,19 @@
 package fake
 
 import (
+	"crypto"
 	"crypto/rand"
 	"crypto/x509"
 	"encoding/base64"
 	"encoding/json"
 	"encoding/pem"
 	"fmt"
-	"github.com/Venafi/vcert/pkg/certificate"
-	"github.com/Venafi/vcert/pkg/endpoint"
 	"math/big"
 	"strings"
 	"time"
+
+	"github.com/Venafi/vcert/pkg/certificate"
+	"github.com/Venafi/vcert/pkg/endpoint"
 )
 
 type Connector struct {
@@ -44,14 +46,9 @@ func (c *Connector) GetType() endpoint.ConnectorType {
 }
 
 func (c *Connector) SetZone(z string) {
-	return
 }
 
 func (c *Connector) Ping() (err error) {
-	return
-}
-
-func (c *Connector) Register(email string) (err error) {
 	return
 }
 
@@ -71,8 +68,7 @@ func validateRequest(req *certificate.Request) error {
 	return nil
 }
 
-func (c *Connector) RequestCertificate(req *certificate.Request, zone string) (requestID string, err error) {
-
+func (c *Connector) RequestCertificate(req *certificate.Request) (requestID string, err error) {
 	err = validateRequest(req)
 	if err != nil {
 		return "", fmt.Errorf("certificate request validation fail: %s", err)
@@ -83,7 +79,7 @@ func (c *Connector) RequestCertificate(req *certificate.Request, zone string) (r
 	switch req.CsrOrigin {
 	case certificate.LocalGeneratedCSR, certificate.UserProvidedCSR:
 		// should return CSR as requestID payload
-		fakeRequest.CSR = base64.StdEncoding.EncodeToString(req.CSR)
+		fakeRequest.CSR = base64.StdEncoding.EncodeToString(req.GetCSR())
 
 	case certificate.ServiceGeneratedCSR:
 		// should return certificate.Request as requestID payload
@@ -114,7 +110,7 @@ func issueCertificate(csr *x509.CertificateRequest) ([]byte, error) {
 			nameSet[name] = true
 		}
 		uniqNames := []string{}
-		for name, _ := range nameSet {
+		for name := range nameSet {
 			uniqNames = append(uniqNames, name)
 		}
 		csr.DNSNames = uniqNames
@@ -159,33 +155,29 @@ func (c *Connector) RetrieveCertificate(req *certificate.Request) (pcc *certific
 	}
 
 	var csrPEMbytes []byte
-	var pk interface{}
+	var pk crypto.Signer
 
 	if fakeRequest.CSR != "" {
 		csrPEMbytes, err = base64.StdEncoding.DecodeString(fakeRequest.CSR)
+		if err != nil {
+			return nil, err
+		}
 
 	} else {
 		req := fakeRequest.Req
 
-		switch req.KeyType {
-		case certificate.KeyTypeECDSA:
-			req.PrivateKey, err = certificate.GenerateECDSAPrivateKey(req.KeyCurve)
-		case certificate.KeyTypeRSA:
-			req.PrivateKey, err = certificate.GenerateRSAPrivateKey(req.KeyLength)
-		default:
-			return nil, fmt.Errorf("Unable to generate certificate request, key type %s is not supported", req.KeyType.String())
-		}
+		err = req.GeneratePrivateKey()
 		if err != nil {
 			return
 		}
 
 		req.DNSNames = append(req.DNSNames, "fake-service-generated."+req.Subject.CommonName)
 
-		err = certificate.GenerateRequest(req, req.PrivateKey)
+		err = req.GenerateCSR()
 		if err != nil {
 			return
 		}
-		csrPEMbytes = pem.EncodeToMemory(certificate.GetCertificateRequestPEMBlock(req.CSR))
+		csrPEMbytes = req.GetCSR()
 		pk = req.PrivateKey
 	}
 
@@ -216,11 +208,17 @@ func (c *Connector) RetrieveCertificate(req *certificate.Request) (pcc *certific
 		certBytes = append(cert_pem, []byte(caCertPEM)...)
 	}
 	pcc, err = certificate.PEMCollectionFromBytes(certBytes, req.ChainOption)
-
+	if err != nil {
+		return nil, err
+	}
 	// no key password -- no key
 	if pk != nil && req.KeyPassword != "" {
-		pcc.AddPrivateKey(pk, []byte(req.KeyPassword))
+		err = pcc.AddPrivateKey(pk, []byte(req.KeyPassword))
+		if err != nil {
+			return
+		}
 	}
+	err = req.CheckCertificate(pcc.Certificate)
 	return
 }
 
@@ -229,7 +227,7 @@ func (c *Connector) RevokeCertificate(revReq *certificate.RevocationRequest) (er
 	return fmt.Errorf("revocation is not supported in -test-mode")
 }
 
-func (c *Connector) ReadZoneConfiguration(zone string) (config *endpoint.ZoneConfiguration, err error) {
+func (c *Connector) ReadZoneConfiguration() (config *endpoint.ZoneConfiguration, err error) {
 	return endpoint.NewZoneConfiguration(), nil
 }
 
@@ -240,4 +238,27 @@ func (c *Connector) RenewCertificate(revReq *certificate.RenewalRequest) (reques
 
 func (c *Connector) ImportCertificate(req *certificate.ImportRequest) (*certificate.ImportResponse, error) {
 	return nil, fmt.Errorf("import is not supported in -test-mode")
+}
+
+func (c *Connector) ReadPolicyConfiguration() (policy *endpoint.Policy, err error) {
+	policy = &endpoint.Policy{
+		[]string{".*"},
+		[]string{".*"},
+		[]string{".*"},
+		[]string{".*"},
+		[]string{".*"},
+		[]string{".*"},
+		[]endpoint.AllowedKeyConfiguration{
+			{certificate.KeyTypeRSA, certificate.AllSupportedKeySizes(), nil},
+			{certificate.KeyTypeECDSA, nil, certificate.AllSupportedCurves()},
+		},
+		[]string{".*"},
+		[]string{".*"},
+		[]string{".*"},
+		[]string{".*"},
+		[]string{".*"},
+		true,
+		true,
+	}
+	return
 }

@@ -17,6 +17,7 @@
 package certificate
 
 import (
+	"crypto"
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
@@ -55,7 +56,7 @@ type PEMCollection struct {
 }
 
 //NewPEMCollection creates a PEMCollection based on the data being passed in
-func NewPEMCollection(certificate *x509.Certificate, privateKey interface{}, privateKeyPassword []byte) (*PEMCollection, error) {
+func NewPEMCollection(certificate *x509.Certificate, privateKey crypto.Signer, privateKeyPassword []byte) (*PEMCollection, error) { //todo: change to crypto.Signer type
 	collection := PEMCollection{}
 	if certificate != nil {
 		collection.Certificate = string(pem.EncodeToMemory(GetCertificatePEMBlock(certificate.Raw)))
@@ -63,7 +64,7 @@ func NewPEMCollection(certificate *x509.Certificate, privateKey interface{}, pri
 	if privateKey != nil {
 		var p *pem.Block
 		var err error
-		if privateKeyPassword != nil && len(privateKeyPassword) > 0 {
+		if len(privateKeyPassword) > 0 {
 			p, err = GetEncryptedPrivateKeyPEMBock(privateKey, privateKeyPassword)
 		} else {
 			p, err = GetPrivateKeyPEMBock(privateKey)
@@ -114,14 +115,20 @@ func PEMCollectionFromBytes(certBytes []byte, chainOrder ChainOption) (*PEMColle
 			collection, err = NewPEMCollection(chain[len(chain)-1], nil, nil)
 			if len(chain) > 1 && chainOrder != ChainOptionIgnore {
 				for _, caCert := range chain[:len(chain)-1] {
-					collection.AddChainElement(caCert)
+					err = collection.AddChainElement(caCert)
+					if err != nil {
+						return nil, err
+					}
 				}
 			}
 		default:
 			collection, err = NewPEMCollection(chain[0], nil, nil)
 			if len(chain) > 1 && chainOrder != ChainOptionIgnore {
 				for _, caCert := range chain[1:] {
-					collection.AddChainElement(caCert)
+					err = collection.AddChainElement(caCert)
+					if err != nil {
+						return nil, err
+					}
 				}
 			}
 		}
@@ -137,13 +144,13 @@ func PEMCollectionFromBytes(certBytes []byte, chainOrder ChainOption) (*PEMColle
 }
 
 //AddPrivateKey adds a Private Key to the PEMCollection. Note that the collection can only contain one private key
-func (col *PEMCollection) AddPrivateKey(privateKey interface{}, privateKeyPassword []byte) error {
+func (col *PEMCollection) AddPrivateKey(privateKey crypto.Signer, privateKeyPassword []byte) error { //todo: change to crypto.Signer type
 	if col.PrivateKey != "" {
 		return fmt.Errorf("The PEM Collection can only contain one private key")
 	}
 	var p *pem.Block
 	var err error
-	if privateKeyPassword != nil && len(privateKeyPassword) > 0 {
+	if len(privateKeyPassword) > 0 {
 		p, err = GetEncryptedPrivateKeyPEMBock(privateKey, privateKeyPassword)
 	} else {
 		p, err = GetPrivateKeyPEMBock(privateKey)

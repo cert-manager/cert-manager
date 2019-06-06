@@ -17,8 +17,6 @@
 package cloud
 
 import (
-	"fmt"
-	"github.com/Venafi/vcert/pkg/certificate"
 	"github.com/Venafi/vcert/pkg/endpoint"
 	"time"
 )
@@ -41,7 +39,7 @@ type zone struct {
 	CertificatePolicyIDs             certificatePolicyID `json:"certificatePolicyIds,omitempty"`
 	DefaultCertificateIdentityPolicy string              `json:"defaultCertificateIdentityPolicyId,omitempty"`
 	DefaultCertificateUsePolicy      string              `json:"defaultCertificateUsePolicyId,omitempty"`
-	SystemGenerated                  bool                `json:"systemGeneratedate,omitempty"`
+	SystemGenerated                  bool                `json:"systemGenerated,omitempty"`
 	CreationDateString               string              `json:"creationDate,omitempty"`
 	CreationDate                     time.Time           `json:"-"`
 }
@@ -51,24 +49,14 @@ type certificatePolicyID struct {
 	CertificateUse      []string `json:"CERTIFICATE_USE,omitempty"`
 }
 
-func (z *zone) GetZoneConfiguration(ud *userDetails, policy *certificatePolicy) *endpoint.ZoneConfiguration {
-	zoneConfig := endpoint.ZoneConfiguration{}
-
-	if policy != nil {
-		if policy.KeyTypes != nil {
-			certKeyType := certificate.KeyTypeRSA
-			for _, kt := range policy.KeyTypes {
-				certKeyType.Set(fmt.Sprintf("%s", kt.KeyType))
-				keyConfiguration := endpoint.AllowedKeyConfiguration{}
-				keyConfiguration.KeyType = certKeyType
-				for _, size := range kt.KeyLengths {
-					keyConfiguration.KeySizes = append(keyConfiguration.KeySizes, size)
-				}
-				zoneConfig.AllowedKeyConfigurations = append(zoneConfig.AllowedKeyConfigurations, keyConfiguration)
-			}
-		}
+func (z *zone) getZoneConfiguration(ud *userDetails, policy *certificatePolicy) (zoneConfig *endpoint.ZoneConfiguration) {
+	zoneConfig = endpoint.NewZoneConfiguration()
+	if policy == nil {
+		return
 	}
-	return &zoneConfig
+	zoneConfig.Policy = policy.toPolicy()
+	policy.toZoneConfig(zoneConfig)
+	return
 }
 
 const (

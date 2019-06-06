@@ -26,9 +26,9 @@ type fakeConnector struct {
 	*fake.Connector
 
 	PingFunc                  func() error
-	ReadZoneConfigurationFunc func(string) (*endpoint.ZoneConfiguration, error)
+	ReadZoneConfigurationFunc func() (*endpoint.ZoneConfiguration, error)
 	RetrieveCertificateFunc   func(*certificate.Request) (*certificate.PEMCollection, error)
-	RequestCertificateFunc    func(*certificate.Request, string) (string, error)
+	RequestCertificateFunc    func(*certificate.Request) (string, error)
 	RenewCertificateFunc      func(*certificate.RenewalRequest) (string, error)
 }
 
@@ -46,11 +46,11 @@ func (f *fakeConnector) Ping() (err error) {
 	return f.Connector.Ping()
 }
 
-func (f *fakeConnector) ReadZoneConfiguration(zone string) (config *endpoint.ZoneConfiguration, err error) {
+func (f *fakeConnector) ReadZoneConfiguration() (config *endpoint.ZoneConfiguration, err error) {
 	if f.ReadZoneConfigurationFunc != nil {
-		return f.ReadZoneConfigurationFunc(zone)
+		return f.ReadZoneConfigurationFunc()
 	}
-	return f.Connector.ReadZoneConfiguration(zone)
+	return f.Connector.ReadZoneConfiguration()
 }
 
 func (f *fakeConnector) RetrieveCertificate(req *certificate.Request) (certificates *certificate.PEMCollection, err error) {
@@ -60,11 +60,11 @@ func (f *fakeConnector) RetrieveCertificate(req *certificate.Request) (certifica
 	return f.Connector.RetrieveCertificate(req)
 }
 
-func (f *fakeConnector) RequestCertificate(req *certificate.Request, zone string) (requestID string, err error) {
+func (f *fakeConnector) RequestCertificate(req *certificate.Request) (requestID string, err error) {
 	if f.RequestCertificateFunc != nil {
-		return f.RequestCertificateFunc(req, zone)
+		return f.RequestCertificateFunc(req)
 	}
-	return f.Connector.RequestCertificate(req, zone)
+	return f.Connector.RequestCertificate(req)
 }
 
 func (f *fakeConnector) RenewCertificate(req *certificate.RenewalRequest) (requestID string, err error) {
