@@ -786,6 +786,10 @@ Appears In:
 </tr>
 </thead>
 <tbody><tr>
+<td><code>allowManuallySpecifiedIngress</code><br /> <em>boolean</em></td>
+<td>Allow certificates using this issuer to specify the ingress to be edited as an annotation on their configuration. This gives certificate developers the ability to define the solver, without needing access to editing the issuer.</td>
+</tr>
+<tr>
 <td><code>class</code><br /> <em>string</em></td>
 <td>The ingress class to use when creating Ingress resources to solve ACME challenges that use this challenge solver. Only one of &#39;class&#39; or &#39;name&#39; may be specified.</td>
 </tr>

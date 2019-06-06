@@ -287,6 +287,13 @@ type ACMEChallengeSolverHTTP01Ingress struct {
 	// fields will override fields with matching keys.
 	// +optional
 	PodTemplate *ACMEChallengeSolverHTTP01IngressPodTemplate `json:"podTemplate,omitempty"`
+
+	// Allow certificates using this issuer to specify the ingress to be edited
+	// as an annotation on their configuration.
+	// This gives certificate developers the ability to define the solver, without
+	// needing access to editing the issuer.
+	// +optional
+	AllowManuallySpecifiedIngress bool `json:"allowManuallySpecifiedIngress,omitempty"`
 }
 
 type ACMEChallengeSolverHTTP01IngressPodTemplate struct {

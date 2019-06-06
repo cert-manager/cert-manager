@@ -409,17 +409,29 @@ func (c *Controller) challengeSpecForAuthorization(ctx context.Context, cl acmec
 		candidates = append(candidates, cfg)
 	}
 
-	// 3. iterate through each solver, finding the most specific match (taking account of dnsNames)
-	// if a solver config that matches all dns names is found, we'll use the
-	// one with the most labels, as this is the 'most specific match' for the
-	// certificate this order is fulfilling.
-	// the matchAll solver is only used if the domainToFind is not listed in
-	// any other solver's DNSNames list.
 	domainToFind := authz.Identifier.Value
 	if authz.Wildcard {
 		domainToFind = "*." + domainToFind
 	}
-	acmeCh, solverConfigToUse := determineSolverConfigToUse(candidates, authz, domainToFind)
+
+	// 3. iterate through each solver.
+
+	// if the order has the annotation declaring the ingress it would like to edit,
+	// iterate through each solver to determine whether this option is allowed
+	// by the issuer, and setup the solver for this if so.
+	acmeCh, solverConfigToUse := determineManualSolver(o, candidates, authz)
+
+	if acmeCh == nil || solverConfigToUse == nil {
+		// if the annotation is not declared, or if the issuer does not allow it,
+		// find the most specific match (taking account of dnsNames).
+		// if a solver config that matches all dns names is found, we'll use the
+		// one with the most labels, as this is the 'most specific match' for the
+		// certificate this order is fulfilling.
+		// the matchAll solver is only used if the domainToFind is not listed in
+		// any other solver's DNSNames list.
+		acmeCh, solverConfigToUse = determineSolverConfigToUse(candidates, authz, domainToFind)
+	}
+
 	if acmeCh == nil || solverConfigToUse == nil {
 		return nil, fmt.Errorf("solver configuration for domain %q not found. Ensure at least one Solver on your Issuer matches the order", domainToFind)
 	}
@@ -441,6 +453,47 @@ func (c *Controller) challengeSpecForAuthorization(ctx context.Context, cl acmec
 		Wildcard:  authz.Wildcard,
 		IssuerRef: o.Spec.IssuerRef,
 	}, nil
+}
+
+// if the order has the annotation declaring the ingress it would like to edit,
+// iterate through each solver to determine whether this option is allowed
+// by the issuer, and setup the solver for this if so.
+func determineManualSolver(o *cmapi.Order, candidates []cmapi.ACMEChallengeSolver, authz *acmeapi.Authorization) (*acmeapi.Challenge, *cmapi.ACMEChallengeSolver) {
+	ingName, ok := o.Annotations["http01.acme.certmanager.k8s.io/ingress-to-edit"]
+
+	if !ok {
+		return nil, nil
+	}
+
+	klog.Infof("Attempting to use manually specified ingress %v for order %v", ingName, o.Name)
+	var acmech *acmeapi.Challenge
+	for _, ch := range authz.Challenges {
+		if ch.Type == "http-01" {
+			acmech = ch
+			break
+		}
+	}
+
+	if acmech == nil {
+		klog.Infof("Unable to use manually specified ingress %v for order %v, as no http-01 challenges exist on the issuer", ingName, o.Name)
+		return nil, nil
+	}
+
+	for idx := range candidates {
+		d := &candidates[idx]
+		if d.HTTP01 == nil || !d.HTTP01.Ingress.AllowManuallySpecifiedIngress {
+			continue
+		}
+		solverConfigToUse := &cmapi.ACMEChallengeSolver{
+			HTTP01: &cmapi.ACMEChallengeSolverHTTP01{
+				Ingress: &cmapi.ACMEChallengeSolverHTTP01Ingress{Name: ingName},
+			},
+		}
+		return acmech, solverConfigToUse
+	}
+
+	klog.Infof("Unable to use manually specified ingress %v for order %v as issuer does not allow this option.", ingName, o.Name)
+	return nil, nil
 }
 
 // if a solver config that matches all dns names is found, we'll use the
