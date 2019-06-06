@@ -21,6 +21,7 @@ import (
 	"testing"
 
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
@@ -197,6 +198,68 @@ func TestValidateACMEIssuerConfig(t *testing.T) {
 			},
 			errs: []*field.Error{
 				field.Invalid(fldPath.Child("http01", "serviceType"), corev1.ServiceType("InvalidServiceType"), "optional field serviceType must be one of [\"ClusterIP\" \"NodePort\"]"),
+			},
+		},
+		"acme issue with valid pod template attributes": {
+			spec: &v1alpha1.ACMEIssuer{
+				Email:      "valid-email",
+				Server:     "valid-server",
+				PrivateKey: validSecretKeyRef,
+				HTTP01: &v1alpha1.ACMEIssuerHTTP01Config{
+					ServiceType: corev1.ServiceType("NodePort"),
+					PodTemplate: corev1.PodTemplate{
+						ObjectMeta: metav1.ObjectMeta{
+							Labels: map[string]string{
+								"valid_to_contain": "labels",
+							},
+							ClusterName: "and_cluster",
+						},
+					},
+				},
+			},
+		},
+		"acme issue with invalid pod template ObjectMeta attributes": {
+			spec: &v1alpha1.ACMEIssuer{
+				Email:      "valid-email",
+				Server:     "valid-server",
+				PrivateKey: validSecretKeyRef,
+				HTTP01: &v1alpha1.ACMEIssuerHTTP01Config{
+					ServiceType: corev1.ServiceType("NodePort"),
+					PodTemplate: corev1.PodTemplate{
+						ObjectMeta: metav1.ObjectMeta{
+							Annotations: map[string]string{
+								"valid_to_contain": "annotations",
+							},
+							GenerateName: "unable-to-change-generateName",
+							Name:         "unable-to-change-name",
+						},
+					},
+				},
+			},
+			errs: []*field.Error{
+				field.Invalid(fldPath.Child("http01", "podTemplate"), "unable-to-change-name", "name cannot be set for solver pod template"),
+				field.Invalid(fldPath.Child("http01", "podTemplate"), "unable-to-change-generateName", "generateName cannot be set for solver pod template"),
+			},
+		},
+		"acme issue with invalid pod template Spec attributes": {
+			spec: &v1alpha1.ACMEIssuer{
+				Email:      "valid-email",
+				Server:     "valid-server",
+				PrivateKey: validSecretKeyRef,
+				HTTP01: &v1alpha1.ACMEIssuerHTTP01Config{
+					ServiceType: corev1.ServiceType("NodePort"),
+					PodTemplate: corev1.PodTemplate{
+						Template: corev1.PodTemplateSpec{
+							Spec: corev1.PodSpec{
+								HostIPC:   true,
+								Subdomain: "a sub domain",
+							},
+						},
+					},
+				},
+			},
+			errs: []*field.Error{
+				field.Invalid(fldPath.Child("http01", "podTemplate"), "", "pod spec cannot be defined for solver pod template"),
 			},
 		},
 	}

@@ -18,7 +18,6 @@ package http
 
 import (
 	"context"
-	"fmt"
 	"reflect"
 	"testing"
 
@@ -88,12 +87,7 @@ func TestEnsurePod(t *testing.T) {
 				},
 			},
 			PreFn: func(t *testing.T, s *solverFixture) {
-				expectedPod, err := s.Solver.buildPod(s.Issuer, s.Challenge)
-				if err != nil {
-					t.Errorf("unexpected error building pod: %s", err)
-					t.Fail()
-					return
-				}
+				expectedPod := s.Solver.buildPod(s.Issuer, s.Challenge)
 				// create a reactor that fails the test if a pod is created
 				s.Builder.FakeKubeClient().PrependReactor("create", "pods", func(action coretesting.Action) (handled bool, ret runtime.Object, err error) {
 					pod := action.(coretesting.CreateAction).GetObject().(*v1.Pod)
@@ -183,92 +177,6 @@ func TestEnsurePod(t *testing.T) {
 	}
 }
 
-func TestMergePodWithPodTemplate(t *testing.T) {
-	const createdPodKey = "createdPod"
-	tests := map[string]solverFixture{
-		"should return one pod that matches": {
-			Challenge: &v1alpha1.Challenge{
-				Spec: v1alpha1.ChallengeSpec{
-					DNSName: "example.com",
-					Config: &v1alpha1.SolverConfig{
-						HTTP01: &v1alpha1.HTTP01SolverConfig{},
-					},
-				},
-			},
-			//Issuer: &v1alpha1.Issuer{},
-			PreFn: func(t *testing.T, s *solverFixture) {
-				s.testResources[createdPodKey] = v1.PodTemplate{
-					ObjectMeta: metav1.ObjectMeta{
-						Labels: map[string]string{
-							"this is": "a label",
-						},
-					},
-				}
-
-				s.Builder.Sync()
-			},
-			Issuer: generate.Issuer(generate.IssuerConfig{
-				Name:      defaultTestIssuerName,
-				Namespace: defaultTestNamespace,
-				HTTP01: &v1alpha1.ACMEIssuerHTTP01Config{
-					PodTemplate: v1.PodTemplate{
-						ObjectMeta: metav1.ObjectMeta{
-							Labels: map[string]string{
-								"this is a": "label",
-							},
-						},
-						Template: v1.PodTemplateSpec{
-							Spec: v1.PodSpec{
-								Containers: []v1.Container{
-									{
-										Command: []string{"this is a command foo"},
-									},
-								},
-							},
-						},
-					},
-				},
-			}),
-			CheckFn: func(t *testing.T, s *solverFixture, args ...interface{}) {
-				//createdPod := s.testResources[createdPodKey].(*v1.PodTemplate)
-				pod, err := s.Solver.buildPod(s.Issuer, s.Challenge)
-				if err != nil {
-					t.Error(err)
-					return
-				}
-
-				fmt.Printf("\n\n\n\n\n%s\n\n\n\n\n", pod)
-
-				//resp := args[0].([]*v1.Pod)
-				//if len(resp) != 1 {
-				//	t.Errorf("expected one pod to be returned, but got %d", len(resp))
-				//	t.Fail()
-				//	return
-				//}
-				//if !reflect.DeepEqual(resp[0], createdPod) {
-				//	t.Errorf("Expected %v to equal %v", resp[0], createdPod)
-				//}
-
-				return
-			},
-		},
-	}
-
-	for name, test := range tests {
-		t.Run(name, func(t *testing.T) {
-			test.Setup(t)
-			resp, err := test.Solver.buildPod(test.Issuer, test.Challenge)
-			if err != nil && !test.Err {
-				t.Errorf("Expected function to not error, but got: %v", err)
-			}
-			if err == nil && test.Err {
-				t.Errorf("Expected function to get an error, but got: %v", err)
-			}
-			test.Finish(t, resp, err)
-		})
-	}
-}
-
 func TestGetPodsForCertificate(t *testing.T) {
 	const createdPodKey = "createdPod"
 	tests := map[string]solverFixture{
@@ -343,6 +251,129 @@ func TestGetPodsForCertificate(t *testing.T) {
 				t.Errorf("Expected function to get an error, but got: %v", err)
 			}
 			test.Finish(t, resp, err)
+		})
+	}
+}
+
+func TestMergePodObjectMetaWithPodTemplate(t *testing.T) {
+	const createdPodKey = "createdPod"
+	tests := map[string]solverFixture{
+		"should use labels and owner references from template": {
+			Challenge: &v1alpha1.Challenge{
+				Spec: v1alpha1.ChallengeSpec{
+					DNSName: "example.com",
+					Config: &v1alpha1.SolverConfig{
+						HTTP01: &v1alpha1.HTTP01SolverConfig{},
+					},
+				},
+			},
+			PreFn: func(t *testing.T, s *solverFixture) {
+				resultingPod := s.Solver.buildDefaultPod(s.Issuer, s.Challenge)
+				resultingPod.Labels = map[string]string{
+					"this is a": "label",
+				}
+				resultingPod.OwnerReferences = []metav1.OwnerReference{
+					{Kind: "foo", Name: "bar"},
+				}
+				s.testResources[createdPodKey] = resultingPod
+
+				s.Builder.Sync()
+			},
+			Issuer: generate.Issuer(generate.IssuerConfig{
+				Name:      defaultTestIssuerName,
+				Namespace: defaultTestNamespace,
+				HTTP01: &v1alpha1.ACMEIssuerHTTP01Config{
+					PodTemplate: v1.PodTemplate{
+						ObjectMeta: metav1.ObjectMeta{
+							Labels: map[string]string{
+								"this is a": "label",
+							},
+							OwnerReferences: []metav1.OwnerReference{
+								{Kind: "foo", Name: "bar"},
+							},
+						},
+					},
+				},
+			}),
+			CheckFn: func(t *testing.T, s *solverFixture, args ...interface{}) {
+				resultingPod := s.testResources[createdPodKey].(*v1.Pod)
+
+				resp, ok := args[0].(*v1.Pod)
+				if !ok {
+					t.Errorf("expected pod to be returned, but got %v", args[0])
+					t.Fail()
+					return
+				}
+
+				if resp.String() != resultingPod.String() {
+					t.Errorf("unexpected pod generated from merge\nexp=%s\ngot=%s",
+						resultingPod, resp)
+					t.Fail()
+				}
+			},
+		},
+		"should use default if nothing has changed in template": {
+			Challenge: &v1alpha1.Challenge{
+				Spec: v1alpha1.ChallengeSpec{
+					DNSName: "example.com",
+					Config: &v1alpha1.SolverConfig{
+						HTTP01: &v1alpha1.HTTP01SolverConfig{},
+					},
+				},
+			},
+			PreFn: func(t *testing.T, s *solverFixture) {
+				resultingPod := s.Solver.buildDefaultPod(s.Issuer, s.Challenge)
+				s.testResources[createdPodKey] = resultingPod
+
+				s.Builder.Sync()
+			},
+			Issuer: generate.Issuer(generate.IssuerConfig{
+				Name:      defaultTestIssuerName,
+				Namespace: defaultTestNamespace,
+				HTTP01: &v1alpha1.ACMEIssuerHTTP01Config{
+					PodTemplate: v1.PodTemplate{},
+				},
+			}),
+			CheckFn: func(t *testing.T, s *solverFixture, args ...interface{}) {
+				resultingPod := s.testResources[createdPodKey].(*v1.Pod)
+
+				resp, ok := args[0].(*v1.Pod)
+				if !ok {
+					t.Errorf("expected pod to be returned, but got %v", args[0])
+					t.Fail()
+					return
+				}
+
+				// Owner references need to be checked individually
+				if len(resultingPod.OwnerReferences) != len(resp.OwnerReferences) {
+					t.Errorf("mismatch owner references length, exp=%d got=%d",
+						len(resultingPod.OwnerReferences), len(resp.OwnerReferences))
+				} else {
+					for i := range resp.OwnerReferences {
+						if resp.OwnerReferences[i].String() !=
+							resultingPod.OwnerReferences[i].String() {
+							t.Errorf("unexpected pod owner references generated from merge\nexp=%s\ngot=%s",
+								resp.OwnerReferences[i].String(), resultingPod.OwnerReferences[i].String())
+						}
+					}
+				}
+
+				resp.OwnerReferences = resultingPod.OwnerReferences
+
+				if resp.String() != resultingPod.String() {
+					t.Errorf("unexpected pod generated from merge\nexp=%s\ngot=%s",
+						resultingPod, resp)
+					t.Fail()
+				}
+			},
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			test.Setup(t)
+			resp := test.Solver.buildPod(test.Issuer, test.Challenge)
+			test.Finish(t, resp, nil)
 		})
 	}
 }
