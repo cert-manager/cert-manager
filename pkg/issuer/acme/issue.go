@@ -398,9 +398,10 @@ func buildOrder(crt *v1alpha1.Certificate, csr []byte) (*v1alpha1.Order, error) 
 		return nil, err
 	}
 
+	// truncate certificate name so final name will be <= 63 characters
 	return &v1alpha1.Order{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:            fmt.Sprintf("%s-%d", crt.Name, hash),
+			Name:            fmt.Sprintf("%.52s-%d", crt.Name, hash),
 			Namespace:       crt.Namespace,
 			Labels:          orderLabels(crt),
 			OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(crt, certificateGvk)},
