@@ -5,19 +5,7 @@ Installing on EKS
 Create an EKS cluster
 =====================
 
-The easiest way to deploy and interact with an EKS cluster is to install `eksctl <https://eksctl.io/>`_. 
-
-This allows you to create an EKS cluster using CLI flags:
-
-.. code-block:: shell
-
-    eksctl create cluster --name ekscluster \
-     --region eu-west-1 --version 1.12 \
-      --nodegroup-name ng-1 \
-       --node-type t3.medium \
-        --nodes 2 --nodes-min 1 --nodes-max 3 --node-ami auto
-
-Alternatively, an `eksctl config file <https://github.com/weaveworks/eksctl#using-config-files>`_ can be written in YAML and passed to eksctl.
+The easiest way to deploy and interact with an EKS cluster is to install `eksctl <https://eksctl.io/>`_. This allows you to create an EKS cluster using CLI flags. Alternatively, an `eksctl config file <https://github.com/weaveworks/eksctl#using-config-files>`_ can be written in YAML and passed to eksctl.
 
 Before you can install cert-manager, you should first ensure that your local ``kubectl``
 is configured to talk to your EKS cluster.
@@ -32,15 +20,137 @@ EKS is designed to allow applications to be fully compatible with any standard K
 Issues unique to AWS
 ====================
 
-When a Kubernetes Service with LoadBalancer type is created in an EKS cluster, the default behaviour of EKS is to provision an Elastic Load Balancer (ELB). Unfortunately, this comes with a number of limitations, one of which is cost (ELBs are charged hourly). In order to prevent EKS from creating a number of ELBs (one for each LoadBalancer Service), we can expose a single nginx LoadBalancer Service to the outside world, and have this Service forward requests to our cluster's applications.
+When a Kubernetes Service with LoadBalancer type is created in an EKS cluster, the default behaviour of EKS is to provision an Elastic Load Balancer (ELB). Unfortunately, this comes with a number of limitations, one of which is cost (ELBs are charged hourly). In order to prevent EKS from creating a number of LoadBalancers, we can expose a single LoadBalancer Service to the outside world, and have this Service forward requests to our cluster's applications.
 
-NOTE: A more recent, and more capable, load balancer is the AWS Application Load Balancer (ALB), which can be provisioned from within EKS using the `alb-ingress-controller <https://github.com/kubernetes-sigs/aws-alb-ingress-controller>`_. Currently this controller requires `an annotation <https://kubernetes-sigs.github.io/aws-alb-ingress-controller/guide/ingress/annotation/#ssl>`_ for specifying a certificate stored in AWS Certificate Manager (ACM). Additionally, the AWS ALB controller currently requires granting the cluster a number of IAM permissions/roles. Version 1.15 of Kubernetes should address multiple bug fixes for this controller and allow for TLS termination support.
+This demonstration uses the NGINX Ingress Controller (installation guide `here<https://kubernetes.github.io/ingress-nginx/deploy/>`_;), which can be `configured to provision a Network Load Balancer (NLB) <https://raw.githubusercontent.com/kubernetes/ingress-nginx/master/deploy/static/provider/aws/service-nlb.yaml>`_; as opposed to an Elastic Load Balancer (ELB). Therefore, the first hop from the end user is to the NLB, which then does a passthrough to the NGINX Ingress Controller.
 
-=======
-Example
-=======
+Note: although the AWS Application Load Balancer (ALB) is a modern load balancer offered by AWS that can can be be provisioned from within EKS, at the time of writing, the `alb-ingress-controller <https://github.com/kubernetes-sigs/aws-alb-ingress-controller>`_; is only capable of serving sites using certificates stored in AWS Certificate Manager (ACM). Version 1.15 of Kubernetes should address multiple bug fixes for this controller and allow for TLS termination support.
+
+===================================
+Creating the cert-manager resources
+===================================
+
+Signing up to Venafi is straightforward - follow the guide provided <here>.
+
+For this tutorial we'll use Venafi Cloud as a `ClusterIssuer` resource.
+
+In order for cert-manager to be able to authenticate with your Venafi Cloud account and set up a ClusterIssuer resource, you'll need to create a Kubernetes Secret containing your API key:
+
+.. code-block:: secret
+   kubectl create secret generic \
+     cloud-secret \
+     --namespace=cert-manager \
+     --from-literal=apikey=<API_KEY>
 
 
+.. code-block:: yaml
+   :linenos:
+
+   apiVersion: certmanager.k8s.io/v1alpha1
+   kind: ClusterIssuer
+   metadata:
+     name: cloud-venafi-issuer
+   spec:
+     venafi:
+       zone: "Default" # Set this to the Venafi policy zone you want to use
+       cloud:
+         url: "https://api.venafi.cloud/v1"
+         apiTokenSecretRef:
+           name: cloud-secret
+           key: apikey
+
+When you run the following command, you should see that the Status stanza of the output is shows that the Issuer is Ready (i.e. has successfully validated itself with the Venafi Cloud service).
+
+.. code-block:: shell
+   kubectl describe clusterissuer cloud-venafi-issuer
+
+.. code-block:: yaml
+   Status:
+     Conditions:
+       Last Transition Time:  2019-06-07T09:33:35Z
+       Message:               Venafi issuer started
+       Reason:                Venafi issuer started
+       Status:                True
+       Type:                  Ready
+
+
+The ClusterIssuer is referenced in the ``spec.issuerRef`` field of the Certificate resource below:
+
+.. code-block:: yaml
+   :linenos:
+
+   apiVersion: certmanager.k8s.io/v1alpha1
+   kind: Certificate
+   metadata:
+     name: venafi-cert
+     namespace: hello-kubernetes-ns
+   spec:
+     secretName: venafi-cert-tls
+     duration: 2160h # 90d
+     renewBefore: 360h # 15d
+     commonName: cmvenafi.jetstack.example.com
+     dnsNames:
+     - cmvenafi.jetstack.example.com
+     - www.cmvenafi.jetstack.example.com
+     issuerRef:
+       name: cloud-venafi-issuer
+       kind: ClusterIssuer
+
+As long as you've ensured that the zone of your Venafi Cloud account (in our example, we use the "Default" zone) has been configured with a CA or contains a custom certificate, cert-manager can now take steps to populate the ``venafi-cert-tls`` Secret with a certificate. It does this by identifying itself with Venafi Cloud using the API key, then requesting a certificate to match the specifications of the Certificate resource that we've created.
+
+==================
+Example Deployment
+==================
+
+Below is a demo deployment that serves a simple "hello world" website. The Service is of type ClusterIP, not LoadBalancer, as we only wish to provision a Network Load Balancer for the NGINX Ingress Controller. You will also need to configure the NGINX Deployment to ensure that it is correctly labelled to perform routing to this service.
+
+.. code-block:: yaml
+   :linenos:
+
+   ---
+   apiVersion: v1
+   kind: Service
+   metadata:
+     name: hello-kubernetes
+     labels:
+       name: hello-kubernetes
+     namespace: hello-kubernetes-ns
+   spec:
+     type: ClusterIP
+     ports:
+     - port: 80
+       targetPort: 8080
+     selector:
+       name: hello-kubernetes
+   ---
+   apiVersion: apps/v1
+   kind: Deployment
+   metadata:
+     name: hello-kubernetes
+     namespace: hello-kubernetes-ns
+   spec:
+     replicas: 2
+     selector:
+       matchLabels:
+         name: hello-kubernetes
+     template:
+       metadata:
+         labels:
+           name: hello-kubernetes
+       spec:
+         containers:
+         - name: hello-kubernetes
+           image: paulbouwer/hello-kubernetes:1.5
+           resources:
+             requests:
+               cpu: 100m
+               memory: 100Mi
+           ports:
+           - containerPort: 8080
+
+===============
+Example Ingress
+===============
 
 .. code-block:: yaml
    :linenos:
@@ -48,16 +158,16 @@ Example
    apiVersion: extensions/v1beta1
    kind: Ingress
    metadata:
-     name: frontend-ing
+     name: frontend-ingress
      namespace: hello-kubernetes-ns
      annotations:
        kubernetes.io/ingress.class: "nginx"
-       certmanager.k8s.io/cluster-issuer:    "letsencrypt-staging"
+       certmanager.k8s.io/cluster-issuer: "cloud-venafi-issuer"
    spec:
      tls:
      - hosts:
        - www.<host-name>
-       secretName: certsecret-tls
+       secretName: certsecret-venafi-tls
      rules:
      - host: www.<host-name>
        http:
@@ -67,20 +177,13 @@ Example
              serviceName: hello-kubernetes
              servicePort: 80
 
-======================
-Register a certificate
-======================
+==========================
+Configure your DNS records
+==========================
 
-For this tutorial we'll use Venafi Cloud as a `ClusterIssuer` resource.
+Once AWS has provisioned a Network Load Balancer, you're provided with an IPv4 address to which you can point a CNAME DNS record:
 
-Signing up to Venafi is straightforward - follow the guide.
+.. code-block:: shell
+   kubectl -n hello-kubernetes-ns get svc
 
-Cert-manager is able to request a certificate, but requires an apikey to authenticate itself with the Venafi Cloud account. This API key should be stored as a Kubernetes Secret.
-
-##### Notes
-
-Had some issues with the using Venafi: specifically getting 404s when trying to register a ClusterIssuer resource.
-
-Have tested it using a LetsEncrypt certificate and it works fine. Think this example would be more useful with an example of a different issuer e.g. Venafi
-
-TLS certificate auto-discovery / multiple TLS certificate support not there yet
+It will take several minutes for the Load Balancer to be provisioned and for the DNS records to propagate.
