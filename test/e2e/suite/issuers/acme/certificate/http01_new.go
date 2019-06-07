@@ -171,6 +171,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 			gen.SetCertificateDNSNames(acmeIngressDomain),
 			gen.SetCertificateKeyAlgorithm(v1alpha1.ECDSAKeyAlgorithm),
 		)
+		cert.Namespace = f.Namespace.Name
 		_, err := certClient.Create(cert)
 		Expect(err).NotTo(HaveOccurred())
 		By("Verifying the Certificate is valid and of type ECDSA")
