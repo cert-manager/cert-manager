@@ -28,7 +28,6 @@ import (
 	coretesting "k8s.io/client-go/testing"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
-	"github.com/jetstack/cert-manager/test/util/generate"
 )
 
 func TestEnsurePod(t *testing.T) {
@@ -46,7 +45,7 @@ func TestEnsurePod(t *testing.T) {
 				},
 			},
 			PreFn: func(t *testing.T, s *solverFixture) {
-				ing, err := s.Solver.createPod(s.Issuer, s.Challenge)
+				ing, err := s.Solver.createPod(s.Challenge)
 				if err != nil {
 					t.Errorf("error preparing test: %v", err)
 				}
@@ -87,7 +86,7 @@ func TestEnsurePod(t *testing.T) {
 				},
 			},
 			PreFn: func(t *testing.T, s *solverFixture) {
-				expectedPod := s.Solver.buildPod(s.Issuer, s.Challenge)
+				expectedPod := s.Solver.buildPod(s.Challenge)
 				// create a reactor that fails the test if a pod is created
 				s.Builder.FakeKubeClient().PrependReactor("create", "pods", func(action coretesting.Action) (handled bool, ret runtime.Object, err error) {
 					pod := action.(coretesting.CreateAction).GetObject().(*v1.Pod)
@@ -138,11 +137,11 @@ func TestEnsurePod(t *testing.T) {
 			},
 			Err: true,
 			PreFn: func(t *testing.T, s *solverFixture) {
-				_, err := s.Solver.createPod(s.Issuer, s.Challenge)
+				_, err := s.Solver.createPod(s.Challenge)
 				if err != nil {
 					t.Errorf("error preparing test: %v", err)
 				}
-				_, err = s.Solver.createPod(s.Issuer, s.Challenge)
+				_, err = s.Solver.createPod(s.Challenge)
 				if err != nil {
 					t.Errorf("error preparing test: %v", err)
 				}
@@ -165,7 +164,7 @@ func TestEnsurePod(t *testing.T) {
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			test.Setup(t)
-			resp, err := test.Solver.ensurePod(context.TODO(), test.Issuer, test.Challenge)
+			resp, err := test.Solver.ensurePod(context.TODO(), test.Challenge)
 			if err != nil && !test.Err {
 				t.Errorf("Expected function to not error, but got: %v", err)
 			}
@@ -190,7 +189,7 @@ func TestGetPodsForCertificate(t *testing.T) {
 				},
 			},
 			PreFn: func(t *testing.T, s *solverFixture) {
-				ing, err := s.Solver.createPod(s.Issuer, s.Challenge)
+				ing, err := s.Solver.createPod(s.Challenge)
 				if err != nil {
 					t.Errorf("error preparing test: %v", err)
 				}
@@ -223,7 +222,7 @@ func TestGetPodsForCertificate(t *testing.T) {
 			PreFn: func(t *testing.T, s *solverFixture) {
 				differentChallenge := s.Challenge.DeepCopy()
 				differentChallenge.Spec.DNSName = "notexample.com"
-				_, err := s.Solver.createPod(s.Issuer, differentChallenge)
+				_, err := s.Solver.createPod(differentChallenge)
 				if err != nil {
 					t.Errorf("error preparing test: %v", err)
 				}
@@ -265,10 +264,24 @@ func TestMergePodObjectMetaWithPodTemplate(t *testing.T) {
 					Config: &v1alpha1.SolverConfig{
 						HTTP01: &v1alpha1.HTTP01SolverConfig{},
 					},
+					Solver: &v1alpha1.ACMEChallengeSolver{
+						HTTP01: &v1alpha1.ACMEChallengeSolverHTTP01{
+							PodTemplate: v1.PodTemplateSpec{
+								ObjectMeta: metav1.ObjectMeta{
+									Labels: map[string]string{
+										"this is a": "label",
+									},
+									OwnerReferences: []metav1.OwnerReference{
+										{Kind: "foo", Name: "bar"},
+									},
+								},
+							},
+						},
+					},
 				},
 			},
 			PreFn: func(t *testing.T, s *solverFixture) {
-				resultingPod := s.Solver.buildDefaultPod(s.Issuer, s.Challenge)
+				resultingPod := s.Solver.buildDefaultPod(s.Challenge)
 				resultingPod.Labels = map[string]string{
 					"this is a": "label",
 				}
@@ -279,22 +292,6 @@ func TestMergePodObjectMetaWithPodTemplate(t *testing.T) {
 
 				s.Builder.Sync()
 			},
-			Issuer: generate.Issuer(generate.IssuerConfig{
-				Name:      defaultTestIssuerName,
-				Namespace: defaultTestNamespace,
-				HTTP01: &v1alpha1.ACMEIssuerHTTP01Config{
-					PodTemplate: v1.PodTemplate{
-						ObjectMeta: metav1.ObjectMeta{
-							Labels: map[string]string{
-								"this is a": "label",
-							},
-							OwnerReferences: []metav1.OwnerReference{
-								{Kind: "foo", Name: "bar"},
-							},
-						},
-					},
-				},
-			}),
 			CheckFn: func(t *testing.T, s *solverFixture, args ...interface{}) {
 				resultingPod := s.testResources[createdPodKey].(*v1.Pod)
 
@@ -322,18 +319,11 @@ func TestMergePodObjectMetaWithPodTemplate(t *testing.T) {
 				},
 			},
 			PreFn: func(t *testing.T, s *solverFixture) {
-				resultingPod := s.Solver.buildDefaultPod(s.Issuer, s.Challenge)
+				resultingPod := s.Solver.buildDefaultPod(s.Challenge)
 				s.testResources[createdPodKey] = resultingPod
 
 				s.Builder.Sync()
 			},
-			Issuer: generate.Issuer(generate.IssuerConfig{
-				Name:      defaultTestIssuerName,
-				Namespace: defaultTestNamespace,
-				HTTP01: &v1alpha1.ACMEIssuerHTTP01Config{
-					PodTemplate: v1.PodTemplate{},
-				},
-			}),
 			CheckFn: func(t *testing.T, s *solverFixture, args ...interface{}) {
 				resultingPod := s.testResources[createdPodKey].(*v1.Pod)
 
@@ -372,7 +362,7 @@ func TestMergePodObjectMetaWithPodTemplate(t *testing.T) {
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			test.Setup(t)
-			resp := test.Solver.buildPod(test.Issuer, test.Challenge)
+			resp := test.Solver.buildPod(test.Challenge)
 			test.Finish(t, resp, nil)
 		})
 	}

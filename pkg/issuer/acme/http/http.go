@@ -112,7 +112,7 @@ func httpDomainCfgForChallenge(issuer v1alpha1.GenericIssuer, ch *v1alpha1.Chall
 func (s *Solver) Present(ctx context.Context, issuer v1alpha1.GenericIssuer, ch *v1alpha1.Challenge) error {
 	ctx = http01LogCtx(ctx)
 
-	_, podErr := s.ensurePod(ctx, issuer, ch)
+	_, podErr := s.ensurePod(ctx, ch)
 	svc, svcErr := s.ensureService(ctx, issuer, ch)
 	if svcErr != nil {
 		return utilerrors.NewAggregate([]error{podErr, svcErr})

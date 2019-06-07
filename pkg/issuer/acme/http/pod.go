@@ -46,7 +46,7 @@ func podLabels(ch *v1alpha1.Challenge) map[string]string {
 	}
 }
 
-func (s *Solver) ensurePod(ctx context.Context, issuer v1alpha1.GenericIssuer, ch *v1alpha1.Challenge) (*corev1.Pod, error) {
+func (s *Solver) ensurePod(ctx context.Context, ch *v1alpha1.Challenge) (*corev1.Pod, error) {
 	log := logf.FromContext(ctx).WithName("ensurePod")
 
 	log.V(logf.DebugLevel).Info("checking for existing HTTP01 solver pods")
@@ -68,7 +68,8 @@ func (s *Solver) ensurePod(ctx context.Context, issuer v1alpha1.GenericIssuer, c
 	}
 
 	log.Info("creating HTTP01 challenge solver pod")
-	return s.createPod(issuer, ch)
+
+	return s.createPod(ch)
 }
 
 // getPodsForChallenge returns a list of pods that were created to solve
@@ -130,24 +131,26 @@ func (s *Solver) cleanupPods(ctx context.Context, ch *v1alpha1.Challenge) error 
 
 // createPod will create a challenge solving pod for the given certificate,
 // domain, token and key.
-func (s *Solver) createPod(issuer v1alpha1.GenericIssuer, ch *v1alpha1.Challenge) (*corev1.Pod, error) {
+func (s *Solver) createPod(ch *v1alpha1.Challenge) (*corev1.Pod, error) {
 	return s.Client.CoreV1().Pods(ch.Namespace).Create(
-		s.buildPod(issuer, ch))
+		s.buildPod(ch))
 }
 
 // buildPod will build a challenge solving pod for the given certificate,
 // domain, token and key. It will not create it in the API server
-func (s *Solver) buildPod(issuer v1alpha1.GenericIssuer, ch *v1alpha1.Challenge) *corev1.Pod {
-	pod := s.buildDefaultPod(issuer, ch)
+func (s *Solver) buildPod(ch *v1alpha1.Challenge) *corev1.Pod {
+	pod := s.buildDefaultPod(ch)
 
 	// Override defaults if they have changed in the pod template.
-	pod = s.mergePodObjectMetaWithPodTemplate(pod,
-		issuer.GetSpec().ACME.HTTP01.PodTemplate.DeepCopy())
+	if ch.Spec.Solver != nil {
+		pod = s.mergePodObjectMetaWithPodTemplate(pod,
+			ch.Spec.Solver.HTTP01.PodTemplate.DeepCopy())
+	}
 
 	return pod
 }
 
-func (s *Solver) buildDefaultPod(issuer v1alpha1.GenericIssuer, ch *v1alpha1.Challenge) *corev1.Pod {
+func (s *Solver) buildDefaultPod(ch *v1alpha1.Challenge) *corev1.Pod {
 	podLabels := podLabels(ch)
 
 	return &corev1.Pod{
@@ -198,7 +201,7 @@ func (s *Solver) buildDefaultPod(issuer v1alpha1.GenericIssuer, ch *v1alpha1.Cha
 }
 
 // Merge object meta from the pod template. Fall back to default values.
-func (s *Solver) mergePodObjectMetaWithPodTemplate(pod *corev1.Pod, podTempl *corev1.PodTemplate) *corev1.Pod {
+func (s *Solver) mergePodObjectMetaWithPodTemplate(pod *corev1.Pod, podTempl *corev1.PodTemplateSpec) *corev1.Pod {
 	mergedObjectMeta := podTempl.ObjectMeta
 	mergedObjectMeta.GenerateName = pod.GenerateName
 

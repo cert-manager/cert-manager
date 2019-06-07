@@ -106,6 +106,38 @@ func ValidateACMEIssuerConfig(iss *v1alpha1.ACMEIssuer, fldPath *field.Path) fie
 	if iss.DNS01 != nil {
 		el = append(el, ValidateACMEIssuerDNS01Config(iss.DNS01, fldPath.Child("dns01"))...)
 	}
+	for _, sol := range iss.Solvers {
+		el = append(el, ValidateACMEIssuerChallengeSolverConfig(&sol, fldPath.Child("solver"))...)
+	}
+
+	return el
+}
+
+func ValidateACMEIssuerChallengeSolverConfig(sol *v1alpha1.ACMEChallengeSolver, fldPath *field.Path) field.ErrorList {
+	el := field.ErrorList{}
+
+	if sol.HTTP01 != nil {
+		el = append(el, ValidateACMEIssuerChallengeSolverHTTP01Config(sol.HTTP01, fldPath.Child("http01"))...)
+	}
+
+	return el
+}
+
+func ValidateACMEIssuerChallengeSolverHTTP01Config(sol *v1alpha1.ACMEChallengeSolverHTTP01, fldPath *field.Path) field.ErrorList {
+	el := field.ErrorList{}
+
+	// Validate incoming solver pod template
+	if len(sol.PodTemplate.Name) > 0 {
+		el = append(el, field.Invalid(fldPath.Child("podTemplate"), sol.PodTemplate.Name, "name cannot be set for solver pod template"))
+	}
+	if len(sol.PodTemplate.GenerateName) > 0 {
+		el = append(el, field.Invalid(fldPath.Child("podTemplate"), sol.PodTemplate.GenerateName, "generateName cannot be set for solver pod template"))
+	}
+
+	if sol.PodTemplate.Spec.String() != new(corev1.PodSpec).String() {
+		el = append(el, field.Invalid(fldPath.Child("podTemplate"), "", "pod spec cannot be defined for solver pod template"))
+	}
+
 	return el
 }
 
@@ -167,18 +199,6 @@ func ValidateACMEIssuerHTTP01Config(iss *v1alpha1.ACMEIssuerHTTP01Config, fldPat
 		if !validType {
 			el = append(el, field.Invalid(fldPath.Child("serviceType"), iss.ServiceType, fmt.Sprintf("optional field serviceType must be one of %q", validTypes)))
 		}
-	}
-
-	// Validate incoming solver pod template
-	if len(iss.PodTemplate.Name) > 0 {
-		el = append(el, field.Invalid(fldPath.Child("podTemplate"), iss.PodTemplate.Name, "name cannot be set for solver pod template"))
-	}
-	if len(iss.PodTemplate.GenerateName) > 0 {
-		el = append(el, field.Invalid(fldPath.Child("podTemplate"), iss.PodTemplate.GenerateName, "generateName cannot be set for solver pod template"))
-	}
-
-	if iss.PodTemplate.Template.Spec.String() != new(corev1.PodSpec).String() {
-		el = append(el, field.Invalid(fldPath.Child("podTemplate"), "", "pod spec cannot be defined for solver pod template"))
 	}
 
 	return el

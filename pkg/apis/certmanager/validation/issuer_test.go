@@ -205,16 +205,22 @@ func TestValidateACMEIssuerConfig(t *testing.T) {
 				Email:      "valid-email",
 				Server:     "valid-server",
 				PrivateKey: validSecretKeyRef,
-				HTTP01: &v1alpha1.ACMEIssuerHTTP01Config{
-					ServiceType: corev1.ServiceType("NodePort"),
-					PodTemplate: corev1.PodTemplate{
-						ObjectMeta: metav1.ObjectMeta{
-							Labels: map[string]string{
-								"valid_to_contain": "labels",
+				Solvers: []v1alpha1.ACMEChallengeSolver{
+					{
+						HTTP01: &v1alpha1.ACMEChallengeSolverHTTP01{
+							PodTemplate: corev1.PodTemplateSpec{
+								ObjectMeta: metav1.ObjectMeta{
+									Labels: map[string]string{
+										"valid_to_contain": "labels",
+									},
+									ClusterName: "and_cluster",
+								},
 							},
-							ClusterName: "and_cluster",
 						},
 					},
+				},
+				HTTP01: &v1alpha1.ACMEIssuerHTTP01Config{
+					ServiceType: corev1.ServiceType("NodePort"),
 				},
 			},
 		},
@@ -223,22 +229,25 @@ func TestValidateACMEIssuerConfig(t *testing.T) {
 				Email:      "valid-email",
 				Server:     "valid-server",
 				PrivateKey: validSecretKeyRef,
-				HTTP01: &v1alpha1.ACMEIssuerHTTP01Config{
-					ServiceType: corev1.ServiceType("NodePort"),
-					PodTemplate: corev1.PodTemplate{
-						ObjectMeta: metav1.ObjectMeta{
-							Annotations: map[string]string{
-								"valid_to_contain": "annotations",
+				Solvers: []v1alpha1.ACMEChallengeSolver{
+					{
+						HTTP01: &v1alpha1.ACMEChallengeSolverHTTP01{
+							PodTemplate: corev1.PodTemplateSpec{
+								ObjectMeta: metav1.ObjectMeta{
+									Annotations: map[string]string{
+										"valid_to_contain": "annotations",
+									},
+									GenerateName: "unable-to-change-generateName",
+									Name:         "unable-to-change-name",
+								},
 							},
-							GenerateName: "unable-to-change-generateName",
-							Name:         "unable-to-change-name",
 						},
 					},
 				},
 			},
 			errs: []*field.Error{
-				field.Invalid(fldPath.Child("http01", "podTemplate"), "unable-to-change-name", "name cannot be set for solver pod template"),
-				field.Invalid(fldPath.Child("http01", "podTemplate"), "unable-to-change-generateName", "generateName cannot be set for solver pod template"),
+				field.Invalid(fldPath.Child("solver", "http01", "podTemplate"), "unable-to-change-name", "name cannot be set for solver pod template"),
+				field.Invalid(fldPath.Child("solver", "http01", "podTemplate"), "unable-to-change-generateName", "generateName cannot be set for solver pod template"),
 			},
 		},
 		"acme issue with invalid pod template Spec attributes": {
@@ -246,20 +255,21 @@ func TestValidateACMEIssuerConfig(t *testing.T) {
 				Email:      "valid-email",
 				Server:     "valid-server",
 				PrivateKey: validSecretKeyRef,
-				HTTP01: &v1alpha1.ACMEIssuerHTTP01Config{
-					ServiceType: corev1.ServiceType("NodePort"),
-					PodTemplate: corev1.PodTemplate{
-						Template: corev1.PodTemplateSpec{
-							Spec: corev1.PodSpec{
-								HostIPC:   true,
-								Subdomain: "a sub domain",
+				Solvers: []v1alpha1.ACMEChallengeSolver{
+					{
+						HTTP01: &v1alpha1.ACMEChallengeSolverHTTP01{
+							PodTemplate: corev1.PodTemplateSpec{
+								Spec: corev1.PodSpec{
+									HostIPC:   true,
+									Subdomain: "a sub domain",
+								},
 							},
 						},
 					},
 				},
 			},
 			errs: []*field.Error{
-				field.Invalid(fldPath.Child("http01", "podTemplate"), "", "pod spec cannot be defined for solver pod template"),
+				field.Invalid(fldPath.Child("solver", "http01", "podTemplate"), "", "pod spec cannot be defined for solver pod template"),
 			},
 		},
 	}
