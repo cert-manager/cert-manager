@@ -751,6 +751,10 @@ Appears In:
 <td><code>ingress</code><br /> *<a href="#acmechallengesolverhttp01ingress-v1alpha1">ACMEChallengeSolverHTTP01Ingress</a>*</td>
 <td>The ingress based HTTP01 challenge solver will solve challenges by creating or modifying Ingress resources in order to route requests for &#39;/.well-known/acme-challenge/XYZ&#39; to &#39;challenge solver&#39; pods that are provisioned by cert-manager for each Challenge to be completed.</td>
 </tr>
+<tr>
+<td><code>podTemplate</code><br /> <em>PodTemplateSpec</em></td>
+<td>Optional template for configure the solver pods. Not all pod template options are valid (e.g. name).</td>
+</tr>
 </tbody></table>
 <h2 id="acmechallengesolverhttp01ingress-v1alpha1">ACMEChallengeSolverHTTP01Ingress v1alpha1</h2>
 <table>
@@ -1394,10 +1398,6 @@ Appears In:
 </tr>
 </thead>
 <tbody><tr>
-<td><code>PodTemplate</code><br /> <em>PodTemplate</em></td>
-<td>Optional template for configure the solver pods. Not all pod template options are valid (e.g. name)</td>
-</tr>
-<tr>
 <td><code>serviceType</code><br /> <em>string</em></td>
 <td>Optional service type for Kubernetes solver service</td>
 </tr>

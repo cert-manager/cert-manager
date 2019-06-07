@@ -261,7 +261,7 @@ type ACMEChallengeSolverHTTP01 struct {
 	// +optional
 	Ingress *ACMEChallengeSolverHTTP01Ingress `json:"ingress"`
 
-	// Optional template for configure the solver pods. Not all pod template
+	// Optional template to configure the solver pods. Not all pod template
 	// options are valid (e.g. name).
 	// +optional
 	PodTemplate corev1.PodTemplateSpec `json:"podTemplate,omitempty"`

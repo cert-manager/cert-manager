@@ -67,3 +67,23 @@ response specify the following http01 config:
 
 By default type NodePort will be used when you don't set http01 or when you set
 serviceType to an empty string. Normally there's no need to change this.
+
+podTemplate
+-----------
+
+You may wish to change the solver's pod metadata, such as labels and
+annotations. This can be done by editing the ``podTemplate`` attribute. Note
+that the ``name``, ``generateName``, and all fields under ``spec`` cannot be
+changed.
+
+.. code-block:: yaml
+
+       - http01:
+           podTemplate:
+             namespace: default
+             labels:
+               environment: production
+               foo: bar
+
+Unless changed, the pod's metadata will remain the default for each unedited
+field when a podTemplate is specified.
