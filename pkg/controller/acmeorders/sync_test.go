@@ -34,6 +34,263 @@ import (
 	acmeapi "github.com/jetstack/cert-manager/third_party/crypto/acme"
 )
 
+func TestSyncHappyPathWithNewFormat(t *testing.T) {
+	nowTime := time.Now()
+	//nowMetaTime := metav1.NewTime(nowTime)
+	fixedClock := fakeclock.NewFakeClock(nowTime)
+
+	// issuers
+	ingressName := "ingress-name"
+	defaultSolvers := []v1alpha1.ACMEChallengeSolver{
+		{
+			HTTP01: &v1alpha1.ACMEChallengeSolverHTTP01{
+				Ingress: &v1alpha1.ACMEChallengeSolverHTTP01Ingress{
+					Name: ingressName,
+				},
+			},
+		},
+	}
+
+	testIssuer := &v1alpha1.Issuer{
+		Spec: v1alpha1.IssuerSpec{
+			IssuerConfig: v1alpha1.IssuerConfig{
+				ACME: &v1alpha1.ACMEIssuer{
+					Solvers: defaultSolvers,
+				},
+			},
+		},
+	}
+
+	testIssuerManualEnabled := testIssuer.DeepCopy()
+	testIssuerManualEnabled.Spec.IssuerConfig.ACME.Solvers = append(defaultSolvers,
+		v1alpha1.ACMEChallengeSolver{
+			HTTP01: &v1alpha1.ACMEChallengeSolverHTTP01{
+				Ingress: &v1alpha1.ACMEChallengeSolverHTTP01Ingress{
+					AllowManuallySpecifiedIngress: true,
+				},
+			},
+		},
+	)
+
+	// orders
+	testOrder := &v1alpha1.Order{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "testorder",
+			Namespace: "default",
+		},
+		Spec: v1alpha1.OrderSpec{CommonName: "test.com"},
+	}
+
+	manuallySpecifiedIngressName := "manually-specified-ingress-name"
+	testOrderManual := testOrder.DeepCopy()
+	testOrderManual.ObjectMeta.Annotations = map[string]string{"http01.acme.certmanager.k8s.io/ingress-to-edit": manuallySpecifiedIngressName}
+
+	testOrderPending := testOrder.DeepCopy()
+	testOrderPending.Status = v1alpha1.OrderStatus{
+		State:       v1alpha1.Pending,
+		URL:         "http://testurl.com/abcde",
+		FinalizeURL: "http://testurl.com/abcde/finalize",
+		Challenges: []v1alpha1.ChallengeSpec{
+			{
+				AuthzURL: "http://authzurl",
+				Type:     "http-01",
+				Token:    "token",
+				DNSName:  "test.com",
+				Key:      "key",
+				Solver: &v1alpha1.ACMEChallengeSolver{
+					HTTP01: &v1alpha1.ACMEChallengeSolverHTTP01{
+						Ingress: &v1alpha1.ACMEChallengeSolverHTTP01Ingress{Name: ingressName},
+					},
+				},
+			},
+		},
+	}
+
+	testOrderManualPending := testOrderManual.DeepCopy()
+	testOrderManualPending.Status = v1alpha1.OrderStatus{
+		State:       v1alpha1.Pending,
+		URL:         "http://testurl.com/abcde",
+		FinalizeURL: "http://testurl.com/abcde/finalize",
+		Challenges: []v1alpha1.ChallengeSpec{
+			{
+				AuthzURL: "http://authzurl",
+				Type:     "http-01",
+				Token:    "token",
+				DNSName:  "test.com",
+				Key:      "key",
+				Solver: &v1alpha1.ACMEChallengeSolver{
+					HTTP01: &v1alpha1.ACMEChallengeSolverHTTP01{
+						Ingress: &v1alpha1.ACMEChallengeSolverHTTP01Ingress{Name: manuallySpecifiedIngressName},
+					},
+				},
+			},
+		},
+	}
+
+	testOrderManualPendingFallback := testOrderManualPending.DeepCopy()
+	testOrderManualPendingFallback.Status.Challenges = []v1alpha1.ChallengeSpec{
+		{
+			AuthzURL: "http://authzurl",
+			Type:     "http-01",
+			Token:    "token",
+			DNSName:  "test.com",
+			Key:      "key",
+			Solver: &v1alpha1.ACMEChallengeSolver{
+				HTTP01: &v1alpha1.ACMEChallengeSolverHTTP01{
+					Ingress: &v1alpha1.ACMEChallengeSolverHTTP01Ingress{Name: ingressName},
+				},
+			},
+		},
+	}
+
+	testAuthorizationChallenge := buildChallenge(0, testOrderPending, testOrderPending.Status.Challenges[0])
+	testAuthorizationChallengeValid := testAuthorizationChallenge.DeepCopy()
+	testAuthorizationChallengeValid.Status.State = v1alpha1.Valid
+	testAuthorizationChallengeInvalid := testAuthorizationChallenge.DeepCopy()
+	testAuthorizationChallengeInvalid.Status.State = v1alpha1.Invalid
+
+	testACMEAuthorizationPending := &acmeapi.Authorization{
+		URL:    "http://authzurl",
+		Status: acmeapi.StatusPending,
+		Identifier: acmeapi.AuthzID{
+			Value: "test.com",
+		},
+		Challenges: []*acmeapi.Challenge{
+			{
+				Type:  "http-01",
+				Token: "token",
+			},
+		},
+	}
+
+	testACMEOrderPending := &acmeapi.Order{
+		URL: testOrderPending.Status.URL,
+		Identifiers: []acmeapi.AuthzID{
+			{
+				Type:  "dns",
+				Value: "test.com",
+			},
+		},
+		FinalizeURL:    testOrderPending.Status.FinalizeURL,
+		Authorizations: []string{"http://authzurl"},
+		Status:         acmeapi.StatusPending,
+	}
+	// shallow copy
+	testACMEOrderValid := &acmeapi.Order{}
+	*testACMEOrderValid = *testACMEOrderPending
+	testACMEOrderValid.Status = acmeapi.StatusValid
+	// shallow copy
+	testACMEOrderReady := &acmeapi.Order{}
+	*testACMEOrderReady = *testACMEOrderPending
+	testACMEOrderReady.Status = acmeapi.StatusReady
+	// shallow copy
+	testACMEOrderInvalid := &acmeapi.Order{}
+	*testACMEOrderInvalid = *testACMEOrderPending
+	testACMEOrderInvalid.Status = acmeapi.StatusInvalid
+
+	tests := map[string]controllerFixture{
+		"create a new order with the acme server using the manually specified ingress when option enabled": {
+			Issuer: testIssuerManualEnabled,
+			Order:  testOrderManual,
+			Builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{testOrderManual},
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(coretesting.NewUpdateAction(v1alpha1.SchemeGroupVersion.WithResource("orders"), testOrderManualPending.Namespace, testOrderManualPending)),
+				},
+			},
+			Client: &acmecl.FakeACME{
+				FakeCreateOrder: func(ctx context.Context, o *acmeapi.Order) (*acmeapi.Order, error) {
+					return testACMEOrderPending, nil
+				},
+				FakeGetAuthorization: func(ctx context.Context, url string) (*acmeapi.Authorization, error) {
+					// TODO: assert url = "http://authzurl"
+					return testACMEAuthorizationPending, nil
+				},
+				FakeHTTP01ChallengeResponse: func(s string) (string, error) {
+					// TODO: assert s = "token"
+					return "key", nil
+				},
+			},
+			CheckFn: func(t *testing.T, s *controllerFixture, args ...interface{}) {
+			},
+			Err: false,
+		},
+		"create a new order with the acme server with a fallback ingress when ingress is manually specified but option disabled": {
+			Issuer: testIssuer,
+			Order:  testOrderManual,
+			Builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{testOrderManual},
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(coretesting.NewUpdateAction(v1alpha1.SchemeGroupVersion.WithResource("orders"), testOrderManualPendingFallback.Namespace, testOrderManualPendingFallback)),
+				},
+			},
+			Client: &acmecl.FakeACME{
+				FakeCreateOrder: func(ctx context.Context, o *acmeapi.Order) (*acmeapi.Order, error) {
+					return testACMEOrderPending, nil
+				},
+				FakeGetAuthorization: func(ctx context.Context, url string) (*acmeapi.Authorization, error) {
+					// TODO: assert url = "http://authzurl"
+					return testACMEAuthorizationPending, nil
+				},
+				FakeHTTP01ChallengeResponse: func(s string) (string, error) {
+					// TODO: assert s = "token"
+					return "key", nil
+				},
+			},
+			CheckFn: func(t *testing.T, s *controllerFixture, args ...interface{}) {
+			},
+			Err: false,
+		},
+		"create a new order with the acme server when ingress is not manually specified but option enabled": {
+			Issuer: testIssuerManualEnabled,
+			Order:  testOrder,
+			Builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{testOrder},
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(coretesting.NewUpdateAction(v1alpha1.SchemeGroupVersion.WithResource("orders"), testOrderPending.Namespace, testOrderPending)),
+				},
+			},
+			Client: &acmecl.FakeACME{
+				FakeCreateOrder: func(ctx context.Context, o *acmeapi.Order) (*acmeapi.Order, error) {
+					return testACMEOrderPending, nil
+				},
+				FakeGetAuthorization: func(ctx context.Context, url string) (*acmeapi.Authorization, error) {
+					// TODO: assert url = "http://authzurl"
+					return testACMEAuthorizationPending, nil
+				},
+				FakeHTTP01ChallengeResponse: func(s string) (string, error) {
+					// TODO: assert s = "token"
+					return "key", nil
+				},
+			},
+			CheckFn: func(t *testing.T, s *controllerFixture, args ...interface{}) {
+			},
+			Err: false,
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			if test.Builder == nil {
+				test.Builder = &testpkg.Builder{}
+			}
+			if test.Clock == nil {
+				test.Clock = fixedClock
+			}
+			test.Setup(t)
+			orderCopy := test.Order.DeepCopy()
+			err := test.Controller.Sync(test.Ctx, orderCopy)
+			if err != nil && !test.Err {
+				t.Errorf("Expected function to not error, but got: %v", err)
+			}
+			if err == nil && test.Err {
+				t.Errorf("Expected function to get an error, but got: %v", err)
+			}
+			test.Finish(t, orderCopy, err)
+		})
+	}
+}
+
 func TestSyncHappyPath(t *testing.T) {
 	nowTime := time.Now()
 	nowMetaTime := metav1.NewTime(nowTime)
