@@ -24,6 +24,7 @@ go_library(
         "//test/e2e/framework/matcher:go_default_library",
         "//test/e2e/suite/issuers/acme/dnsproviders:go_default_library",
         "//test/e2e/util:go_default_library",
+        "//test/unit/gen:go_default_library",
         "//test/util/generate:go_default_library",
         "//vendor/github.com/onsi/ginkgo:go_default_library",
         "//vendor/github.com/onsi/gomega:go_default_library",
