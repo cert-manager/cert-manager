@@ -30,6 +30,7 @@ import (
 	"k8s.io/klog"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	"github.com/jetstack/cert-manager/pkg/metrics"
 	"github.com/jetstack/cert-manager/pkg/util"
 )
 
@@ -60,6 +61,8 @@ const (
 var ingressGVK = extv1beta1.SchemeGroupVersion.WithKind("Ingress")
 
 func (c *Controller) Sync(ctx context.Context, ing *extv1beta1.Ingress) error {
+	metrics.Default.IncrementSyncCallCount(ControllerName)
+
 	if !shouldSync(ing, c.defaults.autoCertificateAnnotations) {
 		klog.Infof("Not syncing ingress %s/%s as it does not contain necessary annotations", ing.Namespace, ing.Name)
 		return nil
@@ -180,6 +183,16 @@ func (c *Controller) buildCertificates(ing *extv1beta1.Ingress, issuer v1alpha1.
 		if existingCrt != nil {
 			klog.Infof("Certificate %q for ingress %q already exists", tls.SecretName, ing.Name)
 
+			if metav1.GetControllerOf(existingCrt) == nil {
+				klog.Infof("Certificate %q has no owners and cannot be updated for ingress %q", tls.SecretName, ing.Name)
+				continue
+			}
+
+			if !metav1.IsControlledBy(existingCrt, ing) {
+				klog.Infof("Certificate %q is not (solely) owned by ingress %q and cannot be updated", tls.SecretName, ing.Name)
+				continue
+			}
+
 			if !certNeedsUpdate(existingCrt, crt) {
 				klog.Infof("Certificate %q for ingress %q is up to date", tls.SecretName, ing.Name)
 				continue
@@ -191,6 +204,7 @@ func (c *Controller) buildCertificates(ing *extv1beta1.Ingress, issuer v1alpha1.
 			updateCrt.Spec.SecretName = tls.SecretName
 			updateCrt.Spec.IssuerRef.Name = issuer.GetObjectMeta().Name
 			updateCrt.Spec.IssuerRef.Kind = issuerKind
+			updateCrt.Labels = ing.Labels
 			err = c.setIssuerSpecificConfig(updateCrt, issuer, ing, tls)
 			if err != nil {
 				return nil, nil, err
@@ -206,6 +220,14 @@ func (c *Controller) buildCertificates(ing *extv1beta1.Ingress, issuer v1alpha1.
 // certNeedsUpdate checks and returns true if two Certificates differ
 func certNeedsUpdate(a, b *v1alpha1.Certificate) bool {
 	if a.Name != b.Name {
+		return true
+	}
+
+	// TODO: we may need to allow users to edit the managed Certificate resources
+	// to add their own labels directly.
+	// Right now, we'll reset/remove the label values back automatically.
+	// Let's hope no other controllers do this automatically, else we'll start fighting...
+	if !reflect.DeepEqual(a.Labels, b.Labels) {
 		return true
 	}
 
@@ -264,16 +286,21 @@ func (c *Controller) setIssuerSpecificConfig(crt *v1alpha1.Certificate, issuer v
 		}
 		switch challengeType {
 		case "http01":
+			editInPlaceVal, ok := ingAnnotations[editInPlaceAnnotation]
+			editInPlace := editInPlaceVal == "true"
 			// If the HTTP01 issuer is not enabled, skip setting the ACME field
 			// on the Certificate resource.
 			if issuer.GetSpec().ACME.HTTP01 == nil {
+				if editInPlace {
+					c.Recorder.Eventf(ing, corev1.EventTypeWarning, "Unsupported", "%s annotation cannot be enabled when using new format solver type. "+
+						"Re-enable the old format HTTP01 solver, or otherwise create a specific HTTP01 solver for this Ingress.", editInPlaceAnnotation)
+				}
 				crt.Spec.ACME = nil
 				return nil
 			}
 			domainCfg.HTTP01 = &v1alpha1.HTTP01SolverConfig{}
-			editInPlace, ok := ingAnnotations[editInPlaceAnnotation]
 			// If annotation isn't present, or it's set to true, edit the existing ingress
-			if ok && editInPlace == "true" {
+			if ok && editInPlace {
 				domainCfg.HTTP01.Ingress = ing.Name
 			} else {
 				ingressClass, ok := ingAnnotations[acmeIssuerHTTP01IngressClassAnnotation]

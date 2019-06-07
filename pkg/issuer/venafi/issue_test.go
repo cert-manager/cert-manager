@@ -35,6 +35,11 @@ func checkCertificateIssued(t *testing.T, s *fixture, args ...interface{}) {
 	returnedCert := args[0].(*cmapi.Certificate)
 	resp := args[1].(*issuer.IssueResponse)
 
+	if resp == nil {
+		t.Errorf("expected IssueResponse to be non-nil")
+		t.FailNow()
+		return
+	}
 	if err, ok := args[2].(error); ok && err != nil {
 		t.Errorf("expected no error to be returned, but got: %v", err)
 		return
@@ -87,10 +92,9 @@ func TestIssue(t *testing.T) {
 				gen.SetCertificateDNSNames("example.com"),
 			),
 			Client: fakeConnector{
-				ReadZoneConfigurationFunc: func(zone string) (*endpoint.ZoneConfiguration, error) {
+				ReadZoneConfigurationFunc: func() (*endpoint.ZoneConfiguration, error) {
 					return &endpoint.ZoneConfiguration{
-						Organization:       "testing-org",
-						OrganizationLocked: true,
+						Organization: "testing-org",
 					}, nil
 				},
 			}.Default(),
@@ -112,10 +116,9 @@ func TestIssue(t *testing.T) {
 				gen.SetCertificateDNSNames("example.com"),
 			),
 			Client: fakeConnector{
-				ReadZoneConfigurationFunc: func(zone string) (*endpoint.ZoneConfiguration, error) {
+				ReadZoneConfigurationFunc: func() (*endpoint.ZoneConfiguration, error) {
 					return &endpoint.ZoneConfiguration{
-						Organization:       "testing-org",
-						OrganizationLocked: false,
+						Organization: "testing-org",
 					}, nil
 				},
 			}.Default(),

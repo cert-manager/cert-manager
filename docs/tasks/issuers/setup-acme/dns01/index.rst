@@ -6,7 +6,7 @@ This page contains details on the different options available on the ``Issuer``
 resource's DNS01 challenge solver configuration.
 
 For more information on configuring ACME issuers and their API format, read the
-:doc:`Setting up ACME Issuers <./setup-acme>` documentation.
+:doc:`Setting up ACME Issuers <../index>` documentation.
 
 DNS01 provider configuration must be specified on the Issuer resource, similar
 to the examples in the setting up documentation:

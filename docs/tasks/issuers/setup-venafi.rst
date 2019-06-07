@@ -5,7 +5,7 @@ Setting up Venafi Issuers
 The Venafi Issuer types allows you to obtain certificates from `Venafi Cloud`_
 and `Venafi Trust Protection Platform`_ instances.
 
-Register your account at https://api.venafi.cloud/login and get an API key from
+Register your account at https://ui.venafi.cloud/enroll and get an API key from
 your dashboard.
 
 You can have multiple different Venafi Issuer types installed within the same
@@ -30,7 +30,7 @@ obtain certificates from.
 You can configure your Issuer resource to either issue certificates only within
 a single namespace, or cluster-wide (using a ClusterIssuer resource).
 For more information on the distinction between Issuer and ClusterIssuer
-resources, read the issuer_vs_clusterissuer_ section.
+resources, read the :ref:`issuer_vs_clusterissuer` section.
 
 
 Creating a Venafi Cloud Issuer
@@ -95,7 +95,7 @@ Verify the Issuer has been initialised correctly using ``kubectl describe``:
 You are now ready to issue certificates using the newly provisioned Venafi
 Issuer.
 
-Read the :doc:`Issuing Certificates <../issuing-certificates>` document
+Read the :doc:`Issuing Certificates <../issuing-certificates/index>` document
 for more information on how to create Certificate resources.
 
 Creating a Venafi Trust Protection Platform Issuer
@@ -176,4 +176,4 @@ Read the :doc:`Issuing Certificates <../issuing-certificates/index>` document
 for more information on how to create Certificate resources.
 
 .. _Venafi Cloud: https://pki.venafi.com/venafi-cloud/
-.. _Venafi Trust Protection Platform:: https://venafi.com/
+.. _Venafi Trust Protection Platform: https://venafi.com/

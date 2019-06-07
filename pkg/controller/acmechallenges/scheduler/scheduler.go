@@ -27,22 +27,17 @@ import (
 	cmlisters "github.com/jetstack/cert-manager/pkg/client/listers/certmanager/v1alpha1"
 )
 
-const (
-	// MaxConcurrentChallenges is the total maximum number of challenges that
-	// can be scheduled as 'processing' at once.
-	MaxConcurrentChallenges = 60
-)
-
 // Scheduler implements an ACME challenge scheduler that applies heuristics
 // to challenge resources in order to determine which challenges should be
 // processing at a given time.
 type Scheduler struct {
-	challengeLister cmlisters.ChallengeLister
+	challengeLister         cmlisters.ChallengeLister
+	maxConcurrentChallenges int
 }
 
 // New will construct a new instance of a scheduler
-func New(l cmlisters.ChallengeLister) *Scheduler {
-	return &Scheduler{challengeLister: l}
+func New(l cmlisters.ChallengeLister, maxConcurrentChallenges int) *Scheduler {
+	return &Scheduler{challengeLister: l, maxConcurrentChallenges: maxConcurrentChallenges}
 }
 
 // ScheduleN will return a maximum of N challenge resources that should be
@@ -69,7 +64,7 @@ func (s *Scheduler) scheduleN(n int, allChallenges []*cmapi.Challenge) ([]*cmapi
 	}
 
 	numberToSelect := n
-	remainingNumberAllowedChallenges := MaxConcurrentChallenges - inProgressChallengeCount
+	remainingNumberAllowedChallenges := s.maxConcurrentChallenges - inProgressChallengeCount
 	if numberToSelect > remainingNumberAllowedChallenges {
 		numberToSelect = remainingNumberAllowedChallenges
 	}
@@ -107,8 +102,8 @@ func (s *Scheduler) determineChallengeCandidates(allChallenges []*cmapi.Challeng
 	// Ensure we only run a max of MaxConcurrentChallenges at a time
 	// We perform this check here to avoid extra processing if we've already
 	// hit the maximum number of challenges.
-	if inProgressChallengeCount >= MaxConcurrentChallenges {
-		klog.V(4).Infof("There are currently %d running challenges, with a maximum configured of %d. Refusing to schedule more challenges.", len(inProgress), MaxConcurrentChallenges)
+	if inProgressChallengeCount >= s.maxConcurrentChallenges {
+		klog.V(4).Infof("There are currently %d running challenges, with a maximum configured of %d. Refusing to schedule more challenges.", len(inProgress), s.maxConcurrentChallenges)
 		return []*cmapi.Challenge{}, inProgressChallengeCount, nil
 	}
 

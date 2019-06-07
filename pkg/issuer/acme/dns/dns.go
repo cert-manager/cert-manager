@@ -62,7 +62,7 @@ type dnsProviderConstructors struct {
 	cloudDNS     func(project string, serviceAccount []byte, dns01Nameservers []string, ambient bool) (*clouddns.DNSProvider, error)
 	cloudFlare   func(email, apikey string, dns01Nameservers []string) (*cloudflare.DNSProvider, error)
 	route53      func(accessKey, secretKey, hostedZoneID, region string, ambient bool, dns01Nameservers []string) (*route53.DNSProvider, error)
-	azureDNS     func(clientID, clientSecret, subscriptionID, tenentID, resourceGroupName, hostedZoneName string, dns01Nameservers []string) (*azuredns.DNSProvider, error)
+	azureDNS     func(clientID, clientSecret, subscriptionID, tenantID, resourceGroupName, hostedZoneName string, dns01Nameservers []string) (*azuredns.DNSProvider, error)
 	acmeDNS      func(host string, accountJson []byte, dns01Nameservers []string) (*acmedns.DNSProvider, error)
 	digitalOcean func(token string, dns01Nameservers []string) (*digitalocean.DNSProvider, error)
 }
@@ -407,6 +407,7 @@ func (s *Solver) prepareChallengeRequest(issuer v1alpha1.GenericIssuer, ch *v1al
 		AllowAmbientCredentials: canUseAmbientCredentials,
 		ResourceNamespace:       resourceNamespace,
 		Key:                     ch.Spec.Key,
+		DNSName:                 ch.Spec.DNSName,
 		Config:                  &apiext.JSON{Raw: b},
 	}
 
@@ -422,6 +423,9 @@ func (s *Solver) dns01SolverForConfig(config *v1alpha1.ACMEChallengeSolverDNS01)
 	case config.Webhook != nil:
 		solverName = "webhook"
 		c = config.Webhook
+	case config.RFC2136 != nil:
+		solverName = "rfc2136"
+		c = config.RFC2136
 	}
 	if solverName == "" {
 		return nil, nil, errNotFound

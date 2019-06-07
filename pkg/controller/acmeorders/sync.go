@@ -33,6 +33,7 @@ import (
 	"github.com/jetstack/cert-manager/pkg/acme"
 	acmecl "github.com/jetstack/cert-manager/pkg/acme/client"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	"github.com/jetstack/cert-manager/pkg/metrics"
 	acmeapi "github.com/jetstack/cert-manager/third_party/crypto/acme"
 	"k8s.io/klog"
 )
@@ -48,6 +49,8 @@ var (
 // - create a Challenge resource in order to fulfill required validations
 // - waiting for Challenge resources to enter the 'ready' state
 func (c *Controller) Sync(ctx context.Context, o *cmapi.Order) (err error) {
+	metrics.Default.IncrementSyncCallCount(ControllerName)
+
 	oldOrder := o
 	o = o.DeepCopy()
 
@@ -476,8 +479,9 @@ func determineSolverConfigToUse(candidates []cmapi.ACMEChallengeSolver, authz *a
 	var matchAll *cmapi.ACMEChallengeSolver
 	var matchAllToSolve *acmeapi.Challenge
 
-	for _, d := range candidates {
-		acmech := challengeForSolver(&d)
+	for idx := range candidates {
+		d := &candidates[idx]
+		acmech := challengeForSolver(d)
 		if acmech == nil {
 			continue
 		}
@@ -486,15 +490,16 @@ func determineSolverConfigToUse(candidates []cmapi.ACMEChallengeSolver, authz *a
 		if d.Selector == nil {
 			if matchAll == nil {
 				matchAllDomainsNumLabels = 0
-				matchAll = &d
+				matchAll = d
 				matchAllToSolve = acmech
 			}
 			continue
 		}
 		if len(d.Selector.DNSNames) == 0 {
 			if len(d.Selector.MatchLabels) > matchAllDomainsNumLabels || matchAll == nil {
-				matchAll = &d
+				matchAll = d
 				matchAllToSolve = acmech
+				matchAllDomainsNumLabels = len(d.Selector.MatchLabels)
 			}
 		}
 		for _, dom := range d.Selector.DNSNames {
@@ -502,8 +507,9 @@ func determineSolverConfigToUse(candidates []cmapi.ACMEChallengeSolver, authz *a
 				continue
 			}
 			if len(d.Selector.MatchLabels) > numLabelsSpecificMatch || specificMatch == nil {
-				specificMatch = &d
+				specificMatch = d
 				specificMatchToSolve = acmech
+				numLabelsSpecificMatch = len(d.Selector.MatchLabels)
 				break
 			}
 		}

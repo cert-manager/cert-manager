@@ -43,22 +43,12 @@ func (r *Webhook) Name() string {
 
 // Present creates a TXT record using the specified parameters
 func (r *Webhook) Present(ch *v1alpha1.ChallengeRequest) error {
-	pl := &v1alpha1.ChallengePayload{
-		Request: ch,
-	}
-	pl.Request.Action = v1alpha1.ChallengeActionPresent
-
-	cfg, err := r.loadConfig(*ch.Config)
+	cl, pl, solverName, err := r.buildPayload(ch, v1alpha1.ChallengeActionPresent)
 	if err != nil {
 		return err
 	}
 
-	cl, err := r.restClientForGroup(cfg.GroupName)
-	if err != nil {
-		return err
-	}
-
-	result := cl.Post().Resource(cfg.SolverName).Body(pl).Do()
+	result := cl.Post().Resource(solverName).Body(pl).Do()
 	// we will check this error after parsing the response
 	resErr := result.Error()
 
@@ -89,22 +79,12 @@ func (r *Webhook) Present(ch *v1alpha1.ChallengeRequest) error {
 
 // CleanUp removes the TXT record matching the specified parameters
 func (r *Webhook) CleanUp(ch *v1alpha1.ChallengeRequest) error {
-	pl := &v1alpha1.ChallengePayload{
-		Request: ch,
-	}
-	pl.Request.Action = v1alpha1.ChallengeActionCleanUp
-
-	cfg, err := r.loadConfig(*ch.Config)
+	cl, pl, solverName, err := r.buildPayload(ch, v1alpha1.ChallengeActionCleanUp)
 	if err != nil {
 		return err
 	}
 
-	cl, err := r.restClientForGroup(cfg.GroupName)
-	if err != nil {
-		return err
-	}
-
-	result := cl.Post().Resource(cfg.SolverName).Body(pl).Do()
+	result := cl.Post().Resource(solverName).Body(pl).Do()
 	// we will check this error after parsing the response
 	resErr := result.Error()
 
@@ -149,7 +129,37 @@ func (r *Webhook) Initialize(kubeClientConfig *rest.Config, stopCh <-chan struct
 	return nil
 }
 
-func (r *Webhook) loadConfig(cfgJSON apiext.JSON) (*cmapi.ACMEIssuerDNS01ProviderWebhook, error) {
+func (r *Webhook) buildPayload(ch *v1alpha1.ChallengeRequest, action v1alpha1.ChallengeAction) (*rest.RESTClient, *v1alpha1.ChallengePayload, string, error) {
+	// create a copy just to be certain we don't modify something unexpectedly
+	req := ch.DeepCopy()
+
+	// extract the complete solver config, including groupName and solverName
+	cfg, err := loadConfig(*req.Config)
+	if err != nil {
+		return nil, nil, "", err
+	}
+
+	// obtain a REST client that can be used to communicate with the webhook
+	cl, err := r.restClientForGroup(cfg.GroupName)
+	if err != nil {
+		return nil, nil, "", err
+	}
+
+	// build the ChallengePayload resource
+	pl := &v1alpha1.ChallengePayload{
+		Request: req,
+	}
+	pl.Request.Action = action
+	// When using the webhook provider, the 'config' on the ChallengeRequest
+	// will be the complete marshaled configuration as specified on the issuer.
+	// Instead of passing all this extra config along, we instead extract out
+	// only the 'config' field and submit that to the webhook.
+	pl.Request.Config = cfg.Config
+
+	return cl, pl, cfg.SolverName, nil
+}
+
+func loadConfig(cfgJSON apiext.JSON) (*cmapi.ACMEIssuerDNS01ProviderWebhook, error) {
 	cfg := cmapi.ACMEIssuerDNS01ProviderWebhook{}
 	if err := json.Unmarshal(cfgJSON.Raw, &cfg); err != nil {
 		return nil, fmt.Errorf("error decoding solver config: %v", err)

@@ -354,18 +354,25 @@ install cert-manager. This example installed cert-manager into the
     # chart in the next step for `release-0.8` of cert-manager:
     $ kubectl apply -f https://raw.githubusercontent.com/jetstack/cert-manager/release-0.8/deploy/manifests/00-crds.yaml
 
-    ## IMPORTANT: if the cert-manager namespace **already exists**, you MUST ensure
-    ## it has an additional label on it in order for the deployment to succeed
-    $ kubectl label namespace cert-manager certmanager.k8s.io/disable-validation="true"
+    # Create the namespace for cert-manager
+    $ kubectl create namespace cert-manager
+
+    # Label the cert-manager namespace to disable resource validation
+    $ kubectl label namespace cert-manager certmanager.k8s.io/disable-validation=true
 
     ## Add the Jetstack Helm repository
     $ helm repo add jetstack https://charts.jetstack.io
+
     ## Updating the repo just incase it already existed
     $ helm repo update
 
     ## Install the cert-manager helm chart
-    $ helm install --name cert-manager --namespace cert-manager jetstack/cert-manager
-   
+    $ helm install \
+      --name cert-manager \
+      --namespace cert-manager \
+      --version v0.8.0 \
+      jetstack/cert-manager
+
     NAME:   cert-manager
     LAST DEPLOYED: Wed Jan  9 13:36:13 2019
     NAMESPACE: cert-manager
@@ -468,6 +475,18 @@ operation. These two resources are:
     certificates. An Issuer is specific to a single namespace in Kubernetes,
     and a ClusterIssuer is meant to be a cluster-wide definition for the same
     purpose.
+    
+    Note that if you're using this document as a guide to configure cert-manager
+    for your own Issuer, you must create the Issuers in the same namespace
+    as your Ingress resouces by adding '-n my-namespace' to your 'kubectl create'
+    commands. Your other option is to replace your Issuers with ClusterIssuers.
+    ClusterIssuer resources apply across all Ingress resources in your cluster
+    and don't have this namespace-matching requirement.
+    
+    More information on the differences between Issuers and ClusterIssuers and
+    when you might choose to use each can be found at:
+    
+    https://docs.cert-manager.io/en/latest/tasks/issuers/index.html#difference-between-issuers-and-clusterissuers
 
 :doc:`Certificate </reference/certificates>`
 
@@ -516,7 +535,7 @@ will need to update this example and add in your own email address.
 .. literalinclude:: example/production-issuer.yaml
    :language: yaml
    :emphasize-lines: 10
-   
+
 .. _`production-issuer.yaml`: https://raw.githubusercontent.com/jetstack/cert-manager/release-0.8/docs/tutorials/acme/quick-start/example/production-issuer.yaml
 
 .. code-block:: shell
@@ -525,7 +544,7 @@ will need to update this example and add in your own email address.
     issuer.certmanager.k8s.io "letsencrypt-prod" created
 
 Both of these issuers are configured to use the
-:doc:`HTTP01 </tasks/acme/configuring-http01>` challenge provider.
+:doc:`HTTP01 </tasks/issuers/setup-acme/http01/index>` challenge provider.
 
 Check on the status of the issuer after you create it:
 
@@ -550,11 +569,14 @@ Check on the status of the issuer after you create it:
     Spec:
       Acme:
         Email:  your.email@your-domain.com
-        Http 01:
         Private Key Secret Ref:
           Key:
           Name:  letsencrypt-staging
         Server:  https://acme-staging-v02.api.letsencrypt.org/directory
+        Solvers:
+          Http 01:
+            Ingress:
+              Class:  nginx
     Status:
       Acme:
         Uri:  https://acme-staging-v02.api.letsencrypt.org/acme/acct/7374163
@@ -647,13 +669,6 @@ certificate object. You can view this information using the
       Self Link:               /apis/certmanager.k8s.io/v1alpha1/namespaces/default/certificates/quickstart-example-tls
       UID:                     68d43400-ea92-11e8-82f8-42010a8a00b5
     Spec:
-      Acme:
-        Config:
-          Domains:
-            example.your-domain.com
-          Http 01:
-            Ingress:
-            Ingress Class:  nginx
       Dns Names:
         example.your-domain.com
       Issuer Ref:
@@ -714,7 +729,7 @@ can update the annotations in the ingress to specify the production issuer:
 
 .. literalinclude:: example/ingress-tls-final.yaml
    :language: yaml
-   
+
 .. _`ingress-tls-final.yaml`: https://raw.githubusercontent.com/jetstack/cert-manager/release-0.8/docs/tutorials/acme/quick-start/example/ingress-tls-final.yaml
 
 .. code-block:: shell
@@ -763,13 +778,6 @@ certificate.
       Self Link:               /apis/certmanager.k8s.io/v1alpha1/namespaces/default/certificates/quickstart-example-tls
       UID:                     bdd93b32-ea97-11e8-82f8-42010a8a00b5
     Spec:
-      Acme:
-        Config:
-          Domains:
-            example.your-domain.com
-          Http 01:
-            Ingress:
-            Ingress Class:  nginx
       Dns Names:
         example.your-domain.com
       Issuer Ref:
@@ -785,7 +793,7 @@ certificate.
         Type:                  Ready
     Events:
       Type    Reason        Age   From          Message
-      ----    ------        ----  ----          -------
+   kubectl describe certificate quickstart-example-tls   ----    ------        ----  ----          -------
       Normal  Generated     18s   cert-manager  Generated new private key
       Normal  OrderCreated  18s   cert-manager  Created Order resource "quickstart-example-tls-889745041"
 

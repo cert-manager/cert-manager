@@ -73,7 +73,7 @@ version number you want to install:
    kubectl label namespace cert-manager certmanager.k8s.io/disable-validation=true
 
    kubectl apply \
-        -f https://raw.githubusercontent.com/jetstack/cert-manager/<version>/deploy/manifests/cert-manager.yaml
+        -f https://github.com/jetstack/cert-manager/releases/download/<version>/cert-manager.yaml
 
 .. note::
    If you are running kubectl v1.12 or below, you will need to add the
@@ -90,6 +90,8 @@ version number you want to install:
    upgrading-0.3-0.4
    upgrading-0.4-0.5
    upgrading-0.5-0.6
+   upgrading-0.6-0.7
+   upgrading-0.7-0.8
 
 .. _`official Helm charts repository`: https://hub.helm.sh/charts/jetstack
 .. _`static deployment manifests`: https://github.com/jetstack/cert-manager/blob/release-0.8/deploy/manifests

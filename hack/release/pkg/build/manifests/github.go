@@ -19,6 +19,8 @@ package manifests
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
+	"strings"
 
 	"github.com/google/go-github/github"
 	flag "github.com/spf13/pflag"
@@ -26,20 +28,30 @@ import (
 )
 
 type gitHub struct {
+	tokenFile string
+
 	// GitHub token
 	token string
 }
 
 func (g *gitHub) AddFlags(fs *flag.FlagSet) {
-	fs.StringVar(&g.token, "github.token", "", "github token used to communicate with GitHub")
+	fs.StringVar(&g.tokenFile, "github.token-file", "/etc/github/token", "path to a file containing the github token used to communicate with GitHub")
 }
 
 func (g *gitHub) ValidatePublish() []error {
 	var errs []error
 
-	if g.token == "" {
-		errs = append(errs, fmt.Errorf("github.token must be set"))
+	if g.tokenFile == "" {
+		errs = append(errs, fmt.Errorf("github.token-file must be set"))
+		return errs
 	}
+
+	b, err := ioutil.ReadFile(g.tokenFile)
+	if err != nil {
+		errs = append(errs, fmt.Errorf("error reading github token from file: %v", err))
+	}
+
+	g.token = strings.TrimSpace(string(b))
 
 	return errs
 }

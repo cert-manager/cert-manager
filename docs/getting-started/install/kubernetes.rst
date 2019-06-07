@@ -1,6 +1,6 @@
-=======================
-Installing cert-manager
-=======================
+========================
+Installing on Kubernetes
+========================
 
 cert-manager runs within your Kubernetes cluster as a series of deployment
 resources. It utilises `CustomResourceDefinitions`_ to configure Certificate
@@ -48,7 +48,7 @@ cert-manager runs in:
    # Disable resource validation on the cert-manager namespace
    kubectl label namespace cert-manager certmanager.k8s.io/disable-validation=true
 
-You can read more about the webhook on the :doc:`webhook document <./webhook>`.
+You can read more about the webhook on the :doc:`webhook document <../webhook>`.
 
 We can now go ahead and install cert-manager. All resources
 (the CustomResourceDefinitions, cert-manager, and the webhook component)
@@ -57,7 +57,7 @@ are included in a single YAML manifest file:
 .. code-block:: shell
 
    # Install the CustomResourceDefinitions and cert-manager itself
-   kubectl apply -f https://raw.githubusercontent.com/jetstack/cert-manager/release-0.8/deploy/manifests/cert-manager.yaml
+   kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/v0.8.0/cert-manager.yaml
 
 .. note::
    If you are running kubectl v1.12 or below, you will need to add the
@@ -133,7 +133,7 @@ In order to install the Helm chart, you must run:
    helm install \
      --name cert-manager \
      --namespace cert-manager \
-     --version v0.8.0-alpha.0 \
+     --version v0.8.0 \
      jetstack/cert-manager
 
 The default cert-manager configuration is good for the majority of users, but a
@@ -159,7 +159,7 @@ state, and the ``ca-sync`` pod is Completed. If the webhook has not Completed
 but the ``cert-manager`` pod has recently started, wait a few minutes for the
 ``ca-sync`` pod to be retried.
 If you experience problems, please check the
-:doc:`troubleshooting guide <./troubleshooting>`.
+:doc:`troubleshooting guide <../troubleshooting>`.
 
 The following steps will confirm that cert-manager is set up correctly and able
 to issue basic certificate types:
@@ -225,7 +225,7 @@ to issue basic certificate types:
 If all the above steps have completed without error, you are good to go!
 
 If you experience problems, please check the
-:doc:`troubleshooting guide <./troubleshooting>`.
+:doc:`troubleshooting guide <../troubleshooting>`.
 
 Configuring your first Issuer
 =============================
@@ -263,7 +263,7 @@ Debugging installation issues
 =============================
 
 If you have any issues with your installation, please refer to the
-:doc:`troubleshooting guide <./troubleshooting>`.
+:doc:`troubleshooting guide <../troubleshooting>`.
 
 .. _`CustomResourceDefinitions`: https://kubernetes.io/docs/concepts/extend-kubernetes/api-extension/custom-resources/
 .. _`Helm chart README`: https://github.com/jetstack/cert-manager/blob/release-0.8/deploy/charts/cert-manager/README.md
@@ -275,7 +275,6 @@ If you have any issues with your installation, please refer to the
 .. _`installing helm docs`: https://github.com/kubernetes/helm/blob/master/docs/install.md
 .. _Tiller: https://github.com/helm/helm
 .. _`Tillerless Helm v2`: https://rimusz.net/tillerless-helm/
-.. _`Let's Encrypt`: https://letsencrypt.org
 .. _`Bitnami Kubernetes Production Runtime`: https://github.com/bitnami/kube-prod-runtime/
 .. _`regularly tested`: https://github.com/bitnami/kube-prod-runtime/blob/master/Jenkinsfile
 .. _`BKPR installation guide`: https://github.com/bitnami/kube-prod-runtime/blob/master/docs/install.md

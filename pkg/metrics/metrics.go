@@ -84,6 +84,15 @@ var ACMEClientRequestDurationSeconds = prometheus.NewSummaryVec(
 	[]string{"scheme", "host", "path", "method", "status"},
 )
 
+var ControllerSyncCallCount = prometheus.NewCounterVec(
+	prometheus.CounterOpts{
+		Namespace: namespace,
+		Name:      "controller_sync_call_count",
+		Help:      "The number of sync() calls made by a controller.",
+	},
+	[]string{"controller"},
+)
+
 type Metrics struct {
 	ctx context.Context
 	http.Server
@@ -93,6 +102,7 @@ type Metrics struct {
 	CertificateExpiryTimeSeconds     *prometheus.GaugeVec
 	ACMEClientRequestDurationSeconds *prometheus.SummaryVec
 	ACMEClientRequestCount           *prometheus.CounterVec
+	ControllerSyncCallCount          *prometheus.CounterVec
 }
 
 func New(ctx context.Context) *Metrics {
@@ -112,6 +122,7 @@ func New(ctx context.Context) *Metrics {
 		CertificateExpiryTimeSeconds:     CertificateExpiryTimeSeconds,
 		ACMEClientRequestDurationSeconds: ACMEClientRequestDurationSeconds,
 		ACMEClientRequestCount:           ACMEClientRequestCount,
+		ControllerSyncCallCount:          ControllerSyncCallCount,
 	}
 
 	router.Handle("/metrics", promhttp.HandlerFor(s.registry, promhttp.HandlerOpts{}))
@@ -141,6 +152,7 @@ func (m *Metrics) Start(stopCh <-chan struct{}) {
 	m.registry.MustRegister(m.CertificateExpiryTimeSeconds)
 	m.registry.MustRegister(m.ACMEClientRequestDurationSeconds)
 	m.registry.MustRegister(m.ACMEClientRequestCount)
+	m.registry.MustRegister(m.ControllerSyncCallCount)
 
 	go func() {
 		log := log.WithValues("address", m.Addr)
@@ -182,4 +194,10 @@ func updateX509Expiry(name, namespace string, cert *x509.Certificate) {
 	CertificateExpiryTimeSeconds.With(prometheus.Labels{
 		"name":      name,
 		"namespace": namespace}).Set(float64(expiryTime.Unix()))
+}
+
+func (m *Metrics) IncrementSyncCallCount(controllerName string) {
+	log := logf.FromContext(m.ctx)
+	log.V(logf.DebugLevel).Info("incrementing controller sync call count", "controllerName", controllerName)
+	ControllerSyncCallCount.WithLabelValues(controllerName).Inc()
 }
