@@ -23,7 +23,7 @@ import (
 	"net/url"
 	"strings"
 
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -166,6 +166,11 @@ func (a *Acme) Setup(ctx context.Context) error {
 
 	// registerAccount will also verify the account exists if it already
 	// exists.
+	if a.issuer.GetStatus().ACME.LastRegisteredEmail == a.issuer.GetSpec().ACME.Email {
+		log.Info("account has already been registered with ACME server")
+		return nil
+	}
+
 	account, err := a.registerAccount(ctx, cl)
 	if err != nil {
 		s := messageAccountVerificationFailed + err.Error()
@@ -195,6 +200,7 @@ func (a *Acme) Setup(ctx context.Context) error {
 	log.Info("verified existing registration with ACME server")
 	apiutil.SetIssuerCondition(a.issuer, v1alpha1.IssuerConditionReady, v1alpha1.ConditionTrue, successAccountRegistered, messageAccountRegistered)
 	a.issuer.GetStatus().ACMEStatus().URI = account.URL
+	a.issuer.GetStatus().ACMEStatus().LastRegisteredEmail = a.issuer.GetSpec().ACME.Email
 
 	return nil
 }
