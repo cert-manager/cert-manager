@@ -19,11 +19,13 @@ package validation
 import (
 	"crypto/x509"
 	"fmt"
+	"reflect"
 	"strings"
 
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/rfc2136"
 
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
@@ -123,19 +125,35 @@ func ValidateACMEIssuerChallengeSolverConfig(sol *v1alpha1.ACMEChallengeSolver, 
 	return el
 }
 
-func ValidateACMEIssuerChallengeSolverHTTP01Config(sol *v1alpha1.ACMEChallengeSolverHTTP01, fldPath *field.Path) field.ErrorList {
+func ValidateACMEIssuerChallengeSolverHTTP01Config(http01 *v1alpha1.ACMEChallengeSolverHTTP01, fldPath *field.Path) field.ErrorList {
 	el := field.ErrorList{}
 
-	// Validate incoming solver pod template
-	if len(sol.PodTemplate.Name) > 0 {
-		el = append(el, field.Invalid(fldPath.Child("podTemplate"), sol.PodTemplate.Name, "name cannot be set for solver pod template"))
-	}
-	if len(sol.PodTemplate.GenerateName) > 0 {
-		el = append(el, field.Invalid(fldPath.Child("podTemplate"), sol.PodTemplate.GenerateName, "generateName cannot be set for solver pod template"))
+	if http01.Ingress != nil {
+		el = append(el, ValidateACMEIssuerChallengeSolverHTTP01IngressConfig(http01.Ingress, fldPath.Child("ingress"))...)
 	}
 
-	if sol.PodTemplate.Spec.String() != new(corev1.PodSpec).String() {
-		el = append(el, field.Invalid(fldPath.Child("podTemplate"), "", "pod spec cannot be defined for solver pod template"))
+	return el
+}
+
+func ValidateACMEIssuerChallengeSolverHTTP01IngressConfig(ingress *v1alpha1.ACMEChallengeSolverHTTP01Ingress, fldPath *field.Path) field.ErrorList {
+	el := field.ErrorList{}
+
+	if ingress.PodTemplate != nil {
+		el = append(el, ValidateACMEIssuerChallengeSolverHTTP01IngressPodTemplateConfig(ingress.PodTemplate, fldPath.Child("podTemplate"))...)
+	}
+
+	return el
+}
+
+func ValidateACMEIssuerChallengeSolverHTTP01IngressPodTemplateConfig(podTempl *v1alpha1.ACMEChallengeSolverHTTP01IngressPodTemplate, fldPath *field.Path) field.ErrorList {
+	el := field.ErrorList{}
+
+	cpyPodTempl := podTempl.DeepCopy()
+	cpyPodTempl.Labels = nil
+	cpyPodTempl.Annotations = nil
+
+	if !reflect.DeepEqual(cpyPodTempl.ObjectMeta, metav1.ObjectMeta{}) {
+		el = append(el, field.Invalid(fldPath.Child("metadata"), "", "only labels and annotations may be set on podTemplate"))
 	}
 
 	return el

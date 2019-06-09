@@ -208,12 +208,16 @@ func TestValidateACMEIssuerConfig(t *testing.T) {
 				Solvers: []v1alpha1.ACMEChallengeSolver{
 					{
 						HTTP01: &v1alpha1.ACMEChallengeSolverHTTP01{
-							PodTemplate: corev1.PodTemplateSpec{
-								ObjectMeta: metav1.ObjectMeta{
-									Labels: map[string]string{
-										"valid_to_contain": "labels",
+							Ingress: &v1alpha1.ACMEChallengeSolverHTTP01Ingress{
+								PodTemplate: &v1alpha1.ACMEChallengeSolverHTTP01IngressPodTemplate{
+									ObjectMeta: metav1.ObjectMeta{
+										Labels: map[string]string{
+											"valid_to_contain": "labels",
+										},
+										Annotations: map[string]string{
+											"valid_to_contain": "annotations",
+										},
 									},
-									ClusterName: "and_cluster",
 								},
 							},
 						},
@@ -232,13 +236,15 @@ func TestValidateACMEIssuerConfig(t *testing.T) {
 				Solvers: []v1alpha1.ACMEChallengeSolver{
 					{
 						HTTP01: &v1alpha1.ACMEChallengeSolverHTTP01{
-							PodTemplate: corev1.PodTemplateSpec{
-								ObjectMeta: metav1.ObjectMeta{
-									Annotations: map[string]string{
-										"valid_to_contain": "annotations",
+							Ingress: &v1alpha1.ACMEChallengeSolverHTTP01Ingress{
+								PodTemplate: &v1alpha1.ACMEChallengeSolverHTTP01IngressPodTemplate{
+									ObjectMeta: metav1.ObjectMeta{
+										Annotations: map[string]string{
+											"valid_to_contain": "annotations",
+										},
+										GenerateName: "unable-to-change-generateName",
+										Name:         "unable-to-change-name",
 									},
-									GenerateName: "unable-to-change-generateName",
-									Name:         "unable-to-change-name",
 								},
 							},
 						},
@@ -246,30 +252,8 @@ func TestValidateACMEIssuerConfig(t *testing.T) {
 				},
 			},
 			errs: []*field.Error{
-				field.Invalid(fldPath.Child("solver", "http01", "podTemplate"), "unable-to-change-name", "name cannot be set for solver pod template"),
-				field.Invalid(fldPath.Child("solver", "http01", "podTemplate"), "unable-to-change-generateName", "generateName cannot be set for solver pod template"),
-			},
-		},
-		"acme issue with invalid pod template Spec attributes": {
-			spec: &v1alpha1.ACMEIssuer{
-				Email:      "valid-email",
-				Server:     "valid-server",
-				PrivateKey: validSecretKeyRef,
-				Solvers: []v1alpha1.ACMEChallengeSolver{
-					{
-						HTTP01: &v1alpha1.ACMEChallengeSolverHTTP01{
-							PodTemplate: corev1.PodTemplateSpec{
-								Spec: corev1.PodSpec{
-									HostIPC:   true,
-									Subdomain: "a sub domain",
-								},
-							},
-						},
-					},
-				},
-			},
-			errs: []*field.Error{
-				field.Invalid(fldPath.Child("solver", "http01", "podTemplate"), "", "pod spec cannot be defined for solver pod template"),
+				field.Invalid(fldPath.Child("solver", "http01", "ingress", "podTemplate", "metadata"),
+					"", "only labels and annotations may be set on podTemplate"),
 			},
 		},
 	}

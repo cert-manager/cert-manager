@@ -144,7 +144,7 @@ func (s *Solver) buildPod(ch *v1alpha1.Challenge) *corev1.Pod {
 	// Override defaults if they have changed in the pod template.
 	if ch.Spec.Solver != nil {
 		pod = s.mergePodObjectMetaWithPodTemplate(pod,
-			ch.Spec.Solver.HTTP01.PodTemplate.DeepCopy())
+			ch.Spec.Solver.HTTP01.Ingress.PodTemplate)
 	}
 
 	return pod
@@ -201,24 +201,18 @@ func (s *Solver) buildDefaultPod(ch *v1alpha1.Challenge) *corev1.Pod {
 }
 
 // Merge object meta from the pod template. Fall back to default values.
-func (s *Solver) mergePodObjectMetaWithPodTemplate(pod *corev1.Pod, podTempl *corev1.PodTemplateSpec) *corev1.Pod {
-	mergedObjectMeta := podTempl.ObjectMeta
-	mergedObjectMeta.GenerateName = pod.GenerateName
-
-	if len(podTempl.Namespace) == 0 {
-		mergedObjectMeta.Namespace = pod.Namespace
-	}
-	if len(podTempl.Labels) == 0 {
-		mergedObjectMeta.Labels = pod.Labels
-	}
-	if len(podTempl.Annotations) == 0 {
-		mergedObjectMeta.Annotations = pod.Annotations
-	}
-	if len(podTempl.OwnerReferences) == 0 {
-		mergedObjectMeta.OwnerReferences = pod.OwnerReferences
+func (s *Solver) mergePodObjectMetaWithPodTemplate(pod *corev1.Pod, podTempl *v1alpha1.ACMEChallengeSolverHTTP01IngressPodTemplate) *corev1.Pod {
+	if podTempl == nil {
+		return pod
 	}
 
-	pod.ObjectMeta = mergedObjectMeta
+	for k, v := range podTempl.Labels {
+		pod.Labels[k] = v
+	}
+
+	for k, v := range podTempl.Annotations {
+		pod.Annotations[k] = v
+	}
 
 	return pod
 }
