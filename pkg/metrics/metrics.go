@@ -187,7 +187,6 @@ func (m *Metrics) UpdateCertificateExpiry(crt *v1alpha1.Certificate, secretListe
 
 	updateX509Expiry(crt.Name, crt.Namespace, cert)
 }
-
 func updateX509Expiry(name, namespace string, cert *x509.Certificate) {
 	// set certificate expiry time
 	expiryTime := cert.NotAfter

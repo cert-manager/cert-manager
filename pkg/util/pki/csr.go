@@ -26,6 +26,7 @@ import (
 	"fmt"
 	"math/big"
 	"net"
+	"net/url"
 	"time"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
@@ -43,6 +44,19 @@ func CommonNameForCertificate(crt *v1alpha1.Certificate) string {
 	return crt.Spec.DNSNames[0]
 }
 
+// CommonNameForCertificateRequest returns the common name that should be used
+// for the given *x509.CertificateRequest, by inspecting the CommonName and
+// DNSNames fields.
+func CommonNameForCertificateRequest(csr *x509.CertificateRequest) string {
+	if csr.Subject.CommonName != "" {
+		return csr.Subject.CommonName
+	}
+	if len(csr.DNSNames) == 0 {
+		return ""
+	}
+	return csr.DNSNames[0]
+}
+
 // DNSNamesForCertificate returns the DNS names that should be used for the
 // given Certificate resource, by inspecting the CommonName and DNSNames fields.
 func DNSNamesForCertificate(crt *v1alpha1.Certificate) []string {
@@ -56,6 +70,22 @@ func DNSNamesForCertificate(crt *v1alpha1.Certificate) []string {
 		return removeDuplicates(append([]string{crt.Spec.CommonName}, crt.Spec.DNSNames...))
 	}
 	return crt.Spec.DNSNames
+}
+
+// DNSNamesForCertificateRequest returns the DNS names that should be used for
+// the given *x509.CertificateRequest, by inspecting the CommonName and
+// DNSNames fields.
+func DNSNamesForCertificateRequest(csr *x509.CertificateRequest) []string {
+	if len(csr.DNSNames) == 0 {
+		if csr.Subject.CommonName == "" {
+			return []string{}
+		}
+		return []string{csr.Subject.CommonName}
+	}
+	if csr.Subject.CommonName != "" {
+		return removeDuplicates(append([]string{csr.Subject.CommonName}, csr.DNSNames...))
+	}
+	return csr.DNSNames
 }
 
 func IPAddressesForCertificate(crt *v1alpha1.Certificate) []net.IP {
@@ -76,6 +106,14 @@ func IPAddressesToString(ipAddresses []net.IP) []string {
 		ipNames = append(ipNames, ip.String())
 	}
 	return ipNames
+}
+
+func URLsToString(urls []*url.URL) []string {
+	var urlNames []string
+	for _, url := range urls {
+		urlNames = append(urlNames, url.String())
+	}
+	return urlNames
 }
 
 func removeDuplicates(in []string) []string {

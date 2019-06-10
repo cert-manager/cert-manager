@@ -31,6 +31,10 @@ type Interface interface {
 	// Issue attempts to issue a certificate as described by the certificate
 	// resource given
 	Issue(context.Context, *v1alpha1.Certificate) (*IssueResponse, error)
+
+	// Sign attempts to sign a certificate as described by the CertificateRequest
+	// resource given
+	Sign(context.Context, *v1alpha1.CertificateRequest) (*IssueResponse, error)
 }
 
 type IssueResponse struct {

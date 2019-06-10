@@ -35,8 +35,8 @@ type CertificateRequest struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   CertificateSpec   `json:"spec,omitempty"`
-	Status CertificateStatus `json:"status,omitempty"`
+	Spec   CertificateRequestSpec   `json:"spec,omitempty"`
+	Status CertificateRequestStatus `json:"status,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -85,6 +85,11 @@ type CertificateRequestStatus struct {
 	// given certificate signing request.
 	// +optional
 	Certificate []byte `json:"certificate,omitempty"`
+
+	// Byte slice containing the PEM encoded certificate authority of the signed
+	// certificate.
+	// +optional
+	CA []byte `json:"ca,omitempty"`
 }
 
 // CertificateRequestCondition contains condition information for a CertificateRequest.

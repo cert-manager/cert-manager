@@ -153,3 +153,48 @@ func SetCertificateCondition(crt *cmapi.Certificate, conditionType cmapi.Certifi
 	crt.Status.Conditions = append(crt.Status.Conditions, newCondition)
 	klog.Infof("Setting lastTransitionTime for Certificate %q condition %q to %v", crt.Name, conditionType, nowTime.Time)
 }
+
+// SetCertificateRequestCondition will set a 'condition' on the given CertificateRequest.
+// - If no condition of the same type already exists, the condition will be
+//   inserted with the LastTransitionTime set to the current time.
+// - If a condition of the same type and state already exists, the condition
+//   will be updated but the LastTransitionTime will not be modified.
+// - If a condition of the same type and different state already exists, the
+//   condition will be updated and the LastTransitionTime set to the current
+//   time.
+func SetCertificateRequestCondition(csr *cmapi.CertificateRequest, conditionType cmapi.CertificateRequestConditionType, status cmapi.ConditionStatus, reason, message string) {
+	newCondition := cmapi.CertificateRequestCondition{
+		Type:    conditionType,
+		Status:  status,
+		Reason:  reason,
+		Message: message,
+	}
+
+	nowTime := metav1.NewTime(Clock.Now())
+	newCondition.LastTransitionTime = &nowTime
+
+	// Search through existing conditions
+	for idx, cond := range csr.Status.Conditions {
+		// Skip unrelated conditions
+		if cond.Type != conditionType {
+			continue
+		}
+
+		// If this update doesn't contain a state transition, we don't update
+		// the conditions LastTransitionTime to Now()
+		if cond.Status == status {
+			newCondition.LastTransitionTime = cond.LastTransitionTime
+		} else {
+			klog.Infof("Found status change for CertificateRequest %q condition %q: %q -> %q; setting lastTransitionTime to %v", csr.Name, conditionType, cond.Status, status, nowTime.Time)
+		}
+
+		// Overwrite the existing condition
+		csr.Status.Conditions[idx] = newCondition
+		return
+	}
+
+	// If we've not found an existing condition of this type, we simply insert
+	// the new condition into the slice.
+	csr.Status.Conditions = append(csr.Status.Conditions, newCondition)
+	klog.Infof("Setting lastTransitionTime for CertificateRequest %q condition %q to %v", csr.Name, conditionType, nowTime.Time)
+}

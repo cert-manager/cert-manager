@@ -748,6 +748,11 @@ func (in *CertificateRequestStatus) DeepCopyInto(out *CertificateRequestStatus) 
 		*out = make([]byte, len(*in))
 		copy(*out, *in)
 	}
+	if in.CA != nil {
+		in, out := &in.CA, &out.CA
+		*out = make([]byte, len(*in))
+		copy(*out, *in)
+	}
 	return
 }
 

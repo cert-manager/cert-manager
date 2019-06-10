@@ -40,6 +40,7 @@ filegroup(
         "//pkg/controller/acmechallenges:all-srcs",
         "//pkg/controller/acmeorders:all-srcs",
         "//pkg/controller/cainjector:all-srcs",
+        "//pkg/controller/certificaterequests:all-srcs",
         "//pkg/controller/certificates:all-srcs",
         "//pkg/controller/clusterissuers:all-srcs",
         "//pkg/controller/ingress-shim:all-srcs",

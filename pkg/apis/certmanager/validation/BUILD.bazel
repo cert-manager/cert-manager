@@ -5,6 +5,8 @@ go_library(
     srcs = [
         "certificate.go",
         "certificate_for_issuer.go",
+        "certificaterequest.go",
+        "certificaterequest_for_issuer.go",
         "clusterissuer.go",
         "issuer.go",
     ],
