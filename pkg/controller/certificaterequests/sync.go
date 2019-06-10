@@ -247,6 +247,10 @@ func (c *Controller) setCertificateRequestStatus(cr *v1alpha1.CertificateRequest
 func (c *Controller) certificateMatchesSpec(cr *v1alpha1.CertificateRequest, csr *x509.CertificateRequest, cert *x509.Certificate) (bool, []string) {
 	var errs []string
 
+	if err := csr.CheckSignature(); err != nil {
+		errs = append(errs, fmt.Sprintf("failed to validate certificate signing request signature: %s", err))
+	}
+
 	// validate the common name is correct
 	expectedCN := pki.CommonNameForCertificateRequest(csr)
 	if expectedCN != cert.Subject.CommonName {
