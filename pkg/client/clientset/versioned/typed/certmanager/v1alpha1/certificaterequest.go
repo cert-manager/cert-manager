@@ -32,7 +32,7 @@ import (
 // CertificateRequestsGetter has a method to return a CertificateRequestInterface.
 // A group's client should implement this interface.
 type CertificateRequestsGetter interface {
-	CertificateRequests(namespace string) CertificateRequestInterface
+	CertificateRequests() CertificateRequestInterface
 }
 
 // CertificateRequestInterface has methods to work with CertificateRequest resources.
@@ -52,14 +52,12 @@ type CertificateRequestInterface interface {
 // certificateRequests implements CertificateRequestInterface
 type certificateRequests struct {
 	client rest.Interface
-	ns     string
 }
 
 // newCertificateRequests returns a CertificateRequests
-func newCertificateRequests(c *CertmanagerV1alpha1Client, namespace string) *certificateRequests {
+func newCertificateRequests(c *CertmanagerV1alpha1Client) *certificateRequests {
 	return &certificateRequests{
 		client: c.RESTClient(),
-		ns:     namespace,
 	}
 }
 
@@ -67,7 +65,6 @@ func newCertificateRequests(c *CertmanagerV1alpha1Client, namespace string) *cer
 func (c *certificateRequests) Get(name string, options v1.GetOptions) (result *v1alpha1.CertificateRequest, err error) {
 	result = &v1alpha1.CertificateRequest{}
 	err = c.client.Get().
-		Namespace(c.ns).
 		Resource("certificaterequests").
 		Name(name).
 		VersionedParams(&options, scheme.ParameterCodec).
@@ -84,7 +81,6 @@ func (c *certificateRequests) List(opts v1.ListOptions) (result *v1alpha1.Certif
 	}
 	result = &v1alpha1.CertificateRequestList{}
 	err = c.client.Get().
-		Namespace(c.ns).
 		Resource("certificaterequests").
 		VersionedParams(&opts, scheme.ParameterCodec).
 		Timeout(timeout).
@@ -101,7 +97,6 @@ func (c *certificateRequests) Watch(opts v1.ListOptions) (watch.Interface, error
 	}
 	opts.Watch = true
 	return c.client.Get().
-		Namespace(c.ns).
 		Resource("certificaterequests").
 		VersionedParams(&opts, scheme.ParameterCodec).
 		Timeout(timeout).
@@ -112,7 +107,6 @@ func (c *certificateRequests) Watch(opts v1.ListOptions) (watch.Interface, error
 func (c *certificateRequests) Create(certificateRequest *v1alpha1.CertificateRequest) (result *v1alpha1.CertificateRequest, err error) {
 	result = &v1alpha1.CertificateRequest{}
 	err = c.client.Post().
-		Namespace(c.ns).
 		Resource("certificaterequests").
 		Body(certificateRequest).
 		Do().
@@ -124,7 +118,6 @@ func (c *certificateRequests) Create(certificateRequest *v1alpha1.CertificateReq
 func (c *certificateRequests) Update(certificateRequest *v1alpha1.CertificateRequest) (result *v1alpha1.CertificateRequest, err error) {
 	result = &v1alpha1.CertificateRequest{}
 	err = c.client.Put().
-		Namespace(c.ns).
 		Resource("certificaterequests").
 		Name(certificateRequest.Name).
 		Body(certificateRequest).
@@ -139,7 +132,6 @@ func (c *certificateRequests) Update(certificateRequest *v1alpha1.CertificateReq
 func (c *certificateRequests) UpdateStatus(certificateRequest *v1alpha1.CertificateRequest) (result *v1alpha1.CertificateRequest, err error) {
 	result = &v1alpha1.CertificateRequest{}
 	err = c.client.Put().
-		Namespace(c.ns).
 		Resource("certificaterequests").
 		Name(certificateRequest.Name).
 		SubResource("status").
@@ -152,7 +144,6 @@ func (c *certificateRequests) UpdateStatus(certificateRequest *v1alpha1.Certific
 // Delete takes name of the certificateRequest and deletes it. Returns an error if one occurs.
 func (c *certificateRequests) Delete(name string, options *v1.DeleteOptions) error {
 	return c.client.Delete().
-		Namespace(c.ns).
 		Resource("certificaterequests").
 		Name(name).
 		Body(options).
@@ -167,7 +158,6 @@ func (c *certificateRequests) DeleteCollection(options *v1.DeleteOptions, listOp
 		timeout = time.Duration(*listOptions.TimeoutSeconds) * time.Second
 	}
 	return c.client.Delete().
-		Namespace(c.ns).
 		Resource("certificaterequests").
 		VersionedParams(&listOptions, scheme.ParameterCodec).
 		Timeout(timeout).
@@ -180,7 +170,6 @@ func (c *certificateRequests) DeleteCollection(options *v1.DeleteOptions, listOp
 func (c *certificateRequests) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v1alpha1.CertificateRequest, err error) {
 	result = &v1alpha1.CertificateRequest{}
 	err = c.client.Patch(pt).
-		Namespace(c.ns).
 		Resource("certificaterequests").
 		SubResource(subresources...).
 		Name(name).

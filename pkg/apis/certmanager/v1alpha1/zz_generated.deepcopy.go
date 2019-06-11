@@ -707,8 +707,8 @@ func (in *CertificateRequestSpec) DeepCopyInto(out *CertificateRequestSpec) {
 		(*in).DeepCopyInto(*out)
 	}
 	out.IssuerRef = in.IssuerRef
-	if in.CSRPem != nil {
-		in, out := &in.CSRPem, &out.CSRPem
+	if in.CSRPEM != nil {
+		in, out := &in.CSRPEM, &out.CSRPEM
 		*out = make([]byte, len(*in))
 		copy(*out, *in)
 	}

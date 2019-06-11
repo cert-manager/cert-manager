@@ -44,8 +44,8 @@ func (c *CertmanagerV1alpha1Client) Certificates(namespace string) CertificateIn
 	return newCertificates(c, namespace)
 }
 
-func (c *CertmanagerV1alpha1Client) CertificateRequests(namespace string) CertificateRequestInterface {
-	return newCertificateRequests(c, namespace)
+func (c *CertmanagerV1alpha1Client) CertificateRequests() CertificateRequestInterface {
+	return newCertificateRequests(c)
 }
 
 func (c *CertmanagerV1alpha1Client) Challenges(namespace string) ChallengeInterface {

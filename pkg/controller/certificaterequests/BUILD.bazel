@@ -18,8 +18,6 @@ go_library(
         "//pkg/issuer:go_default_library",
         "//pkg/logs:go_default_library",
         "//pkg/metrics:go_default_library",
-        "//pkg/util:go_default_library",
-        "//pkg/util/pki:go_default_library",
         "//vendor/github.com/kr/pretty:go_default_library",
         "//vendor/k8s.io/api/core/v1:go_default_library",
         "//vendor/k8s.io/apimachinery/pkg/api/errors:go_default_library",

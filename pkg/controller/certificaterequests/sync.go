@@ -38,8 +38,6 @@ import (
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/validation"
 	"github.com/jetstack/cert-manager/pkg/issuer"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
-	"github.com/jetstack/cert-manager/pkg/util"
-	"github.com/jetstack/cert-manager/pkg/util/pki"
 )
 
 const (
@@ -251,27 +249,29 @@ func (c *Controller) certificateMatchesSpec(cr *v1alpha1.CertificateRequest, csr
 		errs = append(errs, fmt.Sprintf("failed to validate certificate signing request signature: %s", err))
 	}
 
+	// CSR spec will become immutable
+
 	// validate the common name is correct
-	expectedCN := pki.CommonNameForCertificateRequest(csr)
-	if expectedCN != cert.Subject.CommonName {
-		errs = append(errs, fmt.Sprintf("Common name on TLS certificate not up to date: %q", cert.Subject.CommonName))
-	}
+	//expectedCN := pki.CommonNameForCertificateRequest(csr)
+	//if expectedCN != cert.Subject.CommonName {
+	//	errs = append(errs, fmt.Sprintf("Common name on TLS certificate not up to date: %q", cert.Subject.CommonName))
+	//}
 
-	// validate the dns names are correct
-	expectedDNSNames := pki.DNSNamesForCertificateRequest(csr)
-	if !util.EqualUnsorted(cert.DNSNames, expectedDNSNames) {
-		errs = append(errs, fmt.Sprintf("DNS names on TLS certificate not up to date: %q", cert.DNSNames))
-	}
+	//// validate the dns names are correct
+	//expectedDNSNames := pki.DNSNamesForCertificateRequest(csr)
+	//if !util.EqualUnsorted(cert.DNSNames, expectedDNSNames) {
+	//	errs = append(errs, fmt.Sprintf("DNS names on TLS certificate not up to date: %q", cert.DNSNames))
+	//}
 
-	// validate the uris are correct
-	if !util.EqualUnsorted(pki.URLsToString(cert.URIs), pki.URLsToString(csr.URIs)) {
-		errs = append(errs, fmt.Sprintf("URLs on TLS certificate not up to date: %q", pki.URLsToString(cert.URIs)))
-	}
+	//// validate the uris are correct
+	//if !util.EqualUnsorted(pki.URLsToString(cert.URIs), pki.URLsToString(csr.URIs)) {
+	//	errs = append(errs, fmt.Sprintf("URLs on TLS certificate not up to date: %q", pki.URLsToString(cert.URIs)))
+	//}
 
-	// validate the ip addresses are correct
-	if !util.EqualUnsorted(pki.IPAddressesToString(cert.IPAddresses), pki.IPAddressesToString(csr.IPAddresses)) {
-		errs = append(errs, fmt.Sprintf("IP addresses on TLS certificate not up to date: %q", pki.IPAddressesToString(cert.IPAddresses)))
-	}
+	//// validate the ip addresses are correct
+	//if !util.EqualUnsorted(pki.IPAddressesToString(cert.IPAddresses), pki.IPAddressesToString(csr.IPAddresses)) {
+	//	errs = append(errs, fmt.Sprintf("IP addresses on TLS certificate not up to date: %q", pki.IPAddressesToString(cert.IPAddresses)))
+	//}
 
 	return len(errs) == 0, errs
 }

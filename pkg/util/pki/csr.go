@@ -235,7 +235,7 @@ func GenerateTemplate(crt *v1alpha1.Certificate) (*x509.Certificate, error) {
 // GenerateTemplate will create a x509.Certificate for the given
 // CertificateRequest resource
 func GenerateTemplateFromCertificateRequest(cr *v1alpha1.CertificateRequest) (*x509.Certificate, error) {
-	block, _ := pem.Decode(cr.Spec.CSRPem)
+	block, _ := pem.Decode(cr.Spec.CSRPEM)
 	if block == nil {
 		return nil, fmt.Errorf("failed to decode csr from certificate request resource %s/%s",
 			cr.Namespace, cr.Name)
