@@ -31,6 +31,7 @@ import (
 // FakeCertificateRequests implements CertificateRequestInterface
 type FakeCertificateRequests struct {
 	Fake *FakeCertmanagerV1alpha1
+	ns   string
 }
 
 var certificaterequestsResource = schema.GroupVersionResource{Group: "certmanager.k8s.io", Version: "v1alpha1", Resource: "certificaterequests"}
@@ -40,7 +41,8 @@ var certificaterequestsKind = schema.GroupVersionKind{Group: "certmanager.k8s.io
 // Get takes name of the certificateRequest, and returns the corresponding certificateRequest object, and an error if there is any.
 func (c *FakeCertificateRequests) Get(name string, options v1.GetOptions) (result *v1alpha1.CertificateRequest, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewRootGetAction(certificaterequestsResource, name), &v1alpha1.CertificateRequest{})
+		Invokes(testing.NewGetAction(certificaterequestsResource, c.ns, name), &v1alpha1.CertificateRequest{})
+
 	if obj == nil {
 		return nil, err
 	}
@@ -50,7 +52,8 @@ func (c *FakeCertificateRequests) Get(name string, options v1.GetOptions) (resul
 // List takes label and field selectors, and returns the list of CertificateRequests that match those selectors.
 func (c *FakeCertificateRequests) List(opts v1.ListOptions) (result *v1alpha1.CertificateRequestList, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewRootListAction(certificaterequestsResource, certificaterequestsKind, opts), &v1alpha1.CertificateRequestList{})
+		Invokes(testing.NewListAction(certificaterequestsResource, certificaterequestsKind, c.ns, opts), &v1alpha1.CertificateRequestList{})
+
 	if obj == nil {
 		return nil, err
 	}
@@ -71,13 +74,15 @@ func (c *FakeCertificateRequests) List(opts v1.ListOptions) (result *v1alpha1.Ce
 // Watch returns a watch.Interface that watches the requested certificateRequests.
 func (c *FakeCertificateRequests) Watch(opts v1.ListOptions) (watch.Interface, error) {
 	return c.Fake.
-		InvokesWatch(testing.NewRootWatchAction(certificaterequestsResource, opts))
+		InvokesWatch(testing.NewWatchAction(certificaterequestsResource, c.ns, opts))
+
 }
 
 // Create takes the representation of a certificateRequest and creates it.  Returns the server's representation of the certificateRequest, and an error, if there is any.
 func (c *FakeCertificateRequests) Create(certificateRequest *v1alpha1.CertificateRequest) (result *v1alpha1.CertificateRequest, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewRootCreateAction(certificaterequestsResource, certificateRequest), &v1alpha1.CertificateRequest{})
+		Invokes(testing.NewCreateAction(certificaterequestsResource, c.ns, certificateRequest), &v1alpha1.CertificateRequest{})
+
 	if obj == nil {
 		return nil, err
 	}
@@ -87,7 +92,8 @@ func (c *FakeCertificateRequests) Create(certificateRequest *v1alpha1.Certificat
 // Update takes the representation of a certificateRequest and updates it. Returns the server's representation of the certificateRequest, and an error, if there is any.
 func (c *FakeCertificateRequests) Update(certificateRequest *v1alpha1.CertificateRequest) (result *v1alpha1.CertificateRequest, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewRootUpdateAction(certificaterequestsResource, certificateRequest), &v1alpha1.CertificateRequest{})
+		Invokes(testing.NewUpdateAction(certificaterequestsResource, c.ns, certificateRequest), &v1alpha1.CertificateRequest{})
+
 	if obj == nil {
 		return nil, err
 	}
@@ -98,7 +104,8 @@ func (c *FakeCertificateRequests) Update(certificateRequest *v1alpha1.Certificat
 // Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
 func (c *FakeCertificateRequests) UpdateStatus(certificateRequest *v1alpha1.CertificateRequest) (*v1alpha1.CertificateRequest, error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewRootUpdateSubresourceAction(certificaterequestsResource, "status", certificateRequest), &v1alpha1.CertificateRequest{})
+		Invokes(testing.NewUpdateSubresourceAction(certificaterequestsResource, "status", c.ns, certificateRequest), &v1alpha1.CertificateRequest{})
+
 	if obj == nil {
 		return nil, err
 	}
@@ -108,13 +115,14 @@ func (c *FakeCertificateRequests) UpdateStatus(certificateRequest *v1alpha1.Cert
 // Delete takes name of the certificateRequest and deletes it. Returns an error if one occurs.
 func (c *FakeCertificateRequests) Delete(name string, options *v1.DeleteOptions) error {
 	_, err := c.Fake.
-		Invokes(testing.NewRootDeleteAction(certificaterequestsResource, name), &v1alpha1.CertificateRequest{})
+		Invokes(testing.NewDeleteAction(certificaterequestsResource, c.ns, name), &v1alpha1.CertificateRequest{})
+
 	return err
 }
 
 // DeleteCollection deletes a collection of objects.
 func (c *FakeCertificateRequests) DeleteCollection(options *v1.DeleteOptions, listOptions v1.ListOptions) error {
-	action := testing.NewRootDeleteCollectionAction(certificaterequestsResource, listOptions)
+	action := testing.NewDeleteCollectionAction(certificaterequestsResource, c.ns, listOptions)
 
 	_, err := c.Fake.Invokes(action, &v1alpha1.CertificateRequestList{})
 	return err
@@ -123,7 +131,8 @@ func (c *FakeCertificateRequests) DeleteCollection(options *v1.DeleteOptions, li
 // Patch applies the patch and returns the patched certificateRequest.
 func (c *FakeCertificateRequests) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v1alpha1.CertificateRequest, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewRootPatchSubresourceAction(certificaterequestsResource, name, pt, data, subresources...), &v1alpha1.CertificateRequest{})
+		Invokes(testing.NewPatchSubresourceAction(certificaterequestsResource, c.ns, name, pt, data, subresources...), &v1alpha1.CertificateRequest{})
+
 	if obj == nil {
 		return nil, err
 	}

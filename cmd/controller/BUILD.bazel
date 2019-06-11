@@ -22,6 +22,7 @@ go_library(
         "//pkg/controller/acmechallenges:go_default_library",
         "//pkg/controller/acmeorders:go_default_library",
         "//pkg/controller/certificates:go_default_library",
+        "//pkg/controller/certificaterequests:go_default_library",
         "//pkg/controller/clusterissuers:go_default_library",
         "//pkg/controller/ingress-shim:go_default_library",
         "//pkg/controller/issuers:go_default_library",

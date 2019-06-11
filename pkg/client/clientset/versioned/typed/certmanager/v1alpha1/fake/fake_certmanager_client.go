@@ -32,8 +32,8 @@ func (c *FakeCertmanagerV1alpha1) Certificates(namespace string) v1alpha1.Certif
 	return &FakeCertificates{c, namespace}
 }
 
-func (c *FakeCertmanagerV1alpha1) CertificateRequests() v1alpha1.CertificateRequestInterface {
-	return &FakeCertificateRequests{c}
+func (c *FakeCertmanagerV1alpha1) CertificateRequests(namespace string) v1alpha1.CertificateRequestInterface {
+	return &FakeCertificateRequests{c, namespace}
 }
 
 func (c *FakeCertmanagerV1alpha1) Challenges(namespace string) v1alpha1.ChallengeInterface {

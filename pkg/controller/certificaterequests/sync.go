@@ -56,12 +56,6 @@ const (
 	successCertificateIssued = "CertIssued"
 
 	messageErrorSavingCertificate = "Error saving TLS certificate: "
-
-	// staticTemporarySerialNumber is a fixed serial number we check for when
-	// updating the status of a certificate.
-	// It is used to identify temporarily generated certificates, so that friendly
-	// status messages can be displayed to users.
-	staticTemporarySerialNumber = 0x1234567890
 )
 
 func (c *Controller) Sync(ctx context.Context, cr *v1alpha1.CertificateRequest) (err error) {
@@ -79,11 +73,11 @@ func (c *Controller) Sync(ctx context.Context, cr *v1alpha1.CertificateRequest) 
 
 	dbg.Info("Fetching existing certificate signing request and certificate from certificate request",
 		"name", crCopy.ObjectMeta.Name)
-	if len(cr.Spec.CSRPem) == 0 {
+	if len(cr.Spec.CSRPEM) == 0 {
 		return errors.New(errorCertificateSigningRequestNotFound)
 	}
 
-	block, _ := pem.Decode(cr.Spec.CSRPem)
+	block, _ := pem.Decode(cr.Spec.CSRPEM)
 	if block == nil {
 		return errors.New(errorCertificateSigningRequestParse)
 	}
@@ -92,27 +86,6 @@ func (c *Controller) Sync(ctx context.Context, cr *v1alpha1.CertificateRequest) 
 	if err != nil {
 		return err
 	}
-
-	if len(cr.Status.Certificate) == 0 {
-		return errors.New(errorCertificateNotFound)
-	}
-
-	block, _ = pem.Decode(cr.Status.Certificate)
-	if block == nil {
-		return errors.New(errorCertificateParse)
-	}
-
-	cert, err := x509.ParseCertificate(block.Bytes)
-	if err != nil {
-		return err
-	}
-
-	// TODO: Metrics??
-	// update certificate expiry metric
-	//defer c.metrics.UpdateCertificateExpiry(crtCopy, c.secretLister)
-
-	dbg.Info("Update certificate request status if required")
-	c.setCertificateRequestStatus(crCopy, csr, cert)
 
 	el := validation.ValidateCertificateRequest(crCopy)
 	if len(el) > 0 {
@@ -131,14 +104,6 @@ func (c *Controller) Sync(ctx context.Context, cr *v1alpha1.CertificateRequest) 
 	}
 	dbg.Info("Fetched issuer resource referenced by certificate request", "issuer_name", crCopy.Spec.IssuerRef.Name)
 
-	el = validation.ValidateCertificateRequestForIssuer(crCopy, issuerObj)
-	if len(el) > 0 {
-		c.Recorder.Eventf(crCopy, corev1.EventTypeWarning, "BadConfig", "Resource validation failed: %v", el.ToAggregate())
-		return nil
-	}
-
-	dbg.Info("Certificate request passed all validation checks")
-
 	issuerReady := apiutil.IssuerHasCondition(issuerObj, v1alpha1.IssuerCondition{
 		Type:   v1alpha1.IssuerConditionReady,
 		Status: v1alpha1.ConditionTrue,
@@ -154,13 +119,36 @@ func (c *Controller) Sync(ctx context.Context, cr *v1alpha1.CertificateRequest) 
 		return nil
 	}
 
-	if isTemporaryCertificate(cert) {
-		dbg.Info("Temporary certificate found - calling 'issue'")
+	el = validation.ValidateCertificateRequestForIssuer(crCopy, issuerObj)
+	if len(el) > 0 {
+		c.Recorder.Eventf(crCopy, corev1.EventTypeWarning, "BadConfig", "Resource validation failed: %v", el.ToAggregate())
+		return nil
+	}
+
+	if len(cr.Status.Certificate) == 0 {
+		dbg.Info("Invoking issue function as existing certificate does not exist")
 		return c.sign(ctx, i, crCopy)
 	}
 
+	block, _ = pem.Decode(cr.Status.Certificate)
+	if block == nil {
+		return errors.New(errorCertificateParse)
+	}
+
+	cert, err := x509.ParseCertificate(block.Bytes)
+	if err != nil {
+		return err
+	}
+
+	dbg.Info("Update certificate request status if required")
+	c.setCertificateRequestStatus(crCopy, csr, cert)
+
+	// TODO: Metrics??
+	// update certificate expiry metric
+	//defer c.metrics.UpdateCertificateExpiry(crtCopy, c.secretLister)
+
 	if cert == nil {
-		dbg.Info("Invoking issue function as existing certificate does not exist")
+		dbg.Info("Invoking sign function as existing certificate does not exist")
 		return c.sign(ctx, i, crCopy)
 	}
 
@@ -220,11 +208,6 @@ func (c *Controller) setCertificateRequestStatus(cr *v1alpha1.CertificateRequest
 	reason := ""
 	message := ""
 	switch {
-	case isTemporaryCertificate(cert):
-		reason = "TemporaryCertificate"
-		message = "Certificate issuance in progress. Temporary certificate issued."
-		// clear the NotAfter field as it is not relevant to the user
-		cr.Status.NotAfter = nil
 	case cert.NotAfter.Before(c.clock.Now()):
 		reason = "Expired"
 		message = fmt.Sprintf("Certificate has expired on %s", cert.NotAfter.Format(time.RFC822))
@@ -274,13 +257,6 @@ func (c *Controller) certificateMatchesSpec(cr *v1alpha1.CertificateRequest, csr
 	//}
 
 	return len(errs) == 0, errs
-}
-
-func isTemporaryCertificate(cert *x509.Certificate) bool {
-	if cert == nil {
-		return false
-	}
-	return cert.SerialNumber.Int64() == staticTemporarySerialNumber
 }
 
 func (c *Controller) updateCertificateStatus(ctx context.Context, old, new *v1alpha1.CertificateRequest) (*v1alpha1.CertificateRequest, error) {

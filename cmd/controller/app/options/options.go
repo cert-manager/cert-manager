@@ -27,6 +27,7 @@ import (
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	challengescontroller "github.com/jetstack/cert-manager/pkg/controller/acmechallenges"
 	orderscontroller "github.com/jetstack/cert-manager/pkg/controller/acmeorders"
+	certificaterequestscontroller "github.com/jetstack/cert-manager/pkg/controller/certificaterequests"
 	certificatescontroller "github.com/jetstack/cert-manager/pkg/controller/certificates"
 	clusterissuerscontroller "github.com/jetstack/cert-manager/pkg/controller/clusterissuers"
 	ingressshimcontroller "github.com/jetstack/cert-manager/pkg/controller/ingress-shim"
@@ -122,6 +123,7 @@ var (
 		issuerscontroller.ControllerName,
 		clusterissuerscontroller.ControllerName,
 		certificatescontroller.ControllerName,
+		certificaterequestscontroller.ControllerName,
 		ingressshimcontroller.ControllerName,
 		orderscontroller.ControllerName,
 		challengescontroller.ControllerName,
