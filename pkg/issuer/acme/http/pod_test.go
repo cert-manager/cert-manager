@@ -257,7 +257,7 @@ func TestGetPodsForCertificate(t *testing.T) {
 func TestMergePodObjectMetaWithPodTemplate(t *testing.T) {
 	const createdPodKey = "createdPod"
 	tests := map[string]solverFixture{
-		"should use labels and owner references from template": {
+		"should use labels and annotations from template": {
 			Challenge: &v1alpha1.Challenge{
 				Spec: v1alpha1.ChallengeSpec{
 					DNSName: "example.com",
