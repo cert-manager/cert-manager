@@ -5,10 +5,10 @@ kind: ClusterRole
 metadata:
   name: {{ template "cert-manager.fullname" . }}-leaderelection
   labels:
-    app: {{ template "cert-manager.name" . }}
-    chart: {{ template "cert-manager.chart" . }}
-    release: {{ .Release.Name }}
-    heritage: {{ .Release.Service }}
+    app.kubernetes.io/name: {{ template "cert-manager.name" . }}
+    app.kubernetes.io/instance:  {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+    helm.sh/chart: {{ template "cert-manager.chart" . }}
 rules:
   # Used for leader election by the controller
   - apiGroups: [""]
@@ -23,10 +23,10 @@ kind: ClusterRole
 metadata:
   name: {{ template "cert-manager.fullname" . }}-controller-issuers
   labels:
-    app: {{ template "cert-manager.name" . }}
-    chart: {{ template "cert-manager.chart" . }}
-    release: {{ .Release.Name }}
-    heritage: {{ .Release.Service }}
+    app.kubernetes.io/name: {{ template "cert-manager.name" . }}
+    app.kubernetes.io/instance:  {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+    helm.sh/chart: {{ template "cert-manager.chart" . }}
 rules:
   - apiGroups: ["certmanager.k8s.io"]
     resources: ["issuers", "issuers/status"]
@@ -49,10 +49,10 @@ kind: ClusterRole
 metadata:
   name: {{ template "cert-manager.fullname" . }}-controller-clusterissuers
   labels:
-    app: {{ template "cert-manager.name" . }}
-    chart: {{ template "cert-manager.chart" . }}
-    release: {{ .Release.Name }}
-    heritage: {{ .Release.Service }}
+    app.kubernetes.io/name: {{ template "cert-manager.name" . }}
+    app.kubernetes.io/instance:  {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+    helm.sh/chart: {{ template "cert-manager.chart" . }}
 rules:
   - apiGroups: ["certmanager.k8s.io"]
     resources: ["clusterissuers", "clusterissuers/status"]
@@ -75,10 +75,10 @@ kind: ClusterRole
 metadata:
   name: {{ template "cert-manager.fullname" . }}-controller-certificates
   labels:
-    app: {{ template "cert-manager.name" . }}
-    chart: {{ template "cert-manager.chart" . }}
-    release: {{ .Release.Name }}
-    heritage: {{ .Release.Service }}
+    app.kubernetes.io/name: {{ template "cert-manager.name" . }}
+    app.kubernetes.io/instance:  {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+    helm.sh/chart: {{ template "cert-manager.chart" . }}
 rules:
   - apiGroups: ["certmanager.k8s.io"]
     resources: ["certificates", "certificates/status"]
@@ -110,10 +110,10 @@ kind: ClusterRole
 metadata:
   name: {{ template "cert-manager.fullname" . }}-controller-orders
   labels:
-    app: {{ template "cert-manager.name" . }}
-    chart: {{ template "cert-manager.chart" . }}
-    release: {{ .Release.Name }}
-    heritage: {{ .Release.Service }}
+    app.kubernetes.io/name: {{ template "cert-manager.name" . }}
+    app.kubernetes.io/instance:  {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+    helm.sh/chart: {{ template "cert-manager.chart" . }}
 rules:
   - apiGroups: ["certmanager.k8s.io"]
     resources: ["orders", "orders/status"]
@@ -145,10 +145,10 @@ kind: ClusterRole
 metadata:
   name: {{ template "cert-manager.fullname" . }}-controller-challenges
   labels:
-    app: {{ template "cert-manager.name" . }}
-    chart: {{ template "cert-manager.chart" . }}
-    release: {{ .Release.Name }}
-    heritage: {{ .Release.Service }}
+    app.kubernetes.io/name: {{ template "cert-manager.name" . }}
+    app.kubernetes.io/instance:  {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+    helm.sh/chart: {{ template "cert-manager.chart" . }}
 rules:
   # Use to update challenge resource status
   - apiGroups: ["certmanager.k8s.io"]
@@ -200,10 +200,10 @@ kind: ClusterRole
 metadata:
   name: {{ template "cert-manager.fullname" . }}-controller-ingress-shim
   labels:
-    app: {{ template "cert-manager.name" . }}
-    chart: {{ template "cert-manager.chart" . }}
-    release: {{ .Release.Name }}
-    heritage: {{ .Release.Service }}
+    app.kubernetes.io/name: {{ template "cert-manager.name" . }}
+    app.kubernetes.io/instance:  {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+    helm.sh/chart: {{ template "cert-manager.chart" . }}
 rules:
   - apiGroups: ["certmanager.k8s.io"]
     resources: ["certificates"]
@@ -231,10 +231,10 @@ kind: ClusterRoleBinding
 metadata:
   name: {{ template "cert-manager.fullname" . }}-leaderelection
   labels:
-    app: {{ template "cert-manager.name" . }}
-    chart: {{ template "cert-manager.chart" . }}
-    release: {{ .Release.Name }}
-    heritage: {{ .Release.Service }}
+    app.kubernetes.io/name: {{ template "cert-manager.name" . }}
+    app.kubernetes.io/instance:  {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+    helm.sh/chart: {{ template "cert-manager.chart" . }}
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
@@ -251,10 +251,10 @@ kind: ClusterRoleBinding
 metadata:
   name: {{ template "cert-manager.fullname" . }}-controller-issuers
   labels:
-    app: {{ template "cert-manager.name" . }}
-    chart: {{ template "cert-manager.chart" . }}
-    release: {{ .Release.Name }}
-    heritage: {{ .Release.Service }}
+    app.kubernetes.io/name: {{ template "cert-manager.name" . }}
+    app.kubernetes.io/instance:  {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+    helm.sh/chart: {{ template "cert-manager.chart" . }}
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
@@ -271,10 +271,10 @@ kind: ClusterRoleBinding
 metadata:
   name: {{ template "cert-manager.fullname" . }}-controller-clusterissuers
   labels:
-    app: {{ template "cert-manager.name" . }}
-    chart: {{ template "cert-manager.chart" . }}
-    release: {{ .Release.Name }}
-    heritage: {{ .Release.Service }}
+    app.kubernetes.io/name: {{ template "cert-manager.name" . }}
+    app.kubernetes.io/instance:  {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+    helm.sh/chart: {{ template "cert-manager.chart" . }}
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
@@ -291,10 +291,10 @@ kind: ClusterRoleBinding
 metadata:
   name: {{ template "cert-manager.fullname" . }}-controller-certificates
   labels:
-    app: {{ template "cert-manager.name" . }}
-    chart: {{ template "cert-manager.chart" . }}
-    release: {{ .Release.Name }}
-    heritage: {{ .Release.Service }}
+    app.kubernetes.io/name: {{ template "cert-manager.name" . }}
+    app.kubernetes.io/instance:  {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+    helm.sh/chart: {{ template "cert-manager.chart" . }}
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
@@ -311,10 +311,10 @@ kind: ClusterRoleBinding
 metadata:
   name: {{ template "cert-manager.fullname" . }}-controller-orders
   labels:
-    app: {{ template "cert-manager.name" . }}
-    chart: {{ template "cert-manager.chart" . }}
-    release: {{ .Release.Name }}
-    heritage: {{ .Release.Service }}
+    app.kubernetes.io/name: {{ template "cert-manager.name" . }}
+    app.kubernetes.io/instance:  {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+    helm.sh/chart: {{ template "cert-manager.chart" . }}
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
@@ -331,10 +331,10 @@ kind: ClusterRoleBinding
 metadata:
   name: {{ template "cert-manager.fullname" . }}-controller-challenges
   labels:
-    app: {{ template "cert-manager.name" . }}
-    chart: {{ template "cert-manager.chart" . }}
-    release: {{ .Release.Name }}
-    heritage: {{ .Release.Service }}
+    app.kubernetes.io/name: {{ template "cert-manager.name" . }}
+    app.kubernetes.io/instance:  {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+    helm.sh/chart: {{ template "cert-manager.chart" . }}
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
@@ -351,10 +351,10 @@ kind: ClusterRoleBinding
 metadata:
   name: {{ template "cert-manager.fullname" . }}-controller-ingress-shim
   labels:
-    app: {{ template "cert-manager.name" . }}
-    chart: {{ template "cert-manager.chart" . }}
-    release: {{ .Release.Name }}
-    heritage: {{ .Release.Service }}
+    app.kubernetes.io/name: {{ template "cert-manager.name" . }}
+    app.kubernetes.io/instance:  {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+    helm.sh/chart: {{ template "cert-manager.chart" . }}
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
@@ -371,10 +371,10 @@ kind: ClusterRole
 metadata:
   name: {{ template "cert-manager.fullname" . }}-view
   labels:
-    app: {{ template "cert-manager.name" . }}
-    chart: {{ template "cert-manager.chart" . }}
-    release: {{ .Release.Name }}
-    heritage: {{ .Release.Service }}
+    app.kubernetes.io/name: {{ template "cert-manager.name" . }}
+    app.kubernetes.io/instance:  {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+    helm.sh/chart: {{ template "cert-manager.chart" . }}
     rbac.authorization.k8s.io/aggregate-to-view: "true"
     rbac.authorization.k8s.io/aggregate-to-edit: "true"
     rbac.authorization.k8s.io/aggregate-to-admin: "true"
@@ -390,10 +390,10 @@ kind: ClusterRole
 metadata:
   name: {{ template "cert-manager.fullname" . }}-edit
   labels:
-    app: {{ template "cert-manager.name" . }}
-    chart: {{ template "cert-manager.chart" . }}
-    release: {{ .Release.Name }}
-    heritage: {{ .Release.Service }}
+    app.kubernetes.io/name: {{ template "cert-manager.name" . }}
+    app.kubernetes.io/instance:  {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+    helm.sh/chart: {{ template "cert-manager.chart" . }}
     rbac.authorization.k8s.io/aggregate-to-edit: "true"
     rbac.authorization.k8s.io/aggregate-to-admin: "true"
 rules:

@@ -8,10 +8,10 @@ kind: ClusterRoleBinding
 metadata:
   name: {{ include "webhook.fullname" . }}:auth-delegator
   labels:
-    app: {{ include "webhook.name" . }}
-    chart: {{ include "webhook.chart" . }}
-    release: {{ .Release.Name }}
-    heritage: {{ .Release.Service }}
+    app.kubernetes.io/name: {{ include "webhook.name" . }}
+    app.kubernetes.io/instance:  {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+    helm.sh/chart: {{ include "webhook.chart" . }}
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
@@ -33,10 +33,10 @@ metadata:
   name: {{ include "webhook.fullname" . }}:webhook-authentication-reader
   namespace: kube-system
   labels:
-    app: {{ include "webhook.name" . }}
-    chart: {{ include "webhook.chart" . }}
-    release: {{ .Release.Name }}
-    heritage: {{ .Release.Service }}
+    app.kubernetes.io/name: {{ include "webhook.name" . }}
+    app.kubernetes.io/instance:  {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+    helm.sh/chart: {{ include "webhook.chart" . }}
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
@@ -54,10 +54,10 @@ kind: ClusterRole
 metadata:
   name: {{ include "webhook.fullname" . }}:webhook-requester
   labels:
-    app: {{ include "webhook.name" . }}
-    chart: {{ include "webhook.chart" . }}
-    release: {{ .Release.Name }}
-    heritage: {{ .Release.Service }}
+    app.kubernetes.io/name: {{ include "webhook.name" . }}
+    app.kubernetes.io/instance:  {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+    helm.sh/chart: {{ include "webhook.chart" . }}
 rules:
 - apiGroups:
   - admission.certmanager.k8s.io

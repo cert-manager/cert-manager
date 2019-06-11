@@ -7,10 +7,10 @@ metadata:
   name: {{ include "webhook.selfSignedIssuer" . }}
   namespace: {{ .Release.Namespace | quote }}
   labels:
-    app: {{ include "webhook.name" . }}
-    chart: {{ include "webhook.chart" . }}
-    release: {{ .Release.Name }}
-    heritage: {{ .Release.Service }}
+    app.kubernetes.io/name: {{ include "webhook.name" . }}
+    app.kubernetes.io/instance:  {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+    helm.sh/chart: {{ include "webhook.chart" . }}
 spec:
   selfSigned: {}
 
@@ -23,10 +23,10 @@ metadata:
   name: {{ include "webhook.rootCACertificate" . }}
   namespace: {{ .Release.Namespace | quote }}
   labels:
-    app: {{ include "webhook.name" . }}
-    chart: {{ include "webhook.chart" . }}
-    release: {{ .Release.Name }}
-    heritage: {{ .Release.Service }}
+    app.kubernetes.io/name: {{ include "webhook.name" . }}
+    app.kubernetes.io/instance:  {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+    helm.sh/chart: {{ include "webhook.chart" . }}
 spec:
   secretName: {{ include "webhook.rootCACertificate" . }}
   duration: 43800h # 5y
@@ -44,10 +44,10 @@ metadata:
   name: {{ include "webhook.rootCAIssuer" . }}
   namespace: {{ .Release.Namespace | quote }}
   labels:
-    app: {{ include "webhook.name" . }}
-    chart: {{ include "webhook.chart" . }}
-    release: {{ .Release.Name }}
-    heritage: {{ .Release.Service }}
+    app.kubernetes.io/name: {{ include "webhook.name" . }}
+    app.kubernetes.io/instance:  {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+    helm.sh/chart: {{ include "webhook.chart" . }}
 spec:
   ca:
     secretName: {{ include "webhook.rootCACertificate" . }}
@@ -61,10 +61,10 @@ metadata:
   name: {{ include "webhook.servingCertificate" . }}
   namespace: {{ .Release.Namespace | quote }}
   labels:
-    app: {{ include "webhook.name" . }}
-    chart: {{ include "webhook.chart" . }}
-    release: {{ .Release.Name }}
-    heritage: {{ .Release.Service }}
+    app.kubernetes.io/name: {{ include "webhook.name" . }}
+    app.kubernetes.io/instance:  {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+    helm.sh/chart: {{ include "webhook.chart" . }}
 spec:
   secretName: {{ include "webhook.servingCertificate" . }}
   duration: 8760h # 1y
