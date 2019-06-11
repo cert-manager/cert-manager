@@ -21,6 +21,7 @@ import (
 	"testing"
 
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
@@ -197,6 +198,62 @@ func TestValidateACMEIssuerConfig(t *testing.T) {
 			},
 			errs: []*field.Error{
 				field.Invalid(fldPath.Child("http01", "serviceType"), corev1.ServiceType("InvalidServiceType"), "optional field serviceType must be one of [\"ClusterIP\" \"NodePort\"]"),
+			},
+		},
+		"acme issue with valid pod template attributes": {
+			spec: &v1alpha1.ACMEIssuer{
+				Email:      "valid-email",
+				Server:     "valid-server",
+				PrivateKey: validSecretKeyRef,
+				Solvers: []v1alpha1.ACMEChallengeSolver{
+					{
+						HTTP01: &v1alpha1.ACMEChallengeSolverHTTP01{
+							Ingress: &v1alpha1.ACMEChallengeSolverHTTP01Ingress{
+								PodTemplate: &v1alpha1.ACMEChallengeSolverHTTP01IngressPodTemplate{
+									ObjectMeta: metav1.ObjectMeta{
+										Labels: map[string]string{
+											"valid_to_contain": "labels",
+										},
+										Annotations: map[string]string{
+											"valid_to_contain": "annotations",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+				HTTP01: &v1alpha1.ACMEIssuerHTTP01Config{
+					ServiceType: corev1.ServiceType("NodePort"),
+				},
+			},
+		},
+		"acme issue with invalid pod template ObjectMeta attributes": {
+			spec: &v1alpha1.ACMEIssuer{
+				Email:      "valid-email",
+				Server:     "valid-server",
+				PrivateKey: validSecretKeyRef,
+				Solvers: []v1alpha1.ACMEChallengeSolver{
+					{
+						HTTP01: &v1alpha1.ACMEChallengeSolverHTTP01{
+							Ingress: &v1alpha1.ACMEChallengeSolverHTTP01Ingress{
+								PodTemplate: &v1alpha1.ACMEChallengeSolverHTTP01IngressPodTemplate{
+									ObjectMeta: metav1.ObjectMeta{
+										Annotations: map[string]string{
+											"valid_to_contain": "annotations",
+										},
+										GenerateName: "unable-to-change-generateName",
+										Name:         "unable-to-change-name",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			errs: []*field.Error{
+				field.Invalid(fldPath.Child("solver", "http01", "ingress", "podTemplate", "metadata"),
+					"", "only labels and annotations may be set on podTemplate"),
 			},
 		},
 	}

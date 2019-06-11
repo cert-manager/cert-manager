@@ -280,6 +280,17 @@ type ACMEChallengeSolverHTTP01Ingress struct {
 	// ingress resources.
 	// +optional
 	Name string `json:"name,omitempty"`
+
+	// Optional pod template used to configure the ACME challenge solver pods
+	// used for HTTP01 challenges. Only labels and annotations may be set and
+	// will be merged ontop of the defaults. PodTemplate labels and annotation
+	// fields will override fields with matching keys.
+	// +optional
+	PodTemplate *ACMEChallengeSolverHTTP01IngressPodTemplate `json:"podTemplate,omitempty"`
+}
+
+type ACMEChallengeSolverHTTP01IngressPodTemplate struct {
+	metav1.ObjectMeta `json:"metadata,omitempty"`
 }
 
 type ACMEChallengeSolverDNS01 struct {

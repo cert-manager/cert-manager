@@ -68,6 +68,7 @@ func (s *Solver) ensurePod(ctx context.Context, ch *v1alpha1.Challenge) (*corev1
 	}
 
 	log.Info("creating HTTP01 challenge solver pod")
+
 	return s.createPod(ch)
 }
 
@@ -131,13 +132,29 @@ func (s *Solver) cleanupPods(ctx context.Context, ch *v1alpha1.Challenge) error 
 // createPod will create a challenge solving pod for the given certificate,
 // domain, token and key.
 func (s *Solver) createPod(ch *v1alpha1.Challenge) (*corev1.Pod, error) {
-	return s.Client.CoreV1().Pods(ch.Namespace).Create(s.buildPod(ch))
+	return s.Client.CoreV1().Pods(ch.Namespace).Create(
+		s.buildPod(ch))
 }
 
 // buildPod will build a challenge solving pod for the given certificate,
 // domain, token and key. It will not create it in the API server
 func (s *Solver) buildPod(ch *v1alpha1.Challenge) *corev1.Pod {
+	pod := s.buildDefaultPod(ch)
+
+	// Override defaults if they have changed in the pod template.
+	if ch.Spec.Solver != nil &&
+		ch.Spec.Solver.HTTP01 != nil &&
+		ch.Spec.Solver.HTTP01.Ingress != nil {
+		pod = s.mergePodObjectMetaWithPodTemplate(pod,
+			ch.Spec.Solver.HTTP01.Ingress.PodTemplate)
+	}
+
+	return pod
+}
+
+func (s *Solver) buildDefaultPod(ch *v1alpha1.Challenge) *corev1.Pod {
 	podLabels := podLabels(ch)
+
 	return &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "cm-acme-http-solver-",
@@ -183,4 +200,29 @@ func (s *Solver) buildPod(ch *v1alpha1.Challenge) *corev1.Pod {
 			},
 		},
 	}
+}
+
+// Merge object meta from the pod template. Fall back to default values.
+func (s *Solver) mergePodObjectMetaWithPodTemplate(pod *corev1.Pod, podTempl *v1alpha1.ACMEChallengeSolverHTTP01IngressPodTemplate) *corev1.Pod {
+	if podTempl == nil {
+		return pod
+	}
+
+	if pod.Labels == nil {
+		pod.Labels = make(map[string]string)
+	}
+
+	for k, v := range podTempl.Labels {
+		pod.Labels[k] = v
+	}
+
+	if pod.Annotations == nil {
+		pod.Annotations = make(map[string]string)
+	}
+
+	for k, v := range podTempl.Annotations {
+		pod.Annotations[k] = v
+	}
+
+	return pod
 }

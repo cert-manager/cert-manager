@@ -67,3 +67,36 @@ response specify the following http01 config:
 
 By default type NodePort will be used when you don't set http01 or when you set
 serviceType to an empty string. Normally there's no need to change this.
+
+podTemplate
+-----------
+
+You may wish to change or add to the labels and annotations of solver pods.
+These can be configured under the `metadata` field under `podTemplate`. No other
+metadata fields can be edited. Below shows how an issuer that is configured to
+add some labels and annotations to solver pods.
+
+.. code-block:: yaml
+
+       apiVersion: certmanager.k8s.io/v1alpha1
+       kind: Issuer
+       metadata:
+         name: ...
+       spec:
+         acme:
+           server: ...
+           privateKeySecretRef:
+             name: ...
+           solvers:
+           - http01:
+               ingress:
+                 podTemplate:
+                   metadata:
+                     labels:
+                       foo: "bar"
+                       env: "prod"
+                     annotations:
+                       my: "annotation"
+
+The added labels and annotations will merge on top of the cert-manager defaults,
+overriding entries with the same key.
