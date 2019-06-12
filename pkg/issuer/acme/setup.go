@@ -147,12 +147,14 @@ func (a *Acme) Setup(ctx context.Context) error {
 		Status: v1alpha1.ConditionTrue,
 	})
 
-	// If the Host components of the server URL and the account URL match, then
+	// If the Host components of the server URL and the account URL match,
+	// and the cached email matches the registered email, then
 	// we skip re-checking the account status to save excess calls to the
 	// ACME api.
 	if hasReadyCondition &&
 		a.issuer.GetStatus().ACMEStatus().URI != "" &&
-		parsedAccountURL.Host == parsedServerURL.Host {
+		parsedAccountURL.Host == parsedServerURL.Host &&
+		a.issuer.GetStatus().ACMEStatus().LastRegisteredEmail == a.issuer.GetSpec().ACME.Email {
 		log.Info("skipping re-verifying ACME account as cached registration " +
 			"details look sufficient")
 		return nil
@@ -166,12 +168,28 @@ func (a *Acme) Setup(ctx context.Context) error {
 
 	// registerAccount will also verify the account exists if it already
 	// exists.
-	if a.issuer.GetStatus().ACME.LastRegisteredEmail == a.issuer.GetSpec().ACME.Email {
-		log.Info("account has already been registered with ACME server")
-		return nil
+	account, err := a.registerAccount(ctx, cl)
+
+	// if we got an account successfully, we must check if the registered
+	// email is the same as in the issuer spec
+	registeredEmail := ""
+	if err == nil {
+		if len(account.Contact) > 0 {
+			registeredEmail = strings.Replace(account.Contact[0], "mailto:", "", 1)
+		}
+
+		// if they are different, we update the account
+		if registeredEmail != a.issuer.GetSpec().ACME.Email {
+			emailurl := []string(nil)
+			if a.issuer.GetSpec().ACME.Email != "" {
+				emailurl = []string{fmt.Sprintf("mailto:%s", strings.ToLower(a.issuer.GetSpec().ACME.Email))}
+			}
+			account.Contact = emailurl
+			account, err = cl.UpdateAccount(ctx, account)
+		}
 	}
 
-	account, err := a.registerAccount(ctx, cl)
+	// handle errs from both registerAccount and UpdateAccount
 	if err != nil {
 		s := messageAccountVerificationFailed + err.Error()
 		log.Error(err, "failed to verify ACME account")
@@ -200,7 +218,7 @@ func (a *Acme) Setup(ctx context.Context) error {
 	log.Info("verified existing registration with ACME server")
 	apiutil.SetIssuerCondition(a.issuer, v1alpha1.IssuerConditionReady, v1alpha1.ConditionTrue, successAccountRegistered, messageAccountRegistered)
 	a.issuer.GetStatus().ACMEStatus().URI = account.URL
-	a.issuer.GetStatus().ACMEStatus().LastRegisteredEmail = a.issuer.GetSpec().ACME.Email
+	a.issuer.GetStatus().ACMEStatus().LastRegisteredEmail = registeredEmail
 
 	return nil
 }
