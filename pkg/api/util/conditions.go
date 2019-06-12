@@ -109,6 +109,25 @@ func CertificateHasCondition(crt *cmapi.Certificate, c cmapi.CertificateConditio
 	return false
 }
 
+// CertificateRequestHasCondition will return true if the given
+// CertificateRequest has a condition matching the provided
+// CertificateRequestCondition.
+// Only the Type and Status field will be used in the comparison, meaning that
+// this function will return 'true' even if the Reason, Message and
+// LastTransitionTime fields do not match.
+func CertificateRequestHasCondition(cr *cmapi.CertificateRequest, c cmapi.CertificateRequestCondition) bool {
+	if cr == nil {
+		return false
+	}
+	existingConditions := cr.Status.Conditions
+	for _, cond := range existingConditions {
+		if c.Type == cond.Type && c.Status == cond.Status {
+			return true
+		}
+	}
+	return false
+}
+
 // SetCertificateCondition will set a 'condition' on the given Certificate.
 // - If no condition of the same type already exists, the condition will be
 //   inserted with the LastTransitionTime set to the current time.

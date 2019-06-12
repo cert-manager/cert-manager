@@ -310,9 +310,13 @@ func SignCertificate(template *x509.Certificate, issuerCert *x509.Certificate, p
 // EncodeCSR calls x509.CreateCertificateRequest to sign the given CSR template.
 // It returns a DER encoded signed CSR.
 func EncodeCSR(template *x509.CertificateRequest, key crypto.Signer) ([]byte, error) {
+	if key == nil {
+		return nil, fmt.Errorf("no private key given to encode CSR")
+	}
+
 	derBytes, err := x509.CreateCertificateRequest(rand.Reader, template, key)
 	if err != nil {
-		return nil, fmt.Errorf("error creating x509 certificate: %s", err.Error())
+		return nil, fmt.Errorf("error creating x509 certificate request: %s", err.Error())
 	}
 
 	return derBytes, nil

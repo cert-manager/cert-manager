@@ -50,10 +50,11 @@ type Controller struct {
 	// To allow injection for testing.
 	syncHandler func(ctx context.Context, key string) error
 
-	issuerLister        cmlisters.IssuerLister
-	clusterIssuerLister cmlisters.ClusterIssuerLister
-	certificateLister   cmlisters.CertificateLister
-	secretLister        corelisters.SecretLister
+	issuerLister             cmlisters.IssuerLister
+	clusterIssuerLister      cmlisters.ClusterIssuerLister
+	certificateLister        cmlisters.CertificateLister
+	certificateRequestLister cmlisters.CertificateRequestLister
+	secretLister             corelisters.SecretLister
 
 	queue              workqueue.RateLimitingInterface
 	scheduledWorkQueue scheduler.ScheduledWorkQueue
@@ -84,6 +85,11 @@ func New(ctx *controllerpkg.Context) *Controller {
 	certificateInformer.Informer().AddEventHandler(&controllerpkg.QueuingEventHandler{Queue: ctrl.queue})
 	ctrl.certificateLister = certificateInformer.Lister()
 	ctrl.syncedFuncs = append(ctrl.syncedFuncs, certificateInformer.Informer().HasSynced)
+
+	certificateRequestInformer := ctrl.SharedInformerFactory.Certmanager().V1alpha1().CertificateRequests()
+	certificateRequestInformer.Informer().AddEventHandler(&controllerpkg.QueuingEventHandler{Queue: ctrl.queue})
+	ctrl.certificateRequestLister = certificateRequestInformer.Lister()
+	ctrl.syncedFuncs = append(ctrl.syncedFuncs, certificateRequestInformer.Informer().HasSynced)
 
 	issuerInformer := ctrl.SharedInformerFactory.Certmanager().V1alpha1().Issuers()
 	issuerInformer.Informer().AddEventHandler(&controllerpkg.BlockingEventHandler{WorkFunc: ctrl.handleGenericIssuer})

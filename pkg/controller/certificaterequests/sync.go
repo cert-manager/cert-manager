@@ -66,7 +66,7 @@ func (c *Controller) Sync(ctx context.Context, cr *v1alpha1.CertificateRequest) 
 
 	crCopy := cr.DeepCopy()
 	defer func() {
-		if _, saveErr := c.updateCertificateStatus(ctx, cr, crCopy); saveErr != nil {
+		if _, saveErr := c.updateCertificateRequestStatus(ctx, cr, crCopy); saveErr != nil {
 			err = utilerrors.NewAggregate([]error{saveErr, err})
 		}
 	}()
@@ -144,18 +144,9 @@ func (c *Controller) Sync(ctx context.Context, cr *v1alpha1.CertificateRequest) 
 	c.setCertificateRequestStatus(crCopy, csr, cert)
 
 	// TODO: Metrics??
-	// update certificate expiry metric
-	//defer c.metrics.UpdateCertificateExpiry(crtCopy, c.secretLister)
 
 	if cert == nil {
 		dbg.Info("Invoking sign function as existing certificate does not exist")
-		return c.sign(ctx, i, crCopy)
-	}
-
-	// begin checking if the TLS certificate is valid/needs a re-issue or renew
-	matches, matchErrs := c.certificateMatchesSpec(crCopy, csr, cert)
-	if !matches {
-		dbg.Info("invoking issue function due to certificate not matching spec", "diff", strings.Join(matchErrs, ", "))
 		return c.sign(ctx, i, crCopy)
 	}
 
@@ -232,34 +223,12 @@ func (c *Controller) certificateMatchesSpec(cr *v1alpha1.CertificateRequest, csr
 		errs = append(errs, fmt.Sprintf("failed to validate certificate signing request signature: %s", err))
 	}
 
-	// CSR spec will become immutable
-
-	// validate the common name is correct
-	//expectedCN := pki.CommonNameForCertificateRequest(csr)
-	//if expectedCN != cert.Subject.CommonName {
-	//	errs = append(errs, fmt.Sprintf("Common name on TLS certificate not up to date: %q", cert.Subject.CommonName))
-	//}
-
-	//// validate the dns names are correct
-	//expectedDNSNames := pki.DNSNamesForCertificateRequest(csr)
-	//if !util.EqualUnsorted(cert.DNSNames, expectedDNSNames) {
-	//	errs = append(errs, fmt.Sprintf("DNS names on TLS certificate not up to date: %q", cert.DNSNames))
-	//}
-
-	//// validate the uris are correct
-	//if !util.EqualUnsorted(pki.URLsToString(cert.URIs), pki.URLsToString(csr.URIs)) {
-	//	errs = append(errs, fmt.Sprintf("URLs on TLS certificate not up to date: %q", pki.URLsToString(cert.URIs)))
-	//}
-
-	//// validate the ip addresses are correct
-	//if !util.EqualUnsorted(pki.IPAddressesToString(cert.IPAddresses), pki.IPAddressesToString(csr.IPAddresses)) {
-	//	errs = append(errs, fmt.Sprintf("IP addresses on TLS certificate not up to date: %q", pki.IPAddressesToString(cert.IPAddresses)))
-	//}
+	// CR spec will become immutable
 
 	return len(errs) == 0, errs
 }
 
-func (c *Controller) updateCertificateStatus(ctx context.Context, old, new *v1alpha1.CertificateRequest) (*v1alpha1.CertificateRequest, error) {
+func (c *Controller) updateCertificateRequestStatus(ctx context.Context, old, new *v1alpha1.CertificateRequest) (*v1alpha1.CertificateRequest, error) {
 	log := logf.FromContext(ctx, "updateStatus")
 	oldBytes, _ := json.Marshal(old.Status)
 	newBytes, _ := json.Marshal(new.Status)

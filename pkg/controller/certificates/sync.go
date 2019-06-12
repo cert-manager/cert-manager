@@ -36,7 +36,6 @@ import (
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/validation"
-	"github.com/jetstack/cert-manager/pkg/issuer"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 	"github.com/jetstack/cert-manager/pkg/util"
 	"github.com/jetstack/cert-manager/pkg/util/errors"
@@ -134,34 +133,28 @@ func (c *Controller) Sync(ctx context.Context, crt *v1alpha1.Certificate) (err e
 		return nil
 	}
 
-	i, err := c.issuerFactory.IssuerFor(issuerObj)
-	if err != nil {
-		c.Recorder.Eventf(crtCopy, corev1.EventTypeWarning, errorIssuerInit, "Internal error initialising issuer: %v", err)
-		return nil
-	}
-
 	if isTemporaryCertificate(cert) {
 		dbg.Info("Temporary certificate found - calling 'issue'")
-		return c.issue(ctx, i, crtCopy)
+		return c.issue(ctx, issuerObj, key, crtCopy)
 	}
 
 	if key == nil || cert == nil {
 		dbg.Info("Invoking issue function as existing certificate does not exist")
-		return c.issue(ctx, i, crtCopy)
+		return c.issue(ctx, issuerObj, key, crtCopy)
 	}
 
 	// begin checking if the TLS certificate is valid/needs a re-issue or renew
 	matches, matchErrs := c.certificateMatchesSpec(crtCopy, key, cert)
 	if !matches {
 		dbg.Info("invoking issue function due to certificate not matching spec", "diff", strings.Join(matchErrs, ", "))
-		return c.issue(ctx, i, crtCopy)
+		return c.issue(ctx, issuerObj, key, crtCopy)
 	}
 
 	// check if the certificate needs renewal
 	needsRenew := c.Context.IssuerOptions.CertificateNeedsRenew(cert, crt)
 	if needsRenew {
 		dbg.Info("invoking issue function due to certificate needing renewal")
-		return c.issue(ctx, i, crtCopy)
+		return c.issue(ctx, issuerObj, key, crtCopy)
 	}
 	// end checking if the TLS certificate is valid/needs a re-issue or renew
 
@@ -320,22 +313,25 @@ func (c *Controller) updateSecret(ctx context.Context, crt *v1alpha1.Certificate
 	log := logf.FromContext(ctx, "updateSecret")
 	log = logf.WithRelatedResourceName(log, crt.Spec.SecretName, namespace, "Secret")
 
-	// if the key is not set, we bail out early.
-	// this function should always be called with at least a private key.
-	// in future we'll likely need to relax this requirement, but for now we'll
-	// keep this here to be safe.
-	if len(key) == 0 {
-		return nil, fmt.Errorf("private key data must be set")
-	}
-	privKey, err := pki.DecodePrivateKeyBytes(key)
-	if err != nil {
-		return nil, fmt.Errorf("error decoding private key: %v", err)
-	}
-
 	// get a copy of the current secret resource
 	secret, err := c.secretLister.Secrets(namespace).Get(crt.Spec.SecretName)
 	if err != nil && !k8sErrors.IsNotFound(err) {
 		return nil, err
+	}
+
+	var ok bool
+	if len(key) == 0 {
+		if secret != nil && secret.Data != nil {
+			key, ok = secret.Data[corev1.TLSPrivateKeyKey]
+			if !ok || len(key) == 0 {
+				return nil, fmt.Errorf("private key data must be set")
+			}
+		}
+	}
+
+	privKey, err := pki.DecodePrivateKeyBytes(key)
+	if err != nil {
+		return nil, fmt.Errorf("error decoding private key: %v", err)
 	}
 
 	// if the resource does not already exist, we will create a new one
@@ -435,37 +431,6 @@ func (c *Controller) updateSecret(ctx context.Context, crt *v1alpha1.Certificate
 		return nil, err
 	}
 	return secret, nil
-}
-
-// return an error on failure. If retrieval is succesful, the certificate data
-// and private key will be stored in the named secret
-func (c *Controller) issue(ctx context.Context, issuer issuer.Interface, crt *v1alpha1.Certificate) error {
-	log := logf.FromContext(ctx)
-
-	resp, err := issuer.Issue(ctx, crt)
-	if err != nil {
-		log.Error(err, "error issuing certificate")
-		return err
-	}
-	// if the issuer has not returned any data, exit early
-	if resp == nil {
-		return nil
-	}
-
-	if _, err := c.updateSecret(ctx, crt, crt.Namespace, resp.Certificate, resp.PrivateKey, resp.CA); err != nil {
-		s := messageErrorSavingCertificate + err.Error()
-		log.Error(err, "error saving certificate")
-		c.Recorder.Event(crt, corev1.EventTypeWarning, errorSavingCertificate, s)
-		return err
-	}
-
-	if len(resp.Certificate) > 0 {
-		c.Recorder.Event(crt, corev1.EventTypeNormal, successCertificateIssued, "Certificate issued successfully")
-		// as we have just written a certificate, we should schedule it for renewal
-		c.scheduleRenewal(ctx, crt)
-	}
-
-	return nil
 }
 
 // staticTemporarySerialNumber is a fixed serial number we check for when
