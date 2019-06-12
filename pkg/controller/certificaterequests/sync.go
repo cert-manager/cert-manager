@@ -160,7 +160,7 @@ func (c *Controller) Sync(ctx context.Context, cr *v1alpha1.CertificateRequest) 
 func (c *Controller) sign(ctx context.Context, issuer issuer.Interface, cr *v1alpha1.CertificateRequest) error {
 	log := logf.FromContext(ctx)
 
-	resp, err := issuer.Sign(ctx, cr)
+	resp, err := issuer.Issue(ctx, cr)
 	if err != nil {
 		log.Error(err, "error issuing certificate request")
 		return err

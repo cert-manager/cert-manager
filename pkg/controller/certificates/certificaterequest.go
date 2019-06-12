@@ -34,6 +34,14 @@ func (c *Controller) issue(ctx context.Context, issuer v1alpha1.GenericIssuer, k
 		return err
 	}
 
+	if key == nil {
+		log.Info("generating new private key")
+		key, err = c.generateNewPrivateKey(ctx, crt)
+		if err != nil {
+			return err
+		}
+	}
+
 	csrPEM, err := pki.EncodeCSR(csr, key)
 	if err != nil {
 		return err
@@ -93,7 +101,12 @@ func (c *Controller) issue(ctx context.Context, issuer v1alpha1.GenericIssuer, k
 			continue
 		}
 
-		if _, err := c.updateSecret(ctx, crt, crt.Namespace, cr.Status.Certificate, nil, cr.Status.CA); err != nil {
+		keyPem, err := pki.EncodePrivateKey(key)
+		if err != nil {
+			return err
+		}
+
+		if _, err := c.updateSecret(ctx, crt, crt.Namespace, cr.Status.Certificate, keyPem, cr.Status.CA); err != nil {
 			s := messageErrorSavingCertificate + err.Error()
 			log.Error(err, "error saving certificate")
 			c.Recorder.Event(crt, corev1.EventTypeWarning, errorSavingCertificate, s)

@@ -166,6 +166,25 @@ func (c *Controller) Sync(ctx context.Context, crt *v1alpha1.Certificate) (err e
 	return nil
 }
 
+func (c *Controller) generateNewPrivateKey(ctx context.Context, crt *v1alpha1.Certificate) (crypto.Signer, error) {
+	key, err := pki.GeneratePrivateKeyForCertificate(crt)
+	if err != nil {
+		return nil, err
+	}
+
+	keyPem, err := pki.EncodePrivateKey(key)
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = c.updateSecret(ctx, crt, crt.Namespace, nil, keyPem, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return key, nil
+}
+
 // setCertificateStatus will update the status subresource of the certificate.
 // It will not actually submit the resource to the apiserver.
 func (c *Controller) setCertificateStatus(crt *v1alpha1.Certificate, key crypto.Signer, cert *x509.Certificate) {
@@ -319,14 +338,8 @@ func (c *Controller) updateSecret(ctx context.Context, crt *v1alpha1.Certificate
 		return nil, err
 	}
 
-	var ok bool
 	if len(key) == 0 {
-		if secret != nil && secret.Data != nil {
-			key, ok = secret.Data[corev1.TLSPrivateKeyKey]
-			if !ok || len(key) == 0 {
-				return nil, fmt.Errorf("private key data must be set")
-			}
-		}
+		return nil, fmt.Errorf("private key data must be set")
 	}
 
 	privKey, err := pki.DecodePrivateKeyBytes(key)
