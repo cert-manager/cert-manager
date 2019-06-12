@@ -398,7 +398,9 @@ func buildOrder(crt *v1alpha1.Certificate, csr []byte) (*v1alpha1.Order, error) 
 		return nil, err
 	}
 
-	// truncate certificate name so final name will be <= 63 characters
+	// truncate certificate name so final name will be <= 63 characters.
+	// hash (uint32) will be at most 10 digits long, and we account for
+	// the hyphen.
 	return &v1alpha1.Order{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:            fmt.Sprintf("%.52s-%d", crt.Name, hash),
