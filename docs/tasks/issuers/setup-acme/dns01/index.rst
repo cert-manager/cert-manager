@@ -64,6 +64,41 @@ Example usage::
 
 .. _supported-dns01-providers:
 
+Delegated Domains for DNS01
+===========================
+
+By default, cert-manager will not follow CNAME records pointing to subdomains.
+
+If granting cert-manager access to the root DNS zone is not desired, then the
+_acme-challenge.example.com subdomain can instead be delegated to some other,
+less privileged domain.
+Once a CNAME record has been configured to point at the desired domain, and the
+DNS configuration/credentials for the zone that *should be updated* have been
+provided, all that is left to be done is adding an additional field into the
+relevant `dns01` solver:
+
+.. code-block:: yaml
+   :linenos:
+   :emphasize-lines: 11
+
+   apiVersion: certmanager.k8s.io/v1alpha1
+   kind: Issuer
+   metadata:
+     ...
+   spec:
+     acme:
+       ...
+       solvers:
+       - dns01:
+           # Valid values are None and Follow
+           cnameStrategy: Follow
+           clouddns:
+             ...
+
+cert-manager will then follow CNAME records recursively in order to determine
+which DNS zone to update during DNS01 challenges.
+
+
 *************************
 Supported DNS01 providers
 *************************
