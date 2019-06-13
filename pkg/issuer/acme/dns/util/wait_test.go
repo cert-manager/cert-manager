@@ -178,6 +178,7 @@ func TestResolveConfServers(t *testing.T) {
 	}
 }
 
+// TODO: find a website which uses issuewild?
 func TestValidateCAA(t *testing.T) {
 	// google installs a CAA record at google.com
 	// ask for the www.google.com record to test that
@@ -190,6 +191,13 @@ func TestValidateCAA(t *testing.T) {
 	err = ValidateCAA("www.google.com", []string{"daniel.homebrew.ca"}, false, RecursiveNameservers)
 	if err == nil {
 		t.Fatalf("expected err, got success")
+	}
+	// if the CAA record allows non-wildcards then it has an `issue` tag,
+	// and it is known that it has no issuewild tags, then wildcard certificates
+	// will also be allowed
+	err = ValidateCAA("www.google.com", []string{"pki.goog"}, true, RecursiveNameservers)
+	if err != nil {
+		t.Fatalf("unexpected error: %s", err)
 	}
 	// ask for a domain you know does not have CAA records.
 	// it should succeed
