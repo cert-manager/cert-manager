@@ -1,9 +1,25 @@
+/*
+Copyright 2019 The Jetstack cert-manager contributors.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
 package certificates
 
 import (
 	"bytes"
 	"context"
 	"crypto"
+	"encoding/pem"
 	"fmt"
 	"strings"
 
@@ -42,10 +58,14 @@ func (c *Controller) issue(ctx context.Context, issuer v1alpha1.GenericIssuer, k
 		}
 	}
 
-	csrPEM, err := pki.EncodeCSR(csr, key)
+	csrBytes, err := pki.EncodeCSR(csr, key)
 	if err != nil {
 		return err
 	}
+
+	csrPEM := pem.EncodeToMemory(&pem.Block{
+		Type: "CERTIFICATE REQUEST", Bytes: csrBytes,
+	})
 
 	crs, err := c.listCertificateRequestsForCertificate(crt)
 	if err != nil {
@@ -193,8 +213,9 @@ func (c *Controller) certificateRequestMatchesCertificateSpec(cert *v1alpha1.Cer
 func buildCertificateRequest(csr []byte, crt *v1alpha1.Certificate) *v1alpha1.CertificateRequest {
 	return &v1alpha1.CertificateRequest{
 		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: crt.Name,
+			GenerateName: crt.Name + "-",
 			Namespace:    crt.Namespace,
+			Labels:       certificateRequestLabelsForCertificate(crt),
 		},
 		Spec: v1alpha1.CertificateRequestSpec{
 			CSRPEM:    csr,

@@ -28,9 +28,11 @@ type Interface interface {
 	// credentials and authorization with a remote server.
 	Setup(ctx context.Context) error
 
-	// Sign attempts to issue a certificate as described by the CertificateRequest
+	Issue(context.Context, *v1alpha1.Certificate) (*IssueResponse, error)
+
+	// Issue attempts to issue a certificate as described by the CertificateRequest
 	// resource given
-	Issue(context.Context, *v1alpha1.CertificateRequest) (*IssueResponse, error)
+	Sign(context.Context, *v1alpha1.CertificateRequest) (*IssueResponse, error)
 }
 
 type IssueResponse struct {
