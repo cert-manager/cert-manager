@@ -128,6 +128,7 @@ func buildIngressResource(issuer v1alpha1.GenericIssuer, ch *v1alpha1.Challenge,
 	// TODO: add additional annotations to help workaround problematic ingress controller behaviours
 	ingAnnotations := make(map[string]string)
 	ingAnnotations["nginx.ingress.kubernetes.io/whitelist-source-range"] = "0.0.0.0/0,::/0"
+	ingAnnotations["nginx.org/mergeable-ingress-type"] = "minion"
 
 	if ingClass != nil {
 		ingAnnotations[util.IngressKey] = *ingClass

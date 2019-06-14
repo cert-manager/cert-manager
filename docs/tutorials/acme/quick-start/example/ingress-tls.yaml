@@ -5,6 +5,7 @@ metadata:
   annotations:
     kubernetes.io/ingress.class: "nginx"    
     certmanager.k8s.io/issuer: "letsencrypt-staging"
+    nginx.org/mergeable-ingress-type: "master"
 
 spec:
   tls:
