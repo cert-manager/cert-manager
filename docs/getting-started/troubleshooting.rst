@@ -115,5 +115,5 @@ again.
 .. note::
    Check if the Secret exists by running::
 
-     kubectl get secret cert-manager-webhook-webhook-tls
+     kubectl --namespace cert-manager get secret cert-manager-webhook-webhook-tls
 
