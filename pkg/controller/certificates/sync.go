@@ -31,7 +31,9 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
+	"k8s.io/client-go/tools/cache"
 
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
@@ -45,11 +47,12 @@ import (
 )
 
 const (
-	errorIssuerNotFound    = "IssuerNotFound"
-	errorIssuerNotReady    = "IssuerNotReady"
-	errorIssuerInit        = "IssuerInitError"
-	errorSavingCertificate = "SaveCertError"
-	errorConfig            = "ConfigError"
+	errorIssuerNotFound      = "IssuerNotFound"
+	errorIssuerNotReady      = "IssuerNotReady"
+	errorIssuerInit          = "IssuerInitError"
+	errorSavingCertificate   = "SaveCertError"
+	errorConfig              = "ConfigError"
+	errorDuplicateSecretName = "DuplicateSecretNameError"
 
 	reasonIssuingCertificate  = "IssueCert"
 	reasonRenewingCertificate = "RenewCert"
@@ -103,6 +106,31 @@ func (c *Controller) Sync(ctx context.Context, crt *v1alpha1.Certificate) (err e
 	el := validation.ValidateCertificate(crtCopy)
 	if len(el) > 0 {
 		c.Recorder.Eventf(crtCopy, corev1.EventTypeWarning, "BadConfig", "Resource validation failed: %v", el.ToAggregate())
+		return nil
+	}
+
+	// check that certificate secret name is unique
+	namespaceCrts := c.certificateLister.Certificates(crtCopy.Namespace)
+	otherCrts, err := namespaceCrts.List(labels.Everything())
+	if err != nil {
+		return err
+	}
+	var duplicate *v1alpha1.Certificate
+	for _, otherCrt := range otherCrts {
+		if otherCrt.Name != crtCopy.Name && otherCrt.Spec.SecretName == crtCopy.Spec.SecretName {
+			duplicate = otherCrt
+			break
+		}
+	}
+	if duplicate != nil {
+		c.Recorder.Eventf(crtCopy, corev1.EventTypeWarning, errorDuplicateSecretName, "Another Certificate %v already specifies spec.secretName %v, please update the secretName on either Certificate", duplicate.Name, crtCopy.Spec.SecretName)
+		key, err := cache.MetaNamespaceKeyFunc(crtCopy)
+		if err != nil {
+			c.Recorder.Eventf(crtCopy, corev1.EventTypeWarning, "KeyError", "Failed to create a key for the Certificate: %v", err)
+			return nil
+		}
+		c.scheduledWorkQueue.Forget(key)
+		apiutil.SetCertificateCondition(crtCopy, v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse, "DuplicateSecretName", "Another Certificate is using the same secretName")
 		return nil
 	}
 
