@@ -125,3 +125,18 @@ func DecodeX509CertificateBytes(certBytes []byte) (*x509.Certificate, error) {
 
 	return certs[0], nil
 }
+
+// DecodeX509CertificateRequestBytes will decode a PEM encoded x509 Certificate Request.
+func DecodeX509CertificateRequestBytes(csrBytes []byte) (*x509.CertificateRequest, error) {
+	block, _ := pem.Decode(csrBytes)
+	if block == nil {
+		return nil, errors.NewInvalidData("error decoding certificate request PEM block")
+	}
+
+	csr, err := x509.ParseCertificateRequest(block.Bytes)
+	if err != nil {
+		return nil, err
+	}
+
+	return csr, nil
+}
