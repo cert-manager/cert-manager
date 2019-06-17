@@ -112,10 +112,10 @@ along with a DNS01 solver that can be used for wildcard certificates:
        - http01:
            ingress:
              class: nginx
-       - dns01:
-           selector:
-             matchLabels:
-               use-cloudflare-solver: "true"
+       - selector:
+           matchLabels:
+             use-cloudflare-solver: "true"
+         dns01:
            cloudflare:
              email: user@example.com
              apiKeySecretRef:
@@ -151,10 +151,10 @@ For example:
        - http01:
            ingress:
              class: nginx
-       - dns01:
-           selector:
-             dnsNames:
-             - '*.example.com'
+       - selector:
+           dnsNames:
+           - '*.example.com'
+         dns01:
            cloudflare:
              email: user@example.com
              apiKeySecretRef:
