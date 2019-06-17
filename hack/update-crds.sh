@@ -34,7 +34,7 @@ out="deploy/manifests/00-crds.yaml"
 rm "$out" > /dev/null 2>&1 || true
 mkdir -p "$(dirname $out)"
 touch "$out"
-for file in $(find "${output}" -type f | sort); do
+for file in $(find "${output}" -type f | sort -V); do
     cat "$file" >> "$out"
     echo "---" >> "$out"
 done

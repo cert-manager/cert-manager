@@ -20,6 +20,8 @@ package v1alpha1
 
 type CertificateExpansion interface{}
 
+type CertificateRequestExpansion interface{}
+
 type ChallengeExpansion interface{}
 
 type ClusterIssuerExpansion interface{}

@@ -26,6 +26,8 @@ import (
 type Interface interface {
 	// Certificates returns a CertificateInformer.
 	Certificates() CertificateInformer
+	// CertificateRequests returns a CertificateRequestInformer.
+	CertificateRequests() CertificateRequestInformer
 	// Challenges returns a ChallengeInformer.
 	Challenges() ChallengeInformer
 	// ClusterIssuers returns a ClusterIssuerInformer.
@@ -50,6 +52,11 @@ func New(f internalinterfaces.SharedInformerFactory, namespace string, tweakList
 // Certificates returns a CertificateInformer.
 func (v *version) Certificates() CertificateInformer {
 	return &certificateInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+}
+
+// CertificateRequests returns a CertificateRequestInformer.
+func (v *version) CertificateRequests() CertificateRequestInformer {
+	return &certificateRequestInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }
 
 // Challenges returns a ChallengeInformer.
