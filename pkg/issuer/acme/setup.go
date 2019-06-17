@@ -40,12 +40,14 @@ import (
 const (
 	errorAccountRegistrationFailed = "ErrRegisterACMEAccount"
 	errorAccountVerificationFailed = "ErrVerifyACMEAccount"
+	errorAccountUpdateFailed       = "ErrUpdateACMEAccount"
 
 	successAccountRegistered = "ACMEAccountRegistered"
 	successAccountVerified   = "ACMEAccountVerified"
 
 	messageAccountRegistrationFailed = "Failed to register ACME account: "
 	messageAccountVerificationFailed = "Failed to verify ACME account: "
+	messageAccountUpdateFailed       = "Failed to update ACME account:"
 	messageAccountRegistered         = "The ACME account was registered with the ACME server"
 	messageAccountVerified           = "The ACME account was verified with the ACME server"
 )
@@ -169,27 +171,6 @@ func (a *Acme) Setup(ctx context.Context) error {
 	// registerAccount will also verify the account exists if it already
 	// exists.
 	account, err := a.registerAccount(ctx, cl)
-
-	// if we got an account successfully, we must check if the registered
-	// email is the same as in the issuer spec
-	registeredEmail := ""
-	if err == nil {
-		if len(account.Contact) > 0 {
-			registeredEmail = strings.Replace(account.Contact[0], "mailto:", "", 1)
-		}
-
-		// if they are different, we update the account
-		if registeredEmail != a.issuer.GetSpec().ACME.Email {
-			emailurl := []string(nil)
-			if a.issuer.GetSpec().ACME.Email != "" {
-				emailurl = []string{fmt.Sprintf("mailto:%s", strings.ToLower(a.issuer.GetSpec().ACME.Email))}
-			}
-			account.Contact = emailurl
-			account, err = cl.UpdateAccount(ctx, account)
-		}
-	}
-
-	// handle errs from both registerAccount and UpdateAccount
 	if err != nil {
 		s := messageAccountVerificationFailed + err.Error()
 		log.Error(err, "failed to verify ACME account")
@@ -213,6 +194,53 @@ func (a *Acme) Setup(ctx context.Context) error {
 
 		// Otherwise if we receive anything other than a 400, we will retry.
 		return err
+	}
+
+	// if we got an account successfully, we must check if the registered
+	// email is the same as in the issuer spec
+
+	// if no email was specified, then registeredEmail will remain empty
+	registeredEmail := ""
+	if len(account.Contact) > 0 {
+		registeredEmail = strings.Replace(account.Contact[0], "mailto:", "", 1)
+	}
+
+	// if they are different, we update the account
+	specEmail := a.issuer.GetSpec().ACME.Email
+	if registeredEmail != specEmail {
+		log.Info("Updating ACME account with email %s", specEmail)
+		emailurl := []string(nil)
+		if a.issuer.GetSpec().ACME.Email != "" {
+			emailurl = []string{fmt.Sprintf("mailto:%s", strings.ToLower(specEmail))}
+		}
+		account.Contact = emailurl
+
+		account, err = cl.UpdateAccount(ctx, account)
+		if err != nil {
+			s := messageAccountUpdateFailed + err.Error()
+			log.Error(err, "failed to update ACME account")
+			a.Recorder.Event(a.issuer, v1.EventTypeWarning, errorAccountUpdateFailed, s)
+			apiutil.SetIssuerCondition(a.issuer, v1alpha1.IssuerConditionReady, v1alpha1.ConditionFalse, errorAccountUpdateFailed, s)
+
+			acmeErr, ok := err.(*acmeapi.Error)
+			// If this is not an ACME error, we will simply return it and retry later
+			if !ok {
+				return err
+			}
+
+			// If the status code is 400 (BadRequest), we will *not* retry this registration
+			// as it implies that something about the request (i.e. email address or private key)
+			// is invalid.
+			if acmeErr.StatusCode >= 400 && acmeErr.StatusCode < 500 {
+				log.Error(acmeErr, "skipping updating account email as a "+
+					"BadRequest response was returned from the ACME server")
+				return nil
+			}
+
+			// Otherwise if we receive anything other than a 400, we will retry.
+			return err
+		}
+
 	}
 
 	log.Info("verified existing registration with ACME server")
