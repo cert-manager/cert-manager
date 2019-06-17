@@ -42,7 +42,7 @@ func (c *Controller) handleGenericIssuer(obj interface{}) {
 			runtime.HandleError(err)
 			continue
 		}
-		c.queue.Add(key)
+		c.BaseController.Queue.Add(key)
 	}
 }
 

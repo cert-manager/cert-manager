@@ -29,7 +29,7 @@ import (
 )
 
 func (c *Controller) handleGenericIssuer(obj interface{}) {
-	log := logf.FromContext(c.ctx, "handleGenericIssuer")
+	log := logf.FromContext(c.BaseController.Ctx, "handleGenericIssuer")
 
 	iss, ok := obj.(cmapi.GenericIssuer)
 	if !ok {
@@ -50,12 +50,12 @@ func (c *Controller) handleGenericIssuer(obj interface{}) {
 			log.Error(err, "error computing key for resource")
 			continue
 		}
-		c.queue.Add(key)
+		c.BaseController.Queue.Add(key)
 	}
 }
 
 func (c *Controller) handleSecretResource(obj interface{}) {
-	log := logf.FromContext(c.ctx, "handleSecretResource")
+	log := logf.FromContext(c.BaseController.Ctx, "handleSecretResource")
 
 	secret, ok := obj.(*corev1.Secret)
 	if !ok {
@@ -76,7 +76,7 @@ func (c *Controller) handleSecretResource(obj interface{}) {
 			log.Error(err, "error computing key for resource")
 			continue
 		}
-		c.queue.Add(key)
+		c.BaseController.Queue.Add(key)
 	}
 }
 
@@ -129,7 +129,7 @@ func (c *Controller) certificatesForGenericIssuer(iss cmapi.GenericIssuer) ([]*c
 }
 
 func (c *Controller) handleOwnedResource(obj interface{}) {
-	log := logf.FromContext(c.ctx, "handleOwnedResource")
+	log := logf.FromContext(c.BaseController.Ctx, "handleOwnedResource")
 
 	metaobj, ok := obj.(metav1.Object)
 	if !ok {
@@ -168,7 +168,7 @@ func (c *Controller) handleOwnedResource(obj interface{}) {
 				log.Error(err, "error computing key for resource")
 				continue
 			}
-			c.queue.Add(objKey)
+			c.BaseController.Queue.Add(objKey)
 		}
 	}
 }
