@@ -185,7 +185,7 @@ IP address. When it is complete, you can see the external IP address using the
 ``kubectl`` command:
 
 .. code-block:: shell
-    :emphasize-lines: 5
+   :emphasize-lines: 5
 
     $ kubectl get svc
 
@@ -529,8 +529,8 @@ Both of these issuers are configured to use the
 
 Check on the status of the issuer after you create it:
 
-.. code-block::shell
-  :emphasize-lines: 28-32
+.. code-block:: shell
+   :emphasize-lines: 28-32
 
     $ kubectl describe issuer letsencrypt-staging
 
