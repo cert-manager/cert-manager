@@ -1,0 +1,24 @@
+{{- if and .Values.prometheus.enabled .Values.prometheus.servicemonitor.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ template "cert-manager.fullname" . }}
+  namespace: {{ .Release.Namespace | quote }}
+  labels:
+    app: {{ template "cert-manager.name" . }}
+    chart: {{ template "cert-manager.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+    prometheus: {{ .Values.prometheus.servicemonitor.prometheusInstance }}
+spec:
+  jobLabel: {{ template "cert-manager.fullname" . }}
+  selector:
+    matchLabels:
+      app: {{ template "cert-manager.name" . }}
+      release: {{ .Release.Name }}
+  endpoints:
+  - targetPort: {{ .Values.prometheus.servicemonitor.targetPort }}
+    path: {{ .Values.prometheus.servicemonitor.path }}
+    interval: {{ .Values.prometheus.servicemonitor.interval }}
+    scrapeTimeout: {{ .Values.prometheus.servicemonitor.scrapeTimeout }}
+{{- end }}

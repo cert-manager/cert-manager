@@ -103,6 +103,15 @@ The following table lists the configurable parameters of the cert-manager chart 
 | `ingressShim.defaultIssuerKind` | Optional default issuer kind to use for ingress resources |  |
 | `ingressShim.defaultACMEChallengeType` | Optional default challenge type to use for ingresses using ACME issuers |  |
 | `ingressShim.defaultACMEDNS01ChallengeProvider` | Optional default DNS01 challenge provider to use for ingresses using ACME issuers with DNS01 |  |
+| `prometheus.enabled` | Enable Prometheus monitoring | `true` |
+| `prometheus.servicemonitor.enabled` | Enable Prometheus Operator ServiceMonitor
+monitoring | `false`
+| `prometheus.servicemonitor.prometheusInstance` | Prometheus Instance
+definition | `default` |
+| `prometheus.servicemonitor.targetPort` | Prometheus scrape port | `9402` |
+| `prometheus.servicemonitor.path` | Prometheus scrape path | `/metrics` |
+| `prometheus.servicemonitor.interval` | Prometheus scrape interval | `60s` |
+| `prometheus.servicemonitor.scrapeTimeout` | Prometheus scrape timeout | `30s` |
 | `podAnnotations` | Annotations to add to the cert-manager pod | `{}` |
 | `podDnsPolicy` | Optional cert-manager pod [DNS policy](https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pods-dns-policy) |  |
 | `podDnsConfig` | Optional cert-manager pod [DNS configurations](https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pods-dns-config) |  |
