@@ -40,7 +40,7 @@ const (
 
 // return an error on failure. If retrieval is succesful, the certificate data
 // and private key will be stored in the named secret
-func (c *Controller) issue(ctx context.Context, issuer v1alpha1.GenericIssuer, key crypto.Signer, crt *v1alpha1.Certificate) error {
+func (c *Controller) sign(ctx context.Context, issuer v1alpha1.GenericIssuer, key crypto.Signer, crt *v1alpha1.Certificate) error {
 	log := logf.FromContext(ctx)
 
 	csr, err := pki.GenerateCSR(issuer, crt)
