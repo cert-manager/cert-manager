@@ -90,6 +90,7 @@ func New(ctx *controllerpkg.Context) *Controller {
 	ctrl.BaseController = bctrl
 	ctrl.helper = issuer.NewHelper(ctrl.issuerLister, ctrl.clusterIssuerLister)
 	ctrl.metrics = metrics.Default
+	ctrl.metrics.SetActiveCertificates(ctrl.certificateLister)
 	ctrl.helper = issuer.NewHelper(ctrl.issuerLister, ctrl.clusterIssuerLister)
 	ctrl.issuerFactory = issuer.NewIssuerFactory(ctx)
 	ctrl.clock = clock.RealClock{}
