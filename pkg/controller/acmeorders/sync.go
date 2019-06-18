@@ -414,23 +414,8 @@ func (c *Controller) challengeSpecForAuthorization(ctx context.Context, cl acmec
 		domainToFind = "*." + domainToFind
 	}
 
-	// 3. iterate through each solver.
-
-	// if the order has the annotation declaring the ingress it would like to edit,
-	// iterate through each solver to determine whether this option is allowed
-	// by the issuer, and setup the solver for this if so.
-	acmeCh, solverConfigToUse := determineManualSolver(o, candidates, authz)
-
-	if acmeCh == nil || solverConfigToUse == nil {
-		// if the annotation is not declared, or if the issuer does not allow it,
-		// find the most specific match (taking account of dnsNames).
-		// if a solver config that matches all dns names is found, we'll use the
-		// one with the most labels, as this is the 'most specific match' for the
-		// certificate this order is fulfilling.
-		// the matchAll solver is only used if the domainToFind is not listed in
-		// any other solver's DNSNames list.
-		acmeCh, solverConfigToUse = determineSolverConfigToUse(candidates, authz, domainToFind)
-	}
+	// 3. iterate through each solver to find most appropriate
+	acmeCh, solverConfigToUse := determineSolverConfigToUse(o, candidates, authz, domainToFind)
 
 	if acmeCh == nil || solverConfigToUse == nil {
 		return nil, fmt.Errorf("solver configuration for domain %q not found. Ensure at least one Solver on your Issuer matches the order", domainToFind)
@@ -501,7 +486,13 @@ func determineManualSolver(o *cmapi.Order, candidates []cmapi.ACMEChallengeSolve
 // certificate this order is fulfilling.
 // the matchAll solver is only used if the domainToFind is not listed in
 // any other solver's DNSNames list.
-func determineSolverConfigToUse(candidates []cmapi.ACMEChallengeSolver, authz *acmeapi.Authorization, domainToFind string) (*acmeapi.Challenge, *cmapi.ACMEChallengeSolver) {
+func determineSolverConfigToUse(o *cmapi.Order, candidates []cmapi.ACMEChallengeSolver, authz *acmeapi.Authorization, domainToFind string) (*acmeapi.Challenge, *cmapi.ACMEChallengeSolver) {
+	// determine if a manual solver is applicable, and return if so
+	acmech, solverConfigToUse := determineManualSolver(o, candidates, authz)
+	if acmech != nil && solverConfigToUse != nil {
+		return acmech, solverConfigToUse
+	}
+
 	challengeForSolver := func(solver *cmapi.ACMEChallengeSolver) *acmeapi.Challenge {
 		for _, ch := range authz.Challenges {
 			switch {
