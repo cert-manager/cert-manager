@@ -364,8 +364,12 @@ install cert-manager. This example installed cert-manager into the
     $ helm repo update
 
     ## Install the cert-manager helm chart
-    $ helm install --name cert-manager --namespace cert-manager jetstack/cert-manager
-   
+    $ helm install \
+      --name cert-manager \
+      --namespace cert-manager \
+      --version v0.8.1 \
+      jetstack/cert-manager
+
     NAME:   cert-manager
     LAST DEPLOYED: Wed Jan  9 13:36:13 2019
     NAMESPACE: cert-manager
