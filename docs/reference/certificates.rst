@@ -111,3 +111,39 @@ expiration.
      issuerRef:
        name: my-internal-ca
        kind: Issuer
+
+************************
+Certificate Key Encoding
+************************
+
+cert-manager Certificate resources support two types of key encodings 
+for its private key known as the private key cryptography standards (PKCS).
+The two key encodings are PKCS#1 and PKCS#8. 
+
+The default encoding is PKCS#1, if the `keyEncoding` field of the Certificate spec is left empty.
+
+A limitation exists where once a Certificate resource is generated with a 
+specific key encoding, it cannot be generated with a different key encoding.
+
+Example Usage
+=============
+Here is an example of a Certificate specifying the use of PKCS#8 encoding on 
+its private key.
+
+ .. code-block:: yaml
+   :linenos:
+   :emphasize-lines: 7
+
+   apiVersion: certmanager.k8s.io/v1alpha1
+   kind: Certificate
+   metadata:
+     name: example-pkcs8-cert
+   spec:
+     secretName: example-pkcs8-secret
+     keyEncoding: pkcs8
+     dnsNames:
+     - foo.example.com
+     - bar.example.com
+     issuerRef:
+       name: my-internal-ca
+       kind: Issuer
