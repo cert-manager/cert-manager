@@ -40,10 +40,10 @@ spec:
       {{- if .Values.global.priorityClassName }}
       priorityClassName: {{ .Values.global.priorityClassName | quote }}
       {{- end }}
-      {{- if .Values.securityContext.enabled }}
+      {{- if .Values.podSecurityContext.enabled }}
       securityContext:
-        fsGroup: {{ .Values.securityContext.fsGroup }}
-        runAsUser: {{ .Values.securityContext.runAsUser }}
+        fsGroup: {{ .Values.podSecurityContext.fsGroup }}
+        runAsUser: {{ .Values.podSecurityContext.runAsUser }}
       {{- end }}
       containers:
         - name: {{ .Chart.Name }}
@@ -79,6 +79,12 @@ spec:
           {{- if .defaultACMEDNS01ChallengeProvider }}
           - --default-acme-issuer-dns01-provider-name={{ .defaultACMEDNS01ChallengeProvider }}
           {{- end }}
+          {{- end }}
+          {{- if .Values.securityContext.enabled }}
+          securityContext:
+            allowPrivilegeEscalation: {{ .Values.securityContext.allowPrivilegeEscalation }}
+            readOnlyRootFilesystem: {{ .Values.securityContext.readOnlyRootFilesystem }}
+            privileged: {{ .Values.securityContext.privileged }}
           {{- end }}
           ports:
           - containerPort: 9402
