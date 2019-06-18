@@ -26,6 +26,7 @@ import (
 	extv1beta1 "k8s.io/api/extensions/v1beta1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/klog"
 
@@ -115,6 +116,19 @@ func (c *Controller) Sync(ctx context.Context, ing *extv1beta1.Ingress) error {
 			return err
 		}
 		c.Recorder.Eventf(ing, corev1.EventTypeNormal, "UpdateCertificate", "Successfully updated Certificate %q", crt.Name)
+	}
+
+	unrequiredCrts, err := c.findUnrequiredCertificates(ing)
+	if err != nil {
+		return err
+	}
+
+	for _, crt := range unrequiredCrts {
+		err = c.CMClient.CertmanagerV1alpha1().Certificates(crt.Namespace).Delete(crt.Name, nil)
+		if err != nil {
+			return err
+		}
+		c.Recorder.Eventf(ing, corev1.EventTypeNormal, "DeleteCertificate", "Successfully deleted unrequired Certificate %q", crt.Name)
 	}
 
 	return nil
@@ -215,6 +229,36 @@ func (c *Controller) buildCertificates(ing *extv1beta1.Ingress, issuer v1alpha1.
 		}
 	}
 	return newCrts, updateCrts, nil
+}
+
+func (c *Controller) findUnrequiredCertificates(ing *extv1beta1.Ingress) ([]*v1alpha1.Certificate, error) {
+	var unrequired []*v1alpha1.Certificate
+	// TODO: investigate selector which filters for certificates controlled by the ingress
+	crts, err := c.certificateLister.Certificates(ing.Namespace).List(labels.Everything())
+	if err != nil {
+		return nil, err
+	}
+
+	for _, crt := range crts {
+		if isUnrequiredCertificate(crt, ing) {
+			unrequired = append(unrequired, crt)
+		}
+	}
+
+	return unrequired, nil
+}
+
+func isUnrequiredCertificate(crt *v1alpha1.Certificate, ing *extv1beta1.Ingress) bool {
+	if !metav1.IsControlledBy(crt, ing) {
+		return false
+	}
+
+	for _, tls := range ing.Spec.TLS {
+		if crt.Spec.SecretName == tls.SecretName {
+			return false
+		}
+	}
+	return true
 }
 
 // certNeedsUpdate checks and returns true if two Certificates differ
