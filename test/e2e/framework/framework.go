@@ -179,8 +179,10 @@ func (f *Framework) printAddonLogs() {
 				l, err := a.Logs()
 				Expect(err).NotTo(HaveOccurred())
 
-				// TODO: replace with writing logs to a file
-				log.Logf("Got pod logs for addon: \n%s", l)
+				for ident, l := range l {
+					// TODO: replace with writing logs to a file
+					log.Logf("Got pod logs %q for addon: \n%s", ident, l)
+				}
 			}
 		}
 	}
@@ -201,7 +203,7 @@ func (f *Framework) RequireGlobalAddon(a addon.Addon) {
 }
 
 type loggableAddon interface {
-	Logs() (string, error)
+	Logs() (map[string]string, error)
 }
 
 // RequireAddon calls the Setup and Provision method on the given addon, failing
