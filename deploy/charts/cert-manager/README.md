@@ -125,6 +125,7 @@ definition | `default` |
 | `webhook.podAnnotations` | Annotations to add to the webhook pods | `{}` |
 | `webhook.extraArgs` | Optional flags for cert-manager webhook component | `[]` |
 | `webhook.resources` | CPU/memory resource requests/limits for the webhook pods | |
+| `webhook.nodeSelector` | Node labels for webhook pod assignment | `{}` |
 | `webhook.image.repository` | Webhook image repository | `quay.io/jetstack/cert-manager-webhook` |
 | `webhook.image.tag` | Webhook image tag | `v0.8.1` |
 | `webhook.image.pullPolicy` | Webhook image pull policy | `IfNotPresent` |
@@ -134,6 +135,7 @@ definition | `default` |
 | `cainjector.podAnnotations` | Annotations to add to the cainjector pods | `{}` |
 | `cainjector.extraArgs` | Optional flags for cert-manager cainjector component | `[]` |
 | `cainjector.resources` | CPU/memory resource requests/limits for the cainjector pods | |
+| `cainjector.nodeSelector` | Node labels for cainjector pod assignment | `{}` |
 | `cainjector.image.repository` | cainjector image repository | `quay.io/jetstack/cert-manager-cainjector` |
 | `cainjector.image.tag` | cainjector image tag | `v0.8.1` |
 | `cainjector.image.pullPolicy` | cainjector image pull policy | `IfNotPresent` |

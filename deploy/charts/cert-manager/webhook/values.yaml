@@ -28,6 +28,8 @@ resources: {}
   #   cpu: 10m
   #   memory: 32Mi
 
+nodeSelector: {}
+
 image:
   repository: quay.io/jetstack/cert-manager-webhook
   # Override the image tag to deploy by setting this variable.
