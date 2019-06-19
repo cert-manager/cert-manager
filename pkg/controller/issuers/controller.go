@@ -19,47 +19,82 @@ package issuers
 import (
 	"context"
 
+	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	corelisters "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/tools/cache"
+	"k8s.io/client-go/tools/record"
+	"k8s.io/client-go/util/workqueue"
 
+	cmclient "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
 	cmlisters "github.com/jetstack/cert-manager/pkg/client/listers/certmanager/v1alpha1"
 	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
 	"github.com/jetstack/cert-manager/pkg/issuer"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 )
 
-type Controller struct {
-	*controllerpkg.BaseController
-
-	issuerFactory issuer.IssuerFactory
-
+type controller struct {
 	issuerLister cmlisters.IssuerLister
 	secretLister corelisters.SecretLister
+
+	// maintain a reference to the workqueue for this controller
+	// so the handleOwnedResource method can enqueue resources
+	queue workqueue.RateLimitingInterface
+
+	// logger to be used by this controller
+	log logr.Logger
+
+	// clientset used to update cert-manager API resources
+	cmClient cmclient.Interface
+
+	// used to record Events about resources to the API
+	recorder record.EventRecorder
+
+	// issuerFactory is used to obtain a reference to the Issuer implementation
+	// for each ClusterIssuer resource
+	issuerFactory issuer.IssuerFactory
 }
 
-func New(ctx *controllerpkg.Context) *Controller {
-	ctrl := &Controller{}
-	bctrl := controllerpkg.New(ctx, ControllerName, ctrl.processNextWorkItem)
+// Register registers and constructs the controller using the provided context.
+// It returns the workqueue to be used to enqueue items, a list of
+// InformerSynced functions that must be synced, or an error.
+func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitingInterface, []cache.InformerSynced, error) {
+	// construct a new named logger to be reused throughout the controller
+	c.log = logf.FromContext(ctx.RootContext, ControllerName)
 
+	// create a queue used to queue up items to be processed
+	c.queue = workqueue.NewNamedRateLimitingQueue(controllerpkg.DefaultItemBasedRateLimiter(), ControllerName)
+
+	// obtain references to all the informers used by this controller
 	issuerInformer := ctx.SharedInformerFactory.Certmanager().V1alpha1().Issuers()
-	bctrl.AddQueuing(controllerpkg.DefaultItemBasedRateLimiter(), "issuers", issuerInformer.Informer())
-	ctrl.issuerLister = issuerInformer.Lister()
+	secretInformer := ctx.KubeSharedInformerFactory.Core().V1().Secrets()
+	// build a list of InformerSynced functions that will be returned by the Register method.
+	// the controller will only begin processing items once all of these informers have synced.
+	mustSync := []cache.InformerSynced{
+		issuerInformer.Informer().HasSynced,
+		secretInformer.Informer().HasSynced,
+	}
 
-	secretsInformer := ctx.KubeSharedInformerFactory.Core().V1().Secrets()
-	bctrl.AddHandled(secretsInformer.Informer(), &controllerpkg.BlockingEventHandler{WorkFunc: ctrl.secretDeleted})
-	ctrl.secretLister = secretsInformer.Lister()
+	// set all the references to the listers for used by the Sync function
+	c.issuerLister = issuerInformer.Lister()
+	c.secretLister = secretInformer.Lister()
 
-	ctrl.BaseController = bctrl
-	ctrl.issuerFactory = issuer.NewIssuerFactory(ctx)
+	// register handler functions
+	issuerInformer.Informer().AddEventHandler(&controllerpkg.QueuingEventHandler{Queue: c.queue})
+	secretInformer.Informer().AddEventHandler(&controllerpkg.BlockingEventHandler{WorkFunc: c.secretDeleted})
 
-	return ctrl
+	// instantiate additional helpers used by this controller
+	c.issuerFactory = issuer.NewIssuerFactory(ctx)
+	c.cmClient = ctx.CMClient
+	c.recorder = ctx.Recorder
+
+	return c.queue, mustSync, nil
 }
 
 // TODO: replace with generic handleObjet function (like Navigator)
-func (c *Controller) secretDeleted(obj interface{}) {
-	log := logf.FromContext(c.BaseController.Ctx)
+func (c *controller) secretDeleted(obj interface{}) {
+	log := c.log.WithName("secretDeleted")
 
 	var secret *corev1.Secret
 	var ok bool
@@ -80,11 +115,11 @@ func (c *Controller) secretDeleted(obj interface{}) {
 			log.Error(err, "error computing key for resource")
 			continue
 		}
-		c.BaseController.Queue.AddRateLimited(key)
+		c.queue.AddRateLimited(key)
 	}
 }
 
-func (c *Controller) processNextWorkItem(ctx context.Context, key string) error {
+func (c *controller) ProcessItem(ctx context.Context, key string) error {
 	log := logf.FromContext(ctx)
 	namespace, name, err := cache.SplitMetaNamespaceKey(key)
 	if err != nil {
@@ -114,6 +149,10 @@ const (
 
 func init() {
 	controllerpkg.Register(ControllerName, func(ctx *controllerpkg.Context) (controllerpkg.Interface, error) {
-		return New(ctx).BaseController.Run, nil
+		c, err := controllerpkg.New(ctx, ControllerName, &controller{})
+		if err != nil {
+			return nil, err
+		}
+		return c.Run, nil
 	})
 }

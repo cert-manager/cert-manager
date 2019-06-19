@@ -17,6 +17,7 @@ limitations under the License.
 package test
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"reflect"
@@ -84,7 +85,9 @@ const informerResyncPeriod = time.Millisecond * 500
 // Subsequent calls to ToContext will return the same Context instance.
 func (b *Builder) Start() {
 	if b.Context == nil {
-		b.Context = &controller.Context{}
+		b.Context = &controller.Context{
+			RootContext: context.Background(),
+		}
 	}
 	if b.StringGenerator == nil {
 		b.StringGenerator = RandStringBytes

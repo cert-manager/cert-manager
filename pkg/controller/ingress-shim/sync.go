@@ -61,7 +61,7 @@ const (
 
 var ingressGVK = extv1beta1.SchemeGroupVersion.WithKind("Ingress")
 
-func (c *Controller) Sync(ctx context.Context, ing *extv1beta1.Ingress) error {
+func (c *controller) Sync(ctx context.Context, ing *extv1beta1.Ingress) error {
 	metrics.Default.IncrementSyncCallCount(ControllerName)
 
 	if !shouldSync(ing, c.defaults.autoCertificateAnnotations) {
@@ -71,7 +71,7 @@ func (c *Controller) Sync(ctx context.Context, ing *extv1beta1.Ingress) error {
 
 	issuerName, issuerKind := c.issuerForIngress(ing)
 	if issuerName == "" {
-		c.Recorder.Eventf(ing, corev1.EventTypeWarning, "BadConfig", "Issuer name annotation is not set and a default issuer has not been configured")
+		c.recorder.Eventf(ing, corev1.EventTypeWarning, "BadConfig", "Issuer name annotation is not set and a default issuer has not been configured")
 		return nil
 	}
 
@@ -80,7 +80,7 @@ func (c *Controller) Sync(ctx context.Context, ing *extv1beta1.Ingress) error {
 		Kind: issuerKind,
 	}, ing.Namespace)
 	if apierrors.IsNotFound(err) {
-		c.Recorder.Eventf(ing, corev1.EventTypeWarning, "BadConfig", "%s resource %q not found", issuerKind, issuerName)
+		c.recorder.Eventf(ing, corev1.EventTypeWarning, "BadConfig", "%s resource %q not found", issuerKind, issuerName)
 		return nil
 	}
 	if err != nil {
@@ -93,7 +93,7 @@ func (c *Controller) Sync(ctx context.Context, ing *extv1beta1.Ingress) error {
 		if len(errs) > 1 {
 			errMsg = utilerrors.NewAggregate(errs).Error()
 		}
-		c.Recorder.Eventf(ing, corev1.EventTypeWarning, "BadConfig", errMsg)
+		c.recorder.Eventf(ing, corev1.EventTypeWarning, "BadConfig", errMsg)
 		return nil
 	}
 
@@ -103,19 +103,19 @@ func (c *Controller) Sync(ctx context.Context, ing *extv1beta1.Ingress) error {
 	}
 
 	for _, crt := range newCrts {
-		_, err := c.CMClient.CertmanagerV1alpha1().Certificates(crt.Namespace).Create(crt)
+		_, err := c.cmClient.CertmanagerV1alpha1().Certificates(crt.Namespace).Create(crt)
 		if err != nil {
 			return err
 		}
-		c.Recorder.Eventf(ing, corev1.EventTypeNormal, "CreateCertificate", "Successfully created Certificate %q", crt.Name)
+		c.recorder.Eventf(ing, corev1.EventTypeNormal, "CreateCertificate", "Successfully created Certificate %q", crt.Name)
 	}
 
 	for _, crt := range updateCrts {
-		_, err := c.CMClient.CertmanagerV1alpha1().Certificates(crt.Namespace).Update(crt)
+		_, err := c.cmClient.CertmanagerV1alpha1().Certificates(crt.Namespace).Update(crt)
 		if err != nil {
 			return err
 		}
-		c.Recorder.Eventf(ing, corev1.EventTypeNormal, "UpdateCertificate", "Successfully updated Certificate %q", crt.Name)
+		c.recorder.Eventf(ing, corev1.EventTypeNormal, "UpdateCertificate", "Successfully updated Certificate %q", crt.Name)
 	}
 
 	unrequiredCrts, err := c.findUnrequiredCertificates(ing)
@@ -124,17 +124,17 @@ func (c *Controller) Sync(ctx context.Context, ing *extv1beta1.Ingress) error {
 	}
 
 	for _, crt := range unrequiredCrts {
-		err = c.CMClient.CertmanagerV1alpha1().Certificates(crt.Namespace).Delete(crt.Name, nil)
+		err = c.cmClient.CertmanagerV1alpha1().Certificates(crt.Namespace).Delete(crt.Name, nil)
 		if err != nil {
 			return err
 		}
-		c.Recorder.Eventf(ing, corev1.EventTypeNormal, "DeleteCertificate", "Successfully deleted unrequired Certificate %q", crt.Name)
+		c.recorder.Eventf(ing, corev1.EventTypeNormal, "DeleteCertificate", "Successfully deleted unrequired Certificate %q", crt.Name)
 	}
 
 	return nil
 }
 
-func (c *Controller) validateIngress(ing *extv1beta1.Ingress) []error {
+func (c *controller) validateIngress(ing *extv1beta1.Ingress) []error {
 	var errs []error
 	if ing.Annotations != nil {
 		challengeType := ing.Annotations[acmeIssuerChallengeTypeAnnotation]
@@ -161,7 +161,7 @@ func (c *Controller) validateIngress(ing *extv1beta1.Ingress) []error {
 	return errs
 }
 
-func (c *Controller) buildCertificates(ing *extv1beta1.Ingress, issuer v1alpha1.GenericIssuer, issuerKind string) (new, update []*v1alpha1.Certificate, _ error) {
+func (c *controller) buildCertificates(ing *extv1beta1.Ingress, issuer v1alpha1.GenericIssuer, issuerKind string) (new, update []*v1alpha1.Certificate, _ error) {
 	var newCrts []*v1alpha1.Certificate
 	var updateCrts []*v1alpha1.Certificate
 	for _, tls := range ing.Spec.TLS {
@@ -231,7 +231,7 @@ func (c *Controller) buildCertificates(ing *extv1beta1.Ingress, issuer v1alpha1.
 	return newCrts, updateCrts, nil
 }
 
-func (c *Controller) findUnrequiredCertificates(ing *extv1beta1.Ingress) ([]*v1alpha1.Certificate, error) {
+func (c *controller) findUnrequiredCertificates(ing *extv1beta1.Ingress) ([]*v1alpha1.Certificate, error) {
 	var unrequired []*v1alpha1.Certificate
 	// TODO: investigate selector which filters for certificates controlled by the ingress
 	crts, err := c.certificateLister.Certificates(ing.Namespace).List(labels.Everything())
@@ -314,7 +314,7 @@ func certNeedsUpdate(a, b *v1alpha1.Certificate) bool {
 	return false
 }
 
-func (c *Controller) setIssuerSpecificConfig(crt *v1alpha1.Certificate, issuer v1alpha1.GenericIssuer, ing *extv1beta1.Ingress, tls extv1beta1.IngressTLS) error {
+func (c *controller) setIssuerSpecificConfig(crt *v1alpha1.Certificate, issuer v1alpha1.GenericIssuer, ing *extv1beta1.Ingress, tls extv1beta1.IngressTLS) error {
 	ingAnnotations := ing.Annotations
 	if ingAnnotations == nil {
 		ingAnnotations = map[string]string{}
@@ -336,7 +336,7 @@ func (c *Controller) setIssuerSpecificConfig(crt *v1alpha1.Certificate, issuer v
 			// on the Certificate resource.
 			if issuer.GetSpec().ACME.HTTP01 == nil {
 				if editInPlace {
-					c.Recorder.Eventf(ing, corev1.EventTypeWarning, "Unsupported", "%s annotation cannot be enabled when using new format solver type. "+
+					c.recorder.Eventf(ing, corev1.EventTypeWarning, "Unsupported", "%s annotation cannot be enabled when using new format solver type. "+
 						"Re-enable the old format HTTP01 solver, or otherwise create a specific HTTP01 solver for this Ingress.", editInPlaceAnnotation)
 				}
 				crt.Spec.ACME = nil
@@ -417,7 +417,7 @@ func shouldSync(ing *extv1beta1.Ingress, autoCertificateAnnotations []string) bo
 // issuerForIngress will determine the issuer that should be specified on a
 // Certificate created for the given Ingress resource. If one is not set, the
 // default issuer given to the controller will be used.
-func (c *Controller) issuerForIngress(ing *extv1beta1.Ingress) (name string, kind string) {
+func (c *controller) issuerForIngress(ing *extv1beta1.Ingress) (name string, kind string) {
 	name = c.defaults.issuerName
 	kind = c.defaults.issuerKind
 	annotations := ing.Annotations

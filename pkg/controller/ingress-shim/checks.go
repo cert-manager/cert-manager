@@ -26,7 +26,7 @@ import (
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 )
 
-func (c *Controller) ingressesForCertificate(crt *v1alpha1.Certificate) ([]*extv1beta1.Ingress, error) {
+func (c *controller) ingressesForCertificate(crt *v1alpha1.Certificate) ([]*extv1beta1.Ingress, error) {
 	ings, err := c.ingressLister.List(labels.NewSelector())
 
 	if err != nil {

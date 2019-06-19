@@ -19,17 +19,14 @@ package certificates
 import (
 	"fmt"
 
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/apimachinery/pkg/runtime/schema"
-
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/labels"
 )
 
-func (c *Controller) handleGenericIssuer(obj interface{}) {
-	log := logf.FromContext(c.BaseController.Ctx, "handleGenericIssuer")
+func (c *controller) handleGenericIssuer(obj interface{}) {
+	log := c.log.WithName("handleGenericIssuer")
 
 	iss, ok := obj.(cmapi.GenericIssuer)
 	if !ok {
@@ -50,12 +47,12 @@ func (c *Controller) handleGenericIssuer(obj interface{}) {
 			log.Error(err, "error computing key for resource")
 			continue
 		}
-		c.BaseController.Queue.Add(key)
+		c.queue.Add(key)
 	}
 }
 
-func (c *Controller) handleSecretResource(obj interface{}) {
-	log := logf.FromContext(c.BaseController.Ctx, "handleSecretResource")
+func (c *controller) handleSecretResource(obj interface{}) {
+	log := c.log.WithName("handleSecretResource")
 
 	secret, ok := obj.(*corev1.Secret)
 	if !ok {
@@ -76,11 +73,11 @@ func (c *Controller) handleSecretResource(obj interface{}) {
 			log.Error(err, "error computing key for resource")
 			continue
 		}
-		c.BaseController.Queue.Add(key)
+		c.queue.Add(key)
 	}
 }
 
-func (c *Controller) certificatesForSecret(secret *corev1.Secret) ([]*cmapi.Certificate, error) {
+func (c *controller) certificatesForSecret(secret *corev1.Secret) ([]*cmapi.Certificate, error) {
 	crts, err := c.certificateLister.List(labels.NewSelector())
 
 	if err != nil {
@@ -100,7 +97,7 @@ func (c *Controller) certificatesForSecret(secret *corev1.Secret) ([]*cmapi.Cert
 	return affected, nil
 }
 
-func (c *Controller) certificatesForGenericIssuer(iss cmapi.GenericIssuer) ([]*cmapi.Certificate, error) {
+func (c *controller) certificatesForGenericIssuer(iss cmapi.GenericIssuer) ([]*cmapi.Certificate, error) {
 	crts, err := c.certificateLister.List(labels.NewSelector())
 
 	if err != nil {
@@ -126,49 +123,4 @@ func (c *Controller) certificatesForGenericIssuer(iss cmapi.GenericIssuer) ([]*c
 	}
 
 	return affected, nil
-}
-
-func (c *Controller) handleOwnedResource(obj interface{}) {
-	log := logf.FromContext(c.BaseController.Ctx, "handleOwnedResource")
-
-	metaobj, ok := obj.(metav1.Object)
-	if !ok {
-		log.Error(nil, "item passed to handleOwnedResource does not implement ObjectMetaAccessor")
-		return
-	}
-
-	log = logf.WithResource(log, metaobj)
-	log.V(logf.DebugLevel).Info("looking up owners for resource")
-
-	ownerRefs := metaobj.GetOwnerReferences()
-	for _, ref := range ownerRefs {
-		log := log.WithValues(
-			logf.RelatedResourceNamespaceKey, metaobj.GetNamespace(),
-			logf.RelatedResourceNameKey, ref.Name,
-			logf.RelatedResourceKindKey, ref.Kind,
-		)
-		log.V(logf.DebugLevel).Info("evaluating ownerRef on resource")
-
-		// Parse the Group out of the OwnerReference to compare it to what was parsed out of the requested OwnerType
-		refGV, err := schema.ParseGroupVersion(ref.APIVersion)
-		if err != nil {
-			log.Error(err, "could not parse ownerReference GroupVersion")
-			continue
-		}
-
-		if refGV.Group == certificateGvk.Group && ref.Kind == certificateGvk.Kind {
-			// TODO: how to handle namespace of owner references?
-			cert, err := c.certificateLister.Certificates(metaobj.GetNamespace()).Get(ref.Name)
-			if err != nil {
-				log.Error(err, "error getting owning certificate resource")
-				continue
-			}
-			objKey, err := keyFunc(cert)
-			if err != nil {
-				log.Error(err, "error computing key for resource")
-				continue
-			}
-			c.BaseController.Queue.Add(objKey)
-		}
-	}
 }

@@ -27,7 +27,7 @@ import (
 
 type controllerFixture struct {
 	// The Solver under test
-	Controller *Controller
+	Controller *controller
 	Builder    *test.Builder
 
 	// Issuer to be passed to functions on the Solver (a default will be used if nil)
@@ -71,7 +71,8 @@ func (s *controllerFixture) Setup(t *testing.T) {
 		s.Builder.T = t
 	}
 	s.Builder.Start()
-	s.Controller = New(s.Builder.Context)
+	s.Controller = &controller{}
+	s.Controller.Register(s.Builder.Context)
 	s.Builder.Sync()
 	if s.PreFn != nil {
 		s.PreFn(t, s)

@@ -20,13 +20,16 @@ import (
 	"context"
 	"time"
 
+	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	corelisters "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/tools/cache"
+	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
 
 	"github.com/jetstack/cert-manager/pkg/acme"
+	cmclient "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
 	cmlisters "github.com/jetstack/cert-manager/pkg/client/listers/certmanager/v1alpha1"
 	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
 	"github.com/jetstack/cert-manager/pkg/controller/acmechallenges/scheduler"
@@ -36,12 +39,13 @@ import (
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 )
 
-type Controller struct {
-	*controllerpkg.BaseController
-
-	helper     issuer.Helper
+type controller struct {
+	// issuer helper is used to obtain references to issuers, used by Sync()
+	helper issuer.Helper
+	// acmehelper is used to obtain references to ACME clients
 	acmeHelper acme.Helper
 
+	// all the listers used by this controller
 	challengeLister     cmlisters.ChallengeLister
 	issuerLister        cmlisters.IssuerLister
 	clusterIssuerLister cmlisters.ClusterIssuerLister
@@ -52,53 +56,85 @@ type Controller struct {
 	// This also allows for easy mocking of the different challenge mechanisms.
 	dnsSolver  solver
 	httpSolver solver
-
+	// scheduler marks challenges as Processing=true if they can be scheduled
+	// for processing. This job runs periodically every N seconds, so it cannot
+	// be constructed as a traditional controller.
 	scheduler *scheduler.Scheduler
+
+	// used to record Events about resources to the API
+	recorder record.EventRecorder
+	// clientset used to update cert-manager API resources
+	cmClient cmclient.Interface
+
+	// maintain a reference to the workqueue for this controller
+	// so the handleOwnedResource method can enqueue resources
+	queue workqueue.RateLimitingInterface
+
+	// logger to be used by this controller
+	log logr.Logger
+
+	dns01Nameservers []string
 }
 
-func New(ctx *controllerpkg.Context) (*Controller, error) {
-	ctrl := &Controller{}
-	bctrl := controllerpkg.New(ctx, ControllerName, ctrl.processNextWorkItem)
+func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitingInterface, []cache.InformerSynced, error) {
+	// construct a new named logger to be reused throughout the controller
+	c.log = logf.FromContext(ctx.RootContext, ControllerName)
 
+	// create a queue used to queue up items to be processed
+	c.queue = workqueue.NewNamedRateLimitingQueue(workqueue.NewItemExponentialFailureRateLimiter(time.Second*5, time.Minute*30), ControllerName)
+
+	// obtain references to all the informers used by this controller
 	challengeInformer := ctx.SharedInformerFactory.Certmanager().V1alpha1().Challenges()
-	bctrl.AddQueuing(workqueue.NewItemExponentialFailureRateLimiter(time.Second*5, time.Minute*30), "challenges", challengeInformer.Informer())
-	ctrl.challengeLister = challengeInformer.Lister()
-
-	// issuerInformer.Informer().AddEventHandler(&controllerpkg.QueuingEventHandler{Queue: ctrl.queue})
 	issuerInformer := ctx.SharedInformerFactory.Certmanager().V1alpha1().Issuers()
-	bctrl.AddWatched(issuerInformer.Informer())
-	ctrl.issuerLister = issuerInformer.Lister()
-
-	if ctx.Namespace == "" {
-		// clusterIssuerInformer.Informer().AddEventHandler(&controllerpkg.QueuingEventHandler{Queue: ctrl.queue})
-		clusterIssuerInformer := ctx.SharedInformerFactory.Certmanager().V1alpha1().ClusterIssuers()
-		bctrl.AddWatched(clusterIssuerInformer.Informer())
-		ctrl.clusterIssuerLister = clusterIssuerInformer.Lister()
-	}
-
 	secretInformer := ctx.KubeSharedInformerFactory.Core().V1().Secrets()
-	bctrl.AddWatched(secretInformer.Informer())
-	ctrl.secretLister = secretInformer.Lister()
-
-	// instantiate listers used by the http01 solver
+	// we register these informers here so the HTTP01 solver has a synced
+	// cache when managing pod/service/ingress resources
 	podInformer := ctx.KubeSharedInformerFactory.Core().V1().Pods()
 	serviceInformer := ctx.KubeSharedInformerFactory.Core().V1().Services()
 	ingressInformer := ctx.KubeSharedInformerFactory.Extensions().V1beta1().Ingresses()
-	bctrl.AddWatched(podInformer.Informer(), serviceInformer.Informer(), ingressInformer.Informer())
-
-	ctrl.BaseController = bctrl
-	ctrl.helper = issuer.NewHelper(ctrl.issuerLister, ctrl.clusterIssuerLister)
-	ctrl.acmeHelper = acme.NewHelper(ctrl.secretLister, ctrl.BaseController.Context.ClusterResourceNamespace)
-
-	ctrl.httpSolver = http.NewSolver(ctx)
-	var err error
-	ctrl.dnsSolver, err = dns.NewSolver(ctx)
-	if err != nil {
-		return nil, err
+	// build a list of InformerSynced functions that will be returned by the Register method.
+	// the controller will only begin processing items once all of these informers have synced.
+	mustSync := []cache.InformerSynced{
+		challengeInformer.Informer().HasSynced,
+		issuerInformer.Informer().HasSynced,
+		secretInformer.Informer().HasSynced,
+		podInformer.Informer().HasSynced,
+		serviceInformer.Informer().HasSynced,
+		ingressInformer.Informer().HasSynced,
 	}
-	ctrl.scheduler = scheduler.New(ctrl.challengeLister, ctx.SchedulerOptions.MaxConcurrentChallenges)
 
-	return ctrl, nil
+	// set all the references to the listers for used by the Sync function
+	c.challengeLister = challengeInformer.Lister()
+	c.issuerLister = issuerInformer.Lister()
+	c.secretLister = secretInformer.Lister()
+
+	// if we are running in non-namespaced mode (i.e. --namespace=""), we also
+	// register event handlers and obtain a lister for clusterissuers.
+	if ctx.Namespace == "" {
+		clusterIssuerInformer := ctx.SharedInformerFactory.Certmanager().V1alpha1().ClusterIssuers()
+		mustSync = append(mustSync, clusterIssuerInformer.Informer().HasSynced)
+		c.clusterIssuerLister = clusterIssuerInformer.Lister()
+	}
+
+	// register handler functions
+	challengeInformer.Informer().AddEventHandler(&controllerpkg.QueuingEventHandler{Queue: c.queue})
+
+	c.helper = issuer.NewHelper(c.issuerLister, c.clusterIssuerLister)
+	c.acmeHelper = acme.NewHelper(c.secretLister, ctx.ClusterResourceNamespace)
+	c.scheduler = scheduler.New(c.challengeLister, ctx.SchedulerOptions.MaxConcurrentChallenges)
+	c.recorder = ctx.Recorder
+	c.cmClient = ctx.CMClient
+	c.httpSolver = http.NewSolver(ctx)
+	var err error
+	c.dnsSolver, err = dns.NewSolver(ctx)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	// read options from context
+	c.dns01Nameservers = ctx.ACMEOptions.DNS01Nameservers
+
+	return c.queue, mustSync, nil
 }
 
 // MaxChallengesPerSchedule is the maximum number of challenges that can be
@@ -113,7 +149,7 @@ const MaxChallengesPerSchedule = 20
 // which, if any, challenges should be rescheduled.
 // TODO: it should also only re-run the scheduler if a change to challenges has
 // been observed, to save needless work
-func (c *Controller) runScheduler(ctx context.Context) {
+func (c *controller) runScheduler(ctx context.Context) {
 	log := logf.FromContext(ctx, "scheduler")
 
 	toSchedule, err := c.scheduler.ScheduleN(MaxChallengesPerSchedule)
@@ -127,13 +163,13 @@ func (c *Controller) runScheduler(ctx context.Context) {
 		ch = ch.DeepCopy()
 		ch.Status.Processing = true
 
-		_, err := c.CMClient.CertmanagerV1alpha1().Challenges(ch.Namespace).Update(ch)
+		_, err := c.cmClient.CertmanagerV1alpha1().Challenges(ch.Namespace).Update(ch)
 		if err != nil {
 			log.Error(err, "error scheduling challenge for processing")
 			return
 		}
 
-		c.Recorder.Event(ch, corev1.EventTypeNormal, "Started", "Challenge scheduled for processing")
+		c.recorder.Event(ch, corev1.EventTypeNormal, "Started", "Challenge scheduled for processing")
 	}
 
 	if len(toSchedule) > 0 {
@@ -141,7 +177,7 @@ func (c *Controller) runScheduler(ctx context.Context) {
 	}
 }
 
-func (c *Controller) processNextWorkItem(ctx context.Context, key string) error {
+func (c *controller) ProcessItem(ctx context.Context, key string) error {
 	log := logf.FromContext(ctx)
 	namespace, name, err := cache.SplitMetaNamespaceKey(key)
 	if err != nil {
@@ -164,22 +200,17 @@ func (c *Controller) processNextWorkItem(ctx context.Context, key string) error 
 	return c.Sync(ctx, ch)
 }
 
-var keyFunc = controllerpkg.KeyFunc
-
 const (
 	ControllerName = "challenges"
 )
 
-func (c *Controller) Run(workers int, stopCh <-chan struct{}) error {
-	return c.BaseController.RunWith(c.runScheduler, time.Second, workers, stopCh)
-}
-
 func init() {
 	controllerpkg.Register(ControllerName, func(ctx *controllerpkg.Context) (controllerpkg.Interface, error) {
-		i, err := New(ctx)
+		c := &controller{}
+		b, err := controllerpkg.New(ctx, ControllerName, c)
 		if err != nil {
 			return nil, err
 		}
-		return i.Run, nil
+		return b.RunWith(c.runScheduler, time.Second), nil
 	})
 }

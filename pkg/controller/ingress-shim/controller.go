@@ -20,18 +20,21 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/go-logr/logr"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/kubernetes"
 	extlisters "k8s.io/client-go/listers/extensions/v1beta1"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
+	"k8s.io/client-go/util/workqueue"
 
 	cmv1alpha1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	clientset "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
 	cmlisters "github.com/jetstack/cert-manager/pkg/client/listers/certmanager/v1alpha1"
 	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
 	"github.com/jetstack/cert-manager/pkg/issuer"
+	logf "github.com/jetstack/cert-manager/pkg/logs"
 )
 
 const (
@@ -45,63 +48,83 @@ type defaults struct {
 	acmeIssuerDNS01ProviderName string
 }
 
-type Controller struct {
-	*controllerpkg.BaseController
+type controller struct {
+	// maintain a reference to the workqueue for this controller
+	// so the handleOwnedResource method can enqueue resources
+	queue workqueue.RateLimitingInterface
 
-	Client   kubernetes.Interface
-	CMClient clientset.Interface
-	Recorder record.EventRecorder
+	// logger to be used by this controller
+	log logr.Logger
 
-	helper issuer.Helper
+	kClient  kubernetes.Interface
+	cmClient clientset.Interface
+	recorder record.EventRecorder
 
 	ingressLister       extlisters.IngressLister
 	certificateLister   cmlisters.CertificateLister
 	issuerLister        cmlisters.IssuerLister
 	clusterIssuerLister cmlisters.ClusterIssuerLister
 
+	helper   issuer.Helper
 	defaults defaults
 }
 
-func New(ctx *controllerpkg.Context) *Controller {
-	ctrl := &Controller{
-		Client:   ctx.Client,
-		CMClient: ctx.CMClient,
-		Recorder: ctx.Recorder,
-		defaults: defaults{
-			ctx.DefaultAutoCertificateAnnotations,
-			ctx.DefaultIssuerName,
-			ctx.DefaultIssuerKind,
-			ctx.DefaultACMEIssuerChallengeType,
-			ctx.DefaultACMEIssuerDNS01ProviderName,
-		},
-	}
-	bctrl := controllerpkg.New(ctx, ControllerName, ctrl.processNextWorkItem)
+// Register registers and constructs the controller using the provided context.
+// It returns the workqueue to be used to enqueue items, a list of
+// InformerSynced functions that must be synced, or an error.
+func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitingInterface, []cache.InformerSynced, error) {
+	// construct a new named logger to be reused throughout the controller
+	c.log = logf.FromContext(ctx.RootContext, ControllerName)
 
+	// create a queue used to queue up items to be processed
+	c.queue = workqueue.NewNamedRateLimitingQueue(controllerpkg.DefaultItemBasedRateLimiter(), ControllerName)
+
+	// obtain references to all the informers used by this controller
 	ingressInformer := ctx.KubeSharedInformerFactory.Extensions().V1beta1().Ingresses()
-	bctrl.AddQueuing(controllerpkg.DefaultItemBasedRateLimiter(), "ingresses", ingressInformer.Informer())
-	ctrl.ingressLister = ingressInformer.Lister()
-
 	certificatesInformer := ctx.SharedInformerFactory.Certmanager().V1alpha1().Certificates()
-	bctrl.AddHandled(certificatesInformer.Informer(), &controllerpkg.BlockingEventHandler{WorkFunc: ctrl.certificateDeleted})
-	ctrl.certificateLister = certificatesInformer.Lister()
-
 	issuerInformer := ctx.SharedInformerFactory.Certmanager().V1alpha1().Issuers()
-	bctrl.AddWatched(issuerInformer.Informer())
-	ctrl.issuerLister = issuerInformer.Lister()
+	// build a list of InformerSynced functions that will be returned by the Register method.
+	// the controller will only begin processing items once all of these informers have synced.
+	mustSync := []cache.InformerSynced{
+		ingressInformer.Informer().HasSynced,
+		certificatesInformer.Informer().HasSynced,
+		issuerInformer.Informer().HasSynced,
+	}
 
+	// set all the references to the listers for used by the Sync function
+	c.ingressLister = ingressInformer.Lister()
+	c.certificateLister = certificatesInformer.Lister()
+	c.issuerLister = issuerInformer.Lister()
+
+	// if scoped to a single namespace
+	// if we are running in non-namespaced mode (i.e. --namespace=""), we also
+	// register event handlers and obtain a lister for clusterissuers.
 	if ctx.Namespace == "" {
 		clusterIssuerInformer := ctx.SharedInformerFactory.Certmanager().V1alpha1().ClusterIssuers()
-		bctrl.AddWatched(clusterIssuerInformer.Informer())
-		ctrl.clusterIssuerLister = clusterIssuerInformer.Lister()
+		mustSync = append(mustSync, clusterIssuerInformer.Informer().HasSynced)
+		c.clusterIssuerLister = clusterIssuerInformer.Lister()
 	}
 
-	ctrl.BaseController = bctrl
-	ctrl.helper = issuer.NewHelper(ctrl.issuerLister, ctrl.clusterIssuerLister)
+	// register handler functions
+	ingressInformer.Informer().AddEventHandler(&controllerpkg.QueuingEventHandler{Queue: c.queue})
+	certificatesInformer.Informer().AddEventHandler(&controllerpkg.BlockingEventHandler{WorkFunc: c.certificateDeleted})
 
-	return ctrl
+	c.helper = issuer.NewHelper(c.issuerLister, c.clusterIssuerLister)
+	c.kClient = ctx.Client
+	c.cmClient = ctx.CMClient
+	c.recorder = ctx.Recorder
+	c.defaults = defaults{
+		ctx.DefaultAutoCertificateAnnotations,
+		ctx.DefaultIssuerName,
+		ctx.DefaultIssuerKind,
+		ctx.DefaultACMEIssuerChallengeType,
+		ctx.DefaultACMEIssuerDNS01ProviderName,
+	}
+
+	return c.queue, mustSync, nil
 }
 
-func (c *Controller) certificateDeleted(obj interface{}) {
+func (c *controller) certificateDeleted(obj interface{}) {
 	crt, ok := obj.(*cmv1alpha1.Certificate)
 	if !ok {
 		runtime.HandleError(fmt.Errorf("Object is not a certificate object %#v", obj))
@@ -112,17 +135,17 @@ func (c *Controller) certificateDeleted(obj interface{}) {
 		runtime.HandleError(fmt.Errorf("Error looking up ingress observing certificate: %s/%s", crt.Namespace, crt.Name))
 		return
 	}
-	for _, crt := range ings {
-		key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(crt)
+	for _, ing := range ings {
+		key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(ing)
 		if err != nil {
 			runtime.HandleError(err)
 			continue
 		}
-		c.BaseController.Queue.Add(key)
+		c.queue.Add(key)
 	}
 }
 
-func (c *Controller) processNextWorkItem(ctx context.Context, key string) error {
+func (c *controller) ProcessItem(ctx context.Context, key string) error {
 	namespace, name, err := cache.SplitMetaNamespaceKey(key)
 	if err != nil {
 		runtime.HandleError(fmt.Errorf("invalid resource key: %s", key))
@@ -147,6 +170,10 @@ var keyFunc = controllerpkg.KeyFunc
 
 func init() {
 	controllerpkg.Register(ControllerName, func(ctx *controllerpkg.Context) (controllerpkg.Interface, error) {
-		return New(ctx).BaseController.Run, nil
+		c, err := controllerpkg.New(ctx, ControllerName, &controller{})
+		if err != nil {
+			return nil, err
+		}
+		return c.Run, nil
 	})
 }
