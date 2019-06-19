@@ -399,7 +399,7 @@ func (c *controller) createOrder(ctx context.Context, cl acmecl.Interface, issue
 				return fmt.Errorf("error constructing old format Challenge resource for authorization: %v", err)
 			}
 		} else {
-			cs, err = c.challengeSpecForAuthorization(ctx, cl, issuer, o, authz)
+			cs, err = challengeSpecForAuthorization(ctx, cl, issuer, o, authz)
 			if err != nil {
 				return fmt.Errorf("error constructing Challenge resource for authorization: %v", err)
 			}
@@ -412,7 +412,7 @@ func (c *controller) createOrder(ctx context.Context, cl acmecl.Interface, issue
 	return nil
 }
 
-func (c *controller) challengeSpecForAuthorization(ctx context.Context, cl acmecl.Interface, issuer cmapi.GenericIssuer, o *cmapi.Order, authz *acmeapi.Authorization) (*cmapi.ChallengeSpec, error) {
+func challengeSpecForAuthorization(ctx context.Context, cl acmecl.Interface, issuer cmapi.GenericIssuer, o *cmapi.Order, authz *acmeapi.Authorization) (*cmapi.ChallengeSpec, error) {
 	// 1. fetch solvers from issuer
 	solvers := issuer.GetSpec().ACME.Solvers
 
