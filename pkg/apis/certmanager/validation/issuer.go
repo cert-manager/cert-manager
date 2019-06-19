@@ -153,7 +153,14 @@ func ValidateACMEIssuerChallengeSolverHTTP01IngressPodTemplateConfig(podTempl *v
 	cpyPodTempl.Annotations = nil
 
 	if !reflect.DeepEqual(cpyPodTempl.ObjectMeta, metav1.ObjectMeta{}) {
-		el = append(el, field.Invalid(fldPath.Child("metadata"), "", "only labels and annotations may be set on podTemplate"))
+		el = append(el, field.Invalid(fldPath.Child("metadata"), "", "only labels and annotations may be set on podTemplate metadata"))
+	}
+
+	cpyPodTempl.NodeSelector = nil
+	cpyPodTempl.Tolerations = nil
+
+	if !reflect.DeepEqual(cpyPodTempl.PodSpec, corev1.PodSpec{}) {
+		el = append(el, field.Invalid(fldPath.Child("spec"), "", "only nodeSelector and tolerations may be set on podTemplate spec"))
 	}
 
 	return el

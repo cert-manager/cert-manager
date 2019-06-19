@@ -307,6 +307,7 @@ type ACMEChallengeSolverHTTP01Ingress struct {
 
 type ACMEChallengeSolverHTTP01IngressPodTemplate struct {
 	metav1.ObjectMeta `json:"metadata,omitempty"`
+	corev1.PodSpec    `json:"spec,omitempty"`
 }
 
 type ACMEChallengeSolverDNS01 struct {

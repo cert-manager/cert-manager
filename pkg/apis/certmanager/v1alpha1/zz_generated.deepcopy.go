@@ -192,6 +192,7 @@ func (in *ACMEChallengeSolverHTTP01Ingress) DeepCopy() *ACMEChallengeSolverHTTP0
 func (in *ACMEChallengeSolverHTTP01IngressPodTemplate) DeepCopyInto(out *ACMEChallengeSolverHTTP01IngressPodTemplate) {
 	*out = *in
 	in.ObjectMeta.DeepCopyInto(&out.ObjectMeta)
+	in.PodSpec.DeepCopyInto(&out.PodSpec)
 	return
 }
 
