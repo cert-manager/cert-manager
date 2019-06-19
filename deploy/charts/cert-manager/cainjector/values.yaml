@@ -32,6 +32,8 @@ resources: {}
   #   cpu: 10m
   #   memory: 32Mi
 
+nodeSelector: {}
+
 image:
   repository: quay.io/jetstack/cert-manager-cainjector
   # Override the image tag to deploy by setting this variable.
