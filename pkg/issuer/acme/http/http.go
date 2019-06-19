@@ -229,7 +229,7 @@ func testReachability(ctx context.Context, url *url.URL, key string) error {
 
 	if string(presentedKey) != key {
 		log.V(logf.DebugLevel).Info("key returned by server did not match expected", "actual", presentedKey, "expected", key)
-		return fmt.Errorf("presented key (%s) did not match expected (%s)", presentedKey, key)
+		return fmt.Errorf("presented key (%s) did not match expected (%s)", presentedKey[:len(key)], key)
 	}
 
 	log.V(logf.DebugLevel).Info("reachability test succeeded")
