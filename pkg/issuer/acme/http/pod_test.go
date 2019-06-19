@@ -21,7 +21,8 @@ import (
 	"reflect"
 	"testing"
 
-	"k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -278,6 +279,18 @@ func TestMergePodObjectMetaWithPodTemplate(t *testing.T) {
 											"foo":                     "bar",
 										},
 									},
+									PodSpec: corev1.PodSpec{
+										NodeSelector: map[string]string{
+											"node": "selector",
+										},
+										Tolerations: []corev1.Toleration{
+											{
+												Key:      "key",
+												Operator: "Exists",
+												Effect:   "NoSchedule",
+											},
+										},
+									},
 								},
 							},
 						},
@@ -295,6 +308,16 @@ func TestMergePodObjectMetaWithPodTemplate(t *testing.T) {
 				resultingPod.Annotations = map[string]string{
 					"sidecar.istio.io/inject": "true",
 					"foo":                     "bar",
+				}
+				resultingPod.Spec.NodeSelector = map[string]string{
+					"node": "selector",
+				}
+				resultingPod.Spec.Tolerations = []corev1.Toleration{
+					{
+						Key:      "key",
+						Operator: "Exists",
+						Effect:   "NoSchedule",
+					},
 				}
 				s.testResources[createdPodKey] = resultingPod
 
