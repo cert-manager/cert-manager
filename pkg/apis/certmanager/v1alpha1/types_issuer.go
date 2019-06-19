@@ -269,7 +269,8 @@ type ACMEChallengeSolverHTTP01Ingress struct {
 
 	// The ingress class to use when creating Ingress resources to solve ACME
 	// challenges that use this challenge solver.
-	// Only one of 'class' or 'name' may be specified.
+	// Only one of 'class', 'name' or 'allowManuallySpecifiedIngress' may be
+	// specified.
 	// +optional
 	Class *string `json:"class,omitempty"`
 
@@ -281,19 +282,19 @@ type ACMEChallengeSolverHTTP01Ingress struct {
 	// +optional
 	Name string `json:"name,omitempty"`
 
-	// Optional pod template used to configure the ACME challenge solver pods
-	// used for HTTP01 challenges. Only labels and annotations may be set and
-	// will be merged ontop of the defaults. PodTemplate labels and annotation
-	// fields will override fields with matching keys.
-	// +optional
-	PodTemplate *ACMEChallengeSolverHTTP01IngressPodTemplate `json:"podTemplate,omitempty"`
-
 	// Allow certificates using this issuer to specify the ingress to be edited
 	// as an annotation on their configuration.
 	// This gives certificate developers the ability to define the solver, without
 	// needing access to editing the issuer.
 	// +optional
 	AllowManuallySpecifiedIngress bool `json:"allowManuallySpecifiedIngress,omitempty"`
+
+	// Optional pod template used to configure the ACME challenge solver pods
+	// used for HTTP01 challenges. Only labels and annotations may be set and
+	// will be merged ontop of the defaults. PodTemplate labels and annotation
+	// fields will override fields with matching keys.
+	// +optional
+	PodTemplate *ACMEChallengeSolverHTTP01IngressPodTemplate `json:"podTemplate,omitempty"`
 }
 
 type ACMEChallengeSolverHTTP01IngressPodTemplate struct {

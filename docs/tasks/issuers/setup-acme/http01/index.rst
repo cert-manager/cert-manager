@@ -51,6 +51,35 @@ This mode should be avoided when using ingress controllers that expose a single
 IP for all ingress resources, as it can create compatibility problems with
 certain ingress-controller specific annotations.
 
+allowManuallySpecifiedIngress
+-----------------------------
+
+Access to editing an existing issuer resource may be inconvenient to developers
+who want to create a new Certificate for newly created domains. In these
+instances, a solver can be added to the issuer to permit the manual
+specification of the ingress to be edited in order to solve HTTP01 challenges.
+
+The developer can then add an annotation to their certificate like so:
+
+.. code-block:: yaml
+   :linenos:
+   :emphasize-lines: 6
+   
+   apiVersion: certmanager.k8s.io/v1alpha1
+   kind: Certificate
+   metadata:
+     name: example-com
+     annotations:
+       http01.acme.certmanager.k8s.io/ingress-to-edit: "ingress-to-edit-to-solve-challenges"
+   spec:
+     secretName: example-com-tls
+     dnsNames:
+     - example.com
+     - www.example.com
+     issuerRef:
+       name: letsencrypt-staging
+       kind: Issuer
+
 servicePort
 -----------
 

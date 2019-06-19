@@ -138,6 +138,25 @@ func ValidateACMEIssuerChallengeSolverHTTP01Config(http01 *v1alpha1.ACMEChalleng
 func ValidateACMEIssuerChallengeSolverHTTP01IngressConfig(ingress *v1alpha1.ACMEChallengeSolverHTTP01Ingress, fldPath *field.Path) field.ErrorList {
 	el := field.ErrorList{}
 
+	numIngressSpecifiers := 0
+
+	if ingress.Class != nil {
+		numIngressSpecifiers++
+	}
+
+	if ingress.Name != "" {
+		if numIngressSpecifiers > 0 {
+			el = append(el, field.Forbidden(fldPath.Child("name"), "may not specify more than one of class, name, or allowManuallySpecifiedIngress"))
+		}
+		numIngressSpecifiers++
+	}
+
+	if ingress.AllowManuallySpecifiedIngress {
+		if numIngressSpecifiers > 0 {
+			el = append(el, field.Forbidden(fldPath.Child("allowManuallySpecifiedIngress"), "may not specify more than one of class, name, or allowManuallySpecifiedIngress"))
+		}
+	}
+
 	if ingress.PodTemplate != nil {
 		el = append(el, ValidateACMEIssuerChallengeSolverHTTP01IngressPodTemplateConfig(ingress.PodTemplate, fldPath.Child("podTemplate"))...)
 	}
