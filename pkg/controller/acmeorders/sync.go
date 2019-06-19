@@ -429,6 +429,7 @@ func challengeSpecForAuthorization(ctx context.Context, cl acmecl.Interface, iss
 	var selectedChallenge *acmeapi.Challenge
 	selectedNumLabelsMatch := 0
 	selectedNumDNSNamesMatch := 0
+	selectedNumDNSZonesMatch := 0
 
 	challengeForSolver := func(solver *cmapi.ACMEChallengeSolver) *acmeapi.Challenge {
 		for _, ch := range authz.Challenges {
@@ -459,9 +460,10 @@ func challengeSpecForAuthorization(ctx context.Context, cl acmecl.Interface, iss
 
 		labelsMatch, numLabelsMatch := selectors.Labels(*cfg.Selector).Matches(o.ObjectMeta, domainToFind)
 		dnsNamesMatch, numDNSNamesMatch := selectors.DNSNames(*cfg.Selector).Matches(o.ObjectMeta, domainToFind)
+		dnsZonesMatch, numDNSZonesMatch := selectors.DNSZones(*cfg.Selector).Matches(o.ObjectMeta, domainToFind)
 
-		if !labelsMatch || !dnsNamesMatch {
-			dbg.Info("not selecting solver", "labels_match", labelsMatch, "dnsnames_match", dnsNamesMatch)
+		if !labelsMatch || !dnsNamesMatch || !dnsZonesMatch {
+			dbg.Info("not selecting solver", "labels_match", labelsMatch, "dnsnames_match", dnsNamesMatch, "dnszones_match", dnsZonesMatch)
 			continue
 		}
 
@@ -472,6 +474,7 @@ func challengeSpecForAuthorization(ctx context.Context, cl acmecl.Interface, iss
 			selectedChallenge = acmech
 			selectedNumLabelsMatch = numLabelsMatch
 			selectedNumDNSNamesMatch = numDNSNamesMatch
+			selectedNumDNSZonesMatch = numDNSZonesMatch
 		}
 
 		if selectedSolver == nil {
@@ -498,8 +501,20 @@ func challengeSpecForAuthorization(ctx context.Context, cl acmecl.Interface, iss
 			dbg.Info("not selecting solver as the previous one has matching DNS names and this one does not")
 			continue
 		case !selectedHasMatchingDNSNames && !hasMatchingDNSNames:
-			// check labels
+			dbg.Info("solver does not have any matching DNS names, checking dnsZones")
+			// check zones
 		case selectedHasMatchingDNSNames && hasMatchingDNSNames:
+			dbg.Info("both this solver and the previously selected one matches dnsNames, comparing zones")
+			if numDNSZonesMatch > selectedNumDNSZonesMatch {
+				dbg.Info("selecting solver as this one has a more specific dnsZone match than the previously selected one")
+				selectSolver()
+				continue
+			}
+			if selectedNumDNSZonesMatch > numDNSZonesMatch {
+				dbg.Info("not selecting this solver as the previously selected one has a more specific dnsZone match")
+				continue
+			}
+			dbg.Info("both this solver and the previously selected one match dnsZones, comparing labels")
 			// choose the one with the most labels
 			if numLabelsMatch > selectedNumLabelsMatch {
 				dbg.Info("selecting solver as this one has more labels than the previously selected one")
@@ -510,8 +525,40 @@ func challengeSpecForAuthorization(ctx context.Context, cl acmecl.Interface, iss
 			continue
 		}
 
-		if numLabelsMatch > selectedNumLabelsMatch {
+		selectedHasMatchingDNSZones := selectedNumDNSZonesMatch > 0
+		hasMatchingDNSZones := numDNSZonesMatch > 0
+
+		switch {
+		case !selectedHasMatchingDNSZones && hasMatchingDNSZones:
+			dbg.Info("selecting solver as this solver has matching DNS zones and the previous one does not")
 			selectSolver()
+			continue
+		case selectedHasMatchingDNSZones && !hasMatchingDNSZones:
+			dbg.Info("not selecting solver as the previous one has matching DNS zones and this one does not")
+			continue
+		case !selectedHasMatchingDNSZones && !hasMatchingDNSZones:
+			dbg.Info("solver does not have any matching DNS zones, checking labels")
+			// check labels
+		case selectedHasMatchingDNSZones && hasMatchingDNSZones:
+			dbg.Info("both this solver and the previously selected one matches dnsZones")
+			dbg.Info("comparing number of matching domain segments")
+			// choose the one with the most matching DNS zone segments
+			if numDNSZonesMatch > selectedNumDNSZonesMatch {
+				dbg.Info("selecting solver because this one has more matching DNS zone segments")
+				selectSolver()
+				continue
+			}
+			if selectedNumDNSZonesMatch > numDNSZonesMatch {
+				dbg.Info("not selecting solver because previous one has more matching DNS zone segments")
+				continue
+			}
+			// choose the one with the most labels
+			if numLabelsMatch > selectedNumLabelsMatch {
+				dbg.Info("selecting solver because this one has more labels than the previous one")
+				selectSolver()
+				continue
+			}
+			dbg.Info("not selecting solver as this one's number of matching labels is equal to or less than the last one")
 			continue
 		}
 

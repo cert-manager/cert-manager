@@ -4,6 +4,7 @@ go_library(
     name = "go_default_library",
     srcs = [
         "dns_names.go",
+        "dns_zones.go",
         "labels.go",
         "selector.go",
     ],
@@ -11,6 +12,7 @@ go_library(
     visibility = ["//visibility:public"],
     deps = [
         "//pkg/apis/certmanager/v1alpha1:go_default_library",
+        "//vendor/github.com/miekg/dns:go_default_library",
         "//vendor/k8s.io/apimachinery/pkg/apis/meta/v1:go_default_library",
     ],
 )
