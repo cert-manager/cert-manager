@@ -236,11 +236,7 @@ func updateX509Expiry(crt *v1alpha1.Certificate, cert *x509.Certificate) {
 	CertificateExpiryTimeSeconds.With(prometheus.Labels{
 		"name":      crt.Name,
 		"namespace": crt.Namespace}).Set(float64(expiryTime.Unix()))
-	registeredCertificates.certificates[key] = struct{}{}
-}
-
-func (m *Metrics) SetActiveCertificates(cl cmlisters.CertificateLister) {
-	m.activeCertificates = cl
+	registerCertificateKey(key)
 }
 
 func (m *Metrics) UpdateCertificateStatus(crt *v1alpha1.Certificate) {
@@ -275,9 +271,23 @@ func updateCertificateReadyStatus(crt *v1alpha1.Certificate, current v1alpha1.Co
 			"condition": string(condition),
 		}).Set(value)
 	}
+	registerCertificateKey(key)
+}
+
+// registerCertificateKey adds an entry in registeredCertificates to track
+// which certificates have metrics stored in prometheus, allowing for easier
+// clean-up.
+// You MUST lock the mutex before calling this function, this ensures no other
+// function is cleaning up while we are registering a certificate
+func registerCertificateKey(key string) {
 	registeredCertificates.certificates[key] = struct{}{}
 }
 
+func (m *Metrics) SetActiveCertificates(cl cmlisters.CertificateLister) {
+	m.activeCertificates = cl
+}
+
+// cleanUp removes any metrics which reference resources which no longer exist
 func (m *Metrics) cleanUp() {
 	log := logf.FromContext(m.ctx)
 	log.V(logf.DebugLevel).Info("attempting to clean up metrics for recently deleted certificates")
@@ -296,6 +306,7 @@ func (m *Metrics) cleanUp() {
 	cleanUpCertificates(activeCrts)
 }
 
+// cleanUpCertificates removes metrics for recently deleted certificates
 func cleanUpCertificates(activeCrts []*v1alpha1.Certificate) {
 	activeMap := make(map[string]struct{}, len(activeCrts))
 	for _, crt := range activeCrts {
@@ -317,25 +328,31 @@ func cleanUpCertificates(activeCrts []*v1alpha1.Certificate) {
 	}
 
 	for _, key := range toCleanUp {
-		namespace, name, err := cache.SplitMetaNamespaceKey(key)
-		if err != nil {
-			continue
-		}
+		cleanUpCertificateByKey(key)
+	}
+}
 
-		CertificateExpiryTimeSeconds.Delete(prometheus.Labels{
+// cleanUpCertificateByKey removes metrics which refer to a certificate,
+// given the key of the certificate.
+func cleanUpCertificateByKey(key string) {
+	namespace, name, err := cache.SplitMetaNamespaceKey(key)
+	if err != nil {
+		return
+	}
+
+	CertificateExpiryTimeSeconds.Delete(prometheus.Labels{
+		"name":      name,
+		"namespace": namespace,
+	})
+
+	for _, condition := range readyConditionStatuses {
+		CertificateReadyStatus.Delete(prometheus.Labels{
 			"name":      name,
 			"namespace": namespace,
+			"condition": string(condition),
 		})
-
-		for _, condition := range readyConditionStatuses {
-			CertificateReadyStatus.Delete(prometheus.Labels{
-				"name":      name,
-				"namespace": namespace,
-				"condition": string(condition),
-			})
-		}
-		delete(registeredCertificates.certificates, key)
 	}
+	delete(registeredCertificates.certificates, key)
 }
 
 func (m *Metrics) IncrementSyncCallCount(controllerName string) {

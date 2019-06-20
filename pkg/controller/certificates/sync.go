@@ -585,6 +585,8 @@ func generateLocallySignedTemporaryCertificate(crt *v1alpha1.Certificate, pk []b
 }
 
 func (c *controller) updateCertificateStatus(ctx context.Context, old, new *v1alpha1.Certificate) (*v1alpha1.Certificate, error) {
+	defer c.metrics.UpdateCertificateStatus(new)
+
 	log := logf.FromContext(ctx, "updateStatus")
 	oldBytes, _ := json.Marshal(old.Status)
 	newBytes, _ := json.Marshal(new.Status)
