@@ -17,6 +17,7 @@ limitations under the License.
 // Package metrics contains global structures related to metrics collection
 // cert-manager exposes the following metrics:
 // certificate_expiration_timestamp_seconds{name, namespace}
+// certificate_ready_status{name, namespace, condition}
 package metrics
 
 import (
@@ -52,6 +53,8 @@ const (
 	prometheusMetricsServerMaxHeaderBytes  = 1 << 20 // 1 MiB
 )
 
+var readyConditionStatuses = [...]v1alpha1.ConditionStatus{v1alpha1.ConditionTrue, v1alpha1.ConditionFalse, v1alpha1.ConditionUnknown}
+
 // Default set of metrics
 var Default = New(logf.NewContext(context.Background(), logf.Log.WithName("metrics")))
 
@@ -62,6 +65,15 @@ var CertificateExpiryTimeSeconds = prometheus.NewGaugeVec(
 		Help:      "The date after which the certificate expires. Expressed as a Unix Epoch Time.",
 	},
 	[]string{"name", "namespace"},
+)
+
+var CertificateReadyStatus = prometheus.NewGaugeVec(
+	prometheus.GaugeOpts{
+		Namespace: namespace,
+		Name:      "certificate_ready_status",
+		Help:      "The ready status of the Certificate.",
+	},
+	[]string{"name", "namespace", "condition"},
 )
 
 // ACMEClientRequestCount is a Prometheus summary to collect the number of
@@ -117,6 +129,7 @@ type Metrics struct {
 	// TODO (@dippynark): switch this to use an interface to make it testable
 	registry                         *prometheus.Registry
 	CertificateExpiryTimeSeconds     *prometheus.GaugeVec
+	CertificateReadyStatus           *prometheus.GaugeVec
 	ACMEClientRequestDurationSeconds *prometheus.SummaryVec
 	ACMEClientRequestCount           *prometheus.CounterVec
 	ControllerSyncCallCount          *prometheus.CounterVec
@@ -138,6 +151,7 @@ func New(ctx context.Context) *Metrics {
 		activeCertificates:               nil,
 		registry:                         prometheus.NewRegistry(),
 		CertificateExpiryTimeSeconds:     CertificateExpiryTimeSeconds,
+		CertificateReadyStatus:           CertificateReadyStatus,
 		ACMEClientRequestDurationSeconds: ACMEClientRequestDurationSeconds,
 		ACMEClientRequestCount:           ACMEClientRequestCount,
 		ControllerSyncCallCount:          ControllerSyncCallCount,
@@ -168,6 +182,7 @@ func (m *Metrics) Start(stopCh <-chan struct{}) {
 	log := logf.FromContext(m.ctx)
 
 	m.registry.MustRegister(m.CertificateExpiryTimeSeconds)
+	m.registry.MustRegister(m.CertificateReadyStatus)
 	m.registry.MustRegister(m.ACMEClientRequestDurationSeconds)
 	m.registry.MustRegister(m.ACMEClientRequestCount)
 	m.registry.MustRegister(m.ControllerSyncCallCount)
@@ -228,6 +243,42 @@ func (m *Metrics) SetActiveCertificates(cl cmlisters.CertificateLister) {
 	m.activeCertificates = cl
 }
 
+func (m *Metrics) UpdateCertificateStatus(crt *v1alpha1.Certificate) {
+	log := logf.FromContext(m.ctx)
+	log = logf.WithResource(log, crt)
+
+	log.V(logf.DebugLevel).Info("attempting to retrieve ready status for certificate")
+	for _, c := range crt.Status.Conditions {
+		switch c.Type {
+		case v1alpha1.CertificateConditionReady:
+			updateCertificateReadyStatus(crt, c.Status)
+		}
+	}
+}
+
+func updateCertificateReadyStatus(crt *v1alpha1.Certificate, current v1alpha1.ConditionStatus) {
+
+	key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(crt)
+	if err != nil {
+		return
+	}
+
+	registeredCertificates.mtx.Lock()
+	defer registeredCertificates.mtx.Unlock()
+	for _, condition := range readyConditionStatuses {
+		value := 0.0
+		if current == condition {
+			value = 1.0
+		}
+		CertificateReadyStatus.With(prometheus.Labels{
+			"name":      crt.Name,
+			"namespace": crt.Namespace,
+			"condition": string(condition),
+		}).Set(value)
+	}
+	registeredCertificates.certificates[key] = struct{}{}
+}
+
 func (m *Metrics) cleanUp() {
 	log := logf.FromContext(m.ctx)
 	log.V(logf.DebugLevel).Info("attempting to clean up metrics for recently deleted certificates")
@@ -276,6 +327,14 @@ func cleanUpCertificates(activeCrts []*v1alpha1.Certificate) {
 			"name":      name,
 			"namespace": namespace,
 		})
+
+		for _, condition := range readyConditionStatuses {
+			CertificateReadyStatus.Delete(prometheus.Labels{
+				"name":      name,
+				"namespace": namespace,
+				"condition": string(condition),
+			})
+		}
 		delete(registeredCertificates.certificates, key)
 	}
 }
