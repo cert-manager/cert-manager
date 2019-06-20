@@ -71,7 +71,7 @@ var CertificateReadyStatus = prometheus.NewGaugeVec(
 	prometheus.GaugeOpts{
 		Namespace: namespace,
 		Name:      "certificate_ready_status",
-		Help:      "The ready status of the Certificate.",
+		Help:      "The ready status of the certificate.",
 	},
 	[]string{"name", "namespace", "condition"},
 )
@@ -257,7 +257,6 @@ func (m *Metrics) UpdateCertificateStatus(crt *v1alpha1.Certificate) {
 }
 
 func updateCertificateReadyStatus(crt *v1alpha1.Certificate, current v1alpha1.ConditionStatus) {
-
 	key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(crt)
 	if err != nil {
 		return
