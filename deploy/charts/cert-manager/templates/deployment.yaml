@@ -80,11 +80,11 @@ spec:
           - --default-acme-issuer-dns01-provider-name={{ .defaultACMEDNS01ChallengeProvider }}
           {{- end }}
           {{- end }}
-          {{- if .Values.containerSecurityContext.enabled }}
+          {{- if .Values.securityContext.enabled }}
           securityContext:
-            allowPrivilegeEscalation: {{ .Values.containerSecurityContext.allowPrivilegeEscalation }}
-            readOnlyRootFilesystem: {{ .Values.containerSecurityContext.readOnlyRootFilesystem }}
-            privileged: {{ .Values.containerSecurityContext.privileged }}
+            allowPrivilegeEscalation: {{ .Values.securityContext.allowPrivilegeEscalation }}
+            readOnlyRootFilesystem: {{ .Values.securityContext.readOnlyRootFilesystem }}
+            privileged: {{ .Values.securityContext.privileged }}
           {{- end }}
           ports:
           - containerPort: 9402

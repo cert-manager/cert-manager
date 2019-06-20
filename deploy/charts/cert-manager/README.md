@@ -93,13 +93,12 @@ The following table lists the configurable parameters of the cert-manager chart 
 | `serviceAccount.create` | If `true`, create a new service account | `true` |
 | `serviceAccount.name` | Service account to be used. If not set and `serviceAccount.create` is `true`, a name is generated using the fullname template |  |
 | `resources` | CPU/memory resource requests/limits | |
-| `securityContext.enabled` | Enable pod-level security context | `false` |
+| `securityContext.enabled` | Enable security context | `false` |
 | `securityContext.fsGroup` | Group ID for the container | `1001` |
 | `securityContext.runAsUser` | User ID for the container | `1001` |
-| `containerSecurityContext.enabled` | Enable container-level security context | `false` |
-| `containerSecurityContext.allowPrivilegeEscalation` | If `true`, enable processes to gain more privilege than their parent processes | `false` |
-| `containerSecurityContext.readOnlyRootFilesystem` | If `true`, set the container to be a read-only root filesystem | `true` |
-| `containerSecurityContext.privileged` | If `true`, run the container in privileged mode  | `false` |
+| `securityContext.allowPrivilegeEscalation` | If `true`, enable processes to gain more privilege than their parent processes | `false` |
+| `securityContext.readOnlyRootFilesystem` | If `true`, set the container to be a read-only root filesystem | `true` |
+| `securityContext.privileged` | If `true`, run the container in privileged mode  | `false` |
 | `nodeSelector` | Node labels for pod assignment | `{}` |
 | `affinity` | Node affinity for pod assignment | `{}` |
 | `tolerations` | Node tolerations for pod assignment | `[]` |
