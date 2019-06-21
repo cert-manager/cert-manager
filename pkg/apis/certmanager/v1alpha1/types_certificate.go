@@ -67,7 +67,9 @@ type CertificateSpec struct {
 	// If no CommonName is given, then the first entry in DNSNames is used as
 	// the CommonName.
 	// The CommonName should have a length shorter than 64 bytes to avoid
-	// generating invalid CSRs.
+	// generating invalid CSRs; in order to have longer domain names, set the
+	// CommonName (or first DNSNames entry) to have less than 64 bytes, and
+	// then add the longer domain name to DNSNames.
 	// +optional
 	CommonName string `json:"commonName,omitempty"`
 
