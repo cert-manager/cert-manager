@@ -63,7 +63,11 @@ const (
 
 // CertificateSpec defines the desired state of Certificate
 type CertificateSpec struct {
-	// CommonName is a common name to be used on the Certificate
+	// CommonName is a common name to be used on the Certificate.
+	// If no CommonName is given, then the first entry in DNSNames is used as
+	// the CommonName.
+	// The CommonName should have a length shorter than 64 bytes to avoid
+	// generating invalid CSRs.
 	// +optional
 	CommonName string `json:"commonName,omitempty"`
 
@@ -79,7 +83,10 @@ type CertificateSpec struct {
 	// +optional
 	RenewBefore *metav1.Duration `json:"renewBefore,omitempty"`
 
-	// DNSNames is a list of subject alt names to be used on the Certificate
+	// DNSNames is a list of subject alt names to be used on the Certificate.
+	// If no CommonName is given, then the first entry in DNSNames is used as
+	// the CommonName - any requirements for the CommonName would then also
+	// apply to this first entry.
 	// +optional
 	DNSNames []string `json:"dnsNames,omitempty"`
 

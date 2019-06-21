@@ -76,11 +76,16 @@ spec:
               - config
               type: object
             commonName:
-              description: CommonName is a common name to be used on the Certificate
+              description: CommonName is a common name to be used on the Certificate.
+                If no CommonName is given, then the first entry in DNSNames is used
+                as the CommonName. The CommonName should have a length shorter than
+                64 bytes to avoid generating invalid CSRs.
               type: string
             dnsNames:
               description: DNSNames is a list of subject alt names to be used on the
-                Certificate
+                Certificate. If no CommonName is given, then the first entry in DNSNames
+                is used as the CommonName - any requirements for the CommonName would
+                then also apply to this first entry.
               items:
                 type: string
               type: array

@@ -395,6 +395,58 @@ func TestValidateCertificate(t *testing.T) {
 				field.Invalid(fldPath.Child("ipAddresses").Index(0), "blah", "invalid IP address"),
 			},
 		},
+		"invalid certificate with commonName longer than 63 bytes": {
+			cfg: &v1alpha1.Certificate{
+				Spec: v1alpha1.CertificateSpec{
+					CommonName: "this-is-a-certificate-common-name-which-is-longer-than-sixty-three-bytes",
+					SecretName: "abc",
+					IssuerRef:  validIssuerRef,
+				},
+			},
+			errs: []*field.Error{
+				field.TooLong(fldPath.Child("commonName"), "this-is-a-certificate-common-name-which-is-longer-than-sixty-three-bytes", 63),
+			},
+		},
+		"invalid certificate with no commonName and first dnsName longer than 63 bytes": {
+			cfg: &v1alpha1.Certificate{
+				Spec: v1alpha1.CertificateSpec{
+					SecretName: "abc",
+					IssuerRef:  validIssuerRef,
+					DNSNames: []string{
+						"this-is-a-certificate-dns-name-which-is-longer-than-sixty-three-bytes",
+						"dnsName",
+					},
+				},
+			},
+			errs: []*field.Error{
+				field.TooLong(fldPath.Child("dnsNames").Index(0), "this-is-a-certificate-dns-name-which-is-longer-than-sixty-three-bytes", 63),
+			},
+		},
+		"valid certificate with no commonName and second dnsName longer than 63 bytes": {
+			cfg: &v1alpha1.Certificate{
+				Spec: v1alpha1.CertificateSpec{
+					SecretName: "abc",
+					IssuerRef:  validIssuerRef,
+					DNSNames: []string{
+						"dnsName",
+						"this-is-a-certificate-dns-name-which-is-longer-than-sixty-three-bytes",
+					},
+				},
+			},
+		},
+		"valid certificate with commonName and first dnsName longer than 63 bytes": {
+			cfg: &v1alpha1.Certificate{
+				Spec: v1alpha1.CertificateSpec{
+					CommonName: "testcn",
+					SecretName: "abc",
+					IssuerRef:  validIssuerRef,
+					DNSNames: []string{
+						"this-is-a-certificate-dns-name-which-is-longer-than-sixty-three-bytes",
+						"dnsName",
+					},
+				},
+			},
+		},
 	}
 	for n, s := range scenarios {
 		t.Run(n, func(t *testing.T) {

@@ -85,11 +85,11 @@ Appears In:
 </tr>
 <tr>
 <td><code>commonName</code><br /> <em>string</em></td>
-<td>CommonName is a common name to be used on the Certificate</td>
+<td>CommonName is a common name to be used on the Certificate. If no CommonName is given, then the first entry in DNSNames is used as the CommonName. The CommonName should have a length shorter than 64 bytes to avoid generating invalid CSRs.</td>
 </tr>
 <tr>
 <td><code>dnsNames</code><br /> <em>string array</em></td>
-<td>DNSNames is a list of subject alt names to be used on the Certificate</td>
+<td>DNSNames is a list of subject alt names to be used on the Certificate. If no CommonName is given, then the first entry in DNSNames is used as the CommonName - any requirements for the CommonName would then also apply to this first entry.</td>
 </tr>
 <tr>
 <td><code>duration</code><br /> *<a href="#duration-v1">Duration</a>*</td>
