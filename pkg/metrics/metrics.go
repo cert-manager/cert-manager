@@ -121,6 +121,8 @@ var registeredCertificates = &struct {
 
 var activeCertificates cmlisters.CertificateLister
 
+// cleanUpFunctions are functions called to clean up metrics which refer to
+// deleted certificates, inputs are name and namespace of the certificate
 var cleanUpFunctions = []func(string, string){
 	metricCleanUpCertificate(CertificateExpiryTimeSeconds),
 	metricCleanUpCertificateWith(CertificateReadyStatus, readyConditionStatuses[:]),
@@ -208,6 +210,7 @@ func (m *Metrics) Start(stopCh <-chan struct{}) {
 
 	}()
 
+	// clean up metrics referring to deleted resources every minute
 	go wait.Until(func() { m.cleanUp() }, time.Minute, stopCh)
 
 	m.waitShutdown(stopCh)
@@ -341,12 +344,19 @@ func cleanUpCertificates(activeCrts []*v1alpha1.Certificate) {
 	}
 }
 
+// metricCleanUpCertificate creates a clean up function which deletes the entry
+// (if any) for a certificate in the given metric
 func metricCleanUpCertificate(c cleanableMetric) func(string, string) {
 	return func(name, namespace string) {
 		c.DeleteLabelValues(name, namespace)
 	}
 }
 
+// metricCleanUpCertificateWith creates a clean up function which deletes the
+// entries (if any) for a certificate in the given metric, iterating over the
+// additional labels.
+// This is used if the metric keys on data in addition to the name and
+// namespace.
 func metricCleanUpCertificateWith(c cleanableMetric, additionalLabels []string) func(string, string) {
 	return func(name, namespace string) {
 		for _, label := range additionalLabels {
@@ -363,6 +373,7 @@ func cleanUpCertificateByKey(key string) {
 		return
 	}
 
+	// apply all the clean up functions
 	for _, f := range cleanUpFunctions {
 		f(name, namespace)
 	}
