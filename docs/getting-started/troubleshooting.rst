@@ -98,8 +98,7 @@ the state of the pods that have been deployed:
 
 .. code-block:: shell
 
-   # Get all pods, including Completed and Errored pods
-   kubectl get pods --show-all --namespace cert-manager
+   kubectl get pods --namespace cert-manager
 
    NAME                                            READY   STATUS      RESTARTS   AGE
    cert-manager-7cbdc48784-rpgnt                   1/1     Running     0          3m
