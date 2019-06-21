@@ -29,7 +29,7 @@ func (c *Controller) issuersForSecret(secret *corev1.Secret) ([]*v1alpha1.Issuer
 	issuers, err := c.issuerLister.List(labels.NewSelector())
 
 	if err != nil {
-		return nil, fmt.Errorf("error listing certificiates: %s", err.Error())
+		return nil, fmt.Errorf("error listing certificates: %s", err.Error())
 	}
 
 	var affected []*v1alpha1.Issuer
@@ -41,7 +41,8 @@ func (c *Controller) issuersForSecret(secret *corev1.Secret) ([]*v1alpha1.Issuer
 			(iss.Spec.CA != nil && iss.Spec.CA.SecretName == secret.Name) ||
 			(iss.Spec.Vault != nil && iss.Spec.Vault.Auth.TokenSecretRef.Name == secret.Name) ||
 			(iss.Spec.Venafi != nil && iss.Spec.Venafi.TPP != nil && iss.Spec.Venafi.TPP.CredentialsRef.Name == secret.Name) ||
-			(iss.Spec.Venafi != nil && iss.Spec.Venafi.Cloud != nil && iss.Spec.Venafi.Cloud.APITokenSecretRef.Name == secret.Name) {
+			(iss.Spec.Venafi != nil && iss.Spec.Venafi.Cloud != nil && iss.Spec.Venafi.Cloud.APITokenSecretRef.Name == secret.Name) ||
+			(iss.Spec.Step != nil && iss.Spec.Step.Provisioner.PasswordRef.Name == secret.Name) {
 			affected = append(affected, iss)
 			continue
 		}

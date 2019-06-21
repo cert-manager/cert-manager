@@ -90,6 +90,9 @@ type IssuerConfig struct {
 
 	// +optional
 	Venafi *VenafiIssuer `json:"venafi,omitempty"`
+
+	// +optional
+	Step *StepIssuer `json:"step,omitempty"`
 }
 
 // VenafiIssuer describes issuer configuration details for Venafi Cloud.
@@ -229,6 +232,35 @@ type ACMEChallengeSolver struct {
 
 	// +optional
 	DNS01 *ACMEChallengeSolverDNS01 `json:"dns01,omitempty"`
+}
+
+// StepIssuer contains the configuration for the step certificates provisioner.
+type StepIssuer struct {
+	// URL is the base URL for the step certificates instance.
+	URL string `json:"url"`
+
+	// Provisioner contains the step certificates provisioner configuration.
+	Provisioner StepProvisioner `json:"provisioner"`
+
+	// CABundle is a base64 encoded TLS certificate used to verify connections
+	// to the step certificates server. If not set the system root certificates
+	// are used to validate the TLS connection.
+	// +optional
+	CABundle []byte `json:"caBundle,omitempty"`
+}
+
+// StepProvisioner contains the configuration used to create step certificate
+// tokens used to grant certificates.
+type StepProvisioner struct {
+	// Names is the name of the JWK provisioner.
+	Name string `json:"name"`
+
+	// KeyID is the kid property of the JWK provisioner.
+	KeyID string `json:"kid"`
+
+	// PasswordRef is a reference to a Secret containing the provisioner
+	// password used to decrypt the provisioner private key.
+	PasswordRef SecretKeySelector `json:"passwordRef"`
 }
 
 // CertificateDomainSelector selects certificates using a label selector, and

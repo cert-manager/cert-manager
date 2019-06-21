@@ -32,6 +32,7 @@ filegroup(
         "//pkg/issuer/ca:all-srcs",
         "//pkg/issuer/fake:all-srcs",
         "//pkg/issuer/selfsigned:all-srcs",
+        "//pkg/issuer/step:all-srcs",
         "//pkg/issuer/vault:all-srcs",
         "//pkg/issuer/venafi:all-srcs",
     ],

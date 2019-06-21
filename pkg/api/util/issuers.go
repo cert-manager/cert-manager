@@ -33,6 +33,8 @@ const (
 	IssuerSelfSigned string = "selfsigned"
 	// IssuerVenafi uses Venafi Trust Protection Platform and Venafi Cloud
 	IssuerVenafi string = "venafi"
+	// IssuerStep uses is the name of the step certificates issuer
+	IssuerStep string = "step"
 )
 
 // NameForIssuer determines the name of the Issuer implementation given an
@@ -49,6 +51,8 @@ func NameForIssuer(i cmapi.GenericIssuer) (string, error) {
 		return IssuerSelfSigned, nil
 	case i.GetSpec().Venafi != nil:
 		return IssuerVenafi, nil
+	case i.GetSpec().Step != nil:
+		return IssuerStep, nil
 	}
 	return "", fmt.Errorf("no issuer specified for Issuer '%s/%s'", i.GetObjectMeta().Namespace, i.GetObjectMeta().Name)
 }

@@ -87,6 +87,14 @@ func ValidateIssuerConfig(iss *v1alpha1.IssuerConfig, fldPath *field.Path) field
 			el = append(el, ValidateVenafiIssuerConfig(iss.Venafi, fldPath.Child("venafi"))...)
 		}
 	}
+	if iss.Step != nil {
+		if numConfigs > 0 {
+			el = append(el, field.Forbidden(fldPath.Child("step"), "may not specify more than one issuer type"))
+		} else {
+			numConfigs++
+			el = append(el, ValidateStepIssuerConfig(iss.Step, fldPath.Child("step"))...)
+		}
+	}
 	if numConfigs == 0 {
 		el = append(el, field.Required(fldPath, "at least one issuer must be configured"))
 	}
@@ -197,6 +205,38 @@ func ValidateVaultIssuerConfig(iss *v1alpha1.VaultIssuer, fldPath *field.Path) f
 func ValidateVenafiIssuerConfig(iss *v1alpha1.VenafiIssuer, fldPath *field.Path) field.ErrorList {
 	//TODO: make extended validation fro fake\tpp\cloud modes
 	return nil
+}
+
+// ValidateStepIssuerConfig validates the configuration of a step issuer.
+func ValidateStepIssuerConfig(iss *v1alpha1.StepIssuer, fldPath *field.Path) field.ErrorList {
+	el := field.ErrorList{}
+	if iss.URL == "" {
+		el = append(el, field.Required(fldPath.Child("url"), ""))
+	}
+	if iss.Provisioner.Name == "" {
+		el = append(el, field.Required(fldPath.Child("provisioner", "name"), ""))
+	}
+	if iss.Provisioner.KeyID == "" {
+		el = append(el, field.Required(fldPath.Child("provisioner", "kid"), ""))
+	}
+	if iss.Provisioner.PasswordRef.Name == "" {
+		el = append(el, field.Required(fldPath.Child("provisioner", "passwordRef", "name"), ""))
+	}
+	if iss.Provisioner.PasswordRef.Key == "" {
+		el = append(el, field.Required(fldPath.Child("provisioner", "passwordRef", "key"), ""))
+	}
+
+	// check if caBundle is valid
+	certs := iss.CABundle
+	if len(certs) > 0 {
+		caCertPool := x509.NewCertPool()
+		ok := caCertPool.AppendCertsFromPEM(certs)
+		if !ok {
+			el = append(el, field.Invalid(fldPath.Child("caBundle"), "", "Specified CA bundle is invalid"))
+		}
+	}
+
+	return el
 }
 
 func ValidateACMEIssuerHTTP01Config(iss *v1alpha1.ACMEIssuerHTTP01Config, fldPath *field.Path) field.ErrorList {

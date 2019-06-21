@@ -45,6 +45,8 @@ func ValidateCertificateForIssuer(crt *v1alpha1.Certificate, issuerObj v1alpha1.
 		el = append(el, ValidateCertificateForSelfSignedIssuer(&crt.Spec, issuerObj.GetSpec(), path)...)
 	case apiutil.IssuerVenafi:
 		el = append(el, ValidateCertificateForVenafiIssuer(&crt.Spec, issuerObj.GetSpec(), path)...)
+	case apiutil.IssuerStep:
+		el = append(el, ValidateCertificateForStepIssuer(&crt.Spec, issuerObj.GetSpec(), path)...)
 	}
 
 	return el
@@ -99,6 +101,12 @@ func ValidateCertificateForSelfSignedIssuer(crt *v1alpha1.CertificateSpec, issue
 }
 
 func ValidateCertificateForVenafiIssuer(crt *v1alpha1.CertificateSpec, issuer *v1alpha1.IssuerSpec, specPath *field.Path) field.ErrorList {
+	el := field.ErrorList{}
+
+	return el
+}
+
+func ValidateCertificateForStepIssuer(crt *v1alpha1.CertificateSpec, issuer *v1alpha1.IssuerSpec, specPath *field.Path) field.ErrorList {
 	el := field.ErrorList{}
 
 	return el
