@@ -53,7 +53,7 @@ const (
 	prometheusMetricsServerMaxHeaderBytes  = 1 << 20 // 1 MiB
 )
 
-var readyConditionStatuses = [...]v1alpha1.ConditionStatus{v1alpha1.ConditionTrue, v1alpha1.ConditionFalse, v1alpha1.ConditionUnknown}
+var readyConditionStatuses = [...]string{string(v1alpha1.ConditionTrue), string(v1alpha1.ConditionFalse), string(v1alpha1.ConditionUnknown)}
 
 // Default set of metrics
 var Default = New(logf.NewContext(context.Background(), logf.Log.WithName("metrics")))
@@ -120,6 +120,15 @@ var registeredCertificates = &struct {
 }
 
 var activeCertificates cmlisters.CertificateLister
+
+var cleanUpFunctions = []func(string, string){
+	metricCleanUpCertificate(CertificateExpiryTimeSeconds),
+	metricCleanUpCertificateWith(CertificateReadyStatus, readyConditionStatuses[:]),
+}
+
+type cleanableMetric interface {
+	DeleteLabelValues(...string) bool
+}
 
 type Metrics struct {
 	ctx context.Context
@@ -262,7 +271,7 @@ func updateCertificateReadyStatus(crt *v1alpha1.Certificate, current v1alpha1.Co
 	defer registeredCertificates.mtx.Unlock()
 	for _, condition := range readyConditionStatuses {
 		value := 0.0
-		if current == condition {
+		if string(current) == condition {
 			value = 1.0
 		}
 		CertificateReadyStatus.With(prometheus.Labels{
@@ -332,6 +341,20 @@ func cleanUpCertificates(activeCrts []*v1alpha1.Certificate) {
 	}
 }
 
+func metricCleanUpCertificate(c cleanableMetric) func(string, string) {
+	return func(name, namespace string) {
+		c.DeleteLabelValues(name, namespace)
+	}
+}
+
+func metricCleanUpCertificateWith(c cleanableMetric, additionalLabels []string) func(string, string) {
+	return func(name, namespace string) {
+		for _, label := range additionalLabels {
+			c.DeleteLabelValues(name, namespace, label)
+		}
+	}
+}
+
 // cleanUpCertificateByKey removes metrics which refer to a certificate,
 // given the key of the certificate.
 func cleanUpCertificateByKey(key string) {
@@ -340,18 +363,10 @@ func cleanUpCertificateByKey(key string) {
 		return
 	}
 
-	CertificateExpiryTimeSeconds.Delete(prometheus.Labels{
-		"name":      name,
-		"namespace": namespace,
-	})
-
-	for _, condition := range readyConditionStatuses {
-		CertificateReadyStatus.Delete(prometheus.Labels{
-			"name":      name,
-			"namespace": namespace,
-			"condition": string(condition),
-		})
+	for _, f := range cleanUpFunctions {
+		f(name, namespace)
 	}
+
 	delete(registeredCertificates.certificates, key)
 }
 
