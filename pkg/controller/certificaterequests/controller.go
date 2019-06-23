@@ -18,12 +18,9 @@ package certificaterequests
 
 import (
 	"context"
-	"fmt"
 	"sync"
-	"time"
 
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
 	"k8s.io/utils/clock"
@@ -39,11 +36,10 @@ const (
 	ControllerName = "certificaterequests"
 )
 
-type Controller struct {
-	// the controllers root context, containing a controller scoped logger
-	ctx context.Context
+var keyFunc = controllerpkg.KeyFunc
 
-	*controllerpkg.Context
+type Controller struct {
+	*controllerpkg.BaseController
 
 	helper        issuer.Helper
 	issuerFactory issuer.IssuerFactory
@@ -67,99 +63,34 @@ type Controller struct {
 // New returns a new CertificateRequests controller. It sets up the informer
 // handler functions for all the types it watches.
 func New(ctx *controllerpkg.Context) *Controller {
-	ctrl := &Controller{Context: ctx}
-	ctrl.syncHandler = ctrl.processNextWorkItem
-	ctrl.queue = workqueue.NewNamedRateLimitingQueue(controllerpkg.DefaultItemBasedRateLimiter(), "certificaterequests")
+	ctrl := &Controller{}
+	bctrl := controllerpkg.New(ctx, ControllerName, ctrl.processNextWorkItem)
 
-	certificateRequestInformer := ctrl.SharedInformerFactory.Certmanager().V1alpha1().CertificateRequests()
-	certificateRequestInformer.Informer().AddEventHandler(&controllerpkg.QueuingEventHandler{Queue: ctrl.queue})
+	certificateRequestInformer := ctx.SharedInformerFactory.Certmanager().V1alpha1().CertificateRequests()
+	bctrl.AddQueuing(controllerpkg.DefaultItemBasedRateLimiter(), "certificaterequests", certificateRequestInformer.Informer())
 	ctrl.certificateRequestLister = certificateRequestInformer.Lister()
-	ctrl.syncedFuncs = append(ctrl.syncedFuncs, certificateRequestInformer.Informer().HasSynced)
 
-	issuerInformer := ctrl.SharedInformerFactory.Certmanager().V1alpha1().Issuers()
-	issuerInformer.Informer().AddEventHandler(&controllerpkg.BlockingEventHandler{WorkFunc: ctrl.handleGenericIssuer})
+	issuerInformer := ctx.SharedInformerFactory.Certmanager().V1alpha1().Issuers()
+	bctrl.AddHandled(issuerInformer.Informer(), &controllerpkg.BlockingEventHandler{WorkFunc: ctrl.handleGenericIssuer})
 	ctrl.issuerLister = issuerInformer.Lister()
-	ctrl.syncedFuncs = append(ctrl.syncedFuncs, issuerInformer.Informer().HasSynced)
 
 	// if scoped to a single namespace
 	if ctx.Namespace == "" {
-		clusterIssuerInformer := ctrl.SharedInformerFactory.Certmanager().V1alpha1().ClusterIssuers()
-		clusterIssuerInformer.Informer().AddEventHandler(&controllerpkg.BlockingEventHandler{WorkFunc: ctrl.handleGenericIssuer})
+		clusterIssuerInformer := ctx.SharedInformerFactory.Certmanager().V1alpha1().ClusterIssuers()
+		bctrl.AddHandled(clusterIssuerInformer.Informer(), &controllerpkg.BlockingEventHandler{WorkFunc: ctrl.handleGenericIssuer})
 		ctrl.clusterIssuerLister = clusterIssuerInformer.Lister()
-		ctrl.syncedFuncs = append(ctrl.syncedFuncs, clusterIssuerInformer.Informer().HasSynced)
 	}
 
-	ordersInformer := ctrl.SharedInformerFactory.Certmanager().V1alpha1().Orders()
-	ordersInformer.Informer().AddEventHandler(&controllerpkg.BlockingEventHandler{WorkFunc: ctrl.handleOwnedResource})
-	ctrl.syncedFuncs = append(ctrl.syncedFuncs, ordersInformer.Informer().HasSynced)
-
+	ctrl.BaseController = bctrl
 	ctrl.helper = issuer.NewHelper(ctrl.issuerLister, ctrl.clusterIssuerLister)
 	ctrl.metrics = metrics.Default
+	// TODO: set up metrics
+	//ctrl.metrics.SetActiveCertificateRequestss(ctrl.certificateLister)
 	ctrl.helper = issuer.NewHelper(ctrl.issuerLister, ctrl.clusterIssuerLister)
 	ctrl.issuerFactory = issuer.NewIssuerFactory(ctx)
 	ctrl.clock = clock.RealClock{}
-	ctrl.ctx = logf.NewContext(ctx.RootContext, nil, ControllerName)
 
 	return ctrl
-}
-
-func (c *Controller) Run(workers int, stopCh <-chan struct{}) error {
-	ctx, cancel := context.WithCancel(c.ctx)
-	defer cancel()
-	log := logf.FromContext(ctx)
-
-	log.Info("starting control loop")
-	// wait for all the informer caches we depend to sync
-	if !cache.WaitForCacheSync(stopCh, c.syncedFuncs...) {
-		return fmt.Errorf("error waiting for informer caches to sync")
-	}
-
-	log.Info("synced all caches for control loop")
-
-	for i := 0; i < workers; i++ {
-		c.workerWg.Add(1)
-		// TODO (@munnerz): make time.Second duration configurable
-		go wait.Until(func() { c.worker(ctx) }, time.Second, stopCh)
-	}
-	<-stopCh
-	log.V(logf.DebugLevel).Info("shutting down queue as workqueue signaled shutdown")
-	c.queue.ShutDown()
-	log.V(logf.DebugLevel).Info("waiting for workers to exit...")
-	c.workerWg.Wait()
-	log.V(logf.DebugLevel).Info("workers exited")
-	return nil
-}
-
-func (c *Controller) worker(ctx context.Context) {
-	log := logf.FromContext(ctx)
-	defer c.workerWg.Done()
-	log.V(logf.DebugLevel).Info("starting worker")
-	for {
-		obj, shutdown := c.queue.Get()
-		if shutdown {
-			break
-		}
-
-		var key string
-		// use an inlined function so we can use defer
-		func() {
-			defer c.queue.Done(obj)
-			var ok bool
-			if key, ok = obj.(string); !ok {
-				return
-			}
-			log := log.WithValues("key", key)
-			log.Info("syncing resource")
-			if err := c.syncHandler(ctx, key); err != nil {
-				log.Error(err, "re-queuing item  due to error processing")
-				c.queue.AddRateLimited(obj)
-				return
-			}
-			log.Info("finished processing work item")
-			c.queue.Forget(obj)
-		}()
-	}
-	log.V(logf.DebugLevel).Info("exiting worker loop")
 }
 
 func (c *Controller) processNextWorkItem(ctx context.Context, key string) error {
@@ -170,7 +101,7 @@ func (c *Controller) processNextWorkItem(ctx context.Context, key string) error 
 		return nil
 	}
 
-	crt, err := c.certificateRequestLister.CertificateRequests(namespace).Get(name)
+	cr, err := c.certificateRequestLister.CertificateRequests(namespace).Get(name)
 	if err != nil {
 		if k8sErrors.IsNotFound(err) {
 			log.Error(err, "certificate request in work queue no longer exists")
@@ -180,8 +111,8 @@ func (c *Controller) processNextWorkItem(ctx context.Context, key string) error 
 		return err
 	}
 
-	ctx = logf.NewContext(ctx, logf.WithResource(log, crt))
-	return c.Sync(ctx, crt)
+	ctx = logf.NewContext(ctx, logf.WithResource(log, cr))
+	return c.Sync(ctx, cr)
 }
 
 func init() {
