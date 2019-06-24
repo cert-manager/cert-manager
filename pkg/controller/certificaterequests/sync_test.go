@@ -179,6 +179,9 @@ func TestSync(t *testing.T) {
 	exampleSignedNotMatchCR := exampleSignedCR.DeepCopy()
 	exampleSignedNotMatchCR.Spec.CSRPEM = csr2
 
+	exampleGarbageCertCR := exampleSignedCR.DeepCopy()
+	exampleGarbageCertCR.Status.Certificate = []byte("not a certificate")
+
 	// TODO: create validation to catch this case
 	exampleCRDoesNotMatch := gen.CertificateRequestFrom(exampleSignedNotMatchCR,
 		gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
@@ -302,6 +305,28 @@ func TestSync(t *testing.T) {
 			CheckFn: func(t *testing.T, s *controllerFixture, args ...interface{}) {
 			},
 			Err: false,
+		},
+		"fail if bytes contains no certificate but len > 0": {
+			Issuer: gen.Issuer("test",
+				gen.AddIssuerCondition(cmapi.IssuerCondition{
+					Type:   cmapi.IssuerConditionReady,
+					Status: cmapi.ConditionTrue,
+				}),
+				gen.SetIssuerSelfSigned(cmapi.SelfSignedIssuer{}),
+			),
+			CertificateRequest: *exampleGarbageCertCR,
+			IssuerImpl: &fake.Issuer{
+				FakeSign: func(context.Context, *cmapi.CertificateRequest) (*issuer.IssueResponse, error) {
+					return nil, errors.New("unexpected sign call")
+				},
+			},
+			Builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{gen.CertificateRequest("test")},
+				ExpectedActions:    []testpkg.Action{},
+			},
+			CheckFn: func(t *testing.T, s *controllerFixture, args ...interface{}) {
+			},
+			Err: true,
 		},
 	}
 
