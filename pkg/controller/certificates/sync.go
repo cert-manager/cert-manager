@@ -71,7 +71,7 @@ var (
 	certificateGvk = v1alpha1.SchemeGroupVersion.WithKind("Certificate")
 )
 
-func (c *Controller) Sync(ctx context.Context, crt *v1alpha1.Certificate) (err error) {
+func (c *controller) Sync(ctx context.Context, crt *v1alpha1.Certificate) (err error) {
 	c.metrics.IncrementSyncCallCount(ControllerName)
 
 	log := logf.FromContext(ctx)
@@ -105,7 +105,7 @@ func (c *Controller) Sync(ctx context.Context, crt *v1alpha1.Certificate) (err e
 
 	el := validation.ValidateCertificate(crtCopy)
 	if len(el) > 0 {
-		c.Recorder.Eventf(crtCopy, corev1.EventTypeWarning, "BadConfig", "Resource validation failed: %v", el.ToAggregate())
+		c.recorder.Eventf(crtCopy, corev1.EventTypeWarning, "BadConfig", "Resource validation failed: %v", el.ToAggregate())
 		return nil
 	}
 
@@ -123,10 +123,10 @@ func (c *Controller) Sync(ctx context.Context, crt *v1alpha1.Certificate) (err e
 		}
 	}
 	if duplicate != nil {
-		c.Recorder.Eventf(crtCopy, corev1.EventTypeWarning, errorDuplicateSecretName, "Another Certificate %v already specifies spec.secretName %v, please update the secretName on either Certificate", duplicate.Name, crtCopy.Spec.SecretName)
+		c.recorder.Eventf(crtCopy, corev1.EventTypeWarning, errorDuplicateSecretName, "Another Certificate %v already specifies spec.secretName %v, please update the secretName on either Certificate", duplicate.Name, crtCopy.Spec.SecretName)
 		key, err := cache.MetaNamespaceKeyFunc(crtCopy)
 		if err != nil {
-			c.Recorder.Eventf(crtCopy, corev1.EventTypeWarning, "KeyError", "Failed to create a key for the Certificate: %v", err)
+			c.recorder.Eventf(crtCopy, corev1.EventTypeWarning, "KeyError", "Failed to create a key for the Certificate: %v", err)
 			return nil
 		}
 		c.scheduledWorkQueue.Forget(key)
@@ -137,7 +137,7 @@ func (c *Controller) Sync(ctx context.Context, crt *v1alpha1.Certificate) (err e
 	// step zero: check if the referenced issuer exists and is ready
 	issuerObj, err := c.helper.GetGenericIssuer(crtCopy.Spec.IssuerRef, crtCopy.Namespace)
 	if k8sErrors.IsNotFound(err) {
-		c.Recorder.Eventf(crtCopy, corev1.EventTypeWarning, errorIssuerNotFound, err.Error())
+		c.recorder.Eventf(crtCopy, corev1.EventTypeWarning, errorIssuerNotFound, err.Error())
 		return nil
 	}
 	if err != nil {
@@ -147,7 +147,7 @@ func (c *Controller) Sync(ctx context.Context, crt *v1alpha1.Certificate) (err e
 
 	el = validation.ValidateCertificateForIssuer(crtCopy, issuerObj)
 	if len(el) > 0 {
-		c.Recorder.Eventf(crtCopy, corev1.EventTypeWarning, "BadConfig", "Resource validation failed: %v", el.ToAggregate())
+		c.recorder.Eventf(crtCopy, corev1.EventTypeWarning, "BadConfig", "Resource validation failed: %v", el.ToAggregate())
 		return nil
 	}
 
@@ -158,13 +158,13 @@ func (c *Controller) Sync(ctx context.Context, crt *v1alpha1.Certificate) (err e
 		Status: v1alpha1.ConditionTrue,
 	})
 	if !issuerReady {
-		c.Recorder.Eventf(crtCopy, corev1.EventTypeWarning, errorIssuerNotReady, "Issuer %s not ready", issuerObj.GetObjectMeta().Name)
+		c.recorder.Eventf(crtCopy, corev1.EventTypeWarning, errorIssuerNotReady, "Issuer %s not ready", issuerObj.GetObjectMeta().Name)
 		return nil
 	}
 
 	i, err := c.issuerFactory.IssuerFor(issuerObj)
 	if err != nil {
-		c.Recorder.Eventf(crtCopy, corev1.EventTypeWarning, errorIssuerInit, "Internal error initialising issuer: %v", err)
+		c.recorder.Eventf(crtCopy, corev1.EventTypeWarning, errorIssuerInit, "Internal error initialising issuer: %v", err)
 		return nil
 	}
 
@@ -186,7 +186,7 @@ func (c *Controller) Sync(ctx context.Context, crt *v1alpha1.Certificate) (err e
 	}
 
 	// check if the certificate needs renewal
-	needsRenew := c.Context.IssuerOptions.CertificateNeedsRenew(cert, crt)
+	needsRenew := c.certificateNeedsRenew(cert, crt)
 	if needsRenew {
 		dbg.Info("invoking issue function due to certificate needing renewal")
 		return c.issue(ctx, i, crtCopy)
@@ -203,7 +203,7 @@ func (c *Controller) Sync(ctx context.Context, crt *v1alpha1.Certificate) (err e
 
 // setCertificateStatus will update the status subresource of the certificate.
 // It will not actually submit the resource to the apiserver.
-func (c *Controller) setCertificateStatus(crt *v1alpha1.Certificate, key crypto.Signer, cert *x509.Certificate) {
+func (c *controller) setCertificateStatus(crt *v1alpha1.Certificate, key crypto.Signer, cert *x509.Certificate) {
 	if key == nil || cert == nil {
 		apiutil.SetCertificateCondition(crt, v1alpha1.CertificateConditionReady, v1alpha1.ConditionFalse, "NotFound", "Certificate does not exist")
 		return
@@ -240,7 +240,7 @@ func (c *Controller) setCertificateStatus(crt *v1alpha1.Certificate, key crypto.
 	return
 }
 
-func (c *Controller) certificateMatchesSpec(crt *v1alpha1.Certificate, key crypto.Signer, cert *x509.Certificate) (bool, []string) {
+func (c *controller) certificateMatchesSpec(crt *v1alpha1.Certificate, key crypto.Signer, cert *x509.Certificate) (bool, []string) {
 	var errs []string
 
 	// TODO: add checks for KeySize, KeyAlgorithm fields
@@ -290,7 +290,7 @@ func (c *Controller) certificateMatchesSpec(crt *v1alpha1.Certificate, key crypt
 	return len(errs) == 0, errs
 }
 
-func (c *Controller) scheduleRenewal(ctx context.Context, crt *v1alpha1.Certificate) {
+func (c *controller) scheduleRenewal(ctx context.Context, crt *v1alpha1.Certificate) {
 	log := logf.FromContext(ctx)
 	log = log.WithValues(
 		logf.RelatedResourceNameKey, crt.Spec.SecretName,
@@ -312,7 +312,7 @@ func (c *Controller) scheduleRenewal(ctx context.Context, crt *v1alpha1.Certific
 		return
 	}
 
-	renewIn := c.Context.IssuerOptions.CalculateDurationUntilRenew(cert, crt)
+	renewIn := c.calculateDurationUntilRenew(cert, crt)
 	c.scheduledWorkQueue.Add(key, renewIn)
 
 	log.WithValues("duration_until_renewal", renewIn.String()).Info("certificate scheduled for renewal")
@@ -344,7 +344,7 @@ func ownerRef(crt *v1alpha1.Certificate) metav1.OwnerReference {
 // - If the provided certificate is a temporary certificate and the certificate
 //   stored in the secret is already a temporary certificate, then the Secret
 //   **will not** be updated.
-func (c *Controller) updateSecret(ctx context.Context, crt *v1alpha1.Certificate, namespace string, cert, key, ca []byte) (*corev1.Secret, error) {
+func (c *controller) updateSecret(ctx context.Context, crt *v1alpha1.Certificate, namespace string, cert, key, ca []byte) (*corev1.Secret, error) {
 	log := logf.FromContext(ctx, "updateSecret")
 	log = logf.WithRelatedResourceName(log, crt.Spec.SecretName, namespace, "Secret")
 
@@ -429,7 +429,7 @@ func (c *Controller) updateSecret(ctx context.Context, crt *v1alpha1.Certificate
 			return nil, fmt.Errorf("invalid certificate data: %v", err)
 		}
 
-		c.Recorder.Event(crt, corev1.EventTypeNormal, "GenerateSelfSigned", "Generated temporary self signed certificate")
+		c.recorder.Event(crt, corev1.EventTypeNormal, "GenerateSelfSigned", "Generated temporary self signed certificate")
 	}
 
 	// TODO: move metadata setting out of this method, and support
@@ -451,13 +451,12 @@ func (c *Controller) updateSecret(ctx context.Context, crt *v1alpha1.Certificate
 
 	// if it is a new resource
 	if secret.SelfLink == "" {
-		enableOwner := c.CertificateOptions.EnableOwnerRef
-		if enableOwner {
+		if c.addOwnerReferences {
 			secret.SetOwnerReferences(append(secret.GetOwnerReferences(), ownerRef(crt)))
 		}
-		secret, err = c.Client.CoreV1().Secrets(namespace).Create(secret)
+		secret, err = c.kClient.CoreV1().Secrets(namespace).Create(secret)
 	} else {
-		secret, err = c.Client.CoreV1().Secrets(namespace).Update(secret)
+		secret, err = c.kClient.CoreV1().Secrets(namespace).Update(secret)
 	}
 	if err != nil {
 		return nil, err
@@ -467,7 +466,7 @@ func (c *Controller) updateSecret(ctx context.Context, crt *v1alpha1.Certificate
 
 // return an error on failure. If retrieval is succesful, the certificate data
 // and private key will be stored in the named secret
-func (c *Controller) issue(ctx context.Context, issuer issuer.Interface, crt *v1alpha1.Certificate) error {
+func (c *controller) issue(ctx context.Context, issuer issuer.Interface, crt *v1alpha1.Certificate) error {
 	log := logf.FromContext(ctx)
 
 	resp, err := issuer.Issue(ctx, crt)
@@ -483,12 +482,12 @@ func (c *Controller) issue(ctx context.Context, issuer issuer.Interface, crt *v1
 	if _, err := c.updateSecret(ctx, crt, crt.Namespace, resp.Certificate, resp.PrivateKey, resp.CA); err != nil {
 		s := messageErrorSavingCertificate + err.Error()
 		log.Error(err, "error saving certificate")
-		c.Recorder.Event(crt, corev1.EventTypeWarning, errorSavingCertificate, s)
+		c.recorder.Event(crt, corev1.EventTypeWarning, errorSavingCertificate, s)
 		return err
 	}
 
 	if len(resp.Certificate) > 0 {
-		c.Recorder.Event(crt, corev1.EventTypeNormal, successCertificateIssued, "Certificate issued successfully")
+		c.recorder.Event(crt, corev1.EventTypeNormal, successCertificateIssued, "Certificate issued successfully")
 		// as we have just written a certificate, we should schedule it for renewal
 		c.scheduleRenewal(ctx, crt)
 	}
@@ -572,7 +571,7 @@ func generateLocallySignedTemporaryCertificate(crt *v1alpha1.Certificate, pk []b
 	return b, nil
 }
 
-func (c *Controller) updateCertificateStatus(ctx context.Context, old, new *v1alpha1.Certificate) (*v1alpha1.Certificate, error) {
+func (c *controller) updateCertificateStatus(ctx context.Context, old, new *v1alpha1.Certificate) (*v1alpha1.Certificate, error) {
 	log := logf.FromContext(ctx, "updateStatus")
 	oldBytes, _ := json.Marshal(old.Status)
 	newBytes, _ := json.Marshal(new.Status)
@@ -583,5 +582,5 @@ func (c *Controller) updateCertificateStatus(ctx context.Context, old, new *v1al
 	// TODO: replace Update call with UpdateStatus. This requires a custom API
 	// server with the /status subresource enabled and/or subresource support
 	// for CRDs (https://github.com/kubernetes/kubernetes/issues/38113)
-	return c.CMClient.CertmanagerV1alpha1().Certificates(new.Namespace).Update(new)
+	return c.cmClient.CertmanagerV1alpha1().Certificates(new.Namespace).Update(new)
 }
