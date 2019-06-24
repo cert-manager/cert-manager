@@ -75,14 +75,14 @@ type controller struct {
 	// a certificate currently requires renewal.
 	// This is a field on the controller struct to avoid having to maintain a reference
 	// to the controller context, and to make it easier to fake out this call during tests.
-	certificateNeedsRenew func(cert *x509.Certificate, crt *v1alpha1.Certificate) bool
+	certificateNeedsRenew func(ctx context.Context, cert *x509.Certificate, crt *v1alpha1.Certificate) bool
 
 	// calculateDurationUntilRenew returns the amount of time before the controller should
 	// begin attempting to renew the certificate, given the provided existing certificate
 	// and certificate spec.
 	// This is a field on the controller struct to avoid having to maintain a reference
 	// to the controller context, and to make it easier to fake out this call during tests.
-	calculateDurationUntilRenew func(cert *x509.Certificate, crt *v1alpha1.Certificate) time.Duration
+	calculateDurationUntilRenew func(ctx context.Context, cert *x509.Certificate, crt *v1alpha1.Certificate) time.Duration
 
 	// if addOwnerReferences is enabled then the controller will add owner references
 	// to the secret resources it creates
