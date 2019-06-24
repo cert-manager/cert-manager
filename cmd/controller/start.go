@@ -35,6 +35,7 @@ import (
 	_ "github.com/jetstack/cert-manager/pkg/issuer/acme"
 	_ "github.com/jetstack/cert-manager/pkg/issuer/ca"
 	_ "github.com/jetstack/cert-manager/pkg/issuer/selfsigned"
+	_ "github.com/jetstack/cert-manager/pkg/issuer/step"
 	_ "github.com/jetstack/cert-manager/pkg/issuer/vault"
 	_ "github.com/jetstack/cert-manager/pkg/issuer/venafi"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
