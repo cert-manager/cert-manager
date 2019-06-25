@@ -40,17 +40,8 @@ func (s *labelSelector) Matches(meta metav1.ObjectMeta, dnsName string) (bool, i
 	hasAllLabels := true
 	matches := 0
 	for k, v := range s.requiredLabels {
-		hasLabel := false
-		for metaK, metaV := range meta.Labels {
-			if metaK != k {
-				continue
-			}
-			if metaV == v {
-				hasLabel = true
-			}
-			break
-		}
-		if !hasLabel {
+		actualV, hasLabel := meta.Labels[k]
+		if !hasLabel || v != actualV {
 			hasAllLabels = false
 			break
 		}
