@@ -132,6 +132,8 @@ currently supported Issuer types are:
 +------------------------------------------------------+----------------------------------------------------------------------+
 | :doc:`Venafi </tasks/issuers/setup-venafi>`          | Supports issuing certificates from Venafi Cloud & TPP                |
 +------------------------------------------------------+----------------------------------------------------------------------+
+| :doc:`Step </tasks/issuers/setup-step>`              | Supports issuing certificates using Smallstep Step Certificates.     |
++------------------------------------------------------+----------------------------------------------------------------------+
 
 Each Issuer resource is of one, and only one type. The type of an Issuer is
 inferred by which field it specifies in its spec, such as ``spec.acme``

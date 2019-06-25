@@ -43,6 +43,8 @@ types you require:
   configured with the `Vault PKI backend`_.
 * :doc:`Venafi <./setup-venafi>` - issue certificates from a Venafi_ Cloud
   or Trust Protection Platform instance.
+* :doc:`Step <./setup-step>` - issue certificates from a Step Certificates
+  instance.
 
 Additional information
 ======================
@@ -77,6 +79,7 @@ Certificate resources.
    setup-selfsigned
    setup-vault
    setup-venafi
+   setup-step
 
 .. _`Let's Encrypt`: https://letsencrypt.org
 .. _`Vault PKI backend`: https://www.vaultproject.io/docs/secrets/pki/index.html
