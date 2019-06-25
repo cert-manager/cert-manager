@@ -54,7 +54,7 @@ func (s *Step) Issue(ctx context.Context, crt *certmanager.Certificate) (*issuer
 	}
 
 	// If expired force sign flow
-	if crt.Status.NotAfter != nil && crt.Status.NotAfter.Time.After(time.Now()) {
+	if crt.Status.NotAfter != nil && crt.Status.NotAfter.Time.Before(time.Now()) {
 		signFlow = true
 	}
 
