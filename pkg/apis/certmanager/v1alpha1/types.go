@@ -59,10 +59,11 @@ type ObjectReference struct {
 }
 
 const (
-	ClusterIssuerKind = "ClusterIssuer"
-	IssuerKind        = "Issuer"
-	CertificateKind   = "Certificate"
-	OrderKind         = "Order"
+	ClusterIssuerKind      = "ClusterIssuer"
+	IssuerKind             = "Issuer"
+	CertificateKind        = "Certificate"
+	CertificateRequestKind = "CertificateRequest"
+	OrderKind              = "Order"
 )
 
 type SecretKeySelector struct {

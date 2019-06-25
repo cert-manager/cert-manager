@@ -26,6 +26,14 @@ type CertificateListerExpansion interface{}
 // CertificateNamespaceLister.
 type CertificateNamespaceListerExpansion interface{}
 
+// CertificateRequestListerExpansion allows custom methods to be added to
+// CertificateRequestLister.
+type CertificateRequestListerExpansion interface{}
+
+// CertificateRequestNamespaceListerExpansion allows custom methods to be added to
+// CertificateRequestNamespaceLister.
+type CertificateRequestNamespaceListerExpansion interface{}
+
 // ChallengeListerExpansion allows custom methods to be added to
 // ChallengeLister.
 type ChallengeListerExpansion interface{}
