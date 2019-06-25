@@ -338,7 +338,7 @@ func TestSync(t *testing.T) {
 			test.Clock = fixedClock
 			test.Setup(t)
 			crCopy := test.CertificateRequest.DeepCopy()
-			err := test.Controller.Sync(test.Ctx, crCopy)
+			err := test.controller.Sync(test.Ctx, crCopy)
 			if err != nil && !test.Err {
 				t.Errorf("Expected function to not error, but got: %v", err)
 			}

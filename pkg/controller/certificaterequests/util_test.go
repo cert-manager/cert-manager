@@ -31,7 +31,7 @@ import (
 )
 
 type controllerFixture struct {
-	Controller *Controller
+	controller *controller
 	*test.Builder
 
 	Issuer             v1alpha1.GenericIssuer
@@ -61,7 +61,7 @@ func (f *controllerFixture) Setup(t *testing.T) {
 		//		ambient credentials settings
 		f.Builder = &test.Builder{}
 	}
-	f.Controller = f.buildFakeController(f.Builder, f.Issuer)
+	f.controller = f.buildFakeController(f.Builder, f.Issuer)
 	if f.PreFn != nil {
 		f.PreFn(t, f)
 		f.Builder.Sync()
@@ -69,7 +69,7 @@ func (f *controllerFixture) Setup(t *testing.T) {
 
 	// Fix the clock used in apiutil so that calls to set status conditions
 	// can be predictably tested
-	apiutil.Clock = f.Controller.clock
+	apiutil.Clock = f.controller.clock
 }
 
 func (f *controllerFixture) Finish(t *testing.T, args ...interface{}) {
@@ -92,9 +92,10 @@ func (f *controllerFixture) Finish(t *testing.T, args ...interface{}) {
 	apiutil.Clock = realclock.RealClock{}
 }
 
-func (f *controllerFixture) buildFakeController(b *test.Builder, issuer v1alpha1.GenericIssuer) *Controller {
+func (f *controllerFixture) buildFakeController(b *test.Builder, issuer v1alpha1.GenericIssuer) *controller {
 	b.Start()
-	c := New(b.Context)
+	c := &controller{}
+	c.Register(b.Context)
 	c.helper = f
 	c.issuerFactory = f
 	c.clock = f.Clock

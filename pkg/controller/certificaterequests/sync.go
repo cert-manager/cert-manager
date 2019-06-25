@@ -60,7 +60,7 @@ var (
 	certificateRequestGvk = v1alpha1.SchemeGroupVersion.WithKind("CertificateRequest")
 )
 
-func (c *Controller) Sync(ctx context.Context, cr *v1alpha1.CertificateRequest) (err error) {
+func (c *controller) Sync(ctx context.Context, cr *v1alpha1.CertificateRequest) (err error) {
 	c.metrics.IncrementSyncCallCount(ControllerName)
 
 	log := logf.FromContext(ctx)
@@ -86,14 +86,14 @@ func (c *Controller) Sync(ctx context.Context, cr *v1alpha1.CertificateRequest) 
 
 	el := validation.ValidateCertificateRequest(crCopy)
 	if len(el) > 0 {
-		c.Recorder.Eventf(crCopy, corev1.EventTypeWarning, "BadConfig", "Resource validation failed: %v", el.ToAggregate())
+		c.recorder.Eventf(crCopy, corev1.EventTypeWarning, "BadConfig", "Resource validation failed: %v", el.ToAggregate())
 		return nil
 	}
 
 	// step zero: check if the referenced issuer exists and is ready
 	issuerObj, err := c.helper.GetGenericIssuer(crCopy.Spec.IssuerRef, crCopy.Namespace)
 	if k8sErrors.IsNotFound(err) {
-		c.Recorder.Eventf(crCopy, corev1.EventTypeWarning, errorIssuerNotFound, err.Error())
+		c.recorder.Eventf(crCopy, corev1.EventTypeWarning, errorIssuerNotFound, err.Error())
 		return nil
 	}
 	if err != nil {
@@ -106,19 +106,19 @@ func (c *Controller) Sync(ctx context.Context, cr *v1alpha1.CertificateRequest) 
 		Status: v1alpha1.ConditionTrue,
 	})
 	if !issuerReady {
-		c.Recorder.Eventf(crCopy, corev1.EventTypeWarning, errorIssuerNotReady, "Issuer %s not ready", issuerObj.GetObjectMeta().Name)
+		c.recorder.Eventf(crCopy, corev1.EventTypeWarning, errorIssuerNotReady, "Issuer %s not ready", issuerObj.GetObjectMeta().Name)
 		return nil
 	}
 
 	i, err := c.issuerFactory.IssuerFor(issuerObj)
 	if err != nil {
-		c.Recorder.Eventf(crCopy, corev1.EventTypeWarning, errorIssuerInit, "Internal error initialising issuer: %v", err)
+		c.recorder.Eventf(crCopy, corev1.EventTypeWarning, errorIssuerInit, "Internal error initialising issuer: %v", err)
 		return nil
 	}
 
 	el = validation.ValidateCertificateRequestForIssuer(crCopy, issuerObj)
 	if len(el) > 0 {
-		c.Recorder.Eventf(crCopy, corev1.EventTypeWarning, "BadConfig", "Resource validation failed: %v", el.ToAggregate())
+		c.recorder.Eventf(crCopy, corev1.EventTypeWarning, "BadConfig", "Resource validation failed: %v", el.ToAggregate())
 		return nil
 	}
 
@@ -149,7 +149,7 @@ func (c *Controller) Sync(ctx context.Context, cr *v1alpha1.CertificateRequest) 
 
 // return an error on failure. If retrieval is succesful, the certificate data
 // will be stored in the certificate request status
-func (c *Controller) sign(ctx context.Context, issuer issuer.Interface,
+func (c *controller) sign(ctx context.Context, issuer issuer.Interface,
 	cr *v1alpha1.CertificateRequest, csr *x509.CertificateRequest) error {
 	log := logf.FromContext(ctx)
 
@@ -169,7 +169,7 @@ func (c *Controller) sign(ctx context.Context, issuer issuer.Interface,
 		cr.Status.Certificate = resp.Certificate
 		cr.Status.CA = resp.CA
 
-		c.Recorder.Event(cr, corev1.EventTypeNormal, successCertificateIssued, "Certificate issued successfully")
+		c.recorder.Event(cr, corev1.EventTypeNormal, successCertificateIssued, "Certificate issued successfully")
 	}
 
 	cert, err := pki.DecodeX509CertificateBytes(resp.Certificate)
@@ -185,7 +185,7 @@ func (c *Controller) sign(ctx context.Context, issuer issuer.Interface,
 // setCertificateRequestStatus will update the status subresource of the
 // certificate reques. It will not actually submit the resource to the
 // apiserver.
-func (c *Controller) setCertificateRequestStatus(cr *v1alpha1.CertificateRequest, csr *x509.CertificateRequest, cert *x509.Certificate) {
+func (c *controller) setCertificateRequestStatus(cr *v1alpha1.CertificateRequest, csr *x509.CertificateRequest, cert *x509.Certificate) {
 	if cert == nil {
 		apiutil.SetCertificateRequestCondition(cr, v1alpha1.CertificateRequestConditionReady, v1alpha1.ConditionFalse, "NotExists", "Certificate does not exist")
 		return
@@ -212,7 +212,7 @@ func (c *Controller) setCertificateRequestStatus(cr *v1alpha1.CertificateRequest
 	return
 }
 
-func (c *Controller) certificateMatchesSpec(cr *v1alpha1.CertificateRequest, csr *x509.CertificateRequest, cert *x509.Certificate) (bool, []string) {
+func (c *controller) certificateMatchesSpec(cr *v1alpha1.CertificateRequest, csr *x509.CertificateRequest, cert *x509.Certificate) (bool, []string) {
 	var errs []string
 
 	if err := csr.CheckSignature(); err != nil {
@@ -224,7 +224,7 @@ func (c *Controller) certificateMatchesSpec(cr *v1alpha1.CertificateRequest, csr
 	return len(errs) == 0, errs
 }
 
-func (c *Controller) updateCertificateRequestStatus(ctx context.Context, old, new *v1alpha1.CertificateRequest) (*v1alpha1.CertificateRequest, error) {
+func (c *controller) updateCertificateRequestStatus(ctx context.Context, old, new *v1alpha1.CertificateRequest) (*v1alpha1.CertificateRequest, error) {
 	log := logf.FromContext(ctx, "updateStatus")
 	oldBytes, _ := json.Marshal(old.Status)
 	newBytes, _ := json.Marshal(new.Status)
@@ -235,5 +235,5 @@ func (c *Controller) updateCertificateRequestStatus(ctx context.Context, old, ne
 	// TODO: replace Update call with UpdateStatus. This requires a custom API
 	// server with the /status subresource enabled and/or subresource support
 	// for CRDs (https://github.com/kubernetes/kubernetes/issues/38113)
-	return c.CMClient.CertmanagerV1alpha1().CertificateRequests(new.Namespace).Update(new)
+	return c.cmClient.CertmanagerV1alpha1().CertificateRequests(new.Namespace).Update(new)
 }

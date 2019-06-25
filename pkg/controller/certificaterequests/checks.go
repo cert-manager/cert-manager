@@ -27,8 +27,8 @@ import (
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 )
 
-func (c *Controller) handleGenericIssuer(obj interface{}) {
-	log := logf.FromContext(c.BaseController.Ctx, "handleGenericIssuer")
+func (c *controller) handleGenericIssuer(obj interface{}) {
+	log := c.log.WithName("handleGenericIssuer")
 
 	iss, ok := obj.(cmapi.GenericIssuer)
 	if !ok {
@@ -49,12 +49,12 @@ func (c *Controller) handleGenericIssuer(obj interface{}) {
 			log.Error(err, "error computing key for resource")
 			continue
 		}
-		c.BaseController.Queue.Add(key)
+		c.queue.Add(key)
 	}
 }
 
-func (c *Controller) handleOwnedResource(obj interface{}) {
-	log := logf.FromContext(c.BaseController.Ctx, "handleOwnedResource")
+func (c *controller) handleOwnedResource(obj interface{}) {
+	log := c.log.WithName("handleOwnedResource")
 
 	metaobj, ok := obj.(metav1.Object)
 	if !ok {
@@ -93,12 +93,12 @@ func (c *Controller) handleOwnedResource(obj interface{}) {
 				log.Error(err, "error computing key for resource")
 				continue
 			}
-			c.BaseController.Queue.Add(objKey)
+			c.queue.Add(objKey)
 		}
 	}
 }
 
-func (c *Controller) certificatesRequestsForGenericIssuer(iss cmapi.GenericIssuer) ([]*cmapi.CertificateRequest, error) {
+func (c *controller) certificatesRequestsForGenericIssuer(iss cmapi.GenericIssuer) ([]*cmapi.CertificateRequest, error) {
 	crts, err := c.certificateRequestLister.List(labels.NewSelector())
 
 	if err != nil {
