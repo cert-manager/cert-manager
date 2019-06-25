@@ -6,6 +6,7 @@ go_library(
         "ca.go",
         "issue.go",
         "setup.go",
+        "sign.go",
     ],
     importpath = "github.com/jetstack/cert-manager/pkg/issuer/ca",
     visibility = ["//visibility:public"],
