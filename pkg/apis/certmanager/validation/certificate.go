@@ -49,14 +49,14 @@ func ValidateCertificateSpec(crt *v1alpha1.CertificateSpec, fldPath *field.Path)
 	}
 	if len(crt.CommonName) == 0 && len(crt.DNSNames) == 0 {
 		el = append(el, field.Required(fldPath.Child("dnsNames"), "at least one dnsName is required if commonName is not set"))
-	} else if crt.CommonName != "" {
-		// if we have a commonName, check it is below 64 bytes long
-		if len(crt.CommonName) > 63 {
-			el = append(el, field.TooLong(fldPath.Child("commonName"), crt.CommonName, 63))
-		}
-	} else if len(crt.DNSNames[0]) > 63 {
-		// if we do not have a commonName, check that the first dnsName (used
-		// as the commonName) is below 64 bytes long
+	}
+	// if a common name has been specified, ensure it is no longer than 63 chars
+	if len(crt.CommonName) > 63 {
+		el = append(el, field.TooLong(fldPath.Child("commonName"), crt.CommonName, 63))
+	}
+	// if the common name has *not* been specified, ensure the first dnsName is no longer than 63 chars
+	// as it will be used as the commonName
+	if crt.CommonName == "" && len(crt.DNSNames) > 0 && len(crt.DNSNames[0]) > 63 {
 		el = append(el, field.TooLong(fldPath.Child("dnsNames").Index(0), crt.DNSNames[0], 63))
 	}
 
