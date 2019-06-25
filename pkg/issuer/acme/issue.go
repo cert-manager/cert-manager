@@ -180,7 +180,7 @@ func (a *Acme) Issue(ctx context.Context, crt *v1alpha1.Certificate) (*issuer.Is
 	}
 
 	// TODO: replace with a call to a function that returns the whole chain
-	x509Certs, err := pki.DecodeX509CertificateBytes(existingOrder.Status.Certificate)
+	x509Cert, err := pki.DecodeX509CertificateBytes(existingOrder.Status.Certificate)
 	if err != nil {
 		log.Error(err, "error parsing existing x509 certificate on Order resource")
 		a.Recorder.Eventf(crt, corev1.EventTypeWarning, "ParseError", "Error decoding certificate issued by Order: %v", err)
@@ -190,15 +190,12 @@ func (a *Acme) Issue(ctx context.Context, crt *v1alpha1.Certificate) (*issuer.Is
 
 	a.Recorder.Eventf(crt, corev1.EventTypeNormal, "OrderComplete", "Order %q completed successfully", existingOrder.Name)
 
-	// x509Cert := x509Certs[0]
-	x509Cert := x509Certs
-
 	// we check if the certificate stored on the existing order resource is
 	// nearing expiry.
 	// If it is, we recreate the order so we can obtain a fresh certificate.
 	// If not, we return the existing order's certificate to save additional
 	// orders.
-	if a.Context.IssuerOptions.CertificateNeedsRenew(x509Cert, crt) {
+	if a.Context.IssuerOptions.CertificateNeedsRenew(ctx, x509Cert, crt) {
 		a.Recorder.Eventf(crt, corev1.EventTypeNormal, "OrderExpired", "Order %q contains a certificate nearing expiry. "+
 			"Creating new order...")
 		// existing order's certificate is near expiry

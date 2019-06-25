@@ -17,6 +17,7 @@ limitations under the License.
 package controller
 
 import (
+	"context"
 	"crypto/x509"
 	"testing"
 	"time"
@@ -107,7 +108,7 @@ func TestCalculateDurationUntilRenew(t *testing.T) {
 			},
 		}
 		x509Cert := &x509.Certificate{NotBefore: v.notBefore, NotAfter: v.notAfter}
-		duration := c.CalculateDurationUntilRenew(x509Cert, cert)
+		duration := c.CalculateDurationUntilRenew(context.Background(), x509Cert, cert)
 		if duration != v.expectedExpiry {
 			t.Errorf("test # %d - %s: got %v, expected %v", k, v.desc, duration, v.expectedExpiry)
 		}

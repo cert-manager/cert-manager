@@ -121,7 +121,7 @@ func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitin
 
 	c.helper = issuer.NewHelper(c.issuerLister, c.clusterIssuerLister)
 	c.acmeHelper = acme.NewHelper(c.secretLister, ctx.ClusterResourceNamespace)
-	c.scheduler = scheduler.New(c.challengeLister, ctx.SchedulerOptions.MaxConcurrentChallenges)
+	c.scheduler = scheduler.New(logf.NewContext(ctx.RootContext, c.log), c.challengeLister, ctx.SchedulerOptions.MaxConcurrentChallenges)
 	c.recorder = ctx.Recorder
 	c.cmClient = ctx.CMClient
 	c.httpSolver = http.NewSolver(ctx)

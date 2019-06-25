@@ -27,12 +27,12 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
-	utilerrors "k8s.io/apimachinery/pkg/util/errors"
-	"k8s.io/klog"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	"github.com/jetstack/cert-manager/pkg/logs"
 	"github.com/jetstack/cert-manager/pkg/metrics"
 	"github.com/jetstack/cert-manager/pkg/util"
+	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 )
 
 const (
@@ -62,15 +62,19 @@ const (
 var ingressGVK = extv1beta1.SchemeGroupVersion.WithKind("Ingress")
 
 func (c *controller) Sync(ctx context.Context, ing *extv1beta1.Ingress) error {
+	log := logs.WithResource(logs.FromContext(ctx), ing)
+	ctx = logs.NewContext(ctx, log)
+
 	metrics.Default.IncrementSyncCallCount(ControllerName)
 
 	if !shouldSync(ing, c.defaults.autoCertificateAnnotations) {
-		klog.Infof("Not syncing ingress %s/%s as it does not contain necessary annotations", ing.Namespace, ing.Name)
+		log.Info(fmt.Sprintf("not syncing ingress resource as it does not contain a %q or %q annotation", issuerNameAnnotation, clusterIssuerNameAnnotation))
 		return nil
 	}
 
 	issuerName, issuerKind := c.issuerForIngress(ing)
 	if issuerName == "" {
+		log.Info("failed to determine issuer to be used for ingress resource")
 		c.recorder.Eventf(ing, corev1.EventTypeWarning, "BadConfig", "Issuer name annotation is not set and a default issuer has not been configured")
 		return nil
 	}
@@ -97,7 +101,7 @@ func (c *controller) Sync(ctx context.Context, ing *extv1beta1.Ingress) error {
 		return nil
 	}
 
-	newCrts, updateCrts, err := c.buildCertificates(ing, issuer, issuerKind)
+	newCrts, updateCrts, err := c.buildCertificates(ctx, ing, issuer, issuerKind)
 	if err != nil {
 		return err
 	}
@@ -161,7 +165,9 @@ func (c *controller) validateIngress(ing *extv1beta1.Ingress) []error {
 	return errs
 }
 
-func (c *controller) buildCertificates(ing *extv1beta1.Ingress, issuer v1alpha1.GenericIssuer, issuerKind string) (new, update []*v1alpha1.Certificate, _ error) {
+func (c *controller) buildCertificates(ctx context.Context, ing *extv1beta1.Ingress, issuer v1alpha1.GenericIssuer, issuerKind string) (new, update []*v1alpha1.Certificate, _ error) {
+	log := logs.FromContext(ctx)
+
 	var newCrts []*v1alpha1.Certificate
 	var updateCrts []*v1alpha1.Certificate
 	for _, tls := range ing.Spec.TLS {
@@ -195,20 +201,21 @@ func (c *controller) buildCertificates(ing *extv1beta1.Ingress, issuer v1alpha1.
 		// check if a Certificate for this TLS entry already exists, and if it
 		// does then skip this entry
 		if existingCrt != nil {
-			klog.Infof("Certificate %q for ingress %q already exists", tls.SecretName, ing.Name)
+			log := logs.WithRelatedResource(log, existingCrt)
+			log.Info("certificate already exists for ingress resource, ensuring it is up to date")
 
 			if metav1.GetControllerOf(existingCrt) == nil {
-				klog.Infof("Certificate %q has no owners and cannot be updated for ingress %q", tls.SecretName, ing.Name)
+				log.Info("certificate resource has no owner. refusing to update non-owned certificate resource for ingress")
 				continue
 			}
 
 			if !metav1.IsControlledBy(existingCrt, ing) {
-				klog.Infof("Certificate %q is not (solely) owned by ingress %q and cannot be updated", tls.SecretName, ing.Name)
+				log.Info("certificate resource is not owned by this ingress. refusing to update non-owned certificate resource for ingress")
 				continue
 			}
 
 			if !certNeedsUpdate(existingCrt, crt) {
-				klog.Infof("Certificate %q for ingress %q is up to date", tls.SecretName, ing.Name)
+				log.Info("certificate resource is already up to date for ingress")
 				continue
 			}
 

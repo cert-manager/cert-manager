@@ -186,7 +186,7 @@ func (c *controller) Sync(ctx context.Context, crt *v1alpha1.Certificate) (err e
 	}
 
 	// check if the certificate needs renewal
-	needsRenew := c.certificateNeedsRenew(cert, crt)
+	needsRenew := c.certificateNeedsRenew(ctx, cert, crt)
 	if needsRenew {
 		dbg.Info("invoking issue function due to certificate needing renewal")
 		return c.issue(ctx, i, crtCopy)
@@ -312,7 +312,7 @@ func (c *controller) scheduleRenewal(ctx context.Context, crt *v1alpha1.Certific
 		return
 	}
 
-	renewIn := c.calculateDurationUntilRenew(cert, crt)
+	renewIn := c.calculateDurationUntilRenew(ctx, cert, crt)
 	c.scheduledWorkQueue.Add(key, renewIn)
 
 	log.WithValues("duration_until_renewal", renewIn.String()).Info("certificate scheduled for renewal")
