@@ -182,18 +182,6 @@ func TestSync(t *testing.T) {
 	exampleGarbageCertCR := exampleSignedCR.DeepCopy()
 	exampleGarbageCertCR.Status.Certificate = []byte("not a certificate")
 
-	// TODO: create validation to catch this case
-	exampleCRDoesNotMatch := gen.CertificateRequestFrom(exampleSignedNotMatchCR,
-		gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
-			Type:   cmapi.CertificateRequestConditionReady,
-			Status: cmapi.ConditionTrue,
-			//Reason:             "DoesNotMatch",
-			Reason:             "Ready",
-			Message:            "Certificate exists and is signed",
-			LastTransitionTime: &nowMetaTime,
-		}),
-	)
-
 	tests := map[string]controllerFixture{
 		"should update certificate request with NotExists if issuer does not return a response": {
 			Issuer: gen.Issuer("test",
@@ -273,34 +261,6 @@ func TestSync(t *testing.T) {
 			Builder: &testpkg.Builder{
 				CertManagerObjects: []runtime.Object{gen.CertificateRequest("test")},
 				ExpectedActions:    []testpkg.Action{}, // no update
-			},
-			CheckFn: func(t *testing.T, s *controllerFixture, args ...interface{}) {
-			},
-			Err: false,
-		},
-		"should update status that CSR and certificate do not match, but not sign new certificate": {
-			Issuer: gen.Issuer("test",
-				gen.AddIssuerCondition(cmapi.IssuerCondition{
-					Type:   cmapi.IssuerConditionReady,
-					Status: cmapi.ConditionTrue,
-				}),
-				gen.SetIssuerSelfSigned(cmapi.SelfSignedIssuer{}),
-			),
-			CertificateRequest: *exampleCRDoesNotMatch,
-			IssuerImpl: &fake.Issuer{
-				FakeSign: func(context.Context, *cmapi.CertificateRequest) (*issuer.IssueResponse, error) {
-					return nil, errors.New("unexpected sign call")
-				},
-			},
-			Builder: &testpkg.Builder{
-				CertManagerObjects: []runtime.Object{gen.CertificateRequest("test")},
-				ExpectedActions:    []testpkg.Action{
-					//testpkg.NewAction(coretesting.NewUpdateAction(
-					//	cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
-					//	gen.DefaultTestNamespace,
-					//	exampleCRDoesNotMatch,
-					//)),
-				},
 			},
 			CheckFn: func(t *testing.T, s *controllerFixture, args ...interface{}) {
 			},
