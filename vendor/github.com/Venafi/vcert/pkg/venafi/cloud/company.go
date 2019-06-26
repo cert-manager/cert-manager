@@ -32,24 +32,17 @@ type company struct {
 }
 
 type zone struct {
-	ID                               string              `json:"id,omitempty"`
-	CompanyID                        string              `json:"companyId,omitempty"`
-	Tag                              string              `json:"tag,omitempty"`
-	ZoneType                         string              `json:"zoneType,omitempty"`
-	CertificatePolicyIDs             certificatePolicyID `json:"certificatePolicyIds,omitempty"`
-	DefaultCertificateIdentityPolicy string              `json:"defaultCertificateIdentityPolicyId,omitempty"`
-	DefaultCertificateUsePolicy      string              `json:"defaultCertificateUsePolicyId,omitempty"`
-	SystemGenerated                  bool                `json:"systemGenerated,omitempty"`
-	CreationDateString               string              `json:"creationDate,omitempty"`
-	CreationDate                     time.Time           `json:"-"`
+	ID                           string    `json:"id,omitempty"`
+	CompanyID                    string    `json:"companyId,omitempty"`
+	Tag                          string    `json:"tag,omitempty"`
+	ZoneType                     string    `json:"zoneType,omitempty"`
+	SystemGenerated              bool      `json:"systemGenerated,omitempty"`
+	CreationDateString           string    `json:"creationDate,omitempty"`
+	CreationDate                 time.Time `json:"-"`
+	CertificateIssuingTemplateId string    `json:"certificateIssuingTemplateId"`
 }
 
-type certificatePolicyID struct {
-	CertificateIdentity []string `json:"CERTIFICATE_IDENTITY,omitempty"`
-	CertificateUse      []string `json:"CERTIFICATE_USE,omitempty"`
-}
-
-func (z *zone) getZoneConfiguration(ud *userDetails, policy *certificatePolicy) (zoneConfig *endpoint.ZoneConfiguration) {
+func (z *zone) getZoneConfiguration(ud *userDetails, policy *certificateTemplate) (zoneConfig *endpoint.ZoneConfiguration) {
 	zoneConfig = endpoint.NewZoneConfiguration()
 	if policy == nil {
 		return
