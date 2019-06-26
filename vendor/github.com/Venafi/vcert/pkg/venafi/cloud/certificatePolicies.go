@@ -23,41 +23,43 @@ import (
 	"time"
 )
 
-type certificatePolicy struct {
-	CertificatePolicyType certificatePolicyType `json:"certificatePolicyType,omitempty"`
-	ID                    string                `json:"id,omitempty"`
-	CompanyID             string                `json:"companyId,omitempty"`
-	Name                  string                `json:"name,omitempty"`
-	SystemGenerated       bool                  `json:"systemGenerated,omitempty"`
-	CreationDateString    string                `json:"creationDate,omitempty"`
-	CreationDate          time.Time             `json:"-"`
-	CertificateProviderID string                `json:"certificateProviderId,omitempty"`
-	SubjectCNRegexes      []string              `json:"subjectCNRegexes,omitempty"`
-	SubjectORegexes       []string              `json:"subjectORegexes,omitempty"`
-	SubjectOURegexes      []string              `json:"subjectOURegexes,omitempty"`
-	SubjectSTRegexes      []string              `json:"subjectSTRegexes,omitempty"`
-	SubjectLRegexes       []string              `json:"subjectLRegexes,omitempty"`
-	SubjectCRegexes       []string              `json:"subjectCValues,omitempty"`
-	SANRegexes            []string              `json:"sanRegexes,omitempty"`
-	KeyTypes              []allowedKeyType      `json:"keyTypes,omitempty"`
-	KeyReuse              bool                  `json:"keyReuse,omitempty"`
+type certificateTemplate struct {
+	ID                                  string `json:"id,omitempty"`
+	CompanyID                           string `json:"companyId,omitempty"`
+	CertificateAuthority                string `json:"certificateAuthority"`
+	Name                                string `json:"name,omitempty"`
+	CertificateAuthorityAccountId       string `json:"certificateAuthorityAccountId"`
+	CertificateAuthorityProductOptionId string `json:"certificateAuthorityProductOptionId"`
+	Product                             struct {
+		CertificateAuthority string `json:"certificateAuthority"`
+		ProductName          string `json:"productName"`
+	} `json:"product"`
+	Priority               int              `json:"priority"`
+	SystemGenerated        bool             `json:"systemGenerated,omitempty"`
+	CreationDateString     string           `json:"creationDate,omitempty"`
+	CreationDate           time.Time        `json:"-"`
+	ModificationDateString string           `json:"modificationDate"`
+	ModificationDate       time.Time        `json:"-"`
+	Status                 string           `json:"status"`
+	Reason                 string           `json:"reason"`
+	SubjectCNRegexes       []string         `json:"subjectCNRegexes,omitempty"`
+	SubjectORegexes        []string         `json:"subjectORegexes,omitempty"`
+	SubjectOURegexes       []string         `json:"subjectOURegexes,omitempty"`
+	SubjectSTRegexes       []string         `json:"subjectSTRegexes,omitempty"`
+	SubjectLRegexes        []string         `json:"subjectLRegexes,omitempty"`
+	SubjectCValues         []string         `json:"subjectCValues,omitempty"`
+	SANRegexes             []string         `json:"sanRegexes,omitempty"`
+	KeyTypes               []allowedKeyType `json:"keyTypes,omitempty"`
+	KeyReuse               bool             `json:"keyReuse,omitempty"`
 }
-
 type allowedKeyType struct {
 	KeyType    keyType
 	KeyLengths []int
 }
 
-type certificatePolicyType string
-
-const (
-	certificatePolicyTypeIdentity certificatePolicyType = "CERTIFICATE_IDENTITY"
-	certificatePolicyTypeUse      certificatePolicyType = "CERTIFICATE_USE"
-)
-
 type keyType string
 
-func (cp certificatePolicy) toPolicy() (p endpoint.Policy) {
+func (ct certificateTemplate) toPolicy() (p endpoint.Policy) {
 	addStartEnd := func(s string) string {
 		if !strings.HasPrefix(s, "^") {
 			s = "^" + s
@@ -74,14 +76,17 @@ func (cp certificatePolicy) toPolicy() (p endpoint.Policy) {
 		}
 		return a
 	}
-	p.SubjectCNRegexes = addStartEndToArray(cp.SubjectCNRegexes)
-	p.SubjectOURegexes = addStartEndToArray(cp.SubjectOURegexes)
-	p.SubjectCRegexes = addStartEndToArray(cp.SubjectCRegexes)
-	p.SubjectSTRegexes = addStartEndToArray(cp.SubjectSTRegexes)
-	p.SubjectLRegexes = addStartEndToArray(cp.SubjectLRegexes)
-	p.SubjectORegexes = addStartEndToArray(cp.SubjectORegexes)
-	p.DnsSanRegExs = addStartEndToArray(cp.SANRegexes)
-	p.AllowKeyReuse = cp.KeyReuse
+	if len(ct.SubjectCValues) == 0 {
+		ct.SubjectCValues = []string{".*"}
+	}
+	p.SubjectCNRegexes = addStartEndToArray(ct.SubjectCNRegexes)
+	p.SubjectOURegexes = addStartEndToArray(ct.SubjectOURegexes)
+	p.SubjectCRegexes = addStartEndToArray(ct.SubjectCValues)
+	p.SubjectSTRegexes = addStartEndToArray(ct.SubjectSTRegexes)
+	p.SubjectLRegexes = addStartEndToArray(ct.SubjectLRegexes)
+	p.SubjectORegexes = addStartEndToArray(ct.SubjectORegexes)
+	p.DnsSanRegExs = addStartEndToArray(ct.SANRegexes)
+	p.AllowKeyReuse = ct.KeyReuse
 	allowWildCards := false
 	for _, s := range p.SubjectCNRegexes {
 		if strings.HasPrefix(s, "^.*") {
@@ -96,7 +101,7 @@ func (cp certificatePolicy) toPolicy() (p endpoint.Policy) {
 		}
 	}
 	p.AllowWildcards = allowWildCards
-	for _, kt := range cp.KeyTypes {
+	for _, kt := range ct.KeyTypes {
 		keyConfiguration := endpoint.AllowedKeyConfiguration{}
 		if err := keyConfiguration.KeyType.Set(string(kt.KeyType)); err != nil {
 			panic(err)
@@ -114,20 +119,20 @@ func isNotRegexp(s string) bool {
 	}
 	return true
 }
-func (cp certificatePolicy) toZoneConfig(zc *endpoint.ZoneConfiguration) {
-	if len(cp.SubjectCRegexes) > 0 && isNotRegexp(cp.SubjectCRegexes[0]) {
-		zc.Country = cp.SubjectCRegexes[0]
+func (ct certificateTemplate) toZoneConfig(zc *endpoint.ZoneConfiguration) {
+	if len(ct.SubjectCValues) > 0 && isNotRegexp(ct.SubjectCValues[0]) {
+		zc.Country = ct.SubjectCValues[0]
 	}
-	if len(cp.SubjectORegexes) > 0 && isNotRegexp(cp.SubjectORegexes[0]) {
-		zc.Organization = cp.SubjectORegexes[0]
+	if len(ct.SubjectORegexes) > 0 && isNotRegexp(ct.SubjectORegexes[0]) {
+		zc.Organization = ct.SubjectORegexes[0]
 	}
-	if len(cp.SubjectSTRegexes) > 0 && isNotRegexp(cp.SubjectSTRegexes[0]) {
-		zc.Province = cp.SubjectSTRegexes[0]
+	if len(ct.SubjectSTRegexes) > 0 && isNotRegexp(ct.SubjectSTRegexes[0]) {
+		zc.Province = ct.SubjectSTRegexes[0]
 	}
-	if len(cp.SubjectLRegexes) > 0 && isNotRegexp(cp.SubjectLRegexes[0]) {
-		zc.Locality = cp.SubjectLRegexes[0]
+	if len(ct.SubjectLRegexes) > 0 && isNotRegexp(ct.SubjectLRegexes[0]) {
+		zc.Locality = ct.SubjectLRegexes[0]
 	}
-	for _, ou := range cp.SubjectOURegexes {
+	for _, ou := range ct.SubjectOURegexes {
 		if isNotRegexp(ou) {
 			zc.OrganizationalUnit = append(zc.OrganizationalUnit, ou)
 		}
