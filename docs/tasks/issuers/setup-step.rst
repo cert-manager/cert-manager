@@ -6,7 +6,8 @@ Installing Step Certificates
 ----------------------------
 
 There are different ways to install Smallstep Step Certificates and initialize
-your PKI. The easiest one is probably to use Helm:
+your PKI. The easiest one is probably to use Helm which will generate your PKI
+on the fly:
 
 .. code-block:: shell
 
@@ -17,7 +18,7 @@ your PKI. The easiest one is probably to use Helm:
    # Install step certificates
    $ helm install --name your-release smallstep/step-certificates
 
-For extra options or a different installation process, refer to the docs on Step
+For custom options or a different installation process, refer to the docs on Step
 Certificates `documentation <https://github.com/smallstep/certificates>`__.
 
 Creating an Issuer resource
@@ -29,10 +30,10 @@ CSR. This JWT is signed by an encrypted private key configured in the step
 certificates configuration. We will need to configure all the necessary
 parameters to get the proper provisioner key and decrypt its private key.
 
-Helm automatically initializes one provisioner and stores the password on the
+Helm automatically initializes one provisioner and stores the password in the
 secret named ``your-release-step-certificates-provisioner-password``. But if you
-are using a different provisioner you will need to create a secret for it. Using
-kubctl would be:
+want to use a different provisioner you will have to create a secret for it yourself.
+Using kubctl would be:
 
 .. code-block:: shell
 
@@ -40,7 +41,7 @@ kubctl would be:
         --namespace='<namespace-of-issuer-resource>' \
         --from-literal=password='<your-provisioner-password>'
 
-Or you can also create a secret using the yaml format like:
+Or, alternatively, you can create a secret using the yaml format like:
 
 .. code-block:: yaml
 
@@ -53,14 +54,15 @@ Or you can also create a secret using the yaml format like:
    data:
      password: bXktcHJvdmlzaW9uZXItcGFzc3dvcmQ=
 
-The issuer configuration needs a few more things to be able to create provisioning tokens:
+The issuer configuration is not complete yet. The following is required to
+be able to create provisioning tokens:
 
-* The URL to access Step Certificates API. With Helm the url has the a format
+* The URL to access the Step Certificates API. Using Helm the URL requires following format
   ``https://your-release-step-certificates.default.svc.cluster.local``.
 
 * The base64 encoded version of the root certificate of Step Certificate PKI.
-  With Helm this is stored in a configmap named ``your-release-step-certificates-certs``, 
-  and we can get the necessary value with:
+  Using Helm this is stored in a configmap named ``your-release-step-certificates-certs``,
+  and we can retrieve the necessary value with:
 
   .. code-block:: shell
 
@@ -84,11 +86,11 @@ The issuer configuration needs a few more things to be able to create provisioni
      $ kubectl get configmaps -o jsonpath="{.data['root_ca\.crt']}" your-release-step-certificates-certs | base64
      LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSQ...
 
-* The provisioner name, with Helm the default one is ``admin``. But you can use
-  any other JWK provisioner.
+* The provisioner name. Using Helm the default one is ``admin``. However, feel free to use
+  any other name for JWK provisioners.
 
-* The provisioner kid, or Key ID configured in step certificates configuration.
-  With Helm this can be accessed looking at the secret named ``your-release-step-certificates-config``.
+* The provisioner kid (Key ID) configured in step certificates configuration.
+  Using Helm this can be retrieved from the secret named ``your-release-step-certificates-config``.
 
   .. code-block:: shell
 
@@ -124,7 +126,7 @@ The issuer configuration needs a few more things to be able to create provisioni
      ...
 
 With the secret, name and kid in place now we can create the Step certificates issuer
-referencing the previous values:
+referencing the respective values:
 
 .. code-block:: yaml
 
@@ -143,8 +145,8 @@ referencing the previous values:
         passwordRef:
           name: provisioner-secret
           key: password
-      
-A sample issuer using values from previous examples will look like:
+
+An example issuer using values used previously will look like this:
 
 .. code-block:: yaml
 
@@ -165,7 +167,7 @@ A sample issuer using values from previous examples will look like:
            key: password
 
 
-Once we have created the Issuer we can use it to obtain a certificate:
+Once we have provisioned the Issuer we can use it to obtain a certificate:
 
 .. code-block:: yaml
 
@@ -182,5 +184,5 @@ Once we have created the Issuer we can use it to obtain a certificate:
       dnsNames:
       - www.example.com
 
-Read the :doc:`Issuing Certificates <../issuing-certificates/index>` document
+Please see the :doc:`Issuing Certificates <../issuing-certificates/index>` document
 for more information on how to create Certificate resources.
