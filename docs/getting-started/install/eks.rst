@@ -18,9 +18,8 @@ Installing on EKS
 =================
 
 EKS is designed to allow applications to be fully compatible with any standard 
-Kubernetes environment. Therefore, installing cert-manager on an EKS doesn't 
-require any deviation from the :doc:`Running on Kubernetes <./kubernetes>` 
-installation guide.
+Kubernetes environment. Therefore, installing cert-manager on an EKS cluster doesn't  require any deviation from the
+ :doc:`Running on Kubernetes <./kubernetes>` installation guide.
 
 ====================
 Issues unique to AWS
@@ -49,6 +48,19 @@ Controller.
    Manager (ACM). Version 1.15 of Kubernetes should address multiple bug fixes 
    for this controller and allow for TLS termination support.
 
+==========================
+Configure your DNS records
+==========================
+
+Once AWS has provisioned a Network Load Balancer, you're provided with an IPv4 
+address to which you can point a CNAME DNS record:
+
+.. code-block:: shell
+   kubectl -n ingress-nginx get svc
+
+It will take several minutes for the Load Balancer to be provisioned and for 
+the DNS records to propagate.
+
 ===================================
 Creating the cert-manager resources
 ===================================
@@ -64,7 +76,7 @@ Secret containing your API key:
 
 .. code-block:: secret
    kubectl create secret generic \
-     cloud-secret \
+     venafi-cloud-secret \
      --namespace=cert-manager \
      --from-literal=apikey=<API_KEY>
 
@@ -81,7 +93,7 @@ Secret containing your API key:
        cloud:
          url: "https://api.venafi.cloud/v1"
          apiTokenSecretRef:
-           name: cloud-secret
+           name: venafi-cloud-secret
            key: apikey
 
 When you run the following command, you should see that the Status stanza of 
@@ -100,8 +112,7 @@ itself with the Venafi Cloud service).
        Status:                True
        Type:                  Ready
 
-
-The ClusterIssuer is referenced in the ``spec.issuerRef`` field of the 
+The ClusterIssuer is referenced in the ``spec.issuerRef`` field of the example
 Certificate resource below:
 
 .. code-block:: yaml
@@ -111,15 +122,13 @@ Certificate resource below:
    kind: Certificate
    metadata:
      name: venafi-cert
-     namespace: hello-kubernetes-ns
    spec:
      secretName: venafi-cert-tls
      duration: 2160h # 90d
      renewBefore: 360h # 15d
-     commonName: cmvenafi.jetstack.example.com
+     commonName: <host-name>
      dnsNames:
-     - cmvenafi.jetstack.example.com
-     - www.cmvenafi.jetstack.example.com
+     - <host-name>
      issuerRef:
        name: cloud-venafi-issuer
        kind: ClusterIssuer
@@ -137,9 +146,7 @@ Example Deployment
 
 Below is a demo deployment that serves a simple "hello world" website. The 
 Service is of type ClusterIP, not LoadBalancer, as we only wish to provision a 
-Network Load Balancer for the NGINX Ingress Controller. You will also need to 
-configure the NGINX Deployment to ensure that it is correctly labelled to 
-perform routing to this service.
+Network Load Balancer for the NGINX Ingress Controller.
 
 .. code-block:: yaml
    :linenos:
@@ -149,31 +156,27 @@ perform routing to this service.
    kind: Service
    metadata:
      name: hello-kubernetes
-     labels:
-       name: hello-kubernetes
-     namespace: hello-kubernetes-ns
    spec:
      type: ClusterIP
      ports:
      - port: 80
        targetPort: 8080
      selector:
-       name: hello-kubernetes
+       app: hello-kubernetes
    ---
    apiVersion: apps/v1
    kind: Deployment
    metadata:
      name: hello-kubernetes
-     namespace: hello-kubernetes-ns
    spec:
      replicas: 2
      selector:
        matchLabels:
-         name: hello-kubernetes
+         app: hello-kubernetes
      template:
        metadata:
          labels:
-           name: hello-kubernetes
+           app: hello-kubernetes
        spec:
          containers:
          - name: hello-kubernetes
@@ -189,6 +192,9 @@ perform routing to this service.
 Example Ingress
 ===============
 
+You will also need to configure the NGINX Deployment to ensure that it is 
+correctly labelled to perform routing to this service.
+
 .. code-block:: yaml
    :linenos:
 
@@ -202,26 +208,13 @@ Example Ingress
    spec:
      tls:
      - hosts:
-       - www.<host-name>
-       secretName: certsecret-venafi-tls
+       - <host-name>
+       secretName: venafi-cert-tls
      rules:
-     - host: www.<host-name>
+     - host: <host-name>
        http:
          paths:
          - path: /
            backend:
              serviceName: hello-kubernetes
              servicePort: 80
-
-==========================
-Configure your DNS records
-==========================
-
-Once AWS has provisioned a Network Load Balancer, you're provided with an IPv4 
-address to which you can point a CNAME DNS record:
-
-.. code-block:: shell
-   kubectl -n ingress-nginx get svc
-
-It will take several minutes for the Load Balancer to be provisioned and for 
-the DNS records to propagate.
