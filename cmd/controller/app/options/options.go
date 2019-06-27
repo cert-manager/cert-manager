@@ -31,6 +31,7 @@ import (
 	clusterissuerscontroller "github.com/jetstack/cert-manager/pkg/controller/clusterissuers"
 	ingressshimcontroller "github.com/jetstack/cert-manager/pkg/controller/ingress-shim"
 	issuerscontroller "github.com/jetstack/cert-manager/pkg/controller/issuers"
+	issuerca "github.com/jetstack/cert-manager/pkg/issuer/ca"
 	"github.com/jetstack/cert-manager/pkg/util"
 )
 
@@ -125,6 +126,7 @@ var (
 		ingressshimcontroller.ControllerName,
 		orderscontroller.ControllerName,
 		challengescontroller.ControllerName,
+		issuerca.CRControllerName,
 	}
 )
 

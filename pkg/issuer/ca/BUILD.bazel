@@ -14,6 +14,7 @@ go_library(
         "//pkg/api/util:go_default_library",
         "//pkg/apis/certmanager/v1alpha1:go_default_library",
         "//pkg/controller:go_default_library",
+        "//pkg/controller/certificaterequests:go_default_library",
         "//pkg/issuer:go_default_library",
         "//pkg/logs:go_default_library",
         "//pkg/util/errors:go_default_library",

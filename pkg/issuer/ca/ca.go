@@ -22,7 +22,13 @@ import (
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	"github.com/jetstack/cert-manager/pkg/controller"
+	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
+	"github.com/jetstack/cert-manager/pkg/controller/certificaterequests"
 	"github.com/jetstack/cert-manager/pkg/issuer"
+)
+
+const (
+	CRControllerName = "issuer-ca-certificaterequests"
 )
 
 // CA is a simple CA implementation backed by the Kubernetes API server.
@@ -52,4 +58,15 @@ func NewCA(ctx *controller.Context, issuer v1alpha1.GenericIssuer) (issuer.Inter
 
 func init() {
 	issuer.RegisterIssuer(apiutil.IssuerCA, NewCA)
+
+	// create certificate request controller for ca issuer
+	controllerpkg.Register(CRControllerName, func(ctx *controllerpkg.Context) (controllerpkg.Interface, error) {
+		controller := certificaterequests.New(apiutil.IssuerCA)
+
+		c, err := controllerpkg.New(ctx, CRControllerName, controller)
+		if err != nil {
+			return nil, err
+		}
+		return c.Run, nil
+	})
 }

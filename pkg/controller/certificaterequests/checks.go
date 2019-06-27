@@ -19,15 +19,13 @@ package certificaterequests
 import (
 	"fmt"
 
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 )
 
-func (c *controller) handleGenericIssuer(obj interface{}) {
+func (c *Controller) handleGenericIssuer(obj interface{}) {
 	log := c.log.WithName("handleGenericIssuer")
 
 	iss, ok := obj.(cmapi.GenericIssuer)
@@ -53,52 +51,7 @@ func (c *controller) handleGenericIssuer(obj interface{}) {
 	}
 }
 
-func (c *controller) handleOwnedResource(obj interface{}) {
-	log := c.log.WithName("handleOwnedResource")
-
-	metaobj, ok := obj.(metav1.Object)
-	if !ok {
-		log.Error(nil, "item passed to handleOwnedResource does not implement ObjectMetaAccessor")
-		return
-	}
-
-	log = logf.WithResource(log, metaobj)
-	log.V(logf.DebugLevel).Info("looking up owners for resource")
-
-	ownerRefs := metaobj.GetOwnerReferences()
-	for _, ref := range ownerRefs {
-		log := log.WithValues(
-			logf.RelatedResourceNamespaceKey, metaobj.GetNamespace(),
-			logf.RelatedResourceNameKey, ref.Name,
-			logf.RelatedResourceKindKey, ref.Kind,
-		)
-		log.V(logf.DebugLevel).Info("evaluating ownerRef on resource")
-
-		// Parse the Group out of the OwnerReference to compare it to what was parsed out of the requested OwnerType
-		refGV, err := schema.ParseGroupVersion(ref.APIVersion)
-		if err != nil {
-			log.Error(err, "could not parse ownerReference GroupVersion")
-			continue
-		}
-
-		if refGV.Group == certificateRequestGvk.Group && ref.Kind == certificateRequestGvk.Kind {
-			// TODO: how to handle namespace of owner references?
-			cert, err := c.certificateRequestLister.CertificateRequests(metaobj.GetNamespace()).Get(ref.Name)
-			if err != nil {
-				log.Error(err, "error getting owning certificate request resource")
-				continue
-			}
-			objKey, err := keyFunc(cert)
-			if err != nil {
-				log.Error(err, "error computing key for resource")
-				continue
-			}
-			c.queue.Add(objKey)
-		}
-	}
-}
-
-func (c *controller) certificatesRequestsForGenericIssuer(iss cmapi.GenericIssuer) ([]*cmapi.CertificateRequest, error) {
+func (c *Controller) certificatesRequestsForGenericIssuer(iss cmapi.GenericIssuer) ([]*cmapi.CertificateRequest, error) {
 	crts, err := c.certificateRequestLister.List(labels.NewSelector())
 
 	if err != nil {
