@@ -1,0 +1,46 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "aggregate.go",
+        "checkstyle.go",
+        "config.go",
+        "directives.go",
+        "execute.go",
+        "issue.go",
+        "linters.go",
+        "main.go",
+        "partition.go",
+        "stringset.go",
+    ],
+    importmap = "github.com/jetstack/cert-manager/vendor/github.com/alecthomas/gometalinter",
+    importpath = "github.com/alecthomas/gometalinter",
+    tags = ["manual"],
+    visibility = ["//visibility:private"],
+    deps = [
+        "//vendor/github.com/google/shlex:go_default_library",
+        "//vendor/gopkg.in/alecthomas/kingpin.v3-unstable:go_default_library",
+    ],
+)
+
+go_binary(
+    name = "gometalinter",
+    embed = [":go_default_library"],
+    tags = ["manual"],
+    visibility = ["//visibility:public"],
+)
+
+filegroup(
+    name = "package-srcs",
+    srcs = glob(["**"]),
+    tags = ["automanaged"],
+    visibility = ["//visibility:private"],
+)
+
+filegroup(
+    name = "all-srcs",
+    srcs = [":package-srcs"],
+    tags = ["automanaged"],
+    visibility = ["//visibility:public"],
+)

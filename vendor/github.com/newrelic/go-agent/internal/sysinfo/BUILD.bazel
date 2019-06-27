@@ -1,0 +1,40 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "bootid.go",
+        "docker.go",
+        "errors.go",
+        "hostname_generic.go",
+        "hostname_linux.go",
+        "memtotal.go",
+        "memtotal_darwin.go",
+        "memtotal_freebsd.go",
+        "memtotal_linux.go",
+        "memtotal_solaris.go",
+        "memtotal_windows.go",
+        "usage.go",
+        "usage_posix.go",
+        "usage_windows.go",
+    ],
+    cgo = True,
+    importmap = "github.com/jetstack/cert-manager/vendor/github.com/newrelic/go-agent/internal/sysinfo",
+    importpath = "github.com/newrelic/go-agent/internal/sysinfo",
+    tags = ["manual"],
+    visibility = ["//vendor/github.com/newrelic/go-agent:__subpackages__"],
+)
+
+filegroup(
+    name = "package-srcs",
+    srcs = glob(["**"]),
+    tags = ["automanaged"],
+    visibility = ["//visibility:private"],
+)
+
+filegroup(
+    name = "all-srcs",
+    srcs = [":package-srcs"],
+    tags = ["automanaged"],
+    visibility = ["//visibility:public"],
+)

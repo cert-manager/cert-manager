@@ -1,0 +1,35 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "options.go",
+        "templates.go",
+        "ui.go",
+        "validators.go",
+    ],
+    importmap = "github.com/jetstack/cert-manager/vendor/github.com/smallstep/cli/ui",
+    importpath = "github.com/smallstep/cli/ui",
+    tags = ["manual"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//vendor/github.com/chzyer/readline:go_default_library",
+        "//vendor/github.com/manifoldco/promptui:go_default_library",
+        "//vendor/github.com/pkg/errors:go_default_library",
+        "//vendor/github.com/smallstep/cli/crypto/randutil:go_default_library",
+    ],
+)
+
+filegroup(
+    name = "package-srcs",
+    srcs = glob(["**"]),
+    tags = ["automanaged"],
+    visibility = ["//visibility:private"],
+)
+
+filegroup(
+    name = "all-srcs",
+    srcs = [":package-srcs"],
+    tags = ["automanaged"],
+    visibility = ["//visibility:public"],
+)

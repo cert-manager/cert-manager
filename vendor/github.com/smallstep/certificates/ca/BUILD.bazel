@@ -1,0 +1,53 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "bootstrap.go",
+        "ca.go",
+        "client.go",
+        "mutable_tls_config.go",
+        "provisioner.go",
+        "renew.go",
+        "signal.go",
+        "tls.go",
+        "tls_options.go",
+    ],
+    importmap = "github.com/jetstack/cert-manager/vendor/github.com/smallstep/certificates/ca",
+    importpath = "github.com/smallstep/certificates/ca",
+    tags = ["manual"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//vendor/github.com/go-chi/chi:go_default_library",
+        "//vendor/github.com/pkg/errors:go_default_library",
+        "//vendor/github.com/smallstep/certificates/api:go_default_library",
+        "//vendor/github.com/smallstep/certificates/authority:go_default_library",
+        "//vendor/github.com/smallstep/certificates/authority/provisioner:go_default_library",
+        "//vendor/github.com/smallstep/certificates/db:go_default_library",
+        "//vendor/github.com/smallstep/certificates/logging:go_default_library",
+        "//vendor/github.com/smallstep/certificates/monitoring:go_default_library",
+        "//vendor/github.com/smallstep/certificates/server:go_default_library",
+        "//vendor/github.com/smallstep/cli/config:go_default_library",
+        "//vendor/github.com/smallstep/cli/crypto/randutil:go_default_library",
+        "//vendor/github.com/smallstep/cli/crypto/x509util:go_default_library",
+        "//vendor/github.com/smallstep/cli/jose:go_default_library",
+        "//vendor/github.com/smallstep/cli/token:go_default_library",
+        "//vendor/github.com/smallstep/cli/token/provision:go_default_library",
+        "//vendor/golang.org/x/net/http2:go_default_library",
+        "//vendor/gopkg.in/square/go-jose.v2/jwt:go_default_library",
+    ],
+)
+
+filegroup(
+    name = "package-srcs",
+    srcs = glob(["**"]),
+    tags = ["automanaged"],
+    visibility = ["//visibility:private"],
+)
+
+filegroup(
+    name = "all-srcs",
+    srcs = [":package-srcs"],
+    tags = ["automanaged"],
+    visibility = ["//visibility:public"],
+)

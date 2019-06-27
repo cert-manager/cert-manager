@@ -1,0 +1,42 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "convert.go",
+        "crt.go",
+        "csr.go",
+        "identity.go",
+        "intermediateProfile.go",
+        "leafProfile.go",
+        "profile.go",
+        "rootProfile.go",
+        "types.go",
+    ],
+    importmap = "github.com/jetstack/cert-manager/vendor/github.com/smallstep/cli/crypto/x509util",
+    importpath = "github.com/smallstep/cli/crypto/x509util",
+    tags = ["manual"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//vendor/github.com/pkg/errors:go_default_library",
+        "//vendor/github.com/smallstep/cli/crypto/keys:go_default_library",
+        "//vendor/github.com/smallstep/cli/crypto/pemutil:go_default_library",
+        "//vendor/github.com/smallstep/cli/errs:go_default_library",
+        "//vendor/github.com/smallstep/cli/pkg/x509:go_default_library",
+        "//vendor/github.com/smallstep/cli/utils:go_default_library",
+    ],
+)
+
+filegroup(
+    name = "package-srcs",
+    srcs = glob(["**"]),
+    tags = ["automanaged"],
+    visibility = ["//visibility:private"],
+)
+
+filegroup(
+    name = "all-srcs",
+    srcs = [":package-srcs"],
+    tags = ["automanaged"],
+    visibility = ["//visibility:public"],
+)

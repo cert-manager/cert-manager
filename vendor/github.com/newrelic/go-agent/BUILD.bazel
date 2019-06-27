@@ -1,0 +1,53 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "app_run.go",
+        "application.go",
+        "attributes.go",
+        "browser_header.go",
+        "config.go",
+        "context.go",
+        "context_stub.go",
+        "datastore.go",
+        "errors.go",
+        "instrumentation.go",
+        "internal_app.go",
+        "internal_config.go",
+        "internal_response_writer.go",
+        "internal_txn.go",
+        "log.go",
+        "segments.go",
+        "sql_driver.go",
+        "sql_driver_optional_methods.go",
+        "transaction.go",
+        "version.go",
+    ],
+    importmap = "github.com/jetstack/cert-manager/vendor/github.com/newrelic/go-agent",
+    importpath = "github.com/newrelic/go-agent",
+    tags = ["manual"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//vendor/github.com/newrelic/go-agent/internal:go_default_library",
+        "//vendor/github.com/newrelic/go-agent/internal/logger:go_default_library",
+        "//vendor/github.com/newrelic/go-agent/internal/utilization:go_default_library",
+    ],
+)
+
+filegroup(
+    name = "package-srcs",
+    srcs = glob(["**"]),
+    tags = ["automanaged"],
+    visibility = ["//visibility:private"],
+)
+
+filegroup(
+    name = "all-srcs",
+    srcs = [
+        ":package-srcs",
+        "//vendor/github.com/newrelic/go-agent/internal:all-srcs",
+    ],
+    tags = ["automanaged"],
+    visibility = ["//visibility:public"],
+)

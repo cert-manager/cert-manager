@@ -1,0 +1,58 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "ansi_windows.go",
+        "complete.go",
+        "complete_helper.go",
+        "complete_segment.go",
+        "history.go",
+        "operation.go",
+        "password.go",
+        "rawreader_windows.go",
+        "readline.go",
+        "remote.go",
+        "runebuf.go",
+        "runes.go",
+        "search.go",
+        "std.go",
+        "std_windows.go",
+        "term.go",
+        "term_bsd.go",
+        "term_linux.go",
+        "term_solaris.go",
+        "term_unix.go",
+        "term_windows.go",
+        "terminal.go",
+        "utils.go",
+        "utils_unix.go",
+        "utils_windows.go",
+        "vim.go",
+        "windows_api.go",
+    ],
+    importmap = "github.com/jetstack/cert-manager/vendor/github.com/chzyer/readline",
+    importpath = "github.com/chzyer/readline",
+    tags = ["manual"],
+    visibility = ["//visibility:public"],
+    deps = select({
+        "@io_bazel_rules_go//go/platform:solaris": [
+            "//vendor/golang.org/x/sys/unix:go_default_library",
+        ],
+        "//conditions:default": [],
+    }),
+)
+
+filegroup(
+    name = "package-srcs",
+    srcs = glob(["**"]),
+    tags = ["automanaged"],
+    visibility = ["//visibility:private"],
+)
+
+filegroup(
+    name = "all-srcs",
+    srcs = [":package-srcs"],
+    tags = ["automanaged"],
+    visibility = ["//visibility:public"],
+)

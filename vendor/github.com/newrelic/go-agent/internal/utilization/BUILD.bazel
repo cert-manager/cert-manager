@@ -1,0 +1,38 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "addresses.go",
+        "aws.go",
+        "azure.go",
+        "fqdn.go",
+        "fqdn_pre18.go",
+        "gcp.go",
+        "pcf.go",
+        "provider.go",
+        "utilization.go",
+    ],
+    importmap = "github.com/jetstack/cert-manager/vendor/github.com/newrelic/go-agent/internal/utilization",
+    importpath = "github.com/newrelic/go-agent/internal/utilization",
+    tags = ["manual"],
+    visibility = ["//vendor/github.com/newrelic/go-agent:__subpackages__"],
+    deps = [
+        "//vendor/github.com/newrelic/go-agent/internal/logger:go_default_library",
+        "//vendor/github.com/newrelic/go-agent/internal/sysinfo:go_default_library",
+    ],
+)
+
+filegroup(
+    name = "package-srcs",
+    srcs = glob(["**"]),
+    tags = ["automanaged"],
+    visibility = ["//visibility:private"],
+)
+
+filegroup(
+    name = "all-srcs",
+    srcs = [":package-srcs"],
+    tags = ["automanaged"],
+    visibility = ["//visibility:public"],
+)

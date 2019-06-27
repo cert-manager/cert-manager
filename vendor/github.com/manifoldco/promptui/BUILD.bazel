@@ -1,0 +1,43 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "codes.go",
+        "keycodes.go",
+        "keycodes_windows.go",
+        "prompt.go",
+        "promptui.go",
+        "select.go",
+        "styles.go",
+        "styles_windows.go",
+    ],
+    importmap = "github.com/jetstack/cert-manager/vendor/github.com/manifoldco/promptui",
+    importpath = "github.com/manifoldco/promptui",
+    tags = ["manual"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//vendor/github.com/chzyer/readline:go_default_library",
+        "//vendor/github.com/juju/ansiterm:go_default_library",
+        "//vendor/github.com/manifoldco/promptui/list:go_default_library",
+        "//vendor/github.com/manifoldco/promptui/screenbuf:go_default_library",
+    ],
+)
+
+filegroup(
+    name = "package-srcs",
+    srcs = glob(["**"]),
+    tags = ["automanaged"],
+    visibility = ["//visibility:private"],
+)
+
+filegroup(
+    name = "all-srcs",
+    srcs = [
+        ":package-srcs",
+        "//vendor/github.com/manifoldco/promptui/list:all-srcs",
+        "//vendor/github.com/manifoldco/promptui/screenbuf:all-srcs",
+    ],
+    tags = ["automanaged"],
+    visibility = ["//visibility:public"],
+)

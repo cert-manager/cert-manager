@@ -1,0 +1,52 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "actions.go",
+        "app.go",
+        "args.go",
+        "camelcase.go",
+        "clause.go",
+        "cmd.go",
+        "completions.go",
+        "doc.go",
+        "flags.go",
+        "global.go",
+        "guesswidth.go",
+        "guesswidth_unix.go",
+        "i18n_en_AU.go",
+        "i18n_fr.go",
+        "i18n_init.go",
+        "model.go",
+        "parser.go",
+        "resolver.go",
+        "struct.go",
+        "templates.go",
+        "usage.go",
+        "values.go",
+        "values_generated.go",
+    ],
+    importmap = "github.com/jetstack/cert-manager/vendor/gopkg.in/alecthomas/kingpin.v3-unstable",
+    importpath = "gopkg.in/alecthomas/kingpin.v3-unstable",
+    tags = ["manual"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//vendor/github.com/alecthomas/units:go_default_library",
+        "//vendor/github.com/nicksnyder/go-i18n/i18n:go_default_library",
+    ],
+)
+
+filegroup(
+    name = "package-srcs",
+    srcs = glob(["**"]),
+    tags = ["automanaged"],
+    visibility = ["//visibility:private"],
+)
+
+filegroup(
+    name = "all-srcs",
+    srcs = [":package-srcs"],
+    tags = ["automanaged"],
+    visibility = ["//visibility:public"],
+)

@@ -34,6 +34,7 @@ filegroup(
     name = "all-srcs",
     srcs = [
         ":package-srcs",
+        "//vendor/google.golang.org/appengine/cloudsql:all-srcs",
         "//vendor/google.golang.org/appengine/internal:all-srcs",
         "//vendor/google.golang.org/appengine/urlfetch:all-srcs",
     ],

@@ -1,0 +1,91 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "backup.go",
+        "compaction.go",
+        "db.go",
+        "dir_unix.go",
+        "dir_windows.go",
+        "doc.go",
+        "errors.go",
+        "iterator.go",
+        "level_handler.go",
+        "levels.go",
+        "managed_db.go",
+        "manifest.go",
+        "options.go",
+        "structs.go",
+        "transaction.go",
+        "util.go",
+        "value.go",
+    ],
+    importmap = "github.com/jetstack/cert-manager/vendor/github.com/dgraph-io/badger",
+    importpath = "github.com/dgraph-io/badger",
+    tags = ["manual"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//vendor/github.com/dgraph-io/badger/options:go_default_library",
+        "//vendor/github.com/dgraph-io/badger/protos:go_default_library",
+        "//vendor/github.com/dgraph-io/badger/skl:go_default_library",
+        "//vendor/github.com/dgraph-io/badger/table:go_default_library",
+        "//vendor/github.com/dgraph-io/badger/y:go_default_library",
+        "//vendor/github.com/dgryski/go-farm:go_default_library",
+        "//vendor/github.com/pkg/errors:go_default_library",
+        "//vendor/golang.org/x/net/trace:go_default_library",
+    ] + select({
+        "@io_bazel_rules_go//go/platform:android": [
+            "//vendor/golang.org/x/sys/unix:go_default_library",
+        ],
+        "@io_bazel_rules_go//go/platform:darwin": [
+            "//vendor/golang.org/x/sys/unix:go_default_library",
+        ],
+        "@io_bazel_rules_go//go/platform:dragonfly": [
+            "//vendor/golang.org/x/sys/unix:go_default_library",
+        ],
+        "@io_bazel_rules_go//go/platform:freebsd": [
+            "//vendor/golang.org/x/sys/unix:go_default_library",
+        ],
+        "@io_bazel_rules_go//go/platform:linux": [
+            "//vendor/golang.org/x/sys/unix:go_default_library",
+        ],
+        "@io_bazel_rules_go//go/platform:nacl": [
+            "//vendor/golang.org/x/sys/unix:go_default_library",
+        ],
+        "@io_bazel_rules_go//go/platform:netbsd": [
+            "//vendor/golang.org/x/sys/unix:go_default_library",
+        ],
+        "@io_bazel_rules_go//go/platform:openbsd": [
+            "//vendor/golang.org/x/sys/unix:go_default_library",
+        ],
+        "@io_bazel_rules_go//go/platform:plan9": [
+            "//vendor/golang.org/x/sys/unix:go_default_library",
+        ],
+        "@io_bazel_rules_go//go/platform:solaris": [
+            "//vendor/golang.org/x/sys/unix:go_default_library",
+        ],
+        "//conditions:default": [],
+    }),
+)
+
+filegroup(
+    name = "package-srcs",
+    srcs = glob(["**"]),
+    tags = ["automanaged"],
+    visibility = ["//visibility:private"],
+)
+
+filegroup(
+    name = "all-srcs",
+    srcs = [
+        ":package-srcs",
+        "//vendor/github.com/dgraph-io/badger/options:all-srcs",
+        "//vendor/github.com/dgraph-io/badger/protos:all-srcs",
+        "//vendor/github.com/dgraph-io/badger/skl:all-srcs",
+        "//vendor/github.com/dgraph-io/badger/table:all-srcs",
+        "//vendor/github.com/dgraph-io/badger/y:all-srcs",
+    ],
+    tags = ["automanaged"],
+    visibility = ["//visibility:public"],
+)
