@@ -29,9 +29,11 @@ import (
 func (s *Step) Setup(ctx context.Context) error {
 	resp, err := s.provisioner.Health()
 	if err != nil {
+		util.SetIssuerCondition(s.issuer, certmanager.IssuerConditionReady, certmanager.ConditionFalse, "ErrorHealth", "Failed to connect to step certificates")
 		return fmt.Errorf("failed to connect to step certificate: %v", err)
 	}
 	if !strings.EqualFold(resp.Status, "ok") {
+		util.SetIssuerCondition(s.issuer, certmanager.IssuerConditionReady, certmanager.ConditionFalse, "ErrorHealth", fmt.Sprintf("Unexpected health status %s on step certificates", resp.Status))
 		return fmt.Errorf("unexpected step certificate status: %s", resp.Status)
 	}
 

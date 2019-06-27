@@ -232,7 +232,7 @@ func ValidateStepIssuerConfig(iss *v1alpha1.StepIssuer, fldPath *field.Path) fie
 		caCertPool := x509.NewCertPool()
 		ok := caCertPool.AppendCertsFromPEM(certs)
 		if !ok {
-			el = append(el, field.Invalid(fldPath.Child("caBundle"), "", "Specified CA bundle is invalid"))
+			el = append(el, field.Invalid(fldPath.Child("caBundle"), string(certs), "Specified CA bundle is invalid"))
 		}
 	}
 

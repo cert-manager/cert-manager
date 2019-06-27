@@ -82,6 +82,7 @@ func NewStep(ctx *controller.Context, issuer certmanager.GenericIssuer) (issuer.
 
 	provisioner, err := ca.NewProvisioner(spec.Provisioner.Name, spec.Provisioner.KeyID, spec.URL, password, options...)
 	if err != nil {
+		util.SetIssuerCondition(issuer, certmanager.IssuerConditionReady, certmanager.ConditionFalse, "ErrorProvisioner", fmt.Sprintf("Provisioner configuration error: %v", err))
 		return nil, err
 	}
 
