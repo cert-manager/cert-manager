@@ -23,6 +23,7 @@ require (
 	github.com/containerd/continuity v0.0.0-20181203112020-004b46473808 // indirect
 	github.com/cpu/goacmedns v0.0.0-20180701200144-565ecf2a84df
 	github.com/denisenkom/go-mssqldb v0.0.0-20190412130859-3b1d194e553a // indirect
+	github.com/dgraph-io/badger v1.5.5 // indirect
 	github.com/digitalocean/godo v1.6.0
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/docker/go-units v0.3.3 // indirect
@@ -30,6 +31,7 @@ require (
 	github.com/emicklei/go-restful v2.9.3+incompatible // indirect
 	github.com/fatih/structs v1.1.0 // indirect
 	github.com/ghodss/yaml v1.0.0 // indirect
+	github.com/go-chi/chi v4.0.2+incompatible // indirect
 	github.com/go-ini/ini v1.42.0 // indirect
 	github.com/go-logr/logr v0.1.0
 	github.com/go-logr/zapr v0.1.1 // indirect
@@ -38,7 +40,6 @@ require (
 	github.com/go-sql-driver/mysql v1.4.1 // indirect
 	github.com/gocql/gocql v0.0.0-20190402132108-0e1d5de854df // indirect
 	github.com/gogo/protobuf v1.2.0 // indirect
-	github.com/golang/protobuf v1.3.1 // indirect
 	github.com/golang/snappy v0.0.0-20180518054509-2e65f85255db // indirect
 	github.com/google/btree v1.0.0 // indirect
 	github.com/google/go-cmp v0.3.0 // indirect
@@ -57,14 +58,13 @@ require (
 	github.com/hashicorp/go-version v1.1.0 // indirect
 	github.com/hashicorp/golang-lru v0.5.1 // indirect
 	github.com/hashicorp/golang-math-big v0.0.0-20180316142257-561262b71329 // indirect
-	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/hashicorp/vault v0.9.6
-	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/jefferai/jsonx v1.0.0 // indirect
 	github.com/jmespath/go-jmespath v0.0.0-20180206201540-c2b33e8439af // indirect
 	github.com/keybase/go-crypto v0.0.0-20190403132359-d65b6b94177f // indirect
 	github.com/kr/pretty v0.1.0
 	github.com/lib/pq v1.0.0 // indirect
+	github.com/manifoldco/promptui v0.3.2 // indirect
 	github.com/mattn/go-colorable v0.1.1 // indirect
 	github.com/mattn/go-isatty v0.0.7 // indirect
 	github.com/mgutz/ansi v0.0.0-20170206155736-9520e82c474b // indirect
@@ -72,8 +72,8 @@ require (
 	github.com/miekg/dns v0.0.0-20170721150254-0f3adef2e220
 	github.com/mitchellh/copystructure v1.0.0 // indirect
 	github.com/mitchellh/go-testing-interface v1.0.0 // indirect
-	github.com/mitchellh/mapstructure v1.1.2 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20190414153302-2ae31c8b6b30 // indirect
+	github.com/newrelic/go-agent v2.8.1+incompatible // indirect
 	github.com/onsi/ginkgo v1.7.0
 	github.com/onsi/gomega v1.4.3
 	github.com/opencontainers/go-digest v1.0.0-rc1 // indirect
@@ -83,28 +83,38 @@ require (
 	github.com/ory/dockertest v3.3.4+incompatible // indirect
 	github.com/pascaldekloe/goe v0.1.0 // indirect
 	github.com/patrickmn/go-cache v2.1.0+incompatible // indirect
-	github.com/pkg/errors v0.8.0
+	github.com/pkg/errors v0.8.1
 	github.com/prometheus/client_golang v0.9.3-0.20190127221311-3c4408c8b829
+	github.com/rs/xid v1.2.1 // indirect
 	github.com/ryanuber/go-glob v1.0.0 // indirect
+	github.com/samfoo/ansi v0.0.0-20160124022901-b6bd2ded7189 // indirect
 	github.com/sethgrid/pester v0.0.0-20190127155807-68a33a018ad0 // indirect
-	github.com/spf13/cobra v0.0.0-20170905172051-b78744579491
-	github.com/spf13/pflag v1.0.1
+	github.com/shurcooL/sanitized_anchor_name v1.0.0 // indirect
+	github.com/smallstep/assert v0.0.0-20180720014142-de77670473b5 // indirect
+	github.com/smallstep/certificates v0.11.0-rc.2
+	github.com/smallstep/cli v0.11.0-rc.2.0.20190618225955-98635d188cad // indirect
+	github.com/smallstep/nosql v0.0.0-20190521005621-a0934e124687 // indirect
+	github.com/spf13/cobra v0.0.5
+	github.com/spf13/pflag v1.0.3
 	github.com/stretchr/testify v1.3.0
 	github.com/tent/http-link-go v0.0.0-20130702225549-ac974c61c2f9 // indirect
+	github.com/urfave/cli v1.20.0 // indirect
+	go.etcd.io/bbolt v1.3.3 // indirect
 	go.uber.org/zap v1.9.1 // indirect
 	golang.org/x/crypto v0.0.0-20190426145343-a29dc8fdc734
-	golang.org/x/net v0.0.0-20190502183928-7f726cade0ab
+	golang.org/x/net v0.0.0-20190613194153-d28f0bde5980
 	golang.org/x/oauth2 v0.0.0-20190402181905-9f3314589c9a
-	golang.org/x/sys v0.0.0-20190502175342-a43fa875dd82 // indirect
 	golang.org/x/text v0.3.2 // indirect
 	golang.org/x/time v0.0.0-20190308202827-9d24e82272b4 // indirect
 	golang.org/x/tools v0.0.0-20190501045030-23463209683d // indirect
 	google.golang.org/api v0.4.0
 	google.golang.org/genproto v0.0.0-20190502173448-54afdca5d873 // indirect
 	google.golang.org/grpc v1.20.1 // indirect
+	gopkg.in/alecthomas/kingpin.v3-unstable v3.0.0-20180810215634-df19058c872c // indirect
 	gopkg.in/ini.v1 v1.42.0 // indirect
 	gopkg.in/mgo.v2 v2.0.0-20180705113604-9856a29383ce // indirect
 	gopkg.in/ory-am/dockertest.v3 v3.3.4 // indirect
+	gopkg.in/square/go-jose.v2 v2.3.1 // indirect
 	k8s.io/api v0.0.0-20190413052509-3cc1b3fb6d0f
 	k8s.io/apiextensions-apiserver v0.0.0-20190111034747-7d26de67f177
 	k8s.io/apimachinery v0.0.0-20190413052414-40a3f73b0fa2
