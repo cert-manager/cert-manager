@@ -51,7 +51,7 @@ func (h *Helper) WaitForAllPodsRunningInNamespaceTimeout(ns string, timeout time
 		}
 
 		if len(pods.Items) == 0 {
-			log.Logf("No pods found in namespace %s - checking again...")
+			log.Logf("No pods found in namespace %s - checking again...", ns)
 			return false, nil
 		}
 

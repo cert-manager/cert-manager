@@ -24,7 +24,7 @@ import (
 	"time"
 
 	intscheme "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/scheme"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	extv1beta1 "k8s.io/api/extensions/v1beta1"
 	apiextcs "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/typed/apiextensions/v1beta1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -454,6 +454,32 @@ func NewCertManagerVaultIssuerAppRole(name, vaultURL, vaultPath, roleId, vaultSe
 									Name: vaultSecretAppRole,
 								},
 							},
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+func NewCertManagerStepIssuer(issuerName, caURL, name, kid, passwordRefName, passwordRefKey string, caBundle []byte) *v1alpha1.Issuer {
+	return &v1alpha1.Issuer{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: issuerName,
+		},
+		Spec: v1alpha1.IssuerSpec{
+			IssuerConfig: v1alpha1.IssuerConfig{
+				Step: &v1alpha1.StepIssuer{
+					URL:      caURL,
+					CABundle: caBundle,
+					Provisioner: v1alpha1.StepProvisioner{
+						Name:  name,
+						KeyID: kid,
+						PasswordRef: v1alpha1.SecretKeySelector{
+							LocalObjectReference: v1alpha1.LocalObjectReference{
+								Name: passwordRefName,
+							},
+							Key: passwordRefKey,
 						},
 					},
 				},

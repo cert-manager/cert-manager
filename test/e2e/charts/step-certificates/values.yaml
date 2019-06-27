@@ -1,0 +1,40 @@
+# Default values for step-certificates.
+
+# replicaCount is the number of replicas of step-certificates.
+# Only one replica is supported at this time.
+replicaCount: 1
+
+# nameOverride overrides the name of the chart.
+nameOverride: ""
+# fullnameOverride overrides the full name of the chart.
+fullnameOverride: ""
+
+# image contains the docker image for step-certificates.
+image:
+  repository: smallstep/step-ca
+  tag: 0.10.0
+  pullPolicy: IfNotPresent
+
+# service contains configuration for the kubernetes service.
+service:
+  type: ClusterIP
+  port: 443
+  targetPort: 9000
+
+# resources contains the CPU/memory resource requests/limits.
+resources:
+  requests:
+    cpu: 10m
+    memory: 10Mi
+  limits:
+    cpu: 100m
+    memory: 100Mi
+
+# nodeSelector contains the node labels for pod assignment.
+nodeSelector: {}
+
+# tolerations contains the toleration labels for pod assignment.
+tolerations: []
+
+# affinity contains the affinity settings for pod assignment.
+affinity: {}

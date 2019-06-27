@@ -1,0 +1,87 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "step-certificates.fullname" . }}
+  labels:
+{{ include "step-certificates.labels" . | indent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "step-certificates.name" . }}
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ include "step-certificates.name" . }}
+        app.kubernetes.io/instance: {{ .Release.Name }}
+    spec:
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: ["/usr/local/bin/step-ca", 
+            "--password-file", "/home/step/secrets/passwords/password",
+            "/home/step/config/ca.json"]
+          env:
+          - name: NAMESPACE
+            value: "{{ .Release.Namespace }}"
+          ports:
+            - name: https
+              containerPort: {{ .Values.service.targetPort }}
+              protocol: TCP
+          livenessProbe:
+            initialDelaySeconds: 5
+            httpGet:
+              path: /health
+              port: {{ .Values.service.targetPort }}
+              scheme: HTTPS
+          readinessProbe:
+            initialDelaySeconds: 5
+            httpGet:
+              path: /health
+              port: {{ .Values.service.targetPort }}
+              scheme: HTTPS
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+          - name: certs
+            mountPath: /home/step/certs
+            readOnly: true
+          - name: config
+            mountPath: /home/step/config
+            readOnly: true
+          - name: secrets
+            mountPath: /home/step/secrets
+            readOnly: true
+          - name: ca-password
+            mountPath: /home/step/secrets/passwords
+            readOnly: true
+          securityContext:
+            runAsUser: 1000
+            allowPrivilegeEscalation: false
+      volumes:
+      - name: certs
+        configMap:
+          name: {{ include "step-certificates.fullname" . }}-certs
+      - name: config
+        configMap:
+          name: {{ include "step-certificates.fullname" . }}-config
+      - name: secrets
+        configMap:
+          name: {{ include "step-certificates.fullname" . }}-secrets
+      - name: ca-password
+        secret:
+          secretName: {{ include "step-certificates.fullname" . }}-ca-password
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+      {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+      {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+      {{- toYaml . | nindent 8 }}
+      {{- end }}

@@ -1,0 +1,139 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "step-certificates.fullname" . }}-config
+  namespace: {{.Release.Namespace}}
+  labels:
+{{ include "step-certificates.labels" . | indent 4 }}
+data:
+  ca.json: |
+    {
+      "root": "/home/step/certs/root_ca.crt",
+      "federatedRoots": [],
+      "crt": "/home/step/certs/intermediate_ca.crt",
+      "key": "/home/step/secrets/intermediate_ca_key",
+      "address": ":9000",
+      "dnsNames": [
+          "127.0.0.1",
+          "ca.{{.Release.Namespace}}",
+          "ca.{{.Release.Namespace}}.svc.cluster.local",
+          "{{ include "step-certificates.dns" .}}"
+      ],
+      "logger": {
+          "format": "json"
+      },
+      "authority": {
+          "provisioners": [
+            {
+                "type": "jwk",
+                "name": "admin",
+                "key": {
+                  "use": "sig",
+                  "kty": "EC",
+                  "kid": "n8LNAAZrrDJWAnEv3MRnq2YOZNb1A_umIkSLSEN5fWg",
+                  "crv": "P-256",
+                  "alg": "ES256",
+                  "x": "WW3ztL4a3-Pks92VV19v7Nz6KDAmdr3Pe_hJGccZpnk",
+                  "y": "5WlAwA8tFHm3noeAhRxDojq2lxtBPdFGYI6zxZBr8NE"
+                },
+                "encryptedKey": "eyJhbGciOiJQQkVTMi1IUzI1NitBMTI4S1ciLCJjdHkiOiJqd2sranNvbiIsImVuYyI6IkEyNTZHQ00iLCJwMmMiOjEwMDAwMCwicDJzIjoiNHUxaXN1ajlDbndLQTEwYzJ5MjJXdyJ9.YgqYuQ4KRbrTSABVT4txGGPGEgUgK2izA9-eT-8tvuHzwhfv65q_Xg.Z4e0RoY-7noMzhVe.4mH-MIc_3XlvefXgQQss5BzYwVKv6hSxkcLLzNoyNhYqZ4jAoCH5HRVewj-jxe2ZiSHy2QkItemraOt__2-eKC_TmIO_eOnAkGan-D3g6gyW8AJkQvk5FUjRDZLxjAFOLvvNe3NgG0lYFwrbvWOvAPKMwHHq9i5NQa8MyWzgtx-QeB5Q_nSq8zAsvHI76BvUYcC7_yuwhemaTdhyDZLsoTH_DsBuiXR1LKtdE8R2oV0i_tG4kI0QdksLmzCA_aCHENQcX6RVymMJtZBxTVMCkZpGs6bAif-goIFFtaBq8iTVrrrdHPyXURP2VUNl5ZUAEu-6YkltXGAMbmnyoZI.EltSVJRacPYBZDrSknWECg"
+            },
+            {
+                "type": "JWK",
+                "name": "cert-manager",
+                "key": {
+                  "use": "sig",
+                  "kty": "EC",
+                  "kid": "Z2S-kUYeYrEdDN32RX0zjl1xY-XRtpxudC2hmplgK6U",
+                  "crv": "P-256",
+                  "alg": "ES256",
+                  "x": "jr51e1ue8qjrY3-WsXBkW-63T-62P2x-zMzlbvIdpsU",
+                  "y": "nXEZkyEXWRE08AJx7MwEgOpDILYzeGN-RTiXLazrsAU"
+                },
+                "claims":{
+                  "minTLSCertDuration": "1h",
+                  "maxTLSCertDuration": "2160h",
+                  "defaultTLSCertDuration": "24h"
+                },
+                "encryptedKey": "eyJhbGciOiJQQkVTMi1IUzI1NitBMTI4S1ciLCJjdHkiOiJqd2sranNvbiIsImVuYyI6IkEyNTZHQ00iLCJwMmMiOjEwMDAwMCwicDJzIjoiUnNxeWdTV1RHc2x4Y253eWFiTldSdyJ9.hrdLlGFgZAAGP1dL1rWR9_NKGRIAojEqxTQpmgUZvNbrgMMmK7tqMQ.K8oXCGaAuhmPGLGL.kUHnACLoOsCJA2-Fxg42ebdOMg6Z8tM9rYtMCEs20zc4sfCt9jPcqhwaavN96d8qesYMeVv7gtZjB8BIzCMWvIqDRFQuAjRkBoZ-ex8gB5s87fP4I7nReWcHwFkn_7mgo3utghoG9Kax3QeeqRBQemDKNt2kJDWB8B92pmriCH_gcImp-jA977rvDMeZUMoeT5EASkXPREp2w5bVvABieDP8enFygcoo94doaC_nLG8MktlHSf_pa4QPa_jJhK585826V1fM8k-aPsaUgMVsDp6TUYDWQN8zjbJpxww-1tu_Teh2AJbjN_3C5stsX2SmMPfzadHdN6ZjTek_hLM.TAljlmdLnF8XVwBiygqiCA"
+            }
+          ]
+      },
+      "tls": {
+          "cipherSuites": [
+            "TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305",
+            "TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256"
+          ],
+          "minVersion": 1.2,
+          "maxVersion": 1.2,
+          "renegotiation": false
+      }
+    }
+  defaults.json: |
+    {
+      "ca-url": "https://127.0.0.1:9000",
+      "ca-config": "/home/step/config/ca.json",
+      "fingerprint": "4a1ade72f1bf4d0def6b638716d29404dafaacdafc099a99244e52464c8674f1",
+      "root": "/home/step/certs/root_ca.crt"
+    }
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "step-certificates.fullname" . }}-certs
+  namespace: {{.Release.Namespace}}
+  labels:
+{{ include "step-certificates.labels" . | indent 4 }}
+data:
+  root_ca.crt: |
+    -----BEGIN CERTIFICATE-----
+    MIIBjDCCATKgAwIBAgIRAMFDGL1R3GzFunj9M/hH1iQwCgYIKoZIzj0EAwIwJDEi
+    MCAGA1UEAxMZQ2VydCBNYW5hZ2VyIFRlc3QgUm9vdCBDQTAeFw0xOTA2MjYxNjU2
+    MzlaFw0yOTA2MjMxNjU2MzlaMCQxIjAgBgNVBAMTGUNlcnQgTWFuYWdlciBUZXN0
+    IFJvb3QgQ0EwWTATBgcqhkjOPQIBBggqhkjOPQMBBwNCAATbqHQ+Gg6Yc5NZQ38q
+    NLuYfJklLLuvB2hnDch/b3imeQfEANCiXxOBtnOcAJuSP3sqxNGZXPj6EyJincAm
+    EEtTo0UwQzAOBgNVHQ8BAf8EBAMCAQYwEgYDVR0TAQH/BAgwBgEB/wIBATAdBgNV
+    HQ4EFgQU91VJlfkDfw0ziaWWfcxOBJGD7xQwCgYIKoZIzj0EAwIDSAAwRQIgZwrs
+    NSLM7V2PMU+bgSYkPfv7ATe5Los6RI1D+PZHriUCIQCLcgyWkG2h6J4etVHxp4RL
+    ZTJkx8uxINprKsNhwfjdWg==
+    -----END CERTIFICATE-----
+  intermediate_ca.crt: |
+    -----BEGIN CERTIFICATE-----
+    MIIBszCCAVqgAwIBAgIQUrCm64V3qkDZ7YNVvFIPzzAKBggqhkjOPQQDAjAkMSIw
+    IAYDVQQDExlDZXJ0IE1hbmFnZXIgVGVzdCBSb290IENBMB4XDTE5MDYyNjE2NTYz
+    OVoXDTI5MDYyMzE2NTYzOVowLDEqMCgGA1UEAxMhQ2VydCBNYW5hZ2VyIFRlc3Qg
+    SW50ZXJtZWRpYXRlIENBMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEwsqM9A5n
+    YgbLOdr7aWW1fNCqznLYqE+UgdkNxS+MlHi7TYYjHMWMTKJtX4fKCEvdXoivm90b
+    BnIVAE60ZAVZFKNmMGQwDgYDVR0PAQH/BAQDAgEGMBIGA1UdEwEB/wQIMAYBAf8C
+    AQAwHQYDVR0OBBYEFIox+hs4TaY4JHPESPdndBDdHOI1MB8GA1UdIwQYMBaAFPdV
+    SZX5A38NM4mlln3MTgSRg+8UMAoGCCqGSM49BAMCA0cAMEQCIApaGbCGKKXqvFid
+    tKh/JAxBRHdPNW9+Yu60oC1+xZt5AiBfRraJ6QHrjJBqEed7865fdXd1lGaJAy22
+    xoUQZsoHYw==
+    -----END CERTIFICATE-----
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "step-certificates.fullname" . }}-secrets
+  namespace: {{.Release.Namespace}}
+  labels:
+{{ include "step-certificates.labels" . | indent 4 }}
+data:
+  root_ca_key: |
+    -----BEGIN EC PRIVATE KEY-----
+    Proc-Type: 4,ENCRYPTED
+    DEK-Info: AES-256-CBC,b66a1eaa46baaf3f252e55d71cd838ca
+
+    wbXS2BQcdnUGfeW7e1Y2mlb9zoCQorjkG69i6MzrubZLvEy5hIQn2Gt27lXvwxnj
+    ZL8xtB7hbkNKkymMwUJEEdl6periZ4ETqrCJ1O3Br+PEMc5NXZ1MdGrCYbdE6/a8
+    z1MFJf0it9geBH+aPfeLjBnVRKMUtOjV7Tg7p8CmOEs=
+    -----END EC PRIVATE KEY-----
+  intermediate_ca_key: |
+    -----BEGIN EC PRIVATE KEY-----
+    Proc-Type: 4,ENCRYPTED
+    DEK-Info: AES-256-CBC,5f883c2d14d420ecc566da860e9c9700
+
+    6NW2twylOA6abZt96jFaKyHuVO5CmjYFPSx+svgXOfvcVPJnYYHA78OrHPlDhHLN
+    ITD7V1lb4ShtHum4kVm1zDJzZsvGb2JjtYeJT6Vk/NEJBxK94c+bK6eRrx9giUme
+    9xbrFqg4oO40ZuEp8VAJUy8uLojbcM1PQ+0luscBvbk=
+    -----END EC PRIVATE KEY-----

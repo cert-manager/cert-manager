@@ -162,6 +162,14 @@ container_pull(
     tag = "0.9.3",
 )
 
+# Fetch step-certificate for use during e2e tests
+container_pull(
+    name = "com_smallstep_certificates",
+    registry = "index.docker.io",
+    repository = "smallstep/step-ca",
+    tag = "0.10.0",
+)
+
 ## Fetch kind images used during e2e tests
 container_pull(
     name = "kind-1.11",
