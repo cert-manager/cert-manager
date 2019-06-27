@@ -17,6 +17,7 @@ limitations under the License.
 package dns
 
 import (
+	"context"
 	"reflect"
 	"testing"
 
@@ -191,7 +192,7 @@ func TestSolverFor(t *testing.T) {
 			test.Setup(t)
 			defer test.Finish(t)
 			s := test.Solver
-			dnsSolver, _, err := s.solverForChallenge(test.Issuer, test.Challenge)
+			dnsSolver, _, err := s.solverForChallenge(context.Background(), test.Issuer, test.Challenge)
 			if err != nil && !test.expectErr {
 				t.Errorf("expected solverFor to not error, but got: %s", err.Error())
 				return
@@ -241,7 +242,7 @@ func TestSolveForDigitalOcean(t *testing.T) {
 	defer f.Finish(t)
 
 	s := f.Solver
-	_, _, err := s.solverForChallenge(f.Issuer, f.Challenge)
+	_, _, err := s.solverForChallenge(context.Background(), f.Issuer, f.Challenge)
 	if err != nil {
 		t.Fatalf("expected solverFor to not error, but got: %s", err)
 	}
@@ -294,7 +295,7 @@ func TestRoute53TrimCreds(t *testing.T) {
 	defer f.Finish(t)
 
 	s := f.Solver
-	_, _, err := s.solverForChallenge(f.Issuer, f.Challenge)
+	_, _, err := s.solverForChallenge(context.Background(), f.Issuer, f.Challenge)
 	if err != nil {
 		t.Fatalf("expected solverFor to not error, but got: %s", err)
 	}
@@ -388,7 +389,7 @@ func TestRoute53AmbientCreds(t *testing.T) {
 		f.Setup(t)
 		defer f.Finish(t)
 		s := f.Solver
-		_, _, err := s.solverForChallenge(f.Issuer, f.Challenge)
+		_, _, err := s.solverForChallenge(context.Background(), f.Issuer, f.Challenge)
 		if !reflect.DeepEqual(tt.out.expectedErr, err) {
 			t.Fatalf("expected error %v, got error %v", tt.out.expectedErr, err)
 		}

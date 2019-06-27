@@ -320,48 +320,17 @@ func parseZoneConfigurationData(b []byte) (*zone, error) {
 	return &data, nil
 }
 
-func parseCertificatePolicyResult(httpStatusCode int, httpStatus string, body []byte) (*certificatePolicy, error) {
-	switch httpStatusCode {
-	case http.StatusOK:
-		p, err := parseCertificatePolicyData(body)
-		if err != nil {
-			return nil, err
-		}
-		return p, nil
-	case http.StatusBadRequest, http.StatusPreconditionFailed, http.StatusNotFound:
-		respErrors, err := parseResponseErrors(body)
-		if err != nil {
-			return nil, err
-		}
-
-		respError := fmt.Sprintf("Unexpected status code on Venafi Cloud policy read. Status: %s\n", httpStatus)
-		for _, e := range respErrors {
-			respError += fmt.Sprintf("Error Code: %d Error: %s\n", e.Code, e.Message)
-		}
-		return nil, fmt.Errorf(respError)
-	default:
-		if body != nil {
-			respErrors, err := parseResponseErrors(body)
-			if err == nil {
-				respError := fmt.Sprintf("Unexpected status code on Venafi Cloud policy read. Status: %s\n", httpStatus)
-				for _, e := range respErrors {
-					respError += fmt.Sprintf("Error Code: %d Error: %s\n", e.Code, e.Message)
-				}
-				return nil, fmt.Errorf(respError)
-			}
-		}
-		return nil, fmt.Errorf("Unexpected status code on Venafi Cloud policy read. Status: %s", httpStatus)
+func parseCertificateTemplate(httpStatusCode int, httpStatus string, body []byte) (*certificateTemplate, error) {
+	ct := certificateTemplate{}
+	if httpStatusCode != 200 {
+		return nil, fmt.Errorf("Unexpected status code on Venafi Cloud policy read. Status: %s\n", httpStatus)
 	}
-}
-
-func parseCertificatePolicyData(b []byte) (*certificatePolicy, error) {
-	var data certificatePolicy
-	err := json.Unmarshal(b, &data)
+	// todo: better error parsing
+	err := json.Unmarshal(body, &ct)
 	if err != nil {
 		return nil, err
 	}
-
-	return &data, nil
+	return &ct, nil
 }
 
 func parseCertificateRequestResult(httpStatusCode int, httpStatus string, body []byte) (*certificateRequestResponse, error) {

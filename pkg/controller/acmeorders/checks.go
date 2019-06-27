@@ -24,7 +24,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/runtime"
 )
 
-func (c *Controller) handleGenericIssuer(obj interface{}) {
+func (c *controller) handleGenericIssuer(obj interface{}) {
 	iss, ok := obj.(cmapi.GenericIssuer)
 	if !ok {
 		runtime.HandleError(fmt.Errorf("Object does not implement GenericIssuer %#v", obj))
@@ -46,7 +46,7 @@ func (c *Controller) handleGenericIssuer(obj interface{}) {
 	}
 }
 
-func (c *Controller) ordersForGenericIssuer(iss cmapi.GenericIssuer) ([]*cmapi.Order, error) {
+func (c *controller) ordersForGenericIssuer(iss cmapi.GenericIssuer) ([]*cmapi.Order, error) {
 	orders, err := c.orderLister.List(labels.NewSelector())
 
 	if err != nil {

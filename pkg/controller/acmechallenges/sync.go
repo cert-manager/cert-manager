@@ -56,7 +56,7 @@ type solver interface {
 
 // Sync will process this ACME Challenge.
 // It is the core control function for ACME challenges.
-func (c *Controller) Sync(ctx context.Context, ch *cmapi.Challenge) (err error) {
+func (c *controller) Sync(ctx context.Context, ch *cmapi.Challenge) (err error) {
 	metrics.Default.IncrementSyncCallCount(ControllerName)
 
 	log := logf.FromContext(ctx).WithValues("dnsName", ch.Spec.DNSName, "type", ch.Spec.Type)
@@ -69,7 +69,7 @@ func (c *Controller) Sync(ctx context.Context, ch *cmapi.Challenge) (err error) 
 		if reflect.DeepEqual(oldChal.Status, ch.Status) && len(oldChal.Finalizers) == len(ch.Finalizers) {
 			return
 		}
-		_, updateErr := c.CMClient.CertmanagerV1alpha1().Challenges(ch.Namespace).Update(ch)
+		_, updateErr := c.cmClient.CertmanagerV1alpha1().Challenges(ch.Namespace).Update(ch)
 		if err != nil {
 			err = utilerrors.NewAggregate([]error{err, updateErr})
 		}
@@ -102,7 +102,7 @@ func (c *Controller) Sync(ctx context.Context, ch *cmapi.Challenge) (err error) 
 
 			err = solver.CleanUp(ctx, genericIssuer, ch)
 			if err != nil {
-				c.Recorder.Eventf(ch, corev1.EventTypeWarning, "CleanUpError", "Error cleaning up challenge: %v", err)
+				c.recorder.Eventf(ch, corev1.EventTypeWarning, "CleanUpError", "Error cleaning up challenge: %v", err)
 				ch.Status.Reason = err.Error()
 				log.Error(err, "error cleaning up challenge")
 				return err
@@ -153,7 +153,7 @@ func (c *Controller) Sync(ctx context.Context, ch *cmapi.Challenge) (err error) 
 		// means no CAA check is performed by ACME server or if any valid
 		// CAA would stop issuance (strongly suspect the former)
 		if len(dir.CAA) != 0 {
-			err := dnsutil.ValidateCAA(ch.Spec.DNSName, dir.CAA, ch.Spec.Wildcard, c.Context.DNS01Nameservers)
+			err := dnsutil.ValidateCAA(ch.Spec.DNSName, dir.CAA, ch.Spec.Wildcard, c.dns01Nameservers)
 			if err != nil {
 				ch.Status.Reason = fmt.Sprintf("CAA self-check failed: %s", err)
 				return err
@@ -169,13 +169,13 @@ func (c *Controller) Sync(ctx context.Context, ch *cmapi.Challenge) (err error) 
 	if !ch.Status.Presented {
 		err := solver.Present(ctx, genericIssuer, ch)
 		if err != nil {
-			c.Recorder.Eventf(ch, corev1.EventTypeWarning, "PresentError", "Error presenting challenge: %v", err)
+			c.recorder.Eventf(ch, corev1.EventTypeWarning, "PresentError", "Error presenting challenge: %v", err)
 			ch.Status.Reason = err.Error()
 			return err
 		}
 
 		ch.Status.Presented = true
-		c.Recorder.Eventf(ch, corev1.EventTypeNormal, "Presented", "Presented challenge using %s challenge mechanism", ch.Spec.Type)
+		c.recorder.Eventf(ch, corev1.EventTypeNormal, "Presented", "Presented challenge using %s challenge mechanism", ch.Spec.Type)
 	}
 
 	err = solver.Check(ctx, genericIssuer, ch)
@@ -232,7 +232,7 @@ func handleError(ch *cmapi.Challenge, err error) error {
 	return err
 }
 
-func (c *Controller) handleFinalizer(ctx context.Context, ch *cmapi.Challenge) error {
+func (c *controller) handleFinalizer(ctx context.Context, ch *cmapi.Challenge) error {
 	log := logf.FromContext(ctx, "finalizer")
 	if len(ch.Finalizers) == 0 {
 		return nil
@@ -260,7 +260,7 @@ func (c *Controller) handleFinalizer(ctx context.Context, ch *cmapi.Challenge) e
 
 	err = solver.CleanUp(ctx, genericIssuer, ch)
 	if err != nil {
-		c.Recorder.Eventf(ch, corev1.EventTypeWarning, "CleanUpError", "Error cleaning up challenge: %v", err)
+		c.recorder.Eventf(ch, corev1.EventTypeWarning, "CleanUpError", "Error cleaning up challenge: %v", err)
 		ch.Status.Reason = err.Error()
 		log.Error(err, "error cleaning up challenge")
 		return nil
@@ -272,7 +272,7 @@ func (c *Controller) handleFinalizer(ctx context.Context, ch *cmapi.Challenge) e
 // syncChallengeStatus will communicate with the ACME server to retrieve the current
 // state of the Challenge. It will then update the Challenge's status block with the new
 // state of the Challenge.
-func (c *Controller) syncChallengeStatus(ctx context.Context, cl acmecl.Interface, ch *cmapi.Challenge) error {
+func (c *controller) syncChallengeStatus(ctx context.Context, cl acmecl.Interface, ch *cmapi.Challenge) error {
 	if ch.Spec.URL == "" {
 		return fmt.Errorf("challenge URL is blank - challenge has not been created yet")
 	}
@@ -304,7 +304,7 @@ func (c *Controller) syncChallengeStatus(ctx context.Context, cl acmecl.Interfac
 // It will update the challenge's status to reflect the final state of the
 // challenge if it failed, or the final state of the challenge's authorization
 // if accepting the challenge succeeds.
-func (c *Controller) acceptChallenge(ctx context.Context, cl acmecl.Interface, ch *cmapi.Challenge) error {
+func (c *controller) acceptChallenge(ctx context.Context, cl acmecl.Interface, ch *cmapi.Challenge) error {
 	log := logf.FromContext(ctx, "acceptChallenge")
 
 	log.Info("accepting challenge with ACME server")
@@ -337,7 +337,7 @@ func (c *Controller) acceptChallenge(ctx context.Context, cl acmecl.Interface, c
 		ch.Status.State = cmapi.State(authErr.Authorization.Status)
 		ch.Status.Reason = fmt.Sprintf("Error accepting authorization: %v", authErr)
 
-		c.Recorder.Eventf(ch, corev1.EventTypeWarning, "Failed", "Accepting challenge authorization failed: %v", authErr)
+		c.recorder.Eventf(ch, corev1.EventTypeWarning, "Failed", "Accepting challenge authorization failed: %v", authErr)
 
 		// return nil here, as accepting the challenge did not error, the challenge
 		// simply failed
@@ -346,12 +346,12 @@ func (c *Controller) acceptChallenge(ctx context.Context, cl acmecl.Interface, c
 
 	ch.Status.State = cmapi.State(authorization.Status)
 	ch.Status.Reason = "Successfully authorized domain"
-	c.Context.Recorder.Eventf(ch, corev1.EventTypeNormal, reasonDomainVerified, "Domain %q verified with %q validation", ch.Spec.DNSName, ch.Spec.Type)
+	c.recorder.Eventf(ch, corev1.EventTypeNormal, reasonDomainVerified, "Domain %q verified with %q validation", ch.Spec.DNSName, ch.Spec.Type)
 
 	return nil
 }
 
-func (c *Controller) solverFor(challengeType string) (solver, error) {
+func (c *controller) solverFor(challengeType string) (solver, error) {
 	switch challengeType {
 	case "http-01":
 		return c.httpSolver, nil

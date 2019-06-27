@@ -33,9 +33,9 @@ import (
 	"github.com/jetstack/cert-manager/pkg/acme"
 	acmecl "github.com/jetstack/cert-manager/pkg/acme/client"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	logf "github.com/jetstack/cert-manager/pkg/logs"
 	"github.com/jetstack/cert-manager/pkg/metrics"
 	acmeapi "github.com/jetstack/cert-manager/third_party/crypto/acme"
-	"k8s.io/klog"
 )
 
 var (
@@ -48,7 +48,11 @@ var (
 // - deciding/validated configured challenge mechanisms
 // - create a Challenge resource in order to fulfill required validations
 // - waiting for Challenge resources to enter the 'ready' state
-func (c *Controller) Sync(ctx context.Context, o *cmapi.Order) (err error) {
+func (c *controller) Sync(ctx context.Context, o *cmapi.Order) (err error) {
+	log := logf.WithResource(logf.FromContext(ctx), o)
+	dbg := log.V(logf.DebugLevel)
+	ctx = logf.NewContext(ctx, log)
+
 	metrics.Default.IncrementSyncCallCount(ControllerName)
 
 	oldOrder := o
@@ -57,12 +61,17 @@ func (c *Controller) Sync(ctx context.Context, o *cmapi.Order) (err error) {
 	defer func() {
 		// TODO: replace with more efficient comparison
 		if reflect.DeepEqual(oldOrder.Status, o.Status) {
+			dbg.Info("skipping updating resource as new status == existing status")
 			return
 		}
-		_, updateErr := c.CMClient.CertmanagerV1alpha1().Orders(o.Namespace).Update(o)
+		log.Info("updating Order resource status")
+		_, updateErr := c.cmClient.CertmanagerV1alpha1().Orders(o.Namespace).Update(o)
 		if err != nil {
+			log.Error(err, "failed to update status")
 			err = utilerrors.NewAggregate([]error{err, updateErr})
+			return
 		}
+		dbg.Info("updated Order resource status successfully")
 	}()
 
 	genericIssuer, err := c.helper.GetGenericIssuer(o.Spec.IssuerRef, o.Namespace)
@@ -76,6 +85,7 @@ func (c *Controller) Sync(ctx context.Context, o *cmapi.Order) (err error) {
 	}
 
 	if o.Status.URL == "" {
+		log.Info("creating Order with ACME server as one does not currently exist")
 		err := c.createOrder(ctx, cl, genericIssuer, o)
 
 		if err != nil {
@@ -155,7 +165,7 @@ func (c *Controller) Sync(ctx context.Context, o *cmapi.Order) (err error) {
 
 		// Cleanup challenge resources once a final state has been reached
 		for _, ch := range existingChallenges {
-			err := c.CMClient.CertmanagerV1alpha1().Challenges(ch.Namespace).Delete(ch.Name, nil)
+			err := c.cmClient.CertmanagerV1alpha1().Challenges(ch.Namespace).Delete(ch.Name, nil)
 			if err != nil {
 				return err
 			}
@@ -274,20 +284,20 @@ func (c *Controller) Sync(ctx context.Context, o *cmapi.Order) (err error) {
 		specsToCreate[i] = s
 	}
 
-	klog.Infof("Need to create %d challenges", len(specsToCreate))
+	log.Info("need to create challenges", "number", len(specsToCreate))
 
 	// create a Challenge resource for each challenge we need to create.
 	var errs []error
 	for i, spec := range specsToCreate {
 		ch := buildChallenge(i, o, spec)
 
-		ch, err = c.CMClient.CertmanagerV1alpha1().Challenges(o.Namespace).Create(ch)
+		ch, err = c.cmClient.CertmanagerV1alpha1().Challenges(o.Namespace).Create(ch)
 		if err != nil {
 			errs = append(errs, err)
 			continue
 		}
 
-		c.Recorder.Eventf(o, corev1.EventTypeNormal, "Created", "Created Challenge resource %q for domain %q", ch.Name, ch.Spec.DNSName)
+		c.recorder.Eventf(o, corev1.EventTypeNormal, "Created", "Created Challenge resource %q for domain %q", ch.Name, ch.Spec.DNSName)
 
 		existingChallenges = append(existingChallenges, ch)
 	}
@@ -319,12 +329,12 @@ func (c *Controller) Sync(ctx context.Context, o *cmapi.Order) (err error) {
 		return nil
 	}
 
-	klog.Infof("Waiting for all challenges for order %q to enter 'valid' state", o.Name)
+	log.Info("waiting for all challenges to enter 'valid' state")
 
 	return nil
 }
 
-func (c *Controller) listChallengesForOrder(o *cmapi.Order) ([]*cmapi.Challenge, error) {
+func (c *controller) listChallengesForOrder(o *cmapi.Order) ([]*cmapi.Challenge, error) {
 	// create a selector that we can use to find all existing Challenges for the order
 	sel, err := challengeSelectorForOrder(o)
 	if err != nil {
@@ -339,34 +349,49 @@ const (
 	orderNameLabelKey = "acme.cert-manager.io/order-name"
 )
 
-func (c *Controller) createOrder(ctx context.Context, cl acmecl.Interface, issuer cmapi.GenericIssuer, o *cmapi.Order) error {
+func (c *controller) createOrder(ctx context.Context, cl acmecl.Interface, issuer cmapi.GenericIssuer, o *cmapi.Order) error {
+	log := logf.FromContext(ctx)
+	dbg := log.V(logf.DebugLevel)
+
 	if o.Status.URL != "" {
 		return fmt.Errorf("refusing to recreate a new order for Order %q. Please create a new Order resource to initiate a new order", o.Name)
 	}
+	log.Info("order URL not set, submitting Order to ACME server")
 
 	identifierSet := sets.NewString(o.Spec.DNSNames...)
 	if o.Spec.CommonName != "" {
 		identifierSet.Insert(o.Spec.CommonName)
 	}
+	log.Info("build set of domains for Order", "domains", identifierSet.List())
+
 	// create a new order with the acme server
 	orderTemplate := acmeapi.NewOrder(identifierSet.List()...)
+	dbg.Info("constructed order template", "template", orderTemplate)
 	acmeOrder, err := cl.CreateOrder(ctx, orderTemplate)
 	if err != nil {
 		return fmt.Errorf("error creating new order: %v", err)
 	}
 
+	log.Info("submitted Order to ACME server")
 	c.setOrderStatus(&o.Status, acmeOrder)
 
+	log.Info("computing Challenge resources to create for this Order")
 	useOldFormat := len(o.Spec.Config) > 0
+	if useOldFormat {
+		log.Info("spec.acme field found on Order resource. Using old style ACME configuration format. For more details, read: https://docs.cert-manager.io/en/latest/tasks/upgrading/upgrading-0.7-0.8.html")
+	}
 	chals := make([]cmapi.ChallengeSpec, len(acmeOrder.Authorizations))
 	// we only set the status.challenges field when we first create the order,
 	// because we only create one order per Order resource.
 	for i, authzURL := range acmeOrder.Authorizations {
+		dbg.Info("querying details for authorization", "url", authzURL)
 		authz, err := cl.GetAuthorization(ctx, authzURL)
 		if err != nil {
 			return err
 		}
 
+		log := log.WithValues("url", authzURL, "domain", authz.Identifier.Value, "wildcard", authz.Wildcard)
+		log.Info("determining challenge solver to use for challenge")
 		var cs *cmapi.ChallengeSpec
 		if useOldFormat {
 			cs, err = c.oldFormatChallengeSpecForAuthorization(ctx, cl, issuer, o, authz)
@@ -387,7 +412,7 @@ func (c *Controller) createOrder(ctx context.Context, cl acmecl.Interface, issue
 	return nil
 }
 
-func (c *Controller) challengeSpecForAuthorization(ctx context.Context, cl acmecl.Interface, issuer cmapi.GenericIssuer, o *cmapi.Order, authz *acmeapi.Authorization) (*cmapi.ChallengeSpec, error) {
+func (c *controller) challengeSpecForAuthorization(ctx context.Context, cl acmecl.Interface, issuer cmapi.GenericIssuer, o *cmapi.Order, authz *acmeapi.Authorization) (*cmapi.ChallengeSpec, error) {
 	// 1. fetch solvers from issuer
 	solvers := issuer.GetSpec().ACME.Solvers
 
@@ -547,7 +572,7 @@ func orderHasOneOfDNSNames(o *cmapi.Order, dnsNames ...string) bool {
 	return false
 }
 
-func (c *Controller) oldFormatChallengeSpecForAuthorization(ctx context.Context, cl acmecl.Interface, issuer cmapi.GenericIssuer, o *cmapi.Order, authz *acmeapi.Authorization) (*cmapi.ChallengeSpec, error) {
+func (c *controller) oldFormatChallengeSpecForAuthorization(ctx context.Context, cl acmecl.Interface, issuer cmapi.GenericIssuer, o *cmapi.Order, authz *acmeapi.Authorization) (*cmapi.ChallengeSpec, error) {
 	cfg, err := solverConfigurationForAuthorization(o.Spec.Config, authz)
 	if err != nil {
 		return nil, err
@@ -623,7 +648,7 @@ func solverConfigurationForAuthorization(cfgs []cmapi.DomainSolverConfig, authz 
 // syncOrderStatus will communicate with the ACME server to retrieve the current
 // state of the Order. It will then update the Order's status block with the new
 // state of the order.
-func (c *Controller) syncOrderStatus(ctx context.Context, cl acmecl.Interface, o *cmapi.Order) error {
+func (c *controller) syncOrderStatus(ctx context.Context, cl acmecl.Interface, o *cmapi.Order) error {
 	if o.Status.URL == "" {
 		return fmt.Errorf("order URL is blank - order has not been created yet")
 	}
@@ -656,7 +681,7 @@ func buildChallenge(i int, o *cmapi.Order, chalSpec cmapi.ChallengeSpec) *cmapi.
 
 // setOrderStatus will populate the given OrderStatus struct with the details from
 // the provided ACME Order.
-func (c *Controller) setOrderStatus(o *cmapi.OrderStatus, acmeOrder *acmeapi.Order) {
+func (c *controller) setOrderStatus(o *cmapi.OrderStatus, acmeOrder *acmeapi.Order) {
 	// TODO: should we validate the State returned by the ACME server here?
 	cmState := cmapi.State(acmeOrder.Status)
 	// be nice to our users and check if there is an error that we
@@ -699,7 +724,7 @@ func challengeSelectorForOrder(o *cmapi.Order) (labels.Selector, error) {
 // setOrderState will set the 'State' field of the given Order to 's'.
 // It will set the Orders failureTime field if the state provided is classed as
 // a failure state.
-func (c *Controller) setOrderState(o *cmapi.OrderStatus, s cmapi.State) {
+func (c *controller) setOrderState(o *cmapi.OrderStatus, s cmapi.State) {
 	o.State = s
 	// if the order is in a failure state, we should set the `failureTime` field
 	if acme.IsFailureState(o.State) {
@@ -708,7 +733,7 @@ func (c *Controller) setOrderState(o *cmapi.OrderStatus, s cmapi.State) {
 	}
 }
 
-func (c *Controller) storeCertificateOnStatus(o *cmapi.Order, certs [][]byte) error {
+func (c *controller) storeCertificateOnStatus(o *cmapi.Order, certs [][]byte) error {
 	// encode the retrieved certificates (including the chain)
 	certBuffer := bytes.NewBuffer([]byte{})
 	for _, cert := range certs {
@@ -720,7 +745,7 @@ func (c *Controller) storeCertificateOnStatus(o *cmapi.Order, certs [][]byte) er
 	}
 
 	o.Status.Certificate = certBuffer.Bytes()
-	c.Recorder.Event(o, corev1.EventTypeNormal, "OrderValid", "Order completed successfully")
+	c.recorder.Event(o, corev1.EventTypeNormal, "OrderValid", "Order completed successfully")
 
 	return nil
 }

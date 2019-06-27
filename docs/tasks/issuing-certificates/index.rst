@@ -68,6 +68,16 @@ The Certificate will be issued using the issuer named ``ca-issuer`` in the
    :doc:`webhook </getting-started/webhook>` component can prevent cert-manager
    from functioning correctly (`#1269`_).
 
+.. note::
+   Take care when setting the ``renewBefore`` field to be very close to the
+   ``duration`` as this can lead to a renewal loop, where the Certificate is
+   always in the renewal period. Some Issuers set the ``notBefore`` field on
+   their issued X.509 certificate before the issue time to fix clock-skew
+   issues, leading to the working duration of a certificate to be less than
+   the full duration of the certificate. For example, Let's Encrypt sets it
+   to be one hour before issue time, so the actual *working duration* of the
+   certificate is 89 days, 23 hours (the *full duration* remains 90 days). 
+
 A full list of the fields supported on the Certificate resource can be found in
 the `API reference documentation`_.
 

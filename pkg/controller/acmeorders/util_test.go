@@ -36,7 +36,7 @@ const (
 )
 
 type controllerFixture struct {
-	Controller *Controller
+	Controller *controller
 	*test.Builder
 
 	Issuer v1alpha1.GenericIssuer
@@ -105,9 +105,10 @@ func (f *controllerFixture) Finish(t *testing.T, args ...interface{}) {
 	}
 }
 
-func (f *controllerFixture) buildFakeController(b *test.Builder, issuer v1alpha1.GenericIssuer) *Controller {
+func (f *controllerFixture) buildFakeController(b *test.Builder, issuer v1alpha1.GenericIssuer) *controller {
 	b.Start()
-	c := New(b.Context)
+	c := &controller{}
+	c.Register(b.Context)
 	c.acmeHelper = f
 	c.helper = f
 	c.clock = f.Clock

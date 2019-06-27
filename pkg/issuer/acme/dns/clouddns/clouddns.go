@@ -22,6 +22,7 @@ import (
 	"google.golang.org/api/dns/v1"
 
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
+	"k8s.io/klog"
 )
 
 // DNSProvider is an implementation of the DNSProvider interface.
@@ -217,6 +218,15 @@ func (c *DNSProvider) getHostedZone(domain string) (string, error) {
 		return "", fmt.Errorf("No matching GoogleCloud domain found for domain %s", authZone)
 	}
 
+	// attempt to get the first public zone
+	for _, zone := range zones.ManagedZones {
+		if zone.Visibility == "public" {
+			return zone.Name, nil
+		}
+	}
+
+	klog.V(5).Infof("No matching public GoogleCloud managed-zone for domain %s, falling back to a private managed-zone", authZone)
+	// fall back to first available zone, if none public
 	return zones.ManagedZones[0].Name, nil
 }
 

@@ -17,6 +17,7 @@ limitations under the License.
 package controller
 
 import (
+	"context"
 	"crypto/x509"
 	"testing"
 	"time"
@@ -89,6 +90,15 @@ func TestCalculateDurationUntilRenew(t *testing.T) {
 			renewBefore:    &metav1.Duration{time.Hour * 24 * 40},
 			expectedExpiry: time.Hour * 24 * 35 * 2 / 3,
 		},
+		{
+			// the notBefore of an LE certificate is one hour before issuance
+			desc:           "expiry of let's encrypt certificate",
+			notBefore:      now().Add(-time.Hour),
+			notAfter:       now().Add(-time.Hour).Add(time.Hour * 24 * 90),
+			duration:       nil,
+			renewBefore:    &metav1.Duration{time.Hour*2159 + time.Minute*50},
+			expectedExpiry: -time.Minute * 50,
+		},
 	}
 	for k, v := range tests {
 		cert := &v1alpha1.Certificate{
@@ -98,7 +108,7 @@ func TestCalculateDurationUntilRenew(t *testing.T) {
 			},
 		}
 		x509Cert := &x509.Certificate{NotBefore: v.notBefore, NotAfter: v.notAfter}
-		duration := c.CalculateDurationUntilRenew(x509Cert, cert)
+		duration := c.CalculateDurationUntilRenew(context.Background(), x509Cert, cert)
 		if duration != v.expectedExpiry {
 			t.Errorf("test # %d - %s: got %v, expected %v", k, v.desc, duration, v.expectedExpiry)
 		}

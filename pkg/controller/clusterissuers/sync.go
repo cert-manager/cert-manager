@@ -38,7 +38,7 @@ const (
 	messageErrorInitIssuer = "Error initializing issuer: "
 )
 
-func (c *Controller) Sync(ctx context.Context, iss *v1alpha1.ClusterIssuer) (err error) {
+func (c *controller) Sync(ctx context.Context, iss *v1alpha1.ClusterIssuer) (err error) {
 	metrics.Default.IncrementSyncCallCount(ControllerName)
 
 	log := logf.FromContext(ctx)
@@ -77,19 +77,19 @@ func (c *Controller) Sync(ctx context.Context, iss *v1alpha1.ClusterIssuer) (err
 	if err != nil {
 		s := messageErrorInitIssuer + err.Error()
 		log.Error(err, "error setting up issuer")
-		c.Recorder.Event(issuerCopy, v1.EventTypeWarning, errorInitIssuer, s)
+		c.recorder.Event(issuerCopy, v1.EventTypeWarning, errorInitIssuer, s)
 		return err
 	}
 
 	return nil
 }
 
-func (c *Controller) updateIssuerStatus(old, new *v1alpha1.ClusterIssuer) (*v1alpha1.ClusterIssuer, error) {
+func (c *controller) updateIssuerStatus(old, new *v1alpha1.ClusterIssuer) (*v1alpha1.ClusterIssuer, error) {
 	if reflect.DeepEqual(old.Status, new.Status) {
 		return nil, nil
 	}
 	// TODO: replace Update call with UpdateStatus. This requires a custom API
 	// server with the /status subresource enabled and/or subresource support
 	// for CRDs (https://github.com/kubernetes/kubernetes/issues/38113)
-	return c.CMClient.CertmanagerV1alpha1().ClusterIssuers().Update(new)
+	return c.cmClient.CertmanagerV1alpha1().ClusterIssuers().Update(new)
 }

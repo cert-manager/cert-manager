@@ -4,6 +4,7 @@ go_library(
     name = "go_default_library",
     srcs = [
         "certificate.go",
+        "certificaterequest.go",
         "certmanager_client.go",
         "challenge.go",
         "clusterissuer.go",

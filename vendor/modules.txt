@@ -26,7 +26,7 @@ github.com/NYTimes/gziphandler
 github.com/PuerkitoBio/purell
 # github.com/PuerkitoBio/urlesc v0.0.0-20170810143723-de5bf2ad4578
 github.com/PuerkitoBio/urlesc
-# github.com/Venafi/vcert v0.0.0-20190530133915-e207710a0ab9
+# github.com/Venafi/vcert v0.0.0-20190613103158-62139eb19b25
 github.com/Venafi/vcert
 github.com/Venafi/vcert/pkg/certificate
 github.com/Venafi/vcert/pkg/endpoint
@@ -764,7 +764,6 @@ k8s.io/client-go/discovery/fake
 k8s.io/client-go/testing
 k8s.io/client-go/tools/cache
 k8s.io/client-go/util/workqueue
-k8s.io/client-go/informers/extensions/v1beta1
 k8s.io/client-go/listers/extensions/v1beta1
 k8s.io/client-go/kubernetes/fake
 k8s.io/client-go/tools/clientcmd
@@ -894,6 +893,7 @@ k8s.io/client-go/informers/coordination/v1
 k8s.io/client-go/informers/coordination/v1beta1
 k8s.io/client-go/informers/core/v1
 k8s.io/client-go/informers/events/v1beta1
+k8s.io/client-go/informers/extensions/v1beta1
 k8s.io/client-go/informers/networking/v1
 k8s.io/client-go/informers/networking/v1beta1
 k8s.io/client-go/informers/node/v1alpha1

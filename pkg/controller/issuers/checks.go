@@ -25,7 +25,7 @@ import (
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 )
 
-func (c *Controller) issuersForSecret(secret *corev1.Secret) ([]*v1alpha1.Issuer, error) {
+func (c *controller) issuersForSecret(secret *corev1.Secret) ([]*v1alpha1.Issuer, error) {
 	issuers, err := c.issuerLister.List(labels.NewSelector())
 
 	if err != nil {

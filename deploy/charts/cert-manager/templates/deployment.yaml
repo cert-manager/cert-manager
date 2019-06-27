@@ -30,9 +30,11 @@ spec:
       {{- if .Values.podAnnotations }}
 {{ toYaml .Values.podAnnotations | indent 8 }}
       {{- end }}
+      {{- if and .Values.prometheus.enabled (not .Values.prometheus.servicemonitor.enabled) }}
         prometheus.io/path: "/metrics"
         prometheus.io/scrape: 'true'
         prometheus.io/port: '9402'
+      {{- end }}
     spec:
       serviceAccountName: {{ template "cert-manager.serviceAccountName" . }}
       {{- if .Values.global.priorityClassName }}

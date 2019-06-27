@@ -7,6 +7,7 @@ go_library(
     visibility = ["//visibility:public"],
     deps = [
         "//pkg/apis/certmanager/v1alpha1:go_default_library",
+        "//pkg/client/listers/certmanager/v1alpha1:go_default_library",
         "//pkg/logs:go_default_library",
         "//pkg/util/errors:go_default_library",
         "//pkg/util/kube:go_default_library",
@@ -14,7 +15,10 @@ go_library(
         "//vendor/github.com/prometheus/client_golang/prometheus:go_default_library",
         "//vendor/github.com/prometheus/client_golang/prometheus/promhttp:go_default_library",
         "//vendor/k8s.io/apimachinery/pkg/api/errors:go_default_library",
+        "//vendor/k8s.io/apimachinery/pkg/labels:go_default_library",
+        "//vendor/k8s.io/apimachinery/pkg/util/wait:go_default_library",
         "//vendor/k8s.io/client-go/listers/core/v1:go_default_library",
+        "//vendor/k8s.io/client-go/tools/cache:go_default_library",
     ],
 )
 
@@ -36,5 +40,9 @@ go_test(
     name = "go_default_test",
     srcs = ["metrics_test.go"],
     embed = [":go_default_library"],
-    deps = ["//vendor/github.com/prometheus/client_golang/prometheus/testutil:go_default_library"],
+    deps = [
+        "//pkg/apis/certmanager/v1alpha1:go_default_library",
+        "//vendor/github.com/prometheus/client_golang/prometheus/testutil:go_default_library",
+        "//vendor/k8s.io/apimachinery/pkg/apis/meta/v1:go_default_library",
+    ],
 )

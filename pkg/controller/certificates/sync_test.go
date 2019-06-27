@@ -740,6 +740,108 @@ func TestSync(t *testing.T) {
 				},
 			},
 		},
+		"should mark certificate with duplicate secretName as DuplicateSecretName": {
+			Issuer: gen.Issuer("test",
+				gen.AddIssuerCondition(cmapi.IssuerCondition{
+					Type:   cmapi.IssuerConditionReady,
+					Status: cmapi.ConditionTrue,
+				}),
+				gen.SetIssuerSelfSigned(cmapi.SelfSignedIssuer{}),
+			),
+			Certificate: *exampleCert,
+			IssuerImpl: &fake.Issuer{
+				FakeIssue: func(context.Context, *cmapi.Certificate) (*issuer.IssueResponse, error) {
+					return &issuer.IssueResponse{
+						PrivateKey:  pk1PEM,
+						Certificate: cert1PEM,
+					}, nil
+				},
+			},
+			Builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{
+					gen.Certificate("test"),
+					gen.Certificate("dup-test",
+						gen.SetCertificateDNSNames("example.com"),
+						gen.SetCertificateIssuer(cmapi.ObjectReference{Name: "test"}),
+						gen.SetCertificateSecretName("output"),
+					),
+				},
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(coretesting.NewUpdateAction(
+						cmapi.SchemeGroupVersion.WithResource("certificates"),
+						gen.DefaultTestNamespace,
+						gen.CertificateFrom(exampleCert,
+							gen.SetCertificateStatusCondition(cmapi.CertificateCondition{
+								Type:               cmapi.CertificateConditionReady,
+								Status:             cmapi.ConditionFalse,
+								Reason:             "DuplicateSecretName",
+								Message:            "Another Certificate is using the same secretName",
+								LastTransitionTime: &nowMetaTime,
+							}),
+						),
+					)),
+				},
+			},
+		},
+		"should allow duplicate secretName in different namespaces": {
+			Issuer: gen.Issuer("test",
+				gen.AddIssuerCondition(cmapi.IssuerCondition{
+					Type:   cmapi.IssuerConditionReady,
+					Status: cmapi.ConditionTrue,
+				}),
+				gen.SetIssuerSelfSigned(cmapi.SelfSignedIssuer{}),
+			),
+			Certificate: *exampleCert,
+			IssuerImpl: &fake.Issuer{
+				FakeIssue: func(context.Context, *cmapi.Certificate) (*issuer.IssueResponse, error) {
+					return &issuer.IssueResponse{
+						PrivateKey:  pk1PEM,
+						Certificate: cert1PEM,
+					}, nil
+				},
+			},
+			Builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{
+					gen.Certificate("test"),
+					gen.CertificateFrom(exampleCert,
+						gen.SetCertificateNamespace("other-unit-test-ns")),
+				},
+				ExpectedActions: []testpkg.Action{
+					// specifically tests that a secret is created - behaves as usual
+					testpkg.NewAction(coretesting.NewUpdateAction(
+						cmapi.SchemeGroupVersion.WithResource("certificates"),
+						gen.DefaultTestNamespace,
+						exampleCertNotFoundCondition,
+					)),
+					testpkg.NewAction(coretesting.NewCreateAction(
+						corev1.SchemeGroupVersion.WithResource("secrets"),
+						gen.DefaultTestNamespace,
+						&corev1.Secret{
+							ObjectMeta: metav1.ObjectMeta{
+								Namespace: gen.DefaultTestNamespace,
+								Name:      "output",
+								Labels: map[string]string{
+									cmapi.CertificateNameKey: "test",
+								},
+								Annotations: map[string]string{
+									"certmanager.k8s.io/alt-names":   "example.com",
+									"certmanager.k8s.io/common-name": "example.com",
+									"certmanager.k8s.io/ip-sans":     "",
+									"certmanager.k8s.io/issuer-kind": "Issuer",
+									"certmanager.k8s.io/issuer-name": "test",
+								},
+							},
+							Data: map[string][]byte{
+								corev1.TLSCertKey:       cert1PEM,
+								corev1.TLSPrivateKeyKey: pk1PEM,
+								TLSCAKey:                nil,
+							},
+							Type: corev1.SecretTypeTLS,
+						},
+					)),
+				},
+			},
+		},
 		//"should add annotations to already existing secret resource": {
 		//	Issuer: gen.Issuer("test",
 		//		gen.AddIssuerCondition(cmapi.IssuerCondition{

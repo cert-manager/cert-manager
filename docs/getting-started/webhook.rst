@@ -45,7 +45,7 @@ Certificate resources:
   to issue a self signed root CA certificate.
 * certificate/cert-manager-webhook-ca - A self-signed root CA certificate
   which is used to sign certificates for the webhook pod.
-* issue/cert-manager-webhook-ca - A CA Issuer that is used to issue
+* issuer/cert-manager-webhook-ca - A CA Issuer that is used to issue
   certificates used by the webhook pod to serve with.
 * certificate/cert-manager-webhook-webhook-tls - A TLS certificate issued by the
   root CA above, served by the webhook.
@@ -193,15 +193,15 @@ To re-install cert-manager without the webhook, run:
 
 .. code-block:: shell
 
-   kubectl delete -f https://github.com/jetstack/cert-manager/releases/download/v0.8.0-beta.0/cert-manager.yaml
+   kubectl delete -f https://github.com/jetstack/cert-manager/releases/download/v0.8.1/cert-manager.yaml
 
-   kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/v0.8.0-beta.0/cert-manager-no-webhook.yaml
+   kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/v0.8.1/cert-manager-no-webhook.yaml
 
 Once you have re-installed cert-manager, you should then
 :doc:`restore your configuration </tasks/backup-restore-crds>`.
 
 .. _`deploy directory`: https://github.com/jetstack/cert-manager/blob/release-0.8/deploy/manifests
-.. _`cert-manager.yaml`: https://github.com/jetstack/cert-manager/releases/download/v0.8.0-beta.0/cert-manager.yaml
-.. _`cert-manager-no-webhook.yaml`: https://github.com/jetstack/cert-manager/releases/download/v0.8.0-beta.0/cert-manager-no-webhook.yaml
+.. _`cert-manager.yaml`: https://github.com/jetstack/cert-manager/releases/download/v0.8.1/cert-manager.yaml
+.. _`cert-manager-no-webhook.yaml`: https://github.com/jetstack/cert-manager/releases/download/v0.8.1/cert-manager-no-webhook.yaml
 .. _`GKE docs`: https://cloud.google.com/kubernetes-engine/docs/how-to/private-clusters#add_firewall_rules
 .. _`ValidatingWebhookConfiguration`: https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers/

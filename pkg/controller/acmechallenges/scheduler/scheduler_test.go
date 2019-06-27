@@ -17,6 +17,7 @@ limitations under the License.
 package scheduler
 
 import (
+	"context"
 	"fmt"
 	"reflect"
 	"testing"
@@ -307,7 +308,7 @@ func TestScheduleN(t *testing.T) {
 				challengesInformer.Informer().GetIndexer().Add(ch)
 			}
 
-			s := New(challengesInformer.Lister(), maxConcurrentChallenges)
+			s := New(context.Background(), challengesInformer.Lister(), maxConcurrentChallenges)
 
 			if test.expected == nil {
 				test.expected = []*cmapi.Challenge{}

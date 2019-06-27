@@ -185,7 +185,7 @@ IP address. When it is complete, you can see the external IP address using the
 ``kubectl`` command:
 
 .. code-block:: shell
-    :emphasize-lines: 5
+   :emphasize-lines: 5
 
     $ kubectl get svc
 
@@ -370,7 +370,7 @@ install cert-manager. This example installed cert-manager into the
     $ helm install \
       --name cert-manager \
       --namespace cert-manager \
-      --version v0.8.0 \
+      --version v0.8.1 \
       jetstack/cert-manager
 
     NAME:   cert-manager
@@ -548,8 +548,8 @@ Both of these issuers are configured to use the
 
 Check on the status of the issuer after you create it:
 
-.. code-block::shell
-  :emphasize-lines: 28-32
+.. code-block:: shell
+   :emphasize-lines: 28-32
 
     $ kubectl describe issuer letsencrypt-staging
 

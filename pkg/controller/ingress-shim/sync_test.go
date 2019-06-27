@@ -110,6 +110,7 @@ func TestSync(t *testing.T) {
 		Err                 bool
 		ExpectedCreate      []*v1alpha1.Certificate
 		ExpectedUpdate      []*v1alpha1.Certificate
+		ExpectedDelete      []*v1alpha1.Certificate
 	}
 	tests := []testT{
 		{
@@ -1077,6 +1078,80 @@ func TestSync(t *testing.T) {
 				},
 			},
 		},
+		{
+			Name:         "should delete a Certificate if its SecretName is not present in the ingress",
+			Issuer:       acmeIssuer,
+			IssuerLister: []runtime.Object{acmeIssuer},
+			Ingress: &extv1beta1.Ingress{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "ingress-name",
+					Namespace: gen.DefaultTestNamespace,
+					Annotations: map[string]string{
+						issuerNameAnnotation:              "issuer-name",
+						acmeIssuerChallengeTypeAnnotation: "http01",
+					},
+					UID: types.UID("ingress-name"),
+				},
+			},
+			CertificateLister: []runtime.Object{
+				&v1alpha1.Certificate{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:            "existing-crt",
+						Namespace:       gen.DefaultTestNamespace,
+						OwnerReferences: buildOwnerReferences("ingress-name", gen.DefaultTestNamespace),
+					},
+					Spec: v1alpha1.CertificateSpec{
+						DNSNames:   []string{"example.com"},
+						SecretName: "existing-crt",
+						IssuerRef: v1alpha1.ObjectReference{
+							Name: "issuer-name",
+							Kind: "Issuer",
+						},
+						ACME: &v1alpha1.ACMECertificateConfig{
+							Config: []v1alpha1.DomainSolverConfig{
+								{
+									Domains: []string{"example.com"},
+									SolverConfig: v1alpha1.SolverConfig{
+										HTTP01: &v1alpha1.HTTP01SolverConfig{
+											Ingress: "",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			ExpectedDelete: []*v1alpha1.Certificate{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:            "existing-crt",
+						Namespace:       gen.DefaultTestNamespace,
+						OwnerReferences: buildOwnerReferences("ingress-name", gen.DefaultTestNamespace),
+					},
+					Spec: v1alpha1.CertificateSpec{
+						DNSNames:   []string{"example.com"},
+						SecretName: "existing-crt",
+						IssuerRef: v1alpha1.ObjectReference{
+							Name: "issuer-name",
+							Kind: "Issuer",
+						},
+						ACME: &v1alpha1.ACMECertificateConfig{
+							Config: []v1alpha1.DomainSolverConfig{
+								{
+									Domains: []string{"example.com"},
+									SolverConfig: v1alpha1.SolverConfig{
+										HTTP01: &v1alpha1.HTTP01SolverConfig{
+											Ingress: "",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
 	}
 	testFn := func(test testT) func(t *testing.T) {
 		return func(t *testing.T) {
@@ -1103,6 +1178,14 @@ func TestSync(t *testing.T) {
 					)),
 				)
 			}
+			for _, cr := range test.ExpectedDelete {
+				expectedActions = append(expectedActions,
+					testpkg.NewAction(coretesting.NewDeleteAction(
+						v1alpha1.SchemeGroupVersion.WithResource("certificates"),
+						cr.Namespace,
+						cr.Name,
+					)))
+			}
 			b := &testpkg.Builder{
 				T:                  t,
 				CertManagerObjects: allCMObjects,
@@ -1110,10 +1193,10 @@ func TestSync(t *testing.T) {
 			}
 			b.Start()
 			defer b.Stop()
-			c := &Controller{
-				Client:              b.Client,
-				CMClient:            b.CMClient,
-				Recorder:            b.FakeEventRecorder(),
+			c := &controller{
+				kClient:             b.Client,
+				cmClient:            b.CMClient,
+				recorder:            b.FakeEventRecorder(),
 				issuerLister:        b.SharedInformerFactory.Certmanager().V1alpha1().Issuers().Lister(),
 				clusterIssuerLister: b.SharedInformerFactory.Certmanager().V1alpha1().ClusterIssuers().Lister(),
 				certificateLister:   b.SharedInformerFactory.Certmanager().V1alpha1().Certificates().Lister(),
@@ -1192,7 +1275,7 @@ func TestIssuerForIngress(t *testing.T) {
 		},
 	}
 	for _, test := range tests {
-		c := &Controller{
+		c := &controller{
 			defaults: defaults{
 				issuerKind: test.DefaultKind,
 				issuerName: test.DefaultName,
@@ -1214,6 +1297,9 @@ func buildCertificate(name, namespace string, ownerReferences []metav1.OwnerRefe
 			Name:            name,
 			Namespace:       namespace,
 			OwnerReferences: ownerReferences,
+		},
+		Spec: v1alpha1.CertificateSpec{
+			SecretName: name,
 		},
 	}
 }

@@ -26,6 +26,7 @@ import (
 type Issuer struct {
 	FakeSetup func(context.Context) error
 	FakeIssue func(context.Context, *cmapi.Certificate) (*issuer.IssueResponse, error)
+	FakeSign  func(context.Context, *cmapi.CertificateRequest) (*issuer.IssueResponse, error)
 }
 
 var _ issuer.Interface = &Issuer{}
@@ -41,4 +42,10 @@ func (i *Issuer) Setup(ctx context.Context) error {
 // resource given
 func (i *Issuer) Issue(ctx context.Context, crt *cmapi.Certificate) (*issuer.IssueResponse, error) {
 	return i.FakeIssue(ctx, crt)
+}
+
+// Sign attempts to issue a certificate as described by the CertificateRequest
+// resource given
+func (i *Issuer) Sign(ctx context.Context, cr *cmapi.CertificateRequest) (*issuer.IssueResponse, error) {
+	return i.FakeSign(ctx, cr)
 }

@@ -79,6 +79,12 @@ func SetCertificateKeySize(keySize int) CertificateModifier {
 	}
 }
 
+func SetCertificateKeyEncoding(keyEncoding v1alpha1.KeyEncoding) CertificateModifier {
+	return func(crt *v1alpha1.Certificate) {
+		crt.Spec.KeyEncoding = keyEncoding
+	}
+}
+
 func SetCertificateSecretName(secretName string) CertificateModifier {
 	return func(crt *v1alpha1.Certificate) {
 		crt.Spec.SecretName = secretName
@@ -116,5 +122,11 @@ func SetCertificateNotAfter(p metav1.Time) CertificateModifier {
 func SetCertificateOrganization(orgs ...string) CertificateModifier {
 	return func(ch *v1alpha1.Certificate) {
 		ch.Spec.Organization = orgs
+	}
+}
+
+func SetCertificateNamespace(namespace string) CertificateModifier {
+	return func(crt *v1alpha1.Certificate) {
+		crt.ObjectMeta.Namespace = namespace
 	}
 }

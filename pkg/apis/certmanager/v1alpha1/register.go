@@ -55,6 +55,8 @@ func addKnownTypes(scheme *runtime.Scheme) error {
 		&IssuerList{},
 		&ClusterIssuer{},
 		&ClusterIssuerList{},
+		&CertificateRequest{},
+		&CertificateRequestList{},
 		&Order{},
 		&OrderList{},
 		&Challenge{},

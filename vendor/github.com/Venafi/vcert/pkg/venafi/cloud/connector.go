@@ -40,9 +40,6 @@ const (
 	urlResourcePing                                  = "ping"
 	urlResourceZones                                 = "zones"
 	urlResourceZoneByTag                             = urlResourceZones + "/tag/%s"
-	urlResourceCertificatePolicies                   = "certificatepolicies"
-	urlResourcePoliciesByID                          = urlResourceCertificatePolicies + "/%s"
-	urlResourcePoliciesForZoneByID                   = urlResourceCertificatePolicies + "?zoneId=%s"
 	urlResourceCertificateRequests                   = "certificaterequests"
 	urlResourceCertificateStatus                     = urlResourceCertificateRequests + "/%s"
 	urlResourceCertificateRetrieveViaCSR             = urlResourceCertificateRequests + "/%s/certificate"
@@ -52,6 +49,7 @@ const (
 	urlResourceManagedCertificates                   = "managedcertificates"
 	urlResourceManagedCertificateByID                = urlResourceManagedCertificates + "/%s"
 	urlResourceDiscovery                             = "discovery"
+	urlResourceTemplate                              = "certificateissuingtemplates/%s"
 )
 
 type condorChainOption string
@@ -156,11 +154,14 @@ func (c *Connector) ReadZoneConfiguration() (config *endpoint.ZoneConfiguration,
 	if err != nil {
 		return nil, err
 	}
-	p, err := c.getPoliciesByID([]string{z.DefaultCertificateIdentityPolicy, z.DefaultCertificateUsePolicy})
+	if z.CertificateIssuingTemplateId == "" {
+		return nil, fmt.Errorf("Empty certificateTemplateID in zone. May be it`s old type zone.")
+	}
+	t, err := c.getTemplateByID(z.CertificateIssuingTemplateId)
 	if err != nil {
 		return
 	}
-	config = z.getZoneConfiguration(c.user, p)
+	config = z.getZoneConfiguration(c.user, t)
 	return config, nil
 }
 
@@ -434,6 +435,7 @@ func (c *Connector) RenewCertificate(renewReq *certificate.RenewalRequest) (requ
 }
 
 func (c *Connector) getZoneByTag(tag string) (*zone, error) {
+
 	url := c.getURL(urlResourceZoneByTag)
 	if c.user == nil {
 		return nil, fmt.Errorf("Must be autheticated to read the zone configuration")
@@ -450,37 +452,18 @@ func (c *Connector) getZoneByTag(tag string) (*zone, error) {
 	return z, nil
 }
 
-func (c *Connector) getPoliciesByID(ids []string) (*certificatePolicy, error) {
-	policy := new(certificatePolicy)
-	if c.user == nil {
-		return nil, fmt.Errorf("Must be autheticated to read the zone configuration")
+func (c *Connector) getTemplateByID(id string) (*certificateTemplate, error) {
+	if id == "" {
+		return nil, fmt.Errorf("Empty template id")
 	}
-	for _, id := range ids {
-		url := c.getURL(urlResourcePoliciesByID)
-		url = fmt.Sprintf(url, id)
-		statusCode, status, body, err := c.request("GET", url, nil)
-		if err != nil {
-			return nil, err
-		}
-		p, err := parseCertificatePolicyResult(statusCode, status, body)
-		if err != nil {
-			return nil, err
-		}
-		switch p.CertificatePolicyType {
-		case certificatePolicyTypeIdentity:
-			policy.SubjectCNRegexes = p.SubjectCNRegexes
-			policy.SubjectORegexes = p.SubjectORegexes
-			policy.SubjectOURegexes = p.SubjectOURegexes
-			policy.SubjectSTRegexes = p.SubjectSTRegexes
-			policy.SubjectLRegexes = p.SubjectLRegexes
-			policy.SubjectCRegexes = p.SubjectCRegexes
-			policy.SANRegexes = p.SANRegexes
-		case certificatePolicyTypeUse:
-			policy.KeyTypes = p.KeyTypes
-			policy.KeyReuse = p.KeyReuse
-		}
+	url := c.getURL(urlResourceTemplate)
+	url = fmt.Sprintf(url, id)
+	statusCode, status, body, err := c.request("GET", url, nil)
+	if err != nil {
+		return nil, err
 	}
-	return policy, nil
+	t, err := parseCertificateTemplate(statusCode, status, body)
+	return t, err
 }
 
 func (c *Connector) searchCertificates(req *SearchRequest) (*CertificateSearchResponse, error) {
