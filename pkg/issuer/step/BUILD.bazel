@@ -5,6 +5,7 @@ go_library(
     srcs = [
         "issue.go",
         "setup.go",
+        "sign.go",
         "step.go",
     ],
     importpath = "github.com/jetstack/cert-manager/pkg/issuer/step",
