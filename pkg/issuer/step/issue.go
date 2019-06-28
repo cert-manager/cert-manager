@@ -58,7 +58,7 @@ func (s *Step) Issue(ctx context.Context, crt *certmanager.Certificate) (*issuer
 		signFlow = true
 	}
 
-	keyPem, err := pki.EncodePrivateKey(key)
+	keyPem, err := pki.EncodePrivateKey(key, crt.Spec.KeyEncoding)
 	if err != nil {
 		s.Recorder.Eventf(crt, corev1.EventTypeWarning, "ErrorPrivateKey", "Error encoding private key: %v", err)
 		return nil, err
