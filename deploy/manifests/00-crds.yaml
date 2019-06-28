@@ -612,6 +612,52 @@ spec:
               type: object
             selfSigned:
               type: object
+            step:
+              properties:
+                caBundle:
+                  description: CABundle is a base64 encoded TLS certificate used to
+                    verify connections to the step certificates server. If not set
+                    the system root certificates are used to validate the TLS connection.
+                  format: byte
+                  type: string
+                provisioner:
+                  description: Provisioner contains the step certificates provisioner
+                    configuration.
+                  properties:
+                    kid:
+                      description: KeyID is the kid property of the JWK provisioner.
+                      type: string
+                    name:
+                      description: Names is the name of the JWK provisioner.
+                      type: string
+                    passwordRef:
+                      description: PasswordRef is a reference to a Secret containing
+                        the provisioner password used to decrypt the provisioner private
+                        key.
+                      properties:
+                        key:
+                          description: The key of the secret to select from. Must
+                            be a valid secret key.
+                          type: string
+                        name:
+                          description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                            TODO: Add other useful fields. apiVersion, kind, uid?'
+                          type: string
+                      required:
+                      - name
+                      type: object
+                  required:
+                  - name
+                  - kid
+                  - passwordRef
+                  type: object
+                url:
+                  description: URL is the base URL for the step certificates instance.
+                  type: string
+              required:
+              - url
+              - provisioner
+              type: object
             vault:
               properties:
                 auth:
@@ -890,6 +936,52 @@ spec:
               - secretName
               type: object
             selfSigned:
+              type: object
+            step:
+              properties:
+                caBundle:
+                  description: CABundle is a base64 encoded TLS certificate used to
+                    verify connections to the step certificates server. If not set
+                    the system root certificates are used to validate the TLS connection.
+                  format: byte
+                  type: string
+                provisioner:
+                  description: Provisioner contains the step certificates provisioner
+                    configuration.
+                  properties:
+                    kid:
+                      description: KeyID is the kid property of the JWK provisioner.
+                      type: string
+                    name:
+                      description: Names is the name of the JWK provisioner.
+                      type: string
+                    passwordRef:
+                      description: PasswordRef is a reference to a Secret containing
+                        the provisioner password used to decrypt the provisioner private
+                        key.
+                      properties:
+                        key:
+                          description: The key of the secret to select from. Must
+                            be a valid secret key.
+                          type: string
+                        name:
+                          description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                            TODO: Add other useful fields. apiVersion, kind, uid?'
+                          type: string
+                      required:
+                      - name
+                      type: object
+                  required:
+                  - name
+                  - kid
+                  - passwordRef
+                  type: object
+                url:
+                  description: URL is the base URL for the step certificates instance.
+                  type: string
+              required:
+              - url
+              - provisioner
               type: object
             vault:
               properties:
