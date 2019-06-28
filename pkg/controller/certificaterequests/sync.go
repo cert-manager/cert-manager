@@ -18,7 +18,6 @@ package certificaterequests
 
 import (
 	"context"
-	"crypto/x509"
 	"encoding/json"
 	"reflect"
 
@@ -96,17 +95,11 @@ func (c *Controller) Sync(ctx context.Context, cr *v1alpha1.CertificateRequest) 
 		return nil
 	}
 
-	csr, err := pki.DecodeX509CertificateRequestBytes(cr.Spec.CSRPEM)
-	if err != nil {
-		log.Error(err, "failed to decode CSR PEM")
-		return nil
-	}
-
 	dbg.Info("Fetched issuer resource referenced by certificate request", "issuer_name", crCopy.Spec.IssuerRef.Name)
 
 	if len(cr.Status.Certificate) == 0 {
 		dbg.Info("Invoking sign function as existing certificate does not exist")
-		return c.sign(ctx, crCopy, csr, i)
+		return c.sign(ctx, crCopy, i)
 	}
 
 	dbg.Info("Update certificate request status if required")
@@ -121,8 +114,7 @@ func (c *Controller) Sync(ctx context.Context, cr *v1alpha1.CertificateRequest) 
 
 // return an error on failure. If retrieval is succesful, the certificate data
 // will be stored in the certificate request status
-func (c *Controller) sign(ctx context.Context, cr *v1alpha1.CertificateRequest,
-	csr *x509.CertificateRequest, issuer issuer.Interface) error {
+func (c *Controller) sign(ctx context.Context, cr *v1alpha1.CertificateRequest, issuer issuer.Interface) error {
 	log := logf.FromContext(ctx)
 
 	defer c.setCertificateRequestStatus(cr)
