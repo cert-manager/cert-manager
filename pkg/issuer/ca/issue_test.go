@@ -86,6 +86,28 @@ func allFieldsSetCheck(expectedCA []byte) func(t *testing.T, s *caFixture, args 
 		if resp.PrivateKey == nil {
 			t.Errorf("expected new private key to be generated")
 		}
+
+		certificatesFieldsSetCheck(expectedCA)(t, s, args...)
+	}
+}
+
+func noPrivateKeyFieldsSetCheck(expectedCA []byte) func(t *testing.T, s *caFixture, args ...interface{}) {
+	return func(t *testing.T, s *caFixture, args ...interface{}) {
+		resp := args[1].(*issuer.IssueResponse)
+
+		if len(resp.PrivateKey) > 0 {
+			t.Errorf("expected no new private key to be generated but got: %s",
+				resp.PrivateKey)
+		}
+
+		certificatesFieldsSetCheck(expectedCA)(t, s, args...)
+	}
+}
+
+func certificatesFieldsSetCheck(expectedCA []byte) func(t *testing.T, s *caFixture, args ...interface{}) {
+	return func(t *testing.T, s *caFixture, args ...interface{}) {
+		resp := args[1].(*issuer.IssueResponse)
+
 		if resp.Certificate == nil {
 			t.Errorf("expected new certificate to be issued")
 		}

@@ -18,12 +18,42 @@ package ca
 
 import (
 	"context"
-	"errors"
+
+	corev1 "k8s.io/api/core/v1"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	"github.com/jetstack/cert-manager/pkg/issuer"
+	logf "github.com/jetstack/cert-manager/pkg/logs"
+	"github.com/jetstack/cert-manager/pkg/util/kube"
+	"github.com/jetstack/cert-manager/pkg/util/pki"
 )
 
 func (c *CA) Sign(ctx context.Context, cr *v1alpha1.CertificateRequest) (*issuer.IssueResponse, error) {
-	return nil, errors.New("sign not implemented by CA issuer")
+	log := logf.FromContext(ctx, "sign")
+
+	// get a copy of the CA certificate named on the Issuer
+	caCerts, caKey, err := kube.SecretTLSKeyPair(ctx, c.secretsLister, c.resourceNamespace, c.issuer.GetSpec().CA.SecretName)
+	if err != nil {
+		log := logf.WithRelatedResourceName(log, c.issuer.GetSpec().CA.SecretName, c.resourceNamespace, "Secret")
+		log.Info("error getting signing CA for Issuer")
+		return nil, err
+	}
+
+	template, err := pki.GenerateTemplateFromCertificateRequest(cr)
+	if err != nil {
+		log.Error(err, "error generating certificate template")
+		c.Recorder.Eventf(cr, corev1.EventTypeWarning, "ErrorSigning", "Error generating certificate template: %v", err)
+		return nil, err
+	}
+
+	resp, err := c.signTemplate(caCerts, caKey, template)
+	if err != nil {
+		log.Error(err, "error signing certificate")
+		c.Recorder.Eventf(cr, corev1.EventTypeWarning, "ErrorSigning", "Error signing certificate: %v", err)
+		return nil, err
+	}
+
+	log.Info("certificate issued")
+
+	return resp, nil
 }
