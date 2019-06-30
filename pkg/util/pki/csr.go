@@ -230,7 +230,7 @@ func GenerateTemplateFromCertificateRequest(cr *v1alpha1.CertificateRequest) (*x
 		SerialNumber:          serialNumber,
 		PublicKeyAlgorithm:    csr.PublicKeyAlgorithm,
 		PublicKey:             csr.PublicKey,
-		IsCA:                  false,
+		IsCA:                  cr.Spec.IsCA,
 		Subject:               csr.Subject,
 		NotBefore:             time.Now(),
 		NotAfter:              time.Now().Add(certDuration),
