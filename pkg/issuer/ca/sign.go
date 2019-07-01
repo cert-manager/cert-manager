@@ -46,7 +46,7 @@ func (c *CA) Sign(ctx context.Context, cr *v1alpha1.CertificateRequest) (*issuer
 		return nil, err
 	}
 
-	resp, err := c.signTemplate(caCerts, caKey, template)
+	resp, err := pki.SignCSRTemplate(caCerts, caKey, template)
 	if err != nil {
 		log.Error(err, "error signing certificate")
 		c.Recorder.Eventf(cr, corev1.EventTypeWarning, "ErrorSigning", "Error signing certificate: %v", err)

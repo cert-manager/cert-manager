@@ -18,8 +18,6 @@ package ca
 
 import (
 	"context"
-	"crypto"
-	"crypto/x509"
 
 	corev1 "k8s.io/api/core/v1"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
@@ -94,7 +92,7 @@ func (c *CA) Issue(ctx context.Context, crt *v1alpha1.Certificate) (*issuer.Issu
 
 	template.PublicKey = signeePublicKey
 
-	resp, err := c.signTemplate(caCerts, caKey, template)
+	resp, err := pki.SignCSRTemplate(caCerts, caKey, template)
 	if err != nil {
 		log.Error(err, "error signing certificate")
 		c.Recorder.Eventf(crt, corev1.EventTypeWarning, "ErrorSigning", "Error signing certificate: %v", err)
@@ -112,32 +110,4 @@ func (c *CA) Issue(ctx context.Context, crt *v1alpha1.Certificate) (*issuer.Issu
 	log.Info("certificate issued")
 
 	return resp, nil
-}
-
-func (c *CA) signTemplate(caCerts []*x509.Certificate, caKey crypto.Signer, template *x509.Certificate) (*issuer.IssueResponse, error) {
-	caCert := caCerts[0]
-
-	certPem, _, err := pki.SignCertificate(template, caCert, template.PublicKey, caKey)
-	if err != nil {
-		return nil, err
-
-	}
-
-	chainPem, err := pki.EncodeX509Chain(caCerts)
-	if err != nil {
-		return nil, err
-	}
-
-	certPem = append(certPem, chainPem...)
-
-	// encode the CA certificate to be bundled in the output
-	caPem, err := pki.EncodeX509(caCerts[0])
-	if err != nil {
-		return nil, err
-	}
-
-	return &issuer.IssueResponse{
-		Certificate: certPem,
-		CA:          caPem,
-	}, nil
 }
