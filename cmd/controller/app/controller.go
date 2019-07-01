@@ -26,6 +26,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	utilfeature "k8s.io/apiserver/pkg/util/feature"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
@@ -40,7 +41,9 @@ import (
 	intscheme "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/scheme"
 	informers "github.com/jetstack/cert-manager/pkg/client/informers/externalversions"
 	"github.com/jetstack/cert-manager/pkg/controller"
+	cacertificaterequestcontroller "github.com/jetstack/cert-manager/pkg/controller/certificaterequests/ca"
 	"github.com/jetstack/cert-manager/pkg/controller/clusterissuers"
+	"github.com/jetstack/cert-manager/pkg/feature"
 	dnsutil "github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 	"github.com/jetstack/cert-manager/pkg/metrics"
@@ -70,6 +73,12 @@ func Run(opts *options.ControllerOptions, stopCh <-chan struct{}) {
 		defer wg.Done()
 		metrics.Default.Start(stopCh)
 	}()
+
+	if utilfeature.DefaultFeatureGate.Enabled(feature.CertificateRequestControllers) {
+		opts.EnabledControllers = append(opts.EnabledControllers, []string{
+			cacertificaterequestcontroller.CRControllerName,
+		}...)
+	}
 
 	run := func(_ context.Context) {
 		for n, fn := range controller.Known() {
