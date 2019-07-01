@@ -19,6 +19,7 @@ package certificaterequests
 import (
 	"context"
 	"testing"
+	"time"
 
 	realclock "k8s.io/utils/clock"
 	clock "k8s.io/utils/clock/testing"
@@ -47,7 +48,13 @@ type controllerFixture struct {
 
 func (f *controllerFixture) Setup(t *testing.T) {
 	if f.Issuer == nil {
-		f.Issuer = &v1alpha1.Issuer{}
+		f.Issuer = &v1alpha1.Issuer{
+			Spec: v1alpha1.IssuerSpec{
+				IssuerConfig: v1alpha1.IssuerConfig{
+					SelfSigned: new(v1alpha1.SelfSignedIssuer),
+				},
+			},
+		}
 	}
 	if f.Ctx == nil {
 		f.Ctx = context.Background()
@@ -68,7 +75,7 @@ func (f *controllerFixture) Setup(t *testing.T) {
 
 	// Fix the clock used in apiutil so that calls to set status conditions
 	// can be predictably tested
-	//apiutil.Clock = f.controller.clock
+	apiutil.Clock = f.controller.clock
 }
 
 func (f *controllerFixture) Finish(t *testing.T, args ...interface{}) {
@@ -93,14 +100,16 @@ func (f *controllerFixture) Finish(t *testing.T, args ...interface{}) {
 
 func (f *controllerFixture) buildFakeController(b *test.Builder, issuer v1alpha1.GenericIssuer) *Controller {
 	b.Start()
-	c := &Controller{}
+	c := &Controller{
+		issuerType: apiutil.IssuerSelfSigned,
+	}
 	c.Register(b.Context)
 	c.helper = f
 	c.issuerFactory = f
-	//c.clock = f.Clock
-	//if c.clock == nil {
-	//	c.clock = clock.NewFakeClock(time.Now())
-	//}
+	c.clock = f.Clock
+	if c.clock == nil {
+		c.clock = clock.NewFakeClock(time.Now())
+	}
 	b.Sync()
 	return c
 }

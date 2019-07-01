@@ -131,24 +131,22 @@ func TestSync(t *testing.T) {
 		t.FailNow()
 	}
 
-	csr2, err := generateCSR("csr2")
-	if err != nil {
-		t.Errorf("failed to generate CSR for testing: %s", err)
-		t.FailNow()
-	}
-
 	pk := generatePrivateKey(t)
 
 	exampleCR := gen.CertificateRequest("test",
 		gen.SetCertificateRequestIsCA(false),
 		gen.SetCertificateRequestIssuer(cmapi.ObjectReference{Name: "test"}),
 		gen.SetCertificateRequestCSR(csr1),
+		gen.SetCertificateRequestIssuer(cmapi.ObjectReference{
+			Kind: "Issuer",
+			Name: "fake-issuer",
+		}),
 	)
 	exampleCRNotFoundCondition := gen.CertificateRequestFrom(exampleCR,
 		gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
 			Type:               cmapi.CertificateRequestConditionReady,
 			Status:             cmapi.ConditionFalse,
-			Reason:             "NotExists",
+			Reason:             "CertNotExists",
 			Message:            "Certificate does not exist",
 			LastTransitionTime: &nowMetaTime,
 		}),
@@ -176,11 +174,17 @@ func TestSync(t *testing.T) {
 	exampleCRExpiredReadyCondition := exampleSignedExpiredCR
 	exampleCRExpiredReadyCondition.Status.Conditions = exampleCRReadyCondition.Status.Conditions
 
-	exampleSignedNotMatchCR := exampleSignedCR.DeepCopy()
-	exampleSignedNotMatchCR.Spec.CSRPEM = csr2
-
 	exampleGarbageCertCR := exampleSignedCR.DeepCopy()
 	exampleGarbageCertCR.Status.Certificate = []byte("not a certificate")
+	exampleCRGarbageCondition := gen.CertificateRequestFrom(exampleGarbageCertCR,
+		gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
+			Type:               cmapi.CertificateRequestConditionReady,
+			Status:             cmapi.ConditionFalse,
+			Reason:             "CertParseError",
+			Message:            "Failed to decode certificate PEM",
+			LastTransitionTime: &nowMetaTime,
+		}),
+	)
 
 	tests := map[string]controllerFixture{
 		"should update certificate request with NotExists if issuer does not return a response": {
@@ -282,11 +286,17 @@ func TestSync(t *testing.T) {
 			},
 			Builder: &testpkg.Builder{
 				CertManagerObjects: []runtime.Object{gen.CertificateRequest("test")},
-				ExpectedActions:    []testpkg.Action{},
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(coretesting.NewUpdateAction(
+						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
+						gen.DefaultTestNamespace,
+						exampleCRGarbageCondition,
+					)),
+				},
 			},
 			CheckFn: func(t *testing.T, s *controllerFixture, args ...interface{}) {
 			},
-			Err: true,
+			Err: false,
 		},
 	}
 

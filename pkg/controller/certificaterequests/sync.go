@@ -63,6 +63,9 @@ func (c *Controller) Sync(ctx context.Context, cr *v1alpha1.CertificateRequest) 
 	issuerObj, err := c.helper.GetGenericIssuer(crCopy.Spec.IssuerRef, crCopy.Namespace)
 	if k8sErrors.IsNotFound(err) {
 		c.recorder.Eventf(crCopy, corev1.EventTypeWarning, errorIssuerNotFound, err.Error())
+		c.log.Error(err,
+			"issuer-name", crCopy.Spec.IssuerRef.Name,
+			"issuer-kind", crCopy.Spec.IssuerRef.Kind)
 		return nil
 	}
 	if err != nil {
@@ -72,12 +75,14 @@ func (c *Controller) Sync(ctx context.Context, cr *v1alpha1.CertificateRequest) 
 	issuerType, err := apiutil.NameForIssuer(issuerObj)
 	if err != nil {
 		c.recorder.Eventf(crCopy, corev1.EventTypeWarning, errorIssuerNotFound, err.Error())
+		c.log.Error(err,
+			"issuer-name", issuerObj.GetName())
 		return nil
 	}
 
 	// This CertificateRequest is not meant for us, ignore
 	if issuerType != c.issuerType {
-		log.V(5).Info("issuer reference type does not match resource kind, ignoring",
+		c.log.V(5).Info("issuer reference type does not match resource kind, ignoring",
 			"certificaterequest-issuer-type", issuerType,
 			"issuer-type", c.issuerType)
 		return nil
