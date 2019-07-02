@@ -23,6 +23,7 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/pem"
+	"errors"
 	"fmt"
 	"math/big"
 	"net"
@@ -271,7 +272,14 @@ func SignCertificate(template *x509.Certificate, issuerCert *x509.Certificate, p
 	return pemBytes.Bytes(), cert, err
 }
 
+// SignCSRTemplate signs a certificate template usually based upon a CSR. This
+// function expects all fields to be present in the certificate template,
+// including it's public key.
 func SignCSRTemplate(caCerts []*x509.Certificate, caKey crypto.Signer, template *x509.Certificate) (*issuer.IssueResponse, error) {
+	if len(caCerts) == 0 {
+		return nil, errors.New("no CA certificates given to sign CSR template")
+	}
+
 	caCert := caCerts[0]
 
 	certPem, _, err := SignCertificate(template, caCert, template.PublicKey, caKey)

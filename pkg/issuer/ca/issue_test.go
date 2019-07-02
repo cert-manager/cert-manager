@@ -95,6 +95,11 @@ func noPrivateKeyFieldsSetCheck(expectedCA []byte) func(t *testing.T, s *caFixtu
 	return func(t *testing.T, s *caFixture, args ...interface{}) {
 		resp := args[1].(*issuer.IssueResponse)
 
+		if resp == nil {
+			t.Errorf("no response given, got=%s", resp)
+			return
+		}
+
 		if len(resp.PrivateKey) > 0 {
 			t.Errorf("expected no new private key to be generated but got: %s",
 				resp.PrivateKey)

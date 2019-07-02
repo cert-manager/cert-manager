@@ -36,6 +36,10 @@ func (c *CA) Sign(ctx context.Context, cr *v1alpha1.CertificateRequest) (*issuer
 	if err != nil {
 		log := logf.WithRelatedResourceName(log, c.issuer.GetSpec().CA.SecretName, c.resourceNamespace, "Secret")
 		log.Info("error getting signing CA for Issuer")
+
+		// We're fine to return errors here and later since upon a retry the issuer
+		// will be marked as 'not ready' - therefore this codepath wont be reached
+		// again
 		return nil, err
 	}
 

@@ -29,6 +29,7 @@ import (
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	testpkg "github.com/jetstack/cert-manager/pkg/controller/test"
+	"github.com/jetstack/cert-manager/pkg/issuer"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 	"github.com/jetstack/cert-manager/test/unit/gen"
 	corev1 "k8s.io/api/core/v1"
@@ -108,6 +109,11 @@ func TestSign(t *testing.T) {
 		},
 	}
 
+	rootRSANoCASecret := rootRSACASecret.DeepCopy()
+	rootRSANoCASecret.Data[corev1.TLSCertKey] = make([]byte, 0)
+	rootRSANoKeySecret := rootRSACASecret.DeepCopy()
+	rootRSANoKeySecret.Data[corev1.TLSPrivateKeyKey] = make([]byte, 0)
+
 	tests := map[string]caFixture{
 		"sign a CertificateRequest": {
 			Issuer: gen.Issuer("ca-issuer",
@@ -124,6 +130,110 @@ func TestSign(t *testing.T) {
 			// we are not expecting key on response
 			CheckFn: noPrivateKeyFieldsSetCheck(rsaPEMCert),
 			Err:     false,
+		},
+		"fail to find CA tls key pair": {
+			Issuer: gen.Issuer("ca-issuer",
+				gen.SetIssuerCA(v1alpha1.CAIssuer{SecretName: "root-ca-secret"}),
+			),
+			CertificateRequest: gen.CertificateRequest("test-cr",
+				gen.SetCertificateRequestIsCA(true),
+				gen.SetCertificateRequestCSR(caCSR),
+			),
+			Builder: &testpkg.Builder{
+				KubeObjects:        []runtime.Object{},
+				CertManagerObjects: []runtime.Object{},
+			},
+			CheckFn: func(t *testing.T, s *caFixture, args ...interface{}) {
+				err := args[2].(error)
+				notFoundErr := `secret "root-ca-secret" not found`
+				if err == nil || err.Error() != notFoundErr {
+					t.Errorf("unexpected error, exp='%s' got='%+v'", notFoundErr, err)
+				}
+
+				resp := args[1].(*issuer.IssueResponse)
+				if resp != nil {
+					t.Errorf("unexpected response, exp='nil' got='%+v'", resp)
+				}
+			},
+			Err: true,
+		},
+		"given bad CSR should fail Certificate generation": {
+			Issuer: gen.Issuer("ca-issuer",
+				gen.SetIssuerCA(v1alpha1.CAIssuer{SecretName: "root-ca-secret"}),
+			),
+			CertificateRequest: gen.CertificateRequest("test-cr",
+				gen.SetCertificateRequestIsCA(true),
+				gen.SetCertificateRequestCSR([]byte("bad-csr")),
+			),
+			Builder: &testpkg.Builder{
+				KubeObjects:        []runtime.Object{rootRSACASecret},
+				CertManagerObjects: []runtime.Object{},
+			},
+			CheckFn: func(t *testing.T, s *caFixture, args ...interface{}) {
+				err := args[2].(error)
+				decodeErr := "failed to decode csr from certificate request resource default-unit-test-ns/test-cr"
+				if err == nil || err.Error() != decodeErr {
+					t.Errorf("unexpected error, exp='%s' got='%+v'", decodeErr, err)
+				}
+
+				resp := args[1].(*issuer.IssueResponse)
+				if resp != nil {
+					t.Errorf("unexpected response, exp='nil' got='%+v'", resp)
+				}
+			},
+			Err: true,
+		},
+		"no CA certificate should fail a signing": {
+			Issuer: gen.Issuer("ca-issuer",
+				gen.SetIssuerCA(v1alpha1.CAIssuer{SecretName: "root-ca-secret"}),
+			),
+			CertificateRequest: gen.CertificateRequest("test-cr",
+				gen.SetCertificateRequestIsCA(true),
+				gen.SetCertificateRequestCSR(caCSR),
+			),
+			Builder: &testpkg.Builder{
+				KubeObjects:        []runtime.Object{rootRSANoCASecret},
+				CertManagerObjects: []runtime.Object{},
+			},
+			CheckFn: func(t *testing.T, s *caFixture, args ...interface{}) {
+				err := args[2].(error)
+				noCertError := "error decoding cert PEM block"
+				if err == nil || err.Error() != noCertError {
+					t.Errorf("unexpected error, exp='%s' got='%+v'", noCertError, err)
+				}
+
+				resp := args[1].(*issuer.IssueResponse)
+				if resp != nil {
+					t.Errorf("unexpected response, exp='nil' got='%+v'", resp)
+				}
+			},
+			Err: true,
+		},
+		"no CA key should fail a signing": {
+			Issuer: gen.Issuer("ca-issuer",
+				gen.SetIssuerCA(v1alpha1.CAIssuer{SecretName: "root-ca-secret"}),
+			),
+			CertificateRequest: gen.CertificateRequest("test-cr",
+				gen.SetCertificateRequestIsCA(true),
+				gen.SetCertificateRequestCSR(caCSR),
+			),
+			Builder: &testpkg.Builder{
+				KubeObjects:        []runtime.Object{rootRSANoKeySecret},
+				CertManagerObjects: []runtime.Object{},
+			},
+			CheckFn: func(t *testing.T, s *caFixture, args ...interface{}) {
+				err := args[2].(error)
+				noKeyError := "error decoding private key PEM block"
+				if err == nil || err.Error() != noKeyError {
+					t.Errorf("unexpected error, exp='%s' got='%+v'", noKeyError, err)
+				}
+
+				resp := args[1].(*issuer.IssueResponse)
+				if resp != nil {
+					t.Errorf("unexpected response, exp='nil' got='%+v'", resp)
+				}
+			},
+			Err: true,
 		},
 	}
 
