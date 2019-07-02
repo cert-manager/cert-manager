@@ -1,31 +1,19 @@
 load("@io_bazel_rules_docker//container:container.bzl", "container_bundle")
 load("@io_bazel_rules_docker//contrib:push-all.bzl", "docker_push")
-load("//hack:def.bzl", "multiarch_bundle")
 
 # export WORKSPACE so workspace_binary rules can be used outside the root
 exports_files(["WORKSPACE"])
 
 # gazelle:proto disable_global
 
-# this target creates targets:
-# 'images' (all arch and os)
-# 'images.linux-amd64'
-# 'images.linux-arm64'
-# 'images.linux-arm'
-multiarch_bundle(
+container_bundle(
     name = "images",
-    arch = [
-        "amd64",
-        "arm64",
-        "arm",
-    ],
     images = {
-        "{STABLE_DOCKER_REPO}/cert-manager-controller-{arch}:{STABLE_DOCKER_TAG}": "//cmd/controller:image",
-        "{STABLE_DOCKER_REPO}/cert-manager-acmesolver-{arch}:{STABLE_DOCKER_TAG}": "//cmd/acmesolver:image",
-        "{STABLE_DOCKER_REPO}/cert-manager-webhook-{arch}:{STABLE_DOCKER_TAG}": "//cmd/webhook:image",
-        "{STABLE_DOCKER_REPO}/cert-manager-cainjector-{arch}:{STABLE_DOCKER_TAG}": "//cmd/cainjector:image",
+        "{STABLE_DOCKER_REPO}/cert-manager-controller:{STABLE_DOCKER_TAG}": "//cmd/controller:image",
+        "{STABLE_DOCKER_REPO}/cert-manager-acmesolver:{STABLE_DOCKER_TAG}": "//cmd/acmesolver:image",
+        "{STABLE_DOCKER_REPO}/cert-manager-webhook:{STABLE_DOCKER_TAG}": "//cmd/webhook:image",
+        "{STABLE_DOCKER_REPO}/cert-manager-cainjector:{STABLE_DOCKER_TAG}": "//cmd/cainjector:image",
     },
-    os = ["linux"],
 )
 
 docker_push(
