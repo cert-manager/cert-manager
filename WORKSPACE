@@ -1,3 +1,8 @@
+workspace(
+    # How this workspace would be referenced with absolute labels from another workspace
+    name = "cert_manager",
+)
+
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_file")
 load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
@@ -6,8 +11,11 @@ load("@bazel_tools//tools/build_defs/repo:git.bzl", "new_git_repository")
 ## Load rules_go and dependencies
 http_archive(
     name = "io_bazel_rules_go",
-    url = "https://github.com/bazelbuild/rules_go/releases/download/0.18.2/rules_go-0.18.2.tar.gz",
-    sha256 = "31f959ecf3687f6e0bb9d01e1e7a7153367ecd82816c9c0ae149cd0e5a92bf8c",
+    urls = [
+        "https://storage.googleapis.com/bazel-mirror/github.com/bazelbuild/rules_go/releases/download/0.18.6/rules_go-0.18.6.tar.gz",
+        "https://github.com/bazelbuild/rules_go/releases/download/0.18.6/rules_go-0.18.6.tar.gz",
+    ],
+    sha256 = "f04d2373bcaf8aa09bccb08a98a57e721306c8f6043a2a0ee610fd6853dcde3d",
 )
 
 load("@io_bazel_rules_go//go:deps.bzl", "go_rules_dependencies", "go_register_toolchains")
@@ -36,16 +44,18 @@ gazelle_dependencies()
 ## Load kubernetes repo-infra for tools like kazel
 git_repository(
     name = "io_kubernetes_build",
-    commit = "df02ded38f9506e5bbcbf21702034b4fef815f2f",
-    remote = "https://github.com/kubernetes/repo-infra.git",
+    commit = "8036538b4efe3443d25e6325cabdc367a1926f7d",
+    # Use justinsb's fork until https://github.com/kubernetes/repo-infra/pull/114 merges
+    remote = "https://github.com/justinsb/repo-infra.git",
+    shallow_since = "1561083176 -0400",
 )
 
 ## Load rules_docker and depdencies, for working with docker images
 git_repository(
     name = "io_bazel_rules_docker",
     remote = "https://github.com/bazelbuild/rules_docker.git",
-    commit = "3732c9d05315bef6a3dbd195c545d6fea3b86880",
-    shallow_since = "1547471117 +0100",
+    commit = "80ea3aae060077e5fe0cdef1a5c570d4b7622100",
+    shallow_since = "1561646721 -0700",
 )
 
 load(
@@ -114,6 +124,7 @@ container_pull(
     registry = "gcr.io",
     repository = "kubernetes-helm/tiller",
     tag = "v2.10.0",
+    digest = "sha256:2a3dd484ecfcf9343994e0f6c2af0a6faf1af7f7e499905793643f91e90edcb3",
 )
 
 ## Install 'kind', for creating kubernetes-in-docker clusters
@@ -143,6 +154,9 @@ container_pull(
     registry = "quay.io",
     repository = "kubernetes-ingress-controller/nginx-ingress-controller",
     tag = "0.23.0",
+    # For some reason, the suggested sha256 returns an error when fetched from
+    # quay.io by digest.
+    # digest = "sha256:f7f08fdbbeddaf3179829c662da360a3feac1ecf8c4b1305949fffd8c8f59879",
 )
 
 container_pull(
@@ -150,6 +164,7 @@ container_pull(
     registry = "k8s.gcr.io",
     repository = "defaultbackend",
     tag = "1.4",
+    digest = "sha256:865b0c35e6da393b8e80b7e3799f777572399a4cff047eb02a81fa6e7a48ed4b",
 )
 
 ## Fetch vault for use during e2e tests
@@ -160,6 +175,7 @@ container_pull(
     registry = "index.docker.io",
     repository = "library/vault",
     tag = "0.9.3",
+    digest = "sha256:27a564c725f4f6fa72a618add6b0c3294431ed6b5e912ee042822b35b91064c3",
 )
 
 ## Fetch kind images used during e2e tests
@@ -182,6 +198,7 @@ container_pull(
     registry = "index.docker.io",
     repository = "kindest/node",
     tag = "v1.13.4",
+    digest = "sha256:842ffccc3ba7674f71815d40fdfd18bc8a98d18130dcfd58bc15c857593f1e15",
 )
 
 ## Fetch kubectl for use during e2e tests
@@ -322,7 +339,10 @@ new_git_repository(
     # We use this specific revision as it contains changes that allow us to
     # specify custom paths when building documentation.
     commit = "28714834053271ebb5a6a5fe22af29f98fc0b6d0",
+    shallow_since = "1556994488 +0100",
     build_file_content = """
+exports_files(["brodoc.js"])
+
 filegroup(
     name = "all-srcs",
     srcs = glob(["**/*"]),
@@ -342,27 +362,31 @@ filegroup(
 """,
 )
 
-# Setup npm for brodocs doc generation
-git_repository(
+# Install the nodejs "bootstrap" package
+# This provides the basic tools for running and packaging nodejs programs in Bazel
+load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
+
+http_archive(
     name = "build_bazel_rules_nodejs",
-    remote = "https://github.com/bazelbuild/rules_nodejs.git",
-    commit = "11271418a6bbd2529170270a7e61dcc5167bb16d",
-    shallow_since = "1554849870 -0700",
+    sha256 = "395b7568f20822c13fc5abc65b1eced637446389181fda3a108fdd6ff2cac1e9",
+    urls = ["https://github.com/bazelbuild/rules_nodejs/releases/download/0.29.2/rules_nodejs-0.29.2.tar.gz"],
 )
 
-load("@build_bazel_rules_nodejs//:defs.bzl", "node_repositories")
-
-# TODO: do we need to specify this package.json in node_repositories as well as
-# in npm_install?
-node_repositories(package_json = ["@brodocs//:package.json"])
-
+# The npm_install rule runs yarn anytime the package.json or package-lock.json file changes.
+# It also extracts any Bazel rules distributed in an npm package.
 load("@build_bazel_rules_nodejs//:defs.bzl", "npm_install")
 
 npm_install(
+    # Name this npm so that Bazel Label references look like @brodocs_modules//package
     name = "brodocs_modules",
     package_json = "@brodocs//:package.json",
     package_lock_json = "//docs/generated/reference/generate/bin:package-lock.json",
 )
+
+# Install any Bazel rules which were extracted earlier by the npm_install rule.
+load("@brodocs_modules//:install_bazel_dependencies.bzl", "install_bazel_dependencies")
+
+install_bazel_dependencies()
 
 # Load the controller-tools repository in order to build the crd generator tool
 go_repository(

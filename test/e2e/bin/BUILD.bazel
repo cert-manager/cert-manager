@@ -3,6 +3,7 @@ genrule(
     srcs = ["@io_kubernetes_sigs_kind//:kind"],
     outs = ["kind"],
     cmd = "cp $(SRCS) $@",
+    tags = ["manual"],
     visibility = ["//visibility:public"],
 )
 
@@ -14,6 +15,7 @@ genrule(
     }),
     outs = ["kubectl-1.11"],
     cmd = "cp $(SRCS) $@",
+    tags = ["manual"],
     visibility = ["//visibility:public"],
 )
 
@@ -25,6 +27,7 @@ genrule(
     }),
     outs = ["kubectl-1.12"],
     cmd = "cp $(SRCS) $@",
+    tags = ["manual"],
     visibility = ["//visibility:public"],
 )
 
@@ -36,6 +39,7 @@ genrule(
     }),
     outs = ["kubectl-1.13"],
     cmd = "cp $(SRCS) $@",
+    tags = ["manual"],
     visibility = ["//visibility:public"],
 )
 

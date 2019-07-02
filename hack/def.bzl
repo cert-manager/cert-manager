@@ -28,7 +28,6 @@ def image(
         name = "%s.app" % name,
         base = "@static_base//image",
         binary = binary,
-        pure = "on",
     )
 
     container_image(

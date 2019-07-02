@@ -58,11 +58,11 @@ genrule(
     srcs = [
         ":__internal_brodocs_out",
         "@brodocs//:static",
-        "@brodocs_modules//node_modules/jquery:jquery__files",
-        "@brodocs_modules//node_modules/bootstrap:bootstrap__files",
-        "@brodocs_modules//node_modules/font-awesome:font-awesome__files",
-        "@brodocs_modules//node_modules/highlight.js:highlight.js__files",
-        "@brodocs_modules//node_modules/jquery.scrollto:jquery.scrollto__files",
+        "@brodocs_modules//jquery:jquery__contents",
+        "@brodocs_modules//bootstrap:bootstrap__contents",
+        "@brodocs_modules//font-awesome:font-awesome__contents",
+        "@brodocs_modules//highlight.js:highlight.js__contents",
+        "@brodocs_modules//jquery.scrollto:jquery.scrollto__contents",
     ],
     outs = ["generated.tar.gz"],
     cmd = "; ".join([
