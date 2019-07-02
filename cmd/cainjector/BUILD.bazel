@@ -4,6 +4,7 @@ load("//hack:def.bzl", "image")
 image(
     name = "image",
     component = "cainjector",
+    binary = ":cainjector",
     visibility = ["//visibility:public"],
 )
 
@@ -31,6 +32,7 @@ go_library(
 go_binary(
     name = "cainjector",
     embed = [":go_default_library"],
+    pure = "on",
     visibility = ["//visibility:public"],
 )
 

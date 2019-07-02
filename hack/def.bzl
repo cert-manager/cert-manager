@@ -19,6 +19,7 @@ load("@io_bazel_rules_docker//go:image.bzl", "go_image")
 def image(
     name,
     component,
+    binary,
     user = "1000",
     stamp = True,
     **kwargs):
@@ -26,7 +27,7 @@ def image(
     go_image(
         name = "%s.app" % name,
         base = "@static_base//image",
-        embed = [":go_default_library"],
+        binary = binary,
         tags = ["manual"],
         pure = "on",
     )
@@ -43,5 +44,6 @@ def image(
         name = name + ".export",
         images = {
             component + ":{STABLE_APP_GIT_COMMIT}": ":" + name,
-        }
+        },
+        tags = ["manual"],
     )

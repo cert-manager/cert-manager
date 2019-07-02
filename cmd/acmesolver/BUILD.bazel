@@ -4,6 +4,7 @@ load("//hack:def.bzl", "image")
 image(
     name = "image",
     component = "acmesolver",
+    binary = ":acmesolver",
     visibility = ["//visibility:public"],
 )
 
@@ -21,6 +22,7 @@ go_library(
 go_binary(
     name = "acmesolver",
     embed = [":go_default_library"],
+    pure = "on",
     visibility = ["//visibility:public"],
 )
 

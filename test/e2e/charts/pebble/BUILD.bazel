@@ -1,11 +1,16 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
 load("@io_bazel_rules_docker//go:image.bzl", "go_image")
 
 go_image(
     name = "image",
     base = "@static_base//image",
+    binary = ":app",
+    visibility = ["//visibility:public"],
+)
+
+go_binary(
+    name = "app",
     embed = ["@org_letsencrypt_pebble//cmd/pebble:go_default_library"],
-    goarch = "amd64",
-    goos = "linux",
     pure = "on",
     visibility = ["//visibility:public"],
 )
