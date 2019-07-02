@@ -23,12 +23,14 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/pem"
+	"errors"
 	"fmt"
 	"math/big"
 	"net"
 	"time"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	"github.com/jetstack/cert-manager/pkg/issuer"
 )
 
 // CommonNameForCertificate returns the common name that should be used for the
@@ -194,6 +196,55 @@ func GenerateTemplate(crt *v1alpha1.Certificate) (*x509.Certificate, error) {
 	}, nil
 }
 
+// GenerateTemplate will create a x509.Certificate for the given
+// CertificateRequest resource
+func GenerateTemplateFromCertificateRequest(cr *v1alpha1.CertificateRequest) (*x509.Certificate, error) {
+	block, _ := pem.Decode(cr.Spec.CSRPEM)
+	if block == nil {
+		return nil, fmt.Errorf("failed to decode csr from certificate request resource %s/%s",
+			cr.Namespace, cr.Name)
+	}
+
+	csr, err := x509.ParseCertificateRequest(block.Bytes)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := csr.CheckSignature(); err != nil {
+		return nil, err
+	}
+
+	serialNumber, err := rand.Int(rand.Reader, serialNumberLimit)
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate serial number: %s", err.Error())
+	}
+
+	certDuration := v1alpha1.DefaultCertificateDuration
+	if cr.Spec.Duration != nil {
+		certDuration = cr.Spec.Duration.Duration
+	}
+
+	keyUsages := x509.KeyUsageDigitalSignature | x509.KeyUsageKeyEncipherment
+
+	return &x509.Certificate{
+		Version:               csr.Version,
+		BasicConstraintsValid: true,
+		SerialNumber:          serialNumber,
+		PublicKeyAlgorithm:    csr.PublicKeyAlgorithm,
+		PublicKey:             csr.PublicKey,
+		IsCA:                  cr.Spec.IsCA,
+		Subject:               csr.Subject,
+		NotBefore:             time.Now(),
+		NotAfter:              time.Now().Add(certDuration),
+		// see http://golang.org/pkg/crypto/x509/#KeyUsage
+		KeyUsage:    keyUsages,
+		DNSNames:    csr.DNSNames,
+		IPAddresses: csr.IPAddresses,
+		URIs:        csr.URIs,
+		ExtKeyUsage: []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
+	}, nil
+}
+
 // SignCertificate returns a signed x509.Certificate object for the given
 // *v1alpha1.Certificate crt.
 // publicKey is the public key of the signee, and signerKey is the private
@@ -219,6 +270,41 @@ func SignCertificate(template *x509.Certificate, issuerCert *x509.Certificate, p
 	}
 
 	return pemBytes.Bytes(), cert, err
+}
+
+// SignCSRTemplate signs a certificate template usually based upon a CSR. This
+// function expects all fields to be present in the certificate template,
+// including it's public key.
+func SignCSRTemplate(caCerts []*x509.Certificate, caKey crypto.Signer, template *x509.Certificate) (*issuer.IssueResponse, error) {
+	if len(caCerts) == 0 {
+		return nil, errors.New("no CA certificates given to sign CSR template")
+	}
+
+	caCert := caCerts[0]
+
+	certPem, _, err := SignCertificate(template, caCert, template.PublicKey, caKey)
+	if err != nil {
+		return nil, err
+
+	}
+
+	chainPem, err := EncodeX509Chain(caCerts)
+	if err != nil {
+		return nil, err
+	}
+
+	certPem = append(certPem, chainPem...)
+
+	// encode the CA certificate to be bundled in the output
+	caPem, err := EncodeX509(caCerts[0])
+	if err != nil {
+		return nil, err
+	}
+
+	return &issuer.IssueResponse{
+		Certificate: certPem,
+		CA:          caPem,
+	}, nil
 }
 
 // EncodeCSR calls x509.CreateCertificateRequest to sign the given CSR template.
