@@ -419,7 +419,7 @@ func (c *controller) updateSecret(ctx context.Context, crt *v1alpha1.Certificate
 		// if the issuer returns a private key but not certificate data, we
 		// generate and store a temporary certificate that we can later
 		// recognise and force later calls to the issuer's Issue method
-		cert, err = c.localTemporarySigner(crt, key)
+		cert, ca, err = c.localTemporarySigner(crt, key)
 		if err != nil {
 			return nil, fmt.Errorf("error signing locally generated certificate: %v", err)
 		}
@@ -531,11 +531,11 @@ func generateSelfSignedTemporaryCertificate(crt *v1alpha1.Certificate, pk []byte
 // This is to mitigate a potential attack against x509 certificates that use a
 // predictable serial number and weak MD5 hashing algorithms.
 // In practice, this shouldn't really be a concern anyway.
-func generateLocallySignedTemporaryCertificate(crt *v1alpha1.Certificate, pk []byte) ([]byte, error) {
+func generateLocallySignedTemporaryCertificate(crt *v1alpha1.Certificate, pk []byte) ([]byte, []byte, error) {
 	// generate a throwaway self-signed root CA
 	caPk, err := pki.GenerateECPrivateKey(pki.ECCurve521)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	caCertTemplate, err := pki.GenerateTemplate(&v1alpha1.Certificate{
 		Spec: v1alpha1.CertificateSpec{
@@ -544,31 +544,31 @@ func generateLocallySignedTemporaryCertificate(crt *v1alpha1.Certificate, pk []b
 		},
 	})
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	_, caCert, err := pki.SignCertificate(caCertTemplate, caCertTemplate, caPk.Public(), caPk)
+	ca, caCert, err := pki.SignCertificate(caCertTemplate, caCertTemplate, caPk.Public(), caPk)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	// sign a temporary certificate using the root CA
 	template, err := pki.GenerateTemplate(crt)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	template.SerialNumber = big.NewInt(staticTemporarySerialNumber)
 
 	signeeKey, err := pki.DecodePrivateKeyBytes(pk)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	b, _, err := pki.SignCertificate(template, caCert, signeeKey.Public(), caPk)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	return b, nil
+	return b, ca, nil
 }
 
 func (c *controller) updateCertificateStatus(ctx context.Context, old, new *v1alpha1.Certificate) (*v1alpha1.Certificate, error) {

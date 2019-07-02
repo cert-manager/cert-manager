@@ -69,7 +69,7 @@ type controller struct {
 	log logr.Logger
 
 	// localTemporarySigner signs a certificate that is stored temporarily
-	localTemporarySigner func(crt *v1alpha1.Certificate, pk []byte) ([]byte, error)
+	localTemporarySigner func(crt *v1alpha1.Certificate, pk []byte) ([]byte, []byte, error)
 
 	// certificateNeedsRenew is a function that can be used to determine whether
 	// a certificate currently requires renewal.
