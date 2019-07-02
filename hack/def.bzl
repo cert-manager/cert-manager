@@ -28,7 +28,6 @@ def image(
         name = "%s.app" % name,
         base = "@static_base//image",
         binary = binary,
-        tags = ["manual"],
         pure = "on",
     )
 
@@ -37,7 +36,6 @@ def image(
         base = "%s.app" % name,
         user = user,
         stamp = stamp,
-        tags = ["manual"],
         **kwargs)
 
     container_bundle(
@@ -45,5 +43,4 @@ def image(
         images = {
             component + ":{STABLE_APP_GIT_COMMIT}": ":" + name,
         },
-        tags = ["manual"],
     )

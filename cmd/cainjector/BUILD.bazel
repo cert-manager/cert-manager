@@ -3,8 +3,8 @@ load("//hack:def.bzl", "image")
 
 image(
     name = "image",
-    component = "cainjector",
     binary = ":cainjector",
+    component = "cainjector",
     visibility = ["//visibility:public"],
 )
 

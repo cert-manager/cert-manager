@@ -3,8 +3,8 @@ load("//hack:def.bzl", "image")
 
 image(
     name = "image",
-    component = "webhook",
     binary = ":webhook",
+    component = "webhook",
     visibility = ["//visibility:public"],
 )
 

@@ -3,8 +3,8 @@ load("//hack:def.bzl", "image")
 
 image(
     name = "image",
-    component = "acmesolver",
     binary = ":acmesolver",
+    component = "acmesolver",
     visibility = ["//visibility:public"],
 )
 
