@@ -33,17 +33,15 @@ func ValidateCertificateRequest(cr *v1alpha1.CertificateRequest) field.ErrorList
 func ValidateCertificateRequestSpec(crSpec *v1alpha1.CertificateRequestSpec, fldPath *field.Path) field.ErrorList {
 	el := field.ErrorList{}
 
+	el = append(el, validateIssuerRef(crSpec.IssuerRef, fldPath)...)
+
 	if len(crSpec.CSRPEM) == 0 {
 		el = append(el, field.Required(fldPath.Child("csr"), "must be specified"))
 	} else {
 		_, err := pki.DecodeX509CertificateRequestBytes(crSpec.CSRPEM)
 		if err != nil {
-			el = append(el, field.Required(fldPath.Child("csr"), fmt.Sprintf("failed to decode csr: %s", err)))
+			el = append(el, field.Invalid(fldPath.Child("csr"), crSpec.CSRPEM, fmt.Sprintf("failed to decode csr: %s", err)))
 		}
-	}
-
-	if len(crSpec.IssuerRef.Name) == 0 || len(crSpec.IssuerRef.Kind) == 0 {
-		el = append(el, field.Required(fldPath.Child("issuerRef"), "issuerRef name and kind must be specified"))
 	}
 
 	return el

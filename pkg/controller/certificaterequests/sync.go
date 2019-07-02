@@ -35,8 +35,8 @@ import (
 )
 
 const (
-	errorCertificateNotExists = "CertNotExists"
-	errorCertificateParse     = "CertParseError"
+	errorCertificatePending = "CertPending"
+	errorCertificateFailed  = "CertFailed"
 
 	errorIssuerNotFound = "IssuerNotFound"
 	errorIssuerInit     = "IssuerInitError"
@@ -57,40 +57,50 @@ func (c *Controller) Sync(ctx context.Context, cr *v1alpha1.CertificateRequest) 
 		}
 	}()
 
-	dbg.Info("Fetching existing certificate signing request and certificate from certificate request",
-		"name", crCopy.ObjectMeta.Name)
+	dbg.Info("fetching issuer object referenced by CertificateRequest")
 
 	issuerObj, err := c.helper.GetGenericIssuer(crCopy.Spec.IssuerRef, crCopy.Namespace)
 	if k8sErrors.IsNotFound(err) {
 		c.recorder.Eventf(crCopy, corev1.EventTypeWarning, errorIssuerNotFound, err.Error())
-		c.log.Error(err,
-			"issuer-name", crCopy.Spec.IssuerRef.Name,
-			"issuer-kind", crCopy.Spec.IssuerRef.Kind)
-		return nil
+		log.WithValues(
+			logf.RelatedResourceNameKey, crCopy.Spec.IssuerRef.Name,
+			logf.RelatedResourceKindKey, crCopy.Spec.IssuerRef.Kind,
+		).Error(err, "failed to find referenced issuer")
 	}
 	if err != nil {
 		return err
 	}
 
+	dbg.Info("ensuring issuer type matches this controller")
+
+	log = logf.WithRelatedResource(log, issuerObj.GetObjectMeta())
+
 	issuerType, err := apiutil.NameForIssuer(issuerObj)
 	if err != nil {
 		c.recorder.Eventf(crCopy, corev1.EventTypeWarning, errorIssuerNotFound, err.Error())
-		c.log.Error(err,
-			"issuer-name", issuerObj.GetName())
+		log.Error(err, "failed to obtain referenced issuer type")
 		return nil
 	}
 
 	// This CertificateRequest is not meant for us, ignore
 	if issuerType != c.issuerType {
-		c.log.V(5).Info("issuer reference type does not match resource kind, ignoring",
-			"certificaterequest-issuer-type", issuerType,
-			"issuer-type", c.issuerType)
+		c.log.WithValues(
+			logf.RelatedResourceKindKey, issuerType,
+		).V(5).Info("issuer reference type does not match controller resource kind, ignoring")
 		return nil
 	}
+
+	dbg.Info("validating CertificateRequest resource object")
 
 	el := validation.ValidateCertificateRequest(crCopy)
 	if len(el) > 0 {
 		c.recorder.Eventf(crCopy, corev1.EventTypeWarning, "BadConfig", "Resource validation failed: %v", el.ToAggregate())
+		return nil
+	}
+
+	if len(crCopy.Status.Certificate) > 0 {
+		dbg.Info("certificate exists so exiting sync")
+		c.setCertificateRequestStatus(crCopy)
 		return nil
 	}
 
@@ -100,21 +110,10 @@ func (c *Controller) Sync(ctx context.Context, cr *v1alpha1.CertificateRequest) 
 		return nil
 	}
 
-	dbg.Info("Fetched issuer resource referenced by certificate request", "issuer_name", crCopy.Spec.IssuerRef.Name)
-
-	if len(cr.Status.Certificate) == 0 {
-		dbg.Info("Invoking sign function as existing certificate does not exist")
-		return c.sign(ctx, crCopy, i)
-	}
-
-	dbg.Info("Update certificate request status if required")
-	c.setCertificateRequestStatus(crCopy)
-
 	// TODO: Metrics??
 
-	dbg.Info("Certificate does not need updating.")
-
-	return nil
+	dbg.Info("invoking sign function as existing certificate does not exist")
+	return c.sign(ctx, crCopy, i)
 }
 
 // return an error on failure. If retrieval is succesful, the certificate data
@@ -150,8 +149,8 @@ func (c *Controller) sign(ctx context.Context, cr *v1alpha1.CertificateRequest, 
 func (c *Controller) setCertificateRequestStatus(cr *v1alpha1.CertificateRequest) {
 	// No cert exists yet
 	if len(cr.Status.Certificate) == 0 {
-		apiutil.SetCertificateRequestCondition(cr, v1alpha1.CertificateRequestConditionReady, v1alpha1.ConditionFalse,
-			errorCertificateNotExists, "Certificate does not exist")
+		apiutil.SetCertificateRequestCondition(cr, v1alpha1.CertificateRequestConditionReady,
+			v1alpha1.ConditionFalse, errorCertificatePending, "Certificate issuance pending")
 		return
 	}
 
@@ -159,13 +158,13 @@ func (c *Controller) setCertificateRequestStatus(cr *v1alpha1.CertificateRequest
 	_, err := pki.DecodeX509CertificateBytes(cr.Status.Certificate)
 	if err != nil {
 		apiutil.SetCertificateRequestCondition(cr, v1alpha1.CertificateRequestConditionReady,
-			v1alpha1.ConditionFalse, errorCertificateParse, "Failed to decode certificate PEM")
+			v1alpha1.ConditionFalse, errorCertificateFailed, "Failed to decode certificate PEM")
 		return
 	}
 
-	// cert exists and can be decoded so we are ready
+	// cert has been issued and can be decoded so we are ready
 	apiutil.SetCertificateRequestCondition(cr, v1alpha1.CertificateRequestConditionReady,
-		v1alpha1.ConditionTrue, "Ready", "Certificate exists and is signed")
+		v1alpha1.ConditionTrue, "Ready", "Certificate has been issued successfully")
 	return
 }
 
@@ -176,6 +175,7 @@ func (c *Controller) updateCertificateRequestStatus(ctx context.Context, old, ne
 	if reflect.DeepEqual(oldBytes, newBytes) {
 		return nil, nil
 	}
+
 	log.V(logf.DebugLevel).Info("updating resource due to change in status", "diff", pretty.Diff(string(oldBytes), string(newBytes)))
 	// TODO: replace Update call with UpdateStatus. This requires a custom API
 	// server with the /status subresource enabled and/or subresource support

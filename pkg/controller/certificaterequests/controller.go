@@ -24,7 +24,6 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
-	"k8s.io/utils/clock"
 
 	cmclient "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
 	cmlisters "github.com/jetstack/cert-manager/pkg/client/listers/certmanager/v1alpha1"
@@ -50,9 +49,6 @@ type Controller struct {
 
 	queue   workqueue.RateLimitingInterface
 	metrics *metrics.Metrics
-
-	// used for testing
-	clock clock.Clock
 
 	// logger to be used by this controller
 	log logr.Logger
@@ -122,9 +118,6 @@ func (c *Controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitin
 
 	// issuerFactory provides an interface to obtain Issuer implementations from issuer resources
 	c.issuerFactory = issuer.NewIssuerFactory(ctx)
-
-	// clock is used to determine whether certificates need renewal
-	c.clock = clock.RealClock{}
 
 	// recorder records events about resources to the Kubernetes api
 	c.recorder = ctx.Recorder

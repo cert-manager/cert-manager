@@ -142,12 +142,12 @@ func TestSync(t *testing.T) {
 			Name: "fake-issuer",
 		}),
 	)
-	exampleCRNotFoundCondition := gen.CertificateRequestFrom(exampleCR,
+	exampleCRPendingCondition := gen.CertificateRequestFrom(exampleCR,
 		gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
 			Type:               cmapi.CertificateRequestConditionReady,
 			Status:             cmapi.ConditionFalse,
-			Reason:             "CertNotExists",
-			Message:            "Certificate does not exist",
+			Reason:             "CertPending",
+			Message:            "Certificate issuance pending",
 			LastTransitionTime: &nowMetaTime,
 		}),
 	)
@@ -166,7 +166,7 @@ func TestSync(t *testing.T) {
 			Type:               cmapi.CertificateRequestConditionReady,
 			Status:             cmapi.ConditionTrue,
 			Reason:             "Ready",
-			Message:            "Certificate exists and is signed",
+			Message:            "Certificate has been issued successfully",
 			LastTransitionTime: &nowMetaTime,
 		}),
 	)
@@ -180,14 +180,14 @@ func TestSync(t *testing.T) {
 		gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
 			Type:               cmapi.CertificateRequestConditionReady,
 			Status:             cmapi.ConditionFalse,
-			Reason:             "CertParseError",
+			Reason:             "CertFailed",
 			Message:            "Failed to decode certificate PEM",
 			LastTransitionTime: &nowMetaTime,
 		}),
 	)
 
 	tests := map[string]controllerFixture{
-		"should update certificate request with NotExists if issuer does not return a response": {
+		"should update certificate request with CertPending if issuer does not return a response": {
 			Issuer: gen.Issuer("test",
 				gen.AddIssuerCondition(cmapi.IssuerCondition{
 					Type:   cmapi.IssuerConditionReady,
@@ -200,7 +200,7 @@ func TestSync(t *testing.T) {
 				FakeSign: func(context.Context, *cmapi.CertificateRequest) (*issuer.IssueResponse, error) {
 					// By not returning a response, we trigger a 'no-op' action which
 					// causes the certificate request controller to update the status of
-					// the CertificateRequest with !Ready - NotExists.
+					// the CertificateRequest with !Ready - CertPending.
 					return nil, nil
 				},
 			},
@@ -210,7 +210,7 @@ func TestSync(t *testing.T) {
 					testpkg.NewAction(coretesting.NewUpdateAction(
 						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
 						gen.DefaultTestNamespace,
-						exampleCRNotFoundCondition,
+						exampleCRPendingCondition,
 					)),
 				},
 			},

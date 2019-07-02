@@ -34,7 +34,7 @@ const (
 
 	// alpha: v0.8.1
 	//
-	// Enables cert-manager to resolve certificate requests using it's
+	// Enables cert-manager to resolve certificate requests using its
 	// CertificateRequest issuer controllers.
 	CertificateRequestControllers = "CertificateRequestControllers"
 )

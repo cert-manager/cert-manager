@@ -19,7 +19,6 @@ package certificaterequests
 import (
 	"context"
 	"testing"
-	"time"
 
 	realclock "k8s.io/utils/clock"
 	clock "k8s.io/utils/clock/testing"
@@ -75,7 +74,7 @@ func (f *controllerFixture) Setup(t *testing.T) {
 
 	// Fix the clock used in apiutil so that calls to set status conditions
 	// can be predictably tested
-	apiutil.Clock = f.controller.clock
+	apiutil.Clock = f.Clock
 }
 
 func (f *controllerFixture) Finish(t *testing.T, args ...interface{}) {
@@ -106,10 +105,6 @@ func (f *controllerFixture) buildFakeController(b *test.Builder, issuer v1alpha1
 	c.Register(b.Context)
 	c.helper = f
 	c.issuerFactory = f
-	c.clock = f.Clock
-	if c.clock == nil {
-		c.clock = clock.NewFakeClock(time.Now())
-	}
 	b.Sync()
 	return c
 }
