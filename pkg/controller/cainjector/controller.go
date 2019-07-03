@@ -144,6 +144,10 @@ func (r *genericInjectReconciler) Reconcile(req ctrl.Request) (ctrl.Result, erro
 	// fetch the target object
 	target := r.injector.NewTarget()
 	if err := r.Client.Get(ctx, req.NamespacedName, target.AsObject()); err != nil {
+		if dropNotFound(err) == nil {
+			// don't requeue on deletions, which yield a non-found object
+			return ctrl.Result{}, nil
+		}
 		log.Error(err, "unable to fetch target object to inject into")
 		return ctrl.Result{}, err
 	}

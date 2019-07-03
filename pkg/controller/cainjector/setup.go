@@ -21,6 +21,7 @@ import (
 
 	admissionreg "k8s.io/api/admissionregistration/v1beta1"
 	corev1 "k8s.io/api/core/v1"
+	apiext "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	"k8s.io/apimachinery/pkg/runtime"
 	apireg "k8s.io/kube-aggregator/pkg/apis/apiregistration/v1beta1"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -56,7 +57,13 @@ var (
 		listType:     &apireg.APIServiceList{},
 	}
 
-	injectorSetups  = []injectorSetup{MutatingWebhookSetup, ValidatingWebhookSetup, APIServiceSetup}
+	CRDSetup = injectorSetup{
+		resourceName: "customresourcedefinition",
+		injector:     crdConversionInjector{},
+		listType:     &apiext.CustomResourceDefinitionList{},
+	}
+
+	injectorSetups  = []injectorSetup{MutatingWebhookSetup, ValidatingWebhookSetup, APIServiceSetup, CRDSetup}
 	ControllerNames []string
 )
 
