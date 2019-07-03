@@ -103,3 +103,8 @@ func (l *Logger) Discover(ctx context.Context) (acme.Directory, error) {
 	klog.Infof("Calling Discover")
 	return l.baseCl.Discover(ctx)
 }
+
+func (l *Logger) UpdateAccount(ctx context.Context, a *acme.Account) (*acme.Account, error) {
+	klog.Infof("Calling UpdateAccount")
+	return l.baseCl.UpdateAccount(ctx, a)
+}

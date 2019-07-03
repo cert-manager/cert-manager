@@ -42,6 +42,7 @@ type FakeACME struct {
 	FakeHTTP01ChallengeResponse func(token string) (string, error)
 	FakeDNS01ChallengeRecord    func(token string) (string, error)
 	FakeDiscover                func(ctx context.Context) (acme.Directory, error)
+	FakeUpdateAccount           func(ctx context.Context, a *acme.Account) (*acme.Account, error)
 }
 
 func (f *FakeACME) CreateOrder(ctx context.Context, order *acme.Order) (*acme.Order, error) {
@@ -142,4 +143,11 @@ func (f *FakeACME) Discover(ctx context.Context) (acme.Directory, error) {
 	// We only use Discover to find CAAIdentities, so returning an
 	// empty directory here will be fine
 	return acme.Directory{}, nil
+}
+
+func (f *FakeACME) UpdateAccount(ctx context.Context, a *acme.Account) (*acme.Account, error) {
+	if f.FakeUpdateAccount != nil {
+		return f.FakeUpdateAccount(ctx, a)
+	}
+	return nil, fmt.Errorf("UpdateAccount not implemented")
 }
