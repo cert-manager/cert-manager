@@ -20,6 +20,7 @@ import (
 	"context"
 	"testing"
 
+	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	realclock "k8s.io/utils/clock"
 	clock "k8s.io/utils/clock/testing"
 
@@ -46,15 +47,6 @@ type controllerFixture struct {
 }
 
 func (f *controllerFixture) Setup(t *testing.T) {
-	if f.Issuer == nil {
-		f.Issuer = &v1alpha1.Issuer{
-			Spec: v1alpha1.IssuerSpec{
-				IssuerConfig: v1alpha1.IssuerConfig{
-					SelfSigned: new(v1alpha1.SelfSignedIssuer),
-				},
-			},
-		}
-	}
 	if f.Ctx == nil {
 		f.Ctx = context.Background()
 	}
@@ -110,6 +102,10 @@ func (f *controllerFixture) buildFakeController(b *test.Builder, issuer v1alpha1
 }
 
 func (f *controllerFixture) GetGenericIssuer(ref v1alpha1.ObjectReference, ns string) (v1alpha1.GenericIssuer, error) {
+	if f.Issuer == nil {
+		return nil, k8sErrors.NewNotFound(v1alpha1.Resource("issuer"), ref.Name)
+	}
+
 	return f.Issuer, nil
 }
 

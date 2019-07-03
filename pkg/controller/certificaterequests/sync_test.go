@@ -125,7 +125,7 @@ func TestSync(t *testing.T) {
 	nowMetaTime := metav1.NewTime(nowTime)
 	fixedClock := clock.NewFakeClock(nowTime)
 
-	csr1, err := generateCSR("csr1")
+	csr, err := generateCSR("csr")
 	if err != nil {
 		t.Errorf("failed to generate CSR for testing: %s", err)
 		t.FailNow()
@@ -136,7 +136,7 @@ func TestSync(t *testing.T) {
 	exampleCR := gen.CertificateRequest("test",
 		gen.SetCertificateRequestIsCA(false),
 		gen.SetCertificateRequestIssuer(cmapi.ObjectReference{Name: "test"}),
-		gen.SetCertificateRequestCSR(csr1),
+		gen.SetCertificateRequestCSR(csr),
 		gen.SetCertificateRequestIssuer(cmapi.ObjectReference{
 			Kind: "Issuer",
 			Name: "fake-issuer",
@@ -152,11 +152,11 @@ func TestSync(t *testing.T) {
 		}),
 	)
 
-	cert1PEM := generateSelfSignedCert(t, exampleCR, nil, pk, nowTime, nowTime.Add(time.Hour*12))
+	certPEM := generateSelfSignedCert(t, exampleCR, nil, pk, nowTime, nowTime.Add(time.Hour*12))
 	certPEMExpired := generateSelfSignedCert(t, exampleCR, nil, pk, nowTime.Add(-time.Hour*13), nowTime.Add(-time.Hour*12))
 
 	exampleSignedCR := exampleCR.DeepCopy()
-	exampleSignedCR.Status.Certificate = cert1PEM
+	exampleSignedCR.Status.Certificate = certPEM
 
 	exampleSignedExpiredCR := exampleCR.DeepCopy()
 	exampleSignedExpiredCR.Status.Certificate = certPEMExpired
@@ -185,6 +185,9 @@ func TestSync(t *testing.T) {
 			LastTransitionTime: &nowMetaTime,
 		}),
 	)
+
+	exampleEmptyCSRCR := exampleCR.DeepCopy()
+	exampleEmptyCSRCR.Spec.CSRPEM = make([]byte, 0)
 
 	tests := map[string]controllerFixture{
 		"should update certificate request with CertPending if issuer does not return a response": {
@@ -230,7 +233,7 @@ func TestSync(t *testing.T) {
 			IssuerImpl: &fake.Issuer{
 				FakeSign: func(context.Context, *cmapi.CertificateRequest) (*issuer.IssueResponse, error) {
 					return &issuer.IssueResponse{
-						Certificate: cert1PEM,
+						Certificate: certPEM,
 					}, nil
 				},
 			},
@@ -293,6 +296,92 @@ func TestSync(t *testing.T) {
 						exampleCRGarbageCondition,
 					)),
 				},
+			},
+			CheckFn: func(t *testing.T, s *controllerFixture, args ...interface{}) {
+			},
+			Err: false,
+		},
+		"fail if generic issuer doesn't exist": {
+			Issuer:             nil,
+			CertificateRequest: *exampleSignedCR,
+			IssuerImpl: &fake.Issuer{
+				FakeSign: func(context.Context, *cmapi.CertificateRequest) (*issuer.IssueResponse, error) {
+					return nil, errors.New("unexpected sign call")
+				},
+			},
+			Builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{gen.CertificateRequest("test")},
+				ExpectedActions:    []testpkg.Action{},
+			},
+			CheckFn: func(t *testing.T, s *controllerFixture, args ...interface{}) {
+				err := args[1].(error)
+				issuerNotExist := `issuer.certmanager.k8s.io "fake-issuer" not found`
+				if err == nil || err.Error() != issuerNotExist {
+					t.Errorf("unexpected error, exp='%s' got='%+v'", issuerNotExist, err)
+				}
+			},
+			Err: true,
+		},
+		"exit nil if we cannot determine the issuer type (probably not meant for us)": {
+			Issuer: gen.Issuer("test",
+				gen.AddIssuerCondition(cmapi.IssuerCondition{
+					Type:   cmapi.IssuerConditionReady,
+					Status: cmapi.ConditionTrue,
+				}),
+			),
+			CertificateRequest: *exampleSignedCR,
+			IssuerImpl: &fake.Issuer{
+				FakeSign: func(context.Context, *cmapi.CertificateRequest) (*issuer.IssueResponse, error) {
+					return nil, errors.New("unexpected sign call")
+				},
+			},
+			Builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{gen.CertificateRequest("test")},
+				ExpectedActions:    []testpkg.Action{},
+			},
+			CheckFn: func(t *testing.T, s *controllerFixture, args ...interface{}) {
+			},
+			Err: false,
+		},
+		"exit nil if the issuer type is not meant for us": {
+			Issuer: gen.Issuer("test",
+				gen.AddIssuerCondition(cmapi.IssuerCondition{
+					Type:   cmapi.IssuerConditionReady,
+					Status: cmapi.ConditionTrue,
+				}),
+				gen.SetIssuerCA(cmapi.CAIssuer{}),
+			),
+			CertificateRequest: *exampleSignedCR,
+			IssuerImpl: &fake.Issuer{
+				FakeSign: func(context.Context, *cmapi.CertificateRequest) (*issuer.IssueResponse, error) {
+					return nil, errors.New("unexpected sign call")
+				},
+			},
+			Builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{gen.CertificateRequest("test")},
+				ExpectedActions:    []testpkg.Action{},
+			},
+			CheckFn: func(t *testing.T, s *controllerFixture, args ...interface{}) {
+			},
+			Err: false,
+		},
+		"exit if we fail validation during a sync": {
+			Issuer: gen.Issuer("test",
+				gen.AddIssuerCondition(cmapi.IssuerCondition{
+					Type:   cmapi.IssuerConditionReady,
+					Status: cmapi.ConditionTrue,
+				}),
+				gen.SetIssuerSelfSigned(cmapi.SelfSignedIssuer{}),
+			),
+			CertificateRequest: *exampleEmptyCSRCR,
+			IssuerImpl: &fake.Issuer{
+				FakeSign: func(context.Context, *cmapi.CertificateRequest) (*issuer.IssueResponse, error) {
+					return nil, errors.New("unexpected sign call")
+				},
+			},
+			Builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{gen.CertificateRequest("test")},
+				ExpectedActions:    []testpkg.Action{},
 			},
 			CheckFn: func(t *testing.T, s *controllerFixture, args ...interface{}) {
 			},
