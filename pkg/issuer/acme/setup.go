@@ -208,7 +208,7 @@ func (a *Acme) Setup(ctx context.Context) error {
 	// if they are different, we update the account
 	specEmail := a.issuer.GetSpec().ACME.Email
 	if registeredEmail != specEmail {
-		log.Info("Updating ACME account with email %s", specEmail)
+		log.Info("updating ACME account email address", "email", specEmail)
 		emailurl := []string(nil)
 		if a.issuer.GetSpec().ACME.Email != "" {
 			emailurl = []string{fmt.Sprintf("mailto:%s", strings.ToLower(specEmail))}
@@ -241,6 +241,8 @@ func (a *Acme) Setup(ctx context.Context) error {
 			return err
 		}
 
+		// update the registeredEmail var so it is updated properly in the status below
+		registeredEmail = specEmail
 	}
 
 	log.Info("verified existing registration with ACME server")
