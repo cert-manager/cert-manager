@@ -33,11 +33,13 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
+	utilfeature "k8s.io/apiserver/pkg/util/feature"
 	"k8s.io/client-go/tools/cache"
 
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/validation"
+	"github.com/jetstack/cert-manager/pkg/feature"
 	"github.com/jetstack/cert-manager/pkg/issuer"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 	"github.com/jetstack/cert-manager/pkg/util"
@@ -404,6 +406,8 @@ func (c *controller) updateSecret(ctx context.Context, crt *v1alpha1.Certificate
 		if err != nil {
 			return nil, fmt.Errorf("invalid certificate data: %v", err)
 		}
+	case !utilfeature.DefaultFeatureGate.Enabled(feature.IssueTemporaryCertificate):
+		break
 	case isTemporaryCertificate(existingCert):
 		matches, err := pki.PublicKeyMatchesCertificate(privKey.Public(), existingCert)
 		if err == nil && matches {
@@ -435,11 +439,13 @@ func (c *controller) updateSecret(ctx context.Context, crt *v1alpha1.Certificate
 	// TODO: move metadata setting out of this method, and support
 	// retrospectively adding metadata annotations on every Sync iteration and
 	// not just when a new certificate is issued
-	secret.Annotations[v1alpha1.IssuerNameAnnotationKey] = crt.Spec.IssuerRef.Name
-	secret.Annotations[v1alpha1.IssuerKindAnnotationKey] = issuerKind(crt)
-	secret.Annotations[v1alpha1.CommonNameAnnotationKey] = x509Cert.Subject.CommonName
-	secret.Annotations[v1alpha1.AltNamesAnnotationKey] = strings.Join(x509Cert.DNSNames, ",")
-	secret.Annotations[v1alpha1.IPSANAnnotationKey] = strings.Join(pki.IPAddressesToString(x509Cert.IPAddresses), ",")
+	if x509Cert != nil {
+		secret.Annotations[v1alpha1.IssuerNameAnnotationKey] = crt.Spec.IssuerRef.Name
+		secret.Annotations[v1alpha1.IssuerKindAnnotationKey] = issuerKind(crt)
+		secret.Annotations[v1alpha1.CommonNameAnnotationKey] = x509Cert.Subject.CommonName
+		secret.Annotations[v1alpha1.AltNamesAnnotationKey] = strings.Join(x509Cert.DNSNames, ",")
+		secret.Annotations[v1alpha1.IPSANAnnotationKey] = strings.Join(pki.IPAddressesToString(x509Cert.IPAddresses), ",")
+	}
 
 	// Always set the certificate name label on the target secret
 	secret.Labels[v1alpha1.CertificateNameKey] = crt.Name
