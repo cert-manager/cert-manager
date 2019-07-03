@@ -198,3 +198,22 @@ func SetCertificateRequestCondition(csr *cmapi.CertificateRequest, conditionType
 	csr.Status.Conditions = append(csr.Status.Conditions, newCondition)
 	klog.Infof("Setting lastTransitionTime for CertificateRequest %q condition %q to %v", csr.Name, conditionType, nowTime.Time)
 }
+
+// CertificateRequestHasCondition will return true if the given
+// CertificateRequest has a condition matching the provided
+// CertificateRequestCondition.
+// Only the Type and Status field will be used in the comparison, meaning that
+// this function will return 'true' even if the Reason, Message and
+// LastTransitionTime fields do not match.
+func CertificateRequestHasCondition(cr *cmapi.CertificateRequest, c cmapi.CertificateRequestCondition) bool {
+	if cr == nil {
+		return false
+	}
+	existingConditions := cr.Status.Conditions
+	for _, cond := range existingConditions {
+		if c.Type == cond.Type && c.Status == cond.Status {
+			return true
+		}
+	}
+	return false
+}

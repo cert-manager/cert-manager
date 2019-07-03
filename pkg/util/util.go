@@ -18,6 +18,8 @@ package util
 
 import (
 	"math/rand"
+	"net"
+	"net/url"
 	"sort"
 	"time"
 )
@@ -44,6 +46,57 @@ func EqualUnsorted(s1 []string, s2 []string) bool {
 	copy(s2_2, s2)
 	sort.Strings(s1_2)
 	sort.Strings(s2_2)
+	for i, s := range s1_2 {
+		if s != s2_2[i] {
+			return false
+		}
+	}
+	return true
+}
+
+// Test for equal URL slices even if unsorted. Panics if any element is nil
+func EqualURLsUnsorted(s1, s2 []*url.URL) bool {
+	if len(s1) != len(s2) {
+		return false
+	}
+	s1_2, s2_2 := make([]*url.URL, len(s1)), make([]*url.URL, len(s2))
+	copy(s1_2, s1)
+	copy(s2_2, s2)
+
+	sort.SliceStable(s1_2, func(i, j int) bool {
+		return s1_2[i].String() < s1_2[j].String()
+	})
+	sort.SliceStable(s2_2, func(i, j int) bool {
+		return s2_2[i].String() < s2_2[j].String()
+	})
+
+	for i, s := range s1_2 {
+		if s != s2_2[i] {
+			return false
+		}
+	}
+	return true
+}
+
+// Test for equal IP slices even if unsorted
+func EqualIPsUnsorted(s1, s2 []net.IP) bool {
+	if len(s1) != len(s2) {
+		return false
+	}
+	s1_2, s2_2 := make([]string, len(s1)), make([]string, len(s2))
+	// we may want to implement a sort interface here instead of []byte conversion
+	for i := range s1 {
+		s1_2[i] = string(s1[i])
+		s2_2[i] = string(s2[i])
+	}
+
+	sort.SliceStable(s1_2, func(i, j int) bool {
+		return s1_2[i] < s1_2[j]
+	})
+	sort.SliceStable(s2_2, func(i, j int) bool {
+		return s2_2[i] < s2_2[j]
+	})
+
 	for i, s := range s1_2 {
 		if s != s2_2[i] {
 			return false
