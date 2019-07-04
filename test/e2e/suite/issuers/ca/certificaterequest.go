@@ -37,7 +37,6 @@ var _ = framework.CertManagerDescribe("CA Certificate", func() {
 	issuerName := "test-ca-issuer"
 	issuerSecretName := "ca-issuer-signing-keypair"
 	certificateRequestName := "test-ca-certificaterequest"
-	//certificateRequestSecretName := "test-ca-certificaterequest"
 
 	exampleDNSNames := []string{"dnsName1.co", "dnsName2.ninja"}
 	exampleIPAddresses := []net.IP{

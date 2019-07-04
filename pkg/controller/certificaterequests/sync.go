@@ -50,6 +50,15 @@ func (c *Controller) Sync(ctx context.Context, cr *v1alpha1.CertificateRequest) 
 	log := logf.FromContext(ctx)
 	dbg := log.V(logf.DebugLevel)
 
+	if apiutil.CertificateRequestHasCondition(cr, v1alpha1.CertificateRequestCondition{
+		Type:   v1alpha1.CertificateRequestConditionReady,
+		Status: v1alpha1.ConditionFalse,
+		Reason: errorCertificateFailed,
+	}) {
+		dbg.Info("certificate request condition failed so skipping processing")
+		return nil
+	}
+
 	crCopy := cr.DeepCopy()
 	defer func() {
 		if _, saveErr := c.updateCertificateRequestStatus(ctx, cr, crCopy); saveErr != nil {
@@ -66,6 +75,7 @@ func (c *Controller) Sync(ctx context.Context, cr *v1alpha1.CertificateRequest) 
 			logf.RelatedResourceNameKey, crCopy.Spec.IssuerRef.Name,
 			logf.RelatedResourceKindKey, crCopy.Spec.IssuerRef.Kind,
 		).Error(err, "failed to find referenced issuer")
+		return nil
 	}
 	if err != nil {
 		return err
@@ -73,7 +83,7 @@ func (c *Controller) Sync(ctx context.Context, cr *v1alpha1.CertificateRequest) 
 
 	dbg.Info("ensuring issuer type matches this controller")
 
-	log = logf.WithRelatedResource(log, issuerObj.GetObjectMeta())
+	log = logf.WithRelatedResource(log, issuerObj)
 
 	issuerType, err := apiutil.NameForIssuer(issuerObj)
 	if err != nil {
@@ -99,7 +109,7 @@ func (c *Controller) Sync(ctx context.Context, cr *v1alpha1.CertificateRequest) 
 	}
 
 	if len(crCopy.Status.Certificate) > 0 {
-		dbg.Info("certificate exists so exiting sync")
+		dbg.Info("certificate field is already set in status so skipping processing")
 		c.setCertificateRequestStatus(crCopy)
 		return nil
 	}
@@ -138,7 +148,8 @@ func (c *Controller) sign(ctx context.Context, cr *v1alpha1.CertificateRequest, 
 		cr.Status.Certificate = resp.Certificate
 		cr.Status.CA = resp.CA
 
-		c.recorder.Event(cr, corev1.EventTypeNormal, successCertificateIssued, "Certificate issued successfully")
+		c.recorder.Event(cr, corev1.EventTypeNormal, successCertificateIssued,
+			"Certificate fetched from issuer successfully")
 	}
 
 	return nil

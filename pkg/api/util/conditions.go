@@ -212,7 +212,9 @@ func CertificateRequestHasCondition(cr *cmapi.CertificateRequest, c cmapi.Certif
 	existingConditions := cr.Status.Conditions
 	for _, cond := range existingConditions {
 		if c.Type == cond.Type && c.Status == cond.Status {
-			return true
+			if c.Reason == "" || c.Reason == cond.Reason {
+				return true
+			}
 		}
 	}
 	return false

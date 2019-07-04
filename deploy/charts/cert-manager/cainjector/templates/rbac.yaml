@@ -10,7 +10,7 @@ metadata:
     heritage: {{ .Release.Service }}
 rules:
   - apiGroups: ["certmanager.k8s.io"]
-    resources: ["certificates", "certificaterequests"]
+    resources: ["certificates"]
     verbs: ["get", "list", "watch"]
   - apiGroups: [""]
     resources: ["secrets"]
