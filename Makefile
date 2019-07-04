@@ -142,6 +142,7 @@ images:
 	bazel run //hack/release -- \
 		--repo-root "$$(pwd)" \
 		--images \
+		--images.export=true \
 		--images.goarch="amd64" \
 		--app-version="$(APP_VERSION)" \
 		--docker-repo="$(DOCKER_REPO)"

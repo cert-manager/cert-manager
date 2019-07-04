@@ -542,6 +542,12 @@ type ACMEIssuerStatus struct {
 	// account details from the CA
 	// +optional
 	URI string `json:"uri,omitempty"`
+
+	// LastRegisteredEmail is the email associated with the latest registered
+	// ACME account, in order to track changes made to registered account
+	// associated with the  Issuer
+	// +optional
+	LastRegisteredEmail string `json:"lastRegisteredEmail,omitempty"`
 }
 
 // IssuerCondition contains condition information for an Issuer.

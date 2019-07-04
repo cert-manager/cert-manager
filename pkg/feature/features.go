@@ -26,6 +26,11 @@ const (
 	//
 	// ValidateCAA enables CAA checking when issuing certificates
 	ValidateCAA feature.Feature = "ValidateCAA"
+
+	// beta: v0.8.1
+	//
+	// IssueTemporaryCertificate enables issuing temporary certificates
+	IssueTemporaryCertificate feature.Feature = "IssueTemporaryCertificate"
 )
 
 func init() {
@@ -36,5 +41,6 @@ func init() {
 // To add a new feature, define a key for it above and add it here. The features will be
 // available throughout Kubernetes binaries.
 var defaultKubernetesFeatureGates = map[feature.Feature]feature.FeatureSpec{
-	ValidateCAA: {Default: false, PreRelease: feature.Alpha},
+	ValidateCAA:               {Default: false, PreRelease: feature.Alpha},
+	IssueTemporaryCertificate: {Default: true, PreRelease: feature.Beta},
 }

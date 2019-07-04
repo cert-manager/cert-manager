@@ -90,25 +90,13 @@ func (c *CA) Issue(ctx context.Context, crt *v1alpha1.Certificate) (*issuer.Issu
 		return nil, err
 	}
 
-	caCert := caCerts[0]
+	template.PublicKey = signeePublicKey
 
-	// sign and encode the certificate
-	certPem, _, err := pki.SignCertificate(template, caCert, signeePublicKey, caKey)
+	resp, err := pki.SignCSRTemplate(caCerts, caKey, template)
 	if err != nil {
 		log.Error(err, "error signing certificate")
 		c.Recorder.Eventf(crt, corev1.EventTypeWarning, "ErrorSigning", "Error signing certificate: %v", err)
-		return nil, err
 	}
-
-	// encode the chain
-	// TODO: replace caCerts with caCerts[1:]?
-	chainPem, err := pki.EncodeX509Chain(caCerts)
-	if err != nil {
-		log.Error(err, "error encoding x509 certificate chain")
-		return nil, err
-	}
-
-	certPem = append(certPem, chainPem...)
 
 	// Encode output private key and CA cert ready for return
 	keyPem, err := pki.EncodePrivateKey(signeeKey, crt.Spec.KeyEncoding)
@@ -117,20 +105,9 @@ func (c *CA) Issue(ctx context.Context, crt *v1alpha1.Certificate) (*issuer.Issu
 		c.Recorder.Eventf(crt, corev1.EventTypeWarning, "ErrorPrivateKey", "Error encoding private key: %v", err)
 		return nil, err
 	}
-
-	// encode the CA certificate to be bundled in the output
-	caPem, err := pki.EncodeX509(caCerts[0])
-	if err != nil {
-		log.Error(err, "error encoding certificate")
-		c.Recorder.Eventf(crt, corev1.EventTypeWarning, "ErrorSigning", "Error encoding certificate: %v", err)
-		return nil, err
-	}
+	resp.PrivateKey = keyPem
 
 	log.Info("certificate issued")
 
-	return &issuer.IssueResponse{
-		PrivateKey:  keyPem,
-		Certificate: certPem,
-		CA:          caPem,
-	}, nil
+	return resp, nil
 }

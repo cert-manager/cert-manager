@@ -43,6 +43,7 @@ go_test(
     name = "go_default_test",
     srcs = [
         "issue_test.go",
+        "sign_test.go",
         "util_test.go",
     ],
     embed = [":go_default_library"],

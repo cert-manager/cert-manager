@@ -68,7 +68,7 @@ func (g *Bazel) Cmd(ctx context.Context, args ...string) *exec.Cmd {
 		fmt.Sprintf("APP_VERSION=%s", flags.Default.AppVersion),
 		fmt.Sprintf("APP_GIT_COMMIT=%s", flags.Default.GitCommitRef),
 	)
-	log.Info("set command environment variables", "env", cmd.Env)
+	log.V(logf.LogLevelTrace).Info("set command environment variables", "env", cmd.Env)
 	cmd.Dir = flags.Default.RepoRoot
 	return cmd
 }

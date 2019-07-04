@@ -45,7 +45,7 @@ Certificate resources:
   to issue a self signed root CA certificate.
 * certificate/cert-manager-webhook-ca - A self-signed root CA certificate
   which is used to sign certificates for the webhook pod.
-* issue/cert-manager-webhook-ca - A CA Issuer that is used to issue
+* issuer/cert-manager-webhook-ca - A CA Issuer that is used to issue
   certificates used by the webhook pod to serve with.
 * certificate/cert-manager-webhook-webhook-tls - A TLS certificate issued by the
   root CA above, served by the webhook.

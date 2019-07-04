@@ -750,6 +750,11 @@ spec:
           properties:
             acme:
               properties:
+                lastRegisteredEmail:
+                  description: LastRegisteredEmail is the email associated with the
+                    latest registered ACME account, in order to track changes made
+                    to registered account associated with the  Issuer
+                  type: string
                 uri:
                   description: URI is the unique account identifier, which can also
                     be used to retrieve account details from the CA
@@ -1029,6 +1034,11 @@ spec:
           properties:
             acme:
               properties:
+                lastRegisteredEmail:
+                  description: LastRegisteredEmail is the email associated with the
+                    latest registered ACME account, in order to track changes made
+                    to registered account associated with the  Issuer
+                  type: string
                 uri:
                   description: URI is the unique account identifier, which can also
                     be used to retrieve account details from the CA
