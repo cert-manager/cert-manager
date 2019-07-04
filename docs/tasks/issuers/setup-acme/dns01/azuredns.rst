@@ -64,5 +64,5 @@ You can configure the issuer like so:
              # ResourceGroup name where dns zone is provisioned
              resourceGroupName: AZURE_RESOURCE_GROUP
              hostedZoneName: AZURE_DNS_ZONE_NAME
-             # Azure Cloud Environment, default to AZUREPUBLICCLOUD
+             # Azure Cloud Environment, default to AzurePublicCloud
              environment: AZURE_ENVIRONMENT

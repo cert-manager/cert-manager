@@ -464,6 +464,7 @@ type ACMEIssuerDNS01ProviderAzureDNS struct {
 	// +optional
 	HostedZoneName string `json:"hostedZoneName,omitempty"`
 
+	// +kubebuilder:validation:Enum=,AzurePublicCloud,AzureChinaCloud,AzureGermanCloud,AzureUSGovernmentCloud
 	// +optional
 	Environment string `json:"environment,omitempty"`
 }

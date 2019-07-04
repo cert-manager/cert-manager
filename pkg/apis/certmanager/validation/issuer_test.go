@@ -513,6 +513,26 @@ func TestValidateACMEIssuerDNS01Config(t *testing.T) {
 				field.Required(providersPath.Index(0).Child("azuredns", "resourceGroupName"), ""),
 			},
 		},
+		"invalid azuredns environment": {
+			cfg: &v1alpha1.ACMEIssuerDNS01Config{
+				Providers: []v1alpha1.ACMEIssuerDNS01Provider{
+					{
+						Name:     "a name",
+						AzureDNS: &v1alpha1.ACMEIssuerDNS01ProviderAzureDNS{Environment: "an env"},
+					},
+				},
+			},
+			errs: []*field.Error{
+				field.Required(providersPath.Index(0).Child("azuredns", "clientSecretSecretRef", "name"), "secret name is required"),
+				field.Required(providersPath.Index(0).Child("azuredns", "clientSecretSecretRef", "key"), "secret key is required"),
+				field.Required(providersPath.Index(0).Child("azuredns", "clientID"), ""),
+				field.Required(providersPath.Index(0).Child("azuredns", "subscriptionID"), ""),
+				field.Required(providersPath.Index(0).Child("azuredns", "tenantID"), ""),
+				field.Required(providersPath.Index(0).Child("azuredns", "resourceGroupName"), ""),
+				field.Invalid(providersPath.Index(0).Child("azuredns", "environment"), "an env",
+					"must be either empty or one of AzurePublicCloud, AzureChinaCloud, AzureGermanCloud or AzureUSGovernmentCloud"),
+			},
+		},
 		"missing akamai config": {
 			cfg: &v1alpha1.ACMEIssuerDNS01Config{
 				Providers: []v1alpha1.ACMEIssuerDNS01Provider{

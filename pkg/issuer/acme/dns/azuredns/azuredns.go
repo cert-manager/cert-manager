@@ -54,14 +54,13 @@ func NewDNSProvider(dns01Nameservers []string) (*DNSProvider, error) {
 // NewDNSProviderCredentials returns a DNSProvider instance configured for the Azure
 // DNS service using static credentials from its parameters
 func NewDNSProviderCredentials(environment, clientID, clientSecret, subscriptionID, tenantID, resourceGroupName, zoneName string, dns01Nameservers []string) (*DNSProvider, error) {
-	if environment == "" {
-		// default to azure.PublicCloud
-		environment = "AZUREPUBLICCLOUD"
-	}
-
-	env, err := azure.EnvironmentFromName(environment)
-	if err != nil {
-		return nil, err
+	env := azure.PublicCloud
+	if environment != "" {
+		var err error
+		env, err = azure.EnvironmentFromName(environment)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	oauthConfig, err := adal.NewOAuthConfig(env.ActiveDirectoryEndpoint, tenantID)
