@@ -4,6 +4,7 @@ metadata:
   name: {{ include "webhook.fullname" . }}
   namespace: {{ .Release.Namespace | quote }}
   labels:
+    app: {{ include "webhook.name" . }}
     app.kubernetes.io/name: {{ include "webhook.name" . }}
     app.kubernetes.io/instance:  {{ .Release.Name }}
     app.kubernetes.io/managed-by: {{ .Release.Service }}
@@ -15,6 +16,7 @@ spec:
     port: 443
     targetPort: 6443
   selector:
+    app: {{ include "webhook.name" . }}
     app.kubernetes.io/name: {{ include "webhook.name" . }}
     app.kubernetes.io/instance:  {{ .Release.Name }}
     app.kubernetes.io/managed-by: {{ .Release.Service }}

@@ -5,6 +5,7 @@ kind: ClusterRole
 metadata:
   name: {{ template "cert-manager.fullname" . }}-leaderelection
   labels:
+    app: {{ template "cert-manager.name" . }}
     app.kubernetes.io/name: {{ template "cert-manager.name" . }}
     app.kubernetes.io/instance:  {{ .Release.Name }}
     app.kubernetes.io/managed-by: {{ .Release.Service }}
@@ -23,6 +24,7 @@ kind: ClusterRole
 metadata:
   name: {{ template "cert-manager.fullname" . }}-controller-issuers
   labels:
+    app: {{ template "cert-manager.name" . }}
     app.kubernetes.io/name: {{ template "cert-manager.name" . }}
     app.kubernetes.io/instance:  {{ .Release.Name }}
     app.kubernetes.io/managed-by: {{ .Release.Service }}
@@ -49,6 +51,7 @@ kind: ClusterRole
 metadata:
   name: {{ template "cert-manager.fullname" . }}-controller-clusterissuers
   labels:
+    app: {{ template "cert-manager.name" . }}
     app.kubernetes.io/name: {{ template "cert-manager.name" . }}
     app.kubernetes.io/instance:  {{ .Release.Name }}
     app.kubernetes.io/managed-by: {{ .Release.Service }}
@@ -75,6 +78,7 @@ kind: ClusterRole
 metadata:
   name: {{ template "cert-manager.fullname" . }}-controller-certificates
   labels:
+    app: {{ template "cert-manager.name" . }}
     app.kubernetes.io/name: {{ template "cert-manager.name" . }}
     app.kubernetes.io/instance:  {{ .Release.Name }}
     app.kubernetes.io/managed-by: {{ .Release.Service }}
@@ -110,6 +114,7 @@ kind: ClusterRole
 metadata:
   name: {{ template "cert-manager.fullname" . }}-controller-orders
   labels:
+    app: {{ template "cert-manager.name" . }}
     app.kubernetes.io/name: {{ template "cert-manager.name" . }}
     app.kubernetes.io/instance:  {{ .Release.Name }}
     app.kubernetes.io/managed-by: {{ .Release.Service }}
@@ -145,6 +150,7 @@ kind: ClusterRole
 metadata:
   name: {{ template "cert-manager.fullname" . }}-controller-challenges
   labels:
+    app: {{ template "cert-manager.name" . }}
     app.kubernetes.io/name: {{ template "cert-manager.name" . }}
     app.kubernetes.io/instance:  {{ .Release.Name }}
     app.kubernetes.io/managed-by: {{ .Release.Service }}
@@ -200,6 +206,7 @@ kind: ClusterRole
 metadata:
   name: {{ template "cert-manager.fullname" . }}-controller-ingress-shim
   labels:
+    app: {{ template "cert-manager.name" . }}
     app.kubernetes.io/name: {{ template "cert-manager.name" . }}
     app.kubernetes.io/instance:  {{ .Release.Name }}
     app.kubernetes.io/managed-by: {{ .Release.Service }}
@@ -231,6 +238,7 @@ kind: ClusterRoleBinding
 metadata:
   name: {{ template "cert-manager.fullname" . }}-leaderelection
   labels:
+    app: {{ template "cert-manager.name" . }}
     app.kubernetes.io/name: {{ template "cert-manager.name" . }}
     app.kubernetes.io/instance:  {{ .Release.Name }}
     app.kubernetes.io/managed-by: {{ .Release.Service }}
@@ -251,6 +259,7 @@ kind: ClusterRoleBinding
 metadata:
   name: {{ template "cert-manager.fullname" . }}-controller-issuers
   labels:
+    app: {{ template "cert-manager.name" . }}
     app.kubernetes.io/name: {{ template "cert-manager.name" . }}
     app.kubernetes.io/instance:  {{ .Release.Name }}
     app.kubernetes.io/managed-by: {{ .Release.Service }}
@@ -271,6 +280,7 @@ kind: ClusterRoleBinding
 metadata:
   name: {{ template "cert-manager.fullname" . }}-controller-clusterissuers
   labels:
+    app: {{ template "cert-manager.name" . }}
     app.kubernetes.io/name: {{ template "cert-manager.name" . }}
     app.kubernetes.io/instance:  {{ .Release.Name }}
     app.kubernetes.io/managed-by: {{ .Release.Service }}
@@ -291,6 +301,7 @@ kind: ClusterRoleBinding
 metadata:
   name: {{ template "cert-manager.fullname" . }}-controller-certificates
   labels:
+    app: {{ template "cert-manager.name" . }}
     app.kubernetes.io/name: {{ template "cert-manager.name" . }}
     app.kubernetes.io/instance:  {{ .Release.Name }}
     app.kubernetes.io/managed-by: {{ .Release.Service }}
@@ -311,6 +322,7 @@ kind: ClusterRoleBinding
 metadata:
   name: {{ template "cert-manager.fullname" . }}-controller-orders
   labels:
+    app: {{ template "cert-manager.name" . }}
     app.kubernetes.io/name: {{ template "cert-manager.name" . }}
     app.kubernetes.io/instance:  {{ .Release.Name }}
     app.kubernetes.io/managed-by: {{ .Release.Service }}
@@ -331,6 +343,7 @@ kind: ClusterRoleBinding
 metadata:
   name: {{ template "cert-manager.fullname" . }}-controller-challenges
   labels:
+    app: {{ template "cert-manager.name" . }}
     app.kubernetes.io/name: {{ template "cert-manager.name" . }}
     app.kubernetes.io/instance:  {{ .Release.Name }}
     app.kubernetes.io/managed-by: {{ .Release.Service }}
@@ -351,6 +364,7 @@ kind: ClusterRoleBinding
 metadata:
   name: {{ template "cert-manager.fullname" . }}-controller-ingress-shim
   labels:
+    app: {{ template "cert-manager.name" . }}
     app.kubernetes.io/name: {{ template "cert-manager.name" . }}
     app.kubernetes.io/instance:  {{ .Release.Name }}
     app.kubernetes.io/managed-by: {{ .Release.Service }}
@@ -371,6 +385,7 @@ kind: ClusterRole
 metadata:
   name: {{ template "cert-manager.fullname" . }}-view
   labels:
+    app: {{ template "cert-manager.name" . }}
     app.kubernetes.io/name: {{ template "cert-manager.name" . }}
     app.kubernetes.io/instance:  {{ .Release.Name }}
     app.kubernetes.io/managed-by: {{ .Release.Service }}
@@ -390,6 +405,7 @@ kind: ClusterRole
 metadata:
   name: {{ template "cert-manager.fullname" . }}-edit
   labels:
+    app: {{ template "cert-manager.name" . }}
     app.kubernetes.io/name: {{ template "cert-manager.name" . }}
     app.kubernetes.io/instance:  {{ .Release.Name }}
     app.kubernetes.io/managed-by: {{ .Release.Service }}

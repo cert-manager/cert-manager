@@ -3,6 +3,7 @@ kind: APIService
 metadata:
   name: v1beta1.admission.certmanager.k8s.io
   labels:
+    app: {{ include "webhook.name" . }}
     app.kubernetes.io/name: {{ include "webhook.name" . }}
     app.kubernetes.io/instance:  {{ .Release.Name }}
     app.kubernetes.io/managed-by: {{ .Release.Service }}

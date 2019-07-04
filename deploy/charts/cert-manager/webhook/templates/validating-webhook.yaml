@@ -3,6 +3,7 @@ kind: ValidatingWebhookConfiguration
 metadata:
   name: {{ include "webhook.fullname" . }}
   labels:
+    app: {{ include "webhook.name" . }}
     app.kubernetes.io/name: {{ include "webhook.name" . }}
     app.kubernetes.io/instance:  {{ .Release.Name }}
     app.kubernetes.io/managed-by: {{ .Release.Service }}

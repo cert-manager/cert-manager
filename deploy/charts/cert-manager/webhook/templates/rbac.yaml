@@ -8,6 +8,7 @@ kind: ClusterRoleBinding
 metadata:
   name: {{ include "webhook.fullname" . }}:auth-delegator
   labels:
+    app: {{ include "webhook.name" . }}
     app.kubernetes.io/name: {{ include "webhook.name" . }}
     app.kubernetes.io/instance:  {{ .Release.Name }}
     app.kubernetes.io/managed-by: {{ .Release.Service }}
@@ -33,6 +34,7 @@ metadata:
   name: {{ include "webhook.fullname" . }}:webhook-authentication-reader
   namespace: kube-system
   labels:
+    app: {{ include "webhook.name" . }}
     app.kubernetes.io/name: {{ include "webhook.name" . }}
     app.kubernetes.io/instance:  {{ .Release.Name }}
     app.kubernetes.io/managed-by: {{ .Release.Service }}
@@ -54,6 +56,7 @@ kind: ClusterRole
 metadata:
   name: {{ include "webhook.fullname" . }}:webhook-requester
   labels:
+    app: {{ include "webhook.name" . }}
     app.kubernetes.io/name: {{ include "webhook.name" . }}
     app.kubernetes.io/instance:  {{ .Release.Name }}
     app.kubernetes.io/managed-by: {{ .Release.Service }}

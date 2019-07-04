@@ -4,6 +4,7 @@ metadata:
   name: {{ include "cainjector.fullname" . }}
   namespace: {{ .Release.Namespace | quote }}
   labels:
+    app: {{ include "cainjector.name" . }}
     app.kubernetes.io/name: {{ include "cainjector.name" . }}
     app.kubernetes.io/instance:  {{ .Release.Name }}
     app.kubernetes.io/managed-by: {{ .Release.Service }}
@@ -12,6 +13,7 @@ spec:
   replicas: {{ .Values.replicaCount }}
   selector:
     matchLabels:
+      app: {{ include "cainjector.name" . }}
       app.kubernetes.io/name: {{ include "cainjector.name" . }}
       app.kubernetes.io/instance:  {{ .Release.Name }}
       app.kubernetes.io/managed-by: {{ .Release.Service }}
@@ -22,6 +24,7 @@ spec:
   template:
     metadata:
       labels:
+        app: {{ include "cainjector.name" . }}
         app.kubernetes.io/name: {{ include "cainjector.name" . }}
         app.kubernetes.io/instance:  {{ .Release.Name }}
         app.kubernetes.io/managed-by: {{ .Release.Service }}
