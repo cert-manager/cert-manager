@@ -307,7 +307,7 @@ func NewCertManagerBasicCertificateRequest(name, issuerName string, issuerKind s
 		}
 		signatureAlgorithm = x509.SHA256WithRSA
 	case x509.ECDSA:
-		sk, err = pki.GenerateECPrivateKey(2048)
+		sk, err = pki.GenerateECPrivateKey(pki.ECCurve256)
 		if err != nil {
 			return nil, nil, err
 		}

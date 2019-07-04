@@ -112,9 +112,9 @@ func (h *Helper) ValidateIssuedCertificateRequest(cr *v1alpha1.CertificateReques
 
 	if expectedCN != cert.Subject.CommonName ||
 		!util.EqualUnsorted(cert.DNSNames, expectedDNSNames) ||
-		util.EqualUnsorted(cert.Subject.Organization, expectedOrganization) ||
-		util.EqualIPsUnsorted(cert.IPAddresses, expectedIPAddresses) ||
-		util.EqualURLsUnsorted(cert.URIs, expectedURIs) {
+		!util.EqualUnsorted(cert.Subject.Organization, expectedOrganization) ||
+		!util.EqualIPsUnsorted(cert.IPAddresses, expectedIPAddresses) ||
+		!util.EqualURLsUnsorted(cert.URIs, expectedURIs) {
 		return nil, fmt.Errorf("Expected certificate valid for CN %q, O %v, dnsNames %v, IPs %v, URIs %v but got a certificate valid for CN %q, O %v, dnsNames %v, IPs %v URIs %v",
 			expectedCN, expectedOrganization, expectedDNSNames, expectedIPAddresses, expectedURIs,
 			cert.Subject.CommonName, cert.Subject.Organization, cert.DNSNames, cert.IPAddresses, cert.URIs)
