@@ -268,6 +268,12 @@ func ValidateACMEIssuerDNS01Config(iss *v1alpha1.ACMEIssuerDNS01Config, fldPath 
 				if len(p.AzureDNS.ResourceGroupName) == 0 {
 					el = append(el, field.Required(fldPath.Child("azuredns", "resourceGroupName"), ""))
 				}
+				switch p.AzureDNS.Environment {
+				case "", "AzurePublicCloud", "AzureChinaCloud", "AzureGermanCloud", "AzureUSGovernmentCloud":
+				default:
+					el = append(el, field.Invalid(fldPath.Child("azuredns", "environment"), p.AzureDNS.Environment,
+						"must be either empty or one of AzurePublicCloud, AzureChinaCloud, AzureGermanCloud or AzureUSGovernmentCloud"))
+				}
 			}
 		}
 		if p.CloudDNS != nil {

@@ -62,7 +62,7 @@ type dnsProviderConstructors struct {
 	cloudDNS     func(project string, serviceAccount []byte, dns01Nameservers []string, ambient bool) (*clouddns.DNSProvider, error)
 	cloudFlare   func(email, apikey string, dns01Nameservers []string) (*cloudflare.DNSProvider, error)
 	route53      func(accessKey, secretKey, hostedZoneID, region string, ambient bool, dns01Nameservers []string) (*route53.DNSProvider, error)
-	azureDNS     func(clientID, clientSecret, subscriptionID, tenantID, resourceGroupName, hostedZoneName string, dns01Nameservers []string) (*azuredns.DNSProvider, error)
+	azureDNS     func(environment, clientID, clientSecret, subscriptionID, tenantID, resourceGroupName, hostedZoneName string, dns01Nameservers []string) (*azuredns.DNSProvider, error)
 	acmeDNS      func(host string, accountJson []byte, dns01Nameservers []string) (*acmedns.DNSProvider, error)
 	digitalOcean func(token string, dns01Nameservers []string) (*digitalocean.DNSProvider, error)
 }
@@ -345,6 +345,7 @@ func (s *Solver) solverForChallenge(ctx context.Context, issuer v1alpha1.Generic
 		}
 
 		impl, err = s.dnsProviderConstructors.azureDNS(
+			providerConfig.AzureDNS.Environment,
 			providerConfig.AzureDNS.ClientID,
 			string(clientSecretBytes),
 			providerConfig.AzureDNS.SubscriptionID,

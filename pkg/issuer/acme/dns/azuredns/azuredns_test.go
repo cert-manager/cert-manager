@@ -45,7 +45,7 @@ func TestLiveAzureDnsPresent(t *testing.T) {
 	if !azureLiveTest {
 		t.Skip("skipping live test")
 	}
-	provider, err := NewDNSProviderCredentials(azureClientID, azureClientSecret, azuresubscriptionID, azureTenantID, azureResourceGroupName, azureHostedZoneName, util.RecursiveNameservers)
+	provider, err := NewDNSProviderCredentials("", azureClientID, azureClientSecret, azuresubscriptionID, azureTenantID, azureResourceGroupName, azureHostedZoneName, util.RecursiveNameservers)
 	assert.NoError(t, err)
 
 	err = provider.Present(azureDomain, "_acme-challenge."+azureDomain+".", "123d==")
@@ -59,9 +59,20 @@ func TestLiveAzureDnsCleanUp(t *testing.T) {
 
 	time.Sleep(time.Second * 5)
 
-	provider, err := NewDNSProviderCredentials(azureClientID, azureClientSecret, azuresubscriptionID, azureTenantID, azureResourceGroupName, azureHostedZoneName, util.RecursiveNameservers)
+	provider, err := NewDNSProviderCredentials("", azureClientID, azureClientSecret, azuresubscriptionID, azureTenantID, azureResourceGroupName, azureHostedZoneName, util.RecursiveNameservers)
 	assert.NoError(t, err)
 
 	err = provider.CleanUp(azureDomain, "_acme-challenge."+azureDomain+".", "123d==")
 	assert.NoError(t, err)
+}
+
+func TestInvalidAzureDns(t *testing.T) {
+	validEnv := []string{"", "AzurePublicCloud", "AzureChinaCloud", "AzureGermanCloud", "AzureUSGovernmentCloud"}
+	for _, env := range validEnv {
+		_, err := NewDNSProviderCredentials(env, "cid", "secret", "", "", "", "", util.RecursiveNameservers)
+		assert.NoError(t, err)
+	}
+
+	_, err := NewDNSProviderCredentials("invalid env", "cid", "secret", "", "", "", "", util.RecursiveNameservers)
+	assert.Error(t, err)
 }
