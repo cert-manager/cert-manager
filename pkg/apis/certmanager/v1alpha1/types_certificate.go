@@ -66,10 +66,10 @@ type CertificateSpec struct {
 	// CommonName is a common name to be used on the Certificate.
 	// If no CommonName is given, then the first entry in DNSNames is used as
 	// the CommonName.
-	// The CommonName should have a length shorter than 64 bytes to avoid
+	// The CommonName should have a length of 64 characters or fewer to avoid
 	// generating invalid CSRs; in order to have longer domain names, set the
-	// CommonName (or first DNSNames entry) to have less than 64 bytes, and
-	// then add the longer domain name to DNSNames.
+	// CommonName (or first DNSNames entry) to have 64 characters or fewer,
+	// and then add the longer domain name to DNSNames.
 	// +optional
 	CommonName string `json:"commonName,omitempty"`
 
@@ -87,8 +87,7 @@ type CertificateSpec struct {
 
 	// DNSNames is a list of subject alt names to be used on the Certificate.
 	// If no CommonName is given, then the first entry in DNSNames is used as
-	// the CommonName - any requirements for the CommonName would then also
-	// apply to this first entry.
+	// the CommonName and must have a length of 64 characters or fewer.
 	// +optional
 	DNSNames []string `json:"dnsNames,omitempty"`
 
