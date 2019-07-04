@@ -452,22 +452,27 @@ func (s *Solver) dns01SolverForConfig(config *v1alpha1.ACMEChallengeSolverDNS01)
 	return p, c, nil
 }
 
-var WebhookSolvers = []webhook.Solver{
-	&webhookslv.Webhook{},
-	&rfc2136.Solver{},
-}
-
 // NewSolver creates a Solver which can instantiate the appropriate DNS
 // provider.
 func NewSolver(ctx *controller.Context) (*Solver, error) {
+	webhookSolvers := []webhook.Solver{
+		&webhookslv.Webhook{},
+		rfc2136.New(rfc2136.WithNamespace(ctx.Namespace)),
+	}
+
 	initialized := make(map[string]webhook.Solver)
-	// initialize all DNS providers
-	for _, s := range WebhookSolvers {
-		err := s.Initialize(ctx.RESTConfig, ctx.StopCh)
-		if err != nil {
-			return nil, fmt.Errorf("error intializing DNS provider %q: %v", s.Name(), err)
+
+	// the RESTConfig may be nil if we are running in a unit test environment,
+	// so don't initialize the webhook based solvers in this case.
+	if ctx.RESTConfig != nil {
+		// initialize all DNS providers
+		for _, s := range webhookSolvers {
+			err := s.Initialize(ctx.RESTConfig, ctx.StopCh)
+			if err != nil {
+				return nil, fmt.Errorf("error intializing DNS provider %q: %v", s.Name(), err)
+			}
+			initialized[s.Name()] = s
 		}
-		initialized[s.Name()] = s
 	}
 
 	return &Solver{

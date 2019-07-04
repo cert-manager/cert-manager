@@ -187,8 +187,8 @@ func buildControllerContext(ctx context.Context, stopCh <-chan struct{}, opts *o
 	eventBroadcaster.StartRecordingToSink(&corev1.EventSinkImpl{Interface: cl.CoreV1().Events("")})
 	recorder := eventBroadcaster.NewRecorder(scheme.Scheme, v1.EventSource{Component: controllerAgentName})
 
-	sharedInformerFactory := informers.NewFilteredSharedInformerFactory(intcl, time.Second*30, opts.Namespace, nil)
-	kubeSharedInformerFactory := kubeinformers.NewFilteredSharedInformerFactory(cl, time.Second*30, opts.Namespace, nil)
+	sharedInformerFactory := informers.NewSharedInformerFactoryWithOptions(intcl, time.Second*30, informers.WithNamespace(opts.Namespace))
+	kubeSharedInformerFactory := kubeinformers.NewSharedInformerFactoryWithOptions(cl, time.Second*30, kubeinformers.WithNamespace(opts.Namespace))
 	return &controller.Context{
 		RootContext:               ctx,
 		StopCh:                    stopCh,
