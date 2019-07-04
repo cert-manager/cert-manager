@@ -1557,7 +1557,11 @@ Appears In:
 </thead>
 <tbody><tr>
 <td><code>dnsNames</code><br /> <em>string array</em></td>
-<td>List of DNSNames that can be used to further refine the domains that this solver applies to.</td>
+<td>List of DNSNames that this solver will be used to solve. If specified and a match is found, a dnsNames selector will take precedence over a dnsZones selector. If multiple solvers match with the same dnsNames value, the solver with the most matching labels in matchLabels will be selected. If neither has more matches, the solver defined earlier in the list will be selected.</td>
+</tr>
+<tr>
+<td><code>dnsZones</code><br /> <em>string array</em></td>
+<td>List of DNSZones that this solver will be used to solve. The most specific DNS zone match specified here will take precedence over other DNS zone matches, so a solver specifying sys.example.com will be selected over one specifying example.com for the domain <a href="http://www.sys.example.com">www.sys.example.com</a>. If multiple solvers match with the same dnsZones value, the solver with the most matching labels in matchLabels will be selected. If neither has more matches, the solver defined earlier in the list will be selected.</td>
 </tr>
 <tr>
 <td><code>matchLabels</code><br /> <em>object</em></td>

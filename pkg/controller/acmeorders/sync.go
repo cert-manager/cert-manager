@@ -33,6 +33,7 @@ import (
 	"github.com/jetstack/cert-manager/pkg/acme"
 	acmecl "github.com/jetstack/cert-manager/pkg/acme/client"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	"github.com/jetstack/cert-manager/pkg/controller/acmeorders/selectors"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 	"github.com/jetstack/cert-manager/pkg/metrics"
 	acmeapi "github.com/jetstack/cert-manager/third_party/crypto/acme"
@@ -399,7 +400,7 @@ func (c *controller) createOrder(ctx context.Context, cl acmecl.Interface, issue
 				return fmt.Errorf("error constructing old format Challenge resource for authorization: %v", err)
 			}
 		} else {
-			cs, err = c.challengeSpecForAuthorization(ctx, cl, issuer, o, authz)
+			cs, err = challengeSpecForAuthorization(ctx, cl, issuer, o, authz)
 			if err != nil {
 				return fmt.Errorf("error constructing Challenge resource for authorization: %v", err)
 			}
@@ -412,68 +413,24 @@ func (c *controller) createOrder(ctx context.Context, cl acmecl.Interface, issue
 	return nil
 }
 
-func (c *controller) challengeSpecForAuthorization(ctx context.Context, cl acmecl.Interface, issuer cmapi.GenericIssuer, o *cmapi.Order, authz *acmeapi.Authorization) (*cmapi.ChallengeSpec, error) {
+func challengeSpecForAuthorization(ctx context.Context, cl acmecl.Interface, issuer cmapi.GenericIssuer, o *cmapi.Order, authz *acmeapi.Authorization) (*cmapi.ChallengeSpec, error) {
+	log := logf.FromContext(ctx, "challengeSpecForAuthorization")
+	dbg := log.V(logf.DebugLevel)
+
 	// 1. fetch solvers from issuer
 	solvers := issuer.GetSpec().ACME.Solvers
 
-	// 2. filter solvers to only those that matchLabels
-	var candidates []cmapi.ACMEChallengeSolver
-	for _, cfg := range solvers {
-		// if this config has no selector at all, then it can be used for all
-		// domain authorizations, so we include it
-		if cfg.Selector == nil {
-			candidates = append(candidates, cfg)
-			continue
-		}
-		if !resourceMatchesSelector(o, cfg.Selector.MatchLabels) {
-			continue
-		}
-		if len(cfg.Selector.DNSNames) > 0 && !orderHasOneOfDNSNames(o, cfg.Selector.DNSNames...) {
-			continue
-		}
-		candidates = append(candidates, cfg)
-	}
-
-	// 3. iterate through each solver, finding the most specific match (taking account of dnsNames)
-	// if a solver config that matches all dns names is found, we'll use the
-	// one with the most labels, as this is the 'most specific match' for the
-	// certificate this order is fulfilling.
-	// the matchAll solver is only used if the domainToFind is not listed in
-	// any other solver's DNSNames list.
 	domainToFind := authz.Identifier.Value
 	if authz.Wildcard {
 		domainToFind = "*." + domainToFind
 	}
-	acmeCh, solverConfigToUse := determineSolverConfigToUse(candidates, authz, domainToFind)
-	if acmeCh == nil || solverConfigToUse == nil {
-		return nil, fmt.Errorf("solver configuration for domain %q not found. Ensure at least one Solver on your Issuer matches the order", domainToFind)
-	}
 
-	key, err := keyForChallenge(cl, acmeCh)
-	if err != nil {
-		return nil, err
-	}
+	var selectedSolver *cmapi.ACMEChallengeSolver
+	var selectedChallenge *acmeapi.Challenge
+	selectedNumLabelsMatch := 0
+	selectedNumDNSNamesMatch := 0
+	selectedNumDNSZonesMatch := 0
 
-	// 4. construct Challenge resource with spec.solver field set
-	return &cmapi.ChallengeSpec{
-		AuthzURL:  authz.URL,
-		Type:      acmeCh.Type,
-		URL:       acmeCh.URL,
-		DNSName:   authz.Identifier.Value,
-		Token:     acmeCh.Token,
-		Key:       key,
-		Solver:    solverConfigToUse,
-		Wildcard:  authz.Wildcard,
-		IssuerRef: o.Spec.IssuerRef,
-	}, nil
-}
-
-// if a solver config that matches all dns names is found, we'll use the
-// one with the most labels, as this is the 'most specific match' for the
-// certificate this order is fulfilling.
-// the matchAll solver is only used if the domainToFind is not listed in
-// any other solver's DNSNames list.
-func determineSolverConfigToUse(candidates []cmapi.ACMEChallengeSolver, authz *acmeapi.Authorization, domainToFind string) (*acmeapi.Challenge, *cmapi.ACMEChallengeSolver) {
 	challengeForSolver := func(solver *cmapi.ACMEChallengeSolver) *acmeapi.Challenge {
 		for _, ch := range authz.Challenges {
 			switch {
@@ -486,90 +443,157 @@ func determineSolverConfigToUse(candidates []cmapi.ACMEChallengeSolver, authz *a
 		return nil
 	}
 
-	// this variable tracks the number of labels that matched when a solver
-	// that specifically names the dnsName in the authorization matches.
-	// This is used to tie-break if two different solver configurations both
-	// explicitly name a dnsName
-	numLabelsSpecificMatch := 0
-	var specificMatch *cmapi.ACMEChallengeSolver
-	var specificMatchToSolve *acmeapi.Challenge
-
-	// this variable tracks the number of labels that matched when a solver
-	// that does NOT specifically list the authorization's dnsName matches.
-	// If no solver explicitly lists the dnsName then the solver that matches
-	// the most labels is used.
-	matchAllDomainsNumLabels := 0
-	// matchAll is the most-specific solver that matches the authorization,
-	// that does not list the authorization's dns name
-	var matchAll *cmapi.ACMEChallengeSolver
-	var matchAllToSolve *acmeapi.Challenge
-
-	for idx := range candidates {
-		d := &candidates[idx]
-		acmech := challengeForSolver(d)
+	// 2. filter solvers to only those that matchLabels
+	for _, cfg := range solvers {
+		acmech := challengeForSolver(&cfg)
 		if acmech == nil {
+			dbg.Info("cannot use solver as the ACME authorization does not allow solvers of this type")
 			continue
 		}
 
-		// empty selector/dnsName list matches all
-		if d.Selector == nil {
-			if matchAll == nil {
-				matchAllDomainsNumLabels = 0
-				matchAll = d
-				matchAllToSolve = acmech
-			}
+		if cfg.Selector == nil && selectedSolver == nil {
+			dbg.Info("selecting solver due to nil selector and no previously selected solver")
+			selectedSolver = cfg.DeepCopy()
+			selectedChallenge = acmech
 			continue
 		}
-		if len(d.Selector.DNSNames) == 0 {
-			if len(d.Selector.MatchLabels) > matchAllDomainsNumLabels || matchAll == nil {
-				matchAll = d
-				matchAllToSolve = acmech
-				matchAllDomainsNumLabels = len(d.Selector.MatchLabels)
-			}
+
+		labelsMatch, numLabelsMatch := selectors.Labels(*cfg.Selector).Matches(o.ObjectMeta, domainToFind)
+		dnsNamesMatch, numDNSNamesMatch := selectors.DNSNames(*cfg.Selector).Matches(o.ObjectMeta, domainToFind)
+		dnsZonesMatch, numDNSZonesMatch := selectors.DNSZones(*cfg.Selector).Matches(o.ObjectMeta, domainToFind)
+
+		if !labelsMatch || !dnsNamesMatch || !dnsZonesMatch {
+			dbg.Info("not selecting solver", "labels_match", labelsMatch, "dnsnames_match", dnsNamesMatch, "dnszones_match", dnsZonesMatch)
+			continue
 		}
-		for _, dom := range d.Selector.DNSNames {
-			if dom != domainToFind {
+
+		dbg.Info("selector matches")
+
+		selectSolver := func() {
+			selectedSolver = cfg.DeepCopy()
+			selectedChallenge = acmech
+			selectedNumLabelsMatch = numLabelsMatch
+			selectedNumDNSNamesMatch = numDNSNamesMatch
+			selectedNumDNSZonesMatch = numDNSZonesMatch
+		}
+
+		if selectedSolver == nil {
+			dbg.Info("selecting solver as there is no previously selected solver")
+			selectSolver()
+			continue
+		}
+
+		dbg.Info("determining whether this match is more significant than last")
+
+		// because we don't count multiple dnsName matches as extra 'weight'
+		// in the selection process, we normalise the numDNSNamesMatch vars
+		// to be either 1 or 0 (i.e. true or false)
+		selectedHasMatchingDNSNames := selectedNumDNSNamesMatch > 0
+		hasMatchingDNSNames := numDNSNamesMatch > 0
+
+		// dnsName selectors have the highest precedence, so check them first
+		switch {
+		case !selectedHasMatchingDNSNames && hasMatchingDNSNames:
+			dbg.Info("selecting solver as this solver has matching DNS names and the previous one does not")
+			selectSolver()
+			continue
+		case selectedHasMatchingDNSNames && !hasMatchingDNSNames:
+			dbg.Info("not selecting solver as the previous one has matching DNS names and this one does not")
+			continue
+		case !selectedHasMatchingDNSNames && !hasMatchingDNSNames:
+			dbg.Info("solver does not have any matching DNS names, checking dnsZones")
+			// check zones
+		case selectedHasMatchingDNSNames && hasMatchingDNSNames:
+			dbg.Info("both this solver and the previously selected one matches dnsNames, comparing zones")
+			if numDNSZonesMatch > selectedNumDNSZonesMatch {
+				dbg.Info("selecting solver as this one has a more specific dnsZone match than the previously selected one")
+				selectSolver()
 				continue
 			}
-			if len(d.Selector.MatchLabels) > numLabelsSpecificMatch || specificMatch == nil {
-				specificMatch = d
-				specificMatchToSolve = acmech
-				numLabelsSpecificMatch = len(d.Selector.MatchLabels)
-				break
+			if selectedNumDNSZonesMatch > numDNSZonesMatch {
+				dbg.Info("not selecting this solver as the previously selected one has a more specific dnsZone match")
+				continue
 			}
+			dbg.Info("both this solver and the previously selected one match dnsZones, comparing labels")
+			// choose the one with the most labels
+			if numLabelsMatch > selectedNumLabelsMatch {
+				dbg.Info("selecting solver as this one has more labels than the previously selected one")
+				selectSolver()
+				continue
+			}
+			dbg.Info("not selecting this solver as previous one has either the same number of or more labels")
+			continue
 		}
-	}
-	if specificMatch != nil {
-		return specificMatchToSolve, specificMatch
-	}
-	if matchAll != nil {
-		return matchAllToSolve, matchAll
-	}
-	return nil, nil
-}
 
-func resourceMatchesSelector(r metav1.Object, sel map[string]string) bool {
-	labels := r.GetLabels()
-	for k, v := range sel {
-		val, ok := labels[k]
-		if !ok || v != val {
-			return false
-		}
-	}
-	return true
-}
+		selectedHasMatchingDNSZones := selectedNumDNSZonesMatch > 0
+		hasMatchingDNSZones := numDNSZonesMatch > 0
 
-func orderHasOneOfDNSNames(o *cmapi.Order, dnsNames ...string) bool {
-	dnsNameMap := map[string]struct{}{}
-	for _, d := range o.Spec.DNSNames {
-		dnsNameMap[d] = struct{}{}
-	}
-	for _, d := range dnsNames {
-		if _, ok := dnsNameMap[d]; ok {
-			return true
+		switch {
+		case !selectedHasMatchingDNSZones && hasMatchingDNSZones:
+			dbg.Info("selecting solver as this solver has matching DNS zones and the previous one does not")
+			selectSolver()
+			continue
+		case selectedHasMatchingDNSZones && !hasMatchingDNSZones:
+			dbg.Info("not selecting solver as the previous one has matching DNS zones and this one does not")
+			continue
+		case !selectedHasMatchingDNSZones && !hasMatchingDNSZones:
+			dbg.Info("solver does not have any matching DNS zones, checking labels")
+			// check labels
+		case selectedHasMatchingDNSZones && hasMatchingDNSZones:
+			dbg.Info("both this solver and the previously selected one matches dnsZones")
+			dbg.Info("comparing number of matching domain segments")
+			// choose the one with the most matching DNS zone segments
+			if numDNSZonesMatch > selectedNumDNSZonesMatch {
+				dbg.Info("selecting solver because this one has more matching DNS zone segments")
+				selectSolver()
+				continue
+			}
+			if selectedNumDNSZonesMatch > numDNSZonesMatch {
+				dbg.Info("not selecting solver because previous one has more matching DNS zone segments")
+				continue
+			}
+			// choose the one with the most labels
+			if numLabelsMatch > selectedNumLabelsMatch {
+				dbg.Info("selecting solver because this one has more labels than the previous one")
+				selectSolver()
+				continue
+			}
+			dbg.Info("not selecting solver as this one's number of matching labels is equal to or less than the last one")
+			continue
 		}
+
+		if numLabelsMatch > selectedNumLabelsMatch {
+			dbg.Info("selecting solver as this one has more labels than the last one")
+			selectSolver()
+			continue
+		}
+
+		dbg.Info("not selecting solver as this one's number of matching labels is equal to or less than the last one (reached end of loop)")
+		// if we get here, the number of matches is less than or equal so we
+		// fallback to choosing the first in the list
 	}
-	return false
+
+	if selectedSolver == nil || selectedChallenge == nil {
+		return nil, fmt.Errorf("failed to find matching challenge solver for challenge")
+	}
+
+	key, err := keyForChallenge(cl, selectedChallenge)
+	if err != nil {
+		return nil, err
+	}
+
+	// 4. construct Challenge resource with spec.solver field set
+	return &cmapi.ChallengeSpec{
+		AuthzURL:  authz.URL,
+		Type:      selectedChallenge.Type,
+		URL:       selectedChallenge.URL,
+		DNSName:   authz.Identifier.Value,
+		Token:     selectedChallenge.Token,
+		Key:       key,
+		Solver:    selectedSolver,
+		Wildcard:  authz.Wildcard,
+		IssuerRef: o.Spec.IssuerRef,
+	}, nil
 }
 
 func (c *controller) oldFormatChallengeSpecForAuthorization(ctx context.Context, cl acmecl.Interface, issuer cmapi.GenericIssuer, o *cmapi.Order, authz *acmeapi.Authorization) (*cmapi.ChallengeSpec, error) {

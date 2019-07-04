@@ -593,6 +593,11 @@ func (in *CertificateDNSNameSelector) DeepCopyInto(out *CertificateDNSNameSelect
 		*out = make([]string, len(*in))
 		copy(*out, *in)
 	}
+	if in.DNSZones != nil {
+		in, out := &in.DNSZones, &out.DNSZones
+		*out = make([]string, len(*in))
+		copy(*out, *in)
+	}
 	return
 }
 
