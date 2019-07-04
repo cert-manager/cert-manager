@@ -100,11 +100,6 @@ func (h *Helper) ValidateIssuedCertificateRequest(cr *v1alpha1.CertificateReques
 	expectedIPAddresses := csr.IPAddresses
 	expectedURIs := csr.URIs
 
-	//certBytes, ok := secret.Data[corev1.TLSCertKey]
-	//if !ok {
-	//	return nil, fmt.Errorf("No certificate data found for Certificate %q (secret %q)", certificate.Name, certificate.Spec.SecretName)
-	//}
-
 	cert, err := pki.DecodeX509CertificateBytes(cr.Status.Certificate)
 	if err != nil {
 		return nil, err
@@ -120,6 +115,11 @@ func (h *Helper) ValidateIssuedCertificateRequest(cr *v1alpha1.CertificateReques
 			cert.Subject.CommonName, cert.Subject.Organization, cert.DNSNames, cert.IPAddresses, cert.URIs)
 	}
 
+	var expectedDNSName string
+	if len(expectedDNSNames) > 0 {
+		expectedDNSName = expectedDNSNames[0]
+	}
+
 	// TODO: move this verification step out of this function
 	if rootCAPEM != nil {
 		rootCertPool := x509.NewCertPool()
@@ -127,7 +127,7 @@ func (h *Helper) ValidateIssuedCertificateRequest(cr *v1alpha1.CertificateReques
 		intermediateCertPool := x509.NewCertPool()
 		intermediateCertPool.AppendCertsFromPEM(cr.Status.CA)
 		opts := x509.VerifyOptions{
-			DNSName:       expectedDNSNames[0],
+			DNSName:       expectedDNSName,
 			Intermediates: intermediateCertPool,
 			Roots:         rootCertPool,
 		}

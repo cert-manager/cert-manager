@@ -71,7 +71,7 @@ func EqualURLsUnsorted(s1, s2 []*url.URL) bool {
 	})
 
 	for i, s := range s1_2 {
-		if s != s2_2[i] {
+		if s.String() != s2_2[i].String() {
 			return false
 		}
 	}
