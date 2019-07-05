@@ -137,6 +137,8 @@ var _ = framework.CertManagerDescribe("CA CertificateRequest", func() {
 				By("Verifying the CertificateRequest is valid")
 				err = h.WaitCertificateRequestIssuedValid(f.Namespace.Name, certificateRequestName, time.Second*30, key)
 				Expect(err).NotTo(HaveOccurred())
+				cr, err = crClient.Get(cr.Name, metav1.GetOptions{})
+				Expect(err).NotTo(HaveOccurred())
 				f.CertificateRequestDurationValid(cr, v.expectedDuration)
 			})
 		}
