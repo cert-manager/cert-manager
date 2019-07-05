@@ -21,8 +21,7 @@ import (
 	"reflect"
 	"testing"
 
-	corev1 "k8s.io/api/core/v1"
-	v1 "k8s.io/api/core/v1"
+	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -279,11 +278,11 @@ func TestMergePodObjectMetaWithPodTemplate(t *testing.T) {
 											"foo":                     "bar",
 										},
 									},
-									PodSpec: corev1.PodSpec{
+									Spec: v1alpha1.ACMEChallengeSolverHTTP01IngressPodSpec{
 										NodeSelector: map[string]string{
 											"node": "selector",
 										},
-										Tolerations: []corev1.Toleration{
+										Tolerations: []v1.Toleration{
 											{
 												Key:      "key",
 												Operator: "Exists",
@@ -312,7 +311,7 @@ func TestMergePodObjectMetaWithPodTemplate(t *testing.T) {
 				resultingPod.Spec.NodeSelector = map[string]string{
 					"node": "selector",
 				}
-				resultingPod.Spec.Tolerations = []corev1.Toleration{
+				resultingPod.Spec.Tolerations = []v1.Toleration{
 					{
 						Key:      "key",
 						Operator: "Exists",

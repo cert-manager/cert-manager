@@ -306,7 +306,7 @@ type ACMEChallengeSolverHTTP01Ingress struct {
 type ACMEChallengeSolverHTTP01IngressPodTemplate struct {
 	// ObjectMeta overrides for the pod used to solve HTTP01 challenges.
 	// Only the 'labels' and 'annotations' fields may be set.
-	// If labels or annotations overlap with in-built value, the values here
+	// If labels or annotations overlap with in-built values, the values here
 	// will override the in-built values.
 	// +optional
 	metav1.ObjectMeta `json:"metadata,omitempty"`
