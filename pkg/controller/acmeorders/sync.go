@@ -402,6 +402,7 @@ func (c *controller) createOrder(ctx context.Context, cl acmecl.Interface, issue
 		} else {
 			cs, err = challengeSpecForAuthorization(ctx, cl, issuer, o, authz)
 			if err != nil {
+				c.recorder.Eventf(o, corev1.EventTypeWarning, "NoMatchingSolver", "Failed to create challenge for domain %q: %v", authz.Identifier.Value, err)
 				return fmt.Errorf("error constructing Challenge resource for authorization: %v", err)
 			}
 		}
@@ -574,7 +575,7 @@ func challengeSpecForAuthorization(ctx context.Context, cl acmecl.Interface, iss
 	}
 
 	if selectedSolver == nil || selectedChallenge == nil {
-		return nil, fmt.Errorf("failed to find matching challenge solver for challenge")
+		return nil, fmt.Errorf("no configured challenge solvers can be used for this challenge")
 	}
 
 	key, err := keyForChallenge(cl, selectedChallenge)
