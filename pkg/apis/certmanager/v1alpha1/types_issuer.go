@@ -308,11 +308,13 @@ type ACMEChallengeSolverHTTP01IngressPodTemplate struct {
 	// Only the 'labels' and 'annotations' fields may be set.
 	// If labels or annotations overlap with in-built value, the values here
 	// will override the in-built values.
+	// +optional
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
 	// PodSpec defines overrides for the HTTP01 challenge solver pod.
 	// Only the 'nodeSelector', 'affinity' and 'tolerations' fields are
 	// supported currently. All other fields will be ignored.
+	// +optional
 	Spec ACMEChallengeSolverHTTP01IngressPodSpec `json:"spec,omitempty"`
 }
 
