@@ -266,7 +266,7 @@ func TestValidateACMEIssuerConfig(t *testing.T) {
 						HTTP01: &v1alpha1.ACMEChallengeSolverHTTP01{
 							Ingress: &v1alpha1.ACMEChallengeSolverHTTP01Ingress{
 								PodTemplate: &v1alpha1.ACMEChallengeSolverHTTP01IngressPodTemplate{
-									PodSpec: corev1.PodSpec{
+									Spec: v1alpha1.ACMEChallengeSolverHTTP01IngressPodSpec{
 										NodeSelector: map[string]string{
 											"valid_to_contain": "nodeSelector",
 										},
@@ -288,33 +288,6 @@ func TestValidateACMEIssuerConfig(t *testing.T) {
 				},
 			},
 		},
-		"acme issue with invalid pod template PodSpec attributes": {
-			spec: &v1alpha1.ACMEIssuer{
-				Email:      "valid-email",
-				Server:     "valid-server",
-				PrivateKey: validSecretKeyRef,
-				Solvers: []v1alpha1.ACMEChallengeSolver{
-					{
-						HTTP01: &v1alpha1.ACMEChallengeSolverHTTP01{
-							Ingress: &v1alpha1.ACMEChallengeSolverHTTP01Ingress{
-								PodTemplate: &v1alpha1.ACMEChallengeSolverHTTP01IngressPodTemplate{
-									PodSpec: corev1.PodSpec{
-										NodeSelector: map[string]string{
-											"valid_to_contain": "nodeSelector",
-										},
-										NodeName: "unable-to-change-nodeName",
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-			errs: []*field.Error{
-				field.Invalid(fldPath.Child("solver", "http01", "ingress", "podTemplate", "spec"),
-					"", "only nodeSelector and tolerations may be set on podTemplate spec"),
-			},
-		},
 		"acme issue with valid pod template ObjectMeta and PodSpec attributes": {
 			spec: &v1alpha1.ACMEIssuer{
 				Email:      "valid-email",
@@ -330,7 +303,7 @@ func TestValidateACMEIssuerConfig(t *testing.T) {
 											"valid_to_contain": "labels",
 										},
 									},
-									PodSpec: corev1.PodSpec{
+									Spec: v1alpha1.ACMEChallengeSolverHTTP01IngressPodSpec{
 										NodeSelector: map[string]string{
 											"valid_to_contain": "nodeSelector",
 										},

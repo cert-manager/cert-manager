@@ -298,16 +298,38 @@ type ACMEChallengeSolverHTTP01Ingress struct {
 	Name string `json:"name,omitempty"`
 
 	// Optional pod template used to configure the ACME challenge solver pods
-	// used for HTTP01 challenges. Only labels and annotations may be set and
-	// will be merged ontop of the defaults. PodTemplate labels and annotation
-	// fields will override fields with matching keys.
+	// used for HTTP01 challenges
 	// +optional
 	PodTemplate *ACMEChallengeSolverHTTP01IngressPodTemplate `json:"podTemplate,omitempty"`
 }
 
 type ACMEChallengeSolverHTTP01IngressPodTemplate struct {
+	// ObjectMeta overrides for the pod used to solve HTTP01 challenges.
+	// Only the 'labels' and 'annotations' fields may be set.
+	// If labels or annotations overlap with in-built value, the values here
+	// will override the in-built values.
 	metav1.ObjectMeta `json:"metadata,omitempty"`
-	corev1.PodSpec    `json:"spec,omitempty"`
+
+	// PodSpec defines overrides for the HTTP01 challenge solver pod.
+	// Only the 'nodeSelector', 'affinity' and 'tolerations' fields are
+	// supported currently. All other fields will be ignored.
+	Spec ACMEChallengeSolverHTTP01IngressPodSpec `json:"spec,omitempty"`
+}
+
+type ACMEChallengeSolverHTTP01IngressPodSpec struct {
+	// NodeSelector is a selector which must be true for the pod to fit on a node.
+	// Selector which must match a node's labels for the pod to be scheduled on that node.
+	// More info: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/
+	// +optional
+	NodeSelector map[string]string `json:"nodeSelector,omitempty"`
+
+	// If specified, the pod's scheduling constraints
+	// +optional
+	Affinity *corev1.Affinity `json:"affinity,omitempty"`
+
+	// If specified, the pod's tolerations.
+	// +optional
+	Tolerations []corev1.Toleration `json:"tolerations,omitempty"`
 }
 
 type ACMEChallengeSolverDNS01 struct {

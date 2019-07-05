@@ -74,9 +74,9 @@ podTemplate
 You may wish to change or add to the labels and annotations of solver pods.
 These can be configured under the ``metadata`` field under ``podTemplate``. 
 
-Similarly, you can set the node selector and tolerations of solver pods by
-configuring under the ``spec`` field of the ``podTemplate``. No other spec fields
-can be edited.
+Similarly, you can set the nodeSelector, tolerations and affinity of solver
+pods by configuring under the ``spec`` field of the ``podTemplate``. No other
+spec fields can be edited.
 
 An example of how you could configure the template is as so:
 
