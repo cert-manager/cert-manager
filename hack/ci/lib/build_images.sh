@@ -27,10 +27,13 @@ source "${SCRIPT_ROOT}/lib.sh"
 
 build_images() {
     # Build cert-manager binaries & docker image
+    # Set --stamp=true when running a build to workaround issues introduced
+    # in bazelbuild/rules_go#2110. For more information, see: https://github.com/bazelbuild/rules_go/pull/2110#issuecomment-508713878
+    # We should be able to remove the `--stamp=true` arg once this has been fixed!
     APP_VERSION="${DOCKER_TAG}" \
     DOCKER_REPO="${DOCKER_REPO}" \
     DOCKER_TAG="${DOCKER_TAG}" \
-    bazel run --platforms=@io_bazel_rules_go//go/toolchain:linux_amd64 //test/e2e:images
+    bazel run --platforms=@io_bazel_rules_go//go/toolchain:linux_amd64 --stamp=true //test/e2e:images
 
     echo "All images built"
 

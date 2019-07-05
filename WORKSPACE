@@ -9,13 +9,13 @@ load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
 load("@bazel_tools//tools/build_defs/repo:git.bzl", "new_git_repository")
 
 ## Load rules_go and dependencies
-http_archive(
+git_repository(
+    # Use rules_go at HEAD to resolve crossbuild issues building Linux
+    # images from an OSX host: https://github.com/bazelbuild/rules_go/pull/2118
     name = "io_bazel_rules_go",
-    urls = [
-        "https://storage.googleapis.com/bazel-mirror/github.com/bazelbuild/rules_go/releases/download/0.18.6/rules_go-0.18.6.tar.gz",
-        "https://github.com/bazelbuild/rules_go/releases/download/0.18.6/rules_go-0.18.6.tar.gz",
-    ],
-    sha256 = "f04d2373bcaf8aa09bccb08a98a57e721306c8f6043a2a0ee610fd6853dcde3d",
+    commit = "792fc6d3ec004e40dfaaff79fbbe461e482022e3",
+    remote = "https://github.com/bazelbuild/rules_go.git",
+    shallow_since = "1562187980 -0400",
 )
 
 load("@io_bazel_rules_go//go:deps.bzl", "go_rules_dependencies", "go_register_toolchains")
@@ -44,10 +44,9 @@ gazelle_dependencies()
 ## Load kubernetes repo-infra for tools like kazel
 git_repository(
     name = "io_kubernetes_build",
-    commit = "8036538b4efe3443d25e6325cabdc367a1926f7d",
-    # Use justinsb's fork until https://github.com/kubernetes/repo-infra/pull/114 merges
-    remote = "https://github.com/justinsb/repo-infra.git",
-    shallow_since = "1561083176 -0400",
+    commit = "1b2ddaf3fb8775a5d0f4e28085cf846f915977a8",
+    remote = "https://github.com/kubernetes/repo-infra.git",
+    shallow_since = "1562041369 -0700",
 )
 
 ## Load rules_docker and depdencies, for working with docker images
