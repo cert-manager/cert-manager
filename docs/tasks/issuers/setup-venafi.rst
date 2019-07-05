@@ -129,7 +129,8 @@ create a Kubernetes Secret resource containing your Venafi TPP API credentials:
    resource namespace'.
 
 These credentials will be used by cert-manager to interact with your Venafi TPP
-instance.
+instance.  Username attribute must be adhere to the <identity provider>:<username> format.  
+For example: ``local:admin``.
 
 Once the Secret containing credentials has been created, you can create your
 Issuer or ClusterIssuer resource. If you are creating a ClusterIssuer resource,
