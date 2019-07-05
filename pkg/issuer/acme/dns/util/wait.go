@@ -227,6 +227,7 @@ func ValidateCAA(domain string, issuerID []string, iswildcard bool, nameservers 
 			}
 			caas = append(caas, caa)
 		}
+		// once we've found any CAA records, we use these CAAs
 		if len(caas) != 0 {
 			break
 		}

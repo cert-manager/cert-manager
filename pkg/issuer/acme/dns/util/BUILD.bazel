@@ -19,6 +19,7 @@ go_test(
     srcs = ["wait_test.go"],
     data = glob(["testdata/**"]),
     embed = [":go_default_library"],
+    deps = ["//vendor/github.com/miekg/dns:go_default_library"],
 )
 
 filegroup(

@@ -13,6 +13,8 @@ import (
 	"sort"
 	"strings"
 	"testing"
+
+	"github.com/miekg/dns"
 )
 
 var lookupNameserversTestsOK = []struct {
@@ -84,6 +86,82 @@ var checkResolvConfServersTests = []struct {
 }{
 	{"testdata/resolv.conf.1", []string{"10.200.3.249:53", "10.200.3.250:5353", "[2001:4860:4860::8844]:53", "[10.0.0.1]:5353"}, []string{"127.0.0.1:53"}},
 	{"testdata/resolv.conf.nonexistant", []string{"127.0.0.1:53"}, []string{"127.0.0.1:53"}},
+}
+
+func TestMatchCAA(t *testing.T) {
+	tests := map[string]struct {
+		caas       []*dns.CAA
+		issuerIDs  map[string]bool
+		isWildcard bool
+		matches    bool
+	}{
+		"matches with a single 'issue' caa for a non-wildcard domain": {
+			caas:       []*dns.CAA{{Tag: issueTag, Value: "example-ca"}},
+			issuerIDs:  map[string]bool{"example-ca": true},
+			isWildcard: false,
+			matches:    true,
+		},
+		"matches with a single 'issue' caa for a wildcard domain": {
+			caas:       []*dns.CAA{{Tag: issueTag, Value: "example-ca"}},
+			issuerIDs:  map[string]bool{"example-ca": true},
+			isWildcard: true,
+			matches:    true,
+		},
+		"does not match with a single 'issue' caa for a non-wildcard domain": {
+			caas:       []*dns.CAA{{Tag: issueTag, Value: "example-ca"}},
+			issuerIDs:  map[string]bool{"not-example-ca": true},
+			isWildcard: false,
+			matches:    false,
+		},
+		"matches with a single 'issuewild' caa for a wildcard domain": {
+			caas:       []*dns.CAA{{Tag: issuewildTag, Value: "example-ca"}},
+			issuerIDs:  map[string]bool{"example-ca": true},
+			isWildcard: true,
+			matches:    true,
+		},
+		"does not match with a single 'issuewild' caa for a non-wildcard domain": {
+			caas:       []*dns.CAA{{Tag: issuewildTag, Value: "example-ca"}},
+			issuerIDs:  map[string]bool{"example-ca": true},
+			isWildcard: false,
+			matches:    false,
+		},
+		"still matches if only one of two CAAs does not match issuerID": {
+			caas: []*dns.CAA{
+				{Tag: issueTag, Value: "not-example-ca"},
+				{Tag: issueTag, Value: "example-ca"},
+			},
+			issuerIDs:  map[string]bool{"example-ca": true},
+			isWildcard: false,
+			matches:    true,
+		},
+		"matches with a wildcard name if the wildcard tag permits the CA": {
+			caas: []*dns.CAA{
+				{Tag: issueTag, Value: "not-example-ca"},
+				{Tag: issuewildTag, Value: "example-ca"},
+			},
+			issuerIDs:  map[string]bool{"example-ca": true},
+			isWildcard: true,
+			matches:    true,
+		},
+		"does not match with a wildcard name if the issuewild tag is set and does not match, but an issue tag does": {
+			caas: []*dns.CAA{
+				{Tag: issueTag, Value: "example-ca"},
+				{Tag: issuewildTag, Value: "not-example-ca"},
+			},
+			issuerIDs:  map[string]bool{"example-ca": true},
+			isWildcard: true,
+			matches:    false,
+		},
+	}
+
+	for n, test := range tests {
+		t.Run(n, func(t *testing.T) {
+			m := matchCAA(test.caas, test.issuerIDs, test.isWildcard)
+			if test.matches != m {
+				t.Errorf("expected match to equal %t but got %t", test.matches, m)
+			}
+		})
+	}
 }
 
 func TestPreCheckDNS(t *testing.T) {
