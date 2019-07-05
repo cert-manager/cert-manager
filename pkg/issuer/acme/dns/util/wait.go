@@ -33,6 +33,9 @@ var (
 
 const defaultResolvConf = "/etc/resolv.conf"
 
+const issueTag = "issue"
+const issuewildTag = "issuewild"
+
 var defaultNameservers = []string{
 	"8.8.8.8:53",
 	"8.8.4.4:53",
@@ -224,6 +227,7 @@ func ValidateCAA(domain string, issuerID []string, iswildcard bool, nameservers 
 			}
 			caas = append(caas, caa)
 		}
+		// once we've found any CAA records, we use these CAAs
 		if len(caas) != 0 {
 			break
 		}
@@ -247,19 +251,23 @@ func ValidateCAA(domain string, issuerID []string, iswildcard bool, nameservers 
 }
 
 func matchCAA(caas []*dns.CAA, issuerIDs map[string]bool, iswildcard bool) bool {
-	expectedTag := "issue"
-	if iswildcard {
-		expectedTag = "issuewild"
-	}
+	matches := false
 	for _, caa := range caas {
-		if caa.Tag != expectedTag {
-			continue
+		// if we require a wildcard certificate, we must prioritize any issuewild
+		// tags - only if it matches (regardless of any other entries) can we
+		// issue a wildcard certificate
+		if iswildcard && caa.Tag == issuewildTag {
+			return issuerIDs[caa.Value]
 		}
-		if issuerIDs[caa.Value] {
-			return true
+
+		// issue tags allow any certificate, we perform a check which will only
+		// be returned if we do not need a wildcard certificate, or if we need
+		// a wildcard certificate and no issuewild entries are present
+		if caa.Tag == issueTag {
+			matches = matches || issuerIDs[caa.Value]
 		}
 	}
-	return false
+	return matches
 }
 
 // lookupNameservers returns the authoritative nameservers for the given fqdn.
