@@ -136,7 +136,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01) (Old format)", 
 		// the maximum length of a single segment of the domain being requested
 		const maxLengthOfDomainSegment = 63
 		By("Creating a Certificate")
-		_, err := certClient.Create(util.NewCertManagerACMECertificateOldFormat(certificateName, certificateSecretName, issuerName, v1alpha1.IssuerKind, nil, nil, acmeIngressClass, fmt.Sprintf("%s.%s", cmutil.RandStringRunes(maxLengthOfDomainSegment), acmeIngressDomain)))
+		_, err := certClient.Create(util.NewCertManagerACMECertificateOldFormat(certificateName, certificateSecretName, issuerName, v1alpha1.IssuerKind, nil, nil, acmeIngressClass, acmeIngressDomain, fmt.Sprintf("%s.%s", cmutil.RandStringRunes(maxLengthOfDomainSegment), acmeIngressDomain)))
 		Expect(err).NotTo(HaveOccurred())
 		err = h.WaitCertificateIssuedValid(f.Namespace.Name, certificateName, time.Minute*5)
 		Expect(err).NotTo(HaveOccurred())
