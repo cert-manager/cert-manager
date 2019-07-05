@@ -30,7 +30,7 @@ import (
 	"github.com/jetstack/cert-manager/test/e2e/util"
 )
 
-var _ = framework.CertManagerDescribe("CA Certificate", func() {
+var _ = framework.CertManagerDescribe("CA CertificateRequest", func() {
 	f := framework.NewDefaultFramework("create-ca-certificate")
 	h := f.Helper()
 
@@ -140,47 +140,5 @@ var _ = framework.CertManagerDescribe("CA Certificate", func() {
 				f.CertificateRequestDurationValid(cr, v.expectedDuration)
 			})
 		}
-	})
-
-	Context("when the CA is an issuer", func() {
-		BeforeEach(func() {
-			By("Creating a signing keypair fixture")
-			_, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Create(newSigningIssuer1KeypairSecret(issuerSecretName))
-			Expect(err).NotTo(HaveOccurred())
-		})
-
-		It("should generate a signed keypair", func() {
-			crClient := f.CertManagerClientSet.CertmanagerV1alpha1().CertificateRequests(f.Namespace.Name)
-
-			By("Creating a CertificateRequest")
-			cr, key, err := util.NewCertManagerBasicCertificateRequest(certificateRequestName, issuerName, v1alpha1.IssuerKind, nil, nil, nil, nil, x509.RSA)
-			Expect(err).NotTo(HaveOccurred())
-			_, err = crClient.Create(cr)
-			Expect(err).NotTo(HaveOccurred())
-			By("Verifying the Certificate is valid")
-			err = h.WaitCertificateRequestIssuedValidTLS(f.Namespace.Name, certificateRequestName, time.Second*30, key, []byte(rootCert))
-			Expect(err).NotTo(HaveOccurred())
-		})
-	})
-
-	Context("when the CA is a second level issuer", func() {
-		BeforeEach(func() {
-			By("Creating a signing keypair fixture")
-			_, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Create(newSigningIssuer2KeypairSecret(issuerSecretName))
-			Expect(err).NotTo(HaveOccurred())
-		})
-
-		It("should generate a signed keypair", func() {
-			crClient := f.CertManagerClientSet.CertmanagerV1alpha1().CertificateRequests(f.Namespace.Name)
-
-			By("Creating a CertificateRequest")
-			cr, key, err := util.NewCertManagerBasicCertificateRequest(certificateRequestName, issuerName, v1alpha1.IssuerKind, nil, nil, nil, nil, x509.RSA)
-			Expect(err).NotTo(HaveOccurred())
-			_, err = crClient.Create(cr)
-			Expect(err).NotTo(HaveOccurred())
-			By("Verifying the Certificate is valid")
-			err = h.WaitCertificateRequestIssuedValidTLS(f.Namespace.Name, certificateRequestName, time.Second*30, key, []byte(rootCert))
-			Expect(err).NotTo(HaveOccurred())
-		})
 	})
 })
