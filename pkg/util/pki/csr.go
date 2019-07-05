@@ -243,7 +243,11 @@ func GenerateTemplateFromCertificateRequest(cr *v1alpha1.CertificateRequest) (*x
 		DNSNames:    csr.DNSNames,
 		IPAddresses: csr.IPAddresses,
 		URIs:        csr.URIs,
-		ExtKeyUsage: []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
+		// TODO: we should expose ExtKeyUsage via the API and not set x509.ExtKeyUsageClientAuth
+		// by default. This is a known change in behaviour between the Certificate and CertificateRequest
+		// controller and should be rectified before the CertificateRequest feature exits
+		// alpha.
+		ExtKeyUsage: []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth, x509.ExtKeyUsageClientAuth},
 	}, nil
 }
 
