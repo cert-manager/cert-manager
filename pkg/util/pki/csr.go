@@ -172,11 +172,6 @@ func GenerateTemplate(crt *v1alpha1.Certificate) (*x509.Certificate, error) {
 		return nil, err
 	}
 
-	keyUsages := x509.KeyUsageDigitalSignature | x509.KeyUsageKeyEncipherment
-	if crt.Spec.IsCA {
-		keyUsages |= x509.KeyUsageCertSign
-	}
-
 	return &x509.Certificate{
 		Version:               3,
 		BasicConstraintsValid: true,
@@ -190,10 +185,19 @@ func GenerateTemplate(crt *v1alpha1.Certificate) (*x509.Certificate, error) {
 		NotBefore: time.Now(),
 		NotAfter:  time.Now().Add(certDuration),
 		// see http://golang.org/pkg/crypto/x509/#KeyUsage
-		KeyUsage:    keyUsages,
+		KeyUsage:    keyUsage(crt.Spec.IsCA),
 		DNSNames:    dnsNames,
 		IPAddresses: ipAddresses,
 	}, nil
+}
+
+func keyUsage(isCA bool) x509.KeyUsage {
+	keyUsages := x509.KeyUsageDigitalSignature | x509.KeyUsageKeyEncipherment
+	if isCA {
+		keyUsages |= x509.KeyUsageCertSign
+	}
+
+	return keyUsages
 }
 
 // GenerateTemplate will create a x509.Certificate for the given
@@ -224,8 +228,6 @@ func GenerateTemplateFromCertificateRequest(cr *v1alpha1.CertificateRequest) (*x
 		certDuration = cr.Spec.Duration.Duration
 	}
 
-	keyUsages := x509.KeyUsageDigitalSignature | x509.KeyUsageKeyEncipherment
-
 	return &x509.Certificate{
 		Version:               csr.Version,
 		BasicConstraintsValid: true,
@@ -237,11 +239,15 @@ func GenerateTemplateFromCertificateRequest(cr *v1alpha1.CertificateRequest) (*x
 		NotBefore:             time.Now(),
 		NotAfter:              time.Now().Add(certDuration),
 		// see http://golang.org/pkg/crypto/x509/#KeyUsage
-		KeyUsage:    keyUsages,
+		KeyUsage:    keyUsage(cr.Spec.IsCA),
 		DNSNames:    csr.DNSNames,
 		IPAddresses: csr.IPAddresses,
 		URIs:        csr.URIs,
-		ExtKeyUsage: []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
+		// TODO: we should expose ExtKeyUsage via the API and not set x509.ExtKeyUsageClientAuth
+		// by default. This is a known change in behaviour between the Certificate and CertificateRequest
+		// controller and should be rectified before the CertificateRequest feature exits
+		// alpha.
+		ExtKeyUsage: []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth, x509.ExtKeyUsageClientAuth},
 	}, nil
 }
 

@@ -66,6 +66,7 @@ rules:
   - admission.certmanager.k8s.io
   resources:
   - certificates
+  - certificaterequests
   - issuers
   - clusterissuers
   verbs:

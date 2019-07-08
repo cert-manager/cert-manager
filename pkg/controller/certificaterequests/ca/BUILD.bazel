@@ -2,19 +2,13 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 
 go_library(
     name = "go_default_library",
-    srcs = [
-        "certificate.go",
-        "certificaterequest.go",
-        "doc.go",
-        "issuer.go",
-    ],
-    importpath = "github.com/jetstack/cert-manager/test/e2e/suite/conformance/rbac",
-    tags = ["manual"],
+    srcs = ["ca.go"],
+    importpath = "github.com/jetstack/cert-manager/pkg/controller/certificaterequests/ca",
     visibility = ["//visibility:public"],
     deps = [
-        "//test/e2e/framework:go_default_library",
-        "//vendor/github.com/onsi/ginkgo:go_default_library",
-        "//vendor/github.com/onsi/gomega:go_default_library",
+        "//pkg/api/util:go_default_library",
+        "//pkg/controller:go_default_library",
+        "//pkg/controller/certificaterequests:go_default_library",
     ],
 )
 

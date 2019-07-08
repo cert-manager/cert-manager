@@ -85,10 +85,10 @@ metadata:
     helm.sh/chart: {{ template "cert-manager.chart" . }}
 rules:
   - apiGroups: ["certmanager.k8s.io"]
-    resources: ["certificates", "certificates/status"]
+    resources: ["certificates", "certificates/status", "certificaterequests", "certificaterequests/status"]
     verbs: ["update"]
   - apiGroups: ["certmanager.k8s.io"]
-    resources: ["certificates", "clusterissuers", "issuers", "orders"]
+    resources: ["certificates", "certificaterequests", "clusterissuers", "issuers", "orders"]
     verbs: ["get", "list", "watch"]
   # We require these rules to support users with the OwnerReferencesPermissionEnforcement
   # admission controller enabled:
@@ -213,10 +213,10 @@ metadata:
     helm.sh/chart: {{ template "cert-manager.chart" . }}
 rules:
   - apiGroups: ["certmanager.k8s.io"]
-    resources: ["certificates"]
+    resources: ["certificates", "certificaterequests"]
     verbs: ["create", "update", "delete"]
   - apiGroups: ["certmanager.k8s.io"]
-    resources: ["certificates", "issuers", "clusterissuers"]
+    resources: ["certificates", "certificaterequests", "issuers", "clusterissuers"]
     verbs: ["get", "list", "watch"]
   - apiGroups: ["extensions"]
     resources: ["ingresses"]
@@ -395,7 +395,7 @@ metadata:
     rbac.authorization.k8s.io/aggregate-to-admin: "true"
 rules:
   - apiGroups: ["certmanager.k8s.io"]
-    resources: ["certificates", "issuers"]
+    resources: ["certificates", "certificaterequests", "issuers"]
     verbs: ["get", "list", "watch"]
 
 ---
@@ -414,7 +414,7 @@ metadata:
     rbac.authorization.k8s.io/aggregate-to-admin: "true"
 rules:
   - apiGroups: ["certmanager.k8s.io"]
-    resources: ["certificates", "issuers"]
+    resources: ["certificates", "certificaterequests", "issuers"]
     verbs: ["create", "delete", "deletecollection", "patch", "update"]
 
 {{- end }}
