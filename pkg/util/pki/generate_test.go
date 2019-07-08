@@ -33,13 +33,19 @@ import (
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 )
 
-func buildCertificateWithKeyParams(keyAlgo v1alpha1.KeyAlgorithm, keySize int) *v1alpha1.Certificate {
+func buildCertificateWithKeyParams(keyAlgo v1alpha1.KeyAlgorithm, keySize int, keyEnco v1alpha1.KeyEncoding) *v1alpha1.Certificate {
 	return &v1alpha1.Certificate{
 		Spec: v1alpha1.CertificateSpec{
 			CommonName:   "test",
 			DNSNames:     []string{"test.test"},
 			KeyAlgorithm: keyAlgo,
 			KeySize:      keySize,
+			KeyEncoding:  keyEnco,
+		},
+		Status: v1alpha1.CertificateStatus{
+			KeyAlgorithm: keyAlgo,
+			KeySize:      keySize,
+			KeyEncoding:  keyEnco,
 		},
 	}
 }
@@ -90,7 +96,7 @@ func TestGeneratePrivateKeyForCertificate(t *testing.T) {
 		},
 		{
 			name:         "unsupported key algo specified",
-			keyAlgo:      v1alpha1.KeyAlgorithm("blahblah"),
+			keyAlgo:      v1alpha1.KeyAlgorithm(""),
 			keySize:      256,
 			expectErr:    true,
 			expectErrStr: "unsupported private key algorithm specified",
@@ -105,6 +111,12 @@ func TestGeneratePrivateKeyForCertificate(t *testing.T) {
 			name:      "rsa key with keysize 4096",
 			keyAlgo:   v1alpha1.RSAKeyAlgorithm,
 			keySize:   4096,
+			expectErr: false,
+		},
+		{
+			name:      "rsa key with keysize 8192",
+			keyAlgo:   v1alpha1.RSAKeyAlgorithm,
+			keySize:   8192,
 			expectErr: false,
 		},
 		{
@@ -125,27 +137,11 @@ func TestGeneratePrivateKeyForCertificate(t *testing.T) {
 			keySize:   521,
 			expectErr: false,
 		},
-		{
-			name:      "valid key size with key algorithm not specified",
-			keyAlgo:   v1alpha1.KeyAlgorithm(""),
-			keySize:   2048,
-			expectErr: false,
-		},
-		{
-			name:      "rsa with keysize not specified",
-			keyAlgo:   v1alpha1.RSAKeyAlgorithm,
-			expectErr: false,
-		},
-		{
-			name:      "ecdsa with keysize not specified",
-			keyAlgo:   v1alpha1.ECDSAKeyAlgorithm,
-			expectErr: false,
-		},
 	}
 
 	testFn := func(test testT) func(*testing.T) {
 		return func(t *testing.T) {
-			privateKey, err := GeneratePrivateKeyForCertificate(buildCertificateWithKeyParams(test.keyAlgo, test.keySize))
+			privateKey, err := GeneratePrivateKeyForCertificate(buildCertificateWithKeyParams(test.keyAlgo, test.keySize, v1alpha1.PKCS1))
 			if test.expectErr {
 				if err == nil {
 					t.Error("expected err, but got no error")

@@ -30,6 +30,9 @@ func Certificate(name string, mods ...CertificateModifier) *v1alpha1.Certificate
 	c := &v1alpha1.Certificate{
 		ObjectMeta: ObjectMeta(name),
 	}
+	c.Status.KeyAlgorithm = v1alpha1.RSAKeyAlgorithm
+	c.Status.KeySize = 2048
+	c.Status.KeyEncoding = v1alpha1.PKCS1
 	for _, mod := range mods {
 		mod(c)
 	}
@@ -72,18 +75,21 @@ func SetCertificateIsCA(isCA bool) CertificateModifier {
 func SetCertificateKeyAlgorithm(keyAlgorithm v1alpha1.KeyAlgorithm) CertificateModifier {
 	return func(crt *v1alpha1.Certificate) {
 		crt.Spec.KeyAlgorithm = keyAlgorithm
+		crt.Status.KeyAlgorithm = keyAlgorithm
 	}
 }
 
 func SetCertificateKeySize(keySize int) CertificateModifier {
 	return func(crt *v1alpha1.Certificate) {
 		crt.Spec.KeySize = keySize
+		crt.Status.KeySize = keySize
 	}
 }
 
 func SetCertificateKeyEncoding(keyEncoding v1alpha1.KeyEncoding) CertificateModifier {
 	return func(crt *v1alpha1.Certificate) {
 		crt.Spec.KeyEncoding = keyEncoding
+		crt.Status.KeyEncoding = keyEncoding
 	}
 }
 

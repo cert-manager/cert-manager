@@ -88,7 +88,7 @@ func createCryptoBundle(crt *cmapi.Certificate) (*cryptoBundle, error) {
 		return nil, err
 	}
 
-	privateKeyBytes, err := pki.EncodePrivateKey(privateKey, crt.Spec.KeyEncoding)
+	privateKeyBytes, err := pki.EncodePrivateKey(privateKey, crt.Status.KeyEncoding)
 	if err != nil {
 		return nil, err
 	}
@@ -289,6 +289,9 @@ func TestProcessCertificate(t *testing.T) {
 		gen.SetCertificateIssuer(cmapi.ObjectReference{Name: "test", Kind: "something", Group: "not-empty"}),
 		gen.SetCertificateSecretName("output"),
 		gen.SetCertificateRenewBefore(time.Hour*36),
+		gen.SetCertificateKeyAlgorithm(cmapi.RSAKeyAlgorithm),
+		gen.SetCertificateKeySize(2048),
+		gen.SetCertificateKeyEncoding(cmapi.PKCS1),
 	)
 	exampleBundle1 := mustCreateCryptoBundle(t, gen.CertificateFrom(baseCert,
 		gen.SetCertificateDNSNames("example.com"),
@@ -296,6 +299,7 @@ func TestProcessCertificate(t *testing.T) {
 	exampleECBundle := mustCreateCryptoBundle(t, gen.CertificateFrom(baseCert,
 		gen.SetCertificateDNSNames("example.com"),
 		gen.SetCertificateKeyAlgorithm(cmapi.ECDSAKeyAlgorithm),
+		gen.SetCertificateKeySize(256),
 	))
 
 	tests := map[string]testT{
@@ -510,7 +514,7 @@ func TestProcessCertificate(t *testing.T) {
 						exampleBundle1.certificateRequest,
 					)),
 				},
-				ExpectedEvents: []string{`Normal Requested Created new CertificateRequest resource "test-850937773"`},
+				ExpectedEvents: []string{fmt.Sprintf(`Normal Requested Created new CertificateRequest resource "%s"`, exampleBundle1.certificateRequest.Name)},
 			},
 		},
 		"delete an existing certificaterequest that does not have matching dnsnames": {
@@ -560,7 +564,7 @@ func TestProcessCertificate(t *testing.T) {
 						exampleBundle1.certificateRequest,
 					)),
 				},
-				ExpectedEvents: []string{`Normal Requested Created new CertificateRequest resource "test-850937773"`},
+				ExpectedEvents: []string{fmt.Sprintf(`Normal Requested Created new CertificateRequest resource "%s"`, exampleBundle1.certificateRequest.Name)},
 			},
 		},
 		"do nothing and wait if an up to date certificaterequest resource exists and is not Ready": {
@@ -629,7 +633,7 @@ func TestProcessCertificate(t *testing.T) {
 						exampleBundle1.certificateRequest,
 					)),
 				},
-				ExpectedEvents: []string{`Normal Requested Created new CertificateRequest resource "test-850937773"`},
+				ExpectedEvents: []string{fmt.Sprintf(`Normal Requested Created new CertificateRequest resource "%s"`, exampleBundle1.certificateRequest.Name)},
 			},
 		},
 		"do nothing if existing x509 certificate is up to date and valid for the cert and no other CertificateRequest exists": {
@@ -949,7 +953,7 @@ func TestProcessCertificate(t *testing.T) {
 						exampleBundle1.certificateRequestReady.Name,
 					)),
 				},
-				ExpectedEvents: []string{`Normal PrivateKeyLost Lost private key for CertificateRequest "test-850937773", deleting old resource`},
+				ExpectedEvents: []string{fmt.Sprintf(`Normal PrivateKeyLost Lost private key for CertificateRequest "%s", deleting old resource`, exampleBundle1.certificateRequestReady.Name)},
 			},
 		},
 	}
@@ -970,6 +974,9 @@ func TestTemporaryCertificateEnabled(t *testing.T) {
 		gen.SetCertificateIssuer(cmapi.ObjectReference{Name: "test", Kind: "something", Group: "not-empty"}),
 		gen.SetCertificateSecretName("output"),
 		gen.SetCertificateRenewBefore(time.Hour*36),
+		gen.SetCertificateKeyAlgorithm(cmapi.RSAKeyAlgorithm),
+		gen.SetCertificateKeySize(2048),
+		gen.SetCertificateKeyEncoding(cmapi.PKCS1),
 	)
 	exampleBundle1 := mustCreateCryptoBundle(t, gen.CertificateFrom(baseCert,
 		gen.SetCertificateDNSNames("example.com"),
@@ -1403,6 +1410,9 @@ func TestUpdateStatus(t *testing.T) {
 		gen.SetCertificateIssuer(cmapi.ObjectReference{Name: "test", Kind: "something", Group: "not-empty"}),
 		gen.SetCertificateSecretName("output"),
 		gen.SetCertificateRenewBefore(time.Hour*36),
+		gen.SetCertificateKeyAlgorithm(cmapi.RSAKeyAlgorithm),
+		gen.SetCertificateKeySize(2048),
+		gen.SetCertificateKeyEncoding(cmapi.PKCS1),
 	)
 	exampleBundle1 := mustCreateCryptoBundle(t, gen.CertificateFrom(baseCert,
 		gen.SetCertificateDNSNames("example.com"),

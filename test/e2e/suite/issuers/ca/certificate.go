@@ -79,8 +79,8 @@ var _ = framework.CertManagerDescribe("CA Certificate", func() {
 			certClient := f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name)
 
 			crt := util.NewCertManagerBasicCertificate(certificateName, certificateSecretName, issuerName, v1alpha1.IssuerKind, nil, nil)
-			crt.Spec.KeyAlgorithm = v1alpha1.ECDSAKeyAlgorithm
-			crt.Spec.KeySize = 521
+			crt.Status.KeyAlgorithm = v1alpha1.ECDSAKeyAlgorithm
+			crt.Status.KeySize = 521
 
 			By("Creating a Certificate")
 			_, err := certClient.Create(crt)

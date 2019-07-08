@@ -276,6 +276,11 @@ func NewCertManagerBasicCertificate(name, secretName, issuerName string, issuerK
 				Kind: issuerKind,
 			},
 		},
+		Status: v1alpha1.CertificateStatus{
+			KeyAlgorithm: v1alpha1.RSAKeyAlgorithm,
+			KeySize:      2048,
+			KeyEncoding:  v1alpha1.PKCS1,
+		},
 	}
 }
 
@@ -381,6 +386,11 @@ func NewCertManagerACMECertificateOldFormat(name, secretName, issuerName string,
 				},
 			},
 		},
+		Status: v1alpha1.CertificateStatus{
+			KeyAlgorithm: v1alpha1.RSAKeyAlgorithm,
+			KeySize:      2048,
+			KeyEncoding:  v1alpha1.PKCS1,
+		},
 	}
 }
 
@@ -398,6 +408,11 @@ func NewCertManagerVaultCertificate(name, secretName, issuerName string, issuerK
 				Name: issuerName,
 				Kind: issuerKind,
 			},
+		},
+		Status: v1alpha1.CertificateStatus{
+			KeyAlgorithm: v1alpha1.RSAKeyAlgorithm,
+			KeySize:      2048,
+			KeyEncoding:  v1alpha1.PKCS1,
 		},
 	}
 }

@@ -170,6 +170,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 			}),
 			gen.SetCertificateDNSNames(acmeIngressDomain),
 			gen.SetCertificateKeyAlgorithm(v1alpha1.ECDSAKeyAlgorithm),
+			gen.SetCertificateKeySize(256),
 		)
 		cert.Namespace = f.Namespace.Name
 		_, err := certClient.Create(cert)

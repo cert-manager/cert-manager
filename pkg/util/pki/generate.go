@@ -51,25 +51,13 @@ const (
 // parameters on the provided resource.
 // The returned key will either be RSA or ECDSA.
 func GeneratePrivateKeyForCertificate(crt *v1alpha1.Certificate) (crypto.Signer, error) {
-	switch crt.Spec.KeyAlgorithm {
-	case v1alpha1.KeyAlgorithm(""), v1alpha1.RSAKeyAlgorithm:
-		keySize := MinRSAKeySize
-
-		if crt.Spec.KeySize > 0 {
-			keySize = crt.Spec.KeySize
-		}
-
-		return GenerateRSAPrivateKey(keySize)
+	switch crt.Status.KeyAlgorithm {
+	case v1alpha1.RSAKeyAlgorithm:
+		return GenerateRSAPrivateKey(crt.Status.KeySize)
 	case v1alpha1.ECDSAKeyAlgorithm:
-		keySize := ECCurve256
-
-		if crt.Spec.KeySize > 0 {
-			keySize = crt.Spec.KeySize
-		}
-
-		return GenerateECPrivateKey(keySize)
+		return GenerateECPrivateKey(crt.Status.KeySize)
 	default:
-		return nil, fmt.Errorf("unsupported private key algorithm specified: %s", crt.Spec.KeyAlgorithm)
+		return nil, fmt.Errorf("unsupported private key algorithm specified: %s", crt.Status.KeyAlgorithm)
 	}
 }
 
@@ -112,7 +100,7 @@ func GenerateECPrivateKey(keySize int) (*ecdsa.PrivateKey, error) {
 // It only supports encoding RSA or ECDSA keys.
 func EncodePrivateKey(pk crypto.PrivateKey, keyEncoding v1alpha1.KeyEncoding) ([]byte, error) {
 	switch keyEncoding {
-	case v1alpha1.KeyEncoding(""), v1alpha1.PKCS1:
+	case v1alpha1.PKCS1:
 		switch k := pk.(type) {
 		case *rsa.PrivateKey:
 			return EncodePKCS1PrivateKey(k), nil

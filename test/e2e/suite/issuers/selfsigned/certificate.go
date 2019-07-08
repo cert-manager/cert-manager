@@ -114,7 +114,7 @@ var _ = framework.CertManagerDescribe("Self Signed Certificate", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		crt := util.NewCertManagerBasicCertificate(certificateName, certificateSecretName, issuerName, v1alpha1.IssuerKind, nil, nil)
-		crt.Spec.KeyEncoding = v1alpha1.PKCS8
+		crt.Status.KeyEncoding = v1alpha1.PKCS8
 
 		By("Creating a Certificate")
 		_, err = certClient.Create(crt)

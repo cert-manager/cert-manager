@@ -119,9 +119,8 @@ func (h *Helper) ValidateIssuedCertificate(certificate *v1alpha1.Certificate, ro
 	}
 
 	// validate private key is of the correct type (rsa or ecdsa)
-	switch certificate.Spec.KeyAlgorithm {
-	case v1alpha1.KeyAlgorithm(""),
-		v1alpha1.RSAKeyAlgorithm:
+	switch certificate.Status.KeyAlgorithm {
+	case v1alpha1.RSAKeyAlgorithm:
 		_, ok := key.(*rsa.PrivateKey)
 		if !ok {
 			return nil, fmt.Errorf("Expected private key of type RSA, but it was: %T", key)
@@ -132,7 +131,7 @@ func (h *Helper) ValidateIssuedCertificate(certificate *v1alpha1.Certificate, ro
 			return nil, fmt.Errorf("Expected private key of type ECDSA, but it was: %T", key)
 		}
 	default:
-		return nil, fmt.Errorf("unrecognised requested private key algorithm %q", certificate.Spec.KeyAlgorithm)
+		return nil, fmt.Errorf("unrecognised requested private key algorithm %q", certificate.Status.KeyAlgorithm)
 	}
 
 	// TODO: validate private key KeySize

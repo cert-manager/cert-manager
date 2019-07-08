@@ -189,7 +189,7 @@ func (v *Venafi) Issue(ctx context.Context, crt *v1alpha1.Certificate) (*issuer.
 
 	// Encode the private key ready to be saved
 	dbg.Info("encoding generated private key")
-	pk, err := pki.EncodePrivateKey(signeeKey, crt.Spec.KeyEncoding)
+	pk, err := pki.EncodePrivateKey(signeeKey, crt.Status.KeyEncoding)
 
 	if err != nil {
 		return nil, err

@@ -88,6 +88,10 @@ type controller struct {
 	// if addOwnerReferences is enabled then the controller will add owner references
 	// to the secret resources it creates
 	addOwnerReferences bool
+
+	defaultKeyAlgorithm v1alpha1.KeyAlgorithm
+	defaultKeySize      int
+	defaultKeyEncoding  v1alpha1.KeyEncoding
 }
 
 type calculateDurationUntilRenewFn func(context.Context, *x509.Certificate, *v1alpha1.Certificate) time.Duration
@@ -171,6 +175,9 @@ func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitin
 	c.cmClient = ctx.CMClient
 	c.kClient = ctx.Client
 	c.addOwnerReferences = ctx.CertificateOptions.EnableOwnerRef
+	c.defaultKeyAlgorithm = ctx.CertificateOptions.DefaultKeyAlgorithm
+	c.defaultKeySize = ctx.CertificateOptions.DefaultKeySize
+	c.defaultKeyEncoding = ctx.CertificateOptions.DefaultKeyEncoding
 
 	return c.queue, mustSync, nil
 }

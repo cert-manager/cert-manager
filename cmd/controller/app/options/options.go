@@ -32,6 +32,7 @@ import (
 	ingressshimcontroller "github.com/jetstack/cert-manager/pkg/controller/ingress-shim"
 	issuerscontroller "github.com/jetstack/cert-manager/pkg/controller/issuers"
 	"github.com/jetstack/cert-manager/pkg/util"
+	"github.com/jetstack/cert-manager/pkg/util/pki"
 )
 
 type ControllerOptions struct {
@@ -71,6 +72,9 @@ type ControllerOptions struct {
 	DNS01RecursiveNameserversOnly bool
 
 	EnableCertificateOwnerRef bool
+	DefaultKeyAlgorithm       string
+	DefaultKeySize            int
+	DefaultKeyEncoding        string
 
 	MaxConcurrentChallenges int
 }
@@ -94,9 +98,13 @@ const (
 	defaultTLSACMEIssuerKind           = "Issuer"
 	defaultACMEIssuerChallengeType     = "http01"
 	defaultACMEIssuerDNS01ProviderName = ""
-	defaultEnableCertificateOwnerRef   = false
 
 	defaultDNS01RecursiveNameserversOnly = false
+
+	defaultEnableCertificateOwnerRef = false
+	defaultKeyAlgorithm              = string(cmapi.RSAKeyAlgorithm)
+	defaultKeySize                   = 2048
+	defaultKeyEncoding               = string(cmapi.PKCS1)
 
 	defaultMaxConcurrentChallenges = 60
 )
@@ -150,6 +158,9 @@ func NewControllerOptions() *ControllerOptions {
 		DNS01RecursiveNameservers:          []string{},
 		DNS01RecursiveNameserversOnly:      defaultDNS01RecursiveNameserversOnly,
 		EnableCertificateOwnerRef:          defaultEnableCertificateOwnerRef,
+		DefaultKeyAlgorithm:                defaultKeyAlgorithm,
+		DefaultKeySize:                     defaultKeySize,
+		DefaultKeyEncoding:                 defaultKeyEncoding,
 	}
 }
 
@@ -241,14 +252,34 @@ func (s *ControllerOptions) AddFlags(fs *pflag.FlagSet) {
 			"DNS01 check requests. This should be a list containing IP address and "+
 			"port, for example 8.8.8.8:53,8.8.4.4:53")
 	fs.MarkDeprecated("dns01-self-check-nameservers", "Deprecated in favour of dns01-recursive-nameservers")
+
 	fs.BoolVar(&s.EnableCertificateOwnerRef, "enable-certificate-owner-ref", defaultEnableCertificateOwnerRef, ""+
 		"Whether to set the certificate resource as an owner of secret where the tls certificate is stored. "+
 		"When this flag is enabled, the secret will be automatically removed when the certificate resource is deleted.")
+	fs.StringVar(&s.DefaultKeyAlgorithm, "default-key-algorithm", defaultKeyAlgorithm, ""+
+		"Key Algorithm to use when no KeyAlgorithm is supplied for a certificate.")
+	fs.IntVar(&s.DefaultKeySize, "default-key-size", defaultKeySize, ""+
+		"Key Size to use when no KeySize is supplied for a certificate.")
+	fs.StringVar(&s.DefaultKeyEncoding, "default-key-encoding", defaultKeyEncoding, ""+
+		"Key Encoding to use when no KeyEncoding is supplied for a certificate.")
+
 	fs.IntVar(&s.MaxConcurrentChallenges, "max-concurrent-challenges", defaultMaxConcurrentChallenges, ""+
 		"The maximum number of challenges that can be scheduled as 'processing' at once.")
 }
 
 func (o *ControllerOptions) Validate() error {
+	_, _, err := pki.SignatureAlgorithmFromKeyAlgorithmAndSize(cmapi.KeyAlgorithm(o.DefaultKeyAlgorithm), o.DefaultKeySize)
+	if err != nil {
+		return fmt.Errorf("invalid default-key-algorithm and default-key-size: %v", err)
+	}
+
+	switch cmapi.KeyEncoding(o.DefaultKeyEncoding) {
+	case cmapi.PKCS1:
+	case cmapi.PKCS8:
+	default:
+		return fmt.Errorf("invalid default-key-encoding: %v", o.DefaultKeyEncoding)
+	}
+
 	switch o.DefaultIssuerKind {
 	case "Issuer":
 	case "ClusterIssuer":

@@ -122,6 +122,9 @@ func TestSync(t *testing.T) {
 		gen.SetCertificateDNSNames("example.com"),
 		gen.SetCertificateIssuer(cmapi.ObjectReference{Name: "test"}),
 		gen.SetCertificateSecretName("output"),
+		gen.SetCertificateKeyAlgorithm(cmapi.RSAKeyAlgorithm),
+		gen.SetCertificateKeySize(2048),
+		gen.SetCertificateKeyEncoding(cmapi.PKCS1),
 	)
 	exampleCertNotFoundCondition := gen.CertificateFrom(exampleCert,
 		gen.SetCertificateStatusCondition(cmapi.CertificateCondition{
@@ -941,6 +944,9 @@ func TestDisableOldConfigFeatureFlagDisabled(t *testing.T) {
 		}),
 		gen.SetCertificateDNSNames("test.com"),
 		gen.SetCertificateSecretName("test-tls"),
+		gen.SetCertificateKeyAlgorithm(cmapi.RSAKeyAlgorithm),
+		gen.SetCertificateKeySize(2048),
+		gen.SetCertificateKeyEncoding(cmapi.PKCS1),
 	)
 	oldFormatCertificate := gen.CertificateFrom(newFormatCertificate,
 		gen.SetCertificateACMEConfig(cmapi.ACMECertificateConfig{}),

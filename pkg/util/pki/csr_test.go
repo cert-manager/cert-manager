@@ -157,18 +157,6 @@ func TestSignatureAlgorithmForCertificate(t *testing.T) {
 			expectErr: true,
 		},
 		{
-			name:            "certificate with KeyAlgorithm rsa and no size set should default to rsa256",
-			keyAlgo:         v1alpha1.RSAKeyAlgorithm,
-			expectedSigAlgo: x509.SHA256WithRSA,
-			expectedKeyType: x509.RSA,
-		},
-		{
-			name:            "certificate with KeyAlgorithm not set",
-			keyAlgo:         v1alpha1.KeyAlgorithm(""),
-			expectedSigAlgo: x509.SHA256WithRSA,
-			expectedKeyType: x509.RSA,
-		},
-		{
 			name:            "certificate with KeyAlgorithm rsa and size 2048",
 			keyAlgo:         v1alpha1.RSAKeyAlgorithm,
 			keySize:         2048,
@@ -190,10 +178,10 @@ func TestSignatureAlgorithmForCertificate(t *testing.T) {
 			expectedKeyType: x509.RSA,
 		},
 		{
-			name:            "certificate with ecdsa key algorithm set and no key size default to ecdsa256",
-			keyAlgo:         v1alpha1.ECDSAKeyAlgorithm,
-			expectedSigAlgo: x509.ECDSAWithSHA256,
-			expectedKeyType: x509.ECDSA,
+			name:      "certificate with KeyAlgorithm ecdsa and size 100",
+			keyAlgo:   v1alpha1.ECDSAKeyAlgorithm,
+			keySize:   100,
+			expectErr: true,
 		},
 		{
 			name:            "certificate with KeyAlgorithm ecdsa and size 256",
@@ -217,21 +205,15 @@ func TestSignatureAlgorithmForCertificate(t *testing.T) {
 			expectedKeyType: x509.ECDSA,
 		},
 		{
-			name:      "certificate with KeyAlgorithm ecdsa and size 100",
-			keyAlgo:   v1alpha1.ECDSAKeyAlgorithm,
-			keySize:   100,
-			expectErr: true,
-		},
-		{
 			name:      "certificate with KeyAlgorithm set to unknown key algo",
-			keyAlgo:   v1alpha1.KeyAlgorithm("blah"),
+			keyAlgo:   v1alpha1.KeyAlgorithm(""),
 			expectErr: true,
 		},
 	}
 
 	testFn := func(test testT) func(*testing.T) {
 		return func(t *testing.T) {
-			actualPKAlgo, actualSigAlgo, err := SignatureAlgorithm(buildCertificateWithKeyParams(test.keyAlgo, test.keySize))
+			actualPKAlgo, actualSigAlgo, err := SignatureAlgorithmFromCertificate(buildCertificateWithKeyParams(test.keyAlgo, test.keySize, v1alpha1.PKCS1))
 			if test.expectErr && err == nil {
 				t.Error("expected err, but got no error")
 				return

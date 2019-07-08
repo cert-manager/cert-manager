@@ -27,6 +27,7 @@ import (
 	"k8s.io/client-go/tools/record"
 	"k8s.io/utils/clock"
 
+	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	clientset "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
 	informers "github.com/jetstack/cert-manager/pkg/client/informers/externalversions"
 )
@@ -131,7 +132,10 @@ type IngressShimOptions struct {
 type CertificateOptions struct {
 	// EnableOwnerRef controls wheter wheter the certificate is configured as an owner of
 	// secret where the effective TLS certificate is stored.
-	EnableOwnerRef bool
+	EnableOwnerRef      bool
+	DefaultKeyAlgorithm v1alpha1.KeyAlgorithm
+	DefaultKeySize      int
+	DefaultKeyEncoding  v1alpha1.KeyEncoding
 }
 
 type SchedulerOptions struct {

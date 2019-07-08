@@ -99,7 +99,7 @@ func (c *CA) Issue(ctx context.Context, crt *v1alpha1.Certificate) (*issuer.Issu
 	}
 
 	// Encode output private key and CA cert ready for return
-	keyPem, err := pki.EncodePrivateKey(signeeKey, crt.Spec.KeyEncoding)
+	keyPem, err := pki.EncodePrivateKey(signeeKey, crt.Status.KeyEncoding)
 	if err != nil {
 		log.Error(err, "error encoding private key")
 		c.Recorder.Eventf(crt, corev1.EventTypeWarning, "ErrorPrivateKey", "Error encoding private key: %v", err)

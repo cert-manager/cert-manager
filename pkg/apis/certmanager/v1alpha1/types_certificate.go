@@ -118,13 +118,6 @@ type CertificateSpec struct {
 	// +optional
 	ACME *ACMECertificateConfig `json:"acme,omitempty"`
 
-	// KeySize is the key bit size of the corresponding private key for this certificate.
-	// If provided, value must be between 2048 and 8192 inclusive when KeyAlgorithm is
-	// empty or is set to "rsa", and value must be one of (256, 384, 521) when
-	// KeyAlgorithm is set to "ecdsa".
-	// +optional
-	KeySize int `json:"keySize,omitempty"`
-
 	// KeyAlgorithm is the private key algorithm of the corresponding private key
 	// for this certificate. If provided, allowed values are either "rsa" or "ecdsa"
 	// If KeyAlgorithm is specified and KeySize is not provided,
@@ -134,10 +127,18 @@ type CertificateSpec struct {
 	// +optional
 	KeyAlgorithm KeyAlgorithm `json:"keyAlgorithm,omitempty"`
 
+	// KeySize is the key bit size of the corresponding private key for this certificate.
+	// If provided, value must be between 2048 and 8192 inclusive when KeyAlgorithm is
+	// empty or is set to "rsa", and value must be one of (256, 384, 521) when
+	// KeyAlgorithm is set to "ecdsa".
+	// +optional
+	KeySize int `json:"keySize,omitempty"`
+
 	// KeyEncoding is the private key cryptography standards (PKCS)
 	// for this certificate's private key to be encoded in. If provided, allowed
 	// values are "pkcs1" and "pkcs8" standing for PKCS#1 and PKCS#8, respectively.
 	// If KeyEncoding is not specified, then PKCS#1 will be used by default.
+	// +optional
 	KeyEncoding KeyEncoding `json:"keyEncoding,omitempty"`
 }
 
@@ -158,6 +159,23 @@ type CertificateStatus struct {
 	// by this resource in spec.secretName.
 	// +optional
 	NotAfter *metav1.Time `json:"notAfter,omitempty"`
+
+	// KeyAlgorithm is the private key algorithm of the corresponding private key
+	// for this certificate. Either "rsa" or "ecdsa".
+	// +kubebuilder:validation:Enum=rsa,ecdsa
+	// +optional
+	KeyAlgorithm KeyAlgorithm `json:"keyAlgorithm,omitempty"`
+
+	// KeySize is the key bit size of the corresponding private key for this certificate.
+	// Value will be between 2048 and 8192 inclusive when KeyAlgorithm is set to "rsa",
+	// and will be one of (256, 384, 521) when KeyAlgorithm is set to "ecdsa".
+	// +optional
+	KeySize int `json:"keySize,omitempty"`
+
+	// KeyEncoding is the private key cryptography standards (PKCS) for this certificate's
+	// private key to be encoded in. Either "pkcs1" or "pkcs8" standing for PKCS#1 and PKCS#8, respectively.
+	// +optional
+	KeyEncoding KeyEncoding `json:"keyEncoding,omitempty"`
 }
 
 // CertificateCondition contains condition information for an Certificate.

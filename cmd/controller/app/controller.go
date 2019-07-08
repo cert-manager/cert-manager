@@ -38,6 +38,7 @@ import (
 	"k8s.io/utils/clock"
 
 	"github.com/jetstack/cert-manager/cmd/controller/app/options"
+	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	clientset "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
 	intscheme "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/scheme"
 	informers "github.com/jetstack/cert-manager/pkg/client/informers/externalversions"
@@ -235,7 +236,10 @@ func buildControllerContext(ctx context.Context, stopCh <-chan struct{}, opts *o
 			DefaultACMEIssuerDNS01ProviderName: opts.DefaultACMEIssuerDNS01ProviderName,
 		},
 		CertificateOptions: controller.CertificateOptions{
-			EnableOwnerRef: opts.EnableCertificateOwnerRef,
+			EnableOwnerRef:      opts.EnableCertificateOwnerRef,
+			DefaultKeyAlgorithm: v1alpha1.KeyAlgorithm(opts.DefaultKeyAlgorithm),
+			DefaultKeySize:      opts.DefaultKeySize,
+			DefaultKeyEncoding:  v1alpha1.KeyEncoding(opts.DefaultKeyEncoding),
 		},
 		SchedulerOptions: controller.SchedulerOptions{
 			MaxConcurrentChallenges: opts.MaxConcurrentChallenges,

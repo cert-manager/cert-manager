@@ -800,12 +800,7 @@ func validatePrivateKeyUpToDate(log logr.Logger, pk []byte, crt *cmapi.Certifica
 
 	// TODO: check keyEncoding
 
-	wantedAlgorithm := crt.Spec.KeyAlgorithm
-	if wantedAlgorithm == "" {
-		// in-memory defaulting of the key algorithm to RSA
-		// TODO: remove this in favour of actual defaulting in a mutating webhook
-		wantedAlgorithm = cmapi.RSAKeyAlgorithm
-	}
+	wantedAlgorithm := crt.Status.KeyAlgorithm
 
 	switch wantedAlgorithm {
 	case cmapi.RSAKeyAlgorithm:
@@ -857,7 +852,7 @@ func generatePrivateKeyBytesImpl(ctx context.Context, crt *cmapi.Certificate) ([
 		return nil, err
 	}
 
-	keyData, err := pki.EncodePrivateKey(signer, crt.Spec.KeyEncoding)
+	keyData, err := pki.EncodePrivateKey(signer, crt.Status.KeyEncoding)
 	if err != nil {
 		return nil, err
 	}

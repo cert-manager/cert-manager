@@ -14,6 +14,7 @@ go_library(
         "//pkg/controller/ingress-shim:go_default_library",
         "//pkg/controller/issuers:go_default_library",
         "//pkg/util:go_default_library",
+        "//pkg/util/pki:go_default_library",
         "//vendor/github.com/spf13/pflag:go_default_library",
     ],
 )

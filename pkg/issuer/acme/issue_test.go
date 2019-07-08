@@ -143,6 +143,11 @@ func TestIssueHappyPath(t *testing.T) {
 				},
 			},
 		},
+		Status: v1alpha1.CertificateStatus{
+			KeyAlgorithm: "rsa",
+			KeySize:      2048,
+			KeyEncoding:  "pkcs1",
+		},
 	}
 
 	_, testCertSignedBytesPEM := generateSelfSignedCert(t, testCert, pk, time.Now(), time.Hour*24*365)
@@ -361,6 +366,11 @@ func TestIssueRetryCases(t *testing.T) {
 					},
 				},
 			},
+		},
+		Status: v1alpha1.CertificateStatus{
+			KeyAlgorithm: "rsa",
+			KeySize:      2048,
+			KeyEncoding:  "pkcs1",
 		},
 	}
 	invalidTestCert := testCert.DeepCopy()

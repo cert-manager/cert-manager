@@ -63,7 +63,7 @@ func (a *Acme) Issue(ctx context.Context, crt *v1alpha1.Certificate) (*issuer.Is
 		log.V(logf.DebugLevel).Info("storing newly generated certificate private key")
 		a.Recorder.Eventf(crt, corev1.EventTypeNormal, "Generated", "Generated new private key")
 
-		keyPem, err := pki.EncodePrivateKey(key, crt.Spec.KeyEncoding)
+		keyPem, err := pki.EncodePrivateKey(key, crt.Status.KeyEncoding)
 		if err != nil {
 			return nil, err
 		}
@@ -203,7 +203,7 @@ func (a *Acme) Issue(ctx context.Context, crt *v1alpha1.Certificate) (*issuer.Is
 	}
 
 	// encode the private key and return
-	keyPem, err := pki.EncodePrivateKey(key, crt.Spec.KeyEncoding)
+	keyPem, err := pki.EncodePrivateKey(key, crt.Status.KeyEncoding)
 	if err != nil {
 		// TODO: this is probably an internal error - we should fail safer here
 		return nil, err

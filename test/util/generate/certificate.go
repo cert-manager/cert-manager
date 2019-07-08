@@ -67,6 +67,10 @@ func Certificate(cfg CertificateConfig) *v1alpha1.Certificate {
 			DNSNames:   cfg.DNSNames,
 			ACME:       a,
 		},
-		Status: v1alpha1.CertificateStatus{},
+		Status: v1alpha1.CertificateStatus{
+			KeyAlgorithm: v1alpha1.RSAKeyAlgorithm,
+			KeySize:      2048,
+			KeyEncoding:  v1alpha1.PKCS1,
+		},
 	}
 }

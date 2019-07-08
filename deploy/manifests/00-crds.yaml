@@ -375,6 +375,21 @@ spec:
                 - type
                 type: object
               type: array
+            keyAlgorithm:
+              description: KeyAlgorithm is the private key algorithm of the corresponding
+                private key for this certificate. Either "rsa" or "ecdsa".
+              type: string
+            keyEncoding:
+              description: KeyEncoding is the private key cryptography standards (PKCS)
+                for this certificate's private key to be encoded in. Either "pkcs1"
+                or "pkcs8" standing for PKCS#1 and PKCS#8, respectively.
+              type: string
+            keySize:
+              description: KeySize is the key bit size of the corresponding private
+                key for this certificate. Value will be between 2048 and 8192 inclusive
+                when KeyAlgorithm is set to "rsa", and will be one of (256, 384, 521)
+                when KeyAlgorithm is set to "ecdsa".
+              type: integer
             lastFailureTime:
               format: date-time
               type: string

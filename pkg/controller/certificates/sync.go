@@ -101,6 +101,34 @@ func (c *controller) Sync(ctx context.Context, crt *v1alpha1.Certificate) (err e
 		}
 	}()
 
+	if crtCopy.Spec.KeyAlgorithm == "" {
+		if crtCopy.Spec.KeySize == 0 {
+			crtCopy.Status.KeyAlgorithm = c.defaultKeyAlgorithm
+			crtCopy.Status.KeySize = c.defaultKeySize
+		} else {
+			crtCopy.Status.KeyAlgorithm = v1alpha1.RSAKeyAlgorithm
+			crtCopy.Status.KeySize = crtCopy.Spec.KeySize
+		}
+	} else {
+		crtCopy.Status.KeyAlgorithm = crtCopy.Spec.KeyAlgorithm
+		if crtCopy.Spec.KeySize == 0 {
+			switch crtCopy.Status.KeyAlgorithm {
+			case v1alpha1.RSAKeyAlgorithm:
+				crtCopy.Status.KeySize = pki.MinRSAKeySize
+			case v1alpha1.ECDSAKeyAlgorithm:
+				crtCopy.Status.KeySize = pki.ECCurve256
+			}
+		} else {
+			crtCopy.Status.KeySize = crtCopy.Spec.KeySize
+		}
+	}
+
+	if crtCopy.Spec.KeyEncoding == "" {
+		crtCopy.Status.KeyEncoding = c.defaultKeyEncoding
+	} else {
+		crtCopy.Status.KeyEncoding = crtCopy.Spec.KeyEncoding
+	}
+
 	dbg.Info("Fetching existing certificate from secret", "name", crtCopy.Spec.SecretName)
 	// grab existing certificate and validate private key
 	certs, key, err := kube.SecretTLSKeyPair(ctx, c.secretLister, crtCopy.Namespace, crtCopy.Spec.SecretName)
@@ -554,6 +582,11 @@ func generateLocallySignedTemporaryCertificate(crt *v1alpha1.Certificate, pk []b
 		Spec: v1alpha1.CertificateSpec{
 			CommonName: "cert-manager.local",
 			IsCA:       true,
+		},
+		Status: v1alpha1.CertificateStatus{
+			KeyAlgorithm: v1alpha1.RSAKeyAlgorithm,
+			KeySize:      2048,
+			KeyEncoding:  v1alpha1.PKCS1,
 		},
 	})
 	if err != nil {

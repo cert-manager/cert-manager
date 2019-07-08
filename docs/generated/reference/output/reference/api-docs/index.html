@@ -152,6 +152,18 @@ Appears In:
 <td></td>
 </tr>
 <tr>
+<td><code>keyAlgorithm</code><br /> <em>string</em></td>
+<td>KeyAlgorithm is the private key algorithm of the corresponding private key for this certificate. Either &#34;rsa&#34; or &#34;ecdsa&#34;.</td>
+</tr>
+<tr>
+<td><code>keyEncoding</code><br /> <em>string</em></td>
+<td>KeyEncoding is the private key cryptography standards (PKCS) for this certificate&#39;s private key to be encoded in. Either &#34;pkcs1&#34; or &#34;pkcs8&#34; standing for PKCS#1 and PKCS#8, respectively.</td>
+</tr>
+<tr>
+<td><code>keySize</code><br /> <em>integer</em></td>
+<td>KeySize is the key bit size of the corresponding private key for this certificate. Value will be between 2048 and 8192 inclusive when KeyAlgorithm is set to &#34;rsa&#34;, and will be one of (256, 384, 521) when KeyAlgorithm is set to &#34;ecdsa&#34;.</td>
+</tr>
+<tr>
 <td><code>lastFailureTime</code><br /> *<a href="#time-v1">Time</a>*</td>
 <td></td>
 </tr>

@@ -27,17 +27,17 @@ import (
 )
 
 func generatePrivateKeyBytes(keyAlgo v1alpha1.KeyAlgorithm, keySize int) ([]byte, error) {
-	cert := buildCertificateWithKeyParams(keyAlgo, keySize)
+	cert := buildCertificateWithKeyParams(keyAlgo, keySize, v1alpha1.PKCS1)
 	privateKey, err := GeneratePrivateKeyForCertificate(cert)
 	if err != nil {
 		return nil, err
 	}
 
-	return EncodePrivateKey(privateKey, cert.Spec.KeyEncoding)
+	return EncodePrivateKey(privateKey, cert.Status.KeyEncoding)
 }
 
 func generatePKCS8PrivateKey(keyAlgo v1alpha1.KeyAlgorithm, keySize int) ([]byte, error) {
-	privateKey, err := GeneratePrivateKeyForCertificate(buildCertificateWithKeyParams(keyAlgo, keySize))
+	privateKey, err := GeneratePrivateKeyForCertificate(buildCertificateWithKeyParams(keyAlgo, keySize, v1alpha1.PKCS1))
 	if err != nil {
 		return nil, err
 	}
