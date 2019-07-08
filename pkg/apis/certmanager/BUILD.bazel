@@ -19,6 +19,7 @@ filegroup(
     srcs = [
         ":package-srcs",
         "//pkg/apis/certmanager/install:all-srcs",
+        "//pkg/apis/certmanager/mutation/webhooks:all-srcs",
         "//pkg/apis/certmanager/v1alpha1:all-srcs",
         "//pkg/apis/certmanager/validation:all-srcs",
     ],
