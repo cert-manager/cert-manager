@@ -82,7 +82,7 @@ A full list of the fields supported on the Certificate resource can be found in
 the `API reference documentation`_.
 
 .. _`#1269`: https://github.com/jetstack/cert-manager/issues/1269
-.. _`API reference documentation`: https://docs.cert-manager.io/en/release-0.8/reference/api-docs/index.html#certificatespec-v1alpha1
+.. _`API reference documentation`: https://docs.cert-manager.io/en/release-0.9/reference/api-docs/index.html#certificatespec-v1alpha1
 
 Temporary certificates whilst issuing
 =====================================
