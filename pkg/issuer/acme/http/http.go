@@ -28,6 +28,7 @@ import (
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	corev1listers "k8s.io/client-go/listers/core/v1"
 	extv1beta1listers "k8s.io/client-go/listers/extensions/v1beta1"
+	networkingv1listers "k8s.io/client-go/listers/networking/v1"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	"github.com/jetstack/cert-manager/pkg/controller"
@@ -55,9 +56,10 @@ var (
 type Solver struct {
 	*controller.Context
 
-	podLister     corev1listers.PodLister
-	serviceLister corev1listers.ServiceLister
-	ingressLister extv1beta1listers.IngressLister
+	podLister           corev1listers.PodLister
+	serviceLister       corev1listers.ServiceLister
+	ingressLister       extv1beta1listers.IngressLister
+	networkPolicyLister networkingv1listers.NetworkPolicyLister
 
 	testReachability reachabilityTest
 	requiredPasses   int
@@ -69,12 +71,13 @@ type reachabilityTest func(ctx context.Context, url *url.URL, key string) error
 // TODO: refactor this to have fewer args
 func NewSolver(ctx *controller.Context) *Solver {
 	return &Solver{
-		Context:          ctx,
-		podLister:        ctx.KubeSharedInformerFactory.Core().V1().Pods().Lister(),
-		serviceLister:    ctx.KubeSharedInformerFactory.Core().V1().Services().Lister(),
-		ingressLister:    ctx.KubeSharedInformerFactory.Extensions().V1beta1().Ingresses().Lister(),
-		testReachability: testReachability,
-		requiredPasses:   5,
+		Context:             ctx,
+		podLister:           ctx.KubeSharedInformerFactory.Core().V1().Pods().Lister(),
+		serviceLister:       ctx.KubeSharedInformerFactory.Core().V1().Services().Lister(),
+		ingressLister:       ctx.KubeSharedInformerFactory.Extensions().V1beta1().Ingresses().Lister(),
+		networkPolicyLister: ctx.KubeSharedInformerFactory.Networking().V1().NetworkPolicies().Lister(),
+		testReachability:    testReachability,
+		requiredPasses:      5,
 	}
 }
 
@@ -117,8 +120,9 @@ func (s *Solver) Present(ctx context.Context, issuer v1alpha1.GenericIssuer, ch 
 	if svcErr != nil {
 		return utilerrors.NewAggregate([]error{podErr, svcErr})
 	}
+	_, npErr := s.ensureNetworkPolicy(ctx, issuer, ch)
 	_, ingressErr := s.ensureIngress(ctx, issuer, ch, svc.Name)
-	return utilerrors.NewAggregate([]error{podErr, svcErr, ingressErr})
+	return utilerrors.NewAggregate([]error{podErr, svcErr, ingressErr, npErr})
 }
 
 func (s *Solver) Check(ctx context.Context, issuer v1alpha1.GenericIssuer, ch *v1alpha1.Challenge) error {
