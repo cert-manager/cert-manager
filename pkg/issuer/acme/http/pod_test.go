@@ -278,6 +278,18 @@ func TestMergePodObjectMetaWithPodTemplate(t *testing.T) {
 											"foo":                     "bar",
 										},
 									},
+									Spec: v1alpha1.ACMEChallengeSolverHTTP01IngressPodSpec{
+										NodeSelector: map[string]string{
+											"node": "selector",
+										},
+										Tolerations: []v1.Toleration{
+											{
+												Key:      "key",
+												Operator: "Exists",
+												Effect:   "NoSchedule",
+											},
+										},
+									},
 								},
 							},
 						},
@@ -295,6 +307,16 @@ func TestMergePodObjectMetaWithPodTemplate(t *testing.T) {
 				resultingPod.Annotations = map[string]string{
 					"sidecar.istio.io/inject": "true",
 					"foo":                     "bar",
+				}
+				resultingPod.Spec.NodeSelector = map[string]string{
+					"node": "selector",
+				}
+				resultingPod.Spec.Tolerations = []v1.Toleration{
+					{
+						Key:      "key",
+						Operator: "Exists",
+						Effect:   "NoSchedule",
+					},
 				}
 				s.testResources[createdPodKey] = resultingPod
 
