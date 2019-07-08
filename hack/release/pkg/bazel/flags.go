@@ -119,7 +119,7 @@ func (g *Bazel) Run(ctx context.Context, target string, args ...string) *exec.Cm
 // Bazel's --platforms variable will be set automatically.
 func (g *Bazel) RunPlatform(ctx context.Context, os, arch, target string, args ...string) *exec.Cmd {
 	platform := fmt.Sprintf("--platforms=@io_bazel_rules_go//go/toolchain:%s_%s", os, arch)
-	return g.Cmd(ctx, append([]string{"run", platform, target}, args...)...)
+	return g.Cmd(ctx, append([]string{"run", platform, "--stamp=true", target}, args...)...)
 }
 
 // RunE will run the given targets on the current host OS.
