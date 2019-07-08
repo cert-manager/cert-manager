@@ -198,6 +198,14 @@ func TestSync(t *testing.T) {
 	exampleEmptyCSRCR := exampleCR.DeepCopy()
 	exampleEmptyCSRCR.Spec.CSRPEM = make([]byte, 0)
 
+	exampleCRWrongIssuerRefGroup := exampleCR.DeepCopy()
+	exampleCRWrongIssuerRefGroup.Spec.IssuerRef.Group = "notcertmanager.k8s.io"
+
+	exampleCRCorrentIssuerRefGroup := exampleCRWrongIssuerRefGroup.DeepCopy()
+	exampleCRCorrentIssuerRefGroup.Spec.IssuerRef.Group = "certmanager.k8s.io"
+	exampleCRReadyConditionWithGroupRef := exampleCRReadyCondition.DeepCopy()
+	exampleCRReadyConditionWithGroupRef.Spec.IssuerRef.Group = "certmanager.k8s.io"
+
 	tests := map[string]controllerFixture{
 		"should update certificate request with CertPending if issuer does not return a response": {
 			Issuer: gen.Issuer("test",
@@ -230,7 +238,7 @@ func TestSync(t *testing.T) {
 			},
 			Err: false,
 		},
-		"should update the status with a freshly signed certificate only when one doesn't exist": {
+		"should update the status with a freshly signed certificate only when one doesn't exist and group ref=''": {
 			Issuer: gen.Issuer("test",
 				gen.AddIssuerCondition(cmapi.IssuerCondition{
 					Type:   cmapi.IssuerConditionReady,
@@ -255,6 +263,58 @@ func TestSync(t *testing.T) {
 						exampleCRReadyCondition,
 					)),
 				},
+			},
+			CheckFn: func(t *testing.T, s *controllerFixture, args ...interface{}) {
+			},
+			Err: false,
+		},
+		"should update the status with a freshly signed certificate only when one doesn't exist and issuer group ref='certmanager.k8s.io'": {
+			Issuer: gen.Issuer("test",
+				gen.AddIssuerCondition(cmapi.IssuerCondition{
+					Type:   cmapi.IssuerConditionReady,
+					Status: cmapi.ConditionTrue,
+				}),
+				gen.SetIssuerSelfSigned(cmapi.SelfSignedIssuer{}),
+			),
+			CertificateRequest: *exampleCRCorrentIssuerRefGroup,
+			IssuerImpl: &fake.Issuer{
+				FakeSign: func(context.Context, *cmapi.CertificateRequest) (*issuer.IssueResponse, error) {
+					return &issuer.IssueResponse{
+						Certificate: certPEM,
+					}, nil
+				},
+			},
+			Builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{gen.CertificateRequest("test")},
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(coretesting.NewUpdateAction(
+						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
+						gen.DefaultTestNamespace,
+						exampleCRReadyConditionWithGroupRef,
+					)),
+				},
+			},
+			CheckFn: func(t *testing.T, s *controllerFixture, args ...interface{}) {
+			},
+			Err: false,
+		},
+		"should exit sync nil if issuerRef group does not match certmanager.k8s.io": {
+			Issuer: gen.Issuer("test",
+				gen.AddIssuerCondition(cmapi.IssuerCondition{
+					Type:   cmapi.IssuerConditionReady,
+					Status: cmapi.ConditionTrue,
+				}),
+				gen.SetIssuerSelfSigned(cmapi.SelfSignedIssuer{}),
+			),
+			CertificateRequest: *exampleCRWrongIssuerRefGroup,
+			IssuerImpl: &fake.Issuer{
+				FakeSign: func(context.Context, *cmapi.CertificateRequest) (*issuer.IssueResponse, error) {
+					return nil, errors.New("unexpected sign call")
+				},
+			},
+			Builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{gen.CertificateRequest("test")},
+				ExpectedActions:    []testpkg.Action{}, // no update
 			},
 			CheckFn: func(t *testing.T, s *controllerFixture, args ...interface{}) {
 			},
