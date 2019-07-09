@@ -25,6 +25,7 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/pem"
+	"errors"
 	"math/big"
 	"testing"
 	"time"
@@ -146,6 +147,9 @@ func TestSync(t *testing.T) {
 	}
 
 	localTempCert := generateSelfSignedCert(t, exampleCert, big.NewInt(staticTemporarySerialNumber), pk1, nowTime, nowTime)
+
+	exampleCertWrongGroup := exampleCert.DeepCopy()
+	exampleCertWrongGroup.Spec.IssuerRef.Group = "wrong.group.io"
 
 	tests := map[string]controllerFixture{
 		"should update certificate with NotExists if issuer does not return a keypair": {
@@ -840,6 +844,25 @@ func TestSync(t *testing.T) {
 						},
 					)),
 				},
+			},
+		},
+		"should exit sync nil if group is not certmanager.k8s.io": {
+			Issuer: gen.Issuer("test",
+				gen.AddIssuerCondition(cmapi.IssuerCondition{
+					Type:   cmapi.IssuerConditionReady,
+					Status: cmapi.ConditionTrue,
+				}),
+				gen.SetIssuerSelfSigned(cmapi.SelfSignedIssuer{}),
+			),
+			Certificate: *exampleCertWrongGroup,
+			IssuerImpl: &fake.Issuer{
+				FakeIssue: func(context.Context, *cmapi.Certificate) (*issuer.IssueResponse, error) {
+					return nil, errors.New("unexpected issue call")
+				},
+			},
+			Builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{gen.Certificate("test")},
+				ExpectedActions:    []testpkg.Action{},
 			},
 		},
 		//"should add annotations to already existing secret resource": {
