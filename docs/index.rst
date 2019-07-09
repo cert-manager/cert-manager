@@ -32,6 +32,7 @@ a source of references when seeking help with the project.
    tutorials/index
    tasks/index
    reference/index
+   design/index
    devel/index
 
 .. _Kubernetes: https://kubernetes.io
