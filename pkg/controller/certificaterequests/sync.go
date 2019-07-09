@@ -27,6 +27,7 @@ import (
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
+	"github.com/jetstack/cert-manager/pkg/apis/certmanager"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/validation"
 	"github.com/jetstack/cert-manager/pkg/issuer"
@@ -49,6 +50,11 @@ func (c *Controller) Sync(ctx context.Context, cr *v1alpha1.CertificateRequest) 
 
 	log := logf.FromContext(ctx)
 	dbg := log.V(logf.DebugLevel)
+
+	if !(cr.Spec.IssuerRef.Group == "" || cr.Spec.IssuerRef.Group == certmanager.GroupName) {
+		dbg.Info("certificate request issuerRef group does not match certmanager group so skipping processing")
+		return nil
+	}
 
 	if apiutil.CertificateRequestHasCondition(cr, v1alpha1.CertificateRequestCondition{
 		Type:   v1alpha1.CertificateRequestConditionReady,
