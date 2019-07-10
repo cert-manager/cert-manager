@@ -448,6 +448,14 @@ func challengeSpecForAuthorization(ctx context.Context, cl acmecl.Interface, iss
 	selectedNumDNSNamesMatch := 0
 	selectedNumDNSZonesMatch := 0
 
+	selectedAllowsManuallySpecifiedIngress := false
+	manuallySpecifiedIngressName, hasManuallySpecifiedIngressName := o.Annotations["http01.acme.certmanager.k8s.io/ingress-to-edit"]
+	if hasManuallySpecifiedIngressName {
+		// we will prioritize finding any solver (the first) which allows
+		// manually specified ingress names.
+		dbg.Info("ingress name has been manually specified, attempting to select an appropriate solver")
+	}
+
 	challengeForSolver := func(solver *cmapi.ACMEChallengeSolver) *acmeapi.Challenge {
 		for _, ch := range authz.Challenges {
 			switch {
@@ -468,14 +476,23 @@ func challengeSpecForAuthorization(ctx context.Context, cl acmecl.Interface, iss
 			continue
 		}
 
+		allowsManuallySpecifiedIngressAsRequired := hasManuallySpecifiedIngressName && cfg.HTTP01 != nil && cfg.HTTP01.Ingress.AllowManuallySpecifiedIngress
+
 		if cfg.Selector == nil {
 			if selectedSolver != nil {
 				dbg.Info("not selecting solver as previously selected solver has a just as or more specific selector")
 				continue
 			}
-			dbg.Info("selecting solver due to match all selector and no previously selected solver")
+			dbg.Info("selecting solver due to nil selector and no previously selected solver")
 			selectedSolver = cfg.DeepCopy()
 			selectedChallenge = acmech
+			if allowsManuallySpecifiedIngressAsRequired {
+				// if this solver allows manually specified ingress names and
+				// we have the associated annotation, select this solver, finish.
+				dbg.Info("selected solver which allows manually specified ingress name")
+				selectedAllowsManuallySpecifiedIngress = true
+				break
+			}
 			continue
 		}
 
@@ -501,7 +518,24 @@ func challengeSpecForAuthorization(ctx context.Context, cl acmecl.Interface, iss
 		if selectedSolver == nil {
 			dbg.Info("selecting solver as there is no previously selected solver")
 			selectSolver()
+			if allowsManuallySpecifiedIngressAsRequired {
+				// if we had no previous selected solver, and it allows
+				// manually specified ingress names, and we have the
+				// associated annotation, select it, finish.
+				dbg.Info("selected solver which allows manually specified ingress name")
+				selectedAllowsManuallySpecifiedIngress = true
+				break
+			}
 			continue
+		}
+
+		// if this solver matches, and allows manually specified ingress names,
+		// and we have the associated annotation, select it, finish.
+		if allowsManuallySpecifiedIngressAsRequired {
+			selectedAllowsManuallySpecifiedIngress = true
+			dbg.Info("selected solver which allows manually specified ingress name")
+			selectSolver()
+			break
 		}
 
 		dbg.Info("determining whether this match is more significant than last")
@@ -601,6 +635,21 @@ func challengeSpecForAuthorization(ctx context.Context, cl acmecl.Interface, iss
 	key, err := keyForChallenge(cl, selectedChallenge)
 	if err != nil {
 		return nil, err
+	}
+
+	// if order manually specified an ingress name and the selected solver
+	// allows this, then we switch the solver to use the specified ingress.
+	if hasManuallySpecifiedIngressName {
+		if selectedAllowsManuallySpecifiedIngress {
+			dbg.Info("was able to find a solver which allowed manually specified ingress")
+			selectedSolver = &cmapi.ACMEChallengeSolver{
+				HTTP01: &cmapi.ACMEChallengeSolverHTTP01{
+					Ingress: &cmapi.ACMEChallengeSolverHTTP01Ingress{Name: manuallySpecifiedIngressName},
+				},
+			}
+		} else {
+			dbg.Info("was unable to find a solver which allows manually specified ingress, fell back to a standard solver")
+		}
 	}
 
 	// 4. construct Challenge resource with spec.solver field set

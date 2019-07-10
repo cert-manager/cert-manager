@@ -363,6 +363,31 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 			},
 		},
 	}
+	emptySelectorManualSolver := v1alpha1.ACMEChallengeSolver{
+		HTTP01: &v1alpha1.ACMEChallengeSolverHTTP01{
+			Ingress: &v1alpha1.ACMEChallengeSolverHTTP01Ingress{
+				AllowManuallySpecifiedIngress: true,
+			},
+		},
+	}
+	exampleComDNSNameSelectorManualSolver := v1alpha1.ACMEChallengeSolver{
+		Selector: &v1alpha1.CertificateDNSNameSelector{
+			DNSNames: []string{"example.com"},
+		},
+		HTTP01: &v1alpha1.ACMEChallengeSolverHTTP01{
+			Ingress: &v1alpha1.ACMEChallengeSolverHTTP01Ingress{
+				AllowManuallySpecifiedIngress: true,
+			},
+		},
+	}
+	manuallySpecifiedIngressSolver := v1alpha1.ACMEChallengeSolver{
+		HTTP01: &v1alpha1.ACMEChallengeSolverHTTP01{
+			Ingress: &v1alpha1.ACMEChallengeSolverHTTP01Ingress{
+				Name: "ing-name",
+			},
+		},
+	}
+
 	// define ACME challenges that are used during tests
 	acmeChallengeHTTP01 := &acmeapi.Challenge{
 		Type:  "http-01",
@@ -1421,6 +1446,193 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 							Solvers: []v1alpha1.ACMEChallengeSolver{
 								exampleComDNSNameSelectorSolver,
 								emptySelectorSolverHTTP01,
+							},
+						},
+					},
+				},
+			},
+			order: &v1alpha1.Order{
+				Spec: v1alpha1.OrderSpec{
+					DNSNames: []string{"example.com"},
+				},
+			},
+			authz: &acmeapi.Authorization{
+				Identifier: acmeapi.AuthzID{
+					Value: "example.com",
+				},
+				Challenges: []*acmeapi.Challenge{acmeChallengeHTTP01},
+			},
+			expectedChallengeSpec: &v1alpha1.ChallengeSpec{
+				Type:    "http-01",
+				DNSName: "example.com",
+				Token:   acmeChallengeHTTP01.Token,
+				Key:     "http01",
+				Solver:  &exampleComDNSNameSelectorSolver,
+			},
+		},
+		"should use solver which allows manually specified ingress when ingress annotation has been set, and correctly set final solver": {
+			acmeClient: basicACMEClient,
+			issuer: &v1alpha1.Issuer{
+				Spec: v1alpha1.IssuerSpec{
+					IssuerConfig: v1alpha1.IssuerConfig{
+						ACME: &v1alpha1.ACMEIssuer{
+							Solvers: []v1alpha1.ACMEChallengeSolver{
+								emptySelectorManualSolver,
+							},
+						},
+					},
+				},
+			},
+			order: &v1alpha1.Order{
+				ObjectMeta: metav1.ObjectMeta{
+					Annotations: map[string]string{"http01.acme.certmanager.k8s.io/ingress-to-edit": "ing-name"},
+				},
+				Spec: v1alpha1.OrderSpec{
+					DNSNames: []string{"example.com"},
+				},
+			},
+			authz: &acmeapi.Authorization{
+				Identifier: acmeapi.AuthzID{
+					Value: "example.com",
+				},
+				Challenges: []*acmeapi.Challenge{acmeChallengeHTTP01},
+			},
+			expectedChallengeSpec: &v1alpha1.ChallengeSpec{
+				Type:    "http-01",
+				DNSName: "example.com",
+				Token:   acmeChallengeHTTP01.Token,
+				Key:     "http01",
+				Solver:  &manuallySpecifiedIngressSolver,
+			},
+		},
+		"should fall back to using standard solvers when ingress annotation set but no solver allowing it": {
+			acmeClient: basicACMEClient,
+			issuer: &v1alpha1.Issuer{
+				Spec: v1alpha1.IssuerSpec{
+					IssuerConfig: v1alpha1.IssuerConfig{
+						ACME: &v1alpha1.ACMEIssuer{
+							Solvers: []v1alpha1.ACMEChallengeSolver{
+								exampleComDNSNameSelectorSolver,
+							},
+						},
+					},
+				},
+			},
+			order: &v1alpha1.Order{
+				ObjectMeta: metav1.ObjectMeta{
+					Annotations: map[string]string{"http01.acme.certmanager.k8s.io/ingress-to-edit": "ing-name"},
+				},
+				Spec: v1alpha1.OrderSpec{
+					DNSNames: []string{"example.com"},
+				},
+			},
+			authz: &acmeapi.Authorization{
+				Identifier: acmeapi.AuthzID{
+					Value: "example.com",
+				},
+				Challenges: []*acmeapi.Challenge{acmeChallengeHTTP01},
+			},
+			expectedChallengeSpec: &v1alpha1.ChallengeSpec{
+				Type:    "http-01",
+				DNSName: "example.com",
+				Token:   acmeChallengeHTTP01.Token,
+				Key:     "http01",
+				Solver:  &exampleComDNSNameSelectorSolver,
+			},
+		},
+		"should fall back to using standard solvers when ingress annotation set but solver selector's do not match": {
+			acmeClient: basicACMEClient,
+			issuer: &v1alpha1.Issuer{
+				Spec: v1alpha1.IssuerSpec{
+					IssuerConfig: v1alpha1.IssuerConfig{
+						ACME: &v1alpha1.ACMEIssuer{
+							Solvers: []v1alpha1.ACMEChallengeSolver{
+								{
+									Selector: &v1alpha1.CertificateDNSNameSelector{
+										MatchLabels: map[string]string{
+											"label":    "does-not-exist",
+											"does-not": "match",
+										},
+									},
+									HTTP01: &v1alpha1.ACMEChallengeSolverHTTP01{
+										Ingress: &v1alpha1.ACMEChallengeSolverHTTP01Ingress{
+											AllowManuallySpecifiedIngress: true,
+										},
+									},
+								},
+								exampleComDNSNameSelectorSolver,
+							},
+						},
+					},
+				},
+			},
+			order: &v1alpha1.Order{
+				ObjectMeta: metav1.ObjectMeta{
+					Annotations: map[string]string{"http01.acme.certmanager.k8s.io/ingress-to-edit": "ing-name"},
+				},
+				Spec: v1alpha1.OrderSpec{
+					DNSNames: []string{"example.com"},
+				},
+			},
+			authz: &acmeapi.Authorization{
+				Identifier: acmeapi.AuthzID{
+					Value: "example.com",
+				},
+				Challenges: []*acmeapi.Challenge{acmeChallengeHTTP01},
+			},
+			expectedChallengeSpec: &v1alpha1.ChallengeSpec{
+				Type:    "http-01",
+				DNSName: "example.com",
+				Token:   acmeChallengeHTTP01.Token,
+				Key:     "http01",
+				Solver:  &exampleComDNSNameSelectorSolver,
+			},
+		},
+		"should use solver which allows manually specified ingress names when annotation is set, over other solvers": {
+			acmeClient: basicACMEClient,
+			issuer: &v1alpha1.Issuer{
+				Spec: v1alpha1.IssuerSpec{
+					IssuerConfig: v1alpha1.IssuerConfig{
+						ACME: &v1alpha1.ACMEIssuer{
+							Solvers: []v1alpha1.ACMEChallengeSolver{
+								exampleComDNSNameSelectorSolver,
+								exampleComDNSNameSelectorManualSolver,
+							},
+						},
+					},
+				},
+			},
+			order: &v1alpha1.Order{
+				ObjectMeta: metav1.ObjectMeta{
+					Annotations: map[string]string{"http01.acme.certmanager.k8s.io/ingress-to-edit": "ing-name"},
+				},
+				Spec: v1alpha1.OrderSpec{
+					DNSNames: []string{"example.com"},
+				},
+			},
+			authz: &acmeapi.Authorization{
+				Identifier: acmeapi.AuthzID{
+					Value: "example.com",
+				},
+				Challenges: []*acmeapi.Challenge{acmeChallengeHTTP01},
+			},
+			expectedChallengeSpec: &v1alpha1.ChallengeSpec{
+				Type:    "http-01",
+				DNSName: "example.com",
+				Token:   acmeChallengeHTTP01.Token,
+				Key:     "http01",
+				Solver:  &manuallySpecifiedIngressSolver,
+			},
+		},
+		"should not choose solver which allows manually specified ingress name when annotation is not set, over others": {
+			acmeClient: basicACMEClient,
+			issuer: &v1alpha1.Issuer{
+				Spec: v1alpha1.IssuerSpec{
+					IssuerConfig: v1alpha1.IssuerConfig{
+						ACME: &v1alpha1.ACMEIssuer{
+							Solvers: []v1alpha1.ACMEChallengeSolver{
+								exampleComDNSNameSelectorSolver,
+								exampleComDNSNameSelectorManualSolver,
 							},
 						},
 					},
