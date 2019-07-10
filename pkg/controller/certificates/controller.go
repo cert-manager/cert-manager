@@ -58,6 +58,7 @@ type controller struct {
 
 	// used for testing
 	clock clock.Clock
+
 	// used to record Events about resources to the API
 	recorder record.EventRecorder
 
@@ -82,12 +83,14 @@ type controller struct {
 	// and certificate spec.
 	// This is a field on the controller struct to avoid having to maintain a reference
 	// to the controller context, and to make it easier to fake out this call during tests.
-	calculateDurationUntilRenew func(ctx context.Context, cert *x509.Certificate, crt *v1alpha1.Certificate) time.Duration
+	calculateDurationUntilRenew calculateDurationUntilRenewFn
 
 	// if addOwnerReferences is enabled then the controller will add owner references
 	// to the secret resources it creates
 	addOwnerReferences bool
 }
+
+type calculateDurationUntilRenewFn func(context.Context, *x509.Certificate, *v1alpha1.Certificate) time.Duration
 
 // Register registers and constructs the controller using the provided context.
 // It returns the workqueue to be used to enqueue items, a list of
@@ -133,9 +136,9 @@ func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitin
 	// register handler functions
 	certificateInformer.Informer().AddEventHandler(&controllerpkg.QueuingEventHandler{Queue: c.queue})
 	issuerInformer.Informer().AddEventHandler(&controllerpkg.BlockingEventHandler{WorkFunc: c.handleGenericIssuer})
-	secretsInformer.Informer().AddEventHandler(&controllerpkg.BlockingEventHandler{WorkFunc: c.handleSecretResource})
+	secretsInformer.Informer().AddEventHandler(&controllerpkg.BlockingEventHandler{WorkFunc: secretResourceHandler(c.log, c.certificateLister, c.queue)})
 	ordersInformer.Informer().AddEventHandler(&controllerpkg.BlockingEventHandler{
-		WorkFunc: controllerpkg.HandleOwnedResourceNamespacedFunc(c.log, c.queue, certificateGvk, c.certificateGetter),
+		WorkFunc: controllerpkg.HandleOwnedResourceNamespacedFunc(c.log, c.queue, certificateGvk, certificateGetter(c.certificateLister)),
 	})
 
 	// Create a scheduled work queue that calls the ctrl.queue.Add method for
@@ -173,30 +176,48 @@ func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitin
 }
 
 func (c *controller) ProcessItem(ctx context.Context, key string) error {
+	ctx = logf.NewContext(ctx, nil, ControllerName)
 	log := logf.FromContext(ctx)
-	namespace, name, err := cache.SplitMetaNamespaceKey(key)
-	if err != nil {
-		log.Error(err, "invalid resource key")
+
+	crt, err := getCertificateForKey(ctx, key, c.certificateLister)
+	if k8sErrors.IsNotFound(err) {
+		log.Error(err, "certificate resource not found for key", "key", key)
 		return nil
 	}
-
-	crt, err := c.certificateLister.Certificates(namespace).Get(name)
+	if crt == nil {
+		log.Info("certificate resource not found for key", "key", key)
+		return nil
+	}
 	if err != nil {
-		if k8sErrors.IsNotFound(err) {
-			c.scheduledWorkQueue.Forget(key)
-			log.Error(err, "certificate in work queue no longer exists")
-			return nil
-		}
-
 		return err
 	}
 
-	ctx = logf.NewContext(ctx, logf.WithResource(log, crt))
 	return c.Sync(ctx, crt)
 }
 
-func (c *controller) certificateGetter(namespace, name string) (interface{}, error) {
-	return c.certificateLister.Certificates(namespace).Get(name)
+type syncFn func(context.Context, *v1alpha1.Certificate) error
+
+func getCertificateForKey(ctx context.Context, key string, lister cmlisters.CertificateLister) (*v1alpha1.Certificate, error) {
+	namespace, name, err := cache.SplitMetaNamespaceKey(key)
+	if err != nil {
+		return nil, nil
+	}
+
+	crt, err := lister.Certificates(namespace).Get(name)
+	if k8sErrors.IsNotFound(err) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	return crt, nil
+}
+
+func certificateGetter(lister cmlisters.CertificateLister) func(namespace, name string) (interface{}, error) {
+	return func(namespace, name string) (interface{}, error) {
+		return lister.Certificates(namespace).Get(name)
+	}
 }
 
 var keyFunc = controllerpkg.KeyFunc
