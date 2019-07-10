@@ -100,3 +100,9 @@ func SetCertificateRequestNamespace(namespace string) CertificateRequestModifier
 		cr.ObjectMeta.Namespace = namespace
 	}
 }
+
+func SetCertificateRequestName(name string) CertificateRequestModifier {
+	return func(cr *v1alpha1.CertificateRequest) {
+		cr.ObjectMeta.Name = name
+	}
+}

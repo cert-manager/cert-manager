@@ -17,6 +17,8 @@ limitations under the License.
 package gen
 
 import (
+	"time"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
@@ -88,6 +90,18 @@ func SetCertificateKeyEncoding(keyEncoding v1alpha1.KeyEncoding) CertificateModi
 func SetCertificateSecretName(secretName string) CertificateModifier {
 	return func(crt *v1alpha1.Certificate) {
 		crt.Spec.SecretName = secretName
+	}
+}
+
+func SetCertificateDuration(duration time.Duration) CertificateModifier {
+	return func(crt *v1alpha1.Certificate) {
+		crt.Spec.Duration = &metav1.Duration{Duration: duration}
+	}
+}
+
+func SetCertificateRenewBefore(renewBefore time.Duration) CertificateModifier {
+	return func(crt *v1alpha1.Certificate) {
+		crt.Spec.RenewBefore = &metav1.Duration{Duration: renewBefore}
 	}
 }
 

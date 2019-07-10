@@ -3,6 +3,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 go_library(
     name = "go_default_library",
     srcs = [
+        "certificate_request.go",
         "checks.go",
         "controller.go",
         "sync.go",
@@ -59,6 +60,7 @@ filegroup(
 go_test(
     name = "go_default_test",
     srcs = [
+        "certificate_request_test.go",
         "sync_test.go",
         "util_test.go",
     ],
