@@ -16,12 +16,12 @@ Cert-manager needs to be able to add records to CloudDNS in order to solve the D
    For this guide the ``gcloud`` command will be used to set up the service account. Ensure that ``gcloud`` is in using the correct project and zone before entering the commands. These steps could also be completed using the Cloud Console.
 
 .. code-block:: shell
-
+   export PROJECT_ID=myproject-id
    gcloud iam service-accounts create dns01-solver \
     --display-name "dns01-solver"
    # Replace both uses of project-id with the id of your project
-   gcloud projects add-iam-policy-binding project-id \
-    --member serviceAccount:dns01-solver@project-id.iam.gserviceaccount.com \
+   gcloud projects add-iam-policy-binding $PROJECT_ID \
+    --member serviceAccount:dns01-solver@$PROJECT_ID.iam.gserviceaccount.com \
     --role roles/dns.admin
 
 Create a Service Account Secret
@@ -33,7 +33,7 @@ To access this service account cert-manager uses a key stored in a Kubernetes Se
 
    # Replace use of project-id with the id of your project
    gcloud iam service-accounts keys create key.json \
-    --iam-account dns01-solver@project-id.iam.gserviceaccount.com
+    --iam-account dns01-solver@$PROJECT_ID.iam.gserviceaccount.com
    kubectl create secret generic clouddns-dns01-solver-svc-acct \
     --from-file=key.json
 
@@ -60,7 +60,7 @@ Next, create an Issuer (or ClusterIssuer) with a ``clouddns`` provider. An examp
        - dns01:
            clouddns:
              # The ID of the GCP project
-             project: my-project-id
+             project: $PROJECT_ID
              # This is the secret used to access the service account
              serviceAccountSecretRef:
                name: clouddns-dns01-solver-svc-acct
