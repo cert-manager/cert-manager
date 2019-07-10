@@ -113,7 +113,7 @@ var serialNumberLimit = new(big.Int).Lsh(big.NewInt(1), 128)
 // by issuers that utilise CSRs to obtain Certificates.
 // The CSR will not be signed, and should be passed to either EncodeCSR or
 // to the x509.CreateCertificateRequest function.
-func GenerateCSR(issuer v1alpha1.GenericIssuer, crt *v1alpha1.Certificate) (*x509.CertificateRequest, error) {
+func GenerateCSR(crt *v1alpha1.Certificate) (*x509.CertificateRequest, error) {
 	commonName := CommonNameForCertificate(crt)
 	dnsNames := DNSNamesForCertificate(crt)
 	iPAddresses := IPAddressesForCertificate(crt)

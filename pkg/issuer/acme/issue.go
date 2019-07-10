@@ -305,7 +305,7 @@ func (a *Acme) createNewOrder(ctx context.Context, crt *v1alpha1.Certificate, te
 
 	log.V(4).Info("Creating new Order resource for Certificate")
 
-	csr, err := pki.GenerateCSR(a.issuer, crt)
+	csr, err := pki.GenerateCSR(crt)
 	if err != nil {
 		// TODO: what errors can be produced here? some error types might
 		// be permanent, and we should handle that properly.
