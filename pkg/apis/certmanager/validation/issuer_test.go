@@ -103,6 +103,7 @@ func TestValidateVaultIssuerConfig(t *testing.T) {
 
 func TestValidateACMEIssuerConfig(t *testing.T) {
 	fldPath := field.NewPath("")
+	ingressClass := "ing-class"
 	scenarios := map[string]struct {
 		spec *v1alpha1.ACMEIssuer
 		errs []*field.Error
@@ -157,7 +158,7 @@ func TestValidateACMEIssuerConfig(t *testing.T) {
 				HTTP01:     &v1alpha1.ACMEIssuerHTTP01Config{},
 			},
 		},
-		"acme issue with valid http01 service config serviceType ClusterIP": {
+		"acme issuer with valid http01 service config serviceType ClusterIP": {
 			spec: &v1alpha1.ACMEIssuer{
 				Email:      "valid-email",
 				Server:     "valid-server",
@@ -167,7 +168,7 @@ func TestValidateACMEIssuerConfig(t *testing.T) {
 				},
 			},
 		},
-		"acme issue with valid http01 service config serviceType NodePort": {
+		"acme issuer with valid http01 service config serviceType NodePort": {
 			spec: &v1alpha1.ACMEIssuer{
 				Email:      "valid-email",
 				Server:     "valid-server",
@@ -177,7 +178,7 @@ func TestValidateACMEIssuerConfig(t *testing.T) {
 				},
 			},
 		},
-		"acme issue with valid http01 service config serviceType (empty string)": {
+		"acme issuer with valid http01 service config serviceType (empty string)": {
 			spec: &v1alpha1.ACMEIssuer{
 				Email:      "valid-email",
 				Server:     "valid-server",
@@ -187,7 +188,7 @@ func TestValidateACMEIssuerConfig(t *testing.T) {
 				},
 			},
 		},
-		"acme issue with invalid http01 service config": {
+		"acme issuer with invalid http01 service config": {
 			spec: &v1alpha1.ACMEIssuer{
 				Email:      "valid-email",
 				Server:     "valid-server",
@@ -200,7 +201,7 @@ func TestValidateACMEIssuerConfig(t *testing.T) {
 				field.Invalid(fldPath.Child("http01", "serviceType"), corev1.ServiceType("InvalidServiceType"), "optional field serviceType must be one of [\"ClusterIP\" \"NodePort\"]"),
 			},
 		},
-		"acme issue with valid pod template ObjectMeta attributes": {
+		"acme issuer with valid pod template ObjectMeta attributes": {
 			spec: &v1alpha1.ACMEIssuer{
 				Email:      "valid-email",
 				Server:     "valid-server",
@@ -223,12 +224,9 @@ func TestValidateACMEIssuerConfig(t *testing.T) {
 						},
 					},
 				},
-				HTTP01: &v1alpha1.ACMEIssuerHTTP01Config{
-					ServiceType: corev1.ServiceType("NodePort"),
-				},
 			},
 		},
-		"acme issue with invalid pod template ObjectMeta attributes": {
+		"acme issuer with invalid pod template ObjectMeta attributes": {
 			spec: &v1alpha1.ACMEIssuer{
 				Email:      "valid-email",
 				Server:     "valid-server",
@@ -256,7 +254,7 @@ func TestValidateACMEIssuerConfig(t *testing.T) {
 					"", "only labels and annotations may be set on podTemplate metadata"),
 			},
 		},
-		"acme issue with valid pod template PodSpec attributes": {
+		"acme issuer with valid pod template PodSpec attributes": {
 			spec: &v1alpha1.ACMEIssuer{
 				Email:      "valid-email",
 				Server:     "valid-server",
@@ -283,12 +281,9 @@ func TestValidateACMEIssuerConfig(t *testing.T) {
 						},
 					},
 				},
-				HTTP01: &v1alpha1.ACMEIssuerHTTP01Config{
-					ServiceType: corev1.ServiceType("NodePort"),
-				},
 			},
 		},
-		"acme issue with valid pod template ObjectMeta and PodSpec attributes": {
+		"acme issuer with valid pod template ObjectMeta and PodSpec attributes": {
 			spec: &v1alpha1.ACMEIssuer{
 				Email:      "valid-email",
 				Server:     "valid-server",
@@ -313,8 +308,80 @@ func TestValidateACMEIssuerConfig(t *testing.T) {
 						},
 					},
 				},
-				HTTP01: &v1alpha1.ACMEIssuerHTTP01Config{
-					ServiceType: corev1.ServiceType("NodePort"),
+			},
+		},
+		"acme issuer with invalid ingress specifiers with class and name": {
+			spec: &v1alpha1.ACMEIssuer{
+				Email:      "valid-email",
+				Server:     "valid-server",
+				PrivateKey: validSecretKeyRef,
+				Solvers: []v1alpha1.ACMEChallengeSolver{
+					{
+						HTTP01: &v1alpha1.ACMEChallengeSolverHTTP01{
+							Ingress: &v1alpha1.ACMEChallengeSolverHTTP01Ingress{
+								Class: &ingressClass,
+								Name:  "name",
+							},
+						},
+					},
+				},
+			},
+			errs: []*field.Error{
+				field.Forbidden(fldPath.Child("solver", "http01", "ingress", "name"),
+					"may not specify more than one of class, name, or allowManuallySpecifiedIngress"),
+			},
+		},
+		"acme issuer with invalid ingress specifiers with name and allowManuallySpecifiedIngress": {
+			spec: &v1alpha1.ACMEIssuer{
+				Email:      "valid-email",
+				Server:     "valid-server",
+				PrivateKey: validSecretKeyRef,
+				Solvers: []v1alpha1.ACMEChallengeSolver{
+					{
+						HTTP01: &v1alpha1.ACMEChallengeSolverHTTP01{
+							Ingress: &v1alpha1.ACMEChallengeSolverHTTP01Ingress{
+								Name:                          "name",
+								AllowManuallySpecifiedIngress: true,
+							},
+						},
+					},
+				},
+			},
+			errs: []*field.Error{
+				field.Forbidden(fldPath.Child("solver", "http01", "ingress", "allowManuallySpecifiedIngress"),
+					"may not specify more than one of class, name, or allowManuallySpecifiedIngress"),
+			},
+		},
+		"acme issuer with valid ingress specifier": {
+			spec: &v1alpha1.ACMEIssuer{
+				Email:      "valid-email",
+				Server:     "valid-server",
+				PrivateKey: validSecretKeyRef,
+				Solvers: []v1alpha1.ACMEChallengeSolver{
+					{
+						HTTP01: &v1alpha1.ACMEChallengeSolverHTTP01{
+							Ingress: &v1alpha1.ACMEChallengeSolverHTTP01Ingress{
+								Class: &ingressClass,
+							},
+						},
+					},
+				},
+			},
+		},
+		"acme issuer with valid ingress specifier and allowManuallySpecifiedIngress false": {
+			spec: &v1alpha1.ACMEIssuer{
+				Email:      "valid-email",
+				Server:     "valid-server",
+				PrivateKey: validSecretKeyRef,
+				Solvers: []v1alpha1.ACMEChallengeSolver{
+					{
+						HTTP01: &v1alpha1.ACMEChallengeSolverHTTP01{
+							Ingress: &v1alpha1.ACMEChallengeSolverHTTP01Ingress{
+								Class:                         &ingressClass,
+								AllowManuallySpecifiedIngress: false,
+							},
+						},
+					},
 				},
 			},
 		},
