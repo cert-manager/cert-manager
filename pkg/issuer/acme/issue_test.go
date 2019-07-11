@@ -119,10 +119,14 @@ func TestIssueHappyPath(t *testing.T) {
 			CommonName: "test.com",
 		},
 	}
-	testCertCSR, err := pki.EncodeCSR(testCertCSRTemplate, pk)
+	testCertCSRDER, err := pki.EncodeCSR(testCertCSRTemplate, pk)
 	if err != nil {
 		t.Errorf("error generating csr1: %v", err)
 	}
+	// encode the DER CSR bytes into PEM format
+	testCertCSR := pem.EncodeToMemory(&pem.Block{
+		Type: "CERTIFICATE REQUEST", Bytes: testCertCSRDER,
+	})
 
 	// build actual test fixtures
 	testCert := &v1alpha1.Certificate{
@@ -327,14 +331,22 @@ func TestIssueRetryCases(t *testing.T) {
 			CommonName: "test.com",
 		},
 	}
-	testCSR1, err := pki.EncodeCSR(testCertCSRTemplate, pk1)
+	testCSR1DER, err := pki.EncodeCSR(testCertCSRTemplate, pk1)
 	if err != nil {
 		t.Errorf("error generating csr1: %v", err)
 	}
-	testCSR2, err := pki.EncodeCSR(testCertCSRTemplate, pk2)
+	// encode the DER CSR bytes into PEM format
+	testCSR1 := pem.EncodeToMemory(&pem.Block{
+		Type: "CERTIFICATE REQUEST", Bytes: testCSR1DER,
+	})
+	testCSR2DER, err := pki.EncodeCSR(testCertCSRTemplate, pk2)
 	if err != nil {
 		t.Errorf("error generating csr2: %v", err)
 	}
+	// encode the DER CSR bytes into PEM format
+	testCSR2 := pem.EncodeToMemory(&pem.Block{
+		Type: "CERTIFICATE REQUEST", Bytes: testCSR2DER,
+	})
 
 	testCert := &v1alpha1.Certificate{
 		ObjectMeta: metav1.ObjectMeta{Name: "testcrt", Namespace: "default"},
