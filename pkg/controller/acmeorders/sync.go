@@ -452,8 +452,12 @@ func challengeSpecForAuthorization(ctx context.Context, cl acmecl.Interface, iss
 			continue
 		}
 
-		if cfg.Selector == nil && selectedSolver == nil {
-			dbg.Info("selecting solver due to nil selector and no previously selected solver")
+		if cfg.Selector == nil {
+			if selectedSolver != nil {
+				dbg.Info("not selecting solver as previously selected solver has a just as or more specific selector")
+				continue
+			}
+			dbg.Info("selecting solver due to match all selector and no previously selected solver")
 			selectedSolver = cfg.DeepCopy()
 			selectedChallenge = acmech
 			continue

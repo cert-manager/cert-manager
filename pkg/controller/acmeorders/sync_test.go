@@ -1412,6 +1412,39 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 				},
 			},
 		},
+		"uses correct solver when selector explicitly names dnsName (reversed)": {
+			acmeClient: basicACMEClient,
+			issuer: &v1alpha1.Issuer{
+				Spec: v1alpha1.IssuerSpec{
+					IssuerConfig: v1alpha1.IssuerConfig{
+						ACME: &v1alpha1.ACMEIssuer{
+							Solvers: []v1alpha1.ACMEChallengeSolver{
+								exampleComDNSNameSelectorSolver,
+								emptySelectorSolverHTTP01,
+							},
+						},
+					},
+				},
+			},
+			order: &v1alpha1.Order{
+				Spec: v1alpha1.OrderSpec{
+					DNSNames: []string{"example.com"},
+				},
+			},
+			authz: &acmeapi.Authorization{
+				Identifier: acmeapi.AuthzID{
+					Value: "example.com",
+				},
+				Challenges: []*acmeapi.Challenge{acmeChallengeHTTP01},
+			},
+			expectedChallengeSpec: &v1alpha1.ChallengeSpec{
+				Type:    "http-01",
+				DNSName: "example.com",
+				Token:   acmeChallengeHTTP01.Token,
+				Key:     "http01",
+				Solver:  &exampleComDNSNameSelectorSolver,
+			},
+		},
 	}
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
