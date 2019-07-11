@@ -198,9 +198,25 @@ func (c *Controller) Sync(ctx context.Context, o *cmapi.Order) (err error) {
 	// if the current state is 'ready', we need to generate a CSR and finalize
 	// the order
 	case cmapi.Ready:
+
+		// Due to a bug in the initial release of this controller, we previously
+		// only supported DER encoded CSRs and not PEM encoded as they are intended
+		// to be as part of our API.
+		// To work around this, we first attempt to decode the CSR into DER bytes
+		// by running pem.Decode. If the PEM block is empty, we assume that the CSR
+		// is DER encoded and continue to call FinalizeOrder.
+		var derBytes []byte
+		block, _ := pem.Decode(o.Spec.CSR)
+		if block == nil {
+			log.Info("failed to parse CSR as PEM data, attempting to treat CSR as DER encoded for compatibility reasons")
+			derBytes = o.Spec.CSR
+		} else {
+			derBytes = block.Bytes
+		}
+
 		// TODO: we could retrieve a copy of the certificate resource here and
 		// stored it on the Order resource to prevent extra calls to the API
-		certSlice, err := cl.FinalizeOrder(ctx, o.Status.FinalizeURL, o.Spec.CSR)
+		certSlice, err := cl.FinalizeOrder(ctx, o.Status.FinalizeURL, derBytes)
 
 		// always update the order status after calling Finalize - this allows
 		// us to record the current orders status on this order resource

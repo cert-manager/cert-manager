@@ -19,8 +19,8 @@ package acme
 import (
 	"context"
 	"crypto"
-	"crypto/x509"
 	"encoding/json"
+	"encoding/pem"
 	"fmt"
 	"hash/fnv"
 	"time"
@@ -315,13 +315,18 @@ func (a *Acme) createNewOrder(ctx context.Context, crt *v1alpha1.Certificate, te
 		return err
 	}
 
-	csrBytes, err := pki.EncodeCSR(csr, key)
+	csrDER, err := pki.EncodeCSR(csr, key)
 	if err != nil {
 		return err
 	}
 
+	// encode the DER CSR bytes into PEM format
+	csrPEM := pem.EncodeToMemory(&pem.Block{
+		Type: "CERTIFICATE REQUEST", Bytes: csrDER,
+	})
+
 	// set the CSR field on the order to be created
-	template.Spec.CSR = csrBytes
+	template.Spec.CSR = csrPEM
 
 	o, err := a.CMClient.CertmanagerV1alpha1().Orders(template.Namespace).Create(template)
 	if err != nil {
@@ -363,7 +368,7 @@ func existingOrderIsValidForKey(o *v1alpha1.Order, key crypto.Signer) (bool, err
 		// Handles a weird case where an Order exists *without* a CSR set
 		return false, nil
 	}
-	existingCSR, err := x509.ParseCertificateRequest(csrBytes)
+	existingCSR, err := pki.DecodeX509CertificateRequestBytes(csrBytes)
 	if err != nil {
 		// Absorb invalid CSR data as 'not valid'
 		return false, nil
