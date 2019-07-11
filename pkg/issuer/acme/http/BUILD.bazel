@@ -5,6 +5,7 @@ go_library(
     srcs = [
         "http.go",
         "ingress.go",
+        "networkpolicy.go",
         "pod.go",
         "service.go",
     ],
@@ -18,6 +19,7 @@ go_library(
         "//pkg/util:go_default_library",
         "//vendor/k8s.io/api/core/v1:go_default_library",
         "//vendor/k8s.io/api/extensions/v1beta1:go_default_library",
+        "//vendor/k8s.io/api/networking/v1:go_default_library",
         "//vendor/k8s.io/apimachinery/pkg/api/errors:go_default_library",
         "//vendor/k8s.io/apimachinery/pkg/apis/meta/v1:go_default_library",
         "//vendor/k8s.io/apimachinery/pkg/labels:go_default_library",
@@ -26,6 +28,7 @@ go_library(
         "//vendor/k8s.io/apimachinery/pkg/util/intstr:go_default_library",
         "//vendor/k8s.io/client-go/listers/core/v1:go_default_library",
         "//vendor/k8s.io/client-go/listers/extensions/v1beta1:go_default_library",
+        "//vendor/k8s.io/client-go/listers/networking/v1:go_default_library",
     ],
 )
 
@@ -34,6 +37,7 @@ go_test(
     srcs = [
         "http_test.go",
         "ingress_test.go",
+        "networkpolicy_test.go",
         "pod_test.go",
         "service_test.go",
         "util_test.go",
@@ -45,6 +49,7 @@ go_test(
         "//test/util/generate:go_default_library",
         "//vendor/k8s.io/api/core/v1:go_default_library",
         "//vendor/k8s.io/api/extensions/v1beta1:go_default_library",
+        "//vendor/k8s.io/api/networking/v1:go_default_library",
         "//vendor/k8s.io/apimachinery/pkg/api/errors:go_default_library",
         "//vendor/k8s.io/apimachinery/pkg/apis/meta/v1:go_default_library",
         "//vendor/k8s.io/apimachinery/pkg/labels:go_default_library",

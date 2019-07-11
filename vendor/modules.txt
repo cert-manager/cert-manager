@@ -447,6 +447,7 @@ k8s.io/api/core/v1
 k8s.io/api/admission/v1beta1
 k8s.io/api/admissionregistration/v1beta1
 k8s.io/api/extensions/v1beta1
+k8s.io/api/networking/v1
 k8s.io/api/authorization/v1
 k8s.io/api/rbac/v1
 k8s.io/api/apps/v1
@@ -463,7 +464,6 @@ k8s.io/api/certificates/v1beta1
 k8s.io/api/coordination/v1
 k8s.io/api/coordination/v1beta1
 k8s.io/api/events/v1beta1
-k8s.io/api/networking/v1
 k8s.io/api/networking/v1beta1
 k8s.io/api/node/v1alpha1
 k8s.io/api/node/v1beta1
@@ -651,6 +651,7 @@ k8s.io/client-go/tools/cache
 k8s.io/client-go/util/workqueue
 k8s.io/client-go/listers/extensions/v1beta1
 k8s.io/client-go/kubernetes/fake
+k8s.io/client-go/listers/networking/v1
 k8s.io/client-go/tools/clientcmd
 k8s.io/client-go/tools/clientcmd/api
 k8s.io/client-go/plugin/pkg/client/auth/azure
@@ -816,7 +817,6 @@ k8s.io/client-go/listers/certificates/v1beta1
 k8s.io/client-go/listers/coordination/v1
 k8s.io/client-go/listers/coordination/v1beta1
 k8s.io/client-go/listers/events/v1beta1
-k8s.io/client-go/listers/networking/v1
 k8s.io/client-go/listers/networking/v1beta1
 k8s.io/client-go/listers/node/v1alpha1
 k8s.io/client-go/listers/node/v1beta1
