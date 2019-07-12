@@ -27,29 +27,27 @@ import (
 
 // Validation functions for cert-manager v1alpha1 Certificate types
 
-func ValidateCertificate(crt *v1alpha1.Certificate) field.ErrorList {
-	allErrs := ValidateCertificateSpec(&crt.Spec, field.NewPath("spec"))
-	return allErrs
-}
-
 func ValidateCertificateSpec(crt *v1alpha1.CertificateSpec, fldPath *field.Path) field.ErrorList {
 	el := field.ErrorList{}
 	if crt.SecretName == "" {
 		el = append(el, field.Required(fldPath.Child("secretName"), "must be specified"))
 	}
-	issuerRefPath := fldPath.Child("issuerRef")
-	if crt.IssuerRef.Name == "" {
-		el = append(el, field.Required(issuerRefPath.Child("name"), "must be specified"))
-	}
-	switch crt.IssuerRef.Kind {
-	case "":
-	case "Issuer", "ClusterIssuer":
-	default:
-		el = append(el, field.Invalid(issuerRefPath.Child("kind"), crt.IssuerRef.Kind, "must be one of Issuer or ClusterIssuer"))
-	}
+
+	el = append(el, validateIssuerRef(crt.IssuerRef, fldPath)...)
+
 	if len(crt.CommonName) == 0 && len(crt.DNSNames) == 0 {
 		el = append(el, field.Required(fldPath.Child("dnsNames"), "at least one dnsName is required if commonName is not set"))
 	}
+	// if a common name has been specified, ensure it is no longer than 64 chars
+	if len(crt.CommonName) > 64 {
+		el = append(el, field.TooLong(fldPath.Child("commonName"), crt.CommonName, 64))
+	}
+	// if the common name has *not* been specified, ensure the first dnsName is no longer than 64 chars
+	// as it will be used as the commonName
+	if crt.CommonName == "" && len(crt.DNSNames) > 0 && len(crt.DNSNames[0]) > 64 {
+		el = append(el, field.TooLong(fldPath.Child("dnsNames").Index(0), crt.DNSNames[0], 64))
+	}
+
 	if len(crt.IPAddresses) > 0 {
 		el = append(el, validateIPAddresses(crt, fldPath)...)
 	}
@@ -110,6 +108,28 @@ func validateACMEConfigForAllDNSNames(a *v1alpha1.CertificateSpec, fldPath *fiel
 			el = append(el, field.Required(acmeFldPath.Child("config"), errFn(d)))
 		}
 	}
+	return el
+}
+
+func ValidateCertificate(crt *v1alpha1.Certificate) field.ErrorList {
+	allErrs := ValidateCertificateSpec(&crt.Spec, field.NewPath("spec"))
+	return allErrs
+}
+
+func validateIssuerRef(issuerRef v1alpha1.ObjectReference, fldPath *field.Path) field.ErrorList {
+	el := field.ErrorList{}
+
+	issuerRefPath := fldPath.Child("issuerRef")
+	if issuerRef.Name == "" {
+		el = append(el, field.Required(issuerRefPath.Child("name"), "must be specified"))
+	}
+	switch issuerRef.Kind {
+	case "":
+	case "Issuer", "ClusterIssuer":
+	default:
+		el = append(el, field.Invalid(issuerRefPath.Child("kind"), issuerRef.Kind, "must be one of Issuer or ClusterIssuer"))
+	}
+
 	return el
 }
 

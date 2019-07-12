@@ -5,6 +5,7 @@ go_library(
     srcs = [
         "certificate.go",
         "certificate_for_issuer.go",
+        "certificaterequest.go",
         "clusterissuer.go",
         "issuer.go",
     ],
@@ -14,6 +15,7 @@ go_library(
         "//pkg/api/util:go_default_library",
         "//pkg/apis/certmanager/v1alpha1:go_default_library",
         "//pkg/issuer/acme/dns/rfc2136:go_default_library",
+        "//pkg/util/pki:go_default_library",
         "//vendor/k8s.io/api/core/v1:go_default_library",
         "//vendor/k8s.io/apimachinery/pkg/apis/meta/v1:go_default_library",
         "//vendor/k8s.io/apimachinery/pkg/util/validation/field:go_default_library",

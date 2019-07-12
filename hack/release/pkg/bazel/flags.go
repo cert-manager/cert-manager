@@ -86,7 +86,10 @@ func (g *Bazel) Build(ctx context.Context, targets ...string) *exec.Cmd {
 // Bazel's --platforms variable will be set automatically.
 func (g *Bazel) BuildPlatform(ctx context.Context, os, arch string, targets ...string) *exec.Cmd {
 	platform := fmt.Sprintf("--platforms=@io_bazel_rules_go//go/toolchain:%s_%s", os, arch)
-	return g.Cmd(ctx, append([]string{"build", platform}, targets...)...)
+	// Set --stamp=true when running a build to workaround issues introduced
+	// in bazelbuild/rules_go#2110. For more information, see: https://github.com/bazelbuild/rules_go/pull/2110#issuecomment-508713878
+	// We should be able to remove the `--stamp=true` arg once this has been fixed!
+	return g.Cmd(ctx, append([]string{"build", platform, "--stamp=true"}, targets...)...)
 }
 
 // BuildE will build the given targets for the current host OS.
@@ -116,7 +119,7 @@ func (g *Bazel) Run(ctx context.Context, target string, args ...string) *exec.Cm
 // Bazel's --platforms variable will be set automatically.
 func (g *Bazel) RunPlatform(ctx context.Context, os, arch, target string, args ...string) *exec.Cmd {
 	platform := fmt.Sprintf("--platforms=@io_bazel_rules_go//go/toolchain:%s_%s", os, arch)
-	return g.Cmd(ctx, append([]string{"run", platform, target}, args...)...)
+	return g.Cmd(ctx, append([]string{"run", platform, "--stamp=true", target}, args...)...)
 }
 
 // RunE will run the given targets on the current host OS.

@@ -62,7 +62,7 @@ type dnsProviderConstructors struct {
 	cloudDNS     func(project string, serviceAccount []byte, dns01Nameservers []string, ambient bool) (*clouddns.DNSProvider, error)
 	cloudFlare   func(email, apikey string, dns01Nameservers []string) (*cloudflare.DNSProvider, error)
 	route53      func(accessKey, secretKey, hostedZoneID, region string, ambient bool, dns01Nameservers []string) (*route53.DNSProvider, error)
-	azureDNS     func(clientID, clientSecret, subscriptionID, tenantID, resourceGroupName, hostedZoneName string, dns01Nameservers []string) (*azuredns.DNSProvider, error)
+	azureDNS     func(environment, clientID, clientSecret, subscriptionID, tenantID, resourceGroupName, hostedZoneName string, dns01Nameservers []string) (*azuredns.DNSProvider, error)
 	acmeDNS      func(host string, accountJson []byte, dns01Nameservers []string) (*acmedns.DNSProvider, error)
 	digitalOcean func(token string, dns01Nameservers []string) (*digitalocean.DNSProvider, error)
 }
@@ -345,6 +345,7 @@ func (s *Solver) solverForChallenge(ctx context.Context, issuer v1alpha1.Generic
 		}
 
 		impl, err = s.dnsProviderConstructors.azureDNS(
+			providerConfig.AzureDNS.Environment,
 			providerConfig.AzureDNS.ClientID,
 			string(clientSecretBytes),
 			providerConfig.AzureDNS.SubscriptionID,
@@ -452,22 +453,27 @@ func (s *Solver) dns01SolverForConfig(config *v1alpha1.ACMEChallengeSolverDNS01)
 	return p, c, nil
 }
 
-var WebhookSolvers = []webhook.Solver{
-	&webhookslv.Webhook{},
-	&rfc2136.Solver{},
-}
-
 // NewSolver creates a Solver which can instantiate the appropriate DNS
 // provider.
 func NewSolver(ctx *controller.Context) (*Solver, error) {
+	webhookSolvers := []webhook.Solver{
+		&webhookslv.Webhook{},
+		rfc2136.New(rfc2136.WithNamespace(ctx.Namespace)),
+	}
+
 	initialized := make(map[string]webhook.Solver)
-	// initialize all DNS providers
-	for _, s := range WebhookSolvers {
-		err := s.Initialize(ctx.RESTConfig, ctx.StopCh)
-		if err != nil {
-			return nil, fmt.Errorf("error intializing DNS provider %q: %v", s.Name(), err)
+
+	// the RESTConfig may be nil if we are running in a unit test environment,
+	// so don't initialize the webhook based solvers in this case.
+	if ctx.RESTConfig != nil {
+		// initialize all DNS providers
+		for _, s := range webhookSolvers {
+			err := s.Initialize(ctx.RESTConfig, ctx.StopCh)
+			if err != nil {
+				return nil, fmt.Errorf("error intializing DNS provider %q: %v", s.Name(), err)
+			}
+			initialized[s.Name()] = s
 		}
-		initialized[s.Name()] = s
 	}
 
 	return &Solver{

@@ -19,6 +19,7 @@ extraArgs:
 - --leader-election-lease-duration=10s
 - --leader-election-renew-deadline=3s
 - --leader-election-retry-period=2s
+- --feature-gates=CertificateRequestControllers=true
 
 webhook:
   enabled: true

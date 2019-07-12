@@ -57,7 +57,7 @@ are included in a single YAML manifest file:
 .. code-block:: shell
 
    # Install the CustomResourceDefinitions and cert-manager itself
-   kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/v0.8.1/cert-manager.yaml
+   kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/v0.9.0-alpha.0/cert-manager.yaml
 
 .. note::
    If you are running kubectl v1.12 or below, you will need to add the
@@ -115,7 +115,7 @@ In order to install the Helm chart, you must run:
 .. code-block:: shell
 
    # Install the CustomResourceDefinition resources separately
-   kubectl apply -f https://raw.githubusercontent.com/jetstack/cert-manager/release-0.8/deploy/manifests/00-crds.yaml
+   kubectl apply -f https://raw.githubusercontent.com/jetstack/cert-manager/release-0.9/deploy/manifests/00-crds.yaml
 
    # Create the namespace for cert-manager
    kubectl create namespace cert-manager
@@ -133,7 +133,7 @@ In order to install the Helm chart, you must run:
    helm install \
      --name cert-manager \
      --namespace cert-manager \
-     --version v0.8.1 \
+     --version v0.9.0-alpha.0 \
      jetstack/cert-manager
 
 The default cert-manager configuration is good for the majority of users, but a
@@ -266,7 +266,7 @@ If you have any issues with your installation, please refer to the
 :doc:`troubleshooting guide <../troubleshooting>`.
 
 .. _`CustomResourceDefinitions`: https://kubernetes.io/docs/concepts/extend-kubernetes/api-extension/custom-resources/
-.. _`Helm chart README`: https://github.com/jetstack/cert-manager/blob/release-0.8/deploy/charts/cert-manager/README.md
+.. _`Helm chart README`: https://github.com/jetstack/cert-manager/blob/release-0.9/deploy/charts/cert-manager/README.md
 .. _`kubernetes/kubernetes#69590`: https://github.com/kubernetes/kubernetes/issues/69590
 .. _`ValidatingWebhookConfiguration`: https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers/
 .. _`Helm`: https://helm.sh/

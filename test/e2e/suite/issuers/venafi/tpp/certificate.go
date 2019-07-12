@@ -48,6 +48,8 @@ var _ = TPPDescribe("with a properly configured Issuer", func() {
 
 	// Create the Issuer resource
 	BeforeEach(func() {
+		Skip("venafi tpp instance TLS certificate has expired")
+
 		var err error
 
 		By("Creating a Venafi Issuer resource")
@@ -71,6 +73,8 @@ var _ = TPPDescribe("with a properly configured Issuer", func() {
 	})
 
 	It("should obtain a signed certificate for a single domain", func() {
+		Skip("venafi tpp instance TLS certificate has expired")
+
 		certClient := f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name)
 
 		crt := util.NewCertManagerBasicCertificate(certificateName, certificateSecretName, issuer.Name, cmapi.IssuerKind, nil, nil)

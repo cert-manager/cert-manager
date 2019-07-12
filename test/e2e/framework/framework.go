@@ -248,6 +248,19 @@ func (f *Framework) CertificateDurationValid(c *v1alpha1.Certificate, duration t
 	}
 }
 
+func (f *Framework) CertificateRequestDurationValid(c *v1alpha1.CertificateRequest, duration time.Duration) {
+	By("Verifying TLS certificate exists")
+	if len(c.Status.Certificate) == 0 {
+		Failf("No certificate data found for CertificateRequest %s", c.Name)
+	}
+	cert, err := pki.DecodeX509CertificateBytes(c.Status.Certificate)
+	Expect(err).NotTo(HaveOccurred())
+	By("Verifying that the duration is valid")
+	if cert.NotAfter.Sub(cert.NotBefore) != duration {
+		Failf("Expected duration of %s, got %s [NotBefore: %s, NotAfter: %s]", duration, cert.NotAfter.Sub(cert.NotBefore), cert.NotBefore.Format(time.RFC3339), cert.NotAfter.Format(time.RFC3339))
+	}
+}
+
 // CertManagerDescribe is a wrapper function for ginkgo describe. Adds namespacing.
 func CertManagerDescribe(text string, body func()) bool {
 	return Describe("[cert-manager] "+text, body)

@@ -37,6 +37,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
+	"github.com/jetstack/cert-manager/pkg/apis/certmanager"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/validation"
 	"github.com/jetstack/cert-manager/pkg/feature"
@@ -78,6 +79,12 @@ func (c *controller) Sync(ctx context.Context, crt *v1alpha1.Certificate) (err e
 
 	log := logf.FromContext(ctx)
 	dbg := log.V(logf.DebugLevel)
+
+	// TODO: if not 'certmanager.k8s.io, then use CertificateRequest stratagy if feature gate set
+	if !(crt.Spec.IssuerRef.Group == "" || crt.Spec.IssuerRef.Group == certmanager.GroupName) {
+		dbg.Info("certificate issuerRef group does not match certmanager group so skipping processing")
+		return nil
+	}
 
 	crtCopy := crt.DeepCopy()
 	defer func() {

@@ -31,6 +31,12 @@ const (
 	//
 	// IssueTemporaryCertificate enables issuing temporary certificates
 	IssueTemporaryCertificate feature.Feature = "IssueTemporaryCertificate"
+
+	// alpha: v0.8.1
+	//
+	// Enables cert-manager to resolve certificate requests using its
+	// CertificateRequest issuer controllers.
+	CertificateRequestControllers = "CertificateRequestControllers"
 )
 
 func init() {
@@ -41,6 +47,7 @@ func init() {
 // To add a new feature, define a key for it above and add it here. The features will be
 // available throughout Kubernetes binaries.
 var defaultKubernetesFeatureGates = map[feature.Feature]feature.FeatureSpec{
-	ValidateCAA:               {Default: false, PreRelease: feature.Alpha},
-	IssueTemporaryCertificate: {Default: true, PreRelease: feature.Beta},
+	ValidateCAA:                   {Default: false, PreRelease: feature.Alpha},
+	IssueTemporaryCertificate:     {Default: true, PreRelease: feature.Beta},
+	CertificateRequestControllers: {Default: false, PreRelease: feature.Alpha},
 }

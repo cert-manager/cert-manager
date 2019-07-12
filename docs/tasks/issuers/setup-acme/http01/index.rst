@@ -72,31 +72,40 @@ podTemplate
 -----------
 
 You may wish to change or add to the labels and annotations of solver pods.
-These can be configured under the `metadata` field under `podTemplate`. No other
-metadata fields can be edited. Below shows how an issuer that is configured to
-add some labels and annotations to solver pods.
+These can be configured under the ``metadata`` field under ``podTemplate``. 
+
+Similarly, you can set the nodeSelector, tolerations and affinity of solver
+pods by configuring under the ``spec`` field of the ``podTemplate``. No other
+spec fields can be edited.
+
+An example of how you could configure the template is as so:
 
 .. code-block:: yaml
+   :linenos:
+   :emphasize-lines: 13-20
 
-       apiVersion: certmanager.k8s.io/v1alpha1
-       kind: Issuer
-       metadata:
+   apiVersion: certmanager.k8s.io/v1alpha1
+   kind: Issuer
+   metadata:
+     name: ...
+   spec:
+     acme:
+       server: ...
+       privateKeySecretRef:
          name: ...
-       spec:
-         acme:
-           server: ...
-           privateKeySecretRef:
-             name: ...
-           solvers:
-           - http01:
-               ingress:
-                 podTemplate:
-                   metadata:
-                     labels:
-                       foo: "bar"
-                       env: "prod"
-                     annotations:
-                       my: "annotation"
+       solvers:
+       - http01:
+           ingress:
+             podTemplate:
+               metadata:
+                 labels:
+                   foo: "bar"
+                   env: "prod"
+               spec:
+                 nodeSelector:
+                   bar: baz
 
 The added labels and annotations will merge on top of the cert-manager defaults,
 overriding entries with the same key.
+
+No other fields can be edited. 

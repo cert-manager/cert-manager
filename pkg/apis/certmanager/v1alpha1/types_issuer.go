@@ -238,14 +238,30 @@ type ACMEChallengeSolver struct {
 type CertificateDNSNameSelector struct {
 	// A label selector that is used to refine the set of certificate's that
 	// this challenge solver will apply to.
-	// TODO: use kubernetes standard types for matchLabels
 	// +optional
 	MatchLabels map[string]string `json:"matchLabels,omitempty"`
 
-	// List of DNSNames that can be used to further refine the domains that
-	// this solver applies to.
+	// List of DNSNames that this solver will be used to solve.
+	// If specified and a match is found, a dnsNames selector will take
+	// precedence over a dnsZones selector.
+	// If multiple solvers match with the same dnsNames value, the solver
+	// with the most matching labels in matchLabels will be selected.
+	// If neither has more matches, the solver defined earlier in the list
+	// will be selected.
 	// +optional
 	DNSNames []string `json:"dnsNames,omitempty"`
+
+	// List of DNSZones that this solver will be used to solve.
+	// The most specific DNS zone match specified here will take precedence
+	// over other DNS zone matches, so a solver specifying sys.example.com
+	// will be selected over one specifying example.com for the domain
+	// www.sys.example.com.
+	// If multiple solvers match with the same dnsZones value, the solver
+	// with the most matching labels in matchLabels will be selected.
+	// If neither has more matches, the solver defined earlier in the list
+	// will be selected.
+	// +optional
+	DNSZones []string `json:"dnsZones,omitempty"`
 }
 
 // ACMEChallengeSolverHTTP01 contains configuration detailing how to solve
@@ -282,15 +298,40 @@ type ACMEChallengeSolverHTTP01Ingress struct {
 	Name string `json:"name,omitempty"`
 
 	// Optional pod template used to configure the ACME challenge solver pods
-	// used for HTTP01 challenges. Only labels and annotations may be set and
-	// will be merged ontop of the defaults. PodTemplate labels and annotation
-	// fields will override fields with matching keys.
+	// used for HTTP01 challenges
 	// +optional
 	PodTemplate *ACMEChallengeSolverHTTP01IngressPodTemplate `json:"podTemplate,omitempty"`
 }
 
 type ACMEChallengeSolverHTTP01IngressPodTemplate struct {
+	// ObjectMeta overrides for the pod used to solve HTTP01 challenges.
+	// Only the 'labels' and 'annotations' fields may be set.
+	// If labels or annotations overlap with in-built values, the values here
+	// will override the in-built values.
+	// +optional
 	metav1.ObjectMeta `json:"metadata,omitempty"`
+
+	// PodSpec defines overrides for the HTTP01 challenge solver pod.
+	// Only the 'nodeSelector', 'affinity' and 'tolerations' fields are
+	// supported currently. All other fields will be ignored.
+	// +optional
+	Spec ACMEChallengeSolverHTTP01IngressPodSpec `json:"spec,omitempty"`
+}
+
+type ACMEChallengeSolverHTTP01IngressPodSpec struct {
+	// NodeSelector is a selector which must be true for the pod to fit on a node.
+	// Selector which must match a node's labels for the pod to be scheduled on that node.
+	// More info: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/
+	// +optional
+	NodeSelector map[string]string `json:"nodeSelector,omitempty"`
+
+	// If specified, the pod's scheduling constraints
+	// +optional
+	Affinity *corev1.Affinity `json:"affinity,omitempty"`
+
+	// If specified, the pod's tolerations.
+	// +optional
+	Tolerations []corev1.Toleration `json:"tolerations,omitempty"`
 }
 
 type ACMEChallengeSolverDNS01 struct {
@@ -464,6 +505,7 @@ type ACMEIssuerDNS01ProviderAzureDNS struct {
 	// +optional
 	HostedZoneName string `json:"hostedZoneName,omitempty"`
 
+	// +kubebuilder:validation:Enum=,AzurePublicCloud,AzureChinaCloud,AzureGermanCloud,AzureUSGovernmentCloud
 	// +optional
 	Environment string `json:"environment,omitempty"`
 }

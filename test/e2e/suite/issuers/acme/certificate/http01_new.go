@@ -190,7 +190,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 			Namespace:  f.Namespace.Name,
 			SecretName: certificateSecretName,
 			IssuerName: issuerName,
-			DNSNames:   []string{fmt.Sprintf("%s.%s", cmutil.RandStringRunes(maxLengthOfDomainSegment), acmeIngressDomain)},
+			DNSNames:   []string{acmeIngressDomain, fmt.Sprintf("%s.%s", cmutil.RandStringRunes(maxLengthOfDomainSegment), acmeIngressDomain)},
 		})
 		_, err := certClient.Create(cert)
 		Expect(err).NotTo(HaveOccurred())

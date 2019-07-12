@@ -54,8 +54,9 @@ This will upgrade you to the latest version of cert-manager, as listed in the
 Upgrading using static manifests
 ================================
 
-If you installed cert-manager using the `static deployment manifests`_, you
-can upgrade them in a similar way to how you first installed them.
+If you installed cert-manager using the static deployment manifests published
+on each release, you can upgrade them in a similar way to how you first
+installed them.
 
 .. note::
    Before upgrading, please read the relevant instructions at the links below
@@ -94,5 +95,5 @@ version number you want to install:
    upgrading-0.7-0.8
 
 .. _`official Helm charts repository`: https://hub.helm.sh/charts/jetstack
-.. _`static deployment manifests`: https://github.com/jetstack/cert-manager/blob/release-0.8/deploy/manifests
+.. _`static deployment manifests`: https://github.com/jetstack/cert-manager/blob/release-0.9/deploy/manifests
 .. _`kubernetes/kubernetes#69590`: https://github.com/kubernetes/kubernetes/issues/69590
