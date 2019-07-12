@@ -87,6 +87,11 @@ type controller struct {
 	// if addOwnerReferences is enabled then the controller will add owner references
 	// to the secret resources it creates
 	addOwnerReferences bool
+
+	// if SetTruncatedLabelOrderSecret is enabled then the controller will add a
+	// label of its name, truncated to 63 characters, to owned orders and
+	// secrets.
+	SetTruncatedLabelOrderSecret bool
 }
 
 // Register registers and constructs the controller using the provided context.
@@ -168,6 +173,7 @@ func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitin
 	c.cmClient = ctx.CMClient
 	c.kClient = ctx.Client
 	c.addOwnerReferences = ctx.CertificateOptions.EnableOwnerRef
+	c.SetTruncatedLabelOrderSecret = ctx.CertificateOptions.SetTruncatedLabelOrderSecret
 
 	return c.queue, mustSync, nil
 }

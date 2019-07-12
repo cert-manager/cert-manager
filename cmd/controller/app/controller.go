@@ -231,7 +231,8 @@ func buildControllerContext(ctx context.Context, stopCh <-chan struct{}, opts *o
 			DefaultACMEIssuerDNS01ProviderName: opts.DefaultACMEIssuerDNS01ProviderName,
 		},
 		CertificateOptions: controller.CertificateOptions{
-			EnableOwnerRef: opts.EnableCertificateOwnerRef,
+			EnableOwnerRef:               opts.EnableCertificateOwnerRef,
+			SetTruncatedLabelOrderSecret: opts.DepreciatedSetTruncatedLabelOrderSecret,
 		},
 		SchedulerOptions: controller.SchedulerOptions{
 			MaxConcurrentChallenges: opts.MaxConcurrentChallenges,

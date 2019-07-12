@@ -43,6 +43,10 @@ type Acme struct {
 
 	// used for testing
 	clock clock.Clock
+
+	// whether to set truncated Certificate name on Orders owned by the
+	// certificate.
+	SetCertificateTruncatedLabelOrderSecret bool
 }
 
 // New returns a new ACME issuer interface for the given issuer.
@@ -65,6 +69,8 @@ func New(ctx *controller.Context, issuer v1alpha1.GenericIssuer) (issuer.Interfa
 		secretsLister: secretsLister,
 		orderLister:   orderLister,
 		clock:         clock.RealClock{},
+
+		SetCertificateTruncatedLabelOrderSecret: ctx.CertificateOptions.SetTruncatedLabelOrderSecret,
 	}
 
 	return a, nil

@@ -127,6 +127,10 @@ type CertificateOptions struct {
 	// EnableOwnerRef controls wheter wheter the certificate is configured as an owner of
 	// secret where the effective TLS certificate is stored.
 	EnableOwnerRef bool
+	// SetTruncatedLabelOrderSecret controls whether the certificate will add a
+	// label with its (truncated to 63 characters) name onto owned orders and
+	// secrets.
+	SetTruncatedLabelOrderSecret bool
 }
 
 type SchedulerOptions struct {

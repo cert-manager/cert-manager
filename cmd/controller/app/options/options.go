@@ -73,6 +73,8 @@ type ControllerOptions struct {
 	EnableCertificateOwnerRef bool
 
 	MaxConcurrentChallenges int
+
+	DepreciatedSetTruncatedLabelOrderSecret bool
 }
 
 const (
@@ -95,6 +97,9 @@ const (
 	defaultACMEIssuerChallengeType     = "http01"
 	defaultACMEIssuerDNS01ProviderName = ""
 	defaultEnableCertificateOwnerRef   = false
+
+	// TODO: set this to false in future releases
+	defaultDepreciatedSetTruncatedLabelOrderSecret = true
 
 	defaultDNS01RecursiveNameserversOnly = false
 
@@ -130,26 +135,27 @@ var (
 
 func NewControllerOptions() *ControllerOptions {
 	return &ControllerOptions{
-		APIServerHost:                      defaultAPIServerHost,
-		ClusterResourceNamespace:           defaultClusterResourceNamespace,
-		Namespace:                          defaultNamespace,
-		LeaderElect:                        defaultLeaderElect,
-		LeaderElectionNamespace:            defaultLeaderElectionNamespace,
-		LeaderElectionLeaseDuration:        defaultLeaderElectionLeaseDuration,
-		LeaderElectionRenewDeadline:        defaultLeaderElectionRenewDeadline,
-		LeaderElectionRetryPeriod:          defaultLeaderElectionRetryPeriod,
-		EnabledControllers:                 defaultEnabledControllers,
-		ClusterIssuerAmbientCredentials:    defaultClusterIssuerAmbientCredentials,
-		IssuerAmbientCredentials:           defaultIssuerAmbientCredentials,
-		RenewBeforeExpiryDuration:          defaultRenewBeforeExpiryDuration,
-		DefaultIssuerName:                  defaultTLSACMEIssuerName,
-		DefaultIssuerKind:                  defaultTLSACMEIssuerKind,
-		DefaultAutoCertificateAnnotations:  defaultAutoCertificateAnnotations,
-		DefaultACMEIssuerChallengeType:     defaultACMEIssuerChallengeType,
-		DefaultACMEIssuerDNS01ProviderName: defaultACMEIssuerDNS01ProviderName,
-		DNS01RecursiveNameservers:          []string{},
-		DNS01RecursiveNameserversOnly:      defaultDNS01RecursiveNameserversOnly,
-		EnableCertificateOwnerRef:          defaultEnableCertificateOwnerRef,
+		APIServerHost:                           defaultAPIServerHost,
+		ClusterResourceNamespace:                defaultClusterResourceNamespace,
+		Namespace:                               defaultNamespace,
+		LeaderElect:                             defaultLeaderElect,
+		LeaderElectionNamespace:                 defaultLeaderElectionNamespace,
+		LeaderElectionLeaseDuration:             defaultLeaderElectionLeaseDuration,
+		LeaderElectionRenewDeadline:             defaultLeaderElectionRenewDeadline,
+		LeaderElectionRetryPeriod:               defaultLeaderElectionRetryPeriod,
+		EnabledControllers:                      defaultEnabledControllers,
+		ClusterIssuerAmbientCredentials:         defaultClusterIssuerAmbientCredentials,
+		IssuerAmbientCredentials:                defaultIssuerAmbientCredentials,
+		RenewBeforeExpiryDuration:               defaultRenewBeforeExpiryDuration,
+		DefaultIssuerName:                       defaultTLSACMEIssuerName,
+		DefaultIssuerKind:                       defaultTLSACMEIssuerKind,
+		DefaultAutoCertificateAnnotations:       defaultAutoCertificateAnnotations,
+		DefaultACMEIssuerChallengeType:          defaultACMEIssuerChallengeType,
+		DefaultACMEIssuerDNS01ProviderName:      defaultACMEIssuerDNS01ProviderName,
+		DNS01RecursiveNameservers:               []string{},
+		DNS01RecursiveNameserversOnly:           defaultDNS01RecursiveNameserversOnly,
+		EnableCertificateOwnerRef:               defaultEnableCertificateOwnerRef,
+		DepreciatedSetTruncatedLabelOrderSecret: defaultDepreciatedSetTruncatedLabelOrderSecret,
 	}
 }
 
@@ -246,6 +252,11 @@ func (s *ControllerOptions) AddFlags(fs *pflag.FlagSet) {
 		"When this flag is enabled, the secret will be automatically removed when the certificate resource is deleted.")
 	fs.IntVar(&s.MaxConcurrentChallenges, "max-concurrent-challenges", defaultMaxConcurrentChallenges, ""+
 		"The maximum number of challenges that can be scheduled as 'processing' at once.")
+	fs.BoolVar(&s.DepreciatedSetTruncatedLabelOrderSecret, "depreciated-set-label-on-owned-resources", defaultDepreciatedSetTruncatedLabelOrderSecret, ""+
+		"Whether to add a label of the Certificate's name on the Certificate's "+
+		"owned Orders and Secrets, truncated to 63 characters. "+
+		"This is only necessary if you have previously developed tools which "+
+		"rely on this legacy behaviour.")
 }
 
 func (o *ControllerOptions) Validate() error {
