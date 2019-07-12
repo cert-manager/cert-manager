@@ -160,14 +160,19 @@ var _ = framework.CertManagerDescribe("ACME webhook DNS provider", func() {
 			var order *v1alpha1.Order
 			pollErr := wait.PollImmediate(500*time.Millisecond, time.Second*30,
 				func() (bool, error) {
-					l, err := f.CertManagerClientSet.CertmanagerV1alpha1().Orders(f.Namespace.Name).List(metav1.ListOptions{
-						LabelSelector: "acme.cert-manager.io/certificate-name=" + cert.Name,
-					})
+					l, err := f.CertManagerClientSet.CertmanagerV1alpha1().Orders(f.Namespace.Name).List(metav1.ListOptions{})
 					Expect(err).NotTo(HaveOccurred())
 
-					log.Logf("Found %d orders for certificate", len(l.Items))
-					if len(l.Items) == 1 {
-						order = &l.Items[0]
+					var relevantOrders []v1alpha1.Order
+					for _, o := range l.Items {
+						if metav1.IsControlledBy(&o, cert) {
+							relevantOrders = append(relevantOrders, o)
+						}
+					}
+
+					log.Logf("Found %d orders for certificate", len(relevantOrders))
+					if len(relevantOrders) == 1 {
+						order = &relevantOrders[0]
 						log.Logf("Found order named %q", order.Name)
 						return true, nil
 					}

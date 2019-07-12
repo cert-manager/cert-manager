@@ -126,7 +126,7 @@ func (m *secretMapper) Map(obj handler.MapObject) []ctrl.Request {
 	}
 
 	// TODO(directxman12): check for not found error?
-	//log.Error(err, "unable to fetch certificate that owns the secret")
+	log.Error(fmt.Errorf("no matching certificate"), "unable to find certificate corresponding to the hash on the secret")
 	return nil
 }
 

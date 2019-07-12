@@ -25,10 +25,12 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
 
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	controllerutil "github.com/jetstack/cert-manager/pkg/controller"
 	"github.com/jetstack/cert-manager/pkg/util"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 	"github.com/jetstack/cert-manager/test/e2e/framework/log"
@@ -162,13 +164,19 @@ func (h *Helper) ValidateIssuedCertificate(certificate *v1alpha1.Certificate, ro
 		return nil, fmt.Errorf("Expected certificate expiry date to be %v, but got %v", certificate.Status.NotAfter, cert.NotAfter)
 	}
 
-	label, ok := secret.Labels[v1alpha1.CertificateNameKey]
+	label, ok := secret.Labels[v1alpha1.CertificateHashKey]
 	if !ok {
-		return nil, fmt.Errorf("Expected secret to have certificate-name label, but had none")
+		return nil, fmt.Errorf("Expected secret to have certificate-hash label, but had none")
 	}
 
-	if label != certificate.Name {
-		return nil, fmt.Errorf("Expected secret to have certificate-name label with a value of %q, but got %q", certificate.Name, label)
+	hash, err := controllerutil.HashName(types.NamespacedName{Name: certificate.Name, Namespace: certificate.Namespace})
+	if err != nil {
+		return nil, err
+	}
+
+	expectedHash := fmt.Sprint(hash)
+	if expectedHash != label {
+		return nil, fmt.Errorf("Expected secret to have certificate-hash label with a value of %q, but got %q", expectedHash, label)
 	}
 
 	// TODO: move this verification step out of this function

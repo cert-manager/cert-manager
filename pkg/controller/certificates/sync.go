@@ -468,7 +468,7 @@ func (c *controller) updateSecret(ctx context.Context, crt *v1alpha1.Certificate
 	if err != nil {
 		return nil, err
 	}
-	secret.Labels[v1alpha1.CertificateHashKey] = fmt.Sprintf("%d", hash)
+	secret.Labels[v1alpha1.CertificateHashKey] = fmt.Sprint(hash)
 
 	// set the actual values in the secret
 	secret.Data[corev1.TLSCertKey] = cert
