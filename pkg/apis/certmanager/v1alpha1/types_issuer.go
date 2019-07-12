@@ -463,6 +463,9 @@ type ACMEIssuerDNS01ProviderAzureDNS struct {
 
 	// +optional
 	HostedZoneName string `json:"hostedZoneName,omitempty"`
+
+	// +optional
+	Environment string `json:"environment,omitempty"`
 }
 
 // ACMEIssuerDNS01ProviderAcmeDNS is a structure containing the
