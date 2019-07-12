@@ -143,7 +143,7 @@ func TestIssueHappyPath(t *testing.T) {
 
 	_, testCertSignedBytesPEM := generateSelfSignedCert(t, testCert, pk, time.Now(), time.Hour*24*365)
 	_, testCertExpiringSignedBytesPEM := generateSelfSignedCert(t, testCert, pk, time.Now().Add(-4*time.Minute), time.Minute*5)
-	testCertEmptyOrder, _ := buildOrder(testCert, testCertCSR)
+	testCertEmptyOrder, _ := buildOrder(testCert, testCertCSR, false)
 	testCertPendingOrder := testCertEmptyOrder.DeepCopy()
 	testCertPendingOrder.Status.State = v1alpha1.Pending
 	testCertValidOrder := testCertEmptyOrder.DeepCopy()
@@ -354,7 +354,7 @@ func TestIssueRetryCases(t *testing.T) {
 	invalidTestCert := testCert.DeepCopy()
 	invalidTestCert.Spec.CommonName = "test2.com"
 
-	testOrder, _ := buildOrder(testCert, nil)
+	testOrder, _ := buildOrder(testCert, nil, false)
 
 	recentlyFailedCertificate := testCert.DeepCopy()
 	recentlyFailedCertificate.Status.LastFailureTime = &nowMetaTime
@@ -375,7 +375,7 @@ func TestIssueRetryCases(t *testing.T) {
 
 	readyTestOrder := testOrder.DeepCopy()
 	readyTestOrder.Status.State = v1alpha1.Ready
-	invalidTestOrder, _ := buildOrder(invalidTestCert, nil)
+	invalidTestOrder, _ := buildOrder(invalidTestCert, nil, false)
 
 	pkBytes := pki.EncodePKCS1PrivateKey(pk1)
 	testCertExistingPKSecret := &corev1.Secret{

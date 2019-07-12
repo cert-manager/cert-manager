@@ -17,9 +17,12 @@ limitations under the License.
 package controller
 
 import (
+	"encoding/json"
+	"hash/fnv"
 	"reflect"
 	"time"
 
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
@@ -95,4 +98,19 @@ func (b *BlockingEventHandler) OnDelete(obj interface{}) {
 		obj = tombstone.Obj
 	}
 	b.WorkFunc(obj)
+}
+
+func HashName(name types.NamespacedName) (uint32, error) {
+	nameBytes, err := json.Marshal(name)
+	if err != nil {
+		return 0, err
+	}
+
+	hashF := fnv.New32()
+	_, err = hashF.Write(nameBytes)
+	if err != nil {
+		return 0, err
+	}
+
+	return hashF.Sum32(), nil
 }

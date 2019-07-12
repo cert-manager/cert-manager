@@ -23,6 +23,7 @@ const (
 	IssuerNameAnnotationKey = "certmanager.k8s.io/issuer-name"
 	IssuerKindAnnotationKey = "certmanager.k8s.io/issuer-kind"
 	CertificateNameKey      = "certmanager.k8s.io/certificate-name"
+	CertificateHashKey      = "certmanager.k8s.io/certificate-hash"
 )
 
 // ConditionStatus represents a condition's status.

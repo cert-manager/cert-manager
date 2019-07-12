@@ -18,6 +18,7 @@ package cainjector
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	"github.com/go-logr/logr"
@@ -30,7 +31,9 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	certmanager "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	controllerutil "github.com/jetstack/cert-manager/pkg/controller"
 	certctrl "github.com/jetstack/cert-manager/pkg/controller/certificates"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 )
@@ -207,8 +210,20 @@ func (r *genericInjectReconciler) Reconcile(req ctrl.Request) (ctrl.Result, erro
 		// don't requeue if we're just not found, we'll get called when the secret gets created
 		return ctrl.Result{}, dropNotFound(err)
 	}
-	owner := OwningCertForSecret(&secret)
-	if owner == nil || *owner != certName {
+
+	// grab the hashes from the label and the certificate
+	hash, ok := secret.Labels[v1alpha1.CertificateHashKey]
+	if !ok {
+		log.Error(err, "unable to fetch the certificate hash from secret")
+	}
+	cHash, err := controllerutil.HashName(certName)
+	if err != nil {
+		log.Error(err, "unable to calculate hash of certificate name")
+		return ctrl.Result{}, nil
+	}
+
+	// compare the hashes to ensure certificate owns the target secret
+	if fmt.Sprint(cHash) != hash {
 		log.Info("refusing to target secret not owned by certificate", "owner", metav1.GetControllerOf(&secret))
 		return ctrl.Result{}, nil
 	}

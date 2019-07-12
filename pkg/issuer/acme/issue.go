@@ -29,7 +29,6 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/apimachinery/pkg/selection"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 
 	"github.com/jetstack/cert-manager/pkg/acme"
@@ -81,7 +80,7 @@ func (a *Acme) Issue(ctx context.Context, crt *v1alpha1.Certificate) (*issuer.Is
 	// where the Order resource is up to date already, and also because we have
 	// not actually read the existing certificate private key yet to ensure it
 	// exists.
-	expectedOrder, err := buildOrder(crt, nil)
+	expectedOrder, err := buildOrder(crt, nil, a.CertificateOptions.SetTruncatedLabelOrderSecret)
 	if err != nil {
 		a.Recorder.Eventf(crt, corev1.EventTypeWarning, "Unknown", "Error building Order resource: %v", err)
 		return nil, err
@@ -218,21 +217,16 @@ func (a *Acme) Issue(ctx context.Context, crt *v1alpha1.Certificate) (*issuer.Is
 func (a *Acme) cleanupOwnedOrders(ctx context.Context, crt *v1alpha1.Certificate, retain string) error {
 	log := logf.FromContext(ctx)
 
-	// TODO: don't use a label selector at all here, instead we can index orders by their ownerRef and query based on owner reference alone
-	// construct a label selector
-	req, err := labels.NewRequirement(certificateNameLabelKey, selection.Equals, []string{crt.Name})
+	// get all the orders
+	// TODO: investigate if there exists a more efficient method of finding all
+	// children (i.e. all resources with the ownerReference of the parent)
+	allOrders, err := a.orderLister.Orders(crt.Namespace).List(labels.Everything())
 	if err != nil {
-		return err
-	}
-	selector := labels.NewSelector().Add(*req)
-
-	existingOrders, err := a.orderLister.Orders(crt.Namespace).List(selector)
-	if err != nil {
-		return err
+		return nil
 	}
 
 	var errs []error
-	for _, o := range existingOrders {
+	for _, o := range allOrders {
 		log := logf.WithRelatedResource(log, o)
 		// Don't touch any objects that don't have this certificate set as the
 		// owner reference.
@@ -378,7 +372,7 @@ func existingOrderIsValidForKey(o *v1alpha1.Order, key crypto.Signer) (bool, err
 	return true, nil
 }
 
-func buildOrder(crt *v1alpha1.Certificate, csr []byte) (*v1alpha1.Order, error) {
+func buildOrder(crt *v1alpha1.Certificate, csr []byte, setCertificateNameLabel bool) (*v1alpha1.Order, error) {
 	var oldConfig []v1alpha1.DomainSolverConfig
 	if crt.Spec.ACME != nil {
 		oldConfig = crt.Spec.ACME.Config
@@ -402,7 +396,7 @@ func buildOrder(crt *v1alpha1.Certificate, csr []byte) (*v1alpha1.Order, error) 
 		ObjectMeta: metav1.ObjectMeta{
 			Name:            fmt.Sprintf("%.52s-%d", crt.Name, hash),
 			Namespace:       crt.Namespace,
-			Labels:          orderLabels(crt),
+			Labels:          orderLabels(crt, setCertificateNameLabel),
 			OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(crt, certificateGvk)},
 		},
 		Spec: spec,
@@ -411,7 +405,7 @@ func buildOrder(crt *v1alpha1.Certificate, csr []byte) (*v1alpha1.Order, error) 
 
 const certificateNameLabelKey = "acme.cert-manager.io/certificate-name"
 
-func orderLabels(crt *v1alpha1.Certificate) map[string]string {
+func orderLabels(crt *v1alpha1.Certificate, setCertificateNameLabel bool) map[string]string {
 	lbls := make(map[string]string, len(crt.Labels)+1)
 	// copy across labels from the Certificate resource onto the Order.
 	// In future, determining which challenge solver to use will be solely
@@ -421,7 +415,11 @@ func orderLabels(crt *v1alpha1.Certificate) map[string]string {
 	for k, v := range crt.Labels {
 		lbls[k] = v
 	}
-	lbls[certificateNameLabelKey] = crt.Name
+
+	if setCertificateNameLabel {
+		// labels have max character count of 63
+		lbls[certificateNameLabelKey] = fmt.Sprintf("%.63s", crt.Name)
+	}
 	return lbls
 }
 

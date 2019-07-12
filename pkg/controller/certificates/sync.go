@@ -32,6 +32,7 @@ import (
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/types"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	utilfeature "k8s.io/apiserver/pkg/util/feature"
 	"k8s.io/client-go/tools/cache"
@@ -40,6 +41,7 @@ import (
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/validation"
+	controllerutil "github.com/jetstack/cert-manager/pkg/controller"
 	"github.com/jetstack/cert-manager/pkg/feature"
 	"github.com/jetstack/cert-manager/pkg/issuer"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
@@ -454,8 +456,19 @@ func (c *controller) updateSecret(ctx context.Context, crt *v1alpha1.Certificate
 		secret.Annotations[v1alpha1.IPSANAnnotationKey] = strings.Join(pki.IPAddressesToString(x509Cert.IPAddresses), ",")
 	}
 
-	// Always set the certificate name label on the target secret
-	secret.Labels[v1alpha1.CertificateNameKey] = crt.Name
+	if c.SetTruncatedLabelOrderSecret {
+		// label character limit is 63
+		secret.Labels[v1alpha1.CertificateNameKey] = fmt.Sprintf("%.63s", crt.Name)
+	}
+
+	// set the certificate hash label on the target secret - disambiguates if
+	// two certificates have same characters up to 63 characters
+	certName := types.NamespacedName{Name: crt.Name, Namespace: crt.Namespace}
+	hash, err := controllerutil.HashName(certName)
+	if err != nil {
+		return nil, err
+	}
+	secret.Labels[v1alpha1.CertificateHashKey] = fmt.Sprintf("%d", hash)
 
 	// set the actual values in the secret
 	secret.Data[corev1.TLSCertKey] = cert

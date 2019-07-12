@@ -18,9 +18,9 @@ package cainjector
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/go-logr/logr"
-	certmanager "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -28,6 +28,10 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
+
+	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	certmanager "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	controllerutil "github.com/jetstack/cert-manager/pkg/controller"
 )
 
 // setup for indexers used to trigger reconciliation on injected CA data.
@@ -92,24 +96,38 @@ func (m *secretMapper) InjectClient(c client.Client) error {
 	return nil
 }
 func (m *secretMapper) Map(obj handler.MapObject) []ctrl.Request {
-	// grab the certificate, if it exists
-	certName := OwningCertForSecret(obj.Object.(*corev1.Secret))
-	if certName == nil {
+	// grab the certificate hash, if it exists
+	hash, ok := obj.Object.(*corev1.Secret).Labels[v1alpha1.CertificateHashKey]
+	if !ok {
 		return nil
 	}
 
 	secretName := types.NamespacedName{Name: obj.Meta.GetName(), Namespace: obj.Meta.GetNamespace()}
-	log := m.log.WithValues("secret", secretName, "certificate", *certName)
+	log := m.log.WithValues("secret", secretName, "certificate hash", hash)
 
-	var cert certmanager.Certificate
-	// confirm that a service owns this cert
-	if err := m.Client.Get(context.Background(), *certName, &cert); err != nil {
-		// TODO(directxman12): check for not found error?
-		log.Error(err, "unable to fetch certificate that owns the secret")
-		return nil
+	// fetch all the certificates from the namespace
+	var certs certmanager.CertificateList
+	if err := m.Client.List(context.Background(), &certs, client.InNamespace(obj.Meta.GetNamespace())); err != nil {
+		log.Error(err, "unable to fetch certificates from secret's namespace")
 	}
 
-	return m.toInjectable(log, m.Client, *certName)
+	// confirm that the certificate corresponding to the hash exists
+	for _, cert := range certs.Items {
+		certName := types.NamespacedName{Name: cert.Name, Namespace: cert.Namespace}
+		cHash, err := controllerutil.HashName(certName)
+		if err != nil {
+			log.Error(err, "unable to calculate hash of certificate name")
+			return nil
+		}
+
+		if fmt.Sprint(cHash) == hash {
+			return m.toInjectable(log, m.Client, certName)
+		}
+	}
+
+	// TODO(directxman12): check for not found error?
+	//log.Error(err, "unable to fetch certificate that owns the secret")
+	return nil
 }
 
 // certMapper is a mapper that converts Certificates up to injectables, through services.

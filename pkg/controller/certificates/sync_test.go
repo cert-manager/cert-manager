@@ -26,6 +26,7 @@ import (
 	"crypto/x509/pkix"
 	"encoding/pem"
 	"errors"
+	"fmt"
 	"math/big"
 	"testing"
 	"time"
@@ -33,10 +34,12 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	coretesting "k8s.io/client-go/testing"
 	clock "k8s.io/utils/clock/testing"
 
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	controllerutil "github.com/jetstack/cert-manager/pkg/controller"
 	testpkg "github.com/jetstack/cert-manager/pkg/controller/test"
 	"github.com/jetstack/cert-manager/pkg/issuer"
 	"github.com/jetstack/cert-manager/pkg/issuer/fake"
@@ -128,6 +131,20 @@ func TestSync(t *testing.T) {
 		}),
 	)
 
+	exampleCertHash, err := controllerutil.HashName(types.NamespacedName{Name: exampleCert.Name, Namespace: exampleCert.Namespace})
+	if err != nil {
+		t.Errorf("Error hashing example cert: %v", err)
+		t.FailNow()
+	}
+	exampleCertHashKey := fmt.Sprint(exampleCertHash)
+
+	notExampleCertHash, err := controllerutil.HashName(types.NamespacedName{Name: "not" + exampleCert.Name, Namespace: exampleCert.Namespace})
+	if err != nil {
+		t.Errorf("Error hashing not example cert: %v", err)
+		t.FailNow()
+	}
+	notExampleCertHashKey := fmt.Sprint(notExampleCertHash)
+
 	pk1 := generatePrivateKey(t)
 	pk1PEM := pki.EncodePKCS1PrivateKey(pk1)
 	cert1PEM := generateSelfSignedCert(t, exampleCert, nil, pk1, nowTime, nowTime.Add(time.Hour*12))
@@ -216,7 +233,7 @@ func TestSync(t *testing.T) {
 								Namespace: gen.DefaultTestNamespace,
 								Name:      "output",
 								Labels: map[string]string{
-									cmapi.CertificateNameKey: "test",
+									cmapi.CertificateHashKey: exampleCertHashKey,
 								},
 								Annotations: map[string]string{
 									"certmanager.k8s.io/alt-names":   "example.com",
@@ -262,7 +279,7 @@ func TestSync(t *testing.T) {
 							Name:      "output",
 							SelfLink:  "abc",
 							Labels: map[string]string{
-								cmapi.CertificateNameKey: "nottest",
+								cmapi.CertificateHashKey: notExampleCertHashKey,
 							},
 							Annotations: map[string]string{
 								"testannotation": "true",
@@ -286,7 +303,7 @@ func TestSync(t *testing.T) {
 								Name:      "output",
 								SelfLink:  "abc",
 								Labels: map[string]string{
-									cmapi.CertificateNameKey: "test",
+									cmapi.CertificateHashKey: exampleCertHashKey,
 								},
 								Annotations: map[string]string{
 									"testannotation":                 "true",
@@ -340,7 +357,7 @@ func TestSync(t *testing.T) {
 								Namespace: gen.DefaultTestNamespace,
 								Name:      "output",
 								Labels: map[string]string{
-									cmapi.CertificateNameKey: "test",
+									cmapi.CertificateHashKey: exampleCertHashKey,
 								},
 								Annotations: map[string]string{
 									"certmanager.k8s.io/alt-names":   "example.com",
@@ -386,7 +403,7 @@ func TestSync(t *testing.T) {
 							Name:      "output",
 							SelfLink:  "abc",
 							Labels: map[string]string{
-								cmapi.CertificateNameKey: "nottest",
+								cmapi.CertificateHashKey: notExampleCertHashKey,
 							},
 							Annotations: map[string]string{
 								"testannotation": "true",
@@ -410,7 +427,7 @@ func TestSync(t *testing.T) {
 								Name:      "output",
 								SelfLink:  "abc",
 								Labels: map[string]string{
-									cmapi.CertificateNameKey: "test",
+									cmapi.CertificateHashKey: exampleCertHashKey,
 								},
 								Annotations: map[string]string{
 									"testannotation":                 "true",
@@ -456,7 +473,7 @@ func TestSync(t *testing.T) {
 							Name:      "output",
 							SelfLink:  "abc",
 							Labels: map[string]string{
-								cmapi.CertificateNameKey: "nottest",
+								cmapi.CertificateHashKey: notExampleCertHashKey,
 							},
 							Annotations: map[string]string{
 								"testannotation": "true",
@@ -497,7 +514,7 @@ func TestSync(t *testing.T) {
 								Name:      "output",
 								SelfLink:  "abc",
 								Labels: map[string]string{
-									cmapi.CertificateNameKey: "test",
+									cmapi.CertificateHashKey: exampleCertHashKey,
 								},
 								Annotations: map[string]string{
 									"testannotation":                 "true",
@@ -543,7 +560,7 @@ func TestSync(t *testing.T) {
 							Name:      "output",
 							SelfLink:  "abc",
 							Labels: map[string]string{
-								cmapi.CertificateNameKey: "test",
+								cmapi.CertificateHashKey: exampleCertHashKey,
 							},
 							Annotations: map[string]string{
 								"testannotation":                 "true",
@@ -608,7 +625,7 @@ func TestSync(t *testing.T) {
 							Name:      "output",
 							SelfLink:  "abc",
 							Labels: map[string]string{
-								cmapi.CertificateNameKey: "nottest",
+								cmapi.CertificateHashKey: notExampleCertHashKey,
 							},
 							Annotations: map[string]string{
 								"testannotation": "true",
@@ -632,7 +649,7 @@ func TestSync(t *testing.T) {
 								Name:      "output",
 								SelfLink:  "abc",
 								Labels: map[string]string{
-									cmapi.CertificateNameKey: "test",
+									cmapi.CertificateHashKey: exampleCertHashKey,
 								},
 								Annotations: map[string]string{
 									"testannotation":                 "true",
@@ -683,7 +700,7 @@ func TestSync(t *testing.T) {
 							Name:      "output",
 							SelfLink:  "abc",
 							Labels: map[string]string{
-								cmapi.CertificateNameKey: "test",
+								cmapi.CertificateHashKey: exampleCertHashKey,
 							},
 							Annotations: map[string]string{
 								"testannotation":                 "true",
@@ -723,7 +740,7 @@ func TestSync(t *testing.T) {
 								Name:      "output",
 								SelfLink:  "abc",
 								Labels: map[string]string{
-									cmapi.CertificateNameKey: "test",
+									cmapi.CertificateHashKey: exampleCertHashKey,
 								},
 								Annotations: map[string]string{
 									"testannotation":                 "true",
@@ -825,7 +842,7 @@ func TestSync(t *testing.T) {
 								Namespace: gen.DefaultTestNamespace,
 								Name:      "output",
 								Labels: map[string]string{
-									cmapi.CertificateNameKey: "test",
+									cmapi.CertificateHashKey: exampleCertHashKey,
 								},
 								Annotations: map[string]string{
 									"certmanager.k8s.io/alt-names":   "example.com",
@@ -899,7 +916,7 @@ func TestSync(t *testing.T) {
 		//					Name:      "output",
 		//					SelfLink:  "abc",
 		//					Labels: map[string]string{
-		//						cmapi.CertificateNameKey: "nottest",
+		//						cmapi.CertificateHashKey: notExampleCertHashKey,
 		//					},
 		//					Annotations: map[string]string{
 		//						"testannotation": "true",
@@ -928,7 +945,7 @@ func TestSync(t *testing.T) {
 		//						Name:      "output",
 		//						SelfLink:  "abc",
 		//						Labels: map[string]string{
-		//							cmapi.CertificateNameKey: "test",
+		//							cmapi.CertificateNameHash: exampleCertHashKey,
 		//						},
 		//						Annotations: map[string]string{
 		//							"testannotation":                 "true",
