@@ -62,16 +62,12 @@ actions to take next on the resource. Each condition consists of the pair
 `Ready` - a boolean value, and `Reason` - a string. The set of values and
 meanings are as follows:
 
-+---------+-----------------+---------------------------------------------------------------------------------------------------------------------------+
-| *Ready* | *Reason*        | Condition Meaning                                                                                                         |
-+=========+=================+===========================================================================================================================+
-| False   | CertPending     | A valid Issuer has been found and is currently in the process of issuing a certificate based on the Spec of the resource. |
-+---------+-----------------+---------------------------------------------------------------------------------------------------------------------------+
-| False   | CertFailed      | The certificate has failed to be issued. No further action will be taken on the CertificateRequest by it's controller.    |
-+---------+-----------------+---------------------------------------------------------------------------------------------------------------------------+
-| False   | IssuerNotFound  | The referenced Issuer detailed in the Spec cannot be found.                                                               |
-+---------+-----------------+---------------------------------------------------------------------------------------------------------------------------+
-| False   | IssuerInitError | Failed to initialize an instance of the found Issuer to issue a certificate.                                              |
-+---------+-----------------+---------------------------------------------------------------------------------------------------------------------------+
-| True    | CertIssued      | A signed certificate has been successfully issued by the referenced Issuer.                                               |
-+---------+-----------------+---------------------------------------------------------------------------------------------------------------------------+
++---------+-----------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| *Ready* | *Reason*        | Condition Meaning                                                                                                                                                                                                                             |
++=========+=================+===============================================================================================================================================================================================================================================+
+| False   | Pending         | The CertificateRequest is currently pending, waiting for some other operation to take place. This could be that the Issuer does not exist yet or the Issuer is in the process of issuing a certificate.                                       |
++---------+-----------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| False   | Failed          | The certificate has failed to be issued - either the returned certificate failed to be decoded or an instance of the referenced issuer used for signing failed. No further action will be taken on the CertificateRequest by it's controller. |
++---------+-----------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| True    | Issued          | A signed certificate has been successfully issued by the referenced Issuer.                                                                                                                                                                   |
++---------+-----------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
