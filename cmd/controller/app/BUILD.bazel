@@ -12,6 +12,7 @@ go_library(
         "//pkg/client/informers/externalversions:go_default_library",
         "//pkg/controller:go_default_library",
         "//pkg/controller/certificaterequests/ca:go_default_library",
+        "//pkg/controller/certificaterequests/step:go_default_library",
         "//pkg/controller/clusterissuers:go_default_library",
         "//pkg/feature:go_default_library",
         "//pkg/issuer/acme/dns/util:go_default_library",

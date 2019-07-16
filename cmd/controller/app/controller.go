@@ -42,6 +42,7 @@ import (
 	informers "github.com/jetstack/cert-manager/pkg/client/informers/externalversions"
 	"github.com/jetstack/cert-manager/pkg/controller"
 	cacertificaterequestcontroller "github.com/jetstack/cert-manager/pkg/controller/certificaterequests/ca"
+	stepcertificaterequestcontroller "github.com/jetstack/cert-manager/pkg/controller/certificaterequests/step"
 	"github.com/jetstack/cert-manager/pkg/controller/clusterissuers"
 	"github.com/jetstack/cert-manager/pkg/feature"
 	dnsutil "github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
@@ -77,6 +78,7 @@ func Run(opts *options.ControllerOptions, stopCh <-chan struct{}) {
 	if utilfeature.DefaultFeatureGate.Enabled(feature.CertificateRequestControllers) {
 		opts.EnabledControllers = append(opts.EnabledControllers, []string{
 			cacertificaterequestcontroller.CRControllerName,
+			stepcertificaterequestcontroller.CRControllerName,
 		}...)
 	}
 
