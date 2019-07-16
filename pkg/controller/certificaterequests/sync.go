@@ -19,6 +19,7 @@ package certificaterequests
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"reflect"
 
 	"github.com/kr/pretty"
@@ -36,13 +37,9 @@ import (
 )
 
 const (
-	errorCertificatePending = "CertPending"
-	errorCertificateFailed  = "CertFailed"
-
-	errorIssuerNotFound = "IssuerNotFound"
-	errorIssuerInit     = "IssuerInitError"
-
-	successCertificateIssued = "CertIssued"
+	errorPending  = "Pending"
+	errorFailed   = "Failed"
+	successIssued = "Issued"
 )
 
 func (c *Controller) Sync(ctx context.Context, cr *v1alpha1.CertificateRequest) (err error) {
@@ -59,7 +56,7 @@ func (c *Controller) Sync(ctx context.Context, cr *v1alpha1.CertificateRequest) 
 	if apiutil.CertificateRequestHasCondition(cr, v1alpha1.CertificateRequestCondition{
 		Type:   v1alpha1.CertificateRequestConditionReady,
 		Status: v1alpha1.ConditionFalse,
-		Reason: errorCertificateFailed,
+		Reason: errorFailed,
 	}) {
 		dbg.Info("certificate request condition failed so skipping processing")
 		return nil
@@ -76,13 +73,19 @@ func (c *Controller) Sync(ctx context.Context, cr *v1alpha1.CertificateRequest) 
 
 	issuerObj, err := c.helper.GetGenericIssuer(crCopy.Spec.IssuerRef, crCopy.Namespace)
 	if k8sErrors.IsNotFound(err) {
-		c.recorder.Eventf(crCopy, corev1.EventTypeWarning, errorIssuerNotFound, err.Error())
+		apiutil.SetCertificateRequestCondition(crCopy, v1alpha1.CertificateRequestConditionReady,
+			v1alpha1.ConditionFalse, errorPending, "Referenced Issuer not found")
+
+		c.recorder.Eventf(crCopy, corev1.EventTypeWarning, errorPending, err.Error())
+
 		log.WithValues(
 			logf.RelatedResourceNameKey, crCopy.Spec.IssuerRef.Name,
 			logf.RelatedResourceKindKey, crCopy.Spec.IssuerRef.Kind,
 		).Error(err, "failed to find referenced issuer")
+
 		return nil
 	}
+
 	if err != nil {
 		return err
 	}
@@ -93,7 +96,10 @@ func (c *Controller) Sync(ctx context.Context, cr *v1alpha1.CertificateRequest) 
 
 	issuerType, err := apiutil.NameForIssuer(issuerObj)
 	if err != nil {
-		c.recorder.Eventf(crCopy, corev1.EventTypeWarning, errorIssuerNotFound, err.Error())
+		apiutil.SetCertificateRequestCondition(crCopy, v1alpha1.CertificateRequestConditionReady,
+			v1alpha1.ConditionFalse, errorPending, "Referenced Issuer not found")
+
+		c.recorder.Eventf(crCopy, corev1.EventTypeWarning, errorPending, err.Error())
 		log.Error(err, "failed to obtain referenced issuer type")
 		return nil
 	}
@@ -111,6 +117,9 @@ func (c *Controller) Sync(ctx context.Context, cr *v1alpha1.CertificateRequest) 
 	el := validation.ValidateCertificateRequest(crCopy)
 	if len(el) > 0 {
 		c.recorder.Eventf(crCopy, corev1.EventTypeWarning, "BadConfig", "Resource validation failed: %v", el.ToAggregate())
+
+		apiutil.SetCertificateRequestCondition(crCopy, v1alpha1.CertificateRequestConditionReady,
+			v1alpha1.ConditionFalse, errorFailed, fmt.Sprintf("Validation failed: %s", el.ToAggregate()))
 		return nil
 	}
 
@@ -122,7 +131,11 @@ func (c *Controller) Sync(ctx context.Context, cr *v1alpha1.CertificateRequest) 
 
 	i, err := c.issuerFactory.IssuerFor(issuerObj)
 	if err != nil {
-		c.recorder.Eventf(crCopy, corev1.EventTypeWarning, errorIssuerInit, "Internal error initialising issuer: %v", err)
+		apiutil.SetCertificateRequestCondition(crCopy, v1alpha1.CertificateRequestConditionReady,
+			v1alpha1.ConditionFalse, errorFailed,
+			fmt.Sprintf("Failed to initialise Issuer for signing: %s", err))
+
+		c.recorder.Eventf(crCopy, corev1.EventTypeWarning, errorFailed, "Internal error initialising issuer: %v", err)
 		return nil
 	}
 
@@ -154,7 +167,7 @@ func (c *Controller) sign(ctx context.Context, cr *v1alpha1.CertificateRequest, 
 		cr.Status.Certificate = resp.Certificate
 		cr.Status.CA = resp.CA
 
-		c.recorder.Event(cr, corev1.EventTypeNormal, successCertificateIssued,
+		c.recorder.Event(cr, corev1.EventTypeNormal, successIssued,
 			"Certificate fetched from issuer successfully")
 	}
 
@@ -167,7 +180,7 @@ func (c *Controller) setCertificateRequestStatus(cr *v1alpha1.CertificateRequest
 	// No cert exists yet
 	if len(cr.Status.Certificate) == 0 {
 		apiutil.SetCertificateRequestCondition(cr, v1alpha1.CertificateRequestConditionReady,
-			v1alpha1.ConditionFalse, errorCertificatePending, "Certificate issuance pending")
+			v1alpha1.ConditionFalse, errorPending, "Certificate issuance pending")
 		return
 	}
 
@@ -175,7 +188,7 @@ func (c *Controller) setCertificateRequestStatus(cr *v1alpha1.CertificateRequest
 	_, err := pki.DecodeX509CertificateBytes(cr.Status.Certificate)
 	if err != nil {
 		apiutil.SetCertificateRequestCondition(cr, v1alpha1.CertificateRequestConditionReady,
-			v1alpha1.ConditionFalse, errorCertificateFailed, "Failed to decode certificate PEM")
+			v1alpha1.ConditionFalse, errorFailed, "Failed to decode certificate PEM")
 		return
 	}
 
