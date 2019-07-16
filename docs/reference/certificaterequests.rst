@@ -51,3 +51,27 @@ certificate (if available), and setting the `Ready` condition to `True`.
 Whether issuance of the controller was successful or not, a retry of the
 issuance will _not_ happen. It is the responsibility of some other controller to
 manage the logic and life cycle of CertificateRequets.
+
+----------
+Conditions
+----------
+
+CertificateRequests have a set of strongly defined conditions that should be
+used and relied upon by controllers or services to make decisions on what
+actions to take next on the resource. Each condition consists of the pair
+`Ready` - a boolean value, and `Reason` - a string. The set of values and
+meanings are as follows:
+
++---------+-----------------+---------------------------------------------------------------------------------------------------------------------------+
+| *Ready* | *Reason*        | Condition Meaning                                                                                                         |
++=========+=================+===========================================================================================================================+
+| False   | CertPending     | A valid Issuer has been found and is currently in the process of issuing a certificate based on the Spec of the resource. |
++---------+-----------------+---------------------------------------------------------------------------------------------------------------------------+
+| False   | CertFailed      | The certificate has failed to be issued. No further action will be taken on the CertificateRequest by it's controller.    |
++---------+-----------------+---------------------------------------------------------------------------------------------------------------------------+
+| False   | IssuerNotFound  | The referenced Issuer detailed in the Spec cannot be found.                                                               |
++---------+-----------------+---------------------------------------------------------------------------------------------------------------------------+
+| False   | IssuerInitError | Failed to initialize an instance of the found Issuer to issue a certificate.                                              |
++---------+-----------------+---------------------------------------------------------------------------------------------------------------------------+
+| True    | CertIssued      | A signed certificate has been successfully issued by the referenced Issuer.                                               |
++---------+-----------------+---------------------------------------------------------------------------------------------------------------------------+
