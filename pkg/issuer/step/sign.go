@@ -61,6 +61,9 @@ func (s *Step) Sign(ctx context.Context, cr *certmanager.CertificateRequest) (*i
 	if err != nil {
 		return nil, fmt.Errorf("error parsing certificate request: %v", err)
 	}
+	if err := csr.CheckSignature(); err != nil {
+		return nil, fmt.Errorf("error checking certificate request signature: %v", err)
+	}
 
 	var sans []string
 	for _, dns := range csr.DNSNames {
