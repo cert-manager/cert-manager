@@ -50,7 +50,6 @@ func InitLogs(fs *pflag.FlagSet) {
 	fs.MarkHidden("log_file")
 	fs.MarkHidden("logtostderr")
 	fs.MarkHidden("alsologtostderr")
-	fs.MarkHidden("v")
 	fs.MarkHidden("skip_headers")
 	fs.MarkHidden("stderrthreshold")
 	fs.MarkHidden("vmodule")

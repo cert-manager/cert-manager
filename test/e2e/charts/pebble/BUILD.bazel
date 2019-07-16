@@ -1,13 +1,19 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_binary")
 load("@io_bazel_rules_docker//go:image.bzl", "go_image")
+
+# gazelle:ignore
 
 go_image(
     name = "image",
     base = "@static_base//image",
-    embed = ["@org_letsencrypt_pebble//cmd/pebble:go_default_library"],
-    goarch = "amd64",
-    goos = "linux",
-    pure = "on",
+    binary = ":app",
     visibility = ["//visibility:public"],
+)
+
+go_binary(
+    name = "app",
+    embed = ["@org_letsencrypt_pebble//cmd/pebble:go_default_library"],
+    pure = "on",
 )
 
 filegroup(

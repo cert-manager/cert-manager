@@ -161,7 +161,7 @@ func ValidateACMEIssuerChallengeSolverHTTP01IngressPodTemplateConfig(podTempl *v
 	cpyPodTempl.Annotations = nil
 
 	if !reflect.DeepEqual(cpyPodTempl.ObjectMeta, metav1.ObjectMeta{}) {
-		el = append(el, field.Invalid(fldPath.Child("metadata"), "", "only labels and annotations may be set on podTemplate"))
+		el = append(el, field.Invalid(fldPath.Child("metadata"), "", "only labels and annotations may be set on podTemplate metadata"))
 	}
 
 	return el
@@ -307,6 +307,12 @@ func ValidateACMEIssuerDNS01Config(iss *v1alpha1.ACMEIssuerDNS01Config, fldPath 
 				}
 				if len(p.AzureDNS.ResourceGroupName) == 0 {
 					el = append(el, field.Required(fldPath.Child("azuredns", "resourceGroupName"), ""))
+				}
+				switch p.AzureDNS.Environment {
+				case "", "AzurePublicCloud", "AzureChinaCloud", "AzureGermanCloud", "AzureUSGovernmentCloud":
+				default:
+					el = append(el, field.Invalid(fldPath.Child("azuredns", "environment"), p.AzureDNS.Environment,
+						"must be either empty or one of AzurePublicCloud, AzureChinaCloud, AzureGermanCloud or AzureUSGovernmentCloud"))
 				}
 			}
 		}

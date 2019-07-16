@@ -34,7 +34,6 @@ import (
 var (
 	Default = &Plugin{}
 
-	supportedGoArch     = []string{"amd64", "arm64", "arm"}
 	supportedComponents = []string{"acmesolver", "controller", "webhook", "cainjector"}
 	log                 = logf.Log.WithName("images")
 )
@@ -71,20 +70,6 @@ func (g *Plugin) AddFlags(fs *flag.FlagSet) {
 
 func (g *Plugin) Validate() []error {
 	var errs []error
-
-	// validate goarch flag
-	for _, a := range g.GoArch {
-		valid := false
-		for _, sa := range supportedGoArch {
-			if a == sa {
-				valid = true
-				break
-			}
-		}
-		if !valid {
-			errs = append(errs, fmt.Errorf("invalid goarch value %q", a))
-		}
-	}
 
 	// validate components flag
 	for _, a := range g.Components {
@@ -175,19 +160,18 @@ func (g *Plugin) Complete() error {
 func (g *Plugin) build(ctx context.Context) (imageTargets, error) {
 	targets := g.generateTargets()
 
-	bazelTargets := targets.bazelTargets()
-	log := log.WithValues("images", bazelTargets)
-	log.Info("building bazel image targets")
+	// only support building docker images for linux for now
+	os := "linux"
+	for _, arch := range g.GoArch {
+		filteredTargets := targets.withOSArch(os, arch)
+		bazelTargets := filteredTargets.bazelTargets()
+		log := log.WithValues("images", bazelTargets)
+		log.Info("building bazel image targets")
 
-	// set the os and arch to linux/amd64
-	// whilst we might be building cross-arch binaries, cgo only depends on
-	// particular OS settings and not arch, so just by setting this to 'linux'
-	// we can fix cross builds on platforms other than linux
-	// if we support alternate OS values in future, this will need updating
-	// with a call to BuildPlatformE per *OS*.
-	err := bazel.Default.BuildPlatformE(ctx, log, "linux", "amd64", bazelTargets...)
-	if err != nil {
-		return nil, fmt.Errorf("error building docker images (%v): %v", targets, err)
+		err := bazel.Default.BuildPlatformE(ctx, log, os, arch, bazelTargets...)
+		if err != nil {
+			return nil, fmt.Errorf("error building docker images (%v): %v", targets, err)
+		}
 	}
 
 	g.built = true
@@ -197,22 +181,26 @@ func (g *Plugin) build(ctx context.Context) (imageTargets, error) {
 func (g *Plugin) exportToDocker(ctx context.Context) error {
 	targets := g.generateTargets()
 	log.WithValues("images", targets.bazelExportTargets()).Info("exporting images to docker daemon")
-	for _, target := range targets.bazelExportTargets() {
-		log := log.WithValues("target", target)
+	for _, target := range targets {
+		log := log.WithValues("target", target.name, "os", target.os, "arch", target.arch)
 		log.Info("exporting image to docker daemon")
-		// set the os and arch to linux/amd64
-		// whilst we might be building cross-arch binaries, cgo only depends on
-		// particular OS settings and not arch, so just by setting this to 'linux'
-		// we can fix cross builds on platforms other than linux
-		// if we support alternate OS values in future, this will need updating
-		// with a call to BuildPlatformE per *OS*.
-		err := bazel.Default.RunPlatformE(ctx, log, "linux", "amd64", target)
+		exportTarget := target.bazelExportTarget()
+		err := bazel.Default.RunPlatformE(ctx, log, target.os, target.arch, exportTarget)
 		if err != nil {
 			return fmt.Errorf("error exporting image %q to docker daemon: %v", target, err)
 		}
+
+		for _, taggedImage := range target.taggedImageNames() {
+			log.Info("tagging image", "tag", taggedImage)
+			cmd := exec.CommandContext(ctx, "docker", "tag", target.exportedImageName(), taggedImage)
+			err := util.RunE(log, cmd)
+			if err != nil {
+				return err
+			}
+		}
 	}
 
-	log.WithValues("images", targets.exportedImageNames()).Info("exported all docker images")
+	log.WithValues("images", targets.taggedImageNames()).Info("exported all docker images")
 
 	return nil
 }
@@ -237,10 +225,7 @@ func (p *Plugin) pushImages(ctx context.Context, targets imageTargets) error {
 		return err
 	}
 
-	var images []string
-	for _, t := range targets {
-		images = append(images, t.exportedImageNames()...)
-	}
+	images := targets.taggedImageNames()
 
 	log.WithValues("images", images).Info("pushing docker images")
 	for _, img := range images {
@@ -279,10 +264,28 @@ func (i imageTargets) bazelExportTargets() []string {
 	return out
 }
 
+func (i imageTargets) taggedImageNames() []string {
+	out := make([]string, 0)
+	for _, target := range i {
+		out = append(out, target.taggedImageNames()...)
+	}
+	return out
+}
+
 func (i imageTargets) exportedImageNames() []string {
 	out := make([]string, 0)
 	for _, target := range i {
-		out = append(out, target.exportedImageNames()...)
+		out = append(out, target.taggedImageNames()...)
+	}
+	return out
+}
+
+func (i imageTargets) withOSArch(os, arch string) imageTargets {
+	out := make(imageTargets, 0)
+	for _, target := range i {
+		if target.os == os && target.arch == arch {
+			out = append(out, target)
+		}
 	}
 	return out
 }
@@ -292,14 +295,18 @@ type imageTarget struct {
 }
 
 func (i imageTarget) bazelTarget() string {
-	return fmt.Sprintf("//cmd/%s:image.%s-%s", i.name, i.os, i.arch)
+	return fmt.Sprintf("//cmd/%s:image", i.name)
 }
 
 func (i imageTarget) bazelExportTarget() string {
-	return fmt.Sprintf("//cmd/%s:image.%s-%s.export", i.name, i.os, i.arch)
+	return fmt.Sprintf("//cmd/%s:image.export", i.name)
 }
 
-func (i imageTarget) exportedImageNames() []string {
+func (i imageTarget) exportedImageName() string {
+	return fmt.Sprintf("%s:%s", i.name, flags.Default.GitCommitRef)
+}
+
+func (i imageTarget) taggedImageNames() []string {
 	if i.arch == "amd64" {
 		return []string{
 			fmt.Sprintf("%s/cert-manager-%s:%s", flags.Default.DockerRepo, i.name, flags.Default.AppVersion),

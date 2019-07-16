@@ -57,6 +57,7 @@ func (h *HTTP01Solver) Listen(ctx context.Context) error {
 		)
 		if r.URL.EscapedPath() == "/" || r.URL.EscapedPath() == "/healthz" {
 			log.Info("responding OK to health check")
+			w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
 			w.WriteHeader(http.StatusOK)
 			return
 		}
@@ -84,6 +85,7 @@ func (h *HTTP01Solver) Listen(ctx context.Context) error {
 		}
 
 		log.Info("got successful challenge request, writing key")
+		w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
 		w.WriteHeader(http.StatusOK)
 		fmt.Fprint(w, h.Key)
 	})

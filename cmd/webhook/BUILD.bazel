@@ -1,9 +1,9 @@
 load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
-load("//hack:def.bzl", "multiarch_image")
+load("//hack:def.bzl", "image")
 
-# Expands to target names such as 'image.linux-amd64', 'image.linux-arm64'
-multiarch_image(
+image(
     name = "image",
+    binary = ":webhook",
     component = "webhook",
     visibility = ["//visibility:public"],
 )
@@ -23,6 +23,7 @@ go_library(
 go_binary(
     name = "webhook",
     embed = [":go_default_library"],
+    pure = "on",
     visibility = ["//visibility:public"],
 )
 

@@ -198,6 +198,7 @@ func testReachability(ctx context.Context, url *url.URL, key string) error {
 	// TODO(dmo): figure out if we need to add a more specific timeout for
 	// individual checks
 	transport := &http.Transport{
+		Proxy: http.ProxyFromEnvironment,
 		// we're only doing 1 request, make the code around this
 		// simpler by disabling keepalives
 		DisableKeepAlives: true,

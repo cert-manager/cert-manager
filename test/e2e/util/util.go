@@ -19,8 +19,13 @@ package util
 // TODO: we should break this file apart into separate more sane/reusable parts
 
 import (
+	"crypto"
 	"crypto/x509"
+	"crypto/x509/pkix"
+	"encoding/pem"
 	"fmt"
+	"net"
+	"net/url"
 	"time"
 
 	intscheme "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/scheme"
@@ -37,6 +42,7 @@ import (
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	clientset "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/typed/certmanager/v1alpha1"
 	"github.com/jetstack/cert-manager/pkg/util"
+	"github.com/jetstack/cert-manager/pkg/util/pki"
 	"github.com/jetstack/cert-manager/test/e2e/framework/log"
 )
 
@@ -271,6 +277,80 @@ func NewCertManagerBasicCertificate(name, secretName, issuerName string, issuerK
 			},
 		},
 	}
+}
+
+func NewCertManagerBasicCertificateRequest(name, issuerName string, issuerKind string, duration *metav1.Duration,
+	dnsNames []string, ips []net.IP, uris []string, keyAlgorithm x509.PublicKeyAlgorithm) (*v1alpha1.CertificateRequest, crypto.Signer, error) {
+	cn := "test.domain.com"
+	if len(dnsNames) > 0 {
+		cn = dnsNames[0]
+	}
+
+	var parsedURIs []*url.URL
+	for _, uri := range uris {
+		parsed, err := url.Parse(uri)
+		if err != nil {
+			return nil, nil, err
+		}
+		parsedURIs = append(parsedURIs, parsed)
+	}
+
+	var sk crypto.Signer
+	var signatureAlgorithm x509.SignatureAlgorithm
+	var err error
+
+	switch keyAlgorithm {
+	case x509.RSA:
+		sk, err = pki.GenerateRSAPrivateKey(2048)
+		if err != nil {
+			return nil, nil, err
+		}
+		signatureAlgorithm = x509.SHA256WithRSA
+	case x509.ECDSA:
+		sk, err = pki.GenerateECPrivateKey(pki.ECCurve256)
+		if err != nil {
+			return nil, nil, err
+		}
+		signatureAlgorithm = x509.ECDSAWithSHA256
+	default:
+		return nil, nil, fmt.Errorf("unrecognised key algorithm: %s", err)
+	}
+
+	csr := &x509.CertificateRequest{
+		Version:            3,
+		SignatureAlgorithm: signatureAlgorithm,
+		PublicKeyAlgorithm: keyAlgorithm,
+		PublicKey:          sk.Public(),
+		Subject: pkix.Name{
+			CommonName: cn,
+		},
+		DNSNames:    dnsNames,
+		IPAddresses: ips,
+		URIs:        parsedURIs,
+	}
+
+	csrBytes, err := pki.EncodeCSR(csr, sk)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	csrPEM := pem.EncodeToMemory(&pem.Block{
+		Type: "CERTIFICATE REQUEST", Bytes: csrBytes,
+	})
+
+	return &v1alpha1.CertificateRequest{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: name,
+		},
+		Spec: v1alpha1.CertificateRequestSpec{
+			Duration: duration,
+			CSRPEM:   csrPEM,
+			IssuerRef: v1alpha1.ObjectReference{
+				Name: issuerName,
+				Kind: issuerKind,
+			},
+		},
+	}, sk, nil
 }
 
 func NewCertManagerACMECertificateOldFormat(name, secretName, issuerName string, issuerKind string, duration, renewBefore *metav1.Duration, ingressClass string, cn string, dnsNames ...string) *v1alpha1.Certificate {

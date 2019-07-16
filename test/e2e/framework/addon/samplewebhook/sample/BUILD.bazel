@@ -4,10 +4,7 @@ load("@io_bazel_rules_docker//go:image.bzl", "go_image")
 go_image(
     name = "image",
     base = "@static_base//image",
-    embed = [":go_default_library"],
-    goarch = "amd64",
-    goos = "linux",
-    pure = "on",
+    binary = ":sample",
     visibility = ["//visibility:public"],
 )
 
@@ -27,6 +24,7 @@ go_library(
 go_binary(
     name = "sample",
     embed = [":go_default_library"],
+    pure = "on",
     visibility = ["//visibility:public"],
 )
 

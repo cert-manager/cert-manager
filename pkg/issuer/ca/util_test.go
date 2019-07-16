@@ -33,8 +33,9 @@ type caFixture struct {
 	CA *CA
 	*test.Builder
 
-	Issuer      v1alpha1.GenericIssuer
-	Certificate *v1alpha1.Certificate
+	Issuer             v1alpha1.GenericIssuer
+	Certificate        *v1alpha1.Certificate
+	CertificateRequest *v1alpha1.CertificateRequest
 
 	PreFn   func(*testing.T, *caFixture)
 	CheckFn func(*testing.T, *caFixture, ...interface{})

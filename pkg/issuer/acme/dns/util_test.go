@@ -154,7 +154,7 @@ func newFakeDNSProviders() *fakeDNSProviders {
 			f.call("route53", accessKey, secretKey, hostedZoneID, region, ambient, util.RecursiveNameservers)
 			return nil, nil
 		},
-		azureDNS: func(clientID, clientSecret, subscriptionID, tenentID, resourceGroupName, hostedZoneName string, dns01Nameservers []string) (*azuredns.DNSProvider, error) {
+		azureDNS: func(environment, clientID, clientSecret, subscriptionID, tenentID, resourceGroupName, hostedZoneName string, dns01Nameservers []string) (*azuredns.DNSProvider, error) {
 			f.call("azuredns", clientID, clientSecret, subscriptionID, tenentID, resourceGroupName, hostedZoneName, util.RecursiveNameservers)
 			return nil, nil
 		},

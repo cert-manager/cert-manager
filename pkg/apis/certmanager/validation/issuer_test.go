@@ -200,7 +200,7 @@ func TestValidateACMEIssuerConfig(t *testing.T) {
 				field.Invalid(fldPath.Child("http01", "serviceType"), corev1.ServiceType("InvalidServiceType"), "optional field serviceType must be one of [\"ClusterIP\" \"NodePort\"]"),
 			},
 		},
-		"acme issue with valid pod template attributes": {
+		"acme issue with valid pod template ObjectMeta attributes": {
 			spec: &v1alpha1.ACMEIssuer{
 				Email:      "valid-email",
 				Server:     "valid-server",
@@ -253,7 +253,69 @@ func TestValidateACMEIssuerConfig(t *testing.T) {
 			},
 			errs: []*field.Error{
 				field.Invalid(fldPath.Child("solver", "http01", "ingress", "podTemplate", "metadata"),
-					"", "only labels and annotations may be set on podTemplate"),
+					"", "only labels and annotations may be set on podTemplate metadata"),
+			},
+		},
+		"acme issue with valid pod template PodSpec attributes": {
+			spec: &v1alpha1.ACMEIssuer{
+				Email:      "valid-email",
+				Server:     "valid-server",
+				PrivateKey: validSecretKeyRef,
+				Solvers: []v1alpha1.ACMEChallengeSolver{
+					{
+						HTTP01: &v1alpha1.ACMEChallengeSolverHTTP01{
+							Ingress: &v1alpha1.ACMEChallengeSolverHTTP01Ingress{
+								PodTemplate: &v1alpha1.ACMEChallengeSolverHTTP01IngressPodTemplate{
+									Spec: v1alpha1.ACMEChallengeSolverHTTP01IngressPodSpec{
+										NodeSelector: map[string]string{
+											"valid_to_contain": "nodeSelector",
+										},
+										Tolerations: []corev1.Toleration{
+											{
+												Key:      "valid_key",
+												Operator: "Exists",
+												Effect:   "NoSchedule",
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+				HTTP01: &v1alpha1.ACMEIssuerHTTP01Config{
+					ServiceType: corev1.ServiceType("NodePort"),
+				},
+			},
+		},
+		"acme issue with valid pod template ObjectMeta and PodSpec attributes": {
+			spec: &v1alpha1.ACMEIssuer{
+				Email:      "valid-email",
+				Server:     "valid-server",
+				PrivateKey: validSecretKeyRef,
+				Solvers: []v1alpha1.ACMEChallengeSolver{
+					{
+						HTTP01: &v1alpha1.ACMEChallengeSolverHTTP01{
+							Ingress: &v1alpha1.ACMEChallengeSolverHTTP01Ingress{
+								PodTemplate: &v1alpha1.ACMEChallengeSolverHTTP01IngressPodTemplate{
+									ObjectMeta: metav1.ObjectMeta{
+										Labels: map[string]string{
+											"valid_to_contain": "labels",
+										},
+									},
+									Spec: v1alpha1.ACMEChallengeSolverHTTP01IngressPodSpec{
+										NodeSelector: map[string]string{
+											"valid_to_contain": "nodeSelector",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+				HTTP01: &v1alpha1.ACMEIssuerHTTP01Config{
+					ServiceType: corev1.ServiceType("NodePort"),
+				},
 			},
 		},
 	}
@@ -511,6 +573,26 @@ func TestValidateACMEIssuerDNS01Config(t *testing.T) {
 				field.Required(providersPath.Index(0).Child("azuredns", "subscriptionID"), ""),
 				field.Required(providersPath.Index(0).Child("azuredns", "tenantID"), ""),
 				field.Required(providersPath.Index(0).Child("azuredns", "resourceGroupName"), ""),
+			},
+		},
+		"invalid azuredns environment": {
+			cfg: &v1alpha1.ACMEIssuerDNS01Config{
+				Providers: []v1alpha1.ACMEIssuerDNS01Provider{
+					{
+						Name:     "a name",
+						AzureDNS: &v1alpha1.ACMEIssuerDNS01ProviderAzureDNS{Environment: "an env"},
+					},
+				},
+			},
+			errs: []*field.Error{
+				field.Required(providersPath.Index(0).Child("azuredns", "clientSecretSecretRef", "name"), "secret name is required"),
+				field.Required(providersPath.Index(0).Child("azuredns", "clientSecretSecretRef", "key"), "secret key is required"),
+				field.Required(providersPath.Index(0).Child("azuredns", "clientID"), ""),
+				field.Required(providersPath.Index(0).Child("azuredns", "subscriptionID"), ""),
+				field.Required(providersPath.Index(0).Child("azuredns", "tenantID"), ""),
+				field.Required(providersPath.Index(0).Child("azuredns", "resourceGroupName"), ""),
+				field.Invalid(providersPath.Index(0).Child("azuredns", "environment"), "an env",
+					"must be either empty or one of AzurePublicCloud, AzureChinaCloud, AzureGermanCloud or AzureUSGovernmentCloud"),
 			},
 		},
 		"missing akamai config": {

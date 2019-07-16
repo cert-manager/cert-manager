@@ -17,12 +17,13 @@ container_bundle(
         "{STABLE_DOCKER_REPO}/cert-manager-webhook:{STABLE_DOCKER_TAG}": "//cmd/webhook:image",
         "{STABLE_DOCKER_REPO}/cert-manager-cainjector:{STABLE_DOCKER_TAG}": "//cmd/cainjector:image",
     },
+    tags = ["manual"],
 )
 
 # we add this rule so users can `bazel build //test/e2e` to run a
 # platform-independent version of the e2e test binary
 genrule(
-    name = "e2e.test",
+    name = "e2e",
     testonly = True,
     srcs = [":go_default_test"],
     outs = ["e2e.test"],
@@ -72,7 +73,7 @@ filegroup(
     name = "all-srcs",
     srcs = [
         ":package-srcs",
-        "//test/e2e/bin:all-srcs",
+        "//test/e2e/bin/cloudflare-clean:all-srcs",
         "//test/e2e/charts:all-srcs",
         "//test/e2e/framework:all-srcs",
         "//test/e2e/suite:all-srcs",

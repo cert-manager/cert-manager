@@ -76,13 +76,13 @@ The Certificate will be issued using the issuer named ``ca-issuer`` in the
    issues, leading to the working duration of a certificate to be less than
    the full duration of the certificate. For example, Let's Encrypt sets it
    to be one hour before issue time, so the actual *working duration* of the
-   certificate is 89 days, 23 hours (the *full duration* remains 90 days). 
+   certificate is 89 days, 23 hours (the *full duration* remains 90 days).
 
 A full list of the fields supported on the Certificate resource can be found in
 the `API reference documentation`_.
 
 .. _`#1269`: https://github.com/jetstack/cert-manager/issues/1269
-.. _`API reference documentation`: https://docs.cert-manager.io/en/release-0.8/reference/api-docs/index.html#certificatespec-v1alpha1
+.. _`API reference documentation`: https://docs.cert-manager.io/en/release-0.9/reference/api-docs/index.html#certificatespec-v1alpha1
 
 Temporary certificates whilst issuing
 =====================================
@@ -100,6 +100,9 @@ order to function.
 After the real, valid certificate has been obtained, cert-manager will replace
 the temporary self signed certificate with the valid one, **but will retain the
 same private key**.
+
+You can disable issuing temporary certificate by setting feature gate flag
+``--feature-gates=IssueTemporaryCertificate=false``
 
 .. toctree::
    :maxdepth: 2

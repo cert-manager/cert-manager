@@ -24,12 +24,14 @@ import (
 
 	"k8s.io/api/core/v1"
 	api "k8s.io/api/core/v1"
+	apiext "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	apiextcs "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	kscheme "k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
+	apireg "k8s.io/kube-aggregator/pkg/apis/apiregistration/v1beta1"
 	crclient "sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
@@ -50,6 +52,8 @@ var Scheme = runtime.NewScheme()
 func init() {
 	kscheme.AddToScheme(Scheme)
 	certmgrscheme.AddToScheme(Scheme)
+	apiext.AddToScheme(Scheme)
+	apireg.AddToScheme(Scheme)
 }
 
 // DefaultConfig contains the default shared config the is likely parsed from
@@ -237,6 +241,19 @@ func (f *Framework) CertificateDurationValid(c *v1alpha1.Certificate, duration t
 		Failf("No certificate data found for Certificate %q", c.Name)
 	}
 	cert, err := pki.DecodeX509CertificateBytes(certBytes)
+	Expect(err).NotTo(HaveOccurred())
+	By("Verifying that the duration is valid")
+	if cert.NotAfter.Sub(cert.NotBefore) != duration {
+		Failf("Expected duration of %s, got %s [NotBefore: %s, NotAfter: %s]", duration, cert.NotAfter.Sub(cert.NotBefore), cert.NotBefore.Format(time.RFC3339), cert.NotAfter.Format(time.RFC3339))
+	}
+}
+
+func (f *Framework) CertificateRequestDurationValid(c *v1alpha1.CertificateRequest, duration time.Duration) {
+	By("Verifying TLS certificate exists")
+	if len(c.Status.Certificate) == 0 {
+		Failf("No certificate data found for CertificateRequest %s", c.Name)
+	}
+	cert, err := pki.DecodeX509CertificateBytes(c.Status.Certificate)
 	Expect(err).NotTo(HaveOccurred())
 	By("Verifying that the duration is valid")
 	if cert.NotAfter.Sub(cert.NotBefore) != duration {

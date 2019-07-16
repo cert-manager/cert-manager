@@ -395,6 +395,68 @@ func TestValidateCertificate(t *testing.T) {
 				field.Invalid(fldPath.Child("ipAddresses").Index(0), "blah", "invalid IP address"),
 			},
 		},
+		"valid certificate with commonName exactly 64 bytes": {
+			cfg: &v1alpha1.Certificate{
+				Spec: v1alpha1.CertificateSpec{
+					CommonName: "this-is-a-big-long-string-which-is-exactly-sixty-four-characters",
+					SecretName: "abc",
+					IssuerRef:  validIssuerRef,
+				},
+			},
+			errs: []*field.Error{},
+		},
+		"invalid certificate with commonName longer than 64 bytes": {
+			cfg: &v1alpha1.Certificate{
+				Spec: v1alpha1.CertificateSpec{
+					CommonName: "this-is-a-big-long-string-which-has-exactly-sixty-five-characters",
+					SecretName: "abc",
+					IssuerRef:  validIssuerRef,
+				},
+			},
+			errs: []*field.Error{
+				field.TooLong(fldPath.Child("commonName"), "this-is-a-big-long-string-which-has-exactly-sixty-five-characters", 64),
+			},
+		},
+		"invalid certificate with no commonName and first dnsName longer than 64 bytes": {
+			cfg: &v1alpha1.Certificate{
+				Spec: v1alpha1.CertificateSpec{
+					SecretName: "abc",
+					IssuerRef:  validIssuerRef,
+					DNSNames: []string{
+						"this-is-a-big-long-string-which-has-exactly-sixty-five-characters",
+						"dnsName",
+					},
+				},
+			},
+			errs: []*field.Error{
+				field.TooLong(fldPath.Child("dnsNames").Index(0), "this-is-a-big-long-string-which-has-exactly-sixty-five-characters", 64),
+			},
+		},
+		"valid certificate with no commonName and second dnsName longer than 64 bytes": {
+			cfg: &v1alpha1.Certificate{
+				Spec: v1alpha1.CertificateSpec{
+					SecretName: "abc",
+					IssuerRef:  validIssuerRef,
+					DNSNames: []string{
+						"dnsName",
+						"this-is-a-big-long-string-which-has-exactly-sixty-five-characters",
+					},
+				},
+			},
+		},
+		"valid certificate with commonName and first dnsName longer than 64 bytes": {
+			cfg: &v1alpha1.Certificate{
+				Spec: v1alpha1.CertificateSpec{
+					CommonName: "testcn",
+					SecretName: "abc",
+					IssuerRef:  validIssuerRef,
+					DNSNames: []string{
+						"this-is-a-big-long-string-which-has-exactly-sixty-five-characters",
+						"dnsName",
+					},
+				},
+			},
+		},
 	}
 	for n, s := range scenarios {
 		t.Run(n, func(t *testing.T) {

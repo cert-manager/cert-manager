@@ -51,11 +51,13 @@ type LocalObjectReference struct {
 	Name string `json:"name"`
 }
 
-// ObjectReference is a reference to an object with a given name and kind.
+// ObjectReference is a reference to an object with a given name, kind and group.
 type ObjectReference struct {
 	Name string `json:"name"`
 	// +optional
 	Kind string `json:"kind,omitempty"`
+	// +optional
+	Group string `json:"group,omitempty"`
 }
 
 const (

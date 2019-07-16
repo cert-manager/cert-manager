@@ -251,13 +251,20 @@ func (c *Chart) SupportsGlobal() bool {
 
 func (c *Chart) Logs() (map[string]string, error) {
 	kc := c.Tiller.Base.Details().KubeClient
-	pods, err := kc.CoreV1().Pods(c.Namespace).List(metav1.ListOptions{LabelSelector: "release=" + c.ReleaseName})
+	oldLabelPods, err := kc.CoreV1().Pods(c.Namespace).List(metav1.ListOptions{LabelSelector: "release=" + c.ReleaseName})
 	if err != nil {
 		return nil, err
 	}
 
+	// also check pods with the new style labels used in the cert-manager chart
+	newLabelPods, err := kc.CoreV1().Pods(c.Namespace).List(metav1.ListOptions{LabelSelector: "app.kubernetes.io/instance=" + c.ReleaseName})
+	if err != nil {
+		return nil, err
+	}
+	podList := append(oldLabelPods.Items, newLabelPods.Items...)
+
 	out := make(map[string]string)
-	for _, pod := range pods.Items {
+	for _, pod := range podList {
 		// Only grab logs from the first container in the pod
 		// TODO: grab logs from all containers
 		containerName := pod.Spec.Containers[0].Name

@@ -69,7 +69,7 @@ are included in a single YAML manifest file:
 .. code-block:: shell
 
    # Install the CustomResourceDefinitions and cert-manager itself
-   oc apply --validate=false -f https://github.com/jetstack/cert-manager/releases/download/v0.8.1/cert-manager-openshift.yaml
+   oc apply --validate=false -f https://github.com/jetstack/cert-manager/releases/download/v0.9.0-alpha.0/cert-manager-openshift.yaml
 
 .. note::
    The ``--validate=false`` flag is added to the ``oc apply`` command above
@@ -94,6 +94,5 @@ If you have any issues with your installation, please refer to the
 :doc:`troubleshooting guide <../troubleshooting>`.
 
 .. _`CustomResourceDefinitions`: https://kubernetes.io/docs/concepts/extend-kubernetes/api-extension/custom-resources/
-.. _`Helm chart README`: https://github.com/jetstack/cert-manager/blob/release-0.8/deploy/charts/cert-manager/README.md
 .. _`kubernetes/kubernetes#69590`: https://github.com/kubernetes/kubernetes/issues/69590
 .. _`ValidatingWebhookConfiguration`: https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers/

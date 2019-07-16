@@ -23,7 +23,7 @@ import (
 	"net/url"
 	"strings"
 
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -40,12 +40,14 @@ import (
 const (
 	errorAccountRegistrationFailed = "ErrRegisterACMEAccount"
 	errorAccountVerificationFailed = "ErrVerifyACMEAccount"
+	errorAccountUpdateFailed       = "ErrUpdateACMEAccount"
 
 	successAccountRegistered = "ACMEAccountRegistered"
 	successAccountVerified   = "ACMEAccountVerified"
 
 	messageAccountRegistrationFailed = "Failed to register ACME account: "
 	messageAccountVerificationFailed = "Failed to verify ACME account: "
+	messageAccountUpdateFailed       = "Failed to update ACME account:"
 	messageAccountRegistered         = "The ACME account was registered with the ACME server"
 	messageAccountVerified           = "The ACME account was verified with the ACME server"
 )
@@ -147,12 +149,14 @@ func (a *Acme) Setup(ctx context.Context) error {
 		Status: v1alpha1.ConditionTrue,
 	})
 
-	// If the Host components of the server URL and the account URL match, then
+	// If the Host components of the server URL and the account URL match,
+	// and the cached email matches the registered email, then
 	// we skip re-checking the account status to save excess calls to the
 	// ACME api.
 	if hasReadyCondition &&
 		a.issuer.GetStatus().ACMEStatus().URI != "" &&
-		parsedAccountURL.Host == parsedServerURL.Host {
+		parsedAccountURL.Host == parsedServerURL.Host &&
+		a.issuer.GetStatus().ACMEStatus().LastRegisteredEmail == a.issuer.GetSpec().ACME.Email {
 		log.Info("skipping re-verifying ACME account as cached registration " +
 			"details look sufficient")
 		return nil
@@ -192,11 +196,72 @@ func (a *Acme) Setup(ctx context.Context) error {
 		return err
 	}
 
+	// if we got an account successfully, we must check if the registered
+	// email is the same as in the issuer spec
+	specEmail := a.issuer.GetSpec().ACME.Email
+	account, registeredEmail, err := ensureEmailUpToDate(ctx, cl, account, specEmail)
+	if err != nil {
+		s := messageAccountUpdateFailed + err.Error()
+		log.Error(err, "failed to update ACME account")
+		a.Recorder.Event(a.issuer, v1.EventTypeWarning, errorAccountUpdateFailed, s)
+		apiutil.SetIssuerCondition(a.issuer, v1alpha1.IssuerConditionReady, v1alpha1.ConditionFalse, errorAccountUpdateFailed, s)
+
+		acmeErr, ok := err.(*acmeapi.Error)
+		// If this is not an ACME error, we will simply return it and retry later
+		if !ok {
+			return err
+		}
+
+		// If the status code is 400 (BadRequest), we will *not* retry this registration
+		// as it implies that something about the request (i.e. email address or private key)
+		// is invalid.
+		if acmeErr.StatusCode >= 400 && acmeErr.StatusCode < 500 {
+			log.Error(acmeErr, "skipping updating account email as a "+
+				"BadRequest response was returned from the ACME server")
+			return nil
+		}
+
+		// Otherwise if we receive anything other than a 400, we will retry.
+		return err
+	}
+
 	log.Info("verified existing registration with ACME server")
 	apiutil.SetIssuerCondition(a.issuer, v1alpha1.IssuerConditionReady, v1alpha1.ConditionTrue, successAccountRegistered, messageAccountRegistered)
 	a.issuer.GetStatus().ACMEStatus().URI = account.URL
+	a.issuer.GetStatus().ACMEStatus().LastRegisteredEmail = registeredEmail
 
 	return nil
+}
+
+func ensureEmailUpToDate(ctx context.Context, cl client.Interface, acc *acmeapi.Account, specEmail string) (*acmeapi.Account, string, error) {
+	log := logf.FromContext(ctx)
+
+	// if no email was specified, then registeredEmail will remain empty
+	registeredEmail := ""
+	if len(acc.Contact) > 0 {
+		registeredEmail = strings.Replace(acc.Contact[0], "mailto:", "", 1)
+	}
+
+	// if they are different, we update the account
+	if registeredEmail != specEmail {
+		log.Info("updating ACME account email address", "email", specEmail)
+		emailurl := []string(nil)
+		if specEmail != "" {
+			emailurl = []string{fmt.Sprintf("mailto:%s", strings.ToLower(specEmail))}
+		}
+		acc.Contact = emailurl
+
+		var err error
+		acc, err = cl.UpdateAccount(ctx, acc)
+		if err != nil {
+			return nil, "", err
+		}
+
+		// update the registeredEmail var so it is updated properly in the status below
+		registeredEmail = specEmail
+	}
+
+	return acc, registeredEmail, nil
 }
 
 // registerAccount will register a new ACME account with the server. If an

@@ -224,5 +224,25 @@ func (s *Solver) mergePodObjectMetaWithPodTemplate(pod *corev1.Pod, podTempl *v1
 		pod.Annotations[k] = v
 	}
 
+	if pod.Spec.NodeSelector == nil {
+		pod.Spec.NodeSelector = make(map[string]string)
+	}
+
+	for k, v := range podTempl.Spec.NodeSelector {
+		pod.Spec.NodeSelector[k] = v
+	}
+
+	if pod.Spec.Tolerations == nil {
+		pod.Spec.Tolerations = []corev1.Toleration{}
+	}
+
+	for _, t := range podTempl.Spec.Tolerations {
+		pod.Spec.Tolerations = append(pod.Spec.Tolerations, t)
+	}
+
+	if podTempl.Spec.Affinity != nil {
+		pod.Spec.Affinity = podTempl.Spec.Affinity
+	}
+
 	return pod
 }

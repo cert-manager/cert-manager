@@ -34,6 +34,27 @@ import (
 
 type Solver struct {
 	secretLister corelisters.SecretLister
+
+	// If specified, namespace will cause the rfc2136 provider to limit the
+	// scope of the lister/watcher to a single namespace, to allow for
+	// namespace restricted instances of cert-manager.
+	namespace string
+}
+
+type Option func(*Solver)
+
+func WithNamespace(ns string) Option {
+	return func(s *Solver) {
+		s.namespace = ns
+	}
+}
+
+func New(opts ...Option) *Solver {
+	s := &Solver{}
+	for _, o := range opts {
+		o(s)
+	}
+	return s
 }
 
 func (s *Solver) Name() string {
@@ -76,7 +97,7 @@ func (s *Solver) Initialize(kubeClientConfig *restclient.Config, stopCh <-chan s
 
 	// obtain a secret lister and start the informer factory to populate the
 	// secret cache
-	factory := informers.NewSharedInformerFactory(cl, time.Minute*5)
+	factory := informers.NewSharedInformerFactoryWithOptions(cl, time.Minute*5, informers.WithNamespace(s.namespace))
 	s.secretLister = factory.Core().V1().Secrets().Lister()
 	factory.Start(stopCh)
 	factory.WaitForCacheSync(stopCh)
