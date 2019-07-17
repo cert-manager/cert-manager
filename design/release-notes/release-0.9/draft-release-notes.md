@@ -62,10 +62,10 @@ Users who want to debug from within the cert-manager pod will need to attach an
 additional container with their debug utilities to the pod's namespace.
 
 ### CSRs in Order Resources now PEM Encoded
-CSRs in Order resources have previously been erroneously DER encoded however has
-now been changed to be correctly PEM encoding. Current orders that were created
-from a previous version of cert-manager will fail to validate and so will be
-recreated. This should resume the order normally.
+CSRs in Order resources have previously been incorrectly DER encoded due to an
+error in implementation. This has now been corrected to PEM encoding. Current
+orders that were created with a previous version of cert-manager will fail to
+validate and so will be recreated. This should resume the order normally.
 
 ## Changelog
 ### General
