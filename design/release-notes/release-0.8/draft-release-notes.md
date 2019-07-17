@@ -74,7 +74,7 @@ have any issues!
 - Fixes additionalPrinterColumn formatting for Certificate resources (#1616, @munnerz)
 - Fix update loop in certificates controller and add additional debug logging (#1602, @munnerz)
 - Automatically retry expired Challenge resources (#1603, @munnerz)
--Build under MacOS. (#1601, @michaelfig)
+- Build under MacOS. (#1601, @michaelfig)
 - Disable the CAA check by default, and introduce a new --feature-gates=ValidateCAA=true option to enable it (#1585, @munnerz)
 - Improve error handling when ACME challenges fail to Present or CleanUp (#1597, @munnerz)
 - Add static label for solver identification to allow usage of custom service (#1575, @christianhuening)
