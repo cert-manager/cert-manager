@@ -40,9 +40,6 @@ The process for cutting a minor release is as follows:
 
 #. Push it to the ```jetstack/cert-manager`` repository
 
-#. Create a pull-request updating the Helm chart version and merge it:
-
-   * Run ```helm dep update``` in the deploy/charts/cert-manager directory
 #. Gather release notes since the previous release:
 
    * Download, install and run the latest version of release-notes:
