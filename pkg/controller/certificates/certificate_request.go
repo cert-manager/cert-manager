@@ -567,14 +567,8 @@ func (c *certificateRequestManager) processCertificate(ctx context.Context, crt 
 	// If certificate stored on CertificateRequest is not expiring soon, copy
 	// across the status.certificate field into the Secret resource.
 	log.Info("CertificateRequest contains a valid certificate for issuance. Issuing certificate...")
-	expectedSecret := existingSecret.DeepCopy()
-	err = c.setSecretValues(ctx, crt, expectedSecret, secretData{pk: existingKey, cert: existingReq.Status.Certificate, ca: existingReq.Status.CA})
-	if err != nil {
-		return err
-	}
 
-	// Finally, save the newly issued certificate!
-	existingSecret, err = c.kubeClient.CoreV1().Secrets(existingSecret.Namespace).Update(expectedSecret)
+	_, err = c.updateSecretData(ctx, crt, existingSecret, secretData{pk: existingKey, cert: existingReq.Status.Certificate, ca: existingReq.Status.CA})
 	if err != nil {
 		return err
 	}
@@ -584,13 +578,26 @@ func (c *certificateRequestManager) processCertificate(ctx context.Context, crt 
 	return nil
 }
 
-func (c *certificateRequestManager) ensureSecretMetadataUpToDate(ctx context.Context, s *corev1.Secret, crt *cmapi.Certificate) (bool, error) {
-	pk := s.Data[corev1.TLSPrivateKeyKey]
-	cert := s.Data[corev1.TLSCertKey]
-	ca := s.Data[TLSCAKey]
+// updateSecretData will ensure the Secret resource contains the given secret
+// data as well as appropriate metadata.
+// If the given 'existingSecret' is nil, a new Secret resource will be created.
+// Otherwise, the existing resource will be updated.
+// The first return argument will be true if the resource was updated/created
+// without error.
+func (c *certificateRequestManager) updateSecretData(ctx context.Context, crt *cmapi.Certificate, existingSecret *corev1.Secret, data secretData) (bool, error) {
+	s := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      crt.Spec.SecretName,
+			Namespace: crt.Namespace,
+		},
+		Type: corev1.SecretTypeTLS,
+	}
+	if existingSecret != nil {
+		s = existingSecret
+	}
 
 	newSecret := s.DeepCopy()
-	err := c.setSecretValues(ctx, crt, newSecret, secretData{pk: pk, cert: cert, ca: ca})
+	err := setSecretValues(ctx, crt, newSecret, secretData{pk: data.pk, cert: data.cert, ca: data.ca})
 	if err != nil {
 		return false, err
 	}
@@ -598,9 +605,30 @@ func (c *certificateRequestManager) ensureSecretMetadataUpToDate(ctx context.Con
 		return false, nil
 	}
 
+	if existingSecret == nil {
+		_, err = c.kubeClient.CoreV1().Secrets(newSecret.Namespace).Create(newSecret)
+		if err != nil {
+			return false, err
+		}
+		return true, nil
+	}
+
 	_, err = c.kubeClient.CoreV1().Secrets(newSecret.Namespace).Update(newSecret)
 	if err != nil {
 		return false, err
+	}
+
+	return true, nil
+}
+
+func (c *certificateRequestManager) ensureSecretMetadataUpToDate(ctx context.Context, s *corev1.Secret, crt *cmapi.Certificate) (bool, error) {
+	pk := s.Data[corev1.TLSPrivateKeyKey]
+	cert := s.Data[corev1.TLSCertKey]
+	ca := s.Data[TLSCAKey]
+
+	updated, err := c.updateSecretData(ctx, crt, s, secretData{pk: pk, cert: cert, ca: ca})
+	if err != nil || !updated {
+		return updated, err
 	}
 
 	c.recorder.Eventf(crt, corev1.EventTypeNormal, "UpdateMeta", "Updated metadata on Secret resource")
@@ -615,7 +643,7 @@ func (c *certificateRequestManager) issueTemporaryCertificate(ctx context.Contex
 	}
 
 	newSecret := secret.DeepCopy()
-	err = c.setSecretValues(ctx, crt, newSecret, secretData{pk: key, cert: tempCertData})
+	err = setSecretValues(ctx, crt, newSecret, secretData{pk: key, cert: tempCertData})
 	if err != nil {
 		return err
 	}
@@ -753,7 +781,6 @@ func findCertificateRequestsForCertificate(log logr.Logger, crt *cmapi.Certifica
 		if metav1.IsControlledBy(req, crt) {
 			log.V(logf.DebugLevel).Info("found CertificateRequest resource for Certificate")
 			candidates = append(candidates, &(*req))
-			continue
 		}
 	}
 
@@ -803,31 +830,18 @@ func validatePrivateKeyUpToDate(log logr.Logger, pk []byte, crt *cmapi.Certifica
 type secretSaveFn func(*corev1.Secret) (*corev1.Secret, error)
 
 func (c *certificateRequestManager) generateAndStorePrivateKey(ctx context.Context, crt *cmapi.Certificate, s *corev1.Secret, saveFn secretSaveFn) error {
-	if s == nil {
-		s = &corev1.Secret{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      crt.Spec.SecretName,
-				Namespace: crt.Namespace,
-			},
-			Type: corev1.SecretTypeTLS,
-		}
-	}
-
 	keyData, err := c.generatePrivateKeyBytes(ctx, crt)
 	if err != nil {
 		// TODO: handle permanent failures caused by invalid spec
 		return err
 	}
 
-	err = c.setSecretValues(ctx, crt, s, secretData{pk: keyData})
+	updated, err := c.updateSecretData(ctx, crt, s, secretData{pk: keyData})
 	if err != nil {
 		return err
 	}
-
-	// submit resource to apiserver
-	_, err = saveFn(s)
-	if err != nil {
-		return err
+	if !updated {
+		return nil
 	}
 
 	c.recorder.Eventf(crt, corev1.EventTypeNormal, "GeneratedKey", "Generated a new private key")
@@ -864,7 +878,7 @@ type secretData struct {
 // setSecretValues will NOT actually update the resource in the apiserver.
 // If updating an existing Secret resource returned by an api client 'lister',
 // make sure to DeepCopy the object first to avoid modifying data in-cache.
-func (c *certificateRequestManager) setSecretValues(ctx context.Context, crt *cmapi.Certificate, s *corev1.Secret, data secretData) error {
+func setSecretValues(ctx context.Context, crt *cmapi.Certificate, s *corev1.Secret, data secretData) error {
 	// initialize the `Data` field if it is nil
 	if s.Data == nil {
 		s.Data = make(map[string][]byte)
