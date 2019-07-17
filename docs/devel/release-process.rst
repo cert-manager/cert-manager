@@ -27,43 +27,32 @@ Process
 
 The process for cutting a minor release is as follows:
 
-#. Ensure upgrading document exists in docs/admin/upgrading
+#. Ensure upgrading document exists in docs/tasks/upgrading
 
+#. Ensure all strings of versions have been updated:
+
+   * deploy/charts/cert-manager/README.md
+   * docs/getting-started/install/kubernetes.rst
+   * docs/getting-started/install/openshift.rst
+   * docs/getting-started/webhook.rst
+   * docs/tutorials/acme/quick-start/index.rst
 #. Create a new release branch (e.g. ```release-0.5```)
 
 #. Push it to the ```jetstack/cert-manager`` repository
 
-#. Create a pull-request updating the Helm chart version and merge it:
-
-   * Update contrib/charts/cert-manager/README.md
-   * Update contrib/charts/cert-manager/Chart.yaml
-   * Update contrib/charts/cert-manager/values.yaml
-   * Update contrib/charts/cert-manager/requirements.yaml
-   * Update contrib/charts/cert-manager/webhook/Chart.yaml
-   * Update contrib/charts/cert-manager/webhook/values.yaml
-   * Run ```helm dep update``` in the contrib/charts/cert-manager directory
-   * Run ```./hack/update-deploy-gen.sh``` in the root of the repository
 #. Gather release notes since the previous release:
 
-   * Run ```relnotes -repo cert-manager -owner jetstack release-0.5```
-   * Write up appropriate notes, similar to previous releases
+   * Download, install and run the latest version of release-notes:
 
-#. Submit the Helm chart changes to the upstream ```helm/charts``` repo:
+.. code::
 
-   .. code:: shell
+     * $ go get k8s.io/release; go install $GOPATH/src/k8s.io/release/cmd/release-notes/.
+     * $ mkdir -p design/release-notes/release-*X.Y*
+     * $ export GITHUB_TOKEN=*your-token*
+     * $ $GOPATH/bin/release-notes -release-version v*X.Y* -github-repo cert-manager -github-org jetstack -requiredAuthor "" -start-sha=$(git rev-parse *X.Y-1.0*) -end-sha=$(git rev-parse HEAD) -output design/release-notes/release-*X.Y*/draft-release-notes.md
+     * # Add additional blurb, notable items and characterise Changelog.
 
-      TARGET_REPO_REMOTE=upstream \
-      SOURCE_REPO_REMOTE=upstream \
-      SOURCE_REPO_REF=release-0.5 \
-      GITHUB_USER=munnerz \
-      ./hack/create-chart-pr.sh
-
-#. Iterate on review feedback (hopefully this will be minimal) and submit
-   changes to ```master``` of cert-manager, performing a rebase of release-x.y
-   and re-run of the ```create-chart-pr.sh``` script after each cycle to gather
-   more feedback.
-
-#. Create a new tag taken from the release branch, e.g. ```v0.5.0```.
+Finally, create a new tag taken from the release branch, e.g. ```v0.5.0```.
 
 Patch releases
 ==============
@@ -95,35 +84,24 @@ this repository.
 
 The process for cutting a patch release is as follows:
 
-#. Create a PR against the **release branch** to bump the chart version:
+#. Ensure all strings of versions have been updated:
 
-   * Update contrib/charts/cert-manager/README.md
-   * Update contrib/charts/cert-manager/Chart.yaml
-   * Update contrib/charts/cert-manager/values.yaml
-   * Update contrib/charts/cert-manager/requirements.yaml
-   * Update contrib/charts/cert-manager/webhook/Chart.yaml
-   * Update contrib/charts/cert-manager/webhook/values.yaml
-   * Run ```helm dep update``` in the contrib/charts/cert-manager directory
-   * Run ```./hack/update-deploy-gen.sh``` in the root of the repository
-
-#. Submit the Helm chart changes to the upstream ```helm/charts``` repo:
-
-   .. code:: shell
-
-      TARGET_REPO_REMOTE=upstream \
-      SOURCE_REPO_REMOTE=upstream \
-      SOURCE_REPO_REF=release-0.5 \
-      GITHUB_USER=munnerz \
-      ./hack/create-chart-pr.sh
-
+   * deploy/charts/cert-manager/README.md
+   * docs/getting-started/install/kubernetes.rst
+   * docs/getting-started/install/openshift.rst
+   * docs/getting-started/webhook.rst
+   * docs/tutorials/acme/quick-start/index.rst
 #. Iterate on review feedback (hopefully this will be minimal) and submit
-   changes to ```master``` of cert-manager, performing a rebase of release-x.y
-   and re-run of the ```create-chart-pr.sh``` script after each cycle to gather
-   more feedback.
+   changes to ```master``` of cert-manager, performing a rebase of release-x.y.
 
 #. Gather release notes since the previous release:
 
-   * Run ```relnotes -repo cert-manager -owner jetstack release-0.5```
-   * Write up appropriate notes, similar to previous patch releases
+.. code::
 
-#. Create a new tag taken from the release branch, e.g. ```v0.5.1```.
+     * $ go get k8s.io/release; go install $GOPATH/src/k8s.io/release/cmd/release-notes/.
+     * $ mkdir -p design/release-notes/release-*X.Y*
+     * $ export GITHUB_TOKEN=*your-token*
+     * $ $GOPATH/bin/release-notes -release-version v*X.Y* -github-repo cert-manager -github-org jetstack -requiredAuthor "" -start-sha=$(git rev-parse *X.Y.Z-1*) -end-sha=$(git rev-parse release-*X.Y*) -output design/release-notes/release-*X.Y*/draft-release-notes-*Z*.md
+     * # Add additional blurb, notable items and characterise Changelog.
+
+Finally, create a new tag taken from the release branch, e.g. ```v0.5.1```.
