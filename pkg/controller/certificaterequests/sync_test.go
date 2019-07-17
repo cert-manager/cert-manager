@@ -167,7 +167,7 @@ func TestSync(t *testing.T) {
 		gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
 			Type:               cmapi.CertificateRequestConditionReady,
 			Status:             cmapi.ConditionFalse,
-			Reason:             errorFailed,
+			Reason:             reasonFailed,
 			LastTransitionTime: &nowMetaTime,
 		}),
 	)
