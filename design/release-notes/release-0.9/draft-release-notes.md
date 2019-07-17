@@ -22,7 +22,7 @@ or how this resource is used in the
 ### DNS Zones support for ACME challenge solver selector
 A list of DNS zones can now be added to the ACME challenge solver selector.  The
 most specific DNS zone match specified here will take precedence over other DNS
-zone matches, so a solver specifying `sys.example.com will` be selected over one
+zone matches, so a solver specifying `sys.example.com` will be selected over one
 specifying `example.com` for the domain `www.sys.example.com`. If multiple
 solvers match with the same dnsZones value, the solver with the most matching
 labels in matchLabels will be selected. If neither has more matches, the solver
@@ -31,13 +31,13 @@ defined earlier in the list will be selected.
 ### Certificate Readiness Prometheus Metrics
 Cert-manager now exposes Prometheus metrics on Certificate ready statuses as
 `certmanager_certificate_ready_status`. This is useful for monitoring
-Certificate resources to ensure they have a `Read=True` status.
+Certificate resources to ensure they have a `Ready=True` status.
 
 ### Prometheus Operator ServiceMonitor
 Support has been added to include a Prometheus ServiceMonitor for cert-manager
 in the helm chart. This enables monitoring of cert-manager when in conjunction
-with the Prometheus Operator. This is disabled by default but can be enabled via
-the helm configuration.
+with the [Prometheus Operator](https://github.com/coreos/prometheus-operator).
+This is disabled by default but can be enabled via the helm configuration.
 
 ### ACMEv2 POST-as-GET
 
@@ -46,7 +46,9 @@ the helm configuration.
 ### ACME Issuer Solver Pod Template
 The ACME Solver Pod Spec now exposes a template that can be used to change
 metadata about that pod. Currently, a template will expose labels, annotations,
-node selector, tolerations, and affinity.
+node selector, tolerations, and affinity. This is useful when running
+cert-manager in multi-arch clusters, or when you run workloads across different
+types of nodes and need to restrict where the acmesolver pod runs.
 
 ## Action Required
 ### Length limit for Common Names
@@ -60,10 +62,10 @@ Users who want to debug from within the cert-manager pod will need to attach an
 additional container with their debug utilities to the pod's namespace.
 
 ### CSRs in Order Resources now PEM Encoded
-CSRs in Order resources have previously been DER encoded however this has now
-changed to PEM encoding. Current orders that were created from a previous
-version of cert-manager will fail to validate and so will be recreated. This
-should resume the order normally.
+CSRs in Order resources have previously been erroneously DER encoded however has
+now been changed to be correctly PEM encoding. Current orders that were created
+from a previous version of cert-manager will fail to validate and so will be
+recreated. This should resume the order normally.
 
 ## Changelog
 ### General
