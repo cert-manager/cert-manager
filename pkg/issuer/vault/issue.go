@@ -72,7 +72,7 @@ func (v *Vault) Issue(ctx context.Context, crt *v1alpha1.Certificate) (*issuer.I
 
 	/// BEGIN building CSR
 	// TODO: we should probably surface some of these errors to users
-	template, err := pki.GenerateCSR(v.issuer, crt)
+	template, err := pki.GenerateCSR(crt)
 	if err != nil {
 		return nil, err
 	}
