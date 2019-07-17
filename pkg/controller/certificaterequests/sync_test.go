@@ -142,12 +142,23 @@ func TestSync(t *testing.T) {
 			Name: "fake-issuer",
 		}),
 	)
-	exampleCRPendingCondition := gen.CertificateRequestFrom(exampleCR,
+
+	exampleCRIssuePendingCondition := gen.CertificateRequestFrom(exampleCR,
 		gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
 			Type:               cmapi.CertificateRequestConditionReady,
 			Status:             cmapi.ConditionFalse,
-			Reason:             "CertPending",
+			Reason:             "Pending",
 			Message:            "Certificate issuance pending",
+			LastTransitionTime: &nowMetaTime,
+		}),
+	)
+
+	exampleCRIssuerNotFoundPendingCondition := gen.CertificateRequestFrom(exampleCR,
+		gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
+			Type:               cmapi.CertificateRequestConditionReady,
+			Status:             cmapi.ConditionFalse,
+			Reason:             "Pending",
+			Message:            "Referenced Issuer not found",
 			LastTransitionTime: &nowMetaTime,
 		}),
 	)
@@ -156,7 +167,7 @@ func TestSync(t *testing.T) {
 		gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
 			Type:               cmapi.CertificateRequestConditionReady,
 			Status:             cmapi.ConditionFalse,
-			Reason:             errorCertificateFailed,
+			Reason:             reasonFailed,
 			LastTransitionTime: &nowMetaTime,
 		}),
 	)
@@ -189,7 +200,7 @@ func TestSync(t *testing.T) {
 		gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
 			Type:               cmapi.CertificateRequestConditionReady,
 			Status:             cmapi.ConditionFalse,
-			Reason:             "CertFailed",
+			Reason:             "Failed",
 			Message:            "Failed to decode certificate PEM",
 			LastTransitionTime: &nowMetaTime,
 		}),
@@ -197,6 +208,16 @@ func TestSync(t *testing.T) {
 
 	exampleEmptyCSRCR := exampleCR.DeepCopy()
 	exampleEmptyCSRCR.Spec.CSRPEM = make([]byte, 0)
+
+	exampleFailedValidationCR := gen.CertificateRequestFrom(exampleEmptyCSRCR,
+		gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
+			Type:               cmapi.CertificateRequestConditionReady,
+			Status:             cmapi.ConditionFalse,
+			Reason:             "Failed",
+			Message:            "Validation failed: spec.csr: Required value: must be specified",
+			LastTransitionTime: &nowMetaTime,
+		}),
+	)
 
 	exampleCRWrongIssuerRefGroup := exampleCR.DeepCopy()
 	exampleCRWrongIssuerRefGroup.Spec.IssuerRef.Group = "notcertmanager.k8s.io"
@@ -230,7 +251,7 @@ func TestSync(t *testing.T) {
 					testpkg.NewAction(coretesting.NewUpdateAction(
 						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
 						gen.DefaultTestNamespace,
-						exampleCRPendingCondition,
+						exampleCRIssuePendingCondition,
 					)),
 				},
 			},
@@ -372,7 +393,7 @@ func TestSync(t *testing.T) {
 		},
 		"return nil if generic issuer doesn't exist, will sync when on ready": {
 			Issuer:             nil,
-			CertificateRequest: *exampleSignedCR,
+			CertificateRequest: *exampleCR,
 			IssuerImpl: &fake.Issuer{
 				FakeSign: func(context.Context, *cmapi.CertificateRequest) (*issuer.IssueResponse, error) {
 					return nil, errors.New("unexpected sign call")
@@ -380,7 +401,13 @@ func TestSync(t *testing.T) {
 			},
 			Builder: &testpkg.Builder{
 				CertManagerObjects: []runtime.Object{gen.CertificateRequest("test")},
-				ExpectedActions:    []testpkg.Action{},
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(coretesting.NewUpdateAction(
+						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
+						gen.DefaultTestNamespace,
+						exampleCRIssuerNotFoundPendingCondition,
+					)),
+				},
 			},
 			CheckFn: func(t *testing.T, s *controllerFixture, args ...interface{}) {
 			},
@@ -392,8 +419,9 @@ func TestSync(t *testing.T) {
 					Type:   cmapi.IssuerConditionReady,
 					Status: cmapi.ConditionTrue,
 				}),
+				// no issuer set
 			),
-			CertificateRequest: *exampleSignedCR,
+			CertificateRequest: *exampleCR,
 			IssuerImpl: &fake.Issuer{
 				FakeSign: func(context.Context, *cmapi.CertificateRequest) (*issuer.IssueResponse, error) {
 					return nil, errors.New("unexpected sign call")
@@ -401,7 +429,13 @@ func TestSync(t *testing.T) {
 			},
 			Builder: &testpkg.Builder{
 				CertManagerObjects: []runtime.Object{gen.CertificateRequest("test")},
-				ExpectedActions:    []testpkg.Action{},
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(coretesting.NewUpdateAction(
+						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
+						gen.DefaultTestNamespace,
+						exampleCRIssuerNotFoundPendingCondition,
+					)),
+				},
 			},
 			CheckFn: func(t *testing.T, s *controllerFixture, args ...interface{}) {
 			},
@@ -445,7 +479,13 @@ func TestSync(t *testing.T) {
 			},
 			Builder: &testpkg.Builder{
 				CertManagerObjects: []runtime.Object{gen.CertificateRequest("test")},
-				ExpectedActions:    []testpkg.Action{},
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(coretesting.NewUpdateAction(
+						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
+						gen.DefaultTestNamespace,
+						exampleFailedValidationCR,
+					)),
+				},
 			},
 			CheckFn: func(t *testing.T, s *controllerFixture, args ...interface{}) {
 			},
