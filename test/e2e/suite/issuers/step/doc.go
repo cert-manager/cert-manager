@@ -18,4 +18,5 @@ package step
 
 import (
 	_ "github.com/jetstack/cert-manager/test/e2e/suite/issuers/step/certificate"
+	_ "github.com/jetstack/cert-manager/test/e2e/suite/issuers/step/certificaterequest"
 )
