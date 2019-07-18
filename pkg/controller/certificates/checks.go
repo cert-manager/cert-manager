@@ -19,10 +19,14 @@ package certificates
 import (
 	"fmt"
 
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
-	logf "github.com/jetstack/cert-manager/pkg/logs"
+	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/client-go/util/workqueue"
+
+	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	cmlisters "github.com/jetstack/cert-manager/pkg/client/listers/certmanager/v1alpha1"
+	logf "github.com/jetstack/cert-manager/pkg/logs"
 )
 
 func (c *controller) handleGenericIssuer(obj interface{}) {
@@ -51,34 +55,36 @@ func (c *controller) handleGenericIssuer(obj interface{}) {
 	}
 }
 
-func (c *controller) handleSecretResource(obj interface{}) {
-	log := c.log.WithName("handleSecretResource")
+func secretResourceHandler(log logr.Logger, certificateLister cmlisters.CertificateLister, queue workqueue.Interface) func(obj interface{}) {
+	return func(obj interface{}) {
+		log := log.WithName("handleSecretResource")
 
-	secret, ok := obj.(*corev1.Secret)
-	if !ok {
-		log.Error(nil, "object is not a Secret resource")
-		return
-	}
-	log = logf.WithResource(log, secret)
-
-	crts, err := c.certificatesForSecret(secret)
-	if err != nil {
-		log.Error(err, "error looking up Certificates observing Secret")
-		return
-	}
-	for _, crt := range crts {
-		log := logf.WithRelatedResource(log, crt)
-		key, err := keyFunc(crt)
-		if err != nil {
-			log.Error(err, "error computing key for resource")
-			continue
+		secret, ok := obj.(*corev1.Secret)
+		if !ok {
+			log.Error(nil, "object is not a Secret resource")
+			return
 		}
-		c.queue.Add(key)
+		log = logf.WithResource(log, secret)
+
+		crts, err := certificatesForSecret(certificateLister, secret)
+		if err != nil {
+			log.Error(err, "error looking up Certificates observing Secret")
+			return
+		}
+		for _, crt := range crts {
+			log := logf.WithRelatedResource(log, crt)
+			key, err := keyFunc(crt)
+			if err != nil {
+				log.Error(err, "error computing key for resource")
+				continue
+			}
+			queue.Add(key)
+		}
 	}
 }
 
-func (c *controller) certificatesForSecret(secret *corev1.Secret) ([]*cmapi.Certificate, error) {
-	crts, err := c.certificateLister.List(labels.NewSelector())
+func certificatesForSecret(certificateLister cmlisters.CertificateLister, secret *corev1.Secret) ([]*cmapi.Certificate, error) {
+	crts, err := certificateLister.List(labels.NewSelector())
 
 	if err != nil {
 		return nil, fmt.Errorf("error listing certificiates: %s", err.Error())

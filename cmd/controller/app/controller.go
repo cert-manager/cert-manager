@@ -43,6 +43,7 @@ import (
 	"github.com/jetstack/cert-manager/pkg/controller"
 	cacertificaterequestcontroller "github.com/jetstack/cert-manager/pkg/controller/certificaterequests/ca"
 	stepcertificaterequestcontroller "github.com/jetstack/cert-manager/pkg/controller/certificaterequests/step"
+	certificatescontroller "github.com/jetstack/cert-manager/pkg/controller/certificates"
 	"github.com/jetstack/cert-manager/pkg/controller/clusterissuers"
 	"github.com/jetstack/cert-manager/pkg/feature"
 	dnsutil "github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
@@ -79,6 +80,7 @@ func Run(opts *options.ControllerOptions, stopCh <-chan struct{}) {
 		opts.EnabledControllers = append(opts.EnabledControllers, []string{
 			cacertificaterequestcontroller.CRControllerName,
 			stepcertificaterequestcontroller.CRControllerName,
+			certificatescontroller.ExperimentalControllerName,
 		}...)
 	}
 

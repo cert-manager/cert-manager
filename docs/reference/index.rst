@@ -13,6 +13,7 @@ Step by step user guides and tutorials can be found in the
    :caption: Contents:
 
    certificates
+   certificaterequests
    orders
    challenges
    issuers
