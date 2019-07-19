@@ -544,7 +544,6 @@ k8s.io/apimachinery/pkg/api/equality
 k8s.io/apimachinery/pkg/util/rand
 k8s.io/apimachinery/pkg/apis/meta/v1beta1/validation
 # k8s.io/apiserver v0.0.0-20190718184206-a1aa83af71a7 => k8s.io/apiserver v0.0.0-20190718184206-a1aa83af71a7
-k8s.io/apiserver/pkg/util/feature
 k8s.io/apiserver/pkg/registry/rest
 k8s.io/apiserver/pkg/server
 k8s.io/apiserver/pkg/server/options
@@ -552,6 +551,7 @@ k8s.io/apiserver/pkg/admission
 k8s.io/apiserver/pkg/endpoints/request
 k8s.io/apiserver/pkg/features
 k8s.io/apiserver/pkg/storage/names
+k8s.io/apiserver/pkg/util/feature
 k8s.io/apiserver/pkg/admission/plugin/namespace/lifecycle
 k8s.io/apiserver/pkg/admission/plugin/webhook/mutating
 k8s.io/apiserver/pkg/admission/plugin/webhook/validating

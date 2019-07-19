@@ -26,7 +26,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	utilfeature "k8s.io/apiserver/pkg/util/feature"
+	kubeinformers "k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
@@ -49,8 +49,8 @@ import (
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 	"github.com/jetstack/cert-manager/pkg/metrics"
 	"github.com/jetstack/cert-manager/pkg/util"
+	utilfeature "github.com/jetstack/cert-manager/pkg/util/feature"
 	"github.com/jetstack/cert-manager/pkg/util/kube"
-	kubeinformers "k8s.io/client-go/informers"
 )
 
 const controllerAgentName = "cert-manager"

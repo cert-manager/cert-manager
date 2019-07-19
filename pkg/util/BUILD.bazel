@@ -39,6 +39,7 @@ filegroup(
     srcs = [
         ":package-srcs",
         "//pkg/util/errors:all-srcs",
+        "//pkg/util/feature:all-srcs",
         "//pkg/util/kube:all-srcs",
         "//pkg/util/pki:all-srcs",
     ],

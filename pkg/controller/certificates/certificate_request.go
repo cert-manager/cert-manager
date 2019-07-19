@@ -34,7 +34,6 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
-	utilfeature "k8s.io/apiserver/pkg/util/feature"
 	"k8s.io/client-go/kubernetes"
 	corelisters "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/tools/cache"
@@ -52,6 +51,7 @@ import (
 	"github.com/jetstack/cert-manager/pkg/metrics"
 	"github.com/jetstack/cert-manager/pkg/scheduler"
 	"github.com/jetstack/cert-manager/pkg/util/errors"
+	utilfeature "github.com/jetstack/cert-manager/pkg/util/feature"
 	"github.com/jetstack/cert-manager/pkg/util/kube"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 )

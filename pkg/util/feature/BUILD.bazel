@@ -2,14 +2,10 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 
 go_library(
     name = "go_default_library",
-    srcs = ["features.go"],
-    importpath = "github.com/jetstack/cert-manager/pkg/feature",
+    srcs = ["feature_gate.go"],
+    importpath = "github.com/jetstack/cert-manager/pkg/util/feature",
     visibility = ["//visibility:public"],
-    deps = [
-        "//pkg/util/feature:go_default_library",
-        "//vendor/k8s.io/apimachinery/pkg/util/runtime:go_default_library",
-        "//vendor/k8s.io/component-base/featuregate:go_default_library",
-    ],
+    deps = ["//vendor/k8s.io/component-base/featuregate:go_default_library"],
 )
 
 filegroup(
