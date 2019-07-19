@@ -8,7 +8,7 @@ go_library(
     tags = ["manual"],
     visibility = ["//visibility:public"],
     deps = [
-        "//vendor/k8s.io/api/admissionregistration/v1beta1:go_default_library",
+        "//vendor/k8s.io/apiserver/pkg/admission/plugin/webhook:go_default_library",
         "//vendor/k8s.io/apiserver/pkg/util/webhook:go_default_library",
     ],
 )

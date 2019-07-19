@@ -113,13 +113,6 @@ func (c *codec) Decode(data []byte, defaultGVK *schema.GroupVersionKind, into ru
 
 	// if we specify a target, use generic conversion.
 	if into != nil {
-		if into == obj {
-			if isVersioned {
-				return versioned, gvk, nil
-			}
-			return into, gvk, nil
-		}
-
 		// perform defaulting if requested
 		if c.defaulter != nil {
 			// create a copy to ensure defaulting is not applied to the original versioned objects
@@ -131,6 +124,14 @@ func (c *codec) Decode(data []byte, defaultGVK *schema.GroupVersionKind, into ru
 			if isVersioned {
 				versioned.Objects = []runtime.Object{obj}
 			}
+		}
+
+		// Short-circuit conversion if the into object is same object
+		if into == obj {
+			if isVersioned {
+				return versioned, gvk, nil
+			}
+			return into, gvk, nil
 		}
 
 		if err := c.convertor.Convert(obj, into, c.decodeVersion); err != nil {
@@ -199,23 +200,22 @@ func (c *codec) Encode(obj runtime.Object, w io.Writer) error {
 		return err
 	}
 
+	objectKind := obj.GetObjectKind()
+	old := objectKind.GroupVersionKind()
+	// restore the old GVK after encoding
+	defer objectKind.SetGroupVersionKind(old)
+
 	if c.encodeVersion == nil || isUnversioned {
 		if e, ok := obj.(runtime.NestedObjectEncoder); ok {
 			if err := e.EncodeNestedObjects(runtime.WithVersionEncoder{Encoder: c.encoder, ObjectTyper: c.typer}); err != nil {
 				return err
 			}
 		}
-		objectKind := obj.GetObjectKind()
-		old := objectKind.GroupVersionKind()
 		objectKind.SetGroupVersionKind(gvks[0])
-		err = c.encoder.Encode(obj, w)
-		objectKind.SetGroupVersionKind(old)
-		return err
+		return c.encoder.Encode(obj, w)
 	}
 
 	// Perform a conversion if necessary
-	objectKind := obj.GetObjectKind()
-	old := objectKind.GroupVersionKind()
 	out, err := c.convertor.ConvertToVersion(obj, c.encodeVersion)
 	if err != nil {
 		return err
@@ -228,10 +228,7 @@ func (c *codec) Encode(obj runtime.Object, w io.Writer) error {
 	}
 
 	// Conversion is responsible for setting the proper group, version, and kind onto the outgoing object
-	err = c.encoder.Encode(out, w)
-	// restore the old GVK, in case conversion returned the same object
-	objectKind.SetGroupVersionKind(old)
-	return err
+	return c.encoder.Encode(out, w)
 }
 
 // DirectEncoder was moved and renamed to runtime.WithVersionEncoder in 1.15.

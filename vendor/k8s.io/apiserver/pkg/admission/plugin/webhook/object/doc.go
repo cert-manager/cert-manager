@@ -1,5 +1,5 @@
 /*
-Copyright 2016 The Kubernetes Authors.
+Copyright 2019 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,19 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package generators
-
-import (
-	"k8s.io/gengo/types"
-)
-
-// extractTag gets the comment-tags for the key.  If the tag did not exist, it
-// returns the empty string.
-func extractTag(key string, lines []string) string {
-	val, present := types.ExtractCommentTags("+", lines)[key]
-	if !present || len(val) < 1 {
-		return ""
-	}
-
-	return val[0]
-}
+// Package object defines the utilities that are used by the webhook plugin to
+// decide if a webhook should run, as long as either the old object or the new
+// object has labels matching the webhook config's objectSelector.
+package object // import "k8s.io/apiserver/pkg/admission/plugin/webhook/object"
