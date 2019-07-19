@@ -86,7 +86,7 @@ func (s *Step) Issue(ctx context.Context, crt *certmanager.Certificate) (*issuer
 
 	var resp *api.SignResponse
 	if signFlow {
-		template, err := pki.GenerateCSR(s.issuer, crt)
+		template, err := pki.GenerateCSR(crt)
 		if err != nil {
 			s.Recorder.Eventf(crt, corev1.EventTypeWarning, "ErrorSigning", "Error creating certificate signing request: %v", err)
 			return nil, err
