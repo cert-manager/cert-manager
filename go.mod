@@ -5,7 +5,7 @@ go 1.12
 require (
 	cloud.google.com/go v0.38.0
 	github.com/Azure/azure-sdk-for-go v21.3.0+incompatible
-	github.com/Azure/go-autorest v11.1.0+incompatible
+	github.com/Azure/go-autorest v11.1.2+incompatible
 	github.com/Microsoft/go-winio v0.4.12 // indirect
 	github.com/Nvveen/Gotty v0.0.0-20120604004816-cd527374f1e5 // indirect
 	github.com/SAP/go-hdb v0.14.1 // indirect
@@ -14,7 +14,6 @@ require (
 	github.com/appscode/jsonpatch v0.0.0-20190108182946-7c0e3b262f30 // indirect
 	github.com/armon/go-metrics v0.0.0-20180917152333-f0300d1749da // indirect
 	github.com/armon/go-radix v1.0.0 // indirect
-	github.com/asaskevich/govalidator v0.0.0-20180720115003-f9ffefc3facf // indirect
 	github.com/aws/aws-sdk-go v0.0.0-20170809071707-58f4800ac6e7
 	github.com/bitly/go-hostpool v0.0.0-20171023180738-a3a6125de932 // indirect
 	github.com/bmizerany/assert v0.0.0-20160611221934-b7ed37b82869 // indirect
@@ -25,7 +24,6 @@ require (
 	github.com/denisenkom/go-mssqldb v0.0.0-20190412130859-3b1d194e553a // indirect
 	github.com/digitalocean/godo v1.6.0
 	github.com/docker/go-connections v0.4.0 // indirect
-	github.com/docker/go-units v0.3.3 // indirect
 	github.com/duosecurity/duo_api_golang v0.0.0-20190308151101-6c680f768e74 // indirect
 	github.com/emicklei/go-restful v2.9.3+incompatible // indirect
 	github.com/fatih/structs v1.1.0 // indirect
@@ -41,7 +39,6 @@ require (
 	github.com/golang/protobuf v1.3.1 // indirect
 	github.com/golang/snappy v0.0.0-20180518054509-2e65f85255db // indirect
 	github.com/google/btree v1.0.0 // indirect
-	github.com/google/go-cmp v0.3.0 // indirect
 	github.com/google/go-github v17.0.0+incompatible
 	github.com/google/go-querystring v1.0.0 // indirect
 	github.com/gorilla/context v1.1.1 // indirect
@@ -59,7 +56,6 @@ require (
 	github.com/hashicorp/golang-math-big v0.0.0-20180316142257-561262b71329 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/hashicorp/vault v0.9.6
-	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/jefferai/jsonx v1.0.0 // indirect
 	github.com/jmespath/go-jmespath v0.0.0-20180206201540-c2b33e8439af // indirect
 	github.com/keybase/go-crypto v0.0.0-20190403132359-d65b6b94177f // indirect
@@ -72,7 +68,6 @@ require (
 	github.com/miekg/dns v0.0.0-20170721150254-0f3adef2e220
 	github.com/mitchellh/copystructure v1.0.0 // indirect
 	github.com/mitchellh/go-testing-interface v1.0.0 // indirect
-	github.com/mitchellh/mapstructure v1.1.2 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20190414153302-2ae31c8b6b30 // indirect
 	github.com/onsi/ginkgo v1.7.0
 	github.com/onsi/gomega v1.4.3
@@ -87,7 +82,7 @@ require (
 	github.com/prometheus/client_golang v0.9.3-0.20190127221311-3c4408c8b829
 	github.com/ryanuber/go-glob v1.0.0 // indirect
 	github.com/sethgrid/pester v0.0.0-20190127155807-68a33a018ad0 // indirect
-	github.com/spf13/cobra v0.0.0-20170905172051-b78744579491
+	github.com/spf13/cobra v0.0.0-20180319062004-c439c4fa0937
 	github.com/spf13/pflag v1.0.1
 	github.com/stretchr/testify v1.3.0
 	github.com/tent/http-link-go v0.0.0-20130702225549-ac974c61c2f9 // indirect
@@ -105,23 +100,21 @@ require (
 	gopkg.in/ini.v1 v1.42.0 // indirect
 	gopkg.in/mgo.v2 v2.0.0-20180705113604-9856a29383ce // indirect
 	gopkg.in/ory-am/dockertest.v3 v3.3.4 // indirect
-	k8s.io/api v0.0.0-20190413052509-3cc1b3fb6d0f
-	k8s.io/apiextensions-apiserver v0.0.0-20190111034747-7d26de67f177
-	k8s.io/apimachinery v0.0.0-20190413052414-40a3f73b0fa2
-	k8s.io/apiserver v0.0.0-20190413053200-5b6ebd80335e
-	k8s.io/client-go v0.0.0-20190413052642-108c485f896e
-	k8s.io/code-generator v0.0.0-20181117043124-c2090bec4d9b
-	k8s.io/component-base v0.0.0-20190413053003-a7e0d79a8811
+	k8s.io/api v0.0.0-20190718183219-b59d8169aab5
+	k8s.io/apiextensions-apiserver v0.0.0-20190718185103-d1ef975d28ce
+	k8s.io/apimachinery v0.0.0-20190612205821-1799e75a0719
+	k8s.io/apiserver v0.0.0-20190718184206-a1aa83af71a7
+	k8s.io/client-go v0.0.0-20190718183610-8e956561bbf5
+	k8s.io/code-generator v0.0.0-20190612205613-18da4a14b22b
+	k8s.io/component-base v0.0.0-20190718183727-0ececfbe9772
 	k8s.io/gengo v0.0.0-20190327210449-e17681d19d3a // indirect
-	k8s.io/klog v0.2.0
+	k8s.io/klog v0.3.1
 	k8s.io/kube-aggregator v0.0.0-20190222095010-0b78038fe9e5
 	k8s.io/kube-openapi v0.0.0-20190228160746-b3a7cee44a30
 	k8s.io/utils v0.0.0-20190221042446-c2654d5206da
 	sigs.k8s.io/controller-runtime v0.0.0-20190222182021-68ae79ea094a
 	sigs.k8s.io/testing_frameworks v0.1.1
 )
-
-replace k8s.io/client-go => k8s.io/client-go v0.0.0-20190413052642-108c485f896e
 
 replace github.com/openshift/generic-admission-server => github.com/openshift/generic-admission-server v1.14.0
 
@@ -130,3 +123,19 @@ replace sigs.k8s.io/controller-runtime => github.com/munnerz/controller-runtime 
 replace github.com/evanphx/json-patch => github.com/evanphx/json-patch v0.0.0-20190203023257-5858425f7550
 
 replace github.com/munnerz/goautoneg => github.com/munnerz/goautoneg v0.0.0-20190414153302-2ae31c8b6b30
+
+replace k8s.io/api => k8s.io/api v0.0.0-20190718183219-b59d8169aab5
+
+replace k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.0.0-20190718185103-d1ef975d28ce
+
+replace k8s.io/apimachinery => k8s.io/apimachinery v0.0.0-20190612205821-1799e75a0719
+
+replace k8s.io/apiserver => k8s.io/apiserver v0.0.0-20190718184206-a1aa83af71a7
+
+replace k8s.io/client-go => k8s.io/client-go v0.0.0-20190718183610-8e956561bbf5
+
+replace k8s.io/code-generator => k8s.io/code-generator v0.0.0-20190612205613-18da4a14b22b
+
+replace k8s.io/component-base => k8s.io/component-base v0.0.0-20190718183727-0ececfbe9772
+
+replace k8s.io/kube-aggregator => k8s.io/kube-aggregator v0.0.0-20190718184434-a064d4d1ed7a
