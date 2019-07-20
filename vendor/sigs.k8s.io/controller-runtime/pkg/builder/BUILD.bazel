@@ -3,8 +3,9 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 go_library(
     name = "go_default_library",
     srcs = [
-        "build.go",
+        "controller.go",
         "doc.go",
+        "webhook.go",
     ],
     importmap = "github.com/jetstack/cert-manager/vendor/sigs.k8s.io/controller-runtime/pkg/builder",
     importpath = "sigs.k8s.io/controller-runtime/pkg/builder",
@@ -24,6 +25,7 @@ go_library(
         "//vendor/sigs.k8s.io/controller-runtime/pkg/reconcile:go_default_library",
         "//vendor/sigs.k8s.io/controller-runtime/pkg/source:go_default_library",
         "//vendor/sigs.k8s.io/controller-runtime/pkg/webhook/admission:go_default_library",
+        "//vendor/sigs.k8s.io/controller-runtime/pkg/webhook/conversion:go_default_library",
     ],
 )
 

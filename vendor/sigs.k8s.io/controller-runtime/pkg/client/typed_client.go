@@ -134,7 +134,6 @@ func (c *typedClient) List(ctx context.Context, obj runtime.Object, opts ...List
 	return r.Get().
 		NamespaceIfScoped(listOpts.Namespace, r.isNamespaced()).
 		Resource(r.resource()).
-		Body(obj).
 		VersionedParams(listOpts.AsListOptions(), c.paramCodec).
 		Context(ctx).
 		Do().
@@ -142,7 +141,7 @@ func (c *typedClient) List(ctx context.Context, obj runtime.Object, opts ...List
 }
 
 // UpdateStatus used by StatusWriter to write status.
-func (c *typedClient) UpdateStatus(ctx context.Context, obj runtime.Object) error {
+func (c *typedClient) UpdateStatus(ctx context.Context, obj runtime.Object, opts ...UpdateOptionFunc) error {
 	o, err := c.cache.getObjMeta(obj)
 	if err != nil {
 		return err
@@ -157,6 +156,32 @@ func (c *typedClient) UpdateStatus(ctx context.Context, obj runtime.Object) erro
 		Name(o.GetName()).
 		SubResource("status").
 		Body(obj).
+		VersionedParams((&UpdateOptions{}).ApplyOptions(opts).AsUpdateOptions(), c.paramCodec).
+		Context(ctx).
+		Do().
+		Into(obj)
+}
+
+// PatchStatus used by StatusWriter to write status.
+func (c *typedClient) PatchStatus(ctx context.Context, obj runtime.Object, patch Patch, opts ...PatchOptionFunc) error {
+	o, err := c.cache.getObjMeta(obj)
+	if err != nil {
+		return err
+	}
+
+	data, err := patch.Data(obj)
+	if err != nil {
+		return err
+	}
+
+	patchOpts := &PatchOptions{}
+	return o.Patch(patch.Type()).
+		NamespaceIfScoped(o.GetNamespace(), o.isNamespaced()).
+		Resource(o.resource()).
+		Name(o.GetName()).
+		SubResource("status").
+		Body(data).
+		VersionedParams(patchOpts.ApplyOptions(opts).AsPatchOptions(), c.paramCodec).
 		Context(ctx).
 		Do().
 		Into(obj)

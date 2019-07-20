@@ -94,6 +94,9 @@ var (
 	// NewControllerManagedBy returns a new controller builder that will be started by the provided Manager
 	NewControllerManagedBy = builder.ControllerManagedBy
 
+	// NewWebhookManagedBy returns a new webhook builder that will be started by the provided Manager
+	NewWebhookManagedBy = builder.WebhookManagedBy
+
 	// NewManager returns a new Manager for creating Controllers.
 	NewManager = manager.New
 

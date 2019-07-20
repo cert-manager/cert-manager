@@ -31,7 +31,7 @@ EnqueueRequestForOwner - Enqueues a reconcile.Request containing the Name and Na
 This will cause owner of the object that was the source of the Event (e.g. the owner object that created the object)
 to be reconciled.
 
-EnqueueRequestsFromMapFunc - Enqueues Reconciler.Requests resulting from a user provided transformation function run against the
+EnqueueRequestsFromMapFunc - Enqueues reconcile.Requests resulting from a user provided transformation function run against the
 object in the Event.  This will cause an arbitrary collection of objects (defined from a transformation of the
 source object) to be reconciled.
 */

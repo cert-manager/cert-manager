@@ -11,7 +11,6 @@ require (
 	github.com/SAP/go-hdb v0.14.1 // indirect
 	github.com/SermoDigital/jose v0.9.1 // indirect
 	github.com/Venafi/vcert v0.0.0-20190613103158-62139eb19b25
-	github.com/appscode/jsonpatch v0.0.0-20190108182946-7c0e3b262f30 // indirect
 	github.com/armon/go-metrics v0.0.0-20180917152333-f0300d1749da // indirect
 	github.com/armon/go-radix v1.0.0 // indirect
 	github.com/aws/aws-sdk-go v0.0.0-20170809071707-58f4800ac6e7
@@ -78,15 +77,14 @@ require (
 	github.com/ory/dockertest v3.3.4+incompatible // indirect
 	github.com/pascaldekloe/goe v0.1.0 // indirect
 	github.com/patrickmn/go-cache v2.1.0+incompatible // indirect
-	github.com/pkg/errors v0.8.0
+	github.com/pkg/errors v0.8.1
 	github.com/prometheus/client_golang v0.9.3-0.20190127221311-3c4408c8b829
 	github.com/ryanuber/go-glob v1.0.0 // indirect
 	github.com/sethgrid/pester v0.0.0-20190127155807-68a33a018ad0 // indirect
 	github.com/spf13/cobra v0.0.0-20180319062004-c439c4fa0937
-	github.com/spf13/pflag v1.0.1
+	github.com/spf13/pflag v1.0.2
 	github.com/stretchr/testify v1.3.0
 	github.com/tent/http-link-go v0.0.0-20130702225549-ac974c61c2f9 // indirect
-	go.uber.org/zap v1.9.1 // indirect
 	golang.org/x/crypto v0.0.0-20190426145343-a29dc8fdc734
 	golang.org/x/net v0.0.0-20190502183928-7f726cade0ab
 	golang.org/x/oauth2 v0.0.0-20190402181905-9f3314589c9a
@@ -104,21 +102,21 @@ require (
 	k8s.io/apiextensions-apiserver v0.0.0-20190718185103-d1ef975d28ce
 	k8s.io/apimachinery v0.0.0-20190612205821-1799e75a0719
 	k8s.io/apiserver v0.0.0-20190718184206-a1aa83af71a7
-	k8s.io/client-go v0.0.0-20190718183610-8e956561bbf5
+	k8s.io/client-go v11.0.1-0.20190409021438-1a26190bd76a+incompatible
 	k8s.io/code-generator v0.0.0-20190612205613-18da4a14b22b
 	k8s.io/component-base v0.0.0-20190718183727-0ececfbe9772
 	k8s.io/gengo v0.0.0-20190327210449-e17681d19d3a // indirect
 	k8s.io/klog v0.3.1
 	k8s.io/kube-aggregator v0.0.0-20190222095010-0b78038fe9e5
 	k8s.io/kube-openapi v0.0.0-20190228160746-b3a7cee44a30
-	k8s.io/utils v0.0.0-20190221042446-c2654d5206da
-	sigs.k8s.io/controller-runtime v0.0.0-20190222182021-68ae79ea094a
+	k8s.io/utils v0.0.0-20190506122338-8fab8cb257d5
+	sigs.k8s.io/controller-runtime v0.2.0-beta.4
 	sigs.k8s.io/testing_frameworks v0.1.1
 )
 
 replace github.com/openshift/generic-admission-server => github.com/openshift/generic-admission-server v1.14.0
 
-replace sigs.k8s.io/controller-runtime => github.com/munnerz/controller-runtime v0.1.8-0.20190423203449-038d2c82607c
+replace sigs.k8s.io/controller-runtime => sigs.k8s.io/controller-runtime v0.2.0-beta.4
 
 replace github.com/evanphx/json-patch => github.com/evanphx/json-patch v0.0.0-20190203023257-5858425f7550
 

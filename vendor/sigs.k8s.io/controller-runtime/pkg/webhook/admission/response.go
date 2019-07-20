@@ -19,7 +19,7 @@ package admission
 import (
 	"net/http"
 
-	"github.com/appscode/jsonpatch"
+	"gomodules.xyz/jsonpatch/v2"
 
 	admissionv1beta1 "k8s.io/api/admission/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -62,15 +62,20 @@ func Errored(code int32, err error) Response {
 
 // ValidationResponse returns a response for admitting a request.
 func ValidationResponse(allowed bool, reason string) Response {
+	code := http.StatusForbidden
+	if allowed {
+		code = http.StatusOK
+	}
 	resp := Response{
 		AdmissionResponse: admissionv1beta1.AdmissionResponse{
 			Allowed: allowed,
+			Result: &metav1.Status{
+				Code: int32(code),
+			},
 		},
 	}
 	if len(reason) > 0 {
-		resp.Result = &metav1.Status{
-			Reason: metav1.StatusReason(reason),
-		}
+		resp.Result.Reason = metav1.StatusReason(reason)
 	}
 	return resp
 }

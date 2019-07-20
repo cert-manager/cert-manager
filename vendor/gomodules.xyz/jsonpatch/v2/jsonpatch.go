@@ -58,8 +58,8 @@ func NewPatch(operation, path string, value interface{}) Operation {
 //
 // An error will be returned if any of the two documents are invalid.
 func CreatePatch(a, b []byte) ([]Operation, error) {
-	aI := map[string]interface{}{}
-	bI := map[string]interface{}{}
+	var aI interface{}
+	var bI interface{}
 	err := json.Unmarshal(a, &aI)
 	if err != nil {
 		return nil, errBadJSONDoc
@@ -68,7 +68,7 @@ func CreatePatch(a, b []byte) ([]Operation, error) {
 	if err != nil {
 		return nil, errBadJSONDoc
 	}
-	return diff(aI, bI, "", []Operation{})
+	return handleValues(aI, bI, "", []Operation{})
 }
 
 // Returns true if the values matches (must be json types)
@@ -326,7 +326,7 @@ func backtrace(s, t []interface{}, p string, i int, j int, matrix [][]int) []Ope
 			return append([]Operation{op}, backtrace(s, t, p, i-1, j-1, matrix)...)
 		}
 
-		p2, _ := handleValues(s[j-1], t[j-1], makePath(p, i-1), []Operation{})
+		p2, _ := handleValues(s[i-1], t[j-1], makePath(p, i-1), []Operation{})
 		return append(p2, backtrace(s, t, p, i-1, j-1, matrix)...)
 	}
 	if i > 0 && j > 0 && matrix[i-1][j-1] == matrix[i][j] {

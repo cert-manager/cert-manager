@@ -23,6 +23,11 @@ import (
 	"k8s.io/apimachinery/pkg/util/json"
 )
 
+var (
+	// Apply uses server-side apply to patch the given object.
+	Apply = applyPatch{}
+)
+
 type patch struct {
 	patchType types.PatchType
 	data      []byte
@@ -70,4 +75,21 @@ func (s *mergeFromPatch) Data(obj runtime.Object) ([]byte, error) {
 // MergeFrom creates a Patch that patches using the merge-patch strategy with the given object as base.
 func MergeFrom(obj runtime.Object) Patch {
 	return &mergeFromPatch{obj}
+}
+
+// applyPatch uses server-side apply to patch the object.
+type applyPatch struct{}
+
+// Type implements Patch.
+func (p applyPatch) Type() types.PatchType {
+	return types.ApplyPatchType
+}
+
+// Data implements Patch.
+func (p applyPatch) Data(obj runtime.Object) ([]byte, error) {
+	// NB(directxman12): we might techically want to be using an actual encoder
+	// here (in case some more performant encoder is introduced) but this is
+	// correct and sufficient for our uses (it's what the JSON serializer in
+	// client-go does, more-or-less).
+	return json.Marshal(obj)
 }

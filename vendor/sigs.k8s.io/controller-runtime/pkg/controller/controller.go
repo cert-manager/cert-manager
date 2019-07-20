@@ -42,7 +42,7 @@ type Options struct {
 // Work typically is reads and writes Kubernetes objects to make the system state match the state specified
 // in the object Spec.
 type Controller interface {
-	// Reconciler is called to Reconciler an object by Namespace/Name
+	// Reconciler is called to reconcile an object by Namespace/Name
 	reconcile.Reconciler
 
 	// Watch takes events provided by a Source and uses the EventHandler to
