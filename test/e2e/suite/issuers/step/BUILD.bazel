@@ -34,6 +34,7 @@ filegroup(
     srcs = [
         ":package-srcs",
         "//test/e2e/suite/issuers/step/certificate:all-srcs",
+        "//test/e2e/suite/issuers/step/certificaterequest:all-srcs",
     ],
     tags = ["automanaged"],
     visibility = ["//visibility:public"],
