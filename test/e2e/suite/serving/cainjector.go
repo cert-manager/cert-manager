@@ -237,7 +237,7 @@ var _ = framework.CertManagerDescribe("CA Injector", func() {
 						injctrl.WantInjectAnnotation: types.NamespacedName{Name: "serving-certs", Namespace: f.Namespace.Name}.String(),
 					},
 				},
-				Webhooks: []admissionreg.Webhook{
+				Webhooks: []admissionreg.ValidatingWebhook{
 					{
 						Name: "hook1.fake.k8s.io",
 						ClientConfig: admissionreg.WebhookClientConfig{
@@ -276,7 +276,7 @@ var _ = framework.CertManagerDescribe("CA Injector", func() {
 						injctrl.WantInjectAnnotation: types.NamespacedName{Name: "serving-certs", Namespace: f.Namespace.Name}.String(),
 					},
 				},
-				Webhooks: []admissionreg.Webhook{
+				Webhooks: []admissionreg.MutatingWebhook{
 					{
 						Name: "hook1.fake.k8s.io",
 						ClientConfig: admissionreg.WebhookClientConfig{
