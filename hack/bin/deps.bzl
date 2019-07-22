@@ -253,22 +253,24 @@ def install_kind():
         name = "kind-1.11",
         registry = "index.docker.io",
         repository = "kindest/node",
-        tag = "v1.11.3",
+        tag = "v1.11.10",
+        digest = "sha256:176845d919899daef63d0dbd1cf62f79902c38b8d2a86e5fa041e491ab795d33",
     )
 
     container_pull(
         name = "kind-1.12",
         registry = "index.docker.io",
         repository = "kindest/node",
-        tag = "v1.12.5",
+        tag = "v1.12.9",
+        digest = "sha256:bcb79eb3cd6550c1ba9584ce57c832dcd6e442913678d2785307a7ad9addc029",
     )
 
     container_pull(
         name = "kind-1.13",
         registry = "index.docker.io",
         repository = "kindest/node",
-        tag = "v1.13.4",
-        digest = "sha256:842ffccc3ba7674f71815d40fdfd18bc8a98d18130dcfd58bc15c857593f1e15",
+        tag = "v1.13.7",
+        digest = "sha256:f3f1cfc2318d1eb88d91253a9c5fa45f6e9121b6b1e65aea6c7ef59f1549aaaf",
     )    
 
     container_pull(
