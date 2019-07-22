@@ -83,7 +83,7 @@ var _ = framework.CertManagerDescribe("SelfSigned CertificateRequest", func() {
 				},
 				exampleDNSNames, exampleIPAddresses, exampleURIs, x509.RSA)
 			Expect(err).NotTo(HaveOccurred())
-			cr.Annotations[v1alpha1.CRPrivateKeyAnnotationKey] = certificateRequestSecretName
+			cr.Annotations = map[string]string{v1alpha1.CRPrivateKeyAnnotationKey: certificateRequestSecretName}
 			_, err = certRequestClient.Create(cr)
 			Expect(err).NotTo(HaveOccurred())
 
@@ -102,7 +102,7 @@ var _ = framework.CertManagerDescribe("SelfSigned CertificateRequest", func() {
 				},
 				exampleDNSNames, exampleIPAddresses, exampleURIs, x509.ECDSA)
 			Expect(err).NotTo(HaveOccurred())
-			cr.Annotations[v1alpha1.CRPrivateKeyAnnotationKey] = certificateRequestSecretName
+			cr.Annotations = map[string]string{v1alpha1.CRPrivateKeyAnnotationKey: certificateRequestSecretName}
 			_, err = certRequestClient.Create(cr)
 			Expect(err).NotTo(HaveOccurred())
 
@@ -135,7 +135,7 @@ var _ = framework.CertManagerDescribe("SelfSigned CertificateRequest", func() {
 				cr, key, err := util.NewCertManagerBasicCertificateRequest(certificateRequestName, issuerName, v1alpha1.IssuerKind, v.inputDuration,
 					exampleDNSNames, exampleIPAddresses, exampleURIs, x509.RSA)
 				Expect(err).NotTo(HaveOccurred())
-				cr.Annotations[v1alpha1.CRPrivateKeyAnnotationKey] = certificateRequestSecretName
+				cr.Annotations = map[string]string{v1alpha1.CRPrivateKeyAnnotationKey: certificateRequestSecretName}
 				cr, err = crClient.Create(cr)
 				Expect(err).NotTo(HaveOccurred())
 
