@@ -25,6 +25,7 @@ import (
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
 
+	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	cmclient "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
 	cmlisters "github.com/jetstack/cert-manager/pkg/client/listers/certmanager/v1alpha1"
 	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
@@ -38,6 +39,10 @@ const (
 )
 
 var keyFunc = controllerpkg.KeyFunc
+
+type Issuer interface {
+	Sign(ctx context.Context, cr *v1alpha1.CertificateRequest) (*issuer.IssueResponse, error)
+}
 
 type Controller struct {
 	helper issuer.Helper
@@ -61,12 +66,15 @@ type Controller struct {
 
 	issuerLister        cmlisters.IssuerLister
 	clusterIssuerLister cmlisters.ClusterIssuerLister
-	issuerFactory       issuer.IssuerFactory
+
+	// Issuer to call sign function
+	issuer Issuer
 }
 
-func New(issuerType string) *Controller {
+func New(issuerType string, issuer Issuer) *Controller {
 	return &Controller{
 		issuerType: issuerType,
+		issuer:     issuer,
 	}
 }
 
@@ -115,9 +123,6 @@ func (c *Controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitin
 
 	// create an issuer helper for reading generic issuers
 	c.helper = issuer.NewHelper(c.issuerLister, c.clusterIssuerLister)
-
-	// issuerFactory provides an interface to obtain Issuer implementations from issuer resources
-	c.issuerFactory = issuer.NewIssuerFactory(ctx)
 
 	// recorder records events about resources to the Kubernetes api
 	c.recorder = ctx.Recorder

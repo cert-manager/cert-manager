@@ -6,7 +6,6 @@ go_library(
         "ca.go",
         "issue.go",
         "setup.go",
-        "sign.go",
     ],
     importpath = "github.com/jetstack/cert-manager/pkg/issuer/ca",
     visibility = ["//visibility:public"],
@@ -43,7 +42,6 @@ go_test(
     name = "go_default_test",
     srcs = [
         "issue_test.go",
-        "sign_test.go",
         "util_test.go",
     ],
     embed = [":go_default_library"],

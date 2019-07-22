@@ -6,7 +6,6 @@ go_library(
         "issue.go",
         "selfsigned.go",
         "setup.go",
-        "sign.go",
     ],
     importpath = "github.com/jetstack/cert-manager/pkg/issuer/selfsigned",
     visibility = ["//visibility:public"],

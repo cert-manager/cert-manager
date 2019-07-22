@@ -6,7 +6,6 @@ go_library(
         "acme.go",
         "issue.go",
         "setup.go",
-        "sign.go",
     ],
     importpath = "github.com/jetstack/cert-manager/pkg/issuer/acme",
     visibility = ["//visibility:public"],

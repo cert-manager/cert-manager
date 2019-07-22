@@ -5,7 +5,6 @@ go_library(
     srcs = [
         "issue.go",
         "setup.go",
-        "sign.go",
         "vault.go",
     ],
     importpath = "github.com/jetstack/cert-manager/pkg/issuer/vault",

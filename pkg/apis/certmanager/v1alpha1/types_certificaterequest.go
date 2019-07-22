@@ -20,6 +20,12 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+const (
+	CertificateRequestReasonPending = "Pending"
+	CertificateRequestReasonFailed  = "Failed"
+	CertificateRequestReasonIssued  = "Issued"
+)
+
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 

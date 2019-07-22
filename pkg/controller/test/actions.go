@@ -84,5 +84,8 @@ func (a *action) Matches(act coretesting.Action) error {
 		return nil
 	}
 
+	fmt.Printf("EXP:%+v\n", objExp.GetObject())
+	fmt.Printf("ACT:%+v\n", objExp.GetObject())
+
 	return fmt.Errorf("unexpected difference between actions: %s", pretty.Diff(objExp.GetObject(), objAct.GetObject()))
 }
