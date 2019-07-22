@@ -237,7 +237,8 @@ def install_kind():
     # install kind binary
     go_repository(
         name = "io_kubernetes_sigs_kind",
-        commit = "161151a26faf0dbe962ac9f323cc0cdebac79ba8",
+        # version 0.4.0
+        commit = "08872cfc811c76a7cfcf11338fbf6f157477c1cf",
         importpath = "sigs.k8s.io/kind",
     )
 

@@ -23,7 +23,7 @@ REPO_ROOT="${_SCRIPT_ROOT}/../../.."
 
 # This file contains common definitions that are re-used in other scripts
 
-export K8S_VERSION="${K8S_VERSION:-1.11}"
+export K8S_VERSION="${K8S_VERSION:-1.15}"
 KUBECTL_TARGET="${KUBECTL_TARGET:-//hack/bin:kubectl-${K8S_VERSION}}"
 KIND_IMAGE_TARGET="${KIND_IMAGE_TARGET:-@kind-${K8S_VERSION}//image}"
 
