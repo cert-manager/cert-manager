@@ -31,6 +31,7 @@ import (
 	"github.com/jetstack/cert-manager/pkg/controller/certificaterequests"
 	"github.com/jetstack/cert-manager/pkg/issuer"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
+	"github.com/jetstack/cert-manager/pkg/util"
 	"github.com/jetstack/cert-manager/pkg/util/kube"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 )
@@ -83,7 +84,7 @@ func (c *CA) Sign(ctx context.Context, cr *v1alpha1.CertificateRequest) (*issuer
 	if k8sErrors.IsNotFound(err) {
 		apiutil.SetCertificateRequestCondition(cr, v1alpha1.CertificateRequestConditionReady,
 			v1alpha1.ConditionFalse, v1alpha1.CertificateRequestReasonPending,
-			fmt.Sprintf("Referenced %s not found", certificaterequests.IssuerKind(cr)))
+			fmt.Sprintf("Referenced %s not found", util.IssuerKind(cr.Spec.IssuerRef)))
 
 		c.recorder.Event(cr, corev1.EventTypeWarning, v1alpha1.CertificateRequestReasonPending, err.Error())
 
@@ -114,7 +115,7 @@ func (c *CA) Sign(ctx context.Context, cr *v1alpha1.CertificateRequest) (*issuer
 	if err != nil {
 		apiutil.SetCertificateRequestCondition(cr, v1alpha1.CertificateRequestConditionReady,
 			v1alpha1.ConditionFalse, v1alpha1.CertificateRequestReasonPending,
-			fmt.Sprintf("Referenced %s not found", certificaterequests.IssuerKind(cr)))
+			fmt.Sprintf("Referenced %s not found", util.IssuerKind(cr.Spec.IssuerRef)))
 
 		log.Error(err, "error generating certificate template")
 		c.recorder.Eventf(cr, corev1.EventTypeWarning, "ErrorSigning", "Error generating certificate template: %v", err)
