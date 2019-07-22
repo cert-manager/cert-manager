@@ -7,7 +7,7 @@ using the Venafi Issuer type.
 
 Whilst stepping through, you will learn how to:
 
-* Create an EKS cluster using `eksctl`_.
+* Create an EKS cluster using `eksctl`_
 * Install cert-manager into the EKS cluster
 * Deploy `nginx-ingress`_ to expose applications running in the cluster
 * Configure a Venafi Cloud issuer
@@ -135,8 +135,8 @@ the ingress-nginx service.
 
 .. note::
    Although the AWS Application Load Balancer (ALB) is a modern load balancer
-   offered by AWS that can can be be provisioned from within EKS, at the time
-   of writing, the `alb-ingress-controller <https://github.com/kubernetes-sigs/aws-alb-ingress-controller>`_;
+   offered by AWS that can can be provisioned from within EKS, at the time of
+   writing, the `alb-ingress-controller <https://github.com/kubernetes-sigs/aws-alb-ingress-controller>`_;
    is only capable of serving sites using certificates stored in AWS Certificate
    Manager (ACM). Version 1.15 of Kubernetes should address multiple bug fixes
    for this controller and allow for TLS termination support.
