@@ -83,6 +83,42 @@ genrule(
 )
 
 genrule(
+    name = "fetch_kubectl_1_14",
+    srcs = select({
+        ":darwin": ["@kubectl_1_14_darwin//file"],
+        ":k8": ["@kubectl_1_14_linux//file"],
+    }),
+    outs = ["kubectl-1.14"],
+    cmd = "cp $(SRCS) $@",
+    tags = ["manual"],
+    visibility = ["//visibility:public"],
+)
+
+genrule(
+    name = "fetch_kubectl_1_15",
+    srcs = select({
+        ":darwin": ["@kubectl_1_15_darwin//file"],
+        ":k8": ["@kubectl_1_15_linux//file"],
+    }),
+    outs = ["kubectl-1.15"],
+    cmd = "cp $(SRCS) $@",
+    tags = ["manual"],
+    visibility = ["//visibility:public"],
+)
+
+genrule(
+    name = "fetch_kubectl_1_16",
+    srcs = select({
+        ":darwin": ["@kubectl_1_16_darwin//file"],
+        ":k8": ["@kubectl_1_16_linux//file"],
+    }),
+    outs = ["kubectl-1.16"],
+    cmd = "cp $(SRCS) $@",
+    tags = ["manual"],
+    visibility = ["//visibility:public"],
+)
+
+genrule(
     name = "fetch_kubectl",
     srcs = select({
         ":darwin": ["@kubectl_1_13_darwin//file"],
