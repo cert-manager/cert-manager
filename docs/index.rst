@@ -17,7 +17,7 @@ certificates at a configured time before expiry.
 It is loosely based upon the work of kube-lego_ and has borrowed some wisdom
 from other similar projects e.g. kube-cert-manager_.
 
-.. image:: images/high-level-overview.png
+.. image:: images/high-level-overview.svg
    :align: center
 
 This is the full technical documentation for the project, and should be used as
