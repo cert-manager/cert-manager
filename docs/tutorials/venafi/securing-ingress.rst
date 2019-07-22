@@ -249,13 +249,89 @@ internet. We will expose the demo application to the internet in later steps.
 Creating a Venafi Issuer resource
 =================================
 
+cert-manager supports both Venafi TPP and Venafi Cloud.
+
+Please only follow one of the below sections according to where you want to
+retrieve your Certificates from.
+
+Venafi TPP
+----------
+
+Assuming you already have a Venafi TPP server set up properly, you can create
+a Venafi Issuer resource that can be used to issue certificates.
+
+To do this, you need to make sure you have your TPP *username* and *password*.
+
+In order for cert-manager to be able to authenticate with your Venafi TPP
+server and set up an Issuer resource, you'll need to create a Kubernetes
+Secret containing your username and password:
+
+.. code-block:: shell
+
+   kubectl create secret generic \
+        venafi-tpp-secret \
+        --namespace=demo \
+        --from-literal=username='YOUR_TPP_USERNAME_HERE' \
+        --from-literal=password='YOUR_TPP_PASSWORD_HERE'
+
+We must then create a Venafi Issuer resource, which represents a certificate
+authority within Kubernetes.
+
+Save the following YAML into a file named ``venafi-issuer.yaml``:
+
+.. code-block:: yaml
+   :linenos:
+
+   apiVersion: certmanager.k8s.io/v1alpha1
+   kind: Issuer
+   metadata:
+     name: venafi-issuer
+     namespace: demo
+   spec:
+     venafi:
+       zone: "Default" # Set this to the Venafi policy zone you want to use
+       tpp:
+         url: https://venafi-tpp.example.com/vedsdk # Change this to the URL of your TPP instance
+         caBundle: <base64 encoded string of caBundle PEM file, or empty to use system root CAs>
+         credentialsRef:
+           name: venafi-tpp-secret
+
+Then run:
+
+.. code-block:: shell
+
+   kubectl apply -n demo -f venafi-issuer.yaml
+
+When you run the following command, you should see that the Status stanza of
+the output shows that the Issuer is Ready (i.e. has successfully validated
+itself with the Venafi TPP server).
+
+.. code-block:: shell
+
+   kubectl describe issuer -n demo venafi-issuer
+
+   Status:
+     Conditions:
+       Last Transition Time:  2019-07-17T15:46:00Z
+       Message:               Venafi issuer started
+       Reason:                Venafi issuer started
+       Status:                True
+       Type:                  Ready
+   Events:
+     Type    Reason  Age   From          Message
+     ----    ------  ----  ----          -------
+     Normal  Ready   14s   cert-manager  Verified issuer with Venafi server
+
+Venafi Cloud
+------------
+
 You can sign up for a Venafi Cloud account by visiting the `enroll page`_.
 
 Once registered, you should fetch your API key by clicking your name in the top
 right of the control panel interface.
 
 In order for cert-manager to be able to authenticate with your Venafi Cloud
-account and set up a ClusterIssuer resource, you'll need to create a Kubernetes
+account and set up an Issuer resource, you'll need to create a Kubernetes
 Secret containing your API key:
 
 .. code-block:: shell
@@ -276,7 +352,7 @@ Save the following YAML into a file named ``venafi-issuer.yaml``:
    apiVersion: certmanager.k8s.io/v1alpha1
    kind: Issuer
    metadata:
-     name: cloud-venafi-issuer
+     name: venafi-issuer
      namespace: demo
    spec:
      venafi:
@@ -299,7 +375,7 @@ itself with the Venafi Cloud service).
 
 .. code-block:: shell
 
-   kubectl describe issuer -n demo cloud-venafi-issuer
+   kubectl describe issuer -n demo venafi-issuer
 
    Status:
      Conditions:
@@ -343,7 +419,7 @@ For now, we will create a basic x509 Certificate that is valid for our domain,
      dnsNames:
      - example.com
      issuerRef:
-       name: cloud-venafi-issuer
+       name: venafi-issuer
 
 Save this YAML into a file named ``example-com-tls.yaml`` and run:
 

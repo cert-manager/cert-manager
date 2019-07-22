@@ -152,7 +152,7 @@ Save the below content after making your amendments to a file named
        zone: devops\cert-manager # Set this to the Venafi policy zone you want to use
        tpp:
          url: https://tpp.venafi.example/vedsdk # Change this to the URL of your TPP instance
-         caBundle: <base64 encoded string of caBundle PEM file>
+         caBundle: <base64 encoded string of caBundle PEM file, or empty to use system root CAs>
          credentialsRef:
            name: tpp-secret
 
