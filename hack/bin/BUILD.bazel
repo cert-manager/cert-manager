@@ -172,7 +172,10 @@ workspace_binary(
 
 genrule(
     name = "fetch_kind",
-    srcs = ["@io_kubernetes_sigs_kind//:kind"],
+    srcs = select({
+        ":darwin": ["@kind_darwin//file"],
+        ":k8": ["@kind_linux//file"],
+    }),
     outs = ["kind"],
     cmd = "cp $(SRCS) $@",
     visibility = ["//visibility:public"],

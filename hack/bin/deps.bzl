@@ -235,11 +235,18 @@ def install_kubectl():
 ## Fetch kind images used during e2e tests
 def install_kind():
     # install kind binary
-    go_repository(
-        name = "io_kubernetes_sigs_kind",
-        # version 0.4.0
-        commit = "08872cfc811c76a7cfcf11338fbf6f157477c1cf",
-        importpath = "sigs.k8s.io/kind",
+    http_file(
+        name = "kind_darwin",
+        executable = 1,
+        sha256 = "023f1886207132dcfc62139a86f09488a79210732b00c9ec6431d6f6b7e9d2d3",
+        urls = ["https://github.com/kubernetes-sigs/kind/releases/download/v0.4.0/kind-darwin-amd64"],
+    )
+
+    http_file(
+        name = "kind_linux",
+        executable = 1,
+        sha256 = "a97f7d6d97bc0e261ea85433ca564269f117baf0fae051f16b296d2d7541f8dd",
+        urls = ["https://github.com/kubernetes-sigs/kind/releases/download/v0.4.0/kind-linux-amd64"],
     )
 
     container_pull(
