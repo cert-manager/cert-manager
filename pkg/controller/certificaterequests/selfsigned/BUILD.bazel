@@ -1,0 +1,54 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "go_default_library",
+    srcs = ["selfsigned.go"],
+    importpath = "github.com/jetstack/cert-manager/pkg/controller/certificaterequests/selfsigned",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//pkg/api/util:go_default_library",
+        "//pkg/apis/certmanager/v1alpha1:go_default_library",
+        "//pkg/controller:go_default_library",
+        "//pkg/controller/certificaterequests:go_default_library",
+        "//pkg/issuer:go_default_library",
+        "//pkg/logs:go_default_library",
+        "//pkg/util/kube:go_default_library",
+        "//pkg/util/pki:go_default_library",
+        "//vendor/k8s.io/api/core/v1:go_default_library",
+        "//vendor/k8s.io/client-go/listers/core/v1:go_default_library",
+        "//vendor/k8s.io/client-go/tools/record:go_default_library",
+    ],
+)
+
+go_test(
+    name = "go_default_test",
+    srcs = [
+        "selfsigned_test.go",
+        "util_test.go",
+    ],
+    embed = [":go_default_library"],
+    deps = [
+        "//pkg/apis/certmanager/v1alpha1:go_default_library",
+        "//pkg/controller/test:go_default_library",
+        "//pkg/issuer:go_default_library",
+        "//pkg/util/pki:go_default_library",
+        "//test/unit/gen:go_default_library",
+        "//vendor/k8s.io/api/core/v1:go_default_library",
+        "//vendor/k8s.io/apimachinery/pkg/apis/meta/v1:go_default_library",
+        "//vendor/k8s.io/apimachinery/pkg/runtime:go_default_library",
+    ],
+)
+
+filegroup(
+    name = "package-srcs",
+    srcs = glob(["**"]),
+    tags = ["automanaged"],
+    visibility = ["//visibility:private"],
+)
+
+filegroup(
+    name = "all-srcs",
+    srcs = [":package-srcs"],
+    tags = ["automanaged"],
+    visibility = ["//visibility:public"],
+)
