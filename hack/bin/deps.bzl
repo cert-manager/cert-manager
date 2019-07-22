@@ -116,8 +116,8 @@ def install_helm():
     ## the version numbers in these rules.
     http_archive(
         name = "helm_darwin",
-        sha256 = "7c4e6bfbc211d6b984ffb4fa490ce9ac112cc4b9b8d859ece27045b8514c1ed1",
-        urls = ["https://storage.googleapis.com/kubernetes-helm/helm-v2.10.0-darwin-amd64.tar.gz"],
+        sha256 = "9469da75bb357bc325c985dead224480bbacc7aa8aecff74089dff97e64655d0",
+        urls = ["https://get.helm.sh/helm-v2.14.2-darwin-amd64.tar.gz"],
         build_file_content =
             """
 filegroup(
@@ -132,8 +132,8 @@ filegroup(
 
     http_archive(
         name = "helm_linux",
-        sha256 = "0fa2ed4983b1e4a3f90f776d08b88b0c73fd83f305b5b634175cb15e61342ffe",
-        urls = ["https://storage.googleapis.com/kubernetes-helm/helm-v2.10.0-linux-amd64.tar.gz"],
+        sha256 = "9f50e69cf5cfa7268b28686728ad0227507a169e52bf59c99ada872ddd9679f0",
+        urls = ["https://get.helm.sh/helm-v2.14.2-linux-amd64.tar.gz"],
         build_file_content =
             """
 filegroup(

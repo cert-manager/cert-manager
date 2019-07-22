@@ -21,8 +21,8 @@ def install():
         name = "io_gcr_helm_tiller",
         registry = "gcr.io",
         repository = "kubernetes-helm/tiller",
-        tag = "v2.10.0",
-        digest = "sha256:2a3dd484ecfcf9343994e0f6c2af0a6faf1af7f7e499905793643f91e90edcb3",
+        tag = "v2.14.2",
+        digest = "sha256:be79aff05025bd736f027eaf4a1b2716ac1e09b88e0e9493c962642519f19d9c",
     )
 
     ## Fetch pebble for use during e2e tests
