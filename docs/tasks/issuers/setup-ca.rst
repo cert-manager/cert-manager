@@ -66,7 +66,7 @@ We can now create an Issuer referencing the Secret resource we just created:
    :linenos:
    :emphasize-lines: 8
 
-   apiVersion: certmanager.k8s.io/v1alpha1
+   apiVersion: cert-manager.io/v1alpha1
    kind: Issuer
    metadata:
      name: ca-issuer
@@ -88,7 +88,7 @@ desired certificate. You can read more about the Certificate resource in
    :linenos:
    :emphasize-lines: 9, 10, 11, 12
 
-   apiVersion: certmanager.k8s.io/v1alpha1
+   apiVersion: cert-manager.io/v1alpha1
    kind: Certificate
    metadata:
      name: example-com

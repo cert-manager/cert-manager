@@ -22,7 +22,7 @@ as described on the Ingress exists. For example:
   metadata:
     annotations:
       # add an annotation indicating the issuer to use.
-      certmanager.k8s.io/cluster-issuer: nameOfClusterIssuer
+      cert-manager.io/cluster-issuer: nameOfClusterIssuer
     name: myIngress
     namespace: myIngress
   spec:
@@ -67,11 +67,11 @@ Supported annotations
 You can specify the following annotations on ingresses in order to trigger
 Certificate resources to be automatically created:
 
-* ``certmanager.k8s.io/issuer`` - the name of an Issuer to acquire the
+* ``cert-manager.io/issuer`` - the name of an Issuer to acquire the
   certificate required for this ingress from. The Issuer **must** be in the same
   namespace as the Ingress resource.
 
-* ``certmanager.k8s.io/cluster-issuer`` - the name of a ClusterIssuer to acquire
+* ``cert-manager.io/cluster-issuer`` - the name of a ClusterIssuer to acquire
   the certificate required for this ingress from. It does not matter which
   namespace your Ingress resides, as ClusterIssuers are non-namespaced resources.
 

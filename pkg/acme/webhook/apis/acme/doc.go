@@ -14,9 +14,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// +groupName=acme.webhook.certmanager.k8s.io
+// +groupName=webhook.acme.cert-manager.io
 
 // Package acme contains type definitions for ACME ChallengePayload resources
 package acme
 
-const GroupName = "acme.webhook.certmanager.k8s.io"
+const GroupName = "webhook.acme.cert-manager.io"

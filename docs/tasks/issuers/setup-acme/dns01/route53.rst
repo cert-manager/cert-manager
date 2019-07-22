@@ -87,7 +87,7 @@ Here is an example configuration for a ClusterIssuer:
 
 .. code:: yaml
 
-   apiVersion: certmanager.k8s.io/v1alpha1
+   apiVersion: cert-manager.io/v1alpha1
    kind: ClusterIssuer
    metadata:
      name: letsencrypt-prod

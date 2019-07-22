@@ -30,10 +30,10 @@ metadata:
     app.kubernetes.io/managed-by: {{ .Release.Service }}
     helm.sh/chart: {{ template "cert-manager.chart" . }}
 rules:
-  - apiGroups: ["certmanager.k8s.io"]
+  - apiGroups: ["cert-manager.io"]
     resources: ["issuers", "issuers/status"]
     verbs: ["update"]
-  - apiGroups: ["certmanager.k8s.io"]
+  - apiGroups: ["cert-manager.io"]
     resources: ["issuers"]
     verbs: ["get", "list", "watch"]
   - apiGroups: [""]
@@ -57,10 +57,10 @@ metadata:
     app.kubernetes.io/managed-by: {{ .Release.Service }}
     helm.sh/chart: {{ template "cert-manager.chart" . }}
 rules:
-  - apiGroups: ["certmanager.k8s.io"]
+  - apiGroups: ["cert-manager.io"]
     resources: ["clusterissuers", "clusterissuers/status"]
     verbs: ["update"]
-  - apiGroups: ["certmanager.k8s.io"]
+  - apiGroups: ["cert-manager.io"]
     resources: ["clusterissuers"]
     verbs: ["get", "list", "watch"]
   - apiGroups: [""]
@@ -84,19 +84,19 @@ metadata:
     app.kubernetes.io/managed-by: {{ .Release.Service }}
     helm.sh/chart: {{ template "cert-manager.chart" . }}
 rules:
-  - apiGroups: ["certmanager.k8s.io"]
+  - apiGroups: ["cert-manager.io"]
     resources: ["certificates", "certificates/status", "certificaterequests", "certificaterequests/status"]
     verbs: ["update"]
-  - apiGroups: ["certmanager.k8s.io"]
+  - apiGroups: ["cert-manager.io"]
     resources: ["certificates", "certificaterequests", "clusterissuers", "issuers", "orders"]
     verbs: ["get", "list", "watch"]
   # We require these rules to support users with the OwnerReferencesPermissionEnforcement
   # admission controller enabled:
   # https://kubernetes.io/docs/reference/access-authn-authz/admission-controllers/#ownerreferencespermissionenforcement
-  - apiGroups: ["certmanager.k8s.io"]
+  - apiGroups: ["cert-manager.io"]
     resources: ["certificates/finalizers"]
     verbs: ["update"]
-  - apiGroups: ["certmanager.k8s.io"]
+  - apiGroups: ["cert-manager.io"]
     resources: ["orders"]
     verbs: ["create", "delete"]
   - apiGroups: [""]
@@ -120,19 +120,19 @@ metadata:
     app.kubernetes.io/managed-by: {{ .Release.Service }}
     helm.sh/chart: {{ template "cert-manager.chart" . }}
 rules:
-  - apiGroups: ["certmanager.k8s.io"]
+  - apiGroups: ["cert-manager.io"]
     resources: ["orders", "orders/status"]
     verbs: ["update"]
-  - apiGroups: ["certmanager.k8s.io"]
+  - apiGroups: ["cert-manager.io"]
     resources: ["orders", "clusterissuers", "issuers", "challenges"]
     verbs: ["get", "list", "watch"]
-  - apiGroups: ["certmanager.k8s.io"]
+  - apiGroups: ["cert-manager.io"]
     resources: ["challenges"]
     verbs: ["create", "delete"]
   # We require these rules to support users with the OwnerReferencesPermissionEnforcement
   # admission controller enabled:
   # https://kubernetes.io/docs/reference/access-authn-authz/admission-controllers/#ownerreferencespermissionenforcement
-  - apiGroups: ["certmanager.k8s.io"]
+  - apiGroups: ["cert-manager.io"]
     resources: ["orders/finalizers"]
     verbs: ["update"]
   - apiGroups: [""]
@@ -157,11 +157,11 @@ metadata:
     helm.sh/chart: {{ template "cert-manager.chart" . }}
 rules:
   # Use to update challenge resource status
-  - apiGroups: ["certmanager.k8s.io"]
+  - apiGroups: ["cert-manager.io"]
     resources: ["challenges", "challenges/status"]
     verbs: ["update"]
   # Used to watch challenges, issuer and clusterissuer resources
-  - apiGroups: ["certmanager.k8s.io"]
+  - apiGroups: ["cert-manager.io"]
     resources: ["challenges", "issuers", "clusterissuers"]
     verbs: ["get", "list", "watch"]
   # Need to be able to retrieve ACME account private key to complete challenges
@@ -190,7 +190,7 @@ rules:
   # We require these rules to support users with the OwnerReferencesPermissionEnforcement
   # admission controller enabled:
   # https://kubernetes.io/docs/reference/access-authn-authz/admission-controllers/#ownerreferencespermissionenforcement
-  - apiGroups: ["certmanager.k8s.io"]
+  - apiGroups: ["cert-manager.io"]
     resources: ["challenges/finalizers"]
     verbs: ["update"]
   # DNS01 rules (duplicated above)
@@ -212,10 +212,10 @@ metadata:
     app.kubernetes.io/managed-by: {{ .Release.Service }}
     helm.sh/chart: {{ template "cert-manager.chart" . }}
 rules:
-  - apiGroups: ["certmanager.k8s.io"]
+  - apiGroups: ["cert-manager.io"]
     resources: ["certificates", "certificaterequests"]
     verbs: ["create", "update", "delete"]
-  - apiGroups: ["certmanager.k8s.io"]
+  - apiGroups: ["cert-manager.io"]
     resources: ["certificates", "certificaterequests", "issuers", "clusterissuers"]
     verbs: ["get", "list", "watch"]
   - apiGroups: ["extensions"]
@@ -394,7 +394,7 @@ metadata:
     rbac.authorization.k8s.io/aggregate-to-edit: "true"
     rbac.authorization.k8s.io/aggregate-to-admin: "true"
 rules:
-  - apiGroups: ["certmanager.k8s.io"]
+  - apiGroups: ["cert-manager.io"]
     resources: ["certificates", "certificaterequests", "issuers"]
     verbs: ["get", "list", "watch"]
 
@@ -413,7 +413,7 @@ metadata:
     rbac.authorization.k8s.io/aggregate-to-edit: "true"
     rbac.authorization.k8s.io/aggregate-to-admin: "true"
 rules:
-  - apiGroups: ["certmanager.k8s.io"]
+  - apiGroups: ["cert-manager.io"]
     resources: ["certificates", "certificaterequests", "issuers"]
     verbs: ["create", "delete", "deletecollection", "patch", "update"]
 

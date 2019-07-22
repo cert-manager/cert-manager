@@ -58,7 +58,7 @@ type acmeIssuerProvisioner struct {
 	tiller *tiller.Tiller
 	pebble *pebble.Pebble
 	// if setGroupName is true, the 'group name' field on the IssuerRef will be
-	// set the 'certmanager.k8s.io'.
+	// set the 'cert-manager.io'.
 	// Setting the group name will cause the new 'certificate requests' based
 	// implementation to be used, however this is not implemented for ACME yet
 	// See: https://github.com/jetstack/cert-manager/pull/1943

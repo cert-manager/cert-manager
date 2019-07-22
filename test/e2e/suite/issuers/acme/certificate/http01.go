@@ -205,8 +205,8 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01) (Old format)", 
 
 		By("Creating an Ingress with the issuer name annotation set")
 		_, err := ingClient.Create(util.NewIngress(certificateSecretName, certificateSecretName, map[string]string{
-			"certmanager.k8s.io/issuer":                  issuerName,
-			"certmanager.k8s.io/acme-challenge-provider": "http01",
+			"cert-manager.io/issuer":                  issuerName,
+			"cert-manager.io/acme-challenge-provider": "http01",
 		}, acmeIngressDomain))
 		Expect(err).NotTo(HaveOccurred())
 

@@ -21,7 +21,7 @@ You can read more about the Issuer resource in the :doc:`Issuer reference docs <
 .. code-block:: yaml
    :linenos:
 
-   apiVersion: certmanager.k8s.io/v1alpha1
+   apiVersion: cert-manager.io/v1alpha1
    kind: Issuer
    metadata:
      name: letsencrypt-staging
@@ -86,7 +86,7 @@ Once we have created the above Issuer we can use it to obtain a certificate.
 .. code-block:: yaml
    :linenos:
 
-   apiVersion: certmanager.k8s.io/v1alpha1
+   apiVersion: cert-manager.io/v1alpha1
    kind: Certificate
    metadata:
      name: example-com

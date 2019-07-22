@@ -41,11 +41,11 @@ const (
 	editInPlaceAnnotation = "certmanager.k8s.io/acme-http01-edit-in-place"
 	// issuerNameAnnotation can be used to override the issuer specified on the
 	// created Certificate resource.
-	issuerNameAnnotation = "certmanager.k8s.io/issuer"
+	issuerNameAnnotation = "cert-manager.io/issuer"
 	// clusterIssuerNameAnnotation can be used to override the issuer specified on the
 	// created Certificate resource. The Certificate will reference the
 	// specified *ClusterIssuer* instead of normal issuer.
-	clusterIssuerNameAnnotation = "certmanager.k8s.io/cluster-issuer"
+	clusterIssuerNameAnnotation = "cert-manager.io/cluster-issuer"
 	// acmeIssuerChallengeTypeAnnotation can be used to override the default ACME challenge
 	// type to be used when the specified issuer is an ACME issuer
 	acmeIssuerChallengeTypeAnnotation = "certmanager.k8s.io/acme-challenge-type"

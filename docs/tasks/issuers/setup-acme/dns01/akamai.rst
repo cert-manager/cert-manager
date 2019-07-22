@@ -5,7 +5,7 @@ Akamai FastDNS
 .. code-block:: yaml
    :emphasize-lines: 10-20
 
-   apiVersion: certmanager.k8s.io/v1alpha1
+   apiVersion: cert-manager.io/v1alpha1
    kind: Issuer
    metadata:
      name: example-issuer

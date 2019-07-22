@@ -28,7 +28,7 @@ DNS names that is valid for 90d and renews 15d before expiry is below:
    :linenos:
    :emphasize-lines: 9, 10, 11, 12
 
-   apiVersion: certmanager.k8s.io/v1alpha1
+   apiVersion: cert-manager.io/v1alpha1
    kind: Certificate
    metadata:
      name: example-com

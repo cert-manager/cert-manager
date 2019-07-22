@@ -64,7 +64,7 @@ metadata:
     helm.sh/chart: {{ include "webhook.chart" . }}
 rules:
 - apiGroups:
-  - admission.certmanager.k8s.io
+  - admission.cert-manager.io
   resources:
   - certificates
   - certificaterequests

@@ -18,17 +18,17 @@ package certmanager
 
 // Annotation names for Secrets
 const (
-	AltNamesAnnotationKey   = "certmanager.k8s.io/alt-names"
-	IPSANAnnotationKey      = "certmanager.k8s.io/ip-sans"
-	CommonNameAnnotationKey = "certmanager.k8s.io/common-name"
-	IssuerNameAnnotationKey = "certmanager.k8s.io/issuer-name"
-	IssuerKindAnnotationKey = "certmanager.k8s.io/issuer-kind"
-	CertificateNameKey      = "certmanager.k8s.io/certificate-name"
+	AltNamesAnnotationKey   = "cert-manager.io/alt-names"
+	IPSANAnnotationKey      = "cert-manager.io/ip-sans"
+	CommonNameAnnotationKey = "cert-manager.io/common-name"
+	IssuerNameAnnotationKey = "cert-manager.io/issuer-name"
+	IssuerKindAnnotationKey = "cert-manager.io/issuer-kind"
+	CertificateNameKey      = "cert-manager.io/certificate-name"
 )
 
 // Annotation names for CertificateRequests
 const (
-	CRPrivateKeyAnnotationKey = "certmanager.k8s.io/private-key-secret-name"
+	CRPrivateKeyAnnotationKey = "cert-manager.io/private-key-secret-name"
 )
 
 // ConditionStatus represents a condition's status.
@@ -91,25 +91,25 @@ const (
 	// WantInjectAnnotation is the annotation that specifies that a particular
 	// object wants injection of CAs.  It takes the form of a reference to a certificate
 	// as namespace/name.  The certificate is expected to have the is-serving-for annotations.
-	WantInjectAnnotation = "certmanager.k8s.io/inject-ca-from"
+	WantInjectAnnotation = "injector.cert-manager.io/inject-ca-from"
 
 	// WantInjectAPIServerCAAnnotation, if set to "true", will make the cainjector
 	// inject the CA certificate for the Kubernetes apiserver into the resource.
 	// It discovers the apiserver's CA by inspecting the service account credentials
 	// mounted into the cainjector pod.
-	WantInjectAPIServerCAAnnotation = "certmanager.k8s.io/inject-apiserver-ca"
+	WantInjectAPIServerCAAnnotation = "injector.cert-manager.io/inject-apiserver-ca"
 
 	// WantInjectFromSecretAnnotation is the annotation that specifies that a particular
 	// object wants injection of CAs.  It takes the form of a reference to a Secret
 	// as namespace/name.
-	WantInjectFromSecretAnnotation = "certmanager.k8s.io/inject-ca-from-secret"
+	WantInjectFromSecretAnnotation = "injector.cert-manager.io/inject-ca-from-secret"
 
 	// AllowsInjectionFromSecretAnnotation is an annotation that must be added
 	// to Secret resource that want to denote that they can be directly
 	// injected into injectables that have a `inject-ca-from-secret` annotation.
 	// If an injectable references a Secret that does NOT have this annotation,
 	// the cainjector will refuse to inject the secret.
-	AllowsInjectionFromSecretAnnotation = "certmanager.k8s.io/allow-direct-injection"
+	AllowsInjectionFromSecretAnnotation = "injector.cert-manager.io/allow-direct-injection"
 )
 
 // KeyUsage specifies valid usage contexts for keys.

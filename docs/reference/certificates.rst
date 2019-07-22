@@ -12,7 +12,7 @@ A simple Certificate could be defined as:
    :linenos:
    :emphasize-lines: 17-20
 
-   apiVersion: certmanager.k8s.io/v1alpha1
+   apiVersion: cert-manager.io/v1alpha1
    kind: Certificate
    metadata:
      name: acme-crt
@@ -97,7 +97,7 @@ expiration.
    :linenos:
    :emphasize-lines: 7,8
 
-   apiVersion: certmanager.k8s.io/v1alpha1
+   apiVersion: cert-manager.io/v1alpha1
    kind: Certificate
    metadata:
      name: example
@@ -134,7 +134,7 @@ its private key.
    :linenos:
    :emphasize-lines: 7
 
-   apiVersion: certmanager.k8s.io/v1alpha1
+   apiVersion: cert-manager.io/v1alpha1
    kind: Certificate
    metadata:
      name: example-pkcs8-cert

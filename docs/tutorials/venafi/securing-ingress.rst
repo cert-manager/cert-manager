@@ -282,7 +282,7 @@ Save the following YAML into a file named ``venafi-issuer.yaml``:
 .. code-block:: yaml
    :linenos:
 
-   apiVersion: certmanager.k8s.io/v1alpha1
+   apiVersion: cert-manager.io/v1alpha1
    kind: Issuer
    metadata:
      name: venafi-issuer
@@ -349,7 +349,7 @@ Save the following YAML into a file named ``venafi-issuer.yaml``:
 .. code-block:: yaml
    :linenos:
 
-   apiVersion: certmanager.k8s.io/v1alpha1
+   apiVersion: cert-manager.io/v1alpha1
    kind: Issuer
    metadata:
      name: venafi-issuer
@@ -409,7 +409,7 @@ For now, we will create a basic x509 Certificate that is valid for our domain,
 .. code-block:: yaml
    :linenos:
 
-   apiVersion: certmanager.k8s.io/v1alpha1
+   apiVersion: cert-manager.io/v1alpha1
    kind: Certificate
    metadata:
      name: example-com-tls
