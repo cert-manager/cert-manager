@@ -33,9 +33,9 @@ type FakeClusterIssuers struct {
 	Fake *FakeCertmanagerV1alpha1
 }
 
-var clusterissuersResource = schema.GroupVersionResource{Group: "certmanager.k8s.io", Version: "v1alpha1", Resource: "clusterissuers"}
+var clusterissuersResource = schema.GroupVersionResource{Group: "cert-manager.io", Version: "v1alpha1", Resource: "clusterissuers"}
 
-var clusterissuersKind = schema.GroupVersionKind{Group: "certmanager.k8s.io", Version: "v1alpha1", Kind: "ClusterIssuer"}
+var clusterissuersKind = schema.GroupVersionKind{Group: "cert-manager.io", Version: "v1alpha1", Kind: "ClusterIssuer"}
 
 // Get takes name of the clusterIssuer, and returns the corresponding clusterIssuer object, and an error if there is any.
 func (c *FakeClusterIssuers) Get(name string, options v1.GetOptions) (result *v1alpha1.ClusterIssuer, err error) {

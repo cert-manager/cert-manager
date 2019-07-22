@@ -34,7 +34,7 @@ type CertmanagerV1alpha1Interface interface {
 	OrdersGetter
 }
 
-// CertmanagerV1alpha1Client is used to interact with features provided by the certmanager.k8s.io group.
+// CertmanagerV1alpha1Client is used to interact with features provided by the cert-manager.io group.
 type CertmanagerV1alpha1Client struct {
 	restClient rest.Interface
 }

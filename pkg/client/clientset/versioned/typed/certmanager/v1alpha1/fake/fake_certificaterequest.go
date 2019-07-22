@@ -34,9 +34,9 @@ type FakeCertificateRequests struct {
 	ns   string
 }
 
-var certificaterequestsResource = schema.GroupVersionResource{Group: "certmanager.k8s.io", Version: "v1alpha1", Resource: "certificaterequests"}
+var certificaterequestsResource = schema.GroupVersionResource{Group: "cert-manager.io", Version: "v1alpha1", Resource: "certificaterequests"}
 
-var certificaterequestsKind = schema.GroupVersionKind{Group: "certmanager.k8s.io", Version: "v1alpha1", Kind: "CertificateRequest"}
+var certificaterequestsKind = schema.GroupVersionKind{Group: "cert-manager.io", Version: "v1alpha1", Kind: "CertificateRequest"}
 
 // Get takes name of the certificateRequest, and returns the corresponding certificateRequest object, and an error if there is any.
 func (c *FakeCertificateRequests) Get(name string, options v1.GetOptions) (result *v1alpha1.CertificateRequest, err error) {
