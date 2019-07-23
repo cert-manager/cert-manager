@@ -31,7 +31,6 @@ import (
 	"github.com/jetstack/cert-manager/pkg/controller/certificaterequests"
 	"github.com/jetstack/cert-manager/pkg/issuer"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
-	"github.com/jetstack/cert-manager/pkg/util"
 	"github.com/jetstack/cert-manager/pkg/util/kube"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 )
@@ -84,7 +83,7 @@ func (c *CA) Sign(ctx context.Context, cr *v1alpha1.CertificateRequest) (*issuer
 	if k8sErrors.IsNotFound(err) {
 		apiutil.SetCertificateRequestCondition(cr, v1alpha1.CertificateRequestConditionReady,
 			v1alpha1.ConditionFalse, v1alpha1.CertificateRequestReasonPending,
-			fmt.Sprintf("Referenced %s not found", util.IssuerKind(cr.Spec.IssuerRef)))
+			fmt.Sprintf("Referenced %s not found", apiutil.IssuerKind(cr.Spec.IssuerRef)))
 
 		c.recorder.Event(cr, corev1.EventTypeWarning, v1alpha1.CertificateRequestReasonPending, err.Error())
 
@@ -92,6 +91,8 @@ func (c *CA) Sign(ctx context.Context, cr *v1alpha1.CertificateRequest) (*issuer
 			logf.RelatedResourceNameKey, cr.Spec.IssuerRef.Name,
 			logf.RelatedResourceKindKey, cr.Spec.IssuerRef.Kind,
 		).Error(err, "failed to find referenced issuer")
+
+		return nil, nil
 	}
 	if err != nil {
 		return nil, err
@@ -106,6 +107,8 @@ func (c *CA) Sign(ctx context.Context, cr *v1alpha1.CertificateRequest) (*issuer
 		log.Info("error getting signing CA for Issuer")
 
 		c.recorder.Event(cr, corev1.EventTypeWarning, v1alpha1.CertificateRequestReasonPending, err.Error())
+
+		return nil, nil
 	}
 	if err != nil {
 		return nil, err
@@ -114,9 +117,10 @@ func (c *CA) Sign(ctx context.Context, cr *v1alpha1.CertificateRequest) (*issuer
 	template, err := pki.GenerateTemplateFromCertificateRequest(cr)
 	if err != nil {
 		apiutil.SetCertificateRequestCondition(cr, v1alpha1.CertificateRequestConditionReady,
-			v1alpha1.ConditionFalse, v1alpha1.CertificateRequestReasonPending,
-			fmt.Sprintf("Referenced %s not found", util.IssuerKind(cr.Spec.IssuerRef)))
+			v1alpha1.ConditionFalse, v1alpha1.CertificateRequestReasonFailed,
+			fmt.Sprintf("Failed to generate certificate template: %s", err))
 
+		// TODO: add mechanism here to handle invalid input errors which should result in a permanent failure
 		log.Error(err, "error generating certificate template")
 		c.recorder.Eventf(cr, corev1.EventTypeWarning, "ErrorSigning", "Error generating certificate template: %v", err)
 		return nil, err

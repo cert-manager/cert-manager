@@ -68,6 +68,9 @@ func (f *controllerFixture) Setup(t *testing.T) {
 
 func (f *controllerFixture) Finish(t *testing.T, args ...interface{}) {
 	defer f.Builder.Stop()
+	if err := f.Builder.AllReactorsCalled(); err != nil {
+		t.Errorf("Not all expected reactors were called: %v", err)
+	}
 	if err := f.Builder.AllActionsExecuted(); err != nil {
 		t.Errorf(err.Error())
 	}

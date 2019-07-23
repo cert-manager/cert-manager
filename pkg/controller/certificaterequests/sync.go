@@ -32,7 +32,6 @@ import (
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/validation"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
-	"github.com/jetstack/cert-manager/pkg/util"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 )
 
@@ -69,7 +68,7 @@ func (c *Controller) Sync(ctx context.Context, cr *v1alpha1.CertificateRequest) 
 	if k8sErrors.IsNotFound(err) {
 		apiutil.SetCertificateRequestCondition(crCopy, v1alpha1.CertificateRequestConditionReady,
 			v1alpha1.ConditionFalse, v1alpha1.CertificateRequestReasonPending,
-			fmt.Sprintf("Referenced %s not found", util.IssuerKind(crCopy.Spec.IssuerRef)))
+			fmt.Sprintf("Referenced %s not found", apiutil.IssuerKind(crCopy.Spec.IssuerRef)))
 
 		c.recorder.Eventf(crCopy, corev1.EventTypeWarning, v1alpha1.CertificateRequestReasonPending, err.Error())
 
@@ -93,7 +92,7 @@ func (c *Controller) Sync(ctx context.Context, cr *v1alpha1.CertificateRequest) 
 	if err != nil {
 		apiutil.SetCertificateRequestCondition(crCopy, v1alpha1.CertificateRequestConditionReady,
 			v1alpha1.ConditionFalse, v1alpha1.CertificateRequestReasonPending,
-			fmt.Sprintf("Referenced %s not found", util.IssuerKind(crCopy.Spec.IssuerRef)))
+			fmt.Sprintf("Referenced %s not found", apiutil.IssuerKind(crCopy.Spec.IssuerRef)))
 
 		c.recorder.Eventf(crCopy, corev1.EventTypeWarning, v1alpha1.CertificateRequestReasonPending, err.Error())
 		log.Error(err, "failed to obtain referenced issuer type")

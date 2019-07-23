@@ -5,7 +5,6 @@ go_library(
     srcs = [
         "context.go",
         "ingress.go",
-        "issuer.go",
         "useragent.go",
         "util.go",
         "version.go",
@@ -17,7 +16,6 @@ go_library(
         "AppGitCommit": "{STABLE_APP_GIT_COMMIT}",
         "AppGitState": "{STABLE_APP_GIT_STATE}",
     },
-    deps = ["//pkg/apis/certmanager/v1alpha1:go_default_library"],
 )
 
 go_test(

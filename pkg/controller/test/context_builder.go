@@ -59,7 +59,6 @@ type Builder struct {
 	stopCh           chan struct{}
 	events           []string
 	requiredReactors map[string]bool
-	fakeRecorder     *record.FakeRecorder
 
 	*controller.Context
 }
@@ -99,14 +98,31 @@ func (b *Builder) Start() {
 	// create a fake recorder with a buffer of 5.
 	// this may need to be increased in future to acomodate tests that
 	// produce more than 5 events
-	b.fakeRecorder = record.NewFakeRecorder(5)
-	b.Recorder = b.fakeRecorder
+	b.Recorder = record.NewFakeRecorder(5)
+	// read all events out of the recorder and just log for now
+	// TODO: validate logged events
+	go func() {
+		// Skip logging event messages due to a race/timing issue in the test
+		// framework that needs investigating, where log is called after the
+		// test has finished
+
+		//r, ok := b.Recorder.(*record.FakeRecorder)
+		//if !ok {
+		//	return
+		//}
+
+		// exits when r.Events is closed in Finish
+		//for e := range r.Events {
+		//	b.logf("Event logged: %v", e)
+		//}
+	}()
 
 	b.FakeKubeClient().PrependReactor("create", "*", b.generateNameReactor)
 	b.FakeCMClient().PrependReactor("create", "*", b.generateNameReactor)
 	b.KubeSharedInformerFactory = kubeinformers.NewSharedInformerFactory(b.Client, informerResyncPeriod)
 	b.SharedInformerFactory = informers.NewSharedInformerFactory(b.CMClient, informerResyncPeriod)
 	b.stopCh = make(chan struct{})
+	go b.readEvents()
 }
 
 func (b *Builder) FakeKubeClient() *kubefake.Clientset {
@@ -123,6 +139,18 @@ func (b *Builder) FakeCMClient() *cmfake.Clientset {
 
 func (b *Builder) FakeCMInformerFactory() informers.SharedInformerFactory {
 	return b.Context.SharedInformerFactory
+}
+
+func (b *Builder) EnsureReactorCalled(testName string, fn coretesting.ReactionFunc) coretesting.ReactionFunc {
+	b.requiredReactors[testName] = false
+	return func(action coretesting.Action) (handled bool, ret runtime.Object, err error) {
+		handled, ret, err = fn(action)
+		if !handled {
+			return
+		}
+		b.requiredReactors[testName] = true
+		return
+	}
 }
 
 func (b *Builder) AllReactorsCalled() error {
@@ -190,10 +218,6 @@ func actionToString(a coretesting.Action) string {
 	return fmt.Sprintf("%s %q in namespace %s", a.GetVerb(), a.GetResource(), a.GetNamespace())
 }
 
-func (b *Builder) Foo() {
-	close(b.fakeRecorder.Events)
-}
-
 // Stop will signal the informers to stop watching changes
 // This method is *not* safe to be called concurrently
 func (b *Builder) Stop() {
@@ -203,9 +227,9 @@ func (b *Builder) Stop() {
 
 	close(b.stopCh)
 
-	//if r, ok := b.Recorder.(*record.FakeRecorder); ok {
-	//	close(r.Events)
-	//}
+	if r, ok := b.Recorder.(*record.FakeRecorder); ok {
+		close(r.Events)
+	}
 }
 
 // WaitForResync will wait for the informer factory informer duration by
@@ -232,18 +256,18 @@ func (b *Builder) FakeEventRecorder() *record.FakeRecorder {
 }
 
 func (b *Builder) Events() []string {
-	if b.fakeRecorder.Events != nil {
-		b.readEvents()
-	}
 	return b.events
 }
 
 func (b *Builder) readEvents() {
-	close(b.fakeRecorder.Events)
-	for e := range b.FakeEventRecorder().Events {
-		b.events = append(b.events, e)
+	for {
+		select {
+		case e := <-b.FakeEventRecorder().Events:
+			b.events = append(b.events, e)
+		case <-b.stopCh:
+			return
+		}
 	}
-	b.fakeRecorder.Events = nil
 }
 
 func mustAllSync(in map[reflect.Type]bool) error {
