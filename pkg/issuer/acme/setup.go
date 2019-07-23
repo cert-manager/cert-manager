@@ -31,8 +31,10 @@ import (
 	"github.com/jetstack/cert-manager/pkg/acme/client"
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	"github.com/jetstack/cert-manager/pkg/feature"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 	"github.com/jetstack/cert-manager/pkg/util/errors"
+	utilfeature "github.com/jetstack/cert-manager/pkg/util/feature"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 	acmeapi "github.com/jetstack/cert-manager/third_party/crypto/acme"
 )
@@ -56,6 +58,12 @@ const (
 // already registered.
 func (a *Acme) Setup(ctx context.Context) error {
 	log := logf.FromContext(ctx)
+
+	if utilfeature.DefaultFeatureGate.Enabled(feature.DisableDeprecatedACMECertificates) &&
+		(a.issuer.GetSpec().ACME.DNS01 != nil || a.issuer.GetSpec().ACME.HTTP01 != nil) {
+		a.Recorder.Eventf(a.issuer, v1.EventTypeWarning, "DeprecatedField", "Deprecated spec.acme.{http01,dns01} field specified and deprecated field feature gate is enabled.")
+		return nil
+	}
 
 	// check if user has specified a v1 account URL, and set a status condition if so.
 	if newURL, ok := acmev1ToV2Mappings[a.issuer.GetSpec().ACME.Server]; ok {

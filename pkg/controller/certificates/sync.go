@@ -82,6 +82,12 @@ func (c *controller) Sync(ctx context.Context, crt *v1alpha1.Certificate) (err e
 	log := logf.FromContext(ctx)
 	dbg := log.V(logf.DebugLevel)
 
+	if utilfeature.DefaultFeatureGate.Enabled(feature.DisableDeprecatedACMECertificates) &&
+		crt.Spec.ACME != nil {
+		c.recorder.Eventf(crt, corev1.EventTypeWarning, "DeprecatedField", "Deprecated spec.acme field specified and deprecated field feature gate is enabled.")
+		return nil
+	}
+
 	// if group name is set, use the new experimental controller implementation
 	if crt.Spec.IssuerRef.Group != "" {
 		log.Info("certificate issuerRef group is non-empty, skipping processing")
