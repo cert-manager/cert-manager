@@ -23,10 +23,10 @@ import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 // Certificate is a type to represent a Certificate from ACME
 // +k8s:openapi-gen=true
-// +kubebuilder:printcolumn:name="Ready",type="string",JSONPath=".status.conditions[?(@.type=="Ready")].status",description=""
+// +kubebuilder:printcolumn:name="Ready",type="string",JSONPath=".status.conditions[?(@.type==\"Ready\")].status",description=""
 // +kubebuilder:printcolumn:name="Secret",type="string",JSONPath=".spec.secretName",description=""
 // +kubebuilder:printcolumn:name="Issuer",type="string",JSONPath=".spec.issuerRef.name",description="",priority=1
-// +kubebuilder:printcolumn:name="Status",type="string",JSONPath=".status.conditions[?(@.type=="Ready")].message",priority=1
+// +kubebuilder:printcolumn:name="Status",type="string",JSONPath=".status.conditions[?(@.type==\"Ready\")].message",priority=1
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp",description="CreationTimestamp is a timestamp representing the server time when this object was created. It is not guaranteed to be set in happens-before order across separate operations. Clients may not set this value. It is represented in RFC3339 form and is in UTC."
 // +kubebuilder:resource:path=certificates,shortName=cert;certs
 type Certificate struct {
@@ -130,7 +130,7 @@ type CertificateSpec struct {
 	// If KeyAlgorithm is specified and KeySize is not provided,
 	// key size of 256 will be used for "ecdsa" key algorithm and
 	// key size of 2048 will be used for "rsa" key algorithm.
-	// +kubebuilder:validation:Enum=rsa,ecdsa
+	// +kubebuilder:validation:Enum=rsa;ecdsa
 	// +optional
 	KeyAlgorithm KeyAlgorithm `json:"keyAlgorithm,omitempty"`
 
@@ -166,7 +166,7 @@ type CertificateCondition struct {
 	Type CertificateConditionType `json:"type"`
 
 	// Status of the condition, one of ('True', 'False', 'Unknown').
-	// +kubebuilder:validation:Enum=True,False,Unknown
+	// +kubebuilder:validation:Enum=True;False;Unknown
 	Status ConditionStatus `json:"status"`
 
 	// LastTransitionTime is the timestamp corresponding to the last status
