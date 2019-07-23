@@ -69,7 +69,7 @@ func (c *controller) Sync(ctx context.Context, ch *cmapi.Challenge) (err error) 
 		if reflect.DeepEqual(oldChal.Status, ch.Status) && len(oldChal.Finalizers) == len(ch.Finalizers) {
 			return
 		}
-		_, updateErr := c.cmClient.CertmanagerV1alpha1().Challenges(ch.Namespace).Update(ch)
+		_, updateErr := c.cmClient.CertmanagerV1alpha1().Challenges(ch.Namespace).UpdateStatus(ch)
 		if err != nil {
 			err = utilerrors.NewAggregate([]error{err, updateErr})
 		}

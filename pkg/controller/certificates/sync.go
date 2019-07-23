@@ -594,8 +594,5 @@ func updateCertificateStatus(ctx context.Context, m *metrics.Metrics, cmClient c
 		return nil, nil
 	}
 	log.V(logf.DebugLevel).Info("updating resource due to change in status", "diff", pretty.Diff(string(oldBytes), string(newBytes)))
-	// TODO: replace Update call with UpdateStatus. This requires a custom API
-	// server with the /status subresource enabled and/or subresource support
-	// for CRDs (https://github.com/kubernetes/kubernetes/issues/38113)
-	return cmClient.CertmanagerV1alpha1().Certificates(new.Namespace).Update(new)
+	return cmClient.CertmanagerV1alpha1().Certificates(new.Namespace).UpdateStatus(new)
 }

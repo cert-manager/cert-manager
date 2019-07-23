@@ -163,7 +163,7 @@ func (c *controller) runScheduler(ctx context.Context) {
 		ch = ch.DeepCopy()
 		ch.Status.Processing = true
 
-		_, err := c.cmClient.CertmanagerV1alpha1().Challenges(ch.Namespace).Update(ch)
+		_, err := c.cmClient.CertmanagerV1alpha1().Challenges(ch.Namespace).UpdateStatus(ch)
 		if err != nil {
 			log.Error(err, "error scheduling challenge for processing")
 			return

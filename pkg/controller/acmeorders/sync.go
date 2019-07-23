@@ -74,7 +74,7 @@ func (c *controller) Sync(ctx context.Context, o *cmapi.Order) (err error) {
 			return
 		}
 		log.Info("updating Order resource status")
-		_, updateErr := c.cmClient.CertmanagerV1alpha1().Orders(o.Namespace).Update(o)
+		_, updateErr := c.cmClient.CertmanagerV1alpha1().Orders(o.Namespace).UpdateStatus(o)
 		if err != nil {
 			log.Error(err, "failed to update status")
 			err = utilerrors.NewAggregate([]error{err, updateErr})
