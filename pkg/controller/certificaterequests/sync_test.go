@@ -139,7 +139,7 @@ func TestSync(t *testing.T) {
 		gen.SetCertificateRequestCSR(csr),
 		gen.SetCertificateRequestIssuer(cmapi.ObjectReference{
 			Kind: "Issuer",
-			Name: "ca-issuer",
+			Name: "fake-issuer",
 		}),
 	)
 
@@ -225,8 +225,8 @@ func TestSync(t *testing.T) {
 	exampleCRWrongIssuerRefType := exampleCR.DeepCopy()
 	exampleCRWrongIssuerRefType.Spec.IssuerRef.Name = "selfsigned-issuer"
 
-	exampleCRCorrentIssuerRefGroup := exampleCRWrongIssuerRefGroup.DeepCopy()
-	exampleCRCorrentIssuerRefGroup.Spec.IssuerRef.Group = "certmanager.k8s.io"
+	exampleCRCorrectIssuerRefGroup := exampleCRWrongIssuerRefGroup.DeepCopy()
+	exampleCRCorrectIssuerRefGroup.Spec.IssuerRef.Group = "certmanager.k8s.io"
 	exampleCRReadyConditionWithGroupRef := exampleCRReadyCondition.DeepCopy()
 	exampleCRReadyConditionWithGroupRef.Spec.IssuerRef.Group = "certmanager.k8s.io"
 
@@ -237,7 +237,7 @@ func TestSync(t *testing.T) {
 				gen.SetCertificateRequestCSR(csr),
 				gen.SetCertificateRequestIssuer(cmapi.ObjectReference{
 					Kind: "Issuer",
-					Name: "ca-issuer",
+					Name: "fake-issuer",
 				}),
 			),
 			IssuerImpl: &fake.Issuer{
@@ -249,8 +249,8 @@ func TestSync(t *testing.T) {
 				},
 			},
 			Builder: &testpkg.Builder{
-				CertManagerObjects: []runtime.Object{gen.Issuer("ca-issuer",
-					gen.SetIssuerCA(cmapi.CAIssuer{SecretName: "root-ca-secret"}),
+				CertManagerObjects: []runtime.Object{gen.Issuer("fake-issuer",
+					gen.SetIssuerSelfSigned(cmapi.SelfSignedIssuer{}),
 				),
 					gen.CertificateRequest("test"),
 				},
@@ -277,12 +277,12 @@ func TestSync(t *testing.T) {
 			},
 			Builder: &testpkg.Builder{
 				CertManagerObjects: []runtime.Object{gen.CertificateRequest("test"),
-					gen.Issuer("ca-issuer",
+					gen.Issuer("fake-issuer",
 						gen.AddIssuerCondition(cmapi.IssuerCondition{
 							Type:   cmapi.IssuerConditionReady,
 							Status: cmapi.ConditionTrue,
 						}),
-						gen.SetIssuerCA(cmapi.CAIssuer{}),
+						gen.SetIssuerSelfSigned(cmapi.SelfSignedIssuer{}),
 					)},
 				ExpectedActions: []testpkg.Action{
 					testpkg.NewAction(coretesting.NewUpdateAction(
@@ -297,7 +297,7 @@ func TestSync(t *testing.T) {
 			Err: false,
 		},
 		"should update the status with a freshly signed certificate only when one doesn't exist and issuer group ref='certmanager.k8s.io'": {
-			CertificateRequest: exampleCRCorrentIssuerRefGroup,
+			CertificateRequest: exampleCRCorrectIssuerRefGroup,
 			IssuerImpl: &fake.Issuer{
 				FakeSign: func(context.Context, *cmapi.CertificateRequest) (*issuer.IssueResponse, error) {
 					return &issuer.IssueResponse{
@@ -307,12 +307,12 @@ func TestSync(t *testing.T) {
 			},
 			Builder: &testpkg.Builder{
 				CertManagerObjects: []runtime.Object{gen.CertificateRequest("test"),
-					gen.Issuer("ca-issuer",
+					gen.Issuer("fake-issuer",
 						gen.AddIssuerCondition(cmapi.IssuerCondition{
 							Type:   cmapi.IssuerConditionReady,
 							Status: cmapi.ConditionTrue,
 						}),
-						gen.SetIssuerCA(cmapi.CAIssuer{}),
+						gen.SetIssuerSelfSigned(cmapi.SelfSignedIssuer{}),
 					),
 				},
 				ExpectedActions: []testpkg.Action{
@@ -337,12 +337,12 @@ func TestSync(t *testing.T) {
 			},
 			Builder: &testpkg.Builder{
 				CertManagerObjects: []runtime.Object{gen.CertificateRequest("test"),
-					gen.Issuer("ca-issuer",
+					gen.Issuer("fake-issuer",
 						gen.AddIssuerCondition(cmapi.IssuerCondition{
 							Type:   cmapi.IssuerConditionReady,
 							Status: cmapi.ConditionTrue,
 						}),
-						gen.SetIssuerCA(cmapi.CAIssuer{}),
+						gen.SetIssuerSelfSigned(cmapi.SelfSignedIssuer{}),
 					),
 				},
 				ExpectedActions: []testpkg.Action{}, // no update
@@ -360,12 +360,12 @@ func TestSync(t *testing.T) {
 			},
 			Builder: &testpkg.Builder{
 				CertManagerObjects: []runtime.Object{gen.CertificateRequest("test"),
-					gen.Issuer("ca-issuer",
+					gen.Issuer("fake-issuer",
 						gen.AddIssuerCondition(cmapi.IssuerCondition{
 							Type:   cmapi.IssuerConditionReady,
 							Status: cmapi.ConditionTrue,
 						}),
-						gen.SetIssuerCA(cmapi.CAIssuer{}),
+						gen.SetIssuerSelfSigned(cmapi.SelfSignedIssuer{}),
 					),
 				},
 				ExpectedActions: []testpkg.Action{}, // no update
@@ -383,12 +383,12 @@ func TestSync(t *testing.T) {
 			},
 			Builder: &testpkg.Builder{
 				CertManagerObjects: []runtime.Object{gen.CertificateRequest("test"),
-					gen.Issuer("ca-issuer",
+					gen.Issuer("fake-issuer",
 						gen.AddIssuerCondition(cmapi.IssuerCondition{
 							Type:   cmapi.IssuerConditionReady,
 							Status: cmapi.ConditionTrue,
 						}),
-						gen.SetIssuerCA(cmapi.CAIssuer{}),
+						gen.SetIssuerSelfSigned(cmapi.SelfSignedIssuer{}),
 					),
 				},
 				ExpectedActions: []testpkg.Action{
@@ -433,7 +433,7 @@ func TestSync(t *testing.T) {
 			},
 			Builder: &testpkg.Builder{
 				CertManagerObjects: []runtime.Object{gen.CertificateRequest("test"),
-					gen.Issuer("ca-issuer",
+					gen.Issuer("fake-issuer",
 						gen.AddIssuerCondition(cmapi.IssuerCondition{
 							Type:   cmapi.IssuerConditionReady,
 							Status: cmapi.ConditionTrue,
@@ -467,7 +467,7 @@ func TestSync(t *testing.T) {
 							Type:   cmapi.IssuerConditionReady,
 							Status: cmapi.ConditionTrue,
 						}),
-						gen.SetIssuerSelfSigned(cmapi.SelfSignedIssuer{}),
+						gen.SetIssuerCA(cmapi.CAIssuer{SecretName: "fake-root-ca"}),
 					),
 				},
 				ExpectedActions: []testpkg.Action{},
@@ -485,12 +485,12 @@ func TestSync(t *testing.T) {
 			},
 			Builder: &testpkg.Builder{
 				CertManagerObjects: []runtime.Object{gen.CertificateRequest("test"),
-					gen.Issuer("ca-issuer",
+					gen.Issuer("fake-issuer",
 						gen.AddIssuerCondition(cmapi.IssuerCondition{
 							Type:   cmapi.IssuerConditionReady,
 							Status: cmapi.ConditionTrue,
 						}),
-						gen.SetIssuerCA(cmapi.CAIssuer{}),
+						gen.SetIssuerSelfSigned(cmapi.SelfSignedIssuer{}),
 					),
 				},
 				ExpectedActions: []testpkg.Action{
@@ -514,7 +514,7 @@ func TestSync(t *testing.T) {
 			},
 			Builder: &testpkg.Builder{
 				CertManagerObjects: []runtime.Object{gen.CertificateRequest("test"),
-					gen.Issuer("ca-issuer",
+					gen.Issuer("fake-issuer",
 						gen.AddIssuerCondition(cmapi.IssuerCondition{
 							Type:   cmapi.IssuerConditionReady,
 							Status: cmapi.ConditionTrue,

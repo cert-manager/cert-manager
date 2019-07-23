@@ -89,7 +89,7 @@ func (f *controllerFixture) Finish(t *testing.T, args ...interface{}) {
 func (f *controllerFixture) buildFakeController(b *test.Builder) *Controller {
 	b.Start()
 	c := &Controller{
-		issuerType: apiutil.IssuerCA,
+		issuerType: apiutil.IssuerSelfSigned,
 		issuer:     f.IssuerImpl,
 	}
 	c.Register(b.Context)
