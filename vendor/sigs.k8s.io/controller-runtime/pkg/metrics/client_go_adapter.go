@@ -20,23 +20,9 @@ import (
 	"net/url"
 	"time"
 
-	"k8s.io/apimachinery/pkg/util/runtime"
-
 	"github.com/prometheus/client_golang/prometheus"
 	reflectormetrics "k8s.io/client-go/tools/cache"
 	clientmetrics "k8s.io/client-go/tools/metrics"
-	workqueuemetrics "k8s.io/client-go/util/workqueue"
-)
-
-const (
-	workQueueSubsystem         = "workqueue"
-	depthKey                   = "depth"
-	addsKey                    = "adds_total"
-	queueLatencyKey            = "queue_duration_seconds"
-	workDurationKey            = "work_duration_seconds"
-	unfinishedWorkKey          = "unfinished_work_seconds"
-	longestRunningProcessorKey = "longest_running_processor_seconds"
-	retriesKey                 = "retries_total"
 )
 
 // this file contains setup logic to initialize the myriad of places
@@ -117,62 +103,11 @@ var (
 		Name:      "last_resource_version",
 		Help:      "Last resource version seen for the reflectors",
 	}, []string{"name"})
-
-	// workqueue metrics
-
-	depth = prometheus.NewGaugeVec(prometheus.GaugeOpts{
-		Subsystem: workQueueSubsystem,
-		Name:      depthKey,
-		Help:      "Current depth of workqueue",
-	}, []string{"name"})
-
-	adds = prometheus.NewCounterVec(prometheus.CounterOpts{
-		Subsystem: workQueueSubsystem,
-		Name:      addsKey,
-		Help:      "Total number of adds handled by workqueue",
-	}, []string{"name"})
-
-	latency = prometheus.NewHistogramVec(prometheus.HistogramOpts{
-		Subsystem: workQueueSubsystem,
-		Name:      queueLatencyKey,
-		Help:      "How long in seconds an item stays in workqueue before being requested.",
-		Buckets:   prometheus.ExponentialBuckets(10e-9, 10, 10),
-	}, []string{"name"})
-
-	workDuration = prometheus.NewHistogramVec(prometheus.HistogramOpts{
-		Subsystem: workQueueSubsystem,
-		Name:      workDurationKey,
-		Help:      "How long in seconds processing an item from workqueue takes.",
-		Buckets:   prometheus.ExponentialBuckets(10e-9, 10, 10),
-	}, []string{"name"})
-
-	unfinishedWork = prometheus.NewGaugeVec(prometheus.GaugeOpts{
-		Subsystem: workQueueSubsystem,
-		Name:      unfinishedWorkKey,
-		Help: "How many seconds of work has done that " +
-			"is in progress and hasn't been observed by work_duration. Large " +
-			"values indicate stuck threads. One can deduce the number of stuck " +
-			"threads by observing the rate at which this increases.",
-	}, []string{"name"})
-
-	longestRunning = prometheus.NewGaugeVec(prometheus.GaugeOpts{
-		Subsystem: workQueueSubsystem,
-		Name:      longestRunningProcessorKey,
-		Help: "How many seconds has the longest running " +
-			"processor for workqueue been running.",
-	}, []string{"name"})
-
-	retries = prometheus.NewCounterVec(prometheus.CounterOpts{
-		Subsystem: workQueueSubsystem,
-		Name:      retriesKey,
-		Help:      "Total number of retries handled by workqueue",
-	}, []string{"name"})
 )
 
 func init() {
 	registerClientMetrics()
 	registerReflectorMetrics()
-	registerWorkqueueMetrics()
 }
 
 // registerClientMetrics sets up the client latency metrics from client-go
@@ -197,19 +132,6 @@ func registerReflectorMetrics() {
 	Registry.MustRegister(lastResourceVersion)
 
 	reflectormetrics.SetReflectorMetricsProvider(reflectorMetricsProvider{})
-}
-
-// registerWorkQueueMetrics sets up workqueue (other reconcile) metrics
-func registerWorkqueueMetrics() {
-	Registry.MustRegister(depth)
-	Registry.MustRegister(adds)
-	Registry.MustRegister(latency)
-	Registry.MustRegister(workDuration)
-	Registry.MustRegister(retries)
-	Registry.MustRegister(longestRunning)
-	Registry.MustRegister(unfinishedWork)
-
-	workqueuemetrics.SetProvider(workqueueMetricsProvider{})
 }
 
 // this section contains adapters, implementations, and other sundry organic, artisinally
@@ -272,115 +194,4 @@ func (reflectorMetricsProvider) NewItemsInWatchMetric(name string) reflectormetr
 
 func (reflectorMetricsProvider) NewLastResourceVersionMetric(name string) reflectormetrics.GaugeMetric {
 	return lastResourceVersion.WithLabelValues(name)
-}
-
-// Workqueue metrics (method #3 for client-go metrics),
-// copied (more-or-less directly) from k8s.io/kubernetes setup code
-// (which isn't anywhere in an easily-importable place).
-// TODO(directxman12): stop "cheating" and calling histograms summaries when we pull in the latest deps
-
-type workqueueMetricsProvider struct{}
-
-func (workqueueMetricsProvider) NewDepthMetric(name string) workqueuemetrics.GaugeMetric {
-	return depth.WithLabelValues(name)
-}
-
-func (workqueueMetricsProvider) NewAddsMetric(name string) workqueuemetrics.CounterMetric {
-	return adds.WithLabelValues(name)
-}
-
-func (workqueueMetricsProvider) NewLatencyMetric(name string) workqueuemetrics.HistogramMetric {
-	return latency.WithLabelValues(name)
-}
-
-func (workqueueMetricsProvider) NewWorkDurationMetric(name string) workqueuemetrics.HistogramMetric {
-	return workDuration.WithLabelValues(name)
-}
-
-func (workqueueMetricsProvider) NewUnfinishedWorkSecondsMetric(name string) workqueuemetrics.SettableGaugeMetric {
-	return unfinishedWork.WithLabelValues(name)
-}
-
-func (workqueueMetricsProvider) NewLongestRunningProcessorSecondsMetric(name string) workqueuemetrics.SettableGaugeMetric {
-	return longestRunning.WithLabelValues(name)
-}
-
-func (workqueueMetricsProvider) NewRetriesMetric(name string) workqueuemetrics.CounterMetric {
-	return retries.WithLabelValues(name)
-}
-
-func (workqueueMetricsProvider) NewDeprecatedDepthMetric(name string) workqueuemetrics.GaugeMetric {
-	depth := prometheus.NewGauge(prometheus.GaugeOpts{
-		Subsystem: name,
-		Name:      "depth",
-		Help:      "Current depth of workqueue: " + name,
-	})
-	runtime.HandleError(Registry.Register(depth))
-	return depth
-}
-
-func (workqueueMetricsProvider) NewDeprecatedAddsMetric(name string) workqueuemetrics.CounterMetric {
-	adds := prometheus.NewCounter(prometheus.CounterOpts{
-		Subsystem: name,
-		Name:      "adds",
-		Help:      "Total number of adds handled by workqueue: " + name,
-	})
-	runtime.HandleError(Registry.Register(adds))
-	return adds
-}
-
-func (workqueueMetricsProvider) NewDeprecatedLatencyMetric(name string) workqueuemetrics.SummaryMetric {
-	latency := prometheus.NewSummary(prometheus.SummaryOpts{
-		Subsystem:   name,
-		Name:        "queue_latency",
-		Help:        "How long an item stays in workqueue" + name + " before being requested.",
-		ConstLabels: prometheus.Labels{"name": name},
-	})
-	runtime.HandleError(Registry.Register(latency))
-	return latency
-}
-
-func (workqueueMetricsProvider) NewDeprecatedWorkDurationMetric(name string) workqueuemetrics.SummaryMetric {
-	workDuration := prometheus.NewSummary(prometheus.SummaryOpts{
-		Subsystem:   name,
-		Name:        "work_duration",
-		Help:        "How long processing an item from workqueue" + name + " takes.",
-		ConstLabels: prometheus.Labels{"name": name},
-	})
-	runtime.HandleError(Registry.Register(workDuration))
-	return workDuration
-}
-
-func (workqueueMetricsProvider) NewDeprecatedUnfinishedWorkSecondsMetric(name string) workqueuemetrics.SettableGaugeMetric {
-	unfinishedWork := prometheus.NewGauge(prometheus.GaugeOpts{
-		Subsystem: name,
-		Name:      "unfinished_work_seconds",
-		Help: "How many seconds of work " + name + " has done that " +
-			"is in progress and hasn't been observed by work_duration. Large " +
-			"values indicate stuck threads. One can deduce the number of stuck " +
-			"threads by observing the rate at which this increases.",
-	})
-	runtime.HandleError(Registry.Register(unfinishedWork))
-	return unfinishedWork
-}
-
-func (workqueueMetricsProvider) NewDeprecatedLongestRunningProcessorMicrosecondsMetric(name string) workqueuemetrics.SettableGaugeMetric {
-	longestRunning := prometheus.NewGauge(prometheus.GaugeOpts{
-		Subsystem: name,
-		Name:      "longest_running_processor_microseconds",
-		Help: "How many microseconds has the longest running " +
-			"processor for " + name + " been running.",
-	})
-	runtime.HandleError(Registry.Register(longestRunning))
-	return longestRunning
-}
-
-func (workqueueMetricsProvider) NewDeprecatedRetriesMetric(name string) workqueuemetrics.CounterMetric {
-	retries := prometheus.NewCounter(prometheus.CounterOpts{
-		Subsystem: name,
-		Name:      "retries",
-		Help:      "Total number of retries handled by workqueue: " + name,
-	})
-	runtime.HandleError(Registry.Register(retries))
-	return retries
 }

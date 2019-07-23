@@ -18,19 +18,21 @@ package feature
 
 import (
 	"k8s.io/apimachinery/pkg/util/runtime"
-	"k8s.io/apiserver/pkg/util/feature"
+	"k8s.io/component-base/featuregate"
+
+	utilfeature "github.com/jetstack/cert-manager/pkg/util/feature"
 )
 
 const (
 	// alpha: v0.7.2
 	//
 	// ValidateCAA enables CAA checking when issuing certificates
-	ValidateCAA feature.Feature = "ValidateCAA"
+	ValidateCAA featuregate.Feature = "ValidateCAA"
 
 	// beta: v0.8.1
 	//
 	// IssueTemporaryCertificate enables issuing temporary certificates
-	IssueTemporaryCertificate feature.Feature = "IssueTemporaryCertificate"
+	IssueTemporaryCertificate featuregate.Feature = "IssueTemporaryCertificate"
 
 	// alpha: v0.8.1
 	//
@@ -40,14 +42,14 @@ const (
 )
 
 func init() {
-	runtime.Must(feature.DefaultMutableFeatureGate.Add(defaultKubernetesFeatureGates))
+	runtime.Must(utilfeature.DefaultMutableFeatureGate.Add(defaultKubernetesFeatureGates))
 }
 
 // defaultKubernetesFeatureGates consists of all known Kubernetes-specific feature keys.
 // To add a new feature, define a key for it above and add it here. The features will be
 // available throughout Kubernetes binaries.
-var defaultKubernetesFeatureGates = map[feature.Feature]feature.FeatureSpec{
-	ValidateCAA:                   {Default: false, PreRelease: feature.Alpha},
-	IssueTemporaryCertificate:     {Default: true, PreRelease: feature.Beta},
-	CertificateRequestControllers: {Default: false, PreRelease: feature.Alpha},
+var defaultKubernetesFeatureGates = map[featuregate.Feature]featuregate.FeatureSpec{
+	ValidateCAA:                   {Default: false, PreRelease: featuregate.Alpha},
+	IssueTemporaryCertificate:     {Default: true, PreRelease: featuregate.Beta},
+	CertificateRequestControllers: {Default: false, PreRelease: featuregate.Alpha},
 }

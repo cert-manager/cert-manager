@@ -652,7 +652,7 @@ func (in *CertificateDNSNameSelector) DeepCopy() *CertificateDNSNameSelector {
 func (in *CertificateList) DeepCopyInto(out *CertificateList) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
-	out.ListMeta = in.ListMeta
+	in.ListMeta.DeepCopyInto(&out.ListMeta)
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]Certificate, len(*in))
@@ -733,7 +733,7 @@ func (in *CertificateRequestCondition) DeepCopy() *CertificateRequestCondition {
 func (in *CertificateRequestList) DeepCopyInto(out *CertificateRequestList) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
-	out.ListMeta = in.ListMeta
+	in.ListMeta.DeepCopyInto(&out.ListMeta)
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]CertificateRequest, len(*in))
@@ -932,7 +932,7 @@ func (in *Challenge) DeepCopyObject() runtime.Object {
 func (in *ChallengeList) DeepCopyInto(out *ChallengeList) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
-	out.ListMeta = in.ListMeta
+	in.ListMeta.DeepCopyInto(&out.ListMeta)
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]Challenge, len(*in))
@@ -1036,7 +1036,7 @@ func (in *ClusterIssuer) DeepCopyObject() runtime.Object {
 func (in *ClusterIssuerList) DeepCopyInto(out *ClusterIssuerList) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
-	out.ListMeta = in.ListMeta
+	in.ListMeta.DeepCopyInto(&out.ListMeta)
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]ClusterIssuer, len(*in))
@@ -1217,7 +1217,7 @@ func (in *IssuerConfig) DeepCopy() *IssuerConfig {
 func (in *IssuerList) DeepCopyInto(out *IssuerList) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
-	out.ListMeta = in.ListMeta
+	in.ListMeta.DeepCopyInto(&out.ListMeta)
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]Issuer, len(*in))
@@ -1355,7 +1355,7 @@ func (in *Order) DeepCopyObject() runtime.Object {
 func (in *OrderList) DeepCopyInto(out *OrderList) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
-	out.ListMeta = in.ListMeta
+	in.ListMeta.DeepCopyInto(&out.ListMeta)
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]Order, len(*in))

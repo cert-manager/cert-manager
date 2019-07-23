@@ -2,9 +2,9 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 
 go_library(
     name = "go_default_library",
-    srcs = ["jsonpatch.go"],
-    importmap = "github.com/jetstack/cert-manager/vendor/github.com/appscode/jsonpatch",
-    importpath = "github.com/appscode/jsonpatch",
+    srcs = ["pointer.go"],
+    importmap = "github.com/jetstack/cert-manager/vendor/k8s.io/utils/pointer",
+    importpath = "k8s.io/utils/pointer",
     tags = ["manual"],
     visibility = ["//visibility:public"],
 )

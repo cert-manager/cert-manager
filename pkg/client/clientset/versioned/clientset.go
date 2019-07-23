@@ -28,8 +28,6 @@ import (
 type Interface interface {
 	Discovery() discovery.DiscoveryInterface
 	CertmanagerV1alpha1() certmanagerv1alpha1.CertmanagerV1alpha1Interface
-	// Deprecated: please explicitly pick a version if possible.
-	Certmanager() certmanagerv1alpha1.CertmanagerV1alpha1Interface
 }
 
 // Clientset contains the clients for groups. Each group has exactly one
@@ -41,12 +39,6 @@ type Clientset struct {
 
 // CertmanagerV1alpha1 retrieves the CertmanagerV1alpha1Client
 func (c *Clientset) CertmanagerV1alpha1() certmanagerv1alpha1.CertmanagerV1alpha1Interface {
-	return c.certmanagerV1alpha1
-}
-
-// Deprecated: Certmanager retrieves the default version of CertmanagerClient.
-// Please explicitly pick a version.
-func (c *Clientset) Certmanager() certmanagerv1alpha1.CertmanagerV1alpha1Interface {
 	return c.certmanagerV1alpha1
 }
 

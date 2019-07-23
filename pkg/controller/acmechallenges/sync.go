@@ -24,7 +24,6 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
-	utilfeature "k8s.io/apiserver/pkg/util/feature"
 
 	"github.com/jetstack/cert-manager/pkg/acme"
 	acmecl "github.com/jetstack/cert-manager/pkg/acme/client"
@@ -34,6 +33,7 @@ import (
 	dnsutil "github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 	"github.com/jetstack/cert-manager/pkg/metrics"
+	utilfeature "github.com/jetstack/cert-manager/pkg/util/feature"
 	acmeapi "github.com/jetstack/cert-manager/third_party/crypto/acme"
 )
 

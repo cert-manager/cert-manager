@@ -171,10 +171,19 @@ type statusWriter struct {
 var _ StatusWriter = &statusWriter{}
 
 // Update implements client.StatusWriter
-func (sw *statusWriter) Update(ctx context.Context, obj runtime.Object) error {
+func (sw *statusWriter) Update(ctx context.Context, obj runtime.Object, opts ...UpdateOptionFunc) error {
 	_, ok := obj.(*unstructured.Unstructured)
 	if ok {
-		return sw.client.unstructuredClient.UpdateStatus(ctx, obj)
+		return sw.client.unstructuredClient.UpdateStatus(ctx, obj, opts...)
 	}
-	return sw.client.typedClient.UpdateStatus(ctx, obj)
+	return sw.client.typedClient.UpdateStatus(ctx, obj, opts...)
+}
+
+// Patch implements client.Client
+func (sw *statusWriter) Patch(ctx context.Context, obj runtime.Object, patch Patch, opts ...PatchOptionFunc) error {
+	_, ok := obj.(*unstructured.Unstructured)
+	if ok {
+		return sw.client.unstructuredClient.PatchStatus(ctx, obj, patch, opts...)
+	}
+	return sw.client.typedClient.PatchStatus(ctx, obj, patch, opts...)
 }
