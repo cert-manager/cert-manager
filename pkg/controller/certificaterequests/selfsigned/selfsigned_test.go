@@ -24,7 +24,6 @@ import (
 	"crypto/x509/pkix"
 	"encoding/asn1"
 	"encoding/pem"
-	"fmt"
 	"testing"
 
 	corev1 "k8s.io/api/core/v1"
@@ -56,6 +55,13 @@ func generateCSR(t *testing.T, secretKey crypto.Signer, alg x509.SignatureAlgori
 	csr := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE REQUEST", Bytes: csrBytes})
 
 	return csr
+}
+
+func mustNoResponse(t *testing.T, args []interface{}) {
+	resp := args[1].(*issuer.IssueResponse)
+	if resp != nil {
+		t.Errorf("unexpected response, exp='nil' got='%+v'", resp)
+	}
 }
 
 func TestSign(t *testing.T) {
@@ -126,7 +132,7 @@ func TestSign(t *testing.T) {
 	}
 
 	tests := map[string]selfsignedFixture{
-		"a CertificateRequest with no certmanager.k8s.io/selfsigned-private-key annotation errors": {
+		"a CertificateRequest with no certmanager.k8s.io/selfsigned-private-key annotation should record error": {
 			Issuer: gen.Issuer("selfsigned-issuer",
 				gen.SetIssuerSelfSigned(v1alpha1.SelfSignedIssuer{}),
 			),
@@ -135,16 +141,16 @@ func TestSign(t *testing.T) {
 			Builder: &testpkg.Builder{
 				KubeObjects:        []runtime.Object{},
 				CertManagerObjects: []runtime.Object{},
+				ExpectedEvents: []string{
+					"Warning ErrorAnnotation Referenced secret default-unit-test-ns/ not found: self signed issuer requires 'certmanager.k8s.io/private-key-secret-name' annotation set to secret name holding the private key",
+				},
 			},
-			Err: true,
+			Err: false,
 			CheckFn: func(t *testing.T, s *selfsignedFixture, args ...interface{}) {
-				err := args[2].(error)
-				if err == nil || err != errorNoAnnotation {
-					t.Errorf("unexpected error, exp='%s' got='%+v'", errorNoAnnotation, err)
-				}
+				mustNoResponse(t, args)
 			},
 		},
-		"a CertificateRequest with a certmanager.k8s.io/private-key-secret-name annotation but empty string should error": {
+		"a CertificateRequest with a certmanager.k8s.io/private-key-secret-name annotation but empty string should record error": {
 			Issuer: gen.Issuer("selfsigned-issuer",
 				gen.SetIssuerSelfSigned(v1alpha1.SelfSignedIssuer{}),
 			),
@@ -157,16 +163,15 @@ func TestSign(t *testing.T) {
 			Builder: &testpkg.Builder{
 				KubeObjects:        []runtime.Object{},
 				CertManagerObjects: []runtime.Object{},
+				ExpectedEvents: []string{
+					"Warning ErrorAnnotation Referenced secret default-unit-test-ns/ not found: self signed issuer requires 'certmanager.k8s.io/private-key-secret-name' annotation set to secret name holding the private key",
+				},
 			},
-			Err: true,
+			Err: false,
 			CheckFn: func(t *testing.T, s *selfsignedFixture, args ...interface{}) {
-				err := args[2].(error)
-				if err == nil || err != errorNoAnnotation {
-					t.Errorf("unexpected error, exp='%s' got='%+v'", errorNoAnnotation, err)
-				}
 			},
 		},
-		"a CertificateRequest with a certmanager.k8s.io/private-key-secret-name annotation but the referenced secret doesn't exist should error": {
+		"a CertificateRequest with a certmanager.k8s.io/private-key-secret-name annotation but the referenced secret doesn't exist should record error": {
 			Issuer: gen.Issuer("selfsigned-issuer",
 				gen.SetIssuerSelfSigned(v1alpha1.SelfSignedIssuer{}),
 			),
@@ -178,14 +183,12 @@ func TestSign(t *testing.T) {
 			Builder: &testpkg.Builder{
 				KubeObjects:        []runtime.Object{},
 				CertManagerObjects: []runtime.Object{},
+				ExpectedEvents: []string{
+					`Warning ErrorSecret Referenced secret default-unit-test-ns/a-non-existent-secret not found: secret "a-non-existent-secret" not found`,
+				},
 			},
-			Err: true,
+			Err: false,
 			CheckFn: func(t *testing.T, s *selfsignedFixture, args ...interface{}) {
-				notFoundError := `failed to get private key a-non-existent-secret referenced in the annotation 'certmanager.k8s.io/private-key-secret-name': secret "a-non-existent-secret" not found`
-				err := args[2].(error)
-				if err == nil || err.Error() != notFoundError {
-					t.Errorf("unexpected error, exp='%s' got='%+v'", notFoundError, err)
-				}
 			},
 		},
 		"a CertificateRequest with a bad CSR should error": {
@@ -201,17 +204,15 @@ func TestSign(t *testing.T) {
 			Builder: &testpkg.Builder{
 				KubeObjects:        []runtime.Object{rsaKeySecret},
 				CertManagerObjects: []runtime.Object{},
+				ExpectedEvents: []string{
+					"Warning ErrorGenerating Failed to generate certificate template: failed to decode csr from certificate request resource default-unit-test-ns/test-cr",
+				},
 			},
-			Err: true,
+			Err: false,
 			CheckFn: func(t *testing.T, s *selfsignedFixture, args ...interface{}) {
-				parseCSRError := fmt.Sprintf("failed to decode csr from certificate request resource %s/test-cr", gen.DefaultTestNamespace)
-				err := args[2].(error)
-				if err == nil || err.Error() != parseCSRError {
-					t.Errorf("unexpected error, exp='%s' got='%+v'", parseCSRError, err)
-				}
 			},
 		},
-		"a CertificateRequest referencing a bad key should error": {
+		"a CertificateRequest referencing a bad key should record an error": {
 			Issuer: gen.Issuer("selfsigned-issuer",
 				gen.SetIssuerSelfSigned(v1alpha1.SelfSignedIssuer{}),
 			),
@@ -234,7 +235,7 @@ func TestSign(t *testing.T) {
 				}
 			},
 		},
-		"a CertificateRequest referencing a key which did not sign the CSR should error": {
+		"a CertificateRequest referencing a key which did not sign the CSR should record an error": {
 			Issuer: gen.Issuer("selfsigned-issuer",
 				gen.SetIssuerSelfSigned(v1alpha1.SelfSignedIssuer{}),
 			),
@@ -247,14 +248,12 @@ func TestSign(t *testing.T) {
 			Builder: &testpkg.Builder{
 				KubeObjects:        []runtime.Object{anotherRSAKeySecret},
 				CertManagerObjects: []runtime.Object{},
+				ExpectedEvents: []string{
+					"Warning ErrorKeyMatch Error generating certificate template: CSR not signed by referenced private key",
+				},
 			},
-			Err: true,
+			Err: false,
 			CheckFn: func(t *testing.T, s *selfsignedFixture, args ...interface{}) {
-				badKeyError := "CSR not signed by referenced private key"
-				err := args[2].(error)
-				if err == nil || err.Error() != badKeyError {
-					t.Errorf("unexpected error, exp='%s' got='%+v'", badKeyError, err)
-				}
 			},
 		},
 		"a valid RSA key should sign a self signed certificate": {
@@ -340,14 +339,6 @@ func TestSign(t *testing.T) {
 			}
 			if err == nil && test.Err {
 				t.Errorf("Expected function to get an error, but got: %v", err)
-			}
-
-			if test.Err && resp != nil {
-				t.Errorf("unexpected response, exp=nil got='%+v'", resp)
-			}
-
-			if !test.Err && resp == nil {
-				t.Errorf("expected response but got nil")
 			}
 
 			test.Finish(t, crCopy, resp, err)

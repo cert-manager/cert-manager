@@ -22,9 +22,11 @@ import (
 	"fmt"
 
 	corev1 "k8s.io/api/core/v1"
+	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	corelisters "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/tools/record"
 
+	"github.com/go-logr/logr"
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
@@ -78,10 +80,19 @@ func (s *SelfSigned) Sign(ctx context.Context, cr *v1alpha1.CertificateRequest) 
 
 	skRef, ok := cr.ObjectMeta.Annotations[v1alpha1.CRPrivateKeyAnnotationKey]
 	if !ok || skRef == "" {
-		return nil, errorNoAnnotation
+		s.reportFaliedStatus(log, cr, errorNoAnnotation, "ErrorAnnotation",
+			fmt.Sprintf("Referenced secret %s/%s not found", cr.Namespace, skRef))
+
+		return nil, nil
 	}
 
 	sk, err := kube.SecretTLSKey(ctx, s.secretsLister, cr.Namespace, skRef)
+	if k8sErrors.IsNotFound(err) {
+		s.reportFaliedStatus(log, cr, err, "ErrorSecret",
+			fmt.Sprintf("Referenced secret %s/%s not found", cr.Namespace, skRef))
+
+		return nil, nil
+	}
 	if err != nil {
 		return nil, fmt.Errorf("failed to get private key %s referenced in the annotation '%s': %s",
 			skRef, v1alpha1.CRPrivateKeyAnnotationKey, err)
@@ -89,32 +100,33 @@ func (s *SelfSigned) Sign(ctx context.Context, cr *v1alpha1.CertificateRequest) 
 
 	template, err := pki.GenerateTemplateFromCertificateRequest(cr)
 	if err != nil {
-		log.Error(err, "error generating certificate template")
-		s.recorder.Eventf(cr, corev1.EventTypeWarning, "ErrorSigning", "Error generating certificate template: %v", err)
-		return nil, err
+		s.reportFaliedStatus(log, cr, err, "ErrorGenerating", "Failed to generate certificate template")
+		return nil, nil
 	}
 
 	// extract the public component of the key
 	pk, err := pki.PublicKeyForPrivateKey(sk)
 	if err != nil {
-		log.Error(err, "failed to get public key from private key")
-		return nil, err
+		s.reportFaliedStatus(log, cr, err, "ErrorPublicKey", "Failed to get public key from private key")
+		return nil, nil
 	}
 
 	ok, err = pki.PublicKeyMatchesPublicKey(pk, template.PublicKey)
-	if err != nil {
-		log.Error(err, "failed to verify CSR is signed by referenced private key")
-		return nil, err
-	}
+	if err != nil || !ok {
 
-	if !ok {
-		return nil, errors.New("CSR not signed by referenced private key")
+		if err == nil {
+			err = errors.New("CSR not signed by referenced private key")
+		}
+
+		s.reportFaliedStatus(log, cr, err, "ErrorKeyMatch", "Error generating certificate template")
+
+		return nil, nil
 	}
 
 	// sign and encode the certificate
 	certPem, _, err := pki.SignCertificate(template, template, pk, sk)
 	if err != nil {
-		s.recorder.Eventf(cr, corev1.EventTypeWarning, "ErrorSigning", "Error signing certificate: %v", err)
+		s.reportFaliedStatus(log, cr, err, "ErrorSigning", "Error signing certificate")
 		return nil, err
 	}
 
@@ -124,4 +136,15 @@ func (s *SelfSigned) Sign(ctx context.Context, cr *v1alpha1.CertificateRequest) 
 		Certificate: certPem,
 		CA:          certPem,
 	}, nil
+}
+
+func (s *SelfSigned) reportFaliedStatus(log logr.Logger, cr *v1alpha1.CertificateRequest, err error,
+	reason, message string) {
+	// TODO: add mechanism here to handle invalid input errors which should result in a permanent failure
+	apiutil.SetCertificateRequestCondition(cr, v1alpha1.CertificateRequestConditionReady,
+		v1alpha1.ConditionFalse, v1alpha1.CertificateRequestReasonFailed,
+		message)
+
+	log.Error(err, message)
+	s.recorder.Event(cr, corev1.EventTypeWarning, reason, fmt.Sprintf("%s: %v", message, err))
 }

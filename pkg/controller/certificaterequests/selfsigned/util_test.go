@@ -78,6 +78,9 @@ func (s *selfsignedFixture) Finish(t *testing.T, args ...interface{}) {
 	if err := s.Builder.AllActionsExecuted(); err != nil {
 		t.Errorf(err.Error())
 	}
+	if err := s.Builder.AllEventsCalled(); err != nil {
+		t.Errorf(err.Error())
+	}
 
 	// resync listers before running checks
 	s.Builder.Sync()
