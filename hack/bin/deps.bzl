@@ -116,8 +116,8 @@ def install_helm():
     ## the version numbers in these rules.
     http_archive(
         name = "helm_darwin",
-        sha256 = "7c4e6bfbc211d6b984ffb4fa490ce9ac112cc4b9b8d859ece27045b8514c1ed1",
-        urls = ["https://storage.googleapis.com/kubernetes-helm/helm-v2.10.0-darwin-amd64.tar.gz"],
+        sha256 = "9469da75bb357bc325c985dead224480bbacc7aa8aecff74089dff97e64655d0",
+        urls = ["https://get.helm.sh/helm-v2.14.2-darwin-amd64.tar.gz"],
         build_file_content =
             """
 filegroup(
@@ -132,8 +132,8 @@ filegroup(
 
     http_archive(
         name = "helm_linux",
-        sha256 = "0fa2ed4983b1e4a3f90f776d08b88b0c73fd83f305b5b634175cb15e61342ffe",
-        urls = ["https://storage.googleapis.com/kubernetes-helm/helm-v2.10.0-linux-amd64.tar.gz"],
+        sha256 = "9f50e69cf5cfa7268b28686728ad0227507a169e52bf59c99ada872ddd9679f0",
+        urls = ["https://get.helm.sh/helm-v2.14.2-linux-amd64.tar.gz"],
         build_file_content =
             """
 filegroup(
@@ -190,33 +190,109 @@ def install_kubectl():
         urls = ["https://storage.googleapis.com/kubernetes-release/release/v1.13.2/bin/linux/amd64/kubectl"],
     )
 
+    http_file(
+        name = "kubectl_1_14_darwin",
+        executable = 1,
+        sha256 = "b4f6d583014f3dc9f3912d68b5aaa20a25394ecc43b42b2df3d37ef7c4a6f819",
+        urls = ["https://storage.googleapis.com/kubernetes-release/release/v1.14.3/bin/darwin/amd64/kubectl"],
+    )
+
+    http_file(
+        name = "kubectl_1_14_linux",
+        executable = 1,
+        sha256 = "ebc8c2fadede148c2db1b974f0f7f93f39f19c8278619893fd530e20e9bec98f",
+        urls = ["https://storage.googleapis.com/kubernetes-release/release/v1.14.3/bin/linux/amd64/kubectl"],
+    )
+
+    http_file(
+        name = "kubectl_1_15_darwin",
+        executable = 1,
+        sha256 = "63f1ace419edffa1f5ebb64a6c63597afd48f8d94a61d4fb44e820139adbbe54",
+        urls = ["https://storage.googleapis.com/kubernetes-release/release/v1.15.0/bin/darwin/amd64/kubectl"],
+    )
+
+    http_file(
+        name = "kubectl_1_15_linux",
+        executable = 1,
+        sha256 = "ecec7fe4ffa03018ff00f14e228442af5c2284e57771e4916b977c20ba4e5b39",
+        urls = ["https://storage.googleapis.com/kubernetes-release/release/v1.15.0/bin/linux/amd64/kubectl"],
+    )
+
+    http_file(
+        name = "kubectl_1_16_darwin",
+        executable = 1,
+        sha256 = "ab04b4e950fb7a8fa24da1d646af6d2fd7c1c7f09254af3783c920d258a94b1a",
+        urls = ["https://storage.googleapis.com/kubernetes-release/release/v1.16.0-alpha.1/bin/darwin/amd64/kubectl"],
+    )
+
+    http_file(
+        name = "kubectl_1_16_linux",
+        executable = 1,
+        sha256 = "05942f4d57305dedeb76102a8d7ba0476914a1cd373e51d503923e6c96c4dc45",
+        urls = ["https://storage.googleapis.com/kubernetes-release/release/v1.16.0-alpha.1/bin/linux/amd64/kubectl"],
+    )
+
 ## Fetch kind images used during e2e tests
 def install_kind():
     # install kind binary
-    go_repository(
-        name = "io_kubernetes_sigs_kind",
-        commit = "161151a26faf0dbe962ac9f323cc0cdebac79ba8",
-        importpath = "sigs.k8s.io/kind",
+    http_file(
+        name = "kind_darwin",
+        executable = 1,
+        sha256 = "023f1886207132dcfc62139a86f09488a79210732b00c9ec6431d6f6b7e9d2d3",
+        urls = ["https://github.com/kubernetes-sigs/kind/releases/download/v0.4.0/kind-darwin-amd64"],
+    )
+
+    http_file(
+        name = "kind_linux",
+        executable = 1,
+        sha256 = "a97f7d6d97bc0e261ea85433ca564269f117baf0fae051f16b296d2d7541f8dd",
+        urls = ["https://github.com/kubernetes-sigs/kind/releases/download/v0.4.0/kind-linux-amd64"],
     )
 
     container_pull(
         name = "kind-1.11",
         registry = "index.docker.io",
         repository = "kindest/node",
-        tag = "v1.11.3",
+        tag = "v1.11.10",
+        digest = "sha256:176845d919899daef63d0dbd1cf62f79902c38b8d2a86e5fa041e491ab795d33",
     )
 
     container_pull(
         name = "kind-1.12",
         registry = "index.docker.io",
         repository = "kindest/node",
-        tag = "v1.12.5",
+        tag = "v1.12.9",
+        digest = "sha256:bcb79eb3cd6550c1ba9584ce57c832dcd6e442913678d2785307a7ad9addc029",
     )
 
     container_pull(
         name = "kind-1.13",
         registry = "index.docker.io",
         repository = "kindest/node",
-        tag = "v1.13.4",
-        digest = "sha256:842ffccc3ba7674f71815d40fdfd18bc8a98d18130dcfd58bc15c857593f1e15",
+        tag = "v1.13.7",
+        digest = "sha256:f3f1cfc2318d1eb88d91253a9c5fa45f6e9121b6b1e65aea6c7ef59f1549aaaf",
     )    
+
+    container_pull(
+        name = "kind-1.14",
+        registry = "index.docker.io",
+        repository = "kindest/node",
+        tag = "v1.14.3",
+        digest = "sha256:583166c121482848cd6509fbac525dd62d503c52a84ff45c338ee7e8b5cfe114",
+    )
+
+    container_pull(
+        name = "kind-1.15",
+        registry = "index.docker.io",
+        repository = "kindest/node",
+        tag = "v1.15.0",
+        digest = "sha256:b4d092fd2b507843dd096fe6c85d06a27a0cbd740a0b32a880fe61aba24bb478",
+    )
+
+    container_pull(
+        name = "kind-1.16",
+        registry = "eu.gcr.io",
+        repository = "jetstack-build-infra-images/kind-node",
+        tag = "1.16.0-alpha.1",
+        digest = "sha256:b9775b688fda2e6434cda1b9016baf876f381a8325961f59b9ae238166259885",
+    )
