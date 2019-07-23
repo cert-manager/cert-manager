@@ -20,6 +20,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/client"
 	"github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/aws/aws-sdk-go/aws/credentials/stscreds"
 	"github.com/aws/aws-sdk-go/aws/request"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/route53"
@@ -66,7 +67,7 @@ func (d customRetryer) RetryRules(r *request.Request) time.Duration {
 // NewDNSProvider returns a DNSProvider instance configured for the AWS
 // Route 53 service using static credentials from its parameters or, if they're
 // unset and the 'ambient' option is set, credentials from the environment.
-func NewDNSProvider(accessKeyID, secretAccessKey, hostedZoneID, region string, ambient bool, dns01Nameservers []string) (*DNSProvider, error) {
+func NewDNSProvider(accessKeyID, secretAccessKey, assumeRoleARN, hostedZoneID, region string, ambient bool, dns01Nameservers []string) (*DNSProvider, error) {
 	if accessKeyID == "" && secretAccessKey == "" {
 		if !ambient {
 			return nil, fmt.Errorf("unable to construct route53 provider: empty credentials; perhaps you meant to enable ambient credentials?")
@@ -105,7 +106,12 @@ func NewDNSProvider(accessKeyID, secretAccessKey, hostedZoneID, region string, a
 		return nil, fmt.Errorf("unable to create aws session: %s", err)
 	}
 	sess.Handlers.Build.PushBack(request.WithAppendUserAgent(pkgutil.CertManagerUserAgent))
+
+	// assume role?
 	client := route53.New(sess, config)
+	if assumeRoleARN != "" {
+		client = route53.New(sess, &aws.Config{Credentials: stscreds.NewCredentials(sess, assumeRoleARN)})
+	}
 
 	return &DNSProvider{
 		client:           client,
