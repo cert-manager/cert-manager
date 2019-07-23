@@ -30,12 +30,12 @@ import (
 	kubeinformers "k8s.io/client-go/informers"
 	kubefake "k8s.io/client-go/kubernetes/fake"
 	coretesting "k8s.io/client-go/testing"
-	"k8s.io/client-go/tools/record"
 
 	cmfake "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/fake"
 	informers "github.com/jetstack/cert-manager/pkg/client/informers/externalversions"
 	"github.com/jetstack/cert-manager/pkg/controller"
 	"github.com/jetstack/cert-manager/pkg/logs"
+	"github.com/jetstack/cert-manager/pkg/util"
 )
 
 func init() {
@@ -54,10 +54,10 @@ type Builder struct {
 	KubeObjects        []runtime.Object
 	CertManagerObjects []runtime.Object
 	ExpectedActions    []Action
+	ExpectedEvents     []string
 	StringGenerator    StringGenerator
 
 	stopCh           chan struct{}
-	events           []string
 	requiredReactors map[string]bool
 
 	*controller.Context
@@ -95,34 +95,13 @@ func (b *Builder) Start() {
 	b.requiredReactors = make(map[string]bool)
 	b.Client = kubefake.NewSimpleClientset(b.KubeObjects...)
 	b.CMClient = cmfake.NewSimpleClientset(b.CertManagerObjects...)
-	// create a fake recorder with a buffer of 5.
-	// this may need to be increased in future to acomodate tests that
-	// produce more than 5 events
-	b.Recorder = record.NewFakeRecorder(5)
-	// read all events out of the recorder and just log for now
-	// TODO: validate logged events
-	go func() {
-		// Skip logging event messages due to a race/timing issue in the test
-		// framework that needs investigating, where log is called after the
-		// test has finished
-
-		//r, ok := b.Recorder.(*record.FakeRecorder)
-		//if !ok {
-		//	return
-		//}
-
-		// exits when r.Events is closed in Finish
-		//for e := range r.Events {
-		//	b.logf("Event logged: %v", e)
-		//}
-	}()
+	b.Recorder = new(FakeRecorder)
 
 	b.FakeKubeClient().PrependReactor("create", "*", b.generateNameReactor)
 	b.FakeCMClient().PrependReactor("create", "*", b.generateNameReactor)
 	b.KubeSharedInformerFactory = kubeinformers.NewSharedInformerFactory(b.Client, informerResyncPeriod)
 	b.SharedInformerFactory = informers.NewSharedInformerFactory(b.CMClient, informerResyncPeriod)
 	b.stopCh = make(chan struct{})
-	go b.readEvents()
 }
 
 func (b *Builder) FakeKubeClient() *kubefake.Clientset {
@@ -160,6 +139,16 @@ func (b *Builder) AllReactorsCalled() error {
 			errs = append(errs, fmt.Errorf("reactor not called: %s", n))
 		}
 	}
+	return utilerrors.NewAggregate(errs)
+}
+
+func (b *Builder) AllEventsCalled() error {
+	var errs []error
+	if !util.EqualSorted(b.ExpectedEvents, b.Events()) {
+		errs = append(errs, fmt.Errorf("got unexpected events, exp='%s' got='%s'",
+			b.ExpectedEvents, b.Events()))
+	}
+
 	return utilerrors.NewAggregate(errs)
 }
 
@@ -226,10 +215,6 @@ func (b *Builder) Stop() {
 	}
 
 	close(b.stopCh)
-
-	if r, ok := b.Recorder.(*record.FakeRecorder); ok {
-		close(r.Events)
-	}
 }
 
 // WaitForResync will wait for the informer factory informer duration by
@@ -251,23 +236,12 @@ func (b *Builder) Sync() {
 	}
 }
 
-func (b *Builder) FakeEventRecorder() *record.FakeRecorder {
-	return b.Recorder.(*record.FakeRecorder)
-}
-
 func (b *Builder) Events() []string {
-	return b.events
-}
-
-func (b *Builder) readEvents() {
-	for {
-		select {
-		case e := <-b.FakeEventRecorder().Events:
-			b.events = append(b.events, e)
-		case <-b.stopCh:
-			return
-		}
+	if e, ok := b.Recorder.(*FakeRecorder); ok {
+		return e.Events
 	}
+
+	return nil
 }
 
 func mustAllSync(in map[reflect.Type]bool) error {

@@ -123,7 +123,7 @@ func (c *CA) Sign(ctx context.Context, cr *v1alpha1.CertificateRequest) (*issuer
 		// TODO: add mechanism here to handle invalid input errors which should result in a permanent failure
 		log.Error(err, "error generating certificate template")
 		c.recorder.Eventf(cr, corev1.EventTypeWarning, "ErrorSigning", "Error generating certificate template: %v", err)
-		return nil, err
+		return nil, nil
 	}
 
 	resp, err := pki.SignCSRTemplate(caCerts, caKey, template)

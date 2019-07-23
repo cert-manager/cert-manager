@@ -1196,7 +1196,7 @@ func TestSync(t *testing.T) {
 			c := &controller{
 				kClient:             b.Client,
 				cmClient:            b.CMClient,
-				recorder:            b.FakeEventRecorder(),
+				recorder:            b.Recorder,
 				issuerLister:        b.SharedInformerFactory.Certmanager().V1alpha1().Issuers().Lister(),
 				clusterIssuerLister: b.SharedInformerFactory.Certmanager().V1alpha1().ClusterIssuers().Lister(),
 				certificateLister:   b.SharedInformerFactory.Certmanager().V1alpha1().Certificates().Lister(),

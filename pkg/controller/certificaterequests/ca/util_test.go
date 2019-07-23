@@ -22,7 +22,6 @@ import (
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	"github.com/jetstack/cert-manager/pkg/controller/test"
-	"github.com/jetstack/cert-manager/pkg/util"
 )
 
 const (
@@ -36,8 +35,6 @@ type caFixture struct {
 
 	Certificate        *v1alpha1.Certificate
 	CertificateRequest *v1alpha1.CertificateRequest
-
-	ExpectedEvents []string
 
 	PreFn   func(*testing.T, *caFixture)
 	CheckFn func(*testing.T, *caFixture, ...interface{})
@@ -74,9 +71,8 @@ func (s *caFixture) Finish(t *testing.T, args ...interface{}) {
 		t.Errorf(err.Error())
 	}
 
-	if !util.EqualSorted(s.ExpectedEvents, s.Events()) {
-		t.Errorf("got unexpected events, exp='%s' got='%s'",
-			s.ExpectedEvents, s.Events())
+	if err := s.Builder.AllEventsCalled(); err != nil {
+		t.Errorf(err.Error())
 	}
 
 	// resync listers before running checks

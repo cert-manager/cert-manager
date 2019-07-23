@@ -203,6 +203,9 @@ func TestSign(t *testing.T) {
 				CertManagerObjects: []runtime.Object{gen.Issuer("ca-issuer",
 					gen.SetIssuerCA(v1alpha1.CAIssuer{SecretName: "root-ca-secret"}),
 				)},
+				ExpectedEvents: []string{
+					`Warning Pending secret "root-ca-secret" not found`,
+				},
 			},
 			CheckFn: func(t *testing.T, s *caFixture, args ...interface{}) {
 				mustNoResponse(t, args)
@@ -224,16 +227,14 @@ func TestSign(t *testing.T) {
 				CertManagerObjects: []runtime.Object{gen.Issuer("ca-issuer",
 					gen.SetIssuerCA(v1alpha1.CAIssuer{SecretName: "root-ca-secret"}),
 				)},
+				ExpectedEvents: []string{
+					`Warning ErrorSigning Error generating certificate template: failed to decode csr from certificate request resource default-unit-test-ns/test-cr`,
+				},
 			},
 			CheckFn: func(t *testing.T, s *caFixture, args ...interface{}) {
-				err := args[2].(error)
-				badCSRError := `failed to decode csr from certificate request resource default-unit-test-ns/test-cr`
-				if err == nil || err.Error() != badCSRError {
-					t.Errorf("unexpected error, exp='%s' got='%+v'", badCSRError, err)
-				}
 				mustNoResponse(t, args)
 			},
-			Err: true,
+			Err: false,
 		},
 		"no CA certificate should fail a signing": {
 			CertificateRequest: gen.CertificateRequest("test-cr",
