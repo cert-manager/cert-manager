@@ -7,13 +7,13 @@ load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
 
 ## Load rules_go and dependencies
-git_repository(
-    # Use rules_go at HEAD to resolve crossbuild issues building Linux
-    # images from an OSX host: https://github.com/bazelbuild/rules_go/pull/2118
+http_archive(
     name = "io_bazel_rules_go",
-    commit = "792fc6d3ec004e40dfaaff79fbbe461e482022e3",
-    remote = "https://github.com/bazelbuild/rules_go.git",
-    shallow_since = "1562187980 -0400",
+    urls = [
+        "https://storage.googleapis.com/bazel-mirror/github.com/bazelbuild/rules_go/releases/download/0.19.1/rules_go-0.19.1.tar.gz",
+        "https://github.com/bazelbuild/rules_go/releases/download/0.19.1/rules_go-0.19.1.tar.gz",
+    ],
+    sha256 = "8df59f11fb697743cbb3f26cfb8750395f30471e9eabde0d174c3aebc7a1cd39",
 )
 
 load("@io_bazel_rules_go//go:deps.bzl", "go_rules_dependencies", "go_register_toolchains")
@@ -21,14 +21,14 @@ load("@io_bazel_rules_go//go:deps.bzl", "go_rules_dependencies", "go_register_to
 go_rules_dependencies()
 
 go_register_toolchains(
-    go_version = "1.12",
+    go_version = "1.12.7",
 )
 
 ## Load gazelle and dependencies
 http_archive(
     name = "bazel_gazelle",
-    url = "https://github.com/bazelbuild/bazel-gazelle/releases/download/0.17.0/bazel-gazelle-0.17.0.tar.gz",
-    sha256 = "3c681998538231a2d24d0c07ed5a7658cb72bfb5fd4bf9911157c0e9ac6a2687",
+    url = "https://github.com/bazelbuild/bazel-gazelle/releases/download/0.18.1/bazel-gazelle-0.18.1.tar.gz",
+    sha256 = "be9296bfd64882e3c08e3283c58fcb461fa6dd3c171764fcc4cf322f60615a9b",
 )
 
 load("@bazel_gazelle//:deps.bzl", "gazelle_dependencies")
