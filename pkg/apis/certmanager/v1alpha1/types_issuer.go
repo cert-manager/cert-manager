@@ -483,6 +483,8 @@ type ACMEIssuerDNS01ProviderRoute53 struct {
 
 	SecretAccessKey SecretKeySelector `json:"secretAccessKeySecretRef"`
 
+	AssumeRoleARN string `json:"assumeRoleARN"`
+
 	// +optional
 	HostedZoneID string `json:"hostedZoneID,omitempty"`
 
