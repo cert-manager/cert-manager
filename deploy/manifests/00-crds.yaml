@@ -766,12 +766,29 @@ spec:
                         the Route 53 configuration for AWS
                       properties:
                         accessKeyID:
+                          description: 'The AccessKeyID is used for authentication.
+                            If not set we fall-back to using env vars, shared credentials
+                            file or AWS Instance metadata see: https://docs.aws.amazon.com/sdk-for-go/v1/developer-guide/configuring-sdk.html#specifying-credentials'
                           type: string
                         hostedZoneID:
+                          description: If set, the provider will manage only this
+                            zone in Route53 and will not do an lookup using the route53:ListHostedZonesByName
+                            api call.
                           type: string
                         region:
+                          description: Always set the region when using AccessKeyID
+                            and SecretAccessKey
+                          type: string
+                        role:
+                          description: Role is a Role ARN which the Route53 provider
+                            will assume using either the explicit credentials AccessKeyID/SecretAccessKey
+                            or the inferred credentials from environment variables,
+                            shared credentials file or AWS Instance metadata
                           type: string
                         secretAccessKeySecretRef:
+                          description: The SecretAccessKey is used for authentication.
+                            If not set we fall-back to using env vars, shared credentials
+                            file or AWS Instance metadata https://docs.aws.amazon.com/sdk-for-go/v1/developer-guide/configuring-sdk.html#specifying-credentials
                           properties:
                             key:
                               description: The key of the secret to select from. Must
@@ -785,9 +802,7 @@ spec:
                           - name
                           type: object
                       required:
-                      - accessKeyID
                       - region
-                      - secretAccessKeySecretRef
                       type: object
                     webhook:
                       description: ACMEIssuerDNS01ProviderWebhook specifies configuration
@@ -2110,12 +2125,30 @@ spec:
                               containing the Route 53 configuration for AWS
                             properties:
                               accessKeyID:
+                                description: 'The AccessKeyID is used for authentication.
+                                  If not set we fall-back to using env vars, shared
+                                  credentials file or AWS Instance metadata see: https://docs.aws.amazon.com/sdk-for-go/v1/developer-guide/configuring-sdk.html#specifying-credentials'
                                 type: string
                               hostedZoneID:
+                                description: If set, the provider will manage only
+                                  this zone in Route53 and will not do an lookup using
+                                  the route53:ListHostedZonesByName api call.
                                 type: string
                               region:
+                                description: Always set the region when using AccessKeyID
+                                  and SecretAccessKey
+                                type: string
+                              role:
+                                description: Role is a Role ARN which the Route53
+                                  provider will assume using either the explicit credentials
+                                  AccessKeyID/SecretAccessKey or the inferred credentials
+                                  from environment variables, shared credentials file
+                                  or AWS Instance metadata
                                 type: string
                               secretAccessKeySecretRef:
+                                description: The SecretAccessKey is used for authentication.
+                                  If not set we fall-back to using env vars, shared
+                                  credentials file or AWS Instance metadata https://docs.aws.amazon.com/sdk-for-go/v1/developer-guide/configuring-sdk.html#specifying-credentials
                                 properties:
                                   key:
                                     description: The key of the secret to select from.
@@ -2131,9 +2164,7 @@ spec:
                                 - name
                                 type: object
                             required:
-                            - accessKeyID
                             - region
-                            - secretAccessKeySecretRef
                             type: object
                           webhook:
                             description: ACMEIssuerDNS01ProviderWebhook specifies
@@ -2462,12 +2493,30 @@ spec:
                               containing the Route 53 configuration for AWS
                             properties:
                               accessKeyID:
+                                description: 'The AccessKeyID is used for authentication.
+                                  If not set we fall-back to using env vars, shared
+                                  credentials file or AWS Instance metadata see: https://docs.aws.amazon.com/sdk-for-go/v1/developer-guide/configuring-sdk.html#specifying-credentials'
                                 type: string
                               hostedZoneID:
+                                description: If set, the provider will manage only
+                                  this zone in Route53 and will not do an lookup using
+                                  the route53:ListHostedZonesByName api call.
                                 type: string
                               region:
+                                description: Always set the region when using AccessKeyID
+                                  and SecretAccessKey
+                                type: string
+                              role:
+                                description: Role is a Role ARN which the Route53
+                                  provider will assume using either the explicit credentials
+                                  AccessKeyID/SecretAccessKey or the inferred credentials
+                                  from environment variables, shared credentials file
+                                  or AWS Instance metadata
                                 type: string
                               secretAccessKeySecretRef:
+                                description: The SecretAccessKey is used for authentication.
+                                  If not set we fall-back to using env vars, shared
+                                  credentials file or AWS Instance metadata https://docs.aws.amazon.com/sdk-for-go/v1/developer-guide/configuring-sdk.html#specifying-credentials
                                 properties:
                                   key:
                                     description: The key of the secret to select from.
@@ -2483,9 +2532,7 @@ spec:
                                 - name
                                 type: object
                             required:
-                            - accessKeyID
                             - region
-                            - secretAccessKeySecretRef
                             type: object
                           webhook:
                             description: ACMEIssuerDNS01ProviderWebhook specifies
@@ -4053,12 +4100,30 @@ spec:
                               containing the Route 53 configuration for AWS
                             properties:
                               accessKeyID:
+                                description: 'The AccessKeyID is used for authentication.
+                                  If not set we fall-back to using env vars, shared
+                                  credentials file or AWS Instance metadata see: https://docs.aws.amazon.com/sdk-for-go/v1/developer-guide/configuring-sdk.html#specifying-credentials'
                                 type: string
                               hostedZoneID:
+                                description: If set, the provider will manage only
+                                  this zone in Route53 and will not do an lookup using
+                                  the route53:ListHostedZonesByName api call.
                                 type: string
                               region:
+                                description: Always set the region when using AccessKeyID
+                                  and SecretAccessKey
+                                type: string
+                              role:
+                                description: Role is a Role ARN which the Route53
+                                  provider will assume using either the explicit credentials
+                                  AccessKeyID/SecretAccessKey or the inferred credentials
+                                  from environment variables, shared credentials file
+                                  or AWS Instance metadata
                                 type: string
                               secretAccessKeySecretRef:
+                                description: The SecretAccessKey is used for authentication.
+                                  If not set we fall-back to using env vars, shared
+                                  credentials file or AWS Instance metadata https://docs.aws.amazon.com/sdk-for-go/v1/developer-guide/configuring-sdk.html#specifying-credentials
                                 properties:
                                   key:
                                     description: The key of the secret to select from.
@@ -4074,9 +4139,7 @@ spec:
                                 - name
                                 type: object
                             required:
-                            - accessKeyID
                             - region
-                            - secretAccessKeySecretRef
                             type: object
                           webhook:
                             description: ACMEIssuerDNS01ProviderWebhook specifies
@@ -4405,12 +4468,30 @@ spec:
                               containing the Route 53 configuration for AWS
                             properties:
                               accessKeyID:
+                                description: 'The AccessKeyID is used for authentication.
+                                  If not set we fall-back to using env vars, shared
+                                  credentials file or AWS Instance metadata see: https://docs.aws.amazon.com/sdk-for-go/v1/developer-guide/configuring-sdk.html#specifying-credentials'
                                 type: string
                               hostedZoneID:
+                                description: If set, the provider will manage only
+                                  this zone in Route53 and will not do an lookup using
+                                  the route53:ListHostedZonesByName api call.
                                 type: string
                               region:
+                                description: Always set the region when using AccessKeyID
+                                  and SecretAccessKey
+                                type: string
+                              role:
+                                description: Role is a Role ARN which the Route53
+                                  provider will assume using either the explicit credentials
+                                  AccessKeyID/SecretAccessKey or the inferred credentials
+                                  from environment variables, shared credentials file
+                                  or AWS Instance metadata
                                 type: string
                               secretAccessKeySecretRef:
+                                description: The SecretAccessKey is used for authentication.
+                                  If not set we fall-back to using env vars, shared
+                                  credentials file or AWS Instance metadata https://docs.aws.amazon.com/sdk-for-go/v1/developer-guide/configuring-sdk.html#specifying-credentials
                                 properties:
                                   key:
                                     description: The key of the secret to select from.
@@ -4426,9 +4507,7 @@ spec:
                                 - name
                                 type: object
                             required:
-                            - accessKeyID
                             - region
-                            - secretAccessKeySecretRef
                             type: object
                           webhook:
                             description: ACMEIssuerDNS01ProviderWebhook specifies
@@ -6187,12 +6266,30 @@ spec:
                               containing the Route 53 configuration for AWS
                             properties:
                               accessKeyID:
+                                description: 'The AccessKeyID is used for authentication.
+                                  If not set we fall-back to using env vars, shared
+                                  credentials file or AWS Instance metadata see: https://docs.aws.amazon.com/sdk-for-go/v1/developer-guide/configuring-sdk.html#specifying-credentials'
                                 type: string
                               hostedZoneID:
+                                description: If set, the provider will manage only
+                                  this zone in Route53 and will not do an lookup using
+                                  the route53:ListHostedZonesByName api call.
                                 type: string
                               region:
+                                description: Always set the region when using AccessKeyID
+                                  and SecretAccessKey
+                                type: string
+                              role:
+                                description: Role is a Role ARN which the Route53
+                                  provider will assume using either the explicit credentials
+                                  AccessKeyID/SecretAccessKey or the inferred credentials
+                                  from environment variables, shared credentials file
+                                  or AWS Instance metadata
                                 type: string
                               secretAccessKeySecretRef:
+                                description: The SecretAccessKey is used for authentication.
+                                  If not set we fall-back to using env vars, shared
+                                  credentials file or AWS Instance metadata https://docs.aws.amazon.com/sdk-for-go/v1/developer-guide/configuring-sdk.html#specifying-credentials
                                 properties:
                                   key:
                                     description: The key of the secret to select from.
@@ -6208,9 +6305,7 @@ spec:
                                 - name
                                 type: object
                             required:
-                            - accessKeyID
                             - region
-                            - secretAccessKeySecretRef
                             type: object
                           webhook:
                             description: ACMEIssuerDNS01ProviderWebhook specifies

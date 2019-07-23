@@ -1396,19 +1396,23 @@ Appears In:
 </thead>
 <tbody><tr>
 <td><code>accessKeyID</code><br /> <em>string</em></td>
-<td></td>
+<td>The AccessKeyID is used for authentication. If not set we fall-back to using env vars, shared credentials file or AWS Instance metadata see: <a href="https://docs.aws.amazon.com/sdk-for-go/v1/developer-guide/configuring-sdk.html#specifying-credentials">https://docs.aws.amazon.com/sdk-for-go/v1/developer-guide/configuring-sdk.html#specifying-credentials</a></td>
 </tr>
 <tr>
 <td><code>hostedZoneID</code><br /> <em>string</em></td>
-<td></td>
+<td>If set, the provider will manage only this zone in Route53 and will not do an lookup using the route53:ListHostedZonesByName api call.</td>
 </tr>
 <tr>
 <td><code>region</code><br /> <em>string</em></td>
-<td></td>
+<td>Always set the region when using AccessKeyID and SecretAccessKey</td>
+</tr>
+<tr>
+<td><code>role</code><br /> <em>string</em></td>
+<td>Role is a Role ARN which the Route53 provider will assume using either the explicit credentials AccessKeyID/SecretAccessKey or the inferred credentials from environment variables, shared credentials file or AWS Instance metadata</td>
 </tr>
 <tr>
 <td><code>secretAccessKeySecretRef</code><br /> *<a href="#secretkeyselector-v1alpha1">SecretKeySelector</a>*</td>
-<td></td>
+<td>The SecretAccessKey is used for authentication. If not set we fall-back to using env vars, shared credentials file or AWS Instance metadata <a href="https://docs.aws.amazon.com/sdk-for-go/v1/developer-guide/configuring-sdk.html#specifying-credentials">https://docs.aws.amazon.com/sdk-for-go/v1/developer-guide/configuring-sdk.html#specifying-credentials</a></td>
 </tr>
 </tbody></table>
 <h2 id="acmeissuerdns01providerwebhook-v1alpha1">ACMEIssuerDNS01ProviderWebhook v1alpha1</h2>

@@ -478,13 +478,26 @@ type ACMEIssuerDNS01ProviderDigitalOcean struct {
 // ACMEIssuerDNS01ProviderRoute53 is a structure containing the Route 53
 // configuration for AWS
 type ACMEIssuerDNS01ProviderRoute53 struct {
+	// The AccessKeyID is used for authentication. If not set we fall-back to using env vars, shared credentials file or AWS Instance metadata
+	// see: https://docs.aws.amazon.com/sdk-for-go/v1/developer-guide/configuring-sdk.html#specifying-credentials
+	// +optional
 	AccessKeyID string `json:"accessKeyID"`
 
+	// The SecretAccessKey is used for authentication. If not set we fall-back to using env vars, shared credentials file or AWS Instance metadata
+	// https://docs.aws.amazon.com/sdk-for-go/v1/developer-guide/configuring-sdk.html#specifying-credentials
+	// +optional
 	SecretAccessKey SecretKeySelector `json:"secretAccessKeySecretRef"`
 
+	// Role is a Role ARN which the Route53 provider will assume using either the explicit credentials AccessKeyID/SecretAccessKey
+	// or the inferred credentials from environment variables, shared credentials file or AWS Instance metadata
+	// +optional
+	Role string `json:"role"`
+
+	// If set, the provider will manage only this zone in Route53 and will not do an lookup using the route53:ListHostedZonesByName api call.
 	// +optional
 	HostedZoneID string `json:"hostedZoneID,omitempty"`
 
+	// Always set the region when using AccessKeyID and SecretAccessKey
 	Region string `json:"region"`
 }
 
