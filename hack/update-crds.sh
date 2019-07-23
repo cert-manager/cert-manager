@@ -25,9 +25,10 @@ export PATH="${runfiles}/hack/bin:${PATH}"
 cd "${REPO_ROOT}"
 
 output="$(mktemp -d)"
-gencrd generate \
-    --domain "k8s.io" \
-    --output-dir "${output}"
+controller-gen \
+    paths=./pkg/apis/... \
+    crd:trivialVersions=true \
+    output:crd:dir="${output}"
 
 echo "Copying files to output file"
 out="deploy/manifests/00-crds.yaml"

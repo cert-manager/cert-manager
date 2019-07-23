@@ -39,13 +39,6 @@ def install_misc():
         urls = ["https://github.com/stedolan/jq/releases/download/jq-1.5/jq-osx-amd64"],
     )
 
-    # Load the controller-tools repository in order to build the crd generator tool
-    go_repository(
-        name = "io_kubernetes_sigs_controller-tools",
-        commit = "538db3af1387ce55d50b93e500a49925a5768c82",
-        importpath = "sigs.k8s.io/controller-tools",
-    )
-
 # Install dependencies used by the controller-runtime integration test framework
 def install_integration_test_dependencies():
     http_file(

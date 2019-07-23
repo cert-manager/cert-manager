@@ -182,9 +182,9 @@ genrule(
 )
 
 genrule(
-    name = "fetch_gencrd",
-    srcs = ["@io_kubernetes_sigs_controller-tools//cmd/crd"],
-    outs = ["gencrd"],
+    name = "fetch_controller-gen",
+    srcs = ["//vendor/sigs.k8s.io/controller-tools/cmd/controller-gen"],
+    outs = ["controller-gen"],
     cmd = "cp $(SRCS) $@",
     visibility = ["//visibility:public"],
 )
