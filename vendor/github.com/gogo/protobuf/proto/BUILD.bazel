@@ -6,6 +6,7 @@ go_library(
         "clone.go",
         "custom_gogo.go",
         "decode.go",
+        "deprecated.go",
         "discard.go",
         "duration.go",
         "duration_gogo.go",
