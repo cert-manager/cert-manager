@@ -182,8 +182,9 @@ func TestSync(t *testing.T) {
 					exampleCert,
 				},
 				ExpectedActions: []testpkg.Action{
-					testpkg.NewAction(coretesting.NewUpdateAction(
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
 						cmapi.SchemeGroupVersion.WithResource("certificates"),
+						"status",
 						gen.DefaultTestNamespace,
 						exampleCertNotFoundCondition,
 					)),
@@ -206,8 +207,9 @@ func TestSync(t *testing.T) {
 					testIssuerReady,
 				},
 				ExpectedActions: []testpkg.Action{
-					testpkg.NewAction(coretesting.NewUpdateAction(
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
 						cmapi.SchemeGroupVersion.WithResource("certificates"),
+						"status",
 						gen.DefaultTestNamespace,
 						exampleCertNotFoundCondition,
 					)),
@@ -272,8 +274,9 @@ func TestSync(t *testing.T) {
 					exampleCert,
 				},
 				ExpectedActions: []testpkg.Action{
-					testpkg.NewAction(coretesting.NewUpdateAction(
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
 						cmapi.SchemeGroupVersion.WithResource("certificates"),
+						"status",
 						gen.DefaultTestNamespace,
 						exampleCertNotFoundCondition,
 					)),
@@ -324,8 +327,9 @@ func TestSync(t *testing.T) {
 					exampleCert,
 				},
 				ExpectedActions: []testpkg.Action{
-					testpkg.NewAction(coretesting.NewUpdateAction(
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
 						cmapi.SchemeGroupVersion.WithResource("certificates"),
+						"status",
 						gen.DefaultTestNamespace,
 						exampleCertNotFoundCondition,
 					)),
@@ -390,8 +394,9 @@ func TestSync(t *testing.T) {
 					exampleCert,
 				},
 				ExpectedActions: []testpkg.Action{
-					testpkg.NewAction(coretesting.NewUpdateAction(
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
 						cmapi.SchemeGroupVersion.WithResource("certificates"),
+						"status",
 						gen.DefaultTestNamespace,
 						exampleCertNotFoundCondition,
 					)),
@@ -465,8 +470,9 @@ func TestSync(t *testing.T) {
 					gen.Certificate("test"),
 				},
 				ExpectedActions: []testpkg.Action{
-					testpkg.NewAction(coretesting.NewUpdateAction(
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
 						cmapi.SchemeGroupVersion.WithResource("certificates"),
+						"status",
 						gen.DefaultTestNamespace,
 						gen.CertificateFrom(exampleCert,
 							gen.SetCertificateStatusCondition(cmapi.CertificateCondition{
@@ -551,8 +557,9 @@ func TestSync(t *testing.T) {
 					gen.Certificate("test"),
 				},
 				ExpectedActions: []testpkg.Action{
-					testpkg.NewAction(coretesting.NewUpdateAction(
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
 						cmapi.SchemeGroupVersion.WithResource("certificates"),
+						"status",
 						gen.DefaultTestNamespace,
 						gen.CertificateFrom(exampleCert,
 							gen.SetCertificateStatusCondition(cmapi.CertificateCondition{
@@ -634,8 +641,9 @@ func TestSync(t *testing.T) {
 							},
 						},
 					)),
-					testpkg.NewAction(coretesting.NewUpdateAction(
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
 						cmapi.SchemeGroupVersion.WithResource("certificates"),
+						"status",
 						gen.DefaultTestNamespace,
 						exampleCertTemporaryCondition,
 					)),
@@ -680,8 +688,9 @@ func TestSync(t *testing.T) {
 					exampleCert,
 				},
 				ExpectedActions: []testpkg.Action{
-					testpkg.NewAction(coretesting.NewUpdateAction(
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
 						cmapi.SchemeGroupVersion.WithResource("certificates"),
+						"status",
 						gen.DefaultTestNamespace,
 						gen.CertificateFrom(exampleCert,
 							gen.SetCertificateStatusCondition(cmapi.CertificateCondition{
@@ -746,8 +755,9 @@ func TestSync(t *testing.T) {
 					),
 				},
 				ExpectedActions: []testpkg.Action{
-					testpkg.NewAction(coretesting.NewUpdateAction(
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
 						cmapi.SchemeGroupVersion.WithResource("certificates"),
+						"status",
 						gen.DefaultTestNamespace,
 						gen.CertificateFrom(exampleCert,
 							gen.SetCertificateStatusCondition(cmapi.CertificateCondition{
@@ -782,8 +792,9 @@ func TestSync(t *testing.T) {
 				},
 				ExpectedActions: []testpkg.Action{
 					// specifically tests that a secret is created - behaves as usual
-					testpkg.NewAction(coretesting.NewUpdateAction(
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
 						cmapi.SchemeGroupVersion.WithResource("certificates"),
+						"status",
 						gen.DefaultTestNamespace,
 						exampleCertNotFoundCondition,
 					)),
@@ -966,8 +977,9 @@ func TestDisableOldConfigFeatureFlagDisabled(t *testing.T) {
 					newFormatCertificate,
 				},
 				ExpectedActions: []testpkg.Action{
-					testpkg.NewAction(coretesting.NewUpdateAction(
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
 						cmapi.SchemeGroupVersion.WithResource("certificates"),
+						"status",
 						gen.DefaultTestNamespace,
 						gen.CertificateFrom(newFormatCertificate,
 							gen.SetCertificateStatusCondition(cmapi.CertificateCondition{

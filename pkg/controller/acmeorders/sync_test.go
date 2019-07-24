@@ -153,7 +153,7 @@ dGVzdA==
 			builder: &testpkg.Builder{
 				CertManagerObjects: []runtime.Object{testIssuerHTTP01Enabled, testOrder},
 				ExpectedActions: []testpkg.Action{
-					testpkg.NewAction(coretesting.NewUpdateAction(v1alpha1.SchemeGroupVersion.WithResource("orders"), testOrderPending.Namespace, testOrderPending)),
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(v1alpha1.SchemeGroupVersion.WithResource("orders"), "status", testOrderPending.Namespace, testOrderPending)),
 				},
 			},
 			acmeClient: &acmecl.FakeACME{
@@ -196,7 +196,7 @@ dGVzdA==
 			builder: &testpkg.Builder{
 				CertManagerObjects: []runtime.Object{testIssuerHTTP01Enabled, testOrderPending, testAuthorizationChallengeValid},
 				ExpectedActions: []testpkg.Action{
-					testpkg.NewAction(coretesting.NewUpdateAction(v1alpha1.SchemeGroupVersion.WithResource("orders"), testOrderReady.Namespace, testOrderReady)),
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(v1alpha1.SchemeGroupVersion.WithResource("orders"), "status", testOrderReady.Namespace, testOrderReady)),
 				},
 			},
 			acmeClient: &acmecl.FakeACME{
@@ -210,7 +210,7 @@ dGVzdA==
 			builder: &testpkg.Builder{
 				CertManagerObjects: []runtime.Object{testIssuerHTTP01Enabled, testOrderReady, testAuthorizationChallengeValid},
 				ExpectedActions: []testpkg.Action{
-					testpkg.NewAction(coretesting.NewUpdateAction(v1alpha1.SchemeGroupVersion.WithResource("orders"), testOrderValid.Namespace, testOrderValid)),
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(v1alpha1.SchemeGroupVersion.WithResource("orders"), "status", testOrderValid.Namespace, testOrderValid)),
 				},
 				ExpectedEvents: []string{
 					"Normal OrderValid Order completed successfully",
@@ -231,7 +231,7 @@ dGVzdA==
 			builder: &testpkg.Builder{
 				CertManagerObjects: []runtime.Object{testIssuerHTTP01Enabled, testOrderPending, testAuthorizationChallengeInvalid},
 				ExpectedActions: []testpkg.Action{
-					testpkg.NewAction(coretesting.NewUpdateAction(v1alpha1.SchemeGroupVersion.WithResource("orders"), testOrderInvalid.Namespace, testOrderInvalid)),
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(v1alpha1.SchemeGroupVersion.WithResource("orders"), "status", testOrderInvalid.Namespace, testOrderInvalid)),
 				},
 			},
 			acmeClient: &acmecl.FakeACME{
