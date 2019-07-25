@@ -30,7 +30,6 @@ import (
 	"time"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
-	"github.com/jetstack/cert-manager/pkg/issuer"
 )
 
 // CommonNameForCertificate returns the common name that should be used for the
@@ -281,22 +280,23 @@ func SignCertificate(template *x509.Certificate, issuerCert *x509.Certificate, p
 // SignCSRTemplate signs a certificate template usually based upon a CSR. This
 // function expects all fields to be present in the certificate template,
 // including it's public key.
-func SignCSRTemplate(caCerts []*x509.Certificate, caKey crypto.Signer, template *x509.Certificate) (*issuer.IssueResponse, error) {
+// It returns the certificate data followed by the CA data, encoded in PEM format.
+func SignCSRTemplate(caCerts []*x509.Certificate, caKey crypto.Signer, template *x509.Certificate) ([]byte, []byte, error) {
 	if len(caCerts) == 0 {
-		return nil, errors.New("no CA certificates given to sign CSR template")
+		return nil, nil, errors.New("no CA certificates given to sign CSR template")
 	}
 
 	caCert := caCerts[0]
 
 	certPem, _, err := SignCertificate(template, caCert, template.PublicKey, caKey)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 
 	}
 
 	chainPem, err := EncodeX509Chain(caCerts)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	certPem = append(certPem, chainPem...)
@@ -304,13 +304,10 @@ func SignCSRTemplate(caCerts []*x509.Certificate, caKey crypto.Signer, template 
 	// encode the CA certificate to be bundled in the output
 	caPem, err := EncodeX509(caCerts[0])
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	return &issuer.IssueResponse{
-		Certificate: certPem,
-		CA:          caPem,
-	}, nil
+	return certPem, caPem, nil
 }
 
 // EncodeCSR calls x509.CreateCertificateRequest to sign the given CSR template.

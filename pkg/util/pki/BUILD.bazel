@@ -11,7 +11,6 @@ go_library(
     visibility = ["//visibility:public"],
     deps = [
         "//pkg/apis/certmanager/v1alpha1:go_default_library",
-        "//pkg/issuer:go_default_library",
         "//pkg/util/errors:go_default_library",
     ],
 )
