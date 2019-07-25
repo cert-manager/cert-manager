@@ -137,6 +137,6 @@ func (c *CA) Sign(ctx context.Context, cr *v1alpha1.CertificateRequest) (*issuer
 
 	return &issuerpkg.IssueResponse{
 		Certificate: certPEM,
-		CA: caPEM,
+		CA:          caPEM,
 	}, nil
 }
