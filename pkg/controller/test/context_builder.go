@@ -57,6 +57,14 @@ type Builder struct {
 	ExpectedEvents     []string
 	StringGenerator    StringGenerator
 
+	// CheckFn is a custom check function that will be executed when the
+	// CheckAndFinish method is called on the builder, after all other checks.
+	// It will be passed a reference to the Builder in order to access state,
+	// as well as a list of all the arguments passed to the CheckAndFinish
+	// function (typically the list of return arguments from the function under
+	// test).
+	CheckFn func(*Builder, ...interface{})
+
 	stopCh           chan struct{}
 	requiredReactors map[string]bool
 
@@ -129,6 +137,29 @@ func (b *Builder) EnsureReactorCalled(testName string, fn coretesting.ReactionFu
 		}
 		b.requiredReactors[testName] = true
 		return
+	}
+}
+
+// CheckAndFinish will run ensure: all reactors are called, all actions are
+// expected, and all events are as expected.
+// It will then call the Builder's CheckFn, if defined.
+func (b *Builder) CheckAndFinish(args ...interface{}) {
+	defer b.Stop()
+	if err := b.AllReactorsCalled(); err != nil {
+		b.T.Errorf("Not all expected reactors were called: %v", err)
+	}
+	if err := b.AllActionsExecuted(); err != nil {
+		b.T.Errorf(err.Error())
+	}
+	if err := b.AllEventsCalled(); err != nil {
+		b.T.Errorf(err.Error())
+	}
+
+	// resync listers before running checks
+	b.Sync()
+	// run custom checks
+	if b.CheckFn != nil {
+		b.CheckFn(b, args...)
 	}
 }
 
@@ -215,6 +246,7 @@ func (b *Builder) Stop() {
 	}
 
 	close(b.stopCh)
+	b.stopCh = nil
 }
 
 // WaitForResync will wait for the informer factory informer duration by
