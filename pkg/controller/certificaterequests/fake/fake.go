@@ -14,16 +14,21 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package selfsigned
+package fake
 
 import (
 	"context"
-	"errors"
 
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	"github.com/jetstack/cert-manager/pkg/issuer"
 )
 
-func (c *SelfSigned) Sign(ctx context.Context, cr *v1alpha1.CertificateRequest) (*issuer.IssueResponse, error) {
-	return nil, errors.New("sign not implemented by SelfSigned issuer")
+type Issuer struct {
+	FakeSign func(context.Context, *cmapi.CertificateRequest) (*issuer.IssueResponse, error)
+}
+
+// Sign attempts to issue a certificate as described by the CertificateRequest
+// resource given
+func (i *Issuer) Sign(ctx context.Context, cr *cmapi.CertificateRequest) (*issuer.IssueResponse, error) {
+	return i.FakeSign(ctx, cr)
 }

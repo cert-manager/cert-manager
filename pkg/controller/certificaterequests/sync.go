@@ -31,15 +31,8 @@ import (
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/validation"
-	"github.com/jetstack/cert-manager/pkg/issuer"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
-)
-
-const (
-	reasonPending = "Pending"
-	reasonFailed  = "Failed"
-	reasonIssued  = "Issued"
 )
 
 func (c *Controller) Sync(ctx context.Context, cr *v1alpha1.CertificateRequest) (err error) {
@@ -56,7 +49,7 @@ func (c *Controller) Sync(ctx context.Context, cr *v1alpha1.CertificateRequest) 
 	if apiutil.CertificateRequestHasCondition(cr, v1alpha1.CertificateRequestCondition{
 		Type:   v1alpha1.CertificateRequestConditionReady,
 		Status: v1alpha1.ConditionFalse,
-		Reason: reasonFailed,
+		Reason: v1alpha1.CertificateRequestReasonFailed,
 	}) {
 		dbg.Info("certificate request condition failed so skipping processing")
 		return nil
@@ -74,10 +67,10 @@ func (c *Controller) Sync(ctx context.Context, cr *v1alpha1.CertificateRequest) 
 	issuerObj, err := c.helper.GetGenericIssuer(crCopy.Spec.IssuerRef, crCopy.Namespace)
 	if k8sErrors.IsNotFound(err) {
 		apiutil.SetCertificateRequestCondition(crCopy, v1alpha1.CertificateRequestConditionReady,
-			v1alpha1.ConditionFalse, reasonPending,
-			fmt.Sprintf("Referenced %s not found", issuerKind(crCopy)))
+			v1alpha1.ConditionFalse, v1alpha1.CertificateRequestReasonPending,
+			fmt.Sprintf("Referenced %s not found", apiutil.IssuerKind(crCopy.Spec.IssuerRef)))
 
-		c.recorder.Eventf(crCopy, corev1.EventTypeWarning, reasonPending, err.Error())
+		c.recorder.Eventf(crCopy, corev1.EventTypeWarning, v1alpha1.CertificateRequestReasonPending, err.Error())
 
 		log.WithValues(
 			logf.RelatedResourceNameKey, crCopy.Spec.IssuerRef.Name,
@@ -98,10 +91,10 @@ func (c *Controller) Sync(ctx context.Context, cr *v1alpha1.CertificateRequest) 
 	issuerType, err := apiutil.NameForIssuer(issuerObj)
 	if err != nil {
 		apiutil.SetCertificateRequestCondition(crCopy, v1alpha1.CertificateRequestConditionReady,
-			v1alpha1.ConditionFalse, reasonPending,
-			fmt.Sprintf("Referenced %s not found", issuerKind(crCopy)))
+			v1alpha1.ConditionFalse, v1alpha1.CertificateRequestReasonPending,
+			fmt.Sprintf("Referenced %s not found", apiutil.IssuerKind(crCopy.Spec.IssuerRef)))
 
-		c.recorder.Eventf(crCopy, corev1.EventTypeWarning, reasonPending, err.Error())
+		c.recorder.Eventf(crCopy, corev1.EventTypeWarning, v1alpha1.CertificateRequestReasonPending, err.Error())
 		log.Error(err, "failed to obtain referenced issuer type")
 		return nil
 	}
@@ -121,55 +114,40 @@ func (c *Controller) Sync(ctx context.Context, cr *v1alpha1.CertificateRequest) 
 		c.recorder.Eventf(crCopy, corev1.EventTypeWarning, "BadConfig", "Resource validation failed: %v", el.ToAggregate())
 
 		apiutil.SetCertificateRequestCondition(crCopy, v1alpha1.CertificateRequestConditionReady,
-			v1alpha1.ConditionFalse, reasonFailed, fmt.Sprintf("Validation failed: %s", el.ToAggregate()))
+			v1alpha1.ConditionFalse, v1alpha1.CertificateRequestReasonFailed, fmt.Sprintf("Validation failed: %s", el.ToAggregate()))
 		return nil
 	}
+
+	defer c.setCertificateRequestStatus(crCopy)
 
 	if len(crCopy.Status.Certificate) > 0 {
 		dbg.Info("certificate field is already set in status so skipping processing")
-		c.setCertificateRequestStatus(crCopy)
-		return nil
-	}
-
-	i, err := c.issuerFactory.IssuerFor(issuerObj)
-	if err != nil {
-		apiutil.SetCertificateRequestCondition(crCopy, v1alpha1.CertificateRequestConditionReady,
-			v1alpha1.ConditionFalse, reasonFailed,
-			fmt.Sprintf("Failed to initialise Issuer for signing: %s", err))
-
-		c.recorder.Eventf(crCopy, corev1.EventTypeWarning, reasonFailed, "Internal error initialising issuer: %v", err)
 		return nil
 	}
 
 	// TODO: Metrics??
 
 	dbg.Info("invoking sign function as existing certificate does not exist")
-	return c.sign(ctx, crCopy, i)
-}
 
-// return an error on failure. If retrieval is succesful, the certificate data
-// will be stored in the certificate request status
-func (c *Controller) sign(ctx context.Context, cr *v1alpha1.CertificateRequest, issuer issuer.Interface) error {
-	log := logf.FromContext(ctx)
-
-	defer c.setCertificateRequestStatus(cr)
-
-	resp, err := issuer.Sign(ctx, cr)
+	// Attempt to call the Sign function on our issuer
+	resp, err := c.issuer.Sign(ctx, crCopy)
 	if err != nil {
 		log.Error(err, "error issuing certificate request")
 		return err
 	}
 
-	// if the issuer has not returned any data, exit early
+	// If the issuer has not returned any data, exit early as nil. Wait for the
+	// next re-sync.
 	if resp == nil {
 		return nil
 	}
 
+	// Update to status with the new given certificate.
 	if len(resp.Certificate) > 0 {
-		cr.Status.Certificate = resp.Certificate
-		cr.Status.CA = resp.CA
+		crCopy.Status.Certificate = resp.Certificate
+		crCopy.Status.CA = resp.CA
 
-		c.recorder.Event(cr, corev1.EventTypeNormal, reasonIssued,
+		c.recorder.Event(crCopy, corev1.EventTypeNormal, v1alpha1.CertificateRequestReasonIssued,
 			"Certificate fetched from issuer successfully")
 	}
 
@@ -182,7 +160,7 @@ func (c *Controller) setCertificateRequestStatus(cr *v1alpha1.CertificateRequest
 	// No cert exists yet
 	if len(cr.Status.Certificate) == 0 {
 		apiutil.SetCertificateRequestCondition(cr, v1alpha1.CertificateRequestConditionReady,
-			v1alpha1.ConditionFalse, reasonPending, "Certificate issuance pending")
+			v1alpha1.ConditionFalse, v1alpha1.CertificateRequestReasonPending, "Certificate issuance pending")
 		return
 	}
 
@@ -190,7 +168,7 @@ func (c *Controller) setCertificateRequestStatus(cr *v1alpha1.CertificateRequest
 	_, err := pki.DecodeX509CertificateBytes(cr.Status.Certificate)
 	if err != nil {
 		apiutil.SetCertificateRequestCondition(cr, v1alpha1.CertificateRequestConditionReady,
-			v1alpha1.ConditionFalse, reasonFailed, "Failed to decode certificate PEM")
+			v1alpha1.ConditionFalse, v1alpha1.CertificateRequestReasonFailed, "Failed to decode certificate PEM")
 		return
 	}
 
@@ -213,12 +191,4 @@ func (c *Controller) updateCertificateRequestStatus(ctx context.Context, old, ne
 	// server with the /status subresource enabled and/or subresource support
 	// for CRDs (https://github.com/kubernetes/kubernetes/issues/38113)
 	return c.cmClient.CertmanagerV1alpha1().CertificateRequests(new.Namespace).Update(new)
-}
-
-// issuerKind returns the kind of issuer for a certificaterequest
-func issuerKind(cr *v1alpha1.CertificateRequest) string {
-	if cr.Spec.IssuerRef.Kind == "" {
-		return v1alpha1.IssuerKind
-	}
-	return cr.Spec.IssuerRef.Kind
 }

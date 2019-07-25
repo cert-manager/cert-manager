@@ -52,3 +52,11 @@ func NameForIssuer(i cmapi.GenericIssuer) (string, error) {
 	}
 	return "", fmt.Errorf("no issuer specified for Issuer '%s/%s'", i.GetObjectMeta().Namespace, i.GetObjectMeta().Name)
 }
+
+// issuerKind returns the kind of issuer for a certificate
+func IssuerKind(ref cmapi.ObjectReference) string {
+	if ref.Kind == "" {
+		return cmapi.IssuerKind
+	}
+	return ref.Kind
+}

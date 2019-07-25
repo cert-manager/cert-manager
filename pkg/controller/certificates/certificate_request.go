@@ -894,7 +894,7 @@ func setSecretValues(ctx context.Context, crt *cmapi.Certificate, s *corev1.Secr
 
 	s.Annotations[cmapi.CertificateNameKey] = crt.Name
 	s.Annotations[cmapi.IssuerNameAnnotationKey] = crt.Spec.IssuerRef.Name
-	s.Annotations[cmapi.IssuerKindAnnotationKey] = issuerKind(crt.Spec.IssuerRef)
+	s.Annotations[cmapi.IssuerKindAnnotationKey] = apiutil.IssuerKind(crt.Spec.IssuerRef)
 
 	// if the certificate data is empty, clear the subject related annotations
 	if len(data.cert) == 0 {

@@ -45,6 +45,7 @@ filegroup(
     srcs = [
         ":package-srcs",
         "//pkg/controller/certificaterequests/ca:all-srcs",
+        "//pkg/controller/certificaterequests/fake:all-srcs",
     ],
     tags = ["automanaged"],
     visibility = ["//visibility:public"],
@@ -60,13 +61,12 @@ go_test(
     deps = [
         "//pkg/api/util:go_default_library",
         "//pkg/apis/certmanager/v1alpha1:go_default_library",
+        "//pkg/controller/certificaterequests/fake:go_default_library",
         "//pkg/controller/test:go_default_library",
         "//pkg/issuer:go_default_library",
-        "//pkg/issuer/fake:go_default_library",
         "//pkg/issuer/selfsigned:go_default_library",
         "//pkg/util/pki:go_default_library",
         "//test/unit/gen:go_default_library",
-        "//vendor/k8s.io/apimachinery/pkg/api/errors:go_default_library",
         "//vendor/k8s.io/apimachinery/pkg/apis/meta/v1:go_default_library",
         "//vendor/k8s.io/apimachinery/pkg/runtime:go_default_library",
         "//vendor/k8s.io/client-go/testing:go_default_library",

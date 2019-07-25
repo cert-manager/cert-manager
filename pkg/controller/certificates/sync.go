@@ -294,7 +294,7 @@ func certificateMatchesSpec(crt *v1alpha1.Certificate, key crypto.Signer, cert *
 	}
 
 	// validate that the issuer kind is correct
-	if issuerKind(crt.Spec.IssuerRef) != secret.Annotations[v1alpha1.IssuerKindAnnotationKey] {
+	if apiutil.IssuerKind(crt.Spec.IssuerRef) != secret.Annotations[v1alpha1.IssuerKindAnnotationKey] {
 		errs = append(errs, fmt.Sprintf("Issuer kind of the certificate is not up to date: %q", secret.Annotations[v1alpha1.IssuerKindAnnotationKey]))
 	}
 
@@ -327,14 +327,6 @@ func scheduleRenewal(ctx context.Context, lister corelisters.SecretLister, calc 
 	queueFn(key, renewIn)
 
 	log.WithValues("duration_until_renewal", renewIn.String()).Info("certificate scheduled for renewal")
-}
-
-// issuerKind returns the kind of issuer for a certificate
-func issuerKind(ref v1alpha1.ObjectReference) string {
-	if ref.Kind == "" {
-		return v1alpha1.IssuerKind
-	}
-	return ref.Kind
 }
 
 func ownerRef(crt *v1alpha1.Certificate) metav1.OwnerReference {
@@ -450,7 +442,7 @@ func (c *controller) updateSecret(ctx context.Context, crt *v1alpha1.Certificate
 	// not just when a new certificate is issued
 	if x509Cert != nil {
 		secret.Annotations[v1alpha1.IssuerNameAnnotationKey] = crt.Spec.IssuerRef.Name
-		secret.Annotations[v1alpha1.IssuerKindAnnotationKey] = issuerKind(crt.Spec.IssuerRef)
+		secret.Annotations[v1alpha1.IssuerKindAnnotationKey] = apiutil.IssuerKind(crt.Spec.IssuerRef)
 		secret.Annotations[v1alpha1.CommonNameAnnotationKey] = x509Cert.Subject.CommonName
 		secret.Annotations[v1alpha1.AltNamesAnnotationKey] = strings.Join(x509Cert.DNSNames, ",")
 		secret.Annotations[v1alpha1.IPSANAnnotationKey] = strings.Join(pki.IPAddressesToString(x509Cert.IPAddresses), ",")

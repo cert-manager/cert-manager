@@ -20,23 +20,20 @@ import (
 	"context"
 	"testing"
 
-	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	realclock "k8s.io/utils/clock"
 	clock "k8s.io/utils/clock/testing"
 
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	"github.com/jetstack/cert-manager/pkg/controller/test"
-	"github.com/jetstack/cert-manager/pkg/issuer"
 )
 
 type controllerFixture struct {
 	controller *Controller
 	*test.Builder
 
-	Issuer             v1alpha1.GenericIssuer
-	CertificateRequest v1alpha1.CertificateRequest
-	IssuerImpl         issuer.Interface
+	CertificateRequest *v1alpha1.CertificateRequest
+	IssuerImpl         Issuer
 	Clock              *clock.FakeClock
 
 	PreFn   func(*testing.T, *controllerFixture)
@@ -58,7 +55,7 @@ func (f *controllerFixture) Setup(t *testing.T) {
 		//		ambient credentials settings
 		f.Builder = &test.Builder{}
 	}
-	f.controller = f.buildFakeController(f.Builder, f.Issuer)
+	f.controller = f.buildFakeController(f.Builder)
 	if f.PreFn != nil {
 		f.PreFn(t, f)
 		f.Builder.Sync()
@@ -89,26 +86,13 @@ func (f *controllerFixture) Finish(t *testing.T, args ...interface{}) {
 	apiutil.Clock = realclock.RealClock{}
 }
 
-func (f *controllerFixture) buildFakeController(b *test.Builder, issuer v1alpha1.GenericIssuer) *Controller {
+func (f *controllerFixture) buildFakeController(b *test.Builder) *Controller {
 	b.Start()
 	c := &Controller{
 		issuerType: apiutil.IssuerSelfSigned,
+		issuer:     f.IssuerImpl,
 	}
 	c.Register(b.Context)
-	c.helper = f
-	c.issuerFactory = f
 	b.Sync()
 	return c
-}
-
-func (f *controllerFixture) GetGenericIssuer(ref v1alpha1.ObjectReference, ns string) (v1alpha1.GenericIssuer, error) {
-	if f.Issuer == nil {
-		return nil, k8sErrors.NewNotFound(v1alpha1.Resource("issuer"), ref.Name)
-	}
-
-	return f.Issuer, nil
-}
-
-func (f *controllerFixture) IssuerFor(v1alpha1.GenericIssuer) (issuer.Interface, error) {
-	return f.IssuerImpl, nil
 }
