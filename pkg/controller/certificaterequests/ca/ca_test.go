@@ -168,7 +168,7 @@ func TestSign(t *testing.T) {
 
 	tests := map[string]testT{
 		"sign a CertificateRequest": {
-			request: gen.CertificateRequest("test-cr",
+			certificateRequest: gen.CertificateRequest("test-cr",
 				gen.SetCertificateRequestIsCA(true),
 				gen.SetCertificateRequestCSR(caCSR),
 				gen.SetCertificateRequestIssuer(v1alpha1.ObjectReference{
@@ -189,7 +189,7 @@ func TestSign(t *testing.T) {
 			},
 		},
 		"fail to find CA tls key pair": {
-			request: gen.CertificateRequest("test-cr",
+			certificateRequest: gen.CertificateRequest("test-cr",
 				gen.SetCertificateRequestIsCA(true),
 				gen.SetCertificateRequestCSR(caCSR),
 				gen.SetCertificateRequestIssuer(v1alpha1.ObjectReference{
@@ -210,7 +210,7 @@ func TestSign(t *testing.T) {
 			},
 		},
 		"given bad CSR should fail Certificate generation": {
-			request: gen.CertificateRequest("test-cr",
+			certificateRequest: gen.CertificateRequest("test-cr",
 				gen.SetCertificateRequestIsCA(true),
 				gen.SetCertificateRequestCSR([]byte("bad-csr")),
 				gen.SetCertificateRequestIssuer(v1alpha1.ObjectReference{
@@ -231,7 +231,7 @@ func TestSign(t *testing.T) {
 			},
 		},
 		"no CA certificate should fail a signing": {
-			request: gen.CertificateRequest("test-cr",
+			certificateRequest: gen.CertificateRequest("test-cr",
 				gen.SetCertificateRequestIsCA(true),
 				gen.SetCertificateRequestCSR(caCSR),
 				gen.SetCertificateRequestIssuer(v1alpha1.ObjectReference{
@@ -257,7 +257,7 @@ func TestSign(t *testing.T) {
 			expectedErr: true,
 		},
 		"no CA key should fail a signing": {
-			request: gen.CertificateRequest("test-cr",
+			certificateRequest: gen.CertificateRequest("test-cr",
 				gen.SetCertificateRequestIsCA(true),
 				gen.SetCertificateRequestCSR(caCSR),
 				gen.SetCertificateRequestIssuer(v1alpha1.ObjectReference{
@@ -293,8 +293,8 @@ func TestSign(t *testing.T) {
 }
 
 type testT struct {
-	builder *testpkg.Builder
-	request *v1alpha1.CertificateRequest
+	builder            *testpkg.Builder
+	certificateRequest *v1alpha1.CertificateRequest
 
 	checkFn     func(*testpkg.Builder, ...interface{})
 	expectedErr bool
@@ -308,7 +308,7 @@ func runTest(t *testing.T, test testT) {
 	c := NewCA(test.builder.Context)
 	test.builder.Sync()
 
-	resp, err := c.Sign(context.Background(), test.request)
+	resp, err := c.Sign(context.Background(), test.certificateRequest)
 	if err != nil && !test.expectedErr {
 		t.Errorf("expected to not get an error, but got: %v", err)
 	}

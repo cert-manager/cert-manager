@@ -233,7 +233,7 @@ func TestSync(t *testing.T) {
 
 	tests := map[string]testT{
 		"should update certificate request with CertPending if issuer does not return a response": {
-			request: gen.CertificateRequest("test",
+			certificateRequest: gen.CertificateRequest("test",
 				gen.SetCertificateRequestIsCA(false),
 				gen.SetCertificateRequestCSR(csr),
 				gen.SetCertificateRequestIssuer(cmapi.ObjectReference{
@@ -265,7 +265,7 @@ func TestSync(t *testing.T) {
 			},
 		},
 		"should update the status with a freshly signed certificate only when one doesn't exist and group ref=''": {
-			request: exampleCR,
+			certificateRequest: exampleCR,
 			issuerImpl: &fake.Issuer{
 				FakeSign: func(context.Context, *cmapi.CertificateRequest) (*issuer.IssueResponse, error) {
 					return &issuer.IssueResponse{
@@ -293,7 +293,7 @@ func TestSync(t *testing.T) {
 			},
 		},
 		"should update the status with a freshly signed certificate only when one doesn't exist and issuer group ref='certmanager.k8s.io'": {
-			request: exampleCRCorrectIssuerRefGroup,
+			certificateRequest: exampleCRCorrectIssuerRefGroup,
 			issuerImpl: &fake.Issuer{
 				FakeSign: func(context.Context, *cmapi.CertificateRequest) (*issuer.IssueResponse, error) {
 					return &issuer.IssueResponse{
@@ -322,7 +322,7 @@ func TestSync(t *testing.T) {
 			},
 		},
 		"should exit sync nil if issuerRef group does not match certmanager.k8s.io": {
-			request: exampleCRWrongIssuerRefGroup,
+			certificateRequest: exampleCRWrongIssuerRefGroup,
 			issuerImpl: &fake.Issuer{
 				FakeSign: func(context.Context, *cmapi.CertificateRequest) (*issuer.IssueResponse, error) {
 					return nil, errors.New("unexpected sign call")
@@ -342,7 +342,7 @@ func TestSync(t *testing.T) {
 			},
 		},
 		"should not update certificate request if certificate exists, even if out of date": {
-			request: exampleSignedExpiredCR,
+			certificateRequest: exampleSignedExpiredCR,
 			issuerImpl: &fake.Issuer{
 				FakeSign: func(context.Context, *cmapi.CertificateRequest) (*issuer.IssueResponse, error) {
 					return nil, errors.New("unexpected sign call")
@@ -362,7 +362,7 @@ func TestSync(t *testing.T) {
 			},
 		},
 		"fail if bytes contains no certificate but len > 0": {
-			request: exampleGarbageCertCR,
+			certificateRequest: exampleGarbageCertCR,
 			issuerImpl: &fake.Issuer{
 				FakeSign: func(context.Context, *cmapi.CertificateRequest) (*issuer.IssueResponse, error) {
 					return nil, errors.New("unexpected sign call")
@@ -388,7 +388,7 @@ func TestSync(t *testing.T) {
 			},
 		},
 		"return nil if generic issuer doesn't exist, will sync when on ready": {
-			request: exampleCR,
+			certificateRequest: exampleCR,
 			issuerImpl: &fake.Issuer{
 				FakeSign: func(context.Context, *cmapi.CertificateRequest) (*issuer.IssueResponse, error) {
 					return nil, errors.New("unexpected sign call")
@@ -407,7 +407,7 @@ func TestSync(t *testing.T) {
 			},
 		},
 		"exit nil if we cannot determine the issuer type (probably not meant for us)": {
-			request: exampleCR,
+			certificateRequest: exampleCR,
 			issuerImpl: &fake.Issuer{
 				FakeSign: func(context.Context, *cmapi.CertificateRequest) (*issuer.IssueResponse, error) {
 					return nil, errors.New("unexpected sign call")
@@ -434,7 +434,7 @@ func TestSync(t *testing.T) {
 			},
 		},
 		"exit nil if the issuer type is not meant for us": {
-			request: exampleCRWrongIssuerRefType,
+			certificateRequest: exampleCRWrongIssuerRefType,
 			issuerImpl: &fake.Issuer{
 				FakeSign: func(context.Context, *cmapi.CertificateRequest) (*issuer.IssueResponse, error) {
 					return nil, errors.New("unexpected sign call")
@@ -454,7 +454,7 @@ func TestSync(t *testing.T) {
 			},
 		},
 		"exit if we fail validation during a sync": {
-			request: exampleEmptyCSRCR,
+			certificateRequest: exampleEmptyCSRCR,
 			issuerImpl: &fake.Issuer{
 				FakeSign: func(context.Context, *cmapi.CertificateRequest) (*issuer.IssueResponse, error) {
 					return nil, errors.New("unexpected sign call")
@@ -481,7 +481,7 @@ func TestSync(t *testing.T) {
 			},
 		},
 		"should exit sync nil if condition is failed": {
-			request: exampleFailedCR,
+			certificateRequest: exampleFailedCR,
 			issuerImpl: &fake.Issuer{
 				FakeSign: func(context.Context, *cmapi.CertificateRequest) (*issuer.IssueResponse, error) {
 					return nil, errors.New("unexpected sign call")
@@ -512,11 +512,11 @@ func TestSync(t *testing.T) {
 }
 
 type testT struct {
-	builder     *testpkg.Builder
-	issuerImpl  Issuer
-	request     *cmapi.CertificateRequest
-	clock       *clock.FakeClock
-	expectedErr bool
+	builder            *testpkg.Builder
+	issuerImpl         Issuer
+	certificateRequest *cmapi.CertificateRequest
+	clock              *clock.FakeClock
+	expectedErr        bool
 }
 
 func runTest(t *testing.T, test testT) {
@@ -535,7 +535,7 @@ func runTest(t *testing.T, test testT) {
 	c.Register(test.builder.Context)
 	test.builder.Sync()
 
-	err := c.Sync(context.Background(), test.request)
+	err := c.Sync(context.Background(), test.certificateRequest)
 	if err != nil && !test.expectedErr {
 		t.Errorf("expected to not get an error, but got: %v", err)
 	}
