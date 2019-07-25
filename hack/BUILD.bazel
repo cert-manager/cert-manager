@@ -130,9 +130,15 @@ sh_binary(
     data = [
         "//hack/bin:controller-gen",
         "//pkg/apis:all-srcs",
-        "//vendor/k8s.io/api/core/v1:go_default_library",
-        "//vendor/k8s.io/apimachinery/pkg/apis/meta/v1:all-srcs",
-        "//vendor/k8s.io/apimachinery/pkg/runtime:all-srcs",
+        # Include all of pkg/util in case the pkg/apis package depends on it.
+        # Technically this shouldn't happen and should be avoided. Whilst we
+        # still have some cases of it however, this helps us overcome problems.
+        # These two are generally required due to the validation package being
+        # built by the controller-gen tool.
+        "//pkg/util:all-srcs",
+        "//pkg/api/util:all-srcs",
+        "//vendor:all-srcs",
+        "@go_sdk//:files",
     ],
 )
 
@@ -142,8 +148,6 @@ sh_test(
     data = [
         ":update-crds",
         "//deploy:all-srcs",
-        "//hack/bin:controller-gen",
-        "//pkg/apis:all-srcs",
     ],
 )
 
