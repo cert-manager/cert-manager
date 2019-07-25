@@ -18,6 +18,7 @@ package ca
 
 import (
 	"bytes"
+	"context"
 	"crypto"
 	"crypto/rand"
 	"crypto/rsa"
@@ -48,13 +49,6 @@ func generateRSAPrivateKey(t *testing.T) *rsa.PrivateKey {
 		t.FailNow()
 	}
 	return pk
-}
-
-func mustNoResponse(t *testing.T, args []interface{}) {
-	resp := args[1].(*issuer.IssueResponse)
-	if resp != nil {
-		t.Errorf("unexpected response, exp='nil' got='%+v'", resp)
-	}
 }
 
 func generateCSR(t *testing.T, secretKey crypto.Signer) ([]byte, error) {
@@ -99,33 +93,40 @@ func generateSelfSignedCertFromCR(t *testing.T, cr *v1alpha1.CertificateRequest,
 	return derBytes, pemByteBuffer.Bytes()
 }
 
-func noPrivateKeyFieldsSetCheck(expectedCA []byte) func(t *testing.T, s *caFixture, args ...interface{}) {
-	return func(t *testing.T, s *caFixture, args ...interface{}) {
-		resp := args[1].(*issuer.IssueResponse)
+func mustNoResponse(builder *testpkg.Builder, args ...interface{}) {
+	resp := args[0].(*issuer.IssueResponse)
+	if resp != nil {
+		builder.T.Errorf("unexpected response, exp='nil' got='%+v'", resp)
+	}
+}
+
+func noPrivateKeyFieldsSetCheck(expectedCA []byte) func(builder *testpkg.Builder, args ...interface{}) {
+	return func(builder *testpkg.Builder, args ...interface{}) {
+		resp := args[0].(*issuer.IssueResponse)
 
 		if resp == nil {
-			t.Errorf("no response given, got=%s", resp)
+			builder.T.Errorf("no response given, got=%s", resp)
 			return
 		}
 
 		if len(resp.PrivateKey) > 0 {
-			t.Errorf("expected no new private key to be generated but got: %s",
+			builder.T.Errorf("expected no new private key to be generated but got: %s",
 				resp.PrivateKey)
 		}
 
-		certificatesFieldsSetCheck(expectedCA)(t, s, args...)
+		certificatesFieldsSetCheck(expectedCA)(builder, args...)
 	}
 }
 
-func certificatesFieldsSetCheck(expectedCA []byte) func(t *testing.T, s *caFixture, args ...interface{}) {
-	return func(t *testing.T, s *caFixture, args ...interface{}) {
-		resp := args[1].(*issuer.IssueResponse)
+func certificatesFieldsSetCheck(expectedCA []byte) func(builder *testpkg.Builder, args ...interface{}) {
+	return func(builder *testpkg.Builder, args ...interface{}) {
+		resp := args[0].(*issuer.IssueResponse)
 
 		if resp.Certificate == nil {
-			t.Errorf("expected new certificate to be issued")
+			builder.T.Errorf("expected new certificate to be issued")
 		}
 		if resp.CA == nil || !reflect.DeepEqual(expectedCA, resp.CA) {
-			t.Errorf("expected CA certificate to be returned")
+			builder.T.Errorf("expected CA certificate to be returned")
 		}
 	}
 }
@@ -165,9 +166,9 @@ func TestSign(t *testing.T) {
 	rootRSANoKeySecret := rootRSACASecret.DeepCopy()
 	rootRSANoKeySecret.Data[corev1.TLSPrivateKeyKey] = make([]byte, 0)
 
-	tests := map[string]caFixture{
+	tests := map[string]testT{
 		"sign a CertificateRequest": {
-			CertificateRequest: gen.CertificateRequest("test-cr",
+			certificateRequest: gen.CertificateRequest("test-cr",
 				gen.SetCertificateRequestIsCA(true),
 				gen.SetCertificateRequestCSR(caCSR),
 				gen.SetCertificateRequestIssuer(v1alpha1.ObjectReference{
@@ -176,20 +177,19 @@ func TestSign(t *testing.T) {
 					Kind:  "Issuer",
 				}),
 			),
-			Builder: &testpkg.Builder{
+			builder: &testpkg.Builder{
 				KubeObjects: []runtime.Object{rootRSACASecret},
 				CertManagerObjects: []runtime.Object{
 					gen.Issuer("ca-issuer",
 						gen.SetIssuerCA(v1alpha1.CAIssuer{SecretName: "root-ca-secret"}),
 					),
 				},
+				// we are not expecting key on response
+				CheckFn: noPrivateKeyFieldsSetCheck(rsaPEMCert),
 			},
-			// we are not expecting key on response
-			CheckFn: noPrivateKeyFieldsSetCheck(rsaPEMCert),
-			Err:     false,
 		},
 		"fail to find CA tls key pair": {
-			CertificateRequest: gen.CertificateRequest("test-cr",
+			certificateRequest: gen.CertificateRequest("test-cr",
 				gen.SetCertificateRequestIsCA(true),
 				gen.SetCertificateRequestCSR(caCSR),
 				gen.SetCertificateRequestIssuer(v1alpha1.ObjectReference{
@@ -198,7 +198,7 @@ func TestSign(t *testing.T) {
 					Kind:  "Issuer",
 				}),
 			),
-			Builder: &testpkg.Builder{
+			builder: &testpkg.Builder{
 				KubeObjects: []runtime.Object{},
 				CertManagerObjects: []runtime.Object{gen.Issuer("ca-issuer",
 					gen.SetIssuerCA(v1alpha1.CAIssuer{SecretName: "root-ca-secret"}),
@@ -206,14 +206,11 @@ func TestSign(t *testing.T) {
 				ExpectedEvents: []string{
 					`Warning Pending secret "root-ca-secret" not found`,
 				},
+				CheckFn: mustNoResponse,
 			},
-			CheckFn: func(t *testing.T, s *caFixture, args ...interface{}) {
-				mustNoResponse(t, args)
-			},
-			Err: false,
 		},
 		"given bad CSR should fail Certificate generation": {
-			CertificateRequest: gen.CertificateRequest("test-cr",
+			certificateRequest: gen.CertificateRequest("test-cr",
 				gen.SetCertificateRequestIsCA(true),
 				gen.SetCertificateRequestCSR([]byte("bad-csr")),
 				gen.SetCertificateRequestIssuer(v1alpha1.ObjectReference{
@@ -222,7 +219,7 @@ func TestSign(t *testing.T) {
 					Kind:  "Issuer",
 				}),
 			),
-			Builder: &testpkg.Builder{
+			builder: &testpkg.Builder{
 				KubeObjects: []runtime.Object{rootRSACASecret},
 				CertManagerObjects: []runtime.Object{gen.Issuer("ca-issuer",
 					gen.SetIssuerCA(v1alpha1.CAIssuer{SecretName: "root-ca-secret"}),
@@ -230,14 +227,11 @@ func TestSign(t *testing.T) {
 				ExpectedEvents: []string{
 					`Warning ErrorSigning Error generating certificate template: failed to decode csr from certificate request resource default-unit-test-ns/test-cr`,
 				},
+				CheckFn: mustNoResponse,
 			},
-			CheckFn: func(t *testing.T, s *caFixture, args ...interface{}) {
-				mustNoResponse(t, args)
-			},
-			Err: false,
 		},
 		"no CA certificate should fail a signing": {
-			CertificateRequest: gen.CertificateRequest("test-cr",
+			certificateRequest: gen.CertificateRequest("test-cr",
 				gen.SetCertificateRequestIsCA(true),
 				gen.SetCertificateRequestCSR(caCSR),
 				gen.SetCertificateRequestIssuer(v1alpha1.ObjectReference{
@@ -246,24 +240,24 @@ func TestSign(t *testing.T) {
 					Kind:  "Issuer",
 				}),
 			),
-			Builder: &testpkg.Builder{
+			builder: &testpkg.Builder{
 				KubeObjects: []runtime.Object{rootRSANoCASecret},
 				CertManagerObjects: []runtime.Object{gen.Issuer("ca-issuer",
 					gen.SetIssuerCA(v1alpha1.CAIssuer{SecretName: "root-ca-secret"}),
 				)},
+				CheckFn: func(builder *testpkg.Builder, args ...interface{}) {
+					err := args[1].(error)
+					badCAError := `error decoding cert PEM block`
+					if err == nil || err.Error() != badCAError {
+						t.Errorf("unexpected error, exp='%s' got='%+v'", badCAError, err)
+					}
+					mustNoResponse(builder, args...)
+				},
 			},
-			CheckFn: func(t *testing.T, s *caFixture, args ...interface{}) {
-				err := args[2].(error)
-				badCAError := `error decoding cert PEM block`
-				if err == nil || err.Error() != badCAError {
-					t.Errorf("unexpected error, exp='%s' got='%+v'", badCAError, err)
-				}
-				mustNoResponse(t, args)
-			},
-			Err: true,
+			expectedErr: true,
 		},
 		"no CA key should fail a signing": {
-			CertificateRequest: gen.CertificateRequest("test-cr",
+			certificateRequest: gen.CertificateRequest("test-cr",
 				gen.SetCertificateRequestIsCA(true),
 				gen.SetCertificateRequestCSR(caCSR),
 				gen.SetCertificateRequestIssuer(v1alpha1.ObjectReference{
@@ -272,40 +266,54 @@ func TestSign(t *testing.T) {
 					Kind:  "Issuer",
 				}),
 			),
-			Builder: &testpkg.Builder{
+			builder: &testpkg.Builder{
 				KubeObjects: []runtime.Object{rootRSANoKeySecret},
 				CertManagerObjects: []runtime.Object{gen.Issuer("ca-issuer",
 					gen.SetIssuerCA(v1alpha1.CAIssuer{SecretName: "root-ca-secret"}),
 				)},
-			},
-			CheckFn: func(t *testing.T, s *caFixture, args ...interface{}) {
-				err := args[2].(error)
-				noKeyError := "error decoding private key PEM block"
-				if err == nil || err.Error() != noKeyError {
-					t.Errorf("unexpected error, exp='%s' got='%+v'", noKeyError, err)
-				}
+				CheckFn: func(builder *testpkg.Builder, args ...interface{}) {
+					err := args[1].(error)
+					noKeyError := "error decoding private key PEM block"
+					if err == nil || err.Error() != noKeyError {
+						builder.T.Errorf("unexpected error, exp='%s' got='%+v'", noKeyError, err)
+					}
 
-				mustNoResponse(t, args)
+					mustNoResponse(builder, args...)
+				},
 			},
-			Err: true,
+			expectedErr: true,
 		},
 	}
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			if test.Builder == nil {
-				test.Builder = &testpkg.Builder{}
-			}
-			test.Setup(t)
-			crCopy := test.CertificateRequest.DeepCopy()
-			resp, err := test.CA.Sign(test.Ctx, crCopy)
-			if err != nil && !test.Err {
-				t.Errorf("Expected function to not error, but got: %v", err)
-			}
-			if err == nil && test.Err {
-				t.Errorf("Expected function to get an error, but got: %v", err)
-			}
-			test.Finish(t, crCopy, resp, err)
+			runTest(t, test)
 		})
 	}
+}
+
+type testT struct {
+	builder            *testpkg.Builder
+	certificateRequest *v1alpha1.CertificateRequest
+
+	checkFn     func(*testpkg.Builder, ...interface{})
+	expectedErr bool
+}
+
+func runTest(t *testing.T, test testT) {
+	test.builder.T = t
+	test.builder.Start()
+	defer test.builder.Stop()
+
+	c := NewCA(test.builder.Context)
+	test.builder.Sync()
+
+	resp, err := c.Sign(context.Background(), test.certificateRequest)
+	if err != nil && !test.expectedErr {
+		t.Errorf("expected to not get an error, but got: %v", err)
+	}
+	if err == nil && test.expectedErr {
+		t.Errorf("expected to get an error but did not get one")
+	}
+	test.builder.CheckAndFinish(resp, err)
 }

@@ -37,10 +37,7 @@ filegroup(
 
 go_test(
     name = "go_default_test",
-    srcs = [
-        "ca_test.go",
-        "util_test.go",
-    ],
+    srcs = ["ca_test.go"],
     embed = [":go_default_library"],
     deps = [
         "//pkg/apis/certmanager:go_default_library",
