@@ -22,13 +22,12 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/rfc2136"
-
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	"github.com/jetstack/cert-manager/pkg/apis/certmanager/validation/util"
 )
 
 // Validation functions for cert-manager v1alpha1 Issuer types
@@ -222,6 +221,14 @@ func ValidateACMEIssuerHTTP01Config(iss *v1alpha1.ACMEIssuerHTTP01Config, fldPat
 	return el
 }
 
+// This list must be kept in sync with pkg/issuer/acme/dns/rfc2136/rfc2136.go
+var supportedTSIGAlgorithms = []string{
+	"HMACMD5",
+	"HMACSHA1",
+	"HMACSHA256",
+	"HMACSHA512",
+}
+
 func ValidateACMEIssuerDNS01Config(iss *v1alpha1.ACMEIssuerDNS01Config, fldPath *field.Path) field.ErrorList {
 	el := field.ErrorList{}
 	providersFldPath := fldPath.Child("providers")
@@ -338,19 +345,19 @@ func ValidateACMEIssuerDNS01Config(iss *v1alpha1.ACMEIssuerDNS01Config, fldPath 
 				if len(p.RFC2136.Nameserver) == 0 {
 					el = append(el, field.Required(fldPath.Child("rfc2136", "nameserver"), ""))
 				} else {
-					if _, err := rfc2136.ValidNameserver(p.RFC2136.Nameserver); err != nil {
+					if _, err := util.ValidNameserver(p.RFC2136.Nameserver); err != nil {
 						el = append(el, field.Invalid(fldPath.Child("rfc2136", "nameserver"), "", "Nameserver invalid. Check the documentation for details."))
 					}
 				}
 				if len(p.RFC2136.TSIGAlgorithm) > 0 {
 					present := false
-					for _, b := range rfc2136.GetSupportedAlgorithms() {
+					for _, b := range supportedTSIGAlgorithms {
 						if b == strings.ToUpper(p.RFC2136.TSIGAlgorithm) {
 							present = true
 						}
 					}
 					if !present {
-						el = append(el, field.NotSupported(fldPath.Child("rfc2136", "tsigAlgorithm"), "", rfc2136.GetSupportedAlgorithms()))
+						el = append(el, field.NotSupported(fldPath.Child("rfc2136", "tsigAlgorithm"), "", supportedTSIGAlgorithms))
 					}
 				}
 				if len(p.RFC2136.TSIGKeyName) > 0 {
