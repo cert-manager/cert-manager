@@ -58,7 +58,7 @@ func init() {
 	// create certificate request controller for selfsigned issuer
 	controllerpkg.Register(CRControllerName, func(ctx *controllerpkg.Context) (controllerpkg.Interface, error) {
 		selfsigned := NewSelfSigned(ctx)
-		controller := certificaterequests.New(apiutil.IssuerCA, selfsigned)
+		controller := certificaterequests.New(apiutil.IssuerSelfSigned, selfsigned)
 
 		c, err := controllerpkg.New(ctx, CRControllerName, controller)
 		if err != nil {
