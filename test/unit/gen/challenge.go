@@ -33,6 +33,7 @@ func Challenge(name string, mods ...ChallengeModifier) *v1alpha1.Challenge {
 }
 
 func ChallengeFrom(ch *v1alpha1.Challenge, mods ...ChallengeModifier) *v1alpha1.Challenge {
+	ch = ch.DeepCopy()
 	for _, mod := range mods {
 		mod(ch)
 	}
