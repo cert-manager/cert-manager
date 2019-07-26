@@ -781,7 +781,7 @@ spec:
                             use a SecretKeySelector to reference a Secret resource.
                             For details on the schema of this field, consult the webhook
                             provider implementation's documentation.
-                          type: string
+                          type: object
                         groupName:
                           description: The API group name that should be used when
                             POSTing ChallengePayload resources to the webhook apiserver.
@@ -2114,7 +2114,7 @@ spec:
                                   to reference a Secret resource. For details on the
                                   schema of this field, consult the webhook provider
                                   implementation's documentation.
-                                type: string
+                                type: object
                               groupName:
                                 description: The API group name that should be used
                                   when POSTing ChallengePayload resources to the webhook
@@ -2458,7 +2458,7 @@ spec:
                                   to reference a Secret resource. For details on the
                                   schema of this field, consult the webhook provider
                                   implementation's documentation.
-                                type: string
+                                type: object
                               groupName:
                                 description: The API group name that should be used
                                   when POSTing ChallengePayload resources to the webhook
@@ -4037,7 +4037,7 @@ spec:
                                   to reference a Secret resource. For details on the
                                   schema of this field, consult the webhook provider
                                   implementation's documentation.
-                                type: string
+                                type: object
                               groupName:
                                 description: The API group name that should be used
                                   when POSTing ChallengePayload resources to the webhook
@@ -4381,7 +4381,7 @@ spec:
                                   to reference a Secret resource. For details on the
                                   schema of this field, consult the webhook provider
                                   implementation's documentation.
-                                type: string
+                                type: object
                               groupName:
                                 description: The API group name that should be used
                                   when POSTing ChallengePayload resources to the webhook
@@ -6151,7 +6151,7 @@ spec:
                                   to reference a Secret resource. For details on the
                                   schema of this field, consult the webhook provider
                                   implementation's documentation.
-                                type: string
+                                type: object
                               groupName:
                                 description: The API group name that should be used
                                   when POSTing ChallengePayload resources to the webhook

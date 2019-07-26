@@ -133,4 +133,4 @@ replace k8s.io/component-base => k8s.io/component-base v0.0.0-20190718183727-0ec
 
 replace k8s.io/kube-aggregator => k8s.io/kube-aggregator v0.0.0-20190718184434-a064d4d1ed7a
 
-replace sigs.k8s.io/controller-tools => github.com/munnerz/controller-tools v0.1.10-0.20190723151506-0264a5324181
+replace sigs.k8s.io/controller-tools => github.com/munnerz/controller-tools v0.1.10-0.20190726150537-a7ada4fef919

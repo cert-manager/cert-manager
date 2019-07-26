@@ -944,7 +944,7 @@ sigs.k8s.io/controller-runtime/pkg/webhook/internal/certwatcher
 sigs.k8s.io/controller-runtime/pkg/webhook/internal/metrics
 sigs.k8s.io/controller-runtime/pkg/internal/objectutil
 sigs.k8s.io/controller-runtime/pkg/internal/controller/metrics
-# sigs.k8s.io/controller-tools v0.2.0-beta.4 => github.com/munnerz/controller-tools v0.1.10-0.20190723151506-0264a5324181
+# sigs.k8s.io/controller-tools v0.2.0-beta.4 => github.com/munnerz/controller-tools v0.1.10-0.20190726150537-a7ada4fef919
 sigs.k8s.io/controller-tools/cmd/controller-gen
 sigs.k8s.io/controller-tools/pkg/crd
 sigs.k8s.io/controller-tools/pkg/deepcopy
