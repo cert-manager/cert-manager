@@ -159,7 +159,7 @@ func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitin
 	// issuerFactory provides an interface to obtain Issuer implementations from issuer resources
 	c.issuerFactory = issuer.NewFactory(ctx)
 	// clock is used to determine whether certificates need renewal
-	c.clock = clock.RealClock{}
+	c.clock = ctx.Clock
 	// recorder records events about resources to the Kubernetes api
 	c.recorder = ctx.Recorder
 	// the localTemporarySigner is used to sign 'temporary certificates' during

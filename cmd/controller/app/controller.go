@@ -35,6 +35,7 @@ import (
 	"k8s.io/client-go/tools/leaderelection/resourcelock"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/klog"
+	"k8s.io/utils/clock"
 
 	"github.com/jetstack/cert-manager/cmd/controller/app/options"
 	clientset "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
@@ -210,6 +211,7 @@ func buildControllerContext(ctx context.Context, stopCh <-chan struct{}, opts *o
 		KubeSharedInformerFactory: kubeSharedInformerFactory,
 		SharedInformerFactory:     sharedInformerFactory,
 		Namespace:                 opts.Namespace,
+		Clock:                     clock.RealClock{},
 		ACMEOptions: controller.ACMEOptions{
 			HTTP01SolverImage:                 opts.ACMEHTTP01SolverImage,
 			HTTP01SolverResourceRequestCPU:    HTTP01SolverResourceRequestCPU,
