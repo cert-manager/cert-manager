@@ -1792,7 +1792,7 @@ spec:
   names:
     kind: ClusterIssuer
     plural: clusterissuers
-  scope: Namespaced
+  scope: Cluster
   validation:
     openAPIV3Schema:
       properties:

@@ -27,7 +27,7 @@ import (
 // +k8s:openapi-gen=true
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// +kubebuilder:resource:path=clusterissuers
+// +kubebuilder:resource:path=clusterissuers,scope=Cluster
 type ClusterIssuer struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
