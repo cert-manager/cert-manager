@@ -18,6 +18,7 @@ package selfsigned
 
 import (
 	"bytes"
+	"context"
 	"crypto"
 	"crypto/rand"
 	"crypto/x509"
@@ -57,10 +58,10 @@ func generateCSR(t *testing.T, secretKey crypto.Signer, alg x509.SignatureAlgori
 	return csr
 }
 
-func mustNoResponse(t *testing.T, args []interface{}) {
-	resp := args[1].(*issuer.IssueResponse)
+func mustNoResponse(builder *testpkg.Builder, args ...interface{}) {
+	resp := args[0].(*issuer.IssueResponse)
 	if resp != nil {
-		t.Errorf("unexpected response, exp='nil' got='%+v'", resp)
+		builder.T.Errorf("unexpected response, exp='nil' got='%+v'", resp)
 	}
 }
 
@@ -131,217 +132,185 @@ func TestSign(t *testing.T) {
 		},
 	}
 
-	tests := map[string]selfsignedFixture{
-		"a CertificateRequest with no certmanager.k8s.io/selfsigned-private-key annotation should record error": {
-			Issuer: gen.Issuer("selfsigned-issuer",
-				gen.SetIssuerSelfSigned(v1alpha1.SelfSignedIssuer{}),
-			),
-			// no data in annotation
-			CertificateRequest: gen.CertificateRequest("test-cr"),
-			Builder: &testpkg.Builder{
-				KubeObjects:        []runtime.Object{},
-				CertManagerObjects: []runtime.Object{},
+	tests := map[string]testT{
+		"a CertificateRequest with no certmanager.k8s.io/selfsigned-private-key annotation should record pending": {
+			// no annotation
+			certificaterequest: gen.CertificateRequest("test-cr"),
+			builder: &testpkg.Builder{
 				ExpectedEvents: []string{
-					"Warning ErrorAnnotation Referenced secret default-unit-test-ns/ not found: self signed issuer requires 'certmanager.k8s.io/private-key-secret-name' annotation set to secret name holding the private key",
+					`Normal MissingAnnotation Annotation "certmanager.k8s.io/private-key-secret-name" missing or reference empty: self signed issuer requires "certmanager.k8s.io/private-key-secret-name" annotation to be set to the name of the Secret containing the private key`,
 				},
+				CheckFn: mustNoResponse,
 			},
-			Err: false,
-			CheckFn: func(t *testing.T, s *selfsignedFixture, args ...interface{}) {
-				mustNoResponse(t, args)
-			},
+			expectedErr: false,
 		},
-		"a CertificateRequest with a certmanager.k8s.io/private-key-secret-name annotation but empty string should record error": {
-			Issuer: gen.Issuer("selfsigned-issuer",
-				gen.SetIssuerSelfSigned(v1alpha1.SelfSignedIssuer{}),
-			),
+		"a CertificateRequest with a certmanager.k8s.io/private-key-secret-name annotation but empty string should record pending": {
 			// no data in annotation
-			CertificateRequest: gen.CertificateRequest("test-cr",
+			certificaterequest: gen.CertificateRequest("test-cr",
 				gen.AddCertificateRequestAnnotations(map[string]string{
 					v1alpha1.CRPrivateKeyAnnotationKey: "",
 				}),
 			),
-			Builder: &testpkg.Builder{
-				KubeObjects:        []runtime.Object{},
-				CertManagerObjects: []runtime.Object{},
+			builder: &testpkg.Builder{
 				ExpectedEvents: []string{
-					"Warning ErrorAnnotation Referenced secret default-unit-test-ns/ not found: self signed issuer requires 'certmanager.k8s.io/private-key-secret-name' annotation set to secret name holding the private key",
+					`Normal MissingAnnotation Annotation "certmanager.k8s.io/private-key-secret-name" missing or reference empty: self signed issuer requires "certmanager.k8s.io/private-key-secret-name" annotation to be set to the name of the Secret containing the private key`,
 				},
+				CheckFn: mustNoResponse,
 			},
-			Err: false,
-			CheckFn: func(t *testing.T, s *selfsignedFixture, args ...interface{}) {
-			},
+			expectedErr: false,
 		},
-		"a CertificateRequest with a certmanager.k8s.io/private-key-secret-name annotation but the referenced secret doesn't exist should record error": {
-			Issuer: gen.Issuer("selfsigned-issuer",
-				gen.SetIssuerSelfSigned(v1alpha1.SelfSignedIssuer{}),
-			),
-			CertificateRequest: gen.CertificateRequest("test-cr",
+		"a CertificateRequest with a certmanager.k8s.io/private-key-secret-name annotation but the referenced secret doesn't exist should record pending": {
+			certificaterequest: gen.CertificateRequest("test-cr",
 				gen.AddCertificateRequestAnnotations(map[string]string{
 					v1alpha1.CRPrivateKeyAnnotationKey: "a-non-existent-secret",
 				}),
 			),
-			Builder: &testpkg.Builder{
-				KubeObjects:        []runtime.Object{},
-				CertManagerObjects: []runtime.Object{},
+			builder: &testpkg.Builder{
 				ExpectedEvents: []string{
-					`Warning ErrorSecret Referenced secret default-unit-test-ns/a-non-existent-secret not found: secret "a-non-existent-secret" not found`,
+					`Normal MissingSecret Referenced secret default-unit-test-ns/a-non-existent-secret not found: secret "a-non-existent-secret" not found`,
 				},
+				CheckFn: mustNoResponse,
 			},
-			Err: false,
-			CheckFn: func(t *testing.T, s *selfsignedFixture, args ...interface{}) {
-			},
+			expectedErr: false,
 		},
-		"a CertificateRequest with a bad CSR should error": {
-			Issuer: gen.Issuer("selfsigned-issuer",
-				gen.SetIssuerSelfSigned(v1alpha1.SelfSignedIssuer{}),
-			),
-			CertificateRequest: gen.CertificateRequest("test-cr",
+		"a CertificateRequest with a bad CSR should fail": {
+			certificaterequest: gen.CertificateRequest("test-cr",
 				gen.AddCertificateRequestAnnotations(map[string]string{
 					v1alpha1.CRPrivateKeyAnnotationKey: "test-rsa-key",
 				}),
 				gen.SetCertificateRequestCSR([]byte("this is a bad CSR")),
 			),
-			Builder: &testpkg.Builder{
-				KubeObjects:        []runtime.Object{rsaKeySecret},
-				CertManagerObjects: []runtime.Object{},
+			builder: &testpkg.Builder{
+				KubeObjects: []runtime.Object{rsaKeySecret},
 				ExpectedEvents: []string{
 					"Warning ErrorGenerating Failed to generate certificate template: failed to decode csr from certificate request resource default-unit-test-ns/test-cr",
 				},
+				CheckFn: mustNoResponse,
 			},
-			Err: false,
-			CheckFn: func(t *testing.T, s *selfsignedFixture, args ...interface{}) {
-			},
+			expectedErr: false,
 		},
-		"a CertificateRequest referencing a bad key should record an error": {
-			Issuer: gen.Issuer("selfsigned-issuer",
-				gen.SetIssuerSelfSigned(v1alpha1.SelfSignedIssuer{}),
-			),
-			CertificateRequest: gen.CertificateRequest("test-cr",
+		"a CertificateRequest referencing a bad key should fail": {
+			certificaterequest: gen.CertificateRequest("test-cr",
 				gen.AddCertificateRequestAnnotations(map[string]string{
 					v1alpha1.CRPrivateKeyAnnotationKey: "test-bad-key",
 				}),
 				gen.SetCertificateRequestCSR(csrBytes),
 			),
-			Builder: &testpkg.Builder{
-				KubeObjects:        []runtime.Object{badKeySecret},
-				CertManagerObjects: []runtime.Object{},
+			builder: &testpkg.Builder{
+				KubeObjects: []runtime.Object{badKeySecret},
+				CheckFn:     mustNoResponse,
+				ExpectedEvents: []string{
+					`Warning ErrorGettingKey Failed to get key "test-bad-key" referenced in annotation "certmanager.k8s.io/private-key-secret-name": error decoding private key PEM block`,
+				},
 			},
-			Err: true,
-			CheckFn: func(t *testing.T, s *selfsignedFixture, args ...interface{}) {
-				badKeyError := "failed to get private key test-bad-key referenced in the annotation 'certmanager.k8s.io/private-key-secret-name': error decoding private key PEM block"
-				err := args[2].(error)
-				if err == nil || err.Error() != badKeyError {
-					t.Errorf("unexpected error, exp='%s' got='%+v'", badKeyError, err)
-				}
-			},
+			expectedErr: false,
 		},
-		"a CertificateRequest referencing a key which did not sign the CSR should record an error": {
-			Issuer: gen.Issuer("selfsigned-issuer",
-				gen.SetIssuerSelfSigned(v1alpha1.SelfSignedIssuer{}),
-			),
-			CertificateRequest: gen.CertificateRequest("test-cr",
+		"a CertificateRequest referencing a key which did not sign the CSR should fail": {
+			certificaterequest: gen.CertificateRequest("test-cr",
 				gen.AddCertificateRequestAnnotations(map[string]string{
 					v1alpha1.CRPrivateKeyAnnotationKey: "test-another-rsa-key",
 				}),
 				gen.SetCertificateRequestCSR(csrBytes),
 			),
-			Builder: &testpkg.Builder{
-				KubeObjects:        []runtime.Object{anotherRSAKeySecret},
-				CertManagerObjects: []runtime.Object{},
+			builder: &testpkg.Builder{
+				KubeObjects: []runtime.Object{anotherRSAKeySecret},
 				ExpectedEvents: []string{
 					"Warning ErrorKeyMatch Error generating certificate template: CSR not signed by referenced private key",
 				},
+				CheckFn: mustNoResponse,
 			},
-			Err: false,
-			CheckFn: func(t *testing.T, s *selfsignedFixture, args ...interface{}) {
-			},
+			expectedErr: false,
 		},
 		"a valid RSA key should sign a self signed certificate": {
-			Issuer: gen.Issuer("selfsigned-issuer",
-				gen.SetIssuerSelfSigned(v1alpha1.SelfSignedIssuer{}),
-			),
-			CertificateRequest: gen.CertificateRequest("test-cr",
+			certificaterequest: gen.CertificateRequest("test-cr",
 				gen.AddCertificateRequestAnnotations(map[string]string{
 					v1alpha1.CRPrivateKeyAnnotationKey: "test-rsa-key",
 				}),
 				gen.SetCertificateRequestCSR(csrBytes),
 			),
-			Builder: &testpkg.Builder{
-				KubeObjects:        []runtime.Object{rsaKeySecret},
-				CertManagerObjects: []runtime.Object{},
-			},
-			Err: false,
-			CheckFn: func(t *testing.T, s *selfsignedFixture, args ...interface{}) {
-				resp := args[1].(*issuer.IssueResponse)
+			builder: &testpkg.Builder{
+				KubeObjects: []runtime.Object{rsaKeySecret},
+				CheckFn: func(builder *testpkg.Builder, args ...interface{}) {
+					resp := args[0].(*issuer.IssueResponse)
 
-				// CA and cert should be the same.
-				if !bytes.Equal(resp.CA, resp.Certificate) {
-					t.Errorf("expected CA and cert to be the same but got:\nCA: %s\nCert: %s",
-						resp.CA, resp.Certificate)
-				}
+					// CA and cert should be the same.
+					if !bytes.Equal(resp.CA, resp.Certificate) {
+						t.Errorf("expected CA and cert to be the same but got:\nCA: %s\nCert: %s",
+							resp.CA, resp.Certificate)
+					}
 
-				// No private key should be returned.
-				if len(resp.PrivateKey) > 0 {
-					t.Errorf("expected to private key returned but got: %s",
-						resp.PrivateKey)
-				}
+					// No private key should be returned.
+					if len(resp.PrivateKey) > 0 {
+						t.Errorf("expected to private key returned but got: %s",
+							resp.PrivateKey)
+					}
+				},
 			},
+			expectedErr: false,
 		},
 		"a valid ECDSA key should sign a self signed certificate": {
-			Issuer: gen.Issuer("selfsigned-issuer",
-				gen.SetIssuerSelfSigned(v1alpha1.SelfSignedIssuer{}),
-			),
-			CertificateRequest: gen.CertificateRequest("test-cr",
+			certificaterequest: gen.CertificateRequest("test-cr",
 				gen.AddCertificateRequestAnnotations(map[string]string{
 					v1alpha1.CRPrivateKeyAnnotationKey: "test-ecdsa-key",
 				}),
 				gen.SetCertificateRequestCSR(csrECBytes),
 			),
-			Builder: &testpkg.Builder{
-				KubeObjects:        []runtime.Object{ecKeySecret},
-				CertManagerObjects: []runtime.Object{},
-			},
-			Err: false,
-			CheckFn: func(t *testing.T, s *selfsignedFixture, args ...interface{}) {
-				resp := args[1].(*issuer.IssueResponse)
-				if resp == nil {
-					t.Errorf("expected a response but got: %+v",
-						args[1])
-					return
-				}
+			builder: &testpkg.Builder{
+				KubeObjects: []runtime.Object{ecKeySecret},
+				CheckFn: func(builder *testpkg.Builder, args ...interface{}) {
+					resp := args[0].(*issuer.IssueResponse)
+					if resp == nil {
+						t.Errorf("expected a response but got: %+v",
+							args[1])
+						return
+					}
 
-				// CA and cert should be the same.
-				if !bytes.Equal(resp.CA, resp.Certificate) {
-					t.Errorf("expected CA and cert to be the same but got:\nCA: %s\nCert: %s",
-						resp.CA, resp.Certificate)
-				}
+					// CA and cert should be the same.
+					if !bytes.Equal(resp.CA, resp.Certificate) {
+						t.Errorf("expected CA and cert to be the same but got:\nCA: %s\nCert: %s",
+							resp.CA, resp.Certificate)
+					}
 
-				// No private key should be returned.
-				if len(resp.PrivateKey) > 0 {
-					t.Errorf("expected to private key returned but got: %s",
-						resp.PrivateKey)
-				}
+					// No private key should be returned.
+					if len(resp.PrivateKey) > 0 {
+						t.Errorf("expected to private key returned but got: %s",
+							resp.PrivateKey)
+					}
+				},
 			},
+			expectedErr: false,
 		},
 	}
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			if test.Builder == nil {
-				test.Builder = &testpkg.Builder{}
-			}
-
-			test.Setup(t)
-			crCopy := test.CertificateRequest.DeepCopy()
-			resp, err := test.SelfSigned.Sign(test.Ctx, crCopy)
-			if err != nil && !test.Err {
-				t.Errorf("Expected function to not error, but got: %v", err)
-			}
-			if err == nil && test.Err {
-				t.Errorf("Expected function to get an error, but got: %v", err)
-			}
-
-			test.Finish(t, crCopy, resp, err)
+			runTest(t, test)
 		})
 	}
+}
+
+type testT struct {
+	builder            *testpkg.Builder
+	certificaterequest *v1alpha1.CertificateRequest
+
+	checkFn     func(*testpkg.Builder, ...interface{})
+	expectedErr bool
+}
+
+func runTest(t *testing.T, test testT) {
+	test.builder.T = t
+	test.builder.Start()
+	defer test.builder.Stop()
+
+	c := NewSelfSigned(test.builder.Context)
+	test.builder.Sync()
+
+	resp, err := c.Sign(context.Background(), test.certificaterequest)
+	if err != nil && !test.expectedErr {
+		t.Errorf("expected to not get an error, but got: %v", err)
+	}
+	if err == nil && test.expectedErr {
+		t.Errorf("expected to get an error but did not get one")
+	}
+	test.builder.CheckAndFinish(resp, err)
 }

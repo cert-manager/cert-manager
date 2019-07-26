@@ -16,13 +16,18 @@ limitations under the License.
 
 package v1alpha1
 
+// Annotation names for Secrets
 const (
-	AltNamesAnnotationKey     = "certmanager.k8s.io/alt-names"
-	IPSANAnnotationKey        = "certmanager.k8s.io/ip-sans"
-	CommonNameAnnotationKey   = "certmanager.k8s.io/common-name"
-	IssuerNameAnnotationKey   = "certmanager.k8s.io/issuer-name"
-	IssuerKindAnnotationKey   = "certmanager.k8s.io/issuer-kind"
-	CertificateNameKey        = "certmanager.k8s.io/certificate-name"
+	AltNamesAnnotationKey   = "certmanager.k8s.io/alt-names"
+	IPSANAnnotationKey      = "certmanager.k8s.io/ip-sans"
+	CommonNameAnnotationKey = "certmanager.k8s.io/common-name"
+	IssuerNameAnnotationKey = "certmanager.k8s.io/issuer-name"
+	IssuerKindAnnotationKey = "certmanager.k8s.io/issuer-kind"
+	CertificateNameKey      = "certmanager.k8s.io/certificate-name"
+)
+
+// Annotation names for CertificateRequests
+const (
 	CRPrivateKeyAnnotationKey = "certmanager.k8s.io/private-key-secret-name"
 )
 
