@@ -33,6 +33,7 @@ import (
 	"k8s.io/utils/clock"
 	fakeclock "k8s.io/utils/clock/testing"
 
+	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	cmfake "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/fake"
 	informers "github.com/jetstack/cert-manager/pkg/client/informers/externalversions"
 	"github.com/jetstack/cert-manager/pkg/controller"
@@ -122,6 +123,9 @@ func (b *Builder) Start() {
 	if b.Context.Clock == nil {
 		b.Context.Clock = clock.RealClock{}
 	}
+	// Fix the clock used in apiutil so that calls to set status conditions
+	// can be predictably tested
+	apiutil.Clock = b.Context.Clock
 }
 
 func (b *Builder) FakeKubeClient() *kubefake.Clientset {
@@ -259,6 +263,8 @@ func (b *Builder) Stop() {
 
 	close(b.stopCh)
 	b.stopCh = nil
+	// Reset the clock back to the RealClock in apiutil
+	apiutil.Clock = clock.RealClock{}
 }
 
 // WaitForResync will wait for the informer factory informer duration by
