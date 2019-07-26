@@ -26,6 +26,7 @@ import (
 	clientgotesting "k8s.io/client-go/testing"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	testpkg "github.com/jetstack/cert-manager/pkg/controller/test"
 )
 
 func newFakeIssuerWithStatus(name string, status v1alpha1.IssuerStatus) *v1alpha1.ClusterIssuer {
@@ -42,12 +43,17 @@ func TestSync(t *testing.T) {
 }
 
 func TestUpdateIssuerStatus(t *testing.T) {
-	f := &controllerFixture{}
-	f.Setup(t)
-	defer f.Finish(t)
+	b := &testpkg.Builder{
+		T: t,
+	}
+	b.Start()
+	defer b.Stop()
 
-	c := f.Controller
-	fakeClient := f.Builder.FakeCMClient()
+	c := &controller{}
+	c.Register(b.Context)
+	b.Sync()
+
+	fakeClient := b.FakeCMClient()
 	assertNumberOfActions(t, fatalf, filter(fakeClient.Actions()), 0)
 
 	originalIssuer := newFakeIssuerWithStatus("test", v1alpha1.IssuerStatus{})
