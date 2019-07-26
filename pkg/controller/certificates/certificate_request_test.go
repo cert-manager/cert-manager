@@ -329,6 +329,7 @@ func TestProcessCertificate(t *testing.T) {
 						},
 					)),
 				},
+				ExpectedEvents: []string{"Normal GeneratedKey Generated a new private key"},
 			},
 		},
 		"generate a private key and update an existing secret if one already exists": {
@@ -374,6 +375,7 @@ func TestProcessCertificate(t *testing.T) {
 						},
 					)),
 				},
+				ExpectedEvents: []string{"Normal GeneratedKey Generated a new private key"},
 			},
 		},
 		"generate a new private key and update the Secret if the existing private key data is garbage": {
@@ -422,6 +424,7 @@ func TestProcessCertificate(t *testing.T) {
 						},
 					)),
 				},
+				ExpectedEvents: []string{`Normal GeneratedKey Generated a new private key`},
 			},
 		},
 		"generate a new private key and update the Secret if the existing private key data has a differing keyAlgorithm": {
@@ -470,6 +473,7 @@ func TestProcessCertificate(t *testing.T) {
 						},
 					)),
 				},
+				ExpectedEvents: []string{"Normal GeneratedKey Generated a new private key"},
 			},
 		},
 		"create a new certificatesigningrequest resource if the secret contains a private key but no certificate": {
@@ -506,6 +510,7 @@ func TestProcessCertificate(t *testing.T) {
 						exampleBundle1.certificateRequest,
 					)),
 				},
+				ExpectedEvents: []string{`Normal Requested Created new CertificateRequest resource "test-850937773"`},
 			},
 		},
 		"delete an existing certificaterequest that does not have matching dnsnames": {
@@ -555,6 +560,7 @@ func TestProcessCertificate(t *testing.T) {
 						exampleBundle1.certificateRequest,
 					)),
 				},
+				ExpectedEvents: []string{`Normal Requested Created new CertificateRequest resource "test-850937773"`},
 			},
 		},
 		"do nothing and wait if an up to date certificaterequest resource exists and is not Ready": {
@@ -623,6 +629,7 @@ func TestProcessCertificate(t *testing.T) {
 						exampleBundle1.certificateRequest,
 					)),
 				},
+				ExpectedEvents: []string{`Normal Requested Created new CertificateRequest resource "test-850937773"`},
 			},
 		},
 		"do nothing if existing x509 certificate is up to date and valid for the cert and no other CertificateRequest exists": {
@@ -708,6 +715,7 @@ func TestProcessCertificate(t *testing.T) {
 						},
 					)),
 				},
+				ExpectedEvents: []string{"Normal UpdateMeta Updated metadata on Secret resource"},
 			},
 		},
 		"update the Secret resource with the signed certificate if the CertificateRequest is ready": {
@@ -764,6 +772,7 @@ func TestProcessCertificate(t *testing.T) {
 						},
 					)),
 				},
+				ExpectedEvents: []string{"Normal Issued Certificate issued successfully"},
 			},
 		},
 		"do nothing if the Secret resource is not in need of issuance even if a Ready CertificateRequest exists and contains different data": {
@@ -855,6 +864,7 @@ func TestProcessCertificate(t *testing.T) {
 						},
 					)),
 				},
+				ExpectedEvents: []string{"Normal Issued Certificate issued successfully"},
 			},
 		},
 		"delete existing certificate request if existing one contains a certificate nearing expiry": {
@@ -939,6 +949,7 @@ func TestProcessCertificate(t *testing.T) {
 						exampleBundle1.certificateRequestReady.Name,
 					)),
 				},
+				ExpectedEvents: []string{`Normal PrivateKeyLost Lost private key for CertificateRequest "test-850937773", deleting old resource`},
 			},
 		},
 	}
@@ -1018,6 +1029,7 @@ func TestTemporaryCertificateEnabled(t *testing.T) {
 						},
 					)),
 				},
+				ExpectedEvents: []string{`Normal TempCert Issued temporary certificate`},
 			},
 		},
 		"issue a temporary certificate if existing request is pending and secret does not contain a cert": {
@@ -1074,6 +1086,7 @@ func TestTemporaryCertificateEnabled(t *testing.T) {
 						},
 					)),
 				},
+				ExpectedEvents: []string{`Normal TempCert Issued temporary certificate`},
 			},
 		},
 		"issue a temporary certificate if existing request is Ready and secret does not contain a cert": {
@@ -1130,6 +1143,7 @@ func TestTemporaryCertificateEnabled(t *testing.T) {
 						},
 					)),
 				},
+				ExpectedEvents: []string{`Normal TempCert Issued temporary certificate`},
 			},
 		},
 		"update the Secret resource with the signed certificate if the CertificateRequest is ready and contains temporary signed certificate": {
@@ -1189,6 +1203,7 @@ func TestTemporaryCertificateEnabled(t *testing.T) {
 						},
 					)),
 				},
+				ExpectedEvents: []string{`Normal Issued Certificate issued successfully`},
 			},
 		},
 		"issue new certificate if existing certificate data is garbage, even if existing CertificateRequest is Ready": {
@@ -1248,6 +1263,7 @@ func TestTemporaryCertificateEnabled(t *testing.T) {
 						},
 					)),
 				},
+				ExpectedEvents: []string{`Normal TempCert Issued temporary certificate`},
 			},
 		},
 		"generate a new temporary certificate if existing one is valid for different dnsNames": {
@@ -1310,6 +1326,7 @@ func TestTemporaryCertificateEnabled(t *testing.T) {
 						},
 					)),
 				},
+				ExpectedEvents: []string{`Normal TempCert Issued temporary certificate`},
 			},
 		},
 		"update the secret metadata if existing temporary certificate does not have annotations": {
@@ -1364,6 +1381,7 @@ func TestTemporaryCertificateEnabled(t *testing.T) {
 						},
 					)),
 				},
+				ExpectedEvents: []string{`Normal UpdateMeta Updated metadata on Secret resource`},
 			},
 		},
 	}
@@ -1896,25 +1914,17 @@ func TestUpdateStatus(t *testing.T) {
 
 			testManager := &certificateRequestManager{}
 			testManager.Register(test.builder.Context)
-			testManager.generatePrivateKeyBytes = test.generatePrivateKeyBytes
-			testManager.generateCSR = test.generateCSR
 			testManager.clock = fixedClock
 			test.builder.Sync()
 
 			err := testManager.updateCertificateStatus(context.Background(), test.certificate, test.certificate.DeepCopy())
-
 			if err != nil && !test.expectedErr {
 				t.Errorf("expected to not get an error, but got: %v", err)
 			}
 			if err == nil && test.expectedErr {
 				t.Errorf("expected to get an error but did not get one")
 			}
-			if err := test.builder.AllReactorsCalled(); err != nil {
-				t.Errorf("Not all expected reactors were called: %v", err)
-			}
-			if err := test.builder.AllActionsExecuted(); err != nil {
-				t.Errorf(err.Error())
-			}
+			test.builder.CheckAndFinish(err)
 		})
 	}
 }
@@ -1943,17 +1953,12 @@ func runTest(t *testing.T, test testT) {
 	test.builder.Sync()
 
 	err := testManager.processCertificate(context.Background(), test.certificate)
-
 	if err != nil && !test.expectedErr {
 		t.Errorf("expected to not get an error, but got: %v", err)
 	}
 	if err == nil && test.expectedErr {
 		t.Errorf("expected to get an error but did not get one")
 	}
-	if err := test.builder.AllReactorsCalled(); err != nil {
-		t.Errorf("Not all expected reactors were called: %v", err)
-	}
-	if err := test.builder.AllActionsExecuted(); err != nil {
-		t.Errorf(err.Error())
-	}
+
+	test.builder.CheckAndFinish(err)
 }
