@@ -21,18 +21,19 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	corelisters "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/tools/record"
 
-	"github.com/go-logr/logr"
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
 	"github.com/jetstack/cert-manager/pkg/controller/certificaterequests"
 	"github.com/jetstack/cert-manager/pkg/issuer"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
+	cmerrors "github.com/jetstack/cert-manager/pkg/util/errors"
 	"github.com/jetstack/cert-manager/pkg/util/kube"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 )
@@ -88,17 +89,26 @@ func (s *SelfSigned) Sign(ctx context.Context, cr *v1alpha1.CertificateRequest) 
 	}
 
 	privatekey, err := kube.SecretTLSKey(ctx, s.secretsLister, cr.Namespace, skRef)
-	if k8sErrors.IsNotFound(err) {
-		s.reportPendingStatus(log, cr, err, "MissingSecret",
-			fmt.Sprintf("Referenced secret %s/%s not found", cr.Namespace, skRef))
-
-		return nil, nil
-	}
 	if err != nil {
-		s.reportFaliedStatus(log, cr, err, "ErrorGettingKey",
+		if k8sErrors.IsNotFound(err) {
+			s.reportPendingStatus(log, cr, err, "MissingSecret",
+				fmt.Sprintf("Referenced secret %s/%s not found", cr.Namespace, skRef))
+
+			return nil, nil
+		}
+
+		if cmerrors.IsInvalidData(err) {
+			s.reportPendingStatus(log, cr, err, "ErrorParsingKey",
+				fmt.Sprintf("Failed to get key %q referenced in annotation %q",
+					skRef, v1alpha1.CRPrivateKeyAnnotationKey))
+			return nil, nil
+		}
+
+		// We are probably in a network error here so we should backoff and retry
+		s.reportPendingStatus(log, cr, err, "ErrorGettingSecret",
 			fmt.Sprintf("Failed to get key %q referenced in annotation %q",
 				skRef, v1alpha1.CRPrivateKeyAnnotationKey))
-		return nil, nil
+		return nil, err
 	}
 
 	template, err := pki.GenerateTemplateFromCertificateRequest(cr)

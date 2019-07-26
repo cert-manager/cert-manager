@@ -25,14 +25,17 @@ import (
 	"crypto/x509/pkix"
 	"encoding/asn1"
 	"encoding/pem"
+	"errors"
 	"testing"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	clientcorev1 "k8s.io/client-go/listers/core/v1"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	testpkg "github.com/jetstack/cert-manager/pkg/controller/test"
+	testfake "github.com/jetstack/cert-manager/pkg/controller/test/fake"
 	"github.com/jetstack/cert-manager/pkg/issuer"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 	"github.com/jetstack/cert-manager/test/unit/gen"
@@ -189,7 +192,7 @@ func TestSign(t *testing.T) {
 			},
 			expectedErr: false,
 		},
-		"a CertificateRequest referencing a bad key should fail": {
+		"a CertificateRequest referencing a bad key should record pending": {
 			certificaterequest: gen.CertificateRequest("test-cr",
 				gen.AddCertificateRequestAnnotations(map[string]string{
 					v1alpha1.CRPrivateKeyAnnotationKey: "test-bad-key",
@@ -200,10 +203,35 @@ func TestSign(t *testing.T) {
 				KubeObjects: []runtime.Object{badKeySecret},
 				CheckFn:     mustNoResponse,
 				ExpectedEvents: []string{
-					`Warning ErrorGettingKey Failed to get key "test-bad-key" referenced in annotation "certmanager.k8s.io/private-key-secret-name": error decoding private key PEM block`,
+					`Normal ErrorParsingKey Failed to get key "test-bad-key" referenced in annotation "certmanager.k8s.io/private-key-secret-name": error decoding private key PEM block`,
 				},
 			},
 			expectedErr: false,
+		},
+		"a CertificateRequest that transiently fails a secret lookup should backoff error to retry": {
+			certificaterequest: gen.CertificateRequest("test-cr",
+				gen.AddCertificateRequestAnnotations(map[string]string{
+					v1alpha1.CRPrivateKeyAnnotationKey: "test-rsa-key",
+				}),
+				gen.SetCertificateRequestCSR(csrBytes),
+			),
+			builder: &testpkg.Builder{
+				KubeObjects: []runtime.Object{rsaKeySecret},
+				CheckFn:     mustNoResponse,
+				ExpectedEvents: []string{
+					`Normal ErrorGettingSecret Failed to get key "test-rsa-key" referenced in annotation "certmanager.k8s.io/private-key-secret-name": this is a network error`,
+				},
+			},
+			FakeLister: &testfake.FakeSecretLister{
+				SecretsFn: func(namespace string) clientcorev1.SecretNamespaceLister {
+					return &testfake.FakeSecretNamespaceLister{
+						GetFn: func(name string) (ret *corev1.Secret, err error) {
+							return nil, errors.New("this is a network error")
+						},
+					}
+				},
+			},
+			expectedErr: true,
 		},
 		"a CertificateRequest referencing a key which did not sign the CSR should fail": {
 			certificaterequest: gen.CertificateRequest("test-cr",
@@ -295,6 +323,8 @@ type testT struct {
 
 	checkFn     func(*testpkg.Builder, ...interface{})
 	expectedErr bool
+
+	FakeLister *testfake.FakeSecretLister
 }
 
 func runTest(t *testing.T, test testT) {
@@ -303,6 +333,11 @@ func runTest(t *testing.T, test testT) {
 	defer test.builder.Stop()
 
 	c := NewSelfSigned(test.builder.Context)
+
+	if test.FakeLister != nil {
+		c.secretsLister = test.FakeLister
+	}
+
 	test.builder.Sync()
 
 	resp, err := c.Sign(context.Background(), test.certificaterequest)
