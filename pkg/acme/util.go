@@ -17,25 +17,36 @@ limitations under the License.
 package acme
 
 import (
-	v1alpha1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	corev1 "k8s.io/api/core/v1"
+
+	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 )
 
 // IsFinalState will return true if the given ACME State is a 'final' state.
 // This is either one of 'ready', 'invalid' or 'expired'.
 // The 'valid' state is a special case, as it is a final state for Challenges but
 // not for Orders.
-func IsFinalState(s v1alpha1.State) bool {
+func IsFinalState(s cmapi.State) bool {
 	switch s {
-	case v1alpha1.Valid, v1alpha1.Invalid, v1alpha1.Expired, v1alpha1.Errored:
+	case cmapi.Valid, cmapi.Invalid, cmapi.Expired, cmapi.Errored:
 		return true
 	}
 	return false
 }
 
-func IsFailureState(s v1alpha1.State) bool {
+func IsFailureState(s cmapi.State) bool {
 	switch s {
-	case v1alpha1.Invalid, v1alpha1.Expired, v1alpha1.Errored:
+	case cmapi.Invalid, cmapi.Expired, cmapi.Errored:
 		return true
 	}
 	return false
+}
+
+// PrivateKeySelector will default the SecretKeySelector with a default secret key
+// if one is not already specified.
+func PrivateKeySelector(sel cmapi.SecretKeySelector) cmapi.SecretKeySelector {
+	if len(sel.Key) == 0 {
+		sel.Key = corev1.TLSPrivateKeyKey
+	}
+	return sel
 }
