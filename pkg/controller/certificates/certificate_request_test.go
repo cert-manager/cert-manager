@@ -30,7 +30,6 @@ import (
 	coretesting "k8s.io/client-go/testing"
 	fakeclock "k8s.io/utils/clock/testing"
 
-	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	testpkg "github.com/jetstack/cert-manager/pkg/controller/test"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
@@ -946,6 +945,9 @@ func TestProcessCertificate(t *testing.T) {
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
+			fixedClock.SetTime(fixedClockStart)
+			test.builder.Clock = fixedClock
+
 			test.enableTempCerts = false
 			runTest(t, test)
 		})
@@ -1368,6 +1370,9 @@ func TestTemporaryCertificateEnabled(t *testing.T) {
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
+			fixedClock.SetTime(fixedClockStart)
+			test.builder.Clock = fixedClock
+
 			test.enableTempCerts = true
 			test.localTemporarySigner = testLocalTemporarySignerFn(exampleBundle1.localTemporaryCertificateBytes)
 			runTest(t, test)
@@ -1883,11 +1888,11 @@ func TestUpdateStatus(t *testing.T) {
 	}
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
+			fixedClock.SetTime(fixedClockStart)
+			test.builder.Clock = fixedClock
 			test.builder.T = t
 			test.builder.Start()
 			defer test.builder.Stop()
-			fixedClock.SetTime(fixedClockStart)
-			apiutil.Clock = fixedClock
 
 			testManager := &certificateRequestManager{}
 			testManager.Register(test.builder.Context)
@@ -1928,8 +1933,6 @@ func runTest(t *testing.T, test testT) {
 	test.builder.T = t
 	test.builder.Start()
 	defer test.builder.Stop()
-	fixedClock.SetTime(fixedClockStart)
-	apiutil.Clock = fixedClock
 
 	testManager := &certificateRequestManager{issueTemporaryCerts: test.enableTempCerts}
 	testManager.Register(test.builder.Context)
@@ -1937,7 +1940,6 @@ func runTest(t *testing.T, test testT) {
 	testManager.generateCSR = test.generateCSR
 	testManager.localTemporarySigner = test.localTemporarySigner
 	testManager.issueTemporaryCerts = test.enableTempCerts
-	testManager.clock = fixedClock
 	test.builder.Sync()
 
 	err := testManager.processCertificate(context.Background(), test.certificate)
