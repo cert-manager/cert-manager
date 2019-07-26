@@ -896,11 +896,11 @@ k8s.io/kube-openapi/pkg/util/sets
 k8s.io/kube-openapi/pkg/schemaconv
 # k8s.io/utils v0.0.0-20190506122338-8fab8cb257d5
 k8s.io/utils/clock
+k8s.io/utils/clock/testing
 k8s.io/utils/pointer
 k8s.io/utils/integer
 k8s.io/utils/buffer
 k8s.io/utils/trace
-k8s.io/utils/clock/testing
 # sigs.k8s.io/controller-runtime v0.2.0-beta.4 => sigs.k8s.io/controller-runtime v0.2.0-beta.4
 sigs.k8s.io/controller-runtime
 sigs.k8s.io/controller-runtime/pkg/client
