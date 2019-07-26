@@ -39,6 +39,11 @@ const (
 	// Enables cert-manager to resolve certificate requests using its
 	// CertificateRequest issuer controllers.
 	CertificateRequestControllers = "CertificateRequestControllers"
+
+	// Disables the deprecated certificate.spec.acme configuration field.
+	// This can be used to ensure your certificates do not use the old format
+	// for specifying ACME challenge solvers.
+	DisableDeprecatedACMECertificates = "DisableDeprecatedACMECertificates"
 )
 
 func init() {
@@ -49,7 +54,8 @@ func init() {
 // To add a new feature, define a key for it above and add it here. The features will be
 // available throughout Kubernetes binaries.
 var defaultKubernetesFeatureGates = map[featuregate.Feature]featuregate.FeatureSpec{
-	ValidateCAA:                   {Default: false, PreRelease: featuregate.Alpha},
-	IssueTemporaryCertificate:     {Default: true, PreRelease: featuregate.Beta},
-	CertificateRequestControllers: {Default: false, PreRelease: featuregate.Alpha},
+	ValidateCAA:                       {Default: false, PreRelease: featuregate.Alpha},
+	IssueTemporaryCertificate:         {Default: true, PreRelease: featuregate.Beta},
+	CertificateRequestControllers:     {Default: false, PreRelease: featuregate.Alpha},
+	DisableDeprecatedACMECertificates: {Default: false},
 }

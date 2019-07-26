@@ -27,12 +27,15 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/diff"
 	coretesting "k8s.io/client-go/testing"
+	featuregatetesting "k8s.io/component-base/featuregate/testing"
 	fakeclock "k8s.io/utils/clock/testing"
 
 	acmecl "github.com/jetstack/cert-manager/pkg/acme/client"
 	acmefake "github.com/jetstack/cert-manager/pkg/acme/fake"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	testpkg "github.com/jetstack/cert-manager/pkg/controller/test"
+	"github.com/jetstack/cert-manager/pkg/feature"
+	utilfeature "github.com/jetstack/cert-manager/pkg/util/feature"
 	"github.com/jetstack/cert-manager/test/unit/gen"
 	acmeapi "github.com/jetstack/cert-manager/third_party/crypto/acme"
 )
@@ -275,6 +278,59 @@ dGVzdA==
 			if test.builder.Clock == nil {
 				test.builder.Clock = fixedClock
 			}
+			runTest(t, test)
+		})
+	}
+}
+
+func TestDisableOldConfigFeatureFlagDisabled(t *testing.T) {
+	iss := gen.Issuer("testissuer",
+		gen.SetIssuerACME(v1alpha1.ACMEIssuer{}),
+	)
+	// the 'new format' means not specifying any DomainSolverConfig
+	newFormatOrder := gen.Order("testorder",
+		gen.SetOrderIssuer(v1alpha1.ObjectReference{
+			Name: iss.Name,
+		}),
+	)
+	oldFormatOrder := gen.OrderFrom(newFormatOrder,
+		gen.SetOrderDomainSolverConfig([]v1alpha1.DomainSolverConfig{
+			{},
+		}),
+	)
+	newFormatOrderValid := gen.OrderFrom(newFormatOrder,
+		gen.SetOrderURL("http://testurl.com/abcde"),
+		gen.SetOrderState(v1alpha1.Valid),
+		gen.SetOrderCertificate([]byte(`-----BEGIN CERTIFICATE-----
+dGVzdA==
+-----END CERTIFICATE-----
+`)),
+	)
+
+	tests := map[string]testT{
+		"log an event and exit if an order that specifies the old config format is processed": {
+			order: oldFormatOrder,
+			builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{
+					iss,
+				},
+				ExpectedEvents: []string{
+					`Warning DeprecatedField Deprecated spec.config field specified and deprecated field feature gate is enabled.`,
+				},
+			},
+		},
+		"begin processing the Order if it does not specify the old config format": {
+			order: newFormatOrderValid,
+			builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{
+					iss,
+				},
+			},
+		},
+	}
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			defer featuregatetesting.SetFeatureGateDuringTest(t, utilfeature.DefaultFeatureGate, feature.DisableDeprecatedACMECertificates, true)()
 			runTest(t, test)
 		})
 	}

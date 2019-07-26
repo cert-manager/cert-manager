@@ -35,13 +35,16 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	coretesting "k8s.io/client-go/testing"
+	featuregatetesting "k8s.io/component-base/featuregate/testing"
 	clock "k8s.io/utils/clock/testing"
 
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	testpkg "github.com/jetstack/cert-manager/pkg/controller/test"
+	"github.com/jetstack/cert-manager/pkg/feature"
 	"github.com/jetstack/cert-manager/pkg/issuer"
 	"github.com/jetstack/cert-manager/pkg/issuer/fake"
 	_ "github.com/jetstack/cert-manager/pkg/issuer/selfsigned"
+	utilfeature "github.com/jetstack/cert-manager/pkg/util/feature"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 	"github.com/jetstack/cert-manager/test/unit/gen"
 )
@@ -915,6 +918,77 @@ func TestSync(t *testing.T) {
 	}
 	for n, test := range tests {
 		t.Run(n, func(t *testing.T) {
+			// reset the fixedClock
+			fixedClock.SetTime(nowTime)
+			test.builder.Clock = fixedClock
+			runTestDefault(t, test)
+		})
+	}
+}
+
+func TestDisableOldConfigFeatureFlagDisabled(t *testing.T) {
+	nowTime := time.Now()
+	nowMetaTime := metav1.NewTime(nowTime)
+	fixedClock := clock.NewFakeClock(nowTime)
+
+	iss := gen.Issuer("testissuer",
+		gen.SetIssuerACME(cmapi.ACMEIssuer{}),
+	)
+	// the 'new format' means not specifying any ACMECertificateConfig
+	newFormatCertificate := gen.Certificate("test",
+		gen.SetCertificateIssuer(cmapi.ObjectReference{
+			Name: iss.Name,
+		}),
+		gen.SetCertificateDNSNames("test.com"),
+		gen.SetCertificateSecretName("test-tls"),
+	)
+	oldFormatCertificate := gen.CertificateFrom(newFormatCertificate,
+		gen.SetCertificateACMEConfig(cmapi.ACMECertificateConfig{}),
+	)
+
+	tests := map[string]testTDefault{
+		"log an event and exit if a certificate that specifies the old config format is processed": {
+			certificate: oldFormatCertificate,
+			builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{
+					iss,
+				},
+				ExpectedEvents: []string{
+					`Warning DeprecatedField Deprecated spec.acme field specified and deprecated field feature gate is enabled.`,
+				},
+			},
+		},
+		"begin processing the Certificate if it does not specify the old config format": {
+			certificate: newFormatCertificate,
+			builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{
+					iss,
+					newFormatCertificate,
+				},
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(coretesting.NewUpdateAction(
+						cmapi.SchemeGroupVersion.WithResource("certificates"),
+						gen.DefaultTestNamespace,
+						gen.CertificateFrom(newFormatCertificate,
+							gen.SetCertificateStatusCondition(cmapi.CertificateCondition{
+								Type:               cmapi.CertificateConditionReady,
+								Status:             cmapi.ConditionFalse,
+								Reason:             "NotFound",
+								Message:            "Certificate does not exist",
+								LastTransitionTime: &nowMetaTime,
+							}),
+						),
+					)),
+				},
+				ExpectedEvents: []string{
+					`Warning IssuerNotReady Issuer testissuer not ready`,
+				},
+			},
+		},
+	}
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			defer featuregatetesting.SetFeatureGateDuringTest(t, utilfeature.DefaultFeatureGate, feature.DisableDeprecatedACMECertificates, true)()
 			// reset the fixedClock
 			fixedClock.SetTime(nowTime)
 			test.builder.Clock = fixedClock
