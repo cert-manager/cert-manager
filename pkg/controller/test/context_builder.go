@@ -119,9 +119,10 @@ func (b *Builder) Start() {
 	b.stopCh = make(chan struct{})
 
 	// set the Clock on the context
-	b.Context.Clock = b.Clock
-	if b.Context.Clock == nil {
+	if b.Clock == nil {
 		b.Context.Clock = clock.RealClock{}
+	} else {
+		b.Context.Clock = b.Clock
 	}
 	// Fix the clock used in apiutil so that calls to set status conditions
 	// can be predictably tested
