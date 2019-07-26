@@ -30,8 +30,10 @@ import (
 	fakeclock "k8s.io/utils/clock/testing"
 
 	acmecl "github.com/jetstack/cert-manager/pkg/acme/client"
+	acmefake "github.com/jetstack/cert-manager/pkg/acme/fake"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	testpkg "github.com/jetstack/cert-manager/pkg/controller/test"
+	"github.com/jetstack/cert-manager/test/unit/gen"
 	acmeapi "github.com/jetstack/cert-manager/third_party/crypto/acme"
 )
 
@@ -40,21 +42,18 @@ func TestSyncHappyPath(t *testing.T) {
 	nowMetaTime := metav1.NewTime(nowTime)
 	fixedClock := fakeclock.NewFakeClock(nowTime)
 
-	testIssuerHTTP01Enabled := &v1alpha1.Issuer{
-		Spec: v1alpha1.IssuerSpec{
-			IssuerConfig: v1alpha1.IssuerConfig{
-				ACME: &v1alpha1.ACMEIssuer{
-					HTTP01: &v1alpha1.ACMEIssuerHTTP01Config{},
-				},
-			},
-		},
-	}
+	testIssuerHTTP01Enabled := gen.Issuer("testissuer", gen.SetIssuerACME(v1alpha1.ACMEIssuer{
+		HTTP01: &v1alpha1.ACMEIssuerHTTP01Config{},
+	}))
 
 	// build actual test fixtures
 	testOrder := &v1alpha1.Order{
-		ObjectMeta: metav1.ObjectMeta{Name: "testorder", Namespace: "default"},
+		ObjectMeta: metav1.ObjectMeta{Name: "testorder", Namespace: gen.DefaultTestNamespace},
 		Spec: v1alpha1.OrderSpec{
 			CommonName: "test.com",
+			IssuerRef: v1alpha1.ObjectReference{
+				Name: "testissuer",
+			},
 			Config: []v1alpha1.DomainSolverConfig{
 				{
 					Domains:      []string{"test.com"},
@@ -73,9 +72,12 @@ func TestSyncHappyPath(t *testing.T) {
 			{
 				AuthzURL: "http://authzurl",
 				Type:     "http-01",
-				Token:    "token",
-				DNSName:  "test.com",
-				Key:      "key",
+				IssuerRef: v1alpha1.ObjectReference{
+					Name: "testissuer",
+				},
+				Token:   "token",
+				DNSName: "test.com",
+				Key:     "key",
 				Config: &v1alpha1.SolverConfig{
 					HTTP01: &v1alpha1.HTTP01SolverConfig{
 						Ingress: "",
@@ -142,17 +144,16 @@ dGVzdA==
 	*testACMEOrderInvalid = *testACMEOrderPending
 	testACMEOrderInvalid.Status = acmeapi.StatusInvalid
 
-	tests := map[string]controllerFixture{
+	tests := map[string]testT{
 		"create a new order with the acme server, set the order url on the status resource and return nil to avoid cache timing issues": {
-			Issuer: testIssuerHTTP01Enabled,
-			Order:  testOrder,
-			Builder: &testpkg.Builder{
-				CertManagerObjects: []runtime.Object{testOrder},
+			order: testOrder,
+			builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{testIssuerHTTP01Enabled, testOrder},
 				ExpectedActions: []testpkg.Action{
 					testpkg.NewAction(coretesting.NewUpdateAction(v1alpha1.SchemeGroupVersion.WithResource("orders"), testOrderPending.Namespace, testOrderPending)),
 				},
 			},
-			Client: &acmecl.FakeACME{
+			acmeClient: &acmecl.FakeACME{
 				FakeCreateOrder: func(ctx context.Context, o *acmeapi.Order) (*acmeapi.Order, error) {
 					return testACMEOrderPending, nil
 				},
@@ -165,62 +166,54 @@ dGVzdA==
 					return "key", nil
 				},
 			},
-			CheckFn: func(t *testing.T, s *controllerFixture, args ...interface{}) {
-			},
-			Err: false,
 		},
 		"create a challenge resource for the test.com dnsName on the order": {
-			Issuer: testIssuerHTTP01Enabled,
-			Order:  testOrderPending,
-			Builder: &testpkg.Builder{
-				CertManagerObjects: []runtime.Object{testOrder},
+			order: testOrderPending,
+			builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{testIssuerHTTP01Enabled, testOrderPending},
 				ExpectedActions: []testpkg.Action{
 					testpkg.NewAction(coretesting.NewCreateAction(v1alpha1.SchemeGroupVersion.WithResource("challenges"), testAuthorizationChallenge.Namespace, testAuthorizationChallenge)),
 				},
+				ExpectedEvents: []string{
+					`Normal Created Created Challenge resource "testorder-0" for domain "test.com"`,
+				},
 			},
-			Client: &acmecl.FakeACME{},
-			CheckFn: func(t *testing.T, s *controllerFixture, args ...interface{}) {
-			},
-			Err: false,
+			acmeClient: &acmecl.FakeACME{},
 		},
 		"do nothing if the challenge for test.com is still pending": {
-			Issuer: testIssuerHTTP01Enabled,
-			Order:  testOrderPending,
-			Builder: &testpkg.Builder{
-				CertManagerObjects: []runtime.Object{testOrder, testAuthorizationChallenge},
+			order: testOrderPending,
+			builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{testIssuerHTTP01Enabled, testOrderPending, testAuthorizationChallenge},
 				ExpectedActions:    []testpkg.Action{},
 			},
-			Client: &acmecl.FakeACME{},
-			CheckFn: func(t *testing.T, s *controllerFixture, args ...interface{}) {
-			},
-			Err: false,
+			acmeClient: &acmecl.FakeACME{},
 		},
 		"call GetOrder and update the order state to 'ready' if all challenges are 'valid'": {
-			Order: testOrderPending,
-			Builder: &testpkg.Builder{
-				CertManagerObjects: []runtime.Object{testOrderPending, testAuthorizationChallengeValid},
+			order: testOrderPending,
+			builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{testIssuerHTTP01Enabled, testOrderPending, testAuthorizationChallengeValid},
 				ExpectedActions: []testpkg.Action{
 					testpkg.NewAction(coretesting.NewUpdateAction(v1alpha1.SchemeGroupVersion.WithResource("orders"), testOrderReady.Namespace, testOrderReady)),
 				},
 			},
-			Client: &acmecl.FakeACME{
+			acmeClient: &acmecl.FakeACME{
 				FakeGetOrder: func(_ context.Context, url string) (*acmeapi.Order, error) {
 					return testACMEOrderReady, nil
 				},
 			},
-			CheckFn: func(t *testing.T, s *controllerFixture, args ...interface{}) {
-			},
-			Err: false,
 		},
 		"call FinalizeOrder and update the order state to 'valid' if finalize succeeds": {
-			Order: testOrderReady,
-			Builder: &testpkg.Builder{
-				CertManagerObjects: []runtime.Object{testOrderValid, testAuthorizationChallengeValid},
+			order: testOrderReady,
+			builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{testIssuerHTTP01Enabled, testOrderReady, testAuthorizationChallengeValid},
 				ExpectedActions: []testpkg.Action{
 					testpkg.NewAction(coretesting.NewUpdateAction(v1alpha1.SchemeGroupVersion.WithResource("orders"), testOrderValid.Namespace, testOrderValid)),
 				},
+				ExpectedEvents: []string{
+					"Normal OrderValid Order completed successfully",
+				},
 			},
-			Client: &acmecl.FakeACME{
+			acmeClient: &acmecl.FakeACME{
 				FakeGetOrder: func(_ context.Context, url string) (*acmeapi.Order, error) {
 					return testACMEOrderValid, nil
 				},
@@ -229,88 +222,94 @@ dGVzdA==
 					return [][]byte{testData}, nil
 				},
 			},
-			CheckFn: func(t *testing.T, s *controllerFixture, args ...interface{}) {
-			},
-			Err: false,
 		},
 		"call GetOrder and update the order state if the challenge is 'failed'": {
-			Order: testOrderPending,
-			Builder: &testpkg.Builder{
-				CertManagerObjects: []runtime.Object{testOrderPending, testAuthorizationChallengeInvalid},
+			order: testOrderPending,
+			builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{testIssuerHTTP01Enabled, testOrderPending, testAuthorizationChallengeInvalid},
 				ExpectedActions: []testpkg.Action{
 					testpkg.NewAction(coretesting.NewUpdateAction(v1alpha1.SchemeGroupVersion.WithResource("orders"), testOrderInvalid.Namespace, testOrderInvalid)),
 				},
 			},
-			Client: &acmecl.FakeACME{
+			acmeClient: &acmecl.FakeACME{
 				FakeGetOrder: func(_ context.Context, url string) (*acmeapi.Order, error) {
 					return testACMEOrderInvalid, nil
 				},
 			},
-			CheckFn: func(t *testing.T, s *controllerFixture, args ...interface{}) {
-			},
-			Err: false,
 		},
 		"should leave the order state as-is if the challenge is marked invalid but the acme order is pending": {
-			Order: testOrderPending,
-			Builder: &testpkg.Builder{
-				CertManagerObjects: []runtime.Object{testOrderPending, testAuthorizationChallengeInvalid},
+			order: testOrderPending,
+			builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{testIssuerHTTP01Enabled, testOrderPending, testAuthorizationChallengeInvalid},
 				ExpectedActions:    []testpkg.Action{},
 			},
-			Client: &acmecl.FakeACME{
+			acmeClient: &acmecl.FakeACME{
 				FakeGetOrder: func(_ context.Context, url string) (*acmeapi.Order, error) {
 					return testACMEOrderPending, nil
 				},
 			},
-			CheckFn: func(t *testing.T, s *controllerFixture, args ...interface{}) {
-			},
-			Err: false,
 		},
 		"do nothing if the order is valid": {
-			Issuer: testIssuerHTTP01Enabled,
-			Order:  testOrderValid,
-			Builder: &testpkg.Builder{
-				CertManagerObjects: []runtime.Object{testOrderValid},
+			order: testOrderValid,
+			builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{testIssuerHTTP01Enabled, testOrderValid},
 				ExpectedActions:    []testpkg.Action{},
 			},
-			Client: &acmecl.FakeACME{},
-			CheckFn: func(t *testing.T, s *controllerFixture, args ...interface{}) {
-			},
-			Err: false,
+			acmeClient: &acmecl.FakeACME{},
 		},
 		"do nothing if the order is failed": {
-			Issuer: testIssuerHTTP01Enabled,
-			Order:  testOrderInvalid,
-			Builder: &testpkg.Builder{
-				CertManagerObjects: []runtime.Object{testOrderInvalid},
+			order: testOrderInvalid,
+			builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{testIssuerHTTP01Enabled, testOrderInvalid},
 				ExpectedActions:    []testpkg.Action{},
 			},
-			Client: &acmecl.FakeACME{},
-			CheckFn: func(t *testing.T, s *controllerFixture, args ...interface{}) {
-			},
-			Err: false,
+			acmeClient: &acmecl.FakeACME{},
 		},
 	}
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			if test.Builder == nil {
-				test.Builder = &testpkg.Builder{}
+			// reset the fixedClock at the start of each test
+			fixedClock.SetTime(nowTime)
+			// always use the fixedClock unless otherwise specified
+			if test.builder.Clock == nil {
+				test.builder.Clock = fixedClock
 			}
-			if test.Clock == nil {
-				test.Clock = fixedClock
-			}
-			test.Setup(t)
-			orderCopy := test.Order.DeepCopy()
-			err := test.Controller.Sync(test.Ctx, orderCopy)
-			if err != nil && !test.Err {
-				t.Errorf("Expected function to not error, but got: %v", err)
-			}
-			if err == nil && test.Err {
-				t.Errorf("Expected function to get an error, but got: %v", err)
-			}
-			test.Finish(t, orderCopy, err)
+			runTest(t, test)
 		})
 	}
+}
+
+type testT struct {
+	order      *v1alpha1.Order
+	builder    *testpkg.Builder
+	acmeClient acmecl.Interface
+	expectErr  bool
+}
+
+func runTest(t *testing.T, test testT) {
+	test.builder.T = t
+	test.builder.Start()
+	defer test.builder.Stop()
+
+	c := &controller{}
+	c.Register(test.builder.Context)
+	c.acmeHelper = &acmefake.Helper{
+		ClientForIssuerFunc: func(iss v1alpha1.GenericIssuer) (acmecl.Interface, error) {
+			return test.acmeClient, nil
+		},
+	}
+	test.builder.Sync()
+
+	err := c.Sync(context.Background(), test.order)
+	if err != nil && !test.expectErr {
+		t.Errorf("Expected function to not error, but got: %v", err)
+	}
+	if err == nil && test.expectErr {
+		t.Errorf("Expected function to get an error, but got: %v", err)
+	}
+
+	test.builder.CheckAndFinish(err)
 }
 
 //func (c *controller) challengeSpecForAuthorization(ctx context.Context, cl acmecl.Interface, issuer cmapi.GenericIssuer, o *cmapi.Order, authz *acmeapi.Authorization) (*cmapi.ChallengeSpec, error) {

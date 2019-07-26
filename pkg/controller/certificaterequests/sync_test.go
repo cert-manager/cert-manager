@@ -505,7 +505,7 @@ func TestSync(t *testing.T) {
 	for n, test := range tests {
 		t.Run(n, func(t *testing.T) {
 			fixedClock.SetTime(nowTime)
-			test.clock = fixedClock
+			test.builder.Clock = fixedClock
 			runTest(t, test)
 		})
 	}
@@ -515,7 +515,6 @@ type testT struct {
 	builder            *testpkg.Builder
 	issuerImpl         Issuer
 	certificateRequest *cmapi.CertificateRequest
-	clock              *clock.FakeClock
 	expectedErr        bool
 }
 
@@ -523,10 +522,6 @@ func runTest(t *testing.T, test testT) {
 	test.builder.T = t
 	test.builder.Start()
 	defer test.builder.Stop()
-
-	// Fix the clock used in apiutil so that calls to set status conditions
-	// can be predictably tested
-	util.Clock = test.clock
 
 	c := &Controller{
 		issuerType: util.IssuerSelfSigned,

@@ -25,6 +25,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/record"
+	"k8s.io/utils/clock"
 
 	clientset "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
 	informers "github.com/jetstack/cert-manager/pkg/client/informers/externalversions"
@@ -60,6 +61,10 @@ type Context struct {
 	// Namespace is the namespace to operate within.
 	// If unset, operates on all namespaces
 	Namespace string
+
+	// Clock should be used to access the current time instead of relying on
+	// time.Now, to make it easier to test controllers that utilise time
+	Clock clock.Clock
 
 	IssuerOptions
 	ACMEOptions

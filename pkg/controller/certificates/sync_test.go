@@ -26,6 +26,7 @@ import (
 	"crypto/x509/pkix"
 	"encoding/pem"
 	"errors"
+	"fmt"
 	"math/big"
 	"testing"
 	"time"
@@ -104,6 +105,16 @@ func TestSync(t *testing.T) {
 	nowMetaTime := metav1.NewTime(nowTime)
 	fixedClock := clock.NewFakeClock(nowTime)
 
+	testIssuer := gen.Issuer("test",
+		gen.SetIssuerSelfSigned(cmapi.SelfSignedIssuer{}),
+	)
+	testIssuerReady := gen.IssuerFrom(testIssuer,
+		gen.AddIssuerCondition(cmapi.IssuerCondition{
+			Type:   cmapi.IssuerConditionReady,
+			Status: cmapi.ConditionTrue,
+		}),
+	)
+
 	exampleCert := gen.Certificate("test",
 		gen.SetCertificateDNSNames("example.com"),
 		gen.SetCertificateIssuer(cmapi.ObjectReference{Name: "test"}),
@@ -151,26 +162,22 @@ func TestSync(t *testing.T) {
 	exampleCertWrongGroup := exampleCert.DeepCopy()
 	exampleCertWrongGroup.Spec.IssuerRef.Group = "wrong.group.io"
 
-	tests := map[string]controllerFixture{
+	tests := map[string]testTDefault{
 		"should update certificate with NotExists if issuer does not return a keypair": {
-			Issuer: gen.Issuer("test",
-				gen.AddIssuerCondition(cmapi.IssuerCondition{
-					Type:   cmapi.IssuerConditionReady,
-					Status: cmapi.ConditionTrue,
-				}),
-				gen.SetIssuerSelfSigned(cmapi.SelfSignedIssuer{}),
-			),
-			Certificate: *exampleCert,
-			IssuerImpl: &fake.Issuer{
-				FakeIssue: func(context.Context, *cmapi.Certificate) (*issuer.IssueResponse, error) {
+			certificate: exampleCert,
+			issuerImpl: &fake.Issuer{
+				IssueFunc: func(context.Context, *cmapi.Certificate) (*issuer.IssueResponse, error) {
 					// By not returning a response, we trigger a 'no-op' action
 					// which causes the certificate controller to only update
 					// the status of the Certificate and not create a Secret.
 					return nil, nil
 				},
 			},
-			Builder: &testpkg.Builder{
-				CertManagerObjects: []runtime.Object{gen.Certificate("test")},
+			builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{
+					testIssuerReady,
+					exampleCert,
+				},
 				ExpectedActions: []testpkg.Action{
 					testpkg.NewAction(coretesting.NewUpdateAction(
 						cmapi.SchemeGroupVersion.WithResource("certificates"),
@@ -179,29 +186,22 @@ func TestSync(t *testing.T) {
 					)),
 				},
 			},
-			CheckFn: func(t *testing.T, s *controllerFixture, args ...interface{}) {
-			},
-			Err: false,
 		},
 		"should create a secret containing the private key only when one doesn't exist": {
-			Issuer: gen.Issuer("test",
-				gen.AddIssuerCondition(cmapi.IssuerCondition{
-					Type:   cmapi.IssuerConditionReady,
-					Status: cmapi.ConditionTrue,
-				}),
-				gen.SetIssuerSelfSigned(cmapi.SelfSignedIssuer{}),
-			),
-			Certificate: *exampleCert,
-			IssuerImpl: &fake.Issuer{
-				FakeIssue: func(context.Context, *cmapi.Certificate) (*issuer.IssueResponse, error) {
+			certificate: exampleCert,
+			issuerImpl: &fake.Issuer{
+				IssueFunc: func(context.Context, *cmapi.Certificate) (*issuer.IssueResponse, error) {
 					return &issuer.IssueResponse{
 						PrivateKey: pk1PEM,
 					}, nil
 				},
 			},
-			StaticTemporaryCert: localTempCert,
-			Builder: &testpkg.Builder{
-				CertManagerObjects: []runtime.Object{gen.Certificate("test")},
+			staticTemporaryCert: localTempCert,
+			builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{
+					exampleCert,
+					testIssuerReady,
+				},
 				ExpectedActions: []testpkg.Action{
 					testpkg.NewAction(coretesting.NewUpdateAction(
 						cmapi.SchemeGroupVersion.WithResource("certificates"),
@@ -235,26 +235,20 @@ func TestSync(t *testing.T) {
 						},
 					)),
 				},
+				ExpectedEvents: []string{`Normal GenerateSelfSigned Generated temporary self signed certificate`},
 			},
 		},
 		"should update an existing empty secret with the private key": {
-			Issuer: gen.Issuer("test",
-				gen.AddIssuerCondition(cmapi.IssuerCondition{
-					Type:   cmapi.IssuerConditionReady,
-					Status: cmapi.ConditionTrue,
-				}),
-				gen.SetIssuerSelfSigned(cmapi.SelfSignedIssuer{}),
-			),
-			Certificate: *exampleCert,
-			IssuerImpl: &fake.Issuer{
-				FakeIssue: func(context.Context, *cmapi.Certificate) (*issuer.IssueResponse, error) {
+			certificate: exampleCert,
+			issuerImpl: &fake.Issuer{
+				IssueFunc: func(context.Context, *cmapi.Certificate) (*issuer.IssueResponse, error) {
 					return &issuer.IssueResponse{
 						PrivateKey: pk1PEM,
 					}, nil
 				},
 			},
-			StaticTemporaryCert: localTempCert,
-			Builder: &testpkg.Builder{
+			staticTemporaryCert: localTempCert,
+			builder: &testpkg.Builder{
 				KubeObjects: []runtime.Object{
 					&corev1.Secret{
 						ObjectMeta: metav1.ObjectMeta{
@@ -270,7 +264,10 @@ func TestSync(t *testing.T) {
 						},
 					},
 				},
-				CertManagerObjects: []runtime.Object{gen.Certificate("test")},
+				CertManagerObjects: []runtime.Object{
+					testIssuerReady,
+					exampleCert,
+				},
 				ExpectedActions: []testpkg.Action{
 					testpkg.NewAction(coretesting.NewUpdateAction(
 						cmapi.SchemeGroupVersion.WithResource("certificates"),
@@ -305,27 +302,24 @@ func TestSync(t *testing.T) {
 						},
 					)),
 				},
+				ExpectedEvents: []string{`Normal GenerateSelfSigned Generated temporary self signed certificate`},
 			},
 		},
 		"should create a new secret containing private key and cert": {
-			Issuer: gen.Issuer("test",
-				gen.AddIssuerCondition(cmapi.IssuerCondition{
-					Type:   cmapi.IssuerConditionReady,
-					Status: cmapi.ConditionTrue,
-				}),
-				gen.SetIssuerSelfSigned(cmapi.SelfSignedIssuer{}),
-			),
-			Certificate: *exampleCert,
-			IssuerImpl: &fake.Issuer{
-				FakeIssue: func(context.Context, *cmapi.Certificate) (*issuer.IssueResponse, error) {
+			certificate: exampleCert,
+			issuerImpl: &fake.Issuer{
+				IssueFunc: func(context.Context, *cmapi.Certificate) (*issuer.IssueResponse, error) {
 					return &issuer.IssueResponse{
 						PrivateKey:  pk1PEM,
 						Certificate: cert1PEM,
 					}, nil
 				},
 			},
-			Builder: &testpkg.Builder{
-				CertManagerObjects: []runtime.Object{gen.Certificate("test")},
+			builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{
+					testIssuerReady,
+					exampleCert,
+				},
 				ExpectedActions: []testpkg.Action{
 					testpkg.NewAction(coretesting.NewUpdateAction(
 						cmapi.SchemeGroupVersion.WithResource("certificates"),
@@ -359,26 +353,20 @@ func TestSync(t *testing.T) {
 						},
 					)),
 				},
+				ExpectedEvents: []string{`Normal CertIssued Certificate issued successfully`},
 			},
 		},
 		"should update an existing secret with private key and cert": {
-			Issuer: gen.Issuer("test",
-				gen.AddIssuerCondition(cmapi.IssuerCondition{
-					Type:   cmapi.IssuerConditionReady,
-					Status: cmapi.ConditionTrue,
-				}),
-				gen.SetIssuerSelfSigned(cmapi.SelfSignedIssuer{}),
-			),
-			Certificate: *exampleCert,
-			IssuerImpl: &fake.Issuer{
-				FakeIssue: func(context.Context, *cmapi.Certificate) (*issuer.IssueResponse, error) {
+			certificate: exampleCert,
+			issuerImpl: &fake.Issuer{
+				IssueFunc: func(context.Context, *cmapi.Certificate) (*issuer.IssueResponse, error) {
 					return &issuer.IssueResponse{
 						PrivateKey:  pk1PEM,
 						Certificate: cert1PEM,
 					}, nil
 				},
 			},
-			Builder: &testpkg.Builder{
+			builder: &testpkg.Builder{
 				KubeObjects: []runtime.Object{
 					&corev1.Secret{
 						ObjectMeta: metav1.ObjectMeta{
@@ -394,7 +382,10 @@ func TestSync(t *testing.T) {
 						},
 					},
 				},
-				CertManagerObjects: []runtime.Object{gen.Certificate("test")},
+				CertManagerObjects: []runtime.Object{
+					testIssuerReady,
+					exampleCert,
+				},
 				ExpectedActions: []testpkg.Action{
 					testpkg.NewAction(coretesting.NewUpdateAction(
 						cmapi.SchemeGroupVersion.WithResource("certificates"),
@@ -429,26 +420,20 @@ func TestSync(t *testing.T) {
 						},
 					)),
 				},
+				ExpectedEvents: []string{`Normal CertIssued Certificate issued successfully`},
 			},
 		},
 		"should mark certificate with invalid private key as DoesNotMatch": {
-			Issuer: gen.Issuer("test",
-				gen.AddIssuerCondition(cmapi.IssuerCondition{
-					Type:   cmapi.IssuerConditionReady,
-					Status: cmapi.ConditionTrue,
-				}),
-				gen.SetIssuerSelfSigned(cmapi.SelfSignedIssuer{}),
-			),
-			Certificate: *exampleCert,
-			IssuerImpl: &fake.Issuer{
-				FakeIssue: func(context.Context, *cmapi.Certificate) (*issuer.IssueResponse, error) {
+			certificate: exampleCert,
+			issuerImpl: &fake.Issuer{
+				IssueFunc: func(context.Context, *cmapi.Certificate) (*issuer.IssueResponse, error) {
 					return &issuer.IssueResponse{
 						PrivateKey:  pk1PEM,
 						Certificate: cert1PEM,
 					}, nil
 				},
 			},
-			Builder: &testpkg.Builder{
+			builder: &testpkg.Builder{
 				KubeObjects: []runtime.Object{
 					&corev1.Secret{
 						ObjectMeta: metav1.ObjectMeta{
@@ -472,7 +457,10 @@ func TestSync(t *testing.T) {
 						},
 					},
 				},
-				CertManagerObjects: []runtime.Object{gen.Certificate("test")},
+				CertManagerObjects: []runtime.Object{
+					testIssuerReady,
+					gen.Certificate("test"),
+				},
 				ExpectedActions: []testpkg.Action{
 					testpkg.NewAction(coretesting.NewUpdateAction(
 						cmapi.SchemeGroupVersion.WithResource("certificates"),
@@ -516,26 +504,20 @@ func TestSync(t *testing.T) {
 						},
 					)),
 				},
+				ExpectedEvents: []string{`Normal CertIssued Certificate issued successfully`},
 			},
 		},
 		"should update status of up to date certificate": {
-			Issuer: gen.Issuer("test",
-				gen.AddIssuerCondition(cmapi.IssuerCondition{
-					Type:   cmapi.IssuerConditionReady,
-					Status: cmapi.ConditionTrue,
-				}),
-				gen.SetIssuerSelfSigned(cmapi.SelfSignedIssuer{}),
-			),
-			Certificate: *exampleCert,
-			IssuerImpl: &fake.Issuer{
-				FakeIssue: func(context.Context, *cmapi.Certificate) (*issuer.IssueResponse, error) {
+			certificate: exampleCert,
+			issuerImpl: &fake.Issuer{
+				IssueFunc: func(context.Context, *cmapi.Certificate) (*issuer.IssueResponse, error) {
 					return &issuer.IssueResponse{
 						PrivateKey:  pk1PEM,
 						Certificate: cert1PEM,
 					}, nil
 				},
 			},
-			Builder: &testpkg.Builder{
+			builder: &testpkg.Builder{
 				KubeObjects: []runtime.Object{
 					&corev1.Secret{
 						ObjectMeta: metav1.ObjectMeta{
@@ -561,7 +543,10 @@ func TestSync(t *testing.T) {
 						},
 					},
 				},
-				CertManagerObjects: []runtime.Object{gen.Certificate("test")},
+				CertManagerObjects: []runtime.Object{
+					testIssuerReady,
+					gen.Certificate("test"),
+				},
 				ExpectedActions: []testpkg.Action{
 					testpkg.NewAction(coretesting.NewUpdateAction(
 						cmapi.SchemeGroupVersion.WithResource("certificates"),
@@ -581,16 +566,9 @@ func TestSync(t *testing.T) {
 			},
 		},
 		"should update the reason field with temporary self signed cert text": {
-			Issuer: gen.Issuer("test",
-				gen.AddIssuerCondition(cmapi.IssuerCondition{
-					Type:   cmapi.IssuerConditionReady,
-					Status: cmapi.ConditionTrue,
-				}),
-				gen.SetIssuerSelfSigned(cmapi.SelfSignedIssuer{}),
-			),
-			Certificate: *exampleCert,
-			IssuerImpl: &fake.Issuer{
-				FakeIssue: func(context.Context, *cmapi.Certificate) (*issuer.IssueResponse, error) {
+			certificate: exampleCert,
+			issuerImpl: &fake.Issuer{
+				IssueFunc: func(context.Context, *cmapi.Certificate) (*issuer.IssueResponse, error) {
 					return &issuer.IssueResponse{
 						PrivateKey: pk1PEM,
 					}, nil
@@ -599,8 +577,8 @@ func TestSync(t *testing.T) {
 			// set this to something other than localTempCert, so that we can
 			// assert that the controller doesn't enter in a loop updating the
 			// Secret resource with a newly generated certificate
-			StaticTemporaryCert: cert1PEM,
-			Builder: &testpkg.Builder{
+			staticTemporaryCert: cert1PEM,
+			builder: &testpkg.Builder{
 				KubeObjects: []runtime.Object{
 					&corev1.Secret{
 						ObjectMeta: metav1.ObjectMeta{
@@ -621,7 +599,10 @@ func TestSync(t *testing.T) {
 						},
 					},
 				},
-				CertManagerObjects: []runtime.Object{gen.Certificate("test")},
+				CertManagerObjects: []runtime.Object{
+					testIssuerReady,
+					gen.Certificate("test"),
+				},
 				ExpectedActions: []testpkg.Action{
 					testpkg.NewAction(coretesting.NewUpdateAction(
 						corev1.SchemeGroupVersion.WithResource("secrets"),
@@ -659,23 +640,16 @@ func TestSync(t *testing.T) {
 			},
 		},
 		"should mark certificate with wrong issuer name as DoesNotMatch": {
-			Issuer: gen.Issuer("test",
-				gen.AddIssuerCondition(cmapi.IssuerCondition{
-					Type:   cmapi.IssuerConditionReady,
-					Status: cmapi.ConditionTrue,
-				}),
-				gen.SetIssuerSelfSigned(cmapi.SelfSignedIssuer{}),
-			),
-			Certificate: *exampleCert,
-			IssuerImpl: &fake.Issuer{
-				FakeIssue: func(context.Context, *cmapi.Certificate) (*issuer.IssueResponse, error) {
+			certificate: exampleCert,
+			issuerImpl: &fake.Issuer{
+				IssueFunc: func(context.Context, *cmapi.Certificate) (*issuer.IssueResponse, error) {
 					return &issuer.IssueResponse{
 						PrivateKey:  pk1PEM,
 						Certificate: cert1PEM,
 					}, nil
 				},
 			},
-			Builder: &testpkg.Builder{
+			builder: &testpkg.Builder{
 				KubeObjects: []runtime.Object{
 					&corev1.Secret{
 						ObjectMeta: metav1.ObjectMeta{
@@ -698,7 +672,10 @@ func TestSync(t *testing.T) {
 						},
 					},
 				},
-				CertManagerObjects: []runtime.Object{gen.Certificate("test")},
+				CertManagerObjects: []runtime.Object{
+					testIssuerReady,
+					exampleCert,
+				},
 				ExpectedActions: []testpkg.Action{
 					testpkg.NewAction(coretesting.NewUpdateAction(
 						cmapi.SchemeGroupVersion.WithResource("certificates"),
@@ -742,28 +719,23 @@ func TestSync(t *testing.T) {
 						},
 					)),
 				},
+				ExpectedEvents: []string{`Normal CertIssued Certificate issued successfully`},
 			},
 		},
 		"should mark certificate with duplicate secretName as DuplicateSecretName": {
-			Issuer: gen.Issuer("test",
-				gen.AddIssuerCondition(cmapi.IssuerCondition{
-					Type:   cmapi.IssuerConditionReady,
-					Status: cmapi.ConditionTrue,
-				}),
-				gen.SetIssuerSelfSigned(cmapi.SelfSignedIssuer{}),
-			),
-			Certificate: *exampleCert,
-			IssuerImpl: &fake.Issuer{
-				FakeIssue: func(context.Context, *cmapi.Certificate) (*issuer.IssueResponse, error) {
+			certificate: exampleCert,
+			issuerImpl: &fake.Issuer{
+				IssueFunc: func(context.Context, *cmapi.Certificate) (*issuer.IssueResponse, error) {
 					return &issuer.IssueResponse{
 						PrivateKey:  pk1PEM,
 						Certificate: cert1PEM,
 					}, nil
 				},
 			},
-			Builder: &testpkg.Builder{
+			builder: &testpkg.Builder{
 				CertManagerObjects: []runtime.Object{
-					gen.Certificate("test"),
+					testIssuerReady,
+					exampleCert,
 					gen.Certificate("dup-test",
 						gen.SetCertificateDNSNames("example.com"),
 						gen.SetCertificateIssuer(cmapi.ObjectReference{Name: "test"}),
@@ -785,28 +757,23 @@ func TestSync(t *testing.T) {
 						),
 					)),
 				},
+				ExpectedEvents: []string{`Warning DuplicateSecretNameError Another Certificate dup-test already specifies spec.secretName output, please update the secretName on either Certificate`},
 			},
 		},
 		"should allow duplicate secretName in different namespaces": {
-			Issuer: gen.Issuer("test",
-				gen.AddIssuerCondition(cmapi.IssuerCondition{
-					Type:   cmapi.IssuerConditionReady,
-					Status: cmapi.ConditionTrue,
-				}),
-				gen.SetIssuerSelfSigned(cmapi.SelfSignedIssuer{}),
-			),
-			Certificate: *exampleCert,
-			IssuerImpl: &fake.Issuer{
-				FakeIssue: func(context.Context, *cmapi.Certificate) (*issuer.IssueResponse, error) {
+			certificate: exampleCert,
+			issuerImpl: &fake.Issuer{
+				IssueFunc: func(context.Context, *cmapi.Certificate) (*issuer.IssueResponse, error) {
 					return &issuer.IssueResponse{
 						PrivateKey:  pk1PEM,
 						Certificate: cert1PEM,
 					}, nil
 				},
 			},
-			Builder: &testpkg.Builder{
+			builder: &testpkg.Builder{
 				CertManagerObjects: []runtime.Object{
-					gen.Certificate("test"),
+					testIssuerReady,
+					exampleCert,
 					gen.CertificateFrom(exampleCert,
 						gen.SetCertificateNamespace("other-unit-test-ns")),
 				},
@@ -844,25 +811,22 @@ func TestSync(t *testing.T) {
 						},
 					)),
 				},
+				ExpectedEvents: []string{`Normal CertIssued Certificate issued successfully`},
 			},
 		},
 		"should exit sync nil if group is not certmanager.k8s.io": {
-			Issuer: gen.Issuer("test",
-				gen.AddIssuerCondition(cmapi.IssuerCondition{
-					Type:   cmapi.IssuerConditionReady,
-					Status: cmapi.ConditionTrue,
-				}),
-				gen.SetIssuerSelfSigned(cmapi.SelfSignedIssuer{}),
-			),
-			Certificate: *exampleCertWrongGroup,
-			IssuerImpl: &fake.Issuer{
-				FakeIssue: func(context.Context, *cmapi.Certificate) (*issuer.IssueResponse, error) {
+			certificate: exampleCertWrongGroup,
+			issuerImpl: &fake.Issuer{
+				IssueFunc: func(context.Context, *cmapi.Certificate) (*issuer.IssueResponse, error) {
 					return nil, errors.New("unexpected issue call")
 				},
 			},
-			Builder: &testpkg.Builder{
-				CertManagerObjects: []runtime.Object{gen.Certificate("test")},
-				ExpectedActions:    []testpkg.Action{},
+			builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{
+					testIssuerReady,
+					exampleCert,
+				},
+				ExpectedActions: []testpkg.Action{},
 			},
 		},
 		//"should add annotations to already existing secret resource": {
@@ -884,7 +848,7 @@ func TestSync(t *testing.T) {
 		//		gen.SetCertificateNotAfter(metav1.NewTime(cert1.NotAfter)),
 		//	),
 		//	IssuerImpl: &fake.Issuer{
-		//		FakeIssue: func(context.Context, *cmapi.Certificate) (*issuer.IssueResponse, error) {
+		//		IssueFunc: func(context.Context, *cmapi.Certificate) (*issuer.IssueResponse, error) {
 		//			return &issuer.IssueResponse{
 		//				PrivateKey:  pk1PEM,
 		//				Certificate: cert1PEM,
@@ -951,20 +915,53 @@ func TestSync(t *testing.T) {
 	}
 	for n, test := range tests {
 		t.Run(n, func(t *testing.T) {
-			if test.Builder == nil {
-				test.Builder = &testpkg.Builder{}
-			}
-			test.Clock = fixedClock
-			test.Setup(t)
-			crtCopy := test.Certificate.DeepCopy()
-			err := test.Controller.Sync(test.Ctx, crtCopy)
-			if err != nil && !test.Err {
-				t.Errorf("Expected function to not error, but got: %v", err)
-			}
-			if err == nil && test.Err {
-				t.Errorf("Expected function to get an error, but got: %v", err)
-			}
-			test.Finish(t, crtCopy, err)
+			// reset the fixedClock
+			fixedClock.SetTime(nowTime)
+			test.builder.Clock = fixedClock
+			runTestDefault(t, test)
 		})
 	}
+}
+
+// type name testT is already used by certificate_request_test.go
+type testTDefault struct {
+	builder             *testpkg.Builder
+	issuerImpl          *fake.Issuer
+	staticTemporaryCert []byte
+	certificate         *cmapi.Certificate
+	expectedErr         bool
+}
+
+func runTestDefault(t *testing.T, test testTDefault) {
+	test.builder.T = t
+	test.builder.Start()
+	defer test.builder.Stop()
+
+	c := &controller{}
+	c.Register(test.builder.Context)
+	c.localTemporarySigner = func(crt *cmapi.Certificate, pk []byte) ([]byte, error) {
+		if test.staticTemporaryCert == nil {
+			return nil, fmt.Errorf("localTemporarySigner not implemented")
+		}
+		return test.staticTemporaryCert, nil
+	}
+	c.issuerFactory = &fake.Factory{
+		IssuerForFunc: func(cmapi.GenericIssuer) (issuer.Interface, error) {
+			if test.issuerImpl == nil {
+				return nil, fmt.Errorf("no issuerImpl defined in test fixture")
+			}
+			return test.issuerImpl, nil
+		},
+	}
+	test.builder.Sync()
+
+	err := c.Sync(context.Background(), test.certificate)
+	if err != nil && !test.expectedErr {
+		t.Errorf("expected to not get an error, but got: %v", err)
+	}
+	if err == nil && test.expectedErr {
+		t.Errorf("expected to get an error but did not get one")
+	}
+
+	test.builder.CheckAndFinish(err)
 }

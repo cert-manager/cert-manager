@@ -30,7 +30,10 @@ import (
 	kubeinformers "k8s.io/client-go/informers"
 	kubefake "k8s.io/client-go/kubernetes/fake"
 	coretesting "k8s.io/client-go/testing"
+	"k8s.io/utils/clock"
+	fakeclock "k8s.io/utils/clock/testing"
 
+	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	cmfake "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/fake"
 	informers "github.com/jetstack/cert-manager/pkg/client/informers/externalversions"
 	"github.com/jetstack/cert-manager/pkg/controller"
@@ -56,6 +59,10 @@ type Builder struct {
 	ExpectedActions    []Action
 	ExpectedEvents     []string
 	StringGenerator    StringGenerator
+
+	// Clock will be the Clock set on the controller context.
+	// If not specified, the RealClock will be used.
+	Clock *fakeclock.FakeClock
 
 	// CheckFn is a custom check function that will be executed when the
 	// CheckAndFinish method is called on the builder, after all other checks.
@@ -110,6 +117,16 @@ func (b *Builder) Start() {
 	b.KubeSharedInformerFactory = kubeinformers.NewSharedInformerFactory(b.Client, informerResyncPeriod)
 	b.SharedInformerFactory = informers.NewSharedInformerFactory(b.CMClient, informerResyncPeriod)
 	b.stopCh = make(chan struct{})
+
+	// set the Clock on the context
+	if b.Clock == nil {
+		b.Context.Clock = clock.RealClock{}
+	} else {
+		b.Context.Clock = b.Clock
+	}
+	// Fix the clock used in apiutil so that calls to set status conditions
+	// can be predictably tested
+	apiutil.Clock = b.Context.Clock
 }
 
 func (b *Builder) FakeKubeClient() *kubefake.Clientset {
@@ -247,6 +264,8 @@ func (b *Builder) Stop() {
 
 	close(b.stopCh)
 	b.stopCh = nil
+	// Reset the clock back to the RealClock in apiutil
+	apiutil.Clock = clock.RealClock{}
 }
 
 // WaitForResync will wait for the informer factory informer duration by

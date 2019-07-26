@@ -116,6 +116,8 @@ func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitin
 	c.acmeHelper = acme.NewHelper(c.secretLister, ctx.ClusterResourceNamespace)
 	c.recorder = ctx.Recorder
 	c.cmClient = ctx.CMClient
+	// clock is used when setting the failureTime on an Order's status
+	c.clock = ctx.Clock
 
 	return c.queue, mustSync, nil
 }

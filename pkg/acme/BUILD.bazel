@@ -3,7 +3,8 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 go_library(
     name = "go_default_library",
     srcs = [
-        "acme.go",
+        "cache.go",
+        "helper.go",
         "util.go",
     ],
     importpath = "github.com/jetstack/cert-manager/pkg/acme",
@@ -33,6 +34,7 @@ filegroup(
     srcs = [
         ":package-srcs",
         "//pkg/acme/client:all-srcs",
+        "//pkg/acme/fake:all-srcs",
         "//pkg/acme/webhook:all-srcs",
     ],
     tags = ["automanaged"],

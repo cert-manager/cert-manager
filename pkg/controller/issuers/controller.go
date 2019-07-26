@@ -53,7 +53,7 @@ type controller struct {
 
 	// issuerFactory is used to obtain a reference to the Issuer implementation
 	// for each ClusterIssuer resource
-	issuerFactory issuer.IssuerFactory
+	issuerFactory issuer.Factory
 }
 
 // Register registers and constructs the controller using the provided context.
@@ -85,7 +85,7 @@ func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitin
 	secretInformer.Informer().AddEventHandler(&controllerpkg.BlockingEventHandler{WorkFunc: c.secretDeleted})
 
 	// instantiate additional helpers used by this controller
-	c.issuerFactory = issuer.NewIssuerFactory(ctx)
+	c.issuerFactory = issuer.NewFactory(ctx)
 	c.cmClient = ctx.CMClient
 	c.recorder = ctx.Recorder
 

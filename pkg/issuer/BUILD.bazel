@@ -3,9 +3,9 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 go_library(
     name = "go_default_library",
     srcs = [
+        "factory.go",
         "helper.go",
         "issuer.go",
-        "issuer_factory.go",
     ],
     importpath = "github.com/jetstack/cert-manager/pkg/issuer",
     visibility = ["//visibility:public"],

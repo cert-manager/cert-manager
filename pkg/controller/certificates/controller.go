@@ -42,7 +42,7 @@ import (
 
 type controller struct {
 	helper        issuer.Helper
-	issuerFactory issuer.IssuerFactory
+	issuerFactory issuer.Factory
 
 	// clientset used to update cert-manager API resources
 	cmClient cmclient.Interface
@@ -157,9 +157,9 @@ func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitin
 	// create an issuer helper for reading generic issuers
 	c.helper = issuer.NewHelper(c.issuerLister, c.clusterIssuerLister)
 	// issuerFactory provides an interface to obtain Issuer implementations from issuer resources
-	c.issuerFactory = issuer.NewIssuerFactory(ctx)
+	c.issuerFactory = issuer.NewFactory(ctx)
 	// clock is used to determine whether certificates need renewal
-	c.clock = clock.RealClock{}
+	c.clock = ctx.Clock
 	// recorder records events about resources to the Kubernetes api
 	c.recorder = ctx.Recorder
 	// the localTemporarySigner is used to sign 'temporary certificates' during
