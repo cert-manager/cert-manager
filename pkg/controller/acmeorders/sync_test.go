@@ -33,7 +33,6 @@ import (
 	acmefake "github.com/jetstack/cert-manager/pkg/acme/fake"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	testpkg "github.com/jetstack/cert-manager/pkg/controller/test"
-	"github.com/jetstack/cert-manager/pkg/issuer"
 	"github.com/jetstack/cert-manager/test/unit/gen"
 	acmeapi "github.com/jetstack/cert-manager/third_party/crypto/acme"
 )
@@ -295,10 +294,6 @@ func runTest(t *testing.T, test testT) {
 
 	c := &controller{}
 	c.Register(test.builder.Context)
-	c.helper = issuer.NewHelper(
-		test.builder.SharedInformerFactory.Certmanager().V1alpha1().Issuers().Lister(),
-		test.builder.SharedInformerFactory.Certmanager().V1alpha1().ClusterIssuers().Lister(),
-	)
 	c.acmeHelper = &acmefake.Helper{
 		ClientForIssuerFunc: func(iss v1alpha1.GenericIssuer) (acmecl.Interface, error) {
 			return test.acmeClient, nil
