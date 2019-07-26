@@ -162,7 +162,7 @@ func TestSync(t *testing.T) {
 			),
 			Certificate: *exampleCert,
 			IssuerImpl: &fake.Issuer{
-				FakeIssue: func(context.Context, *cmapi.Certificate) (*issuer.IssueResponse, error) {
+				IssueFunc: func(context.Context, *cmapi.Certificate) (*issuer.IssueResponse, error) {
 					// By not returning a response, we trigger a 'no-op' action
 					// which causes the certificate controller to only update
 					// the status of the Certificate and not create a Secret.
@@ -193,7 +193,7 @@ func TestSync(t *testing.T) {
 			),
 			Certificate: *exampleCert,
 			IssuerImpl: &fake.Issuer{
-				FakeIssue: func(context.Context, *cmapi.Certificate) (*issuer.IssueResponse, error) {
+				IssueFunc: func(context.Context, *cmapi.Certificate) (*issuer.IssueResponse, error) {
 					return &issuer.IssueResponse{
 						PrivateKey: pk1PEM,
 					}, nil
@@ -247,7 +247,7 @@ func TestSync(t *testing.T) {
 			),
 			Certificate: *exampleCert,
 			IssuerImpl: &fake.Issuer{
-				FakeIssue: func(context.Context, *cmapi.Certificate) (*issuer.IssueResponse, error) {
+				IssueFunc: func(context.Context, *cmapi.Certificate) (*issuer.IssueResponse, error) {
 					return &issuer.IssueResponse{
 						PrivateKey: pk1PEM,
 					}, nil
@@ -317,7 +317,7 @@ func TestSync(t *testing.T) {
 			),
 			Certificate: *exampleCert,
 			IssuerImpl: &fake.Issuer{
-				FakeIssue: func(context.Context, *cmapi.Certificate) (*issuer.IssueResponse, error) {
+				IssueFunc: func(context.Context, *cmapi.Certificate) (*issuer.IssueResponse, error) {
 					return &issuer.IssueResponse{
 						PrivateKey:  pk1PEM,
 						Certificate: cert1PEM,
@@ -371,7 +371,7 @@ func TestSync(t *testing.T) {
 			),
 			Certificate: *exampleCert,
 			IssuerImpl: &fake.Issuer{
-				FakeIssue: func(context.Context, *cmapi.Certificate) (*issuer.IssueResponse, error) {
+				IssueFunc: func(context.Context, *cmapi.Certificate) (*issuer.IssueResponse, error) {
 					return &issuer.IssueResponse{
 						PrivateKey:  pk1PEM,
 						Certificate: cert1PEM,
@@ -441,7 +441,7 @@ func TestSync(t *testing.T) {
 			),
 			Certificate: *exampleCert,
 			IssuerImpl: &fake.Issuer{
-				FakeIssue: func(context.Context, *cmapi.Certificate) (*issuer.IssueResponse, error) {
+				IssueFunc: func(context.Context, *cmapi.Certificate) (*issuer.IssueResponse, error) {
 					return &issuer.IssueResponse{
 						PrivateKey:  pk1PEM,
 						Certificate: cert1PEM,
@@ -528,7 +528,7 @@ func TestSync(t *testing.T) {
 			),
 			Certificate: *exampleCert,
 			IssuerImpl: &fake.Issuer{
-				FakeIssue: func(context.Context, *cmapi.Certificate) (*issuer.IssueResponse, error) {
+				IssueFunc: func(context.Context, *cmapi.Certificate) (*issuer.IssueResponse, error) {
 					return &issuer.IssueResponse{
 						PrivateKey:  pk1PEM,
 						Certificate: cert1PEM,
@@ -590,7 +590,7 @@ func TestSync(t *testing.T) {
 			),
 			Certificate: *exampleCert,
 			IssuerImpl: &fake.Issuer{
-				FakeIssue: func(context.Context, *cmapi.Certificate) (*issuer.IssueResponse, error) {
+				IssueFunc: func(context.Context, *cmapi.Certificate) (*issuer.IssueResponse, error) {
 					return &issuer.IssueResponse{
 						PrivateKey: pk1PEM,
 					}, nil
@@ -668,7 +668,7 @@ func TestSync(t *testing.T) {
 			),
 			Certificate: *exampleCert,
 			IssuerImpl: &fake.Issuer{
-				FakeIssue: func(context.Context, *cmapi.Certificate) (*issuer.IssueResponse, error) {
+				IssueFunc: func(context.Context, *cmapi.Certificate) (*issuer.IssueResponse, error) {
 					return &issuer.IssueResponse{
 						PrivateKey:  pk1PEM,
 						Certificate: cert1PEM,
@@ -754,7 +754,7 @@ func TestSync(t *testing.T) {
 			),
 			Certificate: *exampleCert,
 			IssuerImpl: &fake.Issuer{
-				FakeIssue: func(context.Context, *cmapi.Certificate) (*issuer.IssueResponse, error) {
+				IssueFunc: func(context.Context, *cmapi.Certificate) (*issuer.IssueResponse, error) {
 					return &issuer.IssueResponse{
 						PrivateKey:  pk1PEM,
 						Certificate: cert1PEM,
@@ -797,7 +797,7 @@ func TestSync(t *testing.T) {
 			),
 			Certificate: *exampleCert,
 			IssuerImpl: &fake.Issuer{
-				FakeIssue: func(context.Context, *cmapi.Certificate) (*issuer.IssueResponse, error) {
+				IssueFunc: func(context.Context, *cmapi.Certificate) (*issuer.IssueResponse, error) {
 					return &issuer.IssueResponse{
 						PrivateKey:  pk1PEM,
 						Certificate: cert1PEM,
@@ -856,7 +856,7 @@ func TestSync(t *testing.T) {
 			),
 			Certificate: *exampleCertWrongGroup,
 			IssuerImpl: &fake.Issuer{
-				FakeIssue: func(context.Context, *cmapi.Certificate) (*issuer.IssueResponse, error) {
+				IssueFunc: func(context.Context, *cmapi.Certificate) (*issuer.IssueResponse, error) {
 					return nil, errors.New("unexpected issue call")
 				},
 			},
@@ -884,7 +884,7 @@ func TestSync(t *testing.T) {
 		//		gen.SetCertificateNotAfter(metav1.NewTime(cert1.NotAfter)),
 		//	),
 		//	IssuerImpl: &fake.Issuer{
-		//		FakeIssue: func(context.Context, *cmapi.Certificate) (*issuer.IssueResponse, error) {
+		//		IssueFunc: func(context.Context, *cmapi.Certificate) (*issuer.IssueResponse, error) {
 		//			return &issuer.IssueResponse{
 		//				PrivateKey:  pk1PEM,
 		//				Certificate: cert1PEM,

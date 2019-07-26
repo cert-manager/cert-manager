@@ -29,6 +29,7 @@ import (
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	"github.com/jetstack/cert-manager/pkg/controller/test"
 	"github.com/jetstack/cert-manager/pkg/issuer"
+	issuerfake "github.com/jetstack/cert-manager/pkg/issuer/fake"
 )
 
 type controllerFixture struct {
@@ -65,7 +66,7 @@ func (f *controllerFixture) Setup(t *testing.T) {
 		//		ambient credentials settings
 		f.Builder = &test.Builder{}
 	}
-	f.Controller = f.buildFakeController(f.Builder, f.Issuer)
+	f.Controller = f.buildFakeController()
 	if f.PreFn != nil {
 		f.PreFn(t, f)
 		f.Builder.Sync()
@@ -96,27 +97,27 @@ func (f *controllerFixture) Finish(t *testing.T, args ...interface{}) {
 	apiutil.Clock = realclock.RealClock{}
 }
 
-func (f *controllerFixture) buildFakeController(b *test.Builder, issuer v1alpha1.GenericIssuer) *controller {
-	b.Start()
+func (f *controllerFixture) buildFakeController() *controller {
+	f.Builder.Start()
 	c := &controller{}
-	c.Register(b.Context)
-	c.helper = f
-	c.issuerFactory = f
+	c.Register(f.Builder.Context)
+	c.helper = &issuerfake.Helper{
+		GetGenericIssuerFunc: func(ref v1alpha1.ObjectReference, ns string) (v1alpha1.GenericIssuer, error) {
+			return f.Issuer, nil
+		},
+	}
+	c.issuerFactory = &issuerfake.Factory{
+		IssuerForFunc: func(v1alpha1.GenericIssuer) (issuer.Interface, error) {
+			return f.IssuerImpl, nil
+		},
+	}
 	c.localTemporarySigner = f.localTemporarySigner
 	c.clock = f.Clock
 	if c.clock == nil {
 		c.clock = clock.NewFakeClock(time.Now())
 	}
-	b.Sync()
+	f.Builder.Sync()
 	return c
-}
-
-func (f *controllerFixture) GetGenericIssuer(ref v1alpha1.ObjectReference, ns string) (v1alpha1.GenericIssuer, error) {
-	return f.Issuer, nil
-}
-
-func (f *controllerFixture) IssuerFor(v1alpha1.GenericIssuer) (issuer.Interface, error) {
-	return f.IssuerImpl, nil
 }
 
 // localTemporarySigner returns a fixed static certificate that can be compared

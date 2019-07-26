@@ -45,24 +45,11 @@ func RegisterIssuer(name string, c IssuerConstructor) {
 	constructors[name] = c
 }
 
-// IssuerFactory is an interface that can be used to obtain Issuer implementations.
+// Factory is an interface that can be used to obtain Issuer implementations.
 // It determines which issuer implementation to use by introspecting the
 // given Issuer resource.
-type IssuerFactory interface {
+type Factory interface {
 	IssuerFor(v1alpha1.GenericIssuer) (Interface, error)
-}
-
-type fakeFactory struct {
-	ctx         *controller.Context
-	constructor IssuerConstructor
-}
-
-func NewFakeFactory(ctx *controller.Context, constructor IssuerConstructor) IssuerFactory {
-	return &fakeFactory{ctx, constructor}
-}
-
-func (f *fakeFactory) IssuerFor(iss v1alpha1.GenericIssuer) (Interface, error) {
-	return f.constructor(f.ctx, iss)
 }
 
 // factory is the default Factory implementation
@@ -70,9 +57,9 @@ type factory struct {
 	ctx *controller.Context
 }
 
-// NewIssuerFactory returns a new issuer factory with the given issuer context.
+// NewFactory returns a new issuer factory with the given issuer context.
 // The context will be injected into each Issuer upon creation.
-func NewIssuerFactory(ctx *controller.Context) IssuerFactory {
+func NewFactory(ctx *controller.Context) Factory {
 	return &factory{ctx: ctx}
 }
 
