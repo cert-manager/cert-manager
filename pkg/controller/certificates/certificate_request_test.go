@@ -21,6 +21,7 @@ import (
 	"crypto"
 	"crypto/x509"
 	"fmt"
+	"reflect"
 	"testing"
 	"time"
 
@@ -281,6 +282,81 @@ func testGenerateCSRFn(b []byte) generateCSRFn {
 func testLocalTemporarySignerFn(b []byte) localTemporarySignerFn {
 	return func(crt *cmapi.Certificate, pk []byte) ([]byte, error) {
 		return b, nil
+	}
+}
+
+func TestBuildCertificateRequest(t *testing.T) {
+	baseCert := gen.Certificate("test",
+		gen.SetCertificateIssuer(cmapi.ObjectReference{Name: "test", Kind: "something", Group: "not-empty"}),
+		gen.SetCertificateSecretName("output"),
+		gen.SetCertificateRenewBefore(time.Hour*36),
+		gen.SetCertificateDNSNames("example.com"),
+	)
+	exampleBundle := mustCreateCryptoBundle(t, gen.CertificateFrom(baseCert,
+		gen.SetCertificateDNSNames("example.com"),
+	))
+
+	tests := map[string]struct {
+		crt         *cmapi.Certificate
+		name        string
+		pk          []byte
+		expectedErr bool
+
+		expectedCertificateRequestAnnotations map[string]string
+	}{
+		"a bad private key should error": {
+			crt:         baseCert,
+			pk:          []byte("bad key"),
+			name:        "test",
+			expectedErr: true,
+
+			expectedCertificateRequestAnnotations: nil,
+		},
+		"a good certificate that is not referencing a selfsigning issuer should not have annotations": {
+			crt:         baseCert,
+			pk:          exampleBundle.privateKeyBytes,
+			name:        "test",
+			expectedErr: false,
+
+			expectedCertificateRequestAnnotations: nil,
+		},
+		"a good certificate that is referencing a selfsigning issuer should have annotations referencing the secret name": {
+			crt: gen.CertificateFrom(baseCert,
+				gen.SetCertificateIssuer(cmapi.ObjectReference{Name: "test", Kind: "selfsigned", Group: "certmanager.k8s.io"}),
+			),
+			pk:          exampleBundle.privateKeyBytes,
+			name:        "test",
+			expectedErr: false,
+
+			expectedCertificateRequestAnnotations: map[string]string{
+				cmapi.CRPrivateKeyAnnotationKey: baseCert.Spec.SecretName,
+			},
+		},
+	}
+
+	for name, test := range tests {
+		c := &certificateRequestManager{
+			generateCSR: generateCSRImpl,
+		}
+
+		cr, err := c.buildCertificateRequest(nil, test.crt, test.name, test.pk)
+		if err != nil && !test.expectedErr {
+			t.Errorf("expected no error but got: %s", err)
+		}
+
+		if err == nil && test.expectedErr {
+			t.Error("expected and error but got 'nil'")
+		}
+
+		if cr == nil {
+			continue
+		}
+
+		// check for annotations
+		if !reflect.DeepEqual(cr.Annotations, test.expectedCertificateRequestAnnotations) {
+			t.Errorf("%s: got unexpected resulting certificate request annotations, exp=%+v got=%+v",
+				name, test.expectedCertificateRequestAnnotations, cr.Annotations)
+		}
 	}
 }
 
