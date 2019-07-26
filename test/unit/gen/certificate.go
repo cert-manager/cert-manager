@@ -105,6 +105,12 @@ func SetCertificateRenewBefore(renewBefore time.Duration) CertificateModifier {
 	}
 }
 
+func SetCertificateACMEConfig(cfg v1alpha1.ACMECertificateConfig) CertificateModifier {
+	return func(crt *v1alpha1.Certificate) {
+		crt.Spec.ACME = &cfg
+	}
+}
+
 func SetCertificateStatusCondition(c v1alpha1.CertificateCondition) CertificateModifier {
 	return func(crt *v1alpha1.Certificate) {
 		if len(crt.Status.Conditions) == 0 {

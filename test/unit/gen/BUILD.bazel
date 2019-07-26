@@ -9,6 +9,7 @@ go_library(
         "doc.go",
         "issuer.go",
         "objectmeta.go",
+        "order.go",
     ],
     importpath = "github.com/jetstack/cert-manager/test/unit/gen",
     visibility = ["//visibility:public"],

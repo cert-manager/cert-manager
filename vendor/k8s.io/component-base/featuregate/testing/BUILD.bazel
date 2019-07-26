@@ -3,14 +3,11 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 go_library(
     name = "go_default_library",
     srcs = ["feature_gate.go"],
-    importmap = "github.com/jetstack/cert-manager/vendor/k8s.io/component-base/featuregate",
-    importpath = "k8s.io/component-base/featuregate",
+    importmap = "github.com/jetstack/cert-manager/vendor/k8s.io/component-base/featuregate/testing",
+    importpath = "k8s.io/component-base/featuregate/testing",
     tags = ["manual"],
     visibility = ["//visibility:public"],
-    deps = [
-        "//vendor/github.com/spf13/pflag:go_default_library",
-        "//vendor/k8s.io/klog:go_default_library",
-    ],
+    deps = ["//vendor/k8s.io/component-base/featuregate:go_default_library"],
 )
 
 filegroup(
@@ -22,10 +19,7 @@ filegroup(
 
 filegroup(
     name = "all-srcs",
-    srcs = [
-        ":package-srcs",
-        "//vendor/k8s.io/component-base/featuregate/testing:all-srcs",
-    ],
+    srcs = [":package-srcs"],
     tags = ["automanaged"],
     visibility = ["//visibility:public"],
 )

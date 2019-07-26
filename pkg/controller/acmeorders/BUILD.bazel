@@ -49,6 +49,8 @@ go_test(
         "//pkg/acme/fake:go_default_library",
         "//pkg/apis/certmanager/v1alpha1:go_default_library",
         "//pkg/controller/test:go_default_library",
+        "//pkg/feature:go_default_library",
+        "//pkg/util/feature:go_default_library",
         "//test/unit/gen:go_default_library",
         "//third_party/crypto/acme:go_default_library",
         "//vendor/github.com/kr/pretty:go_default_library",
@@ -56,6 +58,7 @@ go_test(
         "//vendor/k8s.io/apimachinery/pkg/runtime:go_default_library",
         "//vendor/k8s.io/apimachinery/pkg/util/diff:go_default_library",
         "//vendor/k8s.io/client-go/testing:go_default_library",
+        "//vendor/k8s.io/component-base/featuregate/testing:go_default_library",
         "//vendor/k8s.io/utils/clock/testing:go_default_library",
     ],
 )
