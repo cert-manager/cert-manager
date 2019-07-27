@@ -44,6 +44,7 @@ import (
 	"github.com/jetstack/cert-manager/pkg/controller"
 	crcacontroller "github.com/jetstack/cert-manager/pkg/controller/certificaterequests/ca"
 	crselfsignedcontroller "github.com/jetstack/cert-manager/pkg/controller/certificaterequests/selfsigned"
+	crvaultcontroller "github.com/jetstack/cert-manager/pkg/controller/certificaterequests/vault"
 	certificatescontroller "github.com/jetstack/cert-manager/pkg/controller/certificates"
 	"github.com/jetstack/cert-manager/pkg/controller/clusterissuers"
 	"github.com/jetstack/cert-manager/pkg/feature"
@@ -81,6 +82,7 @@ func Run(opts *options.ControllerOptions, stopCh <-chan struct{}) {
 		opts.EnabledControllers = append(opts.EnabledControllers, []string{
 			crcacontroller.CRControllerName,
 			crselfsignedcontroller.CRControllerName,
+			crvaultcontroller.CRControllerName,
 			certificatescontroller.ExperimentalControllerName,
 		}...)
 	}
