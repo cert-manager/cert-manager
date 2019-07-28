@@ -34,6 +34,7 @@ import (
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
 	"github.com/jetstack/cert-manager/pkg/controller/certificaterequests"
+	crutil "github.com/jetstack/cert-manager/pkg/controller/certificaterequests/util"
 	"github.com/jetstack/cert-manager/pkg/issuer"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
@@ -84,83 +85,47 @@ func (v *Vault) Sign(ctx context.Context, cr *v1alpha1.CertificateRequest) (*iss
 	log := logf.FromContext(ctx, "sign")
 	dbg := log.V(logf.DebugLevel)
 
-	issuerObj, err := v.helper.GetGenericIssuer(cr.Spec.IssuerRef, cr.Namespace)
-	if k8sErrors.IsNotFound(err) {
-		// pending fail wait
+	reporter := crutil.NewReporter(log, cr, v.recorder)
 
-		return nil, nil
-	}
+	issuerObj, err := v.helper.GetGenericIssuer(cr.Spec.IssuerRef, cr.Namespace)
 	if err != nil {
-		// pending fail backoff
+		log = log.WithValues(
+			logf.RelatedResourceNameKey, cr.Spec.IssuerRef.Name,
+			logf.RelatedResourceKindKey, cr.Spec.IssuerRef.Kind,
+		)
+
+		if k8sErrors.IsNotFound(err) {
+			reporter.WithLog(log).Pending(err, v1alpha1.CertificateRequestReasonPending,
+				fmt.Sprintf("Referenced %s not found", apiutil.IssuerKind(cr.Spec.IssuerRef)))
+			return nil, nil
+		}
+
+		reporter.WithLog(log).Pending(err, v1alpha1.CertificateRequestReasonPending,
+			fmt.Sprintf("Referenced %s not found", apiutil.IssuerKind(cr.Spec.IssuerRef)))
 		return nil, err
 	}
 
 	csr, err := pki.DecodeX509CertificateRequestBytes(cr.Spec.CSRPEM)
 	if err != nil {
-		// hard fail
+		reporter.WithLog(log).Failed(err, "ErrorrParsingCSR",
+			fmt.Sprintf("Failed to decode CSR in spec: %s", err))
 		return nil, nil
 	}
 
 	client, err := v.initVaultClient(cr, issuerObj)
 	if err != nil {
-		// hard fail?
-		//return nil, err
+		reporter.WithLog(log).Failed(err, "ErrorVaultInit",
+			fmt.Sprintf("Failed to initialise vault client: %s", err))
 		return nil, nil
 	}
-
-	ipSans := pki.IPAddressesToString(csr.IPAddresses)
 
 	dbg.Info("Vault certificate request", "commonName", csr.Subject.CommonName,
-		"altNames", csr.DNSNames, "ipSans", ipSans)
+		"altNames", csr.DNSNames, "ipSans", pki.IPAddressesToString(csr.IPAddresses))
 
-	parameters := map[string]string{
-		"common_name":          csr.Subject.CommonName,
-		"alt_names":            strings.Join(csr.DNSNames, ","),
-		"ip_sans":              strings.Join(ipSans, ","),
-		"ttl":                  cr.Spec.Duration.String(),
-		"csr":                  string(cr.Spec.CSRPEM),
-		"exclude_cn_from_sans": "true",
-	}
-
-	url := path.Join("/v1", issuerObj.GetSpec().Vault.Path)
-
-	request := client.NewRequest("POST", url)
-
-	err = request.SetJSONBody(parameters)
+	bundle, err := v.requestSign(cr, csr, client, issuerObj)
 	if err != nil {
-		// hard fail?
-		//return nil, fmt.Errorf("error encoding Vault parameters: %s", err.Error())
-		return nil, nil
-	}
-
-	resp, err := client.RawRequest(request)
-	if err != nil {
-		// pending fail?
-		//return nil, nil, fmt.Errorf("error signing certificate in Vault: %s", err.Error())
-		return nil, nil
-	}
-
-	defer resp.Body.Close()
-
-	vaultResult := certutil.Secret{}
-	resp.DecodeJSON(&vaultResult)
-	if err != nil {
-		// hard fail?
-		//return nil, nil, fmt.Errorf("unable to decode JSON payload: %s", err.Error())
-		return nil, nil
-	}
-
-	parsedBundle, err := certutil.ParsePKIMap(vaultResult.Data)
-	if err != nil {
-		// hard fail?
-		//return nil, nil, fmt.Errorf("unable to parse certificate: %s", err.Error())
-		return nil, nil
-	}
-
-	bundle, err := parsedBundle.ToCertBundle()
-	if err != nil {
-		// hard fail?
-		//return nil, nil, fmt.Errorf("unable to convert certificate bundle to PEM bundle: %s", err.Error())
+		reporter.WithLog(log).Failed(err, "ErrorSigning",
+			fmt.Sprintf("Vault failed to sign certificate: %s", err))
 		return nil, nil
 	}
 
@@ -173,6 +138,53 @@ func (v *Vault) Sign(ctx context.Context, cr *v1alpha1.CertificateRequest) (*iss
 		Certificate: []byte(bundle.ToPEMBundle()),
 		CA:          caPem,
 	}, nil
+}
+
+func (v *Vault) requestSign(cr *v1alpha1.CertificateRequest, csr *x509.CertificateRequest,
+	client *vault.Client, issuerObj v1alpha1.GenericIssuer) (*certutil.CertBundle, error) {
+
+	parameters := map[string]string{
+		"common_name": csr.Subject.CommonName,
+		"alt_names":   strings.Join(csr.DNSNames, ","),
+		"ip_sans":     strings.Join(pki.IPAddressesToString(csr.IPAddresses), ","),
+		"ttl":         cr.Spec.Duration.String(),
+		"csr":         string(cr.Spec.CSRPEM),
+
+		"exclude_cn_from_sans": "true",
+	}
+
+	url := path.Join("/v1", issuerObj.GetSpec().Vault.Path)
+
+	request := client.NewRequest("POST", url)
+
+	if err := request.SetJSONBody(parameters); err != nil {
+		return nil, fmt.Errorf("failed to build vault request: %s", err)
+	}
+
+	resp, err := client.RawRequest(request)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to sign certificate by vault: %s", err)
+	}
+
+	defer resp.Body.Close()
+
+	vaultResult := certutil.Secret{}
+	resp.DecodeJSON(&vaultResult)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to decode response returned by vault: %s", err)
+	}
+
+	parsedBundle, err := certutil.ParsePKIMap(vaultResult.Data)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to decode response returned by vault: %s", err)
+	}
+
+	bundle, err := parsedBundle.ToCertBundle()
+	if err != nil {
+		return nil, fmt.Errorf("unable to convert certificate bundle to PEM bundle: %s", err.Error())
+	}
+
+	return bundle, nil
 }
 
 func (v *Vault) configureCertPool(cfg *vault.Config, issuerObj v1alpha1.GenericIssuer) error {
