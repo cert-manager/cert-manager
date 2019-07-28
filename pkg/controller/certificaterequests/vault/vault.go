@@ -107,14 +107,14 @@ func (v *Vault) Sign(ctx context.Context, cr *v1alpha1.CertificateRequest) (*iss
 
 	csr, err := pki.DecodeX509CertificateRequestBytes(cr.Spec.CSRPEM)
 	if err != nil {
-		reporter.WithLog(log).Failed(err, "ErrorrParsingCSR",
+		reporter.Failed(err, "ErrorrParsingCSR",
 			fmt.Sprintf("Failed to decode CSR in spec: %s", err))
 		return nil, nil
 	}
 
 	client, err := v.initVaultClient(cr, issuerObj)
 	if err != nil {
-		reporter.WithLog(log).Failed(err, "ErrorVaultInit",
+		reporter.Failed(err, "ErrorVaultInit",
 			fmt.Sprintf("Failed to initialise vault client: %s", err))
 		return nil, nil
 	}
@@ -124,7 +124,7 @@ func (v *Vault) Sign(ctx context.Context, cr *v1alpha1.CertificateRequest) (*iss
 
 	bundle, err := v.requestSign(cr, csr, client, issuerObj)
 	if err != nil {
-		reporter.WithLog(log).Failed(err, "ErrorSigning",
+		reporter.Failed(err, "ErrorSigning",
 			fmt.Sprintf("Vault failed to sign certificate: %s", err))
 		return nil, nil
 	}
@@ -187,28 +187,12 @@ func (v *Vault) requestSign(cr *v1alpha1.CertificateRequest, csr *x509.Certifica
 	return bundle, nil
 }
 
-func (v *Vault) configureCertPool(cfg *vault.Config, issuerObj v1alpha1.GenericIssuer) error {
-	certs := issuerObj.GetSpec().Vault.CABundle
-	if len(certs) == 0 {
-		return nil
-	}
-
-	caCertPool := x509.NewCertPool()
-	ok := caCertPool.AppendCertsFromPEM(certs)
-	if ok == false {
-		return fmt.Errorf("error loading Vault CA bundle")
-	}
-
-	cfg.HttpClient.Transport.(*http.Transport).TLSClientConfig.RootCAs = caCertPool
-
-	return nil
-}
-
 func (v *Vault) requestTokenWithAppRoleRef(cr *v1alpha1.CertificateRequest, client *vault.Client,
 	appRole *v1alpha1.VaultAppRole) (string, error) {
 	roleId, secretId, err := v.appRoleRef(cr, appRole)
 	if err != nil {
-		return "", fmt.Errorf("error reading Vault AppRole from secret: %s/%s: %s", appRole.SecretRef.Name, cr.Namespace, err.Error())
+		return "", fmt.Errorf("error reading Vault AppRole from secret: %s/%s: %s",
+			cr.Namespace, appRole.SecretRef.Name, err.Error())
 	}
 
 	parameters := map[string]string{
@@ -259,14 +243,11 @@ func (v *Vault) appRoleRef(cr *v1alpha1.CertificateRequest, appRole *v1alpha1.Va
 		return "", "", err
 	}
 
-	key := "secretId"
-	if appRole.SecretRef.Key != "secretId" {
-		key = appRole.SecretRef.Key
-	}
+	key := appRole.SecretRef.Key
 
 	keyBytes, ok := secret.Data[key]
 	if !ok {
-		return "", "", fmt.Errorf("no data for %q in secret '%s/%s'", key, appRole.SecretRef.Name, cr.Namespace)
+		return "", "", fmt.Errorf("no data for %q in secret '%s/%s'", key, cr.Namespace, appRole.SecretRef.Name)
 	}
 
 	secretId = string(keyBytes)
@@ -275,7 +256,7 @@ func (v *Vault) appRoleRef(cr *v1alpha1.CertificateRequest, appRole *v1alpha1.Va
 	return roleId, secretId, nil
 }
 
-func (v *Vault) vaultTokenRef(name, namespace, key string) (string, error) {
+func (v *Vault) tokenRef(name, namespace, key string) (string, error) {
 	secret, err := v.secretsLister.Secrets(namespace).Get(name)
 	if err != nil {
 		return "", err
@@ -311,7 +292,7 @@ func (v *Vault) initVaultClient(cr *v1alpha1.CertificateRequest, issuerObj v1alp
 
 	tokenRef := issuerObj.GetSpec().Vault.Auth.TokenSecretRef
 	if tokenRef.Name != "" {
-		token, err := v.vaultTokenRef(tokenRef.Name, cr.Namespace, tokenRef.Key)
+		token, err := v.tokenRef(tokenRef.Name, cr.Namespace, tokenRef.Key)
 		if err != nil {
 			return nil, fmt.Errorf("error reading Vault token from secret %s/%s: %s", cr.Namespace, tokenRef.Name, err.Error())
 		}
@@ -332,4 +313,21 @@ func (v *Vault) initVaultClient(cr *v1alpha1.CertificateRequest, issuerObj v1alp
 	}
 
 	return nil, fmt.Errorf("error initializing Vault client. tokenSecretRef or appRoleSecretRef not set")
+}
+
+func (v *Vault) configureCertPool(cfg *vault.Config, issuerObj v1alpha1.GenericIssuer) error {
+	certs := issuerObj.GetSpec().Vault.CABundle
+	if len(certs) == 0 {
+		return nil
+	}
+
+	caCertPool := x509.NewCertPool()
+	ok := caCertPool.AppendCertsFromPEM(certs)
+	if ok == false {
+		return fmt.Errorf("error loading Vault CA bundle")
+	}
+
+	cfg.HttpClient.Transport.(*http.Transport).TLSClientConfig.RootCAs = caCertPool
+
+	return nil
 }
