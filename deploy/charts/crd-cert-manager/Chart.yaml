@@ -1,0 +1,6 @@
+name: crds-cert-manager
+version: v0.1.0
+description: A Helm chart for the cert-manager custom resource definitions.
+maintainers:
+  - name: zakkg3
+    email: zakkg3@gmail.com
