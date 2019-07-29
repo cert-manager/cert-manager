@@ -734,6 +734,9 @@ func (c *certificateRequestManager) buildCertificateRequest(log logr.Logger, crt
 			Name:            name,
 			Namespace:       crt.Namespace,
 			OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(crt, certificateGvk)},
+			Annotations: map[string]string{
+				cmapi.CRPrivateKeyAnnotationKey: crt.Spec.SecretName,
+			},
 		},
 		Spec: cmapi.CertificateRequestSpec{
 			CSRPEM:    csrPEM,
@@ -741,12 +744,6 @@ func (c *certificateRequestManager) buildCertificateRequest(log logr.Logger, crt
 			IssuerRef: crt.Spec.IssuerRef,
 			IsCA:      crt.Spec.IsCA,
 		},
-	}
-
-	if apiutil.IssuerKind(crt.Spec.IssuerRef) == apiutil.IssuerSelfSigned {
-		cr.Annotations = map[string]string{
-			cmapi.CRPrivateKeyAnnotationKey: crt.Spec.SecretName,
-		}
 	}
 
 	return cr, nil

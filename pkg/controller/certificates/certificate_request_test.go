@@ -109,6 +109,9 @@ func createCryptoBundle(crt *cmapi.Certificate) (*cryptoBundle, error) {
 			Name:            reqName,
 			Namespace:       crt.Namespace,
 			OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(crt, certificateGvk)},
+			Annotations: map[string]string{
+				cmapi.CRPrivateKeyAnnotationKey: crt.Spec.SecretName,
+			},
 		},
 		Spec: cmapi.CertificateRequestSpec{
 			CSRPEM:    csrPEM,
@@ -287,7 +290,7 @@ func testLocalTemporarySignerFn(b []byte) localTemporarySignerFn {
 
 func TestBuildCertificateRequest(t *testing.T) {
 	baseCert := gen.Certificate("test",
-		gen.SetCertificateIssuer(cmapi.ObjectReference{Name: "test", Kind: "something", Group: "not-empty"}),
+		gen.SetCertificateIssuer(cmapi.ObjectReference{Name: "ca-issuer", Kind: "Issuer", Group: "not-empty"}),
 		gen.SetCertificateSecretName("output"),
 		gen.SetCertificateRenewBefore(time.Hour*36),
 		gen.SetCertificateDNSNames("example.com"),
@@ -312,18 +315,8 @@ func TestBuildCertificateRequest(t *testing.T) {
 
 			expectedCertificateRequestAnnotations: nil,
 		},
-		"a good certificate that is not referencing a selfsigning issuer should not have annotations": {
+		"a good certificate should always have annotations set": {
 			crt:         baseCert,
-			pk:          exampleBundle.privateKeyBytes,
-			name:        "test",
-			expectedErr: false,
-
-			expectedCertificateRequestAnnotations: nil,
-		},
-		"a good certificate that is referencing a selfsigning issuer should have annotations referencing the secret name": {
-			crt: gen.CertificateFrom(baseCert,
-				gen.SetCertificateIssuer(cmapi.ObjectReference{Name: "test", Kind: "selfsigned", Group: "certmanager.k8s.io"}),
-			),
 			pk:          exampleBundle.privateKeyBytes,
 			name:        "test",
 			expectedErr: false,
