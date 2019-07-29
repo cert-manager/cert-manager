@@ -254,9 +254,9 @@ Steps:
  
 1.- create a working directory:
 
-    `mkdir cert-manager && cd cert-manager`
+    `mkdir cert-manager && cd cert-manager && mkdir helmfile.d`
     
-2.-  create `helmfile.yaml` with the following content:
+2.-  create `helmfile.d/00-crds.yaml` with the following content:
 
 ```
 repositories:
@@ -268,6 +268,15 @@ releases:
     namespace: cert-manager
     version: v0.1.0
     chart: jetstack/crd-cert-manager
+```
+
+3.- Create helmfile.d/01-cert-manager.yaml with the following content:
+
+```
+repositories:
+  - name: jetstack
+    url: https://charts.jetstack.io
+releases:
   - name: cert-manager
     namespace: cert-manager
     version: v0.8.1
@@ -280,8 +289,12 @@ releases:
 3.- Run:
 
 ```
-helmfile sync
+.../cert-manager> helmfile sync
 ```
+
+helmfile will proceess all the the helm charts defined inside `helmfile.d` directory in alphabetical order. (intall crd's then anotate the namespace and finally install cert-manager chart)
+
+
 
 kubeprod
 --------
