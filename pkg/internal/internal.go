@@ -17,8 +17,19 @@ limitations under the License.
 package internal
 
 import (
+	"time"
+
 	vault "github.com/hashicorp/vault/api"
+	corelisters "k8s.io/client-go/listers/core/v1"
+
+	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 )
+
+type VaultFactory func(string, corelisters.SecretLister, v1alpha1.GenericIssuer) (Vault, error)
+
+type Vault interface {
+	Sign(csrPEM []byte, duration time.Duration) (certPEM []byte, caPEM []byte, err error)
+}
 
 type VaultClient interface {
 	NewRequest(method, requestPath string) *vault.Request

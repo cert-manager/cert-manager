@@ -34,6 +34,8 @@ import (
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 )
 
+var _ internal.Vault = &Vault{}
+
 type Vault struct {
 	secretsLister corelisters.SecretLister
 	issuer        v1alpha1.GenericIssuer
@@ -43,7 +45,7 @@ type Vault struct {
 }
 
 func New(namespace string, secretsLister corelisters.SecretLister,
-	issuer v1alpha1.GenericIssuer) (*Vault, error) {
+	issuer v1alpha1.GenericIssuer) (internal.Vault, error) {
 	v := &Vault{
 		secretsLister: secretsLister,
 		namespace:     namespace,
@@ -129,7 +131,7 @@ func (v *Vault) setToken(client internal.VaultClient) error {
 	if tokenRef.Name != "" {
 		token, err := v.tokenRef(tokenRef.Name, v.namespace, tokenRef.Key)
 		if err != nil {
-			return fmt.Errorf("error reading Vault token from secret %s/%s: %s", v.namespace, tokenRef.Name, err.Error())
+			return err
 		}
 		client.SetToken(token)
 
@@ -140,7 +142,7 @@ func (v *Vault) setToken(client internal.VaultClient) error {
 	if appRole.RoleId != "" {
 		token, err := v.requestTokenWithAppRoleRef(client, &appRole)
 		if err != nil {
-			return fmt.Errorf("error reading Vault token from AppRole: %s", err.Error())
+			return err
 		}
 		client.SetToken(token)
 
@@ -215,8 +217,7 @@ func (v *Vault) appRoleRef(appRole *v1alpha1.VaultAppRole) (roleId, secretId str
 func (v *Vault) requestTokenWithAppRoleRef(client internal.VaultClient, appRole *v1alpha1.VaultAppRole) (string, error) {
 	roleId, secretId, err := v.appRoleRef(appRole)
 	if err != nil {
-		return "", fmt.Errorf("error reading Vault AppRole from secret: %s/%s: %s",
-			v.namespace, appRole.SecretRef.Name, err.Error())
+		return "", err
 	}
 
 	parameters := map[string]string{

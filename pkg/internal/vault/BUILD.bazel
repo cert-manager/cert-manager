@@ -8,7 +8,9 @@ go_library(
     deps = [
         "//pkg/apis/certmanager/v1alpha1:go_default_library",
         "//pkg/internal:go_default_library",
+        "//pkg/util/pki:go_default_library",
         "//vendor/github.com/hashicorp/vault/api:go_default_library",
+        "//vendor/github.com/hashicorp/vault/helper/certutil:go_default_library",
         "//vendor/k8s.io/client-go/listers/core/v1:go_default_library",
     ],
 )
@@ -22,8 +24,11 @@ go_test(
         "//pkg/controller/test/fake:go_default_library",
         "//pkg/internal:go_default_library",
         "//pkg/internal/vault/fake:go_default_library",
+        "//pkg/util/pki:go_default_library",
         "//test/unit/gen:go_default_library",
         "//vendor/github.com/hashicorp/vault/api:go_default_library",
+        "//vendor/github.com/hashicorp/vault/helper/certutil:go_default_library",
+        "//vendor/github.com/hashicorp/vault/helper/jsonutil:go_default_library",
         "//vendor/k8s.io/api/core/v1:go_default_library",
     ],
 )

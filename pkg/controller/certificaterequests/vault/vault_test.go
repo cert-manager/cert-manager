@@ -17,477 +17,285 @@ limitations under the License.
 package vault
 
 import (
-	"bytes"
-	"crypto/tls"
-	"crypto/x509"
+	"context"
 	"errors"
-	"fmt"
-	"net/http"
-	"reflect"
-	"strings"
 	"testing"
+	"time"
 
-	vault "github.com/hashicorp/vault/api"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 
+	"github.com/jetstack/cert-manager/pkg/apis/certmanager"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
-	testfake "github.com/jetstack/cert-manager/pkg/controller/test/fake"
+	testcr "github.com/jetstack/cert-manager/pkg/controller/certificaterequests/test"
+	testpkg "github.com/jetstack/cert-manager/pkg/controller/test"
+	fakevault "github.com/jetstack/cert-manager/pkg/internal/vault/fake"
 	"github.com/jetstack/cert-manager/test/unit/gen"
 )
 
-const (
-	testCertBundle = `-----BEGIN CERTIFICATE-----
-MIIDBTCCAe2gAwIBAgIUAR4qkcRVjl3D2ZNXyAjGrmJJafUwDQYJKoZIhvcNAQEL
-BQAwEjEQMA4GA1UEAwwHZm9vLmJhcjAeFw0xOTA2MTExMTQ4MjZaFw0yOTA2MDgx
-MTQ4MjZaMBIxEDAOBgNVBAMMB2Zvby5iYXIwggEiMA0GCSqGSIb3DQEBAQUAA4IB
-DwAwggEKAoIBAQC6nycZ01dEcR1xaMdhP7HWeHEZVTCMBkvk9NJ7CjHBjEcRFPbo
-koMfIeuQ2lO+mFXpLo9iJOE+fh+Pl8/vNihS9Xan23EFNYGNukmpup4zcZ5sBueA
-sE9A1LwuHxCIhwutvSOatfzbw5i4LrXNncIRabNjHmJgd4j7hhRJF0PR3x5uTV0t
-lMsPVtBUX2FehR3ZvJBaYRFk4ITa7wX8a9p2JQeavoeoSxX2UWGxdE9v2oMUU0Sn
-+LjzoNHVWzkTZv5yn8X3GKS1Co4bWaeDmZywL8HSkK//ST/rk7UDItWgeetMRvTt
-UO1xLjEYU4HO4aPEdmwVha58nzS87pdJm+LfAgMBAAGjUzBRMB0GA1UdDgQWBBR0
-B9MwNgun4l7JAyd2tqL24oRmGDAfBgNVHSMEGDAWgBR0B9MwNgun4l7JAyd2tqL2
-4oRmGDAPBgNVHRMBAf8EBTADAQH/MA0GCSqGSIb3DQEBCwUAA4IBAQAOofYo23Xv
-I5fh1sg4cmayLU5TSZ1hv9/qLzqYDu/9MSJtY0ww8RotkZOL5E3sphh8JQfKnj0G
-0NvJrq6RP3Bd9FfizF2k1y2Z6D/dorztd5uum6ctdylfBPgeZEemv9aCfdigAwd+
-nh5C+XrIPnsN7Xeq3N4gzyLVzdkFHbuMWTqmqJo5XaMEWP3/dzPl447z/QlSXVqe
-nCSne2t3DgvoiqS+A1hVLzHeEiwwd9kmQdPUrybwXZ/i6B1sfcxf8eklbiuhtunQ
-jy1M5ZaOOfj2WFwmydx1ycGdJbJiKppN3oehi7EJ2lAxwbGoKy4VD4Ks/nMu4TEY
-2lUQ3SmEzoFL
------END CERTIFICATE-----`
-)
+func TestSign(t *testing.T) {
+	rsaPK := testcr.GenerateRSAPrivateKey(t)
+	caCSR := testcr.GenerateCSR(t, rsaPK)
 
-type testAppRoleRefT struct {
-	expectedRoleID   string
-	expectedSecretID string
-	expectedErr      error
+	testCR := gen.CertificateRequest("test-cr",
+		gen.SetCertificateRequestCSR(caCSR),
+		gen.SetCertificateRequestIsCA(true),
+		gen.SetCertificateRequestDuration(&metav1.Duration{Duration: time.Hour * 24 * 60}),
+		gen.SetCertificateRequestIssuer(v1alpha1.ObjectReference{
+			Name:  "vault-issuer",
+			Group: certmanager.GroupName,
+			Kind:  "Issuer",
+		}),
+	)
 
-	appRole            *v1alpha1.VaultAppRole
-	certificaterequest *v1alpha1.CertificateRequest
+	_, rsaPEMCert := testcr.GenerateSelfSignedCertFromCR(t, testCR, rsaPK, time.Hour*24*60)
 
-	fakeLister *testfake.FakeSecretLister
-}
-
-func TestAppRoleRef(t *testing.T) {
-	errSecretGet := errors.New("no secret found")
-
-	basicAppRoleRef := &v1alpha1.VaultAppRole{
-		RoleId: "my-role-id",
+	tokenSecret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: gen.DefaultTestNamespace,
+			Name:      "token-secret",
+		},
+		Data: map[string][]byte{
+			"my-token-key": []byte("my-secret-token"),
+		},
 	}
 
-	tests := map[string]testAppRoleRefT{
-		"failing to get secret should error": {
-			appRole: basicAppRoleRef,
-			certificaterequest: gen.CertificateRequest("test",
-				gen.SetCertificateRequestNamespace("test-namespace"),
-			),
-			fakeLister: gen.FakeSecretListerFrom(testfake.NewFakeSecretLister(),
-				gen.SetFakeSecretNamespaceListerGet(nil, errSecretGet),
-			),
-			expectedRoleID:   "",
-			expectedSecretID: "",
-			expectedErr:      errSecretGet,
+	roleSecret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: gen.DefaultTestNamespace,
+			Name:      "role-secret",
 		},
+		Data: map[string][]byte{
+			"my-role-key": []byte("my-secret-role"),
+		},
+	}
 
-		"no data in key should fail": {
-			appRole: &v1alpha1.VaultAppRole{
-				RoleId: "",
-				SecretRef: v1alpha1.SecretKeySelector{
-					LocalObjectReference: v1alpha1.LocalObjectReference{
-						Name: "secret-name",
-					},
-					Key: "my-key",
+	tests := map[string]testT{
+		"if the issuer does not exist then report pending": {
+			certificateRequest: testCR,
+			builder: &testpkg.Builder{
+				KubeObjects:        []runtime.Object{},
+				CertManagerObjects: []runtime.Object{},
+				ExpectedEvents: []string{
+					`Normal ErrorMissingIssuer Referenced "Issuer" not found: issuer.certmanager.k8s.io "vault-issuer" not found`,
 				},
+				CheckFn: testcr.MustNoResponse,
 			},
-			certificaterequest: gen.CertificateRequest("test",
-				gen.SetCertificateRequestNamespace("test-namespace"),
-			),
-			fakeLister: gen.FakeSecretListerFrom(testfake.NewFakeSecretLister(),
-				gen.SetFakeSecretNamespaceListerGet(
-					&corev1.Secret{
-						Data: map[string][]byte{
-							"foo": []byte("bar"),
-						},
-					}, nil),
-			),
-			expectedRoleID:   "",
-			expectedSecretID: "",
-			expectedErr:      errors.New(`no data for "my-key" in secret 'test-namespace/secret-name'`),
+			expectedErr: false,
 		},
-
-		"should return roleID and secretID with trimmed space": {
-			appRole: &v1alpha1.VaultAppRole{
-				RoleId: "    my-role-id  ",
-				SecretRef: v1alpha1.SecretKeySelector{
-					LocalObjectReference: v1alpha1.LocalObjectReference{
-						Name: "secret-name",
-					},
-					Key: "my-key",
+		"a badly formed CSR should report failure": {
+			certificateRequest: gen.CertificateRequestFrom(testCR,
+				gen.SetCertificateRequestCSR([]byte("a bad csr")),
+			),
+			builder: &testpkg.Builder{
+				KubeObjects:        []runtime.Object{},
+				CertManagerObjects: []runtime.Object{gen.Issuer("vault-issuer")},
+				ExpectedEvents: []string{
+					`Warning ErrorParsingCSR Failed to decode CSR in spec: error decoding certificate request PEM block: error decoding certificate request PEM block`,
 				},
+				CheckFn: testcr.MustNoResponse,
 			},
-			certificaterequest: gen.CertificateRequest("test",
-				gen.SetCertificateRequestNamespace("test-namespace"),
-			),
-			fakeLister: gen.FakeSecretListerFrom(testfake.NewFakeSecretLister(),
-				gen.SetFakeSecretNamespaceListerGet(
-					&corev1.Secret{
-						Data: map[string][]byte{
-							"foo":    []byte("bar"),
-							"my-key": []byte("    my-key-data   "),
-						},
-					}, nil),
-			),
-			expectedRoleID:   "my-role-id",
-			expectedSecretID: "my-key-data",
-			expectedErr:      nil,
+			expectedErr: false,
 		},
-	}
-
-	for name, test := range tests {
-		v := &Vault{
-			secretsLister: test.fakeLister,
-		}
-
-		roleID, secretID, err := v.appRoleRef(test.certificaterequest, test.appRole)
-		if !reflect.DeepEqual(test.expectedErr, err) {
-			t.Errorf("%s: unexpected error, exp=%v got=%v",
-				name, test.expectedErr, err)
-		}
-
-		if test.expectedRoleID != roleID {
-			t.Errorf("%s: got unexpected roleID, exp=%s got=%s",
-				name, test.expectedRoleID, roleID)
-		}
-
-		if test.expectedSecretID != secretID {
-			t.Errorf("%s: got unexpected secretID, exp=%s got=%s",
-				name, test.expectedSecretID, secretID)
-		}
-	}
-}
-
-type testTokenRefT struct {
-	expectedToken string
-	expectedErr   error
-
-	key string
-
-	fakeLister *testfake.FakeSecretLister
-}
-
-func TestTokenRef(t *testing.T) {
-	errSecretGet := errors.New("no secret found")
-
-	testName, testNamespace := "test-name", "test-namespace"
-
-	tests := map[string]testTokenRefT{
-		"failing to get secret should error": {
-			fakeLister: gen.FakeSecretListerFrom(testfake.NewFakeSecretLister(),
-				gen.SetFakeSecretNamespaceListerGet(nil, errSecretGet),
-			),
-			key:           "a-key",
-			expectedToken: "",
-			expectedErr:   errSecretGet,
-		},
-
-		"if no vault at key exists then error": {
-			fakeLister: gen.FakeSecretListerFrom(testfake.NewFakeSecretLister(),
-				gen.SetFakeSecretNamespaceListerGet(
-					&corev1.Secret{
-						Data: map[string][]byte{
-							"foo": []byte("bar"),
-						},
-					}, nil),
-			),
-
-			key:           "a-key",
-			expectedToken: "",
-			expectedErr: fmt.Errorf(`no data for "a-key" in secret '%s/%s'`,
-				testName, testNamespace),
-		},
-		"if value exists at key then return with whitespace trimmed": {
-			fakeLister: gen.FakeSecretListerFrom(testfake.NewFakeSecretLister(),
-				gen.SetFakeSecretNamespaceListerGet(
-					&corev1.Secret{
-						Data: map[string][]byte{
-							"foo":   []byte("bar"),
-							"a-key": []byte(" my-token              "),
-						},
-					}, nil),
-			),
-
-			key:           "a-key",
-			expectedToken: "my-token",
-		},
-		"if no key is given then it should default to 'token'": {
-			fakeLister: gen.FakeSecretListerFrom(testfake.NewFakeSecretLister(),
-				gen.SetFakeSecretNamespaceListerGet(
-					&corev1.Secret{
-						Data: map[string][]byte{
-							"foo":   []byte("bar"),
-							"token": []byte(" my-token              "),
-						},
-					}, nil),
-			),
-
-			key:           "",
-			expectedToken: "my-token",
-		},
-	}
-
-	for name, test := range tests {
-		v := &Vault{
-			secretsLister: test.fakeLister,
-		}
-
-		token, err := v.tokenRef("test-name", "test-namespace", test.key)
-		if !reflect.DeepEqual(test.expectedErr, err) {
-			t.Errorf("%s: unexpected error, exp=%v got=%v",
-				name, test.expectedErr, err)
-		}
-
-		if test.expectedToken != token {
-			t.Errorf("%s: got unexpected token, exp=%s got=%s",
-				name, test.expectedToken, token)
-		}
-	}
-}
-
-type testConfigureCertPoolT struct {
-	expectedErr error
-	issuer      *v1alpha1.Issuer
-	checkFunc   func(cfg *vault.Config) error
-}
-
-func TestConfigureCertPool(t *testing.T) {
-	tests := map[string]testConfigureCertPoolT{
-		"no CA bundle set in issuer should return nil": {
-			issuer: gen.Issuer("vault-issuer",
-				gen.SetIssuerVault(v1alpha1.VaultIssuer{
-					CABundle: nil,
-				}),
-			),
-			expectedErr: nil,
-		},
-
-		"a bad cert bundle should error": {
-			issuer: gen.Issuer("vault-issuer",
-				gen.SetIssuerVault(v1alpha1.VaultIssuer{
-					CABundle: []byte("a bad cert bundle"),
-				}),
-			),
-			expectedErr: errors.New("error loading Vault CA bundle"),
-		},
-
-		"a good cert bundle should be added to the config": {
-			issuer: gen.Issuer("vault-issuer",
-				gen.SetIssuerVault(v1alpha1.VaultIssuer{
-					CABundle: []byte(testCertBundle),
-				}),
-			),
-			expectedErr: nil,
-			checkFunc: func(cfg *vault.Config) error {
-				testCA := x509.NewCertPool()
-				testCA.AppendCertsFromPEM([]byte(testCertBundle))
-				subs := cfg.HttpClient.Transport.(*http.Transport).TLSClientConfig.RootCAs.Subjects()
-
-				err := fmt.Errorf("got unexpected root CAs in config, exp=%s got=%s",
-					testCA.Subjects(), subs)
-				if len(subs) != len(testCA.Subjects()) {
-					return err
-				}
-				for i := range subs {
-					if !bytes.Equal(subs[i], testCA.Subjects()[i]) {
-						return err
-					}
-				}
-
-				return nil
+		"no token or app role secret reference should report pending": {
+			certificateRequest: testCR,
+			builder: &testpkg.Builder{
+				KubeObjects: []runtime.Object{},
+				CertManagerObjects: []runtime.Object{gen.Issuer("vault-issuer",
+					gen.SetIssuerVault(v1alpha1.VaultIssuer{}),
+				)},
+				ExpectedEvents: []string{
+					`Normal ErrorVaultInit Failed to initialise vault client for signing: error initializing Vault client tokenSecretRef or appRoleSecretRef not set: error initializing Vault client tokenSecretRef or appRoleSecretRef not set`,
+				},
+				CheckFn: testcr.MustNoResponse,
 			},
+			expectedErr: false,
 		},
-	}
-
-	for name, test := range tests {
-		v := new(Vault)
-		httpClient := http.DefaultClient
-		httpClient.Transport = &http.Transport{
-			TLSClientConfig: &tls.Config{},
-		}
-
-		cfg := vault.Config{
-			HttpClient: http.DefaultClient,
-		}
-
-		err := v.configureCertPool(&cfg, test.issuer)
-		if !reflect.DeepEqual(test.expectedErr, err) {
-			t.Errorf("%s: unexpected error, exp=%v got=%v",
-				name, test.expectedErr, err)
-		}
-
-		if test.checkFunc != nil {
-			if err := test.checkFunc(&cfg); err != nil {
-				t.Errorf("%s: check function failed: %s",
-					name, err)
-			}
-		}
-	}
-}
-
-type testInitVaultClientT struct {
-	expectedErr        error
-	certificaterequest *v1alpha1.CertificateRequest
-	issuer             v1alpha1.GenericIssuer
-}
-
-func TestInitVaultClient(t *testing.T) {
-	tests := map[string]testInitVaultClientT{
-		"a issuer with a bad CA cert should error": {
-			issuer: gen.Issuer("vault-issuer",
-				gen.SetIssuerVault(v1alpha1.VaultIssuer{
-					CABundle: []byte("bad cert"),
-				}),
-			),
-			expectedErr: errors.New("error loading Vault CA bundle"),
-		},
-		"a vault issuer with no token or role secret reference should error": {
-			issuer: gen.Issuer("vault-issuer",
-				gen.SetIssuerVault(v1alpha1.VaultIssuer{
-					CABundle: []byte(testCertBundle),
-				}),
-			),
-			expectedErr: errors.New("error initializing Vault client. tokenSecretRef or appRoleSecretRef not set"),
-		},
-
-		//TODO:
-		// - test for when tokenRef.Name != ""
-		// - test for when appRole.RoleId != ""
-		// - test for when appRole.RoleId != "" and tokenRef.Name != ""
-
-		//"foo": {
-		//	issuer: gen.Issuer("vault-issuer",
-		//		gen.SetIssuerVault(v1alpha1.VaultIssuer{
-		//			CABundle: []byte(testCertBundle),
-		//			Auth: v1alpha1.VaultAuth{
-		//				AppRole: v1alpha1.VaultAppRole{
-		//					RoleId: "my-role-id",
-		//				},
-		//			},
-		//		}),
-		//	),
-		//	expectedErr: nil,
-		//},
-	}
-
-	for name, test := range tests {
-		v := new(Vault)
-
-		_, err := v.initVaultClient(test.certificaterequest, test.issuer)
-		if !reflect.DeepEqual(test.expectedErr, err) {
-			t.Errorf("%s: unexpected error, exp=%v got=%v",
-				name, test.expectedErr, err)
-		}
-	}
-}
-
-type requestTokenWithAppRoleRefT struct {
-	client  *vault.Client
-	appRole *v1alpha1.VaultAppRole
-
-	certificaterequest *v1alpha1.CertificateRequest
-	fakeLister         *testfake.FakeSecretLister
-
-	expectedToken string
-	expectedErr   error
-}
-
-func TestRequestTokenWithAppRoleRef(t *testing.T) {
-	basicAppRoleRef := &v1alpha1.VaultAppRole{
-		RoleId: "test-role-id",
-		SecretRef: v1alpha1.SecretKeySelector{
-			LocalObjectReference: v1alpha1.LocalObjectReference{
-				Name: "test-secret",
-			},
-			Key: "my-key",
-		},
-	}
-
-	tests := map[string]requestTokenWithAppRoleRefT{
-		"a secret reference that does not exist should error": {
-			client:  nil,
-			appRole: basicAppRoleRef,
-			certificaterequest: gen.CertificateRequest("test",
-				gen.SetCertificateRequestNamespace("test-namespace"),
-			),
-			fakeLister: gen.FakeSecretListerFrom(testfake.NewFakeSecretLister(),
-				gen.SetFakeSecretNamespaceListerGet(nil, errors.New("secret not found")),
-			),
-
-			expectedToken: "",
-			expectedErr:   errors.New("error reading Vault AppRole from secret: test-namespace/test-secret: secret not found"),
-		},
-		"foo": {
-			//client: &vault.NewClient(&vault.Config{
-			//	HttpClient: http.DefaultClient,
-			//}),
-			client:  nil,
-			appRole: basicAppRoleRef,
-			certificaterequest: gen.CertificateRequest("test",
-				gen.SetCertificateRequestNamespace("test-namespace"),
-			),
-			fakeLister: gen.FakeSecretListerFrom(testfake.NewFakeSecretLister(),
-				gen.SetFakeSecretNamespaceListerGet(
-					&corev1.Secret{
-						Data: map[string][]byte{
-							"my-key": []byte("my-key-data"),
+		"a client with a token secret referenced that doesn't exist should report pending": {
+			certificateRequest: testCR,
+			builder: &testpkg.Builder{
+				KubeObjects: []runtime.Object{},
+				CertManagerObjects: []runtime.Object{gen.Issuer("vault-issuer",
+					gen.SetIssuerVault(v1alpha1.VaultIssuer{
+						Auth: v1alpha1.VaultAuth{
+							TokenSecretRef: v1alpha1.SecretKeySelector{
+								Key: "secret-key",
+								LocalObjectReference: v1alpha1.LocalObjectReference{
+									"non-existing-secret",
+								},
+							},
 						},
-					}, nil),
-			),
-
-			expectedToken: "",
-			expectedErr:   errors.New("error reading Vault AppRole from secret: test-namespace/test-secret: secret not found"),
+					}),
+				)},
+				ExpectedEvents: []string{
+					`Normal MissingSecret Required resource not found: secret "non-existing-secret" not found: secret "non-existing-secret" not found`,
+				},
+				CheckFn: testcr.MustNoResponse,
+			},
+			expectedErr: false,
+		},
+		"a client with a app role secret referenced that doesn't exist should report pending": {
+			certificateRequest: testCR,
+			builder: &testpkg.Builder{
+				KubeObjects: []runtime.Object{},
+				CertManagerObjects: []runtime.Object{gen.Issuer("vault-issuer",
+					gen.SetIssuerVault(v1alpha1.VaultIssuer{
+						Auth: v1alpha1.VaultAuth{
+							AppRole: v1alpha1.VaultAppRole{
+								RoleId: "my-role-id",
+								SecretRef: v1alpha1.SecretKeySelector{
+									Key: "secret-key",
+									LocalObjectReference: v1alpha1.LocalObjectReference{
+										"non-existing-secret",
+									},
+								},
+							},
+						},
+					}),
+				)},
+				ExpectedEvents: []string{
+					`Normal MissingSecret Required resource not found: secret "non-existing-secret" not found: secret "non-existing-secret" not found`,
+				},
+				CheckFn: testcr.MustNoResponse,
+			},
+			expectedErr: false,
+		},
+		"a client with a token secret referenced with token but failed to sign should report fail": {
+			certificateRequest: testCR,
+			builder: &testpkg.Builder{
+				KubeObjects: []runtime.Object{tokenSecret},
+				CertManagerObjects: []runtime.Object{gen.Issuer("vault-issuer",
+					gen.SetIssuerVault(v1alpha1.VaultIssuer{
+						Auth: v1alpha1.VaultAuth{
+							TokenSecretRef: v1alpha1.SecretKeySelector{
+								Key: "my-token-key",
+								LocalObjectReference: v1alpha1.LocalObjectReference{
+									"token-secret",
+								},
+							},
+						},
+					}),
+				)},
+				ExpectedEvents: []string{
+					`Warning ErrorSigning Vault failed to sign certificate: failed to sign: failed to sign`,
+				},
+				CheckFn: testcr.MustNoResponse,
+			},
+			fakeVault:   fakevault.NewFakeVault().WithSign(nil, nil, errors.New("failed to sign")),
+			expectedErr: false,
+		},
+		"a client with a app role secret referenced with role but failed to sign should report fail": {
+			certificateRequest: testCR,
+			builder: &testpkg.Builder{
+				KubeObjects: []runtime.Object{roleSecret},
+				CertManagerObjects: []runtime.Object{gen.Issuer("vault-issuer",
+					gen.SetIssuerVault(v1alpha1.VaultIssuer{
+						Auth: v1alpha1.VaultAuth{
+							AppRole: v1alpha1.VaultAppRole{
+								RoleId: "my-role-id",
+								SecretRef: v1alpha1.SecretKeySelector{
+									LocalObjectReference: v1alpha1.LocalObjectReference{
+										"role-secret",
+									},
+									Key: "my-role-key",
+								},
+							},
+						},
+					}),
+				)},
+				ExpectedEvents: []string{
+					`Warning ErrorSigning Vault failed to sign certificate: failed to sign: failed to sign`,
+				},
+				CheckFn: testcr.MustNoResponse,
+			},
+			fakeVault:   fakevault.NewFakeVault().WithNoOpNew().WithSign(nil, nil, errors.New("failed to sign")),
+			expectedErr: false,
+		},
+		"a client with a token secret referenced with token and signs should return certificate": {
+			certificateRequest: testCR,
+			builder: &testpkg.Builder{
+				KubeObjects: []runtime.Object{tokenSecret},
+				CertManagerObjects: []runtime.Object{gen.Issuer("vault-issuer",
+					gen.SetIssuerVault(v1alpha1.VaultIssuer{
+						Auth: v1alpha1.VaultAuth{
+							TokenSecretRef: v1alpha1.SecretKeySelector{
+								Key: "my-token-key",
+								LocalObjectReference: v1alpha1.LocalObjectReference{
+									"token-secret",
+								},
+							},
+						},
+					}),
+				)},
+				ExpectedEvents: []string{},
+				CheckFn:        testcr.NoPrivateKeyFieldsSetCheck(rsaPEMCert),
+			},
+			fakeVault:   fakevault.NewFakeVault().WithSign(rsaPEMCert, rsaPEMCert, nil),
+			expectedErr: false,
+		},
+		"a client with a app role secret referenced with role should return certificate": {
+			certificateRequest: testCR,
+			builder: &testpkg.Builder{
+				KubeObjects: []runtime.Object{roleSecret},
+				CertManagerObjects: []runtime.Object{gen.Issuer("vault-issuer",
+					gen.SetIssuerVault(v1alpha1.VaultIssuer{
+						Auth: v1alpha1.VaultAuth{
+							AppRole: v1alpha1.VaultAppRole{
+								RoleId: "my-role-id",
+								SecretRef: v1alpha1.SecretKeySelector{
+									LocalObjectReference: v1alpha1.LocalObjectReference{
+										"role-secret",
+									},
+									Key: "my-role-key",
+								},
+							},
+						},
+					}),
+				)},
+				ExpectedEvents: []string{},
+				CheckFn:        testcr.NoPrivateKeyFieldsSetCheck(rsaPEMCert),
+			},
+			fakeVault:   fakevault.NewFakeVault().WithNoOpNew().WithSign(rsaPEMCert, rsaPEMCert, nil),
+			expectedErr: false,
 		},
 	}
 
-	f := func(w http.ResponseWriter, r *http.Request) {
-		message := r.URL.Path
-		message = strings.TrimPrefix(message, "/")
-		message = "Hello " + message
-		w.Write([]byte(message))
-	}
-
-	http.HandleFunc("/", f)
-	go func() {
-		if err := http.ListenAndServeTLS("127.0.0.1:8443")
-		if err := http.ListenAndServe("127.0.0.1:8443", nil); err != nil {
-			t.Error(err)
-			t.FailNow()
-		}
-	}()
-
 	for name, test := range tests {
-		v := &Vault{
-			secretsLister: test.fakeLister,
-		}
-
-		client, err := vault.NewClient(&vault.Config{
-			HttpClient: http.DefaultClient,
-			Address:    "https://127.0.0.1:8443",
+		t.Run(name, func(t *testing.T) {
+			runTest(t, test)
 		})
-
-		if err != nil {
-			t.Errorf("%s: failed to build vault client: %s", name, err)
-			continue
-		}
-
-		token, err := v.requestTokenWithAppRoleRef(test.certificaterequest, client, test.appRole)
-		if !reflect.DeepEqual(test.expectedErr, err) {
-			t.Errorf("%s: unexpected error, exp=%v got=%v",
-				name, test.expectedErr, err)
-		}
-
-		if test.expectedToken != token {
-			t.Errorf("%s: got unexpected token, exp=%s got=%s",
-				name, test.expectedToken, token)
-		}
 	}
+}
+
+type testT struct {
+	builder            *testpkg.Builder
+	certificateRequest *v1alpha1.CertificateRequest
+
+	expectedErr bool
+
+	fakeVault *fakevault.Vault
+}
+
+func runTest(t *testing.T, test testT) {
+	test.builder.T = t
+	test.builder.Start()
+	defer test.builder.Stop()
+
+	v := NewVault(test.builder.Context)
+
+	if test.fakeVault != nil {
+		v.vaultFactory = test.fakeVault.New
+	}
+
+	test.builder.Sync()
+
+	resp, err := v.Sign(context.Background(), test.certificateRequest)
+	if err != nil && !test.expectedErr {
+		t.Errorf("expected to not get an error, but got: %v", err)
+	}
+	if err == nil && test.expectedErr {
+		t.Errorf("expected to get an error but did not get one")
+	}
+	test.builder.CheckAndFinish(resp, err)
 }

@@ -235,8 +235,7 @@ func TestSetToken(t *testing.T) {
 			),
 			fakeClient:    vaultfake.NewFakeClient(),
 			expectedToken: "",
-			expectedErr: errors.New(
-				"error reading Vault token from secret test-namespace/secret-ref-name: secret does not exists"),
+			expectedErr:   errors.New("secret does not exists"),
 		},
 
 		"if token secret ref set, return client using token stored": {
@@ -284,7 +283,7 @@ func TestSetToken(t *testing.T) {
 			fakeClient:    vaultfake.NewFakeClient(),
 			expectedToken: "",
 			expectedErr: errors.New(
-				"error reading Vault token from AppRole: error reading Vault AppRole from secret: test-namespace/secret-ref-name: secret not found"),
+				"error reading Vault AppRole from secret: test-namespace/secret-ref-name: secret not found"),
 		},
 
 		"if app role secret ref set, return client using token stored": {

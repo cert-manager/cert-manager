@@ -29,6 +29,7 @@ import (
 	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
 	"github.com/jetstack/cert-manager/pkg/controller/certificaterequests"
 	crutil "github.com/jetstack/cert-manager/pkg/controller/certificaterequests/util"
+	"github.com/jetstack/cert-manager/pkg/internal"
 	vaultinternal "github.com/jetstack/cert-manager/pkg/internal/vault"
 	"github.com/jetstack/cert-manager/pkg/issuer"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
@@ -44,6 +45,8 @@ type Vault struct {
 	recorder      record.EventRecorder
 	secretsLister corelisters.SecretLister
 	helper        issuer.Helper
+
+	vaultFactory internal.VaultFactory
 }
 
 func init() {
@@ -70,6 +73,7 @@ func NewVault(ctx *controllerpkg.Context) *Vault {
 			ctx.SharedInformerFactory.Certmanager().V1alpha1().Issuers().Lister(),
 			ctx.SharedInformerFactory.Certmanager().V1alpha1().ClusterIssuers().Lister(),
 		),
+		vaultFactory: vaultinternal.New,
 	}
 }
 
@@ -86,13 +90,14 @@ func (v *Vault) Sign(ctx context.Context, cr *v1alpha1.CertificateRequest) (*iss
 		)
 
 		if k8sErrors.IsNotFound(err) {
-			reporter.WithLog(log).Pending(err, v1alpha1.CertificateRequestReasonPending,
-				fmt.Sprintf("Referenced %s not found", apiutil.IssuerKind(cr.Spec.IssuerRef)))
+			reporter.WithLog(log).Pending(err, "ErrorMissingIssuer",
+				fmt.Sprintf("Referenced %q not found", apiutil.IssuerKind(cr.Spec.IssuerRef)))
 			return nil, nil
 		}
 
-		reporter.WithLog(log).Pending(err, v1alpha1.CertificateRequestReasonPending,
-			fmt.Sprintf("Referenced %s not found", apiutil.IssuerKind(cr.Spec.IssuerRef)))
+		// We are probably in a network error here so we should backoff and retry
+		reporter.Pending(err, "ErrorGettingIssuer",
+			fmt.Sprintf("Failed to get referenced Issuer %q", cr.Spec.IssuerRef.Name))
 		return nil, err
 	}
 
@@ -103,9 +108,20 @@ func (v *Vault) Sign(ctx context.Context, cr *v1alpha1.CertificateRequest) (*iss
 		return nil, nil
 	}
 
-	client, err := vaultinternal.New(cr.Namespace, v.secretsLister, issuerObj)
+	client, err := v.vaultFactory(cr.Namespace, v.secretsLister, issuerObj)
 	if err != nil {
-		reporter.Pending(err, "ErrorVaultInit",
+		log = log.WithValues(
+			logf.RelatedResourceNameKey, cr.Spec.IssuerRef.Name,
+			logf.RelatedResourceKindKey, cr.Spec.IssuerRef.Kind,
+		)
+
+		if k8sErrors.IsNotFound(err) {
+			reporter.WithLog(log).Pending(err, "MissingSecret",
+				fmt.Sprintf("Required resource not found: %s", err))
+			return nil, nil
+		}
+
+		reporter.WithLog(log).Pending(err, "ErrorVaultInit",
 			fmt.Sprintf("Failed to initialise vault client for signing: %s", err))
 		return nil, nil
 	}

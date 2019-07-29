@@ -69,6 +69,7 @@ filegroup(
         "//pkg/controller/certificaterequests/ca:all-srcs",
         "//pkg/controller/certificaterequests/fake:all-srcs",
         "//pkg/controller/certificaterequests/selfsigned:all-srcs",
+        "//pkg/controller/certificaterequests/test:all-srcs",
         "//pkg/controller/certificaterequests/util:all-srcs",
         "//pkg/controller/certificaterequests/vault:all-srcs",
     ],
