@@ -23,30 +23,33 @@ import (
 	"net/http"
 	"path"
 	"strings"
+	"time"
 
 	vault "github.com/hashicorp/vault/api"
+	"github.com/hashicorp/vault/helper/certutil"
 	corelisters "k8s.io/client-go/listers/core/v1"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	"github.com/jetstack/cert-manager/pkg/internal"
+	"github.com/jetstack/cert-manager/pkg/util/pki"
 )
 
 type Vault struct {
 	secretsLister corelisters.SecretLister
 	issuer        v1alpha1.GenericIssuer
 	namespace     string
+
+	client internal.VaultClient
 }
 
 func New(namespace string, secretsLister corelisters.SecretLister,
-	issuer v1alpha1.GenericIssuer) *Vault {
-	return &Vault{
+	issuer v1alpha1.GenericIssuer) (*Vault, error) {
+	v := &Vault{
 		secretsLister: secretsLister,
 		namespace:     namespace,
 		issuer:        issuer,
 	}
-}
 
-func (v *Vault) Client() (internal.VaultClient, error) {
 	cfg, err := v.newConfig()
 	if err != nil {
 		return nil, err
@@ -61,7 +64,64 @@ func (v *Vault) Client() (internal.VaultClient, error) {
 		return nil, err
 	}
 
-	return client, nil
+	v.client = client
+
+	return v, nil
+}
+
+func (v *Vault) Sign(csrPEM []byte, duration time.Duration) (cert []byte, ca []byte, err error) {
+	csr, err := pki.DecodeX509CertificateRequestBytes(csrPEM)
+	if err != nil {
+		return nil, nil, fmt.Errorf("faild to decode CSR for signing: %s", err)
+	}
+
+	parameters := map[string]string{
+		"common_name": csr.Subject.CommonName,
+		"alt_names":   strings.Join(csr.DNSNames, ","),
+		"ip_sans":     strings.Join(pki.IPAddressesToString(csr.IPAddresses), ","),
+		"ttl":         duration.String(),
+		"csr":         string(csrPEM),
+
+		"exclude_cn_from_sans": "true",
+	}
+
+	url := path.Join("/v1", v.issuer.GetSpec().Vault.Path)
+
+	request := v.client.NewRequest("POST", url)
+
+	if err := request.SetJSONBody(parameters); err != nil {
+		return nil, nil, fmt.Errorf("failed to build vault request: %s", err)
+	}
+
+	resp, err := v.client.RawRequest(request)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to sign certificate by vault: %s", err)
+	}
+
+	defer resp.Body.Close()
+
+	vaultResult := certutil.Secret{}
+	resp.DecodeJSON(&vaultResult)
+	if err != nil {
+		return nil, nil, fmt.Errorf("Failed to decode response returned by vault: %s", err)
+	}
+
+	parsedBundle, err := certutil.ParsePKIMap(vaultResult.Data)
+	if err != nil {
+		return nil, nil, fmt.Errorf("Failed to decode response returned by vault: %s", err)
+	}
+
+	bundle, err := parsedBundle.ToCertBundle()
+	if err != nil {
+		return nil, nil, fmt.Errorf("unable to convert certificate bundle to PEM bundle: %s", err.Error())
+	}
+
+	var caPem []byte = nil
+	if len(bundle.CAChain) > 0 {
+		caPem = []byte(bundle.CAChain[0])
+	}
+
+	return []byte(bundle.ToPEMBundle()), caPem, nil
 }
 
 func (v *Vault) setToken(client internal.VaultClient) error {
@@ -201,4 +261,8 @@ func (v *Vault) requestTokenWithAppRoleRef(client internal.VaultClient, appRole 
 	}
 
 	return token, nil
+}
+
+func (v *Vault) Sys() *vault.Sys {
+	return v.client.Sys()
 }

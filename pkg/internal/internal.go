@@ -25,4 +25,5 @@ type VaultClient interface {
 	RawRequest(r *vault.Request) (*vault.Response, error)
 	SetToken(v string)
 	Token() string
+	Sys() *vault.Sys
 }

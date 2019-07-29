@@ -18,7 +18,13 @@ package vault
 
 import (
 	"bytes"
+	"crypto"
+	"crypto/rand"
+	"crypto/rsa"
 	"crypto/x509"
+	"crypto/x509/pkix"
+	"encoding/asn1"
+	"encoding/pem"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -26,14 +32,18 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+	"time"
 
 	vault "github.com/hashicorp/vault/api"
+	"github.com/hashicorp/vault/helper/certutil"
+	"github.com/hashicorp/vault/helper/jsonutil"
 	corev1 "k8s.io/api/core/v1"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	testfake "github.com/jetstack/cert-manager/pkg/controller/test/fake"
 	"github.com/jetstack/cert-manager/pkg/internal"
 	vaultfake "github.com/jetstack/cert-manager/pkg/internal/vault/fake"
+	"github.com/jetstack/cert-manager/pkg/util/pki"
 	"github.com/jetstack/cert-manager/test/unit/gen"
 )
 
@@ -58,6 +68,117 @@ jy1M5ZaOOfj2WFwmydx1ycGdJbJiKppN3oehi7EJ2lAxwbGoKy4VD4Ks/nMu4TEY
 2lUQ3SmEzoFL
 -----END CERTIFICATE-----`
 )
+
+func generateRSAPrivateKey(t *testing.T) *rsa.PrivateKey {
+	pk, err := pki.GenerateRSAPrivateKey(2048)
+	if err != nil {
+		t.Errorf("failed to generate private key: %v", err)
+		t.FailNow()
+	}
+	return pk
+}
+
+func generateCSR(t *testing.T, secretKey crypto.Signer) []byte {
+	asn1Subj, _ := asn1.Marshal(pkix.Name{
+		CommonName: "test",
+	}.ToRDNSequence())
+	template := x509.CertificateRequest{
+		RawSubject:         asn1Subj,
+		SignatureAlgorithm: x509.SHA256WithRSA,
+	}
+
+	csrBytes, err := x509.CreateCertificateRequest(rand.Reader, &template, secretKey)
+	if err != nil {
+		t.Errorf("failed to create CSR: %s", err)
+		t.FailNow()
+	}
+
+	csr := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE REQUEST", Bytes: csrBytes})
+
+	return csr
+}
+
+type testSignT struct {
+	issuer     *v1alpha1.Issuer
+	fakeLister *testfake.FakeSecretLister
+	fakeClient *vaultfake.Client
+
+	csrPEM       []byte
+	expectedErr  error
+	expectedCert string
+	expectedCA   string
+}
+
+func TestSign(t *testing.T) {
+	privatekey := generateRSAPrivateKey(t)
+	csrPEM := generateCSR(t, privatekey)
+
+	bundle := certutil.Secret{
+		Data: map[string]interface{}{
+			"certificate": testCertBundle,
+		},
+	}
+
+	bundleData, err := jsonutil.EncodeJSON(&bundle)
+	if err != nil {
+		t.Errorf("failed to encode bundle for testing: %s", err)
+		t.FailNow()
+	}
+
+	tests := map[string]testSignT{
+		"a garbage csr should return err": {
+			csrPEM:       []byte("a bad csr"),
+			expectedErr:  errors.New("faild to decode CSR for signing: error decoding certificate request PEM block"),
+			expectedCert: "",
+			expectedCA:   "",
+		},
+
+		"a good csr but failed request should error": {
+			csrPEM: csrPEM,
+			issuer: gen.Issuer("vault-issuer",
+				gen.SetIssuerVault(v1alpha1.VaultIssuer{}),
+			),
+			fakeClient:   vaultfake.NewFakeClient().WithRawRequest(nil, errors.New("request failed")),
+			expectedErr:  errors.New("failed to sign certificate by vault: request failed"),
+			expectedCert: "",
+			expectedCA:   "",
+		},
+
+		"a good csr and good response should return a certificate": {
+			csrPEM: csrPEM,
+			issuer: gen.Issuer("vault-issuer",
+				gen.SetIssuerVault(v1alpha1.VaultIssuer{}),
+			),
+			fakeClient: vaultfake.NewFakeClient().WithRawRequest(&vault.Response{
+				Response: &http.Response{
+					Body: ioutil.NopCloser(bytes.NewReader(bundleData))},
+			}, nil),
+			expectedErr:  nil,
+			expectedCert: testCertBundle,
+			expectedCA:   testCertBundle,
+		},
+	}
+
+	for name, test := range tests {
+		v := &Vault{
+			namespace:     "test-namespace",
+			secretsLister: test.fakeLister,
+			issuer:        test.issuer,
+			client:        test.fakeClient,
+		}
+
+		cert, _, err := v.Sign(test.csrPEM, time.Minute)
+		if !reflect.DeepEqual(test.expectedErr, err) {
+			t.Errorf("%s: unexpected error, exp=%v got=%v",
+				name, test.expectedErr, err)
+		}
+
+		if test.expectedCert != string(cert) {
+			t.Errorf("unexpected certificate in response bundle, exp=%s got=%s",
+				test.expectedCert, cert)
+		}
+	}
+}
 
 type testSetTokenT struct {
 	expectedToken string
@@ -230,7 +351,11 @@ func TestSetToken(t *testing.T) {
 	}
 
 	for name, test := range tests {
-		v := New("test-namespace", test.fakeLister, test.issuer)
+		v := &Vault{
+			namespace:     "test-namespace",
+			secretsLister: test.fakeLister,
+			issuer:        test.issuer,
+		}
 
 		err := v.setToken(test.fakeClient)
 		if !reflect.DeepEqual(test.expectedErr, err) {
@@ -322,7 +447,11 @@ func TestAppRoleRef(t *testing.T) {
 	}
 
 	for name, test := range tests {
-		v := New("test-namespace", test.fakeLister, nil)
+		v := &Vault{
+			namespace:     "test-namespace",
+			secretsLister: test.fakeLister,
+			issuer:        nil,
+		}
 
 		roleID, secretID, err := v.appRoleRef(test.appRole)
 		if !reflect.DeepEqual(test.expectedErr, err) {
@@ -412,7 +541,11 @@ func TestTokenRef(t *testing.T) {
 	}
 
 	for name, test := range tests {
-		v := New(testNamespace, test.fakeLister, nil)
+		v := &Vault{
+			namespace:     "test-namespace",
+			secretsLister: test.fakeLister,
+			issuer:        nil,
+		}
 
 		token, err := v.tokenRef("test-name", "test-namespace", test.key)
 		if !reflect.DeepEqual(test.expectedErr, err) {
@@ -482,7 +615,11 @@ func TestNewConfig(t *testing.T) {
 	}
 
 	for name, test := range tests {
-		v := New("test-namespace", nil, test.issuer)
+		v := &Vault{
+			namespace:     "test-namespace",
+			secretsLister: nil,
+			issuer:        test.issuer,
+		}
 
 		cfg, err := v.newConfig()
 		if !reflect.DeepEqual(test.expectedErr, err) {
@@ -602,7 +739,11 @@ func TestRequestTokenWithAppRoleRef(t *testing.T) {
 	}
 
 	for name, test := range tests {
-		v := New("test-namespace", test.fakeLister, nil)
+		v := &Vault{
+			namespace:     "test-namespace",
+			secretsLister: test.fakeLister,
+			issuer:        nil,
+		}
 
 		token, err := v.requestTokenWithAppRoleRef(test.client, test.appRole)
 		if !reflect.DeepEqual(test.expectedErr, err) {
