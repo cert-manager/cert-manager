@@ -30,6 +30,7 @@ import (
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	testcr "github.com/jetstack/cert-manager/pkg/controller/certificaterequests/test"
 	testpkg "github.com/jetstack/cert-manager/pkg/controller/test"
+	internalvault "github.com/jetstack/cert-manager/pkg/internal/vault"
 	fakevault "github.com/jetstack/cert-manager/pkg/internal/vault/fake"
 	"github.com/jetstack/cert-manager/test/unit/gen"
 )
@@ -182,7 +183,7 @@ func TestSign(t *testing.T) {
 				},
 				CheckFn: testcr.MustNoResponse,
 			},
-			fakeVault:   fakevault.NewFakeVault().WithSign(nil, nil, errors.New("failed to sign")),
+			fakeVault:   fakevault.NewFakeVault().WithNew(internalvault.New).WithSign(nil, nil, errors.New("failed to sign")),
 			expectedErr: false,
 		},
 		"a client with a app role secret referenced with role but failed to sign should report fail": {
@@ -209,7 +210,7 @@ func TestSign(t *testing.T) {
 				},
 				CheckFn: testcr.MustNoResponse,
 			},
-			fakeVault:   fakevault.NewFakeVault().WithNoOpNew().WithSign(nil, nil, errors.New("failed to sign")),
+			fakeVault:   fakevault.NewFakeVault().WithSign(nil, nil, errors.New("failed to sign")),
 			expectedErr: false,
 		},
 		"a client with a token secret referenced with token and signs should return certificate": {
@@ -231,7 +232,7 @@ func TestSign(t *testing.T) {
 				ExpectedEvents: []string{},
 				CheckFn:        testcr.NoPrivateKeyFieldsSetCheck(rsaPEMCert),
 			},
-			fakeVault:   fakevault.NewFakeVault().WithSign(rsaPEMCert, rsaPEMCert, nil),
+			fakeVault:   fakevault.NewFakeVault().WithNew(internalvault.New).WithSign(rsaPEMCert, rsaPEMCert, nil),
 			expectedErr: false,
 		},
 		"a client with a app role secret referenced with role should return certificate": {
@@ -256,7 +257,7 @@ func TestSign(t *testing.T) {
 				ExpectedEvents: []string{},
 				CheckFn:        testcr.NoPrivateKeyFieldsSetCheck(rsaPEMCert),
 			},
-			fakeVault:   fakevault.NewFakeVault().WithNoOpNew().WithSign(rsaPEMCert, rsaPEMCert, nil),
+			fakeVault:   fakevault.NewFakeVault().WithSign(rsaPEMCert, rsaPEMCert, nil),
 			expectedErr: false,
 		},
 	}

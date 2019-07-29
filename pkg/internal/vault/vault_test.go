@@ -282,8 +282,7 @@ func TestSetToken(t *testing.T) {
 			),
 			fakeClient:    vaultfake.NewFakeClient(),
 			expectedToken: "",
-			expectedErr: errors.New(
-				"error reading Vault AppRole from secret: test-namespace/secret-ref-name: secret not found"),
+			expectedErr:   errors.New("secret not found"),
 		},
 
 		"if app role secret ref set, return client using token stored": {
@@ -674,7 +673,7 @@ func TestRequestTokenWithAppRoleRef(t *testing.T) {
 			),
 
 			expectedToken: "",
-			expectedErr:   errors.New("error reading Vault AppRole from secret: test-namespace/test-secret: secret not found"),
+			expectedErr:   errors.New("secret not found"),
 		},
 		"if a raw request fails then error": {
 			client:     vaultfake.NewFakeClient().WithRawRequest(nil, errors.New("request failed")),

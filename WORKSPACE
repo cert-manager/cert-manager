@@ -78,17 +78,26 @@ container_pull(
 )
 
 # Load and define targets defined in //hack/bin
-load("//hack/bin:deps.bzl", install_hack_bin = "install")
+load(
+    "//hack/bin:deps.bzl",
+    install_hack_bin = "install",
+)
 
 install_hack_bin()
 
 # Load and define targets defined in //hack/bin
-load("//test/e2e:images.bzl", install_e2e_images = "install")
+load(
+    "//test/e2e:images.bzl",
+    install_e2e_images = "install",
+)
 
 install_e2e_images()
 
 # Load and define targets used for reference doc generation
-load("//docs/generated/reference:deps.bzl", install_docs_dependencies = "install")
+load(
+    "//docs/generated/reference:deps.bzl",
+    install_docs_dependencies = "install",
+)
 
 install_docs_dependencies()
 

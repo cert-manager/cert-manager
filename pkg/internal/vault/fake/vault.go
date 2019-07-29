@@ -19,11 +19,11 @@ package fake
 import (
 	"time"
 
+	vault "github.com/hashicorp/vault/api"
 	corelisters "k8s.io/client-go/listers/core/v1"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	"github.com/jetstack/cert-manager/pkg/internal"
-	"github.com/jetstack/cert-manager/pkg/internal/vault"
 )
 
 var _ internal.Vault = &Vault{}
@@ -34,13 +34,19 @@ type Vault struct {
 }
 
 func NewFakeVault() *Vault {
-	return &Vault{
-		NewFn: vault.New,
+	v := &Vault{
 		SignFn: func([]byte, time.Duration) ([]byte, []byte, error) {
 			return nil, nil, nil
 		},
 	}
+
+	v.NewFn = func(string, corelisters.SecretLister, v1alpha1.GenericIssuer) (internal.Vault, error) {
+		return v, nil
+	}
+
+	return v
 }
+
 func (v *Vault) Sign(csrPEM []byte, duration time.Duration) ([]byte, []byte, error) {
 	return v.SignFn(csrPEM, duration)
 }
@@ -52,10 +58,8 @@ func (v *Vault) WithSign(certPEM, caPEM []byte, err error) *Vault {
 	return v
 }
 
-func (v *Vault) WithNoOpNew() *Vault {
-	v.NewFn = func(string, corelisters.SecretLister, v1alpha1.GenericIssuer) (internal.Vault, error) {
-		return v, nil
-	}
+func (v *Vault) WithNew(f internal.VaultFactory) *Vault {
+	v.NewFn = f
 	return v
 }
 
@@ -66,4 +70,8 @@ func (v *Vault) New(ns string, sl corelisters.SecretLister, iss v1alpha1.Generic
 	}
 
 	return v, nil
+}
+
+func (v *Vault) Sys() *vault.Sys {
+	return new(vault.Sys)
 }

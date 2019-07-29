@@ -29,6 +29,7 @@ type VaultFactory func(string, corelisters.SecretLister, v1alpha1.GenericIssuer)
 
 type Vault interface {
 	Sign(csrPEM []byte, duration time.Duration) (certPEM []byte, caPEM []byte, err error)
+	Sys() *vault.Sys
 }
 
 type VaultClient interface {
