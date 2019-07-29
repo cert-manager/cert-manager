@@ -127,7 +127,7 @@ type ChallengeStatus struct {
 
 	// State contains the current 'state' of the challenge.
 	// If not set, the state of the challenge is unknown.
-	// +kubebuilder:validation:Enum=,valid,ready,pending,processing,invalid,expired,errored
+	// +kubebuilder:validation:Enum=valid;ready;pending;processing;invalid;expired;errored
 	// +optional
 	State State `json:"state,omitempty"`
 }

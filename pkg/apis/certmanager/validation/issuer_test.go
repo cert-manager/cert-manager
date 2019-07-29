@@ -25,7 +25,6 @@ import (
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
-	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/rfc2136"
 )
 
 var (
@@ -698,7 +697,7 @@ func TestValidateACMEIssuerDNS01Config(t *testing.T) {
 				},
 			},
 			errs: []*field.Error{
-				field.NotSupported(providersPath.Index(0).Child("rfc2136", "tsigAlgorithm"), "", rfc2136.GetSupportedAlgorithms()),
+				field.NotSupported(providersPath.Index(0).Child("rfc2136", "tsigAlgorithm"), "", supportedTSIGAlgorithms),
 			},
 		},
 		"rfc2136 provider TSIGKeyName provided but no TSIGSecret": {

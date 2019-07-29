@@ -14,7 +14,7 @@ go_library(
     deps = [
         "//pkg/api/util:go_default_library",
         "//pkg/apis/certmanager/v1alpha1:go_default_library",
-        "//pkg/issuer/acme/dns/rfc2136:go_default_library",
+        "//pkg/apis/certmanager/validation/util:go_default_library",
         "//pkg/util/pki:go_default_library",
         "//vendor/k8s.io/api/core/v1:go_default_library",
         "//vendor/k8s.io/apimachinery/pkg/apis/meta/v1:go_default_library",
@@ -32,7 +32,6 @@ go_test(
     embed = [":go_default_library"],
     deps = [
         "//pkg/apis/certmanager/v1alpha1:go_default_library",
-        "//pkg/issuer/acme/dns/rfc2136:go_default_library",
         "//test/util/generate:go_default_library",
         "//vendor/k8s.io/api/core/v1:go_default_library",
         "//vendor/k8s.io/apimachinery/pkg/apis/meta/v1:go_default_library",
@@ -51,6 +50,7 @@ filegroup(
     name = "all-srcs",
     srcs = [
         ":package-srcs",
+        "//pkg/apis/certmanager/validation/util:all-srcs",
         "//pkg/apis/certmanager/validation/webhooks:all-srcs",
     ],
     tags = ["automanaged"],

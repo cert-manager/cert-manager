@@ -92,7 +92,7 @@ func (c *CA) Issue(ctx context.Context, crt *v1alpha1.Certificate) (*issuer.Issu
 
 	template.PublicKey = signeePublicKey
 
-	resp, err := pki.SignCSRTemplate(caCerts, caKey, template)
+	certPEM, caPEM, err := pki.SignCSRTemplate(caCerts, caKey, template)
 	if err != nil {
 		log.Error(err, "error signing certificate")
 		c.Recorder.Eventf(crt, corev1.EventTypeWarning, "ErrorSigning", "Error signing certificate: %v", err)
@@ -105,9 +105,12 @@ func (c *CA) Issue(ctx context.Context, crt *v1alpha1.Certificate) (*issuer.Issu
 		c.Recorder.Eventf(crt, corev1.EventTypeWarning, "ErrorPrivateKey", "Error encoding private key: %v", err)
 		return nil, err
 	}
-	resp.PrivateKey = keyPem
 
 	log.Info("certificate issued")
 
-	return resp, nil
+	return &issuer.IssueResponse{
+		Certificate: certPEM,
+		CA:          caPEM,
+		PrivateKey:  keyPem,
+	}, nil
 }

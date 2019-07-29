@@ -27,7 +27,7 @@ import (
 // +k8s:openapi-gen=true
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// +kubebuilder:resource:path=clusterissuers
+// +kubebuilder:resource:path=clusterissuers,scope=Cluster
 type ClusterIssuer struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -338,7 +338,7 @@ type ACMEChallengeSolverDNS01 struct {
 	// CNAMEStrategy configures how the DNS01 provider should handle CNAME
 	// records when found in DNS zones.
 	// +optional
-	// +kubebuilder:validation:Enum=None,Follow
+	// +kubebuilder:validation:Enum=None;Follow
 	CNAMEStrategy CNAMEStrategy `json:"cnameStrategy,omitempty"`
 
 	// +optional
@@ -396,7 +396,7 @@ type ACMEIssuerDNS01Provider struct {
 	// CNAMEStrategy configures how the DNS01 provider should handle CNAME
 	// records when found in DNS zones.
 	// +optional
-	// +kubebuilder:validation:Enum=None,Follow
+	// +kubebuilder:validation:Enum=None;Follow
 	CNAMEStrategy CNAMEStrategy `json:"cnameStrategy,omitempty"`
 
 	// +optional
@@ -597,7 +597,7 @@ type IssuerCondition struct {
 	Type IssuerConditionType `json:"type"`
 
 	// Status of the condition, one of ('True', 'False', 'Unknown').
-	// +kubebuilder:validation:Enum=True,False,Unknown
+	// +kubebuilder:validation:Enum=True;False;Unknown
 	Status ConditionStatus `json:"status"`
 
 	// LastTransitionTime is the timestamp corresponding to the last status

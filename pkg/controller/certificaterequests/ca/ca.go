@@ -29,7 +29,7 @@ import (
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
 	"github.com/jetstack/cert-manager/pkg/controller/certificaterequests"
-	"github.com/jetstack/cert-manager/pkg/issuer"
+	issuerpkg "github.com/jetstack/cert-manager/pkg/issuer"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 	"github.com/jetstack/cert-manager/pkg/util/kube"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
@@ -45,7 +45,7 @@ type CA struct {
 
 	issuerOptions controllerpkg.IssuerOptions
 	secretsLister corelisters.SecretLister
-	helper        issuer.Helper
+	helper        issuerpkg.Helper
 }
 
 func init() {
@@ -69,14 +69,14 @@ func NewCA(ctx *controllerpkg.Context) *CA {
 		recorder:      ctx.Recorder,
 		issuerOptions: ctx.IssuerOptions,
 		secretsLister: ctx.KubeSharedInformerFactory.Core().V1().Secrets().Lister(),
-		helper: issuer.NewHelper(
+		helper: issuerpkg.NewHelper(
 			ctx.SharedInformerFactory.Certmanager().V1alpha1().Issuers().Lister(),
 			ctx.SharedInformerFactory.Certmanager().V1alpha1().ClusterIssuers().Lister(),
 		),
 	}
 }
 
-func (c *CA) Sign(ctx context.Context, cr *v1alpha1.CertificateRequest) (*issuer.IssueResponse, error) {
+func (c *CA) Sign(ctx context.Context, cr *v1alpha1.CertificateRequest) (*issuerpkg.IssueResponse, error) {
 	log := logf.FromContext(ctx, "sign")
 
 	issuer, err := c.helper.GetGenericIssuer(cr.Spec.IssuerRef, cr.Namespace)
@@ -126,7 +126,7 @@ func (c *CA) Sign(ctx context.Context, cr *v1alpha1.CertificateRequest) (*issuer
 		return nil, nil
 	}
 
-	resp, err := pki.SignCSRTemplate(caCerts, caKey, template)
+	certPEM, caPEM, err := pki.SignCSRTemplate(caCerts, caKey, template)
 	if err != nil {
 		log.Error(err, "error signing certificate")
 		c.recorder.Eventf(cr, corev1.EventTypeWarning, "ErrorSigning", "Error signing certificate: %v", err)
@@ -135,5 +135,8 @@ func (c *CA) Sign(ctx context.Context, cr *v1alpha1.CertificateRequest) (*issuer
 
 	log.Info("certificate issued")
 
-	return resp, nil
+	return &issuerpkg.IssueResponse{
+		Certificate: certPEM,
+		CA:          caPEM,
+	}, nil
 }
