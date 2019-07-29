@@ -18,10 +18,10 @@ package vault
 
 import (
 	"bytes"
-	"crypto/tls"
 	"crypto/x509"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"reflect"
 	"strings"
@@ -32,6 +32,8 @@ import (
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	testfake "github.com/jetstack/cert-manager/pkg/controller/test/fake"
+	"github.com/jetstack/cert-manager/pkg/internal"
+	vaultfake "github.com/jetstack/cert-manager/pkg/internal/vault/fake"
 	"github.com/jetstack/cert-manager/test/unit/gen"
 )
 
@@ -57,13 +59,198 @@ jy1M5ZaOOfj2WFwmydx1ycGdJbJiKppN3oehi7EJ2lAxwbGoKy4VD4Ks/nMu4TEY
 -----END CERTIFICATE-----`
 )
 
+type testSetTokenT struct {
+	expectedToken string
+	expectedErr   error
+
+	issuer     *v1alpha1.Issuer
+	fakeLister *testfake.FakeSecretLister
+	fakeClient *vaultfake.Client
+}
+
+func TestSetToken(t *testing.T) {
+	tokenSecret := &corev1.Secret{
+		Data: map[string][]byte{
+			"my-token-key": []byte("my-secret-token"),
+		},
+	}
+
+	appRoleSecret := &corev1.Secret{
+		Data: map[string][]byte{
+			"my-role-key": []byte("my-secret-role-token"),
+		},
+	}
+
+	tests := map[string]testSetTokenT{
+		"if neither token secret ref or app role secret ref not found then error": {
+			issuer: gen.Issuer("vault-issuer",
+				gen.SetIssuerVault(v1alpha1.VaultIssuer{
+					CABundle: []byte(testCertBundle),
+					Auth:     v1alpha1.VaultAuth{},
+				}),
+			),
+			fakeLister:    gen.FakeSecretListerFrom(testfake.NewFakeSecretLister()),
+			fakeClient:    vaultfake.NewFakeClient(),
+			expectedToken: "",
+			expectedErr: errors.New(
+				"error initializing Vault client tokenSecretRef or appRoleSecretRef not set"),
+		},
+
+		"if token secret ref is set but secret doesn't exist should error": {
+			issuer: gen.Issuer("vault-issuer",
+				gen.SetIssuerVault(v1alpha1.VaultIssuer{
+					CABundle: []byte(testCertBundle),
+					Auth: v1alpha1.VaultAuth{
+						TokenSecretRef: v1alpha1.SecretKeySelector{
+							LocalObjectReference: v1alpha1.LocalObjectReference{
+								Name: "secret-ref-name",
+							},
+						},
+					},
+				}),
+			),
+			fakeLister: gen.FakeSecretListerFrom(testfake.NewFakeSecretLister(),
+				gen.SetFakeSecretNamespaceListerGet(nil, errors.New("secret does not exists")),
+			),
+			fakeClient:    vaultfake.NewFakeClient(),
+			expectedToken: "",
+			expectedErr: errors.New(
+				"error reading Vault token from secret test-namespace/secret-ref-name: secret does not exists"),
+		},
+
+		"if token secret ref set, return client using token stored": {
+			issuer: gen.Issuer("vault-issuer",
+				gen.SetIssuerVault(v1alpha1.VaultIssuer{
+					CABundle: []byte(testCertBundle),
+					Auth: v1alpha1.VaultAuth{
+						TokenSecretRef: v1alpha1.SecretKeySelector{
+							LocalObjectReference: v1alpha1.LocalObjectReference{
+								Name: "secret-ref-name",
+							},
+							Key: "my-token-key",
+						},
+					},
+				}),
+			),
+			fakeLister: gen.FakeSecretListerFrom(testfake.NewFakeSecretLister(),
+				gen.SetFakeSecretNamespaceListerGet(tokenSecret, nil),
+			),
+			fakeClient:    vaultfake.NewFakeClient(),
+			expectedToken: "my-secret-token",
+			expectedErr:   nil,
+		},
+
+		"if app role set but secret token not but vault fails to return token, error": {
+			issuer: gen.Issuer("vault-issuer",
+				gen.SetIssuerVault(v1alpha1.VaultIssuer{
+					CABundle: []byte(testCertBundle),
+					Auth: v1alpha1.VaultAuth{
+						AppRole: v1alpha1.VaultAppRole{
+							RoleId: "my-role-id",
+							SecretRef: v1alpha1.SecretKeySelector{
+								LocalObjectReference: v1alpha1.LocalObjectReference{
+									Name: "secret-ref-name",
+								},
+								Key: "my-role-key",
+							},
+						},
+					},
+				}),
+			),
+			fakeLister: gen.FakeSecretListerFrom(testfake.NewFakeSecretLister(),
+				gen.SetFakeSecretNamespaceListerGet(nil, errors.New("secret not found")),
+			),
+			fakeClient:    vaultfake.NewFakeClient(),
+			expectedToken: "",
+			expectedErr: errors.New(
+				"error reading Vault token from AppRole: error reading Vault AppRole from secret: test-namespace/secret-ref-name: secret not found"),
+		},
+
+		"if app role secret ref set, return client using token stored": {
+			issuer: gen.Issuer("vault-issuer",
+				gen.SetIssuerVault(v1alpha1.VaultIssuer{
+					CABundle: []byte(testCertBundle),
+					Auth: v1alpha1.VaultAuth{
+						AppRole: v1alpha1.VaultAppRole{
+							RoleId: "my-role-id",
+							SecretRef: v1alpha1.SecretKeySelector{
+								LocalObjectReference: v1alpha1.LocalObjectReference{
+									Name: "secret-ref-name",
+								},
+								Key: "my-role-key",
+							},
+						},
+					},
+				}),
+			),
+			fakeLister: gen.FakeSecretListerFrom(testfake.NewFakeSecretLister(),
+				gen.SetFakeSecretNamespaceListerGet(appRoleSecret, nil),
+			),
+			fakeClient: vaultfake.NewFakeClient().WithRawRequest(&vault.Response{
+				Response: &http.Response{
+					Body: ioutil.NopCloser(
+						strings.NewReader(
+							`{"request_id":"","lease_id":"","lease_duration":0,"renewable":false,"data":null,"warnings":null,"data":{"id":"my-roleapp-token"}}`),
+					),
+				},
+			}, nil),
+			expectedToken: "my-roleapp-token",
+			expectedErr:   nil,
+		},
+		"if app role secret ref and token secret set, take preference on token secret": {
+			issuer: gen.Issuer("vault-issuer",
+				gen.SetIssuerVault(v1alpha1.VaultIssuer{
+					CABundle: []byte(testCertBundle),
+					Auth: v1alpha1.VaultAuth{
+						AppRole: v1alpha1.VaultAppRole{
+							RoleId: "my-role-id",
+							SecretRef: v1alpha1.SecretKeySelector{
+								LocalObjectReference: v1alpha1.LocalObjectReference{
+									Name: "secret-ref-name",
+								},
+								Key: "my-role-key",
+							},
+						},
+						TokenSecretRef: v1alpha1.SecretKeySelector{
+							LocalObjectReference: v1alpha1.LocalObjectReference{
+								Name: "secret-ref-name",
+							},
+							Key: "my-token-key",
+						},
+					},
+				}),
+			),
+			fakeLister: gen.FakeSecretListerFrom(testfake.NewFakeSecretLister(),
+				gen.SetFakeSecretNamespaceListerGet(tokenSecret, nil),
+			),
+			fakeClient:    vaultfake.NewFakeClient(),
+			expectedToken: "my-secret-token",
+			expectedErr:   nil,
+		},
+	}
+
+	for name, test := range tests {
+		v := New("test-namespace", test.fakeLister, test.issuer)
+
+		err := v.setToken(test.fakeClient)
+		if !reflect.DeepEqual(test.expectedErr, err) {
+			t.Errorf("%s: unexpected error, exp=%v got=%v",
+				name, test.expectedErr, err)
+		}
+
+		if test.fakeClient.Token() != test.expectedToken {
+			t.Errorf("%s: got unexpected client token, exp=%s got=%s",
+				name, test.expectedToken, test.fakeClient.Token())
+		}
+	}
+}
+
 type testAppRoleRefT struct {
 	expectedRoleID   string
 	expectedSecretID string
 	expectedErr      error
 
-	appRole            *v1alpha1.VaultAppRole
-	certificaterequest *v1alpha1.CertificateRequest
+	appRole *v1alpha1.VaultAppRole
 
 	fakeLister *testfake.FakeSecretLister
 }
@@ -78,9 +265,6 @@ func TestAppRoleRef(t *testing.T) {
 	tests := map[string]testAppRoleRefT{
 		"failing to get secret should error": {
 			appRole: basicAppRoleRef,
-			certificaterequest: gen.CertificateRequest("test",
-				gen.SetCertificateRequestNamespace("test-namespace"),
-			),
 			fakeLister: gen.FakeSecretListerFrom(testfake.NewFakeSecretLister(),
 				gen.SetFakeSecretNamespaceListerGet(nil, errSecretGet),
 			),
@@ -99,9 +283,6 @@ func TestAppRoleRef(t *testing.T) {
 					Key: "my-key",
 				},
 			},
-			certificaterequest: gen.CertificateRequest("test",
-				gen.SetCertificateRequestNamespace("test-namespace"),
-			),
 			fakeLister: gen.FakeSecretListerFrom(testfake.NewFakeSecretLister(),
 				gen.SetFakeSecretNamespaceListerGet(
 					&corev1.Secret{
@@ -125,9 +306,6 @@ func TestAppRoleRef(t *testing.T) {
 					Key: "my-key",
 				},
 			},
-			certificaterequest: gen.CertificateRequest("test",
-				gen.SetCertificateRequestNamespace("test-namespace"),
-			),
 			fakeLister: gen.FakeSecretListerFrom(testfake.NewFakeSecretLister(),
 				gen.SetFakeSecretNamespaceListerGet(
 					&corev1.Secret{
@@ -144,11 +322,9 @@ func TestAppRoleRef(t *testing.T) {
 	}
 
 	for name, test := range tests {
-		v := &Vault{
-			secretsLister: test.fakeLister,
-		}
+		v := New("test-namespace", test.fakeLister, nil)
 
-		roleID, secretID, err := v.appRoleRef(test.certificaterequest, test.appRole)
+		roleID, secretID, err := v.appRoleRef(test.appRole)
 		if !reflect.DeepEqual(test.expectedErr, err) {
 			t.Errorf("%s: unexpected error, exp=%v got=%v",
 				name, test.expectedErr, err)
@@ -236,9 +412,7 @@ func TestTokenRef(t *testing.T) {
 	}
 
 	for name, test := range tests {
-		v := &Vault{
-			secretsLister: test.fakeLister,
-		}
+		v := New(testNamespace, test.fakeLister, nil)
 
 		token, err := v.tokenRef("test-name", "test-namespace", test.key)
 		if !reflect.DeepEqual(test.expectedErr, err) {
@@ -253,14 +427,14 @@ func TestTokenRef(t *testing.T) {
 	}
 }
 
-type testConfigureCertPoolT struct {
+type testNewConfigT struct {
 	expectedErr error
 	issuer      *v1alpha1.Issuer
 	checkFunc   func(cfg *vault.Config) error
 }
 
-func TestConfigureCertPool(t *testing.T) {
-	tests := map[string]testConfigureCertPoolT{
+func TestNewConfig(t *testing.T) {
+	tests := map[string]testNewConfigT{
 		"no CA bundle set in issuer should return nil": {
 			issuer: gen.Issuer("vault-issuer",
 				gen.SetIssuerVault(v1alpha1.VaultIssuer{
@@ -308,24 +482,16 @@ func TestConfigureCertPool(t *testing.T) {
 	}
 
 	for name, test := range tests {
-		v := new(Vault)
-		httpClient := http.DefaultClient
-		httpClient.Transport = &http.Transport{
-			TLSClientConfig: &tls.Config{},
-		}
+		v := New("test-namespace", nil, test.issuer)
 
-		cfg := vault.Config{
-			HttpClient: http.DefaultClient,
-		}
-
-		err := v.configureCertPool(&cfg, test.issuer)
+		cfg, err := v.newConfig()
 		if !reflect.DeepEqual(test.expectedErr, err) {
 			t.Errorf("%s: unexpected error, exp=%v got=%v",
 				name, test.expectedErr, err)
 		}
 
 		if test.checkFunc != nil {
-			if err := test.checkFunc(&cfg); err != nil {
+			if err := test.checkFunc(cfg); err != nil {
 				t.Errorf("%s: check function failed: %s",
 					name, err)
 			}
@@ -333,68 +499,11 @@ func TestConfigureCertPool(t *testing.T) {
 	}
 }
 
-type testInitVaultClientT struct {
-	expectedErr        error
-	certificaterequest *v1alpha1.CertificateRequest
-	issuer             v1alpha1.GenericIssuer
-}
-
-func TestInitVaultClient(t *testing.T) {
-	tests := map[string]testInitVaultClientT{
-		"a issuer with a bad CA cert should error": {
-			issuer: gen.Issuer("vault-issuer",
-				gen.SetIssuerVault(v1alpha1.VaultIssuer{
-					CABundle: []byte("bad cert"),
-				}),
-			),
-			expectedErr: errors.New("error loading Vault CA bundle"),
-		},
-		"a vault issuer with no token or role secret reference should error": {
-			issuer: gen.Issuer("vault-issuer",
-				gen.SetIssuerVault(v1alpha1.VaultIssuer{
-					CABundle: []byte(testCertBundle),
-				}),
-			),
-			expectedErr: errors.New("error initializing Vault client. tokenSecretRef or appRoleSecretRef not set"),
-		},
-
-		//TODO:
-		// - test for when tokenRef.Name != ""
-		// - test for when appRole.RoleId != ""
-		// - test for when appRole.RoleId != "" and tokenRef.Name != ""
-
-		//"foo": {
-		//	issuer: gen.Issuer("vault-issuer",
-		//		gen.SetIssuerVault(v1alpha1.VaultIssuer{
-		//			CABundle: []byte(testCertBundle),
-		//			Auth: v1alpha1.VaultAuth{
-		//				AppRole: v1alpha1.VaultAppRole{
-		//					RoleId: "my-role-id",
-		//				},
-		//			},
-		//		}),
-		//	),
-		//	expectedErr: nil,
-		//},
-	}
-
-	for name, test := range tests {
-		v := new(Vault)
-
-		_, err := v.initVaultClient(test.certificaterequest, test.issuer)
-		if !reflect.DeepEqual(test.expectedErr, err) {
-			t.Errorf("%s: unexpected error, exp=%v got=%v",
-				name, test.expectedErr, err)
-		}
-	}
-}
-
 type requestTokenWithAppRoleRefT struct {
-	client  *vault.Client
+	client  internal.VaultClient
 	appRole *v1alpha1.VaultAppRole
 
-	certificaterequest *v1alpha1.CertificateRequest
-	fakeLister         *testfake.FakeSecretLister
+	fakeLister *testfake.FakeSecretLister
 
 	expectedToken string
 	expectedErr   error
@@ -411,13 +520,19 @@ func TestRequestTokenWithAppRoleRef(t *testing.T) {
 		},
 	}
 
+	basicSecretLister := gen.FakeSecretListerFrom(testfake.NewFakeSecretLister(),
+		gen.SetFakeSecretNamespaceListerGet(
+			&corev1.Secret{
+				Data: map[string][]byte{
+					"my-key": []byte("my-key-data"),
+				},
+			}, nil),
+	)
+
 	tests := map[string]requestTokenWithAppRoleRefT{
 		"a secret reference that does not exist should error": {
-			client:  nil,
+			client:  vaultfake.NewFakeClient(),
 			appRole: basicAppRoleRef,
-			certificaterequest: gen.CertificateRequest("test",
-				gen.SetCertificateRequestNamespace("test-namespace"),
-			),
 			fakeLister: gen.FakeSecretListerFrom(testfake.NewFakeSecretLister(),
 				gen.SetFakeSecretNamespaceListerGet(nil, errors.New("secret not found")),
 			),
@@ -425,61 +540,71 @@ func TestRequestTokenWithAppRoleRef(t *testing.T) {
 			expectedToken: "",
 			expectedErr:   errors.New("error reading Vault AppRole from secret: test-namespace/test-secret: secret not found"),
 		},
-		"foo": {
-			//client: &vault.NewClient(&vault.Config{
-			//	HttpClient: http.DefaultClient,
-			//}),
-			client:  nil,
-			appRole: basicAppRoleRef,
-			certificaterequest: gen.CertificateRequest("test",
-				gen.SetCertificateRequestNamespace("test-namespace"),
-			),
-			fakeLister: gen.FakeSecretListerFrom(testfake.NewFakeSecretLister(),
-				gen.SetFakeSecretNamespaceListerGet(
-					&corev1.Secret{
-						Data: map[string][]byte{
-							"my-key": []byte("my-key-data"),
-						},
-					}, nil),
-			),
+		"if a raw request fails then error": {
+			client:     vaultfake.NewFakeClient().WithRawRequest(nil, errors.New("request failed")),
+			appRole:    basicAppRoleRef,
+			fakeLister: basicSecretLister,
 
 			expectedToken: "",
-			expectedErr:   errors.New("error reading Vault AppRole from secret: test-namespace/test-secret: secret not found"),
+			expectedErr:   errors.New("error logging in to Vault server: request failed"),
+		},
+		"no id in the JSON response should return no token": {
+			client: vaultfake.NewFakeClient().WithRawRequest(
+				&vault.Response{
+					Response: &http.Response{
+						Body: ioutil.NopCloser(
+							strings.NewReader(
+								`{"request_id":"","lease_id":"","lease_duration":0,"renewable":false,"data":null,"warnings":null,"data":{}}`),
+						),
+					},
+				}, nil,
+			),
+			appRole:    basicAppRoleRef,
+			fakeLister: basicSecretLister,
+
+			expectedToken: "",
+			expectedErr:   errors.New("no token returned"),
+		},
+		"an id in the JSON response should return that token": {
+			client: vaultfake.NewFakeClient().WithRawRequest(
+				&vault.Response{
+					Response: &http.Response{
+						Body: ioutil.NopCloser(
+							strings.NewReader(
+								`{"request_id":"","lease_id":"","lease_duration":0,"renewable":false,"data":null,"warnings":null,"data":{"id":"my-token"}}`),
+						),
+					},
+				}, nil,
+			),
+			appRole:    basicAppRoleRef,
+			fakeLister: basicSecretLister,
+
+			expectedToken: "my-token",
+			expectedErr:   nil,
+		},
+		"a client_token present should take president over id": {
+			client: vaultfake.NewFakeClient().WithRawRequest(
+				&vault.Response{
+					Response: &http.Response{
+						Body: ioutil.NopCloser(
+							strings.NewReader(
+								`{"request_id":"","lease_id":"","lease_duration":0,"renewable":false,"data":null,"warnings":null,"data":{"id":"my-token"},"auth":{"client_token":"my-client-token"}}`),
+						),
+					},
+				}, nil,
+			),
+			appRole:    basicAppRoleRef,
+			fakeLister: basicSecretLister,
+
+			expectedToken: "my-client-token",
+			expectedErr:   nil,
 		},
 	}
 
-	f := func(w http.ResponseWriter, r *http.Request) {
-		message := r.URL.Path
-		message = strings.TrimPrefix(message, "/")
-		message = "Hello " + message
-		w.Write([]byte(message))
-	}
-
-	http.HandleFunc("/", f)
-	go func() {
-		if err := http.ListenAndServeTLS("127.0.0.1:8443")
-		if err := http.ListenAndServe("127.0.0.1:8443", nil); err != nil {
-			t.Error(err)
-			t.FailNow()
-		}
-	}()
-
 	for name, test := range tests {
-		v := &Vault{
-			secretsLister: test.fakeLister,
-		}
+		v := New("test-namespace", test.fakeLister, nil)
 
-		client, err := vault.NewClient(&vault.Config{
-			HttpClient: http.DefaultClient,
-			Address:    "https://127.0.0.1:8443",
-		})
-
-		if err != nil {
-			t.Errorf("%s: failed to build vault client: %s", name, err)
-			continue
-		}
-
-		token, err := v.requestTokenWithAppRoleRef(test.certificaterequest, client, test.appRole)
+		token, err := v.requestTokenWithAppRoleRef(test.client, test.appRole)
 		if !reflect.DeepEqual(test.expectedErr, err) {
 			t.Errorf("%s: unexpected error, exp=%v got=%v",
 				name, test.expectedErr, err)
