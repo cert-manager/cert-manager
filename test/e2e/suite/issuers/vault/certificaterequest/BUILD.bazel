@@ -3,22 +3,20 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 go_library(
     name = "go_default_library",
     srcs = [
-        "doc.go",
-        "issuer.go",
+        "approle.go",
+        "approle_custom_mount.go",
     ],
-    importpath = "github.com/jetstack/cert-manager/test/e2e/suite/issuers/vault",
-    tags = ["manual"],
+    importpath = "github.com/jetstack/cert-manager/test/e2e/suite/issuers/vault/certificaterequest",
     visibility = ["//visibility:public"],
     deps = [
         "//pkg/apis/certmanager/v1alpha1:go_default_library",
         "//test/e2e/framework:go_default_library",
         "//test/e2e/framework/addon/tiller:go_default_library",
         "//test/e2e/framework/addon/vault:go_default_library",
-        "//test/e2e/suite/issuers/vault/certificate:go_default_library",
-        "//test/e2e/suite/issuers/vault/certificaterequest:go_default_library",
         "//test/e2e/util:go_default_library",
         "//vendor/github.com/onsi/ginkgo:go_default_library",
         "//vendor/github.com/onsi/gomega:go_default_library",
+        "//vendor/k8s.io/apimachinery/pkg/apis/meta/v1:go_default_library",
     ],
 )
 
@@ -31,11 +29,7 @@ filegroup(
 
 filegroup(
     name = "all-srcs",
-    srcs = [
-        ":package-srcs",
-        "//test/e2e/suite/issuers/vault/certificate:all-srcs",
-        "//test/e2e/suite/issuers/vault/certificaterequest:all-srcs",
-    ],
+    srcs = [":package-srcs"],
     tags = ["automanaged"],
     visibility = ["//visibility:public"],
 )
