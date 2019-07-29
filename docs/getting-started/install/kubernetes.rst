@@ -240,6 +240,49 @@ supported backends.
 Alternative installation methods
 ================================
 
+Helmfile
+--------
+
+Helmfile is a declarative spec for deploying helm charts.
+
+Requirements:
+ * kubectl
+ * Helm
+ * helmfile (https://github.com/roboll/helmfile).
+ 
+Steps:
+ 
+1.- create a working directory:
+
+    `mkdir cert-manager && cd cert-manager`
+    
+2.-  create `helmfile.yaml` with the following content:
+
+```
+repositories:
+  - name: jetstack
+    url: https://charts.jetstack.io
+
+releases:
+  - name: crd-cert-manager
+    namespace: cert-manager
+    version: v0.1.0
+    chart: jetstack/crd-cert-manager
+  - name: cert-manager
+    namespace: cert-manager
+    version: v0.8.1
+    chart: jetstack/cert-manager
+    hooks: # here we add the annotation to namespace /disable-validation=true and we do it pre install (preSync)
+      - events: ["presync"]
+        command: "kubectl"
+        args: ["label", "--overwrite", "namespace", "{{`{{.Release.Namespace}}`}}", "certmanager.k8s.io/disable-validation=true"]
+```
+3.- Run:
+
+```
+helmfile sync
+```
+
 kubeprod
 --------
 
