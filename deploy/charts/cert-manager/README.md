@@ -106,8 +106,7 @@ The following table lists the configurable parameters of the cert-manager chart 
 | `prometheus.enabled` | Enable Prometheus monitoring | `true` |
 | `prometheus.servicemonitor.enabled` | Enable Prometheus Operator ServiceMonitor
 monitoring | `false`
-| `prometheus.servicemonitor.prometheusInstance` | Prometheus Instance
-definition | `default` |
+| `prometheus.servicemonitor.prometheusInstance` | Prometheus Instance definition | `default` |
 | `prometheus.servicemonitor.targetPort` | Prometheus scrape port | `9402` |
 | `prometheus.servicemonitor.path` | Prometheus scrape path | `/metrics` |
 | `prometheus.servicemonitor.interval` | Prometheus scrape interval | `60s` |
