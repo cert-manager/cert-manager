@@ -345,7 +345,7 @@ func (s *Solver) solverForChallenge(ctx context.Context, issuer v1alpha1.Generic
 		}
 
 		impl, err = s.dnsProviderConstructors.azureDNS(
-			providerConfig.AzureDNS.Environment,
+			string(providerConfig.AzureDNS.Environment),
 			providerConfig.AzureDNS.ClientID,
 			string(clientSecretBytes),
 			providerConfig.AzureDNS.SubscriptionID,
