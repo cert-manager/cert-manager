@@ -240,6 +240,22 @@ supported backends.
 Alternative installation methods
 ================================
 
+Helmfile
+--------
+
+Helmfile is a declarative spec for deploying helm charts. 
+
+'cert-manager-installer': https://github.com/zakkg3/cert-manager-installer
+It's an easy and automated way to install cert-manager.
+
+Note: This is an external link and it's not officially maintained by cert-manager
+but by the community.
+
+   git clone git@github.com:zakkg3/cert-manager-installer.git
+   cd cert-manager-installer
+   helmfile sync
+
+
 kubeprod
 --------
 
