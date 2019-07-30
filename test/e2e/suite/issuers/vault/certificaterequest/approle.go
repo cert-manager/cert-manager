@@ -190,6 +190,8 @@ var _ = framework.CertManagerDescribe("Vault CertificateRequest (AppRole)", func
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Verifying the Certificate is valid")
+			cr, err = crClient.Get(cr.Name, metav1.GetOptions{})
+			Expect(err).NotTo(HaveOccurred())
 			f.CertificateRequestDurationValid(cr, v.expectedDuration+(30*time.Second))
 		})
 	}
