@@ -52,7 +52,6 @@ var _ = framework.CertManagerDescribe("Vault CertificateRequest (AppRole)", func
 			[]byte{8, 8, 8, 8},
 			[]byte{1, 1, 1, 1},
 		}
-		crURIs = []string{"spiffe://foo.foo.example.net", "spiffe://foo.bar.example.net"}
 	)
 
 	BeforeEach(func() {
@@ -124,7 +123,7 @@ var _ = framework.CertManagerDescribe("Vault CertificateRequest (AppRole)", func
 			&metav1.Duration{
 				Duration: time.Hour * 24 * 90,
 			},
-			crDNSNames, crIPAddresses, crURIs, x509.ECDSA)
+			crDNSNames, crIPAddresses, nil, x509.RSA)
 		Expect(err).NotTo(HaveOccurred())
 		_, err = crClient.Create(cr)
 		Expect(err).NotTo(HaveOccurred())
@@ -182,7 +181,7 @@ var _ = framework.CertManagerDescribe("Vault CertificateRequest (AppRole)", func
 			crClient := f.CertManagerClientSet.CertmanagerV1alpha1().CertificateRequests(f.Namespace.Name)
 
 			cr, key, err := util.NewCertManagerBasicCertificateRequest(certificateRequestName, issuerName,
-				v1alpha1.IssuerKind, v.inputDuration, crDNSNames, crIPAddresses, crURIs, x509.ECDSA)
+				v1alpha1.IssuerKind, v.inputDuration, crDNSNames, crIPAddresses, nil, x509.RSA)
 			Expect(err).NotTo(HaveOccurred())
 			_, err = crClient.Create(cr)
 			Expect(err).NotTo(HaveOccurred())
