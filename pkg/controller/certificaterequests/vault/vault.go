@@ -77,31 +77,11 @@ func NewVault(ctx *controllerpkg.Context) *Vault {
 	}
 }
 
-func (v *Vault) Sign(ctx context.Context, cr *v1alpha1.CertificateRequest) (*issuer.IssueResponse, error) {
+func (v *Vault) Sign(ctx context.Context, cr *v1alpha1.CertificateRequest, issuerObj v1alpha1.GenericIssuer) (*issuer.IssueResponse, error) {
 	log := logf.FromContext(ctx, "sign")
-
 	reporter := crutil.NewReporter(log, cr, v.recorder)
 
-	issuerObj, err := v.helper.GetGenericIssuer(cr.Spec.IssuerRef, cr.Namespace)
-	if err != nil {
-		log = log.WithValues(
-			logf.RelatedResourceNameKey, cr.Spec.IssuerRef.Name,
-			logf.RelatedResourceKindKey, cr.Spec.IssuerRef.Kind,
-		)
-
-		if k8sErrors.IsNotFound(err) {
-			reporter.WithLog(log).Pending(err, "ErrorMissingIssuer",
-				fmt.Sprintf("Referenced %q not found", apiutil.IssuerKind(cr.Spec.IssuerRef)))
-			return nil, nil
-		}
-
-		// We are probably in a network error here so we should backoff and retry
-		reporter.Pending(err, "ErrorGettingIssuer",
-			fmt.Sprintf("Failed to get referenced Issuer %q", cr.Spec.IssuerRef.Name))
-		return nil, err
-	}
-
-	_, err = pki.DecodeX509CertificateRequestBytes(cr.Spec.CSRPEM)
+	_, err := pki.DecodeX509CertificateRequestBytes(cr.Spec.CSRPEM)
 	if err != nil {
 		reporter.Failed(err, "ErrorParsingCSR",
 			fmt.Sprintf("Failed to decode CSR in spec: %s", err))
