@@ -50,7 +50,7 @@ type Vault struct {
 }
 
 func init() {
-	// create certificate request controller for ca issuer
+	// create certificate request controller for vault issuer
 	controllerpkg.Register(CRControllerName, func(ctx *controllerpkg.Context) (controllerpkg.Interface, error) {
 		vault := NewVault(ctx)
 
@@ -126,7 +126,8 @@ func (v *Vault) Sign(ctx context.Context, cr *v1alpha1.CertificateRequest) (*iss
 		return nil, nil
 	}
 
-	certPem, caPem, err := client.Sign(cr.Spec.CSRPEM, cr.Spec.Duration.Duration)
+	certDuration := pki.CertDuration(cr.Spec.Duration)
+	certPem, caPem, err := client.Sign(cr.Spec.CSRPEM, certDuration)
 	if err != nil {
 		reporter.Failed(err, "ErrorSigning",
 			fmt.Sprintf("Vault failed to sign certificate: %s", err))

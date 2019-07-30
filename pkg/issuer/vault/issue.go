@@ -82,10 +82,7 @@ func (v *Vault) Issue(ctx context.Context, crt *v1alpha1.Certificate) (*issuer.I
 	/// END building CSR
 
 	/// BEGIN requesting certificate
-	certDuration := v1alpha1.DefaultCertificateDuration
-	if crt.Spec.Duration != nil {
-		certDuration = crt.Spec.Duration.Duration
-	}
+	certDuration := pki.CertDuration(crt.Spec.Duration)
 
 	vaultClient, err := vaultinternal.New(v.resourceNamespace, v.secretsLister, v.issuer)
 	if err != nil {

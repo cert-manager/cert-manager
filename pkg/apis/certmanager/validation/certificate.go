@@ -23,6 +23,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	"github.com/jetstack/cert-manager/pkg/util/pki"
 )
 
 // Validation functions for cert-manager v1alpha1 Certificate types
@@ -200,10 +201,7 @@ func ValidateHTTP01SolverConfig(a *v1alpha1.HTTP01SolverConfig, fldPath *field.P
 func ValidateDuration(crt *v1alpha1.CertificateSpec, fldPath *field.Path) field.ErrorList {
 	el := field.ErrorList{}
 
-	duration := v1alpha1.DefaultCertificateDuration
-	if crt.Duration != nil {
-		duration = crt.Duration.Duration
-	}
+	duration := pki.CertDuration(crt.Duration)
 	renewBefore := v1alpha1.DefaultRenewBefore
 	if crt.RenewBefore != nil {
 		renewBefore = crt.RenewBefore.Duration
