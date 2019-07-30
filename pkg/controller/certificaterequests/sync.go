@@ -34,6 +34,10 @@ import (
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 )
 
+var (
+	certificateRequestGvk = v1alpha1.SchemeGroupVersion.WithKind("CertificateRequest")
+)
+
 func (c *Controller) Sync(ctx context.Context, cr *v1alpha1.CertificateRequest) (err error) {
 	c.metrics.IncrementSyncCallCount(ControllerName)
 

@@ -42,6 +42,7 @@ import (
 	intscheme "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/scheme"
 	informers "github.com/jetstack/cert-manager/pkg/client/informers/externalversions"
 	"github.com/jetstack/cert-manager/pkg/controller"
+	cracmecontroller "github.com/jetstack/cert-manager/pkg/controller/certificaterequests/acme"
 	crcacontroller "github.com/jetstack/cert-manager/pkg/controller/certificaterequests/ca"
 	crselfsignedcontroller "github.com/jetstack/cert-manager/pkg/controller/certificaterequests/selfsigned"
 	crvaultcontroller "github.com/jetstack/cert-manager/pkg/controller/certificaterequests/vault"
@@ -80,6 +81,7 @@ func Run(opts *options.ControllerOptions, stopCh <-chan struct{}) {
 
 	if utilfeature.DefaultFeatureGate.Enabled(feature.CertificateRequestControllers) {
 		opts.EnabledControllers = append(opts.EnabledControllers, []string{
+			cracmecontroller.CRControllerName,
 			crcacontroller.CRControllerName,
 			crselfsignedcontroller.CRControllerName,
 			crvaultcontroller.CRControllerName,
