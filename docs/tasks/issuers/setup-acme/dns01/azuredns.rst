@@ -12,11 +12,11 @@ To create the service principal:
   :linenos:
 
   AZURE_CERT_MANAGER_SP_NAME=SOME_SERVICE_PRINCIPAL_NAME
-  AZURE_CERT_MANAGER_SP_PASSWORD=SOME_PASSWORD
   AZURE_CERT_MANAGER_DNS_RESOURCE_GROUP=SOME_RESOURCE_GROUP
   AZURE_CERT_MANAGER_DNS_NAME=SOME_DNS_ZONE
 
-  AZURE_CERT_MANAGER_SP_APP_ID=$(az ad sp create-for-rbac --name $AZURE_CERT_MANAGER_SP_NAME --password $AZURE_CERT_MANAGER_SP_PASSWORD --query "appId" --output tsv)
+  # Password is automatically generated. Query with "password" to get it
+  AZURE_CERT_MANAGER_SP_APP_ID=$(az ad sp create-for-rbac --name $AZURE_CERT_MANAGER_SP_NAME --query "appId" --output tsv)
 
   # Lower the Permissions of the SP
   az role assignment delete --assignee $AZURE_CERT_MANAGER_SP_APP_ID --role Contributor
