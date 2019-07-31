@@ -251,6 +251,8 @@ It's an easy and automated way to install cert-manager.
 Note: This is an external link and it's not officially maintained by cert-manager
 but by the community.
 
+.. code-block:: shell
+
    git clone git@github.com:zakkg3/cert-manager-installer.git
    cd cert-manager-installer
    helmfile sync
