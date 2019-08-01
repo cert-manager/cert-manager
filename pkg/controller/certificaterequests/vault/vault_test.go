@@ -82,7 +82,7 @@ func TestSign(t *testing.T) {
 				KubeObjects:        []runtime.Object{},
 				CertManagerObjects: []runtime.Object{},
 				ExpectedEvents: []string{
-					`Warning ErrorParsingCSR Failed to decode CSR in spec: error decoding certificate request PEM block: error decoding certificate request PEM block`,
+					`Warning ErrorParsingCSR Failed to decode CSR in spec: error decoding certificate request PEM block`,
 				},
 				CheckFn: testcr.MustNoResponse,
 			},
@@ -97,7 +97,7 @@ func TestSign(t *testing.T) {
 				KubeObjects:        []runtime.Object{},
 				CertManagerObjects: []runtime.Object{},
 				ExpectedEvents: []string{
-					`Normal ErrorVaultInit Failed to initialise vault client for signing: error initializing Vault client tokenSecretRef or appRoleSecretRef not set: error initializing Vault client tokenSecretRef or appRoleSecretRef not set`,
+					`Normal ErrorVaultInit Failed to initialise vault client for signing: error initializing Vault client tokenSecretRef or appRoleSecretRef not set`,
 				},
 				CheckFn: testcr.MustNoResponse,
 			},
@@ -121,7 +121,7 @@ func TestSign(t *testing.T) {
 				KubeObjects:        []runtime.Object{},
 				CertManagerObjects: []runtime.Object{},
 				ExpectedEvents: []string{
-					`Normal MissingSecret Required resource not found: secret "non-existing-secret" not found: secret "non-existing-secret" not found`,
+					`Normal MissingSecret Required secret resource not found: secret "non-existing-secret" not found`,
 				},
 				CheckFn: testcr.MustNoResponse,
 			},
@@ -148,7 +148,7 @@ func TestSign(t *testing.T) {
 				KubeObjects:        []runtime.Object{},
 				CertManagerObjects: []runtime.Object{},
 				ExpectedEvents: []string{
-					`Normal MissingSecret Required resource not found: secret "non-existing-secret" not found: secret "non-existing-secret" not found`,
+					`Normal MissingSecret Required secret resource not found: secret "non-existing-secret" not found`,
 				},
 				CheckFn: testcr.MustNoResponse,
 			},
@@ -172,7 +172,7 @@ func TestSign(t *testing.T) {
 				KubeObjects:        []runtime.Object{tokenSecret},
 				CertManagerObjects: []runtime.Object{},
 				ExpectedEvents: []string{
-					`Warning ErrorSigning Vault failed to sign certificate: failed to sign: failed to sign`,
+					`Warning ErrorSigning Vault failed to sign certificate: failed to sign`,
 				},
 				CheckFn: testcr.MustNoResponse,
 			},
@@ -200,7 +200,7 @@ func TestSign(t *testing.T) {
 				KubeObjects:        []runtime.Object{roleSecret},
 				CertManagerObjects: []runtime.Object{},
 				ExpectedEvents: []string{
-					`Warning ErrorSigning Vault failed to sign certificate: failed to sign: failed to sign`,
+					`Warning ErrorSigning Vault failed to sign certificate: failed to sign`,
 				},
 				CheckFn: testcr.MustNoResponse,
 			},

@@ -2,16 +2,12 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 
 go_library(
     name = "go_default_library",
-    srcs = [
-        "reporter.go",
-        "status.go",
-    ],
+    srcs = ["reporter.go"],
     importpath = "github.com/jetstack/cert-manager/pkg/controller/certificaterequests/util",
     visibility = ["//visibility:public"],
     deps = [
         "//pkg/api/util:go_default_library",
         "//pkg/apis/certmanager/v1alpha1:go_default_library",
-        "//vendor/github.com/go-logr/logr:go_default_library",
         "//vendor/k8s.io/api/core/v1:go_default_library",
         "//vendor/k8s.io/apimachinery/pkg/apis/meta/v1:go_default_library",
         "//vendor/k8s.io/client-go/tools/record:go_default_library",

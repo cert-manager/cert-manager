@@ -18,7 +18,6 @@ package vault
 
 import (
 	"context"
-	"fmt"
 
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	corelisters "k8s.io/client-go/listers/core/v1"
@@ -79,12 +78,15 @@ func NewVault(ctx *controllerpkg.Context) *Vault {
 
 func (v *Vault) Sign(ctx context.Context, cr *v1alpha1.CertificateRequest, issuerObj v1alpha1.GenericIssuer) (*issuer.IssueResponse, error) {
 	log := logf.FromContext(ctx, "sign")
-	reporter := crutil.NewReporter(log, cr, v.recorder)
+	reporter := crutil.NewReporter(cr, v.recorder)
 
 	_, err := pki.DecodeX509CertificateRequestBytes(cr.Spec.CSRPEM)
 	if err != nil {
-		reporter.Failed(err, "ErrorParsingCSR",
-			fmt.Sprintf("Failed to decode CSR in spec: %s", err))
+		message := "Failed to decode CSR in spec"
+
+		reporter.Failed(err, "ErrorParsingCSR", message)
+		log.Error(err, message)
+
 		return nil, nil
 	}
 
@@ -96,21 +98,29 @@ func (v *Vault) Sign(ctx context.Context, cr *v1alpha1.CertificateRequest, issue
 		)
 
 		if k8sErrors.IsNotFound(err) {
-			reporter.WithLog(log).Pending(err, "MissingSecret",
-				fmt.Sprintf("Required resource not found: %s", err))
+			message := "Required secret resource not found"
+
+			reporter.Pending(err, "MissingSecret", message)
+			log.Error(err, message)
+
 			return nil, nil
 		}
 
-		reporter.WithLog(log).Pending(err, "ErrorVaultInit",
-			fmt.Sprintf("Failed to initialise vault client for signing: %s", err))
+		message := "Failed to initialise vault client for signing"
+		reporter.Pending(err, "ErrorVaultInit", message)
+		log.Error(err, message)
+
 		return nil, nil
 	}
 
 	certDuration := pki.CertDuration(cr.Spec.Duration)
 	certPem, caPem, err := client.Sign(cr.Spec.CSRPEM, certDuration)
 	if err != nil {
-		reporter.Failed(err, "ErrorSigning",
-			fmt.Sprintf("Vault failed to sign certificate: %s", err))
+		message := "Vault failed to sign certificate"
+
+		reporter.Failed(err, "ErrorSigning", message)
+		log.Error(err, message)
+
 		return nil, nil
 	}
 
