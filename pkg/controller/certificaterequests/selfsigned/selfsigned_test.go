@@ -141,7 +141,7 @@ func TestSign(t *testing.T) {
 			certificaterequest: gen.CertificateRequest("test-cr"),
 			builder: &testpkg.Builder{
 				ExpectedEvents: []string{
-					`Normal MissingAnnotation Annotation "certmanager.k8s.io/private-key-secret-name" missing or reference empty: self signed issuer requires "certmanager.k8s.io/private-key-secret-name" annotation to be set to the name of the Secret containing the private key`,
+					`Normal MissingAnnotation Annotation "certmanager.k8s.io/private-key-secret-name" missing or reference empty: secret name missing`,
 				},
 				CheckFn: mustNoResponse,
 			},
@@ -156,7 +156,7 @@ func TestSign(t *testing.T) {
 			),
 			builder: &testpkg.Builder{
 				ExpectedEvents: []string{
-					`Normal MissingAnnotation Annotation "certmanager.k8s.io/private-key-secret-name" missing or reference empty: self signed issuer requires "certmanager.k8s.io/private-key-secret-name" annotation to be set to the name of the Secret containing the private key`,
+					`Normal MissingAnnotation Annotation "certmanager.k8s.io/private-key-secret-name" missing or reference empty: secret name missing`,
 				},
 				CheckFn: mustNoResponse,
 			},
@@ -186,7 +186,7 @@ func TestSign(t *testing.T) {
 			builder: &testpkg.Builder{
 				KubeObjects: []runtime.Object{rsaKeySecret},
 				ExpectedEvents: []string{
-					"Warning ErrorGenerating Failed to generate certificate template: failed to decode csr from certificate request resource default-unit-test-ns/test-cr",
+					`Warning ErrorGenerating Error generating certificate template: failed to decode csr from certificate request resource default-unit-test-ns/test-cr`,
 				},
 				CheckFn: mustNoResponse,
 			},
@@ -219,7 +219,7 @@ func TestSign(t *testing.T) {
 				KubeObjects: []runtime.Object{rsaKeySecret},
 				CheckFn:     mustNoResponse,
 				ExpectedEvents: []string{
-					`Normal ErrorGettingSecret Failed to get key "test-rsa-key" referenced in annotation "certmanager.k8s.io/private-key-secret-name": this is a network error`,
+					`Normal ErrorGettingSecret Failed to get certificate key pair from secret default-unit-test-ns/test-rsa-key: this is a network error`,
 				},
 			},
 			FakeLister: &testfake.FakeSecretLister{
@@ -340,7 +340,12 @@ func runTest(t *testing.T, test testT) {
 
 	test.builder.Sync()
 
-	resp, err := c.Sign(context.Background(), test.certificaterequest)
+	selfSignedIssuer := gen.Issuer("selfsigned-issuer",
+		gen.SetIssuerSelfSigned(v1alpha1.SelfSignedIssuer{}),
+	)
+
+	resp, err := c.Sign(context.Background(), test.certificaterequest,
+		selfSignedIssuer)
 	if err != nil && !test.expectedErr {
 		t.Errorf("expected to not get an error, but got: %v", err)
 	}

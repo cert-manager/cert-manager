@@ -21,8 +21,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/go-logr/logr"
-	corev1 "k8s.io/api/core/v1"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	corelisters "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/tools/record"
@@ -31,6 +29,7 @@ import (
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
 	"github.com/jetstack/cert-manager/pkg/controller/certificaterequests"
+	crutil "github.com/jetstack/cert-manager/pkg/controller/certificaterequests/util"
 	"github.com/jetstack/cert-manager/pkg/issuer"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 	cmerrors "github.com/jetstack/cert-manager/pkg/util/errors"
@@ -51,6 +50,7 @@ type SelfSigned struct {
 	// used to record Events about resources to the API
 	recorder record.EventRecorder
 
+	issuerOptions controllerpkg.IssuerOptions
 	secretsLister corelisters.SecretLister
 }
 
@@ -72,55 +72,71 @@ func init() {
 func NewSelfSigned(ctx *controllerpkg.Context) *SelfSigned {
 	return &SelfSigned{
 		recorder:      ctx.Recorder,
+		issuerOptions: ctx.IssuerOptions,
 		secretsLister: ctx.KubeSharedInformerFactory.Core().V1().Secrets().Lister(),
 	}
 }
 
-func (s *SelfSigned) Sign(ctx context.Context, cr *v1alpha1.CertificateRequest) (*issuer.IssueResponse, error) {
+func (s *SelfSigned) Sign(ctx context.Context, cr *v1alpha1.CertificateRequest, issuerObj v1alpha1.GenericIssuer) (*issuer.IssueResponse, error) {
 	log := logf.FromContext(ctx, "sign")
+	reporter := crutil.NewReporter(cr, s.recorder)
 
-	skRef, ok := cr.ObjectMeta.Annotations[v1alpha1.CRPrivateKeyAnnotationKey]
-	if !ok || skRef == "" {
-		s.reportPendingStatus(log, cr, errorNoAnnotation, "MissingAnnotation",
-			fmt.Sprintf("Annotation %q missing or reference empty",
-				v1alpha1.CRPrivateKeyAnnotationKey))
+	resourceNamespace := s.issuerOptions.ResourceNamespace(issuerObj)
+
+	secretName, ok := cr.ObjectMeta.Annotations[v1alpha1.CRPrivateKeyAnnotationKey]
+	if !ok || secretName == "" {
+		message := fmt.Sprintf("Annotation %q missing or reference empty",
+			v1alpha1.CRPrivateKeyAnnotationKey)
+		err := errors.New("secret name missing")
+
+		reporter.Pending(err, "MissingAnnotation", message)
+		log.Error(err, message)
 
 		return nil, nil
 	}
 
-	privatekey, err := kube.SecretTLSKey(ctx, s.secretsLister, cr.Namespace, skRef)
+	privatekey, err := kube.SecretTLSKey(ctx, s.secretsLister, cr.Namespace, secretName)
 	if err != nil {
 		if k8sErrors.IsNotFound(err) {
-			s.reportPendingStatus(log, cr, err, "MissingSecret",
-				fmt.Sprintf("Referenced secret %s/%s not found", cr.Namespace, skRef))
+			message := fmt.Sprintf("Referenced secret %s/%s not found", cr.Namespace, secretName)
+
+			reporter.Pending(err, "MissingSecret", message)
+			log.Error(err, message)
 
 			return nil, nil
 		}
 
 		if cmerrors.IsInvalidData(err) {
-			s.reportPendingStatus(log, cr, err, "ErrorParsingKey",
-				fmt.Sprintf("Failed to get key %q referenced in annotation %q",
-					skRef, v1alpha1.CRPrivateKeyAnnotationKey))
+			message := fmt.Sprintf("Failed to get key %q referenced in annotation %q",
+				secretName, v1alpha1.CRPrivateKeyAnnotationKey)
+
+			reporter.Pending(err, "ErrorParsingKey", message)
+			log.Error(err, message)
+
 			return nil, nil
 		}
 
 		// We are probably in a network error here so we should backoff and retry
-		s.reportPendingStatus(log, cr, err, "ErrorGettingSecret",
-			fmt.Sprintf("Failed to get key %q referenced in annotation %q",
-				skRef, v1alpha1.CRPrivateKeyAnnotationKey))
+		message := fmt.Sprintf("Failed to get certificate key pair from secret %s/%s", resourceNamespace, secretName)
+		reporter.Pending(err, "ErrorGettingSecret", message)
+		log.Error(err, message)
 		return nil, err
 	}
 
 	template, err := pki.GenerateTemplateFromCertificateRequest(cr)
 	if err != nil {
-		s.reportFaliedStatus(log, cr, err, "ErrorGenerating", "Failed to generate certificate template")
+		message := "Error generating certificate template"
+		reporter.Failed(err, "ErrorGenerating", message)
+		log.Error(err, message)
 		return nil, nil
 	}
 
 	// extract the public component of the key
 	publickey, err := pki.PublicKeyForPrivateKey(privatekey)
 	if err != nil {
-		s.reportFaliedStatus(log, cr, err, "ErrorPublicKey", "Failed to get public key from private key")
+		message := "Failed to get public key from private key"
+		reporter.Failed(err, "ErrorPublicKey", message)
+		log.Error(err, message)
 		return nil, nil
 	}
 
@@ -131,7 +147,9 @@ func (s *SelfSigned) Sign(ctx context.Context, cr *v1alpha1.CertificateRequest) 
 			err = errors.New("CSR not signed by referenced private key")
 		}
 
-		s.reportFaliedStatus(log, cr, err, "ErrorKeyMatch", "Error generating certificate template")
+		message := "Error generating certificate template"
+		reporter.Failed(err, "ErrorKeyMatch", message)
+		log.Error(err, message)
 
 		return nil, nil
 	}
@@ -139,7 +157,9 @@ func (s *SelfSigned) Sign(ctx context.Context, cr *v1alpha1.CertificateRequest) 
 	// sign and encode the certificate
 	certPem, _, err := pki.SignCertificate(template, template, publickey, privatekey)
 	if err != nil {
-		s.reportFaliedStatus(log, cr, err, "ErrorSigning", "Error signing certificate")
+		message := "Error signing certificate"
+		reporter.Failed(err, "ErrorSigning", message)
+		log.Error(err, message)
 		return nil, nil
 	}
 
@@ -150,26 +170,4 @@ func (s *SelfSigned) Sign(ctx context.Context, cr *v1alpha1.CertificateRequest) 
 		Certificate: certPem,
 		CA:          certPem,
 	}, nil
-}
-
-func (s *SelfSigned) reportFaliedStatus(log logr.Logger, cr *v1alpha1.CertificateRequest, err error,
-	reason, message string) {
-	s.recorder.Event(cr, corev1.EventTypeWarning, reason, fmt.Sprintf("%s: %v", message, err))
-	s.reportStatus(log, cr, err, reason, message, v1alpha1.ConditionFalse, v1alpha1.CertificateRequestReasonFailed)
-}
-
-func (s *SelfSigned) reportPendingStatus(log logr.Logger, cr *v1alpha1.CertificateRequest, err error,
-	reason, message string) {
-	s.recorder.Event(cr, corev1.EventTypeNormal, reason, fmt.Sprintf("%s: %v", message, err))
-	s.reportStatus(log, cr, err, reason, message, v1alpha1.ConditionFalse, v1alpha1.CertificateRequestReasonPending)
-}
-
-func (s *SelfSigned) reportStatus(log logr.Logger, cr *v1alpha1.CertificateRequest, err error,
-	reason, message string, condtion v1alpha1.ConditionStatus, reasonMessage v1alpha1.CertificateConditionType) {
-	log.Error(err, message)
-
-	// TODO: add mechanism here to handle invalid input errors which should result in a permanent failure
-	apiutil.SetCertificateRequestCondition(cr, v1alpha1.CertificateRequestConditionReady,
-		v1alpha1.ConditionFalse, v1alpha1.CertificateRequestReasonFailed,
-		message)
 }
