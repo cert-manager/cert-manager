@@ -130,7 +130,7 @@ func (c *Controller) Sync(ctx context.Context, cr *v1alpha1.CertificateRequest) 
 	dbg.Info("invoking sign function as existing certificate does not exist")
 
 	// Attempt to call the Sign function on our issuer
-	resp, err := c.issuer.Sign(ctx, crCopy)
+	resp, err := c.issuer.Sign(ctx, crCopy, issuerObj)
 	if err != nil {
 		log.Error(err, "error issuing certificate request")
 		return err

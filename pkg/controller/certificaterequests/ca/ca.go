@@ -20,7 +20,6 @@ import (
 	"context"
 	"fmt"
 
-	corev1 "k8s.io/api/core/v1"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	corelisters "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/tools/record"
@@ -29,8 +28,10 @@ import (
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
 	"github.com/jetstack/cert-manager/pkg/controller/certificaterequests"
+	crutil "github.com/jetstack/cert-manager/pkg/controller/certificaterequests/util"
 	issuerpkg "github.com/jetstack/cert-manager/pkg/issuer"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
+	cmerrors "github.com/jetstack/cert-manager/pkg/util/errors"
 	"github.com/jetstack/cert-manager/pkg/util/kube"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 )
@@ -76,60 +77,47 @@ func NewCA(ctx *controllerpkg.Context) *CA {
 	}
 }
 
-func (c *CA) Sign(ctx context.Context, cr *v1alpha1.CertificateRequest) (*issuerpkg.IssueResponse, error) {
+func (c *CA) Sign(ctx context.Context, cr *v1alpha1.CertificateRequest, issuerObj v1alpha1.GenericIssuer) (*issuerpkg.IssueResponse, error) {
 	log := logf.FromContext(ctx, "sign")
+	reporter := crutil.NewReporter(log, cr, c.recorder)
 
-	issuer, err := c.helper.GetGenericIssuer(cr.Spec.IssuerRef, cr.Namespace)
-	if k8sErrors.IsNotFound(err) {
-		apiutil.SetCertificateRequestCondition(cr, v1alpha1.CertificateRequestConditionReady,
-			v1alpha1.ConditionFalse, v1alpha1.CertificateRequestReasonPending,
-			fmt.Sprintf("Referenced %s not found", apiutil.IssuerKind(cr.Spec.IssuerRef)))
-
-		c.recorder.Event(cr, corev1.EventTypeWarning, v1alpha1.CertificateRequestReasonPending, err.Error())
-
-		log.WithValues(
-			logf.RelatedResourceNameKey, cr.Spec.IssuerRef.Name,
-			logf.RelatedResourceKindKey, cr.Spec.IssuerRef.Kind,
-		).Error(err, "failed to find referenced issuer")
-
-		return nil, nil
-	}
-	if err != nil {
-		return nil, err
-	}
-
-	resourceNamespace := c.issuerOptions.ResourceNamespace(issuer)
+	secretName := issuerObj.GetSpec().CA.SecretName
+	resourceNamespace := c.issuerOptions.ResourceNamespace(issuerObj)
 
 	// get a copy of the CA certificate named on the Issuer
-	caCerts, caKey, err := kube.SecretTLSKeyPair(ctx, c.secretsLister, resourceNamespace, issuer.GetSpec().CA.SecretName)
-	if k8sErrors.IsNotFound(err) {
-		log := logf.WithRelatedResourceName(log, issuer.GetSpec().CA.SecretName, resourceNamespace, "Secret")
-		log.Info("error getting signing CA for Issuer")
-
-		c.recorder.Event(cr, corev1.EventTypeWarning, v1alpha1.CertificateRequestReasonPending, err.Error())
-
-		return nil, nil
-	}
+	caCerts, caKey, err := kube.SecretTLSKeyPair(ctx, c.secretsLister, resourceNamespace, issuerObj.GetSpec().CA.SecretName)
 	if err != nil {
+		log := logf.WithRelatedResourceName(log, issuerObj.GetSpec().CA.SecretName, resourceNamespace, "Secret")
+		reporter = reporter.WithLog(log)
+
+		if k8sErrors.IsNotFound(err) {
+			reporter.Pending(err, "MissingSecret",
+				fmt.Sprintf("Referenced secret %s/%s not found", resourceNamespace, secretName))
+
+			return nil, nil
+		}
+
+		if cmerrors.IsInvalidData(err) {
+			reporter.Pending(err, "ErrorParsingSecret",
+				fmt.Sprintf("Failed to parse key cert pair from secret %s/%s", resourceNamespace, secretName))
+			return nil, nil
+		}
+
+		// We are probably in a network error here so we should backoff and retry
+		reporter.Pending(err, "ErrorGettingSecret",
+			fmt.Sprintf("Failed to get key cert pair from secret %s/%s", resourceNamespace, secretName))
 		return nil, err
 	}
 
 	template, err := pki.GenerateTemplateFromCertificateRequest(cr)
 	if err != nil {
-		apiutil.SetCertificateRequestCondition(cr, v1alpha1.CertificateRequestConditionReady,
-			v1alpha1.ConditionFalse, v1alpha1.CertificateRequestReasonFailed,
-			fmt.Sprintf("Failed to generate certificate template: %s", err))
-
-		// TODO: add mechanism here to handle invalid input errors which should result in a permanent failure
-		log.Error(err, "error generating certificate template")
-		c.recorder.Eventf(cr, corev1.EventTypeWarning, "ErrorSigning", "Error generating certificate template: %v", err)
+		reporter.Failed(err, "ErrorSigning", "Error generating certificate template")
 		return nil, nil
 	}
 
 	certPEM, caPEM, err := pki.SignCSRTemplate(caCerts, caKey, template)
 	if err != nil {
-		log.Error(err, "error signing certificate")
-		c.recorder.Eventf(cr, corev1.EventTypeWarning, "ErrorSigning", "Error signing certificate: %v", err)
+		reporter.Failed(err, "ErrorSigning", "Error signing certificate")
 		return nil, err
 	}
 

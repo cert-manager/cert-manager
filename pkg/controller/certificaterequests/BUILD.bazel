@@ -46,6 +46,7 @@ filegroup(
         ":package-srcs",
         "//pkg/controller/certificaterequests/ca:all-srcs",
         "//pkg/controller/certificaterequests/fake:all-srcs",
+        "//pkg/controller/certificaterequests/util:all-srcs",
     ],
     tags = ["automanaged"],
     visibility = ["//visibility:public"],
