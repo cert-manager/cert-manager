@@ -123,13 +123,14 @@ func validateIssuerRef(issuerRef v1alpha1.ObjectReference, fldPath *field.Path) 
 	if issuerRef.Name == "" {
 		el = append(el, field.Required(issuerRefPath.Child("name"), "must be specified"))
 	}
-	switch issuerRef.Kind {
-	case "":
-	case "Issuer", "ClusterIssuer":
-	default:
-		el = append(el, field.Invalid(issuerRefPath.Child("kind"), issuerRef.Kind, "must be one of Issuer or ClusterIssuer"))
+	if issuerRef.Group == "" || issuerRef.Group == v1alpha1.SchemeGroupVersion.Group {
+		switch issuerRef.Kind {
+		case "":
+		case "Issuer", "ClusterIssuer":
+		default:
+			el = append(el, field.Invalid(issuerRefPath.Child("kind"), issuerRef.Kind, "must be one of Issuer or ClusterIssuer"))
+		}
 	}
-
 	return el
 }
 
