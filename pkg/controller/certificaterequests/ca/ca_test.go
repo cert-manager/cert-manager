@@ -39,10 +39,10 @@ import (
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	testpkg "github.com/jetstack/cert-manager/pkg/controller/test"
-	testfake "github.com/jetstack/cert-manager/pkg/controller/test/fake"
 	"github.com/jetstack/cert-manager/pkg/issuer"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 	"github.com/jetstack/cert-manager/test/unit/gen"
+	testlisters "github.com/jetstack/cert-manager/test/unit/listers"
 )
 
 func generateRSAPrivateKey(t *testing.T) *rsa.PrivateKey {
@@ -247,7 +247,7 @@ func TestSign(t *testing.T) {
 				KubeObjects:        []runtime.Object{rootRSANoCASecret},
 				CertManagerObjects: []runtime.Object{},
 				ExpectedEvents: []string{
-					`Normal ErrorParsingSecret Failed to parse key cert pair from secret default-unit-test-ns/root-ca-secret: error decoding cert PEM block`,
+					`Normal ErrorParsingSecret Failed to parse signing CA keypair from secret default-unit-test-ns/root-ca-secret: error decoding cert PEM block`,
 				},
 				CheckFn: mustNoResponse,
 			},
@@ -268,7 +268,7 @@ func TestSign(t *testing.T) {
 				KubeObjects:        []runtime.Object{rootRSANoKeySecret},
 				CertManagerObjects: []runtime.Object{},
 				ExpectedEvents: []string{
-					`Normal ErrorParsingSecret Failed to parse key cert pair from secret default-unit-test-ns/root-ca-secret: error decoding private key PEM block`,
+					`Normal ErrorParsingSecret Failed to parse signing CA keypair from secret default-unit-test-ns/root-ca-secret: error decoding private key PEM block`,
 				},
 				CheckFn: mustNoResponse,
 			},
@@ -290,12 +290,12 @@ func TestSign(t *testing.T) {
 				CertManagerObjects: []runtime.Object{},
 				CheckFn:            mustNoResponse,
 				ExpectedEvents: []string{
-					"Normal ErrorGettingSecret Failed to get key cert pair from secret default-unit-test-ns/root-ca-secret: this is a network error",
+					`Normal ErrorGettingSecret Failed to get certificate key pair from secret default-unit-test-ns/root-ca-secret: this is a network error`,
 				},
 			},
-			FakeLister: &testfake.FakeSecretLister{
+			fakeLister: &testlisters.FakeSecretLister{
 				SecretsFn: func(namespace string) clientcorev1.SecretNamespaceLister {
-					return &testfake.FakeSecretNamespaceLister{
+					return &testlisters.FakeSecretNamespaceLister{
 						GetFn: func(name string) (ret *corev1.Secret, err error) {
 							return nil, errors.New("this is a network error")
 						},
@@ -320,7 +320,7 @@ type testT struct {
 
 	expectedErr bool
 
-	FakeLister *testfake.FakeSecretLister
+	fakeLister *testlisters.FakeSecretLister
 }
 
 func runTest(t *testing.T, test testT) {
@@ -330,8 +330,8 @@ func runTest(t *testing.T, test testT) {
 
 	c := NewCA(test.builder.Context)
 
-	if test.FakeLister != nil {
-		c.secretsLister = test.FakeLister
+	if test.fakeLister != nil {
+		c.secretsLister = test.fakeLister
 	}
 
 	test.builder.Sync()

@@ -79,7 +79,7 @@ func NewCA(ctx *controllerpkg.Context) *CA {
 
 func (c *CA) Sign(ctx context.Context, cr *v1alpha1.CertificateRequest, issuerObj v1alpha1.GenericIssuer) (*issuerpkg.IssueResponse, error) {
 	log := logf.FromContext(ctx, "sign")
-	reporter := crutil.NewReporter(log, cr, c.recorder)
+	reporter := crutil.NewReporter(cr, c.recorder)
 
 	secretName := issuerObj.GetSpec().CA.SecretName
 	resourceNamespace := c.issuerOptions.ResourceNamespace(issuerObj)
@@ -88,36 +88,44 @@ func (c *CA) Sign(ctx context.Context, cr *v1alpha1.CertificateRequest, issuerOb
 	caCerts, caKey, err := kube.SecretTLSKeyPair(ctx, c.secretsLister, resourceNamespace, issuerObj.GetSpec().CA.SecretName)
 	if err != nil {
 		log := logf.WithRelatedResourceName(log, issuerObj.GetSpec().CA.SecretName, resourceNamespace, "Secret")
-		reporter = reporter.WithLog(log)
 
 		if k8sErrors.IsNotFound(err) {
-			reporter.Pending(err, "MissingSecret",
-				fmt.Sprintf("Referenced secret %s/%s not found", resourceNamespace, secretName))
+			message := fmt.Sprintf("Referenced secret %s/%s not found", resourceNamespace, secretName)
+
+			reporter.Pending(err, "MissingSecret", message)
+			log.Error(err, message)
 
 			return nil, nil
 		}
 
 		if cmerrors.IsInvalidData(err) {
-			reporter.Pending(err, "ErrorParsingSecret",
-				fmt.Sprintf("Failed to parse key cert pair from secret %s/%s", resourceNamespace, secretName))
+			message := fmt.Sprintf("Failed to parse signing CA keypair from secret %s/%s", resourceNamespace, secretName)
+
+			reporter.Pending(err, "ErrorParsingSecret", message)
+			log.Error(err, message)
 			return nil, nil
 		}
 
 		// We are probably in a network error here so we should backoff and retry
-		reporter.Pending(err, "ErrorGettingSecret",
-			fmt.Sprintf("Failed to get key cert pair from secret %s/%s", resourceNamespace, secretName))
+		message := fmt.Sprintf("Failed to get certificate key pair from secret %s/%s", resourceNamespace, secretName)
+		reporter.Pending(err, "ErrorGettingSecret", message)
+		log.Error(err, message)
 		return nil, err
 	}
 
 	template, err := pki.GenerateTemplateFromCertificateRequest(cr)
 	if err != nil {
-		reporter.Failed(err, "ErrorSigning", "Error generating certificate template")
+		message := "Error generating certificate template"
+		reporter.Failed(err, "ErrorSigning", message)
+		log.Error(err, message)
 		return nil, nil
 	}
 
 	certPEM, caPEM, err := pki.SignCSRTemplate(caCerts, caKey, template)
 	if err != nil {
-		reporter.Failed(err, "ErrorSigning", "Error signing certificate")
+		message := "Error signing certificate"
+		reporter.Failed(err, "ErrorSigning", message)
+		log.Error(err, message)
 		return nil, err
 	}
 

@@ -19,7 +19,6 @@ package util
 import (
 	"fmt"
 
-	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/tools/record"
 
@@ -28,32 +27,23 @@ import (
 )
 
 type Reporter struct {
-	log      logr.Logger
 	cr       *v1alpha1.CertificateRequest
 	recorder record.EventRecorder
 }
 
-func NewReporter(log logr.Logger, cr *v1alpha1.CertificateRequest, recorder record.EventRecorder) *Reporter {
+func NewReporter(cr *v1alpha1.CertificateRequest, recorder record.EventRecorder) *Reporter {
 	return &Reporter{
-		log:      log,
 		cr:       cr,
 		recorder: recorder,
 	}
 }
 
-func (r *Reporter) WithLog(log logr.Logger) *Reporter {
-	r.log = log
-	return r
-}
-
 func (r *Reporter) Failed(err error, reason, message string) {
 	r.recorder.Event(r.cr, corev1.EventTypeWarning, reason, fmt.Sprintf("%s: %v", message, err))
-	r.log.Error(err, message)
 	apiutil.SetCertificateRequestCondition(r.cr, v1alpha1.CertificateRequestReasonFailed, v1alpha1.ConditionFalse, reason, message)
 }
 
 func (r *Reporter) Pending(err error, reason, message string) {
 	r.recorder.Event(r.cr, corev1.EventTypeNormal, reason, fmt.Sprintf("%s: %v", message, err))
-	r.log.Error(err, message)
 	apiutil.SetCertificateRequestCondition(r.cr, v1alpha1.CertificateRequestReasonPending, v1alpha1.ConditionFalse, reason, message)
 }
