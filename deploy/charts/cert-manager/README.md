@@ -104,8 +104,8 @@ The following table lists the configurable parameters of the cert-manager chart 
 | `ingressShim.defaultACMEChallengeType` | Optional default challenge type to use for ingresses using ACME issuers |  |
 | `ingressShim.defaultACMEDNS01ChallengeProvider` | Optional default DNS01 challenge provider to use for ingresses using ACME issuers with DNS01 |  |
 | `prometheus.enabled` | Enable Prometheus monitoring | `true` |
-| `prometheus.servicemonitor.enabled` | Enable Prometheus Operator ServiceMonitor
-monitoring | `false`
+| `prometheus.servicemonitor.enabled` | Enable Prometheus Operator ServiceMonitor monitoring | `false`
+| `prometheus.servicemonitor.namespace` | Define namespace where to deploy the ServiceMonitor resource | (namespace where you are deploying) |
 | `prometheus.servicemonitor.prometheusInstance` | Prometheus Instance definition | `default` |
 | `prometheus.servicemonitor.targetPort` | Prometheus scrape port | `9402` |
 | `prometheus.servicemonitor.path` | Prometheus scrape path | `/metrics` |
