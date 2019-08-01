@@ -41,7 +41,7 @@ const (
 var keyFunc = controllerpkg.KeyFunc
 
 type Issuer interface {
-	Sign(ctx context.Context, cr *v1alpha1.CertificateRequest) (*issuer.IssueResponse, error)
+	Sign(context.Context, *v1alpha1.CertificateRequest, v1alpha1.GenericIssuer) (*issuer.IssueResponse, error)
 }
 
 type Controller struct {

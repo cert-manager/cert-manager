@@ -24,11 +24,11 @@ import (
 )
 
 type Issuer struct {
-	FakeSign func(context.Context, *cmapi.CertificateRequest) (*issuer.IssueResponse, error)
+	FakeSign func(context.Context, *cmapi.CertificateRequest, cmapi.GenericIssuer) (*issuer.IssueResponse, error)
 }
 
 // Sign attempts to issue a certificate as described by the CertificateRequest
 // resource given
-func (i *Issuer) Sign(ctx context.Context, cr *cmapi.CertificateRequest) (*issuer.IssueResponse, error) {
-	return i.FakeSign(ctx, cr)
+func (i *Issuer) Sign(ctx context.Context, cr *cmapi.CertificateRequest, issuerObj cmapi.GenericIssuer) (*issuer.IssueResponse, error) {
+	return i.FakeSign(ctx, cr, issuerObj)
 }

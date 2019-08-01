@@ -60,6 +60,7 @@ filegroup(
         "//test/acme/dns:all-srcs",
         "//test/e2e:all-srcs",
         "//test/unit/gen:all-srcs",
+        "//test/unit/listers:all-srcs",
         "//test/util:all-srcs",
         "//third_party:all-srcs",
         "//vendor:all-srcs",
