@@ -38,8 +38,8 @@ type Challenge struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata"`
 
-	Spec   ChallengeSpec   `json:"spec"`
-	Status ChallengeStatus `json:"status"`
+	Spec   ChallengeSpec   `json:"spec,omitempty"`
+	Status ChallengeStatus `json:"status,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
