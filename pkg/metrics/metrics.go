@@ -119,8 +119,6 @@ var registeredCertificates = &struct {
 	certificates: make(map[string]struct{}),
 }
 
-var activeCertificates cmlisters.CertificateLister
-
 // cleanUpFunctions are functions called to clean up metrics which refer to
 // deleted certificates, inputs are name and namespace of the certificate
 var cleanUpFunctions = []func(string, string){
@@ -304,12 +302,12 @@ func (m *Metrics) cleanUp() {
 	log := logf.FromContext(m.ctx)
 	log.V(logf.DebugLevel).Info("attempting to clean up metrics for recently deleted certificates")
 
-	if activeCertificates == nil {
+	if m.activeCertificates == nil {
 		log.V(logf.DebugLevel).Info("active certificates is still uninitialized")
 		return
 	}
 
-	activeCrts, err := activeCertificates.List(labels.Everything())
+	activeCrts, err := m.activeCertificates.List(labels.Everything())
 	if err != nil {
 		log.Error(err, "error retrieving active certificates")
 		return
