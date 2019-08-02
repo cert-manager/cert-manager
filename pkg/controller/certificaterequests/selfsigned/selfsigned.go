@@ -41,11 +41,6 @@ const (
 	CRControllerName = "certificaterequests-issuer-selfsigned"
 )
 
-var (
-	errorNoAnnotation = fmt.Errorf("self signed issuer requires %q annotation to be set to the name of the Secret containing the private key",
-		v1alpha1.CRPrivateKeyAnnotationKey)
-)
-
 type SelfSigned struct {
 	// used to record Events about resources to the API
 	recorder record.EventRecorder
@@ -89,7 +84,7 @@ func (s *SelfSigned) Sign(ctx context.Context, cr *v1alpha1.CertificateRequest, 
 			v1alpha1.CRPrivateKeyAnnotationKey)
 		err := errors.New("secret name missing")
 
-		reporter.Pending(err, "MissingAnnotation", message)
+		reporter.Failed(err, "MissingAnnotation", message)
 		log.Error(err, message)
 
 		return nil, nil

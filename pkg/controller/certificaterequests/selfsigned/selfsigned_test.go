@@ -35,10 +35,10 @@ import (
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	testpkg "github.com/jetstack/cert-manager/pkg/controller/test"
-	testfake "github.com/jetstack/cert-manager/pkg/controller/test/fake"
 	"github.com/jetstack/cert-manager/pkg/issuer"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 	"github.com/jetstack/cert-manager/test/unit/gen"
+	listersfake "github.com/jetstack/cert-manager/test/unit/listers"
 )
 
 func generateCSR(t *testing.T, secretKey crypto.Signer, alg x509.SignatureAlgorithm) []byte {
@@ -141,7 +141,7 @@ func TestSign(t *testing.T) {
 			certificaterequest: gen.CertificateRequest("test-cr"),
 			builder: &testpkg.Builder{
 				ExpectedEvents: []string{
-					`Normal MissingAnnotation Annotation "certmanager.k8s.io/private-key-secret-name" missing or reference empty: secret name missing`,
+					`Warning MissingAnnotation Annotation "certmanager.k8s.io/private-key-secret-name" missing or reference empty: secret name missing`,
 				},
 				CheckFn: mustNoResponse,
 			},
@@ -156,7 +156,7 @@ func TestSign(t *testing.T) {
 			),
 			builder: &testpkg.Builder{
 				ExpectedEvents: []string{
-					`Normal MissingAnnotation Annotation "certmanager.k8s.io/private-key-secret-name" missing or reference empty: secret name missing`,
+					`Warning MissingAnnotation Annotation "certmanager.k8s.io/private-key-secret-name" missing or reference empty: secret name missing`,
 				},
 				CheckFn: mustNoResponse,
 			},
@@ -222,9 +222,9 @@ func TestSign(t *testing.T) {
 					`Normal ErrorGettingSecret Failed to get certificate key pair from secret default-unit-test-ns/test-rsa-key: this is a network error`,
 				},
 			},
-			FakeLister: &testfake.FakeSecretLister{
+			fakeLister: &listersfake.FakeSecretLister{
 				SecretsFn: func(namespace string) clientcorev1.SecretNamespaceLister {
-					return &testfake.FakeSecretNamespaceLister{
+					return &listersfake.FakeSecretNamespaceLister{
 						GetFn: func(name string) (ret *corev1.Secret, err error) {
 							return nil, errors.New("this is a network error")
 						},
@@ -324,7 +324,7 @@ type testT struct {
 	checkFn     func(*testpkg.Builder, ...interface{})
 	expectedErr bool
 
-	FakeLister *testfake.FakeSecretLister
+	fakeLister *listersfake.FakeSecretLister
 }
 
 func runTest(t *testing.T, test testT) {
@@ -334,8 +334,8 @@ func runTest(t *testing.T, test testT) {
 
 	c := NewSelfSigned(test.builder.Context)
 
-	if test.FakeLister != nil {
-		c.secretsLister = test.FakeLister
+	if test.fakeLister != nil {
+		c.secretsLister = test.fakeLister
 	}
 
 	test.builder.Sync()
