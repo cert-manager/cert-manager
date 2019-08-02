@@ -1796,8 +1796,6 @@ spec:
           type: object
       required:
       - metadata
-      - spec
-      - status
       type: object
   versions:
   - name: v1alpha1
@@ -7324,8 +7322,6 @@ spec:
           type: object
       required:
       - metadata
-      - spec
-      - status
       type: object
   versions:
   - name: v1alpha1
