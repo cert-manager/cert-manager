@@ -6,7 +6,12 @@ go_library(
     importpath = "github.com/jetstack/cert-manager/test/e2e/suite/conformance",
     tags = ["manual"],
     visibility = ["//visibility:public"],
-    deps = ["//test/e2e/suite/conformance/rbac:go_default_library"],
+    deps = [
+        "//test/e2e/suite/conformance/certificates/acme:go_default_library",
+        "//test/e2e/suite/conformance/certificates/ca:go_default_library",
+        "//test/e2e/suite/conformance/certificates/selfsigned:go_default_library",
+        "//test/e2e/suite/conformance/rbac:go_default_library",
+    ],
 )
 
 filegroup(
@@ -20,6 +25,7 @@ filegroup(
     name = "all-srcs",
     srcs = [
         ":package-srcs",
+        "//test/e2e/suite/conformance/certificates:all-srcs",
         "//test/e2e/suite/conformance/rbac:all-srcs",
     ],
     tags = ["automanaged"],
