@@ -336,10 +336,6 @@ func EncodeX509(cert *x509.Certificate) ([]byte, error) {
 func EncodeX509Chain(certs []*x509.Certificate) ([]byte, error) {
 	caPem := bytes.NewBuffer([]byte{})
 	for _, cert := range certs {
-		if bytes.Equal(cert.RawIssuer, cert.RawSubject) {
-			// Don't include self-signed certificate
-			continue
-		}
 		err := pem.Encode(caPem, &pem.Block{Type: "CERTIFICATE", Bytes: cert.Raw})
 		if err != nil {
 			return nil, err
