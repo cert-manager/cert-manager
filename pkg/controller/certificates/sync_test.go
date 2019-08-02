@@ -222,6 +222,7 @@ func TestSync(t *testing.T) {
 									cmapi.CertificateNameKey: "test",
 								},
 								Annotations: map[string]string{
+									cmapi.CertificateNameKey:         "test",
 									"certmanager.k8s.io/alt-names":   "example.com",
 									"certmanager.k8s.io/common-name": "example.com",
 									"certmanager.k8s.io/ip-sans":     "",
@@ -290,6 +291,7 @@ func TestSync(t *testing.T) {
 								},
 								Annotations: map[string]string{
 									"testannotation":                 "true",
+									cmapi.CertificateNameKey:         "test",
 									"certmanager.k8s.io/alt-names":   "example.com",
 									"certmanager.k8s.io/common-name": "example.com",
 									"certmanager.k8s.io/ip-sans":     "",
@@ -340,6 +342,7 @@ func TestSync(t *testing.T) {
 									cmapi.CertificateNameKey: "test",
 								},
 								Annotations: map[string]string{
+									cmapi.CertificateNameKey:         "test",
 									"certmanager.k8s.io/alt-names":   "example.com",
 									"certmanager.k8s.io/common-name": "example.com",
 									"certmanager.k8s.io/ip-sans":     "",
@@ -408,6 +411,7 @@ func TestSync(t *testing.T) {
 								},
 								Annotations: map[string]string{
 									"testannotation":                 "true",
+									cmapi.CertificateNameKey:         "test",
 									"certmanager.k8s.io/alt-names":   "example.com",
 									"certmanager.k8s.io/common-name": "example.com",
 									"certmanager.k8s.io/ip-sans":     "",
@@ -492,6 +496,7 @@ func TestSync(t *testing.T) {
 								},
 								Annotations: map[string]string{
 									"testannotation":                 "true",
+									cmapi.CertificateNameKey:         "test",
 									"certmanager.k8s.io/alt-names":   "example.com",
 									"certmanager.k8s.io/common-name": "example.com",
 									"certmanager.k8s.io/ip-sans":     "",
@@ -620,6 +625,7 @@ func TestSync(t *testing.T) {
 								},
 								Annotations: map[string]string{
 									"testannotation":                 "true",
+									cmapi.CertificateNameKey:         "test",
 									"certmanager.k8s.io/alt-names":   "example.com",
 									"certmanager.k8s.io/common-name": "example.com",
 									"certmanager.k8s.io/ip-sans":     "",
@@ -707,6 +713,7 @@ func TestSync(t *testing.T) {
 								},
 								Annotations: map[string]string{
 									"testannotation":                 "true",
+									cmapi.CertificateNameKey:         "test",
 									"certmanager.k8s.io/alt-names":   "example.com",
 									"certmanager.k8s.io/common-name": "example.com",
 									"certmanager.k8s.io/ip-sans":     "",
@@ -798,6 +805,7 @@ func TestSync(t *testing.T) {
 									cmapi.CertificateNameKey: "test",
 								},
 								Annotations: map[string]string{
+									cmapi.CertificateNameKey:         "test",
 									"certmanager.k8s.io/alt-names":   "example.com",
 									"certmanager.k8s.io/common-name": "example.com",
 									"certmanager.k8s.io/ip-sans":     "",
