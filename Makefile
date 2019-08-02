@@ -112,7 +112,7 @@ e2e_test:
 	# Run e2e tests
 	KUBECONFIG=$(KUBECONFIG) \
 		bazel run //vendor/github.com/onsi/ginkgo/ginkgo -- \
-			-nodes 20 \
+			-nodes 10 \
 			$$(bazel info bazel-genfiles)/test/e2e/e2e.test \
 			-- \
 			--helm-binary-path=$$(bazel info bazel-genfiles)/hack/bin/helm \
