@@ -210,9 +210,13 @@ func PublicKeyMatchesCertificate(check crypto.PublicKey, crt *x509.Certificate) 
 // It will return an error if either of the passed parameters are of an
 // unrecognised type (i.e. non RSA/ECDSA)
 func PublicKeyMatchesCSR(check crypto.PublicKey, csr *x509.CertificateRequest) (bool, error) {
-	switch pub := csr.PublicKey.(type) {
+	return PublicKeysEqual(check, csr.PublicKey)
+}
+
+func PublicKeysEqual(a, b crypto.PublicKey) (bool, error) {
+	switch pub := a.(type) {
 	case *rsa.PublicKey:
-		rsaCheck, ok := check.(*rsa.PublicKey)
+		rsaCheck, ok := b.(*rsa.PublicKey)
 		if !ok {
 			return false, nil
 		}
@@ -221,7 +225,7 @@ func PublicKeyMatchesCSR(check crypto.PublicKey, csr *x509.CertificateRequest) (
 		}
 		return true, nil
 	case *ecdsa.PublicKey:
-		ecdsaCheck, ok := check.(*ecdsa.PublicKey)
+		ecdsaCheck, ok := b.(*ecdsa.PublicKey)
 		if !ok {
 			return false, nil
 		}
@@ -230,6 +234,6 @@ func PublicKeyMatchesCSR(check crypto.PublicKey, csr *x509.CertificateRequest) (
 		}
 		return true, nil
 	default:
-		return false, fmt.Errorf("unrecognised Certificate public key type")
+		return false, fmt.Errorf("unrecognised public key type")
 	}
 }

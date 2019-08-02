@@ -21,6 +21,7 @@ import (
 	"crypto"
 	"crypto/x509"
 	"fmt"
+	"reflect"
 	"testing"
 	"time"
 
@@ -108,6 +109,9 @@ func createCryptoBundle(crt *cmapi.Certificate) (*cryptoBundle, error) {
 			Name:            reqName,
 			Namespace:       crt.Namespace,
 			OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(crt, certificateGvk)},
+			Annotations: map[string]string{
+				cmapi.CRPrivateKeyAnnotationKey: crt.Spec.SecretName,
+			},
 		},
 		Spec: cmapi.CertificateRequestSpec{
 			CSRPEM:    csrPEM,
@@ -281,6 +285,71 @@ func testGenerateCSRFn(b []byte) generateCSRFn {
 func testLocalTemporarySignerFn(b []byte) localTemporarySignerFn {
 	return func(crt *cmapi.Certificate, pk []byte) ([]byte, error) {
 		return b, nil
+	}
+}
+
+func TestBuildCertificateRequest(t *testing.T) {
+	baseCert := gen.Certificate("test",
+		gen.SetCertificateIssuer(cmapi.ObjectReference{Name: "ca-issuer", Kind: "Issuer", Group: "not-empty"}),
+		gen.SetCertificateSecretName("output"),
+		gen.SetCertificateRenewBefore(time.Hour*36),
+		gen.SetCertificateDNSNames("example.com"),
+	)
+	exampleBundle := mustCreateCryptoBundle(t, gen.CertificateFrom(baseCert,
+		gen.SetCertificateDNSNames("example.com"),
+	))
+
+	tests := map[string]struct {
+		crt         *cmapi.Certificate
+		name        string
+		pk          []byte
+		expectedErr bool
+
+		expectedCertificateRequestAnnotations map[string]string
+	}{
+		"a bad private key should error": {
+			crt:         baseCert,
+			pk:          []byte("bad key"),
+			name:        "test",
+			expectedErr: true,
+
+			expectedCertificateRequestAnnotations: nil,
+		},
+		"a good certificate should always have annotations set": {
+			crt:         baseCert,
+			pk:          exampleBundle.privateKeyBytes,
+			name:        "test",
+			expectedErr: false,
+
+			expectedCertificateRequestAnnotations: map[string]string{
+				cmapi.CRPrivateKeyAnnotationKey: baseCert.Spec.SecretName,
+			},
+		},
+	}
+
+	for name, test := range tests {
+		c := &certificateRequestManager{
+			generateCSR: generateCSRImpl,
+		}
+
+		cr, err := c.buildCertificateRequest(nil, test.crt, test.name, test.pk)
+		if err != nil && !test.expectedErr {
+			t.Errorf("expected no error but got: %s", err)
+		}
+
+		if err == nil && test.expectedErr {
+			t.Error("expected and error but got 'nil'")
+		}
+
+		if cr == nil {
+			continue
+		}
+
+		// check for annotations
+		if !reflect.DeepEqual(cr.Annotations, test.expectedCertificateRequestAnnotations) {
+			t.Errorf("%s: got unexpected resulting certificate request annotations, exp=%+v got=%+v",
+				name, test.expectedCertificateRequestAnnotations, cr.Annotations)
+		}
 	}
 }
 
