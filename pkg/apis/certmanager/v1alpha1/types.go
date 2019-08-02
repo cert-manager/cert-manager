@@ -32,6 +32,7 @@ const (
 )
 
 // ConditionStatus represents a condition's status.
+// +kubebuilder:validation:Enum=True;False;Unknown
 type ConditionStatus string
 
 // These are valid condition statuses. "ConditionTrue" means a resource is in

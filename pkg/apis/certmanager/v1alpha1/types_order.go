@@ -117,7 +117,6 @@ type OrderStatus struct {
 
 	// State contains the current state of this Order resource.
 	// States 'success' and 'expired' are 'final'
-	// +kubebuilder:validation:Enum=valid;ready;pending;processing;invalid;expired;errored
 	// +optional
 	State State `json:"state,omitempty"`
 
@@ -143,6 +142,7 @@ type OrderStatus struct {
 // Full details of these values can be found here: https://tools.ietf.org/html/draft-ietf-acme-acme-15#section-7.1.6
 // Clients utilising this type must also gracefully handle unknown
 // values, as the contents of this enumeration may be added to over time.
+// +kubebuilder:validation:Enum=valid;ready;pending;processing;invalid;expired;errored
 type State string
 
 const (
