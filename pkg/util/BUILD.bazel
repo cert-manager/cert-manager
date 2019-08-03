@@ -38,6 +38,7 @@ filegroup(
     name = "all-srcs",
     srcs = [
         ":package-srcs",
+        "//pkg/util/api:all-srcs",
         "//pkg/util/errors:all-srcs",
         "//pkg/util/feature:all-srcs",
         "//pkg/util/kube:all-srcs",

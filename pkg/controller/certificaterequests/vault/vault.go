@@ -32,6 +32,7 @@ import (
 	vaultinternal "github.com/jetstack/cert-manager/pkg/internal/vault"
 	"github.com/jetstack/cert-manager/pkg/issuer"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
+	"github.com/jetstack/cert-manager/pkg/util/api"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 )
 
@@ -113,7 +114,7 @@ func (v *Vault) Sign(ctx context.Context, cr *v1alpha1.CertificateRequest, issue
 		return nil, nil
 	}
 
-	certDuration := pki.CertDuration(cr.Spec.Duration)
+	certDuration := api.DefaultCertDuration(cr.Spec.Duration)
 	certPem, caPem, err := client.Sign(cr.Spec.CSRPEM, certDuration)
 	if err != nil {
 		message := "Vault failed to sign certificate"

@@ -29,9 +29,8 @@ import (
 	"net"
 	"time"
 
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	"github.com/jetstack/cert-manager/pkg/util/api"
 )
 
 // CommonNameForCertificate returns the common name that should be used for the
@@ -163,7 +162,7 @@ func GenerateTemplate(crt *v1alpha1.Certificate) (*x509.Certificate, error) {
 		return nil, fmt.Errorf("failed to generate serial number: %s", err.Error())
 	}
 
-	certDuration := CertDuration(crt.Spec.Duration)
+	certDuration := api.DefaultCertDuration(crt.Spec.Duration)
 
 	pubKeyAlgo, _, err := SignatureAlgorithm(crt)
 	if err != nil {
@@ -187,15 +186,6 @@ func GenerateTemplate(crt *v1alpha1.Certificate) (*x509.Certificate, error) {
 		DNSNames:    dnsNames,
 		IPAddresses: ipAddresses,
 	}, nil
-}
-
-func CertDuration(d *metav1.Duration) time.Duration {
-	certDuration := v1alpha1.DefaultCertificateDuration
-	if d != nil {
-		certDuration = d.Duration
-	}
-
-	return certDuration
 }
 
 func keyUsage(isCA bool) x509.KeyUsage {
@@ -230,7 +220,7 @@ func GenerateTemplateFromCertificateRequest(cr *v1alpha1.CertificateRequest) (*x
 		return nil, fmt.Errorf("failed to generate serial number: %s", err.Error())
 	}
 
-	certDuration := CertDuration(cr.Spec.Duration)
+	certDuration := api.DefaultCertDuration(cr.Spec.Duration)
 
 	return &x509.Certificate{
 		Version:               csr.Version,

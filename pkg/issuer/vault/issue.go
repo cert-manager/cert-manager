@@ -29,6 +29,7 @@ import (
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	vaultinternal "github.com/jetstack/cert-manager/pkg/internal/vault"
 	"github.com/jetstack/cert-manager/pkg/issuer"
+	"github.com/jetstack/cert-manager/pkg/util/api"
 	"github.com/jetstack/cert-manager/pkg/util/errors"
 	"github.com/jetstack/cert-manager/pkg/util/kube"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
@@ -82,7 +83,7 @@ func (v *Vault) Issue(ctx context.Context, crt *v1alpha1.Certificate) (*issuer.I
 	/// END building CSR
 
 	/// BEGIN requesting certificate
-	certDuration := pki.CertDuration(crt.Spec.Duration)
+	certDuration := api.DefaultCertDuration(crt.Spec.Duration)
 
 	vaultClient, err := vaultinternal.New(v.resourceNamespace, v.secretsLister, v.issuer)
 	if err != nil {
