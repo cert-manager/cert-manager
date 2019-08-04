@@ -33,7 +33,6 @@ import (
 	"github.com/jetstack/cert-manager/pkg/issuer"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 	"github.com/jetstack/cert-manager/pkg/util/api"
-	"github.com/jetstack/cert-manager/pkg/util/pki"
 )
 
 const (
@@ -46,7 +45,7 @@ type Vault struct {
 	secretsLister corelisters.SecretLister
 	helper        issuer.Helper
 
-	vaultFactory internal.VaultFactory
+	vaultClientBuilder internal.VaultClientBuilder
 }
 
 func init() {
@@ -73,7 +72,7 @@ func NewVault(ctx *controllerpkg.Context) *Vault {
 			ctx.SharedInformerFactory.Certmanager().V1alpha1().Issuers().Lister(),
 			ctx.SharedInformerFactory.Certmanager().V1alpha1().ClusterIssuers().Lister(),
 		),
-		vaultFactory: vaultinternal.New,
+		vaultClientBuilder: vaultinternal.New,
 	}
 }
 
@@ -81,22 +80,9 @@ func (v *Vault) Sign(ctx context.Context, cr *v1alpha1.CertificateRequest, issue
 	log := logf.FromContext(ctx, "sign")
 	reporter := crutil.NewReporter(cr, v.recorder)
 
-	_, err := pki.DecodeX509CertificateRequestBytes(cr.Spec.CSRPEM)
+	client, err := v.vaultClientBuilder(cr.Namespace, v.secretsLister, issuerObj)
 	if err != nil {
-		message := "Failed to decode CSR in spec"
-
-		reporter.Failed(err, "ErrorParsingCSR", message)
-		log.Error(err, message)
-
-		return nil, nil
-	}
-
-	client, err := v.vaultFactory(cr.Namespace, v.secretsLister, issuerObj)
-	if err != nil {
-		log = log.WithValues(
-			logf.RelatedResourceNameKey, cr.Spec.IssuerRef.Name,
-			logf.RelatedResourceKindKey, cr.Spec.IssuerRef.Kind,
-		)
+		log = logf.WithRelatedResource(log, issuerObj)
 
 		if k8sErrors.IsNotFound(err) {
 			message := "Required secret resource not found"
@@ -111,7 +97,7 @@ func (v *Vault) Sign(ctx context.Context, cr *v1alpha1.CertificateRequest, issue
 		reporter.Pending(err, "ErrorVaultInit", message)
 		log.Error(err, message)
 
-		return nil, nil
+		return nil, err
 	}
 
 	certDuration := api.DefaultCertDuration(cr.Spec.Duration)

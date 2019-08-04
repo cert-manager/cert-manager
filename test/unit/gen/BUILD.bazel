@@ -8,7 +8,6 @@ go_library(
         "challenge.go",
         "doc.go",
         "issuer.go",
-        "lister.go",
         "objectmeta.go",
         "order.go",
     ],
@@ -16,10 +15,7 @@ go_library(
     visibility = ["//visibility:public"],
     deps = [
         "//pkg/apis/certmanager/v1alpha1:go_default_library",
-        "//pkg/controller/test/fake:go_default_library",
-        "//vendor/k8s.io/api/core/v1:go_default_library",
         "//vendor/k8s.io/apimachinery/pkg/apis/meta/v1:go_default_library",
-        "//vendor/k8s.io/client-go/listers/core/v1:go_default_library",
     ],
 )
 

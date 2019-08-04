@@ -29,7 +29,7 @@ import (
 var _ internal.Vault = &Vault{}
 
 type Vault struct {
-	NewFn  internal.VaultFactory
+	NewFn  internal.VaultClientBuilder
 	SignFn func([]byte, time.Duration) ([]byte, []byte, error)
 }
 
@@ -58,7 +58,7 @@ func (v *Vault) WithSign(certPEM, caPEM []byte, err error) *Vault {
 	return v
 }
 
-func (v *Vault) WithNew(f internal.VaultFactory) *Vault {
+func (v *Vault) WithNew(f internal.VaultClientBuilder) *Vault {
 	v.NewFn = f
 	return v
 }

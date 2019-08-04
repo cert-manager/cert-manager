@@ -25,7 +25,7 @@ import (
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 )
 
-type VaultFactory func(string, corelisters.SecretLister, v1alpha1.GenericIssuer) (Vault, error)
+type VaultClientBuilder func(string, corelisters.SecretLister, v1alpha1.GenericIssuer) (Vault, error)
 
 type Vault interface {
 	Sign(csrPEM []byte, duration time.Duration) (certPEM []byte, caPEM []byte, err error)

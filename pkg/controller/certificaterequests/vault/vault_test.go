@@ -18,6 +18,12 @@ package vault
 
 import (
 	"context"
+	"crypto"
+	"crypto/rand"
+	"crypto/x509"
+	"crypto/x509/pkix"
+	"encoding/asn1"
+	"encoding/pem"
 	"errors"
 	"testing"
 	"time"
@@ -32,25 +38,59 @@ import (
 	testpkg "github.com/jetstack/cert-manager/pkg/controller/test"
 	internalvault "github.com/jetstack/cert-manager/pkg/internal/vault"
 	fakevault "github.com/jetstack/cert-manager/pkg/internal/vault/fake"
+	"github.com/jetstack/cert-manager/pkg/util/pki"
 	"github.com/jetstack/cert-manager/test/unit/gen"
 )
 
+func generateCSR(t *testing.T, secretKey crypto.Signer) []byte {
+	asn1Subj, _ := asn1.Marshal(pkix.Name{
+		CommonName: "test",
+	}.ToRDNSequence())
+	template := x509.CertificateRequest{
+		RawSubject:         asn1Subj,
+		SignatureAlgorithm: x509.SHA256WithRSA,
+	}
+
+	csrBytes, err := x509.CreateCertificateRequest(rand.Reader, &template, secretKey)
+	if err != nil {
+		t.Error(err)
+		t.FailNow()
+	}
+
+	csr := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE REQUEST", Bytes: csrBytes})
+
+	return csr
+}
+
 func TestSign(t *testing.T) {
-	rsaPK := testcr.GenerateRSAPrivateKey(t)
-	caCSR := testcr.GenerateCSR(t, rsaPK)
+	rsaSK, err := pki.GenerateRSAPrivateKey(2048)
+	if err != nil {
+		t.Error(err)
+		t.FailNow()
+	}
+
+	csrPEM := generateCSR(t, rsaSK)
+
+	baseIssuer := gen.Issuer("vault-issuer",
+		gen.SetIssuerVault(v1alpha1.VaultIssuer{}),
+	)
 
 	testCR := gen.CertificateRequest("test-cr",
-		gen.SetCertificateRequestCSR(caCSR),
 		gen.SetCertificateRequestIsCA(true),
+		gen.SetCertificateRequestCSR(csrPEM),
 		gen.SetCertificateRequestDuration(&metav1.Duration{Duration: time.Hour * 24 * 60}),
 		gen.SetCertificateRequestIssuer(v1alpha1.ObjectReference{
-			Name:  "vault-issuer",
+			Name:  baseIssuer.Name,
 			Group: certmanager.GroupName,
-			Kind:  "Issuer",
+			Kind:  baseIssuer.Kind,
 		}),
 	)
 
-	_, rsaPEMCert := testcr.GenerateSelfSignedCertFromCR(t, testCR, rsaPK, time.Hour*24*60)
+	_, rsaPEMCert, err := pki.GenerateSelfSignedCertFromCR(testCR, rsaSK, time.Hour*24*60)
+	if err != nil {
+		t.Error(err)
+		t.FailNow()
+	}
 
 	tokenSecret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
@@ -73,25 +113,8 @@ func TestSign(t *testing.T) {
 	}
 
 	tests := map[string]testT{
-		"a badly formed CSR should report failure": {
-			issuer: gen.Issuer("vault-issuer"),
-			certificateRequest: gen.CertificateRequestFrom(testCR,
-				gen.SetCertificateRequestCSR([]byte("a bad csr")),
-			),
-			builder: &testpkg.Builder{
-				KubeObjects:        []runtime.Object{},
-				CertManagerObjects: []runtime.Object{},
-				ExpectedEvents: []string{
-					`Warning ErrorParsingCSR Failed to decode CSR in spec: error decoding certificate request PEM block`,
-				},
-				CheckFn: testcr.MustNoResponse,
-			},
-			expectedErr: false,
-		},
 		"no token or app role secret reference should report pending": {
-			issuer: gen.Issuer("vault-issuer",
-				gen.SetIssuerVault(v1alpha1.VaultIssuer{}),
-			),
+			issuer:             gen.IssuerFrom(baseIssuer),
 			certificateRequest: testCR,
 			builder: &testpkg.Builder{
 				KubeObjects:        []runtime.Object{},
@@ -101,10 +124,10 @@ func TestSign(t *testing.T) {
 				},
 				CheckFn: testcr.MustNoResponse,
 			},
-			expectedErr: false,
+			expectedErr: true,
 		},
 		"a client with a token secret referenced that doesn't exist should report pending": {
-			issuer: gen.Issuer("vault-issuer",
+			issuer: gen.IssuerFrom(baseIssuer,
 				gen.SetIssuerVault(v1alpha1.VaultIssuer{
 					Auth: v1alpha1.VaultAuth{
 						TokenSecretRef: v1alpha1.SecretKeySelector{
@@ -128,7 +151,7 @@ func TestSign(t *testing.T) {
 			expectedErr: false,
 		},
 		"a client with a app role secret referenced that doesn't exist should report pending": {
-			issuer: gen.Issuer("vault-issuer",
+			issuer: gen.IssuerFrom(baseIssuer,
 				gen.SetIssuerVault(v1alpha1.VaultIssuer{
 					Auth: v1alpha1.VaultAuth{
 						AppRole: v1alpha1.VaultAppRole{
@@ -155,7 +178,7 @@ func TestSign(t *testing.T) {
 			expectedErr: false,
 		},
 		"a client with a token secret referenced with token but failed to sign should report fail": {
-			issuer: gen.Issuer("vault-issuer",
+			issuer: gen.IssuerFrom(baseIssuer,
 				gen.SetIssuerVault(v1alpha1.VaultIssuer{
 					Auth: v1alpha1.VaultAuth{
 						TokenSecretRef: v1alpha1.SecretKeySelector{
@@ -180,7 +203,7 @@ func TestSign(t *testing.T) {
 			expectedErr: false,
 		},
 		"a client with a app role secret referenced with role but failed to sign should report fail": {
-			issuer: gen.Issuer("vault-issuer",
+			issuer: gen.IssuerFrom(baseIssuer,
 				gen.SetIssuerVault(v1alpha1.VaultIssuer{
 					Auth: v1alpha1.VaultAuth{
 						AppRole: v1alpha1.VaultAppRole{
@@ -208,7 +231,7 @@ func TestSign(t *testing.T) {
 			expectedErr: false,
 		},
 		"a client with a token secret referenced with token and signs should return certificate": {
-			issuer: gen.Issuer("vault-issuer",
+			issuer: gen.IssuerFrom(baseIssuer,
 				gen.SetIssuerVault(v1alpha1.VaultIssuer{
 					Auth: v1alpha1.VaultAuth{
 						TokenSecretRef: v1alpha1.SecretKeySelector{
@@ -231,7 +254,7 @@ func TestSign(t *testing.T) {
 			expectedErr: false,
 		},
 		"a client with a app role secret referenced with role should return certificate": {
-			issuer: gen.Issuer("vault-issuer",
+			issuer: gen.IssuerFrom(baseIssuer,
 				gen.SetIssuerVault(v1alpha1.VaultIssuer{
 					Auth: v1alpha1.VaultAuth{
 						AppRole: v1alpha1.VaultAppRole{
@@ -283,7 +306,7 @@ func runTest(t *testing.T, test testT) {
 	v := NewVault(test.builder.Context)
 
 	if test.fakeVault != nil {
-		v.vaultFactory = test.fakeVault.New
+		v.vaultClientBuilder = test.fakeVault.New
 	}
 
 	test.builder.Sync()
