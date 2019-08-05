@@ -116,6 +116,7 @@ func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitin
 	c.acmeHelper = acme.NewHelper(c.secretLister, ctx.ClusterResourceNamespace)
 	c.recorder = ctx.Recorder
 	c.cmClient = ctx.CMClient
+	c.clock = clock.RealClock{}
 
 	return c.queue, mustSync, nil
 }
