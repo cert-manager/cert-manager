@@ -26,32 +26,9 @@ SCRIPT_ROOT=$(dirname "${BASH_SOURCE}")
 source "${SCRIPT_ROOT}/lib.sh"
 
 build_images() {
-    # Build cert-manager binaries & docker image
-    # Set --stamp=true when running a build to workaround issues introduced
-    # in bazelbuild/rules_go#2110. For more information, see: https://github.com/bazelbuild/rules_go/pull/2110#issuecomment-508713878
-    # We should be able to remove the `--stamp=true` arg once this has been fixed!
-    APP_VERSION="${DOCKER_TAG}" \
-    DOCKER_REPO="${DOCKER_REPO}" \
-    DOCKER_TAG="${DOCKER_TAG}" \
-    bazel run --platforms=@io_bazel_rules_go//go/toolchain:linux_amd64 --stamp=true //test/e2e:images
-
-    echo "All images built"
-
-    for IMG in \
-        "${DOCKER_REPO}"/cert-manager-controller:"${DOCKER_TAG}" \
-        "${DOCKER_REPO}"/cert-manager-cainjector:"${DOCKER_TAG}" \
-        "${DOCKER_REPO}"/cert-manager-acmesolver:"${DOCKER_TAG}" \
-        "${DOCKER_REPO}"/cert-manager-webhook:"${DOCKER_TAG}" \
-        "pebble:bazel" \
-        "quay.io/kubernetes-ingress-controller/nginx-ingress-controller:0.26.1" \
-        "k8s.gcr.io/defaultbackend-amd64:bazel" \
-        "sample-webhook:bazel" \
-        "vault:bazel" \
-        "gcr.io/kubernetes-helm/tiller:bazel" \
-    ; do
-        echo "Loading image ${IMG} into kind container"
-        "${KIND}" load docker-image --name "${KIND_CLUSTER_NAME}" "${IMG}" &
-    done
+    # TODO: handle DOCKER_REPO
+    "${BUILD_TOOL}" certmanager load --cluster-name="${KIND_CLUSTER_NAME}" --app-version="${DOCKER_TAG}" &
+    "${BUILD_TOOL}" addon load --cluster-name="${KIND_CLUSTER_NAME}" &
     echo "Waiting for all images to be loaded..."
     wait
     echo "All images loaded!"

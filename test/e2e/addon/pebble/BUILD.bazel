@@ -1,0 +1,39 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_binary")
+load("@io_bazel_rules_docker//go:image.bzl", "go_image")
+load("@io_bazel_rules_docker//container:container.bzl", "container_image")
+
+# gazelle:ignore
+
+go_image(
+    name = "image.app",
+    base = "@static_base//image",
+    binary = ":app",
+    tags = ["manual"],
+)
+
+container_image(
+    name = "image",
+    base = ":image.app",
+    tags = ["manual"],
+    visibility = ["//visibility:public"],
+)
+
+go_binary(
+    name = "app",
+    embed = ["@org_letsencrypt_pebble//cmd/pebble:go_default_library"],
+    pure = "on",
+)
+
+filegroup(
+    name = "package-srcs",
+    srcs = glob(["**"]),
+    tags = ["automanaged"],
+    visibility = ["//visibility:private"],
+)
+
+filegroup(
+    name = "all-srcs",
+    srcs = [":package-srcs"],
+    tags = ["automanaged"],
+    visibility = ["//visibility:public"],
+)

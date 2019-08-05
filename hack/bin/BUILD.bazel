@@ -1,6 +1,9 @@
 package(default_visibility = ["//visibility:public"])
 
 load("@io_k8s_repo_infra//defs:run_in_workspace.bzl", "workspace_binary")
+load(":deps.bzl", "install_kind_aliases")
+
+install_kind_aliases()
 
 genrule(
     name = "fetch_jq",

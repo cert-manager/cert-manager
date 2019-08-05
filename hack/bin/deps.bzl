@@ -13,7 +13,7 @@
 # limitations under the License.
 
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_file", "http_archive")
-load("@io_bazel_rules_docker//container:container.bzl", "container_pull")
+load("@io_bazel_rules_docker//container:container.bzl", "container_pull", "container_image")
 load("@bazel_gazelle//:deps.bzl", "go_repository")
 
 def install():
@@ -288,4 +288,26 @@ def install_kind():
         repository = "jetstack-build-infra-images/kind-node",
         tag = "1.16.0-alpha.1",
         digest = "sha256:b9775b688fda2e6434cda1b9016baf876f381a8325961f59b9ae238166259885",
+    )
+
+def install_kind_aliases():
+    container_image(
+        name = "kind-1.11",
+        base = "@kind-1.11//image",
+    )
+    container_image(
+        name = "kind-1.12",
+        base = "@kind-1.12//image",
+    )
+    container_image(
+        name = "kind-1.13",
+        base = "@kind-1.13//image",
+    )
+    container_image(
+        name = "kind-1.14",
+        base = "@kind-1.14//image",
+    )
+    container_image(
+        name = "kind-1.15",
+        base = "@kind-1.15//image",
     )

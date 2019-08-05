@@ -1,0 +1,34 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "addon.go",
+        "addon_load.go",
+        "certmanager.go",
+        "certmanager_load.go",
+        "cluster.go",
+        "cluster_create.go",
+        "root.go",
+    ],
+    importpath = "github.com/jetstack/cert-manager/hack/build/cmd/options",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//hack/build/internal/consts:go_default_library",
+        "@com_github_spf13_pflag//:go_default_library",
+    ],
+)
+
+filegroup(
+    name = "package-srcs",
+    srcs = glob(["**"]),
+    tags = ["automanaged"],
+    visibility = ["//visibility:private"],
+)
+
+filegroup(
+    name = "all-srcs",
+    srcs = [":package-srcs"],
+    tags = ["automanaged"],
+    visibility = ["//visibility:public"],
+)

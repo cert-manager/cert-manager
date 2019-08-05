@@ -99,8 +99,12 @@ func (n *Nginx) Setup(cfg *config.Config) error {
 				Value: "Never",
 			},
 			{
+				Key:   "controller.image.repo",
+				Value: "bazel/test/e2e/addon/ingress-nginx",
+			},
+			{
 				Key:   "controller.image.tag",
-				Value: "0.26.1",
+				Value: "v0.0.0-bazel",
 			},
 			{
 				Key:   "defaultBackend.image.pullPolicy",

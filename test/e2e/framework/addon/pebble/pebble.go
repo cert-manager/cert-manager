@@ -68,7 +68,7 @@ func (p *Pebble) Setup(cfg *config.Config) error {
 		Tiller:      p.Tiller,
 		ReleaseName: "chart-pebble-" + p.Name,
 		Namespace:   p.Namespace,
-		ChartName:   cfg.RepoRoot + "/test/e2e/charts/pebble",
+		ChartName:   cfg.RepoRoot + "/test/e2e/addon/pebble",
 		Vars: []chart.StringTuple{
 			{
 				Key:   "strict",

@@ -24,11 +24,10 @@ REPO_ROOT="${_SCRIPT_ROOT}/../../.."
 # This file contains common definitions that are re-used in other scripts
 
 export K8S_VERSION="${K8S_VERSION:-1.15}"
+BUILD_TOOL_TARGET="${BUILD_TOOL_TARGET:-//hack/build}"
 KUBECTL_TARGET="${KUBECTL_TARGET:-//hack/bin:kubectl-${K8S_VERSION}}"
-KIND_IMAGE_TARGET="${KIND_IMAGE_TARGET:-@kind-${K8S_VERSION}//image}"
 
 export KIND_CLUSTER_NAME="${KIND_CLUSTER_NAME:-cm-local-cluster}"
-export KIND_CONTAINER_NAME="kind-${KIND_CLUSTER_NAME}-control-plane"
 
 # DOCKER_REPO is the docker repo to use for cert-manager images, either when
 # building or deploying cert-manager using these scripts.
@@ -43,14 +42,12 @@ if [ ! "${CM_DEPS_LOADED:-}" = "1" ]; then
     # Build all e2e test dependencies
     bazel build \
         "${KUBECTL_TARGET}" \
-        "${KIND_IMAGE_TARGET}" \
+        "${BUILD_TOOL_TARGET}" \
         //hack/bin:kind
 
     genfiles="$(bazel info bazel-genfiles)"
     export KUBECTL="${genfiles}/hack/bin/kubectl-${K8S_VERSION}"
-    # TODO: use a more unique name for the kind image
-    export KIND_IMAGE="bazel/image:image"
-    export KIND="${genfiles}/hack/bin/kind"
+    export BUILD_TOOL="${genfiles}/hack/build/build.binary"
 
     export CM_DEPS_LOADED="1"
 fi

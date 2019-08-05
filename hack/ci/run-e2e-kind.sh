@@ -28,12 +28,17 @@ SCRIPT_ROOT=$(dirname "${BASH_SOURCE}")
 source "${SCRIPT_ROOT}/lib/lib.sh"
 
 cleanup() {
-    # Ignore errors here
-    "${SCRIPT_ROOT}/lib/cluster_destroy.sh" || true
+  # Ignore errors here
+  "${BUILD_TOOL}" --debug cluster delete \
+    --name="${KIND_CLUSTER_NAME}" || true
 }
 trap cleanup EXIT
 
-"${SCRIPT_ROOT}/lib/cluster_create.sh"
+# create the kind cluster
+echo "Booting Kubernetes version: $K8S_VERSION"
+"${BUILD_TOOL}" --debug cluster create \
+  --name="${KIND_CLUSTER_NAME}" \
+  --kube-version="${K8S_VERSION}"
 
 export KUBECONFIG="${HOME}/.kube/kind-config-${KIND_CLUSTER_NAME}"
 
@@ -41,8 +46,14 @@ echo "Testing kind apiserver connectivity"
 # Ensure the apiserver is responding
 "${KUBECTL}" get nodes
 
-"${SCRIPT_ROOT}/lib/build_images.sh"
+echo "Building test images"
+# TODO: handle DOCKER_REPO
+"${BUILD_TOOL}" --debug certmanager load --cluster-name="${KIND_CLUSTER_NAME}" --app-version="${DOCKER_TAG}" &
+"${BUILD_TOOL}" --debug addon load --cluster-name="${KIND_CLUSTER_NAME}" &
+echo "Waiting for all images to be loaded..."
+wait
+echo "All images loaded!"
 
 make e2e_test \
-    KUBECONFIG=${KUBECONFIG} \
-    KUBECTL=${KUBECTL}
+    KUBECONFIG="${KUBECONFIG}" \
+    KUBECTL="${KUBECTL}"

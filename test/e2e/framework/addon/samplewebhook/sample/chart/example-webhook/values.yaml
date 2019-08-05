@@ -13,9 +13,9 @@ certManager:
   serviceAccountName: cert-manager
 
 image:
-  repository: mycompany/webhook-image
-  tag: latest
-  pullPolicy: IfNotPresent
+  repository: test/e2e/addon/sample-webhook
+  tag: v0.0.0-bazel
+  pullPolicy: Never
 
 nameOverride: ""
 fullnameOverride: ""

@@ -23,40 +23,11 @@ source "${SCRIPT_ROOT}/lib.sh"
 
 # deploy_kind will deploy a kubernetes-in-docker cluster
 deploy_kind() {
-    echo "Exporting kind image to docker daemon..."
-    bazel run "${KIND_IMAGE_TARGET}"
-
-    function kubeVersion() {
-        echo $(docker run \
-            --entrypoint="cat" \
-            "${KIND_IMAGE}" \
-            /kind/version)
-    }
-
-    # default to v1beta2
-    # - if 1.13.x or 1.14.x use v1beta1
-    # - if 1.12.x then use v1alpha3
-    # - if 1.11.x then use v1alpha2
-    vers="$(kubeVersion)"
-    config="v1beta2"
-    if [[ "$vers" =~ v1\.11\..+ ]]; then
-        config="v1alpha2"
-    fi
-    if [[ "$vers" =~ v1\.12\..+ ]]; then
-        config="v1alpha3"
-    fi
-    if [[ "$vers" =~ v1\.1[3-4]\..+ ]] ; then
-        config="v1beta1"
-    fi
-
-
-    echo "Booting Kubernetes version: $vers"
-    echo "Using kubeadm config api version '$config'"
     # create the kind cluster
-    "${KIND}" create cluster \
-        --name="${KIND_CLUSTER_NAME}" \
-        --image="${KIND_IMAGE}" \
-        --config "${REPO_ROOT}"/test/fixtures/kind/config-"$config".yaml
+    echo "Booting Kubernetes version: $K8S_VERSION"
+    "${BUILD_TOOL}" cluster create \
+      --name="${KIND_CLUSTER_NAME}" \
+      --kube-version="${K8S_VERSION}"
 }
 
 deploy_kind

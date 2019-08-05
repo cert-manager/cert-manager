@@ -1,7 +1,7 @@
 replicaCount: 1
 image:
-  repository: pebble
-  tag: "bazel"
+  repository: bazel/test/e2e/addon/pebble
+  tag: "v0.0.0-bazel"
   pullPolicy: Never
 service:
   type: ClusterIP

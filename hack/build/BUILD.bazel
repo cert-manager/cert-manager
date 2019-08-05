@@ -1,3 +1,4 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
 load("@io_bazel_rules_go//go:def.bzl", "nogo")
 
 nogo(
@@ -44,6 +45,28 @@ nogo(
     ],
 )
 
+genrule(
+    name = "build",
+    srcs = [":go_default_binary"],
+    outs = ["build.binary"],
+    cmd = "cp $(SRCS) $@",
+    executable = True,
+)
+
+go_library(
+    name = "go_default_library",
+    srcs = ["main.go"],
+    importpath = "github.com/jetstack/cert-manager/hack/build",
+    visibility = ["//visibility:private"],
+    deps = ["//hack/build/cmd:go_default_library"],
+)
+
+go_binary(
+    name = "go_default_binary",
+    embed = [":go_default_library"],
+    visibility = ["//visibility:public"],
+)
+
 filegroup(
     name = "package-srcs",
     srcs = glob(["**"]),
@@ -53,7 +76,15 @@ filegroup(
 
 filegroup(
     name = "all-srcs",
-    srcs = [":package-srcs"],
+    srcs = [
+        ":package-srcs",
+        "//hack/build/cmd:all-srcs",
+        "//hack/build/internal/bazel:all-srcs",
+        "//hack/build/internal/cluster:all-srcs",
+        "//hack/build/internal/consts:all-srcs",
+        "//hack/build/internal/exec:all-srcs",
+        "//hack/build/internal/log:all-srcs",
+    ],
     tags = ["automanaged"],
     visibility = ["//visibility:public"],
 )

@@ -169,6 +169,7 @@ func DeprovisionGlobals(cfg *config.Config) error {
 }
 
 func provisionGlobal(a Addon, cfg *config.Config) error {
+	log.Logf("Setting up global addon")
 	if err := a.Setup(cfg); err != nil {
 		return err
 	}
@@ -181,6 +182,7 @@ func provisionGlobal(a Addon, cfg *config.Config) error {
 			return err
 		}
 	}
+	log.Logf("Provisioning global addon")
 	provisioned = append(provisioned, a)
 	if err := a.Provision(); err != nil {
 		return err

@@ -84,8 +84,6 @@ func (p *CertmanagerWebhook) Setup(cfg *config.Config) error {
 		Vars: []chart.StringTuple{
 			{Key: "certManager.namespace", Value: p.Certmanager.Namespace},
 			{Key: "certManager.serviceAccountName", Value: p.Certmanager.Details().ServiceAccountName},
-			{Key: "image.repository", Value: "sample-webhook"},
-			{Key: "image.tag", Value: "bazel"},
 			{Key: "groupName", Value: p.GroupName},
 		},
 		Values: []string{cfg.RepoRoot + "/test/fixtures/example-webhook-values.yaml"},

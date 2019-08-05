@@ -113,7 +113,7 @@ func (v *Vault) Setup(cfg *config.Config) error {
 		Tiller:      v.Tiller,
 		ReleaseName: "chart-vault-" + v.Name,
 		Namespace:   v.Namespace,
-		ChartName:   cfg.RepoRoot + "/test/e2e/charts/vault",
+		ChartName:   cfg.RepoRoot + "/test/e2e/addon/vault",
 		// doesn't matter when installing from disk
 		ChartVersion: "0",
 		Vars: []chart.StringTuple{
