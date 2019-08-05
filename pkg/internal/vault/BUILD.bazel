@@ -23,11 +23,10 @@ go_test(
         "//pkg/internal/vault/fake:go_default_library",
         "//pkg/util/pki:go_default_library",
         "//test/unit/gen:go_default_library",
+        "//test/unit/listers:go_default_library",
         "//vendor/github.com/hashicorp/vault/api:go_default_library",
         "//vendor/github.com/hashicorp/vault/helper/certutil:go_default_library",
         "//vendor/github.com/hashicorp/vault/helper/jsonutil:go_default_library",
-        "//vendor/github.com/jetstack/cert-manager/pkg/controller/test/fake:go_default_library",
-        "//vendor/github.com/jetstack/cert-manager/pkg/internal:go_default_library",
         "//vendor/k8s.io/api/core/v1:go_default_library",
     ],
 )

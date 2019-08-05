@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package lister
+package listers
 
 import (
 	corev1 "k8s.io/api/core/v1"
@@ -24,6 +24,9 @@ import (
 
 var _ clientcorev1.SecretLister = &FakeSecretLister{}
 var _ clientcorev1.SecretNamespaceLister = &FakeSecretNamespaceLister{}
+
+type FakeSecretListerModifier func(*FakeSecretLister)
+type FakeSecretNamespaceListerModifier func(*FakeSecretNamespaceLister)
 
 type FakeSecretLister struct {
 	ListFn    func(selector labels.Selector) (ret []*corev1.Secret, err error)
@@ -72,4 +75,45 @@ func (f *FakeSecretNamespaceLister) List(selector labels.Selector) (ret []*corev
 
 func (f *FakeSecretNamespaceLister) Get(name string) (*corev1.Secret, error) {
 	return f.GetFn(name)
+}
+
+func FakeSecretNamespaceListerFrom(f *FakeSecretNamespaceLister, mods ...FakeSecretNamespaceListerModifier) *FakeSecretNamespaceLister {
+	for _, mod := range mods {
+		mod(f)
+	}
+	return f
+}
+
+func (f *FakeSecretNamespaceLister) SetFakeSecretNamespaceListerGet(ret *corev1.Secret,
+	err error) *FakeSecretNamespaceLister {
+	f.GetFn = func(string) (*corev1.Secret, error) {
+		return ret, err
+	}
+
+	return f
+}
+
+func FakeSecretListerFrom(s *FakeSecretLister, mods ...FakeSecretListerModifier) *FakeSecretLister {
+	for _, mod := range mods {
+		mod(s)
+	}
+	return s
+}
+
+func SetFakeSecretListerSecret(s func(namespace string) clientcorev1.SecretNamespaceLister) FakeSecretListerModifier {
+	return func(f *FakeSecretLister) {
+		f.SecretsFn = s
+	}
+}
+
+func SetFakeSecretNamespaceListerGet(sec *corev1.Secret, err error) FakeSecretListerModifier {
+	return func(f *FakeSecretLister) {
+		f.SecretsFn = func(namespace string) clientcorev1.SecretNamespaceLister {
+			return &FakeSecretNamespaceLister{
+				GetFn: func(name string) (*corev1.Secret, error) {
+					return sec, err
+				},
+			}
+		}
+	}
 }

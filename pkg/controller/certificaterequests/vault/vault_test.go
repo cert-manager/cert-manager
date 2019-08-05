@@ -31,6 +31,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	corelisters "k8s.io/client-go/listers/core/v1"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
@@ -199,7 +200,7 @@ func TestSign(t *testing.T) {
 				},
 				CheckFn: testcr.MustNoResponse,
 			},
-			fakeVault:   fakevault.NewFakeVault().WithNew(internalvault.New).WithSign(nil, nil, errors.New("failed to sign")),
+			fakeVault:   fakevault.New().WithSign(nil, nil, errors.New("failed to sign")),
 			expectedErr: false,
 		},
 		"a client with a app role secret referenced with role but failed to sign should report fail": {
@@ -227,7 +228,7 @@ func TestSign(t *testing.T) {
 				},
 				CheckFn: testcr.MustNoResponse,
 			},
-			fakeVault:   fakevault.NewFakeVault().WithSign(nil, nil, errors.New("failed to sign")),
+			fakeVault:   fakevault.New().WithSign(nil, nil, errors.New("failed to sign")),
 			expectedErr: false,
 		},
 		"a client with a token secret referenced with token and signs should return certificate": {
@@ -250,7 +251,7 @@ func TestSign(t *testing.T) {
 				ExpectedEvents:     []string{},
 				CheckFn:            testcr.NoPrivateKeyFieldsSetCheck(rsaPEMCert),
 			},
-			fakeVault:   fakevault.NewFakeVault().WithNew(internalvault.New).WithSign(rsaPEMCert, rsaPEMCert, nil),
+			fakeVault:   fakevault.New().WithSign(rsaPEMCert, rsaPEMCert, nil),
 			expectedErr: false,
 		},
 		"a client with a app role secret referenced with role should return certificate": {
@@ -276,7 +277,7 @@ func TestSign(t *testing.T) {
 				ExpectedEvents:     []string{},
 				CheckFn:            testcr.NoPrivateKeyFieldsSetCheck(rsaPEMCert),
 			},
-			fakeVault:   fakevault.NewFakeVault().WithSign(rsaPEMCert, rsaPEMCert, nil),
+			fakeVault:   fakevault.New().WithSign(rsaPEMCert, rsaPEMCert, nil),
 			expectedErr: false,
 		},
 	}
@@ -306,7 +307,10 @@ func runTest(t *testing.T, test testT) {
 	v := NewVault(test.builder.Context)
 
 	if test.fakeVault != nil {
-		v.vaultClientBuilder = test.fakeVault.New
+		v.vaultClientBuilder = func(ns string, sl corelisters.SecretLister,
+			iss v1alpha1.GenericIssuer) (internalvault.Interface, error) {
+			return test.fakeVault.New(ns, sl, iss)
+		}
 	}
 
 	test.builder.Sync()

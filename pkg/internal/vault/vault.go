@@ -35,7 +35,8 @@ import (
 
 var _ Interface = &Vault{}
 
-type VaultClientBuilder func(string, corelisters.SecretLister, v1alpha1.GenericIssuer) (Interface, error)
+type VaultClientBuilder func(namespace string, secretsLister corelisters.SecretLister,
+	issuer v1alpha1.GenericIssuer) (Interface, error)
 
 type Interface interface {
 	Sign(csrPEM []byte, duration time.Duration) (certPEM []byte, caPEM []byte, err error)
