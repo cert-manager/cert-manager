@@ -111,8 +111,12 @@ func (n *Nginx) Setup(cfg *config.Config) error {
 				Value: "Never",
 			},
 			{
+				Key:   "defaultBackend.image.repo",
+				Value: "bazel/test/e2e/addon/defaultbackend",
+			},
+			{
 				Key:   "defaultBackend.image.tag",
-				Value: "bazel",
+				Value: "v0.0.0-bazel",
 			},
 			{
 				Key:   "controller.service.clusterIP",
