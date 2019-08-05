@@ -39,6 +39,7 @@ import (
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/digitalocean"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/rfc2136"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/route53"
+	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/softlayer"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
 	webhookslv "github.com/jetstack/cert-manager/pkg/issuer/acme/dns/webhook"
 	"github.com/jetstack/cert-manager/pkg/logs"
@@ -65,6 +66,7 @@ type dnsProviderConstructors struct {
 	azureDNS     func(environment, clientID, clientSecret, subscriptionID, tenantID, resourceGroupName, hostedZoneName string, dns01Nameservers []string) (*azuredns.DNSProvider, error)
 	acmeDNS      func(host string, accountJson []byte, dns01Nameservers []string) (*acmedns.DNSProvider, error)
 	digitalOcean func(token string, dns01Nameservers []string) (*digitalocean.DNSProvider, error)
+	softlayer    func(username, apikey string, dns01Nameservers []string) (*softlayer.DNSProvider, error)
 }
 
 // Solver is a solver for the acme dns01 challenge.
@@ -304,6 +306,19 @@ func (s *Solver) solverForChallenge(ctx context.Context, issuer v1alpha1.Generic
 		if err != nil {
 			return nil, nil, fmt.Errorf("error instantiating route53 challenge solver: %s", err)
 		}
+	case providerConfig.Softlayer != nil:
+		apiKeySecret, err := s.secretLister.Secrets(resourceNamespace).Get(providerConfig.Softlayer.APIKey.Name)
+		if err != nil {
+			return nil, nil, fmt.Errorf("error getting softlayer service account: %s", err.Error())
+		}
+
+		username := providerConfig.Softlayer.Username
+		apiKey := string(apiKeySecret.Data[providerConfig.Softlayer.APIKey.Key])
+
+		impl, err = s.dnsProviderConstructors.softlayer(username, apiKey, s.DNS01Nameservers)
+		if err != nil {
+			return nil, nil, fmt.Errorf("error instantiating softlayer challenge solver: %s", err.Error())
+		}
 	case providerConfig.AzureDNS != nil:
 		dbg.Info("preparing to create AzureDNS provider")
 		clientSecret, err := s.secretLister.Secrets(resourceNamespace).Get(providerConfig.AzureDNS.ClientSecret.Name)
@@ -458,6 +473,7 @@ func NewSolver(ctx *controller.Context) (*Solver, error) {
 			azuredns.NewDNSProviderCredentials,
 			acmedns.NewDNSProviderHostBytes,
 			digitalocean.NewDNSProviderCredentials,
+			softlayer.NewDNSProviderCredentials,
 		},
 		webhookSolvers: initialized,
 	}, nil

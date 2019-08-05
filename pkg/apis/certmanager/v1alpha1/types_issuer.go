@@ -357,6 +357,9 @@ type ACMEChallengeSolverDNS01 struct {
 	RFC2136 *ACMEIssuerDNS01ProviderRFC2136 `json:"rfc2136,omitempty"`
 
 	// +optional
+	Softlayer *ACMEIssuerDNS01ProviderSoftlayer `json:"softlayer,omitempty"`
+
+	// +optional
 	Webhook *ACMEIssuerDNS01ProviderWebhook `json:"webhook,omitempty"`
 }
 
@@ -432,6 +435,13 @@ type ACMEIssuerDNS01ProviderRoute53 struct {
 
 	// Always set the region when using AccessKeyID and SecretAccessKey
 	Region string `json:"region"`
+}
+
+// ACMEIssuerDNS01ProviderSoftlayer is a structure containing the DNS
+// configuration for Softlayer
+type ACMEIssuerDNS01ProviderSoftlayer struct {
+	Username string            `json:"username"`
+	APIKey   SecretKeySelector `json:"apiKeySecretRef"`
 }
 
 // ACMEIssuerDNS01ProviderAzureDNS is a structure containing the
