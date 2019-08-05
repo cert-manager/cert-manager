@@ -71,7 +71,7 @@ type ContainerImage struct {
 }
 
 func (c *ContainerImage) Build(ctx context.Context) error {
-	return c.bzl().BuildPlatformE(ctx, c.os(), c.arch(), c.Target)
+	return c.bzl().RunPlatformE(ctx, c.os(), c.arch(), c.Target)
 }
 
 func (c *ContainerImage) Export(ctx context.Context, imageNames ...string) error {
@@ -79,11 +79,11 @@ func (c *ContainerImage) Export(ctx context.Context, imageNames ...string) error
 		return fmt.Errorf("image targets must begin with // and exist in the current bazel workspace")
 	}
 
-	exportedImageName := "bazel/" + c.Target[2:len(c.Target)]
-	if err := c.bzl().RunPlatformE(ctx, c.os(), c.arch(), c.Target); err != nil {
+	if err := c.Build(ctx); err != nil {
 		return err
 	}
 
+	exportedImageName := "bazel/" + c.Target[2:len(c.Target)]
 	c.Log.Info("exported image with name", "image_name", exportedImageName)
 	for _, n := range imageNames {
 		c.Log.Info("tagging image", "new_name", n)

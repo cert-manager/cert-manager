@@ -29,6 +29,7 @@ import (
 	"github.com/jetstack/cert-manager/hack/build/internal/bazel"
 	"github.com/jetstack/cert-manager/hack/build/internal/cluster"
 	logf "github.com/jetstack/cert-manager/hack/build/internal/log"
+	"github.com/jetstack/cert-manager/hack/build/internal/util"
 )
 
 func RegisterLoadCmd(rootOpts *options.Root, cmOpts *options.CertManager, rootCmd *cobra.Command) {
@@ -87,11 +88,22 @@ func RegisterLoadCmd(rootOpts *options.Root, cmOpts *options.CertManager, rootCm
 
 func buildAndExport(ctx context.Context, log logr.Logger, repoRoot string, debug bool, dockerRepo, component, appVersion string) (string, error) {
 	imageName := fmt.Sprintf("%s/cert-manager-%s:%s", dockerRepo, component, appVersion)
+	ref, err := util.GitCommitRef()
+	if err != nil {
+		return "", fmt.Errorf("error getting git commit ref: %v", err)
+	}
+
+	log.Info("determined git commit ref", "git_commit_ref", ref)
 
 	ci := &bazel.ContainerImage{
 		Target:       "//cmd/" + component + ":image",
 		WorkspaceDir: repoRoot,
 		Log:          log.V(4),
+		EnvVars: map[string]string{
+			"DOCKER_REPO":    dockerRepo,
+			"APP_VERSION":    appVersion,
+			"APP_GIT_COMMIT": ref,
+		},
 	}
 	if debug {
 		ci.Stdout = os.Stdout

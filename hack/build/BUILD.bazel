@@ -84,6 +84,7 @@ filegroup(
         "//hack/build/internal/consts:all-srcs",
         "//hack/build/internal/exec:all-srcs",
         "//hack/build/internal/log:all-srcs",
+        "//hack/build/internal/util:all-srcs",
     ],
     tags = ["automanaged"],
     visibility = ["//visibility:public"],

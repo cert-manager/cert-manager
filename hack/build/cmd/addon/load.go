@@ -86,7 +86,8 @@ func RegisterLoadCmd(rootOpts *options.Root, addonOpts *options.Addon, rootCmd *
 }
 
 func buildAndExport(ctx context.Context, log logr.Logger, repoRoot string, debug bool, component string) (string, error) {
-	imageName := "bazel/test/e2e/addon/" + component + ":v0.0.0-bazel"
+	repo, tag := imageRefForAddon(component)
+	imageName := repo + ":" + tag
 
 	log.Info("using root", "root", repoRoot)
 	ci := &bazel.ContainerImage{
@@ -103,4 +104,8 @@ func buildAndExport(ctx context.Context, log logr.Logger, repoRoot string, debug
 	}
 
 	return imageName, nil
+}
+
+func imageRefForAddon(s string) (repo, tag string) {
+	return "bazel/test/e2e/addon/" + s, "v0.0.0-bazel"
 }

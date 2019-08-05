@@ -13,6 +13,7 @@ go_library(
         "//hack/build/internal/bazel:go_default_library",
         "//hack/build/internal/cluster:go_default_library",
         "//hack/build/internal/log:go_default_library",
+        "//hack/build/internal/util:go_default_library",
         "@com_github_go_logr_logr//:go_default_library",
         "@com_github_spf13_cobra//:go_default_library",
     ],
