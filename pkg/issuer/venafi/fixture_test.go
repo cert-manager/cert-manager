@@ -20,8 +20,6 @@ import (
 	"context"
 	"testing"
 
-	vfake "github.com/Venafi/vcert/pkg/venafi/fake"
-
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	"github.com/jetstack/cert-manager/pkg/controller/test"
 )
@@ -32,7 +30,6 @@ type fixture struct {
 
 	Issuer      v1alpha1.GenericIssuer
 	Certificate *v1alpha1.Certificate
-	Client      connector
 
 	PreFn   func(*testing.T, *fixture)
 	CheckFn func(*testing.T, *fixture, ...interface{})
@@ -53,9 +50,9 @@ func (s *fixture) Setup(t *testing.T) {
 	}
 	// if a custom client has not been provided, we will use the vcert fake
 	// which generates certificates and private keys by default
-	if s.Client == nil {
-		s.Client = vfake.NewConnector(true, nil)
-	}
+	//if s.Client == nil {
+	//	s.Client = vfake.NewConnector(true, nil)
+	//}
 	if s.Ctx == nil {
 		s.Ctx = context.Background()
 	}
@@ -100,7 +97,7 @@ func (s *fixture) buildFakeVenafi(b *test.Builder, issuer v1alpha1.GenericIssuer
 		Context:           s.Context,
 		resourceNamespace: s.Context.IssuerOptions.ResourceNamespace(issuer),
 		secretsLister:     s.Context.KubeSharedInformerFactory.Core().V1().Secrets().Lister(),
-		client:            s.Client,
+		//client:            s.Client,
 	}
 	b.Sync()
 	return v

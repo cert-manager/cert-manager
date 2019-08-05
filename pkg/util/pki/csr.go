@@ -200,10 +200,14 @@ func keyUsage(isCA bool) x509.KeyUsage {
 // GenerateTemplate will create a x509.Certificate for the given
 // CertificateRequest resource
 func GenerateTemplateFromCertificateRequest(cr *v1alpha1.CertificateRequest) (*x509.Certificate, error) {
-	block, _ := pem.Decode(cr.Spec.CSRPEM)
+	certDuration := api.DefaultCertDuration(cr.Spec.Duration)
+	return GenerateTemplateFromCSRPEM(cr.Spec.CSRPEM, certDuration, cr.Spec.IsCA)
+}
+
+func GenerateTemplateFromCSRPEM(csrPEM []byte, duration time.Duration, isCA bool) (*x509.Certificate, error) {
+	block, _ := pem.Decode(csrPEM)
 	if block == nil {
-		return nil, fmt.Errorf("failed to decode csr from certificate request resource %s/%s",
-			cr.Namespace, cr.Name)
+		return nil, errors.New("failed to decode csr")
 	}
 
 	csr, err := x509.ParseCertificateRequest(block.Bytes)
@@ -220,20 +224,18 @@ func GenerateTemplateFromCertificateRequest(cr *v1alpha1.CertificateRequest) (*x
 		return nil, fmt.Errorf("failed to generate serial number: %s", err.Error())
 	}
 
-	certDuration := api.DefaultCertDuration(cr.Spec.Duration)
-
 	return &x509.Certificate{
 		Version:               csr.Version,
 		BasicConstraintsValid: true,
 		SerialNumber:          serialNumber,
 		PublicKeyAlgorithm:    csr.PublicKeyAlgorithm,
 		PublicKey:             csr.PublicKey,
-		IsCA:                  cr.Spec.IsCA,
+		IsCA:                  isCA,
 		Subject:               csr.Subject,
 		NotBefore:             time.Now(),
-		NotAfter:              time.Now().Add(certDuration),
+		NotAfter:              time.Now().Add(duration),
 		// see http://golang.org/pkg/crypto/x509/#KeyUsage
-		KeyUsage:    keyUsage(cr.Spec.IsCA),
+		KeyUsage:    keyUsage(isCA),
 		DNSNames:    csr.DNSNames,
 		IPAddresses: csr.IPAddresses,
 		URIs:        csr.URIs,

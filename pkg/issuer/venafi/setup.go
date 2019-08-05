@@ -25,10 +25,17 @@ import (
 
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	"github.com/jetstack/cert-manager/pkg/internal/venafi"
 )
 
 func (v *Venafi) Setup(ctx context.Context) error {
-	err := v.client.Ping()
+
+	client, err := venafi.New(v.resourceNamespace, v.secretsLister, v.issuer)
+	if err != nil {
+		return err
+	}
+
+	err = client.Ping()
 	if err != nil {
 		klog.Infof("Issuer could not connect to endpoint with provided credentials. Issuer failed to connect to endpoint\n")
 		apiutil.SetIssuerCondition(v.issuer, v1alpha1.IssuerConditionReady, v1alpha1.ConditionFalse,

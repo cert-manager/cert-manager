@@ -20,8 +20,6 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/Venafi/vcert/pkg/endpoint"
-
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	testpkg "github.com/jetstack/cert-manager/pkg/controller/test"
 	"github.com/jetstack/cert-manager/pkg/issuer"
@@ -91,13 +89,13 @@ func TestIssue(t *testing.T) {
 			Certificate: gen.Certificate("testcrt",
 				gen.SetCertificateDNSNames("example.com"),
 			),
-			Client: fakeConnector{
-				ReadZoneConfigurationFunc: func() (*endpoint.ZoneConfiguration, error) {
-					return &endpoint.ZoneConfiguration{
-						Organization: "testing-org",
-					}, nil
-				},
-			}.Default(),
+			//Client: fakeConnector{
+			//	ReadZoneConfigurationFunc: func() (*endpoint.ZoneConfiguration, error) {
+			//		return &endpoint.ZoneConfiguration{
+			//			Organization: "testing-org",
+			//		}, nil
+			//	},
+			//}.Default(),
 			CheckFn: func(t *testing.T, s *fixture, args ...interface{}) {
 				checkCertificateIssued(t, s, args...)
 				resp := args[1].(*issuer.IssueResponse)
@@ -115,13 +113,13 @@ func TestIssue(t *testing.T) {
 			Certificate: gen.Certificate("testcrt",
 				gen.SetCertificateDNSNames("example.com"),
 			),
-			Client: fakeConnector{
-				ReadZoneConfigurationFunc: func() (*endpoint.ZoneConfiguration, error) {
-					return &endpoint.ZoneConfiguration{
-						Organization: "testing-org",
-					}, nil
-				},
-			}.Default(),
+			//Client: fakeConnector{
+			//	ReadZoneConfigurationFunc: func() (*endpoint.ZoneConfiguration, error) {
+			//		return &endpoint.ZoneConfiguration{
+			//			Organization: "testing-org",
+			//		}, nil
+			//	},
+			//}.Default(),
 			CheckFn: func(t *testing.T, s *fixture, args ...interface{}) {
 				checkCertificateIssued(t, s, args...)
 
