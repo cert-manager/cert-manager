@@ -25,10 +25,7 @@ import (
 	"github.com/Venafi/vcert/pkg/endpoint"
 	corev1 "k8s.io/api/core/v1"
 
-	//"k8s.io/klog"
-
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
-	"github.com/jetstack/cert-manager/pkg/internal/venafi"
 	"github.com/jetstack/cert-manager/pkg/issuer"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
@@ -71,30 +68,33 @@ func (v *Venafi) Issue(ctx context.Context, crt *v1alpha1.Certificate) (*issuer.
 		return nil, nil
 	}
 
+	dbg.Info("generated new private key")
+	v.Recorder.Event(crt, corev1.EventTypeNormal, "GenerateKey", "Generated new private key")
+
 	pk, err := pki.EncodePKCS8PrivateKey(signeeKey)
 	if err != nil {
 		return nil, err
 	}
-
-	dbg.Info("generated new private key")
-	v.Recorder.Event(crt, corev1.EventTypeNormal, "GenerateKey", "Generated new private key")
 
 	// We build a x509.Certificate as the vcert library has support for converting
 	// this into its own internal Certificate Request type.
 	dbg.Info("constructing certificate request template to submit to venafi")
 	csr, err := pki.GenerateCSR(crt)
 	if err != nil {
+		v.Recorder.Eventf(crt, corev1.EventTypeWarning, "GenerateCSR", "Failed to generate a CSR for the certificate: %v", err)
 		return nil, err
 	}
 
 	csrPEM, err := pki.EncodeCSR(csr, signeeKey)
 	if err != nil {
+		v.Recorder.Eventf(crt, corev1.EventTypeWarning, "EncodeCSR", "Failed to PEM encode CSR for the certificate: %v", err)
 		return nil, err
 	}
 
-	client, err := venafi.New(v.resourceNamespace, v.secretsLister, v.issuer)
+	client, err := v.clientBuilder(v.resourceNamespace, v.secretsLister, v.issuer)
 	if err != nil {
-		return nil, err
+		v.Recorder.Eventf(v.issuer, corev1.EventTypeWarning, "FailedInit", "Failed to create Venafi client: %v", err)
+		return nil, fmt.Errorf("error creating Venafi client: %s", err.Error())
 	}
 
 	cert, err := client.Sign(csrPEM)

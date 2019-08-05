@@ -25,12 +25,11 @@ import (
 
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
-	"github.com/jetstack/cert-manager/pkg/internal/venafi"
 )
 
 func (v *Venafi) Setup(ctx context.Context) error {
 
-	client, err := venafi.New(v.resourceNamespace, v.secretsLister, v.issuer)
+	client, err := v.clientBuilder(v.resourceNamespace, v.secretsLister, v.issuer)
 	if err != nil {
 		return err
 	}
