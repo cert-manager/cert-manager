@@ -360,17 +360,17 @@ operation. These two resources are:
     certificates. An Issuer is specific to a single namespace in Kubernetes,
     and a ClusterIssuer is meant to be a cluster-wide definition for the same
     purpose.
-    
+
     Note that if you're using this document as a guide to configure cert-manager
     for your own Issuer, you must create the Issuers in the same namespace
     as your Ingress resouces by adding '-n my-namespace' to your 'kubectl create'
     commands. Your other option is to replace your Issuers with ClusterIssuers.
     ClusterIssuer resources apply across all Ingress resources in your cluster
     and don't have this namespace-matching requirement.
-    
+
     More information on the differences between Issuers and ClusterIssuers and
     when you might choose to use each can be found at:
-    
+
     https://docs.cert-manager.io/en/latest/tasks/issuers/index.html#difference-between-issuers-and-clusterissuers
 
 :doc:`Certificate </reference/certificates>`
