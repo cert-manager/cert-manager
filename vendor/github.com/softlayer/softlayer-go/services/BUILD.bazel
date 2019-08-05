@@ -1,0 +1,66 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "account.go",
+        "auxiliary.go",
+        "billing.go",
+        "brand.go",
+        "business.go",
+        "catalyst.go",
+        "compliance.go",
+        "configuration.go",
+        "dns.go",
+        "email.go",
+        "event.go",
+        "exception.go",
+        "flexiblecredit.go",
+        "hardware.go",
+        "layout.go",
+        "locale.go",
+        "location.go",
+        "marketplace.go",
+        "metric.go",
+        "monitoring.go",
+        "network.go",
+        "notification.go",
+        "product.go",
+        "provisioning.go",
+        "resource.go",
+        "sales.go",
+        "scale.go",
+        "search.go",
+        "security.go",
+        "software.go",
+        "survey.go",
+        "tag.go",
+        "ticket.go",
+        "user.go",
+        "utility.go",
+        "virtual.go",
+    ],
+    importmap = "github.com/jetstack/cert-manager/vendor/github.com/softlayer/softlayer-go/services",
+    importpath = "github.com/softlayer/softlayer-go/services",
+    tags = ["manual"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//vendor/github.com/softlayer/softlayer-go/datatypes:go_default_library",
+        "//vendor/github.com/softlayer/softlayer-go/session:go_default_library",
+        "//vendor/github.com/softlayer/softlayer-go/sl:go_default_library",
+    ],
+)
+
+filegroup(
+    name = "package-srcs",
+    srcs = glob(["**"]),
+    tags = ["automanaged"],
+    visibility = ["//visibility:private"],
+)
+
+filegroup(
+    name = "all-srcs",
+    srcs = [":package-srcs"],
+    tags = ["automanaged"],
+    visibility = ["//visibility:public"],
+)

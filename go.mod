@@ -52,6 +52,7 @@ require (
 	github.com/hashicorp/go-version v1.1.0 // indirect
 	github.com/hashicorp/golang-math-big v0.0.0-20180316142257-561262b71329 // indirect
 	github.com/hashicorp/vault v0.9.6
+	github.com/jarcoal/httpmock v1.0.4 // indirect
 	github.com/jefferai/jsonx v1.0.0 // indirect
 	github.com/jmespath/go-jmespath v0.0.0-20180206201540-c2b33e8439af // indirect
 	github.com/keybase/go-crypto v0.0.0-20190403132359-d65b6b94177f // indirect
@@ -75,8 +76,10 @@ require (
 	github.com/patrickmn/go-cache v2.1.0+incompatible // indirect
 	github.com/pkg/errors v0.8.1
 	github.com/prometheus/client_golang v0.9.3-0.20190127221311-3c4408c8b829
+	github.com/renier/xmlrpc v0.0.0-20170708154548-ce4a1a486c03 // indirect
 	github.com/ryanuber/go-glob v1.0.0 // indirect
 	github.com/sethgrid/pester v0.0.0-20190127155807-68a33a018ad0 // indirect
+	github.com/softlayer/softlayer-go v0.0.0-20190615201252-ba6e7f295217
 	github.com/spf13/cobra v0.0.5
 	github.com/spf13/pflag v1.0.3
 	github.com/stretchr/testify v1.3.0

@@ -1,0 +1,34 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "rest.go",
+        "session.go",
+        "xmlrpc.go",
+    ],
+    importmap = "github.com/jetstack/cert-manager/vendor/github.com/softlayer/softlayer-go/session",
+    importpath = "github.com/softlayer/softlayer-go/session",
+    tags = ["manual"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//vendor/github.com/renier/xmlrpc:go_default_library",
+        "//vendor/github.com/softlayer/softlayer-go/config:go_default_library",
+        "//vendor/github.com/softlayer/softlayer-go/datatypes:go_default_library",
+        "//vendor/github.com/softlayer/softlayer-go/sl:go_default_library",
+    ],
+)
+
+filegroup(
+    name = "package-srcs",
+    srcs = glob(["**"]),
+    tags = ["automanaged"],
+    visibility = ["//visibility:private"],
+)
+
+filegroup(
+    name = "all-srcs",
+    srcs = [":package-srcs"],
+    tags = ["automanaged"],
+    visibility = ["//visibility:public"],
+)

@@ -1,0 +1,30 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "errors.go",
+        "helpers.go",
+        "options.go",
+        "version.go",
+    ],
+    importmap = "github.com/jetstack/cert-manager/vendor/github.com/softlayer/softlayer-go/sl",
+    importpath = "github.com/softlayer/softlayer-go/sl",
+    tags = ["manual"],
+    visibility = ["//visibility:public"],
+    deps = ["//vendor/github.com/softlayer/softlayer-go/datatypes:go_default_library"],
+)
+
+filegroup(
+    name = "package-srcs",
+    srcs = glob(["**"]),
+    tags = ["automanaged"],
+    visibility = ["//visibility:private"],
+)
+
+filegroup(
+    name = "all-srcs",
+    srcs = [":package-srcs"],
+    tags = ["automanaged"],
+    visibility = ["//visibility:public"],
+)
