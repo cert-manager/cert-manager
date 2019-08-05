@@ -2222,3 +2222,11 @@ def go_repositories():
         sum = "h1:B0J02caTR6tpSJozBJyiAzT6CtBzjclw4pgm9gg8Ys0=",
         version = "v3.0.0-20190905181640-827449938966",
     )
+    go_repository(
+        name = "com_github_masterminds_semver",
+        build_file_generation = "on",
+        build_file_proto_mode = "disable",
+        importpath = "github.com/Masterminds/semver",
+        sum = "h1:WBLTQ37jOCzSLtXNdoo8bNM8876KhNqOKvrlGITgsTc=",
+        version = "v1.4.2",
+    )
