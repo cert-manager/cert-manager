@@ -29,20 +29,17 @@ import (
 // It also returns an stdout and stderr io.Reader that can be used by callers
 // to read command output.
 func Run(out io.Writer, cmd *exec.Cmd) (stdout, stderr io.Reader, err error) {
-	var stdoutRW, stderrRW io.ReadWriter
+	stdoutRW := &bytes.Buffer{}
+	stderrRW := &bytes.Buffer{}
 
-	stdoutRW = &bytes.Buffer{}
-	stderrRW = &bytes.Buffer{}
-	stdoutW := stdoutRW.(io.Writer)
-	stderrW := stderrRW.(io.Writer)
 	if out != nil {
-		stdoutW = io.MultiWriter(stdoutW, out)
-		stderrW = io.MultiWriter(stderrW, out)
+		cmd.Stdout = io.MultiWriter(stdoutRW, out)
+		cmd.Stderr = io.MultiWriter(stderrRW, out)
+		return stdoutRW, stderrRW, cmd.Run()
 	}
 
-	cmd.Stdout = stdoutW
-	cmd.Stderr = stderrW
-
+	cmd.Stdout = io.MultiWriter(stdoutRW)
+	cmd.Stderr = io.MultiWriter(stderrRW)
 	return stdoutRW, stderrRW, cmd.Run()
 }
 

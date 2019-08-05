@@ -42,7 +42,8 @@ func RegisterCreateCmd(rootOpts *options.Root, clusterOpts *options.Cluster, roo
 		Use:   "create",
 		Short: "Create clusters used for development and testing",
 		Run: func(cmd *cobra.Command, args []string) {
-			stdout := os.Stdout
+			var stdout io.Writer
+			stdout = os.Stdout
 			if !rootOpts.Debug {
 				stdout = nil
 			}
