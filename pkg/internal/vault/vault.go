@@ -30,22 +30,36 @@ import (
 	corelisters "k8s.io/client-go/listers/core/v1"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
-	"github.com/jetstack/cert-manager/pkg/internal"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 )
 
-var _ internal.Vault = &Vault{}
+var _ Interface = &Vault{}
+
+type VaultClientBuilder func(string, corelisters.SecretLister, v1alpha1.GenericIssuer) (Interface, error)
+
+type Interface interface {
+	Sign(csrPEM []byte, duration time.Duration) (certPEM []byte, caPEM []byte, err error)
+	Sys() *vault.Sys
+}
+
+type Client interface {
+	NewRequest(method, requestPath string) *vault.Request
+	RawRequest(r *vault.Request) (*vault.Response, error)
+	SetToken(v string)
+	Token() string
+	Sys() *vault.Sys
+}
 
 type Vault struct {
 	secretsLister corelisters.SecretLister
 	issuer        v1alpha1.GenericIssuer
 	namespace     string
 
-	client internal.VaultClient
+	client Client
 }
 
 func New(namespace string, secretsLister corelisters.SecretLister,
-	issuer v1alpha1.GenericIssuer) (internal.Vault, error) {
+	issuer v1alpha1.GenericIssuer) (Interface, error) {
 	v := &Vault{
 		secretsLister: secretsLister,
 		namespace:     namespace,
@@ -126,7 +140,7 @@ func (v *Vault) Sign(csrPEM []byte, duration time.Duration) (cert []byte, ca []b
 	return []byte(bundle.ToPEMBundle()), caPem, nil
 }
 
-func (v *Vault) setToken(client internal.VaultClient) error {
+func (v *Vault) setToken(client Client) error {
 	tokenRef := v.issuer.GetSpec().Vault.Auth.TokenSecretRef
 	if tokenRef.Name != "" {
 		token, err := v.tokenRef(tokenRef.Name, v.namespace, tokenRef.Key)
@@ -214,7 +228,7 @@ func (v *Vault) appRoleRef(appRole *v1alpha1.VaultAppRole) (roleId, secretId str
 	return roleId, secretId, nil
 }
 
-func (v *Vault) requestTokenWithAppRoleRef(client internal.VaultClient, appRole *v1alpha1.VaultAppRole) (string, error) {
+func (v *Vault) requestTokenWithAppRoleRef(client Client, appRole *v1alpha1.VaultAppRole) (string, error) {
 	roleId, secretId, err := v.appRoleRef(appRole)
 	if err != nil {
 		return "", err

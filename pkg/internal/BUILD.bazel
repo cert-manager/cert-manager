@@ -1,17 +1,3 @@
-load("@io_bazel_rules_go//go:def.bzl", "go_library")
-
-go_library(
-    name = "go_default_library",
-    srcs = ["internal.go"],
-    importpath = "github.com/jetstack/cert-manager/pkg/internal",
-    visibility = ["//visibility:public"],
-    deps = [
-        "//pkg/apis/certmanager/v1alpha1:go_default_library",
-        "//vendor/github.com/hashicorp/vault/api:go_default_library",
-        "//vendor/k8s.io/client-go/listers/core/v1:go_default_library",
-    ],
-)
-
 filegroup(
     name = "package-srcs",
     srcs = glob(["**"]),

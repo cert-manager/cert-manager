@@ -10,7 +10,7 @@ go_library(
     visibility = ["//pkg:__subpackages__"],
     deps = [
         "//pkg/apis/certmanager/v1alpha1:go_default_library",
-        "//pkg/internal:go_default_library",
+        "//pkg/internal/vault:go_default_library",
         "//vendor/github.com/hashicorp/vault/api:go_default_library",
         "//vendor/k8s.io/client-go/listers/core/v1:go_default_library",
     ],

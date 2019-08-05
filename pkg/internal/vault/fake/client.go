@@ -21,10 +21,10 @@ import (
 
 	vault "github.com/hashicorp/vault/api"
 
-	"github.com/jetstack/cert-manager/pkg/internal"
+	internalvault "github.com/jetstack/cert-manager/pkg/internal/vault"
 )
 
-var _ internal.VaultClient = &Client{}
+var _ internalvault.Client = &Client{}
 
 type Client struct {
 	NewRequestS  *vault.Request

@@ -28,7 +28,6 @@ import (
 	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
 	"github.com/jetstack/cert-manager/pkg/controller/certificaterequests"
 	crutil "github.com/jetstack/cert-manager/pkg/controller/certificaterequests/util"
-	"github.com/jetstack/cert-manager/pkg/internal"
 	vaultinternal "github.com/jetstack/cert-manager/pkg/internal/vault"
 	"github.com/jetstack/cert-manager/pkg/issuer"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
@@ -45,7 +44,7 @@ type Vault struct {
 	secretsLister corelisters.SecretLister
 	helper        issuer.Helper
 
-	vaultClientBuilder internal.VaultClientBuilder
+	vaultClientBuilder vaultinternal.VaultClientBuilder
 }
 
 func init() {

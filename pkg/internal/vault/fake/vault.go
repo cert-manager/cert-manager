@@ -23,13 +23,13 @@ import (
 	corelisters "k8s.io/client-go/listers/core/v1"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
-	"github.com/jetstack/cert-manager/pkg/internal"
+	internalvault "github.com/jetstack/cert-manager/pkg/internal/vault"
 )
 
-var _ internal.Vault = &Vault{}
+var _ internalvault.Interface = &Vault{}
 
 type Vault struct {
-	NewFn  internal.VaultClientBuilder
+	NewFn  internalvault.VaultClientBuilder
 	SignFn func([]byte, time.Duration) ([]byte, []byte, error)
 }
 
@@ -40,7 +40,7 @@ func NewFakeVault() *Vault {
 		},
 	}
 
-	v.NewFn = func(string, corelisters.SecretLister, v1alpha1.GenericIssuer) (internal.Vault, error) {
+	v.NewFn = func(string, corelisters.SecretLister, v1alpha1.GenericIssuer) (internalvault.Interface, error) {
 		return v, nil
 	}
 
@@ -58,12 +58,12 @@ func (v *Vault) WithSign(certPEM, caPEM []byte, err error) *Vault {
 	return v
 }
 
-func (v *Vault) WithNew(f internal.VaultClientBuilder) *Vault {
+func (v *Vault) WithNew(f internalvault.VaultClientBuilder) *Vault {
 	v.NewFn = f
 	return v
 }
 
-func (v *Vault) New(ns string, sl corelisters.SecretLister, iss v1alpha1.GenericIssuer) (internal.Vault, error) {
+func (v *Vault) New(ns string, sl corelisters.SecretLister, iss v1alpha1.GenericIssuer) (internalvault.Interface, error) {
 	_, err := v.NewFn(ns, sl, iss)
 	if err != nil {
 		return nil, err
