@@ -28,7 +28,6 @@ import (
 
 const (
 	DefaultKindClusterName = "cert-manager-cluster"
-	DefaultKindBinaryPath  = "kind"
 )
 
 // Cluster allows creating, deleting and interacting with kind clusters.
@@ -38,12 +37,6 @@ type Cluster struct {
 	// If not set, DefaultKindClusterName will be used.
 	KindClusterName string
 
-	// KindBinaryPath is the path to the kind binary used for provisioning
-	// clusters.
-	// If not set, 'kind' will be used and the binary will be looked up using
-	// the configured $PATH.
-	KindBinaryPath string
-
 	// KindConfigPath is an optional path to a Kind config file.
 	// If not specified, the default is no configuration file.
 	KindConfigPath string
@@ -52,6 +45,12 @@ type Cluster struct {
 	// If not specified, none will be set and the default image for the kind
 	// version used will be used.
 	KindImage string
+
+	// Executor is used to execute the kind command.
+	// This is defined as an interface to allow executing kind with bazel or
+	// with a binary.
+	// If not specified, ExecutorBazel will be used.
+	Executor Executor
 
 	// Stdout is an optional Writer that can be specified to capture output
 	// from kind.
@@ -105,11 +104,28 @@ func (c *Cluster) runKind(args ...string) (stdout, stderr io.Reader, err error) 
 	if clusterName == "" {
 		clusterName = DefaultKindClusterName
 	}
-	kindPath := c.KindBinaryPath
-	if kindPath == "" {
-		kindPath = DefaultKindBinaryPath
-	}
 	args = append(args, "--name", clusterName)
-	c.Log.Info("Running kind command", "kind_path", kindPath, "args", args)
-	return exec.RunCommand(c.Stdout, kindPath, args...)
+
+	executor := c.Executor
+	if executor == nil {
+		executor = ExecutorBazel
+	}
+
+	c.Log.Info("Running kind command", "args", args)
+	return executor(c.Stdout, args...)
+}
+
+// Executor is a function that executes kind.
+type Executor func(out io.Writer, args ...string) (stdout, stderr io.Reader, err error)
+
+// ExecutorBinary executes kind by using the regular system PATH.
+// It requires kind to be manually installed and made available ahead of time.
+func ExecutorBinary(out io.Writer, args ...string) (stdout, stderr io.Reader, err error) {
+	return exec.RunCommand(out, "kind", args...)
+}
+
+// ExecutorBazel executes kind using the //hack/bin:kind bazel target
+func ExecutorBazel(out io.Writer, args ...string) (stdout, stderr io.Reader, err error) {
+	completeArgs := append([]string{"run", "//hack/bin:kind", "--"}, args...)
+	return exec.RunCommand(out, "bazel", completeArgs...)
 }
