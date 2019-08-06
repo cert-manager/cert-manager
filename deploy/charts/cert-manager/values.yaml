@@ -103,6 +103,7 @@ prometheus:
     path: /metrics
     interval: 60s
     scrapeTimeout: 30s
+    labels: {}
 
 webhook:
   enabled: true
