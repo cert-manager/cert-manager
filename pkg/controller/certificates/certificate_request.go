@@ -729,11 +729,14 @@ func (c *certificateRequestManager) buildCertificateRequest(log logr.Logger, crt
 		return nil, err
 	}
 
-	return &cmapi.CertificateRequest{
+	cr := &cmapi.CertificateRequest{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:            name,
 			Namespace:       crt.Namespace,
 			OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(crt, certificateGvk)},
+			Annotations: map[string]string{
+				cmapi.CRPrivateKeyAnnotationKey: crt.Spec.SecretName,
+			},
 		},
 		Spec: cmapi.CertificateRequestSpec{
 			CSRPEM:    csrPEM,
@@ -741,7 +744,9 @@ func (c *certificateRequestManager) buildCertificateRequest(log logr.Logger, crt
 			IssuerRef: crt.Spec.IssuerRef,
 			IsCA:      crt.Spec.IsCA,
 		},
-	}, nil
+	}
+
+	return cr, nil
 }
 
 func (c *certificateRequestManager) cleanupExistingCertificateRequests(log logr.Logger, crt *cmapi.Certificate, retain string) error {

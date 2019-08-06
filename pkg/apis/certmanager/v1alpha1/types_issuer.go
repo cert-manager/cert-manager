@@ -338,7 +338,6 @@ type ACMEChallengeSolverDNS01 struct {
 	// CNAMEStrategy configures how the DNS01 provider should handle CNAME
 	// records when found in DNS zones.
 	// +optional
-	// +kubebuilder:validation:Enum=None;Follow
 	CNAMEStrategy CNAMEStrategy `json:"cnameStrategy,omitempty"`
 
 	// +optional
@@ -396,7 +395,6 @@ type ACMEIssuerDNS01Provider struct {
 	// CNAMEStrategy configures how the DNS01 provider should handle CNAME
 	// records when found in DNS zones.
 	// +optional
-	// +kubebuilder:validation:Enum=None;Follow
 	CNAMEStrategy CNAMEStrategy `json:"cnameStrategy,omitempty"`
 
 	// +optional
@@ -432,6 +430,7 @@ type ACMEIssuerDNS01Provider struct {
 // CNAMEStrategy configures how the DNS01 provider should handle CNAME records
 // when found in DNS zones.
 // By default, the None strategy will be applied (i.e. do not follow CNAMEs).
+// +kubebuilder:validation:Enum=None;Follow
 type CNAMEStrategy string
 
 const (
@@ -505,10 +504,19 @@ type ACMEIssuerDNS01ProviderAzureDNS struct {
 	// +optional
 	HostedZoneName string `json:"hostedZoneName,omitempty"`
 
-	// +kubebuilder:validation:Enum=,AzurePublicCloud,AzureChinaCloud,AzureGermanCloud,AzureUSGovernmentCloud
 	// +optional
-	Environment string `json:"environment,omitempty"`
+	Environment AzureDNSEnvironment `json:"environment,omitempty"`
 }
+
+// +kubebuilder:validation:Enum=AzurePublicCloud;AzureChinaCloud;AzureGermanCloud;AzureUSGovernmentCloud
+type AzureDNSEnvironment string
+
+const (
+	AzurePublicCloud       AzureDNSEnvironment = "AzurePublicCloud"
+	AzureChinaCloud        AzureDNSEnvironment = "AzureChinaCloud"
+	AzureGermanCloud       AzureDNSEnvironment = "AzureGermanCloud"
+	AzureUSGovernmentCloud AzureDNSEnvironment = "AzureUSGovernmentCloud"
+)
 
 // ACMEIssuerDNS01ProviderAcmeDNS is a structure containing the
 // configuration for ACME-DNS servers
@@ -597,7 +605,6 @@ type IssuerCondition struct {
 	Type IssuerConditionType `json:"type"`
 
 	// Status of the condition, one of ('True', 'False', 'Unknown').
-	// +kubebuilder:validation:Enum=True;False;Unknown
 	Status ConditionStatus `json:"status"`
 
 	// LastTransitionTime is the timestamp corresponding to the last status

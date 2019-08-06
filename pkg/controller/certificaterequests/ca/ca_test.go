@@ -26,6 +26,7 @@ import (
 	"crypto/x509/pkix"
 	"encoding/asn1"
 	"encoding/pem"
+	"errors"
 	"reflect"
 	"testing"
 	"time"
@@ -33,6 +34,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	clientcorev1 "k8s.io/client-go/listers/core/v1"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
@@ -40,6 +42,7 @@ import (
 	"github.com/jetstack/cert-manager/pkg/issuer"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 	"github.com/jetstack/cert-manager/test/unit/gen"
+	testlisters "github.com/jetstack/cert-manager/test/unit/listers"
 )
 
 func generateRSAPrivateKey(t *testing.T) *rsa.PrivateKey {
@@ -166,8 +169,13 @@ func TestSign(t *testing.T) {
 	rootRSANoKeySecret := rootRSACASecret.DeepCopy()
 	rootRSANoKeySecret.Data[corev1.TLSPrivateKeyKey] = make([]byte, 0)
 
+	basicIssuer := gen.Issuer("ca-issuer",
+		gen.SetIssuerCA(v1alpha1.CAIssuer{SecretName: "root-ca-secret"}),
+	)
+
 	tests := map[string]testT{
 		"sign a CertificateRequest": {
+			issuer: basicIssuer,
 			certificateRequest: gen.CertificateRequest("test-cr",
 				gen.SetCertificateRequestIsCA(true),
 				gen.SetCertificateRequestCSR(caCSR),
@@ -178,17 +186,14 @@ func TestSign(t *testing.T) {
 				}),
 			),
 			builder: &testpkg.Builder{
-				KubeObjects: []runtime.Object{rootRSACASecret},
-				CertManagerObjects: []runtime.Object{
-					gen.Issuer("ca-issuer",
-						gen.SetIssuerCA(v1alpha1.CAIssuer{SecretName: "root-ca-secret"}),
-					),
-				},
+				KubeObjects:        []runtime.Object{rootRSACASecret},
+				CertManagerObjects: []runtime.Object{},
 				// we are not expecting key on response
 				CheckFn: noPrivateKeyFieldsSetCheck(rsaPEMCert),
 			},
 		},
 		"fail to find CA tls key pair": {
+			issuer: basicIssuer,
 			certificateRequest: gen.CertificateRequest("test-cr",
 				gen.SetCertificateRequestIsCA(true),
 				gen.SetCertificateRequestCSR(caCSR),
@@ -199,17 +204,16 @@ func TestSign(t *testing.T) {
 				}),
 			),
 			builder: &testpkg.Builder{
-				KubeObjects: []runtime.Object{},
-				CertManagerObjects: []runtime.Object{gen.Issuer("ca-issuer",
-					gen.SetIssuerCA(v1alpha1.CAIssuer{SecretName: "root-ca-secret"}),
-				)},
+				KubeObjects:        []runtime.Object{},
+				CertManagerObjects: []runtime.Object{},
 				ExpectedEvents: []string{
-					`Warning Pending secret "root-ca-secret" not found`,
+					`Normal MissingSecret Referenced secret default-unit-test-ns/root-ca-secret not found: secret "root-ca-secret" not found`,
 				},
 				CheckFn: mustNoResponse,
 			},
 		},
 		"given bad CSR should fail Certificate generation": {
+			issuer: basicIssuer,
 			certificateRequest: gen.CertificateRequest("test-cr",
 				gen.SetCertificateRequestIsCA(true),
 				gen.SetCertificateRequestCSR([]byte("bad-csr")),
@@ -220,10 +224,8 @@ func TestSign(t *testing.T) {
 				}),
 			),
 			builder: &testpkg.Builder{
-				KubeObjects: []runtime.Object{rootRSACASecret},
-				CertManagerObjects: []runtime.Object{gen.Issuer("ca-issuer",
-					gen.SetIssuerCA(v1alpha1.CAIssuer{SecretName: "root-ca-secret"}),
-				)},
+				KubeObjects:        []runtime.Object{rootRSACASecret},
+				CertManagerObjects: []runtime.Object{},
 				ExpectedEvents: []string{
 					`Warning ErrorSigning Error generating certificate template: failed to decode csr from certificate request resource default-unit-test-ns/test-cr`,
 				},
@@ -231,6 +233,7 @@ func TestSign(t *testing.T) {
 			},
 		},
 		"no CA certificate should fail a signing": {
+			issuer: basicIssuer,
 			certificateRequest: gen.CertificateRequest("test-cr",
 				gen.SetCertificateRequestIsCA(true),
 				gen.SetCertificateRequestCSR(caCSR),
@@ -241,22 +244,17 @@ func TestSign(t *testing.T) {
 				}),
 			),
 			builder: &testpkg.Builder{
-				KubeObjects: []runtime.Object{rootRSANoCASecret},
-				CertManagerObjects: []runtime.Object{gen.Issuer("ca-issuer",
-					gen.SetIssuerCA(v1alpha1.CAIssuer{SecretName: "root-ca-secret"}),
-				)},
-				CheckFn: func(builder *testpkg.Builder, args ...interface{}) {
-					err := args[1].(error)
-					badCAError := `error decoding cert PEM block`
-					if err == nil || err.Error() != badCAError {
-						t.Errorf("unexpected error, exp='%s' got='%+v'", badCAError, err)
-					}
-					mustNoResponse(builder, args...)
+				KubeObjects:        []runtime.Object{rootRSANoCASecret},
+				CertManagerObjects: []runtime.Object{},
+				ExpectedEvents: []string{
+					`Normal ErrorParsingSecret Failed to parse signing CA keypair from secret default-unit-test-ns/root-ca-secret: error decoding cert PEM block`,
 				},
+				CheckFn: mustNoResponse,
 			},
-			expectedErr: true,
+			expectedErr: false,
 		},
 		"no CA key should fail a signing": {
+			issuer: basicIssuer,
 			certificateRequest: gen.CertificateRequest("test-cr",
 				gen.SetCertificateRequestIsCA(true),
 				gen.SetCertificateRequestCSR(caCSR),
@@ -267,18 +265,41 @@ func TestSign(t *testing.T) {
 				}),
 			),
 			builder: &testpkg.Builder{
-				KubeObjects: []runtime.Object{rootRSANoKeySecret},
-				CertManagerObjects: []runtime.Object{gen.Issuer("ca-issuer",
-					gen.SetIssuerCA(v1alpha1.CAIssuer{SecretName: "root-ca-secret"}),
-				)},
-				CheckFn: func(builder *testpkg.Builder, args ...interface{}) {
-					err := args[1].(error)
-					noKeyError := "error decoding private key PEM block"
-					if err == nil || err.Error() != noKeyError {
-						builder.T.Errorf("unexpected error, exp='%s' got='%+v'", noKeyError, err)
+				KubeObjects:        []runtime.Object{rootRSANoKeySecret},
+				CertManagerObjects: []runtime.Object{},
+				ExpectedEvents: []string{
+					`Normal ErrorParsingSecret Failed to parse signing CA keypair from secret default-unit-test-ns/root-ca-secret: error decoding private key PEM block`,
+				},
+				CheckFn: mustNoResponse,
+			},
+			expectedErr: false,
+		},
+		"a CertificateRequest that transiently fails a secret lookup should backoff error to retry": {
+			issuer: basicIssuer,
+			certificateRequest: gen.CertificateRequest("test-cr",
+				gen.SetCertificateRequestIsCA(true),
+				gen.SetCertificateRequestCSR(caCSR),
+				gen.SetCertificateRequestIssuer(v1alpha1.ObjectReference{
+					Name:  "ca-issuer",
+					Group: certmanager.GroupName,
+					Kind:  "Issuer",
+				}),
+			),
+			builder: &testpkg.Builder{
+				KubeObjects:        []runtime.Object{rootRSACASecret},
+				CertManagerObjects: []runtime.Object{},
+				CheckFn:            mustNoResponse,
+				ExpectedEvents: []string{
+					`Normal ErrorGettingSecret Failed to get certificate key pair from secret default-unit-test-ns/root-ca-secret: this is a network error`,
+				},
+			},
+			fakeLister: &testlisters.FakeSecretLister{
+				SecretsFn: func(namespace string) clientcorev1.SecretNamespaceLister {
+					return &testlisters.FakeSecretNamespaceLister{
+						GetFn: func(name string) (ret *corev1.Secret, err error) {
+							return nil, errors.New("this is a network error")
+						},
 					}
-
-					mustNoResponse(builder, args...)
 				},
 			},
 			expectedErr: true,
@@ -295,9 +316,11 @@ func TestSign(t *testing.T) {
 type testT struct {
 	builder            *testpkg.Builder
 	certificateRequest *v1alpha1.CertificateRequest
+	issuer             v1alpha1.GenericIssuer
 
-	checkFn     func(*testpkg.Builder, ...interface{})
 	expectedErr bool
+
+	fakeLister *testlisters.FakeSecretLister
 }
 
 func runTest(t *testing.T, test testT) {
@@ -306,9 +329,14 @@ func runTest(t *testing.T, test testT) {
 	defer test.builder.Stop()
 
 	c := NewCA(test.builder.Context)
+
+	if test.fakeLister != nil {
+		c.secretsLister = test.fakeLister
+	}
+
 	test.builder.Sync()
 
-	resp, err := c.Sign(context.Background(), test.certificateRequest)
+	resp, err := c.Sign(context.Background(), test.certificateRequest, test.issuer)
 	if err != nil && !test.expectedErr {
 		t.Errorf("expected to not get an error, but got: %v", err)
 	}

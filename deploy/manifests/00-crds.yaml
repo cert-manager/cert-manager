@@ -121,6 +121,10 @@ spec:
                   status:
                     description: Status of the condition, one of ('True', 'False',
                       'Unknown').
+                    enum:
+                    - "True"
+                    - "False"
+                    - Unknown
                     type: string
                   type:
                     description: Type of the condition, currently ('Ready').
@@ -311,6 +315,9 @@ spec:
                 either "rsa" or "ecdsa" If KeyAlgorithm is specified and KeySize is
                 not provided, key size of 256 will be used for "ecdsa" key algorithm
                 and key size of 2048 will be used for "rsa" key algorithm.
+              enum:
+              - rsa
+              - ecdsa
               type: string
             keyEncoding:
               description: KeyEncoding is the private key cryptography standards (PKCS)
@@ -318,6 +325,9 @@ spec:
                 allowed values are "pkcs1" and "pkcs8" standing for PKCS#1 and PKCS#8,
                 respectively. If KeyEncoding is not specified, then PKCS#1 will be
                 used by default.
+              enum:
+              - pkcs1
+              - pkcs8
               type: string
             keySize:
               description: KeySize is the key bit size of the corresponding private
@@ -366,6 +376,10 @@ spec:
                   status:
                     description: Status of the condition, one of ('True', 'False',
                       'Unknown').
+                    enum:
+                    - "True"
+                    - "False"
+                    - Unknown
                     type: string
                   type:
                     description: Type of the condition, currently ('Ready').
@@ -616,6 +630,11 @@ spec:
                           - name
                           type: object
                         environment:
+                          enum:
+                          - AzurePublicCloud
+                          - AzureChinaCloud
+                          - AzureGermanCloud
+                          - AzureUSGovernmentCloud
                           type: string
                         hostedZoneName:
                           type: string
@@ -681,6 +700,9 @@ spec:
                     cnameStrategy:
                       description: CNAMEStrategy configures how the DNS01 provider
                         should handle CNAME records when found in DNS zones.
+                      enum:
+                      - None
+                      - Follow
                       type: string
                     digitalocean:
                       description: ACMEIssuerDNS01ProviderDigitalOcean is a structure
@@ -1762,12 +1784,18 @@ spec:
             state:
               description: State contains the current 'state' of the challenge. If
                 not set, the state of the challenge is unknown.
+              enum:
+              - valid
+              - ready
+              - pending
+              - processing
+              - invalid
+              - expired
+              - errored
               type: string
           type: object
       required:
       - metadata
-      - spec
-      - status
       type: object
   versions:
   - name: v1alpha1
@@ -1929,6 +1957,11 @@ spec:
                                 - name
                                 type: object
                               environment:
+                                enum:
+                                - AzurePublicCloud
+                                - AzureChinaCloud
+                                - AzureGermanCloud
+                                - AzureUSGovernmentCloud
                                 type: string
                               hostedZoneName:
                                 type: string
@@ -1998,6 +2031,9 @@ spec:
                           cnameStrategy:
                             description: CNAMEStrategy configures how the DNS01 provider
                               should handle CNAME records when found in DNS zones.
+                            enum:
+                            - None
+                            - Follow
                             type: string
                           digitalocean:
                             description: ACMEIssuerDNS01ProviderDigitalOcean is a
@@ -2278,6 +2314,11 @@ spec:
                                 - name
                                 type: object
                               environment:
+                                enum:
+                                - AzurePublicCloud
+                                - AzureChinaCloud
+                                - AzureGermanCloud
+                                - AzureUSGovernmentCloud
                                 type: string
                               hostedZoneName:
                                 type: string
@@ -2347,6 +2388,9 @@ spec:
                           cnameStrategy:
                             description: CNAMEStrategy configures how the DNS01 provider
                               should handle CNAME records when found in DNS zones.
+                            enum:
+                            - None
+                            - Follow
                             type: string
                           digitalocean:
                             description: ACMEIssuerDNS01ProviderDigitalOcean is a
@@ -3681,6 +3725,10 @@ spec:
                   status:
                     description: Status of the condition, one of ('True', 'False',
                       'Unknown').
+                    enum:
+                    - "True"
+                    - "False"
+                    - Unknown
                     type: string
                   type:
                     description: Type of the condition, currently ('Ready').
@@ -3852,6 +3900,11 @@ spec:
                                 - name
                                 type: object
                               environment:
+                                enum:
+                                - AzurePublicCloud
+                                - AzureChinaCloud
+                                - AzureGermanCloud
+                                - AzureUSGovernmentCloud
                                 type: string
                               hostedZoneName:
                                 type: string
@@ -3921,6 +3974,9 @@ spec:
                           cnameStrategy:
                             description: CNAMEStrategy configures how the DNS01 provider
                               should handle CNAME records when found in DNS zones.
+                            enum:
+                            - None
+                            - Follow
                             type: string
                           digitalocean:
                             description: ACMEIssuerDNS01ProviderDigitalOcean is a
@@ -4201,6 +4257,11 @@ spec:
                                 - name
                                 type: object
                               environment:
+                                enum:
+                                - AzurePublicCloud
+                                - AzureChinaCloud
+                                - AzureGermanCloud
+                                - AzureUSGovernmentCloud
                                 type: string
                               hostedZoneName:
                                 type: string
@@ -4270,6 +4331,9 @@ spec:
                           cnameStrategy:
                             description: CNAMEStrategy configures how the DNS01 provider
                               should handle CNAME records when found in DNS zones.
+                            enum:
+                            - None
+                            - Follow
                             type: string
                           digitalocean:
                             description: ACMEIssuerDNS01ProviderDigitalOcean is a
@@ -5604,6 +5668,10 @@ spec:
                   status:
                     description: Status of the condition, one of ('True', 'False',
                       'Unknown').
+                    enum:
+                    - "True"
+                    - "False"
+                    - Unknown
                     type: string
                   type:
                     description: Type of the condition, currently ('Ready').
@@ -5971,6 +6039,11 @@ spec:
                                 - name
                                 type: object
                               environment:
+                                enum:
+                                - AzurePublicCloud
+                                - AzureChinaCloud
+                                - AzureGermanCloud
+                                - AzureUSGovernmentCloud
                                 type: string
                               hostedZoneName:
                                 type: string
@@ -6040,6 +6113,9 @@ spec:
                           cnameStrategy:
                             description: CNAMEStrategy configures how the DNS01 provider
                               should handle CNAME records when found in DNS zones.
+                            enum:
+                            - None
+                            - Follow
                             type: string
                           digitalocean:
                             description: ACMEIssuerDNS01ProviderDigitalOcean is a
@@ -7228,6 +7304,14 @@ spec:
             state:
               description: State contains the current state of this Order resource.
                 States 'success' and 'expired' are 'final'
+              enum:
+              - valid
+              - ready
+              - pending
+              - processing
+              - invalid
+              - expired
+              - errored
               type: string
             url:
               description: URL of the Order. This will initially be empty when the
@@ -7238,8 +7322,6 @@ spec:
           type: object
       required:
       - metadata
-      - spec
-      - status
       type: object
   versions:
   - name: v1alpha1

@@ -14,10 +14,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package ca
+package selfsigned
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
@@ -29,7 +30,7 @@ import (
 	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
 	"github.com/jetstack/cert-manager/pkg/controller/certificaterequests"
 	crutil "github.com/jetstack/cert-manager/pkg/controller/certificaterequests/util"
-	issuerpkg "github.com/jetstack/cert-manager/pkg/issuer"
+	"github.com/jetstack/cert-manager/pkg/issuer"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 	cmerrors "github.com/jetstack/cert-manager/pkg/util/errors"
 	"github.com/jetstack/cert-manager/pkg/util/kube"
@@ -37,24 +38,22 @@ import (
 )
 
 const (
-	CRControllerName = "certificaterequests-issuer-ca"
+	CRControllerName = "certificaterequests-issuer-selfsigned"
 )
 
-type CA struct {
+type SelfSigned struct {
 	// used to record Events about resources to the API
 	recorder record.EventRecorder
 
 	issuerOptions controllerpkg.IssuerOptions
 	secretsLister corelisters.SecretLister
-	helper        issuerpkg.Helper
 }
 
 func init() {
-	// create certificate request controller for ca issuer
+	// create certificate request controller for selfsigned issuer
 	controllerpkg.Register(CRControllerName, func(ctx *controllerpkg.Context) (controllerpkg.Interface, error) {
-		ca := NewCA(ctx)
-
-		controller := certificaterequests.New(apiutil.IssuerCA, ca)
+		selfsigned := NewSelfSigned(ctx)
+		controller := certificaterequests.New(apiutil.IssuerSelfSigned, selfsigned)
 
 		c, err := controllerpkg.New(ctx, CRControllerName, controller)
 		if err != nil {
@@ -65,32 +64,36 @@ func init() {
 	})
 }
 
-func NewCA(ctx *controllerpkg.Context) *CA {
-	return &CA{
+func NewSelfSigned(ctx *controllerpkg.Context) *SelfSigned {
+	return &SelfSigned{
 		recorder:      ctx.Recorder,
 		issuerOptions: ctx.IssuerOptions,
 		secretsLister: ctx.KubeSharedInformerFactory.Core().V1().Secrets().Lister(),
-		helper: issuerpkg.NewHelper(
-			ctx.SharedInformerFactory.Certmanager().V1alpha1().Issuers().Lister(),
-			ctx.SharedInformerFactory.Certmanager().V1alpha1().ClusterIssuers().Lister(),
-		),
 	}
 }
 
-func (c *CA) Sign(ctx context.Context, cr *v1alpha1.CertificateRequest, issuerObj v1alpha1.GenericIssuer) (*issuerpkg.IssueResponse, error) {
+func (s *SelfSigned) Sign(ctx context.Context, cr *v1alpha1.CertificateRequest, issuerObj v1alpha1.GenericIssuer) (*issuer.IssueResponse, error) {
 	log := logf.FromContext(ctx, "sign")
-	reporter := crutil.NewReporter(cr, c.recorder)
+	reporter := crutil.NewReporter(cr, s.recorder)
 
-	secretName := issuerObj.GetSpec().CA.SecretName
-	resourceNamespace := c.issuerOptions.ResourceNamespace(issuerObj)
+	resourceNamespace := s.issuerOptions.ResourceNamespace(issuerObj)
 
-	// get a copy of the CA certificate named on the Issuer
-	caCerts, caKey, err := kube.SecretTLSKeyPair(ctx, c.secretsLister, resourceNamespace, issuerObj.GetSpec().CA.SecretName)
+	secretName, ok := cr.ObjectMeta.Annotations[v1alpha1.CRPrivateKeyAnnotationKey]
+	if !ok || secretName == "" {
+		message := fmt.Sprintf("Annotation %q missing or reference empty",
+			v1alpha1.CRPrivateKeyAnnotationKey)
+		err := errors.New("secret name missing")
+
+		reporter.Failed(err, "MissingAnnotation", message)
+		log.Error(err, message)
+
+		return nil, nil
+	}
+
+	privatekey, err := kube.SecretTLSKey(ctx, s.secretsLister, cr.Namespace, secretName)
 	if err != nil {
-		log := logf.WithRelatedResourceName(log, issuerObj.GetSpec().CA.SecretName, resourceNamespace, "Secret")
-
 		if k8sErrors.IsNotFound(err) {
-			message := fmt.Sprintf("Referenced secret %s/%s not found", resourceNamespace, secretName)
+			message := fmt.Sprintf("Referenced secret %s/%s not found", cr.Namespace, secretName)
 
 			reporter.Pending(err, "MissingSecret", message)
 			log.Error(err, message)
@@ -99,10 +102,12 @@ func (c *CA) Sign(ctx context.Context, cr *v1alpha1.CertificateRequest, issuerOb
 		}
 
 		if cmerrors.IsInvalidData(err) {
-			message := fmt.Sprintf("Failed to parse signing CA keypair from secret %s/%s", resourceNamespace, secretName)
+			message := fmt.Sprintf("Failed to get key %q referenced in annotation %q",
+				secretName, v1alpha1.CRPrivateKeyAnnotationKey)
 
-			reporter.Pending(err, "ErrorParsingSecret", message)
+			reporter.Pending(err, "ErrorParsingKey", message)
 			log.Error(err, message)
+
 			return nil, nil
 		}
 
@@ -116,23 +121,48 @@ func (c *CA) Sign(ctx context.Context, cr *v1alpha1.CertificateRequest, issuerOb
 	template, err := pki.GenerateTemplateFromCertificateRequest(cr)
 	if err != nil {
 		message := "Error generating certificate template"
+		reporter.Failed(err, "ErrorGenerating", message)
+		log.Error(err, message)
+		return nil, nil
+	}
+
+	// extract the public component of the key
+	publickey, err := pki.PublicKeyForPrivateKey(privatekey)
+	if err != nil {
+		message := "Failed to get public key from private key"
+		reporter.Failed(err, "ErrorPublicKey", message)
+		log.Error(err, message)
+		return nil, nil
+	}
+
+	ok, err = pki.PublicKeysEqual(publickey, template.PublicKey)
+	if err != nil || !ok {
+
+		if err == nil {
+			err = errors.New("CSR not signed by referenced private key")
+		}
+
+		message := "Error generating certificate template"
+		reporter.Failed(err, "ErrorKeyMatch", message)
+		log.Error(err, message)
+
+		return nil, nil
+	}
+
+	// sign and encode the certificate
+	certPem, _, err := pki.SignCertificate(template, template, publickey, privatekey)
+	if err != nil {
+		message := "Error signing certificate"
 		reporter.Failed(err, "ErrorSigning", message)
 		log.Error(err, message)
 		return nil, nil
 	}
 
-	certPEM, caPEM, err := pki.SignCSRTemplate(caCerts, caKey, template)
-	if err != nil {
-		message := "Error signing certificate"
-		reporter.Failed(err, "ErrorSigning", message)
-		log.Error(err, message)
-		return nil, err
-	}
+	log.Info("self signed certificate issued")
 
-	log.Info("certificate issued")
-
-	return &issuerpkg.IssueResponse{
-		Certificate: certPEM,
-		CA:          caPEM,
+	// We set the CA to the returned certificate here since this is self signed.
+	return &issuer.IssueResponse{
+		Certificate: certPem,
+		CA:          certPem,
 	}, nil
 }

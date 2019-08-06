@@ -106,3 +106,17 @@ func SetCertificateRequestName(name string) CertificateRequestModifier {
 		cr.ObjectMeta.Name = name
 	}
 }
+
+func AddCertificateRequestAnnotations(annotations map[string]string) CertificateRequestModifier {
+	return func(cr *v1alpha1.CertificateRequest) {
+		// Make sure to do a merge here with new annotations overriding.
+		annotationsNew := cr.GetAnnotations()
+		if annotationsNew == nil {
+			annotationsNew = make(map[string]string)
+		}
+		for k, v := range annotations {
+			annotationsNew[k] = v
+		}
+		cr.SetAnnotations(annotationsNew)
+	}
+}

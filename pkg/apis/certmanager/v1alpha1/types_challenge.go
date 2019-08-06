@@ -37,8 +37,8 @@ type Challenge struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata"`
 
-	Spec   ChallengeSpec   `json:"spec"`
-	Status ChallengeStatus `json:"status"`
+	Spec   ChallengeSpec   `json:"spec,omitempty"`
+	Status ChallengeStatus `json:"status,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -127,7 +127,6 @@ type ChallengeStatus struct {
 
 	// State contains the current 'state' of the challenge.
 	// If not set, the state of the challenge is unknown.
-	// +kubebuilder:validation:Enum=valid;ready;pending;processing;invalid;expired;errored
 	// +optional
 	State State `json:"state,omitempty"`
 }

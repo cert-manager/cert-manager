@@ -47,6 +47,7 @@ type CertificateList struct {
 	Items []Certificate `json:"items"`
 }
 
+// +kubebuilder:validation:Enum=rsa;ecdsa
 type KeyAlgorithm string
 
 const (
@@ -54,6 +55,7 @@ const (
 	ECDSAKeyAlgorithm KeyAlgorithm = "ecdsa"
 )
 
+// +kubebuilder:validation:Enum=pkcs1;pkcs8
 type KeyEncoding string
 
 const (
@@ -130,7 +132,6 @@ type CertificateSpec struct {
 	// If KeyAlgorithm is specified and KeySize is not provided,
 	// key size of 256 will be used for "ecdsa" key algorithm and
 	// key size of 2048 will be used for "rsa" key algorithm.
-	// +kubebuilder:validation:Enum=rsa;ecdsa
 	// +optional
 	KeyAlgorithm KeyAlgorithm `json:"keyAlgorithm,omitempty"`
 
@@ -166,7 +167,6 @@ type CertificateCondition struct {
 	Type CertificateConditionType `json:"type"`
 
 	// Status of the condition, one of ('True', 'False', 'Unknown').
-	// +kubebuilder:validation:Enum=True;False;Unknown
 	Status ConditionStatus `json:"status"`
 
 	// LastTransitionTime is the timestamp corresponding to the last status
