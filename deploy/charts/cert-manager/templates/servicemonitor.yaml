@@ -3,8 +3,8 @@ apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
   name: {{ template "cert-manager.fullname" . }}
-{{- if .Values.servicemonitor.namespace }}
-  namespace: {{ .Values.servicemonitor.namespace }}
+{{- if .Values.prometheus.servicemonitor.namespace }}
+  namespace: {{ .Values.prometheus.servicemonitor.namespace }}
 {{- else }}
   namespace: {{ .Release.Namespace | quote }}
 {{- end }}
