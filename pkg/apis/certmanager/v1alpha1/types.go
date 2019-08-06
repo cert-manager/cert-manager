@@ -16,6 +16,7 @@ limitations under the License.
 
 package v1alpha1
 
+// Annotation names for Secrets
 const (
 	AltNamesAnnotationKey   = "certmanager.k8s.io/alt-names"
 	IPSANAnnotationKey      = "certmanager.k8s.io/ip-sans"
@@ -25,7 +26,13 @@ const (
 	CertificateNameKey      = "certmanager.k8s.io/certificate-name"
 )
 
+// Annotation names for CertificateRequests
+const (
+	CRPrivateKeyAnnotationKey = "certmanager.k8s.io/private-key-secret-name"
+)
+
 // ConditionStatus represents a condition's status.
+// +kubebuilder:validation:Enum=True;False;Unknown
 type ConditionStatus string
 
 // These are valid condition statuses. "ConditionTrue" means a resource is in

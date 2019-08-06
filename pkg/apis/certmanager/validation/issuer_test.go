@@ -590,7 +590,7 @@ func TestValidateACMEIssuerDNS01Config(t *testing.T) {
 				field.Required(providersPath.Index(0).Child("azuredns", "subscriptionID"), ""),
 				field.Required(providersPath.Index(0).Child("azuredns", "tenantID"), ""),
 				field.Required(providersPath.Index(0).Child("azuredns", "resourceGroupName"), ""),
-				field.Invalid(providersPath.Index(0).Child("azuredns", "environment"), "an env",
+				field.Invalid(providersPath.Index(0).Child("azuredns", "environment"), v1alpha1.AzureDNSEnvironment("an env"),
 					"must be either empty or one of AzurePublicCloud, AzureChinaCloud, AzureGermanCloud or AzureUSGovernmentCloud"),
 			},
 		},
