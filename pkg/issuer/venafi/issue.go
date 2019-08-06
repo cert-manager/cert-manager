@@ -28,6 +28,7 @@ import (
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	"github.com/jetstack/cert-manager/pkg/issuer"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
+	"github.com/jetstack/cert-manager/pkg/util/api"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 )
 
@@ -85,19 +86,34 @@ func (v *Venafi) Issue(ctx context.Context, crt *v1alpha1.Certificate) (*issuer.
 		return nil, err
 	}
 
-	csrPEM, err := pki.EncodeCSR(csr, signeeKey)
-	if err != nil {
-		v.Recorder.Eventf(crt, corev1.EventTypeWarning, "EncodeCSR", "Failed to PEM encode CSR for the certificate: %v", err)
-		return nil, err
-	}
-
 	client, err := v.clientBuilder(v.resourceNamespace, v.secretsLister, v.issuer)
 	if err != nil {
 		v.Recorder.Eventf(v.issuer, corev1.EventTypeWarning, "FailedInit", "Failed to create Venafi client: %v", err)
 		return nil, fmt.Errorf("error creating Venafi client: %s", err.Error())
 	}
 
-	cert, err := client.Sign(csrPEM)
+	// Retrieve a copy of the Venafi zone.
+	// This contains default values and policy control info that we can apply
+	// and check against locally.
+	//dbg.Info("reading venafi zone configuration")
+	zoneCfg, err := v.client.ReadZoneConfiguration()
+	if err != nil {
+		return nil, err
+	}
+
+	// Apply default values from the Venafi zone
+	//dbg.Info("applying default venafi zone values to request")
+	zoneCfg.UpdateCertificateRequest(vreq)
+
+	csrPEM, err := pki.EncodeCSR(csr, signeeKey)
+	if err != nil {
+		v.Recorder.Eventf(crt, corev1.EventTypeWarning, "EncodeCSR", "Failed to PEM encode CSR for the certificate: %v", err)
+		return nil, err
+	}
+
+	duration := utilapi.DefaultCertDuration(cr.Spec.Duration)
+
+	cert, err := client.Sign(csrPEM, duration)
 
 	// Check some known error types
 	if err, ok := err.(endpoint.ErrCertificatePending); ok {

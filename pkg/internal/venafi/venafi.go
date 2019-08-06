@@ -18,6 +18,7 @@ package venafi
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/Venafi/vcert"
 	"github.com/Venafi/vcert/pkg/certificate"
@@ -38,7 +39,7 @@ type VenafiClientBuilder func(namespace string, secretsLister corelisters.Secret
 	issuer cmapi.GenericIssuer) (Interface, error)
 
 type Interface interface {
-	Sign(csrPEM []byte) (cert []byte, err error)
+	Sign(csrPEM []byte, duration time.Duration) (cert []byte, err error)
 	Ping() error
 }
 
@@ -87,12 +88,12 @@ func New(namespace string, secretsLister corelisters.SecretLister,
 
 // configForIssuer will convert a cert-manager Venafi issuer into a vcert.Config
 // that can be used to instantiate an API client.
-func configForIssuer(iss cmapi.GenericIssuer, secretsLister corelisters.SecretLister, resourceNamespace string) (*vcert.Config, error) {
+func configForIssuer(iss cmapi.GenericIssuer, secretsLister corelisters.SecretLister, namespace string) (*vcert.Config, error) {
 	venCfg := iss.GetSpec().Venafi
 	switch {
 	case venCfg.TPP != nil:
 		tpp := venCfg.TPP
-		tppSecret, err := secretsLister.Secrets(resourceNamespace).Get(tpp.CredentialsRef.Name)
+		tppSecret, err := secretsLister.Secrets(namespace).Get(tpp.CredentialsRef.Name)
 		if err != nil {
 			return nil, fmt.Errorf("error loading TPP credentials: %v", err)
 		}
@@ -120,7 +121,7 @@ func configForIssuer(iss cmapi.GenericIssuer, secretsLister corelisters.SecretLi
 
 	case venCfg.Cloud != nil:
 		cloud := venCfg.Cloud
-		cloudSecret, err := secretsLister.Secrets(resourceNamespace).Get(cloud.APITokenSecretRef.Name)
+		cloudSecret, err := secretsLister.Secrets(namespace).Get(cloud.APITokenSecretRef.Name)
 		if err != nil {
 			return nil, fmt.Errorf("error loading TPP credentials: %v", err)
 		}

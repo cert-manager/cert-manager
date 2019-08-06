@@ -82,6 +82,12 @@ func SetIssuerSelfSigned(a v1alpha1.SelfSignedIssuer) IssuerModifier {
 	}
 }
 
+func SetIssuerVenafi(a v1alpha1.VenafiIssuer) IssuerModifier {
+	return func(iss v1alpha1.GenericIssuer) {
+		iss.GetSpec().Venafi = &a
+	}
+}
+
 func AddIssuerCondition(c v1alpha1.IssuerCondition) IssuerModifier {
 	return func(iss v1alpha1.GenericIssuer) {
 		iss.GetStatus().Conditions = append(iss.GetStatus().Conditions, c)

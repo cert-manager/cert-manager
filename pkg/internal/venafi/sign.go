@@ -23,39 +23,28 @@ import (
 	"github.com/Venafi/vcert/pkg/certificate"
 )
 
-func (v *Venafi) Sign(csrPEM []byte) (cert []byte, err error) {
+func (v *Venafi) Sign(csrPEM []byte, duration time.Duration) (cert []byte, err error) {
 	vreq := new(certificate.Request)
 
-	// Retrieve a copy of the Venafi zone.
-	// This contains default values and policy control info that we can apply
-	// and check against locally.
-	//dbg.Info("reading venafi zone configuration")
-	zoneCfg, err := v.client.ReadZoneConfiguration()
-	if err != nil {
-		return nil, err
-	}
+	// Set options on the request
+	vreq.CsrOrigin = certificate.UserProvidedCSR
+	vreq.Timeout = time.Minute * 5
 
-	// Apply default values from the Venafi zone
-	//dbg.Info("applying default venafi zone values to request")
-	zoneCfg.UpdateCertificateRequest(vreq)
-
+	// Set the request CSR with the passed value
 	if err := vreq.SetCSR(csrPEM); err != nil {
 		return nil, err
 	}
 
-	vreq.CsrOrigin = certificate.UserProvidedCSR
-	vreq.Timeout = time.Minute * 5
-
-	//dbg.Info("submitting generated CSR to venafi")
+	// Send the certificate signing request to Venafi
 	requestID, err := v.client.RequestCertificate(vreq)
 	if err != nil {
 		return nil, err
 	}
 
-	//dbg.Info("successfully submitted request. attempting to pickup certificate from venafi server...")
 	// Set the PickupID so vcert does not have to look it up by the fingerprint
 	vreq.PickupID = requestID
 
+	// Retrieve the certificate from request
 	pemCollection, err := v.client.RetrieveCertificate(vreq)
 	if err != nil {
 		return nil, err
