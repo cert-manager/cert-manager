@@ -149,10 +149,13 @@ func (c *DNSProvider) Timeout() (timeout, interval time.Duration) {
 
 // getHostedZone returns the managed-zone
 func (c *DNSProvider) getHostedZone(domain string) (*int, error) {
-	svc := services.GetDnsDomainService(c.session)
+	svc := services.GetAccountService(c.session)
 
-	domainFqdn := util.UnFqdn(domain)
-	zones, err := svc.GetByDomainName(&domainFqdn)
+	filters := filter.New(
+		filter.Path("domains.name").Eq(domain),
+	)
+
+	zones, err := svc.Filter(filters.Build()).GetDomains()
 
 	if err != nil {
 		return nil, fmt.Errorf("Softlayer API call failed: %v", err)
