@@ -15,12 +15,18 @@ metadata:
     app.kubernetes.io/managed-by: {{ .Release.Service }}
     helm.sh/chart: {{ template "cert-manager.chart" . }}
     prometheus: {{ .Values.prometheus.servicemonitor.prometheusInstance }}
+{{- if .Values.prometheus.servicemonitor.labels }}
+{{ toYaml .Values.prometheus.servicemonitor.labels | indent 4}}
+{{- end }}
 spec:
   jobLabel: {{ template "cert-manager.fullname" . }}
   selector:
     matchLabels:
       app.kubernetes.io/name: {{ template "cert-manager.name" . }}
       app.kubernetes.io/instance:  {{ .Release.Name }}
+  namespaceSelector:
+    matchNames:
+      - {{ .Release.Namespace }}
   endpoints:
   - targetPort: {{ .Values.prometheus.servicemonitor.targetPort }}
     path: {{ .Values.prometheus.servicemonitor.path }}

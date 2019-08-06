@@ -110,6 +110,7 @@ The following table lists the configurable parameters of the cert-manager chart 
 | `prometheus.servicemonitor.targetPort` | Prometheus scrape port | `9402` |
 | `prometheus.servicemonitor.path` | Prometheus scrape path | `/metrics` |
 | `prometheus.servicemonitor.interval` | Prometheus scrape interval | `60s` |
+| `prometheus.servicemonitor.labels` | Add custom labels to ServiceMonitor | |
 | `prometheus.servicemonitor.scrapeTimeout` | Prometheus scrape timeout | `30s` |
 | `podAnnotations` | Annotations to add to the cert-manager pod | `{}` |
 | `podDnsPolicy` | Optional cert-manager pod [DNS policy](https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pods-dns-policy) |  |
