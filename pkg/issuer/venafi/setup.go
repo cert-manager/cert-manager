@@ -28,7 +28,6 @@ import (
 )
 
 func (v *Venafi) Setup(ctx context.Context) error {
-
 	client, err := v.clientBuilder(v.resourceNamespace, v.secretsLister, v.issuer)
 	if err != nil {
 		return err

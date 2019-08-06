@@ -145,7 +145,7 @@ func TestSign(t *testing.T) {
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			test.runSignTest(t)
+			test.runTest(t)
 		})
 	}
 }
@@ -159,7 +159,7 @@ type testSignT struct {
 	CheckFn func(*testing.T, []byte, []byte)
 }
 
-func (s *testSignT) runSignTest(t *testing.T) {
+func (s *testSignT) runTest(t *testing.T) {
 	client := s.client
 	if client == nil {
 		client = fake.NewConnector(true, nil)

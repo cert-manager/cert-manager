@@ -41,6 +41,7 @@ type VenafiClientBuilder func(namespace string, secretsLister corelisters.Secret
 type Interface interface {
 	Sign(csrPEM []byte, duration time.Duration) (cert []byte, err error)
 	Ping() error
+	ReadZoneConfiguration() (*endpoint.ZoneConfiguration, error)
 }
 
 // Venafi is a implementation of govcert library to manager certificates from TPP or Venafi Cloud
@@ -150,4 +151,8 @@ func configForIssuer(iss cmapi.GenericIssuer, secretsLister corelisters.SecretLi
 
 func (v *Venafi) Ping() error {
 	return v.client.Ping()
+}
+
+func (v *Venafi) ReadZoneConfiguration() (*endpoint.ZoneConfiguration, error) {
+	return v.client.ReadZoneConfiguration()
 }

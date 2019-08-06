@@ -28,7 +28,8 @@ import (
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	"github.com/jetstack/cert-manager/pkg/issuer"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
-	"github.com/jetstack/cert-manager/pkg/util/api"
+
+	utilapi "github.com/jetstack/cert-manager/pkg/util/api"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 )
 
@@ -72,19 +73,33 @@ func (v *Venafi) Issue(ctx context.Context, crt *v1alpha1.Certificate) (*issuer.
 	dbg.Info("generated new private key")
 	v.Recorder.Event(crt, corev1.EventTypeNormal, "GenerateKey", "Generated new private key")
 
-	pk, err := pki.EncodePKCS8PrivateKey(signeeKey)
+	// extract the public component of the key
+	dbg.Info("extracting public key from private key")
+	signeePublicKey, err := pki.PublicKeyForPrivateKey(signeeKey)
 	if err != nil {
+		log.Error(err, "Error getting public key from private key")
 		return nil, err
 	}
 
 	// We build a x509.Certificate as the vcert library has support for converting
 	// this into its own internal Certificate Request type.
 	dbg.Info("constructing certificate request template to submit to venafi")
-	csr, err := pki.GenerateCSR(crt)
+	tmpl, err := pki.GenerateTemplate(crt)
 	if err != nil {
-		v.Recorder.Eventf(crt, corev1.EventTypeWarning, "GenerateCSR", "Failed to generate a CSR for the certificate: %v", err)
 		return nil, err
 	}
+
+	// TODO: we need some way to detect fields are defaulted on the template,
+	// or otherwise move certificate/csr template defaulting into its own
+	// function within the PKI package.
+	// For now, we manually 'fix' the certificate template returned above
+	if len(crt.Spec.Organization) == 0 {
+		tmpl.Subject.Organization = []string{}
+	}
+
+	// set the PublicKey field on the certificate template so it can be checked
+	// by the vcert library
+	tmpl.PublicKey = signeePublicKey
 
 	client, err := v.clientBuilder(v.resourceNamespace, v.secretsLister, v.issuer)
 	if err != nil {
@@ -95,25 +110,46 @@ func (v *Venafi) Issue(ctx context.Context, crt *v1alpha1.Certificate) (*issuer.
 	// Retrieve a copy of the Venafi zone.
 	// This contains default values and policy control info that we can apply
 	// and check against locally.
-	//dbg.Info("reading venafi zone configuration")
-	zoneCfg, err := v.client.ReadZoneConfiguration()
+	dbg.Info("reading venafi zone configuration")
+	zoneCfg, err := client.ReadZoneConfiguration()
 	if err != nil {
+		v.Recorder.Eventf(crt, corev1.EventTypeWarning, "ReadZone", "Failed to read Venafi zone configuration: %v", err)
 		return nil, err
 	}
+
+	//// Begin building Venafi certificate Request
+
+	// Create a vcert Request structure
+	vreq := newVRequest(tmpl)
+	vreq.PrivateKey = signeeKey
 
 	// Apply default values from the Venafi zone
-	//dbg.Info("applying default venafi zone values to request")
+	dbg.Info("applying default venafi zone values to request")
 	zoneCfg.UpdateCertificateRequest(vreq)
 
-	csrPEM, err := pki.EncodeCSR(csr, signeeKey)
+	dbg.Info("validating venafi certificate request")
+	err = zoneCfg.ValidateCertificateRequest(vreq)
 	if err != nil {
-		v.Recorder.Eventf(crt, corev1.EventTypeWarning, "EncodeCSR", "Failed to PEM encode CSR for the certificate: %v", err)
+		// TODO: set a certificate status condition instead of firing an event
+		// in case this step is particularly chatty
+		v.Recorder.Eventf(crt, corev1.EventTypeWarning, "Validate", "Failed to validate certificate against Venafi zone: %v", err)
+		return nil, err
+	}
+	dbg.Info("validated venafi certificate request")
+	v.Recorder.Eventf(crt, corev1.EventTypeNormal, "Validate", "Validated certificate request against Venafi zone policy")
+
+	// Generate the actual x509 CSR and set it on the vreq
+	dbg.Info("generating CSR to submit to venafi")
+	err = vreq.GenerateCSR()
+	if err != nil {
+		v.Recorder.Eventf(crt, corev1.EventTypeWarning, "GenerateCSR", "Failed to generate a CSR for the certificate: %v", err)
 		return nil, err
 	}
 
-	duration := utilapi.DefaultCertDuration(cr.Spec.Duration)
+	duration := utilapi.DefaultCertDuration(crt.Spec.Duration)
 
-	cert, err := client.Sign(csrPEM, duration)
+	dbg.Info("submitting generated CSR to venafi")
+	cert, err := client.Sign(vreq.GetCSR(), duration)
 
 	// Check some known error types
 	if err, ok := err.(endpoint.ErrCertificatePending); ok {
@@ -134,6 +170,15 @@ func (v *Venafi) Issue(ctx context.Context, crt *v1alpha1.Certificate) (*issuer.
 	log.Info("successfully fetched signed certificate from venafi")
 	v.Recorder.Eventf(crt, corev1.EventTypeNormal, "Retrieve", "Retrieved certificate from Venafi server")
 
+	// Encode the private key ready to be saved
+	dbg.Info("encoding generated private key")
+	pk, err := pki.EncodePrivateKey(signeeKey, crt.Spec.KeyEncoding)
+
+	if err != nil {
+		return nil, err
+	}
+
+	dbg.Info("constructing certificate chain PEM and returning data")
 	return &issuer.IssueResponse{
 		PrivateKey:  pk,
 		Certificate: cert,

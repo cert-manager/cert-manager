@@ -28,6 +28,7 @@ func (v *Venafi) Sign(csrPEM []byte, duration time.Duration) (cert []byte, err e
 
 	// Set options on the request
 	vreq.CsrOrigin = certificate.UserProvidedCSR
+	//// TODO: better set the timeout here. Right now, we'll block for this amount of time.
 	vreq.Timeout = time.Minute * 5
 
 	// Set the request CSR with the passed value
@@ -45,6 +46,12 @@ func (v *Venafi) Sign(csrPEM []byte, duration time.Duration) (cert []byte, err e
 	vreq.PickupID = requestID
 
 	// Retrieve the certificate from request
+
+	//// TODO: we probably need to check the error response here, as the certificate
+	//// may still be provisioning.
+	//// If so, we may *also* want to consider storing the pickup ID somewhere too
+	//// so we can attempt to retrieve the certificate on the next sync (i.e. wait
+	//// for issuance asynchronously).
 	pemCollection, err := v.client.RetrieveCertificate(vreq)
 	if err != nil {
 		return nil, err
