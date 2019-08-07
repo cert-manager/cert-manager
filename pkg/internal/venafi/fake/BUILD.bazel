@@ -2,7 +2,10 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 
 go_library(
     name = "go_default_library",
-    srcs = ["connector.go"],
+    srcs = [
+        "connector.go",
+        "venafi.go",
+    ],
     importpath = "github.com/jetstack/cert-manager/pkg/internal/venafi/fake",
     visibility = ["//pkg:__subpackages__"],
     deps = [

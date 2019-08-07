@@ -42,6 +42,7 @@ type Interface interface {
 	Sign(csrPEM []byte, duration time.Duration) (cert []byte, err error)
 	Ping() error
 	ReadZoneConfiguration() (*endpoint.ZoneConfiguration, error)
+	SetClient(endpoint.Connector)
 }
 
 // Venafi is a implementation of govcert library to manager certificates from TPP or Venafi Cloud
@@ -155,4 +156,8 @@ func (v *Venafi) Ping() error {
 
 func (v *Venafi) ReadZoneConfiguration() (*endpoint.ZoneConfiguration, error) {
 	return v.client.ReadZoneConfiguration()
+}
+
+func (v *Venafi) SetClient(client endpoint.Connector) {
+	v.client = client
 }

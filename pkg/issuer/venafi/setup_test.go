@@ -31,15 +31,6 @@ import (
 	"github.com/jetstack/cert-manager/test/unit/gen"
 )
 
-type testSetupT struct {
-	clientBuilder internalvenafi.VenafiClientBuilder
-	iss           cmapi.GenericIssuer
-
-	expectedErr       bool
-	expectedEvents    []string
-	expectedCondition *cmapi.IssuerCondition
-}
-
 func TestSetup(t *testing.T) {
 	baseIssuer := gen.Issuer("test-issuer")
 
@@ -106,11 +97,22 @@ func TestSetup(t *testing.T) {
 	}
 }
 
+type testSetupT struct {
+	clientBuilder internalvenafi.VenafiClientBuilder
+	iss           cmapi.GenericIssuer
+
+	expectedErr       bool
+	expectedEvents    []string
+	expectedCondition *cmapi.IssuerCondition
+}
+
 func (s *testSetupT) runTest(t *testing.T) {
+	rec := &controllertest.FakeRecorder{}
+
 	v := &Venafi{
 		resourceNamespace: "test-namespace",
 		Context: &controller.Context{
-			Recorder: &controllertest.FakeRecorder{},
+			Recorder: rec,
 		},
 		issuer:        s.iss,
 		clientBuilder: s.clientBuilder,
@@ -124,10 +126,9 @@ func (s *testSetupT) runTest(t *testing.T) {
 		t.Errorf("expected to get an error but did not get one")
 	}
 
-	r := v.Recorder.(*controllertest.FakeRecorder)
-	if !util.EqualSorted(s.expectedEvents, r.Events) {
+	if !util.EqualSorted(s.expectedEvents, rec.Events) {
 		t.Errorf("got unexpected events, exp='%s' got='%s'",
-			s.expectedEvents, r.Events)
+			s.expectedEvents, rec.Events)
 	}
 
 	conditions := s.iss.GetStatus().Conditions

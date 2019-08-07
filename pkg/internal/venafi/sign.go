@@ -17,15 +17,47 @@ limitations under the License.
 package venafi
 
 import (
+	"crypto/x509"
 	"strings"
 	"time"
 
 	"github.com/Venafi/vcert/pkg/certificate"
+
+	"github.com/jetstack/cert-manager/pkg/util/pki"
 )
 
+// This function sends a request to Venafi to for a signed certificate.
+// The CSR will be decoded to be validated against the zone configuration policy.
+// Upon the template being successfully defaulted and validated, the CSR will be sent, as is.
 func (v *Venafi) Sign(csrPEM []byte, duration time.Duration) (cert []byte, err error) {
-	vreq := new(certificate.Request)
+	// Retrieve a copy of the Venafi zone.
+	// This contains default values and policy control info that we can apply
+	// and check against locally.
+	zoneCfg, err := v.client.ReadZoneConfiguration()
+	if err != nil {
+		return nil, err
+	}
 
+	tmpl, err := pki.GenerateTemplateFromCSRPEM(csrPEM, duration, false)
+	if err != nil {
+		return nil, err
+	}
+
+	// Create a vcert Request structure
+	vreq := newVRequest(tmpl)
+
+	// Apply default values from the Venafi zone
+	zoneCfg.UpdateCertificateRequest(vreq)
+
+	// Here we are validating the request using the current policy with
+	// defaulting applied to the CSR. The CSR we send will not be defaulted
+	// however, as this will be done again server side.
+	err = zoneCfg.ValidateCertificateRequest(vreq)
+	if err != nil {
+		return nil, err
+	}
+
+	vreq.SetCSR(csrPEM)
 	// Set options on the request
 	vreq.CsrOrigin = certificate.UserProvidedCSR
 	//// TODO: better set the timeout here. Right now, we'll block for this amount of time.
@@ -46,12 +78,6 @@ func (v *Venafi) Sign(csrPEM []byte, duration time.Duration) (cert []byte, err e
 	vreq.PickupID = requestID
 
 	// Retrieve the certificate from request
-
-	//// TODO: we probably need to check the error response here, as the certificate
-	//// may still be provisioning.
-	//// If so, we may *also* want to consider storing the pickup ID somewhere too
-	//// so we can attempt to retrieve the certificate on the next sync (i.e. wait
-	//// for issuance asynchronously).
 	pemCollection, err := v.client.RetrieveCertificate(vreq)
 	if err != nil {
 		return nil, err
@@ -62,4 +88,11 @@ func (v *Venafi) Sign(csrPEM []byte, duration time.Duration) (cert []byte, err e
 	chain := strings.Join(cs, "\n")
 
 	return []byte(chain), nil
+}
+
+func newVRequest(cert *x509.Certificate) *certificate.Request {
+	req := certificate.NewRequest(cert)
+	// overwrite entire Subject block
+	req.Subject = cert.Subject
+	return req
 }

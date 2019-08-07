@@ -46,7 +46,7 @@ const (
 // - Create a Venafi request based on the certificate template
 // - Set defaults on the request based on the zone
 // - Validate the request against the zone
-// - Submit the request
+// - Submit the original CSR in request request
 // - Wait for the request to be fulfilled and the certificate to be available
 func (v *Venafi) Issue(ctx context.Context, crt *v1alpha1.Certificate) (*issuer.IssueResponse, error) {
 	log := logf.FromContext(ctx, "venafi")
@@ -81,6 +81,13 @@ func (v *Venafi) Issue(ctx context.Context, crt *v1alpha1.Certificate) (*issuer.
 		return nil, err
 	}
 
+	// Encode the private key ready to be saved
+	dbg.Info("encoding generated private key")
+	skPEM, err := pki.EncodePrivateKey(signeeKey, crt.Spec.KeyEncoding)
+	if err != nil {
+		return nil, err
+	}
+
 	// We build a x509.Certificate as the vcert library has support for converting
 	// this into its own internal Certificate Request type.
 	dbg.Info("constructing certificate request template to submit to venafi")
@@ -107,36 +114,11 @@ func (v *Venafi) Issue(ctx context.Context, crt *v1alpha1.Certificate) (*issuer.
 		return nil, fmt.Errorf("error creating Venafi client: %s", err.Error())
 	}
 
-	// Retrieve a copy of the Venafi zone.
-	// This contains default values and policy control info that we can apply
-	// and check against locally.
-	dbg.Info("reading venafi zone configuration")
-	zoneCfg, err := client.ReadZoneConfiguration()
-	if err != nil {
-		v.Recorder.Eventf(crt, corev1.EventTypeWarning, "ReadZone", "Failed to read Venafi zone configuration: %v", err)
-		return nil, err
-	}
-
 	//// Begin building Venafi certificate Request
 
 	// Create a vcert Request structure
 	vreq := newVRequest(tmpl)
 	vreq.PrivateKey = signeeKey
-
-	// Apply default values from the Venafi zone
-	dbg.Info("applying default venafi zone values to request")
-	zoneCfg.UpdateCertificateRequest(vreq)
-
-	dbg.Info("validating venafi certificate request")
-	err = zoneCfg.ValidateCertificateRequest(vreq)
-	if err != nil {
-		// TODO: set a certificate status condition instead of firing an event
-		// in case this step is particularly chatty
-		v.Recorder.Eventf(crt, corev1.EventTypeWarning, "Validate", "Failed to validate certificate against Venafi zone: %v", err)
-		return nil, err
-	}
-	dbg.Info("validated venafi certificate request")
-	v.Recorder.Eventf(crt, corev1.EventTypeNormal, "Validate", "Validated certificate request against Venafi zone policy")
 
 	// Generate the actual x509 CSR and set it on the vreq
 	dbg.Info("generating CSR to submit to venafi")
@@ -170,17 +152,9 @@ func (v *Venafi) Issue(ctx context.Context, crt *v1alpha1.Certificate) (*issuer.
 	log.Info("successfully fetched signed certificate from venafi")
 	v.Recorder.Eventf(crt, corev1.EventTypeNormal, "Retrieve", "Retrieved certificate from Venafi server")
 
-	// Encode the private key ready to be saved
-	dbg.Info("encoding generated private key")
-	pk, err := pki.EncodePrivateKey(signeeKey, crt.Spec.KeyEncoding)
-
-	if err != nil {
-		return nil, err
-	}
-
 	dbg.Info("constructing certificate chain PEM and returning data")
 	return &issuer.IssueResponse{
-		PrivateKey:  pk,
+		PrivateKey:  skPEM,
 		Certificate: cert,
 		// TODO: obtain CA certificate somehow
 		// CA: []byte{},

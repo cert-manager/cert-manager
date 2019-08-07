@@ -43,21 +43,21 @@ filegroup(
 go_test(
     name = "go_default_test",
     srcs = [
-        "connector_test.go",
-        "fixture_test.go",
         "issue_test.go",
+        "setup_test.go",
     ],
     embed = [":go_default_library"],
     deps = [
         "//pkg/apis/certmanager/v1alpha1:go_default_library",
+        "//pkg/controller:go_default_library",
         "//pkg/controller/test:go_default_library",
+        "//pkg/internal/venafi:go_default_library",
+        "//pkg/internal/venafi/fake:go_default_library",
         "//pkg/issuer:go_default_library",
         "//pkg/util:go_default_library",
         "//pkg/util/pki:go_default_library",
         "//test/unit/gen:go_default_library",
-        "//vendor/github.com/Venafi/vcert/pkg/certificate:go_default_library",
         "//vendor/github.com/Venafi/vcert/pkg/endpoint:go_default_library",
-        "//vendor/github.com/Venafi/vcert/pkg/venafi/fake:go_default_library",
-        "//vendor/github.com/kr/pretty:go_default_library",
+        "//vendor/k8s.io/client-go/listers/core/v1:go_default_library",
     ],
 )

@@ -39,3 +39,5 @@ func (v *Venafi) Sign(b []byte, t time.Duration) ([]byte, error) {
 func (v *Venafi) ReadZoneConfiguration() (*endpoint.ZoneConfiguration, error) {
 	return v.ReadZoneConfigurationFn()
 }
+
+func (v *Venafi) SetClient(endpoint.Connector) {}

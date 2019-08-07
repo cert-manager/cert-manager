@@ -27,6 +27,7 @@ import (
 	"time"
 
 	"github.com/Venafi/vcert/pkg/certificate"
+	"github.com/Venafi/vcert/pkg/endpoint"
 	"github.com/Venafi/vcert/pkg/venafi/fake"
 
 	internalfake "github.com/jetstack/cert-manager/pkg/internal/venafi/fake"
@@ -111,9 +112,33 @@ func TestSign(t *testing.T) {
 		"foo.example.com", "bar.example.com"})
 
 	tests := map[string]testSignT{
+		"if reading the zone configuration fails then error": {
+			csrPEM:      csrPEM,
+			checkFn:     checkNoCetificateIssued,
+			expectedErr: true,
+			client: internalfake.Connector{
+				ReadZoneConfigurationFunc: func() (*endpoint.ZoneConfiguration, error) {
+					return nil, errors.New("zone configuration error")
+				},
+			}.Default(),
+		},
+		"if validating the certificate fails then error": {
+			csrPEM:      csrPEM,
+			checkFn:     checkNoCetificateIssued,
+			expectedErr: true,
+			client: internalfake.Connector{
+				ReadZoneConfigurationFunc: func() (*endpoint.ZoneConfiguration, error) {
+					return &endpoint.ZoneConfiguration{
+						Policy: endpoint.Policy{
+							SubjectCNRegexes: []string{"foo"},
+						},
+					}, nil
+				},
+			}.Default(),
+		},
 		"a badly formed CSR should error": {
 			csrPEM:      []byte("a badly formed CSR"),
-			CheckFn:     checkNoCetificateIssued,
+			checkFn:     checkNoCetificateIssued,
 			expectedErr: true,
 		},
 		"if requesting the certificate fails, sign should error": {
@@ -123,7 +148,7 @@ func TestSign(t *testing.T) {
 					return "", errors.New("request error")
 				},
 			}.Default(),
-			CheckFn:     checkNoCetificateIssued,
+			checkFn:     checkNoCetificateIssued,
 			expectedErr: true,
 		},
 		"if retrive certificate fails, sign should error": {
@@ -133,12 +158,12 @@ func TestSign(t *testing.T) {
 					return nil, errors.New("request error")
 				},
 			}.Default(),
-			CheckFn:     checkNoCetificateIssued,
+			checkFn:     checkNoCetificateIssued,
 			expectedErr: true,
 		},
 		"obtain a certificate with DNS names specified": {
 			csrPEM:      csrPEM,
-			CheckFn:     checkCertificateIssued,
+			checkFn:     checkCertificateIssued,
 			expectedErr: false,
 		},
 	}
@@ -156,7 +181,7 @@ type testSignT struct {
 
 	expectedErr bool
 
-	CheckFn func(*testing.T, []byte, []byte)
+	checkFn func(*testing.T, []byte, []byte)
 }
 
 func (s *testSignT) runTest(t *testing.T) {
@@ -177,7 +202,7 @@ func (s *testSignT) runTest(t *testing.T) {
 		t.Errorf("expected to get an error but did not get one")
 	}
 
-	if s.CheckFn != nil {
-		s.CheckFn(t, s.csrPEM, resp)
+	if s.checkFn != nil {
+		s.checkFn(t, s.csrPEM, resp)
 	}
 }
