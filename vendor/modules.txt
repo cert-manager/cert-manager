@@ -25,11 +25,11 @@ github.com/PuerkitoBio/purell
 # github.com/PuerkitoBio/urlesc v0.0.0-20170810143723-de5bf2ad4578
 github.com/PuerkitoBio/urlesc
 # github.com/Venafi/vcert v0.0.0-20190613103158-62139eb19b25
+github.com/Venafi/vcert/pkg/endpoint
 github.com/Venafi/vcert
 github.com/Venafi/vcert/pkg/certificate
-github.com/Venafi/vcert/pkg/endpoint
-github.com/Venafi/vcert/pkg/venafi/cloud
 github.com/Venafi/vcert/pkg/venafi/fake
+github.com/Venafi/vcert/pkg/venafi/cloud
 github.com/Venafi/vcert/pkg/venafi/tpp
 # github.com/aws/aws-sdk-go v0.0.0-20170809071707-58f4800ac6e7
 github.com/aws/aws-sdk-go/aws
