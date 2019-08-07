@@ -4,6 +4,7 @@ go_library(
     name = "go_default_library",
     srcs = [
         "certificate.go",
+        "certificaterequest.go",
         "doc.go",
     ],
     importpath = "github.com/jetstack/cert-manager/test/e2e/suite/issuers/venafi/tpp",

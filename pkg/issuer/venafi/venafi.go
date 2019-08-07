@@ -54,6 +54,7 @@ func NewVenafi(ctx *controller.Context, issuer cmapi.GenericIssuer) (issuer.Inte
 		secretsLister:     ctx.KubeSharedInformerFactory.Core().V1().Secrets().Lister(),
 		resourceNamespace: ctx.IssuerOptions.ResourceNamespace(issuer),
 		clientBuilder:     venafi.New,
+		Context:           ctx,
 	}, nil
 }
 
