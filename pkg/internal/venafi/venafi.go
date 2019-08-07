@@ -97,7 +97,7 @@ func configForIssuer(iss cmapi.GenericIssuer, secretsLister corelisters.SecretLi
 		tpp := venCfg.TPP
 		tppSecret, err := secretsLister.Secrets(namespace).Get(tpp.CredentialsRef.Name)
 		if err != nil {
-			return nil, fmt.Errorf("error loading TPP credentials: %v", err)
+			return nil, err
 		}
 
 		username := tppSecret.Data[tppUsernameKey]
@@ -125,7 +125,7 @@ func configForIssuer(iss cmapi.GenericIssuer, secretsLister corelisters.SecretLi
 		cloud := venCfg.Cloud
 		cloudSecret, err := secretsLister.Secrets(namespace).Get(cloud.APITokenSecretRef.Name)
 		if err != nil {
-			return nil, fmt.Errorf("error loading TPP credentials: %v", err)
+			return nil, err
 		}
 
 		k := defaultAPIKeyKey

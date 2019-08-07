@@ -25,13 +25,14 @@ import (
 	"k8s.io/client-go/tools/record"
 
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
 	"github.com/jetstack/cert-manager/pkg/controller/certificaterequests"
 	crutil "github.com/jetstack/cert-manager/pkg/controller/certificaterequests/util"
 	venafiinternal "github.com/jetstack/cert-manager/pkg/internal/venafi"
 	issuerpkg "github.com/jetstack/cert-manager/pkg/issuer"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
+	utilapi "github.com/jetstack/cert-manager/pkg/util/api"
 )
 
 const (
@@ -46,7 +47,7 @@ type Venafi struct {
 	secretsLister corelisters.SecretLister
 	helper        issuerpkg.Helper
 
-	venafiClientBuilder venafiinternal.VenafiClientBuilder
+	clientBuilder venafiinternal.VenafiClientBuilder
 }
 
 func init() {
@@ -74,15 +75,15 @@ func NewVenafi(ctx *controllerpkg.Context) *Venafi {
 			ctx.SharedInformerFactory.Certmanager().V1alpha1().Issuers().Lister(),
 			ctx.SharedInformerFactory.Certmanager().V1alpha1().ClusterIssuers().Lister(),
 		),
-		venafiClientBuilder: venafiinternal.New,
+		clientBuilder: venafiinternal.New,
 	}
 }
 
-func (v *Venafi) Sign(ctx context.Context, cr *v1alpha1.CertificateRequest, issuerObj v1alpha1.GenericIssuer) (*issuerpkg.IssueResponse, error) {
+func (v *Venafi) Sign(ctx context.Context, cr *cmapi.CertificateRequest, issuerObj cmapi.GenericIssuer) (*issuerpkg.IssueResponse, error) {
 	log := logf.FromContext(ctx, "sign")
 	reporter := crutil.NewReporter(cr, v.recorder)
 
-	client, err := v.venafiClientBuilder(cr.Namespace, v.secretsLister, issuerObj)
+	client, err := v.clientBuilder(cr.Namespace, v.secretsLister, issuerObj)
 	if err != nil {
 		log = logf.WithRelatedResource(log, issuerObj)
 
@@ -102,7 +103,9 @@ func (v *Venafi) Sign(ctx context.Context, cr *v1alpha1.CertificateRequest, issu
 		return nil, err
 	}
 
-	certPem, err := client.Sign(cr.Spec.CSRPEM)
+	duration := utilapi.DefaultCertDuration(cr.Spec.Duration)
+
+	certPem, err := client.Sign(cr.Spec.CSRPEM, duration)
 
 	// Check some known error types
 	if err != nil {
