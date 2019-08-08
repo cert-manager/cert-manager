@@ -9,6 +9,7 @@ this directory.
 package route53
 
 import (
+	"fmt"
 	"net/http/httptest"
 	"os"
 	"testing"
@@ -17,6 +18,8 @@ import (
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/route53"
+	"github.com/aws/aws-sdk-go/service/sts"
+	"github.com/aws/aws-sdk-go/service/sts/stsiface"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
@@ -59,7 +62,7 @@ func TestAmbientCredentialsFromEnv(t *testing.T) {
 	os.Setenv("AWS_REGION", "us-east-1")
 	defer restoreRoute53Env()
 
-	provider, err := NewDNSProvider("", "", "", "", true, util.RecursiveNameservers)
+	provider, err := NewDNSProvider("", "", "", "", "", true, util.RecursiveNameservers)
 	assert.NoError(t, err, "Expected no error constructing DNSProvider")
 
 	_, err = provider.client.Config.Credentials.Get()
@@ -73,7 +76,7 @@ func TestNoCredentialsFromEnv(t *testing.T) {
 	os.Setenv("AWS_REGION", "us-east-1")
 	defer restoreRoute53Env()
 
-	_, err := NewDNSProvider("", "", "", "", false, util.RecursiveNameservers)
+	_, err := NewDNSProvider("", "", "", "", "", false, util.RecursiveNameservers)
 	assert.Error(t, err, "Expected error constructing DNSProvider with no credentials and not ambient")
 }
 
@@ -81,7 +84,7 @@ func TestAmbientRegionFromEnv(t *testing.T) {
 	os.Setenv("AWS_REGION", "us-east-1")
 	defer restoreRoute53Env()
 
-	provider, err := NewDNSProvider("", "", "", "", true, util.RecursiveNameservers)
+	provider, err := NewDNSProvider("", "", "", "", "", true, util.RecursiveNameservers)
 	assert.NoError(t, err, "Expected no error constructing DNSProvider")
 
 	assert.Equal(t, "us-east-1", *provider.client.Config.Region, "Expected Region to be set from environment")
@@ -91,7 +94,7 @@ func TestNoRegionFromEnv(t *testing.T) {
 	os.Setenv("AWS_REGION", "us-east-1")
 	defer restoreRoute53Env()
 
-	provider, err := NewDNSProvider("marx", "swordfish", "", "", false, util.RecursiveNameservers)
+	provider, err := NewDNSProvider("marx", "swordfish", "", "", "", false, util.RecursiveNameservers)
 	assert.NoError(t, err, "Expected no error constructing DNSProvider")
 
 	assert.Equal(t, "", *provider.client.Config.Region, "Expected Region to not be set from environment")
@@ -114,4 +117,141 @@ func TestRoute53Present(t *testing.T) {
 
 	err := provider.Present(domain, "_acme-challenge."+domain+".", keyAuth)
 	assert.NoError(t, err, "Expected Present to return no error")
+}
+
+func TestAssumeRole(t *testing.T) {
+	creds := &sts.Credentials{
+		AccessKeyId:     aws.String("foo"),
+		SecretAccessKey: aws.String("bar"),
+		SessionToken:    aws.String("my-token"),
+	}
+	cases := []struct {
+		name      string
+		ambient   bool
+		role      string
+		expErr    bool
+		expCreds  *sts.Credentials
+		expRegion string
+		key       string
+		secret    string
+		region    string
+		mockSTS   *mockSTS
+	}{
+		{
+			name:      "should assume role w/ ambient creds",
+			role:      "my-role",
+			key:       "key",
+			secret:    "secret",
+			region:    "",
+			ambient:   true,
+			expErr:    false,
+			expCreds:  creds,
+			expRegion: "",
+			mockSTS: &mockSTS{
+				AssumeRoleFn: func(input *sts.AssumeRoleInput) (*sts.AssumeRoleOutput, error) {
+					return &sts.AssumeRoleOutput{
+						Credentials: creds,
+					}, nil
+				},
+			},
+		},
+		{
+			name:     "should assume role w/o ambient",
+			ambient:  false,
+			role:     "my-role",
+			key:      "key",
+			secret:   "secret",
+			region:   "eu-central-1",
+			expErr:   false,
+			expCreds: creds,
+			mockSTS: &mockSTS{
+				AssumeRoleFn: func(input *sts.AssumeRoleInput) (*sts.AssumeRoleOutput, error) {
+					return &sts.AssumeRoleOutput{
+						Credentials: creds,
+					}, nil
+				},
+			},
+		},
+		{
+			name:    "no role set: do NOT assume role and use provided credentials",
+			ambient: true,
+			role:    "",
+			key:     "my-explicit-key",
+			secret:  "my-explicit-secret",
+			region:  "eu-central-1",
+			expErr:  false,
+			expCreds: &sts.Credentials{
+				AccessKeyId:     aws.String("my-explicit-key"),    // from <key> above
+				SecretAccessKey: aws.String("my-explicit-secret"), // from <secret> above
+			},
+			mockSTS: &mockSTS{
+				AssumeRoleFn: func(input *sts.AssumeRoleInput) (*sts.AssumeRoleOutput, error) {
+					return &sts.AssumeRoleOutput{
+						Credentials: creds,
+					}, nil
+				},
+			},
+		},
+		{
+			// AssumeRole() error should be forwarded by provider
+			name:     "error assuming role w/ ambient",
+			ambient:  true,
+			role:     "my-role",
+			key:      "key",
+			secret:   "secret",
+			region:   "eu-central-1",
+			expErr:   true,
+			expCreds: nil,
+			mockSTS: &mockSTS{
+				AssumeRoleFn: func(input *sts.AssumeRoleInput) (*sts.AssumeRoleOutput, error) {
+					return nil, fmt.Errorf("error assuming mock role")
+				},
+			},
+		},
+	}
+
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			provider, err := makeMockSessionProvider(func(sess *session.Session) stsiface.STSAPI {
+				return c.mockSTS
+			}, c.key, c.secret, c.region, c.role, c.ambient)
+			assert.NoError(t, err)
+			sess, err := provider.GetSession()
+			if c.expErr {
+				assert.NotNil(t, err)
+			} else {
+				sessCreds, _ := sess.Config.Credentials.Get()
+				assert.Equal(t, c.mockSTS.assumedRole, c.role)
+				assert.Equal(t, *c.expCreds.SecretAccessKey, sessCreds.SecretAccessKey)
+				assert.Equal(t, *c.expCreds.AccessKeyId, sessCreds.AccessKeyID)
+				assert.Equal(t, c.region, *sess.Config.Region)
+			}
+		})
+	}
+}
+
+type mockSTS struct {
+	*sts.STS
+	AssumeRoleFn func(input *sts.AssumeRoleInput) (*sts.AssumeRoleOutput, error)
+	assumedRole  string
+}
+
+func (m *mockSTS) AssumeRole(input *sts.AssumeRoleInput) (*sts.AssumeRoleOutput, error) {
+	if m.AssumeRoleFn != nil {
+		m.assumedRole = *input.RoleArn
+		return m.AssumeRoleFn(input)
+	}
+
+	return nil, nil
+}
+
+func makeMockSessionProvider(defaultSTSProvider func(sess *session.Session) stsiface.STSAPI, accessKeyID, secretAccessKey, region, role string, ambient bool) (*sessionProvider, error) {
+	return &sessionProvider{
+		AccessKeyID:     accessKeyID,
+		SecretAccessKey: secretAccessKey,
+		Ambient:         ambient,
+		Region:          region,
+		Role:            role,
+		StsProvider:     defaultSTSProvider,
+	}, nil
 }

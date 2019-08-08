@@ -23,10 +23,11 @@ import (
 	"github.com/aws/aws-sdk-go/aws/request"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/route53"
-	"k8s.io/klog"
-
+	"github.com/aws/aws-sdk-go/service/sts"
+	"github.com/aws/aws-sdk-go/service/sts/stsiface"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
 	pkgutil "github.com/jetstack/cert-manager/pkg/util"
+	"k8s.io/klog"
 )
 
 const (
@@ -63,25 +64,33 @@ func (d customRetryer) RetryRules(r *request.Request) time.Duration {
 	return time.Duration(delay) * time.Millisecond
 }
 
-// NewDNSProvider returns a DNSProvider instance configured for the AWS
-// Route 53 service using static credentials from its parameters or, if they're
-// unset and the 'ambient' option is set, credentials from the environment.
-func NewDNSProvider(accessKeyID, secretAccessKey, hostedZoneID, region string, ambient bool, dns01Nameservers []string) (*DNSProvider, error) {
-	if accessKeyID == "" && secretAccessKey == "" {
-		if !ambient {
+type sessionProvider struct {
+	AccessKeyID     string
+	SecretAccessKey string
+	Ambient         bool
+	Region          string
+	Role            string
+	StsProvider     func(*session.Session) stsiface.STSAPI
+}
+
+func (d *sessionProvider) GetSession() (*session.Session, error) {
+	if d.AccessKeyID == "" && d.SecretAccessKey == "" {
+		if !d.Ambient {
 			return nil, fmt.Errorf("unable to construct route53 provider: empty credentials; perhaps you meant to enable ambient credentials?")
 		}
-	} else if accessKeyID == "" || secretAccessKey == "" {
+	} else if d.AccessKeyID == "" || d.SecretAccessKey == "" {
 		// It's always an error to set one of those but not the other
 		return nil, fmt.Errorf("unable to construct route53 provider: only one of access and secret key was provided")
 	}
 
-	useAmbientCredentials := ambient && (accessKeyID == "" && secretAccessKey == "")
+	useAmbientCredentials := d.Ambient && (d.AccessKeyID == "" && d.SecretAccessKey == "")
 
 	r := customRetryer{}
 	r.NumMaxRetries = maxRetries
 	config := request.WithRetryer(aws.NewConfig(), r)
-	sessionOpts := session.Options{}
+	sessionOpts := session.Options{
+		Config: *config,
+	}
 
 	if useAmbientCredentials {
 		klog.V(5).Infof("using ambient credentials")
@@ -90,22 +99,77 @@ func NewDNSProvider(accessKeyID, secretAccessKey, hostedZoneID, region string, a
 		// https://docs.aws.amazon.com/sdk-for-go/v1/developer-guide/configuring-sdk.html#specifying-credentials
 	} else {
 		klog.V(5).Infof("not using ambient credentials")
-		config.WithCredentials(credentials.NewStaticCredentials(accessKeyID, secretAccessKey, ""))
+		sessionOpts.Config.Credentials = credentials.NewStaticCredentials(d.AccessKeyID, d.SecretAccessKey, "")
 		// also disable 'ambient' region sources
 		sessionOpts.SharedConfigState = session.SharedConfigDisable
 	}
 
-	// If ambient credentials aren't permitted, always set the region, even if to
-	// empty string, to avoid it falling back on the environment.
-	if region != "" || !useAmbientCredentials {
-		config.WithRegion(region)
-	}
 	sess, err := session.NewSessionWithOptions(sessionOpts)
 	if err != nil {
 		return nil, fmt.Errorf("unable to create aws session: %s", err)
 	}
+
+	if d.Role != "" {
+		klog.V(5).Infof("assuming role: %s", d.Role)
+		stsSvc := d.StsProvider(sess)
+		result, err := stsSvc.AssumeRole(&sts.AssumeRoleInput{
+			RoleArn:         aws.String(d.Role),
+			RoleSessionName: aws.String("cert-manager"),
+		})
+		if err != nil {
+			return nil, fmt.Errorf("unable to assume role: %s", err)
+		}
+
+		creds := credentials.Value{
+			AccessKeyID:     *result.Credentials.AccessKeyId,
+			SecretAccessKey: *result.Credentials.SecretAccessKey,
+			SessionToken:    *result.Credentials.SessionToken,
+		}
+		sessionOpts.Config.Credentials = credentials.NewStaticCredentialsFromCreds(creds)
+
+		sess, err = session.NewSessionWithOptions(sessionOpts)
+		if err != nil {
+			return nil, fmt.Errorf("unable to create aws session: %s", err)
+		}
+	}
+
+	// If ambient credentials aren't permitted, always set the region, even if to
+	// empty string, to avoid it falling back on the environment.
+	// this has to be set after session is constructed
+	if d.Region != "" || !useAmbientCredentials {
+		sess.Config.WithRegion(d.Region)
+	}
+
 	sess.Handlers.Build.PushBack(request.WithAppendUserAgent(pkgutil.CertManagerUserAgent))
-	client := route53.New(sess, config)
+	return sess, nil
+}
+
+func newSessionProvider(accessKeyID, secretAccessKey, region, role string, ambient bool) (*sessionProvider, error) {
+	return &sessionProvider{
+		AccessKeyID:     accessKeyID,
+		SecretAccessKey: secretAccessKey,
+		Ambient:         ambient,
+		Region:          region,
+		Role:            role,
+		StsProvider:     defaultSTSProvider,
+	}, nil
+}
+
+func defaultSTSProvider(sess *session.Session) stsiface.STSAPI {
+	return sts.New(sess)
+}
+
+// NewDNSProvider returns a DNSProvider instance configured for the AWS
+// Route 53 service using static credentials from its parameters or, if they're
+// unset and the 'ambient' option is set, credentials from the environment.
+func NewDNSProvider(accessKeyID, secretAccessKey, hostedZoneID, region, role string, ambient bool, dns01Nameservers []string) (*DNSProvider, error) {
+	provider, err := newSessionProvider(accessKeyID, secretAccessKey, region, role, ambient)
+	sess, err := provider.GetSession()
+	if err != nil {
+		return nil, err
+	}
+
+	client := route53.New(sess)
 
 	return &DNSProvider{
 		client:           client,

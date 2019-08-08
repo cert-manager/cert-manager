@@ -303,7 +303,7 @@ func TestRoute53TrimCreds(t *testing.T) {
 	expectedR53Call := []fakeDNSProviderCall{
 		{
 			name: "route53",
-			args: []interface{}{"test_with_spaces", "AKIENDINNEWLINE", "", "us-west-2", false, util.RecursiveNameservers},
+			args: []interface{}{"test_with_spaces", "AKIENDINNEWLINE", "", "us-west-2", "", false, util.RecursiveNameservers},
 		},
 	}
 
@@ -348,7 +348,7 @@ func TestRoute53AmbientCreds(t *testing.T) {
 			result{
 				expectedCall: &fakeDNSProviderCall{
 					name: "route53",
-					args: []interface{}{"", "", "", "us-west-2", true, util.RecursiveNameservers},
+					args: []interface{}{"", "", "", "us-west-2", "", true, util.RecursiveNameservers},
 				},
 			},
 		},
@@ -378,7 +378,99 @@ func TestRoute53AmbientCreds(t *testing.T) {
 			result{
 				expectedCall: &fakeDNSProviderCall{
 					name: "route53",
-					args: []interface{}{"", "", "", "us-west-2", false, util.RecursiveNameservers},
+					args: []interface{}{"", "", "", "us-west-2", "", false, util.RecursiveNameservers},
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		f := tt.in
+		f.Setup(t)
+		defer f.Finish(t)
+		s := f.Solver
+		_, _, err := s.solverForChallenge(context.Background(), f.Issuer, f.Challenge)
+		if !reflect.DeepEqual(tt.out.expectedErr, err) {
+			t.Fatalf("expected error %v, got error %v", tt.out.expectedErr, err)
+		}
+
+		if tt.out.expectedCall != nil {
+			if !reflect.DeepEqual([]fakeDNSProviderCall{*tt.out.expectedCall}, f.dnsProviders.calls) {
+				t.Fatalf("expected %+v == %+v", []fakeDNSProviderCall{*tt.out.expectedCall}, f.dnsProviders.calls)
+			}
+		}
+	}
+}
+
+func TestRoute53AssumeRole(t *testing.T) {
+	type result struct {
+		expectedCall *fakeDNSProviderCall
+		expectedErr  error
+	}
+
+	tests := []struct {
+		in  solverFixture
+		out result
+	}{
+		{
+			solverFixture{
+				Builder: &test.Builder{
+					Context: &controller.Context{
+						IssuerOptions: controller.IssuerOptions{
+							IssuerAmbientCredentials: true,
+						},
+					},
+				},
+				Issuer:       newIssuer("test", "default"),
+				dnsProviders: newFakeDNSProviders(),
+				Challenge: &v1alpha1.Challenge{
+					Spec: v1alpha1.ChallengeSpec{
+						Solver: &v1alpha1.ACMEChallengeSolver{
+							DNS01: &v1alpha1.ACMEChallengeSolverDNS01{
+								Route53: &v1alpha1.ACMEIssuerDNS01ProviderRoute53{
+									Region: "us-west-2",
+									Role:   "my-role",
+								},
+							},
+						},
+					},
+				},
+			},
+			result{
+				expectedCall: &fakeDNSProviderCall{
+					name: "route53",
+					args: []interface{}{"", "", "", "us-west-2", "my-role", true, util.RecursiveNameservers},
+				},
+			},
+		},
+		{
+			solverFixture{
+				Builder: &test.Builder{
+					Context: &controller.Context{
+						IssuerOptions: controller.IssuerOptions{
+							IssuerAmbientCredentials: false,
+						},
+					},
+				},
+				Issuer:       newIssuer("test", "default"),
+				dnsProviders: newFakeDNSProviders(),
+				Challenge: &v1alpha1.Challenge{
+					Spec: v1alpha1.ChallengeSpec{
+						Solver: &v1alpha1.ACMEChallengeSolver{
+							DNS01: &v1alpha1.ACMEChallengeSolverDNS01{
+								Route53: &v1alpha1.ACMEIssuerDNS01ProviderRoute53{
+									Region: "us-west-2",
+									Role:   "my-other-role",
+								},
+							},
+						},
+					},
+				},
+			},
+			result{
+				expectedCall: &fakeDNSProviderCall{
+					name: "route53",
+					args: []interface{}{"", "", "", "us-west-2", "my-other-role", false, util.RecursiveNameservers},
 				},
 			},
 		},
