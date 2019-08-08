@@ -39,6 +39,9 @@ To access this service account cert-manager uses a key stored in a Kubernetes Se
 
 .. note::
    Keep the key file safe and do not share it, as it could be used to gain access to your cloud resources. The key file can be deleted once it has been used to generate the Secret.
+   
+.. note::
+   If you have already added the secret but get an error: `...due to error processing: error getting clouddns service account: secret "XXX" not found`, the secret may be in the wrong namespace. If you're configuring a `ClusterIssuer`, try moving the secret to the same namespace as cert-manager. If you're configuring an `Issuer`, the secret should be stored in the same namespace as the `Issuer` resource.
 
 Create an Issuer That Uses CloudDNS
 ===================================
