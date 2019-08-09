@@ -37,7 +37,7 @@ func MustNoResponse(builder *testpkg.Builder, args ...interface{}) {
 
 // Ensure no private key exists in test response.
 // Ensure no signed certificate or CA	certificate in test response.
-func NoPrivateKeyFieldsSetCheck(expectedCA []byte) func(builder *testpkg.Builder, args ...interface{}) {
+func NoPrivateKeyCertificatesFieldsSetCheck(expectedCA []byte) func(builder *testpkg.Builder, args ...interface{}) {
 	return func(builder *testpkg.Builder, args ...interface{}) {
 		resp := args[0].(*issuer.IssueResponse)
 

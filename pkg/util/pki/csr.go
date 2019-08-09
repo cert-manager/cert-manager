@@ -389,24 +389,3 @@ func SignatureAlgorithm(crt *v1alpha1.Certificate) (x509.PublicKeyAlgorithm, x50
 	}
 	return pubKeyAlgo, sigAlgo, nil
 }
-
-func GenerateSelfSignedCertFromCR(cr *v1alpha1.CertificateRequest, key crypto.Signer,
-	duration time.Duration) (derBytes, pemBytes []byte, err error) {
-	template, err := GenerateTemplateFromCertificateRequest(cr)
-	if err != nil {
-		return nil, nil, fmt.Errorf("error generating template: %v", err)
-	}
-
-	derBytes, err = x509.CreateCertificate(rand.Reader, template, template, key.Public(), key)
-	if err != nil {
-		return nil, nil, fmt.Errorf("error signing cert: %v", err)
-	}
-
-	pemByteBuffer := bytes.NewBuffer([]byte{})
-	err = pem.Encode(pemByteBuffer, &pem.Block{Type: "CERTIFICATE", Bytes: derBytes})
-	if err != nil {
-		return nil, nil, fmt.Errorf("failed to encode cert: %v", err)
-	}
-
-	return derBytes, pemByteBuffer.Bytes(), nil
-}

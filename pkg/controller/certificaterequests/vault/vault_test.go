@@ -17,6 +17,7 @@ limitations under the License.
 package vault
 
 import (
+	"bytes"
 	"context"
 	"crypto"
 	"crypto/rand"
@@ -25,6 +26,7 @@ import (
 	"encoding/asn1"
 	"encoding/pem"
 	"errors"
+	"fmt"
 	"testing"
 	"time"
 
@@ -63,6 +65,27 @@ func generateCSR(t *testing.T, secretKey crypto.Signer) []byte {
 	return csr
 }
 
+func generateSelfSignedCertFromCR(cr *v1alpha1.CertificateRequest, key crypto.Signer,
+	duration time.Duration) ([]byte, error) {
+	template, err := pki.GenerateTemplateFromCertificateRequest(cr)
+	if err != nil {
+		return nil, fmt.Errorf("error generating template: %v", err)
+	}
+
+	derBytes, err := x509.CreateCertificate(rand.Reader, template, template, key.Public(), key)
+	if err != nil {
+		return nil, fmt.Errorf("error signing cert: %v", err)
+	}
+
+	pemByteBuffer := bytes.NewBuffer([]byte{})
+	err = pem.Encode(pemByteBuffer, &pem.Block{Type: "CERTIFICATE", Bytes: derBytes})
+	if err != nil {
+		return nil, fmt.Errorf("failed to encode cert: %v", err)
+	}
+
+	return pemByteBuffer.Bytes(), nil
+}
+
 func TestSign(t *testing.T) {
 	rsaSK, err := pki.GenerateRSAPrivateKey(2048)
 	if err != nil {
@@ -87,7 +110,7 @@ func TestSign(t *testing.T) {
 		}),
 	)
 
-	_, rsaPEMCert, err := pki.GenerateSelfSignedCertFromCR(testCR, rsaSK, time.Hour*24*60)
+	rsaPEMCert, err := generateSelfSignedCertFromCR(testCR, rsaSK, time.Hour*24*60)
 	if err != nil {
 		t.Error(err)
 		t.FailNow()
@@ -249,7 +272,7 @@ func TestSign(t *testing.T) {
 				KubeObjects:        []runtime.Object{tokenSecret},
 				CertManagerObjects: []runtime.Object{},
 				ExpectedEvents:     []string{},
-				CheckFn:            testcr.NoPrivateKeyFieldsSetCheck(rsaPEMCert),
+				CheckFn:            testcr.NoPrivateKeyCertificatesFieldsSetCheck(rsaPEMCert),
 			},
 			fakeVault:   fakevault.New().WithSign(rsaPEMCert, rsaPEMCert, nil),
 			expectedErr: false,
@@ -275,7 +298,7 @@ func TestSign(t *testing.T) {
 				KubeObjects:        []runtime.Object{roleSecret},
 				CertManagerObjects: []runtime.Object{},
 				ExpectedEvents:     []string{},
-				CheckFn:            testcr.NoPrivateKeyFieldsSetCheck(rsaPEMCert),
+				CheckFn:            testcr.NoPrivateKeyCertificatesFieldsSetCheck(rsaPEMCert),
 			},
 			fakeVault:   fakevault.New().WithSign(rsaPEMCert, rsaPEMCert, nil),
 			expectedErr: false,
