@@ -214,7 +214,6 @@ var _ = framework.CertManagerDescribe("ACME CertificateRequest (HTTP01)", func()
 		notReadyCondition := v1alpha1.CertificateRequestCondition{
 			Type:   v1alpha1.CertificateRequestConditionReady,
 			Status: v1alpha1.ConditionFalse,
-			Reason: v1alpha1.CertificateRequestReasonFailed,
 		}
 		Eventually(cr, "30s", "1s").Should(HaveCondition(f, notReadyCondition))
 		Consistently(cr, "1m", "10s").Should(HaveCondition(f, notReadyCondition))
