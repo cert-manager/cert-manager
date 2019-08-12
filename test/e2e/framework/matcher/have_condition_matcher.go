@@ -44,6 +44,8 @@ func toGenericCondition(c interface{}) (*genericCondition, error) {
 		return buildGenericCondition(string(c.Type), string(c.Status), c.Reason), nil
 	case cmapi.IssuerCondition:
 		return buildGenericCondition(string(c.Type), string(c.Status), c.Reason), nil
+	case cmapi.CertificateRequestCondition:
+		return buildGenericCondition(string(c.Type), string(c.Status), c.Reason), nil
 	default:
 		return nil, fmt.Errorf("unsupported condition type %T", c)
 	}
@@ -55,6 +57,8 @@ func (c *conditionMatcher) getUpToDateResource(obj interface{}) (interface{}, er
 		return c.f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(obj.Namespace).Get(obj.Name, metav1.GetOptions{})
 	case *cmapi.Issuer:
 		return c.f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(obj.Namespace).Get(obj.Name, metav1.GetOptions{})
+	case *cmapi.CertificateRequest:
+		return c.f.CertManagerClientSet.CertmanagerV1alpha1().CertificateRequests(obj.Namespace).Get(obj.Name, metav1.GetOptions{})
 	default:
 		return nil, fmt.Errorf("unsupported resource type %T", c)
 	}
@@ -68,6 +72,10 @@ func extractConditionSlice(obj interface{}) ([]interface{}, error) {
 			actualConditions = append(actualConditions, c)
 		}
 	case *cmapi.Issuer:
+		for _, c := range obj.Status.Conditions {
+			actualConditions = append(actualConditions, c)
+		}
+	case *cmapi.CertificateRequest:
 		for _, c := range obj.Status.Conditions {
 			actualConditions = append(actualConditions, c)
 		}
