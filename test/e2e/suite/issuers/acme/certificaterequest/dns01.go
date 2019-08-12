@@ -20,8 +20,6 @@ import (
 	"crypto/x509"
 	"time"
 
-	"github.com/jetstack/cert-manager/test/util/generate"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -31,6 +29,7 @@ import (
 	"github.com/jetstack/cert-manager/test/e2e/framework/addon"
 	"github.com/jetstack/cert-manager/test/e2e/suite/issuers/acme/dnsproviders"
 	"github.com/jetstack/cert-manager/test/e2e/util"
+	"github.com/jetstack/cert-manager/test/util/generate"
 )
 
 type dns01Provider interface {
@@ -43,16 +42,16 @@ type dns01Provider interface {
 const testingACMEEmail = "e2e@cert-manager.io"
 const testingACMEPrivateKey = "test-acme-private-key"
 
-var _ = framework.CertManagerDescribe("ACME CertificateRequest (DNS01) (Old format)", func() {
+var _ = framework.CertManagerDescribe("ACME CertificateRequest (DNS01)", func() {
 	// TODO: add additional DNS provider configs here
 	cf := &dnsproviders.Cloudflare{}
 
-	testDNSProviderOldFormat("cloudflare", cf)
+	testDNSProvider("cloudflare", cf)
 })
 
-func testDNSProviderOldFormat(name string, p dns01Provider) bool {
+func testDNSProvider(name string, p dns01Provider) bool {
 	return Context("With "+name+" credentials configured", func() {
-		f := framework.NewDefaultFramework("create-acme-certificaterequest-dns01-" + name + "-old")
+		f := framework.NewDefaultFramework("create-acme-certificate-request-dns01-" + name)
 		h := f.Helper()
 
 		BeforeEach(func() {
@@ -62,7 +61,7 @@ func testDNSProviderOldFormat(name string, p dns01Provider) bool {
 		f.RequireAddon(p)
 
 		issuerName := "test-acme-issuer"
-		certificateRequestName := "test-acme-certificaterequest"
+		certificateRequestName := "test-acme-certificate-request"
 		dnsDomain := ""
 
 		BeforeEach(func() {
@@ -78,9 +77,9 @@ func testDNSProviderOldFormat(name string, p dns01Provider) bool {
 				// ACMEServer:         framework.TestContext.ACMEURL,
 				ACMEEmail:          testingACMEEmail,
 				ACMEPrivateKeyName: testingACMEPrivateKey,
-				DNS01: &v1alpha1.ACMEIssuerDNS01Config{
-					Providers: []v1alpha1.ACMEIssuerDNS01Provider{
-						p.Details().ProviderConfigOldFormat,
+				Solvers: []v1alpha1.ACMEChallengeSolver{
+					{
+						DNS01: &p.Details().ProviderConfig,
 					},
 				},
 			})
@@ -123,13 +122,12 @@ func testDNSProviderOldFormat(name string, p dns01Provider) bool {
 
 			crClient := f.CertManagerClientSet.CertmanagerV1alpha1().CertificateRequests(f.Namespace.Name)
 
-			cr, key, err := util.NewCertManagerBasicCertificateRequest(certificateRequestName, issuerName, v1alpha1.IssuerKind,
-				nil, []string{dnsDomain}, nil, nil, x509.RSA)
+			cr, key, err := util.NewCertManagerBasicCertificateRequest(certificateRequestName, issuerName, v1alpha1.IssuerKind, nil,
+				[]string{dnsDomain}, nil, nil, x509.RSA)
 			Expect(err).NotTo(HaveOccurred())
 
 			cr, err = crClient.Create(cr)
 			Expect(err).NotTo(HaveOccurred())
-
 			err = h.WaitCertificateRequestIssuedValid(f.Namespace.Name, certificateRequestName, time.Minute*5, key)
 			Expect(err).NotTo(HaveOccurred())
 		})
@@ -137,8 +135,8 @@ func testDNSProviderOldFormat(name string, p dns01Provider) bool {
 		It("should obtain a signed certificate for a wildcard domain", func() {
 			By("Creating a CertificateRequest")
 
-			cr, key, err := util.NewCertManagerBasicCertificateRequest(certificateRequestName, issuerName, v1alpha1.IssuerKind,
-				nil, []string{"*." + dnsDomain}, nil, nil, x509.RSA)
+			cr, key, err := util.NewCertManagerBasicCertificateRequest(certificateRequestName, issuerName, v1alpha1.IssuerKind, nil,
+				[]string{"*." + dnsDomain}, nil, nil, x509.RSA)
 			Expect(err).NotTo(HaveOccurred())
 
 			cr, err = f.CertManagerClientSet.CertmanagerV1alpha1().CertificateRequests(f.Namespace.Name).Create(cr)
@@ -149,8 +147,9 @@ func testDNSProviderOldFormat(name string, p dns01Provider) bool {
 
 		It("should obtain a signed certificate for a wildcard and apex domain", func() {
 			By("Creating a CertificateRequest")
-			cr, key, err := util.NewCertManagerBasicCertificateRequest(certificateRequestName, issuerName, v1alpha1.IssuerKind,
-				nil, []string{"*." + dnsDomain, dnsDomain}, nil, nil, x509.RSA)
+
+			cr, key, err := util.NewCertManagerBasicCertificateRequest(certificateRequestName, issuerName, v1alpha1.IssuerKind, nil,
+				[]string{"*." + dnsDomain, dnsDomain}, nil, nil, x509.RSA)
 			Expect(err).NotTo(HaveOccurred())
 
 			cr, err = f.CertManagerClientSet.CertmanagerV1alpha1().CertificateRequests(f.Namespace.Name).Create(cr)
