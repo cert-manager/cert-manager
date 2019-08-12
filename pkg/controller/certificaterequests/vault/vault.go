@@ -42,7 +42,6 @@ type Vault struct {
 	// used to record Events about resources to the API
 	recorder      record.EventRecorder
 	secretsLister corelisters.SecretLister
-	helper        issuer.Helper
 
 	vaultClientBuilder vaultinternal.VaultClientBuilder
 }
@@ -65,37 +64,30 @@ func init() {
 
 func NewVault(ctx *controllerpkg.Context) *Vault {
 	return &Vault{
-		recorder:      ctx.Recorder,
-		secretsLister: ctx.KubeSharedInformerFactory.Core().V1().Secrets().Lister(),
-		helper: issuer.NewHelper(
-			ctx.SharedInformerFactory.Certmanager().V1alpha1().Issuers().Lister(),
-			ctx.SharedInformerFactory.Certmanager().V1alpha1().ClusterIssuers().Lister(),
-		),
+		recorder:           ctx.Recorder,
+		secretsLister:      ctx.KubeSharedInformerFactory.Core().V1().Secrets().Lister(),
 		vaultClientBuilder: vaultinternal.New,
 	}
 }
 
 func (v *Vault) Sign(ctx context.Context, cr *v1alpha1.CertificateRequest, issuerObj v1alpha1.GenericIssuer) (*issuer.IssueResponse, error) {
-	log := logf.FromContext(ctx, "sign")
+	log := logf.WithRelatedResource(
+		logf.FromContext(ctx, "sign"), issuerObj)
 	reporter := crutil.NewReporter(cr, v.recorder)
 
 	client, err := v.vaultClientBuilder(cr.Namespace, v.secretsLister, issuerObj)
+	if k8sErrors.IsNotFound(err) {
+		message := "Required secret resource not found"
+
+		reporter.Pending(err, "MissingSecret", message)
+		log.Error(err, message)
+		return nil, nil
+	}
+
 	if err != nil {
-		log = logf.WithRelatedResource(log, issuerObj)
-
-		if k8sErrors.IsNotFound(err) {
-			message := "Required secret resource not found"
-
-			reporter.Pending(err, "MissingSecret", message)
-			log.Error(err, message)
-
-			return nil, nil
-		}
-
 		message := "Failed to initialise vault client for signing"
 		reporter.Pending(err, "ErrorVaultInit", message)
 		log.Error(err, message)
-
 		return nil, err
 	}
 
