@@ -144,7 +144,7 @@ func (a *ACME) Sign(ctx context.Context, cr *v1alpha1.CertificateRequest, issuer
 		return nil, nil
 	}
 
-	// Order valid, return cert. The calling controller will update with ready if it's happy with the cert.
+	// Order valid, return cert. The calling controller will update with ready if its happy with the cert.
 	if order.Status.State == v1alpha1.Valid {
 		log.Info("certificate issued")
 

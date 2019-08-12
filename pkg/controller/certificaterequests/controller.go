@@ -85,8 +85,9 @@ type Controller struct {
 
 func New(issuerType string, issuer Issuer, extraInformers ...cache.SharedIndexInformer) *Controller {
 	return &Controller{
-		issuerType: issuerType,
-		issuer:     issuer,
+		issuerType:     issuerType,
+		issuer:         issuer,
+		extraInformers: extraInformers,
 	}
 }
 
