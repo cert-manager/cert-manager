@@ -25,6 +25,7 @@ import (
 	"github.com/kr/pretty"
 	corev1 "k8s.io/api/core/v1"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
@@ -46,21 +47,22 @@ func (c *Controller) Sync(ctx context.Context, cr *v1alpha1.CertificateRequest) 
 		return nil
 	}
 
-	if apiutil.CertificateRequestHasCondition(cr, v1alpha1.CertificateRequestCondition{
-		Type:   v1alpha1.CertificateRequestConditionReady,
-		Status: v1alpha1.ConditionFalse,
-		Reason: v1alpha1.CertificateRequestReasonFailed,
-	}) {
+	if apiutil.CertificateRequestHasFailed(cr) {
 		dbg.Info("certificate request condition failed so skipping processing")
 		return nil
 	}
 
 	crCopy := cr.DeepCopy()
+
 	defer func() {
 		if _, saveErr := c.updateCertificateRequestStatus(ctx, cr, crCopy); saveErr != nil {
 			err = utilerrors.NewAggregate([]error{saveErr, err})
 		}
 	}()
+
+	// If the CertificateRequest has the conditon 'Failed' then set the
+	// FailureTime to `c.clock.Now()`
+	defer c.setFailureTime(crCopy)
 
 	dbg.Info("fetching issuer object referenced by CertificateRequest")
 
@@ -191,4 +193,15 @@ func (c *Controller) updateCertificateRequestStatus(ctx context.Context, old, ne
 	// server with the /status subresource enabled and/or subresource support
 	// for CRDs (https://github.com/kubernetes/kubernetes/issues/38113)
 	return c.cmClient.CertmanagerV1alpha1().CertificateRequests(new.Namespace).Update(new)
+}
+
+// If the CertificateRequest has a condition set to 'Failed` then set the
+// FailureTime to c.clock.Now(), only if it has not been already set.
+func (c *Controller) setFailureTime(cr *v1alpha1.CertificateRequest) {
+	if apiutil.CertificateRequestHasFailed(cr) {
+		if cr.Status.FailureTime == nil {
+			nowTime := metav1.NewTime(c.clock.Now())
+			cr.Status.FailureTime = &nowTime
+		}
+	}
 }

@@ -809,6 +809,10 @@ func (in *CertificateRequestStatus) DeepCopyInto(out *CertificateRequestStatus) 
 		*out = make([]byte, len(*in))
 		copy(*out, *in)
 	}
+	if in.FailureTime != nil {
+		in, out := &in.FailureTime, &out.FailureTime
+		*out = (*in).DeepCopy()
+	}
 	return
 }
 

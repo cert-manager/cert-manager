@@ -24,6 +24,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
+	"k8s.io/utils/clock"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	cmclient "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
@@ -69,6 +70,9 @@ type Controller struct {
 
 	// Issuer to call sign function
 	issuer Issuer
+
+	// used for testing
+	clock clock.Clock
 }
 
 func New(issuerType string, issuer Issuer) *Controller {
@@ -124,6 +128,8 @@ func (c *Controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitin
 	// create an issuer helper for reading generic issuers
 	c.helper = issuer.NewHelper(c.issuerLister, c.clusterIssuerLister)
 
+	// clock is used to set the FailureTime of failed CertificateRequests
+	c.clock = ctx.Clock
 	// recorder records events about resources to the Kubernetes api
 	c.recorder = ctx.Recorder
 	c.cmClient = ctx.CMClient

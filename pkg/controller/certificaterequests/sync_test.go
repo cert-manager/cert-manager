@@ -35,7 +35,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	coretesting "k8s.io/client-go/testing"
-	clock "k8s.io/utils/clock/testing"
+	fakeclock "k8s.io/utils/clock/testing"
 
 	"github.com/jetstack/cert-manager/pkg/api/util"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
@@ -47,7 +47,11 @@ import (
 	"github.com/jetstack/cert-manager/test/unit/gen"
 )
 
-var serialNumberLimit = new(big.Int).Lsh(big.NewInt(1), 128)
+var (
+	fixedClockStart   = time.Now()
+	fixedClock        = fakeclock.NewFakeClock(fixedClockStart)
+	serialNumberLimit = new(big.Int).Lsh(big.NewInt(1), 128)
+)
 
 func generateCSR(commonName string) ([]byte, error) {
 	csr := &x509.CertificateRequest{
@@ -122,9 +126,7 @@ func generateSelfSignedCert(t *testing.T, cr *cmapi.CertificateRequest, sn *big.
 }
 
 func TestSync(t *testing.T) {
-	nowTime := time.Now()
-	nowMetaTime := metav1.NewTime(nowTime)
-	fixedClock := clock.NewFakeClock(nowTime)
+	nowMetaTime := metav1.NewTime(fixedClockStart)
 
 	csr, err := generateCSR("csr")
 	if err != nil {
@@ -165,6 +167,7 @@ func TestSync(t *testing.T) {
 	)
 
 	exampleFailedCR := gen.CertificateRequestFrom(exampleCR,
+		gen.SetCertificateRequestFailureTime(nowMetaTime),
 		gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
 			Type:               cmapi.CertificateRequestConditionReady,
 			Status:             cmapi.ConditionFalse,
@@ -173,8 +176,8 @@ func TestSync(t *testing.T) {
 		}),
 	)
 
-	certPEM := generateSelfSignedCert(t, exampleCR, nil, pk, nowTime, nowTime.Add(time.Hour*12))
-	certPEMExpired := generateSelfSignedCert(t, exampleCR, nil, pk, nowTime.Add(-time.Hour*13), nowTime.Add(-time.Hour*12))
+	certPEM := generateSelfSignedCert(t, exampleCR, nil, pk, fixedClockStart, fixedClockStart.Add(time.Hour*12))
+	certPEMExpired := generateSelfSignedCert(t, exampleCR, nil, pk, fixedClockStart.Add(-time.Hour*13), fixedClockStart.Add(-time.Hour*12))
 
 	exampleSignedCR := exampleCR.DeepCopy()
 	exampleSignedCR.Status.Certificate = certPEM
@@ -198,10 +201,11 @@ func TestSync(t *testing.T) {
 	exampleGarbageCertCR := exampleSignedCR.DeepCopy()
 	exampleGarbageCertCR.Status.Certificate = []byte("not a certificate")
 	exampleCRGarbageCondition := gen.CertificateRequestFrom(exampleGarbageCertCR,
+		gen.SetCertificateRequestFailureTime(nowMetaTime),
 		gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
 			Type:               cmapi.CertificateRequestConditionReady,
 			Status:             cmapi.ConditionFalse,
-			Reason:             "Failed",
+			Reason:             cmapi.CertificateRequestReasonFailed,
 			Message:            "Failed to decode certificate PEM",
 			LastTransitionTime: &nowMetaTime,
 		}),
@@ -211,6 +215,7 @@ func TestSync(t *testing.T) {
 	exampleEmptyCSRCR.Spec.CSRPEM = make([]byte, 0)
 
 	exampleFailedValidationCR := gen.CertificateRequestFrom(exampleEmptyCSRCR,
+		gen.SetCertificateRequestFailureTime(nowMetaTime),
 		gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
 			Type:               cmapi.CertificateRequestConditionReady,
 			Status:             cmapi.ConditionFalse,
@@ -504,8 +509,6 @@ func TestSync(t *testing.T) {
 
 	for n, test := range tests {
 		t.Run(n, func(t *testing.T) {
-			fixedClock.SetTime(nowTime)
-			test.builder.Clock = fixedClock
 			runTest(t, test)
 		})
 	}
@@ -520,12 +523,15 @@ type testT struct {
 
 func runTest(t *testing.T, test testT) {
 	test.builder.T = t
+	test.builder.Clock = fixedClock
 	test.builder.Start()
+
 	defer test.builder.Stop()
 
 	c := &Controller{
 		issuerType: util.IssuerSelfSigned,
 		issuer:     test.issuerImpl,
+		clock:      fixedClock,
 	}
 	c.Register(test.builder.Context)
 	test.builder.Sync()
