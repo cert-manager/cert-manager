@@ -32,8 +32,8 @@ import (
 	cmlisters "github.com/jetstack/cert-manager/pkg/client/listers/certmanager/v1alpha1"
 	testcr "github.com/jetstack/cert-manager/pkg/controller/certificaterequests/test"
 	testpkg "github.com/jetstack/cert-manager/pkg/controller/test"
-	testfake "github.com/jetstack/cert-manager/pkg/controller/test/fake"
 	"github.com/jetstack/cert-manager/test/unit/gen"
+	testlisters "github.com/jetstack/cert-manager/test/unit/listers"
 )
 
 func buildOrderMust(t *testing.T, cr *v1alpha1.CertificateRequest,
@@ -114,9 +114,9 @@ func TestSign(t *testing.T) {
 				CheckFn: testcr.MustNoResponse,
 			},
 			expectedErr: true,
-			FakeOrderLister: &testfake.FakeOrderLister{
+			FakeOrderLister: &testlisters.FakeOrderLister{
 				OrdersFn: func(namespace string) cmlisters.OrderNamespaceLister {
-					return &testfake.FakeOrderNamespaceLister{
+					return &testlisters.FakeOrderNamespaceLister{
 						GetFn: func(name string) (ret *v1alpha1.Order, err error) {
 							return nil, errors.New("this is a network error")
 						},
@@ -185,7 +185,7 @@ type testT struct {
 	checkFn     func(*testpkg.Builder, ...interface{})
 	expectedErr bool
 
-	FakeOrderLister *testfake.FakeOrderLister
+	FakeOrderLister *testlisters.FakeOrderLister
 }
 
 func runTest(t *testing.T, test testT) {
