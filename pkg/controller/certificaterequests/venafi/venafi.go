@@ -32,7 +32,6 @@ import (
 	venafiinternal "github.com/jetstack/cert-manager/pkg/internal/venafi"
 	issuerpkg "github.com/jetstack/cert-manager/pkg/issuer"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
-	utilapi "github.com/jetstack/cert-manager/pkg/util/api"
 )
 
 const (
@@ -103,7 +102,7 @@ func (v *Venafi) Sign(ctx context.Context, cr *cmapi.CertificateRequest, issuerO
 		return nil, err
 	}
 
-	duration := utilapi.DefaultCertDuration(cr.Spec.Duration)
+	duration := apiutil.DefaultCertDuration(cr.Spec.Duration)
 
 	certPem, err := client.Sign(cr.Spec.CSRPEM, duration)
 

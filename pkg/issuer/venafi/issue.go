@@ -29,7 +29,7 @@ import (
 	"github.com/jetstack/cert-manager/pkg/issuer"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 
-	utilapi "github.com/jetstack/cert-manager/pkg/util/api"
+	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 )
 
@@ -128,7 +128,7 @@ func (v *Venafi) Issue(ctx context.Context, crt *v1alpha1.Certificate) (*issuer.
 		return nil, err
 	}
 
-	duration := utilapi.DefaultCertDuration(crt.Spec.Duration)
+	duration := apiutil.DefaultCertDuration(crt.Spec.Duration)
 
 	dbg.Info("submitting generated CSR to venafi")
 	cert, err := client.Sign(vreq.GetCSR(), duration)

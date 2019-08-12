@@ -16,7 +16,6 @@ go_library(
         "//pkg/internal/venafi:go_default_library",
         "//pkg/issuer:go_default_library",
         "//pkg/logs:go_default_library",
-        "//pkg/util/api:go_default_library",
         "//pkg/util/pki:go_default_library",
         "//vendor/github.com/Venafi/vcert/pkg/certificate:go_default_library",
         "//vendor/github.com/Venafi/vcert/pkg/endpoint:go_default_library",

@@ -22,9 +22,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/Venafi/vcert/pkg/endpoint"
 	corelisters "k8s.io/client-go/listers/core/v1"
 
-	"github.com/Venafi/vcert/pkg/endpoint"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	"github.com/jetstack/cert-manager/pkg/controller"
 	controllertest "github.com/jetstack/cert-manager/pkg/controller/test"
