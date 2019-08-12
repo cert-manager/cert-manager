@@ -483,6 +483,44 @@ func (c *certificateRequestManager) processCertificate(ctx context.Context, crt 
 		}
 	}
 
+	// If the CertificateRequest exists but has failed then we check the failure
+	// time. If the failure time doesn't exist or is over an hour in the past
+	// then delete the request so it can be re-created on the next sync. If the
+	// failure time is less than an hour in the past then schedule this owning
+	// Certificate for a re-sync in an hour.
+	if existingReq != nil && apiutil.CertificateRequestHasFailed(existingReq) {
+		if existingReq.Status.FailureTime == nil {
+			log.Info("the failed existing certificate request has no failure time so will be retried now")
+
+		} else if c.clock.Since(existingReq.Status.FailureTime.Time) > time.Hour {
+			log.Info("the failed existing certificate request failed over an hour ago so will be retried now")
+
+		} else {
+			log.Info("the failed existing certificate request failed less than an hour ago, will be scheduled for reprocessing in an hour")
+
+			key, err := keyFunc(crt)
+			if err != nil {
+				log.Error(err, "error getting key for certificate resource")
+				return nil
+			}
+
+			c.scheduledWorkQueue.Add(key, time.Hour)
+
+			c.recorder.Eventf(crt, corev1.EventTypeNormal, "CertificateRequestReschedule", "The CertificateRequest %q has failed and is scheduled for a retry in 1 hour", existingReq.Name)
+			return nil
+		}
+
+		log.Info("deleting failed certificate request")
+		err := c.cmClient.CertmanagerV1alpha1().CertificateRequests(existingReq.Namespace).Delete(existingReq.Name, nil)
+		if err != nil {
+			return err
+		}
+
+		c.recorder.Eventf(crt, corev1.EventTypeNormal, "CertificateRequestRetry", "The failed CertificateRequest %q will be retried now", existingReq.Name)
+
+		return nil
+	}
+
 	if existingReq == nil {
 		// If no existing CertificateRequest resource exists, we must create one
 		log.Info("no existing CertificateRequest resource exists, creating new request...")

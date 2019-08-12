@@ -222,7 +222,7 @@ func CertificateRequestHasCondition(cr *cmapi.CertificateRequest, c cmapi.Certif
 
 func CertificateRequestHasFailed(cr *cmapi.CertificateRequest) bool {
 	for _, con := range cr.Status.Conditions {
-		if con.Reason == "Failed" {
+		if con.Reason == cmapi.CertificateRequestReasonFailed {
 			return true
 		}
 	}

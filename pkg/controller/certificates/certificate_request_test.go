@@ -60,8 +60,9 @@ type cryptoBundle struct {
 
 	// certificateRequest is the request that is expected to be created to
 	// obtain a certificate when using this bundle
-	certificateRequest      *cmapi.CertificateRequest
-	certificateRequestReady *cmapi.CertificateRequest
+	certificateRequest       *cmapi.CertificateRequest
+	certificateRequestReady  *cmapi.CertificateRequest
+	certificateRequestFailed *cmapi.CertificateRequest
 
 	// cert is a signed certificate
 	cert      *x509.Certificate
@@ -139,6 +140,14 @@ func createCryptoBundle(crt *cmapi.Certificate) (*cryptoBundle, error) {
 		}),
 	)
 
+	certificateRequestFailed := gen.CertificateRequestFrom(certificateRequest,
+		gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
+			Type:   cmapi.CertificateRequestConditionReady,
+			Status: cmapi.ConditionFalse,
+			Reason: cmapi.CertificateRequestReasonFailed,
+		}),
+	)
+
 	tempCertBytes, err := generateLocallySignedTemporaryCertificate(crt, privateKeyBytes)
 	if err != nil {
 		panic("failed to generate test fixture: " + err.Error())
@@ -153,6 +162,7 @@ func createCryptoBundle(crt *cmapi.Certificate) (*cryptoBundle, error) {
 		csrBytes:                       csrPEM,
 		certificateRequest:             certificateRequest,
 		certificateRequestReady:        certificateRequestReady,
+		certificateRequestFailed:       certificateRequestFailed,
 		cert:                           cert,
 		certBytes:                      certBytes,
 		localTemporaryCertificateBytes: tempCertBytes,
@@ -1019,6 +1029,105 @@ func TestProcessCertificate(t *testing.T) {
 					)),
 				},
 				ExpectedEvents: []string{`Normal PrivateKeyLost Lost private key for CertificateRequest "test-850937773", deleting old resource`},
+			},
+		},
+		"if a temporary certificate exists but the request has failed and contains no FailureTime, delete the request to cause a re-sync and retry": {
+			certificate: exampleBundle1.certificate,
+			builder: &testpkg.Builder{
+				KubeObjects: []runtime.Object{
+					&corev1.Secret{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      exampleBundle1.certificate.Spec.SecretName,
+							Namespace: exampleBundle1.certificate.Namespace,
+							Annotations: map[string]string{
+								cmapi.IssuerNameAnnotationKey: exampleBundle1.certificate.Spec.IssuerRef.Name,
+								cmapi.IssuerKindAnnotationKey: exampleBundle1.certificate.Spec.IssuerRef.Kind,
+							},
+						},
+						Data: map[string][]byte{
+							corev1.TLSPrivateKeyKey: exampleBundle1.privateKeyBytes,
+							corev1.TLSCertKey:       exampleBundle1.localTemporaryCertificateBytes,
+						},
+					},
+				},
+				CertManagerObjects: []runtime.Object{
+					exampleBundle1.certificate,
+					exampleBundle1.certificateRequestFailed,
+				},
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(coretesting.NewDeleteAction(
+						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
+						gen.DefaultTestNamespace,
+						exampleBundle1.certificateRequestFailed.Name,
+					)),
+				},
+				ExpectedEvents: []string{`Normal CertificateRequestRetry The failed CertificateRequest "test-850937773" will be retried now`},
+			},
+		},
+		"if a temporary certificate exists but the request has failed and contains a FailureTime over an hour in the past, delete the request to cause a re-sync and retry": {
+			certificate: exampleBundle1.certificate,
+			builder: &testpkg.Builder{
+				KubeObjects: []runtime.Object{
+					&corev1.Secret{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      exampleBundle1.certificate.Spec.SecretName,
+							Namespace: exampleBundle1.certificate.Namespace,
+							Annotations: map[string]string{
+								cmapi.IssuerNameAnnotationKey: exampleBundle1.certificate.Spec.IssuerRef.Name,
+								cmapi.IssuerKindAnnotationKey: exampleBundle1.certificate.Spec.IssuerRef.Kind,
+							},
+						},
+						Data: map[string][]byte{
+							corev1.TLSPrivateKeyKey: exampleBundle1.privateKeyBytes,
+							corev1.TLSCertKey:       exampleBundle1.localTemporaryCertificateBytes,
+						},
+					},
+				},
+				CertManagerObjects: []runtime.Object{
+					exampleBundle1.certificate,
+					gen.CertificateRequestFrom(exampleBundle1.certificateRequestFailed,
+						gen.SetCertificateRequestFailureTime(metav1.Time{
+							Time: fixedClockStart.Add(-time.Minute * 61),
+						})),
+				},
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(coretesting.NewDeleteAction(
+						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
+						gen.DefaultTestNamespace,
+						exampleBundle1.certificateRequestFailed.Name,
+					)),
+				},
+				ExpectedEvents: []string{`Normal CertificateRequestRetry The failed CertificateRequest "test-850937773" will be retried now`},
+			},
+		},
+		"if a temporary certificate exists but the request has failed and contains a FailureTime less than an hour in the past, reschedule a re-sync in an hour": {
+			certificate: exampleBundle1.certificate,
+			builder: &testpkg.Builder{
+				KubeObjects: []runtime.Object{
+					&corev1.Secret{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      exampleBundle1.certificate.Spec.SecretName,
+							Namespace: exampleBundle1.certificate.Namespace,
+							Annotations: map[string]string{
+								cmapi.IssuerNameAnnotationKey: exampleBundle1.certificate.Spec.IssuerRef.Name,
+								cmapi.IssuerKindAnnotationKey: exampleBundle1.certificate.Spec.IssuerRef.Kind,
+							},
+						},
+						Data: map[string][]byte{
+							corev1.TLSPrivateKeyKey: exampleBundle1.privateKeyBytes,
+							corev1.TLSCertKey:       exampleBundle1.localTemporaryCertificateBytes,
+						},
+					},
+				},
+				CertManagerObjects: []runtime.Object{
+					exampleBundle1.certificate,
+					gen.CertificateRequestFrom(exampleBundle1.certificateRequestFailed,
+						gen.SetCertificateRequestFailureTime(metav1.Time{
+							Time: fixedClockStart.Add(-time.Minute * 59),
+						})),
+				},
+				ExpectedActions: []testpkg.Action{},
+				ExpectedEvents:  []string{`Normal CertificateRequestReschedule The CertificateRequest "test-850937773" has failed and is scheduled for a retry in 1 hour`},
 			},
 		},
 	}
