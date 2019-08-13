@@ -4,8 +4,6 @@ go_library(
     name = "go_default_library",
     srcs = [
         "const.go",
-        "conversion.go",
-        "defaults.go",
         "doc.go",
         "generic_issuer.go",
         "register.go",
@@ -16,7 +14,6 @@ go_library(
         "types_issuer.go",
         "types_order.go",
         "zz_generated.deepcopy.go",
-        "zz_generated.defaults.go",
     ],
     importpath = "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1",
     visibility = ["//visibility:public"],
