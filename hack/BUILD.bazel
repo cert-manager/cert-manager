@@ -73,7 +73,7 @@ sh_binary(
         "//hack:update-bazel",
         "//hack/boilerplate:all-srcs",
         "//third_party/k8s.io/code-generator:generate-groups",
-        "//third_party/k8s.io/code-generator:openapi-gen",
+        "//third_party/k8s.io/code-generator:generate-groups-internal",
     ],
 )
 

@@ -5,6 +5,20 @@ sh_binary(
     srcs = ["generate-groups.sh"],
     data = [
         ":client",
+        ":conversion",
+        ":deepcopy",
+        ":informer",
+        ":lister",
+        ":openapi",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+sh_binary(
+    name = "generate-groups-internal",
+    srcs = ["generate-groups-internal.sh"],
+    data = [
+        ":client",
         ":deepcopy",
         ":informer",
         ":lister",
@@ -38,6 +52,14 @@ genrule(
     srcs = ["//vendor/k8s.io/code-generator/cmd/lister-gen"],
     outs = ["lister-gen"],
     cmd = "cp $(SRCS) $@",
+)
+
+genrule(
+    name = "conversion",
+    srcs = ["//vendor/k8s.io/code-generator/cmd/conversion-gen"],
+    outs = ["conversion-gen"],
+    cmd = "cp $(SRCS) $@",
+    executable = True,
 )
 
 genrule(
