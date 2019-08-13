@@ -10,7 +10,7 @@ metadata:
     app.kubernetes.io/managed-by: {{ .Release.Service }}
     helm.sh/chart: {{ include "webhook.chart" . }}
   annotations:
-    certmanager.k8s.io/inject-ca-from: "{{ .Release.Namespace }}/{{ include "webhook.servingCertificate" . }}"
+    certmanager.k8s.io/inject-ca-from-secret: "{{ .Release.Namespace }}/{{ include "webhook.servingCertificate" . }}"
 spec:
   group: admission.certmanager.k8s.io
   groupPriorityMinimum: 1000

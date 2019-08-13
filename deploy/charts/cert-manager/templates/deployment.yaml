@@ -86,6 +86,10 @@ spec:
           - --default-acme-issuer-dns01-provider-name={{ .defaultACMEDNS01ChallengeProvider }}
           {{- end }}
           {{- end }}
+          - --webhook-namespace=$(POD_NAMESPACE)
+          - --webhook-ca-secret={{ include "webhook.rootCACertificate" . }}
+          - --webhook-serving-secret={{ include "webhook.servingCertificate" . }}
+          - --webhook-dns-names={{ include "webhook.fullname" . }},{{ include "webhook.fullname" . }}.{{ .Release.Namespace }},{{ include "webhook.fullname" . }}.{{ .Release.Namespace }}.svc
           ports:
           - containerPort: 9402
           env:
