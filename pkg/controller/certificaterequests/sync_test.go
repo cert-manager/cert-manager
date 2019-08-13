@@ -161,7 +161,7 @@ func TestSync(t *testing.T) {
 			Type:               cmapi.CertificateRequestConditionReady,
 			Status:             cmapi.ConditionFalse,
 			Reason:             "Pending",
-			Message:            `referenced "Issuer" not found: issuer.certmanager.k8s.io "fake-issuer" not found`,
+			Message:            `Referenced "Issuer" not found: issuer.certmanager.k8s.io "fake-issuer" not found`,
 			LastTransitionTime: &nowMetaTime,
 		}),
 	)
@@ -171,7 +171,7 @@ func TestSync(t *testing.T) {
 			Type:               cmapi.CertificateRequestConditionReady,
 			Status:             cmapi.ConditionFalse,
 			Reason:             "Pending",
-			Message:            "failed to obtain referenced issuer type: no issuer specified for Issuer 'default-unit-test-ns/fake-issuer'",
+			Message:            "Missing issuer type: no issuer specified for Issuer 'default-unit-test-ns/fake-issuer'",
 			LastTransitionTime: &nowMetaTime,
 		}),
 	)
@@ -199,7 +199,7 @@ func TestSync(t *testing.T) {
 		gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
 			Type:               cmapi.CertificateRequestConditionReady,
 			Status:             cmapi.ConditionTrue,
-			Reason:             "Ready",
+			Reason:             cmapi.CertificateRequestReasonIssued,
 			Message:            "Certificate has been issued successfully",
 			LastTransitionTime: &nowMetaTime,
 		}),
@@ -216,7 +216,7 @@ func TestSync(t *testing.T) {
 			Type:               cmapi.CertificateRequestConditionReady,
 			Status:             cmapi.ConditionFalse,
 			Reason:             cmapi.CertificateRequestReasonFailed,
-			Message:            "Failed to decode certificate PEM",
+			Message:            "Failed to decode returned certificate: error decoding cert PEM block",
 			LastTransitionTime: &nowMetaTime,
 		}),
 	)
@@ -230,7 +230,7 @@ func TestSync(t *testing.T) {
 			Type:               cmapi.CertificateRequestConditionReady,
 			Status:             cmapi.ConditionFalse,
 			Reason:             "Failed",
-			Message:            "resource validation failed: spec.csr: Required value: must be specified",
+			Message:            "Resource validation failed: spec.csr: Required value: must be specified",
 			LastTransitionTime: &nowMetaTime,
 		}),
 	)
@@ -400,6 +400,7 @@ func TestSync(t *testing.T) {
 						exampleCRGarbageCondition,
 					)),
 				},
+				ExpectedEvents: []string{"Warning DecodeError Failed to decode returned certificate: error decoding cert PEM block"},
 			},
 		},
 		"return nil if generic issuer doesn't exist, will sync when on ready": {
@@ -418,7 +419,7 @@ func TestSync(t *testing.T) {
 						exampleCRIssuerNotFoundPendingCondition,
 					)),
 				},
-				ExpectedEvents: []string{`Normal IssuerNotFound referenced "Issuer" not found: issuer.certmanager.k8s.io "fake-issuer" not found`},
+				ExpectedEvents: []string{`Normal IssuerNotFound Referenced "Issuer" not found: issuer.certmanager.k8s.io "fake-issuer" not found`},
 			},
 		},
 		"exit nil if we cannot determine the issuer type (probably not meant for us)": {
@@ -445,7 +446,7 @@ func TestSync(t *testing.T) {
 						exampleCRIssuerUnknownTypeFoundPendingCondition,
 					)),
 				},
-				ExpectedEvents: []string{"Normal IssuerTypeError failed to obtain referenced issuer type: no issuer specified for Issuer 'default-unit-test-ns/fake-issuer'"},
+				ExpectedEvents: []string{"Normal IssuerTypeMissing Missing issuer type: no issuer specified for Issuer 'default-unit-test-ns/fake-issuer'"},
 			},
 		},
 		"exit nil if the issuer type is not meant for us": {
@@ -492,11 +493,31 @@ func TestSync(t *testing.T) {
 						exampleFailedValidationCR,
 					)),
 				},
-				ExpectedEvents: []string{"Warning BadConfig resource validation failed: spec.csr: Required value: must be specified"},
+				ExpectedEvents: []string{"Warning BadConfig Resource validation failed: spec.csr: Required value: must be specified"},
 			},
 		},
 		"should exit sync nil if condition is failed": {
 			certificateRequest: exampleFailedCR,
+			issuerImpl: &fake.Issuer{
+				FakeSign: func(context.Context, *cmapi.CertificateRequest, cmapi.GenericIssuer) (*issuer.IssueResponse, error) {
+					return nil, errors.New("unexpected sign call")
+				},
+			},
+			builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{gen.CertificateRequest("test"),
+					gen.Issuer("fake-issuer",
+						gen.AddIssuerCondition(cmapi.IssuerCondition{
+							Type:   cmapi.IssuerConditionReady,
+							Status: cmapi.ConditionTrue,
+						}),
+						gen.SetIssuerSelfSigned(cmapi.SelfSignedIssuer{}),
+					),
+				},
+				ExpectedActions: []testpkg.Action{}, // no update
+			},
+		},
+		"should exit sync nil if condition is ready": {
+			certificateRequest: exampleCRReadyCondition,
 			issuerImpl: &fake.Issuer{
 				FakeSign: func(context.Context, *cmapi.CertificateRequest, cmapi.GenericIssuer) (*issuer.IssueResponse, error) {
 					return nil, errors.New("unexpected sign call")
@@ -542,7 +563,6 @@ func runTest(t *testing.T, test testT) {
 	c := &Controller{
 		issuerType: util.IssuerSelfSigned,
 		issuer:     test.issuerImpl,
-		clock:      fixedClock,
 	}
 	c.Register(test.builder.Context)
 	test.builder.Sync()

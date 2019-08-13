@@ -531,45 +531,40 @@ func (c *certificateRequestManager) processCertificate(ctx context.Context, crt 
 		return nil
 	}
 
+	reason := apiutil.CertificateRequestReadyReason(existingReq)
 	// Determine the status reason of the CertificateRequest and process accordingly
-	switch apiutil.CertificateRequestStatusReason(existingReq) {
+	switch reason {
 	// If the CertificateRequest exists but has failed then we check the failure
 	// time. If the failure time doesn't exist or is over an hour in the past
 	// then delete the request so it can be re-created on the next sync. If the
 	// failure time is less than an hour in the past then schedule this owning
 	// Certificate for a re-sync in an hour.
 	case cmapi.CertificateRequestReasonFailed:
-		if existingReq.Status.FailureTime == nil {
-			log.Info("the failed existing certificate request has no failure time so will be retried now")
-
-		} else if c.clock.Since(existingReq.Status.FailureTime.Time) > time.Hour {
-			log.Info("the failed existing certificate request failed over an hour ago so will be retried now")
-
-		} else {
-			log.Info("the failed existing certificate request failed less than an hour ago, will be scheduled for reprocessing in an hour")
-
-			key, err := keyFunc(crt)
+		if existingReq.Status.FailureTime == nil || c.clock.Since(existingReq.Status.FailureTime.Time) > time.Hour {
+			log.Info("deleting failed certificate request")
+			err := c.cmClient.CertmanagerV1alpha1().CertificateRequests(existingReq.Namespace).Delete(existingReq.Name, nil)
 			if err != nil {
-				log.Error(err, "error getting key for certificate resource")
-				return nil
+				return err
 			}
 
-			// We don't fire an event here as this could be called multiple times in quick succession
-			c.scheduledWorkQueue.Add(key, time.Hour)
+			c.recorder.Eventf(crt, corev1.EventTypeNormal, "CertificateRequestRetry", "The failed CertificateRequest %q will be retried now", existingReq.Name)
 			return nil
 		}
 
-		log.Info("deleting failed certificate request")
-		err := c.cmClient.CertmanagerV1alpha1().CertificateRequests(existingReq.Namespace).Delete(existingReq.Name, nil)
+		log.Info("the failed existing certificate request failed less than an hour ago, will be scheduled for reprocessing in an hour")
+
+		key, err := keyFunc(crt)
 		if err != nil {
-			return err
+			log.Error(err, "error getting key for certificate resource")
+			return nil
 		}
 
-		c.recorder.Eventf(crt, corev1.EventTypeNormal, "CertificateRequestRetry", "The failed CertificateRequest %q will be retried now", existingReq.Name)
+		// We don't fire an event here as this could be called multiple times in quick succession
+		c.scheduledWorkQueue.Add(key, time.Hour)
 		return nil
 
-		// If the CertificateRequest is in a Ready state then we can decode, verify
-		// and check whether it needs renewal
+		// If the CertificateRequest is in a Ready state then we can decode,
+		// verify, and check whether it needs renewal
 	case cmapi.CertificateRequestReasonIssued:
 		log.Info("CertificateRequest is in a Ready state, issuing certificate...")
 
@@ -608,7 +603,7 @@ func (c *certificateRequestManager) processCertificate(ctx context.Context, crt 
 		// If it is not Ready _OR_ Failed then we return and wait for informer
 		// updates to re-trigger processing.
 	default:
-		log.Info("certificate request is not in a Ready state, waiting until CertificateRequest is issued")
+		log.Info("CertificateRequest is in state %q, waiting until CertificateRequest is issued", reason)
 		return nil
 	}
 }

@@ -25,7 +25,6 @@ import (
 	"github.com/kr/pretty"
 	corev1 "k8s.io/api/core/v1"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
@@ -47,9 +46,14 @@ func (c *Controller) Sync(ctx context.Context, cr *v1alpha1.CertificateRequest) 
 		return nil
 	}
 
-	if apiutil.CertificateRequestStatusReason(cr) == v1alpha1.CertificateRequestReasonFailed {
-		dbg.Info("certificate request condition failed so skipping processing")
-		return nil
+	switch apiutil.CertificateRequestReadyReason(cr) {
+	case v1alpha1.CertificateRequestReasonFailed:
+		dbg.Info("certificate request Ready condition failed so skipping processing")
+		return
+
+	case v1alpha1.CertificateRequestReasonIssued:
+		dbg.Info("certificate request Ready condition true so skipping processing")
+		return
 	}
 
 	crCopy := cr.DeepCopy()
@@ -65,7 +69,7 @@ func (c *Controller) Sync(ctx context.Context, cr *v1alpha1.CertificateRequest) 
 	issuerObj, err := c.helper.GetGenericIssuer(crCopy.Spec.IssuerRef, crCopy.Namespace)
 	if k8sErrors.IsNotFound(err) {
 		c.reporter.Pending(crCopy, err, "IssuerNotFound",
-			fmt.Sprintf("referenced %q not found", apiutil.IssuerKind(crCopy.Spec.IssuerRef)))
+			fmt.Sprintf("Referenced %q not found", apiutil.IssuerKind(crCopy.Spec.IssuerRef)))
 		return nil
 	}
 
@@ -78,8 +82,8 @@ func (c *Controller) Sync(ctx context.Context, cr *v1alpha1.CertificateRequest) 
 
 	issuerType, err := apiutil.NameForIssuer(issuerObj)
 	if err != nil {
-		c.reporter.Pending(crCopy, err, "IssuerTypeError",
-			"failed to obtain referenced issuer type")
+		c.reporter.Pending(crCopy, err, "IssuerTypeMissing",
+			"Missing issuer type")
 		return nil
 	}
 
@@ -96,7 +100,7 @@ func (c *Controller) Sync(ctx context.Context, cr *v1alpha1.CertificateRequest) 
 	el := validation.ValidateCertificateRequest(crCopy)
 	if len(el) > 0 {
 		c.reporter.Failed(crCopy, el.ToAggregate(), "BadConfig",
-			"resource validation failed")
+			"Resource validation failed")
 		return nil
 	}
 
@@ -149,19 +153,13 @@ func (c *Controller) setCertificateRequestStatus(cr *v1alpha1.CertificateRequest
 	// invalid cert
 	_, err := pki.DecodeX509CertificateBytes(cr.Status.Certificate)
 	if err != nil {
-		if cr.Status.FailureTime == nil {
-			nowTime := metav1.NewTime(c.clock.Now())
-			cr.Status.FailureTime = &nowTime
-		}
-
-		apiutil.SetCertificateRequestCondition(cr, v1alpha1.CertificateRequestConditionReady,
-			v1alpha1.ConditionFalse, v1alpha1.CertificateRequestReasonFailed, "Failed to decode certificate PEM")
+		c.reporter.Failed(cr, err, "DecodeError", "Failed to decode returned certificate")
 		return
 	}
 
 	// cert has been issued and can be decoded so we are ready
 	apiutil.SetCertificateRequestCondition(cr, v1alpha1.CertificateRequestConditionReady,
-		v1alpha1.ConditionTrue, "Ready", "Certificate has been issued successfully")
+		v1alpha1.ConditionTrue, v1alpha1.CertificateRequestReasonIssued, "Certificate has been issued successfully")
 	return
 }
 
