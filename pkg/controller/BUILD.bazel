@@ -52,6 +52,7 @@ filegroup(
         "//pkg/controller/ingress-shim:all-srcs",
         "//pkg/controller/issuers:all-srcs",
         "//pkg/controller/test:all-srcs",
+        "//pkg/controller/webhookbootstrap:all-srcs",
     ],
     tags = ["automanaged"],
     visibility = ["//visibility:public"],

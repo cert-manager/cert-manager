@@ -244,6 +244,12 @@ func buildControllerContext(ctx context.Context, stopCh <-chan struct{}, opts *o
 		SchedulerOptions: controller.SchedulerOptions{
 			MaxConcurrentChallenges: opts.MaxConcurrentChallenges,
 		},
+		WebhookBootstrapOptions: controller.WebhookBootstrapOptions{
+			Namespace:         opts.WebhookNamespace,
+			CASecretName:      opts.WebhookCASecretName,
+			ServingSecretName: opts.WebhookServingSecretName,
+			DNSNames:          opts.WebhookDNSNames,
+		},
 	}, kubeCfg, nil
 }
 
