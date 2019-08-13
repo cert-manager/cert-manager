@@ -390,7 +390,8 @@ func runTest(t *testing.T, test testT) {
 
 	test.builder.Sync()
 
-	resp, err := c.Sign(context.Background(), test.certificateRequest, test.issuer)
+	// Deep copy the certificate request to prevent pulling condition state across tests
+	resp, err := c.Sign(context.Background(), test.certificateRequest.DeepCopy(), test.issuer)
 	if err != nil && !test.expectedErr {
 		t.Errorf("expected to not get an error, but got: %v", err)
 	}
