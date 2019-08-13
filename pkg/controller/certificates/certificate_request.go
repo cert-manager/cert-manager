@@ -624,7 +624,7 @@ func (c *certificateRequestManager) updateSecretData(ctx context.Context, crt *c
 func (c *certificateRequestManager) ensureSecretMetadataUpToDate(ctx context.Context, s *corev1.Secret, crt *cmapi.Certificate) (bool, error) {
 	pk := s.Data[corev1.TLSPrivateKeyKey]
 	cert := s.Data[corev1.TLSCertKey]
-	ca := s.Data[TLSCAKey]
+	ca := s.Data[cmapi.TLSCAKey]
 
 	updated, err := c.updateSecretData(ctx, crt, s, secretData{pk: pk, cert: cert, ca: ca})
 	if err != nil || !updated {
@@ -891,7 +891,7 @@ func setSecretValues(ctx context.Context, crt *cmapi.Certificate, s *corev1.Secr
 
 	s.Data[corev1.TLSPrivateKeyKey] = data.pk
 	s.Data[corev1.TLSCertKey] = data.cert
-	s.Data[TLSCAKey] = data.ca
+	s.Data[cmapi.TLSCAKey] = data.ca
 
 	if s.Annotations == nil {
 		s.Annotations = make(map[string]string)

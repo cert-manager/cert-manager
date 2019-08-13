@@ -12,7 +12,6 @@ go_library(
     visibility = ["//visibility:public"],
     deps = [
         "//pkg/apis/certmanager/v1alpha1:go_default_library",
-        "//pkg/controller/certificates:go_default_library",
         "//pkg/logs:go_default_library",
         "//vendor/github.com/go-logr/logr:go_default_library",
         "//vendor/k8s.io/api/admissionregistration/v1beta1:go_default_library",
