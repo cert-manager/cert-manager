@@ -20,30 +20,53 @@ import (
 	"fmt"
 
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/record"
+	"k8s.io/utils/clock"
 
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 )
 
 type Reporter struct {
-	cr       *v1alpha1.CertificateRequest
+	clock    clock.Clock
 	recorder record.EventRecorder
 }
 
-func NewReporter(cr *v1alpha1.CertificateRequest, recorder record.EventRecorder) *Reporter {
+func NewReporter(clock clock.Clock, recorder record.EventRecorder) *Reporter {
 	return &Reporter{
-		cr:       cr,
+		clock:    clock,
 		recorder: recorder,
 	}
 }
 
-func (r *Reporter) Failed(err error, reason, message string) {
-	r.recorder.Event(r.cr, corev1.EventTypeWarning, reason, fmt.Sprintf("%s: %v", message, err))
-	apiutil.SetCertificateRequestCondition(r.cr, v1alpha1.CertificateRequestReasonFailed, v1alpha1.ConditionFalse, reason, message)
+func (r *Reporter) Failed(cr *cmapi.CertificateRequest, err error, reason, message string) {
+	// Set the FailureTime to c.clock.Now(), only if it has not been already set.
+	if cr.Status.FailureTime == nil {
+		nowTime := metav1.NewTime(r.clock.Now())
+		cr.Status.FailureTime = &nowTime
+	}
+
+	message = fmt.Sprintf("%s: %v", message, err)
+	r.recorder.Event(cr, corev1.EventTypeWarning, reason, message)
+	apiutil.SetCertificateRequestCondition(cr, cmapi.CertificateRequestConditionReady,
+		cmapi.ConditionFalse, cmapi.CertificateRequestReasonFailed, message)
 }
 
-func (r *Reporter) Pending(err error, reason, message string) {
-	r.recorder.Event(r.cr, corev1.EventTypeNormal, reason, fmt.Sprintf("%s: %v", message, err))
-	apiutil.SetCertificateRequestCondition(r.cr, v1alpha1.CertificateRequestReasonPending, v1alpha1.ConditionFalse, reason, message)
+func (r *Reporter) Pending(cr *cmapi.CertificateRequest, err error, reason, message string) {
+	message = fmt.Sprintf("%s: %v", message, err)
+
+	// If pending condition not already set then fire a Pending Event. This is to
+	// reduce strain on the API server and avoid rate limiting ourselves for
+	// Event creation.
+	if !apiutil.CertificateRequestHasCondition(cr, cmapi.CertificateRequestCondition{
+		Type:   cmapi.CertificateRequestConditionReady,
+		Status: cmapi.ConditionFalse,
+		Reason: cmapi.CertificateRequestReasonPending,
+	}) {
+		r.recorder.Event(cr, corev1.EventTypeNormal, reason, message)
+	}
+
+	apiutil.SetCertificateRequestCondition(cr, cmapi.CertificateRequestConditionReady,
+		cmapi.ConditionFalse, cmapi.CertificateRequestReasonPending, message)
 }

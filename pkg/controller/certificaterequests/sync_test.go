@@ -35,7 +35,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	coretesting "k8s.io/client-go/testing"
-	clock "k8s.io/utils/clock/testing"
+	fakeclock "k8s.io/utils/clock/testing"
 
 	"github.com/jetstack/cert-manager/pkg/api/util"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
@@ -47,7 +47,11 @@ import (
 	"github.com/jetstack/cert-manager/test/unit/gen"
 )
 
-var serialNumberLimit = new(big.Int).Lsh(big.NewInt(1), 128)
+var (
+	fixedClockStart   = time.Now()
+	fixedClock        = fakeclock.NewFakeClock(fixedClockStart)
+	serialNumberLimit = new(big.Int).Lsh(big.NewInt(1), 128)
+)
 
 func generateCSR(commonName string) ([]byte, error) {
 	csr := &x509.CertificateRequest{
@@ -122,9 +126,7 @@ func generateSelfSignedCert(t *testing.T, cr *cmapi.CertificateRequest, sn *big.
 }
 
 func TestSync(t *testing.T) {
-	nowTime := time.Now()
-	nowMetaTime := metav1.NewTime(nowTime)
-	fixedClock := clock.NewFakeClock(nowTime)
+	nowMetaTime := metav1.NewTime(fixedClockStart)
 
 	csr, err := generateCSR("csr")
 	if err != nil {
@@ -159,12 +161,23 @@ func TestSync(t *testing.T) {
 			Type:               cmapi.CertificateRequestConditionReady,
 			Status:             cmapi.ConditionFalse,
 			Reason:             "Pending",
-			Message:            "Referenced Issuer not found",
+			Message:            `Referenced "Issuer" not found: issuer.certmanager.k8s.io "fake-issuer" not found`,
+			LastTransitionTime: &nowMetaTime,
+		}),
+	)
+
+	exampleCRIssuerUnknownTypeFoundPendingCondition := gen.CertificateRequestFrom(exampleCR,
+		gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
+			Type:               cmapi.CertificateRequestConditionReady,
+			Status:             cmapi.ConditionFalse,
+			Reason:             "Pending",
+			Message:            "Missing issuer type: no issuer specified for Issuer 'default-unit-test-ns/fake-issuer'",
 			LastTransitionTime: &nowMetaTime,
 		}),
 	)
 
 	exampleFailedCR := gen.CertificateRequestFrom(exampleCR,
+		gen.SetCertificateRequestFailureTime(nowMetaTime),
 		gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
 			Type:               cmapi.CertificateRequestConditionReady,
 			Status:             cmapi.ConditionFalse,
@@ -173,8 +186,8 @@ func TestSync(t *testing.T) {
 		}),
 	)
 
-	certPEM := generateSelfSignedCert(t, exampleCR, nil, pk, nowTime, nowTime.Add(time.Hour*12))
-	certPEMExpired := generateSelfSignedCert(t, exampleCR, nil, pk, nowTime.Add(-time.Hour*13), nowTime.Add(-time.Hour*12))
+	certPEM := generateSelfSignedCert(t, exampleCR, nil, pk, fixedClockStart, fixedClockStart.Add(time.Hour*12))
+	certPEMExpired := generateSelfSignedCert(t, exampleCR, nil, pk, fixedClockStart.Add(-time.Hour*13), fixedClockStart.Add(-time.Hour*12))
 
 	exampleSignedCR := exampleCR.DeepCopy()
 	exampleSignedCR.Status.Certificate = certPEM
@@ -186,7 +199,7 @@ func TestSync(t *testing.T) {
 		gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
 			Type:               cmapi.CertificateRequestConditionReady,
 			Status:             cmapi.ConditionTrue,
-			Reason:             "Ready",
+			Reason:             cmapi.CertificateRequestReasonIssued,
 			Message:            "Certificate has been issued successfully",
 			LastTransitionTime: &nowMetaTime,
 		}),
@@ -198,11 +211,12 @@ func TestSync(t *testing.T) {
 	exampleGarbageCertCR := exampleSignedCR.DeepCopy()
 	exampleGarbageCertCR.Status.Certificate = []byte("not a certificate")
 	exampleCRGarbageCondition := gen.CertificateRequestFrom(exampleGarbageCertCR,
+		gen.SetCertificateRequestFailureTime(nowMetaTime),
 		gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
 			Type:               cmapi.CertificateRequestConditionReady,
 			Status:             cmapi.ConditionFalse,
-			Reason:             "Failed",
-			Message:            "Failed to decode certificate PEM",
+			Reason:             cmapi.CertificateRequestReasonFailed,
+			Message:            "Failed to decode returned certificate: error decoding cert PEM block",
 			LastTransitionTime: &nowMetaTime,
 		}),
 	)
@@ -211,11 +225,12 @@ func TestSync(t *testing.T) {
 	exampleEmptyCSRCR.Spec.CSRPEM = make([]byte, 0)
 
 	exampleFailedValidationCR := gen.CertificateRequestFrom(exampleEmptyCSRCR,
+		gen.SetCertificateRequestFailureTime(nowMetaTime),
 		gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
 			Type:               cmapi.CertificateRequestConditionReady,
 			Status:             cmapi.ConditionFalse,
 			Reason:             "Failed",
-			Message:            "Validation failed: spec.csr: Required value: must be specified",
+			Message:            "Resource validation failed: spec.csr: Required value: must be specified",
 			LastTransitionTime: &nowMetaTime,
 		}),
 	)
@@ -385,6 +400,7 @@ func TestSync(t *testing.T) {
 						exampleCRGarbageCondition,
 					)),
 				},
+				ExpectedEvents: []string{"Warning DecodeError Failed to decode returned certificate: error decoding cert PEM block"},
 			},
 		},
 		"return nil if generic issuer doesn't exist, will sync when on ready": {
@@ -403,7 +419,7 @@ func TestSync(t *testing.T) {
 						exampleCRIssuerNotFoundPendingCondition,
 					)),
 				},
-				ExpectedEvents: []string{"Warning Pending issuer.certmanager.k8s.io \"fake-issuer\" not found"},
+				ExpectedEvents: []string{`Normal IssuerNotFound Referenced "Issuer" not found: issuer.certmanager.k8s.io "fake-issuer" not found`},
 			},
 		},
 		"exit nil if we cannot determine the issuer type (probably not meant for us)": {
@@ -427,10 +443,10 @@ func TestSync(t *testing.T) {
 					testpkg.NewAction(coretesting.NewUpdateAction(
 						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
 						gen.DefaultTestNamespace,
-						exampleCRIssuerNotFoundPendingCondition,
+						exampleCRIssuerUnknownTypeFoundPendingCondition,
 					)),
 				},
-				ExpectedEvents: []string{"Warning Pending no issuer specified for Issuer 'default-unit-test-ns/fake-issuer'"},
+				ExpectedEvents: []string{"Normal IssuerTypeMissing Missing issuer type: no issuer specified for Issuer 'default-unit-test-ns/fake-issuer'"},
 			},
 		},
 		"exit nil if the issuer type is not meant for us": {
@@ -500,12 +516,31 @@ func TestSync(t *testing.T) {
 				ExpectedActions: []testpkg.Action{}, // no update
 			},
 		},
+		"should exit sync nil if condition is ready": {
+			certificateRequest: exampleCRReadyCondition,
+			issuerImpl: &fake.Issuer{
+				FakeSign: func(context.Context, *cmapi.CertificateRequest, cmapi.GenericIssuer) (*issuer.IssueResponse, error) {
+					return nil, errors.New("unexpected sign call")
+				},
+			},
+			builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{gen.CertificateRequest("test"),
+					gen.Issuer("fake-issuer",
+						gen.AddIssuerCondition(cmapi.IssuerCondition{
+							Type:   cmapi.IssuerConditionReady,
+							Status: cmapi.ConditionTrue,
+						}),
+						gen.SetIssuerSelfSigned(cmapi.SelfSignedIssuer{}),
+					),
+				},
+				ExpectedActions: []testpkg.Action{}, // no update
+			},
+		},
 	}
 
 	for n, test := range tests {
 		t.Run(n, func(t *testing.T) {
-			fixedClock.SetTime(nowTime)
-			test.builder.Clock = fixedClock
+			fixedClock.SetTime(fixedClockStart)
 			runTest(t, test)
 		})
 	}
@@ -520,7 +555,9 @@ type testT struct {
 
 func runTest(t *testing.T, test testT) {
 	test.builder.T = t
+	test.builder.Clock = fixedClock
 	test.builder.Start()
+
 	defer test.builder.Stop()
 
 	c := &Controller{

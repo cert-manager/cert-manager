@@ -134,6 +134,11 @@ spec:
                 - type
                 type: object
               type: array
+            failureTime:
+              description: FailureTime stores the time that this CertificateRequest
+                failed. This is used to influence garbage collection and back-off.
+              format: date-time
+              type: string
           type: object
       type: object
   versions:

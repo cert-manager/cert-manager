@@ -94,6 +94,11 @@ type CertificateRequestStatus struct {
 	// certificate.
 	// +optional
 	CA []byte `json:"ca,omitempty"`
+
+	// FailureTime stores the time that this CertificateRequest failed. This is
+	// used to influence garbage collection and back-off.
+	// +optional
+	FailureTime *metav1.Time `json:"failureTime,omitempty"`
 }
 
 // CertificateRequestCondition contains condition information for a CertificateRequest.

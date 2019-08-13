@@ -22,7 +22,6 @@ import (
 
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	corelisters "k8s.io/client-go/listers/core/v1"
-	"k8s.io/client-go/tools/record"
 
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
@@ -41,12 +40,10 @@ const (
 )
 
 type CA struct {
-	// used to record Events about resources to the API
-	recorder record.EventRecorder
-
 	issuerOptions controllerpkg.IssuerOptions
 	secretsLister corelisters.SecretLister
-	helper        issuerpkg.Helper
+
+	reporter *crutil.Reporter
 }
 
 func init() {
@@ -67,19 +64,14 @@ func init() {
 
 func NewCA(ctx *controllerpkg.Context) *CA {
 	return &CA{
-		recorder:      ctx.Recorder,
 		issuerOptions: ctx.IssuerOptions,
 		secretsLister: ctx.KubeSharedInformerFactory.Core().V1().Secrets().Lister(),
-		helper: issuerpkg.NewHelper(
-			ctx.SharedInformerFactory.Certmanager().V1alpha1().Issuers().Lister(),
-			ctx.SharedInformerFactory.Certmanager().V1alpha1().ClusterIssuers().Lister(),
-		),
+		reporter:      crutil.NewReporter(ctx.Clock, ctx.Recorder),
 	}
 }
 
 func (c *CA) Sign(ctx context.Context, cr *v1alpha1.CertificateRequest, issuerObj v1alpha1.GenericIssuer) (*issuerpkg.IssueResponse, error) {
 	log := logf.FromContext(ctx, "sign")
-	reporter := crutil.NewReporter(cr, c.recorder)
 
 	secretName := issuerObj.GetSpec().CA.SecretName
 	resourceNamespace := c.issuerOptions.ResourceNamespace(issuerObj)
@@ -92,7 +84,7 @@ func (c *CA) Sign(ctx context.Context, cr *v1alpha1.CertificateRequest, issuerOb
 		if k8sErrors.IsNotFound(err) {
 			message := fmt.Sprintf("Referenced secret %s/%s not found", resourceNamespace, secretName)
 
-			reporter.Pending(err, "MissingSecret", message)
+			c.reporter.Pending(cr, err, "MissingSecret", message)
 			log.Error(err, message)
 
 			return nil, nil
@@ -101,14 +93,14 @@ func (c *CA) Sign(ctx context.Context, cr *v1alpha1.CertificateRequest, issuerOb
 		if cmerrors.IsInvalidData(err) {
 			message := fmt.Sprintf("Failed to parse signing CA keypair from secret %s/%s", resourceNamespace, secretName)
 
-			reporter.Pending(err, "ErrorParsingSecret", message)
+			c.reporter.Pending(cr, err, "ErrorParsingSecret", message)
 			log.Error(err, message)
 			return nil, nil
 		}
 
 		// We are probably in a network error here so we should backoff and retry
 		message := fmt.Sprintf("Failed to get certificate key pair from secret %s/%s", resourceNamespace, secretName)
-		reporter.Pending(err, "ErrorGettingSecret", message)
+		c.reporter.Pending(cr, err, "ErrorGettingSecret", message)
 		log.Error(err, message)
 		return nil, err
 	}
@@ -116,7 +108,7 @@ func (c *CA) Sign(ctx context.Context, cr *v1alpha1.CertificateRequest, issuerOb
 	template, err := pki.GenerateTemplateFromCertificateRequest(cr)
 	if err != nil {
 		message := "Error generating certificate template"
-		reporter.Failed(err, "ErrorSigning", message)
+		c.reporter.Failed(cr, err, "ErrorSigning", message)
 		log.Error(err, message)
 		return nil, nil
 	}
@@ -124,7 +116,7 @@ func (c *CA) Sign(ctx context.Context, cr *v1alpha1.CertificateRequest, issuerOb
 	certPEM, caPEM, err := pki.SignCSRTemplate(caCerts, caKey, template)
 	if err != nil {
 		message := "Error signing certificate"
-		reporter.Failed(err, "ErrorSigning", message)
+		c.reporter.Failed(cr, err, "ErrorSigning", message)
 		log.Error(err, message)
 		return nil, err
 	}

@@ -46,16 +46,18 @@ func (c *Controller) Sync(ctx context.Context, cr *v1alpha1.CertificateRequest) 
 		return nil
 	}
 
-	if apiutil.CertificateRequestHasCondition(cr, v1alpha1.CertificateRequestCondition{
-		Type:   v1alpha1.CertificateRequestConditionReady,
-		Status: v1alpha1.ConditionFalse,
-		Reason: v1alpha1.CertificateRequestReasonFailed,
-	}) {
-		dbg.Info("certificate request condition failed so skipping processing")
-		return nil
+	switch apiutil.CertificateRequestReadyReason(cr) {
+	case v1alpha1.CertificateRequestReasonFailed:
+		dbg.Info("certificate request Ready condition failed so skipping processing")
+		return
+
+	case v1alpha1.CertificateRequestReasonIssued:
+		dbg.Info("certificate request Ready condition true so skipping processing")
+		return
 	}
 
 	crCopy := cr.DeepCopy()
+
 	defer func() {
 		if _, saveErr := c.updateCertificateRequestStatus(ctx, cr, crCopy); saveErr != nil {
 			err = utilerrors.NewAggregate([]error{saveErr, err})
@@ -66,17 +68,8 @@ func (c *Controller) Sync(ctx context.Context, cr *v1alpha1.CertificateRequest) 
 
 	issuerObj, err := c.helper.GetGenericIssuer(crCopy.Spec.IssuerRef, crCopy.Namespace)
 	if k8sErrors.IsNotFound(err) {
-		apiutil.SetCertificateRequestCondition(crCopy, v1alpha1.CertificateRequestConditionReady,
-			v1alpha1.ConditionFalse, v1alpha1.CertificateRequestReasonPending,
-			fmt.Sprintf("Referenced %s not found", apiutil.IssuerKind(crCopy.Spec.IssuerRef)))
-
-		c.recorder.Eventf(crCopy, corev1.EventTypeWarning, v1alpha1.CertificateRequestReasonPending, err.Error())
-
-		log.WithValues(
-			logf.RelatedResourceNameKey, crCopy.Spec.IssuerRef.Name,
-			logf.RelatedResourceKindKey, crCopy.Spec.IssuerRef.Kind,
-		).Error(err, "failed to find referenced issuer")
-
+		c.reporter.Pending(crCopy, err, "IssuerNotFound",
+			fmt.Sprintf("Referenced %q not found", apiutil.IssuerKind(crCopy.Spec.IssuerRef)))
 		return nil
 	}
 
@@ -84,18 +77,13 @@ func (c *Controller) Sync(ctx context.Context, cr *v1alpha1.CertificateRequest) 
 		return err
 	}
 
-	dbg.Info("ensuring issuer type matches this controller")
-
 	log = logf.WithRelatedResource(log, issuerObj)
+	dbg.Info("ensuring issuer type matches this controller")
 
 	issuerType, err := apiutil.NameForIssuer(issuerObj)
 	if err != nil {
-		apiutil.SetCertificateRequestCondition(crCopy, v1alpha1.CertificateRequestConditionReady,
-			v1alpha1.ConditionFalse, v1alpha1.CertificateRequestReasonPending,
-			fmt.Sprintf("Referenced %s not found", apiutil.IssuerKind(crCopy.Spec.IssuerRef)))
-
-		c.recorder.Eventf(crCopy, corev1.EventTypeWarning, v1alpha1.CertificateRequestReasonPending, err.Error())
-		log.Error(err, "failed to obtain referenced issuer type")
+		c.reporter.Pending(crCopy, err, "IssuerTypeMissing",
+			"Missing issuer type")
 		return nil
 	}
 
@@ -111,10 +99,8 @@ func (c *Controller) Sync(ctx context.Context, cr *v1alpha1.CertificateRequest) 
 
 	el := validation.ValidateCertificateRequest(crCopy)
 	if len(el) > 0 {
-		c.recorder.Eventf(crCopy, corev1.EventTypeWarning, "BadConfig", "Resource validation failed: %v", el.ToAggregate())
-
-		apiutil.SetCertificateRequestCondition(crCopy, v1alpha1.CertificateRequestConditionReady,
-			v1alpha1.ConditionFalse, v1alpha1.CertificateRequestReasonFailed, fmt.Sprintf("Validation failed: %s", el.ToAggregate()))
+		c.reporter.Failed(crCopy, el.ToAggregate(), "BadConfig",
+			"Resource validation failed")
 		return nil
 	}
 
@@ -167,14 +153,13 @@ func (c *Controller) setCertificateRequestStatus(cr *v1alpha1.CertificateRequest
 	// invalid cert
 	_, err := pki.DecodeX509CertificateBytes(cr.Status.Certificate)
 	if err != nil {
-		apiutil.SetCertificateRequestCondition(cr, v1alpha1.CertificateRequestConditionReady,
-			v1alpha1.ConditionFalse, v1alpha1.CertificateRequestReasonFailed, "Failed to decode certificate PEM")
+		c.reporter.Failed(cr, err, "DecodeError", "Failed to decode returned certificate")
 		return
 	}
 
 	// cert has been issued and can be decoded so we are ready
 	apiutil.SetCertificateRequestCondition(cr, v1alpha1.CertificateRequestConditionReady,
-		v1alpha1.ConditionTrue, "Ready", "Certificate has been issued successfully")
+		v1alpha1.ConditionTrue, v1alpha1.CertificateRequestReasonIssued, "Certificate has been issued successfully")
 	return
 }
 

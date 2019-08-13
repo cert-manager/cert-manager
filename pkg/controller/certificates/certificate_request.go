@@ -531,51 +531,81 @@ func (c *certificateRequestManager) processCertificate(ctx context.Context, crt 
 		return nil
 	}
 
-	// Check if the CertificateRequest is Ready, if it is not then we return
-	// and wait for informer updates to re-trigger processing.
-	if !apiutil.CertificateRequestHasCondition(existingReq, cmapi.CertificateRequestCondition{
-		Type:   cmapi.CertificateRequestConditionReady,
-		Status: cmapi.ConditionTrue,
-	}) {
-		log.Info("certificate request is not in a Ready state, waiting until CertificateRequest is issued")
-		// TODO: we need to handle failure states too once we have defined how we represent them
+	reason := apiutil.CertificateRequestReadyReason(existingReq)
+	// Determine the status reason of the CertificateRequest and process accordingly
+	switch reason {
+	// If the CertificateRequest exists but has failed then we check the failure
+	// time. If the failure time doesn't exist or is over an hour in the past
+	// then delete the request so it can be re-created on the next sync. If the
+	// failure time is less than an hour in the past then schedule this owning
+	// Certificate for a re-sync in an hour.
+	case cmapi.CertificateRequestReasonFailed:
+		if existingReq.Status.FailureTime == nil || c.clock.Since(existingReq.Status.FailureTime.Time) > time.Hour {
+			log.Info("deleting failed certificate request")
+			err := c.cmClient.CertmanagerV1alpha1().CertificateRequests(existingReq.Namespace).Delete(existingReq.Name, nil)
+			if err != nil {
+				return err
+			}
+
+			c.recorder.Eventf(crt, corev1.EventTypeNormal, "CertificateRequestRetry", "The failed CertificateRequest %q will be retried now", existingReq.Name)
+			return nil
+		}
+
+		log.Info("the failed existing certificate request failed less than an hour ago, will be scheduled for reprocessing in an hour")
+
+		key, err := keyFunc(crt)
+		if err != nil {
+			log.Error(err, "error getting key for certificate resource")
+			return nil
+		}
+
+		// We don't fire an event here as this could be called multiple times in quick succession
+		c.scheduledWorkQueue.Add(key, time.Hour)
 		return nil
-	}
 
-	log.Info("CertificateRequest is in a Ready state, issuing certificate...")
+		// If the CertificateRequest is in a Ready state then we can decode,
+		// verify, and check whether it needs renewal
+	case cmapi.CertificateRequestReasonIssued:
+		log.Info("CertificateRequest is in a Ready state, issuing certificate...")
 
-	// Decode the certificate bytes so we can ensure the certificate is valid
-	log.Info("decoding certificate data")
-	x509Cert, err := pki.DecodeX509CertificateBytes(existingReq.Status.Certificate)
-	if err != nil {
-		return err
-	}
-
-	// Check if the Certificate requires renewal according to the renewBefore
-	// specified on the Certificate resource.
-	log.Info("checking if certificate stored on CertificateRequest is up to date")
-	if c.certificateNeedsRenew(ctx, x509Cert, crt) {
-		log.Info("certificate stored on CertificateRequest needs renewal, so deleting the old CertificateRequest resource")
-		err := c.cmClient.CertmanagerV1alpha1().CertificateRequests(existingReq.Namespace).Delete(existingReq.Name, nil)
+		// Decode the certificate bytes so we can ensure the certificate is valid
+		log.Info("decoding certificate data")
+		x509Cert, err := pki.DecodeX509CertificateBytes(existingReq.Status.Certificate)
 		if err != nil {
 			return err
 		}
 
+		// Check if the Certificate requires renewal according to the renewBefore
+		// specified on the Certificate resource.
+		log.Info("checking if certificate stored on CertificateRequest is up to date")
+		if c.certificateNeedsRenew(ctx, x509Cert, crt) {
+			log.Info("certificate stored on CertificateRequest needs renewal, so deleting the old CertificateRequest resource")
+			err := c.cmClient.CertmanagerV1alpha1().CertificateRequests(existingReq.Namespace).Delete(existingReq.Name, nil)
+			if err != nil {
+				return err
+			}
+
+			return nil
+		}
+
+		// If certificate stored on CertificateRequest is not expiring soon, copy
+		// across the status.certificate field into the Secret resource.
+		log.Info("CertificateRequest contains a valid certificate for issuance. Issuing certificate...")
+
+		_, err = c.updateSecretData(ctx, crt, existingSecret, secretData{pk: existingKey, cert: existingReq.Status.Certificate, ca: existingReq.Status.CA})
+		if err != nil {
+			return err
+		}
+
+		c.recorder.Eventf(crt, corev1.EventTypeNormal, "Issued", "Certificate issued successfully")
+		return nil
+
+		// If it is not Ready _OR_ Failed then we return and wait for informer
+		// updates to re-trigger processing.
+	default:
+		log.Info("CertificateRequest is in state %q, waiting until CertificateRequest is issued", reason)
 		return nil
 	}
-
-	// If certificate stored on CertificateRequest is not expiring soon, copy
-	// across the status.certificate field into the Secret resource.
-	log.Info("CertificateRequest contains a valid certificate for issuance. Issuing certificate...")
-
-	_, err = c.updateSecretData(ctx, crt, existingSecret, secretData{pk: existingKey, cert: existingReq.Status.Certificate, ca: existingReq.Status.CA})
-	if err != nil {
-		return err
-	}
-
-	c.recorder.Eventf(crt, corev1.EventTypeNormal, "Issued", "Certificate issued successfully")
-
-	return nil
 }
 
 // updateSecretData will ensure the Secret resource contains the given secret
