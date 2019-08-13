@@ -32,6 +32,7 @@ import (
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/validation"
+	"github.com/jetstack/cert-manager/pkg/controller/certificaterequests/util"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 )
@@ -60,25 +61,13 @@ func (c *Controller) Sync(ctx context.Context, cr *v1alpha1.CertificateRequest) 
 		}
 	}()
 
-	// If the CertificateRequest has the conditon 'Failed' then set the
-	// FailureTime to `c.clock.Now()`
-	defer c.setFailureTime(crCopy)
+	reporter := util.NewReporter(crCopy, c.clock, c.recorder)
 
 	dbg.Info("fetching issuer object referenced by CertificateRequest")
 
 	issuerObj, err := c.helper.GetGenericIssuer(crCopy.Spec.IssuerRef, crCopy.Namespace)
 	if k8sErrors.IsNotFound(err) {
-		apiutil.SetCertificateRequestCondition(crCopy, v1alpha1.CertificateRequestConditionReady,
-			v1alpha1.ConditionFalse, v1alpha1.CertificateRequestReasonPending,
-			fmt.Sprintf("Referenced %s not found", apiutil.IssuerKind(crCopy.Spec.IssuerRef)))
-
-		c.recorder.Eventf(crCopy, corev1.EventTypeWarning, v1alpha1.CertificateRequestReasonPending, err.Error())
-
-		log.WithValues(
-			logf.RelatedResourceNameKey, crCopy.Spec.IssuerRef.Name,
-			logf.RelatedResourceKindKey, crCopy.Spec.IssuerRef.Kind,
-		).Error(err, "failed to find referenced issuer")
-
+		reporter.Pending(err, "IssuerNotFound", fmt.Sprintf("referenced %q not found", apiutil.IssuerKind(crCopy.Spec.IssuerRef)))
 		return nil
 	}
 
@@ -86,18 +75,12 @@ func (c *Controller) Sync(ctx context.Context, cr *v1alpha1.CertificateRequest) 
 		return err
 	}
 
-	dbg.Info("ensuring issuer type matches this controller")
-
 	log = logf.WithRelatedResource(log, issuerObj)
+	dbg.Info("ensuring issuer type matches this controller")
 
 	issuerType, err := apiutil.NameForIssuer(issuerObj)
 	if err != nil {
-		apiutil.SetCertificateRequestCondition(crCopy, v1alpha1.CertificateRequestConditionReady,
-			v1alpha1.ConditionFalse, v1alpha1.CertificateRequestReasonPending,
-			fmt.Sprintf("Referenced %s not found", apiutil.IssuerKind(crCopy.Spec.IssuerRef)))
-
-		c.recorder.Eventf(crCopy, corev1.EventTypeWarning, v1alpha1.CertificateRequestReasonPending, err.Error())
-		log.Error(err, "failed to obtain referenced issuer type")
+		reporter.Pending(err, "IssuerTypeError", "failed to obtain referenced issuer type")
 		return nil
 	}
 
@@ -113,10 +96,7 @@ func (c *Controller) Sync(ctx context.Context, cr *v1alpha1.CertificateRequest) 
 
 	el := validation.ValidateCertificateRequest(crCopy)
 	if len(el) > 0 {
-		c.recorder.Eventf(crCopy, corev1.EventTypeWarning, "BadConfig", "Resource validation failed: %v", el.ToAggregate())
-
-		apiutil.SetCertificateRequestCondition(crCopy, v1alpha1.CertificateRequestConditionReady,
-			v1alpha1.ConditionFalse, v1alpha1.CertificateRequestReasonFailed, fmt.Sprintf("Validation failed: %s", el.ToAggregate()))
+		reporter.Failed(el.ToAggregate(), "BadConfig", "resource validation failed")
 		return nil
 	}
 
@@ -169,6 +149,11 @@ func (c *Controller) setCertificateRequestStatus(cr *v1alpha1.CertificateRequest
 	// invalid cert
 	_, err := pki.DecodeX509CertificateBytes(cr.Status.Certificate)
 	if err != nil {
+		if cr.Status.FailureTime == nil {
+			nowTime := metav1.NewTime(c.clock.Now())
+			cr.Status.FailureTime = &nowTime
+		}
+
 		apiutil.SetCertificateRequestCondition(cr, v1alpha1.CertificateRequestConditionReady,
 			v1alpha1.ConditionFalse, v1alpha1.CertificateRequestReasonFailed, "Failed to decode certificate PEM")
 		return
@@ -193,15 +178,4 @@ func (c *Controller) updateCertificateRequestStatus(ctx context.Context, old, ne
 	// server with the /status subresource enabled and/or subresource support
 	// for CRDs (https://github.com/kubernetes/kubernetes/issues/38113)
 	return c.cmClient.CertmanagerV1alpha1().CertificateRequests(new.Namespace).Update(new)
-}
-
-// If the CertificateRequest has a condition set to 'Failed` then set the
-// FailureTime to c.clock.Now(), only if it has not been already set.
-func (c *Controller) setFailureTime(cr *v1alpha1.CertificateRequest) {
-	if apiutil.CertificateRequestHasFailed(cr) {
-		if cr.Status.FailureTime == nil {
-			nowTime := metav1.NewTime(c.clock.Now())
-			cr.Status.FailureTime = &nowTime
-		}
-	}
 }

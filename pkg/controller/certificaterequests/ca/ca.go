@@ -23,6 +23,7 @@ import (
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	corelisters "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/tools/record"
+	"k8s.io/utils/clock"
 
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
@@ -46,7 +47,9 @@ type CA struct {
 
 	issuerOptions controllerpkg.IssuerOptions
 	secretsLister corelisters.SecretLister
-	helper        issuerpkg.Helper
+
+	// Clock used to set constant time for testing
+	clock clock.Clock
 }
 
 func init() {
@@ -70,16 +73,13 @@ func NewCA(ctx *controllerpkg.Context) *CA {
 		recorder:      ctx.Recorder,
 		issuerOptions: ctx.IssuerOptions,
 		secretsLister: ctx.KubeSharedInformerFactory.Core().V1().Secrets().Lister(),
-		helper: issuerpkg.NewHelper(
-			ctx.SharedInformerFactory.Certmanager().V1alpha1().Issuers().Lister(),
-			ctx.SharedInformerFactory.Certmanager().V1alpha1().ClusterIssuers().Lister(),
-		),
+		clock:         ctx.Clock,
 	}
 }
 
 func (c *CA) Sign(ctx context.Context, cr *v1alpha1.CertificateRequest, issuerObj v1alpha1.GenericIssuer) (*issuerpkg.IssueResponse, error) {
 	log := logf.FromContext(ctx, "sign")
-	reporter := crutil.NewReporter(cr, c.recorder)
+	reporter := crutil.NewReporter(cr, c.clock, c.recorder)
 
 	secretName := issuerObj.GetSpec().CA.SecretName
 	resourceNamespace := c.issuerOptions.ResourceNamespace(issuerObj)

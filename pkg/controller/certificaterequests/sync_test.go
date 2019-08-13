@@ -161,7 +161,17 @@ func TestSync(t *testing.T) {
 			Type:               cmapi.CertificateRequestConditionReady,
 			Status:             cmapi.ConditionFalse,
 			Reason:             "Pending",
-			Message:            "Referenced Issuer not found",
+			Message:            `referenced "Issuer" not found: issuer.certmanager.k8s.io "fake-issuer" not found`,
+			LastTransitionTime: &nowMetaTime,
+		}),
+	)
+
+	exampleCRIssuerUnknownTypeFoundPendingCondition := gen.CertificateRequestFrom(exampleCR,
+		gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
+			Type:               cmapi.CertificateRequestConditionReady,
+			Status:             cmapi.ConditionFalse,
+			Reason:             "Pending",
+			Message:            "failed to obtain referenced issuer type: no issuer specified for Issuer 'default-unit-test-ns/fake-issuer'",
 			LastTransitionTime: &nowMetaTime,
 		}),
 	)
@@ -220,7 +230,7 @@ func TestSync(t *testing.T) {
 			Type:               cmapi.CertificateRequestConditionReady,
 			Status:             cmapi.ConditionFalse,
 			Reason:             "Failed",
-			Message:            "Validation failed: spec.csr: Required value: must be specified",
+			Message:            "resource validation failed: spec.csr: Required value: must be specified",
 			LastTransitionTime: &nowMetaTime,
 		}),
 	)
@@ -408,7 +418,7 @@ func TestSync(t *testing.T) {
 						exampleCRIssuerNotFoundPendingCondition,
 					)),
 				},
-				ExpectedEvents: []string{"Warning Pending issuer.certmanager.k8s.io \"fake-issuer\" not found"},
+				ExpectedEvents: []string{`Normal IssuerNotFound referenced "Issuer" not found: issuer.certmanager.k8s.io "fake-issuer" not found`},
 			},
 		},
 		"exit nil if we cannot determine the issuer type (probably not meant for us)": {
@@ -432,10 +442,10 @@ func TestSync(t *testing.T) {
 					testpkg.NewAction(coretesting.NewUpdateAction(
 						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
 						gen.DefaultTestNamespace,
-						exampleCRIssuerNotFoundPendingCondition,
+						exampleCRIssuerUnknownTypeFoundPendingCondition,
 					)),
 				},
-				ExpectedEvents: []string{"Warning Pending no issuer specified for Issuer 'default-unit-test-ns/fake-issuer'"},
+				ExpectedEvents: []string{"Normal IssuerTypeError failed to obtain referenced issuer type: no issuer specified for Issuer 'default-unit-test-ns/fake-issuer'"},
 			},
 		},
 		"exit nil if the issuer type is not meant for us": {
@@ -482,7 +492,7 @@ func TestSync(t *testing.T) {
 						exampleFailedValidationCR,
 					)),
 				},
-				ExpectedEvents: []string{"Warning BadConfig Resource validation failed: spec.csr: Required value: must be specified"},
+				ExpectedEvents: []string{"Warning BadConfig resource validation failed: spec.csr: Required value: must be specified"},
 			},
 		},
 		"should exit sync nil if condition is failed": {
@@ -509,6 +519,7 @@ func TestSync(t *testing.T) {
 
 	for n, test := range tests {
 		t.Run(n, func(t *testing.T) {
+			fixedClock.SetTime(fixedClockStart)
 			runTest(t, test)
 		})
 	}

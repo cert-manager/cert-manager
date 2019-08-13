@@ -24,6 +24,7 @@ import (
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	corelisters "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/tools/record"
+	"k8s.io/utils/clock"
 
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
@@ -47,6 +48,9 @@ type SelfSigned struct {
 
 	issuerOptions controllerpkg.IssuerOptions
 	secretsLister corelisters.SecretLister
+
+	// Clock used to set constant time for testing
+	clock clock.Clock
 }
 
 func init() {
@@ -69,12 +73,13 @@ func NewSelfSigned(ctx *controllerpkg.Context) *SelfSigned {
 		recorder:      ctx.Recorder,
 		issuerOptions: ctx.IssuerOptions,
 		secretsLister: ctx.KubeSharedInformerFactory.Core().V1().Secrets().Lister(),
+		clock:         ctx.Clock,
 	}
 }
 
 func (s *SelfSigned) Sign(ctx context.Context, cr *v1alpha1.CertificateRequest, issuerObj v1alpha1.GenericIssuer) (*issuer.IssueResponse, error) {
 	log := logf.FromContext(ctx, "sign")
-	reporter := crutil.NewReporter(cr, s.recorder)
+	reporter := crutil.NewReporter(cr, s.clock, s.recorder)
 
 	resourceNamespace := s.issuerOptions.ResourceNamespace(issuerObj)
 

@@ -20,7 +20,9 @@ import (
 	"fmt"
 
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/record"
+	"k8s.io/utils/clock"
 
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
@@ -28,22 +30,34 @@ import (
 
 type Reporter struct {
 	cr       *v1alpha1.CertificateRequest
+	clock    clock.Clock
 	recorder record.EventRecorder
 }
 
-func NewReporter(cr *v1alpha1.CertificateRequest, recorder record.EventRecorder) *Reporter {
+func NewReporter(cr *v1alpha1.CertificateRequest, clock clock.Clock, recorder record.EventRecorder) *Reporter {
 	return &Reporter{
 		cr:       cr,
+		clock:    clock,
 		recorder: recorder,
 	}
 }
 
 func (r *Reporter) Failed(err error, reason, message string) {
-	r.recorder.Event(r.cr, corev1.EventTypeWarning, reason, fmt.Sprintf("%s: %v", message, err))
-	apiutil.SetCertificateRequestCondition(r.cr, v1alpha1.CertificateRequestReasonFailed, v1alpha1.ConditionFalse, reason, message)
+	// Set the FailureTime to c.clock.Now(), only if it has not been already set.
+	if r.cr.Status.FailureTime == nil {
+		nowTime := metav1.NewTime(r.clock.Now())
+		r.cr.Status.FailureTime = &nowTime
+	}
+
+	message = fmt.Sprintf("%s: %v", message, err)
+	r.recorder.Event(r.cr, corev1.EventTypeWarning, reason, message)
+	apiutil.SetCertificateRequestCondition(r.cr, v1alpha1.CertificateRequestConditionReady,
+		v1alpha1.ConditionFalse, v1alpha1.CertificateRequestReasonFailed, message)
 }
 
 func (r *Reporter) Pending(err error, reason, message string) {
-	r.recorder.Event(r.cr, corev1.EventTypeNormal, reason, fmt.Sprintf("%s: %v", message, err))
-	apiutil.SetCertificateRequestCondition(r.cr, v1alpha1.CertificateRequestReasonPending, v1alpha1.ConditionFalse, reason, message)
+	message = fmt.Sprintf("%s: %v", message, err)
+	r.recorder.Event(r.cr, corev1.EventTypeNormal, reason, message)
+	apiutil.SetCertificateRequestCondition(r.cr, v1alpha1.CertificateRequestConditionReady,
+		v1alpha1.ConditionFalse, v1alpha1.CertificateRequestReasonPending, message)
 }
