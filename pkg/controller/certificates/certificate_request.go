@@ -554,9 +554,8 @@ func (c *certificateRequestManager) processCertificate(ctx context.Context, crt 
 				return nil
 			}
 
+			// We don't fire an event here as this could be called multiple times in quick succession
 			c.scheduledWorkQueue.Add(key, time.Hour)
-
-			c.recorder.Eventf(crt, corev1.EventTypeNormal, "CertificateRequestReschedule", "The CertificateRequest %q has failed and is scheduled for a retry in 1 hour", existingReq.Name)
 			return nil
 		}
 

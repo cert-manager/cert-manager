@@ -1128,7 +1128,8 @@ func TestProcessCertificate(t *testing.T) {
 						})),
 				},
 				ExpectedActions: []testpkg.Action{},
-				ExpectedEvents:  []string{`Normal CertificateRequestReschedule The CertificateRequest "test-850937773" has failed and is scheduled for a retry in 1 hour`},
+				// We don't fire an event here as this could be called multiple times in quick succession
+				ExpectedEvents: []string{},
 			},
 		},
 	}
