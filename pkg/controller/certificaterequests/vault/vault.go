@@ -21,7 +21,6 @@ import (
 
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	corelisters "k8s.io/client-go/listers/core/v1"
-	"k8s.io/client-go/tools/record"
 
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
@@ -39,9 +38,8 @@ const (
 )
 
 type Vault struct {
-	// used to record Events about resources to the API
-	recorder      record.EventRecorder
 	secretsLister corelisters.SecretLister
+	reporter      *crutil.Reporter
 
 	vaultClientBuilder vaultinternal.VaultClientBuilder
 }
@@ -64,29 +62,28 @@ func init() {
 
 func NewVault(ctx *controllerpkg.Context) *Vault {
 	return &Vault{
-		recorder:           ctx.Recorder,
 		secretsLister:      ctx.KubeSharedInformerFactory.Core().V1().Secrets().Lister(),
+		reporter:           crutil.NewReporter(ctx.Clock, ctx.Recorder),
 		vaultClientBuilder: vaultinternal.New,
 	}
 }
 
 func (v *Vault) Sign(ctx context.Context, cr *v1alpha1.CertificateRequest, issuerObj v1alpha1.GenericIssuer) (*issuer.IssueResponse, error) {
-	log := logf.WithRelatedResource(
-		logf.FromContext(ctx, "sign"), issuerObj)
-	reporter := crutil.NewReporter(cr, v.recorder)
+	log := logf.FromContext(ctx, "sign")
+	log = logf.WithRelatedResource(log, issuerObj)
 
 	client, err := v.vaultClientBuilder(cr.Namespace, v.secretsLister, issuerObj)
 	if k8sErrors.IsNotFound(err) {
 		message := "Required secret resource not found"
 
-		reporter.Pending(err, "MissingSecret", message)
+		v.reporter.Pending(cr, err, "MissingSecret", message)
 		log.Error(err, message)
 		return nil, nil
 	}
 
 	if err != nil {
 		message := "Failed to initialise vault client for signing"
-		reporter.Pending(err, "ErrorVaultInit", message)
+		v.reporter.Pending(cr, err, "ErrorVaultInit", message)
 		log.Error(err, message)
 		return nil, err
 	}
@@ -96,7 +93,7 @@ func (v *Vault) Sign(ctx context.Context, cr *v1alpha1.CertificateRequest, issue
 	if err != nil {
 		message := "Vault failed to sign certificate"
 
-		reporter.Failed(err, "ErrorSigning", message)
+		v.reporter.Failed(cr, err, "ErrorSigning", message)
 		log.Error(err, message)
 
 		return nil, nil

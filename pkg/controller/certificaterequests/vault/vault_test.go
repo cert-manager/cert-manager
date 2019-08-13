@@ -338,7 +338,9 @@ func runTest(t *testing.T, test testT) {
 
 	test.builder.Sync()
 
-	resp, err := v.Sign(context.Background(), test.certificateRequest, test.issuer)
+	// Use a deep copy of the CertificateRequest to prevent carrying condition
+	// state across multiple test case using the same base CertificateRequest
+	resp, err := v.Sign(context.Background(), test.certificateRequest.DeepCopy(), test.issuer)
 	if err != nil && !test.expectedErr {
 		t.Errorf("expected to not get an error, but got: %v", err)
 	}
