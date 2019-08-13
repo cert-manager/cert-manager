@@ -376,7 +376,11 @@ func (c *controller) updateSecret(ctx context.Context, crt *v1alpha1.Certificate
 	if err != nil && !k8sErrors.IsNotFound(err) {
 		return nil, err
 	}
-
+	// create a deep copy of the secret before modifying it as we fetched it
+	// from the lister's cache.
+	if secret != nil {
+		secret = secret.DeepCopy()
+	}
 	// if the resource does not already exist, we will create a new one
 	if secret == nil {
 		secret = &corev1.Secret{
