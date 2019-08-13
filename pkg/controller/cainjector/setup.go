@@ -20,15 +20,10 @@ import (
 	"io/ioutil"
 
 	admissionreg "k8s.io/api/admissionregistration/v1beta1"
-	corev1 "k8s.io/api/core/v1"
 	apiext "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	"k8s.io/apimachinery/pkg/runtime"
 	apireg "k8s.io/kube-aggregator/pkg/apis/apiregistration/v1beta1"
 	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/handler"
-	"sigs.k8s.io/controller-runtime/pkg/source"
-
-	certmanager "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 )
 
 // injectorSet describes a particular setup of the injector controller
@@ -68,39 +63,22 @@ var (
 )
 
 // Register registers an injection controller with the given manager, and adds relevant indicies.
-func Register(mgr ctrl.Manager, setup injectorSetup) error {
+func Register(mgr ctrl.Manager, setup injectorSetup, sources ...caDataSource) error {
 	typ := setup.injector.NewTarget().AsObject()
-	if err := mgr.GetFieldIndexer().IndexField(typ, injectFromPath, injectableIndexer); err != nil {
-		return err
+	builder := ctrl.NewControllerManagedBy(mgr).For(typ)
+	for _, s := range sources {
+		if err := s.ApplyTo(mgr, setup, builder); err != nil {
+			return err
+		}
 	}
 
-	cfg := mgr.GetConfig()
-	caBundle, err := dataFromSliceOrFile(cfg.CAData, cfg.CAFile)
-	if err != nil {
-		return err
-	}
-
-	return ctrl.NewControllerManagedBy(mgr).
-		For(typ).
-		Watches(&source.Kind{Type: &certmanager.Certificate{}},
-			&handler.EnqueueRequestsFromMapFunc{ToRequests: &certMapper{
-				Client:       mgr.GetClient(),
-				log:          ctrl.Log.WithName("cert-mapper"),
-				toInjectable: certToInjectableFunc(setup.listType, setup.resourceName),
-			}}).
-		Watches(&source.Kind{Type: &corev1.Secret{}}, &handler.EnqueueRequestsFromMapFunc{
-			ToRequests: &secretMapper{
-				Client:       mgr.GetClient(),
-				log:          ctrl.Log.WithName("secret-mapper"),
-				toInjectable: certToInjectableFunc(setup.listType, setup.resourceName),
-			}}).
-		Complete(&genericInjectReconciler{
-			Client:            mgr.GetClient(),
-			apiserverCABundle: caBundle,
-			log:               ctrl.Log.WithName("inject-controller"),
-			resourceName:      setup.resourceName,
-			injector:          setup.injector,
-		})
+	return builder.Complete(&genericInjectReconciler{
+		Client:       mgr.GetClient(),
+		sources:      sources,
+		log:          ctrl.Log.WithName("inject-controller"),
+		resourceName: setup.resourceName,
+		injector:     setup.injector,
+	})
 }
 
 // dataFromSliceOrFile returns data from the slice (if non-empty), or from the file,
@@ -119,10 +97,36 @@ func dataFromSliceOrFile(data []byte, file string) ([]byte, error) {
 	return nil, nil
 }
 
-// RegisterALL registers all known injection controllers with the given manager, and adds relevant indicides.
-func RegisterAll(mgr ctrl.Manager) error {
+// RegisterCertificateBased registers all known injection controllers that
+// target Certificate resources with the  given manager, and adds relevant
+// indices.
+// The registered controllers require the cert-manager API to be available
+// in order to run.
+func RegisterCertificateBased(mgr ctrl.Manager) error {
+	sources := []caDataSource{
+		&certificateDataSource{client: mgr.GetClient()},
+	}
 	for _, setup := range injectorSetups {
-		if err := Register(mgr, setup); err != nil {
+		if err := Register(mgr, setup, sources...); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// RegisterSecretBased registers all known injection controllers that
+// target Secret resources with the  given manager, and adds relevant
+// indices.
+// The registered controllers only require the corev1 APi to be available in
+// order to run.
+func RegisterSecretBased(mgr ctrl.Manager) error {
+	sources := []caDataSource{
+		&secretDataSource{client: mgr.GetClient()},
+		&kubeconfigDataSource{},
+	}
+	for _, setup := range injectorSetups {
+		if err := Register(mgr, setup, sources...); err != nil {
 			return err
 		}
 	}
