@@ -370,7 +370,7 @@ install cert-manager. This example installed cert-manager into the
     $ helm install \
       --name cert-manager \
       --namespace cert-manager \
-      --version v0.9.0 \
+      --version v0.9.1 \
       jetstack/cert-manager
 
     NAME:   cert-manager
