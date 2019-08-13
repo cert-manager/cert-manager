@@ -72,7 +72,6 @@ func init() {
 }
 
 func NewACME(ctx *controllerpkg.Context) *ACME {
-	ctx.CMClient.CertmanagerV1alpha1()
 	return &ACME{
 		recorder:      ctx.Recorder,
 		issuerOptions: ctx.IssuerOptions,
@@ -109,35 +108,42 @@ func (a *ACME) Sign(ctx context.Context, cr *v1alpha1.CertificateRequest, issuer
 	}
 
 	order, err := a.orderLister.Orders(expectedOrder.Namespace).Get(expectedOrder.Name)
-	if err != nil {
-		if k8sErrors.IsNotFound(err) {
-			// Failing to create the order here is most likely network related.
-			// We should backoff and keep trying.
-			order, err = a.cmClientV.Orders(resourceNamespace).Create(expectedOrder)
-			if err != nil {
-				message := fmt.Sprintf("Failed create new order resource %s/%s", resourceNamespace, expectedOrder.Name)
+	if k8sErrors.IsNotFound(err) {
+		// Failing to create the order here is most likely network related.
+		// We should backoff and keep trying.
+		_, err = a.cmClientV.Orders(resourceNamespace).Create(expectedOrder)
+		if err != nil {
+			message := fmt.Sprintf("Failed create new order resource %s/%s", resourceNamespace, expectedOrder.Name)
 
-				reporter.Pending(err, "ErrorCreatingOrder", message)
-				log.Error(err, message)
-
-				return nil, err
-			}
-
-		} else {
-			// We are probably in a network error here so we should backoff and retry
-			message := fmt.Sprintf("Failed to get order resource %s/%s", resourceNamespace, expectedOrder.Name)
-
-			reporter.Pending(err, "ErrorGettingOrder", message)
+			reporter.Pending(err, "ErrorCreatingOrder", message)
 			log.Error(err, message)
 
 			return nil, err
 		}
+
+		err = fmt.Errorf("%s/%s", resourceNamespace, expectedOrder.Name)
+		message := "Created Order resource"
+		reporter.Pending(err, "OrderCreated", message)
+		log.V(4).Info(message)
+
+		return nil, nil
+	}
+
+	if err != nil {
+		// We are probably in a network error here so we should backoff and retry
+		message := fmt.Sprintf("Failed to get order resource %s/%s", resourceNamespace, expectedOrder.Name)
+
+		reporter.Pending(err, "ErrorGettingOrder", message)
+		log.Error(err, message)
+
+		return nil, err
 	}
 
 	// If the acme order has failed then so too does the CertificateRequest meet the same fate.
 	if acme.IsFailureState(order.Status.State) {
-		message := fmt.Sprintf("Failed to resolve order resource %s/%s", resourceNamespace, expectedOrder.Name)
-		err := fmt.Errorf("order is in failure state %q", order.Status.State)
+		message := fmt.Sprintf("Failed to wait for order resource %s/%s to become ready",
+			resourceNamespace, expectedOrder.Name)
+		err := fmt.Errorf("order is in %q state", order.Status.State)
 
 		reporter.Failed(err, "OrderFailed", message)
 
@@ -158,7 +164,7 @@ func (a *ACME) Sign(ctx context.Context, cr *v1alpha1.CertificateRequest, issuer
 	err = fmt.Errorf("order is currently pending: %q", order.Status.State)
 
 	reporter.Pending(err, "OrderPending", message)
-	log.Error(err, message)
+	log.Info(fmt.Sprintf("%s: %s", message, err))
 
 	log.Info("acme Order resource is not in a valid state, waiting...", "state", order.Status.State)
 

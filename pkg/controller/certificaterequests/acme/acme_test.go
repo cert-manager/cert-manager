@@ -36,7 +36,7 @@ import (
 	testlisters "github.com/jetstack/cert-manager/test/unit/listers"
 )
 
-func buildOrderMust(t *testing.T, cr *v1alpha1.CertificateRequest,
+func mustBuildOrder(t *testing.T, cr *v1alpha1.CertificateRequest,
 	csr *x509.CertificateRequest) *v1alpha1.Order {
 	order, err := buildOrder(cr, csr)
 	if err != nil {
@@ -63,7 +63,7 @@ func TestSign(t *testing.T) {
 	)
 
 	_, rsaPEMCert := testcr.GenerateSelfSignedCertFromCR(t, testCR, rsaPK, time.Hour*24*60)
-	testOrder := buildOrderMust(t, testCR, csr)
+	testOrder := mustBuildOrder(t, testCR, csr)
 
 	tests := map[string]testT{
 		"a badly formed CSR should report failure": {
@@ -97,7 +97,7 @@ func TestSign(t *testing.T) {
 					)),
 				},
 				ExpectedEvents: []string{
-					`Normal OrderPending Waiting on certificate issuance from order default-unit-test-ns/test-cr-3958469914: order is currently pending: ""`,
+					`Normal OrderCreated Created Order resource: default-unit-test-ns/test-cr-3958469914`,
 				},
 				CheckFn: testcr.MustNoResponse,
 			},
@@ -130,7 +130,7 @@ func TestSign(t *testing.T) {
 			certificateRequest: testCR,
 			builder: &testpkg.Builder{
 				ExpectedEvents: []string{
-					`Warning OrderFailed Failed to resolve order resource default-unit-test-ns/test-cr-3958469914: order is in failure state "invalid"`,
+					`Warning OrderFailed Failed to wait for order resource default-unit-test-ns/test-cr-3958469914 to become ready: order is in "invalid" state`,
 				},
 				CertManagerObjects: []runtime.Object{gen.OrderFrom(testOrder,
 					gen.SetOrderState(v1alpha1.Invalid),
@@ -140,7 +140,7 @@ func TestSign(t *testing.T) {
 			expectedErr: false,
 		},
 
-		"if the order is in a non failure state or valid, then report pending": {
+		"if the order is in an unknown, then report pending": {
 			issuer:             gen.Issuer("acme-issuer"),
 			certificateRequest: testCR,
 			builder: &testpkg.Builder{

@@ -35,7 +35,7 @@ import (
 )
 
 var (
-	certificateRequestGvk = v1alpha1.SchemeGroupVersion.WithKind("CertificateRequest")
+	certificateRequestGvk = v1alpha1.SchemeGroupVersion.WithKind(v1alpha1.CertificateRequestKind)
 )
 
 func (c *Controller) Sync(ctx context.Context, cr *v1alpha1.CertificateRequest) (err error) {
