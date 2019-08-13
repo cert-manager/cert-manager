@@ -32,7 +32,6 @@ import (
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/validation"
-	"github.com/jetstack/cert-manager/pkg/controller/certificaterequests/util"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 )
@@ -61,13 +60,12 @@ func (c *Controller) Sync(ctx context.Context, cr *v1alpha1.CertificateRequest) 
 		}
 	}()
 
-	reporter := util.NewReporter(crCopy, c.clock, c.recorder)
-
 	dbg.Info("fetching issuer object referenced by CertificateRequest")
 
 	issuerObj, err := c.helper.GetGenericIssuer(crCopy.Spec.IssuerRef, crCopy.Namespace)
 	if k8sErrors.IsNotFound(err) {
-		reporter.Pending(err, "IssuerNotFound", fmt.Sprintf("referenced %q not found", apiutil.IssuerKind(crCopy.Spec.IssuerRef)))
+		c.reporter.Pending(crCopy, err, "IssuerNotFound",
+			fmt.Sprintf("referenced %q not found", apiutil.IssuerKind(crCopy.Spec.IssuerRef)))
 		return nil
 	}
 
@@ -80,7 +78,8 @@ func (c *Controller) Sync(ctx context.Context, cr *v1alpha1.CertificateRequest) 
 
 	issuerType, err := apiutil.NameForIssuer(issuerObj)
 	if err != nil {
-		reporter.Pending(err, "IssuerTypeError", "failed to obtain referenced issuer type")
+		c.reporter.Pending(crCopy, err, "IssuerTypeError",
+			"failed to obtain referenced issuer type")
 		return nil
 	}
 
@@ -96,7 +95,8 @@ func (c *Controller) Sync(ctx context.Context, cr *v1alpha1.CertificateRequest) 
 
 	el := validation.ValidateCertificateRequest(crCopy)
 	if len(el) > 0 {
-		reporter.Failed(el.ToAggregate(), "BadConfig", "resource validation failed")
+		c.reporter.Failed(crCopy, el.ToAggregate(), "BadConfig",
+			"resource validation failed")
 		return nil
 	}
 

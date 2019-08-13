@@ -23,8 +23,6 @@ import (
 
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	corelisters "k8s.io/client-go/listers/core/v1"
-	"k8s.io/client-go/tools/record"
-	"k8s.io/utils/clock"
 
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
@@ -43,14 +41,10 @@ const (
 )
 
 type SelfSigned struct {
-	// used to record Events about resources to the API
-	recorder record.EventRecorder
-
 	issuerOptions controllerpkg.IssuerOptions
 	secretsLister corelisters.SecretLister
 
-	// Clock used to set constant time for testing
-	clock clock.Clock
+	reporter *crutil.Reporter
 }
 
 func init() {
@@ -70,16 +64,14 @@ func init() {
 
 func NewSelfSigned(ctx *controllerpkg.Context) *SelfSigned {
 	return &SelfSigned{
-		recorder:      ctx.Recorder,
 		issuerOptions: ctx.IssuerOptions,
 		secretsLister: ctx.KubeSharedInformerFactory.Core().V1().Secrets().Lister(),
-		clock:         ctx.Clock,
+		reporter:      crutil.NewReporter(ctx.Clock, ctx.Recorder),
 	}
 }
 
 func (s *SelfSigned) Sign(ctx context.Context, cr *v1alpha1.CertificateRequest, issuerObj v1alpha1.GenericIssuer) (*issuer.IssueResponse, error) {
 	log := logf.FromContext(ctx, "sign")
-	reporter := crutil.NewReporter(cr, s.clock, s.recorder)
 
 	resourceNamespace := s.issuerOptions.ResourceNamespace(issuerObj)
 
@@ -89,7 +81,7 @@ func (s *SelfSigned) Sign(ctx context.Context, cr *v1alpha1.CertificateRequest, 
 			v1alpha1.CRPrivateKeyAnnotationKey)
 		err := errors.New("secret name missing")
 
-		reporter.Failed(err, "MissingAnnotation", message)
+		s.reporter.Failed(cr, err, "MissingAnnotation", message)
 		log.Error(err, message)
 
 		return nil, nil
@@ -100,7 +92,7 @@ func (s *SelfSigned) Sign(ctx context.Context, cr *v1alpha1.CertificateRequest, 
 		if k8sErrors.IsNotFound(err) {
 			message := fmt.Sprintf("Referenced secret %s/%s not found", cr.Namespace, secretName)
 
-			reporter.Pending(err, "MissingSecret", message)
+			s.reporter.Pending(cr, err, "MissingSecret", message)
 			log.Error(err, message)
 
 			return nil, nil
@@ -110,7 +102,7 @@ func (s *SelfSigned) Sign(ctx context.Context, cr *v1alpha1.CertificateRequest, 
 			message := fmt.Sprintf("Failed to get key %q referenced in annotation %q",
 				secretName, v1alpha1.CRPrivateKeyAnnotationKey)
 
-			reporter.Pending(err, "ErrorParsingKey", message)
+			s.reporter.Pending(cr, err, "ErrorParsingKey", message)
 			log.Error(err, message)
 
 			return nil, nil
@@ -118,7 +110,7 @@ func (s *SelfSigned) Sign(ctx context.Context, cr *v1alpha1.CertificateRequest, 
 
 		// We are probably in a network error here so we should backoff and retry
 		message := fmt.Sprintf("Failed to get certificate key pair from secret %s/%s", resourceNamespace, secretName)
-		reporter.Pending(err, "ErrorGettingSecret", message)
+		s.reporter.Pending(cr, err, "ErrorGettingSecret", message)
 		log.Error(err, message)
 		return nil, err
 	}
@@ -126,7 +118,7 @@ func (s *SelfSigned) Sign(ctx context.Context, cr *v1alpha1.CertificateRequest, 
 	template, err := pki.GenerateTemplateFromCertificateRequest(cr)
 	if err != nil {
 		message := "Error generating certificate template"
-		reporter.Failed(err, "ErrorGenerating", message)
+		s.reporter.Failed(cr, err, "ErrorGenerating", message)
 		log.Error(err, message)
 		return nil, nil
 	}
@@ -135,7 +127,7 @@ func (s *SelfSigned) Sign(ctx context.Context, cr *v1alpha1.CertificateRequest, 
 	publickey, err := pki.PublicKeyForPrivateKey(privatekey)
 	if err != nil {
 		message := "Failed to get public key from private key"
-		reporter.Failed(err, "ErrorPublicKey", message)
+		s.reporter.Failed(cr, err, "ErrorPublicKey", message)
 		log.Error(err, message)
 		return nil, nil
 	}
@@ -148,7 +140,7 @@ func (s *SelfSigned) Sign(ctx context.Context, cr *v1alpha1.CertificateRequest, 
 		}
 
 		message := "Error generating certificate template"
-		reporter.Failed(err, "ErrorKeyMatch", message)
+		s.reporter.Failed(cr, err, "ErrorKeyMatch", message)
 		log.Error(err, message)
 
 		return nil, nil
@@ -158,7 +150,7 @@ func (s *SelfSigned) Sign(ctx context.Context, cr *v1alpha1.CertificateRequest, 
 	certPem, _, err := pki.SignCertificate(template, template, publickey, privatekey)
 	if err != nil {
 		message := "Error signing certificate"
-		reporter.Failed(err, "ErrorSigning", message)
+		s.reporter.Failed(cr, err, "ErrorSigning", message)
 		log.Error(err, message)
 		return nil, nil
 	}

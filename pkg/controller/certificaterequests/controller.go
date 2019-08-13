@@ -30,6 +30,7 @@ import (
 	cmclient "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
 	cmlisters "github.com/jetstack/cert-manager/pkg/client/listers/certmanager/v1alpha1"
 	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
+	"github.com/jetstack/cert-manager/pkg/controller/certificaterequests/util"
 	"github.com/jetstack/cert-manager/pkg/issuer"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 	"github.com/jetstack/cert-manager/pkg/metrics"
@@ -73,6 +74,8 @@ type Controller struct {
 
 	// used for testing
 	clock clock.Clock
+
+	reporter *util.Reporter
 }
 
 func New(issuerType string, issuer Issuer) *Controller {
@@ -132,6 +135,7 @@ func (c *Controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitin
 	c.clock = ctx.Clock
 	// recorder records events about resources to the Kubernetes api
 	c.recorder = ctx.Recorder
+	c.reporter = util.NewReporter(c.clock, c.recorder)
 	c.cmClient = ctx.CMClient
 
 	c.log.Info("new certificate request controller registered",
