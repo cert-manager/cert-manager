@@ -37,7 +37,7 @@ var _ = TPPDescribe("CertificateRequest with a properly configured Issuer", func
 	var (
 		issuer                 *cmapi.Issuer
 		tppAddon               = &vaddon.VenafiTPP{}
-		certificateRequestName = "test-venafi-certreq"
+		certificateRequestName = "test-venafi-certificaterequest"
 	)
 
 	BeforeEach(func() {
@@ -71,19 +71,19 @@ var _ = TPPDescribe("CertificateRequest with a properly configured Issuer", func
 	})
 
 	It("should obtain a signed certificate for a single domain", func() {
-		certClient := f.CertManagerClientSet.CertmanagerV1alpha1().CertificateRequests(f.Namespace.Name)
+		crClient := f.CertManagerClientSet.CertmanagerV1alpha1().CertificateRequests(f.Namespace.Name)
 
 		dnsNames := []string{cmutil.RandStringRunes(10) + ".venafi-e2e.example"}
 
-		cr, _, err := util.NewCertManagerBasicCertificateRequest(certificateRequestName, issuer.Name, cmapi.IssuerKind, nil, dnsNames, nil, nil, x509.RSA)
+		cr, key, err := util.NewCertManagerBasicCertificateRequest(certificateRequestName, issuer.Name, cmapi.IssuerKind, nil, dnsNames, nil, nil, x509.RSA)
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Creating a CertificateRequest")
-		_, err = certClient.Create(cr)
+		_, err = crClient.Create(cr)
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Verifying the CertificateRequest is valid")
-		err = h.WaitCertificateIssuedValid(f.Namespace.Name, certificateRequestName, time.Second*30)
+		err = h.WaitCertificateRequestIssuedValid(f.Namespace.Name, certificateRequestName, time.Second*30, key)
 		Expect(err).NotTo(HaveOccurred())
 	})
 })
