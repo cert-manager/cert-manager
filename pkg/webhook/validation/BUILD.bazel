@@ -7,7 +7,7 @@ go_library(
         "clusterissuer.go",
         "issuer.go",
     ],
-    importpath = "github.com/jetstack/cert-manager/pkg/apis/certmanager/validation/webhooks",
+    importpath = "github.com/jetstack/cert-manager/pkg/webhook/validation",
     visibility = ["//visibility:public"],
     deps = [
         "//pkg/apis/certmanager/v1alpha1:go_default_library",

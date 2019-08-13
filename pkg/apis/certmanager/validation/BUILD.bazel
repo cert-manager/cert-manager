@@ -51,7 +51,6 @@ filegroup(
     srcs = [
         ":package-srcs",
         "//pkg/apis/certmanager/validation/util:all-srcs",
-        "//pkg/apis/certmanager/validation/webhooks:all-srcs",
     ],
     tags = ["automanaged"],
     visibility = ["//visibility:public"],

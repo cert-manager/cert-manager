@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package webhooks
+package validation
 
 import (
 	"encoding/json"
@@ -29,25 +29,25 @@ import (
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/validation"
 )
 
-type CertificateAdmissionHook struct {
+type ClusterIssuerAdmissionHook struct {
 }
 
-func (c *CertificateAdmissionHook) Initialize(kubeClientConfig *restclient.Config, stopCh <-chan struct{}) error {
+func (c *ClusterIssuerAdmissionHook) Initialize(kubeClientConfig *restclient.Config, stopCh <-chan struct{}) error {
 	return nil
 }
 
-func (c *CertificateAdmissionHook) ValidatingResource() (plural schema.GroupVersionResource, singular string) {
+func (c *ClusterIssuerAdmissionHook) ValidatingResource() (plural schema.GroupVersionResource, singular string) {
 	gv := v1alpha1.SchemeGroupVersion
 	gv.Group = "admission." + gv.Group
 	// override version to be the version of the admissionresponse resource
 	gv.Version = "v1beta1"
-	return gv.WithResource("certificates"), "certificate"
+	return gv.WithResource("clusterissuers"), "clusterissuer"
 }
 
-func (c *CertificateAdmissionHook) Validate(admissionSpec *admissionv1beta1.AdmissionRequest) *admissionv1beta1.AdmissionResponse {
+func (c *ClusterIssuerAdmissionHook) Validate(admissionSpec *admissionv1beta1.AdmissionRequest) *admissionv1beta1.AdmissionResponse {
 	status := &admissionv1beta1.AdmissionResponse{}
 
-	obj := &v1alpha1.Certificate{}
+	obj := &v1alpha1.ClusterIssuer{}
 	err := json.Unmarshal(admissionSpec.Object.Raw, obj)
 	if err != nil {
 		status.Allowed = false
@@ -58,7 +58,7 @@ func (c *CertificateAdmissionHook) Validate(admissionSpec *admissionv1beta1.Admi
 		return status
 	}
 
-	err = validation.ValidateCertificate(obj).ToAggregate()
+	err = validation.ValidateClusterIssuer(obj).ToAggregate()
 	if err != nil {
 		status.Allowed = false
 		status.Result = &metav1.Status{
