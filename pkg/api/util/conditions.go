@@ -220,12 +220,20 @@ func CertificateRequestHasCondition(cr *cmapi.CertificateRequest, c cmapi.Certif
 	return false
 }
 
-func CertificateRequestHasFailed(cr *cmapi.CertificateRequest) bool {
-	for _, con := range cr.Status.Conditions {
-		if con.Reason == cmapi.CertificateRequestReasonFailed {
-			return true
+// This returns the status reason of a CertificateRequest. The order of reason
+// hierarchy is 'Failed' -> 'Ready' -> 'Pending' -> ''
+func CertificateRequestStatusReason(cr *cmapi.CertificateRequest) string {
+	for _, reason := range []string{
+		cmapi.CertificateRequestReasonFailed,
+		cmapi.CertificateRequestReasonIssued,
+		cmapi.CertificateRequestReasonPending,
+	} {
+		for _, con := range cr.Status.Conditions {
+			if con.Reason == reason {
+				return reason
+			}
 		}
 	}
 
-	return false
+	return ""
 }

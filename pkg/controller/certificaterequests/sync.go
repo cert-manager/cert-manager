@@ -47,7 +47,7 @@ func (c *Controller) Sync(ctx context.Context, cr *v1alpha1.CertificateRequest) 
 		return nil
 	}
 
-	if apiutil.CertificateRequestHasFailed(cr) {
+	if apiutil.CertificateRequestStatusReason(cr) == v1alpha1.CertificateRequestReasonFailed {
 		dbg.Info("certificate request condition failed so skipping processing")
 		return nil
 	}

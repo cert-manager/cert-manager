@@ -137,6 +137,7 @@ func createCryptoBundle(crt *cmapi.Certificate) (*cryptoBundle, error) {
 		gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
 			Type:   cmapi.CertificateRequestConditionReady,
 			Status: cmapi.ConditionTrue,
+			Reason: cmapi.CertificateRequestReasonIssued,
 		}),
 	)
 
