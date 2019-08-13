@@ -200,7 +200,9 @@ func runTest(t *testing.T, test testT) {
 		a.orderLister = test.FakeOrderLister
 	}
 
-	resp, err := a.Sign(context.Background(), test.certificateRequest, test.issuer)
+	// Deep copy CertificateRequest to prevent carrying condition state across
+	// multiple test cases from the same shared base CertificateRequest struct
+	resp, err := a.Sign(context.Background(), test.certificateRequest.DeepCopy(), test.issuer)
 	if err != nil && !test.expectedErr {
 		t.Errorf("expected to not get an error, but got: %v", err)
 	}
