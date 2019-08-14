@@ -23,7 +23,6 @@ import (
 	. "github.com/onsi/gomega"
 
 	certmanager "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
-	injctrl "github.com/jetstack/cert-manager/pkg/controller/cainjector"
 	"github.com/jetstack/cert-manager/test/e2e/framework"
 	"github.com/jetstack/cert-manager/test/e2e/util"
 	admissionreg "k8s.io/api/admissionregistration/v1beta1"
@@ -178,7 +177,7 @@ var _ = framework.CertManagerDescribe("CA Injector", func() {
 				By("creating a validating webhook with an invalid cert name")
 				injectable := test.makeInjectable("invalid")
 				injectable.(metav1.Object).SetAnnotations(map[string]string{
-					injctrl.WantInjectAnnotation: "serving-certs", // an invalid annotation
+					certmanager.WantInjectAnnotation: "serving-certs", // an invalid annotation
 				})
 				Expect(f.CRClient.Create(context.Background(), injectable)).To(Succeed())
 				toCleanup = injectable
@@ -204,7 +203,7 @@ var _ = framework.CertManagerDescribe("CA Injector", func() {
 				By("creating an injectable with the inject-apiserver-ca annotation")
 				injectable := test.makeInjectable("apiserver-ca")
 				injectable.(metav1.Object).SetAnnotations(map[string]string{
-					injctrl.WantInjectAPIServerCAAnnotation: "true",
+					certmanager.WantInjectAPIServerCAAnnotation: "true",
 				})
 				Expect(f.CRClient.Create(context.Background(), injectable)).To(Succeed())
 				toCleanup = injectable
@@ -235,7 +234,7 @@ var _ = framework.CertManagerDescribe("CA Injector", func() {
 						Name:      secretName.Name,
 						Namespace: secretName.Namespace,
 						Annotations: map[string]string{
-							injctrl.AllowsInjectionFromSecretAnnotation: "true",
+							certmanager.AllowsInjectionFromSecretAnnotation: "true",
 						},
 					},
 				}
@@ -243,7 +242,7 @@ var _ = framework.CertManagerDescribe("CA Injector", func() {
 
 				injectable := test.makeInjectable("from-secret")
 				injectable.(metav1.Object).SetAnnotations(map[string]string{
-					injctrl.WantInjectFromSecretAnnotation: secretName.String(),
+					certmanager.WantInjectFromSecretAnnotation: secretName.String(),
 				})
 				generalSetup(injectable)
 			})
@@ -258,7 +257,7 @@ var _ = framework.CertManagerDescribe("CA Injector", func() {
 						Name:      secretName.Name,
 						Namespace: secretName.Namespace,
 						Annotations: map[string]string{
-							injctrl.AllowsInjectionFromSecretAnnotation: "false",
+							certmanager.AllowsInjectionFromSecretAnnotation: "false",
 						},
 					},
 				}
@@ -267,7 +266,7 @@ var _ = framework.CertManagerDescribe("CA Injector", func() {
 				By("creating a " + subj + " pointing to a secret")
 				injectable := test.makeInjectable("from-secret-not-allowed")
 				injectable.(metav1.Object).SetAnnotations(map[string]string{
-					injctrl.WantInjectFromSecretAnnotation: secretName.String(),
+					certmanager.WantInjectFromSecretAnnotation: secretName.String(),
 				})
 				Expect(f.CRClient.Create(context.Background(), injectable)).To(Succeed())
 				toCleanup = injectable
@@ -305,7 +304,7 @@ var _ = framework.CertManagerDescribe("CA Injector", func() {
 				ObjectMeta: metav1.ObjectMeta{
 					Name: namePrefix + "-hook",
 					Annotations: map[string]string{
-						injctrl.WantInjectAnnotation: types.NamespacedName{Name: "serving-certs", Namespace: f.Namespace.Name}.String(),
+						certmanager.WantInjectAnnotation: types.NamespacedName{Name: "serving-certs", Namespace: f.Namespace.Name}.String(),
 					},
 				},
 				Webhooks: []admissionreg.ValidatingWebhook{
@@ -344,7 +343,7 @@ var _ = framework.CertManagerDescribe("CA Injector", func() {
 				ObjectMeta: metav1.ObjectMeta{
 					Name: namePrefix + "-hook",
 					Annotations: map[string]string{
-						injctrl.WantInjectAnnotation: types.NamespacedName{Name: "serving-certs", Namespace: f.Namespace.Name}.String(),
+						certmanager.WantInjectAnnotation: types.NamespacedName{Name: "serving-certs", Namespace: f.Namespace.Name}.String(),
 					},
 				},
 				Webhooks: []admissionreg.MutatingWebhook{
@@ -385,7 +384,7 @@ var _ = framework.CertManagerDescribe("CA Injector", func() {
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "objs." + namePrefix + ".testing.certmanager.k8s.io",
 					Annotations: map[string]string{
-						injctrl.WantInjectAnnotation: types.NamespacedName{Name: "serving-certs", Namespace: f.Namespace.Name}.String(),
+						certmanager.WantInjectAnnotation: types.NamespacedName{Name: "serving-certs", Namespace: f.Namespace.Name}.String(),
 					},
 				},
 				Spec: apiext.CustomResourceDefinitionSpec{
@@ -420,7 +419,7 @@ var _ = framework.CertManagerDescribe("CA Injector", func() {
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "v1." + namePrefix + ".testing.certmanager.k8s.io",
 					Annotations: map[string]string{
-						injctrl.WantInjectAnnotation: types.NamespacedName{Name: "serving-certs", Namespace: f.Namespace.Name}.String(),
+						certmanager.WantInjectAnnotation: types.NamespacedName{Name: "serving-certs", Namespace: f.Namespace.Name}.String(),
 					},
 				},
 				Spec: apireg.APIServiceSpec{

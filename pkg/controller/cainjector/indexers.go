@@ -124,7 +124,7 @@ func injectableCAFromIndexer(rawObj runtime.Object) []string {
 	}
 
 	// skip invalid certificate names
-	certNameRaw := metaInfo.GetAnnotations()[WantInjectAnnotation]
+	certNameRaw := metaInfo.GetAnnotations()[cmapi.WantInjectAnnotation]
 	if certNameRaw == "" {
 		return nil
 	}
@@ -201,7 +201,7 @@ func injectableCAFromSecretIndexer(rawObj runtime.Object) []string {
 	}
 
 	// skip invalid secret names
-	secretNameRaw := metaInfo.GetAnnotations()[WantInjectFromSecretAnnotation]
+	secretNameRaw := metaInfo.GetAnnotations()[cmapi.WantInjectFromSecretAnnotation]
 	if secretNameRaw == "" {
 		return nil
 	}
