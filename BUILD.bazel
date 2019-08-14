@@ -58,6 +58,7 @@ filegroup(
         "//pkg/metrics:all-srcs",
         "//pkg/scheduler:all-srcs",
         "//pkg/util:all-srcs",
+        "//pkg/webhook/validation:all-srcs",
         "//test/acme/dns:all-srcs",
         "//test/e2e:all-srcs",
         "//test/unit/gen:all-srcs",

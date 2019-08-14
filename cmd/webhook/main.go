@@ -24,12 +24,12 @@ import (
 	"github.com/openshift/generic-admission-server/pkg/cmd"
 	"k8s.io/klog"
 
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager/validation/webhooks"
+	"github.com/jetstack/cert-manager/pkg/webhook/validation"
 )
 
-var certHook cmd.ValidatingAdmissionHook = &webhooks.CertificateAdmissionHook{}
-var issuerHook cmd.ValidatingAdmissionHook = &webhooks.IssuerAdmissionHook{}
-var clusterIssuerHook cmd.ValidatingAdmissionHook = &webhooks.ClusterIssuerAdmissionHook{}
+var certHook cmd.ValidatingAdmissionHook = &validation.CertificateAdmissionHook{}
+var issuerHook cmd.ValidatingAdmissionHook = &validation.IssuerAdmissionHook{}
+var clusterIssuerHook cmd.ValidatingAdmissionHook = &validation.ClusterIssuerAdmissionHook{}
 
 func main() {
 	// Avoid "logging before flag.Parse" errors from glog
