@@ -285,7 +285,7 @@ var _ = framework.CertManagerDescribe("CA Injector", func() {
 				expectedLen := len(test.getCAs(injectable))
 				expectedCAs := make([][]byte, expectedLen)
 				for i := range expectedCAs {
-					expectedCAs[i] = []byte{}
+					expectedCAs[i] = nil
 				}
 				Consistently(func() ([][]byte, error) {
 					newInjectable := injectable.DeepCopyObject()
