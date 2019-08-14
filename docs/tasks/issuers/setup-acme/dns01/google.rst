@@ -35,7 +35,7 @@ To access this service account cert-manager uses a key stored in a Kubernetes Se
    gcloud iam service-accounts keys create key.json \
     --iam-account dns01-solver@$PROJECT_ID.iam.gserviceaccount.com
    kubectl create secret generic clouddns-dns01-solver-svc-acct \
-    --from-file=key.json
+    --from-file=key.json --namespace=cert-manager
 
 .. note::
    Keep the key file safe and do not share it, as it could be used to gain access to your cloud resources. The key file can be deleted once it has been used to generate the Secret.
