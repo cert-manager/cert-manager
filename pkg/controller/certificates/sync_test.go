@@ -233,7 +233,7 @@ func TestSync(t *testing.T) {
 							Data: map[string][]byte{
 								corev1.TLSCertKey:       localTempCert,
 								corev1.TLSPrivateKeyKey: pk1PEM,
-								TLSCAKey:                nil,
+								cmapi.TLSCAKey:          nil,
 							},
 						},
 					)),
@@ -300,7 +300,7 @@ func TestSync(t *testing.T) {
 							Data: map[string][]byte{
 								corev1.TLSCertKey:       localTempCert,
 								corev1.TLSPrivateKeyKey: pk1PEM,
-								TLSCAKey:                nil,
+								cmapi.TLSCAKey:          nil,
 							},
 						},
 					)),
@@ -350,7 +350,7 @@ func TestSync(t *testing.T) {
 							Data: map[string][]byte{
 								corev1.TLSCertKey:       cert1PEM,
 								corev1.TLSPrivateKeyKey: pk1PEM,
-								TLSCAKey:                nil,
+								cmapi.TLSCAKey:          nil,
 							},
 							Type: corev1.SecretTypeTLS,
 						},
@@ -418,7 +418,7 @@ func TestSync(t *testing.T) {
 							Data: map[string][]byte{
 								corev1.TLSCertKey:       cert1PEM,
 								corev1.TLSPrivateKeyKey: pk1PEM,
-								TLSCAKey:                nil,
+								cmapi.TLSCAKey:          nil,
 							},
 						},
 					)),
@@ -456,7 +456,7 @@ func TestSync(t *testing.T) {
 						Data: map[string][]byte{
 							corev1.TLSCertKey:       cert2PEM,
 							corev1.TLSPrivateKeyKey: pk1PEM,
-							TLSCAKey:                nil,
+							cmapi.TLSCAKey:          nil,
 						},
 					},
 				},
@@ -502,7 +502,7 @@ func TestSync(t *testing.T) {
 							Data: map[string][]byte{
 								corev1.TLSCertKey:       cert1PEM,
 								corev1.TLSPrivateKeyKey: pk1PEM,
-								TLSCAKey:                nil,
+								cmapi.TLSCAKey:          nil,
 							},
 						},
 					)),
@@ -542,7 +542,7 @@ func TestSync(t *testing.T) {
 						Data: map[string][]byte{
 							corev1.TLSCertKey:       cert1PEM,
 							corev1.TLSPrivateKeyKey: pk1PEM,
-							TLSCAKey:                nil,
+							cmapi.TLSCAKey:          nil,
 						},
 					},
 				},
@@ -598,7 +598,7 @@ func TestSync(t *testing.T) {
 						Data: map[string][]byte{
 							corev1.TLSCertKey:       localTempCert,
 							corev1.TLSPrivateKeyKey: pk1PEM,
-							TLSCAKey:                nil,
+							cmapi.TLSCAKey:          nil,
 						},
 					},
 				},
@@ -630,7 +630,7 @@ func TestSync(t *testing.T) {
 							Data: map[string][]byte{
 								corev1.TLSCertKey:       localTempCert,
 								corev1.TLSPrivateKeyKey: pk1PEM,
-								TLSCAKey:                nil,
+								cmapi.TLSCAKey:          nil,
 							},
 						},
 					)),
@@ -671,7 +671,7 @@ func TestSync(t *testing.T) {
 						Data: map[string][]byte{
 							corev1.TLSCertKey:       cert1PEM,
 							corev1.TLSPrivateKeyKey: pk1PEM,
-							TLSCAKey:                nil,
+							cmapi.TLSCAKey:          nil,
 						},
 					},
 				},
@@ -717,7 +717,7 @@ func TestSync(t *testing.T) {
 							Data: map[string][]byte{
 								corev1.TLSCertKey:       cert1PEM,
 								corev1.TLSPrivateKeyKey: pk1PEM,
-								TLSCAKey:                nil,
+								cmapi.TLSCAKey:          nil,
 							},
 						},
 					)),
@@ -808,7 +808,7 @@ func TestSync(t *testing.T) {
 							Data: map[string][]byte{
 								corev1.TLSCertKey:       cert1PEM,
 								corev1.TLSPrivateKeyKey: pk1PEM,
-								TLSCAKey:                nil,
+								cmapi.TLSCAKey:          nil,
 							},
 							Type: corev1.SecretTypeTLS,
 						},

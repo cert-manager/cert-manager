@@ -31,7 +31,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	certmanager "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
-	certctrl "github.com/jetstack/cert-manager/pkg/controller/certificates"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 )
 
@@ -214,7 +213,7 @@ func (r *genericInjectReconciler) Reconcile(req ctrl.Request) (ctrl.Result, erro
 	}
 
 	// inject the CA data
-	caData, hasCAData := secret.Data[certctrl.TLSCAKey]
+	caData, hasCAData := secret.Data[certmanager.TLSCAKey]
 	if !hasCAData {
 		log.Error(nil, "certificate has no CA data")
 		// don't requeue, we'll get called when the secret gets updated

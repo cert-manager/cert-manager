@@ -68,10 +68,6 @@ const (
 	messageErrorSavingCertificate = "Error saving TLS certificate: "
 )
 
-const (
-	TLSCAKey = "ca.crt"
-)
-
 var (
 	certificateGvk = v1alpha1.SchemeGroupVersion.WithKind("Certificate")
 )
@@ -464,7 +460,7 @@ func (c *controller) updateSecret(ctx context.Context, crt *v1alpha1.Certificate
 	// set the actual values in the secret
 	secret.Data[corev1.TLSCertKey] = cert
 	secret.Data[corev1.TLSPrivateKeyKey] = key
-	secret.Data[TLSCAKey] = ca
+	secret.Data[v1alpha1.TLSCAKey] = ca
 
 	// if it is a new resource
 	if secret.SelfLink == "" {

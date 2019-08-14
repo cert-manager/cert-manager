@@ -82,3 +82,7 @@ type SecretKeySelector struct {
 	// +optional
 	Key string `json:"key,omitempty"`
 }
+
+const (
+	TLSCAKey = "ca.crt"
+)
