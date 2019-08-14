@@ -31,7 +31,7 @@ import (
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 )
 
-var (
+const (
 	// WantInjectAnnotation is the annotation that specifies that a particular
 	// object wants injection of CAs.  It takes the form of a reference to a certificate
 	// as namespace/name.  The certificate is expected to have the is-serving-for annotations.
@@ -40,7 +40,7 @@ var (
 	// WantInjectAPIServerCAAnnotation, if set to "true", will make the cainjector
 	// inject the CA certificate for the Kubernetes apiserver into the resource.
 	// It discovers the apiserver's CA by inspecting the service account credentials
-	// mounted into the
+	// mounted into the cainjector pod.
 	WantInjectAPIServerCAAnnotation = "certmanager.k8s.io/inject-apiserver-ca"
 
 	// WantInjectFromSecretAnnotation is the annotation that specifies that a particular
