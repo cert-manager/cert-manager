@@ -163,7 +163,6 @@ func TestReporter(t *testing.T) {
 			message: exampleMessage,
 			reason:  exampleReason,
 
-			// No event sent
 			expectedEvents: []string{
 				"Normal ThisIsAReason this is a message: this is an error",
 			},
@@ -176,7 +175,6 @@ func TestReporter(t *testing.T) {
 			certificateRequest: gen.CertificateRequestFrom(baseCR,
 				gen.SetCertificateRequestStatusCondition(readyCondition),
 			),
-			// No event sent
 			expectedEvents: []string{
 				"Normal CertificateIssued Certificate fetched from issuer successfully",
 			},
