@@ -18,6 +18,7 @@ package cainjector
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	"github.com/go-logr/logr"
@@ -32,19 +33,6 @@ import (
 
 	certmanager "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
-)
-
-var (
-	// WantInjectAnnotation is the annotation that specifies that a particular
-	// object wants injection of CAs.  It takes the form of a reference to a certificate
-	// as namespace/name.  The certificate is expected to have the is-serving-for annotations.
-	WantInjectAnnotation = "certmanager.k8s.io/inject-ca-from"
-
-	// WantInjectAPIServerCAAnnotation, if set to "true", will make the cainjector
-	// inject the CA certificate for the Kubernetes apiserver into the resource.
-	// It discovers the apiserver's CA by inspecting the service account credentials
-	// mounted into the
-	WantInjectAPIServerCAAnnotation = "certmanager.k8s.io/inject-apiserver-ca"
 )
 
 // dropNotFound ignores the given error if it's a not-found error,
@@ -107,21 +95,17 @@ type genericInjectReconciler struct {
 	// injector is responsible for the logic of actually setting a CA -- it's the component
 	// that contains type-specific logic.
 	injector CertInjector
+	// sources is a list of available 'data sources' that can be used to extract
+	// caBundles from various source.
+	// This is defined as a variable to allow an instance of the secret-based
+	// cainjector to run even when Certificate resources cannot we watched due to
+	// the conversion webhook not being available.
+	sources []caDataSource
 
 	log logr.Logger
 	client.Client
 
-	// apiserverCABundle is the ca bundle used by the apiserver.
-	// This will be injected into resources that have the `
-	apiserverCABundle []byte
-
 	resourceName string // just used for logging
-}
-
-// InjectClient provides a client for this reconciler.
-func (r *genericInjectReconciler) InjectClient(c client.Client) error {
-	r.Client = c
-	return nil
 }
 
 // splitNamespacedName turns the string form of a namespaced name
@@ -159,64 +143,19 @@ func (r *genericInjectReconciler) Reconcile(req ctrl.Request) (ctrl.Result, erro
 	}
 	log = logf.WithResource(r.log, metaObj)
 
-	certNameRaw := metaObj.GetAnnotations()[WantInjectAnnotation]
-	hasInjectAPIServerCA := metaObj.GetAnnotations()[WantInjectAPIServerCAAnnotation] == "true"
-	if certNameRaw != "" && hasInjectAPIServerCA {
-		log.Info("object has both inject-ca-from and inject-apiserver-ca annotations, skipping")
-		return ctrl.Result{}, nil
-	}
-	if hasInjectAPIServerCA {
-		log.V(1).Info("setting apiserver ca bundle on injectable")
-		target.SetCA(r.apiserverCABundle)
-
-		// actually update with injected CA data
-		if err := r.Client.Update(ctx, target.AsObject()); err != nil {
-			log.Error(err, "unable to update target object with new CA data")
-			return ctrl.Result{}, err
-		}
-		log.V(1).Info("updated object")
-		return ctrl.Result{}, nil
-	}
-	if certNameRaw == "" {
-		log.V(1).Info("object does not want CA injection, skipping")
+	dataSource, err := r.caDataSourceFor(log, metaObj)
+	if err != nil {
+		log.V(4).Info("failed to determine ca data source for injectable")
 		return ctrl.Result{}, nil
 	}
 
-	certName := splitNamespacedName(certNameRaw)
-	log = log.WithValues("certificate", certName)
-	if certName.Namespace == "" {
-		log.Error(nil, "invalid certificate name")
-		// don't return an error, requeuing won't help till this is changed
-		return ctrl.Result{}, nil
+	caData, err := dataSource.ReadCA(ctx, log, metaObj)
+	if err != nil {
+		log.Error(err, "failed to read CA from data source")
+		return ctrl.Result{}, err
 	}
-
-	var cert certmanager.Certificate
-	if err := r.Client.Get(ctx, certName, &cert); err != nil {
-		log.Error(err, "unable to fetch associated certificate")
-		// don't requeue if we're just not found, we'll get called when the secret gets created
-		return ctrl.Result{}, dropNotFound(err)
-	}
-
-	// grab the associated secret, and ensure it's owned by the cert
-	secretName := types.NamespacedName{Namespace: cert.Namespace, Name: cert.Spec.SecretName}
-	log = log.WithValues("secret", secretName)
-	var secret corev1.Secret
-	if err := r.Client.Get(ctx, secretName, &secret); err != nil {
-		log.Error(err, "unable to fetch associated secret")
-		// don't requeue if we're just not found, we'll get called when the secret gets created
-		return ctrl.Result{}, dropNotFound(err)
-	}
-	owner := OwningCertForSecret(&secret)
-	if owner == nil || *owner != certName {
-		log.Info("refusing to target secret not owned by certificate", "owner", metav1.GetControllerOf(&secret))
-		return ctrl.Result{}, nil
-	}
-
-	// inject the CA data
-	caData, hasCAData := secret.Data[certmanager.TLSCAKey]
-	if !hasCAData {
-		log.Error(nil, "certificate has no CA data")
-		// don't requeue, we'll get called when the secret gets updated
+	if caData == nil {
+		log.Info("could not find any ca data in data source for target")
 		return ctrl.Result{}, nil
 	}
 
@@ -231,4 +170,13 @@ func (r *genericInjectReconciler) Reconcile(req ctrl.Request) (ctrl.Result, erro
 	log.V(1).Info("updated object")
 
 	return ctrl.Result{}, nil
+}
+
+func (r *genericInjectReconciler) caDataSourceFor(log logr.Logger, metaObj metav1.Object) (caDataSource, error) {
+	for _, s := range r.sources {
+		if s.Configured(log, metaObj) {
+			return s, nil
+		}
+	}
+	return nil, fmt.Errorf("could not determine ca data source for resource")
 }

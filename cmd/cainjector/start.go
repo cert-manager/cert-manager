@@ -35,7 +35,6 @@ type InjectorControllerOptions struct {
 	Namespace               string
 	LeaderElect             bool
 	LeaderElectionNamespace string
-	LeaderElectionID        string
 
 	StdOut io.Writer
 	StdErr io.Writer
@@ -52,8 +51,6 @@ func (o *InjectorControllerOptions) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVar(&o.LeaderElectionNamespace, "leader-election-namespace", "", ""+
 		"Namespace used to perform leader election (defaults to controller's namespace). "+
 		"Only used if leader election is enabled")
-	fs.StringVar(&o.LeaderElectionID, "leader-election-id", "", ""+
-		"Override the identifier to use in leader election.  Only used if leader election is enabled")
 }
 
 func NewInjectorControllerOptions(out, errOut io.Writer) *InjectorControllerOptions {
@@ -94,12 +91,27 @@ servers and webhook servers.`,
 }
 
 func (o InjectorControllerOptions) RunInjectorController(stopCh <-chan struct{}) {
+	eitherStopCh := make(chan struct{})
+	go func() {
+		defer close(eitherStopCh)
+		o.runCertificateBasedInjector(stopCh)
+	}()
+	go func() {
+		defer close(eitherStopCh)
+		o.runSecretBasedInjector(stopCh)
+	}()
+
+	<-eitherStopCh
+}
+
+func (o InjectorControllerOptions) runCertificateBasedInjector(stopCh <-chan struct{}) {
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme:                  api.Scheme,
 		Namespace:               o.Namespace,
 		LeaderElection:          o.LeaderElect,
 		LeaderElectionNamespace: o.LeaderElectionNamespace,
-		LeaderElectionID:        o.LeaderElectionID,
+		LeaderElectionID:        "cert-manager-cainjector-leader-election",
+		MetricsBindAddress:      "0",
 	})
 
 	if err != nil {
@@ -107,11 +119,35 @@ func (o InjectorControllerOptions) RunInjectorController(stopCh <-chan struct{})
 	}
 
 	// TODO(directxman12): enabled controllers for separate injectors?
-	if err := cainjector.RegisterAll(mgr); err != nil {
+	if err := cainjector.RegisterCertificateBased(mgr); err != nil {
 		klog.Fatalf("error registering controllers: %v", err)
 	}
 
 	if err := mgr.Start(stopCh); err != nil {
 		klog.Fatalf("error running manager: %v", err)
+	}
+}
+
+func (o InjectorControllerOptions) runSecretBasedInjector(stopCh <-chan struct{}) {
+	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
+		Scheme:                  api.Scheme,
+		Namespace:               o.Namespace,
+		LeaderElection:          o.LeaderElect,
+		LeaderElectionNamespace: o.LeaderElectionNamespace,
+		LeaderElectionID:        "cert-manager-cainjector-leader-election-core",
+		MetricsBindAddress:      "0",
+	})
+
+	if err != nil {
+		klog.Fatalf("error creating core-only manager: %v", err)
+	}
+
+	// TODO(directxman12): enabled controllers for separate injectors?
+	if err := cainjector.RegisterSecretBased(mgr); err != nil {
+		klog.Fatalf("error registering core-only controllers: %v", err)
+	}
+
+	if err := mgr.Start(stopCh); err != nil {
+		klog.Fatalf("error running core-only manager: %v", err)
 	}
 }

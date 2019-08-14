@@ -1,0 +1,252 @@
+/*
+Copyright 2019 The Jetstack cert-manager contributors.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+package cainjector
+
+import (
+	"context"
+
+	"github.com/go-logr/logr"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
+	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
+	"sigs.k8s.io/controller-runtime/pkg/source"
+
+	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+)
+
+const (
+	// WantInjectAnnotation is the annotation that specifies that a particular
+	// object wants injection of CAs.  It takes the form of a reference to a certificate
+	// as namespace/name.  The certificate is expected to have the is-serving-for annotations.
+	WantInjectAnnotation = "certmanager.k8s.io/inject-ca-from"
+
+	// WantInjectAPIServerCAAnnotation, if set to "true", will make the cainjector
+	// inject the CA certificate for the Kubernetes apiserver into the resource.
+	// It discovers the apiserver's CA by inspecting the service account credentials
+	// mounted into the cainjector pod.
+	WantInjectAPIServerCAAnnotation = "certmanager.k8s.io/inject-apiserver-ca"
+
+	// WantInjectFromSecretAnnotation is the annotation that specifies that a particular
+	// object wants injection of CAs.  It takes the form of a reference to a Secret
+	// as namespace/name.
+	WantInjectFromSecretAnnotation = "certmanager.k8s.io/inject-ca-from-secret"
+
+	// AllowsInjectionFromSecretAnnotation is an annotation that must be added
+	// to Secret resource that want to denote that they can be directly
+	// injected into injectables that have a `inject-ca-from-secret` annotation.
+	// If an injectable references a Secret that does NOT have this annotation,
+	// the cainjector will refuse to inject the secret.
+	AllowsInjectionFromSecretAnnotation = "certmanager.k8s.io/allow-direct-injection"
+)
+
+// caDataSource knows how to extract CA data given a provided InjectTarget.
+// This allows adaptable implementations of fetching CA data based on
+// configuration given on the injection target (e.g. annotations).
+
+type caDataSource interface {
+	// Configured returns true if this data source should be used for the given
+	// InjectTarget, i.e. if it has appropriate annotations enabled to use the
+	// annotations.
+	Configured(log logr.Logger, metaObj metav1.Object) bool
+
+	// ReadCA reads the CA that should be injected into the InjectTarget based
+	// on the configuration provided in the InjectTarget.
+	// ReadCA may return nil, nil if the CA data cannot be read.
+	// In this case, the caller should not retry the operation.
+	// It is up to the ReadCA implementation to inform the user why the CA
+	// failed to read.
+	ReadCA(ctx context.Context, log logr.Logger, metaObj metav1.Object) (ca []byte, err error)
+
+	// ApplyTo applies any required watchers to the given controller builder.
+	ApplyTo(mgr ctrl.Manager, setup injectorSetup, builder *ctrl.Builder) error
+}
+
+// kubeconfigDataSource reads the ca bundle provided as part of the struct
+// instantiation if it has the 'certmanager.k8s.io/inject-apiserver-ca'
+// annotation.
+type kubeconfigDataSource struct {
+	apiserverCABundle []byte
+}
+
+func (c *kubeconfigDataSource) Configured(log logr.Logger, metaObj metav1.Object) bool {
+	return metaObj.GetAnnotations()[WantInjectAPIServerCAAnnotation] == "true"
+}
+
+func (c *kubeconfigDataSource) ReadCA(ctx context.Context, log logr.Logger, metaObj metav1.Object) (ca []byte, err error) {
+	return c.apiserverCABundle, nil
+}
+
+func (c *kubeconfigDataSource) ApplyTo(mgr ctrl.Manager, setup injectorSetup, builder *ctrl.Builder) error {
+	cfg := mgr.GetConfig()
+	caBundle, err := dataFromSliceOrFile(cfg.CAData, cfg.CAFile)
+	if err != nil {
+		return err
+	}
+	c.apiserverCABundle = caBundle
+	return nil
+}
+
+// certificateDataSource reads a CA bundle by fetching the Certificate named in
+// the 'certmanager.k8s.io/inject-ca-from' annotation in the form
+// 'namespace/name'.
+type certificateDataSource struct {
+	client client.Client
+}
+
+func (c *certificateDataSource) Configured(log logr.Logger, metaObj metav1.Object) bool {
+	certNameRaw, ok := metaObj.GetAnnotations()[WantInjectAnnotation]
+	if !ok {
+		return false
+	}
+	log.Info("Extracting CA from Certificate resource", "certificate", certNameRaw)
+	return true
+}
+
+func (c *certificateDataSource) ReadCA(ctx context.Context, log logr.Logger, metaObj metav1.Object) (ca []byte, err error) {
+	certNameRaw := metaObj.GetAnnotations()[WantInjectAnnotation]
+	certName := splitNamespacedName(certNameRaw)
+	log = log.WithValues("certificate", certName)
+	if certName.Namespace == "" {
+		log.Error(nil, "invalid certificate name")
+		// don't return an error, requeuing won't help till this is changed
+		return nil, nil
+	}
+
+	var cert cmapi.Certificate
+	if err := c.client.Get(ctx, certName, &cert); err != nil {
+		log.Error(err, "unable to fetch associated certificate")
+		// don't requeue if we're just not found, we'll get called when the secret gets created
+		return nil, dropNotFound(err)
+	}
+
+	secretName := &types.NamespacedName{Namespace: cert.Namespace, Name: cert.Spec.SecretName}
+	// grab the associated secret, and ensure it's owned by the cert
+	log = log.WithValues("secret", secretName)
+	var secret corev1.Secret
+	if err := c.client.Get(ctx, *secretName, &secret); err != nil {
+		log.Error(err, "unable to fetch associated secret")
+		// don't requeue if we're just not found, we'll get called when the secret gets created
+		return nil, dropNotFound(err)
+	}
+	owner := OwningCertForSecret(&secret)
+	if owner == nil || *owner != certName {
+		log.Info("refusing to target secret not owned by certificate", "owner", metav1.GetControllerOf(&secret))
+		return nil, nil
+	}
+
+	// inject the CA data
+	caData, hasCAData := secret.Data[cmapi.TLSCAKey]
+	if !hasCAData {
+		log.Error(nil, "certificate has no CA data")
+		// don't requeue, we'll get called when the secret gets updated
+		return nil, nil
+	}
+
+	return caData, nil
+}
+
+func (c *certificateDataSource) ApplyTo(mgr ctrl.Manager, setup injectorSetup, builder *ctrl.Builder) error {
+	typ := setup.injector.NewTarget().AsObject()
+	if err := mgr.GetFieldIndexer().IndexField(typ, injectFromPath, injectableCAFromIndexer); err != nil {
+		return err
+	}
+
+	builder.Watches(&source.Kind{Type: &cmapi.Certificate{}},
+		&handler.EnqueueRequestsFromMapFunc{ToRequests: &certMapper{
+			Client:       mgr.GetClient(),
+			log:          ctrl.Log.WithName("cert-mapper"),
+			toInjectable: buildCertToInjectableFunc(setup.listType, setup.resourceName),
+		}},
+	).
+		Watches(&source.Kind{Type: &corev1.Secret{}},
+			&handler.EnqueueRequestsFromMapFunc{ToRequests: &secretForCertificateMapper{
+				Client:                  mgr.GetClient(),
+				log:                     ctrl.Log.WithName("secret-for-certificate-mapper"),
+				certificateToInjectable: buildCertToInjectableFunc(setup.listType, setup.resourceName),
+			}},
+		)
+	return nil
+}
+
+// secretDataSource reads a CA bundle from a Secret resource named using the
+// 'certmanager.k8s.io/inject-ca-from-secret' annotation in the form
+// 'namespace/name'.
+type secretDataSource struct {
+	client client.Client
+}
+
+func (c *secretDataSource) Configured(log logr.Logger, metaObj metav1.Object) bool {
+	secretNameRaw, ok := metaObj.GetAnnotations()[WantInjectFromSecretAnnotation]
+	if !ok {
+		return false
+	}
+	log.Info("Extracting CA from Secret resource", "secret", secretNameRaw)
+	return true
+}
+
+func (c *secretDataSource) ReadCA(ctx context.Context, log logr.Logger, metaObj metav1.Object) ([]byte, error) {
+	secretNameRaw := metaObj.GetAnnotations()[WantInjectFromSecretAnnotation]
+	secretName := splitNamespacedName(secretNameRaw)
+	log = log.WithValues("secret", secretName)
+	if secretName.Namespace == "" {
+		log.Error(nil, "invalid certificate name")
+		// don't return an error, requeuing won't help till this is changed
+		return nil, nil
+	}
+
+	// grab the associated secret
+	var secret corev1.Secret
+	if err := c.client.Get(ctx, secretName, &secret); err != nil {
+		log.Error(err, "unable to fetch associated secret")
+		// don't requeue if we're just not found, we'll get called when the secret gets created
+		return nil, dropNotFound(err)
+	}
+
+	if secret.Annotations == nil || secret.Annotations[AllowsInjectionFromSecretAnnotation] != "true" {
+		log.Info("Secret resource does not allow direct injection - refusing to inject CA")
+		return nil, nil
+	}
+
+	// inject the CA data
+	caData, hasCAData := secret.Data[cmapi.TLSCAKey]
+	if !hasCAData {
+		log.Error(nil, "certificate has no CA data")
+		// don't requeue, we'll get called when the secret gets updated
+		return nil, nil
+	}
+
+	return caData, nil
+}
+
+func (c *secretDataSource) ApplyTo(mgr ctrl.Manager, setup injectorSetup, builder *ctrl.Builder) error {
+	typ := setup.injector.NewTarget().AsObject()
+	if err := mgr.GetFieldIndexer().IndexField(typ, injectFromSecretPath, injectableCAFromSecretIndexer); err != nil {
+		return err
+	}
+
+	builder.Watches(&source.Kind{Type: &corev1.Secret{}},
+		&handler.EnqueueRequestsFromMapFunc{ToRequests: &secretForInjectableMapper{
+			Client:             mgr.GetClient(),
+			log:                ctrl.Log.WithName("secret-mapper"),
+			secretToInjectable: buildSecretToInjectableFunc(setup.listType, setup.resourceName),
+		}},
+	)
+	return nil
+}

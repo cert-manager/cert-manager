@@ -46,6 +46,7 @@ var _ = framework.CertManagerDescribe("CA Injector", func() {
 	f := framework.NewDefaultFramework("ca-injector")
 
 	issuerName := "inject-cert-issuer"
+	secretName := "serving-certs-data"
 
 	injectorContext := func(subj string, test *injectableTest) {
 		Context("for "+subj+"s", func() {
@@ -73,14 +74,13 @@ var _ = framework.CertManagerDescribe("CA Injector", func() {
 				}
 				Expect(f.CRClient.Delete(context.Background(), toCleanup)).To(Succeed())
 			})
-			generalSetup := func(namePrefix string) (runtime.Object, certmanager.Certificate, corev1.Secret) {
+			generalSetup := func(injectable runtime.Object) (runtime.Object, certmanager.Certificate, corev1.Secret) {
 				By("creating a " + subj + " pointing to a cert")
-				injectable := test.makeInjectable(namePrefix)
 				Expect(f.CRClient.Create(context.Background(), injectable)).To(Succeed())
 				toCleanup = injectable
 
 				By("creating a certificate")
-				secretName := types.NamespacedName{Name: "serving-certs-data", Namespace: f.Namespace.Name}
+				secretName := types.NamespacedName{Name: secretName, Namespace: f.Namespace.Name}
 				cert := util.NewCertManagerBasicCertificate("serving-certs", secretName.Name, issuerName, certmanager.IssuerKind, nil, nil)
 				cert.Namespace = f.Namespace.Name
 				Expect(f.CRClient.Create(context.Background(), cert)).To(Succeed())
@@ -113,7 +113,7 @@ var _ = framework.CertManagerDescribe("CA Injector", func() {
 					Skip(test.disabled)
 				}
 
-				generalSetup("injected")
+				generalSetup(test.makeInjectable("injected"))
 			})
 
 			It("should not inject CA into non-annotated objects", func() {
@@ -141,14 +141,14 @@ var _ = framework.CertManagerDescribe("CA Injector", func() {
 				if test.disabled != "" {
 					Skip(test.disabled)
 				}
-				injectable, cert, _ := generalSetup("changed")
+				injectable, cert, _ := generalSetup(test.makeInjectable("changed"))
 
 				By("grabbing the latest copy of the cert")
 				Expect(f.CRClient.Get(context.Background(), types.NamespacedName{Name: cert.Name, Namespace: cert.Namespace}, &cert)).To(Succeed())
 
 				By("changing the name of the corresponding secret in the cert")
-				secretName := types.NamespacedName{Name: "other-data", Namespace: f.Namespace.Name}
-				cert.Spec.SecretName = secretName.Name
+				secretName := types.NamespacedName{Name: cert.Spec.SecretName, Namespace: f.Namespace.Name}
+				cert.Spec.DNSNames = append(cert.Spec.DNSNames, "something.com")
 				Expect(f.CRClient.Update(context.Background(), &cert)).To(Succeed())
 
 				By("grabbing the new secret")
@@ -201,7 +201,7 @@ var _ = framework.CertManagerDescribe("CA Injector", func() {
 				if len(f.KubeClientConfig.CAData) == 0 {
 					Skip("skipping test as the kube client CA bundle is not set")
 				}
-				By("creating a vaidating webhook with the inject-apiserver-ca annotation")
+				By("creating an injectable with the inject-apiserver-ca annotation")
 				injectable := test.makeInjectable("apiserver-ca")
 				injectable.(metav1.Object).SetAnnotations(map[string]string{
 					injctrl.WantInjectAPIServerCAAnnotation: "true",
@@ -217,6 +217,77 @@ var _ = framework.CertManagerDescribe("CA Injector", func() {
 					expectedCAs[i] = caData
 				}
 				Eventually(func() ([][]byte, error) {
+					newInjectable := injectable.DeepCopyObject()
+					if err := f.CRClient.Get(context.Background(), types.NamespacedName{Name: injectable.(metav1.Object).GetName()}, newInjectable); err != nil {
+						return nil, err
+					}
+					return test.getCAs(newInjectable), nil
+				}, "10s", "2s").Should(Equal(expectedCAs))
+			})
+
+			It("should inject a CA directly from a secret if the inject-ca-from-secret annotation is present", func() {
+				if test.disabled != "" {
+					Skip(test.disabled)
+				}
+				secretName := types.NamespacedName{Name: secretName, Namespace: f.Namespace.Name}
+				annotatedSecret := corev1.Secret{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      secretName.Name,
+						Namespace: secretName.Namespace,
+						Annotations: map[string]string{
+							injctrl.AllowsInjectionFromSecretAnnotation: "true",
+						},
+					},
+				}
+				Expect(f.CRClient.Create(context.Background(), &annotatedSecret)).To(Succeed())
+
+				injectable := test.makeInjectable("from-secret")
+				injectable.(metav1.Object).SetAnnotations(map[string]string{
+					injctrl.WantInjectFromSecretAnnotation: secretName.String(),
+				})
+				generalSetup(injectable)
+			})
+
+			It("should refuse to inject a CA directly from a secret if the allow-direct-injection annotation is not 'true'", func() {
+				if test.disabled != "" {
+					Skip(test.disabled)
+				}
+				secretName := types.NamespacedName{Name: secretName, Namespace: f.Namespace.Name}
+				annotatedSecret := corev1.Secret{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      secretName.Name,
+						Namespace: secretName.Namespace,
+						Annotations: map[string]string{
+							injctrl.AllowsInjectionFromSecretAnnotation: "false",
+						},
+					},
+				}
+				Expect(f.CRClient.Create(context.Background(), &annotatedSecret)).To(Succeed())
+
+				By("creating a " + subj + " pointing to a secret")
+				injectable := test.makeInjectable("from-secret-not-allowed")
+				injectable.(metav1.Object).SetAnnotations(map[string]string{
+					injctrl.WantInjectFromSecretAnnotation: secretName.String(),
+				})
+				Expect(f.CRClient.Create(context.Background(), injectable)).To(Succeed())
+				toCleanup = injectable
+
+				By("creating a certificate")
+				cert := util.NewCertManagerBasicCertificate("serving-certs", secretName.Name, issuerName, certmanager.IssuerKind, nil, nil)
+				cert.Namespace = f.Namespace.Name
+				Expect(f.CRClient.Create(context.Background(), cert)).To(Succeed())
+
+				By("grabbing the corresponding secret")
+				var secret corev1.Secret
+				Eventually(func() error { return f.CRClient.Get(context.Background(), secretName, &secret) }, "10s", "2s").Should(Succeed())
+
+				By("checking that all webhooks have an empty CA")
+				expectedLen := len(test.getCAs(injectable))
+				expectedCAs := make([][]byte, expectedLen)
+				for i := range expectedCAs {
+					expectedCAs[i] = nil
+				}
+				Consistently(func() ([][]byte, error) {
 					newInjectable := injectable.DeepCopyObject()
 					if err := f.CRClient.Get(context.Background(), types.NamespacedName{Name: injectable.(metav1.Object).GetName()}, newInjectable); err != nil {
 						return nil, err
@@ -369,4 +440,5 @@ var _ = framework.CertManagerDescribe("CA Injector", func() {
 			return [][]byte{apiSvc.Spec.CABundle}
 		},
 	})
+
 })
