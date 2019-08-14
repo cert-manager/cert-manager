@@ -26,10 +26,11 @@ go_test(
     srcs = ["ca_test.go"],
     embed = [":go_default_library"],
     deps = [
+        "//pkg/api/util:go_default_library",
         "//pkg/apis/certmanager:go_default_library",
         "//pkg/apis/certmanager/v1alpha1:go_default_library",
+        "//pkg/controller/certificaterequests:go_default_library",
         "//pkg/controller/test:go_default_library",
-        "//pkg/issuer:go_default_library",
         "//pkg/util/pki:go_default_library",
         "//test/unit/gen:go_default_library",
         "//test/unit/listers:go_default_library",
@@ -37,6 +38,8 @@ go_test(
         "//vendor/k8s.io/apimachinery/pkg/apis/meta/v1:go_default_library",
         "//vendor/k8s.io/apimachinery/pkg/runtime:go_default_library",
         "//vendor/k8s.io/client-go/listers/core/v1:go_default_library",
+        "//vendor/k8s.io/client-go/testing:go_default_library",
+        "//vendor/k8s.io/utils/clock/testing:go_default_library",
     ],
 )
 

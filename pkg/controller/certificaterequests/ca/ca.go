@@ -18,13 +18,14 @@ package ca
 
 import (
 	"context"
+	"crypto/x509"
 	"fmt"
 
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	corelisters "k8s.io/client-go/listers/core/v1"
 
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
 	"github.com/jetstack/cert-manager/pkg/controller/certificaterequests"
 	crutil "github.com/jetstack/cert-manager/pkg/controller/certificaterequests/util"
@@ -39,11 +40,16 @@ const (
 	CRControllerName = "certificaterequests-issuer-ca"
 )
 
+type templateGenerator func(*cmapi.CertificateRequest) (*x509.Certificate, error)
+
 type CA struct {
 	issuerOptions controllerpkg.IssuerOptions
 	secretsLister corelisters.SecretLister
 
 	reporter *crutil.Reporter
+
+	// Used for testing to get reproducible resulting certificates
+	templateGenerator templateGenerator
 }
 
 func init() {
@@ -64,13 +70,14 @@ func init() {
 
 func NewCA(ctx *controllerpkg.Context) *CA {
 	return &CA{
-		issuerOptions: ctx.IssuerOptions,
-		secretsLister: ctx.KubeSharedInformerFactory.Core().V1().Secrets().Lister(),
-		reporter:      crutil.NewReporter(ctx.Clock, ctx.Recorder),
+		issuerOptions:     ctx.IssuerOptions,
+		secretsLister:     ctx.KubeSharedInformerFactory.Core().V1().Secrets().Lister(),
+		reporter:          crutil.NewReporter(ctx.Clock, ctx.Recorder),
+		templateGenerator: pki.GenerateTemplateFromCertificateRequest,
 	}
 }
 
-func (c *CA) Sign(ctx context.Context, cr *v1alpha1.CertificateRequest, issuerObj v1alpha1.GenericIssuer) (*issuerpkg.IssueResponse, error) {
+func (c *CA) Sign(ctx context.Context, cr *cmapi.CertificateRequest, issuerObj cmapi.GenericIssuer) (*issuerpkg.IssueResponse, error) {
 	log := logf.FromContext(ctx, "sign")
 
 	secretName := issuerObj.GetSpec().CA.SecretName
@@ -105,7 +112,7 @@ func (c *CA) Sign(ctx context.Context, cr *v1alpha1.CertificateRequest, issuerOb
 		return nil, err
 	}
 
-	template, err := pki.GenerateTemplateFromCertificateRequest(cr)
+	template, err := c.templateGenerator(cr)
 	if err != nil {
 		message := "Error generating certificate template"
 		c.reporter.Failed(cr, err, "ErrorSigning", message)
