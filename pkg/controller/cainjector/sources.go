@@ -37,16 +37,23 @@ var (
 	// as namespace/name.  The certificate is expected to have the is-serving-for annotations.
 	WantInjectAnnotation = "certmanager.k8s.io/inject-ca-from"
 
-	// WantInjectFromSecretAnnotation is the annotation that specifies that a particular
-	// object wants injection of CAs.  It takes the form of a reference to a Secret
-	// as namespace/name.
-	WantInjectFromSecretAnnotation = "certmanager.k8s.io/inject-ca-from-secret"
-
 	// WantInjectAPIServerCAAnnotation, if set to "true", will make the cainjector
 	// inject the CA certificate for the Kubernetes apiserver into the resource.
 	// It discovers the apiserver's CA by inspecting the service account credentials
 	// mounted into the
 	WantInjectAPIServerCAAnnotation = "certmanager.k8s.io/inject-apiserver-ca"
+
+	// WantInjectFromSecretAnnotation is the annotation that specifies that a particular
+	// object wants injection of CAs.  It takes the form of a reference to a Secret
+	// as namespace/name.
+	WantInjectFromSecretAnnotation = "certmanager.k8s.io/inject-ca-from-secret"
+
+	// AllowsInjectionFromSecretAnnotation is an annotation that must be added
+	// to Secret resource that want to denote that they can be directly
+	// injected into injectables that have a `inject-ca-from-secret` annotation.
+	// If an injectable references a Secret that does NOT have this annotation,
+	// the cainjector will refuse to inject the secret.
+	AllowsInjectionFromSecretAnnotation = "certmanager.k8s.io/allow-direct-injection"
 )
 
 // caDataSource knows how to extract CA data given a provided InjectTarget.
@@ -210,6 +217,11 @@ func (c *secretDataSource) ReadCA(ctx context.Context, log logr.Logger, metaObj 
 		log.Error(err, "unable to fetch associated secret")
 		// don't requeue if we're just not found, we'll get called when the secret gets created
 		return nil, dropNotFound(err)
+	}
+
+	if secret.Annotations == nil || secret.Annotations[AllowsInjectionFromSecretAnnotation] != "true" {
+		log.Info("Secret resource does not allow direct injection - refusing to inject CA")
+		return nil, nil
 	}
 
 	// inject the CA data
