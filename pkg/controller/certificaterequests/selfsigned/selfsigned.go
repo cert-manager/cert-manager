@@ -18,6 +18,8 @@ package selfsigned
 
 import (
 	"context"
+	"crypto"
+	"crypto/x509"
 	"errors"
 	"fmt"
 
@@ -25,7 +27,7 @@ import (
 	corelisters "k8s.io/client-go/listers/core/v1"
 
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
 	"github.com/jetstack/cert-manager/pkg/controller/certificaterequests"
 	crutil "github.com/jetstack/cert-manager/pkg/controller/certificaterequests/util"
@@ -40,11 +42,16 @@ const (
 	CRControllerName = "certificaterequests-issuer-selfsigned"
 )
 
+type signingFn func(*x509.Certificate, *x509.Certificate, crypto.PublicKey, interface{}) ([]byte, *x509.Certificate, error)
+
 type SelfSigned struct {
 	issuerOptions controllerpkg.IssuerOptions
 	secretsLister corelisters.SecretLister
 
 	reporter *crutil.Reporter
+
+	// Used for testing to get reproducible resulting certificates
+	signingFn signingFn
 }
 
 func init() {
@@ -67,18 +74,19 @@ func NewSelfSigned(ctx *controllerpkg.Context) *SelfSigned {
 		issuerOptions: ctx.IssuerOptions,
 		secretsLister: ctx.KubeSharedInformerFactory.Core().V1().Secrets().Lister(),
 		reporter:      crutil.NewReporter(ctx.Clock, ctx.Recorder),
+		signingFn:     pki.SignCertificate,
 	}
 }
 
-func (s *SelfSigned) Sign(ctx context.Context, cr *v1alpha1.CertificateRequest, issuerObj v1alpha1.GenericIssuer) (*issuer.IssueResponse, error) {
+func (s *SelfSigned) Sign(ctx context.Context, cr *cmapi.CertificateRequest, issuerObj cmapi.GenericIssuer) (*issuer.IssueResponse, error) {
 	log := logf.FromContext(ctx, "sign")
 
 	resourceNamespace := s.issuerOptions.ResourceNamespace(issuerObj)
 
-	secretName, ok := cr.ObjectMeta.Annotations[v1alpha1.CRPrivateKeyAnnotationKey]
+	secretName, ok := cr.ObjectMeta.Annotations[cmapi.CRPrivateKeyAnnotationKey]
 	if !ok || secretName == "" {
 		message := fmt.Sprintf("Annotation %q missing or reference empty",
-			v1alpha1.CRPrivateKeyAnnotationKey)
+			cmapi.CRPrivateKeyAnnotationKey)
 		err := errors.New("secret name missing")
 
 		s.reporter.Failed(cr, err, "MissingAnnotation", message)
@@ -88,26 +96,26 @@ func (s *SelfSigned) Sign(ctx context.Context, cr *v1alpha1.CertificateRequest, 
 	}
 
 	privatekey, err := kube.SecretTLSKey(ctx, s.secretsLister, cr.Namespace, secretName)
+	if k8sErrors.IsNotFound(err) {
+		message := fmt.Sprintf("Referenced secret %s/%s not found", cr.Namespace, secretName)
+
+		s.reporter.Pending(cr, err, "MissingSecret", message)
+		log.Error(err, message)
+
+		return nil, nil
+	}
+
+	if cmerrors.IsInvalidData(err) {
+		message := fmt.Sprintf("Failed to get key %q referenced in annotation %q",
+			secretName, cmapi.CRPrivateKeyAnnotationKey)
+
+		s.reporter.Pending(cr, err, "ErrorParsingKey", message)
+		log.Error(err, message)
+
+		return nil, nil
+	}
+
 	if err != nil {
-		if k8sErrors.IsNotFound(err) {
-			message := fmt.Sprintf("Referenced secret %s/%s not found", cr.Namespace, secretName)
-
-			s.reporter.Pending(cr, err, "MissingSecret", message)
-			log.Error(err, message)
-
-			return nil, nil
-		}
-
-		if cmerrors.IsInvalidData(err) {
-			message := fmt.Sprintf("Failed to get key %q referenced in annotation %q",
-				secretName, v1alpha1.CRPrivateKeyAnnotationKey)
-
-			s.reporter.Pending(cr, err, "ErrorParsingKey", message)
-			log.Error(err, message)
-
-			return nil, nil
-		}
-
 		// We are probably in a network error here so we should backoff and retry
 		message := fmt.Sprintf("Failed to get certificate key pair from secret %s/%s", resourceNamespace, secretName)
 		s.reporter.Pending(cr, err, "ErrorGettingSecret", message)
@@ -147,7 +155,7 @@ func (s *SelfSigned) Sign(ctx context.Context, cr *v1alpha1.CertificateRequest, 
 	}
 
 	// sign and encode the certificate
-	certPem, _, err := pki.SignCertificate(template, template, publickey, privatekey)
+	certPem, _, err := s.signingFn(template, template, publickey, privatekey)
 	if err != nil {
 		message := "Error signing certificate"
 		s.reporter.Failed(cr, err, "ErrorSigning", message)

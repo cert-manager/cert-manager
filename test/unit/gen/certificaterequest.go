@@ -121,6 +121,12 @@ func AddCertificateRequestAnnotations(annotations map[string]string) Certificate
 	}
 }
 
+func SetCertificateRequestAnnotations(annotations map[string]string) CertificateRequestModifier {
+	return func(cr *v1alpha1.CertificateRequest) {
+		cr.SetAnnotations(annotations)
+	}
+}
+
 func SetCertificateRequestFailureTime(p metav1.Time) CertificateRequestModifier {
 	return func(cr *v1alpha1.CertificateRequest) {
 		cr.Status.FailureTime = &p
