@@ -19,6 +19,7 @@ package ca
 import (
 	"crypto/x509"
 	"net"
+	"net/url"
 	"time"
 
 	. "github.com/onsi/ginkgo"
@@ -28,7 +29,15 @@ import (
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	"github.com/jetstack/cert-manager/test/e2e/framework"
 	"github.com/jetstack/cert-manager/test/e2e/util"
+	"github.com/jetstack/cert-manager/test/unit/gen"
 )
+
+func exampleURLs() (urls []*url.URL) {
+	a, _ := url.Parse("spiffe://foo.foo.example.net")
+	b, _ := url.Parse("spiffe://foo.bar.example.net")
+	urls = append(urls, a, b)
+	return
+}
 
 var _ = framework.CertManagerDescribe("CA CertificateRequest", func() {
 	f := framework.NewDefaultFramework("create-ca-certificate")
@@ -127,10 +136,10 @@ var _ = framework.CertManagerDescribe("CA CertificateRequest", func() {
 			It("should generate a signed certificate valid for "+v.label, func() {
 				crClient := f.CertManagerClientSet.CertmanagerV1alpha1().CertificateRequests(f.Namespace.Name)
 
-				By("Creating a CertificateRequest")
-				cr, key, err := util.NewCertManagerBasicCertificateRequest(certificateRequestName, issuerName, v1alpha1.IssuerKind, v.inputDuration,
-					exampleDNSNames, exampleIPAddresses, exampleURIs, x509.RSA)
+				By("Creating a CertificateRequest with Usages")
+				csr, key, err := gen.CSR(x509.RSA, gen.SetCSRDNSNames(exampleDNSNames...), gen.SetCSRIPAddresses(exampleIPAddresses...), gen.SetCSRURIs(exampleURLs()...))
 				Expect(err).NotTo(HaveOccurred())
+				cr := gen.CertificateRequest(certificateRequestName, gen.SetCertificateRequestNamespace(f.Namespace.Name), gen.SetCertificateRequestIssuer(v1alpha1.ObjectReference{Kind: v1alpha1.IssuerKind, Name: issuerName}), gen.SetCertificateRequestDuration(v.inputDuration), gen.SetCertificateRequestCSR(csr))
 				cr, err = crClient.Create(cr)
 				Expect(err).NotTo(HaveOccurred())
 

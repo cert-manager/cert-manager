@@ -6,6 +6,7 @@ go_library(
         "certificate.go",
         "certificaterequest.go",
         "challenge.go",
+        "csr.go",
         "doc.go",
         "issuer.go",
         "objectmeta.go",
@@ -15,6 +16,7 @@ go_library(
     visibility = ["//visibility:public"],
     deps = [
         "//pkg/apis/certmanager/v1alpha1:go_default_library",
+        "//pkg/util/pki:go_default_library",
         "//vendor/k8s.io/apimachinery/pkg/apis/meta/v1:go_default_library",
     ],
 )

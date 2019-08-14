@@ -70,6 +70,11 @@ type CertificateRequestSpec struct {
 	// implies that the 'signing' usage is set
 	// +optional
 	IsCA bool `json:"isCA,omitempty"`
+
+	// Usages is the set of x509 actions that are enabled for a given key.
+	// Defaults are ('digital signature', 'key encipherment') if empty
+	// +optional
+	Usages []KeyUsage `json:"usages,omitempty"`
 }
 
 // CertificateStatus defines the observed state of CertificateRequest and

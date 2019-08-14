@@ -103,6 +103,10 @@ type CertificateSpec struct {
 	// +optional
 	IsCA bool `json:"isCA,omitempty"`
 
+	// Usages is the set of x509 actions that are enabled for a given key. Defaults are ('digital signature', 'key encipherment') if empty
+	// +optional
+	Usages []KeyUsage `json:"usages,omitempty"`
+
 	// ACME contains configuration specific to ACME Certificates.
 	// Notably, this contains details on how the domain names listed on this
 	// Certificate resource should be 'solved', i.e. mapping HTTP01 and DNS01

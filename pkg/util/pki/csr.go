@@ -109,6 +109,29 @@ func OrganizationForCertificate(crt *v1alpha1.Certificate) []string {
 
 var serialNumberLimit = new(big.Int).Lsh(big.NewInt(1), 128)
 
+func buildUsages(usages []v1alpha1.KeyUsage, isCA bool) (ku x509.KeyUsage, eku []x509.ExtKeyUsage, err error) {
+	var unk []v1alpha1.KeyUsage
+	if isCA {
+		ku |= x509.KeyUsageCertSign
+	}
+	if len(usages) == 0 {
+		usages = append(usages, v1alpha1.DefaultKeyUsages()...)
+	}
+	for _, u := range usages {
+		if kuse, ok := apiutil.KeyUsageType(u); ok {
+			ku |= kuse
+		} else if ekuse, ok := apiutil.ExtKeyUsageType(u); ok {
+			eku = append(eku, ekuse)
+		} else {
+			unk = append(unk, u)
+		}
+	}
+	if len(unk) > 0 {
+		err = fmt.Errorf("unknown key usages: %v", unk)
+	}
+	return
+}
+
 // GenerateCSR will generate a new *x509.CertificateRequest template to be used
 // by issuers that utilise CSRs to obtain Certificates.
 // The CSR will not be signed, and should be passed to either EncodeCSR or
@@ -152,6 +175,10 @@ func GenerateTemplate(crt *v1alpha1.Certificate) (*x509.Certificate, error) {
 	dnsNames := DNSNamesForCertificate(crt)
 	ipAddresses := IPAddressesForCertificate(crt)
 	organization := OrganizationForCertificate(crt)
+	keyUsages, extKeyUsages, err := buildUsages(crt.Spec.Usages, crt.Spec.IsCA)
+	if err != nil {
+		return nil, err
+	}
 
 	if len(commonName) == 0 && len(dnsNames) == 0 {
 		return nil, fmt.Errorf("no domains specified on certificate")
@@ -182,29 +209,33 @@ func GenerateTemplate(crt *v1alpha1.Certificate) (*x509.Certificate, error) {
 		NotBefore: time.Now(),
 		NotAfter:  time.Now().Add(certDuration),
 		// see http://golang.org/pkg/crypto/x509/#KeyUsage
-		KeyUsage:    keyUsage(crt.Spec.IsCA),
+		KeyUsage:    keyUsages,
+		ExtKeyUsage: extKeyUsages,
 		DNSNames:    dnsNames,
 		IPAddresses: ipAddresses,
 	}, nil
-}
-
-func keyUsage(isCA bool) x509.KeyUsage {
-	keyUsages := x509.KeyUsageDigitalSignature | x509.KeyUsageKeyEncipherment
-	if isCA {
-		keyUsages |= x509.KeyUsageCertSign
-	}
-
-	return keyUsages
 }
 
 // GenerateTemplate will create a x509.Certificate for the given
 // CertificateRequest resource
 func GenerateTemplateFromCertificateRequest(cr *v1alpha1.CertificateRequest) (*x509.Certificate, error) {
 	certDuration := apiutil.DefaultCertDuration(cr.Spec.Duration)
-	return GenerateTemplateFromCSRPEM(cr.Spec.CSRPEM, certDuration, cr.Spec.IsCA)
+	keyUsage, extKeyUsage, err := buildUsages(cr.Spec.Usages, cr.Spec.IsCA)
+	if err != nil {
+		return nil, err
+	}
+	return GenerateTemplateFromCSRPEMWithUsages(cr.Spec.CSRPEM, certDuration, cr.Spec.IsCA, keyUsage, extKeyUsage)
 }
 
 func GenerateTemplateFromCSRPEM(csrPEM []byte, duration time.Duration, isCA bool) (*x509.Certificate, error) {
+	var (
+		ku  x509.KeyUsage
+		eku []x509.ExtKeyUsage
+	)
+	return GenerateTemplateFromCSRPEMWithUsages(csrPEM, duration, isCA, ku, eku)
+}
+
+func GenerateTemplateFromCSRPEMWithUsages(csrPEM []byte, duration time.Duration, isCA bool, keyUsage x509.KeyUsage, extKeyUsage []x509.ExtKeyUsage) (*x509.Certificate, error) {
 	block, _ := pem.Decode(csrPEM)
 	if block == nil {
 		return nil, errors.New("failed to decode csr")
@@ -235,15 +266,11 @@ func GenerateTemplateFromCSRPEM(csrPEM []byte, duration time.Duration, isCA bool
 		NotBefore:             time.Now(),
 		NotAfter:              time.Now().Add(duration),
 		// see http://golang.org/pkg/crypto/x509/#KeyUsage
-		KeyUsage:    keyUsage(isCA),
+		KeyUsage:    keyUsage,
+		ExtKeyUsage: extKeyUsage,
 		DNSNames:    csr.DNSNames,
 		IPAddresses: csr.IPAddresses,
 		URIs:        csr.URIs,
-		// TODO: we should expose ExtKeyUsage via the API and not set x509.ExtKeyUsageClientAuth
-		// by default. This is a known change in behaviour between the Certificate and CertificateRequest
-		// controller and should be rectified before the CertificateRequest feature exits
-		// alpha.
-		ExtKeyUsage: []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth, x509.ExtKeyUsageClientAuth},
 	}, nil
 }
 

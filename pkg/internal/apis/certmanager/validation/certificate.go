@@ -77,7 +77,9 @@ func ValidateCertificateSpec(crt *v1alpha1.CertificateSpec, fldPath *field.Path)
 	if crt.Duration != nil || crt.RenewBefore != nil {
 		el = append(el, ValidateDuration(crt, fldPath)...)
 	}
-
+	if len(crt.Usages) > 0 {
+		el = append(el, validateUsages(crt, fldPath)...)
+	}
 	switch crt.KeyEncoding {
 	case v1alpha1.KeyEncoding(""), v1alpha1.PKCS1, v1alpha1.PKCS8:
 	default:
@@ -146,6 +148,18 @@ func validateIPAddresses(a *v1alpha1.CertificateSpec, fldPath *field.Path) field
 		ip := net.ParseIP(d)
 		if ip == nil {
 			el = append(el, field.Invalid(fldPath.Child("ipAddresses").Index(i), d, "invalid IP address"))
+		}
+	}
+	return el
+}
+
+func validateUsages(a *v1alpha1.CertificateSpec, fldPath *field.Path) field.ErrorList {
+	el := field.ErrorList{}
+	for i, u := range a.Usages {
+		_, kok := util.KeyUsageType(u)
+		_, ekok := util.ExtKeyUsageType(u)
+		if !kok && !ekok {
+			el = append(el, field.Invalid(fldPath.Child("usages").Index(i), u, "unknown keyusage"))
 		}
 	}
 	return el

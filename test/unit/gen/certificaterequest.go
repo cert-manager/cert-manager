@@ -107,6 +107,12 @@ func SetCertificateRequestName(name string) CertificateRequestModifier {
 	}
 }
 
+func SetCertificateRequestKeyUsages(usages ...v1alpha1.KeyUsage) CertificateRequestModifier {
+	return func(cr *v1alpha1.CertificateRequest) {
+		cr.Spec.Usages = usages
+	}
+}
+
 func AddCertificateRequestAnnotations(annotations map[string]string) CertificateRequestModifier {
 	return func(cr *v1alpha1.CertificateRequest) {
 		// Make sure to do a merge here with new annotations overriding.

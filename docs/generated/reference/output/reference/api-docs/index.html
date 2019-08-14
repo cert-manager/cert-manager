@@ -101,7 +101,7 @@ Appears In:
 </tr>
 <tr>
 <td><code>isCA</code><br /> <em>boolean</em></td>
-<td>IsCA will mark this Certificate as valid for signing. This implies that the &#39;signing&#39; usage is set</td>
+<td>IsCA will mark this Certificate as valid for signing. This implies that the &#39;cert sign&#39; usage is set</td>
 </tr>
 <tr>
 <td><code>issuerRef</code><br /> *<a href="#objectreference-v1alpha1">ObjectReference</a>*</td>
@@ -130,6 +130,10 @@ Appears In:
 <tr>
 <td><code>secretName</code><br /> <em>string</em></td>
 <td>SecretName is the name of the secret resource to store this secret in</td>
+</tr>
+<tr>
+<td><code>usages</code><br /> <em>string array</em></td>
+<td>Usages is the set of x509 actions that are enabled for a given key. Defaults are (&#39;digital signature&#39;, &#39;key encipherment&#39;) if empty</td>
 </tr>
 </tbody></table>
 <h3 id="certificatestatus-v1alpha1">CertificateStatus v1alpha1</h3>

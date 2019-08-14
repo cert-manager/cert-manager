@@ -6,6 +6,7 @@ go_library(
         "conditions.go",
         "duration.go",
         "issuers.go",
+        "usages.go",
     ],
     importpath = "github.com/jetstack/cert-manager/pkg/api/util",
     visibility = ["//visibility:public"],

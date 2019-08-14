@@ -63,7 +63,7 @@ spec:
               type: string
             isCA:
               description: IsCA will mark the resulting certificate as valid for signing.
-                This implies that the 'signing' usage is set
+                This implies that the 'cert sign' usage is set
               type: boolean
             issuerRef:
               description: IssuerRef is a reference to the issuer for this CertificateRequest.  If
@@ -83,6 +83,39 @@ spec:
               required:
               - name
               type: object
+            usages:
+              description: Usages is the set of x509 actions that are enabled for
+                a given key. Defaults are ('digital signature', 'key encipherment')
+                if empty
+              items:
+                description: 'KeyUsage specifies valid usage contexts for keys. See:
+                  https://tools.ietf.org/html/rfc5280#section-4.2.1.3      https://tools.ietf.org/html/rfc5280#section-4.2.1.12'
+                enum:
+                - signing
+                - digital signature
+                - content commitment
+                - key encipherment
+                - key agreement
+                - data encipherment
+                - cert sign
+                - crl sign
+                - encipher only
+                - decipher only
+                - any
+                - server auth
+                - client auth
+                - code signing
+                - email protection
+                - s/mime
+                - ipsec end system
+                - ipsec tunnel
+                - ipsec user
+                - timestamping
+                - ocsp signing
+                - microsoft sgc
+                - netscape sgc
+                type: string
+              type: array
           required:
           - issuerRef
           type: object
@@ -295,7 +328,7 @@ spec:
               type: array
             isCA:
               description: IsCA will mark this Certificate as valid for signing. This
-                implies that the 'signing' usage is set
+                implies that the 'cert sign' usage is set
               type: boolean
             issuerRef:
               description: IssuerRef is a reference to the issuer for this certificate.
@@ -353,6 +386,39 @@ spec:
               description: SecretName is the name of the secret resource to store
                 this secret in
               type: string
+            usages:
+              description: Usages is the set of x509 actions that are enabled for
+                a given key. Defaults are ('digital signature', 'key encipherment')
+                if empty
+              items:
+                description: 'KeyUsage specifies valid usage contexts for keys. See:
+                  https://tools.ietf.org/html/rfc5280#section-4.2.1.3      https://tools.ietf.org/html/rfc5280#section-4.2.1.12'
+                enum:
+                - signing
+                - digital signature
+                - content commitment
+                - key encipherment
+                - key agreement
+                - data encipherment
+                - cert sign
+                - crl sign
+                - encipher only
+                - decipher only
+                - any
+                - server auth
+                - client auth
+                - code signing
+                - email protection
+                - s/mime
+                - ipsec end system
+                - ipsec tunnel
+                - ipsec user
+                - timestamping
+                - ocsp signing
+                - microsoft sgc
+                - netscape sgc
+                type: string
+              type: array
           required:
           - issuerRef
           - secretName
