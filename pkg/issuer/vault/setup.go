@@ -24,6 +24,7 @@ import (
 
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	vaultinternal "github.com/jetstack/cert-manager/pkg/internal/vault"
 )
 
 const (
@@ -83,7 +84,7 @@ func (v *Vault) Setup(ctx context.Context) error {
 		return nil
 	}
 
-	client, err := v.initVaultClient()
+	client, err := vaultinternal.New(v.resourceNamespace, v.secretsLister, v.issuer)
 	if err != nil {
 		s := messageVaultClientInitFailed + err.Error()
 		klog.V(4).Infof("%s: %s", v.issuer.GetObjectMeta().Name, s)

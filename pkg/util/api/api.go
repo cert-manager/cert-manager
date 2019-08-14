@@ -14,9 +14,21 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package vault
+package api
 
 import (
-	_ "github.com/jetstack/cert-manager/test/e2e/suite/issuers/vault/certificate"
-	_ "github.com/jetstack/cert-manager/test/e2e/suite/issuers/vault/certificaterequest"
+	"time"
+
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 )
+
+func DefaultCertDuration(d *metav1.Duration) time.Duration {
+	certDuration := v1alpha1.DefaultCertificateDuration
+	if d != nil {
+		certDuration = d.Duration
+	}
+
+	return certDuration
+}

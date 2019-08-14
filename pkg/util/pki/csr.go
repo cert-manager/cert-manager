@@ -30,6 +30,7 @@ import (
 	"time"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	"github.com/jetstack/cert-manager/pkg/util/api"
 )
 
 // CommonNameForCertificate returns the common name that should be used for the
@@ -161,10 +162,7 @@ func GenerateTemplate(crt *v1alpha1.Certificate) (*x509.Certificate, error) {
 		return nil, fmt.Errorf("failed to generate serial number: %s", err.Error())
 	}
 
-	certDuration := v1alpha1.DefaultCertificateDuration
-	if crt.Spec.Duration != nil {
-		certDuration = crt.Spec.Duration.Duration
-	}
+	certDuration := api.DefaultCertDuration(crt.Spec.Duration)
 
 	pubKeyAlgo, _, err := SignatureAlgorithm(crt)
 	if err != nil {
@@ -222,10 +220,7 @@ func GenerateTemplateFromCertificateRequest(cr *v1alpha1.CertificateRequest) (*x
 		return nil, fmt.Errorf("failed to generate serial number: %s", err.Error())
 	}
 
-	certDuration := v1alpha1.DefaultCertificateDuration
-	if cr.Spec.Duration != nil {
-		certDuration = cr.Spec.Duration.Duration
-	}
+	certDuration := api.DefaultCertDuration(cr.Spec.Duration)
 
 	return &x509.Certificate{
 		Version:               csr.Version,

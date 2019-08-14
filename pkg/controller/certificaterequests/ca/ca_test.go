@@ -54,7 +54,7 @@ func generateRSAPrivateKey(t *testing.T) *rsa.PrivateKey {
 	return pk
 }
 
-func generateCSR(t *testing.T, secretKey crypto.Signer) ([]byte, error) {
+func generateCSR(t *testing.T, secretKey crypto.Signer) []byte {
 	asn1Subj, _ := asn1.Marshal(pkix.Name{
 		CommonName: "test",
 	}.ToRDNSequence())
@@ -65,12 +65,13 @@ func generateCSR(t *testing.T, secretKey crypto.Signer) ([]byte, error) {
 
 	csrBytes, err := x509.CreateCertificateRequest(rand.Reader, &template, secretKey)
 	if err != nil {
-		return nil, err
+		t.Error(err)
+		t.FailNow()
 	}
 
 	csr := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE REQUEST", Bytes: csrBytes})
 
-	return csr, nil
+	return csr
 }
 
 func generateSelfSignedCertFromCR(t *testing.T, cr *v1alpha1.CertificateRequest, key crypto.Signer,
@@ -139,11 +140,7 @@ func TestSign(t *testing.T) {
 	rsaPK := generateRSAPrivateKey(t)
 	rsaPKBytes := pki.EncodePKCS1PrivateKey(rsaPK)
 
-	caCSR, err := generateCSR(t, rsaPK)
-	if err != nil {
-		t.Errorf("failed to generate CA CSR: %s", err)
-		t.FailNow()
-	}
+	caCSR := generateCSR(t, rsaPK)
 
 	rootRSACR := gen.CertificateRequest("test-root-ca",
 		gen.SetCertificateRequestCSR(caCSR),
