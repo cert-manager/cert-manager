@@ -21,14 +21,12 @@ import (
 	"context"
 	"crypto"
 	"crypto/rand"
-	"crypto/rsa"
 	"crypto/x509"
 	"crypto/x509/pkix"
+	"encoding/asn1"
 	"encoding/pem"
 	"errors"
 	"math/big"
-	"net"
-	"net/url"
 	"testing"
 	"time"
 
@@ -42,6 +40,7 @@ import (
 	"github.com/jetstack/cert-manager/pkg/controller/certificaterequests/fake"
 	testpkg "github.com/jetstack/cert-manager/pkg/controller/test"
 	"github.com/jetstack/cert-manager/pkg/issuer"
+	issuerfake "github.com/jetstack/cert-manager/pkg/issuer/fake"
 	_ "github.com/jetstack/cert-manager/pkg/issuer/selfsigned"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 	"github.com/jetstack/cert-manager/test/unit/gen"
@@ -53,53 +52,27 @@ var (
 	serialNumberLimit = new(big.Int).Lsh(big.NewInt(1), 128)
 )
 
-func generateCSR(commonName string) ([]byte, error) {
-	csr := &x509.CertificateRequest{
-		Version:            3,
-		SignatureAlgorithm: x509.SHA256WithRSA,
-		PublicKeyAlgorithm: x509.RSA,
-		Subject: pkix.Name{
-			Organization: []string{"my-org"},
-			CommonName:   commonName,
-		},
-		URIs: []*url.URL{
-			{
-				Scheme: "http",
-				Host:   "example.com",
-			},
-		},
-		IPAddresses: []net.IP{
-			net.IPv4(8, 8, 8, 8),
-		},
+func generateCSR(t *testing.T, secretKey crypto.Signer, alg x509.SignatureAlgorithm) []byte {
+	asn1Subj, _ := asn1.Marshal(pkix.Name{
+		CommonName: "test",
+	}.ToRDNSequence())
+	template := x509.CertificateRequest{
+		RawSubject:         asn1Subj,
+		SignatureAlgorithm: alg,
 	}
 
-	sk, err := pki.GenerateRSAPrivateKey(2048)
+	csrBytes, err := x509.CreateCertificateRequest(rand.Reader, &template, secretKey)
 	if err != nil {
-		return nil, err
-	}
-
-	csrBytes, err := pki.EncodeCSR(csr, sk)
-	if err != nil {
-		return nil, err
-	}
-
-	csrPEM := pem.EncodeToMemory(&pem.Block{
-		Type: "CERTIFICATE REQUEST", Bytes: csrBytes,
-	})
-
-	return csrPEM, nil
-}
-
-func generatePrivateKey(t *testing.T) *rsa.PrivateKey {
-	pk, err := pki.GenerateRSAPrivateKey(2048)
-	if err != nil {
-		t.Errorf("failed to generate private key: %v", err)
+		t.Error(err)
 		t.FailNow()
 	}
-	return pk
+
+	csr := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE REQUEST", Bytes: csrBytes})
+
+	return csr
 }
 
-func generateSelfSignedCert(t *testing.T, cr *cmapi.CertificateRequest, sn *big.Int, key crypto.Signer, notBefore, notAfter time.Time) []byte {
+func generateSelfSignedCert(t *testing.T, cr *cmapi.CertificateRequest, key crypto.Signer, notBefore, notAfter time.Time) []byte {
 	template, err := pki.GenerateTemplateFromCertificateRequest(cr)
 	if err != nil {
 		t.Errorf("failed to generate cert template from CSR: %v", err)
@@ -128,412 +101,431 @@ func generateSelfSignedCert(t *testing.T, cr *cmapi.CertificateRequest, sn *big.
 func TestSync(t *testing.T) {
 	nowMetaTime := metav1.NewTime(fixedClockStart)
 
-	csr, err := generateCSR("csr")
+	skRSA, err := pki.GenerateRSAPrivateKey(2048)
 	if err != nil {
-		t.Errorf("failed to generate CSR for testing: %s", err)
+		t.Error(err)
 		t.FailNow()
 	}
 
-	pk := generatePrivateKey(t)
+	skEC, err := pki.GenerateECPrivateKey(256)
+	if err != nil {
+		t.Error(err)
+		t.FailNow()
+	}
 
-	exampleCR := gen.CertificateRequest("test",
+	csrRSAPEM := generateCSR(t, skRSA, x509.SHA256WithRSA)
+
+	baseIssuer := gen.Issuer("test-issuer",
+		gen.SetIssuerSelfSigned(cmapi.SelfSignedIssuer{}),
+	)
+
+	baseCR := gen.CertificateRequest("test-cr",
 		gen.SetCertificateRequestIsCA(false),
-		gen.SetCertificateRequestIssuer(cmapi.ObjectReference{Name: "test"}),
-		gen.SetCertificateRequestCSR(csr),
+		gen.SetCertificateRequestCSR(csrRSAPEM),
 		gen.SetCertificateRequestIssuer(cmapi.ObjectReference{
-			Kind: "Issuer",
-			Name: "fake-issuer",
+			Kind: baseIssuer.Kind,
+			Name: baseIssuer.Name,
 		}),
 	)
 
-	exampleCRIssuePendingCondition := gen.CertificateRequestFrom(exampleCR,
-		gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
-			Type:               cmapi.CertificateRequestConditionReady,
-			Status:             cmapi.ConditionFalse,
-			Reason:             "Pending",
-			Message:            "Certificate issuance pending",
-			LastTransitionTime: &nowMetaTime,
-		}),
-	)
+	certRSAPEM := generateSelfSignedCert(t, baseCR, skRSA, fixedClockStart, fixedClockStart.Add(time.Hour*12))
+	certRSAPEMExpired := generateSelfSignedCert(t, baseCR, skRSA, fixedClockStart.Add(-time.Hour*13), fixedClockStart.Add(-time.Hour*12))
 
-	exampleCRIssuerNotFoundPendingCondition := gen.CertificateRequestFrom(exampleCR,
-		gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
-			Type:               cmapi.CertificateRequestConditionReady,
-			Status:             cmapi.ConditionFalse,
-			Reason:             "Pending",
-			Message:            `Referenced "Issuer" not found: issuer.certmanager.k8s.io "fake-issuer" not found`,
-			LastTransitionTime: &nowMetaTime,
-		}),
-	)
-
-	exampleCRIssuerUnknownTypeFoundPendingCondition := gen.CertificateRequestFrom(exampleCR,
-		gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
-			Type:               cmapi.CertificateRequestConditionReady,
-			Status:             cmapi.ConditionFalse,
-			Reason:             "Pending",
-			Message:            "Missing issuer type: no issuer specified for Issuer 'default-unit-test-ns/fake-issuer'",
-			LastTransitionTime: &nowMetaTime,
-		}),
-	)
-
-	exampleFailedCR := gen.CertificateRequestFrom(exampleCR,
-		gen.SetCertificateRequestFailureTime(nowMetaTime),
-		gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
-			Type:               cmapi.CertificateRequestConditionReady,
-			Status:             cmapi.ConditionFalse,
-			Reason:             cmapi.CertificateRequestReasonFailed,
-			LastTransitionTime: &nowMetaTime,
-		}),
-	)
-
-	certPEM := generateSelfSignedCert(t, exampleCR, nil, pk, fixedClockStart, fixedClockStart.Add(time.Hour*12))
-	certPEMExpired := generateSelfSignedCert(t, exampleCR, nil, pk, fixedClockStart.Add(-time.Hour*13), fixedClockStart.Add(-time.Hour*12))
-
-	exampleSignedCR := exampleCR.DeepCopy()
-	exampleSignedCR.Status.Certificate = certPEM
-
-	exampleSignedExpiredCR := exampleCR.DeepCopy()
-	exampleSignedExpiredCR.Status.Certificate = certPEMExpired
-
-	exampleCRReadyCondition := gen.CertificateRequestFrom(exampleSignedCR,
-		gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
-			Type:               cmapi.CertificateRequestConditionReady,
-			Status:             cmapi.ConditionTrue,
-			Reason:             cmapi.CertificateRequestReasonIssued,
-			Message:            "Certificate has been issued successfully",
-			LastTransitionTime: &nowMetaTime,
-		}),
-	)
-
-	exampleCRExpiredReadyCondition := exampleSignedExpiredCR
-	exampleCRExpiredReadyCondition.Status.Conditions = exampleCRReadyCondition.Status.Conditions
-
-	exampleGarbageCertCR := exampleSignedCR.DeepCopy()
-	exampleGarbageCertCR.Status.Certificate = []byte("not a certificate")
-	exampleCRGarbageCondition := gen.CertificateRequestFrom(exampleGarbageCertCR,
-		gen.SetCertificateRequestFailureTime(nowMetaTime),
-		gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
-			Type:               cmapi.CertificateRequestConditionReady,
-			Status:             cmapi.ConditionFalse,
-			Reason:             cmapi.CertificateRequestReasonFailed,
-			Message:            "Failed to decode returned certificate: error decoding cert PEM block",
-			LastTransitionTime: &nowMetaTime,
-		}),
-	)
-
-	exampleEmptyCSRCR := exampleCR.DeepCopy()
-	exampleEmptyCSRCR.Spec.CSRPEM = make([]byte, 0)
-
-	exampleFailedValidationCR := gen.CertificateRequestFrom(exampleEmptyCSRCR,
-		gen.SetCertificateRequestFailureTime(nowMetaTime),
-		gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
-			Type:               cmapi.CertificateRequestConditionReady,
-			Status:             cmapi.ConditionFalse,
-			Reason:             "Failed",
-			Message:            "Resource validation failed: spec.csr: Required value: must be specified",
-			LastTransitionTime: &nowMetaTime,
-		}),
-	)
-
-	exampleCRWrongIssuerRefGroup := exampleCR.DeepCopy()
-	exampleCRWrongIssuerRefGroup.Spec.IssuerRef.Group = "notcertmanager.k8s.io"
-
-	exampleCRWrongIssuerRefType := exampleCR.DeepCopy()
-	exampleCRWrongIssuerRefType.Spec.IssuerRef.Name = "selfsigned-issuer"
-
-	exampleCRCorrectIssuerRefGroup := exampleCRWrongIssuerRefGroup.DeepCopy()
-	exampleCRCorrectIssuerRefGroup.Spec.IssuerRef.Group = "certmanager.k8s.io"
-	exampleCRReadyConditionWithGroupRef := exampleCRReadyCondition.DeepCopy()
-	exampleCRReadyConditionWithGroupRef.Spec.IssuerRef.Group = "certmanager.k8s.io"
+	certECPEM := generateSelfSignedCert(t, baseCR, skEC, fixedClockStart, fixedClockStart.Add(time.Hour*12))
+	certECPEMExpired := generateSelfSignedCert(t, baseCR, skEC, fixedClockStart.Add(-time.Hour*13), fixedClockStart.Add(-time.Hour*12))
 
 	tests := map[string]testT{
-		"should update certificate request with CertPending if issuer does not return a response": {
-			certificateRequest: gen.CertificateRequest("test",
-				gen.SetCertificateRequestIsCA(false),
-				gen.SetCertificateRequestCSR(csr),
+		"should return nil (no action) if group name if not 'certmanager.k8s.io' or ''": {
+			certificateRequest: gen.CertificateRequestFrom(baseCR,
 				gen.SetCertificateRequestIssuer(cmapi.ObjectReference{
-					Kind: "Issuer",
-					Name: "fake-issuer",
+					Group: "not-certmanager.k8s.io",
 				}),
 			),
+			builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{baseIssuer, baseCR},
+				ExpectedEvents:     []string{},
+				ExpectedActions:    []testpkg.Action{},
+			},
+		},
+		"should return nil (no action) if certificate request is ready and reason Issued": {
+			certificateRequest: gen.CertificateRequestFrom(baseCR,
+				gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
+					Type:               cmapi.CertificateRequestConditionReady,
+					Status:             cmapi.ConditionTrue,
+					Reason:             "Issued",
+					Message:            "Certificate issued",
+					LastTransitionTime: &nowMetaTime,
+				}),
+			),
+			builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{baseIssuer, baseCR},
+				ExpectedEvents:     []string{},
+				ExpectedActions:    []testpkg.Action{},
+			},
+		},
+		"should return nil (no action) if certificate request is not ready and reason Failed": {
+			certificateRequest: gen.CertificateRequestFrom(baseCR,
+				gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
+					Type:               cmapi.CertificateRequestConditionReady,
+					Status:             cmapi.ConditionFalse,
+					Reason:             "Failed",
+					Message:            "Certificate failed",
+					LastTransitionTime: &nowMetaTime,
+				}),
+			),
+			builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{baseIssuer, baseCR},
+				ExpectedEvents:     []string{},
+				ExpectedActions:    []testpkg.Action{},
+			},
+		},
+		"should report pending if issuer not found": {
+			certificateRequest: baseCR.DeepCopy(),
+			builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{baseCR},
+				ExpectedEvents: []string{
+					`Normal IssuerNotFound Referenced "Issuer" not found: issuer.certmanager.k8s.io "test-issuer" not found`,
+				},
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(coretesting.NewUpdateAction(
+						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
+						gen.DefaultTestNamespace,
+						gen.CertificateRequestFrom(baseCR,
+							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
+								Type:               cmapi.CertificateRequestConditionReady,
+								Status:             cmapi.ConditionFalse,
+								Reason:             "Pending",
+								Message:            `Referenced "Issuer" not found: issuer.certmanager.k8s.io "test-issuer" not found`,
+								LastTransitionTime: &nowMetaTime,
+							}),
+						),
+					)),
+				},
+			},
+		},
+		"should return error to try again if there was a error getting issuer wasn't a not found error": {
+			certificateRequest: baseCR.DeepCopy(),
+			helper: &issuerfake.Helper{
+				GetGenericIssuerFunc: func(cmapi.ObjectReference, string) (cmapi.GenericIssuer, error) {
+					return nil, errors.New("this is a network error")
+				},
+			},
+			builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{baseCR},
+				ExpectedEvents:     []string{},
+				ExpectedActions:    []testpkg.Action{},
+			},
+			expectedErr: true,
+		},
+		"report pending if we cannot determine the issuer type (probably not set)": {
+			certificateRequest: baseCR.DeepCopy(),
+			builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{baseCR,
+					gen.Issuer(baseIssuer.Name,
+						gen.AddIssuerCondition(cmapi.IssuerCondition{
+							Type:   cmapi.IssuerConditionReady,
+							Status: cmapi.ConditionTrue,
+						}),
+						// no type set
+					),
+				},
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(coretesting.NewUpdateAction(
+						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
+						gen.DefaultTestNamespace,
+						gen.CertificateRequestFrom(baseCR,
+							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
+								Type:               cmapi.CertificateRequestConditionReady,
+								Status:             cmapi.ConditionFalse,
+								Reason:             "Pending",
+								Message:            "Missing issuer type: no issuer specified for Issuer 'default-unit-test-ns/test-issuer'",
+								LastTransitionTime: &nowMetaTime,
+							}),
+						),
+					)),
+				},
+				ExpectedEvents: []string{
+					"Normal IssuerTypeMissing Missing issuer type: no issuer specified for Issuer 'default-unit-test-ns/test-issuer'",
+				},
+			},
+		},
+		"exit nil and no action if the issuer type does not match ours (its not meant for us)": {
+			certificateRequest: baseCR.DeepCopy(),
+			builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{baseCR,
+					gen.Issuer(baseIssuer.Name,
+						gen.AddIssuerCondition(cmapi.IssuerCondition{
+							Type:   cmapi.IssuerConditionReady,
+							Status: cmapi.ConditionTrue,
+						}),
+						gen.SetIssuerCA(cmapi.CAIssuer{}),
+					),
+				},
+				ExpectedActions: []testpkg.Action{},
+				ExpectedEvents:  []string{},
+			},
+		},
+		"report failure if the CertificateRequest fails validation": {
+			certificateRequest: gen.CertificateRequestFrom(baseCR,
+				gen.SetCertificateRequestCSR([]byte("bad csr")),
+			),
+			builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{baseCR, baseIssuer},
+				ExpectedEvents: []string{
+					"Warning BadConfig Resource validation failed: spec.csr: Invalid value: []byte{0x62, 0x61, 0x64, 0x20, 0x63, 0x73, 0x72}: failed to decode csr: error decoding certificate request PEM block",
+				},
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(coretesting.NewUpdateAction(
+						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
+						gen.DefaultTestNamespace,
+						gen.CertificateRequestFrom(baseCR,
+							gen.SetCertificateRequestCSR([]byte("bad csr")),
+							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
+								Type:               cmapi.CertificateRequestConditionReady,
+								Status:             cmapi.ConditionFalse,
+								Reason:             "Failed",
+								Message:            "Resource validation failed: spec.csr: Invalid value: []byte{0x62, 0x61, 0x64, 0x20, 0x63, 0x73, 0x72}: failed to decode csr: error decoding certificate request PEM block",
+								LastTransitionTime: &nowMetaTime,
+							}),
+							gen.SetCertificateRequestFailureTime(nowMetaTime),
+						),
+					)),
+				},
+			},
+		},
+		"if the Certificate is already set in the status then return nil and no-op, regardless of condition": {
+			certificateRequest: gen.CertificateRequestFrom(baseCR,
+				gen.SetCertificateRequestCertificate([]byte("a cert")),
+			),
+			builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{baseCR, baseIssuer},
+				ExpectedEvents:     []string{},
+				ExpectedActions:    []testpkg.Action{},
+			},
+		},
+		"if calling sign errors, we should not update condition and return error to retry": {
+			certificateRequest: gen.CertificateRequestFrom(baseCR),
 			issuerImpl: &fake.Issuer{
 				FakeSign: func(context.Context, *cmapi.CertificateRequest, cmapi.GenericIssuer) (*issuer.IssueResponse, error) {
-					// By not returning a response, we trigger a 'no-op' action which
-					// causes the certificate request controller to update the status of
-					// the CertificateRequest with !Ready - CertPending.
+					return nil, errors.New("sign call returns error")
+				},
+			},
+			builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{baseCR, baseIssuer},
+				ExpectedEvents:     []string{},
+				ExpectedActions:    []testpkg.Action{},
+			},
+			expectedErr: true,
+		},
+		"if calling sign returns nil, nil then we should return nil with no-op since the underlying issuer has probably set the condition to failed": {
+			certificateRequest: gen.CertificateRequestFrom(baseCR),
+			issuerImpl: &fake.Issuer{
+				FakeSign: func(context.Context, *cmapi.CertificateRequest, cmapi.GenericIssuer) (*issuer.IssueResponse, error) {
 					return nil, nil
 				},
 			},
 			builder: &testpkg.Builder{
-				CertManagerObjects: []runtime.Object{gen.Issuer("fake-issuer",
-					gen.SetIssuerSelfSigned(cmapi.SelfSignedIssuer{}),
-				),
-					gen.CertificateRequest("test"),
+				CertManagerObjects: []runtime.Object{baseCR, baseIssuer},
+				ExpectedEvents:     []string{},
+				ExpectedActions:    []testpkg.Action{},
+			},
+			expectedErr: false,
+		},
+		"if calling sign returns a response but the certificate is empty then we should set the condition as pending": {
+			certificateRequest: baseCR.DeepCopy(),
+			issuerImpl: &fake.Issuer{
+				FakeSign: func(context.Context, *cmapi.CertificateRequest, cmapi.GenericIssuer) (*issuer.IssueResponse, error) {
+					// By not returning a certificate in the response, we trigger a
+					// 'no-op' action which causes the certificate request controller to
+					// update the status of the CertificateRequest with !Ready +
+					// CertPending.
+					return new(issuer.IssueResponse), nil
+				},
+			},
+			builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{baseIssuer, baseCR},
+				ExpectedEvents: []string{
+					"Normal CertificatePending Certificate issuance pending",
 				},
 				ExpectedActions: []testpkg.Action{
 					testpkg.NewAction(coretesting.NewUpdateAction(
 						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
 						gen.DefaultTestNamespace,
-						exampleCRIssuePendingCondition,
+						gen.CertificateRequestFrom(baseCR,
+							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
+								Type:               cmapi.CertificateRequestConditionReady,
+								Status:             cmapi.ConditionFalse,
+								Reason:             "Pending",
+								Message:            "Certificate issuance pending",
+								LastTransitionTime: &nowMetaTime,
+							}),
+						),
 					)),
 				},
 			},
 		},
-		"should update the status with a freshly signed certificate only when one doesn't exist and group ref=''": {
-			certificateRequest: exampleCR,
+		"if calling sign returns a response but the certificate is badly formed then we fail": {
+			certificateRequest: baseCR.DeepCopy(),
 			issuerImpl: &fake.Issuer{
 				FakeSign: func(context.Context, *cmapi.CertificateRequest, cmapi.GenericIssuer) (*issuer.IssueResponse, error) {
 					return &issuer.IssueResponse{
-						Certificate: certPEM,
+						Certificate: []byte("a bad certificate"),
 					}, nil
 				},
 			},
 			builder: &testpkg.Builder{
-				CertManagerObjects: []runtime.Object{gen.CertificateRequest("test"),
-					gen.Issuer("fake-issuer",
-						gen.AddIssuerCondition(cmapi.IssuerCondition{
-							Type:   cmapi.IssuerConditionReady,
-							Status: cmapi.ConditionTrue,
-						}),
-						gen.SetIssuerSelfSigned(cmapi.SelfSignedIssuer{}),
+				CertManagerObjects: []runtime.Object{baseIssuer,
+					gen.CertificateRequestFrom(baseCR,
+						gen.SetCertificateRequestCertificate([]byte("a bad certificate")),
 					)},
+				ExpectedEvents: []string{
+					"Warning DecodeError Failed to decode returned certificate: error decoding cert PEM block",
+				},
 				ExpectedActions: []testpkg.Action{
 					testpkg.NewAction(coretesting.NewUpdateAction(
 						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
 						gen.DefaultTestNamespace,
-						exampleCRReadyCondition,
+						gen.CertificateRequestFrom(baseCR,
+							gen.SetCertificateRequestCertificate([]byte("a bad certificate")),
+							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
+								Type:               cmapi.CertificateRequestConditionReady,
+								Status:             cmapi.ConditionFalse,
+								Reason:             "Failed",
+								Message:            "Failed to decode returned certificate: error decoding cert PEM block",
+								LastTransitionTime: &nowMetaTime,
+							}),
+							gen.SetCertificateRequestFailureTime(nowMetaTime),
+						),
 					)),
 				},
-				ExpectedEvents: []string{"Normal Issued Certificate fetched from issuer successfully"},
 			},
 		},
-		"should update the status with a freshly signed certificate only when one doesn't exist and issuer group ref='certmanager.k8s.io'": {
-			certificateRequest: exampleCRCorrectIssuerRefGroup,
+		"if calling sign returns a response with a valid RSA signed certificate then set condition Ready": {
+			certificateRequest: baseCR.DeepCopy(),
 			issuerImpl: &fake.Issuer{
 				FakeSign: func(context.Context, *cmapi.CertificateRequest, cmapi.GenericIssuer) (*issuer.IssueResponse, error) {
 					return &issuer.IssueResponse{
-						Certificate: certPEM,
+						Certificate: certRSAPEM,
 					}, nil
 				},
 			},
 			builder: &testpkg.Builder{
-				CertManagerObjects: []runtime.Object{gen.CertificateRequest("test"),
-					gen.Issuer("fake-issuer",
-						gen.AddIssuerCondition(cmapi.IssuerCondition{
-							Type:   cmapi.IssuerConditionReady,
-							Status: cmapi.ConditionTrue,
-						}),
-						gen.SetIssuerSelfSigned(cmapi.SelfSignedIssuer{}),
-					),
+				CertManagerObjects: []runtime.Object{baseIssuer, baseCR.DeepCopy()},
+				ExpectedEvents: []string{
+					"Normal CertificateIssued Certificate fetched from issuer successfully",
 				},
 				ExpectedActions: []testpkg.Action{
 					testpkg.NewAction(coretesting.NewUpdateAction(
 						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
 						gen.DefaultTestNamespace,
-						exampleCRReadyConditionWithGroupRef,
+						gen.CertificateRequestFrom(baseCR,
+							gen.SetCertificateRequestCertificate(certRSAPEM),
+							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
+								Type:               cmapi.CertificateRequestConditionReady,
+								Status:             cmapi.ConditionTrue,
+								Reason:             "Issued",
+								Message:            "Certificate fetched from issuer successfully",
+								LastTransitionTime: &nowMetaTime,
+							}),
+						),
 					)),
 				},
-				ExpectedEvents: []string{"Normal Issued Certificate fetched from issuer successfully"},
 			},
 		},
-		"should exit sync nil if issuerRef group does not match certmanager.k8s.io": {
-			certificateRequest: exampleCRWrongIssuerRefGroup,
+		"if calling sign returns a response with an expired RSA certificate then set condition Ready": {
+			certificateRequest: baseCR.DeepCopy(),
 			issuerImpl: &fake.Issuer{
 				FakeSign: func(context.Context, *cmapi.CertificateRequest, cmapi.GenericIssuer) (*issuer.IssueResponse, error) {
-					return nil, errors.New("unexpected sign call")
+					return &issuer.IssueResponse{
+						Certificate: certRSAPEMExpired,
+					}, nil
 				},
 			},
 			builder: &testpkg.Builder{
-				CertManagerObjects: []runtime.Object{gen.CertificateRequest("test"),
-					gen.Issuer("fake-issuer",
-						gen.AddIssuerCondition(cmapi.IssuerCondition{
-							Type:   cmapi.IssuerConditionReady,
-							Status: cmapi.ConditionTrue,
-						}),
-						gen.SetIssuerSelfSigned(cmapi.SelfSignedIssuer{}),
-					),
-				},
-				ExpectedActions: []testpkg.Action{}, // no update
-			},
-		},
-		"should not update certificate request if certificate exists, even if out of date": {
-			certificateRequest: exampleSignedExpiredCR,
-			issuerImpl: &fake.Issuer{
-				FakeSign: func(context.Context, *cmapi.CertificateRequest, cmapi.GenericIssuer) (*issuer.IssueResponse, error) {
-					return nil, errors.New("unexpected sign call")
-				},
-			},
-			builder: &testpkg.Builder{
-				CertManagerObjects: []runtime.Object{gen.CertificateRequest("test"),
-					gen.Issuer("fake-issuer",
-						gen.AddIssuerCondition(cmapi.IssuerCondition{
-							Type:   cmapi.IssuerConditionReady,
-							Status: cmapi.ConditionTrue,
-						}),
-						gen.SetIssuerSelfSigned(cmapi.SelfSignedIssuer{}),
-					),
-				},
-				ExpectedActions: []testpkg.Action{}, // no update
-			},
-		},
-		"fail if bytes contains no certificate but len > 0": {
-			certificateRequest: exampleGarbageCertCR,
-			issuerImpl: &fake.Issuer{
-				FakeSign: func(context.Context, *cmapi.CertificateRequest, cmapi.GenericIssuer) (*issuer.IssueResponse, error) {
-					return nil, errors.New("unexpected sign call")
-				},
-			},
-			builder: &testpkg.Builder{
-				CertManagerObjects: []runtime.Object{gen.CertificateRequest("test"),
-					gen.Issuer("fake-issuer",
-						gen.AddIssuerCondition(cmapi.IssuerCondition{
-							Type:   cmapi.IssuerConditionReady,
-							Status: cmapi.ConditionTrue,
-						}),
-						gen.SetIssuerSelfSigned(cmapi.SelfSignedIssuer{}),
-					),
+				CertManagerObjects: []runtime.Object{baseIssuer, baseCR.DeepCopy()},
+				ExpectedEvents: []string{
+					"Normal CertificateIssued Certificate fetched from issuer successfully",
 				},
 				ExpectedActions: []testpkg.Action{
 					testpkg.NewAction(coretesting.NewUpdateAction(
 						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
 						gen.DefaultTestNamespace,
-						exampleCRGarbageCondition,
+						gen.CertificateRequestFrom(baseCR,
+							gen.SetCertificateRequestCertificate(certRSAPEMExpired),
+							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
+								Type:               cmapi.CertificateRequestConditionReady,
+								Status:             cmapi.ConditionTrue,
+								Reason:             "Issued",
+								Message:            "Certificate fetched from issuer successfully",
+								LastTransitionTime: &nowMetaTime,
+							}),
+						),
 					)),
 				},
-				ExpectedEvents: []string{"Warning DecodeError Failed to decode returned certificate: error decoding cert PEM block"},
 			},
 		},
-		"return nil if generic issuer doesn't exist, will sync when on ready": {
-			certificateRequest: exampleCR,
+		"if calling sign returns a response with a valid EC signed certificate then set condition Ready": {
+			certificateRequest: baseCR.DeepCopy(),
 			issuerImpl: &fake.Issuer{
 				FakeSign: func(context.Context, *cmapi.CertificateRequest, cmapi.GenericIssuer) (*issuer.IssueResponse, error) {
-					return nil, errors.New("unexpected sign call")
+					return &issuer.IssueResponse{
+						Certificate: certECPEM,
+					}, nil
 				},
 			},
 			builder: &testpkg.Builder{
-				CertManagerObjects: []runtime.Object{gen.CertificateRequest("test")},
-				ExpectedActions: []testpkg.Action{
-					testpkg.NewAction(coretesting.NewUpdateAction(
-						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
-						gen.DefaultTestNamespace,
-						exampleCRIssuerNotFoundPendingCondition,
-					)),
-				},
-				ExpectedEvents: []string{`Normal IssuerNotFound Referenced "Issuer" not found: issuer.certmanager.k8s.io "fake-issuer" not found`},
-			},
-		},
-		"exit nil if we cannot determine the issuer type (probably not meant for us)": {
-			certificateRequest: exampleCR,
-			issuerImpl: &fake.Issuer{
-				FakeSign: func(context.Context, *cmapi.CertificateRequest, cmapi.GenericIssuer) (*issuer.IssueResponse, error) {
-					return nil, errors.New("unexpected sign call")
-				},
-			},
-			builder: &testpkg.Builder{
-				CertManagerObjects: []runtime.Object{gen.CertificateRequest("test"),
-					gen.Issuer("fake-issuer",
-						gen.AddIssuerCondition(cmapi.IssuerCondition{
-							Type:   cmapi.IssuerConditionReady,
-							Status: cmapi.ConditionTrue,
-						}),
-						// no issuer set
-					),
+				CertManagerObjects: []runtime.Object{baseIssuer, baseCR.DeepCopy()},
+				ExpectedEvents: []string{
+					"Normal CertificateIssued Certificate fetched from issuer successfully",
 				},
 				ExpectedActions: []testpkg.Action{
 					testpkg.NewAction(coretesting.NewUpdateAction(
 						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
 						gen.DefaultTestNamespace,
-						exampleCRIssuerUnknownTypeFoundPendingCondition,
+						gen.CertificateRequestFrom(baseCR,
+							gen.SetCertificateRequestCertificate(certECPEM),
+							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
+								Type:               cmapi.CertificateRequestConditionReady,
+								Status:             cmapi.ConditionTrue,
+								Reason:             "Issued",
+								Message:            "Certificate fetched from issuer successfully",
+								LastTransitionTime: &nowMetaTime,
+							}),
+						),
 					)),
 				},
-				ExpectedEvents: []string{"Normal IssuerTypeMissing Missing issuer type: no issuer specified for Issuer 'default-unit-test-ns/fake-issuer'"},
 			},
 		},
-		"exit nil if the issuer type is not meant for us": {
-			certificateRequest: exampleCRWrongIssuerRefType,
+		"if calling sign returns a response with an expired EC certificate then set condition Ready": {
+			certificateRequest: baseCR.DeepCopy(),
 			issuerImpl: &fake.Issuer{
 				FakeSign: func(context.Context, *cmapi.CertificateRequest, cmapi.GenericIssuer) (*issuer.IssueResponse, error) {
-					return nil, errors.New("unexpected sign call")
+					return &issuer.IssueResponse{
+						Certificate: certECPEMExpired,
+					}, nil
 				},
 			},
 			builder: &testpkg.Builder{
-				CertManagerObjects: []runtime.Object{gen.CertificateRequest("test"),
-					gen.Issuer("selfsigned-issuer",
-						gen.AddIssuerCondition(cmapi.IssuerCondition{
-							Type:   cmapi.IssuerConditionReady,
-							Status: cmapi.ConditionTrue,
-						}),
-						gen.SetIssuerCA(cmapi.CAIssuer{SecretName: "fake-root-ca"}),
-					),
-				},
-				ExpectedActions: []testpkg.Action{},
-			},
-		},
-		"exit if we fail validation during a sync": {
-			certificateRequest: exampleEmptyCSRCR,
-			issuerImpl: &fake.Issuer{
-				FakeSign: func(context.Context, *cmapi.CertificateRequest, cmapi.GenericIssuer) (*issuer.IssueResponse, error) {
-					return nil, errors.New("unexpected sign call")
-				},
-			},
-			builder: &testpkg.Builder{
-				CertManagerObjects: []runtime.Object{gen.CertificateRequest("test"),
-					gen.Issuer("fake-issuer",
-						gen.AddIssuerCondition(cmapi.IssuerCondition{
-							Type:   cmapi.IssuerConditionReady,
-							Status: cmapi.ConditionTrue,
-						}),
-						gen.SetIssuerSelfSigned(cmapi.SelfSignedIssuer{}),
-					),
+				CertManagerObjects: []runtime.Object{baseIssuer, baseCR.DeepCopy()},
+				ExpectedEvents: []string{
+					"Normal CertificateIssued Certificate fetched from issuer successfully",
 				},
 				ExpectedActions: []testpkg.Action{
 					testpkg.NewAction(coretesting.NewUpdateAction(
 						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
 						gen.DefaultTestNamespace,
-						exampleFailedValidationCR,
+						gen.CertificateRequestFrom(baseCR,
+							gen.SetCertificateRequestCertificate(certECPEMExpired),
+							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
+								Type:               cmapi.CertificateRequestConditionReady,
+								Status:             cmapi.ConditionTrue,
+								Reason:             "Issued",
+								Message:            "Certificate fetched from issuer successfully",
+								LastTransitionTime: &nowMetaTime,
+							}),
+						),
 					)),
 				},
-				ExpectedEvents: []string{"Warning BadConfig Resource validation failed: spec.csr: Required value: must be specified"},
-			},
-		},
-		"should exit sync nil if condition is failed": {
-			certificateRequest: exampleFailedCR,
-			issuerImpl: &fake.Issuer{
-				FakeSign: func(context.Context, *cmapi.CertificateRequest, cmapi.GenericIssuer) (*issuer.IssueResponse, error) {
-					return nil, errors.New("unexpected sign call")
-				},
-			},
-			builder: &testpkg.Builder{
-				CertManagerObjects: []runtime.Object{gen.CertificateRequest("test"),
-					gen.Issuer("fake-issuer",
-						gen.AddIssuerCondition(cmapi.IssuerCondition{
-							Type:   cmapi.IssuerConditionReady,
-							Status: cmapi.ConditionTrue,
-						}),
-						gen.SetIssuerSelfSigned(cmapi.SelfSignedIssuer{}),
-					),
-				},
-				ExpectedActions: []testpkg.Action{}, // no update
-			},
-		},
-		"should exit sync nil if condition is ready": {
-			certificateRequest: exampleCRReadyCondition,
-			issuerImpl: &fake.Issuer{
-				FakeSign: func(context.Context, *cmapi.CertificateRequest, cmapi.GenericIssuer) (*issuer.IssueResponse, error) {
-					return nil, errors.New("unexpected sign call")
-				},
-			},
-			builder: &testpkg.Builder{
-				CertManagerObjects: []runtime.Object{gen.CertificateRequest("test"),
-					gen.Issuer("fake-issuer",
-						gen.AddIssuerCondition(cmapi.IssuerCondition{
-							Type:   cmapi.IssuerConditionReady,
-							Status: cmapi.ConditionTrue,
-						}),
-						gen.SetIssuerSelfSigned(cmapi.SelfSignedIssuer{}),
-					),
-				},
-				ExpectedActions: []testpkg.Action{}, // no update
 			},
 		},
 	}
@@ -550,6 +542,7 @@ type testT struct {
 	builder            *testpkg.Builder
 	issuerImpl         Issuer
 	certificateRequest *cmapi.CertificateRequest
+	helper             *issuerfake.Helper
 	expectedErr        bool
 }
 
@@ -560,11 +553,21 @@ func runTest(t *testing.T, test testT) {
 
 	defer test.builder.Stop()
 
-	c := &Controller{
-		issuerType: util.IssuerSelfSigned,
-		issuer:     test.issuerImpl,
+	if test.issuerImpl == nil {
+		test.issuerImpl = &fake.Issuer{
+			FakeSign: func(context.Context, *cmapi.CertificateRequest, cmapi.GenericIssuer) (*issuer.IssueResponse, error) {
+				return nil, errors.New("unexpected sign call")
+			},
+		}
 	}
+
+	c := New(util.IssuerSelfSigned, test.issuerImpl)
 	c.Register(test.builder.Context)
+
+	if test.helper != nil {
+		c.helper = test.helper
+	}
+
 	test.builder.Sync()
 
 	err := c.Sync(context.Background(), test.certificateRequest)

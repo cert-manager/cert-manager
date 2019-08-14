@@ -40,6 +40,10 @@ func NewReporter(clock clock.Clock, recorder record.EventRecorder) *Reporter {
 	}
 }
 
+const (
+	readyMessage = "Certificate fetched from issuer successfully"
+)
+
 func (r *Reporter) Failed(cr *cmapi.CertificateRequest, err error, reason, message string) {
 	// Set the FailureTime to c.clock.Now(), only if it has not been already set.
 	if cr.Status.FailureTime == nil {
@@ -54,19 +58,23 @@ func (r *Reporter) Failed(cr *cmapi.CertificateRequest, err error, reason, messa
 }
 
 func (r *Reporter) Pending(cr *cmapi.CertificateRequest, err error, reason, message string) {
-	message = fmt.Sprintf("%s: %v", message, err)
+	if err != nil {
+		message = fmt.Sprintf("%s: %v", message, err)
+	}
 
 	// If pending condition not already set then fire a Pending Event. This is to
 	// reduce strain on the API server and avoid rate limiting ourselves for
 	// Event creation.
-	if !apiutil.CertificateRequestHasCondition(cr, cmapi.CertificateRequestCondition{
-		Type:   cmapi.CertificateRequestConditionReady,
-		Status: cmapi.ConditionFalse,
-		Reason: cmapi.CertificateRequestReasonPending,
-	}) {
+	if apiutil.CertificateRequestReadyReason(cr) != cmapi.CertificateRequestReasonPending {
 		r.recorder.Event(cr, corev1.EventTypeNormal, reason, message)
 	}
 
 	apiutil.SetCertificateRequestCondition(cr, cmapi.CertificateRequestConditionReady,
 		cmapi.ConditionFalse, cmapi.CertificateRequestReasonPending, message)
+}
+
+func (r *Reporter) Ready(cr *cmapi.CertificateRequest) {
+	r.recorder.Event(cr, corev1.EventTypeNormal, "CertificateIssued", readyMessage)
+	apiutil.SetCertificateRequestCondition(cr, cmapi.CertificateRequestConditionReady,
+		cmapi.ConditionTrue, cmapi.CertificateRequestReasonIssued, readyMessage)
 }

@@ -43,7 +43,7 @@ type reporterT struct {
 	err             error
 	message, reason string
 
-	runFailedNotPending bool
+	call string
 
 	expectedEvents      []string
 	expectedConditions  []cmapi.CertificateRequestCondition
@@ -84,6 +84,14 @@ func TestReporter(t *testing.T) {
 		LastTransitionTime: &nowMetaTime,
 	}
 
+	readyCondition := cmapi.CertificateRequestCondition{
+		Type:               cmapi.CertificateRequestConditionReady,
+		Reason:             "Issued",
+		Message:            "Certificate fetched from issuer successfully",
+		Status:             "True",
+		LastTransitionTime: &nowMetaTime,
+	}
+
 	tests := map[string]reporterT{
 		"a failed report should update the conditions and set FailureTime as it is nil": {
 			certificateRequest: gen.CertificateRequestFrom(baseCR),
@@ -97,7 +105,7 @@ func TestReporter(t *testing.T) {
 			expectedConditions:  []cmapi.CertificateRequestCondition{failedCondition},
 			expectedFailureTime: &nowMetaTime,
 
-			runFailedNotPending: true,
+			call: "failed",
 		},
 
 		"a failed report should update the conditions and not FailureTime as it is not nil": {
@@ -114,7 +122,7 @@ func TestReporter(t *testing.T) {
 			expectedConditions:  []cmapi.CertificateRequestCondition{failedCondition},
 			expectedFailureTime: &oldMetaTime,
 
-			runFailedNotPending: true,
+			call: "failed",
 		},
 
 		"a pending report should update the conditions and send an event as a Pending condition already exists": {
@@ -129,7 +137,7 @@ func TestReporter(t *testing.T) {
 			expectedConditions:  []cmapi.CertificateRequestCondition{pendingCondition},
 			expectedFailureTime: nil,
 
-			runFailedNotPending: false,
+			call: "pending",
 		},
 
 		"a pending report should update the conditions and not send an event as a Pending condition already exists": {
@@ -145,7 +153,7 @@ func TestReporter(t *testing.T) {
 			expectedConditions:  []cmapi.CertificateRequestCondition{pendingCondition},
 			expectedFailureTime: nil,
 
-			runFailedNotPending: false,
+			call: "pending",
 		},
 		"a pending report should update the conditions and send an event as only a non Pending condition already exists": {
 			certificateRequest: gen.CertificateRequestFrom(baseCR,
@@ -162,7 +170,20 @@ func TestReporter(t *testing.T) {
 			expectedConditions:  []cmapi.CertificateRequestCondition{pendingCondition},
 			expectedFailureTime: nil,
 
-			runFailedNotPending: false,
+			call: "pending",
+		},
+		"a ready report should update the conditions and send an event": {
+			certificateRequest: gen.CertificateRequestFrom(baseCR,
+				gen.SetCertificateRequestStatusCondition(readyCondition),
+			),
+			// No event sent
+			expectedEvents: []string{
+				"Normal CertificateIssued Certificate fetched from issuer successfully",
+			},
+			expectedConditions:  []cmapi.CertificateRequestCondition{readyCondition},
+			expectedFailureTime: nil,
+
+			call: "ready",
 		},
 	}
 
@@ -179,12 +200,15 @@ func (tt *reporterT) runTest(t *testing.T) {
 	recorder := new(controllertest.FakeRecorder)
 	reporter := NewReporter(fixedClock, recorder)
 
-	if tt.runFailedNotPending {
+	switch tt.call {
+	case "failed":
 		reporter.Failed(tt.certificateRequest, tt.err,
 			tt.reason, tt.message)
-	} else {
+	case "pending":
 		reporter.Pending(tt.certificateRequest, tt.err,
 			tt.reason, tt.message)
+	default:
+		reporter.Ready(tt.certificateRequest)
 	}
 
 	expConditions := conditionsToString(tt.expectedConditions)
