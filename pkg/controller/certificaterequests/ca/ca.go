@@ -85,29 +85,27 @@ func (c *CA) Sign(ctx context.Context, cr *cmapi.CertificateRequest, issuerObj c
 
 	// get a copy of the CA certificate named on the Issuer
 	caCerts, caKey, err := kube.SecretTLSKeyPair(ctx, c.secretsLister, resourceNamespace, issuerObj.GetSpec().CA.SecretName)
+	if k8sErrors.IsNotFound(err) {
+		message := fmt.Sprintf("Referenced secret %s/%s not found", resourceNamespace, secretName)
+
+		c.reporter.Pending(cr, err, "SecretMissing", message)
+		log.Error(err, message)
+
+		return nil, nil
+	}
+
+	if cmerrors.IsInvalidData(err) {
+		message := fmt.Sprintf("Failed to parse signing CA keypair from secret %s/%s", resourceNamespace, secretName)
+
+		c.reporter.Pending(cr, err, "SecretInvalidData", message)
+		log.Error(err, message)
+		return nil, nil
+	}
+
 	if err != nil {
-		log := logf.WithRelatedResourceName(log, issuerObj.GetSpec().CA.SecretName, resourceNamespace, "Secret")
-
-		if k8sErrors.IsNotFound(err) {
-			message := fmt.Sprintf("Referenced secret %s/%s not found", resourceNamespace, secretName)
-
-			c.reporter.Pending(cr, err, "MissingSecret", message)
-			log.Error(err, message)
-
-			return nil, nil
-		}
-
-		if cmerrors.IsInvalidData(err) {
-			message := fmt.Sprintf("Failed to parse signing CA keypair from secret %s/%s", resourceNamespace, secretName)
-
-			c.reporter.Pending(cr, err, "ErrorParsingSecret", message)
-			log.Error(err, message)
-			return nil, nil
-		}
-
 		// We are probably in a network error here so we should backoff and retry
 		message := fmt.Sprintf("Failed to get certificate key pair from secret %s/%s", resourceNamespace, secretName)
-		c.reporter.Pending(cr, err, "ErrorGettingSecret", message)
+		c.reporter.Pending(cr, err, "SecretGetError", message)
 		log.Error(err, message)
 		return nil, err
 	}
@@ -115,7 +113,7 @@ func (c *CA) Sign(ctx context.Context, cr *cmapi.CertificateRequest, issuerObj c
 	template, err := c.templateGenerator(cr)
 	if err != nil {
 		message := "Error generating certificate template"
-		c.reporter.Failed(cr, err, "ErrorSigning", message)
+		c.reporter.Failed(cr, err, "SigningError", message)
 		log.Error(err, message)
 		return nil, nil
 	}
@@ -123,7 +121,7 @@ func (c *CA) Sign(ctx context.Context, cr *cmapi.CertificateRequest, issuerObj c
 	certPEM, caPEM, err := pki.SignCSRTemplate(caCerts, caKey, template)
 	if err != nil {
 		message := "Error signing certificate"
-		c.reporter.Failed(cr, err, "ErrorSigning", message)
+		c.reporter.Failed(cr, err, "SigningError", message)
 		log.Error(err, message)
 		return nil, err
 	}

@@ -32,6 +32,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+
 	clientcorev1 "k8s.io/client-go/listers/core/v1"
 	coretesting "k8s.io/client-go/testing"
 	fakeclock "k8s.io/utils/clock/testing"
@@ -95,62 +96,53 @@ func generateSelfSignedCertFromCR(t *testing.T, cr *cmapi.CertificateRequest, ke
 }
 
 func TestSign(t *testing.T) {
+	baseIssuer := gen.Issuer("test-issuer",
+		gen.SetIssuerCA(cmapi.CAIssuer{SecretName: "root-ca-secret"}),
+	)
+
 	// Build root RSA CA
-	rsaPK, err := pki.GenerateRSAPrivateKey(2048)
+	skRSA, err := pki.GenerateRSAPrivateKey(2048)
 	if err != nil {
 		t.Error(err)
 		t.FailNow()
 	}
 
-	rsaPKBytes := pki.EncodePKCS1PrivateKey(rsaPK)
+	skRSAPEM := pki.EncodePKCS1PrivateKey(skRSA)
+	rsaCSR := generateCSR(t, skRSA)
 
-	caCSR := generateCSR(t, rsaPK)
-
-	rootRSACR := gen.CertificateRequest("test-root-ca",
-		gen.SetCertificateRequestCSR(caCSR),
+	baseCR := gen.CertificateRequest("test-cr",
 		gen.SetCertificateRequestIsCA(true),
+		gen.SetCertificateRequestCSR(rsaCSR),
+		gen.SetCertificateRequestIssuer(cmapi.ObjectReference{
+			Name:  baseIssuer.Name,
+			Group: certmanager.GroupName,
+			Kind:  "Issuer",
+		}),
 		gen.SetCertificateRequestDuration(&metav1.Duration{Duration: time.Hour * 24 * 60}),
 	)
 
 	// generate a self signed root ca valid for 60d
-	rsaCert, rsaPEMCert := generateSelfSignedCertFromCR(t, rootRSACR, rsaPK, time.Hour*24*60)
-	rootRSACASecret := &corev1.Secret{
+	_, rsaPEMCert := generateSelfSignedCertFromCR(t, baseCR, skRSA, time.Hour*24*60)
+	rsaCASecret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "root-ca-secret",
 			Namespace: gen.DefaultTestNamespace,
 		},
 		Data: map[string][]byte{
-			corev1.TLSPrivateKeyKey: rsaPKBytes,
+			corev1.TLSPrivateKeyKey: skRSAPEM,
 			corev1.TLSCertKey:       rsaPEMCert,
 		},
 	}
 
-	rootRSANoCASecret := rootRSACASecret.DeepCopy()
-	rootRSANoCASecret.Data[corev1.TLSCertKey] = make([]byte, 0)
-	rootRSANoKeySecret := rootRSACASecret.DeepCopy()
-	rootRSANoKeySecret.Data[corev1.TLSPrivateKeyKey] = make([]byte, 0)
+	badDataSecret := rsaCASecret.DeepCopy()
+	badDataSecret.Data[corev1.TLSPrivateKeyKey] = []byte("bad key")
 
-	basicIssuer := gen.Issuer("ca-issuer",
-		gen.SetIssuerCA(cmapi.CAIssuer{SecretName: "root-ca-secret"}),
-	)
-
-	validCR := gen.CertificateRequest("test-cr",
-		gen.SetCertificateRequestIsCA(true),
-		gen.SetCertificateRequestCSR(caCSR),
-		gen.SetCertificateRequestIssuer(cmapi.ObjectReference{
-			Name:  basicIssuer.Name,
-			Group: certmanager.GroupName,
-			Kind:  "Issuer",
-		}),
-	)
-
-	template, err := pki.GenerateTemplateFromCertificateRequest(validCR)
+	template, err := pki.GenerateTemplateFromCertificateRequest(baseCR)
 	if err != nil {
 		t.Error(err)
 		t.FailNow()
 	}
-
-	certPEM, _, err := pki.SignCSRTemplate([]*x509.Certificate{rsaCert}, rsaPK, template)
+	certPEM, _, err := pki.SignCSRTemplate([]*x509.Certificate{template}, skRSA, template)
 	if err != nil {
 		t.Error(err)
 		t.FailNow()
@@ -158,132 +150,74 @@ func TestSign(t *testing.T) {
 
 	metaFixedClockStart := metav1.NewTime(fixedClockStart)
 	tests := map[string]testT{
-		"fail to find CA tls key pair": {
-			certificateRequest: validCR,
+		"a missing CA key pair should set the condition to pending and wait for a re-sync": {
+			certificateRequest: baseCR.DeepCopy(),
 			builder: &testpkg.Builder{
 				KubeObjects:        []runtime.Object{},
-				CertManagerObjects: []runtime.Object{validCR.DeepCopy(), basicIssuer},
+				CertManagerObjects: []runtime.Object{baseCR.DeepCopy(), baseIssuer},
 				ExpectedEvents: []string{
-					`Normal MissingSecret Referenced secret default-unit-test-ns/root-ca-secret not found: secret "root-ca-secret" not found`,
+					`Normal SecretMissing Referenced secret default-unit-test-ns/root-ca-secret not found: secret "root-ca-secret" not found`,
 				},
 				ExpectedActions: []testpkg.Action{
 					testpkg.NewAction(coretesting.NewUpdateAction(
 						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
 						gen.DefaultTestNamespace,
-						gen.CertificateRequestFrom(validCR,
+						gen.CertificateRequestFrom(baseCR.DeepCopy(),
 							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
 								Type:               cmapi.CertificateRequestConditionReady,
 								Status:             cmapi.ConditionFalse,
 								Reason:             cmapi.CertificateRequestReasonPending,
-								Message:            "Certificate issuance pending",
+								Message:            `Referenced secret default-unit-test-ns/root-ca-secret not found: secret "root-ca-secret" not found`,
 								LastTransitionTime: &metaFixedClockStart,
 							}),
 						),
 					)),
 				},
 			},
-			expectedErr: false,
 		},
-		"given bad CSR should fail Certificate generation": {
-			certificateRequest: gen.CertificateRequestFrom(validCR,
-				gen.SetCertificateRequestCSR([]byte("bad-csr")),
-			),
+		"a secret with invlaid datashould set condition to pending and wait for re-sync": {
+			certificateRequest: baseCR.DeepCopy(),
 			builder: &testpkg.Builder{
-				KubeObjects:        []runtime.Object{rootRSACASecret},
-				CertManagerObjects: []runtime.Object{validCR.DeepCopy(), basicIssuer},
+				KubeObjects:        []runtime.Object{badDataSecret},
+				CertManagerObjects: []runtime.Object{baseCR.DeepCopy(), baseIssuer},
 				ExpectedEvents: []string{
-					"Warning BadConfig Resource validation failed: spec.csr: Invalid value: []byte{0x62, 0x61, 0x64, 0x2d, 0x63, 0x73, 0x72}: failed to decode csr: error decoding certificate request PEM block",
+					"Normal SecretInvalidData Failed to parse signing CA keypair from secret default-unit-test-ns/root-ca-secret: error decoding private key PEM block",
 				},
 				ExpectedActions: []testpkg.Action{
 					testpkg.NewAction(coretesting.NewUpdateAction(
 						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
 						gen.DefaultTestNamespace,
-						gen.CertificateRequestFrom(validCR,
-							gen.SetCertificateRequestCSR([]byte("bad-csr")),
-							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
-								Type:               cmapi.CertificateRequestConditionReady,
-								Status:             cmapi.ConditionFalse,
-								Reason:             cmapi.CertificateRequestReasonFailed,
-								Message:            "Resource validation failed: spec.csr: Invalid value: []byte{0x62, 0x61, 0x64, 0x2d, 0x63, 0x73, 0x72}: failed to decode csr: error decoding certificate request PEM block",
-								LastTransitionTime: &metaFixedClockStart,
-							}),
-							gen.SetCertificateRequestFailureTime(metaFixedClockStart),
-						),
-					)),
-				},
-			},
-			expectedErr: false,
-		},
-		"no CA certificate should fail a signing": {
-			certificateRequest: validCR.DeepCopy(),
-			builder: &testpkg.Builder{
-				KubeObjects:        []runtime.Object{rootRSANoCASecret},
-				CertManagerObjects: []runtime.Object{validCR.DeepCopy(), basicIssuer},
-				ExpectedEvents: []string{
-					`Normal ErrorParsingSecret Failed to parse signing CA keypair from secret default-unit-test-ns/root-ca-secret: error decoding cert PEM block`,
-				},
-				ExpectedActions: []testpkg.Action{
-					testpkg.NewAction(coretesting.NewUpdateAction(
-						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
-						gen.DefaultTestNamespace,
-						gen.CertificateRequestFrom(validCR,
+						gen.CertificateRequestFrom(baseCR.DeepCopy(),
 							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
 								Type:               cmapi.CertificateRequestConditionReady,
 								Status:             cmapi.ConditionFalse,
 								Reason:             cmapi.CertificateRequestReasonPending,
-								Message:            "Certificate issuance pending",
+								Message:            "Failed to parse signing CA keypair from secret default-unit-test-ns/root-ca-secret: error decoding private key PEM block",
 								LastTransitionTime: &metaFixedClockStart,
 							}),
 						),
 					)),
 				},
 			},
-			expectedErr: false,
-		},
-		"no CA key should fail a signing": {
-			certificateRequest: validCR.DeepCopy(),
-			builder: &testpkg.Builder{
-				KubeObjects:        []runtime.Object{rootRSANoKeySecret},
-				CertManagerObjects: []runtime.Object{validCR.DeepCopy(), basicIssuer},
-				ExpectedEvents: []string{
-					`Normal ErrorParsingSecret Failed to parse signing CA keypair from secret default-unit-test-ns/root-ca-secret: error decoding private key PEM block`,
-				},
-				ExpectedActions: []testpkg.Action{
-					testpkg.NewAction(coretesting.NewUpdateAction(
-						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
-						gen.DefaultTestNamespace,
-						gen.CertificateRequestFrom(validCR,
-							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
-								Type:               cmapi.CertificateRequestConditionReady,
-								Status:             cmapi.ConditionFalse,
-								Reason:             cmapi.CertificateRequestReasonPending,
-								Message:            "Certificate issuance pending",
-								LastTransitionTime: &metaFixedClockStart,
-							}),
-						),
-					)),
-				},
-			},
-			expectedErr: false,
 		},
 		"a CertificateRequest that transiently fails a secret lookup should backoff error to retry": {
-			certificateRequest: validCR.DeepCopy(),
+			certificateRequest: baseCR.DeepCopy(),
 			builder: &testpkg.Builder{
-				KubeObjects:        []runtime.Object{rootRSACASecret},
-				CertManagerObjects: []runtime.Object{validCR.DeepCopy(), basicIssuer},
+				KubeObjects:        []runtime.Object{rsaCASecret},
+				CertManagerObjects: []runtime.Object{baseCR.DeepCopy(), baseIssuer},
 				ExpectedEvents: []string{
-					`Normal ErrorGettingSecret Failed to get certificate key pair from secret default-unit-test-ns/root-ca-secret: this is a network error`,
+					`Normal SecretGetError Failed to get certificate key pair from secret default-unit-test-ns/root-ca-secret: this is a network error`,
 				},
 				ExpectedActions: []testpkg.Action{
 					testpkg.NewAction(coretesting.NewUpdateAction(
 						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
 						gen.DefaultTestNamespace,
-						gen.CertificateRequestFrom(validCR,
+						gen.CertificateRequestFrom(baseCR,
 							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
 								Type:               cmapi.CertificateRequestConditionReady,
 								Status:             cmapi.ConditionFalse,
 								Reason:             cmapi.CertificateRequestReasonPending,
-								Message:            "Certificate issuance pending",
+								Message:            "Failed to get certificate key pair from secret default-unit-test-ns/root-ca-secret: this is a network error",
 								LastTransitionTime: &metaFixedClockStart,
 							}),
 						),
@@ -301,8 +235,37 @@ func TestSign(t *testing.T) {
 			},
 			expectedErr: true,
 		},
-		"sign a CertificateRequest": {
-			certificateRequest: validCR.DeepCopy(),
+		"a secret that fails to sign should set condition to failed": {
+			certificateRequest: baseCR.DeepCopy(),
+			templateGenerator: func(*cmapi.CertificateRequest) (*x509.Certificate, error) {
+				return nil, errors.New("this is a sign error")
+			},
+			builder: &testpkg.Builder{
+				KubeObjects:        []runtime.Object{rsaCASecret},
+				CertManagerObjects: []runtime.Object{baseCR.DeepCopy(), baseIssuer},
+				ExpectedEvents: []string{
+					"Warning SigningError Error generating certificate template: this is a sign error",
+				},
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(coretesting.NewUpdateAction(
+						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
+						gen.DefaultTestNamespace,
+						gen.CertificateRequestFrom(baseCR.DeepCopy(),
+							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
+								Type:               cmapi.CertificateRequestConditionReady,
+								Status:             cmapi.ConditionFalse,
+								Reason:             cmapi.CertificateRequestReasonFailed,
+								Message:            "Error generating certificate template: this is a sign error",
+								LastTransitionTime: &metaFixedClockStart,
+							}),
+							gen.SetCertificateRequestFailureTime(metaFixedClockStart),
+						),
+					)),
+				},
+			},
+		},
+		"a successful signinig should set condition to Ready": {
+			certificateRequest: baseCR.DeepCopy(),
 			templateGenerator: func(cr *cmapi.CertificateRequest) (*x509.Certificate, error) {
 				_, err := pki.GenerateTemplateFromCertificateRequest(cr)
 				if err != nil {
@@ -312,21 +275,21 @@ func TestSign(t *testing.T) {
 				return template, nil
 			},
 			builder: &testpkg.Builder{
-				KubeObjects:        []runtime.Object{rootRSACASecret},
-				CertManagerObjects: []runtime.Object{validCR.DeepCopy(), basicIssuer},
+				KubeObjects:        []runtime.Object{rsaCASecret},
+				CertManagerObjects: []runtime.Object{baseCR.DeepCopy(), baseIssuer},
 				ExpectedEvents: []string{
-					`Normal Issued Certificate fetched from issuer successfully`,
+					"Normal CertificateIssued Certificate fetched from issuer successfully",
 				},
 				ExpectedActions: []testpkg.Action{
 					testpkg.NewAction(coretesting.NewUpdateAction(
 						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
 						gen.DefaultTestNamespace,
-						gen.CertificateRequestFrom(validCR,
+						gen.CertificateRequestFrom(baseCR,
 							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
 								Type:               cmapi.CertificateRequestConditionReady,
 								Status:             cmapi.ConditionTrue,
 								Reason:             cmapi.CertificateRequestReasonIssued,
-								Message:            "Certificate has been issued successfully",
+								Message:            "Certificate fetched from issuer successfully",
 								LastTransitionTime: &metaFixedClockStart,
 							}),
 							gen.SetCertificateRequestCA(rsaPEMCert),
@@ -350,8 +313,7 @@ func TestSign(t *testing.T) {
 type testT struct {
 	builder            *testpkg.Builder
 	certificateRequest *cmapi.CertificateRequest
-
-	templateGenerator templateGenerator
+	templateGenerator  templateGenerator
 
 	expectedErr bool
 
