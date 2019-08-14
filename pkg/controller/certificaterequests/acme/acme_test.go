@@ -164,7 +164,7 @@ func TestSign(t *testing.T) {
 					gen.SetOrderState(v1alpha1.Valid),
 					gen.SetOrderCertificate(rsaPEMCert),
 				)},
-				CheckFn: testcr.NoPrivateKeyFieldsSetCheck(nil),
+				CheckFn: testcr.NoPrivateKeyCertificatesFieldsSetCheck(nil),
 			},
 			expectedErr: false,
 		},
