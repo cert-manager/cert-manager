@@ -331,39 +331,6 @@ func TestSync(t *testing.T) {
 			},
 			expectedErr: false,
 		},
-		"if calling sign returns a response but the certificate is empty then we should set the condition as pending": {
-			certificateRequest: baseCR.DeepCopy(),
-			issuerImpl: &fake.Issuer{
-				FakeSign: func(context.Context, *cmapi.CertificateRequest, cmapi.GenericIssuer) (*issuer.IssueResponse, error) {
-					// By not returning a certificate in the response, we trigger a
-					// 'no-op' action which causes the certificate request controller to
-					// update the status of the CertificateRequest with !Ready +
-					// CertPending.
-					return new(issuer.IssueResponse), nil
-				},
-			},
-			builder: &testpkg.Builder{
-				CertManagerObjects: []runtime.Object{baseIssuer, baseCR},
-				ExpectedEvents: []string{
-					"Normal CertificatePending Certificate issuance pending",
-				},
-				ExpectedActions: []testpkg.Action{
-					testpkg.NewAction(coretesting.NewUpdateAction(
-						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
-						gen.DefaultTestNamespace,
-						gen.CertificateRequestFrom(baseCR,
-							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
-								Type:               cmapi.CertificateRequestConditionReady,
-								Status:             cmapi.ConditionFalse,
-								Reason:             "Pending",
-								Message:            "Certificate issuance pending",
-								LastTransitionTime: &nowMetaTime,
-							}),
-						),
-					)),
-				},
-			},
-		},
 		"if calling sign returns a response but the certificate is badly formed then we fail": {
 			certificateRequest: baseCR.DeepCopy(),
 			issuerImpl: &fake.Issuer{

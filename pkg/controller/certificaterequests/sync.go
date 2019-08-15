@@ -131,12 +131,6 @@ func (c *Controller) Sync(ctx context.Context, cr *v1alpha1.CertificateRequest) 
 	crCopy.Status.Certificate = resp.Certificate
 	crCopy.Status.CA = resp.CA
 
-	// If the certificate is empty, set pending and wait for next re-sync.
-	if len(crCopy.Status.Certificate) == 0 {
-		c.reporter.Pending(crCopy, nil, "CertificatePending", "Certificate issuance pending")
-		return nil
-	}
-
 	// invalid cert
 	_, err = pki.DecodeX509CertificateBytes(crCopy.Status.Certificate)
 	if err != nil {
