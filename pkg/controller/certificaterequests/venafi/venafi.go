@@ -78,7 +78,7 @@ func (v *Venafi) Sign(ctx context.Context, cr *cmapi.CertificateRequest, issuerO
 	if k8sErrors.IsNotFound(err) {
 		message := "Required secret resource not found"
 
-		v.reporter.Pending(cr, err, "MissingSecret", message)
+		v.reporter.Pending(cr, err, "SecretMissing", message)
 		log.Error(err, message)
 
 		return nil, nil
@@ -87,7 +87,7 @@ func (v *Venafi) Sign(ctx context.Context, cr *cmapi.CertificateRequest, issuerO
 	if err != nil {
 		message := "Failed to initialise venafi client for signing"
 
-		v.reporter.Pending(cr, err, "ErrorVenafiInit", message)
+		v.reporter.Pending(cr, err, "VenafiInitError", message)
 		log.Error(err, message)
 
 		return nil, err
@@ -102,23 +102,23 @@ func (v *Venafi) Sign(ctx context.Context, cr *cmapi.CertificateRequest, issuerO
 		switch err.(type) {
 
 		case endpoint.ErrCertificatePending:
-			message := "venafi certificate still in a pending state, the request will be retried"
+			message := "Venafi certificate still in a pending state, the request will be retried"
 
 			v.reporter.Pending(cr, err, "IssuancePending", message)
 			log.Error(err, message)
 			return nil, err
 
 		case endpoint.ErrRetrieveCertificateTimeout:
-			message := "timed out waiting for venafi certificate, the request will be retried"
+			message := "Timed out waiting for venafi certificate, the request will be retried"
 
 			v.reporter.Failed(cr, err, "Timeout", message)
 			log.Error(err, message)
 			return nil, nil
 
 		default:
-			message := "failed to obtain venafi certificate"
+			message := "Failed to obtain venafi certificate"
 
-			v.reporter.Pending(cr, err, "Retrieve", message)
+			v.reporter.Pending(cr, err, "RetrieveError", message)
 			log.Error(err, message)
 
 			return nil, err

@@ -28,21 +28,29 @@ import (
 	"time"
 
 	"github.com/Venafi/vcert/pkg/endpoint"
-	"github.com/jetstack/cert-manager/pkg/issuer"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	corelisters "k8s.io/client-go/listers/core/v1"
+	coretesting "k8s.io/client-go/testing"
+	fakeclock "k8s.io/utils/clock/testing"
 
+	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
-	testcr "github.com/jetstack/cert-manager/pkg/controller/certificaterequests/test"
+	"github.com/jetstack/cert-manager/pkg/controller/certificaterequests"
 	controllertest "github.com/jetstack/cert-manager/pkg/controller/test"
+	testpkg "github.com/jetstack/cert-manager/pkg/controller/test"
 	internalvenafi "github.com/jetstack/cert-manager/pkg/internal/venafi"
 	internalvenafifake "github.com/jetstack/cert-manager/pkg/internal/venafi/fake"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 	"github.com/jetstack/cert-manager/test/unit/gen"
 	testlisters "github.com/jetstack/cert-manager/test/unit/listers"
+)
+
+var (
+	fixedClockStart = time.Now()
+	fixedClock      = fakeclock.NewFakeClock(fixedClockStart)
 )
 
 func generateCSR(t *testing.T, secretKey crypto.Signer, alg x509.SignatureAlgorithm) []byte {
@@ -65,23 +73,6 @@ func generateCSR(t *testing.T, secretKey crypto.Signer, alg x509.SignatureAlgori
 	csr := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE REQUEST", Bytes: csrBytes})
 
 	return csr
-}
-
-func checkOnlyCertReturned(builder *controllertest.Builder, args ...interface{}) {
-	resp, ok := args[0].(*issuer.IssueResponse)
-	if !ok {
-		builder.T.Errorf("unexpected argument to be of type IssuerResponse: %+v", args[0])
-	}
-
-	if string(resp.Certificate) != "returned cert" {
-		builder.T.Errorf("unexpected returned cert, exp=returned cert got=%s",
-			resp.Certificate)
-	}
-
-	if len(resp.PrivateKey) > 0 || len(resp.CA) > 0 {
-		builder.T.Errorf("expected both private key and CA to be empty, got=%s %s",
-			resp.PrivateKey, resp.CA)
-	}
 }
 
 func TestSign(t *testing.T) {
@@ -168,6 +159,18 @@ func TestSign(t *testing.T) {
 		},
 	}
 
+	template, err := pki.GenerateTemplateFromCertificateRequest(baseCR)
+	if err != nil {
+		t.Error(err)
+		t.FailNow()
+	}
+
+	certPEM, _, err := pki.SignCertificate(template, template, rsaSK.Public(), rsaSK)
+	if err != nil {
+		t.Error(err)
+		t.FailNow()
+	}
+
 	clientReturnsPending := &internalvenafifake.Venafi{
 		SignFn: func([]byte, time.Duration) ([]byte, error) {
 			return nil, endpoint.ErrCertificatePending{
@@ -190,169 +193,344 @@ func TestSign(t *testing.T) {
 	}
 	clientReturnsCert := &internalvenafifake.Venafi{
 		SignFn: func([]byte, time.Duration) ([]byte, error) {
-			return []byte("returned cert"), nil
+			return certPEM, nil
 		},
 	}
 
+	metaFixedClockStart := metav1.NewTime(fixedClockStart)
 	tests := map[string]testT{
 		"tpp: if fail to build client based on missing secret then return nil and hard fail": {
-			certificateRequest: tppCR,
-			issuer:             tppIssuer,
+			certificateRequest: tppCR.DeepCopy(),
 			builder: &controllertest.Builder{
+				CertManagerObjects: []runtime.Object{tppCR.DeepCopy(), tppIssuer.DeepCopy()},
 				ExpectedEvents: []string{
-					`Normal MissingSecret Required secret resource not found: secret "test-tpp-secret" not found`,
+					`Normal SecretMissing Required secret resource not found: secret "test-tpp-secret" not found`,
 				},
-				CheckFn: testcr.MustNoResponse,
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(coretesting.NewUpdateAction(
+						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
+						gen.DefaultTestNamespace,
+						gen.CertificateRequestFrom(tppCR,
+							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
+								Type:               cmapi.CertificateRequestConditionReady,
+								Status:             cmapi.ConditionFalse,
+								Reason:             cmapi.CertificateRequestReasonPending,
+								Message:            `Required secret resource not found: secret "test-tpp-secret" not found`,
+								LastTransitionTime: &metaFixedClockStart,
+							}),
+						),
+					)),
+				},
 			},
-			expectedErr: false,
 		},
 		"tpp: if fail to build client based on secret lister transient error then return err and set pending": {
-			certificateRequest: tppCR,
+			certificateRequest: tppCR.DeepCopy(),
 			issuer:             tppIssuer,
 			builder: &controllertest.Builder{
+				CertManagerObjects: []runtime.Object{tppCR.DeepCopy(), tppIssuer.DeepCopy()},
 				ExpectedEvents: []string{
-					`Normal ErrorVenafiInit Failed to initialise venafi client for signing: this is a network error`,
+					`Normal VenafiInitError Failed to initialise venafi client for signing: this is a network error`,
 				},
-				CheckFn: testcr.MustNoResponse,
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(coretesting.NewUpdateAction(
+						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
+						gen.DefaultTestNamespace,
+						gen.CertificateRequestFrom(tppCR,
+							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
+								Type:               cmapi.CertificateRequestConditionReady,
+								Status:             cmapi.ConditionFalse,
+								Reason:             cmapi.CertificateRequestReasonPending,
+								Message:            "Failed to initialise venafi client for signing: this is a network error",
+								LastTransitionTime: &metaFixedClockStart,
+							}),
+						),
+					)),
+				},
 			},
 			fakeSecretLister: failGetSecretLister,
 			expectedErr:      true,
 		},
 		"cloud: if fail to build client based on missing secret then return nil and hard fail": {
-			certificateRequest: cloudCR,
+			certificateRequest: cloudCR.DeepCopy(),
 			issuer:             cloudIssuer,
 			builder: &controllertest.Builder{
+				CertManagerObjects: []runtime.Object{cloudCR.DeepCopy(), cloudIssuer.DeepCopy()},
 				ExpectedEvents: []string{
-					`Normal MissingSecret Required secret resource not found: secret "test-cloud-secret" not found`,
+					`Normal SecretMissing Required secret resource not found: secret "test-cloud-secret" not found`,
 				},
-				CheckFn: testcr.MustNoResponse,
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(coretesting.NewUpdateAction(
+						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
+						gen.DefaultTestNamespace,
+						gen.CertificateRequestFrom(cloudCR,
+							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
+								Type:               cmapi.CertificateRequestConditionReady,
+								Status:             cmapi.ConditionFalse,
+								Reason:             cmapi.CertificateRequestReasonPending,
+								Message:            `Required secret resource not found: secret "test-cloud-secret" not found`,
+								LastTransitionTime: &metaFixedClockStart,
+							}),
+						),
+					)),
+				},
 			},
-			expectedErr: false,
 		},
 		"cloud: if fail to build client based on secret lister transient error then return err and set pending": {
-			certificateRequest: cloudCR,
-			issuer:             cloudIssuer,
+			certificateRequest: cloudCR.DeepCopy(),
 			builder: &controllertest.Builder{
+				CertManagerObjects: []runtime.Object{cloudCR.DeepCopy(), cloudIssuer.DeepCopy()},
 				ExpectedEvents: []string{
-					`Normal ErrorVenafiInit Failed to initialise venafi client for signing: this is a network error`,
+					`Normal VenafiInitError Failed to initialise venafi client for signing: this is a network error`,
 				},
-				CheckFn: testcr.MustNoResponse,
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(coretesting.NewUpdateAction(
+						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
+						gen.DefaultTestNamespace,
+						gen.CertificateRequestFrom(cloudCR,
+							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
+								Type:               cmapi.CertificateRequestConditionReady,
+								Status:             cmapi.ConditionFalse,
+								Reason:             cmapi.CertificateRequestReasonPending,
+								Message:            "Failed to initialise venafi client for signing: this is a network error",
+								LastTransitionTime: &metaFixedClockStart,
+							}),
+						),
+					)),
+				},
 			},
 			fakeSecretLister: failGetSecretLister,
 			expectedErr:      true,
 		},
 		"tpp: if sign returns pending error then set pending and return err": {
-			certificateRequest: tppCR,
-			issuer:             tppIssuer,
+			certificateRequest: tppCR.DeepCopy(),
 			builder: &controllertest.Builder{
-				KubeObjects: []runtime.Object{tppSecret},
+				KubeObjects:        []runtime.Object{tppSecret},
+				CertManagerObjects: []runtime.Object{cloudCR.DeepCopy(), tppIssuer.DeepCopy()},
 				ExpectedEvents: []string{
-					"Normal IssuancePending venafi certificate still in a pending state, the request will be retried: Issuance is pending. You may try retrieving the certificate later using Pickup ID: test-cert-id\n\tStatus: test-status-pending",
+					"Normal IssuancePending Venafi certificate still in a pending state, the request will be retried: Issuance is pending. You may try retrieving the certificate later using Pickup ID: test-cert-id\n\tStatus: test-status-pending",
 				},
-				CheckFn: testcr.MustNoResponse,
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(coretesting.NewUpdateAction(
+						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
+						gen.DefaultTestNamespace,
+						gen.CertificateRequestFrom(tppCR,
+							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
+								Type:               cmapi.CertificateRequestConditionReady,
+								Status:             cmapi.ConditionFalse,
+								Reason:             cmapi.CertificateRequestReasonPending,
+								Message:            "Venafi certificate still in a pending state, the request will be retried: Issuance is pending. You may try retrieving the certificate later using Pickup ID: test-cert-id\n\tStatus: test-status-pending",
+								LastTransitionTime: &metaFixedClockStart,
+							}),
+						),
+					)),
+				},
 			},
 			fakeSecretLister: failGetSecretLister,
 			fakeClient:       clientReturnsPending,
 			expectedErr:      true,
 		},
 		"cloud: if sign returns pending error then set pending and return err": {
-			certificateRequest: cloudCR,
-			issuer:             cloudIssuer,
+			certificateRequest: cloudCR.DeepCopy(),
 			builder: &controllertest.Builder{
-				KubeObjects: []runtime.Object{cloudSecret},
+				KubeObjects:        []runtime.Object{cloudSecret},
+				CertManagerObjects: []runtime.Object{cloudCR.DeepCopy(), cloudIssuer.DeepCopy()},
 				ExpectedEvents: []string{
-					"Normal IssuancePending venafi certificate still in a pending state, the request will be retried: Issuance is pending. You may try retrieving the certificate later using Pickup ID: test-cert-id\n\tStatus: test-status-pending",
+					"Normal IssuancePending Venafi certificate still in a pending state, the request will be retried: Issuance is pending. You may try retrieving the certificate later using Pickup ID: test-cert-id\n\tStatus: test-status-pending",
 				},
-				CheckFn: testcr.MustNoResponse,
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(coretesting.NewUpdateAction(
+						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
+						gen.DefaultTestNamespace,
+						gen.CertificateRequestFrom(cloudCR,
+							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
+								Type:               cmapi.CertificateRequestConditionReady,
+								Status:             cmapi.ConditionFalse,
+								Reason:             cmapi.CertificateRequestReasonPending,
+								Message:            "Venafi certificate still in a pending state, the request will be retried: Issuance is pending. You may try retrieving the certificate later using Pickup ID: test-cert-id\n\tStatus: test-status-pending",
+								LastTransitionTime: &metaFixedClockStart,
+							}),
+						),
+					)),
+				},
 			},
 			fakeSecretLister: failGetSecretLister,
 			fakeClient:       clientReturnsPending,
 			expectedErr:      true,
 		},
 		"tpp: if sign returns timeout error then set failed and return nil": {
-			certificateRequest: tppCR,
-			issuer:             tppIssuer,
+			certificateRequest: tppCR.DeepCopy(),
 			builder: &controllertest.Builder{
-				KubeObjects: []runtime.Object{tppSecret},
+				CertManagerObjects: []runtime.Object{tppCR.DeepCopy(), tppIssuer.DeepCopy()},
+				KubeObjects:        []runtime.Object{tppSecret},
 				ExpectedEvents: []string{
-					"Warning Timeout timed out waiting for venafi certificate, the request will be retried: Operation timed out. You may try retrieving the certificate later using Pickup ID: test-cert-id",
+					"Warning Timeout Timed out waiting for venafi certificate, the request will be retried: Operation timed out. You may try retrieving the certificate later using Pickup ID: test-cert-id",
 				},
-				CheckFn: testcr.MustNoResponse,
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(coretesting.NewUpdateAction(
+						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
+						gen.DefaultTestNamespace,
+						gen.CertificateRequestFrom(tppCR,
+							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
+								Type:               cmapi.CertificateRequestConditionReady,
+								Status:             cmapi.ConditionFalse,
+								Reason:             cmapi.CertificateRequestReasonFailed,
+								Message:            "Timed out waiting for venafi certificate, the request will be retried: Operation timed out. You may try retrieving the certificate later using Pickup ID: test-cert-id",
+								LastTransitionTime: &metaFixedClockStart,
+							}),
+							gen.SetCertificateRequestFailureTime(metaFixedClockStart),
+						),
+					)),
+				},
 			},
 			fakeSecretLister: failGetSecretLister,
 			fakeClient:       clientReturnsTimeout,
-			expectedErr:      false,
 		},
 		"cloud: if sign returns timeout error then set failed and return nil": {
-			certificateRequest: cloudCR,
-			issuer:             cloudIssuer,
+			certificateRequest: cloudCR.DeepCopy(),
 			builder: &controllertest.Builder{
-				KubeObjects: []runtime.Object{cloudSecret},
+				KubeObjects:        []runtime.Object{cloudSecret},
+				CertManagerObjects: []runtime.Object{cloudCR.DeepCopy(), cloudIssuer.DeepCopy()},
 				ExpectedEvents: []string{
-					"Warning Timeout timed out waiting for venafi certificate, the request will be retried: Operation timed out. You may try retrieving the certificate later using Pickup ID: test-cert-id",
+					"Warning Timeout Timed out waiting for venafi certificate, the request will be retried: Operation timed out. You may try retrieving the certificate later using Pickup ID: test-cert-id",
 				},
-				CheckFn: testcr.MustNoResponse,
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(coretesting.NewUpdateAction(
+						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
+						gen.DefaultTestNamespace,
+						gen.CertificateRequestFrom(cloudCR,
+							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
+								Type:               cmapi.CertificateRequestConditionReady,
+								Status:             cmapi.ConditionFalse,
+								Reason:             cmapi.CertificateRequestReasonFailed,
+								Message:            "Timed out waiting for venafi certificate, the request will be retried: Operation timed out. You may try retrieving the certificate later using Pickup ID: test-cert-id",
+								LastTransitionTime: &metaFixedClockStart,
+							}),
+							gen.SetCertificateRequestFailureTime(metaFixedClockStart),
+						),
+					)),
+				},
 			},
 			fakeSecretLister: failGetSecretLister,
 			fakeClient:       clientReturnsTimeout,
-			expectedErr:      false,
 		},
 		"tpp: if sign returns generic error then set pending and return error": {
-			certificateRequest: tppCR,
-			issuer:             tppIssuer,
+			certificateRequest: tppCR.DeepCopy(),
 			builder: &controllertest.Builder{
-				KubeObjects: []runtime.Object{tppSecret},
+				KubeObjects:        []runtime.Object{tppSecret},
+				CertManagerObjects: []runtime.Object{tppCR.DeepCopy(), tppIssuer.DeepCopy()},
 				ExpectedEvents: []string{
-					"Normal Retrieve failed to obtain venafi certificate: this is an error",
+					"Normal RetrieveError Failed to obtain venafi certificate: this is an error",
 				},
-				CheckFn: testcr.MustNoResponse,
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(coretesting.NewUpdateAction(
+						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
+						gen.DefaultTestNamespace,
+						gen.CertificateRequestFrom(tppCR,
+							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
+								Type:               cmapi.CertificateRequestConditionReady,
+								Status:             cmapi.ConditionFalse,
+								Reason:             cmapi.CertificateRequestReasonPending,
+								Message:            "Failed to obtain venafi certificate: this is an error",
+								LastTransitionTime: &metaFixedClockStart,
+							}),
+						),
+					)),
+				},
 			},
 			fakeSecretLister: failGetSecretLister,
 			fakeClient:       clientReturnsGenericError,
 			expectedErr:      true,
 		},
 		"cloud: if sign returns generic error then set pending and return error": {
-			certificateRequest: cloudCR,
-			issuer:             cloudIssuer,
+			certificateRequest: cloudCR.DeepCopy(),
 			builder: &controllertest.Builder{
-				KubeObjects: []runtime.Object{cloudSecret},
+				KubeObjects:        []runtime.Object{cloudSecret},
+				CertManagerObjects: []runtime.Object{tppCR.DeepCopy(), cloudIssuer.DeepCopy()},
 				ExpectedEvents: []string{
-					"Normal Retrieve failed to obtain venafi certificate: this is an error",
+					"Normal RetrieveError Failed to obtain venafi certificate: this is an error",
 				},
-				CheckFn: testcr.MustNoResponse,
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(coretesting.NewUpdateAction(
+						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
+						gen.DefaultTestNamespace,
+						gen.CertificateRequestFrom(cloudCR,
+							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
+								Type:               cmapi.CertificateRequestConditionReady,
+								Status:             cmapi.ConditionFalse,
+								Reason:             cmapi.CertificateRequestReasonPending,
+								Message:            "Failed to obtain venafi certificate: this is an error",
+								LastTransitionTime: &metaFixedClockStart,
+							}),
+						),
+					)),
+				},
 			},
 			fakeSecretLister: failGetSecretLister,
 			fakeClient:       clientReturnsGenericError,
 			expectedErr:      true,
 		},
 		"tpp: if sign returns cert then return cert and not failed": {
-			certificateRequest: tppCR,
-			issuer:             tppIssuer,
+			certificateRequest: tppCR.DeepCopy(),
 			builder: &controllertest.Builder{
-				KubeObjects:    []runtime.Object{tppSecret},
-				ExpectedEvents: []string{},
-				CheckFn:        checkOnlyCertReturned,
+				KubeObjects:        []runtime.Object{tppSecret},
+				CertManagerObjects: []runtime.Object{tppCR.DeepCopy(), tppIssuer.DeepCopy()},
+				ExpectedEvents: []string{
+					"Normal CertificateIssued Certificate fetched from issuer successfully",
+				},
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(coretesting.NewUpdateAction(
+						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
+						gen.DefaultTestNamespace,
+						gen.CertificateRequestFrom(tppCR,
+							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
+								Type:               cmapi.CertificateRequestConditionReady,
+								Status:             cmapi.ConditionTrue,
+								Reason:             cmapi.CertificateRequestReasonIssued,
+								Message:            "Certificate fetched from issuer successfully",
+								LastTransitionTime: &metaFixedClockStart,
+							}),
+							gen.SetCertificateRequestCertificate(certPEM),
+						),
+					)),
+				},
 			},
 			fakeSecretLister: failGetSecretLister,
 			fakeClient:       clientReturnsCert,
-			expectedErr:      false,
 		},
 		"cloud: if sign returns cert then return cert and not failed": {
-			certificateRequest: cloudCR,
-			issuer:             cloudIssuer,
+			certificateRequest: cloudCR.DeepCopy(),
 			builder: &controllertest.Builder{
-				KubeObjects:    []runtime.Object{cloudSecret},
-				ExpectedEvents: []string{},
-				CheckFn:        checkOnlyCertReturned,
+				KubeObjects:        []runtime.Object{cloudSecret},
+				CertManagerObjects: []runtime.Object{cloudCR.DeepCopy(), cloudIssuer.DeepCopy()},
+				ExpectedEvents: []string{
+					"Normal CertificateIssued Certificate fetched from issuer successfully",
+				},
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(coretesting.NewUpdateAction(
+						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
+						gen.DefaultTestNamespace,
+						gen.CertificateRequestFrom(cloudCR,
+							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
+								Type:               cmapi.CertificateRequestConditionReady,
+								Status:             cmapi.ConditionTrue,
+								Reason:             cmapi.CertificateRequestReasonIssued,
+								Message:            "Certificate fetched from issuer successfully",
+								LastTransitionTime: &metaFixedClockStart,
+							}),
+							gen.SetCertificateRequestCertificate(certPEM),
+						),
+					)),
+				},
 			},
 			fakeSecretLister: failGetSecretLister,
 			fakeClient:       clientReturnsCert,
-			expectedErr:      false,
 		},
 	}
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
+			fixedClock.SetTime(fixedClockStart)
+			test.builder.Clock = fixedClock
 			runTest(t, test)
 		})
 	}
@@ -375,28 +553,31 @@ func runTest(t *testing.T, test testT) {
 	test.builder.Start()
 	defer test.builder.Stop()
 
-	c := NewVenafi(test.builder.Context)
+	v := NewVenafi(test.builder.Context)
 
 	if test.fakeSecretLister != nil {
-		c.secretsLister = test.fakeSecretLister
+		v.secretsLister = test.fakeSecretLister
 	}
 
 	if test.fakeClient != nil {
-		c.clientBuilder = func(namespace string, secretsLister corelisters.SecretLister,
+		v.clientBuilder = func(namespace string, secretsLister corelisters.SecretLister,
 			issuer cmapi.GenericIssuer) (internalvenafi.Interface, error) {
 			return test.fakeClient, nil
 		}
 	}
 
+	controller := certificaterequests.New(apiutil.IssuerVenafi, v)
+	controller.Register(test.builder.Context)
 	test.builder.Sync()
 
 	// Deep copy the certificate request to prevent pulling condition state across tests
-	resp, err := c.Sign(context.Background(), test.certificateRequest.DeepCopy(), test.issuer)
+	err := controller.Sync(context.Background(), test.certificateRequest)
 	if err != nil && !test.expectedErr {
 		t.Errorf("expected to not get an error, but got: %v", err)
 	}
 	if err == nil && test.expectedErr {
 		t.Errorf("expected to get an error but did not get one")
 	}
-	test.builder.CheckAndFinish(resp, err)
+
+	test.builder.CheckAndFinish(err)
 }
