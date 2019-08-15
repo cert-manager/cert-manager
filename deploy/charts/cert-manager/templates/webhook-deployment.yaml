@@ -1,3 +1,4 @@
+{{- if .Values.webhook.enabled -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -10,14 +11,14 @@ metadata:
     app.kubernetes.io/managed-by: {{ .Release.Service }}
     helm.sh/chart: {{ include "webhook.chart" . }}
 spec:
-  replicas: {{ .Values.replicaCount }}
+  replicas: {{ .Values.webhook.replicaCount }}
   selector:
     matchLabels:
       app: {{ include "webhook.name" . }}
       app.kubernetes.io/name: {{ include "webhook.name" . }}
       app.kubernetes.io/instance:  {{ .Release.Name }}
       app.kubernetes.io/managed-by: {{ .Release.Service }}
-  {{- with .Values.strategy }}
+  {{- with .Values.webhook.strategy }}
   strategy:
     {{- . | toYaml | nindent 4 }}
   {{- end }}
@@ -30,8 +31,8 @@ spec:
         app.kubernetes.io/managed-by: {{ .Release.Service }}
         helm.sh/chart: {{ include "webhook.chart" . }}
       annotations:
-      {{- if .Values.podAnnotations }}
-{{ toYaml .Values.podAnnotations | indent 8 }}
+      {{- if .Values.webhook.podAnnotations }}
+{{ toYaml .Values.webhook.podAnnotations | indent 8 }}
       {{- end }}
     spec:
       serviceAccountName: {{ include "webhook.fullname" . }}
@@ -40,8 +41,8 @@ spec:
       {{- end }}
       containers:
         - name: {{ .Chart.Name }}
-          image: "{{ .Values.image.repository }}:{{ default .Chart.AppVersion .Values.image.tag }}"
-          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          image: "{{ .Values.webhook.image.repository }}:{{ default .Chart.AppVersion .Values.webhook.image.tag }}"
+          imagePullPolicy: {{ .Values.webhook.image.pullPolicy }}
           args:
           {{- if .Values.global.logLevel }}
           - --v={{ .Values.global.logLevel }}
@@ -49,8 +50,8 @@ spec:
           - --secure-port=6443
           - --tls-cert-file=/certs/tls.crt
           - --tls-private-key-file=/certs/tls.key
-        {{- if .Values.extraArgs }}
-{{ toYaml .Values.extraArgs | indent 10 }}
+        {{- if .Values.webhook.extraArgs }}
+{{ toYaml .Values.webhook.extraArgs | indent 10 }}
         {{- end }}
           env:
           - name: POD_NAMESPACE
@@ -58,7 +59,7 @@ spec:
               fieldRef:
                 fieldPath: metadata.namespace
           resources:
-{{ toYaml .Values.resources | indent 12 }}
+{{ toYaml .Values.webhook.resources | indent 12 }}
           volumeMounts:
           - name: certs
             mountPath: /certs
@@ -66,15 +67,16 @@ spec:
       - name: certs
         secret:
           secretName: {{ include "webhook.servingCertificate" . }}
-    {{- with .Values.nodeSelector }}
+    {{- with .Values.webhook.nodeSelector }}
       nodeSelector:
 {{ toYaml . | indent 8 }}
     {{- end }}
-    {{- with .Values.affinity }}
+    {{- with .Values.webhook.affinity }}
       affinity:
 {{ toYaml . | indent 8 }}
     {{- end }}
-    {{- with .Values.tolerations }}
+    {{- with .Values.webhook.tolerations }}
       tolerations:
 {{ toYaml . | indent 8 }}
     {{- end }}
+{{- end -}}

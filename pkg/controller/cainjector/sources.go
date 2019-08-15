@@ -31,31 +31,6 @@ import (
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 )
 
-const (
-	// WantInjectAnnotation is the annotation that specifies that a particular
-	// object wants injection of CAs.  It takes the form of a reference to a certificate
-	// as namespace/name.  The certificate is expected to have the is-serving-for annotations.
-	WantInjectAnnotation = "certmanager.k8s.io/inject-ca-from"
-
-	// WantInjectAPIServerCAAnnotation, if set to "true", will make the cainjector
-	// inject the CA certificate for the Kubernetes apiserver into the resource.
-	// It discovers the apiserver's CA by inspecting the service account credentials
-	// mounted into the cainjector pod.
-	WantInjectAPIServerCAAnnotation = "certmanager.k8s.io/inject-apiserver-ca"
-
-	// WantInjectFromSecretAnnotation is the annotation that specifies that a particular
-	// object wants injection of CAs.  It takes the form of a reference to a Secret
-	// as namespace/name.
-	WantInjectFromSecretAnnotation = "certmanager.k8s.io/inject-ca-from-secret"
-
-	// AllowsInjectionFromSecretAnnotation is an annotation that must be added
-	// to Secret resource that want to denote that they can be directly
-	// injected into injectables that have a `inject-ca-from-secret` annotation.
-	// If an injectable references a Secret that does NOT have this annotation,
-	// the cainjector will refuse to inject the secret.
-	AllowsInjectionFromSecretAnnotation = "certmanager.k8s.io/allow-direct-injection"
-)
-
 // caDataSource knows how to extract CA data given a provided InjectTarget.
 // This allows adaptable implementations of fetching CA data based on
 // configuration given on the injection target (e.g. annotations).
@@ -86,7 +61,7 @@ type kubeconfigDataSource struct {
 }
 
 func (c *kubeconfigDataSource) Configured(log logr.Logger, metaObj metav1.Object) bool {
-	return metaObj.GetAnnotations()[WantInjectAPIServerCAAnnotation] == "true"
+	return metaObj.GetAnnotations()[cmapi.WantInjectAPIServerCAAnnotation] == "true"
 }
 
 func (c *kubeconfigDataSource) ReadCA(ctx context.Context, log logr.Logger, metaObj metav1.Object) (ca []byte, err error) {
@@ -111,7 +86,7 @@ type certificateDataSource struct {
 }
 
 func (c *certificateDataSource) Configured(log logr.Logger, metaObj metav1.Object) bool {
-	certNameRaw, ok := metaObj.GetAnnotations()[WantInjectAnnotation]
+	certNameRaw, ok := metaObj.GetAnnotations()[cmapi.WantInjectAnnotation]
 	if !ok {
 		return false
 	}
@@ -120,7 +95,7 @@ func (c *certificateDataSource) Configured(log logr.Logger, metaObj metav1.Objec
 }
 
 func (c *certificateDataSource) ReadCA(ctx context.Context, log logr.Logger, metaObj metav1.Object) (ca []byte, err error) {
-	certNameRaw := metaObj.GetAnnotations()[WantInjectAnnotation]
+	certNameRaw := metaObj.GetAnnotations()[cmapi.WantInjectAnnotation]
 	certName := splitNamespacedName(certNameRaw)
 	log = log.WithValues("certificate", certName)
 	if certName.Namespace == "" {
@@ -193,7 +168,7 @@ type secretDataSource struct {
 }
 
 func (c *secretDataSource) Configured(log logr.Logger, metaObj metav1.Object) bool {
-	secretNameRaw, ok := metaObj.GetAnnotations()[WantInjectFromSecretAnnotation]
+	secretNameRaw, ok := metaObj.GetAnnotations()[cmapi.WantInjectFromSecretAnnotation]
 	if !ok {
 		return false
 	}
@@ -202,7 +177,7 @@ func (c *secretDataSource) Configured(log logr.Logger, metaObj metav1.Object) bo
 }
 
 func (c *secretDataSource) ReadCA(ctx context.Context, log logr.Logger, metaObj metav1.Object) ([]byte, error) {
-	secretNameRaw := metaObj.GetAnnotations()[WantInjectFromSecretAnnotation]
+	secretNameRaw := metaObj.GetAnnotations()[cmapi.WantInjectFromSecretAnnotation]
 	secretName := splitNamespacedName(secretNameRaw)
 	log = log.WithValues("secret", secretName)
 	if secretName.Namespace == "" {
@@ -219,7 +194,7 @@ func (c *secretDataSource) ReadCA(ctx context.Context, log logr.Logger, metaObj 
 		return nil, dropNotFound(err)
 	}
 
-	if secret.Annotations == nil || secret.Annotations[AllowsInjectionFromSecretAnnotation] != "true" {
+	if secret.Annotations == nil || secret.Annotations[cmapi.AllowsInjectionFromSecretAnnotation] != "true" {
 		log.Info("Secret resource does not allow direct injection - refusing to inject CA")
 		return nil, nil
 	}

@@ -71,6 +71,7 @@ type Context struct {
 	IngressShimOptions
 	CertificateOptions
 	SchedulerOptions
+	WebhookBootstrapOptions
 }
 
 type IssuerOptions struct {
@@ -138,4 +139,21 @@ type SchedulerOptions struct {
 	// MaxConcurrentChallenges determines the maximum number of challenges that can be
 	// scheduled as 'processing' at once.
 	MaxConcurrentChallenges int
+}
+
+type WebhookBootstrapOptions struct {
+	// Namespace is the namespace the webhook CA and serving secret will be
+	// created in.
+	// If not specified, it will default to the same namespace as cert-manager.
+	Namespace string
+
+	// CASecretName is the name of the secret containing the webhook's root CA
+	CASecretName string
+
+	// ServingSecretName is the name of the secret containing the webhook's
+	// serving certificate
+	ServingSecretName string
+
+	// DNSNames are the dns names that should be set on the serving certificate
+	DNSNames []string
 }
