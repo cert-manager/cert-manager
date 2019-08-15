@@ -30,10 +30,12 @@ import (
 	corelisters "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
+	"k8s.io/utils/clock"
 
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
+	"github.com/jetstack/cert-manager/pkg/scheduler"
 	"github.com/jetstack/cert-manager/pkg/util"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 )
@@ -56,9 +58,10 @@ type controller struct {
 	webhookDNSNames      []string
 	webhookNamespace     string
 
-	secretLister corelisters.SecretLister
-	kubeClient   kubernetes.Interface
-
+	scheduledWorkQueue scheduler.ScheduledWorkQueue
+	secretLister       corelisters.SecretLister
+	kubeClient         kubernetes.Interface
+	clock              clock.Clock
 	// certificateNeedsRenew is a function that can be used to determine whether
 	// a certificate currently requires renewal.
 	// This is a field on the controller struct to avoid having to maintain a reference
@@ -114,6 +117,11 @@ func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitin
 
 	c.kubeClient = ctx.Client
 
+	// Create a scheduled work queue that calls the ctrl.queue.Add method for
+	// each object in the queue. This is used to schedule re-checks of
+	// Certificate resources when they get near to expiry
+	c.scheduledWorkQueue = scheduler.NewScheduledWorkQueue(queue.Add)
+
 	c.webhookDNSNames = ctx.WebhookBootstrapOptions.DNSNames
 	c.webhookCASecret = ctx.WebhookBootstrapOptions.CASecretName
 	c.webhookServingSecret = ctx.WebhookBootstrapOptions.ServingSecretName
@@ -121,6 +129,7 @@ func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitin
 	c.certificateNeedsRenew = ctx.IssuerOptions.CertificateNeedsRenew
 	c.generatePrivateKeyBytes = generatePrivateKeyBytesImpl
 	c.signCertificate = signCertificateImpl
+	c.clock = ctx.Clock
 
 	return queue, mustSync, nil
 }
@@ -160,8 +169,6 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 		return c.syncServingSecret(ctx, secret)
 	}
 
-	// TODO: set up scheduledWorkQueue for auto-renewal
-
 	return nil
 }
 
@@ -184,6 +191,8 @@ func (c *controller) syncCASecret(ctx context.Context, secret *corev1.Secret) er
 
 	// read the existing certificate
 	if !c.certificateRequiresIssuance(ctx, log, secret, pk, crt) {
+		c.scheduleRenewal(log, secret)
+		log.Info("CA certificate already up to date")
 		return nil
 	}
 
@@ -240,6 +249,7 @@ func (c *controller) syncServingSecret(ctx context.Context, secret *corev1.Secre
 	}
 	// read the existing certificate
 	if !c.certificateRequiresIssuance(ctx, log, secret, pk, crt) {
+		c.scheduleRenewal(log, secret)
 		log.Info("Serving certificate already up to date")
 		return nil
 	}
@@ -252,6 +262,30 @@ func (c *controller) syncServingSecret(ctx context.Context, secret *corev1.Secre
 	}
 
 	return c.updateSecret(secret, pkData, caCertData, certData)
+}
+
+func (c *controller) scheduleRenewal(log logr.Logger, s *corev1.Secret) {
+	log = logf.WithResource(log, s)
+	// read the existing certificate
+	crtData := readSecretDataKey(s, corev1.TLSCertKey)
+	if crtData == nil {
+		log.Info("no certificate data found in secret")
+		return
+	}
+	cert, err := pki.DecodeX509CertificateBytes(crtData)
+	if err != nil {
+		log.Error(err, "failed to decode certificate data in secret")
+		return
+	}
+	key, err := controllerpkg.KeyFunc(s)
+	if err != nil {
+		log.Error(err, "internal error determining string key for secret")
+		return
+	}
+
+	// renew 30d before expiry
+	renewIn := cert.NotAfter.Add(-1 * time.Hour * 24 * 30).Sub(c.clock.Now())
+	c.scheduledWorkQueue.Add(key, renewIn)
 }
 
 func (c *controller) certificateRequiresIssuance(ctx context.Context, log logr.Logger, secret *corev1.Secret, pk crypto.Signer, crt *cmapi.Certificate) bool {
