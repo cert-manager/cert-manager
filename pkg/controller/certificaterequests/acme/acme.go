@@ -91,7 +91,7 @@ func (a *ACME) Sign(ctx context.Context, cr *v1alpha1.CertificateRequest, issuer
 	if err != nil {
 		message := "Failed to decode CSR in spec"
 
-		a.reporter.Failed(cr, err, "ErrorParsingCSR", message)
+		a.reporter.Failed(cr, err, "CSRParsingError", message)
 		log.Error(err, message)
 
 		return nil, nil
@@ -102,7 +102,7 @@ func (a *ACME) Sign(ctx context.Context, cr *v1alpha1.CertificateRequest, issuer
 	if err != nil {
 		message := "Failed to build order"
 
-		a.reporter.Failed(cr, err, "ErrorBuildingOrder", message)
+		a.reporter.Failed(cr, err, "OrderBuildingError", message)
 		log.Error(err, message)
 
 		return nil, nil
@@ -116,15 +116,15 @@ func (a *ACME) Sign(ctx context.Context, cr *v1alpha1.CertificateRequest, issuer
 		if err != nil {
 			message := fmt.Sprintf("Failed create new order resource %s/%s", resourceNamespace, expectedOrder.Name)
 
-			a.reporter.Pending(cr, err, "ErrorCreatingOrder", message)
+			a.reporter.Pending(cr, err, "OrderCreatingError", message)
 			log.Error(err, message)
 
 			return nil, err
 		}
 
-		err = fmt.Errorf("%s/%s", resourceNamespace, expectedOrder.Name)
-		message := "Created Order resource"
-		a.reporter.Pending(cr, err, "OrderCreated", message)
+		message := fmt.Sprintf("Created Order resource %s/%s",
+			resourceNamespace, expectedOrder.Name)
+		a.reporter.Pending(cr, nil, "OrderCreated", message)
 		log.V(4).Info(message)
 
 		return nil, nil
@@ -134,11 +134,13 @@ func (a *ACME) Sign(ctx context.Context, cr *v1alpha1.CertificateRequest, issuer
 		// We are probably in a network error here so we should backoff and retry
 		message := fmt.Sprintf("Failed to get order resource %s/%s", resourceNamespace, expectedOrder.Name)
 
-		a.reporter.Pending(cr, err, "ErrorGettingOrder", message)
+		a.reporter.Pending(cr, err, "OrderGetError", message)
 		log.Error(err, message)
 
 		return nil, err
 	}
+
+	log = logf.WithResource(log, order)
 
 	// If the acme order has failed then so too does the CertificateRequest meet the same fate.
 	if acme.IsFailureState(order.Status.State) {
@@ -160,14 +162,12 @@ func (a *ACME) Sign(ctx context.Context, cr *v1alpha1.CertificateRequest, issuer
 		}, nil
 	}
 
-	// We update here to just normal pending while we wait for the order to be resolved.
-	message := fmt.Sprintf("Waiting on certificate issuance from order %s/%s", resourceNamespace, expectedOrder.Name)
-	err = fmt.Errorf("order is currently pending: %q", order.Status.State)
+	// We update here to just pending while we wait for the order to be resolved.
+	a.reporter.Pending(cr, nil, "OrderPending",
+		fmt.Sprintf("Waiting on certificate issuance from order %s/%s: %q",
+			resourceNamespace, order.Name, order.Status.State))
 
-	a.reporter.Pending(cr, err, "OrderPending", message)
-	log.Info(fmt.Sprintf("%s: %s", message, err))
-
-	log.Info("acme Order resource is not in a valid state, waiting...", "state", order.Status.State)
+	log.Info("acme Order resource is not in a ready state, waiting...")
 
 	return nil, nil
 }

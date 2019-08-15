@@ -28,6 +28,10 @@ import (
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 )
 
+const (
+	readyMessage = "Certificate fetched from issuer successfully"
+)
+
 type Reporter struct {
 	clock    clock.Clock
 	recorder record.EventRecorder
@@ -39,10 +43,6 @@ func NewReporter(clock clock.Clock, recorder record.EventRecorder) *Reporter {
 		recorder: recorder,
 	}
 }
-
-const (
-	readyMessage = "Certificate fetched from issuer successfully"
-)
 
 func (r *Reporter) Failed(cr *cmapi.CertificateRequest, err error, reason, message string) {
 	// Set the FailureTime to c.clock.Now(), only if it has not been already set.
