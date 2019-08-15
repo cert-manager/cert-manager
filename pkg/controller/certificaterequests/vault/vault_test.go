@@ -34,15 +34,23 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	corelisters "k8s.io/client-go/listers/core/v1"
+	coretesting "k8s.io/client-go/testing"
+	fakeclock "k8s.io/utils/clock/testing"
 
+	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager"
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
-	testcr "github.com/jetstack/cert-manager/pkg/controller/certificaterequests/test"
+	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	"github.com/jetstack/cert-manager/pkg/controller/certificaterequests"
 	testpkg "github.com/jetstack/cert-manager/pkg/controller/test"
 	internalvault "github.com/jetstack/cert-manager/pkg/internal/vault"
 	fakevault "github.com/jetstack/cert-manager/pkg/internal/vault/fake"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 	"github.com/jetstack/cert-manager/test/unit/gen"
+)
+
+var (
+	fixedClockStart = time.Now()
+	fixedClock      = fakeclock.NewFakeClock(fixedClockStart)
 )
 
 func generateCSR(t *testing.T, secretKey crypto.Signer) []byte {
@@ -65,7 +73,7 @@ func generateCSR(t *testing.T, secretKey crypto.Signer) []byte {
 	return csr
 }
 
-func generateSelfSignedCertFromCR(cr *v1alpha1.CertificateRequest, key crypto.Signer,
+func generateSelfSignedCertFromCR(cr *cmapi.CertificateRequest, key crypto.Signer,
 	duration time.Duration) ([]byte, error) {
 	template, err := pki.GenerateTemplateFromCertificateRequest(cr)
 	if err != nil {
@@ -87,6 +95,11 @@ func generateSelfSignedCertFromCR(cr *v1alpha1.CertificateRequest, key crypto.Si
 }
 
 func TestSign(t *testing.T) {
+	metaFixedClockStart := metav1.NewTime(fixedClockStart)
+	baseIssuer := gen.Issuer("vault-issuer",
+		gen.SetIssuerVault(cmapi.VaultIssuer{}),
+	)
+
 	rsaSK, err := pki.GenerateRSAPrivateKey(2048)
 	if err != nil {
 		t.Error(err)
@@ -95,22 +108,18 @@ func TestSign(t *testing.T) {
 
 	csrPEM := generateCSR(t, rsaSK)
 
-	baseIssuer := gen.Issuer("vault-issuer",
-		gen.SetIssuerVault(v1alpha1.VaultIssuer{}),
-	)
-
-	testCR := gen.CertificateRequest("test-cr",
+	baseCR := gen.CertificateRequest("test-cr",
 		gen.SetCertificateRequestIsCA(true),
 		gen.SetCertificateRequestCSR(csrPEM),
 		gen.SetCertificateRequestDuration(&metav1.Duration{Duration: time.Hour * 24 * 60}),
-		gen.SetCertificateRequestIssuer(v1alpha1.ObjectReference{
+		gen.SetCertificateRequestIssuer(cmapi.ObjectReference{
 			Name:  baseIssuer.Name,
 			Group: certmanager.GroupName,
 			Kind:  baseIssuer.Kind,
 		}),
 	)
 
-	rsaPEMCert, err := generateSelfSignedCertFromCR(testCR, rsaSK, time.Hour*24*60)
+	rsaPEMCert, err := generateSelfSignedCertFromCR(baseCR, rsaSK, time.Hour*24*60)
 	if err != nil {
 		t.Error(err)
 		t.FailNow()
@@ -138,175 +147,271 @@ func TestSign(t *testing.T) {
 
 	tests := map[string]testT{
 		"no token or app role secret reference should report pending": {
-			issuer:             gen.IssuerFrom(baseIssuer),
-			certificateRequest: testCR,
+			certificateRequest: baseCR.DeepCopy(),
 			builder: &testpkg.Builder{
 				KubeObjects:        []runtime.Object{},
-				CertManagerObjects: []runtime.Object{},
+				CertManagerObjects: []runtime.Object{baseCR.DeepCopy(), baseIssuer.DeepCopy()},
 				ExpectedEvents: []string{
-					`Normal ErrorVaultInit Failed to initialise vault client for signing: error initializing Vault client tokenSecretRef or appRoleSecretRef not set`,
+					"Normal VaultInitError Failed to initialise vault client for signing: error initializing Vault client tokenSecretRef or appRoleSecretRef not set",
 				},
-				CheckFn: testcr.MustNoResponse,
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(coretesting.NewUpdateAction(
+						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
+						gen.DefaultTestNamespace,
+						gen.CertificateRequestFrom(baseCR,
+							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
+								Type:               cmapi.CertificateRequestConditionReady,
+								Status:             cmapi.ConditionFalse,
+								Reason:             cmapi.CertificateRequestReasonPending,
+								Message:            "Failed to initialise vault client for signing: error initializing Vault client tokenSecretRef or appRoleSecretRef not set",
+								LastTransitionTime: &metaFixedClockStart,
+							}),
+						),
+					)),
+				},
 			},
-			expectedErr: true,
 		},
 		"a client with a token secret referenced that doesn't exist should report pending": {
-			issuer: gen.IssuerFrom(baseIssuer,
-				gen.SetIssuerVault(v1alpha1.VaultIssuer{
-					Auth: v1alpha1.VaultAuth{
-						TokenSecretRef: v1alpha1.SecretKeySelector{
-							Key: "secret-key",
-							LocalObjectReference: v1alpha1.LocalObjectReference{
-								"non-existing-secret",
-							},
-						},
-					},
-				}),
-			),
-			certificateRequest: testCR,
+			certificateRequest: baseCR.DeepCopy(),
 			builder: &testpkg.Builder{
-				KubeObjects:        []runtime.Object{},
-				CertManagerObjects: []runtime.Object{},
-				ExpectedEvents: []string{
-					`Normal MissingSecret Required secret resource not found: secret "non-existing-secret" not found`,
-				},
-				CheckFn: testcr.MustNoResponse,
-			},
-			expectedErr: false,
-		},
-		"a client with a app role secret referenced that doesn't exist should report pending": {
-			issuer: gen.IssuerFrom(baseIssuer,
-				gen.SetIssuerVault(v1alpha1.VaultIssuer{
-					Auth: v1alpha1.VaultAuth{
-						AppRole: v1alpha1.VaultAppRole{
-							RoleId: "my-role-id",
-							SecretRef: v1alpha1.SecretKeySelector{
+				KubeObjects: []runtime.Object{},
+				CertManagerObjects: []runtime.Object{baseCR.DeepCopy(),
+					gen.IssuerFrom(baseIssuer, gen.SetIssuerVault(cmapi.VaultIssuer{
+						Auth: cmapi.VaultAuth{
+							TokenSecretRef: cmapi.SecretKeySelector{
 								Key: "secret-key",
-								LocalObjectReference: v1alpha1.LocalObjectReference{
+								LocalObjectReference: cmapi.LocalObjectReference{
 									"non-existing-secret",
 								},
 							},
 						},
-					},
-				}),
-			),
-			certificateRequest: testCR,
-			builder: &testpkg.Builder{
-				KubeObjects:        []runtime.Object{},
-				CertManagerObjects: []runtime.Object{},
-				ExpectedEvents: []string{
-					`Normal MissingSecret Required secret resource not found: secret "non-existing-secret" not found`,
+					})),
 				},
-				CheckFn: testcr.MustNoResponse,
+				ExpectedEvents: []string{
+					`Normal SecretMissing Required secret resource not found: secret "non-existing-secret" not found`,
+				},
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(coretesting.NewUpdateAction(
+						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
+						gen.DefaultTestNamespace,
+						gen.CertificateRequestFrom(baseCR,
+							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
+								Type:               cmapi.CertificateRequestConditionReady,
+								Status:             cmapi.ConditionFalse,
+								Reason:             cmapi.CertificateRequestReasonPending,
+								Message:            `Required secret resource not found: secret "non-existing-secret" not found`,
+								LastTransitionTime: &metaFixedClockStart,
+							}),
+						),
+					)),
+				},
 			},
-			expectedErr: false,
+		},
+		"a client with a app role secret referenced that doesn't exist should report pending": {
+			certificateRequest: baseCR.DeepCopy(),
+			builder: &testpkg.Builder{
+				KubeObjects: []runtime.Object{},
+				CertManagerObjects: []runtime.Object{baseCR.DeepCopy(), gen.IssuerFrom(baseIssuer,
+					gen.SetIssuerVault(cmapi.VaultIssuer{
+						Auth: cmapi.VaultAuth{
+							AppRole: cmapi.VaultAppRole{
+								RoleId: "my-role-id",
+								SecretRef: cmapi.SecretKeySelector{
+									Key: "secret-key",
+									LocalObjectReference: cmapi.LocalObjectReference{
+										"non-existing-secret",
+									},
+								},
+							},
+						},
+					}),
+				)},
+				ExpectedEvents: []string{
+					`Normal SecretMissing Required secret resource not found: secret "non-existing-secret" not found`,
+				},
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(coretesting.NewUpdateAction(
+						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
+						gen.DefaultTestNamespace,
+						gen.CertificateRequestFrom(baseCR,
+							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
+								Type:               cmapi.CertificateRequestConditionReady,
+								Status:             cmapi.ConditionFalse,
+								Reason:             cmapi.CertificateRequestReasonPending,
+								Message:            `Required secret resource not found: secret "non-existing-secret" not found`,
+								LastTransitionTime: &metaFixedClockStart,
+							}),
+						),
+					)),
+				},
+			},
 		},
 		"a client with a token secret referenced with token but failed to sign should report fail": {
-			issuer: gen.IssuerFrom(baseIssuer,
-				gen.SetIssuerVault(v1alpha1.VaultIssuer{
-					Auth: v1alpha1.VaultAuth{
-						TokenSecretRef: v1alpha1.SecretKeySelector{
-							Key: "my-token-key",
-							LocalObjectReference: v1alpha1.LocalObjectReference{
-								"token-secret",
+			certificateRequest: baseCR.DeepCopy(),
+			builder: &testpkg.Builder{
+				KubeObjects: []runtime.Object{tokenSecret},
+				CertManagerObjects: []runtime.Object{baseCR.DeepCopy(), gen.IssuerFrom(baseIssuer,
+					gen.SetIssuerVault(cmapi.VaultIssuer{
+						Auth: cmapi.VaultAuth{
+							TokenSecretRef: cmapi.SecretKeySelector{
+								Key: "my-token-key",
+								LocalObjectReference: cmapi.LocalObjectReference{
+									"token-secret",
+								},
 							},
 						},
-					},
-				}),
-			),
-			certificateRequest: testCR,
-			builder: &testpkg.Builder{
-				KubeObjects:        []runtime.Object{tokenSecret},
-				CertManagerObjects: []runtime.Object{},
+					}),
+				)},
 				ExpectedEvents: []string{
-					`Warning ErrorSigning Vault failed to sign certificate: failed to sign`,
+					"Warning SigningError Vault failed to sign certificate: failed to sign",
 				},
-				CheckFn: testcr.MustNoResponse,
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(coretesting.NewUpdateAction(
+						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
+						gen.DefaultTestNamespace,
+						gen.CertificateRequestFrom(baseCR,
+							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
+								Type:               cmapi.CertificateRequestConditionReady,
+								Status:             cmapi.ConditionFalse,
+								Reason:             cmapi.CertificateRequestReasonFailed,
+								Message:            "Vault failed to sign certificate: failed to sign",
+								LastTransitionTime: &metaFixedClockStart,
+							}),
+							gen.SetCertificateRequestFailureTime(metaFixedClockStart),
+						),
+					)),
+				},
 			},
-			fakeVault:   fakevault.New().WithSign(nil, nil, errors.New("failed to sign")),
-			expectedErr: false,
+			fakeVault: fakevault.New().WithSign(nil, nil, errors.New("failed to sign")),
 		},
 		"a client with a app role secret referenced with role but failed to sign should report fail": {
-			issuer: gen.IssuerFrom(baseIssuer,
-				gen.SetIssuerVault(v1alpha1.VaultIssuer{
-					Auth: v1alpha1.VaultAuth{
-						AppRole: v1alpha1.VaultAppRole{
-							RoleId: "my-role-id",
-							SecretRef: v1alpha1.SecretKeySelector{
-								LocalObjectReference: v1alpha1.LocalObjectReference{
-									"role-secret",
+			certificateRequest: baseCR.DeepCopy(),
+			builder: &testpkg.Builder{
+				KubeObjects: []runtime.Object{roleSecret},
+				CertManagerObjects: []runtime.Object{baseCR.DeepCopy(), gen.IssuerFrom(baseIssuer,
+					gen.SetIssuerVault(cmapi.VaultIssuer{
+						Auth: cmapi.VaultAuth{
+							AppRole: cmapi.VaultAppRole{
+								RoleId: "my-role-id",
+								SecretRef: cmapi.SecretKeySelector{
+									LocalObjectReference: cmapi.LocalObjectReference{
+										"role-secret",
+									},
+									Key: "my-role-key",
 								},
-								Key: "my-role-key",
 							},
 						},
-					},
-				}),
-			),
-			certificateRequest: testCR,
-			builder: &testpkg.Builder{
-				KubeObjects:        []runtime.Object{roleSecret},
-				CertManagerObjects: []runtime.Object{},
+					}),
+				)},
 				ExpectedEvents: []string{
-					`Warning ErrorSigning Vault failed to sign certificate: failed to sign`,
+					`Warning SigningError Vault failed to sign certificate: failed to sign`,
 				},
-				CheckFn: testcr.MustNoResponse,
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(coretesting.NewUpdateAction(
+						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
+						gen.DefaultTestNamespace,
+						gen.CertificateRequestFrom(baseCR,
+							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
+								Type:               cmapi.CertificateRequestConditionReady,
+								Status:             cmapi.ConditionFalse,
+								Reason:             cmapi.CertificateRequestReasonFailed,
+								Message:            "Vault failed to sign certificate: failed to sign",
+								LastTransitionTime: &metaFixedClockStart,
+							}),
+							gen.SetCertificateRequestFailureTime(metaFixedClockStart),
+						),
+					)),
+				},
 			},
-			fakeVault:   fakevault.New().WithSign(nil, nil, errors.New("failed to sign")),
-			expectedErr: false,
+			fakeVault: fakevault.New().WithSign(nil, nil, errors.New("failed to sign")),
 		},
 		"a client with a token secret referenced with token and signs should return certificate": {
-			issuer: gen.IssuerFrom(baseIssuer,
-				gen.SetIssuerVault(v1alpha1.VaultIssuer{
-					Auth: v1alpha1.VaultAuth{
-						TokenSecretRef: v1alpha1.SecretKeySelector{
-							Key: "my-token-key",
-							LocalObjectReference: v1alpha1.LocalObjectReference{
-								"token-secret",
+			certificateRequest: baseCR,
+			builder: &testpkg.Builder{
+				KubeObjects: []runtime.Object{tokenSecret},
+				CertManagerObjects: []runtime.Object{baseCR.DeepCopy(), gen.IssuerFrom(baseIssuer,
+					gen.SetIssuerVault(cmapi.VaultIssuer{
+						Auth: cmapi.VaultAuth{
+							TokenSecretRef: cmapi.SecretKeySelector{
+								Key: "my-token-key",
+								LocalObjectReference: cmapi.LocalObjectReference{
+									"token-secret",
+								},
 							},
 						},
-					},
-				}),
-			),
-			certificateRequest: testCR,
-			builder: &testpkg.Builder{
-				KubeObjects:        []runtime.Object{tokenSecret},
-				CertManagerObjects: []runtime.Object{},
-				ExpectedEvents:     []string{},
-				CheckFn:            testcr.NoPrivateKeyCertificatesFieldsSetCheck(rsaPEMCert),
+					}),
+				)},
+				ExpectedEvents: []string{
+					"Normal CertificateIssued Certificate fetched from issuer successfully",
+				},
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(coretesting.NewUpdateAction(
+						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
+						gen.DefaultTestNamespace,
+						gen.CertificateRequestFrom(baseCR,
+							gen.SetCertificateRequestCertificate(rsaPEMCert),
+							gen.SetCertificateRequestCA(rsaPEMCert),
+							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
+								Type:               cmapi.CertificateRequestConditionReady,
+								Status:             cmapi.ConditionTrue,
+								Reason:             cmapi.CertificateRequestReasonIssued,
+								Message:            "Certificate fetched from issuer successfully",
+								LastTransitionTime: &metaFixedClockStart,
+							}),
+						),
+					)),
+				},
 			},
-			fakeVault:   fakevault.New().WithSign(rsaPEMCert, rsaPEMCert, nil),
-			expectedErr: false,
+			fakeVault: fakevault.New().WithSign(rsaPEMCert, rsaPEMCert, nil),
 		},
 		"a client with a app role secret referenced with role should return certificate": {
-			issuer: gen.IssuerFrom(baseIssuer,
-				gen.SetIssuerVault(v1alpha1.VaultIssuer{
-					Auth: v1alpha1.VaultAuth{
-						AppRole: v1alpha1.VaultAppRole{
-							RoleId: "my-role-id",
-							SecretRef: v1alpha1.SecretKeySelector{
-								LocalObjectReference: v1alpha1.LocalObjectReference{
-									"role-secret",
+			certificateRequest: baseCR,
+			builder: &testpkg.Builder{
+				KubeObjects: []runtime.Object{tokenSecret},
+				CertManagerObjects: []runtime.Object{baseCR.DeepCopy(), gen.IssuerFrom(baseIssuer,
+					gen.SetIssuerVault(cmapi.VaultIssuer{
+						Auth: cmapi.VaultAuth{
+							AppRole: cmapi.VaultAppRole{
+								RoleId: "my-role-id",
+								SecretRef: cmapi.SecretKeySelector{
+									LocalObjectReference: cmapi.LocalObjectReference{
+										"role-secret",
+									},
+									Key: "my-role-key",
 								},
-								Key: "my-role-key",
 							},
 						},
-					},
-				}),
-			),
-			certificateRequest: testCR,
-			builder: &testpkg.Builder{
-				KubeObjects:        []runtime.Object{roleSecret},
-				CertManagerObjects: []runtime.Object{},
-				ExpectedEvents:     []string{},
-				CheckFn:            testcr.NoPrivateKeyCertificatesFieldsSetCheck(rsaPEMCert),
+					}),
+				)},
+				ExpectedEvents: []string{
+					"Normal CertificateIssued Certificate fetched from issuer successfully",
+				},
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(coretesting.NewUpdateAction(
+						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
+						gen.DefaultTestNamespace,
+						gen.CertificateRequestFrom(baseCR,
+							gen.SetCertificateRequestCertificate(rsaPEMCert),
+							gen.SetCertificateRequestCA(rsaPEMCert),
+							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
+								Type:               cmapi.CertificateRequestConditionReady,
+								Status:             cmapi.ConditionTrue,
+								Reason:             cmapi.CertificateRequestReasonIssued,
+								Message:            "Certificate fetched from issuer successfully",
+								LastTransitionTime: &metaFixedClockStart,
+							}),
+						),
+					)),
+				},
 			},
-			fakeVault:   fakevault.New().WithSign(rsaPEMCert, rsaPEMCert, nil),
-			expectedErr: false,
+			fakeVault: fakevault.New().WithSign(rsaPEMCert, rsaPEMCert, nil),
 		},
 	}
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
+			fixedClock.SetTime(fixedClockStart)
+			test.builder.Clock = fixedClock
 			runTest(t, test)
 		})
 	}
@@ -314,8 +419,7 @@ func TestSign(t *testing.T) {
 
 type testT struct {
 	builder            *testpkg.Builder
-	certificateRequest *v1alpha1.CertificateRequest
-	issuer             v1alpha1.GenericIssuer
+	certificateRequest *cmapi.CertificateRequest
 
 	expectedErr bool
 
@@ -327,25 +431,26 @@ func runTest(t *testing.T, test testT) {
 	test.builder.Start()
 	defer test.builder.Stop()
 
-	v := NewVault(test.builder.Context)
+	vault := NewVault(test.builder.Context)
 
 	if test.fakeVault != nil {
-		v.vaultClientBuilder = func(ns string, sl corelisters.SecretLister,
-			iss v1alpha1.GenericIssuer) (internalvault.Interface, error) {
+		vault.vaultClientBuilder = func(ns string, sl corelisters.SecretLister,
+			iss cmapi.GenericIssuer) (internalvault.Interface, error) {
 			return test.fakeVault.New(ns, sl, iss)
 		}
 	}
 
+	controller := certificaterequests.New(apiutil.IssuerVault, vault)
+	controller.Register(test.builder.Context)
 	test.builder.Sync()
 
-	// Use a deep copy of the CertificateRequest to prevent carrying condition
-	// state across multiple test case using the same base CertificateRequest
-	resp, err := v.Sign(context.Background(), test.certificateRequest.DeepCopy(), test.issuer)
+	err := controller.Sync(context.Background(), test.certificateRequest)
 	if err != nil && !test.expectedErr {
 		t.Errorf("expected to not get an error, but got: %v", err)
 	}
 	if err == nil && test.expectedErr {
 		t.Errorf("expected to get an error but did not get one")
 	}
-	test.builder.CheckAndFinish(resp, err)
+
+	test.builder.CheckAndFinish(err)
 }

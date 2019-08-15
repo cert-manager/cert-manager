@@ -18,13 +18,14 @@ package ca
 
 import (
 	"context"
+	"crypto/x509"
 	"fmt"
 
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	corelisters "k8s.io/client-go/listers/core/v1"
 
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
 	"github.com/jetstack/cert-manager/pkg/controller/certificaterequests"
 	crutil "github.com/jetstack/cert-manager/pkg/controller/certificaterequests/util"
@@ -39,11 +40,16 @@ const (
 	CRControllerName = "certificaterequests-issuer-ca"
 )
 
+type templateGenerator func(*cmapi.CertificateRequest) (*x509.Certificate, error)
+
 type CA struct {
 	issuerOptions controllerpkg.IssuerOptions
 	secretsLister corelisters.SecretLister
 
 	reporter *crutil.Reporter
+
+	// Used for testing to get reproducible resulting certificates
+	templateGenerator templateGenerator
 }
 
 func init() {
@@ -64,13 +70,14 @@ func init() {
 
 func NewCA(ctx *controllerpkg.Context) *CA {
 	return &CA{
-		issuerOptions: ctx.IssuerOptions,
-		secretsLister: ctx.KubeSharedInformerFactory.Core().V1().Secrets().Lister(),
-		reporter:      crutil.NewReporter(ctx.Clock, ctx.Recorder),
+		issuerOptions:     ctx.IssuerOptions,
+		secretsLister:     ctx.KubeSharedInformerFactory.Core().V1().Secrets().Lister(),
+		reporter:          crutil.NewReporter(ctx.Clock, ctx.Recorder),
+		templateGenerator: pki.GenerateTemplateFromCertificateRequest,
 	}
 }
 
-func (c *CA) Sign(ctx context.Context, cr *v1alpha1.CertificateRequest, issuerObj v1alpha1.GenericIssuer) (*issuerpkg.IssueResponse, error) {
+func (c *CA) Sign(ctx context.Context, cr *cmapi.CertificateRequest, issuerObj cmapi.GenericIssuer) (*issuerpkg.IssueResponse, error) {
 	log := logf.FromContext(ctx, "sign")
 
 	secretName := issuerObj.GetSpec().CA.SecretName
@@ -78,37 +85,35 @@ func (c *CA) Sign(ctx context.Context, cr *v1alpha1.CertificateRequest, issuerOb
 
 	// get a copy of the CA certificate named on the Issuer
 	caCerts, caKey, err := kube.SecretTLSKeyPair(ctx, c.secretsLister, resourceNamespace, issuerObj.GetSpec().CA.SecretName)
+	if k8sErrors.IsNotFound(err) {
+		message := fmt.Sprintf("Referenced secret %s/%s not found", resourceNamespace, secretName)
+
+		c.reporter.Pending(cr, err, "SecretMissing", message)
+		log.Error(err, message)
+
+		return nil, nil
+	}
+
+	if cmerrors.IsInvalidData(err) {
+		message := fmt.Sprintf("Failed to parse signing CA keypair from secret %s/%s", resourceNamespace, secretName)
+
+		c.reporter.Pending(cr, err, "SecretInvalidData", message)
+		log.Error(err, message)
+		return nil, nil
+	}
+
 	if err != nil {
-		log := logf.WithRelatedResourceName(log, issuerObj.GetSpec().CA.SecretName, resourceNamespace, "Secret")
-
-		if k8sErrors.IsNotFound(err) {
-			message := fmt.Sprintf("Referenced secret %s/%s not found", resourceNamespace, secretName)
-
-			c.reporter.Pending(cr, err, "MissingSecret", message)
-			log.Error(err, message)
-
-			return nil, nil
-		}
-
-		if cmerrors.IsInvalidData(err) {
-			message := fmt.Sprintf("Failed to parse signing CA keypair from secret %s/%s", resourceNamespace, secretName)
-
-			c.reporter.Pending(cr, err, "ErrorParsingSecret", message)
-			log.Error(err, message)
-			return nil, nil
-		}
-
 		// We are probably in a network error here so we should backoff and retry
 		message := fmt.Sprintf("Failed to get certificate key pair from secret %s/%s", resourceNamespace, secretName)
-		c.reporter.Pending(cr, err, "ErrorGettingSecret", message)
+		c.reporter.Pending(cr, err, "SecretGetError", message)
 		log.Error(err, message)
 		return nil, err
 	}
 
-	template, err := pki.GenerateTemplateFromCertificateRequest(cr)
+	template, err := c.templateGenerator(cr)
 	if err != nil {
 		message := "Error generating certificate template"
-		c.reporter.Failed(cr, err, "ErrorSigning", message)
+		c.reporter.Failed(cr, err, "SigningError", message)
 		log.Error(err, message)
 		return nil, nil
 	}
@@ -116,7 +121,7 @@ func (c *CA) Sign(ctx context.Context, cr *v1alpha1.CertificateRequest, issuerOb
 	certPEM, caPEM, err := pki.SignCSRTemplate(caCerts, caKey, template)
 	if err != nil {
 		message := "Error signing certificate"
-		c.reporter.Failed(cr, err, "ErrorSigning", message)
+		c.reporter.Failed(cr, err, "SigningError", message)
 		log.Error(err, message)
 		return nil, err
 	}

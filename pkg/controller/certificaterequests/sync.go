@@ -23,7 +23,6 @@ import (
 	"reflect"
 
 	"github.com/kr/pretty"
-	corev1 "k8s.io/api/core/v1"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 
@@ -74,6 +73,7 @@ func (c *Controller) Sync(ctx context.Context, cr *v1alpha1.CertificateRequest) 
 	}
 
 	if err != nil {
+		log.Error(err, "failed to get issuer")
 		return err
 	}
 
@@ -104,8 +104,6 @@ func (c *Controller) Sync(ctx context.Context, cr *v1alpha1.CertificateRequest) 
 		return nil
 	}
 
-	defer c.setCertificateRequestStatus(crCopy)
-
 	if len(crCopy.Status.Certificate) > 0 {
 		dbg.Info("certificate field is already set in status so skipping processing")
 		return nil
@@ -122,45 +120,28 @@ func (c *Controller) Sync(ctx context.Context, cr *v1alpha1.CertificateRequest) 
 		return err
 	}
 
-	// If the issuer has not returned any data, exit early as nil. Wait for the
-	// next re-sync.
+	// If the issuer has not returned any data we may be pending or failed. The
+	// underlying issuer will have set the condition of pending or failed and we
+	// should potentially wait for a re-sync.
 	if resp == nil {
 		return nil
 	}
 
-	// Update to status with the new given certificate.
-	if len(resp.Certificate) > 0 {
-		crCopy.Status.Certificate = resp.Certificate
-		crCopy.Status.CA = resp.CA
-
-		c.recorder.Event(crCopy, corev1.EventTypeNormal, v1alpha1.CertificateRequestReasonIssued,
-			"Certificate fetched from issuer successfully")
-	}
-
-	return nil
-}
-
-// setCertificateRequestStatus will update the status subresource of the
-// certificate request.
-func (c *Controller) setCertificateRequestStatus(cr *v1alpha1.CertificateRequest) {
-	// No cert exists yet
-	if len(cr.Status.Certificate) == 0 {
-		apiutil.SetCertificateRequestCondition(cr, v1alpha1.CertificateRequestConditionReady,
-			v1alpha1.ConditionFalse, v1alpha1.CertificateRequestReasonPending, "Certificate issuance pending")
-		return
-	}
+	// Update to status with the new given response.
+	crCopy.Status.Certificate = resp.Certificate
+	crCopy.Status.CA = resp.CA
 
 	// invalid cert
-	_, err := pki.DecodeX509CertificateBytes(cr.Status.Certificate)
+	_, err = pki.DecodeX509CertificateBytes(crCopy.Status.Certificate)
 	if err != nil {
-		c.reporter.Failed(cr, err, "DecodeError", "Failed to decode returned certificate")
-		return
+		c.reporter.Failed(crCopy, err, "DecodeError", "Failed to decode returned certificate")
+		return nil
 	}
 
-	// cert has been issued and can be decoded so we are ready
-	apiutil.SetCertificateRequestCondition(cr, v1alpha1.CertificateRequestConditionReady,
-		v1alpha1.ConditionTrue, v1alpha1.CertificateRequestReasonIssued, "Certificate has been issued successfully")
-	return
+	// Set condition to Ready.
+	c.reporter.Ready(crCopy)
+
+	return nil
 }
 
 func (c *Controller) updateCertificateRequestStatus(ctx context.Context, old, new *v1alpha1.CertificateRequest) (*v1alpha1.CertificateRequest, error) {

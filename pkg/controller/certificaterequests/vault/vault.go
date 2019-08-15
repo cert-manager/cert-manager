@@ -76,16 +76,17 @@ func (v *Vault) Sign(ctx context.Context, cr *v1alpha1.CertificateRequest, issue
 	if k8sErrors.IsNotFound(err) {
 		message := "Required secret resource not found"
 
-		v.reporter.Pending(cr, err, "MissingSecret", message)
+		v.reporter.Pending(cr, err, "SecretMissing", message)
 		log.Error(err, message)
 		return nil, nil
 	}
 
+	// TODO: distinguish between network errors and other which might warrant a failure.
 	if err != nil {
 		message := "Failed to initialise vault client for signing"
-		v.reporter.Pending(cr, err, "ErrorVaultInit", message)
+		v.reporter.Pending(cr, err, "VaultInitError", message)
 		log.Error(err, message)
-		return nil, err
+		return nil, nil
 	}
 
 	certDuration := api.DefaultCertDuration(cr.Spec.Duration)
@@ -93,7 +94,7 @@ func (v *Vault) Sign(ctx context.Context, cr *v1alpha1.CertificateRequest, issue
 	if err != nil {
 		message := "Vault failed to sign certificate"
 
-		v.reporter.Failed(cr, err, "ErrorSigning", message)
+		v.reporter.Failed(cr, err, "SigningError", message)
 		log.Error(err, message)
 
 		return nil, nil
