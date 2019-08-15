@@ -94,9 +94,6 @@ func signCertificateImpl(crt *cmapi.Certificate, signeeKey, signerKey crypto.Sig
 // It returns the workqueue to be used to enqueue items, a list of
 // InformerSynced functions that must be synced, or an error.
 func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitingInterface, []cache.InformerSynced, error) {
-	// construct a new named logger to be reused throughout the controller
-	//log := logf.FromContext(ctx.RootContext, ExperimentalControllerName)
-
 	// create a queue used to queue up items to be processed
 	queue := workqueue.NewNamedRateLimitingQueue(workqueue.NewItemExponentialFailureRateLimiter(time.Second*5, time.Minute*30), ControllerName)
 
@@ -109,7 +106,7 @@ func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitin
 		secretsInformer.Informer().HasSynced,
 	}
 
-	// set all the references to the listers for used by the Sync function
+	// set all the references to the listers for use by the Sync function
 	c.secretLister = secretsInformer.Lister()
 
 	// register handler functions
@@ -139,7 +136,7 @@ func (c *controller) ProcessItem(ctx context.Context, key string) error {
 	log := logf.FromContext(ctx)
 
 	if len(c.webhookDNSNames) == 0 {
-		log.Info("No webhook DNS names provided on start-up, not processing any resources.")
+		log.Info("no webhook DNS names provided on start-up, not processing any resources.")
 		return nil
 	}
 
@@ -180,19 +177,19 @@ func (c *controller) syncCASecret(ctx context.Context, secret *corev1.Secret) er
 	// read the existing private key
 	pkData := readSecretDataKey(secret, corev1.TLSPrivateKeyKey)
 	if pkData == nil {
-		log.Info("Generating new private key")
+		log.Info("generating new private key")
 		return c.generatePrivateKey(crt, secret)
 	}
 	pk, err := pki.DecodePrivateKeyBytes(pkData)
 	if err != nil {
-		log.Info("Regenerating new private key")
+		log.Info("regenerating new private key")
 		return c.generatePrivateKey(crt, secret)
 	}
 
 	// read the existing certificate
 	if !c.certificateRequiresIssuance(ctx, log, secret, pk, crt) {
 		c.scheduleRenewal(log, secret)
-		log.Info("CA certificate already up to date")
+		log.Info("ca certificate already up to date")
 		return nil
 	}
 
@@ -212,45 +209,45 @@ func (c *controller) syncServingSecret(ctx context.Context, secret *corev1.Secre
 
 	// first fetch the CA private key & certificate
 	caSecret, err := c.secretLister.Secrets(c.webhookNamespace).Get(c.webhookCASecret)
+	if apierrors.IsNotFound(err) {
+		log.Error(err, "ca secret does not yet exist")
+		// TODO: automatically sync the serving secret when the ca secret
+		//       is updated and return nil here instead
+		return err
+	}
 	if err != nil {
-		if apierrors.IsNotFound(err) {
-			log.Error(err, "ca secret does not yet exist")
-			// TODO: automatically sync the serving secret when the ca secret
-			//       is updated and return nil here instead
-			return err
-		}
 		return err
 	}
 
 	caPKData := readSecretDataKey(caSecret, corev1.TLSPrivateKeyKey)
 	caPK, err := pki.DecodePrivateKeyBytes(caPKData)
 	if err != nil {
-		log.Error(err, "Error decoding CA private key")
+		log.Error(err, "error decoding CA private key")
 		return err
 	}
 
 	caCertData := readSecretDataKey(caSecret, corev1.TLSCertKey)
 	caCert, err := pki.DecodeX509CertificateBytes(caCertData)
 	if err != nil {
-		log.Error(err, "Error decoding CA certificate data")
+		log.Error(err, "error decoding CA certificate data")
 		return err
 	}
 
 	// read the existing private key
 	pkData := readSecretDataKey(secret, corev1.TLSPrivateKeyKey)
 	if pkData == nil {
-		log.Info("Generating new private key")
+		log.Info("generating new private key")
 		return c.generatePrivateKey(crt, secret)
 	}
 	pk, err := pki.DecodePrivateKeyBytes(pkData)
 	if err != nil {
-		log.Info("Regenerating new private key")
+		log.Info("regenerating new private key")
 		return c.generatePrivateKey(crt, secret)
 	}
 	// read the existing certificate
 	if !c.certificateRequiresIssuance(ctx, log, secret, pk, crt) {
 		c.scheduleRenewal(log, secret)
-		log.Info("Serving certificate already up to date")
+		log.Info("serving certificate already up to date")
 		return nil
 	}
 
@@ -292,12 +289,12 @@ func (c *controller) certificateRequiresIssuance(ctx context.Context, log logr.L
 	// read the existing certificate
 	crtData := readSecretDataKey(secret, corev1.TLSCertKey)
 	if crtData == nil {
-		log.Info("Issuing webhook certificate")
+		log.Info("ussuing webhook certificate")
 		return true
 	}
 	cert, err := pki.DecodeX509CertificateBytes(crtData)
 	if err != nil {
-		log.Info("Re-issuing webhook certificate")
+		log.Info("re-issuing webhook certificate")
 		return true
 	}
 
@@ -398,12 +395,12 @@ func (c *controller) ensureSecretExists(ctx context.Context, name string) {
 	log = log.WithValues(logf.ResourceNameKey, name, logf.ResourceNamespaceKey, c.webhookNamespace, logf.ResourceKindKey, "Secret")
 	_, err := c.secretLister.Secrets(c.webhookNamespace).Get(name)
 	if apierrors.IsNotFound(err) {
-		log.Info("Existing Secret does not exist, creating new empty secret")
+		log.Info("existing Secret does not exist, creating new empty secret")
 		c.createEmptySecret(ctx, log, name)
 		return
 	}
 	if err != nil {
-		log.Error(err, "Failed to GET existing Secret resource")
+		log.Error(err, "failed to GET existing Secret resource")
 		return
 	}
 }
@@ -425,22 +422,22 @@ func (c *controller) createEmptySecret(ctx context.Context, log logr.Logger, nam
 		Type: corev1.SecretTypeTLS,
 	}
 	if _, err := c.kubeClient.CoreV1().Secrets(c.webhookNamespace).Create(s); err != nil {
-		log.Error(err, "Failed to create new empty Secret")
+		log.Error(err, "failed to create new empty Secret")
 	}
 	return
 }
 
 const (
-	defaultSelfSignedIssuerName = "cert-manager-webhook-selfsigner"
-	defaultCAIssuerName         = "cert-manager-webhook-ca"
+	selfSignedIssuerName = "cert-manager-webhook-selfsigner"
+	caIssuerName         = "cert-manager-webhook-ca"
 
-	defaultCAKeyAlgorithm = cmapi.RSAKeyAlgorithm
-	defaultCAKeySize      = 2048
-	defaultCAKeyEncoding  = cmapi.PKCS1
+	caKeyAlgorithm = cmapi.RSAKeyAlgorithm
+	caKeySize      = 2048
+	caKeyEncoding  = cmapi.PKCS1
 
-	defaultServingKeyAlgorithm = cmapi.RSAKeyAlgorithm
-	defaultServingKeySize      = 2048
-	defaultServingKeyEncoding  = cmapi.PKCS1
+	servingKeyAlgorithm = cmapi.RSAKeyAlgorithm
+	servingKeySize      = 2048
+	servingKeyEncoding  = cmapi.PKCS1
 )
 
 func buildCACertificate(secret *corev1.Secret) *cmapi.Certificate {
@@ -458,12 +455,12 @@ func buildCACertificate(secret *corev1.Secret) *cmapi.Certificate {
 			// rotating the root properly
 			Duration: &metav1.Duration{Duration: time.Hour * 24 * 365 * 5},
 			IssuerRef: cmapi.ObjectReference{
-				Name: defaultSelfSignedIssuerName,
+				Name: selfSignedIssuerName,
 			},
 			IsCA:         true,
-			KeyAlgorithm: defaultCAKeyAlgorithm,
-			KeySize:      defaultCAKeySize,
-			KeyEncoding:  defaultCAKeyEncoding,
+			KeyAlgorithm: caKeyAlgorithm,
+			KeySize:      caKeySize,
+			KeyEncoding:  caKeyEncoding,
 		},
 	}
 }
@@ -481,11 +478,11 @@ func buildServingCertificate(secret *corev1.Secret, dnsNames []string) *cmapi.Ce
 			DNSNames:     dnsNames,
 			Duration:     &metav1.Duration{Duration: time.Hour * 24 * 365 * 1},
 			IssuerRef: cmapi.ObjectReference{
-				Name: defaultCAIssuerName,
+				Name: caIssuerName,
 			},
-			KeyAlgorithm: defaultServingKeyAlgorithm,
-			KeySize:      defaultServingKeySize,
-			KeyEncoding:  defaultServingKeyEncoding,
+			KeyAlgorithm: servingKeyAlgorithm,
+			KeySize:      servingKeySize,
+			KeyEncoding:  servingKeyEncoding,
 		},
 	}
 }

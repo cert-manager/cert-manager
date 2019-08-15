@@ -134,7 +134,7 @@ webhook:
     # tag: canary
     pullPolicy: IfNotPresent
 
-  # if true, the apiserver's cabundle will be automatically injected into the
+  # If true, the apiserver's cabundle will be automatically injected into the
   # webhook's ValidatingWebhookConfiguration resource by the CA injector.
   # in future this will default to false, as the apiserver can use the loopback
   # configuration caBundle to talk to itself in kubernetes 1.11+
