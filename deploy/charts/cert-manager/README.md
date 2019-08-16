@@ -83,7 +83,7 @@ The following table lists the configurable parameters of the cert-manager chart 
 | `global.imagePullSecrets` | Reference to one or more secrets to be used when pulling images | `[]` |
 | `global.rbac.create` | If `true`, create and use RBAC resources (includes sub-charts) | `true` |
 | `image.repository` | Image repository | `quay.io/jetstack/cert-manager-controller` |
-| `image.tag` | Image tag | `v0.9.0` |
+| `image.tag` | Image tag | `v0.10.0` |
 | `image.pullPolicy` | Image pull policy | `IfNotPresent` |
 | `replicaCount`  | Number of cert-manager replicas  | `1` |
 | `clusterResourceNamespace` | Override the namespace used to store DNS provider credentials etc. for ClusterIssuer resources | Same namespace as cert-manager pod
@@ -127,7 +127,7 @@ The following table lists the configurable parameters of the cert-manager chart 
 | `webhook.resources` | CPU/memory resource requests/limits for the webhook pods | |
 | `webhook.nodeSelector` | Node labels for webhook pod assignment | `{}` |
 | `webhook.image.repository` | Webhook image repository | `quay.io/jetstack/cert-manager-webhook` |
-| `webhook.image.tag` | Webhook image tag | `v0.9.0` |
+| `webhook.image.tag` | Webhook image tag | `v0.10.0` |
 | `webhook.image.pullPolicy` | Webhook image pull policy | `IfNotPresent` |
 | `webhook.injectAPIServerCA` | if true, the apiserver's CABundle will be automatically injected into the ValidatingWebhookConfiguration resource | `true` |
 | `cainjector.enabled` | Toggles whether the cainjector component should be installed (required for the webhook component to work) | `true` |
@@ -137,7 +137,7 @@ The following table lists the configurable parameters of the cert-manager chart 
 | `cainjector.resources` | CPU/memory resource requests/limits for the cainjector pods | |
 | `cainjector.nodeSelector` | Node labels for cainjector pod assignment | `{}` |
 | `cainjector.image.repository` | cainjector image repository | `quay.io/jetstack/cert-manager-cainjector` |
-| `cainjector.image.tag` | cainjector image tag | `v0.9.0` |
+| `cainjector.image.tag` | cainjector image tag | `v0.10.0` |
 | `cainjector.image.pullPolicy` | cainjector image pull policy | `IfNotPresent` |
 
 Specify each parameter using the `--set key=value[,key=value]` argument to `helm install`.
