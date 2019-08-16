@@ -140,7 +140,7 @@ func (a *ACME) Sign(ctx context.Context, cr *v1alpha1.CertificateRequest, issuer
 		return nil, err
 	}
 
-	log = logf.WithResource(log, order)
+	log = logf.WithRelatedResource(log, order)
 
 	// If the acme order has failed then so too does the CertificateRequest meet the same fate.
 	if acme.IsFailureState(order.Status.State) {
