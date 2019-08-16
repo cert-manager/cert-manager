@@ -96,5 +96,5 @@ version number you want to install:
    upgrading-0.8-0.9
 
 .. _`official Helm charts repository`: https://hub.helm.sh/charts/jetstack
-.. _`static deployment manifests`: https://github.com/jetstack/cert-manager/blob/release-0.9/deploy/manifests
+.. _`static deployment manifests`: https://github.com/jetstack/cert-manager/blob/release-0.10/deploy/manifests
 .. _`kubernetes/kubernetes#69590`: https://github.com/kubernetes/kubernetes/issues/69590
