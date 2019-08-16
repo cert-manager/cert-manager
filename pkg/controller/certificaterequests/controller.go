@@ -69,6 +69,11 @@ type Controller struct {
 	issuerLister        cmlisters.IssuerLister
 	clusterIssuerLister cmlisters.ClusterIssuerLister
 
+	// Extra informers that should be watched by this certificate request
+	// controller instance. These resources can be owned by certificate requests
+	// that we resolve.
+	extraInformers []cache.SharedIndexInformer
+
 	// Issuer to call sign function
 	issuer Issuer
 
@@ -78,10 +83,11 @@ type Controller struct {
 	reporter *util.Reporter
 }
 
-func New(issuerType string, issuer Issuer) *Controller {
+func New(issuerType string, issuer Issuer, extraInformers ...cache.SharedIndexInformer) *Controller {
 	return &Controller{
-		issuerType: issuerType,
-		issuer:     issuer,
+		issuerType:     issuerType,
+		issuer:         issuer,
+		extraInformers: extraInformers,
 	}
 }
 
@@ -103,10 +109,17 @@ func (c *Controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitin
 
 	// build a list of InformerSynced functions that will be returned by the Register method.
 	// the controller will only begin processing items once all of these informers have synced.
-	mustSync := []cache.InformerSynced{
+
+	// Ensure we also catch all extra informers for this certificate controller instance
+	var extraInformersMustSync []cache.InformerSynced
+	for _, i := range c.extraInformers {
+		extraInformersMustSync = append(extraInformersMustSync, i.HasSynced)
+	}
+
+	mustSync := append([]cache.InformerSynced{
 		certificateRequestInformer.Informer().HasSynced,
 		issuerInformer.Informer().HasSynced,
-	}
+	}, extraInformersMustSync...)
 
 	// if scoped to a single namespace
 	// if we are running in non-namespaced mode (i.e. --namespace=""), we also
@@ -124,6 +137,14 @@ func (c *Controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitin
 
 	// register handler functions
 	certificateRequestInformer.Informer().AddEventHandler(&controllerpkg.QueuingEventHandler{Queue: c.queue})
+	issuerInformer.Informer().AddEventHandler(&controllerpkg.BlockingEventHandler{WorkFunc: c.handleGenericIssuer})
+
+	// Ensure we catch extra informers that are owned by certificate requests
+	for _, i := range c.extraInformers {
+		i.AddEventHandler(&controllerpkg.BlockingEventHandler{
+			WorkFunc: controllerpkg.HandleOwnedResourceNamespacedFunc(c.log, c.queue, certificateRequestGvk, certificateRequestGetter(c.certificateRequestLister)),
+		})
+	}
 
 	// instantiate metrics interface with default metrics implementation
 	c.metrics = metrics.Default
@@ -164,4 +185,10 @@ func (c *Controller) ProcessItem(ctx context.Context, key string) error {
 
 	ctx = logf.NewContext(ctx, logf.WithResource(log, cr))
 	return c.Sync(ctx, cr)
+}
+
+func certificateRequestGetter(lister cmlisters.CertificateRequestLister) func(namespace, name string) (interface{}, error) {
+	return func(namespace, name string) (interface{}, error) {
+		return lister.CertificateRequests(namespace).Get(name)
+	}
 }

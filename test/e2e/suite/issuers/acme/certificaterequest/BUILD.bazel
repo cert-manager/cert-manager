@@ -3,24 +3,28 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 go_library(
     name = "go_default_library",
     srcs = [
-        "doc.go",
-        "issuer.go",
+        "dns01.go",
+        "http01.go",
     ],
-    importpath = "github.com/jetstack/cert-manager/test/e2e/suite/issuers/acme",
-    tags = ["manual"],
+    importpath = "github.com/jetstack/cert-manager/test/e2e/suite/issuers/acme/certificaterequest",
     visibility = ["//visibility:public"],
     deps = [
         "//pkg/apis/certmanager/v1alpha1:go_default_library",
+        "//pkg/util:go_default_library",
         "//test/e2e/framework:go_default_library",
         "//test/e2e/framework/addon:go_default_library",
         "//test/e2e/framework/addon/pebble:go_default_library",
         "//test/e2e/framework/addon/tiller:go_default_library",
-        "//test/e2e/suite/issuers/acme/certificate:go_default_library",
-        "//test/e2e/suite/issuers/acme/certificaterequest:go_default_library",
+        "//test/e2e/framework/log:go_default_library",
+        "//test/e2e/framework/matcher:go_default_library",
+        "//test/e2e/suite/issuers/acme/dnsproviders:go_default_library",
         "//test/e2e/util:go_default_library",
+        "//test/util/generate:go_default_library",
         "//vendor/github.com/onsi/ginkgo:go_default_library",
         "//vendor/github.com/onsi/gomega:go_default_library",
+        "//vendor/k8s.io/api/core/v1:go_default_library",
         "//vendor/k8s.io/apimachinery/pkg/apis/meta/v1:go_default_library",
+        "//vendor/k8s.io/apimachinery/pkg/util/wait:go_default_library",
     ],
 )
 
@@ -33,12 +37,7 @@ filegroup(
 
 filegroup(
     name = "all-srcs",
-    srcs = [
-        ":package-srcs",
-        "//test/e2e/suite/issuers/acme/certificate:all-srcs",
-        "//test/e2e/suite/issuers/acme/certificaterequest:all-srcs",
-        "//test/e2e/suite/issuers/acme/dnsproviders:all-srcs",
-    ],
+    srcs = [":package-srcs"],
     tags = ["automanaged"],
     visibility = ["//visibility:public"],
 )
