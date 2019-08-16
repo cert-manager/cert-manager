@@ -118,7 +118,7 @@ func (v *Venafi) Sign(ctx context.Context, cr *cmapi.CertificateRequest, issuerO
 		default:
 			message := "Failed to obtain venafi certificate"
 
-			v.reporter.Pending(cr, err, "RetrieveError", message)
+			v.reporter.Failed(cr, err, "RetrieveError", message)
 			log.Error(err, message)
 
 			return nil, err

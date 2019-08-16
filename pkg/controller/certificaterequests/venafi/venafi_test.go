@@ -419,7 +419,7 @@ func TestSign(t *testing.T) {
 				KubeObjects:        []runtime.Object{tppSecret},
 				CertManagerObjects: []runtime.Object{tppCR.DeepCopy(), tppIssuer.DeepCopy()},
 				ExpectedEvents: []string{
-					"Normal RetrieveError Failed to obtain venafi certificate: this is an error",
+					"Warning RetrieveError Failed to obtain venafi certificate: this is an error",
 				},
 				ExpectedActions: []testpkg.Action{
 					testpkg.NewAction(coretesting.NewUpdateAction(
@@ -429,10 +429,11 @@ func TestSign(t *testing.T) {
 							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
 								Type:               cmapi.CertificateRequestConditionReady,
 								Status:             cmapi.ConditionFalse,
-								Reason:             cmapi.CertificateRequestReasonPending,
+								Reason:             cmapi.CertificateRequestReasonFailed,
 								Message:            "Failed to obtain venafi certificate: this is an error",
 								LastTransitionTime: &metaFixedClockStart,
 							}),
+							gen.SetCertificateRequestFailureTime(metaFixedClockStart),
 						),
 					)),
 				},
@@ -447,7 +448,7 @@ func TestSign(t *testing.T) {
 				KubeObjects:        []runtime.Object{cloudSecret},
 				CertManagerObjects: []runtime.Object{tppCR.DeepCopy(), cloudIssuer.DeepCopy()},
 				ExpectedEvents: []string{
-					"Normal RetrieveError Failed to obtain venafi certificate: this is an error",
+					"Warning RetrieveError Failed to obtain venafi certificate: this is an error",
 				},
 				ExpectedActions: []testpkg.Action{
 					testpkg.NewAction(coretesting.NewUpdateAction(
@@ -457,10 +458,11 @@ func TestSign(t *testing.T) {
 							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
 								Type:               cmapi.CertificateRequestConditionReady,
 								Status:             cmapi.ConditionFalse,
-								Reason:             cmapi.CertificateRequestReasonPending,
+								Reason:             cmapi.CertificateRequestReasonFailed,
 								Message:            "Failed to obtain venafi certificate: this is an error",
 								LastTransitionTime: &metaFixedClockStart,
 							}),
+							gen.SetCertificateRequestFailureTime(metaFixedClockStart),
 						),
 					)),
 				},
