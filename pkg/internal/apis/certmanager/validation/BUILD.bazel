@@ -9,12 +9,12 @@ go_library(
         "clusterissuer.go",
         "issuer.go",
     ],
-    importpath = "github.com/jetstack/cert-manager/pkg/apis/certmanager/validation",
+    importpath = "github.com/jetstack/cert-manager/pkg/internal/apis/certmanager/validation",
     visibility = ["//visibility:public"],
     deps = [
         "//pkg/api/util:go_default_library",
         "//pkg/apis/certmanager/v1alpha1:go_default_library",
-        "//pkg/apis/certmanager/validation/util:go_default_library",
+        "//pkg/internal/apis/certmanager/validation/util:go_default_library",
         "//pkg/util/pki:go_default_library",
         "//vendor/k8s.io/api/core/v1:go_default_library",
         "//vendor/k8s.io/apimachinery/pkg/apis/meta/v1:go_default_library",
@@ -51,7 +51,7 @@ filegroup(
     name = "all-srcs",
     srcs = [
         ":package-srcs",
-        "//pkg/apis/certmanager/validation/util:all-srcs",
+        "//pkg/internal/apis/certmanager/validation/util:all-srcs",
     ],
     tags = ["automanaged"],
     visibility = ["//visibility:public"],

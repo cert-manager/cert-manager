@@ -16,7 +16,7 @@ limitations under the License.
 
 package webhook
 
-import "github.com/jetstack/cert-manager/pkg/apis/certmanager/validation"
+import "github.com/jetstack/cert-manager/pkg/internal/apis/certmanager/validation"
 
 var (
 	ValidateCertificate        = validation.ValidateCertificate

@@ -29,7 +29,7 @@ import (
 	"github.com/miekg/dns"
 	"k8s.io/klog"
 
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager/validation/util"
+	"github.com/jetstack/cert-manager/pkg/internal/apis/certmanager/validation/util"
 )
 
 var defaultPort = "53"

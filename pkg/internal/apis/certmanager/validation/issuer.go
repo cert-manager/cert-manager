@@ -28,7 +28,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager/validation/util"
+	"github.com/jetstack/cert-manager/pkg/internal/apis/certmanager/validation/util"
 )
 
 // Validation functions for cert-manager v1alpha1 Issuer types
