@@ -22,14 +22,30 @@ import (
 	"time"
 
 	"github.com/openshift/generic-admission-server/pkg/cmd"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/klog"
 
-	"github.com/jetstack/cert-manager/pkg/webhook/validation"
+	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	"github.com/jetstack/cert-manager/pkg/logs"
+	"github.com/jetstack/cert-manager/pkg/webhook"
+	"github.com/jetstack/cert-manager/pkg/webhook/handlers"
 )
 
-var certHook cmd.ValidatingAdmissionHook = &validation.CertificateAdmissionHook{}
-var issuerHook cmd.ValidatingAdmissionHook = &validation.IssuerAdmissionHook{}
-var clusterIssuerHook cmd.ValidatingAdmissionHook = &validation.ClusterIssuerAdmissionHook{}
+var (
+	GroupName = "webhook." + v1alpha1.SchemeGroupVersion.Group
+)
+
+var (
+	validationFuncs = map[schema.GroupVersionKind]handlers.ValidationFunc{
+		v1alpha1.SchemeGroupVersion.WithKind(v1alpha1.CertificateKind):        webhook.ValidateCertificate,
+		v1alpha1.SchemeGroupVersion.WithKind(v1alpha1.CertificateRequestKind): webhook.ValidateCertificateRequest,
+		v1alpha1.SchemeGroupVersion.WithKind(v1alpha1.IssuerKind):             webhook.ValidateIssuer,
+		v1alpha1.SchemeGroupVersion.WithKind(v1alpha1.ClusterIssuerKind):      webhook.ValidateClusterIssuer,
+	}
+)
+
+var validationHook cmd.ValidatingAdmissionHook = handlers.NewFuncBackedValidator(logs.Log, GroupName, webhook.Scheme, validationFuncs)
+var mutationHook cmd.MutatingAdmissionHook = handlers.NewSchemeBackedDefaulter(logs.Log, GroupName, webhook.Scheme)
 
 func main() {
 	// Avoid "logging before flag.Parse" errors from glog
@@ -46,9 +62,8 @@ func main() {
 	}
 
 	cmd.RunAdmissionServer(
-		certHook,
-		issuerHook,
-		clusterIssuerHook,
+		validationHook,
+		mutationHook,
 	)
 }
 

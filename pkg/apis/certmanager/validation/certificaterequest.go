@@ -19,13 +19,15 @@ package validation
 import (
 	"fmt"
 
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 )
 
-func ValidateCertificateRequest(cr *v1alpha1.CertificateRequest) field.ErrorList {
+func ValidateCertificateRequest(obj runtime.Object) field.ErrorList {
+	cr := obj.(*v1alpha1.CertificateRequest)
 	allErrs := ValidateCertificateRequestSpec(&cr.Spec, field.NewPath("spec"))
 	return allErrs
 }

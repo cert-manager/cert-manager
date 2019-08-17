@@ -28,7 +28,6 @@ filegroup(
     srcs = [
         ":package-srcs",
         "//pkg/webhook/handlers:all-srcs",
-        "//pkg/webhook/validation:all-srcs",
     ],
     tags = ["automanaged"],
     visibility = ["//visibility:public"],

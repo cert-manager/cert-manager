@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"net"
 
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
 	"github.com/jetstack/cert-manager/pkg/api/util"
@@ -112,7 +113,8 @@ func validateACMEConfigForAllDNSNames(a *v1alpha1.CertificateSpec, fldPath *fiel
 	return el
 }
 
-func ValidateCertificate(crt *v1alpha1.Certificate) field.ErrorList {
+func ValidateCertificate(obj runtime.Object) field.ErrorList {
+	crt := obj.(*v1alpha1.Certificate)
 	allErrs := ValidateCertificateSpec(&crt.Spec, field.NewPath("spec"))
 	return allErrs
 }

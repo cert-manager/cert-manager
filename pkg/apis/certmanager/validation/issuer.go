@@ -24,6 +24,7 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
@@ -32,7 +33,8 @@ import (
 
 // Validation functions for cert-manager v1alpha1 Issuer types
 
-func ValidateIssuer(iss *v1alpha1.Issuer) field.ErrorList {
+func ValidateIssuer(obj runtime.Object) field.ErrorList {
+	iss := obj.(*v1alpha1.Issuer)
 	allErrs := ValidateIssuerSpec(&iss.Spec, field.NewPath("spec"))
 	return allErrs
 }

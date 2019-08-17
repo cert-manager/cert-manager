@@ -40,8 +40,8 @@ type funcBackedValidator struct {
 func NewFuncBackedValidator(log logr.Logger, groupName string, scheme *runtime.Scheme, fns map[schema.GroupVersionKind]ValidationFunc) *funcBackedValidator {
 	factory := serializer.NewCodecFactory(scheme)
 	return &funcBackedValidator{
-		log:         log,
-		groupName:   groupName,
+		log:       log,
+		groupName: groupName,
 		// TODO: switch to using UniversalDecoder and make validation functions
 		//       run against the internal apiversion
 		decoder:     factory.UniversalDeserializer(),
