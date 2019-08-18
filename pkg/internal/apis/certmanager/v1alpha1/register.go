@@ -17,9 +17,10 @@ limitations under the License.
 package v1alpha1
 
 import (
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+
+	"github.com/jetstack/cert-manager/pkg/apis/certmanager"
+	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 )
 
 // SchemeGroupVersion is group version used to register these objects
@@ -31,8 +32,7 @@ func Resource(resource string) schema.GroupResource {
 }
 
 var (
-	SchemeBuilder      runtime.SchemeBuilder
-	localSchemeBuilder = &SchemeBuilder
+	localSchemeBuilder = &cmapi.SchemeBuilder
 	AddToScheme        = localSchemeBuilder.AddToScheme
 )
 

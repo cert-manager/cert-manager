@@ -18,14 +18,8 @@ package v1alpha1
 
 import (
 	"k8s.io/apimachinery/pkg/runtime"
-
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 )
 
 func addDefaultingFuncs(scheme *runtime.Scheme) error {
 	return RegisterDefaults(scheme)
-}
-
-func SetDefaults_Certificate(obj *v1alpha1.Certificate) {
-	obj.Spec.CommonName = "defaulted"
 }

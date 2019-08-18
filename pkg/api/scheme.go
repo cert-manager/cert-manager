@@ -30,6 +30,15 @@ import (
 	certmanagerv1alpha1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 )
 
+// This package defines a Scheme and Codec that has the *external* API types
+// registered.
+// This means that the scheme will *not* perform defaulting or conversions for
+// cert-manager API resources.
+// This is to ensure a clean separation between API semantics and controllers.
+// Only the webhook should utilise a scheme with conversions and defaults
+// registered in order to ensure all controllers have a consistent view of
+// resource types in the apiserver.
+
 var Scheme = runtime.NewScheme()
 var Codecs = serializer.NewCodecFactory(Scheme)
 var ParameterCodec = runtime.NewParameterCodec(Scheme)

@@ -21,26 +21,12 @@ limitations under the License.
 package v1alpha1
 
 import (
-	v1alpha1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
-	runtime "k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime"
 )
 
 // RegisterDefaults adds defaulters functions to the given scheme.
 // Public to allow building arbitrary schemes.
 // All generated defaulters are covering - they call all nested defaulters.
 func RegisterDefaults(scheme *runtime.Scheme) error {
-	scheme.AddTypeDefaultingFunc(&v1alpha1.Certificate{}, func(obj interface{}) { SetObjectDefaults_Certificate(obj.(*v1alpha1.Certificate)) })
-	scheme.AddTypeDefaultingFunc(&v1alpha1.CertificateList{}, func(obj interface{}) { SetObjectDefaults_CertificateList(obj.(*v1alpha1.CertificateList)) })
 	return nil
-}
-
-func SetObjectDefaults_Certificate(in *v1alpha1.Certificate) {
-	SetDefaults_Certificate(in)
-}
-
-func SetObjectDefaults_CertificateList(in *v1alpha1.CertificateList) {
-	for i := range in.Items {
-		a := &in.Items[i]
-		SetObjectDefaults_Certificate(a)
-	}
 }
