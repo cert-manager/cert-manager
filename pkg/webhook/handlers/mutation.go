@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"sort"
 
 	"github.com/go-logr/logr"
 	"github.com/mattbaird/jsonpatch"
@@ -98,6 +99,8 @@ func (c *SchemeBackedDefaulter) Admit(admissionSpec *admissionv1beta1.AdmissionR
 		}
 		return status
 	}
+	// sort options by path to ensure the output of CreatePatch is deterministic
+	sortOps(ops)
 
 	patch, err := json.Marshal(ops)
 	if err != nil {
@@ -117,4 +120,10 @@ func (c *SchemeBackedDefaulter) Admit(admissionSpec *admissionv1beta1.AdmissionR
 	c.log.Info("generated patch", "patch", string(patch))
 
 	return status
+}
+
+func sortOps(ops []jsonpatch.JsonPatchOperation) {
+	sort.Slice(ops, func(i, j int) bool {
+		return ops[i].Path < ops[j].Path
+	})
 }

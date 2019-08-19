@@ -45,4 +45,12 @@ generate-groups-internal.sh "deepcopy,defaulter,conversion" \
   --output-base "${GOPATH}/src/" \
   --go-header-file "${runfiles}/hack/boilerplate/boilerplate.go.txt"
 
+generate-groups-internal.sh "deepcopy,defaulter,conversion" \
+  github.com/jetstack/cert-manager/pkg/webhook/handlers/testdata/generated \
+  github.com/jetstack/cert-manager/pkg/webhook/handlers/testdata/apis \
+  github.com/jetstack/cert-manager/pkg/webhook/handlers/testdata/apis \
+  testgroup:v1 \
+  --output-base "${GOPATH}/src/" \
+  --go-header-file "${runfiles}/hack/boilerplate/boilerplate.go.txt"
+
 update-bazel.sh
