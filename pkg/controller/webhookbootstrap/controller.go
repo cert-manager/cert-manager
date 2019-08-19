@@ -26,6 +26,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	coreinformers "k8s.io/client-go/informers/core/v1"
 	"k8s.io/client-go/kubernetes"
 	corelisters "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/tools/cache"
@@ -98,19 +99,22 @@ func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitin
 	queue := workqueue.NewNamedRateLimitingQueue(workqueue.NewItemExponentialFailureRateLimiter(time.Second*5, time.Minute*30), ControllerName)
 
 	// obtain references to all the informers used by this controller
-	secretsInformer := ctx.KubeSharedInformerFactory.Core().V1().Secrets()
+	// don't use the SharedInformerFactory here as it is configured to watch
+	// *all* namespaces, whereas we only want to watch the webhook bootstrap
+	// namespace for secret resources.
+	secretsInformer := coreinformers.NewSecretInformer(ctx.Client, ctx.WebhookBootstrapOptions.Namespace, time.Minute*5, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc})
 
 	// build a list of InformerSynced functions that will be returned by the Register method.
 	// the controller will only begin processing items once all of these informers have synced.
 	mustSync := []cache.InformerSynced{
-		secretsInformer.Informer().HasSynced,
+		secretsInformer.HasSynced,
 	}
 
 	// set all the references to the listers for use by the Sync function
-	c.secretLister = secretsInformer.Lister()
+	c.secretLister = corelisters.NewSecretLister(secretsInformer.GetIndexer())
 
 	// register handler functions
-	secretsInformer.Informer().AddEventHandler(&controllerpkg.QueuingEventHandler{Queue: queue})
+	secretsInformer.AddEventHandler(&controllerpkg.QueuingEventHandler{Queue: queue})
 
 	c.kubeClient = ctx.Client
 
@@ -128,7 +132,7 @@ func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitin
 	c.signCertificate = signCertificateImpl
 	c.clock = ctx.Clock
 
-	return queue, mustSync, []controllerpkg.RunFunc{secretsInformer.Informer().Run}, nil
+	return queue, mustSync, []controllerpkg.RunFunc{secretsInformer.Run}, nil
 }
 
 func (c *controller) ProcessItem(ctx context.Context, key string) error {
