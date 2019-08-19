@@ -21,7 +21,6 @@ limitations under the License.
 package v1alpha1
 
 import (
-	v1alpha1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 )
 
@@ -29,59 +28,5 @@ import (
 // Public to allow building arbitrary schemes.
 // All generated defaulters are covering - they call all nested defaulters.
 func RegisterDefaults(scheme *runtime.Scheme) error {
-	scheme.AddTypeDefaultingFunc(&v1alpha1.Certificate{}, func(obj interface{}) { SetObjectDefaults_Certificate(obj.(*v1alpha1.Certificate)) })
-	scheme.AddTypeDefaultingFunc(&v1alpha1.CertificateList{}, func(obj interface{}) { SetObjectDefaults_CertificateList(obj.(*v1alpha1.CertificateList)) })
-	scheme.AddTypeDefaultingFunc(&v1alpha1.CertificateRequest{}, func(obj interface{}) { SetObjectDefaults_CertificateRequest(obj.(*v1alpha1.CertificateRequest)) })
-	scheme.AddTypeDefaultingFunc(&v1alpha1.CertificateRequestList{}, func(obj interface{}) {
-		SetObjectDefaults_CertificateRequestList(obj.(*v1alpha1.CertificateRequestList))
-	})
-	scheme.AddTypeDefaultingFunc(&v1alpha1.Challenge{}, func(obj interface{}) { SetObjectDefaults_Challenge(obj.(*v1alpha1.Challenge)) })
-	scheme.AddTypeDefaultingFunc(&v1alpha1.ChallengeList{}, func(obj interface{}) { SetObjectDefaults_ChallengeList(obj.(*v1alpha1.ChallengeList)) })
-	scheme.AddTypeDefaultingFunc(&v1alpha1.Order{}, func(obj interface{}) { SetObjectDefaults_Order(obj.(*v1alpha1.Order)) })
-	scheme.AddTypeDefaultingFunc(&v1alpha1.OrderList{}, func(obj interface{}) { SetObjectDefaults_OrderList(obj.(*v1alpha1.OrderList)) })
 	return nil
-}
-
-func SetObjectDefaults_Certificate(in *v1alpha1.Certificate) {
-	SetDefaults_Certificate(in)
-}
-
-func SetObjectDefaults_CertificateList(in *v1alpha1.CertificateList) {
-	for i := range in.Items {
-		a := &in.Items[i]
-		SetObjectDefaults_Certificate(a)
-	}
-}
-
-func SetObjectDefaults_CertificateRequest(in *v1alpha1.CertificateRequest) {
-	SetDefaults_CertificateRequest(in)
-}
-
-func SetObjectDefaults_CertificateRequestList(in *v1alpha1.CertificateRequestList) {
-	for i := range in.Items {
-		a := &in.Items[i]
-		SetObjectDefaults_CertificateRequest(a)
-	}
-}
-
-func SetObjectDefaults_Challenge(in *v1alpha1.Challenge) {
-	SetDefaults_Challenge(in)
-}
-
-func SetObjectDefaults_ChallengeList(in *v1alpha1.ChallengeList) {
-	for i := range in.Items {
-		a := &in.Items[i]
-		SetObjectDefaults_Challenge(a)
-	}
-}
-
-func SetObjectDefaults_Order(in *v1alpha1.Order) {
-	SetDefaults_Order(in)
-}
-
-func SetObjectDefaults_OrderList(in *v1alpha1.OrderList) {
-	for i := range in.Items {
-		a := &in.Items[i]
-		SetObjectDefaults_Order(a)
-	}
 }
