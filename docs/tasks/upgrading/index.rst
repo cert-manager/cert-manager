@@ -35,6 +35,9 @@ version number you want to install:
    kubectl apply \
         -f https://raw.githubusercontent.com/jetstack/cert-manager/<version>/deploy/manifests/00-crds.yaml
 
+   # Add the Jetstack Helm repository if you haven't already
+   helm repo add jetstack https://charts.jetstack.io
+
    # Ensure the local Helm chart repository cache is up to date
    helm repo update
 
