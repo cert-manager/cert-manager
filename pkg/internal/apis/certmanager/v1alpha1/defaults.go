@@ -17,9 +17,39 @@ limitations under the License.
 package v1alpha1
 
 import (
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+
+	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 )
 
 func addDefaultingFuncs(scheme *runtime.Scheme) error {
 	return RegisterDefaults(scheme)
+}
+
+func SetDefaults_Certificate(obj *v1alpha1.Certificate) {
+	if obj.Spec.IssuerRef.Kind == "" {
+		obj.Spec.IssuerRef.Kind = v1alpha1.IssuerKind
+	}
+	if obj.Spec.RenewBefore == nil {
+		obj.Spec.RenewBefore = &metav1.Duration{Duration: v1alpha1.DefaultRenewBefore}
+	}
+}
+
+func SetDefaults_CertificateRequest(obj *v1alpha1.CertificateRequest) {
+	if obj.Spec.IssuerRef.Kind == "" {
+		obj.Spec.IssuerRef.Kind = v1alpha1.IssuerKind
+	}
+}
+
+func SetDefaults_Order(obj *v1alpha1.Order) {
+	if obj.Spec.IssuerRef.Kind == "" {
+		obj.Spec.IssuerRef.Kind = v1alpha1.IssuerKind
+	}
+}
+
+func SetDefaults_Challenge(obj *v1alpha1.Challenge) {
+	if obj.Spec.IssuerRef.Kind == "" {
+		obj.Spec.IssuerRef.Kind = v1alpha1.IssuerKind
+	}
 }
