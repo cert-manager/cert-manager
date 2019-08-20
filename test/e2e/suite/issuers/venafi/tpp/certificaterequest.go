@@ -17,6 +17,7 @@ limitations under the License.
 package tpp
 
 import (
+	"crypto/x509"
 	"time"
 
 	. "github.com/onsi/ginkgo"
@@ -29,15 +30,14 @@ import (
 	"github.com/jetstack/cert-manager/test/e2e/util"
 )
 
-var _ = TPPDescribe("Certificate with a properly configured Issuer", func() {
-	f := framework.NewDefaultFramework("venafi-tpp-certificate")
+var _ = TPPDescribe("CertificateRequest with a properly configured Issuer", func() {
+	f := framework.NewDefaultFramework("venafi-tpp-certificaterequest")
 	h := f.Helper()
 
 	var (
-		issuer                *cmapi.Issuer
-		tppAddon              = &vaddon.VenafiTPP{}
-		certificateName       = "test-venafi-cert"
-		certificateSecretName = "test-venafi-cert-tls"
+		issuer                 *cmapi.Issuer
+		tppAddon               = &vaddon.VenafiTPP{}
+		certificateRequestName = "test-venafi-certificaterequest"
 	)
 
 	BeforeEach(func() {
@@ -71,17 +71,19 @@ var _ = TPPDescribe("Certificate with a properly configured Issuer", func() {
 	})
 
 	It("should obtain a signed certificate for a single domain", func() {
-		certClient := f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name)
+		crClient := f.CertManagerClientSet.CertmanagerV1alpha1().CertificateRequests(f.Namespace.Name)
 
-		crt := util.NewCertManagerBasicCertificate(certificateName, certificateSecretName, issuer.Name, cmapi.IssuerKind, nil, nil)
-		crt.Spec.CommonName = cmutil.RandStringRunes(10) + ".venafi-e2e.example"
+		dnsNames := []string{cmutil.RandStringRunes(10) + ".venafi-e2e.example"}
 
-		By("Creating a Certificate")
-		_, err := certClient.Create(crt)
+		cr, key, err := util.NewCertManagerBasicCertificateRequest(certificateRequestName, issuer.Name, cmapi.IssuerKind, nil, dnsNames, nil, nil, x509.RSA)
 		Expect(err).NotTo(HaveOccurred())
 
-		By("Verifying the Certificate is valid")
-		err = h.WaitCertificateIssuedValid(f.Namespace.Name, certificateName, time.Second*30)
+		By("Creating a CertificateRequest")
+		_, err = crClient.Create(cr)
+		Expect(err).NotTo(HaveOccurred())
+
+		By("Verifying the CertificateRequest is valid")
+		err = h.WaitCertificateRequestIssuedValid(f.Namespace.Name, certificateRequestName, time.Second*30, key)
 		Expect(err).NotTo(HaveOccurred())
 	})
 })

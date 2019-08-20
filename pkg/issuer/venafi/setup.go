@@ -28,7 +28,12 @@ import (
 )
 
 func (v *Venafi) Setup(ctx context.Context) error {
-	err := v.client.Ping()
+	client, err := v.clientBuilder(v.resourceNamespace, v.secretsLister, v.issuer)
+	if err != nil {
+		return err
+	}
+
+	err = client.Ping()
 	if err != nil {
 		klog.Infof("Issuer could not connect to endpoint with provided credentials. Issuer failed to connect to endpoint\n")
 		apiutil.SetIssuerCondition(v.issuer, v1alpha1.IssuerConditionReady, v1alpha1.ConditionFalse,

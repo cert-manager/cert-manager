@@ -10,6 +10,7 @@ filegroup(
     srcs = [
         ":package-srcs",
         "//pkg/internal/vault:all-srcs",
+        "//pkg/internal/venafi:all-srcs",
     ],
     tags = ["automanaged"],
     visibility = ["//visibility:public"],

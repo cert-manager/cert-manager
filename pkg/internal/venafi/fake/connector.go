@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package venafi
+package fake
 
 import (
 	"github.com/Venafi/vcert/pkg/certificate"
@@ -22,7 +22,7 @@ import (
 	"github.com/Venafi/vcert/pkg/venafi/fake"
 )
 
-type fakeConnector struct {
+type Connector struct {
 	*fake.Connector
 
 	PingFunc                  func() error
@@ -32,42 +32,42 @@ type fakeConnector struct {
 	RenewCertificateFunc      func(*certificate.RenewalRequest) (string, error)
 }
 
-func (f fakeConnector) Default() *fakeConnector {
+func (f Connector) Default() *Connector {
 	if f.Connector == nil {
 		f.Connector = fake.NewConnector(true, nil)
 	}
 	return &f
 }
 
-func (f *fakeConnector) Ping() (err error) {
+func (f *Connector) Ping() (err error) {
 	if f.PingFunc != nil {
 		return f.PingFunc()
 	}
 	return f.Connector.Ping()
 }
 
-func (f *fakeConnector) ReadZoneConfiguration() (config *endpoint.ZoneConfiguration, err error) {
+func (f *Connector) ReadZoneConfiguration() (config *endpoint.ZoneConfiguration, err error) {
 	if f.ReadZoneConfigurationFunc != nil {
 		return f.ReadZoneConfigurationFunc()
 	}
 	return f.Connector.ReadZoneConfiguration()
 }
 
-func (f *fakeConnector) RetrieveCertificate(req *certificate.Request) (certificates *certificate.PEMCollection, err error) {
+func (f *Connector) RetrieveCertificate(req *certificate.Request) (certificates *certificate.PEMCollection, err error) {
 	if f.RetrieveCertificateFunc != nil {
 		return f.RetrieveCertificateFunc(req)
 	}
 	return f.Connector.RetrieveCertificate(req)
 }
 
-func (f *fakeConnector) RequestCertificate(req *certificate.Request) (requestID string, err error) {
+func (f *Connector) RequestCertificate(req *certificate.Request) (requestID string, err error) {
 	if f.RequestCertificateFunc != nil {
 		return f.RequestCertificateFunc(req)
 	}
 	return f.Connector.RequestCertificate(req)
 }
 
-func (f *fakeConnector) RenewCertificate(req *certificate.RenewalRequest) (requestID string, err error) {
+func (f *Connector) RenewCertificate(req *certificate.RenewalRequest) (requestID string, err error) {
 	if f.RenewCertificateFunc != nil {
 		return f.RenewCertificateFunc(req)
 	}
