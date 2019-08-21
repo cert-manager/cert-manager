@@ -107,7 +107,7 @@ type localTemporarySignerFn func(crt *cmapi.Certificate, pk []byte) ([]byte, err
 // Register registers and constructs the controller using the provided context.
 // It returns the workqueue to be used to enqueue items, a list of
 // InformerSynced functions that must be synced, or an error.
-func (c *certificateRequestManager) Register(ctx *controllerpkg.Context) (workqueue.RateLimitingInterface, []cache.InformerSynced, error) {
+func (c *certificateRequestManager) Register(ctx *controllerpkg.Context) (workqueue.RateLimitingInterface, []cache.InformerSynced, []controllerpkg.RunFunc, error) {
 	// construct a new named logger to be reused throughout the controller
 	log := logf.FromContext(ctx.RootContext, ExperimentalControllerName)
 
@@ -160,7 +160,7 @@ func (c *certificateRequestManager) Register(ctx *controllerpkg.Context) (workqu
 	c.cmClient = ctx.CMClient
 	c.kubeClient = ctx.Client
 
-	return c.queue, mustSync, nil
+	return c.queue, mustSync, nil, nil
 }
 
 func (c *certificateRequestManager) ProcessItem(ctx context.Context, key string) error {
@@ -957,10 +957,8 @@ const (
 
 func init() {
 	controllerpkg.Register(ExperimentalControllerName, func(ctx *controllerpkg.Context) (controllerpkg.Interface, error) {
-		c, err := controllerpkg.New(ctx, ExperimentalControllerName, &certificateRequestManager{})
-		if err != nil {
-			return nil, err
-		}
-		return c.Run, nil
+		return controllerpkg.NewBuilder(ctx, ControllerName).
+			For(&certificateRequestManager{}).
+			Complete()
 	})
 }

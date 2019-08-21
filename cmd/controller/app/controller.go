@@ -91,6 +91,7 @@ func Run(opts *options.ControllerOptions, stopCh <-chan struct{}) {
 		}...)
 	}
 
+	var additionalRunFuncs []controller.RunFunc
 	run := func(_ context.Context) {
 		for n, fn := range controller.Known() {
 			log := log.WithValues("controller", n)
@@ -113,12 +114,13 @@ func Run(opts *options.ControllerOptions, stopCh <-chan struct{}) {
 				log.Error(err, "error starting controller")
 				os.Exit(1)
 			}
+			additionalRunFuncs = append(additionalRunFuncs, iface.AdditionalInformers()...)
 			go func(n string, fn controller.Interface) {
 				defer wg.Done()
 				log.Info("starting controller")
 
 				workers := 5
-				err := fn(workers, stopCh)
+				err := fn.Run(workers, stopCh)
 
 				if err != nil {
 					log.Error(err, "error starting controller")
@@ -130,6 +132,10 @@ func Run(opts *options.ControllerOptions, stopCh <-chan struct{}) {
 		log.V(4).Info("starting shared informer factories")
 		ctx.SharedInformerFactory.Start(stopCh)
 		ctx.KubeSharedInformerFactory.Start(stopCh)
+		// start any additional controllers
+		for _, r := range additionalRunFuncs {
+			go r(stopCh)
+		}
 		wg.Wait()
 		log.Info("control loops exited")
 		os.Exit(0)

@@ -93,7 +93,7 @@ func signCertificateImpl(crt *cmapi.Certificate, signeeKey, signerKey crypto.Sig
 // Register registers and constructs the controller using the provided context.
 // It returns the workqueue to be used to enqueue items, a list of
 // InformerSynced functions that must be synced, or an error.
-func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitingInterface, []cache.InformerSynced, error) {
+func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitingInterface, []cache.InformerSynced, []controllerpkg.RunFunc, error) {
 	// create a queue used to queue up items to be processed
 	queue := workqueue.NewNamedRateLimitingQueue(workqueue.NewItemExponentialFailureRateLimiter(time.Second*5, time.Minute*30), ControllerName)
 
@@ -128,7 +128,7 @@ func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitin
 	c.signCertificate = signCertificateImpl
 	c.clock = ctx.Clock
 
-	return queue, mustSync, nil
+	return queue, mustSync, []controllerpkg.RunFunc{secretsInformer.Informer().Run}, nil
 }
 
 func (c *controller) ProcessItem(ctx context.Context, key string) error {
@@ -510,10 +510,9 @@ const (
 func init() {
 	controllerpkg.Register(ControllerName, func(ctx *controllerpkg.Context) (controllerpkg.Interface, error) {
 		ctrl := &controller{}
-		c, err := controllerpkg.New(ctx, ControllerName, ctrl)
-		if err != nil {
-			return nil, err
-		}
-		return c.RunWith(ctrl.ensureSecretsExist, time.Second*10), nil
+		return controllerpkg.NewBuilder(ctx, ControllerName).
+			For(ctrl).
+			With(ctrl.ensureSecretsExist, time.Second*10).
+			Complete()
 	})
 }

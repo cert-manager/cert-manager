@@ -67,7 +67,7 @@ type controller struct {
 // Register registers and constructs the controller using the provided context.
 // It returns the workqueue to be used to enqueue items, a list of
 // InformerSynced functions that must be synced, or an error.
-func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitingInterface, []cache.InformerSynced, error) {
+func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitingInterface, []cache.InformerSynced, []controllerpkg.RunFunc, error) {
 	// construct a new named logger to be reused throughout the controller
 	c.log = logf.FromContext(ctx.RootContext, ControllerName)
 
@@ -119,7 +119,7 @@ func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitin
 	// clock is used when setting the failureTime on an Order's status
 	c.clock = ctx.Clock
 
-	return c.queue, mustSync, nil
+	return c.queue, mustSync, nil, nil
 }
 
 func (c *controller) orderGetter(namespace, name string) (interface{}, error) {
@@ -156,10 +156,8 @@ const (
 
 func init() {
 	controllerpkg.Register(ControllerName, func(ctx *controllerpkg.Context) (controllerpkg.Interface, error) {
-		c, err := controllerpkg.New(ctx, ControllerName, &controller{})
-		if err != nil {
-			return nil, err
-		}
-		return c.Run, nil
+		return controllerpkg.NewBuilder(ctx, ControllerName).
+			For(&controller{}).
+			Complete()
 	})
 }

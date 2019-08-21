@@ -57,15 +57,9 @@ type SelfSigned struct {
 func init() {
 	// create certificate request controller for selfsigned issuer
 	controllerpkg.Register(CRControllerName, func(ctx *controllerpkg.Context) (controllerpkg.Interface, error) {
-		selfsigned := NewSelfSigned(ctx)
-		controller := certificaterequests.New(apiutil.IssuerSelfSigned, selfsigned)
-
-		c, err := controllerpkg.New(ctx, CRControllerName, controller)
-		if err != nil {
-			return nil, err
-		}
-
-		return c.Run, nil
+		return controllerpkg.NewBuilder(ctx, CRControllerName).
+			For(certificaterequests.New(apiutil.IssuerSelfSigned, NewSelfSigned(ctx))).
+			Complete()
 	})
 }
 
