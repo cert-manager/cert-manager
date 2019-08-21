@@ -46,12 +46,12 @@ func TestUpdateIssuerStatus(t *testing.T) {
 	b := &testpkg.Builder{
 		T: t,
 	}
-	b.Start()
+	b.Init()
 	defer b.Stop()
 
 	c := &controller{}
 	c.Register(b.Context)
-	b.Sync()
+	b.Start()
 
 	fakeClient := b.FakeCMClient()
 	assertNumberOfActions(t, fatalf, filter(fakeClient.Actions()), 0)

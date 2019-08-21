@@ -326,7 +326,7 @@ type testT struct {
 
 func runTest(t *testing.T, test testT) {
 	test.builder.T = t
-	test.builder.Start()
+	test.builder.Init()
 	defer test.builder.Stop()
 
 	ac := NewACME(test.builder.Context)
@@ -334,11 +334,9 @@ func runTest(t *testing.T, test testT) {
 		ac.orderLister = test.fakeOrderLister
 	}
 
-	test.builder.Sync()
-
 	controller := certificaterequests.New(apiutil.IssuerACME, ac)
 	controller.Register(test.builder.Context)
-	test.builder.Sync()
+	test.builder.Start()
 
 	err := controller.Sync(context.Background(), test.certificateRequest)
 	if err != nil && !test.expectedErr {

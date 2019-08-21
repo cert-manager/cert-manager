@@ -516,7 +516,7 @@ type testT struct {
 func runTest(t *testing.T, test testT) {
 	test.builder.T = t
 	test.builder.Clock = fixedClock
-	test.builder.Start()
+	test.builder.Init()
 
 	defer test.builder.Stop()
 
@@ -535,7 +535,7 @@ func runTest(t *testing.T, test testT) {
 		c.helper = test.helper
 	}
 
-	test.builder.Sync()
+	test.builder.Start()
 
 	err := c.Sync(context.Background(), test.certificateRequest)
 	if err != nil && !test.expectedErr {

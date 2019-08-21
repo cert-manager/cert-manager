@@ -85,14 +85,14 @@ func TestDisableOldConfigFeatureFlagDisabled(t *testing.T) {
 
 func runSetupTest(t *testing.T, test testT) {
 	test.builder.T = t
-	test.builder.Start()
+	test.builder.Init()
 	defer test.builder.Stop()
 
 	c, err := New(test.builder.Context, test.issuer)
 	if err != nil {
 		t.Fatalf("error building ACME fixture: %v", err)
 	}
-	test.builder.Sync()
+	test.builder.Start()
 
 	err = c.Setup(context.Background())
 	if err != nil && !test.expectedErr {

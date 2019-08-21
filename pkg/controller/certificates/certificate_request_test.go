@@ -2089,13 +2089,13 @@ func TestUpdateStatus(t *testing.T) {
 			fixedClock.SetTime(fixedClockStart)
 			test.builder.Clock = fixedClock
 			test.builder.T = t
-			test.builder.Start()
+			test.builder.Init()
 			defer test.builder.Stop()
 
 			testManager := &certificateRequestManager{}
 			testManager.Register(test.builder.Context)
 			testManager.clock = fixedClock
-			test.builder.Sync()
+			test.builder.Start()
 
 			err := testManager.updateCertificateStatus(context.Background(), test.certificate, test.certificate.DeepCopy())
 			if err != nil && !test.expectedErr {
@@ -2121,7 +2121,7 @@ type testT struct {
 
 func runTest(t *testing.T, test testT) {
 	test.builder.T = t
-	test.builder.Start()
+	test.builder.Init()
 	defer test.builder.Stop()
 
 	testManager := &certificateRequestManager{issueTemporaryCerts: test.enableTempCerts}
@@ -2130,7 +2130,7 @@ func runTest(t *testing.T, test testT) {
 	testManager.generateCSR = test.generateCSR
 	testManager.localTemporarySigner = test.localTemporarySigner
 	testManager.issueTemporaryCerts = test.enableTempCerts
-	test.builder.Sync()
+	test.builder.Start()
 
 	err := testManager.processCertificate(context.Background(), test.certificate)
 	if err != nil && !test.expectedErr {

@@ -1191,7 +1191,7 @@ func TestSync(t *testing.T) {
 				CertManagerObjects: allCMObjects,
 				ExpectedActions:    expectedActions,
 			}
-			b.Start()
+			b.Init()
 			defer b.Stop()
 			c := &controller{
 				kClient:             b.Client,
@@ -1207,7 +1207,7 @@ func TestSync(t *testing.T) {
 				},
 				helper: &fakeHelper{issuer: test.Issuer},
 			}
-			b.Sync()
+			b.Start()
 
 			err := c.Sync(context.Background(), test.Ingress)
 			if err != nil && !test.Err {

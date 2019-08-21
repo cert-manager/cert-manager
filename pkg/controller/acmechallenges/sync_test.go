@@ -330,7 +330,7 @@ func TestSyncHappyPath(t *testing.T) {
 
 func runTest(t *testing.T, test testT) {
 	test.builder.T = t
-	test.builder.Start()
+	test.builder.Init()
 	defer test.builder.Stop()
 
 	c := &controller{}
@@ -346,7 +346,7 @@ func runTest(t *testing.T, test testT) {
 	}
 	c.httpSolver = test.httpSolver
 	c.dnsSolver = test.dnsSolver
-	test.builder.Sync()
+	test.builder.Start()
 
 	err := c.Sync(context.Background(), test.challenge)
 	if err != nil && !test.expectErr {
