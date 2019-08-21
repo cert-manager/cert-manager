@@ -1,0 +1,39 @@
+{{- if .Values.webhook.enabled -}}
+apiVersion: admissionregistration.k8s.io/v1beta1
+kind: MutatingWebhookConfiguration
+metadata:
+  name: {{ include "webhook.fullname" . }}
+  labels:
+    app: {{ include "webhook.name" . }}
+    app.kubernetes.io/name: {{ include "webhook.name" . }}
+    app.kubernetes.io/instance:  {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+    helm.sh/chart: {{ include "webhook.chart" . }}
+  annotations:
+{{- if .Values.webhook.injectAPIServerCA }}
+    certmanager.k8s.io/inject-apiserver-ca: "true"
+{{- end }}
+webhooks:
+  - name: webhook.certmanager.k8s.io
+    rules:
+      - apiGroups:
+          - "certmanager.k8s.io"
+        apiVersions:
+          - v1alpha1
+        operations:
+          - CREATE
+          - UPDATE
+        resources:
+          - certificates
+          - issuers
+          - clusterissuers
+          - orders
+          - challenges
+          - certificaterequests
+    failurePolicy: Fail
+    clientConfig:
+      service:
+        name: kubernetes
+        namespace: default
+        path: /apis/webhook.certmanager.k8s.io/v1beta1/mutations
+{{- end -}}

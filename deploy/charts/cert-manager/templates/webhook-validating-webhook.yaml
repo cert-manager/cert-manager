@@ -14,7 +14,7 @@ metadata:
     certmanager.k8s.io/inject-apiserver-ca: "true"
 {{- end }}
 webhooks:
-  - name: certificates.admission.certmanager.k8s.io
+  - name: webhook.certmanager.k8s.io
     namespaceSelector:
       matchExpressions:
       - key: "certmanager.k8s.io/disable-validation"
@@ -35,64 +35,13 @@ webhooks:
           - UPDATE
         resources:
           - certificates
-    failurePolicy: Fail
-    clientConfig:
-      service:
-        name: kubernetes
-        namespace: default
-        path: /apis/admission.certmanager.k8s.io/v1beta1/certificates
-  - name: issuers.admission.certmanager.k8s.io
-    namespaceSelector:
-      matchExpressions:
-      - key: "certmanager.k8s.io/disable-validation"
-        operator: "NotIn"
-        values:
-        - "true"
-      - key: "name"
-        operator: "NotIn"
-        values:
-        - {{ .Release.Namespace }}
-    rules:
-      - apiGroups:
-          - "certmanager.k8s.io"
-        apiVersions:
-          - v1alpha1
-        operations:
-          - CREATE
-          - UPDATE
-        resources:
           - issuers
-    failurePolicy: Fail
-    clientConfig:
-      service:
-        name: kubernetes
-        namespace: default
-        path: /apis/admission.certmanager.k8s.io/v1beta1/issuers
-  - name: clusterissuers.admission.certmanager.k8s.io
-    namespaceSelector:
-      matchExpressions:
-      - key: "certmanager.k8s.io/disable-validation"
-        operator: "NotIn"
-        values:
-        - "true"
-      - key: "name"
-        operator: "NotIn"
-        values:
-        - {{ .Release.Namespace }}
-    rules:
-      - apiGroups:
-          - "certmanager.k8s.io"
-        apiVersions:
-          - v1alpha1
-        operations:
-          - CREATE
-          - UPDATE
-        resources:
           - clusterissuers
+          - certificaterequests
     failurePolicy: Fail
     clientConfig:
       service:
         name: kubernetes
         namespace: default
-        path: /apis/admission.certmanager.k8s.io/v1beta1/clusterissuers
+        path: /apis/webhook.certmanager.k8s.io/v1beta1/validations
 {{- end -}}

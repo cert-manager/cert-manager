@@ -20,6 +20,7 @@ sh_binary(
     data = [
         ":client",
         ":deepcopy",
+        ":defaulter",
         ":informer",
         ":lister",
     ],
@@ -30,6 +31,13 @@ genrule(
     name = "deepcopy",
     srcs = ["//vendor/k8s.io/code-generator/cmd/deepcopy-gen"],
     outs = ["deepcopy-gen"],
+    cmd = "cp $(SRCS) $@",
+)
+
+genrule(
+    name = "defaulter",
+    srcs = ["//vendor/k8s.io/code-generator/cmd/defaulter-gen"],
+    outs = ["defaulter-gen"],
     cmd = "cp $(SRCS) $@",
 )
 

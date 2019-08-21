@@ -18,9 +18,7 @@ filegroup(
     name = "all-srcs",
     srcs = [
         ":package-srcs",
-        "//pkg/apis/certmanager/install:all-srcs",
         "//pkg/apis/certmanager/v1alpha1:all-srcs",
-        "//pkg/apis/certmanager/validation:all-srcs",
     ],
     tags = ["automanaged"],
     visibility = ["//visibility:public"],
