@@ -83,6 +83,16 @@ type Controller struct {
 	reporter *util.Reporter
 }
 
+// New will construct a new certificaterequest controller using the given
+// Issuer implementation.
+// Note: the extraInformers passed here will be 'waited' for when starting to
+// ensure their corresponding listers have synced.
+// An event handler will then be set on these informers that automatically
+// resyncs CertificateRequest resources that 'own' the objects in the informer.
+// It's the callers responsibility to ensure the Run function on the informer
+// is called in order to start the reflector. This is handled automatically
+// when the informer factory's Start method is called, if the given informer
+// was obtained using a SharedInformerFactory.
 func New(issuerType string, issuer Issuer, extraInformers ...cache.SharedIndexInformer) *Controller {
 	return &Controller{
 		issuerType:     issuerType,
@@ -94,7 +104,7 @@ func New(issuerType string, issuer Issuer, extraInformers ...cache.SharedIndexIn
 // Register registers and constructs the controller using the provided context.
 // It returns the workqueue to be used to enqueue items, a list of
 // InformerSynced functions that must be synced, or an error.
-func (c *Controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitingInterface, []cache.InformerSynced, error) {
+func (c *Controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitingInterface, []cache.InformerSynced, []controllerpkg.RunFunc, error) {
 	// construct a new named logger to be reused throughout the controller
 	c.log = logf.FromContext(ctx.RootContext, ControllerName)
 
@@ -162,7 +172,7 @@ func (c *Controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitin
 	c.log.Info("new certificate request controller registered",
 		"type", c.issuerType)
 
-	return c.queue, mustSync, nil
+	return c.queue, mustSync, nil, nil
 }
 
 func (c *Controller) ProcessItem(ctx context.Context, key string) error {

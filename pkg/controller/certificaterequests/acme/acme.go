@@ -58,17 +58,12 @@ type ACME struct {
 func init() {
 	// create certificate request controller for acme issuer
 	controllerpkg.Register(CRControllerName, func(ctx *controllerpkg.Context) (controllerpkg.Interface, error) {
-		acme := NewACME(ctx)
-
+		// watch owned Order resources and trigger resyncs of CertificateRequests
+		// that own Orders automatically
 		orderInformer := ctx.SharedInformerFactory.Certmanager().V1alpha1().Orders().Informer()
-		controller := certificaterequests.New(apiutil.IssuerACME, acme, orderInformer)
-
-		c, err := controllerpkg.New(ctx, CRControllerName, controller)
-		if err != nil {
-			return nil, err
-		}
-
-		return c.Run, nil
+		return controllerpkg.NewBuilder(ctx, CRControllerName).
+			For(certificaterequests.New(apiutil.IssuerACME, NewACME(ctx), orderInformer)).
+			Complete()
 	})
 }
 

@@ -19,12 +19,20 @@ package controller
 // This file defines types for controllers to register themselves with the
 // controller package.
 
-// Interface represents a controller that can run. 'workers' should be the
-// number of independent goroutines for this controller in question that
-// are to be run, and the workers should shut down upon a signal on stopCh.
-// This method should block until all workers have exited cleanly, thus
-// allowing for graceful shutdown of control loops.
-type Interface func(workers int, stopCh <-chan struct{}) error
+// Interface represents a controller that can be run.
+type Interface interface {
+	// Run will start a controller. 'workers' should be the  number of
+	// independent goroutines for this controller in question that are to be
+	// run, and the workers should shut down upon a signal on stopCh.
+	// This method should block until all workers have exited cleanly, thus
+	// allowing for graceful shutdown of control loops.
+	Run(workers int, stopCh <-chan struct{}) error
+
+	// AdditionalInformers is a list of additional informer 'Run' functions
+	// that will be started when the shared informer factories 'Start' function
+	// is called.
+	AdditionalInformers() []RunFunc
+}
 
 // Constructor is a function that creates a new control loop given a
 // controller Context.
