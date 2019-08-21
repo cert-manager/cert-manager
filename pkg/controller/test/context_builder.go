@@ -30,6 +30,7 @@ import (
 	kubeinformers "k8s.io/client-go/informers"
 	kubefake "k8s.io/client-go/kubernetes/fake"
 	coretesting "k8s.io/client-go/testing"
+	"k8s.io/client-go/tools/cache"
 	"k8s.io/utils/clock"
 	fakeclock "k8s.io/utils/clock/testing"
 
@@ -72,8 +73,9 @@ type Builder struct {
 	// test).
 	CheckFn func(*Builder, ...interface{})
 
-	stopCh           chan struct{}
-	requiredReactors map[string]bool
+	stopCh              chan struct{}
+	requiredReactors    map[string]bool
+	additionalSyncFuncs []cache.InformerSynced
 
 	*controller.Context
 }
@@ -285,6 +287,18 @@ func (b *Builder) Sync() {
 	if err := mustAllSync(b.SharedInformerFactory.WaitForCacheSync(b.stopCh)); err != nil {
 		panic("Error waiting for SharedInformerFactory to sync: " + err.Error())
 	}
+	if b.additionalSyncFuncs != nil {
+		cache.WaitForCacheSync(b.stopCh, b.additionalSyncFuncs...)
+	}
+}
+
+// RegisterAdditionalSyncFuncs registers an additional InformerSynced function
+// with the builder.
+// When the Sync method is called, the builder will also wait for the given
+// listers to be synced as well as the listers that were registered with the
+// informer factories that the builder provides.
+func (b *Builder) RegisterAdditionalSyncFuncs(fns ...cache.InformerSynced) {
+	b.additionalSyncFuncs = append(b.additionalSyncFuncs, fns...)
 }
 
 func (b *Builder) Events() []string {
