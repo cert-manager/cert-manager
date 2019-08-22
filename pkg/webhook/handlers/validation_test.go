@@ -46,7 +46,7 @@ func TestFuncBackedValidator(t *testing.T) {
 		Version: v1.SchemeGroupVersion.Version,
 		Kind:    "TestType",
 	}
-	tests := map[string]testT{
+	tests := map[string]admissionTestT{
 		"should not allow invalid value for 'testField' field": {
 			inputRequest: admissionv1beta1.AdmissionRequest{
 				Kind: testTypeGVK,
@@ -152,7 +152,7 @@ func TestFuncBackedValidator(t *testing.T) {
 
 	for n, test := range tests {
 		t.Run(n, func(t *testing.T) {
-			runTest(t, c.Validate, test)
+			runAdmissionTest(t, c.Validate, test)
 		})
 	}
 }
