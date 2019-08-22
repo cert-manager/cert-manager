@@ -1008,7 +1008,7 @@ type testTDefault struct {
 
 func runTestDefault(t *testing.T, test testTDefault) {
 	test.builder.T = t
-	test.builder.Start()
+	test.builder.Init()
 	defer test.builder.Stop()
 
 	c := &controller{}
@@ -1027,7 +1027,7 @@ func runTestDefault(t *testing.T, test testTDefault) {
 			return test.issuerImpl, nil
 		},
 	}
-	test.builder.Sync()
+	test.builder.Start()
 
 	err := c.Sync(context.Background(), test.certificate)
 	if err != nil && !test.expectedErr {

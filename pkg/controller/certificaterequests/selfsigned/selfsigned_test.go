@@ -498,7 +498,7 @@ type testT struct {
 
 func runTest(t *testing.T, test testT) {
 	test.builder.T = t
-	test.builder.Start()
+	test.builder.Init()
 	defer test.builder.Stop()
 
 	self := NewSelfSigned(test.builder.Context)
@@ -513,7 +513,7 @@ func runTest(t *testing.T, test testT) {
 
 	controller := certificaterequests.New(apiutil.IssuerSelfSigned, self)
 	controller.Register(test.builder.Context)
-	test.builder.Sync()
+	test.builder.Start()
 
 	err := controller.Sync(context.Background(), test.certificateRequest)
 	if err != nil && !test.expectedErr {

@@ -552,7 +552,7 @@ type testT struct {
 
 func runTest(t *testing.T, test testT) {
 	test.builder.T = t
-	test.builder.Start()
+	test.builder.Init()
 	defer test.builder.Stop()
 
 	v := NewVenafi(test.builder.Context)
@@ -570,7 +570,7 @@ func runTest(t *testing.T, test testT) {
 
 	controller := certificaterequests.New(apiutil.IssuerVenafi, v)
 	controller.Register(test.builder.Context)
-	test.builder.Sync()
+	test.builder.Start()
 
 	// Deep copy the certificate request to prevent pulling condition state across tests
 	err := controller.Sync(context.Background(), test.certificateRequest)

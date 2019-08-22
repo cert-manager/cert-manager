@@ -345,7 +345,7 @@ type testT struct {
 
 func runTest(t *testing.T, test testT) {
 	test.builder.T = t
-	test.builder.Start()
+	test.builder.Init()
 	defer test.builder.Stop()
 
 	c := &controller{}
@@ -355,7 +355,7 @@ func runTest(t *testing.T, test testT) {
 			return test.acmeClient, nil
 		},
 	}
-	test.builder.Sync()
+	test.builder.Start()
 
 	err := c.Sync(context.Background(), test.order)
 	if err != nil && !test.expectErr {

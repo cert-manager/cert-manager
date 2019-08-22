@@ -53,15 +53,22 @@ type testT struct {
 
 func runTest(t *testing.T, test testT) {
 	test.builder.T = t
-	test.builder.Start()
+	c := &controller{}
+	test.builder.Init()
 	defer test.builder.Stop()
 
-	c := &controller{}
-	c.Register(test.builder.Context)
-	c.webhookServingSecret = defaultWebhookServingName
-	c.webhookCASecret = defaultWebhookCAName
-	c.webhookNamespace = defaultWebhookNamespace
-	c.webhookDNSNames = defaultWebhookDNSNames
+	test.builder.Context.WebhookBootstrapOptions.Namespace = defaultWebhookNamespace
+	test.builder.Context.WebhookBootstrapOptions.DNSNames = defaultWebhookDNSNames
+	test.builder.Context.WebhookBootstrapOptions.ServingSecretName = defaultWebhookServingName
+	test.builder.Context.WebhookBootstrapOptions.CASecretName = defaultWebhookCAName
+	_, waitSync, runFn, err := c.Register(test.builder.Context)
+	if err != nil {
+		t.Errorf("failed to setup controller: %v", err)
+		t.FailNow()
+	}
+	test.builder.RegisterAdditionalSyncFuncs(waitSync...)
+	test.builder.Start(runFn...)
+
 	if test.generatePrivateKeyBytes != nil {
 		c.generatePrivateKeyBytes = test.generatePrivateKeyBytes
 	}
@@ -71,7 +78,7 @@ func runTest(t *testing.T, test testT) {
 
 	test.builder.Sync()
 
-	err := c.ProcessItem(context.Background(), test.key)
+	err = c.ProcessItem(context.Background(), test.key)
 	if err != nil && !test.expectedErr {
 		t.Errorf("expected to not get an error, but got: %v", err)
 	}

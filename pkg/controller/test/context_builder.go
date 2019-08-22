@@ -30,6 +30,7 @@ import (
 	kubeinformers "k8s.io/client-go/informers"
 	kubefake "k8s.io/client-go/kubernetes/fake"
 	coretesting "k8s.io/client-go/testing"
+	"k8s.io/client-go/tools/cache"
 	"k8s.io/utils/clock"
 	fakeclock "k8s.io/utils/clock/testing"
 
@@ -72,8 +73,9 @@ type Builder struct {
 	// test).
 	CheckFn func(*Builder, ...interface{})
 
-	stopCh           chan struct{}
-	requiredReactors map[string]bool
+	stopCh              chan struct{}
+	requiredReactors    map[string]bool
+	additionalSyncFuncs []cache.InformerSynced
 
 	*controller.Context
 }
@@ -96,9 +98,9 @@ func (b *Builder) generateNameReactor(action coretesting.Action) (handled bool, 
 
 const informerResyncPeriod = time.Millisecond * 500
 
-// ToContext will construct a new context for this builder.
-// Subsequent calls to ToContext will return the same Context instance.
-func (b *Builder) Start() {
+// Init will construct a new context for this builder and set default values
+// for any unset fields.
+func (b *Builder) Init() {
 	if b.Context == nil {
 		b.Context = &controller.Context{
 			RootContext: context.Background(),
@@ -268,23 +270,35 @@ func (b *Builder) Stop() {
 	apiutil.Clock = clock.RealClock{}
 }
 
-// WaitForResync will wait for the informer factory informer duration by
-// calling time.Sleep. This will ensure that all informer Stores are up to date
-// with current information from the fake clients.
-func (b *Builder) WaitForResync() {
-	// add 100ms here to try and cut down on flakes
-	time.Sleep(informerResyncPeriod + time.Millisecond*100)
+func (b *Builder) Start(additional ...controller.RunFunc) {
+	b.KubeSharedInformerFactory.Start(b.stopCh)
+	b.SharedInformerFactory.Start(b.stopCh)
+	for _, fn := range additional {
+		go fn(b.stopCh)
+	}
+	// wait for caches to sync
+	b.Sync()
 }
 
 func (b *Builder) Sync() {
-	b.KubeSharedInformerFactory.Start(b.stopCh)
-	b.SharedInformerFactory.Start(b.stopCh)
 	if err := mustAllSync(b.KubeSharedInformerFactory.WaitForCacheSync(b.stopCh)); err != nil {
 		panic("Error waiting for kubeSharedInformerFactory to sync: " + err.Error())
 	}
 	if err := mustAllSync(b.SharedInformerFactory.WaitForCacheSync(b.stopCh)); err != nil {
 		panic("Error waiting for SharedInformerFactory to sync: " + err.Error())
 	}
+	if b.additionalSyncFuncs != nil {
+		cache.WaitForCacheSync(b.stopCh, b.additionalSyncFuncs...)
+	}
+}
+
+// RegisterAdditionalSyncFuncs registers an additional InformerSynced function
+// with the builder.
+// When the Sync method is called, the builder will also wait for the given
+// listers to be synced as well as the listers that were registered with the
+// informer factories that the builder provides.
+func (b *Builder) RegisterAdditionalSyncFuncs(fns ...cache.InformerSynced) {
+	b.additionalSyncFuncs = append(b.additionalSyncFuncs, fns...)
 }
 
 func (b *Builder) Events() []string {

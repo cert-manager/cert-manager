@@ -83,12 +83,12 @@ func TestGetGenericIssuer(t *testing.T) {
 			b := test.Builder{
 				CertManagerObjects: row.CMObjects,
 			}
-			b.Start()
+			b.Init()
 			c := &helperImpl{
 				issuerLister:        b.FakeCMInformerFactory().Certmanager().V1alpha1().Issuers().Lister(),
 				clusterIssuerLister: b.FakeCMInformerFactory().Certmanager().V1alpha1().ClusterIssuers().Lister(),
 			}
-			b.Sync()
+			b.Start()
 			defer b.Stop()
 
 			if row.NilClusterIssuerLister {

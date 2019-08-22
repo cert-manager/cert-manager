@@ -103,7 +103,7 @@ func (s *acmeFixture) Finish(t *testing.T, args ...interface{}) {
 }
 
 func (s *acmeFixture) buildFakeAcme(b *test.Builder, issuer v1alpha1.GenericIssuer) *Acme {
-	b.Start()
+	b.Init()
 	a, err := New(b.Context, issuer)
 	if err != nil {
 		panic("error creating fake Acme: " + err.Error())
@@ -111,7 +111,7 @@ func (s *acmeFixture) buildFakeAcme(b *test.Builder, issuer v1alpha1.GenericIssu
 	acmeStruct := a.(*Acme)
 	acmeStruct.helper = s
 	acmeStruct.clock = s.Clock
-	b.Sync()
+	b.Start()
 	return acmeStruct
 }
 

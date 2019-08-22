@@ -106,13 +106,13 @@ func (s *solverFixture) Finish(t *testing.T, args ...interface{}) {
 }
 
 func buildFakeSolver(b *test.Builder, dnsProviders dnsProviderConstructors) *Solver {
-	b.Start()
+	b.Init()
 	s := &Solver{
 		Context:                 b.Context,
 		secretLister:            b.Context.KubeSharedInformerFactory.Core().V1().Secrets().Lister(),
 		dnsProviderConstructors: dnsProviders,
 	}
-	b.Sync()
+	b.Start()
 	return s
 }
 

@@ -674,6 +674,7 @@ k8s.io/client-go/tools/cache
 k8s.io/client-go/util/workqueue
 k8s.io/client-go/listers/extensions/v1beta1
 k8s.io/client-go/kubernetes/fake
+k8s.io/client-go/informers/core/v1
 k8s.io/client-go/tools/clientcmd
 k8s.io/client-go/tools/clientcmd/api
 k8s.io/client-go/plugin/pkg/client/auth/azure
@@ -799,7 +800,6 @@ k8s.io/client-go/informers/batch/v2alpha1
 k8s.io/client-go/informers/certificates/v1beta1
 k8s.io/client-go/informers/coordination/v1
 k8s.io/client-go/informers/coordination/v1beta1
-k8s.io/client-go/informers/core/v1
 k8s.io/client-go/informers/events/v1beta1
 k8s.io/client-go/informers/extensions/v1beta1
 k8s.io/client-go/informers/networking/v1
