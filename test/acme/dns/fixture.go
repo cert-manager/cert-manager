@@ -22,6 +22,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"sync"
 	"testing"
+	"time"
 
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	"k8s.io/client-go/rest"
@@ -68,6 +69,9 @@ type fixture struct {
 	clientset    kubernetes.Interface
 	kubectl      *integration.KubeCtl
 	setupLock    sync.Mutex
+
+	pollInterval     time.Duration
+	propagationLimit time.Duration
 }
 
 var DefaultKubeAPIServerFlags = []string{

@@ -43,9 +43,9 @@ func (f *fixture) TestBasicPresentRecord(t *testing.T) {
 	defer f.testSolver.CleanUp(ch)
 
 	// wait until the record has propagated
-	if err := wait.PollUntil(defaultPollInterval,
+	if err := wait.PollUntil(f.getPollInterval(),
 		f.recordHasPropagatedCheck(ch.ResolvedFQDN, ch.Key),
-		closingStopCh(defaultPropagationLimit)); err != nil {
+		closingStopCh(f.getPropagationLimit())); err != nil {
 		t.Errorf("error waiting for DNS record propagation: %v", err)
 		return
 	}
@@ -56,9 +56,9 @@ func (f *fixture) TestBasicPresentRecord(t *testing.T) {
 	}
 
 	// wait until the record has been deleted
-	if err := wait.PollUntil(defaultPollInterval,
+	if err := wait.PollUntil(f.getPollInterval(),
 		f.recordHasBeenDeletedCheck(ch.ResolvedFQDN, ch.Key),
-		closingStopCh(defaultPropagationLimit)); err != nil {
+		closingStopCh(f.getPropagationLimit())); err != nil {
 		t.Errorf("error waiting for record to be deleted: %v", err)
 		return
 	}
@@ -94,12 +94,12 @@ func (f *fixture) TestExtendedDeletingOneRecordRetainsOthers(t *testing.T) {
 	defer f.testSolver.CleanUp(ch2)
 
 	// wait until all records have propagated
-	if err := wait.PollUntil(defaultPollInterval,
+	if err := wait.PollUntil(f.getPollInterval(),
 		allConditions(
 			f.recordHasPropagatedCheck(ch.ResolvedFQDN, ch.Key),
 			f.recordHasPropagatedCheck(ch2.ResolvedFQDN, ch2.Key),
 		),
-		closingStopCh(defaultPropagationLimit)); err != nil {
+		closingStopCh(f.getPropagationLimit())); err != nil {
 		t.Errorf("error waiting for DNS record propagation: %v", err)
 		return
 	}
@@ -110,12 +110,12 @@ func (f *fixture) TestExtendedDeletingOneRecordRetainsOthers(t *testing.T) {
 	}
 
 	// wait until the second record has been deleted and the first one remains
-	if err := wait.PollUntil(defaultPollInterval,
+	if err := wait.PollUntil(f.getPollInterval(),
 		allConditions(
 			f.recordHasBeenDeletedCheck(ch2.ResolvedFQDN, ch2.Key),
 			f.recordHasPropagatedCheck(ch.ResolvedFQDN, ch.Key),
 		),
-		closingStopCh(defaultPropagationLimit)); err != nil {
+		closingStopCh(f.getPropagationLimit())); err != nil {
 		t.Errorf("error waiting for DNS record propagation: %v", err)
 		return
 	}
