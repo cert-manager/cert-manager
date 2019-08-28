@@ -148,3 +148,19 @@ func (f *fixture) recordHasBeenDeletedCheck(fqdn, value string) func() (bool, er
 		return true, nil
 	}
 }
+
+func (f *fixture) getPollInterval() time.Duration {
+	if f.pollInterval != 0 {
+		return f.pollInterval
+	} else {
+		return defaultPollInterval
+	}
+}
+
+func (f *fixture) getPropagationLimit() time.Duration {
+	if f.propagationLimit != 0 {
+		return f.propagationLimit
+	} else {
+		return defaultPropagationLimit
+	}
+}

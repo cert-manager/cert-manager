@@ -22,6 +22,7 @@ import (
 	"io/ioutil"
 	"os"
 	"strings"
+	"time"
 
 	extapi "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 
@@ -155,5 +156,17 @@ func SetDNSServer(s string) Option {
 func SetBinariesPath(s string) Option {
 	return func(f *fixture) {
 		f.binariesPath = s
+	}
+}
+
+func SetPollInterval(d time.Duration) Option {
+	return func(f *fixture) {
+		f.pollInterval = d
+	}
+}
+
+func SetPropagationLimit(d time.Duration) Option {
+	return func(f *fixture) {
+		f.propagationLimit = d
 	}
 }
