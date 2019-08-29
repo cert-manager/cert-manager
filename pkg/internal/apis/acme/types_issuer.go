@@ -146,6 +146,10 @@ type ACMEChallengeSolverHTTP01Ingress struct {
 	// Optional pod template used to configure the ACME challenge solver pods
 	// used for HTTP01 challenges
 	PodTemplate *ACMEChallengeSolverHTTP01IngressPodTemplate
+
+	// Optional ingress template used to configure the ACME challenge solver
+	// ingress used for HTTP01 challenges
+	IngressTemplate *ACMEChallengeSolverHTTP01IngressTemplate
 }
 
 type ACMEChallengeSolverHTTP01IngressPodTemplate struct {
@@ -180,6 +184,22 @@ type ACMEChallengeSolverHTTP01IngressPodSpec struct {
 
 	// If specified, the pod's tolerations.
 	Tolerations []corev1.Toleration
+}
+
+type ACMEChallengeSolverHTTP01IngressTemplate struct {
+	// ObjectMeta overrides for the ingress used to solve HTTP01 challenges.
+	// Only the 'labels' and 'annotations' fields may be set.
+	// If labels or annotations overlap with in-built values, the values here
+	// will override the in-built values.
+	ACMEChallengeSolverHTTP01IngressObjectMeta
+}
+
+type ACMEChallengeSolverHTTP01IngressObjectMeta struct {
+	// Annotations that should be added to the created ACME HTTP01 solver ingress.
+	Annotations map[string]string
+
+	// Labels that should be added to the created ACME HTTP01 solver ingress.
+	Labels map[string]string
 }
 
 type ACMEChallengeSolverDNS01 struct {

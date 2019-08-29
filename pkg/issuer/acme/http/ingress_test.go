@@ -436,3 +436,81 @@ func TestEnsureIngress(t *testing.T) {
 		})
 	}
 }
+
+func TestMergeIngressObjectMetaWithIngressResourceTemplate(t *testing.T) {
+	const createdIngressKey = "createdIngressKey"
+	tests := map[string]solverFixture{
+		"should use labels and annotations from the template": {
+			Challenge: &cmacme.Challenge{
+				Spec: cmacme.ChallengeSpec{
+					DNSName: "example.com",
+					Solver: &cmacme.ACMEChallengeSolver{
+						HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
+							Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
+								Class: strPtr("nginx"),
+								IngressTemplate: &cmacme.ACMEChallengeSolverHTTP01IngressTemplate{
+									ACMEChallengeSolverHTTP01IngressObjectMeta: cmacme.ACMEChallengeSolverHTTP01IngressObjectMeta{
+										Labels: map[string]string{
+											"this is a":                        "label",
+											"acme.cert-manager.io/http-domain": "44655555555",
+										},
+										Annotations: map[string]string{
+											"nginx.ingress.kubernetes.io/whitelist-source-range":  "0.0.0.0/0,::/0",
+											"nginx.org/mergeable-ingress-type":                    "minion",
+											"traefik.ingress.kubernetes.io/frontend-entry-points": "http",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			PreFn: func(t *testing.T, s *solverFixture) {
+				expectedIngress, err := buildIngressResource(s.Challenge, "fakeservice")
+				if err != nil {
+					t.Errorf("error preparing test: %v", err)
+				}
+				expectedIngress.Labels = map[string]string{
+					"this is a":                          "label",
+					"acme.cert-manager.io/http-domain":   "44655555555",
+					"acme.cert-manager.io/http-token":    "1",
+					"acme.cert-manager.io/http01-solver": "true",
+				}
+				expectedIngress.Annotations = map[string]string{
+					"kubernetes.io/ingress.class":                         "nginx",
+					"nginx.ingress.kubernetes.io/whitelist-source-range":  "0.0.0.0/0,::/0",
+					"nginx.org/mergeable-ingress-type":                    "minion",
+					"traefik.ingress.kubernetes.io/frontend-entry-points": "http",
+				}
+				s.testResources[createdIngressKey] = expectedIngress
+				s.Builder.Sync()
+			},
+			CheckFn: func(t *testing.T, s *solverFixture, args ...interface{}) {
+				expectedIngress := s.testResources[createdIngressKey].(*v1beta1.Ingress)
+
+				resp, ok := args[0].(*v1beta1.Ingress)
+				if !ok {
+					t.Errorf("expected ingress to be returned, but got %v", args[0])
+					t.Fail()
+					return
+				}
+
+				expectedIngress.OwnerReferences = resp.OwnerReferences
+				expectedIngress.Name = resp.Name
+
+				if !reflect.DeepEqual(resp, expectedIngress) {
+					t.Errorf("unexpected ingress generated from merge\nexp=%+v\ngot=%+v", expectedIngress, resp)
+				}
+			},
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			test.Setup(t)
+			resp, err := test.Solver.createIngress(test.Challenge, "fakeservice")
+			test.Finish(t, resp, err)
+		})
+	}
+}

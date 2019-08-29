@@ -163,6 +163,11 @@ type ACMEChallengeSolverHTTP01Ingress struct {
 	// used for HTTP01 challenges
 	// +optional
 	PodTemplate *ACMEChallengeSolverHTTP01IngressPodTemplate `json:"podTemplate,omitempty"`
+
+	// Optional ingress template used to configure the ACME challenge solver
+	// ingress used for HTTP01 challenges
+	// +optional
+	IngressTemplate *ACMEChallengeSolverHTTP01IngressTemplate `json:"ingressTemplate,omitempty"`
 }
 
 type ACMEChallengeSolverHTTP01IngressPodTemplate struct {
@@ -171,20 +176,22 @@ type ACMEChallengeSolverHTTP01IngressPodTemplate struct {
 	// If labels or annotations overlap with in-built values, the values here
 	// will override the in-built values.
 	// +optional
-	ACMEChallengeSolverHTTP01IngressPodObjectMeta `json:"metadata,omitempty"`
+	ACMEChallengeSolverHTTP01IngressPodObjectMeta `json:"metadata"`
 
 	// PodSpec defines overrides for the HTTP01 challenge solver pod.
 	// Only the 'nodeSelector', 'affinity' and 'tolerations' fields are
 	// supported currently. All other fields will be ignored.
 	// +optional
-	Spec ACMEChallengeSolverHTTP01IngressPodSpec `json:"spec,omitempty"`
+	Spec ACMEChallengeSolverHTTP01IngressPodSpec `json:"spec"`
 }
 
 type ACMEChallengeSolverHTTP01IngressPodObjectMeta struct {
 	// Annotations that should be added to the create ACME HTTP01 solver pods.
+	// +optional
 	Annotations map[string]string `json:"annotations,omitempty"`
 
 	// Labels that should be added to the created ACME HTTP01 solver pods.
+	// +optional
 	Labels map[string]string `json:"labels,omitempty"`
 }
 
@@ -202,6 +209,25 @@ type ACMEChallengeSolverHTTP01IngressPodSpec struct {
 	// If specified, the pod's tolerations.
 	// +optional
 	Tolerations []corev1.Toleration `json:"tolerations,omitempty"`
+}
+
+type ACMEChallengeSolverHTTP01IngressTemplate struct {
+	// ObjectMeta overrides for the ingress used to solve HTTP01 challenges.
+	// Only the 'labels' and 'annotations' fields may be set.
+	// If labels or annotations overlap with in-built values, the values here
+	// will override the in-built values.
+	// +optional
+	ACMEChallengeSolverHTTP01IngressObjectMeta `json:"metadata"`
+}
+
+type ACMEChallengeSolverHTTP01IngressObjectMeta struct {
+	// Annotations that should be added to the created ACME HTTP01 solver ingress.
+	// +optional
+	Annotations map[string]string `json:"annotations,omitempty"`
+
+	// Labels that should be added to the created ACME HTTP01 solver ingress.
+	// +optional
+	Labels map[string]string `json:"labels,omitempty"`
 }
 
 type ACMEChallengeSolverDNS01 struct {
