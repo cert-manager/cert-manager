@@ -10,9 +10,9 @@ in the `reStructured Text Basics`_.
 Installation instructions
 =========================
 
-To install the sphinx tools, you'll need ``python`` (and ``pip``) installed.::
+To install the sphinx tools, you'll need ``python`` (and ``pip``) installed:
 
-.. code-block: shell
+.. code-block:: shell
 
    pip install --user -r requirements.txt
 
@@ -21,14 +21,14 @@ Generating documentation locally
 
 You can generate the documentation locally with the following command:
 
-.. code-block: shell
+.. code-block:: shell
 
    make html
 
 This will create documentation in the ``_build`` directory which you can
 open with your browser.
 
-.. code-block: shell
+.. code-block:: shell
 
    open _build/html/index.html
 
