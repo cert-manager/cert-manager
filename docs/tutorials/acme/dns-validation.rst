@@ -36,27 +36,34 @@ You can read more about the Issuer resource in the :doc:`Issuer reference docs <
          name: letsencrypt-staging
 
        # ACME DNS-01 provider configurations
-       dns01:
+       solvers:
+       # An empty 'selector' means that this solver matches all domains
+       - selector: {}
+         dns01:
+           clouddns:
+             # The ID of the GCP project
+             # reference: https://docs.cert-manager.io/en/latest/tasks/issuers/setup-acme/dns01/google.html
+             project: $PROJECT_ID
+             # This is the secret used to access the service account
+             serviceAccountSecretRef:
+               name: clouddns-dns01-solver-svc-acct
+               key: key.json
 
-         # Here we define a list of DNS-01 providers that can solve DNS challenges
-         providers:
+       # We only use cloudflare to solve challenges for foo.com.
+       # Alternative options such as 'matchLabels' and 'dnsZones' can be specified
+       # as part of a solver's selector too.
+       - selector:
+           dnsNames:
+           - foo.com
+         dns01:
+           cloudflare:
+             email: my-cloudflare-acc@example.com
+             # !! Remember to create a k8s secret before
+             # kubectl create secret generic cloudflare-api-key
+             apiKeySecretRef:
+               name: cloudflare-api-key-secret
+               key: api-key
 
-           - name: prod-dns
-             clouddns:
-               # A secretKeyRef to a google cloud json service account
-               serviceAccountSecretRef:
-                 name: clouddns-service-account
-                 key: service-account.json
-               # The project in which to update the DNS zone
-               project: gcloud-prod-project
-
-           - name: cf-dns
-             cloudflare:
-               email: user@example.com
-               # A secretKeyRef to a cloudflare api key
-               apiKeySecretRef:
-                 name: cloudflare-api-key
-                 key: api-key.txt
 
 We have specified the ACME server URL for Let's Encrypt's `staging environment`_.
 The staging environment will not issue trusted certificates but is used to
@@ -99,17 +106,6 @@ Once we have created the above Issuer we can use it to obtain a certificate.
      dnsNames:
      - example.com
      - foo.com
-     acme:
-       config:
-       - dns01:
-           provider: prod-dns
-         domains:
-         - '*.example.com'
-         - example.com
-       - dns01:
-           provider: cf-dns
-         domains:
-         - foo.com
 
 The Certificate resource describes our desired certificate and the possible
 methods that can be used to obtain it.
