@@ -20,7 +20,9 @@ import (
 	"io/ioutil"
 
 	admissionreg "k8s.io/api/admissionregistration/v1beta1"
+	"k8s.io/api/auditregistration/v1alpha1"
 	apiext "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
+	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/runtime"
 	apireg "k8s.io/kube-aggregator/pkg/apis/apiregistration/v1beta1"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -58,7 +60,13 @@ var (
 		listType:     &apiext.CustomResourceDefinitionList{},
 	}
 
-	injectorSetups  = []injectorSetup{MutatingWebhookSetup, ValidatingWebhookSetup, APIServiceSetup, CRDSetup}
+	AuditSinkSetup = injectorSetup{
+		resourceName: "auditsink",
+		injector:     auditSinkTarget{},
+		listType:     &v1alpha1.AuditSinkList{},
+	}
+
+	injectorSetups  = []injectorSetup{MutatingWebhookSetup, ValidatingWebhookSetup, APIServiceSetup, CRDSetup, AuditSinkSetup}
 	ControllerNames []string
 )
 
@@ -108,7 +116,13 @@ func RegisterCertificateBased(mgr ctrl.Manager) error {
 	}
 	for _, setup := range injectorSetups {
 		if err := Register(mgr, setup, sources...); err != nil {
-			return err
+			if meta.IsNoMatchError(err) {
+				ctrl.Log.Error(err, "failed to register certificate based injector."+
+					" this is most probably due to the apiserver not knowing about the specific type",
+					"injector", setup)
+			} else {
+				return err
+			}
 		}
 	}
 
@@ -127,7 +141,13 @@ func RegisterSecretBased(mgr ctrl.Manager) error {
 	}
 	for _, setup := range injectorSetups {
 		if err := Register(mgr, setup, sources...); err != nil {
-			return err
+			if meta.IsNoMatchError(err) {
+				ctrl.Log.Error(err, "failed to register secret based injector."+
+					" this is most probably due to the apiserver not knowing about the specific type",
+					"injector", setup)
+			} else {
+				return err
+			}
 		}
 	}
 
