@@ -636,8 +636,8 @@ which you can request and see:
 .. code-block:: shell
 
     $ kubectl get certificate
-    NAME                     AGE
-    quickstart-example-tls   38s
+    NAME                     READY   SECRET                   AGE
+    quickstart-example-tls   True    quickstart-example-tls   16m
 
 Cert-manager reflects the state of the process for every request in the
 certificate object. You can view this information using the
