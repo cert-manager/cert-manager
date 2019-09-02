@@ -15,7 +15,7 @@ To backup all of your cert-manager configuration resources, run:
 
    kubectl get -o yaml \
       --all-namespaces \
-      issuer,clusterissuer,certificates,orders,challenges > cert-manager-backup.yaml
+      issuer,clusterissuer,certificates,orders,challenges,certificaterequests > cert-manager-backup.yaml
 
 If you are transferring data to a new cluster, you may also need to copy across
 additional Secret resources that are referenced by your configured Issuers,
