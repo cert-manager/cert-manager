@@ -39,7 +39,7 @@ ACME Issuers
 
 * The ACME account private key Secret referenced by ``issuer.acme.privateKeySecretRef``
 * Any Secrets referenced by DNS providers configured under the
-  ``issuer.acme.dns01.providers`` field
+  ``issuer.acme.dns01.providers`` and ``issuer.acme.solvers.dns01`` fields.
 
 Restoring
 =========
