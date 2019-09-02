@@ -193,14 +193,14 @@ To re-install cert-manager without the webhook, run:
 
 .. code-block:: shell
 
-   kubectl delete -f https://github.com/jetstack/cert-manager/releases/download/v0.10.0-alpha.0/cert-manager.yaml
+   kubectl delete -f https://github.com/jetstack/cert-manager/releases/download/v0.10.0/cert-manager.yaml
 
-   kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/v0.10.0-alpha.0/cert-manager-no-webhook.yaml
+   kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/v0.10.0/cert-manager-no-webhook.yaml
 
 Once you have re-installed cert-manager, you should then
 :doc:`restore your configuration </tasks/backup-restore-crds>`.
 
-.. _`cert-manager.yaml`: https://github.com/jetstack/cert-manager/releases/download/v0.10.0-alpha.0/cert-manager.yaml
-.. _`cert-manager-no-webhook.yaml`: https://github.com/jetstack/cert-manager/releases/download/v0.10.0-alpha.0/cert-manager-no-webhook.yaml
+.. _`cert-manager.yaml`: https://github.com/jetstack/cert-manager/releases/download/v0.10.0/cert-manager.yaml
+.. _`cert-manager-no-webhook.yaml`: https://github.com/jetstack/cert-manager/releases/download/v0.10.0/cert-manager-no-webhook.yaml
 .. _`GKE docs`: https://cloud.google.com/kubernetes-engine/docs/how-to/private-clusters#add_firewall_rules
 .. _`ValidatingWebhookConfiguration`: https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers/
