@@ -21,6 +21,7 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 	"fmt"
+	"math/bits"
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
@@ -169,6 +170,27 @@ func (h *Helper) ValidateIssuedCertificate(certificate *v1alpha1.Certificate, ro
 
 	if label != certificate.Name {
 		return nil, fmt.Errorf("Expected secret to have certificate-name label with a value of %q, but got %q", certificate.Name, label)
+	}
+
+	usages := make(map[v1alpha1.KeyUsage]bool)
+	for _, u := range certificate.Spec.Usages {
+		usages[u] = true
+	}
+	if certificate.Spec.IsCA {
+		if !cert.IsCA {
+			return nil, fmt.Errorf("Expected secret to have IsCA set to true, but was false")
+		}
+		if cert.KeyUsage&x509.KeyUsageCertSign == 0 {
+			return nil, fmt.Errorf("Expected secret to have x509.KeyUsageCertSign bit set but was not")
+		}
+		usages[v1alpha1.UsageCertSign] = true
+	}
+
+	if len(certificate.Spec.Usages) > 0 {
+		sumFoundUsages := bits.OnesCount(uint(cert.KeyUsage)) + len(cert.ExtKeyUsage)
+		if len(usages) != sumFoundUsages {
+			return nil, fmt.Errorf("Expected secret to have the same sum of KeyUsages and ExtKeyUsages [%d] as the number of Usages [%d] in Certificate", sumFoundUsages, len(usages))
+		}
 	}
 
 	// TODO: move this verification step out of this function

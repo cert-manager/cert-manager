@@ -457,6 +457,39 @@ func TestValidateCertificate(t *testing.T) {
 				},
 			},
 		},
+		"valid certificate with basic keyusage": {
+			cfg: &v1alpha1.Certificate{
+				Spec: v1alpha1.CertificateSpec{
+					CommonName: "testcn",
+					SecretName: "abc",
+					IssuerRef:  validIssuerRef,
+					Usages:     []v1alpha1.KeyUsage{"signing"},
+				},
+			},
+		},
+		"valid certificate with multiple keyusage": {
+			cfg: &v1alpha1.Certificate{
+				Spec: v1alpha1.CertificateSpec{
+					CommonName: "testcn",
+					SecretName: "abc",
+					IssuerRef:  validIssuerRef,
+					Usages:     []v1alpha1.KeyUsage{"signing", "s/mime"},
+				},
+			},
+		},
+		"invalid certificate with nonexistant keyusage": {
+			cfg: &v1alpha1.Certificate{
+				Spec: v1alpha1.CertificateSpec{
+					CommonName: "testcn",
+					SecretName: "abc",
+					IssuerRef:  validIssuerRef,
+					Usages:     []v1alpha1.KeyUsage{"nonexistant"},
+				},
+			},
+			errs: []*field.Error{
+				field.Invalid(fldPath.Child("usages").Index(0), v1alpha1.KeyUsage("nonexistant"), "unknown keyusage"),
+			},
+		},
 	}
 	for n, s := range scenarios {
 		t.Run(n, func(t *testing.T) {

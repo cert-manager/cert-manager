@@ -22,6 +22,7 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 	"fmt"
+	"math/bits"
 	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -118,6 +119,27 @@ func (h *Helper) ValidateIssuedCertificateRequest(cr *v1alpha1.CertificateReques
 	var expectedDNSName string
 	if len(expectedDNSNames) > 0 {
 		expectedDNSName = expectedDNSNames[0]
+	}
+
+	usages := make(map[v1alpha1.KeyUsage]bool)
+	for _, u := range cr.Spec.Usages {
+		usages[u] = true
+	}
+	if cr.Spec.IsCA {
+		if !cert.IsCA {
+			return nil, fmt.Errorf("Expected csr cert to have IsCA set to true, but was false")
+		}
+		if cert.KeyUsage&x509.KeyUsageCertSign == 0 {
+			return nil, fmt.Errorf("Expected csr cert to have x509.KeyUsageCertSign bit set but was not")
+		}
+		usages[v1alpha1.UsageCertSign] = true
+	}
+
+	if len(cr.Spec.Usages) > 0 {
+		sumFoundUsages := bits.OnesCount(uint(cert.KeyUsage)) + len(cert.ExtKeyUsage)
+		if len(usages) != sumFoundUsages {
+			return nil, fmt.Errorf("Expected csr cert to have the same sum of KeyUsages and ExtKeyUsages [%d] as the number of Usages [%d] in Certificate", sumFoundUsages, len(usages))
+		}
 	}
 
 	// TODO: move this verification step out of this function

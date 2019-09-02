@@ -1465,6 +1465,7 @@ func autoConvert_v1alpha1_CertificateRequestSpec_To_certmanager_CertificateReque
 	}
 	out.CSRPEM = *(*[]byte)(unsafe.Pointer(&in.CSRPEM))
 	out.IsCA = in.IsCA
+	out.Usages = *(*[]certmanager.KeyUsage)(unsafe.Pointer(&in.Usages))
 	return nil
 }
 
@@ -1480,6 +1481,7 @@ func autoConvert_certmanager_CertificateRequestSpec_To_v1alpha1_CertificateReque
 	}
 	out.CSRPEM = *(*[]byte)(unsafe.Pointer(&in.CSRPEM))
 	out.IsCA = in.IsCA
+	out.Usages = *(*[]v1alpha1.KeyUsage)(unsafe.Pointer(&in.Usages))
 	return nil
 }
 
@@ -1526,6 +1528,7 @@ func autoConvert_v1alpha1_CertificateSpec_To_certmanager_CertificateSpec(in *v1a
 		return err
 	}
 	out.IsCA = in.IsCA
+	out.Usages = *(*[]certmanager.KeyUsage)(unsafe.Pointer(&in.Usages))
 	out.ACME = (*certmanager.ACMECertificateConfig)(unsafe.Pointer(in.ACME))
 	out.KeySize = in.KeySize
 	out.KeyAlgorithm = certmanager.KeyAlgorithm(in.KeyAlgorithm)
@@ -1550,6 +1553,7 @@ func autoConvert_certmanager_CertificateSpec_To_v1alpha1_CertificateSpec(in *cer
 		return err
 	}
 	out.IsCA = in.IsCA
+	out.Usages = *(*[]v1alpha1.KeyUsage)(unsafe.Pointer(&in.Usages))
 	out.ACME = (*v1alpha1.ACMECertificateConfig)(unsafe.Pointer(in.ACME))
 	out.KeySize = in.KeySize
 	out.KeyAlgorithm = v1alpha1.KeyAlgorithm(in.KeyAlgorithm)

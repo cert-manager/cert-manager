@@ -18,6 +18,7 @@ package pki
 
 import (
 	"crypto/x509"
+	"reflect"
 	"testing"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
@@ -30,6 +31,81 @@ func buildCertificate(cn string, dnsNames ...string) *v1alpha1.Certificate {
 			CommonName: cn,
 			DNSNames:   dnsNames,
 		},
+	}
+}
+
+func TestBuildUsages(t *testing.T) {
+	type testT struct {
+		name                string
+		usages              []v1alpha1.KeyUsage
+		isCa                bool
+		expectedKeyUsage    x509.KeyUsage
+		expectedExtKeyUsage []x509.ExtKeyUsage
+		expectedError       bool
+	}
+	tests := []testT{
+		{
+			name:             "default",
+			usages:           []v1alpha1.KeyUsage{},
+			expectedKeyUsage: x509.KeyUsageDigitalSignature | x509.KeyUsageKeyEncipherment,
+			expectedError:    false,
+		},
+		{
+			name:             "isCa",
+			usages:           []v1alpha1.KeyUsage{},
+			isCa:             true,
+			expectedKeyUsage: x509.KeyUsageDigitalSignature | x509.KeyUsageKeyEncipherment | x509.KeyUsageCertSign,
+			expectedError:    false,
+		},
+		{
+			name:             "existing keyusage",
+			usages:           []v1alpha1.KeyUsage{"crl sign"},
+			expectedKeyUsage: x509.KeyUsageCRLSign,
+			expectedError:    false,
+		},
+		{
+			name:          "nonexisting keyusage error",
+			usages:        []v1alpha1.KeyUsage{"nonexistant"},
+			expectedError: true,
+		},
+		{
+			name:             "duplicate keyusage",
+			usages:           []v1alpha1.KeyUsage{"signing", "signing"},
+			expectedKeyUsage: x509.KeyUsageDigitalSignature,
+			expectedError:    false,
+		},
+		{
+			name:                "existing extkeyusage",
+			usages:              []v1alpha1.KeyUsage{"server auth"},
+			expectedExtKeyUsage: []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
+			expectedError:       false,
+		},
+		{
+			name:                "duplicate extkeyusage",
+			usages:              []v1alpha1.KeyUsage{"s/mime", "s/mime"},
+			expectedExtKeyUsage: []x509.ExtKeyUsage{x509.ExtKeyUsageEmailProtection, x509.ExtKeyUsageEmailProtection},
+			expectedError:       false,
+		},
+	}
+	testFn := func(test testT) func(*testing.T) {
+		return func(t *testing.T) {
+			ku, eku, err := buildUsages(test.usages, test.isCa)
+			if err != nil && !test.expectedError {
+				t.Errorf("got unexpected error generating cert: %q", err)
+				return
+			}
+			if !reflect.DeepEqual(ku, test.expectedKeyUsage) {
+				t.Errorf("keyUsages don't match, got %q, expected %q", ku, test.expectedKeyUsage)
+				return
+			}
+			if !reflect.DeepEqual(eku, test.expectedExtKeyUsage) {
+				t.Errorf("extKeyUsages don't match, got %q, expected %q", eku, test.expectedExtKeyUsage)
+				return
+			}
+		}
+	}
+	for _, test := range tests {
+		t.Run(test.name, testFn(test))
 	}
 }
 

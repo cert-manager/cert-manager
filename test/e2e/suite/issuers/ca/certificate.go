@@ -25,6 +25,7 @@ import (
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	"github.com/jetstack/cert-manager/test/e2e/framework"
 	"github.com/jetstack/cert-manager/test/e2e/util"
+	"github.com/jetstack/cert-manager/test/unit/gen"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -155,8 +156,8 @@ var _ = framework.CertManagerDescribe("CA Certificate", func() {
 		It("should generate a signed keypair", func() {
 			certClient := f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name)
 
-			By("Creating a Certificate")
-			_, err := certClient.Create(util.NewCertManagerBasicCertificate(certificateName, certificateSecretName, issuerName, v1alpha1.IssuerKind, nil, nil))
+			By("Creating a Certificate with Usages")
+			_, err := certClient.Create(gen.Certificate(certificateName, gen.SetCertificateNamespace(f.Namespace.Name), gen.SetCertificateCommonName("test.domain.com"), gen.SetCertificateSecretName(certificateSecretName), gen.SetCertificateIssuer(v1alpha1.ObjectReference{Name: issuerName, Kind: v1alpha1.IssuerKind}), gen.SetCertificateKeyUsages(v1alpha1.UsageServerAuth, v1alpha1.UsageClientAuth)))
 			Expect(err).NotTo(HaveOccurred())
 			By("Verifying the Certificate is valid")
 			err = h.WaitCertificateIssuedValidTLS(f.Namespace.Name, certificateName, time.Second*30, []byte(rootCert))
