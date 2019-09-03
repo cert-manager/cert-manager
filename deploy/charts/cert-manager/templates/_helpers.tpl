@@ -43,9 +43,11 @@ Create the name of the service account to use
 
 {{/*
 Expand the name of the chart.
+Manually fix the 'app' and 'name' labels to 'webhook' to maintain
+compatibility with the v0.9 deployment selector.
 */}}
 {{- define "webhook.name" -}}
-{{- printf "%s-webhook" (default .Chart.Name .Values.nameOverride) | trunc 63 | trimSuffix "-" -}}
+{{- printf "webhook" | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
 
 {{/*

@@ -603,7 +603,7 @@ func (c *certificateRequestManager) processCertificate(ctx context.Context, crt 
 		// If it is not Ready _OR_ Failed then we return and wait for informer
 		// updates to re-trigger processing.
 	default:
-		log.Info("CertificateRequest is in state %q, waiting until CertificateRequest is issued", reason)
+		log.Info("CertificateRequest is not in a final state, waiting until CertificateRequest is complete", "state", reason)
 		return nil
 	}
 }
@@ -767,6 +767,7 @@ func (c *certificateRequestManager) buildCertificateRequest(log logr.Logger, crt
 			Annotations: map[string]string{
 				cmapi.CRPrivateKeyAnnotationKey: crt.Spec.SecretName,
 			},
+			Labels: crt.Labels,
 		},
 		Spec: cmapi.CertificateRequestSpec{
 			CSRPEM:    csrPEM,
