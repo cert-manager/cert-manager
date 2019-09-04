@@ -38,9 +38,18 @@ var _ = framework.ConformanceDescribe("Certificates", func() {
 
 	provisioner := &acmeIssuerProvisioner{setGroupName: false}
 	(&certificates.Suite{
-		Name:                "ACME",
+		Name:                "ACME HTTP01",
 		CreateIssuerFunc:    provisioner.create,
 		DeleteIssuerFunc:    provisioner.delete,
+		UnsupportedFeatures: unsupportedFeatures,
+	}).Define()
+
+	// crProvisioner sets the issuerRef.group field on Certificates it creates
+	crProvisioner := &acmeIssuerProvisioner{setGroupName: true}
+	(&certificates.Suite{
+		Name:                "ACME HTTP01 (CertificateRequest)",
+		CreateIssuerFunc:    crProvisioner.create,
+		DeleteIssuerFunc:    crProvisioner.delete,
 		UnsupportedFeatures: unsupportedFeatures,
 	}).Define()
 })
