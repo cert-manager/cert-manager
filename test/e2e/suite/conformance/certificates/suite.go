@@ -188,6 +188,58 @@ func (s *Suite) Define() {
 			err = f.Helper().WaitCertificateIssuedValid(f.Namespace.Name, "testcert", time.Minute*5)
 			Expect(err).NotTo(HaveOccurred())
 		})
+
+		It("should issue a certificate that defines a commonName and sets a duration", func() {
+			s.checkFeatures(DurationFeature)
+
+			testCertificate := &cmapi.Certificate{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "testcert",
+					Namespace: f.Namespace.Name,
+				},
+				Spec: cmapi.CertificateSpec{
+					SecretName: "testcert-tls",
+					CommonName: s.newDomain(),
+					IssuerRef:  issuerRef,
+					Duration: &metav1.Duration{
+						Duration: time.Hour * 35,
+					},
+				},
+			}
+			By("Creating a Certificate")
+			err := f.CRClient.Create(ctx, testCertificate)
+			Expect(err).NotTo(HaveOccurred())
+
+			By("Waiting for the Certificate to be issued...")
+			err = f.Helper().WaitCertificateIssuedValid(f.Namespace.Name, "testcert", time.Minute*5)
+			Expect(err).NotTo(HaveOccurred())
+
+			f.CertificateDurationValid(testCertificate, time.Hour*35)
+		})
+
+		It("should issue a certificate which has a wildcard DNS name defined", func() {
+			s.checkFeatures(Wildcards)
+
+			testCertificate := &cmapi.Certificate{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "testcert",
+					Namespace: f.Namespace.Name,
+				},
+				Spec: cmapi.CertificateSpec{
+					SecretName: "testcert-tls",
+					CommonName: s.newDomain(),
+					IssuerRef:  issuerRef,
+					DNSNames:   []string{"foo." + s.newDomain()},
+				},
+			}
+			By("Creating a Certificate")
+			err := f.CRClient.Create(ctx, testCertificate)
+			Expect(err).NotTo(HaveOccurred())
+
+			By("Waiting for the Certificate to be issued...")
+			err = f.Helper().WaitCertificateIssuedValid(f.Namespace.Name, "testcert", time.Minute*5)
+			Expect(err).NotTo(HaveOccurred())
+		})
 	})
 }
 
