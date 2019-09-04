@@ -17,5 +17,8 @@ limitations under the License.
 package conformance
 
 import (
+	_ "github.com/jetstack/cert-manager/test/e2e/suite/conformance/certificates/acme"
+	_ "github.com/jetstack/cert-manager/test/e2e/suite/conformance/certificates/ca"
+	_ "github.com/jetstack/cert-manager/test/e2e/suite/conformance/certificates/selfsigned"
 	_ "github.com/jetstack/cert-manager/test/e2e/suite/conformance/rbac"
 )

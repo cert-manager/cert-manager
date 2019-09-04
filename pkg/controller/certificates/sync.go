@@ -452,9 +452,11 @@ func (c *controller) updateSecret(ctx context.Context, crt *v1alpha1.Certificate
 		secret.Annotations[v1alpha1.CommonNameAnnotationKey] = x509Cert.Subject.CommonName
 		secret.Annotations[v1alpha1.AltNamesAnnotationKey] = strings.Join(x509Cert.DNSNames, ",")
 		secret.Annotations[v1alpha1.IPSANAnnotationKey] = strings.Join(pki.IPAddressesToString(x509Cert.IPAddresses), ",")
+		secret.Annotations[v1alpha1.CertificateNameKey] = crt.Name
 	}
 
 	// Always set the certificate name label on the target secret
+	// TODO: remove this behaviour - there is a max length limit of 64 chars on label values which causes issues here
 	secret.Labels[v1alpha1.CertificateNameKey] = crt.Name
 
 	// set the actual values in the secret

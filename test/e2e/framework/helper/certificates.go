@@ -163,7 +163,7 @@ func (h *Helper) ValidateIssuedCertificate(certificate *v1alpha1.Certificate, ro
 		return nil, fmt.Errorf("Expected certificate expiry date to be %v, but got %v", certificate.Status.NotAfter, cert.NotAfter)
 	}
 
-	label, ok := secret.Labels[v1alpha1.CertificateNameKey]
+	label, ok := secret.Annotations[v1alpha1.CertificateNameKey]
 	if !ok {
 		return nil, fmt.Errorf("Expected secret to have certificate-name label, but had none")
 	}
