@@ -34,6 +34,7 @@ filegroup(
         "//test/e2e/suite/conformance/certificates/ca:all-srcs",
         "//test/e2e/suite/conformance/certificates/selfsigned:all-srcs",
         "//test/e2e/suite/conformance/certificates/vault:all-srcs",
+        "//test/e2e/suite/conformance/certificates/venafi:all-srcs",
     ],
     tags = ["automanaged"],
     visibility = ["//visibility:public"],

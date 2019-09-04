@@ -10,6 +10,8 @@ go_library(
         "//test/e2e/suite/conformance/certificates/acme:go_default_library",
         "//test/e2e/suite/conformance/certificates/ca:go_default_library",
         "//test/e2e/suite/conformance/certificates/selfsigned:go_default_library",
+        "//test/e2e/suite/conformance/certificates/vault:go_default_library",
+        "//test/e2e/suite/conformance/certificates/venafi:go_default_library",
         "//test/e2e/suite/conformance/rbac:go_default_library",
     ],
 )
