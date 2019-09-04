@@ -202,7 +202,7 @@ func (s *Suite) Define() {
 					CommonName: s.newDomain(),
 					IssuerRef:  issuerRef,
 					Duration: &metav1.Duration{
-						Duration: time.Hour * 35,
+						Duration: time.Hour * 896,
 					},
 				},
 			}
@@ -214,7 +214,7 @@ func (s *Suite) Define() {
 			err = f.Helper().WaitCertificateIssuedValid(f.Namespace.Name, "testcert", time.Minute*5)
 			Expect(err).NotTo(HaveOccurred())
 
-			f.CertificateDurationValid(testCertificate, time.Hour*35)
+			f.CertificateDurationValid(testCertificate, time.Hour*896)
 		})
 
 		It("should issue a certificate which has a wildcard DNS name defined", func() {
