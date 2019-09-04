@@ -91,9 +91,14 @@ func (s *Suite) complete(f *framework.Framework) {
 func (s *Suite) Define() {
 	Describe("with issuer type "+s.Name, func() {
 		f := framework.NewDefaultFramework("certificates")
-		if !s.completed {
-			s.complete(f)
-		}
+
+		// wrap this in a BeforeEach else flags will not have been parsed at
+		// the time that the `complete` function is called.
+		BeforeEach(func() {
+			if !s.completed {
+				s.complete(f)
+			}
+		})
 
 		By("Running test suite with the following unsupported features: " + s.UnsupportedFeatures.String())
 		ctx := context.Background()
