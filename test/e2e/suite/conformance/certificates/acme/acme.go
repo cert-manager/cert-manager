@@ -35,7 +35,8 @@ var _ = framework.ConformanceDescribe("Certificates", func() {
 	// issuer type using HTTP01
 	var unsupportedFeatures = certificates.NewFeatureSet(
 		certificates.IPAddressFeature,
-		certificates.Wildcards,
+		certificates.WildcardsFeature,
+		certificates.DurationFeature,
 	)
 
 	provisioner := &acmeIssuerProvisioner{setGroupName: false}

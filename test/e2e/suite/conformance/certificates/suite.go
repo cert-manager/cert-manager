@@ -218,7 +218,7 @@ func (s *Suite) Define() {
 		})
 
 		It("should issue a certificate which has a wildcard DNS name defined", func() {
-			s.checkFeatures(Wildcards)
+			s.checkFeatures(WildcardsFeature)
 
 			testCertificate := &cmapi.Certificate{
 				ObjectMeta: metav1.ObjectMeta{

@@ -86,5 +86,5 @@ const (
 	// Wildcards denotes tests that request certificates for wildcard domains.
 	// Some issuer's disable wildcard certificate issuance, so this feature
 	// allows runs of the suite to exclude those tests that utilise wildcards.
-	Wildcards Feature = "Wildcards"
+	WildcardsFeature Feature = "Wildcards"
 )
