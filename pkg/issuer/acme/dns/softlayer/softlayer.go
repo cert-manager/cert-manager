@@ -84,14 +84,14 @@ func (c *DNSProvider) Present(domain, fqdn, value string) error {
 		return err
 	}
 
-	entry := strings.TrimSuffix(strings.TrimSuffix(fqdn, "."), "."+domain)
+	entry := strings.TrimSuffix(fqdn, "."+zoneName)
 
 	recordsTxt, err := c.findTxtRecords(*zone, entry)
 	if err != nil {
 		return err
 	}
 	for _, r := range recordsTxt {
-		if r.Data == &value {
+		if *r.Data == value {
 			// the record is already set to the desired value
 			return nil
 		}
@@ -126,7 +126,7 @@ func (c *DNSProvider) CleanUp(domain, fqdn, key string) error {
 		return err
 	}
 
-	entry := strings.TrimSuffix(strings.TrimSuffix(fqdn, "."), "."+domain)
+	entry := strings.TrimSuffix(fqdn, "."+zoneName)
 	records, err := c.findTxtRecords(*zone, entry)
 	if err != nil {
 		return err
@@ -152,7 +152,7 @@ func (c *DNSProvider) getHostedZone(domain string) (*int, error) {
 	svc := services.GetAccountService(c.session)
 
 	filters := filter.New(
-		filter.Path("domains.name").Eq(domain),
+		filter.Path("domains.name").Eq(strings.TrimSuffix(domain, ".")),
 	)
 
 	zones, err := svc.Filter(filters.Build()).GetDomains()
