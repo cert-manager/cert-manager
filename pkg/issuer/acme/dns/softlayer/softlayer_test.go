@@ -17,81 +17,71 @@ limitations under the License.
 package softlayer
 
 import (
-	"os"
 	"testing"
-	"time"
 
+	"github.com/jarcoal/httpmock"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
 	"github.com/stretchr/testify/assert"
 )
 
 var (
-	softlayerLiveTest bool
 	softlayerUsername string
 	softlayerAPIKey   string
-	softlayerDomain   string
 )
 
 func init() {
-	softlayerUsername = os.Getenv("SL_USERNAME")
-	softlayerAPIKey = os.Getenv("SL_API_KEY")
-	softlayerDomain = os.Getenv("SL_DOMAIN")
-	if len(softlayerUsername) > 0 && len(softlayerAPIKey) > 0 && len(softlayerDomain) > 0 {
-		softlayerLiveTest = true
-	}
-}
-
-func restoreSoftlayerEnv() {
-	os.Setenv("SL_USERNAME", softlayerUsername)
-	os.Setenv("SL_API_KEY", softlayerAPIKey)
-}
-
-func TestNewDNSProviderValid(t *testing.T) {
-	os.Setenv("SL_USERNAME", "")
-	os.Setenv("SL_API_KEY", "")
-	_, err := NewDNSProviderCredentials("123", "123", util.RecursiveNameservers)
-	assert.NoError(t, err)
-	restoreSoftlayerEnv()
-}
-
-func TestNewDNSProviderValidEnv(t *testing.T) {
-	os.Setenv("SL_USERNAME", "test@example.com")
-	os.Setenv("SL_API_KEY", "123")
-	_, err := NewDNSProvider(util.RecursiveNameservers)
-	assert.NoError(t, err)
-	restoreSoftlayerEnv()
-}
-
-func TestNewDNSProviderMissingCredErr(t *testing.T) {
-	os.Setenv("SL_USERNAME", "")
-	os.Setenv("SL_API_KEY", "")
-	_, err := NewDNSProvider(util.RecursiveNameservers)
-	assert.EqualError(t, err, "Softlayer credentials missing")
-	restoreSoftlayerEnv()
+	softlayerUsername = "unittest"
+	softlayerAPIKey = "unittest-token"
 }
 
 func TestSoftlayerPresent(t *testing.T) {
-	if !softlayerLiveTest {
-		t.Skip("skipping live test")
-	}
+	httpmock.Activate()
+	defer httpmock.DeactivateAndReset()
+
+	registerMocks(t)
 
 	provider, err := NewDNSProviderCredentials(softlayerUsername, softlayerAPIKey, util.RecursiveNameservers)
 	assert.NoError(t, err)
 
-	err = provider.Present(softlayerDomain, "_acme-challenge."+softlayerDomain+".", "123d==")
+	domain := "example.com"
+	err = provider.Present(domain, "_acme-challenge."+domain+".", "123d==")
 	assert.NoError(t, err)
+
+	info := httpmock.GetCallCountInfo()
+	assert.Equal(t, info[`POST =~^https://api\.softlayer\.com/rest/v3/SoftLayer_Dns_Domain/(\d+)/createTxtRecord\.json`], 1)
+	assert.Equal(t, info["GET https://api.softlayer.com/rest/v3/SoftLayer_Account/getDomains.json"], 1)
+	assert.Equal(t, info[`GET =~^https://api\.softlayer\.com/rest/v3/SoftLayer_Dns_Domain/(\d+)/getResourceRecords.json`], 2)
+}
+
+func TestSoftlayerPresentDelete(t *testing.T) {
+	httpmock.Activate()
+	defer httpmock.DeactivateAndReset()
+	registerMocks(t)
+
+	provider, err := NewDNSProviderCredentials(softlayerUsername, softlayerAPIKey, util.RecursiveNameservers)
+	assert.NoError(t, err)
+
+	domain := "example.net"
+	err = provider.Present(domain, "_acme-challenge."+domain+".", "123d==")
+	assert.NoError(t, err)
+
+	info := httpmock.GetCallCountInfo()
+	assert.Equal(t, 1, info[`POST https://api.softlayer.com/rest/v3/SoftLayer_Dns_Domain_ResourceRecord/deleteObjects.json`])
 }
 
 func TestSoftlayerCleanUp(t *testing.T) {
-	if !softlayerLiveTest {
-		t.Skip("skipping live test")
-	}
+	httpmock.Activate()
+	defer httpmock.DeactivateAndReset()
 
-	time.Sleep(time.Second * 2)
+	registerMocks(t)
 
 	provider, err := NewDNSProviderCredentials(softlayerUsername, softlayerAPIKey, util.RecursiveNameservers)
 	assert.NoError(t, err)
 
-	err = provider.CleanUp(softlayerDomain, "_acme-challenge."+softlayerDomain+".", "123d==")
+	domain := "example.net"
+	err = provider.CleanUp(domain, "_acme-challenge."+domain+".", "123d==")
 	assert.NoError(t, err)
+
+	info := httpmock.GetCallCountInfo()
+	assert.Equal(t, 1, info[`POST https://api.softlayer.com/rest/v3/SoftLayer_Dns_Domain_ResourceRecord/deleteObjects.json`])
 }
