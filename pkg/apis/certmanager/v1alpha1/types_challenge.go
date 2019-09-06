@@ -58,7 +58,7 @@ type ChallengeSpec struct {
 
 	// Type is the type of ACME challenge this resource represents, e.g. "dns01"
 	// or "http01"
-	Type string `json:"type"`
+	Type ACMEChallengeType `json:"type"`
 
 	// URL is the URL of the ACME Challenge resource for this challenge.
 	// This can be used to lookup details about the status of this challenge.
