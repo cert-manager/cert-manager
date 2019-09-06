@@ -49,12 +49,12 @@ func dropNotFound(err error) error {
 // Right now, this actually uses a label instead of owner refs,
 // since certmanager doesn't set owner refs on secrets.
 func OwningCertForSecret(secret *corev1.Secret) *types.NamespacedName {
-	lblVal, hasLbl := secret.Labels[certmanager.CertificateNameKey]
-	if !hasLbl {
+	annVal, hasAnn := secret.Annotations[certmanager.CertificateNameKey]
+	if !hasAnn {
 		return nil
 	}
 	return &types.NamespacedName{
-		Name:      lblVal,
+		Name:      annVal,
 		Namespace: secret.Namespace,
 	}
 }

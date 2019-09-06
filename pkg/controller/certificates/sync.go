@@ -455,10 +455,6 @@ func (c *controller) updateSecret(ctx context.Context, crt *v1alpha1.Certificate
 		secret.Annotations[v1alpha1.CertificateNameKey] = crt.Name
 	}
 
-	// Always set the certificate name label on the target secret
-	// TODO: remove this behaviour - there is a max length limit of 64 chars on label values which causes issues here
-	secret.Labels[v1alpha1.CertificateNameKey] = crt.Name
-
 	// set the actual values in the secret
 	secret.Data[corev1.TLSCertKey] = cert
 	secret.Data[corev1.TLSPrivateKeyKey] = key
