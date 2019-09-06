@@ -469,6 +469,16 @@ func RegisterConversions(s *runtime.Scheme) error {
 	}); err != nil {
 		return err
 	}
+	if err := s.AddGeneratedConversionFunc((*v1alpha1.KubernetesAuth)(nil), (*certmanager.KubernetesAuth)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1alpha1_KubernetesAuth_To_certmanager_KubernetesAuth(a.(*v1alpha1.KubernetesAuth), b.(*certmanager.KubernetesAuth), scope)
+	}); err != nil {
+		return err
+	}
+	if err := s.AddGeneratedConversionFunc((*certmanager.KubernetesAuth)(nil), (*v1alpha1.KubernetesAuth)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_certmanager_KubernetesAuth_To_v1alpha1_KubernetesAuth(a.(*certmanager.KubernetesAuth), b.(*v1alpha1.KubernetesAuth), scope)
+	}); err != nil {
+		return err
+	}
 	if err := s.AddGeneratedConversionFunc((*v1alpha1.LocalObjectReference)(nil), (*certmanager.LocalObjectReference)(nil), func(a, b interface{}, scope conversion.Scope) error {
 		return Convert_v1alpha1_LocalObjectReference_To_certmanager_LocalObjectReference(a.(*v1alpha1.LocalObjectReference), b.(*certmanager.LocalObjectReference), scope)
 	}); err != nil {
@@ -1628,17 +1638,7 @@ func Convert_certmanager_ClusterIssuer_To_v1alpha1_ClusterIssuer(in *certmanager
 
 func autoConvert_v1alpha1_ClusterIssuerList_To_certmanager_ClusterIssuerList(in *v1alpha1.ClusterIssuerList, out *certmanager.ClusterIssuerList, s conversion.Scope) error {
 	out.ListMeta = in.ListMeta
-	if in.Items != nil {
-		in, out := &in.Items, &out.Items
-		*out = make([]certmanager.ClusterIssuer, len(*in))
-		for i := range *in {
-			if err := Convert_v1alpha1_ClusterIssuer_To_certmanager_ClusterIssuer(&(*in)[i], &(*out)[i], s); err != nil {
-				return err
-			}
-		}
-	} else {
-		out.Items = nil
-	}
+	out.Items = *(*[]certmanager.ClusterIssuer)(unsafe.Pointer(&in.Items))
 	return nil
 }
 
@@ -1649,17 +1649,7 @@ func Convert_v1alpha1_ClusterIssuerList_To_certmanager_ClusterIssuerList(in *v1a
 
 func autoConvert_certmanager_ClusterIssuerList_To_v1alpha1_ClusterIssuerList(in *certmanager.ClusterIssuerList, out *v1alpha1.ClusterIssuerList, s conversion.Scope) error {
 	out.ListMeta = in.ListMeta
-	if in.Items != nil {
-		in, out := &in.Items, &out.Items
-		*out = make([]v1alpha1.ClusterIssuer, len(*in))
-		for i := range *in {
-			if err := Convert_certmanager_ClusterIssuer_To_v1alpha1_ClusterIssuer(&(*in)[i], &(*out)[i], s); err != nil {
-				return err
-			}
-		}
-	} else {
-		out.Items = nil
-	}
+	out.Items = *(*[]v1alpha1.ClusterIssuer)(unsafe.Pointer(&in.Items))
 	return nil
 }
 
@@ -1731,15 +1721,7 @@ func Convert_certmanager_IssuerCondition_To_v1alpha1_IssuerCondition(in *certman
 func autoConvert_v1alpha1_IssuerConfig_To_certmanager_IssuerConfig(in *v1alpha1.IssuerConfig, out *certmanager.IssuerConfig, s conversion.Scope) error {
 	out.ACME = (*certmanager.ACMEIssuer)(unsafe.Pointer(in.ACME))
 	out.CA = (*certmanager.CAIssuer)(unsafe.Pointer(in.CA))
-	if in.Vault != nil {
-		in, out := &in.Vault, &out.Vault
-		*out = new(certmanager.VaultIssuer)
-		if err := Convert_v1alpha1_VaultIssuer_To_certmanager_VaultIssuer(*in, *out, s); err != nil {
-			return err
-		}
-	} else {
-		out.Vault = nil
-	}
+	out.Vault = (*certmanager.VaultIssuer)(unsafe.Pointer(in.Vault))
 	out.SelfSigned = (*certmanager.SelfSignedIssuer)(unsafe.Pointer(in.SelfSigned))
 	out.Venafi = (*certmanager.VenafiIssuer)(unsafe.Pointer(in.Venafi))
 	return nil
@@ -1753,15 +1735,7 @@ func Convert_v1alpha1_IssuerConfig_To_certmanager_IssuerConfig(in *v1alpha1.Issu
 func autoConvert_certmanager_IssuerConfig_To_v1alpha1_IssuerConfig(in *certmanager.IssuerConfig, out *v1alpha1.IssuerConfig, s conversion.Scope) error {
 	out.ACME = (*v1alpha1.ACMEIssuer)(unsafe.Pointer(in.ACME))
 	out.CA = (*v1alpha1.CAIssuer)(unsafe.Pointer(in.CA))
-	if in.Vault != nil {
-		in, out := &in.Vault, &out.Vault
-		*out = new(v1alpha1.VaultIssuer)
-		if err := Convert_certmanager_VaultIssuer_To_v1alpha1_VaultIssuer(*in, *out, s); err != nil {
-			return err
-		}
-	} else {
-		out.Vault = nil
-	}
+	out.Vault = (*v1alpha1.VaultIssuer)(unsafe.Pointer(in.Vault))
 	out.SelfSigned = (*v1alpha1.SelfSignedIssuer)(unsafe.Pointer(in.SelfSigned))
 	out.Venafi = (*v1alpha1.VenafiIssuer)(unsafe.Pointer(in.Venafi))
 	return nil
@@ -1774,17 +1748,7 @@ func Convert_certmanager_IssuerConfig_To_v1alpha1_IssuerConfig(in *certmanager.I
 
 func autoConvert_v1alpha1_IssuerList_To_certmanager_IssuerList(in *v1alpha1.IssuerList, out *certmanager.IssuerList, s conversion.Scope) error {
 	out.ListMeta = in.ListMeta
-	if in.Items != nil {
-		in, out := &in.Items, &out.Items
-		*out = make([]certmanager.Issuer, len(*in))
-		for i := range *in {
-			if err := Convert_v1alpha1_Issuer_To_certmanager_Issuer(&(*in)[i], &(*out)[i], s); err != nil {
-				return err
-			}
-		}
-	} else {
-		out.Items = nil
-	}
+	out.Items = *(*[]certmanager.Issuer)(unsafe.Pointer(&in.Items))
 	return nil
 }
 
@@ -1795,17 +1759,7 @@ func Convert_v1alpha1_IssuerList_To_certmanager_IssuerList(in *v1alpha1.IssuerLi
 
 func autoConvert_certmanager_IssuerList_To_v1alpha1_IssuerList(in *certmanager.IssuerList, out *v1alpha1.IssuerList, s conversion.Scope) error {
 	out.ListMeta = in.ListMeta
-	if in.Items != nil {
-		in, out := &in.Items, &out.Items
-		*out = make([]v1alpha1.Issuer, len(*in))
-		for i := range *in {
-			if err := Convert_certmanager_Issuer_To_v1alpha1_Issuer(&(*in)[i], &(*out)[i], s); err != nil {
-				return err
-			}
-		}
-	} else {
-		out.Items = nil
-	}
+	out.Items = *(*[]v1alpha1.Issuer)(unsafe.Pointer(&in.Items))
 	return nil
 }
 
@@ -1858,6 +1812,34 @@ func autoConvert_certmanager_IssuerStatus_To_v1alpha1_IssuerStatus(in *certmanag
 // Convert_certmanager_IssuerStatus_To_v1alpha1_IssuerStatus is an autogenerated conversion function.
 func Convert_certmanager_IssuerStatus_To_v1alpha1_IssuerStatus(in *certmanager.IssuerStatus, out *v1alpha1.IssuerStatus, s conversion.Scope) error {
 	return autoConvert_certmanager_IssuerStatus_To_v1alpha1_IssuerStatus(in, out, s)
+}
+
+func autoConvert_v1alpha1_KubernetesAuth_To_certmanager_KubernetesAuth(in *v1alpha1.KubernetesAuth, out *certmanager.KubernetesAuth, s conversion.Scope) error {
+	out.Path = in.Path
+	if err := Convert_v1alpha1_SecretKeySelector_To_certmanager_SecretKeySelector(&in.SecretRef, &out.SecretRef, s); err != nil {
+		return err
+	}
+	out.Role = in.Role
+	return nil
+}
+
+// Convert_v1alpha1_KubernetesAuth_To_certmanager_KubernetesAuth is an autogenerated conversion function.
+func Convert_v1alpha1_KubernetesAuth_To_certmanager_KubernetesAuth(in *v1alpha1.KubernetesAuth, out *certmanager.KubernetesAuth, s conversion.Scope) error {
+	return autoConvert_v1alpha1_KubernetesAuth_To_certmanager_KubernetesAuth(in, out, s)
+}
+
+func autoConvert_certmanager_KubernetesAuth_To_v1alpha1_KubernetesAuth(in *certmanager.KubernetesAuth, out *v1alpha1.KubernetesAuth, s conversion.Scope) error {
+	out.Path = in.Path
+	if err := Convert_certmanager_SecretKeySelector_To_v1alpha1_SecretKeySelector(&in.SecretRef, &out.SecretRef, s); err != nil {
+		return err
+	}
+	out.Role = in.Role
+	return nil
+}
+
+// Convert_certmanager_KubernetesAuth_To_v1alpha1_KubernetesAuth is an autogenerated conversion function.
+func Convert_certmanager_KubernetesAuth_To_v1alpha1_KubernetesAuth(in *certmanager.KubernetesAuth, out *v1alpha1.KubernetesAuth, s conversion.Scope) error {
+	return autoConvert_certmanager_KubernetesAuth_To_v1alpha1_KubernetesAuth(in, out, s)
 }
 
 func autoConvert_v1alpha1_LocalObjectReference_To_certmanager_LocalObjectReference(in *v1alpha1.LocalObjectReference, out *certmanager.LocalObjectReference, s conversion.Scope) error {
@@ -2119,8 +2101,15 @@ func autoConvert_v1alpha1_VaultAuth_To_certmanager_VaultAuth(in *v1alpha1.VaultA
 	if err := Convert_v1alpha1_VaultAppRole_To_certmanager_VaultAppRole(&in.AppRole, &out.AppRole, s); err != nil {
 		return err
 	}
-	// WARNING: in.Kubernetes requires manual conversion: does not exist in peer-type
+	if err := Convert_v1alpha1_KubernetesAuth_To_certmanager_KubernetesAuth(&in.Kubernetes, &out.Kubernetes, s); err != nil {
+		return err
+	}
 	return nil
+}
+
+// Convert_v1alpha1_VaultAuth_To_certmanager_VaultAuth is an autogenerated conversion function.
+func Convert_v1alpha1_VaultAuth_To_certmanager_VaultAuth(in *v1alpha1.VaultAuth, out *certmanager.VaultAuth, s conversion.Scope) error {
+	return autoConvert_v1alpha1_VaultAuth_To_certmanager_VaultAuth(in, out, s)
 }
 
 func autoConvert_certmanager_VaultAuth_To_v1alpha1_VaultAuth(in *certmanager.VaultAuth, out *v1alpha1.VaultAuth, s conversion.Scope) error {
@@ -2128,6 +2117,9 @@ func autoConvert_certmanager_VaultAuth_To_v1alpha1_VaultAuth(in *certmanager.Vau
 		return err
 	}
 	if err := Convert_certmanager_VaultAppRole_To_v1alpha1_VaultAppRole(&in.AppRole, &out.AppRole, s); err != nil {
+		return err
+	}
+	if err := Convert_certmanager_KubernetesAuth_To_v1alpha1_KubernetesAuth(&in.Kubernetes, &out.Kubernetes, s); err != nil {
 		return err
 	}
 	return nil
