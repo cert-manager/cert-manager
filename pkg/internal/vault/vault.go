@@ -178,7 +178,7 @@ func (v *Vault) setToken(client Client) error {
 		return nil
 	}
 
-	return fmt.Errorf("error initializing Vault client. tokenSecretRef, appRoleSecretRef, or Kubernetes auth role not set")
+	return fmt.Errorf("error initializing Vault client: tokenSecretRef, appRoleSecretRef, or Kubernetes auth role not set")
 }
 
 func (v *Vault) newConfig() (*vault.Config, error) {
@@ -306,7 +306,7 @@ func (v *Vault) requestTokenWithKubernetesAuth(client Client, kubernetesAuth *v1
 
 	keyBytes, ok := secret.Data[key]
 	if !ok {
-		return "", fmt.Errorf("no data for %q in secret '%s/%s'\n%+v", key, kubernetesAuth.SecretRef.Name, v.namespace, secret)
+		return "", fmt.Errorf("no data for %q in secret '%s/%s'", key, kubernetesAuth.SecretRef.Name, v.namespace)
 	}
 
 	jwt := string(keyBytes)
@@ -327,20 +327,24 @@ func (v *Vault) requestTokenWithKubernetesAuth(client Client, kubernetesAuth *v1
 	if err != nil {
 		return "", fmt.Errorf("error encoding Vault parameters: %s", err.Error())
 	}
+
 	resp, err := client.RawRequest(request)
 	if err != nil {
 		return "", fmt.Errorf("error calling Vault server: %s", err.Error())
 	}
+
 	defer resp.Body.Close()
 	vaultResult := vault.Secret{}
 	resp.DecodeJSON(&vaultResult)
 	if err != nil {
 		return "", fmt.Errorf("unable to decode JSON payload: %s", err.Error())
 	}
+
 	token, err := vaultResult.TokenID()
 	if err != nil {
 		return "", fmt.Errorf("unable to read token: %s", err.Error())
 	}
+
 	return token, nil
 }
 

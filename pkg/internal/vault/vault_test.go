@@ -202,8 +202,13 @@ func TestSetToken(t *testing.T) {
 		},
 	}
 
+	kubeAuthSecret := &corev1.Secret{
+		Data: map[string][]byte{
+			"my-kube-key": []byte("my-secret-kube-token"),
+		},
+	}
 	tests := map[string]testSetTokenT{
-		"if neither token secret ref or app role secret ref not found then error": {
+		"if neither token secret ref, app role secret ref, or kube auth then not found then error": {
 			issuer: gen.Issuer("vault-issuer",
 				gen.SetIssuerVault(v1alpha2.VaultIssuer{
 					CABundle: []byte(testCertBundle),
@@ -214,7 +219,8 @@ func TestSetToken(t *testing.T) {
 			fakeClient:    vaultfake.NewFakeClient(),
 			expectedToken: "",
 			expectedErr: errors.New(
-				"error initializing Vault client tokenSecretRef or appRoleSecretRef not set"),
+				"error initializing Vault client: tokenSecretRef, appRoleSecretRef, or Kubernetes auth role not set",
+			),
 		},
 
 		"if token secret ref is set but secret doesn't exist should error": {
@@ -316,6 +322,114 @@ func TestSetToken(t *testing.T) {
 			expectedToken: "my-roleapp-token",
 			expectedErr:   nil,
 		},
+
+		"if kubernetes role auth set but reference secret doesn't exist return error": {
+			issuer: gen.Issuer("vault-issuer",
+				gen.SetIssuerVault(v1alpha1.VaultIssuer{
+					CABundle: []byte(testCertBundle),
+					Auth: v1alpha1.VaultAuth{
+						Kubernetes: v1alpha1.KubernetesAuth{
+							Role: "kube-vault-role",
+							SecretRef: v1alpha1.SecretKeySelector{
+								LocalObjectReference: v1alpha1.LocalObjectReference{
+									Name: "secret-ref-name",
+								},
+								Key: "my-kube-key",
+							},
+						},
+					},
+				}),
+			),
+			fakeLister: listers.FakeSecretListerFrom(listers.NewFakeSecretLister(),
+				listers.SetFakeSecretNamespaceListerGet(nil, errors.New("secret does not exists")),
+			),
+			fakeClient:    vaultfake.NewFakeClient(),
+			expectedToken: "",
+			expectedErr:   errors.New("error reading Kubernetes service account token from secret-ref-name: secret does not exists"),
+		},
+
+		"if kubernetes role auth set but reference secret doesn't contain data at key error": {
+			issuer: gen.Issuer("vault-issuer",
+				gen.SetIssuerVault(v1alpha1.VaultIssuer{
+					CABundle: []byte(testCertBundle),
+					Auth: v1alpha1.VaultAuth{
+						Kubernetes: v1alpha1.KubernetesAuth{
+							Role: "kube-vault-role",
+							SecretRef: v1alpha1.SecretKeySelector{
+								LocalObjectReference: v1alpha1.LocalObjectReference{
+									Name: "secret-ref-name",
+								},
+								Key: "my-kube-key",
+							},
+						},
+					},
+				}),
+			),
+			fakeLister: listers.FakeSecretListerFrom(listers.NewFakeSecretLister(),
+				listers.SetFakeSecretNamespaceListerGet(&corev1.Secret{}, nil),
+			),
+			fakeClient:    vaultfake.NewFakeClient(),
+			expectedToken: "",
+			expectedErr:   errors.New(`error reading Kubernetes service account token from secret-ref-name: no data for "my-kube-key" in secret 'secret-ref-name/test-namespace'`),
+		},
+
+		"if kubernetes role auth set but errors with a raw request should error": {
+			issuer: gen.Issuer("vault-issuer",
+				gen.SetIssuerVault(v1alpha1.VaultIssuer{
+					CABundle: []byte(testCertBundle),
+					Auth: v1alpha1.VaultAuth{
+						Kubernetes: v1alpha1.KubernetesAuth{
+							Role: "kube-vault-role",
+							SecretRef: v1alpha1.SecretKeySelector{
+								LocalObjectReference: v1alpha1.LocalObjectReference{
+									Name: "secret-ref-name",
+								},
+								Key: "my-kube-key",
+							},
+						},
+					},
+				}),
+			),
+			fakeLister: listers.FakeSecretListerFrom(listers.NewFakeSecretLister(),
+				listers.SetFakeSecretNamespaceListerGet(kubeAuthSecret, nil),
+			),
+			fakeClient:    vaultfake.NewFakeClient().WithRawRequest(nil, errors.New("raw request error")),
+			expectedToken: "",
+			expectedErr:   errors.New("error reading Kubernetes service account token from secret-ref-name: error calling Vault server: raw request error"),
+		},
+
+		"foo": {
+			issuer: gen.Issuer("vault-issuer",
+				gen.SetIssuerVault(v1alpha1.VaultIssuer{
+					CABundle: []byte(testCertBundle),
+					Auth: v1alpha1.VaultAuth{
+						Kubernetes: v1alpha1.KubernetesAuth{
+							Role: "kube-vault-role",
+							SecretRef: v1alpha1.SecretKeySelector{
+								LocalObjectReference: v1alpha1.LocalObjectReference{
+									Name: "secret-ref-name",
+								},
+								Key: "my-kube-key",
+							},
+						},
+					},
+				}),
+			),
+			fakeLister: listers.FakeSecretListerFrom(listers.NewFakeSecretLister(),
+				listers.SetFakeSecretNamespaceListerGet(kubeAuthSecret, nil),
+			),
+			fakeClient: vaultfake.NewFakeClient().WithRawRequest(&vault.Response{
+				Response: &http.Response{
+					Body: ioutil.NopCloser(
+						strings.NewReader(
+							`{"request_id":"","lease_id":"","lease_duration":0,"renewable":false,"data":null,"warnings":null,"data":{"id":"my-token"}}`),
+					),
+				},
+			}, nil),
+			expectedToken: "my-token",
+			expectedErr:   nil,
+		},
+
 		"if app role secret ref and token secret set, take preference on token secret": {
 			issuer: gen.Issuer("vault-issuer",
 				gen.SetIssuerVault(v1alpha2.VaultIssuer{
@@ -349,22 +463,24 @@ func TestSetToken(t *testing.T) {
 	}
 
 	for name, test := range tests {
-		v := &Vault{
-			namespace:     "test-namespace",
-			secretsLister: test.fakeLister,
-			issuer:        test.issuer,
-		}
+		t.Run(name, func(t *testing.T) {
+			v := &Vault{
+				namespace:     "test-namespace",
+				secretsLister: test.fakeLister,
+				issuer:        test.issuer,
+			}
 
-		err := v.setToken(test.fakeClient)
-		if !reflect.DeepEqual(test.expectedErr, err) {
-			t.Errorf("%s: unexpected error, exp=%v got=%v",
-				name, test.expectedErr, err)
-		}
+			err := v.setToken(test.fakeClient)
+			if !reflect.DeepEqual(test.expectedErr, err) {
+				t.Errorf("unexpected error, exp=%v got=%v",
+					test.expectedErr, err)
+			}
 
-		if test.fakeClient.Token() != test.expectedToken {
-			t.Errorf("%s: got unexpected client token, exp=%s got=%s",
-				name, test.expectedToken, test.fakeClient.Token())
-		}
+			if test.fakeClient.Token() != test.expectedToken {
+				t.Errorf("got unexpected client token, exp=%s got=%s",
+					test.expectedToken, test.fakeClient.Token())
+			}
+		})
 	}
 }
 
@@ -445,27 +561,29 @@ func TestAppRoleRef(t *testing.T) {
 	}
 
 	for name, test := range tests {
-		v := &Vault{
-			namespace:     "test-namespace",
-			secretsLister: test.fakeLister,
-			issuer:        nil,
-		}
+		t.Run(name, func(t *testing.T) {
+			v := &Vault{
+				namespace:     "test-namespace",
+				secretsLister: test.fakeLister,
+				issuer:        nil,
+			}
 
-		roleID, secretID, err := v.appRoleRef(test.appRole)
-		if !reflect.DeepEqual(test.expectedErr, err) {
-			t.Errorf("%s: unexpected error, exp=%v got=%v",
-				name, test.expectedErr, err)
-		}
+			roleID, secretID, err := v.appRoleRef(test.appRole)
+			if !reflect.DeepEqual(test.expectedErr, err) {
+				t.Errorf("unexpected error, exp=%v got=%v",
+					test.expectedErr, err)
+			}
 
-		if test.expectedRoleID != roleID {
-			t.Errorf("%s: got unexpected roleID, exp=%s got=%s",
-				name, test.expectedRoleID, roleID)
-		}
+			if test.expectedRoleID != roleID {
+				t.Errorf("got unexpected roleID, exp=%s got=%s",
+					test.expectedRoleID, roleID)
+			}
 
-		if test.expectedSecretID != secretID {
-			t.Errorf("%s: got unexpected secretID, exp=%s got=%s",
-				name, test.expectedSecretID, secretID)
-		}
+			if test.expectedSecretID != secretID {
+				t.Errorf("got unexpected secretID, exp=%s got=%s",
+					test.expectedSecretID, secretID)
+			}
+		})
 	}
 }
 
@@ -539,22 +657,24 @@ func TestTokenRef(t *testing.T) {
 	}
 
 	for name, test := range tests {
-		v := &Vault{
-			namespace:     "test-namespace",
-			secretsLister: test.fakeLister,
-			issuer:        nil,
-		}
+		t.Run(name, func(t *testing.T) {
+			v := &Vault{
+				namespace:     "test-namespace",
+				secretsLister: test.fakeLister,
+				issuer:        nil,
+			}
 
-		token, err := v.tokenRef("test-name", "test-namespace", test.key)
-		if !reflect.DeepEqual(test.expectedErr, err) {
-			t.Errorf("%s: unexpected error, exp=%v got=%v",
-				name, test.expectedErr, err)
-		}
+			token, err := v.tokenRef("test-name", "test-namespace", test.key)
+			if !reflect.DeepEqual(test.expectedErr, err) {
+				t.Errorf("unexpected error, exp=%v got=%v",
+					test.expectedErr, err)
+			}
 
-		if test.expectedToken != token {
-			t.Errorf("%s: got unexpected token, exp=%s got=%s",
-				name, test.expectedToken, token)
-		}
+			if test.expectedToken != token {
+				t.Errorf("got unexpected token, exp=%s got=%s",
+					test.expectedToken, token)
+			}
+		})
 	}
 }
 
@@ -613,24 +733,25 @@ func TestNewConfig(t *testing.T) {
 	}
 
 	for name, test := range tests {
-		v := &Vault{
-			namespace:     "test-namespace",
-			secretsLister: nil,
-			issuer:        test.issuer,
-		}
-
-		cfg, err := v.newConfig()
-		if !reflect.DeepEqual(test.expectedErr, err) {
-			t.Errorf("%s: unexpected error, exp=%v got=%v",
-				name, test.expectedErr, err)
-		}
-
-		if test.checkFunc != nil {
-			if err := test.checkFunc(cfg); err != nil {
-				t.Errorf("%s: check function failed: %s",
-					name, err)
+		t.Run(name, func(t *testing.T) {
+			v := &Vault{
+				namespace:     "test-namespace",
+				secretsLister: nil,
+				issuer:        test.issuer,
 			}
-		}
+
+			cfg, err := v.newConfig()
+			if !reflect.DeepEqual(test.expectedErr, err) {
+				t.Errorf("unexpected error, exp=%v got=%v",
+					test.expectedErr, err)
+			}
+
+			if test.checkFunc != nil {
+				if err := test.checkFunc(cfg); err != nil {
+					t.Errorf("check function failed: %s", err)
+				}
+			}
+		})
 	}
 }
 
@@ -737,21 +858,23 @@ func TestRequestTokenWithAppRoleRef(t *testing.T) {
 	}
 
 	for name, test := range tests {
-		v := &Vault{
-			namespace:     "test-namespace",
-			secretsLister: test.fakeLister,
-			issuer:        nil,
-		}
+		t.Run(name, func(t *testing.T) {
+			v := &Vault{
+				namespace:     "test-namespace",
+				secretsLister: test.fakeLister,
+				issuer:        nil,
+			}
 
-		token, err := v.requestTokenWithAppRoleRef(test.client, test.appRole)
-		if !reflect.DeepEqual(test.expectedErr, err) {
-			t.Errorf("%s: unexpected error, exp=%v got=%v",
-				name, test.expectedErr, err)
-		}
+			token, err := v.requestTokenWithAppRoleRef(test.client, test.appRole)
+			if !reflect.DeepEqual(test.expectedErr, err) {
+				t.Errorf("unexpected error, exp=%v got=%v",
+					test.expectedErr, err)
+			}
 
-		if test.expectedToken != token {
-			t.Errorf("%s: got unexpected token, exp=%s got=%s",
-				name, test.expectedToken, token)
-		}
+			if test.expectedToken != token {
+				t.Errorf("got unexpected token, exp=%s got=%s",
+					test.expectedToken, token)
+			}
+		})
 	}
 }
