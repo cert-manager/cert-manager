@@ -42,7 +42,7 @@ func ChallengeFrom(ch *v1alpha1.Challenge, mods ...ChallengeModifier) *v1alpha1.
 
 func SetChallengeType(t string) ChallengeModifier {
 	return func(ch *v1alpha1.Challenge) {
-		ch.Spec.Type = t
+		ch.Spec.Type = v1alpha1.ACMEChallengeType(t)
 	}
 }
 

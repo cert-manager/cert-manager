@@ -351,7 +351,7 @@ func (c *controller) acceptChallenge(ctx context.Context, cl acmecl.Interface, c
 	return nil
 }
 
-func (c *controller) solverFor(challengeType string) (solver, error) {
+func (c *controller) solverFor(challengeType cmapi.ACMEChallengeType) (solver, error) {
 	switch challengeType {
 	case "http-01":
 		return c.httpSolver, nil
