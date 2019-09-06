@@ -561,11 +561,11 @@ k8s.io/apimachinery/pkg/watch
 k8s.io/apimachinery/pkg/labels
 k8s.io/apimachinery/pkg/api/errors
 k8s.io/apimachinery/pkg/util/wait
-k8s.io/apimachinery/pkg/selection
 k8s.io/apimachinery/pkg/util/sets
 k8s.io/apimachinery/pkg/api/meta
 k8s.io/apimachinery/pkg/conversion
 k8s.io/apimachinery/pkg/util/validation/field
+k8s.io/apimachinery/pkg/selection
 k8s.io/apimachinery/pkg/util/intstr
 k8s.io/apimachinery/pkg/runtime/serializer/json
 k8s.io/apimachinery/pkg/fields
