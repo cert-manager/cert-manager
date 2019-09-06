@@ -107,8 +107,7 @@ func (v *VenafiTPP) Details() *TPPDetails {
 }
 
 func (v *VenafiTPP) Deprovision() error {
-	v.Base.Details().KubeClient.CoreV1().Secrets(v.createdSecret.Namespace).Delete(v.createdSecret.Name, nil)
-	return nil
+	return v.Base.Details().KubeClient.CoreV1().Secrets(v.createdSecret.Namespace).Delete(v.createdSecret.Name, nil)
 }
 
 func (v *VenafiTPP) SupportsGlobal() bool {

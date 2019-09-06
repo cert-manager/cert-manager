@@ -26,35 +26,48 @@ import (
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	"github.com/jetstack/cert-manager/test/e2e/framework"
 	"github.com/jetstack/cert-manager/test/e2e/framework/addon/tiller"
-	vaultaddon "github.com/jetstack/cert-manager/test/e2e/framework/addon/vault"
+	vault "github.com/jetstack/cert-manager/test/e2e/framework/addon/vault"
 	"github.com/jetstack/cert-manager/test/e2e/suite/conformance/certificates"
 )
 
 var _ = framework.ConformanceDescribe("Certificates", func() {
+	provisioner := new(vaultProvisioner)
+
 	(&certificates.Suite{
 		Name:             "Vault",
-		CreateIssuerFunc: createVaultIssuer,
+		CreateIssuerFunc: provisioner.create,
+		DeleteIssuerFunc: provisioner.delete,
 	}).Define()
 })
 
-func createVaultIssuer(f *framework.Framework) cmapi.ObjectReference {
+type vaultProvisioner struct {
+	tiller *tiller.Tiller
+	vault  *vault.Vault
+}
+
+func (v *vaultProvisioner) delete(f *framework.Framework, ref cmapi.ObjectReference) {
+	Expect(v.vault.Deprovision()).NotTo(HaveOccurred(), "failed to deprovision vault")
+	Expect(v.tiller.Deprovision()).NotTo(HaveOccurred(), "failed to deprovision tiller")
+}
+
+func (v *vaultProvisioner) create(f *framework.Framework) cmapi.ObjectReference {
 	By("Creating a Vault issuer")
 
-	var (
-		tiller = &tiller.Tiller{
-			Name:               "tiller-deploy",
-			Namespace:          f.Namespace.Name,
-			ClusterPermissions: false,
-		}
-		vault = &vaultaddon.Vault{
-			Tiller:    tiller,
-			Namespace: f.Namespace.Name,
-			Name:      "cm-e2e-create-vault-issuer",
-		}
-	)
+	v.tiller = &tiller.Tiller{
+		Name:               "tiller-deploy",
+		Namespace:          f.Namespace.Name,
+		ClusterPermissions: false,
+	}
+	Expect(v.tiller.Setup(f.Config)).NotTo(HaveOccurred(), "failed to setup tiller")
+	Expect(v.tiller.Provision()).NotTo(HaveOccurred(), "failed to provision tiller")
 
-	f.RequireAddon(tiller)
-	f.RequireAddon(vault)
+	v.vault = &vault.Vault{
+		Tiller:    v.tiller,
+		Namespace: f.Namespace.Name,
+		Name:      "cm-e2e-create-vault-issuer",
+	}
+	Expect(v.vault.Setup(f.Config)).NotTo(HaveOccurred(), "failed to setup vault")
+	Expect(v.vault.Provision()).NotTo(HaveOccurred(), "failed to provision vault")
 
 	intermediateMount := "intermediate-ca"
 	role := "kubernetes-vault"
@@ -63,22 +76,21 @@ func createVaultIssuer(f *framework.Framework) cmapi.ObjectReference {
 	authPath := "approle"
 
 	By("Configuring the Vault server")
-	vaultInit := &vaultaddon.VaultInitializer{
-		Details:           *vault.Details(),
+	vaultInit := &vault.VaultInitializer{
+		Details:           *v.vault.Details(),
 		RootMount:         "root-ca",
 		IntermediateMount: intermediateMount,
 		Role:              role,
 		AuthPath:          authPath,
 	}
-	err := vaultInit.Init()
-	Expect(err).NotTo(HaveOccurred())
-	err = vaultInit.Setup()
-	Expect(err).NotTo(HaveOccurred())
-	roleID, secretID, err := vaultInit.CreateAppRole()
-	Expect(err).NotTo(HaveOccurred())
+	Expect(vaultInit.Init()).NotTo(HaveOccurred(), "failed to init vault")
+	Expect(vaultInit.Setup()).NotTo(HaveOccurred(), "fauled to setup vault")
 
-	_, err = f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Create(vaultaddon.NewVaultAppRoleSecret(vaultSecretAppRoleName, secretID))
-	Expect(err).NotTo(HaveOccurred())
+	roleID, secretID, err := vaultInit.CreateAppRole()
+	Expect(err).NotTo(HaveOccurred(), "vault to create app role from vault")
+
+	_, err = f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Create(vault.NewVaultAppRoleSecret(vaultSecretAppRoleName, secretID))
+	Expect(err).NotTo(HaveOccurred(), "vault to store app role secret from vault")
 
 	issuer, err := f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Create(&cmapi.Issuer{
 		ObjectMeta: metav1.ObjectMeta{
@@ -87,9 +99,9 @@ func createVaultIssuer(f *framework.Framework) cmapi.ObjectReference {
 		Spec: cmapi.IssuerSpec{
 			IssuerConfig: cmapi.IssuerConfig{
 				Vault: &cmapi.VaultIssuer{
-					Server:   vault.Details().Host,
+					Server:   v.vault.Details().Host,
 					Path:     vaultPath,
-					CABundle: vault.Details().VaultCA,
+					CABundle: v.vault.Details().VaultCA,
 					Auth: cmapi.VaultAuth{
 						AppRole: cmapi.VaultAppRole{
 							Path:   authPath,

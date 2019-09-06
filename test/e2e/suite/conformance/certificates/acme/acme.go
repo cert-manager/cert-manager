@@ -39,20 +39,11 @@ var _ = framework.ConformanceDescribe("Certificates", func() {
 		certificates.DurationFeature,
 	)
 
-	provisioner := &acmeIssuerProvisioner{setGroupName: false}
+	provisioner := new(acmeIssuerProvisioner)
 	(&certificates.Suite{
 		Name:                "ACME HTTP01",
 		CreateIssuerFunc:    provisioner.create,
 		DeleteIssuerFunc:    provisioner.delete,
-		UnsupportedFeatures: unsupportedFeatures,
-	}).Define()
-
-	// crProvisioner sets the issuerRef.group field on Certificates it creates
-	crProvisioner := &acmeIssuerProvisioner{setGroupName: true}
-	(&certificates.Suite{
-		Name:                "ACME HTTP01 (CertificateRequest)",
-		CreateIssuerFunc:    crProvisioner.create,
-		DeleteIssuerFunc:    crProvisioner.delete,
 		UnsupportedFeatures: unsupportedFeatures,
 	}).Define()
 })
@@ -60,12 +51,6 @@ var _ = framework.ConformanceDescribe("Certificates", func() {
 type acmeIssuerProvisioner struct {
 	tiller *tiller.Tiller
 	pebble *pebble.Pebble
-	// if setGroupName is true, the 'group name' field on the IssuerRef will be
-	// set the 'cert-manager.io'.
-	// Setting the group name will cause the new 'certificate requests' based
-	// implementation to be used, however this is not implemented for ACME yet
-	// See: https://github.com/jetstack/cert-manager/pull/1943
-	setGroupName bool
 }
 
 func (a *acmeIssuerProvisioner) delete(f *framework.Framework, ref cmmeta.ObjectReference) {
@@ -128,17 +113,8 @@ func (a *acmeIssuerProvisioner) create(f *framework.Framework) cmmeta.ObjectRefe
 	Expect(err).NotTo(HaveOccurred(), "failed to create acme issuer")
 
 	return cmmeta.ObjectReference{
-		Group: emptyOrString(a.setGroupName, cmapi.SchemeGroupVersion.Group),
+		Group: cmapi.SchemeGroupVersion.Group,
 		Kind:  cmapi.IssuerKind,
 		Name:  issuer.Name,
 	}
-}
-
-// emptyOrString will return the given string 's' if 'set' is true,
-// otherwise it will return the empty string.
-func emptyOrString(set bool, s string) string {
-	if set {
-		return s
-	}
-	return ""
 }
