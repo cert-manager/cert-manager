@@ -26,6 +26,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	"github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
 	"github.com/jetstack/cert-manager/test/e2e/framework"
 	"github.com/jetstack/cert-manager/test/e2e/framework/addon"
 	"github.com/jetstack/cert-manager/test/e2e/framework/addon/pebble"
@@ -179,19 +180,17 @@ var _ = framework.CertManagerDescribe("ACME webhook DNS provider", func() {
 
 			pollErr = wait.PollImmediate(500*time.Millisecond, time.Second*30,
 				func() (bool, error) {
-					l, err := f.CertManagerClientSet.CertmanagerV1alpha1().Challenges(f.Namespace.Name).List(metav1.ListOptions{
-						LabelSelector: "acme.cert-manager.io/order-name=" + order.Name,
-					})
+					l, err := listOwnedChallenges(f.CertManagerClientSet, order)
 					Expect(err).NotTo(HaveOccurred())
 
-					log.Logf("Found %d challenges", len(l.Items))
-					if len(l.Items) == 0 {
+					log.Logf("Found %d challenges", len(l))
+					if len(l) == 0 {
 						log.Logf("Waiting for at least one challenge to exist")
 						return false, nil
 					}
 
 					allPresented := true
-					for _, ch := range l.Items {
+					for _, ch := range l {
 						log.Logf("Found challenge named %q", ch.Name)
 
 						if ch.Status.Presented == false {
@@ -207,3 +206,20 @@ var _ = framework.CertManagerDescribe("ACME webhook DNS provider", func() {
 		})
 	})
 })
+
+func listOwnedChallenges(cl versioned.Interface, owner *v1alpha1.Order) ([]*v1alpha1.Challenge, error) {
+	l, err := cl.CertmanagerV1alpha1().Challenges(owner.Namespace).List(metav1.ListOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	var owned []*v1alpha1.Challenge
+	for _, ch := range l.Items {
+		if !metav1.IsControlledBy(&ch, owner) {
+			continue
+		}
+		owned = append(owned, &ch)
+	}
+
+	return owned, nil
+}
