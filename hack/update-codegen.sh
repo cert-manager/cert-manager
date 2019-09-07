@@ -24,6 +24,8 @@ runfiles="$(pwd)"
 export PATH="${runfiles}/third_party/k8s.io/code-generator:${runfiles}/hack:${runfiles}/hack/bin:${PATH}"
 cd "${REPO_ROOT}"
 
+export GO111MODULE=off
+
 generate-groups.sh "deepcopy" \
   github.com/jetstack/cert-manager/pkg/client github.com/jetstack/cert-manager/pkg/acme/webhook/apis \
   acme:v1alpha1 \
