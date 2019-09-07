@@ -46,7 +46,7 @@ func dropNotFound(err error) error {
 
 // OwningCertForSecret gets the name of the owning certificate for a
 // given secret, returning nil if no such object exists.
-// Right now, this actually uses a label instead of owner refs,
+// Right now, this actually uses an annotation instead of owner refs,
 // since certmanager doesn't set owner refs on secrets.
 func OwningCertForSecret(secret *corev1.Secret) *types.NamespacedName {
 	annVal, hasAnn := secret.Annotations[certmanager.CertificateNameKey]
