@@ -149,17 +149,17 @@ checking the ``cert-manager`` namespace for running pods:
 
    kubectl get pods --namespace cert-manager
 
-   NAME                               READY   STATUS      RESTARTS   AGE
-   cert-manager-5c6866597-zw7kh       1/1     Running     0          2m
-   webhook-78fb756679-9bsmf           1/1     Running     0          2m
-   webhook-ca-sync-1543708620-n82gj   0/1     Completed   0          1m
+   NAME                                       READY   STATUS    RESTARTS   AGE
+   cert-manager-5c6866597-zw7kh               1/1     Running   0          2m
+   cert-manager-cainjector-577f6d9fd7-tr77l   1/1     Running   0          2m
+   cert-manager-webhook-787858fcdb-nlzsq      1/1     Running   0          2m
 
-You should see both the ``cert-manager`` and ``webhook`` component in a Running
-state, and the ``ca-sync`` pod is Completed. If the webhook has not Completed
-but the ``cert-manager`` pod has recently started, wait a few minutes for the
-``ca-sync`` pod to be retried.
-If you experience problems, please check the
-:doc:`troubleshooting guide <../troubleshooting>`.
+You should see the ``cert-manager``, ``cert-manager-cainjector`` and
+``cert-manager-webhook` pod in a Running state.
+It may take a minute or so for the TLS assets required for the webhook to
+function to be provisioned. This may cause the webhook to take a while longer
+to start for the first time than other pods. If you experience problems, please
+check the :doc:`troubleshooting guide <../troubleshooting>`.
 
 The following steps will confirm that cert-manager is set up correctly and able
 to issue basic certificate types:
