@@ -455,6 +455,13 @@ func (c *controller) updateSecret(ctx context.Context, crt *v1alpha1.Certificate
 		secret.Annotations[v1alpha1.CertificateNameKey] = crt.Name
 	}
 
+	// Remove any old label with the Certificate name to an annotation
+	// The corresponding annotation would be already added above
+	_, b := secret.Labels[v1alpha1.CertificateNameKey]
+	if b {
+		delete(secret.Labels, v1alpha1.CertificateNameKey)
+	}
+
 	// set the actual values in the secret
 	secret.Data[corev1.TLSCertKey] = cert
 	secret.Data[corev1.TLSPrivateKeyKey] = key
