@@ -4,6 +4,7 @@ go_library(
     name = "go_default_library",
     srcs = [
         "doc.go",
+        "fastjson.go",
         "unstructured.go",
         "value.go",
     ],
@@ -11,7 +12,10 @@ go_library(
     importpath = "sigs.k8s.io/structured-merge-diff/value",
     tags = ["manual"],
     visibility = ["//visibility:public"],
-    deps = ["//vendor/gopkg.in/yaml.v2:go_default_library"],
+    deps = [
+        "//vendor/github.com/json-iterator/go:go_default_library",
+        "//vendor/gopkg.in/yaml.v2:go_default_library",
+    ],
 )
 
 filegroup(

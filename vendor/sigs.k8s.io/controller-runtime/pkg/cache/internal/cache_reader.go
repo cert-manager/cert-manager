@@ -88,7 +88,7 @@ func (c *CacheReader) Get(_ context.Context, key client.ObjectKey, out runtime.O
 }
 
 // List lists items out of the indexer and writes them to out
-func (c *CacheReader) List(_ context.Context, out runtime.Object, opts ...client.ListOptionFunc) error {
+func (c *CacheReader) List(_ context.Context, out runtime.Object, opts ...client.ListOption) error {
 	var objs []interface{}
 	var err error
 
@@ -97,7 +97,7 @@ func (c *CacheReader) List(_ context.Context, out runtime.Object, opts ...client
 
 	if listOpts.FieldSelector != nil {
 		// TODO(directxman12): support more complicated field selectors by
-		// combining multiple indicies, GetIndexers, etc
+		// combining multiple indices, GetIndexers, etc
 		field, val, requiresExact := requiresExactMatch(listOpts.FieldSelector)
 		if !requiresExact {
 			return fmt.Errorf("non-exact field matches are not supported by the cache")

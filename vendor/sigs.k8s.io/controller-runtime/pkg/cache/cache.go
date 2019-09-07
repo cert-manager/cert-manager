@@ -36,17 +36,17 @@ var log = logf.RuntimeLog.WithName("object-cache")
 
 // Cache knows how to load Kubernetes objects, fetch informers to request
 // to receive events for Kubernetes objects (at a low-level),
-// and add indicies to fields on the objects stored in the cache.
+// and add indices to fields on the objects stored in the cache.
 type Cache interface {
 	// Cache acts as a client to objects stored in the cache.
 	client.Reader
 
-	// Cache loads informers and adds field indicies.
+	// Cache loads informers and adds field indices.
 	Informers
 }
 
 // Informers knows how to create or fetch informers for different
-// group-version-kinds, and add indicies to those informers.  It's safe to call
+// group-version-kinds, and add indices to those informers.  It's safe to call
 // GetInformer from multiple threads.
 type Informers interface {
 	// GetInformer fetches or constructs an informer for the given object that corresponds to a single
@@ -64,7 +64,7 @@ type Informers interface {
 	// WaitForCacheSync waits for all the caches to sync.  Returns false if it could not sync a cache.
 	WaitForCacheSync(stop <-chan struct{}) bool
 
-	// Informers knows how to add indicies to the caches (informers) that it manages.
+	// Informers knows how to add indices to the caches (informers) that it manages.
 	client.FieldIndexer
 }
 

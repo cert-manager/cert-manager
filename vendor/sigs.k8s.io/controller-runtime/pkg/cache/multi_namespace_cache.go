@@ -133,7 +133,7 @@ func (c *multiNamespaceCache) Get(ctx context.Context, key client.ObjectKey, obj
 }
 
 // List multi namespace cache will get all the objects in the namespaces that the cache is watching if asked for all namespaces.
-func (c *multiNamespaceCache) List(ctx context.Context, list runtime.Object, opts ...client.ListOptionFunc) error {
+func (c *multiNamespaceCache) List(ctx context.Context, list runtime.Object, opts ...client.ListOption) error {
 	listOpts := client.ListOptions{}
 	listOpts.ApplyOptions(opts)
 	if listOpts.Namespace != corev1.NamespaceAll {

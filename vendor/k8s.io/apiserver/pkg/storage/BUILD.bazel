@@ -38,7 +38,6 @@ filegroup(
         ":package-srcs",
         "//vendor/k8s.io/apiserver/pkg/storage/cacher:all-srcs",
         "//vendor/k8s.io/apiserver/pkg/storage/errors:all-srcs",
-        "//vendor/k8s.io/apiserver/pkg/storage/etcd:all-srcs",
         "//vendor/k8s.io/apiserver/pkg/storage/etcd3:all-srcs",
         "//vendor/k8s.io/apiserver/pkg/storage/names:all-srcs",
         "//vendor/k8s.io/apiserver/pkg/storage/storagebackend:all-srcs",

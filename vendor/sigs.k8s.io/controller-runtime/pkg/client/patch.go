@@ -87,7 +87,7 @@ func (p applyPatch) Type() types.PatchType {
 
 // Data implements Patch.
 func (p applyPatch) Data(obj runtime.Object) ([]byte, error) {
-	// NB(directxman12): we might techically want to be using an actual encoder
+	// NB(directxman12): we might technically want to be using an actual encoder
 	// here (in case some more performant encoder is introduced) but this is
 	// correct and sufficient for our uses (it's what the JSON serializer in
 	// client-go does, more-or-less).

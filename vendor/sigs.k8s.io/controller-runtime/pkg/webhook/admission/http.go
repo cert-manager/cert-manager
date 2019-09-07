@@ -17,7 +17,6 @@ limitations under the License.
 package admission
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -84,7 +83,7 @@ func (wh *Webhook) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// TODO: add panic-recovery for Handle
-	reviewResponse = wh.Handle(context.Background(), req)
+	reviewResponse = wh.Handle(r.Context(), req)
 	wh.writeResponse(w, reviewResponse)
 }
 
