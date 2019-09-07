@@ -92,6 +92,10 @@ func (r *Response) Complete(req Request) error {
 
 // Handler can handle an AdmissionRequest.
 type Handler interface {
+	// Handle yields a response to an AdmissionRequest.
+	//
+	// The supplied context is extracted from the received http.Request, allowing wrapping
+	// http.Handlers to inject values into and control cancelation of downstream request processing.
 	Handle(context.Context, Request) Response
 }
 

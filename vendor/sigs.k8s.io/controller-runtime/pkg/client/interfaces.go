@@ -58,24 +58,27 @@ type Reader interface {
 	// List retrieves list of objects for a given namespace and list options. On a
 	// successful call, Items field in the list will be populated with the
 	// result returned from the server.
-	List(ctx context.Context, list runtime.Object, opts ...ListOptionFunc) error
+	List(ctx context.Context, list runtime.Object, opts ...ListOption) error
 }
 
 // Writer knows how to create, delete, and update Kubernetes objects.
 type Writer interface {
 	// Create saves the object obj in the Kubernetes cluster.
-	Create(ctx context.Context, obj runtime.Object, opts ...CreateOptionFunc) error
+	Create(ctx context.Context, obj runtime.Object, opts ...CreateOption) error
 
 	// Delete deletes the given obj from Kubernetes cluster.
-	Delete(ctx context.Context, obj runtime.Object, opts ...DeleteOptionFunc) error
+	Delete(ctx context.Context, obj runtime.Object, opts ...DeleteOption) error
 
 	// Update updates the given obj in the Kubernetes cluster. obj must be a
 	// struct pointer so that obj can be updated with the content returned by the Server.
-	Update(ctx context.Context, obj runtime.Object, opts ...UpdateOptionFunc) error
+	Update(ctx context.Context, obj runtime.Object, opts ...UpdateOption) error
 
 	// Patch patches the given obj in the Kubernetes cluster. obj must be a
 	// struct pointer so that obj can be updated with the content returned by the Server.
-	Patch(ctx context.Context, obj runtime.Object, patch Patch, opts ...PatchOptionFunc) error
+	Patch(ctx context.Context, obj runtime.Object, patch Patch, opts ...PatchOption) error
+
+	// DeleteAllOf deletes all objects of the given type matching the given options.
+	DeleteAllOf(ctx context.Context, obj runtime.Object, opts ...DeleteAllOfOption) error
 }
 
 // StatusClient knows how to create a client which can update status subresource
@@ -89,12 +92,12 @@ type StatusWriter interface {
 	// Update updates the fields corresponding to the status subresource for the
 	// given obj. obj must be a struct pointer so that obj can be updated
 	// with the content returned by the Server.
-	Update(ctx context.Context, obj runtime.Object, opts ...UpdateOptionFunc) error
+	Update(ctx context.Context, obj runtime.Object, opts ...UpdateOption) error
 
 	// Patch patches the given object's subresource. obj must be a struct
 	// pointer so that obj can be updated with the content returned by the
 	// Server.
-	Patch(ctx context.Context, obj runtime.Object, patch Patch, opts ...PatchOptionFunc) error
+	Patch(ctx context.Context, obj runtime.Object, patch Patch, opts ...PatchOption) error
 }
 
 // Client knows how to perform CRUD operations on Kubernetes objects.

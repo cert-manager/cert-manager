@@ -17,6 +17,8 @@ limitations under the License.
 package admission
 
 import (
+	"fmt"
+
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
@@ -36,11 +38,17 @@ func NewDecoder(scheme *runtime.Scheme) (*Decoder, error) {
 
 // Decode decodes the inlined object in the AdmissionRequest into the passed-in runtime.Object.
 // If you want decode the OldObject in the AdmissionRequest, use DecodeRaw.
+// It errors out if req.Object.Raw is empty i.e. containing 0 raw bytes.
 func (d *Decoder) Decode(req Request, into runtime.Object) error {
+	// we error out if rawObj is an empty object.
+	if len(req.Object.Raw) == 0 {
+		return fmt.Errorf("there is no content to decode")
+	}
 	return d.DecodeRaw(req.Object, into)
 }
 
 // DecodeRaw decodes a RawExtension object into the passed-in runtime.Object.
+// It errors out if rawObj is empty i.e. containing 0 raw bytes.
 func (d *Decoder) DecodeRaw(rawObj runtime.RawExtension, into runtime.Object) error {
 	// NB(directxman12): there's a bug/weird interaction between decoders and
 	// the API server where the API server doesn't send a GVK on the embedded
@@ -49,6 +57,11 @@ func (d *Decoder) DecodeRaw(rawObj runtime.RawExtension, into runtime.Object) er
 	// and call unstructured's special Unmarshal implementation, which calls
 	// back into that same decoder :-/
 	// See kubernetes/kubernetes#74373.
+
+	// we error out if rawObj is an empty object.
+	if len(rawObj.Raw) == 0 {
+		return fmt.Errorf("there is no content to decode")
+	}
 	if unstructuredInto, isUnstructured := into.(*unstructured.Unstructured); isUnstructured {
 		// unmarshal into unstructured's underlying object to avoid calling the decoder
 		if err := json.Unmarshal(rawObj.Raw, &unstructuredInto.Object); err != nil {

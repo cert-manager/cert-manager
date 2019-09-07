@@ -22,7 +22,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
-	"path"
+	"os"
 	"path/filepath"
 	"strconv"
 	"sync"
@@ -85,7 +85,7 @@ func (s *Server) setDefaults() {
 	}
 
 	if len(s.CertDir) == 0 {
-		s.CertDir = path.Join("/tmp", "k8s-webhook-server", "serving-certs")
+		s.CertDir = filepath.Join(os.TempDir(), "k8s-webhook-server", "serving-certs")
 	}
 }
 

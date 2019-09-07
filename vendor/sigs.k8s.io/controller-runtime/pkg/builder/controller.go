@@ -23,7 +23,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
-	"sigs.k8s.io/controller-runtime/pkg/client/config"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
@@ -33,9 +32,7 @@ import (
 )
 
 // Supporting mocking out functions for testing
-var getConfig = config.GetConfig
 var newController = controller.New
-var newManager = manager.New
 var getGvk = apiutil.GVKForObject
 
 // Builder builds a Controller.
@@ -47,19 +44,13 @@ type Builder struct {
 	watchRequest   []watchRequest
 	config         *rest.Config
 	ctrl           controller.Controller
+	ctrlOptions    controller.Options
 	name           string
-}
-
-// SimpleController returns a new Builder.
-//
-// Deprecated: Use ControllerManagedBy(Manager) instead.
-func SimpleController() *Builder {
-	return &Builder{}
 }
 
 // ControllerManagedBy returns a new controller builder that will be started by the provided Manager
 func ControllerManagedBy(m manager.Manager) *Builder {
-	return SimpleController().WithManager(m)
+	return &Builder{mgr: m}
 }
 
 // ForType defines the type of Object being *reconciled*, and configures the ControllerManagedBy to respond to create / delete /
@@ -109,19 +100,17 @@ func (blder *Builder) WithConfig(config *rest.Config) *Builder {
 	return blder
 }
 
-// WithManager sets the Manager to use for registering the ControllerManagedBy.  Defaults to a new manager.Manager.
-//
-// Deprecated: Use ControllerManagedBy(Manager) and this isn't needed.
-func (blder *Builder) WithManager(m manager.Manager) *Builder {
-	blder.mgr = m
-	return blder
-}
-
 // WithEventFilter sets the event filters, to filter which create/update/delete/generic events eventually
 // trigger reconciliations.  For example, filtering on whether the resource version has changed.
 // Defaults to the empty list.
 func (blder *Builder) WithEventFilter(p predicate.Predicate) *Builder {
 	blder.predicates = append(blder.predicates, p)
+	return blder
+}
+
+// WithOptions overrides the controller options use in doController. Defaults to empty.
+func (blder *Builder) WithOptions(options controller.Options) *Builder {
+	blder.ctrlOptions = options
 	return blder
 }
 
@@ -141,23 +130,17 @@ func (blder *Builder) Complete(r reconcile.Reconciler) error {
 	return err
 }
 
-// Build builds the Application ControllerManagedBy and returns the Manager used to start it.
-//
-// Deprecated: Use Complete
-func (blder *Builder) Build(r reconcile.Reconciler) (manager.Manager, error) {
+// Build builds the Application ControllerManagedBy and returns the Controller it created.
+func (blder *Builder) Build(r reconcile.Reconciler) (controller.Controller, error) {
 	if r == nil {
 		return nil, fmt.Errorf("must provide a non-nil Reconciler")
 	}
+	if blder.mgr == nil {
+		return nil, fmt.Errorf("must provide a non-nil Manager")
+	}
 
 	// Set the Config
-	if err := blder.loadRestConfig(); err != nil {
-		return nil, err
-	}
-
-	// Set the Manager
-	if err := blder.doManager(); err != nil {
-		return nil, err
-	}
+	blder.loadRestConfig()
 
 	// Set the ControllerManagedBy
 	if err := blder.doController(r); err != nil {
@@ -169,7 +152,7 @@ func (blder *Builder) Build(r reconcile.Reconciler) (manager.Manager, error) {
 		return nil, err
 	}
 
-	return blder.mgr, nil
+	return blder.ctrl, nil
 }
 
 func (blder *Builder) doWatch() error {
@@ -203,26 +186,10 @@ func (blder *Builder) doWatch() error {
 	return nil
 }
 
-func (blder *Builder) loadRestConfig() error {
-	if blder.config != nil {
-		return nil
-	}
-	if blder.mgr != nil {
+func (blder *Builder) loadRestConfig() {
+	if blder.config == nil {
 		blder.config = blder.mgr.GetConfig()
-		return nil
 	}
-	var err error
-	blder.config, err = getConfig()
-	return err
-}
-
-func (blder *Builder) doManager() error {
-	if blder.mgr != nil {
-		return nil
-	}
-	var err error
-	blder.mgr, err = newManager(blder.config, manager.Options{})
-	return err
 }
 
 func (blder *Builder) getControllerName() (string, error) {
@@ -241,6 +208,8 @@ func (blder *Builder) doController(r reconcile.Reconciler) error {
 	if err != nil {
 		return err
 	}
-	blder.ctrl, err = newController(name, blder.mgr, controller.Options{Reconciler: r})
+	ctrlOptions := blder.ctrlOptions
+	ctrlOptions.Reconciler = r
+	blder.ctrl, err = newController(name, blder.mgr, ctrlOptions)
 	return err
 }

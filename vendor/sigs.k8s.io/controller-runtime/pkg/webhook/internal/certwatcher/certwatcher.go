@@ -124,7 +124,7 @@ func (cw *CertWatcher) ReadCertificate() error {
 	cw.currentCert = &cert
 	cw.Unlock()
 
-	log.Info("Updated current TLS certiface")
+	log.Info("Updated current TLS certificate")
 
 	return nil
 }

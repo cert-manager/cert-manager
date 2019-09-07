@@ -10,6 +10,9 @@ go_library(
     deps = [
         "//vendor/k8s.io/api/admissionregistration/v1beta1:go_default_library",
         "//vendor/k8s.io/apimachinery/pkg/apis/meta/v1:go_default_library",
+        "//vendor/k8s.io/apimachinery/pkg/labels:go_default_library",
+        "//vendor/k8s.io/apiserver/pkg/util/webhook:go_default_library",
+        "//vendor/k8s.io/client-go/rest:go_default_library",
     ],
 )
 
@@ -32,7 +35,6 @@ filegroup(
         "//vendor/k8s.io/apiserver/pkg/admission/plugin/webhook/object:all-srcs",
         "//vendor/k8s.io/apiserver/pkg/admission/plugin/webhook/request:all-srcs",
         "//vendor/k8s.io/apiserver/pkg/admission/plugin/webhook/rules:all-srcs",
-        "//vendor/k8s.io/apiserver/pkg/admission/plugin/webhook/util:all-srcs",
         "//vendor/k8s.io/apiserver/pkg/admission/plugin/webhook/validating:all-srcs",
     ],
     tags = ["automanaged"],
