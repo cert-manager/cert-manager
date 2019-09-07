@@ -163,13 +163,13 @@ func (h *Helper) ValidateIssuedCertificate(certificate *v1alpha1.Certificate, ro
 		return nil, fmt.Errorf("Expected certificate expiry date to be %v, but got %v", certificate.Status.NotAfter, cert.NotAfter)
 	}
 
-	label, ok := secret.Annotations[v1alpha1.CertificateNameKey]
+	ann, ok := secret.Annotations[v1alpha1.CertificateNameKey]
 	if !ok {
-		return nil, fmt.Errorf("Expected secret to have certificate-name label, but had none")
+		return nil, fmt.Errorf("Expected secret to have certificate-name annotation, but had none")
 	}
 
-	if label != certificate.Name {
-		return nil, fmt.Errorf("Expected secret to have certificate-name label with a value of %q, but got %q", certificate.Name, label)
+	if ann != certificate.Name {
+		return nil, fmt.Errorf("Expected secret to have certificate-name annotation with a value of %q, but got %q", certificate.Name, ann)
 	}
 
 	usages := make(map[v1alpha1.KeyUsage]bool)
