@@ -16,6 +16,12 @@ resources which represent certificate authorities.
 More information on configuring different Issuer types can be found in the
 :doc:`respective setup guides </tasks/issuers/index>`.
 
+.. warning::
+
+    You should not install multiple instances of cert-manager on a single
+    cluster. This will lead to undefined behaviour and you may be banned from
+    providers such as Let's Encrypt.
+
 Login to your OpenShift cluster
 ===============================
 
