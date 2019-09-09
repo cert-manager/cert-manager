@@ -116,7 +116,7 @@ func (r *Webhook) CleanUp(ch *v1alpha1.ChallengeRequest) error {
 func (r *Webhook) Initialize(kubeClientConfig *rest.Config, stopCh <-chan struct{}) error {
 	cfgShallowCopy := *kubeClientConfig
 	cfgShallowCopy.APIPath = "/apis"
-	cfgShallowCopy.NegotiatedSerializer = serializer.DirectCodecFactory{CodecFactory: scheme.Codecs}
+	cfgShallowCopy.NegotiatedSerializer = serializer.WithoutConversionCodecFactory{CodecFactory: scheme.Codecs}
 	// We defer setting the GroupVersion of the rest client config to the
 	// restClientForGroup function.
 

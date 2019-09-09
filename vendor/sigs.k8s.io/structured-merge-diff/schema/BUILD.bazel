@@ -5,14 +5,13 @@ go_library(
     srcs = [
         "doc.go",
         "elements.go",
-        "fromvalue.go",
+        "equals.go",
         "schemaschema.go",
     ],
     importmap = "github.com/jetstack/cert-manager/vendor/sigs.k8s.io/structured-merge-diff/schema",
     importpath = "sigs.k8s.io/structured-merge-diff/schema",
     tags = ["manual"],
     visibility = ["//visibility:public"],
-    deps = ["//vendor/sigs.k8s.io/structured-merge-diff/value:go_default_library"],
 )
 
 filegroup(

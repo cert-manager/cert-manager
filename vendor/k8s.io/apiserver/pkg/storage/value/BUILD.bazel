@@ -13,6 +13,8 @@ go_library(
     deps = [
         "//vendor/github.com/prometheus/client_golang/prometheus:go_default_library",
         "//vendor/google.golang.org/grpc/status:go_default_library",
+        "//vendor/k8s.io/component-base/metrics:go_default_library",
+        "//vendor/k8s.io/component-base/metrics/legacyregistry:go_default_library",
     ],
 )
 
@@ -25,7 +27,13 @@ filegroup(
 
 filegroup(
     name = "all-srcs",
-    srcs = [":package-srcs"],
+    srcs = [
+        ":package-srcs",
+        "//vendor/k8s.io/apiserver/pkg/storage/value/encrypt/aes:all-srcs",
+        "//vendor/k8s.io/apiserver/pkg/storage/value/encrypt/envelope:all-srcs",
+        "//vendor/k8s.io/apiserver/pkg/storage/value/encrypt/identity:all-srcs",
+        "//vendor/k8s.io/apiserver/pkg/storage/value/encrypt/secretbox:all-srcs",
+    ],
     tags = ["automanaged"],
     visibility = ["//visibility:public"],
 )

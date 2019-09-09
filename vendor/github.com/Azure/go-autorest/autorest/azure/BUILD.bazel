@@ -13,7 +13,10 @@ go_library(
     importpath = "github.com/Azure/go-autorest/autorest/azure",
     tags = ["manual"],
     visibility = ["//visibility:public"],
-    deps = ["//vendor/github.com/Azure/go-autorest/autorest:go_default_library"],
+    deps = [
+        "//vendor/github.com/Azure/go-autorest/autorest:go_default_library",
+        "//vendor/github.com/Azure/go-autorest/tracing:go_default_library",
+    ],
 )
 
 filegroup(

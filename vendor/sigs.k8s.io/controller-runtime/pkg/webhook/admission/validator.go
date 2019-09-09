@@ -29,6 +29,7 @@ type Validator interface {
 	runtime.Object
 	ValidateCreate() error
 	ValidateUpdate(old runtime.Object) error
+	ValidateDelete() error
 }
 
 // ValidatingWebhookFor creates a new Webhook for validating the provided type.
@@ -84,6 +85,20 @@ func (h *validatingHandler) Handle(ctx context.Context, req Request) Response {
 		}
 
 		err = obj.ValidateUpdate(oldObj)
+		if err != nil {
+			return Denied(err.Error())
+		}
+	}
+
+	if req.Operation == v1beta1.Delete {
+		// In reference to PR: https://github.com/kubernetes/kubernetes/pull/76346
+		// OldObject contains the object being deleted
+		err := h.decoder.DecodeRaw(req.OldObject, obj)
+		if err != nil {
+			return Errored(http.StatusBadRequest, err)
+		}
+
+		err = obj.ValidateDelete()
 		if err != nil {
 			return Denied(err.Error())
 		}
