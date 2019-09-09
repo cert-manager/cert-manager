@@ -265,11 +265,13 @@ func (s *ControllerOptions) AddFlags(fs *pflag.FlagSet) {
 	fs.BoolVar(&s.ClusterIssuerAmbientCredentials, "cluster-issuer-ambient-credentials", defaultClusterIssuerAmbientCredentials, ""+
 		"Whether a cluster-issuer may make use of ambient credentials for issuers. 'Ambient Credentials' are credentials drawn from the environment, metadata services, or local files which are not explicitly configured in the ClusterIssuer API object. "+
 		"When this flag is enabled, the following sources for credentials are also used: "+
-		"AWS - All sources the Go SDK defaults to, notably including any EC2 IAM roles available via instance metadata.")
+		"AWS - All sources the Go SDK defaults to, notably including any EC2 IAM roles available via instance metadata."+
+		"Azure - System and User Assigned Identities")
 	fs.BoolVar(&s.IssuerAmbientCredentials, "issuer-ambient-credentials", defaultIssuerAmbientCredentials, ""+
 		"Whether an issuer may make use of ambient credentials. 'Ambient Credentials' are credentials drawn from the environment, metadata services, or local files which are not explicitly configured in the Issuer API object. "+
 		"When this flag is enabled, the following sources for credentials are also used: "+
-		"AWS - All sources the Go SDK defaults to, notably including any EC2 IAM roles available via instance metadata.")
+		"AWS - All sources the Go SDK defaults to, notably including any EC2 IAM roles available via instance metadata."+
+		"Azure - System and User Assigned Identities")
 	fs.DurationVar(&s.RenewBeforeExpiryDuration, "renew-before-expiry-duration", defaultRenewBeforeExpiryDuration, ""+
 		"The default 'renew before expiry' time for Certificates. "+
 		"Once a certificate is within this duration until expiry, a new Certificate "+

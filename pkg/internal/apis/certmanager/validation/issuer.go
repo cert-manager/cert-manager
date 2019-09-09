@@ -253,10 +253,17 @@ func ValidateACMEChallengeSolverDNS01(p *cmacme.ACMEChallengeSolverDNS01, fldPat
 			el = append(el, field.Forbidden(fldPath.Child("azuredns"), "may not specify more than one provider type"))
 		} else {
 			numProviders++
-			el = append(el, ValidateSecretKeySelector(&p.AzureDNS.ClientSecret, fldPath.Child("azuredns", "clientSecretSecretRef"))...)
-			if len(p.AzureDNS.ClientID) == 0 {
+
+			// If the ClientID is set, the ClientSecret MUST also be set
+			if len(p.AzureDNS.ClientID) > 0 {
+				el = append(el, ValidateSecretKeySelector(p.AzureDNS.ClientSecret, fldPath.Child("azuredns", "clientSecretSecretRef"))...)
+			}
+			// If the ClientSecret is set, the ClientID MUST also be set
+			if p.AzureDNS.ClientSecret != nil {
 				el = append(el, field.Required(fldPath.Child("azuredns", "clientID"), ""))
 			}
+			// If ClientID and ClientID are NOT set, that's ok, we'll try use managed identities
+
 			if len(p.AzureDNS.SubscriptionID) == 0 {
 				el = append(el, field.Required(fldPath.Child("azuredns", "subscriptionID"), ""))
 			}
@@ -393,6 +400,9 @@ func ValidateACMEChallengeSolverDNS01(p *cmacme.ACMEChallengeSolverDNS01, fldPat
 
 func ValidateSecretKeySelector(sks *cmmeta.SecretKeySelector, fldPath *field.Path) field.ErrorList {
 	el := field.ErrorList{}
+	if sks == nil {
+		return append(el, field.Required(fldPath, "secret key selector is required"))
+	}
 	if sks.Name == "" {
 		el = append(el, field.Required(fldPath.Child("name"), "secret name is required"))
 	}

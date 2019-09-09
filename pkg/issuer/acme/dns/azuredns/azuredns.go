@@ -13,7 +13,6 @@ package azuredns
 import (
 	"context"
 	"fmt"
-	"os"
 	"strings"
 
 	"k8s.io/klog"
@@ -35,25 +34,9 @@ type DNSProvider struct {
 	zoneName          string
 }
 
-// NewDNSProvider returns a DNSProvider instance configured for the Azure
-// DNS service.
-// Credentials are automatically detected from environment variables
-func NewDNSProvider(dns01Nameservers []string) (*DNSProvider, error) {
-
-	clientID := os.Getenv("AZURE_CLIENT_ID")
-	clientSecret := os.Getenv("AZURE_CLIENT_SECRET")
-	subscriptionID := os.Getenv("AZURE_SUBSCRIPTION_ID")
-	tenantID := os.Getenv("AZURE_TENANT_ID")
-	resourceGroupName := ("AZURE_RESOURCE_GROUP")
-	zoneName := ("AZURE_ZONE_NAME")
-	environment := ("AZURE_ENVIRONMENT")
-
-	return NewDNSProviderCredentials(environment, clientID, clientSecret, subscriptionID, tenantID, resourceGroupName, zoneName, dns01Nameservers)
-}
-
 // NewDNSProviderCredentials returns a DNSProvider instance configured for the Azure
 // DNS service using static credentials from its parameters
-func NewDNSProviderCredentials(environment, clientID, clientSecret, subscriptionID, tenantID, resourceGroupName, zoneName string, dns01Nameservers []string) (*DNSProvider, error) {
+func NewDNSProviderCredentials(environment, clientID, clientSecret, subscriptionID, tenantID, resourceGroupName, zoneName string, ambient bool, dns01Nameservers []string) (*DNSProvider, error) {
 	env := azure.PublicCloud
 	if environment != "" {
 		var err error
@@ -63,21 +46,42 @@ func NewDNSProviderCredentials(environment, clientID, clientSecret, subscription
 		}
 	}
 
-	oauthConfig, err := adal.NewOAuthConfig(env.ActiveDirectoryEndpoint, tenantID)
-	if err != nil {
-		return nil, err
+	var token *adal.ServicePrincipalToken
+	if clientID != "" {
+		oauthConfig, err := adal.NewOAuthConfig(env.ActiveDirectoryEndpoint, tenantID)
+		if err != nil {
+			return nil, err
+		}
+
+		klog.Info("azuredns authenticating with clientID and secret key")
+		token, err = adal.NewServicePrincipalToken(*oauthConfig, clientID, clientSecret, env.ResourceManagerEndpoint)
+		if err != nil {
+			return nil, err
+		}
 	}
 
-	spt, err := adal.NewServicePrincipalToken(*oauthConfig, clientID, clientSecret, env.ResourceManagerEndpoint)
-	if err != nil {
-		return nil, err
+	if token == nil {
+		if !ambient {
+			return nil, fmt.Errorf("attempting to authenticate using AzureAD Managed Identity but ambient credentials are not enabled")
+		}
+
+		klog.Info("azuredns authenticating with managed identity")
+		endpoint, err := adal.GetMSIVMEndpoint()
+		if err != nil {
+			return nil, err
+		}
+
+		token, err = adal.NewServicePrincipalTokenFromMSI(endpoint, env.ServiceManagementEndpoint)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	rc := dns.NewRecordSetsClientWithBaseURI(env.ResourceManagerEndpoint, subscriptionID)
-	rc.Authorizer = autorest.NewBearerAuthorizer(spt)
+	rc.Authorizer = autorest.NewBearerAuthorizer(token)
 
 	zc := dns.NewZonesClientWithBaseURI(env.ResourceManagerEndpoint, subscriptionID)
-	zc.Authorizer = autorest.NewBearerAuthorizer(spt)
+	zc.Authorizer = autorest.NewBearerAuthorizer(token)
 
 	return &DNSProvider{
 		dns01Nameservers:  dns01Nameservers,

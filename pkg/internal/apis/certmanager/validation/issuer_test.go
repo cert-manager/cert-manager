@@ -590,12 +590,37 @@ func TestValidateACMEIssuerDNS01Config(t *testing.T) {
 				AzureDNS: &cmacme.ACMEIssuerDNS01ProviderAzureDNS{},
 			},
 			errs: []*field.Error{
-				field.Required(fldPath.Child("azuredns", "clientSecretSecretRef", "name"), "secret name is required"),
-				field.Required(fldPath.Child("azuredns", "clientSecretSecretRef", "key"), "secret key is required"),
-				field.Required(fldPath.Child("azuredns", "clientID"), ""),
 				field.Required(fldPath.Child("azuredns", "subscriptionID"), ""),
 				field.Required(fldPath.Child("azuredns", "tenantID"), ""),
 				field.Required(fldPath.Child("azuredns", "resourceGroupName"), ""),
+			},
+		},
+		"missing azuredns client secret": {
+			cfg: &cmacme.ACMEChallengeSolverDNS01{
+				AzureDNS: &cmacme.ACMEIssuerDNS01ProviderAzureDNS{
+					ClientID: "abc-123",
+					TenantID: "00000000-0000-0000-0000-000000000000",
+					SubscriptionID: "00000000-0000-0000-0000-000000000000",
+					ResourceGroupName: "my-rg",
+					Environment: cmacme.AzurePublicCloud,
+				},
+			},
+			errs: []*field.Error{
+				field.Required(fldPath.Child("azuredns", "clientSecretSecretRef"), "secret key selector is required"),
+			},
+		},
+		"missing azuredns client id": {
+			cfg: &cmacme.ACMEChallengeSolverDNS01{
+				AzureDNS: &cmacme.ACMEIssuerDNS01ProviderAzureDNS{
+					ClientSecret: &validSecretKeyRef,
+					TenantID: "00000000-0000-0000-0000-000000000000",
+					SubscriptionID: "00000000-0000-0000-0000-000000000000",
+					ResourceGroupName: "my-rg",
+					Environment: cmacme.AzurePublicCloud,
+				},
+			},
+			errs: []*field.Error{
+				field.Required(fldPath.Child("azuredns", "clientID"), ""),
 			},
 		},
 		"invalid azuredns environment": {
@@ -605,15 +630,23 @@ func TestValidateACMEIssuerDNS01Config(t *testing.T) {
 				},
 			},
 			errs: []*field.Error{
-				field.Required(fldPath.Child("azuredns", "clientSecretSecretRef", "name"), "secret name is required"),
-				field.Required(fldPath.Child("azuredns", "clientSecretSecretRef", "key"), "secret key is required"),
-				field.Required(fldPath.Child("azuredns", "clientID"), ""),
 				field.Required(fldPath.Child("azuredns", "subscriptionID"), ""),
 				field.Required(fldPath.Child("azuredns", "tenantID"), ""),
 				field.Required(fldPath.Child("azuredns", "resourceGroupName"), ""),
 				field.Invalid(fldPath.Child("azuredns", "environment"), cmacme.AzureDNSEnvironment("an env"),
 					"must be either empty or one of AzurePublicCloud, AzureChinaCloud, AzureGermanCloud or AzureUSGovernmentCloud"),
 			},
+		},
+		"valid azuredns managed identity": {
+			cfg: &cmacme.ACMEChallengeSolverDNS01{
+				AzureDNS: &cmacme.ACMEIssuerDNS01ProviderAzureDNS{
+					TenantID: "00000000-0000-0000-0000-000000000000",
+					SubscriptionID: "00000000-0000-0000-0000-000000000000",
+					ResourceGroupName: "my-rg",
+					Environment: cmacme.AzurePublicCloud,
+				},
+			},
+			errs: []*field.Error{},
 		},
 		"missing akamai config": {
 			cfg: &cmacme.ACMEChallengeSolverDNS01{

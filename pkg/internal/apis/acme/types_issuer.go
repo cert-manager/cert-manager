@@ -279,14 +279,21 @@ type ACMEIssuerDNS01ProviderRoute53 struct {
 // ACMEIssuerDNS01ProviderAzureDNS is a structure containing the
 // configuration for Azure DNS
 type ACMEIssuerDNS01ProviderAzureDNS struct {
+	// The ClientID of the service principal used to authenticate with the Azure API
+	// Not required if using Managed Identities
 	ClientID string
 
-	ClientSecret cmmeta.SecretKeySelector
+	// The secret key for the service principal.
+	// Required if ClientID is configured
+	ClientSecret *cmmeta.SecretKeySelector
 
+	// The subscription containing the DNS zone
 	SubscriptionID string
 
+	// The tenant the subscription belongs to
 	TenantID string
 
+	// The resource group containing the DNS zone
 	ResourceGroupName string
 
 	HostedZoneName string
