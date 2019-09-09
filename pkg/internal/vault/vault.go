@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"net/http"
 	"path"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -31,10 +32,6 @@ import (
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
-)
-
-const (
-	defaultKubernetesAuthMountPath = "kubernetes"
 )
 
 var _ Interface = &Vault{}
@@ -147,7 +144,7 @@ func (v *Vault) Sign(csrPEM []byte, duration time.Duration) (cert []byte, ca []b
 
 func (v *Vault) setToken(client Client) error {
 	tokenRef := v.issuer.GetSpec().Vault.Auth.TokenSecretRef
-	if tokenRef.Name != "" {
+	if tokenRef != nil {
 		token, err := v.tokenRef(tokenRef.Name, v.namespace, tokenRef.Key)
 		if err != nil {
 			return err
@@ -158,8 +155,8 @@ func (v *Vault) setToken(client Client) error {
 	}
 
 	appRole := v.issuer.GetSpec().Vault.Auth.AppRole
-	if appRole.RoleId != "" {
-		token, err := v.requestTokenWithAppRoleRef(client, &appRole)
+	if appRole != nil {
+		token, err := v.requestTokenWithAppRoleRef(client, appRole)
 		if err != nil {
 			return err
 		}
@@ -169,8 +166,8 @@ func (v *Vault) setToken(client Client) error {
 	}
 
 	kubernetesAuth := v.issuer.GetSpec().Vault.Auth.Kubernetes
-	if kubernetesAuth.Role != "" {
-		token, err := v.requestTokenWithKubernetesAuth(client, &kubernetesAuth)
+	if kubernetesAuth != nil {
+		token, err := v.requestTokenWithKubernetesAuth(client, kubernetesAuth)
 		if err != nil {
 			return fmt.Errorf("error reading Kubernetes service account token from %s: %s", kubernetesAuth.SecretRef.Name, err.Error())
 		}
@@ -208,7 +205,7 @@ func (v *Vault) tokenRef(name, namespace, key string) (string, error) {
 	}
 
 	if key == "" {
-		key = "token"
+		key = v1alpha2.DefaultVaultTokenAuthSecretKey
 	}
 
 	keyBytes, ok := secret.Data[key]
@@ -293,7 +290,7 @@ func (v *Vault) requestTokenWithAppRoleRef(client Client, appRole *v1alpha2.Vaul
 	return token, nil
 }
 
-func (v *Vault) requestTokenWithKubernetesAuth(client Client, kubernetesAuth *v1alpha1.KubernetesAuth) (string, error) {
+func (v *Vault) requestTokenWithKubernetesAuth(client Client, kubernetesAuth *v1alpha2.VaultKubernetesAuth) (string, error) {
 	secret, err := v.secretsLister.Secrets(v.namespace).Get(kubernetesAuth.SecretRef.Name)
 	if err != nil {
 		return "", err
@@ -301,12 +298,12 @@ func (v *Vault) requestTokenWithKubernetesAuth(client Client, kubernetesAuth *v1
 
 	key := kubernetesAuth.SecretRef.Key
 	if key == "" {
-		key = "token"
+		key = v1alpha2.DefaultVaultTokenAuthSecretKey
 	}
 
 	keyBytes, ok := secret.Data[key]
 	if !ok {
-		return "", fmt.Errorf("no data for %q in secret '%s/%s'", key, kubernetesAuth.SecretRef.Name, v.namespace)
+		return "", fmt.Errorf("no data for %q in secret '%s/%s'", key, v.namespace, kubernetesAuth.SecretRef.Name)
 	}
 
 	jwt := string(keyBytes)
@@ -318,10 +315,10 @@ func (v *Vault) requestTokenWithKubernetesAuth(client Client, kubernetesAuth *v1
 
 	mountPath := kubernetesAuth.Path
 	if mountPath == "" {
-		mountPath = defaultKubernetesAuthMountPath
+		mountPath = v1alpha2.DefaultVaultKubernetesAuthMountPath
 	}
 
-	url := fmt.Sprintf("/v1/auth/%s/login", mountPath)
+	url := filepath.Join("/v1/auth", mountPath, "login")
 	request := client.NewRequest("POST", url)
 	err = request.SetJSONBody(parameters)
 	if err != nil {

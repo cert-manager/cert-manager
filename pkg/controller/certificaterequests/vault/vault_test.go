@@ -179,7 +179,7 @@ func TestSign(t *testing.T) {
 				CertManagerObjects: []runtime.Object{baseCR.DeepCopy(),
 					gen.IssuerFrom(baseIssuer, gen.SetIssuerVault(cmapi.VaultIssuer{
 						Auth: cmapi.VaultAuth{
-							TokenSecretRef: cmmeta.SecretKeySelector{
+							TokenSecretRef: &cmapi.SecretKeySelector{
 								Key: "secret-key",
 								LocalObjectReference: cmmeta.LocalObjectReference{
 									"non-existing-secret",
@@ -215,7 +215,7 @@ func TestSign(t *testing.T) {
 				CertManagerObjects: []runtime.Object{baseCR.DeepCopy(), gen.IssuerFrom(baseIssuer,
 					gen.SetIssuerVault(cmapi.VaultIssuer{
 						Auth: cmapi.VaultAuth{
-							AppRole: cmapi.VaultAppRole{
+							AppRole: &cmapi.VaultAppRole{
 								RoleId: "my-role-id",
 								SecretRef: cmmeta.SecretKeySelector{
 									Key: "secret-key",
@@ -254,7 +254,7 @@ func TestSign(t *testing.T) {
 				CertManagerObjects: []runtime.Object{baseCR.DeepCopy(), gen.IssuerFrom(baseIssuer,
 					gen.SetIssuerVault(cmapi.VaultIssuer{
 						Auth: cmapi.VaultAuth{
-							TokenSecretRef: cmmeta.SecretKeySelector{
+							TokenSecretRef: &cmapi.SecretKeySelector{
 								Key: "my-token-key",
 								LocalObjectReference: cmmeta.LocalObjectReference{
 									"token-secret",
@@ -292,7 +292,7 @@ func TestSign(t *testing.T) {
 				CertManagerObjects: []runtime.Object{baseCR.DeepCopy(), gen.IssuerFrom(baseIssuer,
 					gen.SetIssuerVault(cmapi.VaultIssuer{
 						Auth: cmapi.VaultAuth{
-							AppRole: cmapi.VaultAppRole{
+							AppRole: &cmapi.VaultAppRole{
 								RoleId: "my-role-id",
 								SecretRef: cmmeta.SecretKeySelector{
 									LocalObjectReference: cmmeta.LocalObjectReference{
@@ -333,7 +333,7 @@ func TestSign(t *testing.T) {
 				CertManagerObjects: []runtime.Object{baseCR.DeepCopy(), gen.IssuerFrom(baseIssuer,
 					gen.SetIssuerVault(cmapi.VaultIssuer{
 						Auth: cmapi.VaultAuth{
-							TokenSecretRef: cmmeta.SecretKeySelector{
+							TokenSecretRef: &cmapi.SecretKeySelector{
 								Key: "my-token-key",
 								LocalObjectReference: cmmeta.LocalObjectReference{
 									"token-secret",
@@ -372,7 +372,7 @@ func TestSign(t *testing.T) {
 				CertManagerObjects: []runtime.Object{baseCR.DeepCopy(), gen.IssuerFrom(baseIssuer,
 					gen.SetIssuerVault(cmapi.VaultIssuer{
 						Auth: cmapi.VaultAuth{
-							AppRole: cmapi.VaultAppRole{
+							AppRole: &cmapi.VaultAppRole{
 								RoleId: "my-role-id",
 								SecretRef: cmmeta.SecretKeySelector{
 									LocalObjectReference: cmmeta.LocalObjectReference{

@@ -228,8 +228,8 @@ func TestSetToken(t *testing.T) {
 				gen.SetIssuerVault(v1alpha2.VaultIssuer{
 					CABundle: []byte(testCertBundle),
 					Auth: v1alpha2.VaultAuth{
-						TokenSecretRef: cmmeta.SecretKeySelector{
-							LocalObjectReference: cmmeta.LocalObjectReference{
+						TokenSecretRef: &v1alpha2.SecretKeySelector{
+							LocalObjectReference: v1alpha2.LocalObjectReference{
 								Name: "secret-ref-name",
 							},
 						},
@@ -249,8 +249,8 @@ func TestSetToken(t *testing.T) {
 				gen.SetIssuerVault(v1alpha2.VaultIssuer{
 					CABundle: []byte(testCertBundle),
 					Auth: v1alpha2.VaultAuth{
-						TokenSecretRef: cmmeta.SecretKeySelector{
-							LocalObjectReference: cmmeta.LocalObjectReference{
+						TokenSecretRef: &v1alpha2.SecretKeySelector{
+							LocalObjectReference: v1alpha2.LocalObjectReference{
 								Name: "secret-ref-name",
 							},
 							Key: "my-token-key",
@@ -271,7 +271,7 @@ func TestSetToken(t *testing.T) {
 				gen.SetIssuerVault(v1alpha2.VaultIssuer{
 					CABundle: []byte(testCertBundle),
 					Auth: v1alpha2.VaultAuth{
-						AppRole: v1alpha2.VaultAppRole{
+						AppRole: &v1alpha2.VaultAppRole{
 							RoleId: "my-role-id",
 							SecretRef: cmmeta.SecretKeySelector{
 								LocalObjectReference: cmmeta.LocalObjectReference{
@@ -296,7 +296,7 @@ func TestSetToken(t *testing.T) {
 				gen.SetIssuerVault(v1alpha2.VaultIssuer{
 					CABundle: []byte(testCertBundle),
 					Auth: v1alpha2.VaultAuth{
-						AppRole: v1alpha2.VaultAppRole{
+						AppRole: &v1alpha2.VaultAppRole{
 							RoleId: "my-role-id",
 							SecretRef: cmmeta.SecretKeySelector{
 								LocalObjectReference: cmmeta.LocalObjectReference{
@@ -325,13 +325,13 @@ func TestSetToken(t *testing.T) {
 
 		"if kubernetes role auth set but reference secret doesn't exist return error": {
 			issuer: gen.Issuer("vault-issuer",
-				gen.SetIssuerVault(v1alpha1.VaultIssuer{
+				gen.SetIssuerVault(v1alpha2.VaultIssuer{
 					CABundle: []byte(testCertBundle),
-					Auth: v1alpha1.VaultAuth{
-						Kubernetes: v1alpha1.KubernetesAuth{
+					Auth: v1alpha2.VaultAuth{
+						Kubernetes: &v1alpha2.KubernetesAuth{
 							Role: "kube-vault-role",
-							SecretRef: v1alpha1.SecretKeySelector{
-								LocalObjectReference: v1alpha1.LocalObjectReference{
+							SecretRef: v1alpha2.SecretKeySelector{
+								LocalObjectReference: v1alpha2.LocalObjectReference{
 									Name: "secret-ref-name",
 								},
 								Key: "my-kube-key",
@@ -350,13 +350,13 @@ func TestSetToken(t *testing.T) {
 
 		"if kubernetes role auth set but reference secret doesn't contain data at key error": {
 			issuer: gen.Issuer("vault-issuer",
-				gen.SetIssuerVault(v1alpha1.VaultIssuer{
+				gen.SetIssuerVault(v1alpha2.VaultIssuer{
 					CABundle: []byte(testCertBundle),
-					Auth: v1alpha1.VaultAuth{
-						Kubernetes: v1alpha1.KubernetesAuth{
+					Auth: v1alpha2.VaultAuth{
+						Kubernetes: &v1alpha2.KubernetesAuth{
 							Role: "kube-vault-role",
-							SecretRef: v1alpha1.SecretKeySelector{
-								LocalObjectReference: v1alpha1.LocalObjectReference{
+							SecretRef: v1alpha2.SecretKeySelector{
+								LocalObjectReference: v1alpha2.LocalObjectReference{
 									Name: "secret-ref-name",
 								},
 								Key: "my-kube-key",
@@ -370,18 +370,18 @@ func TestSetToken(t *testing.T) {
 			),
 			fakeClient:    vaultfake.NewFakeClient(),
 			expectedToken: "",
-			expectedErr:   errors.New(`error reading Kubernetes service account token from secret-ref-name: no data for "my-kube-key" in secret 'secret-ref-name/test-namespace'`),
+			expectedErr:   errors.New(`error reading Kubernetes service account token from secret-ref-name: no data for "my-kube-key" in secret 'test-namespace/secret-ref-name'`),
 		},
 
 		"if kubernetes role auth set but errors with a raw request should error": {
 			issuer: gen.Issuer("vault-issuer",
-				gen.SetIssuerVault(v1alpha1.VaultIssuer{
+				gen.SetIssuerVault(v1alpha2.VaultIssuer{
 					CABundle: []byte(testCertBundle),
-					Auth: v1alpha1.VaultAuth{
-						Kubernetes: v1alpha1.KubernetesAuth{
+					Auth: v1alpha2.VaultAuth{
+						Kubernetes: &v1alpha2.KubernetesAuth{
 							Role: "kube-vault-role",
-							SecretRef: v1alpha1.SecretKeySelector{
-								LocalObjectReference: v1alpha1.LocalObjectReference{
+							SecretRef: v1alpha2.SecretKeySelector{
+								LocalObjectReference: v1alpha2.LocalObjectReference{
 									Name: "secret-ref-name",
 								},
 								Key: "my-kube-key",
@@ -400,13 +400,13 @@ func TestSetToken(t *testing.T) {
 
 		"foo": {
 			issuer: gen.Issuer("vault-issuer",
-				gen.SetIssuerVault(v1alpha1.VaultIssuer{
+				gen.SetIssuerVault(v1alpha2.VaultIssuer{
 					CABundle: []byte(testCertBundle),
-					Auth: v1alpha1.VaultAuth{
-						Kubernetes: v1alpha1.KubernetesAuth{
+					Auth: v1alpha2.VaultAuth{
+						Kubernetes: &v1alpha2.KubernetesAuth{
 							Role: "kube-vault-role",
-							SecretRef: v1alpha1.SecretKeySelector{
-								LocalObjectReference: v1alpha1.LocalObjectReference{
+							SecretRef: v1alpha2.SecretKeySelector{
+								LocalObjectReference: v1alpha2.LocalObjectReference{
 									Name: "secret-ref-name",
 								},
 								Key: "my-kube-key",
@@ -435,7 +435,7 @@ func TestSetToken(t *testing.T) {
 				gen.SetIssuerVault(v1alpha2.VaultIssuer{
 					CABundle: []byte(testCertBundle),
 					Auth: v1alpha2.VaultAuth{
-						AppRole: v1alpha2.VaultAppRole{
+						AppRole: &v1alpha2.VaultAppRole{
 							RoleId: "my-role-id",
 							SecretRef: cmmeta.SecretKeySelector{
 								LocalObjectReference: cmmeta.LocalObjectReference{
@@ -444,8 +444,8 @@ func TestSetToken(t *testing.T) {
 								Key: "my-role-key",
 							},
 						},
-						TokenSecretRef: cmmeta.SecretKeySelector{
-							LocalObjectReference: cmmeta.LocalObjectReference{
+						TokenSecretRef: &v1alpha2.SecretKeySelector{
+							LocalObjectReference: v1alpha2.LocalObjectReference{
 								Name: "secret-ref-name",
 							},
 							Key: "my-token-key",

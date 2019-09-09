@@ -472,7 +472,7 @@ func NewCertManagerVaultIssuerToken(name, vaultURL, vaultPath, vaultSecretToken,
 					Path:     vaultPath,
 					CABundle: caBundle,
 					Auth: v1alpha2.VaultAuth{
-						TokenSecretRef: cmmeta.SecretKeySelector{
+						TokenSecretRef: &cmmeta.SecretKeySelector{
 							Key: "secretkey",
 							LocalObjectReference: cmmeta.LocalObjectReference{
 								Name: vaultSecretToken,
@@ -497,7 +497,7 @@ func NewCertManagerVaultIssuerAppRole(name, vaultURL, vaultPath, roleId, vaultSe
 					Path:     vaultPath,
 					CABundle: caBundle,
 					Auth: v1alpha2.VaultAuth{
-						AppRole: v1alpha2.VaultAppRole{
+						AppRole: &v1alpha2.VaultAppRole{
 							Path:   authPath,
 							RoleId: roleId,
 							SecretRef: cmmeta.SecretKeySelector{
@@ -526,11 +526,11 @@ func NewCertManagerVaultIssuerKubernetes(name, vaultURL, vaultPath, vaultSecretS
 					Path:     vaultPath,
 					CABundle: caBundle,
 					Auth: v1alpha2.VaultAuth{
-						Kubernetes: v1alpha2.KubernetesAuth{
+						Kubernetes: &v1alpha2.VaultKubernetesAuth{
 							Path: authPath,
-							SecretRef: v1alpha2.SecretKeySelector{
+							SecretRef: cmmeta.SecretKeySelector{
 								Key: "token",
-								LocalObjectReference: v1alpha2.LocalObjectReference{
+								LocalObjectReference: cmmeta.LocalObjectReference{
 									Name: vaultSecretServiceAccount,
 								},
 							},

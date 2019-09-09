@@ -2095,15 +2095,9 @@ func Convert_certmanager_VaultAppRole_To_v1alpha1_VaultAppRole(in *certmanager.V
 }
 
 func autoConvert_v1alpha1_VaultAuth_To_certmanager_VaultAuth(in *v1alpha1.VaultAuth, out *certmanager.VaultAuth, s conversion.Scope) error {
-	if err := Convert_v1alpha1_SecretKeySelector_To_certmanager_SecretKeySelector(&in.TokenSecretRef, &out.TokenSecretRef, s); err != nil {
-		return err
-	}
-	if err := Convert_v1alpha1_VaultAppRole_To_certmanager_VaultAppRole(&in.AppRole, &out.AppRole, s); err != nil {
-		return err
-	}
-	if err := Convert_v1alpha1_KubernetesAuth_To_certmanager_KubernetesAuth(&in.Kubernetes, &out.Kubernetes, s); err != nil {
-		return err
-	}
+	out.TokenSecretRef = (*certmanager.SecretKeySelector)(unsafe.Pointer(in.TokenSecretRef))
+	out.AppRole = (*certmanager.VaultAppRole)(unsafe.Pointer(in.AppRole))
+	out.Kubernetes = (*certmanager.KubernetesAuth)(unsafe.Pointer(in.Kubernetes))
 	return nil
 }
 
@@ -2113,15 +2107,9 @@ func Convert_v1alpha1_VaultAuth_To_certmanager_VaultAuth(in *v1alpha1.VaultAuth,
 }
 
 func autoConvert_certmanager_VaultAuth_To_v1alpha1_VaultAuth(in *certmanager.VaultAuth, out *v1alpha1.VaultAuth, s conversion.Scope) error {
-	if err := Convert_certmanager_SecretKeySelector_To_v1alpha1_SecretKeySelector(&in.TokenSecretRef, &out.TokenSecretRef, s); err != nil {
-		return err
-	}
-	if err := Convert_certmanager_VaultAppRole_To_v1alpha1_VaultAppRole(&in.AppRole, &out.AppRole, s); err != nil {
-		return err
-	}
-	if err := Convert_certmanager_KubernetesAuth_To_v1alpha1_KubernetesAuth(&in.Kubernetes, &out.Kubernetes, s); err != nil {
-		return err
-	}
+	out.TokenSecretRef = (*v1alpha1.SecretKeySelector)(unsafe.Pointer(in.TokenSecretRef))
+	out.AppRole = (*v1alpha1.VaultAppRole)(unsafe.Pointer(in.AppRole))
+	out.Kubernetes = (*v1alpha1.KubernetesAuth)(unsafe.Pointer(in.Kubernetes))
 	return nil
 }
 
