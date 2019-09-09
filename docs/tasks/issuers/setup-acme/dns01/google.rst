@@ -29,6 +29,12 @@ Create a Service Account Secret
 
 To access this service account cert-manager uses a key stored in a Kubernetes Secret. First, create a key for the service account and download it as JSON file, then create a Secret from this file.
 
+If you did not create the service "dns01-solver" account before, you need to create it first:
+
+.. code-block:: shell
+
+   gcloud iam service-accounts create dns01-solver
+
 .. code-block:: shell
 
    # Replace use of project-id with the id of your project
