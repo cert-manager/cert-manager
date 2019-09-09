@@ -31,3 +31,12 @@ const (
 	// Default duration before certificate expiration if  Issuer.spec.renewBefore is not set
 	DefaultRenewBefore = time.Hour * 24 * 30
 )
+
+const (
+	// Default index key for the Secret reference for Token authentication
+	DefaultVaultTokenAuthSecretKey = "token"
+
+	// Default mount path location for Kubernetes ServiceAccount authentication
+	// (/v1/auth/kubernetes/login)
+	DefaultVaultKubernetesAuthMountPath = "kubernetes"
+)

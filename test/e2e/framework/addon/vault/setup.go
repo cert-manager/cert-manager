@@ -65,14 +65,36 @@ func NewVaultServiceAccount(name string) *v1.ServiceAccount {
 	}
 }
 
-func NewVaultServiceAccountRoleBinding(namespace, subject string) *rbacv1.ClusterRoleBinding {
-	return &rbacv1.ClusterRoleBinding{
+func NewVaultServiceAccountRole(namespace string) *rbacv1.Role {
+	return &rbacv1.Role{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: fmt.Sprintf("%s:%s:auth-delegator", namespace, subject),
+			Name:      "auth-delegator",
+			Namespace: namespace,
+		},
+		Rules: []rbacv1.PolicyRule{
+			{
+				APIGroups: []string{"authentication.k8s.io"},
+				Resources: []string{"tokenreviews"},
+				Verbs:     []string{"create"},
+			},
+			{
+				APIGroups: []string{"authorization.k8s.io"},
+				Resources: []string{"subjectaccessreviews"},
+				Verbs:     []string{"create"},
+			},
+		},
+	}
+}
+
+func NewVaultServiceAccountRoleBinding(namespace, subject string) *rbacv1.RoleBinding {
+	return &rbacv1.RoleBinding{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      fmt.Sprintf("%s:auth-delegator", subject),
+			Namespace: namespace,
 		},
 		RoleRef: rbacv1.RoleRef{
 			APIGroup: "rbac.authorization.k8s.io",
-			Kind:     "ClusterRole",
+			Kind:     "Role",
 			Name:     "system:auth-delegator",
 		},
 		Subjects: []rbacv1.Subject{
@@ -203,7 +225,7 @@ func (v *VaultInitializer) Setup() error {
 		return err
 	}
 
-	if err := v.setupKubernetes(); err != nil {
+	if err := v.setupKubernetesBasedAuth(); err != nil {
 		return err
 	}
 
@@ -397,7 +419,7 @@ func (v *VaultInitializer) setupRole() error {
 	return nil
 }
 
-func (v *VaultInitializer) setupKubernetes() error {
+func (v *VaultInitializer) setupKubernetesBasedAuth() error {
 	if len(v.APIServerURL) == 0 {
 		// skip initialization if not provided
 		return nil
@@ -441,11 +463,17 @@ func (v *VaultInitializer) CreateKubernetesRole(client kubernetes.Interface, nam
 		return fmt.Errorf("error creating ServiceAccount for Kubernetes auth: %s", err.Error())
 	}
 
+	role := NewVaultServiceAccountRole(namespace)
+	_, err = client.RbacV1().Roles(namespace).Create(role)
+	if err != nil {
+		return fmt.Errorf("error creating Role for Kubernetes auth ServiceAccount: %s", err.Error())
+	}
+
 	roleBinding := NewVaultServiceAccountRoleBinding(namespace, serviceAccountName)
-	_, err = client.RbacV1().ClusterRoleBindings().Create(roleBinding)
+	_, err = client.RbacV1().RoleBindings(namespace).Create(roleBinding)
 
 	if err != nil {
-		return fmt.Errorf("error creating ClusterRoleBinding for Kubernetes auth ServiceAccount: %s", err.Error())
+		return fmt.Errorf("error creating RoleBinding for Kubernetes auth ServiceAccount: %s", err.Error())
 	}
 
 	// vault write auth/kubernetes/role/<roleName>
@@ -466,8 +494,17 @@ func (v *VaultInitializer) CreateKubernetesRole(client kubernetes.Interface, nam
 
 // CleanKubernetesRole cleans up the ClusterRoleBinding and ServiceAccount for Kubernetes auth delegation
 func (v *VaultInitializer) CleanKubernetesRole(client kubernetes.Interface, namespace, roleName, serviceAccountName string) error {
-	client.RbacV1().ClusterRoleBindings().Delete(fmt.Sprintf("%s:%s:auth-delegator", namespace, serviceAccountName), nil)
-	client.CoreV1().ServiceAccounts(namespace).Delete(serviceAccountName, nil)
+	if err := client.RbacV1().RoleBindings(namespace).Delete(fmt.Sprintf("%s:auth-delegator", serviceAccountName), nil); err != nil {
+		return err
+	}
+
+	if err := client.RbacV1().Roles(namespace).Delete("auth-delegator", nil); err != nil {
+		return err
+	}
+
+	if err := client.CoreV1().ServiceAccounts(namespace).Delete(serviceAccountName, nil); err != nil {
+		return err
+	}
 
 	// vault delete auth/kubernetes/role/<roleName>
 	url := path.Join(fmt.Sprintf("/v1/auth/%s/role", v.KubernetesAuthPath), roleName)
