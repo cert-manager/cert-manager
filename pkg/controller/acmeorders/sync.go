@@ -440,18 +440,20 @@ func (c *controller) finalizeOrder(ctx context.Context, cl acmecl.Interface, o *
 		return fmt.Errorf("error finalizing order: %v", err)
 	}
 
-	return c.storeCertificateOnStatus(o, certSlice)
+	return c.storeCertificateOnStatus(ctx, o, certSlice)
 }
 
-func (c *controller) storeCertificateOnStatus(o *cmapi.Order, certs [][]byte) error {
+func (c *controller) storeCertificateOnStatus(ctx context.Context, o *cmapi.Order, certs [][]byte) error {
+	log := logf.FromContext(ctx)
 	// encode the retrieved certificates (including the chain)
 	certBuffer := bytes.NewBuffer([]byte{})
 	for _, cert := range certs {
 		err := pem.Encode(certBuffer, &pem.Block{Type: "CERTIFICATE", Bytes: cert})
 		if err != nil {
-			// TODO: mark the Order as failed as this indicates the ACME server
-			//  is returning some unknown data
-			return err
+			log.Error(err, "invalid certificate data returned by ACME server")
+			c.setOrderState(&o.Status, string(cmapi.Errored))
+			o.Status.Reason = fmt.Sprintf("Invalid certificate retrieved from ACME server: %v", err)
+			return nil
 		}
 	}
 
@@ -492,7 +494,7 @@ func (c *controller) fetchCertificateData(ctx context.Context, cl acmecl.Interfa
 		return err
 	}
 
-	err = c.storeCertificateOnStatus(o, certs)
+	err = c.storeCertificateOnStatus(ctx, o, certs)
 	if err != nil {
 		return err
 	}
