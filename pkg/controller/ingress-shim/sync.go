@@ -326,7 +326,25 @@ func (c *controller) setIssuerSpecificConfig(crt *v1alpha1.Certificate, issuer v
 	if ingAnnotations == nil {
 		ingAnnotations = map[string]string{}
 	}
+
 	// for ACME issuers
+	editInPlaceVal, _ := ingAnnotations[editInPlaceAnnotation]
+	editInPlace := editInPlaceVal == "true"
+	if editInPlace {
+		if crt.Annotations == nil {
+			crt.Annotations = make(map[string]string)
+		}
+		crt.Annotations[v1alpha1.ACMECertificateHTTP01IngressNameOverride] = ing.Name
+	}
+
+	ingressClassVal, hasIngressClassVal := ingAnnotations[acmeIssuerHTTP01IngressClassAnnotation]
+	if hasIngressClassVal {
+		if crt.Annotations == nil {
+			crt.Annotations = make(map[string]string)
+		}
+		crt.Annotations[v1alpha1.ACMECertificateHTTP01IngressClassOverride] = ingressClassVal
+	}
+
 	if issuer.GetSpec().ACME != nil {
 		challengeType, ok := ingAnnotations[acmeIssuerChallengeTypeAnnotation]
 		if !ok {

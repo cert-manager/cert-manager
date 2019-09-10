@@ -24,6 +24,7 @@ import (
 	"github.com/kr/pretty"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/diff"
+	"k8s.io/utils/pointer"
 
 	acmecl "github.com/jetstack/cert-manager/pkg/acme/client"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
@@ -97,6 +98,145 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 		expectedChallengeSpec *v1alpha1.ChallengeSpec
 		expectedError         bool
 	}{
+		"should override the ingress name to edit if override annotation is specified": {
+			acmeClient: basicACMEClient,
+			issuer: &v1alpha1.Issuer{
+				Spec: v1alpha1.IssuerSpec{
+					IssuerConfig: v1alpha1.IssuerConfig{
+						ACME: &v1alpha1.ACMEIssuer{
+							Solvers: []v1alpha1.ACMEChallengeSolver{emptySelectorSolverHTTP01},
+						},
+					},
+				},
+			},
+			order: &v1alpha1.Order{
+				ObjectMeta: metav1.ObjectMeta{
+					Annotations: map[string]string{
+						v1alpha1.ACMECertificateHTTP01IngressNameOverride: "test-name-to-override",
+					},
+				},
+				Spec: v1alpha1.OrderSpec{
+					DNSNames: []string{"example.com"},
+				},
+			},
+			authz: &v1alpha1.ACMEAuthorization{
+				Identifier: "example.com",
+				Challenges: []v1alpha1.ACMEChallenge{*acmeChallengeHTTP01},
+			},
+			expectedChallengeSpec: &v1alpha1.ChallengeSpec{
+				Type:    "http-01",
+				DNSName: "example.com",
+				Token:   acmeChallengeHTTP01.Token,
+				Key:     "http01",
+				Solver: &v1alpha1.ACMEChallengeSolver{
+					HTTP01: &v1alpha1.ACMEChallengeSolverHTTP01{
+						Ingress: &v1alpha1.ACMEChallengeSolverHTTP01Ingress{
+							Name: "test-name-to-override",
+						},
+					},
+				},
+			},
+		},
+		"should override the ingress class to edit if override annotation is specified": {
+			acmeClient: basicACMEClient,
+			issuer: &v1alpha1.Issuer{
+				Spec: v1alpha1.IssuerSpec{
+					IssuerConfig: v1alpha1.IssuerConfig{
+						ACME: &v1alpha1.ACMEIssuer{
+							Solvers: []v1alpha1.ACMEChallengeSolver{emptySelectorSolverHTTP01},
+						},
+					},
+				},
+			},
+			order: &v1alpha1.Order{
+				ObjectMeta: metav1.ObjectMeta{
+					Annotations: map[string]string{
+						v1alpha1.ACMECertificateHTTP01IngressClassOverride: "test-class-to-override",
+					},
+				},
+				Spec: v1alpha1.OrderSpec{
+					DNSNames: []string{"example.com"},
+				},
+			},
+			authz: &v1alpha1.ACMEAuthorization{
+				Identifier: "example.com",
+				Challenges: []v1alpha1.ACMEChallenge{*acmeChallengeHTTP01},
+			},
+			expectedChallengeSpec: &v1alpha1.ChallengeSpec{
+				Type:    "http-01",
+				DNSName: "example.com",
+				Token:   acmeChallengeHTTP01.Token,
+				Key:     "http01",
+				Solver: &v1alpha1.ACMEChallengeSolver{
+					HTTP01: &v1alpha1.ACMEChallengeSolverHTTP01{
+						Ingress: &v1alpha1.ACMEChallengeSolverHTTP01Ingress{
+							Class: pointer.StringPtr("test-class-to-override"),
+						},
+					},
+				},
+			},
+		},
+		"should return an error if both ingress class and name override annotations are set": {
+			acmeClient: basicACMEClient,
+			issuer: &v1alpha1.Issuer{
+				Spec: v1alpha1.IssuerSpec{
+					IssuerConfig: v1alpha1.IssuerConfig{
+						ACME: &v1alpha1.ACMEIssuer{
+							Solvers: []v1alpha1.ACMEChallengeSolver{emptySelectorSolverHTTP01},
+						},
+					},
+				},
+			},
+			order: &v1alpha1.Order{
+				ObjectMeta: metav1.ObjectMeta{
+					Annotations: map[string]string{
+						v1alpha1.ACMECertificateHTTP01IngressNameOverride:  "test-name-to-override",
+						v1alpha1.ACMECertificateHTTP01IngressClassOverride: "test-class-to-override",
+					},
+				},
+				Spec: v1alpha1.OrderSpec{
+					DNSNames: []string{"example.com"},
+				},
+			},
+			authz: &v1alpha1.ACMEAuthorization{
+				Identifier: "example.com",
+				Challenges: []v1alpha1.ACMEChallenge{*acmeChallengeHTTP01},
+			},
+			expectedError: true,
+		},
+		"should ignore HTTP01 override annotations if DNS01 solver is chosen": {
+			acmeClient: basicACMEClient,
+			issuer: &v1alpha1.Issuer{
+				Spec: v1alpha1.IssuerSpec{
+					IssuerConfig: v1alpha1.IssuerConfig{
+						ACME: &v1alpha1.ACMEIssuer{
+							Solvers: []v1alpha1.ACMEChallengeSolver{emptySelectorSolverDNS01},
+						},
+					},
+				},
+			},
+			order: &v1alpha1.Order{
+				ObjectMeta: metav1.ObjectMeta{
+					Annotations: map[string]string{
+						v1alpha1.ACMECertificateHTTP01IngressNameOverride: "test-name-to-override",
+					},
+				},
+				Spec: v1alpha1.OrderSpec{
+					DNSNames: []string{"example.com"},
+				},
+			},
+			authz: &v1alpha1.ACMEAuthorization{
+				Identifier: "example.com",
+				Challenges: []v1alpha1.ACMEChallenge{*acmeChallengeDNS01},
+			},
+			expectedChallengeSpec: &v1alpha1.ChallengeSpec{
+				Type:    "dns-01",
+				DNSName: "example.com",
+				Token:   acmeChallengeDNS01.Token,
+				Key:     "dns01",
+				Solver:  &emptySelectorSolverDNS01,
+			},
+		},
 		"should use configured default solver when no others are present": {
 			acmeClient: basicACMEClient,
 			issuer: &v1alpha1.Issuer{
@@ -1134,7 +1274,6 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 		})
 	}
 }
-
 
 func TestSolverConfigurationForAuthorization(t *testing.T) {
 	type testT struct {

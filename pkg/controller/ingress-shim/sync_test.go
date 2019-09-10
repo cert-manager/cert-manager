@@ -148,6 +148,9 @@ func TestSync(t *testing.T) {
 						Labels: map[string]string{
 							"my-test-label": "should be copied",
 						},
+						Annotations: map[string]string{
+							v1alpha1.ACMECertificateHTTP01IngressNameOverride: "ingress-name",
+						},
 						OwnerReferences: buildOwnerReferences("ingress-name", gen.DefaultTestNamespace),
 					},
 					Spec: v1alpha1.CertificateSpec{
@@ -168,6 +171,56 @@ func TestSync(t *testing.T) {
 									},
 								},
 							},
+						},
+					},
+				},
+			},
+		},
+		{
+			Name:   "create a Certificate with the HTTP01 name override if the given ingress uses http01 annotations",
+			Issuer: gen.Issuer(acmeIssuer.Name),
+			Ingress: &extv1beta1.Ingress{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "ingress-name",
+					Namespace: gen.DefaultTestNamespace,
+					Labels: map[string]string{
+						"my-test-label": "should be copied",
+					},
+					Annotations: map[string]string{
+						clusterIssuerNameAnnotation: "issuer-name",
+						editInPlaceAnnotation:       "true",
+					},
+					UID: types.UID("ingress-name"),
+				},
+				Spec: extv1beta1.IngressSpec{
+					TLS: []extv1beta1.IngressTLS{
+						{
+							Hosts:      []string{"example.com", "www.example.com"},
+							SecretName: "example-com-tls",
+						},
+					},
+				},
+			},
+			ClusterIssuerLister: []runtime.Object{acmeClusterIssuer},
+			ExpectedCreate: []*v1alpha1.Certificate{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "example-com-tls",
+						Namespace: gen.DefaultTestNamespace,
+						Labels: map[string]string{
+							"my-test-label": "should be copied",
+						},
+						Annotations: map[string]string{
+							v1alpha1.ACMECertificateHTTP01IngressNameOverride: "ingress-name",
+						},
+						OwnerReferences: buildOwnerReferences("ingress-name", gen.DefaultTestNamespace),
+					},
+					Spec: v1alpha1.CertificateSpec{
+						DNSNames:   []string{"example.com", "www.example.com"},
+						SecretName: "example-com-tls",
+						IssuerRef: v1alpha1.ObjectReference{
+							Name: "issuer-name",
+							Kind: "ClusterIssuer",
 						},
 					},
 				},
@@ -309,6 +362,9 @@ func TestSync(t *testing.T) {
 						Name:            "example-com-tls",
 						Namespace:       gen.DefaultTestNamespace,
 						OwnerReferences: buildOwnerReferences("ingress-name", gen.DefaultTestNamespace),
+						Annotations: map[string]string{
+							v1alpha1.ACMECertificateHTTP01IngressClassOverride: "cert-ing",
+						},
 					},
 					Spec: v1alpha1.CertificateSpec{
 						DNSNames:   []string{"example.com", "www.example.com"},
