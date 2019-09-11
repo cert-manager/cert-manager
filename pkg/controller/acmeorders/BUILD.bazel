@@ -60,7 +60,10 @@ filegroup(
 
 go_test(
     name = "go_default_test",
-    srcs = ["sync_test.go"],
+    srcs = [
+        "sync_test.go",
+        "util_test.go",
+    ],
     embed = [":go_default_library"],
     deps = [
         "//pkg/acme/client:go_default_library",
