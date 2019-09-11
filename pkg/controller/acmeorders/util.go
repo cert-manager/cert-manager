@@ -280,7 +280,13 @@ func challengeSpecForAuthorization(ctx context.Context, cl acmecl.Interface, iss
 		return nil, err
 	}
 
-	// 4. construct Challenge resource with spec.solver field set
+	// 4. handle overriding the HTTP01 ingress class and name fields using the
+	//    ACMECertificateHTTP01IngressNameOverride & Class annotations
+	if err := applyIngressParameterAnnotationOverrides(o, selectedSolver); err != nil {
+		return nil, err
+	}
+
+	// 5. construct Challenge resource with spec.solver field set
 	return &cmapi.ChallengeSpec{
 		AuthzURL:  authz.URL,
 		Type:      selectedChallenge.Type,
@@ -292,6 +298,32 @@ func challengeSpecForAuthorization(ctx context.Context, cl acmecl.Interface, iss
 		Wildcard:  authz.Wildcard,
 		IssuerRef: o.Spec.IssuerRef,
 	}, nil
+}
+
+func applyIngressParameterAnnotationOverrides(o *cmapi.Order, s *cmapi.ACMEChallengeSolver) error {
+	if s.HTTP01 == nil || s.HTTP01.Ingress == nil || o.Annotations == nil {
+		return nil
+	}
+
+	manualIngressName, hasManualIngressName := o.Annotations[cmapi.ACMECertificateHTTP01IngressNameOverride]
+	manualIngressClass, hasManualIngressClass := o.Annotations[cmapi.ACMECertificateHTTP01IngressClassOverride]
+	// don't allow both override annotations to be specified at once
+	if hasManualIngressName && hasManualIngressClass {
+		return fmt.Errorf("both ingress name and ingress class overrides specified - only one may be specified at a time")
+	}
+	// if an override annotation is specified, clear out the existing solver
+	// config
+	if hasManualIngressClass || hasManualIngressName {
+		s.HTTP01.Ingress.Class = nil
+		s.HTTP01.Ingress.Name = ""
+	}
+	if hasManualIngressName {
+		s.HTTP01.Ingress.Name = manualIngressName
+	}
+	if hasManualIngressClass {
+		s.HTTP01.Ingress.Class = &manualIngressClass
+	}
+	return nil
 }
 
 func keyForChallenge(cl acmecl.Interface, challenge *cmapi.ACMEChallenge) (string, error) {
