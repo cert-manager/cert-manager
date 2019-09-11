@@ -108,6 +108,12 @@ type OrderStatus struct {
 	// +optional
 	FinalizeURL string `json:"finalizeURL,omitempty"`
 
+	// Authorizations contains data returned from the ACME server on what
+	// authoriations must be completed in order to validate the DNS names
+	// specified on the Order.
+	// +optional
+	Authorizations []ACMEAuthorization `json:"authorizations,omitempty"`
+
 	// Certificate is a copy of the PEM encoded certificate for this Order.
 	// This field will be populated after the order has been successfully
 	// finalized with the ACME server, and the order has transitioned to the
@@ -125,16 +131,65 @@ type OrderStatus struct {
 	// +optional
 	Reason string `json:"reason,omitempty"`
 
-	// Challenges is a list of ChallengeSpecs for Challenges that must be created
-	// in order to complete this Order.
-	// +optional
-	Challenges []ChallengeSpec `json:"challenges,omitempty"`
-
 	// FailureTime stores the time that this order failed.
 	// This is used to influence garbage collection and back-off.
 	// +optional
 	FailureTime *metav1.Time `json:"failureTime,omitempty"`
 }
+
+// ACMEAuthorization contains data returned from the ACME server on an
+// authorization that must be completed in order validate a DNS name on an ACME
+// Order resource.
+type ACMEAuthorization struct {
+	// URL is the URL of the Authorization that must be completed
+	URL string `json:"url"`
+
+	// Identifier is the DNS name to be validated as part of this authorization
+	// +optional
+	Identifier string `json:"identifier,omitempty"`
+
+	// Wildcard will be true if this authorization is for a wildcard DNS name.
+	// If this is true, the identifier will be the *non-wildcard* version of
+	// the DNS name.
+	// For example, if '*.example.com' is the DNS name being validated, this
+	// field will be 'true' and the 'identifier' field will be 'example.com'.
+	// +optional
+	Wildcard bool `json:"wildcard,omitempty"`
+
+	// Challenges specifies the challenge types offered by the ACME server.
+	// One of these challenge types will be selected when validating the DNS
+	// name and an appropriate Challenge resource will be created to perform
+	// the ACME challenge process.
+	// +optional
+	Challenges []ACMEChallenge `json:"challenges,omitempty"`
+}
+
+// Challenge specifies a challenge offered by the ACME server for an Order.
+// An appropriate Challenge resource can be created to perform the ACME
+// challenge process.
+type ACMEChallenge struct {
+	// URL is the URL of this challenge. It can be used to retrieve additional
+	// metadata about the Challenge from the ACME server.
+	URL string `json:"url"`
+
+	// Token is the token that must be presented for this challenge.
+	// This is used to compute the 'key' that must also be presented.
+	Token string `json:"token""`
+
+	// Type is the type of challenge being offered, e.g. http-01, dns-01
+	Type ACMEChallengeType `json:"type"`
+}
+
+// ACMEChallengeType denotes a type of ACME challenge
+type ACMEChallengeType string
+
+const (
+	// ACMEChallengeTypeHTTP01 denotes a Challenge is of type http-01
+	ACMEChallengeTypeHTTP01 ACMEChallengeType = "http-01"
+
+	// ACMEChallengeTypeDNS01 denotes a Challenge is of type dns-01
+	ACMEChallengeTypeDNS01 ACMEChallengeType = "dns-01"
+)
 
 // State represents the state of an ACME resource, such as an Order.
 // The possible options here map to the corresponding values in the

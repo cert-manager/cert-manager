@@ -65,6 +65,12 @@ func SetOrderState(s v1alpha1.State) OrderModifier {
 	}
 }
 
+func SetOrderStatus(s v1alpha1.OrderStatus) OrderModifier {
+	return func(o *v1alpha1.Order) {
+		o.Status = s
+	}
+}
+
 func SetOrderCertificate(d []byte) OrderModifier {
 	return func(crt *v1alpha1.Order) {
 		crt.Status.Certificate = d

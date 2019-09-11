@@ -45,50 +45,45 @@ func TestSyncHappyPath(t *testing.T) {
 	nowMetaTime := metav1.NewTime(nowTime)
 	fixedClock := fakeclock.NewFakeClock(nowTime)
 
-	testIssuerHTTP01Enabled := gen.Issuer("testissuer", gen.SetIssuerACME(v1alpha1.ACMEIssuer{
-		HTTP01: &v1alpha1.ACMEIssuerHTTP01Config{},
-	}))
-
-	// build actual test fixtures
-	testOrder := &v1alpha1.Order{
-		ObjectMeta: metav1.ObjectMeta{Name: "testorder", Namespace: gen.DefaultTestNamespace},
-		Spec: v1alpha1.OrderSpec{
-			CommonName: "test.com",
-			IssuerRef: v1alpha1.ObjectReference{
-				Name: "testissuer",
-			},
-			Config: []v1alpha1.DomainSolverConfig{
-				{
-					Domains:      []string{"test.com"},
-					SolverConfig: v1alpha1.SolverConfig{HTTP01: &v1alpha1.HTTP01SolverConfig{}},
+	testIssuerHTTP01TestCom := gen.Issuer("testissuer", gen.SetIssuerACME(v1alpha1.ACMEIssuer{
+		Solvers: []v1alpha1.ACMEChallengeSolver{
+			{
+				Selector: &v1alpha1.CertificateDNSNameSelector{
+					DNSNames: []string{"test.com"},
+				},
+				HTTP01: &v1alpha1.ACMEChallengeSolverHTTP01{
+					Ingress: &v1alpha1.ACMEChallengeSolverHTTP01Ingress{},
 				},
 			},
 		},
-	}
+	}))
+	testOrder := gen.Order("testorder",
+		gen.SetOrderCommonName("test.com"),
+		gen.SetOrderIssuer(v1alpha1.ObjectReference{
+			Name: testIssuerHTTP01TestCom.Name,
+		}),
+	)
 
-	testOrderPending := testOrder.DeepCopy()
-	testOrderPending.Status = v1alpha1.OrderStatus{
+	pendingStatus := v1alpha1.OrderStatus{
 		State:       v1alpha1.Pending,
 		URL:         "http://testurl.com/abcde",
 		FinalizeURL: "http://testurl.com/abcde/finalize",
-		Challenges: []v1alpha1.ChallengeSpec{
+		Authorizations: []v1alpha1.ACMEAuthorization{
 			{
-				AuthzURL: "http://authzurl",
-				Type:     "http-01",
-				IssuerRef: v1alpha1.ObjectReference{
-					Name: "testissuer",
-				},
-				Token:   "token",
-				DNSName: "test.com",
-				Key:     "key",
-				Config: &v1alpha1.SolverConfig{
-					HTTP01: &v1alpha1.HTTP01SolverConfig{
-						Ingress: "",
+				URL:        "http://authzurl",
+				Identifier: "test.com",
+				Challenges: []v1alpha1.ACMEChallenge{
+					{
+						URL:   "http://chalurl",
+						Token: "token",
+						Type:  v1alpha1.ACMEChallengeTypeHTTP01,
 					},
 				},
 			},
 		},
 	}
+
+	testOrderPending := gen.OrderFrom(testOrder, gen.SetOrderStatus(pendingStatus))
 	testOrderInvalid := testOrderPending.DeepCopy()
 	testOrderInvalid.Status.State = v1alpha1.Invalid
 	testOrderInvalid.Status.FailureTime = &nowMetaTime
@@ -102,7 +97,16 @@ dGVzdA==
 	testOrderReady := testOrderPending.DeepCopy()
 	testOrderReady.Status.State = v1alpha1.Ready
 
-	testAuthorizationChallenge := buildChallenge(0, testOrderPending, testOrderPending.Status.Challenges[0])
+	fakeHTTP01ACMECl := &acmecl.FakeACME{
+		FakeHTTP01ChallengeResponse: func(s string) (string, error) {
+			// TODO: assert s = "token"
+			return "key", nil
+		},
+	}
+	testAuthorizationChallenge, err := buildChallenge(context.TODO(), fakeHTTP01ACMECl, testIssuerHTTP01TestCom, testOrderPending, testOrderPending.Status.Authorizations[0])
+	if err != nil {
+		t.Fatalf("error building Challenge resource test fixture: %v", err)
+	}
 	testAuthorizationChallengeValid := testAuthorizationChallenge.DeepCopy()
 	testAuthorizationChallengeValid.Status.State = v1alpha1.Valid
 	testAuthorizationChallengeInvalid := testAuthorizationChallenge.DeepCopy()
@@ -151,9 +155,19 @@ dGVzdA==
 		"create a new order with the acme server, set the order url on the status resource and return nil to avoid cache timing issues": {
 			order: testOrder,
 			builder: &testpkg.Builder{
-				CertManagerObjects: []runtime.Object{testIssuerHTTP01Enabled, testOrder},
+				CertManagerObjects: []runtime.Object{testIssuerHTTP01TestCom, testOrder},
 				ExpectedActions: []testpkg.Action{
-					testpkg.NewAction(coretesting.NewUpdateAction(v1alpha1.SchemeGroupVersion.WithResource("orders"), testOrderPending.Namespace, testOrderPending)),
+					testpkg.NewAction(coretesting.NewUpdateAction(v1alpha1.SchemeGroupVersion.WithResource("orders"), testOrderPending.Namespace,
+						gen.OrderFrom(testOrder, gen.SetOrderStatus(v1alpha1.OrderStatus{
+							State:       v1alpha1.Pending,
+							URL:         "http://testurl.com/abcde",
+							FinalizeURL: "http://testurl.com/abcde/finalize",
+							Authorizations: []v1alpha1.ACMEAuthorization{
+								{
+									URL: "http://authzurl",
+								},
+							},
+						})))),
 				},
 			},
 			acmeClient: &acmecl.FakeACME{
@@ -173,28 +187,38 @@ dGVzdA==
 		"create a challenge resource for the test.com dnsName on the order": {
 			order: testOrderPending,
 			builder: &testpkg.Builder{
-				CertManagerObjects: []runtime.Object{testIssuerHTTP01Enabled, testOrderPending},
+				CertManagerObjects: []runtime.Object{testIssuerHTTP01TestCom, testOrderPending},
 				ExpectedActions: []testpkg.Action{
 					testpkg.NewAction(coretesting.NewCreateAction(v1alpha1.SchemeGroupVersion.WithResource("challenges"), testAuthorizationChallenge.Namespace, testAuthorizationChallenge)),
 				},
 				ExpectedEvents: []string{
-					`Normal Created Created Challenge resource "testorder-0" for domain "test.com"`,
+					`Normal Created Created Challenge resource "testorder-1335133199" for domain "test.com"`,
 				},
 			},
-			acmeClient: &acmecl.FakeACME{},
+			acmeClient: &acmecl.FakeACME{
+				FakeHTTP01ChallengeResponse: func(s string) (string, error) {
+					// TODO: assert s = "token"
+					return "key", nil
+				},
+			},
 		},
 		"do nothing if the challenge for test.com is still pending": {
 			order: testOrderPending,
 			builder: &testpkg.Builder{
-				CertManagerObjects: []runtime.Object{testIssuerHTTP01Enabled, testOrderPending, testAuthorizationChallenge},
+				CertManagerObjects: []runtime.Object{testIssuerHTTP01TestCom, testOrderPending, testAuthorizationChallenge},
 				ExpectedActions:    []testpkg.Action{},
 			},
-			acmeClient: &acmecl.FakeACME{},
+			acmeClient: &acmecl.FakeACME{
+				FakeHTTP01ChallengeResponse: func(s string) (string, error) {
+					// TODO: assert s = "token"
+					return "key", nil
+				},
+			},
 		},
 		"call GetOrder and update the order state to 'ready' if all challenges are 'valid'": {
 			order: testOrderPending,
 			builder: &testpkg.Builder{
-				CertManagerObjects: []runtime.Object{testIssuerHTTP01Enabled, testOrderPending, testAuthorizationChallengeValid},
+				CertManagerObjects: []runtime.Object{testIssuerHTTP01TestCom, testOrderPending, testAuthorizationChallengeValid},
 				ExpectedActions: []testpkg.Action{
 					testpkg.NewAction(coretesting.NewUpdateAction(v1alpha1.SchemeGroupVersion.WithResource("orders"), testOrderReady.Namespace, testOrderReady)),
 				},
@@ -203,17 +227,21 @@ dGVzdA==
 				FakeGetOrder: func(_ context.Context, url string) (*acmeapi.Order, error) {
 					return testACMEOrderReady, nil
 				},
+				FakeHTTP01ChallengeResponse: func(s string) (string, error) {
+					// TODO: assert s = "token"
+					return "key", nil
+				},
 			},
 		},
 		"call FinalizeOrder and update the order state to 'valid' if finalize succeeds": {
 			order: testOrderReady,
 			builder: &testpkg.Builder{
-				CertManagerObjects: []runtime.Object{testIssuerHTTP01Enabled, testOrderReady, testAuthorizationChallengeValid},
+				CertManagerObjects: []runtime.Object{testIssuerHTTP01TestCom, testOrderReady, testAuthorizationChallengeValid},
 				ExpectedActions: []testpkg.Action{
 					testpkg.NewAction(coretesting.NewUpdateAction(v1alpha1.SchemeGroupVersion.WithResource("orders"), testOrderValid.Namespace, testOrderValid)),
 				},
 				ExpectedEvents: []string{
-					"Normal OrderValid Order completed successfully",
+					"Normal Complete Order completed successfully",
 				},
 			},
 			acmeClient: &acmecl.FakeACME{
@@ -224,12 +252,16 @@ dGVzdA==
 					testData := []byte("test")
 					return [][]byte{testData}, nil
 				},
+				FakeHTTP01ChallengeResponse: func(s string) (string, error) {
+					// TODO: assert s = "token"
+					return "key", nil
+				},
 			},
 		},
 		"call GetOrder and update the order state if the challenge is 'failed'": {
 			order: testOrderPending,
 			builder: &testpkg.Builder{
-				CertManagerObjects: []runtime.Object{testIssuerHTTP01Enabled, testOrderPending, testAuthorizationChallengeInvalid},
+				CertManagerObjects: []runtime.Object{testIssuerHTTP01TestCom, testOrderPending, testAuthorizationChallengeInvalid},
 				ExpectedActions: []testpkg.Action{
 					testpkg.NewAction(coretesting.NewUpdateAction(v1alpha1.SchemeGroupVersion.WithResource("orders"), testOrderInvalid.Namespace, testOrderInvalid)),
 				},
@@ -238,24 +270,31 @@ dGVzdA==
 				FakeGetOrder: func(_ context.Context, url string) (*acmeapi.Order, error) {
 					return testACMEOrderInvalid, nil
 				},
+				FakeHTTP01ChallengeResponse: func(s string) (string, error) {
+					return "key", nil
+				},
 			},
 		},
 		"should leave the order state as-is if the challenge is marked invalid but the acme order is pending": {
 			order: testOrderPending,
 			builder: &testpkg.Builder{
-				CertManagerObjects: []runtime.Object{testIssuerHTTP01Enabled, testOrderPending, testAuthorizationChallengeInvalid},
+				CertManagerObjects: []runtime.Object{testIssuerHTTP01TestCom, testOrderPending, testAuthorizationChallengeInvalid},
 				ExpectedActions:    []testpkg.Action{},
 			},
 			acmeClient: &acmecl.FakeACME{
 				FakeGetOrder: func(_ context.Context, url string) (*acmeapi.Order, error) {
 					return testACMEOrderPending, nil
 				},
+				FakeHTTP01ChallengeResponse: func(s string) (string, error) {
+					// TODO: assert s = "token"
+					return "key", nil
+				},
 			},
 		},
 		"do nothing if the order is valid": {
 			order: testOrderValid,
 			builder: &testpkg.Builder{
-				CertManagerObjects: []runtime.Object{testIssuerHTTP01Enabled, testOrderValid},
+				CertManagerObjects: []runtime.Object{testIssuerHTTP01TestCom, testOrderValid},
 				ExpectedActions:    []testpkg.Action{},
 			},
 			acmeClient: &acmecl.FakeACME{},
@@ -263,7 +302,7 @@ dGVzdA==
 		"do nothing if the order is failed": {
 			order: testOrderInvalid,
 			builder: &testpkg.Builder{
-				CertManagerObjects: []runtime.Object{testIssuerHTTP01Enabled, testOrderInvalid},
+				CertManagerObjects: []runtime.Object{testIssuerHTTP01TestCom, testOrderInvalid},
 				ExpectedActions:    []testpkg.Action{},
 			},
 			acmeClient: &acmecl.FakeACME{},
@@ -300,7 +339,11 @@ func TestDisableOldConfigFeatureFlagDisabled(t *testing.T) {
 	)
 	newFormatOrderValid := gen.OrderFrom(newFormatOrder,
 		gen.SetOrderURL("http://testurl.com/abcde"),
-		gen.SetOrderState(v1alpha1.Valid),
+		gen.SetOrderStatus(v1alpha1.OrderStatus{
+			URL:         "http://abc",
+			FinalizeURL: "http://abc",
+			State:       v1alpha1.Valid,
+		}),
 		gen.SetOrderCertificate([]byte(`-----BEGIN CERTIFICATE-----
 dGVzdA==
 -----END CERTIFICATE-----
@@ -419,11 +462,11 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 		},
 	}
 	// define ACME challenges that are used during tests
-	acmeChallengeHTTP01 := &acmeapi.Challenge{
+	acmeChallengeHTTP01 := &v1alpha1.ACMEChallenge{
 		Type:  "http-01",
 		Token: "http-01-token",
 	}
-	acmeChallengeDNS01 := &acmeapi.Challenge{
+	acmeChallengeDNS01 := &v1alpha1.ACMEChallenge{
 		Type:  "dns-01",
 		Token: "dns-01-token",
 	}
@@ -432,7 +475,7 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 		acmeClient acmecl.Interface
 		issuer     v1alpha1.GenericIssuer
 		order      *v1alpha1.Order
-		authz      *acmeapi.Authorization
+		authz      *v1alpha1.ACMEAuthorization
 
 		expectedChallengeSpec *v1alpha1.ChallengeSpec
 		expectedError         bool
@@ -453,11 +496,9 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 					DNSNames: []string{"example.com"},
 				},
 			},
-			authz: &acmeapi.Authorization{
-				Identifier: acmeapi.AuthzID{
-					Value: "example.com",
-				},
-				Challenges: []*acmeapi.Challenge{acmeChallengeHTTP01},
+			authz: &v1alpha1.ACMEAuthorization{
+				Identifier: "example.com",
+				Challenges: []v1alpha1.ACMEChallenge{*acmeChallengeHTTP01},
 			},
 			expectedChallengeSpec: &v1alpha1.ChallengeSpec{
 				Type:    "http-01",
@@ -492,11 +533,9 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 					DNSNames: []string{"example.com"},
 				},
 			},
-			authz: &acmeapi.Authorization{
-				Identifier: acmeapi.AuthzID{
-					Value: "example.com",
-				},
-				Challenges: []*acmeapi.Challenge{acmeChallengeHTTP01},
+			authz: &v1alpha1.ACMEAuthorization{
+				Identifier: "example.com",
+				Challenges: []v1alpha1.ACMEChallenge{*acmeChallengeHTTP01},
 			},
 			expectedChallengeSpec: &v1alpha1.ChallengeSpec{
 				Type:    "http-01",
@@ -532,11 +571,9 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 					DNSNames: []string{"example.com"},
 				},
 			},
-			authz: &acmeapi.Authorization{
-				Identifier: acmeapi.AuthzID{
-					Value: "example.com",
-				},
-				Challenges: []*acmeapi.Challenge{acmeChallengeHTTP01},
+			authz: &v1alpha1.ACMEAuthorization{
+				Identifier: "example.com",
+				Challenges: []v1alpha1.ACMEChallenge{*acmeChallengeHTTP01},
 			},
 			expectedChallengeSpec: &v1alpha1.ChallengeSpec{
 				Type:    "http-01",
@@ -565,11 +602,9 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 					DNSNames: []string{"example.com"},
 				},
 			},
-			authz: &acmeapi.Authorization{
-				Identifier: acmeapi.AuthzID{
-					Value: "example.com",
-				},
-				Challenges: []*acmeapi.Challenge{acmeChallengeDNS01},
+			authz: &v1alpha1.ACMEAuthorization{
+				Identifier: "example.com",
+				Challenges: []v1alpha1.ACMEChallenge{*acmeChallengeDNS01},
 			},
 			expectedChallengeSpec: &v1alpha1.ChallengeSpec{
 				Type:    "dns-01",
@@ -597,11 +632,9 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 					DNSNames: []string{"example.com"},
 				},
 			},
-			authz: &acmeapi.Authorization{
-				Identifier: acmeapi.AuthzID{
-					Value: "example.com",
-				},
-				Challenges: []*acmeapi.Challenge{acmeChallengeHTTP01},
+			authz: &v1alpha1.ACMEAuthorization{
+				Identifier: "example.com",
+				Challenges: []v1alpha1.ACMEChallenge{*acmeChallengeHTTP01},
 			},
 			expectedError: true,
 		},
@@ -624,11 +657,9 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 					DNSNames: []string{"example.com"},
 				},
 			},
-			authz: &acmeapi.Authorization{
-				Identifier: acmeapi.AuthzID{
-					Value: "example.com",
-				},
-				Challenges: []*acmeapi.Challenge{acmeChallengeHTTP01},
+			authz: &v1alpha1.ACMEAuthorization{
+				Identifier: "example.com",
+				Challenges: []v1alpha1.ACMEChallenge{*acmeChallengeHTTP01},
 			},
 			expectedChallengeSpec: &v1alpha1.ChallengeSpec{
 				Type:    "http-01",
@@ -657,11 +688,9 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 					DNSNames: []string{"notexample.com"},
 				},
 			},
-			authz: &acmeapi.Authorization{
-				Identifier: acmeapi.AuthzID{
-					Value: "notexample.com",
-				},
-				Challenges: []*acmeapi.Challenge{acmeChallengeHTTP01},
+			authz: &v1alpha1.ACMEAuthorization{
+				Identifier: "notexample.com",
+				Challenges: []v1alpha1.ACMEChallenge{*acmeChallengeHTTP01},
 			},
 			expectedChallengeSpec: &v1alpha1.ChallengeSpec{
 				Type:    "http-01",
@@ -707,11 +736,9 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 					DNSNames: []string{"example.com"},
 				},
 			},
-			authz: &acmeapi.Authorization{
-				Identifier: acmeapi.AuthzID{
-					Value: "example.com",
-				},
-				Challenges: []*acmeapi.Challenge{acmeChallengeHTTP01},
+			authz: &v1alpha1.ACMEAuthorization{
+				Identifier: "example.com",
+				Challenges: []v1alpha1.ACMEChallenge{*acmeChallengeHTTP01},
 			},
 			expectedChallengeSpec: &v1alpha1.ChallengeSpec{
 				Type:    "http-01",
@@ -768,11 +795,9 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 					DNSNames: []string{"example.com"},
 				},
 			},
-			authz: &acmeapi.Authorization{
-				Identifier: acmeapi.AuthzID{
-					Value: "example.com",
-				},
-				Challenges: []*acmeapi.Challenge{acmeChallengeHTTP01},
+			authz: &v1alpha1.ACMEAuthorization{
+				Identifier: "example.com",
+				Challenges: []v1alpha1.ACMEChallenge{*acmeChallengeHTTP01},
 			},
 			expectedChallengeSpec: &v1alpha1.ChallengeSpec{
 				Type:    "http-01",
@@ -819,11 +844,9 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 					DNSNames: []string{"example.com"},
 				},
 			},
-			authz: &acmeapi.Authorization{
-				Identifier: acmeapi.AuthzID{
-					Value: "example.com",
-				},
-				Challenges: []*acmeapi.Challenge{acmeChallengeHTTP01},
+			authz: &v1alpha1.ACMEAuthorization{
+				Identifier: "example.com",
+				Challenges: []v1alpha1.ACMEChallenge{*acmeChallengeHTTP01},
 			},
 			expectedChallengeSpec: &v1alpha1.ChallengeSpec{
 				Type:    "http-01",
@@ -870,11 +893,9 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 					DNSNames: []string{"example.com"},
 				},
 			},
-			authz: &acmeapi.Authorization{
-				Identifier: acmeapi.AuthzID{
-					Value: "example.com",
-				},
-				Challenges: []*acmeapi.Challenge{acmeChallengeHTTP01},
+			authz: &v1alpha1.ACMEAuthorization{
+				Identifier: "example.com",
+				Challenges: []v1alpha1.ACMEChallenge{*acmeChallengeHTTP01},
 			},
 			expectedChallengeSpec: &v1alpha1.ChallengeSpec{
 				Type:    "http-01",
@@ -932,11 +953,9 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 					DNSNames: []string{"example.com"},
 				},
 			},
-			authz: &acmeapi.Authorization{
-				Identifier: acmeapi.AuthzID{
-					Value: "example.com",
-				},
-				Challenges: []*acmeapi.Challenge{acmeChallengeHTTP01},
+			authz: &v1alpha1.ACMEAuthorization{
+				Identifier: "example.com",
+				Challenges: []v1alpha1.ACMEChallenge{*acmeChallengeHTTP01},
 			},
 			expectedChallengeSpec: &v1alpha1.ChallengeSpec{
 				Type:    "http-01",
@@ -986,12 +1005,10 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 					DNSNames: []string{"*.example.com"},
 				},
 			},
-			authz: &acmeapi.Authorization{
-				Identifier: acmeapi.AuthzID{
-					Value: "example.com",
-				},
+			authz: &v1alpha1.ACMEAuthorization{
+				Identifier: "example.com",
 				Wildcard:   true,
-				Challenges: []*acmeapi.Challenge{acmeChallengeDNS01},
+				Challenges: []v1alpha1.ACMEChallenge{*acmeChallengeDNS01},
 			},
 			expectedChallengeSpec: &v1alpha1.ChallengeSpec{
 				Type:     "dns-01",
@@ -1039,11 +1056,9 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 					DNSNames: []string{"example.com"},
 				},
 			},
-			authz: &acmeapi.Authorization{
-				Identifier: acmeapi.AuthzID{
-					Value: "example.com",
-				},
-				Challenges: []*acmeapi.Challenge{acmeChallengeHTTP01},
+			authz: &v1alpha1.ACMEAuthorization{
+				Identifier: "example.com",
+				Challenges: []v1alpha1.ACMEChallenge{*acmeChallengeHTTP01},
 			},
 			expectedChallengeSpec: &v1alpha1.ChallengeSpec{
 				Type:    "http-01",
@@ -1081,11 +1096,9 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 					DNSNames: []string{"example.com"},
 				},
 			},
-			authz: &acmeapi.Authorization{
-				Identifier: acmeapi.AuthzID{
-					Value: "example.com",
-				},
-				Challenges: []*acmeapi.Challenge{acmeChallengeHTTP01},
+			authz: &v1alpha1.ACMEAuthorization{
+				Identifier: "example.com",
+				Challenges: []v1alpha1.ACMEChallenge{*acmeChallengeHTTP01},
 			},
 			expectedChallengeSpec: &v1alpha1.ChallengeSpec{
 				Type:    "http-01",
@@ -1123,12 +1136,10 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 					DNSNames: []string{"www.example.com"},
 				},
 			},
-			authz: &acmeapi.Authorization{
-				Identifier: acmeapi.AuthzID{
-					Value: "www.example.com",
-				},
+			authz: &v1alpha1.ACMEAuthorization{
+				Identifier: "www.example.com",
 				Wildcard:   true,
-				Challenges: []*acmeapi.Challenge{acmeChallengeDNS01},
+				Challenges: []v1alpha1.ACMEChallenge{*acmeChallengeDNS01},
 			},
 			expectedChallengeSpec: &v1alpha1.ChallengeSpec{
 				Type:     "dns-01",
@@ -1185,12 +1196,10 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 					DNSNames: []string{"www.prod.example.com"},
 				},
 			},
-			authz: &acmeapi.Authorization{
-				Identifier: acmeapi.AuthzID{
-					Value: "www.prod.example.com",
-				},
+			authz: &v1alpha1.ACMEAuthorization{
+				Identifier: "www.prod.example.com",
 				Wildcard:   true,
-				Challenges: []*acmeapi.Challenge{acmeChallengeDNS01},
+				Challenges: []v1alpha1.ACMEChallenge{*acmeChallengeDNS01},
 			},
 			expectedChallengeSpec: &v1alpha1.ChallengeSpec{
 				Type:     "dns-01",
@@ -1247,12 +1256,10 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 					DNSNames: []string{"www.prod.example.com"},
 				},
 			},
-			authz: &acmeapi.Authorization{
-				Identifier: acmeapi.AuthzID{
-					Value: "www.prod.example.com",
-				},
+			authz: &v1alpha1.ACMEAuthorization{
+				Identifier: "www.prod.example.com",
 				Wildcard:   true,
-				Challenges: []*acmeapi.Challenge{acmeChallengeDNS01},
+				Challenges: []v1alpha1.ACMEChallenge{*acmeChallengeDNS01},
 			},
 			expectedChallengeSpec: &v1alpha1.ChallengeSpec{
 				Type:     "dns-01",
@@ -1317,11 +1324,9 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 					DNSNames: []string{"www.example.com"},
 				},
 			},
-			authz: &acmeapi.Authorization{
-				Identifier: acmeapi.AuthzID{
-					Value: "www.example.com",
-				},
-				Challenges: []*acmeapi.Challenge{acmeChallengeHTTP01},
+			authz: &v1alpha1.ACMEAuthorization{
+				Identifier: "www.example.com",
+				Challenges: []v1alpha1.ACMEChallenge{*acmeChallengeHTTP01},
 			},
 			expectedChallengeSpec: &v1alpha1.ChallengeSpec{
 				Type:    "http-01",
@@ -1381,11 +1386,9 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 					DNSNames: []string{"www.example.com"},
 				},
 			},
-			authz: &acmeapi.Authorization{
-				Identifier: acmeapi.AuthzID{
-					Value: "www.example.com",
-				},
-				Challenges: []*acmeapi.Challenge{acmeChallengeHTTP01},
+			authz: &v1alpha1.ACMEAuthorization{
+				Identifier: "www.example.com",
+				Challenges: []v1alpha1.ACMEChallenge{*acmeChallengeHTTP01},
 			},
 			expectedChallengeSpec: &v1alpha1.ChallengeSpec{
 				Type:    "http-01",
@@ -1443,11 +1446,9 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 					DNSNames: []string{"www.example.com"},
 				},
 			},
-			authz: &acmeapi.Authorization{
-				Identifier: acmeapi.AuthzID{
-					Value: "www.example.com",
-				},
-				Challenges: []*acmeapi.Challenge{acmeChallengeHTTP01},
+			authz: &v1alpha1.ACMEAuthorization{
+				Identifier: "www.example.com",
+				Challenges: []v1alpha1.ACMEChallenge{*acmeChallengeHTTP01},
 			},
 			expectedChallengeSpec: &v1alpha1.ChallengeSpec{
 				Type:    "http-01",
@@ -1486,11 +1487,9 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 					DNSNames: []string{"example.com"},
 				},
 			},
-			authz: &acmeapi.Authorization{
-				Identifier: acmeapi.AuthzID{
-					Value: "example.com",
-				},
-				Challenges: []*acmeapi.Challenge{acmeChallengeHTTP01},
+			authz: &v1alpha1.ACMEAuthorization{
+				Identifier: "example.com",
+				Challenges: []v1alpha1.ACMEChallenge{*acmeChallengeHTTP01},
 			},
 			expectedChallengeSpec: &v1alpha1.ChallengeSpec{
 				Type:    "http-01",
@@ -1504,7 +1503,7 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			ctx := context.Background()
-			cs, err := challengeSpecForAuthorization(ctx, test.acmeClient, test.issuer, test.order, test.authz)
+			cs, err := challengeSpecForAuthorization(ctx, test.acmeClient, test.issuer, test.order, *test.authz)
 			if err != nil && !test.expectedError {
 				t.Errorf("expected to not get an error, but got: %v", err)
 				t.Fail()
@@ -1522,7 +1521,7 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 func TestSolverConfigurationForAuthorization(t *testing.T) {
 	type testT struct {
 		cfg         []v1alpha1.DomainSolverConfig
-		authz       *acmeapi.Authorization
+		authz       *v1alpha1.ACMEAuthorization
 		expectedCfg *v1alpha1.SolverConfig
 		expectedErr bool
 	}
@@ -1538,10 +1537,8 @@ func TestSolverConfigurationForAuthorization(t *testing.T) {
 					},
 				},
 			},
-			authz: &acmeapi.Authorization{
-				Identifier: acmeapi.AuthzID{
-					Value: "example.com",
-				},
+			authz: &v1alpha1.ACMEAuthorization{
+				Identifier: "example.com",
 			},
 			expectedCfg: &v1alpha1.SolverConfig{
 				DNS01: &v1alpha1.DNS01SolverConfig{
@@ -1560,10 +1557,8 @@ func TestSolverConfigurationForAuthorization(t *testing.T) {
 					},
 				},
 			},
-			authz: &acmeapi.Authorization{
-				Identifier: acmeapi.AuthzID{
-					Value: "example.com",
-				},
+			authz: &v1alpha1.ACMEAuthorization{
+				Identifier: "example.com",
 			},
 			expectedCfg: &v1alpha1.SolverConfig{
 				DNS01: &v1alpha1.DNS01SolverConfig{
@@ -1590,10 +1585,8 @@ func TestSolverConfigurationForAuthorization(t *testing.T) {
 					},
 				},
 			},
-			authz: &acmeapi.Authorization{
-				Identifier: acmeapi.AuthzID{
-					Value: "example.com",
-				},
+			authz: &v1alpha1.ACMEAuthorization{
+				Identifier: "example.com",
 			},
 			expectedCfg: &v1alpha1.SolverConfig{
 				DNS01: &v1alpha1.DNS01SolverConfig{
@@ -1620,13 +1613,9 @@ func TestSolverConfigurationForAuthorization(t *testing.T) {
 					},
 				},
 			},
-			authz: &acmeapi.Authorization{
-				Wildcard: true,
-				Identifier: acmeapi.AuthzID{
-					// identifiers for wildcards do not include the *. prefix and
-					// instead set the Wildcard field on the Authz object
-					Value: "example.com",
-				},
+			authz: &v1alpha1.ACMEAuthorization{
+				Wildcard:   true,
+				Identifier: "example.com",
 			},
 			expectedCfg: &v1alpha1.SolverConfig{
 				DNS01: &v1alpha1.DNS01SolverConfig{
@@ -1645,10 +1634,8 @@ func TestSolverConfigurationForAuthorization(t *testing.T) {
 					},
 				},
 			},
-			authz: &acmeapi.Authorization{
-				Identifier: acmeapi.AuthzID{
-					Value: "example.com",
-				},
+			authz: &v1alpha1.ACMEAuthorization{
+				Identifier: "example.com",
 			},
 			expectedErr: true,
 		},

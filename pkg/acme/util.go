@@ -28,10 +28,10 @@ import (
 // not for Orders.
 func IsFinalState(s cmapi.State) bool {
 	switch s {
-	case cmapi.Valid, cmapi.Invalid, cmapi.Expired, cmapi.Errored:
+	case cmapi.Valid:
 		return true
 	}
-	return false
+	return IsFailureState(s)
 }
 
 func IsFailureState(s cmapi.State) bool {
