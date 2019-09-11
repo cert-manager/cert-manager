@@ -112,6 +112,11 @@ func httpDomainCfgForChallenge(issuer v1alpha1.GenericIssuer, ch *v1alpha1.Chall
 func (s *Solver) Present(ctx context.Context, issuer v1alpha1.GenericIssuer, ch *v1alpha1.Challenge) error {
 	ctx = http01LogCtx(ctx)
 
+	// TODO: Can this be created in some other part of the code, so it doesn't repeat
+	if s.ACMEOptions.HTTP01SolverNamespace != "" {
+		ch.Namespace = s.ACMEOptions.HTTP01SolverNamespace
+	}
+
 	_, podErr := s.ensurePod(ctx, ch)
 	svc, svcErr := s.ensureService(ctx, issuer, ch)
 	if svcErr != nil {
@@ -124,6 +129,11 @@ func (s *Solver) Present(ctx context.Context, issuer v1alpha1.GenericIssuer, ch 
 func (s *Solver) Check(ctx context.Context, issuer v1alpha1.GenericIssuer, ch *v1alpha1.Challenge) error {
 	ctx = logf.NewContext(http01LogCtx(ctx), nil, "selfCheck")
 	log := logf.FromContext(ctx)
+
+	// TODO: Can this be created in some other part of the code, so it doesn't repeat
+	if s.ACMEOptions.HTTP01SolverNamespace != "" {
+		ch.Namespace = s.ACMEOptions.HTTP01SolverNamespace
+	}
 
 	// HTTP Present is idempotent and the state of the system may have
 	// changed since present was called by the controllers (killed pods, drained nodes)
@@ -164,6 +174,11 @@ func (s *Solver) Check(ctx context.Context, issuer v1alpha1.GenericIssuer, ch *v
 // cert-manager created data.
 func (s *Solver) CleanUp(ctx context.Context, issuer v1alpha1.GenericIssuer, ch *v1alpha1.Challenge) error {
 	var errs []error
+
+	// TODO: Can this be created in some other part of the code, so it doesn't repeat
+	if s.ACMEOptions.HTTP01SolverNamespace != "" {
+		ch.Namespace = s.ACMEOptions.HTTP01SolverNamespace
+	}
 	errs = append(errs, s.cleanupPods(ctx, ch))
 	errs = append(errs, s.cleanupServices(ctx, ch))
 	errs = append(errs, s.cleanupIngresses(ctx, issuer, ch))
