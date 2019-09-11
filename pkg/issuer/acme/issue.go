@@ -29,6 +29,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/selection"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 
 	"github.com/jetstack/cert-manager/pkg/acme"
@@ -217,7 +218,13 @@ func (a *Acme) Issue(ctx context.Context, crt *v1alpha1.Certificate) (*issuer.Is
 func (a *Acme) cleanupOwnedOrders(ctx context.Context, crt *v1alpha1.Certificate, retain string) error {
 	log := logf.FromContext(ctx)
 
-	selector := labels.NewSelector()
+	// TODO: don't use a label selector at all here, instead we can index orders by their ownerRef and query based on owner reference alone
+	// construct a label selector
+	req, err := labels.NewRequirement(certificateNameLabelKey, selection.Equals, []string{crt.Name})
+	if err != nil {
+		return err
+	}
+	selector := labels.NewSelector().Add(*req)
 
 	existingOrders, err := a.orderLister.Orders(crt.Namespace).List(selector)
 	if err != nil {
@@ -407,8 +414,10 @@ func buildOrder(crt *v1alpha1.Certificate, csr []byte) (*v1alpha1.Order, error) 
 	}, nil
 }
 
+const certificateNameLabelKey = "acme.cert-manager.io/certificate-name"
+
 func orderLabels(crt *v1alpha1.Certificate) map[string]string {
-	lbls := make(map[string]string, len(crt.Labels))
+	lbls := make(map[string]string, len(crt.Labels)+1)
 	// copy across labels from the Certificate resource onto the Order.
 	// In future, determining which challenge solver to use will be solely
 	// calculated in the orders controller, and copying the label values
@@ -417,6 +426,7 @@ func orderLabels(crt *v1alpha1.Certificate) map[string]string {
 	for k, v := range crt.Labels {
 		lbls[k] = v
 	}
+	lbls[certificateNameLabelKey] = crt.Name
 	return lbls
 }
 
