@@ -28,6 +28,7 @@ import (
 	"github.com/jetstack/cert-manager/test/e2e/framework/addon/pebble"
 	"github.com/jetstack/cert-manager/test/e2e/framework/addon/tiller"
 	"github.com/jetstack/cert-manager/test/e2e/suite/conformance/certificates"
+	"github.com/jetstack/cert-manager/test/e2e/suite/issuers/acme/dnsproviders"
 )
 
 var _ = framework.ConformanceDescribe("Certificates", func() {
@@ -39,51 +40,60 @@ var _ = framework.ConformanceDescribe("Certificates", func() {
 		certificates.DurationFeature,
 	)
 
-	provisioner := new(acmeIssuerProvisioner)
+	provisionerHTTP01 := new(acmeIssuerProvisioner)
 	(&certificates.Suite{
 		Name:                "ACME HTTP01",
-		CreateIssuerFunc:    provisioner.create,
-		DeleteIssuerFunc:    provisioner.delete,
+		CreateIssuerFunc:    provisionerHTTP01.createHTTP01,
+		DeleteIssuerFunc:    provisionerHTTP01.delete,
+		UnsupportedFeatures: unsupportedFeatures,
+	}).Define()
+
+	provisionerDNS01 := new(acmeIssuerProvisioner)
+	(&certificates.Suite{
+		Name:                "ACME DNS01",
+		CreateIssuerFunc:    provisionerDNS01.createDNS01,
+		DeleteIssuerFunc:    provisionerDNS01.delete,
 		UnsupportedFeatures: unsupportedFeatures,
 	}).Define()
 })
 
 type acmeIssuerProvisioner struct {
-	tiller *tiller.Tiller
-	pebble *pebble.Pebble
+	tiller     *tiller.Tiller
+	pebble     *pebble.Pebble
+	cloudflair *dnsproviders.Cloudflare
 }
 
 func (a *acmeIssuerProvisioner) delete(f *framework.Framework, ref cmmeta.ObjectReference) {
-	Expect(a.pebble.Deprovision()).NotTo(HaveOccurred(), "failed to deprovision pebble")
+	if a.pebble != nil {
+		Expect(a.pebble.Deprovision()).NotTo(HaveOccurred(), "failed to deprovision pebble")
+	}
+	if a.cloudflair != nil {
+		Expect(a.cloudflair.Deprovision()).NotTo(HaveOccurred(), "failed to deprovision cloudflair")
+	}
 	Expect(a.tiller.Deprovision()).NotTo(HaveOccurred(), "failed to deprovision tiller")
 }
 
-// create will deploy the required components to run an ACME issuer based test.
+// createXXX will deploy the required components to run an ACME issuer based test.
 // This includes:
 // - tiller
 // - pebble
 // - a properly configured Issuer resource
-func (a *acmeIssuerProvisioner) create(f *framework.Framework) cmmeta.ObjectReference {
-	a.tiller = &tiller.Tiller{
-		Name:               "tiller-deploy",
-		ClusterPermissions: false,
-		Namespace:          f.Namespace.Name,
-	}
-	Expect(a.tiller.Setup(f.Config)).NotTo(HaveOccurred(), "failed to setup tiller")
-	Expect(a.tiller.Provision()).NotTo(HaveOccurred(), "failed to provision tiller")
+
+func (a *acmeIssuerProvisioner) createHTTP01(f *framework.Framework) cmmeta.ObjectReference {
+	a.deployTiller(f, "http01")
 
 	a.pebble = &pebble.Pebble{
 		Tiller:    a.tiller,
-		Name:      "cm-e2e-create-acme-issuer",
+		Name:      "cm-e2e-create-acme-http01-issuer",
 		Namespace: f.Namespace.Name,
 	}
 	Expect(a.pebble.Setup(f.Config)).NotTo(HaveOccurred(), "failed to setup pebble")
 	Expect(a.pebble.Provision()).NotTo(HaveOccurred(), "failed to provision pebble")
 
-	By("Creating an ACME issuer")
+	By("Creating an ACME HTTP01 issuer")
 	issuer := &cmapi.Issuer{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: "acme-issuer",
+			Name: "acme-issuer-http01",
 		},
 		Spec: cmapi.IssuerSpec{
 			IssuerConfig: cmapi.IssuerConfig{
@@ -92,7 +102,7 @@ func (a *acmeIssuerProvisioner) create(f *framework.Framework) cmmeta.ObjectRefe
 					SkipTLSVerify: true,
 					PrivateKey: cmmeta.SecretKeySelector{
 						LocalObjectReference: cmmeta.LocalObjectReference{
-							Name: "acme-private-key",
+							Name: "acme-private-key-http01",
 						},
 					},
 					Solvers: []cmacme.ACMEChallengeSolver{
@@ -109,12 +119,65 @@ func (a *acmeIssuerProvisioner) create(f *framework.Framework) cmmeta.ObjectRefe
 			},
 		},
 	}
+
 	issuer, err := f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name).Create(issuer)
-	Expect(err).NotTo(HaveOccurred(), "failed to create acme issuer")
+	Expect(err).NotTo(HaveOccurred(), "failed to create acme HTTP01 issuer")
 
 	return cmmeta.ObjectReference{
 		Group: cmapi.SchemeGroupVersion.Group,
 		Kind:  cmapi.IssuerKind,
 		Name:  issuer.Name,
 	}
+}
+
+func (a *acmeIssuerProvisioner) createDNS01(f *framework.Framework) cmmeta.ObjectReference {
+	a.deployTiller(f, "dns01")
+
+	a.cloudflair = &dnsproviders.Cloudflare{}
+	Expect(a.cloudflair.Setup(f.Config)).NotTo(HaveOccurred(), "failed to setup cloudflair")
+	Expect(a.cloudflair.Provision()).NotTo(HaveOccurred(), "failed to provision cloudflair")
+
+	By("Creating an ACME DNS01 issuer")
+	issuer := &cmapi.Issuer{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "acme-issuer-dns01",
+		},
+		Spec: cmapi.IssuerSpec{
+			IssuerConfig: cmapi.IssuerConfig{
+				ACME: &cmacme.ACMEIssuer{
+					// Hardcode this to the acme staging endpoint now due to issues with pebble dns resolution
+					Server:        "https://acme-staging-v02.api.letsencrypt.org/directory",
+					SkipTLSVerify: true,
+					PrivateKey: cmmeta.SecretKeySelector{
+						LocalObjectReference: cmmeta.LocalObjectReference{
+							Name: "acme-private-key",
+						},
+					},
+					Solvers: []cmacme.ACMEChallengeSolver{
+						{
+							DNS01: &a.cloudflair.Details().ProviderConfig,
+						},
+					},
+				},
+			},
+		},
+	}
+	issuer, err := f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name).Create(issuer)
+	Expect(err).NotTo(HaveOccurred(), "failed to create acme HTTP01 issuer")
+
+	return cmmeta.ObjectReference{
+		Group: cmapi.SchemeGroupVersion.Group,
+		Kind:  cmapi.IssuerKind,
+		Name:  issuer.Name,
+	}
+}
+
+func (a *acmeIssuerProvisioner) deployTiller(f *framework.Framework, solverType string) {
+	a.tiller = &tiller.Tiller{
+		Name:               "tiller-deploy-" + solverType,
+		ClusterPermissions: false,
+		Namespace:          f.Namespace.Name,
+	}
+	Expect(a.tiller.Setup(f.Config)).NotTo(HaveOccurred(), "failed to setup tiller")
+	Expect(a.tiller.Provision()).NotTo(HaveOccurred(), "failed to provision tiller")
 }
