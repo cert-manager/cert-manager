@@ -265,25 +265,31 @@ func (c *Chart) Logs() (map[string]string, error) {
 
 	out := make(map[string]string)
 	for _, pod := range podList {
-		// Only grab logs from the first container in the pod
-		// TODO: grab logs from all containers
-		containerName := pod.Spec.Containers[0].Name
-		resp := kc.CoreV1().Pods(pod.Namespace).GetLogs(pod.Name, &corev1.PodLogOptions{
-			Container: containerName,
-		}).Do()
+		for _, con := range pod.Spec.Containers {
+			for _, b := range []bool{true, false} {
+				resp := kc.CoreV1().Pods(pod.Namespace).GetLogs(pod.Name, &corev1.PodLogOptions{
+					Container: con.Name,
+					Previous:  b,
+				}).Do()
 
-		err := resp.Error()
-		if err != nil {
-			continue
+				err := resp.Error()
+				if err != nil {
+					continue
+				}
+
+				logs, err := resp.Raw()
+				if err != nil {
+					continue
+				}
+
+				outPath := path.Join(c.Namespace, pod.Name, con.Name)
+				if !b {
+					out[outPath] = fmt.Sprintf("%s\n%s", out[outPath], string(logs))
+				} else {
+					out[outPath] = string(logs)
+				}
+			}
 		}
-
-		logs, err := resp.Raw()
-		if err != nil {
-			continue
-		}
-
-		outPath := path.Join(c.Namespace, pod.Name)
-		out[outPath] = string(logs)
 	}
 
 	return out, nil
