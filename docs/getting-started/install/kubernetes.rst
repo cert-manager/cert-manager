@@ -160,7 +160,7 @@ checking the ``cert-manager`` namespace for running pods:
    cert-manager-webhook-787858fcdb-nlzsq      1/1     Running   0          2m
 
 You should see the ``cert-manager``, ``cert-manager-cainjector`` and
-``cert-manager-webhook` pod in a Running state.
+``cert-manager-webhook`` pod in a Running state.
 It may take a minute or so for the TLS assets required for the webhook to
 function to be provisioned. This may cause the webhook to take a while longer
 to start for the first time than other pods. If you experience problems, please
