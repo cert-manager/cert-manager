@@ -350,6 +350,9 @@ type ACMEChallengeSolverDNS01 struct {
 	RFC2136 *ACMEIssuerDNS01ProviderRFC2136 `json:"rfc2136,omitempty"`
 
 	// +optional
+	Softlayer *ACMEIssuerDNS01ProviderSoftlayer `json:"softlayer,omitempty"`
+
+	// +optional
 	Webhook *ACMEIssuerDNS01ProviderWebhook `json:"webhook,omitempty"`
 }
 
@@ -456,6 +459,13 @@ const (
 	AzureGermanCloud       AzureDNSEnvironment = "AzureGermanCloud"
 	AzureUSGovernmentCloud AzureDNSEnvironment = "AzureUSGovernmentCloud"
 )
+
+// ACMEIssuerDNS01ProviderSoftlayer is a structure containing the DNS
+// configuration for Softlayer
+type ACMEIssuerDNS01ProviderSoftlayer struct {
+	Username string            `json:"username"`
+	APIKey   SecretKeySelector `json:"apiKeySecretRef"`
+}
 
 // ACMEIssuerDNS01ProviderAcmeDNS is a structure containing the
 // configuration for ACME-DNS servers

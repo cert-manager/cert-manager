@@ -97,6 +97,7 @@ filegroup(
         "//vendor/github.com/hpcloud/tail:all-srcs",
         "//vendor/github.com/imdario/mergo:all-srcs",
         "//vendor/github.com/inconshreveable/mousetrap:all-srcs",
+        "//vendor/github.com/jarcoal/httpmock:all-srcs",
         "//vendor/github.com/jmespath/go-jmespath:all-srcs",
         "//vendor/github.com/json-iterator/go:all-srcs",
         "//vendor/github.com/kr/pretty:all-srcs",
