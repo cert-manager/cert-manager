@@ -282,12 +282,14 @@ func (c *Chart) Logs() (map[string]string, error) {
 					continue
 				}
 
-				outPath := path.Join(c.Namespace, pod.Name, con.Name)
-				if !b {
-					out[outPath] = fmt.Sprintf("%s\n%s", out[outPath], string(logs))
-				} else {
-					out[outPath] = string(logs)
+				outPath := path.Join(c.Namespace,
+					fmt.Sprintf("%s-%s", pod.Name, con.Name))
+
+				if b {
+					outPath = fmt.Sprintf("%s-previous", outPath)
 				}
+
+				out[outPath] = string(logs)
 			}
 		}
 	}
