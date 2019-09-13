@@ -282,7 +282,7 @@ func (s *Suite) Define() {
 			crt1, err := pki.DecodeX509CertificateBytes(crtPEM1)
 			Expect(err).NotTo(HaveOccurred(), "failed to get decode first signed certificate")
 
-			delete(sec.Data, corev1.TLSCertKey)
+			sec.Data[corev1.TLSCertKey] = []byte{}
 
 			_, err = f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Update(sec)
 			Expect(err).NotTo(HaveOccurred(), "failed to update secret by deleting the signed certificate")
