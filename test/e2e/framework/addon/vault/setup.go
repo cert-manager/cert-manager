@@ -65,11 +65,10 @@ func NewVaultServiceAccount(name string) *v1.ServiceAccount {
 	}
 }
 
-func NewVaultServiceAccountRole(namespace string) *rbacv1.Role {
-	return &rbacv1.Role{
+func NewVaultServiceAccountRole(namespace string) *rbacv1.ClusterRole {
+	return &rbacv1.ClusterRole{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "auth-delegator:vault",
-			Namespace: namespace,
+			Name: fmt.Sprintf("auth-delegator:%s:vault", namespace),
 		},
 		Rules: []rbacv1.PolicyRule{
 			{
@@ -86,22 +85,21 @@ func NewVaultServiceAccountRole(namespace string) *rbacv1.Role {
 	}
 }
 
-func NewVaultServiceAccountRoleBinding(roleName, namespace, subject string) *rbacv1.RoleBinding {
-	return &rbacv1.RoleBinding{
+func NewVaultServiceAccountClusterRoleBinding(roleName, namespace, subject string) *rbacv1.ClusterRoleBinding {
+	return &rbacv1.ClusterRoleBinding{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      roleName,
-			Namespace: namespace,
+			Name: roleName,
 		},
 		RoleRef: rbacv1.RoleRef{
 			APIGroup: "rbac.authorization.k8s.io",
-			Kind:     "Role",
+			Kind:     "ClusterRole",
 			Name:     roleName,
 		},
 		Subjects: []rbacv1.Subject{
 			{
 				Name:      subject,
-				Namespace: namespace,
 				Kind:      "ServiceAccount",
+				Namespace: namespace,
 			},
 		},
 	}
@@ -464,13 +462,13 @@ func (v *VaultInitializer) CreateKubernetesRole(client kubernetes.Interface, nam
 	}
 
 	role := NewVaultServiceAccountRole(namespace)
-	_, err = client.RbacV1().Roles(namespace).Create(role)
+	_, err = client.RbacV1().ClusterRoles().Create(role)
 	if err != nil {
 		return fmt.Errorf("error creating Role for Kubernetes auth ServiceAccount: %s", err.Error())
 	}
 
-	roleBinding := NewVaultServiceAccountRoleBinding(role.Name, namespace, serviceAccountName)
-	_, err = client.RbacV1().RoleBindings(namespace).Create(roleBinding)
+	roleBinding := NewVaultServiceAccountClusterRoleBinding(role.Name, namespace, serviceAccountName)
+	_, err = client.RbacV1().ClusterRoleBindings().Create(roleBinding)
 
 	if err != nil {
 		return fmt.Errorf("error creating RoleBinding for Kubernetes auth ServiceAccount: %s", err.Error())
