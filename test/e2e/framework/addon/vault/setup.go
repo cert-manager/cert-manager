@@ -68,7 +68,7 @@ func NewVaultServiceAccount(name string) *v1.ServiceAccount {
 func NewVaultServiceAccountRole(namespace string) *rbacv1.Role {
 	return &rbacv1.Role{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "auth-delegator",
+			Name:      "auth-delegator:vault",
 			Namespace: namespace,
 		},
 		Rules: []rbacv1.PolicyRule{
@@ -86,16 +86,16 @@ func NewVaultServiceAccountRole(namespace string) *rbacv1.Role {
 	}
 }
 
-func NewVaultServiceAccountRoleBinding(namespace, subject string) *rbacv1.RoleBinding {
+func NewVaultServiceAccountRoleBinding(roleName, namespace, subject string) *rbacv1.RoleBinding {
 	return &rbacv1.RoleBinding{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      fmt.Sprintf("%s:auth-delegator", subject),
+			Name:      roleName,
 			Namespace: namespace,
 		},
 		RoleRef: rbacv1.RoleRef{
 			APIGroup: "rbac.authorization.k8s.io",
 			Kind:     "Role",
-			Name:     "system:auth-delegator",
+			Name:     roleName,
 		},
 		Subjects: []rbacv1.Subject{
 			{
@@ -469,7 +469,7 @@ func (v *VaultInitializer) CreateKubernetesRole(client kubernetes.Interface, nam
 		return fmt.Errorf("error creating Role for Kubernetes auth ServiceAccount: %s", err.Error())
 	}
 
-	roleBinding := NewVaultServiceAccountRoleBinding(namespace, serviceAccountName)
+	roleBinding := NewVaultServiceAccountRoleBinding(role.Name, namespace, serviceAccountName)
 	_, err = client.RbacV1().RoleBindings(namespace).Create(roleBinding)
 
 	if err != nil {
@@ -494,11 +494,11 @@ func (v *VaultInitializer) CreateKubernetesRole(client kubernetes.Interface, nam
 
 // CleanKubernetesRole cleans up the ClusterRoleBinding and ServiceAccount for Kubernetes auth delegation
 func (v *VaultInitializer) CleanKubernetesRole(client kubernetes.Interface, namespace, roleName, serviceAccountName string) error {
-	if err := client.RbacV1().RoleBindings(namespace).Delete(fmt.Sprintf("%s:auth-delegator", serviceAccountName), nil); err != nil {
+	if err := client.RbacV1().RoleBindings(namespace).Delete(roleName, nil); err != nil {
 		return err
 	}
 
-	if err := client.RbacV1().Roles(namespace).Delete("auth-delegator", nil); err != nil {
+	if err := client.RbacV1().Roles(namespace).Delete(roleName, nil); err != nil {
 		return err
 	}
 
