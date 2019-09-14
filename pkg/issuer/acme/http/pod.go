@@ -72,6 +72,24 @@ func (s *Solver) ensurePod(ctx context.Context, ch *v1alpha1.Challenge) (*corev1
 	return s.createPod(ch)
 }
 
+// getFinalNamespace resolves the right namespace for Solver Pods for the
+// given challenge.  By default, it will be the namespace set in the
+// Challenge.  For ClusterIssuers, the it may overriden by the
+// Namespace set in the Solver's PodSpec.
+func getFinalNamespace(ch *v1alpha1.Challenge) string {
+	namespace := ch.Namespace
+
+	if ch.Spec.Solver != nil &&
+		ch.Spec.Solver.HTTP01 != nil &&
+		ch.Spec.Solver.HTTP01.Ingress != nil &&
+		ch.Spec.Solver.HTTP01.Ingress.PodTemplate != nil &&
+		0 < len(ch.Spec.Solver.HTTP01.Ingress.PodTemplate.Namespace) {
+		namespace = ch.Spec.Solver.HTTP01.Ingress.PodTemplate.Namespace
+	}
+
+	return namespace
+}
+
 // getPodsForChallenge returns a list of pods that were created to solve
 // the given challenge
 func (s *Solver) getPodsForChallenge(ctx context.Context, ch *v1alpha1.Challenge) ([]*corev1.Pod, error) {
@@ -87,7 +105,7 @@ func (s *Solver) getPodsForChallenge(ctx context.Context, ch *v1alpha1.Challenge
 		orderSelector = orderSelector.Add(*req)
 	}
 
-	podList, err := s.podLister.Pods(ch.Namespace).List(orderSelector)
+	podList, err := s.podLister.Pods(getFinalNamespace(ch)).List(orderSelector)
 	if err != nil {
 		return nil, err
 	}
@@ -132,8 +150,8 @@ func (s *Solver) cleanupPods(ctx context.Context, ch *v1alpha1.Challenge) error 
 // createPod will create a challenge solving pod for the given certificate,
 // domain, token and key.
 func (s *Solver) createPod(ch *v1alpha1.Challenge) (*corev1.Pod, error) {
-	return s.Client.CoreV1().Pods(ch.Namespace).Create(
-		s.buildPod(ch))
+	pod := s.buildPod(ch)
+	return s.Client.CoreV1().Pods(pod.Namespace).Create(pod)
 }
 
 // buildPod will build a challenge solving pod for the given certificate,
@@ -145,7 +163,8 @@ func (s *Solver) buildPod(ch *v1alpha1.Challenge) *corev1.Pod {
 	if ch.Spec.Solver != nil &&
 		ch.Spec.Solver.HTTP01 != nil &&
 		ch.Spec.Solver.HTTP01.Ingress != nil {
-		pod = s.mergePodObjectMetaWithPodTemplate(pod,
+		pod = s.mergePodObjectMetaWithPodTemplate(
+			pod,
 			ch.Spec.Solver.HTTP01.Ingress.PodTemplate)
 	}
 
@@ -222,6 +241,10 @@ func (s *Solver) mergePodObjectMetaWithPodTemplate(pod *corev1.Pod, podTempl *v1
 
 	for k, v := range podTempl.Annotations {
 		pod.Annotations[k] = v
+	}
+
+	if 0 < len(podTempl.Namespace) {
+		pod.Namespace = podTempl.Namespace
 	}
 
 	if pod.Spec.NodeSelector == nil {

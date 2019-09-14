@@ -257,7 +257,7 @@ func TestGetPodsForCertificate(t *testing.T) {
 func TestMergePodObjectMetaWithPodTemplate(t *testing.T) {
 	const createdPodKey = "createdPod"
 	tests := map[string]solverFixture{
-		"should use labels and annotations from template": {
+		"should use labels, annotations and namespace from template": {
 			Challenge: &v1alpha1.Challenge{
 				Spec: v1alpha1.ChallengeSpec{
 					DNSName: "example.com",
@@ -277,6 +277,7 @@ func TestMergePodObjectMetaWithPodTemplate(t *testing.T) {
 											"sidecar.istio.io/inject": "true",
 											"foo":                     "bar",
 										},
+										Namespace: "override-ns",
 									},
 									Spec: v1alpha1.ACMEChallengeSolverHTTP01IngressPodSpec{
 										NodeSelector: map[string]string{
@@ -308,6 +309,94 @@ func TestMergePodObjectMetaWithPodTemplate(t *testing.T) {
 					"sidecar.istio.io/inject": "true",
 					"foo":                     "bar",
 				}
+				resultingPod.Namespace = "override-ns"
+				resultingPod.Spec.NodeSelector = map[string]string{
+					"node": "selector",
+				}
+				resultingPod.Spec.Tolerations = []v1.Toleration{
+					{
+						Key:      "key",
+						Operator: "Exists",
+						Effect:   "NoSchedule",
+					},
+				}
+				s.testResources[createdPodKey] = resultingPod
+
+				s.Builder.Sync()
+			},
+			CheckFn: func(t *testing.T, s *solverFixture, args ...interface{}) {
+				resultingPod := s.testResources[createdPodKey].(*v1.Pod)
+
+				resp, ok := args[0].(*v1.Pod)
+				if !ok {
+					t.Errorf("expected pod to be returned, but got %v", args[0])
+					t.Fail()
+					return
+				}
+
+				// ignore pointer differences here
+				resultingPod.OwnerReferences = resp.OwnerReferences
+
+				if resp.String() != resultingPod.String() {
+					t.Errorf("unexpected pod generated from merge\nexp=%s\ngot=%s",
+						resultingPod, resp)
+					t.Fail()
+				}
+			},
+		},
+		"should use labels, annotations but not namespace from template with Issuer": {
+			Challenge: &v1alpha1.Challenge{
+				Spec: v1alpha1.ChallengeSpec{
+					DNSName: "example.com",
+					Config: &v1alpha1.SolverConfig{
+						HTTP01: &v1alpha1.HTTP01SolverConfig{},
+					},
+					Solver: &v1alpha1.ACMEChallengeSolver{
+						HTTP01: &v1alpha1.ACMEChallengeSolverHTTP01{
+							Ingress: &v1alpha1.ACMEChallengeSolverHTTP01Ingress{
+								PodTemplate: &v1alpha1.ACMEChallengeSolverHTTP01IngressPodTemplate{
+									ObjectMeta: metav1.ObjectMeta{
+										Labels: map[string]string{
+											"this is a":                           "label",
+											"certmanager.k8s.io/acme-http-domain": "44655555555",
+										},
+										Annotations: map[string]string{
+											"sidecar.istio.io/inject": "true",
+											"foo":                     "bar",
+										},
+										Namespace: "override-ns",
+									},
+									Spec: v1alpha1.ACMEChallengeSolverHTTP01IngressPodSpec{
+										NodeSelector: map[string]string{
+											"node": "selector",
+										},
+										Tolerations: []v1.Toleration{
+											{
+												Key:      "key",
+												Operator: "Exists",
+												Effect:   "NoSchedule",
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			PreFn: func(t *testing.T, s *solverFixture) {
+				resultingPod := s.Solver.buildDefaultPod(s.Challenge)
+				resultingPod.Labels = map[string]string{
+					"this is a":                             "label",
+					"certmanager.k8s.io/acme-http-domain":   "44655555555",
+					"certmanager.k8s.io/acme-http-token":    "1",
+					"certmanager.k8s.io/acme-http01-solver": "true",
+				}
+				resultingPod.Annotations = map[string]string{
+					"sidecar.istio.io/inject": "true",
+					"foo":                     "bar",
+				}
+				resultingPod.Namespace = "override-ns"
 				resultingPod.Spec.NodeSelector = map[string]string{
 					"node": "selector",
 				}
