@@ -28,6 +28,7 @@ go_test(
     srcs = [
         "certificate_for_issuer_test.go",
         "certificate_test.go",
+        "clusterissuer_test.go",
         "issuer_test.go",
     ],
     embed = [":go_default_library"],

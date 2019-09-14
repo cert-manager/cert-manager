@@ -35,7 +35,19 @@ import (
 
 func ValidateIssuer(obj runtime.Object) field.ErrorList {
 	iss := obj.(*v1alpha1.Issuer)
-	allErrs := ValidateIssuerSpec(&iss.Spec, field.NewPath("spec"))
+	fldPath := field.NewPath("spec")
+	allErrs := ValidateIssuerSpec(&iss.Spec, fldPath)
+
+	for _, solver := range iss.Spec.IssuerConfig.ACME.Solvers {
+		s := solver.HTTP01
+		if s != nil &&
+			s.Ingress != nil &&
+			s.Ingress.PodTemplate != nil &&
+			0 != len(s.Ingress.PodTemplate.Namespace) {
+			allErrs = append(allErrs, field.Forbidden(fldPath.Child("issuerConfig", "acme", "solver", "http01", "ingress", "podTemplate", "namespace"), "may only be set on ClusterIssuer, but not Issuer"))
+		}
+	}
+
 	return allErrs
 }
 
@@ -152,9 +164,10 @@ func ValidateACMEIssuerChallengeSolverHTTP01IngressPodTemplateConfig(podTempl *v
 	cpyPodTempl := podTempl.DeepCopy()
 	cpyPodTempl.Labels = nil
 	cpyPodTempl.Annotations = nil
+	cpyPodTempl.Namespace = ""
 
 	if !reflect.DeepEqual(cpyPodTempl.ObjectMeta, metav1.ObjectMeta{}) {
-		el = append(el, field.Invalid(fldPath.Child("metadata"), "", "only labels and annotations may be set on podTemplate metadata"))
+		el = append(el, field.Invalid(fldPath.Child("metadata"), "", "only labels, annotations and namespace may be set on podTemplate metadata"))
 	}
 
 	return el

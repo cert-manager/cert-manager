@@ -210,6 +210,7 @@ func TestValidateACMEIssuerConfig(t *testing.T) {
 							Ingress: &v1alpha1.ACMEChallengeSolverHTTP01Ingress{
 								PodTemplate: &v1alpha1.ACMEChallengeSolverHTTP01IngressPodTemplate{
 									ObjectMeta: metav1.ObjectMeta{
+										Namespace: "namespace",
 										Labels: map[string]string{
 											"valid_to_contain": "labels",
 										},
@@ -252,7 +253,7 @@ func TestValidateACMEIssuerConfig(t *testing.T) {
 			},
 			errs: []*field.Error{
 				field.Invalid(fldPath.Child("solver", "http01", "ingress", "podTemplate", "metadata"),
-					"", "only labels and annotations may be set on podTemplate metadata"),
+					"", "only labels, annotations and namespace may be set on podTemplate metadata"),
 			},
 		},
 		"acme issue with valid pod template PodSpec attributes": {
@@ -332,6 +333,53 @@ func TestValidateACMEIssuerConfig(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+// Validate that ordinary Issuers do not allow a PodSpec to override
+// the default namespace
+func TestValidateIssuer(t *testing.T) {
+	acmeIssuer := &v1alpha1.ACMEIssuer{
+		Email:      "valid-email",
+		Server:     "valid-server",
+		PrivateKey: validSecretKeyRef,
+		Solvers: []v1alpha1.ACMEChallengeSolver{
+			{
+				HTTP01: &v1alpha1.ACMEChallengeSolverHTTP01{
+					Ingress: &v1alpha1.ACMEChallengeSolverHTTP01Ingress{
+						PodTemplate: &v1alpha1.ACMEChallengeSolverHTTP01IngressPodTemplate{
+							ObjectMeta: metav1.ObjectMeta{
+								Namespace: "the_namespace",
+								Labels: map[string]string{
+									"valid_to_contain": "labels",
+								},
+								Annotations: map[string]string{
+									"valid_to_contain": "annotations",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		HTTP01: &v1alpha1.ACMEIssuerHTTP01Config{
+			ServiceType: corev1.ServiceType("NodePort"),
+		},
+	}
+
+	issuer := &v1alpha1.Issuer{
+		Spec: v1alpha1.IssuerSpec{
+			IssuerConfig: v1alpha1.IssuerConfig{
+				ACME: acmeIssuer,
+			},
+		},
+	}
+
+	fldPath := field.NewPath("spec")
+	errs := ValidateIssuer(issuer)
+	expectErr := field.ErrorList{field.Forbidden(fldPath.Child("issuerConfig", "acme", "solver", "http01", "ingress", "podTemplate", "namespace"), "may only be set on ClusterIssuer, but not Issuer")}
+	if !reflect.DeepEqual(errs, expectErr) {
+		t.Errorf("Expected %+v but got %+v", expectErr, errs)
 	}
 }
 
