@@ -112,6 +112,12 @@ func httpDomainCfgForChallenge(issuer v1alpha1.GenericIssuer, ch *v1alpha1.Chall
 func (s *Solver) Present(ctx context.Context, issuer v1alpha1.GenericIssuer, ch *v1alpha1.Challenge) error {
 	ctx = http01LogCtx(ctx)
 
+	if ch.Spec.Solver != nil &&
+		ch.Spec.Solver.HTTP01 != nil &&
+		0 < len(ch.Spec.Solver.HTTP01.Namespace) {
+		ch.Namespace = ch.Spec.Solver.HTTP01.Namespace
+	}
+
 	_, podErr := s.ensurePod(ctx, ch)
 	svc, svcErr := s.ensureService(ctx, issuer, ch)
 	if svcErr != nil {

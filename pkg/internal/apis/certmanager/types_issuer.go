@@ -269,6 +269,11 @@ type ACMEChallengeSolverHTTP01 struct {
 	// provisioned by cert-manager for each Challenge to be completed.
 	// +optional
 	Ingress *ACMEChallengeSolverHTTP01Ingress `json:"ingress"`
+
+	// If set, this option will override the default where resources
+	// related to the challenge will be created.
+	// +optional
+	Namespace string `json:"namespace,omitempty"`
 }
 
 type ACMEChallengeSolverHTTP01Ingress struct {

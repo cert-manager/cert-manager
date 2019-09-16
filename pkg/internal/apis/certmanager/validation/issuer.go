@@ -41,11 +41,10 @@ func ValidateIssuer(obj runtime.Object) field.ErrorList {
 	if iss.Spec.IssuerConfig.ACME != nil {
 		for _, solver := range iss.Spec.IssuerConfig.ACME.Solvers {
 			s := solver.HTTP01
-			if s != nil &&
-				s.Ingress != nil &&
-				s.Ingress.PodTemplate != nil &&
-				0 != len(s.Ingress.PodTemplate.Namespace) {
-				allErrs = append(allErrs, field.Forbidden(fldPath.Child("issuerConfig", "acme", "solver", "http01", "ingress", "podTemplate", "namespace"), "may only be set on ClusterIssuer, but not Issuer"))
+			if s != nil && 0 != len(s.Namespace) {
+				allErrs = append(allErrs, field.Forbidden(fldPath.Child(
+					"issuerConfig", "acme", "solver", "http01", "ingress", "podTemplate", "namespace"),
+					"may only be set on ClusterIssuer, but not Issuer"))
 			}
 		}
 

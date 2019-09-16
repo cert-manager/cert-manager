@@ -207,10 +207,10 @@ func TestValidateACMEIssuerConfig(t *testing.T) {
 				Solvers: []v1alpha1.ACMEChallengeSolver{
 					{
 						HTTP01: &v1alpha1.ACMEChallengeSolverHTTP01{
+							Namespace: "namespace",
 							Ingress: &v1alpha1.ACMEChallengeSolverHTTP01Ingress{
 								PodTemplate: &v1alpha1.ACMEChallengeSolverHTTP01IngressPodTemplate{
 									ObjectMeta: metav1.ObjectMeta{
-										Namespace: "namespace",
 										Labels: map[string]string{
 											"valid_to_contain": "labels",
 										},
@@ -346,10 +346,10 @@ func TestValidateIssuer(t *testing.T) {
 		Solvers: []v1alpha1.ACMEChallengeSolver{
 			{
 				HTTP01: &v1alpha1.ACMEChallengeSolverHTTP01{
+					Namespace: "the_namespace",
 					Ingress: &v1alpha1.ACMEChallengeSolverHTTP01Ingress{
 						PodTemplate: &v1alpha1.ACMEChallengeSolverHTTP01IngressPodTemplate{
 							ObjectMeta: metav1.ObjectMeta{
-								Namespace: "the_namespace",
 								Labels: map[string]string{
 									"valid_to_contain": "labels",
 								},

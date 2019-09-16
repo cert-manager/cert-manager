@@ -826,6 +826,7 @@ func Convert_certmanager_ACMEChallengeSolverDNS01_To_v1alpha1_ACMEChallengeSolve
 
 func autoConvert_v1alpha1_ACMEChallengeSolverHTTP01_To_certmanager_ACMEChallengeSolverHTTP01(in *v1alpha1.ACMEChallengeSolverHTTP01, out *certmanager.ACMEChallengeSolverHTTP01, s conversion.Scope) error {
 	out.Ingress = (*certmanager.ACMEChallengeSolverHTTP01Ingress)(unsafe.Pointer(in.Ingress))
+	out.Namespace = in.Namespace
 	return nil
 }
 
@@ -836,6 +837,7 @@ func Convert_v1alpha1_ACMEChallengeSolverHTTP01_To_certmanager_ACMEChallengeSolv
 
 func autoConvert_certmanager_ACMEChallengeSolverHTTP01_To_v1alpha1_ACMEChallengeSolverHTTP01(in *certmanager.ACMEChallengeSolverHTTP01, out *v1alpha1.ACMEChallengeSolverHTTP01, s conversion.Scope) error {
 	out.Ingress = (*v1alpha1.ACMEChallengeSolverHTTP01Ingress)(unsafe.Pointer(in.Ingress))
+	out.Namespace = in.Namespace
 	return nil
 }
 
