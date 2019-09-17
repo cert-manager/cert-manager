@@ -109,3 +109,43 @@ The added labels and annotations will merge on top of the cert-manager defaults,
 overriding entries with the same key.
 
 No other fields can be edited. 
+
+Namespace
+---------
+
+ClusterIssuer creates resources related to the challenge solver in the
+same namespace as the ingress with TLS annotation that requested the
+certificate.  This implies that:
+
+* Requires cert-manager needs CREATE permissions, potentially in all
+  namespaces
+* Because resourceQuotas, some namespaces will not allow to create the
+  pod for the acme challenge
+* Users with access to a given namespace will see the pods of the
+  challenge on their namespace.  This is something that a cluster
+  operator may want to hide from them.
+
+To solve this, the HTTP01 solver offers a  ``namespace`` property.  When
+set, all resources associated to the challenge solver will be created in
+the specified namespace.  An example of this configuration is:
+
+.. code-block:: yaml
+   :linenos:
+   :emphasize-lines: 13-20
+
+   apiVersion: certmanager.k8s.io/v1alpha1
+   kind: ClusterIssuer
+   metadata:
+     name: ...
+   spec:
+     acme:
+       ...
+       solvers:
+       - http01:
+           namespace: my_namespace
+           ingress:
+             ...
+
+
+The ``namespace`` property is only supported for
+ClusterIssuer.
