@@ -1784,6 +1784,10 @@ spec:
                             service
                           type: string
                       type: object
+                    namespace:
+                      description: If set, this option will override the default where
+                        resources related to the challenge will be created.
+                      type: string
                   type: object
                 selector:
                   description: Selector selects a set of DNSNames on the Certificate
@@ -3617,6 +3621,10 @@ spec:
                                   solver service
                                 type: string
                             type: object
+                          namespace:
+                            description: If set, this option will override the default
+                              where resources related to the challenge will be created.
+                            type: string
                         type: object
                       selector:
                         description: Selector selects a set of DNSNames on the Certificate
@@ -5592,6 +5600,10 @@ spec:
                                   solver service
                                 type: string
                             type: object
+                          namespace:
+                            description: If set, this option will override the default
+                              where resources related to the challenge will be created.
+                            type: string
                         type: object
                       selector:
                         description: Selector selects a set of DNSNames on the Certificate
