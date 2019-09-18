@@ -66,6 +66,6 @@ def install():
         name = "com_hashicorp_vault",
         registry = "index.docker.io",
         repository = "library/vault",
-        tag = "0.9.3",
-        digest = "sha256:27a564c725f4f6fa72a618add6b0c3294431ed6b5e912ee042822b35b91064c3",
+        tag = "1.2.3",
+        digest = "sha256:b1c86c9e173f15bb4a926e4144a63f7779531c30554ac7aee9b2a408b22b2c01"
     )
