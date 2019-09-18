@@ -217,7 +217,7 @@ func (s *Suite) Define() {
 			err = f.Helper().WaitCertificateIssuedValid(f.Namespace.Name, "testcert", time.Minute*5)
 			Expect(err).NotTo(HaveOccurred())
 
-			f.CertificateDurationValid(testCertificate, time.Hour*896)
+			f.CertificateDurationValid(testCertificate, time.Hour*896, 30*time.Second)
 		})
 
 		It("should issue a certificate which has a wildcard DNS name defined", func() {
@@ -286,6 +286,10 @@ func (s *Suite) Define() {
 
 			_, err = f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Update(sec)
 			Expect(err).NotTo(HaveOccurred(), "failed to update secret by deleting the signed certificate")
+
+			By("Waiting for the Certificate to become un-ready")
+			_, err = f.Helper().WaitForCertificateNotReady(f.Namespace.Name, "testcert", time.Second*30)
+			Expect(err).NotTo(HaveOccurred())
 
 			By("Waiting for the second Certificate to be issued...")
 			err = f.Helper().WaitCertificateIssuedValid(f.Namespace.Name, "testcert", time.Minute*5)

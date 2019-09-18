@@ -102,7 +102,7 @@ var _ = framework.CertManagerDescribe("Self Signed Certificate", func() {
 			Expect(err).NotTo(HaveOccurred())
 			err = h.WaitCertificateIssuedValid(f.Namespace.Name, certificateName, time.Second*30)
 			Expect(err).NotTo(HaveOccurred())
-			f.CertificateDurationValid(cert, v.expectedDuration)
+			f.CertificateDurationValid(cert, v.expectedDuration, 0)
 		})
 	}
 
