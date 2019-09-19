@@ -73,19 +73,6 @@ type OrderSpec struct {
 	// This field must match the corresponding field on the DER encoded CSR.
 	// +optional
 	DNSNames []string `json:"dnsNames,omitempty"`
-
-	// Config specifies a mapping from DNS identifiers to how those identifiers
-	// should be solved when performing ACME challenges.
-	// A config entry must exist for each domain listed in DNSNames and CommonName.
-	// Only **one** of 'config' or 'solvers' may be specified, and if both are
-	// specified then no action will be performed on the Order resource.
-	//
-	// This field will be removed when support for solver config specified on
-	// the Certificate under certificate.spec.acme has been removed.
-	// DEPRECATED: this field will be removed in future. Solver configuration
-	// must instead be provided on ACME Issuer resources.
-	// +optional
-	Config []DomainSolverConfig `json:"config,omitempty"`
 }
 
 type OrderStatus struct {
@@ -238,54 +225,3 @@ const (
 	// This is a final state.
 	Errored State = "errored"
 )
-
-// SolverConfig is a container type holding the configuration for either a
-// HTTP01 or DNS01 challenge.
-// Only one of HTTP01 or DNS01 should be non-nil.
-type SolverConfig struct {
-	// HTTP01 contains HTTP01 challenge solving configuration
-	// +optional
-	HTTP01 *HTTP01SolverConfig `json:"http01,omitempty"`
-
-	// DNS01 contains DNS01 challenge solving configuration
-	// +optional
-	DNS01 *DNS01SolverConfig `json:"dns01,omitempty"`
-}
-
-// HTTP01SolverConfig contains solver configuration for HTTP01 challenges.
-type HTTP01SolverConfig struct {
-	// Ingress is the name of an Ingress resource that will be edited to include
-	// the ACME HTTP01 'well-known' challenge path in order to solve HTTP01
-	// challenges.
-	// If this field is specified, 'ingressClass' **must not** be specified.
-	// +optional
-	Ingress string `json:"ingress,omitempty"`
-
-	// IngressClass is the ingress class that should be set on new ingress
-	// resources that are created in order to solve HTTP01 challenges.
-	// This field should be used when using an ingress controller such as nginx,
-	// which 'flattens' ingress configuration instead of maintaining a 1:1
-	// mapping between loadbalancer IP:ingress resources.
-	// If this field is not set, and 'ingress' is not set, then ingresses
-	// without an ingress class set will be created to solve HTTP01 challenges.
-	// If this field is specified, 'ingress' **must not** be specified.
-	// +optional
-	IngressClass *string `json:"ingressClass,omitempty"`
-}
-
-// DNS01SolverConfig contains solver configuration for DNS01 challenges.
-type DNS01SolverConfig struct {
-	// Provider is the name of the DNS01 challenge provider to use, as configure
-	// on the referenced Issuer or ClusterIssuer resource.
-	Provider string `json:"provider"`
-}
-
-// DomainSolverConfig contains solver configuration for a set of domains.
-type DomainSolverConfig struct {
-	// Domains is the list of domains that this SolverConfig applies to.
-	Domains []string `json:"domains"`
-
-	// SolverConfig contains the actual solver configuration to use for the
-	// provided set of domains.
-	SolverConfig `json:",inline"`
-}

@@ -117,13 +117,6 @@ type CertificateSpec struct {
 	// +optional
 	Usages []KeyUsage `json:"usages,omitempty"`
 
-	// ACME contains configuration specific to ACME Certificates.
-	// Notably, this contains details on how the domain names listed on this
-	// Certificate resource should be 'solved', i.e. mapping HTTP01 and DNS01
-	// providers to DNS names.
-	// +optional
-	ACME *ACMECertificateConfig `json:"acme,omitempty"`
-
 	// KeySize is the key bit size of the corresponding private key for this certificate.
 	// If provided, value must be between 2048 and 8192 inclusive when KeyAlgorithm is
 	// empty or is set to "rsa", and value must be one of (256, 384, 521) when
@@ -144,11 +137,6 @@ type CertificateSpec struct {
 	// values are "pkcs1" and "pkcs8" standing for PKCS#1 and PKCS#8, respectively.
 	// If KeyEncoding is not specified, then PKCS#1 will be used by default.
 	KeyEncoding KeyEncoding `json:"keyEncoding,omitempty"`
-}
-
-// ACMECertificateConfig contains the configuration for the ACME certificate provider
-type ACMECertificateConfig struct {
-	Config []DomainSolverConfig `json:"config"`
 }
 
 // CertificateStatus defines the observed state of Certificate

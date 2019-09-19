@@ -78,13 +78,6 @@ type ChallengeSpec struct {
 	// +optional
 	Wildcard bool `json:"wildcard"`
 
-	// Config specifies the solver configuration for this challenge.
-	// Only **one** of 'config' or 'solver' may be specified, and if both are
-	// specified then no action will be performed on the Challenge resource.
-	// DEPRECATED: the 'solver' field should be specified instead
-	// +optional
-	Config *SolverConfig `json:"config,omitempty"`
-
 	// Solver contains the domain solving configuration that should be used to
 	// solve this challenge resource.
 	// Only **one** of 'config' or 'solver' may be specified, and if both are
