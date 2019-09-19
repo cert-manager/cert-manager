@@ -49,16 +49,6 @@ func RegisterConversions(s *runtime.Scheme) error {
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*v1alpha1.ACMECertificateConfig)(nil), (*certmanager.ACMECertificateConfig)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha1_ACMECertificateConfig_To_certmanager_ACMECertificateConfig(a.(*v1alpha1.ACMECertificateConfig), b.(*certmanager.ACMECertificateConfig), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddGeneratedConversionFunc((*certmanager.ACMECertificateConfig)(nil), (*v1alpha1.ACMECertificateConfig)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_certmanager_ACMECertificateConfig_To_v1alpha1_ACMECertificateConfig(a.(*certmanager.ACMECertificateConfig), b.(*v1alpha1.ACMECertificateConfig), scope)
-	}); err != nil {
-		return err
-	}
 	if err := s.AddGeneratedConversionFunc((*v1alpha1.ACMEChallenge)(nil), (*certmanager.ACMEChallenge)(nil), func(a, b interface{}, scope conversion.Scope) error {
 		return Convert_v1alpha1_ACMEChallenge_To_certmanager_ACMEChallenge(a.(*v1alpha1.ACMEChallenge), b.(*certmanager.ACMEChallenge), scope)
 	}); err != nil {
@@ -136,26 +126,6 @@ func RegisterConversions(s *runtime.Scheme) error {
 	}
 	if err := s.AddGeneratedConversionFunc((*certmanager.ACMEIssuer)(nil), (*v1alpha1.ACMEIssuer)(nil), func(a, b interface{}, scope conversion.Scope) error {
 		return Convert_certmanager_ACMEIssuer_To_v1alpha1_ACMEIssuer(a.(*certmanager.ACMEIssuer), b.(*v1alpha1.ACMEIssuer), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddGeneratedConversionFunc((*v1alpha1.ACMEIssuerDNS01Config)(nil), (*certmanager.ACMEIssuerDNS01Config)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha1_ACMEIssuerDNS01Config_To_certmanager_ACMEIssuerDNS01Config(a.(*v1alpha1.ACMEIssuerDNS01Config), b.(*certmanager.ACMEIssuerDNS01Config), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddGeneratedConversionFunc((*certmanager.ACMEIssuerDNS01Config)(nil), (*v1alpha1.ACMEIssuerDNS01Config)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_certmanager_ACMEIssuerDNS01Config_To_v1alpha1_ACMEIssuerDNS01Config(a.(*certmanager.ACMEIssuerDNS01Config), b.(*v1alpha1.ACMEIssuerDNS01Config), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddGeneratedConversionFunc((*v1alpha1.ACMEIssuerDNS01Provider)(nil), (*certmanager.ACMEIssuerDNS01Provider)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha1_ACMEIssuerDNS01Provider_To_certmanager_ACMEIssuerDNS01Provider(a.(*v1alpha1.ACMEIssuerDNS01Provider), b.(*certmanager.ACMEIssuerDNS01Provider), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddGeneratedConversionFunc((*certmanager.ACMEIssuerDNS01Provider)(nil), (*v1alpha1.ACMEIssuerDNS01Provider)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_certmanager_ACMEIssuerDNS01Provider_To_v1alpha1_ACMEIssuerDNS01Provider(a.(*certmanager.ACMEIssuerDNS01Provider), b.(*v1alpha1.ACMEIssuerDNS01Provider), scope)
 	}); err != nil {
 		return err
 	}
@@ -246,16 +216,6 @@ func RegisterConversions(s *runtime.Scheme) error {
 	}
 	if err := s.AddGeneratedConversionFunc((*certmanager.ACMEIssuerDNS01ProviderWebhook)(nil), (*v1alpha1.ACMEIssuerDNS01ProviderWebhook)(nil), func(a, b interface{}, scope conversion.Scope) error {
 		return Convert_certmanager_ACMEIssuerDNS01ProviderWebhook_To_v1alpha1_ACMEIssuerDNS01ProviderWebhook(a.(*certmanager.ACMEIssuerDNS01ProviderWebhook), b.(*v1alpha1.ACMEIssuerDNS01ProviderWebhook), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddGeneratedConversionFunc((*v1alpha1.ACMEIssuerHTTP01Config)(nil), (*certmanager.ACMEIssuerHTTP01Config)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha1_ACMEIssuerHTTP01Config_To_certmanager_ACMEIssuerHTTP01Config(a.(*v1alpha1.ACMEIssuerHTTP01Config), b.(*certmanager.ACMEIssuerHTTP01Config), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddGeneratedConversionFunc((*certmanager.ACMEIssuerHTTP01Config)(nil), (*v1alpha1.ACMEIssuerHTTP01Config)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_certmanager_ACMEIssuerHTTP01Config_To_v1alpha1_ACMEIssuerHTTP01Config(a.(*certmanager.ACMEIssuerHTTP01Config), b.(*v1alpha1.ACMEIssuerHTTP01Config), scope)
 	}); err != nil {
 		return err
 	}
@@ -449,36 +409,6 @@ func RegisterConversions(s *runtime.Scheme) error {
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*v1alpha1.DNS01SolverConfig)(nil), (*certmanager.DNS01SolverConfig)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha1_DNS01SolverConfig_To_certmanager_DNS01SolverConfig(a.(*v1alpha1.DNS01SolverConfig), b.(*certmanager.DNS01SolverConfig), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddGeneratedConversionFunc((*certmanager.DNS01SolverConfig)(nil), (*v1alpha1.DNS01SolverConfig)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_certmanager_DNS01SolverConfig_To_v1alpha1_DNS01SolverConfig(a.(*certmanager.DNS01SolverConfig), b.(*v1alpha1.DNS01SolverConfig), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddGeneratedConversionFunc((*v1alpha1.DomainSolverConfig)(nil), (*certmanager.DomainSolverConfig)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha1_DomainSolverConfig_To_certmanager_DomainSolverConfig(a.(*v1alpha1.DomainSolverConfig), b.(*certmanager.DomainSolverConfig), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddGeneratedConversionFunc((*certmanager.DomainSolverConfig)(nil), (*v1alpha1.DomainSolverConfig)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_certmanager_DomainSolverConfig_To_v1alpha1_DomainSolverConfig(a.(*certmanager.DomainSolverConfig), b.(*v1alpha1.DomainSolverConfig), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddGeneratedConversionFunc((*v1alpha1.HTTP01SolverConfig)(nil), (*certmanager.HTTP01SolverConfig)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha1_HTTP01SolverConfig_To_certmanager_HTTP01SolverConfig(a.(*v1alpha1.HTTP01SolverConfig), b.(*certmanager.HTTP01SolverConfig), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddGeneratedConversionFunc((*certmanager.HTTP01SolverConfig)(nil), (*v1alpha1.HTTP01SolverConfig)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_certmanager_HTTP01SolverConfig_To_v1alpha1_HTTP01SolverConfig(a.(*certmanager.HTTP01SolverConfig), b.(*v1alpha1.HTTP01SolverConfig), scope)
-	}); err != nil {
-		return err
-	}
 	if err := s.AddGeneratedConversionFunc((*v1alpha1.Issuer)(nil), (*certmanager.Issuer)(nil), func(a, b interface{}, scope conversion.Scope) error {
 		return Convert_v1alpha1_Issuer_To_certmanager_Issuer(a.(*v1alpha1.Issuer), b.(*certmanager.Issuer), scope)
 	}); err != nil {
@@ -619,16 +549,6 @@ func RegisterConversions(s *runtime.Scheme) error {
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*v1alpha1.SolverConfig)(nil), (*certmanager.SolverConfig)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha1_SolverConfig_To_certmanager_SolverConfig(a.(*v1alpha1.SolverConfig), b.(*certmanager.SolverConfig), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddGeneratedConversionFunc((*certmanager.SolverConfig)(nil), (*v1alpha1.SolverConfig)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_certmanager_SolverConfig_To_v1alpha1_SolverConfig(a.(*certmanager.SolverConfig), b.(*v1alpha1.SolverConfig), scope)
-	}); err != nil {
-		return err
-	}
 	if err := s.AddGeneratedConversionFunc((*v1alpha1.VaultAppRole)(nil), (*certmanager.VaultAppRole)(nil), func(a, b interface{}, scope conversion.Scope) error {
 		return Convert_v1alpha1_VaultAppRole_To_certmanager_VaultAppRole(a.(*v1alpha1.VaultAppRole), b.(*certmanager.VaultAppRole), scope)
 	}); err != nil {
@@ -716,26 +636,6 @@ func autoConvert_certmanager_ACMEAuthorization_To_v1alpha1_ACMEAuthorization(in 
 // Convert_certmanager_ACMEAuthorization_To_v1alpha1_ACMEAuthorization is an autogenerated conversion function.
 func Convert_certmanager_ACMEAuthorization_To_v1alpha1_ACMEAuthorization(in *certmanager.ACMEAuthorization, out *v1alpha1.ACMEAuthorization, s conversion.Scope) error {
 	return autoConvert_certmanager_ACMEAuthorization_To_v1alpha1_ACMEAuthorization(in, out, s)
-}
-
-func autoConvert_v1alpha1_ACMECertificateConfig_To_certmanager_ACMECertificateConfig(in *v1alpha1.ACMECertificateConfig, out *certmanager.ACMECertificateConfig, s conversion.Scope) error {
-	out.Config = *(*[]certmanager.DomainSolverConfig)(unsafe.Pointer(&in.Config))
-	return nil
-}
-
-// Convert_v1alpha1_ACMECertificateConfig_To_certmanager_ACMECertificateConfig is an autogenerated conversion function.
-func Convert_v1alpha1_ACMECertificateConfig_To_certmanager_ACMECertificateConfig(in *v1alpha1.ACMECertificateConfig, out *certmanager.ACMECertificateConfig, s conversion.Scope) error {
-	return autoConvert_v1alpha1_ACMECertificateConfig_To_certmanager_ACMECertificateConfig(in, out, s)
-}
-
-func autoConvert_certmanager_ACMECertificateConfig_To_v1alpha1_ACMECertificateConfig(in *certmanager.ACMECertificateConfig, out *v1alpha1.ACMECertificateConfig, s conversion.Scope) error {
-	out.Config = *(*[]v1alpha1.DomainSolverConfig)(unsafe.Pointer(&in.Config))
-	return nil
-}
-
-// Convert_certmanager_ACMECertificateConfig_To_v1alpha1_ACMECertificateConfig is an autogenerated conversion function.
-func Convert_certmanager_ACMECertificateConfig_To_v1alpha1_ACMECertificateConfig(in *certmanager.ACMECertificateConfig, out *v1alpha1.ACMECertificateConfig, s conversion.Scope) error {
-	return autoConvert_certmanager_ACMECertificateConfig_To_v1alpha1_ACMECertificateConfig(in, out, s)
 }
 
 func autoConvert_v1alpha1_ACMEChallenge_To_certmanager_ACMEChallenge(in *v1alpha1.ACMEChallenge, out *certmanager.ACMEChallenge, s conversion.Scope) error {
@@ -928,8 +828,6 @@ func autoConvert_v1alpha1_ACMEIssuer_To_certmanager_ACMEIssuer(in *v1alpha1.ACME
 		return err
 	}
 	out.Solvers = *(*[]certmanager.ACMEChallengeSolver)(unsafe.Pointer(&in.Solvers))
-	out.HTTP01 = (*certmanager.ACMEIssuerHTTP01Config)(unsafe.Pointer(in.HTTP01))
-	out.DNS01 = (*certmanager.ACMEIssuerDNS01Config)(unsafe.Pointer(in.DNS01))
 	return nil
 }
 
@@ -946,74 +844,12 @@ func autoConvert_certmanager_ACMEIssuer_To_v1alpha1_ACMEIssuer(in *certmanager.A
 		return err
 	}
 	out.Solvers = *(*[]v1alpha1.ACMEChallengeSolver)(unsafe.Pointer(&in.Solvers))
-	out.HTTP01 = (*v1alpha1.ACMEIssuerHTTP01Config)(unsafe.Pointer(in.HTTP01))
-	out.DNS01 = (*v1alpha1.ACMEIssuerDNS01Config)(unsafe.Pointer(in.DNS01))
 	return nil
 }
 
 // Convert_certmanager_ACMEIssuer_To_v1alpha1_ACMEIssuer is an autogenerated conversion function.
 func Convert_certmanager_ACMEIssuer_To_v1alpha1_ACMEIssuer(in *certmanager.ACMEIssuer, out *v1alpha1.ACMEIssuer, s conversion.Scope) error {
 	return autoConvert_certmanager_ACMEIssuer_To_v1alpha1_ACMEIssuer(in, out, s)
-}
-
-func autoConvert_v1alpha1_ACMEIssuerDNS01Config_To_certmanager_ACMEIssuerDNS01Config(in *v1alpha1.ACMEIssuerDNS01Config, out *certmanager.ACMEIssuerDNS01Config, s conversion.Scope) error {
-	out.Providers = *(*[]certmanager.ACMEIssuerDNS01Provider)(unsafe.Pointer(&in.Providers))
-	return nil
-}
-
-// Convert_v1alpha1_ACMEIssuerDNS01Config_To_certmanager_ACMEIssuerDNS01Config is an autogenerated conversion function.
-func Convert_v1alpha1_ACMEIssuerDNS01Config_To_certmanager_ACMEIssuerDNS01Config(in *v1alpha1.ACMEIssuerDNS01Config, out *certmanager.ACMEIssuerDNS01Config, s conversion.Scope) error {
-	return autoConvert_v1alpha1_ACMEIssuerDNS01Config_To_certmanager_ACMEIssuerDNS01Config(in, out, s)
-}
-
-func autoConvert_certmanager_ACMEIssuerDNS01Config_To_v1alpha1_ACMEIssuerDNS01Config(in *certmanager.ACMEIssuerDNS01Config, out *v1alpha1.ACMEIssuerDNS01Config, s conversion.Scope) error {
-	out.Providers = *(*[]v1alpha1.ACMEIssuerDNS01Provider)(unsafe.Pointer(&in.Providers))
-	return nil
-}
-
-// Convert_certmanager_ACMEIssuerDNS01Config_To_v1alpha1_ACMEIssuerDNS01Config is an autogenerated conversion function.
-func Convert_certmanager_ACMEIssuerDNS01Config_To_v1alpha1_ACMEIssuerDNS01Config(in *certmanager.ACMEIssuerDNS01Config, out *v1alpha1.ACMEIssuerDNS01Config, s conversion.Scope) error {
-	return autoConvert_certmanager_ACMEIssuerDNS01Config_To_v1alpha1_ACMEIssuerDNS01Config(in, out, s)
-}
-
-func autoConvert_v1alpha1_ACMEIssuerDNS01Provider_To_certmanager_ACMEIssuerDNS01Provider(in *v1alpha1.ACMEIssuerDNS01Provider, out *certmanager.ACMEIssuerDNS01Provider, s conversion.Scope) error {
-	out.Name = in.Name
-	out.CNAMEStrategy = certmanager.CNAMEStrategy(in.CNAMEStrategy)
-	out.Akamai = (*certmanager.ACMEIssuerDNS01ProviderAkamai)(unsafe.Pointer(in.Akamai))
-	out.CloudDNS = (*certmanager.ACMEIssuerDNS01ProviderCloudDNS)(unsafe.Pointer(in.CloudDNS))
-	out.Cloudflare = (*certmanager.ACMEIssuerDNS01ProviderCloudflare)(unsafe.Pointer(in.Cloudflare))
-	out.Route53 = (*certmanager.ACMEIssuerDNS01ProviderRoute53)(unsafe.Pointer(in.Route53))
-	out.AzureDNS = (*certmanager.ACMEIssuerDNS01ProviderAzureDNS)(unsafe.Pointer(in.AzureDNS))
-	out.DigitalOcean = (*certmanager.ACMEIssuerDNS01ProviderDigitalOcean)(unsafe.Pointer(in.DigitalOcean))
-	out.AcmeDNS = (*certmanager.ACMEIssuerDNS01ProviderAcmeDNS)(unsafe.Pointer(in.AcmeDNS))
-	out.RFC2136 = (*certmanager.ACMEIssuerDNS01ProviderRFC2136)(unsafe.Pointer(in.RFC2136))
-	out.Webhook = (*certmanager.ACMEIssuerDNS01ProviderWebhook)(unsafe.Pointer(in.Webhook))
-	return nil
-}
-
-// Convert_v1alpha1_ACMEIssuerDNS01Provider_To_certmanager_ACMEIssuerDNS01Provider is an autogenerated conversion function.
-func Convert_v1alpha1_ACMEIssuerDNS01Provider_To_certmanager_ACMEIssuerDNS01Provider(in *v1alpha1.ACMEIssuerDNS01Provider, out *certmanager.ACMEIssuerDNS01Provider, s conversion.Scope) error {
-	return autoConvert_v1alpha1_ACMEIssuerDNS01Provider_To_certmanager_ACMEIssuerDNS01Provider(in, out, s)
-}
-
-func autoConvert_certmanager_ACMEIssuerDNS01Provider_To_v1alpha1_ACMEIssuerDNS01Provider(in *certmanager.ACMEIssuerDNS01Provider, out *v1alpha1.ACMEIssuerDNS01Provider, s conversion.Scope) error {
-	out.Name = in.Name
-	out.CNAMEStrategy = v1alpha1.CNAMEStrategy(in.CNAMEStrategy)
-	out.Akamai = (*v1alpha1.ACMEIssuerDNS01ProviderAkamai)(unsafe.Pointer(in.Akamai))
-	out.CloudDNS = (*v1alpha1.ACMEIssuerDNS01ProviderCloudDNS)(unsafe.Pointer(in.CloudDNS))
-	out.Cloudflare = (*v1alpha1.ACMEIssuerDNS01ProviderCloudflare)(unsafe.Pointer(in.Cloudflare))
-	out.Route53 = (*v1alpha1.ACMEIssuerDNS01ProviderRoute53)(unsafe.Pointer(in.Route53))
-	out.AzureDNS = (*v1alpha1.ACMEIssuerDNS01ProviderAzureDNS)(unsafe.Pointer(in.AzureDNS))
-	out.DigitalOcean = (*v1alpha1.ACMEIssuerDNS01ProviderDigitalOcean)(unsafe.Pointer(in.DigitalOcean))
-	out.AcmeDNS = (*v1alpha1.ACMEIssuerDNS01ProviderAcmeDNS)(unsafe.Pointer(in.AcmeDNS))
-	out.RFC2136 = (*v1alpha1.ACMEIssuerDNS01ProviderRFC2136)(unsafe.Pointer(in.RFC2136))
-	out.Webhook = (*v1alpha1.ACMEIssuerDNS01ProviderWebhook)(unsafe.Pointer(in.Webhook))
-	return nil
-}
-
-// Convert_certmanager_ACMEIssuerDNS01Provider_To_v1alpha1_ACMEIssuerDNS01Provider is an autogenerated conversion function.
-func Convert_certmanager_ACMEIssuerDNS01Provider_To_v1alpha1_ACMEIssuerDNS01Provider(in *certmanager.ACMEIssuerDNS01Provider, out *v1alpha1.ACMEIssuerDNS01Provider, s conversion.Scope) error {
-	return autoConvert_certmanager_ACMEIssuerDNS01Provider_To_v1alpha1_ACMEIssuerDNS01Provider(in, out, s)
 }
 
 func autoConvert_v1alpha1_ACMEIssuerDNS01ProviderAcmeDNS_To_certmanager_ACMEIssuerDNS01ProviderAcmeDNS(in *v1alpha1.ACMEIssuerDNS01ProviderAcmeDNS, out *certmanager.ACMEIssuerDNS01ProviderAcmeDNS, s conversion.Scope) error {
@@ -1276,26 +1112,6 @@ func autoConvert_certmanager_ACMEIssuerDNS01ProviderWebhook_To_v1alpha1_ACMEIssu
 // Convert_certmanager_ACMEIssuerDNS01ProviderWebhook_To_v1alpha1_ACMEIssuerDNS01ProviderWebhook is an autogenerated conversion function.
 func Convert_certmanager_ACMEIssuerDNS01ProviderWebhook_To_v1alpha1_ACMEIssuerDNS01ProviderWebhook(in *certmanager.ACMEIssuerDNS01ProviderWebhook, out *v1alpha1.ACMEIssuerDNS01ProviderWebhook, s conversion.Scope) error {
 	return autoConvert_certmanager_ACMEIssuerDNS01ProviderWebhook_To_v1alpha1_ACMEIssuerDNS01ProviderWebhook(in, out, s)
-}
-
-func autoConvert_v1alpha1_ACMEIssuerHTTP01Config_To_certmanager_ACMEIssuerHTTP01Config(in *v1alpha1.ACMEIssuerHTTP01Config, out *certmanager.ACMEIssuerHTTP01Config, s conversion.Scope) error {
-	out.ServiceType = v1.ServiceType(in.ServiceType)
-	return nil
-}
-
-// Convert_v1alpha1_ACMEIssuerHTTP01Config_To_certmanager_ACMEIssuerHTTP01Config is an autogenerated conversion function.
-func Convert_v1alpha1_ACMEIssuerHTTP01Config_To_certmanager_ACMEIssuerHTTP01Config(in *v1alpha1.ACMEIssuerHTTP01Config, out *certmanager.ACMEIssuerHTTP01Config, s conversion.Scope) error {
-	return autoConvert_v1alpha1_ACMEIssuerHTTP01Config_To_certmanager_ACMEIssuerHTTP01Config(in, out, s)
-}
-
-func autoConvert_certmanager_ACMEIssuerHTTP01Config_To_v1alpha1_ACMEIssuerHTTP01Config(in *certmanager.ACMEIssuerHTTP01Config, out *v1alpha1.ACMEIssuerHTTP01Config, s conversion.Scope) error {
-	out.ServiceType = v1.ServiceType(in.ServiceType)
-	return nil
-}
-
-// Convert_certmanager_ACMEIssuerHTTP01Config_To_v1alpha1_ACMEIssuerHTTP01Config is an autogenerated conversion function.
-func Convert_certmanager_ACMEIssuerHTTP01Config_To_v1alpha1_ACMEIssuerHTTP01Config(in *certmanager.ACMEIssuerHTTP01Config, out *v1alpha1.ACMEIssuerHTTP01Config, s conversion.Scope) error {
-	return autoConvert_certmanager_ACMEIssuerHTTP01Config_To_v1alpha1_ACMEIssuerHTTP01Config(in, out, s)
 }
 
 func autoConvert_v1alpha1_ACMEIssuerStatus_To_certmanager_ACMEIssuerStatus(in *v1alpha1.ACMEIssuerStatus, out *certmanager.ACMEIssuerStatus, s conversion.Scope) error {
@@ -1599,7 +1415,6 @@ func autoConvert_v1alpha1_CertificateSpec_To_certmanager_CertificateSpec(in *v1a
 	}
 	out.IsCA = in.IsCA
 	out.Usages = *(*[]certmanager.KeyUsage)(unsafe.Pointer(&in.Usages))
-	out.ACME = (*certmanager.ACMECertificateConfig)(unsafe.Pointer(in.ACME))
 	out.KeySize = in.KeySize
 	out.KeyAlgorithm = certmanager.KeyAlgorithm(in.KeyAlgorithm)
 	out.KeyEncoding = certmanager.KeyEncoding(in.KeyEncoding)
@@ -1624,7 +1439,6 @@ func autoConvert_certmanager_CertificateSpec_To_v1alpha1_CertificateSpec(in *cer
 	}
 	out.IsCA = in.IsCA
 	out.Usages = *(*[]v1alpha1.KeyUsage)(unsafe.Pointer(&in.Usages))
-	out.ACME = (*v1alpha1.ACMECertificateConfig)(unsafe.Pointer(in.ACME))
 	out.KeySize = in.KeySize
 	out.KeyAlgorithm = v1alpha1.KeyAlgorithm(in.KeyAlgorithm)
 	out.KeyEncoding = v1alpha1.KeyEncoding(in.KeyEncoding)
@@ -1722,7 +1536,6 @@ func autoConvert_v1alpha1_ChallengeSpec_To_certmanager_ChallengeSpec(in *v1alpha
 	out.Token = in.Token
 	out.Key = in.Key
 	out.Wildcard = in.Wildcard
-	out.Config = (*certmanager.SolverConfig)(unsafe.Pointer(in.Config))
 	out.Solver = (*certmanager.ACMEChallengeSolver)(unsafe.Pointer(in.Solver))
 	if err := Convert_v1alpha1_ObjectReference_To_certmanager_ObjectReference(&in.IssuerRef, &out.IssuerRef, s); err != nil {
 		return err
@@ -1743,7 +1556,6 @@ func autoConvert_certmanager_ChallengeSpec_To_v1alpha1_ChallengeSpec(in *certman
 	out.Token = in.Token
 	out.Key = in.Key
 	out.Wildcard = in.Wildcard
-	out.Config = (*v1alpha1.SolverConfig)(unsafe.Pointer(in.Config))
 	out.Solver = (*v1alpha1.ACMEChallengeSolver)(unsafe.Pointer(in.Solver))
 	if err := Convert_certmanager_ObjectReference_To_v1alpha1_ObjectReference(&in.IssuerRef, &out.IssuerRef, s); err != nil {
 		return err
@@ -1834,74 +1646,6 @@ func autoConvert_certmanager_ClusterIssuerList_To_v1alpha1_ClusterIssuerList(in 
 // Convert_certmanager_ClusterIssuerList_To_v1alpha1_ClusterIssuerList is an autogenerated conversion function.
 func Convert_certmanager_ClusterIssuerList_To_v1alpha1_ClusterIssuerList(in *certmanager.ClusterIssuerList, out *v1alpha1.ClusterIssuerList, s conversion.Scope) error {
 	return autoConvert_certmanager_ClusterIssuerList_To_v1alpha1_ClusterIssuerList(in, out, s)
-}
-
-func autoConvert_v1alpha1_DNS01SolverConfig_To_certmanager_DNS01SolverConfig(in *v1alpha1.DNS01SolverConfig, out *certmanager.DNS01SolverConfig, s conversion.Scope) error {
-	out.Provider = in.Provider
-	return nil
-}
-
-// Convert_v1alpha1_DNS01SolverConfig_To_certmanager_DNS01SolverConfig is an autogenerated conversion function.
-func Convert_v1alpha1_DNS01SolverConfig_To_certmanager_DNS01SolverConfig(in *v1alpha1.DNS01SolverConfig, out *certmanager.DNS01SolverConfig, s conversion.Scope) error {
-	return autoConvert_v1alpha1_DNS01SolverConfig_To_certmanager_DNS01SolverConfig(in, out, s)
-}
-
-func autoConvert_certmanager_DNS01SolverConfig_To_v1alpha1_DNS01SolverConfig(in *certmanager.DNS01SolverConfig, out *v1alpha1.DNS01SolverConfig, s conversion.Scope) error {
-	out.Provider = in.Provider
-	return nil
-}
-
-// Convert_certmanager_DNS01SolverConfig_To_v1alpha1_DNS01SolverConfig is an autogenerated conversion function.
-func Convert_certmanager_DNS01SolverConfig_To_v1alpha1_DNS01SolverConfig(in *certmanager.DNS01SolverConfig, out *v1alpha1.DNS01SolverConfig, s conversion.Scope) error {
-	return autoConvert_certmanager_DNS01SolverConfig_To_v1alpha1_DNS01SolverConfig(in, out, s)
-}
-
-func autoConvert_v1alpha1_DomainSolverConfig_To_certmanager_DomainSolverConfig(in *v1alpha1.DomainSolverConfig, out *certmanager.DomainSolverConfig, s conversion.Scope) error {
-	out.Domains = *(*[]string)(unsafe.Pointer(&in.Domains))
-	if err := Convert_v1alpha1_SolverConfig_To_certmanager_SolverConfig(&in.SolverConfig, &out.SolverConfig, s); err != nil {
-		return err
-	}
-	return nil
-}
-
-// Convert_v1alpha1_DomainSolverConfig_To_certmanager_DomainSolverConfig is an autogenerated conversion function.
-func Convert_v1alpha1_DomainSolverConfig_To_certmanager_DomainSolverConfig(in *v1alpha1.DomainSolverConfig, out *certmanager.DomainSolverConfig, s conversion.Scope) error {
-	return autoConvert_v1alpha1_DomainSolverConfig_To_certmanager_DomainSolverConfig(in, out, s)
-}
-
-func autoConvert_certmanager_DomainSolverConfig_To_v1alpha1_DomainSolverConfig(in *certmanager.DomainSolverConfig, out *v1alpha1.DomainSolverConfig, s conversion.Scope) error {
-	out.Domains = *(*[]string)(unsafe.Pointer(&in.Domains))
-	if err := Convert_certmanager_SolverConfig_To_v1alpha1_SolverConfig(&in.SolverConfig, &out.SolverConfig, s); err != nil {
-		return err
-	}
-	return nil
-}
-
-// Convert_certmanager_DomainSolverConfig_To_v1alpha1_DomainSolverConfig is an autogenerated conversion function.
-func Convert_certmanager_DomainSolverConfig_To_v1alpha1_DomainSolverConfig(in *certmanager.DomainSolverConfig, out *v1alpha1.DomainSolverConfig, s conversion.Scope) error {
-	return autoConvert_certmanager_DomainSolverConfig_To_v1alpha1_DomainSolverConfig(in, out, s)
-}
-
-func autoConvert_v1alpha1_HTTP01SolverConfig_To_certmanager_HTTP01SolverConfig(in *v1alpha1.HTTP01SolverConfig, out *certmanager.HTTP01SolverConfig, s conversion.Scope) error {
-	out.Ingress = in.Ingress
-	out.IngressClass = (*string)(unsafe.Pointer(in.IngressClass))
-	return nil
-}
-
-// Convert_v1alpha1_HTTP01SolverConfig_To_certmanager_HTTP01SolverConfig is an autogenerated conversion function.
-func Convert_v1alpha1_HTTP01SolverConfig_To_certmanager_HTTP01SolverConfig(in *v1alpha1.HTTP01SolverConfig, out *certmanager.HTTP01SolverConfig, s conversion.Scope) error {
-	return autoConvert_v1alpha1_HTTP01SolverConfig_To_certmanager_HTTP01SolverConfig(in, out, s)
-}
-
-func autoConvert_certmanager_HTTP01SolverConfig_To_v1alpha1_HTTP01SolverConfig(in *certmanager.HTTP01SolverConfig, out *v1alpha1.HTTP01SolverConfig, s conversion.Scope) error {
-	out.Ingress = in.Ingress
-	out.IngressClass = (*string)(unsafe.Pointer(in.IngressClass))
-	return nil
-}
-
-// Convert_certmanager_HTTP01SolverConfig_To_v1alpha1_HTTP01SolverConfig is an autogenerated conversion function.
-func Convert_certmanager_HTTP01SolverConfig_To_v1alpha1_HTTP01SolverConfig(in *certmanager.HTTP01SolverConfig, out *v1alpha1.HTTP01SolverConfig, s conversion.Scope) error {
-	return autoConvert_certmanager_HTTP01SolverConfig_To_v1alpha1_HTTP01SolverConfig(in, out, s)
 }
 
 func autoConvert_v1alpha1_Issuer_To_certmanager_Issuer(in *v1alpha1.Issuer, out *certmanager.Issuer, s conversion.Scope) error {
@@ -2185,7 +1929,6 @@ func autoConvert_v1alpha1_OrderSpec_To_certmanager_OrderSpec(in *v1alpha1.OrderS
 	}
 	out.CommonName = in.CommonName
 	out.DNSNames = *(*[]string)(unsafe.Pointer(&in.DNSNames))
-	out.Config = *(*[]certmanager.DomainSolverConfig)(unsafe.Pointer(&in.Config))
 	return nil
 }
 
@@ -2201,7 +1944,6 @@ func autoConvert_certmanager_OrderSpec_To_v1alpha1_OrderSpec(in *certmanager.Ord
 	}
 	out.CommonName = in.CommonName
 	out.DNSNames = *(*[]string)(unsafe.Pointer(&in.DNSNames))
-	out.Config = *(*[]v1alpha1.DomainSolverConfig)(unsafe.Pointer(&in.Config))
 	return nil
 }
 
@@ -2284,28 +2026,6 @@ func autoConvert_certmanager_SelfSignedIssuer_To_v1alpha1_SelfSignedIssuer(in *c
 // Convert_certmanager_SelfSignedIssuer_To_v1alpha1_SelfSignedIssuer is an autogenerated conversion function.
 func Convert_certmanager_SelfSignedIssuer_To_v1alpha1_SelfSignedIssuer(in *certmanager.SelfSignedIssuer, out *v1alpha1.SelfSignedIssuer, s conversion.Scope) error {
 	return autoConvert_certmanager_SelfSignedIssuer_To_v1alpha1_SelfSignedIssuer(in, out, s)
-}
-
-func autoConvert_v1alpha1_SolverConfig_To_certmanager_SolverConfig(in *v1alpha1.SolverConfig, out *certmanager.SolverConfig, s conversion.Scope) error {
-	out.HTTP01 = (*certmanager.HTTP01SolverConfig)(unsafe.Pointer(in.HTTP01))
-	out.DNS01 = (*certmanager.DNS01SolverConfig)(unsafe.Pointer(in.DNS01))
-	return nil
-}
-
-// Convert_v1alpha1_SolverConfig_To_certmanager_SolverConfig is an autogenerated conversion function.
-func Convert_v1alpha1_SolverConfig_To_certmanager_SolverConfig(in *v1alpha1.SolverConfig, out *certmanager.SolverConfig, s conversion.Scope) error {
-	return autoConvert_v1alpha1_SolverConfig_To_certmanager_SolverConfig(in, out, s)
-}
-
-func autoConvert_certmanager_SolverConfig_To_v1alpha1_SolverConfig(in *certmanager.SolverConfig, out *v1alpha1.SolverConfig, s conversion.Scope) error {
-	out.HTTP01 = (*v1alpha1.HTTP01SolverConfig)(unsafe.Pointer(in.HTTP01))
-	out.DNS01 = (*v1alpha1.DNS01SolverConfig)(unsafe.Pointer(in.DNS01))
-	return nil
-}
-
-// Convert_certmanager_SolverConfig_To_v1alpha1_SolverConfig is an autogenerated conversion function.
-func Convert_certmanager_SolverConfig_To_v1alpha1_SolverConfig(in *certmanager.SolverConfig, out *v1alpha1.SolverConfig, s conversion.Scope) error {
-	return autoConvert_certmanager_SolverConfig_To_v1alpha1_SolverConfig(in, out, s)
 }
 
 func autoConvert_v1alpha1_VaultAppRole_To_certmanager_VaultAppRole(in *v1alpha1.VaultAppRole, out *certmanager.VaultAppRole, s conversion.Scope) error {
