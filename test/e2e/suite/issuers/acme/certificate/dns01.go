@@ -19,8 +19,6 @@ package certificate
 import (
 	"time"
 
-	"github.com/jetstack/cert-manager/test/util/generate"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -30,6 +28,7 @@ import (
 	"github.com/jetstack/cert-manager/test/e2e/framework/addon"
 	"github.com/jetstack/cert-manager/test/e2e/suite/issuers/acme/dnsproviders"
 	"github.com/jetstack/cert-manager/test/e2e/util"
+	"github.com/jetstack/cert-manager/test/unit/gen"
 )
 
 type dns01Provider interface {
@@ -39,16 +38,16 @@ type dns01Provider interface {
 	addon.Addon
 }
 
-var _ = framework.CertManagerDescribe("ACME Certificate (DNS01) (Old format)", func() {
+var _ = framework.CertManagerDescribe("ACME Certificate (DNS01)", func() {
 	// TODO: add additional DNS provider configs here
 	cf := &dnsproviders.Cloudflare{}
 
-	testDNSProviderOldFormat("cloudflare", cf)
+	testDNSProvider("cloudflare", cf)
 })
 
-func testDNSProviderOldFormat(name string, p dns01Provider) bool {
+func testDNSProvider(name string, p dns01Provider) bool {
 	return Context("With "+name+" credentials configured", func() {
-		f := framework.NewDefaultFramework("create-acme-certificate-dns01-" + name + "-old")
+		f := framework.NewDefaultFramework("create-acme-certificate-dns01-" + name)
 		h := f.Helper()
 
 		BeforeEach(func() {
@@ -66,21 +65,23 @@ func testDNSProviderOldFormat(name string, p dns01Provider) bool {
 			dnsDomain = p.Details().NewTestDomain()
 
 			By("Creating an Issuer")
-			issuer := generate.Issuer(generate.IssuerConfig{
-				Name:              issuerName,
-				Namespace:         f.Namespace.Name,
-				ACMESkipTLSVerify: true,
-				// Hardcode this to the acme staging endpoint now due to issues with pebble dns resolution
-				ACMEServer: "https://acme-staging-v02.api.letsencrypt.org/directory",
-				// ACMEServer:         framework.TestContext.ACMEURL,
-				ACMEEmail:          testingACMEEmail,
-				ACMEPrivateKeyName: testingACMEPrivateKey,
-				DNS01: &v1alpha1.ACMEIssuerDNS01Config{
-					Providers: []v1alpha1.ACMEIssuerDNS01Provider{
-						p.Details().ProviderConfigOldFormat,
+			issuer := gen.Issuer(issuerName,
+				gen.SetIssuerACME(v1alpha1.ACMEIssuer{
+					SkipTLSVerify: true,
+					Server:        "https://acme-staging-v02.api.letsencrypt.org/directory",
+					Email:         testingACMEEmail,
+					PrivateKey: v1alpha1.SecretKeySelector{
+						LocalObjectReference: v1alpha1.LocalObjectReference{
+							Name: testingACMEPrivateKey,
+						},
 					},
-				},
-			})
+					Solvers: []v1alpha1.ACMEChallengeSolver{
+						{
+							DNS01: &p.Details().ProviderConfig,
+						},
+					},
+				}))
+			issuer.Namespace = f.Namespace.Name
 			issuer, err := f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Create(issuer)
 			Expect(err).NotTo(HaveOccurred())
 			By("Waiting for Issuer to become Ready")
@@ -121,18 +122,13 @@ func testDNSProviderOldFormat(name string, p dns01Provider) bool {
 
 			certClient := f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name)
 
-			cert := generate.Certificate(generate.CertificateConfig{
-				Name:       certificateName,
-				Namespace:  f.Namespace.Name,
-				SecretName: certificateSecretName,
-				IssuerName: issuerName,
-				DNSNames:   []string{dnsDomain},
-				SolverConfig: &v1alpha1.SolverConfig{
-					DNS01: &v1alpha1.DNS01SolverConfig{
-						Provider: p.Details().ProviderConfigOldFormat.Name,
-					},
-				},
-			})
+			cert := gen.Certificate(certificateName,
+				gen.SetCertificateSecretName(certificateSecretName),
+				gen.SetCertificateIssuer(v1alpha1.ObjectReference{Name: issuerName}),
+				gen.SetCertificateDNSNames(dnsDomain),
+			)
+			cert.Namespace = f.Namespace.Name
+
 			cert, err := certClient.Create(cert)
 			Expect(err).NotTo(HaveOccurred())
 			err = h.WaitCertificateIssuedValid(f.Namespace.Name, certificateName, time.Minute*5)
@@ -142,18 +138,13 @@ func testDNSProviderOldFormat(name string, p dns01Provider) bool {
 		It("should obtain a signed certificate for a wildcard domain", func() {
 			By("Creating a Certificate")
 
-			cert := generate.Certificate(generate.CertificateConfig{
-				Name:       certificateName,
-				Namespace:  f.Namespace.Name,
-				SecretName: certificateSecretName,
-				IssuerName: issuerName,
-				DNSNames:   []string{"*." + dnsDomain},
-				SolverConfig: &v1alpha1.SolverConfig{
-					DNS01: &v1alpha1.DNS01SolverConfig{
-						Provider: p.Details().ProviderConfigOldFormat.Name,
-					},
-				},
-			})
+			cert := gen.Certificate(certificateName,
+				gen.SetCertificateSecretName(certificateSecretName),
+				gen.SetCertificateIssuer(v1alpha1.ObjectReference{Name: issuerName}),
+				gen.SetCertificateDNSNames("*."+dnsDomain),
+			)
+			cert.Namespace = f.Namespace.Name
+
 			cert, err := f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name).Create(cert)
 			Expect(err).NotTo(HaveOccurred())
 			err = h.WaitCertificateIssuedValid(f.Namespace.Name, certificateName, time.Minute*5)
@@ -163,18 +154,13 @@ func testDNSProviderOldFormat(name string, p dns01Provider) bool {
 		It("should obtain a signed certificate for a wildcard and apex domain", func() {
 			By("Creating a Certificate")
 
-			cert := generate.Certificate(generate.CertificateConfig{
-				Name:       certificateName,
-				Namespace:  f.Namespace.Name,
-				SecretName: certificateSecretName,
-				IssuerName: issuerName,
-				DNSNames:   []string{"*." + dnsDomain, dnsDomain},
-				SolverConfig: &v1alpha1.SolverConfig{
-					DNS01: &v1alpha1.DNS01SolverConfig{
-						Provider: p.Details().ProviderConfigOldFormat.Name,
-					},
-				},
-			})
+			cert := gen.Certificate(certificateName,
+				gen.SetCertificateSecretName(certificateSecretName),
+				gen.SetCertificateIssuer(v1alpha1.ObjectReference{Name: issuerName}),
+				gen.SetCertificateDNSNames("*."+dnsDomain, dnsDomain),
+			)
+			cert.Namespace = f.Namespace.Name
+
 			cert, err := f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name).Create(cert)
 			Expect(err).NotTo(HaveOccurred())
 			// use a longer timeout for this, as it requires performing 2 dns validations in serial
