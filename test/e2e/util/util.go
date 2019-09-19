@@ -355,37 +355,6 @@ func NewCertManagerBasicCertificateRequest(name, issuerName string, issuerKind s
 	}, sk, nil
 }
 
-func NewCertManagerACMECertificateOldFormat(name, secretName, issuerName string, issuerKind string, duration, renewBefore *metav1.Duration, ingressClass string, cn string, dnsNames ...string) *v1alpha1.Certificate {
-	return &v1alpha1.Certificate{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: name,
-		},
-		Spec: v1alpha1.CertificateSpec{
-			CommonName:  cn,
-			DNSNames:    dnsNames,
-			SecretName:  secretName,
-			Duration:    duration,
-			RenewBefore: renewBefore,
-			IssuerRef: v1alpha1.ObjectReference{
-				Name: issuerName,
-				Kind: issuerKind,
-			},
-			ACME: &v1alpha1.ACMECertificateConfig{
-				Config: []v1alpha1.DomainSolverConfig{
-					{
-						Domains: append(dnsNames, cn),
-						SolverConfig: v1alpha1.SolverConfig{
-							HTTP01: &v1alpha1.HTTP01SolverConfig{
-								IngressClass: &ingressClass,
-							},
-						},
-					},
-				},
-			},
-		},
-	}
-}
-
 func NewCertManagerVaultCertificate(name, secretName, issuerName string, issuerKind string, duration, renewBefore *metav1.Duration) *v1alpha1.Certificate {
 	return &v1alpha1.Certificate{
 		ObjectMeta: metav1.ObjectMeta{
@@ -455,7 +424,6 @@ func NewCertManagerACMEIssuer(name, acmeURL, acmeEmail, acmePrivateKey string) *
 							Name: acmePrivateKey,
 						},
 					},
-					HTTP01: &v1alpha1.ACMEIssuerHTTP01Config{},
 				},
 			},
 		},

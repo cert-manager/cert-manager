@@ -75,7 +75,6 @@ var _ = framework.CertManagerDescribe("ACME CertificateRequest (HTTP01)", func()
 	BeforeEach(func() {
 		acmeURL := pebble.Details().Host
 		acmeIssuer := util.NewCertManagerACMEIssuer(issuerName, acmeURL, testingACMEEmail, testingACMEPrivateKey)
-		acmeIssuer.Spec.ACME.HTTP01 = nil
 		acmeIssuer.Spec.ACME.Solvers = []v1alpha1.ACMEChallengeSolver{
 			{
 				HTTP01: &v1alpha1.ACMEChallengeSolverHTTP01{

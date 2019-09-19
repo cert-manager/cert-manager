@@ -35,9 +35,6 @@ type Details struct {
 	// Domain is a domain that can be validated using these credentials
 	BaseDomain string
 
-	// ProviderConfigOldFormat is the issuer config needed to use these newly created credentials
-	ProviderConfigOldFormat cmapi.ACMEIssuerDNS01Provider
-
 	// ProviderConfig is the issuer config needed to use these newly created credentials
 	ProviderConfig cmapi.ACMEChallengeSolverDNS01
 }
