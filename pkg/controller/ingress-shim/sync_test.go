@@ -34,10 +34,6 @@ import (
 
 const testAcmeTLSAnnotation = "kubernetes.io/tls-acme"
 
-func strPtr(s string) *string {
-	return &s
-}
-
 func TestShouldSync(t *testing.T) {
 	type testT struct {
 		Annotations map[string]string
@@ -65,14 +61,6 @@ func TestShouldSync(t *testing.T) {
 			ShouldSync:  false,
 		},
 		{
-			Annotations: map[string]string{acmeIssuerChallengeTypeAnnotation: ""},
-			ShouldSync:  true,
-		},
-		{
-			Annotations: map[string]string{acmeIssuerDNS01ProviderNameAnnotation: ""},
-			ShouldSync:  true,
-		},
-		{
 			ShouldSync: false,
 		},
 	}
@@ -89,15 +77,9 @@ func TestSync(t *testing.T) {
 	acmeIssuerNewFormat := gen.Issuer("issuer-name",
 		gen.SetIssuerACME(v1alpha1.ACMEIssuer{}))
 	acmeIssuer := gen.Issuer("issuer-name",
-		gen.SetIssuerACME(v1alpha1.ACMEIssuer{
-			HTTP01: &v1alpha1.ACMEIssuerHTTP01Config{},
-			DNS01:  &v1alpha1.ACMEIssuerDNS01Config{},
-		}))
+		gen.SetIssuerACME(v1alpha1.ACMEIssuer{}))
 	acmeClusterIssuer := gen.ClusterIssuer("issuer-name",
-		gen.SetIssuerACME(v1alpha1.ACMEIssuer{
-			HTTP01: &v1alpha1.ACMEIssuerHTTP01Config{},
-			DNS01:  &v1alpha1.ACMEIssuerDNS01Config{},
-		}))
+		gen.SetIssuerACME(v1alpha1.ACMEIssuer{}))
 	type testT struct {
 		Name                string
 		Ingress             *extv1beta1.Ingress
@@ -124,9 +106,8 @@ func TestSync(t *testing.T) {
 						"my-test-label": "should be copied",
 					},
 					Annotations: map[string]string{
-						clusterIssuerNameAnnotation:       "issuer-name",
-						acmeIssuerChallengeTypeAnnotation: "http01",
-						editInPlaceAnnotation:             "true",
+						clusterIssuerNameAnnotation: "issuer-name",
+						editInPlaceAnnotation:       "true",
 					},
 					UID: types.UID("ingress-name"),
 				},
@@ -159,18 +140,6 @@ func TestSync(t *testing.T) {
 						IssuerRef: v1alpha1.ObjectReference{
 							Name: "issuer-name",
 							Kind: "ClusterIssuer",
-						},
-						ACME: &v1alpha1.ACMECertificateConfig{
-							Config: []v1alpha1.DomainSolverConfig{
-								{
-									Domains: []string{"example.com", "www.example.com"},
-									SolverConfig: v1alpha1.SolverConfig{
-										HTTP01: &v1alpha1.HTTP01SolverConfig{
-											Ingress: "ingress-name",
-										},
-									},
-								},
-							},
 						},
 					},
 				},
@@ -234,8 +203,7 @@ func TestSync(t *testing.T) {
 					Name:      "ingress-name",
 					Namespace: gen.DefaultTestNamespace,
 					Annotations: map[string]string{
-						clusterIssuerNameAnnotation:       "issuer-name",
-						acmeIssuerChallengeTypeAnnotation: "http01",
+						clusterIssuerNameAnnotation: "issuer-name",
 					},
 					UID: types.UID("ingress-name"),
 				},
@@ -262,16 +230,6 @@ func TestSync(t *testing.T) {
 						IssuerRef: v1alpha1.ObjectReference{
 							Name: "issuer-name",
 							Kind: "ClusterIssuer",
-						},
-						ACME: &v1alpha1.ACMECertificateConfig{
-							Config: []v1alpha1.DomainSolverConfig{
-								{
-									Domains: []string{"example.com", "www.example.com"},
-									SolverConfig: v1alpha1.SolverConfig{
-										HTTP01: &v1alpha1.HTTP01SolverConfig{},
-									},
-								},
-							},
 						},
 					},
 				},
@@ -285,9 +243,8 @@ func TestSync(t *testing.T) {
 					Name:      "ingress-name",
 					Namespace: gen.DefaultTestNamespace,
 					Annotations: map[string]string{
-						clusterIssuerNameAnnotation:       "issuer-name",
-						acmeIssuerChallengeTypeAnnotation: "http01",
-						ingressClassAnnotation:            "nginx-ing",
+						clusterIssuerNameAnnotation: "issuer-name",
+						ingressClassAnnotation:      "nginx-ing",
 					},
 					UID: types.UID("ingress-name"),
 				},
@@ -314,18 +271,6 @@ func TestSync(t *testing.T) {
 						IssuerRef: v1alpha1.ObjectReference{
 							Name: "issuer-name",
 							Kind: "ClusterIssuer",
-						},
-						ACME: &v1alpha1.ACMECertificateConfig{
-							Config: []v1alpha1.DomainSolverConfig{
-								{
-									Domains: []string{"example.com", "www.example.com"},
-									SolverConfig: v1alpha1.SolverConfig{
-										HTTP01: &v1alpha1.HTTP01SolverConfig{
-											IngressClass: strPtr("nginx-ing"),
-										},
-									},
-								},
-							},
 						},
 					},
 				},
@@ -340,7 +285,6 @@ func TestSync(t *testing.T) {
 					Namespace: gen.DefaultTestNamespace,
 					Annotations: map[string]string{
 						clusterIssuerNameAnnotation:            "issuer-name",
-						acmeIssuerChallengeTypeAnnotation:      "http01",
 						acmeIssuerHTTP01IngressClassAnnotation: "cert-ing",
 						ingressClassAnnotation:                 "nginx-ing",
 					},
@@ -373,18 +317,6 @@ func TestSync(t *testing.T) {
 							Name: "issuer-name",
 							Kind: "ClusterIssuer",
 						},
-						ACME: &v1alpha1.ACMECertificateConfig{
-							Config: []v1alpha1.DomainSolverConfig{
-								{
-									Domains: []string{"example.com", "www.example.com"},
-									SolverConfig: v1alpha1.SolverConfig{
-										HTTP01: &v1alpha1.HTTP01SolverConfig{
-											IngressClass: strPtr("cert-ing"),
-										},
-									},
-								},
-							},
-						},
 					},
 				},
 			},
@@ -397,10 +329,9 @@ func TestSync(t *testing.T) {
 					Name:      "ingress-name",
 					Namespace: gen.DefaultTestNamespace,
 					Annotations: map[string]string{
-						clusterIssuerNameAnnotation:       "issuer-name",
-						acmeIssuerChallengeTypeAnnotation: "http01",
-						ingressClassAnnotation:            "nginx-ing",
-						editInPlaceAnnotation:             "false",
+						clusterIssuerNameAnnotation: "issuer-name",
+						ingressClassAnnotation:      "nginx-ing",
+						editInPlaceAnnotation:       "false",
 					},
 					UID: types.UID("ingress-name"),
 				},
@@ -428,130 +359,14 @@ func TestSync(t *testing.T) {
 							Name: "issuer-name",
 							Kind: "ClusterIssuer",
 						},
-						ACME: &v1alpha1.ACMECertificateConfig{
-							Config: []v1alpha1.DomainSolverConfig{
-								{
-									Domains: []string{"example.com", "www.example.com"},
-									SolverConfig: v1alpha1.SolverConfig{
-										HTTP01: &v1alpha1.HTTP01SolverConfig{
-											IngressClass: strPtr("nginx-ing"),
-										},
-									},
-								},
-							},
-						},
 					},
 				},
 			},
 		},
 		{
-			Name:   "should error when an ingress specifies dns01 challenge type but no challenge provider",
+			Name:   "return a single DNS01 Certificate for an ingress with a single valid TLS entry",
 			Issuer: acmeClusterIssuer,
 			Err:    true,
-			Ingress: &extv1beta1.Ingress{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "ingress-name",
-					Namespace: gen.DefaultTestNamespace,
-					Annotations: map[string]string{
-						clusterIssuerNameAnnotation:       "issuer-name",
-						acmeIssuerChallengeTypeAnnotation: "dns01",
-					},
-					UID: types.UID("ingress-name"),
-				},
-				Spec: extv1beta1.IngressSpec{
-					TLS: []extv1beta1.IngressTLS{
-						{
-							Hosts:      []string{"example.com", "www.example.com"},
-							SecretName: "example-com-tls",
-						},
-					},
-				},
-			},
-			ClusterIssuerLister: []runtime.Object{acmeClusterIssuer},
-		},
-		{
-			Name:   "should error when an invalid ACME challenge type is specified",
-			Issuer: acmeClusterIssuer,
-			Err:    true,
-			Ingress: &extv1beta1.Ingress{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "ingress-name",
-					Namespace: gen.DefaultTestNamespace,
-					Annotations: map[string]string{
-						clusterIssuerNameAnnotation:       "issuer-name",
-						acmeIssuerChallengeTypeAnnotation: "invalid-challenge-type",
-					},
-					UID: types.UID("ingress-name"),
-				},
-				Spec: extv1beta1.IngressSpec{
-					TLS: []extv1beta1.IngressTLS{
-						{
-							Hosts:      []string{"example.com", "www.example.com"},
-							SecretName: "example-com-tls",
-						},
-					},
-				},
-			},
-			ClusterIssuerLister: []runtime.Object{acmeClusterIssuer},
-		},
-		{
-			Name:   "return a single DNS01 Certificate for an ingress with a single valid TLS entry and DNS01 annotations",
-			Issuer: acmeClusterIssuer,
-			Err:    true,
-			Ingress: &extv1beta1.Ingress{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "ingress-name",
-					Namespace: gen.DefaultTestNamespace,
-					Annotations: map[string]string{
-						clusterIssuerNameAnnotation:           "issuer-name",
-						acmeIssuerChallengeTypeAnnotation:     "dns01",
-						acmeIssuerDNS01ProviderNameAnnotation: "fake-dns",
-					},
-					UID: types.UID("ingress-name"),
-				},
-				Spec: extv1beta1.IngressSpec{
-					TLS: []extv1beta1.IngressTLS{
-						{
-							Hosts:      []string{"example.com", "www.example.com"},
-							SecretName: "example-com-tls",
-						},
-					},
-				},
-			},
-			ClusterIssuerLister: []runtime.Object{acmeClusterIssuer},
-			ExpectedCreate: []*v1alpha1.Certificate{
-				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:            "example-com-tls",
-						Namespace:       gen.DefaultTestNamespace,
-						OwnerReferences: buildOwnerReferences("ingress-name", gen.DefaultTestNamespace),
-					},
-					Spec: v1alpha1.CertificateSpec{
-						DNSNames:   []string{"example.com", "www.example.com"},
-						SecretName: "example-com-tls",
-						IssuerRef: v1alpha1.ObjectReference{
-							Name: "issuer-name",
-							Kind: "ClusterIssuer",
-						},
-						ACME: &v1alpha1.ACMECertificateConfig{
-							Config: []v1alpha1.DomainSolverConfig{
-								{
-									Domains: []string{"example.com", "www.example.com"},
-									SolverConfig: v1alpha1.SolverConfig{
-										DNS01: &v1alpha1.DNS01SolverConfig{
-											Provider: "fake-dns",
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-		{
-			Name:   "should return a certificate without the acme field set when no challenge type is provided",
-			Issuer: acmeClusterIssuer,
 			Ingress: &extv1beta1.Ingress{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "ingress-name",
@@ -700,8 +515,7 @@ func TestSync(t *testing.T) {
 					Name:      "ingress-name",
 					Namespace: gen.DefaultTestNamespace,
 					Annotations: map[string]string{
-						issuerNameAnnotation:              "issuer-name",
-						acmeIssuerChallengeTypeAnnotation: "http01",
+						issuerNameAnnotation: "issuer-name",
 					},
 					UID: types.UID("ingress-name"),
 				},
@@ -728,18 +542,6 @@ func TestSync(t *testing.T) {
 							Name: "issuer-name",
 							Kind: "Issuer",
 						},
-						ACME: &v1alpha1.ACMECertificateConfig{
-							Config: []v1alpha1.DomainSolverConfig{
-								{
-									Domains: []string{"example.com"},
-									SolverConfig: v1alpha1.SolverConfig{
-										HTTP01: &v1alpha1.HTTP01SolverConfig{
-											Ingress: "",
-										},
-									},
-								},
-							},
-						},
 					},
 				},
 			},
@@ -753,8 +555,7 @@ func TestSync(t *testing.T) {
 					Name:      "ingress-name",
 					Namespace: gen.DefaultTestNamespace,
 					Annotations: map[string]string{
-						issuerNameAnnotation:              "issuer-name",
-						acmeIssuerChallengeTypeAnnotation: "http01",
+						issuerNameAnnotation: "issuer-name",
 					},
 					UID: types.UID("ingress-name"),
 				},
@@ -787,174 +588,6 @@ func TestSync(t *testing.T) {
 						IssuerRef: v1alpha1.ObjectReference{
 							Name: "issuer-name",
 							Kind: "Issuer",
-						},
-						ACME: &v1alpha1.ACMECertificateConfig{
-							Config: []v1alpha1.DomainSolverConfig{
-								{
-									Domains: []string{"example.com"},
-									SolverConfig: v1alpha1.SolverConfig{
-										HTTP01: &v1alpha1.HTTP01SolverConfig{
-											Ingress: "",
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-		{
-			Name:         "should update a certificate's config if an incorrect Certificate exists",
-			Issuer:       acmeIssuer,
-			IssuerLister: []runtime.Object{acmeIssuer},
-			Ingress: &extv1beta1.Ingress{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "ingress-name",
-					Namespace: gen.DefaultTestNamespace,
-					Annotations: map[string]string{
-						issuerNameAnnotation:              "issuer-name",
-						acmeIssuerChallengeTypeAnnotation: "http01",
-						ingressClassAnnotation:            "toot-ing",
-					},
-					UID: types.UID("ingress-name"),
-				},
-				Spec: extv1beta1.IngressSpec{
-					TLS: []extv1beta1.IngressTLS{
-						{
-							Hosts:      []string{"example.com"},
-							SecretName: "existing-crt",
-						},
-					},
-				},
-			},
-			CertificateLister: []runtime.Object{
-				&v1alpha1.Certificate{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:            "existing-crt",
-						Namespace:       gen.DefaultTestNamespace,
-						OwnerReferences: buildOwnerReferences("ingress-name", gen.DefaultTestNamespace),
-					},
-					Spec: v1alpha1.CertificateSpec{
-						DNSNames:   []string{"example.com"},
-						SecretName: "existing-crt",
-						IssuerRef: v1alpha1.ObjectReference{
-							Name: "issuer-name",
-							Kind: "Issuer",
-						},
-						ACME: &v1alpha1.ACMECertificateConfig{
-							Config: []v1alpha1.DomainSolverConfig{
-								{
-									Domains: []string{"wrong-example.com"},
-									SolverConfig: v1alpha1.SolverConfig{
-										HTTP01: &v1alpha1.HTTP01SolverConfig{
-											Ingress: "wrong-ingress",
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-			ExpectedUpdate: []*v1alpha1.Certificate{
-				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:            "existing-crt",
-						Namespace:       gen.DefaultTestNamespace,
-						OwnerReferences: buildOwnerReferences("ingress-name", gen.DefaultTestNamespace),
-					},
-					Spec: v1alpha1.CertificateSpec{
-						DNSNames:   []string{"example.com"},
-						SecretName: "existing-crt",
-						IssuerRef: v1alpha1.ObjectReference{
-							Name: "issuer-name",
-							Kind: "Issuer",
-						},
-						ACME: &v1alpha1.ACMECertificateConfig{
-							Config: []v1alpha1.DomainSolverConfig{
-								{
-									Domains: []string{"example.com"},
-									SolverConfig: v1alpha1.SolverConfig{
-										HTTP01: &v1alpha1.HTTP01SolverConfig{
-											Ingress:      "",
-											IngressClass: strPtr("toot-ing"),
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-		{
-			Name:         "should update a Certificate correctly if an existing one of a different type exists",
-			Issuer:       acmeIssuer,
-			IssuerLister: []runtime.Object{acmeIssuer},
-			Ingress: &extv1beta1.Ingress{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "ingress-name",
-					Namespace: gen.DefaultTestNamespace,
-					Annotations: map[string]string{
-						issuerNameAnnotation:              "issuer-name",
-						acmeIssuerChallengeTypeAnnotation: "http01",
-						ingressClassAnnotation:            "toot-ing",
-					},
-					UID: types.UID("ingress-name"),
-				},
-				Spec: extv1beta1.IngressSpec{
-					TLS: []extv1beta1.IngressTLS{
-						{
-							Hosts:      []string{"example.com"},
-							SecretName: "existing-crt",
-						},
-					},
-				},
-			},
-			CertificateLister: []runtime.Object{
-				&v1alpha1.Certificate{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:            "existing-crt",
-						Namespace:       gen.DefaultTestNamespace,
-						OwnerReferences: buildOwnerReferences("ingress-name", gen.DefaultTestNamespace),
-					},
-					Spec: v1alpha1.CertificateSpec{
-						DNSNames:   []string{"example.com"},
-						SecretName: "existing-crt",
-						IssuerRef: v1alpha1.ObjectReference{
-							Name: "issuer-name",
-							Kind: "Issuer",
-						},
-					},
-				},
-			},
-			ExpectedUpdate: []*v1alpha1.Certificate{
-				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:            "existing-crt",
-						Namespace:       gen.DefaultTestNamespace,
-						OwnerReferences: buildOwnerReferences("ingress-name", gen.DefaultTestNamespace),
-					},
-					Spec: v1alpha1.CertificateSpec{
-						DNSNames:   []string{"example.com"},
-						SecretName: "existing-crt",
-						IssuerRef: v1alpha1.ObjectReference{
-							Name: "issuer-name",
-							Kind: "Issuer",
-						},
-						ACME: &v1alpha1.ACMECertificateConfig{
-							Config: []v1alpha1.DomainSolverConfig{
-								{
-									Domains: []string{"example.com"},
-									SolverConfig: v1alpha1.SolverConfig{
-										HTTP01: &v1alpha1.HTTP01SolverConfig{
-											Ingress:      "",
-											IngressClass: strPtr("toot-ing"),
-										},
-									},
-								},
-							},
 						},
 					},
 				},
@@ -1035,9 +668,8 @@ func TestSync(t *testing.T) {
 					Name:      "ingress-name",
 					Namespace: gen.DefaultTestNamespace,
 					Annotations: map[string]string{
-						issuerNameAnnotation:              "issuer-name",
-						acmeIssuerChallengeTypeAnnotation: "http01",
-						ingressClassAnnotation:            "toot-ing",
+						issuerNameAnnotation:   "issuer-name",
+						ingressClassAnnotation: "toot-ing",
 					},
 					UID: types.UID("ingress-name"),
 				},
@@ -1064,18 +696,6 @@ func TestSync(t *testing.T) {
 							Name: "issuer-name",
 							Kind: "Issuer",
 						},
-						ACME: &v1alpha1.ACMECertificateConfig{
-							Config: []v1alpha1.DomainSolverConfig{
-								{
-									Domains: []string{"example.com"},
-									SolverConfig: v1alpha1.SolverConfig{
-										HTTP01: &v1alpha1.HTTP01SolverConfig{
-											Ingress: "",
-										},
-									},
-								},
-							},
-						},
 					},
 				},
 			},
@@ -1089,9 +709,8 @@ func TestSync(t *testing.T) {
 					Name:      "ingress-name",
 					Namespace: gen.DefaultTestNamespace,
 					Annotations: map[string]string{
-						issuerNameAnnotation:              "issuer-name",
-						acmeIssuerChallengeTypeAnnotation: "http01",
-						ingressClassAnnotation:            "toot-ing",
+						issuerNameAnnotation:   "issuer-name",
+						ingressClassAnnotation: "toot-ing",
 					},
 					UID: types.UID("ingress-name"),
 				},
@@ -1118,18 +737,6 @@ func TestSync(t *testing.T) {
 							Name: "issuer-name",
 							Kind: "Issuer",
 						},
-						ACME: &v1alpha1.ACMECertificateConfig{
-							Config: []v1alpha1.DomainSolverConfig{
-								{
-									Domains: []string{"example.com"},
-									SolverConfig: v1alpha1.SolverConfig{
-										HTTP01: &v1alpha1.HTTP01SolverConfig{
-											Ingress: "",
-										},
-									},
-								},
-							},
-						},
 					},
 				},
 			},
@@ -1143,8 +750,7 @@ func TestSync(t *testing.T) {
 					Name:      "ingress-name",
 					Namespace: gen.DefaultTestNamespace,
 					Annotations: map[string]string{
-						issuerNameAnnotation:              "issuer-name",
-						acmeIssuerChallengeTypeAnnotation: "http01",
+						issuerNameAnnotation: "issuer-name",
 					},
 					UID: types.UID("ingress-name"),
 				},
@@ -1163,18 +769,6 @@ func TestSync(t *testing.T) {
 							Name: "issuer-name",
 							Kind: "Issuer",
 						},
-						ACME: &v1alpha1.ACMECertificateConfig{
-							Config: []v1alpha1.DomainSolverConfig{
-								{
-									Domains: []string{"example.com"},
-									SolverConfig: v1alpha1.SolverConfig{
-										HTTP01: &v1alpha1.HTTP01SolverConfig{
-											Ingress: "",
-										},
-									},
-								},
-							},
-						},
 					},
 				},
 			},
@@ -1191,18 +785,6 @@ func TestSync(t *testing.T) {
 						IssuerRef: v1alpha1.ObjectReference{
 							Name: "issuer-name",
 							Kind: "Issuer",
-						},
-						ACME: &v1alpha1.ACMECertificateConfig{
-							Config: []v1alpha1.DomainSolverConfig{
-								{
-									Domains: []string{"example.com"},
-									SolverConfig: v1alpha1.SolverConfig{
-										HTTP01: &v1alpha1.HTTP01SolverConfig{
-											Ingress: "",
-										},
-									},
-								},
-							},
 						},
 					},
 				},

@@ -242,11 +242,9 @@ func buildControllerContext(ctx context.Context, stopCh <-chan struct{}, opts *o
 			RenewBeforeExpiryDuration:       opts.RenewBeforeExpiryDuration,
 		},
 		IngressShimOptions: controller.IngressShimOptions{
-			DefaultIssuerName:                  opts.DefaultIssuerName,
-			DefaultIssuerKind:                  opts.DefaultIssuerKind,
-			DefaultAutoCertificateAnnotations:  opts.DefaultAutoCertificateAnnotations,
-			DefaultACMEIssuerChallengeType:     opts.DefaultACMEIssuerChallengeType,
-			DefaultACMEIssuerDNS01ProviderName: opts.DefaultACMEIssuerDNS01ProviderName,
+			DefaultIssuerName:                 opts.DefaultIssuerName,
+			DefaultIssuerKind:                 opts.DefaultIssuerKind,
+			DefaultAutoCertificateAnnotations: opts.DefaultAutoCertificateAnnotations,
 		},
 		CertificateOptions: controller.CertificateOptions{
 			EnableOwnerRef: opts.EnableCertificateOwnerRef,
