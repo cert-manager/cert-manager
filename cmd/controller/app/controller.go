@@ -42,19 +42,11 @@ import (
 	intscheme "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/scheme"
 	informers "github.com/jetstack/cert-manager/pkg/client/informers/externalversions"
 	"github.com/jetstack/cert-manager/pkg/controller"
-	cracmecontroller "github.com/jetstack/cert-manager/pkg/controller/certificaterequests/acme"
-	crcacontroller "github.com/jetstack/cert-manager/pkg/controller/certificaterequests/ca"
-	crselfsignedcontroller "github.com/jetstack/cert-manager/pkg/controller/certificaterequests/selfsigned"
-	crvaultcontroller "github.com/jetstack/cert-manager/pkg/controller/certificaterequests/vault"
-	crvenaficontroller "github.com/jetstack/cert-manager/pkg/controller/certificaterequests/venafi"
-	certificatescontroller "github.com/jetstack/cert-manager/pkg/controller/certificates"
 	"github.com/jetstack/cert-manager/pkg/controller/clusterissuers"
-	"github.com/jetstack/cert-manager/pkg/feature"
 	dnsutil "github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 	"github.com/jetstack/cert-manager/pkg/metrics"
 	"github.com/jetstack/cert-manager/pkg/util"
-	utilfeature "github.com/jetstack/cert-manager/pkg/util/feature"
 	"github.com/jetstack/cert-manager/pkg/util/kube"
 )
 
@@ -79,17 +71,6 @@ func Run(opts *options.ControllerOptions, stopCh <-chan struct{}) {
 		defer wg.Done()
 		metrics.Default.Start(stopCh)
 	}()
-
-	if utilfeature.DefaultFeatureGate.Enabled(feature.CertificateRequestControllers) {
-		opts.EnabledControllers = append(opts.EnabledControllers, []string{
-			cracmecontroller.CRControllerName,
-			crcacontroller.CRControllerName,
-			crselfsignedcontroller.CRControllerName,
-			crvaultcontroller.CRControllerName,
-			crvenaficontroller.CRControllerName,
-			certificatescontroller.ExperimentalControllerName,
-		}...)
-	}
 
 	var additionalRunFuncs []controller.RunFunc
 	run := func(_ context.Context) {
