@@ -146,6 +146,8 @@ func (s *Suite) Define() {
 		})
 
 		It("should issue an ECDSA, defaulted certificate for a single commonName and distinct dnsName", func() {
+			s.checkFeatures(ECDSAFeautre)
+
 			testCertificate := &cmapi.Certificate{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "testcert",

@@ -83,8 +83,14 @@ const (
 	// will never pass tests that validate the duration is as expected.
 	DurationFeature Feature = "Duration"
 
-	// Wildcards denotes tests that request certificates for wildcard domains.
-	// Some issuer's disable wildcard certificate issuance, so this feature
-	// allows runs of the suite to exclude those tests that utilise wildcards.
+	// WildcardsFeature denotes tests that request certificates for wildcard
+	// domains. Some issuer's disable wildcard certificate issuance, so this
+	// feature allows runs of the suite to exclude those tests that utilise
+	// wildcards.
 	WildcardsFeature Feature = "Wildcards"
+
+	// ECDSAFeature denotes whether the target issuer is able to sign
+	// certificates with an elliptic curve private key. This is useful for some
+	// issuers that have trouble being configured to support this feature.
+	ECDSAFeautre Feature = "ECDSA"
 )
