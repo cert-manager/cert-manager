@@ -114,7 +114,7 @@ func TestValidateCertificate(t *testing.T) {
 				field.Required(fldPath.Child("secretName"), "must be specified"),
 			},
 		},
-		"certificate with no domains": {
+		"certificate with no domains or URIs": {
 			cfg: &v1alpha2.Certificate{
 				Spec: v1alpha2.CertificateSpec{
 					SecretName: "abc",
@@ -122,7 +122,7 @@ func TestValidateCertificate(t *testing.T) {
 				},
 			},
 			errs: []*field.Error{
-				field.Required(fldPath.Child("dnsNames"), "at least one dnsName is required if commonName is not set"),
+				field.Required(fldPath.Child("commonName,dnsNames,uriSANs"), "at least one of commonName, dnsNames, or uriSANs must be set"),
 			},
 		},
 		"certificate with no issuerRef": {
@@ -352,21 +352,6 @@ func TestValidateCertificate(t *testing.T) {
 			},
 			errs: []*field.Error{
 				field.TooLong(fldPath.Child("commonName"), "this-is-a-big-long-string-which-has-exactly-sixty-five-characters", 64),
-			},
-		},
-		"invalid certificate with no commonName and first dnsName longer than 64 bytes": {
-			cfg: &v1alpha2.Certificate{
-				Spec: v1alpha2.CertificateSpec{
-					SecretName: "abc",
-					IssuerRef:  validIssuerRef,
-					DNSNames: []string{
-						"this-is-a-big-long-string-which-has-exactly-sixty-five-characters",
-						"dnsName",
-					},
-				},
-			},
-			errs: []*field.Error{
-				field.TooLong(fldPath.Child("dnsNames").Index(0), "this-is-a-big-long-string-which-has-exactly-sixty-five-characters", 64),
 			},
 		},
 		"valid certificate with no commonName and second dnsName longer than 64 bytes": {

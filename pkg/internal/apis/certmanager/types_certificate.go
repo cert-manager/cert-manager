@@ -59,13 +59,12 @@ const (
 
 // CertificateSpec defines the desired state of Certificate
 type CertificateSpec struct {
+	// A valid Certificate requires at least one of a CommonName, DNSName, or
+	// URISAN to be valid.
+
 	// CommonName is a common name to be used on the Certificate.
-	// If no CommonName is given, then the first entry in DNSNames is used as
-	// the CommonName.
 	// The CommonName should have a length of 64 characters or fewer to avoid
-	// generating invalid CSRs; in order to have longer domain names, set the
-	// CommonName (or first DNSNames entry) to have 64 characters or fewer,
-	// and then add the longer domain name to DNSNames.
+	// generating invalid CSRs.
 	// +optional
 	CommonName string `json:"commonName,omitempty"`
 
@@ -82,14 +81,17 @@ type CertificateSpec struct {
 	RenewBefore *metav1.Duration `json:"renewBefore,omitempty"`
 
 	// DNSNames is a list of subject alt names to be used on the Certificate.
-	// If no CommonName is given, then the first entry in DNSNames is used as
-	// the CommonName and must have a length of 64 characters or fewer.
 	// +optional
 	DNSNames []string `json:"dnsNames,omitempty"`
 
 	// IPAddresses is a list of IP addresses to be used on the Certificate
 	// +optional
 	IPAddresses []string `json:"ipAddresses,omitempty"`
+
+	// URISANs is a list of URI Subject Alternative Names to be set on this
+	// Certificate.
+	// +optional
+	URISANs []string `json:"uriSANs,omitempty"`
 
 	// SecretName is the name of the secret resource to store this secret in
 	SecretName string `json:"secretName"`
@@ -103,7 +105,7 @@ type CertificateSpec struct {
 	IssuerRef cmmeta.ObjectReference `json:"issuerRef"`
 
 	// IsCA will mark this Certificate as valid for signing.
-	// This implies that the 'signing' usage is set
+	// This implies that the 'cert sign' usage is set
 	// +optional
 	IsCA bool `json:"isCA,omitempty"`
 
