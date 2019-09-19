@@ -18,8 +18,6 @@ package issuer
 
 import (
 	"context"
-
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 )
 
 type Interface interface {
@@ -27,10 +25,6 @@ type Interface interface {
 	// a service, creating a CA and storing it somewhere, or verifying
 	// credentials and authorization with a remote server.
 	Setup(ctx context.Context) error
-
-	// Issue attempts to issue a certificate as described by the certificate
-	// resource given
-	Issue(context.Context, *v1alpha1.Certificate) (*IssueResponse, error)
 }
 
 type IssueResponse struct {
