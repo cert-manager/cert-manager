@@ -112,6 +112,7 @@ func createCryptoBundle(crt *cmapi.Certificate) (*cryptoBundle, error) {
 			OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(crt, certificateGvk)},
 			Annotations: map[string]string{
 				cmapi.CRPrivateKeyAnnotationKey: crt.Spec.SecretName,
+				cmapi.CertificateNameKey:        crt.Name,
 			},
 		},
 		Spec: cmapi.CertificateRequestSpec{
@@ -334,6 +335,7 @@ func TestBuildCertificateRequest(t *testing.T) {
 
 			expectedCertificateRequestAnnotations: map[string]string{
 				cmapi.CRPrivateKeyAnnotationKey: baseCert.Spec.SecretName,
+				cmapi.CertificateNameKey:        baseCert.Name,
 			},
 		},
 	}
