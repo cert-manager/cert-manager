@@ -35,28 +35,21 @@ import (
 )
 
 func TestGetIngressesForChallenge(t *testing.T) {
-	fakeIssuer := &v1alpha1.Issuer{
-		Spec: v1alpha1.IssuerSpec{
-			IssuerConfig: v1alpha1.IssuerConfig{
-				ACME: &v1alpha1.ACMEIssuer{
-					HTTP01: &v1alpha1.ACMEIssuerHTTP01Config{},
-				},
-			},
-		},
-	}
 	const createdIngressKey = "createdIngress"
 	tests := map[string]solverFixture{
 		"should return one ingress that matches": {
 			Challenge: &v1alpha1.Challenge{
 				Spec: v1alpha1.ChallengeSpec{
 					DNSName: "example.com",
-					Config: &v1alpha1.SolverConfig{
-						HTTP01: &v1alpha1.HTTP01SolverConfig{},
+					Solver: &v1alpha1.ACMEChallengeSolver{
+						HTTP01: &v1alpha1.ACMEChallengeSolverHTTP01{
+							Ingress: &v1alpha1.ACMEChallengeSolverHTTP01Ingress{},
+						},
 					},
 				},
 			},
 			PreFn: func(t *testing.T, s *solverFixture) {
-				ing, err := s.Solver.createIngress(fakeIssuer, s.Challenge, "fakeservice")
+				ing, err := s.Solver.createIngress(s.Challenge, "fakeservice")
 				if err != nil {
 					t.Errorf("error preparing test: %v", err)
 				}
@@ -81,15 +74,17 @@ func TestGetIngressesForChallenge(t *testing.T) {
 			Challenge: &v1alpha1.Challenge{
 				Spec: v1alpha1.ChallengeSpec{
 					DNSName: "example.com",
-					Config: &v1alpha1.SolverConfig{
-						HTTP01: &v1alpha1.HTTP01SolverConfig{},
+					Solver: &v1alpha1.ACMEChallengeSolver{
+						HTTP01: &v1alpha1.ACMEChallengeSolverHTTP01{
+							Ingress: &v1alpha1.ACMEChallengeSolverHTTP01Ingress{},
+						},
 					},
 				},
 			},
 			PreFn: func(t *testing.T, s *solverFixture) {
 				differentChallenge := s.Challenge.DeepCopy()
 				differentChallenge.Spec.DNSName = "notexample.com"
-				_, err := s.Solver.createIngress(fakeIssuer, differentChallenge, "fakeservice")
+				_, err := s.Solver.createIngress(differentChallenge, "fakeservice")
 				if err != nil {
 					t.Errorf("error preparing test: %v", err)
 				}
@@ -122,15 +117,6 @@ func TestGetIngressesForChallenge(t *testing.T) {
 }
 
 func TestCleanupIngresses(t *testing.T) {
-	fakeIssuer := &v1alpha1.Issuer{
-		Spec: v1alpha1.IssuerSpec{
-			IssuerConfig: v1alpha1.IssuerConfig{
-				ACME: &v1alpha1.ACMEIssuer{
-					HTTP01: &v1alpha1.ACMEIssuerHTTP01Config{},
-				},
-			},
-		},
-	}
 	const createdIngressKey = "createdIngress"
 	tests := map[string]solverFixture{
 		"should delete ingress resource": {
@@ -138,15 +124,17 @@ func TestCleanupIngresses(t *testing.T) {
 				Spec: v1alpha1.ChallengeSpec{
 					DNSName: "example.com",
 					Token:   "abcd",
-					Config: &v1alpha1.SolverConfig{
-						HTTP01: &v1alpha1.HTTP01SolverConfig{
-							IngressClass: strPtr("nginx"),
+					Solver: &v1alpha1.ACMEChallengeSolver{
+						HTTP01: &v1alpha1.ACMEChallengeSolverHTTP01{
+							Ingress: &v1alpha1.ACMEChallengeSolverHTTP01Ingress{
+								Class: strPtr("nginx"),
+							},
 						},
 					},
 				},
 			},
 			PreFn: func(t *testing.T, s *solverFixture) {
-				ing, err := s.Solver.createIngress(fakeIssuer, s.Challenge, "fakeservice")
+				ing, err := s.Solver.createIngress(s.Challenge, "fakeservice")
 				if err != nil {
 					t.Errorf("error preparing test: %v", err)
 				}
@@ -169,9 +157,11 @@ func TestCleanupIngresses(t *testing.T) {
 				Spec: v1alpha1.ChallengeSpec{
 					DNSName: "example.com",
 					Token:   "abcd",
-					Config: &v1alpha1.SolverConfig{
-						HTTP01: &v1alpha1.HTTP01SolverConfig{
-							IngressClass: strPtr("nginx"),
+					Solver: &v1alpha1.ACMEChallengeSolver{
+						HTTP01: &v1alpha1.ACMEChallengeSolverHTTP01{
+							Ingress: &v1alpha1.ACMEChallengeSolverHTTP01Ingress{
+								Class: strPtr("nginx"),
+							},
 						},
 					},
 				},
@@ -179,7 +169,7 @@ func TestCleanupIngresses(t *testing.T) {
 			PreFn: func(t *testing.T, s *solverFixture) {
 				differentChallenge := s.Challenge.DeepCopy()
 				differentChallenge.Spec.DNSName = "notexample.com"
-				ing, err := s.Solver.createIngress(fakeIssuer, differentChallenge, "fakeservice")
+				ing, err := s.Solver.createIngress(differentChallenge, "fakeservice")
 				if err != nil {
 					t.Errorf("error preparing test: %v", err)
 				}
@@ -235,9 +225,11 @@ func TestCleanupIngresses(t *testing.T) {
 				Spec: v1alpha1.ChallengeSpec{
 					DNSName: "example.com",
 					Token:   "abcd",
-					Config: &v1alpha1.SolverConfig{
-						HTTP01: &v1alpha1.HTTP01SolverConfig{
-							Ingress: "testingress",
+					Solver: &v1alpha1.ACMEChallengeSolver{
+						HTTP01: &v1alpha1.ACMEChallengeSolverHTTP01{
+							Ingress: &v1alpha1.ACMEChallengeSolverHTTP01Ingress{
+								Name: "testingress",
+							},
 						},
 					},
 				},
@@ -316,9 +308,11 @@ func TestCleanupIngresses(t *testing.T) {
 				Spec: v1alpha1.ChallengeSpec{
 					DNSName: "example.com",
 					Token:   "abcd",
-					Config: &v1alpha1.SolverConfig{
-						HTTP01: &v1alpha1.HTTP01SolverConfig{
-							Ingress: "testingress",
+					Solver: &v1alpha1.ACMEChallengeSolver{
+						HTTP01: &v1alpha1.ACMEChallengeSolverHTTP01{
+							Ingress: &v1alpha1.ACMEChallengeSolverHTTP01Ingress{
+								Name: "testingress",
+							},
 						},
 					},
 				},
@@ -347,9 +341,11 @@ func TestCleanupIngresses(t *testing.T) {
 				Spec: v1alpha1.ChallengeSpec{
 					DNSName: "example.com",
 					Token:   "abcd",
-					Config: &v1alpha1.SolverConfig{
-						HTTP01: &v1alpha1.HTTP01SolverConfig{
-							IngressClass: strPtr("nginx"),
+					Solver: &v1alpha1.ACMEChallengeSolver{
+						HTTP01: &v1alpha1.ACMEChallengeSolverHTTP01{
+							Ingress: &v1alpha1.ACMEChallengeSolverHTTP01Ingress{
+								Class: strPtr("nginx"),
+							},
 						},
 					},
 				},
@@ -359,7 +355,7 @@ func TestCleanupIngresses(t *testing.T) {
 				s.Builder.FakeKubeClient().PrependReactor("delete", "ingresses", func(action coretesting.Action) (handled bool, ret runtime.Object, err error) {
 					return true, nil, fmt.Errorf("simulated error")
 				})
-				ing, err := s.Solver.createIngress(fakeIssuer, s.Challenge, "fakeservice")
+				ing, err := s.Solver.createIngress(s.Challenge, "fakeservice")
 				if err != nil {
 					t.Errorf("error preparing test: %v", err)
 				}
@@ -371,7 +367,7 @@ func TestCleanupIngresses(t *testing.T) {
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			test.Setup(t)
-			err := test.Solver.cleanupIngresses(context.TODO(), fakeIssuer, test.Challenge)
+			err := test.Solver.cleanupIngresses(context.TODO(), test.Challenge)
 			if err != nil && !test.Err {
 				t.Errorf("Expected function to not error, but got: %v", err)
 			}

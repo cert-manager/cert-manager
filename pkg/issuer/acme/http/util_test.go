@@ -19,18 +19,13 @@ package http
 import (
 	"testing"
 
-	"github.com/jetstack/cert-manager/test/util/generate"
-
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	"github.com/jetstack/cert-manager/pkg/controller/test"
+	"github.com/jetstack/cert-manager/test/unit/gen"
 )
 
 const (
-	defaultTestIssuerName              = "test-issuer"
-	defaultTestIssuerKind              = v1alpha1.IssuerKind
-	defaultTestNamespace               = "default"
-	defaultTestCertificateName         = "test-cert"
-	defaultTestCertificateIngressClass = "nginx"
+	defaultTestNamespace = gen.DefaultTestNamespace
 )
 
 type solverFixture struct {
@@ -38,8 +33,6 @@ type solverFixture struct {
 	Solver *Solver
 	*test.Builder
 
-	// Issuer to be passed to functions on the Solver (a default will be used if nil)
-	Issuer v1alpha1.GenericIssuer
 	// Challenge resource to use during tests
 	Challenge *v1alpha1.Challenge
 
@@ -60,13 +53,6 @@ type solverFixture struct {
 }
 
 func (s *solverFixture) Setup(t *testing.T) {
-	if s.Issuer == nil {
-		s.Issuer = generate.Issuer(generate.IssuerConfig{
-			Name:      defaultTestIssuerName,
-			Namespace: defaultTestNamespace,
-			HTTP01:    &v1alpha1.ACMEIssuerHTTP01Config{},
-		})
-	}
 	if s.testResources == nil {
 		s.testResources = map[string]interface{}{}
 	}

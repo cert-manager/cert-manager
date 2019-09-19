@@ -31,7 +31,7 @@ import (
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 )
 
-func (s *Solver) ensureService(ctx context.Context, issuer v1alpha1.GenericIssuer, ch *v1alpha1.Challenge) (*corev1.Service, error) {
+func (s *Solver) ensureService(ctx context.Context, ch *v1alpha1.Challenge) (*corev1.Service, error) {
 	log := logf.FromContext(ctx).WithName("ensureService")
 
 	log.V(logf.DebugLevel).Info("checking for existing HTTP01 solver services for challenge")
@@ -53,7 +53,7 @@ func (s *Solver) ensureService(ctx context.Context, issuer v1alpha1.GenericIssue
 	}
 
 	log.Info("creating HTTP01 challenge solver service")
-	return s.createService(issuer, ch)
+	return s.createService(ch)
 }
 
 // getServicesForChallenge returns a list of services that were created to solve
@@ -91,15 +91,15 @@ func (s *Solver) getServicesForChallenge(ctx context.Context, ch *v1alpha1.Chall
 
 // createService will create the service required to solve this challenge
 // in the target API server.
-func (s *Solver) createService(issuer v1alpha1.GenericIssuer, ch *v1alpha1.Challenge) (*corev1.Service, error) {
-	svc, err := buildService(issuer, ch)
+func (s *Solver) createService(ch *v1alpha1.Challenge) (*corev1.Service, error) {
+	svc, err := buildService(ch)
 	if err != nil {
 		return nil, err
 	}
 	return s.Client.CoreV1().Services(ch.Namespace).Create(svc)
 }
 
-func buildService(issuer v1alpha1.GenericIssuer, ch *v1alpha1.Challenge) (*corev1.Service, error) {
+func buildService(ch *v1alpha1.Challenge) (*corev1.Service, error) {
 	podLabels := podLabels(ch)
 	service := &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
@@ -125,7 +125,7 @@ func buildService(issuer v1alpha1.GenericIssuer, ch *v1alpha1.Challenge) (*corev
 	}
 
 	// checking for presence of http01 config and if set serviceType is set, override our default (NodePort)
-	httpDomainCfg, err := httpDomainCfgForChallenge(issuer, ch)
+	httpDomainCfg, err := httpDomainCfgForChallenge(ch)
 	if err != nil {
 		return nil, err
 	}

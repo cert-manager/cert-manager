@@ -33,7 +33,7 @@ import (
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
 )
 
-func newIssuer(name, namespace string, configs ...v1alpha1.ACMEIssuerDNS01Provider) *v1alpha1.Issuer {
+func newIssuer(name, namespace string) *v1alpha1.Issuer {
 	return &v1alpha1.Issuer{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
@@ -41,11 +41,7 @@ func newIssuer(name, namespace string, configs ...v1alpha1.ACMEIssuerDNS01Provid
 		},
 		Spec: v1alpha1.IssuerSpec{
 			IssuerConfig: v1alpha1.IssuerConfig{
-				ACME: &v1alpha1.ACMEIssuer{
-					DNS01: &v1alpha1.ACMEIssuerDNS01Config{
-						Providers: configs,
-					},
-				},
+				ACME: &v1alpha1.ACMEIssuer{},
 			},
 		},
 	}
