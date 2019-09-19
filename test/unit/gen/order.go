@@ -88,9 +88,3 @@ func SetOrderNamespace(namespace string) OrderModifier {
 		crt.ObjectMeta.Namespace = namespace
 	}
 }
-
-func SetOrderDomainSolverConfig(cfg []v1alpha1.DomainSolverConfig) OrderModifier {
-	return func(crt *v1alpha1.Order) {
-		crt.Spec.Config = cfg
-	}
-}
