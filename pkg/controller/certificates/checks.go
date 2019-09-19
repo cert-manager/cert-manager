@@ -29,32 +29,6 @@ import (
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 )
 
-func (c *controller) handleGenericIssuer(obj interface{}) {
-	log := c.log.WithName("handleGenericIssuer")
-
-	iss, ok := obj.(cmapi.GenericIssuer)
-	if !ok {
-		log.Error(nil, "object does not implement GenericIssuer")
-		return
-	}
-
-	log = logf.WithResource(log, iss)
-	certs, err := c.certificatesForGenericIssuer(iss)
-	if err != nil {
-		log.Error(err, "error looking up certificates observing issuer or clusterissuer")
-		return
-	}
-	for _, crt := range certs {
-		log := logf.WithRelatedResource(log, crt)
-		key, err := keyFunc(crt)
-		if err != nil {
-			log.Error(err, "error computing key for resource")
-			continue
-		}
-		c.queue.Add(key)
-	}
-}
-
 func secretResourceHandler(log logr.Logger, certificateLister cmlisters.CertificateLister, queue workqueue.Interface) func(obj interface{}) {
 	return func(obj interface{}) {
 		log := log.WithName("handleSecretResource")
@@ -98,34 +72,6 @@ func certificatesForSecret(certificateLister cmlisters.CertificateLister, secret
 		if crt.Spec.SecretName == secret.Name {
 			affected = append(affected, crt)
 		}
-	}
-
-	return affected, nil
-}
-
-func (c *controller) certificatesForGenericIssuer(iss cmapi.GenericIssuer) ([]*cmapi.Certificate, error) {
-	crts, err := c.certificateLister.List(labels.NewSelector())
-
-	if err != nil {
-		return nil, fmt.Errorf("error listing certificiates: %s", err.Error())
-	}
-
-	_, isClusterIssuer := iss.(*cmapi.ClusterIssuer)
-
-	var affected []*cmapi.Certificate
-	for _, crt := range crts {
-		if isClusterIssuer && crt.Spec.IssuerRef.Kind != cmapi.ClusterIssuerKind {
-			continue
-		}
-		if !isClusterIssuer {
-			if crt.Namespace != iss.GetObjectMeta().Namespace {
-				continue
-			}
-		}
-		if crt.Spec.IssuerRef.Name != iss.GetObjectMeta().Name {
-			continue
-		}
-		affected = append(affected, crt)
 	}
 
 	return affected, nil
