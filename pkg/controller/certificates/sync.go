@@ -632,11 +632,12 @@ func (c *certificateRequestManager) buildCertificateRequest(log logr.Logger, crt
 		return nil, err
 	}
 
-	annotations := make(map[string]string, len(crt.Annotations)+1)
+	annotations := make(map[string]string, len(crt.Annotations)+2)
 	for k, v := range crt.Annotations {
 		annotations[k] = v
 	}
 	annotations[cmapi.CRPrivateKeyAnnotationKey] = crt.Spec.SecretName
+	annotations[cmapi.CertificateNameKey] = crt.Name
 
 	cr := &cmapi.CertificateRequest{
 		ObjectMeta: metav1.ObjectMeta{
