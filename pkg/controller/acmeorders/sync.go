@@ -33,10 +33,8 @@ import (
 	"github.com/jetstack/cert-manager/pkg/acme"
 	acmecl "github.com/jetstack/cert-manager/pkg/acme/client"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
-	"github.com/jetstack/cert-manager/pkg/feature"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 	"github.com/jetstack/cert-manager/pkg/metrics"
-	utilfeature "github.com/jetstack/cert-manager/pkg/util/feature"
 	acmeapi "github.com/jetstack/cert-manager/third_party/crypto/acme"
 )
 
@@ -45,12 +43,6 @@ func (c *controller) Sync(ctx context.Context, o *cmapi.Order) (err error) {
 	dbg := log.V(logf.DebugLevel)
 
 	metrics.Default.IncrementSyncCallCount(ControllerName)
-
-	if utilfeature.DefaultFeatureGate.Enabled(feature.DisableDeprecatedACMECertificates) &&
-		o.Spec.Config != nil {
-		c.recorder.Eventf(o, corev1.EventTypeWarning, "DeprecatedField", "Deprecated spec.config field specified and deprecated field feature gate is enabled.")
-		return nil
-	}
 
 	oldOrder := o
 	o = o.DeepCopy()
