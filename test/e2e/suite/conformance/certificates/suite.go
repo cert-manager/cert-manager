@@ -289,17 +289,10 @@ func (s *Suite) Define() {
 			_, err = f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Update(sec)
 			Expect(err).NotTo(HaveOccurred(), "failed to update secret by deleting the signed certificate")
 
-			By("Waiting for the Certificate to become un-ready")
-			_, err = f.Helper().WaitForCertificateNotReady(f.Namespace.Name, "testcert", time.Second*30)
-			Expect(err).NotTo(HaveOccurred())
+			By("Waiting for the Certificate to re-issue a certificate")
+			sec, err = f.Helper().WaitForSecretCertificate(f.Namespace.Name, sec.Name, time.Minute*5)
+			Expect(err).NotTo(HaveOccurred(), "failed to wait for secret to have a valid 2nd certificate")
 
-			By("Waiting for the second Certificate to be issued...")
-			err = f.Helper().WaitCertificateIssuedValid(f.Namespace.Name, "testcert", time.Minute*5)
-			Expect(err).NotTo(HaveOccurred())
-
-			sec, err = f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).
-				Get(testCertificate.Spec.SecretName, metav1.GetOptions{})
-			Expect(err).NotTo(HaveOccurred(), "failed to get 2nd secret containing signed certificate key pair")
 			crtPEM2 := sec.Data[corev1.TLSCertKey]
 			crt2, err := pki.DecodeX509CertificateBytes(crtPEM2)
 			Expect(err).NotTo(HaveOccurred(), "failed to get decode second signed certificate")
