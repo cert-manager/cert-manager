@@ -59,11 +59,9 @@ type ControllerOptions struct {
 	RenewBeforeExpiryDuration       time.Duration
 
 	// Default issuer/certificates details consumed by ingress-shim
-	DefaultIssuerName                  string
-	DefaultIssuerKind                  string
-	DefaultAutoCertificateAnnotations  []string
-	DefaultACMEIssuerChallengeType     string
-	DefaultACMEIssuerDNS01ProviderName string
+	DefaultIssuerName                 string
+	DefaultIssuerKind                 string
+	DefaultAutoCertificateAnnotations []string
 
 	// Allows specifying a list of custom nameservers to perform DNS checks on.
 	DNS01RecursiveNameservers []string
@@ -156,31 +154,35 @@ var (
 		orderscontroller.ControllerName,
 		challengescontroller.ControllerName,
 		webhookbootstrap.ControllerName,
+		cracmecontroller.CRControllerName,
+		crcacontroller.CRControllerName,
+		crselfsignedcontroller.CRControllerName,
+		crvaultcontroller.CRControllerName,
+		crvenaficontroller.CRControllerName,
+		certificatescontroller.ControllerName,
 	}
 )
 
 func NewControllerOptions() *ControllerOptions {
 	return &ControllerOptions{
-		APIServerHost:                      defaultAPIServerHost,
-		ClusterResourceNamespace:           defaultClusterResourceNamespace,
-		Namespace:                          defaultNamespace,
-		LeaderElect:                        defaultLeaderElect,
-		LeaderElectionNamespace:            defaultLeaderElectionNamespace,
-		LeaderElectionLeaseDuration:        defaultLeaderElectionLeaseDuration,
-		LeaderElectionRenewDeadline:        defaultLeaderElectionRenewDeadline,
-		LeaderElectionRetryPeriod:          defaultLeaderElectionRetryPeriod,
-		EnabledControllers:                 defaultEnabledControllers,
-		ClusterIssuerAmbientCredentials:    defaultClusterIssuerAmbientCredentials,
-		IssuerAmbientCredentials:           defaultIssuerAmbientCredentials,
-		RenewBeforeExpiryDuration:          defaultRenewBeforeExpiryDuration,
-		DefaultIssuerName:                  defaultTLSACMEIssuerName,
-		DefaultIssuerKind:                  defaultTLSACMEIssuerKind,
-		DefaultAutoCertificateAnnotations:  defaultAutoCertificateAnnotations,
-		DefaultACMEIssuerChallengeType:     defaultACMEIssuerChallengeType,
-		DefaultACMEIssuerDNS01ProviderName: defaultACMEIssuerDNS01ProviderName,
-		DNS01RecursiveNameservers:          []string{},
-		DNS01RecursiveNameserversOnly:      defaultDNS01RecursiveNameserversOnly,
-		EnableCertificateOwnerRef:          defaultEnableCertificateOwnerRef,
+		APIServerHost:                     defaultAPIServerHost,
+		ClusterResourceNamespace:          defaultClusterResourceNamespace,
+		Namespace:                         defaultNamespace,
+		LeaderElect:                       defaultLeaderElect,
+		LeaderElectionNamespace:           defaultLeaderElectionNamespace,
+		LeaderElectionLeaseDuration:       defaultLeaderElectionLeaseDuration,
+		LeaderElectionRenewDeadline:       defaultLeaderElectionRenewDeadline,
+		LeaderElectionRetryPeriod:         defaultLeaderElectionRetryPeriod,
+		EnabledControllers:                defaultEnabledControllers,
+		ClusterIssuerAmbientCredentials:   defaultClusterIssuerAmbientCredentials,
+		IssuerAmbientCredentials:          defaultIssuerAmbientCredentials,
+		RenewBeforeExpiryDuration:         defaultRenewBeforeExpiryDuration,
+		DefaultIssuerName:                 defaultTLSACMEIssuerName,
+		DefaultIssuerKind:                 defaultTLSACMEIssuerKind,
+		DefaultAutoCertificateAnnotations: defaultAutoCertificateAnnotations,
+		DNS01RecursiveNameservers:         []string{},
+		DNS01RecursiveNameserversOnly:     defaultDNS01RecursiveNameserversOnly,
+		EnableCertificateOwnerRef:         defaultEnableCertificateOwnerRef,
 	}
 }
 
@@ -251,11 +253,6 @@ func (s *ControllerOptions) AddFlags(fs *pflag.FlagSet) {
 		"Name of the Issuer to use when the tls is requested but issuer name is not specified on the ingress resource.")
 	fs.StringVar(&s.DefaultIssuerKind, "default-issuer-kind", defaultTLSACMEIssuerKind, ""+
 		"Kind of the Issuer to use when the tls is requested but issuer kind is not specified on the ingress resource.")
-	fs.StringVar(&s.DefaultACMEIssuerChallengeType, "default-acme-issuer-challenge-type", defaultACMEIssuerChallengeType, ""+
-		"The ACME challenge type to use when tls is requested for an ACME Issuer but is not specified on the ingress resource.")
-	fs.StringVar(&s.DefaultACMEIssuerDNS01ProviderName, "default-acme-issuer-dns01-provider-name", defaultACMEIssuerDNS01ProviderName, ""+
-		"Required if --default-acme-issuer-challenge-type is set to dns01. The DNS01 provider to use for ingresses using ACME dns01 "+
-		"validation that do not explicitly state a dns provider.")
 	fs.StringSliceVar(&s.DNS01RecursiveNameservers, "dns01-recursive-nameservers",
 		[]string{}, "A list of comma seperated dns server endpoints used for "+
 			"DNS01 check requests. This should be a list containing IP address and "+

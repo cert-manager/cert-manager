@@ -46,12 +46,6 @@ const (
 	// created Certificate resource. The Certificate will reference the
 	// specified *ClusterIssuer* instead of normal issuer.
 	clusterIssuerNameAnnotation = "certmanager.k8s.io/cluster-issuer"
-	// acmeIssuerChallengeTypeAnnotation can be used to override the default ACME challenge
-	// type to be used when the specified issuer is an ACME issuer
-	acmeIssuerChallengeTypeAnnotation = "certmanager.k8s.io/acme-challenge-type"
-	// acmeIssuerDNS01ProviderNameAnnotation can be used to override the default dns01 provider
-	// configured on the issuer if the challenge type is set to dns01
-	acmeIssuerDNS01ProviderNameAnnotation = "certmanager.k8s.io/acme-dns01-provider"
 	// acmeIssuerHTTP01IngressClassAnnotation can be used to override the http01 ingressClass
 	// if the challenge type is set to http01
 	acmeIssuerHTTP01IngressClassAnnotation = "certmanager.k8s.io/acme-http01-ingress-class"
@@ -140,19 +134,6 @@ func (c *controller) Sync(ctx context.Context, ing *extv1beta1.Ingress) error {
 
 func (c *controller) validateIngress(ing *extv1beta1.Ingress) []error {
 	var errs []error
-	if ing.Annotations != nil {
-		challengeType := ing.Annotations[acmeIssuerChallengeTypeAnnotation]
-		switch challengeType {
-		case "", "http01":
-		case "dns01":
-			providerName := ing.Annotations[acmeIssuerDNS01ProviderNameAnnotation]
-			if providerName == "" {
-				errs = append(errs, fmt.Errorf("No acme dns01 challenge provider specified"))
-			}
-		default:
-			errs = append(errs, fmt.Errorf("Invalid acme challenge type specified %q", challengeType))
-		}
-	}
 	for i, tls := range ing.Spec.TLS {
 		// validate the ingress TLS block
 		if len(tls.Hosts) == 0 {
@@ -304,20 +285,6 @@ func certNeedsUpdate(a, b *v1alpha1.Certificate) bool {
 		return true
 	}
 
-	var configA, configB []v1alpha1.DomainSolverConfig
-
-	if a.Spec.ACME != nil {
-		configA = a.Spec.ACME.Config
-	}
-
-	if b.Spec.ACME != nil {
-		configB = b.Spec.ACME.Config
-	}
-
-	if !reflect.DeepEqual(configA, configB) {
-		return true
-	}
-
 	return false
 }
 
@@ -345,68 +312,6 @@ func (c *controller) setIssuerSpecificConfig(crt *v1alpha1.Certificate, issuer v
 		crt.Annotations[v1alpha1.ACMECertificateHTTP01IngressClassOverride] = ingressClassVal
 	}
 
-	if issuer.GetSpec().ACME != nil {
-		challengeType, ok := ingAnnotations[acmeIssuerChallengeTypeAnnotation]
-		if !ok {
-			challengeType = c.defaults.acmeIssuerChallengeType
-		}
-		domainCfg := v1alpha1.DomainSolverConfig{
-			Domains: tls.Hosts,
-		}
-		switch challengeType {
-		case "http01":
-			editInPlaceVal, ok := ingAnnotations[editInPlaceAnnotation]
-			editInPlace := editInPlaceVal == "true"
-			// If the HTTP01 issuer is not enabled, skip setting the ACME field
-			// on the Certificate resource.
-			if issuer.GetSpec().ACME.HTTP01 == nil {
-				if editInPlace {
-					c.recorder.Eventf(ing, corev1.EventTypeWarning, "Unsupported", "%s annotation cannot be enabled when using new format solver type. "+
-						"Re-enable the old format HTTP01 solver, or otherwise create a specific HTTP01 solver for this Ingress.", editInPlaceAnnotation)
-				}
-				crt.Spec.ACME = nil
-				return nil
-			}
-			domainCfg.HTTP01 = &v1alpha1.HTTP01SolverConfig{}
-			// If annotation isn't present, or it's set to true, edit the existing ingress
-			if ok && editInPlace {
-				domainCfg.HTTP01.Ingress = ing.Name
-			} else {
-				ingressClass, ok := ingAnnotations[acmeIssuerHTTP01IngressClassAnnotation]
-				if ok {
-					domainCfg.HTTP01.IngressClass = &ingressClass
-				} else {
-					ingressClass, ok := ingAnnotations[ingressClassAnnotation]
-					if ok {
-						domainCfg.HTTP01.IngressClass = &ingressClass
-					}
-				}
-			}
-		case "dns01":
-			// If the DNS01 issuer is not enabled, skip setting the ACME field
-			// on the Certificate resource.
-			if issuer.GetSpec().ACME.DNS01 == nil {
-				crt.Spec.ACME = nil
-				return nil
-			}
-			dnsProvider, ok := ingAnnotations[acmeIssuerDNS01ProviderNameAnnotation]
-			if !ok {
-				dnsProvider = c.defaults.acmeIssuerDNS01ProviderName
-			}
-			if dnsProvider == "" {
-				return fmt.Errorf("no acme issuer dns01 challenge provider specified")
-			}
-			domainCfg.DNS01 = &v1alpha1.DNS01SolverConfig{Provider: dnsProvider}
-		// If no challenge type is specified, don't set the ACME field at all
-		// and instead rely on the 'new API format' to provide solver config.
-		case "":
-			crt.Spec.ACME = nil
-			return nil
-		default:
-			return fmt.Errorf("invalid acme issuer challenge type specified %q", challengeType)
-		}
-		crt.Spec.ACME = &v1alpha1.ACMECertificateConfig{Config: []v1alpha1.DomainSolverConfig{domainCfg}}
-	}
 	return nil
 }
 
@@ -429,12 +334,6 @@ func shouldSync(ing *extv1beta1.Ingress, autoCertificateAnnotations []string) bo
 				return true
 			}
 		}
-	}
-	if _, ok := annotations[acmeIssuerChallengeTypeAnnotation]; ok {
-		return true
-	}
-	if _, ok := annotations[acmeIssuerDNS01ProviderNameAnnotation]; ok {
-		return true
 	}
 	return false
 }
