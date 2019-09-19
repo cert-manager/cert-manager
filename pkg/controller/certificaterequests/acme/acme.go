@@ -184,9 +184,10 @@ func buildOrder(cr *v1alpha1.CertificateRequest, csr *x509.CertificateRequest) (
 	// the hyphen.
 	return &v1alpha1.Order{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      fmt.Sprintf("%.52s-%d", cr.Name, hash),
-			Namespace: cr.Namespace,
-			Labels:    cr.Labels,
+			Name:        fmt.Sprintf("%.52s-%d", cr.Name, hash),
+			Namespace:   cr.Namespace,
+			Labels:      cr.Labels,
+			Annotations: cr.Annotations,
 			OwnerReferences: []metav1.OwnerReference{
 				*metav1.NewControllerRef(cr, v1alpha1.SchemeGroupVersion.WithKind(v1alpha1.CertificateRequestKind)),
 			},
