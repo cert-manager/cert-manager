@@ -16,7 +16,7 @@ require (
 	github.com/Venafi/vcert v0.0.0-20190613103158-62139eb19b25
 	github.com/armon/go-metrics v0.0.0-20180917152333-f0300d1749da // indirect
 	github.com/armon/go-radix v1.0.0 // indirect
-	github.com/aws/aws-sdk-go v0.0.0-20170809071707-58f4800ac6e7
+	github.com/aws/aws-sdk-go v1.24.1
 	github.com/bitly/go-hostpool v0.0.0-20171023180738-a3a6125de932 // indirect
 	github.com/bmizerany/assert v0.0.0-20160611221934-b7ed37b82869 // indirect
 	github.com/cenkalti/backoff v2.1.1+incompatible // indirect
@@ -28,7 +28,6 @@ require (
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/duosecurity/duo_api_golang v0.0.0-20190308151101-6c680f768e74 // indirect
 	github.com/fatih/structs v1.1.0 // indirect
-	github.com/go-ini/ini v1.42.0 // indirect
 	github.com/go-logr/logr v0.1.0
 	github.com/go-logr/zapr v0.1.1 // indirect
 	github.com/go-openapi/spec v0.19.2
@@ -53,7 +52,6 @@ require (
 	github.com/hashicorp/golang-math-big v0.0.0-20180316142257-561262b71329 // indirect
 	github.com/hashicorp/vault v0.9.6
 	github.com/jefferai/jsonx v1.0.0 // indirect
-	github.com/jmespath/go-jmespath v0.0.0-20180206201540-c2b33e8439af // indirect
 	github.com/keybase/go-crypto v0.0.0-20190403132359-d65b6b94177f // indirect
 	github.com/kr/pretty v0.1.0
 	github.com/lib/pq v1.0.0 // indirect
