@@ -20,24 +20,22 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/digitalocean"
-
-	"github.com/jetstack/cert-manager/test/util/generate"
-
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	"github.com/jetstack/cert-manager/pkg/controller/test"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/acmedns"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/azuredns"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/clouddns"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/cloudflare"
+	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/digitalocean"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/route53"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/util"
+	"github.com/jetstack/cert-manager/test/unit/gen"
 )
 
 const (
 	defaultTestIssuerName      = "test-issuer"
 	defaultTestIssuerKind      = v1alpha1.IssuerKind
-	defaultTestNamespace       = "default"
+	defaultTestNamespace       = gen.DefaultTestNamespace
 	defaultTestCertificateName = "test-cert"
 )
 
@@ -71,10 +69,7 @@ type solverFixture struct {
 
 func (s *solverFixture) Setup(t *testing.T) {
 	if s.Issuer == nil {
-		s.Issuer = generate.Issuer(generate.IssuerConfig{
-			Name:      defaultTestIssuerName,
-			Namespace: defaultTestNamespace,
-		})
+		s.Issuer = gen.Issuer(defaultTestIssuerName, gen.SetIssuerACME(v1alpha1.ACMEIssuer{}))
 	}
 	if s.testResources == nil {
 		s.testResources = map[string]interface{}{}

@@ -170,39 +170,10 @@ func followCNAME(strategy v1alpha1.CNAMEStrategy) bool {
 	return false
 }
 
-// extractChallengeSolverConfigOldOrNew will compute a new format ACMEChallengeSolverDNS01
-// structure for the given Issuer or Challenge resource.
-// If the solver configuration is provided in the old format, it will compute
-// and return configuration in the *new* format to make consumers of this
-// function easier to write.
-// This function can be removed once format for old style configuration is no
-// longer supported.
-func extractChallengeSolverConfigOldOrNew(issuer v1alpha1.GenericIssuer, ch *v1alpha1.Challenge) (*v1alpha1.ACMEChallengeSolverDNS01, error) {
+func extractChallengeSolverConfig(ch *v1alpha1.Challenge) (*v1alpha1.ACMEChallengeSolverDNS01, error) {
 	switch {
-	case ch.Spec.Config != nil && ch.Spec.Solver != nil:
-		return nil, fmt.Errorf("both 'config' and 'solver' field on challenge cannot be set")
 	case ch.Spec.Solver != nil:
 		return ch.Spec.Solver.DNS01, nil
-	case ch.Spec.Config != nil:
-		if ch.Spec.Config.DNS01 == nil {
-			return nil, fmt.Errorf("old format dns01 config is missing")
-		}
-		p, err := issuer.GetSpec().ACME.DNS01.Provider(ch.Spec.Config.DNS01.Provider)
-		if err != nil {
-			return nil, fmt.Errorf("no challenge solver config for provider %q found on issuer resource", ch.Spec.Config.DNS01.Provider)
-		}
-		return &v1alpha1.ACMEChallengeSolverDNS01{
-			CNAMEStrategy: p.CNAMEStrategy,
-			Akamai:        p.Akamai,
-			CloudDNS:      p.CloudDNS,
-			Cloudflare:    p.Cloudflare,
-			Route53:       p.Route53,
-			AzureDNS:      p.AzureDNS,
-			DigitalOcean:  p.DigitalOcean,
-			AcmeDNS:       p.AcmeDNS,
-			RFC2136:       p.RFC2136,
-			Webhook:       p.Webhook,
-		}, nil
 	default:
 		return nil, fmt.Errorf("no dns01 challenge solver configuration found")
 	}
@@ -219,7 +190,7 @@ func (s *Solver) solverForChallenge(ctx context.Context, issuer v1alpha1.Generic
 	resourceNamespace := s.ResourceNamespace(issuer)
 	canUseAmbientCredentials := s.CanUseAmbientCredentials(issuer)
 
-	providerConfig, err := extractChallengeSolverConfigOldOrNew(issuer, ch)
+	providerConfig, err := extractChallengeSolverConfig(ch)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -386,7 +357,7 @@ func (s *Solver) solverForChallenge(ctx context.Context, issuer v1alpha1.Generic
 }
 
 func (s *Solver) prepareChallengeRequest(issuer v1alpha1.GenericIssuer, ch *v1alpha1.Challenge) (webhook.Solver, *whapi.ChallengeRequest, error) {
-	dns01Config, err := extractChallengeSolverConfigOldOrNew(issuer, ch)
+	dns01Config, err := extractChallengeSolverConfig(ch)
 	if err != nil {
 		return nil, nil, err
 	}

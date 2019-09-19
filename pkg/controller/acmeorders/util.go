@@ -48,23 +48,11 @@ func buildRequiredChallenges(ctx context.Context, cl acmecl.Interface, issuer cm
 }
 
 func buildChallenge(ctx context.Context, cl acmecl.Interface, issuer cmapi.GenericIssuer, o *cmapi.Order, authz cmapi.ACMEAuthorization) (*cmapi.Challenge, error) {
-	var chSpec *cmapi.ChallengeSpec
-	var err error
-	switch {
-	case len(o.Spec.Config) > 0:
-		chSpec, err = deprecatedChallengeSpecForAuthorization(ctx, cl, issuer, o, authz)
-		if err != nil {
-			// TODO: in this case, we should probably not return the error as it's
-			//  unlikely we can make it succeed by retrying.
-			return nil, err
-		}
-	default:
-		chSpec, err = challengeSpecForAuthorization(ctx, cl, issuer, o, authz)
-		if err != nil {
-			// TODO: in this case, we should probably not return the error as it's
-			//  unlikely we can make it succeed by retrying.
-			return nil, err
-		}
+	chSpec, err := challengeSpecForAuthorization(ctx, cl, issuer, o, authz)
+	if err != nil {
+		// TODO: in this case, we should probably not return the error as it's
+		//  unlikely we can make it succeed by retrying.
+		return nil, err
 	}
 
 	chName, err := buildChallengeName(o.Name, *chSpec)
@@ -337,22 +325,6 @@ func keyForChallenge(cl acmecl.Interface, challenge *cmapi.ACMEChallenge) (strin
 		err = fmt.Errorf("unsupported challenge type %s", challenge.Type)
 	}
 	return "", err
-}
-
-func solverConfigurationForAuthorization(cfgs []cmapi.DomainSolverConfig, authz *cmapi.ACMEAuthorization) (*cmapi.SolverConfig, error) {
-	domainToFind := authz.Identifier
-	if authz.Wildcard {
-		domainToFind = "*." + domainToFind
-	}
-	for _, d := range cfgs {
-		for _, dom := range d.Domains {
-			if dom != domainToFind {
-				continue
-			}
-			return &d.SolverConfig, nil
-		}
-	}
-	return nil, fmt.Errorf("solver configuration for domain %q not found. Ensure you have configured a challenge mechanism using the certificate.spec.acme.config field", domainToFind)
 }
 
 func anyChallengesFailed(chs []*cmapi.Challenge) bool {

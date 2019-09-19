@@ -4,9 +4,7 @@ go_library(
     name = "go_default_library",
     srcs = [
         "dns01.go",
-        "dns01_new.go",
         "http01.go",
-        "http01_new.go",
         "webhook.go",
     ],
     importpath = "github.com/jetstack/cert-manager/test/e2e/suite/issuers/acme/certificate",
@@ -26,7 +24,6 @@ go_library(
         "//test/e2e/suite/issuers/acme/dnsproviders:go_default_library",
         "//test/e2e/util:go_default_library",
         "//test/unit/gen:go_default_library",
-        "//test/util/generate:go_default_library",
         "//vendor/github.com/onsi/ginkgo:go_default_library",
         "//vendor/github.com/onsi/gomega:go_default_library",
         "//vendor/k8s.io/api/core/v1:go_default_library",

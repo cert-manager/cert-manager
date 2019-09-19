@@ -29,7 +29,7 @@ import (
 	"github.com/jetstack/cert-manager/test/e2e/framework/addon"
 	"github.com/jetstack/cert-manager/test/e2e/suite/issuers/acme/dnsproviders"
 	"github.com/jetstack/cert-manager/test/e2e/util"
-	"github.com/jetstack/cert-manager/test/util/generate"
+	"github.com/jetstack/cert-manager/test/unit/gen"
 )
 
 type dns01Provider interface {
@@ -68,21 +68,23 @@ func testDNSProvider(name string, p dns01Provider) bool {
 			dnsDomain = p.Details().NewTestDomain()
 
 			By("Creating an Issuer")
-			issuer := generate.Issuer(generate.IssuerConfig{
-				Name:              issuerName,
-				Namespace:         f.Namespace.Name,
-				ACMESkipTLSVerify: true,
-				// Hardcode this to the acme staging endpoint now due to issues with pebble dns resolution
-				ACMEServer: "https://acme-staging-v02.api.letsencrypt.org/directory",
-				// ACMEServer:         framework.TestContext.ACMEURL,
-				ACMEEmail:          testingACMEEmail,
-				ACMEPrivateKeyName: testingACMEPrivateKey,
-				Solvers: []v1alpha1.ACMEChallengeSolver{
-					{
-						DNS01: &p.Details().ProviderConfig,
+			issuer := gen.Issuer(issuerName,
+				gen.SetIssuerACME(v1alpha1.ACMEIssuer{
+					SkipTLSVerify: true,
+					Server:        "https://acme-staging-v02.api.letsencrypt.org/directory",
+					Email:         testingACMEEmail,
+					PrivateKey: v1alpha1.SecretKeySelector{
+						LocalObjectReference: v1alpha1.LocalObjectReference{
+							Name: testingACMEPrivateKey,
+						},
 					},
-				},
-			})
+					Solvers: []v1alpha1.ACMEChallengeSolver{
+						{
+							DNS01: &p.Details().ProviderConfig,
+						},
+					},
+				}))
+			issuer.Namespace = f.Namespace.Name
 			issuer, err := f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Create(issuer)
 			Expect(err).NotTo(HaveOccurred())
 			By("Waiting for Issuer to become Ready")

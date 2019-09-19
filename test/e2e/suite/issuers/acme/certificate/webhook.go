@@ -34,7 +34,7 @@ import (
 	"github.com/jetstack/cert-manager/test/e2e/framework/addon/tiller"
 	"github.com/jetstack/cert-manager/test/e2e/framework/log"
 	"github.com/jetstack/cert-manager/test/e2e/util"
-	"github.com/jetstack/cert-manager/test/util/generate"
+	"github.com/jetstack/cert-manager/test/unit/gen"
 )
 
 var _ = framework.CertManagerDescribe("ACME webhook DNS provider", func() {
@@ -42,9 +42,6 @@ var _ = framework.CertManagerDescribe("ACME webhook DNS provider", func() {
 	//h := f.Helper()
 
 	Context("with the sample webhook solver deployed", func() {
-		// TODO: add additional DNS provider configs here
-		//cf := &dnsproviders.Cloudflare{}
-
 		var (
 			tiller = &tiller.Tiller{
 				Name:               "tiller-deploy-sample-webhook",
@@ -81,28 +78,31 @@ var _ = framework.CertManagerDescribe("ACME webhook DNS provider", func() {
 			dnsDomain = "example.com"
 
 			By("Creating an Issuer")
-			issuer := generate.Issuer(generate.IssuerConfig{
-				Name:               issuerName,
-				Namespace:          f.Namespace.Name,
-				ACMESkipTLSVerify:  true,
-				ACMEServer:         pebble.Details().Host,
-				ACMEEmail:          testingACMEEmail,
-				ACMEPrivateKeyName: testingACMEPrivateKey,
-				DNS01: &v1alpha1.ACMEIssuerDNS01Config{
-					Providers: []v1alpha1.ACMEIssuerDNS01Provider{
+			issuer := gen.Issuer(issuerName,
+				gen.SetIssuerACME(v1alpha1.ACMEIssuer{
+					SkipTLSVerify: true,
+					Server:        pebble.Details().Host,
+					Email:         testingACMEEmail,
+					PrivateKey: v1alpha1.SecretKeySelector{
+						LocalObjectReference: v1alpha1.LocalObjectReference{
+							Name: testingACMEPrivateKey,
+						},
+					},
+					Solvers: []v1alpha1.ACMEChallengeSolver{
 						{
-							Name: "default",
-							Webhook: &v1alpha1.ACMEIssuerDNS01ProviderWebhook{
-								GroupName:  webhook.Details().GroupName,
-								SolverName: webhook.Details().SolverName,
-								Config: &v1beta1.JSON{
-									Raw: []byte(`{}`),
+							DNS01: &v1alpha1.ACMEChallengeSolverDNS01{
+								Webhook: &v1alpha1.ACMEIssuerDNS01ProviderWebhook{
+									GroupName:  webhook.Details().GroupName,
+									SolverName: webhook.Details().SolverName,
+									Config: &v1beta1.JSON{
+										Raw: []byte(`{}`),
+									},
 								},
 							},
 						},
 					},
-				},
-			})
+				}))
+			issuer.Namespace = f.Namespace.Name
 			issuer, err := f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Create(issuer)
 			Expect(err).NotTo(HaveOccurred())
 			By("Waiting for Issuer to become Ready")
@@ -143,36 +143,30 @@ var _ = framework.CertManagerDescribe("ACME webhook DNS provider", func() {
 
 			certClient := f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name)
 
-			cert := generate.Certificate(generate.CertificateConfig{
-				Name:       certificateName,
-				Namespace:  f.Namespace.Name,
-				SecretName: certificateSecretName,
-				IssuerName: issuerName,
-				DNSNames:   []string{dnsDomain},
-				SolverConfig: &v1alpha1.SolverConfig{
-					DNS01: &v1alpha1.DNS01SolverConfig{
-						Provider: "default",
-					},
-				},
-			})
+			cert := gen.Certificate(certificateName,
+				gen.SetCertificateSecretName(certificateSecretName),
+				gen.SetCertificateIssuer(v1alpha1.ObjectReference{Name: issuerName}),
+				gen.SetCertificateDNSNames(dnsDomain),
+			)
+			cert.Namespace = f.Namespace.Name
+
 			cert, err := certClient.Create(cert)
 			Expect(err).NotTo(HaveOccurred())
 
 			var order *v1alpha1.Order
 			pollErr := wait.PollImmediate(500*time.Millisecond, time.Second*30,
 				func() (bool, error) {
-					l, err := f.CertManagerClientSet.CertmanagerV1alpha1().Orders(f.Namespace.Name).List(metav1.ListOptions{
-						LabelSelector: "acme.cert-manager.io/certificate-name=" + cert.Name,
-					})
+					orders, err := listOwnedOrders(f.CertManagerClientSet, cert)
 					Expect(err).NotTo(HaveOccurred())
 
-					log.Logf("Found %d orders for certificate", len(l.Items))
-					if len(l.Items) == 1 {
-						order = &l.Items[0]
+					log.Logf("Found %d orders for certificate", len(orders))
+					if len(orders) == 1 {
+						order = orders[0]
 						log.Logf("Found order named %q", order.Name)
 						return true, nil
 					}
 
+					log.Logf("Waiting as one Order should exist, but we found %d", len(orders))
 					return false, nil
 				},
 			)
@@ -219,6 +213,24 @@ func listOwnedChallenges(cl versioned.Interface, owner *v1alpha1.Order) ([]*v1al
 			continue
 		}
 		owned = append(owned, &ch)
+	}
+
+	return owned, nil
+}
+
+func listOwnedOrders(cl versioned.Interface, owner *v1alpha1.Certificate) ([]*v1alpha1.Order, error) {
+	l, err := cl.CertmanagerV1alpha1().Orders(owner.Namespace).List(metav1.ListOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	var owned []*v1alpha1.Order
+	for _, o := range l.Items {
+		v, ok := o.Annotations[v1alpha1.CertificateNameKey]
+		if !ok || v != owner.Name {
+			continue
+		}
+		owned = append(owned, &o)
 	}
 
 	return owned, nil

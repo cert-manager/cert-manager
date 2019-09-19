@@ -18,6 +18,7 @@ package certificate
 
 import (
 	"context"
+	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -83,6 +84,12 @@ var _ = framework.CertManagerDescribe("CA Injector", func() {
 				cert := util.NewCertManagerBasicCertificate("serving-certs", secretName.Name, issuerName, certmanager.IssuerKind, nil, nil)
 				cert.Namespace = f.Namespace.Name
 				Expect(f.CRClient.Create(context.Background(), cert)).To(Succeed())
+
+				err := util.WaitForCertificateCondition(f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name), "serving-certs", certmanager.CertificateCondition{
+					Type:   certmanager.CertificateConditionReady,
+					Status: certmanager.ConditionTrue,
+				}, time.Second*30)
+				Expect(err).NotTo(HaveOccurred(), "failed to wait for Certificate to become Ready")
 
 				By("grabbing the corresponding secret")
 				var secret corev1.Secret

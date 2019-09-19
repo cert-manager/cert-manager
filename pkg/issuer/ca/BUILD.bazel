@@ -4,7 +4,6 @@ go_library(
     name = "go_default_library",
     srcs = [
         "ca.go",
-        "issue.go",
         "setup.go",
     ],
     importpath = "github.com/jetstack/cert-manager/pkg/issuer/ca",
@@ -15,11 +14,8 @@ go_library(
         "//pkg/controller:go_default_library",
         "//pkg/issuer:go_default_library",
         "//pkg/logs:go_default_library",
-        "//pkg/util/errors:go_default_library",
         "//pkg/util/kube:go_default_library",
-        "//pkg/util/pki:go_default_library",
         "//vendor/k8s.io/api/core/v1:go_default_library",
-        "//vendor/k8s.io/apimachinery/pkg/api/errors:go_default_library",
         "//vendor/k8s.io/client-go/listers/core/v1:go_default_library",
     ],
 )
@@ -40,19 +36,10 @@ filegroup(
 
 go_test(
     name = "go_default_test",
-    srcs = [
-        "issue_test.go",
-        "util_test.go",
-    ],
+    srcs = ["util_test.go"],
     embed = [":go_default_library"],
     deps = [
         "//pkg/apis/certmanager/v1alpha1:go_default_library",
         "//pkg/controller/test:go_default_library",
-        "//pkg/issuer:go_default_library",
-        "//pkg/util/pki:go_default_library",
-        "//test/unit/gen:go_default_library",
-        "//vendor/k8s.io/api/core/v1:go_default_library",
-        "//vendor/k8s.io/apimachinery/pkg/apis/meta/v1:go_default_library",
-        "//vendor/k8s.io/apimachinery/pkg/runtime:go_default_library",
     ],
 )

@@ -36,13 +36,15 @@ func TestEnsureService(t *testing.T) {
 			Challenge: &v1alpha1.Challenge{
 				Spec: v1alpha1.ChallengeSpec{
 					DNSName: "example.com",
-					Config: &v1alpha1.SolverConfig{
-						HTTP01: &v1alpha1.HTTP01SolverConfig{},
+					Solver: &v1alpha1.ACMEChallengeSolver{
+						HTTP01: &v1alpha1.ACMEChallengeSolverHTTP01{
+							Ingress: &v1alpha1.ACMEChallengeSolverHTTP01Ingress{},
+						},
 					},
 				},
 			},
 			PreFn: func(t *testing.T, s *solverFixture) {
-				svc, err := s.Solver.createService(s.Issuer, s.Challenge)
+				svc, err := s.Solver.createService(s.Challenge)
 				if err != nil {
 					t.Errorf("error preparing test: %v", err)
 				}
@@ -75,13 +77,15 @@ func TestEnsureService(t *testing.T) {
 			Challenge: &v1alpha1.Challenge{
 				Spec: v1alpha1.ChallengeSpec{
 					DNSName: "example.com",
-					Config: &v1alpha1.SolverConfig{
-						HTTP01: &v1alpha1.HTTP01SolverConfig{},
+					Solver: &v1alpha1.ACMEChallengeSolver{
+						HTTP01: &v1alpha1.ACMEChallengeSolverHTTP01{
+							Ingress: &v1alpha1.ACMEChallengeSolverHTTP01Ingress{},
+						},
 					},
 				},
 			},
 			PreFn: func(t *testing.T, s *solverFixture) {
-				expectedService, err := buildService(s.Issuer, s.Challenge)
+				expectedService, err := buildService(s.Challenge)
 				if err != nil {
 					t.Errorf("expectedService returned an error whilst building test fixture: %v", err)
 				}
@@ -126,18 +130,20 @@ func TestEnsureService(t *testing.T) {
 			Challenge: &v1alpha1.Challenge{
 				Spec: v1alpha1.ChallengeSpec{
 					DNSName: "example.com",
-					Config: &v1alpha1.SolverConfig{
-						HTTP01: &v1alpha1.HTTP01SolverConfig{},
+					Solver: &v1alpha1.ACMEChallengeSolver{
+						HTTP01: &v1alpha1.ACMEChallengeSolverHTTP01{
+							Ingress: &v1alpha1.ACMEChallengeSolverHTTP01Ingress{},
+						},
 					},
 				},
 			},
 			Err: true,
 			PreFn: func(t *testing.T, s *solverFixture) {
-				_, err := s.Solver.createService(s.Issuer, s.Challenge)
+				_, err := s.Solver.createService(s.Challenge)
 				if err != nil {
 					t.Errorf("error preparing test: %v", err)
 				}
-				_, err = s.Solver.createService(s.Issuer, s.Challenge)
+				_, err = s.Solver.createService(s.Challenge)
 				if err != nil {
 					t.Errorf("error preparing test: %v", err)
 				}
@@ -160,7 +166,7 @@ func TestEnsureService(t *testing.T) {
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			test.Setup(t)
-			resp, err := test.Solver.ensureService(context.TODO(), test.Issuer, test.Challenge)
+			resp, err := test.Solver.ensureService(context.TODO(), test.Challenge)
 			if err != nil && !test.Err {
 				t.Errorf("Expected function to not error, but got: %v", err)
 			}
@@ -179,13 +185,15 @@ func TestGetServicesForChallenge(t *testing.T) {
 			Challenge: &v1alpha1.Challenge{
 				Spec: v1alpha1.ChallengeSpec{
 					DNSName: "example.com",
-					Config: &v1alpha1.SolverConfig{
-						HTTP01: &v1alpha1.HTTP01SolverConfig{},
+					Solver: &v1alpha1.ACMEChallengeSolver{
+						HTTP01: &v1alpha1.ACMEChallengeSolverHTTP01{
+							Ingress: &v1alpha1.ACMEChallengeSolverHTTP01Ingress{},
+						},
 					},
 				},
 			},
 			PreFn: func(t *testing.T, s *solverFixture) {
-				ing, err := s.Solver.createService(s.Issuer, s.Challenge)
+				ing, err := s.Solver.createService(s.Challenge)
 				if err != nil {
 					t.Errorf("error preparing test: %v", err)
 				}
@@ -210,15 +218,17 @@ func TestGetServicesForChallenge(t *testing.T) {
 			Challenge: &v1alpha1.Challenge{
 				Spec: v1alpha1.ChallengeSpec{
 					DNSName: "example.com",
-					Config: &v1alpha1.SolverConfig{
-						HTTP01: &v1alpha1.HTTP01SolverConfig{},
+					Solver: &v1alpha1.ACMEChallengeSolver{
+						HTTP01: &v1alpha1.ACMEChallengeSolverHTTP01{
+							Ingress: &v1alpha1.ACMEChallengeSolverHTTP01Ingress{},
+						},
 					},
 				},
 			},
 			PreFn: func(t *testing.T, s *solverFixture) {
 				differentChallenge := s.Challenge.DeepCopy()
 				differentChallenge.Spec.DNSName = "invaliddomain"
-				_, err := s.Solver.createService(s.Issuer, differentChallenge)
+				_, err := s.Solver.createService(differentChallenge)
 				if err != nil {
 					t.Errorf("error preparing test: %v", err)
 				}

@@ -21,17 +21,17 @@ import (
 	"testing"
 	"time"
 
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
-	"github.com/jetstack/cert-manager/test/util/generate"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	"github.com/jetstack/cert-manager/test/unit/gen"
 )
 
 const (
 	defaultTestIssuerName = "test-issuer"
 	defaultTestCrtName    = "test-crt"
-	defaultTestNamespace  = "default"
+	defaultTestNamespace  = gen.DefaultTestNamespace
 )
 
 func TestValidateCertificateForIssuer(t *testing.T) {
@@ -46,89 +46,36 @@ func TestValidateCertificateForIssuer(t *testing.T) {
 			crt: &v1alpha1.Certificate{
 				Spec: v1alpha1.CertificateSpec{
 					IssuerRef: validIssuerRef,
-					ACME: &v1alpha1.ACMECertificateConfig{
-						Config: []v1alpha1.DomainSolverConfig{
-							{
-								Domains: []string{"example.com"},
-								SolverConfig: v1alpha1.SolverConfig{
-									HTTP01: &v1alpha1.HTTP01SolverConfig{},
-								},
-							},
-						},
-					},
 				},
 			},
-
-			issuer: generate.Issuer(generate.IssuerConfig{
-				Name:      defaultTestIssuerName,
-				Namespace: defaultTestNamespace,
-			}),
+			issuer: gen.Issuer(defaultTestIssuerName, gen.SetIssuerACME(v1alpha1.ACMEIssuer{})),
 		},
 		"certificate with RSA keyAlgorithm for ACME": {
 			crt: &v1alpha1.Certificate{
 				Spec: v1alpha1.CertificateSpec{
 					KeyAlgorithm: v1alpha1.RSAKeyAlgorithm,
 					IssuerRef:    validIssuerRef,
-					ACME: &v1alpha1.ACMECertificateConfig{
-						Config: []v1alpha1.DomainSolverConfig{
-							{
-								Domains: []string{"example.com"},
-								SolverConfig: v1alpha1.SolverConfig{
-									HTTP01: &v1alpha1.HTTP01SolverConfig{},
-								},
-							},
-						},
-					},
 				},
 			},
-			issuer: generate.Issuer(generate.IssuerConfig{
-				Name:      defaultTestIssuerName,
-				Namespace: defaultTestNamespace,
-			}),
+			issuer: gen.Issuer(defaultTestIssuerName, gen.SetIssuerACME(v1alpha1.ACMEIssuer{})),
 		},
 		"certificate with ECDSA keyAlgorithm for ACME": {
 			crt: &v1alpha1.Certificate{
 				Spec: v1alpha1.CertificateSpec{
 					KeyAlgorithm: v1alpha1.ECDSAKeyAlgorithm,
 					IssuerRef:    validIssuerRef,
-					ACME: &v1alpha1.ACMECertificateConfig{
-						Config: []v1alpha1.DomainSolverConfig{
-							{
-								Domains: []string{"example.com"},
-								SolverConfig: v1alpha1.SolverConfig{
-									HTTP01: &v1alpha1.HTTP01SolverConfig{},
-								},
-							},
-						},
-					},
 				},
 			},
-			issuer: generate.Issuer(generate.IssuerConfig{
-				Name:      defaultTestIssuerName,
-				Namespace: defaultTestNamespace,
-			}),
+			issuer: gen.Issuer(defaultTestIssuerName, gen.SetIssuerACME(v1alpha1.ACMEIssuer{})),
 		},
 		"acme certificate with organization set": {
 			crt: &v1alpha1.Certificate{
 				Spec: v1alpha1.CertificateSpec{
 					Organization: []string{"shouldfailorg"},
 					IssuerRef:    validIssuerRef,
-					ACME: &v1alpha1.ACMECertificateConfig{
-						Config: []v1alpha1.DomainSolverConfig{
-							{
-								Domains: []string{"example.com"},
-								SolverConfig: v1alpha1.SolverConfig{
-									HTTP01: &v1alpha1.HTTP01SolverConfig{},
-								},
-							},
-						},
-					},
 				},
 			},
-			issuer: generate.Issuer(generate.IssuerConfig{
-				Name:      defaultTestIssuerName,
-				Namespace: defaultTestNamespace,
-			}),
+			issuer: gen.Issuer(defaultTestIssuerName, gen.SetIssuerACME(v1alpha1.ACMEIssuer{})),
 			errs: []*field.Error{
 				field.Invalid(fldPath.Child("organization"), []string{"shouldfailorg"}, "ACME does not support setting the organization name"),
 			},
@@ -138,22 +85,9 @@ func TestValidateCertificateForIssuer(t *testing.T) {
 				Spec: v1alpha1.CertificateSpec{
 					Duration:  &metav1.Duration{Duration: time.Minute * 60},
 					IssuerRef: validIssuerRef,
-					ACME: &v1alpha1.ACMECertificateConfig{
-						Config: []v1alpha1.DomainSolverConfig{
-							{
-								Domains: []string{"example.com"},
-								SolverConfig: v1alpha1.SolverConfig{
-									HTTP01: &v1alpha1.HTTP01SolverConfig{},
-								},
-							},
-						},
-					},
 				},
 			},
-			issuer: generate.Issuer(generate.IssuerConfig{
-				Name:      defaultTestIssuerName,
-				Namespace: defaultTestNamespace,
-			}),
+			issuer: gen.Issuer(defaultTestIssuerName, gen.SetIssuerACME(v1alpha1.ACMEIssuer{})),
 			errs: []*field.Error{
 				field.Invalid(fldPath.Child("duration"), &metav1.Duration{Duration: time.Minute * 60}, "ACME does not support certificate durations"),
 			},
@@ -163,22 +97,9 @@ func TestValidateCertificateForIssuer(t *testing.T) {
 				Spec: v1alpha1.CertificateSpec{
 					IPAddresses: []string{"127.0.0.1"},
 					IssuerRef:   validIssuerRef,
-					ACME: &v1alpha1.ACMECertificateConfig{
-						Config: []v1alpha1.DomainSolverConfig{
-							{
-								Domains: []string{"example.com"},
-								SolverConfig: v1alpha1.SolverConfig{
-									HTTP01: &v1alpha1.HTTP01SolverConfig{},
-								},
-							},
-						},
-					},
 				},
 			},
-			issuer: generate.Issuer(generate.IssuerConfig{
-				Name:      defaultTestIssuerName,
-				Namespace: defaultTestNamespace,
-			}),
+			issuer: gen.Issuer(defaultTestIssuerName, gen.SetIssuerACME(v1alpha1.ACMEIssuer{})),
 			errs: []*field.Error{
 				field.Invalid(fldPath.Child("ipAddresses"), []string{"127.0.0.1"}, "ACME does not support certificate ip addresses"),
 			},
@@ -188,39 +109,16 @@ func TestValidateCertificateForIssuer(t *testing.T) {
 				Spec: v1alpha1.CertificateSpec{
 					RenewBefore: &metav1.Duration{Duration: time.Minute * 60},
 					IssuerRef:   validIssuerRef,
-					ACME: &v1alpha1.ACMECertificateConfig{
-						Config: []v1alpha1.DomainSolverConfig{
-							{
-								Domains: []string{"example.com"},
-								SolverConfig: v1alpha1.SolverConfig{
-									HTTP01: &v1alpha1.HTTP01SolverConfig{},
-								},
-							},
-						},
-					},
 				},
 			},
-			issuer: generate.Issuer(generate.IssuerConfig{
-				Name:      defaultTestIssuerName,
-				Namespace: defaultTestNamespace,
-			}),
-			errs: []*field.Error{},
+			issuer: gen.Issuer(defaultTestIssuerName, gen.SetIssuerACME(v1alpha1.ACMEIssuer{})),
+			errs:   []*field.Error{},
 		},
 		"certificate with unspecified issuer type": {
 			crt: &v1alpha1.Certificate{
 				Spec: v1alpha1.CertificateSpec{
 					KeyAlgorithm: v1alpha1.ECDSAKeyAlgorithm,
 					IssuerRef:    validIssuerRef,
-					ACME: &v1alpha1.ACMECertificateConfig{
-						Config: []v1alpha1.DomainSolverConfig{
-							{
-								Domains: []string{"example.com"},
-								SolverConfig: v1alpha1.SolverConfig{
-									HTTP01: &v1alpha1.HTTP01SolverConfig{},
-								},
-							},
-						},
-					},
 				},
 			},
 			issuer: &v1alpha1.Issuer{},

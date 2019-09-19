@@ -103,14 +103,8 @@ func ValidateACMEIssuerConfig(iss *v1alpha1.ACMEIssuer, fldPath *field.Path) fie
 	if len(iss.Server) == 0 {
 		el = append(el, field.Required(fldPath.Child("server"), "acme server URL is a required field"))
 	}
-	if iss.HTTP01 != nil {
-		el = append(el, ValidateACMEIssuerHTTP01Config(iss.HTTP01, fldPath.Child("http01"))...)
-	}
-	if iss.DNS01 != nil {
-		el = append(el, ValidateACMEIssuerDNS01Config(iss.DNS01, fldPath.Child("dns01"))...)
-	}
-	for _, sol := range iss.Solvers {
-		el = append(el, ValidateACMEIssuerChallengeSolverConfig(&sol, fldPath.Child("solver"))...)
+	for i, sol := range iss.Solvers {
+		el = append(el, ValidateACMEIssuerChallengeSolverConfig(&sol, fldPath.Child("solvers").Index(i))...)
 	}
 
 	return el
@@ -119,8 +113,21 @@ func ValidateACMEIssuerConfig(iss *v1alpha1.ACMEIssuer, fldPath *field.Path) fie
 func ValidateACMEIssuerChallengeSolverConfig(sol *v1alpha1.ACMEChallengeSolver, fldPath *field.Path) field.ErrorList {
 	el := field.ErrorList{}
 
+	numProviders := 0
 	if sol.HTTP01 != nil {
+		numProviders++
 		el = append(el, ValidateACMEIssuerChallengeSolverHTTP01Config(sol.HTTP01, fldPath.Child("http01"))...)
+	}
+	if sol.DNS01 != nil {
+		if numProviders > 0 {
+			el = append(el, field.Forbidden(fldPath, "may not specify more than one solver type in a single solver"))
+		} else {
+			numProviders++
+			el = append(el, ValidateACMEChallengeSolverDNS01(sol.DNS01, fldPath.Child("dns01"))...)
+		}
+	}
+	if numProviders == 0 {
+		el = append(el, field.Required(fldPath, "no solver type configured"))
 	}
 
 	return el
@@ -129,8 +136,13 @@ func ValidateACMEIssuerChallengeSolverConfig(sol *v1alpha1.ACMEChallengeSolver, 
 func ValidateACMEIssuerChallengeSolverHTTP01Config(http01 *v1alpha1.ACMEChallengeSolverHTTP01, fldPath *field.Path) field.ErrorList {
 	el := field.ErrorList{}
 
+	numDefined := 0
 	if http01.Ingress != nil {
+		numDefined++
 		el = append(el, ValidateACMEIssuerChallengeSolverHTTP01IngressConfig(http01.Ingress, fldPath.Child("ingress"))...)
+	}
+	if numDefined == 0 {
+		el = append(el, field.Required(fldPath, "no HTTP01 solver type configured"))
 	}
 
 	return el
@@ -139,6 +151,14 @@ func ValidateACMEIssuerChallengeSolverHTTP01Config(http01 *v1alpha1.ACMEChalleng
 func ValidateACMEIssuerChallengeSolverHTTP01IngressConfig(ingress *v1alpha1.ACMEChallengeSolverHTTP01Ingress, fldPath *field.Path) field.ErrorList {
 	el := field.ErrorList{}
 
+	if ingress.Class != nil && len(ingress.Name) > 0 {
+		el = append(el, field.Forbidden(fldPath, "only one of 'name' or 'class' should be specified"))
+	}
+	switch ingress.ServiceType {
+	case "", corev1.ServiceTypeClusterIP, corev1.ServiceTypeNodePort:
+	default:
+		el = append(el, field.Invalid(fldPath.Child("serviceType"), ingress.ServiceType, `must be empty, "ClusterIP" or "NodePort"`))
+	}
 	if ingress.PodTemplate != nil {
 		el = append(el, ValidateACMEIssuerChallengeSolverHTTP01IngressPodTemplateConfig(ingress.PodTemplate, fldPath.Child("podTemplate"))...)
 	}
@@ -200,29 +220,6 @@ func ValidateVenafiIssuerConfig(iss *v1alpha1.VenafiIssuer, fldPath *field.Path)
 	return nil
 }
 
-func ValidateACMEIssuerHTTP01Config(iss *v1alpha1.ACMEIssuerHTTP01Config, fldPath *field.Path) field.ErrorList {
-	el := field.ErrorList{}
-
-	if len(iss.ServiceType) > 0 {
-		validTypes := []corev1.ServiceType{
-			corev1.ServiceTypeClusterIP,
-			corev1.ServiceTypeNodePort,
-		}
-		validType := false
-		for _, validTypeName := range validTypes {
-			if iss.ServiceType == validTypeName {
-				validType = true
-				break
-			}
-		}
-		if !validType {
-			el = append(el, field.Invalid(fldPath.Child("serviceType"), iss.ServiceType, fmt.Sprintf("optional field serviceType must be one of %q", validTypes)))
-		}
-	}
-
-	return el
-}
-
 // This list must be kept in sync with pkg/issuer/acme/dns/rfc2136/rfc2136.go
 var supportedTSIGAlgorithms = []string{
 	"HMACMD5",
@@ -231,163 +228,158 @@ var supportedTSIGAlgorithms = []string{
 	"HMACSHA512",
 }
 
-func ValidateACMEIssuerDNS01Config(iss *v1alpha1.ACMEIssuerDNS01Config, fldPath *field.Path) field.ErrorList {
+func ValidateACMEChallengeSolverDNS01(p *v1alpha1.ACMEChallengeSolverDNS01, fldPath *field.Path) field.ErrorList {
 	el := field.ErrorList{}
-	providersFldPath := fldPath.Child("providers")
-	for i, p := range iss.Providers {
-		fldPath := providersFldPath.Index(i)
-		if len(p.Name) == 0 {
-			el = append(el, field.Required(fldPath.Child("name"), "name must be specified"))
-		}
-		// allow empty values for now, until we have a MutatingWebhook to apply
-		// default values to fields.
-		if len(p.CNAMEStrategy) > 0 {
-			switch p.CNAMEStrategy {
-			case v1alpha1.NoneStrategy:
-			case v1alpha1.FollowStrategy:
-			default:
-				el = append(el, field.Invalid(fldPath.Child("cnameStrategy"), p.CNAMEStrategy, fmt.Sprintf("must be one of %q or %q", v1alpha1.NoneStrategy, v1alpha1.FollowStrategy)))
-			}
-		}
-		numProviders := 0
-		if p.Akamai != nil {
-			numProviders++
-			el = append(el, ValidateSecretKeySelector(&p.Akamai.AccessToken, fldPath.Child("akamai", "accessToken"))...)
-			el = append(el, ValidateSecretKeySelector(&p.Akamai.ClientSecret, fldPath.Child("akamai", "clientSecret"))...)
-			el = append(el, ValidateSecretKeySelector(&p.Akamai.ClientToken, fldPath.Child("akamai", "clientToken"))...)
-			if len(p.Akamai.ServiceConsumerDomain) == 0 {
-				el = append(el, field.Required(fldPath.Child("akamai", "serviceConsumerDomain"), ""))
-			}
-		}
-		if p.AzureDNS != nil {
-			if numProviders > 0 {
-				el = append(el, field.Forbidden(fldPath.Child("azuredns"), "may not specify more than one provider type"))
-			} else {
-				numProviders++
-				el = append(el, ValidateSecretKeySelector(&p.AzureDNS.ClientSecret, fldPath.Child("azuredns", "clientSecretSecretRef"))...)
-				if len(p.AzureDNS.ClientID) == 0 {
-					el = append(el, field.Required(fldPath.Child("azuredns", "clientID"), ""))
-				}
-				if len(p.AzureDNS.SubscriptionID) == 0 {
-					el = append(el, field.Required(fldPath.Child("azuredns", "subscriptionID"), ""))
-				}
-				if len(p.AzureDNS.TenantID) == 0 {
-					el = append(el, field.Required(fldPath.Child("azuredns", "tenantID"), ""))
-				}
-				if len(p.AzureDNS.ResourceGroupName) == 0 {
-					el = append(el, field.Required(fldPath.Child("azuredns", "resourceGroupName"), ""))
-				}
-				switch p.AzureDNS.Environment {
-				case "", v1alpha1.AzurePublicCloud, v1alpha1.AzureChinaCloud, v1alpha1.AzureGermanCloud, v1alpha1.AzureUSGovernmentCloud:
-				default:
-					el = append(el, field.Invalid(fldPath.Child("azuredns", "environment"), p.AzureDNS.Environment,
-						fmt.Sprintf("must be either empty or one of %s, %s, %s or %s", v1alpha1.AzurePublicCloud, v1alpha1.AzureChinaCloud, v1alpha1.AzureGermanCloud, v1alpha1.AzureUSGovernmentCloud)))
-				}
-			}
-		}
-		if p.CloudDNS != nil {
-			if numProviders > 0 {
-				el = append(el, field.Forbidden(fldPath.Child("clouddns"), "may not specify more than one provider type"))
-			} else {
-				numProviders++
-				// if either of serviceAccount.name or serviceAccount.key is set, we
-				// validate the entire secret key selector
-				if p.CloudDNS.ServiceAccount.Name != "" || p.CloudDNS.ServiceAccount.Key != "" {
-					el = append(el, ValidateSecretKeySelector(&p.CloudDNS.ServiceAccount, fldPath.Child("clouddns", "serviceAccountSecretRef"))...)
-				}
-				if len(p.CloudDNS.Project) == 0 {
-					el = append(el, field.Required(fldPath.Child("clouddns", "project"), ""))
-				}
-			}
-		}
-		if p.Cloudflare != nil {
-			if numProviders > 0 {
-				el = append(el, field.Forbidden(fldPath.Child("cloudflare"), "may not specify more than one provider type"))
-			} else {
-				numProviders++
-				el = append(el, ValidateSecretKeySelector(&p.Cloudflare.APIKey, fldPath.Child("cloudflare", "apiKeySecretRef"))...)
-				if len(p.Cloudflare.Email) == 0 {
-					el = append(el, field.Required(fldPath.Child("cloudflare", "email"), ""))
-				}
-			}
-		}
-		if p.Route53 != nil {
-			if numProviders > 0 {
-				el = append(el, field.Forbidden(fldPath.Child("route53"), "may not specify more than one provider type"))
-			} else {
-				numProviders++
-				// region is the only required field for route53 as ambient credentials can be used instead
-				if len(p.Route53.Region) == 0 {
-					el = append(el, field.Required(fldPath.Child("route53", "region"), ""))
-				}
-			}
-		}
-		if p.AcmeDNS != nil {
-			numProviders++
-			el = append(el, ValidateSecretKeySelector(&p.AcmeDNS.AccountSecret, fldPath.Child("acmedns", "accountSecretRef"))...)
-			if len(p.AcmeDNS.Host) == 0 {
-				el = append(el, field.Required(fldPath.Child("acmedns", "host"), ""))
-			}
-		}
 
-		if p.DigitalOcean != nil {
-			if numProviders > 0 {
-				el = append(el, field.Forbidden(fldPath.Child("digitalocean"), "may not specify more than one provider type"))
-			} else {
-				numProviders++
-				el = append(el, ValidateSecretKeySelector(&p.DigitalOcean.Token, fldPath.Child("digitalocean", "tokenSecretRef"))...)
-			}
-		}
-		if p.RFC2136 != nil {
-			if numProviders > 0 {
-				el = append(el, field.Forbidden(fldPath.Child("rfc2136"), "may not specify more than one provider type"))
-			} else {
-				numProviders++
-				// Nameserver is the only required field for RFC2136
-				if len(p.RFC2136.Nameserver) == 0 {
-					el = append(el, field.Required(fldPath.Child("rfc2136", "nameserver"), ""))
-				} else {
-					if _, err := util.ValidNameserver(p.RFC2136.Nameserver); err != nil {
-						el = append(el, field.Invalid(fldPath.Child("rfc2136", "nameserver"), "", "Nameserver invalid. Check the documentation for details."))
-					}
-				}
-				if len(p.RFC2136.TSIGAlgorithm) > 0 {
-					present := false
-					for _, b := range supportedTSIGAlgorithms {
-						if b == strings.ToUpper(p.RFC2136.TSIGAlgorithm) {
-							present = true
-						}
-					}
-					if !present {
-						el = append(el, field.NotSupported(fldPath.Child("rfc2136", "tsigAlgorithm"), "", supportedTSIGAlgorithms))
-					}
-				}
-				if len(p.RFC2136.TSIGKeyName) > 0 {
-					el = append(el, ValidateSecretKeySelector(&p.RFC2136.TSIGSecret, fldPath.Child("rfc2136", "tsigSecretSecretRef"))...)
-				}
-
-				if len(ValidateSecretKeySelector(&p.RFC2136.TSIGSecret, fldPath.Child("rfc2136", "tsigSecretSecretRef"))) == 0 {
-					if len(p.RFC2136.TSIGKeyName) <= 0 {
-						el = append(el, field.Required(fldPath.Child("rfc2136", "tsigKeyName"), ""))
-					}
-
-				}
-			}
-		}
-		if p.Webhook != nil {
-			if numProviders > 0 {
-				el = append(el, field.Forbidden(fldPath.Child("webhook"), "may not specify more than one provider type"))
-			} else {
-				numProviders++
-				if len(p.Webhook.SolverName) == 0 {
-					el = append(el, field.Required(fldPath.Child("webhook", "solverName"), "solver name must be specified"))
-				}
-			}
-		}
-		if numProviders == 0 {
-			el = append(el, field.Required(fldPath, "at least one provider must be configured"))
+	// allow empty values for now, until we have a MutatingWebhook to apply
+	// default values to fields.
+	if len(p.CNAMEStrategy) > 0 {
+		switch p.CNAMEStrategy {
+		case v1alpha1.NoneStrategy:
+		case v1alpha1.FollowStrategy:
+		default:
+			el = append(el, field.Invalid(fldPath.Child("cnameStrategy"), p.CNAMEStrategy, fmt.Sprintf("must be one of %q or %q", v1alpha1.NoneStrategy, v1alpha1.FollowStrategy)))
 		}
 	}
+	numProviders := 0
+	if p.Akamai != nil {
+		numProviders++
+		el = append(el, ValidateSecretKeySelector(&p.Akamai.AccessToken, fldPath.Child("akamai", "accessToken"))...)
+		el = append(el, ValidateSecretKeySelector(&p.Akamai.ClientSecret, fldPath.Child("akamai", "clientSecret"))...)
+		el = append(el, ValidateSecretKeySelector(&p.Akamai.ClientToken, fldPath.Child("akamai", "clientToken"))...)
+		if len(p.Akamai.ServiceConsumerDomain) == 0 {
+			el = append(el, field.Required(fldPath.Child("akamai", "serviceConsumerDomain"), ""))
+		}
+	}
+	if p.AzureDNS != nil {
+		if numProviders > 0 {
+			el = append(el, field.Forbidden(fldPath.Child("azuredns"), "may not specify more than one provider type"))
+		} else {
+			numProviders++
+			el = append(el, ValidateSecretKeySelector(&p.AzureDNS.ClientSecret, fldPath.Child("azuredns", "clientSecretSecretRef"))...)
+			if len(p.AzureDNS.ClientID) == 0 {
+				el = append(el, field.Required(fldPath.Child("azuredns", "clientID"), ""))
+			}
+			if len(p.AzureDNS.SubscriptionID) == 0 {
+				el = append(el, field.Required(fldPath.Child("azuredns", "subscriptionID"), ""))
+			}
+			if len(p.AzureDNS.TenantID) == 0 {
+				el = append(el, field.Required(fldPath.Child("azuredns", "tenantID"), ""))
+			}
+			if len(p.AzureDNS.ResourceGroupName) == 0 {
+				el = append(el, field.Required(fldPath.Child("azuredns", "resourceGroupName"), ""))
+			}
+			switch p.AzureDNS.Environment {
+			case "", v1alpha1.AzurePublicCloud, v1alpha1.AzureChinaCloud, v1alpha1.AzureGermanCloud, v1alpha1.AzureUSGovernmentCloud:
+			default:
+				el = append(el, field.Invalid(fldPath.Child("azuredns", "environment"), p.AzureDNS.Environment,
+					fmt.Sprintf("must be either empty or one of %s, %s, %s or %s", v1alpha1.AzurePublicCloud, v1alpha1.AzureChinaCloud, v1alpha1.AzureGermanCloud, v1alpha1.AzureUSGovernmentCloud)))
+			}
+		}
+	}
+	if p.CloudDNS != nil {
+		if numProviders > 0 {
+			el = append(el, field.Forbidden(fldPath.Child("clouddns"), "may not specify more than one provider type"))
+		} else {
+			numProviders++
+			// if either of serviceAccount.name or serviceAccount.key is set, we
+			// validate the entire secret key selector
+			if p.CloudDNS.ServiceAccount.Name != "" || p.CloudDNS.ServiceAccount.Key != "" {
+				el = append(el, ValidateSecretKeySelector(&p.CloudDNS.ServiceAccount, fldPath.Child("clouddns", "serviceAccountSecretRef"))...)
+			}
+			if len(p.CloudDNS.Project) == 0 {
+				el = append(el, field.Required(fldPath.Child("clouddns", "project"), ""))
+			}
+		}
+	}
+	if p.Cloudflare != nil {
+		if numProviders > 0 {
+			el = append(el, field.Forbidden(fldPath.Child("cloudflare"), "may not specify more than one provider type"))
+		} else {
+			numProviders++
+			el = append(el, ValidateSecretKeySelector(&p.Cloudflare.APIKey, fldPath.Child("cloudflare", "apiKeySecretRef"))...)
+			if len(p.Cloudflare.Email) == 0 {
+				el = append(el, field.Required(fldPath.Child("cloudflare", "email"), ""))
+			}
+		}
+	}
+	if p.Route53 != nil {
+		if numProviders > 0 {
+			el = append(el, field.Forbidden(fldPath.Child("route53"), "may not specify more than one provider type"))
+		} else {
+			numProviders++
+			// region is the only required field for route53 as ambient credentials can be used instead
+			if len(p.Route53.Region) == 0 {
+				el = append(el, field.Required(fldPath.Child("route53", "region"), ""))
+			}
+		}
+	}
+	if p.AcmeDNS != nil {
+		numProviders++
+		el = append(el, ValidateSecretKeySelector(&p.AcmeDNS.AccountSecret, fldPath.Child("acmedns", "accountSecretRef"))...)
+		if len(p.AcmeDNS.Host) == 0 {
+			el = append(el, field.Required(fldPath.Child("acmedns", "host"), ""))
+		}
+	}
+
+	if p.DigitalOcean != nil {
+		if numProviders > 0 {
+			el = append(el, field.Forbidden(fldPath.Child("digitalocean"), "may not specify more than one provider type"))
+		} else {
+			numProviders++
+			el = append(el, ValidateSecretKeySelector(&p.DigitalOcean.Token, fldPath.Child("digitalocean", "tokenSecretRef"))...)
+		}
+	}
+	if p.RFC2136 != nil {
+		if numProviders > 0 {
+			el = append(el, field.Forbidden(fldPath.Child("rfc2136"), "may not specify more than one provider type"))
+		} else {
+			numProviders++
+			// Nameserver is the only required field for RFC2136
+			if len(p.RFC2136.Nameserver) == 0 {
+				el = append(el, field.Required(fldPath.Child("rfc2136", "nameserver"), ""))
+			} else {
+				if _, err := util.ValidNameserver(p.RFC2136.Nameserver); err != nil {
+					el = append(el, field.Invalid(fldPath.Child("rfc2136", "nameserver"), "", "Nameserver invalid. Check the documentation for details."))
+				}
+			}
+			if len(p.RFC2136.TSIGAlgorithm) > 0 {
+				present := false
+				for _, b := range supportedTSIGAlgorithms {
+					if b == strings.ToUpper(p.RFC2136.TSIGAlgorithm) {
+						present = true
+					}
+				}
+				if !present {
+					el = append(el, field.NotSupported(fldPath.Child("rfc2136", "tsigAlgorithm"), "", supportedTSIGAlgorithms))
+				}
+			}
+			if len(p.RFC2136.TSIGKeyName) > 0 {
+				el = append(el, ValidateSecretKeySelector(&p.RFC2136.TSIGSecret, fldPath.Child("rfc2136", "tsigSecretSecretRef"))...)
+			}
+
+			if len(ValidateSecretKeySelector(&p.RFC2136.TSIGSecret, fldPath.Child("rfc2136", "tsigSecretSecretRef"))) == 0 {
+				if len(p.RFC2136.TSIGKeyName) <= 0 {
+					el = append(el, field.Required(fldPath.Child("rfc2136", "tsigKeyName"), ""))
+				}
+
+			}
+		}
+	}
+	if p.Webhook != nil {
+		if numProviders > 0 {
+			el = append(el, field.Forbidden(fldPath.Child("webhook"), "may not specify more than one provider type"))
+		} else {
+			numProviders++
+			if len(p.Webhook.SolverName) == 0 {
+				el = append(el, field.Required(fldPath.Child("webhook", "solverName"), "solver name must be specified"))
+			}
+		}
+	}
+	if numProviders == 0 {
+		el = append(el, field.Required(fldPath, "no DNS01 provider configured"))
+	}
+
 	return el
 }
 

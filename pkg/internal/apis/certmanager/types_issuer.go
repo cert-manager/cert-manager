@@ -202,14 +202,6 @@ type ACMEIssuer struct {
 	// ACME challenges for the matching domains.
 	// +optional
 	Solvers []ACMEChallengeSolver `json:"solvers,omitempty"`
-
-	// DEPRECATED: HTTP-01 config
-	// +optional
-	HTTP01 *ACMEIssuerHTTP01Config `json:"http01,omitempty"`
-
-	// DEPRECATED: DNS-01 config
-	// +optional
-	DNS01 *ACMEIssuerDNS01Config `json:"dns01,omitempty"`
 }
 
 type ACMEChallengeSolver struct {
@@ -360,65 +352,6 @@ type ACMEChallengeSolverDNS01 struct {
 	// +optional
 	Webhook *ACMEIssuerDNS01ProviderWebhook `json:"webhook,omitempty"`
 }
-
-/////// OLD TYPES
-// TODO: REMOVE THESE IN v0.9
-
-// ACMEIssuerHTTP01Config is a structure containing the ACME HTTP configuration options
-type ACMEIssuerHTTP01Config struct {
-	// Optional service type for Kubernetes solver service
-	// +optional
-	ServiceType corev1.ServiceType `json:"serviceType,omitempty"`
-}
-
-// ACMEIssuerDNS01Config is a structure containing the ACME DNS configuration
-// options
-type ACMEIssuerDNS01Config struct {
-	// +optional
-	Providers []ACMEIssuerDNS01Provider `json:"providers,omitempty"`
-}
-
-// ACMEIssuerDNS01Provider contains configuration for a DNS provider that can
-// be used to solve ACME DNS01 challenges.
-type ACMEIssuerDNS01Provider struct {
-	// Name is the name of the DNS provider, which should be used to reference
-	// this DNS provider configuration on Certificate resources.
-	Name string `json:"name"`
-
-	// CNAMEStrategy configures how the DNS01 provider should handle CNAME
-	// records when found in DNS zones.
-	// +optional
-	CNAMEStrategy CNAMEStrategy `json:"cnameStrategy,omitempty"`
-
-	// +optional
-	Akamai *ACMEIssuerDNS01ProviderAkamai `json:"akamai,omitempty"`
-
-	// +optional
-	CloudDNS *ACMEIssuerDNS01ProviderCloudDNS `json:"clouddns,omitempty"`
-
-	// +optional
-	Cloudflare *ACMEIssuerDNS01ProviderCloudflare `json:"cloudflare,omitempty"`
-
-	// +optional
-	Route53 *ACMEIssuerDNS01ProviderRoute53 `json:"route53,omitempty"`
-
-	// +optional
-	AzureDNS *ACMEIssuerDNS01ProviderAzureDNS `json:"azuredns,omitempty"`
-
-	// +optional
-	DigitalOcean *ACMEIssuerDNS01ProviderDigitalOcean `json:"digitalocean,omitempty"`
-
-	// +optional
-	AcmeDNS *ACMEIssuerDNS01ProviderAcmeDNS `json:"acmedns,omitempty"`
-
-	// +optional
-	RFC2136 *ACMEIssuerDNS01ProviderRFC2136 `json:"rfc2136,omitempty"`
-
-	// +optional
-	Webhook *ACMEIssuerDNS01ProviderWebhook `json:"webhook,omitempty"`
-}
-
-//// END OLD TYPES
 
 // CNAMEStrategy configures how the DNS01 provider should handle CNAME records
 // when found in DNS zones.

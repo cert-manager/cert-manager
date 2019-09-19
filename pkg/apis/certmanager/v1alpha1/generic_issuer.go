@@ -17,10 +17,8 @@ limitations under the License.
 package v1alpha1
 
 import (
-	"fmt"
-
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	runtime "k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime"
 )
 
 type GenericIssuer interface {
@@ -82,27 +80,4 @@ func (i *IssuerStatus) ACMEStatus() *ACMEIssuerStatus {
 		i.ACME = &ACMEIssuerStatus{}
 	}
 	return i.ACME
-}
-
-func (a *ACMEIssuerDNS01Config) Provider(name string) (*ACMEIssuerDNS01Provider, error) {
-	if a == nil {
-		return nil, fmt.Errorf("issuer does not contain DNS01 configuration for provider named %q", name)
-	}
-	for _, p := range a.Providers {
-		if p.Name == name {
-			return &(*&p), nil
-		}
-	}
-	return nil, fmt.Errorf("issuer does not contain DNS01 configuration for provider named %q", name)
-}
-
-func ConfigForDomain(cfgs []DomainSolverConfig, domain string) *DomainSolverConfig {
-	for _, cfg := range cfgs {
-		for _, d := range cfg.Domains {
-			if d == domain {
-				return &cfg
-			}
-		}
-	}
-	return &DomainSolverConfig{}
 }
