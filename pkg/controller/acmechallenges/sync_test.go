@@ -69,7 +69,13 @@ type testT struct {
 
 func TestSyncHappyPath(t *testing.T) {
 	testIssuerHTTP01Enabled := gen.Issuer("testissuer", gen.SetIssuerACME(v1alpha1.ACMEIssuer{
-		HTTP01: &v1alpha1.ACMEIssuerHTTP01Config{},
+		Solvers: []v1alpha1.ACMEChallengeSolver{
+			{
+				HTTP01: &v1alpha1.ACMEChallengeSolverHTTP01{
+					Ingress: &v1alpha1.ACMEChallengeSolverHTTP01Ingress{},
+				},
+			},
+		},
 	}))
 	baseChallenge := gen.Challenge("testchal",
 		gen.SetChallengeIssuer(v1alpha1.ObjectReference{
