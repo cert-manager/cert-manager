@@ -116,87 +116,60 @@ func TestValidateACMEIssuerConfig(t *testing.T) {
 				field.Required(fldPath.Child("server"), "acme server URL is a required field"),
 			},
 		},
-		"acme issuer with invalid dns01 config": {
+		"acme solver without any config": {
 			spec: &v1alpha1.ACMEIssuer{
 				Email:      "valid-email",
 				Server:     "valid-server",
 				PrivateKey: validSecretKeyRef,
-				DNS01: &v1alpha1.ACMEIssuerDNS01Config{
-					Providers: []v1alpha1.ACMEIssuerDNS01Provider{
-						{
-							Name: "valid-name",
-						},
-					},
+				Solvers: []v1alpha1.ACMEChallengeSolver{
+					{},
 				},
 			},
 			errs: []*field.Error{
-				field.Required(fldPath.Child("dns01", "providers").Index(0), "at least one provider must be configured"),
+				field.Required(fldPath.Child("solvers").Index(0), "no solver type configured"),
 			},
 		},
-		"acme issuer with valid dns01 config": {
+		"acme solver with valid dns01 config": {
 			spec: &v1alpha1.ACMEIssuer{
 				Email:      "valid-email",
 				Server:     "valid-server",
 				PrivateKey: validSecretKeyRef,
-				DNS01: &v1alpha1.ACMEIssuerDNS01Config{
-					Providers: []v1alpha1.ACMEIssuerDNS01Provider{
-						{
-							Name:     "valid-name",
+				Solvers: []v1alpha1.ACMEChallengeSolver{
+					{
+						DNS01: &v1alpha1.ACMEChallengeSolverDNS01{
 							CloudDNS: &validCloudDNSProvider,
 						},
 					},
 				},
 			},
 		},
-		"acme issuer with valid http01 config": {
+		"acme solver with missing http01 config type": {
 			spec: &v1alpha1.ACMEIssuer{
 				Email:      "valid-email",
 				Server:     "valid-server",
 				PrivateKey: validSecretKeyRef,
-				HTTP01:     &v1alpha1.ACMEIssuerHTTP01Config{},
-			},
-		},
-		"acme issue with valid http01 service config serviceType ClusterIP": {
-			spec: &v1alpha1.ACMEIssuer{
-				Email:      "valid-email",
-				Server:     "valid-server",
-				PrivateKey: validSecretKeyRef,
-				HTTP01: &v1alpha1.ACMEIssuerHTTP01Config{
-					ServiceType: corev1.ServiceType("ClusterIP"),
-				},
-			},
-		},
-		"acme issue with valid http01 service config serviceType NodePort": {
-			spec: &v1alpha1.ACMEIssuer{
-				Email:      "valid-email",
-				Server:     "valid-server",
-				PrivateKey: validSecretKeyRef,
-				HTTP01: &v1alpha1.ACMEIssuerHTTP01Config{
-					ServiceType: corev1.ServiceType("NodePort"),
-				},
-			},
-		},
-		"acme issue with valid http01 service config serviceType (empty string)": {
-			spec: &v1alpha1.ACMEIssuer{
-				Email:      "valid-email",
-				Server:     "valid-server",
-				PrivateKey: validSecretKeyRef,
-				HTTP01: &v1alpha1.ACMEIssuerHTTP01Config{
-					ServiceType: corev1.ServiceType(""),
-				},
-			},
-		},
-		"acme issue with invalid http01 service config": {
-			spec: &v1alpha1.ACMEIssuer{
-				Email:      "valid-email",
-				Server:     "valid-server",
-				PrivateKey: validSecretKeyRef,
-				HTTP01: &v1alpha1.ACMEIssuerHTTP01Config{
-					ServiceType: corev1.ServiceType("InvalidServiceType"),
+				Solvers: []v1alpha1.ACMEChallengeSolver{
+					{
+						HTTP01: &v1alpha1.ACMEChallengeSolverHTTP01{},
+					},
 				},
 			},
 			errs: []*field.Error{
-				field.Invalid(fldPath.Child("http01", "serviceType"), corev1.ServiceType("InvalidServiceType"), "optional field serviceType must be one of [\"ClusterIP\" \"NodePort\"]"),
+				field.Required(fldPath.Child("solvers").Index(0).Child("http01"), "no HTTP01 solver type configured"),
+			},
+		},
+		"acme solver with valid http01 config": {
+			spec: &v1alpha1.ACMEIssuer{
+				Email:      "valid-email",
+				Server:     "valid-server",
+				PrivateKey: validSecretKeyRef,
+				Solvers: []v1alpha1.ACMEChallengeSolver{
+					{
+						HTTP01: &v1alpha1.ACMEChallengeSolverHTTP01{
+							Ingress: &v1alpha1.ACMEChallengeSolverHTTP01Ingress{},
+						},
+					},
+				},
 			},
 		},
 		"acme issue with valid pod template ObjectMeta attributes": {
@@ -221,9 +194,6 @@ func TestValidateACMEIssuerConfig(t *testing.T) {
 							},
 						},
 					},
-				},
-				HTTP01: &v1alpha1.ACMEIssuerHTTP01Config{
-					ServiceType: corev1.ServiceType("NodePort"),
 				},
 			},
 		},
@@ -251,7 +221,7 @@ func TestValidateACMEIssuerConfig(t *testing.T) {
 				},
 			},
 			errs: []*field.Error{
-				field.Invalid(fldPath.Child("solver", "http01", "ingress", "podTemplate", "metadata"),
+				field.Invalid(fldPath.Child("solvers").Index(0).Child("http01", "ingress", "podTemplate", "metadata"),
 					"", "only labels and annotations may be set on podTemplate metadata"),
 			},
 		},
@@ -282,9 +252,6 @@ func TestValidateACMEIssuerConfig(t *testing.T) {
 						},
 					},
 				},
-				HTTP01: &v1alpha1.ACMEIssuerHTTP01Config{
-					ServiceType: corev1.ServiceType("NodePort"),
-				},
 			},
 		},
 		"acme issue with valid pod template ObjectMeta and PodSpec attributes": {
@@ -311,9 +278,6 @@ func TestValidateACMEIssuerConfig(t *testing.T) {
 							},
 						},
 					},
-				},
-				HTTP01: &v1alpha1.ACMEIssuerHTTP01Config{
-					ServiceType: corev1.ServiceType("NodePort"),
 				},
 			},
 		},
@@ -418,339 +382,319 @@ func TestValidateIssuerSpec(t *testing.T) {
 	}
 }
 
-func TestValidateACMEIssuerDNS01Config(t *testing.T) {
+func TestValidateACMEIssuerHTTP01Config(t *testing.T) {
 	fldPath := field.NewPath("")
-	providersPath := fldPath.Child("providers")
 	scenarios := map[string]struct {
-		cfg  *v1alpha1.ACMEIssuerDNS01Config
-		errs []*field.Error
+		isExpectedFailure bool
+		cfg               *v1alpha1.ACMEChallengeSolverHTTP01
+		errs              []*field.Error
 	}{
-		"missing name": {
-			cfg: &v1alpha1.ACMEIssuerDNS01Config{
-				Providers: []v1alpha1.ACMEIssuerDNS01Provider{
-					{
-						CloudDNS: &validCloudDNSProvider,
-					},
-				},
+		"ingress field specified": {
+			cfg: &v1alpha1.ACMEChallengeSolverHTTP01{
+				Ingress: &v1alpha1.ACMEChallengeSolverHTTP01Ingress{Name: "abc"},
 			},
-			errs: []*field.Error{field.Required(providersPath.Index(0).Child("name"), "name must be specified")},
 		},
-		"missing clouddns project": {
-			cfg: &v1alpha1.ACMEIssuerDNS01Config{
-				Providers: []v1alpha1.ACMEIssuerDNS01Provider{
-					{
-						Name: "a name",
-						CloudDNS: &v1alpha1.ACMEIssuerDNS01ProviderCloudDNS{
-							ServiceAccount: validSecretKeyRef,
-						},
-					},
+		"ingress class field specified": {
+			cfg: &v1alpha1.ACMEChallengeSolverHTTP01{
+				Ingress: &v1alpha1.ACMEChallengeSolverHTTP01Ingress{Class: strPtr("abc")},
+			},
+		},
+		"neither field specified": {
+			cfg: &v1alpha1.ACMEChallengeSolverHTTP01{
+				Ingress: &v1alpha1.ACMEChallengeSolverHTTP01Ingress{},
+			},
+		},
+		"no solver config type specified": {
+			cfg: &v1alpha1.ACMEChallengeSolverHTTP01{},
+			errs: []*field.Error{
+				field.Required(fldPath, "no HTTP01 solver type configured"),
+			},
+		},
+		"both fields specified": {
+			cfg: &v1alpha1.ACMEChallengeSolverHTTP01{
+				Ingress: &v1alpha1.ACMEChallengeSolverHTTP01Ingress{
+					Name:  "abc",
+					Class: strPtr("abc"),
 				},
 			},
 			errs: []*field.Error{
-				field.Required(providersPath.Index(0).Child("clouddns", "project"), ""),
+				field.Forbidden(fldPath.Child("ingress"), "only one of 'name' or 'class' should be specified"),
 			},
 		},
-		"missing clouddns service account key": {
-			cfg: &v1alpha1.ACMEIssuerDNS01Config{
-				Providers: []v1alpha1.ACMEIssuerDNS01Provider{
-					{
-						Name: "a name",
-						CloudDNS: &v1alpha1.ACMEIssuerDNS01ProviderCloudDNS{
-							Project: "valid",
-							ServiceAccount: v1alpha1.SecretKeySelector{
-								LocalObjectReference: v1alpha1.LocalObjectReference{Name: "something"},
-								Key:                  "",
-							},
-						},
-					},
+		"acme issuer with valid http01 service config serviceType ClusterIP": {
+			cfg: &v1alpha1.ACMEChallengeSolverHTTP01{
+				Ingress: &v1alpha1.ACMEChallengeSolverHTTP01Ingress{
+					ServiceType: corev1.ServiceType("ClusterIP"),
+				},
+			},
+		},
+		"acme issuer with valid http01 service config serviceType NodePort": {
+			cfg: &v1alpha1.ACMEChallengeSolverHTTP01{
+				Ingress: &v1alpha1.ACMEChallengeSolverHTTP01Ingress{
+					ServiceType: corev1.ServiceType("NodePort"),
+				},
+			},
+		},
+		"acme issuer with valid http01 service config serviceType (empty string)": {
+			cfg: &v1alpha1.ACMEChallengeSolverHTTP01{
+				Ingress: &v1alpha1.ACMEChallengeSolverHTTP01Ingress{
+					ServiceType: corev1.ServiceType(""),
+				},
+			},
+		},
+		"acme issuer with invalid http01 service config": {
+			cfg: &v1alpha1.ACMEChallengeSolverHTTP01{
+				Ingress: &v1alpha1.ACMEChallengeSolverHTTP01Ingress{
+					ServiceType: corev1.ServiceType("InvalidServiceType"),
 				},
 			},
 			errs: []*field.Error{
-				field.Required(providersPath.Index(0).Child("clouddns", "serviceAccountSecretRef", "key"), "secret key is required"),
-			},
-		},
-		"missing clouddns service account name": {
-			cfg: &v1alpha1.ACMEIssuerDNS01Config{
-				Providers: []v1alpha1.ACMEIssuerDNS01Provider{
-					{
-						Name: "a name",
-						CloudDNS: &v1alpha1.ACMEIssuerDNS01ProviderCloudDNS{
-							Project: "valid",
-							ServiceAccount: v1alpha1.SecretKeySelector{
-								LocalObjectReference: v1alpha1.LocalObjectReference{Name: ""},
-								Key:                  "something",
-							},
-						},
-					},
-				},
-			},
-			errs: []*field.Error{
-				field.Required(providersPath.Index(0).Child("clouddns", "serviceAccountSecretRef", "name"), "secret name is required"),
-			},
-		},
-		"clouddns serviceAccount field not set should be allowed for ambient auth": {
-			cfg: &v1alpha1.ACMEIssuerDNS01Config{
-				Providers: []v1alpha1.ACMEIssuerDNS01Provider{
-					{
-						Name: "a name",
-						CloudDNS: &v1alpha1.ACMEIssuerDNS01ProviderCloudDNS{
-							Project: "valid",
-						},
-					},
-				},
-			},
-		},
-		"missing cloudflare token": {
-			cfg: &v1alpha1.ACMEIssuerDNS01Config{
-				Providers: []v1alpha1.ACMEIssuerDNS01Provider{
-					{
-						Name: "a name",
-						Cloudflare: &v1alpha1.ACMEIssuerDNS01ProviderCloudflare{
-							Email: "valid",
-						},
-					},
-				},
-			},
-			errs: []*field.Error{
-				field.Required(providersPath.Index(0).Child("cloudflare", "apiKeySecretRef", "name"), "secret name is required"),
-				field.Required(providersPath.Index(0).Child("cloudflare", "apiKeySecretRef", "key"), "secret key is required"),
-			},
-		},
-		"missing cloudflare email": {
-			cfg: &v1alpha1.ACMEIssuerDNS01Config{
-				Providers: []v1alpha1.ACMEIssuerDNS01Provider{
-					{
-						Name: "a name",
-						Cloudflare: &v1alpha1.ACMEIssuerDNS01ProviderCloudflare{
-							APIKey: validSecretKeyRef,
-						},
-					},
-				},
-			},
-			errs: []*field.Error{
-				field.Required(providersPath.Index(0).Child("cloudflare", "email"), ""),
-			},
-		},
-		"missing route53 region": {
-			cfg: &v1alpha1.ACMEIssuerDNS01Config{
-				Providers: []v1alpha1.ACMEIssuerDNS01Provider{
-					{
-						Name:    "a name",
-						Route53: &v1alpha1.ACMEIssuerDNS01ProviderRoute53{},
-					},
-				},
-			},
-			errs: []*field.Error{
-				field.Required(providersPath.Index(0).Child("route53", "region"), ""),
-			},
-		},
-		"missing provider config": {
-			cfg: &v1alpha1.ACMEIssuerDNS01Config{
-				Providers: []v1alpha1.ACMEIssuerDNS01Provider{
-					{
-						Name: "a name",
-					},
-				},
-			},
-			errs: []*field.Error{
-				field.Required(providersPath.Index(0), "at least one provider must be configured"),
-			},
-		},
-		"missing azuredns config": {
-			cfg: &v1alpha1.ACMEIssuerDNS01Config{
-				Providers: []v1alpha1.ACMEIssuerDNS01Provider{
-					{
-						Name:     "a name",
-						AzureDNS: &v1alpha1.ACMEIssuerDNS01ProviderAzureDNS{},
-					},
-				},
-			},
-			errs: []*field.Error{
-				field.Required(providersPath.Index(0).Child("azuredns", "clientSecretSecretRef", "name"), "secret name is required"),
-				field.Required(providersPath.Index(0).Child("azuredns", "clientSecretSecretRef", "key"), "secret key is required"),
-				field.Required(providersPath.Index(0).Child("azuredns", "clientID"), ""),
-				field.Required(providersPath.Index(0).Child("azuredns", "subscriptionID"), ""),
-				field.Required(providersPath.Index(0).Child("azuredns", "tenantID"), ""),
-				field.Required(providersPath.Index(0).Child("azuredns", "resourceGroupName"), ""),
-			},
-		},
-		"invalid azuredns environment": {
-			cfg: &v1alpha1.ACMEIssuerDNS01Config{
-				Providers: []v1alpha1.ACMEIssuerDNS01Provider{
-					{
-						Name:     "a name",
-						AzureDNS: &v1alpha1.ACMEIssuerDNS01ProviderAzureDNS{Environment: "an env"},
-					},
-				},
-			},
-			errs: []*field.Error{
-				field.Required(providersPath.Index(0).Child("azuredns", "clientSecretSecretRef", "name"), "secret name is required"),
-				field.Required(providersPath.Index(0).Child("azuredns", "clientSecretSecretRef", "key"), "secret key is required"),
-				field.Required(providersPath.Index(0).Child("azuredns", "clientID"), ""),
-				field.Required(providersPath.Index(0).Child("azuredns", "subscriptionID"), ""),
-				field.Required(providersPath.Index(0).Child("azuredns", "tenantID"), ""),
-				field.Required(providersPath.Index(0).Child("azuredns", "resourceGroupName"), ""),
-				field.Invalid(providersPath.Index(0).Child("azuredns", "environment"), v1alpha1.AzureDNSEnvironment("an env"),
-					"must be either empty or one of AzurePublicCloud, AzureChinaCloud, AzureGermanCloud or AzureUSGovernmentCloud"),
-			},
-		},
-		"missing akamai config": {
-			cfg: &v1alpha1.ACMEIssuerDNS01Config{
-				Providers: []v1alpha1.ACMEIssuerDNS01Provider{
-					{
-						Name:   "a name",
-						Akamai: &v1alpha1.ACMEIssuerDNS01ProviderAkamai{},
-					},
-				},
-			},
-			errs: []*field.Error{
-				field.Required(providersPath.Index(0).Child("akamai", "accessToken", "name"), "secret name is required"),
-				field.Required(providersPath.Index(0).Child("akamai", "accessToken", "key"), "secret key is required"),
-				field.Required(providersPath.Index(0).Child("akamai", "clientSecret", "name"), "secret name is required"),
-				field.Required(providersPath.Index(0).Child("akamai", "clientSecret", "key"), "secret key is required"),
-				field.Required(providersPath.Index(0).Child("akamai", "clientToken", "name"), "secret name is required"),
-				field.Required(providersPath.Index(0).Child("akamai", "clientToken", "key"), "secret key is required"),
-				field.Required(providersPath.Index(0).Child("akamai", "serviceConsumerDomain"), ""),
-			},
-		},
-		"valid akamai config": {
-			cfg: &v1alpha1.ACMEIssuerDNS01Config{
-				Providers: []v1alpha1.ACMEIssuerDNS01Provider{
-					{
-						Name: "a name",
-						Akamai: &v1alpha1.ACMEIssuerDNS01ProviderAkamai{
-							AccessToken:           validSecretKeyRef,
-							ClientSecret:          validSecretKeyRef,
-							ClientToken:           validSecretKeyRef,
-							ServiceConsumerDomain: "abc",
-						},
-					},
-				},
-			},
-			errs: []*field.Error{},
-		},
-		"valid rfc2136 config": {
-			cfg: &v1alpha1.ACMEIssuerDNS01Config{
-				Providers: []v1alpha1.ACMEIssuerDNS01Provider{
-					{
-						Name: "a name",
-						RFC2136: &v1alpha1.ACMEIssuerDNS01ProviderRFC2136{
-							Nameserver: "127.0.0.1",
-						},
-					},
-				},
-			},
-			errs: []*field.Error{},
-		},
-		"missing rfc2136 required field": {
-			cfg: &v1alpha1.ACMEIssuerDNS01Config{
-				Providers: []v1alpha1.ACMEIssuerDNS01Provider{
-					{
-						Name:    "a name",
-						RFC2136: &v1alpha1.ACMEIssuerDNS01ProviderRFC2136{},
-					},
-				},
-			},
-			errs: []*field.Error{
-				field.Required(providersPath.Index(0).Child("rfc2136", "nameserver"), ""),
-			},
-		},
-		"rfc2136 provider invalid nameserver": {
-			cfg: &v1alpha1.ACMEIssuerDNS01Config{
-				Providers: []v1alpha1.ACMEIssuerDNS01Provider{
-					{
-						Name: "a name",
-						RFC2136: &v1alpha1.ACMEIssuerDNS01ProviderRFC2136{
-							Nameserver: "dns.example.com",
-						},
-					},
-				},
-			},
-			errs: []*field.Error{
-				field.Invalid(providersPath.Index(0).Child("rfc2136", "nameserver"), "", "Nameserver invalid. Check the documentation for details."),
-			},
-		},
-		"rfc2136 provider using case-camel in algorithm": {
-			cfg: &v1alpha1.ACMEIssuerDNS01Config{
-				Providers: []v1alpha1.ACMEIssuerDNS01Provider{
-					{
-						Name: "a name",
-						RFC2136: &v1alpha1.ACMEIssuerDNS01ProviderRFC2136{
-							Nameserver:    "127.0.0.1",
-							TSIGAlgorithm: "HmAcMd5",
-						},
-					},
-				},
-			},
-			errs: []*field.Error{},
-		},
-		"rfc2136 provider using unsupported algorithm": {
-			cfg: &v1alpha1.ACMEIssuerDNS01Config{
-				Providers: []v1alpha1.ACMEIssuerDNS01Provider{
-					{
-						Name: "a name",
-						RFC2136: &v1alpha1.ACMEIssuerDNS01ProviderRFC2136{
-							Nameserver:    "127.0.0.1",
-							TSIGAlgorithm: "HAMMOCK",
-						},
-					},
-				},
-			},
-			errs: []*field.Error{
-				field.NotSupported(providersPath.Index(0).Child("rfc2136", "tsigAlgorithm"), "", supportedTSIGAlgorithms),
-			},
-		},
-		"rfc2136 provider TSIGKeyName provided but no TSIGSecret": {
-			cfg: &v1alpha1.ACMEIssuerDNS01Config{
-				Providers: []v1alpha1.ACMEIssuerDNS01Provider{
-					{
-						Name: "a name",
-						RFC2136: &v1alpha1.ACMEIssuerDNS01ProviderRFC2136{
-							Nameserver:  "127.0.0.1",
-							TSIGKeyName: "some-name",
-						},
-					},
-				},
-			},
-			errs: []*field.Error{
-				field.Required(providersPath.Index(0).Child("rfc2136", "tsigSecretSecretRef", "name"), "secret name is required"),
-				field.Required(providersPath.Index(0).Child("rfc2136", "tsigSecretSecretRef", "key"), "secret key is required"),
-			},
-		},
-		"rfc2136 provider TSIGSecret provided but no TSIGKeyName": {
-			cfg: &v1alpha1.ACMEIssuerDNS01Config{
-				Providers: []v1alpha1.ACMEIssuerDNS01Provider{
-					{
-						Name: "a name",
-						RFC2136: &v1alpha1.ACMEIssuerDNS01ProviderRFC2136{
-							Nameserver: "127.0.0.1",
-							TSIGSecret: validSecretKeyRef,
-						},
-					},
-				},
-			},
-			errs: []*field.Error{
-				field.Required(providersPath.Index(0).Child("rfc2136", "tsigKeyName"), ""),
-			},
-		},
-		"multiple providers configured": {
-			cfg: &v1alpha1.ACMEIssuerDNS01Config{
-				Providers: []v1alpha1.ACMEIssuerDNS01Provider{
-					{
-						Name:       "a name",
-						CloudDNS:   &validCloudDNSProvider,
-						Cloudflare: &validCloudflareProvider,
-					},
-				},
-			},
-			errs: []*field.Error{
-				field.Forbidden(providersPath.Index(0).Child("cloudflare"), "may not specify more than one provider type"),
+				field.Invalid(fldPath.Child("ingress", "serviceType"), corev1.ServiceType("InvalidServiceType"), `must be empty, "ClusterIP" or "NodePort"`),
 			},
 		},
 	}
 	for n, s := range scenarios {
 		t.Run(n, func(t *testing.T) {
-			errs := ValidateACMEIssuerDNS01Config(s.cfg, fldPath)
+			errs := ValidateACMEIssuerChallengeSolverHTTP01Config(s.cfg, fldPath)
+			if len(errs) != len(s.errs) {
+				t.Errorf("Expected %v but got %v", s.errs, errs)
+				return
+			}
+			for i, e := range errs {
+				expectedErr := s.errs[i]
+				if !reflect.DeepEqual(e, expectedErr) {
+					t.Errorf("Expected %v but got %v", expectedErr, e)
+				}
+			}
+		})
+	}
+}
+
+func TestValidateACMEIssuerDNS01Config(t *testing.T) {
+	fldPath := field.NewPath("test")
+	scenarios := map[string]struct {
+		cfg  *v1alpha1.ACMEChallengeSolverDNS01
+		errs []*field.Error
+	}{
+		"missing clouddns project": {
+			cfg: &v1alpha1.ACMEChallengeSolverDNS01{
+				CloudDNS: &v1alpha1.ACMEIssuerDNS01ProviderCloudDNS{
+					ServiceAccount: validSecretKeyRef,
+				},
+			},
+			errs: []*field.Error{
+				field.Required(fldPath.Child("clouddns", "project"), ""),
+			},
+		},
+		"missing clouddns service account key": {
+			cfg: &v1alpha1.ACMEChallengeSolverDNS01{
+				CloudDNS: &v1alpha1.ACMEIssuerDNS01ProviderCloudDNS{
+					Project: "valid",
+					ServiceAccount: v1alpha1.SecretKeySelector{
+						LocalObjectReference: v1alpha1.LocalObjectReference{Name: "something"},
+						Key:                  "",
+					},
+				},
+			},
+			errs: []*field.Error{
+				field.Required(fldPath.Child("clouddns", "serviceAccountSecretRef", "key"), "secret key is required"),
+			},
+		},
+		"missing clouddns service account name": {
+			cfg: &v1alpha1.ACMEChallengeSolverDNS01{
+				CloudDNS: &v1alpha1.ACMEIssuerDNS01ProviderCloudDNS{
+					Project: "valid",
+					ServiceAccount: v1alpha1.SecretKeySelector{
+						LocalObjectReference: v1alpha1.LocalObjectReference{Name: ""},
+						Key:                  "something",
+					},
+				},
+			},
+			errs: []*field.Error{
+				field.Required(fldPath.Child("clouddns", "serviceAccountSecretRef", "name"), "secret name is required"),
+			},
+		},
+		"clouddns serviceAccount field not set should be allowed for ambient auth": {
+			cfg: &v1alpha1.ACMEChallengeSolverDNS01{
+				CloudDNS: &v1alpha1.ACMEIssuerDNS01ProviderCloudDNS{
+					Project: "valid",
+				},
+			},
+		},
+		"missing cloudflare token": {
+			cfg: &v1alpha1.ACMEChallengeSolverDNS01{
+				Cloudflare: &v1alpha1.ACMEIssuerDNS01ProviderCloudflare{
+					Email: "valid",
+				},
+			},
+			errs: []*field.Error{
+				field.Required(fldPath.Child("cloudflare", "apiKeySecretRef", "name"), "secret name is required"),
+				field.Required(fldPath.Child("cloudflare", "apiKeySecretRef", "key"), "secret key is required"),
+			},
+		},
+		"missing cloudflare email": {
+			cfg: &v1alpha1.ACMEChallengeSolverDNS01{
+				Cloudflare: &v1alpha1.ACMEIssuerDNS01ProviderCloudflare{
+					APIKey: validSecretKeyRef,
+				},
+			},
+			errs: []*field.Error{
+				field.Required(fldPath.Child("cloudflare", "email"), ""),
+			},
+		},
+		"missing route53 region": {
+			cfg: &v1alpha1.ACMEChallengeSolverDNS01{
+				Route53: &v1alpha1.ACMEIssuerDNS01ProviderRoute53{},
+			},
+			errs: []*field.Error{
+				field.Required(fldPath.Child("route53", "region"), ""),
+			},
+		},
+		"missing provider config": {
+			cfg: &v1alpha1.ACMEChallengeSolverDNS01{},
+			errs: []*field.Error{
+				field.Required(fldPath, "no DNS01 provider configured"),
+			},
+		},
+		"missing azuredns config": {
+			cfg: &v1alpha1.ACMEChallengeSolverDNS01{
+				AzureDNS: &v1alpha1.ACMEIssuerDNS01ProviderAzureDNS{},
+			},
+			errs: []*field.Error{
+				field.Required(fldPath.Child("azuredns", "clientSecretSecretRef", "name"), "secret name is required"),
+				field.Required(fldPath.Child("azuredns", "clientSecretSecretRef", "key"), "secret key is required"),
+				field.Required(fldPath.Child("azuredns", "clientID"), ""),
+				field.Required(fldPath.Child("azuredns", "subscriptionID"), ""),
+				field.Required(fldPath.Child("azuredns", "tenantID"), ""),
+				field.Required(fldPath.Child("azuredns", "resourceGroupName"), ""),
+			},
+		},
+		"invalid azuredns environment": {
+			cfg: &v1alpha1.ACMEChallengeSolverDNS01{
+				AzureDNS: &v1alpha1.ACMEIssuerDNS01ProviderAzureDNS{
+					Environment: "an env",
+				},
+			},
+			errs: []*field.Error{
+				field.Required(fldPath.Child("azuredns", "clientSecretSecretRef", "name"), "secret name is required"),
+				field.Required(fldPath.Child("azuredns", "clientSecretSecretRef", "key"), "secret key is required"),
+				field.Required(fldPath.Child("azuredns", "clientID"), ""),
+				field.Required(fldPath.Child("azuredns", "subscriptionID"), ""),
+				field.Required(fldPath.Child("azuredns", "tenantID"), ""),
+				field.Required(fldPath.Child("azuredns", "resourceGroupName"), ""),
+				field.Invalid(fldPath.Child("azuredns", "environment"), v1alpha1.AzureDNSEnvironment("an env"),
+					"must be either empty or one of AzurePublicCloud, AzureChinaCloud, AzureGermanCloud or AzureUSGovernmentCloud"),
+			},
+		},
+		"missing akamai config": {
+			cfg: &v1alpha1.ACMEChallengeSolverDNS01{
+				Akamai: &v1alpha1.ACMEIssuerDNS01ProviderAkamai{},
+			},
+			errs: []*field.Error{
+				field.Required(fldPath.Child("akamai", "accessToken", "name"), "secret name is required"),
+				field.Required(fldPath.Child("akamai", "accessToken", "key"), "secret key is required"),
+				field.Required(fldPath.Child("akamai", "clientSecret", "name"), "secret name is required"),
+				field.Required(fldPath.Child("akamai", "clientSecret", "key"), "secret key is required"),
+				field.Required(fldPath.Child("akamai", "clientToken", "name"), "secret name is required"),
+				field.Required(fldPath.Child("akamai", "clientToken", "key"), "secret key is required"),
+				field.Required(fldPath.Child("akamai", "serviceConsumerDomain"), ""),
+			},
+		},
+		"valid akamai config": {
+			cfg: &v1alpha1.ACMEChallengeSolverDNS01{
+				Akamai: &v1alpha1.ACMEIssuerDNS01ProviderAkamai{
+					AccessToken:           validSecretKeyRef,
+					ClientSecret:          validSecretKeyRef,
+					ClientToken:           validSecretKeyRef,
+					ServiceConsumerDomain: "abc",
+				},
+			},
+			errs: []*field.Error{},
+		},
+		"valid rfc2136 config": {
+			cfg: &v1alpha1.ACMEChallengeSolverDNS01{
+				RFC2136: &v1alpha1.ACMEIssuerDNS01ProviderRFC2136{
+					Nameserver: "127.0.0.1",
+				},
+			},
+			errs: []*field.Error{},
+		},
+		"missing rfc2136 required field": {
+			cfg: &v1alpha1.ACMEChallengeSolverDNS01{
+				RFC2136: &v1alpha1.ACMEIssuerDNS01ProviderRFC2136{},
+			},
+			errs: []*field.Error{
+				field.Required(fldPath.Child("rfc2136", "nameserver"), ""),
+			},
+		},
+		"rfc2136 provider invalid nameserver": {
+			cfg: &v1alpha1.ACMEChallengeSolverDNS01{
+				RFC2136: &v1alpha1.ACMEIssuerDNS01ProviderRFC2136{
+					Nameserver: "dns.example.com",
+				},
+			},
+			errs: []*field.Error{
+				field.Invalid(fldPath.Child("rfc2136", "nameserver"), "", "Nameserver invalid. Check the documentation for details."),
+			},
+		},
+		"rfc2136 provider using case-camel in algorithm": {
+			cfg: &v1alpha1.ACMEChallengeSolverDNS01{
+				RFC2136: &v1alpha1.ACMEIssuerDNS01ProviderRFC2136{
+					Nameserver:    "127.0.0.1",
+					TSIGAlgorithm: "HmAcMd5",
+				},
+			},
+			errs: []*field.Error{},
+		},
+		"rfc2136 provider using unsupported algorithm": {
+			cfg: &v1alpha1.ACMEChallengeSolverDNS01{
+				RFC2136: &v1alpha1.ACMEIssuerDNS01ProviderRFC2136{
+					Nameserver:    "127.0.0.1",
+					TSIGAlgorithm: "HAMMOCK",
+				},
+			},
+			errs: []*field.Error{
+				field.NotSupported(fldPath.Child("rfc2136", "tsigAlgorithm"), "", supportedTSIGAlgorithms),
+			},
+		},
+		"rfc2136 provider TSIGKeyName provided but no TSIGSecret": {
+			cfg: &v1alpha1.ACMEChallengeSolverDNS01{
+				RFC2136: &v1alpha1.ACMEIssuerDNS01ProviderRFC2136{
+					Nameserver:  "127.0.0.1",
+					TSIGKeyName: "some-name",
+				},
+			},
+			errs: []*field.Error{
+				field.Required(fldPath.Child("rfc2136", "tsigSecretSecretRef", "name"), "secret name is required"),
+				field.Required(fldPath.Child("rfc2136", "tsigSecretSecretRef", "key"), "secret key is required"),
+			},
+		},
+		"rfc2136 provider TSIGSecret provided but no TSIGKeyName": {
+			cfg: &v1alpha1.ACMEChallengeSolverDNS01{
+				RFC2136: &v1alpha1.ACMEIssuerDNS01ProviderRFC2136{
+					Nameserver: "127.0.0.1",
+					TSIGSecret: validSecretKeyRef,
+				},
+			},
+			errs: []*field.Error{
+				field.Required(fldPath.Child("rfc2136", "tsigKeyName"), ""),
+			},
+		},
+		"multiple providers configured": {
+			cfg: &v1alpha1.ACMEChallengeSolverDNS01{
+				CloudDNS: &v1alpha1.ACMEIssuerDNS01ProviderCloudDNS{
+					Project: "something",
+				},
+				Cloudflare: &v1alpha1.ACMEIssuerDNS01ProviderCloudflare{},
+			},
+			errs: []*field.Error{
+				field.Forbidden(fldPath.Child("cloudflare"), "may not specify more than one provider type"),
+			},
+		},
+	}
+	for n, s := range scenarios {
+		t.Run(n, func(t *testing.T) {
+			errs := ValidateACMEChallengeSolverDNS01(s.cfg, fldPath)
 			if len(errs) != len(s.errs) {
 				t.Errorf("Expected %v but got %v", s.errs, errs)
 				return

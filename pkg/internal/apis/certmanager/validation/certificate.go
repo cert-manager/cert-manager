@@ -53,10 +53,6 @@ func ValidateCertificateSpec(crt *v1alpha1.CertificateSpec, fldPath *field.Path)
 	if len(crt.IPAddresses) > 0 {
 		el = append(el, validateIPAddresses(crt, fldPath)...)
 	}
-	if crt.ACME != nil {
-		el = append(el, validateACMEConfigForAllDNSNames(crt, fldPath)...)
-		el = append(el, ValidateACMECertificateConfig(crt.ACME, fldPath.Child("acme"))...)
-	}
 	if crt.KeySize < 0 {
 		el = append(el, field.Invalid(fldPath.Child("keySize"), crt.KeySize, "cannot be less than zero"))
 	}
@@ -84,33 +80,6 @@ func ValidateCertificateSpec(crt *v1alpha1.CertificateSpec, fldPath *field.Path)
 	case v1alpha1.KeyEncoding(""), v1alpha1.PKCS1, v1alpha1.PKCS8:
 	default:
 		el = append(el, field.Invalid(fldPath.Child("keyEncoding"), crt.KeyEncoding, "must be either empty or one of pkcs1 or pkcs8"))
-	}
-	return el
-}
-
-// validateACMEConfigForAllDNSNames will ensure that if the provided Certificate
-// specifies any ACME configuration, all domains listed on the Certificate have
-// a configuration entry.
-func validateACMEConfigForAllDNSNames(a *v1alpha1.CertificateSpec, fldPath *field.Path) field.ErrorList {
-	if a.ACME == nil {
-		return nil
-	}
-	el := field.ErrorList{}
-	acmeFldPath := fldPath.Child("acme")
-	errFn := func(s string) string {
-		return fmt.Sprintf("no ACME solver configuration specified for domain %q", s)
-	}
-	if a.CommonName != "" {
-		cfg := v1alpha1.ConfigForDomain(a.ACME.Config, a.CommonName)
-		if cfg == nil || len(cfg.Domains) == 0 {
-			el = append(el, field.Required(acmeFldPath.Child("config"), errFn(a.CommonName)))
-		}
-	}
-	for _, d := range a.DNSNames {
-		cfg := v1alpha1.ConfigForDomain(a.ACME.Config, d)
-		if cfg == nil || len(cfg.Domains) == 0 {
-			el = append(el, field.Required(acmeFldPath.Child("config"), errFn(d)))
-		}
 	}
 	return el
 }
@@ -162,55 +131,6 @@ func validateUsages(a *v1alpha1.CertificateSpec, fldPath *field.Path) field.Erro
 			el = append(el, field.Invalid(fldPath.Child("usages").Index(i), u, "unknown keyusage"))
 		}
 	}
-	return el
-}
-
-func ValidateACMECertificateConfig(a *v1alpha1.ACMECertificateConfig, fldPath *field.Path) field.ErrorList {
-	el := field.ErrorList{}
-	for i, cfg := range a.Config {
-		el = append(el, ValidateDomainSolverConfig(&cfg, fldPath.Child("config").Index(i))...)
-	}
-	return el
-}
-
-func ValidateDomainSolverConfig(a *v1alpha1.DomainSolverConfig, fldPath *field.Path) field.ErrorList {
-	el := field.ErrorList{}
-	if len(a.Domains) == 0 {
-		el = append(el, field.Required(fldPath.Child("domains"), "at least one domain must be specified"))
-	}
-	numTypes := 0
-	if a.DNS01 != nil {
-		numTypes++
-		el = append(el, ValidateDNS01SolverConfig(a.DNS01, fldPath.Child("dns01"))...)
-	}
-	if a.HTTP01 != nil {
-		if numTypes > 0 {
-			el = append(el, field.Forbidden(fldPath.Child("http01"), "may not specify more than one solver type"))
-		} else {
-			numTypes++
-			el = append(el, ValidateHTTP01SolverConfig(a.HTTP01, fldPath.Child("http01"))...)
-		}
-	}
-	if numTypes == 0 {
-		el = append(el, field.Required(fldPath, "at least one solver must be configured"))
-	}
-	return el
-}
-
-func ValidateDNS01SolverConfig(a *v1alpha1.DNS01SolverConfig, fldPath *field.Path) field.ErrorList {
-	el := field.ErrorList{}
-	if a.Provider == "" {
-		el = append(el, field.Required(fldPath.Child("provider"), "provider name must be set"))
-	}
-	return el
-}
-
-func ValidateHTTP01SolverConfig(a *v1alpha1.HTTP01SolverConfig, fldPath *field.Path) field.ErrorList {
-	el := field.ErrorList{}
-	if a.Ingress != "" && a.IngressClass != nil {
-		el = append(el, field.Forbidden(fldPath, "only one of 'ingress' and 'ingressClass' should be specified"))
-	}
-	// TODO: ensure 'ingress' is a valid resource name (i.e. DNS name)
 	return el
 }
 
