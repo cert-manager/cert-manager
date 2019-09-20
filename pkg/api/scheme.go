@@ -27,6 +27,7 @@ import (
 	apireg "k8s.io/kube-aggregator/pkg/apis/apiregistration/v1beta1"
 
 	whapi "github.com/jetstack/cert-manager/pkg/acme/webhook/apis/acme/v1alpha1"
+	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1alpha2"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 )
@@ -45,6 +46,7 @@ var Codecs = serializer.NewCodecFactory(Scheme)
 var ParameterCodec = runtime.NewParameterCodec(Scheme)
 var localSchemeBuilder = runtime.SchemeBuilder{
 	cmapi.AddToScheme,
+	cmacme.AddToScheme,
 	cmmeta.AddToScheme,
 	whapi.AddToScheme,
 	kscheme.AddToScheme,

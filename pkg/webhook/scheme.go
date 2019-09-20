@@ -19,6 +19,7 @@ package webhook
 import (
 	"k8s.io/apimachinery/pkg/runtime"
 
+	acmeinstall "github.com/jetstack/cert-manager/pkg/internal/apis/acme/install"
 	cminstall "github.com/jetstack/cert-manager/pkg/internal/apis/certmanager/install"
 	metainstall "github.com/jetstack/cert-manager/pkg/internal/apis/meta/install"
 )
@@ -36,5 +37,6 @@ var (
 
 func init() {
 	cminstall.Install(Scheme)
+	acmeinstall.Install(Scheme)
 	metainstall.Install(Scheme)
 }
