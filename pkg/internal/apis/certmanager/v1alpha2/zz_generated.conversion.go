@@ -23,7 +23,7 @@ package v1alpha1
 import (
 	unsafe "unsafe"
 
-	v1alpha1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	v1alpha1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	certmanager "github.com/jetstack/cert-manager/pkg/internal/apis/certmanager"
 	v1 "k8s.io/api/core/v1"
 	v1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
