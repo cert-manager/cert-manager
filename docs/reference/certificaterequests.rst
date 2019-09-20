@@ -20,7 +20,7 @@ A simple CertificateRequest looks like the following:
 .. code-block:: yaml
    :linenos:
 
-   apiVersion: certmanager.k8s.io/v1alpha1
+   apiVersion: certmanager.k8s.io/v1alpha2
    kind: CertificateRequest
    metadata:
      name: my-ca-cr

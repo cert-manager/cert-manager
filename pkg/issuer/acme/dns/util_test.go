@@ -20,7 +20,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	"github.com/jetstack/cert-manager/pkg/controller/test"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/acmedns"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/azuredns"
@@ -34,7 +34,7 @@ import (
 
 const (
 	defaultTestIssuerName      = "test-issuer"
-	defaultTestIssuerKind      = v1alpha1.IssuerKind
+	defaultTestIssuerKind      = v1alpha2.IssuerKind
 	defaultTestNamespace       = gen.DefaultTestNamespace
 	defaultTestCertificateName = "test-cert"
 )
@@ -45,9 +45,9 @@ type solverFixture struct {
 	*test.Builder
 
 	// Issuer to be passed to functions on the Solver (a default will be used if nil)
-	Issuer v1alpha1.GenericIssuer
+	Issuer v1alpha2.GenericIssuer
 	// Challenge resource to use during tests
-	Challenge *v1alpha1.Challenge
+	Challenge *v1alpha2.Challenge
 
 	dnsProviders *fakeDNSProviders
 
@@ -69,7 +69,7 @@ type solverFixture struct {
 
 func (s *solverFixture) Setup(t *testing.T) {
 	if s.Issuer == nil {
-		s.Issuer = gen.Issuer(defaultTestIssuerName, gen.SetIssuerACME(v1alpha1.ACMEIssuer{}))
+		s.Issuer = gen.Issuer(defaultTestIssuerName, gen.SetIssuerACME(v1alpha2.ACMEIssuer{}))
 	}
 	if s.testResources == nil {
 		s.testResources = map[string]interface{}{}

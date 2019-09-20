@@ -21,7 +21,7 @@ import (
 
 	"k8s.io/apimachinery/pkg/labels"
 
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 )
 

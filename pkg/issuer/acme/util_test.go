@@ -26,7 +26,7 @@ import (
 	fakeclock "k8s.io/utils/clock/testing"
 
 	"github.com/jetstack/cert-manager/pkg/acme/client"
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	"github.com/jetstack/cert-manager/pkg/controller/test"
 )
 
@@ -39,8 +39,8 @@ type acmeFixture struct {
 	Acme *Acme
 	*test.Builder
 
-	Issuer      v1alpha1.GenericIssuer
-	Certificate *v1alpha1.Certificate
+	Issuer      v1alpha2.GenericIssuer
+	Certificate *v1alpha2.Certificate
 	Client      *client.FakeACME
 	Clock       *fakeclock.FakeClock
 
@@ -53,10 +53,10 @@ type acmeFixture struct {
 
 func (s *acmeFixture) Setup(t *testing.T) {
 	if s.Issuer == nil {
-		s.Issuer = &v1alpha1.Issuer{
-			Spec: v1alpha1.IssuerSpec{
-				IssuerConfig: v1alpha1.IssuerConfig{
-					ACME: &v1alpha1.ACMEIssuer{},
+		s.Issuer = &v1alpha2.Issuer{
+			Spec: v1alpha2.IssuerSpec{
+				IssuerConfig: v1alpha2.IssuerConfig{
+					ACME: &v1alpha2.ACMEIssuer{},
 				},
 			},
 		}
@@ -102,7 +102,7 @@ func (s *acmeFixture) Finish(t *testing.T, args ...interface{}) {
 	}
 }
 
-func (s *acmeFixture) buildFakeAcme(b *test.Builder, issuer v1alpha1.GenericIssuer) *Acme {
+func (s *acmeFixture) buildFakeAcme(b *test.Builder, issuer v1alpha2.GenericIssuer) *Acme {
 	b.Init()
 	a, err := New(b.Context, issuer)
 	if err != nil {
@@ -115,10 +115,10 @@ func (s *acmeFixture) buildFakeAcme(b *test.Builder, issuer v1alpha1.GenericIssu
 	return acmeStruct
 }
 
-func (s *acmeFixture) ClientForIssuer(iss v1alpha1.GenericIssuer) (client.Interface, error) {
+func (s *acmeFixture) ClientForIssuer(iss v1alpha2.GenericIssuer) (client.Interface, error) {
 	return s.Client, nil
 }
 
-func (s *acmeFixture) ReadPrivateKey(sel v1alpha1.SecretKeySelector, ns string) (*rsa.PrivateKey, error) {
+func (s *acmeFixture) ReadPrivateKey(sel v1alpha2.SecretKeySelector, ns string) (*rsa.PrivateKey, error) {
 	return nil, fmt.Errorf("not implemented")
 }

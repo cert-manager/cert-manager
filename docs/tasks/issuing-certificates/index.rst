@@ -28,7 +28,7 @@ DNS names that is valid for 90d and renews 15d before expiry is below:
    :linenos:
    :emphasize-lines: 9, 10, 11, 12
 
-   apiVersion: certmanager.k8s.io/v1alpha1
+   apiVersion: certmanager.k8s.io/v1alpha2
    kind: Certificate
    metadata:
      name: example-com
@@ -82,7 +82,7 @@ A full list of the fields supported on the Certificate resource can be found in
 the `API reference documentation`_.
 
 .. _`#1269`: https://github.com/jetstack/cert-manager/issues/1269
-.. _`API reference documentation`: https://docs.cert-manager.io/en/release-0.10/reference/api-docs/index.html#certificatespec-v1alpha1
+.. _`API reference documentation`: https://docs.cert-manager.io/en/release-0.10/reference/api-docs/index.html#certificatespec-v1alpha2
 
 Temporary certificates whilst issuing
 =====================================

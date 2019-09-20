@@ -26,7 +26,7 @@ import (
 	"k8s.io/utils/pointer"
 
 	acmecl "github.com/jetstack/cert-manager/pkg/acme/client"
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 )
 
 func TestChallengeSpecForAuthorization(t *testing.T) {
@@ -41,95 +41,95 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 		},
 	}
 	// define some reusable solvers that are used in multiple unit tests
-	emptySelectorSolverHTTP01 := v1alpha1.ACMEChallengeSolver{
-		HTTP01: &v1alpha1.ACMEChallengeSolverHTTP01{
-			Ingress: &v1alpha1.ACMEChallengeSolverHTTP01Ingress{
+	emptySelectorSolverHTTP01 := v1alpha2.ACMEChallengeSolver{
+		HTTP01: &v1alpha2.ACMEChallengeSolverHTTP01{
+			Ingress: &v1alpha2.ACMEChallengeSolverHTTP01Ingress{
 				Name: "empty-selector-solver",
 			},
 		},
 	}
-	emptySelectorSolverDNS01 := v1alpha1.ACMEChallengeSolver{
-		DNS01: &v1alpha1.ACMEChallengeSolverDNS01{
-			Cloudflare: &v1alpha1.ACMEIssuerDNS01ProviderCloudflare{
+	emptySelectorSolverDNS01 := v1alpha2.ACMEChallengeSolver{
+		DNS01: &v1alpha2.ACMEChallengeSolverDNS01{
+			Cloudflare: &v1alpha2.ACMEIssuerDNS01ProviderCloudflare{
 				Email: "test-cloudflare-email",
 			},
 		},
 	}
-	nonMatchingSelectorSolver := v1alpha1.ACMEChallengeSolver{
-		Selector: &v1alpha1.CertificateDNSNameSelector{
+	nonMatchingSelectorSolver := v1alpha2.ACMEChallengeSolver{
+		Selector: &v1alpha2.CertificateDNSNameSelector{
 			MatchLabels: map[string]string{
 				"label":    "does-not-exist",
 				"does-not": "match",
 			},
 		},
-		HTTP01: &v1alpha1.ACMEChallengeSolverHTTP01{
-			Ingress: &v1alpha1.ACMEChallengeSolverHTTP01Ingress{
+		HTTP01: &v1alpha2.ACMEChallengeSolverHTTP01{
+			Ingress: &v1alpha2.ACMEChallengeSolverHTTP01Ingress{
 				Name: "non-matching-selector-solver",
 			},
 		},
 	}
-	exampleComDNSNameSelectorSolver := v1alpha1.ACMEChallengeSolver{
-		Selector: &v1alpha1.CertificateDNSNameSelector{
+	exampleComDNSNameSelectorSolver := v1alpha2.ACMEChallengeSolver{
+		Selector: &v1alpha2.CertificateDNSNameSelector{
 			DNSNames: []string{"example.com"},
 		},
-		HTTP01: &v1alpha1.ACMEChallengeSolverHTTP01{
-			Ingress: &v1alpha1.ACMEChallengeSolverHTTP01Ingress{
+		HTTP01: &v1alpha2.ACMEChallengeSolverHTTP01{
+			Ingress: &v1alpha2.ACMEChallengeSolverHTTP01Ingress{
 				Name: "example-com-dns-name-selector-solver",
 			},
 		},
 	}
 	// define ACME challenges that are used during tests
-	acmeChallengeHTTP01 := &v1alpha1.ACMEChallenge{
+	acmeChallengeHTTP01 := &v1alpha2.ACMEChallenge{
 		Type:  "http-01",
 		Token: "http-01-token",
 	}
-	acmeChallengeDNS01 := &v1alpha1.ACMEChallenge{
+	acmeChallengeDNS01 := &v1alpha2.ACMEChallenge{
 		Type:  "dns-01",
 		Token: "dns-01-token",
 	}
 
 	tests := map[string]struct {
 		acmeClient acmecl.Interface
-		issuer     v1alpha1.GenericIssuer
-		order      *v1alpha1.Order
-		authz      *v1alpha1.ACMEAuthorization
+		issuer     v1alpha2.GenericIssuer
+		order      *v1alpha2.Order
+		authz      *v1alpha2.ACMEAuthorization
 
-		expectedChallengeSpec *v1alpha1.ChallengeSpec
+		expectedChallengeSpec *v1alpha2.ChallengeSpec
 		expectedError         bool
 	}{
 		"should override the ingress name to edit if override annotation is specified": {
 			acmeClient: basicACMEClient,
-			issuer: &v1alpha1.Issuer{
-				Spec: v1alpha1.IssuerSpec{
-					IssuerConfig: v1alpha1.IssuerConfig{
-						ACME: &v1alpha1.ACMEIssuer{
-							Solvers: []v1alpha1.ACMEChallengeSolver{emptySelectorSolverHTTP01},
+			issuer: &v1alpha2.Issuer{
+				Spec: v1alpha2.IssuerSpec{
+					IssuerConfig: v1alpha2.IssuerConfig{
+						ACME: &v1alpha2.ACMEIssuer{
+							Solvers: []v1alpha2.ACMEChallengeSolver{emptySelectorSolverHTTP01},
 						},
 					},
 				},
 			},
-			order: &v1alpha1.Order{
+			order: &v1alpha2.Order{
 				ObjectMeta: metav1.ObjectMeta{
 					Annotations: map[string]string{
-						v1alpha1.ACMECertificateHTTP01IngressNameOverride: "test-name-to-override",
+						v1alpha2.ACMECertificateHTTP01IngressNameOverride: "test-name-to-override",
 					},
 				},
-				Spec: v1alpha1.OrderSpec{
+				Spec: v1alpha2.OrderSpec{
 					DNSNames: []string{"example.com"},
 				},
 			},
-			authz: &v1alpha1.ACMEAuthorization{
+			authz: &v1alpha2.ACMEAuthorization{
 				Identifier: "example.com",
-				Challenges: []v1alpha1.ACMEChallenge{*acmeChallengeHTTP01},
+				Challenges: []v1alpha2.ACMEChallenge{*acmeChallengeHTTP01},
 			},
-			expectedChallengeSpec: &v1alpha1.ChallengeSpec{
+			expectedChallengeSpec: &v1alpha2.ChallengeSpec{
 				Type:    "http-01",
 				DNSName: "example.com",
 				Token:   acmeChallengeHTTP01.Token,
 				Key:     "http01",
-				Solver: &v1alpha1.ACMEChallengeSolver{
-					HTTP01: &v1alpha1.ACMEChallengeSolverHTTP01{
-						Ingress: &v1alpha1.ACMEChallengeSolverHTTP01Ingress{
+				Solver: &v1alpha2.ACMEChallengeSolver{
+					HTTP01: &v1alpha2.ACMEChallengeSolverHTTP01{
+						Ingress: &v1alpha2.ACMEChallengeSolverHTTP01Ingress{
 							Name: "test-name-to-override",
 						},
 					},
@@ -138,37 +138,37 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 		},
 		"should override the ingress class to edit if override annotation is specified": {
 			acmeClient: basicACMEClient,
-			issuer: &v1alpha1.Issuer{
-				Spec: v1alpha1.IssuerSpec{
-					IssuerConfig: v1alpha1.IssuerConfig{
-						ACME: &v1alpha1.ACMEIssuer{
-							Solvers: []v1alpha1.ACMEChallengeSolver{emptySelectorSolverHTTP01},
+			issuer: &v1alpha2.Issuer{
+				Spec: v1alpha2.IssuerSpec{
+					IssuerConfig: v1alpha2.IssuerConfig{
+						ACME: &v1alpha2.ACMEIssuer{
+							Solvers: []v1alpha2.ACMEChallengeSolver{emptySelectorSolverHTTP01},
 						},
 					},
 				},
 			},
-			order: &v1alpha1.Order{
+			order: &v1alpha2.Order{
 				ObjectMeta: metav1.ObjectMeta{
 					Annotations: map[string]string{
-						v1alpha1.ACMECertificateHTTP01IngressClassOverride: "test-class-to-override",
+						v1alpha2.ACMECertificateHTTP01IngressClassOverride: "test-class-to-override",
 					},
 				},
-				Spec: v1alpha1.OrderSpec{
+				Spec: v1alpha2.OrderSpec{
 					DNSNames: []string{"example.com"},
 				},
 			},
-			authz: &v1alpha1.ACMEAuthorization{
+			authz: &v1alpha2.ACMEAuthorization{
 				Identifier: "example.com",
-				Challenges: []v1alpha1.ACMEChallenge{*acmeChallengeHTTP01},
+				Challenges: []v1alpha2.ACMEChallenge{*acmeChallengeHTTP01},
 			},
-			expectedChallengeSpec: &v1alpha1.ChallengeSpec{
+			expectedChallengeSpec: &v1alpha2.ChallengeSpec{
 				Type:    "http-01",
 				DNSName: "example.com",
 				Token:   acmeChallengeHTTP01.Token,
 				Key:     "http01",
-				Solver: &v1alpha1.ACMEChallengeSolver{
-					HTTP01: &v1alpha1.ACMEChallengeSolverHTTP01{
-						Ingress: &v1alpha1.ACMEChallengeSolverHTTP01Ingress{
+				Solver: &v1alpha2.ACMEChallengeSolver{
+					HTTP01: &v1alpha2.ACMEChallengeSolverHTTP01{
+						Ingress: &v1alpha2.ACMEChallengeSolverHTTP01Ingress{
 							Class: pointer.StringPtr("test-class-to-override"),
 						},
 					},
@@ -177,58 +177,58 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 		},
 		"should return an error if both ingress class and name override annotations are set": {
 			acmeClient: basicACMEClient,
-			issuer: &v1alpha1.Issuer{
-				Spec: v1alpha1.IssuerSpec{
-					IssuerConfig: v1alpha1.IssuerConfig{
-						ACME: &v1alpha1.ACMEIssuer{
-							Solvers: []v1alpha1.ACMEChallengeSolver{emptySelectorSolverHTTP01},
+			issuer: &v1alpha2.Issuer{
+				Spec: v1alpha2.IssuerSpec{
+					IssuerConfig: v1alpha2.IssuerConfig{
+						ACME: &v1alpha2.ACMEIssuer{
+							Solvers: []v1alpha2.ACMEChallengeSolver{emptySelectorSolverHTTP01},
 						},
 					},
 				},
 			},
-			order: &v1alpha1.Order{
+			order: &v1alpha2.Order{
 				ObjectMeta: metav1.ObjectMeta{
 					Annotations: map[string]string{
-						v1alpha1.ACMECertificateHTTP01IngressNameOverride:  "test-name-to-override",
-						v1alpha1.ACMECertificateHTTP01IngressClassOverride: "test-class-to-override",
+						v1alpha2.ACMECertificateHTTP01IngressNameOverride:  "test-name-to-override",
+						v1alpha2.ACMECertificateHTTP01IngressClassOverride: "test-class-to-override",
 					},
 				},
-				Spec: v1alpha1.OrderSpec{
+				Spec: v1alpha2.OrderSpec{
 					DNSNames: []string{"example.com"},
 				},
 			},
-			authz: &v1alpha1.ACMEAuthorization{
+			authz: &v1alpha2.ACMEAuthorization{
 				Identifier: "example.com",
-				Challenges: []v1alpha1.ACMEChallenge{*acmeChallengeHTTP01},
+				Challenges: []v1alpha2.ACMEChallenge{*acmeChallengeHTTP01},
 			},
 			expectedError: true,
 		},
 		"should ignore HTTP01 override annotations if DNS01 solver is chosen": {
 			acmeClient: basicACMEClient,
-			issuer: &v1alpha1.Issuer{
-				Spec: v1alpha1.IssuerSpec{
-					IssuerConfig: v1alpha1.IssuerConfig{
-						ACME: &v1alpha1.ACMEIssuer{
-							Solvers: []v1alpha1.ACMEChallengeSolver{emptySelectorSolverDNS01},
+			issuer: &v1alpha2.Issuer{
+				Spec: v1alpha2.IssuerSpec{
+					IssuerConfig: v1alpha2.IssuerConfig{
+						ACME: &v1alpha2.ACMEIssuer{
+							Solvers: []v1alpha2.ACMEChallengeSolver{emptySelectorSolverDNS01},
 						},
 					},
 				},
 			},
-			order: &v1alpha1.Order{
+			order: &v1alpha2.Order{
 				ObjectMeta: metav1.ObjectMeta{
 					Annotations: map[string]string{
-						v1alpha1.ACMECertificateHTTP01IngressNameOverride: "test-name-to-override",
+						v1alpha2.ACMECertificateHTTP01IngressNameOverride: "test-name-to-override",
 					},
 				},
-				Spec: v1alpha1.OrderSpec{
+				Spec: v1alpha2.OrderSpec{
 					DNSNames: []string{"example.com"},
 				},
 			},
-			authz: &v1alpha1.ACMEAuthorization{
+			authz: &v1alpha2.ACMEAuthorization{
 				Identifier: "example.com",
-				Challenges: []v1alpha1.ACMEChallenge{*acmeChallengeDNS01},
+				Challenges: []v1alpha2.ACMEChallenge{*acmeChallengeDNS01},
 			},
-			expectedChallengeSpec: &v1alpha1.ChallengeSpec{
+			expectedChallengeSpec: &v1alpha2.ChallengeSpec{
 				Type:    "dns-01",
 				DNSName: "example.com",
 				Token:   acmeChallengeDNS01.Token,
@@ -238,25 +238,25 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 		},
 		"should use configured default solver when no others are present": {
 			acmeClient: basicACMEClient,
-			issuer: &v1alpha1.Issuer{
-				Spec: v1alpha1.IssuerSpec{
-					IssuerConfig: v1alpha1.IssuerConfig{
-						ACME: &v1alpha1.ACMEIssuer{
-							Solvers: []v1alpha1.ACMEChallengeSolver{emptySelectorSolverHTTP01},
+			issuer: &v1alpha2.Issuer{
+				Spec: v1alpha2.IssuerSpec{
+					IssuerConfig: v1alpha2.IssuerConfig{
+						ACME: &v1alpha2.ACMEIssuer{
+							Solvers: []v1alpha2.ACMEChallengeSolver{emptySelectorSolverHTTP01},
 						},
 					},
 				},
 			},
-			order: &v1alpha1.Order{
-				Spec: v1alpha1.OrderSpec{
+			order: &v1alpha2.Order{
+				Spec: v1alpha2.OrderSpec{
 					DNSNames: []string{"example.com"},
 				},
 			},
-			authz: &v1alpha1.ACMEAuthorization{
+			authz: &v1alpha2.ACMEAuthorization{
 				Identifier: "example.com",
-				Challenges: []v1alpha1.ACMEChallenge{*acmeChallengeHTTP01},
+				Challenges: []v1alpha2.ACMEChallenge{*acmeChallengeHTTP01},
 			},
-			expectedChallengeSpec: &v1alpha1.ChallengeSpec{
+			expectedChallengeSpec: &v1alpha2.ChallengeSpec{
 				Type:    "http-01",
 				DNSName: "example.com",
 				Token:   acmeChallengeHTTP01.Token,
@@ -266,15 +266,15 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 		},
 		"should use configured default solver when no others are present but selector is non-nil": {
 			acmeClient: basicACMEClient,
-			issuer: &v1alpha1.Issuer{
-				Spec: v1alpha1.IssuerSpec{
-					IssuerConfig: v1alpha1.IssuerConfig{
-						ACME: &v1alpha1.ACMEIssuer{
-							Solvers: []v1alpha1.ACMEChallengeSolver{
+			issuer: &v1alpha2.Issuer{
+				Spec: v1alpha2.IssuerSpec{
+					IssuerConfig: v1alpha2.IssuerConfig{
+						ACME: &v1alpha2.ACMEIssuer{
+							Solvers: []v1alpha2.ACMEChallengeSolver{
 								{
-									Selector: &v1alpha1.CertificateDNSNameSelector{},
-									HTTP01: &v1alpha1.ACMEChallengeSolverHTTP01{
-										Ingress: &v1alpha1.ACMEChallengeSolverHTTP01Ingress{
+									Selector: &v1alpha2.CertificateDNSNameSelector{},
+									HTTP01: &v1alpha2.ACMEChallengeSolverHTTP01{
+										Ingress: &v1alpha2.ACMEChallengeSolverHTTP01Ingress{
 											Name: "empty-selector-solver",
 										},
 									},
@@ -284,24 +284,24 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 					},
 				},
 			},
-			order: &v1alpha1.Order{
-				Spec: v1alpha1.OrderSpec{
+			order: &v1alpha2.Order{
+				Spec: v1alpha2.OrderSpec{
 					DNSNames: []string{"example.com"},
 				},
 			},
-			authz: &v1alpha1.ACMEAuthorization{
+			authz: &v1alpha2.ACMEAuthorization{
 				Identifier: "example.com",
-				Challenges: []v1alpha1.ACMEChallenge{*acmeChallengeHTTP01},
+				Challenges: []v1alpha2.ACMEChallenge{*acmeChallengeHTTP01},
 			},
-			expectedChallengeSpec: &v1alpha1.ChallengeSpec{
+			expectedChallengeSpec: &v1alpha2.ChallengeSpec{
 				Type:    "http-01",
 				DNSName: "example.com",
 				Token:   acmeChallengeHTTP01.Token,
 				Key:     "http01",
-				Solver: &v1alpha1.ACMEChallengeSolver{
-					Selector: &v1alpha1.CertificateDNSNameSelector{},
-					HTTP01: &v1alpha1.ACMEChallengeSolverHTTP01{
-						Ingress: &v1alpha1.ACMEChallengeSolverHTTP01Ingress{
+				Solver: &v1alpha2.ACMEChallengeSolver{
+					Selector: &v1alpha2.CertificateDNSNameSelector{},
+					HTTP01: &v1alpha2.ACMEChallengeSolverHTTP01{
+						Ingress: &v1alpha2.ACMEChallengeSolverHTTP01Ingress{
 							Name: "empty-selector-solver",
 						},
 					},
@@ -310,11 +310,11 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 		},
 		"should use configured default solver when others do not match": {
 			acmeClient: basicACMEClient,
-			issuer: &v1alpha1.Issuer{
-				Spec: v1alpha1.IssuerSpec{
-					IssuerConfig: v1alpha1.IssuerConfig{
-						ACME: &v1alpha1.ACMEIssuer{
-							Solvers: []v1alpha1.ACMEChallengeSolver{
+			issuer: &v1alpha2.Issuer{
+				Spec: v1alpha2.IssuerSpec{
+					IssuerConfig: v1alpha2.IssuerConfig{
+						ACME: &v1alpha2.ACMEIssuer{
+							Solvers: []v1alpha2.ACMEChallengeSolver{
 								emptySelectorSolverHTTP01,
 								nonMatchingSelectorSolver,
 							},
@@ -322,16 +322,16 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 					},
 				},
 			},
-			order: &v1alpha1.Order{
-				Spec: v1alpha1.OrderSpec{
+			order: &v1alpha2.Order{
+				Spec: v1alpha2.OrderSpec{
 					DNSNames: []string{"example.com"},
 				},
 			},
-			authz: &v1alpha1.ACMEAuthorization{
+			authz: &v1alpha2.ACMEAuthorization{
 				Identifier: "example.com",
-				Challenges: []v1alpha1.ACMEChallenge{*acmeChallengeHTTP01},
+				Challenges: []v1alpha2.ACMEChallenge{*acmeChallengeHTTP01},
 			},
-			expectedChallengeSpec: &v1alpha1.ChallengeSpec{
+			expectedChallengeSpec: &v1alpha2.ChallengeSpec{
 				Type:    "http-01",
 				DNSName: "example.com",
 				Token:   acmeChallengeHTTP01.Token,
@@ -341,11 +341,11 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 		},
 		"should use DNS01 solver over HTTP01 if challenge is of type DNS01": {
 			acmeClient: basicACMEClient,
-			issuer: &v1alpha1.Issuer{
-				Spec: v1alpha1.IssuerSpec{
-					IssuerConfig: v1alpha1.IssuerConfig{
-						ACME: &v1alpha1.ACMEIssuer{
-							Solvers: []v1alpha1.ACMEChallengeSolver{
+			issuer: &v1alpha2.Issuer{
+				Spec: v1alpha2.IssuerSpec{
+					IssuerConfig: v1alpha2.IssuerConfig{
+						ACME: &v1alpha2.ACMEIssuer{
+							Solvers: []v1alpha2.ACMEChallengeSolver{
 								emptySelectorSolverHTTP01,
 								emptySelectorSolverDNS01,
 							},
@@ -353,16 +353,16 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 					},
 				},
 			},
-			order: &v1alpha1.Order{
-				Spec: v1alpha1.OrderSpec{
+			order: &v1alpha2.Order{
+				Spec: v1alpha2.OrderSpec{
 					DNSNames: []string{"example.com"},
 				},
 			},
-			authz: &v1alpha1.ACMEAuthorization{
+			authz: &v1alpha2.ACMEAuthorization{
 				Identifier: "example.com",
-				Challenges: []v1alpha1.ACMEChallenge{*acmeChallengeDNS01},
+				Challenges: []v1alpha2.ACMEChallenge{*acmeChallengeDNS01},
 			},
-			expectedChallengeSpec: &v1alpha1.ChallengeSpec{
+			expectedChallengeSpec: &v1alpha2.ChallengeSpec{
 				Type:    "dns-01",
 				DNSName: "example.com",
 				Token:   acmeChallengeDNS01.Token,
@@ -372,35 +372,35 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 		},
 		"should return an error if none match": {
 			acmeClient: basicACMEClient,
-			issuer: &v1alpha1.Issuer{
-				Spec: v1alpha1.IssuerSpec{
-					IssuerConfig: v1alpha1.IssuerConfig{
-						ACME: &v1alpha1.ACMEIssuer{
-							Solvers: []v1alpha1.ACMEChallengeSolver{
+			issuer: &v1alpha2.Issuer{
+				Spec: v1alpha2.IssuerSpec{
+					IssuerConfig: v1alpha2.IssuerConfig{
+						ACME: &v1alpha2.ACMEIssuer{
+							Solvers: []v1alpha2.ACMEChallengeSolver{
 								nonMatchingSelectorSolver,
 							},
 						},
 					},
 				},
 			},
-			order: &v1alpha1.Order{
-				Spec: v1alpha1.OrderSpec{
+			order: &v1alpha2.Order{
+				Spec: v1alpha2.OrderSpec{
 					DNSNames: []string{"example.com"},
 				},
 			},
-			authz: &v1alpha1.ACMEAuthorization{
+			authz: &v1alpha2.ACMEAuthorization{
 				Identifier: "example.com",
-				Challenges: []v1alpha1.ACMEChallenge{*acmeChallengeHTTP01},
+				Challenges: []v1alpha2.ACMEChallenge{*acmeChallengeHTTP01},
 			},
 			expectedError: true,
 		},
 		"uses correct solver when selector explicitly names dnsName": {
 			acmeClient: basicACMEClient,
-			issuer: &v1alpha1.Issuer{
-				Spec: v1alpha1.IssuerSpec{
-					IssuerConfig: v1alpha1.IssuerConfig{
-						ACME: &v1alpha1.ACMEIssuer{
-							Solvers: []v1alpha1.ACMEChallengeSolver{
+			issuer: &v1alpha2.Issuer{
+				Spec: v1alpha2.IssuerSpec{
+					IssuerConfig: v1alpha2.IssuerConfig{
+						ACME: &v1alpha2.ACMEIssuer{
+							Solvers: []v1alpha2.ACMEChallengeSolver{
 								emptySelectorSolverHTTP01,
 								exampleComDNSNameSelectorSolver,
 							},
@@ -408,16 +408,16 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 					},
 				},
 			},
-			order: &v1alpha1.Order{
-				Spec: v1alpha1.OrderSpec{
+			order: &v1alpha2.Order{
+				Spec: v1alpha2.OrderSpec{
 					DNSNames: []string{"example.com"},
 				},
 			},
-			authz: &v1alpha1.ACMEAuthorization{
+			authz: &v1alpha2.ACMEAuthorization{
 				Identifier: "example.com",
-				Challenges: []v1alpha1.ACMEChallenge{*acmeChallengeHTTP01},
+				Challenges: []v1alpha2.ACMEChallenge{*acmeChallengeHTTP01},
 			},
-			expectedChallengeSpec: &v1alpha1.ChallengeSpec{
+			expectedChallengeSpec: &v1alpha2.ChallengeSpec{
 				Type:    "http-01",
 				DNSName: "example.com",
 				Token:   acmeChallengeHTTP01.Token,
@@ -427,11 +427,11 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 		},
 		"uses default solver if dnsName does not match": {
 			acmeClient: basicACMEClient,
-			issuer: &v1alpha1.Issuer{
-				Spec: v1alpha1.IssuerSpec{
-					IssuerConfig: v1alpha1.IssuerConfig{
-						ACME: &v1alpha1.ACMEIssuer{
-							Solvers: []v1alpha1.ACMEChallengeSolver{
+			issuer: &v1alpha2.Issuer{
+				Spec: v1alpha2.IssuerSpec{
+					IssuerConfig: v1alpha2.IssuerConfig{
+						ACME: &v1alpha2.ACMEIssuer{
+							Solvers: []v1alpha2.ACMEChallengeSolver{
 								emptySelectorSolverHTTP01,
 								exampleComDNSNameSelectorSolver,
 							},
@@ -439,16 +439,16 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 					},
 				},
 			},
-			order: &v1alpha1.Order{
-				Spec: v1alpha1.OrderSpec{
+			order: &v1alpha2.Order{
+				Spec: v1alpha2.OrderSpec{
 					DNSNames: []string{"notexample.com"},
 				},
 			},
-			authz: &v1alpha1.ACMEAuthorization{
+			authz: &v1alpha2.ACMEAuthorization{
 				Identifier: "notexample.com",
-				Challenges: []v1alpha1.ACMEChallenge{*acmeChallengeHTTP01},
+				Challenges: []v1alpha2.ACMEChallenge{*acmeChallengeHTTP01},
 			},
-			expectedChallengeSpec: &v1alpha1.ChallengeSpec{
+			expectedChallengeSpec: &v1alpha2.ChallengeSpec{
 				Type:    "http-01",
 				DNSName: "notexample.com",
 				Token:   acmeChallengeHTTP01.Token,
@@ -458,21 +458,21 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 		},
 		"if two solvers specify the same dnsName, the one with the most labels should be chosen": {
 			acmeClient: basicACMEClient,
-			issuer: &v1alpha1.Issuer{
-				Spec: v1alpha1.IssuerSpec{
-					IssuerConfig: v1alpha1.IssuerConfig{
-						ACME: &v1alpha1.ACMEIssuer{
-							Solvers: []v1alpha1.ACMEChallengeSolver{
+			issuer: &v1alpha2.Issuer{
+				Spec: v1alpha2.IssuerSpec{
+					IssuerConfig: v1alpha2.IssuerConfig{
+						ACME: &v1alpha2.ACMEIssuer{
+							Solvers: []v1alpha2.ACMEChallengeSolver{
 								exampleComDNSNameSelectorSolver,
 								{
-									Selector: &v1alpha1.CertificateDNSNameSelector{
+									Selector: &v1alpha2.CertificateDNSNameSelector{
 										MatchLabels: map[string]string{
 											"label": "exists",
 										},
 										DNSNames: []string{"example.com"},
 									},
-									HTTP01: &v1alpha1.ACMEChallengeSolverHTTP01{
-										Ingress: &v1alpha1.ACMEChallengeSolverHTTP01Ingress{
+									HTTP01: &v1alpha2.ACMEChallengeSolverHTTP01{
+										Ingress: &v1alpha2.ACMEChallengeSolverHTTP01Ingress{
 											Name: "example-com-dns-name-labels-selector-solver",
 										},
 									},
@@ -482,34 +482,34 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 					},
 				},
 			},
-			order: &v1alpha1.Order{
+			order: &v1alpha2.Order{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: map[string]string{
 						"label": "exists",
 					},
 				},
-				Spec: v1alpha1.OrderSpec{
+				Spec: v1alpha2.OrderSpec{
 					DNSNames: []string{"example.com"},
 				},
 			},
-			authz: &v1alpha1.ACMEAuthorization{
+			authz: &v1alpha2.ACMEAuthorization{
 				Identifier: "example.com",
-				Challenges: []v1alpha1.ACMEChallenge{*acmeChallengeHTTP01},
+				Challenges: []v1alpha2.ACMEChallenge{*acmeChallengeHTTP01},
 			},
-			expectedChallengeSpec: &v1alpha1.ChallengeSpec{
+			expectedChallengeSpec: &v1alpha2.ChallengeSpec{
 				Type:    "http-01",
 				DNSName: "example.com",
 				Token:   acmeChallengeHTTP01.Token,
 				Key:     "http01",
-				Solver: &v1alpha1.ACMEChallengeSolver{
-					Selector: &v1alpha1.CertificateDNSNameSelector{
+				Solver: &v1alpha2.ACMEChallengeSolver{
+					Selector: &v1alpha2.CertificateDNSNameSelector{
 						MatchLabels: map[string]string{
 							"label": "exists",
 						},
 						DNSNames: []string{"example.com"},
 					},
-					HTTP01: &v1alpha1.ACMEChallengeSolverHTTP01{
-						Ingress: &v1alpha1.ACMEChallengeSolverHTTP01Ingress{
+					HTTP01: &v1alpha2.ACMEChallengeSolverHTTP01{
+						Ingress: &v1alpha2.ACMEChallengeSolverHTTP01Ingress{
 							Name: "example-com-dns-name-labels-selector-solver",
 						},
 					},
@@ -518,20 +518,20 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 		},
 		"if one solver matches with dnsNames, and the other solver matches with labels, the dnsName solver should be chosen": {
 			acmeClient: basicACMEClient,
-			issuer: &v1alpha1.Issuer{
-				Spec: v1alpha1.IssuerSpec{
-					IssuerConfig: v1alpha1.IssuerConfig{
-						ACME: &v1alpha1.ACMEIssuer{
-							Solvers: []v1alpha1.ACMEChallengeSolver{
+			issuer: &v1alpha2.Issuer{
+				Spec: v1alpha2.IssuerSpec{
+					IssuerConfig: v1alpha2.IssuerConfig{
+						ACME: &v1alpha2.ACMEIssuer{
+							Solvers: []v1alpha2.ACMEChallengeSolver{
 								exampleComDNSNameSelectorSolver,
 								{
-									Selector: &v1alpha1.CertificateDNSNameSelector{
+									Selector: &v1alpha2.CertificateDNSNameSelector{
 										MatchLabels: map[string]string{
 											"label": "exists",
 										},
 									},
-									HTTP01: &v1alpha1.ACMEChallengeSolverHTTP01{
-										Ingress: &v1alpha1.ACMEChallengeSolverHTTP01Ingress{
+									HTTP01: &v1alpha2.ACMEChallengeSolverHTTP01{
+										Ingress: &v1alpha2.ACMEChallengeSolverHTTP01Ingress{
 											Name: "example-com-labels-selector-solver",
 										},
 									},
@@ -541,21 +541,21 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 					},
 				},
 			},
-			order: &v1alpha1.Order{
+			order: &v1alpha2.Order{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: map[string]string{
 						"label": "exists",
 					},
 				},
-				Spec: v1alpha1.OrderSpec{
+				Spec: v1alpha2.OrderSpec{
 					DNSNames: []string{"example.com"},
 				},
 			},
-			authz: &v1alpha1.ACMEAuthorization{
+			authz: &v1alpha2.ACMEAuthorization{
 				Identifier: "example.com",
-				Challenges: []v1alpha1.ACMEChallenge{*acmeChallengeHTTP01},
+				Challenges: []v1alpha2.ACMEChallenge{*acmeChallengeHTTP01},
 			},
-			expectedChallengeSpec: &v1alpha1.ChallengeSpec{
+			expectedChallengeSpec: &v1alpha2.ChallengeSpec{
 				Type:    "http-01",
 				DNSName: "example.com",
 				Token:   acmeChallengeHTTP01.Token,
@@ -567,19 +567,19 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 		// order to ensure that this behaviour isn't just incidental
 		"if one solver matches with dnsNames, and the other solver matches with labels, the dnsName solver should be chosen (solvers listed in reverse order)": {
 			acmeClient: basicACMEClient,
-			issuer: &v1alpha1.Issuer{
-				Spec: v1alpha1.IssuerSpec{
-					IssuerConfig: v1alpha1.IssuerConfig{
-						ACME: &v1alpha1.ACMEIssuer{
-							Solvers: []v1alpha1.ACMEChallengeSolver{
+			issuer: &v1alpha2.Issuer{
+				Spec: v1alpha2.IssuerSpec{
+					IssuerConfig: v1alpha2.IssuerConfig{
+						ACME: &v1alpha2.ACMEIssuer{
+							Solvers: []v1alpha2.ACMEChallengeSolver{
 								{
-									Selector: &v1alpha1.CertificateDNSNameSelector{
+									Selector: &v1alpha2.CertificateDNSNameSelector{
 										MatchLabels: map[string]string{
 											"label": "exists",
 										},
 									},
-									HTTP01: &v1alpha1.ACMEChallengeSolverHTTP01{
-										Ingress: &v1alpha1.ACMEChallengeSolverHTTP01Ingress{
+									HTTP01: &v1alpha2.ACMEChallengeSolverHTTP01{
+										Ingress: &v1alpha2.ACMEChallengeSolverHTTP01Ingress{
 											Name: "example-com-labels-selector-solver",
 										},
 									},
@@ -590,21 +590,21 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 					},
 				},
 			},
-			order: &v1alpha1.Order{
+			order: &v1alpha2.Order{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: map[string]string{
 						"label": "exists",
 					},
 				},
-				Spec: v1alpha1.OrderSpec{
+				Spec: v1alpha2.OrderSpec{
 					DNSNames: []string{"example.com"},
 				},
 			},
-			authz: &v1alpha1.ACMEAuthorization{
+			authz: &v1alpha2.ACMEAuthorization{
 				Identifier: "example.com",
-				Challenges: []v1alpha1.ACMEChallenge{*acmeChallengeHTTP01},
+				Challenges: []v1alpha2.ACMEChallenge{*acmeChallengeHTTP01},
 			},
-			expectedChallengeSpec: &v1alpha1.ChallengeSpec{
+			expectedChallengeSpec: &v1alpha2.ChallengeSpec{
 				Type:    "http-01",
 				DNSName: "example.com",
 				Token:   acmeChallengeHTTP01.Token,
@@ -614,21 +614,21 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 		},
 		"if one solver matches with dnsNames, and the other solver matches with 2 labels, the dnsName solver should be chosen": {
 			acmeClient: basicACMEClient,
-			issuer: &v1alpha1.Issuer{
-				Spec: v1alpha1.IssuerSpec{
-					IssuerConfig: v1alpha1.IssuerConfig{
-						ACME: &v1alpha1.ACMEIssuer{
-							Solvers: []v1alpha1.ACMEChallengeSolver{
+			issuer: &v1alpha2.Issuer{
+				Spec: v1alpha2.IssuerSpec{
+					IssuerConfig: v1alpha2.IssuerConfig{
+						ACME: &v1alpha2.ACMEIssuer{
+							Solvers: []v1alpha2.ACMEChallengeSolver{
 								exampleComDNSNameSelectorSolver,
 								{
-									Selector: &v1alpha1.CertificateDNSNameSelector{
+									Selector: &v1alpha2.CertificateDNSNameSelector{
 										MatchLabels: map[string]string{
 											"label":   "exists",
 											"another": "label",
 										},
 									},
-									HTTP01: &v1alpha1.ACMEChallengeSolverHTTP01{
-										Ingress: &v1alpha1.ACMEChallengeSolverHTTP01Ingress{
+									HTTP01: &v1alpha2.ACMEChallengeSolverHTTP01{
+										Ingress: &v1alpha2.ACMEChallengeSolverHTTP01Ingress{
 											Name: "example-com-labels-selector-solver",
 										},
 									},
@@ -638,22 +638,22 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 					},
 				},
 			},
-			order: &v1alpha1.Order{
+			order: &v1alpha2.Order{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: map[string]string{
 						"label":   "exists",
 						"another": "label",
 					},
 				},
-				Spec: v1alpha1.OrderSpec{
+				Spec: v1alpha2.OrderSpec{
 					DNSNames: []string{"example.com"},
 				},
 			},
-			authz: &v1alpha1.ACMEAuthorization{
+			authz: &v1alpha2.ACMEAuthorization{
 				Identifier: "example.com",
-				Challenges: []v1alpha1.ACMEChallenge{*acmeChallengeHTTP01},
+				Challenges: []v1alpha2.ACMEChallenge{*acmeChallengeHTTP01},
 			},
-			expectedChallengeSpec: &v1alpha1.ChallengeSpec{
+			expectedChallengeSpec: &v1alpha2.ChallengeSpec{
 				Type:    "http-01",
 				DNSName: "example.com",
 				Token:   acmeChallengeHTTP01.Token,
@@ -663,32 +663,32 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 		},
 		"should choose the solver with the most labels matching if multiple match": {
 			acmeClient: basicACMEClient,
-			issuer: &v1alpha1.Issuer{
-				Spec: v1alpha1.IssuerSpec{
-					IssuerConfig: v1alpha1.IssuerConfig{
-						ACME: &v1alpha1.ACMEIssuer{
-							Solvers: []v1alpha1.ACMEChallengeSolver{
+			issuer: &v1alpha2.Issuer{
+				Spec: v1alpha2.IssuerSpec{
+					IssuerConfig: v1alpha2.IssuerConfig{
+						ACME: &v1alpha2.ACMEIssuer{
+							Solvers: []v1alpha2.ACMEChallengeSolver{
 								{
-									Selector: &v1alpha1.CertificateDNSNameSelector{
+									Selector: &v1alpha2.CertificateDNSNameSelector{
 										MatchLabels: map[string]string{
 											"label": "exists",
 										},
 									},
-									HTTP01: &v1alpha1.ACMEChallengeSolverHTTP01{
-										Ingress: &v1alpha1.ACMEChallengeSolverHTTP01Ingress{
+									HTTP01: &v1alpha2.ACMEChallengeSolverHTTP01{
+										Ingress: &v1alpha2.ACMEChallengeSolverHTTP01Ingress{
 											Name: "example-com-labels-selector-solver",
 										},
 									},
 								},
 								{
-									Selector: &v1alpha1.CertificateDNSNameSelector{
+									Selector: &v1alpha2.CertificateDNSNameSelector{
 										MatchLabels: map[string]string{
 											"label":   "exists",
 											"another": "matches",
 										},
 									},
-									HTTP01: &v1alpha1.ACMEChallengeSolverHTTP01{
-										Ingress: &v1alpha1.ACMEChallengeSolverHTTP01Ingress{
+									HTTP01: &v1alpha2.ACMEChallengeSolverHTTP01{
+										Ingress: &v1alpha2.ACMEChallengeSolverHTTP01Ingress{
 											Name: "example-com-multiple-labels-selector-solver",
 										},
 									},
@@ -698,35 +698,35 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 					},
 				},
 			},
-			order: &v1alpha1.Order{
+			order: &v1alpha2.Order{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: map[string]string{
 						"label":   "exists",
 						"another": "matches",
 					},
 				},
-				Spec: v1alpha1.OrderSpec{
+				Spec: v1alpha2.OrderSpec{
 					DNSNames: []string{"example.com"},
 				},
 			},
-			authz: &v1alpha1.ACMEAuthorization{
+			authz: &v1alpha2.ACMEAuthorization{
 				Identifier: "example.com",
-				Challenges: []v1alpha1.ACMEChallenge{*acmeChallengeHTTP01},
+				Challenges: []v1alpha2.ACMEChallenge{*acmeChallengeHTTP01},
 			},
-			expectedChallengeSpec: &v1alpha1.ChallengeSpec{
+			expectedChallengeSpec: &v1alpha2.ChallengeSpec{
 				Type:    "http-01",
 				DNSName: "example.com",
 				Token:   acmeChallengeHTTP01.Token,
 				Key:     "http01",
-				Solver: &v1alpha1.ACMEChallengeSolver{
-					Selector: &v1alpha1.CertificateDNSNameSelector{
+				Solver: &v1alpha2.ACMEChallengeSolver{
+					Selector: &v1alpha2.CertificateDNSNameSelector{
 						MatchLabels: map[string]string{
 							"label":   "exists",
 							"another": "matches",
 						},
 					},
-					HTTP01: &v1alpha1.ACMEChallengeSolverHTTP01{
-						Ingress: &v1alpha1.ACMEChallengeSolverHTTP01Ingress{
+					HTTP01: &v1alpha2.ACMEChallengeSolverHTTP01{
+						Ingress: &v1alpha2.ACMEChallengeSolverHTTP01Ingress{
 							Name: "example-com-multiple-labels-selector-solver",
 						},
 					},
@@ -735,18 +735,18 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 		},
 		"should match wildcard dnsName solver if authorization has Wildcard=true": {
 			acmeClient: basicACMEClient,
-			issuer: &v1alpha1.Issuer{
-				Spec: v1alpha1.IssuerSpec{
-					IssuerConfig: v1alpha1.IssuerConfig{
-						ACME: &v1alpha1.ACMEIssuer{
-							Solvers: []v1alpha1.ACMEChallengeSolver{
+			issuer: &v1alpha2.Issuer{
+				Spec: v1alpha2.IssuerSpec{
+					IssuerConfig: v1alpha2.IssuerConfig{
+						ACME: &v1alpha2.ACMEIssuer{
+							Solvers: []v1alpha2.ACMEChallengeSolver{
 								emptySelectorSolverDNS01,
 								{
-									Selector: &v1alpha1.CertificateDNSNameSelector{
+									Selector: &v1alpha2.CertificateDNSNameSelector{
 										DNSNames: []string{"*.example.com"},
 									},
-									DNS01: &v1alpha1.ACMEChallengeSolverDNS01{
-										Cloudflare: &v1alpha1.ACMEIssuerDNS01ProviderCloudflare{
+									DNS01: &v1alpha2.ACMEChallengeSolverDNS01{
+										Cloudflare: &v1alpha2.ACMEIssuerDNS01ProviderCloudflare{
 											Email: "example-com-wc-dnsname-selector-solver",
 										},
 									},
@@ -756,28 +756,28 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 					},
 				},
 			},
-			order: &v1alpha1.Order{
-				Spec: v1alpha1.OrderSpec{
+			order: &v1alpha2.Order{
+				Spec: v1alpha2.OrderSpec{
 					DNSNames: []string{"*.example.com"},
 				},
 			},
-			authz: &v1alpha1.ACMEAuthorization{
+			authz: &v1alpha2.ACMEAuthorization{
 				Identifier: "example.com",
 				Wildcard:   true,
-				Challenges: []v1alpha1.ACMEChallenge{*acmeChallengeDNS01},
+				Challenges: []v1alpha2.ACMEChallenge{*acmeChallengeDNS01},
 			},
-			expectedChallengeSpec: &v1alpha1.ChallengeSpec{
+			expectedChallengeSpec: &v1alpha2.ChallengeSpec{
 				Type:     "dns-01",
 				DNSName:  "example.com",
 				Wildcard: true,
 				Token:    acmeChallengeDNS01.Token,
 				Key:      "dns01",
-				Solver: &v1alpha1.ACMEChallengeSolver{
-					Selector: &v1alpha1.CertificateDNSNameSelector{
+				Solver: &v1alpha2.ACMEChallengeSolver{
+					Selector: &v1alpha2.CertificateDNSNameSelector{
 						DNSNames: []string{"*.example.com"},
 					},
-					DNS01: &v1alpha1.ACMEChallengeSolverDNS01{
-						Cloudflare: &v1alpha1.ACMEIssuerDNS01ProviderCloudflare{
+					DNS01: &v1alpha2.ACMEChallengeSolverDNS01{
+						Cloudflare: &v1alpha2.ACMEIssuerDNS01ProviderCloudflare{
 							Email: "example-com-wc-dnsname-selector-solver",
 						},
 					},
@@ -786,18 +786,18 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 		},
 		"dnsName selectors should take precedence over dnsZone selectors": {
 			acmeClient: basicACMEClient,
-			issuer: &v1alpha1.Issuer{
-				Spec: v1alpha1.IssuerSpec{
-					IssuerConfig: v1alpha1.IssuerConfig{
-						ACME: &v1alpha1.ACMEIssuer{
-							Solvers: []v1alpha1.ACMEChallengeSolver{
+			issuer: &v1alpha2.Issuer{
+				Spec: v1alpha2.IssuerSpec{
+					IssuerConfig: v1alpha2.IssuerConfig{
+						ACME: &v1alpha2.ACMEIssuer{
+							Solvers: []v1alpha2.ACMEChallengeSolver{
 								exampleComDNSNameSelectorSolver,
 								{
-									Selector: &v1alpha1.CertificateDNSNameSelector{
+									Selector: &v1alpha2.CertificateDNSNameSelector{
 										DNSZones: []string{"com"},
 									},
-									HTTP01: &v1alpha1.ACMEChallengeSolverHTTP01{
-										Ingress: &v1alpha1.ACMEChallengeSolverHTTP01Ingress{
+									HTTP01: &v1alpha2.ACMEChallengeSolverHTTP01{
+										Ingress: &v1alpha2.ACMEChallengeSolverHTTP01Ingress{
 											Name: "com-dnszone-selector-solver",
 										},
 									},
@@ -807,16 +807,16 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 					},
 				},
 			},
-			order: &v1alpha1.Order{
-				Spec: v1alpha1.OrderSpec{
+			order: &v1alpha2.Order{
+				Spec: v1alpha2.OrderSpec{
 					DNSNames: []string{"example.com"},
 				},
 			},
-			authz: &v1alpha1.ACMEAuthorization{
+			authz: &v1alpha2.ACMEAuthorization{
 				Identifier: "example.com",
-				Challenges: []v1alpha1.ACMEChallenge{*acmeChallengeHTTP01},
+				Challenges: []v1alpha2.ACMEChallenge{*acmeChallengeHTTP01},
 			},
-			expectedChallengeSpec: &v1alpha1.ChallengeSpec{
+			expectedChallengeSpec: &v1alpha2.ChallengeSpec{
 				Type:    "http-01",
 				DNSName: "example.com",
 				Token:   acmeChallengeHTTP01.Token,
@@ -826,17 +826,17 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 		},
 		"dnsName selectors should take precedence over dnsZone selectors (reversed order)": {
 			acmeClient: basicACMEClient,
-			issuer: &v1alpha1.Issuer{
-				Spec: v1alpha1.IssuerSpec{
-					IssuerConfig: v1alpha1.IssuerConfig{
-						ACME: &v1alpha1.ACMEIssuer{
-							Solvers: []v1alpha1.ACMEChallengeSolver{
+			issuer: &v1alpha2.Issuer{
+				Spec: v1alpha2.IssuerSpec{
+					IssuerConfig: v1alpha2.IssuerConfig{
+						ACME: &v1alpha2.ACMEIssuer{
+							Solvers: []v1alpha2.ACMEChallengeSolver{
 								{
-									Selector: &v1alpha1.CertificateDNSNameSelector{
+									Selector: &v1alpha2.CertificateDNSNameSelector{
 										DNSZones: []string{"com"},
 									},
-									DNS01: &v1alpha1.ACMEChallengeSolverDNS01{
-										Cloudflare: &v1alpha1.ACMEIssuerDNS01ProviderCloudflare{
+									DNS01: &v1alpha2.ACMEChallengeSolverDNS01{
+										Cloudflare: &v1alpha2.ACMEIssuerDNS01ProviderCloudflare{
 											Email: "com-dnszone-selector-solver",
 										},
 									},
@@ -847,16 +847,16 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 					},
 				},
 			},
-			order: &v1alpha1.Order{
-				Spec: v1alpha1.OrderSpec{
+			order: &v1alpha2.Order{
+				Spec: v1alpha2.OrderSpec{
 					DNSNames: []string{"example.com"},
 				},
 			},
-			authz: &v1alpha1.ACMEAuthorization{
+			authz: &v1alpha2.ACMEAuthorization{
 				Identifier: "example.com",
-				Challenges: []v1alpha1.ACMEChallenge{*acmeChallengeHTTP01},
+				Challenges: []v1alpha2.ACMEChallenge{*acmeChallengeHTTP01},
 			},
-			expectedChallengeSpec: &v1alpha1.ChallengeSpec{
+			expectedChallengeSpec: &v1alpha2.ChallengeSpec{
 				Type:    "http-01",
 				DNSName: "example.com",
 				Token:   acmeChallengeHTTP01.Token,
@@ -866,18 +866,18 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 		},
 		"should allow matching with dnsZones": {
 			acmeClient: basicACMEClient,
-			issuer: &v1alpha1.Issuer{
-				Spec: v1alpha1.IssuerSpec{
-					IssuerConfig: v1alpha1.IssuerConfig{
-						ACME: &v1alpha1.ACMEIssuer{
-							Solvers: []v1alpha1.ACMEChallengeSolver{
+			issuer: &v1alpha2.Issuer{
+				Spec: v1alpha2.IssuerSpec{
+					IssuerConfig: v1alpha2.IssuerConfig{
+						ACME: &v1alpha2.ACMEIssuer{
+							Solvers: []v1alpha2.ACMEChallengeSolver{
 								emptySelectorSolverDNS01,
 								{
-									Selector: &v1alpha1.CertificateDNSNameSelector{
+									Selector: &v1alpha2.CertificateDNSNameSelector{
 										DNSZones: []string{"example.com"},
 									},
-									DNS01: &v1alpha1.ACMEChallengeSolverDNS01{
-										Cloudflare: &v1alpha1.ACMEIssuerDNS01ProviderCloudflare{
+									DNS01: &v1alpha2.ACMEChallengeSolverDNS01{
+										Cloudflare: &v1alpha2.ACMEIssuerDNS01ProviderCloudflare{
 											Email: "example-com-dnszone-selector-solver",
 										},
 									},
@@ -887,28 +887,28 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 					},
 				},
 			},
-			order: &v1alpha1.Order{
-				Spec: v1alpha1.OrderSpec{
+			order: &v1alpha2.Order{
+				Spec: v1alpha2.OrderSpec{
 					DNSNames: []string{"www.example.com"},
 				},
 			},
-			authz: &v1alpha1.ACMEAuthorization{
+			authz: &v1alpha2.ACMEAuthorization{
 				Identifier: "www.example.com",
 				Wildcard:   true,
-				Challenges: []v1alpha1.ACMEChallenge{*acmeChallengeDNS01},
+				Challenges: []v1alpha2.ACMEChallenge{*acmeChallengeDNS01},
 			},
-			expectedChallengeSpec: &v1alpha1.ChallengeSpec{
+			expectedChallengeSpec: &v1alpha2.ChallengeSpec{
 				Type:     "dns-01",
 				DNSName:  "www.example.com",
 				Wildcard: true,
 				Token:    acmeChallengeDNS01.Token,
 				Key:      "dns01",
-				Solver: &v1alpha1.ACMEChallengeSolver{
-					Selector: &v1alpha1.CertificateDNSNameSelector{
+				Solver: &v1alpha2.ACMEChallengeSolver{
+					Selector: &v1alpha2.CertificateDNSNameSelector{
 						DNSZones: []string{"example.com"},
 					},
-					DNS01: &v1alpha1.ACMEChallengeSolverDNS01{
-						Cloudflare: &v1alpha1.ACMEIssuerDNS01ProviderCloudflare{
+					DNS01: &v1alpha2.ACMEChallengeSolverDNS01{
+						Cloudflare: &v1alpha2.ACMEIssuerDNS01ProviderCloudflare{
 							Email: "example-com-dnszone-selector-solver",
 						},
 					},
@@ -917,27 +917,27 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 		},
 		"most specific dnsZone should be selected if multiple match": {
 			acmeClient: basicACMEClient,
-			issuer: &v1alpha1.Issuer{
-				Spec: v1alpha1.IssuerSpec{
-					IssuerConfig: v1alpha1.IssuerConfig{
-						ACME: &v1alpha1.ACMEIssuer{
-							Solvers: []v1alpha1.ACMEChallengeSolver{
+			issuer: &v1alpha2.Issuer{
+				Spec: v1alpha2.IssuerSpec{
+					IssuerConfig: v1alpha2.IssuerConfig{
+						ACME: &v1alpha2.ACMEIssuer{
+							Solvers: []v1alpha2.ACMEChallengeSolver{
 								{
-									Selector: &v1alpha1.CertificateDNSNameSelector{
+									Selector: &v1alpha2.CertificateDNSNameSelector{
 										DNSZones: []string{"example.com"},
 									},
-									DNS01: &v1alpha1.ACMEChallengeSolverDNS01{
-										Cloudflare: &v1alpha1.ACMEIssuerDNS01ProviderCloudflare{
+									DNS01: &v1alpha2.ACMEChallengeSolverDNS01{
+										Cloudflare: &v1alpha2.ACMEIssuerDNS01ProviderCloudflare{
 											Email: "example-com-dnszone-selector-solver",
 										},
 									},
 								},
 								{
-									Selector: &v1alpha1.CertificateDNSNameSelector{
+									Selector: &v1alpha2.CertificateDNSNameSelector{
 										DNSZones: []string{"prod.example.com"},
 									},
-									DNS01: &v1alpha1.ACMEChallengeSolverDNS01{
-										Cloudflare: &v1alpha1.ACMEIssuerDNS01ProviderCloudflare{
+									DNS01: &v1alpha2.ACMEChallengeSolverDNS01{
+										Cloudflare: &v1alpha2.ACMEIssuerDNS01ProviderCloudflare{
 											Email: "prod-example-com-dnszone-selector-solver",
 										},
 									},
@@ -947,28 +947,28 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 					},
 				},
 			},
-			order: &v1alpha1.Order{
-				Spec: v1alpha1.OrderSpec{
+			order: &v1alpha2.Order{
+				Spec: v1alpha2.OrderSpec{
 					DNSNames: []string{"www.prod.example.com"},
 				},
 			},
-			authz: &v1alpha1.ACMEAuthorization{
+			authz: &v1alpha2.ACMEAuthorization{
 				Identifier: "www.prod.example.com",
 				Wildcard:   true,
-				Challenges: []v1alpha1.ACMEChallenge{*acmeChallengeDNS01},
+				Challenges: []v1alpha2.ACMEChallenge{*acmeChallengeDNS01},
 			},
-			expectedChallengeSpec: &v1alpha1.ChallengeSpec{
+			expectedChallengeSpec: &v1alpha2.ChallengeSpec{
 				Type:     "dns-01",
 				DNSName:  "www.prod.example.com",
 				Wildcard: true,
 				Token:    acmeChallengeDNS01.Token,
 				Key:      "dns01",
-				Solver: &v1alpha1.ACMEChallengeSolver{
-					Selector: &v1alpha1.CertificateDNSNameSelector{
+				Solver: &v1alpha2.ACMEChallengeSolver{
+					Selector: &v1alpha2.CertificateDNSNameSelector{
 						DNSZones: []string{"prod.example.com"},
 					},
-					DNS01: &v1alpha1.ACMEChallengeSolverDNS01{
-						Cloudflare: &v1alpha1.ACMEIssuerDNS01ProviderCloudflare{
+					DNS01: &v1alpha2.ACMEChallengeSolverDNS01{
+						Cloudflare: &v1alpha2.ACMEIssuerDNS01ProviderCloudflare{
 							Email: "prod-example-com-dnszone-selector-solver",
 						},
 					},
@@ -977,27 +977,27 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 		},
 		"most specific dnsZone should be selected if multiple match (reversed)": {
 			acmeClient: basicACMEClient,
-			issuer: &v1alpha1.Issuer{
-				Spec: v1alpha1.IssuerSpec{
-					IssuerConfig: v1alpha1.IssuerConfig{
-						ACME: &v1alpha1.ACMEIssuer{
-							Solvers: []v1alpha1.ACMEChallengeSolver{
+			issuer: &v1alpha2.Issuer{
+				Spec: v1alpha2.IssuerSpec{
+					IssuerConfig: v1alpha2.IssuerConfig{
+						ACME: &v1alpha2.ACMEIssuer{
+							Solvers: []v1alpha2.ACMEChallengeSolver{
 								{
-									Selector: &v1alpha1.CertificateDNSNameSelector{
+									Selector: &v1alpha2.CertificateDNSNameSelector{
 										DNSZones: []string{"prod.example.com"},
 									},
-									DNS01: &v1alpha1.ACMEChallengeSolverDNS01{
-										Cloudflare: &v1alpha1.ACMEIssuerDNS01ProviderCloudflare{
+									DNS01: &v1alpha2.ACMEChallengeSolverDNS01{
+										Cloudflare: &v1alpha2.ACMEIssuerDNS01ProviderCloudflare{
 											Email: "prod-example-com-dnszone-selector-solver",
 										},
 									},
 								},
 								{
-									Selector: &v1alpha1.CertificateDNSNameSelector{
+									Selector: &v1alpha2.CertificateDNSNameSelector{
 										DNSZones: []string{"example.com"},
 									},
-									DNS01: &v1alpha1.ACMEChallengeSolverDNS01{
-										Cloudflare: &v1alpha1.ACMEIssuerDNS01ProviderCloudflare{
+									DNS01: &v1alpha2.ACMEChallengeSolverDNS01{
+										Cloudflare: &v1alpha2.ACMEIssuerDNS01ProviderCloudflare{
 											Email: "example-com-dnszone-selector-solver",
 										},
 									},
@@ -1007,28 +1007,28 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 					},
 				},
 			},
-			order: &v1alpha1.Order{
-				Spec: v1alpha1.OrderSpec{
+			order: &v1alpha2.Order{
+				Spec: v1alpha2.OrderSpec{
 					DNSNames: []string{"www.prod.example.com"},
 				},
 			},
-			authz: &v1alpha1.ACMEAuthorization{
+			authz: &v1alpha2.ACMEAuthorization{
 				Identifier: "www.prod.example.com",
 				Wildcard:   true,
-				Challenges: []v1alpha1.ACMEChallenge{*acmeChallengeDNS01},
+				Challenges: []v1alpha2.ACMEChallenge{*acmeChallengeDNS01},
 			},
-			expectedChallengeSpec: &v1alpha1.ChallengeSpec{
+			expectedChallengeSpec: &v1alpha2.ChallengeSpec{
 				Type:     "dns-01",
 				DNSName:  "www.prod.example.com",
 				Wildcard: true,
 				Token:    acmeChallengeDNS01.Token,
 				Key:      "dns01",
-				Solver: &v1alpha1.ACMEChallengeSolver{
-					Selector: &v1alpha1.CertificateDNSNameSelector{
+				Solver: &v1alpha2.ACMEChallengeSolver{
+					Selector: &v1alpha2.CertificateDNSNameSelector{
 						DNSZones: []string{"prod.example.com"},
 					},
-					DNS01: &v1alpha1.ACMEChallengeSolverDNS01{
-						Cloudflare: &v1alpha1.ACMEIssuerDNS01ProviderCloudflare{
+					DNS01: &v1alpha2.ACMEChallengeSolverDNS01{
+						Cloudflare: &v1alpha2.ACMEIssuerDNS01ProviderCloudflare{
 							Email: "prod-example-com-dnszone-selector-solver",
 						},
 					},
@@ -1037,30 +1037,30 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 		},
 		"if two solvers specify the same dnsZone, the one with the most labels should be chosen": {
 			acmeClient: basicACMEClient,
-			issuer: &v1alpha1.Issuer{
-				Spec: v1alpha1.IssuerSpec{
-					IssuerConfig: v1alpha1.IssuerConfig{
-						ACME: &v1alpha1.ACMEIssuer{
-							Solvers: []v1alpha1.ACMEChallengeSolver{
+			issuer: &v1alpha2.Issuer{
+				Spec: v1alpha2.IssuerSpec{
+					IssuerConfig: v1alpha2.IssuerConfig{
+						ACME: &v1alpha2.ACMEIssuer{
+							Solvers: []v1alpha2.ACMEChallengeSolver{
 								{
-									Selector: &v1alpha1.CertificateDNSNameSelector{
+									Selector: &v1alpha2.CertificateDNSNameSelector{
 										DNSZones: []string{"example.com"},
 									},
-									HTTP01: &v1alpha1.ACMEChallengeSolverHTTP01{
-										Ingress: &v1alpha1.ACMEChallengeSolverHTTP01Ingress{
+									HTTP01: &v1alpha2.ACMEChallengeSolverHTTP01{
+										Ingress: &v1alpha2.ACMEChallengeSolverHTTP01Ingress{
 											Name: "example-com-dnszone-selector-solver",
 										},
 									},
 								},
 								{
-									Selector: &v1alpha1.CertificateDNSNameSelector{
+									Selector: &v1alpha2.CertificateDNSNameSelector{
 										MatchLabels: map[string]string{
 											"label": "exists",
 										},
 										DNSZones: []string{"example.com"},
 									},
-									HTTP01: &v1alpha1.ACMEChallengeSolverHTTP01{
-										Ingress: &v1alpha1.ACMEChallengeSolverHTTP01Ingress{
+									HTTP01: &v1alpha2.ACMEChallengeSolverHTTP01{
+										Ingress: &v1alpha2.ACMEChallengeSolverHTTP01Ingress{
 											Name: "example-com-dnszone-labels-selector-solver",
 										},
 									},
@@ -1070,34 +1070,34 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 					},
 				},
 			},
-			order: &v1alpha1.Order{
+			order: &v1alpha2.Order{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: map[string]string{
 						"label": "exists",
 					},
 				},
-				Spec: v1alpha1.OrderSpec{
+				Spec: v1alpha2.OrderSpec{
 					DNSNames: []string{"www.example.com"},
 				},
 			},
-			authz: &v1alpha1.ACMEAuthorization{
+			authz: &v1alpha2.ACMEAuthorization{
 				Identifier: "www.example.com",
-				Challenges: []v1alpha1.ACMEChallenge{*acmeChallengeHTTP01},
+				Challenges: []v1alpha2.ACMEChallenge{*acmeChallengeHTTP01},
 			},
-			expectedChallengeSpec: &v1alpha1.ChallengeSpec{
+			expectedChallengeSpec: &v1alpha2.ChallengeSpec{
 				Type:    "http-01",
 				DNSName: "www.example.com",
 				Token:   acmeChallengeHTTP01.Token,
 				Key:     "http01",
-				Solver: &v1alpha1.ACMEChallengeSolver{
-					Selector: &v1alpha1.CertificateDNSNameSelector{
+				Solver: &v1alpha2.ACMEChallengeSolver{
+					Selector: &v1alpha2.CertificateDNSNameSelector{
 						MatchLabels: map[string]string{
 							"label": "exists",
 						},
 						DNSZones: []string{"example.com"},
 					},
-					HTTP01: &v1alpha1.ACMEChallengeSolverHTTP01{
-						Ingress: &v1alpha1.ACMEChallengeSolverHTTP01Ingress{
+					HTTP01: &v1alpha2.ACMEChallengeSolverHTTP01{
+						Ingress: &v1alpha2.ACMEChallengeSolverHTTP01Ingress{
 							Name: "example-com-dnszone-labels-selector-solver",
 						},
 					},
@@ -1106,28 +1106,28 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 		},
 		"if both solvers match dnsNames, and one also matches dnsZones, choose the one that matches dnsZones": {
 			acmeClient: basicACMEClient,
-			issuer: &v1alpha1.Issuer{
-				Spec: v1alpha1.IssuerSpec{
-					IssuerConfig: v1alpha1.IssuerConfig{
-						ACME: &v1alpha1.ACMEIssuer{
-							Solvers: []v1alpha1.ACMEChallengeSolver{
+			issuer: &v1alpha2.Issuer{
+				Spec: v1alpha2.IssuerSpec{
+					IssuerConfig: v1alpha2.IssuerConfig{
+						ACME: &v1alpha2.ACMEIssuer{
+							Solvers: []v1alpha2.ACMEChallengeSolver{
 								{
-									Selector: &v1alpha1.CertificateDNSNameSelector{
+									Selector: &v1alpha2.CertificateDNSNameSelector{
 										DNSNames: []string{"www.example.com"},
 									},
-									HTTP01: &v1alpha1.ACMEChallengeSolverHTTP01{
-										Ingress: &v1alpha1.ACMEChallengeSolverHTTP01Ingress{
+									HTTP01: &v1alpha2.ACMEChallengeSolverHTTP01{
+										Ingress: &v1alpha2.ACMEChallengeSolverHTTP01Ingress{
 											Name: "example-com-dnsname-selector-solver",
 										},
 									},
 								},
 								{
-									Selector: &v1alpha1.CertificateDNSNameSelector{
+									Selector: &v1alpha2.CertificateDNSNameSelector{
 										DNSZones: []string{"example.com"},
 										DNSNames: []string{"www.example.com"},
 									},
-									HTTP01: &v1alpha1.ACMEChallengeSolverHTTP01{
-										Ingress: &v1alpha1.ACMEChallengeSolverHTTP01Ingress{
+									HTTP01: &v1alpha2.ACMEChallengeSolverHTTP01{
+										Ingress: &v1alpha2.ACMEChallengeSolverHTTP01Ingress{
 											Name: "example-com-dnsname-dnszone-selector-solver",
 										},
 									},
@@ -1137,27 +1137,27 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 					},
 				},
 			},
-			order: &v1alpha1.Order{
-				Spec: v1alpha1.OrderSpec{
+			order: &v1alpha2.Order{
+				Spec: v1alpha2.OrderSpec{
 					DNSNames: []string{"www.example.com"},
 				},
 			},
-			authz: &v1alpha1.ACMEAuthorization{
+			authz: &v1alpha2.ACMEAuthorization{
 				Identifier: "www.example.com",
-				Challenges: []v1alpha1.ACMEChallenge{*acmeChallengeHTTP01},
+				Challenges: []v1alpha2.ACMEChallenge{*acmeChallengeHTTP01},
 			},
-			expectedChallengeSpec: &v1alpha1.ChallengeSpec{
+			expectedChallengeSpec: &v1alpha2.ChallengeSpec{
 				Type:    "http-01",
 				DNSName: "www.example.com",
 				Token:   acmeChallengeHTTP01.Token,
 				Key:     "http01",
-				Solver: &v1alpha1.ACMEChallengeSolver{
-					Selector: &v1alpha1.CertificateDNSNameSelector{
+				Solver: &v1alpha2.ACMEChallengeSolver{
+					Selector: &v1alpha2.CertificateDNSNameSelector{
 						DNSZones: []string{"example.com"},
 						DNSNames: []string{"www.example.com"},
 					},
-					HTTP01: &v1alpha1.ACMEChallengeSolverHTTP01{
-						Ingress: &v1alpha1.ACMEChallengeSolverHTTP01Ingress{
+					HTTP01: &v1alpha2.ACMEChallengeSolverHTTP01{
+						Ingress: &v1alpha2.ACMEChallengeSolverHTTP01Ingress{
 							Name: "example-com-dnsname-dnszone-selector-solver",
 						},
 					},
@@ -1166,28 +1166,28 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 		},
 		"if both solvers match dnsNames, and one also matches dnsZones, choose the one that matches dnsZones (reversed)": {
 			acmeClient: basicACMEClient,
-			issuer: &v1alpha1.Issuer{
-				Spec: v1alpha1.IssuerSpec{
-					IssuerConfig: v1alpha1.IssuerConfig{
-						ACME: &v1alpha1.ACMEIssuer{
-							Solvers: []v1alpha1.ACMEChallengeSolver{
+			issuer: &v1alpha2.Issuer{
+				Spec: v1alpha2.IssuerSpec{
+					IssuerConfig: v1alpha2.IssuerConfig{
+						ACME: &v1alpha2.ACMEIssuer{
+							Solvers: []v1alpha2.ACMEChallengeSolver{
 								{
-									Selector: &v1alpha1.CertificateDNSNameSelector{
+									Selector: &v1alpha2.CertificateDNSNameSelector{
 										DNSZones: []string{"example.com"},
 										DNSNames: []string{"www.example.com"},
 									},
-									HTTP01: &v1alpha1.ACMEChallengeSolverHTTP01{
-										Ingress: &v1alpha1.ACMEChallengeSolverHTTP01Ingress{
+									HTTP01: &v1alpha2.ACMEChallengeSolverHTTP01{
+										Ingress: &v1alpha2.ACMEChallengeSolverHTTP01Ingress{
 											Name: "example-com-dnsname-dnszone-selector-solver",
 										},
 									},
 								},
 								{
-									Selector: &v1alpha1.CertificateDNSNameSelector{
+									Selector: &v1alpha2.CertificateDNSNameSelector{
 										DNSNames: []string{"www.example.com"},
 									},
-									HTTP01: &v1alpha1.ACMEChallengeSolverHTTP01{
-										Ingress: &v1alpha1.ACMEChallengeSolverHTTP01Ingress{
+									HTTP01: &v1alpha2.ACMEChallengeSolverHTTP01{
+										Ingress: &v1alpha2.ACMEChallengeSolverHTTP01Ingress{
 											Name: "example-com-dnsname-selector-solver",
 										},
 									},
@@ -1197,27 +1197,27 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 					},
 				},
 			},
-			order: &v1alpha1.Order{
-				Spec: v1alpha1.OrderSpec{
+			order: &v1alpha2.Order{
+				Spec: v1alpha2.OrderSpec{
 					DNSNames: []string{"www.example.com"},
 				},
 			},
-			authz: &v1alpha1.ACMEAuthorization{
+			authz: &v1alpha2.ACMEAuthorization{
 				Identifier: "www.example.com",
-				Challenges: []v1alpha1.ACMEChallenge{*acmeChallengeHTTP01},
+				Challenges: []v1alpha2.ACMEChallenge{*acmeChallengeHTTP01},
 			},
-			expectedChallengeSpec: &v1alpha1.ChallengeSpec{
+			expectedChallengeSpec: &v1alpha2.ChallengeSpec{
 				Type:    "http-01",
 				DNSName: "www.example.com",
 				Token:   acmeChallengeHTTP01.Token,
 				Key:     "http01",
-				Solver: &v1alpha1.ACMEChallengeSolver{
-					Selector: &v1alpha1.CertificateDNSNameSelector{
+				Solver: &v1alpha2.ACMEChallengeSolver{
+					Selector: &v1alpha2.CertificateDNSNameSelector{
 						DNSZones: []string{"example.com"},
 						DNSNames: []string{"www.example.com"},
 					},
-					HTTP01: &v1alpha1.ACMEChallengeSolverHTTP01{
-						Ingress: &v1alpha1.ACMEChallengeSolverHTTP01Ingress{
+					HTTP01: &v1alpha2.ACMEChallengeSolverHTTP01{
+						Ingress: &v1alpha2.ACMEChallengeSolverHTTP01Ingress{
 							Name: "example-com-dnsname-dnszone-selector-solver",
 						},
 					},
@@ -1226,11 +1226,11 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 		},
 		"uses correct solver when selector explicitly names dnsName (reversed)": {
 			acmeClient: basicACMEClient,
-			issuer: &v1alpha1.Issuer{
-				Spec: v1alpha1.IssuerSpec{
-					IssuerConfig: v1alpha1.IssuerConfig{
-						ACME: &v1alpha1.ACMEIssuer{
-							Solvers: []v1alpha1.ACMEChallengeSolver{
+			issuer: &v1alpha2.Issuer{
+				Spec: v1alpha2.IssuerSpec{
+					IssuerConfig: v1alpha2.IssuerConfig{
+						ACME: &v1alpha2.ACMEIssuer{
+							Solvers: []v1alpha2.ACMEChallengeSolver{
 								exampleComDNSNameSelectorSolver,
 								emptySelectorSolverHTTP01,
 							},
@@ -1238,16 +1238,16 @@ func TestChallengeSpecForAuthorization(t *testing.T) {
 					},
 				},
 			},
-			order: &v1alpha1.Order{
-				Spec: v1alpha1.OrderSpec{
+			order: &v1alpha2.Order{
+				Spec: v1alpha2.OrderSpec{
 					DNSNames: []string{"example.com"},
 				},
 			},
-			authz: &v1alpha1.ACMEAuthorization{
+			authz: &v1alpha2.ACMEAuthorization{
 				Identifier: "example.com",
-				Challenges: []v1alpha1.ACMEChallenge{*acmeChallengeHTTP01},
+				Challenges: []v1alpha2.ACMEChallenge{*acmeChallengeHTTP01},
 			},
-			expectedChallengeSpec: &v1alpha1.ChallengeSpec{
+			expectedChallengeSpec: &v1alpha2.ChallengeSpec{
 				Type:    "http-01",
 				DNSName: "example.com",
 				Token:   acmeChallengeHTTP01.Token,

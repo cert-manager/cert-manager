@@ -22,17 +22,17 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 )
 
 func ValidateCertificateRequest(obj runtime.Object) field.ErrorList {
-	cr := obj.(*v1alpha1.CertificateRequest)
+	cr := obj.(*v1alpha2.CertificateRequest)
 	allErrs := ValidateCertificateRequestSpec(&cr.Spec, field.NewPath("spec"))
 	return allErrs
 }
 
-func ValidateCertificateRequestSpec(crSpec *v1alpha1.CertificateRequestSpec, fldPath *field.Path) field.ErrorList {
+func ValidateCertificateRequestSpec(crSpec *v1alpha2.CertificateRequestSpec, fldPath *field.Path) field.ErrorList {
 	el := field.ErrorList{}
 
 	el = append(el, validateIssuerRef(crSpec.IssuerRef, fldPath)...)

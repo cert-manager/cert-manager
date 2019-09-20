@@ -1,7 +1,7 @@
 apiVersion: apiregistration.k8s.io/v1beta1
 kind: APIService
 metadata:
-  name: v1alpha1.{{ .Values.groupName }}
+  name: v1alpha2.{{ .Values.groupName }}
   labels:
     app: {{ include "example-webhook.name" . }}
     chart: {{ include "example-webhook.chart" . }}
@@ -16,4 +16,4 @@ spec:
   service:
     name: {{ include "example-webhook.fullname" . }}
     namespace: {{ .Release.Namespace }}
-  version: v1alpha1
+  version: v1alpha2

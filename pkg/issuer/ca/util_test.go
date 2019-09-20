@@ -20,7 +20,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	"github.com/jetstack/cert-manager/pkg/controller/test"
 )
 
@@ -33,9 +33,9 @@ type caFixture struct {
 	CA *CA
 	*test.Builder
 
-	Issuer             v1alpha1.GenericIssuer
-	Certificate        *v1alpha1.Certificate
-	CertificateRequest *v1alpha1.CertificateRequest
+	Issuer             v1alpha2.GenericIssuer
+	Certificate        *v1alpha2.Certificate
+	CertificateRequest *v1alpha2.CertificateRequest
 
 	PreFn   func(*testing.T, *caFixture)
 	CheckFn func(*testing.T, *caFixture, ...interface{})
@@ -46,10 +46,10 @@ type caFixture struct {
 
 func (s *caFixture) Setup(t *testing.T) {
 	if s.Issuer == nil {
-		s.Issuer = &v1alpha1.Issuer{
-			Spec: v1alpha1.IssuerSpec{
-				IssuerConfig: v1alpha1.IssuerConfig{
-					ACME: &v1alpha1.ACMEIssuer{},
+		s.Issuer = &v1alpha2.Issuer{
+			Spec: v1alpha2.IssuerSpec{
+				IssuerConfig: v1alpha2.IssuerConfig{
+					ACME: &v1alpha2.ACMEIssuer{},
 				},
 			},
 		}
@@ -92,7 +92,7 @@ func (s *caFixture) Finish(t *testing.T, args ...interface{}) {
 	}
 }
 
-func (s *caFixture) buildFakeCA(b *test.Builder, issuer v1alpha1.GenericIssuer) *CA {
+func (s *caFixture) buildFakeCA(b *test.Builder, issuer v1alpha2.GenericIssuer) *CA {
 	b.Init()
 	a, err := NewCA(b.Context, issuer)
 	if err != nil {

@@ -21,13 +21,13 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	"github.com/jetstack/cert-manager/pkg/util"
 )
 
-func buildCertificate(cn string, dnsNames ...string) *v1alpha1.Certificate {
-	return &v1alpha1.Certificate{
-		Spec: v1alpha1.CertificateSpec{
+func buildCertificate(cn string, dnsNames ...string) *v1alpha2.Certificate {
+	return &v1alpha2.Certificate{
+		Spec: v1alpha2.CertificateSpec{
 			CommonName: cn,
 			DNSNames:   dnsNames,
 		},
@@ -37,7 +37,7 @@ func buildCertificate(cn string, dnsNames ...string) *v1alpha1.Certificate {
 func TestBuildUsages(t *testing.T) {
 	type testT struct {
 		name                string
-		usages              []v1alpha1.KeyUsage
+		usages              []v1alpha2.KeyUsage
 		isCa                bool
 		expectedKeyUsage    x509.KeyUsage
 		expectedExtKeyUsage []x509.ExtKeyUsage
@@ -46,43 +46,43 @@ func TestBuildUsages(t *testing.T) {
 	tests := []testT{
 		{
 			name:             "default",
-			usages:           []v1alpha1.KeyUsage{},
+			usages:           []v1alpha2.KeyUsage{},
 			expectedKeyUsage: x509.KeyUsageDigitalSignature | x509.KeyUsageKeyEncipherment,
 			expectedError:    false,
 		},
 		{
 			name:             "isCa",
-			usages:           []v1alpha1.KeyUsage{},
+			usages:           []v1alpha2.KeyUsage{},
 			isCa:             true,
 			expectedKeyUsage: x509.KeyUsageDigitalSignature | x509.KeyUsageKeyEncipherment | x509.KeyUsageCertSign,
 			expectedError:    false,
 		},
 		{
 			name:             "existing keyusage",
-			usages:           []v1alpha1.KeyUsage{"crl sign"},
+			usages:           []v1alpha2.KeyUsage{"crl sign"},
 			expectedKeyUsage: x509.KeyUsageCRLSign,
 			expectedError:    false,
 		},
 		{
 			name:          "nonexisting keyusage error",
-			usages:        []v1alpha1.KeyUsage{"nonexistant"},
+			usages:        []v1alpha2.KeyUsage{"nonexistant"},
 			expectedError: true,
 		},
 		{
 			name:             "duplicate keyusage",
-			usages:           []v1alpha1.KeyUsage{"signing", "signing"},
+			usages:           []v1alpha2.KeyUsage{"signing", "signing"},
 			expectedKeyUsage: x509.KeyUsageDigitalSignature,
 			expectedError:    false,
 		},
 		{
 			name:                "existing extkeyusage",
-			usages:              []v1alpha1.KeyUsage{"server auth"},
+			usages:              []v1alpha2.KeyUsage{"server auth"},
 			expectedExtKeyUsage: []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
 			expectedError:       false,
 		},
 		{
 			name:                "duplicate extkeyusage",
-			usages:              []v1alpha1.KeyUsage{"s/mime", "s/mime"},
+			usages:              []v1alpha2.KeyUsage{"s/mime", "s/mime"},
 			expectedExtKeyUsage: []x509.ExtKeyUsage{x509.ExtKeyUsageEmailProtection, x509.ExtKeyUsageEmailProtection},
 			expectedError:       false,
 		},
@@ -218,7 +218,7 @@ func TestDNSNamesForCertificate(t *testing.T) {
 func TestSignatureAlgorithmForCertificate(t *testing.T) {
 	type testT struct {
 		name            string
-		keyAlgo         v1alpha1.KeyAlgorithm
+		keyAlgo         v1alpha2.KeyAlgorithm
 		keySize         int
 		expectErr       bool
 		expectedSigAlgo x509.SignatureAlgorithm
@@ -228,79 +228,79 @@ func TestSignatureAlgorithmForCertificate(t *testing.T) {
 	tests := []testT{
 		{
 			name:      "certificate with KeyAlgorithm rsa and size 1024",
-			keyAlgo:   v1alpha1.RSAKeyAlgorithm,
+			keyAlgo:   v1alpha2.RSAKeyAlgorithm,
 			keySize:   1024,
 			expectErr: true,
 		},
 		{
 			name:            "certificate with KeyAlgorithm rsa and no size set should default to rsa256",
-			keyAlgo:         v1alpha1.RSAKeyAlgorithm,
+			keyAlgo:         v1alpha2.RSAKeyAlgorithm,
 			expectedSigAlgo: x509.SHA256WithRSA,
 			expectedKeyType: x509.RSA,
 		},
 		{
 			name:            "certificate with KeyAlgorithm not set",
-			keyAlgo:         v1alpha1.KeyAlgorithm(""),
+			keyAlgo:         v1alpha2.KeyAlgorithm(""),
 			expectedSigAlgo: x509.SHA256WithRSA,
 			expectedKeyType: x509.RSA,
 		},
 		{
 			name:            "certificate with KeyAlgorithm rsa and size 2048",
-			keyAlgo:         v1alpha1.RSAKeyAlgorithm,
+			keyAlgo:         v1alpha2.RSAKeyAlgorithm,
 			keySize:         2048,
 			expectedSigAlgo: x509.SHA256WithRSA,
 			expectedKeyType: x509.RSA,
 		},
 		{
 			name:            "certificate with KeyAlgorithm rsa and size 3072",
-			keyAlgo:         v1alpha1.RSAKeyAlgorithm,
+			keyAlgo:         v1alpha2.RSAKeyAlgorithm,
 			keySize:         3072,
 			expectedSigAlgo: x509.SHA384WithRSA,
 			expectedKeyType: x509.RSA,
 		},
 		{
 			name:            "certificate with KeyAlgorithm rsa and size 4096",
-			keyAlgo:         v1alpha1.RSAKeyAlgorithm,
+			keyAlgo:         v1alpha2.RSAKeyAlgorithm,
 			keySize:         4096,
 			expectedSigAlgo: x509.SHA512WithRSA,
 			expectedKeyType: x509.RSA,
 		},
 		{
 			name:            "certificate with ecdsa key algorithm set and no key size default to ecdsa256",
-			keyAlgo:         v1alpha1.ECDSAKeyAlgorithm,
+			keyAlgo:         v1alpha2.ECDSAKeyAlgorithm,
 			expectedSigAlgo: x509.ECDSAWithSHA256,
 			expectedKeyType: x509.ECDSA,
 		},
 		{
 			name:            "certificate with KeyAlgorithm ecdsa and size 256",
-			keyAlgo:         v1alpha1.ECDSAKeyAlgorithm,
+			keyAlgo:         v1alpha2.ECDSAKeyAlgorithm,
 			keySize:         256,
 			expectedSigAlgo: x509.ECDSAWithSHA256,
 			expectedKeyType: x509.ECDSA,
 		},
 		{
 			name:            "certificate with KeyAlgorithm ecdsa and size 384",
-			keyAlgo:         v1alpha1.ECDSAKeyAlgorithm,
+			keyAlgo:         v1alpha2.ECDSAKeyAlgorithm,
 			keySize:         384,
 			expectedSigAlgo: x509.ECDSAWithSHA384,
 			expectedKeyType: x509.ECDSA,
 		},
 		{
 			name:            "certificate with KeyAlgorithm ecdsa and size 521",
-			keyAlgo:         v1alpha1.ECDSAKeyAlgorithm,
+			keyAlgo:         v1alpha2.ECDSAKeyAlgorithm,
 			keySize:         521,
 			expectedSigAlgo: x509.ECDSAWithSHA512,
 			expectedKeyType: x509.ECDSA,
 		},
 		{
 			name:      "certificate with KeyAlgorithm ecdsa and size 100",
-			keyAlgo:   v1alpha1.ECDSAKeyAlgorithm,
+			keyAlgo:   v1alpha2.ECDSAKeyAlgorithm,
 			keySize:   100,
 			expectErr: true,
 		},
 		{
 			name:      "certificate with KeyAlgorithm set to unknown key algo",
-			keyAlgo:   v1alpha1.KeyAlgorithm("blah"),
+			keyAlgo:   v1alpha2.KeyAlgorithm("blah"),
 			expectErr: true,
 		},
 	}

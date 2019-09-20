@@ -29,7 +29,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	"github.com/jetstack/cert-manager/pkg/util"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 	"github.com/jetstack/cert-manager/test/e2e/framework/log"
@@ -37,19 +37,19 @@ import (
 
 // WaitForCertificateRequestReady waits for the CertificateRequest resource to
 // enter a Ready state.
-func (h *Helper) WaitForCertificateRequestReady(ns, name string, timeout time.Duration) (*v1alpha1.CertificateRequest, error) {
-	var cr *v1alpha1.CertificateRequest
+func (h *Helper) WaitForCertificateRequestReady(ns, name string, timeout time.Duration) (*v1alpha2.CertificateRequest, error) {
+	var cr *v1alpha2.CertificateRequest
 	err := wait.PollImmediate(time.Second, timeout,
 		func() (bool, error) {
 			var err error
 			log.Logf("Waiting for CertificateRequest %s to be ready", name)
-			cr, err = h.CMClient.CertmanagerV1alpha1().CertificateRequests(ns).Get(name, metav1.GetOptions{})
+			cr, err = h.CMClient.CertmanagerV1alpha2().CertificateRequests(ns).Get(name, metav1.GetOptions{})
 			if err != nil {
 				return false, fmt.Errorf("error getting CertificateRequest %s: %v", name, err)
 			}
-			isReady := apiutil.CertificateRequestHasCondition(cr, v1alpha1.CertificateRequestCondition{
-				Type:   v1alpha1.CertificateRequestConditionReady,
-				Status: v1alpha1.ConditionTrue,
+			isReady := apiutil.CertificateRequestHasCondition(cr, v1alpha2.CertificateRequestCondition{
+				Type:   v1alpha2.CertificateRequestConditionReady,
+				Status: v1alpha2.ConditionTrue,
 			})
 			if !isReady {
 				log.Logf("Expected CertificateReques to have Ready condition 'true' but it has: %v", cr.Status.Conditions)
@@ -70,7 +70,7 @@ func (h *Helper) WaitForCertificateRequestReady(ns, name string, timeout time.Du
 // CertificateRequest has a certificate issued for it, and that the details on
 // the x509 certificate are correct as defined by the CertificateRequest's
 // spec.
-func (h *Helper) ValidateIssuedCertificateRequest(cr *v1alpha1.CertificateRequest, key crypto.Signer, rootCAPEM []byte) (*x509.Certificate, error) {
+func (h *Helper) ValidateIssuedCertificateRequest(cr *v1alpha2.CertificateRequest, key crypto.Signer, rootCAPEM []byte) (*x509.Certificate, error) {
 	csr, err := pki.DecodeX509CertificateRequestBytes(cr.Spec.CSRPEM)
 	if err != nil {
 		return nil, fmt.Errorf("failed to decode CertificateRequest's Spec.CSRPEM: %s", err)
@@ -121,7 +121,7 @@ func (h *Helper) ValidateIssuedCertificateRequest(cr *v1alpha1.CertificateReques
 		expectedDNSName = expectedDNSNames[0]
 	}
 
-	usages := make(map[v1alpha1.KeyUsage]bool)
+	usages := make(map[v1alpha2.KeyUsage]bool)
 	for _, u := range cr.Spec.Usages {
 		usages[u] = true
 	}
@@ -132,7 +132,7 @@ func (h *Helper) ValidateIssuedCertificateRequest(cr *v1alpha1.CertificateReques
 		if cert.KeyUsage&x509.KeyUsageCertSign == 0 {
 			return nil, fmt.Errorf("Expected csr cert to have x509.KeyUsageCertSign bit set but was not")
 		}
-		usages[v1alpha1.UsageCertSign] = true
+		usages[v1alpha2.UsageCertSign] = true
 	}
 
 	if len(cr.Spec.Usages) > 0 {

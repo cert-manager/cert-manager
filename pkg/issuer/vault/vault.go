@@ -20,14 +20,14 @@ import (
 	corelisters "k8s.io/client-go/listers/core/v1"
 
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	"github.com/jetstack/cert-manager/pkg/controller"
 	"github.com/jetstack/cert-manager/pkg/issuer"
 )
 
 type Vault struct {
 	*controller.Context
-	issuer v1alpha1.GenericIssuer
+	issuer v1alpha2.GenericIssuer
 
 	secretsLister corelisters.SecretLister
 
@@ -37,7 +37,7 @@ type Vault struct {
 	resourceNamespace string
 }
 
-func NewVault(ctx *controller.Context, issuer v1alpha1.GenericIssuer) (issuer.Interface, error) {
+func NewVault(ctx *controller.Context, issuer v1alpha2.GenericIssuer) (issuer.Interface, error) {
 	secretsLister := ctx.KubeSharedInformerFactory.Core().V1().Secrets().Lister()
 
 	return &Vault{

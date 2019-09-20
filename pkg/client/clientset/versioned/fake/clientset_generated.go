@@ -20,8 +20,8 @@ package fake
 
 import (
 	clientset "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
-	certmanagerv1alpha1 "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/typed/certmanager/v1alpha1"
-	fakecertmanagerv1alpha1 "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/typed/certmanager/v1alpha1/fake"
+	certmanagerv1alpha2 "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/typed/certmanager/v1alpha2"
+	fakecertmanagerv1alpha2 "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/typed/certmanager/v1alpha2/fake"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/discovery"
@@ -76,7 +76,7 @@ func (c *Clientset) Tracker() testing.ObjectTracker {
 
 var _ clientset.Interface = &Clientset{}
 
-// CertmanagerV1alpha1 retrieves the CertmanagerV1alpha1Client
-func (c *Clientset) CertmanagerV1alpha1() certmanagerv1alpha1.CertmanagerV1alpha1Interface {
-	return &fakecertmanagerv1alpha1.FakeCertmanagerV1alpha1{Fake: &c.Fake}
+// CertmanagerV1alpha2 retrieves the CertmanagerV1alpha2Client
+func (c *Clientset) CertmanagerV1alpha2() certmanagerv1alpha2.CertmanagerV1alpha2Interface {
+	return &fakecertmanagerv1alpha2.FakeCertmanagerV1alpha2{Fake: &c.Fake}
 }

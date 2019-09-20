@@ -21,13 +21,13 @@ import (
 	"sync"
 
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	"github.com/jetstack/cert-manager/pkg/controller"
 )
 
 // issuerConstructor constructs an issuer given an Issuer resource and a Context.
 // An error will be returned if the appropriate issuer is not registered.
-type IssuerConstructor func(*controller.Context, v1alpha1.GenericIssuer) (Interface, error)
+type IssuerConstructor func(*controller.Context, v1alpha2.GenericIssuer) (Interface, error)
 
 var (
 	constructors     = make(map[string]IssuerConstructor)
@@ -49,7 +49,7 @@ func RegisterIssuer(name string, c IssuerConstructor) {
 // It determines which issuer implementation to use by introspecting the
 // given Issuer resource.
 type Factory interface {
-	IssuerFor(v1alpha1.GenericIssuer) (Interface, error)
+	IssuerFor(v1alpha2.GenericIssuer) (Interface, error)
 }
 
 // factory is the default Factory implementation
@@ -68,7 +68,7 @@ func NewFactory(ctx *controller.Context) Factory {
 // A new instance of the Issuer will be returned for each call to IssuerFor,
 // however this is an inexpensive operation and so, Issuers should not need
 // to be cached and reused.
-func (f *factory) IssuerFor(issuer v1alpha1.GenericIssuer) (Interface, error) {
+func (f *factory) IssuerFor(issuer v1alpha2.GenericIssuer) (Interface, error) {
 	issuerType, err := apiutil.NameForIssuer(issuer)
 	if err != nil {
 		return nil, fmt.Errorf("could not get issuer type: %s", err.Error())

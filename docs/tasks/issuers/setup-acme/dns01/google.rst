@@ -58,7 +58,7 @@ Next, create an Issuer (or ClusterIssuer) with a ``clouddns`` provider. An examp
    :linenos:
    :emphasize-lines: 10-16
 
-   apiVersion: certmanager.k8s.io/v1alpha1
+   apiVersion: certmanager.k8s.io/v1alpha2
    kind: Issuer
    metadata:
      name: example-issuer
@@ -83,7 +83,7 @@ Once an Issuer (or ClusterIssuer) has been created successfully a Certificate ca
    :linenos:
    :emphasize-lines: 9-10
 
-   apiVersion: certmanager.k8s.io/v1alpha1
+   apiVersion: certmanager.k8s.io/v1alpha2
    kind: Certificate
    metadata:
      name: example-com

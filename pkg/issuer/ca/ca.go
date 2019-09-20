@@ -20,7 +20,7 @@ import (
 	corelisters "k8s.io/client-go/listers/core/v1"
 
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	"github.com/jetstack/cert-manager/pkg/controller"
 	"github.com/jetstack/cert-manager/pkg/issuer"
 )
@@ -30,7 +30,7 @@ import (
 // used to sign certificates.
 type CA struct {
 	*controller.Context
-	issuer        v1alpha1.GenericIssuer
+	issuer        v1alpha2.GenericIssuer
 	secretsLister corelisters.SecretLister
 
 	// Namespace in which to read resources related to this Issuer from.
@@ -39,7 +39,7 @@ type CA struct {
 	resourceNamespace string
 }
 
-func NewCA(ctx *controller.Context, issuer v1alpha1.GenericIssuer) (issuer.Interface, error) {
+func NewCA(ctx *controller.Context, issuer v1alpha2.GenericIssuer) (issuer.Interface, error) {
 	secretsLister := ctx.KubeSharedInformerFactory.Core().V1().Secrets().Lister()
 
 	return &CA{

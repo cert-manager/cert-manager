@@ -23,10 +23,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 )
 
-func generatePrivateKeyBytes(keyAlgo v1alpha1.KeyAlgorithm, keySize int) ([]byte, error) {
+func generatePrivateKeyBytes(keyAlgo v1alpha2.KeyAlgorithm, keySize int) ([]byte, error) {
 	cert := buildCertificateWithKeyParams(keyAlgo, keySize)
 	privateKey, err := GeneratePrivateKeyForCertificate(cert)
 	if err != nil {
@@ -36,7 +36,7 @@ func generatePrivateKeyBytes(keyAlgo v1alpha1.KeyAlgorithm, keySize int) ([]byte
 	return EncodePrivateKey(privateKey, cert.Spec.KeyEncoding)
 }
 
-func generatePKCS8PrivateKey(keyAlgo v1alpha1.KeyAlgorithm, keySize int) ([]byte, error) {
+func generatePKCS8PrivateKey(keyAlgo v1alpha2.KeyAlgorithm, keySize int) ([]byte, error) {
 	privateKey, err := GeneratePrivateKeyForCertificate(buildCertificateWithKeyParams(keyAlgo, keySize))
 	if err != nil {
 		return nil, err
@@ -48,30 +48,30 @@ func TestDecodePrivateKeyBytes(t *testing.T) {
 	type testT struct {
 		name         string
 		keyBytes     []byte
-		keyAlgo      v1alpha1.KeyAlgorithm
+		keyAlgo      v1alpha2.KeyAlgorithm
 		expectErr    bool
 		expectErrStr string
 	}
 
-	rsaKeyBytes, err := generatePrivateKeyBytes(v1alpha1.RSAKeyAlgorithm, MinRSAKeySize)
+	rsaKeyBytes, err := generatePrivateKeyBytes(v1alpha2.RSAKeyAlgorithm, MinRSAKeySize)
 	if err != nil {
 		t.Errorf("error generating key bytes: %s", err)
 		return
 	}
 
-	pkcs8RsaKeyBytes, err := generatePKCS8PrivateKey(v1alpha1.RSAKeyAlgorithm, MinRSAKeySize)
+	pkcs8RsaKeyBytes, err := generatePKCS8PrivateKey(v1alpha2.RSAKeyAlgorithm, MinRSAKeySize)
 	if err != nil {
 		t.Errorf("error generating key bytes: %s", err)
 		return
 	}
 
-	ecdsaKeyBytes, err := generatePrivateKeyBytes(v1alpha1.ECDSAKeyAlgorithm, 256)
+	ecdsaKeyBytes, err := generatePrivateKeyBytes(v1alpha2.ECDSAKeyAlgorithm, 256)
 	if err != nil {
 		t.Errorf("error generating key bytes: %s", err)
 		return
 	}
 
-	pkcs8EcdsaKeyBytes, err := generatePKCS8PrivateKey(v1alpha1.ECDSAKeyAlgorithm, 256)
+	pkcs8EcdsaKeyBytes, err := generatePKCS8PrivateKey(v1alpha2.ECDSAKeyAlgorithm, 256)
 	if err != nil {
 		t.Errorf("error generating key bytes: %s", err)
 		return
@@ -89,25 +89,25 @@ func TestDecodePrivateKeyBytes(t *testing.T) {
 		{
 			name:      "decode pem encoded rsa private key bytes",
 			keyBytes:  rsaKeyBytes,
-			keyAlgo:   v1alpha1.RSAKeyAlgorithm,
+			keyAlgo:   v1alpha2.RSAKeyAlgorithm,
 			expectErr: false,
 		},
 		{
 			name:      "decode pkcs#8 encoded rsa private key bytes",
 			keyBytes:  pkcs8RsaKeyBytes,
-			keyAlgo:   v1alpha1.RSAKeyAlgorithm,
+			keyAlgo:   v1alpha2.RSAKeyAlgorithm,
 			expectErr: false,
 		},
 		{
 			name:      "decode pem encoded ecdsa private key bytes",
 			keyBytes:  ecdsaKeyBytes,
-			keyAlgo:   v1alpha1.ECDSAKeyAlgorithm,
+			keyAlgo:   v1alpha2.ECDSAKeyAlgorithm,
 			expectErr: false,
 		},
 		{
 			name:      "decode pkcs#8 encoded ecdsa private key bytes",
 			keyBytes:  pkcs8EcdsaKeyBytes,
-			keyAlgo:   v1alpha1.ECDSAKeyAlgorithm,
+			keyAlgo:   v1alpha2.ECDSAKeyAlgorithm,
 			expectErr: false,
 		},
 		{
@@ -151,7 +151,7 @@ func TestDecodePrivateKeyBytes(t *testing.T) {
 					return
 				}
 
-				if test.keyAlgo == v1alpha1.RSAKeyAlgorithm {
+				if test.keyAlgo == v1alpha2.RSAKeyAlgorithm {
 					_, ok := privateKey.(*rsa.PrivateKey)
 					if !ok {
 						t.Errorf("expected rsa private key, but got %T", privateKey)
@@ -159,7 +159,7 @@ func TestDecodePrivateKeyBytes(t *testing.T) {
 					}
 				}
 
-				if test.keyAlgo == v1alpha1.ECDSAKeyAlgorithm {
+				if test.keyAlgo == v1alpha2.ECDSAKeyAlgorithm {
 					_, ok := privateKey.(*ecdsa.PrivateKey)
 					if !ok {
 						t.Errorf("expected ecdsa private key, but got %T", privateKey)

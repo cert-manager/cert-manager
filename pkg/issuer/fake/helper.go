@@ -17,7 +17,7 @@ limitations under the License.
 package fake
 
 import (
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	issuerpkg "github.com/jetstack/cert-manager/pkg/issuer"
 )
 

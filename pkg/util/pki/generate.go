@@ -26,7 +26,7 @@ import (
 	"encoding/pem"
 	"fmt"
 
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 )
 
 const (
@@ -50,9 +50,9 @@ const (
 // the provided cert-manager Certificate resource, taking into account the
 // parameters on the provided resource.
 // The returned key will either be RSA or ECDSA.
-func GeneratePrivateKeyForCertificate(crt *v1alpha1.Certificate) (crypto.Signer, error) {
+func GeneratePrivateKeyForCertificate(crt *v1alpha2.Certificate) (crypto.Signer, error) {
 	switch crt.Spec.KeyAlgorithm {
-	case v1alpha1.KeyAlgorithm(""), v1alpha1.RSAKeyAlgorithm:
+	case v1alpha2.KeyAlgorithm(""), v1alpha2.RSAKeyAlgorithm:
 		keySize := MinRSAKeySize
 
 		if crt.Spec.KeySize > 0 {
@@ -60,7 +60,7 @@ func GeneratePrivateKeyForCertificate(crt *v1alpha1.Certificate) (crypto.Signer,
 		}
 
 		return GenerateRSAPrivateKey(keySize)
-	case v1alpha1.ECDSAKeyAlgorithm:
+	case v1alpha2.ECDSAKeyAlgorithm:
 		keySize := ECCurve256
 
 		if crt.Spec.KeySize > 0 {
@@ -110,9 +110,9 @@ func GenerateECPrivateKey(keySize int) (*ecdsa.PrivateKey, error) {
 // EncodePrivateKey will encode a given crypto.PrivateKey by first inspecting
 // the type of key encoding and then inspecting the type of key provided.
 // It only supports encoding RSA or ECDSA keys.
-func EncodePrivateKey(pk crypto.PrivateKey, keyEncoding v1alpha1.KeyEncoding) ([]byte, error) {
+func EncodePrivateKey(pk crypto.PrivateKey, keyEncoding v1alpha2.KeyEncoding) ([]byte, error) {
 	switch keyEncoding {
-	case v1alpha1.KeyEncoding(""), v1alpha1.PKCS1:
+	case v1alpha2.KeyEncoding(""), v1alpha2.PKCS1:
 		switch k := pk.(type) {
 		case *rsa.PrivateKey:
 			return EncodePKCS1PrivateKey(k), nil
@@ -121,7 +121,7 @@ func EncodePrivateKey(pk crypto.PrivateKey, keyEncoding v1alpha1.KeyEncoding) ([
 		default:
 			return nil, fmt.Errorf("error encoding private key: unknown key type: %T", pk)
 		}
-	case v1alpha1.PKCS8:
+	case v1alpha2.PKCS8:
 		return EncodePKCS8PrivateKey(pk)
 	default:
 		return nil, fmt.Errorf("error encoding private key: unknown key encoding: %s", keyEncoding)

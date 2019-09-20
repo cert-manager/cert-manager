@@ -20,7 +20,7 @@ import (
 	"context"
 	"testing"
 
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	testpkg "github.com/jetstack/cert-manager/pkg/controller/test"
 )
 

@@ -19,7 +19,7 @@ package acme
 import (
 	corev1 "k8s.io/api/core/v1"
 
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 )
 
 // IsFinalState will return true if the given ACME State is a 'final' state.

@@ -30,12 +30,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 )
 
-func buildCertificateWithKeyParams(keyAlgo v1alpha1.KeyAlgorithm, keySize int) *v1alpha1.Certificate {
-	return &v1alpha1.Certificate{
-		Spec: v1alpha1.CertificateSpec{
+func buildCertificateWithKeyParams(keyAlgo v1alpha2.KeyAlgorithm, keySize int) *v1alpha2.Certificate {
+	return &v1alpha2.Certificate{
+		Spec: v1alpha2.CertificateSpec{
 			CommonName:   "test",
 			DNSNames:     []string{"test.test"},
 			KeyAlgorithm: keyAlgo,
@@ -60,7 +60,7 @@ func ecCurveForKeySize(keySize int) (elliptic.Curve, error) {
 func TestGeneratePrivateKeyForCertificate(t *testing.T) {
 	type testT struct {
 		name         string
-		keyAlgo      v1alpha1.KeyAlgorithm
+		keyAlgo      v1alpha2.KeyAlgorithm
 		keySize      int
 		expectErr    bool
 		expectErrStr string
@@ -69,76 +69,76 @@ func TestGeneratePrivateKeyForCertificate(t *testing.T) {
 	tests := []testT{
 		{
 			name:         "rsa key with weak keysize (< 2048)",
-			keyAlgo:      v1alpha1.RSAKeyAlgorithm,
+			keyAlgo:      v1alpha2.RSAKeyAlgorithm,
 			keySize:      1024,
 			expectErr:    true,
 			expectErrStr: "weak rsa key size specified",
 		},
 		{
 			name:         "rsa key with too big keysize (> 8192)",
-			keyAlgo:      v1alpha1.RSAKeyAlgorithm,
+			keyAlgo:      v1alpha2.RSAKeyAlgorithm,
 			keySize:      8196,
 			expectErr:    true,
 			expectErrStr: "rsa key size specified too big",
 		},
 		{
 			name:         "ecdsa key with unsupported keysize",
-			keyAlgo:      v1alpha1.ECDSAKeyAlgorithm,
+			keyAlgo:      v1alpha2.ECDSAKeyAlgorithm,
 			keySize:      100,
 			expectErr:    true,
 			expectErrStr: "unsupported ecdsa key size specified",
 		},
 		{
 			name:         "unsupported key algo specified",
-			keyAlgo:      v1alpha1.KeyAlgorithm("blahblah"),
+			keyAlgo:      v1alpha2.KeyAlgorithm("blahblah"),
 			keySize:      256,
 			expectErr:    true,
 			expectErrStr: "unsupported private key algorithm specified",
 		},
 		{
 			name:      "rsa key with keysize 2048",
-			keyAlgo:   v1alpha1.RSAKeyAlgorithm,
+			keyAlgo:   v1alpha2.RSAKeyAlgorithm,
 			keySize:   2048,
 			expectErr: false,
 		},
 		{
 			name:      "rsa key with keysize 4096",
-			keyAlgo:   v1alpha1.RSAKeyAlgorithm,
+			keyAlgo:   v1alpha2.RSAKeyAlgorithm,
 			keySize:   4096,
 			expectErr: false,
 		},
 		{
 			name:      "ecdsa key with keysize 256",
-			keyAlgo:   v1alpha1.ECDSAKeyAlgorithm,
+			keyAlgo:   v1alpha2.ECDSAKeyAlgorithm,
 			keySize:   256,
 			expectErr: false,
 		},
 		{
 			name:      "ecdsa key with keysize 384",
-			keyAlgo:   v1alpha1.ECDSAKeyAlgorithm,
+			keyAlgo:   v1alpha2.ECDSAKeyAlgorithm,
 			keySize:   384,
 			expectErr: false,
 		},
 		{
 			name:      "ecdsa key with keysize 521",
-			keyAlgo:   v1alpha1.ECDSAKeyAlgorithm,
+			keyAlgo:   v1alpha2.ECDSAKeyAlgorithm,
 			keySize:   521,
 			expectErr: false,
 		},
 		{
 			name:      "valid key size with key algorithm not specified",
-			keyAlgo:   v1alpha1.KeyAlgorithm(""),
+			keyAlgo:   v1alpha2.KeyAlgorithm(""),
 			keySize:   2048,
 			expectErr: false,
 		},
 		{
 			name:      "rsa with keysize not specified",
-			keyAlgo:   v1alpha1.RSAKeyAlgorithm,
+			keyAlgo:   v1alpha2.RSAKeyAlgorithm,
 			expectErr: false,
 		},
 		{
 			name:      "ecdsa with keysize not specified",
-			keyAlgo:   v1alpha1.ECDSAKeyAlgorithm,
+			keyAlgo:   v1alpha2.ECDSAKeyAlgorithm,
 			expectErr: false,
 		},
 	}
@@ -241,7 +241,7 @@ func signTestCert(key crypto.Signer) *x509.Certificate {
 			CommonName:   commonName,
 		},
 		NotBefore: time.Now(),
-		NotAfter:  time.Now().Add(v1alpha1.DefaultCertificateDuration),
+		NotAfter:  time.Now().Add(v1alpha2.DefaultCertificateDuration),
 		// see http://golang.org/pkg/crypto/x509/#KeyUsage
 		KeyUsage: x509.KeyUsageDigitalSignature | x509.KeyUsageKeyEncipherment,
 	}
@@ -341,7 +341,7 @@ func TestPrivateKeyEncodings(t *testing.T) {
 	type testT struct {
 		name         string
 		key          []byte
-		keyEncoding  v1alpha1.KeyEncoding
+		keyEncoding  v1alpha2.KeyEncoding
 		expectErr    bool
 		expectErrStr string
 	}
@@ -381,19 +381,19 @@ O7WnDn8nuLFdW+NzzbIrTw==
 		{
 			name:        "rsa 2048 private key with empty key encoding",
 			key:         privateKeyBytes,
-			keyEncoding: v1alpha1.PKCS1,
+			keyEncoding: v1alpha2.PKCS1,
 			expectErr:   false,
 		},
 		{
 			name:        "rsa 2048 private key with pkcs1 key encoding",
 			key:         privateKeyBytes,
-			keyEncoding: v1alpha1.PKCS1,
+			keyEncoding: v1alpha2.PKCS1,
 			expectErr:   false,
 		},
 		{
 			name:        "rsa 2048 private key with pkcs8 key encoding",
 			key:         privateKeyBytes,
-			keyEncoding: v1alpha1.PKCS8,
+			keyEncoding: v1alpha2.PKCS8,
 			expectErr:   false,
 		},
 	}
@@ -423,16 +423,16 @@ O7WnDn8nuLFdW+NzzbIrTw==
 				}
 
 				expectedEncoding := test.keyEncoding
-				actualEncoding := v1alpha1.KeyEncoding("")
+				actualEncoding := v1alpha2.KeyEncoding("")
 				block, _ := pem.Decode(encodedKey)
 
 				switch block.Type {
 				case "PRIVATE KEY":
-					actualEncoding = v1alpha1.PKCS8
+					actualEncoding = v1alpha2.PKCS8
 				case "RSA PRIVATE KEY":
-					actualEncoding = v1alpha1.PKCS1
+					actualEncoding = v1alpha2.PKCS1
 				case "EC PRIVATE KEY":
-					actualEncoding = v1alpha1.PKCS1
+					actualEncoding = v1alpha2.PKCS1
 				default:
 					err := "unknown key encoding for private key"
 					t.Errorf("%s", err)

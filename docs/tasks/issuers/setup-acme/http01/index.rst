@@ -23,7 +23,7 @@ The HTTP01 Issuer supports a number of additional options.
 For full details on the range of options available, read the
 `reference documentation`_.
 
-.. _`reference documentation`: https://docs.cert-manager.io/en/latest/reference/api-docs/index.html#acmeissuerhttp01config-v1alpha1
+.. _`reference documentation`: https://docs.cert-manager.io/en/latest/reference/api-docs/index.html#acmeissuerhttp01config-v1alpha2
 
 ingressClass
 ------------
@@ -84,7 +84,7 @@ An example of how you could configure the template is as so:
    :linenos:
    :emphasize-lines: 13-20
 
-   apiVersion: certmanager.k8s.io/v1alpha1
+   apiVersion: certmanager.k8s.io/v1alpha2
    kind: Issuer
    metadata:
      name: ...

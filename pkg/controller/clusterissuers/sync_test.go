@@ -25,12 +25,12 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgotesting "k8s.io/client-go/testing"
 
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	testpkg "github.com/jetstack/cert-manager/pkg/controller/test"
 )
 
-func newFakeIssuerWithStatus(name string, status v1alpha1.IssuerStatus) *v1alpha1.ClusterIssuer {
-	return &v1alpha1.ClusterIssuer{
+func newFakeIssuerWithStatus(name string, status v1alpha2.IssuerStatus) *v1alpha2.ClusterIssuer {
+	return &v1alpha2.ClusterIssuer{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: name,
 		},
@@ -56,18 +56,18 @@ func TestUpdateIssuerStatus(t *testing.T) {
 	fakeClient := b.FakeCMClient()
 	assertNumberOfActions(t, fatalf, filter(fakeClient.Actions()), 0)
 
-	originalIssuer := newFakeIssuerWithStatus("test", v1alpha1.IssuerStatus{})
+	originalIssuer := newFakeIssuerWithStatus("test", v1alpha2.IssuerStatus{})
 
-	issuer, err := fakeClient.CertmanagerV1alpha1().ClusterIssuers().Create(originalIssuer)
+	issuer, err := fakeClient.CertmanagerV1alpha2().ClusterIssuers().Create(originalIssuer)
 	assertErrIsNil(t, fatalf, err)
 
 	assertNumberOfActions(t, fatalf, filter(fakeClient.Actions()), 1)
 
-	newStatus := v1alpha1.IssuerStatus{
-		Conditions: []v1alpha1.IssuerCondition{
+	newStatus := v1alpha2.IssuerStatus{
+		Conditions: []v1alpha2.IssuerCondition{
 			{
-				Type:   v1alpha1.IssuerConditionReady,
-				Status: v1alpha1.ConditionTrue,
+				Type:   v1alpha2.IssuerConditionReady,
+				Status: v1alpha2.ConditionTrue,
 			},
 		},
 	}
@@ -109,10 +109,10 @@ func assertErrIsNil(t *testing.T, f failfFunc, err error) {
 	}
 }
 
-func assertIsClusterIssuer(t *testing.T, f failfFunc, obj runtime.Object) *v1alpha1.ClusterIssuer {
-	issuer, ok := obj.(*v1alpha1.ClusterIssuer)
+func assertIsClusterIssuer(t *testing.T, f failfFunc, obj runtime.Object) *v1alpha2.ClusterIssuer {
+	issuer, ok := obj.(*v1alpha2.ClusterIssuer)
 	if !ok {
-		f(t, "expected runtime.Object to be of type *v1alpha1.Issuer, but it was %#v", obj)
+		f(t, "expected runtime.Object to be of type *v1alpha2.Issuer, but it was %#v", obj)
 	}
 	return issuer
 }

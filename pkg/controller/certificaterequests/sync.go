@@ -28,17 +28,17 @@ import (
 
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager"
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	"github.com/jetstack/cert-manager/pkg/internal/apis/certmanager/validation"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 )
 
 var (
-	certificateRequestGvk = v1alpha1.SchemeGroupVersion.WithKind(v1alpha1.CertificateRequestKind)
+	certificateRequestGvk = v1alpha2.SchemeGroupVersion.WithKind(v1alpha2.CertificateRequestKind)
 )
 
-func (c *Controller) Sync(ctx context.Context, cr *v1alpha1.CertificateRequest) (err error) {
+func (c *Controller) Sync(ctx context.Context, cr *v1alpha2.CertificateRequest) (err error) {
 	c.metrics.IncrementSyncCallCount(ControllerName)
 
 	log := logf.FromContext(ctx)
@@ -50,11 +50,11 @@ func (c *Controller) Sync(ctx context.Context, cr *v1alpha1.CertificateRequest) 
 	}
 
 	switch apiutil.CertificateRequestReadyReason(cr) {
-	case v1alpha1.CertificateRequestReasonFailed:
+	case v1alpha2.CertificateRequestReasonFailed:
 		dbg.Info("certificate request Ready condition failed so skipping processing")
 		return
 
-	case v1alpha1.CertificateRequestReasonIssued:
+	case v1alpha2.CertificateRequestReasonIssued:
 		dbg.Info("certificate request Ready condition true so skipping processing")
 		return
 	}
@@ -148,7 +148,7 @@ func (c *Controller) Sync(ctx context.Context, cr *v1alpha1.CertificateRequest) 
 	return nil
 }
 
-func (c *Controller) updateCertificateRequestStatus(ctx context.Context, old, new *v1alpha1.CertificateRequest) (*v1alpha1.CertificateRequest, error) {
+func (c *Controller) updateCertificateRequestStatus(ctx context.Context, old, new *v1alpha2.CertificateRequest) (*v1alpha2.CertificateRequest, error) {
 	log := logf.FromContext(ctx, "updateStatus")
 	oldBytes, _ := json.Marshal(old.Status)
 	newBytes, _ := json.Marshal(new.Status)
@@ -160,5 +160,5 @@ func (c *Controller) updateCertificateRequestStatus(ctx context.Context, old, ne
 	// TODO: replace Update call with UpdateStatus. This requires a custom API
 	// server with the /status subresource enabled and/or subresource support
 	// for CRDs (https://github.com/kubernetes/kubernetes/issues/38113)
-	return c.cmClient.CertmanagerV1alpha1().CertificateRequests(new.Namespace).Update(new)
+	return c.cmClient.CertmanagerV1alpha2().CertificateRequests(new.Namespace).Update(new)
 }

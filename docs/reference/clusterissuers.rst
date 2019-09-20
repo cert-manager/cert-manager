@@ -19,7 +19,7 @@ an Issuer to ``ClusterIssuer``, and removing the ``metadata.namespace`` attribut
 .. code-block:: yaml
    :emphasize-lines: 2
 
-   apiVersion: certmanager.k8s.io/v1alpha1
+   apiVersion: certmanager.k8s.io/v1alpha2
    kind: ClusterIssuer
    metadata:
      name: letsencrypt-prod
@@ -32,7 +32,7 @@ the ``spec.issuerRef.kind`` field to ClusterIssuer:
 .. code-block:: yaml
    :emphasize-lines: 10
 
-   apiVersion: certmanager.k8s.io/v1alpha1
+   apiVersion: certmanager.k8s.io/v1alpha2
    kind: Certificate
    metadata:
      name: my-certificate

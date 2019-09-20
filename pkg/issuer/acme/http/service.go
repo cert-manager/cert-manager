@@ -27,11 +27,11 @@ import (
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 )
 
-func (s *Solver) ensureService(ctx context.Context, ch *v1alpha1.Challenge) (*corev1.Service, error) {
+func (s *Solver) ensureService(ctx context.Context, ch *v1alpha2.Challenge) (*corev1.Service, error) {
 	log := logf.FromContext(ctx).WithName("ensureService")
 
 	log.V(logf.DebugLevel).Info("checking for existing HTTP01 solver services for challenge")
@@ -58,7 +58,7 @@ func (s *Solver) ensureService(ctx context.Context, ch *v1alpha1.Challenge) (*co
 
 // getServicesForChallenge returns a list of services that were created to solve
 // http challenges for the given domain
-func (s *Solver) getServicesForChallenge(ctx context.Context, ch *v1alpha1.Challenge) ([]*corev1.Service, error) {
+func (s *Solver) getServicesForChallenge(ctx context.Context, ch *v1alpha2.Challenge) ([]*corev1.Service, error) {
 	log := logf.FromContext(ctx)
 
 	podLabels := podLabels(ch)
@@ -91,7 +91,7 @@ func (s *Solver) getServicesForChallenge(ctx context.Context, ch *v1alpha1.Chall
 
 // createService will create the service required to solve this challenge
 // in the target API server.
-func (s *Solver) createService(ch *v1alpha1.Challenge) (*corev1.Service, error) {
+func (s *Solver) createService(ch *v1alpha2.Challenge) (*corev1.Service, error) {
 	svc, err := buildService(ch)
 	if err != nil {
 		return nil, err
@@ -99,7 +99,7 @@ func (s *Solver) createService(ch *v1alpha1.Challenge) (*corev1.Service, error) 
 	return s.Client.CoreV1().Services(ch.Namespace).Create(svc)
 }
 
-func buildService(ch *v1alpha1.Challenge) (*corev1.Service, error) {
+func buildService(ch *v1alpha2.Challenge) (*corev1.Service, error) {
 	podLabels := podLabels(ch)
 	service := &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
@@ -136,7 +136,7 @@ func buildService(ch *v1alpha1.Challenge) (*corev1.Service, error) {
 	return service, nil
 }
 
-func (s *Solver) cleanupServices(ctx context.Context, ch *v1alpha1.Challenge) error {
+func (s *Solver) cleanupServices(ctx context.Context, ch *v1alpha2.Challenge) error {
 	log := logf.FromContext(ctx, "cleanupPods")
 
 	services, err := s.getServicesForChallenge(ctx, ch)

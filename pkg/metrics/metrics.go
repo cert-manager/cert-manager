@@ -36,8 +36,8 @@ import (
 	corelisters "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/tools/cache"
 
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
-	cmlisters "github.com/jetstack/cert-manager/pkg/client/listers/certmanager/v1alpha1"
+	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmlisters "github.com/jetstack/cert-manager/pkg/client/listers/certmanager/v1alpha2"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 	"github.com/jetstack/cert-manager/pkg/util/errors"
 	"github.com/jetstack/cert-manager/pkg/util/kube"
@@ -53,7 +53,7 @@ const (
 	prometheusMetricsServerMaxHeaderBytes  = 1 << 20 // 1 MiB
 )
 
-var readyConditionStatuses = [...]string{string(v1alpha1.ConditionTrue), string(v1alpha1.ConditionFalse), string(v1alpha1.ConditionUnknown)}
+var readyConditionStatuses = [...]string{string(v1alpha2.ConditionTrue), string(v1alpha2.ConditionFalse), string(v1alpha2.ConditionUnknown)}
 
 // Default set of metrics
 var Default = New(logf.NewContext(context.Background(), logf.Log.WithName("metrics")))
@@ -215,7 +215,7 @@ func (m *Metrics) Start(stopCh <-chan struct{}) {
 }
 
 // UpdateCertificateExpiry updates the expiry time of a certificate
-func (m *Metrics) UpdateCertificateExpiry(crt *v1alpha1.Certificate, secretLister corelisters.SecretLister) {
+func (m *Metrics) UpdateCertificateExpiry(crt *v1alpha2.Certificate, secretLister corelisters.SecretLister) {
 	log := logf.FromContext(m.ctx)
 	log = logf.WithResource(log, crt)
 	log = logf.WithRelatedResourceName(log, crt.Spec.SecretName, crt.Namespace, "Secret")
@@ -233,7 +233,7 @@ func (m *Metrics) UpdateCertificateExpiry(crt *v1alpha1.Certificate, secretListe
 	updateX509Expiry(crt, cert)
 }
 
-func updateX509Expiry(crt *v1alpha1.Certificate, cert *x509.Certificate) {
+func updateX509Expiry(crt *v1alpha2.Certificate, cert *x509.Certificate) {
 	expiryTime := cert.NotAfter
 	key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(crt)
 	if err != nil {
@@ -249,20 +249,20 @@ func updateX509Expiry(crt *v1alpha1.Certificate, cert *x509.Certificate) {
 	registerCertificateKey(key)
 }
 
-func (m *Metrics) UpdateCertificateStatus(crt *v1alpha1.Certificate) {
+func (m *Metrics) UpdateCertificateStatus(crt *v1alpha2.Certificate) {
 	log := logf.FromContext(m.ctx)
 	log = logf.WithResource(log, crt)
 
 	log.V(logf.DebugLevel).Info("attempting to retrieve ready status for certificate")
 	for _, c := range crt.Status.Conditions {
 		switch c.Type {
-		case v1alpha1.CertificateConditionReady:
+		case v1alpha2.CertificateConditionReady:
 			updateCertificateReadyStatus(crt, c.Status)
 		}
 	}
 }
 
-func updateCertificateReadyStatus(crt *v1alpha1.Certificate, current v1alpha1.ConditionStatus) {
+func updateCertificateReadyStatus(crt *v1alpha2.Certificate, current v1alpha2.ConditionStatus) {
 	key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(crt)
 	if err != nil {
 		return
@@ -317,7 +317,7 @@ func (m *Metrics) cleanUp() {
 }
 
 // cleanUpCertificates removes metrics for recently deleted certificates
-func cleanUpCertificates(activeCrts []*v1alpha1.Certificate) {
+func cleanUpCertificates(activeCrts []*v1alpha2.Certificate) {
 	activeMap := make(map[string]struct{}, len(activeCrts))
 	for _, crt := range activeCrts {
 		key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(crt)
