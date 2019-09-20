@@ -24,7 +24,7 @@ import (
 
 	"github.com/spf13/pflag"
 
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	challengescontroller "github.com/jetstack/cert-manager/pkg/controller/acmechallenges"
 	orderscontroller "github.com/jetstack/cert-manager/pkg/controller/acmeorders"
 	cracmecontroller "github.com/jetstack/cert-manager/pkg/controller/certificaterequests/acme"

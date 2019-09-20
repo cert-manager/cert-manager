@@ -29,7 +29,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	"github.com/jetstack/cert-manager/pkg/util"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 	"github.com/jetstack/cert-manager/test/e2e/framework/log"
@@ -37,19 +37,19 @@ import (
 
 // WaitForCertificateReady waits for the certificate resource to enter a Ready
 // state.
-func (h *Helper) WaitForCertificateReady(ns, name string, timeout time.Duration) (*v1alpha1.Certificate, error) {
-	var certificate *v1alpha1.Certificate
+func (h *Helper) WaitForCertificateReady(ns, name string, timeout time.Duration) (*v1alpha2.Certificate, error) {
+	var certificate *v1alpha2.Certificate
 	err := wait.PollImmediate(time.Second, timeout,
 		func() (bool, error) {
 			var err error
 			log.Logf("Waiting for Certificate %v to be ready", name)
-			certificate, err = h.CMClient.CertmanagerV1alpha1().Certificates(ns).Get(name, metav1.GetOptions{})
+			certificate, err = h.CMClient.CertmanagerV1alpha2().Certificates(ns).Get(name, metav1.GetOptions{})
 			if err != nil {
 				return false, fmt.Errorf("error getting Certificate %v: %v", name, err)
 			}
-			isReady := apiutil.CertificateHasCondition(certificate, v1alpha1.CertificateCondition{
-				Type:   v1alpha1.CertificateConditionReady,
-				Status: v1alpha1.ConditionTrue,
+			isReady := apiutil.CertificateHasCondition(certificate, v1alpha2.CertificateCondition{
+				Type:   v1alpha2.CertificateConditionReady,
+				Status: v1alpha2.ConditionTrue,
 			})
 			if !isReady {
 				log.Logf("Expected Certificate to have Ready condition 'true' but it has: %v", certificate.Status.Conditions)
@@ -68,19 +68,19 @@ func (h *Helper) WaitForCertificateReady(ns, name string, timeout time.Duration)
 
 // WaitForCertificateNotReady waits for the certificate resource to enter a
 // non-Ready state.
-func (h *Helper) WaitForCertificateNotReady(ns, name string, timeout time.Duration) (*v1alpha1.Certificate, error) {
-	var certificate *v1alpha1.Certificate
+func (h *Helper) WaitForCertificateNotReady(ns, name string, timeout time.Duration) (*v1alpha2.Certificate, error) {
+	var certificate *v1alpha2.Certificate
 	err := wait.PollImmediate(time.Second, timeout,
 		func() (bool, error) {
 			var err error
 			log.Logf("Waiting for Certificate %v to be ready", name)
-			certificate, err = h.CMClient.CertmanagerV1alpha1().Certificates(ns).Get(name, metav1.GetOptions{})
+			certificate, err = h.CMClient.CertmanagerV1alpha2().Certificates(ns).Get(name, metav1.GetOptions{})
 			if err != nil {
 				return false, fmt.Errorf("error getting Certificate %v: %v", name, err)
 			}
-			isReady := apiutil.CertificateHasCondition(certificate, v1alpha1.CertificateCondition{
-				Type:   v1alpha1.CertificateConditionReady,
-				Status: v1alpha1.ConditionFalse,
+			isReady := apiutil.CertificateHasCondition(certificate, v1alpha2.CertificateCondition{
+				Type:   v1alpha2.CertificateConditionReady,
+				Status: v1alpha2.ConditionFalse,
 			})
 			if !isReady {
 				log.Logf("Expected Certificate to have Ready condition 'true' but it has: %v", certificate.Status.Conditions)
@@ -100,7 +100,7 @@ func (h *Helper) WaitForCertificateNotReady(ns, name string, timeout time.Durati
 // ValidateIssuedCertificate will ensure that the given Certificate has a
 // certificate issued for it, and that the details on the x509 certificate are
 // correct as defined by the Certificate's spec.
-func (h *Helper) ValidateIssuedCertificate(certificate *v1alpha1.Certificate, rootCAPEM []byte) (*x509.Certificate, error) {
+func (h *Helper) ValidateIssuedCertificate(certificate *v1alpha2.Certificate, rootCAPEM []byte) (*x509.Certificate, error) {
 	log.Logf("Getting the TLS certificate Secret resource")
 	secret, err := h.KubeClient.CoreV1().Secrets(certificate.Namespace).Get(certificate.Spec.SecretName, metav1.GetOptions{})
 	if err != nil {
@@ -121,13 +121,13 @@ func (h *Helper) ValidateIssuedCertificate(certificate *v1alpha1.Certificate, ro
 
 	// validate private key is of the correct type (rsa or ecdsa)
 	switch certificate.Spec.KeyAlgorithm {
-	case v1alpha1.KeyAlgorithm(""),
-		v1alpha1.RSAKeyAlgorithm:
+	case v1alpha2.KeyAlgorithm(""),
+		v1alpha2.RSAKeyAlgorithm:
 		_, ok := key.(*rsa.PrivateKey)
 		if !ok {
 			return nil, fmt.Errorf("Expected private key of type RSA, but it was: %T", key)
 		}
-	case v1alpha1.ECDSAKeyAlgorithm:
+	case v1alpha2.ECDSAKeyAlgorithm:
 		_, ok := key.(*ecdsa.PrivateKey)
 		if !ok {
 			return nil, fmt.Errorf("Expected private key of type ECDSA, but it was: %T", key)
@@ -163,7 +163,7 @@ func (h *Helper) ValidateIssuedCertificate(certificate *v1alpha1.Certificate, ro
 		return nil, fmt.Errorf("Expected certificate expiry date to be %v, but got %v", certificate.Status.NotAfter, cert.NotAfter)
 	}
 
-	label, ok := secret.Annotations[v1alpha1.CertificateNameKey]
+	label, ok := secret.Annotations[v1alpha2.CertificateNameKey]
 	if !ok {
 		return nil, fmt.Errorf("Expected secret to have certificate-name label, but had none")
 	}
@@ -172,7 +172,7 @@ func (h *Helper) ValidateIssuedCertificate(certificate *v1alpha1.Certificate, ro
 		return nil, fmt.Errorf("Expected secret to have certificate-name label with a value of %q, but got %q", certificate.Name, label)
 	}
 
-	usages := make(map[v1alpha1.KeyUsage]bool)
+	usages := make(map[v1alpha2.KeyUsage]bool)
 	for _, u := range certificate.Spec.Usages {
 		usages[u] = true
 	}
@@ -183,7 +183,7 @@ func (h *Helper) ValidateIssuedCertificate(certificate *v1alpha1.Certificate, ro
 		if cert.KeyUsage&x509.KeyUsageCertSign == 0 {
 			return nil, fmt.Errorf("Expected secret to have x509.KeyUsageCertSign bit set but was not")
 		}
-		usages[v1alpha1.UsageCertSign] = true
+		usages[v1alpha2.UsageCertSign] = true
 	}
 
 	if len(certificate.Spec.Usages) > 0 {

@@ -20,4 +20,4 @@ limitations under the License.
 // +k8s:defaulter-gen-input=../../../../apis/certmanager/v1alpha2
 
 // +groupName=certmanager.k8s.io
-package v1alpha1
+package v1alpha2

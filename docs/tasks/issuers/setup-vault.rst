@@ -46,7 +46,7 @@ We can now create a cluster issuer referencing this secret:
 
 .. code-block:: yaml
 
-    apiVersion: certmanager.k8s.io/v1alpha1
+    apiVersion: certmanager.k8s.io/v1alpha2
     kind: Issuer
     metadata:
       name: vault-issuer
@@ -83,7 +83,7 @@ Once we have created the above Issuer we can use it to obtain a certificate.
 
 .. code-block:: yaml
 
-    apiVersion: certmanager.k8s.io/v1alpha1
+    apiVersion: certmanager.k8s.io/v1alpha2
     kind: Certificate
     metadata:
       name: example-com
@@ -147,7 +147,7 @@ We can now create an issuer referencing this secret:
 
 .. code-block:: yaml
 
-    apiVersion: certmanager.k8s.io/v1alpha1
+    apiVersion: certmanager.k8s.io/v1alpha2
     kind: Issuer
     metadata:
       name: vault-issuer
@@ -176,7 +176,7 @@ Once we have created the above Issuer we can use it to obtain a certificate.
 
 .. code-block:: yaml
 
-    apiVersion: certmanager.k8s.io/v1alpha1
+    apiVersion: certmanager.k8s.io/v1alpha2
     kind: Certificate
     metadata:
       name: example-com

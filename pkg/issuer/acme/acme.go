@@ -24,8 +24,8 @@ import (
 
 	"github.com/jetstack/cert-manager/pkg/acme"
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
-	cmlisters "github.com/jetstack/cert-manager/pkg/client/listers/certmanager/v1alpha1"
+	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmlisters "github.com/jetstack/cert-manager/pkg/client/listers/certmanager/v1alpha2"
 	"github.com/jetstack/cert-manager/pkg/controller"
 	"github.com/jetstack/cert-manager/pkg/issuer"
 )
@@ -35,7 +35,7 @@ import (
 // mechanisms.
 type Acme struct {
 	*controller.Context
-	issuer v1alpha1.GenericIssuer
+	issuer v1alpha2.GenericIssuer
 	helper acme.Helper
 
 	secretsLister corelisters.SecretLister
@@ -46,7 +46,7 @@ type Acme struct {
 }
 
 // New returns a new ACME issuer interface for the given issuer.
-func New(ctx *controller.Context, issuer v1alpha1.GenericIssuer) (issuer.Interface, error) {
+func New(ctx *controller.Context, issuer v1alpha2.GenericIssuer) (issuer.Interface, error) {
 	if issuer.GetSpec().ACME == nil {
 		return nil, fmt.Errorf("acme config may not be empty")
 	}
@@ -55,7 +55,7 @@ func New(ctx *controller.Context, issuer v1alpha1.GenericIssuer) (issuer.Interfa
 	// we are interested in
 
 	secretsLister := ctx.KubeSharedInformerFactory.Core().V1().Secrets().Lister()
-	orderLister := ctx.SharedInformerFactory.Certmanager().V1alpha1().Orders().Lister()
+	orderLister := ctx.SharedInformerFactory.Certmanager().V1alpha2().Orders().Lister()
 
 	a := &Acme{
 		Context: ctx,

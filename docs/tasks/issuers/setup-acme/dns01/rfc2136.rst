@@ -118,7 +118,7 @@ sufficiently, let’s focus on the provider here.
 .. code:: yaml
    :emphasize-lines: 10-16
 
-   apiVersion: certmanager.k8s.io/v1alpha1
+   apiVersion: certmanager.k8s.io/v1alpha2
    kind: Issuer
    metadata:
      name: example-issuer

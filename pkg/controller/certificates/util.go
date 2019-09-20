@@ -32,9 +32,9 @@ import (
 	"k8s.io/client-go/tools/cache"
 
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	cmclient "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
-	cmlisters "github.com/jetstack/cert-manager/pkg/client/listers/certmanager/v1alpha1"
+	cmlisters "github.com/jetstack/cert-manager/pkg/client/listers/certmanager/v1alpha2"
 	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 	"github.com/jetstack/cert-manager/pkg/metrics"
@@ -45,12 +45,12 @@ import (
 )
 
 var (
-	certificateGvk = v1alpha1.SchemeGroupVersion.WithKind("Certificate")
+	certificateGvk = v1alpha2.SchemeGroupVersion.WithKind("Certificate")
 )
 
-type calculateDurationUntilRenewFn func(context.Context, *x509.Certificate, *v1alpha1.Certificate) time.Duration
+type calculateDurationUntilRenewFn func(context.Context, *x509.Certificate, *v1alpha2.Certificate) time.Duration
 
-func getCertificateForKey(ctx context.Context, key string, lister cmlisters.CertificateLister) (*v1alpha1.Certificate, error) {
+func getCertificateForKey(ctx context.Context, key string, lister cmlisters.CertificateLister) (*v1alpha2.Certificate, error) {
 	namespace, name, err := cache.SplitMetaNamespaceKey(key)
 	if err != nil {
 		return nil, nil
@@ -75,7 +75,7 @@ func certificateGetter(lister cmlisters.CertificateLister) func(namespace, name 
 
 var keyFunc = controllerpkg.KeyFunc
 
-func certificateMatchesSpec(crt *v1alpha1.Certificate, key crypto.Signer, cert *x509.Certificate, secretLister corelisters.SecretLister) (bool, []string) {
+func certificateMatchesSpec(crt *v1alpha2.Certificate, key crypto.Signer, cert *x509.Certificate, secretLister corelisters.SecretLister) (bool, []string) {
 	var errs []string
 
 	// TODO: add checks for KeySize, KeyAlgorithm fields
@@ -113,19 +113,19 @@ func certificateMatchesSpec(crt *v1alpha1.Certificate, key crypto.Signer, cert *
 	secret, err := secretLister.Secrets(crt.Namespace).Get(crt.Spec.SecretName)
 
 	// validate that the issuer is correct
-	if crt.Spec.IssuerRef.Name != secret.Annotations[v1alpha1.IssuerNameAnnotationKey] {
-		errs = append(errs, fmt.Sprintf("Issuer of the certificate is not up to date: %q", secret.Annotations[v1alpha1.IssuerNameAnnotationKey]))
+	if crt.Spec.IssuerRef.Name != secret.Annotations[v1alpha2.IssuerNameAnnotationKey] {
+		errs = append(errs, fmt.Sprintf("Issuer of the certificate is not up to date: %q", secret.Annotations[v1alpha2.IssuerNameAnnotationKey]))
 	}
 
 	// validate that the issuer kind is correct
-	if apiutil.IssuerKind(crt.Spec.IssuerRef) != secret.Annotations[v1alpha1.IssuerKindAnnotationKey] {
-		errs = append(errs, fmt.Sprintf("Issuer kind of the certificate is not up to date: %q", secret.Annotations[v1alpha1.IssuerKindAnnotationKey]))
+	if apiutil.IssuerKind(crt.Spec.IssuerRef) != secret.Annotations[v1alpha2.IssuerKindAnnotationKey] {
+		errs = append(errs, fmt.Sprintf("Issuer kind of the certificate is not up to date: %q", secret.Annotations[v1alpha2.IssuerKindAnnotationKey]))
 	}
 
 	return len(errs) == 0, errs
 }
 
-func scheduleRenewal(ctx context.Context, lister corelisters.SecretLister, calc calculateDurationUntilRenewFn, queueFn func(interface{}, time.Duration), crt *v1alpha1.Certificate) {
+func scheduleRenewal(ctx context.Context, lister corelisters.SecretLister, calc calculateDurationUntilRenewFn, queueFn func(interface{}, time.Duration), crt *v1alpha2.Certificate) {
 	log := logf.FromContext(ctx)
 	log = log.WithValues(
 		logf.RelatedResourceNameKey, crt.Spec.SecretName,
@@ -172,14 +172,14 @@ func isTemporaryCertificate(cert *x509.Certificate) bool {
 // This is to mitigate a potential attack against x509 certificates that use a
 // predictable serial number and weak MD5 hashing algorithms.
 // In practice, this shouldn't really be a concern anyway.
-func generateLocallySignedTemporaryCertificate(crt *v1alpha1.Certificate, pk []byte) ([]byte, error) {
+func generateLocallySignedTemporaryCertificate(crt *v1alpha2.Certificate, pk []byte) ([]byte, error) {
 	// generate a throwaway self-signed root CA
 	caPk, err := pki.GenerateECPrivateKey(pki.ECCurve521)
 	if err != nil {
 		return nil, err
 	}
-	caCertTemplate, err := pki.GenerateTemplate(&v1alpha1.Certificate{
-		Spec: v1alpha1.CertificateSpec{
+	caCertTemplate, err := pki.GenerateTemplate(&v1alpha2.Certificate{
+		Spec: v1alpha2.CertificateSpec{
 			CommonName: "cert-manager.local",
 			IsCA:       true,
 		},
@@ -212,7 +212,7 @@ func generateLocallySignedTemporaryCertificate(crt *v1alpha1.Certificate, pk []b
 	return b, nil
 }
 
-func updateCertificateStatus(ctx context.Context, m *metrics.Metrics, cmClient cmclient.Interface, old, new *v1alpha1.Certificate) (*v1alpha1.Certificate, error) {
+func updateCertificateStatus(ctx context.Context, m *metrics.Metrics, cmClient cmclient.Interface, old, new *v1alpha2.Certificate) (*v1alpha2.Certificate, error) {
 	defer m.UpdateCertificateStatus(new)
 
 	log := logf.FromContext(ctx, "updateStatus")
@@ -225,15 +225,15 @@ func updateCertificateStatus(ctx context.Context, m *metrics.Metrics, cmClient c
 	// TODO: replace Update call with UpdateStatus. This requires a custom API
 	// server with the /status subresource enabled and/or subresource support
 	// for CRDs (https://github.com/kubernetes/kubernetes/issues/38113)
-	return cmClient.CertmanagerV1alpha1().Certificates(new.Namespace).Update(new)
+	return cmClient.CertmanagerV1alpha2().Certificates(new.Namespace).Update(new)
 }
 
-func certificateHasTemporaryCertificateAnnotation(crt *v1alpha1.Certificate) bool {
+func certificateHasTemporaryCertificateAnnotation(crt *v1alpha2.Certificate) bool {
 	if crt.Annotations == nil {
 		return false
 	}
 
-	if val, ok := crt.Annotations[v1alpha1.IssueTemporaryCertificateAnnotation]; ok && val == "true" {
+	if val, ok := crt.Annotations[v1alpha2.IssueTemporaryCertificateAnnotation]; ok && val == "true" {
 		return true
 	}
 

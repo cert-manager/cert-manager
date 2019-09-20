@@ -19,13 +19,13 @@ package gen
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 )
 
-type CertificateRequestModifier func(*v1alpha1.CertificateRequest)
+type CertificateRequestModifier func(*v1alpha2.CertificateRequest)
 
-func CertificateRequest(name string, mods ...CertificateRequestModifier) *v1alpha1.CertificateRequest {
-	c := &v1alpha1.CertificateRequest{
+func CertificateRequest(name string, mods ...CertificateRequestModifier) *v1alpha2.CertificateRequest {
+	c := &v1alpha2.CertificateRequest{
 		ObjectMeta: ObjectMeta(name),
 	}
 	for _, mod := range mods {
@@ -34,7 +34,7 @@ func CertificateRequest(name string, mods ...CertificateRequestModifier) *v1alph
 	return c
 }
 
-func CertificateRequestFrom(cr *v1alpha1.CertificateRequest, mods ...CertificateRequestModifier) *v1alpha1.CertificateRequest {
+func CertificateRequestFrom(cr *v1alpha2.CertificateRequest, mods ...CertificateRequestModifier) *v1alpha2.CertificateRequest {
 	cr = cr.DeepCopy()
 	for _, mod := range mods {
 		mod(cr)
@@ -43,46 +43,46 @@ func CertificateRequestFrom(cr *v1alpha1.CertificateRequest, mods ...Certificate
 }
 
 // SetIssuer sets the CertificateRequest.spec.issuerRef field
-func SetCertificateRequestIssuer(o v1alpha1.ObjectReference) CertificateRequestModifier {
-	return func(c *v1alpha1.CertificateRequest) {
+func SetCertificateRequestIssuer(o v1alpha2.ObjectReference) CertificateRequestModifier {
+	return func(c *v1alpha2.CertificateRequest) {
 		c.Spec.IssuerRef = o
 	}
 }
 
 func SetCertificateRequestCSR(csr []byte) CertificateRequestModifier {
-	return func(cr *v1alpha1.CertificateRequest) {
+	return func(cr *v1alpha2.CertificateRequest) {
 		cr.Spec.CSRPEM = csr
 	}
 }
 
 func SetCertificateRequestIsCA(isCA bool) CertificateRequestModifier {
-	return func(cr *v1alpha1.CertificateRequest) {
+	return func(cr *v1alpha2.CertificateRequest) {
 		cr.Spec.IsCA = isCA
 	}
 }
 
 func SetCertificateRequestDuration(duration *metav1.Duration) CertificateRequestModifier {
-	return func(cr *v1alpha1.CertificateRequest) {
+	return func(cr *v1alpha2.CertificateRequest) {
 		cr.Spec.Duration = duration
 	}
 }
 
 func SetCertificateRequestCA(ca []byte) CertificateRequestModifier {
-	return func(cr *v1alpha1.CertificateRequest) {
+	return func(cr *v1alpha2.CertificateRequest) {
 		cr.Status.CA = ca
 	}
 }
 
 func SetCertificateRequestCertificate(cert []byte) CertificateRequestModifier {
-	return func(cr *v1alpha1.CertificateRequest) {
+	return func(cr *v1alpha2.CertificateRequest) {
 		cr.Status.Certificate = cert
 	}
 }
 
-func SetCertificateRequestStatusCondition(c v1alpha1.CertificateRequestCondition) CertificateRequestModifier {
-	return func(cr *v1alpha1.CertificateRequest) {
+func SetCertificateRequestStatusCondition(c v1alpha2.CertificateRequestCondition) CertificateRequestModifier {
+	return func(cr *v1alpha2.CertificateRequest) {
 		if len(cr.Status.Conditions) == 0 {
-			cr.Status.Conditions = []v1alpha1.CertificateRequestCondition{c}
+			cr.Status.Conditions = []v1alpha2.CertificateRequestCondition{c}
 			return
 		}
 		for i, existingC := range cr.Status.Conditions {
@@ -96,25 +96,25 @@ func SetCertificateRequestStatusCondition(c v1alpha1.CertificateRequestCondition
 }
 
 func SetCertificateRequestNamespace(namespace string) CertificateRequestModifier {
-	return func(cr *v1alpha1.CertificateRequest) {
+	return func(cr *v1alpha2.CertificateRequest) {
 		cr.ObjectMeta.Namespace = namespace
 	}
 }
 
 func SetCertificateRequestName(name string) CertificateRequestModifier {
-	return func(cr *v1alpha1.CertificateRequest) {
+	return func(cr *v1alpha2.CertificateRequest) {
 		cr.ObjectMeta.Name = name
 	}
 }
 
-func SetCertificateRequestKeyUsages(usages ...v1alpha1.KeyUsage) CertificateRequestModifier {
-	return func(cr *v1alpha1.CertificateRequest) {
+func SetCertificateRequestKeyUsages(usages ...v1alpha2.KeyUsage) CertificateRequestModifier {
+	return func(cr *v1alpha2.CertificateRequest) {
 		cr.Spec.Usages = usages
 	}
 }
 
 func AddCertificateRequestAnnotations(annotations map[string]string) CertificateRequestModifier {
-	return func(cr *v1alpha1.CertificateRequest) {
+	return func(cr *v1alpha2.CertificateRequest) {
 		// Make sure to do a merge here with new annotations overriding.
 		annotationsNew := cr.GetAnnotations()
 		if annotationsNew == nil {
@@ -128,13 +128,13 @@ func AddCertificateRequestAnnotations(annotations map[string]string) Certificate
 }
 
 func SetCertificateRequestAnnotations(annotations map[string]string) CertificateRequestModifier {
-	return func(cr *v1alpha1.CertificateRequest) {
+	return func(cr *v1alpha2.CertificateRequest) {
 		cr.SetAnnotations(annotations)
 	}
 }
 
 func SetCertificateRequestFailureTime(p metav1.Time) CertificateRequestModifier {
-	return func(cr *v1alpha1.CertificateRequest) {
+	return func(cr *v1alpha2.CertificateRequest) {
 		cr.Status.FailureTime = &p
 	}
 }

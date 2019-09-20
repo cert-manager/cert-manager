@@ -9,7 +9,7 @@ openapi_library(
     srcs = ["doc.go"],
     go_prefix = "github.com/jetstack/cert-manager/",
     openapi_targets = [
-        "pkg/apis/certmanager/v1alpha1",
+        "pkg/apis/certmanager/v1alpha2",
     ],
     tags = ["docs"],
     vendor_targets = [

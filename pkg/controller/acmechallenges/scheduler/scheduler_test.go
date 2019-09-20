@@ -26,7 +26,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/diff"
 
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	"github.com/jetstack/cert-manager/pkg/client/clientset/versioned/fake"
 	cminformers "github.com/jetstack/cert-manager/pkg/client/informers/externalversions"
 	"github.com/jetstack/cert-manager/pkg/util"
@@ -303,7 +303,7 @@ func TestScheduleN(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			cl := fake.NewSimpleClientset()
 			factory := cminformers.NewSharedInformerFactory(cl, 0)
-			challengesInformer := factory.Certmanager().V1alpha1().Challenges()
+			challengesInformer := factory.Certmanager().V1alpha2().Challenges()
 			for _, ch := range test.challenges {
 				challengesInformer.Informer().GetIndexer().Add(ch)
 			}

@@ -33,7 +33,7 @@ import (
 	"k8s.io/client-go/util/workqueue"
 	"k8s.io/utils/clock"
 
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 	"github.com/jetstack/cert-manager/pkg/scheduler"
@@ -293,7 +293,7 @@ func (c *controller) certificateRequiresIssuance(ctx context.Context, log logr.L
 	// read the existing certificate
 	crtData := readSecretDataKey(secret, corev1.TLSCertKey)
 	if crtData == nil {
-		log.Info("ussuing webhook certificate")
+		log.Info("issuing webhook certificate")
 		return true
 	}
 	cert, err := pki.DecodeX509CertificateBytes(crtData)

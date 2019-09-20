@@ -65,7 +65,7 @@ Save the below content after making your amendments to a file named
 
 .. code-block:: yaml
 
-   apiVersion: certmanager.k8s.io/v1alpha1
+   apiVersion: certmanager.k8s.io/v1alpha2
    kind: Issuer
    metadata:
      name: cloud-venafi-issuer
@@ -142,7 +142,7 @@ Save the below content after making your amendments to a file named
 
 .. code-block:: yaml
 
-   apiVersion: certmanager.k8s.io/v1alpha1
+   apiVersion: certmanager.k8s.io/v1alpha2
    kind: Issuer
    metadata:
      name: tpp-venafi-issuer

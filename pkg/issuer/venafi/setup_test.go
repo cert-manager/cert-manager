@@ -22,7 +22,7 @@ import (
 
 	corelisters "k8s.io/client-go/listers/core/v1"
 
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	"github.com/jetstack/cert-manager/pkg/controller"
 	controllertest "github.com/jetstack/cert-manager/pkg/controller/test"
 	internalvenafi "github.com/jetstack/cert-manager/pkg/internal/venafi"

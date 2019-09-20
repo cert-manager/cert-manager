@@ -7,7 +7,7 @@ go_library(
     visibility = ["//visibility:public"],
     deps = [
         "//pkg/internal/apis/certmanager:go_default_library",
-        "//pkg/internal/apis/certmanager/v1alpha1:go_default_library",
+        "//pkg/internal/apis/certmanager/v1alpha2:go_default_library",
         "//vendor/k8s.io/apimachinery/pkg/runtime:go_default_library",
         "//vendor/k8s.io/apimachinery/pkg/util/runtime:go_default_library",
     ],

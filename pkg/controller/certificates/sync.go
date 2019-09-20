@@ -31,8 +31,8 @@ import (
 
 	"github.com/go-logr/logr"
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
-	cmlisters "github.com/jetstack/cert-manager/pkg/client/listers/certmanager/v1alpha1"
+	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmlisters "github.com/jetstack/cert-manager/pkg/client/listers/certmanager/v1alpha2"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 	"github.com/jetstack/cert-manager/pkg/metrics"
 	"github.com/jetstack/cert-manager/pkg/util/errors"
@@ -366,7 +366,7 @@ func (c *certificateRequestManager) processCertificate(ctx context.Context, crt 
 			return err
 		}
 
-		req, err = c.cmClient.CertmanagerV1alpha1().CertificateRequests(crt.Namespace).Create(req)
+		req, err = c.cmClient.CertmanagerV1alpha2().CertificateRequests(crt.Namespace).Create(req)
 		if err != nil {
 			return err
 		}
@@ -396,7 +396,7 @@ func (c *certificateRequestManager) processCertificate(ctx context.Context, crt 
 	// do anything with the certificate if it is issued
 	if !publicKeyMatches {
 		log.Info("stored private key is not valid for CSR stored on existing CertificateRequest, recreating CertificateRequest resource")
-		err := c.cmClient.CertmanagerV1alpha1().CertificateRequests(existingReq.Namespace).Delete(existingReq.Name, nil)
+		err := c.cmClient.CertmanagerV1alpha2().CertificateRequests(existingReq.Namespace).Delete(existingReq.Name, nil)
 		if err != nil {
 			return err
 		}
@@ -417,7 +417,7 @@ func (c *certificateRequestManager) processCertificate(ctx context.Context, crt 
 	case cmapi.CertificateRequestReasonFailed:
 		if existingReq.Status.FailureTime == nil || c.clock.Since(existingReq.Status.FailureTime.Time) > time.Hour {
 			log.Info("deleting failed certificate request")
-			err := c.cmClient.CertmanagerV1alpha1().CertificateRequests(existingReq.Namespace).Delete(existingReq.Name, nil)
+			err := c.cmClient.CertmanagerV1alpha2().CertificateRequests(existingReq.Namespace).Delete(existingReq.Name, nil)
 			if err != nil {
 				return err
 			}
@@ -455,7 +455,7 @@ func (c *certificateRequestManager) processCertificate(ctx context.Context, crt 
 		log.Info("checking if certificate stored on CertificateRequest is up to date")
 		if c.certificateNeedsRenew(ctx, x509Cert, crt) {
 			log.Info("certificate stored on CertificateRequest needs renewal, so deleting the old CertificateRequest resource")
-			err := c.cmClient.CertmanagerV1alpha1().CertificateRequests(existingReq.Namespace).Delete(existingReq.Name, nil)
+			err := c.cmClient.CertmanagerV1alpha2().CertificateRequests(existingReq.Namespace).Delete(existingReq.Name, nil)
 			if err != nil {
 				return err
 			}
@@ -671,7 +671,7 @@ func (c *certificateRequestManager) cleanupExistingCertificateRequests(log logr.
 			continue
 		}
 
-		err = c.cmClient.CertmanagerV1alpha1().CertificateRequests(req.Namespace).Delete(req.Name, nil)
+		err = c.cmClient.CertmanagerV1alpha2().CertificateRequests(req.Namespace).Delete(req.Name, nil)
 		if err != nil {
 			return err
 		}

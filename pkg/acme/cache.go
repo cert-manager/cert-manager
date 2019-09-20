@@ -28,7 +28,7 @@ import (
 
 	acme "github.com/jetstack/cert-manager/pkg/acme/client"
 	acmemw "github.com/jetstack/cert-manager/pkg/acme/client/middleware"
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	"github.com/jetstack/cert-manager/pkg/util"
 	acmecl "github.com/jetstack/cert-manager/third_party/crypto/acme"
 )

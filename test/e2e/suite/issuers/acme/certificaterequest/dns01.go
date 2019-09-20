@@ -24,7 +24,7 @@ import (
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	"github.com/jetstack/cert-manager/test/e2e/framework"
 	"github.com/jetstack/cert-manager/test/e2e/framework/addon"
 	"github.com/jetstack/cert-manager/test/e2e/suite/issuers/acme/dnsproviders"
@@ -69,36 +69,36 @@ func testDNSProvider(name string, p dns01Provider) bool {
 
 			By("Creating an Issuer")
 			issuer := gen.Issuer(issuerName,
-				gen.SetIssuerACME(v1alpha1.ACMEIssuer{
+				gen.SetIssuerACME(v1alpha2.ACMEIssuer{
 					SkipTLSVerify: true,
 					Server:        "https://acme-staging-v02.api.letsencrypt.org/directory",
 					Email:         testingACMEEmail,
-					PrivateKey: v1alpha1.SecretKeySelector{
-						LocalObjectReference: v1alpha1.LocalObjectReference{
+					PrivateKey: v1alpha2.SecretKeySelector{
+						LocalObjectReference: v1alpha2.LocalObjectReference{
 							Name: testingACMEPrivateKey,
 						},
 					},
-					Solvers: []v1alpha1.ACMEChallengeSolver{
+					Solvers: []v1alpha2.ACMEChallengeSolver{
 						{
 							DNS01: &p.Details().ProviderConfig,
 						},
 					},
 				}))
 			issuer.Namespace = f.Namespace.Name
-			issuer, err := f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Create(issuer)
+			issuer, err := f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name).Create(issuer)
 			Expect(err).NotTo(HaveOccurred())
 			By("Waiting for Issuer to become Ready")
-			err = util.WaitForIssuerCondition(f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name),
+			err = util.WaitForIssuerCondition(f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name),
 				issuerName,
-				v1alpha1.IssuerCondition{
-					Type:   v1alpha1.IssuerConditionReady,
-					Status: v1alpha1.ConditionTrue,
+				v1alpha2.IssuerCondition{
+					Type:   v1alpha2.IssuerConditionReady,
+					Status: v1alpha2.ConditionTrue,
 				})
 			Expect(err).NotTo(HaveOccurred())
 			By("Verifying the ACME account URI is set")
-			err = util.WaitForIssuerStatusFunc(f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name),
+			err = util.WaitForIssuerStatusFunc(f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name),
 				issuerName,
-				func(i *v1alpha1.Issuer) (bool, error) {
+				func(i *v1alpha2.Issuer) (bool, error) {
 					if i.GetStatus().ACMEStatus().URI == "" {
 						return false, nil
 					}
@@ -115,16 +115,16 @@ func testDNSProvider(name string, p dns01Provider) bool {
 
 		AfterEach(func() {
 			By("Cleaning up")
-			f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Delete(issuerName, nil)
+			f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name).Delete(issuerName, nil)
 			f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Delete(testingACMEPrivateKey, nil)
 		})
 
 		It("should obtain a signed certificate for a regular domain", func() {
 			By("Creating a CertificateRequest")
 
-			crClient := f.CertManagerClientSet.CertmanagerV1alpha1().CertificateRequests(f.Namespace.Name)
+			crClient := f.CertManagerClientSet.CertmanagerV1alpha2().CertificateRequests(f.Namespace.Name)
 
-			cr, key, err := util.NewCertManagerBasicCertificateRequest(certificateRequestName, issuerName, v1alpha1.IssuerKind, nil,
+			cr, key, err := util.NewCertManagerBasicCertificateRequest(certificateRequestName, issuerName, v1alpha2.IssuerKind, nil,
 				[]string{dnsDomain}, nil, nil, x509.RSA)
 			Expect(err).NotTo(HaveOccurred())
 
@@ -137,11 +137,11 @@ func testDNSProvider(name string, p dns01Provider) bool {
 		It("should obtain a signed certificate for a wildcard domain", func() {
 			By("Creating a CertificateRequest")
 
-			cr, key, err := util.NewCertManagerBasicCertificateRequest(certificateRequestName, issuerName, v1alpha1.IssuerKind, nil,
+			cr, key, err := util.NewCertManagerBasicCertificateRequest(certificateRequestName, issuerName, v1alpha2.IssuerKind, nil,
 				[]string{"*." + dnsDomain}, nil, nil, x509.RSA)
 			Expect(err).NotTo(HaveOccurred())
 
-			cr, err = f.CertManagerClientSet.CertmanagerV1alpha1().CertificateRequests(f.Namespace.Name).Create(cr)
+			cr, err = f.CertManagerClientSet.CertmanagerV1alpha2().CertificateRequests(f.Namespace.Name).Create(cr)
 			Expect(err).NotTo(HaveOccurred())
 			err = h.WaitCertificateRequestIssuedValid(f.Namespace.Name, certificateRequestName, time.Minute*5, key)
 			Expect(err).NotTo(HaveOccurred())
@@ -150,11 +150,11 @@ func testDNSProvider(name string, p dns01Provider) bool {
 		It("should obtain a signed certificate for a wildcard and apex domain", func() {
 			By("Creating a CertificateRequest")
 
-			cr, key, err := util.NewCertManagerBasicCertificateRequest(certificateRequestName, issuerName, v1alpha1.IssuerKind, nil,
+			cr, key, err := util.NewCertManagerBasicCertificateRequest(certificateRequestName, issuerName, v1alpha2.IssuerKind, nil,
 				[]string{"*." + dnsDomain, dnsDomain}, nil, nil, x509.RSA)
 			Expect(err).NotTo(HaveOccurred())
 
-			cr, err = f.CertManagerClientSet.CertmanagerV1alpha1().CertificateRequests(f.Namespace.Name).Create(cr)
+			cr, err = f.CertManagerClientSet.CertmanagerV1alpha2().CertificateRequests(f.Namespace.Name).Create(cr)
 			Expect(err).NotTo(HaveOccurred())
 			// use a longer timeout for this, as it requires performing 2 dns validations in serial
 			err = h.WaitCertificateRequestIssuedValid(f.Namespace.Name, certificateRequestName, time.Minute*10, key)

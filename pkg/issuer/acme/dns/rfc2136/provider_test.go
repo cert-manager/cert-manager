@@ -19,7 +19,7 @@ package rfc2136
 import (
 	"testing"
 
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 	"github.com/jetstack/cert-manager/test/acme/dns"
 	testserver "github.com/jetstack/cert-manager/test/acme/dns/server"

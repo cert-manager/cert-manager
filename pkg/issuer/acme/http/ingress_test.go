@@ -30,7 +30,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 	coretesting "k8s.io/client-go/testing"
 
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	"github.com/jetstack/cert-manager/pkg/controller/test"
 )
 
@@ -38,12 +38,12 @@ func TestGetIngressesForChallenge(t *testing.T) {
 	const createdIngressKey = "createdIngress"
 	tests := map[string]solverFixture{
 		"should return one ingress that matches": {
-			Challenge: &v1alpha1.Challenge{
-				Spec: v1alpha1.ChallengeSpec{
+			Challenge: &v1alpha2.Challenge{
+				Spec: v1alpha2.ChallengeSpec{
 					DNSName: "example.com",
-					Solver: &v1alpha1.ACMEChallengeSolver{
-						HTTP01: &v1alpha1.ACMEChallengeSolverHTTP01{
-							Ingress: &v1alpha1.ACMEChallengeSolverHTTP01Ingress{},
+					Solver: &v1alpha2.ACMEChallengeSolver{
+						HTTP01: &v1alpha2.ACMEChallengeSolverHTTP01{
+							Ingress: &v1alpha2.ACMEChallengeSolverHTTP01Ingress{},
 						},
 					},
 				},
@@ -71,12 +71,12 @@ func TestGetIngressesForChallenge(t *testing.T) {
 			},
 		},
 		"should not return an ingress for the same certificate but different domain": {
-			Challenge: &v1alpha1.Challenge{
-				Spec: v1alpha1.ChallengeSpec{
+			Challenge: &v1alpha2.Challenge{
+				Spec: v1alpha2.ChallengeSpec{
 					DNSName: "example.com",
-					Solver: &v1alpha1.ACMEChallengeSolver{
-						HTTP01: &v1alpha1.ACMEChallengeSolverHTTP01{
-							Ingress: &v1alpha1.ACMEChallengeSolverHTTP01Ingress{},
+					Solver: &v1alpha2.ACMEChallengeSolver{
+						HTTP01: &v1alpha2.ACMEChallengeSolverHTTP01{
+							Ingress: &v1alpha2.ACMEChallengeSolverHTTP01Ingress{},
 						},
 					},
 				},
@@ -120,13 +120,13 @@ func TestCleanupIngresses(t *testing.T) {
 	const createdIngressKey = "createdIngress"
 	tests := map[string]solverFixture{
 		"should delete ingress resource": {
-			Challenge: &v1alpha1.Challenge{
-				Spec: v1alpha1.ChallengeSpec{
+			Challenge: &v1alpha2.Challenge{
+				Spec: v1alpha2.ChallengeSpec{
 					DNSName: "example.com",
 					Token:   "abcd",
-					Solver: &v1alpha1.ACMEChallengeSolver{
-						HTTP01: &v1alpha1.ACMEChallengeSolverHTTP01{
-							Ingress: &v1alpha1.ACMEChallengeSolverHTTP01Ingress{
+					Solver: &v1alpha2.ACMEChallengeSolver{
+						HTTP01: &v1alpha2.ACMEChallengeSolverHTTP01{
+							Ingress: &v1alpha2.ACMEChallengeSolverHTTP01Ingress{
 								Class: strPtr("nginx"),
 							},
 						},
@@ -153,13 +153,13 @@ func TestCleanupIngresses(t *testing.T) {
 			},
 		},
 		"should not delete ingress resources without appropriate labels": {
-			Challenge: &v1alpha1.Challenge{
-				Spec: v1alpha1.ChallengeSpec{
+			Challenge: &v1alpha2.Challenge{
+				Spec: v1alpha2.ChallengeSpec{
 					DNSName: "example.com",
 					Token:   "abcd",
-					Solver: &v1alpha1.ACMEChallengeSolver{
-						HTTP01: &v1alpha1.ACMEChallengeSolverHTTP01{
-							Ingress: &v1alpha1.ACMEChallengeSolverHTTP01Ingress{
+					Solver: &v1alpha2.ACMEChallengeSolver{
+						HTTP01: &v1alpha2.ACMEChallengeSolverHTTP01{
+							Ingress: &v1alpha2.ACMEChallengeSolverHTTP01Ingress{
 								Class: strPtr("nginx"),
 							},
 						},
@@ -221,13 +221,13 @@ func TestCleanupIngresses(t *testing.T) {
 					},
 				},
 			},
-			Challenge: &v1alpha1.Challenge{
-				Spec: v1alpha1.ChallengeSpec{
+			Challenge: &v1alpha2.Challenge{
+				Spec: v1alpha2.ChallengeSpec{
 					DNSName: "example.com",
 					Token:   "abcd",
-					Solver: &v1alpha1.ACMEChallengeSolver{
-						HTTP01: &v1alpha1.ACMEChallengeSolverHTTP01{
-							Ingress: &v1alpha1.ACMEChallengeSolverHTTP01Ingress{
+					Solver: &v1alpha2.ACMEChallengeSolver{
+						HTTP01: &v1alpha2.ACMEChallengeSolverHTTP01{
+							Ingress: &v1alpha2.ACMEChallengeSolverHTTP01Ingress{
 								Name: "testingress",
 							},
 						},
@@ -304,13 +304,13 @@ func TestCleanupIngresses(t *testing.T) {
 					},
 				},
 			},
-			Challenge: &v1alpha1.Challenge{
-				Spec: v1alpha1.ChallengeSpec{
+			Challenge: &v1alpha2.Challenge{
+				Spec: v1alpha2.ChallengeSpec{
 					DNSName: "example.com",
 					Token:   "abcd",
-					Solver: &v1alpha1.ACMEChallengeSolver{
-						HTTP01: &v1alpha1.ACMEChallengeSolverHTTP01{
-							Ingress: &v1alpha1.ACMEChallengeSolverHTTP01Ingress{
+					Solver: &v1alpha2.ACMEChallengeSolver{
+						HTTP01: &v1alpha2.ACMEChallengeSolverHTTP01{
+							Ingress: &v1alpha2.ACMEChallengeSolverHTTP01Ingress{
 								Name: "testingress",
 							},
 						},
@@ -337,13 +337,13 @@ func TestCleanupIngresses(t *testing.T) {
 			},
 		},
 		"should return an error if a delete fails": {
-			Challenge: &v1alpha1.Challenge{
-				Spec: v1alpha1.ChallengeSpec{
+			Challenge: &v1alpha2.Challenge{
+				Spec: v1alpha2.ChallengeSpec{
 					DNSName: "example.com",
 					Token:   "abcd",
-					Solver: &v1alpha1.ACMEChallengeSolver{
-						HTTP01: &v1alpha1.ACMEChallengeSolverHTTP01{
-							Ingress: &v1alpha1.ACMEChallengeSolverHTTP01Ingress{
+					Solver: &v1alpha2.ACMEChallengeSolver{
+						HTTP01: &v1alpha2.ACMEChallengeSolverHTTP01{
+							Ingress: &v1alpha2.ACMEChallengeSolverHTTP01Ingress{
 								Class: strPtr("nginx"),
 							},
 						},

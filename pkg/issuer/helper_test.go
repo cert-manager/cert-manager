@@ -22,14 +22,14 @@ import (
 
 	"k8s.io/apimachinery/pkg/runtime"
 
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	"github.com/jetstack/cert-manager/pkg/controller/test"
 	"github.com/jetstack/cert-manager/test/unit/gen"
 )
 
 func TestGetGenericIssuer(t *testing.T) {
-	var nilIssuer *v1alpha1.Issuer
-	var nilClusterIssuer *v1alpha1.ClusterIssuer
+	var nilIssuer *v1alpha2.Issuer
+	var nilClusterIssuer *v1alpha2.ClusterIssuer
 	type testT struct {
 		Name                   string
 		Kind                   string
@@ -37,7 +37,7 @@ func TestGetGenericIssuer(t *testing.T) {
 		CMObjects              []runtime.Object
 		NilClusterIssuerLister bool
 		Err                    bool
-		Expected               v1alpha1.GenericIssuer
+		Expected               v1alpha2.GenericIssuer
 	}
 	tests := []testT{
 		{
@@ -85,8 +85,8 @@ func TestGetGenericIssuer(t *testing.T) {
 			}
 			b.Init()
 			c := &helperImpl{
-				issuerLister:        b.FakeCMInformerFactory().Certmanager().V1alpha1().Issuers().Lister(),
-				clusterIssuerLister: b.FakeCMInformerFactory().Certmanager().V1alpha1().ClusterIssuers().Lister(),
+				issuerLister:        b.FakeCMInformerFactory().Certmanager().V1alpha2().Issuers().Lister(),
+				clusterIssuerLister: b.FakeCMInformerFactory().Certmanager().V1alpha2().ClusterIssuers().Lister(),
 			}
 			b.Start()
 			defer b.Stop()
@@ -98,7 +98,7 @@ func TestGetGenericIssuer(t *testing.T) {
 			stopCh := make(chan struct{})
 			defer close(stopCh)
 
-			actual, err := c.GetGenericIssuer(v1alpha1.ObjectReference{Name: row.Name, Kind: row.Kind}, row.Namespace)
+			actual, err := c.GetGenericIssuer(v1alpha2.ObjectReference{Name: row.Name, Kind: row.Kind}, row.Namespace)
 			if err != nil && !row.Err {
 				t.Errorf("Expected no error, but got: %s", err)
 			}

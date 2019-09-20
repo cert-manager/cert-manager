@@ -39,7 +39,7 @@ import (
 	"github.com/hashicorp/vault/helper/jsonutil"
 	corev1 "k8s.io/api/core/v1"
 
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	vaultfake "github.com/jetstack/cert-manager/pkg/internal/vault/fake"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 	"github.com/jetstack/cert-manager/test/unit/gen"
@@ -98,7 +98,7 @@ func generateCSR(t *testing.T, secretKey crypto.Signer) []byte {
 }
 
 type testSignT struct {
-	issuer     *v1alpha1.Issuer
+	issuer     *v1alpha2.Issuer
 	fakeLister *listers.FakeSecretLister
 	fakeClient *vaultfake.Client
 
@@ -135,7 +135,7 @@ func TestSign(t *testing.T) {
 		"a good csr but failed request should error": {
 			csrPEM: csrPEM,
 			issuer: gen.Issuer("vault-issuer",
-				gen.SetIssuerVault(v1alpha1.VaultIssuer{}),
+				gen.SetIssuerVault(v1alpha2.VaultIssuer{}),
 			),
 			fakeClient:   vaultfake.NewFakeClient().WithRawRequest(nil, errors.New("request failed")),
 			expectedErr:  errors.New("failed to sign certificate by vault: request failed"),
@@ -146,7 +146,7 @@ func TestSign(t *testing.T) {
 		"a good csr and good response should return a certificate": {
 			csrPEM: csrPEM,
 			issuer: gen.Issuer("vault-issuer",
-				gen.SetIssuerVault(v1alpha1.VaultIssuer{}),
+				gen.SetIssuerVault(v1alpha2.VaultIssuer{}),
 			),
 			fakeClient: vaultfake.NewFakeClient().WithRawRequest(&vault.Response{
 				Response: &http.Response{
@@ -183,7 +183,7 @@ type testSetTokenT struct {
 	expectedToken string
 	expectedErr   error
 
-	issuer     *v1alpha1.Issuer
+	issuer     *v1alpha2.Issuer
 	fakeLister *listers.FakeSecretLister
 	fakeClient *vaultfake.Client
 }
@@ -204,9 +204,9 @@ func TestSetToken(t *testing.T) {
 	tests := map[string]testSetTokenT{
 		"if neither token secret ref or app role secret ref not found then error": {
 			issuer: gen.Issuer("vault-issuer",
-				gen.SetIssuerVault(v1alpha1.VaultIssuer{
+				gen.SetIssuerVault(v1alpha2.VaultIssuer{
 					CABundle: []byte(testCertBundle),
-					Auth:     v1alpha1.VaultAuth{},
+					Auth:     v1alpha2.VaultAuth{},
 				}),
 			),
 			fakeLister:    listers.FakeSecretListerFrom(listers.NewFakeSecretLister()),
@@ -218,11 +218,11 @@ func TestSetToken(t *testing.T) {
 
 		"if token secret ref is set but secret doesn't exist should error": {
 			issuer: gen.Issuer("vault-issuer",
-				gen.SetIssuerVault(v1alpha1.VaultIssuer{
+				gen.SetIssuerVault(v1alpha2.VaultIssuer{
 					CABundle: []byte(testCertBundle),
-					Auth: v1alpha1.VaultAuth{
-						TokenSecretRef: v1alpha1.SecretKeySelector{
-							LocalObjectReference: v1alpha1.LocalObjectReference{
+					Auth: v1alpha2.VaultAuth{
+						TokenSecretRef: v1alpha2.SecretKeySelector{
+							LocalObjectReference: v1alpha2.LocalObjectReference{
 								Name: "secret-ref-name",
 							},
 						},
@@ -239,11 +239,11 @@ func TestSetToken(t *testing.T) {
 
 		"if token secret ref set, return client using token stored": {
 			issuer: gen.Issuer("vault-issuer",
-				gen.SetIssuerVault(v1alpha1.VaultIssuer{
+				gen.SetIssuerVault(v1alpha2.VaultIssuer{
 					CABundle: []byte(testCertBundle),
-					Auth: v1alpha1.VaultAuth{
-						TokenSecretRef: v1alpha1.SecretKeySelector{
-							LocalObjectReference: v1alpha1.LocalObjectReference{
+					Auth: v1alpha2.VaultAuth{
+						TokenSecretRef: v1alpha2.SecretKeySelector{
+							LocalObjectReference: v1alpha2.LocalObjectReference{
 								Name: "secret-ref-name",
 							},
 							Key: "my-token-key",
@@ -261,13 +261,13 @@ func TestSetToken(t *testing.T) {
 
 		"if app role set but secret token not but vault fails to return token, error": {
 			issuer: gen.Issuer("vault-issuer",
-				gen.SetIssuerVault(v1alpha1.VaultIssuer{
+				gen.SetIssuerVault(v1alpha2.VaultIssuer{
 					CABundle: []byte(testCertBundle),
-					Auth: v1alpha1.VaultAuth{
-						AppRole: v1alpha1.VaultAppRole{
+					Auth: v1alpha2.VaultAuth{
+						AppRole: v1alpha2.VaultAppRole{
 							RoleId: "my-role-id",
-							SecretRef: v1alpha1.SecretKeySelector{
-								LocalObjectReference: v1alpha1.LocalObjectReference{
+							SecretRef: v1alpha2.SecretKeySelector{
+								LocalObjectReference: v1alpha2.LocalObjectReference{
 									Name: "secret-ref-name",
 								},
 								Key: "my-role-key",
@@ -286,13 +286,13 @@ func TestSetToken(t *testing.T) {
 
 		"if app role secret ref set, return client using token stored": {
 			issuer: gen.Issuer("vault-issuer",
-				gen.SetIssuerVault(v1alpha1.VaultIssuer{
+				gen.SetIssuerVault(v1alpha2.VaultIssuer{
 					CABundle: []byte(testCertBundle),
-					Auth: v1alpha1.VaultAuth{
-						AppRole: v1alpha1.VaultAppRole{
+					Auth: v1alpha2.VaultAuth{
+						AppRole: v1alpha2.VaultAppRole{
 							RoleId: "my-role-id",
-							SecretRef: v1alpha1.SecretKeySelector{
-								LocalObjectReference: v1alpha1.LocalObjectReference{
+							SecretRef: v1alpha2.SecretKeySelector{
+								LocalObjectReference: v1alpha2.LocalObjectReference{
 									Name: "secret-ref-name",
 								},
 								Key: "my-role-key",
@@ -317,20 +317,20 @@ func TestSetToken(t *testing.T) {
 		},
 		"if app role secret ref and token secret set, take preference on token secret": {
 			issuer: gen.Issuer("vault-issuer",
-				gen.SetIssuerVault(v1alpha1.VaultIssuer{
+				gen.SetIssuerVault(v1alpha2.VaultIssuer{
 					CABundle: []byte(testCertBundle),
-					Auth: v1alpha1.VaultAuth{
-						AppRole: v1alpha1.VaultAppRole{
+					Auth: v1alpha2.VaultAuth{
+						AppRole: v1alpha2.VaultAppRole{
 							RoleId: "my-role-id",
-							SecretRef: v1alpha1.SecretKeySelector{
-								LocalObjectReference: v1alpha1.LocalObjectReference{
+							SecretRef: v1alpha2.SecretKeySelector{
+								LocalObjectReference: v1alpha2.LocalObjectReference{
 									Name: "secret-ref-name",
 								},
 								Key: "my-role-key",
 							},
 						},
-						TokenSecretRef: v1alpha1.SecretKeySelector{
-							LocalObjectReference: v1alpha1.LocalObjectReference{
+						TokenSecretRef: v1alpha2.SecretKeySelector{
+							LocalObjectReference: v1alpha2.LocalObjectReference{
 								Name: "secret-ref-name",
 							},
 							Key: "my-token-key",
@@ -372,7 +372,7 @@ type testAppRoleRefT struct {
 	expectedSecretID string
 	expectedErr      error
 
-	appRole *v1alpha1.VaultAppRole
+	appRole *v1alpha2.VaultAppRole
 
 	fakeLister *listers.FakeSecretLister
 }
@@ -380,7 +380,7 @@ type testAppRoleRefT struct {
 func TestAppRoleRef(t *testing.T) {
 	errSecretGet := errors.New("no secret found")
 
-	basicAppRoleRef := &v1alpha1.VaultAppRole{
+	basicAppRoleRef := &v1alpha2.VaultAppRole{
 		RoleId: "my-role-id",
 	}
 
@@ -396,10 +396,10 @@ func TestAppRoleRef(t *testing.T) {
 		},
 
 		"no data in key should fail": {
-			appRole: &v1alpha1.VaultAppRole{
+			appRole: &v1alpha2.VaultAppRole{
 				RoleId: "",
-				SecretRef: v1alpha1.SecretKeySelector{
-					LocalObjectReference: v1alpha1.LocalObjectReference{
+				SecretRef: v1alpha2.SecretKeySelector{
+					LocalObjectReference: v1alpha2.LocalObjectReference{
 						Name: "secret-name",
 					},
 					Key: "my-key",
@@ -419,10 +419,10 @@ func TestAppRoleRef(t *testing.T) {
 		},
 
 		"should return roleID and secretID with trimmed space": {
-			appRole: &v1alpha1.VaultAppRole{
+			appRole: &v1alpha2.VaultAppRole{
 				RoleId: "    my-role-id  ",
-				SecretRef: v1alpha1.SecretKeySelector{
-					LocalObjectReference: v1alpha1.LocalObjectReference{
+				SecretRef: v1alpha2.SecretKeySelector{
+					LocalObjectReference: v1alpha2.LocalObjectReference{
 						Name: "secret-name",
 					},
 					Key: "my-key",
@@ -559,7 +559,7 @@ func TestTokenRef(t *testing.T) {
 
 type testNewConfigT struct {
 	expectedErr error
-	issuer      *v1alpha1.Issuer
+	issuer      *v1alpha2.Issuer
 	checkFunc   func(cfg *vault.Config) error
 }
 
@@ -567,7 +567,7 @@ func TestNewConfig(t *testing.T) {
 	tests := map[string]testNewConfigT{
 		"no CA bundle set in issuer should return nil": {
 			issuer: gen.Issuer("vault-issuer",
-				gen.SetIssuerVault(v1alpha1.VaultIssuer{
+				gen.SetIssuerVault(v1alpha2.VaultIssuer{
 					CABundle: nil,
 				}),
 			),
@@ -576,7 +576,7 @@ func TestNewConfig(t *testing.T) {
 
 		"a bad cert bundle should error": {
 			issuer: gen.Issuer("vault-issuer",
-				gen.SetIssuerVault(v1alpha1.VaultIssuer{
+				gen.SetIssuerVault(v1alpha2.VaultIssuer{
 					CABundle: []byte("a bad cert bundle"),
 				}),
 			),
@@ -585,7 +585,7 @@ func TestNewConfig(t *testing.T) {
 
 		"a good cert bundle should be added to the config": {
 			issuer: gen.Issuer("vault-issuer",
-				gen.SetIssuerVault(v1alpha1.VaultIssuer{
+				gen.SetIssuerVault(v1alpha2.VaultIssuer{
 					CABundle: []byte(testCertBundle),
 				}),
 			),
@@ -635,7 +635,7 @@ func TestNewConfig(t *testing.T) {
 
 type requestTokenWithAppRoleRefT struct {
 	client  Client
-	appRole *v1alpha1.VaultAppRole
+	appRole *v1alpha2.VaultAppRole
 
 	fakeLister *listers.FakeSecretLister
 
@@ -644,10 +644,10 @@ type requestTokenWithAppRoleRefT struct {
 }
 
 func TestRequestTokenWithAppRoleRef(t *testing.T) {
-	basicAppRoleRef := &v1alpha1.VaultAppRole{
+	basicAppRoleRef := &v1alpha2.VaultAppRole{
 		RoleId: "test-role-id",
-		SecretRef: v1alpha1.SecretKeySelector{
-			LocalObjectReference: v1alpha1.LocalObjectReference{
+		SecretRef: v1alpha2.SecretKeySelector{
+			LocalObjectReference: v1alpha2.LocalObjectReference{
 				Name: "test-secret",
 			},
 			Key: "my-key",

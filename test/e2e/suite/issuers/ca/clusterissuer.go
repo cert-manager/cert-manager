@@ -20,7 +20,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	cmutil "github.com/jetstack/cert-manager/pkg/util"
 	"github.com/jetstack/cert-manager/test/e2e/framework"
 	"github.com/jetstack/cert-manager/test/e2e/framework/addon"
@@ -49,20 +49,20 @@ var _ = framework.CertManagerDescribe("CA ClusterIssuer", func() {
 	AfterEach(func() {
 		By("Cleaning up")
 		f.KubeClientSet.CoreV1().Secrets(clusterResourceNamespace).Delete(secretName, nil)
-		f.CertManagerClientSet.CertmanagerV1alpha1().ClusterIssuers().Delete(issuerName, nil)
+		f.CertManagerClientSet.CertmanagerV1alpha2().ClusterIssuers().Delete(issuerName, nil)
 	})
 
 	It("should validate a signing keypair", func() {
 		By("Creating an Issuer")
 		clusterIssuer := util.NewCertManagerCAClusterIssuer(issuerName, secretName)
-		_, err := f.CertManagerClientSet.CertmanagerV1alpha1().ClusterIssuers().Create(clusterIssuer)
+		_, err := f.CertManagerClientSet.CertmanagerV1alpha2().ClusterIssuers().Create(clusterIssuer)
 		Expect(err).NotTo(HaveOccurred())
 		By("Waiting for Issuer to become Ready")
-		err = util.WaitForClusterIssuerCondition(f.CertManagerClientSet.CertmanagerV1alpha1().ClusterIssuers(),
+		err = util.WaitForClusterIssuerCondition(f.CertManagerClientSet.CertmanagerV1alpha2().ClusterIssuers(),
 			issuerName,
-			v1alpha1.IssuerCondition{
-				Type:   v1alpha1.IssuerConditionReady,
-				Status: v1alpha1.ConditionTrue,
+			v1alpha2.IssuerCondition{
+				Type:   v1alpha2.IssuerConditionReady,
+				Status: v1alpha2.ConditionTrue,
 			})
 		Expect(err).NotTo(HaveOccurred())
 	})

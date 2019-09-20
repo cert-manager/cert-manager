@@ -28,7 +28,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	cmutil "github.com/jetstack/cert-manager/pkg/util"
 	"github.com/jetstack/cert-manager/test/e2e/framework"
 	"github.com/jetstack/cert-manager/test/e2e/framework/addon"
@@ -75,42 +75,42 @@ var _ = framework.CertManagerDescribe("ACME CertificateRequest (HTTP01)", func()
 	BeforeEach(func() {
 		acmeURL := pebble.Details().Host
 		acmeIssuer := util.NewCertManagerACMEIssuer(issuerName, acmeURL, testingACMEEmail, testingACMEPrivateKey)
-		acmeIssuer.Spec.ACME.Solvers = []v1alpha1.ACMEChallengeSolver{
+		acmeIssuer.Spec.ACME.Solvers = []v1alpha2.ACMEChallengeSolver{
 			{
-				HTTP01: &v1alpha1.ACMEChallengeSolverHTTP01{
-					Ingress: &v1alpha1.ACMEChallengeSolverHTTP01Ingress{
+				HTTP01: &v1alpha2.ACMEChallengeSolverHTTP01{
+					Ingress: &v1alpha2.ACMEChallengeSolverHTTP01Ingress{
 						Class: &addon.NginxIngress.Details().IngressClass,
 					},
 				},
 			},
 			{
-				Selector: &v1alpha1.CertificateDNSNameSelector{
+				Selector: &v1alpha2.CertificateDNSNameSelector{
 					MatchLabels: map[string]string{
 						"testing.cert-manager.io/fixed-ingress": "true",
 					},
 				},
-				HTTP01: &v1alpha1.ACMEChallengeSolverHTTP01{
-					Ingress: &v1alpha1.ACMEChallengeSolverHTTP01Ingress{
+				HTTP01: &v1alpha2.ACMEChallengeSolverHTTP01{
+					Ingress: &v1alpha2.ACMEChallengeSolverHTTP01Ingress{
 						Name: fixedIngressName,
 					},
 				},
 			},
 		}
 		By("Creating an Issuer")
-		_, err := f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Create(acmeIssuer)
+		_, err := f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name).Create(acmeIssuer)
 		Expect(err).NotTo(HaveOccurred())
 		By("Waiting for Issuer to become Ready")
-		err = util.WaitForIssuerCondition(f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name),
+		err = util.WaitForIssuerCondition(f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name),
 			issuerName,
-			v1alpha1.IssuerCondition{
-				Type:   v1alpha1.IssuerConditionReady,
-				Status: v1alpha1.ConditionTrue,
+			v1alpha2.IssuerCondition{
+				Type:   v1alpha2.IssuerConditionReady,
+				Status: v1alpha2.ConditionTrue,
 			})
 		Expect(err).NotTo(HaveOccurred())
 		By("Verifying the ACME account URI is set")
-		err = util.WaitForIssuerStatusFunc(f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name),
+		err = util.WaitForIssuerStatusFunc(f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name),
 			issuerName,
-			func(i *v1alpha1.Issuer) (bool, error) {
+			func(i *v1alpha2.Issuer) (bool, error) {
 				if i.GetStatus().ACMEStatus().URI == "" {
 					return false, nil
 				}
@@ -132,15 +132,15 @@ var _ = framework.CertManagerDescribe("ACME CertificateRequest (HTTP01)", func()
 
 	AfterEach(func() {
 		By("Cleaning up")
-		f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Delete(issuerName, nil)
+		f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name).Delete(issuerName, nil)
 		f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Delete(testingACMEPrivateKey, nil)
 	})
 
 	It("should obtain a signed certificate with a single CN from the ACME server", func() {
-		crClient := f.CertManagerClientSet.CertmanagerV1alpha1().CertificateRequests(f.Namespace.Name)
+		crClient := f.CertManagerClientSet.CertmanagerV1alpha2().CertificateRequests(f.Namespace.Name)
 
 		By("Creating a CertificateRequest")
-		cr, key, err := util.NewCertManagerBasicCertificateRequest(certificateRequestName, issuerName, v1alpha1.IssuerKind, nil,
+		cr, key, err := util.NewCertManagerBasicCertificateRequest(certificateRequestName, issuerName, v1alpha2.IssuerKind, nil,
 			[]string{acmeIngressDomain}, nil, nil, x509.RSA)
 		Expect(err).NotTo(HaveOccurred())
 
@@ -153,10 +153,10 @@ var _ = framework.CertManagerDescribe("ACME CertificateRequest (HTTP01)", func()
 	})
 
 	It("should obtain a signed ecdsa certificate with a single CN from the ACME server", func() {
-		crClient := f.CertManagerClientSet.CertmanagerV1alpha1().CertificateRequests(f.Namespace.Name)
+		crClient := f.CertManagerClientSet.CertmanagerV1alpha2().CertificateRequests(f.Namespace.Name)
 
 		By("Creating a CertificateRequest")
-		cr, key, err := util.NewCertManagerBasicCertificateRequest(certificateRequestName, issuerName, v1alpha1.IssuerKind, nil,
+		cr, key, err := util.NewCertManagerBasicCertificateRequest(certificateRequestName, issuerName, v1alpha2.IssuerKind, nil,
 			[]string{acmeIngressDomain}, nil, nil, x509.ECDSA)
 		Expect(err).NotTo(HaveOccurred())
 
@@ -168,12 +168,12 @@ var _ = framework.CertManagerDescribe("ACME CertificateRequest (HTTP01)", func()
 	})
 
 	It("should obtain a signed certificate for a long domain using http01 validation", func() {
-		crClient := f.CertManagerClientSet.CertmanagerV1alpha1().CertificateRequests(f.Namespace.Name)
+		crClient := f.CertManagerClientSet.CertmanagerV1alpha2().CertificateRequests(f.Namespace.Name)
 
 		// the maximum length of a single segment of the domain being requested
 		const maxLengthOfDomainSegment = 63
 		By("Creating a CertificateRequest")
-		cr, key, err := util.NewCertManagerBasicCertificateRequest(certificateRequestName, issuerName, v1alpha1.IssuerKind, nil,
+		cr, key, err := util.NewCertManagerBasicCertificateRequest(certificateRequestName, issuerName, v1alpha2.IssuerKind, nil,
 			[]string{acmeIngressDomain, fmt.Sprintf("%s.%s", cmutil.RandStringRunes(maxLengthOfDomainSegment), acmeIngressDomain)},
 			nil, nil, x509.RSA)
 		Expect(err).NotTo(HaveOccurred())
@@ -185,10 +185,10 @@ var _ = framework.CertManagerDescribe("ACME CertificateRequest (HTTP01)", func()
 	})
 
 	It("should obtain a signed certificate with a CN and single subdomain as dns name from the ACME server", func() {
-		crClient := f.CertManagerClientSet.CertmanagerV1alpha1().CertificateRequests(f.Namespace.Name)
+		crClient := f.CertManagerClientSet.CertmanagerV1alpha2().CertificateRequests(f.Namespace.Name)
 
 		By("Creating a CertificateRequest")
-		cr, key, err := util.NewCertManagerBasicCertificateRequest(certificateRequestName, issuerName, v1alpha1.IssuerKind, nil,
+		cr, key, err := util.NewCertManagerBasicCertificateRequest(certificateRequestName, issuerName, v1alpha2.IssuerKind, nil,
 			[]string{fmt.Sprintf("%s.%s", cmutil.RandStringRunes(5), acmeIngressDomain)},
 			nil, nil, x509.RSA)
 		Expect(err).NotTo(HaveOccurred())
@@ -203,26 +203,26 @@ var _ = framework.CertManagerDescribe("ACME CertificateRequest (HTTP01)", func()
 	It("should fail to obtain a certificate for an invalid ACME dns name", func() {
 		// create test fixture
 		By("Creating a CertificateRequest")
-		cr, _, err := util.NewCertManagerBasicCertificateRequest(certificateRequestName, issuerName, v1alpha1.IssuerKind, nil,
+		cr, _, err := util.NewCertManagerBasicCertificateRequest(certificateRequestName, issuerName, v1alpha2.IssuerKind, nil,
 			[]string{"google.com"}, nil, nil, x509.RSA)
 		Expect(err).NotTo(HaveOccurred())
 
-		cr, err = f.CertManagerClientSet.CertmanagerV1alpha1().CertificateRequests(f.Namespace.Name).Create(cr)
+		cr, err = f.CertManagerClientSet.CertmanagerV1alpha2().CertificateRequests(f.Namespace.Name).Create(cr)
 		Expect(err).NotTo(HaveOccurred())
 
-		notReadyCondition := v1alpha1.CertificateRequestCondition{
-			Type:   v1alpha1.CertificateRequestConditionReady,
-			Status: v1alpha1.ConditionFalse,
+		notReadyCondition := v1alpha2.CertificateRequestCondition{
+			Type:   v1alpha2.CertificateRequestConditionReady,
+			Status: v1alpha2.ConditionFalse,
 		}
 		Eventually(cr, "30s", "1s").Should(HaveCondition(f, notReadyCondition))
 		Consistently(cr, "1m", "10s").Should(HaveCondition(f, notReadyCondition))
 	})
 
 	It("should automatically recreate challenge pod and still obtain a certificate if it is manually deleted", func() {
-		crClient := f.CertManagerClientSet.CertmanagerV1alpha1().CertificateRequests(f.Namespace.Name)
+		crClient := f.CertManagerClientSet.CertmanagerV1alpha2().CertificateRequests(f.Namespace.Name)
 
 		By("Creating a CertificateRequest")
-		cr, key, err := util.NewCertManagerBasicCertificateRequest(certificateRequestName, issuerName, v1alpha1.IssuerKind, nil,
+		cr, key, err := util.NewCertManagerBasicCertificateRequest(certificateRequestName, issuerName, v1alpha2.IssuerKind, nil,
 			[]string{acmeIngressDomain}, nil, nil, x509.RSA)
 		Expect(err).NotTo(HaveOccurred())
 

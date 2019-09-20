@@ -25,22 +25,22 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/klog"
 
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	"github.com/jetstack/cert-manager/pkg/logs"
 	"github.com/jetstack/cert-manager/pkg/webhook"
 	"github.com/jetstack/cert-manager/pkg/webhook/handlers"
 )
 
 var (
-	GroupName = "webhook." + v1alpha1.SchemeGroupVersion.Group
+	GroupName = "webhook." + v1alpha2.SchemeGroupVersion.Group
 )
 
 var (
 	validationFuncs = map[schema.GroupVersionKind]handlers.ValidationFunc{
-		v1alpha1.SchemeGroupVersion.WithKind(v1alpha1.CertificateKind):        webhook.ValidateCertificate,
-		v1alpha1.SchemeGroupVersion.WithKind(v1alpha1.CertificateRequestKind): webhook.ValidateCertificateRequest,
-		v1alpha1.SchemeGroupVersion.WithKind(v1alpha1.IssuerKind):             webhook.ValidateIssuer,
-		v1alpha1.SchemeGroupVersion.WithKind(v1alpha1.ClusterIssuerKind):      webhook.ValidateClusterIssuer,
+		v1alpha2.SchemeGroupVersion.WithKind(v1alpha2.CertificateKind):        webhook.ValidateCertificate,
+		v1alpha2.SchemeGroupVersion.WithKind(v1alpha2.CertificateRequestKind): webhook.ValidateCertificateRequest,
+		v1alpha2.SchemeGroupVersion.WithKind(v1alpha2.IssuerKind):             webhook.ValidateIssuer,
+		v1alpha2.SchemeGroupVersion.WithKind(v1alpha2.ClusterIssuerKind):      webhook.ValidateClusterIssuer,
 	}
 )
 

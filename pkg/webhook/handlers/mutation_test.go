@@ -54,7 +54,7 @@ func TestDefaultCertificate(t *testing.T) {
 	klog.InitFlags(flag.CommandLine)
 	c := NewSchemeBackedDefaulter(log, testgroup.GroupName, scheme)
 	tests := map[string]testT{
-		"convert Certificate from v1alpha1 to v1beta1": {
+		"apply defaults to TestType": {
 			inputRequest: admissionv1beta1.AdmissionRequest{
 				Object: runtime.RawExtension{
 					Raw: []byte(`

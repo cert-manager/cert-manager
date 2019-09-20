@@ -21,7 +21,7 @@ import (
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	"github.com/jetstack/cert-manager/test/e2e/framework"
 	"github.com/jetstack/cert-manager/test/e2e/suite/conformance/certificates"
 )
@@ -35,7 +35,7 @@ var _ = framework.ConformanceDescribe("Certificates", func() {
 
 func createSelfSignedIssuer(f *framework.Framework) cmapi.ObjectReference {
 	By("Creating a SelfSigned issuer")
-	_, err := f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Create(&cmapi.Issuer{
+	_, err := f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name).Create(&cmapi.Issuer{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "selfsigned",
 		},

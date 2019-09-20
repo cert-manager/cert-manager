@@ -26,7 +26,7 @@ import (
 
 	acmecl "github.com/jetstack/cert-manager/pkg/acme/client"
 	acmefake "github.com/jetstack/cert-manager/pkg/acme/fake"
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	testpkg "github.com/jetstack/cert-manager/pkg/controller/test"
 	"github.com/jetstack/cert-manager/pkg/issuer"
 	"github.com/jetstack/cert-manager/test/unit/gen"
@@ -34,32 +34,32 @@ import (
 )
 
 // Present the challenge value with the given solver.
-func (f *fakeSolver) Present(ctx context.Context, issuer v1alpha1.GenericIssuer, ch *v1alpha1.Challenge) error {
+func (f *fakeSolver) Present(ctx context.Context, issuer v1alpha2.GenericIssuer, ch *v1alpha2.Challenge) error {
 	return f.fakePresent(ctx, issuer, ch)
 }
 
 // Check should return Error only if propagation check cannot be performed.
 // It MUST return `false, nil` if can contact all relevant services and all is
 // doing is waiting for propagation
-func (f *fakeSolver) Check(ctx context.Context, issuer v1alpha1.GenericIssuer, ch *v1alpha1.Challenge) error {
+func (f *fakeSolver) Check(ctx context.Context, issuer v1alpha2.GenericIssuer, ch *v1alpha2.Challenge) error {
 	return f.fakeCheck(ctx, issuer, ch)
 }
 
 // CleanUp will remove challenge records for a given solver.
 // This may involve deleting resources in the Kubernetes API Server, or
 // communicating with other external components (e.g. DNS providers).
-func (f *fakeSolver) CleanUp(ctx context.Context, issuer v1alpha1.GenericIssuer, ch *v1alpha1.Challenge) error {
+func (f *fakeSolver) CleanUp(ctx context.Context, issuer v1alpha2.GenericIssuer, ch *v1alpha2.Challenge) error {
 	return f.fakeCleanUp(ctx, issuer, ch)
 }
 
 type fakeSolver struct {
-	fakePresent func(ctx context.Context, issuer v1alpha1.GenericIssuer, ch *v1alpha1.Challenge) error
-	fakeCheck   func(ctx context.Context, issuer v1alpha1.GenericIssuer, ch *v1alpha1.Challenge) error
-	fakeCleanUp func(ctx context.Context, issuer v1alpha1.GenericIssuer, ch *v1alpha1.Challenge) error
+	fakePresent func(ctx context.Context, issuer v1alpha2.GenericIssuer, ch *v1alpha2.Challenge) error
+	fakeCheck   func(ctx context.Context, issuer v1alpha2.GenericIssuer, ch *v1alpha2.Challenge) error
+	fakeCleanUp func(ctx context.Context, issuer v1alpha2.GenericIssuer, ch *v1alpha2.Challenge) error
 }
 
 type testT struct {
-	challenge  *v1alpha1.Challenge
+	challenge  *v1alpha2.Challenge
 	builder    *testpkg.Builder
 	httpSolver *fakeSolver
 	dnsSolver  *fakeSolver
@@ -68,17 +68,17 @@ type testT struct {
 }
 
 func TestSyncHappyPath(t *testing.T) {
-	testIssuerHTTP01Enabled := gen.Issuer("testissuer", gen.SetIssuerACME(v1alpha1.ACMEIssuer{
-		Solvers: []v1alpha1.ACMEChallengeSolver{
+	testIssuerHTTP01Enabled := gen.Issuer("testissuer", gen.SetIssuerACME(v1alpha2.ACMEIssuer{
+		Solvers: []v1alpha2.ACMEChallengeSolver{
 			{
-				HTTP01: &v1alpha1.ACMEChallengeSolverHTTP01{
-					Ingress: &v1alpha1.ACMEChallengeSolverHTTP01Ingress{},
+				HTTP01: &v1alpha2.ACMEChallengeSolverHTTP01{
+					Ingress: &v1alpha2.ACMEChallengeSolverHTTP01Ingress{},
 				},
 			},
 		},
 	}))
 	baseChallenge := gen.Challenge("testchal",
-		gen.SetChallengeIssuer(v1alpha1.ObjectReference{
+		gen.SetChallengeIssuer(v1alpha2.ObjectReference{
 			Name: "testissuer",
 		}),
 	)
@@ -95,11 +95,11 @@ func TestSyncHappyPath(t *testing.T) {
 					gen.SetChallengeURL("testurl"),
 				), testIssuerHTTP01Enabled},
 				ExpectedActions: []testpkg.Action{
-					testpkg.NewAction(coretesting.NewUpdateAction(v1alpha1.SchemeGroupVersion.WithResource("challenges"), gen.DefaultTestNamespace,
+					testpkg.NewAction(coretesting.NewUpdateAction(v1alpha2.SchemeGroupVersion.WithResource("challenges"), gen.DefaultTestNamespace,
 						gen.ChallengeFrom(baseChallenge,
 							gen.SetChallengeProcessing(true),
 							gen.SetChallengeURL("testurl"),
-							gen.SetChallengeState(v1alpha1.Pending),
+							gen.SetChallengeState(v1alpha2.Pending),
 						))),
 				},
 			},
@@ -113,14 +113,14 @@ func TestSyncHappyPath(t *testing.T) {
 			challenge: gen.ChallengeFrom(baseChallenge,
 				gen.SetChallengeProcessing(true),
 				gen.SetChallengeURL("testurl"),
-				gen.SetChallengeState(v1alpha1.Pending),
+				gen.SetChallengeState(v1alpha2.Pending),
 				gen.SetChallengeType("http-01"),
 			),
 			httpSolver: &fakeSolver{
-				fakePresent: func(ctx context.Context, issuer v1alpha1.GenericIssuer, ch *v1alpha1.Challenge) error {
+				fakePresent: func(ctx context.Context, issuer v1alpha2.GenericIssuer, ch *v1alpha2.Challenge) error {
 					return nil
 				},
-				fakeCheck: func(ctx context.Context, issuer v1alpha1.GenericIssuer, ch *v1alpha1.Challenge) error {
+				fakeCheck: func(ctx context.Context, issuer v1alpha2.GenericIssuer, ch *v1alpha2.Challenge) error {
 					return fmt.Errorf("some error")
 				},
 			},
@@ -128,15 +128,15 @@ func TestSyncHappyPath(t *testing.T) {
 				CertManagerObjects: []runtime.Object{gen.ChallengeFrom(baseChallenge,
 					gen.SetChallengeProcessing(true),
 					gen.SetChallengeURL("testurl"),
-					gen.SetChallengeState(v1alpha1.Pending),
+					gen.SetChallengeState(v1alpha2.Pending),
 					gen.SetChallengeType("http-01"),
 				), testIssuerHTTP01Enabled},
 				ExpectedActions: []testpkg.Action{
-					testpkg.NewAction(coretesting.NewUpdateAction(v1alpha1.SchemeGroupVersion.WithResource("challenges"), gen.DefaultTestNamespace,
+					testpkg.NewAction(coretesting.NewUpdateAction(v1alpha2.SchemeGroupVersion.WithResource("challenges"), gen.DefaultTestNamespace,
 						gen.ChallengeFrom(baseChallenge,
 							gen.SetChallengeProcessing(true),
 							gen.SetChallengeURL("testurl"),
-							gen.SetChallengeState(v1alpha1.Pending),
+							gen.SetChallengeState(v1alpha2.Pending),
 							gen.SetChallengePresented(true),
 							gen.SetChallengeType("http-01"),
 							gen.SetChallengeReason("Waiting for http-01 challenge propagation: some error"),
@@ -152,15 +152,15 @@ func TestSyncHappyPath(t *testing.T) {
 				gen.SetChallengeProcessing(true),
 				gen.SetChallengeURL("testurl"),
 				gen.SetChallengeDNSName("test.com"),
-				gen.SetChallengeState(v1alpha1.Pending),
+				gen.SetChallengeState(v1alpha2.Pending),
 				gen.SetChallengeType("http-01"),
 				gen.SetChallengePresented(true),
 			),
 			httpSolver: &fakeSolver{
-				fakeCheck: func(ctx context.Context, issuer v1alpha1.GenericIssuer, ch *v1alpha1.Challenge) error {
+				fakeCheck: func(ctx context.Context, issuer v1alpha2.GenericIssuer, ch *v1alpha2.Challenge) error {
 					return nil
 				},
-				fakeCleanUp: func(context.Context, v1alpha1.GenericIssuer, *v1alpha1.Challenge) error {
+				fakeCleanUp: func(context.Context, v1alpha2.GenericIssuer, *v1alpha2.Challenge) error {
 					return nil
 				},
 			},
@@ -169,17 +169,17 @@ func TestSyncHappyPath(t *testing.T) {
 					gen.SetChallengeProcessing(true),
 					gen.SetChallengeURL("testurl"),
 					gen.SetChallengeDNSName("test.com"),
-					gen.SetChallengeState(v1alpha1.Pending),
+					gen.SetChallengeState(v1alpha2.Pending),
 					gen.SetChallengeType("http-01"),
 					gen.SetChallengePresented(true),
 				), testIssuerHTTP01Enabled},
 				ExpectedActions: []testpkg.Action{
-					testpkg.NewAction(coretesting.NewUpdateAction(v1alpha1.SchemeGroupVersion.WithResource("challenges"), gen.DefaultTestNamespace,
+					testpkg.NewAction(coretesting.NewUpdateAction(v1alpha2.SchemeGroupVersion.WithResource("challenges"), gen.DefaultTestNamespace,
 						gen.ChallengeFrom(baseChallenge,
 							gen.SetChallengeProcessing(true),
 							gen.SetChallengeURL("testurl"),
 							gen.SetChallengeDNSName("test.com"),
-							gen.SetChallengeState(v1alpha1.Valid),
+							gen.SetChallengeState(v1alpha2.Valid),
 							gen.SetChallengeType("http-01"),
 							gen.SetChallengePresented(true),
 							gen.SetChallengeReason("Successfully authorized domain"),
@@ -205,15 +205,15 @@ func TestSyncHappyPath(t *testing.T) {
 			challenge: gen.ChallengeFrom(baseChallenge,
 				gen.SetChallengeProcessing(true),
 				gen.SetChallengeURL("testurl"),
-				gen.SetChallengeState(v1alpha1.Pending),
+				gen.SetChallengeState(v1alpha2.Pending),
 				gen.SetChallengeType("http-01"),
 				gen.SetChallengePresented(true),
 			),
 			httpSolver: &fakeSolver{
-				fakeCheck: func(ctx context.Context, issuer v1alpha1.GenericIssuer, ch *v1alpha1.Challenge) error {
+				fakeCheck: func(ctx context.Context, issuer v1alpha2.GenericIssuer, ch *v1alpha2.Challenge) error {
 					return nil
 				},
-				fakeCleanUp: func(context.Context, v1alpha1.GenericIssuer, *v1alpha1.Challenge) error {
+				fakeCleanUp: func(context.Context, v1alpha2.GenericIssuer, *v1alpha2.Challenge) error {
 					return nil
 				},
 			},
@@ -221,16 +221,16 @@ func TestSyncHappyPath(t *testing.T) {
 				CertManagerObjects: []runtime.Object{gen.ChallengeFrom(baseChallenge,
 					gen.SetChallengeProcessing(true),
 					gen.SetChallengeURL("testurl"),
-					gen.SetChallengeState(v1alpha1.Pending),
+					gen.SetChallengeState(v1alpha2.Pending),
 					gen.SetChallengeType("http-01"),
 					gen.SetChallengePresented(true),
 				), testIssuerHTTP01Enabled},
 				ExpectedActions: []testpkg.Action{
-					testpkg.NewAction(coretesting.NewUpdateAction(v1alpha1.SchemeGroupVersion.WithResource("challenges"), gen.DefaultTestNamespace,
+					testpkg.NewAction(coretesting.NewUpdateAction(v1alpha2.SchemeGroupVersion.WithResource("challenges"), gen.DefaultTestNamespace,
 						gen.ChallengeFrom(baseChallenge,
 							gen.SetChallengeProcessing(true),
 							gen.SetChallengeURL("testurl"),
-							gen.SetChallengeState(v1alpha1.Invalid),
+							gen.SetChallengeState(v1alpha2.Invalid),
 							gen.SetChallengeType("http-01"),
 							gen.SetChallengePresented(true),
 							gen.SetChallengeReason("Error accepting authorization: acme: authorization for identifier example.com is invalid"),
@@ -263,12 +263,12 @@ func TestSyncHappyPath(t *testing.T) {
 			challenge: gen.ChallengeFrom(baseChallenge,
 				gen.SetChallengeProcessing(true),
 				gen.SetChallengeURL("testurl"),
-				gen.SetChallengeState(v1alpha1.Valid),
+				gen.SetChallengeState(v1alpha2.Valid),
 				gen.SetChallengeType("http-01"),
 				gen.SetChallengePresented(true),
 			),
 			httpSolver: &fakeSolver{
-				fakeCleanUp: func(ctx context.Context, issuer v1alpha1.GenericIssuer, ch *v1alpha1.Challenge) error {
+				fakeCleanUp: func(ctx context.Context, issuer v1alpha2.GenericIssuer, ch *v1alpha2.Challenge) error {
 					return nil
 				},
 			},
@@ -276,16 +276,16 @@ func TestSyncHappyPath(t *testing.T) {
 				CertManagerObjects: []runtime.Object{gen.ChallengeFrom(baseChallenge,
 					gen.SetChallengeProcessing(true),
 					gen.SetChallengeURL("testurl"),
-					gen.SetChallengeState(v1alpha1.Valid),
+					gen.SetChallengeState(v1alpha2.Valid),
 					gen.SetChallengeType("http-01"),
 					gen.SetChallengePresented(true),
 				), testIssuerHTTP01Enabled},
 				ExpectedActions: []testpkg.Action{
-					testpkg.NewAction(coretesting.NewUpdateAction(v1alpha1.SchemeGroupVersion.WithResource("challenges"), gen.DefaultTestNamespace,
+					testpkg.NewAction(coretesting.NewUpdateAction(v1alpha2.SchemeGroupVersion.WithResource("challenges"), gen.DefaultTestNamespace,
 						gen.ChallengeFrom(baseChallenge,
 							gen.SetChallengeProcessing(false),
 							gen.SetChallengeURL("testurl"),
-							gen.SetChallengeState(v1alpha1.Valid),
+							gen.SetChallengeState(v1alpha2.Valid),
 							gen.SetChallengeType("http-01"),
 							gen.SetChallengePresented(false),
 						))),
@@ -296,12 +296,12 @@ func TestSyncHappyPath(t *testing.T) {
 			challenge: gen.ChallengeFrom(baseChallenge,
 				gen.SetChallengeProcessing(true),
 				gen.SetChallengeURL("testurl"),
-				gen.SetChallengeState(v1alpha1.Invalid),
+				gen.SetChallengeState(v1alpha2.Invalid),
 				gen.SetChallengeType("http-01"),
 				gen.SetChallengePresented(true),
 			),
 			httpSolver: &fakeSolver{
-				fakeCleanUp: func(ctx context.Context, issuer v1alpha1.GenericIssuer, ch *v1alpha1.Challenge) error {
+				fakeCleanUp: func(ctx context.Context, issuer v1alpha2.GenericIssuer, ch *v1alpha2.Challenge) error {
 					return nil
 				},
 			},
@@ -309,16 +309,16 @@ func TestSyncHappyPath(t *testing.T) {
 				CertManagerObjects: []runtime.Object{gen.ChallengeFrom(baseChallenge,
 					gen.SetChallengeProcessing(true),
 					gen.SetChallengeURL("testurl"),
-					gen.SetChallengeState(v1alpha1.Invalid),
+					gen.SetChallengeState(v1alpha2.Invalid),
 					gen.SetChallengeType("http-01"),
 					gen.SetChallengePresented(true),
 				), testIssuerHTTP01Enabled},
 				ExpectedActions: []testpkg.Action{
-					testpkg.NewAction(coretesting.NewUpdateAction(v1alpha1.SchemeGroupVersion.WithResource("challenges"), gen.DefaultTestNamespace,
+					testpkg.NewAction(coretesting.NewUpdateAction(v1alpha2.SchemeGroupVersion.WithResource("challenges"), gen.DefaultTestNamespace,
 						gen.ChallengeFrom(baseChallenge,
 							gen.SetChallengeProcessing(false),
 							gen.SetChallengeURL("testurl"),
-							gen.SetChallengeState(v1alpha1.Invalid),
+							gen.SetChallengeState(v1alpha2.Invalid),
 							gen.SetChallengeType("http-01"),
 							gen.SetChallengePresented(false),
 						))),
@@ -342,11 +342,11 @@ func runTest(t *testing.T, test testT) {
 	c := &controller{}
 	c.Register(test.builder.Context)
 	c.helper = issuer.NewHelper(
-		test.builder.SharedInformerFactory.Certmanager().V1alpha1().Issuers().Lister(),
-		test.builder.SharedInformerFactory.Certmanager().V1alpha1().ClusterIssuers().Lister(),
+		test.builder.SharedInformerFactory.Certmanager().V1alpha2().Issuers().Lister(),
+		test.builder.SharedInformerFactory.Certmanager().V1alpha2().ClusterIssuers().Lister(),
 	)
 	c.acmeHelper = &acmefake.Helper{
-		ClientForIssuerFunc: func(iss v1alpha1.GenericIssuer) (acmecl.Interface, error) {
+		ClientForIssuerFunc: func(iss v1alpha2.GenericIssuer) (acmecl.Interface, error) {
 			return test.acmeClient, nil
 		},
 	}
