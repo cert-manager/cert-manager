@@ -26,6 +26,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	acmecl "github.com/jetstack/cert-manager/pkg/acme/client"
+	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1alpha2"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	"github.com/jetstack/cert-manager/pkg/controller/acmeorders/selectors"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
@@ -35,8 +36,8 @@ var (
 	orderGvk = cmapi.SchemeGroupVersion.WithKind("Order")
 )
 
-func buildRequiredChallenges(ctx context.Context, cl acmecl.Interface, issuer cmapi.GenericIssuer, o *cmapi.Order) ([]cmapi.Challenge, error) {
-	chs := make([]cmapi.Challenge, len(o.Status.Authorizations))
+func buildRequiredChallenges(ctx context.Context, cl acmecl.Interface, issuer cmapi.GenericIssuer, o *cmacme.Order) ([]cmacme.Challenge, error) {
+	chs := make([]cmacme.Challenge, len(o.Status.Authorizations))
 	for i, a := range o.Status.Authorizations {
 		ch, err := buildChallenge(ctx, cl, issuer, o, a)
 		if err != nil {
@@ -47,7 +48,7 @@ func buildRequiredChallenges(ctx context.Context, cl acmecl.Interface, issuer cm
 	return chs, nil
 }
 
-func buildChallenge(ctx context.Context, cl acmecl.Interface, issuer cmapi.GenericIssuer, o *cmapi.Order, authz cmapi.ACMEAuthorization) (*cmapi.Challenge, error) {
+func buildChallenge(ctx context.Context, cl acmecl.Interface, issuer cmapi.GenericIssuer, o *cmacme.Order, authz cmacme.ACMEAuthorization) (*cmacme.Challenge, error) {
 	chSpec, err := challengeSpecForAuthorization(ctx, cl, issuer, o, authz)
 	if err != nil {
 		// TODO: in this case, we should probably not return the error as it's
@@ -60,18 +61,18 @@ func buildChallenge(ctx context.Context, cl acmecl.Interface, issuer cmapi.Gener
 		return nil, err
 	}
 
-	return &cmapi.Challenge{
+	return &cmacme.Challenge{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:            chName,
 			Namespace:       o.Namespace,
 			OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(o, orderGvk)},
-			Finalizers:      []string{cmapi.ACMEFinalizer},
+			Finalizers:      []string{cmacme.ACMEFinalizer},
 		},
 		Spec: *chSpec,
 	}, nil
 }
 
-func buildChallengeName(orderName string, chSpec cmapi.ChallengeSpec) (string, error) {
+func buildChallengeName(orderName string, chSpec cmacme.ChallengeSpec) (string, error) {
 	hash, err := hashChallenge(chSpec)
 	if err != nil {
 		return "", err
@@ -80,7 +81,7 @@ func buildChallengeName(orderName string, chSpec cmapi.ChallengeSpec) (string, e
 	return fmt.Sprintf("%s-%d", orderName, hash), nil
 }
 
-func hashChallenge(spec cmapi.ChallengeSpec) (uint32, error) {
+func hashChallenge(spec cmacme.ChallengeSpec) (uint32, error) {
 	specBytes, err := json.Marshal(spec)
 	if err != nil {
 		return 0, err
@@ -95,7 +96,7 @@ func hashChallenge(spec cmapi.ChallengeSpec) (uint32, error) {
 	return hashF.Sum32(), nil
 }
 
-func challengeSpecForAuthorization(ctx context.Context, cl acmecl.Interface, issuer cmapi.GenericIssuer, o *cmapi.Order, authz cmapi.ACMEAuthorization) (*cmapi.ChallengeSpec, error) {
+func challengeSpecForAuthorization(ctx context.Context, cl acmecl.Interface, issuer cmapi.GenericIssuer, o *cmacme.Order, authz cmacme.ACMEAuthorization) (*cmacme.ChallengeSpec, error) {
 	log := logf.FromContext(ctx, "challengeSpecForAuthorization")
 	dbg := log.V(logf.DebugLevel)
 
@@ -107,13 +108,13 @@ func challengeSpecForAuthorization(ctx context.Context, cl acmecl.Interface, iss
 		domainToFind = "*." + domainToFind
 	}
 
-	var selectedSolver *cmapi.ACMEChallengeSolver
-	var selectedChallenge *cmapi.ACMEChallenge
+	var selectedSolver *cmacme.ACMEChallengeSolver
+	var selectedChallenge *cmacme.ACMEChallenge
 	selectedNumLabelsMatch := 0
 	selectedNumDNSNamesMatch := 0
 	selectedNumDNSZonesMatch := 0
 
-	challengeForSolver := func(solver *cmapi.ACMEChallengeSolver) *cmapi.ACMEChallenge {
+	challengeForSolver := func(solver *cmacme.ACMEChallengeSolver) *cmacme.ACMEChallenge {
 		for _, ch := range authz.Challenges {
 			switch {
 			case ch.Type == "http-01" && solver.HTTP01 != nil:
@@ -275,7 +276,7 @@ func challengeSpecForAuthorization(ctx context.Context, cl acmecl.Interface, iss
 	}
 
 	// 5. construct Challenge resource with spec.solver field set
-	return &cmapi.ChallengeSpec{
+	return &cmacme.ChallengeSpec{
 		AuthzURL:  authz.URL,
 		Type:      selectedChallenge.Type,
 		URL:       selectedChallenge.URL,
@@ -288,13 +289,13 @@ func challengeSpecForAuthorization(ctx context.Context, cl acmecl.Interface, iss
 	}, nil
 }
 
-func applyIngressParameterAnnotationOverrides(o *cmapi.Order, s *cmapi.ACMEChallengeSolver) error {
+func applyIngressParameterAnnotationOverrides(o *cmacme.Order, s *cmacme.ACMEChallengeSolver) error {
 	if s.HTTP01 == nil || s.HTTP01.Ingress == nil || o.Annotations == nil {
 		return nil
 	}
 
-	manualIngressName, hasManualIngressName := o.Annotations[cmapi.ACMECertificateHTTP01IngressNameOverride]
-	manualIngressClass, hasManualIngressClass := o.Annotations[cmapi.ACMECertificateHTTP01IngressClassOverride]
+	manualIngressName, hasManualIngressName := o.Annotations[cmacme.ACMECertificateHTTP01IngressNameOverride]
+	manualIngressClass, hasManualIngressClass := o.Annotations[cmacme.ACMECertificateHTTP01IngressClassOverride]
 	// don't allow both override annotations to be specified at once
 	if hasManualIngressName && hasManualIngressClass {
 		return fmt.Errorf("both ingress name and ingress class overrides specified - only one may be specified at a time")
@@ -314,12 +315,12 @@ func applyIngressParameterAnnotationOverrides(o *cmapi.Order, s *cmapi.ACMEChall
 	return nil
 }
 
-func keyForChallenge(cl acmecl.Interface, challenge *cmapi.ACMEChallenge) (string, error) {
+func keyForChallenge(cl acmecl.Interface, challenge *cmacme.ACMEChallenge) (string, error) {
 	var err error
 	switch challenge.Type {
-	case cmapi.ACMEChallengeTypeHTTP01:
+	case cmacme.ACMEChallengeTypeHTTP01:
 		return cl.HTTP01ChallengeResponse(challenge.Token)
-	case cmapi.ACMEChallengeTypeDNS01:
+	case cmacme.ACMEChallengeTypeDNS01:
 		return cl.DNS01ChallengeRecord(challenge.Token)
 	default:
 		err = fmt.Errorf("unsupported challenge type %s", challenge.Type)
@@ -327,7 +328,7 @@ func keyForChallenge(cl acmecl.Interface, challenge *cmapi.ACMEChallenge) (strin
 	return "", err
 }
 
-func anyChallengesFailed(chs []*cmapi.Challenge) bool {
+func anyChallengesFailed(chs []*cmacme.Challenge) bool {
 	for _, ch := range chs {
 		if acme.IsFailureState(ch.Status.State) {
 			return true
@@ -336,7 +337,7 @@ func anyChallengesFailed(chs []*cmapi.Challenge) bool {
 	return false
 }
 
-func allChallengesFinal(chs []*cmapi.Challenge) bool {
+func allChallengesFinal(chs []*cmacme.Challenge) bool {
 	for _, ch := range chs {
 		if !acme.IsFinalState(ch.Status.State) {
 			return false

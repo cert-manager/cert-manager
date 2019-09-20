@@ -30,6 +30,7 @@ import (
 
 	"github.com/jetstack/cert-manager/pkg/acme"
 	cmclient "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
+	cmacmelisters "github.com/jetstack/cert-manager/pkg/client/listers/acme/v1alpha2"
 	cmlisters "github.com/jetstack/cert-manager/pkg/client/listers/certmanager/v1alpha2"
 	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
 	"github.com/jetstack/cert-manager/pkg/controller/acmechallenges/scheduler"
@@ -46,7 +47,7 @@ type controller struct {
 	acmeHelper acme.Helper
 
 	// all the listers used by this controller
-	challengeLister     cmlisters.ChallengeLister
+	challengeLister     cmacmelisters.ChallengeLister
 	issuerLister        cmlisters.IssuerLister
 	clusterIssuerLister cmlisters.ClusterIssuerLister
 	secretLister        corelisters.SecretLister
@@ -84,7 +85,7 @@ func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitin
 	c.queue = workqueue.NewNamedRateLimitingQueue(workqueue.NewItemExponentialFailureRateLimiter(time.Second*5, time.Minute*30), ControllerName)
 
 	// obtain references to all the informers used by this controller
-	challengeInformer := ctx.SharedInformerFactory.Certmanager().V1alpha2().Challenges()
+	challengeInformer := ctx.SharedInformerFactory.Acme().V1alpha2().Challenges()
 	issuerInformer := ctx.SharedInformerFactory.Certmanager().V1alpha2().Issuers()
 	secretInformer := ctx.KubeSharedInformerFactory.Core().V1().Secrets()
 	// we register these informers here so the HTTP01 solver has a synced
@@ -163,7 +164,7 @@ func (c *controller) runScheduler(ctx context.Context) {
 		ch = ch.DeepCopy()
 		ch.Status.Processing = true
 
-		_, err := c.cmClient.CertmanagerV1alpha2().Challenges(ch.Namespace).Update(ch)
+		_, err := c.cmClient.AcmeV1alpha2().Challenges(ch.Namespace).Update(ch)
 		if err != nil {
 			log.Error(err, "error scheduling challenge for processing")
 			return

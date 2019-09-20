@@ -28,6 +28,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 
+	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1alpha2"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	"github.com/jetstack/cert-manager/pkg/logs"
@@ -302,7 +303,7 @@ func (c *controller) setIssuerSpecificConfig(crt *v1alpha2.Certificate, issuer v
 		if crt.Annotations == nil {
 			crt.Annotations = make(map[string]string)
 		}
-		crt.Annotations[v1alpha2.ACMECertificateHTTP01IngressNameOverride] = ing.Name
+		crt.Annotations[cmacme.ACMECertificateHTTP01IngressNameOverride] = ing.Name
 		// set IssueTemporaryCertificateAnnotation to true in order to behave
 		// better when ingress-gce is being used.
 		crt.Annotations[v1alpha2.IssueTemporaryCertificateAnnotation] = "true"
@@ -313,7 +314,7 @@ func (c *controller) setIssuerSpecificConfig(crt *v1alpha2.Certificate, issuer v
 		if crt.Annotations == nil {
 			crt.Annotations = make(map[string]string)
 		}
-		crt.Annotations[v1alpha2.ACMECertificateHTTP01IngressClassOverride] = ingressClassVal
+		crt.Annotations[cmacme.ACMECertificateHTTP01IngressClassOverride] = ingressClassVal
 	}
 
 	return nil
