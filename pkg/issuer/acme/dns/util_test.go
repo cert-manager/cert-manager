@@ -20,6 +20,7 @@ import (
 	"errors"
 	"testing"
 
+	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1alpha2"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	"github.com/jetstack/cert-manager/pkg/controller/test"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/acmedns"
@@ -47,7 +48,7 @@ type solverFixture struct {
 	// Issuer to be passed to functions on the Solver (a default will be used if nil)
 	Issuer v1alpha2.GenericIssuer
 	// Challenge resource to use during tests
-	Challenge *v1alpha2.Challenge
+	Challenge *cmacme.Challenge
 
 	dnsProviders *fakeDNSProviders
 
@@ -69,7 +70,7 @@ type solverFixture struct {
 
 func (s *solverFixture) Setup(t *testing.T) {
 	if s.Issuer == nil {
-		s.Issuer = gen.Issuer(defaultTestIssuerName, gen.SetIssuerACME(v1alpha2.ACMEIssuer{}))
+		s.Issuer = gen.Issuer(defaultTestIssuerName, gen.SetIssuerACME(cmacme.ACMEIssuer{}))
 	}
 	if s.testResources == nil {
 		s.testResources = map[string]interface{}{}

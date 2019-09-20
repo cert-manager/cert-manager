@@ -19,7 +19,7 @@ package rfc2136
 import (
 	"testing"
 
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1alpha2"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 	"github.com/jetstack/cert-manager/test/acme/dns"
@@ -40,7 +40,7 @@ func TestRunSuiteWithTSIG(t *testing.T) {
 	}
 	defer server.Shutdown()
 
-	var validConfig = cmapi.ACMEIssuerDNS01ProviderRFC2136{
+	var validConfig = cmacme.ACMEIssuerDNS01ProviderRFC2136{
 		Nameserver: server.ListenAddr(),
 		TSIGSecret: cmmeta.SecretKeySelector{
 			LocalObjectReference: cmmeta.LocalObjectReference{
@@ -75,7 +75,7 @@ func TestRunSuiteNoTSIG(t *testing.T) {
 	}
 	defer server.Shutdown()
 
-	var validConfig = cmapi.ACMEIssuerDNS01ProviderRFC2136{
+	var validConfig = cmacme.ACMEIssuerDNS01ProviderRFC2136{
 		Nameserver: server.ListenAddr(),
 	}
 

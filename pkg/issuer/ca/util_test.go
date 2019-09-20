@@ -24,11 +24,6 @@ import (
 	"github.com/jetstack/cert-manager/pkg/controller/test"
 )
 
-const (
-	defaultTestAcmeClusterResourceNamespace = "default"
-	defaultTestSolverImage                  = "fake-solver-image"
-)
-
 type caFixture struct {
 	CA *CA
 	*test.Builder
@@ -49,7 +44,7 @@ func (s *caFixture) Setup(t *testing.T) {
 		s.Issuer = &v1alpha2.Issuer{
 			Spec: v1alpha2.IssuerSpec{
 				IssuerConfig: v1alpha2.IssuerConfig{
-					ACME: &v1alpha2.ACMEIssuer{},
+					CA: &v1alpha2.CAIssuer{},
 				},
 			},
 		}

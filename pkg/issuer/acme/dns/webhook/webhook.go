@@ -29,7 +29,7 @@ import (
 	"k8s.io/klog"
 
 	"github.com/jetstack/cert-manager/pkg/acme/webhook/apis/acme/v1alpha1"
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1alpha2"
 	"github.com/jetstack/cert-manager/pkg/client/clientset/versioned/scheme"
 )
 
@@ -159,8 +159,8 @@ func (r *Webhook) buildPayload(ch *v1alpha1.ChallengeRequest, action v1alpha1.Ch
 	return cl, pl, cfg.SolverName, nil
 }
 
-func loadConfig(cfgJSON apiext.JSON) (*cmapi.ACMEIssuerDNS01ProviderWebhook, error) {
-	cfg := cmapi.ACMEIssuerDNS01ProviderWebhook{}
+func loadConfig(cfgJSON apiext.JSON) (*cmacme.ACMEIssuerDNS01ProviderWebhook, error) {
+	cfg := cmacme.ACMEIssuerDNS01ProviderWebhook{}
 	if err := json.Unmarshal(cfgJSON.Raw, &cfg); err != nil {
 		return nil, fmt.Errorf("error decoding solver config: %v", err)
 	}

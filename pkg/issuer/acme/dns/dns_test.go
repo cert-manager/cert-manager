@@ -25,6 +25,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 
+	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1alpha2"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	"github.com/jetstack/cert-manager/pkg/controller"
@@ -42,7 +43,7 @@ func newIssuer(name, namespace string) *v1alpha2.Issuer {
 		},
 		Spec: v1alpha2.IssuerSpec{
 			IssuerConfig: v1alpha2.IssuerConfig{
-				ACME: &v1alpha2.ACMEIssuer{},
+				ACME: &cmacme.ACMEIssuer{},
 			},
 		},
 	}
@@ -75,11 +76,11 @@ func TestSolverFor(t *testing.T) {
 					},
 				},
 				Issuer: newIssuer("test", "default"),
-				Challenge: &v1alpha2.Challenge{
-					Spec: v1alpha2.ChallengeSpec{
-						Solver: &v1alpha2.ACMEChallengeSolver{
-							DNS01: &v1alpha2.ACMEChallengeSolverDNS01{
-								Cloudflare: &v1alpha2.ACMEIssuerDNS01ProviderCloudflare{
+				Challenge: &cmacme.Challenge{
+					Spec: cmacme.ChallengeSpec{
+						Solver: &cmacme.ACMEChallengeSolver{
+							DNS01: &cmacme.ACMEChallengeSolverDNS01{
+								Cloudflare: &cmacme.ACMEIssuerDNS01ProviderCloudflare{
 									Email: "test",
 									APIKey: cmmeta.SecretKeySelector{
 										LocalObjectReference: cmmeta.LocalObjectReference{
@@ -100,11 +101,11 @@ func TestSolverFor(t *testing.T) {
 			solverFixture: &solverFixture{
 				Issuer: newIssuer("test", "default"),
 				// don't include any secrets in the lister
-				Challenge: &v1alpha2.Challenge{
-					Spec: v1alpha2.ChallengeSpec{
-						Solver: &v1alpha2.ACMEChallengeSolver{
-							DNS01: &v1alpha2.ACMEChallengeSolverDNS01{
-								Cloudflare: &v1alpha2.ACMEIssuerDNS01ProviderCloudflare{
+				Challenge: &cmacme.Challenge{
+					Spec: cmacme.ChallengeSpec{
+						Solver: &cmacme.ACMEChallengeSolver{
+							DNS01: &cmacme.ACMEChallengeSolverDNS01{
+								Cloudflare: &cmacme.ACMEIssuerDNS01ProviderCloudflare{
 									Email: "test",
 									APIKey: cmmeta.SecretKeySelector{
 										LocalObjectReference: cmmeta.LocalObjectReference{
@@ -131,11 +132,11 @@ func TestSolverFor(t *testing.T) {
 					},
 				},
 				Issuer: newIssuer("test", "default"),
-				Challenge: &v1alpha2.Challenge{
-					Spec: v1alpha2.ChallengeSpec{
-						Solver: &v1alpha2.ACMEChallengeSolver{
-							DNS01: &v1alpha2.ACMEChallengeSolverDNS01{
-								Cloudflare: &v1alpha2.ACMEIssuerDNS01ProviderCloudflare{
+				Challenge: &cmacme.Challenge{
+					Spec: cmacme.ChallengeSpec{
+						Solver: &cmacme.ACMEChallengeSolver{
+							DNS01: &cmacme.ACMEChallengeSolverDNS01{
+								Cloudflare: &cmacme.ACMEIssuerDNS01ProviderCloudflare{
 									Email: "test",
 									APIKey: cmmeta.SecretKeySelector{
 										LocalObjectReference: cmmeta.LocalObjectReference{
@@ -162,11 +163,11 @@ func TestSolverFor(t *testing.T) {
 					},
 				},
 				Issuer: newIssuer("test", "default"),
-				Challenge: &v1alpha2.Challenge{
-					Spec: v1alpha2.ChallengeSpec{
-						Solver: &v1alpha2.ACMEChallengeSolver{
-							DNS01: &v1alpha2.ACMEChallengeSolverDNS01{
-								AcmeDNS: &v1alpha2.ACMEIssuerDNS01ProviderAcmeDNS{
+				Challenge: &cmacme.Challenge{
+					Spec: cmacme.ChallengeSpec{
+						Solver: &cmacme.ACMEChallengeSolver{
+							DNS01: &cmacme.ACMEChallengeSolverDNS01{
+								AcmeDNS: &cmacme.ACMEIssuerDNS01ProviderAcmeDNS{
 									Host: "http://127.0.0.1/",
 									AccountSecret: cmmeta.SecretKeySelector{
 										LocalObjectReference: cmmeta.LocalObjectReference{
@@ -216,11 +217,11 @@ func TestSolveForDigitalOcean(t *testing.T) {
 			},
 		},
 		Issuer: newIssuer("test", "default"),
-		Challenge: &v1alpha2.Challenge{
-			Spec: v1alpha2.ChallengeSpec{
-				Solver: &v1alpha2.ACMEChallengeSolver{
-					DNS01: &v1alpha2.ACMEChallengeSolverDNS01{
-						DigitalOcean: &v1alpha2.ACMEIssuerDNS01ProviderDigitalOcean{
+		Challenge: &cmacme.Challenge{
+			Spec: cmacme.ChallengeSpec{
+				Solver: &cmacme.ACMEChallengeSolver{
+					DNS01: &cmacme.ACMEChallengeSolverDNS01{
+						DigitalOcean: &cmacme.ACMEIssuerDNS01ProviderDigitalOcean{
 							Token: cmmeta.SecretKeySelector{
 								LocalObjectReference: cmmeta.LocalObjectReference{
 									Name: "digitalocean",
@@ -267,11 +268,11 @@ func TestRoute53TrimCreds(t *testing.T) {
 			},
 		},
 		Issuer: newIssuer("test", "default"),
-		Challenge: &v1alpha2.Challenge{
-			Spec: v1alpha2.ChallengeSpec{
-				Solver: &v1alpha2.ACMEChallengeSolver{
-					DNS01: &v1alpha2.ACMEChallengeSolverDNS01{
-						Route53: &v1alpha2.ACMEIssuerDNS01ProviderRoute53{
+		Challenge: &cmacme.Challenge{
+			Spec: cmacme.ChallengeSpec{
+				Solver: &cmacme.ACMEChallengeSolver{
+					DNS01: &cmacme.ACMEChallengeSolverDNS01{
+						Route53: &cmacme.ACMEIssuerDNS01ProviderRoute53{
 							AccessKeyID: "  test_with_spaces  ",
 							Region:      "us-west-2",
 							SecretAccessKey: cmmeta.SecretKeySelector{
@@ -330,11 +331,11 @@ func TestRoute53AmbientCreds(t *testing.T) {
 				},
 				Issuer:       newIssuer("test", "default"),
 				dnsProviders: newFakeDNSProviders(),
-				Challenge: &v1alpha2.Challenge{
-					Spec: v1alpha2.ChallengeSpec{
-						Solver: &v1alpha2.ACMEChallengeSolver{
-							DNS01: &v1alpha2.ACMEChallengeSolverDNS01{
-								Route53: &v1alpha2.ACMEIssuerDNS01ProviderRoute53{
+				Challenge: &cmacme.Challenge{
+					Spec: cmacme.ChallengeSpec{
+						Solver: &cmacme.ACMEChallengeSolver{
+							DNS01: &cmacme.ACMEChallengeSolverDNS01{
+								Route53: &cmacme.ACMEIssuerDNS01ProviderRoute53{
 									Region: "us-west-2",
 								},
 							},
@@ -360,11 +361,11 @@ func TestRoute53AmbientCreds(t *testing.T) {
 				},
 				Issuer:       newIssuer("test", "default"),
 				dnsProviders: newFakeDNSProviders(),
-				Challenge: &v1alpha2.Challenge{
-					Spec: v1alpha2.ChallengeSpec{
-						Solver: &v1alpha2.ACMEChallengeSolver{
-							DNS01: &v1alpha2.ACMEChallengeSolverDNS01{
-								Route53: &v1alpha2.ACMEIssuerDNS01ProviderRoute53{
+				Challenge: &cmacme.Challenge{
+					Spec: cmacme.ChallengeSpec{
+						Solver: &cmacme.ACMEChallengeSolver{
+							DNS01: &cmacme.ACMEChallengeSolverDNS01{
+								Route53: &cmacme.ACMEIssuerDNS01ProviderRoute53{
 									Region: "us-west-2",
 								},
 							},
@@ -420,11 +421,11 @@ func TestRoute53AssumeRole(t *testing.T) {
 				},
 				Issuer:       newIssuer("test", "default"),
 				dnsProviders: newFakeDNSProviders(),
-				Challenge: &v1alpha2.Challenge{
-					Spec: v1alpha2.ChallengeSpec{
-						Solver: &v1alpha2.ACMEChallengeSolver{
-							DNS01: &v1alpha2.ACMEChallengeSolverDNS01{
-								Route53: &v1alpha2.ACMEIssuerDNS01ProviderRoute53{
+				Challenge: &cmacme.Challenge{
+					Spec: cmacme.ChallengeSpec{
+						Solver: &cmacme.ACMEChallengeSolver{
+							DNS01: &cmacme.ACMEChallengeSolverDNS01{
+								Route53: &cmacme.ACMEIssuerDNS01ProviderRoute53{
 									Region: "us-west-2",
 									Role:   "my-role",
 								},
@@ -451,11 +452,11 @@ func TestRoute53AssumeRole(t *testing.T) {
 				},
 				Issuer:       newIssuer("test", "default"),
 				dnsProviders: newFakeDNSProviders(),
-				Challenge: &v1alpha2.Challenge{
-					Spec: v1alpha2.ChallengeSpec{
-						Solver: &v1alpha2.ACMEChallengeSolver{
-							DNS01: &v1alpha2.ACMEChallengeSolverDNS01{
-								Route53: &v1alpha2.ACMEIssuerDNS01ProviderRoute53{
+				Challenge: &cmacme.Challenge{
+					Spec: cmacme.ChallengeSpec{
+						Solver: &cmacme.ACMEChallengeSolver{
+							DNS01: &cmacme.ACMEChallengeSolverDNS01{
+								Route53: &cmacme.ACMEIssuerDNS01ProviderRoute53{
 									Region: "us-west-2",
 									Role:   "my-other-role",
 								},

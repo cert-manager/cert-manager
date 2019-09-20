@@ -26,19 +26,19 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	coretesting "k8s.io/client-go/testing"
 
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1alpha2"
 )
 
 func TestEnsureService(t *testing.T) {
 	const createdServiceKey = "createdService"
 	tests := map[string]solverFixture{
 		"should return an existing service if one already exists": {
-			Challenge: &v1alpha2.Challenge{
-				Spec: v1alpha2.ChallengeSpec{
+			Challenge: &cmacme.Challenge{
+				Spec: cmacme.ChallengeSpec{
 					DNSName: "example.com",
-					Solver: &v1alpha2.ACMEChallengeSolver{
-						HTTP01: &v1alpha2.ACMEChallengeSolverHTTP01{
-							Ingress: &v1alpha2.ACMEChallengeSolverHTTP01Ingress{},
+					Solver: &cmacme.ACMEChallengeSolver{
+						HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
+							Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{},
 						},
 					},
 				},
@@ -74,12 +74,12 @@ func TestEnsureService(t *testing.T) {
 			},
 		},
 		"should create a new service if one does not exist": {
-			Challenge: &v1alpha2.Challenge{
-				Spec: v1alpha2.ChallengeSpec{
+			Challenge: &cmacme.Challenge{
+				Spec: cmacme.ChallengeSpec{
 					DNSName: "example.com",
-					Solver: &v1alpha2.ACMEChallengeSolver{
-						HTTP01: &v1alpha2.ACMEChallengeSolverHTTP01{
-							Ingress: &v1alpha2.ACMEChallengeSolverHTTP01Ingress{},
+					Solver: &cmacme.ACMEChallengeSolver{
+						HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
+							Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{},
 						},
 					},
 				},
@@ -127,12 +127,12 @@ func TestEnsureService(t *testing.T) {
 			},
 		},
 		"should clean up if multiple services exist": {
-			Challenge: &v1alpha2.Challenge{
-				Spec: v1alpha2.ChallengeSpec{
+			Challenge: &cmacme.Challenge{
+				Spec: cmacme.ChallengeSpec{
 					DNSName: "example.com",
-					Solver: &v1alpha2.ACMEChallengeSolver{
-						HTTP01: &v1alpha2.ACMEChallengeSolverHTTP01{
-							Ingress: &v1alpha2.ACMEChallengeSolverHTTP01Ingress{},
+					Solver: &cmacme.ACMEChallengeSolver{
+						HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
+							Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{},
 						},
 					},
 				},
@@ -182,12 +182,12 @@ func TestGetServicesForChallenge(t *testing.T) {
 	const createdServiceKey = "createdService"
 	tests := map[string]solverFixture{
 		"should return one service that matches": {
-			Challenge: &v1alpha2.Challenge{
-				Spec: v1alpha2.ChallengeSpec{
+			Challenge: &cmacme.Challenge{
+				Spec: cmacme.ChallengeSpec{
 					DNSName: "example.com",
-					Solver: &v1alpha2.ACMEChallengeSolver{
-						HTTP01: &v1alpha2.ACMEChallengeSolverHTTP01{
-							Ingress: &v1alpha2.ACMEChallengeSolverHTTP01Ingress{},
+					Solver: &cmacme.ACMEChallengeSolver{
+						HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
+							Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{},
 						},
 					},
 				},
@@ -215,12 +215,12 @@ func TestGetServicesForChallenge(t *testing.T) {
 			},
 		},
 		"should not return a service for the same certificate but different domain": {
-			Challenge: &v1alpha2.Challenge{
-				Spec: v1alpha2.ChallengeSpec{
+			Challenge: &cmacme.Challenge{
+				Spec: cmacme.ChallengeSpec{
 					DNSName: "example.com",
-					Solver: &v1alpha2.ACMEChallengeSolver{
-						HTTP01: &v1alpha2.ACMEChallengeSolverHTTP01{
-							Ingress: &v1alpha2.ACMEChallengeSolverHTTP01Ingress{},
+					Solver: &cmacme.ACMEChallengeSolver{
+						HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
+							Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{},
 						},
 					},
 				},

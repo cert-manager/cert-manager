@@ -28,7 +28,7 @@ import (
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1alpha2"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/http/solver"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 	"github.com/jetstack/cert-manager/pkg/util"
@@ -36,7 +36,7 @@ import (
 
 // getIngressesForChallenge returns a list of Ingresses that were created to solve
 // http challenges for the given domain
-func (s *Solver) getIngressesForChallenge(ctx context.Context, ch *v1alpha2.Challenge) ([]*extv1beta1.Ingress, error) {
+func (s *Solver) getIngressesForChallenge(ctx context.Context, ch *cmacme.Challenge) ([]*extv1beta1.Ingress, error) {
 	log := logf.FromContext(ctx)
 
 	podLabels := podLabels(ch)
@@ -71,7 +71,7 @@ func (s *Solver) getIngressesForChallenge(ctx context.Context, ch *v1alpha2.Chal
 // ensureIngress will ensure the ingress required to solve this challenge
 // exists, or if an existing ingress is specified on the secret will ensure
 // that the ingress has an appropriate challenge path configured
-func (s *Solver) ensureIngress(ctx context.Context, ch *v1alpha2.Challenge, svcName string) (ing *extv1beta1.Ingress, err error) {
+func (s *Solver) ensureIngress(ctx context.Context, ch *cmacme.Challenge, svcName string) (ing *extv1beta1.Ingress, err error) {
 	log := logf.FromContext(ctx).WithName("ensureIngress")
 	httpDomainCfg, err := httpDomainCfgForChallenge(ch)
 	if err != nil {
@@ -106,7 +106,7 @@ func (s *Solver) ensureIngress(ctx context.Context, ch *v1alpha2.Challenge, svcN
 
 // createIngress will create a challenge solving pod for the given certificate,
 // domain, token and key.
-func (s *Solver) createIngress(ch *v1alpha2.Challenge, svcName string) (*extv1beta1.Ingress, error) {
+func (s *Solver) createIngress(ch *cmacme.Challenge, svcName string) (*extv1beta1.Ingress, error) {
 	ing, err := buildIngressResource(ch, svcName)
 	if err != nil {
 		return nil, err
@@ -114,7 +114,7 @@ func (s *Solver) createIngress(ch *v1alpha2.Challenge, svcName string) (*extv1be
 	return s.Client.ExtensionsV1beta1().Ingresses(ch.Namespace).Create(ing)
 }
 
-func buildIngressResource(ch *v1alpha2.Challenge, svcName string) (*extv1beta1.Ingress, error) {
+func buildIngressResource(ch *cmacme.Challenge, svcName string) (*extv1beta1.Ingress, error) {
 	httpDomainCfg, err := httpDomainCfgForChallenge(ch)
 	if err != nil {
 		return nil, err
@@ -158,7 +158,7 @@ func buildIngressResource(ch *v1alpha2.Challenge, svcName string) (*extv1beta1.I
 	}, nil
 }
 
-func (s *Solver) addChallengePathToIngress(ctx context.Context, ch *v1alpha2.Challenge, svcName string) (*extv1beta1.Ingress, error) {
+func (s *Solver) addChallengePathToIngress(ctx context.Context, ch *cmacme.Challenge, svcName string) (*extv1beta1.Ingress, error) {
 	httpDomainCfg, err := httpDomainCfgForChallenge(ch)
 	if err != nil {
 		return nil, err
@@ -210,7 +210,7 @@ func (s *Solver) addChallengePathToIngress(ctx context.Context, ch *v1alpha2.Cha
 // cleanupIngresses will remove the rules added by cert-manager to an existing
 // ingress, or delete the ingress if an existing ingress name is not specified
 // on the certificate.
-func (s *Solver) cleanupIngresses(ctx context.Context, ch *v1alpha2.Challenge) error {
+func (s *Solver) cleanupIngresses(ctx context.Context, ch *cmacme.Challenge) error {
 	log := logf.FromContext(ctx, "cleanupPods")
 
 	httpDomainCfg, err := httpDomainCfgForChallenge(ch)
