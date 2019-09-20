@@ -32,7 +32,7 @@ go_test(
     srcs = ["roundtrip_test.go"],
     embed = [":go_default_library"],
     deps = [
-        "//pkg/internal/apis/certmanager/fuzzer:go_default_library",
+        "//pkg/internal/apis/meta/fuzzer:go_default_library",
         "//vendor/k8s.io/apimachinery/pkg/api/apitesting/roundtrip:go_default_library",
     ],
 )
