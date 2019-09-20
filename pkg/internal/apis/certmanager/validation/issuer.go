@@ -27,6 +27,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
+	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1alpha2"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	"github.com/jetstack/cert-manager/pkg/internal/apis/certmanager/validation/util"
@@ -96,7 +97,7 @@ func ValidateIssuerConfig(iss *v1alpha2.IssuerConfig, fldPath *field.Path) field
 	return el
 }
 
-func ValidateACMEIssuerConfig(iss *v1alpha2.ACMEIssuer, fldPath *field.Path) field.ErrorList {
+func ValidateACMEIssuerConfig(iss *cmacme.ACMEIssuer, fldPath *field.Path) field.ErrorList {
 	el := field.ErrorList{}
 	if len(iss.PrivateKey.Name) == 0 {
 		el = append(el, field.Required(fldPath.Child("privateKeySecretRef", "name"), "private key secret name is a required field"))
@@ -111,7 +112,7 @@ func ValidateACMEIssuerConfig(iss *v1alpha2.ACMEIssuer, fldPath *field.Path) fie
 	return el
 }
 
-func ValidateACMEIssuerChallengeSolverConfig(sol *v1alpha2.ACMEChallengeSolver, fldPath *field.Path) field.ErrorList {
+func ValidateACMEIssuerChallengeSolverConfig(sol *cmacme.ACMEChallengeSolver, fldPath *field.Path) field.ErrorList {
 	el := field.ErrorList{}
 
 	numProviders := 0
@@ -134,7 +135,7 @@ func ValidateACMEIssuerChallengeSolverConfig(sol *v1alpha2.ACMEChallengeSolver, 
 	return el
 }
 
-func ValidateACMEIssuerChallengeSolverHTTP01Config(http01 *v1alpha2.ACMEChallengeSolverHTTP01, fldPath *field.Path) field.ErrorList {
+func ValidateACMEIssuerChallengeSolverHTTP01Config(http01 *cmacme.ACMEChallengeSolverHTTP01, fldPath *field.Path) field.ErrorList {
 	el := field.ErrorList{}
 
 	numDefined := 0
@@ -149,7 +150,7 @@ func ValidateACMEIssuerChallengeSolverHTTP01Config(http01 *v1alpha2.ACMEChalleng
 	return el
 }
 
-func ValidateACMEIssuerChallengeSolverHTTP01IngressConfig(ingress *v1alpha2.ACMEChallengeSolverHTTP01Ingress, fldPath *field.Path) field.ErrorList {
+func ValidateACMEIssuerChallengeSolverHTTP01IngressConfig(ingress *cmacme.ACMEChallengeSolverHTTP01Ingress, fldPath *field.Path) field.ErrorList {
 	el := field.ErrorList{}
 
 	if ingress.Class != nil && len(ingress.Name) > 0 {
@@ -167,7 +168,7 @@ func ValidateACMEIssuerChallengeSolverHTTP01IngressConfig(ingress *v1alpha2.ACME
 	return el
 }
 
-func ValidateACMEIssuerChallengeSolverHTTP01IngressPodTemplateConfig(podTempl *v1alpha2.ACMEChallengeSolverHTTP01IngressPodTemplate, fldPath *field.Path) field.ErrorList {
+func ValidateACMEIssuerChallengeSolverHTTP01IngressPodTemplateConfig(podTempl *cmacme.ACMEChallengeSolverHTTP01IngressPodTemplate, fldPath *field.Path) field.ErrorList {
 	el := field.ErrorList{}
 
 	cpyPodTempl := podTempl.DeepCopy()
@@ -229,17 +230,17 @@ var supportedTSIGAlgorithms = []string{
 	"HMACSHA512",
 }
 
-func ValidateACMEChallengeSolverDNS01(p *v1alpha2.ACMEChallengeSolverDNS01, fldPath *field.Path) field.ErrorList {
+func ValidateACMEChallengeSolverDNS01(p *cmacme.ACMEChallengeSolverDNS01, fldPath *field.Path) field.ErrorList {
 	el := field.ErrorList{}
 
 	// allow empty values for now, until we have a MutatingWebhook to apply
 	// default values to fields.
 	if len(p.CNAMEStrategy) > 0 {
 		switch p.CNAMEStrategy {
-		case v1alpha2.NoneStrategy:
-		case v1alpha2.FollowStrategy:
+		case cmacme.NoneStrategy:
+		case cmacme.FollowStrategy:
 		default:
-			el = append(el, field.Invalid(fldPath.Child("cnameStrategy"), p.CNAMEStrategy, fmt.Sprintf("must be one of %q or %q", v1alpha2.NoneStrategy, v1alpha2.FollowStrategy)))
+			el = append(el, field.Invalid(fldPath.Child("cnameStrategy"), p.CNAMEStrategy, fmt.Sprintf("must be one of %q or %q", cmacme.NoneStrategy, cmacme.FollowStrategy)))
 		}
 	}
 	numProviders := 0
@@ -271,10 +272,10 @@ func ValidateACMEChallengeSolverDNS01(p *v1alpha2.ACMEChallengeSolverDNS01, fldP
 				el = append(el, field.Required(fldPath.Child("azuredns", "resourceGroupName"), ""))
 			}
 			switch p.AzureDNS.Environment {
-			case "", v1alpha2.AzurePublicCloud, v1alpha2.AzureChinaCloud, v1alpha2.AzureGermanCloud, v1alpha2.AzureUSGovernmentCloud:
+			case "", cmacme.AzurePublicCloud, cmacme.AzureChinaCloud, cmacme.AzureGermanCloud, cmacme.AzureUSGovernmentCloud:
 			default:
 				el = append(el, field.Invalid(fldPath.Child("azuredns", "environment"), p.AzureDNS.Environment,
-					fmt.Sprintf("must be either empty or one of %s, %s, %s or %s", v1alpha2.AzurePublicCloud, v1alpha2.AzureChinaCloud, v1alpha2.AzureGermanCloud, v1alpha2.AzureUSGovernmentCloud)))
+					fmt.Sprintf("must be either empty or one of %s, %s, %s or %s", cmacme.AzurePublicCloud, cmacme.AzureChinaCloud, cmacme.AzureGermanCloud, cmacme.AzureUSGovernmentCloud)))
 			}
 		}
 	}

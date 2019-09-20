@@ -14,39 +14,31 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package certmanager
+package v1alpha2
 
 import (
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager"
-)
-
-var (
-	SchemeBuilder = runtime.NewSchemeBuilder(addKnownTypes)
-	AddToScheme   = SchemeBuilder.AddToScheme
+	"github.com/jetstack/cert-manager/pkg/apis/acme"
+	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1alpha2"
 )
 
 // SchemeGroupVersion is group version used to register these objects
-var SchemeGroupVersion = schema.GroupVersion{Group: certmanager.GroupName, Version: runtime.APIVersionInternal}
+var SchemeGroupVersion = schema.GroupVersion{Group: acme.GroupName, Version: "v1alpha2"}
 
 // Resource takes an unqualified resource and returns a Group qualified GroupResource
 func Resource(resource string) schema.GroupResource {
 	return SchemeGroupVersion.WithResource(resource).GroupResource()
 }
 
-// Adds the list of known types to api.Scheme.
-func addKnownTypes(scheme *runtime.Scheme) error {
-	scheme.AddKnownTypes(SchemeGroupVersion,
-		&Certificate{},
-		&CertificateList{},
-		&Issuer{},
-		&IssuerList{},
-		&ClusterIssuer{},
-		&ClusterIssuerList{},
-		&CertificateRequest{},
-		&CertificateRequestList{},
-	)
-	return nil
+var (
+	localSchemeBuilder = &cmacme.SchemeBuilder
+	AddToScheme        = localSchemeBuilder.AddToScheme
+)
+
+func init() {
+	// We only register manually written functions here. The registration of the
+	// generated functions takes place in the generated files. The separation
+	// makes the code compile even when the generated files are missing.
+	localSchemeBuilder.Register(addDefaultingFuncs)
 }

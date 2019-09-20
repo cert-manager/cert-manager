@@ -36,7 +36,6 @@ const (
 	IssuerKind             = "Issuer"
 	CertificateKind        = "Certificate"
 	CertificateRequestKind = "CertificateRequest"
-	OrderKind              = "Order"
 )
 
 const (

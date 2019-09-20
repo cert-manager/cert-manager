@@ -23,13 +23,13 @@ package v1alpha2
 import (
 	unsafe "unsafe"
 
+	acmev1alpha2 "github.com/jetstack/cert-manager/pkg/apis/acme/v1alpha2"
 	v1alpha2 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
-	apismetav1 "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
+	metav1 "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
+	acme "github.com/jetstack/cert-manager/pkg/internal/apis/acme"
 	certmanager "github.com/jetstack/cert-manager/pkg/internal/apis/certmanager"
 	meta "github.com/jetstack/cert-manager/pkg/internal/apis/meta"
-	v1 "k8s.io/api/core/v1"
-	v1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	conversion "k8s.io/apimachinery/pkg/conversion"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 )
@@ -41,196 +41,6 @@ func init() {
 // RegisterConversions adds conversion functions to the given scheme.
 // Public to allow building arbitrary schemes.
 func RegisterConversions(s *runtime.Scheme) error {
-	if err := s.AddGeneratedConversionFunc((*v1alpha2.ACMEAuthorization)(nil), (*certmanager.ACMEAuthorization)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha2_ACMEAuthorization_To_certmanager_ACMEAuthorization(a.(*v1alpha2.ACMEAuthorization), b.(*certmanager.ACMEAuthorization), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddGeneratedConversionFunc((*certmanager.ACMEAuthorization)(nil), (*v1alpha2.ACMEAuthorization)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_certmanager_ACMEAuthorization_To_v1alpha2_ACMEAuthorization(a.(*certmanager.ACMEAuthorization), b.(*v1alpha2.ACMEAuthorization), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddGeneratedConversionFunc((*v1alpha2.ACMEChallenge)(nil), (*certmanager.ACMEChallenge)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha2_ACMEChallenge_To_certmanager_ACMEChallenge(a.(*v1alpha2.ACMEChallenge), b.(*certmanager.ACMEChallenge), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddGeneratedConversionFunc((*certmanager.ACMEChallenge)(nil), (*v1alpha2.ACMEChallenge)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_certmanager_ACMEChallenge_To_v1alpha2_ACMEChallenge(a.(*certmanager.ACMEChallenge), b.(*v1alpha2.ACMEChallenge), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddGeneratedConversionFunc((*v1alpha2.ACMEChallengeSolver)(nil), (*certmanager.ACMEChallengeSolver)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha2_ACMEChallengeSolver_To_certmanager_ACMEChallengeSolver(a.(*v1alpha2.ACMEChallengeSolver), b.(*certmanager.ACMEChallengeSolver), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddGeneratedConversionFunc((*certmanager.ACMEChallengeSolver)(nil), (*v1alpha2.ACMEChallengeSolver)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_certmanager_ACMEChallengeSolver_To_v1alpha2_ACMEChallengeSolver(a.(*certmanager.ACMEChallengeSolver), b.(*v1alpha2.ACMEChallengeSolver), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddGeneratedConversionFunc((*v1alpha2.ACMEChallengeSolverDNS01)(nil), (*certmanager.ACMEChallengeSolverDNS01)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha2_ACMEChallengeSolverDNS01_To_certmanager_ACMEChallengeSolverDNS01(a.(*v1alpha2.ACMEChallengeSolverDNS01), b.(*certmanager.ACMEChallengeSolverDNS01), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddGeneratedConversionFunc((*certmanager.ACMEChallengeSolverDNS01)(nil), (*v1alpha2.ACMEChallengeSolverDNS01)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_certmanager_ACMEChallengeSolverDNS01_To_v1alpha2_ACMEChallengeSolverDNS01(a.(*certmanager.ACMEChallengeSolverDNS01), b.(*v1alpha2.ACMEChallengeSolverDNS01), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddGeneratedConversionFunc((*v1alpha2.ACMEChallengeSolverHTTP01)(nil), (*certmanager.ACMEChallengeSolverHTTP01)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha2_ACMEChallengeSolverHTTP01_To_certmanager_ACMEChallengeSolverHTTP01(a.(*v1alpha2.ACMEChallengeSolverHTTP01), b.(*certmanager.ACMEChallengeSolverHTTP01), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddGeneratedConversionFunc((*certmanager.ACMEChallengeSolverHTTP01)(nil), (*v1alpha2.ACMEChallengeSolverHTTP01)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_certmanager_ACMEChallengeSolverHTTP01_To_v1alpha2_ACMEChallengeSolverHTTP01(a.(*certmanager.ACMEChallengeSolverHTTP01), b.(*v1alpha2.ACMEChallengeSolverHTTP01), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddGeneratedConversionFunc((*v1alpha2.ACMEChallengeSolverHTTP01Ingress)(nil), (*certmanager.ACMEChallengeSolverHTTP01Ingress)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha2_ACMEChallengeSolverHTTP01Ingress_To_certmanager_ACMEChallengeSolverHTTP01Ingress(a.(*v1alpha2.ACMEChallengeSolverHTTP01Ingress), b.(*certmanager.ACMEChallengeSolverHTTP01Ingress), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddGeneratedConversionFunc((*certmanager.ACMEChallengeSolverHTTP01Ingress)(nil), (*v1alpha2.ACMEChallengeSolverHTTP01Ingress)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_certmanager_ACMEChallengeSolverHTTP01Ingress_To_v1alpha2_ACMEChallengeSolverHTTP01Ingress(a.(*certmanager.ACMEChallengeSolverHTTP01Ingress), b.(*v1alpha2.ACMEChallengeSolverHTTP01Ingress), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddGeneratedConversionFunc((*v1alpha2.ACMEChallengeSolverHTTP01IngressPodSpec)(nil), (*certmanager.ACMEChallengeSolverHTTP01IngressPodSpec)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha2_ACMEChallengeSolverHTTP01IngressPodSpec_To_certmanager_ACMEChallengeSolverHTTP01IngressPodSpec(a.(*v1alpha2.ACMEChallengeSolverHTTP01IngressPodSpec), b.(*certmanager.ACMEChallengeSolverHTTP01IngressPodSpec), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddGeneratedConversionFunc((*certmanager.ACMEChallengeSolverHTTP01IngressPodSpec)(nil), (*v1alpha2.ACMEChallengeSolverHTTP01IngressPodSpec)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_certmanager_ACMEChallengeSolverHTTP01IngressPodSpec_To_v1alpha2_ACMEChallengeSolverHTTP01IngressPodSpec(a.(*certmanager.ACMEChallengeSolverHTTP01IngressPodSpec), b.(*v1alpha2.ACMEChallengeSolverHTTP01IngressPodSpec), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddGeneratedConversionFunc((*v1alpha2.ACMEChallengeSolverHTTP01IngressPodTemplate)(nil), (*certmanager.ACMEChallengeSolverHTTP01IngressPodTemplate)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha2_ACMEChallengeSolverHTTP01IngressPodTemplate_To_certmanager_ACMEChallengeSolverHTTP01IngressPodTemplate(a.(*v1alpha2.ACMEChallengeSolverHTTP01IngressPodTemplate), b.(*certmanager.ACMEChallengeSolverHTTP01IngressPodTemplate), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddGeneratedConversionFunc((*certmanager.ACMEChallengeSolverHTTP01IngressPodTemplate)(nil), (*v1alpha2.ACMEChallengeSolverHTTP01IngressPodTemplate)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_certmanager_ACMEChallengeSolverHTTP01IngressPodTemplate_To_v1alpha2_ACMEChallengeSolverHTTP01IngressPodTemplate(a.(*certmanager.ACMEChallengeSolverHTTP01IngressPodTemplate), b.(*v1alpha2.ACMEChallengeSolverHTTP01IngressPodTemplate), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddGeneratedConversionFunc((*v1alpha2.ACMEIssuer)(nil), (*certmanager.ACMEIssuer)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha2_ACMEIssuer_To_certmanager_ACMEIssuer(a.(*v1alpha2.ACMEIssuer), b.(*certmanager.ACMEIssuer), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddGeneratedConversionFunc((*certmanager.ACMEIssuer)(nil), (*v1alpha2.ACMEIssuer)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_certmanager_ACMEIssuer_To_v1alpha2_ACMEIssuer(a.(*certmanager.ACMEIssuer), b.(*v1alpha2.ACMEIssuer), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddGeneratedConversionFunc((*v1alpha2.ACMEIssuerDNS01ProviderAcmeDNS)(nil), (*certmanager.ACMEIssuerDNS01ProviderAcmeDNS)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha2_ACMEIssuerDNS01ProviderAcmeDNS_To_certmanager_ACMEIssuerDNS01ProviderAcmeDNS(a.(*v1alpha2.ACMEIssuerDNS01ProviderAcmeDNS), b.(*certmanager.ACMEIssuerDNS01ProviderAcmeDNS), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddGeneratedConversionFunc((*certmanager.ACMEIssuerDNS01ProviderAcmeDNS)(nil), (*v1alpha2.ACMEIssuerDNS01ProviderAcmeDNS)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_certmanager_ACMEIssuerDNS01ProviderAcmeDNS_To_v1alpha2_ACMEIssuerDNS01ProviderAcmeDNS(a.(*certmanager.ACMEIssuerDNS01ProviderAcmeDNS), b.(*v1alpha2.ACMEIssuerDNS01ProviderAcmeDNS), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddGeneratedConversionFunc((*v1alpha2.ACMEIssuerDNS01ProviderAkamai)(nil), (*certmanager.ACMEIssuerDNS01ProviderAkamai)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha2_ACMEIssuerDNS01ProviderAkamai_To_certmanager_ACMEIssuerDNS01ProviderAkamai(a.(*v1alpha2.ACMEIssuerDNS01ProviderAkamai), b.(*certmanager.ACMEIssuerDNS01ProviderAkamai), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddGeneratedConversionFunc((*certmanager.ACMEIssuerDNS01ProviderAkamai)(nil), (*v1alpha2.ACMEIssuerDNS01ProviderAkamai)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_certmanager_ACMEIssuerDNS01ProviderAkamai_To_v1alpha2_ACMEIssuerDNS01ProviderAkamai(a.(*certmanager.ACMEIssuerDNS01ProviderAkamai), b.(*v1alpha2.ACMEIssuerDNS01ProviderAkamai), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddGeneratedConversionFunc((*v1alpha2.ACMEIssuerDNS01ProviderAzureDNS)(nil), (*certmanager.ACMEIssuerDNS01ProviderAzureDNS)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha2_ACMEIssuerDNS01ProviderAzureDNS_To_certmanager_ACMEIssuerDNS01ProviderAzureDNS(a.(*v1alpha2.ACMEIssuerDNS01ProviderAzureDNS), b.(*certmanager.ACMEIssuerDNS01ProviderAzureDNS), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddGeneratedConversionFunc((*certmanager.ACMEIssuerDNS01ProviderAzureDNS)(nil), (*v1alpha2.ACMEIssuerDNS01ProviderAzureDNS)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_certmanager_ACMEIssuerDNS01ProviderAzureDNS_To_v1alpha2_ACMEIssuerDNS01ProviderAzureDNS(a.(*certmanager.ACMEIssuerDNS01ProviderAzureDNS), b.(*v1alpha2.ACMEIssuerDNS01ProviderAzureDNS), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddGeneratedConversionFunc((*v1alpha2.ACMEIssuerDNS01ProviderCloudDNS)(nil), (*certmanager.ACMEIssuerDNS01ProviderCloudDNS)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha2_ACMEIssuerDNS01ProviderCloudDNS_To_certmanager_ACMEIssuerDNS01ProviderCloudDNS(a.(*v1alpha2.ACMEIssuerDNS01ProviderCloudDNS), b.(*certmanager.ACMEIssuerDNS01ProviderCloudDNS), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddGeneratedConversionFunc((*certmanager.ACMEIssuerDNS01ProviderCloudDNS)(nil), (*v1alpha2.ACMEIssuerDNS01ProviderCloudDNS)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_certmanager_ACMEIssuerDNS01ProviderCloudDNS_To_v1alpha2_ACMEIssuerDNS01ProviderCloudDNS(a.(*certmanager.ACMEIssuerDNS01ProviderCloudDNS), b.(*v1alpha2.ACMEIssuerDNS01ProviderCloudDNS), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddGeneratedConversionFunc((*v1alpha2.ACMEIssuerDNS01ProviderCloudflare)(nil), (*certmanager.ACMEIssuerDNS01ProviderCloudflare)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha2_ACMEIssuerDNS01ProviderCloudflare_To_certmanager_ACMEIssuerDNS01ProviderCloudflare(a.(*v1alpha2.ACMEIssuerDNS01ProviderCloudflare), b.(*certmanager.ACMEIssuerDNS01ProviderCloudflare), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddGeneratedConversionFunc((*certmanager.ACMEIssuerDNS01ProviderCloudflare)(nil), (*v1alpha2.ACMEIssuerDNS01ProviderCloudflare)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_certmanager_ACMEIssuerDNS01ProviderCloudflare_To_v1alpha2_ACMEIssuerDNS01ProviderCloudflare(a.(*certmanager.ACMEIssuerDNS01ProviderCloudflare), b.(*v1alpha2.ACMEIssuerDNS01ProviderCloudflare), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddGeneratedConversionFunc((*v1alpha2.ACMEIssuerDNS01ProviderDigitalOcean)(nil), (*certmanager.ACMEIssuerDNS01ProviderDigitalOcean)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha2_ACMEIssuerDNS01ProviderDigitalOcean_To_certmanager_ACMEIssuerDNS01ProviderDigitalOcean(a.(*v1alpha2.ACMEIssuerDNS01ProviderDigitalOcean), b.(*certmanager.ACMEIssuerDNS01ProviderDigitalOcean), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddGeneratedConversionFunc((*certmanager.ACMEIssuerDNS01ProviderDigitalOcean)(nil), (*v1alpha2.ACMEIssuerDNS01ProviderDigitalOcean)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_certmanager_ACMEIssuerDNS01ProviderDigitalOcean_To_v1alpha2_ACMEIssuerDNS01ProviderDigitalOcean(a.(*certmanager.ACMEIssuerDNS01ProviderDigitalOcean), b.(*v1alpha2.ACMEIssuerDNS01ProviderDigitalOcean), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddGeneratedConversionFunc((*v1alpha2.ACMEIssuerDNS01ProviderRFC2136)(nil), (*certmanager.ACMEIssuerDNS01ProviderRFC2136)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha2_ACMEIssuerDNS01ProviderRFC2136_To_certmanager_ACMEIssuerDNS01ProviderRFC2136(a.(*v1alpha2.ACMEIssuerDNS01ProviderRFC2136), b.(*certmanager.ACMEIssuerDNS01ProviderRFC2136), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddGeneratedConversionFunc((*certmanager.ACMEIssuerDNS01ProviderRFC2136)(nil), (*v1alpha2.ACMEIssuerDNS01ProviderRFC2136)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_certmanager_ACMEIssuerDNS01ProviderRFC2136_To_v1alpha2_ACMEIssuerDNS01ProviderRFC2136(a.(*certmanager.ACMEIssuerDNS01ProviderRFC2136), b.(*v1alpha2.ACMEIssuerDNS01ProviderRFC2136), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddGeneratedConversionFunc((*v1alpha2.ACMEIssuerDNS01ProviderRoute53)(nil), (*certmanager.ACMEIssuerDNS01ProviderRoute53)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha2_ACMEIssuerDNS01ProviderRoute53_To_certmanager_ACMEIssuerDNS01ProviderRoute53(a.(*v1alpha2.ACMEIssuerDNS01ProviderRoute53), b.(*certmanager.ACMEIssuerDNS01ProviderRoute53), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddGeneratedConversionFunc((*certmanager.ACMEIssuerDNS01ProviderRoute53)(nil), (*v1alpha2.ACMEIssuerDNS01ProviderRoute53)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_certmanager_ACMEIssuerDNS01ProviderRoute53_To_v1alpha2_ACMEIssuerDNS01ProviderRoute53(a.(*certmanager.ACMEIssuerDNS01ProviderRoute53), b.(*v1alpha2.ACMEIssuerDNS01ProviderRoute53), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddGeneratedConversionFunc((*v1alpha2.ACMEIssuerDNS01ProviderWebhook)(nil), (*certmanager.ACMEIssuerDNS01ProviderWebhook)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha2_ACMEIssuerDNS01ProviderWebhook_To_certmanager_ACMEIssuerDNS01ProviderWebhook(a.(*v1alpha2.ACMEIssuerDNS01ProviderWebhook), b.(*certmanager.ACMEIssuerDNS01ProviderWebhook), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddGeneratedConversionFunc((*certmanager.ACMEIssuerDNS01ProviderWebhook)(nil), (*v1alpha2.ACMEIssuerDNS01ProviderWebhook)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_certmanager_ACMEIssuerDNS01ProviderWebhook_To_v1alpha2_ACMEIssuerDNS01ProviderWebhook(a.(*certmanager.ACMEIssuerDNS01ProviderWebhook), b.(*v1alpha2.ACMEIssuerDNS01ProviderWebhook), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddGeneratedConversionFunc((*v1alpha2.ACMEIssuerStatus)(nil), (*certmanager.ACMEIssuerStatus)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha2_ACMEIssuerStatus_To_certmanager_ACMEIssuerStatus(a.(*v1alpha2.ACMEIssuerStatus), b.(*certmanager.ACMEIssuerStatus), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddGeneratedConversionFunc((*certmanager.ACMEIssuerStatus)(nil), (*v1alpha2.ACMEIssuerStatus)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_certmanager_ACMEIssuerStatus_To_v1alpha2_ACMEIssuerStatus(a.(*certmanager.ACMEIssuerStatus), b.(*v1alpha2.ACMEIssuerStatus), scope)
-	}); err != nil {
-		return err
-	}
 	if err := s.AddGeneratedConversionFunc((*v1alpha2.CAIssuer)(nil), (*certmanager.CAIssuer)(nil), func(a, b interface{}, scope conversion.Scope) error {
 		return Convert_v1alpha2_CAIssuer_To_certmanager_CAIssuer(a.(*v1alpha2.CAIssuer), b.(*certmanager.CAIssuer), scope)
 	}); err != nil {
@@ -258,16 +68,6 @@ func RegisterConversions(s *runtime.Scheme) error {
 	}
 	if err := s.AddGeneratedConversionFunc((*certmanager.CertificateCondition)(nil), (*v1alpha2.CertificateCondition)(nil), func(a, b interface{}, scope conversion.Scope) error {
 		return Convert_certmanager_CertificateCondition_To_v1alpha2_CertificateCondition(a.(*certmanager.CertificateCondition), b.(*v1alpha2.CertificateCondition), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddGeneratedConversionFunc((*v1alpha2.CertificateDNSNameSelector)(nil), (*certmanager.CertificateDNSNameSelector)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha2_CertificateDNSNameSelector_To_certmanager_CertificateDNSNameSelector(a.(*v1alpha2.CertificateDNSNameSelector), b.(*certmanager.CertificateDNSNameSelector), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddGeneratedConversionFunc((*certmanager.CertificateDNSNameSelector)(nil), (*v1alpha2.CertificateDNSNameSelector)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_certmanager_CertificateDNSNameSelector_To_v1alpha2_CertificateDNSNameSelector(a.(*certmanager.CertificateDNSNameSelector), b.(*v1alpha2.CertificateDNSNameSelector), scope)
 	}); err != nil {
 		return err
 	}
@@ -351,46 +151,6 @@ func RegisterConversions(s *runtime.Scheme) error {
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*v1alpha2.Challenge)(nil), (*certmanager.Challenge)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha2_Challenge_To_certmanager_Challenge(a.(*v1alpha2.Challenge), b.(*certmanager.Challenge), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddGeneratedConversionFunc((*certmanager.Challenge)(nil), (*v1alpha2.Challenge)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_certmanager_Challenge_To_v1alpha2_Challenge(a.(*certmanager.Challenge), b.(*v1alpha2.Challenge), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddGeneratedConversionFunc((*v1alpha2.ChallengeList)(nil), (*certmanager.ChallengeList)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha2_ChallengeList_To_certmanager_ChallengeList(a.(*v1alpha2.ChallengeList), b.(*certmanager.ChallengeList), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddGeneratedConversionFunc((*certmanager.ChallengeList)(nil), (*v1alpha2.ChallengeList)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_certmanager_ChallengeList_To_v1alpha2_ChallengeList(a.(*certmanager.ChallengeList), b.(*v1alpha2.ChallengeList), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddGeneratedConversionFunc((*v1alpha2.ChallengeSpec)(nil), (*certmanager.ChallengeSpec)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha2_ChallengeSpec_To_certmanager_ChallengeSpec(a.(*v1alpha2.ChallengeSpec), b.(*certmanager.ChallengeSpec), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddGeneratedConversionFunc((*certmanager.ChallengeSpec)(nil), (*v1alpha2.ChallengeSpec)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_certmanager_ChallengeSpec_To_v1alpha2_ChallengeSpec(a.(*certmanager.ChallengeSpec), b.(*v1alpha2.ChallengeSpec), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddGeneratedConversionFunc((*v1alpha2.ChallengeStatus)(nil), (*certmanager.ChallengeStatus)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha2_ChallengeStatus_To_certmanager_ChallengeStatus(a.(*v1alpha2.ChallengeStatus), b.(*certmanager.ChallengeStatus), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddGeneratedConversionFunc((*certmanager.ChallengeStatus)(nil), (*v1alpha2.ChallengeStatus)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_certmanager_ChallengeStatus_To_v1alpha2_ChallengeStatus(a.(*certmanager.ChallengeStatus), b.(*v1alpha2.ChallengeStatus), scope)
-	}); err != nil {
-		return err
-	}
 	if err := s.AddGeneratedConversionFunc((*v1alpha2.ClusterIssuer)(nil), (*certmanager.ClusterIssuer)(nil), func(a, b interface{}, scope conversion.Scope) error {
 		return Convert_v1alpha2_ClusterIssuer_To_certmanager_ClusterIssuer(a.(*v1alpha2.ClusterIssuer), b.(*certmanager.ClusterIssuer), scope)
 	}); err != nil {
@@ -471,46 +231,6 @@ func RegisterConversions(s *runtime.Scheme) error {
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*v1alpha2.Order)(nil), (*certmanager.Order)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha2_Order_To_certmanager_Order(a.(*v1alpha2.Order), b.(*certmanager.Order), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddGeneratedConversionFunc((*certmanager.Order)(nil), (*v1alpha2.Order)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_certmanager_Order_To_v1alpha2_Order(a.(*certmanager.Order), b.(*v1alpha2.Order), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddGeneratedConversionFunc((*v1alpha2.OrderList)(nil), (*certmanager.OrderList)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha2_OrderList_To_certmanager_OrderList(a.(*v1alpha2.OrderList), b.(*certmanager.OrderList), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddGeneratedConversionFunc((*certmanager.OrderList)(nil), (*v1alpha2.OrderList)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_certmanager_OrderList_To_v1alpha2_OrderList(a.(*certmanager.OrderList), b.(*v1alpha2.OrderList), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddGeneratedConversionFunc((*v1alpha2.OrderSpec)(nil), (*certmanager.OrderSpec)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha2_OrderSpec_To_certmanager_OrderSpec(a.(*v1alpha2.OrderSpec), b.(*certmanager.OrderSpec), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddGeneratedConversionFunc((*certmanager.OrderSpec)(nil), (*v1alpha2.OrderSpec)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_certmanager_OrderSpec_To_v1alpha2_OrderSpec(a.(*certmanager.OrderSpec), b.(*v1alpha2.OrderSpec), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddGeneratedConversionFunc((*v1alpha2.OrderStatus)(nil), (*certmanager.OrderStatus)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha2_OrderStatus_To_certmanager_OrderStatus(a.(*v1alpha2.OrderStatus), b.(*certmanager.OrderStatus), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddGeneratedConversionFunc((*certmanager.OrderStatus)(nil), (*v1alpha2.OrderStatus)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_certmanager_OrderStatus_To_v1alpha2_OrderStatus(a.(*certmanager.OrderStatus), b.(*v1alpha2.OrderStatus), scope)
-	}); err != nil {
-		return err
-	}
 	if err := s.AddGeneratedConversionFunc((*v1alpha2.SelfSignedIssuer)(nil), (*certmanager.SelfSignedIssuer)(nil), func(a, b interface{}, scope conversion.Scope) error {
 		return Convert_v1alpha2_SelfSignedIssuer_To_certmanager_SelfSignedIssuer(a.(*v1alpha2.SelfSignedIssuer), b.(*certmanager.SelfSignedIssuer), scope)
 	}); err != nil {
@@ -584,552 +304,6 @@ func RegisterConversions(s *runtime.Scheme) error {
 	return nil
 }
 
-func autoConvert_v1alpha2_ACMEAuthorization_To_certmanager_ACMEAuthorization(in *v1alpha2.ACMEAuthorization, out *certmanager.ACMEAuthorization, s conversion.Scope) error {
-	out.URL = in.URL
-	out.Identifier = in.Identifier
-	out.Wildcard = in.Wildcard
-	out.Challenges = *(*[]certmanager.ACMEChallenge)(unsafe.Pointer(&in.Challenges))
-	return nil
-}
-
-// Convert_v1alpha2_ACMEAuthorization_To_certmanager_ACMEAuthorization is an autogenerated conversion function.
-func Convert_v1alpha2_ACMEAuthorization_To_certmanager_ACMEAuthorization(in *v1alpha2.ACMEAuthorization, out *certmanager.ACMEAuthorization, s conversion.Scope) error {
-	return autoConvert_v1alpha2_ACMEAuthorization_To_certmanager_ACMEAuthorization(in, out, s)
-}
-
-func autoConvert_certmanager_ACMEAuthorization_To_v1alpha2_ACMEAuthorization(in *certmanager.ACMEAuthorization, out *v1alpha2.ACMEAuthorization, s conversion.Scope) error {
-	out.URL = in.URL
-	out.Identifier = in.Identifier
-	out.Wildcard = in.Wildcard
-	out.Challenges = *(*[]v1alpha2.ACMEChallenge)(unsafe.Pointer(&in.Challenges))
-	return nil
-}
-
-// Convert_certmanager_ACMEAuthorization_To_v1alpha2_ACMEAuthorization is an autogenerated conversion function.
-func Convert_certmanager_ACMEAuthorization_To_v1alpha2_ACMEAuthorization(in *certmanager.ACMEAuthorization, out *v1alpha2.ACMEAuthorization, s conversion.Scope) error {
-	return autoConvert_certmanager_ACMEAuthorization_To_v1alpha2_ACMEAuthorization(in, out, s)
-}
-
-func autoConvert_v1alpha2_ACMEChallenge_To_certmanager_ACMEChallenge(in *v1alpha2.ACMEChallenge, out *certmanager.ACMEChallenge, s conversion.Scope) error {
-	out.URL = in.URL
-	out.Token = in.Token
-	out.Type = certmanager.ACMEChallengeType(in.Type)
-	return nil
-}
-
-// Convert_v1alpha2_ACMEChallenge_To_certmanager_ACMEChallenge is an autogenerated conversion function.
-func Convert_v1alpha2_ACMEChallenge_To_certmanager_ACMEChallenge(in *v1alpha2.ACMEChallenge, out *certmanager.ACMEChallenge, s conversion.Scope) error {
-	return autoConvert_v1alpha2_ACMEChallenge_To_certmanager_ACMEChallenge(in, out, s)
-}
-
-func autoConvert_certmanager_ACMEChallenge_To_v1alpha2_ACMEChallenge(in *certmanager.ACMEChallenge, out *v1alpha2.ACMEChallenge, s conversion.Scope) error {
-	out.URL = in.URL
-	out.Token = in.Token
-	out.Type = v1alpha2.ACMEChallengeType(in.Type)
-	return nil
-}
-
-// Convert_certmanager_ACMEChallenge_To_v1alpha2_ACMEChallenge is an autogenerated conversion function.
-func Convert_certmanager_ACMEChallenge_To_v1alpha2_ACMEChallenge(in *certmanager.ACMEChallenge, out *v1alpha2.ACMEChallenge, s conversion.Scope) error {
-	return autoConvert_certmanager_ACMEChallenge_To_v1alpha2_ACMEChallenge(in, out, s)
-}
-
-func autoConvert_v1alpha2_ACMEChallengeSolver_To_certmanager_ACMEChallengeSolver(in *v1alpha2.ACMEChallengeSolver, out *certmanager.ACMEChallengeSolver, s conversion.Scope) error {
-	out.Selector = (*certmanager.CertificateDNSNameSelector)(unsafe.Pointer(in.Selector))
-	out.HTTP01 = (*certmanager.ACMEChallengeSolverHTTP01)(unsafe.Pointer(in.HTTP01))
-	out.DNS01 = (*certmanager.ACMEChallengeSolverDNS01)(unsafe.Pointer(in.DNS01))
-	return nil
-}
-
-// Convert_v1alpha2_ACMEChallengeSolver_To_certmanager_ACMEChallengeSolver is an autogenerated conversion function.
-func Convert_v1alpha2_ACMEChallengeSolver_To_certmanager_ACMEChallengeSolver(in *v1alpha2.ACMEChallengeSolver, out *certmanager.ACMEChallengeSolver, s conversion.Scope) error {
-	return autoConvert_v1alpha2_ACMEChallengeSolver_To_certmanager_ACMEChallengeSolver(in, out, s)
-}
-
-func autoConvert_certmanager_ACMEChallengeSolver_To_v1alpha2_ACMEChallengeSolver(in *certmanager.ACMEChallengeSolver, out *v1alpha2.ACMEChallengeSolver, s conversion.Scope) error {
-	out.Selector = (*v1alpha2.CertificateDNSNameSelector)(unsafe.Pointer(in.Selector))
-	out.HTTP01 = (*v1alpha2.ACMEChallengeSolverHTTP01)(unsafe.Pointer(in.HTTP01))
-	out.DNS01 = (*v1alpha2.ACMEChallengeSolverDNS01)(unsafe.Pointer(in.DNS01))
-	return nil
-}
-
-// Convert_certmanager_ACMEChallengeSolver_To_v1alpha2_ACMEChallengeSolver is an autogenerated conversion function.
-func Convert_certmanager_ACMEChallengeSolver_To_v1alpha2_ACMEChallengeSolver(in *certmanager.ACMEChallengeSolver, out *v1alpha2.ACMEChallengeSolver, s conversion.Scope) error {
-	return autoConvert_certmanager_ACMEChallengeSolver_To_v1alpha2_ACMEChallengeSolver(in, out, s)
-}
-
-func autoConvert_v1alpha2_ACMEChallengeSolverDNS01_To_certmanager_ACMEChallengeSolverDNS01(in *v1alpha2.ACMEChallengeSolverDNS01, out *certmanager.ACMEChallengeSolverDNS01, s conversion.Scope) error {
-	out.CNAMEStrategy = certmanager.CNAMEStrategy(in.CNAMEStrategy)
-	out.Akamai = (*certmanager.ACMEIssuerDNS01ProviderAkamai)(unsafe.Pointer(in.Akamai))
-	out.CloudDNS = (*certmanager.ACMEIssuerDNS01ProviderCloudDNS)(unsafe.Pointer(in.CloudDNS))
-	out.Cloudflare = (*certmanager.ACMEIssuerDNS01ProviderCloudflare)(unsafe.Pointer(in.Cloudflare))
-	out.Route53 = (*certmanager.ACMEIssuerDNS01ProviderRoute53)(unsafe.Pointer(in.Route53))
-	out.AzureDNS = (*certmanager.ACMEIssuerDNS01ProviderAzureDNS)(unsafe.Pointer(in.AzureDNS))
-	out.DigitalOcean = (*certmanager.ACMEIssuerDNS01ProviderDigitalOcean)(unsafe.Pointer(in.DigitalOcean))
-	out.AcmeDNS = (*certmanager.ACMEIssuerDNS01ProviderAcmeDNS)(unsafe.Pointer(in.AcmeDNS))
-	out.RFC2136 = (*certmanager.ACMEIssuerDNS01ProviderRFC2136)(unsafe.Pointer(in.RFC2136))
-	out.Webhook = (*certmanager.ACMEIssuerDNS01ProviderWebhook)(unsafe.Pointer(in.Webhook))
-	return nil
-}
-
-// Convert_v1alpha2_ACMEChallengeSolverDNS01_To_certmanager_ACMEChallengeSolverDNS01 is an autogenerated conversion function.
-func Convert_v1alpha2_ACMEChallengeSolverDNS01_To_certmanager_ACMEChallengeSolverDNS01(in *v1alpha2.ACMEChallengeSolverDNS01, out *certmanager.ACMEChallengeSolverDNS01, s conversion.Scope) error {
-	return autoConvert_v1alpha2_ACMEChallengeSolverDNS01_To_certmanager_ACMEChallengeSolverDNS01(in, out, s)
-}
-
-func autoConvert_certmanager_ACMEChallengeSolverDNS01_To_v1alpha2_ACMEChallengeSolverDNS01(in *certmanager.ACMEChallengeSolverDNS01, out *v1alpha2.ACMEChallengeSolverDNS01, s conversion.Scope) error {
-	out.CNAMEStrategy = v1alpha2.CNAMEStrategy(in.CNAMEStrategy)
-	out.Akamai = (*v1alpha2.ACMEIssuerDNS01ProviderAkamai)(unsafe.Pointer(in.Akamai))
-	out.CloudDNS = (*v1alpha2.ACMEIssuerDNS01ProviderCloudDNS)(unsafe.Pointer(in.CloudDNS))
-	out.Cloudflare = (*v1alpha2.ACMEIssuerDNS01ProviderCloudflare)(unsafe.Pointer(in.Cloudflare))
-	out.Route53 = (*v1alpha2.ACMEIssuerDNS01ProviderRoute53)(unsafe.Pointer(in.Route53))
-	out.AzureDNS = (*v1alpha2.ACMEIssuerDNS01ProviderAzureDNS)(unsafe.Pointer(in.AzureDNS))
-	out.DigitalOcean = (*v1alpha2.ACMEIssuerDNS01ProviderDigitalOcean)(unsafe.Pointer(in.DigitalOcean))
-	out.AcmeDNS = (*v1alpha2.ACMEIssuerDNS01ProviderAcmeDNS)(unsafe.Pointer(in.AcmeDNS))
-	out.RFC2136 = (*v1alpha2.ACMEIssuerDNS01ProviderRFC2136)(unsafe.Pointer(in.RFC2136))
-	out.Webhook = (*v1alpha2.ACMEIssuerDNS01ProviderWebhook)(unsafe.Pointer(in.Webhook))
-	return nil
-}
-
-// Convert_certmanager_ACMEChallengeSolverDNS01_To_v1alpha2_ACMEChallengeSolverDNS01 is an autogenerated conversion function.
-func Convert_certmanager_ACMEChallengeSolverDNS01_To_v1alpha2_ACMEChallengeSolverDNS01(in *certmanager.ACMEChallengeSolverDNS01, out *v1alpha2.ACMEChallengeSolverDNS01, s conversion.Scope) error {
-	return autoConvert_certmanager_ACMEChallengeSolverDNS01_To_v1alpha2_ACMEChallengeSolverDNS01(in, out, s)
-}
-
-func autoConvert_v1alpha2_ACMEChallengeSolverHTTP01_To_certmanager_ACMEChallengeSolverHTTP01(in *v1alpha2.ACMEChallengeSolverHTTP01, out *certmanager.ACMEChallengeSolverHTTP01, s conversion.Scope) error {
-	out.Ingress = (*certmanager.ACMEChallengeSolverHTTP01Ingress)(unsafe.Pointer(in.Ingress))
-	return nil
-}
-
-// Convert_v1alpha2_ACMEChallengeSolverHTTP01_To_certmanager_ACMEChallengeSolverHTTP01 is an autogenerated conversion function.
-func Convert_v1alpha2_ACMEChallengeSolverHTTP01_To_certmanager_ACMEChallengeSolverHTTP01(in *v1alpha2.ACMEChallengeSolverHTTP01, out *certmanager.ACMEChallengeSolverHTTP01, s conversion.Scope) error {
-	return autoConvert_v1alpha2_ACMEChallengeSolverHTTP01_To_certmanager_ACMEChallengeSolverHTTP01(in, out, s)
-}
-
-func autoConvert_certmanager_ACMEChallengeSolverHTTP01_To_v1alpha2_ACMEChallengeSolverHTTP01(in *certmanager.ACMEChallengeSolverHTTP01, out *v1alpha2.ACMEChallengeSolverHTTP01, s conversion.Scope) error {
-	out.Ingress = (*v1alpha2.ACMEChallengeSolverHTTP01Ingress)(unsafe.Pointer(in.Ingress))
-	return nil
-}
-
-// Convert_certmanager_ACMEChallengeSolverHTTP01_To_v1alpha2_ACMEChallengeSolverHTTP01 is an autogenerated conversion function.
-func Convert_certmanager_ACMEChallengeSolverHTTP01_To_v1alpha2_ACMEChallengeSolverHTTP01(in *certmanager.ACMEChallengeSolverHTTP01, out *v1alpha2.ACMEChallengeSolverHTTP01, s conversion.Scope) error {
-	return autoConvert_certmanager_ACMEChallengeSolverHTTP01_To_v1alpha2_ACMEChallengeSolverHTTP01(in, out, s)
-}
-
-func autoConvert_v1alpha2_ACMEChallengeSolverHTTP01Ingress_To_certmanager_ACMEChallengeSolverHTTP01Ingress(in *v1alpha2.ACMEChallengeSolverHTTP01Ingress, out *certmanager.ACMEChallengeSolverHTTP01Ingress, s conversion.Scope) error {
-	out.ServiceType = v1.ServiceType(in.ServiceType)
-	out.Class = (*string)(unsafe.Pointer(in.Class))
-	out.Name = in.Name
-	out.PodTemplate = (*certmanager.ACMEChallengeSolverHTTP01IngressPodTemplate)(unsafe.Pointer(in.PodTemplate))
-	return nil
-}
-
-// Convert_v1alpha2_ACMEChallengeSolverHTTP01Ingress_To_certmanager_ACMEChallengeSolverHTTP01Ingress is an autogenerated conversion function.
-func Convert_v1alpha2_ACMEChallengeSolverHTTP01Ingress_To_certmanager_ACMEChallengeSolverHTTP01Ingress(in *v1alpha2.ACMEChallengeSolverHTTP01Ingress, out *certmanager.ACMEChallengeSolverHTTP01Ingress, s conversion.Scope) error {
-	return autoConvert_v1alpha2_ACMEChallengeSolverHTTP01Ingress_To_certmanager_ACMEChallengeSolverHTTP01Ingress(in, out, s)
-}
-
-func autoConvert_certmanager_ACMEChallengeSolverHTTP01Ingress_To_v1alpha2_ACMEChallengeSolverHTTP01Ingress(in *certmanager.ACMEChallengeSolverHTTP01Ingress, out *v1alpha2.ACMEChallengeSolverHTTP01Ingress, s conversion.Scope) error {
-	out.ServiceType = v1.ServiceType(in.ServiceType)
-	out.Class = (*string)(unsafe.Pointer(in.Class))
-	out.Name = in.Name
-	out.PodTemplate = (*v1alpha2.ACMEChallengeSolverHTTP01IngressPodTemplate)(unsafe.Pointer(in.PodTemplate))
-	return nil
-}
-
-// Convert_certmanager_ACMEChallengeSolverHTTP01Ingress_To_v1alpha2_ACMEChallengeSolverHTTP01Ingress is an autogenerated conversion function.
-func Convert_certmanager_ACMEChallengeSolverHTTP01Ingress_To_v1alpha2_ACMEChallengeSolverHTTP01Ingress(in *certmanager.ACMEChallengeSolverHTTP01Ingress, out *v1alpha2.ACMEChallengeSolverHTTP01Ingress, s conversion.Scope) error {
-	return autoConvert_certmanager_ACMEChallengeSolverHTTP01Ingress_To_v1alpha2_ACMEChallengeSolverHTTP01Ingress(in, out, s)
-}
-
-func autoConvert_v1alpha2_ACMEChallengeSolverHTTP01IngressPodSpec_To_certmanager_ACMEChallengeSolverHTTP01IngressPodSpec(in *v1alpha2.ACMEChallengeSolverHTTP01IngressPodSpec, out *certmanager.ACMEChallengeSolverHTTP01IngressPodSpec, s conversion.Scope) error {
-	out.NodeSelector = *(*map[string]string)(unsafe.Pointer(&in.NodeSelector))
-	out.Affinity = (*v1.Affinity)(unsafe.Pointer(in.Affinity))
-	out.Tolerations = *(*[]v1.Toleration)(unsafe.Pointer(&in.Tolerations))
-	return nil
-}
-
-// Convert_v1alpha2_ACMEChallengeSolverHTTP01IngressPodSpec_To_certmanager_ACMEChallengeSolverHTTP01IngressPodSpec is an autogenerated conversion function.
-func Convert_v1alpha2_ACMEChallengeSolverHTTP01IngressPodSpec_To_certmanager_ACMEChallengeSolverHTTP01IngressPodSpec(in *v1alpha2.ACMEChallengeSolverHTTP01IngressPodSpec, out *certmanager.ACMEChallengeSolverHTTP01IngressPodSpec, s conversion.Scope) error {
-	return autoConvert_v1alpha2_ACMEChallengeSolverHTTP01IngressPodSpec_To_certmanager_ACMEChallengeSolverHTTP01IngressPodSpec(in, out, s)
-}
-
-func autoConvert_certmanager_ACMEChallengeSolverHTTP01IngressPodSpec_To_v1alpha2_ACMEChallengeSolverHTTP01IngressPodSpec(in *certmanager.ACMEChallengeSolverHTTP01IngressPodSpec, out *v1alpha2.ACMEChallengeSolverHTTP01IngressPodSpec, s conversion.Scope) error {
-	out.NodeSelector = *(*map[string]string)(unsafe.Pointer(&in.NodeSelector))
-	out.Affinity = (*v1.Affinity)(unsafe.Pointer(in.Affinity))
-	out.Tolerations = *(*[]v1.Toleration)(unsafe.Pointer(&in.Tolerations))
-	return nil
-}
-
-// Convert_certmanager_ACMEChallengeSolverHTTP01IngressPodSpec_To_v1alpha2_ACMEChallengeSolverHTTP01IngressPodSpec is an autogenerated conversion function.
-func Convert_certmanager_ACMEChallengeSolverHTTP01IngressPodSpec_To_v1alpha2_ACMEChallengeSolverHTTP01IngressPodSpec(in *certmanager.ACMEChallengeSolverHTTP01IngressPodSpec, out *v1alpha2.ACMEChallengeSolverHTTP01IngressPodSpec, s conversion.Scope) error {
-	return autoConvert_certmanager_ACMEChallengeSolverHTTP01IngressPodSpec_To_v1alpha2_ACMEChallengeSolverHTTP01IngressPodSpec(in, out, s)
-}
-
-func autoConvert_v1alpha2_ACMEChallengeSolverHTTP01IngressPodTemplate_To_certmanager_ACMEChallengeSolverHTTP01IngressPodTemplate(in *v1alpha2.ACMEChallengeSolverHTTP01IngressPodTemplate, out *certmanager.ACMEChallengeSolverHTTP01IngressPodTemplate, s conversion.Scope) error {
-	out.ObjectMeta = in.ObjectMeta
-	if err := Convert_v1alpha2_ACMEChallengeSolverHTTP01IngressPodSpec_To_certmanager_ACMEChallengeSolverHTTP01IngressPodSpec(&in.Spec, &out.Spec, s); err != nil {
-		return err
-	}
-	return nil
-}
-
-// Convert_v1alpha2_ACMEChallengeSolverHTTP01IngressPodTemplate_To_certmanager_ACMEChallengeSolverHTTP01IngressPodTemplate is an autogenerated conversion function.
-func Convert_v1alpha2_ACMEChallengeSolverHTTP01IngressPodTemplate_To_certmanager_ACMEChallengeSolverHTTP01IngressPodTemplate(in *v1alpha2.ACMEChallengeSolverHTTP01IngressPodTemplate, out *certmanager.ACMEChallengeSolverHTTP01IngressPodTemplate, s conversion.Scope) error {
-	return autoConvert_v1alpha2_ACMEChallengeSolverHTTP01IngressPodTemplate_To_certmanager_ACMEChallengeSolverHTTP01IngressPodTemplate(in, out, s)
-}
-
-func autoConvert_certmanager_ACMEChallengeSolverHTTP01IngressPodTemplate_To_v1alpha2_ACMEChallengeSolverHTTP01IngressPodTemplate(in *certmanager.ACMEChallengeSolverHTTP01IngressPodTemplate, out *v1alpha2.ACMEChallengeSolverHTTP01IngressPodTemplate, s conversion.Scope) error {
-	out.ObjectMeta = in.ObjectMeta
-	if err := Convert_certmanager_ACMEChallengeSolverHTTP01IngressPodSpec_To_v1alpha2_ACMEChallengeSolverHTTP01IngressPodSpec(&in.Spec, &out.Spec, s); err != nil {
-		return err
-	}
-	return nil
-}
-
-// Convert_certmanager_ACMEChallengeSolverHTTP01IngressPodTemplate_To_v1alpha2_ACMEChallengeSolverHTTP01IngressPodTemplate is an autogenerated conversion function.
-func Convert_certmanager_ACMEChallengeSolverHTTP01IngressPodTemplate_To_v1alpha2_ACMEChallengeSolverHTTP01IngressPodTemplate(in *certmanager.ACMEChallengeSolverHTTP01IngressPodTemplate, out *v1alpha2.ACMEChallengeSolverHTTP01IngressPodTemplate, s conversion.Scope) error {
-	return autoConvert_certmanager_ACMEChallengeSolverHTTP01IngressPodTemplate_To_v1alpha2_ACMEChallengeSolverHTTP01IngressPodTemplate(in, out, s)
-}
-
-func autoConvert_v1alpha2_ACMEIssuer_To_certmanager_ACMEIssuer(in *v1alpha2.ACMEIssuer, out *certmanager.ACMEIssuer, s conversion.Scope) error {
-	out.Email = in.Email
-	out.Server = in.Server
-	out.SkipTLSVerify = in.SkipTLSVerify
-	// TODO: Inefficient conversion - can we improve it?
-	if err := s.Convert(&in.PrivateKey, &out.PrivateKey, 0); err != nil {
-		return err
-	}
-	out.Solvers = *(*[]certmanager.ACMEChallengeSolver)(unsafe.Pointer(&in.Solvers))
-	return nil
-}
-
-// Convert_v1alpha2_ACMEIssuer_To_certmanager_ACMEIssuer is an autogenerated conversion function.
-func Convert_v1alpha2_ACMEIssuer_To_certmanager_ACMEIssuer(in *v1alpha2.ACMEIssuer, out *certmanager.ACMEIssuer, s conversion.Scope) error {
-	return autoConvert_v1alpha2_ACMEIssuer_To_certmanager_ACMEIssuer(in, out, s)
-}
-
-func autoConvert_certmanager_ACMEIssuer_To_v1alpha2_ACMEIssuer(in *certmanager.ACMEIssuer, out *v1alpha2.ACMEIssuer, s conversion.Scope) error {
-	out.Email = in.Email
-	out.Server = in.Server
-	out.SkipTLSVerify = in.SkipTLSVerify
-	// TODO: Inefficient conversion - can we improve it?
-	if err := s.Convert(&in.PrivateKey, &out.PrivateKey, 0); err != nil {
-		return err
-	}
-	out.Solvers = *(*[]v1alpha2.ACMEChallengeSolver)(unsafe.Pointer(&in.Solvers))
-	return nil
-}
-
-// Convert_certmanager_ACMEIssuer_To_v1alpha2_ACMEIssuer is an autogenerated conversion function.
-func Convert_certmanager_ACMEIssuer_To_v1alpha2_ACMEIssuer(in *certmanager.ACMEIssuer, out *v1alpha2.ACMEIssuer, s conversion.Scope) error {
-	return autoConvert_certmanager_ACMEIssuer_To_v1alpha2_ACMEIssuer(in, out, s)
-}
-
-func autoConvert_v1alpha2_ACMEIssuerDNS01ProviderAcmeDNS_To_certmanager_ACMEIssuerDNS01ProviderAcmeDNS(in *v1alpha2.ACMEIssuerDNS01ProviderAcmeDNS, out *certmanager.ACMEIssuerDNS01ProviderAcmeDNS, s conversion.Scope) error {
-	out.Host = in.Host
-	// TODO: Inefficient conversion - can we improve it?
-	if err := s.Convert(&in.AccountSecret, &out.AccountSecret, 0); err != nil {
-		return err
-	}
-	return nil
-}
-
-// Convert_v1alpha2_ACMEIssuerDNS01ProviderAcmeDNS_To_certmanager_ACMEIssuerDNS01ProviderAcmeDNS is an autogenerated conversion function.
-func Convert_v1alpha2_ACMEIssuerDNS01ProviderAcmeDNS_To_certmanager_ACMEIssuerDNS01ProviderAcmeDNS(in *v1alpha2.ACMEIssuerDNS01ProviderAcmeDNS, out *certmanager.ACMEIssuerDNS01ProviderAcmeDNS, s conversion.Scope) error {
-	return autoConvert_v1alpha2_ACMEIssuerDNS01ProviderAcmeDNS_To_certmanager_ACMEIssuerDNS01ProviderAcmeDNS(in, out, s)
-}
-
-func autoConvert_certmanager_ACMEIssuerDNS01ProviderAcmeDNS_To_v1alpha2_ACMEIssuerDNS01ProviderAcmeDNS(in *certmanager.ACMEIssuerDNS01ProviderAcmeDNS, out *v1alpha2.ACMEIssuerDNS01ProviderAcmeDNS, s conversion.Scope) error {
-	out.Host = in.Host
-	// TODO: Inefficient conversion - can we improve it?
-	if err := s.Convert(&in.AccountSecret, &out.AccountSecret, 0); err != nil {
-		return err
-	}
-	return nil
-}
-
-// Convert_certmanager_ACMEIssuerDNS01ProviderAcmeDNS_To_v1alpha2_ACMEIssuerDNS01ProviderAcmeDNS is an autogenerated conversion function.
-func Convert_certmanager_ACMEIssuerDNS01ProviderAcmeDNS_To_v1alpha2_ACMEIssuerDNS01ProviderAcmeDNS(in *certmanager.ACMEIssuerDNS01ProviderAcmeDNS, out *v1alpha2.ACMEIssuerDNS01ProviderAcmeDNS, s conversion.Scope) error {
-	return autoConvert_certmanager_ACMEIssuerDNS01ProviderAcmeDNS_To_v1alpha2_ACMEIssuerDNS01ProviderAcmeDNS(in, out, s)
-}
-
-func autoConvert_v1alpha2_ACMEIssuerDNS01ProviderAkamai_To_certmanager_ACMEIssuerDNS01ProviderAkamai(in *v1alpha2.ACMEIssuerDNS01ProviderAkamai, out *certmanager.ACMEIssuerDNS01ProviderAkamai, s conversion.Scope) error {
-	out.ServiceConsumerDomain = in.ServiceConsumerDomain
-	// TODO: Inefficient conversion - can we improve it?
-	if err := s.Convert(&in.ClientToken, &out.ClientToken, 0); err != nil {
-		return err
-	}
-	// TODO: Inefficient conversion - can we improve it?
-	if err := s.Convert(&in.ClientSecret, &out.ClientSecret, 0); err != nil {
-		return err
-	}
-	// TODO: Inefficient conversion - can we improve it?
-	if err := s.Convert(&in.AccessToken, &out.AccessToken, 0); err != nil {
-		return err
-	}
-	return nil
-}
-
-// Convert_v1alpha2_ACMEIssuerDNS01ProviderAkamai_To_certmanager_ACMEIssuerDNS01ProviderAkamai is an autogenerated conversion function.
-func Convert_v1alpha2_ACMEIssuerDNS01ProviderAkamai_To_certmanager_ACMEIssuerDNS01ProviderAkamai(in *v1alpha2.ACMEIssuerDNS01ProviderAkamai, out *certmanager.ACMEIssuerDNS01ProviderAkamai, s conversion.Scope) error {
-	return autoConvert_v1alpha2_ACMEIssuerDNS01ProviderAkamai_To_certmanager_ACMEIssuerDNS01ProviderAkamai(in, out, s)
-}
-
-func autoConvert_certmanager_ACMEIssuerDNS01ProviderAkamai_To_v1alpha2_ACMEIssuerDNS01ProviderAkamai(in *certmanager.ACMEIssuerDNS01ProviderAkamai, out *v1alpha2.ACMEIssuerDNS01ProviderAkamai, s conversion.Scope) error {
-	out.ServiceConsumerDomain = in.ServiceConsumerDomain
-	// TODO: Inefficient conversion - can we improve it?
-	if err := s.Convert(&in.ClientToken, &out.ClientToken, 0); err != nil {
-		return err
-	}
-	// TODO: Inefficient conversion - can we improve it?
-	if err := s.Convert(&in.ClientSecret, &out.ClientSecret, 0); err != nil {
-		return err
-	}
-	// TODO: Inefficient conversion - can we improve it?
-	if err := s.Convert(&in.AccessToken, &out.AccessToken, 0); err != nil {
-		return err
-	}
-	return nil
-}
-
-// Convert_certmanager_ACMEIssuerDNS01ProviderAkamai_To_v1alpha2_ACMEIssuerDNS01ProviderAkamai is an autogenerated conversion function.
-func Convert_certmanager_ACMEIssuerDNS01ProviderAkamai_To_v1alpha2_ACMEIssuerDNS01ProviderAkamai(in *certmanager.ACMEIssuerDNS01ProviderAkamai, out *v1alpha2.ACMEIssuerDNS01ProviderAkamai, s conversion.Scope) error {
-	return autoConvert_certmanager_ACMEIssuerDNS01ProviderAkamai_To_v1alpha2_ACMEIssuerDNS01ProviderAkamai(in, out, s)
-}
-
-func autoConvert_v1alpha2_ACMEIssuerDNS01ProviderAzureDNS_To_certmanager_ACMEIssuerDNS01ProviderAzureDNS(in *v1alpha2.ACMEIssuerDNS01ProviderAzureDNS, out *certmanager.ACMEIssuerDNS01ProviderAzureDNS, s conversion.Scope) error {
-	out.ClientID = in.ClientID
-	// TODO: Inefficient conversion - can we improve it?
-	if err := s.Convert(&in.ClientSecret, &out.ClientSecret, 0); err != nil {
-		return err
-	}
-	out.SubscriptionID = in.SubscriptionID
-	out.TenantID = in.TenantID
-	out.ResourceGroupName = in.ResourceGroupName
-	out.HostedZoneName = in.HostedZoneName
-	out.Environment = certmanager.AzureDNSEnvironment(in.Environment)
-	return nil
-}
-
-// Convert_v1alpha2_ACMEIssuerDNS01ProviderAzureDNS_To_certmanager_ACMEIssuerDNS01ProviderAzureDNS is an autogenerated conversion function.
-func Convert_v1alpha2_ACMEIssuerDNS01ProviderAzureDNS_To_certmanager_ACMEIssuerDNS01ProviderAzureDNS(in *v1alpha2.ACMEIssuerDNS01ProviderAzureDNS, out *certmanager.ACMEIssuerDNS01ProviderAzureDNS, s conversion.Scope) error {
-	return autoConvert_v1alpha2_ACMEIssuerDNS01ProviderAzureDNS_To_certmanager_ACMEIssuerDNS01ProviderAzureDNS(in, out, s)
-}
-
-func autoConvert_certmanager_ACMEIssuerDNS01ProviderAzureDNS_To_v1alpha2_ACMEIssuerDNS01ProviderAzureDNS(in *certmanager.ACMEIssuerDNS01ProviderAzureDNS, out *v1alpha2.ACMEIssuerDNS01ProviderAzureDNS, s conversion.Scope) error {
-	out.ClientID = in.ClientID
-	// TODO: Inefficient conversion - can we improve it?
-	if err := s.Convert(&in.ClientSecret, &out.ClientSecret, 0); err != nil {
-		return err
-	}
-	out.SubscriptionID = in.SubscriptionID
-	out.TenantID = in.TenantID
-	out.ResourceGroupName = in.ResourceGroupName
-	out.HostedZoneName = in.HostedZoneName
-	out.Environment = v1alpha2.AzureDNSEnvironment(in.Environment)
-	return nil
-}
-
-// Convert_certmanager_ACMEIssuerDNS01ProviderAzureDNS_To_v1alpha2_ACMEIssuerDNS01ProviderAzureDNS is an autogenerated conversion function.
-func Convert_certmanager_ACMEIssuerDNS01ProviderAzureDNS_To_v1alpha2_ACMEIssuerDNS01ProviderAzureDNS(in *certmanager.ACMEIssuerDNS01ProviderAzureDNS, out *v1alpha2.ACMEIssuerDNS01ProviderAzureDNS, s conversion.Scope) error {
-	return autoConvert_certmanager_ACMEIssuerDNS01ProviderAzureDNS_To_v1alpha2_ACMEIssuerDNS01ProviderAzureDNS(in, out, s)
-}
-
-func autoConvert_v1alpha2_ACMEIssuerDNS01ProviderCloudDNS_To_certmanager_ACMEIssuerDNS01ProviderCloudDNS(in *v1alpha2.ACMEIssuerDNS01ProviderCloudDNS, out *certmanager.ACMEIssuerDNS01ProviderCloudDNS, s conversion.Scope) error {
-	// TODO: Inefficient conversion - can we improve it?
-	if err := s.Convert(&in.ServiceAccount, &out.ServiceAccount, 0); err != nil {
-		return err
-	}
-	out.Project = in.Project
-	return nil
-}
-
-// Convert_v1alpha2_ACMEIssuerDNS01ProviderCloudDNS_To_certmanager_ACMEIssuerDNS01ProviderCloudDNS is an autogenerated conversion function.
-func Convert_v1alpha2_ACMEIssuerDNS01ProviderCloudDNS_To_certmanager_ACMEIssuerDNS01ProviderCloudDNS(in *v1alpha2.ACMEIssuerDNS01ProviderCloudDNS, out *certmanager.ACMEIssuerDNS01ProviderCloudDNS, s conversion.Scope) error {
-	return autoConvert_v1alpha2_ACMEIssuerDNS01ProviderCloudDNS_To_certmanager_ACMEIssuerDNS01ProviderCloudDNS(in, out, s)
-}
-
-func autoConvert_certmanager_ACMEIssuerDNS01ProviderCloudDNS_To_v1alpha2_ACMEIssuerDNS01ProviderCloudDNS(in *certmanager.ACMEIssuerDNS01ProviderCloudDNS, out *v1alpha2.ACMEIssuerDNS01ProviderCloudDNS, s conversion.Scope) error {
-	// TODO: Inefficient conversion - can we improve it?
-	if err := s.Convert(&in.ServiceAccount, &out.ServiceAccount, 0); err != nil {
-		return err
-	}
-	out.Project = in.Project
-	return nil
-}
-
-// Convert_certmanager_ACMEIssuerDNS01ProviderCloudDNS_To_v1alpha2_ACMEIssuerDNS01ProviderCloudDNS is an autogenerated conversion function.
-func Convert_certmanager_ACMEIssuerDNS01ProviderCloudDNS_To_v1alpha2_ACMEIssuerDNS01ProviderCloudDNS(in *certmanager.ACMEIssuerDNS01ProviderCloudDNS, out *v1alpha2.ACMEIssuerDNS01ProviderCloudDNS, s conversion.Scope) error {
-	return autoConvert_certmanager_ACMEIssuerDNS01ProviderCloudDNS_To_v1alpha2_ACMEIssuerDNS01ProviderCloudDNS(in, out, s)
-}
-
-func autoConvert_v1alpha2_ACMEIssuerDNS01ProviderCloudflare_To_certmanager_ACMEIssuerDNS01ProviderCloudflare(in *v1alpha2.ACMEIssuerDNS01ProviderCloudflare, out *certmanager.ACMEIssuerDNS01ProviderCloudflare, s conversion.Scope) error {
-	out.Email = in.Email
-	// TODO: Inefficient conversion - can we improve it?
-	if err := s.Convert(&in.APIKey, &out.APIKey, 0); err != nil {
-		return err
-	}
-	return nil
-}
-
-// Convert_v1alpha2_ACMEIssuerDNS01ProviderCloudflare_To_certmanager_ACMEIssuerDNS01ProviderCloudflare is an autogenerated conversion function.
-func Convert_v1alpha2_ACMEIssuerDNS01ProviderCloudflare_To_certmanager_ACMEIssuerDNS01ProviderCloudflare(in *v1alpha2.ACMEIssuerDNS01ProviderCloudflare, out *certmanager.ACMEIssuerDNS01ProviderCloudflare, s conversion.Scope) error {
-	return autoConvert_v1alpha2_ACMEIssuerDNS01ProviderCloudflare_To_certmanager_ACMEIssuerDNS01ProviderCloudflare(in, out, s)
-}
-
-func autoConvert_certmanager_ACMEIssuerDNS01ProviderCloudflare_To_v1alpha2_ACMEIssuerDNS01ProviderCloudflare(in *certmanager.ACMEIssuerDNS01ProviderCloudflare, out *v1alpha2.ACMEIssuerDNS01ProviderCloudflare, s conversion.Scope) error {
-	out.Email = in.Email
-	// TODO: Inefficient conversion - can we improve it?
-	if err := s.Convert(&in.APIKey, &out.APIKey, 0); err != nil {
-		return err
-	}
-	return nil
-}
-
-// Convert_certmanager_ACMEIssuerDNS01ProviderCloudflare_To_v1alpha2_ACMEIssuerDNS01ProviderCloudflare is an autogenerated conversion function.
-func Convert_certmanager_ACMEIssuerDNS01ProviderCloudflare_To_v1alpha2_ACMEIssuerDNS01ProviderCloudflare(in *certmanager.ACMEIssuerDNS01ProviderCloudflare, out *v1alpha2.ACMEIssuerDNS01ProviderCloudflare, s conversion.Scope) error {
-	return autoConvert_certmanager_ACMEIssuerDNS01ProviderCloudflare_To_v1alpha2_ACMEIssuerDNS01ProviderCloudflare(in, out, s)
-}
-
-func autoConvert_v1alpha2_ACMEIssuerDNS01ProviderDigitalOcean_To_certmanager_ACMEIssuerDNS01ProviderDigitalOcean(in *v1alpha2.ACMEIssuerDNS01ProviderDigitalOcean, out *certmanager.ACMEIssuerDNS01ProviderDigitalOcean, s conversion.Scope) error {
-	// TODO: Inefficient conversion - can we improve it?
-	if err := s.Convert(&in.Token, &out.Token, 0); err != nil {
-		return err
-	}
-	return nil
-}
-
-// Convert_v1alpha2_ACMEIssuerDNS01ProviderDigitalOcean_To_certmanager_ACMEIssuerDNS01ProviderDigitalOcean is an autogenerated conversion function.
-func Convert_v1alpha2_ACMEIssuerDNS01ProviderDigitalOcean_To_certmanager_ACMEIssuerDNS01ProviderDigitalOcean(in *v1alpha2.ACMEIssuerDNS01ProviderDigitalOcean, out *certmanager.ACMEIssuerDNS01ProviderDigitalOcean, s conversion.Scope) error {
-	return autoConvert_v1alpha2_ACMEIssuerDNS01ProviderDigitalOcean_To_certmanager_ACMEIssuerDNS01ProviderDigitalOcean(in, out, s)
-}
-
-func autoConvert_certmanager_ACMEIssuerDNS01ProviderDigitalOcean_To_v1alpha2_ACMEIssuerDNS01ProviderDigitalOcean(in *certmanager.ACMEIssuerDNS01ProviderDigitalOcean, out *v1alpha2.ACMEIssuerDNS01ProviderDigitalOcean, s conversion.Scope) error {
-	// TODO: Inefficient conversion - can we improve it?
-	if err := s.Convert(&in.Token, &out.Token, 0); err != nil {
-		return err
-	}
-	return nil
-}
-
-// Convert_certmanager_ACMEIssuerDNS01ProviderDigitalOcean_To_v1alpha2_ACMEIssuerDNS01ProviderDigitalOcean is an autogenerated conversion function.
-func Convert_certmanager_ACMEIssuerDNS01ProviderDigitalOcean_To_v1alpha2_ACMEIssuerDNS01ProviderDigitalOcean(in *certmanager.ACMEIssuerDNS01ProviderDigitalOcean, out *v1alpha2.ACMEIssuerDNS01ProviderDigitalOcean, s conversion.Scope) error {
-	return autoConvert_certmanager_ACMEIssuerDNS01ProviderDigitalOcean_To_v1alpha2_ACMEIssuerDNS01ProviderDigitalOcean(in, out, s)
-}
-
-func autoConvert_v1alpha2_ACMEIssuerDNS01ProviderRFC2136_To_certmanager_ACMEIssuerDNS01ProviderRFC2136(in *v1alpha2.ACMEIssuerDNS01ProviderRFC2136, out *certmanager.ACMEIssuerDNS01ProviderRFC2136, s conversion.Scope) error {
-	out.Nameserver = in.Nameserver
-	// TODO: Inefficient conversion - can we improve it?
-	if err := s.Convert(&in.TSIGSecret, &out.TSIGSecret, 0); err != nil {
-		return err
-	}
-	out.TSIGKeyName = in.TSIGKeyName
-	out.TSIGAlgorithm = in.TSIGAlgorithm
-	return nil
-}
-
-// Convert_v1alpha2_ACMEIssuerDNS01ProviderRFC2136_To_certmanager_ACMEIssuerDNS01ProviderRFC2136 is an autogenerated conversion function.
-func Convert_v1alpha2_ACMEIssuerDNS01ProviderRFC2136_To_certmanager_ACMEIssuerDNS01ProviderRFC2136(in *v1alpha2.ACMEIssuerDNS01ProviderRFC2136, out *certmanager.ACMEIssuerDNS01ProviderRFC2136, s conversion.Scope) error {
-	return autoConvert_v1alpha2_ACMEIssuerDNS01ProviderRFC2136_To_certmanager_ACMEIssuerDNS01ProviderRFC2136(in, out, s)
-}
-
-func autoConvert_certmanager_ACMEIssuerDNS01ProviderRFC2136_To_v1alpha2_ACMEIssuerDNS01ProviderRFC2136(in *certmanager.ACMEIssuerDNS01ProviderRFC2136, out *v1alpha2.ACMEIssuerDNS01ProviderRFC2136, s conversion.Scope) error {
-	out.Nameserver = in.Nameserver
-	// TODO: Inefficient conversion - can we improve it?
-	if err := s.Convert(&in.TSIGSecret, &out.TSIGSecret, 0); err != nil {
-		return err
-	}
-	out.TSIGKeyName = in.TSIGKeyName
-	out.TSIGAlgorithm = in.TSIGAlgorithm
-	return nil
-}
-
-// Convert_certmanager_ACMEIssuerDNS01ProviderRFC2136_To_v1alpha2_ACMEIssuerDNS01ProviderRFC2136 is an autogenerated conversion function.
-func Convert_certmanager_ACMEIssuerDNS01ProviderRFC2136_To_v1alpha2_ACMEIssuerDNS01ProviderRFC2136(in *certmanager.ACMEIssuerDNS01ProviderRFC2136, out *v1alpha2.ACMEIssuerDNS01ProviderRFC2136, s conversion.Scope) error {
-	return autoConvert_certmanager_ACMEIssuerDNS01ProviderRFC2136_To_v1alpha2_ACMEIssuerDNS01ProviderRFC2136(in, out, s)
-}
-
-func autoConvert_v1alpha2_ACMEIssuerDNS01ProviderRoute53_To_certmanager_ACMEIssuerDNS01ProviderRoute53(in *v1alpha2.ACMEIssuerDNS01ProviderRoute53, out *certmanager.ACMEIssuerDNS01ProviderRoute53, s conversion.Scope) error {
-	out.AccessKeyID = in.AccessKeyID
-	// TODO: Inefficient conversion - can we improve it?
-	if err := s.Convert(&in.SecretAccessKey, &out.SecretAccessKey, 0); err != nil {
-		return err
-	}
-	out.Role = in.Role
-	out.HostedZoneID = in.HostedZoneID
-	out.Region = in.Region
-	return nil
-}
-
-// Convert_v1alpha2_ACMEIssuerDNS01ProviderRoute53_To_certmanager_ACMEIssuerDNS01ProviderRoute53 is an autogenerated conversion function.
-func Convert_v1alpha2_ACMEIssuerDNS01ProviderRoute53_To_certmanager_ACMEIssuerDNS01ProviderRoute53(in *v1alpha2.ACMEIssuerDNS01ProviderRoute53, out *certmanager.ACMEIssuerDNS01ProviderRoute53, s conversion.Scope) error {
-	return autoConvert_v1alpha2_ACMEIssuerDNS01ProviderRoute53_To_certmanager_ACMEIssuerDNS01ProviderRoute53(in, out, s)
-}
-
-func autoConvert_certmanager_ACMEIssuerDNS01ProviderRoute53_To_v1alpha2_ACMEIssuerDNS01ProviderRoute53(in *certmanager.ACMEIssuerDNS01ProviderRoute53, out *v1alpha2.ACMEIssuerDNS01ProviderRoute53, s conversion.Scope) error {
-	out.AccessKeyID = in.AccessKeyID
-	// TODO: Inefficient conversion - can we improve it?
-	if err := s.Convert(&in.SecretAccessKey, &out.SecretAccessKey, 0); err != nil {
-		return err
-	}
-	out.Role = in.Role
-	out.HostedZoneID = in.HostedZoneID
-	out.Region = in.Region
-	return nil
-}
-
-// Convert_certmanager_ACMEIssuerDNS01ProviderRoute53_To_v1alpha2_ACMEIssuerDNS01ProviderRoute53 is an autogenerated conversion function.
-func Convert_certmanager_ACMEIssuerDNS01ProviderRoute53_To_v1alpha2_ACMEIssuerDNS01ProviderRoute53(in *certmanager.ACMEIssuerDNS01ProviderRoute53, out *v1alpha2.ACMEIssuerDNS01ProviderRoute53, s conversion.Scope) error {
-	return autoConvert_certmanager_ACMEIssuerDNS01ProviderRoute53_To_v1alpha2_ACMEIssuerDNS01ProviderRoute53(in, out, s)
-}
-
-func autoConvert_v1alpha2_ACMEIssuerDNS01ProviderWebhook_To_certmanager_ACMEIssuerDNS01ProviderWebhook(in *v1alpha2.ACMEIssuerDNS01ProviderWebhook, out *certmanager.ACMEIssuerDNS01ProviderWebhook, s conversion.Scope) error {
-	out.GroupName = in.GroupName
-	out.SolverName = in.SolverName
-	out.Config = (*v1beta1.JSON)(unsafe.Pointer(in.Config))
-	return nil
-}
-
-// Convert_v1alpha2_ACMEIssuerDNS01ProviderWebhook_To_certmanager_ACMEIssuerDNS01ProviderWebhook is an autogenerated conversion function.
-func Convert_v1alpha2_ACMEIssuerDNS01ProviderWebhook_To_certmanager_ACMEIssuerDNS01ProviderWebhook(in *v1alpha2.ACMEIssuerDNS01ProviderWebhook, out *certmanager.ACMEIssuerDNS01ProviderWebhook, s conversion.Scope) error {
-	return autoConvert_v1alpha2_ACMEIssuerDNS01ProviderWebhook_To_certmanager_ACMEIssuerDNS01ProviderWebhook(in, out, s)
-}
-
-func autoConvert_certmanager_ACMEIssuerDNS01ProviderWebhook_To_v1alpha2_ACMEIssuerDNS01ProviderWebhook(in *certmanager.ACMEIssuerDNS01ProviderWebhook, out *v1alpha2.ACMEIssuerDNS01ProviderWebhook, s conversion.Scope) error {
-	out.GroupName = in.GroupName
-	out.SolverName = in.SolverName
-	out.Config = (*v1beta1.JSON)(unsafe.Pointer(in.Config))
-	return nil
-}
-
-// Convert_certmanager_ACMEIssuerDNS01ProviderWebhook_To_v1alpha2_ACMEIssuerDNS01ProviderWebhook is an autogenerated conversion function.
-func Convert_certmanager_ACMEIssuerDNS01ProviderWebhook_To_v1alpha2_ACMEIssuerDNS01ProviderWebhook(in *certmanager.ACMEIssuerDNS01ProviderWebhook, out *v1alpha2.ACMEIssuerDNS01ProviderWebhook, s conversion.Scope) error {
-	return autoConvert_certmanager_ACMEIssuerDNS01ProviderWebhook_To_v1alpha2_ACMEIssuerDNS01ProviderWebhook(in, out, s)
-}
-
-func autoConvert_v1alpha2_ACMEIssuerStatus_To_certmanager_ACMEIssuerStatus(in *v1alpha2.ACMEIssuerStatus, out *certmanager.ACMEIssuerStatus, s conversion.Scope) error {
-	out.URI = in.URI
-	out.LastRegisteredEmail = in.LastRegisteredEmail
-	return nil
-}
-
-// Convert_v1alpha2_ACMEIssuerStatus_To_certmanager_ACMEIssuerStatus is an autogenerated conversion function.
-func Convert_v1alpha2_ACMEIssuerStatus_To_certmanager_ACMEIssuerStatus(in *v1alpha2.ACMEIssuerStatus, out *certmanager.ACMEIssuerStatus, s conversion.Scope) error {
-	return autoConvert_v1alpha2_ACMEIssuerStatus_To_certmanager_ACMEIssuerStatus(in, out, s)
-}
-
-func autoConvert_certmanager_ACMEIssuerStatus_To_v1alpha2_ACMEIssuerStatus(in *certmanager.ACMEIssuerStatus, out *v1alpha2.ACMEIssuerStatus, s conversion.Scope) error {
-	out.URI = in.URI
-	out.LastRegisteredEmail = in.LastRegisteredEmail
-	return nil
-}
-
-// Convert_certmanager_ACMEIssuerStatus_To_v1alpha2_ACMEIssuerStatus is an autogenerated conversion function.
-func Convert_certmanager_ACMEIssuerStatus_To_v1alpha2_ACMEIssuerStatus(in *certmanager.ACMEIssuerStatus, out *v1alpha2.ACMEIssuerStatus, s conversion.Scope) error {
-	return autoConvert_certmanager_ACMEIssuerStatus_To_v1alpha2_ACMEIssuerStatus(in, out, s)
-}
-
 func autoConvert_v1alpha2_CAIssuer_To_certmanager_CAIssuer(in *v1alpha2.CAIssuer, out *certmanager.CAIssuer, s conversion.Scope) error {
 	out.SecretName = in.SecretName
 	return nil
@@ -1185,7 +359,7 @@ func Convert_certmanager_Certificate_To_v1alpha2_Certificate(in *certmanager.Cer
 func autoConvert_v1alpha2_CertificateCondition_To_certmanager_CertificateCondition(in *v1alpha2.CertificateCondition, out *certmanager.CertificateCondition, s conversion.Scope) error {
 	out.Type = certmanager.CertificateConditionType(in.Type)
 	out.Status = meta.ConditionStatus(in.Status)
-	out.LastTransitionTime = (*metav1.Time)(unsafe.Pointer(in.LastTransitionTime))
+	out.LastTransitionTime = (*v1.Time)(unsafe.Pointer(in.LastTransitionTime))
 	out.Reason = in.Reason
 	out.Message = in.Message
 	return nil
@@ -1198,8 +372,8 @@ func Convert_v1alpha2_CertificateCondition_To_certmanager_CertificateCondition(i
 
 func autoConvert_certmanager_CertificateCondition_To_v1alpha2_CertificateCondition(in *certmanager.CertificateCondition, out *v1alpha2.CertificateCondition, s conversion.Scope) error {
 	out.Type = v1alpha2.CertificateConditionType(in.Type)
-	out.Status = apismetav1.ConditionStatus(in.Status)
-	out.LastTransitionTime = (*metav1.Time)(unsafe.Pointer(in.LastTransitionTime))
+	out.Status = metav1.ConditionStatus(in.Status)
+	out.LastTransitionTime = (*v1.Time)(unsafe.Pointer(in.LastTransitionTime))
 	out.Reason = in.Reason
 	out.Message = in.Message
 	return nil
@@ -1208,30 +382,6 @@ func autoConvert_certmanager_CertificateCondition_To_v1alpha2_CertificateConditi
 // Convert_certmanager_CertificateCondition_To_v1alpha2_CertificateCondition is an autogenerated conversion function.
 func Convert_certmanager_CertificateCondition_To_v1alpha2_CertificateCondition(in *certmanager.CertificateCondition, out *v1alpha2.CertificateCondition, s conversion.Scope) error {
 	return autoConvert_certmanager_CertificateCondition_To_v1alpha2_CertificateCondition(in, out, s)
-}
-
-func autoConvert_v1alpha2_CertificateDNSNameSelector_To_certmanager_CertificateDNSNameSelector(in *v1alpha2.CertificateDNSNameSelector, out *certmanager.CertificateDNSNameSelector, s conversion.Scope) error {
-	out.MatchLabels = *(*map[string]string)(unsafe.Pointer(&in.MatchLabels))
-	out.DNSNames = *(*[]string)(unsafe.Pointer(&in.DNSNames))
-	out.DNSZones = *(*[]string)(unsafe.Pointer(&in.DNSZones))
-	return nil
-}
-
-// Convert_v1alpha2_CertificateDNSNameSelector_To_certmanager_CertificateDNSNameSelector is an autogenerated conversion function.
-func Convert_v1alpha2_CertificateDNSNameSelector_To_certmanager_CertificateDNSNameSelector(in *v1alpha2.CertificateDNSNameSelector, out *certmanager.CertificateDNSNameSelector, s conversion.Scope) error {
-	return autoConvert_v1alpha2_CertificateDNSNameSelector_To_certmanager_CertificateDNSNameSelector(in, out, s)
-}
-
-func autoConvert_certmanager_CertificateDNSNameSelector_To_v1alpha2_CertificateDNSNameSelector(in *certmanager.CertificateDNSNameSelector, out *v1alpha2.CertificateDNSNameSelector, s conversion.Scope) error {
-	out.MatchLabels = *(*map[string]string)(unsafe.Pointer(&in.MatchLabels))
-	out.DNSNames = *(*[]string)(unsafe.Pointer(&in.DNSNames))
-	out.DNSZones = *(*[]string)(unsafe.Pointer(&in.DNSZones))
-	return nil
-}
-
-// Convert_certmanager_CertificateDNSNameSelector_To_v1alpha2_CertificateDNSNameSelector is an autogenerated conversion function.
-func Convert_certmanager_CertificateDNSNameSelector_To_v1alpha2_CertificateDNSNameSelector(in *certmanager.CertificateDNSNameSelector, out *v1alpha2.CertificateDNSNameSelector, s conversion.Scope) error {
-	return autoConvert_certmanager_CertificateDNSNameSelector_To_v1alpha2_CertificateDNSNameSelector(in, out, s)
 }
 
 func autoConvert_v1alpha2_CertificateList_To_certmanager_CertificateList(in *v1alpha2.CertificateList, out *certmanager.CertificateList, s conversion.Scope) error {
@@ -1291,7 +441,7 @@ func Convert_certmanager_CertificateRequest_To_v1alpha2_CertificateRequest(in *c
 func autoConvert_v1alpha2_CertificateRequestCondition_To_certmanager_CertificateRequestCondition(in *v1alpha2.CertificateRequestCondition, out *certmanager.CertificateRequestCondition, s conversion.Scope) error {
 	out.Type = certmanager.CertificateRequestConditionType(in.Type)
 	out.Status = meta.ConditionStatus(in.Status)
-	out.LastTransitionTime = (*metav1.Time)(unsafe.Pointer(in.LastTransitionTime))
+	out.LastTransitionTime = (*v1.Time)(unsafe.Pointer(in.LastTransitionTime))
 	out.Reason = in.Reason
 	out.Message = in.Message
 	return nil
@@ -1304,8 +454,8 @@ func Convert_v1alpha2_CertificateRequestCondition_To_certmanager_CertificateRequ
 
 func autoConvert_certmanager_CertificateRequestCondition_To_v1alpha2_CertificateRequestCondition(in *certmanager.CertificateRequestCondition, out *v1alpha2.CertificateRequestCondition, s conversion.Scope) error {
 	out.Type = v1alpha2.CertificateRequestConditionType(in.Type)
-	out.Status = apismetav1.ConditionStatus(in.Status)
-	out.LastTransitionTime = (*metav1.Time)(unsafe.Pointer(in.LastTransitionTime))
+	out.Status = metav1.ConditionStatus(in.Status)
+	out.LastTransitionTime = (*v1.Time)(unsafe.Pointer(in.LastTransitionTime))
 	out.Reason = in.Reason
 	out.Message = in.Message
 	return nil
@@ -1339,7 +489,7 @@ func Convert_certmanager_CertificateRequestList_To_v1alpha2_CertificateRequestLi
 }
 
 func autoConvert_v1alpha2_CertificateRequestSpec_To_certmanager_CertificateRequestSpec(in *v1alpha2.CertificateRequestSpec, out *certmanager.CertificateRequestSpec, s conversion.Scope) error {
-	out.Duration = (*metav1.Duration)(unsafe.Pointer(in.Duration))
+	out.Duration = (*v1.Duration)(unsafe.Pointer(in.Duration))
 	// TODO: Inefficient conversion - can we improve it?
 	if err := s.Convert(&in.IssuerRef, &out.IssuerRef, 0); err != nil {
 		return err
@@ -1356,7 +506,7 @@ func Convert_v1alpha2_CertificateRequestSpec_To_certmanager_CertificateRequestSp
 }
 
 func autoConvert_certmanager_CertificateRequestSpec_To_v1alpha2_CertificateRequestSpec(in *certmanager.CertificateRequestSpec, out *v1alpha2.CertificateRequestSpec, s conversion.Scope) error {
-	out.Duration = (*metav1.Duration)(unsafe.Pointer(in.Duration))
+	out.Duration = (*v1.Duration)(unsafe.Pointer(in.Duration))
 	// TODO: Inefficient conversion - can we improve it?
 	if err := s.Convert(&in.IssuerRef, &out.IssuerRef, 0); err != nil {
 		return err
@@ -1376,7 +526,7 @@ func autoConvert_v1alpha2_CertificateRequestStatus_To_certmanager_CertificateReq
 	out.Conditions = *(*[]certmanager.CertificateRequestCondition)(unsafe.Pointer(&in.Conditions))
 	out.Certificate = *(*[]byte)(unsafe.Pointer(&in.Certificate))
 	out.CA = *(*[]byte)(unsafe.Pointer(&in.CA))
-	out.FailureTime = (*metav1.Time)(unsafe.Pointer(in.FailureTime))
+	out.FailureTime = (*v1.Time)(unsafe.Pointer(in.FailureTime))
 	return nil
 }
 
@@ -1389,7 +539,7 @@ func autoConvert_certmanager_CertificateRequestStatus_To_v1alpha2_CertificateReq
 	out.Conditions = *(*[]v1alpha2.CertificateRequestCondition)(unsafe.Pointer(&in.Conditions))
 	out.Certificate = *(*[]byte)(unsafe.Pointer(&in.Certificate))
 	out.CA = *(*[]byte)(unsafe.Pointer(&in.CA))
-	out.FailureTime = (*metav1.Time)(unsafe.Pointer(in.FailureTime))
+	out.FailureTime = (*v1.Time)(unsafe.Pointer(in.FailureTime))
 	return nil
 }
 
@@ -1401,8 +551,8 @@ func Convert_certmanager_CertificateRequestStatus_To_v1alpha2_CertificateRequest
 func autoConvert_v1alpha2_CertificateSpec_To_certmanager_CertificateSpec(in *v1alpha2.CertificateSpec, out *certmanager.CertificateSpec, s conversion.Scope) error {
 	out.CommonName = in.CommonName
 	out.Organization = *(*[]string)(unsafe.Pointer(&in.Organization))
-	out.Duration = (*metav1.Duration)(unsafe.Pointer(in.Duration))
-	out.RenewBefore = (*metav1.Duration)(unsafe.Pointer(in.RenewBefore))
+	out.Duration = (*v1.Duration)(unsafe.Pointer(in.Duration))
+	out.RenewBefore = (*v1.Duration)(unsafe.Pointer(in.RenewBefore))
 	out.DNSNames = *(*[]string)(unsafe.Pointer(&in.DNSNames))
 	out.IPAddresses = *(*[]string)(unsafe.Pointer(&in.IPAddresses))
 	out.SecretName = in.SecretName
@@ -1426,8 +576,8 @@ func Convert_v1alpha2_CertificateSpec_To_certmanager_CertificateSpec(in *v1alpha
 func autoConvert_certmanager_CertificateSpec_To_v1alpha2_CertificateSpec(in *certmanager.CertificateSpec, out *v1alpha2.CertificateSpec, s conversion.Scope) error {
 	out.CommonName = in.CommonName
 	out.Organization = *(*[]string)(unsafe.Pointer(&in.Organization))
-	out.Duration = (*metav1.Duration)(unsafe.Pointer(in.Duration))
-	out.RenewBefore = (*metav1.Duration)(unsafe.Pointer(in.RenewBefore))
+	out.Duration = (*v1.Duration)(unsafe.Pointer(in.Duration))
+	out.RenewBefore = (*v1.Duration)(unsafe.Pointer(in.RenewBefore))
 	out.DNSNames = *(*[]string)(unsafe.Pointer(&in.DNSNames))
 	out.IPAddresses = *(*[]string)(unsafe.Pointer(&in.IPAddresses))
 	out.SecretName = in.SecretName
@@ -1450,8 +600,8 @@ func Convert_certmanager_CertificateSpec_To_v1alpha2_CertificateSpec(in *certman
 
 func autoConvert_v1alpha2_CertificateStatus_To_certmanager_CertificateStatus(in *v1alpha2.CertificateStatus, out *certmanager.CertificateStatus, s conversion.Scope) error {
 	out.Conditions = *(*[]certmanager.CertificateCondition)(unsafe.Pointer(&in.Conditions))
-	out.LastFailureTime = (*metav1.Time)(unsafe.Pointer(in.LastFailureTime))
-	out.NotAfter = (*metav1.Time)(unsafe.Pointer(in.NotAfter))
+	out.LastFailureTime = (*v1.Time)(unsafe.Pointer(in.LastFailureTime))
+	out.NotAfter = (*v1.Time)(unsafe.Pointer(in.NotAfter))
 	return nil
 }
 
@@ -1462,136 +612,14 @@ func Convert_v1alpha2_CertificateStatus_To_certmanager_CertificateStatus(in *v1a
 
 func autoConvert_certmanager_CertificateStatus_To_v1alpha2_CertificateStatus(in *certmanager.CertificateStatus, out *v1alpha2.CertificateStatus, s conversion.Scope) error {
 	out.Conditions = *(*[]v1alpha2.CertificateCondition)(unsafe.Pointer(&in.Conditions))
-	out.LastFailureTime = (*metav1.Time)(unsafe.Pointer(in.LastFailureTime))
-	out.NotAfter = (*metav1.Time)(unsafe.Pointer(in.NotAfter))
+	out.LastFailureTime = (*v1.Time)(unsafe.Pointer(in.LastFailureTime))
+	out.NotAfter = (*v1.Time)(unsafe.Pointer(in.NotAfter))
 	return nil
 }
 
 // Convert_certmanager_CertificateStatus_To_v1alpha2_CertificateStatus is an autogenerated conversion function.
 func Convert_certmanager_CertificateStatus_To_v1alpha2_CertificateStatus(in *certmanager.CertificateStatus, out *v1alpha2.CertificateStatus, s conversion.Scope) error {
 	return autoConvert_certmanager_CertificateStatus_To_v1alpha2_CertificateStatus(in, out, s)
-}
-
-func autoConvert_v1alpha2_Challenge_To_certmanager_Challenge(in *v1alpha2.Challenge, out *certmanager.Challenge, s conversion.Scope) error {
-	out.ObjectMeta = in.ObjectMeta
-	if err := Convert_v1alpha2_ChallengeSpec_To_certmanager_ChallengeSpec(&in.Spec, &out.Spec, s); err != nil {
-		return err
-	}
-	if err := Convert_v1alpha2_ChallengeStatus_To_certmanager_ChallengeStatus(&in.Status, &out.Status, s); err != nil {
-		return err
-	}
-	return nil
-}
-
-// Convert_v1alpha2_Challenge_To_certmanager_Challenge is an autogenerated conversion function.
-func Convert_v1alpha2_Challenge_To_certmanager_Challenge(in *v1alpha2.Challenge, out *certmanager.Challenge, s conversion.Scope) error {
-	return autoConvert_v1alpha2_Challenge_To_certmanager_Challenge(in, out, s)
-}
-
-func autoConvert_certmanager_Challenge_To_v1alpha2_Challenge(in *certmanager.Challenge, out *v1alpha2.Challenge, s conversion.Scope) error {
-	out.ObjectMeta = in.ObjectMeta
-	if err := Convert_certmanager_ChallengeSpec_To_v1alpha2_ChallengeSpec(&in.Spec, &out.Spec, s); err != nil {
-		return err
-	}
-	if err := Convert_certmanager_ChallengeStatus_To_v1alpha2_ChallengeStatus(&in.Status, &out.Status, s); err != nil {
-		return err
-	}
-	return nil
-}
-
-// Convert_certmanager_Challenge_To_v1alpha2_Challenge is an autogenerated conversion function.
-func Convert_certmanager_Challenge_To_v1alpha2_Challenge(in *certmanager.Challenge, out *v1alpha2.Challenge, s conversion.Scope) error {
-	return autoConvert_certmanager_Challenge_To_v1alpha2_Challenge(in, out, s)
-}
-
-func autoConvert_v1alpha2_ChallengeList_To_certmanager_ChallengeList(in *v1alpha2.ChallengeList, out *certmanager.ChallengeList, s conversion.Scope) error {
-	out.ListMeta = in.ListMeta
-	out.Items = *(*[]certmanager.Challenge)(unsafe.Pointer(&in.Items))
-	return nil
-}
-
-// Convert_v1alpha2_ChallengeList_To_certmanager_ChallengeList is an autogenerated conversion function.
-func Convert_v1alpha2_ChallengeList_To_certmanager_ChallengeList(in *v1alpha2.ChallengeList, out *certmanager.ChallengeList, s conversion.Scope) error {
-	return autoConvert_v1alpha2_ChallengeList_To_certmanager_ChallengeList(in, out, s)
-}
-
-func autoConvert_certmanager_ChallengeList_To_v1alpha2_ChallengeList(in *certmanager.ChallengeList, out *v1alpha2.ChallengeList, s conversion.Scope) error {
-	out.ListMeta = in.ListMeta
-	out.Items = *(*[]v1alpha2.Challenge)(unsafe.Pointer(&in.Items))
-	return nil
-}
-
-// Convert_certmanager_ChallengeList_To_v1alpha2_ChallengeList is an autogenerated conversion function.
-func Convert_certmanager_ChallengeList_To_v1alpha2_ChallengeList(in *certmanager.ChallengeList, out *v1alpha2.ChallengeList, s conversion.Scope) error {
-	return autoConvert_certmanager_ChallengeList_To_v1alpha2_ChallengeList(in, out, s)
-}
-
-func autoConvert_v1alpha2_ChallengeSpec_To_certmanager_ChallengeSpec(in *v1alpha2.ChallengeSpec, out *certmanager.ChallengeSpec, s conversion.Scope) error {
-	out.AuthzURL = in.AuthzURL
-	out.Type = string(in.Type)
-	out.URL = in.URL
-	out.DNSName = in.DNSName
-	out.Token = in.Token
-	out.Key = in.Key
-	out.Wildcard = in.Wildcard
-	out.Solver = (*certmanager.ACMEChallengeSolver)(unsafe.Pointer(in.Solver))
-	// TODO: Inefficient conversion - can we improve it?
-	if err := s.Convert(&in.IssuerRef, &out.IssuerRef, 0); err != nil {
-		return err
-	}
-	return nil
-}
-
-// Convert_v1alpha2_ChallengeSpec_To_certmanager_ChallengeSpec is an autogenerated conversion function.
-func Convert_v1alpha2_ChallengeSpec_To_certmanager_ChallengeSpec(in *v1alpha2.ChallengeSpec, out *certmanager.ChallengeSpec, s conversion.Scope) error {
-	return autoConvert_v1alpha2_ChallengeSpec_To_certmanager_ChallengeSpec(in, out, s)
-}
-
-func autoConvert_certmanager_ChallengeSpec_To_v1alpha2_ChallengeSpec(in *certmanager.ChallengeSpec, out *v1alpha2.ChallengeSpec, s conversion.Scope) error {
-	out.AuthzURL = in.AuthzURL
-	out.Type = v1alpha2.ACMEChallengeType(in.Type)
-	out.URL = in.URL
-	out.DNSName = in.DNSName
-	out.Token = in.Token
-	out.Key = in.Key
-	out.Wildcard = in.Wildcard
-	out.Solver = (*v1alpha2.ACMEChallengeSolver)(unsafe.Pointer(in.Solver))
-	// TODO: Inefficient conversion - can we improve it?
-	if err := s.Convert(&in.IssuerRef, &out.IssuerRef, 0); err != nil {
-		return err
-	}
-	return nil
-}
-
-// Convert_certmanager_ChallengeSpec_To_v1alpha2_ChallengeSpec is an autogenerated conversion function.
-func Convert_certmanager_ChallengeSpec_To_v1alpha2_ChallengeSpec(in *certmanager.ChallengeSpec, out *v1alpha2.ChallengeSpec, s conversion.Scope) error {
-	return autoConvert_certmanager_ChallengeSpec_To_v1alpha2_ChallengeSpec(in, out, s)
-}
-
-func autoConvert_v1alpha2_ChallengeStatus_To_certmanager_ChallengeStatus(in *v1alpha2.ChallengeStatus, out *certmanager.ChallengeStatus, s conversion.Scope) error {
-	out.Processing = in.Processing
-	out.Presented = in.Presented
-	out.Reason = in.Reason
-	out.State = certmanager.State(in.State)
-	return nil
-}
-
-// Convert_v1alpha2_ChallengeStatus_To_certmanager_ChallengeStatus is an autogenerated conversion function.
-func Convert_v1alpha2_ChallengeStatus_To_certmanager_ChallengeStatus(in *v1alpha2.ChallengeStatus, out *certmanager.ChallengeStatus, s conversion.Scope) error {
-	return autoConvert_v1alpha2_ChallengeStatus_To_certmanager_ChallengeStatus(in, out, s)
-}
-
-func autoConvert_certmanager_ChallengeStatus_To_v1alpha2_ChallengeStatus(in *certmanager.ChallengeStatus, out *v1alpha2.ChallengeStatus, s conversion.Scope) error {
-	out.Processing = in.Processing
-	out.Presented = in.Presented
-	out.Reason = in.Reason
-	out.State = v1alpha2.State(in.State)
-	return nil
-}
-
-// Convert_certmanager_ChallengeStatus_To_v1alpha2_ChallengeStatus is an autogenerated conversion function.
-func Convert_certmanager_ChallengeStatus_To_v1alpha2_ChallengeStatus(in *certmanager.ChallengeStatus, out *v1alpha2.ChallengeStatus, s conversion.Scope) error {
-	return autoConvert_certmanager_ChallengeStatus_To_v1alpha2_ChallengeStatus(in, out, s)
 }
 
 func autoConvert_v1alpha2_ClusterIssuer_To_certmanager_ClusterIssuer(in *v1alpha2.ClusterIssuer, out *certmanager.ClusterIssuer, s conversion.Scope) error {
@@ -1683,7 +711,7 @@ func Convert_certmanager_Issuer_To_v1alpha2_Issuer(in *certmanager.Issuer, out *
 func autoConvert_v1alpha2_IssuerCondition_To_certmanager_IssuerCondition(in *v1alpha2.IssuerCondition, out *certmanager.IssuerCondition, s conversion.Scope) error {
 	out.Type = certmanager.IssuerConditionType(in.Type)
 	out.Status = meta.ConditionStatus(in.Status)
-	out.LastTransitionTime = (*metav1.Time)(unsafe.Pointer(in.LastTransitionTime))
+	out.LastTransitionTime = (*v1.Time)(unsafe.Pointer(in.LastTransitionTime))
 	out.Reason = in.Reason
 	out.Message = in.Message
 	return nil
@@ -1696,8 +724,8 @@ func Convert_v1alpha2_IssuerCondition_To_certmanager_IssuerCondition(in *v1alpha
 
 func autoConvert_certmanager_IssuerCondition_To_v1alpha2_IssuerCondition(in *certmanager.IssuerCondition, out *v1alpha2.IssuerCondition, s conversion.Scope) error {
 	out.Type = v1alpha2.IssuerConditionType(in.Type)
-	out.Status = apismetav1.ConditionStatus(in.Status)
-	out.LastTransitionTime = (*metav1.Time)(unsafe.Pointer(in.LastTransitionTime))
+	out.Status = metav1.ConditionStatus(in.Status)
+	out.LastTransitionTime = (*v1.Time)(unsafe.Pointer(in.LastTransitionTime))
 	out.Reason = in.Reason
 	out.Message = in.Message
 	return nil
@@ -1709,7 +737,7 @@ func Convert_certmanager_IssuerCondition_To_v1alpha2_IssuerCondition(in *certman
 }
 
 func autoConvert_v1alpha2_IssuerConfig_To_certmanager_IssuerConfig(in *v1alpha2.IssuerConfig, out *certmanager.IssuerConfig, s conversion.Scope) error {
-	out.ACME = (*certmanager.ACMEIssuer)(unsafe.Pointer(in.ACME))
+	out.ACME = (*acme.ACMEIssuer)(unsafe.Pointer(in.ACME))
 	out.CA = (*certmanager.CAIssuer)(unsafe.Pointer(in.CA))
 	out.Vault = (*certmanager.VaultIssuer)(unsafe.Pointer(in.Vault))
 	out.SelfSigned = (*certmanager.SelfSignedIssuer)(unsafe.Pointer(in.SelfSigned))
@@ -1723,7 +751,7 @@ func Convert_v1alpha2_IssuerConfig_To_certmanager_IssuerConfig(in *v1alpha2.Issu
 }
 
 func autoConvert_certmanager_IssuerConfig_To_v1alpha2_IssuerConfig(in *certmanager.IssuerConfig, out *v1alpha2.IssuerConfig, s conversion.Scope) error {
-	out.ACME = (*v1alpha2.ACMEIssuer)(unsafe.Pointer(in.ACME))
+	out.ACME = (*acmev1alpha2.ACMEIssuer)(unsafe.Pointer(in.ACME))
 	out.CA = (*v1alpha2.CAIssuer)(unsafe.Pointer(in.CA))
 	out.Vault = (*v1alpha2.VaultIssuer)(unsafe.Pointer(in.Vault))
 	out.SelfSigned = (*v1alpha2.SelfSignedIssuer)(unsafe.Pointer(in.SelfSigned))
@@ -1784,7 +812,7 @@ func Convert_certmanager_IssuerSpec_To_v1alpha2_IssuerSpec(in *certmanager.Issue
 
 func autoConvert_v1alpha2_IssuerStatus_To_certmanager_IssuerStatus(in *v1alpha2.IssuerStatus, out *certmanager.IssuerStatus, s conversion.Scope) error {
 	out.Conditions = *(*[]certmanager.IssuerCondition)(unsafe.Pointer(&in.Conditions))
-	out.ACME = (*certmanager.ACMEIssuerStatus)(unsafe.Pointer(in.ACME))
+	out.ACME = (*acme.ACMEIssuerStatus)(unsafe.Pointer(in.ACME))
 	return nil
 }
 
@@ -1795,151 +823,13 @@ func Convert_v1alpha2_IssuerStatus_To_certmanager_IssuerStatus(in *v1alpha2.Issu
 
 func autoConvert_certmanager_IssuerStatus_To_v1alpha2_IssuerStatus(in *certmanager.IssuerStatus, out *v1alpha2.IssuerStatus, s conversion.Scope) error {
 	out.Conditions = *(*[]v1alpha2.IssuerCondition)(unsafe.Pointer(&in.Conditions))
-	out.ACME = (*v1alpha2.ACMEIssuerStatus)(unsafe.Pointer(in.ACME))
+	out.ACME = (*acmev1alpha2.ACMEIssuerStatus)(unsafe.Pointer(in.ACME))
 	return nil
 }
 
 // Convert_certmanager_IssuerStatus_To_v1alpha2_IssuerStatus is an autogenerated conversion function.
 func Convert_certmanager_IssuerStatus_To_v1alpha2_IssuerStatus(in *certmanager.IssuerStatus, out *v1alpha2.IssuerStatus, s conversion.Scope) error {
 	return autoConvert_certmanager_IssuerStatus_To_v1alpha2_IssuerStatus(in, out, s)
-}
-
-func autoConvert_v1alpha2_Order_To_certmanager_Order(in *v1alpha2.Order, out *certmanager.Order, s conversion.Scope) error {
-	out.ObjectMeta = in.ObjectMeta
-	if err := Convert_v1alpha2_OrderSpec_To_certmanager_OrderSpec(&in.Spec, &out.Spec, s); err != nil {
-		return err
-	}
-	if err := Convert_v1alpha2_OrderStatus_To_certmanager_OrderStatus(&in.Status, &out.Status, s); err != nil {
-		return err
-	}
-	return nil
-}
-
-// Convert_v1alpha2_Order_To_certmanager_Order is an autogenerated conversion function.
-func Convert_v1alpha2_Order_To_certmanager_Order(in *v1alpha2.Order, out *certmanager.Order, s conversion.Scope) error {
-	return autoConvert_v1alpha2_Order_To_certmanager_Order(in, out, s)
-}
-
-func autoConvert_certmanager_Order_To_v1alpha2_Order(in *certmanager.Order, out *v1alpha2.Order, s conversion.Scope) error {
-	out.ObjectMeta = in.ObjectMeta
-	if err := Convert_certmanager_OrderSpec_To_v1alpha2_OrderSpec(&in.Spec, &out.Spec, s); err != nil {
-		return err
-	}
-	if err := Convert_certmanager_OrderStatus_To_v1alpha2_OrderStatus(&in.Status, &out.Status, s); err != nil {
-		return err
-	}
-	return nil
-}
-
-// Convert_certmanager_Order_To_v1alpha2_Order is an autogenerated conversion function.
-func Convert_certmanager_Order_To_v1alpha2_Order(in *certmanager.Order, out *v1alpha2.Order, s conversion.Scope) error {
-	return autoConvert_certmanager_Order_To_v1alpha2_Order(in, out, s)
-}
-
-func autoConvert_v1alpha2_OrderList_To_certmanager_OrderList(in *v1alpha2.OrderList, out *certmanager.OrderList, s conversion.Scope) error {
-	out.ListMeta = in.ListMeta
-	if in.Items != nil {
-		in, out := &in.Items, &out.Items
-		*out = make([]certmanager.Order, len(*in))
-		for i := range *in {
-			if err := Convert_v1alpha2_Order_To_certmanager_Order(&(*in)[i], &(*out)[i], s); err != nil {
-				return err
-			}
-		}
-	} else {
-		out.Items = nil
-	}
-	return nil
-}
-
-// Convert_v1alpha2_OrderList_To_certmanager_OrderList is an autogenerated conversion function.
-func Convert_v1alpha2_OrderList_To_certmanager_OrderList(in *v1alpha2.OrderList, out *certmanager.OrderList, s conversion.Scope) error {
-	return autoConvert_v1alpha2_OrderList_To_certmanager_OrderList(in, out, s)
-}
-
-func autoConvert_certmanager_OrderList_To_v1alpha2_OrderList(in *certmanager.OrderList, out *v1alpha2.OrderList, s conversion.Scope) error {
-	out.ListMeta = in.ListMeta
-	if in.Items != nil {
-		in, out := &in.Items, &out.Items
-		*out = make([]v1alpha2.Order, len(*in))
-		for i := range *in {
-			if err := Convert_certmanager_Order_To_v1alpha2_Order(&(*in)[i], &(*out)[i], s); err != nil {
-				return err
-			}
-		}
-	} else {
-		out.Items = nil
-	}
-	return nil
-}
-
-// Convert_certmanager_OrderList_To_v1alpha2_OrderList is an autogenerated conversion function.
-func Convert_certmanager_OrderList_To_v1alpha2_OrderList(in *certmanager.OrderList, out *v1alpha2.OrderList, s conversion.Scope) error {
-	return autoConvert_certmanager_OrderList_To_v1alpha2_OrderList(in, out, s)
-}
-
-func autoConvert_v1alpha2_OrderSpec_To_certmanager_OrderSpec(in *v1alpha2.OrderSpec, out *certmanager.OrderSpec, s conversion.Scope) error {
-	out.CSR = *(*[]byte)(unsafe.Pointer(&in.CSR))
-	// TODO: Inefficient conversion - can we improve it?
-	if err := s.Convert(&in.IssuerRef, &out.IssuerRef, 0); err != nil {
-		return err
-	}
-	out.CommonName = in.CommonName
-	out.DNSNames = *(*[]string)(unsafe.Pointer(&in.DNSNames))
-	return nil
-}
-
-// Convert_v1alpha2_OrderSpec_To_certmanager_OrderSpec is an autogenerated conversion function.
-func Convert_v1alpha2_OrderSpec_To_certmanager_OrderSpec(in *v1alpha2.OrderSpec, out *certmanager.OrderSpec, s conversion.Scope) error {
-	return autoConvert_v1alpha2_OrderSpec_To_certmanager_OrderSpec(in, out, s)
-}
-
-func autoConvert_certmanager_OrderSpec_To_v1alpha2_OrderSpec(in *certmanager.OrderSpec, out *v1alpha2.OrderSpec, s conversion.Scope) error {
-	out.CSR = *(*[]byte)(unsafe.Pointer(&in.CSR))
-	// TODO: Inefficient conversion - can we improve it?
-	if err := s.Convert(&in.IssuerRef, &out.IssuerRef, 0); err != nil {
-		return err
-	}
-	out.CommonName = in.CommonName
-	out.DNSNames = *(*[]string)(unsafe.Pointer(&in.DNSNames))
-	return nil
-}
-
-// Convert_certmanager_OrderSpec_To_v1alpha2_OrderSpec is an autogenerated conversion function.
-func Convert_certmanager_OrderSpec_To_v1alpha2_OrderSpec(in *certmanager.OrderSpec, out *v1alpha2.OrderSpec, s conversion.Scope) error {
-	return autoConvert_certmanager_OrderSpec_To_v1alpha2_OrderSpec(in, out, s)
-}
-
-func autoConvert_v1alpha2_OrderStatus_To_certmanager_OrderStatus(in *v1alpha2.OrderStatus, out *certmanager.OrderStatus, s conversion.Scope) error {
-	out.URL = in.URL
-	out.FinalizeURL = in.FinalizeURL
-	out.Authorizations = *(*[]certmanager.ACMEAuthorization)(unsafe.Pointer(&in.Authorizations))
-	out.Certificate = *(*[]byte)(unsafe.Pointer(&in.Certificate))
-	out.State = certmanager.State(in.State)
-	out.Reason = in.Reason
-	out.FailureTime = (*metav1.Time)(unsafe.Pointer(in.FailureTime))
-	return nil
-}
-
-// Convert_v1alpha2_OrderStatus_To_certmanager_OrderStatus is an autogenerated conversion function.
-func Convert_v1alpha2_OrderStatus_To_certmanager_OrderStatus(in *v1alpha2.OrderStatus, out *certmanager.OrderStatus, s conversion.Scope) error {
-	return autoConvert_v1alpha2_OrderStatus_To_certmanager_OrderStatus(in, out, s)
-}
-
-func autoConvert_certmanager_OrderStatus_To_v1alpha2_OrderStatus(in *certmanager.OrderStatus, out *v1alpha2.OrderStatus, s conversion.Scope) error {
-	out.URL = in.URL
-	out.FinalizeURL = in.FinalizeURL
-	out.Certificate = *(*[]byte)(unsafe.Pointer(&in.Certificate))
-	out.State = v1alpha2.State(in.State)
-	out.Reason = in.Reason
-	out.Authorizations = *(*[]v1alpha2.ACMEAuthorization)(unsafe.Pointer(&in.Authorizations))
-	out.FailureTime = (*metav1.Time)(unsafe.Pointer(in.FailureTime))
-	return nil
-}
-
-// Convert_certmanager_OrderStatus_To_v1alpha2_OrderStatus is an autogenerated conversion function.
-func Convert_certmanager_OrderStatus_To_v1alpha2_OrderStatus(in *certmanager.OrderStatus, out *v1alpha2.OrderStatus, s conversion.Scope) error {
-	return autoConvert_certmanager_OrderStatus_To_v1alpha2_OrderStatus(in, out, s)
 }
 
 func autoConvert_v1alpha2_SelfSignedIssuer_To_certmanager_SelfSignedIssuer(in *v1alpha2.SelfSignedIssuer, out *certmanager.SelfSignedIssuer, s conversion.Scope) error {
