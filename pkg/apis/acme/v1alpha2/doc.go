@@ -14,20 +14,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// +k8s:deepcopy-gen=package,register
+// +k8s:conversion-gen=github.com/jetstack/cert-manager/pkg/apis/acme
+// +k8s:openapi-gen=true
+// +k8s:defaulter-gen=TypeMeta
+
+// Package v1alpha2 is the v1alpha2 version of the API.
+// +groupName=acme.cert-manager.io
 package v1alpha2
-
-import "time"
-
-const (
-	// minimum permitted certificate duration by cert-manager
-	MinimumCertificateDuration = time.Hour
-
-	// default certificate duration if Issuer.spec.duration is not set
-	DefaultCertificateDuration = time.Hour * 24 * 90
-
-	// minimum certificate duration before certificate expiration
-	MinimumRenewBefore = time.Minute * 5
-
-	// Default duration before certificate expiration if  Issuer.spec.renewBefore is not set
-	DefaultRenewBefore = time.Hour * 24 * 30
-)
