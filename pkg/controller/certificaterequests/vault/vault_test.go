@@ -40,6 +40,7 @@ import (
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	"github.com/jetstack/cert-manager/pkg/controller/certificaterequests"
 	testpkg "github.com/jetstack/cert-manager/pkg/controller/test"
 	internalvault "github.com/jetstack/cert-manager/pkg/internal/vault"
@@ -112,7 +113,7 @@ func TestSign(t *testing.T) {
 		gen.SetCertificateRequestIsCA(true),
 		gen.SetCertificateRequestCSR(csrPEM),
 		gen.SetCertificateRequestDuration(&metav1.Duration{Duration: time.Hour * 24 * 60}),
-		gen.SetCertificateRequestIssuer(cmapi.ObjectReference{
+		gen.SetCertificateRequestIssuer(cmmeta.ObjectReference{
 			Name:  baseIssuer.Name,
 			Group: certmanager.GroupName,
 			Kind:  baseIssuer.Kind,
@@ -161,7 +162,7 @@ func TestSign(t *testing.T) {
 						gen.CertificateRequestFrom(baseCR,
 							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
 								Type:               cmapi.CertificateRequestConditionReady,
-								Status:             cmapi.ConditionFalse,
+								Status:             cmmeta.ConditionFalse,
 								Reason:             cmapi.CertificateRequestReasonPending,
 								Message:            "Failed to initialise vault client for signing: error initializing Vault client tokenSecretRef or appRoleSecretRef not set",
 								LastTransitionTime: &metaFixedClockStart,
@@ -178,9 +179,9 @@ func TestSign(t *testing.T) {
 				CertManagerObjects: []runtime.Object{baseCR.DeepCopy(),
 					gen.IssuerFrom(baseIssuer, gen.SetIssuerVault(cmapi.VaultIssuer{
 						Auth: cmapi.VaultAuth{
-							TokenSecretRef: cmapi.SecretKeySelector{
+							TokenSecretRef: cmmeta.SecretKeySelector{
 								Key: "secret-key",
-								LocalObjectReference: cmapi.LocalObjectReference{
+								LocalObjectReference: cmmeta.LocalObjectReference{
 									"non-existing-secret",
 								},
 							},
@@ -197,7 +198,7 @@ func TestSign(t *testing.T) {
 						gen.CertificateRequestFrom(baseCR,
 							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
 								Type:               cmapi.CertificateRequestConditionReady,
-								Status:             cmapi.ConditionFalse,
+								Status:             cmmeta.ConditionFalse,
 								Reason:             cmapi.CertificateRequestReasonPending,
 								Message:            `Required secret resource not found: secret "non-existing-secret" not found`,
 								LastTransitionTime: &metaFixedClockStart,
@@ -216,9 +217,9 @@ func TestSign(t *testing.T) {
 						Auth: cmapi.VaultAuth{
 							AppRole: cmapi.VaultAppRole{
 								RoleId: "my-role-id",
-								SecretRef: cmapi.SecretKeySelector{
+								SecretRef: cmmeta.SecretKeySelector{
 									Key: "secret-key",
-									LocalObjectReference: cmapi.LocalObjectReference{
+									LocalObjectReference: cmmeta.LocalObjectReference{
 										"non-existing-secret",
 									},
 								},
@@ -236,7 +237,7 @@ func TestSign(t *testing.T) {
 						gen.CertificateRequestFrom(baseCR,
 							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
 								Type:               cmapi.CertificateRequestConditionReady,
-								Status:             cmapi.ConditionFalse,
+								Status:             cmmeta.ConditionFalse,
 								Reason:             cmapi.CertificateRequestReasonPending,
 								Message:            `Required secret resource not found: secret "non-existing-secret" not found`,
 								LastTransitionTime: &metaFixedClockStart,
@@ -253,9 +254,9 @@ func TestSign(t *testing.T) {
 				CertManagerObjects: []runtime.Object{baseCR.DeepCopy(), gen.IssuerFrom(baseIssuer,
 					gen.SetIssuerVault(cmapi.VaultIssuer{
 						Auth: cmapi.VaultAuth{
-							TokenSecretRef: cmapi.SecretKeySelector{
+							TokenSecretRef: cmmeta.SecretKeySelector{
 								Key: "my-token-key",
-								LocalObjectReference: cmapi.LocalObjectReference{
+								LocalObjectReference: cmmeta.LocalObjectReference{
 									"token-secret",
 								},
 							},
@@ -272,7 +273,7 @@ func TestSign(t *testing.T) {
 						gen.CertificateRequestFrom(baseCR,
 							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
 								Type:               cmapi.CertificateRequestConditionReady,
-								Status:             cmapi.ConditionFalse,
+								Status:             cmmeta.ConditionFalse,
 								Reason:             cmapi.CertificateRequestReasonFailed,
 								Message:            "Vault failed to sign certificate: failed to sign",
 								LastTransitionTime: &metaFixedClockStart,
@@ -293,8 +294,8 @@ func TestSign(t *testing.T) {
 						Auth: cmapi.VaultAuth{
 							AppRole: cmapi.VaultAppRole{
 								RoleId: "my-role-id",
-								SecretRef: cmapi.SecretKeySelector{
-									LocalObjectReference: cmapi.LocalObjectReference{
+								SecretRef: cmmeta.SecretKeySelector{
+									LocalObjectReference: cmmeta.LocalObjectReference{
 										"role-secret",
 									},
 									Key: "my-role-key",
@@ -313,7 +314,7 @@ func TestSign(t *testing.T) {
 						gen.CertificateRequestFrom(baseCR,
 							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
 								Type:               cmapi.CertificateRequestConditionReady,
-								Status:             cmapi.ConditionFalse,
+								Status:             cmmeta.ConditionFalse,
 								Reason:             cmapi.CertificateRequestReasonFailed,
 								Message:            "Vault failed to sign certificate: failed to sign",
 								LastTransitionTime: &metaFixedClockStart,
@@ -332,9 +333,9 @@ func TestSign(t *testing.T) {
 				CertManagerObjects: []runtime.Object{baseCR.DeepCopy(), gen.IssuerFrom(baseIssuer,
 					gen.SetIssuerVault(cmapi.VaultIssuer{
 						Auth: cmapi.VaultAuth{
-							TokenSecretRef: cmapi.SecretKeySelector{
+							TokenSecretRef: cmmeta.SecretKeySelector{
 								Key: "my-token-key",
-								LocalObjectReference: cmapi.LocalObjectReference{
+								LocalObjectReference: cmmeta.LocalObjectReference{
 									"token-secret",
 								},
 							},
@@ -353,7 +354,7 @@ func TestSign(t *testing.T) {
 							gen.SetCertificateRequestCA(rsaPEMCert),
 							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
 								Type:               cmapi.CertificateRequestConditionReady,
-								Status:             cmapi.ConditionTrue,
+								Status:             cmmeta.ConditionTrue,
 								Reason:             cmapi.CertificateRequestReasonIssued,
 								Message:            "Certificate fetched from issuer successfully",
 								LastTransitionTime: &metaFixedClockStart,
@@ -373,8 +374,8 @@ func TestSign(t *testing.T) {
 						Auth: cmapi.VaultAuth{
 							AppRole: cmapi.VaultAppRole{
 								RoleId: "my-role-id",
-								SecretRef: cmapi.SecretKeySelector{
-									LocalObjectReference: cmapi.LocalObjectReference{
+								SecretRef: cmmeta.SecretKeySelector{
+									LocalObjectReference: cmmeta.LocalObjectReference{
 										"role-secret",
 									},
 									Key: "my-role-key",
@@ -395,7 +396,7 @@ func TestSign(t *testing.T) {
 							gen.SetCertificateRequestCA(rsaPEMCert),
 							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
 								Type:               cmapi.CertificateRequestConditionReady,
-								Status:             cmapi.ConditionTrue,
+								Status:             cmmeta.ConditionTrue,
 								Reason:             cmapi.CertificateRequestReasonIssued,
 								Message:            "Certificate fetched from issuer successfully",
 								LastTransitionTime: &metaFixedClockStart,

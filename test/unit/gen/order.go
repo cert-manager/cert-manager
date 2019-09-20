@@ -18,6 +18,7 @@ package gen
 
 import (
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 )
 
 type OrderModifier func(*v1alpha2.Order)
@@ -41,7 +42,7 @@ func OrderFrom(crt *v1alpha2.Order, mods ...OrderModifier) *v1alpha2.Order {
 }
 
 // SetIssuer sets the Order.spec.issuerRef field
-func SetOrderIssuer(o v1alpha2.ObjectReference) OrderModifier {
+func SetOrderIssuer(o cmmeta.ObjectReference) OrderModifier {
 	return func(c *v1alpha2.Order) {
 		c.Spec.IssuerRef = o
 	}

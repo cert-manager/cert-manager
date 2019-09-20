@@ -25,6 +25,7 @@ import (
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	"github.com/jetstack/cert-manager/test/e2e/framework"
 	"github.com/jetstack/cert-manager/test/e2e/util"
 	"github.com/jetstack/cert-manager/test/unit/gen"
@@ -48,7 +49,7 @@ var _ = framework.CertManagerDescribe("SelfSigned CertificateRequest", func() {
 			issuerName,
 			v1alpha2.IssuerCondition{
 				Type:   v1alpha2.IssuerConditionReady,
-				Status: v1alpha2.ConditionTrue,
+				Status: cmmeta.ConditionTrue,
 			})
 		Expect(err).NotTo(HaveOccurred())
 
@@ -56,7 +57,7 @@ var _ = framework.CertManagerDescribe("SelfSigned CertificateRequest", func() {
 		basicCR = gen.CertificateRequest(certificateRequestName,
 			gen.SetCertificateRequestNamespace(f.Namespace.Name),
 			gen.SetCertificateRequestIsCA(true),
-			gen.SetCertificateRequestIssuer(v1alpha2.ObjectReference{
+			gen.SetCertificateRequestIssuer(cmmeta.ObjectReference{
 				Name:  issuerName,
 				Group: certmanager.GroupName,
 				Kind:  "Issuer",

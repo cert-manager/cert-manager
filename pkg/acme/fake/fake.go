@@ -22,6 +22,7 @@ import (
 	acmepkg "github.com/jetstack/cert-manager/pkg/acme"
 	acme "github.com/jetstack/cert-manager/pkg/acme/client"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 )
 
 // Helper implements a simple fake structure that implements the Helper
@@ -31,7 +32,7 @@ import (
 
 type Helper struct {
 	ClientForIssuerFunc func(cmapi.GenericIssuer) (acme.Interface, error)
-	ReadPrivateKeyFunc  func(cmapi.SecretKeySelector, string) (*rsa.PrivateKey, error)
+	ReadPrivateKeyFunc  func(cmmeta.SecretKeySelector, string) (*rsa.PrivateKey, error)
 }
 
 var _ acmepkg.Helper = &Helper{}
@@ -40,6 +41,6 @@ func (f *Helper) ClientForIssuer(i cmapi.GenericIssuer) (acme.Interface, error) 
 	return f.ClientForIssuerFunc(i)
 }
 
-func (f *Helper) ReadPrivateKey(sel cmapi.SecretKeySelector, ns string) (*rsa.PrivateKey, error) {
+func (f *Helper) ReadPrivateKey(sel cmmeta.SecretKeySelector, ns string) (*rsa.PrivateKey, error) {
 	return f.ReadPrivateKeyFunc(sel, ns)
 }

@@ -32,6 +32,7 @@ import (
 	fakeclock "k8s.io/utils/clock/testing"
 
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	testpkg "github.com/jetstack/cert-manager/pkg/controller/test"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 	"github.com/jetstack/cert-manager/test/unit/gen"
@@ -137,7 +138,7 @@ func createCryptoBundle(crt *cmapi.Certificate) (*cryptoBundle, error) {
 		gen.SetCertificateRequestCertificate(certBytes),
 		gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
 			Type:   cmapi.CertificateRequestConditionReady,
-			Status: cmapi.ConditionTrue,
+			Status: cmmeta.ConditionTrue,
 			Reason: cmapi.CertificateRequestReasonIssued,
 		}),
 	)
@@ -145,7 +146,7 @@ func createCryptoBundle(crt *cmapi.Certificate) (*cryptoBundle, error) {
 	certificateRequestFailed := gen.CertificateRequestFrom(certificateRequest,
 		gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
 			Type:   cmapi.CertificateRequestConditionReady,
-			Status: cmapi.ConditionFalse,
+			Status: cmmeta.ConditionFalse,
 			Reason: cmapi.CertificateRequestReasonFailed,
 		}),
 	)
@@ -302,7 +303,7 @@ func testLocalTemporarySignerFn(b []byte) localTemporarySignerFn {
 
 func TestBuildCertificateRequest(t *testing.T) {
 	baseCert := gen.Certificate("test",
-		gen.SetCertificateIssuer(cmapi.ObjectReference{Name: "ca-issuer", Kind: "Issuer", Group: "not-empty"}),
+		gen.SetCertificateIssuer(cmmeta.ObjectReference{Name: "ca-issuer", Kind: "Issuer", Group: "not-empty"}),
 		gen.SetCertificateSecretName("output"),
 		gen.SetCertificateRenewBefore(time.Hour*36),
 		gen.SetCertificateDNSNames("example.com"),
@@ -368,7 +369,7 @@ func TestBuildCertificateRequest(t *testing.T) {
 
 func TestProcessCertificate(t *testing.T) {
 	baseCert := gen.Certificate("test",
-		gen.SetCertificateIssuer(cmapi.ObjectReference{Name: "test", Kind: "something", Group: "not-empty"}),
+		gen.SetCertificateIssuer(cmmeta.ObjectReference{Name: "test", Kind: "something", Group: "not-empty"}),
 		gen.SetCertificateSecretName("output"),
 		gen.SetCertificateRenewBefore(time.Hour*36),
 	)
@@ -405,7 +406,7 @@ func TestProcessCertificate(t *testing.T) {
 							Data: map[string][]byte{
 								corev1.TLSCertKey:       nil,
 								corev1.TLSPrivateKeyKey: exampleBundle1.privateKeyBytes,
-								cmapi.TLSCAKey:          nil,
+								cmmeta.TLSCAKey:         nil,
 							},
 							Type: corev1.SecretTypeTLS,
 						},
@@ -451,7 +452,7 @@ func TestProcessCertificate(t *testing.T) {
 							Data: map[string][]byte{
 								corev1.TLSCertKey:       nil,
 								corev1.TLSPrivateKeyKey: exampleBundle1.privateKeyBytes,
-								cmapi.TLSCAKey:          nil,
+								cmmeta.TLSCAKey:         nil,
 							},
 							Type: corev1.SecretTypeTLS,
 						},
@@ -500,7 +501,7 @@ func TestProcessCertificate(t *testing.T) {
 							Data: map[string][]byte{
 								corev1.TLSCertKey:       nil,
 								corev1.TLSPrivateKeyKey: exampleBundle1.privateKeyBytes,
-								cmapi.TLSCAKey:          nil,
+								cmmeta.TLSCAKey:         nil,
 							},
 							Type: corev1.SecretTypeTLS,
 						},
@@ -549,7 +550,7 @@ func TestProcessCertificate(t *testing.T) {
 							Data: map[string][]byte{
 								corev1.TLSCertKey:       nil,
 								corev1.TLSPrivateKeyKey: exampleBundle1.privateKeyBytes,
-								cmapi.TLSCAKey:          nil,
+								cmmeta.TLSCAKey:         nil,
 							},
 							Type: corev1.SecretTypeTLS,
 						},
@@ -577,7 +578,7 @@ func TestProcessCertificate(t *testing.T) {
 						Data: map[string][]byte{
 							corev1.TLSCertKey:       nil,
 							corev1.TLSPrivateKeyKey: exampleBundle1.privateKeyBytes,
-							cmapi.TLSCAKey:          nil,
+							cmmeta.TLSCAKey:         nil,
 						},
 						Type: corev1.SecretTypeTLS,
 					},
@@ -614,7 +615,7 @@ func TestProcessCertificate(t *testing.T) {
 						Data: map[string][]byte{
 							corev1.TLSCertKey:       nil,
 							corev1.TLSPrivateKeyKey: exampleBundle1.privateKeyBytes,
-							cmapi.TLSCAKey:          nil,
+							cmmeta.TLSCAKey:         nil,
 						},
 						Type: corev1.SecretTypeTLS,
 					},
@@ -663,7 +664,7 @@ func TestProcessCertificate(t *testing.T) {
 						Data: map[string][]byte{
 							corev1.TLSCertKey:       nil,
 							corev1.TLSPrivateKeyKey: exampleBundle1.privateKeyBytes,
-							cmapi.TLSCAKey:          nil,
+							cmmeta.TLSCAKey:         nil,
 						},
 						Type: corev1.SecretTypeTLS,
 					},
@@ -696,7 +697,7 @@ func TestProcessCertificate(t *testing.T) {
 						Data: map[string][]byte{
 							corev1.TLSCertKey:       exampleBundle1.generateCertificateExpiring1H(exampleBundle1.certificate),
 							corev1.TLSPrivateKeyKey: exampleBundle1.privateKeyBytes,
-							cmapi.TLSCAKey:          nil,
+							cmmeta.TLSCAKey:         nil,
 						},
 						Type: corev1.SecretTypeTLS,
 					},
@@ -735,7 +736,7 @@ func TestProcessCertificate(t *testing.T) {
 						Data: map[string][]byte{
 							corev1.TLSCertKey:       exampleBundle1.certBytes,
 							corev1.TLSPrivateKeyKey: exampleBundle1.privateKeyBytes,
-							cmapi.TLSCAKey:          nil,
+							cmmeta.TLSCAKey:         nil,
 						},
 						Type: corev1.SecretTypeTLS,
 					},
@@ -762,7 +763,7 @@ func TestProcessCertificate(t *testing.T) {
 						Data: map[string][]byte{
 							corev1.TLSCertKey:       exampleBundle1.certBytes,
 							corev1.TLSPrivateKeyKey: exampleBundle1.privateKeyBytes,
-							cmapi.TLSCAKey:          nil,
+							cmmeta.TLSCAKey:         nil,
 						},
 						Type: corev1.SecretTypeTLS,
 					},
@@ -791,7 +792,7 @@ func TestProcessCertificate(t *testing.T) {
 							Data: map[string][]byte{
 								corev1.TLSCertKey:       exampleBundle1.certBytes,
 								corev1.TLSPrivateKeyKey: exampleBundle1.privateKeyBytes,
-								cmapi.TLSCAKey:          nil,
+								cmmeta.TLSCAKey:         nil,
 							},
 							Type: corev1.SecretTypeTLS,
 						},
@@ -818,7 +819,7 @@ func TestProcessCertificate(t *testing.T) {
 						Data: map[string][]byte{
 							corev1.TLSCertKey:       nil,
 							corev1.TLSPrivateKeyKey: exampleBundle1.privateKeyBytes,
-							cmapi.TLSCAKey:          nil,
+							cmmeta.TLSCAKey:         nil,
 						},
 						Type: corev1.SecretTypeTLS,
 					},
@@ -848,7 +849,7 @@ func TestProcessCertificate(t *testing.T) {
 							Data: map[string][]byte{
 								corev1.TLSCertKey:       exampleBundle1.certBytes,
 								corev1.TLSPrivateKeyKey: exampleBundle1.privateKeyBytes,
-								cmapi.TLSCAKey:          nil,
+								cmmeta.TLSCAKey:         nil,
 							},
 							Type: corev1.SecretTypeTLS,
 						},
@@ -878,7 +879,7 @@ func TestProcessCertificate(t *testing.T) {
 						Data: map[string][]byte{
 							corev1.TLSCertKey:       exampleBundle1.generateTestCertificate(exampleBundle1.certificate, nil),
 							corev1.TLSPrivateKeyKey: exampleBundle1.privateKeyBytes,
-							cmapi.TLSCAKey:          nil,
+							cmmeta.TLSCAKey:         nil,
 						},
 						Type: corev1.SecretTypeTLS,
 					},
@@ -910,7 +911,7 @@ func TestProcessCertificate(t *testing.T) {
 						Data: map[string][]byte{
 							corev1.TLSCertKey:       []byte("invalid"),
 							corev1.TLSPrivateKeyKey: exampleBundle1.privateKeyBytes,
-							cmapi.TLSCAKey:          nil,
+							cmmeta.TLSCAKey:         nil,
 						},
 						Type: corev1.SecretTypeTLS,
 					},
@@ -940,7 +941,7 @@ func TestProcessCertificate(t *testing.T) {
 							Data: map[string][]byte{
 								corev1.TLSCertKey:       exampleBundle1.certBytes,
 								corev1.TLSPrivateKeyKey: exampleBundle1.privateKeyBytes,
-								cmapi.TLSCAKey:          nil,
+								cmmeta.TLSCAKey:         nil,
 							},
 							Type: corev1.SecretTypeTLS,
 						},
@@ -970,7 +971,7 @@ func TestProcessCertificate(t *testing.T) {
 						Data: map[string][]byte{
 							corev1.TLSCertKey:       exampleBundle1.generateCertificateExpiring1H(exampleBundle1.certificate),
 							corev1.TLSPrivateKeyKey: exampleBundle1.privateKeyBytes,
-							cmapi.TLSCAKey:          nil,
+							cmmeta.TLSCAKey:         nil,
 						},
 						Type: corev1.SecretTypeTLS,
 					},
@@ -1013,7 +1014,7 @@ func TestProcessCertificate(t *testing.T) {
 						Data: map[string][]byte{
 							corev1.TLSCertKey:       exampleBundle1.generateCertificateExpiring1H(exampleBundle1.certificate),
 							corev1.TLSPrivateKeyKey: exampleBundle1.privateKeyBytes,
-							cmapi.TLSCAKey:          nil,
+							cmmeta.TLSCAKey:         nil,
 						},
 						Type: corev1.SecretTypeTLS,
 					},
@@ -1148,7 +1149,7 @@ func TestProcessCertificate(t *testing.T) {
 
 func TestTemporaryCertificateEnabled(t *testing.T) {
 	baseCert := gen.Certificate("test",
-		gen.SetCertificateIssuer(cmapi.ObjectReference{Name: "test", Kind: "something", Group: "not-empty"}),
+		gen.SetCertificateIssuer(cmmeta.ObjectReference{Name: "test", Kind: "something", Group: "not-empty"}),
 		gen.SetCertificateSecretName("output"),
 		gen.SetCertificateRenewBefore(time.Hour*36),
 	)
@@ -1179,7 +1180,7 @@ func TestTemporaryCertificateEnabled(t *testing.T) {
 						Data: map[string][]byte{
 							corev1.TLSCertKey:       nil,
 							corev1.TLSPrivateKeyKey: exampleBundle1.privateKeyBytes,
-							cmapi.TLSCAKey:          nil,
+							cmmeta.TLSCAKey:         nil,
 						},
 						Type: corev1.SecretTypeTLS,
 					},
@@ -1208,7 +1209,7 @@ func TestTemporaryCertificateEnabled(t *testing.T) {
 							Data: map[string][]byte{
 								corev1.TLSCertKey:       exampleBundle1.localTemporaryCertificateBytes,
 								corev1.TLSPrivateKeyKey: exampleBundle1.privateKeyBytes,
-								cmapi.TLSCAKey:          nil,
+								cmmeta.TLSCAKey:         nil,
 							},
 							Type: corev1.SecretTypeTLS,
 						},
@@ -1235,7 +1236,7 @@ func TestTemporaryCertificateEnabled(t *testing.T) {
 						Data: map[string][]byte{
 							corev1.TLSCertKey:       nil,
 							corev1.TLSPrivateKeyKey: exampleBundle1.privateKeyBytes,
-							cmapi.TLSCAKey:          nil,
+							cmmeta.TLSCAKey:         nil,
 						},
 						Type: corev1.SecretTypeTLS,
 					},
@@ -1265,7 +1266,7 @@ func TestTemporaryCertificateEnabled(t *testing.T) {
 							Data: map[string][]byte{
 								corev1.TLSCertKey:       exampleBundle1.localTemporaryCertificateBytes,
 								corev1.TLSPrivateKeyKey: exampleBundle1.privateKeyBytes,
-								cmapi.TLSCAKey:          nil,
+								cmmeta.TLSCAKey:         nil,
 							},
 							Type: corev1.SecretTypeTLS,
 						},
@@ -1292,7 +1293,7 @@ func TestTemporaryCertificateEnabled(t *testing.T) {
 						Data: map[string][]byte{
 							corev1.TLSCertKey:       nil,
 							corev1.TLSPrivateKeyKey: exampleBundle1.privateKeyBytes,
-							cmapi.TLSCAKey:          nil,
+							cmmeta.TLSCAKey:         nil,
 						},
 						Type: corev1.SecretTypeTLS,
 					},
@@ -1322,7 +1323,7 @@ func TestTemporaryCertificateEnabled(t *testing.T) {
 							Data: map[string][]byte{
 								corev1.TLSCertKey:       exampleBundle1.localTemporaryCertificateBytes,
 								corev1.TLSPrivateKeyKey: exampleBundle1.privateKeyBytes,
-								cmapi.TLSCAKey:          nil,
+								cmmeta.TLSCAKey:         nil,
 							},
 							Type: corev1.SecretTypeTLS,
 						},
@@ -1352,7 +1353,7 @@ func TestTemporaryCertificateEnabled(t *testing.T) {
 						Data: map[string][]byte{
 							corev1.TLSCertKey:       exampleBundle1.localTemporaryCertificateBytes,
 							corev1.TLSPrivateKeyKey: exampleBundle1.privateKeyBytes,
-							cmapi.TLSCAKey:          nil,
+							cmmeta.TLSCAKey:         nil,
 						},
 						Type: corev1.SecretTypeTLS,
 					},
@@ -1382,7 +1383,7 @@ func TestTemporaryCertificateEnabled(t *testing.T) {
 							Data: map[string][]byte{
 								corev1.TLSCertKey:       exampleBundle1.certBytes,
 								corev1.TLSPrivateKeyKey: exampleBundle1.privateKeyBytes,
-								cmapi.TLSCAKey:          nil,
+								cmmeta.TLSCAKey:         nil,
 							},
 							Type: corev1.SecretTypeTLS,
 						},
@@ -1412,7 +1413,7 @@ func TestTemporaryCertificateEnabled(t *testing.T) {
 						Data: map[string][]byte{
 							corev1.TLSCertKey:       []byte("invalid"),
 							corev1.TLSPrivateKeyKey: exampleBundle1.privateKeyBytes,
-							cmapi.TLSCAKey:          nil,
+							cmmeta.TLSCAKey:         nil,
 						},
 						Type: corev1.SecretTypeTLS,
 					},
@@ -1442,7 +1443,7 @@ func TestTemporaryCertificateEnabled(t *testing.T) {
 							Data: map[string][]byte{
 								corev1.TLSCertKey:       exampleBundle1.localTemporaryCertificateBytes,
 								corev1.TLSPrivateKeyKey: exampleBundle1.privateKeyBytes,
-								cmapi.TLSCAKey:          nil,
+								cmmeta.TLSCAKey:         nil,
 							},
 							Type: corev1.SecretTypeTLS,
 						},
@@ -1476,7 +1477,7 @@ func TestTemporaryCertificateEnabled(t *testing.T) {
 								),
 							),
 							corev1.TLSPrivateKeyKey: exampleBundle1.privateKeyBytes,
-							cmapi.TLSCAKey:          nil,
+							cmmeta.TLSCAKey:         nil,
 						},
 						Type: corev1.SecretTypeTLS,
 					},
@@ -1505,7 +1506,7 @@ func TestTemporaryCertificateEnabled(t *testing.T) {
 							Data: map[string][]byte{
 								corev1.TLSCertKey:       exampleBundle1.localTemporaryCertificateBytes,
 								corev1.TLSPrivateKeyKey: exampleBundle1.privateKeyBytes,
-								cmapi.TLSCAKey:          nil,
+								cmmeta.TLSCAKey:         nil,
 							},
 							Type: corev1.SecretTypeTLS,
 						},
@@ -1531,7 +1532,7 @@ func TestTemporaryCertificateEnabled(t *testing.T) {
 						Data: map[string][]byte{
 							corev1.TLSCertKey:       exampleBundle1.localTemporaryCertificateBytes,
 							corev1.TLSPrivateKeyKey: exampleBundle1.privateKeyBytes,
-							cmapi.TLSCAKey:          nil,
+							cmmeta.TLSCAKey:         nil,
 						},
 						Type: corev1.SecretTypeTLS,
 					},
@@ -1560,7 +1561,7 @@ func TestTemporaryCertificateEnabled(t *testing.T) {
 							Data: map[string][]byte{
 								corev1.TLSCertKey:       exampleBundle1.localTemporaryCertificateBytes,
 								corev1.TLSPrivateKeyKey: exampleBundle1.privateKeyBytes,
-								cmapi.TLSCAKey:          nil,
+								cmmeta.TLSCAKey:         nil,
 							},
 							Type: corev1.SecretTypeTLS,
 						},
@@ -1584,7 +1585,7 @@ func TestTemporaryCertificateEnabled(t *testing.T) {
 
 func TestUpdateStatus(t *testing.T) {
 	baseCert := gen.Certificate("test",
-		gen.SetCertificateIssuer(cmapi.ObjectReference{Name: "test", Kind: "something", Group: "not-empty"}),
+		gen.SetCertificateIssuer(cmmeta.ObjectReference{Name: "test", Kind: "something", Group: "not-empty"}),
 		gen.SetCertificateSecretName("output"),
 		gen.SetCertificateRenewBefore(time.Hour*36),
 	)
@@ -1607,7 +1608,7 @@ func TestUpdateStatus(t *testing.T) {
 						gen.CertificateFrom(exampleBundle1.certificate,
 							gen.SetCertificateStatusCondition(cmapi.CertificateCondition{
 								Type:               cmapi.CertificateConditionReady,
-								Status:             cmapi.ConditionFalse,
+								Status:             cmmeta.ConditionFalse,
 								Reason:             "NotFound",
 								Message:            "Certificate does not exist",
 								LastTransitionTime: &metaFixedClockStart,
@@ -1639,7 +1640,7 @@ func TestUpdateStatus(t *testing.T) {
 						gen.CertificateFrom(exampleBundle1.certificate,
 							gen.SetCertificateStatusCondition(cmapi.CertificateCondition{
 								Type:               cmapi.CertificateConditionReady,
-								Status:             cmapi.ConditionFalse,
+								Status:             cmmeta.ConditionFalse,
 								Reason:             "NotFound",
 								Message:            "Certificate does not exist",
 								LastTransitionTime: &metaFixedClockStart,
@@ -1673,7 +1674,7 @@ func TestUpdateStatus(t *testing.T) {
 						gen.CertificateFrom(exampleBundle1.certificate,
 							gen.SetCertificateStatusCondition(cmapi.CertificateCondition{
 								Type:               cmapi.CertificateConditionReady,
-								Status:             cmapi.ConditionFalse,
+								Status:             cmmeta.ConditionFalse,
 								Reason:             "Pending",
 								Message:            "Certificate pending issuance",
 								LastTransitionTime: &metaFixedClockStart,
@@ -1708,7 +1709,7 @@ func TestUpdateStatus(t *testing.T) {
 						gen.CertificateFrom(exampleBundle1.certificate,
 							gen.SetCertificateStatusCondition(cmapi.CertificateCondition{
 								Type:               cmapi.CertificateConditionReady,
-								Status:             cmapi.ConditionFalse,
+								Status:             cmmeta.ConditionFalse,
 								Reason:             "InProgress",
 								Message:            fmt.Sprintf("Waiting for CertificateRequest %q to complete", exampleBundle1.certificateRequest.Name),
 								LastTransitionTime: &metaFixedClockStart,
@@ -1747,7 +1748,7 @@ func TestUpdateStatus(t *testing.T) {
 						gen.CertificateFrom(exampleBundle1.certificate,
 							gen.SetCertificateStatusCondition(cmapi.CertificateCondition{
 								Type:               cmapi.CertificateConditionReady,
-								Status:             cmapi.ConditionTrue,
+								Status:             cmmeta.ConditionTrue,
 								Reason:             "Ready",
 								Message:            "Certificate is up to date and has not expired",
 								LastTransitionTime: &metaFixedClockStart,
@@ -1788,7 +1789,7 @@ func TestUpdateStatus(t *testing.T) {
 						gen.CertificateFrom(exampleBundle1.certificate,
 							gen.SetCertificateStatusCondition(cmapi.CertificateCondition{
 								Type:               cmapi.CertificateConditionReady,
-								Status:             cmapi.ConditionTrue,
+								Status:             cmmeta.ConditionTrue,
 								Reason:             "Ready",
 								Message:            "Certificate is up to date and has not expired",
 								LastTransitionTime: &metaFixedClockStart,
@@ -1828,7 +1829,7 @@ func TestUpdateStatus(t *testing.T) {
 						gen.CertificateFrom(exampleBundle1.certificate,
 							gen.SetCertificateStatusCondition(cmapi.CertificateCondition{
 								Type:               cmapi.CertificateConditionReady,
-								Status:             cmapi.ConditionFalse,
+								Status:             cmmeta.ConditionFalse,
 								Reason:             "Expired",
 								Message:            fmt.Sprintf("Certificate has expired on %s", certificateNotAfter(exampleBundle1.generateCertificateExpired(exampleBundle1.certificate)).Format(time.RFC822)),
 								LastTransitionTime: &metaFixedClockStart,
@@ -1869,7 +1870,7 @@ func TestUpdateStatus(t *testing.T) {
 						gen.CertificateFrom(exampleBundle1.certificate,
 							gen.SetCertificateStatusCondition(cmapi.CertificateCondition{
 								Type:               cmapi.CertificateConditionReady,
-								Status:             cmapi.ConditionFalse,
+								Status:             cmmeta.ConditionFalse,
 								Reason:             "InProgress",
 								Message:            fmt.Sprintf("Waiting for CertificateRequest %q to complete", exampleBundle1.certificateRequest.Name),
 								LastTransitionTime: &metaFixedClockStart,
@@ -1910,7 +1911,7 @@ func TestUpdateStatus(t *testing.T) {
 						gen.CertificateFrom(exampleBundle1.certificate,
 							gen.SetCertificateStatusCondition(cmapi.CertificateCondition{
 								Type:               cmapi.CertificateConditionReady,
-								Status:             cmapi.ConditionFalse,
+								Status:             cmmeta.ConditionFalse,
 								Reason:             "InProgress",
 								Message:            fmt.Sprintf("Waiting for CertificateRequest %q to complete", exampleBundle1.certificateRequest.Name),
 								LastTransitionTime: &metaFixedClockStart,
@@ -1954,7 +1955,7 @@ func TestUpdateStatus(t *testing.T) {
 						gen.CertificateFrom(exampleBundle1.certificate,
 							gen.SetCertificateStatusCondition(cmapi.CertificateCondition{
 								Type:               cmapi.CertificateConditionReady,
-								Status:             cmapi.ConditionFalse,
+								Status:             cmmeta.ConditionFalse,
 								Reason:             "DoesNotMatch",
 								Message:            "Common name on TLS certificate not up to date: \"notexample.com\", DNS names on TLS certificate not up to date: [\"notexample.com\"]",
 								LastTransitionTime: &metaFixedClockStart,
@@ -1998,7 +1999,7 @@ func TestUpdateStatus(t *testing.T) {
 						gen.CertificateFrom(exampleBundle1.certificate,
 							gen.SetCertificateStatusCondition(cmapi.CertificateCondition{
 								Type:               cmapi.CertificateConditionReady,
-								Status:             cmapi.ConditionFalse,
+								Status:             cmmeta.ConditionFalse,
 								Reason:             "InProgress",
 								Message:            fmt.Sprintf("Waiting for CertificateRequest %q to complete", exampleBundle1.certificateRequest.Name),
 								LastTransitionTime: &metaFixedClockStart,
@@ -2037,7 +2038,7 @@ func TestUpdateStatus(t *testing.T) {
 						gen.CertificateFrom(exampleBundle1.certificate,
 							gen.SetCertificateStatusCondition(cmapi.CertificateCondition{
 								Type:               cmapi.CertificateConditionReady,
-								Status:             cmapi.ConditionFalse,
+								Status:             cmmeta.ConditionFalse,
 								Reason:             "TemporaryCertificate",
 								Message:            "Certificate issuance in progress. Temporary certificate issued.",
 								LastTransitionTime: &metaFixedClockStart,
@@ -2077,7 +2078,7 @@ func TestUpdateStatus(t *testing.T) {
 						gen.CertificateFrom(exampleBundle1.certificate,
 							gen.SetCertificateStatusCondition(cmapi.CertificateCondition{
 								Type:               cmapi.CertificateConditionReady,
-								Status:             cmapi.ConditionFalse,
+								Status:             cmmeta.ConditionFalse,
 								Reason:             "InProgress",
 								Message:            fmt.Sprintf("Waiting for CertificateRequest %q to complete", exampleBundle1.certificateRequest.Name),
 								LastTransitionTime: &metaFixedClockStart,

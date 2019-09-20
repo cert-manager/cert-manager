@@ -30,6 +30,7 @@ import (
 
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	"github.com/jetstack/cert-manager/pkg/util"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 	"github.com/jetstack/cert-manager/test/e2e/framework/log"
@@ -49,7 +50,7 @@ func (h *Helper) WaitForCertificateReady(ns, name string, timeout time.Duration)
 			}
 			isReady := apiutil.CertificateHasCondition(certificate, v1alpha2.CertificateCondition{
 				Type:   v1alpha2.CertificateConditionReady,
-				Status: v1alpha2.ConditionTrue,
+				Status: cmmeta.ConditionTrue,
 			})
 			if !isReady {
 				log.Logf("Expected Certificate to have Ready condition 'true' but it has: %v", certificate.Status.Conditions)
@@ -80,7 +81,7 @@ func (h *Helper) WaitForCertificateNotReady(ns, name string, timeout time.Durati
 			}
 			isReady := apiutil.CertificateHasCondition(certificate, v1alpha2.CertificateCondition{
 				Type:   v1alpha2.CertificateConditionReady,
-				Status: v1alpha2.ConditionFalse,
+				Status: cmmeta.ConditionFalse,
 			})
 			if !isReady {
 				log.Logf("Expected Certificate to have Ready condition 'true' but it has: %v", certificate.Status.Conditions)

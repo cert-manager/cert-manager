@@ -23,6 +23,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	"github.com/jetstack/cert-manager/pkg/controller/test"
 	"github.com/jetstack/cert-manager/test/unit/gen"
 )
@@ -98,7 +99,7 @@ func TestGetGenericIssuer(t *testing.T) {
 			stopCh := make(chan struct{})
 			defer close(stopCh)
 
-			actual, err := c.GetGenericIssuer(v1alpha2.ObjectReference{Name: row.Name, Kind: row.Kind}, row.Namespace)
+			actual, err := c.GetGenericIssuer(cmmeta.ObjectReference{Name: row.Name, Kind: row.Kind}, row.Namespace)
 			if err != nil && !row.Err {
 				t.Errorf("Expected no error, but got: %s", err)
 			}

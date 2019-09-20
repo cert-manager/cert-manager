@@ -37,6 +37,7 @@ import (
 
 	"github.com/jetstack/cert-manager/pkg/api/util"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	"github.com/jetstack/cert-manager/pkg/controller/certificaterequests/fake"
 	testpkg "github.com/jetstack/cert-manager/pkg/controller/test"
 	"github.com/jetstack/cert-manager/pkg/issuer"
@@ -122,7 +123,7 @@ func TestSync(t *testing.T) {
 	baseCR := gen.CertificateRequest("test-cr",
 		gen.SetCertificateRequestIsCA(false),
 		gen.SetCertificateRequestCSR(csrRSAPEM),
-		gen.SetCertificateRequestIssuer(cmapi.ObjectReference{
+		gen.SetCertificateRequestIssuer(cmmeta.ObjectReference{
 			Kind: baseIssuer.Kind,
 			Name: baseIssuer.Name,
 		}),
@@ -137,7 +138,7 @@ func TestSync(t *testing.T) {
 	tests := map[string]testT{
 		"should return nil (no action) if group name if not 'certmanager.k8s.io' or ''": {
 			certificateRequest: gen.CertificateRequestFrom(baseCR,
-				gen.SetCertificateRequestIssuer(cmapi.ObjectReference{
+				gen.SetCertificateRequestIssuer(cmmeta.ObjectReference{
 					Group: "not-certmanager.k8s.io",
 				}),
 			),
@@ -151,7 +152,7 @@ func TestSync(t *testing.T) {
 			certificateRequest: gen.CertificateRequestFrom(baseCR,
 				gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
 					Type:               cmapi.CertificateRequestConditionReady,
-					Status:             cmapi.ConditionTrue,
+					Status:             cmmeta.ConditionTrue,
 					Reason:             "Issued",
 					Message:            "Certificate issued",
 					LastTransitionTime: &nowMetaTime,
@@ -167,7 +168,7 @@ func TestSync(t *testing.T) {
 			certificateRequest: gen.CertificateRequestFrom(baseCR,
 				gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
 					Type:               cmapi.CertificateRequestConditionReady,
-					Status:             cmapi.ConditionFalse,
+					Status:             cmmeta.ConditionFalse,
 					Reason:             "Failed",
 					Message:            "Certificate failed",
 					LastTransitionTime: &nowMetaTime,
@@ -193,7 +194,7 @@ func TestSync(t *testing.T) {
 						gen.CertificateRequestFrom(baseCR,
 							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
 								Type:               cmapi.CertificateRequestConditionReady,
-								Status:             cmapi.ConditionFalse,
+								Status:             cmmeta.ConditionFalse,
 								Reason:             "Pending",
 								Message:            `Referenced "Issuer" not found: issuer.certmanager.k8s.io "test-issuer" not found`,
 								LastTransitionTime: &nowMetaTime,
@@ -206,7 +207,7 @@ func TestSync(t *testing.T) {
 		"should return error to try again if there was a error getting issuer wasn't a not found error": {
 			certificateRequest: baseCR.DeepCopy(),
 			helper: &issuerfake.Helper{
-				GetGenericIssuerFunc: func(cmapi.ObjectReference, string) (cmapi.GenericIssuer, error) {
+				GetGenericIssuerFunc: func(cmmeta.ObjectReference, string) (cmapi.GenericIssuer, error) {
 					return nil, errors.New("this is a network error")
 				},
 			},
@@ -224,7 +225,7 @@ func TestSync(t *testing.T) {
 					gen.Issuer(baseIssuer.Name,
 						gen.AddIssuerCondition(cmapi.IssuerCondition{
 							Type:   cmapi.IssuerConditionReady,
-							Status: cmapi.ConditionTrue,
+							Status: cmmeta.ConditionTrue,
 						}),
 						// no type set
 					),
@@ -236,7 +237,7 @@ func TestSync(t *testing.T) {
 						gen.CertificateRequestFrom(baseCR,
 							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
 								Type:               cmapi.CertificateRequestConditionReady,
-								Status:             cmapi.ConditionFalse,
+								Status:             cmmeta.ConditionFalse,
 								Reason:             "Pending",
 								Message:            "Missing issuer type: no issuer specified for Issuer 'default-unit-test-ns/test-issuer'",
 								LastTransitionTime: &nowMetaTime,
@@ -256,7 +257,7 @@ func TestSync(t *testing.T) {
 					gen.Issuer(baseIssuer.Name,
 						gen.AddIssuerCondition(cmapi.IssuerCondition{
 							Type:   cmapi.IssuerConditionReady,
-							Status: cmapi.ConditionTrue,
+							Status: cmmeta.ConditionTrue,
 						}),
 						gen.SetIssuerCA(cmapi.CAIssuer{}),
 					),
@@ -282,7 +283,7 @@ func TestSync(t *testing.T) {
 							gen.SetCertificateRequestCSR([]byte("bad csr")),
 							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
 								Type:               cmapi.CertificateRequestConditionReady,
-								Status:             cmapi.ConditionFalse,
+								Status:             cmmeta.ConditionFalse,
 								Reason:             "Failed",
 								Message:            "Resource validation failed: spec.csr: Invalid value: []byte{0x62, 0x61, 0x64, 0x20, 0x63, 0x73, 0x72}: failed to decode csr: error decoding certificate request PEM block",
 								LastTransitionTime: &nowMetaTime,
@@ -356,7 +357,7 @@ func TestSync(t *testing.T) {
 							gen.SetCertificateRequestCertificate([]byte("a bad certificate")),
 							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
 								Type:               cmapi.CertificateRequestConditionReady,
-								Status:             cmapi.ConditionFalse,
+								Status:             cmmeta.ConditionFalse,
 								Reason:             "Failed",
 								Message:            "Failed to decode returned certificate: error decoding cert PEM block",
 								LastTransitionTime: &nowMetaTime,
@@ -389,7 +390,7 @@ func TestSync(t *testing.T) {
 							gen.SetCertificateRequestCertificate(certRSAPEM),
 							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
 								Type:               cmapi.CertificateRequestConditionReady,
-								Status:             cmapi.ConditionTrue,
+								Status:             cmmeta.ConditionTrue,
 								Reason:             "Issued",
 								Message:            "Certificate fetched from issuer successfully",
 								LastTransitionTime: &nowMetaTime,
@@ -421,7 +422,7 @@ func TestSync(t *testing.T) {
 							gen.SetCertificateRequestCertificate(certRSAPEMExpired),
 							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
 								Type:               cmapi.CertificateRequestConditionReady,
-								Status:             cmapi.ConditionTrue,
+								Status:             cmmeta.ConditionTrue,
 								Reason:             "Issued",
 								Message:            "Certificate fetched from issuer successfully",
 								LastTransitionTime: &nowMetaTime,
@@ -453,7 +454,7 @@ func TestSync(t *testing.T) {
 							gen.SetCertificateRequestCertificate(certECPEM),
 							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
 								Type:               cmapi.CertificateRequestConditionReady,
-								Status:             cmapi.ConditionTrue,
+								Status:             cmmeta.ConditionTrue,
 								Reason:             "Issued",
 								Message:            "Certificate fetched from issuer successfully",
 								LastTransitionTime: &nowMetaTime,
@@ -485,7 +486,7 @@ func TestSync(t *testing.T) {
 							gen.SetCertificateRequestCertificate(certECPEMExpired),
 							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
 								Type:               cmapi.CertificateRequestConditionReady,
-								Status:             cmapi.ConditionTrue,
+								Status:             cmmeta.ConditionTrue,
 								Reason:             "Issued",
 								Message:            "Certificate fetched from issuer successfully",
 								LastTransitionTime: &nowMetaTime,

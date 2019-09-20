@@ -26,6 +26,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	"github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
 	"github.com/jetstack/cert-manager/test/e2e/framework"
 	"github.com/jetstack/cert-manager/test/e2e/framework/addon"
@@ -83,8 +84,8 @@ var _ = framework.CertManagerDescribe("ACME webhook DNS provider", func() {
 					SkipTLSVerify: true,
 					Server:        pebble.Details().Host,
 					Email:         testingACMEEmail,
-					PrivateKey: v1alpha2.SecretKeySelector{
-						LocalObjectReference: v1alpha2.LocalObjectReference{
+					PrivateKey: cmmeta.SecretKeySelector{
+						LocalObjectReference: cmmeta.LocalObjectReference{
 							Name: testingACMEPrivateKey,
 						},
 					},
@@ -110,7 +111,7 @@ var _ = framework.CertManagerDescribe("ACME webhook DNS provider", func() {
 				issuerName,
 				v1alpha2.IssuerCondition{
 					Type:   v1alpha2.IssuerConditionReady,
-					Status: v1alpha2.ConditionTrue,
+					Status: cmmeta.ConditionTrue,
 				})
 			Expect(err).NotTo(HaveOccurred())
 			By("Verifying the ACME account URI is set")
@@ -145,7 +146,7 @@ var _ = framework.CertManagerDescribe("ACME webhook DNS provider", func() {
 
 			cert := gen.Certificate(certificateName,
 				gen.SetCertificateSecretName(certificateSecretName),
-				gen.SetCertificateIssuer(v1alpha2.ObjectReference{Name: issuerName}),
+				gen.SetCertificateIssuer(cmmeta.ObjectReference{Name: issuerName}),
 				gen.SetCertificateDNSNames(dnsDomain),
 			)
 			cert.Namespace = f.Namespace.Name

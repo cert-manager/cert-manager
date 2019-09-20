@@ -180,7 +180,7 @@ type VaultAppRole struct {
 	// Where the authentication path is mounted in Vault.
 	Path string `json:"path"`
 
-	RoleId    string            `json:"roleId"`
+	RoleId    string                   `json:"roleId"`
 	SecretRef cmmeta.SecretKeySelector `json:"secretRef"`
 }
 
@@ -384,7 +384,7 @@ const (
 // ACMEIssuerDNS01ProviderAkamai is a structure containing the DNS
 // configuration for Akamai DNS—Zone Record Management API
 type ACMEIssuerDNS01ProviderAkamai struct {
-	ServiceConsumerDomain string            `json:"serviceConsumerDomain"`
+	ServiceConsumerDomain string                   `json:"serviceConsumerDomain"`
 	ClientToken           cmmeta.SecretKeySelector `json:"clientTokenSecretRef"`
 	ClientSecret          cmmeta.SecretKeySelector `json:"clientSecretSecretRef"`
 	AccessToken           cmmeta.SecretKeySelector `json:"accessTokenSecretRef"`
@@ -394,13 +394,13 @@ type ACMEIssuerDNS01ProviderAkamai struct {
 // configuration for Google Cloud DNS
 type ACMEIssuerDNS01ProviderCloudDNS struct {
 	ServiceAccount cmmeta.SecretKeySelector `json:"serviceAccountSecretRef"`
-	Project        string            `json:"project"`
+	Project        string                   `json:"project"`
 }
 
 // ACMEIssuerDNS01ProviderCloudflare is a structure containing the DNS
 // configuration for Cloudflare
 type ACMEIssuerDNS01ProviderCloudflare struct {
-	Email  string            `json:"email"`
+	Email  string                   `json:"email"`
 	APIKey cmmeta.SecretKeySelector `json:"apiKeySecretRef"`
 }
 

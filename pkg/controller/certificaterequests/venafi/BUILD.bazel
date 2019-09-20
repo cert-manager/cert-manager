@@ -42,6 +42,7 @@ go_test(
         "//pkg/api/util:go_default_library",
         "//pkg/apis/certmanager:go_default_library",
         "//pkg/apis/certmanager/v1alpha2:go_default_library",
+        "//pkg/apis/meta/v1:go_default_library",
         "//pkg/controller/certificaterequests:go_default_library",
         "//pkg/controller/test:go_default_library",
         "//pkg/internal/venafi:go_default_library",

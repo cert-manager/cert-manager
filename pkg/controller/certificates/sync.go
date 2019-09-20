@@ -32,6 +32,7 @@ import (
 	"github.com/go-logr/logr"
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	cmlisters "github.com/jetstack/cert-manager/pkg/client/listers/certmanager/v1alpha2"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 	"github.com/jetstack/cert-manager/pkg/metrics"
@@ -123,7 +124,7 @@ func (c *certificateRequestManager) updateCertificateStatus(ctx context.Context,
 	}
 
 	// Derive & set 'Ready' condition on Certificate resource
-	ready := cmapi.ConditionFalse
+	ready := cmmeta.ConditionFalse
 	reason := ""
 	message := ""
 	switch {
@@ -131,7 +132,7 @@ func (c *certificateRequestManager) updateCertificateStatus(ctx context.Context,
 		reason = "NotFound"
 		message = "Certificate does not exist"
 	case matches && !isTempCert && !certExpired:
-		ready = cmapi.ConditionTrue
+		ready = cmmeta.ConditionTrue
 		reason = "Ready"
 		message = "Certificate is up to date and has not expired"
 	case req != nil:
@@ -163,7 +164,7 @@ func (c *certificateRequestManager) updateCertificateStatus(ctx context.Context,
 			"req_is_nil", req == nil,
 			"cert_is_nil", cert == nil,
 		)
-		ready = cmapi.ConditionFalse
+		ready = cmmeta.ConditionFalse
 		reason = "Unknown"
 		message = "Unknown certificate status. Please open an issue and share your controller logs."
 	}
@@ -529,7 +530,7 @@ func (c *certificateRequestManager) updateSecretData(ctx context.Context, crt *c
 func (c *certificateRequestManager) ensureSecretMetadataUpToDate(ctx context.Context, s *corev1.Secret, crt *cmapi.Certificate) (bool, error) {
 	pk := s.Data[corev1.TLSPrivateKeyKey]
 	cert := s.Data[corev1.TLSCertKey]
-	ca := s.Data[cmapi.TLSCAKey]
+	ca := s.Data[cmmeta.TLSCAKey]
 
 	updated, err := c.updateSecretData(ctx, crt, s, secretData{pk: pk, cert: cert, ca: ca})
 	if err != nil || !updated {
@@ -800,7 +801,7 @@ func setSecretValues(ctx context.Context, crt *cmapi.Certificate, s *corev1.Secr
 
 	s.Data[corev1.TLSPrivateKeyKey] = data.pk
 	s.Data[corev1.TLSCertKey] = data.cert
-	s.Data[cmapi.TLSCAKey] = data.ca
+	s.Data[cmmeta.TLSCAKey] = data.ca
 
 	if s.Annotations == nil {
 		s.Annotations = make(map[string]string)

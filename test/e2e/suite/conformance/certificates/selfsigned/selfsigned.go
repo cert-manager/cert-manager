@@ -22,6 +22,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	"github.com/jetstack/cert-manager/test/e2e/framework"
 	"github.com/jetstack/cert-manager/test/e2e/suite/conformance/certificates"
 )
@@ -33,7 +34,7 @@ var _ = framework.ConformanceDescribe("Certificates", func() {
 	}).Define()
 })
 
-func createSelfSignedIssuer(f *framework.Framework) cmapi.ObjectReference {
+func createSelfSignedIssuer(f *framework.Framework) cmmeta.ObjectReference {
 	By("Creating a SelfSigned issuer")
 	_, err := f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name).Create(&cmapi.Issuer{
 		ObjectMeta: metav1.ObjectMeta{
@@ -47,7 +48,7 @@ func createSelfSignedIssuer(f *framework.Framework) cmapi.ObjectReference {
 	})
 	Expect(err).NotTo(HaveOccurred(), "failed to create self signed issuer")
 
-	return cmapi.ObjectReference{
+	return cmmeta.ObjectReference{
 		Group: cmapi.SchemeGroupVersion.Group,
 		Kind:  cmapi.IssuerKind,
 		Name:  "selfsigned",

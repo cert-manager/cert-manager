@@ -20,6 +20,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 )
 
 type CertificateRequestModifier func(*v1alpha2.CertificateRequest)
@@ -43,7 +44,7 @@ func CertificateRequestFrom(cr *v1alpha2.CertificateRequest, mods ...Certificate
 }
 
 // SetIssuer sets the CertificateRequest.spec.issuerRef field
-func SetCertificateRequestIssuer(o v1alpha2.ObjectReference) CertificateRequestModifier {
+func SetCertificateRequestIssuer(o cmmeta.ObjectReference) CertificateRequestModifier {
 	return func(c *v1alpha2.CertificateRequest) {
 		c.Spec.IssuerRef = o
 	}
