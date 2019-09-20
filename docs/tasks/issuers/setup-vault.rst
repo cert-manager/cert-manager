@@ -217,8 +217,8 @@ find more information on how to configure vault for Kubernetes based Service
 Account authentication in the `documentation
 <https://www.vaultproject.io/docs/auth/kubernetes.html>`__. This authentication
 expects three stanzas; a secret reference of the Service Account to use,
-an optional authentication mount path that is defaulted to `/kubernetes`, and
-finally a role that the Service Account is to assume.
+an optional authentication mount path that is defaulted to `kubernetes`, and
+finally a Vault role that the Service Account is to assume.
 
 Here is an example Vault issuer using the Kubernetes Service Account
 authentication method.
