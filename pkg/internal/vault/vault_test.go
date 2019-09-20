@@ -328,7 +328,7 @@ func TestSetToken(t *testing.T) {
 				gen.SetIssuerVault(v1alpha2.VaultIssuer{
 					CABundle: []byte(testCertBundle),
 					Auth: v1alpha2.VaultAuth{
-						Kubernetes: &v1alpha2.KubernetesAuth{
+						Kubernetes: &v1alpha2.VaultKubernetesAuth{
 							Role: "kube-vault-role",
 							SecretRef: v1alpha2.SecretKeySelector{
 								LocalObjectReference: v1alpha2.LocalObjectReference{
@@ -378,7 +378,7 @@ func TestSetToken(t *testing.T) {
 				gen.SetIssuerVault(v1alpha2.VaultIssuer{
 					CABundle: []byte(testCertBundle),
 					Auth: v1alpha2.VaultAuth{
-						Kubernetes: &v1alpha2.KubernetesAuth{
+						Kubernetes: &v1alpha2.VaultKubernetesAuth{
 							Role: "kube-vault-role",
 							SecretRef: v1alpha2.SecretKeySelector{
 								LocalObjectReference: v1alpha2.LocalObjectReference{
@@ -403,7 +403,7 @@ func TestSetToken(t *testing.T) {
 				gen.SetIssuerVault(v1alpha2.VaultIssuer{
 					CABundle: []byte(testCertBundle),
 					Auth: v1alpha2.VaultAuth{
-						Kubernetes: &v1alpha2.KubernetesAuth{
+						Kubernetes: &v1alpha2.VaultKubernetesAuth{
 							Role: "kube-vault-role",
 							SecretRef: v1alpha2.SecretKeySelector{
 								LocalObjectReference: v1alpha2.LocalObjectReference{
