@@ -396,7 +396,7 @@ func (v *VaultInitializer) setupRole() error {
 		return fmt.Errorf("Error fetching auth mounts: %s", err.Error())
 	}
 
-	if _, ok := auths[v.AppRoleAuthPath+"/"]; !ok {
+	if _, ok := auths[v.AppRoleAuthPath]; !ok {
 		options := &vault.EnableAuthOptions{Type: "approle"}
 		if err := v.client.Sys().EnableAuthWithOptions(v.AppRoleAuthPath, options); err != nil {
 			return fmt.Errorf("Error enabling approle: %s", err.Error())
@@ -429,7 +429,7 @@ func (v *VaultInitializer) setupKubernetesBasedAuth() error {
 		return fmt.Errorf("Error fetching auth mounts: %s", err.Error())
 	}
 
-	if _, ok := auths[v.KubernetesAuthPath+"/"]; !ok {
+	if _, ok := auths[v.KubernetesAuthPath]; !ok {
 		options := &vault.EnableAuthOptions{Type: "kubernetes"}
 		if err := v.client.Sys().EnableAuthWithOptions(v.KubernetesAuthPath, options); err != nil {
 			return fmt.Errorf("Error enabling kubernetes auth: %s", err.Error())

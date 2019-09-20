@@ -1681,11 +1681,7 @@ Appears In:
 <td><code>LabelSelector</code></td>
 </tr>
 </tbody></table>
-<<<<<<< HEAD
 <p>A label selector is a label query over a set of resources. The result of matchLabels and matchExpressions are ANDed. An empty label selector matches all objects. A null label selector matches no objects.</p>
-=======
-<p>Authenticate against Vault using a Kubernetes ServiceAccount token stored in a Secret.</p>
->>>>>>> Addresses comments and makes vault auth pointers
 <aside class="notice">
 Appears In:
 
@@ -1701,7 +1697,6 @@ Appears In:
 </tr>
 </thead>
 <tbody><tr>
-<<<<<<< HEAD
 <td><code>matchExpressions</code><br /> *<a href="#labelselectorrequirement-v1">LabelSelectorRequirement</a> array*</td>
 <td>matchExpressions is a list of label selector requirements. The requirements are ANDed.</td>
 </tr>
@@ -1751,18 +1746,6 @@ Appears In:
 <tr>
 <td><code>values</code><br /> <em>string array</em></td>
 <td>values is an array of string values. If the operator is In or NotIn, the values array must be non-empty. If the operator is Exists or DoesNotExist, the values array must be empty. This array is replaced during a strategic merge patch.</td>
-=======
-<td><code>mountPath</code><br /> <em>string</em></td>
-<td>The kubernetes mount path to be used when authenticating (/v1/auth/%s/login). If unspecified, the default value &#34;kubernetes&#34; will be used.</td>
-</tr>
-<tr>
-<td><code>role</code><br /> <em>string</em></td>
-<td>A required field containing the Vault Role to assume. A Role binds a Kubernetes ServiceAccount with a set of Vault policies.</td>
-</tr>
-<tr>
-<td><code>secretRef</code><br /> *<a href="#secretkeyselector-v1alpha1">SecretKeySelector</a>*</td>
-<td>The required Secret field containing a Kubernetes ServiceAccount JWT used for authenticating with Vault. Use of &#39;ambient credentials&#39; is not supported.</td>
->>>>>>> Addresses comments and makes vault auth pointers
 </tr>
 </tbody></table>
 <h2 id="localobjectreference-v1">LocalObjectReference v1</h2>
@@ -2555,7 +2538,6 @@ Appears In:
 <td><code>VaultAppRole</code></td>
 </tr>
 </tbody></table>
-<p>Authenticate against Vault using an AppRole that is stored in a Secret.</p>
 <aside class="notice">
 Appears In:
 
@@ -2619,11 +2601,7 @@ Appears In:
 <td>This Secret contains a AppRole and Secret</td>
 </tr>
 <tr>
-<<<<<<< HEAD
 <td><code>kubernetes</code><br /> *<a href="#vaultkubernetesauth-v1alpha2">VaultKubernetesAuth</a>*</td>
-=======
-<td><code>kubernetes</code><br /> *<a href="#kubernetesauth-v1alpha1">KubernetesAuth</a>*</td>
->>>>>>> Addresses comments and makes vault auth pointers
 <td>This contains a Role and Secret with a ServiceAccount token to authenticate with vault.</td>
 </tr>
 <tr>

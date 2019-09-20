@@ -318,7 +318,7 @@ func (v *Vault) requestTokenWithKubernetesAuth(client Client, kubernetesAuth *v1
 		mountPath = v1alpha2.DefaultVaultKubernetesAuthMountPath
 	}
 
-	url := filepath.Join("/v1/auth", mountPath, "login")
+	url := filepath.Join("/v1", "auth", mountPath, "login")
 	request := client.NewRequest("POST", url)
 	err = request.SetJSONBody(parameters)
 	if err != nil {
@@ -332,7 +332,7 @@ func (v *Vault) requestTokenWithKubernetesAuth(client Client, kubernetesAuth *v1
 
 	defer resp.Body.Close()
 	vaultResult := vault.Secret{}
-	resp.DecodeJSON(&vaultResult)
+	err = resp.DecodeJSON(&vaultResult)
 	if err != nil {
 		return "", fmt.Errorf("unable to decode JSON payload: %s", err.Error())
 	}
