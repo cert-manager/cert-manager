@@ -32,6 +32,13 @@ generate-groups.sh "deepcopy" \
   --output-base "${GOPATH}/src/" \
   --go-header-file "${runfiles}/hack/boilerplate/boilerplate.go.txt"
 
+generate-groups.sh "deepcopy" \
+  github.com/jetstack/cert-manager/pkg/client \
+  github.com/jetstack/cert-manager/pkg/apis \
+  meta:v1 \
+  --output-base "${GOPATH}/src/" \
+  --go-header-file "${runfiles}/hack/boilerplate/boilerplate.go.txt"
+
 generate-groups.sh "deepcopy,client,informer,lister" \
   github.com/jetstack/cert-manager/pkg/client \
   github.com/jetstack/cert-manager/pkg/apis \
@@ -44,6 +51,7 @@ generate-groups-internal.sh "deepcopy,defaulter,conversion" \
   github.com/jetstack/cert-manager/pkg/internal/apis \
   github.com/jetstack/cert-manager/pkg/internal/apis \
   certmanager:v1alpha2 \
+  meta:v1 \
   --output-base "${GOPATH}/src/" \
   --go-header-file "${runfiles}/hack/boilerplate/boilerplate.go.txt"
 
