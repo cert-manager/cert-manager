@@ -25,6 +25,7 @@ import (
 
 	"github.com/jetstack/cert-manager/pkg/api/util"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 )
 
 // Validation functions for cert-manager v1alpha2 Certificate types
@@ -90,7 +91,7 @@ func ValidateCertificate(obj runtime.Object) field.ErrorList {
 	return allErrs
 }
 
-func validateIssuerRef(issuerRef v1alpha2.ObjectReference, fldPath *field.Path) field.ErrorList {
+func validateIssuerRef(issuerRef cmmeta.ObjectReference, fldPath *field.Path) field.ErrorList {
 	el := field.ErrorList{}
 
 	issuerRefPath := fldPath.Child("issuerRef")
