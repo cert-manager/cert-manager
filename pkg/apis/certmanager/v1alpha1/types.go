@@ -46,6 +46,15 @@ const (
 	ACMECertificateHTTP01IngressClassOverride = "acme.certmanager.k8s.io/http01-override-ingress-class"
 )
 
+const (
+	// IssueTemporaryCertificateAnnotation is an annotation that can be added to
+	// Certificate resources.
+	// If it is present, a temporary internally signed certificate will be
+	// stored in the target Secret resource whilst the real Issuer is processing
+	// the certificate request.
+	IssueTemporaryCertificateAnnotation = "certmanager.k8s.io/issue-temporary-certificate"
+)
+
 // ConditionStatus represents a condition's status.
 // +kubebuilder:validation:Enum=True;False;Unknown
 type ConditionStatus string

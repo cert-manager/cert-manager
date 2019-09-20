@@ -32,10 +32,8 @@ import (
 	cmclient "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
 	cmlisters "github.com/jetstack/cert-manager/pkg/client/listers/certmanager/v1alpha1"
 	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
-	"github.com/jetstack/cert-manager/pkg/feature"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 	"github.com/jetstack/cert-manager/pkg/scheduler"
-	utilfeature "github.com/jetstack/cert-manager/pkg/util/feature"
 )
 
 // certificateRequestManager manages CertificateRequest resources for a
@@ -78,10 +76,6 @@ type certificateRequestManager struct {
 
 	// localTemporarySigner signs a certificate that is stored temporarily
 	localTemporarySigner localTemporarySignerFn
-
-	// issueTemporaryCerts gates whether temporary certificates should be issued.
-	// This is defined here as a bool to make it easy to disable this behaviour.
-	issueTemporaryCerts bool
 }
 
 type localTemporarySignerFn func(crt *cmapi.Certificate, pk []byte) ([]byte, error)
@@ -137,7 +131,6 @@ func (c *certificateRequestManager) Register(ctx *controllerpkg.Context) (workqu
 	// the localTemporarySigner is used to sign 'temporary certificates' during
 	// asynchronous certificate issuance flows
 	c.localTemporarySigner = generateLocallySignedTemporaryCertificate
-	c.issueTemporaryCerts = utilfeature.DefaultFeatureGate.Enabled(feature.IssueTemporaryCertificate)
 
 	c.cmClient = ctx.CMClient
 	c.kubeClient = ctx.Client
