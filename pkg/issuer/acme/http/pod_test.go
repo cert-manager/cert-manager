@@ -27,21 +27,21 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	coretesting "k8s.io/client-go/testing"
 
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1alpha2"
 )
 
 func TestEnsurePod(t *testing.T) {
 	const createdPodKey = "createdPod"
 	tests := map[string]solverFixture{
 		"should return an existing pod if one already exists": {
-			Challenge: &v1alpha2.Challenge{
-				Spec: v1alpha2.ChallengeSpec{
+			Challenge: &cmacme.Challenge{
+				Spec: cmacme.ChallengeSpec{
 					DNSName: "example.com",
 					Token:   "token",
 					Key:     "key",
-					Solver: &v1alpha2.ACMEChallengeSolver{
-						HTTP01: &v1alpha2.ACMEChallengeSolverHTTP01{
-							Ingress: &v1alpha2.ACMEChallengeSolverHTTP01Ingress{},
+					Solver: &cmacme.ACMEChallengeSolver{
+						HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
+							Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{},
 						},
 					},
 				},
@@ -77,14 +77,14 @@ func TestEnsurePod(t *testing.T) {
 			},
 		},
 		"should create a new pod if one does not exist": {
-			Challenge: &v1alpha2.Challenge{
-				Spec: v1alpha2.ChallengeSpec{
+			Challenge: &cmacme.Challenge{
+				Spec: cmacme.ChallengeSpec{
 					DNSName: "example.com",
 					Token:   "token",
 					Key:     "key",
-					Solver: &v1alpha2.ACMEChallengeSolver{
-						HTTP01: &v1alpha2.ACMEChallengeSolverHTTP01{
-							Ingress: &v1alpha2.ACMEChallengeSolverHTTP01Ingress{},
+					Solver: &cmacme.ACMEChallengeSolver{
+						HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
+							Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{},
 						},
 					},
 				},
@@ -129,14 +129,14 @@ func TestEnsurePod(t *testing.T) {
 			},
 		},
 		"should clean up if multiple pods exist": {
-			Challenge: &v1alpha2.Challenge{
-				Spec: v1alpha2.ChallengeSpec{
+			Challenge: &cmacme.Challenge{
+				Spec: cmacme.ChallengeSpec{
 					DNSName: "example.com",
 					Token:   "token",
 					Key:     "key",
-					Solver: &v1alpha2.ACMEChallengeSolver{
-						HTTP01: &v1alpha2.ACMEChallengeSolverHTTP01{
-							Ingress: &v1alpha2.ACMEChallengeSolverHTTP01Ingress{},
+					Solver: &cmacme.ACMEChallengeSolver{
+						HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
+							Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{},
 						},
 					},
 				},
@@ -186,12 +186,12 @@ func TestGetPodsForCertificate(t *testing.T) {
 	const createdPodKey = "createdPod"
 	tests := map[string]solverFixture{
 		"should return one pod that matches": {
-			Challenge: &v1alpha2.Challenge{
-				Spec: v1alpha2.ChallengeSpec{
+			Challenge: &cmacme.Challenge{
+				Spec: cmacme.ChallengeSpec{
 					DNSName: "example.com",
-					Solver: &v1alpha2.ACMEChallengeSolver{
-						HTTP01: &v1alpha2.ACMEChallengeSolverHTTP01{
-							Ingress: &v1alpha2.ACMEChallengeSolverHTTP01Ingress{},
+					Solver: &cmacme.ACMEChallengeSolver{
+						HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
+							Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{},
 						},
 					},
 				},
@@ -219,12 +219,12 @@ func TestGetPodsForCertificate(t *testing.T) {
 			},
 		},
 		"should not return a pod for the same certificate but different domain": {
-			Challenge: &v1alpha2.Challenge{
-				Spec: v1alpha2.ChallengeSpec{
+			Challenge: &cmacme.Challenge{
+				Spec: cmacme.ChallengeSpec{
 					DNSName: "example.com",
-					Solver: &v1alpha2.ACMEChallengeSolver{
-						HTTP01: &v1alpha2.ACMEChallengeSolverHTTP01{
-							Ingress: &v1alpha2.ACMEChallengeSolverHTTP01Ingress{},
+					Solver: &cmacme.ACMEChallengeSolver{
+						HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
+							Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{},
 						},
 					},
 				},
@@ -268,13 +268,13 @@ func TestMergePodObjectMetaWithPodTemplate(t *testing.T) {
 	const createdPodKey = "createdPod"
 	tests := map[string]solverFixture{
 		"should use labels and annotations from template": {
-			Challenge: &v1alpha2.Challenge{
-				Spec: v1alpha2.ChallengeSpec{
+			Challenge: &cmacme.Challenge{
+				Spec: cmacme.ChallengeSpec{
 					DNSName: "example.com",
-					Solver: &v1alpha2.ACMEChallengeSolver{
-						HTTP01: &v1alpha2.ACMEChallengeSolverHTTP01{
-							Ingress: &v1alpha2.ACMEChallengeSolverHTTP01Ingress{
-								PodTemplate: &v1alpha2.ACMEChallengeSolverHTTP01IngressPodTemplate{
+					Solver: &cmacme.ACMEChallengeSolver{
+						HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
+							Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
+								PodTemplate: &cmacme.ACMEChallengeSolverHTTP01IngressPodTemplate{
 									ObjectMeta: metav1.ObjectMeta{
 										Labels: map[string]string{
 											"this is a":                           "label",
@@ -285,7 +285,7 @@ func TestMergePodObjectMetaWithPodTemplate(t *testing.T) {
 											"foo":                     "bar",
 										},
 									},
-									Spec: v1alpha2.ACMEChallengeSolverHTTP01IngressPodSpec{
+									Spec: cmacme.ACMEChallengeSolverHTTP01IngressPodSpec{
 										NodeSelector: map[string]string{
 											"node": "selector",
 										},
@@ -350,12 +350,12 @@ func TestMergePodObjectMetaWithPodTemplate(t *testing.T) {
 			},
 		},
 		"should use default if nothing has changed in template": {
-			Challenge: &v1alpha2.Challenge{
-				Spec: v1alpha2.ChallengeSpec{
+			Challenge: &cmacme.Challenge{
+				Spec: cmacme.ChallengeSpec{
 					DNSName: "example.com",
-					Solver: &v1alpha2.ACMEChallengeSolver{
-						HTTP01: &v1alpha2.ACMEChallengeSolverHTTP01{
-							Ingress: &v1alpha2.ACMEChallengeSolverHTTP01Ingress{},
+					Solver: &cmacme.ACMEChallengeSolver{
+						HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
+							Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{},
 						},
 					},
 				},

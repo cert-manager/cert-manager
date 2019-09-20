@@ -29,6 +29,7 @@ import (
 	corev1listers "k8s.io/client-go/listers/core/v1"
 	extv1beta1listers "k8s.io/client-go/listers/extensions/v1beta1"
 
+	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1alpha2"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	"github.com/jetstack/cert-manager/pkg/controller"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/http/solver"
@@ -82,7 +83,7 @@ func http01LogCtx(ctx context.Context) context.Context {
 	return logf.NewContext(ctx, nil, "http01")
 }
 
-func httpDomainCfgForChallenge(ch *v1alpha2.Challenge) (*v1alpha2.ACMEChallengeSolverHTTP01Ingress, error) {
+func httpDomainCfgForChallenge(ch *cmacme.Challenge) (*cmacme.ACMEChallengeSolverHTTP01Ingress, error) {
 	if ch.Spec.Solver != nil {
 		if ch.Spec.Solver.HTTP01 == nil || ch.Spec.Solver.HTTP01.Ingress == nil {
 			return nil, fmt.Errorf("challenge's 'solver' field is specified but no HTTP01 ingress config provided. " +
@@ -96,7 +97,7 @@ func httpDomainCfgForChallenge(ch *v1alpha2.Challenge) (*v1alpha2.ACMEChallengeS
 // Present will realise the resources required to solve the given HTTP01
 // challenge validation in the apiserver. If those resources already exist, it
 // will return nil (i.e. this function is idempotent).
-func (s *Solver) Present(ctx context.Context, issuer v1alpha2.GenericIssuer, ch *v1alpha2.Challenge) error {
+func (s *Solver) Present(ctx context.Context, issuer v1alpha2.GenericIssuer, ch *cmacme.Challenge) error {
 	ctx = http01LogCtx(ctx)
 
 	_, podErr := s.ensurePod(ctx, ch)
@@ -108,7 +109,7 @@ func (s *Solver) Present(ctx context.Context, issuer v1alpha2.GenericIssuer, ch 
 	return utilerrors.NewAggregate([]error{podErr, svcErr, ingressErr})
 }
 
-func (s *Solver) Check(ctx context.Context, issuer v1alpha2.GenericIssuer, ch *v1alpha2.Challenge) error {
+func (s *Solver) Check(ctx context.Context, issuer v1alpha2.GenericIssuer, ch *cmacme.Challenge) error {
 	ctx = logf.NewContext(http01LogCtx(ctx), nil, "selfCheck")
 	log := logf.FromContext(ctx)
 
@@ -149,7 +150,7 @@ func (s *Solver) Check(ctx context.Context, issuer v1alpha2.GenericIssuer, ch *v
 
 // CleanUp will ensure the created service, ingress and pod are clean/deleted of any
 // cert-manager created data.
-func (s *Solver) CleanUp(ctx context.Context, issuer v1alpha2.GenericIssuer, ch *v1alpha2.Challenge) error {
+func (s *Solver) CleanUp(ctx context.Context, issuer v1alpha2.GenericIssuer, ch *cmacme.Challenge) error {
 	var errs []error
 	errs = append(errs, s.cleanupPods(ctx, ch))
 	errs = append(errs, s.cleanupServices(ctx, ch))
@@ -157,7 +158,7 @@ func (s *Solver) CleanUp(ctx context.Context, issuer v1alpha2.GenericIssuer, ch 
 	return utilerrors.NewAggregate(errs)
 }
 
-func (s *Solver) buildChallengeUrl(ch *v1alpha2.Challenge) *url.URL {
+func (s *Solver) buildChallengeUrl(ch *cmacme.Challenge) *url.URL {
 	url := &url.URL{}
 	url.Scheme = "http"
 	url.Host = ch.Spec.DNSName
