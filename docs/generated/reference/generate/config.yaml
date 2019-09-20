@@ -1,6 +1,7 @@
 example_location: "examples"
 api_groups:
   - "Certmanager"
+  - "ACME"
 resource_categories:
 - name: "Certmanager"
   include: "certmanager"
@@ -14,9 +15,12 @@ resource_categories:
   - name: "Issuer"
     version: "v1alpha2"
     group: "certmanager"
-  - name: "Order"
-    version: "v1alpha2"
-    group: "certmanager"
-  - name: "Challenge"
-    version: "v1alpha2"
-    group: "certmanager"
+- name: "ACME"
+  include: "acme"
+  resources:
+    - name: "Order"
+      version: "v1alpha2"
+      group: "acme"
+    - name: "Challenge"
+      version: "v1alpha2"
+      group: "acme"
