@@ -23,6 +23,7 @@ import (
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1alpha2"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	"github.com/jetstack/cert-manager/test/e2e/framework"
@@ -67,7 +68,7 @@ func testDNSProvider(name string, p dns01Provider) bool {
 
 			By("Creating an Issuer")
 			issuer := gen.Issuer(issuerName,
-				gen.SetIssuerACME(v1alpha2.ACMEIssuer{
+				gen.SetIssuerACME(cmacme.ACMEIssuer{
 					SkipTLSVerify: true,
 					Server:        "https://acme-staging-v02.api.letsencrypt.org/directory",
 					Email:         testingACMEEmail,
@@ -76,7 +77,7 @@ func testDNSProvider(name string, p dns01Provider) bool {
 							Name: testingACMEPrivateKey,
 						},
 					},
-					Solvers: []v1alpha2.ACMEChallengeSolver{
+					Solvers: []cmacme.ACMEChallengeSolver{
 						{
 							DNS01: &p.Details().ProviderConfig,
 						},
