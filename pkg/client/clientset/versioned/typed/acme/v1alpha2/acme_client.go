@@ -19,42 +19,32 @@ limitations under the License.
 package v1alpha2
 
 import (
-	v1alpha2 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	v1alpha2 "github.com/jetstack/cert-manager/pkg/apis/acme/v1alpha2"
 	"github.com/jetstack/cert-manager/pkg/client/clientset/versioned/scheme"
 	rest "k8s.io/client-go/rest"
 )
 
-type CertmanagerV1alpha2Interface interface {
+type AcmeV1alpha2Interface interface {
 	RESTClient() rest.Interface
-	CertificatesGetter
-	CertificateRequestsGetter
-	ClusterIssuersGetter
-	IssuersGetter
+	ChallengesGetter
+	OrdersGetter
 }
 
-// CertmanagerV1alpha2Client is used to interact with features provided by the certmanager.k8s.io group.
-type CertmanagerV1alpha2Client struct {
+// AcmeV1alpha2Client is used to interact with features provided by the acme.cert-manager.io group.
+type AcmeV1alpha2Client struct {
 	restClient rest.Interface
 }
 
-func (c *CertmanagerV1alpha2Client) Certificates(namespace string) CertificateInterface {
-	return newCertificates(c, namespace)
+func (c *AcmeV1alpha2Client) Challenges(namespace string) ChallengeInterface {
+	return newChallenges(c, namespace)
 }
 
-func (c *CertmanagerV1alpha2Client) CertificateRequests(namespace string) CertificateRequestInterface {
-	return newCertificateRequests(c, namespace)
+func (c *AcmeV1alpha2Client) Orders(namespace string) OrderInterface {
+	return newOrders(c, namespace)
 }
 
-func (c *CertmanagerV1alpha2Client) ClusterIssuers() ClusterIssuerInterface {
-	return newClusterIssuers(c)
-}
-
-func (c *CertmanagerV1alpha2Client) Issuers(namespace string) IssuerInterface {
-	return newIssuers(c, namespace)
-}
-
-// NewForConfig creates a new CertmanagerV1alpha2Client for the given config.
-func NewForConfig(c *rest.Config) (*CertmanagerV1alpha2Client, error) {
+// NewForConfig creates a new AcmeV1alpha2Client for the given config.
+func NewForConfig(c *rest.Config) (*AcmeV1alpha2Client, error) {
 	config := *c
 	if err := setConfigDefaults(&config); err != nil {
 		return nil, err
@@ -63,12 +53,12 @@ func NewForConfig(c *rest.Config) (*CertmanagerV1alpha2Client, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &CertmanagerV1alpha2Client{client}, nil
+	return &AcmeV1alpha2Client{client}, nil
 }
 
-// NewForConfigOrDie creates a new CertmanagerV1alpha2Client for the given config and
+// NewForConfigOrDie creates a new AcmeV1alpha2Client for the given config and
 // panics if there is an error in the config.
-func NewForConfigOrDie(c *rest.Config) *CertmanagerV1alpha2Client {
+func NewForConfigOrDie(c *rest.Config) *AcmeV1alpha2Client {
 	client, err := NewForConfig(c)
 	if err != nil {
 		panic(err)
@@ -76,9 +66,9 @@ func NewForConfigOrDie(c *rest.Config) *CertmanagerV1alpha2Client {
 	return client
 }
 
-// New creates a new CertmanagerV1alpha2Client for the given RESTClient.
-func New(c rest.Interface) *CertmanagerV1alpha2Client {
-	return &CertmanagerV1alpha2Client{c}
+// New creates a new AcmeV1alpha2Client for the given RESTClient.
+func New(c rest.Interface) *AcmeV1alpha2Client {
+	return &AcmeV1alpha2Client{c}
 }
 
 func setConfigDefaults(config *rest.Config) error {
@@ -96,7 +86,7 @@ func setConfigDefaults(config *rest.Config) error {
 
 // RESTClient returns a RESTClient that is used to communicate
 // with API server by this client implementation.
-func (c *CertmanagerV1alpha2Client) RESTClient() rest.Interface {
+func (c *AcmeV1alpha2Client) RESTClient() rest.Interface {
 	if c == nil {
 		return nil
 	}

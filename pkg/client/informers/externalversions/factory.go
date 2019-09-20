@@ -24,6 +24,7 @@ import (
 	time "time"
 
 	versioned "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
+	acme "github.com/jetstack/cert-manager/pkg/client/informers/externalversions/acme"
 	certmanager "github.com/jetstack/cert-manager/pkg/client/informers/externalversions/certmanager"
 	internalinterfaces "github.com/jetstack/cert-manager/pkg/client/informers/externalversions/internalinterfaces"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -172,7 +173,12 @@ type SharedInformerFactory interface {
 	ForResource(resource schema.GroupVersionResource) (GenericInformer, error)
 	WaitForCacheSync(stopCh <-chan struct{}) map[reflect.Type]bool
 
+	Acme() acme.Interface
 	Certmanager() certmanager.Interface
+}
+
+func (f *sharedInformerFactory) Acme() acme.Interface {
+	return acme.New(f, f.namespace, f.tweakListOptions)
 }
 
 func (f *sharedInformerFactory) Certmanager() certmanager.Interface {

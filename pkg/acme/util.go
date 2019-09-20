@@ -19,7 +19,7 @@ package acme
 import (
 	corev1 "k8s.io/api/core/v1"
 
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1alpha2"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 )
 
@@ -27,17 +27,17 @@ import (
 // This is either one of 'ready', 'invalid' or 'expired'.
 // The 'valid' state is a special case, as it is a final state for Challenges but
 // not for Orders.
-func IsFinalState(s cmapi.State) bool {
+func IsFinalState(s cmacme.State) bool {
 	switch s {
-	case cmapi.Valid:
+	case cmacme.Valid:
 		return true
 	}
 	return IsFailureState(s)
 }
 
-func IsFailureState(s cmapi.State) bool {
+func IsFailureState(s cmacme.State) bool {
 	switch s {
-	case cmapi.Invalid, cmapi.Expired, cmapi.Errored:
+	case cmacme.Invalid, cmacme.Expired, cmacme.Errored:
 		return true
 	}
 	return false

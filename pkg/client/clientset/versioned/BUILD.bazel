@@ -9,6 +9,7 @@ go_library(
     importpath = "github.com/jetstack/cert-manager/pkg/client/clientset/versioned",
     visibility = ["//visibility:public"],
     deps = [
+        "//pkg/client/clientset/versioned/typed/acme/v1alpha2:go_default_library",
         "//pkg/client/clientset/versioned/typed/certmanager/v1alpha2:go_default_library",
         "//vendor/k8s.io/client-go/discovery:go_default_library",
         "//vendor/k8s.io/client-go/rest:go_default_library",
@@ -29,6 +30,7 @@ filegroup(
         ":package-srcs",
         "//pkg/client/clientset/versioned/fake:all-srcs",
         "//pkg/client/clientset/versioned/scheme:all-srcs",
+        "//pkg/client/clientset/versioned/typed/acme/v1alpha2:all-srcs",
         "//pkg/client/clientset/versioned/typed/certmanager/v1alpha2:all-srcs",
     ],
     tags = ["automanaged"],

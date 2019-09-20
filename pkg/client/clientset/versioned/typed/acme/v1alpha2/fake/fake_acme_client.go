@@ -19,34 +19,26 @@ limitations under the License.
 package fake
 
 import (
-	v1alpha2 "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/typed/certmanager/v1alpha2"
+	v1alpha2 "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/typed/acme/v1alpha2"
 	rest "k8s.io/client-go/rest"
 	testing "k8s.io/client-go/testing"
 )
 
-type FakeCertmanagerV1alpha2 struct {
+type FakeAcmeV1alpha2 struct {
 	*testing.Fake
 }
 
-func (c *FakeCertmanagerV1alpha2) Certificates(namespace string) v1alpha2.CertificateInterface {
-	return &FakeCertificates{c, namespace}
+func (c *FakeAcmeV1alpha2) Challenges(namespace string) v1alpha2.ChallengeInterface {
+	return &FakeChallenges{c, namespace}
 }
 
-func (c *FakeCertmanagerV1alpha2) CertificateRequests(namespace string) v1alpha2.CertificateRequestInterface {
-	return &FakeCertificateRequests{c, namespace}
-}
-
-func (c *FakeCertmanagerV1alpha2) ClusterIssuers() v1alpha2.ClusterIssuerInterface {
-	return &FakeClusterIssuers{c}
-}
-
-func (c *FakeCertmanagerV1alpha2) Issuers(namespace string) v1alpha2.IssuerInterface {
-	return &FakeIssuers{c, namespace}
+func (c *FakeAcmeV1alpha2) Orders(namespace string) v1alpha2.OrderInterface {
+	return &FakeOrders{c, namespace}
 }
 
 // RESTClient returns a RESTClient that is used to communicate
 // with API server by this client implementation.
-func (c *FakeCertmanagerV1alpha2) RESTClient() rest.Interface {
+func (c *FakeAcmeV1alpha2) RESTClient() rest.Interface {
 	var ret *rest.RESTClient
 	return ret
 }

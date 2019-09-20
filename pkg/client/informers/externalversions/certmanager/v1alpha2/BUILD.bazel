@@ -5,11 +5,9 @@ go_library(
     srcs = [
         "certificate.go",
         "certificaterequest.go",
-        "challenge.go",
         "clusterissuer.go",
         "interface.go",
         "issuer.go",
-        "order.go",
     ],
     importpath = "github.com/jetstack/cert-manager/pkg/client/informers/externalversions/certmanager/v1alpha2",
     visibility = ["//visibility:public"],

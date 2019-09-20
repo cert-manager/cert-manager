@@ -21,7 +21,7 @@ package v1alpha2
 import (
 	"time"
 
-	v1alpha2 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	v1alpha2 "github.com/jetstack/cert-manager/pkg/apis/acme/v1alpha2"
 	scheme "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/scheme"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
@@ -56,7 +56,7 @@ type orders struct {
 }
 
 // newOrders returns a Orders
-func newOrders(c *CertmanagerV1alpha2Client, namespace string) *orders {
+func newOrders(c *AcmeV1alpha2Client, namespace string) *orders {
 	return &orders{
 		client: c.RESTClient(),
 		ns:     namespace,

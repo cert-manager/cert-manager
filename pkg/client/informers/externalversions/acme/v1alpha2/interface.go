@@ -24,14 +24,10 @@ import (
 
 // Interface provides access to all the informers in this group version.
 type Interface interface {
-	// Certificates returns a CertificateInformer.
-	Certificates() CertificateInformer
-	// CertificateRequests returns a CertificateRequestInformer.
-	CertificateRequests() CertificateRequestInformer
-	// ClusterIssuers returns a ClusterIssuerInformer.
-	ClusterIssuers() ClusterIssuerInformer
-	// Issuers returns a IssuerInformer.
-	Issuers() IssuerInformer
+	// Challenges returns a ChallengeInformer.
+	Challenges() ChallengeInformer
+	// Orders returns a OrderInformer.
+	Orders() OrderInformer
 }
 
 type version struct {
@@ -45,22 +41,12 @@ func New(f internalinterfaces.SharedInformerFactory, namespace string, tweakList
 	return &version{factory: f, namespace: namespace, tweakListOptions: tweakListOptions}
 }
 
-// Certificates returns a CertificateInformer.
-func (v *version) Certificates() CertificateInformer {
-	return &certificateInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+// Challenges returns a ChallengeInformer.
+func (v *version) Challenges() ChallengeInformer {
+	return &challengeInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }
 
-// CertificateRequests returns a CertificateRequestInformer.
-func (v *version) CertificateRequests() CertificateRequestInformer {
-	return &certificateRequestInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
-}
-
-// ClusterIssuers returns a ClusterIssuerInformer.
-func (v *version) ClusterIssuers() ClusterIssuerInformer {
-	return &clusterIssuerInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
-}
-
-// Issuers returns a IssuerInformer.
-func (v *version) Issuers() IssuerInformer {
-	return &issuerInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+// Orders returns a OrderInformer.
+func (v *version) Orders() OrderInformer {
+	return &orderInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }

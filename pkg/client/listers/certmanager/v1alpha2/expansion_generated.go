@@ -34,14 +34,6 @@ type CertificateRequestListerExpansion interface{}
 // CertificateRequestNamespaceLister.
 type CertificateRequestNamespaceListerExpansion interface{}
 
-// ChallengeListerExpansion allows custom methods to be added to
-// ChallengeLister.
-type ChallengeListerExpansion interface{}
-
-// ChallengeNamespaceListerExpansion allows custom methods to be added to
-// ChallengeNamespaceLister.
-type ChallengeNamespaceListerExpansion interface{}
-
 // ClusterIssuerListerExpansion allows custom methods to be added to
 // ClusterIssuerLister.
 type ClusterIssuerListerExpansion interface{}
@@ -53,11 +45,3 @@ type IssuerListerExpansion interface{}
 // IssuerNamespaceListerExpansion allows custom methods to be added to
 // IssuerNamespaceLister.
 type IssuerNamespaceListerExpansion interface{}
-
-// OrderListerExpansion allows custom methods to be added to
-// OrderLister.
-type OrderListerExpansion interface{}
-
-// OrderNamespaceListerExpansion allows custom methods to be added to
-// OrderNamespaceLister.
-type OrderNamespaceListerExpansion interface{}
