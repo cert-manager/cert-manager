@@ -28,6 +28,7 @@ import (
 
 	acmecl "github.com/jetstack/cert-manager/pkg/acme/client"
 	acmefake "github.com/jetstack/cert-manager/pkg/acme/fake"
+	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1alpha2"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	testpkg "github.com/jetstack/cert-manager/pkg/controller/test"
@@ -40,14 +41,14 @@ func TestSyncHappyPath(t *testing.T) {
 	nowMetaTime := metav1.NewTime(nowTime)
 	fixedClock := fakeclock.NewFakeClock(nowTime)
 
-	testIssuerHTTP01TestCom := gen.Issuer("testissuer", gen.SetIssuerACME(v1alpha2.ACMEIssuer{
-		Solvers: []v1alpha2.ACMEChallengeSolver{
+	testIssuerHTTP01TestCom := gen.Issuer("testissuer", gen.SetIssuerACME(cmacme.ACMEIssuer{
+		Solvers: []cmacme.ACMEChallengeSolver{
 			{
-				Selector: &v1alpha2.CertificateDNSNameSelector{
+				Selector: &cmacme.CertificateDNSNameSelector{
 					DNSNames: []string{"test.com"},
 				},
-				HTTP01: &v1alpha2.ACMEChallengeSolverHTTP01{
-					Ingress: &v1alpha2.ACMEChallengeSolverHTTP01Ingress{},
+				HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
+					Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{},
 				},
 			},
 		},
@@ -59,19 +60,19 @@ func TestSyncHappyPath(t *testing.T) {
 		}),
 	)
 
-	pendingStatus := v1alpha2.OrderStatus{
-		State:       v1alpha2.Pending,
+	pendingStatus := cmacme.OrderStatus{
+		State:       cmacme.Pending,
 		URL:         "http://testurl.com/abcde",
 		FinalizeURL: "http://testurl.com/abcde/finalize",
-		Authorizations: []v1alpha2.ACMEAuthorization{
+		Authorizations: []cmacme.ACMEAuthorization{
 			{
 				URL:        "http://authzurl",
 				Identifier: "test.com",
-				Challenges: []v1alpha2.ACMEChallenge{
+				Challenges: []cmacme.ACMEChallenge{
 					{
 						URL:   "http://chalurl",
 						Token: "token",
-						Type:  v1alpha2.ACMEChallengeTypeHTTP01,
+						Type:  cmacme.ACMEChallengeTypeHTTP01,
 					},
 				},
 			},
@@ -80,17 +81,17 @@ func TestSyncHappyPath(t *testing.T) {
 
 	testOrderPending := gen.OrderFrom(testOrder, gen.SetOrderStatus(pendingStatus))
 	testOrderInvalid := testOrderPending.DeepCopy()
-	testOrderInvalid.Status.State = v1alpha2.Invalid
+	testOrderInvalid.Status.State = cmacme.Invalid
 	testOrderInvalid.Status.FailureTime = &nowMetaTime
 	testOrderValid := testOrderPending.DeepCopy()
-	testOrderValid.Status.State = v1alpha2.Valid
+	testOrderValid.Status.State = cmacme.Valid
 	// pem encoded word 'test'
 	testOrderValid.Status.Certificate = []byte(`-----BEGIN CERTIFICATE-----
 dGVzdA==
 -----END CERTIFICATE-----
 `)
 	testOrderReady := testOrderPending.DeepCopy()
-	testOrderReady.Status.State = v1alpha2.Ready
+	testOrderReady.Status.State = cmacme.Ready
 
 	fakeHTTP01ACMECl := &acmecl.FakeACME{
 		FakeHTTP01ChallengeResponse: func(s string) (string, error) {
@@ -103,9 +104,9 @@ dGVzdA==
 		t.Fatalf("error building Challenge resource test fixture: %v", err)
 	}
 	testAuthorizationChallengeValid := testAuthorizationChallenge.DeepCopy()
-	testAuthorizationChallengeValid.Status.State = v1alpha2.Valid
+	testAuthorizationChallengeValid.Status.State = cmacme.Valid
 	testAuthorizationChallengeInvalid := testAuthorizationChallenge.DeepCopy()
-	testAuthorizationChallengeInvalid.Status.State = v1alpha2.Invalid
+	testAuthorizationChallengeInvalid.Status.State = cmacme.Invalid
 
 	testACMEAuthorizationPending := &acmeapi.Authorization{
 		URL:    "http://authzurl",
@@ -152,12 +153,12 @@ dGVzdA==
 			builder: &testpkg.Builder{
 				CertManagerObjects: []runtime.Object{testIssuerHTTP01TestCom, testOrder},
 				ExpectedActions: []testpkg.Action{
-					testpkg.NewAction(coretesting.NewUpdateAction(v1alpha2.SchemeGroupVersion.WithResource("orders"), testOrderPending.Namespace,
-						gen.OrderFrom(testOrder, gen.SetOrderStatus(v1alpha2.OrderStatus{
-							State:       v1alpha2.Pending,
+					testpkg.NewAction(coretesting.NewUpdateAction(cmacme.SchemeGroupVersion.WithResource("orders"), testOrderPending.Namespace,
+						gen.OrderFrom(testOrder, gen.SetOrderStatus(cmacme.OrderStatus{
+							State:       cmacme.Pending,
 							URL:         "http://testurl.com/abcde",
 							FinalizeURL: "http://testurl.com/abcde/finalize",
-							Authorizations: []v1alpha2.ACMEAuthorization{
+							Authorizations: []cmacme.ACMEAuthorization{
 								{
 									URL: "http://authzurl",
 								},
@@ -184,7 +185,7 @@ dGVzdA==
 			builder: &testpkg.Builder{
 				CertManagerObjects: []runtime.Object{testIssuerHTTP01TestCom, testOrderPending},
 				ExpectedActions: []testpkg.Action{
-					testpkg.NewAction(coretesting.NewCreateAction(v1alpha2.SchemeGroupVersion.WithResource("challenges"), testAuthorizationChallenge.Namespace, testAuthorizationChallenge)),
+					testpkg.NewAction(coretesting.NewCreateAction(cmacme.SchemeGroupVersion.WithResource("challenges"), testAuthorizationChallenge.Namespace, testAuthorizationChallenge)),
 				},
 				ExpectedEvents: []string{
 					`Normal Created Created Challenge resource "testorder-1335133199" for domain "test.com"`,
@@ -215,7 +216,7 @@ dGVzdA==
 			builder: &testpkg.Builder{
 				CertManagerObjects: []runtime.Object{testIssuerHTTP01TestCom, testOrderPending, testAuthorizationChallengeValid},
 				ExpectedActions: []testpkg.Action{
-					testpkg.NewAction(coretesting.NewUpdateAction(v1alpha2.SchemeGroupVersion.WithResource("orders"), testOrderReady.Namespace, testOrderReady)),
+					testpkg.NewAction(coretesting.NewUpdateAction(cmacme.SchemeGroupVersion.WithResource("orders"), testOrderReady.Namespace, testOrderReady)),
 				},
 			},
 			acmeClient: &acmecl.FakeACME{
@@ -233,7 +234,7 @@ dGVzdA==
 			builder: &testpkg.Builder{
 				CertManagerObjects: []runtime.Object{testIssuerHTTP01TestCom, testOrderReady, testAuthorizationChallengeValid},
 				ExpectedActions: []testpkg.Action{
-					testpkg.NewAction(coretesting.NewUpdateAction(v1alpha2.SchemeGroupVersion.WithResource("orders"), testOrderValid.Namespace, testOrderValid)),
+					testpkg.NewAction(coretesting.NewUpdateAction(cmacme.SchemeGroupVersion.WithResource("orders"), testOrderValid.Namespace, testOrderValid)),
 				},
 				ExpectedEvents: []string{
 					"Normal Complete Order completed successfully",
@@ -258,7 +259,7 @@ dGVzdA==
 			builder: &testpkg.Builder{
 				CertManagerObjects: []runtime.Object{testIssuerHTTP01TestCom, testOrderPending, testAuthorizationChallengeInvalid},
 				ExpectedActions: []testpkg.Action{
-					testpkg.NewAction(coretesting.NewUpdateAction(v1alpha2.SchemeGroupVersion.WithResource("orders"), testOrderInvalid.Namespace, testOrderInvalid)),
+					testpkg.NewAction(coretesting.NewUpdateAction(cmacme.SchemeGroupVersion.WithResource("orders"), testOrderInvalid.Namespace, testOrderInvalid)),
 				},
 			},
 			acmeClient: &acmecl.FakeACME{
@@ -318,7 +319,7 @@ dGVzdA==
 }
 
 type testT struct {
-	order      *v1alpha2.Order
+	order      *cmacme.Order
 	builder    *testpkg.Builder
 	acmeClient acmecl.Interface
 	expectErr  bool

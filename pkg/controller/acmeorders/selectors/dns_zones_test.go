@@ -21,13 +21,13 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1alpha2"
 )
 
 func TestDNSZones(t *testing.T) {
 	tests := []struct {
 		name     string
-		selector cmapi.CertificateDNSNameSelector
+		selector cmacme.CertificateDNSNameSelector
 		meta     metav1.ObjectMeta
 		dnsName  string
 		matches  bool
@@ -35,14 +35,14 @@ func TestDNSZones(t *testing.T) {
 	}{
 		{
 			name:     "matching a domain with an empty selector",
-			selector: cmapi.CertificateDNSNameSelector{},
+			selector: cmacme.CertificateDNSNameSelector{},
 			dnsName:  "www.example.com",
 			matches:  true,
 			score:    0,
 		},
 		{
 			name: "matching a domain in a zone",
-			selector: cmapi.CertificateDNSNameSelector{
+			selector: cmacme.CertificateDNSNameSelector{
 				DNSZones: []string{"example.com"},
 			},
 			dnsName: "www.example.com",
@@ -51,7 +51,7 @@ func TestDNSZones(t *testing.T) {
 		},
 		{
 			name: "matching a wildcard domain in a zone",
-			selector: cmapi.CertificateDNSNameSelector{
+			selector: cmacme.CertificateDNSNameSelector{
 				DNSZones: []string{"example.com"},
 			},
 			dnsName: "*.example.com",

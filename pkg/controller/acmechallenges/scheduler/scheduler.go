@@ -24,8 +24,8 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 
 	"github.com/jetstack/cert-manager/pkg/acme"
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
-	cmlisters "github.com/jetstack/cert-manager/pkg/client/listers/certmanager/v1alpha2"
+	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1alpha2"
+	cmacmelisters "github.com/jetstack/cert-manager/pkg/client/listers/acme/v1alpha2"
 	"github.com/jetstack/cert-manager/pkg/logs"
 )
 
@@ -34,12 +34,12 @@ import (
 // processing at a given time.
 type Scheduler struct {
 	log                     logr.Logger
-	challengeLister         cmlisters.ChallengeLister
+	challengeLister         cmacmelisters.ChallengeLister
 	maxConcurrentChallenges int
 }
 
 // New will construct a new instance of a scheduler
-func New(ctx context.Context, l cmlisters.ChallengeLister, maxConcurrentChallenges int) *Scheduler {
+func New(ctx context.Context, l cmacmelisters.ChallengeLister, maxConcurrentChallenges int) *Scheduler {
 	log := logs.FromContext(ctx, "challenge-scheduler")
 	return &Scheduler{log: log, challengeLister: l, maxConcurrentChallenges: maxConcurrentChallenges}
 }
@@ -48,7 +48,7 @@ func New(ctx context.Context, l cmlisters.ChallengeLister, maxConcurrentChalleng
 // scheduled for processing.
 // It may return an empty list if there are no challenges that can/should be
 // scheduled.
-func (s *Scheduler) ScheduleN(n int) ([]*cmapi.Challenge, error) {
+func (s *Scheduler) ScheduleN(n int) ([]*cmacme.Challenge, error) {
 	// Get a list of all challenges from the cache
 	allChallenges, err := s.challengeLister.List(labels.Everything())
 	if err != nil {
@@ -58,7 +58,7 @@ func (s *Scheduler) ScheduleN(n int) ([]*cmapi.Challenge, error) {
 	return s.scheduleN(n, allChallenges)
 }
 
-func (s *Scheduler) scheduleN(n int, allChallenges []*cmapi.Challenge) ([]*cmapi.Challenge, error) {
+func (s *Scheduler) scheduleN(n int, allChallenges []*cmacme.Challenge) ([]*cmacme.Challenge, error) {
 	// Determine the list of challenges that could feasibly be scheduled on
 	// this pass of the scheduler.
 	// This function returns a list of candidates sorted by creation timestamp.
@@ -84,7 +84,7 @@ func (s *Scheduler) scheduleN(n int, allChallenges []*cmapi.Challenge) ([]*cmapi
 // selectChallengesToSchedule will apply some sorting heuristic to the allowed
 // challenge candidates and return a maximum of N challenges that should be
 // scheduled for processing.
-func (s *Scheduler) selectChallengesToSchedule(candidates []*cmapi.Challenge, n int) ([]*cmapi.Challenge, error) {
+func (s *Scheduler) selectChallengesToSchedule(candidates []*cmacme.Challenge, n int) ([]*cmacme.Challenge, error) {
 	// Trim the candidates returned to 'n'
 	if len(candidates) > n {
 		candidates = candidates[:n]
@@ -97,7 +97,7 @@ func (s *Scheduler) selectChallengesToSchedule(candidates []*cmapi.Challenge, n 
 // processing.
 // The returned challenges will be sorted in ascending order based on timestamp
 // (i.e. the oldest challenge will be element zero).
-func (s *Scheduler) determineChallengeCandidates(allChallenges []*cmapi.Challenge) ([]*cmapi.Challenge, int, error) {
+func (s *Scheduler) determineChallengeCandidates(allChallenges []*cmacme.Challenge) ([]*cmacme.Challenge, int, error) {
 	// consider the entire set of challenges for 'in progress', in case a challenge
 	// has processing=true whilst still being in a 'final' state
 	inProgress := processingChallenges(allChallenges)
@@ -108,7 +108,7 @@ func (s *Scheduler) determineChallengeCandidates(allChallenges []*cmapi.Challeng
 	// hit the maximum number of challenges.
 	if inProgressChallengeCount >= s.maxConcurrentChallenges {
 		s.log.V(logs.DebugLevel).Info("hit maximum concurrent challenge limit. refusing to schedule more challenges.", "in_progress", len(inProgress), "max_concurrent", s.maxConcurrentChallenges)
-		return []*cmapi.Challenge{}, inProgressChallengeCount, nil
+		return []*cmacme.Challenge{}, inProgressChallengeCount, nil
 	}
 
 	// Calculate incomplete challenges
@@ -123,7 +123,7 @@ func (s *Scheduler) determineChallengeCandidates(allChallenges []*cmapi.Challeng
 
 	// If there are any already in-progress challenges for a domain and type,
 	// filter them out.
-	candidates := filterChallenges(dedupedCandidates, func(ch *cmapi.Challenge) bool {
+	candidates := filterChallenges(dedupedCandidates, func(ch *cmacme.Challenge) bool {
 		for _, inPCh := range inProgress {
 			if compareChallenges(ch, inPCh) == 0 {
 				s.log.V(logs.DebugLevel).Info("there is already a challenge processing with this domain", "domain", ch.Spec.DNSName, "type", ch.Spec.Type)
@@ -139,7 +139,7 @@ func (s *Scheduler) determineChallengeCandidates(allChallenges []*cmapi.Challeng
 	return candidates, inProgressChallengeCount, nil
 }
 
-func sortChallengesByTimestamp(chs []*cmapi.Challenge) {
+func sortChallengesByTimestamp(chs []*cmacme.Challenge) {
 	sort.Slice(chs, func(i, j int) bool {
 		return chs[i].CreationTimestamp.Before(&chs[j].CreationTimestamp)
 	})
@@ -147,30 +147,30 @@ func sortChallengesByTimestamp(chs []*cmapi.Challenge) {
 
 // notProcessingChallenges will filter out challenges from the given slice
 // that have status.processing set to true.
-func notProcessingChallenges(chs []*cmapi.Challenge) []*cmapi.Challenge {
-	return filterChallenges(chs, func(ch *cmapi.Challenge) bool {
+func notProcessingChallenges(chs []*cmacme.Challenge) []*cmacme.Challenge {
+	return filterChallenges(chs, func(ch *cmacme.Challenge) bool {
 		return !ch.Status.Processing
 	})
 }
 
 // processingChallenges will filter out challenges from the given slice
 // that have status.processing set to false.
-func processingChallenges(chs []*cmapi.Challenge) []*cmapi.Challenge {
-	return filterChallenges(chs, func(ch *cmapi.Challenge) bool {
+func processingChallenges(chs []*cmacme.Challenge) []*cmacme.Challenge {
+	return filterChallenges(chs, func(ch *cmacme.Challenge) bool {
 		return ch.Status.Processing
 	})
 }
 
 // incompleteChallenges will filter out challenges from the given slice
 // that are in a 'final' state
-func incompleteChallenges(chs []*cmapi.Challenge) []*cmapi.Challenge {
-	return filterChallenges(chs, func(ch *cmapi.Challenge) bool {
+func incompleteChallenges(chs []*cmacme.Challenge) []*cmacme.Challenge {
+	return filterChallenges(chs, func(ch *cmacme.Challenge) bool {
 		return !acme.IsFinalState(ch.Status.State)
 	})
 }
 
-func filterChallenges(chs []*cmapi.Challenge, fn func(ch *cmapi.Challenge) bool) []*cmapi.Challenge {
-	ret := []*cmapi.Challenge{}
+func filterChallenges(chs []*cmacme.Challenge, fn func(ch *cmacme.Challenge) bool) []*cmacme.Challenge {
+	ret := []*cmacme.Challenge{}
 	for _, ch := range chs {
 		if fn(ch) {
 			ret = append(ret, ch)
@@ -182,7 +182,7 @@ func filterChallenges(chs []*cmapi.Challenge, fn func(ch *cmapi.Challenge) bool)
 // compareChallenges is used to compare two challenge resources.
 // If two resources are 'equal', they will not be scheduled at the same time
 // as they could cause a conflict.
-func compareChallenges(l, r *cmapi.Challenge) int {
+func compareChallenges(l, r *cmacme.Challenge) int {
 	if l.Spec.DNSName < r.Spec.DNSName {
 		return -1
 	}
@@ -209,7 +209,7 @@ func compareChallenges(l, r *cmapi.Challenge) int {
 // sortChallenges will sort the provided list of challenges according to the
 // schedulers sorting heuristics.
 // This is used to make deduplication of list items efficient (see dedupeChallenges)
-func sortChallenges(chs []*cmapi.Challenge) {
+func sortChallenges(chs []*cmacme.Challenge) {
 	sort.Slice(chs, func(i, j int) bool {
 		cmp := compareChallenges(chs[i], chs[j])
 		if cmp != 0 {
@@ -230,7 +230,7 @@ func sortChallenges(chs []*cmapi.Challenge) {
 }
 
 // https://github.com/golang/go/wiki/SliceTricks#In-place-deduplicate-comparable
-func dedupeChallenges(in []*cmapi.Challenge) []*cmapi.Challenge {
+func dedupeChallenges(in []*cmacme.Challenge) []*cmacme.Challenge {
 	sortChallenges(in)
 	j := 0
 	for i := 1; i < len(in); i++ {

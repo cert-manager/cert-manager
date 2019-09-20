@@ -32,13 +32,13 @@ import (
 
 	"github.com/jetstack/cert-manager/pkg/acme"
 	acmecl "github.com/jetstack/cert-manager/pkg/acme/client"
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1alpha2"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 	"github.com/jetstack/cert-manager/pkg/metrics"
 	acmeapi "github.com/jetstack/cert-manager/third_party/crypto/acme"
 )
 
-func (c *controller) Sync(ctx context.Context, o *cmapi.Order) (err error) {
+func (c *controller) Sync(ctx context.Context, o *cmacme.Order) (err error) {
 	log := logf.FromContext(ctx)
 	dbg := log.V(logf.DebugLevel)
 
@@ -54,7 +54,7 @@ func (c *controller) Sync(ctx context.Context, o *cmapi.Order) (err error) {
 			return
 		}
 		log.Info("updating Order resource status")
-		_, updateErr := c.cmClient.CertmanagerV1alpha2().Orders(o.Namespace).Update(o)
+		_, updateErr := c.cmClient.AcmeV1alpha2().Orders(o.Namespace).Update(o)
 		if err != nil {
 			log.Error(err, "failed to update status")
 			err = utilerrors.NewAggregate([]error{err, updateErr})
@@ -87,10 +87,10 @@ func (c *controller) Sync(ctx context.Context, o *cmapi.Order) (err error) {
 		log.Info("Doing nothing as Order is in a failed state")
 		// if the Order is failed there's nothing left for us to do, return nil
 		return nil
-	case o.Status.State == cmapi.Valid && o.Status.Certificate == nil:
+	case o.Status.State == cmacme.Valid && o.Status.Certificate == nil:
 		log.Info("Order is in a Valid state but the Certificate data is empty, fetching existing Certificate")
 		return c.fetchCertificateData(ctx, cl, o)
-	case o.Status.State == cmapi.Valid && len(o.Status.Certificate) > 0:
+	case o.Status.State == cmacme.Valid && len(o.Status.Certificate) > 0:
 		log.Info("Order has already been completed, cleaning up any owned Challenge resources")
 		// if the Order is valid and the certificate data has been set, clean
 		// up any owned Challenge resources and do nothing
@@ -134,7 +134,7 @@ func (c *controller) Sync(ctx context.Context, o *cmapi.Order) (err error) {
 	}
 
 	switch {
-	case o.Status.State == cmapi.Ready:
+	case o.Status.State == cmacme.Ready:
 		log.Info("Finalizing Order as order state is 'Ready'")
 		return c.finalizeOrder(ctx, cl, o)
 	case anyChallengesFailed(challenges):
@@ -157,7 +157,7 @@ func (c *controller) Sync(ctx context.Context, o *cmapi.Order) (err error) {
 	return nil
 }
 
-func (c *controller) createOrder(ctx context.Context, cl acmecl.Interface, o *cmapi.Order) error {
+func (c *controller) createOrder(ctx context.Context, cl acmecl.Interface, o *cmacme.Order) error {
 	log := logf.FromContext(ctx)
 	dbg := log.V(logf.DebugLevel)
 
@@ -190,7 +190,7 @@ func (c *controller) createOrder(ctx context.Context, cl acmecl.Interface, o *cm
 	return nil
 }
 
-func (c *controller) updateOrderStatus(ctx context.Context, cl acmecl.Interface, o *cmapi.Order) (*acmeapi.Order, error) {
+func (c *controller) updateOrderStatus(ctx context.Context, cl acmecl.Interface, o *cmacme.Order) (*acmeapi.Order, error) {
 	log := logf.FromContext(ctx)
 	if o.Status.URL == "" {
 		return nil, fmt.Errorf("internal error: order URL not set")
@@ -201,7 +201,7 @@ func (c *controller) updateOrderStatus(ctx context.Context, cl acmecl.Interface,
 	if acmeErr, ok := err.(*acmeapi.Error); ok {
 		if acmeErr.StatusCode >= 400 && acmeErr.StatusCode < 500 {
 			log.Error(err, "failed to update Order status due to a 4xx error, marking Order as failed")
-			c.setOrderState(&o.Status, string(cmapi.Errored))
+			c.setOrderState(&o.Status, string(cmacme.Errored))
 			o.Status.Reason = fmt.Sprintf("Failed to retrieve Order resource: %v", err)
 			return nil, nil
 		}
@@ -227,8 +227,8 @@ func (c *controller) updateOrderStatus(ctx context.Context, cl acmecl.Interface,
 // setOrderState will set the 'State' field of the given Order to 's'.
 // It will set the Orders failureTime field if the state provided is classed as
 // a failure state.
-func (c *controller) setOrderState(o *cmapi.OrderStatus, s string) {
-	o.State = cmapi.State(s)
+func (c *controller) setOrderState(o *cmacme.OrderStatus, s string) {
+	o.State = cmacme.State(s)
 	// if the order is in a failure state, we should set the `failureTime` field
 	if acme.IsFailureState(o.State) {
 		t := metav1.NewTime(c.clock.Now())
@@ -241,15 +241,15 @@ func (c *controller) setOrderState(o *cmapi.OrderStatus, s string) {
 // It does *not* perform a query against the ACME server for each authorization
 // named on the Order to fetch additional metadata, instead, use
 // populateAuthorization on each authorization in turn.
-func constructAuthorizations(o *acmeapi.Order) []cmapi.ACMEAuthorization {
-	authzs := make([]cmapi.ACMEAuthorization, len(o.Authorizations))
+func constructAuthorizations(o *acmeapi.Order) []cmacme.ACMEAuthorization {
+	authzs := make([]cmacme.ACMEAuthorization, len(o.Authorizations))
 	for i, url := range o.Authorizations {
 		authzs[i].URL = url
 	}
 	return authzs
 }
 
-func anyAuthorizationsMissingMetadata(o *cmapi.Order) bool {
+func anyAuthorizationsMissingMetadata(o *cmacme.Order) bool {
 	for _, a := range o.Status.Authorizations {
 		if a.Identifier == "" {
 			return true
@@ -258,7 +258,7 @@ func anyAuthorizationsMissingMetadata(o *cmapi.Order) bool {
 	return false
 }
 
-func (c *controller) fetchMetadataForAuthorizations(ctx context.Context, o *cmapi.Order, cl acmecl.Interface) error {
+func (c *controller) fetchMetadataForAuthorizations(ctx context.Context, o *cmacme.Order, cl acmecl.Interface) error {
 	log := logf.FromContext(ctx)
 	for i, authz := range o.Status.Authorizations {
 		// only fetch metadata for each authorization once
@@ -270,7 +270,7 @@ func (c *controller) fetchMetadataForAuthorizations(ctx context.Context, o *cmap
 		if acmeErr, ok := err.(*acmeapi.Error); ok {
 			if acmeErr.StatusCode >= 400 && acmeErr.StatusCode < 500 {
 				log.Error(err, "failed to fetch authorization metadata from acme server")
-				c.setOrderState(&o.Status, string(cmapi.Errored))
+				c.setOrderState(&o.Status, string(cmacme.Errored))
 				o.Status.Reason = fmt.Sprintf("Failed to fetch authorization: %v", err)
 				return nil
 			}
@@ -281,18 +281,18 @@ func (c *controller) fetchMetadataForAuthorizations(ctx context.Context, o *cmap
 
 		authz.Identifier = acmeAuthz.Identifier.Value
 		authz.Wildcard = acmeAuthz.Wildcard
-		authz.Challenges = make([]cmapi.ACMEChallenge, len(acmeAuthz.Challenges))
+		authz.Challenges = make([]cmacme.ACMEChallenge, len(acmeAuthz.Challenges))
 		for i, acmech := range acmeAuthz.Challenges {
 			authz.Challenges[i].URL = acmech.URL
 			authz.Challenges[i].Token = acmech.Token
-			authz.Challenges[i].Type = cmapi.ACMEChallengeType(acmech.Type)
+			authz.Challenges[i].Type = cmacme.ACMEChallengeType(acmech.Type)
 		}
 		o.Status.Authorizations[i] = authz
 	}
 	return nil
 }
 
-func (c *controller) anyRequiredChallengesDoNotExist(requiredChallenges []cmapi.Challenge) (bool, error) {
+func (c *controller) anyRequiredChallengesDoNotExist(requiredChallenges []cmacme.Challenge) (bool, error) {
 	for _, ch := range requiredChallenges {
 		_, err := c.challengeLister.Challenges(ch.Namespace).Get(ch.Name)
 		if apierrors.IsNotFound(err) {
@@ -305,9 +305,9 @@ func (c *controller) anyRequiredChallengesDoNotExist(requiredChallenges []cmapi.
 	return false, nil
 }
 
-func (c *controller) createRequiredChallenges(o *cmapi.Order, requiredChallenges []cmapi.Challenge) error {
+func (c *controller) createRequiredChallenges(o *cmacme.Order, requiredChallenges []cmacme.Challenge) error {
 	for _, ch := range requiredChallenges {
-		_, err := c.cmClient.CertmanagerV1alpha2().Challenges(ch.Namespace).Create(&ch)
+		_, err := c.cmClient.AcmeV1alpha2().Challenges(ch.Namespace).Create(&ch)
 		if apierrors.IsAlreadyExists(err) {
 			continue
 		}
@@ -319,7 +319,7 @@ func (c *controller) createRequiredChallenges(o *cmapi.Order, requiredChallenges
 	return nil
 }
 
-func (c *controller) anyLeftoverChallengesExist(o *cmapi.Order, requiredChallenges []cmapi.Challenge) (bool, error) {
+func (c *controller) anyLeftoverChallengesExist(o *cmacme.Order, requiredChallenges []cmacme.Challenge) (bool, error) {
 	leftoverChallenges, err := c.determineLeftoverChallenges(o, requiredChallenges)
 	if err != nil {
 		return false, err
@@ -328,14 +328,14 @@ func (c *controller) anyLeftoverChallengesExist(o *cmapi.Order, requiredChalleng
 	return len(leftoverChallenges) > 0, nil
 }
 
-func (c *controller) deleteLeftoverChallenges(o *cmapi.Order, requiredChallenges []cmapi.Challenge) error {
+func (c *controller) deleteLeftoverChallenges(o *cmacme.Order, requiredChallenges []cmacme.Challenge) error {
 	leftover, err := c.determineLeftoverChallenges(o, requiredChallenges)
 	if err != nil {
 		return err
 	}
 
 	for _, ch := range leftover {
-		if err := c.cmClient.CertmanagerV1alpha2().Challenges(ch.Namespace).Delete(ch.Name, nil); err != nil {
+		if err := c.cmClient.AcmeV1alpha2().Challenges(ch.Namespace).Delete(ch.Name, nil); err != nil {
 			return err
 		}
 	}
@@ -343,14 +343,14 @@ func (c *controller) deleteLeftoverChallenges(o *cmapi.Order, requiredChallenges
 	return nil
 }
 
-func (c *controller) deleteAllChallenges(o *cmapi.Order) error {
+func (c *controller) deleteAllChallenges(o *cmacme.Order) error {
 	challenges, err := c.listOwnedChallenges(o)
 	if err != nil {
 		return err
 	}
 
 	for _, ch := range challenges {
-		if err := c.cmClient.CertmanagerV1alpha2().Challenges(ch.Namespace).Delete(ch.Name, nil); err != nil {
+		if err := c.cmClient.AcmeV1alpha2().Challenges(ch.Namespace).Delete(ch.Name, nil); err != nil {
 			return err
 		}
 	}
@@ -358,7 +358,7 @@ func (c *controller) deleteAllChallenges(o *cmapi.Order) error {
 	return nil
 }
 
-func (c *controller) determineLeftoverChallenges(o *cmapi.Order, requiredChallenges []cmapi.Challenge) ([]*cmapi.Challenge, error) {
+func (c *controller) determineLeftoverChallenges(o *cmacme.Order, requiredChallenges []cmacme.Challenge) ([]*cmacme.Challenge, error) {
 	requiredNames := map[string]struct{}{}
 	for _, ch := range requiredChallenges {
 		requiredNames[ch.Name] = struct{}{}
@@ -369,7 +369,7 @@ func (c *controller) determineLeftoverChallenges(o *cmapi.Order, requiredChallen
 		return nil, err
 	}
 
-	var leftover []*cmapi.Challenge
+	var leftover []*cmacme.Challenge
 	for _, ch := range ownedChallenges {
 		if _, ok := requiredNames[ch.Name]; ok {
 			continue
@@ -380,13 +380,13 @@ func (c *controller) determineLeftoverChallenges(o *cmapi.Order, requiredChallen
 	return leftover, nil
 }
 
-func (c *controller) listOwnedChallenges(o *cmapi.Order) ([]*cmapi.Challenge, error) {
+func (c *controller) listOwnedChallenges(o *cmacme.Order) ([]*cmacme.Challenge, error) {
 	chs, err := c.challengeLister.Challenges(o.Namespace).List(labels.Everything())
 	if err != nil {
 		return nil, err
 	}
 
-	var ownedChs []*cmapi.Challenge
+	var ownedChs []*cmacme.Challenge
 	for _, ch := range chs {
 		if !metav1.IsControlledBy(ch, o) {
 			continue
@@ -397,7 +397,7 @@ func (c *controller) listOwnedChallenges(o *cmapi.Order) ([]*cmapi.Challenge, er
 	return ownedChs, nil
 }
 
-func (c *controller) finalizeOrder(ctx context.Context, cl acmecl.Interface, o *cmapi.Order) error {
+func (c *controller) finalizeOrder(ctx context.Context, cl acmecl.Interface, o *cmacme.Order) error {
 	log := logf.FromContext(ctx)
 
 	// Due to a bug in the initial release of this controller, we previously
@@ -435,7 +435,7 @@ func (c *controller) finalizeOrder(ctx context.Context, cl acmecl.Interface, o *
 	return c.storeCertificateOnStatus(ctx, o, certSlice)
 }
 
-func (c *controller) storeCertificateOnStatus(ctx context.Context, o *cmapi.Order, certs [][]byte) error {
+func (c *controller) storeCertificateOnStatus(ctx context.Context, o *cmacme.Order, certs [][]byte) error {
 	log := logf.FromContext(ctx)
 	// encode the retrieved certificates (including the chain)
 	certBuffer := bytes.NewBuffer([]byte{})
@@ -443,7 +443,7 @@ func (c *controller) storeCertificateOnStatus(ctx context.Context, o *cmapi.Orde
 		err := pem.Encode(certBuffer, &pem.Block{Type: "CERTIFICATE", Bytes: cert})
 		if err != nil {
 			log.Error(err, "invalid certificate data returned by ACME server")
-			c.setOrderState(&o.Status, string(cmapi.Errored))
+			c.setOrderState(&o.Status, string(cmacme.Errored))
 			o.Status.Reason = fmt.Sprintf("Invalid certificate retrieved from ACME server: %v", err)
 			return nil
 		}
@@ -455,7 +455,7 @@ func (c *controller) storeCertificateOnStatus(ctx context.Context, o *cmapi.Orde
 	return nil
 }
 
-func (c *controller) fetchCertificateData(ctx context.Context, cl acmecl.Interface, o *cmapi.Order) error {
+func (c *controller) fetchCertificateData(ctx context.Context, cl acmecl.Interface, o *cmacme.Order) error {
 	log := logf.FromContext(ctx)
 	acmeOrder, err := c.updateOrderStatus(ctx, cl, o)
 	if err != nil {
@@ -477,7 +477,7 @@ func (c *controller) fetchCertificateData(ctx context.Context, cl acmecl.Interfa
 	if acmeErr, ok := err.(*acmeapi.Error); ok {
 		if acmeErr.StatusCode >= 400 && acmeErr.StatusCode < 500 {
 			log.Error(err, "failed to retrieve issued certificate from ACME server")
-			c.setOrderState(&o.Status, string(cmapi.Errored))
+			c.setOrderState(&o.Status, string(cmacme.Errored))
 			o.Status.Reason = fmt.Sprintf("Failed to retrieve signed certificate: %v", err)
 			return nil
 		}

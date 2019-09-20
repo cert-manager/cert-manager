@@ -29,9 +29,10 @@ import (
 
 	"github.com/jetstack/cert-manager/pkg/acme"
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
+	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1alpha2"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
-	cmclientset "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/typed/certmanager/v1alpha2"
-	cmlisters "github.com/jetstack/cert-manager/pkg/client/listers/certmanager/v1alpha2"
+	cmacmeclientset "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/typed/acme/v1alpha2"
+	cmacmelisters "github.com/jetstack/cert-manager/pkg/client/listers/acme/v1alpha2"
 	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
 	"github.com/jetstack/cert-manager/pkg/controller/certificaterequests"
 	crutil "github.com/jetstack/cert-manager/pkg/controller/certificaterequests/util"
@@ -49,8 +50,8 @@ type ACME struct {
 	recorder      record.EventRecorder
 	issuerOptions controllerpkg.IssuerOptions
 
-	orderLister cmlisters.OrderLister
-	cmClientV   cmclientset.CertmanagerV1alpha2Interface
+	orderLister cmacmelisters.OrderLister
+	acmeClientV cmacmeclientset.AcmeV1alpha2Interface
 
 	reporter *crutil.Reporter
 }
@@ -60,7 +61,7 @@ func init() {
 	controllerpkg.Register(CRControllerName, func(ctx *controllerpkg.Context) (controllerpkg.Interface, error) {
 		// watch owned Order resources and trigger resyncs of CertificateRequests
 		// that own Orders automatically
-		orderInformer := ctx.SharedInformerFactory.Certmanager().V1alpha2().Orders().Informer()
+		orderInformer := ctx.SharedInformerFactory.Acme().V1alpha2().Orders().Informer()
 		return controllerpkg.NewBuilder(ctx, CRControllerName).
 			For(certificaterequests.New(apiutil.IssuerACME, NewACME(ctx), orderInformer)).
 			Complete()
@@ -71,8 +72,8 @@ func NewACME(ctx *controllerpkg.Context) *ACME {
 	return &ACME{
 		recorder:      ctx.Recorder,
 		issuerOptions: ctx.IssuerOptions,
-		orderLister:   ctx.SharedInformerFactory.Certmanager().V1alpha2().Orders().Lister(),
-		cmClientV:     ctx.CMClient.CertmanagerV1alpha2(),
+		orderLister:   ctx.SharedInformerFactory.Acme().V1alpha2().Orders().Lister(),
+		acmeClientV:   ctx.CMClient.AcmeV1alpha2(),
 		reporter:      crutil.NewReporter(ctx.Clock, ctx.Recorder),
 	}
 }
@@ -106,7 +107,7 @@ func (a *ACME) Sign(ctx context.Context, cr *v1alpha2.CertificateRequest, issuer
 	if k8sErrors.IsNotFound(err) {
 		// Failing to create the order here is most likely network related.
 		// We should backoff and keep trying.
-		_, err = a.cmClientV.Orders(expectedOrder.Namespace).Create(expectedOrder)
+		_, err = a.acmeClientV.Orders(expectedOrder.Namespace).Create(expectedOrder)
 		if err != nil {
 			message := fmt.Sprintf("Failed create new order resource %s/%s", expectedOrder.Namespace, expectedOrder.Name)
 
@@ -148,7 +149,7 @@ func (a *ACME) Sign(ctx context.Context, cr *v1alpha2.CertificateRequest, issuer
 	}
 
 	// Order valid, return cert. The calling controller will update with ready if its happy with the cert.
-	if order.Status.State == v1alpha2.Valid {
+	if order.Status.State == cmacme.Valid {
 		log.Info("certificate issued")
 
 		return &issuerpkg.IssueResponse{
@@ -167,8 +168,8 @@ func (a *ACME) Sign(ctx context.Context, cr *v1alpha2.CertificateRequest, issuer
 }
 
 // Build order. If we error here it is a terminating failure.
-func buildOrder(cr *v1alpha2.CertificateRequest, csr *x509.CertificateRequest) (*v1alpha2.Order, error) {
-	spec := v1alpha2.OrderSpec{
+func buildOrder(cr *v1alpha2.CertificateRequest, csr *x509.CertificateRequest) (*cmacme.Order, error) {
+	spec := cmacme.OrderSpec{
 		CSR:        cr.Spec.CSRPEM,
 		IssuerRef:  cr.Spec.IssuerRef,
 		CommonName: csr.Subject.CommonName,
@@ -182,7 +183,7 @@ func buildOrder(cr *v1alpha2.CertificateRequest, csr *x509.CertificateRequest) (
 	// truncate certificate name so final name will be <= 63 characters.
 	// hash (uint32) will be at most 10 digits long, and we account for
 	// the hyphen.
-	return &v1alpha2.Order{
+	return &cmacme.Order{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        fmt.Sprintf("%.52s-%d", cr.Name, hash),
 			Namespace:   cr.Namespace,
@@ -196,7 +197,7 @@ func buildOrder(cr *v1alpha2.CertificateRequest, csr *x509.CertificateRequest) (
 	}, nil
 }
 
-func hashOrder(orderSpec v1alpha2.OrderSpec) (uint32, error) {
+func hashOrder(orderSpec cmacme.OrderSpec) (uint32, error) {
 	// create a shallow copy of the OrderSpec so we can overwrite the CSR field
 	orderSpec.CSR = nil
 

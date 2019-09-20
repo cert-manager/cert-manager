@@ -26,7 +26,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/diff"
 
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1alpha2"
 	"github.com/jetstack/cert-manager/pkg/client/clientset/versioned/fake"
 	cminformers "github.com/jetstack/cert-manager/pkg/client/informers/externalversions"
 	"github.com/jetstack/cert-manager/pkg/util"
@@ -35,7 +35,7 @@ import (
 
 const maxConcurrentChallenges = 60
 
-func randomChallenge(rand int) *cmapi.Challenge {
+func randomChallenge(rand int) *cmacme.Challenge {
 	if rand == 0 {
 		rand = 10
 	}
@@ -44,16 +44,16 @@ func randomChallenge(rand int) *cmapi.Challenge {
 		gen.SetChallengeType("http-01"))
 }
 
-func randomChallengeN(n int, rand int) []*cmapi.Challenge {
-	chs := make([]*cmapi.Challenge, n)
+func randomChallengeN(n int, rand int) []*cmacme.Challenge {
+	chs := make([]*cmacme.Challenge, n)
 	for i := range chs {
 		chs[i] = randomChallenge(rand)
 	}
 	return chs
 }
 
-func ascendingChallengeN(n int, mods ...gen.ChallengeModifier) []*cmapi.Challenge {
-	chs := make([]*cmapi.Challenge, n)
+func ascendingChallengeN(n int, mods ...gen.ChallengeModifier) []*cmacme.Challenge {
+	chs := make([]*cmacme.Challenge, n)
 	for i := range chs {
 		name := fmt.Sprintf("test-%d", i)
 		chs[i] = gen.Challenge(name,
@@ -67,8 +67,8 @@ func ascendingChallengeN(n int, mods ...gen.ChallengeModifier) []*cmapi.Challeng
 	return chs
 }
 
-func withCreationTimestamp(i int64) func(*cmapi.Challenge) {
-	return func(ch *cmapi.Challenge) {
+func withCreationTimestamp(i int64) func(*cmacme.Challenge) {
+	return func(ch *cmacme.Challenge) {
 		ch.CreationTimestamp.Time = time.Unix(i, 0)
 	}
 }
@@ -119,8 +119,8 @@ func TestScheduleN(t *testing.T) {
 	tests := []struct {
 		name       string
 		n          int
-		challenges []*cmapi.Challenge
-		expected   []*cmapi.Challenge
+		challenges []*cmacme.Challenge
+		expected   []*cmacme.Challenge
 		err        bool
 	}{
 		{
@@ -144,14 +144,14 @@ func TestScheduleN(t *testing.T) {
 		{
 			name: "schedule duplicate challenge if second challenge is in a final state",
 			n:    5,
-			challenges: []*cmapi.Challenge{
+			challenges: []*cmacme.Challenge{
 				gen.Challenge("test",
 					gen.SetChallengeDNSName("example.com")),
 				gen.Challenge("test2",
 					gen.SetChallengeDNSName("example.com"),
-					gen.SetChallengeState(cmapi.Valid)),
+					gen.SetChallengeState(cmacme.Valid)),
 			},
-			expected: []*cmapi.Challenge{
+			expected: []*cmacme.Challenge{
 				gen.Challenge("test",
 					gen.SetChallengeDNSName("example.com")),
 			},
@@ -159,7 +159,7 @@ func TestScheduleN(t *testing.T) {
 		{
 			name: "schedule a single duplicate in CreationTimestamp order",
 			n:    5,
-			challenges: []*cmapi.Challenge{
+			challenges: []*cmacme.Challenge{
 				gen.Challenge("test",
 					gen.SetChallengeDNSName("example.com"),
 					withCreationTimestamp(2)),
@@ -167,7 +167,7 @@ func TestScheduleN(t *testing.T) {
 					gen.SetChallengeDNSName("example.com"),
 					withCreationTimestamp(1)),
 			},
-			expected: []*cmapi.Challenge{
+			expected: []*cmacme.Challenge{
 				gen.Challenge("test2",
 					gen.SetChallengeDNSName("example.com"),
 					withCreationTimestamp(1)),
@@ -176,7 +176,7 @@ func TestScheduleN(t *testing.T) {
 		{
 			name: "schedule duplicate in CreationTimestamp order (inverted input)",
 			n:    5,
-			challenges: []*cmapi.Challenge{
+			challenges: []*cmacme.Challenge{
 				gen.Challenge("test2",
 					gen.SetChallengeDNSName("example.com"),
 					withCreationTimestamp(1)),
@@ -184,7 +184,7 @@ func TestScheduleN(t *testing.T) {
 					gen.SetChallengeDNSName("example.com"),
 					withCreationTimestamp(2)),
 			},
-			expected: []*cmapi.Challenge{
+			expected: []*cmacme.Challenge{
 				gen.Challenge("test2",
 					gen.SetChallengeDNSName("example.com"),
 					withCreationTimestamp(1)),
@@ -193,7 +193,7 @@ func TestScheduleN(t *testing.T) {
 		{
 			name: "schedule duplicate challenges for the same domain if they have a different type",
 			n:    5,
-			challenges: []*cmapi.Challenge{
+			challenges: []*cmacme.Challenge{
 				gen.Challenge("test1",
 					gen.SetChallengeDNSName("example.com"),
 					gen.SetChallengeType("dns01")),
@@ -201,7 +201,7 @@ func TestScheduleN(t *testing.T) {
 					gen.SetChallengeDNSName("example.com"),
 					gen.SetChallengeType("http01")),
 			},
-			expected: []*cmapi.Challenge{
+			expected: []*cmacme.Challenge{
 				gen.Challenge("test1",
 					gen.SetChallengeDNSName("example.com"),
 					gen.SetChallengeType("dns01")),
@@ -213,7 +213,7 @@ func TestScheduleN(t *testing.T) {
 		{
 			name: "schedule duplicate challenges for the same domain if they have a different type (inverted input)",
 			n:    5,
-			challenges: []*cmapi.Challenge{
+			challenges: []*cmacme.Challenge{
 				gen.Challenge("test2",
 					gen.SetChallengeDNSName("example.com"),
 					gen.SetChallengeType("http01")),
@@ -221,7 +221,7 @@ func TestScheduleN(t *testing.T) {
 					gen.SetChallengeDNSName("example.com"),
 					gen.SetChallengeType("dns01")),
 			},
-			expected: []*cmapi.Challenge{
+			expected: []*cmacme.Challenge{
 				gen.Challenge("test1",
 					gen.SetChallengeDNSName("example.com"),
 					gen.SetChallengeType("dns01")),
@@ -234,7 +234,7 @@ func TestScheduleN(t *testing.T) {
 		{
 			name: "schedule a challenge when other challenges are already in progress",
 			n:    5,
-			challenges: []*cmapi.Challenge{
+			challenges: []*cmacme.Challenge{
 				gen.Challenge("test1-0",
 					gen.SetChallengeDNSName("rvrko.certmanager.kubernetes.network"),
 					gen.SetChallengeType("dns-01"),
@@ -250,7 +250,7 @@ func TestScheduleN(t *testing.T) {
 					gen.SetChallengeType("dns-01"),
 					gen.SetChallengeWildcard(true)),
 			},
-			expected: []*cmapi.Challenge{
+			expected: []*cmacme.Challenge{
 				gen.Challenge("should-schedule",
 					gen.SetChallengeDNSName("aodob.certmanager.kubernetes.network"),
 					gen.SetChallengeType("dns-01"),
@@ -268,7 +268,7 @@ func TestScheduleN(t *testing.T) {
 		{
 			name: "don't schedule challenge if another one with the same dnsName exists",
 			n:    5,
-			challenges: []*cmapi.Challenge{
+			challenges: []*cmacme.Challenge{
 				gen.Challenge("test",
 					gen.SetChallengeDNSName("example.com")),
 				gen.Challenge("test2",
@@ -279,7 +279,7 @@ func TestScheduleN(t *testing.T) {
 		{
 			name: "don't schedule anything if all challenges are processing",
 			n:    5,
-			challenges: []*cmapi.Challenge{
+			challenges: []*cmacme.Challenge{
 				gen.Challenge("test",
 					gen.SetChallengeDNSName("example.com"),
 					gen.SetChallengeProcessing(true)),
@@ -291,10 +291,10 @@ func TestScheduleN(t *testing.T) {
 		{
 			name: "don't schedule anything if all challenges are in a final state",
 			n:    5,
-			challenges: []*cmapi.Challenge{
+			challenges: []*cmacme.Challenge{
 				gen.Challenge("test2",
 					gen.SetChallengeDNSName("example.com"),
-					gen.SetChallengeState(cmapi.Valid)),
+					gen.SetChallengeState(cmacme.Valid)),
 			},
 		},
 	}
@@ -303,7 +303,7 @@ func TestScheduleN(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			cl := fake.NewSimpleClientset()
 			factory := cminformers.NewSharedInformerFactory(cl, 0)
-			challengesInformer := factory.Certmanager().V1alpha2().Challenges()
+			challengesInformer := factory.Acme().V1alpha2().Challenges()
 			for _, ch := range test.challenges {
 				challengesInformer.Informer().GetIndexer().Add(ch)
 			}
@@ -311,7 +311,7 @@ func TestScheduleN(t *testing.T) {
 			s := New(context.Background(), challengesInformer.Lister(), maxConcurrentChallenges)
 
 			if test.expected == nil {
-				test.expected = []*cmapi.Challenge{}
+				test.expected = []*cmacme.Challenge{}
 			}
 			chs, err := s.ScheduleN(test.n)
 			if err != nil && !test.err {

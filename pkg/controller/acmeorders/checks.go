@@ -19,6 +19,7 @@ package acmeorders
 import (
 	"fmt"
 
+	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1alpha2"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/runtime"
@@ -46,7 +47,7 @@ func (c *controller) handleGenericIssuer(obj interface{}) {
 	}
 }
 
-func (c *controller) ordersForGenericIssuer(iss cmapi.GenericIssuer) ([]*cmapi.Order, error) {
+func (c *controller) ordersForGenericIssuer(iss cmapi.GenericIssuer) ([]*cmacme.Order, error) {
 	orders, err := c.orderLister.List(labels.NewSelector())
 
 	if err != nil {
@@ -55,7 +56,7 @@ func (c *controller) ordersForGenericIssuer(iss cmapi.GenericIssuer) ([]*cmapi.O
 
 	_, isClusterIssuer := iss.(*cmapi.ClusterIssuer)
 
-	var affected []*cmapi.Order
+	var affected []*cmacme.Order
 	for _, o := range orders {
 		if isClusterIssuer && o.Spec.IssuerRef.Kind != cmapi.ClusterIssuerKind {
 			continue

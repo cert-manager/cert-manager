@@ -19,10 +19,10 @@ package selectors
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1alpha2"
 )
 
-func DNSNames(sel cmapi.CertificateDNSNameSelector) Selector {
+func DNSNames(sel cmacme.CertificateDNSNameSelector) Selector {
 	return &dnsNamesSelector{
 		allowedDNSNames: sel.DNSNames,
 	}

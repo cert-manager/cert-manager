@@ -27,6 +27,7 @@ import (
 	types "k8s.io/apimachinery/pkg/types"
 	coretesting "k8s.io/client-go/testing"
 
+	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1alpha2"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	testpkg "github.com/jetstack/cert-manager/pkg/controller/test"
@@ -76,11 +77,11 @@ func TestShouldSync(t *testing.T) {
 func TestSync(t *testing.T) {
 	clusterIssuer := gen.ClusterIssuer("issuer-name")
 	acmeIssuerNewFormat := gen.Issuer("issuer-name",
-		gen.SetIssuerACME(v1alpha2.ACMEIssuer{}))
+		gen.SetIssuerACME(cmacme.ACMEIssuer{}))
 	acmeIssuer := gen.Issuer("issuer-name",
-		gen.SetIssuerACME(v1alpha2.ACMEIssuer{}))
+		gen.SetIssuerACME(cmacme.ACMEIssuer{}))
 	acmeClusterIssuer := gen.ClusterIssuer("issuer-name",
-		gen.SetIssuerACME(v1alpha2.ACMEIssuer{}))
+		gen.SetIssuerACME(cmacme.ACMEIssuer{}))
 	type testT struct {
 		Name                string
 		Ingress             *extv1beta1.Ingress
@@ -131,8 +132,8 @@ func TestSync(t *testing.T) {
 							"my-test-label": "should be copied",
 						},
 						Annotations: map[string]string{
-							v1alpha2.ACMECertificateHTTP01IngressNameOverride: "ingress-name",
-							v1alpha2.IssueTemporaryCertificateAnnotation:      "true",
+							cmacme.ACMECertificateHTTP01IngressNameOverride: "ingress-name",
+							v1alpha2.IssueTemporaryCertificateAnnotation:    "true",
 						},
 						OwnerReferences: buildOwnerReferences("ingress-name", gen.DefaultTestNamespace),
 					},
@@ -182,8 +183,8 @@ func TestSync(t *testing.T) {
 							"my-test-label": "should be copied",
 						},
 						Annotations: map[string]string{
-							v1alpha2.ACMECertificateHTTP01IngressNameOverride: "ingress-name",
-							v1alpha2.IssueTemporaryCertificateAnnotation:      "true",
+							cmacme.ACMECertificateHTTP01IngressNameOverride: "ingress-name",
+							v1alpha2.IssueTemporaryCertificateAnnotation:    "true",
 						},
 						OwnerReferences: buildOwnerReferences("ingress-name", gen.DefaultTestNamespace),
 					},
@@ -310,7 +311,7 @@ func TestSync(t *testing.T) {
 						Namespace:       gen.DefaultTestNamespace,
 						OwnerReferences: buildOwnerReferences("ingress-name", gen.DefaultTestNamespace),
 						Annotations: map[string]string{
-							v1alpha2.ACMECertificateHTTP01IngressClassOverride: "cert-ing",
+							cmacme.ACMECertificateHTTP01IngressClassOverride: "cert-ing",
 						},
 					},
 					Spec: v1alpha2.CertificateSpec{
@@ -953,7 +954,7 @@ func buildACMEIssuer(name, namespace string) *v1alpha2.Issuer {
 		},
 		Spec: v1alpha2.IssuerSpec{
 			IssuerConfig: v1alpha2.IssuerConfig{
-				ACME: &v1alpha2.ACMEIssuer{},
+				ACME: &cmacme.ACMEIssuer{},
 			},
 		},
 	}
