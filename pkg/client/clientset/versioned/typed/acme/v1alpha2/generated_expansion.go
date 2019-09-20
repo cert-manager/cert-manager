@@ -18,10 +18,6 @@ limitations under the License.
 
 package v1alpha2
 
-type CertificateExpansion interface{}
+type ChallengeExpansion interface{}
 
-type CertificateRequestExpansion interface{}
-
-type ClusterIssuerExpansion interface{}
-
-type IssuerExpansion interface{}
+type OrderExpansion interface{}

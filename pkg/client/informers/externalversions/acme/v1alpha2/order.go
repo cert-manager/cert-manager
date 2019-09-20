@@ -21,10 +21,10 @@ package v1alpha2
 import (
 	time "time"
 
-	certmanagerv1alpha2 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	acmev1alpha2 "github.com/jetstack/cert-manager/pkg/apis/acme/v1alpha2"
 	versioned "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
 	internalinterfaces "github.com/jetstack/cert-manager/pkg/client/informers/externalversions/internalinterfaces"
-	v1alpha2 "github.com/jetstack/cert-manager/pkg/client/listers/certmanager/v1alpha2"
+	v1alpha2 "github.com/jetstack/cert-manager/pkg/client/listers/acme/v1alpha2"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	watch "k8s.io/apimachinery/pkg/watch"
@@ -61,16 +61,16 @@ func NewFilteredOrderInformer(client versioned.Interface, namespace string, resy
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.CertmanagerV1alpha2().Orders(namespace).List(options)
+				return client.AcmeV1alpha2().Orders(namespace).List(options)
 			},
 			WatchFunc: func(options v1.ListOptions) (watch.Interface, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.CertmanagerV1alpha2().Orders(namespace).Watch(options)
+				return client.AcmeV1alpha2().Orders(namespace).Watch(options)
 			},
 		},
-		&certmanagerv1alpha2.Order{},
+		&acmev1alpha2.Order{},
 		resyncPeriod,
 		indexers,
 	)
@@ -81,7 +81,7 @@ func (f *orderInformer) defaultInformer(client versioned.Interface, resyncPeriod
 }
 
 func (f *orderInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.InformerFor(&certmanagerv1alpha2.Order{}, f.defaultInformer)
+	return f.factory.InformerFor(&acmev1alpha2.Order{}, f.defaultInformer)
 }
 
 func (f *orderInformer) Lister() v1alpha2.OrderLister {
