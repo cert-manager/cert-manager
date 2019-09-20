@@ -29,7 +29,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/wait"
 
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	cmutil "github.com/jetstack/cert-manager/pkg/util"
 	"github.com/jetstack/cert-manager/test/e2e/framework"
 	"github.com/jetstack/cert-manager/test/e2e/framework/addon"
@@ -82,42 +82,42 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 	BeforeEach(func() {
 		acmeURL := pebble.Details().Host
 		acmeIssuer := util.NewCertManagerACMEIssuer(issuerName, acmeURL, testingACMEEmail, testingACMEPrivateKey)
-		acmeIssuer.Spec.ACME.Solvers = []v1alpha1.ACMEChallengeSolver{
+		acmeIssuer.Spec.ACME.Solvers = []v1alpha2.ACMEChallengeSolver{
 			{
-				HTTP01: &v1alpha1.ACMEChallengeSolverHTTP01{
-					Ingress: &v1alpha1.ACMEChallengeSolverHTTP01Ingress{
+				HTTP01: &v1alpha2.ACMEChallengeSolverHTTP01{
+					Ingress: &v1alpha2.ACMEChallengeSolverHTTP01Ingress{
 						Class: &addon.NginxIngress.Details().IngressClass,
 					},
 				},
 			},
 			{
-				Selector: &v1alpha1.CertificateDNSNameSelector{
+				Selector: &v1alpha2.CertificateDNSNameSelector{
 					MatchLabels: map[string]string{
 						"testing.cert-manager.io/fixed-ingress": "true",
 					},
 				},
-				HTTP01: &v1alpha1.ACMEChallengeSolverHTTP01{
-					Ingress: &v1alpha1.ACMEChallengeSolverHTTP01Ingress{
+				HTTP01: &v1alpha2.ACMEChallengeSolverHTTP01{
+					Ingress: &v1alpha2.ACMEChallengeSolverHTTP01Ingress{
 						Name: fixedIngressName,
 					},
 				},
 			},
 		}
 		By("Creating an Issuer")
-		_, err := f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Create(acmeIssuer)
+		_, err := f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name).Create(acmeIssuer)
 		Expect(err).NotTo(HaveOccurred())
 		By("Waiting for Issuer to become Ready")
-		err = util.WaitForIssuerCondition(f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name),
+		err = util.WaitForIssuerCondition(f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name),
 			issuerName,
-			v1alpha1.IssuerCondition{
-				Type:   v1alpha1.IssuerConditionReady,
-				Status: v1alpha1.ConditionTrue,
+			v1alpha2.IssuerCondition{
+				Type:   v1alpha2.IssuerConditionReady,
+				Status: v1alpha2.ConditionTrue,
 			})
 		Expect(err).NotTo(HaveOccurred())
 		By("Verifying the ACME account URI is set")
-		err = util.WaitForIssuerStatusFunc(f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name),
+		err = util.WaitForIssuerStatusFunc(f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name),
 			issuerName,
-			func(i *v1alpha1.Issuer) (bool, error) {
+			func(i *v1alpha2.Issuer) (bool, error) {
 				if i.GetStatus().ACMEStatus().URI == "" {
 					return false, nil
 				}
@@ -139,17 +139,17 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 
 	AfterEach(func() {
 		By("Cleaning up")
-		f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Delete(issuerName, nil)
+		f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name).Delete(issuerName, nil)
 		f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Delete(testingACMEPrivateKey, nil)
 	})
 
 	It("should obtain a signed certificate with a single CN from the ACME server", func() {
-		certClient := f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name)
+		certClient := f.CertManagerClientSet.CertmanagerV1alpha2().Certificates(f.Namespace.Name)
 
 		By("Creating a Certificate")
 		cert := gen.Certificate(certificateName,
 			gen.SetCertificateSecretName(certificateSecretName),
-			gen.SetCertificateIssuer(v1alpha1.ObjectReference{Name: issuerName}),
+			gen.SetCertificateIssuer(v1alpha2.ObjectReference{Name: issuerName}),
 			gen.SetCertificateDNSNames(acmeIngressDomain),
 		)
 		cert.Namespace = f.Namespace.Name
@@ -162,16 +162,16 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 	})
 
 	It("should obtain a signed ecdsa certificate with a single CN from the ACME server", func() {
-		certClient := f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name)
+		certClient := f.CertManagerClientSet.CertmanagerV1alpha2().Certificates(f.Namespace.Name)
 
 		By("Creating a Certificate")
 		cert := gen.Certificate(certificateName,
 			gen.SetCertificateSecretName(certificateSecretName),
-			gen.SetCertificateIssuer(v1alpha1.ObjectReference{
+			gen.SetCertificateIssuer(v1alpha2.ObjectReference{
 				Name: issuerName,
 			}),
 			gen.SetCertificateDNSNames(acmeIngressDomain),
-			gen.SetCertificateKeyAlgorithm(v1alpha1.ECDSAKeyAlgorithm),
+			gen.SetCertificateKeyAlgorithm(v1alpha2.ECDSAKeyAlgorithm),
 		)
 		cert.Namespace = f.Namespace.Name
 		_, err := certClient.Create(cert)
@@ -182,7 +182,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 	})
 
 	It("should obtain a signed certificate for a long domain using http01 validation", func() {
-		certClient := f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name)
+		certClient := f.CertManagerClientSet.CertmanagerV1alpha2().Certificates(f.Namespace.Name)
 
 		// the maximum length of a single segment of the domain being requested
 		const maxLengthOfDomainSegment = 63
@@ -191,7 +191,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		By("Creating a Certificate")
 		cert := gen.Certificate(certificateName,
 			gen.SetCertificateSecretName(certificateSecretName),
-			gen.SetCertificateIssuer(v1alpha1.ObjectReference{Name: issuerName}),
+			gen.SetCertificateIssuer(v1alpha2.ObjectReference{Name: issuerName}),
 			gen.SetCertificateDNSNames(acmeIngressDomain, fmt.Sprintf("%s.%s", cmutil.RandStringRunes(maxLengthOfDomainSegment), acmeIngressDomain)),
 		)
 		cert.Namespace = f.Namespace.Name
@@ -203,12 +203,12 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 	})
 
 	It("should obtain a signed certificate with a CN and single subdomain as dns name from the ACME server", func() {
-		certClient := f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name)
+		certClient := f.CertManagerClientSet.CertmanagerV1alpha2().Certificates(f.Namespace.Name)
 
 		By("Creating a Certificate")
 		cert := gen.Certificate(certificateName,
 			gen.SetCertificateSecretName(certificateSecretName),
-			gen.SetCertificateIssuer(v1alpha1.ObjectReference{Name: issuerName}),
+			gen.SetCertificateIssuer(v1alpha2.ObjectReference{Name: issuerName}),
 			gen.SetCertificateDNSNames(fmt.Sprintf("%s.%s", cmutil.RandStringRunes(5), acmeIngressDomain)),
 		)
 		cert.Namespace = f.Namespace.Name
@@ -221,12 +221,12 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 	})
 
 	It("should allow updating an existing certificate with a new dns name", func() {
-		certClient := f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name)
+		certClient := f.CertManagerClientSet.CertmanagerV1alpha2().Certificates(f.Namespace.Name)
 
 		By("Creating a Certificate")
 		cert := gen.Certificate(certificateName,
 			gen.SetCertificateSecretName(certificateSecretName),
-			gen.SetCertificateIssuer(v1alpha1.ObjectReference{Name: issuerName}),
+			gen.SetCertificateIssuer(v1alpha2.ObjectReference{Name: issuerName}),
 			gen.SetCertificateDNSNames(fmt.Sprintf("%s.%s", cmutil.RandStringRunes(5), acmeIngressDomain)),
 		)
 		cert.Namespace = f.Namespace.Name
@@ -264,17 +264,17 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		By("Creating a Certificate")
 		cert := gen.Certificate(certificateName,
 			gen.SetCertificateSecretName(certificateSecretName),
-			gen.SetCertificateIssuer(v1alpha1.ObjectReference{Name: issuerName}),
+			gen.SetCertificateIssuer(v1alpha2.ObjectReference{Name: issuerName}),
 			gen.SetCertificateDNSNames("google.com"),
 		)
 		cert.Namespace = f.Namespace.Name
 
-		cert, err := f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name).Create(cert)
+		cert, err := f.CertManagerClientSet.CertmanagerV1alpha2().Certificates(f.Namespace.Name).Create(cert)
 		Expect(err).NotTo(HaveOccurred())
 
-		notReadyCondition := v1alpha1.CertificateCondition{
-			Type:   v1alpha1.CertificateConditionReady,
-			Status: v1alpha1.ConditionFalse,
+		notReadyCondition := v1alpha2.CertificateCondition{
+			Type:   v1alpha2.CertificateConditionReady,
+			Status: v1alpha2.ConditionFalse,
 		}
 		Eventually(cert, "30s", "1s").Should(HaveCondition(f, notReadyCondition))
 		Consistently(cert, "1m", "10s").Should(HaveCondition(f, notReadyCondition))
@@ -282,7 +282,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 
 	It("should obtain a signed certificate with a single CN from the ACME server when putting an annotation on an ingress resource", func() {
 		ingClient := f.KubeClientSet.ExtensionsV1beta1().Ingresses(f.Namespace.Name)
-		certClient := f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name)
+		certClient := f.CertManagerClientSet.CertmanagerV1alpha2().Certificates(f.Namespace.Name)
 
 		By("Creating an Ingress with the issuer name annotation set")
 		_, err := ingClient.Create(util.NewIngress(certificateSecretName, certificateSecretName, map[string]string{
@@ -301,27 +301,27 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 
 	It("should obtain a signed certificate with a single CN from the ACME server when redirected", func() {
 
-		certClient := f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name)
+		certClient := f.CertManagerClientSet.CertmanagerV1alpha2().Certificates(f.Namespace.Name)
 
 		// force-ssl-redirect should make every request turn into a redirect,
 		// but I haven't been able to make this happen. Create a TLS cert via
 		// the self-sign issuer to make it have a "proper" TLS cert
 
-		_, err := f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Create(util.NewCertManagerSelfSignedIssuer("selfsign"))
+		_, err := f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name).Create(util.NewCertManagerSelfSignedIssuer("selfsign"))
 		Expect(err).NotTo(HaveOccurred())
 		By("Waiting for (self-sign) Issuer to become Ready")
-		err = util.WaitForIssuerCondition(f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name),
+		err = util.WaitForIssuerCondition(f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name),
 			issuerName,
-			v1alpha1.IssuerCondition{
-				Type:   v1alpha1.IssuerConditionReady,
-				Status: v1alpha1.ConditionTrue,
+			v1alpha2.IssuerCondition{
+				Type:   v1alpha2.IssuerConditionReady,
+				Status: v1alpha2.ConditionTrue,
 			})
 		Expect(err).NotTo(HaveOccurred())
 
 		const dummycert = "dummy-tls"
 		const secretname = "dummy-tls-secret"
 
-		selfcert := util.NewCertManagerBasicCertificate("dummy-tls", secretname, "selfsign", v1alpha1.IssuerKind, nil, nil, acmeIngressDomain)
+		selfcert := util.NewCertManagerBasicCertificate("dummy-tls", secretname, "selfsign", v1alpha2.IssuerKind, nil, nil, acmeIngressDomain)
 		_, err = certClient.Create(selfcert)
 		Expect(err).NotTo(HaveOccurred())
 		err = h.WaitCertificateIssuedValid(f.Namespace.Name, dummycert, time.Minute*5)
@@ -373,7 +373,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		By("Creating a Certificate")
 		cert := gen.Certificate(certificateName,
 			gen.SetCertificateSecretName(certificateSecretName),
-			gen.SetCertificateIssuer(v1alpha1.ObjectReference{Name: issuerName}),
+			gen.SetCertificateIssuer(v1alpha2.ObjectReference{Name: issuerName}),
 			gen.SetCertificateDNSNames(acmeIngressDomain),
 		)
 		cert.Namespace = f.Namespace.Name
@@ -390,12 +390,12 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 	})
 
 	It("should automatically recreate challenge pod and still obtain a certificate if it is manually deleted", func() {
-		certClient := f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name)
+		certClient := f.CertManagerClientSet.CertmanagerV1alpha2().Certificates(f.Namespace.Name)
 
 		By("Creating a Certificate")
 		cert := gen.Certificate(certificateName,
 			gen.SetCertificateSecretName(certificateSecretName),
-			gen.SetCertificateIssuer(v1alpha1.ObjectReference{Name: issuerName}),
+			gen.SetCertificateIssuer(v1alpha2.ObjectReference{Name: issuerName}),
 			gen.SetCertificateDNSNames(acmeIngressDomain),
 		)
 		cert.Namespace = f.Namespace.Name

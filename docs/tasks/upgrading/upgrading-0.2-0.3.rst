@@ -84,7 +84,7 @@ server URL:
 
 .. code-block:: yaml
 
-   apiVersion: certmanager.k8s.io/v1alpha1
+   apiVersion: certmanager.k8s.io/v1alpha2
    kind: Issuer
    ...
    spec:

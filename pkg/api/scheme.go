@@ -27,7 +27,7 @@ import (
 	apireg "k8s.io/kube-aggregator/pkg/apis/apiregistration/v1beta1"
 
 	whapi "github.com/jetstack/cert-manager/pkg/acme/webhook/apis/acme/v1alpha1"
-	certmanagerv1alpha1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 )
 
 // This package defines a Scheme and Codec that has the *external* API types
@@ -43,7 +43,7 @@ var Scheme = runtime.NewScheme()
 var Codecs = serializer.NewCodecFactory(Scheme)
 var ParameterCodec = runtime.NewParameterCodec(Scheme)
 var localSchemeBuilder = runtime.SchemeBuilder{
-	certmanagerv1alpha1.AddToScheme,
+	cmapi.AddToScheme,
 	whapi.AddToScheme,
 	kscheme.AddToScheme,
 	apireg.AddToScheme,

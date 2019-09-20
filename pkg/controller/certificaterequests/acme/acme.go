@@ -29,9 +29,9 @@ import (
 
 	"github.com/jetstack/cert-manager/pkg/acme"
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
-	cmclientset "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/typed/certmanager/v1alpha1"
-	cmlisters "github.com/jetstack/cert-manager/pkg/client/listers/certmanager/v1alpha1"
+	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmclientset "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/typed/certmanager/v1alpha2"
+	cmlisters "github.com/jetstack/cert-manager/pkg/client/listers/certmanager/v1alpha2"
 	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
 	"github.com/jetstack/cert-manager/pkg/controller/certificaterequests"
 	crutil "github.com/jetstack/cert-manager/pkg/controller/certificaterequests/util"
@@ -50,7 +50,7 @@ type ACME struct {
 	issuerOptions controllerpkg.IssuerOptions
 
 	orderLister cmlisters.OrderLister
-	cmClientV   cmclientset.CertmanagerV1alpha1Interface
+	cmClientV   cmclientset.CertmanagerV1alpha2Interface
 
 	reporter *crutil.Reporter
 }
@@ -60,7 +60,7 @@ func init() {
 	controllerpkg.Register(CRControllerName, func(ctx *controllerpkg.Context) (controllerpkg.Interface, error) {
 		// watch owned Order resources and trigger resyncs of CertificateRequests
 		// that own Orders automatically
-		orderInformer := ctx.SharedInformerFactory.Certmanager().V1alpha1().Orders().Informer()
+		orderInformer := ctx.SharedInformerFactory.Certmanager().V1alpha2().Orders().Informer()
 		return controllerpkg.NewBuilder(ctx, CRControllerName).
 			For(certificaterequests.New(apiutil.IssuerACME, NewACME(ctx), orderInformer)).
 			Complete()
@@ -71,13 +71,13 @@ func NewACME(ctx *controllerpkg.Context) *ACME {
 	return &ACME{
 		recorder:      ctx.Recorder,
 		issuerOptions: ctx.IssuerOptions,
-		orderLister:   ctx.SharedInformerFactory.Certmanager().V1alpha1().Orders().Lister(),
-		cmClientV:     ctx.CMClient.CertmanagerV1alpha1(),
+		orderLister:   ctx.SharedInformerFactory.Certmanager().V1alpha2().Orders().Lister(),
+		cmClientV:     ctx.CMClient.CertmanagerV1alpha2(),
 		reporter:      crutil.NewReporter(ctx.Clock, ctx.Recorder),
 	}
 }
 
-func (a *ACME) Sign(ctx context.Context, cr *v1alpha1.CertificateRequest, issuer v1alpha1.GenericIssuer) (*issuerpkg.IssueResponse, error) {
+func (a *ACME) Sign(ctx context.Context, cr *v1alpha2.CertificateRequest, issuer v1alpha2.GenericIssuer) (*issuerpkg.IssueResponse, error) {
 	log := logf.FromContext(ctx, "sign")
 
 	// If we can't decode the CSR PEM we have to hard fail
@@ -148,7 +148,7 @@ func (a *ACME) Sign(ctx context.Context, cr *v1alpha1.CertificateRequest, issuer
 	}
 
 	// Order valid, return cert. The calling controller will update with ready if its happy with the cert.
-	if order.Status.State == v1alpha1.Valid {
+	if order.Status.State == v1alpha2.Valid {
 		log.Info("certificate issued")
 
 		return &issuerpkg.IssueResponse{
@@ -167,8 +167,8 @@ func (a *ACME) Sign(ctx context.Context, cr *v1alpha1.CertificateRequest, issuer
 }
 
 // Build order. If we error here it is a terminating failure.
-func buildOrder(cr *v1alpha1.CertificateRequest, csr *x509.CertificateRequest) (*v1alpha1.Order, error) {
-	spec := v1alpha1.OrderSpec{
+func buildOrder(cr *v1alpha2.CertificateRequest, csr *x509.CertificateRequest) (*v1alpha2.Order, error) {
+	spec := v1alpha2.OrderSpec{
 		CSR:        cr.Spec.CSRPEM,
 		IssuerRef:  cr.Spec.IssuerRef,
 		CommonName: csr.Subject.CommonName,
@@ -182,21 +182,21 @@ func buildOrder(cr *v1alpha1.CertificateRequest, csr *x509.CertificateRequest) (
 	// truncate certificate name so final name will be <= 63 characters.
 	// hash (uint32) will be at most 10 digits long, and we account for
 	// the hyphen.
-	return &v1alpha1.Order{
+	return &v1alpha2.Order{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        fmt.Sprintf("%.52s-%d", cr.Name, hash),
 			Namespace:   cr.Namespace,
 			Labels:      cr.Labels,
 			Annotations: cr.Annotations,
 			OwnerReferences: []metav1.OwnerReference{
-				*metav1.NewControllerRef(cr, v1alpha1.SchemeGroupVersion.WithKind(v1alpha1.CertificateRequestKind)),
+				*metav1.NewControllerRef(cr, v1alpha2.SchemeGroupVersion.WithKind(v1alpha2.CertificateRequestKind)),
 			},
 		},
 		Spec: spec,
 	}, nil
 }
 
-func hashOrder(orderSpec v1alpha1.OrderSpec) (uint32, error) {
+func hashOrder(orderSpec v1alpha2.OrderSpec) (uint32, error) {
 	// create a shallow copy of the OrderSpec so we can overwrite the CSR field
 	orderSpec.CSR = nil
 

@@ -29,7 +29,7 @@ webhooks:
       - apiGroups:
           - "certmanager.k8s.io"
         apiVersions:
-          - v1alpha1
+          - v1alpha2
         operations:
           - CREATE
           - UPDATE

@@ -23,10 +23,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 )
 
-func (c *controller) ingressesForCertificate(crt *v1alpha1.Certificate) ([]*extv1beta1.Ingress, error) {
+func (c *controller) ingressesForCertificate(crt *v1alpha2.Certificate) ([]*extv1beta1.Ingress, error) {
 	ings, err := c.ingressLister.List(labels.NewSelector())
 
 	if err != nil {

@@ -178,7 +178,7 @@ to issue basic certificate types:
    metadata:
      name: cert-manager-test
    ---
-   apiVersion: certmanager.k8s.io/v1alpha1
+   apiVersion: certmanager.k8s.io/v1alpha2
    kind: Issuer
    metadata:
      name: test-selfsigned
@@ -186,7 +186,7 @@ to issue basic certificate types:
    spec:
      selfSigned: {}
    ---
-   apiVersion: certmanager.k8s.io/v1alpha1
+   apiVersion: certmanager.k8s.io/v1alpha2
    kind: Certificate
    metadata:
      name: selfsigned-cert

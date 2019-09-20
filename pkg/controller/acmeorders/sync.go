@@ -32,7 +32,7 @@ import (
 
 	"github.com/jetstack/cert-manager/pkg/acme"
 	acmecl "github.com/jetstack/cert-manager/pkg/acme/client"
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 	"github.com/jetstack/cert-manager/pkg/metrics"
 	acmeapi "github.com/jetstack/cert-manager/third_party/crypto/acme"
@@ -54,7 +54,7 @@ func (c *controller) Sync(ctx context.Context, o *cmapi.Order) (err error) {
 			return
 		}
 		log.Info("updating Order resource status")
-		_, updateErr := c.cmClient.CertmanagerV1alpha1().Orders(o.Namespace).Update(o)
+		_, updateErr := c.cmClient.CertmanagerV1alpha2().Orders(o.Namespace).Update(o)
 		if err != nil {
 			log.Error(err, "failed to update status")
 			err = utilerrors.NewAggregate([]error{err, updateErr})
@@ -307,7 +307,7 @@ func (c *controller) anyRequiredChallengesDoNotExist(requiredChallenges []cmapi.
 
 func (c *controller) createRequiredChallenges(o *cmapi.Order, requiredChallenges []cmapi.Challenge) error {
 	for _, ch := range requiredChallenges {
-		_, err := c.cmClient.CertmanagerV1alpha1().Challenges(ch.Namespace).Create(&ch)
+		_, err := c.cmClient.CertmanagerV1alpha2().Challenges(ch.Namespace).Create(&ch)
 		if apierrors.IsAlreadyExists(err) {
 			continue
 		}
@@ -335,7 +335,7 @@ func (c *controller) deleteLeftoverChallenges(o *cmapi.Order, requiredChallenges
 	}
 
 	for _, ch := range leftover {
-		if err := c.cmClient.CertmanagerV1alpha1().Challenges(ch.Namespace).Delete(ch.Name, nil); err != nil {
+		if err := c.cmClient.CertmanagerV1alpha2().Challenges(ch.Namespace).Delete(ch.Name, nil); err != nil {
 			return err
 		}
 	}
@@ -350,7 +350,7 @@ func (c *controller) deleteAllChallenges(o *cmapi.Order) error {
 	}
 
 	for _, ch := range challenges {
-		if err := c.cmClient.CertmanagerV1alpha1().Challenges(ch.Namespace).Delete(ch.Name, nil); err != nil {
+		if err := c.cmClient.CertmanagerV1alpha2().Challenges(ch.Namespace).Delete(ch.Name, nil); err != nil {
 			return err
 		}
 	}

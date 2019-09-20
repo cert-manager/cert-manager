@@ -175,7 +175,7 @@ spec:
           type: object
       type: object
   versions:
-  - name: v1alpha1
+  - name: v1alpha2
     served: true
     storage: true
 status:
@@ -413,7 +413,7 @@ spec:
           type: object
       type: object
   versions:
-  - name: v1alpha1
+  - name: v1alpha2
     served: true
     storage: true
 status:
@@ -1787,7 +1787,7 @@ spec:
       - metadata
       type: object
   versions:
-  - name: v1alpha1
+  - name: v1alpha2
     served: true
     storage: true
 status:
@@ -3411,7 +3411,7 @@ spec:
           type: object
       type: object
   versions:
-  - name: v1alpha1
+  - name: v1alpha2
     served: true
     storage: true
 status:
@@ -5035,7 +5035,7 @@ spec:
           type: object
       type: object
   versions:
-  - name: v1alpha1
+  - name: v1alpha2
     served: true
     storage: true
 status:
@@ -5241,7 +5241,7 @@ spec:
       - metadata
       type: object
   versions:
-  - name: v1alpha1
+  - name: v1alpha2
     served: true
     storage: true
 status:

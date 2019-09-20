@@ -27,25 +27,25 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	"github.com/jetstack/cert-manager/pkg/internal/apis/certmanager/validation/util"
 )
 
-// Validation functions for cert-manager v1alpha1 Issuer types
+// Validation functions for cert-manager v1alpha2 Issuer types
 
 func ValidateIssuer(obj runtime.Object) field.ErrorList {
-	iss := obj.(*v1alpha1.Issuer)
+	iss := obj.(*v1alpha2.Issuer)
 	allErrs := ValidateIssuerSpec(&iss.Spec, field.NewPath("spec"))
 	return allErrs
 }
 
-func ValidateIssuerSpec(iss *v1alpha1.IssuerSpec, fldPath *field.Path) field.ErrorList {
+func ValidateIssuerSpec(iss *v1alpha2.IssuerSpec, fldPath *field.Path) field.ErrorList {
 	el := field.ErrorList{}
 	el = ValidateIssuerConfig(&iss.IssuerConfig, fldPath)
 	return el
 }
 
-func ValidateIssuerConfig(iss *v1alpha1.IssuerConfig, fldPath *field.Path) field.ErrorList {
+func ValidateIssuerConfig(iss *v1alpha2.IssuerConfig, fldPath *field.Path) field.ErrorList {
 	numConfigs := 0
 	el := field.ErrorList{}
 	if iss.ACME != nil {
@@ -95,7 +95,7 @@ func ValidateIssuerConfig(iss *v1alpha1.IssuerConfig, fldPath *field.Path) field
 	return el
 }
 
-func ValidateACMEIssuerConfig(iss *v1alpha1.ACMEIssuer, fldPath *field.Path) field.ErrorList {
+func ValidateACMEIssuerConfig(iss *v1alpha2.ACMEIssuer, fldPath *field.Path) field.ErrorList {
 	el := field.ErrorList{}
 	if len(iss.PrivateKey.Name) == 0 {
 		el = append(el, field.Required(fldPath.Child("privateKeySecretRef", "name"), "private key secret name is a required field"))
@@ -110,7 +110,7 @@ func ValidateACMEIssuerConfig(iss *v1alpha1.ACMEIssuer, fldPath *field.Path) fie
 	return el
 }
 
-func ValidateACMEIssuerChallengeSolverConfig(sol *v1alpha1.ACMEChallengeSolver, fldPath *field.Path) field.ErrorList {
+func ValidateACMEIssuerChallengeSolverConfig(sol *v1alpha2.ACMEChallengeSolver, fldPath *field.Path) field.ErrorList {
 	el := field.ErrorList{}
 
 	numProviders := 0
@@ -133,7 +133,7 @@ func ValidateACMEIssuerChallengeSolverConfig(sol *v1alpha1.ACMEChallengeSolver, 
 	return el
 }
 
-func ValidateACMEIssuerChallengeSolverHTTP01Config(http01 *v1alpha1.ACMEChallengeSolverHTTP01, fldPath *field.Path) field.ErrorList {
+func ValidateACMEIssuerChallengeSolverHTTP01Config(http01 *v1alpha2.ACMEChallengeSolverHTTP01, fldPath *field.Path) field.ErrorList {
 	el := field.ErrorList{}
 
 	numDefined := 0
@@ -148,7 +148,7 @@ func ValidateACMEIssuerChallengeSolverHTTP01Config(http01 *v1alpha1.ACMEChalleng
 	return el
 }
 
-func ValidateACMEIssuerChallengeSolverHTTP01IngressConfig(ingress *v1alpha1.ACMEChallengeSolverHTTP01Ingress, fldPath *field.Path) field.ErrorList {
+func ValidateACMEIssuerChallengeSolverHTTP01IngressConfig(ingress *v1alpha2.ACMEChallengeSolverHTTP01Ingress, fldPath *field.Path) field.ErrorList {
 	el := field.ErrorList{}
 
 	if ingress.Class != nil && len(ingress.Name) > 0 {
@@ -166,7 +166,7 @@ func ValidateACMEIssuerChallengeSolverHTTP01IngressConfig(ingress *v1alpha1.ACME
 	return el
 }
 
-func ValidateACMEIssuerChallengeSolverHTTP01IngressPodTemplateConfig(podTempl *v1alpha1.ACMEChallengeSolverHTTP01IngressPodTemplate, fldPath *field.Path) field.ErrorList {
+func ValidateACMEIssuerChallengeSolverHTTP01IngressPodTemplateConfig(podTempl *v1alpha2.ACMEChallengeSolverHTTP01IngressPodTemplate, fldPath *field.Path) field.ErrorList {
 	el := field.ErrorList{}
 
 	cpyPodTempl := podTempl.DeepCopy()
@@ -180,7 +180,7 @@ func ValidateACMEIssuerChallengeSolverHTTP01IngressPodTemplateConfig(podTempl *v
 	return el
 }
 
-func ValidateCAIssuerConfig(iss *v1alpha1.CAIssuer, fldPath *field.Path) field.ErrorList {
+func ValidateCAIssuerConfig(iss *v1alpha2.CAIssuer, fldPath *field.Path) field.ErrorList {
 	el := field.ErrorList{}
 	if len(iss.SecretName) == 0 {
 		el = append(el, field.Required(fldPath.Child("secretName"), ""))
@@ -188,11 +188,11 @@ func ValidateCAIssuerConfig(iss *v1alpha1.CAIssuer, fldPath *field.Path) field.E
 	return el
 }
 
-func ValidateSelfSignedIssuerConfig(iss *v1alpha1.SelfSignedIssuer, fldPath *field.Path) field.ErrorList {
+func ValidateSelfSignedIssuerConfig(iss *v1alpha2.SelfSignedIssuer, fldPath *field.Path) field.ErrorList {
 	return nil
 }
 
-func ValidateVaultIssuerConfig(iss *v1alpha1.VaultIssuer, fldPath *field.Path) field.ErrorList {
+func ValidateVaultIssuerConfig(iss *v1alpha2.VaultIssuer, fldPath *field.Path) field.ErrorList {
 	el := field.ErrorList{}
 	if len(iss.Server) == 0 {
 		el = append(el, field.Required(fldPath.Child("server"), ""))
@@ -215,7 +215,7 @@ func ValidateVaultIssuerConfig(iss *v1alpha1.VaultIssuer, fldPath *field.Path) f
 	// TODO: add validation for Vault authentication types
 }
 
-func ValidateVenafiIssuerConfig(iss *v1alpha1.VenafiIssuer, fldPath *field.Path) field.ErrorList {
+func ValidateVenafiIssuerConfig(iss *v1alpha2.VenafiIssuer, fldPath *field.Path) field.ErrorList {
 	//TODO: make extended validation fro fake\tpp\cloud modes
 	return nil
 }
@@ -228,17 +228,17 @@ var supportedTSIGAlgorithms = []string{
 	"HMACSHA512",
 }
 
-func ValidateACMEChallengeSolverDNS01(p *v1alpha1.ACMEChallengeSolverDNS01, fldPath *field.Path) field.ErrorList {
+func ValidateACMEChallengeSolverDNS01(p *v1alpha2.ACMEChallengeSolverDNS01, fldPath *field.Path) field.ErrorList {
 	el := field.ErrorList{}
 
 	// allow empty values for now, until we have a MutatingWebhook to apply
 	// default values to fields.
 	if len(p.CNAMEStrategy) > 0 {
 		switch p.CNAMEStrategy {
-		case v1alpha1.NoneStrategy:
-		case v1alpha1.FollowStrategy:
+		case v1alpha2.NoneStrategy:
+		case v1alpha2.FollowStrategy:
 		default:
-			el = append(el, field.Invalid(fldPath.Child("cnameStrategy"), p.CNAMEStrategy, fmt.Sprintf("must be one of %q or %q", v1alpha1.NoneStrategy, v1alpha1.FollowStrategy)))
+			el = append(el, field.Invalid(fldPath.Child("cnameStrategy"), p.CNAMEStrategy, fmt.Sprintf("must be one of %q or %q", v1alpha2.NoneStrategy, v1alpha2.FollowStrategy)))
 		}
 	}
 	numProviders := 0
@@ -270,10 +270,10 @@ func ValidateACMEChallengeSolverDNS01(p *v1alpha1.ACMEChallengeSolverDNS01, fldP
 				el = append(el, field.Required(fldPath.Child("azuredns", "resourceGroupName"), ""))
 			}
 			switch p.AzureDNS.Environment {
-			case "", v1alpha1.AzurePublicCloud, v1alpha1.AzureChinaCloud, v1alpha1.AzureGermanCloud, v1alpha1.AzureUSGovernmentCloud:
+			case "", v1alpha2.AzurePublicCloud, v1alpha2.AzureChinaCloud, v1alpha2.AzureGermanCloud, v1alpha2.AzureUSGovernmentCloud:
 			default:
 				el = append(el, field.Invalid(fldPath.Child("azuredns", "environment"), p.AzureDNS.Environment,
-					fmt.Sprintf("must be either empty or one of %s, %s, %s or %s", v1alpha1.AzurePublicCloud, v1alpha1.AzureChinaCloud, v1alpha1.AzureGermanCloud, v1alpha1.AzureUSGovernmentCloud)))
+					fmt.Sprintf("must be either empty or one of %s, %s, %s or %s", v1alpha2.AzurePublicCloud, v1alpha2.AzureChinaCloud, v1alpha2.AzureGermanCloud, v1alpha2.AzureUSGovernmentCloud)))
 			}
 		}
 	}
@@ -383,7 +383,7 @@ func ValidateACMEChallengeSolverDNS01(p *v1alpha1.ACMEChallengeSolverDNS01, fldP
 	return el
 }
 
-func ValidateSecretKeySelector(sks *v1alpha1.SecretKeySelector, fldPath *field.Path) field.ErrorList {
+func ValidateSecretKeySelector(sks *v1alpha2.SecretKeySelector, fldPath *field.Path) field.ErrorList {
 	el := field.ErrorList{}
 	if sks.Name == "" {
 		el = append(el, field.Required(fldPath.Child("name"), "secret name is required"))

@@ -5,7 +5,7 @@ Cloudflare
 .. code-block:: yaml
    :emphasize-lines: 10-14
 
-   apiVersion: certmanager.k8s.io/v1alpha1
+   apiVersion: certmanager.k8s.io/v1alpha2
    kind: Issuer
    metadata:
      name: example-issuer

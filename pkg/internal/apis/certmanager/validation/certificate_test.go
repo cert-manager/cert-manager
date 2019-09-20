@@ -22,14 +22,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var (
-	validIssuerRef = v1alpha1.ObjectReference{
+	validIssuerRef = v1alpha2.ObjectReference{
 		Name: "name",
 		Kind: "ClusterIssuer",
 	}
@@ -42,12 +42,12 @@ func strPtr(s string) *string {
 func TestValidateCertificate(t *testing.T) {
 	fldPath := field.NewPath("spec")
 	scenarios := map[string]struct {
-		cfg  *v1alpha1.Certificate
+		cfg  *v1alpha2.Certificate
 		errs []*field.Error
 	}{
 		"valid basic certificate": {
-			cfg: &v1alpha1.Certificate{
-				Spec: v1alpha1.CertificateSpec{
+			cfg: &v1alpha2.Certificate{
+				Spec: v1alpha2.CertificateSpec{
 					CommonName: "testcn",
 					SecretName: "abc",
 					IssuerRef:  validIssuerRef,
@@ -55,22 +55,22 @@ func TestValidateCertificate(t *testing.T) {
 			},
 		},
 		"valid with blank issuerRef kind": {
-			cfg: &v1alpha1.Certificate{
-				Spec: v1alpha1.CertificateSpec{
+			cfg: &v1alpha2.Certificate{
+				Spec: v1alpha2.CertificateSpec{
 					CommonName: "testcn",
 					SecretName: "abc",
-					IssuerRef: v1alpha1.ObjectReference{
+					IssuerRef: v1alpha2.ObjectReference{
 						Name: "valid",
 					},
 				},
 			},
 		},
 		"valid with 'Issuer' issuerRef kind": {
-			cfg: &v1alpha1.Certificate{
-				Spec: v1alpha1.CertificateSpec{
+			cfg: &v1alpha2.Certificate{
+				Spec: v1alpha2.CertificateSpec{
 					CommonName: "testcn",
 					SecretName: "abc",
-					IssuerRef: v1alpha1.ObjectReference{
+					IssuerRef: v1alpha2.ObjectReference{
 						Name: "valid",
 						Kind: "Issuer",
 					},
@@ -78,8 +78,8 @@ func TestValidateCertificate(t *testing.T) {
 			},
 		},
 		"valid with org set": {
-			cfg: &v1alpha1.Certificate{
-				Spec: v1alpha1.CertificateSpec{
+			cfg: &v1alpha2.Certificate{
+				Spec: v1alpha2.CertificateSpec{
 					CommonName:   "testcn",
 					SecretName:   "abc",
 					Organization: []string{"testorg"},
@@ -88,11 +88,11 @@ func TestValidateCertificate(t *testing.T) {
 			},
 		},
 		"invalid issuerRef kind": {
-			cfg: &v1alpha1.Certificate{
-				Spec: v1alpha1.CertificateSpec{
+			cfg: &v1alpha2.Certificate{
+				Spec: v1alpha2.CertificateSpec{
 					CommonName: "testcn",
 					SecretName: "abc",
-					IssuerRef: v1alpha1.ObjectReference{
+					IssuerRef: v1alpha2.ObjectReference{
 						Name: "valid",
 						Kind: "invalid",
 					},
@@ -103,8 +103,8 @@ func TestValidateCertificate(t *testing.T) {
 			},
 		},
 		"certificate missing secretName": {
-			cfg: &v1alpha1.Certificate{
-				Spec: v1alpha1.CertificateSpec{
+			cfg: &v1alpha2.Certificate{
+				Spec: v1alpha2.CertificateSpec{
 					CommonName: "testcn",
 					IssuerRef:  validIssuerRef,
 				},
@@ -114,8 +114,8 @@ func TestValidateCertificate(t *testing.T) {
 			},
 		},
 		"certificate with no domains": {
-			cfg: &v1alpha1.Certificate{
-				Spec: v1alpha1.CertificateSpec{
+			cfg: &v1alpha2.Certificate{
+				Spec: v1alpha2.CertificateSpec{
 					SecretName: "abc",
 					IssuerRef:  validIssuerRef,
 				},
@@ -125,8 +125,8 @@ func TestValidateCertificate(t *testing.T) {
 			},
 		},
 		"certificate with no issuerRef": {
-			cfg: &v1alpha1.Certificate{
-				Spec: v1alpha1.CertificateSpec{
+			cfg: &v1alpha2.Certificate{
+				Spec: v1alpha2.CertificateSpec{
 					CommonName: "testcn",
 					SecretName: "abc",
 				},
@@ -136,8 +136,8 @@ func TestValidateCertificate(t *testing.T) {
 			},
 		},
 		"valid certificate with only dnsNames": {
-			cfg: &v1alpha1.Certificate{
-				Spec: v1alpha1.CertificateSpec{
+			cfg: &v1alpha2.Certificate{
+				Spec: v1alpha2.CertificateSpec{
 					DNSNames:   []string{"validdnsname"},
 					SecretName: "abc",
 					IssuerRef:  validIssuerRef,
@@ -145,94 +145,94 @@ func TestValidateCertificate(t *testing.T) {
 			},
 		},
 		"valid certificate with rsa keyAlgorithm specified and no keySize": {
-			cfg: &v1alpha1.Certificate{
-				Spec: v1alpha1.CertificateSpec{
+			cfg: &v1alpha2.Certificate{
+				Spec: v1alpha2.CertificateSpec{
 					CommonName:   "testcn",
 					SecretName:   "abc",
 					IssuerRef:    validIssuerRef,
-					KeyAlgorithm: v1alpha1.RSAKeyAlgorithm,
+					KeyAlgorithm: v1alpha2.RSAKeyAlgorithm,
 				},
 			},
 		},
 		"valid certificate with rsa keyAlgorithm specified with keySize 2048": {
-			cfg: &v1alpha1.Certificate{
-				Spec: v1alpha1.CertificateSpec{
+			cfg: &v1alpha2.Certificate{
+				Spec: v1alpha2.CertificateSpec{
 					CommonName:   "testcn",
 					SecretName:   "abc",
 					IssuerRef:    validIssuerRef,
-					KeyAlgorithm: v1alpha1.RSAKeyAlgorithm,
+					KeyAlgorithm: v1alpha2.RSAKeyAlgorithm,
 					KeySize:      2048,
 				},
 			},
 		},
 		"valid certificate with rsa keyAlgorithm specified with keySize 4096": {
-			cfg: &v1alpha1.Certificate{
-				Spec: v1alpha1.CertificateSpec{
+			cfg: &v1alpha2.Certificate{
+				Spec: v1alpha2.CertificateSpec{
 					CommonName:   "testcn",
 					SecretName:   "abc",
 					IssuerRef:    validIssuerRef,
-					KeyAlgorithm: v1alpha1.RSAKeyAlgorithm,
+					KeyAlgorithm: v1alpha2.RSAKeyAlgorithm,
 					KeySize:      4096,
 				},
 			},
 		},
 		"valid certificate with rsa keyAlgorithm specified with keySize 8192": {
-			cfg: &v1alpha1.Certificate{
-				Spec: v1alpha1.CertificateSpec{
+			cfg: &v1alpha2.Certificate{
+				Spec: v1alpha2.CertificateSpec{
 					CommonName:   "testcn",
 					SecretName:   "abc",
 					IssuerRef:    validIssuerRef,
-					KeyAlgorithm: v1alpha1.RSAKeyAlgorithm,
+					KeyAlgorithm: v1alpha2.RSAKeyAlgorithm,
 					KeySize:      8192,
 				},
 			},
 		},
 		"valid certificate with ecdsa keyAlgorithm specified and no keySize": {
-			cfg: &v1alpha1.Certificate{
-				Spec: v1alpha1.CertificateSpec{
+			cfg: &v1alpha2.Certificate{
+				Spec: v1alpha2.CertificateSpec{
 					CommonName:   "testcn",
 					SecretName:   "abc",
 					IssuerRef:    validIssuerRef,
-					KeyAlgorithm: v1alpha1.ECDSAKeyAlgorithm,
+					KeyAlgorithm: v1alpha2.ECDSAKeyAlgorithm,
 				},
 			},
 		},
 		"valid certificate with ecdsa keyAlgorithm specified with keySize 256": {
-			cfg: &v1alpha1.Certificate{
-				Spec: v1alpha1.CertificateSpec{
+			cfg: &v1alpha2.Certificate{
+				Spec: v1alpha2.CertificateSpec{
 					CommonName:   "testcn",
 					SecretName:   "abc",
 					IssuerRef:    validIssuerRef,
-					KeyAlgorithm: v1alpha1.ECDSAKeyAlgorithm,
+					KeyAlgorithm: v1alpha2.ECDSAKeyAlgorithm,
 					KeySize:      256,
 				},
 			},
 		},
 		"valid certificate with ecdsa keyAlgorithm specified with keySize 384": {
-			cfg: &v1alpha1.Certificate{
-				Spec: v1alpha1.CertificateSpec{
+			cfg: &v1alpha2.Certificate{
+				Spec: v1alpha2.CertificateSpec{
 					CommonName:   "testcn",
 					SecretName:   "abc",
 					IssuerRef:    validIssuerRef,
-					KeyAlgorithm: v1alpha1.ECDSAKeyAlgorithm,
+					KeyAlgorithm: v1alpha2.ECDSAKeyAlgorithm,
 					KeySize:      384,
 				},
 			},
 		},
 		"valid certificate with ecdsa keyAlgorithm specified with keySize 521": {
-			cfg: &v1alpha1.Certificate{
-				Spec: v1alpha1.CertificateSpec{
+			cfg: &v1alpha2.Certificate{
+				Spec: v1alpha2.CertificateSpec{
 					CommonName:   "testcn",
 					SecretName:   "abc",
 					IssuerRef:    validIssuerRef,
-					KeyAlgorithm: v1alpha1.ECDSAKeyAlgorithm,
+					KeyAlgorithm: v1alpha2.ECDSAKeyAlgorithm,
 					KeySize:      521,
 				},
 			},
 		},
 		"valid certificate with keyAlgorithm not specified and keySize specified": {
-			cfg: &v1alpha1.Certificate{
-				Spec: v1alpha1.CertificateSpec{
+			cfg: &v1alpha2.Certificate{
+				Spec: v1alpha2.CertificateSpec{
 					CommonName: "testcn",
 					SecretName: "abc",
 					IssuerRef:  validIssuerRef,
@@ -241,8 +241,8 @@ func TestValidateCertificate(t *testing.T) {
 			},
 		},
 		"certificate with keysize less than zero": {
-			cfg: &v1alpha1.Certificate{
-				Spec: v1alpha1.CertificateSpec{
+			cfg: &v1alpha2.Certificate{
+				Spec: v1alpha2.CertificateSpec{
 					CommonName: "testcn",
 					SecretName: "abc",
 					IssuerRef:  validIssuerRef,
@@ -254,12 +254,12 @@ func TestValidateCertificate(t *testing.T) {
 			},
 		},
 		"certificate with rsa keyAlgorithm specified and invalid keysize 1024": {
-			cfg: &v1alpha1.Certificate{
-				Spec: v1alpha1.CertificateSpec{
+			cfg: &v1alpha2.Certificate{
+				Spec: v1alpha2.CertificateSpec{
 					CommonName:   "testcn",
 					SecretName:   "abc",
 					IssuerRef:    validIssuerRef,
-					KeyAlgorithm: v1alpha1.RSAKeyAlgorithm,
+					KeyAlgorithm: v1alpha2.RSAKeyAlgorithm,
 					KeySize:      1024,
 				},
 			},
@@ -268,12 +268,12 @@ func TestValidateCertificate(t *testing.T) {
 			},
 		},
 		"certificate with rsa keyAlgorithm specified and invalid keysize 8196": {
-			cfg: &v1alpha1.Certificate{
-				Spec: v1alpha1.CertificateSpec{
+			cfg: &v1alpha2.Certificate{
+				Spec: v1alpha2.CertificateSpec{
 					CommonName:   "testcn",
 					SecretName:   "abc",
 					IssuerRef:    validIssuerRef,
-					KeyAlgorithm: v1alpha1.RSAKeyAlgorithm,
+					KeyAlgorithm: v1alpha2.RSAKeyAlgorithm,
 					KeySize:      8196,
 				},
 			},
@@ -282,12 +282,12 @@ func TestValidateCertificate(t *testing.T) {
 			},
 		},
 		"certificate with ecdsa keyAlgorithm specified and invalid keysize": {
-			cfg: &v1alpha1.Certificate{
-				Spec: v1alpha1.CertificateSpec{
+			cfg: &v1alpha2.Certificate{
+				Spec: v1alpha2.CertificateSpec{
 					CommonName:   "testcn",
 					SecretName:   "abc",
 					IssuerRef:    validIssuerRef,
-					KeyAlgorithm: v1alpha1.ECDSAKeyAlgorithm,
+					KeyAlgorithm: v1alpha2.ECDSAKeyAlgorithm,
 					KeySize:      100,
 				},
 			},
@@ -296,21 +296,21 @@ func TestValidateCertificate(t *testing.T) {
 			},
 		},
 		"certificate with invalid keyAlgorithm": {
-			cfg: &v1alpha1.Certificate{
-				Spec: v1alpha1.CertificateSpec{
+			cfg: &v1alpha2.Certificate{
+				Spec: v1alpha2.CertificateSpec{
 					CommonName:   "testcn",
 					SecretName:   "abc",
 					IssuerRef:    validIssuerRef,
-					KeyAlgorithm: v1alpha1.KeyAlgorithm("blah"),
+					KeyAlgorithm: v1alpha2.KeyAlgorithm("blah"),
 				},
 			},
 			errs: []*field.Error{
-				field.Invalid(fldPath.Child("keyAlgorithm"), v1alpha1.KeyAlgorithm("blah"), "must be either empty or one of rsa or ecdsa"),
+				field.Invalid(fldPath.Child("keyAlgorithm"), v1alpha2.KeyAlgorithm("blah"), "must be either empty or one of rsa or ecdsa"),
 			},
 		},
 		"valid certificate with ipAddresses": {
-			cfg: &v1alpha1.Certificate{
-				Spec: v1alpha1.CertificateSpec{
+			cfg: &v1alpha2.Certificate{
+				Spec: v1alpha2.CertificateSpec{
 					CommonName:  "testcn",
 					IPAddresses: []string{"127.0.0.1"},
 					SecretName:  "abc",
@@ -319,8 +319,8 @@ func TestValidateCertificate(t *testing.T) {
 			},
 		},
 		"certificate with invalid ipAddresses": {
-			cfg: &v1alpha1.Certificate{
-				Spec: v1alpha1.CertificateSpec{
+			cfg: &v1alpha2.Certificate{
+				Spec: v1alpha2.CertificateSpec{
 					CommonName:  "testcn",
 					IPAddresses: []string{"blah"},
 					SecretName:  "abc",
@@ -332,8 +332,8 @@ func TestValidateCertificate(t *testing.T) {
 			},
 		},
 		"valid certificate with commonName exactly 64 bytes": {
-			cfg: &v1alpha1.Certificate{
-				Spec: v1alpha1.CertificateSpec{
+			cfg: &v1alpha2.Certificate{
+				Spec: v1alpha2.CertificateSpec{
 					CommonName: "this-is-a-big-long-string-which-is-exactly-sixty-four-characters",
 					SecretName: "abc",
 					IssuerRef:  validIssuerRef,
@@ -342,8 +342,8 @@ func TestValidateCertificate(t *testing.T) {
 			errs: []*field.Error{},
 		},
 		"invalid certificate with commonName longer than 64 bytes": {
-			cfg: &v1alpha1.Certificate{
-				Spec: v1alpha1.CertificateSpec{
+			cfg: &v1alpha2.Certificate{
+				Spec: v1alpha2.CertificateSpec{
 					CommonName: "this-is-a-big-long-string-which-has-exactly-sixty-five-characters",
 					SecretName: "abc",
 					IssuerRef:  validIssuerRef,
@@ -354,8 +354,8 @@ func TestValidateCertificate(t *testing.T) {
 			},
 		},
 		"invalid certificate with no commonName and first dnsName longer than 64 bytes": {
-			cfg: &v1alpha1.Certificate{
-				Spec: v1alpha1.CertificateSpec{
+			cfg: &v1alpha2.Certificate{
+				Spec: v1alpha2.CertificateSpec{
 					SecretName: "abc",
 					IssuerRef:  validIssuerRef,
 					DNSNames: []string{
@@ -369,8 +369,8 @@ func TestValidateCertificate(t *testing.T) {
 			},
 		},
 		"valid certificate with no commonName and second dnsName longer than 64 bytes": {
-			cfg: &v1alpha1.Certificate{
-				Spec: v1alpha1.CertificateSpec{
+			cfg: &v1alpha2.Certificate{
+				Spec: v1alpha2.CertificateSpec{
 					SecretName: "abc",
 					IssuerRef:  validIssuerRef,
 					DNSNames: []string{
@@ -381,8 +381,8 @@ func TestValidateCertificate(t *testing.T) {
 			},
 		},
 		"valid certificate with commonName and first dnsName longer than 64 bytes": {
-			cfg: &v1alpha1.Certificate{
-				Spec: v1alpha1.CertificateSpec{
+			cfg: &v1alpha2.Certificate{
+				Spec: v1alpha2.CertificateSpec{
 					CommonName: "testcn",
 					SecretName: "abc",
 					IssuerRef:  validIssuerRef,
@@ -394,36 +394,36 @@ func TestValidateCertificate(t *testing.T) {
 			},
 		},
 		"valid certificate with basic keyusage": {
-			cfg: &v1alpha1.Certificate{
-				Spec: v1alpha1.CertificateSpec{
+			cfg: &v1alpha2.Certificate{
+				Spec: v1alpha2.CertificateSpec{
 					CommonName: "testcn",
 					SecretName: "abc",
 					IssuerRef:  validIssuerRef,
-					Usages:     []v1alpha1.KeyUsage{"signing"},
+					Usages:     []v1alpha2.KeyUsage{"signing"},
 				},
 			},
 		},
 		"valid certificate with multiple keyusage": {
-			cfg: &v1alpha1.Certificate{
-				Spec: v1alpha1.CertificateSpec{
+			cfg: &v1alpha2.Certificate{
+				Spec: v1alpha2.CertificateSpec{
 					CommonName: "testcn",
 					SecretName: "abc",
 					IssuerRef:  validIssuerRef,
-					Usages:     []v1alpha1.KeyUsage{"signing", "s/mime"},
+					Usages:     []v1alpha2.KeyUsage{"signing", "s/mime"},
 				},
 			},
 		},
 		"invalid certificate with nonexistant keyusage": {
-			cfg: &v1alpha1.Certificate{
-				Spec: v1alpha1.CertificateSpec{
+			cfg: &v1alpha2.Certificate{
+				Spec: v1alpha2.CertificateSpec{
 					CommonName: "testcn",
 					SecretName: "abc",
 					IssuerRef:  validIssuerRef,
-					Usages:     []v1alpha1.KeyUsage{"nonexistant"},
+					Usages:     []v1alpha2.KeyUsage{"nonexistant"},
 				},
 			},
 			errs: []*field.Error{
-				field.Invalid(fldPath.Child("usages").Index(0), v1alpha1.KeyUsage("nonexistant"), "unknown keyusage"),
+				field.Invalid(fldPath.Child("usages").Index(0), v1alpha2.KeyUsage("nonexistant"), "unknown keyusage"),
 			},
 		},
 	}
@@ -458,12 +458,12 @@ func TestValidateDuration(t *testing.T) {
 
 	fldPath := field.NewPath("spec")
 	scenarios := map[string]struct {
-		cfg  *v1alpha1.Certificate
+		cfg  *v1alpha2.Certificate
 		errs []*field.Error
 	}{
 		"default duration and renewBefore": {
-			cfg: &v1alpha1.Certificate{
-				Spec: v1alpha1.CertificateSpec{
+			cfg: &v1alpha2.Certificate{
+				Spec: v1alpha2.CertificateSpec{
 					CommonName: "testcn",
 					SecretName: "abc",
 					IssuerRef:  validIssuerRef,
@@ -471,8 +471,8 @@ func TestValidateDuration(t *testing.T) {
 			},
 		},
 		"valid duration and renewBefore": {
-			cfg: &v1alpha1.Certificate{
-				Spec: v1alpha1.CertificateSpec{
+			cfg: &v1alpha2.Certificate{
+				Spec: v1alpha2.CertificateSpec{
 					Duration:    usefulDurations["one year"],
 					RenewBefore: usefulDurations["half year"],
 					CommonName:  "testcn",
@@ -482,8 +482,8 @@ func TestValidateDuration(t *testing.T) {
 			},
 		},
 		"unset duration, valid renewBefore for default": {
-			cfg: &v1alpha1.Certificate{
-				Spec: v1alpha1.CertificateSpec{
+			cfg: &v1alpha2.Certificate{
+				Spec: v1alpha2.CertificateSpec{
 					RenewBefore: usefulDurations["one month"],
 					CommonName:  "testcn",
 					SecretName:  "abc",
@@ -492,8 +492,8 @@ func TestValidateDuration(t *testing.T) {
 			},
 		},
 		"unset renewBefore, valid duration for default": {
-			cfg: &v1alpha1.Certificate{
-				Spec: v1alpha1.CertificateSpec{
+			cfg: &v1alpha2.Certificate{
+				Spec: v1alpha2.CertificateSpec{
 					Duration:   usefulDurations["one year"],
 					CommonName: "testcn",
 					SecretName: "abc",
@@ -502,30 +502,30 @@ func TestValidateDuration(t *testing.T) {
 			},
 		},
 		"renewBefore is bigger than the default duration": {
-			cfg: &v1alpha1.Certificate{
-				Spec: v1alpha1.CertificateSpec{
+			cfg: &v1alpha2.Certificate{
+				Spec: v1alpha2.CertificateSpec{
 					RenewBefore: usefulDurations["ten years"],
 					CommonName:  "testcn",
 					SecretName:  "abc",
 					IssuerRef:   validIssuerRef,
 				},
 			},
-			errs: []*field.Error{field.Invalid(fldPath.Child("renewBefore"), usefulDurations["ten years"].Duration, fmt.Sprintf("certificate duration %s must be greater than renewBefore %s", v1alpha1.DefaultCertificateDuration, usefulDurations["ten years"].Duration))},
+			errs: []*field.Error{field.Invalid(fldPath.Child("renewBefore"), usefulDurations["ten years"].Duration, fmt.Sprintf("certificate duration %s must be greater than renewBefore %s", v1alpha2.DefaultCertificateDuration, usefulDurations["ten years"].Duration))},
 		},
 		"default renewBefore is bigger than the set duration": {
-			cfg: &v1alpha1.Certificate{
-				Spec: v1alpha1.CertificateSpec{
+			cfg: &v1alpha2.Certificate{
+				Spec: v1alpha2.CertificateSpec{
 					Duration:   usefulDurations["one hour"],
 					CommonName: "testcn",
 					SecretName: "abc",
 					IssuerRef:  validIssuerRef,
 				},
 			},
-			errs: []*field.Error{field.Invalid(fldPath.Child("renewBefore"), v1alpha1.DefaultRenewBefore, fmt.Sprintf("certificate duration %s must be greater than renewBefore %s", usefulDurations["one hour"].Duration, v1alpha1.DefaultRenewBefore))},
+			errs: []*field.Error{field.Invalid(fldPath.Child("renewBefore"), v1alpha2.DefaultRenewBefore, fmt.Sprintf("certificate duration %s must be greater than renewBefore %s", usefulDurations["one hour"].Duration, v1alpha2.DefaultRenewBefore))},
 		},
 		"renewBefore is bigger than the duration": {
-			cfg: &v1alpha1.Certificate{
-				Spec: v1alpha1.CertificateSpec{
+			cfg: &v1alpha2.Certificate{
+				Spec: v1alpha2.CertificateSpec{
 					Duration:    usefulDurations["one month"],
 					RenewBefore: usefulDurations["one year"],
 					CommonName:  "testcn",
@@ -536,19 +536,19 @@ func TestValidateDuration(t *testing.T) {
 			errs: []*field.Error{field.Invalid(fldPath.Child("renewBefore"), usefulDurations["one year"].Duration, fmt.Sprintf("certificate duration %s must be greater than renewBefore %s", usefulDurations["one month"].Duration, usefulDurations["one year"].Duration))},
 		},
 		"renewBefore is less than the minimum permitted value": {
-			cfg: &v1alpha1.Certificate{
-				Spec: v1alpha1.CertificateSpec{
+			cfg: &v1alpha2.Certificate{
+				Spec: v1alpha2.CertificateSpec{
 					RenewBefore: usefulDurations["one second"],
 					CommonName:  "testcn",
 					SecretName:  "abc",
 					IssuerRef:   validIssuerRef,
 				},
 			},
-			errs: []*field.Error{field.Invalid(fldPath.Child("renewBefore"), usefulDurations["one second"].Duration, fmt.Sprintf("certificate renewBefore must be greater than %s", v1alpha1.MinimumRenewBefore))},
+			errs: []*field.Error{field.Invalid(fldPath.Child("renewBefore"), usefulDurations["one second"].Duration, fmt.Sprintf("certificate renewBefore must be greater than %s", v1alpha2.MinimumRenewBefore))},
 		},
 		"duration is less than the minimum permitted value": {
-			cfg: &v1alpha1.Certificate{
-				Spec: v1alpha1.CertificateSpec{
+			cfg: &v1alpha2.Certificate{
+				Spec: v1alpha2.CertificateSpec{
 					Duration:    usefulDurations["half hour"],
 					RenewBefore: usefulDurations["ten minutes"],
 					CommonName:  "testcn",
@@ -556,7 +556,7 @@ func TestValidateDuration(t *testing.T) {
 					IssuerRef:   validIssuerRef,
 				},
 			},
-			errs: []*field.Error{field.Invalid(fldPath.Child("duration"), usefulDurations["half hour"].Duration, fmt.Sprintf("certificate duration must be greater than %s", v1alpha1.MinimumCertificateDuration))},
+			errs: []*field.Error{field.Invalid(fldPath.Child("duration"), usefulDurations["half hour"].Duration, fmt.Sprintf("certificate duration must be greater than %s", v1alpha2.MinimumCertificateDuration))},
 		},
 	}
 	for n, s := range scenarios {

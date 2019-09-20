@@ -25,7 +25,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	"github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
 	"github.com/jetstack/cert-manager/test/e2e/framework"
 	"github.com/jetstack/cert-manager/test/e2e/framework/addon"
@@ -79,19 +79,19 @@ var _ = framework.CertManagerDescribe("ACME webhook DNS provider", func() {
 
 			By("Creating an Issuer")
 			issuer := gen.Issuer(issuerName,
-				gen.SetIssuerACME(v1alpha1.ACMEIssuer{
+				gen.SetIssuerACME(v1alpha2.ACMEIssuer{
 					SkipTLSVerify: true,
 					Server:        pebble.Details().Host,
 					Email:         testingACMEEmail,
-					PrivateKey: v1alpha1.SecretKeySelector{
-						LocalObjectReference: v1alpha1.LocalObjectReference{
+					PrivateKey: v1alpha2.SecretKeySelector{
+						LocalObjectReference: v1alpha2.LocalObjectReference{
 							Name: testingACMEPrivateKey,
 						},
 					},
-					Solvers: []v1alpha1.ACMEChallengeSolver{
+					Solvers: []v1alpha2.ACMEChallengeSolver{
 						{
-							DNS01: &v1alpha1.ACMEChallengeSolverDNS01{
-								Webhook: &v1alpha1.ACMEIssuerDNS01ProviderWebhook{
+							DNS01: &v1alpha2.ACMEChallengeSolverDNS01{
+								Webhook: &v1alpha2.ACMEIssuerDNS01ProviderWebhook{
 									GroupName:  webhook.Details().GroupName,
 									SolverName: webhook.Details().SolverName,
 									Config: &v1beta1.JSON{
@@ -103,20 +103,20 @@ var _ = framework.CertManagerDescribe("ACME webhook DNS provider", func() {
 					},
 				}))
 			issuer.Namespace = f.Namespace.Name
-			issuer, err := f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Create(issuer)
+			issuer, err := f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name).Create(issuer)
 			Expect(err).NotTo(HaveOccurred())
 			By("Waiting for Issuer to become Ready")
-			err = util.WaitForIssuerCondition(f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name),
+			err = util.WaitForIssuerCondition(f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name),
 				issuerName,
-				v1alpha1.IssuerCondition{
-					Type:   v1alpha1.IssuerConditionReady,
-					Status: v1alpha1.ConditionTrue,
+				v1alpha2.IssuerCondition{
+					Type:   v1alpha2.IssuerConditionReady,
+					Status: v1alpha2.ConditionTrue,
 				})
 			Expect(err).NotTo(HaveOccurred())
 			By("Verifying the ACME account URI is set")
-			err = util.WaitForIssuerStatusFunc(f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name),
+			err = util.WaitForIssuerStatusFunc(f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name),
 				issuerName,
-				func(i *v1alpha1.Issuer) (bool, error) {
+				func(i *v1alpha2.Issuer) (bool, error) {
 					if i.GetStatus().ACMEStatus().URI == "" {
 						return false, nil
 					}
@@ -133,7 +133,7 @@ var _ = framework.CertManagerDescribe("ACME webhook DNS provider", func() {
 
 		AfterEach(func() {
 			By("Cleaning up")
-			f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Delete(issuerName, nil)
+			f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name).Delete(issuerName, nil)
 			f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Delete(testingACMEPrivateKey, nil)
 			f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Delete(certificateSecretName, nil)
 		})
@@ -141,11 +141,11 @@ var _ = framework.CertManagerDescribe("ACME webhook DNS provider", func() {
 		It("should call the dummy webhook provider and mark the challenges as presented=true", func() {
 			By("Creating a Certificate")
 
-			certClient := f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name)
+			certClient := f.CertManagerClientSet.CertmanagerV1alpha2().Certificates(f.Namespace.Name)
 
 			cert := gen.Certificate(certificateName,
 				gen.SetCertificateSecretName(certificateSecretName),
-				gen.SetCertificateIssuer(v1alpha1.ObjectReference{Name: issuerName}),
+				gen.SetCertificateIssuer(v1alpha2.ObjectReference{Name: issuerName}),
 				gen.SetCertificateDNSNames(dnsDomain),
 			)
 			cert.Namespace = f.Namespace.Name
@@ -153,7 +153,7 @@ var _ = framework.CertManagerDescribe("ACME webhook DNS provider", func() {
 			cert, err := certClient.Create(cert)
 			Expect(err).NotTo(HaveOccurred())
 
-			var order *v1alpha1.Order
+			var order *v1alpha2.Order
 			pollErr := wait.PollImmediate(500*time.Millisecond, time.Second*30,
 				func() (bool, error) {
 					orders, err := listOwnedOrders(f.CertManagerClientSet, cert)
@@ -201,13 +201,13 @@ var _ = framework.CertManagerDescribe("ACME webhook DNS provider", func() {
 	})
 })
 
-func listOwnedChallenges(cl versioned.Interface, owner *v1alpha1.Order) ([]*v1alpha1.Challenge, error) {
-	l, err := cl.CertmanagerV1alpha1().Challenges(owner.Namespace).List(metav1.ListOptions{})
+func listOwnedChallenges(cl versioned.Interface, owner *v1alpha2.Order) ([]*v1alpha2.Challenge, error) {
+	l, err := cl.CertmanagerV1alpha2().Challenges(owner.Namespace).List(metav1.ListOptions{})
 	if err != nil {
 		return nil, err
 	}
 
-	var owned []*v1alpha1.Challenge
+	var owned []*v1alpha2.Challenge
 	for _, ch := range l.Items {
 		if !metav1.IsControlledBy(&ch, owner) {
 			continue
@@ -218,15 +218,15 @@ func listOwnedChallenges(cl versioned.Interface, owner *v1alpha1.Order) ([]*v1al
 	return owned, nil
 }
 
-func listOwnedOrders(cl versioned.Interface, owner *v1alpha1.Certificate) ([]*v1alpha1.Order, error) {
-	l, err := cl.CertmanagerV1alpha1().Orders(owner.Namespace).List(metav1.ListOptions{})
+func listOwnedOrders(cl versioned.Interface, owner *v1alpha2.Certificate) ([]*v1alpha2.Order, error) {
+	l, err := cl.CertmanagerV1alpha2().Orders(owner.Namespace).List(metav1.ListOptions{})
 	if err != nil {
 		return nil, err
 	}
 
-	var owned []*v1alpha1.Order
+	var owned []*v1alpha2.Order
 	for _, o := range l.Items {
-		v, ok := o.Annotations[v1alpha1.CertificateNameKey]
+		v, ok := o.Annotations[v1alpha2.CertificateNameKey]
 		if !ok || v != owner.Name {
 			continue
 		}

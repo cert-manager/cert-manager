@@ -29,9 +29,9 @@ import (
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
 
-	cmv1alpha1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	cmv1alpha1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	clientset "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
-	cmlisters "github.com/jetstack/cert-manager/pkg/client/listers/certmanager/v1alpha1"
+	cmlisters "github.com/jetstack/cert-manager/pkg/client/listers/certmanager/v1alpha2"
 	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
 	"github.com/jetstack/cert-manager/pkg/issuer"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
@@ -79,8 +79,8 @@ func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitin
 
 	// obtain references to all the informers used by this controller
 	ingressInformer := ctx.KubeSharedInformerFactory.Extensions().V1beta1().Ingresses()
-	certificatesInformer := ctx.SharedInformerFactory.Certmanager().V1alpha1().Certificates()
-	issuerInformer := ctx.SharedInformerFactory.Certmanager().V1alpha1().Issuers()
+	certificatesInformer := ctx.SharedInformerFactory.Certmanager().V1alpha2().Certificates()
+	issuerInformer := ctx.SharedInformerFactory.Certmanager().V1alpha2().Issuers()
 	// build a list of InformerSynced functions that will be returned by the Register method.
 	// the controller will only begin processing items once all of these informers have synced.
 	mustSync := []cache.InformerSynced{
@@ -98,7 +98,7 @@ func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitin
 	// if we are running in non-namespaced mode (i.e. --namespace=""), we also
 	// register event handlers and obtain a lister for clusterissuers.
 	if ctx.Namespace == "" {
-		clusterIssuerInformer := ctx.SharedInformerFactory.Certmanager().V1alpha1().ClusterIssuers()
+		clusterIssuerInformer := ctx.SharedInformerFactory.Certmanager().V1alpha2().ClusterIssuers()
 		mustSync = append(mustSync, clusterIssuerInformer.Informer().HasSynced)
 		c.clusterIssuerLister = clusterIssuerInformer.Lister()
 	}

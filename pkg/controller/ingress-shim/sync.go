@@ -28,7 +28,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	"github.com/jetstack/cert-manager/pkg/logs"
 	"github.com/jetstack/cert-manager/pkg/metrics"
 	"github.com/jetstack/cert-manager/pkg/util"
@@ -73,7 +73,7 @@ func (c *controller) Sync(ctx context.Context, ing *extv1beta1.Ingress) error {
 		return nil
 	}
 
-	issuer, err := c.helper.GetGenericIssuer(v1alpha1.ObjectReference{
+	issuer, err := c.helper.GetGenericIssuer(v1alpha2.ObjectReference{
 		Name: issuerName,
 		Kind: issuerKind,
 	}, ing.Namespace)
@@ -101,7 +101,7 @@ func (c *controller) Sync(ctx context.Context, ing *extv1beta1.Ingress) error {
 	}
 
 	for _, crt := range newCrts {
-		_, err := c.cmClient.CertmanagerV1alpha1().Certificates(crt.Namespace).Create(crt)
+		_, err := c.cmClient.CertmanagerV1alpha2().Certificates(crt.Namespace).Create(crt)
 		if err != nil {
 			return err
 		}
@@ -109,7 +109,7 @@ func (c *controller) Sync(ctx context.Context, ing *extv1beta1.Ingress) error {
 	}
 
 	for _, crt := range updateCrts {
-		_, err := c.cmClient.CertmanagerV1alpha1().Certificates(crt.Namespace).Update(crt)
+		_, err := c.cmClient.CertmanagerV1alpha2().Certificates(crt.Namespace).Update(crt)
 		if err != nil {
 			return err
 		}
@@ -122,7 +122,7 @@ func (c *controller) Sync(ctx context.Context, ing *extv1beta1.Ingress) error {
 	}
 
 	for _, crt := range unrequiredCrts {
-		err = c.cmClient.CertmanagerV1alpha1().Certificates(crt.Namespace).Delete(crt.Name, nil)
+		err = c.cmClient.CertmanagerV1alpha2().Certificates(crt.Namespace).Delete(crt.Name, nil)
 		if err != nil {
 			return err
 		}
@@ -146,28 +146,28 @@ func (c *controller) validateIngress(ing *extv1beta1.Ingress) []error {
 	return errs
 }
 
-func (c *controller) buildCertificates(ctx context.Context, ing *extv1beta1.Ingress, issuer v1alpha1.GenericIssuer, issuerKind string) (new, update []*v1alpha1.Certificate, _ error) {
+func (c *controller) buildCertificates(ctx context.Context, ing *extv1beta1.Ingress, issuer v1alpha2.GenericIssuer, issuerKind string) (new, update []*v1alpha2.Certificate, _ error) {
 	log := logs.FromContext(ctx)
 
-	var newCrts []*v1alpha1.Certificate
-	var updateCrts []*v1alpha1.Certificate
+	var newCrts []*v1alpha2.Certificate
+	var updateCrts []*v1alpha2.Certificate
 	for _, tls := range ing.Spec.TLS {
 		existingCrt, err := c.certificateLister.Certificates(ing.Namespace).Get(tls.SecretName)
 		if !apierrors.IsNotFound(err) && err != nil {
 			return nil, nil, err
 		}
 
-		crt := &v1alpha1.Certificate{
+		crt := &v1alpha2.Certificate{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:            tls.SecretName,
 				Namespace:       ing.Namespace,
 				Labels:          ing.Labels,
 				OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(ing, ingressGVK)},
 			},
-			Spec: v1alpha1.CertificateSpec{
+			Spec: v1alpha2.CertificateSpec{
 				DNSNames:   tls.Hosts,
 				SecretName: tls.SecretName,
-				IssuerRef: v1alpha1.ObjectReference{
+				IssuerRef: v1alpha2.ObjectReference{
 					Name: issuer.GetObjectMeta().Name,
 					Kind: issuerKind,
 				},
@@ -219,8 +219,8 @@ func (c *controller) buildCertificates(ctx context.Context, ing *extv1beta1.Ingr
 	return newCrts, updateCrts, nil
 }
 
-func (c *controller) findUnrequiredCertificates(ing *extv1beta1.Ingress) ([]*v1alpha1.Certificate, error) {
-	var unrequired []*v1alpha1.Certificate
+func (c *controller) findUnrequiredCertificates(ing *extv1beta1.Ingress) ([]*v1alpha2.Certificate, error) {
+	var unrequired []*v1alpha2.Certificate
 	// TODO: investigate selector which filters for certificates controlled by the ingress
 	crts, err := c.certificateLister.Certificates(ing.Namespace).List(labels.Everything())
 	if err != nil {
@@ -236,7 +236,7 @@ func (c *controller) findUnrequiredCertificates(ing *extv1beta1.Ingress) ([]*v1a
 	return unrequired, nil
 }
 
-func isUnrequiredCertificate(crt *v1alpha1.Certificate, ing *extv1beta1.Ingress) bool {
+func isUnrequiredCertificate(crt *v1alpha2.Certificate, ing *extv1beta1.Ingress) bool {
 	if !metav1.IsControlledBy(crt, ing) {
 		return false
 	}
@@ -250,7 +250,7 @@ func isUnrequiredCertificate(crt *v1alpha1.Certificate, ing *extv1beta1.Ingress)
 }
 
 // certNeedsUpdate checks and returns true if two Certificates differ
-func certNeedsUpdate(a, b *v1alpha1.Certificate) bool {
+func certNeedsUpdate(a, b *v1alpha2.Certificate) bool {
 	if a.Name != b.Name {
 		return true
 	}
@@ -288,7 +288,7 @@ func certNeedsUpdate(a, b *v1alpha1.Certificate) bool {
 	return false
 }
 
-func (c *controller) setIssuerSpecificConfig(crt *v1alpha1.Certificate, issuer v1alpha1.GenericIssuer, ing *extv1beta1.Ingress, tls extv1beta1.IngressTLS) error {
+func (c *controller) setIssuerSpecificConfig(crt *v1alpha2.Certificate, issuer v1alpha2.GenericIssuer, ing *extv1beta1.Ingress, tls extv1beta1.IngressTLS) error {
 	ingAnnotations := ing.Annotations
 	if ingAnnotations == nil {
 		ingAnnotations = map[string]string{}
@@ -301,10 +301,10 @@ func (c *controller) setIssuerSpecificConfig(crt *v1alpha1.Certificate, issuer v
 		if crt.Annotations == nil {
 			crt.Annotations = make(map[string]string)
 		}
-		crt.Annotations[v1alpha1.ACMECertificateHTTP01IngressNameOverride] = ing.Name
+		crt.Annotations[v1alpha2.ACMECertificateHTTP01IngressNameOverride] = ing.Name
 		// set IssueTemporaryCertificateAnnotation to true in order to behave
 		// better when ingress-gce is being used.
-		crt.Annotations[v1alpha1.IssueTemporaryCertificateAnnotation] = "true"
+		crt.Annotations[v1alpha2.IssueTemporaryCertificateAnnotation] = "true"
 	}
 
 	ingressClassVal, hasIngressClassVal := ingAnnotations[acmeIssuerHTTP01IngressClassAnnotation]
@@ -312,7 +312,7 @@ func (c *controller) setIssuerSpecificConfig(crt *v1alpha1.Certificate, issuer v
 		if crt.Annotations == nil {
 			crt.Annotations = make(map[string]string)
 		}
-		crt.Annotations[v1alpha1.ACMECertificateHTTP01IngressClassOverride] = ingressClassVal
+		crt.Annotations[v1alpha2.ACMECertificateHTTP01IngressClassOverride] = ingressClassVal
 	}
 
 	return nil
@@ -353,11 +353,11 @@ func (c *controller) issuerForIngress(ing *extv1beta1.Ingress) (name string, kin
 	}
 	if issuerName, ok := annotations[issuerNameAnnotation]; ok {
 		name = issuerName
-		kind = v1alpha1.IssuerKind
+		kind = v1alpha2.IssuerKind
 	}
 	if issuerName, ok := annotations[clusterIssuerNameAnnotation]; ok {
 		name = issuerName
-		kind = v1alpha1.ClusterIssuerKind
+		kind = v1alpha2.ClusterIssuerKind
 	}
 	return name, kind
 }

@@ -146,7 +146,7 @@ Create a file named ``cluster-issuer.yaml``:
    :linenos:
    :emphasize-lines: 11
 
-   apiVersion: certmanager.k8s.io/v1alpha1
+   apiVersion: certmanager.k8s.io/v1alpha2
    kind: ClusterIssuer
    metadata:
      # Adjust the name here accordingly

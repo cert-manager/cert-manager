@@ -23,7 +23,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	certmanager "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	certmanager "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	"github.com/jetstack/cert-manager/test/e2e/framework"
 	"github.com/jetstack/cert-manager/test/e2e/util"
 	admissionreg "k8s.io/api/admissionregistration/v1beta1"
@@ -59,7 +59,7 @@ var _ = framework.CertManagerDescribe("CA Injector", func() {
 				Expect(f.CRClient.Create(context.Background(), issuer)).To(Succeed())
 
 				By("Waiting for Issuer to become Ready")
-				err := util.WaitForIssuerCondition(f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name),
+				err := util.WaitForIssuerCondition(f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name),
 					issuerName,
 					certmanager.IssuerCondition{
 						Type:   certmanager.IssuerConditionReady,
@@ -85,7 +85,7 @@ var _ = framework.CertManagerDescribe("CA Injector", func() {
 				cert.Namespace = f.Namespace.Name
 				Expect(f.CRClient.Create(context.Background(), cert)).To(Succeed())
 
-				err := util.WaitForCertificateCondition(f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name), "serving-certs", certmanager.CertificateCondition{
+				err := util.WaitForCertificateCondition(f.CertManagerClientSet.CertmanagerV1alpha2().Certificates(f.Namespace.Name), "serving-certs", certmanager.CertificateCondition{
 					Type:   certmanager.CertificateConditionReady,
 					Status: certmanager.ConditionTrue,
 				}, time.Second*30)

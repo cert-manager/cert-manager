@@ -20,10 +20,10 @@ import (
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 )
 
-func ValidateCertificateForIssuer(crt *v1alpha1.Certificate, issuerObj v1alpha1.GenericIssuer) field.ErrorList {
+func ValidateCertificateForIssuer(crt *v1alpha2.Certificate, issuerObj v1alpha2.GenericIssuer) field.ErrorList {
 	el := field.ErrorList{}
 
 	path := field.NewPath("spec")
@@ -50,7 +50,7 @@ func ValidateCertificateForIssuer(crt *v1alpha1.Certificate, issuerObj v1alpha1.
 	return el
 }
 
-func ValidateCertificateForACMEIssuer(crt *v1alpha1.CertificateSpec, issuer *v1alpha1.IssuerSpec, specPath *field.Path) field.ErrorList {
+func ValidateCertificateForACMEIssuer(crt *v1alpha2.CertificateSpec, issuer *v1alpha2.IssuerSpec, specPath *field.Path) field.ErrorList {
 	el := field.ErrorList{}
 
 	if crt.IsCA {
@@ -72,13 +72,13 @@ func ValidateCertificateForACMEIssuer(crt *v1alpha1.CertificateSpec, issuer *v1a
 	return el
 }
 
-func ValidateCertificateForCAIssuer(crt *v1alpha1.CertificateSpec, issuer *v1alpha1.IssuerSpec, specPath *field.Path) field.ErrorList {
+func ValidateCertificateForCAIssuer(crt *v1alpha2.CertificateSpec, issuer *v1alpha2.IssuerSpec, specPath *field.Path) field.ErrorList {
 	el := field.ErrorList{}
 
 	return el
 }
 
-func ValidateCertificateForVaultIssuer(crt *v1alpha1.CertificateSpec, issuer *v1alpha1.IssuerSpec, specPath *field.Path) field.ErrorList {
+func ValidateCertificateForVaultIssuer(crt *v1alpha2.CertificateSpec, issuer *v1alpha2.IssuerSpec, specPath *field.Path) field.ErrorList {
 	el := field.ErrorList{}
 
 	if crt.IsCA {
@@ -92,13 +92,13 @@ func ValidateCertificateForVaultIssuer(crt *v1alpha1.CertificateSpec, issuer *v1
 	return el
 }
 
-func ValidateCertificateForSelfSignedIssuer(crt *v1alpha1.CertificateSpec, issuer *v1alpha1.IssuerSpec, specPath *field.Path) field.ErrorList {
+func ValidateCertificateForSelfSignedIssuer(crt *v1alpha2.CertificateSpec, issuer *v1alpha2.IssuerSpec, specPath *field.Path) field.ErrorList {
 	el := field.ErrorList{}
 
 	return el
 }
 
-func ValidateCertificateForVenafiIssuer(crt *v1alpha1.CertificateSpec, issuer *v1alpha1.IssuerSpec, specPath *field.Path) field.ErrorList {
+func ValidateCertificateForVenafiIssuer(crt *v1alpha2.CertificateSpec, issuer *v1alpha2.IssuerSpec, specPath *field.Path) field.ErrorList {
 	el := field.ErrorList{}
 
 	return el

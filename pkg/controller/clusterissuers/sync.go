@@ -25,7 +25,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/errors"
 
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	"github.com/jetstack/cert-manager/pkg/internal/apis/certmanager/validation"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 	"github.com/jetstack/cert-manager/pkg/metrics"
@@ -38,7 +38,7 @@ const (
 	messageErrorInitIssuer = "Error initializing issuer: "
 )
 
-func (c *controller) Sync(ctx context.Context, iss *v1alpha1.ClusterIssuer) (err error) {
+func (c *controller) Sync(ctx context.Context, iss *v1alpha2.ClusterIssuer) (err error) {
 	metrics.Default.IncrementSyncCallCount(ControllerName)
 
 	log := logf.FromContext(ctx)
@@ -53,14 +53,14 @@ func (c *controller) Sync(ctx context.Context, iss *v1alpha1.ClusterIssuer) (err
 	el := validation.ValidateClusterIssuer(issuerCopy)
 	if len(el) > 0 {
 		msg := fmt.Sprintf("Resource validation failed: %v", el.ToAggregate())
-		apiutil.SetIssuerCondition(issuerCopy, v1alpha1.IssuerConditionReady, v1alpha1.ConditionFalse, errorConfig, msg)
+		apiutil.SetIssuerCondition(issuerCopy, v1alpha2.IssuerConditionReady, v1alpha2.ConditionFalse, errorConfig, msg)
 		return
 	}
 
 	// Remove existing ErrorConfig condition if it exists
 	for i, c := range issuerCopy.Status.Conditions {
-		if c.Type == v1alpha1.IssuerConditionReady {
-			if c.Reason == errorConfig && c.Status == v1alpha1.ConditionFalse {
+		if c.Type == v1alpha2.IssuerConditionReady {
+			if c.Reason == errorConfig && c.Status == v1alpha2.ConditionFalse {
 				issuerCopy.Status.Conditions = append(issuerCopy.Status.Conditions[:i], issuerCopy.Status.Conditions[i+1:]...)
 				break
 			}
@@ -84,12 +84,12 @@ func (c *controller) Sync(ctx context.Context, iss *v1alpha1.ClusterIssuer) (err
 	return nil
 }
 
-func (c *controller) updateIssuerStatus(old, new *v1alpha1.ClusterIssuer) (*v1alpha1.ClusterIssuer, error) {
+func (c *controller) updateIssuerStatus(old, new *v1alpha2.ClusterIssuer) (*v1alpha2.ClusterIssuer, error) {
 	if reflect.DeepEqual(old.Status, new.Status) {
 		return nil, nil
 	}
 	// TODO: replace Update call with UpdateStatus. This requires a custom API
 	// server with the /status subresource enabled and/or subresource support
 	// for CRDs (https://github.com/kubernetes/kubernetes/issues/38113)
-	return c.cmClient.CertmanagerV1alpha1().ClusterIssuers().Update(new)
+	return c.cmClient.CertmanagerV1alpha2().ClusterIssuers().Update(new)
 }

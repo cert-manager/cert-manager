@@ -28,9 +28,9 @@ import (
 	"k8s.io/client-go/util/workqueue"
 	"k8s.io/utils/clock"
 
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	cmclient "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
-	cmlisters "github.com/jetstack/cert-manager/pkg/client/listers/certmanager/v1alpha1"
+	cmlisters "github.com/jetstack/cert-manager/pkg/client/listers/certmanager/v1alpha2"
 	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 	"github.com/jetstack/cert-manager/pkg/scheduler"
@@ -91,8 +91,8 @@ func (c *certificateRequestManager) Register(ctx *controllerpkg.Context) (workqu
 	c.queue = workqueue.NewNamedRateLimitingQueue(workqueue.NewItemExponentialFailureRateLimiter(time.Second*5, time.Minute*30), ControllerName)
 
 	// obtain references to all the informers used by this controller
-	certificateInformer := ctx.SharedInformerFactory.Certmanager().V1alpha1().Certificates()
-	certificateRequestInformer := ctx.SharedInformerFactory.Certmanager().V1alpha1().CertificateRequests()
+	certificateInformer := ctx.SharedInformerFactory.Certmanager().V1alpha2().Certificates()
+	certificateRequestInformer := ctx.SharedInformerFactory.Certmanager().V1alpha2().CertificateRequests()
 	secretsInformer := ctx.KubeSharedInformerFactory.Core().V1().Secrets()
 
 	// build a list of InformerSynced functions that will be returned by the Register method.

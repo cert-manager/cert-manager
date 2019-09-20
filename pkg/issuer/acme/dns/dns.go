@@ -29,7 +29,7 @@ import (
 
 	"github.com/jetstack/cert-manager/pkg/acme/webhook"
 	whapi "github.com/jetstack/cert-manager/pkg/acme/webhook/apis/acme/v1alpha1"
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	"github.com/jetstack/cert-manager/pkg/controller"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/acmedns"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/akamai"
@@ -78,7 +78,7 @@ type Solver struct {
 }
 
 // Present performs the work to configure DNS to resolve a DNS01 challenge.
-func (s *Solver) Present(ctx context.Context, issuer v1alpha1.GenericIssuer, ch *v1alpha1.Challenge) error {
+func (s *Solver) Present(ctx context.Context, issuer v1alpha2.GenericIssuer, ch *v1alpha2.Challenge) error {
 	log := logs.WithResource(logs.FromContext(ctx, "Present"), ch).WithValues("domain", ch.Spec.DNSName)
 	ctx = logs.NewContext(ctx, log)
 
@@ -107,7 +107,7 @@ func (s *Solver) Present(ctx context.Context, issuer v1alpha1.GenericIssuer, ch 
 }
 
 // Check verifies that the DNS records for the ACME challenge have propagated.
-func (s *Solver) Check(ctx context.Context, issuer v1alpha1.GenericIssuer, ch *v1alpha1.Challenge) error {
+func (s *Solver) Check(ctx context.Context, issuer v1alpha2.GenericIssuer, ch *v1alpha2.Challenge) error {
 	log := logs.WithResource(logs.FromContext(ctx, "Check"), ch).WithValues("domain", ch.Spec.DNSName)
 	ctx = logs.NewContext(ctx, log)
 
@@ -137,7 +137,7 @@ func (s *Solver) Check(ctx context.Context, issuer v1alpha1.GenericIssuer, ch *v
 
 // CleanUp removes DNS records which are no longer needed after
 // certificate issuance.
-func (s *Solver) CleanUp(ctx context.Context, issuer v1alpha1.GenericIssuer, ch *v1alpha1.Challenge) error {
+func (s *Solver) CleanUp(ctx context.Context, issuer v1alpha2.GenericIssuer, ch *v1alpha2.Challenge) error {
 	log := logs.WithResource(logs.FromContext(ctx, "CleanUp"), ch).WithValues("domain", ch.Spec.DNSName)
 	ctx = logs.NewContext(ctx, log)
 
@@ -163,14 +163,14 @@ func (s *Solver) CleanUp(ctx context.Context, issuer v1alpha1.GenericIssuer, ch 
 	return slv.CleanUp(ch.Spec.DNSName, fqdn, ch.Spec.Key)
 }
 
-func followCNAME(strategy v1alpha1.CNAMEStrategy) bool {
-	if strategy == v1alpha1.FollowStrategy {
+func followCNAME(strategy v1alpha2.CNAMEStrategy) bool {
+	if strategy == v1alpha2.FollowStrategy {
 		return true
 	}
 	return false
 }
 
-func extractChallengeSolverConfig(ch *v1alpha1.Challenge) (*v1alpha1.ACMEChallengeSolverDNS01, error) {
+func extractChallengeSolverConfig(ch *v1alpha2.Challenge) (*v1alpha2.ACMEChallengeSolverDNS01, error) {
 	switch {
 	case ch.Spec.Solver != nil:
 		return ch.Spec.Solver.DNS01, nil
@@ -182,7 +182,7 @@ func extractChallengeSolverConfig(ch *v1alpha1.Challenge) (*v1alpha1.ACMEChallen
 // solverForChallenge returns a Solver for the given providerName.
 // The providerName is the name of an ACME DNS-01 challenge provider as
 // specified on the Issuer resource for the Solver.
-func (s *Solver) solverForChallenge(ctx context.Context, issuer v1alpha1.GenericIssuer, ch *v1alpha1.Challenge) (solver, *v1alpha1.ACMEChallengeSolverDNS01, error) {
+func (s *Solver) solverForChallenge(ctx context.Context, issuer v1alpha2.GenericIssuer, ch *v1alpha2.Challenge) (solver, *v1alpha2.ACMEChallengeSolverDNS01, error) {
 	log := logs.FromContext(ctx, "solverForChallenge")
 	dbg := log.V(logs.DebugLevel)
 	ctx = logs.NewContext(ctx, log)
@@ -356,7 +356,7 @@ func (s *Solver) solverForChallenge(ctx context.Context, issuer v1alpha1.Generic
 	return impl, providerConfig, nil
 }
 
-func (s *Solver) prepareChallengeRequest(issuer v1alpha1.GenericIssuer, ch *v1alpha1.Challenge) (webhook.Solver, *whapi.ChallengeRequest, error) {
+func (s *Solver) prepareChallengeRequest(issuer v1alpha2.GenericIssuer, ch *v1alpha2.Challenge) (webhook.Solver, *whapi.ChallengeRequest, error) {
 	dns01Config, err := extractChallengeSolverConfig(ch)
 	if err != nil {
 		return nil, nil, err
@@ -404,7 +404,7 @@ func (s *Solver) prepareChallengeRequest(issuer v1alpha1.GenericIssuer, ch *v1al
 
 var errNotFound = fmt.Errorf("failed to determine DNS01 solver type")
 
-func (s *Solver) dns01SolverForConfig(config *v1alpha1.ACMEChallengeSolverDNS01) (webhook.Solver, interface{}, error) {
+func (s *Solver) dns01SolverForConfig(config *v1alpha2.ACMEChallengeSolverDNS01) (webhook.Solver, interface{}, error) {
 	solverName := ""
 	var c interface{}
 	switch {
@@ -463,7 +463,7 @@ func NewSolver(ctx *controller.Context) (*Solver, error) {
 	}, nil
 }
 
-func (s *Solver) loadSecretData(selector *v1alpha1.SecretKeySelector, ns string) ([]byte, error) {
+func (s *Solver) loadSecretData(selector *v1alpha2.SecretKeySelector, ns string) ([]byte, error) {
 	secret, err := s.secretLister.Secrets(ns).Get(selector.Name)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to load secret %q", ns+"/"+selector.Name)

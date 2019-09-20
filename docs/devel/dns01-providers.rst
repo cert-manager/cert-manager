@@ -25,7 +25,7 @@ Steps to add a ``FooDNS`` DNS-01 provider:
      cert-manager does not use environment variables for internal configuration, so calls to this package should not be required.
 
 3. Add unit test coverage for this package.
-4. Add your provider configuration types to the API (located in ``pkg/apis/certmanager/v1alpha1/types.go``) and regenerate code (run ``./hack/update-codegen.sh``).
+4. Add your provider configuration types to the API (located in ``pkg/apis/certmanager/v1alpha2/types.go``) and regenerate code (run ``./hack/update-codegen.sh``).
    New API types should have an associated short documentation string,
    which is added to the reference API documentation (run ``./hack/update-reference-docs-dockerized.sh`` to update the API documentation).
 5. Register the provider in ``pkg/issuer/acme/dns``:

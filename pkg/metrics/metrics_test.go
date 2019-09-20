@@ -24,30 +24,30 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus/testutil"
 
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func getReadyConditionStatus(crt *v1alpha1.Certificate) v1alpha1.ConditionStatus {
+func getReadyConditionStatus(crt *v1alpha2.Certificate) v1alpha2.ConditionStatus {
 	for _, c := range crt.Status.Conditions {
 		switch c.Type {
-		case v1alpha1.CertificateConditionReady:
+		case v1alpha2.CertificateConditionReady:
 			return c.Status
 		}
 	}
-	return v1alpha1.ConditionUnknown
+	return v1alpha2.ConditionUnknown
 }
 
-func buildCertificate(name, namespace string, condition v1alpha1.ConditionStatus) *v1alpha1.Certificate {
-	return &v1alpha1.Certificate{
+func buildCertificate(name, namespace string, condition v1alpha2.ConditionStatus) *v1alpha2.Certificate {
+	return &v1alpha2.Certificate{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: namespace,
 		},
-		Status: v1alpha1.CertificateStatus{
-			Conditions: []v1alpha1.CertificateCondition{
+		Status: v1alpha2.CertificateStatus{
+			Conditions: []v1alpha2.CertificateCondition{
 				{
-					Type:   v1alpha1.CertificateConditionReady,
+					Type:   v1alpha2.CertificateConditionReady,
 					Status: condition,
 				},
 			},
@@ -61,13 +61,13 @@ func TestUpdateCertificateExpiry(t *testing.T) {
 	# TYPE certmanager_certificate_expiration_timestamp_seconds gauge
 `
 	type testT struct {
-		crt      *v1alpha1.Certificate
+		crt      *v1alpha2.Certificate
 		cert     *x509.Certificate
 		expected string
 	}
 	tests := map[string]testT{
 		"first": {
-			crt: &v1alpha1.Certificate{
+			crt: &v1alpha2.Certificate{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "something",
 					Namespace: "default",
@@ -106,12 +106,12 @@ func TestUpdateCertificateReadyStatus(t *testing.T) {
 `
 
 	type testT struct {
-		crt      *v1alpha1.Certificate
+		crt      *v1alpha2.Certificate
 		expected string
 	}
 	tests := map[string]testT{
 		"ready status true is updated correctly": {
-			crt: buildCertificate("something", "default", v1alpha1.ConditionTrue),
+			crt: buildCertificate("something", "default", v1alpha2.ConditionTrue),
 			expected: `
 	certmanager_certificate_ready_status{condition="False",name="something",namespace="default"} 0
 	certmanager_certificate_ready_status{condition="True",name="something",namespace="default"} 1
@@ -119,7 +119,7 @@ func TestUpdateCertificateReadyStatus(t *testing.T) {
 `,
 		},
 		"ready status false is updated correctly": {
-			crt: buildCertificate("something", "default", v1alpha1.ConditionFalse),
+			crt: buildCertificate("something", "default", v1alpha2.ConditionFalse),
 			expected: `
 	certmanager_certificate_ready_status{condition="False",name="something",namespace="default"} 1
 	certmanager_certificate_ready_status{condition="True",name="something",namespace="default"} 0
@@ -127,7 +127,7 @@ func TestUpdateCertificateReadyStatus(t *testing.T) {
 `,
 		},
 		"ready status unknown is updated correctly": {
-			crt: buildCertificate("something", "default", v1alpha1.ConditionUnknown),
+			crt: buildCertificate("something", "default", v1alpha2.ConditionUnknown),
 			expected: `
 	certmanager_certificate_ready_status{condition="False",name="something",namespace="default"} 0
 	certmanager_certificate_ready_status{condition="True",name="something",namespace="default"} 0
@@ -161,21 +161,21 @@ func TestCleanUp(t *testing.T) {
 	# TYPE certmanager_certificate_ready_status gauge
 `
 	type testT struct {
-		active         map[*v1alpha1.Certificate]*x509.Certificate
-		inactive       map[*v1alpha1.Certificate]*x509.Certificate
+		active         map[*v1alpha2.Certificate]*x509.Certificate
+		inactive       map[*v1alpha2.Certificate]*x509.Certificate
 		expectedExpiry string
 		expectedReady  string
 	}
 	tests := map[string]testT{
 		"inactive certificate metrics cleaned up while active certificate metrics kept": {
-			active: map[*v1alpha1.Certificate]*x509.Certificate{
-				buildCertificate("active", "default", v1alpha1.ConditionTrue): {
+			active: map[*v1alpha2.Certificate]*x509.Certificate{
+				buildCertificate("active", "default", v1alpha2.ConditionTrue): {
 					// fixed expiry time for testing
 					NotAfter: time.Unix(2208988804, 0),
 				},
 			},
-			inactive: map[*v1alpha1.Certificate]*x509.Certificate{
-				buildCertificate("inactive", "default", v1alpha1.ConditionTrue): {
+			inactive: map[*v1alpha2.Certificate]*x509.Certificate{
+				buildCertificate("inactive", "default", v1alpha2.ConditionTrue): {
 					// fixed expiry time for testing
 					NotAfter: time.Unix(2208988804, 0),
 				},
@@ -190,17 +190,17 @@ func TestCleanUp(t *testing.T) {
 `,
 		},
 		"no metrics cleaned up when only active certificate metrics": {
-			active: map[*v1alpha1.Certificate]*x509.Certificate{
-				buildCertificate("active", "default", v1alpha1.ConditionTrue): {
+			active: map[*v1alpha2.Certificate]*x509.Certificate{
+				buildCertificate("active", "default", v1alpha2.ConditionTrue): {
 					// fixed expiry time for testing
 					NotAfter: time.Unix(2208988804, 0),
 				},
-				buildCertificate("also-active", "default", v1alpha1.ConditionTrue): {
+				buildCertificate("also-active", "default", v1alpha2.ConditionTrue): {
 					// fixed expiry time for testing
 					NotAfter: time.Unix(2208988804, 0),
 				},
 			},
-			inactive: map[*v1alpha1.Certificate]*x509.Certificate{},
+			inactive: map[*v1alpha2.Certificate]*x509.Certificate{},
 			expectedExpiry: `
 	certmanager_certificate_expiration_timestamp_seconds{name="active",namespace="default"} 2.208988804e+09
 	certmanager_certificate_expiration_timestamp_seconds{name="also-active",namespace="default"} 2.208988804e+09
@@ -215,13 +215,13 @@ func TestCleanUp(t *testing.T) {
 `,
 		},
 		"all metrics cleaned up when only inactive certificate metrics": {
-			active: map[*v1alpha1.Certificate]*x509.Certificate{},
-			inactive: map[*v1alpha1.Certificate]*x509.Certificate{
-				buildCertificate("inactive", "default", v1alpha1.ConditionTrue): {
+			active: map[*v1alpha2.Certificate]*x509.Certificate{},
+			inactive: map[*v1alpha2.Certificate]*x509.Certificate{
+				buildCertificate("inactive", "default", v1alpha2.ConditionTrue): {
 					// fixed expiry time for testing
 					NotAfter: time.Unix(2208988804, 0),
 				},
-				buildCertificate("also-inactive", "default", v1alpha1.ConditionTrue): {
+				buildCertificate("also-inactive", "default", v1alpha2.ConditionTrue): {
 					// fixed expiry time for testing
 					NotAfter: time.Unix(2208988804, 0),
 				},
@@ -234,7 +234,7 @@ func TestCleanUp(t *testing.T) {
 		t.Run(n, func(t *testing.T) {
 			defer cleanUpCertificates(nil)
 
-			var activeCrts []*v1alpha1.Certificate
+			var activeCrts []*v1alpha2.Certificate
 			for crt, cert := range test.active {
 				updateX509Expiry(crt, cert)
 				updateCertificateReadyStatus(crt, getReadyConditionStatus(crt))

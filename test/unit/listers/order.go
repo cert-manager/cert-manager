@@ -19,26 +19,26 @@ package listers
 import (
 	"k8s.io/apimachinery/pkg/labels"
 
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
-	cmlisters "github.com/jetstack/cert-manager/pkg/client/listers/certmanager/v1alpha1"
+	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmlisters "github.com/jetstack/cert-manager/pkg/client/listers/certmanager/v1alpha2"
 )
 
 var _ cmlisters.OrderLister = &FakeOrderLister{}
 var _ cmlisters.OrderNamespaceLister = &FakeOrderNamespaceLister{}
 
 type FakeOrderLister struct {
-	ListFn   func(selector labels.Selector) (ret []*v1alpha1.Order, err error)
+	ListFn   func(selector labels.Selector) (ret []*v1alpha2.Order, err error)
 	OrdersFn func(namespace string) cmlisters.OrderNamespaceLister
 }
 
 type FakeOrderNamespaceLister struct {
-	ListFn func(selector labels.Selector) (ret []*v1alpha1.Order, err error)
-	GetFn  func(name string) (ret *v1alpha1.Order, err error)
+	ListFn func(selector labels.Selector) (ret []*v1alpha2.Order, err error)
+	GetFn  func(name string) (ret *v1alpha2.Order, err error)
 }
 
 func NewFakeOrderLister() *FakeOrderLister {
 	return &FakeOrderLister{
-		ListFn: func(selector labels.Selector) (ret []*v1alpha1.Order, err error) {
+		ListFn: func(selector labels.Selector) (ret []*v1alpha2.Order, err error) {
 			return nil, nil
 		},
 
@@ -50,16 +50,16 @@ func NewFakeOrderLister() *FakeOrderLister {
 
 func NewFakeOrderNamespaceLister() *FakeOrderNamespaceLister {
 	return &FakeOrderNamespaceLister{
-		ListFn: func(selector labels.Selector) (ret []*v1alpha1.Order, err error) {
+		ListFn: func(selector labels.Selector) (ret []*v1alpha2.Order, err error) {
 			return nil, nil
 		},
-		GetFn: func(name string) (ret *v1alpha1.Order, err error) {
+		GetFn: func(name string) (ret *v1alpha2.Order, err error) {
 			return nil, nil
 		},
 	}
 }
 
-func (f *FakeOrderLister) List(selector labels.Selector) (ret []*v1alpha1.Order, err error) {
+func (f *FakeOrderLister) List(selector labels.Selector) (ret []*v1alpha2.Order, err error) {
 	return f.ListFn(selector)
 }
 
@@ -67,10 +67,10 @@ func (f *FakeOrderLister) Orders(namespace string) cmlisters.OrderNamespaceListe
 	return f.OrdersFn(namespace)
 }
 
-func (f *FakeOrderNamespaceLister) List(selector labels.Selector) (ret []*v1alpha1.Order, err error) {
+func (f *FakeOrderNamespaceLister) List(selector labels.Selector) (ret []*v1alpha2.Order, err error) {
 	return f.ListFn(selector)
 }
 
-func (f *FakeOrderNamespaceLister) Get(name string) (*v1alpha1.Order, error) {
+func (f *FakeOrderNamespaceLister) Get(name string) (*v1alpha2.Order, error) {
 	return f.GetFn(name)
 }

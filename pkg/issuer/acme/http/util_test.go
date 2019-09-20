@@ -19,7 +19,7 @@ package http
 import (
 	"testing"
 
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	"github.com/jetstack/cert-manager/pkg/controller/test"
 	"github.com/jetstack/cert-manager/test/unit/gen"
 )
@@ -34,7 +34,7 @@ type solverFixture struct {
 	*test.Builder
 
 	// Challenge resource to use during tests
-	Challenge *v1alpha1.Challenge
+	Challenge *v1alpha2.Challenge
 
 	// PreFn will run before the test is run, but after the fixture has been initialised.
 	// This is useful if you want to load the clientset with some resources *after* the

@@ -29,14 +29,14 @@ import (
 	"github.com/hashicorp/vault/helper/certutil"
 	corelisters "k8s.io/client-go/listers/core/v1"
 
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 )
 
 var _ Interface = &Vault{}
 
 type VaultClientBuilder func(namespace string, secretsLister corelisters.SecretLister,
-	issuer v1alpha1.GenericIssuer) (Interface, error)
+	issuer v1alpha2.GenericIssuer) (Interface, error)
 
 type Interface interface {
 	Sign(csrPEM []byte, duration time.Duration) (certPEM []byte, caPEM []byte, err error)
@@ -53,14 +53,14 @@ type Client interface {
 
 type Vault struct {
 	secretsLister corelisters.SecretLister
-	issuer        v1alpha1.GenericIssuer
+	issuer        v1alpha2.GenericIssuer
 	namespace     string
 
 	client Client
 }
 
 func New(namespace string, secretsLister corelisters.SecretLister,
-	issuer v1alpha1.GenericIssuer) (Interface, error) {
+	issuer v1alpha2.GenericIssuer) (Interface, error) {
 	v := &Vault{
 		secretsLister: secretsLister,
 		namespace:     namespace,
@@ -208,7 +208,7 @@ func (v *Vault) tokenRef(name, namespace, key string) (string, error) {
 	return token, nil
 }
 
-func (v *Vault) appRoleRef(appRole *v1alpha1.VaultAppRole) (roleId, secretId string, err error) {
+func (v *Vault) appRoleRef(appRole *v1alpha2.VaultAppRole) (roleId, secretId string, err error) {
 	roleId = strings.TrimSpace(appRole.RoleId)
 
 	secret, err := v.secretsLister.Secrets(v.namespace).Get(appRole.SecretRef.Name)
@@ -229,7 +229,7 @@ func (v *Vault) appRoleRef(appRole *v1alpha1.VaultAppRole) (roleId, secretId str
 	return roleId, secretId, nil
 }
 
-func (v *Vault) requestTokenWithAppRoleRef(client Client, appRole *v1alpha1.VaultAppRole) (string, error) {
+func (v *Vault) requestTokenWithAppRoleRef(client Client, appRole *v1alpha2.VaultAppRole) (string, error) {
 	roleId, secretId, err := v.appRoleRef(appRole)
 	if err != nil {
 		return "", err
