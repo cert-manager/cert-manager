@@ -314,6 +314,13 @@ func (c *controller) certificateRequiresIssuance(ctx context.Context, log logr.L
 		return true
 	}
 
+	// validate the common name is correct
+	expectedCN := crt.Spec.CommonName
+	if expectedCN != cert.Subject.CommonName {
+		log.Info("certificate common name is not as expected, re-issuing")
+		return true
+	}
+
 	// validate the dns names are correct
 	expectedDNSNames := pki.DNSNamesForCertificate(crt)
 	if !util.EqualUnsorted(cert.DNSNames, expectedDNSNames) {

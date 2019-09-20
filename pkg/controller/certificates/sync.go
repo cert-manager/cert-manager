@@ -797,7 +797,9 @@ func setSecretValues(ctx context.Context, crt *cmapi.Certificate, s *corev1.Secr
 			return err
 		}
 
-		s.Annotations[cmapi.CommonNameAnnotationKey] = x509Cert.Subject.CommonName
+		if len(x509Cert.Subject.CommonName) > 0 {
+			s.Annotations[cmapi.CommonNameAnnotationKey] = x509Cert.Subject.CommonName
+		}
 		s.Annotations[cmapi.AltNamesAnnotationKey] = strings.Join(x509Cert.DNSNames, ",")
 		s.Annotations[cmapi.IPSANAnnotationKey] = strings.Join(pki.IPAddressesToString(x509Cert.IPAddresses), ",")
 	}
