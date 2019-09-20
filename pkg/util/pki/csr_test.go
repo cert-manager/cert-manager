@@ -125,7 +125,7 @@ func TestCommonNameForCertificate(t *testing.T) {
 		{
 			name:        "certificate with one DNS name set",
 			crtDNSNames: []string{"dnsname"},
-			expectedCN:  "dnsname",
+			expectedCN:  "",
 		},
 		{
 			name:        "certificate with both common name and dnsName set",
@@ -136,12 +136,12 @@ func TestCommonNameForCertificate(t *testing.T) {
 		{
 			name:        "certificate with multiple dns names set",
 			crtDNSNames: []string{"dnsname1", "dnsname2"},
-			expectedCN:  "dnsname1",
+			expectedCN:  "",
 		},
 	}
 	testFn := func(test testT) func(*testing.T) {
 		return func(t *testing.T) {
-			actualCN := CommonNameForCertificate(buildCertificate(test.crtCN, test.crtDNSNames...))
+			actualCN := buildCertificate(test.crtCN, test.crtDNSNames...).Spec.CommonName
 			if actualCN != test.expectedCN {
 				t.Errorf("expected %q but got %q", test.expectedCN, actualCN)
 				return

@@ -90,9 +90,15 @@ func certificateMatchesSpec(crt *v1alpha2.Certificate, key crypto.Signer, cert *
 		errs = append(errs, fmt.Sprintf("Certificate private key does not match certificate"))
 	}
 
+	// If CN is set, and the user didn’t specify it, ensure that the CN is one of the dnsNames
 	// validate the common name is correct
-	expectedCN := pki.CommonNameForCertificate(crt)
-	if expectedCN != cert.Subject.CommonName {
+	expectedCN := crt.Spec.CommonName
+	if len(expectedCN) == 0 && len(cert.Subject.CommonName) > 0 {
+		if !util.Contains(cert.DNSNames, cert.Subject.CommonName) {
+			errs = append(errs,
+				fmt.Sprintf("Common name not set on Certificate, but the common name on the TLS certificate matches no DNS names: %q", cert.Subject.CommonName))
+		}
+	} else if expectedCN != cert.Subject.CommonName {
 		errs = append(errs, fmt.Sprintf("Common name on TLS certificate not up to date: %q", cert.Subject.CommonName))
 	}
 
@@ -100,6 +106,11 @@ func certificateMatchesSpec(crt *v1alpha2.Certificate, key crypto.Signer, cert *
 	expectedDNSNames := pki.DNSNamesForCertificate(crt)
 	if !util.EqualUnsorted(cert.DNSNames, expectedDNSNames) {
 		errs = append(errs, fmt.Sprintf("DNS names on TLS certificate not up to date: %q", cert.DNSNames))
+	}
+
+	expectedURIs := crt.Spec.URISANs
+	if !util.EqualUnsorted(pki.URLsToString(cert.URIs), expectedURIs) {
+		errs = append(errs, fmt.Sprintf("URI SANs on TLS certificate not up to date: %q", cert.URIs))
 	}
 
 	// validate the ip addresses are correct

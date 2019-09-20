@@ -140,9 +140,15 @@ func (h *Helper) ValidateIssuedCertificate(certificate *v1alpha2.Certificate, ro
 	// TODO: validate private key KeySize
 
 	// check the provided certificate is valid
-	expectedCN := pki.CommonNameForCertificate(certificate)
+	expectedCN := certificate.Spec.CommonName
 	expectedOrganization := pki.OrganizationForCertificate(certificate)
 	expectedDNSNames := pki.DNSNamesForCertificate(certificate)
+	uris, err := pki.URIsForCertificate(certificate)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse URIs: %s", err)
+	}
+
+	expectedURIs := pki.URLsToString(uris)
 
 	certBytes, ok := secret.Data[corev1.TLSCertKey]
 	if !ok {
@@ -153,8 +159,10 @@ func (h *Helper) ValidateIssuedCertificate(certificate *v1alpha2.Certificate, ro
 	if err != nil {
 		return nil, err
 	}
-	if expectedCN != cert.Subject.CommonName || !util.EqualUnsorted(cert.DNSNames, expectedDNSNames) || !(len(cert.Subject.Organization) == 0 || util.EqualUnsorted(cert.Subject.Organization, expectedOrganization)) {
-		return nil, fmt.Errorf("Expected certificate valid for CN %q, O %v, dnsNames %v but got a certificate valid for CN %q, O %v, dnsNames %v", expectedCN, expectedOrganization, expectedDNSNames, cert.Subject.CommonName, cert.Subject.Organization, cert.DNSNames)
+	if expectedCN != cert.Subject.CommonName || !util.EqualUnsorted(cert.DNSNames, expectedDNSNames) || !util.EqualUnsorted(pki.URLsToString(cert.URIs), expectedURIs) ||
+		!(len(cert.Subject.Organization) == 0 || util.EqualUnsorted(cert.Subject.Organization, expectedOrganization)) {
+		return nil, fmt.Errorf("Expected certificate valid for CN %q, O %v, dnsNames %v, uriSANs %v,but got a certificate valid for CN %q, O %v, dnsNames %v, uriSANs %v",
+			expectedCN, expectedOrganization, expectedDNSNames, expectedURIs, cert.Subject.CommonName, cert.Subject.Organization, cert.DNSNames, cert.URIs)
 	}
 
 	if certificate.Status.NotAfter == nil {
