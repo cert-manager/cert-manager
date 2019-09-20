@@ -27,6 +27,7 @@ import (
 	acmecl "github.com/jetstack/cert-manager/pkg/acme/client"
 	acmefake "github.com/jetstack/cert-manager/pkg/acme/fake"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	testpkg "github.com/jetstack/cert-manager/pkg/controller/test"
 	"github.com/jetstack/cert-manager/pkg/issuer"
 	"github.com/jetstack/cert-manager/test/unit/gen"
@@ -78,7 +79,7 @@ func TestSyncHappyPath(t *testing.T) {
 		},
 	}))
 	baseChallenge := gen.Challenge("testchal",
-		gen.SetChallengeIssuer(v1alpha2.ObjectReference{
+		gen.SetChallengeIssuer(cmmeta.ObjectReference{
 			Name: "testissuer",
 		}),
 	)

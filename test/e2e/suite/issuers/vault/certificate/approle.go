@@ -24,6 +24,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	"github.com/jetstack/cert-manager/test/e2e/framework"
 	"github.com/jetstack/cert-manager/test/e2e/framework/addon/tiller"
 	vaultaddon "github.com/jetstack/cert-manager/test/e2e/framework/addon/vault"
@@ -107,7 +108,7 @@ var _ = framework.CertManagerDescribe("Vault Certificate (AppRole)", func() {
 			issuerName,
 			v1alpha2.IssuerCondition{
 				Type:   v1alpha2.IssuerConditionReady,
-				Status: v1alpha2.ConditionTrue,
+				Status: cmmeta.ConditionTrue,
 			})
 		Expect(err).NotTo(HaveOccurred())
 
@@ -165,7 +166,7 @@ var _ = framework.CertManagerDescribe("Vault Certificate (AppRole)", func() {
 				issuerName,
 				v1alpha2.IssuerCondition{
 					Type:   v1alpha2.IssuerConditionReady,
-					Status: v1alpha2.ConditionTrue,
+					Status: cmmeta.ConditionTrue,
 				})
 			Expect(err).NotTo(HaveOccurred())
 

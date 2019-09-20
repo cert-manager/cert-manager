@@ -29,6 +29,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	cmutil "github.com/jetstack/cert-manager/pkg/util"
 	"github.com/jetstack/cert-manager/test/e2e/framework"
 	"github.com/jetstack/cert-manager/test/e2e/framework/addon"
@@ -104,7 +105,7 @@ var _ = framework.CertManagerDescribe("ACME CertificateRequest (HTTP01)", func()
 			issuerName,
 			v1alpha2.IssuerCondition{
 				Type:   v1alpha2.IssuerConditionReady,
-				Status: v1alpha2.ConditionTrue,
+				Status: cmmeta.ConditionTrue,
 			})
 		Expect(err).NotTo(HaveOccurred())
 		By("Verifying the ACME account URI is set")
@@ -212,7 +213,7 @@ var _ = framework.CertManagerDescribe("ACME CertificateRequest (HTTP01)", func()
 
 		notReadyCondition := v1alpha2.CertificateRequestCondition{
 			Type:   v1alpha2.CertificateRequestConditionReady,
-			Status: v1alpha2.ConditionFalse,
+			Status: cmmeta.ConditionFalse,
 		}
 		Eventually(cr, "30s", "1s").Should(HaveCondition(f, notReadyCondition))
 		Consistently(cr, "1m", "10s").Should(HaveCondition(f, notReadyCondition))

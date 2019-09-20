@@ -38,6 +38,7 @@ import (
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	"github.com/jetstack/cert-manager/pkg/controller/certificaterequests"
 	controllertest "github.com/jetstack/cert-manager/pkg/controller/test"
 	testpkg "github.com/jetstack/cert-manager/pkg/controller/test"
@@ -110,7 +111,7 @@ func TestSign(t *testing.T) {
 	tppIssuer := gen.IssuerFrom(baseIssuer,
 		gen.SetIssuerVenafi(cmapi.VenafiIssuer{
 			TPP: &cmapi.VenafiTPP{
-				CredentialsRef: cmapi.LocalObjectReference{
+				CredentialsRef: cmmeta.LocalObjectReference{
 					Name: tppSecret.Name,
 				},
 			},
@@ -120,8 +121,8 @@ func TestSign(t *testing.T) {
 	cloudIssuer := gen.IssuerFrom(baseIssuer,
 		gen.SetIssuerVenafi(cmapi.VenafiIssuer{
 			Cloud: &cmapi.VenafiCloud{
-				APITokenSecretRef: cmapi.SecretKeySelector{
-					LocalObjectReference: cmapi.LocalObjectReference{
+				APITokenSecretRef: cmmeta.SecretKeySelector{
+					LocalObjectReference: cmmeta.LocalObjectReference{
 						Name: cloudSecret.Name,
 					},
 				},
@@ -134,7 +135,7 @@ func TestSign(t *testing.T) {
 	)
 
 	tppCR := gen.CertificateRequestFrom(baseCR,
-		gen.SetCertificateRequestIssuer(cmapi.ObjectReference{
+		gen.SetCertificateRequestIssuer(cmmeta.ObjectReference{
 			Group: certmanager.GroupName,
 			Name:  tppIssuer.Name,
 			Kind:  tppIssuer.Kind,
@@ -142,7 +143,7 @@ func TestSign(t *testing.T) {
 	)
 
 	cloudCR := gen.CertificateRequestFrom(baseCR,
-		gen.SetCertificateRequestIssuer(cmapi.ObjectReference{
+		gen.SetCertificateRequestIssuer(cmmeta.ObjectReference{
 			Group: certmanager.GroupName,
 			Name:  cloudIssuer.Name,
 			Kind:  cloudIssuer.Kind,
@@ -213,7 +214,7 @@ func TestSign(t *testing.T) {
 						gen.CertificateRequestFrom(tppCR,
 							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
 								Type:               cmapi.CertificateRequestConditionReady,
-								Status:             cmapi.ConditionFalse,
+								Status:             cmmeta.ConditionFalse,
 								Reason:             cmapi.CertificateRequestReasonPending,
 								Message:            `Required secret resource not found: secret "test-tpp-secret" not found`,
 								LastTransitionTime: &metaFixedClockStart,
@@ -238,7 +239,7 @@ func TestSign(t *testing.T) {
 						gen.CertificateRequestFrom(tppCR,
 							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
 								Type:               cmapi.CertificateRequestConditionReady,
-								Status:             cmapi.ConditionFalse,
+								Status:             cmmeta.ConditionFalse,
 								Reason:             cmapi.CertificateRequestReasonPending,
 								Message:            "Failed to initialise venafi client for signing: this is a network error",
 								LastTransitionTime: &metaFixedClockStart,
@@ -265,7 +266,7 @@ func TestSign(t *testing.T) {
 						gen.CertificateRequestFrom(cloudCR,
 							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
 								Type:               cmapi.CertificateRequestConditionReady,
-								Status:             cmapi.ConditionFalse,
+								Status:             cmmeta.ConditionFalse,
 								Reason:             cmapi.CertificateRequestReasonPending,
 								Message:            `Required secret resource not found: secret "test-cloud-secret" not found`,
 								LastTransitionTime: &metaFixedClockStart,
@@ -289,7 +290,7 @@ func TestSign(t *testing.T) {
 						gen.CertificateRequestFrom(cloudCR,
 							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
 								Type:               cmapi.CertificateRequestConditionReady,
-								Status:             cmapi.ConditionFalse,
+								Status:             cmmeta.ConditionFalse,
 								Reason:             cmapi.CertificateRequestReasonPending,
 								Message:            "Failed to initialise venafi client for signing: this is a network error",
 								LastTransitionTime: &metaFixedClockStart,
@@ -316,7 +317,7 @@ func TestSign(t *testing.T) {
 						gen.CertificateRequestFrom(tppCR,
 							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
 								Type:               cmapi.CertificateRequestConditionReady,
-								Status:             cmapi.ConditionFalse,
+								Status:             cmmeta.ConditionFalse,
 								Reason:             cmapi.CertificateRequestReasonPending,
 								Message:            "Venafi certificate still in a pending state, the request will be retried: Issuance is pending. You may try retrieving the certificate later using Pickup ID: test-cert-id\n\tStatus: test-status-pending",
 								LastTransitionTime: &metaFixedClockStart,
@@ -344,7 +345,7 @@ func TestSign(t *testing.T) {
 						gen.CertificateRequestFrom(cloudCR,
 							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
 								Type:               cmapi.CertificateRequestConditionReady,
-								Status:             cmapi.ConditionFalse,
+								Status:             cmmeta.ConditionFalse,
 								Reason:             cmapi.CertificateRequestReasonPending,
 								Message:            "Venafi certificate still in a pending state, the request will be retried: Issuance is pending. You may try retrieving the certificate later using Pickup ID: test-cert-id\n\tStatus: test-status-pending",
 								LastTransitionTime: &metaFixedClockStart,
@@ -372,7 +373,7 @@ func TestSign(t *testing.T) {
 						gen.CertificateRequestFrom(tppCR,
 							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
 								Type:               cmapi.CertificateRequestConditionReady,
-								Status:             cmapi.ConditionFalse,
+								Status:             cmmeta.ConditionFalse,
 								Reason:             cmapi.CertificateRequestReasonFailed,
 								Message:            "Timed out waiting for venafi certificate, the request will be retried: Operation timed out. You may try retrieving the certificate later using Pickup ID: test-cert-id",
 								LastTransitionTime: &metaFixedClockStart,
@@ -400,7 +401,7 @@ func TestSign(t *testing.T) {
 						gen.CertificateRequestFrom(cloudCR,
 							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
 								Type:               cmapi.CertificateRequestConditionReady,
-								Status:             cmapi.ConditionFalse,
+								Status:             cmmeta.ConditionFalse,
 								Reason:             cmapi.CertificateRequestReasonFailed,
 								Message:            "Timed out waiting for venafi certificate, the request will be retried: Operation timed out. You may try retrieving the certificate later using Pickup ID: test-cert-id",
 								LastTransitionTime: &metaFixedClockStart,
@@ -428,7 +429,7 @@ func TestSign(t *testing.T) {
 						gen.CertificateRequestFrom(tppCR,
 							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
 								Type:               cmapi.CertificateRequestConditionReady,
-								Status:             cmapi.ConditionFalse,
+								Status:             cmmeta.ConditionFalse,
 								Reason:             cmapi.CertificateRequestReasonFailed,
 								Message:            "Failed to obtain venafi certificate: this is an error",
 								LastTransitionTime: &metaFixedClockStart,
@@ -457,7 +458,7 @@ func TestSign(t *testing.T) {
 						gen.CertificateRequestFrom(cloudCR,
 							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
 								Type:               cmapi.CertificateRequestConditionReady,
-								Status:             cmapi.ConditionFalse,
+								Status:             cmmeta.ConditionFalse,
 								Reason:             cmapi.CertificateRequestReasonFailed,
 								Message:            "Failed to obtain venafi certificate: this is an error",
 								LastTransitionTime: &metaFixedClockStart,
@@ -486,7 +487,7 @@ func TestSign(t *testing.T) {
 						gen.CertificateRequestFrom(tppCR,
 							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
 								Type:               cmapi.CertificateRequestConditionReady,
-								Status:             cmapi.ConditionTrue,
+								Status:             cmmeta.ConditionTrue,
 								Reason:             cmapi.CertificateRequestReasonIssued,
 								Message:            "Certificate fetched from issuer successfully",
 								LastTransitionTime: &metaFixedClockStart,
@@ -514,7 +515,7 @@ func TestSign(t *testing.T) {
 						gen.CertificateRequestFrom(cloudCR,
 							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
 								Type:               cmapi.CertificateRequestConditionReady,
-								Status:             cmapi.ConditionTrue,
+								Status:             cmmeta.ConditionTrue,
 								Reason:             cmapi.CertificateRequestReasonIssued,
 								Message:            "Certificate fetched from issuer successfully",
 								LastTransitionTime: &metaFixedClockStart,

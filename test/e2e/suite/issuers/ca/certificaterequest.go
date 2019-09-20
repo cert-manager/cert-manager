@@ -27,6 +27,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	"github.com/jetstack/cert-manager/test/e2e/framework"
 	"github.com/jetstack/cert-manager/test/e2e/util"
 	"github.com/jetstack/cert-manager/test/unit/gen"
@@ -63,7 +64,7 @@ var _ = framework.CertManagerDescribe("CA CertificateRequest", func() {
 			issuerName,
 			v1alpha2.IssuerCondition{
 				Type:   v1alpha2.IssuerConditionReady,
-				Status: v1alpha2.ConditionTrue,
+				Status: cmmeta.ConditionTrue,
 			})
 		Expect(err).NotTo(HaveOccurred())
 	})
@@ -139,7 +140,7 @@ var _ = framework.CertManagerDescribe("CA CertificateRequest", func() {
 				By("Creating a CertificateRequest with Usages")
 				csr, key, err := gen.CSR(x509.RSA, gen.SetCSRDNSNames(exampleDNSNames...), gen.SetCSRIPAddresses(exampleIPAddresses...), gen.SetCSRURIs(exampleURLs()...))
 				Expect(err).NotTo(HaveOccurred())
-				cr := gen.CertificateRequest(certificateRequestName, gen.SetCertificateRequestNamespace(f.Namespace.Name), gen.SetCertificateRequestIssuer(v1alpha2.ObjectReference{Kind: v1alpha2.IssuerKind, Name: issuerName}), gen.SetCertificateRequestDuration(v.inputDuration), gen.SetCertificateRequestCSR(csr))
+				cr := gen.CertificateRequest(certificateRequestName, gen.SetCertificateRequestNamespace(f.Namespace.Name), gen.SetCertificateRequestIssuer(cmmeta.ObjectReference{Kind: v1alpha2.IssuerKind, Name: issuerName}), gen.SetCertificateRequestDuration(v.inputDuration), gen.SetCertificateRequestCSR(csr))
 				cr, err = crClient.Create(cr)
 				Expect(err).NotTo(HaveOccurred())
 

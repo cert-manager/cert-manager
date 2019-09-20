@@ -23,6 +23,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	"github.com/jetstack/cert-manager/test/e2e/framework/addon/base"
 	"github.com/jetstack/cert-manager/test/e2e/framework/config"
 	"github.com/jetstack/cert-manager/test/e2e/framework/util/errors"
@@ -93,7 +94,7 @@ func (v *VenafiTPP) Provision() error {
 		Zone: v.config.Addons.Venafi.TPP.Zone,
 		TPP: &cmapi.VenafiTPP{
 			URL: v.config.Addons.Venafi.TPP.URL,
-			CredentialsRef: cmapi.LocalObjectReference{
+			CredentialsRef: cmmeta.LocalObjectReference{
 				Name: s.Name,
 			},
 		},

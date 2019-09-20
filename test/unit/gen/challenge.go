@@ -18,6 +18,7 @@ package gen
 
 import (
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 )
 
 type ChallengeModifier func(*v1alpha2.Challenge)
@@ -47,7 +48,7 @@ func SetChallengeType(t string) ChallengeModifier {
 }
 
 // SetIssuer sets the challenge.spec.issuerRef field
-func SetChallengeIssuer(o v1alpha2.ObjectReference) ChallengeModifier {
+func SetChallengeIssuer(o cmmeta.ObjectReference) ChallengeModifier {
 	return func(c *v1alpha2.Challenge) {
 		c.Spec.IssuerRef = o
 	}

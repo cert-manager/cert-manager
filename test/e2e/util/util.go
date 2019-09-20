@@ -28,7 +28,6 @@ import (
 	"net/url"
 	"time"
 
-	intscheme "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/scheme"
 	v1 "k8s.io/api/core/v1"
 	extv1beta1 "k8s.io/api/extensions/v1beta1"
 	apiextcs "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/typed/apiextensions/v1beta1"
@@ -40,6 +39,8 @@ import (
 
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
+	intscheme "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/scheme"
 	clientset "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/typed/certmanager/v1alpha2"
 	"github.com/jetstack/cert-manager/pkg/util"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
@@ -272,7 +273,7 @@ func NewCertManagerBasicCertificate(name, secretName, issuerName string, issuerK
 			SecretName:   secretName,
 			Duration:     duration,
 			RenewBefore:  renewBefore,
-			IssuerRef: v1alpha2.ObjectReference{
+			IssuerRef: cmmeta.ObjectReference{
 				Name: issuerName,
 				Kind: issuerKind,
 			},
@@ -347,7 +348,7 @@ func NewCertManagerBasicCertificateRequest(name, issuerName string, issuerKind s
 		Spec: v1alpha2.CertificateRequestSpec{
 			Duration: duration,
 			CSRPEM:   csrPEM,
-			IssuerRef: v1alpha2.ObjectReference{
+			IssuerRef: cmmeta.ObjectReference{
 				Name: issuerName,
 				Kind: issuerKind,
 			},
@@ -365,7 +366,7 @@ func NewCertManagerVaultCertificate(name, secretName, issuerName string, issuerK
 			SecretName:  secretName,
 			Duration:    duration,
 			RenewBefore: renewBefore,
-			IssuerRef: v1alpha2.ObjectReference{
+			IssuerRef: cmmeta.ObjectReference{
 				Name: issuerName,
 				Kind: issuerKind,
 			},
@@ -419,8 +420,8 @@ func NewCertManagerACMEIssuer(name, acmeURL, acmeEmail, acmePrivateKey string) *
 					Email:         acmeEmail,
 					Server:        acmeURL,
 					SkipTLSVerify: true,
-					PrivateKey: v1alpha2.SecretKeySelector{
-						LocalObjectReference: v1alpha2.LocalObjectReference{
+					PrivateKey: cmmeta.SecretKeySelector{
+						LocalObjectReference: cmmeta.LocalObjectReference{
 							Name: acmePrivateKey,
 						},
 					},
@@ -470,9 +471,9 @@ func NewCertManagerVaultIssuerToken(name, vaultURL, vaultPath, vaultSecretToken,
 					Path:     vaultPath,
 					CABundle: caBundle,
 					Auth: v1alpha2.VaultAuth{
-						TokenSecretRef: v1alpha2.SecretKeySelector{
+						TokenSecretRef: cmmeta.SecretKeySelector{
 							Key: "secretkey",
-							LocalObjectReference: v1alpha2.LocalObjectReference{
+							LocalObjectReference: cmmeta.LocalObjectReference{
 								Name: vaultSecretToken,
 							},
 						},
@@ -498,9 +499,9 @@ func NewCertManagerVaultIssuerAppRole(name, vaultURL, vaultPath, roleId, vaultSe
 						AppRole: v1alpha2.VaultAppRole{
 							Path:   authPath,
 							RoleId: roleId,
-							SecretRef: v1alpha2.SecretKeySelector{
+							SecretRef: cmmeta.SecretKeySelector{
 								Key: "secretkey",
-								LocalObjectReference: v1alpha2.LocalObjectReference{
+								LocalObjectReference: cmmeta.LocalObjectReference{
 									Name: vaultSecretAppRole,
 								},
 							},

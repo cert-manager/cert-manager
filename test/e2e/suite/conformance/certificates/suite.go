@@ -26,6 +26,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	"github.com/jetstack/cert-manager/pkg/util"
 	"github.com/jetstack/cert-manager/test/e2e/framework"
 )
@@ -41,14 +42,14 @@ type Suite struct {
 	// returns an ObjectReference to that Issuer that will be used as the
 	// IssuerRef on Certificate resources that this suite creates.
 	// This field must be provided.
-	CreateIssuerFunc func(*framework.Framework) cmapi.ObjectReference
+	CreateIssuerFunc func(*framework.Framework) cmmeta.ObjectReference
 
 	// DeleteIssuerFunc is a function that is run after the test has completed
 	// in order to clean up resources created for a test (e.g. the resources
 	// created in CreateIssuerFunc).
 	// This function will be run regardless whether the test passes or fails.
 	// If not specified, this function will be skipped.
-	DeleteIssuerFunc func(*framework.Framework, cmapi.ObjectReference)
+	DeleteIssuerFunc func(*framework.Framework, cmmeta.ObjectReference)
 
 	// DomainSuffix is a suffix used on all domain requests.
 	// This is useful when the issuer being tested requires special
@@ -102,7 +103,7 @@ func (s *Suite) Define() {
 
 		By("Running test suite with the following unsupported features: " + s.UnsupportedFeatures.String())
 		ctx := context.Background()
-		var issuerRef cmapi.ObjectReference
+		var issuerRef cmmeta.ObjectReference
 
 		JustBeforeEach(func() {
 			By("Creating an issuer resource")

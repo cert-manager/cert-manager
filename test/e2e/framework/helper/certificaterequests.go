@@ -30,6 +30,7 @@ import (
 
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	"github.com/jetstack/cert-manager/pkg/util"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 	"github.com/jetstack/cert-manager/test/e2e/framework/log"
@@ -49,7 +50,7 @@ func (h *Helper) WaitForCertificateRequestReady(ns, name string, timeout time.Du
 			}
 			isReady := apiutil.CertificateRequestHasCondition(cr, v1alpha2.CertificateRequestCondition{
 				Type:   v1alpha2.CertificateRequestConditionReady,
-				Status: v1alpha2.ConditionTrue,
+				Status: cmmeta.ConditionTrue,
 			})
 			if !isReady {
 				log.Logf("Expected CertificateReques to have Ready condition 'true' but it has: %v", cr.Status.Conditions)

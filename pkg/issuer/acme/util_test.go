@@ -27,6 +27,7 @@ import (
 
 	"github.com/jetstack/cert-manager/pkg/acme/client"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	"github.com/jetstack/cert-manager/pkg/controller/test"
 )
 
@@ -119,6 +120,6 @@ func (s *acmeFixture) ClientForIssuer(iss v1alpha2.GenericIssuer) (client.Interf
 	return s.Client, nil
 }
 
-func (s *acmeFixture) ReadPrivateKey(sel v1alpha2.SecretKeySelector, ns string) (*rsa.PrivateKey, error) {
+func (s *acmeFixture) ReadPrivateKey(sel cmmeta.SecretKeySelector, ns string) (*rsa.PrivateKey, error) {
 	return nil, fmt.Errorf("not implemented")
 }

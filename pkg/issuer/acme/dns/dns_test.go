@@ -26,6 +26,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	"github.com/jetstack/cert-manager/pkg/controller"
 	"github.com/jetstack/cert-manager/pkg/controller/test"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/acmedns"
@@ -80,8 +81,8 @@ func TestSolverFor(t *testing.T) {
 							DNS01: &v1alpha2.ACMEChallengeSolverDNS01{
 								Cloudflare: &v1alpha2.ACMEIssuerDNS01ProviderCloudflare{
 									Email: "test",
-									APIKey: v1alpha2.SecretKeySelector{
-										LocalObjectReference: v1alpha2.LocalObjectReference{
+									APIKey: cmmeta.SecretKeySelector{
+										LocalObjectReference: cmmeta.LocalObjectReference{
 											Name: "cloudflare-key",
 										},
 										Key: "api-key",
@@ -105,8 +106,8 @@ func TestSolverFor(t *testing.T) {
 							DNS01: &v1alpha2.ACMEChallengeSolverDNS01{
 								Cloudflare: &v1alpha2.ACMEIssuerDNS01ProviderCloudflare{
 									Email: "test",
-									APIKey: v1alpha2.SecretKeySelector{
-										LocalObjectReference: v1alpha2.LocalObjectReference{
+									APIKey: cmmeta.SecretKeySelector{
+										LocalObjectReference: cmmeta.LocalObjectReference{
 											Name: "cloudflare-key",
 										},
 										Key: "api-key",
@@ -136,8 +137,8 @@ func TestSolverFor(t *testing.T) {
 							DNS01: &v1alpha2.ACMEChallengeSolverDNS01{
 								Cloudflare: &v1alpha2.ACMEIssuerDNS01ProviderCloudflare{
 									Email: "test",
-									APIKey: v1alpha2.SecretKeySelector{
-										LocalObjectReference: v1alpha2.LocalObjectReference{
+									APIKey: cmmeta.SecretKeySelector{
+										LocalObjectReference: cmmeta.LocalObjectReference{
 											Name: "cloudflare-key",
 										},
 										Key: "api-key",
@@ -167,8 +168,8 @@ func TestSolverFor(t *testing.T) {
 							DNS01: &v1alpha2.ACMEChallengeSolverDNS01{
 								AcmeDNS: &v1alpha2.ACMEIssuerDNS01ProviderAcmeDNS{
 									Host: "http://127.0.0.1/",
-									AccountSecret: v1alpha2.SecretKeySelector{
-										LocalObjectReference: v1alpha2.LocalObjectReference{
+									AccountSecret: cmmeta.SecretKeySelector{
+										LocalObjectReference: cmmeta.LocalObjectReference{
 											Name: "acmedns-key",
 										},
 										Key: "acmedns.json",
@@ -220,8 +221,8 @@ func TestSolveForDigitalOcean(t *testing.T) {
 				Solver: &v1alpha2.ACMEChallengeSolver{
 					DNS01: &v1alpha2.ACMEChallengeSolverDNS01{
 						DigitalOcean: &v1alpha2.ACMEIssuerDNS01ProviderDigitalOcean{
-							Token: v1alpha2.SecretKeySelector{
-								LocalObjectReference: v1alpha2.LocalObjectReference{
+							Token: cmmeta.SecretKeySelector{
+								LocalObjectReference: cmmeta.LocalObjectReference{
 									Name: "digitalocean",
 								},
 								Key: "token",
@@ -273,8 +274,8 @@ func TestRoute53TrimCreds(t *testing.T) {
 						Route53: &v1alpha2.ACMEIssuerDNS01ProviderRoute53{
 							AccessKeyID: "  test_with_spaces  ",
 							Region:      "us-west-2",
-							SecretAccessKey: v1alpha2.SecretKeySelector{
-								LocalObjectReference: v1alpha2.LocalObjectReference{
+							SecretAccessKey: cmmeta.SecretKeySelector{
+								LocalObjectReference: cmmeta.LocalObjectReference{
 									Name: "route53",
 								},
 								Key: "secret",

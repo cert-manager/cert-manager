@@ -22,6 +22,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	"github.com/jetstack/cert-manager/test/e2e/framework"
 	"github.com/jetstack/cert-manager/test/e2e/framework/addon/pebble"
 	"github.com/jetstack/cert-manager/test/e2e/framework/addon/tiller"
@@ -65,7 +66,7 @@ type acmeIssuerProvisioner struct {
 	setGroupName bool
 }
 
-func (a *acmeIssuerProvisioner) delete(f *framework.Framework, ref cmapi.ObjectReference) {
+func (a *acmeIssuerProvisioner) delete(f *framework.Framework, ref cmmeta.ObjectReference) {
 	Expect(a.pebble.Deprovision()).NotTo(HaveOccurred(), "failed to deprovision pebble")
 	Expect(a.tiller.Deprovision()).NotTo(HaveOccurred(), "failed to deprovision tiller")
 }
@@ -75,7 +76,7 @@ func (a *acmeIssuerProvisioner) delete(f *framework.Framework, ref cmapi.ObjectR
 // - tiller
 // - pebble
 // - a properly configured Issuer resource
-func (a *acmeIssuerProvisioner) create(f *framework.Framework) cmapi.ObjectReference {
+func (a *acmeIssuerProvisioner) create(f *framework.Framework) cmmeta.ObjectReference {
 	a.tiller = &tiller.Tiller{
 		Name:               "tiller-deploy",
 		ClusterPermissions: false,
@@ -102,8 +103,8 @@ func (a *acmeIssuerProvisioner) create(f *framework.Framework) cmapi.ObjectRefer
 				ACME: &cmapi.ACMEIssuer{
 					Server:        a.pebble.Details().Host,
 					SkipTLSVerify: true,
-					PrivateKey: cmapi.SecretKeySelector{
-						LocalObjectReference: cmapi.LocalObjectReference{
+					PrivateKey: cmmeta.SecretKeySelector{
+						LocalObjectReference: cmmeta.LocalObjectReference{
 							Name: "acme-private-key",
 						},
 					},
@@ -124,7 +125,7 @@ func (a *acmeIssuerProvisioner) create(f *framework.Framework) cmapi.ObjectRefer
 	issuer, err := f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name).Create(issuer)
 	Expect(err).NotTo(HaveOccurred(), "failed to create acme issuer")
 
-	return cmapi.ObjectReference{
+	return cmmeta.ObjectReference{
 		Group: emptyOrString(a.setGroupName, cmapi.SchemeGroupVersion.Group),
 		Kind:  cmapi.IssuerKind,
 		Name:  issuer.Name,

@@ -38,6 +38,7 @@ import (
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	"github.com/jetstack/cert-manager/pkg/controller/certificaterequests"
 	testpkg "github.com/jetstack/cert-manager/pkg/controller/test"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
@@ -131,7 +132,7 @@ func TestSign(t *testing.T) {
 			},
 		),
 		gen.SetCertificateRequestCSR(csrRSAPEM),
-		gen.SetCertificateRequestIssuer(cmapi.ObjectReference{
+		gen.SetCertificateRequestIssuer(cmmeta.ObjectReference{
 			Name:  baseIssuer.Name,
 			Group: certmanager.GroupName,
 			Kind:  "Issuer",
@@ -186,7 +187,7 @@ func TestSign(t *testing.T) {
 							gen.SetCertificateRequestAnnotations(map[string]string{}),
 							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
 								Type:               cmapi.CertificateRequestConditionReady,
-								Status:             cmapi.ConditionFalse,
+								Status:             cmmeta.ConditionFalse,
 								Reason:             cmapi.CertificateRequestReasonFailed,
 								Message:            `Annotation "certmanager.k8s.io/private-key-secret-name" missing or reference empty: secret name missing`,
 								LastTransitionTime: &metaFixedClockStart,
@@ -219,7 +220,7 @@ func TestSign(t *testing.T) {
 							gen.SetCertificateRequestAnnotations(map[string]string{cmapi.CRPrivateKeyAnnotationKey: ""}),
 							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
 								Type:               cmapi.CertificateRequestConditionReady,
-								Status:             cmapi.ConditionFalse,
+								Status:             cmmeta.ConditionFalse,
 								Reason:             cmapi.CertificateRequestReasonFailed,
 								Message:            `Annotation "certmanager.k8s.io/private-key-secret-name" missing or reference empty: secret name missing`,
 								LastTransitionTime: &metaFixedClockStart,
@@ -245,7 +246,7 @@ func TestSign(t *testing.T) {
 						gen.CertificateRequestFrom(baseCR,
 							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
 								Type:               cmapi.CertificateRequestConditionReady,
-								Status:             cmapi.ConditionFalse,
+								Status:             cmmeta.ConditionFalse,
 								Reason:             cmapi.CertificateRequestReasonPending,
 								Message:            `Referenced secret default-unit-test-ns/test-rsa-key not found: secret "test-rsa-key" not found`,
 								LastTransitionTime: &metaFixedClockStart,
@@ -270,7 +271,7 @@ func TestSign(t *testing.T) {
 						gen.CertificateRequestFrom(baseCR,
 							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
 								Type:               cmapi.CertificateRequestConditionReady,
-								Status:             cmapi.ConditionFalse,
+								Status:             cmmeta.ConditionFalse,
 								Reason:             cmapi.CertificateRequestReasonPending,
 								Message:            `Failed to get key "test-rsa-key" referenced in annotation "certmanager.k8s.io/private-key-secret-name": error decoding private key PEM block`,
 								LastTransitionTime: &metaFixedClockStart,
@@ -295,7 +296,7 @@ func TestSign(t *testing.T) {
 						gen.CertificateRequestFrom(baseCR,
 							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
 								Type:               cmapi.CertificateRequestConditionReady,
-								Status:             cmapi.ConditionFalse,
+								Status:             cmmeta.ConditionFalse,
 								Reason:             cmapi.CertificateRequestReasonPending,
 								Message:            "Failed to get certificate key pair from secret default-unit-test-ns/test-rsa-key: this is a network error",
 								LastTransitionTime: &metaFixedClockStart,
@@ -335,7 +336,7 @@ func TestSign(t *testing.T) {
 							gen.SetCertificateRequestCSR([]byte("this is a bad CSR")),
 							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
 								Type:               cmapi.CertificateRequestConditionReady,
-								Status:             cmapi.ConditionFalse,
+								Status:             cmmeta.ConditionFalse,
 								Reason:             cmapi.CertificateRequestReasonFailed,
 								Message:            "Resource validation failed: spec.csr: Invalid value: []byte{0x74, 0x68, 0x69, 0x73, 0x20, 0x69, 0x73, 0x20, 0x61, 0x20, 0x62, 0x61, 0x64, 0x20, 0x43, 0x53, 0x52}: failed to decode csr: error decoding certificate request PEM block",
 								LastTransitionTime: &metaFixedClockStart,
@@ -361,7 +362,7 @@ func TestSign(t *testing.T) {
 						gen.CertificateRequestFrom(ecCR,
 							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
 								Type:               cmapi.CertificateRequestConditionReady,
-								Status:             cmapi.ConditionFalse,
+								Status:             cmmeta.ConditionFalse,
 								Reason:             cmapi.CertificateRequestReasonFailed,
 								Message:            "Error generating certificate template: CSR not signed by referenced private key",
 								LastTransitionTime: &metaFixedClockStart,
@@ -390,7 +391,7 @@ func TestSign(t *testing.T) {
 						gen.CertificateRequestFrom(baseCR,
 							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
 								Type:               cmapi.CertificateRequestConditionReady,
-								Status:             cmapi.ConditionFalse,
+								Status:             cmmeta.ConditionFalse,
 								Reason:             cmapi.CertificateRequestReasonFailed,
 								Message:            "Error signing certificate: this is a signing error",
 								LastTransitionTime: &metaFixedClockStart,
@@ -426,7 +427,7 @@ func TestSign(t *testing.T) {
 						gen.CertificateRequestFrom(baseCR,
 							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
 								Type:               cmapi.CertificateRequestConditionReady,
-								Status:             cmapi.ConditionTrue,
+								Status:             cmmeta.ConditionTrue,
 								Reason:             cmapi.CertificateRequestReasonIssued,
 								Message:            "Certificate fetched from issuer successfully",
 								LastTransitionTime: &metaFixedClockStart,
@@ -463,7 +464,7 @@ func TestSign(t *testing.T) {
 						gen.CertificateRequestFrom(ecCR,
 							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
 								Type:               cmapi.CertificateRequestConditionReady,
-								Status:             cmapi.ConditionTrue,
+								Status:             cmmeta.ConditionTrue,
 								Reason:             cmapi.CertificateRequestReasonIssued,
 								Message:            "Certificate fetched from issuer successfully",
 								LastTransitionTime: &metaFixedClockStart,

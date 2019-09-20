@@ -23,13 +23,14 @@ import (
 
 	acme "github.com/jetstack/cert-manager/pkg/acme/client"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	cmerrors "github.com/jetstack/cert-manager/pkg/util/errors"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 )
 
 type Helper interface {
 	ClientForIssuer(iss cmapi.GenericIssuer) (acme.Interface, error)
-	ReadPrivateKey(sel cmapi.SecretKeySelector, ns string) (*rsa.PrivateKey, error)
+	ReadPrivateKey(sel cmmeta.SecretKeySelector, ns string) (*rsa.PrivateKey, error)
 }
 
 // Helper is a structure that provides 'glue' between cert-managers API types and
@@ -58,7 +59,7 @@ func NewHelper(lister corelisters.SecretLister, ns string) Helper {
 // be returned.
 // A *rsa.PrivateKey will be returned here, as ACME private keys can currently
 // only be RSA.
-func (h *helperImpl) ReadPrivateKey(sel cmapi.SecretKeySelector, ns string) (*rsa.PrivateKey, error) {
+func (h *helperImpl) ReadPrivateKey(sel cmmeta.SecretKeySelector, ns string) (*rsa.PrivateKey, error) {
 	sel = PrivateKeySelector(sel)
 
 	s, err := h.SecretLister.Secrets(ns).Get(sel.Name)

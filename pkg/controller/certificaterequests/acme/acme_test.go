@@ -28,15 +28,15 @@ import (
 	"testing"
 	"time"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	coretesting "k8s.io/client-go/testing"
+	fakeclock "k8s.io/utils/clock/testing"
 
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	fakeclock "k8s.io/utils/clock/testing"
-
+	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	cmlisters "github.com/jetstack/cert-manager/pkg/client/listers/certmanager/v1alpha2"
 	"github.com/jetstack/cert-manager/pkg/controller/certificaterequests"
 	testpkg "github.com/jetstack/cert-manager/pkg/controller/test"
@@ -88,7 +88,7 @@ func TestSign(t *testing.T) {
 		gen.SetCertificateRequestCSR(csrPEM),
 		gen.SetCertificateRequestIsCA(false),
 		gen.SetCertificateRequestDuration(&metav1.Duration{Duration: time.Hour * 24 * 60}),
-		gen.SetCertificateRequestIssuer(cmapi.ObjectReference{
+		gen.SetCertificateRequestIssuer(cmmeta.ObjectReference{
 			Name:  baseIssuer.Name,
 			Group: certmanager.GroupName,
 			Kind:  "Issuer",
@@ -138,7 +138,7 @@ func TestSign(t *testing.T) {
 							gen.SetCertificateRequestCSR([]byte("a bad csr")),
 							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
 								Type:               cmapi.CertificateRequestConditionReady,
-								Status:             cmapi.ConditionFalse,
+								Status:             cmmeta.ConditionFalse,
 								Reason:             cmapi.CertificateRequestReasonFailed,
 								Message:            "Resource validation failed: spec.csr: Invalid value: []byte{0x61, 0x20, 0x62, 0x61, 0x64, 0x20, 0x63, 0x73, 0x72}: failed to decode csr: error decoding certificate request PEM block",
 								LastTransitionTime: &metaFixedClockStart,
@@ -171,7 +171,7 @@ func TestSign(t *testing.T) {
 						gen.CertificateRequestFrom(baseCR,
 							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
 								Type:               cmapi.CertificateRequestConditionReady,
-								Status:             cmapi.ConditionFalse,
+								Status:             cmmeta.ConditionFalse,
 								Reason:             cmapi.CertificateRequestReasonPending,
 								Message:            "Created Order resource default-unit-test-ns/test-cr-1108683324",
 								LastTransitionTime: &metaFixedClockStart,
@@ -196,7 +196,7 @@ func TestSign(t *testing.T) {
 						gen.CertificateRequestFrom(baseCR,
 							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
 								Type:               cmapi.CertificateRequestConditionReady,
-								Status:             cmapi.ConditionFalse,
+								Status:             cmmeta.ConditionFalse,
 								Reason:             cmapi.CertificateRequestReasonPending,
 								Message:            "Failed to get order resource default-unit-test-ns/test-cr-1108683324: this is a network error",
 								LastTransitionTime: &metaFixedClockStart,
@@ -235,7 +235,7 @@ func TestSign(t *testing.T) {
 						gen.CertificateRequestFrom(baseCR,
 							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
 								Type:               cmapi.CertificateRequestConditionReady,
-								Status:             cmapi.ConditionFalse,
+								Status:             cmmeta.ConditionFalse,
 								Reason:             cmapi.CertificateRequestReasonFailed,
 								Message:            `Failed to wait for order resource default-unit-test-ns/test-cr-1108683324 to become ready: order is in "invalid" state`,
 								LastTransitionTime: &metaFixedClockStart,
@@ -265,7 +265,7 @@ func TestSign(t *testing.T) {
 						gen.CertificateRequestFrom(baseCR,
 							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
 								Type:               cmapi.CertificateRequestConditionReady,
-								Status:             cmapi.ConditionFalse,
+								Status:             cmmeta.ConditionFalse,
 								Reason:             cmapi.CertificateRequestReasonPending,
 								Message:            `Waiting on certificate issuance from order default-unit-test-ns/test-cr-1108683324: "pending"`,
 								LastTransitionTime: &metaFixedClockStart,
@@ -293,7 +293,7 @@ func TestSign(t *testing.T) {
 						gen.CertificateRequestFrom(baseCR,
 							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
 								Type:               cmapi.CertificateRequestConditionReady,
-								Status:             cmapi.ConditionTrue,
+								Status:             cmmeta.ConditionTrue,
 								Reason:             cmapi.CertificateRequestReasonIssued,
 								Message:            "Certificate fetched from issuer successfully",
 								LastTransitionTime: &metaFixedClockStart,

@@ -18,15 +18,16 @@ package fake
 
 import (
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	issuerpkg "github.com/jetstack/cert-manager/pkg/issuer"
 )
 
 type Helper struct {
-	GetGenericIssuerFunc func(ref cmapi.ObjectReference, ns string) (cmapi.GenericIssuer, error)
+	GetGenericIssuerFunc func(ref cmmeta.ObjectReference, ns string) (cmapi.GenericIssuer, error)
 }
 
 var _ issuerpkg.Helper = &Helper{}
 
-func (f *Helper) GetGenericIssuer(ref cmapi.ObjectReference, ns string) (cmapi.GenericIssuer, error) {
+func (f *Helper) GetGenericIssuer(ref cmmeta.ObjectReference, ns string) (cmapi.GenericIssuer, error) {
 	return f.GetGenericIssuerFunc(ref, ns)
 }

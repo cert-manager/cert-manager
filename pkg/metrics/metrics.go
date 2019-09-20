@@ -37,6 +37,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	cmlisters "github.com/jetstack/cert-manager/pkg/client/listers/certmanager/v1alpha2"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 	"github.com/jetstack/cert-manager/pkg/util/errors"
@@ -53,7 +54,7 @@ const (
 	prometheusMetricsServerMaxHeaderBytes  = 1 << 20 // 1 MiB
 )
 
-var readyConditionStatuses = [...]string{string(v1alpha2.ConditionTrue), string(v1alpha2.ConditionFalse), string(v1alpha2.ConditionUnknown)}
+var readyConditionStatuses = [...]string{string(cmmeta.ConditionTrue), string(cmmeta.ConditionFalse), string(cmmeta.ConditionUnknown)}
 
 // Default set of metrics
 var Default = New(logf.NewContext(context.Background(), logf.Log.WithName("metrics")))
@@ -262,7 +263,7 @@ func (m *Metrics) UpdateCertificateStatus(crt *v1alpha2.Certificate) {
 	}
 }
 
-func updateCertificateReadyStatus(crt *v1alpha2.Certificate, current v1alpha2.ConditionStatus) {
+func updateCertificateReadyStatus(crt *v1alpha2.Certificate, current cmmeta.ConditionStatus) {
 	key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(crt)
 	if err != nil {
 		return
