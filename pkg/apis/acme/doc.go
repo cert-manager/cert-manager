@@ -14,20 +14,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1alpha2
+// +groupName=acme.cert-manager.io
 
-import "time"
+// Package acme contains types in the acme cert-manager API group
+package acme
 
-const (
-	// minimum permitted certificate duration by cert-manager
-	MinimumCertificateDuration = time.Hour
-
-	// default certificate duration if Issuer.spec.duration is not set
-	DefaultCertificateDuration = time.Hour * 24 * 90
-
-	// minimum certificate duration before certificate expiration
-	MinimumRenewBefore = time.Minute * 5
-
-	// Default duration before certificate expiration if  Issuer.spec.renewBefore is not set
-	DefaultRenewBefore = time.Hour * 24 * 30
-)
+const GroupName = "acme.cert-manager.io"
