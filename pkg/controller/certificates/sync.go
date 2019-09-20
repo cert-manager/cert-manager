@@ -328,7 +328,7 @@ func (c *certificateRequestManager) processCertificate(ctx context.Context, crt 
 	}
 
 	// Handling for 'temporary certificates'
-	if c.issueTemporaryCerts {
+	if certificateHasTemporaryCertificateAnnotation(crt) {
 		// Issue a temporary certificate if the current certificate is empty or the
 		// private key is not valid for the current certificate.
 		if existingX509Cert == nil {

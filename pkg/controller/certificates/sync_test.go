@@ -1141,7 +1141,6 @@ func TestProcessCertificate(t *testing.T) {
 			fixedClock.SetTime(fixedClockStart)
 			test.builder.Clock = fixedClock
 
-			test.enableTempCerts = false
 			runTest(t, test)
 		})
 	}
@@ -1153,6 +1152,10 @@ func TestTemporaryCertificateEnabled(t *testing.T) {
 		gen.SetCertificateSecretName("output"),
 		gen.SetCertificateRenewBefore(time.Hour*36),
 	)
+	if baseCert.Annotations == nil {
+		baseCert.Annotations = make(map[string]string)
+	}
+	baseCert.Annotations[cmapi.IssueTemporaryCertificateAnnotation] = "true"
 	exampleBundle1 := mustCreateCryptoBundle(t, gen.CertificateFrom(baseCert,
 		gen.SetCertificateDNSNames("example.com"),
 	))
@@ -1573,7 +1576,6 @@ func TestTemporaryCertificateEnabled(t *testing.T) {
 			fixedClock.SetTime(fixedClockStart)
 			test.builder.Clock = fixedClock
 
-			test.enableTempCerts = true
 			test.localTemporarySigner = testLocalTemporarySignerFn(exampleBundle1.localTemporaryCertificateBytes)
 			runTest(t, test)
 		})
@@ -2116,7 +2118,6 @@ type testT struct {
 	generatePrivateKeyBytes generatePrivateKeyBytesFn
 	generateCSR             generateCSRFn
 	localTemporarySigner    localTemporarySignerFn
-	enableTempCerts         bool
 	certificate             *cmapi.Certificate
 	expectedErr             bool
 }
@@ -2126,12 +2127,11 @@ func runTest(t *testing.T, test testT) {
 	test.builder.Init()
 	defer test.builder.Stop()
 
-	testManager := &certificateRequestManager{issueTemporaryCerts: test.enableTempCerts}
+	testManager := &certificateRequestManager{}
 	testManager.Register(test.builder.Context)
 	testManager.generatePrivateKeyBytes = test.generatePrivateKeyBytes
 	testManager.generateCSR = test.generateCSR
 	testManager.localTemporarySigner = test.localTemporarySigner
-	testManager.issueTemporaryCerts = test.enableTempCerts
 	test.builder.Start()
 
 	err := testManager.processCertificate(context.Background(), test.certificate)
