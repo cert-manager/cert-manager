@@ -131,6 +131,7 @@ func TestSync(t *testing.T) {
 						},
 						Annotations: map[string]string{
 							v1alpha1.ACMECertificateHTTP01IngressNameOverride: "ingress-name",
+							v1alpha1.IssueTemporaryCertificateAnnotation:      "true",
 						},
 						OwnerReferences: buildOwnerReferences("ingress-name", gen.DefaultTestNamespace),
 					},
@@ -181,6 +182,7 @@ func TestSync(t *testing.T) {
 						},
 						Annotations: map[string]string{
 							v1alpha1.ACMECertificateHTTP01IngressNameOverride: "ingress-name",
+							v1alpha1.IssueTemporaryCertificateAnnotation:      "true",
 						},
 						OwnerReferences: buildOwnerReferences("ingress-name", gen.DefaultTestNamespace),
 					},

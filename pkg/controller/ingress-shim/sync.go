@@ -302,6 +302,9 @@ func (c *controller) setIssuerSpecificConfig(crt *v1alpha1.Certificate, issuer v
 			crt.Annotations = make(map[string]string)
 		}
 		crt.Annotations[v1alpha1.ACMECertificateHTTP01IngressNameOverride] = ing.Name
+		// set IssueTemporaryCertificateAnnotation to true in order to behave
+		// better when ingress-gce is being used.
+		crt.Annotations[v1alpha1.IssueTemporaryCertificateAnnotation] = "true"
 	}
 
 	ingressClassVal, hasIngressClassVal := ingAnnotations[acmeIssuerHTTP01IngressClassAnnotation]

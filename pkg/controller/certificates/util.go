@@ -227,3 +227,15 @@ func updateCertificateStatus(ctx context.Context, m *metrics.Metrics, cmClient c
 	// for CRDs (https://github.com/kubernetes/kubernetes/issues/38113)
 	return cmClient.CertmanagerV1alpha1().Certificates(new.Namespace).Update(new)
 }
+
+func certificateHasTemporaryCertificateAnnotation(crt *v1alpha1.Certificate) bool {
+	if crt.Annotations == nil {
+		return false
+	}
+
+	if val, ok := crt.Annotations[v1alpha1.IssueTemporaryCertificateAnnotation]; ok && val == "true" {
+		return true
+	}
+
+	return false
+}
