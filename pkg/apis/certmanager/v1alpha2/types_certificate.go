@@ -16,7 +16,11 @@ limitations under the License.
 
 package v1alpha2
 
-import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+import (
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
+)
 
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -106,7 +110,7 @@ type CertificateSpec struct {
 	// If the 'kind' field is set to 'ClusterIssuer', a ClusterIssuer with the
 	// provided name will be used.
 	// The 'name' field in this stanza is required at all times.
-	IssuerRef ObjectReference `json:"issuerRef"`
+	IssuerRef cmmeta.ObjectReference `json:"issuerRef"`
 
 	// IsCA will mark this Certificate as valid for signing.
 	// This implies that the 'cert sign' usage is set
@@ -159,7 +163,7 @@ type CertificateCondition struct {
 	Type CertificateConditionType `json:"type"`
 
 	// Status of the condition, one of ('True', 'False', 'Unknown').
-	Status ConditionStatus `json:"status"`
+	Status cmmeta.ConditionStatus `json:"status"`
 
 	// LastTransitionTime is the timestamp corresponding to the last status
 	// change of this condition.

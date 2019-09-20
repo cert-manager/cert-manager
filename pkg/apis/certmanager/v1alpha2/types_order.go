@@ -18,6 +18,8 @@ package v1alpha2
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 )
 
 // TODO: these types should be moved into their own API group once we have a loose
@@ -62,7 +64,7 @@ type OrderSpec struct {
 	// If the Issuer does not exist, processing will be retried.
 	// If the Issuer is not an 'ACME' Issuer, an error will be returned and the
 	// Order will be marked as failed.
-	IssuerRef ObjectReference `json:"issuerRef"`
+	IssuerRef cmmeta.ObjectReference `json:"issuerRef"`
 
 	// CommonName is the common name as specified on the DER encoded CSR.
 	// If CommonName is not specified, the first DNSName specified will be used
