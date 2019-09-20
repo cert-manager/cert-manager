@@ -20,6 +20,8 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apiext "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	cmmeta "github.com/jetstack/cert-manager/pkg/internal/apis/meta"
 )
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -112,7 +114,7 @@ type VenafiTPP struct {
 	// CredentialsRef is a reference to a Secret containing the username and
 	// password for the TPP server.
 	// The secret must contain two keys, 'username' and 'password'.
-	CredentialsRef LocalObjectReference `json:"credentialsRef"`
+	CredentialsRef cmmeta.LocalObjectReference `json:"credentialsRef"`
 
 	// CABundle is a PEM encoded TLS certifiate to use to verify connections to
 	// the TPP instance.
@@ -130,7 +132,7 @@ type VenafiCloud struct {
 	URL string `json:"url"`
 
 	// APITokenSecretRef is a secret key selector for the Venafi Cloud API token.
-	APITokenSecretRef SecretKeySelector `json:"apiTokenSecretRef"`
+	APITokenSecretRef cmmeta.SecretKeySelector `json:"apiTokenSecretRef"`
 }
 
 type SelfSignedIssuer struct{}
@@ -160,7 +162,7 @@ type VaultIssuer struct {
 type VaultAuth struct {
 	// This Secret contains the Vault token key
 	// +optional
-	TokenSecretRef SecretKeySelector `json:"tokenSecretRef,omitempty"`
+	TokenSecretRef cmmeta.SecretKeySelector `json:"tokenSecretRef,omitempty"`
 
 	// This Secret contains a AppRole and Secret
 	// +optional
@@ -171,8 +173,8 @@ type VaultAppRole struct {
 	// Where the authentication path is mounted in Vault.
 	Path string `json:"path"`
 
-	RoleId    string            `json:"roleId"`
-	SecretRef SecretKeySelector `json:"secretRef"`
+	RoleId    string                   `json:"roleId"`
+	SecretRef cmmeta.SecretKeySelector `json:"secretRef"`
 }
 
 type CAIssuer struct {
@@ -196,7 +198,7 @@ type ACMEIssuer struct {
 
 	// PrivateKey is the name of a secret containing the private key for this
 	// user account.
-	PrivateKey SecretKeySelector `json:"privateKeySecretRef"`
+	PrivateKey cmmeta.SecretKeySelector `json:"privateKeySecretRef"`
 
 	// Solvers is a list of challenge solvers that will be used to solve
 	// ACME challenges for the matching domains.
@@ -375,30 +377,30 @@ const (
 // ACMEIssuerDNS01ProviderAkamai is a structure containing the DNS
 // configuration for Akamai DNS—Zone Record Management API
 type ACMEIssuerDNS01ProviderAkamai struct {
-	ServiceConsumerDomain string            `json:"serviceConsumerDomain"`
-	ClientToken           SecretKeySelector `json:"clientTokenSecretRef"`
-	ClientSecret          SecretKeySelector `json:"clientSecretSecretRef"`
-	AccessToken           SecretKeySelector `json:"accessTokenSecretRef"`
+	ServiceConsumerDomain string                   `json:"serviceConsumerDomain"`
+	ClientToken           cmmeta.SecretKeySelector `json:"clientTokenSecretRef"`
+	ClientSecret          cmmeta.SecretKeySelector `json:"clientSecretSecretRef"`
+	AccessToken           cmmeta.SecretKeySelector `json:"accessTokenSecretRef"`
 }
 
 // ACMEIssuerDNS01ProviderCloudDNS is a structure containing the DNS
 // configuration for Google Cloud DNS
 type ACMEIssuerDNS01ProviderCloudDNS struct {
-	ServiceAccount SecretKeySelector `json:"serviceAccountSecretRef"`
-	Project        string            `json:"project"`
+	ServiceAccount cmmeta.SecretKeySelector `json:"serviceAccountSecretRef"`
+	Project        string                   `json:"project"`
 }
 
 // ACMEIssuerDNS01ProviderCloudflare is a structure containing the DNS
 // configuration for Cloudflare
 type ACMEIssuerDNS01ProviderCloudflare struct {
-	Email  string            `json:"email"`
-	APIKey SecretKeySelector `json:"apiKeySecretRef"`
+	Email  string                   `json:"email"`
+	APIKey cmmeta.SecretKeySelector `json:"apiKeySecretRef"`
 }
 
 // ACMEIssuerDNS01ProviderDigitalOcean is a structure containing the DNS
 // configuration for DigitalOcean Domains
 type ACMEIssuerDNS01ProviderDigitalOcean struct {
-	Token SecretKeySelector `json:"tokenSecretRef"`
+	Token cmmeta.SecretKeySelector `json:"tokenSecretRef"`
 }
 
 // ACMEIssuerDNS01ProviderRoute53 is a structure containing the Route 53
@@ -412,7 +414,7 @@ type ACMEIssuerDNS01ProviderRoute53 struct {
 	// The SecretAccessKey is used for authentication. If not set we fall-back to using env vars, shared credentials file or AWS Instance metadata
 	// https://docs.aws.amazon.com/sdk-for-go/v1/developer-guide/configuring-sdk.html#specifying-credentials
 	// +optional
-	SecretAccessKey SecretKeySelector `json:"secretAccessKeySecretRef"`
+	SecretAccessKey cmmeta.SecretKeySelector `json:"secretAccessKeySecretRef"`
 
 	// Role is a Role ARN which the Route53 provider will assume using either the explicit credentials AccessKeyID/SecretAccessKey
 	// or the inferred credentials from environment variables, shared credentials file or AWS Instance metadata
@@ -432,7 +434,7 @@ type ACMEIssuerDNS01ProviderRoute53 struct {
 type ACMEIssuerDNS01ProviderAzureDNS struct {
 	ClientID string `json:"clientID"`
 
-	ClientSecret SecretKeySelector `json:"clientSecretSecretRef"`
+	ClientSecret cmmeta.SecretKeySelector `json:"clientSecretSecretRef"`
 
 	SubscriptionID string `json:"subscriptionID"`
 
@@ -462,7 +464,7 @@ const (
 type ACMEIssuerDNS01ProviderAcmeDNS struct {
 	Host string `json:"host"`
 
-	AccountSecret SecretKeySelector `json:"accountSecretRef"`
+	AccountSecret cmmeta.SecretKeySelector `json:"accountSecretRef"`
 }
 
 // ACMEIssuerDNS01ProviderRFC2136 is a structure containing the
@@ -475,7 +477,7 @@ type ACMEIssuerDNS01ProviderRFC2136 struct {
 	// The name of the secret containing the TSIG value.
 	// If ``tsigKeyName`` is defined, this field is required.
 	// +optional
-	TSIGSecret SecretKeySelector `json:"tsigSecretSecretRef,omitempty"`
+	TSIGSecret cmmeta.SecretKeySelector `json:"tsigSecretSecretRef,omitempty"`
 
 	// The TSIG Key name configured in the DNS.
 	// If ``tsigSecretSecretRef`` is defined, this field is required.
@@ -509,7 +511,7 @@ type ACMEIssuerDNS01ProviderWebhook struct {
 	// This can contain arbitrary JSON data.
 	// Secret values should not be specified in this stanza.
 	// If secret values are needed (e.g. credentials for a DNS service), you
-	// should use a SecretKeySelector to reference a Secret resource.
+	// should use a cmmeta.SecretKeySelector to reference a Secret resource.
 	// For details on the schema of this field, consult the webhook provider
 	// implementation's documentation.
 	// +optional
@@ -544,7 +546,7 @@ type IssuerCondition struct {
 	Type IssuerConditionType `json:"type"`
 
 	// Status of the condition, one of ('True', 'False', 'Unknown').
-	Status ConditionStatus `json:"status"`
+	Status cmmeta.ConditionStatus `json:"status"`
 
 	// LastTransitionTime is the timestamp corresponding to the last status
 	// change of this condition.
