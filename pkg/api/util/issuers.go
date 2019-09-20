@@ -20,6 +20,7 @@ import (
 	"fmt"
 
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 )
 
 const (
@@ -54,7 +55,7 @@ func NameForIssuer(i cmapi.GenericIssuer) (string, error) {
 }
 
 // issuerKind returns the kind of issuer for a certificate
-func IssuerKind(ref cmapi.ObjectReference) string {
+func IssuerKind(ref cmmeta.ObjectReference) string {
 	if ref.Kind == "" {
 		return cmapi.IssuerKind
 	}
