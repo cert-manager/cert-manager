@@ -92,6 +92,7 @@ The following table lists the configurable parameters of the cert-manager chart 
 | `extraEnv` | Optional environment variables for cert-manager | `[]` |
 | `serviceAccount.create` | If `true`, create a new service account | `true` |
 | `serviceAccount.name` | Service account to be used. If not set and `serviceAccount.create` is `true`, a name is generated using the fullname template |  |
+| `serviceAccount.annotations` | Annotations to add to the service account |  |
 | `resources` | CPU/memory resource requests/limits | |
 | `securityContext.enabled` | Enable security context | `false` |
 | `securityContext.fsGroup` | Group ID for the container | `1001` |
