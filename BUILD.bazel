@@ -47,6 +47,7 @@ filegroup(
         ":package-srcs",
         "//cmd/acmesolver:all-srcs",
         "//cmd/cainjector:all-srcs",
+        "//cmd/cert-managerctl:all-srcs",
         "//cmd/controller:all-srcs",
         "//cmd/webhook:all-srcs",
         "//deploy:all-srcs",
