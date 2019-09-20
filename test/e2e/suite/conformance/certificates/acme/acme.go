@@ -21,6 +21,7 @@ import (
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1alpha2"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	"github.com/jetstack/cert-manager/test/e2e/framework"
@@ -100,7 +101,7 @@ func (a *acmeIssuerProvisioner) create(f *framework.Framework) cmmeta.ObjectRefe
 		},
 		Spec: cmapi.IssuerSpec{
 			IssuerConfig: cmapi.IssuerConfig{
-				ACME: &cmapi.ACMEIssuer{
+				ACME: &cmacme.ACMEIssuer{
 					Server:        a.pebble.Details().Host,
 					SkipTLSVerify: true,
 					PrivateKey: cmmeta.SecretKeySelector{
@@ -108,13 +109,13 @@ func (a *acmeIssuerProvisioner) create(f *framework.Framework) cmmeta.ObjectRefe
 							Name: "acme-private-key",
 						},
 					},
-					Solvers: []cmapi.ACMEChallengeSolver{
+					Solvers: []cmacme.ACMEChallengeSolver{
 						{
-							HTTP01: &cmapi.ACMEChallengeSolverHTTP01{
+							HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
 								// Not setting the Class or Name field will cause cert-manager to create
 								// new ingress resources that do not specify a class to solve challenges,
 								// which means all Ingress controllers should act on the ingresses.
-								Ingress: &cmapi.ACMEChallengeSolverHTTP01Ingress{},
+								Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{},
 							},
 						},
 					},

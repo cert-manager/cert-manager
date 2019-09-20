@@ -25,6 +25,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 
+	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1alpha2"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	"github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
@@ -80,7 +81,7 @@ var _ = framework.CertManagerDescribe("ACME webhook DNS provider", func() {
 
 			By("Creating an Issuer")
 			issuer := gen.Issuer(issuerName,
-				gen.SetIssuerACME(v1alpha2.ACMEIssuer{
+				gen.SetIssuerACME(cmacme.ACMEIssuer{
 					SkipTLSVerify: true,
 					Server:        pebble.Details().Host,
 					Email:         testingACMEEmail,
@@ -89,10 +90,10 @@ var _ = framework.CertManagerDescribe("ACME webhook DNS provider", func() {
 							Name: testingACMEPrivateKey,
 						},
 					},
-					Solvers: []v1alpha2.ACMEChallengeSolver{
+					Solvers: []cmacme.ACMEChallengeSolver{
 						{
-							DNS01: &v1alpha2.ACMEChallengeSolverDNS01{
-								Webhook: &v1alpha2.ACMEIssuerDNS01ProviderWebhook{
+							DNS01: &cmacme.ACMEChallengeSolverDNS01{
+								Webhook: &cmacme.ACMEIssuerDNS01ProviderWebhook{
 									GroupName:  webhook.Details().GroupName,
 									SolverName: webhook.Details().SolverName,
 									Config: &v1beta1.JSON{
@@ -154,7 +155,7 @@ var _ = framework.CertManagerDescribe("ACME webhook DNS provider", func() {
 			cert, err := certClient.Create(cert)
 			Expect(err).NotTo(HaveOccurred())
 
-			var order *v1alpha2.Order
+			var order *cmacme.Order
 			pollErr := wait.PollImmediate(500*time.Millisecond, time.Second*30,
 				func() (bool, error) {
 					orders, err := listOwnedOrders(f.CertManagerClientSet, cert)
@@ -202,13 +203,13 @@ var _ = framework.CertManagerDescribe("ACME webhook DNS provider", func() {
 	})
 })
 
-func listOwnedChallenges(cl versioned.Interface, owner *v1alpha2.Order) ([]*v1alpha2.Challenge, error) {
-	l, err := cl.CertmanagerV1alpha2().Challenges(owner.Namespace).List(metav1.ListOptions{})
+func listOwnedChallenges(cl versioned.Interface, owner *cmacme.Order) ([]*cmacme.Challenge, error) {
+	l, err := cl.AcmeV1alpha2().Challenges(owner.Namespace).List(metav1.ListOptions{})
 	if err != nil {
 		return nil, err
 	}
 
-	var owned []*v1alpha2.Challenge
+	var owned []*cmacme.Challenge
 	for _, ch := range l.Items {
 		if !metav1.IsControlledBy(&ch, owner) {
 			continue
@@ -219,13 +220,13 @@ func listOwnedChallenges(cl versioned.Interface, owner *v1alpha2.Order) ([]*v1al
 	return owned, nil
 }
 
-func listOwnedOrders(cl versioned.Interface, owner *v1alpha2.Certificate) ([]*v1alpha2.Order, error) {
-	l, err := cl.CertmanagerV1alpha2().Orders(owner.Namespace).List(metav1.ListOptions{})
+func listOwnedOrders(cl versioned.Interface, owner *v1alpha2.Certificate) ([]*cmacme.Order, error) {
+	l, err := cl.AcmeV1alpha2().Orders(owner.Namespace).List(metav1.ListOptions{})
 	if err != nil {
 		return nil, err
 	}
 
-	var owned []*v1alpha2.Order
+	var owned []*cmacme.Order
 	for _, o := range l.Items {
 		v, ok := o.Annotations[v1alpha2.CertificateNameKey]
 		if !ok || v != owner.Name {

@@ -28,6 +28,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 
+	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1alpha2"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	cmutil "github.com/jetstack/cert-manager/pkg/util"
@@ -76,22 +77,22 @@ var _ = framework.CertManagerDescribe("ACME CertificateRequest (HTTP01)", func()
 	BeforeEach(func() {
 		acmeURL := pebble.Details().Host
 		acmeIssuer := util.NewCertManagerACMEIssuer(issuerName, acmeURL, testingACMEEmail, testingACMEPrivateKey)
-		acmeIssuer.Spec.ACME.Solvers = []v1alpha2.ACMEChallengeSolver{
+		acmeIssuer.Spec.ACME.Solvers = []cmacme.ACMEChallengeSolver{
 			{
-				HTTP01: &v1alpha2.ACMEChallengeSolverHTTP01{
-					Ingress: &v1alpha2.ACMEChallengeSolverHTTP01Ingress{
+				HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
+					Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
 						Class: &addon.NginxIngress.Details().IngressClass,
 					},
 				},
 			},
 			{
-				Selector: &v1alpha2.CertificateDNSNameSelector{
+				Selector: &cmacme.CertificateDNSNameSelector{
 					MatchLabels: map[string]string{
 						"testing.cert-manager.io/fixed-ingress": "true",
 					},
 				},
-				HTTP01: &v1alpha2.ACMEChallengeSolverHTTP01{
-					Ingress: &v1alpha2.ACMEChallengeSolverHTTP01Ingress{
+				HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
+					Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
 						Name: fixedIngressName,
 					},
 				},
