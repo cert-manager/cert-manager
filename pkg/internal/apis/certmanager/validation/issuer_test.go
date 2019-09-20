@@ -24,12 +24,13 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
+	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1alpha2"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 )
 
 var (
-	validCloudDNSProvider = v1alpha2.ACMEIssuerDNS01ProviderCloudDNS{
+	validCloudDNSProvider = cmacme.ACMEIssuerDNS01ProviderCloudDNS{
 		ServiceAccount: validSecretKeyRef,
 		Project:        "valid",
 	}
@@ -39,11 +40,11 @@ var (
 		},
 		Key: "validkey",
 	}
-	validCloudflareProvider = v1alpha2.ACMEIssuerDNS01ProviderCloudflare{
+	validCloudflareProvider = cmacme.ACMEIssuerDNS01ProviderCloudflare{
 		APIKey: validSecretKeyRef,
 		Email:  "valid",
 	}
-	validACMEIssuer = v1alpha2.ACMEIssuer{
+	validACMEIssuer = cmacme.ACMEIssuer{
 		Email:      "valid-email",
 		Server:     "valid-server",
 		PrivateKey: validSecretKeyRef,
@@ -104,25 +105,25 @@ func TestValidateVaultIssuerConfig(t *testing.T) {
 func TestValidateACMEIssuerConfig(t *testing.T) {
 	fldPath := field.NewPath("")
 	scenarios := map[string]struct {
-		spec *v1alpha2.ACMEIssuer
+		spec *cmacme.ACMEIssuer
 		errs []*field.Error
 	}{
 		"valid acme issuer": {
 			spec: &validACMEIssuer,
 		},
 		"acme issuer with missing fields": {
-			spec: &v1alpha2.ACMEIssuer{},
+			spec: &cmacme.ACMEIssuer{},
 			errs: []*field.Error{
 				field.Required(fldPath.Child("privateKeySecretRef", "name"), "private key secret name is a required field"),
 				field.Required(fldPath.Child("server"), "acme server URL is a required field"),
 			},
 		},
 		"acme solver without any config": {
-			spec: &v1alpha2.ACMEIssuer{
+			spec: &cmacme.ACMEIssuer{
 				Email:      "valid-email",
 				Server:     "valid-server",
 				PrivateKey: validSecretKeyRef,
-				Solvers: []v1alpha2.ACMEChallengeSolver{
+				Solvers: []cmacme.ACMEChallengeSolver{
 					{},
 				},
 			},
@@ -131,13 +132,13 @@ func TestValidateACMEIssuerConfig(t *testing.T) {
 			},
 		},
 		"acme solver with valid dns01 config": {
-			spec: &v1alpha2.ACMEIssuer{
+			spec: &cmacme.ACMEIssuer{
 				Email:      "valid-email",
 				Server:     "valid-server",
 				PrivateKey: validSecretKeyRef,
-				Solvers: []v1alpha2.ACMEChallengeSolver{
+				Solvers: []cmacme.ACMEChallengeSolver{
 					{
-						DNS01: &v1alpha2.ACMEChallengeSolverDNS01{
+						DNS01: &cmacme.ACMEChallengeSolverDNS01{
 							CloudDNS: &validCloudDNSProvider,
 						},
 					},
@@ -145,13 +146,13 @@ func TestValidateACMEIssuerConfig(t *testing.T) {
 			},
 		},
 		"acme solver with missing http01 config type": {
-			spec: &v1alpha2.ACMEIssuer{
+			spec: &cmacme.ACMEIssuer{
 				Email:      "valid-email",
 				Server:     "valid-server",
 				PrivateKey: validSecretKeyRef,
-				Solvers: []v1alpha2.ACMEChallengeSolver{
+				Solvers: []cmacme.ACMEChallengeSolver{
 					{
-						HTTP01: &v1alpha2.ACMEChallengeSolverHTTP01{},
+						HTTP01: &cmacme.ACMEChallengeSolverHTTP01{},
 					},
 				},
 			},
@@ -160,29 +161,29 @@ func TestValidateACMEIssuerConfig(t *testing.T) {
 			},
 		},
 		"acme solver with valid http01 config": {
-			spec: &v1alpha2.ACMEIssuer{
+			spec: &cmacme.ACMEIssuer{
 				Email:      "valid-email",
 				Server:     "valid-server",
 				PrivateKey: validSecretKeyRef,
-				Solvers: []v1alpha2.ACMEChallengeSolver{
+				Solvers: []cmacme.ACMEChallengeSolver{
 					{
-						HTTP01: &v1alpha2.ACMEChallengeSolverHTTP01{
-							Ingress: &v1alpha2.ACMEChallengeSolverHTTP01Ingress{},
+						HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
+							Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{},
 						},
 					},
 				},
 			},
 		},
 		"acme issue with valid pod template ObjectMeta attributes": {
-			spec: &v1alpha2.ACMEIssuer{
+			spec: &cmacme.ACMEIssuer{
 				Email:      "valid-email",
 				Server:     "valid-server",
 				PrivateKey: validSecretKeyRef,
-				Solvers: []v1alpha2.ACMEChallengeSolver{
+				Solvers: []cmacme.ACMEChallengeSolver{
 					{
-						HTTP01: &v1alpha2.ACMEChallengeSolverHTTP01{
-							Ingress: &v1alpha2.ACMEChallengeSolverHTTP01Ingress{
-								PodTemplate: &v1alpha2.ACMEChallengeSolverHTTP01IngressPodTemplate{
+						HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
+							Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
+								PodTemplate: &cmacme.ACMEChallengeSolverHTTP01IngressPodTemplate{
 									ObjectMeta: metav1.ObjectMeta{
 										Labels: map[string]string{
 											"valid_to_contain": "labels",
@@ -199,15 +200,15 @@ func TestValidateACMEIssuerConfig(t *testing.T) {
 			},
 		},
 		"acme issue with invalid pod template ObjectMeta attributes": {
-			spec: &v1alpha2.ACMEIssuer{
+			spec: &cmacme.ACMEIssuer{
 				Email:      "valid-email",
 				Server:     "valid-server",
 				PrivateKey: validSecretKeyRef,
-				Solvers: []v1alpha2.ACMEChallengeSolver{
+				Solvers: []cmacme.ACMEChallengeSolver{
 					{
-						HTTP01: &v1alpha2.ACMEChallengeSolverHTTP01{
-							Ingress: &v1alpha2.ACMEChallengeSolverHTTP01Ingress{
-								PodTemplate: &v1alpha2.ACMEChallengeSolverHTTP01IngressPodTemplate{
+						HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
+							Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
+								PodTemplate: &cmacme.ACMEChallengeSolverHTTP01IngressPodTemplate{
 									ObjectMeta: metav1.ObjectMeta{
 										Annotations: map[string]string{
 											"valid_to_contain": "annotations",
@@ -227,16 +228,16 @@ func TestValidateACMEIssuerConfig(t *testing.T) {
 			},
 		},
 		"acme issue with valid pod template PodSpec attributes": {
-			spec: &v1alpha2.ACMEIssuer{
+			spec: &cmacme.ACMEIssuer{
 				Email:      "valid-email",
 				Server:     "valid-server",
 				PrivateKey: validSecretKeyRef,
-				Solvers: []v1alpha2.ACMEChallengeSolver{
+				Solvers: []cmacme.ACMEChallengeSolver{
 					{
-						HTTP01: &v1alpha2.ACMEChallengeSolverHTTP01{
-							Ingress: &v1alpha2.ACMEChallengeSolverHTTP01Ingress{
-								PodTemplate: &v1alpha2.ACMEChallengeSolverHTTP01IngressPodTemplate{
-									Spec: v1alpha2.ACMEChallengeSolverHTTP01IngressPodSpec{
+						HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
+							Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
+								PodTemplate: &cmacme.ACMEChallengeSolverHTTP01IngressPodTemplate{
+									Spec: cmacme.ACMEChallengeSolverHTTP01IngressPodSpec{
 										NodeSelector: map[string]string{
 											"valid_to_contain": "nodeSelector",
 										},
@@ -256,21 +257,21 @@ func TestValidateACMEIssuerConfig(t *testing.T) {
 			},
 		},
 		"acme issue with valid pod template ObjectMeta and PodSpec attributes": {
-			spec: &v1alpha2.ACMEIssuer{
+			spec: &cmacme.ACMEIssuer{
 				Email:      "valid-email",
 				Server:     "valid-server",
 				PrivateKey: validSecretKeyRef,
-				Solvers: []v1alpha2.ACMEChallengeSolver{
+				Solvers: []cmacme.ACMEChallengeSolver{
 					{
-						HTTP01: &v1alpha2.ACMEChallengeSolverHTTP01{
-							Ingress: &v1alpha2.ACMEChallengeSolverHTTP01Ingress{
-								PodTemplate: &v1alpha2.ACMEChallengeSolverHTTP01IngressPodTemplate{
+						HTTP01: &cmacme.ACMEChallengeSolverHTTP01{
+							Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
+								PodTemplate: &cmacme.ACMEChallengeSolverHTTP01IngressPodTemplate{
 									ObjectMeta: metav1.ObjectMeta{
 										Labels: map[string]string{
 											"valid_to_contain": "labels",
 										},
 									},
-									Spec: v1alpha2.ACMEChallengeSolverHTTP01IngressPodSpec{
+									Spec: cmacme.ACMEChallengeSolverHTTP01IngressPodSpec{
 										NodeSelector: map[string]string{
 											"valid_to_contain": "nodeSelector",
 										},
@@ -387,33 +388,33 @@ func TestValidateACMEIssuerHTTP01Config(t *testing.T) {
 	fldPath := field.NewPath("")
 	scenarios := map[string]struct {
 		isExpectedFailure bool
-		cfg               *v1alpha2.ACMEChallengeSolverHTTP01
+		cfg               *cmacme.ACMEChallengeSolverHTTP01
 		errs              []*field.Error
 	}{
 		"ingress field specified": {
-			cfg: &v1alpha2.ACMEChallengeSolverHTTP01{
-				Ingress: &v1alpha2.ACMEChallengeSolverHTTP01Ingress{Name: "abc"},
+			cfg: &cmacme.ACMEChallengeSolverHTTP01{
+				Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{Name: "abc"},
 			},
 		},
 		"ingress class field specified": {
-			cfg: &v1alpha2.ACMEChallengeSolverHTTP01{
-				Ingress: &v1alpha2.ACMEChallengeSolverHTTP01Ingress{Class: strPtr("abc")},
+			cfg: &cmacme.ACMEChallengeSolverHTTP01{
+				Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{Class: strPtr("abc")},
 			},
 		},
 		"neither field specified": {
-			cfg: &v1alpha2.ACMEChallengeSolverHTTP01{
-				Ingress: &v1alpha2.ACMEChallengeSolverHTTP01Ingress{},
+			cfg: &cmacme.ACMEChallengeSolverHTTP01{
+				Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{},
 			},
 		},
 		"no solver config type specified": {
-			cfg: &v1alpha2.ACMEChallengeSolverHTTP01{},
+			cfg: &cmacme.ACMEChallengeSolverHTTP01{},
 			errs: []*field.Error{
 				field.Required(fldPath, "no HTTP01 solver type configured"),
 			},
 		},
 		"both fields specified": {
-			cfg: &v1alpha2.ACMEChallengeSolverHTTP01{
-				Ingress: &v1alpha2.ACMEChallengeSolverHTTP01Ingress{
+			cfg: &cmacme.ACMEChallengeSolverHTTP01{
+				Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
 					Name:  "abc",
 					Class: strPtr("abc"),
 				},
@@ -423,29 +424,29 @@ func TestValidateACMEIssuerHTTP01Config(t *testing.T) {
 			},
 		},
 		"acme issuer with valid http01 service config serviceType ClusterIP": {
-			cfg: &v1alpha2.ACMEChallengeSolverHTTP01{
-				Ingress: &v1alpha2.ACMEChallengeSolverHTTP01Ingress{
+			cfg: &cmacme.ACMEChallengeSolverHTTP01{
+				Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
 					ServiceType: corev1.ServiceType("ClusterIP"),
 				},
 			},
 		},
 		"acme issuer with valid http01 service config serviceType NodePort": {
-			cfg: &v1alpha2.ACMEChallengeSolverHTTP01{
-				Ingress: &v1alpha2.ACMEChallengeSolverHTTP01Ingress{
+			cfg: &cmacme.ACMEChallengeSolverHTTP01{
+				Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
 					ServiceType: corev1.ServiceType("NodePort"),
 				},
 			},
 		},
 		"acme issuer with valid http01 service config serviceType (empty string)": {
-			cfg: &v1alpha2.ACMEChallengeSolverHTTP01{
-				Ingress: &v1alpha2.ACMEChallengeSolverHTTP01Ingress{
+			cfg: &cmacme.ACMEChallengeSolverHTTP01{
+				Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
 					ServiceType: corev1.ServiceType(""),
 				},
 			},
 		},
 		"acme issuer with invalid http01 service config": {
-			cfg: &v1alpha2.ACMEChallengeSolverHTTP01{
-				Ingress: &v1alpha2.ACMEChallengeSolverHTTP01Ingress{
+			cfg: &cmacme.ACMEChallengeSolverHTTP01{
+				Ingress: &cmacme.ACMEChallengeSolverHTTP01Ingress{
 					ServiceType: corev1.ServiceType("InvalidServiceType"),
 				},
 			},
@@ -474,12 +475,12 @@ func TestValidateACMEIssuerHTTP01Config(t *testing.T) {
 func TestValidateACMEIssuerDNS01Config(t *testing.T) {
 	fldPath := field.NewPath("test")
 	scenarios := map[string]struct {
-		cfg  *v1alpha2.ACMEChallengeSolverDNS01
+		cfg  *cmacme.ACMEChallengeSolverDNS01
 		errs []*field.Error
 	}{
 		"missing clouddns project": {
-			cfg: &v1alpha2.ACMEChallengeSolverDNS01{
-				CloudDNS: &v1alpha2.ACMEIssuerDNS01ProviderCloudDNS{
+			cfg: &cmacme.ACMEChallengeSolverDNS01{
+				CloudDNS: &cmacme.ACMEIssuerDNS01ProviderCloudDNS{
 					ServiceAccount: validSecretKeyRef,
 				},
 			},
@@ -488,8 +489,8 @@ func TestValidateACMEIssuerDNS01Config(t *testing.T) {
 			},
 		},
 		"missing clouddns service account key": {
-			cfg: &v1alpha2.ACMEChallengeSolverDNS01{
-				CloudDNS: &v1alpha2.ACMEIssuerDNS01ProviderCloudDNS{
+			cfg: &cmacme.ACMEChallengeSolverDNS01{
+				CloudDNS: &cmacme.ACMEIssuerDNS01ProviderCloudDNS{
 					Project: "valid",
 					ServiceAccount: cmmeta.SecretKeySelector{
 						LocalObjectReference: cmmeta.LocalObjectReference{Name: "something"},
@@ -502,8 +503,8 @@ func TestValidateACMEIssuerDNS01Config(t *testing.T) {
 			},
 		},
 		"missing clouddns service account name": {
-			cfg: &v1alpha2.ACMEChallengeSolverDNS01{
-				CloudDNS: &v1alpha2.ACMEIssuerDNS01ProviderCloudDNS{
+			cfg: &cmacme.ACMEChallengeSolverDNS01{
+				CloudDNS: &cmacme.ACMEIssuerDNS01ProviderCloudDNS{
 					Project: "valid",
 					ServiceAccount: cmmeta.SecretKeySelector{
 						LocalObjectReference: cmmeta.LocalObjectReference{Name: ""},
@@ -516,15 +517,15 @@ func TestValidateACMEIssuerDNS01Config(t *testing.T) {
 			},
 		},
 		"clouddns serviceAccount field not set should be allowed for ambient auth": {
-			cfg: &v1alpha2.ACMEChallengeSolverDNS01{
-				CloudDNS: &v1alpha2.ACMEIssuerDNS01ProviderCloudDNS{
+			cfg: &cmacme.ACMEChallengeSolverDNS01{
+				CloudDNS: &cmacme.ACMEIssuerDNS01ProviderCloudDNS{
 					Project: "valid",
 				},
 			},
 		},
 		"missing cloudflare token": {
-			cfg: &v1alpha2.ACMEChallengeSolverDNS01{
-				Cloudflare: &v1alpha2.ACMEIssuerDNS01ProviderCloudflare{
+			cfg: &cmacme.ACMEChallengeSolverDNS01{
+				Cloudflare: &cmacme.ACMEIssuerDNS01ProviderCloudflare{
 					Email: "valid",
 				},
 			},
@@ -534,8 +535,8 @@ func TestValidateACMEIssuerDNS01Config(t *testing.T) {
 			},
 		},
 		"missing cloudflare email": {
-			cfg: &v1alpha2.ACMEChallengeSolverDNS01{
-				Cloudflare: &v1alpha2.ACMEIssuerDNS01ProviderCloudflare{
+			cfg: &cmacme.ACMEChallengeSolverDNS01{
+				Cloudflare: &cmacme.ACMEIssuerDNS01ProviderCloudflare{
 					APIKey: validSecretKeyRef,
 				},
 			},
@@ -544,22 +545,22 @@ func TestValidateACMEIssuerDNS01Config(t *testing.T) {
 			},
 		},
 		"missing route53 region": {
-			cfg: &v1alpha2.ACMEChallengeSolverDNS01{
-				Route53: &v1alpha2.ACMEIssuerDNS01ProviderRoute53{},
+			cfg: &cmacme.ACMEChallengeSolverDNS01{
+				Route53: &cmacme.ACMEIssuerDNS01ProviderRoute53{},
 			},
 			errs: []*field.Error{
 				field.Required(fldPath.Child("route53", "region"), ""),
 			},
 		},
 		"missing provider config": {
-			cfg: &v1alpha2.ACMEChallengeSolverDNS01{},
+			cfg: &cmacme.ACMEChallengeSolverDNS01{},
 			errs: []*field.Error{
 				field.Required(fldPath, "no DNS01 provider configured"),
 			},
 		},
 		"missing azuredns config": {
-			cfg: &v1alpha2.ACMEChallengeSolverDNS01{
-				AzureDNS: &v1alpha2.ACMEIssuerDNS01ProviderAzureDNS{},
+			cfg: &cmacme.ACMEChallengeSolverDNS01{
+				AzureDNS: &cmacme.ACMEIssuerDNS01ProviderAzureDNS{},
 			},
 			errs: []*field.Error{
 				field.Required(fldPath.Child("azuredns", "clientSecretSecretRef", "name"), "secret name is required"),
@@ -571,8 +572,8 @@ func TestValidateACMEIssuerDNS01Config(t *testing.T) {
 			},
 		},
 		"invalid azuredns environment": {
-			cfg: &v1alpha2.ACMEChallengeSolverDNS01{
-				AzureDNS: &v1alpha2.ACMEIssuerDNS01ProviderAzureDNS{
+			cfg: &cmacme.ACMEChallengeSolverDNS01{
+				AzureDNS: &cmacme.ACMEIssuerDNS01ProviderAzureDNS{
 					Environment: "an env",
 				},
 			},
@@ -583,13 +584,13 @@ func TestValidateACMEIssuerDNS01Config(t *testing.T) {
 				field.Required(fldPath.Child("azuredns", "subscriptionID"), ""),
 				field.Required(fldPath.Child("azuredns", "tenantID"), ""),
 				field.Required(fldPath.Child("azuredns", "resourceGroupName"), ""),
-				field.Invalid(fldPath.Child("azuredns", "environment"), v1alpha2.AzureDNSEnvironment("an env"),
+				field.Invalid(fldPath.Child("azuredns", "environment"), cmacme.AzureDNSEnvironment("an env"),
 					"must be either empty or one of AzurePublicCloud, AzureChinaCloud, AzureGermanCloud or AzureUSGovernmentCloud"),
 			},
 		},
 		"missing akamai config": {
-			cfg: &v1alpha2.ACMEChallengeSolverDNS01{
-				Akamai: &v1alpha2.ACMEIssuerDNS01ProviderAkamai{},
+			cfg: &cmacme.ACMEChallengeSolverDNS01{
+				Akamai: &cmacme.ACMEIssuerDNS01ProviderAkamai{},
 			},
 			errs: []*field.Error{
 				field.Required(fldPath.Child("akamai", "accessToken", "name"), "secret name is required"),
@@ -602,8 +603,8 @@ func TestValidateACMEIssuerDNS01Config(t *testing.T) {
 			},
 		},
 		"valid akamai config": {
-			cfg: &v1alpha2.ACMEChallengeSolverDNS01{
-				Akamai: &v1alpha2.ACMEIssuerDNS01ProviderAkamai{
+			cfg: &cmacme.ACMEChallengeSolverDNS01{
+				Akamai: &cmacme.ACMEIssuerDNS01ProviderAkamai{
 					AccessToken:           validSecretKeyRef,
 					ClientSecret:          validSecretKeyRef,
 					ClientToken:           validSecretKeyRef,
@@ -613,24 +614,24 @@ func TestValidateACMEIssuerDNS01Config(t *testing.T) {
 			errs: []*field.Error{},
 		},
 		"valid rfc2136 config": {
-			cfg: &v1alpha2.ACMEChallengeSolverDNS01{
-				RFC2136: &v1alpha2.ACMEIssuerDNS01ProviderRFC2136{
+			cfg: &cmacme.ACMEChallengeSolverDNS01{
+				RFC2136: &cmacme.ACMEIssuerDNS01ProviderRFC2136{
 					Nameserver: "127.0.0.1",
 				},
 			},
 			errs: []*field.Error{},
 		},
 		"missing rfc2136 required field": {
-			cfg: &v1alpha2.ACMEChallengeSolverDNS01{
-				RFC2136: &v1alpha2.ACMEIssuerDNS01ProviderRFC2136{},
+			cfg: &cmacme.ACMEChallengeSolverDNS01{
+				RFC2136: &cmacme.ACMEIssuerDNS01ProviderRFC2136{},
 			},
 			errs: []*field.Error{
 				field.Required(fldPath.Child("rfc2136", "nameserver"), ""),
 			},
 		},
 		"rfc2136 provider invalid nameserver": {
-			cfg: &v1alpha2.ACMEChallengeSolverDNS01{
-				RFC2136: &v1alpha2.ACMEIssuerDNS01ProviderRFC2136{
+			cfg: &cmacme.ACMEChallengeSolverDNS01{
+				RFC2136: &cmacme.ACMEIssuerDNS01ProviderRFC2136{
 					Nameserver: "dns.example.com",
 				},
 			},
@@ -639,8 +640,8 @@ func TestValidateACMEIssuerDNS01Config(t *testing.T) {
 			},
 		},
 		"rfc2136 provider using case-camel in algorithm": {
-			cfg: &v1alpha2.ACMEChallengeSolverDNS01{
-				RFC2136: &v1alpha2.ACMEIssuerDNS01ProviderRFC2136{
+			cfg: &cmacme.ACMEChallengeSolverDNS01{
+				RFC2136: &cmacme.ACMEIssuerDNS01ProviderRFC2136{
 					Nameserver:    "127.0.0.1",
 					TSIGAlgorithm: "HmAcMd5",
 				},
@@ -648,8 +649,8 @@ func TestValidateACMEIssuerDNS01Config(t *testing.T) {
 			errs: []*field.Error{},
 		},
 		"rfc2136 provider using unsupported algorithm": {
-			cfg: &v1alpha2.ACMEChallengeSolverDNS01{
-				RFC2136: &v1alpha2.ACMEIssuerDNS01ProviderRFC2136{
+			cfg: &cmacme.ACMEChallengeSolverDNS01{
+				RFC2136: &cmacme.ACMEIssuerDNS01ProviderRFC2136{
 					Nameserver:    "127.0.0.1",
 					TSIGAlgorithm: "HAMMOCK",
 				},
@@ -659,8 +660,8 @@ func TestValidateACMEIssuerDNS01Config(t *testing.T) {
 			},
 		},
 		"rfc2136 provider TSIGKeyName provided but no TSIGSecret": {
-			cfg: &v1alpha2.ACMEChallengeSolverDNS01{
-				RFC2136: &v1alpha2.ACMEIssuerDNS01ProviderRFC2136{
+			cfg: &cmacme.ACMEChallengeSolverDNS01{
+				RFC2136: &cmacme.ACMEIssuerDNS01ProviderRFC2136{
 					Nameserver:  "127.0.0.1",
 					TSIGKeyName: "some-name",
 				},
@@ -671,8 +672,8 @@ func TestValidateACMEIssuerDNS01Config(t *testing.T) {
 			},
 		},
 		"rfc2136 provider TSIGSecret provided but no TSIGKeyName": {
-			cfg: &v1alpha2.ACMEChallengeSolverDNS01{
-				RFC2136: &v1alpha2.ACMEIssuerDNS01ProviderRFC2136{
+			cfg: &cmacme.ACMEChallengeSolverDNS01{
+				RFC2136: &cmacme.ACMEIssuerDNS01ProviderRFC2136{
 					Nameserver: "127.0.0.1",
 					TSIGSecret: validSecretKeyRef,
 				},
@@ -682,11 +683,11 @@ func TestValidateACMEIssuerDNS01Config(t *testing.T) {
 			},
 		},
 		"multiple providers configured": {
-			cfg: &v1alpha2.ACMEChallengeSolverDNS01{
-				CloudDNS: &v1alpha2.ACMEIssuerDNS01ProviderCloudDNS{
+			cfg: &cmacme.ACMEChallengeSolverDNS01{
+				CloudDNS: &cmacme.ACMEIssuerDNS01ProviderCloudDNS{
 					Project: "something",
 				},
-				Cloudflare: &v1alpha2.ACMEIssuerDNS01ProviderCloudflare{},
+				Cloudflare: &cmacme.ACMEIssuerDNS01ProviderCloudflare{},
 			},
 			errs: []*field.Error{
 				field.Forbidden(fldPath.Child("cloudflare"), "may not specify more than one provider type"),

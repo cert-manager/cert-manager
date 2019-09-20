@@ -24,6 +24,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
+	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1alpha2"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	"github.com/jetstack/cert-manager/test/unit/gen"
 )
@@ -48,7 +49,7 @@ func TestValidateCertificateForIssuer(t *testing.T) {
 					IssuerRef: validIssuerRef,
 				},
 			},
-			issuer: gen.Issuer(defaultTestIssuerName, gen.SetIssuerACME(v1alpha2.ACMEIssuer{})),
+			issuer: gen.Issuer(defaultTestIssuerName, gen.SetIssuerACME(cmacme.ACMEIssuer{})),
 		},
 		"certificate with RSA keyAlgorithm for ACME": {
 			crt: &v1alpha2.Certificate{
@@ -57,7 +58,7 @@ func TestValidateCertificateForIssuer(t *testing.T) {
 					IssuerRef:    validIssuerRef,
 				},
 			},
-			issuer: gen.Issuer(defaultTestIssuerName, gen.SetIssuerACME(v1alpha2.ACMEIssuer{})),
+			issuer: gen.Issuer(defaultTestIssuerName, gen.SetIssuerACME(cmacme.ACMEIssuer{})),
 		},
 		"certificate with ECDSA keyAlgorithm for ACME": {
 			crt: &v1alpha2.Certificate{
@@ -66,7 +67,7 @@ func TestValidateCertificateForIssuer(t *testing.T) {
 					IssuerRef:    validIssuerRef,
 				},
 			},
-			issuer: gen.Issuer(defaultTestIssuerName, gen.SetIssuerACME(v1alpha2.ACMEIssuer{})),
+			issuer: gen.Issuer(defaultTestIssuerName, gen.SetIssuerACME(cmacme.ACMEIssuer{})),
 		},
 		"acme certificate with organization set": {
 			crt: &v1alpha2.Certificate{
@@ -75,7 +76,7 @@ func TestValidateCertificateForIssuer(t *testing.T) {
 					IssuerRef:    validIssuerRef,
 				},
 			},
-			issuer: gen.Issuer(defaultTestIssuerName, gen.SetIssuerACME(v1alpha2.ACMEIssuer{})),
+			issuer: gen.Issuer(defaultTestIssuerName, gen.SetIssuerACME(cmacme.ACMEIssuer{})),
 			errs: []*field.Error{
 				field.Invalid(fldPath.Child("organization"), []string{"shouldfailorg"}, "ACME does not support setting the organization name"),
 			},
@@ -87,7 +88,7 @@ func TestValidateCertificateForIssuer(t *testing.T) {
 					IssuerRef: validIssuerRef,
 				},
 			},
-			issuer: gen.Issuer(defaultTestIssuerName, gen.SetIssuerACME(v1alpha2.ACMEIssuer{})),
+			issuer: gen.Issuer(defaultTestIssuerName, gen.SetIssuerACME(cmacme.ACMEIssuer{})),
 			errs: []*field.Error{
 				field.Invalid(fldPath.Child("duration"), &metav1.Duration{Duration: time.Minute * 60}, "ACME does not support certificate durations"),
 			},
@@ -99,7 +100,7 @@ func TestValidateCertificateForIssuer(t *testing.T) {
 					IssuerRef:   validIssuerRef,
 				},
 			},
-			issuer: gen.Issuer(defaultTestIssuerName, gen.SetIssuerACME(v1alpha2.ACMEIssuer{})),
+			issuer: gen.Issuer(defaultTestIssuerName, gen.SetIssuerACME(cmacme.ACMEIssuer{})),
 			errs: []*field.Error{
 				field.Invalid(fldPath.Child("ipAddresses"), []string{"127.0.0.1"}, "ACME does not support certificate ip addresses"),
 			},
@@ -111,7 +112,7 @@ func TestValidateCertificateForIssuer(t *testing.T) {
 					IssuerRef:   validIssuerRef,
 				},
 			},
-			issuer: gen.Issuer(defaultTestIssuerName, gen.SetIssuerACME(v1alpha2.ACMEIssuer{})),
+			issuer: gen.Issuer(defaultTestIssuerName, gen.SetIssuerACME(cmacme.ACMEIssuer{})),
 			errs:   []*field.Error{},
 		},
 		"certificate with unspecified issuer type": {
