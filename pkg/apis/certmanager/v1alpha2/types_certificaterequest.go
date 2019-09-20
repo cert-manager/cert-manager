@@ -18,6 +18,8 @@ package v1alpha2
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 )
 
 const (
@@ -67,7 +69,7 @@ type CertificateRequestSpec struct {
 	// the provided name will be used. The 'name' field in this stanza is
 	// required at all times. The group field refers to the API group of the
 	// issuer which defaults to 'certmanager.k8s.io' if empty.
-	IssuerRef ObjectReference `json:"issuerRef"`
+	IssuerRef cmmeta.ObjectReference `json:"issuerRef"`
 
 	// Byte slice containing the PEM encoded CertificateSigningRequest
 	// +optional
@@ -112,7 +114,7 @@ type CertificateRequestCondition struct {
 	Type CertificateRequestConditionType `json:"type"`
 
 	// Status of the condition, one of ('True', 'False', 'Unknown').
-	Status ConditionStatus `json:"status"`
+	Status cmmeta.ConditionStatus `json:"status"`
 
 	// LastTransitionTime is the timestamp corresponding to the last status
 	// change of this condition.

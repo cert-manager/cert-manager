@@ -19,6 +19,7 @@ filegroup(
     srcs = [
         ":package-srcs",
         "//pkg/apis/certmanager:all-srcs",
+        "//pkg/apis/meta:all-srcs",
     ],
     tags = ["automanaged"],
     visibility = ["//visibility:public"],
