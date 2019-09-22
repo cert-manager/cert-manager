@@ -14,10 +14,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package app
+package cmd
 
 import (
 	"github.com/spf13/cobra"
+
+	"github.com/jetstack/cert-manager/cmd/cert-managerctl/app/client"
+	"github.com/jetstack/cert-manager/cmd/cert-managerctl/app/get"
 )
 
 var getCertCmd = &cobra.Command{
@@ -25,13 +28,13 @@ var getCertCmd = &cobra.Command{
 	Short:   "Get the certificate stored in a CertificateRequest.",
 	Aliases: []string{"cert"},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		//client, err := client.New(flags.Kubeconfig)
-		//if err != nil {
-		//	return err
-		//}
+		client, err := client.New(flags.Kubeconfig)
+		if err != nil {
+			return err
+		}
 
-		//get := get.New(client, &flags.Get)
-		//mustDie(get.Cert())
+		get := get.New(client, &flags.Get)
+		mustDie(get.Cert())
 
 		return nil
 	},

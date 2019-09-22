@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package app
+package cmd
 
 import (
 	"github.com/spf13/cobra"
@@ -23,7 +23,7 @@ import (
 
 	"github.com/jetstack/cert-manager/cmd/cert-managerctl/app/apis/cert-managerctl/v1alpha1"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager"
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 )
 
 var requestCmd = &cobra.Command{

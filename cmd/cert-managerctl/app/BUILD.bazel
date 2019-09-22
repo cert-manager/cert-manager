@@ -1,30 +1,3 @@
-load("@io_bazel_rules_go//go:def.bzl", "go_library")
-
-go_library(
-    name = "go_default_library",
-    srcs = [
-        "get.go",
-        "get_cert.go",
-        "request.go",
-        "request_cert.go",
-        "request_sign.go",
-        "root.go",
-        "version.go",
-    ],
-    importpath = "github.com/jetstack/cert-manager/cmd/cert-managerctl/app",
-    visibility = ["//visibility:public"],
-    deps = [
-        "//cmd/cert-managerctl/app/apis/cert-managerctl/v1alpha1:go_default_library",
-        "//pkg/apis/certmanager:go_default_library",
-        "//pkg/apis/certmanager/v1alpha1:go_default_library",
-        "//pkg/util:go_default_library",
-        "//vendor/github.com/sirupsen/logrus:go_default_library",
-        "//vendor/github.com/spf13/cobra:go_default_library",
-        "//vendor/github.com/spf13/pflag:go_default_library",
-        "//vendor/k8s.io/apimachinery/pkg/apis/meta/v1:go_default_library",
-    ],
-)
-
 filegroup(
     name = "package-srcs",
     srcs = glob(["**"]),
@@ -37,6 +10,11 @@ filegroup(
     srcs = [
         ":package-srcs",
         "//cmd/cert-managerctl/app/apis/cert-managerctl:all-srcs",
+        "//cmd/cert-managerctl/app/client:all-srcs",
+        "//cmd/cert-managerctl/app/cmd:all-srcs",
+        "//cmd/cert-managerctl/app/get:all-srcs",
+        "//cmd/cert-managerctl/app/request:all-srcs",
+        "//cmd/cert-managerctl/app/util:all-srcs",
     ],
     tags = ["automanaged"],
     visibility = ["//visibility:public"],

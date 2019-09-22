@@ -5,7 +5,7 @@ go_library(
     srcs = ["main.go"],
     importpath = "github.com/jetstack/cert-manager/cmd/cert-managerctl",
     visibility = ["//visibility:private"],
-    deps = ["//cmd/cert-managerctl/app:go_default_library"],
+    deps = ["//cmd/cert-managerctl/app/cmd:go_default_library"],
 )
 
 go_binary(

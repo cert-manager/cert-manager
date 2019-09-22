@@ -14,16 +14,15 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package app
+package cmd
 
 import (
 	"github.com/spf13/cobra"
 )
 
-var requestCertCmd = &cobra.Command{
-	Use:     "certicate",
-	Short:   "Request a signed certificate from cert-manager.",
-	Aliases: []string{"cert"},
+var requestSignCmd = &cobra.Command{
+	Use:   "sign",
+	Short: "Request a signed certificate from cert-manager using a raw x509 encoded certificate siging request.",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		//client, err := client.New(flags.Kubeconfig)
 		//if err != nil {
@@ -31,13 +30,13 @@ var requestCertCmd = &cobra.Command{
 		//}
 
 		//request := request.New(client, &flags.Request)
-		//mustDie(request.Cert())
+		//mustDie(request.Sign())
 
 		return nil
 	},
 }
 
 func init() {
-	requestCertFlags(requestCertCmd.PersistentFlags())
-	requestCmd.AddCommand(requestCertCmd)
+	requestSignFlags(requestSignCmd.PersistentFlags())
+	requestCmd.AddCommand(requestSignCmd)
 }

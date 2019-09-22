@@ -2,11 +2,11 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 
 go_library(
     name = "go_default_library",
-    srcs = ["types.go"],
-    importpath = "github.com/jetstack/cert-manager/cmd/cert-managerctl/app/apis/cert-managerctl/v1alpha1",
+    srcs = ["util.go"],
+    importpath = "github.com/jetstack/cert-manager/cmd/cert-managerctl/app/util",
     visibility = ["//visibility:public"],
     deps = [
-        "//pkg/apis/certmanager/v1alpha2:go_default_library",
+        "//cmd/cert-managerctl/app/apis/cert-managerctl/v1alpha1:go_default_library",
         "//vendor/k8s.io/apimachinery/pkg/apis/meta/v1:go_default_library",
     ],
 )

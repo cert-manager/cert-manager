@@ -17,9 +17,12 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"crypto"
+	"crypto/x509"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 )
 
 // The root flag struct wth global options.
@@ -134,4 +137,17 @@ type CertificateRequestSpec struct {
 	// certificate.
 	// +optional
 	KeyUsages []cmapi.KeyUsage `json:"out,omitempty"`
+}
+
+// KeyBundle holds the signer and metadata of a PrivateKey
+type KeyBundle struct {
+	// PrivateKey signing interface
+	// +optional
+	PrivateKey crypto.Signer `json:"privateKey,omitempty"`
+
+	// The signature algorithm type of the signature
+	SignatureAlgorithm x509.SignatureAlgorithm `json:"signatureAlgorithm,omitempty"`
+
+	// The signature algorithm type of the public key
+	PublicKeyAlgorithm x509.PublicKeyAlgorithm `json:"publicKeyAlgorithm,omitempty"`
 }

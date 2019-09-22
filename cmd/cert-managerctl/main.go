@@ -19,9 +19,9 @@ package main
 import (
 	"os"
 
-	"github.com/jetstack/cert-manager/cmd/cert-managerctl/app"
+	"github.com/jetstack/cert-manager/cmd/cert-managerctl/app/cmd"
 )
 
 func main() {
-	app.Execute(os.Args[1:])
+	cmd.Execute(os.Args[1:])
 }
