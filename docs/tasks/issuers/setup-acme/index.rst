@@ -30,7 +30,7 @@ own email address.
    :linenos:
    :emphasize-lines: 7-10, 13-14, 19
 
-   apiVersion: certmanager.k8s.io/v1alpha2
+   apiVersion: cert-manager.io/v1alpha2
    kind: ClusterIssuer
    metadata:
      name: letsencrypt-staging
@@ -101,7 +101,7 @@ along with a DNS01 solver that can be used for wildcard certificates:
    :linenos:
    :emphasize-lines: 14-15
 
-   apiVersion: certmanager.k8s.io/v1alpha2
+   apiVersion: cert-manager.io/v1alpha2
    kind: ClusterIssuer
    metadata:
      name: letsencrypt-staging
@@ -140,7 +140,7 @@ For example:
    :linenos:
    :emphasize-lines: 14-15
 
-   apiVersion: certmanager.k8s.io/v1alpha2
+   apiVersion: cert-manager.io/v1alpha2
    kind: ClusterIssuer
    metadata:
      name: letsencrypt-staging

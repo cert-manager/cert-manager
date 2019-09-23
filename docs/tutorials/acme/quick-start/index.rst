@@ -410,7 +410,7 @@ Once edited, apply the custom resource:
 .. code-block:: shell
 
     $ kubectl create --edit -f https://raw.githubusercontent.com/jetstack/cert-manager/release-0.10/docs/tutorials/acme/quick-start/example/staging-issuer.yaml
-    issuer.certmanager.k8s.io "letsencrypt-staging" created
+    issuer.cert-manager.io "letsencrypt-staging" created
 
 Also create a production issuer and deploy it. As with the staging issuer, you
 will need to update this example and add in your own email address.
@@ -426,7 +426,7 @@ will need to update this example and add in your own email address.
 .. code-block:: shell
 
     $ kubectl create --edit -f https://raw.githubusercontent.com/jetstack/cert-manager/release-0.10/docs/tutorials/acme/quick-start/example/production-issuer.yaml
-    issuer.certmanager.k8s.io "letsencrypt-prod" created
+    issuer.cert-manager.io "letsencrypt-prod" created
 
 Both of these issuers are configured to use the
 :doc:`HTTP01 </tasks/issuers/setup-acme/http01/index>` challenge provider.
@@ -441,15 +441,15 @@ Check on the status of the issuer after you create it:
     Name:         letsencrypt-staging
     Namespace:    default
     Labels:       <none>
-    Annotations:  kubectl.kubernetes.io/last-applied-configuration={"apiVersion":"certmanager.k8s.io/v1alpha2","kind":"Issuer","metadata":{"annotations":{},"name":"letsencrypt-staging","namespace":"default"},"spec":{"a...
-    API Version:  certmanager.k8s.io/v1alpha2
+    Annotations:  kubectl.kubernetes.io/last-applied-configuration={"apiVersion":"cert-manager.io/v1alpha2","kind":"Issuer","metadata":{"annotations":{},"name":"letsencrypt-staging","namespace":"default"},"spec":{"a...
+    API Version:  cert-manager.io/v1alpha2
     Kind:         Issuer
     Metadata:
       Cluster Name:
       Creation Timestamp:  2018-11-17T18:03:54Z
       Generation:          0
       Resource Version:    9092
-      Self Link:           /apis/certmanager.k8s.io/v1alpha2/namespaces/default/issuers/letsencrypt-staging
+      Self Link:           /apis/cert-manager.io/v1alpha2/namespaces/default/issuers/letsencrypt-staging
       UID:                 25b7ae77-ea93-11e8-82f8-42010a8a00b5
     Spec:
       Acme:
@@ -537,7 +537,7 @@ certificate object. You can view this information using the
     Namespace:    default
     Labels:       <none>
     Annotations:  <none>
-    API Version:  certmanager.k8s.io/v1alpha2
+    API Version:  cert-manager.io/v1alpha2
     Kind:         Certificate
     Metadata:
       Cluster Name:
@@ -551,7 +551,7 @@ certificate object. You can view this information using the
         Name:                  kuard
         UID:                   a3e9f935-ea87-11e8-82f8-42010a8a00b5
       Resource Version:        9295
-      Self Link:               /apis/certmanager.k8s.io/v1alpha2/namespaces/default/certificates/quickstart-example-tls
+      Self Link:               /apis/cert-manager.io/v1alpha2/namespaces/default/certificates/quickstart-example-tls
       UID:                     68d43400-ea92-11e8-82f8-42010a8a00b5
     Spec:
       Dns Names:
@@ -593,11 +593,11 @@ use the describe command as well to see some details:
 
     Name:         quickstart-example-tls
     Namespace:    default
-    Labels:       certmanager.k8s.io/certificate-name=quickstart-example-tls
-    Annotations:  certmanager.k8s.io/alt-names=example.your-domain.com
-                  certmanager.k8s.io/common-name=example.your-domain.com
-                  certmanager.k8s.io/issuer-kind=Issuer
-                  certmanager.k8s.io/issuer-name=letsencrypt-staging
+    Labels:       cert-manager.io/certificate-name=quickstart-example-tls
+    Annotations:  cert-manager.io/alt-names=example.your-domain.com
+                  cert-manager.io/common-name=example.your-domain.com
+                  cert-manager.io/issuer-kind=Issuer
+                  cert-manager.io/issuer-name=letsencrypt-staging
 
     Type:  kubernetes.io/tls
 
@@ -646,7 +646,7 @@ certificate.
     Namespace:    default
     Labels:       <none>
     Annotations:  <none>
-    API Version:  certmanager.k8s.io/v1alpha2
+    API Version:  cert-manager.io/v1alpha2
     Kind:         Certificate
     Metadata:
       Cluster Name:
@@ -660,7 +660,7 @@ certificate.
         Name:                  kuard
         UID:                   a3e9f935-ea87-11e8-82f8-42010a8a00b5
       Resource Version:        283686
-      Self Link:               /apis/certmanager.k8s.io/v1alpha2/namespaces/default/certificates/quickstart-example-tls
+      Self Link:               /apis/cert-manager.io/v1alpha2/namespaces/default/certificates/quickstart-example-tls
       UID:                     bdd93b32-ea97-11e8-82f8-42010a8a00b5
     Spec:
       Dns Names:

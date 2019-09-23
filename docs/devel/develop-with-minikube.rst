@@ -76,7 +76,7 @@ Deploy that version with helm
    # IMPORTANT: if you are deploying into a namespace that **already exists**,
    # you MUST ensure the namespace has an additional label on it in order for
    # the deployment to succeed
-   $ kubectl label namespace <deployment-namespace> certmanager.k8s.io/disable-validation="true"
+   $ kubectl label namespace <deployment-namespace> cert-manager.io/disable-validation="true"
 
    # Install our freshly built cert-manager image
    $ helm install \

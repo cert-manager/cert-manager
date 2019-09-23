@@ -44,7 +44,7 @@ version number you want to install:
    # If you are upgrading from v0.5 or below, you should manually add this
    # label to your cert-manager namespace to ensure the `webhook component`_
    # can provision correctly.
-   kubectl label namespace cert-manager certmanager.k8s.io/disable-validation=true
+   kubectl label namespace cert-manager cert-manager.io/disable-validation=true
 
    helm upgrade --version <version> <release_name> jetstack/cert-manager
 
@@ -74,7 +74,7 @@ version number you want to install:
    # If you are upgrading from v0.5 or below, you should manually add this
    # label to your cert-manager namespace to ensure the `webhook component`_
    # can provision correctly.
-   kubectl label namespace cert-manager certmanager.k8s.io/disable-validation=true
+   kubectl label namespace cert-manager cert-manager.io/disable-validation=true
 
    kubectl apply \
         -f https://github.com/jetstack/cert-manager/releases/download/<version>/cert-manager.yaml

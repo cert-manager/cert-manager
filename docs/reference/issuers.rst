@@ -13,7 +13,7 @@ An example of an Issuer type is ACME. A simple ACME issuer could be defined as:
    :linenos:
    :emphasize-lines: 11, 16
 
-   apiVersion: certmanager.k8s.io/v1alpha2
+   apiVersion: cert-manager.io/v1alpha2
    kind: Issuer
    metadata:
      name: letsencrypt-prod
@@ -72,7 +72,7 @@ those credentials to perform the ACME DNS01 challenge with route53.
    :linenos:
    :emphasize-lines: 14-15
 
-   apiVersion: certmanager.k8s.io/v1alpha2
+   apiVersion: cert-manager.io/v1alpha2
    kind: ClusterIssuer
    metadata:
      name: letsencrypt-prod
