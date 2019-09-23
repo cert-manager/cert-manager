@@ -158,7 +158,7 @@ func TestSign(t *testing.T) {
 			builder: &testpkg.Builder{
 				CertManagerObjects: []runtime.Object{baseCR.DeepCopy(), baseIssuer.DeepCopy()},
 				ExpectedEvents: []string{
-					"Normal OrderCreated Created Order resource default-unit-test-ns/test-cr-1108683324",
+					"Normal OrderCreated Created Order resource default-unit-test-ns/test-cr-1049712215",
 				},
 				ExpectedActions: []testpkg.Action{
 					testpkg.NewAction(coretesting.NewCreateAction(
@@ -174,7 +174,7 @@ func TestSign(t *testing.T) {
 								Type:               cmapi.CertificateRequestConditionReady,
 								Status:             cmmeta.ConditionFalse,
 								Reason:             cmapi.CertificateRequestReasonPending,
-								Message:            "Created Order resource default-unit-test-ns/test-cr-1108683324",
+								Message:            "Created Order resource default-unit-test-ns/test-cr-1049712215",
 								LastTransitionTime: &metaFixedClockStart,
 							}),
 						),
@@ -187,7 +187,7 @@ func TestSign(t *testing.T) {
 			certificateRequest: baseCR.DeepCopy(),
 			builder: &testpkg.Builder{
 				ExpectedEvents: []string{
-					"Normal OrderGetError Failed to get order resource default-unit-test-ns/test-cr-1108683324: this is a network error",
+					"Normal OrderGetError Failed to get order resource default-unit-test-ns/test-cr-1049712215: this is a network error",
 				},
 				CertManagerObjects: []runtime.Object{baseCR.DeepCopy(), baseIssuer.DeepCopy()},
 				ExpectedActions: []testpkg.Action{
@@ -199,7 +199,7 @@ func TestSign(t *testing.T) {
 								Type:               cmapi.CertificateRequestConditionReady,
 								Status:             cmmeta.ConditionFalse,
 								Reason:             cmapi.CertificateRequestReasonPending,
-								Message:            "Failed to get order resource default-unit-test-ns/test-cr-1108683324: this is a network error",
+								Message:            "Failed to get order resource default-unit-test-ns/test-cr-1049712215: this is a network error",
 								LastTransitionTime: &metaFixedClockStart,
 							}),
 						),
@@ -222,7 +222,7 @@ func TestSign(t *testing.T) {
 			certificateRequest: baseCR.DeepCopy(),
 			builder: &testpkg.Builder{
 				ExpectedEvents: []string{
-					`Warning OrderFailed Failed to wait for order resource default-unit-test-ns/test-cr-1108683324 to become ready: order is in "invalid" state`,
+					`Warning OrderFailed Failed to wait for order resource default-unit-test-ns/test-cr-1049712215 to become ready: order is in "invalid" state`,
 				},
 				CertManagerObjects: []runtime.Object{baseCR.DeepCopy(), baseIssuer.DeepCopy(),
 					gen.OrderFrom(baseOrder,
@@ -238,7 +238,7 @@ func TestSign(t *testing.T) {
 								Type:               cmapi.CertificateRequestConditionReady,
 								Status:             cmmeta.ConditionFalse,
 								Reason:             cmapi.CertificateRequestReasonFailed,
-								Message:            `Failed to wait for order resource default-unit-test-ns/test-cr-1108683324 to become ready: order is in "invalid" state`,
+								Message:            `Failed to wait for order resource default-unit-test-ns/test-cr-1049712215 to become ready: order is in "invalid" state`,
 								LastTransitionTime: &metaFixedClockStart,
 							}),
 							gen.SetCertificateRequestFailureTime(metaFixedClockStart),
@@ -252,7 +252,7 @@ func TestSign(t *testing.T) {
 			certificateRequest: baseCR.DeepCopy(),
 			builder: &testpkg.Builder{
 				ExpectedEvents: []string{
-					`Normal OrderPending Waiting on certificate issuance from order default-unit-test-ns/test-cr-1108683324: "pending"`,
+					`Normal OrderPending Waiting on certificate issuance from order default-unit-test-ns/test-cr-1049712215: "pending"`,
 				},
 				CertManagerObjects: []runtime.Object{baseCR.DeepCopy(), baseIssuer.DeepCopy(),
 					gen.OrderFrom(baseOrder,
@@ -268,7 +268,7 @@ func TestSign(t *testing.T) {
 								Type:               cmapi.CertificateRequestConditionReady,
 								Status:             cmmeta.ConditionFalse,
 								Reason:             cmapi.CertificateRequestReasonPending,
-								Message:            `Waiting on certificate issuance from order default-unit-test-ns/test-cr-1108683324: "pending"`,
+								Message:            `Waiting on certificate issuance from order default-unit-test-ns/test-cr-1049712215: "pending"`,
 								LastTransitionTime: &metaFixedClockStart,
 							}),
 						),
