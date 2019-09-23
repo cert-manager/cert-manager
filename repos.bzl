@@ -1760,8 +1760,8 @@ def go_repositories():
         build_file_proto_mode = "disable",
         importpath = "k8s.io/api",
         replace = "k8s.io/api",
-        sum = "h1:u/zOzrP/Tc5A7+r3fXlMrc3uump69szDgVQixwLRGLM=",
-        version = "v0.0.0-20190904195148-bacad065d7c3",
+        sum = "h1:8FRUST8oUkEI45WYKyD8ed7Ad0Kg5v11zHyPkEVb2xo=",
+        version = "v0.0.0-20190918155943-95b840bb6a1f",
     )
     go_repository(
         name = "io_k8s_apiextensions_apiserver",
@@ -1769,8 +1769,8 @@ def go_repositories():
         build_file_proto_mode = "disable",
         importpath = "k8s.io/apiextensions-apiserver",
         replace = "k8s.io/apiextensions-apiserver",
-        sum = "h1:XwX2pf7ToD5hX23K8Unw4SbG9qDnhPRDHt/eMOxZrGE=",
-        version = "v0.0.0-20190904201032-27869d30407f",
+        sum = "h1:V6ndwCPoao1yZ52agqOKaUAl7DYWVGiXjV7ePA2i610=",
+        version = "v0.0.0-20190918161926-8f644eb6e783",
     )
     go_repository(
         name = "io_k8s_apimachinery",
@@ -1778,8 +1778,8 @@ def go_repositories():
         build_file_proto_mode = "disable",
         importpath = "k8s.io/apimachinery",
         replace = "k8s.io/apimachinery",
-        sum = "h1:3HssScKz+EjlmBW8CvJZY+t+9i3Ox1jF4YSyt2X+0r4=",
-        version = "v0.0.0-20190831152136-93cd198ca677",
+        sum = "h1:CS1tBQz3HOXiseWZu6ZicKX361CZLT97UFnnPx0aqBw=",
+        version = "v0.0.0-20190913080033-27d36303b655",
     )
     go_repository(
         name = "io_k8s_apiserver",
@@ -1787,8 +1787,8 @@ def go_repositories():
         build_file_proto_mode = "disable",
         importpath = "k8s.io/apiserver",
         replace = "k8s.io/apiserver",
-        sum = "h1:DVqa3O8nZo0y90I3b4aOQPbD1M/MN2/jpbxILtSkPl8=",
-        version = "v0.0.0-20190904200128-43b0be24f0d4",
+        sum = "h1:IMoNR9pilTBaCS5WpwWnAdmoVYVeXowOD3bLrwxIAtQ=",
+        version = "v0.0.0-20190918160949-bfa5e2e684ad",
     )
     go_repository(
         name = "io_k8s_client_go",
@@ -1796,8 +1796,8 @@ def go_repositories():
         build_file_proto_mode = "disable",
         importpath = "k8s.io/client-go",
         replace = "k8s.io/client-go",
-        sum = "h1:TbBxj9LdVK8RRdUmZcRi9EQqSwVeuTpkqNvYT0s/QT0=",
-        version = "v0.0.0-20190904195533-1592ba1f99b8",
+        sum = "h1:mLmhKUm1X+pXu0zXMEzNsOF5E2kKFGe5o6BZBIIqA6A=",
+        version = "v0.0.0-20190918160344-1fbdaa4c8d90",
     )
     go_repository(
         name = "io_k8s_code_generator",
@@ -1805,8 +1805,8 @@ def go_repositories():
         build_file_proto_mode = "disable",
         importpath = "k8s.io/code-generator",
         replace = "k8s.io/code-generator",
-        sum = "h1:FvkOCGoM6K8bdAXRkfG0Nou5EQ4CntI/Xgfj1Z888IY=",
-        version = "v0.0.0-20190831154557-969864c73cc1",
+        sum = "h1:d8Fm55A+7HOczX58+x9x+nJnJ1Devt1aCrWVIPaw/Vg=",
+        version = "v0.0.0-20190912054826-cd179ad6a269",
     )
     go_repository(
         name = "io_k8s_component_base",
@@ -1814,8 +1814,8 @@ def go_repositories():
         build_file_proto_mode = "disable",
         importpath = "k8s.io/component-base",
         replace = "k8s.io/component-base",
-        sum = "h1:xQbF50ZabP50L5GbX46I6W0hhGPK2+hDJ+9IlQYTMS0=",
-        version = "v0.0.0-20190904195659-0da46b42124e",
+        sum = "h1:0UWOjjag5IcVoAko0g+3qGhegdwWkRf4v4AHCIMVwnc=",
+        version = "v0.0.0-20190918160511-547f6c5d7090",
     )
     go_repository(
         name = "io_k8s_gengo",
@@ -1839,8 +1839,8 @@ def go_repositories():
         build_file_proto_mode = "disable",
         importpath = "k8s.io/kube-aggregator",
         replace = "k8s.io/kube-aggregator",
-        sum = "h1:bSTOzhBmCPWMSjVTOoLv9c09j/Zbt6HH3+6gpE49c+E=",
-        version = "v0.0.0-20190904200350-34abed88ab5e",
+        sum = "h1:Qscw8cxevIcxULoLXwNgcIPbGCGCaGHlh5HpTE8N8C8=",
+        version = "v0.0.0-20190918161219-8c8f079fddc3",
     )
     go_repository(
         name = "io_k8s_kube_openapi",
