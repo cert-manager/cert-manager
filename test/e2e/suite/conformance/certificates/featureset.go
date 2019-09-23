@@ -93,4 +93,9 @@ const (
 	// certificates with an elliptic curve private key. This is useful for some
 	// issuers that have trouble being configured to support this feature.
 	ECDSAFeautre Feature = "ECDSA"
+
+	// ReusePrivateKey denotes whether the target issuer is able to sign multiple
+	// certificates for the same private key. This is useful for some issuers
+	// that have trouble being configured to support this feature.
+	ReusePrivateKeyFeature Feature = "ReusePrivateKey"
 )

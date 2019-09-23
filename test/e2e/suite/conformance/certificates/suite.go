@@ -247,6 +247,8 @@ func (s *Suite) Define() {
 		})
 
 		It("should issue another certificate with the same private key if the existing certificate and CertificateRequest are deleted", func() {
+			s.checkFeatures(ReusePrivateKeyFeature)
+
 			testCertificate := &cmapi.Certificate{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "testcert",

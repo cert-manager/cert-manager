@@ -35,8 +35,9 @@ var _ = framework.ConformanceDescribe("Certificates", func() {
 		certificates.DurationFeature,
 		// Due to the current configuration of the test environment, it does not
 		// support signing certificates that pair with an elliptic curve private
-		// key.
+		// key or using the same private key multiple times.
 		certificates.ECDSAFeautre,
+		certificates.ReusePrivateKeyFeature,
 	)
 
 	provisioner := new(venafiProvisioner)
