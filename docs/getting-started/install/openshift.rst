@@ -64,7 +64,7 @@ cert-manager runs in:
 .. code-block:: shell
 
    # Disable resource validation on the cert-manager namespace
-   oc label namespace cert-manager certmanager.k8s.io/disable-validation=true
+   oc label namespace cert-manager cert-manager.io/disable-validation=true
 
 You can read more about the webhook on the :doc:`webhook document <../webhook>`.
 

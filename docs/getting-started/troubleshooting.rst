@@ -32,17 +32,17 @@ label:
    kubectl describe namespace cert-manager
    
    Name:         cert-manager
-   Labels:       certmanager.k8s.io/disable-validation=true
+   Labels:       cert-manager.io/disable-validation=true
    Annotations:  <none>
    Status:       Active
    ...
 
-If you cannot see the ``certmanager.k8s.io/disable-validation=true`` label on
+If you cannot see the ``cert-manager.io/disable-validation=true`` label on
 your namespace, you should add it with:
 
 .. code-block:: shell
 
-   kubectl label namespace cert-manager certmanager.k8s.io/disable-validation=true
+   kubectl label namespace cert-manager cert-manager.io/disable-validation=true
 
 Please continue reading this guide once you have added the label.
 
@@ -61,12 +61,12 @@ We can first check for the existence of the CustomResourceDefinition resources:
 
    kubectl get crd | grep certmanager
 
-   NAME                                          CREATED AT
-   certificates.certmanager.k8s.io               2018-08-17T20:12:26Z
-   challenges.certmanager.k8s.io                 2018-08-02T15:33:02Z
-   clusterissuers.certmanager.k8s.io             2018-08-17T20:12:26Z
-   issuers.certmanager.k8s.io                    2018-08-17T20:12:26Z
-   orders.certmanager.k8s.io                     2018-08-02T14:40:11Z
+   NAME                                       CREATED AT
+   certificates.cert-manager.io               2018-08-17T20:12:26Z
+   challenges.cert-manager.io                 2018-08-02T15:33:02Z
+   clusterissuers.cert-manager.io             2018-08-17T20:12:26Z
+   issuers.cert-manager.io                    2018-08-17T20:12:26Z
+   orders.cert-manager.io                     2018-08-02T14:40:11Z
 
 We should then also check for that the webhook's Issuer and Certificate
 resources exist and have been issued correctly:
@@ -75,13 +75,13 @@ resources exist and have been issued correctly:
 
    kubectl get issuer,certificate --namespace cert-manager
 
-   NAME                                                      AGE
-   issuer.certmanager.k8s.io/cert-manager-webhook-ca         22d
-   issuer.certmanager.k8s.io/cert-manager-webhook-selfsign   22d
+   NAME                                                   AGE
+   issuer.cert-manager.io/cert-manager-webhook-ca         22d
+   issuer.cert-manager.io/cert-manager-webhook-selfsign   22d
 
-   NAME                                                              READY   SECRET                             AGE
-   certificate.certmanager.k8s.io/cert-manager-webhook-ca            True    cert-manager-webhook-ca            22d
-   certificate.certmanager.k8s.io/cert-manager-webhook-webhook-tls   True    cert-manager-webhook-webhook-tls   22d
+   NAME                                                           READY   SECRET                             AGE
+   certificate.cert-manager.io/cert-manager-webhook-ca            True    cert-manager-webhook-ca            22d
+   certificate.cert-manager.io/cert-manager-webhook-webhook-tls   True    cert-manager-webhook-webhook-tls   22d
 
 If you do not see the CustomResourceDefinitions installed, or cannot see the
 webhook's Issuer and Certificate resources, please go back to the install guide

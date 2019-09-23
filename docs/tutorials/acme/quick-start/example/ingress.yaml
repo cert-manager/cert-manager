@@ -4,7 +4,7 @@ metadata:
   name: kuard
   annotations:
     kubernetes.io/ingress.class: "nginx"    
-    #certmanager.k8s.io/issuer: "letsencrypt-staging"
+    #cert-manager.io/issuer: "letsencrypt-staging"
 
 spec:
   tls:

@@ -20,7 +20,7 @@ A simple CertificateRequest looks like the following:
 .. code-block:: yaml
    :linenos:
 
-   apiVersion: certmanager.k8s.io/v1alpha2
+   apiVersion: cert-manager.io/v1alpha2
    kind: CertificateRequest
    metadata:
      name: my-ca-cr
@@ -33,10 +33,10 @@ A simple CertificateRequest looks like the following:
        # We can reference ClusterIssuers by changing the kind here.
        # The default value is Issuer (i.e. a locally namespaced Issuer)
        kind: Issuer
-       group: certmanager.k8s.io
+       group: cert-manager.io
 
 This CertificateRequest will make cert-manager attempt to make the Issuer
-``letsencrypt-prod`` in the default issuer pool ``certmanager.k8s.io``, return a
+``letsencrypt-prod`` in the default issuer pool ``cert-manager.io``, return a
 certificate based upon the certificate signing request. Other groups can be
 specified inside the ``issuerRef`` which will change the targeted issuers to other
 external, third party issuers you may have installed.

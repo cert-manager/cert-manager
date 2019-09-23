@@ -84,7 +84,7 @@ An example of how you could configure the template is as so:
    :linenos:
    :emphasize-lines: 13-20
 
-   apiVersion: certmanager.k8s.io/v1alpha2
+   apiVersion: cert-manager.io/v1alpha2
    kind: Issuer
    metadata:
      name: ...

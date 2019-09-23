@@ -81,8 +81,8 @@ injecting the two CA bundles above into the webhook's
 ValidatingWebhookConfiguration and APIService resource in order to allow the
 Kubernetes apiserver to 'trust' the webhook apiserver.
 
-This component is configured using the ``certmanager.k8s.io/inject-apiserver-ca: "true"``
-and ``certmanager.k8s.io/inject-apiserver-ca: "true"`` annotations on the
+This component is configured using the ``cert-manager.io/inject-apiserver-ca: "true"``
+and ``cert-manager.io/inject-apiserver-ca: "true"`` annotations on the
 APIService and ValidatingWebhookConfiguration resources.
 
 It copies across the CA defined in the 'cert-manager-webhook-ca' Secret
@@ -115,7 +115,7 @@ To apply the label, run:
 
 .. code-block:: shell
 
-   kubectl label namespace cert-manager certmanager.k8s.io/disable-validation=true
+   kubectl label namespace cert-manager cert-manager.io/disable-validation=true
 
 You may need to wait a little while before cert-manager retries issuing the
 certificates if they have been failing for a while due to cert-manager's built

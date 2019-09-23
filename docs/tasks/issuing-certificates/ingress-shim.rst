@@ -22,7 +22,7 @@ as described on the Ingress exists. For example:
   metadata:
     annotations:
       # add an annotation indicating the issuer to use.
-      certmanager.k8s.io/cluster-issuer: nameOfClusterIssuer
+      cert-manager.io/cluster-issuer: nameOfClusterIssuer
     name: myIngress
     namespace: myIngress
   spec:
@@ -67,11 +67,11 @@ Supported annotations
 You can specify the following annotations on ingresses in order to trigger
 Certificate resources to be automatically created:
 
-* ``certmanager.k8s.io/issuer`` - the name of an Issuer to acquire the
+* ``cert-manager.io/issuer`` - the name of an Issuer to acquire the
   certificate required for this ingress from. The Issuer **must** be in the same
   namespace as the Ingress resource.
 
-* ``certmanager.k8s.io/cluster-issuer`` - the name of a ClusterIssuer to acquire
+* ``cert-manager.io/cluster-issuer`` - the name of a ClusterIssuer to acquire
   the certificate required for this ingress from. It does not matter which
   namespace your Ingress resides, as ClusterIssuers are non-namespaced resources.
 
@@ -79,7 +79,7 @@ Certificate resources to be automatically created:
   configuration of the ingress-shim (see above). Namely, a default issuer must be
   specified as arguments to the ingress-shim container.
 
-* ``certmanager.k8s.io/acme-http01-ingress-class`` - this annotation allows you
+* ``acme.cert-manager.io/http01-ingress-class`` - this annotation allows you
   to configure ingress class that will be used to solve challenges for this
   ingress. Customising this is useful when you are trying to secure internal
   services, and need to solve challenges using different ingress class to that
@@ -87,7 +87,7 @@ Certificate resources to be automatically created:
   annotation is not set, this defaults to the ingress class of the ingress
   resource.
 
-* ``certmanager.k8s.io/acme-http01-edit-in-place: "true"`` - this controls
+* ``acme.cert-manager.io/http01-edit-in-place: "true"`` - this controls
   whether the ingress is modified 'in-place', or a new one created specifically
   for the http01 challenge. If present, and set to "true" the existing ingress
   will be modified. Any other value, or the absence of the annotation assumes
