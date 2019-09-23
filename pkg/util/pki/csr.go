@@ -188,6 +188,7 @@ func GenerateCSR(crt *v1alpha2.Certificate) (*x509.CertificateRequest, error) {
 		},
 		DNSNames:    dnsNames,
 		IPAddresses: iPAddresses,
+		URIs:        uriNames,
 		// TODO: work out how best to handle extensions/key usages here
 		ExtraExtensions: []pkix.Extension{},
 	}, nil
