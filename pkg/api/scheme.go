@@ -28,6 +28,7 @@ import (
 
 	whapi "github.com/jetstack/cert-manager/pkg/acme/webhook/apis/acme/v1alpha1"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 )
 
 // This package defines a Scheme and Codec that has the *external* API types
@@ -44,6 +45,7 @@ var Codecs = serializer.NewCodecFactory(Scheme)
 var ParameterCodec = runtime.NewParameterCodec(Scheme)
 var localSchemeBuilder = runtime.SchemeBuilder{
 	cmapi.AddToScheme,
+	cmmeta.AddToScheme,
 	whapi.AddToScheme,
 	kscheme.AddToScheme,
 	apireg.AddToScheme,

@@ -25,6 +25,7 @@ import (
 
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 )
 
 func (v *Venafi) Setup(ctx context.Context) error {
@@ -36,7 +37,7 @@ func (v *Venafi) Setup(ctx context.Context) error {
 	err = client.Ping()
 	if err != nil {
 		klog.Infof("Issuer could not connect to endpoint with provided credentials. Issuer failed to connect to endpoint\n")
-		apiutil.SetIssuerCondition(v.issuer, v1alpha2.IssuerConditionReady, v1alpha2.ConditionFalse,
+		apiutil.SetIssuerCondition(v.issuer, v1alpha2.IssuerConditionReady, cmmeta.ConditionFalse,
 			"ErrorPing", fmt.Sprintf("Failed to connect to Venafi endpoint"))
 		return fmt.Errorf("error verifying Venafi client: %s", err.Error())
 	}
@@ -45,13 +46,13 @@ func (v *Venafi) Setup(ctx context.Context) error {
 	// to make it really clear to users that this Issuer is ready.
 	if !apiutil.IssuerHasCondition(v.issuer, v1alpha2.IssuerCondition{
 		Type:   v1alpha2.IssuerConditionReady,
-		Status: v1alpha2.ConditionTrue,
+		Status: cmmeta.ConditionTrue,
 	}) {
 		v.Recorder.Eventf(v.issuer, corev1.EventTypeNormal, "Ready", "Verified issuer with Venafi server")
 	}
 
 	klog.Info("Venafi issuer started")
-	apiutil.SetIssuerCondition(v.issuer, v1alpha2.IssuerConditionReady, v1alpha2.ConditionTrue, "Venafi issuer started", "Venafi issuer started")
+	apiutil.SetIssuerCondition(v.issuer, v1alpha2.IssuerConditionReady, cmmeta.ConditionTrue, "Venafi issuer started", "Venafi issuer started")
 
 	return nil
 }

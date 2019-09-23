@@ -28,6 +28,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	"github.com/jetstack/cert-manager/pkg/internal/apis/certmanager/validation/util"
 )
 
@@ -383,7 +384,7 @@ func ValidateACMEChallengeSolverDNS01(p *v1alpha2.ACMEChallengeSolverDNS01, fldP
 	return el
 }
 
-func ValidateSecretKeySelector(sks *v1alpha2.SecretKeySelector, fldPath *field.Path) field.ErrorList {
+func ValidateSecretKeySelector(sks *cmmeta.SecretKeySelector, fldPath *field.Path) field.ErrorList {
 	el := field.ErrorList{}
 	if sks.Name == "" {
 		el = append(el, field.Required(fldPath.Child("name"), "secret name is required"))

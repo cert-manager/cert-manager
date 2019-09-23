@@ -20,11 +20,12 @@ import (
 	"fmt"
 
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	cmlisters "github.com/jetstack/cert-manager/pkg/client/listers/certmanager/v1alpha2"
 )
 
 type Helper interface {
-	GetGenericIssuer(ref cmapi.ObjectReference, ns string) (cmapi.GenericIssuer, error)
+	GetGenericIssuer(ref cmmeta.ObjectReference, ns string) (cmapi.GenericIssuer, error)
 }
 
 // Type Helper provides a set of commonly useful functions for use when building
@@ -51,7 +52,7 @@ func NewHelper(issuerLister cmlisters.IssuerLister, clusterIssuerLister cmlister
 // This namespace will be used to read the Issuer resource.
 // In most cases, the ns parameter should be set to the namespace of the resource
 // that defines the IssuerRef (i.e. the namespace of the Certificate resource).
-func (h *helperImpl) GetGenericIssuer(ref cmapi.ObjectReference, ns string) (cmapi.GenericIssuer, error) {
+func (h *helperImpl) GetGenericIssuer(ref cmmeta.ObjectReference, ns string) (cmapi.GenericIssuer, error) {
 	switch ref.Kind {
 	case "", cmapi.IssuerKind:
 		return h.issuerLister.Issuers(ns).Get(ref.Name)

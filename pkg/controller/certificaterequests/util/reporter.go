@@ -26,6 +26,7 @@ import (
 
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 )
 
 const (
@@ -54,7 +55,7 @@ func (r *Reporter) Failed(cr *cmapi.CertificateRequest, err error, reason, messa
 	message = fmt.Sprintf("%s: %v", message, err)
 	r.recorder.Event(cr, corev1.EventTypeWarning, reason, message)
 	apiutil.SetCertificateRequestCondition(cr, cmapi.CertificateRequestConditionReady,
-		cmapi.ConditionFalse, cmapi.CertificateRequestReasonFailed, message)
+		cmmeta.ConditionFalse, cmapi.CertificateRequestReasonFailed, message)
 }
 
 func (r *Reporter) Pending(cr *cmapi.CertificateRequest, err error, reason, message string) {
@@ -70,11 +71,11 @@ func (r *Reporter) Pending(cr *cmapi.CertificateRequest, err error, reason, mess
 	}
 
 	apiutil.SetCertificateRequestCondition(cr, cmapi.CertificateRequestConditionReady,
-		cmapi.ConditionFalse, cmapi.CertificateRequestReasonPending, message)
+		cmmeta.ConditionFalse, cmapi.CertificateRequestReasonPending, message)
 }
 
 func (r *Reporter) Ready(cr *cmapi.CertificateRequest) {
 	r.recorder.Event(cr, corev1.EventTypeNormal, "CertificateIssued", readyMessage)
 	apiutil.SetCertificateRequestCondition(cr, cmapi.CertificateRequestConditionReady,
-		cmapi.ConditionTrue, cmapi.CertificateRequestReasonIssued, readyMessage)
+		cmmeta.ConditionTrue, cmapi.CertificateRequestReasonIssued, readyMessage)
 }

@@ -29,6 +29,7 @@ import (
 	acmecl "github.com/jetstack/cert-manager/pkg/acme/client"
 	acmefake "github.com/jetstack/cert-manager/pkg/acme/fake"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	testpkg "github.com/jetstack/cert-manager/pkg/controller/test"
 	"github.com/jetstack/cert-manager/test/unit/gen"
 	acmeapi "github.com/jetstack/cert-manager/third_party/crypto/acme"
@@ -53,7 +54,7 @@ func TestSyncHappyPath(t *testing.T) {
 	}))
 	testOrder := gen.Order("testorder",
 		gen.SetOrderCommonName("test.com"),
-		gen.SetOrderIssuer(v1alpha2.ObjectReference{
+		gen.SetOrderIssuer(cmmeta.ObjectReference{
 			Name: testIssuerHTTP01TestCom.Name,
 		}),
 	)

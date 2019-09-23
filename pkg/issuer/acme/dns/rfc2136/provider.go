@@ -30,6 +30,7 @@ import (
 
 	whapi "github.com/jetstack/cert-manager/pkg/acme/webhook/apis/acme/v1alpha1"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 )
 
 type Solver struct {
@@ -114,7 +115,7 @@ func (s *Solver) loadConfig(cfgJSON extapi.JSON) (*cmapi.ACMEIssuerDNS01Provider
 	return &cfg, nil
 }
 
-func loadSecretKeySelector(l corelisters.SecretNamespaceLister, sks cmapi.SecretKeySelector, defaultKey string) ([]byte, error) {
+func loadSecretKeySelector(l corelisters.SecretNamespaceLister, sks cmmeta.SecretKeySelector, defaultKey string) ([]byte, error) {
 	if sks.Name == "" {
 		klog.Info("rfc2136: secret name not specified")
 		return nil, nil

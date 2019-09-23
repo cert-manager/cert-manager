@@ -26,32 +26,44 @@ cd "${REPO_ROOT}"
 
 export GO111MODULE=off
 
+# Generate deepcopy functions for ACME external webhook API
 generate-groups.sh "deepcopy" \
   github.com/jetstack/cert-manager/pkg/client github.com/jetstack/cert-manager/pkg/acme/webhook/apis \
-  acme:v1alpha1 \
+  "acme:v1alpha1" \
   --output-base "${GOPATH}/src/" \
   --go-header-file "${runfiles}/hack/boilerplate/boilerplate.go.txt"
 
+# Generate deepcopy functions for the metav1 API
+generate-groups.sh "deepcopy" \
+  github.com/jetstack/cert-manager/pkg/client \
+  github.com/jetstack/cert-manager/pkg/apis \
+  "meta:v1" \
+  --output-base "${GOPATH}/src/" \
+  --go-header-file "${runfiles}/hack/boilerplate/boilerplate.go.txt"
+
+# Generate deepcopy, client, informer and listers for the external certmanager API
 generate-groups.sh "deepcopy,client,informer,lister" \
   github.com/jetstack/cert-manager/pkg/client \
   github.com/jetstack/cert-manager/pkg/apis \
-  certmanager:v1alpha2 \
+  "certmanager:v1alpha2" \
   --output-base "${GOPATH}/src/" \
   --go-header-file "${runfiles}/hack/boilerplate/boilerplate.go.txt"
 
+# Generate deepcopy, default and conversions for the internal certmanager and meta APIs
 generate-groups-internal.sh "deepcopy,defaulter,conversion" \
   github.com/jetstack/cert-manager/pkg/client \
   github.com/jetstack/cert-manager/pkg/internal/apis \
   github.com/jetstack/cert-manager/pkg/internal/apis \
-  certmanager:v1alpha2 \
+  "certmanager:v1alpha2 meta:v1" \
   --output-base "${GOPATH}/src/" \
   --go-header-file "${runfiles}/hack/boilerplate/boilerplate.go.txt"
 
+# Generate deepcopy, default and conversions for internal testdata APIs
 generate-groups-internal.sh "deepcopy,defaulter,conversion" \
   github.com/jetstack/cert-manager/pkg/webhook/handlers/testdata/generated \
   github.com/jetstack/cert-manager/pkg/webhook/handlers/testdata/apis \
   github.com/jetstack/cert-manager/pkg/webhook/handlers/testdata/apis \
-  testgroup:v1 \
+  "testgroup:v1" \
   --output-base "${GOPATH}/src/" \
   --go-header-file "${runfiles}/hack/boilerplate/boilerplate.go.txt"
 

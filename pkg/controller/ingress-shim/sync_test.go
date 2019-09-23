@@ -28,6 +28,7 @@ import (
 	coretesting "k8s.io/client-go/testing"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	testpkg "github.com/jetstack/cert-manager/pkg/controller/test"
 	"github.com/jetstack/cert-manager/test/unit/gen"
 )
@@ -138,7 +139,7 @@ func TestSync(t *testing.T) {
 					Spec: v1alpha2.CertificateSpec{
 						DNSNames:   []string{"example.com", "www.example.com"},
 						SecretName: "example-com-tls",
-						IssuerRef: v1alpha2.ObjectReference{
+						IssuerRef: cmmeta.ObjectReference{
 							Name: "issuer-name",
 							Kind: "ClusterIssuer",
 						},
@@ -189,7 +190,7 @@ func TestSync(t *testing.T) {
 					Spec: v1alpha2.CertificateSpec{
 						DNSNames:   []string{"example.com", "www.example.com"},
 						SecretName: "example-com-tls",
-						IssuerRef: v1alpha2.ObjectReference{
+						IssuerRef: cmmeta.ObjectReference{
 							Name: "issuer-name",
 							Kind: "ClusterIssuer",
 						},
@@ -229,7 +230,7 @@ func TestSync(t *testing.T) {
 					Spec: v1alpha2.CertificateSpec{
 						DNSNames:   []string{"example.com", "www.example.com"},
 						SecretName: "example-com-tls",
-						IssuerRef: v1alpha2.ObjectReference{
+						IssuerRef: cmmeta.ObjectReference{
 							Name: "issuer-name",
 							Kind: "ClusterIssuer",
 						},
@@ -270,7 +271,7 @@ func TestSync(t *testing.T) {
 					Spec: v1alpha2.CertificateSpec{
 						DNSNames:   []string{"example.com", "www.example.com"},
 						SecretName: "example-com-tls",
-						IssuerRef: v1alpha2.ObjectReference{
+						IssuerRef: cmmeta.ObjectReference{
 							Name: "issuer-name",
 							Kind: "ClusterIssuer",
 						},
@@ -315,7 +316,7 @@ func TestSync(t *testing.T) {
 					Spec: v1alpha2.CertificateSpec{
 						DNSNames:   []string{"example.com", "www.example.com"},
 						SecretName: "example-com-tls",
-						IssuerRef: v1alpha2.ObjectReference{
+						IssuerRef: cmmeta.ObjectReference{
 							Name: "issuer-name",
 							Kind: "ClusterIssuer",
 						},
@@ -357,7 +358,7 @@ func TestSync(t *testing.T) {
 					Spec: v1alpha2.CertificateSpec{
 						DNSNames:   []string{"example.com", "www.example.com"},
 						SecretName: "example-com-tls",
-						IssuerRef: v1alpha2.ObjectReference{
+						IssuerRef: cmmeta.ObjectReference{
 							Name: "issuer-name",
 							Kind: "ClusterIssuer",
 						},
@@ -398,7 +399,7 @@ func TestSync(t *testing.T) {
 					Spec: v1alpha2.CertificateSpec{
 						DNSNames:   []string{"example.com", "www.example.com"},
 						SecretName: "example-com-tls",
-						IssuerRef: v1alpha2.ObjectReference{
+						IssuerRef: cmmeta.ObjectReference{
 							Name: "issuer-name",
 							Kind: "ClusterIssuer",
 						},
@@ -440,7 +441,7 @@ func TestSync(t *testing.T) {
 					Spec: v1alpha2.CertificateSpec{
 						DNSNames:   []string{"example.com", "www.example.com"},
 						SecretName: "example-com-tls",
-						IssuerRef: v1alpha2.ObjectReference{
+						IssuerRef: cmmeta.ObjectReference{
 							Name: "issuer-name",
 							Kind: "ClusterIssuer",
 						},
@@ -540,7 +541,7 @@ func TestSync(t *testing.T) {
 					Spec: v1alpha2.CertificateSpec{
 						DNSNames:   []string{"example.com"},
 						SecretName: "existing-crt",
-						IssuerRef: v1alpha2.ObjectReference{
+						IssuerRef: cmmeta.ObjectReference{
 							Name: "issuer-name",
 							Kind: "Issuer",
 						},
@@ -587,7 +588,7 @@ func TestSync(t *testing.T) {
 					Spec: v1alpha2.CertificateSpec{
 						DNSNames:   []string{"example.com"},
 						SecretName: "existing-crt",
-						IssuerRef: v1alpha2.ObjectReference{
+						IssuerRef: cmmeta.ObjectReference{
 							Name: "issuer-name",
 							Kind: "Issuer",
 						},
@@ -633,7 +634,7 @@ func TestSync(t *testing.T) {
 					Spec: v1alpha2.CertificateSpec{
 						DNSNames:   []string{"example.com"},
 						SecretName: "cert-secret-name",
-						IssuerRef: v1alpha2.ObjectReference{
+						IssuerRef: cmmeta.ObjectReference{
 							Name: "issuer-name",
 							Kind: "Issuer",
 						},
@@ -653,7 +654,7 @@ func TestSync(t *testing.T) {
 					Spec: v1alpha2.CertificateSpec{
 						DNSNames:   []string{"example.com"},
 						SecretName: "cert-secret-name",
-						IssuerRef: v1alpha2.ObjectReference{
+						IssuerRef: cmmeta.ObjectReference{
 							Name: "issuer-name",
 							Kind: "Issuer",
 						},
@@ -694,7 +695,7 @@ func TestSync(t *testing.T) {
 					Spec: v1alpha2.CertificateSpec{
 						DNSNames:   []string{"example.com"},
 						SecretName: "existing-crt",
-						IssuerRef: v1alpha2.ObjectReference{
+						IssuerRef: cmmeta.ObjectReference{
 							Name: "issuer-name",
 							Kind: "Issuer",
 						},
@@ -735,7 +736,7 @@ func TestSync(t *testing.T) {
 					Spec: v1alpha2.CertificateSpec{
 						DNSNames:   []string{"example.com"},
 						SecretName: "existing-crt",
-						IssuerRef: v1alpha2.ObjectReference{
+						IssuerRef: cmmeta.ObjectReference{
 							Name: "issuer-name",
 							Kind: "Issuer",
 						},
@@ -767,7 +768,7 @@ func TestSync(t *testing.T) {
 					Spec: v1alpha2.CertificateSpec{
 						DNSNames:   []string{"example.com"},
 						SecretName: "existing-crt",
-						IssuerRef: v1alpha2.ObjectReference{
+						IssuerRef: cmmeta.ObjectReference{
 							Name: "issuer-name",
 							Kind: "Issuer",
 						},
@@ -784,7 +785,7 @@ func TestSync(t *testing.T) {
 					Spec: v1alpha2.CertificateSpec{
 						DNSNames:   []string{"example.com"},
 						SecretName: "existing-crt",
-						IssuerRef: v1alpha2.ObjectReference{
+						IssuerRef: cmmeta.ObjectReference{
 							Name: "issuer-name",
 							Kind: "Issuer",
 						},
@@ -871,7 +872,7 @@ type fakeHelper struct {
 	issuer v1alpha2.GenericIssuer
 }
 
-func (f *fakeHelper) GetGenericIssuer(ref v1alpha2.ObjectReference, ns string) (v1alpha2.GenericIssuer, error) {
+func (f *fakeHelper) GetGenericIssuer(ref cmmeta.ObjectReference, ns string) (v1alpha2.GenericIssuer, error) {
 	if f.issuer == nil {
 		return nil, fmt.Errorf("no issuer specified on fake helper")
 	}

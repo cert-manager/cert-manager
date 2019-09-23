@@ -29,6 +29,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 )
 
 // caDataSource knows how to extract CA data given a provided InjectTarget.
@@ -127,7 +128,7 @@ func (c *certificateDataSource) ReadCA(ctx context.Context, log logr.Logger, met
 	}
 
 	// inject the CA data
-	caData, hasCAData := secret.Data[cmapi.TLSCAKey]
+	caData, hasCAData := secret.Data[cmmeta.TLSCAKey]
 	if !hasCAData {
 		log.Error(nil, "certificate has no CA data")
 		// don't requeue, we'll get called when the secret gets updated
@@ -200,7 +201,7 @@ func (c *secretDataSource) ReadCA(ctx context.Context, log logr.Logger, metaObj 
 	}
 
 	// inject the CA data
-	caData, hasCAData := secret.Data[cmapi.TLSCAKey]
+	caData, hasCAData := secret.Data[cmmeta.TLSCAKey]
 	if !hasCAData {
 		log.Error(nil, "certificate has no CA data")
 		// don't requeue, we'll get called when the secret gets updated

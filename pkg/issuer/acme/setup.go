@@ -31,6 +31,7 @@ import (
 	"github.com/jetstack/cert-manager/pkg/acme/client"
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 	"github.com/jetstack/cert-manager/pkg/util/errors"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
@@ -59,7 +60,7 @@ func (a *Acme) Setup(ctx context.Context) error {
 
 	// check if user has specified a v1 account URL, and set a status condition if so.
 	if newURL, ok := acmev1ToV2Mappings[a.issuer.GetSpec().ACME.Server]; ok {
-		apiutil.SetIssuerCondition(a.issuer, v1alpha2.IssuerConditionReady, v1alpha2.ConditionFalse, "InvalidConfig",
+		apiutil.SetIssuerCondition(a.issuer, v1alpha2.IssuerConditionReady, cmmeta.ConditionFalse, "InvalidConfig",
 			fmt.Sprintf("Your ACME server URL is set to a v1 endpoint (%s). "+
 				"You should update the spec.acme.server field to %q", a.issuer.GetSpec().ACME.Server, newURL))
 		// return nil so that Setup only gets called again after the spec is updated
@@ -86,19 +87,19 @@ func (a *Acme) Setup(ctx context.Context) error {
 		pk, err = a.createAccountPrivateKey(a.issuer.GetSpec().ACME.PrivateKey, ns)
 		if err != nil {
 			s := messageAccountRegistrationFailed + err.Error()
-			apiutil.SetIssuerCondition(a.issuer, v1alpha2.IssuerConditionReady, v1alpha2.ConditionFalse, errorAccountRegistrationFailed, s)
+			apiutil.SetIssuerCondition(a.issuer, v1alpha2.IssuerConditionReady, cmmeta.ConditionFalse, errorAccountRegistrationFailed, s)
 			return fmt.Errorf(s)
 		}
 		// We clear the ACME account URI as we have generated a new private key
 		a.issuer.GetStatus().ACMEStatus().URI = ""
 
 	case errors.IsInvalidData(err):
-		apiutil.SetIssuerCondition(a.issuer, v1alpha2.IssuerConditionReady, v1alpha2.ConditionFalse, errorAccountVerificationFailed, fmt.Sprintf("Account private key is invalid: %v", err))
+		apiutil.SetIssuerCondition(a.issuer, v1alpha2.IssuerConditionReady, cmmeta.ConditionFalse, errorAccountVerificationFailed, fmt.Sprintf("Account private key is invalid: %v", err))
 		return nil
 
 	case err != nil:
 		s := messageAccountVerificationFailed + err.Error()
-		apiutil.SetIssuerCondition(a.issuer, v1alpha2.IssuerConditionReady, v1alpha2.ConditionFalse, errorAccountVerificationFailed, s)
+		apiutil.SetIssuerCondition(a.issuer, v1alpha2.IssuerConditionReady, cmmeta.ConditionFalse, errorAccountVerificationFailed, s)
 		return fmt.Errorf(s)
 
 	}
@@ -110,7 +111,7 @@ func (a *Acme) Setup(ctx context.Context) error {
 		s := messageAccountVerificationFailed + err.Error()
 		log.Error(err, "failed to verify acme account")
 		a.Recorder.Event(a.issuer, v1.EventTypeWarning, errorAccountVerificationFailed, s)
-		apiutil.SetIssuerCondition(a.issuer, v1alpha2.IssuerConditionReady, v1alpha2.ConditionFalse, errorAccountVerificationFailed, s)
+		apiutil.SetIssuerCondition(a.issuer, v1alpha2.IssuerConditionReady, cmmeta.ConditionFalse, errorAccountVerificationFailed, s)
 		return err
 	}
 
@@ -128,7 +129,7 @@ func (a *Acme) Setup(ctx context.Context) error {
 		r := "InvalidURL"
 		s := fmt.Sprintf("Failed to parse existing ACME server URI %q: %v", rawServerURL, err)
 		a.Recorder.Eventf(a.issuer, v1.EventTypeWarning, r, s)
-		apiutil.SetIssuerCondition(a.issuer, v1alpha2.IssuerConditionReady, v1alpha2.ConditionFalse, r, s)
+		apiutil.SetIssuerCondition(a.issuer, v1alpha2.IssuerConditionReady, cmmeta.ConditionFalse, r, s)
 		// absorb errors as retrying will not help resolve this error
 		return nil
 	}
@@ -139,14 +140,14 @@ func (a *Acme) Setup(ctx context.Context) error {
 		r := "InvalidURL"
 		s := fmt.Sprintf("Failed to parse existing ACME account URI %q: %v", rawAccountURL, err)
 		a.Recorder.Eventf(a.issuer, v1.EventTypeWarning, r, s)
-		apiutil.SetIssuerCondition(a.issuer, v1alpha2.IssuerConditionReady, v1alpha2.ConditionFalse, r, s)
+		apiutil.SetIssuerCondition(a.issuer, v1alpha2.IssuerConditionReady, cmmeta.ConditionFalse, r, s)
 		// absorb errors as retrying will not help resolve this error
 		return nil
 	}
 
 	hasReadyCondition := apiutil.IssuerHasCondition(a.issuer, v1alpha2.IssuerCondition{
 		Type:   v1alpha2.IssuerConditionReady,
-		Status: v1alpha2.ConditionTrue,
+		Status: cmmeta.ConditionTrue,
 	})
 
 	// If the Host components of the server URL and the account URL match,
@@ -175,7 +176,7 @@ func (a *Acme) Setup(ctx context.Context) error {
 		s := messageAccountVerificationFailed + err.Error()
 		log.Error(err, "failed to verify ACME account")
 		a.Recorder.Event(a.issuer, v1.EventTypeWarning, errorAccountVerificationFailed, s)
-		apiutil.SetIssuerCondition(a.issuer, v1alpha2.IssuerConditionReady, v1alpha2.ConditionFalse, errorAccountRegistrationFailed, s)
+		apiutil.SetIssuerCondition(a.issuer, v1alpha2.IssuerConditionReady, cmmeta.ConditionFalse, errorAccountRegistrationFailed, s)
 
 		acmeErr, ok := err.(*acmeapi.Error)
 		// If this is not an ACME error, we will simply return it and retry later
@@ -204,7 +205,7 @@ func (a *Acme) Setup(ctx context.Context) error {
 		s := messageAccountUpdateFailed + err.Error()
 		log.Error(err, "failed to update ACME account")
 		a.Recorder.Event(a.issuer, v1.EventTypeWarning, errorAccountUpdateFailed, s)
-		apiutil.SetIssuerCondition(a.issuer, v1alpha2.IssuerConditionReady, v1alpha2.ConditionFalse, errorAccountUpdateFailed, s)
+		apiutil.SetIssuerCondition(a.issuer, v1alpha2.IssuerConditionReady, cmmeta.ConditionFalse, errorAccountUpdateFailed, s)
 
 		acmeErr, ok := err.(*acmeapi.Error)
 		// If this is not an ACME error, we will simply return it and retry later
@@ -226,7 +227,7 @@ func (a *Acme) Setup(ctx context.Context) error {
 	}
 
 	log.Info("verified existing registration with ACME server")
-	apiutil.SetIssuerCondition(a.issuer, v1alpha2.IssuerConditionReady, v1alpha2.ConditionTrue, successAccountRegistered, messageAccountRegistered)
+	apiutil.SetIssuerCondition(a.issuer, v1alpha2.IssuerConditionReady, cmmeta.ConditionTrue, successAccountRegistered, messageAccountRegistered)
 	a.issuer.GetStatus().ACMEStatus().URI = account.URL
 	a.issuer.GetStatus().ACMEStatus().LastRegisteredEmail = registeredEmail
 
@@ -306,7 +307,7 @@ func (a *Acme) registerAccount(ctx context.Context, cl client.Interface) (*acmea
 
 // createAccountPrivateKey will generate a new RSA private key, and create it
 // as a secret resource in the apiserver.
-func (a *Acme) createAccountPrivateKey(sel v1alpha2.SecretKeySelector, ns string) (*rsa.PrivateKey, error) {
+func (a *Acme) createAccountPrivateKey(sel cmmeta.SecretKeySelector, ns string) (*rsa.PrivateKey, error) {
 	sel = acme.PrivateKeySelector(sel)
 	accountPrivKey, err := pki.GenerateRSAPrivateKey(pki.MinRSAKeySize)
 	if err != nil {

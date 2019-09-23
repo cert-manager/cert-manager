@@ -25,6 +25,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 )
 
 var (
@@ -32,8 +33,8 @@ var (
 		ServiceAccount: validSecretKeyRef,
 		Project:        "valid",
 	}
-	validSecretKeyRef = v1alpha2.SecretKeySelector{
-		LocalObjectReference: v1alpha2.LocalObjectReference{
+	validSecretKeyRef = cmmeta.SecretKeySelector{
+		LocalObjectReference: cmmeta.LocalObjectReference{
 			Name: "valid",
 		},
 		Key: "validkey",
@@ -490,8 +491,8 @@ func TestValidateACMEIssuerDNS01Config(t *testing.T) {
 			cfg: &v1alpha2.ACMEChallengeSolverDNS01{
 				CloudDNS: &v1alpha2.ACMEIssuerDNS01ProviderCloudDNS{
 					Project: "valid",
-					ServiceAccount: v1alpha2.SecretKeySelector{
-						LocalObjectReference: v1alpha2.LocalObjectReference{Name: "something"},
+					ServiceAccount: cmmeta.SecretKeySelector{
+						LocalObjectReference: cmmeta.LocalObjectReference{Name: "something"},
 						Key:                  "",
 					},
 				},
@@ -504,8 +505,8 @@ func TestValidateACMEIssuerDNS01Config(t *testing.T) {
 			cfg: &v1alpha2.ACMEChallengeSolverDNS01{
 				CloudDNS: &v1alpha2.ACMEIssuerDNS01ProviderCloudDNS{
 					Project: "valid",
-					ServiceAccount: v1alpha2.SecretKeySelector{
-						LocalObjectReference: v1alpha2.LocalObjectReference{Name: ""},
+					ServiceAccount: cmmeta.SecretKeySelector{
+						LocalObjectReference: cmmeta.LocalObjectReference{Name: ""},
 						Key:                  "something",
 					},
 				},
@@ -710,38 +711,38 @@ func TestValidateACMEIssuerDNS01Config(t *testing.T) {
 }
 
 func TestValidateSecretKeySelector(t *testing.T) {
-	validName := v1alpha2.LocalObjectReference{Name: "name"}
+	validName := cmmeta.LocalObjectReference{Name: "name"}
 	validKey := "key"
-	// invalidName := v1alpha2.LocalObjectReference{"-name-"}
+	// invalidName := cmmeta.LocalObjectReference{"-name-"}
 	// invalidKey := "-key-"
 	fldPath := field.NewPath("")
 	scenarios := map[string]struct {
 		isExpectedFailure bool
-		selector          *v1alpha2.SecretKeySelector
+		selector          *cmmeta.SecretKeySelector
 		errs              []*field.Error
 	}{
 		"valid selector": {
-			selector: &v1alpha2.SecretKeySelector{
+			selector: &cmmeta.SecretKeySelector{
 				LocalObjectReference: validName,
 				Key:                  validKey,
 			},
 		},
 		// "invalid name": {
 		// 	isExpectedFailure: true,
-		// 	selector: &v1alpha2.SecretKeySelector{
+		// 	selector: &cmmeta.SecretKeySelector{
 		// 		LocalObjectReference: invalidName,
 		// 		Key:                  validKey,
 		// 	},
 		// },
 		// "invalid key": {
 		// 	isExpectedFailure: true,
-		// 	selector: &v1alpha2.SecretKeySelector{
+		// 	selector: &cmmeta.SecretKeySelector{
 		// 		LocalObjectReference: validName,
 		// 		Key:                  invalidKey,
 		// 	},
 		// },
 		"missing name": {
-			selector: &v1alpha2.SecretKeySelector{
+			selector: &cmmeta.SecretKeySelector{
 				Key: validKey,
 			},
 			errs: []*field.Error{
@@ -749,7 +750,7 @@ func TestValidateSecretKeySelector(t *testing.T) {
 			},
 		},
 		"missing key": {
-			selector: &v1alpha2.SecretKeySelector{
+			selector: &cmmeta.SecretKeySelector{
 				LocalObjectReference: validName,
 			},
 			errs: []*field.Error{

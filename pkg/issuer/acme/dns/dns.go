@@ -30,6 +30,7 @@ import (
 	"github.com/jetstack/cert-manager/pkg/acme/webhook"
 	whapi "github.com/jetstack/cert-manager/pkg/acme/webhook/apis/acme/v1alpha1"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	"github.com/jetstack/cert-manager/pkg/controller"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/acmedns"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/dns/akamai"
@@ -463,7 +464,7 @@ func NewSolver(ctx *controller.Context) (*Solver, error) {
 	}, nil
 }
 
-func (s *Solver) loadSecretData(selector *v1alpha2.SecretKeySelector, ns string) ([]byte, error) {
+func (s *Solver) loadSecretData(selector *cmmeta.SecretKeySelector, ns string) ([]byte, error) {
 	secret, err := s.secretLister.Secrets(ns).Get(selector.Name)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to load secret %q", ns+"/"+selector.Name)

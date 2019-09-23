@@ -24,6 +24,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	certmanager "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	"github.com/jetstack/cert-manager/test/e2e/framework"
 	"github.com/jetstack/cert-manager/test/e2e/util"
 	admissionreg "k8s.io/api/admissionregistration/v1beta1"
@@ -63,7 +64,7 @@ var _ = framework.CertManagerDescribe("CA Injector", func() {
 					issuerName,
 					certmanager.IssuerCondition{
 						Type:   certmanager.IssuerConditionReady,
-						Status: certmanager.ConditionTrue,
+						Status: cmmeta.ConditionTrue,
 					})
 				Expect(err).NotTo(HaveOccurred())
 			})
@@ -87,7 +88,7 @@ var _ = framework.CertManagerDescribe("CA Injector", func() {
 
 				err := util.WaitForCertificateCondition(f.CertManagerClientSet.CertmanagerV1alpha2().Certificates(f.Namespace.Name), "serving-certs", certmanager.CertificateCondition{
 					Type:   certmanager.CertificateConditionReady,
-					Status: certmanager.ConditionTrue,
+					Status: cmmeta.ConditionTrue,
 				}, time.Second*30)
 				Expect(err).NotTo(HaveOccurred(), "failed to wait for Certificate to become Ready")
 

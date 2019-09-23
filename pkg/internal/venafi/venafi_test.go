@@ -26,6 +26,7 @@ import (
 	corelisters "k8s.io/client-go/listers/core/v1"
 
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	"github.com/jetstack/cert-manager/test/unit/gen"
 	testlisters "github.com/jetstack/cert-manager/test/unit/listers"
 )
@@ -88,7 +89,7 @@ func TestConfigForIssuerT(t *testing.T) {
 		gen.SetIssuerVenafi(cmapi.VenafiIssuer{
 			Zone: zone,
 			Cloud: &cmapi.VenafiCloud{
-				APITokenSecretRef: cmapi.SecretKeySelector{
+				APITokenSecretRef: cmmeta.SecretKeySelector{
 					Key: customKey,
 				},
 			},

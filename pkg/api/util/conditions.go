@@ -22,6 +22,7 @@ import (
 	"k8s.io/utils/clock"
 
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 )
 
 // Clock is defined as a package var so it can be stubbed out during tests.
@@ -54,7 +55,7 @@ func IssuerHasCondition(i cmapi.GenericIssuer, c cmapi.IssuerCondition) bool {
 //   condition will be updated and the LastTransitionTime set to the current
 //   time.
 // This function works with both Issuer and ClusterIssuer resources.
-func SetIssuerCondition(i cmapi.GenericIssuer, conditionType cmapi.IssuerConditionType, status cmapi.ConditionStatus, reason, message string) {
+func SetIssuerCondition(i cmapi.GenericIssuer, conditionType cmapi.IssuerConditionType, status cmmeta.ConditionStatus, reason, message string) {
 	newCondition := cmapi.IssuerCondition{
 		Type:    conditionType,
 		Status:  status,
@@ -117,7 +118,7 @@ func CertificateHasCondition(crt *cmapi.Certificate, c cmapi.CertificateConditio
 // - If a condition of the same type and different state already exists, the
 //   condition will be updated and the LastTransitionTime set to the current
 //   time.
-func SetCertificateCondition(crt *cmapi.Certificate, conditionType cmapi.CertificateConditionType, status cmapi.ConditionStatus, reason, message string) {
+func SetCertificateCondition(crt *cmapi.Certificate, conditionType cmapi.CertificateConditionType, status cmmeta.ConditionStatus, reason, message string) {
 	newCondition := cmapi.CertificateCondition{
 		Type:    conditionType,
 		Status:  status,
@@ -162,7 +163,7 @@ func SetCertificateCondition(crt *cmapi.Certificate, conditionType cmapi.Certifi
 // - If a condition of the same type and different state already exists, the
 //   condition will be updated and the LastTransitionTime set to the current
 //   time.
-func SetCertificateRequestCondition(cr *cmapi.CertificateRequest, conditionType cmapi.CertificateRequestConditionType, status cmapi.ConditionStatus, reason, message string) {
+func SetCertificateRequestCondition(cr *cmapi.CertificateRequest, conditionType cmapi.CertificateRequestConditionType, status cmmeta.ConditionStatus, reason, message string) {
 	newCondition := cmapi.CertificateRequestCondition{
 		Type:    conditionType,
 		Status:  status,

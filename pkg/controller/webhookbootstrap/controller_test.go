@@ -30,6 +30,7 @@ import (
 	coretesting "k8s.io/client-go/testing"
 
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	testpkg "github.com/jetstack/cert-manager/pkg/controller/test"
 )
 
@@ -160,7 +161,7 @@ func TestProcessItem(t *testing.T) {
 							Data: map[string][]byte{
 								corev1.TLSCertKey:       nil,
 								corev1.TLSPrivateKeyKey: exampleBundle.privateKeyBytes,
-								cmapi.TLSCAKey:          nil,
+								cmmeta.TLSCAKey:         nil,
 							},
 							Type: corev1.SecretTypeTLS,
 						},
@@ -200,7 +201,7 @@ func TestProcessItem(t *testing.T) {
 							Data: map[string][]byte{
 								corev1.TLSCertKey:       nil,
 								corev1.TLSPrivateKeyKey: exampleBundle.privateKeyBytes,
-								cmapi.TLSCAKey:          nil,
+								cmmeta.TLSCAKey:         nil,
 							},
 							Type: corev1.SecretTypeTLS,
 						},
@@ -277,7 +278,7 @@ func TestProcessItem(t *testing.T) {
 							Data: map[string][]byte{
 								corev1.TLSCertKey:       nil,
 								corev1.TLSPrivateKeyKey: exampleBundle.privateKeyBytes,
-								cmapi.TLSCAKey:          nil,
+								cmmeta.TLSCAKey:         nil,
 							},
 							Type: corev1.SecretTypeTLS,
 						},
@@ -328,7 +329,7 @@ func TestProcessItem(t *testing.T) {
 							Data: map[string][]byte{
 								corev1.TLSCertKey:       nil,
 								corev1.TLSPrivateKeyKey: exampleBundle.privateKeyBytes,
-								cmapi.TLSCAKey:          nil,
+								cmmeta.TLSCAKey:         nil,
 							},
 							Type: corev1.SecretTypeTLS,
 						},
@@ -368,7 +369,7 @@ func TestProcessItem(t *testing.T) {
 							Data: map[string][]byte{
 								corev1.TLSCertKey:       exampleBundleCA.certBytes,
 								corev1.TLSPrivateKeyKey: exampleBundleCA.privateKeyBytes,
-								cmapi.TLSCAKey:          exampleBundleCA.certBytes,
+								cmmeta.TLSCAKey:         exampleBundleCA.certBytes,
 							},
 							Type: corev1.SecretTypeTLS,
 						},
@@ -409,7 +410,7 @@ func TestProcessItem(t *testing.T) {
 							Data: map[string][]byte{
 								corev1.TLSCertKey:       exampleBundleCA.certBytes,
 								corev1.TLSPrivateKeyKey: exampleBundleCA.privateKeyBytes,
-								cmapi.TLSCAKey:          exampleBundleCA.certBytes,
+								cmmeta.TLSCAKey:         exampleBundleCA.certBytes,
 							},
 							Type: corev1.SecretTypeTLS,
 						},
@@ -434,7 +435,7 @@ func TestProcessItem(t *testing.T) {
 						Data: map[string][]byte{
 							corev1.TLSCertKey:       exampleBundleCA.certBytes,
 							corev1.TLSPrivateKeyKey: exampleBundleCA.privateKeyBytes,
-							cmapi.TLSCAKey:          exampleBundleCA.certBytes,
+							cmmeta.TLSCAKey:         exampleBundleCA.certBytes,
 						},
 						Type: corev1.SecretTypeTLS,
 					},
@@ -464,7 +465,7 @@ func TestProcessItem(t *testing.T) {
 							Data: map[string][]byte{
 								corev1.TLSCertKey:       exampleBundle.certBytes,
 								corev1.TLSPrivateKeyKey: exampleBundle.privateKeyBytes,
-								cmapi.TLSCAKey:          exampleBundleCA.certBytes,
+								cmmeta.TLSCAKey:         exampleBundleCA.certBytes,
 							},
 							Type: corev1.SecretTypeTLS,
 						},
@@ -489,7 +490,7 @@ func TestProcessItem(t *testing.T) {
 						Data: map[string][]byte{
 							corev1.TLSCertKey:       exampleBundleCA.certBytes,
 							corev1.TLSPrivateKeyKey: exampleBundleCA.privateKeyBytes,
-							cmapi.TLSCAKey:          exampleBundleCA.certBytes,
+							cmmeta.TLSCAKey:         exampleBundleCA.certBytes,
 						},
 						Type: corev1.SecretTypeTLS,
 					},
@@ -519,7 +520,7 @@ func TestProcessItem(t *testing.T) {
 							Data: map[string][]byte{
 								corev1.TLSCertKey:       exampleBundle.certBytes,
 								corev1.TLSPrivateKeyKey: exampleBundle.privateKeyBytes,
-								cmapi.TLSCAKey:          exampleBundleCA.certBytes,
+								cmmeta.TLSCAKey:         exampleBundleCA.certBytes,
 							},
 							Type: corev1.SecretTypeTLS,
 						},
@@ -544,7 +545,7 @@ func TestProcessItem(t *testing.T) {
 						Data: map[string][]byte{
 							corev1.TLSCertKey:       exampleBundleCA.certBytes,
 							corev1.TLSPrivateKeyKey: exampleBundleCA.privateKeyBytes,
-							cmapi.TLSCAKey:          exampleBundleCA.certBytes,
+							cmmeta.TLSCAKey:         exampleBundleCA.certBytes,
 						},
 						Type: corev1.SecretTypeTLS,
 					},
@@ -556,7 +557,7 @@ func TestProcessItem(t *testing.T) {
 						Data: map[string][]byte{
 							corev1.TLSCertKey:       exampleBundleCA.certBytes,
 							corev1.TLSPrivateKeyKey: exampleBundle.privateKeyBytes,
-							cmapi.TLSCAKey:          exampleBundleCA.certBytes,
+							cmmeta.TLSCAKey:         exampleBundleCA.certBytes,
 						},
 						Type: corev1.SecretTypeTLS,
 					},
@@ -576,7 +577,7 @@ func TestProcessItem(t *testing.T) {
 							Data: map[string][]byte{
 								corev1.TLSCertKey:       exampleBundle.certBytes,
 								corev1.TLSPrivateKeyKey: exampleBundle.privateKeyBytes,
-								cmapi.TLSCAKey:          exampleBundleCA.certBytes,
+								cmmeta.TLSCAKey:         exampleBundleCA.certBytes,
 							},
 							Type: corev1.SecretTypeTLS,
 						},
@@ -598,7 +599,7 @@ func TestProcessItem(t *testing.T) {
 						Data: map[string][]byte{
 							corev1.TLSCertKey:       exampleBundleCA.certBytes,
 							corev1.TLSPrivateKeyKey: exampleBundleCA.privateKeyBytes,
-							cmapi.TLSCAKey:          exampleBundleCA.certBytes,
+							cmmeta.TLSCAKey:         exampleBundleCA.certBytes,
 						},
 						Type: corev1.SecretTypeTLS,
 					},
@@ -610,7 +611,7 @@ func TestProcessItem(t *testing.T) {
 						Data: map[string][]byte{
 							corev1.TLSCertKey:       exampleBadDNSNameBundle.certBytes,
 							corev1.TLSPrivateKeyKey: exampleBadDNSNameBundle.privateKeyBytes,
-							cmapi.TLSCAKey:          exampleBundleCA.certBytes,
+							cmmeta.TLSCAKey:         exampleBundleCA.certBytes,
 						},
 						Type: corev1.SecretTypeTLS,
 					},
@@ -630,7 +631,7 @@ func TestProcessItem(t *testing.T) {
 							Data: map[string][]byte{
 								corev1.TLSCertKey:       exampleBundle.certBytes,
 								corev1.TLSPrivateKeyKey: exampleBadDNSNameBundle.privateKeyBytes,
-								cmapi.TLSCAKey:          exampleBundleCA.certBytes,
+								cmmeta.TLSCAKey:         exampleBundleCA.certBytes,
 							},
 							Type: corev1.SecretTypeTLS,
 						},

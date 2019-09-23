@@ -22,14 +22,15 @@ import (
 	"testing"
 	"time"
 
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 )
 
 var (
-	validIssuerRef = v1alpha2.ObjectReference{
+	validIssuerRef = cmmeta.ObjectReference{
 		Name: "name",
 		Kind: "ClusterIssuer",
 	}
@@ -59,7 +60,7 @@ func TestValidateCertificate(t *testing.T) {
 				Spec: v1alpha2.CertificateSpec{
 					CommonName: "testcn",
 					SecretName: "abc",
-					IssuerRef: v1alpha2.ObjectReference{
+					IssuerRef: cmmeta.ObjectReference{
 						Name: "valid",
 					},
 				},
@@ -70,7 +71,7 @@ func TestValidateCertificate(t *testing.T) {
 				Spec: v1alpha2.CertificateSpec{
 					CommonName: "testcn",
 					SecretName: "abc",
-					IssuerRef: v1alpha2.ObjectReference{
+					IssuerRef: cmmeta.ObjectReference{
 						Name: "valid",
 						Kind: "Issuer",
 					},
@@ -92,7 +93,7 @@ func TestValidateCertificate(t *testing.T) {
 				Spec: v1alpha2.CertificateSpec{
 					CommonName: "testcn",
 					SecretName: "abc",
-					IssuerRef: v1alpha2.ObjectReference{
+					IssuerRef: cmmeta.ObjectReference{
 						Name: "valid",
 						Kind: "invalid",
 					},

@@ -34,6 +34,7 @@ import (
 	"k8s.io/utils/clock"
 
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	controllerpkg "github.com/jetstack/cert-manager/pkg/controller"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 	"github.com/jetstack/cert-manager/pkg/scheduler"
@@ -376,7 +377,7 @@ func (c *controller) updateSecret(secret *corev1.Secret, pk, ca, crt []byte) err
 	}
 	secret.Data[corev1.TLSPrivateKeyKey] = pk
 	secret.Data[corev1.TLSCertKey] = crt
-	secret.Data[cmapi.TLSCAKey] = ca
+	secret.Data[cmmeta.TLSCAKey] = ca
 	_, err := c.kubeClient.CoreV1().Secrets(secret.Namespace).Update(secret)
 	return err
 }
@@ -421,7 +422,7 @@ func (c *controller) createEmptySecret(ctx context.Context, log logr.Logger, nam
 		Data: map[string][]byte{
 			corev1.TLSCertKey:       nil,
 			corev1.TLSPrivateKeyKey: nil,
-			cmapi.TLSCAKey:          nil,
+			cmmeta.TLSCAKey:         nil,
 		},
 		Type: corev1.SecretTypeTLS,
 	}
@@ -458,7 +459,7 @@ func buildCACertificate(secret *corev1.Secret) *cmapi.Certificate {
 			// root CA is valid for 5 years as we don't currently handle
 			// rotating the root properly
 			Duration: &metav1.Duration{Duration: time.Hour * 24 * 365 * 5},
-			IssuerRef: cmapi.ObjectReference{
+			IssuerRef: cmmeta.ObjectReference{
 				Name: selfSignedIssuerName,
 			},
 			IsCA:         true,
@@ -481,7 +482,7 @@ func buildServingCertificate(secret *corev1.Secret, dnsNames []string) *cmapi.Ce
 			Organization: []string{"cert-manager.system"},
 			DNSNames:     dnsNames,
 			Duration:     &metav1.Duration{Duration: time.Hour * 24 * 365 * 1},
-			IssuerRef: cmapi.ObjectReference{
+			IssuerRef: cmmeta.ObjectReference{
 				Name: caIssuerName,
 			},
 			KeyAlgorithm: servingKeyAlgorithm,

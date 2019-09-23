@@ -24,6 +24,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	cmutil "github.com/jetstack/cert-manager/pkg/util"
 	"github.com/jetstack/cert-manager/test/e2e/framework"
 	vaddon "github.com/jetstack/cert-manager/test/e2e/suite/issuers/venafi/addon"
@@ -60,7 +61,7 @@ var _ = TPPDescribe("CertificateRequest with a properly configured Issuer", func
 			issuer.Name,
 			cmapi.IssuerCondition{
 				Type:   cmapi.IssuerConditionReady,
-				Status: cmapi.ConditionTrue,
+				Status: cmmeta.ConditionTrue,
 			})
 		Expect(err).NotTo(HaveOccurred())
 	})

@@ -26,6 +26,7 @@ import (
 	clientgotesting "k8s.io/client-go/testing"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	testpkg "github.com/jetstack/cert-manager/pkg/controller/test"
 )
 
@@ -67,7 +68,7 @@ func TestUpdateIssuerStatus(t *testing.T) {
 		Conditions: []v1alpha2.IssuerCondition{
 			{
 				Type:   v1alpha2.IssuerConditionReady,
-				Status: v1alpha2.ConditionTrue,
+				Status: cmmeta.ConditionTrue,
 			},
 		},
 	}

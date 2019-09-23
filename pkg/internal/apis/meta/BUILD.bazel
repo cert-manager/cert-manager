@@ -1,0 +1,37 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "doc.go",
+        "register.go",
+        "types.go",
+        "zz_generated.deepcopy.go",
+    ],
+    importpath = "github.com/jetstack/cert-manager/pkg/internal/apis/meta",
+    visibility = ["//pkg:__subpackages__"],
+    deps = [
+        "//pkg/apis/meta:go_default_library",
+        "//vendor/k8s.io/apimachinery/pkg/runtime:go_default_library",
+        "//vendor/k8s.io/apimachinery/pkg/runtime/schema:go_default_library",
+    ],
+)
+
+filegroup(
+    name = "package-srcs",
+    srcs = glob(["**"]),
+    tags = ["automanaged"],
+    visibility = ["//visibility:private"],
+)
+
+filegroup(
+    name = "all-srcs",
+    srcs = [
+        ":package-srcs",
+        "//pkg/internal/apis/meta/fuzzer:all-srcs",
+        "//pkg/internal/apis/meta/install:all-srcs",
+        "//pkg/internal/apis/meta/v1:all-srcs",
+    ],
+    tags = ["automanaged"],
+    visibility = ["//visibility:public"],
+)

@@ -23,6 +23,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	"github.com/jetstack/cert-manager/test/e2e/framework"
 	"github.com/jetstack/cert-manager/test/e2e/suite/conformance/certificates"
 )
@@ -34,7 +35,7 @@ var _ = framework.ConformanceDescribe("Certificates", func() {
 	}).Define()
 })
 
-func createCAIssuer(f *framework.Framework) cmapi.ObjectReference {
+func createCAIssuer(f *framework.Framework) cmmeta.ObjectReference {
 	By("Creating a SelfSigned issuer")
 	rootCertSecret, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Create(newSigningKeypairSecret("root-cert"))
 	Expect(err).NotTo(HaveOccurred(), "failed to create root signing keypair secret")
@@ -53,7 +54,7 @@ func createCAIssuer(f *framework.Framework) cmapi.ObjectReference {
 	})
 	Expect(err).NotTo(HaveOccurred(), "failed to create ca issuer")
 
-	return cmapi.ObjectReference{
+	return cmmeta.ObjectReference{
 		Group: cmapi.SchemeGroupVersion.Group,
 		Kind:  cmapi.IssuerKind,
 		Name:  issuer.Name,

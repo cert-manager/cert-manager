@@ -40,6 +40,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	vaultfake "github.com/jetstack/cert-manager/pkg/internal/vault/fake"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 	"github.com/jetstack/cert-manager/test/unit/gen"
@@ -221,8 +222,8 @@ func TestSetToken(t *testing.T) {
 				gen.SetIssuerVault(v1alpha2.VaultIssuer{
 					CABundle: []byte(testCertBundle),
 					Auth: v1alpha2.VaultAuth{
-						TokenSecretRef: v1alpha2.SecretKeySelector{
-							LocalObjectReference: v1alpha2.LocalObjectReference{
+						TokenSecretRef: cmmeta.SecretKeySelector{
+							LocalObjectReference: cmmeta.LocalObjectReference{
 								Name: "secret-ref-name",
 							},
 						},
@@ -242,8 +243,8 @@ func TestSetToken(t *testing.T) {
 				gen.SetIssuerVault(v1alpha2.VaultIssuer{
 					CABundle: []byte(testCertBundle),
 					Auth: v1alpha2.VaultAuth{
-						TokenSecretRef: v1alpha2.SecretKeySelector{
-							LocalObjectReference: v1alpha2.LocalObjectReference{
+						TokenSecretRef: cmmeta.SecretKeySelector{
+							LocalObjectReference: cmmeta.LocalObjectReference{
 								Name: "secret-ref-name",
 							},
 							Key: "my-token-key",
@@ -266,8 +267,8 @@ func TestSetToken(t *testing.T) {
 					Auth: v1alpha2.VaultAuth{
 						AppRole: v1alpha2.VaultAppRole{
 							RoleId: "my-role-id",
-							SecretRef: v1alpha2.SecretKeySelector{
-								LocalObjectReference: v1alpha2.LocalObjectReference{
+							SecretRef: cmmeta.SecretKeySelector{
+								LocalObjectReference: cmmeta.LocalObjectReference{
 									Name: "secret-ref-name",
 								},
 								Key: "my-role-key",
@@ -291,8 +292,8 @@ func TestSetToken(t *testing.T) {
 					Auth: v1alpha2.VaultAuth{
 						AppRole: v1alpha2.VaultAppRole{
 							RoleId: "my-role-id",
-							SecretRef: v1alpha2.SecretKeySelector{
-								LocalObjectReference: v1alpha2.LocalObjectReference{
+							SecretRef: cmmeta.SecretKeySelector{
+								LocalObjectReference: cmmeta.LocalObjectReference{
 									Name: "secret-ref-name",
 								},
 								Key: "my-role-key",
@@ -322,15 +323,15 @@ func TestSetToken(t *testing.T) {
 					Auth: v1alpha2.VaultAuth{
 						AppRole: v1alpha2.VaultAppRole{
 							RoleId: "my-role-id",
-							SecretRef: v1alpha2.SecretKeySelector{
-								LocalObjectReference: v1alpha2.LocalObjectReference{
+							SecretRef: cmmeta.SecretKeySelector{
+								LocalObjectReference: cmmeta.LocalObjectReference{
 									Name: "secret-ref-name",
 								},
 								Key: "my-role-key",
 							},
 						},
-						TokenSecretRef: v1alpha2.SecretKeySelector{
-							LocalObjectReference: v1alpha2.LocalObjectReference{
+						TokenSecretRef: cmmeta.SecretKeySelector{
+							LocalObjectReference: cmmeta.LocalObjectReference{
 								Name: "secret-ref-name",
 							},
 							Key: "my-token-key",
@@ -398,8 +399,8 @@ func TestAppRoleRef(t *testing.T) {
 		"no data in key should fail": {
 			appRole: &v1alpha2.VaultAppRole{
 				RoleId: "",
-				SecretRef: v1alpha2.SecretKeySelector{
-					LocalObjectReference: v1alpha2.LocalObjectReference{
+				SecretRef: cmmeta.SecretKeySelector{
+					LocalObjectReference: cmmeta.LocalObjectReference{
 						Name: "secret-name",
 					},
 					Key: "my-key",
@@ -421,8 +422,8 @@ func TestAppRoleRef(t *testing.T) {
 		"should return roleID and secretID with trimmed space": {
 			appRole: &v1alpha2.VaultAppRole{
 				RoleId: "    my-role-id  ",
-				SecretRef: v1alpha2.SecretKeySelector{
-					LocalObjectReference: v1alpha2.LocalObjectReference{
+				SecretRef: cmmeta.SecretKeySelector{
+					LocalObjectReference: cmmeta.LocalObjectReference{
 						Name: "secret-name",
 					},
 					Key: "my-key",
@@ -646,8 +647,8 @@ type requestTokenWithAppRoleRefT struct {
 func TestRequestTokenWithAppRoleRef(t *testing.T) {
 	basicAppRoleRef := &v1alpha2.VaultAppRole{
 		RoleId: "test-role-id",
-		SecretRef: v1alpha2.SecretKeySelector{
-			LocalObjectReference: v1alpha2.LocalObjectReference{
+		SecretRef: cmmeta.SecretKeySelector{
+			LocalObjectReference: cmmeta.LocalObjectReference{
 				Name: "test-secret",
 			},
 			Key: "my-key",

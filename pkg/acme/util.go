@@ -20,6 +20,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 )
 
 // IsFinalState will return true if the given ACME State is a 'final' state.
@@ -44,7 +45,7 @@ func IsFailureState(s cmapi.State) bool {
 
 // PrivateKeySelector will default the SecretKeySelector with a default secret key
 // if one is not already specified.
-func PrivateKeySelector(sel cmapi.SecretKeySelector) cmapi.SecretKeySelector {
+func PrivateKeySelector(sel cmmeta.SecretKeySelector) cmmeta.SecretKeySelector {
 	if len(sel.Key) == 0 {
 		sel.Key = corev1.TLSPrivateKeyKey
 	}

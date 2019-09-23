@@ -25,6 +25,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	"github.com/jetstack/cert-manager/test/e2e/framework"
 	"github.com/jetstack/cert-manager/test/e2e/framework/addon"
 	"github.com/jetstack/cert-manager/test/e2e/suite/issuers/acme/dnsproviders"
@@ -73,8 +74,8 @@ func testDNSProvider(name string, p dns01Provider) bool {
 					SkipTLSVerify: true,
 					Server:        "https://acme-staging-v02.api.letsencrypt.org/directory",
 					Email:         testingACMEEmail,
-					PrivateKey: v1alpha2.SecretKeySelector{
-						LocalObjectReference: v1alpha2.LocalObjectReference{
+					PrivateKey: cmmeta.SecretKeySelector{
+						LocalObjectReference: cmmeta.LocalObjectReference{
 							Name: testingACMEPrivateKey,
 						},
 					},
@@ -92,7 +93,7 @@ func testDNSProvider(name string, p dns01Provider) bool {
 				issuerName,
 				v1alpha2.IssuerCondition{
 					Type:   v1alpha2.IssuerConditionReady,
-					Status: v1alpha2.ConditionTrue,
+					Status: cmmeta.ConditionTrue,
 				})
 			Expect(err).NotTo(HaveOccurred())
 			By("Verifying the ACME account URI is set")

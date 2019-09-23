@@ -20,6 +20,7 @@ import (
 	"testing"
 
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 	"github.com/jetstack/cert-manager/test/acme/dns"
 	testserver "github.com/jetstack/cert-manager/test/acme/dns/server"
@@ -41,8 +42,8 @@ func TestRunSuiteWithTSIG(t *testing.T) {
 
 	var validConfig = cmapi.ACMEIssuerDNS01ProviderRFC2136{
 		Nameserver: server.ListenAddr(),
-		TSIGSecret: cmapi.SecretKeySelector{
-			LocalObjectReference: cmapi.LocalObjectReference{
+		TSIGSecret: cmmeta.SecretKeySelector{
+			LocalObjectReference: cmmeta.LocalObjectReference{
 				Name: "testkey",
 			},
 			Key: "value",

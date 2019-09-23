@@ -29,6 +29,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	"github.com/jetstack/cert-manager/pkg/logs"
 	"github.com/jetstack/cert-manager/pkg/metrics"
 	"github.com/jetstack/cert-manager/pkg/util"
@@ -73,7 +74,7 @@ func (c *controller) Sync(ctx context.Context, ing *extv1beta1.Ingress) error {
 		return nil
 	}
 
-	issuer, err := c.helper.GetGenericIssuer(v1alpha2.ObjectReference{
+	issuer, err := c.helper.GetGenericIssuer(cmmeta.ObjectReference{
 		Name: issuerName,
 		Kind: issuerKind,
 	}, ing.Namespace)
@@ -167,7 +168,7 @@ func (c *controller) buildCertificates(ctx context.Context, ing *extv1beta1.Ingr
 			Spec: v1alpha2.CertificateSpec{
 				DNSNames:   tls.Hosts,
 				SecretName: tls.SecretName,
-				IssuerRef: v1alpha2.ObjectReference{
+				IssuerRef: cmmeta.ObjectReference{
 					Name: issuer.GetObjectMeta().Name,
 					Kind: issuerKind,
 				},
