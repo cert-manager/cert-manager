@@ -390,13 +390,13 @@ var _ = framework.CertManagerDescribe("CA Injector", func() {
 			someURL := "https://localhost:8675"
 			return &apiext.CustomResourceDefinition{
 				ObjectMeta: metav1.ObjectMeta{
-					Name: "objs." + namePrefix + ".testing.certmanager.k8s.io",
+					Name: "objs." + namePrefix + ".testing.cert-manager.io",
 					Annotations: map[string]string{
 						certmanager.WantInjectAnnotation: types.NamespacedName{Name: "serving-certs", Namespace: f.Namespace.Name}.String(),
 					},
 				},
 				Spec: apiext.CustomResourceDefinitionSpec{
-					Group:   namePrefix + ".testing.certmanager.k8s.io",
+					Group:   namePrefix + ".testing.cert-manager.io",
 					Version: "v1",
 					Conversion: &apiext.CustomResourceConversion{
 						Strategy: apiext.WebhookConverter,
@@ -425,7 +425,7 @@ var _ = framework.CertManagerDescribe("CA Injector", func() {
 		makeInjectable: func(namePrefix string) runtime.Object {
 			return &apireg.APIService{
 				ObjectMeta: metav1.ObjectMeta{
-					Name: "v1." + namePrefix + ".testing.certmanager.k8s.io",
+					Name: "v1." + namePrefix + ".testing.cert-manager.io",
 					Annotations: map[string]string{
 						certmanager.WantInjectAnnotation: types.NamespacedName{Name: "serving-certs", Namespace: f.Namespace.Name}.String(),
 					},
@@ -435,7 +435,7 @@ var _ = framework.CertManagerDescribe("CA Injector", func() {
 						Name:      "does-not-exit",
 						Namespace: "default",
 					},
-					Group:                namePrefix + ".testing.certmanager.k8s.io",
+					Group:                namePrefix + ".testing.cert-manager.io",
 					Version:              "v1",
 					GroupPriorityMinimum: 1,
 					VersionPriority:      1,

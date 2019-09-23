@@ -10,7 +10,7 @@ metadata:
     app.kubernetes.io/managed-by: {{ .Release.Service }}
     helm.sh/chart: {{ include "cainjector.chart" . }}
 rules:
-  - apiGroups: ["certmanager.k8s.io"]
+  - apiGroups: ["cert-manager.io"]
     resources: ["certificates"]
     verbs: ["get", "list", "watch"]
   - apiGroups: [""]

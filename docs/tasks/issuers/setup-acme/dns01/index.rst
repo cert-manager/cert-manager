@@ -21,7 +21,7 @@ You can read about how the DNS01 challenge type works on the
    :linenos:
    :emphasize-lines: 12-17
 
-   apiVersion: certmanager.k8s.io/v1alpha2
+   apiVersion: cert-manager.io/v1alpha2
    kind: Issuer
    metadata:
      name: example-issuer
@@ -81,7 +81,7 @@ relevant `dns01` solver:
    :linenos:
    :emphasize-lines: 11
 
-   apiVersion: certmanager.k8s.io/v1alpha2
+   apiVersion: cert-manager.io/v1alpha2
    kind: Issuer
    metadata:
      ...

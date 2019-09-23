@@ -13,7 +13,7 @@ Handy direct link: https://cloud.digitalocean.com/account/api/tokens/new
 .. code-block:: yaml
    :emphasize-lines: 10-13
 
-   apiVersion: certmanager.k8s.io/v1alpha2
+   apiVersion: cert-manager.io/v1alpha2
    kind: Issuer
    metadata:
      name: example-issuer

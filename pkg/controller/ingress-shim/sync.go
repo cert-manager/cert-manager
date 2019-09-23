@@ -40,17 +40,17 @@ import (
 const (
 	// editInPlaceAnnotation is used to toggle the use of ingressClass instead
 	// of ingress on the created Certificate resource
-	editInPlaceAnnotation = "certmanager.k8s.io/acme-http01-edit-in-place"
+	editInPlaceAnnotation = "acme.cert-manager.io/http01-edit-in-place"
 	// issuerNameAnnotation can be used to override the issuer specified on the
 	// created Certificate resource.
-	issuerNameAnnotation = "certmanager.k8s.io/issuer"
+	issuerNameAnnotation = "cert-manager.io/issuer"
 	// clusterIssuerNameAnnotation can be used to override the issuer specified on the
 	// created Certificate resource. The Certificate will reference the
 	// specified *ClusterIssuer* instead of normal issuer.
-	clusterIssuerNameAnnotation = "certmanager.k8s.io/cluster-issuer"
+	clusterIssuerNameAnnotation = "cert-manager.io/cluster-issuer"
 	// acmeIssuerHTTP01IngressClassAnnotation can be used to override the http01 ingressClass
 	// if the challenge type is set to http01
-	acmeIssuerHTTP01IngressClassAnnotation = "certmanager.k8s.io/acme-http01-ingress-class"
+	acmeIssuerHTTP01IngressClassAnnotation = "acme.cert-manager.io/http01-ingress-class"
 
 	ingressClassAnnotation = util.IngressKey
 )

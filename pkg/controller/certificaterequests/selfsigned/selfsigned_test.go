@@ -165,7 +165,7 @@ func TestSign(t *testing.T) {
 	}
 
 	tests := map[string]testT{
-		"a CertificateRequest with no certmanager.k8s.io/selfsigned-private-key annotation should fail": {
+		"a CertificateRequest with no cert-manager.io/selfsigned-private-key annotation should fail": {
 			certificateRequest: gen.CertificateRequestFrom(baseCR,
 				// no annotation
 				gen.SetCertificateRequestAnnotations(map[string]string{}),
@@ -177,7 +177,7 @@ func TestSign(t *testing.T) {
 					gen.SetCertificateRequestAnnotations(map[string]string{}),
 				), baseIssuer},
 				ExpectedEvents: []string{
-					`Warning MissingAnnotation Annotation "certmanager.k8s.io/private-key-secret-name" missing or reference empty: secret name missing`,
+					`Warning MissingAnnotation Annotation "cert-manager.io/private-key-secret-name" missing or reference empty: secret name missing`,
 				},
 				ExpectedActions: []testpkg.Action{
 					testpkg.NewAction(coretesting.NewUpdateAction(
@@ -189,7 +189,7 @@ func TestSign(t *testing.T) {
 								Type:               cmapi.CertificateRequestConditionReady,
 								Status:             cmmeta.ConditionFalse,
 								Reason:             cmapi.CertificateRequestReasonFailed,
-								Message:            `Annotation "certmanager.k8s.io/private-key-secret-name" missing or reference empty: secret name missing`,
+								Message:            `Annotation "cert-manager.io/private-key-secret-name" missing or reference empty: secret name missing`,
 								LastTransitionTime: &metaFixedClockStart,
 							}),
 							gen.SetCertificateRequestFailureTime(metaFixedClockStart),
@@ -198,7 +198,7 @@ func TestSign(t *testing.T) {
 				},
 			},
 		},
-		"a CertificateRequest with a certmanager.k8s.io/private-key-secret-name annotation but empty string should fail": {
+		"a CertificateRequest with a cert-manager.io/private-key-secret-name annotation but empty string should fail": {
 			certificateRequest: gen.CertificateRequestFrom(baseCR,
 				// no data in annotation
 				gen.SetCertificateRequestAnnotations(map[string]string{cmapi.CRPrivateKeyAnnotationKey: ""}),
@@ -210,7 +210,7 @@ func TestSign(t *testing.T) {
 					gen.SetCertificateRequestAnnotations(map[string]string{cmapi.CRPrivateKeyAnnotationKey: ""}),
 				), baseIssuer},
 				ExpectedEvents: []string{
-					`Warning MissingAnnotation Annotation "certmanager.k8s.io/private-key-secret-name" missing or reference empty: secret name missing`,
+					`Warning MissingAnnotation Annotation "cert-manager.io/private-key-secret-name" missing or reference empty: secret name missing`,
 				},
 				ExpectedActions: []testpkg.Action{
 					testpkg.NewAction(coretesting.NewUpdateAction(
@@ -222,7 +222,7 @@ func TestSign(t *testing.T) {
 								Type:               cmapi.CertificateRequestConditionReady,
 								Status:             cmmeta.ConditionFalse,
 								Reason:             cmapi.CertificateRequestReasonFailed,
-								Message:            `Annotation "certmanager.k8s.io/private-key-secret-name" missing or reference empty: secret name missing`,
+								Message:            `Annotation "cert-manager.io/private-key-secret-name" missing or reference empty: secret name missing`,
 								LastTransitionTime: &metaFixedClockStart,
 							}),
 							gen.SetCertificateRequestFailureTime(metaFixedClockStart),
@@ -262,7 +262,7 @@ func TestSign(t *testing.T) {
 				KubeObjects:        []runtime.Object{invalidKeySecret},
 				CertManagerObjects: []runtime.Object{baseCR.DeepCopy(), baseIssuer},
 				ExpectedEvents: []string{
-					`Normal ErrorParsingKey Failed to get key "test-rsa-key" referenced in annotation "certmanager.k8s.io/private-key-secret-name": error decoding private key PEM block`,
+					`Normal ErrorParsingKey Failed to get key "test-rsa-key" referenced in annotation "cert-manager.io/private-key-secret-name": error decoding private key PEM block`,
 				},
 				ExpectedActions: []testpkg.Action{
 					testpkg.NewAction(coretesting.NewUpdateAction(
@@ -273,7 +273,7 @@ func TestSign(t *testing.T) {
 								Type:               cmapi.CertificateRequestConditionReady,
 								Status:             cmmeta.ConditionFalse,
 								Reason:             cmapi.CertificateRequestReasonPending,
-								Message:            `Failed to get key "test-rsa-key" referenced in annotation "certmanager.k8s.io/private-key-secret-name": error decoding private key PEM block`,
+								Message:            `Failed to get key "test-rsa-key" referenced in annotation "cert-manager.io/private-key-secret-name": error decoding private key PEM block`,
 								LastTransitionTime: &metaFixedClockStart,
 							}),
 						),

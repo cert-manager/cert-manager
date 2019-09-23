@@ -51,7 +51,7 @@ cert-manager runs in:
 .. code-block:: shell
 
    # Disable resource validation on the cert-manager namespace
-   kubectl label namespace cert-manager certmanager.k8s.io/disable-validation=true
+   kubectl label namespace cert-manager cert-manager.io/disable-validation=true
 
 You can read more about the webhook on the :doc:`webhook document <../webhook>`.
 
@@ -126,7 +126,7 @@ In order to install the Helm chart, you must run:
    kubectl create namespace cert-manager
 
    # Label the cert-manager namespace to disable resource validation
-   kubectl label namespace cert-manager certmanager.k8s.io/disable-validation=true
+   kubectl label namespace cert-manager cert-manager.io/disable-validation=true
 
    # Add the Jetstack Helm repository
    helm repo add jetstack https://charts.jetstack.io
@@ -178,7 +178,7 @@ to issue basic certificate types:
    metadata:
      name: cert-manager-test
    ---
-   apiVersion: certmanager.k8s.io/v1alpha2
+   apiVersion: cert-manager.io/v1alpha2
    kind: Issuer
    metadata:
      name: test-selfsigned
@@ -186,7 +186,7 @@ to issue basic certificate types:
    spec:
      selfSigned: {}
    ---
-   apiVersion: certmanager.k8s.io/v1alpha2
+   apiVersion: cert-manager.io/v1alpha2
    kind: Certificate
    metadata:
      name: selfsigned-cert
