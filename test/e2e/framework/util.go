@@ -98,7 +98,7 @@ func RbacClusterRoleHasAccessToResource(f *Framework, clusterRole string, verb s
 			ResourceAttributes: &authorizationv1.ResourceAttributes{
 				Namespace: f.Namespace.Name,
 				Verb:      verb,
-				Group:     "certmanager.k8s.io",
+				Group:     "cert-manager.io",
 				Resource:  resource,
 			},
 		},
