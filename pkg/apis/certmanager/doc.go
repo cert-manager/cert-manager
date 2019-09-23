@@ -14,9 +14,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// +groupName=certmanager.k8s.io
+// +groupName=cert-manager.io
+// +groupGoName=Certmanager
 
 // Package certmanager is the internal version of the API.
 package certmanager
 
-const GroupName = "certmanager.k8s.io"
+const GroupName = "cert-manager.io"
