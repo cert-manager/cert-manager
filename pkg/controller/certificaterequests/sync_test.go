@@ -136,10 +136,10 @@ func TestSync(t *testing.T) {
 	certECPEMExpired := generateSelfSignedCert(t, baseCR, skEC, fixedClockStart.Add(-time.Hour*13), fixedClockStart.Add(-time.Hour*12))
 
 	tests := map[string]testT{
-		"should return nil (no action) if group name if not 'certmanager.k8s.io' or ''": {
+		"should return nil (no action) if group name if not 'cert-manager.io' or ''": {
 			certificateRequest: gen.CertificateRequestFrom(baseCR,
 				gen.SetCertificateRequestIssuer(cmmeta.ObjectReference{
-					Group: "not-certmanager.k8s.io",
+					Group: "not-cert-manager.io",
 				}),
 			),
 			builder: &testpkg.Builder{
@@ -185,7 +185,7 @@ func TestSync(t *testing.T) {
 			builder: &testpkg.Builder{
 				CertManagerObjects: []runtime.Object{baseCR},
 				ExpectedEvents: []string{
-					`Normal IssuerNotFound Referenced "Issuer" not found: issuer.certmanager.k8s.io "test-issuer" not found`,
+					`Normal IssuerNotFound Referenced "Issuer" not found: issuer.cert-manager.io "test-issuer" not found`,
 				},
 				ExpectedActions: []testpkg.Action{
 					testpkg.NewAction(coretesting.NewUpdateAction(
@@ -196,7 +196,7 @@ func TestSync(t *testing.T) {
 								Type:               cmapi.CertificateRequestConditionReady,
 								Status:             cmmeta.ConditionFalse,
 								Reason:             "Pending",
-								Message:            `Referenced "Issuer" not found: issuer.certmanager.k8s.io "test-issuer" not found`,
+								Message:            `Referenced "Issuer" not found: issuer.cert-manager.io "test-issuer" not found`,
 								LastTransitionTime: &nowMetaTime,
 							}),
 						),

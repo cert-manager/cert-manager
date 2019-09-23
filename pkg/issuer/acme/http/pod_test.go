@@ -277,8 +277,8 @@ func TestMergePodObjectMetaWithPodTemplate(t *testing.T) {
 								PodTemplate: &cmacme.ACMEChallengeSolverHTTP01IngressPodTemplate{
 									ObjectMeta: metav1.ObjectMeta{
 										Labels: map[string]string{
-											"this is a":                           "label",
-											"certmanager.k8s.io/acme-http-domain": "44655555555",
+											"this is a":                        "label",
+											"acme.cert-manager.io/http-domain": "44655555555",
 										},
 										Annotations: map[string]string{
 											"sidecar.istio.io/inject": "true",
@@ -306,10 +306,10 @@ func TestMergePodObjectMetaWithPodTemplate(t *testing.T) {
 			PreFn: func(t *testing.T, s *solverFixture) {
 				resultingPod := s.Solver.buildDefaultPod(s.Challenge)
 				resultingPod.Labels = map[string]string{
-					"this is a":                             "label",
-					"certmanager.k8s.io/acme-http-domain":   "44655555555",
-					"certmanager.k8s.io/acme-http-token":    "1",
-					"certmanager.k8s.io/acme-http01-solver": "true",
+					"this is a":                          "label",
+					"acme.cert-manager.io/http-domain":   "44655555555",
+					"acme.cert-manager.io/http-token":    "1",
+					"acme.cert-manager.io/http01-solver": "true",
 				}
 				resultingPod.Annotations = map[string]string{
 					"sidecar.istio.io/inject": "true",
