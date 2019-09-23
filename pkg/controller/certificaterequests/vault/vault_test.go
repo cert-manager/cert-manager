@@ -179,7 +179,7 @@ func TestSign(t *testing.T) {
 				CertManagerObjects: []runtime.Object{baseCR.DeepCopy(),
 					gen.IssuerFrom(baseIssuer, gen.SetIssuerVault(cmapi.VaultIssuer{
 						Auth: cmapi.VaultAuth{
-							TokenSecretRef: &cmapi.SecretKeySelector{
+							TokenSecretRef: &cmmeta.SecretKeySelector{
 								Key: "secret-key",
 								LocalObjectReference: cmmeta.LocalObjectReference{
 									"non-existing-secret",
@@ -254,7 +254,7 @@ func TestSign(t *testing.T) {
 				CertManagerObjects: []runtime.Object{baseCR.DeepCopy(), gen.IssuerFrom(baseIssuer,
 					gen.SetIssuerVault(cmapi.VaultIssuer{
 						Auth: cmapi.VaultAuth{
-							TokenSecretRef: &cmapi.SecretKeySelector{
+							TokenSecretRef: &cmmeta.SecretKeySelector{
 								Key: "my-token-key",
 								LocalObjectReference: cmmeta.LocalObjectReference{
 									"token-secret",
@@ -333,7 +333,7 @@ func TestSign(t *testing.T) {
 				CertManagerObjects: []runtime.Object{baseCR.DeepCopy(), gen.IssuerFrom(baseIssuer,
 					gen.SetIssuerVault(cmapi.VaultIssuer{
 						Auth: cmapi.VaultAuth{
-							TokenSecretRef: &cmapi.SecretKeySelector{
+							TokenSecretRef: &cmmeta.SecretKeySelector{
 								Key: "my-token-key",
 								LocalObjectReference: cmmeta.LocalObjectReference{
 									"token-secret",

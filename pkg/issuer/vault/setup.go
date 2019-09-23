@@ -74,7 +74,7 @@ func (v *Vault) Setup(ctx context.Context) error {
 		(tokenAuth != nil && kubeAuth != nil) ||
 		(appRoleAuth != nil && kubeAuth != nil) {
 		klog.Infof("%s: %s", v.issuer.GetObjectMeta().Name, messageAuthFieldRequired)
-		apiutil.SetIssuerCondition(v.issuer, v1alpha1.IssuerConditionReady, v1alpha1.ConditionFalse, errorVault, messageAuthFieldRequired)
+		apiutil.SetIssuerCondition(v.issuer, v1alpha2.IssuerConditionReady, cmmeta.ConditionFalse, errorVault, messageAuthFieldRequired)
 		return nil
 	}
 
@@ -95,7 +95,7 @@ func (v *Vault) Setup(ctx context.Context) error {
 	// check if all mandatory Vault Kubernetes fields are set.
 	if kubeAuth != nil && (len(kubeAuth.SecretRef.Name) == 0 || len(kubeAuth.Role) == 0) {
 		klog.Infof("%s: %s", v.issuer.GetObjectMeta().Name, messageAuthFieldRequired)
-		apiutil.SetIssuerCondition(v.issuer, v1alpha1.IssuerConditionReady, v1alpha1.ConditionFalse, errorVault, messageAuthFieldRequired)
+		apiutil.SetIssuerCondition(v.issuer, v1alpha2.IssuerConditionReady, cmmeta.ConditionFalse, errorVault, messageAuthFieldRequired)
 		return nil
 	}
 
