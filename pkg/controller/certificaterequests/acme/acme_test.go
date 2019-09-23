@@ -34,10 +34,11 @@ import (
 	fakeclock "k8s.io/utils/clock/testing"
 
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
+	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1alpha2"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
-	cmlisters "github.com/jetstack/cert-manager/pkg/client/listers/certmanager/v1alpha2"
+	cmacmelisters "github.com/jetstack/cert-manager/pkg/client/listers/acme/v1alpha2"
 	"github.com/jetstack/cert-manager/pkg/controller/certificaterequests"
 	testpkg "github.com/jetstack/cert-manager/pkg/controller/test"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
@@ -72,7 +73,7 @@ func generateCSR(t *testing.T, secretKey crypto.Signer) []byte {
 
 func TestSign(t *testing.T) {
 	baseIssuer := gen.Issuer("test-issuer",
-		gen.SetIssuerACME(cmapi.ACMEIssuer{}),
+		gen.SetIssuerACME(cmacme.ACMEIssuer{}),
 	)
 
 	sk, err := pki.GenerateRSAPrivateKey(2048)
@@ -161,7 +162,7 @@ func TestSign(t *testing.T) {
 				},
 				ExpectedActions: []testpkg.Action{
 					testpkg.NewAction(coretesting.NewCreateAction(
-						cmapi.SchemeGroupVersion.WithResource("orders"),
+						cmacme.SchemeGroupVersion.WithResource("orders"),
 						gen.DefaultTestNamespace,
 						baseOrder,
 					)),
@@ -206,9 +207,9 @@ func TestSign(t *testing.T) {
 				},
 			},
 			fakeOrderLister: &testlisters.FakeOrderLister{
-				OrdersFn: func(namespace string) cmlisters.OrderNamespaceLister {
+				OrdersFn: func(namespace string) cmacmelisters.OrderNamespaceLister {
 					return &testlisters.FakeOrderNamespaceLister{
-						GetFn: func(name string) (ret *cmapi.Order, err error) {
+						GetFn: func(name string) (ret *cmacme.Order, err error) {
 							return nil, errors.New("this is a network error")
 						},
 					}
@@ -225,7 +226,7 @@ func TestSign(t *testing.T) {
 				},
 				CertManagerObjects: []runtime.Object{baseCR.DeepCopy(), baseIssuer.DeepCopy(),
 					gen.OrderFrom(baseOrder,
-						gen.SetOrderState(cmapi.Invalid),
+						gen.SetOrderState(cmacme.Invalid),
 					),
 				},
 				ExpectedActions: []testpkg.Action{
@@ -255,7 +256,7 @@ func TestSign(t *testing.T) {
 				},
 				CertManagerObjects: []runtime.Object{baseCR.DeepCopy(), baseIssuer.DeepCopy(),
 					gen.OrderFrom(baseOrder,
-						gen.SetOrderState(cmapi.Pending),
+						gen.SetOrderState(cmacme.Pending),
 					),
 				},
 				ExpectedActions: []testpkg.Action{
@@ -283,7 +284,7 @@ func TestSign(t *testing.T) {
 					"Normal CertificateIssued Certificate fetched from issuer successfully",
 				},
 				CertManagerObjects: []runtime.Object{gen.OrderFrom(baseOrder,
-					gen.SetOrderState(cmapi.Valid),
+					gen.SetOrderState(cmacme.Valid),
 					gen.SetOrderCertificate(certPEM),
 				), baseCR.DeepCopy(), baseIssuer.DeepCopy()},
 				ExpectedActions: []testpkg.Action{

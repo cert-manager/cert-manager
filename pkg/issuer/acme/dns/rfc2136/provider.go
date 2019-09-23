@@ -29,7 +29,7 @@ import (
 	restclient "k8s.io/client-go/rest"
 
 	whapi "github.com/jetstack/cert-manager/pkg/acme/webhook/apis/acme/v1alpha1"
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1alpha2"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 )
 
@@ -106,8 +106,8 @@ func (s *Solver) Initialize(kubeClientConfig *restclient.Config, stopCh <-chan s
 	return nil
 }
 
-func (s *Solver) loadConfig(cfgJSON extapi.JSON) (*cmapi.ACMEIssuerDNS01ProviderRFC2136, error) {
-	cfg := cmapi.ACMEIssuerDNS01ProviderRFC2136{}
+func (s *Solver) loadConfig(cfgJSON extapi.JSON) (*cmacme.ACMEIssuerDNS01ProviderRFC2136, error) {
+	cfg := cmacme.ACMEIssuerDNS01ProviderRFC2136{}
 	if err := json.Unmarshal(cfgJSON.Raw, &cfg); err != nil {
 		return nil, fmt.Errorf("error decoding solver config: %v", err)
 	}

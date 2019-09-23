@@ -22,7 +22,7 @@ import (
 	"net/url"
 	"testing"
 
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1alpha2"
 )
 
 // countReachabilityTestCalls is a wrapper function that allows us to count the number
@@ -38,7 +38,7 @@ func TestCheck(t *testing.T) {
 	type testT struct {
 		name             string
 		reachabilityTest reachabilityTest
-		challenge        *v1alpha2.Challenge
+		challenge        *cmacme.Challenge
 		expectedErr      bool
 	}
 	tests := []testT{
@@ -64,7 +64,7 @@ func TestCheck(t *testing.T) {
 			calls := 0
 			requiredCallsForPass := 2
 			if test.challenge == nil {
-				test.challenge = &v1alpha2.Challenge{}
+				test.challenge = &cmacme.Challenge{}
 			}
 			s := Solver{
 				testReachability: countReachabilityTestCalls(&calls, test.reachabilityTest),

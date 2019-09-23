@@ -23,7 +23,7 @@ package dnsproviders
 import (
 	"fmt"
 
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1alpha2"
 	cmutil "github.com/jetstack/cert-manager/pkg/util"
 )
 
@@ -36,7 +36,7 @@ type Details struct {
 	BaseDomain string
 
 	// ProviderConfig is the issuer config needed to use these newly created credentials
-	ProviderConfig cmapi.ACMEChallengeSolverDNS01
+	ProviderConfig cmacme.ACMEChallengeSolverDNS01
 }
 
 func (d *Details) NewTestDomain() string {

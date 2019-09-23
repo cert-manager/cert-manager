@@ -17,6 +17,7 @@ limitations under the License.
 package gen
 
 import (
+	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1alpha2"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 )
 
@@ -58,7 +59,7 @@ func IssuerFrom(iss *v1alpha2.Issuer, mods ...IssuerModifier) *v1alpha2.Issuer {
 	return iss
 }
 
-func SetIssuerACME(a v1alpha2.ACMEIssuer) IssuerModifier {
+func SetIssuerACME(a cmacme.ACMEIssuer) IssuerModifier {
 	return func(iss v1alpha2.GenericIssuer) {
 		iss.GetSpec().ACME = &a
 	}

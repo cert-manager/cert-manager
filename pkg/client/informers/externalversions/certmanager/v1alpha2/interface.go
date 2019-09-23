@@ -28,14 +28,10 @@ type Interface interface {
 	Certificates() CertificateInformer
 	// CertificateRequests returns a CertificateRequestInformer.
 	CertificateRequests() CertificateRequestInformer
-	// Challenges returns a ChallengeInformer.
-	Challenges() ChallengeInformer
 	// ClusterIssuers returns a ClusterIssuerInformer.
 	ClusterIssuers() ClusterIssuerInformer
 	// Issuers returns a IssuerInformer.
 	Issuers() IssuerInformer
-	// Orders returns a OrderInformer.
-	Orders() OrderInformer
 }
 
 type version struct {
@@ -59,11 +55,6 @@ func (v *version) CertificateRequests() CertificateRequestInformer {
 	return &certificateRequestInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }
 
-// Challenges returns a ChallengeInformer.
-func (v *version) Challenges() ChallengeInformer {
-	return &challengeInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
-}
-
 // ClusterIssuers returns a ClusterIssuerInformer.
 func (v *version) ClusterIssuers() ClusterIssuerInformer {
 	return &clusterIssuerInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
@@ -72,9 +63,4 @@ func (v *version) ClusterIssuers() ClusterIssuerInformer {
 // Issuers returns a IssuerInformer.
 func (v *version) Issuers() IssuerInformer {
 	return &issuerInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
-}
-
-// Orders returns a OrderInformer.
-func (v *version) Orders() OrderInformer {
-	return &orderInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }

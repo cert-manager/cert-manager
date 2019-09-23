@@ -25,7 +25,7 @@ import (
 	"github.com/jetstack/cert-manager/pkg/acme"
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
-	cmlisters "github.com/jetstack/cert-manager/pkg/client/listers/certmanager/v1alpha2"
+	cmacmelisters "github.com/jetstack/cert-manager/pkg/client/listers/acme/v1alpha2"
 	"github.com/jetstack/cert-manager/pkg/controller"
 	"github.com/jetstack/cert-manager/pkg/issuer"
 )
@@ -39,7 +39,7 @@ type Acme struct {
 	helper acme.Helper
 
 	secretsLister corelisters.SecretLister
-	orderLister   cmlisters.OrderLister
+	orderLister   cmacmelisters.OrderLister
 
 	// used for testing
 	clock clock.Clock
@@ -55,7 +55,7 @@ func New(ctx *controller.Context, issuer v1alpha2.GenericIssuer) (issuer.Interfa
 	// we are interested in
 
 	secretsLister := ctx.KubeSharedInformerFactory.Core().V1().Secrets().Lister()
-	orderLister := ctx.SharedInformerFactory.Certmanager().V1alpha2().Orders().Lister()
+	orderLister := ctx.SharedInformerFactory.Acme().V1alpha2().Orders().Lister()
 
 	a := &Acme{
 		Context: ctx,

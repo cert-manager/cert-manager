@@ -17,14 +17,14 @@ limitations under the License.
 package gen
 
 import (
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1alpha2"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 )
 
-type OrderModifier func(*v1alpha2.Order)
+type OrderModifier func(*cmacme.Order)
 
-func Order(name string, mods ...OrderModifier) *v1alpha2.Order {
-	c := &v1alpha2.Order{
+func Order(name string, mods ...OrderModifier) *cmacme.Order {
+	c := &cmacme.Order{
 		ObjectMeta: ObjectMeta(name),
 	}
 	for _, mod := range mods {
@@ -33,7 +33,7 @@ func Order(name string, mods ...OrderModifier) *v1alpha2.Order {
 	return c
 }
 
-func OrderFrom(crt *v1alpha2.Order, mods ...OrderModifier) *v1alpha2.Order {
+func OrderFrom(crt *cmacme.Order, mods ...OrderModifier) *cmacme.Order {
 	crt = crt.DeepCopy()
 	for _, mod := range mods {
 		mod(crt)
@@ -43,49 +43,49 @@ func OrderFrom(crt *v1alpha2.Order, mods ...OrderModifier) *v1alpha2.Order {
 
 // SetIssuer sets the Order.spec.issuerRef field
 func SetOrderIssuer(o cmmeta.ObjectReference) OrderModifier {
-	return func(c *v1alpha2.Order) {
+	return func(c *cmacme.Order) {
 		c.Spec.IssuerRef = o
 	}
 }
 
 func SetOrderDNSNames(dnsNames ...string) OrderModifier {
-	return func(crt *v1alpha2.Order) {
+	return func(crt *cmacme.Order) {
 		crt.Spec.DNSNames = dnsNames
 	}
 }
 
 func SetOrderURL(url string) OrderModifier {
-	return func(crt *v1alpha2.Order) {
+	return func(crt *cmacme.Order) {
 		crt.Status.URL = url
 	}
 }
 
-func SetOrderState(s v1alpha2.State) OrderModifier {
-	return func(crt *v1alpha2.Order) {
+func SetOrderState(s cmacme.State) OrderModifier {
+	return func(crt *cmacme.Order) {
 		crt.Status.State = s
 	}
 }
 
-func SetOrderStatus(s v1alpha2.OrderStatus) OrderModifier {
-	return func(o *v1alpha2.Order) {
+func SetOrderStatus(s cmacme.OrderStatus) OrderModifier {
+	return func(o *cmacme.Order) {
 		o.Status = s
 	}
 }
 
 func SetOrderCertificate(d []byte) OrderModifier {
-	return func(crt *v1alpha2.Order) {
+	return func(crt *cmacme.Order) {
 		crt.Status.Certificate = d
 	}
 }
 
 func SetOrderCommonName(commonName string) OrderModifier {
-	return func(crt *v1alpha2.Order) {
+	return func(crt *cmacme.Order) {
 		crt.Spec.CommonName = commonName
 	}
 }
 
 func SetOrderNamespace(namespace string) OrderModifier {
-	return func(crt *v1alpha2.Order) {
+	return func(crt *cmacme.Order) {
 		crt.ObjectMeta.Namespace = namespace
 	}
 }

@@ -19,7 +19,7 @@ limitations under the License.
 package fake
 
 import (
-	v1alpha2 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	v1alpha2 "github.com/jetstack/cert-manager/pkg/apis/acme/v1alpha2"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
@@ -30,13 +30,13 @@ import (
 
 // FakeChallenges implements ChallengeInterface
 type FakeChallenges struct {
-	Fake *FakeCertmanagerV1alpha2
+	Fake *FakeAcmeV1alpha2
 	ns   string
 }
 
-var challengesResource = schema.GroupVersionResource{Group: "certmanager.k8s.io", Version: "v1alpha2", Resource: "challenges"}
+var challengesResource = schema.GroupVersionResource{Group: "acme.cert-manager.io", Version: "v1alpha2", Resource: "challenges"}
 
-var challengesKind = schema.GroupVersionKind{Group: "certmanager.k8s.io", Version: "v1alpha2", Kind: "Challenge"}
+var challengesKind = schema.GroupVersionKind{Group: "acme.cert-manager.io", Version: "v1alpha2", Kind: "Challenge"}
 
 // Get takes name of the challenge, and returns the corresponding challenge object, and an error if there is any.
 func (c *FakeChallenges) Get(name string, options v1.GetOptions) (result *v1alpha2.Challenge, err error) {

@@ -28,10 +28,8 @@ type CertmanagerV1alpha2Interface interface {
 	RESTClient() rest.Interface
 	CertificatesGetter
 	CertificateRequestsGetter
-	ChallengesGetter
 	ClusterIssuersGetter
 	IssuersGetter
-	OrdersGetter
 }
 
 // CertmanagerV1alpha2Client is used to interact with features provided by the certmanager.k8s.io group.
@@ -47,20 +45,12 @@ func (c *CertmanagerV1alpha2Client) CertificateRequests(namespace string) Certif
 	return newCertificateRequests(c, namespace)
 }
 
-func (c *CertmanagerV1alpha2Client) Challenges(namespace string) ChallengeInterface {
-	return newChallenges(c, namespace)
-}
-
 func (c *CertmanagerV1alpha2Client) ClusterIssuers() ClusterIssuerInterface {
 	return newClusterIssuers(c)
 }
 
 func (c *CertmanagerV1alpha2Client) Issuers(namespace string) IssuerInterface {
 	return newIssuers(c, namespace)
-}
-
-func (c *CertmanagerV1alpha2Client) Orders(namespace string) OrderInterface {
-	return newOrders(c, namespace)
 }
 
 // NewForConfig creates a new CertmanagerV1alpha2Client for the given config.

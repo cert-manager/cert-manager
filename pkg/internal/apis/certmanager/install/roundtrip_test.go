@@ -19,11 +19,14 @@ package install
 import (
 	"testing"
 
+	"k8s.io/apimachinery/pkg/api/apitesting/fuzzer"
 	"k8s.io/apimachinery/pkg/api/apitesting/roundtrip"
 
+	acmefuzzer "github.com/jetstack/cert-manager/pkg/internal/apis/acme/fuzzer"
 	cmfuzzer "github.com/jetstack/cert-manager/pkg/internal/apis/certmanager/fuzzer"
 )
 
 func TestRoundTripTypes(t *testing.T) {
-	roundtrip.RoundTripTestForAPIGroup(t, Install, cmfuzzer.Funcs)
+	fuzzers := fuzzer.MergeFuzzerFuncs(cmfuzzer.Funcs, acmefuzzer.Funcs)
+	roundtrip.RoundTripTestForAPIGroup(t, Install, fuzzers)
 }

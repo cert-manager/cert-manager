@@ -27,11 +27,11 @@ import (
 	"k8s.io/apimachinery/pkg/selection"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1alpha2"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
 )
 
-func podLabels(ch *v1alpha2.Challenge) map[string]string {
+func podLabels(ch *cmacme.Challenge) map[string]string {
 	domainHash := fmt.Sprintf("%d", adler32.Checksum([]byte(ch.Spec.DNSName)))
 	tokenHash := fmt.Sprintf("%d", adler32.Checksum([]byte(ch.Spec.Token)))
 	solverIdent := "true"
@@ -46,7 +46,7 @@ func podLabels(ch *v1alpha2.Challenge) map[string]string {
 	}
 }
 
-func (s *Solver) ensurePod(ctx context.Context, ch *v1alpha2.Challenge) (*corev1.Pod, error) {
+func (s *Solver) ensurePod(ctx context.Context, ch *cmacme.Challenge) (*corev1.Pod, error) {
 	log := logf.FromContext(ctx).WithName("ensurePod")
 
 	log.V(logf.DebugLevel).Info("checking for existing HTTP01 solver pods")
@@ -74,7 +74,7 @@ func (s *Solver) ensurePod(ctx context.Context, ch *v1alpha2.Challenge) (*corev1
 
 // getPodsForChallenge returns a list of pods that were created to solve
 // the given challenge
-func (s *Solver) getPodsForChallenge(ctx context.Context, ch *v1alpha2.Challenge) ([]*corev1.Pod, error) {
+func (s *Solver) getPodsForChallenge(ctx context.Context, ch *cmacme.Challenge) ([]*corev1.Pod, error) {
 	log := logf.FromContext(ctx)
 
 	podLabels := podLabels(ch)
@@ -105,7 +105,7 @@ func (s *Solver) getPodsForChallenge(ctx context.Context, ch *v1alpha2.Challenge
 	return relevantPods, nil
 }
 
-func (s *Solver) cleanupPods(ctx context.Context, ch *v1alpha2.Challenge) error {
+func (s *Solver) cleanupPods(ctx context.Context, ch *cmacme.Challenge) error {
 	log := logf.FromContext(ctx, "cleanupPods")
 
 	pods, err := s.getPodsForChallenge(ctx, ch)
@@ -131,14 +131,14 @@ func (s *Solver) cleanupPods(ctx context.Context, ch *v1alpha2.Challenge) error 
 
 // createPod will create a challenge solving pod for the given certificate,
 // domain, token and key.
-func (s *Solver) createPod(ch *v1alpha2.Challenge) (*corev1.Pod, error) {
+func (s *Solver) createPod(ch *cmacme.Challenge) (*corev1.Pod, error) {
 	return s.Client.CoreV1().Pods(ch.Namespace).Create(
 		s.buildPod(ch))
 }
 
 // buildPod will build a challenge solving pod for the given certificate,
 // domain, token and key. It will not create it in the API server
-func (s *Solver) buildPod(ch *v1alpha2.Challenge) *corev1.Pod {
+func (s *Solver) buildPod(ch *cmacme.Challenge) *corev1.Pod {
 	pod := s.buildDefaultPod(ch)
 
 	// Override defaults if they have changed in the pod template.
@@ -152,7 +152,7 @@ func (s *Solver) buildPod(ch *v1alpha2.Challenge) *corev1.Pod {
 	return pod
 }
 
-func (s *Solver) buildDefaultPod(ch *v1alpha2.Challenge) *corev1.Pod {
+func (s *Solver) buildDefaultPod(ch *cmacme.Challenge) *corev1.Pod {
 	podLabels := podLabels(ch)
 
 	return &corev1.Pod{
@@ -203,7 +203,7 @@ func (s *Solver) buildDefaultPod(ch *v1alpha2.Challenge) *corev1.Pod {
 }
 
 // Merge object meta from the pod template. Fall back to default values.
-func (s *Solver) mergePodObjectMetaWithPodTemplate(pod *corev1.Pod, podTempl *v1alpha2.ACMEChallengeSolverHTTP01IngressPodTemplate) *corev1.Pod {
+func (s *Solver) mergePodObjectMetaWithPodTemplate(pod *corev1.Pod, podTempl *cmacme.ACMEChallengeSolverHTTP01IngressPodTemplate) *corev1.Pod {
 	if podTempl == nil {
 		return pod
 	}

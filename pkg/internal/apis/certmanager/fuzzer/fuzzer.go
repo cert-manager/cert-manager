@@ -18,7 +18,6 @@ package fuzzer
 
 import (
 	fuzz "github.com/google/gofuzz"
-	apiext "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtimeserializer "k8s.io/apimachinery/pkg/runtime/serializer"
 
@@ -45,20 +44,6 @@ var Funcs = func(codecs runtimeserializer.CodecFactory) []interface{} {
 				s.Spec.RenewBefore = &metav1.Duration{Duration: v1alpha2.DefaultRenewBefore}
 			}
 		},
-		func(s *certmanager.Order, c fuzz.Continue) {
-			c.FuzzNoCustom(s) // fuzz self without calling this function again
-
-			if s.Spec.IssuerRef.Kind == "" {
-				s.Spec.IssuerRef.Kind = v1alpha2.IssuerKind
-			}
-		},
-		func(s *certmanager.Challenge, c fuzz.Continue) {
-			c.FuzzNoCustom(s) // fuzz self without calling this function again
-
-			if s.Spec.IssuerRef.Kind == "" {
-				s.Spec.IssuerRef.Kind = v1alpha2.IssuerKind
-			}
-		},
 		func(s *certmanager.CertificateRequest, c fuzz.Continue) {
 			c.FuzzNoCustom(s) // fuzz self without calling this function again
 
@@ -68,11 +53,6 @@ var Funcs = func(codecs runtimeserializer.CodecFactory) []interface{} {
 			if s.Spec.Duration == nil {
 				s.Spec.Duration = &metav1.Duration{Duration: v1alpha2.DefaultCertificateDuration}
 			}
-		},
-		func(s *certmanager.ACMEIssuerDNS01ProviderWebhook, c fuzz.Continue) {
-			c.FuzzNoCustom(s) // fuzz self without calling this function again
-			// ensure the webhook's config is valid JSON
-			s.Config = &apiext.JSON{Raw: []byte("{}")}
 		},
 	}
 }

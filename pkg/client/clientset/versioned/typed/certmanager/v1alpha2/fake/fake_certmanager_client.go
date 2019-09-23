@@ -36,20 +36,12 @@ func (c *FakeCertmanagerV1alpha2) CertificateRequests(namespace string) v1alpha2
 	return &FakeCertificateRequests{c, namespace}
 }
 
-func (c *FakeCertmanagerV1alpha2) Challenges(namespace string) v1alpha2.ChallengeInterface {
-	return &FakeChallenges{c, namespace}
-}
-
 func (c *FakeCertmanagerV1alpha2) ClusterIssuers() v1alpha2.ClusterIssuerInterface {
 	return &FakeClusterIssuers{c}
 }
 
 func (c *FakeCertmanagerV1alpha2) Issuers(namespace string) v1alpha2.IssuerInterface {
 	return &FakeIssuers{c, namespace}
-}
-
-func (c *FakeCertmanagerV1alpha2) Orders(namespace string) v1alpha2.OrderInterface {
-	return &FakeOrders{c, namespace}
 }
 
 // RESTClient returns a RESTClient that is used to communicate

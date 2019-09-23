@@ -26,6 +26,7 @@ import (
 	fakeclock "k8s.io/utils/clock/testing"
 
 	"github.com/jetstack/cert-manager/pkg/acme/client"
+	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1alpha2"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	"github.com/jetstack/cert-manager/pkg/controller/test"
@@ -57,7 +58,7 @@ func (s *acmeFixture) Setup(t *testing.T) {
 		s.Issuer = &v1alpha2.Issuer{
 			Spec: v1alpha2.IssuerSpec{
 				IssuerConfig: v1alpha2.IssuerConfig{
-					ACME: &v1alpha2.ACMEIssuer{},
+					ACME: &cmacme.ACMEIssuer{},
 				},
 			},
 		}

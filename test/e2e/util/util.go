@@ -38,6 +38,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
+	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1alpha2"
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	intscheme "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/scheme"
@@ -416,7 +417,7 @@ func NewCertManagerACMEIssuer(name, acmeURL, acmeEmail, acmePrivateKey string) *
 		},
 		Spec: v1alpha2.IssuerSpec{
 			IssuerConfig: v1alpha2.IssuerConfig{
-				ACME: &v1alpha2.ACMEIssuer{
+				ACME: &cmacme.ACMEIssuer{
 					Email:         acmeEmail,
 					Server:        acmeURL,
 					SkipTLSVerify: true,
