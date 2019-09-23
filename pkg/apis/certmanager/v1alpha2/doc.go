@@ -20,5 +20,6 @@ limitations under the License.
 // +k8s:defaulter-gen=TypeMeta
 
 // Package v1alpha2 is the v1alpha2 version of the API.
-// +groupName=certmanager.k8s.io
+// +groupName=cert-manager.io
+// +groupGoName=Certmanager
 package v1alpha2

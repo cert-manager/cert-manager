@@ -19,5 +19,5 @@ limitations under the License.
 // +k8s:defaulter-gen=TypeMeta
 // +k8s:defaulter-gen-input=../../../../apis/certmanager/v1alpha2
 
-// +groupName=certmanager.k8s.io
+// +groupName=cert-manager.io
 package v1alpha2

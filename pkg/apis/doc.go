@@ -15,6 +15,6 @@ limitations under the License.
 */
 
 //
-// +domain=k8s.io
+// +domain=cert-manager.io
 
 package apis
