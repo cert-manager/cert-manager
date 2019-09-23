@@ -70,7 +70,7 @@ func (c *controller) Sync(ctx context.Context, ch *cmacme.Challenge) (err error)
 		if reflect.DeepEqual(oldChal.Status, ch.Status) && len(oldChal.Finalizers) == len(ch.Finalizers) {
 			return
 		}
-		_, updateErr := c.cmClient.AcmeV1alpha2().Challenges(ch.Namespace).UpdateStatus(ch)
+		_, updateErr := c.cmClient.AcmeV1alpha2().Challenges(ch.Namespace).Update(ch)
 		if err != nil {
 			err = utilerrors.NewAggregate([]error{err, updateErr})
 		}

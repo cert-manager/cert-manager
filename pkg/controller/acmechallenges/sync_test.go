@@ -98,7 +98,7 @@ func TestSyncHappyPath(t *testing.T) {
 				), testIssuerHTTP01Enabled},
 				ExpectedActions: []testpkg.Action{
 					testpkg.NewAction(
-						coretesting.NewUpdateSubresourceAction(cmacme.SchemeGroupVersion.WithResource("challenges"), "status",
+						coretesting.NewUpdateAction(cmacme.SchemeGroupVersion.WithResource("challenges"),
 							gen.DefaultTestNamespace,
 							gen.ChallengeFrom(baseChallenge,
 								gen.SetChallengeProcessing(true),
@@ -136,7 +136,7 @@ func TestSyncHappyPath(t *testing.T) {
 					gen.SetChallengeType("http-01"),
 				), testIssuerHTTP01Enabled},
 				ExpectedActions: []testpkg.Action{
-					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(cmacme.SchemeGroupVersion.WithResource("challenges"), "status",
+					testpkg.NewAction(coretesting.NewUpdateAction(cmacme.SchemeGroupVersion.WithResource("challenges"),
 						gen.DefaultTestNamespace,
 						gen.ChallengeFrom(baseChallenge,
 							gen.SetChallengeProcessing(true),
@@ -179,7 +179,7 @@ func TestSyncHappyPath(t *testing.T) {
 					gen.SetChallengePresented(true),
 				), testIssuerHTTP01Enabled},
 				ExpectedActions: []testpkg.Action{
-					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(cmacme.SchemeGroupVersion.WithResource("challenges"), "status",
+					testpkg.NewAction(coretesting.NewUpdateAction(cmacme.SchemeGroupVersion.WithResource("challenges"),
 						gen.DefaultTestNamespace,
 						gen.ChallengeFrom(baseChallenge,
 							gen.SetChallengeProcessing(true),
@@ -232,7 +232,7 @@ func TestSyncHappyPath(t *testing.T) {
 					gen.SetChallengePresented(true),
 				), testIssuerHTTP01Enabled},
 				ExpectedActions: []testpkg.Action{
-					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(cmacme.SchemeGroupVersion.WithResource("challenges"), "status",
+					testpkg.NewAction(coretesting.NewUpdateAction(cmacme.SchemeGroupVersion.WithResource("challenges"),
 						gen.DefaultTestNamespace,
 						gen.ChallengeFrom(baseChallenge,
 							gen.SetChallengeProcessing(true),
@@ -288,7 +288,7 @@ func TestSyncHappyPath(t *testing.T) {
 					gen.SetChallengePresented(true),
 				), testIssuerHTTP01Enabled},
 				ExpectedActions: []testpkg.Action{
-					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(cmacme.SchemeGroupVersion.WithResource("challenges"), "status",
+					testpkg.NewAction(coretesting.NewUpdateAction(cmacme.SchemeGroupVersion.WithResource("challenges"),
 						gen.DefaultTestNamespace,
 						gen.ChallengeFrom(baseChallenge,
 							gen.SetChallengeProcessing(false),
@@ -322,7 +322,7 @@ func TestSyncHappyPath(t *testing.T) {
 					gen.SetChallengePresented(true),
 				), testIssuerHTTP01Enabled},
 				ExpectedActions: []testpkg.Action{
-					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(cmacme.SchemeGroupVersion.WithResource("challenges"), "status",
+					testpkg.NewAction(coretesting.NewUpdateAction(cmacme.SchemeGroupVersion.WithResource("challenges"),
 						gen.DefaultTestNamespace,
 						gen.ChallengeFrom(baseChallenge,
 							gen.SetChallengeProcessing(false),
