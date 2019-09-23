@@ -159,8 +159,9 @@ func TestSign(t *testing.T) {
 					`Normal SecretMissing Referenced secret default-unit-test-ns/root-ca-secret not found: secret "root-ca-secret" not found`,
 				},
 				ExpectedActions: []testpkg.Action{
-					testpkg.NewAction(coretesting.NewUpdateAction(
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
 						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
+						"status",
 						gen.DefaultTestNamespace,
 						gen.CertificateRequestFrom(baseCR.DeepCopy(),
 							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
@@ -184,8 +185,9 @@ func TestSign(t *testing.T) {
 					"Normal SecretInvalidData Failed to parse signing CA keypair from secret default-unit-test-ns/root-ca-secret: error decoding private key PEM block",
 				},
 				ExpectedActions: []testpkg.Action{
-					testpkg.NewAction(coretesting.NewUpdateAction(
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
 						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
+						"status",
 						gen.DefaultTestNamespace,
 						gen.CertificateRequestFrom(baseCR.DeepCopy(),
 							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
@@ -209,8 +211,9 @@ func TestSign(t *testing.T) {
 					`Normal SecretGetError Failed to get certificate key pair from secret default-unit-test-ns/root-ca-secret: this is a network error`,
 				},
 				ExpectedActions: []testpkg.Action{
-					testpkg.NewAction(coretesting.NewUpdateAction(
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
 						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
+						"status",
 						gen.DefaultTestNamespace,
 						gen.CertificateRequestFrom(baseCR,
 							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
@@ -247,8 +250,9 @@ func TestSign(t *testing.T) {
 					"Warning SigningError Error generating certificate template: this is a sign error",
 				},
 				ExpectedActions: []testpkg.Action{
-					testpkg.NewAction(coretesting.NewUpdateAction(
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
 						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
+						"status",
 						gen.DefaultTestNamespace,
 						gen.CertificateRequestFrom(baseCR.DeepCopy(),
 							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
@@ -281,8 +285,9 @@ func TestSign(t *testing.T) {
 					"Normal CertificateIssued Certificate fetched from issuer successfully",
 				},
 				ExpectedActions: []testpkg.Action{
-					testpkg.NewAction(coretesting.NewUpdateAction(
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
 						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
+						"status",
 						gen.DefaultTestNamespace,
 						gen.CertificateRequestFrom(baseCR,
 							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{

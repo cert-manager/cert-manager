@@ -28,6 +28,7 @@ import (
 // +k8s:openapi-gen=true
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
+// +kubebuilder:subresource:status
 // +kubebuilder:resource:path=clusterissuers,scope=Cluster
 type ClusterIssuer struct {
 	metav1.TypeMeta   `json:",inline"`
@@ -51,6 +52,7 @@ type ClusterIssuerList struct {
 // +k8s:openapi-gen=true
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
+// +kubebuilder:subresource:status
 // +kubebuilder:resource:path=issuers
 type Issuer struct {
 	metav1.TypeMeta   `json:",inline"`

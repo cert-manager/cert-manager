@@ -225,7 +225,7 @@ func updateCertificateStatus(ctx context.Context, m *metrics.Metrics, cmClient c
 	// TODO: replace Update call with UpdateStatus. This requires a custom API
 	// server with the /status subresource enabled and/or subresource support
 	// for CRDs (https://github.com/kubernetes/kubernetes/issues/38113)
-	return cmClient.CertmanagerV1alpha2().Certificates(new.Namespace).Update(new)
+	return cmClient.CertmanagerV1alpha2().Certificates(new.Namespace).UpdateStatus(new)
 }
 
 func certificateHasTemporaryCertificateAnnotation(crt *v1alpha2.Certificate) bool {

@@ -92,5 +92,5 @@ func (c *controller) updateIssuerStatus(old, new *v1alpha2.ClusterIssuer) (*v1al
 	// TODO: replace Update call with UpdateStatus. This requires a custom API
 	// server with the /status subresource enabled and/or subresource support
 	// for CRDs (https://github.com/kubernetes/kubernetes/issues/38113)
-	return c.cmClient.CertmanagerV1alpha2().ClusterIssuers().Update(new)
+	return c.cmClient.CertmanagerV1alpha2().ClusterIssuers().UpdateStatus(new)
 }

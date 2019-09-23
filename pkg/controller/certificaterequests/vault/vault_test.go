@@ -156,8 +156,9 @@ func TestSign(t *testing.T) {
 					"Normal VaultInitError Failed to initialise vault client for signing: error initializing Vault client: tokenSecretRef, appRoleSecretRef, or Kubernetes auth role not set",
 				},
 				ExpectedActions: []testpkg.Action{
-					testpkg.NewAction(coretesting.NewUpdateAction(
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
 						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
+						"status",
 						gen.DefaultTestNamespace,
 						gen.CertificateRequestFrom(baseCR,
 							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
@@ -192,8 +193,9 @@ func TestSign(t *testing.T) {
 					`Normal SecretMissing Required secret resource not found: secret "non-existing-secret" not found`,
 				},
 				ExpectedActions: []testpkg.Action{
-					testpkg.NewAction(coretesting.NewUpdateAction(
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
 						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
+						"status",
 						gen.DefaultTestNamespace,
 						gen.CertificateRequestFrom(baseCR,
 							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
@@ -231,8 +233,9 @@ func TestSign(t *testing.T) {
 					`Normal SecretMissing Required secret resource not found: secret "non-existing-secret" not found`,
 				},
 				ExpectedActions: []testpkg.Action{
-					testpkg.NewAction(coretesting.NewUpdateAction(
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
 						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
+						"status",
 						gen.DefaultTestNamespace,
 						gen.CertificateRequestFrom(baseCR,
 							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
@@ -267,8 +270,9 @@ func TestSign(t *testing.T) {
 					"Warning SigningError Vault failed to sign certificate: failed to sign",
 				},
 				ExpectedActions: []testpkg.Action{
-					testpkg.NewAction(coretesting.NewUpdateAction(
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
 						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
+						"status",
 						gen.DefaultTestNamespace,
 						gen.CertificateRequestFrom(baseCR,
 							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
@@ -308,8 +312,9 @@ func TestSign(t *testing.T) {
 					`Warning SigningError Vault failed to sign certificate: failed to sign`,
 				},
 				ExpectedActions: []testpkg.Action{
-					testpkg.NewAction(coretesting.NewUpdateAction(
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
 						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
+						"status",
 						gen.DefaultTestNamespace,
 						gen.CertificateRequestFrom(baseCR,
 							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
@@ -346,8 +351,9 @@ func TestSign(t *testing.T) {
 					"Normal CertificateIssued Certificate fetched from issuer successfully",
 				},
 				ExpectedActions: []testpkg.Action{
-					testpkg.NewAction(coretesting.NewUpdateAction(
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
 						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
+						"status",
 						gen.DefaultTestNamespace,
 						gen.CertificateRequestFrom(baseCR,
 							gen.SetCertificateRequestCertificate(rsaPEMCert),
@@ -388,8 +394,9 @@ func TestSign(t *testing.T) {
 					"Normal CertificateIssued Certificate fetched from issuer successfully",
 				},
 				ExpectedActions: []testpkg.Action{
-					testpkg.NewAction(coretesting.NewUpdateAction(
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
 						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
+						"status",
 						gen.DefaultTestNamespace,
 						gen.CertificateRequestFrom(baseCR,
 							gen.SetCertificateRequestCertificate(rsaPEMCert),
