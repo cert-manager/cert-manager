@@ -2,7 +2,7 @@
 apiVersion: apiregistration.k8s.io/v1beta1
 kind: APIService
 metadata:
-  name: v1beta1.webhook.certmanager.k8s.io
+  name: v1beta1.webhook.cert-manager.io
   labels:
     app: {{ include "webhook.name" . }}
     app.kubernetes.io/name: {{ include "webhook.name" . }}
@@ -10,9 +10,9 @@ metadata:
     app.kubernetes.io/managed-by: {{ .Release.Service }}
     helm.sh/chart: {{ include "webhook.chart" . }}
   annotations:
-    certmanager.k8s.io/inject-ca-from-secret: "{{ .Release.Namespace }}/{{ include "webhook.servingCertificate" . }}"
+    cert-manager.io/inject-ca-from-secret: "{{ .Release.Namespace }}/{{ include "webhook.servingCertificate" . }}"
 spec:
-  group: webhook.certmanager.k8s.io
+  group: webhook.cert-manager.io
   groupPriorityMinimum: 1000
   versionPriority: 15
   service:

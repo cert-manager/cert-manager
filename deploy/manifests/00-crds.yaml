@@ -1584,7 +1584,7 @@ apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
 metadata:
   creationTimestamp: null
-  name: certificaterequests.certmanager.k8s.io
+  name: certificaterequests.cert-manager.io
 spec:
   additionalPrinterColumns:
   - JSONPath: .status.conditions[?(@.type=="Ready")].status
@@ -1605,7 +1605,7 @@ spec:
       in RFC3339 form and is in UTC.
     name: Age
     type: date
-  group: certmanager.k8s.io
+  group: cert-manager.io
   names:
     kind: CertificateRequest
     plural: certificaterequests
@@ -1652,7 +1652,7 @@ spec:
                 will be used.  If the 'kind' field is set to 'ClusterIssuer', a ClusterIssuer
                 with the provided name will be used. The 'name' field in this stanza
                 is required at all times. The group field refers to the API group
-                of the issuer which defaults to 'certmanager.k8s.io' if empty.
+                of the issuer which defaults to 'cert-manager.io' if empty.
               properties:
                 group:
                   type: string
@@ -1771,7 +1771,7 @@ apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
 metadata:
   creationTimestamp: null
-  name: certificates.certmanager.k8s.io
+  name: certificates.cert-manager.io
 spec:
   additionalPrinterColumns:
   - JSONPath: .status.conditions[?(@.type=="Ready")].status
@@ -1795,7 +1795,7 @@ spec:
       in RFC3339 form and is in UTC.
     name: Age
     type: date
-  group: certmanager.k8s.io
+  group: cert-manager.io
   names:
     kind: Certificate
     plural: certificates
@@ -2009,9 +2009,9 @@ apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
 metadata:
   creationTimestamp: null
-  name: clusterissuers.certmanager.k8s.io
+  name: clusterissuers.cert-manager.io
 spec:
-  group: certmanager.k8s.io
+  group: cert-manager.io
   names:
     kind: ClusterIssuer
     plural: clusterissuers
@@ -3633,9 +3633,9 @@ apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
 metadata:
   creationTimestamp: null
-  name: issuers.certmanager.k8s.io
+  name: issuers.cert-manager.io
 spec:
-  group: certmanager.k8s.io
+  group: cert-manager.io
   names:
     kind: Issuer
     plural: issuers

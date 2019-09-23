@@ -29,10 +29,10 @@ $ oc create \
 
 ## IMPORTANT: if the cert-manager namespace **already exists**, you MUST ensure
 ## it has an additional label on it in order for the deployment to succeed
-$ kubectl label namespace cert-manager certmanager.k8s.io/disable-validation="true"
+$ kubectl label namespace cert-manager cert-manager.io/disable-validation="true"
 
 ## For openshift:
-$ oc label namespace cert-manager certmanager.k8s.io/disable-validation=true
+$ oc label namespace cert-manager cert-manager.io/disable-validation=true
 
 ## Add the Jetstack Helm repository
 $ helm repo add jetstack https://charts.jetstack.io
