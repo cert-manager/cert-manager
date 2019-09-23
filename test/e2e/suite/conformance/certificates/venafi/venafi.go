@@ -20,7 +20,8 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	"github.com/jetstack/cert-manager/test/e2e/framework"
 	"github.com/jetstack/cert-manager/test/e2e/framework/util/errors"
 	"github.com/jetstack/cert-manager/test/e2e/suite/conformance/certificates"
@@ -51,11 +52,11 @@ type venafiProvisioner struct {
 	tpp *vaddon.VenafiTPP
 }
 
-func (v *venafiProvisioner) delete(f *framework.Framework, ref cmapi.ObjectReference) {
+func (v *venafiProvisioner) delete(f *framework.Framework, ref cmmeta.ObjectReference) {
 	Expect(v.tpp.Deprovision()).NotTo(HaveOccurred(), "failed to deprovision tpp venafi")
 }
 
-func (v *venafiProvisioner) create(f *framework.Framework) cmapi.ObjectReference {
+func (v *venafiProvisioner) create(f *framework.Framework) cmmeta.ObjectReference {
 	By("Creating a Venafi issuer")
 
 	v.tpp = &vaddon.VenafiTPP{
@@ -71,10 +72,10 @@ func (v *venafiProvisioner) create(f *framework.Framework) cmapi.ObjectReference
 	Expect(v.tpp.Provision()).NotTo(HaveOccurred(), "failed to provision tpp venafi")
 
 	issuer := v.tpp.Details().BuildIssuer()
-	issuer, err = f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Create(issuer)
+	issuer, err = f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name).Create(issuer)
 	Expect(err).NotTo(HaveOccurred(), "failed to create issuer for venafi")
 
-	return cmapi.ObjectReference{
+	return cmmeta.ObjectReference{
 		Group: cmapi.SchemeGroupVersion.Group,
 		Kind:  cmapi.IssuerKind,
 		Name:  issuer.Name,

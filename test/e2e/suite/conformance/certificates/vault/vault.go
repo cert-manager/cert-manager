@@ -23,7 +23,8 @@ import (
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
+	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	"github.com/jetstack/cert-manager/test/e2e/framework"
 	"github.com/jetstack/cert-manager/test/e2e/framework/addon/tiller"
 	vault "github.com/jetstack/cert-manager/test/e2e/framework/addon/vault"
@@ -45,12 +46,12 @@ type vaultProvisioner struct {
 	vault  *vault.Vault
 }
 
-func (v *vaultProvisioner) delete(f *framework.Framework, ref cmapi.ObjectReference) {
+func (v *vaultProvisioner) delete(f *framework.Framework, ref cmmeta.ObjectReference) {
 	Expect(v.vault.Deprovision()).NotTo(HaveOccurred(), "failed to deprovision vault")
 	Expect(v.tiller.Deprovision()).NotTo(HaveOccurred(), "failed to deprovision tiller")
 }
 
-func (v *vaultProvisioner) create(f *framework.Framework) cmapi.ObjectReference {
+func (v *vaultProvisioner) create(f *framework.Framework) cmmeta.ObjectReference {
 	By("Creating a Vault issuer")
 
 	v.tiller = &tiller.Tiller{
@@ -92,7 +93,7 @@ func (v *vaultProvisioner) create(f *framework.Framework) cmapi.ObjectReference 
 	_, err = f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Create(vault.NewVaultAppRoleSecret(vaultSecretAppRoleName, secretID))
 	Expect(err).NotTo(HaveOccurred(), "vault to store app role secret from vault")
 
-	issuer, err := f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Create(&cmapi.Issuer{
+	issuer, err := f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name).Create(&cmapi.Issuer{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "vault-issuer",
 		},
@@ -106,9 +107,9 @@ func (v *vaultProvisioner) create(f *framework.Framework) cmapi.ObjectReference 
 						AppRole: cmapi.VaultAppRole{
 							Path:   authPath,
 							RoleId: roleID,
-							SecretRef: cmapi.SecretKeySelector{
+							SecretRef: cmmeta.SecretKeySelector{
 								Key: "secretkey",
-								LocalObjectReference: cmapi.LocalObjectReference{
+								LocalObjectReference: cmmeta.LocalObjectReference{
 									Name: vaultSecretAppRoleName,
 								},
 							},
@@ -120,7 +121,7 @@ func (v *vaultProvisioner) create(f *framework.Framework) cmapi.ObjectReference 
 	})
 	Expect(err).NotTo(HaveOccurred(), "failed to create vault issuer")
 
-	return cmapi.ObjectReference{
+	return cmmeta.ObjectReference{
 		Group: cmapi.SchemeGroupVersion.Group,
 		Kind:  cmapi.IssuerKind,
 		Name:  issuer.Name,
