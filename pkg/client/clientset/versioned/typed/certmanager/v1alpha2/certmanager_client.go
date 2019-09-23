@@ -32,7 +32,7 @@ type CertmanagerV1alpha2Interface interface {
 	IssuersGetter
 }
 
-// CertmanagerV1alpha2Client is used to interact with features provided by the certmanager.k8s.io group.
+// CertmanagerV1alpha2Client is used to interact with features provided by the cert-manager.io group.
 type CertmanagerV1alpha2Client struct {
 	restClient rest.Interface
 }
