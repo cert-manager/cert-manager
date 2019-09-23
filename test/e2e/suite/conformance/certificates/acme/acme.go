@@ -133,7 +133,9 @@ func (a *acmeIssuerProvisioner) createHTTP01(f *framework.Framework) cmmeta.Obje
 func (a *acmeIssuerProvisioner) createDNS01(f *framework.Framework) cmmeta.ObjectReference {
 	a.deployTiller(f, "dns01")
 
-	a.cloudflair = &dnsproviders.Cloudflare{}
+	a.cloudflair = &dnsproviders.Cloudflare{
+		Namespace: f.Namespace.Name,
+	}
 	Expect(a.cloudflair.Setup(f.Config)).NotTo(HaveOccurred(), "failed to setup cloudflair")
 	Expect(a.cloudflair.Provision()).NotTo(HaveOccurred(), "failed to provision cloudflair")
 
