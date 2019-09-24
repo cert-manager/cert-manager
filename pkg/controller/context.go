@@ -122,8 +122,9 @@ type ACMEOptions struct {
 
 type IngressShimOptions struct {
 	// Default issuer/certificates details consumed by ingress-shim
-	DefaultIssuerKind                 string
 	DefaultIssuerName                 string
+	DefaultIssuerKind                 string
+	DefaultIssuerGroup                string
 	DefaultAutoCertificateAnnotations []string
 }
 

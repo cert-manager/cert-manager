@@ -18,9 +18,11 @@ package controller
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"reflect"
 	"strconv"
+	"strings"
 
 	corev1 "k8s.io/api/core/v1"
 	extv1beta1 "k8s.io/api/extensions/v1beta1"
@@ -29,30 +31,11 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 
 	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1alpha2"
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	"github.com/jetstack/cert-manager/pkg/logs"
 	"github.com/jetstack/cert-manager/pkg/metrics"
-	"github.com/jetstack/cert-manager/pkg/util"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
-)
-
-const (
-	// editInPlaceAnnotation is used to toggle the use of ingressClass instead
-	// of ingress on the created Certificate resource
-	editInPlaceAnnotation = "acme.cert-manager.io/http01-edit-in-place"
-	// issuerNameAnnotation can be used to override the issuer specified on the
-	// created Certificate resource.
-	issuerNameAnnotation = "cert-manager.io/issuer"
-	// clusterIssuerNameAnnotation can be used to override the issuer specified on the
-	// created Certificate resource. The Certificate will reference the
-	// specified *ClusterIssuer* instead of normal issuer.
-	clusterIssuerNameAnnotation = "cert-manager.io/cluster-issuer"
-	// acmeIssuerHTTP01IngressClassAnnotation can be used to override the http01 ingressClass
-	// if the challenge type is set to http01
-	acmeIssuerHTTP01IngressClassAnnotation = "acme.cert-manager.io/http01-ingress-class"
-
-	ingressClassAnnotation = util.IngressKey
 )
 
 var ingressGVK = extv1beta1.SchemeGroupVersion.WithKind("Ingress")
@@ -64,27 +47,17 @@ func (c *controller) Sync(ctx context.Context, ing *extv1beta1.Ingress) error {
 	metrics.Default.IncrementSyncCallCount(ControllerName)
 
 	if !shouldSync(ing, c.defaults.autoCertificateAnnotations) {
-		log.Info(fmt.Sprintf("not syncing ingress resource as it does not contain a %q or %q annotation", issuerNameAnnotation, clusterIssuerNameAnnotation))
+		log.Info(fmt.Sprintf("not syncing ingress resource as it does not contain a %q or %q annotation",
+			cmapi.IngressIssuerNameAnnotationKey, cmapi.IngressClusterIssuerNameAnnotationKey))
 		return nil
 	}
 
-	issuerName, issuerKind := c.issuerForIngress(ing)
-	if issuerName == "" {
-		log.Info("failed to determine issuer to be used for ingress resource")
-		c.recorder.Eventf(ing, corev1.EventTypeWarning, "BadConfig", "Issuer name annotation is not set and a default issuer has not been configured")
-		return nil
-	}
-
-	issuer, err := c.helper.GetGenericIssuer(cmmeta.ObjectReference{
-		Name: issuerName,
-		Kind: issuerKind,
-	}, ing.Namespace)
-	if apierrors.IsNotFound(err) {
-		c.recorder.Eventf(ing, corev1.EventTypeWarning, "BadConfig", "%s resource %q not found", issuerKind, issuerName)
-		return nil
-	}
+	issuerName, issuerKind, issuerGroup, err := c.issuerForIngress(ing)
 	if err != nil {
-		return err
+		log.Error(err, "failed to determine issuer to be used for ingress resource")
+		c.recorder.Eventf(ing, corev1.EventTypeWarning, "BadConfig", "Could not determine issuer for ingress due bad annotations: %s",
+			err)
+		return nil
 	}
 
 	errs := c.validateIngress(ing)
@@ -97,7 +70,7 @@ func (c *controller) Sync(ctx context.Context, ing *extv1beta1.Ingress) error {
 		return nil
 	}
 
-	newCrts, updateCrts, err := c.buildCertificates(ctx, ing, issuer, issuerKind)
+	newCrts, updateCrts, err := c.buildCertificates(ctx, ing, issuerName, issuerKind, issuerGroup)
 	if err != nil {
 		return err
 	}
@@ -148,35 +121,37 @@ func (c *controller) validateIngress(ing *extv1beta1.Ingress) []error {
 	return errs
 }
 
-func (c *controller) buildCertificates(ctx context.Context, ing *extv1beta1.Ingress, issuer v1alpha2.GenericIssuer, issuerKind string) (new, update []*v1alpha2.Certificate, _ error) {
+func (c *controller) buildCertificates(ctx context.Context, ing *extv1beta1.Ingress,
+	issuerName, issuerKind, issuerGroup string) (new, update []*cmapi.Certificate, _ error) {
 	log := logs.FromContext(ctx)
 
-	var newCrts []*v1alpha2.Certificate
-	var updateCrts []*v1alpha2.Certificate
+	var newCrts []*cmapi.Certificate
+	var updateCrts []*cmapi.Certificate
 	for _, tls := range ing.Spec.TLS {
 		existingCrt, err := c.certificateLister.Certificates(ing.Namespace).Get(tls.SecretName)
 		if !apierrors.IsNotFound(err) && err != nil {
 			return nil, nil, err
 		}
 
-		crt := &v1alpha2.Certificate{
+		crt := &cmapi.Certificate{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:            tls.SecretName,
 				Namespace:       ing.Namespace,
 				Labels:          ing.Labels,
 				OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(ing, ingressGVK)},
 			},
-			Spec: v1alpha2.CertificateSpec{
+			Spec: cmapi.CertificateSpec{
 				DNSNames:   tls.Hosts,
 				SecretName: tls.SecretName,
 				IssuerRef: cmmeta.ObjectReference{
-					Name: issuer.GetObjectMeta().Name,
-					Kind: issuerKind,
+					Name:  issuerName,
+					Kind:  issuerKind,
+					Group: issuerGroup,
 				},
 			},
 		}
 
-		err = c.setIssuerSpecificConfig(crt, issuer, ing, tls)
+		err = c.setIssuerSpecificConfig(crt, ing, tls)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -206,10 +181,11 @@ func (c *controller) buildCertificates(ctx context.Context, ing *extv1beta1.Ingr
 
 			updateCrt.Spec.DNSNames = tls.Hosts
 			updateCrt.Spec.SecretName = tls.SecretName
-			updateCrt.Spec.IssuerRef.Name = issuer.GetObjectMeta().Name
+			updateCrt.Spec.IssuerRef.Name = issuerName
 			updateCrt.Spec.IssuerRef.Kind = issuerKind
+			updateCrt.Spec.IssuerRef.Group = issuerGroup
 			updateCrt.Labels = ing.Labels
-			err = c.setIssuerSpecificConfig(updateCrt, issuer, ing, tls)
+			err = c.setIssuerSpecificConfig(updateCrt, ing, tls)
 			if err != nil {
 				return nil, nil, err
 			}
@@ -221,8 +197,8 @@ func (c *controller) buildCertificates(ctx context.Context, ing *extv1beta1.Ingr
 	return newCrts, updateCrts, nil
 }
 
-func (c *controller) findUnrequiredCertificates(ing *extv1beta1.Ingress) ([]*v1alpha2.Certificate, error) {
-	var unrequired []*v1alpha2.Certificate
+func (c *controller) findUnrequiredCertificates(ing *extv1beta1.Ingress) ([]*cmapi.Certificate, error) {
+	var unrequired []*cmapi.Certificate
 	// TODO: investigate selector which filters for certificates controlled by the ingress
 	crts, err := c.certificateLister.Certificates(ing.Namespace).List(labels.Everything())
 	if err != nil {
@@ -238,7 +214,7 @@ func (c *controller) findUnrequiredCertificates(ing *extv1beta1.Ingress) ([]*v1a
 	return unrequired, nil
 }
 
-func isUnrequiredCertificate(crt *v1alpha2.Certificate, ing *extv1beta1.Ingress) bool {
+func isUnrequiredCertificate(crt *cmapi.Certificate, ing *extv1beta1.Ingress) bool {
 	if !metav1.IsControlledBy(crt, ing) {
 		return false
 	}
@@ -252,7 +228,7 @@ func isUnrequiredCertificate(crt *v1alpha2.Certificate, ing *extv1beta1.Ingress)
 }
 
 // certNeedsUpdate checks and returns true if two Certificates differ
-func certNeedsUpdate(a, b *v1alpha2.Certificate) bool {
+func certNeedsUpdate(a, b *cmapi.Certificate) bool {
 	if a.Name != b.Name {
 		return true
 	}
@@ -290,14 +266,14 @@ func certNeedsUpdate(a, b *v1alpha2.Certificate) bool {
 	return false
 }
 
-func (c *controller) setIssuerSpecificConfig(crt *v1alpha2.Certificate, issuer v1alpha2.GenericIssuer, ing *extv1beta1.Ingress, tls extv1beta1.IngressTLS) error {
+func (c *controller) setIssuerSpecificConfig(crt *cmapi.Certificate, ing *extv1beta1.Ingress, tls extv1beta1.IngressTLS) error {
 	ingAnnotations := ing.Annotations
 	if ingAnnotations == nil {
 		ingAnnotations = map[string]string{}
 	}
 
 	// for ACME issuers
-	editInPlaceVal, _ := ingAnnotations[editInPlaceAnnotation]
+	editInPlaceVal, _ := ingAnnotations[cmapi.IngressEditInPlaceAnnotationKey]
 	editInPlace := editInPlaceVal == "true"
 	if editInPlace {
 		if crt.Annotations == nil {
@@ -306,10 +282,10 @@ func (c *controller) setIssuerSpecificConfig(crt *v1alpha2.Certificate, issuer v
 		crt.Annotations[cmacme.ACMECertificateHTTP01IngressNameOverride] = ing.Name
 		// set IssueTemporaryCertificateAnnotation to true in order to behave
 		// better when ingress-gce is being used.
-		crt.Annotations[v1alpha2.IssueTemporaryCertificateAnnotation] = "true"
+		crt.Annotations[cmapi.IssueTemporaryCertificateAnnotation] = "true"
 	}
 
-	ingressClassVal, hasIngressClassVal := ingAnnotations[acmeIssuerHTTP01IngressClassAnnotation]
+	ingressClassVal, hasIngressClassVal := ingAnnotations[cmapi.IngressACMEIssuerHTTP01IngressClassAnnotationKey]
 	if hasIngressClassVal {
 		if crt.Annotations == nil {
 			crt.Annotations = make(map[string]string)
@@ -327,10 +303,10 @@ func shouldSync(ing *extv1beta1.Ingress, autoCertificateAnnotations []string) bo
 	if annotations == nil {
 		annotations = map[string]string{}
 	}
-	if _, ok := annotations[issuerNameAnnotation]; ok {
+	if _, ok := annotations[cmapi.IngressIssuerNameAnnotationKey]; ok {
 		return true
 	}
-	if _, ok := annotations[clusterIssuerNameAnnotation]; ok {
+	if _, ok := annotations[cmapi.IngressClusterIssuerNameAnnotationKey]; ok {
 		return true
 	}
 	for _, x := range autoCertificateAnnotations {
@@ -346,20 +322,64 @@ func shouldSync(ing *extv1beta1.Ingress, autoCertificateAnnotations []string) bo
 // issuerForIngress will determine the issuer that should be specified on a
 // Certificate created for the given Ingress resource. If one is not set, the
 // default issuer given to the controller will be used.
-func (c *controller) issuerForIngress(ing *extv1beta1.Ingress) (name string, kind string) {
+func (c *controller) issuerForIngress(ing *extv1beta1.Ingress) (name, kind, group string, err error) {
+	var errs []string
+
 	name = c.defaults.issuerName
 	kind = c.defaults.issuerKind
+	group = c.defaults.issuerGroup
 	annotations := ing.Annotations
+
 	if annotations == nil {
 		annotations = map[string]string{}
 	}
-	if issuerName, ok := annotations[issuerNameAnnotation]; ok {
+
+	issuerName, issuerNameOK := annotations[cmapi.IngressIssuerNameAnnotationKey]
+	if issuerNameOK {
 		name = issuerName
-		kind = v1alpha2.IssuerKind
 	}
-	if issuerName, ok := annotations[clusterIssuerNameAnnotation]; ok {
-		name = issuerName
-		kind = v1alpha2.ClusterIssuerKind
+
+	clusterIssuerName, clusterIssuerNameOK := annotations[cmapi.IngressClusterIssuerNameAnnotationKey]
+	if clusterIssuerNameOK {
+		name = clusterIssuerName
+		kind = cmapi.ClusterIssuerKind
 	}
-	return name, kind
+
+	kindName, kindNameOK := annotations[cmapi.IssuerKindAnnotationKey]
+	if kindNameOK {
+		kind = kindName
+	}
+
+	groupName, groupNameOK := annotations[cmapi.IssuerGroupAnnotationKey]
+	if groupNameOK {
+		group = groupName
+	}
+
+	if len(name) == 0 {
+		errs = append(errs, "failed to determine issuer name to be used for ingress resource")
+	}
+
+	if issuerNameOK && clusterIssuerNameOK {
+		errs = append(errs,
+			fmt.Sprintf("both %q and %q may not be set",
+				cmapi.IngressIssuerNameAnnotationKey, cmapi.IngressClusterIssuerNameAnnotationKey))
+	}
+
+	if clusterIssuerNameOK && groupNameOK {
+		errs = append(errs,
+			fmt.Sprintf("both %q and %q may not be set",
+				cmapi.IngressClusterIssuerNameAnnotationKey, cmapi.IssuerGroupAnnotationKey))
+	}
+
+	if clusterIssuerNameOK && kindNameOK {
+		errs = append(errs,
+			fmt.Sprintf("both %q and %q may not be set",
+				cmapi.IngressClusterIssuerNameAnnotationKey, cmapi.IssuerKindAnnotationKey))
+	}
+
+	if len(errs) > 0 {
+		return "", "", "", errors.New(strings.Join(errs, ", "))
+	}
+
+	return name, kind, group, nil
 }

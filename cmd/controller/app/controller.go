@@ -225,6 +225,7 @@ func buildControllerContext(ctx context.Context, stopCh <-chan struct{}, opts *o
 		IngressShimOptions: controller.IngressShimOptions{
 			DefaultIssuerName:                 opts.DefaultIssuerName,
 			DefaultIssuerKind:                 opts.DefaultIssuerKind,
+			DefaultIssuerGroup:                opts.DefaultIssuerGroup,
 			DefaultAutoCertificateAnnotations: opts.DefaultAutoCertificateAnnotations,
 		},
 		CertificateOptions: controller.CertificateOptions{

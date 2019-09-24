@@ -18,12 +18,38 @@ package v1alpha2
 
 // Annotation names for Secrets
 const (
-	AltNamesAnnotationKey   = "cert-manager.io/alt-names"
-	IPSANAnnotationKey      = "cert-manager.io/ip-sans"
-	CommonNameAnnotationKey = "cert-manager.io/common-name"
-	IssuerNameAnnotationKey = "cert-manager.io/issuer-name"
-	IssuerKindAnnotationKey = "cert-manager.io/issuer-kind"
-	CertificateNameKey      = "cert-manager.io/certificate-name"
+	AltNamesAnnotationKey    = "cert-manager.io/alt-names"
+	IPSANAnnotationKey       = "cert-manager.io/ip-sans"
+	CommonNameAnnotationKey  = "cert-manager.io/common-name"
+	IssuerNameAnnotationKey  = "cert-manager.io/issuer-name"
+	IssuerKindAnnotationKey  = "cert-manager.io/issuer-kind"
+	IssuerGroupAnnotationKey = "cert-manager.io/issuer-group"
+	CertificateNameKey       = "cert-manager.io/certificate-name"
+)
+
+const (
+	// editInPlaceAnnotation is used to toggle the use of ingressClass instead
+	// of ingress on the created Certificate resource
+	IngressEditInPlaceAnnotationKey = "acme.cert-manager.io/http01-edit-in-place"
+	// issuerNameAnnotation can be used to override the issuer specified on the
+	// created Certificate resource.
+	IngressIssuerNameAnnotationKey = "cert-manager.io/issuer"
+	// clusterIssuerNameAnnotation can be used to override the issuer specified on the
+	// created Certificate resource. The Certificate will reference the
+	// specified *ClusterIssuer* instead of normal issuer.
+	IngressClusterIssuerNameAnnotationKey = "cert-manager.io/cluster-issuer"
+	// acmeIssuerHTTP01IngressClassAnnotation can be used to override the http01 ingressClass
+	// if the challenge type is set to http01
+	IngressACMEIssuerHTTP01IngressClassAnnotationKey = "acme.cert-manager.io/http01-ingress-class"
+
+	IngressClassAnnotationKey = IngressKey
+)
+
+const (
+	// IngressKey picks a specific "class" for the Ingress.
+	// The controller only processes Ingresses with this annotation either
+	// unset, or set to either the configured value or the empty string.
+	IngressKey = "kubernetes.io/ingress.class"
 )
 
 // Annotation names for CertificateRequests

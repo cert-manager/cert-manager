@@ -42,8 +42,8 @@ const (
 )
 
 type defaults struct {
-	autoCertificateAnnotations []string
-	issuerName, issuerKind     string
+	autoCertificateAnnotations          []string
+	issuerName, issuerKind, issuerGroup string
 }
 
 type controller struct {
@@ -115,6 +115,7 @@ func (c *controller) Register(ctx *controllerpkg.Context) (workqueue.RateLimitin
 		ctx.DefaultAutoCertificateAnnotations,
 		ctx.DefaultIssuerName,
 		ctx.DefaultIssuerKind,
+		ctx.DefaultIssuerGroup,
 	}
 
 	return c.queue, mustSync, nil, nil

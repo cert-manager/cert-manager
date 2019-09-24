@@ -24,6 +24,7 @@ import (
 
 	"github.com/spf13/pflag"
 
+	cm "github.com/jetstack/cert-manager/pkg/apis/certmanager"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	challengescontroller "github.com/jetstack/cert-manager/pkg/controller/acmechallenges"
 	orderscontroller "github.com/jetstack/cert-manager/pkg/controller/acmeorders"
@@ -66,6 +67,7 @@ type ControllerOptions struct {
 	// Default issuer/certificates details consumed by ingress-shim
 	DefaultIssuerName                 string
 	DefaultIssuerKind                 string
+	DefaultIssuerGroup                string
 	DefaultAutoCertificateAnnotations []string
 
 	// Allows specifying a list of custom nameservers to perform DNS checks on.
@@ -111,6 +113,7 @@ const (
 
 	defaultTLSACMEIssuerName           = ""
 	defaultTLSACMEIssuerKind           = "Issuer"
+	defaultTLSACMEIssuerGroup          = cm.GroupName
 	defaultACMEIssuerChallengeType     = "http01"
 	defaultACMEIssuerDNS01ProviderName = ""
 	defaultEnableCertificateOwnerRef   = false
@@ -184,6 +187,7 @@ func NewControllerOptions() *ControllerOptions {
 		RenewBeforeExpiryDuration:         defaultRenewBeforeExpiryDuration,
 		DefaultIssuerName:                 defaultTLSACMEIssuerName,
 		DefaultIssuerKind:                 defaultTLSACMEIssuerKind,
+		DefaultIssuerGroup:                defaultTLSACMEIssuerGroup,
 		DefaultAutoCertificateAnnotations: defaultAutoCertificateAnnotations,
 		DNS01RecursiveNameservers:         []string{},
 		DNS01RecursiveNameserversOnly:     defaultDNS01RecursiveNameserversOnly,
@@ -258,6 +262,8 @@ func (s *ControllerOptions) AddFlags(fs *pflag.FlagSet) {
 		"Name of the Issuer to use when the tls is requested but issuer name is not specified on the ingress resource.")
 	fs.StringVar(&s.DefaultIssuerKind, "default-issuer-kind", defaultTLSACMEIssuerKind, ""+
 		"Kind of the Issuer to use when the tls is requested but issuer kind is not specified on the ingress resource.")
+	fs.StringVar(&s.DefaultIssuerGroup, "default-issuer-group", defaultTLSACMEIssuerGroup, ""+
+		"Group of the Issuer to use when the tls is requested but issuer group is not specified on the ingress resource.")
 	fs.StringSliceVar(&s.DNS01RecursiveNameservers, "dns01-recursive-nameservers",
 		[]string{}, "A list of comma seperated dns server endpoints used for "+
 			"DNS01 check requests. This should be a list containing IP address and "+
