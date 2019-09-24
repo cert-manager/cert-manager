@@ -36,7 +36,7 @@ You can read more about the Issuer resource in the :doc:`Issuer reference docs <
        solvers:
        # An empty 'selector' means that this solver matches all domains
        - selector: {}
-         http01
+         http01:
            ingress:
              class: nginx
 
