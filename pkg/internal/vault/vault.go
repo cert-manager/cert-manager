@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"net/http"
 	"path"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -143,7 +144,7 @@ func (v *Vault) Sign(csrPEM []byte, duration time.Duration) (cert []byte, ca []b
 
 func (v *Vault) setToken(client Client) error {
 	tokenRef := v.issuer.GetSpec().Vault.Auth.TokenSecretRef
-	if tokenRef.Name != "" {
+	if tokenRef != nil {
 		token, err := v.tokenRef(tokenRef.Name, v.namespace, tokenRef.Key)
 		if err != nil {
 			return err
@@ -154,8 +155,8 @@ func (v *Vault) setToken(client Client) error {
 	}
 
 	appRole := v.issuer.GetSpec().Vault.Auth.AppRole
-	if appRole.RoleId != "" {
-		token, err := v.requestTokenWithAppRoleRef(client, &appRole)
+	if appRole != nil {
+		token, err := v.requestTokenWithAppRoleRef(client, appRole)
 		if err != nil {
 			return err
 		}
@@ -164,7 +165,17 @@ func (v *Vault) setToken(client Client) error {
 		return nil
 	}
 
-	return fmt.Errorf("error initializing Vault client tokenSecretRef or appRoleSecretRef not set")
+	kubernetesAuth := v.issuer.GetSpec().Vault.Auth.Kubernetes
+	if kubernetesAuth != nil {
+		token, err := v.requestTokenWithKubernetesAuth(client, kubernetesAuth)
+		if err != nil {
+			return fmt.Errorf("error reading Kubernetes service account token from %s: %s", kubernetesAuth.SecretRef.Name, err.Error())
+		}
+		client.SetToken(token)
+		return nil
+	}
+
+	return fmt.Errorf("error initializing Vault client: tokenSecretRef, appRoleSecretRef, or Kubernetes auth role not set")
 }
 
 func (v *Vault) newConfig() (*vault.Config, error) {
@@ -194,7 +205,7 @@ func (v *Vault) tokenRef(name, namespace, key string) (string, error) {
 	}
 
 	if key == "" {
-		key = "token"
+		key = v1alpha2.DefaultVaultTokenAuthSecretKey
 	}
 
 	keyBytes, ok := secret.Data[key]
@@ -274,6 +285,61 @@ func (v *Vault) requestTokenWithAppRoleRef(client Client, appRole *v1alpha2.Vaul
 
 	if token == "" {
 		return "", errors.New("no token returned")
+	}
+
+	return token, nil
+}
+
+func (v *Vault) requestTokenWithKubernetesAuth(client Client, kubernetesAuth *v1alpha2.VaultKubernetesAuth) (string, error) {
+	secret, err := v.secretsLister.Secrets(v.namespace).Get(kubernetesAuth.SecretRef.Name)
+	if err != nil {
+		return "", err
+	}
+
+	key := kubernetesAuth.SecretRef.Key
+	if key == "" {
+		key = v1alpha2.DefaultVaultTokenAuthSecretKey
+	}
+
+	keyBytes, ok := secret.Data[key]
+	if !ok {
+		return "", fmt.Errorf("no data for %q in secret '%s/%s'", key, v.namespace, kubernetesAuth.SecretRef.Name)
+	}
+
+	jwt := string(keyBytes)
+
+	parameters := map[string]string{
+		"role": kubernetesAuth.Role,
+		"jwt":  jwt,
+	}
+
+	mountPath := kubernetesAuth.Path
+	if mountPath == "" {
+		mountPath = v1alpha2.DefaultVaultKubernetesAuthMountPath
+	}
+
+	url := filepath.Join("/v1", "auth", mountPath, "login")
+	request := client.NewRequest("POST", url)
+	err = request.SetJSONBody(parameters)
+	if err != nil {
+		return "", fmt.Errorf("error encoding Vault parameters: %s", err.Error())
+	}
+
+	resp, err := client.RawRequest(request)
+	if err != nil {
+		return "", fmt.Errorf("error calling Vault server: %s", err.Error())
+	}
+
+	defer resp.Body.Close()
+	vaultResult := vault.Secret{}
+	err = resp.DecodeJSON(&vaultResult)
+	if err != nil {
+		return "", fmt.Errorf("unable to decode JSON payload: %s", err.Error())
+	}
+
+	token, err := vaultResult.TokenID()
+	if err != nil {
+		return "", fmt.Errorf("unable to read token: %s", err.Error())
 	}
 
 	return token, nil

@@ -39,9 +39,25 @@ func (c *controller) issuersForSecret(secret *corev1.Secret) ([]*v1alpha2.Issuer
 		}
 		if (iss.Spec.ACME != nil && iss.Spec.ACME.PrivateKey.Name == secret.Name) ||
 			(iss.Spec.CA != nil && iss.Spec.CA.SecretName == secret.Name) ||
-			(iss.Spec.Vault != nil && iss.Spec.Vault.Auth.TokenSecretRef.Name == secret.Name) ||
+
 			(iss.Spec.Venafi != nil && iss.Spec.Venafi.TPP != nil && iss.Spec.Venafi.TPP.CredentialsRef.Name == secret.Name) ||
 			(iss.Spec.Venafi != nil && iss.Spec.Venafi.Cloud != nil && iss.Spec.Venafi.Cloud.APITokenSecretRef.Name == secret.Name) {
+
+			affected = append(affected, iss)
+			continue
+		}
+
+		if iss.Spec.Vault != nil {
+			if (iss.Spec.Vault.Auth.TokenSecretRef != nil &&
+				iss.Spec.Vault.Auth.TokenSecretRef.Name == secret.Name) ||
+
+				(iss.Spec.Vault.Auth.AppRole != nil &&
+					iss.Spec.Vault.Auth.AppRole.SecretRef.Name == secret.Name) ||
+
+				(iss.Spec.Vault.Auth.Kubernetes != nil &&
+					iss.Spec.Vault.Auth.Kubernetes.SecretRef.Name == secret.Name) {
+			}
+
 			affected = append(affected, iss)
 			continue
 		}

@@ -51,7 +51,7 @@ var (
 	}
 	validVaultIssuer = v1alpha2.VaultIssuer{
 		Auth: v1alpha2.VaultAuth{
-			TokenSecretRef: validSecretKeyRef,
+			TokenSecretRef: &validSecretKeyRef,
 		},
 		Server: "something",
 		Path:   "a/b/c",

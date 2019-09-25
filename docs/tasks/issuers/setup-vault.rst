@@ -207,3 +207,57 @@ For more information on ClusterIssuers, read the
 :doc:`ClusterIssuer reference docs </reference/clusterissuers>`.
 
 .. _`Subject Alternative Names`: https://en.wikipedia.org/wiki/Subject_Alternative_Name
+
+Vault Authentication with Kubernetes Service Accounts
+=====================================================
+
+This Vault authentication method uses Service Account tokens created by
+Kubernetes to authenticate requests to Vault for signing certificates. You can
+find more information on how to configure vault for Kubernetes based Service
+Account authentication in the `documentation
+<https://www.vaultproject.io/docs/auth/kubernetes.html>`__. This authentication
+expects three stanzas; a secret reference of the Service Account to use,
+an optional authentication mount path that is defaulted to `kubernetes`, and
+finally a Vault role that the Service Account is to assume.
+
+Here is an example Vault issuer using the Kubernetes Service Account
+authentication method.
+
+.. code-block:: yaml
+
+    apiVersion: certmanager.k8s.io/v1alpha1
+    kind: Issuer
+    metadata:
+      name: vault-issuer
+      namespace: default
+    spec:
+      vault:
+        path: pki_int/sign/example-dot-com
+        server: https://vault
+        caBundle: <base64 encoded caBundle PEM file>
+        auth:
+          kubernetes:
+            path: /kubernetes/cluster-1
+            role: my-app-1
+            secretRef:
+              name: my-service-account-secret
+              key: token
+
+
+Once created and is ready you can create Certificates referencing this issuer in
+the normal way.
+
+.. code-block:: yaml
+
+    apiVersion: certmanager.k8s.io/v1alpha1
+    kind: Certificate
+    metadata:
+      name: example-com
+      namespace: default
+    spec:
+      secretName: example-com-tls
+      issuerRef:
+        name: vault-issuer
+      commonName: example.com
+      dnsNames:
+      - www.example.com

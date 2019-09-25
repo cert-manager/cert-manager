@@ -3461,6 +3461,42 @@ spec:
                       - roleId
                       - secretRef
                       type: object
+                    kubernetes:
+                      description: This contains a Role and Secret with a ServiceAccount
+                        token to authenticate with vault.
+                      properties:
+                        mountPath:
+                          description: The value here will be used as part of the
+                            path used when authenticating with vault, for example
+                            if you set a value of "foo", the path used will be `/v1/auth/foo/login`.
+                            If unspecified, the default value "kubernetes" will be
+                            used.
+                          type: string
+                        role:
+                          description: A required field containing the Vault Role
+                            to assume. A Role binds a Kubernetes ServiceAccount with
+                            a set of Vault policies.
+                          type: string
+                        secretRef:
+                          description: The required Secret field containing a Kubernetes
+                            ServiceAccount JWT used for authenticating with Vault.
+                            Use of 'ambient credentials' is not supported.
+                          properties:
+                            key:
+                              description: The key of the secret to select from. Must
+                                be a valid secret key.
+                              type: string
+                            name:
+                              description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                                TODO: Add other useful fields. apiVersion, kind, uid?'
+                              type: string
+                          required:
+                          - name
+                          type: object
+                      required:
+                      - role
+                      - secretRef
+                      type: object
                     tokenSecretRef:
                       description: This Secret contains the Vault token key
                       properties:
@@ -5083,6 +5119,42 @@ spec:
                       required:
                       - path
                       - roleId
+                      - secretRef
+                      type: object
+                    kubernetes:
+                      description: This contains a Role and Secret with a ServiceAccount
+                        token to authenticate with vault.
+                      properties:
+                        mountPath:
+                          description: The value here will be used as part of the
+                            path used when authenticating with vault, for example
+                            if you set a value of "foo", the path used will be `/v1/auth/foo/login`.
+                            If unspecified, the default value "kubernetes" will be
+                            used.
+                          type: string
+                        role:
+                          description: A required field containing the Vault Role
+                            to assume. A Role binds a Kubernetes ServiceAccount with
+                            a set of Vault policies.
+                          type: string
+                        secretRef:
+                          description: The required Secret field containing a Kubernetes
+                            ServiceAccount JWT used for authenticating with Vault.
+                            Use of 'ambient credentials' is not supported.
+                          properties:
+                            key:
+                              description: The key of the secret to select from. Must
+                                be a valid secret key.
+                              type: string
+                            name:
+                              description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                                TODO: Add other useful fields. apiVersion, kind, uid?'
+                              type: string
+                          required:
+                          - name
+                          type: object
+                      required:
+                      - role
                       - secretRef
                       type: object
                     tokenSecretRef:
