@@ -33,7 +33,12 @@ You can read more about the Issuer resource in the :doc:`Issuer reference docs <
        privateKeySecretRef:
          name: letsencrypt-staging
        # Enable the HTTP-01 challenge provider
-       http01: {}
+       solvers:
+       # An empty 'selector' means that this solver matches all domains
+       - selector: {}
+         http01:
+           ingress:
+             class: nginx
 
 We have specified the ACME server URL for Let's Encrypt's `staging environment`_.
 The staging environment will not issue trusted certificates but is used to
@@ -72,16 +77,6 @@ Once we have created the above Issuer we can use it to obtain a certificate.
      commonName: example.com
      dnsNames:
      - www.example.com
-     acme:
-       config:
-       - http01:
-           ingressClass: nginx
-         domains:
-         - example.com
-       - http01:
-           ingress: my-ingress
-         domains:
-         - www.example.com
 
 The Certificate resource describes our desired certificate and the possible
 methods that can be used to obtain it. You can learn more about the Certificate
