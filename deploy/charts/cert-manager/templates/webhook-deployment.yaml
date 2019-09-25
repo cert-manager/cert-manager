@@ -47,7 +47,7 @@ spec:
           {{- if .Values.global.logLevel }}
           - --v={{ .Values.global.logLevel }}
           {{- end }}
-          - --secure-port=6443
+          - --secure-port={{ .Values.webhook.secure_port }}
           - --tls-cert-file=/certs/tls.crt
           - --tls-private-key-file=/certs/tls.key
         {{- if .Values.webhook.extraArgs }}
@@ -60,6 +60,12 @@ spec:
                 fieldPath: metadata.namespace
           resources:
 {{ toYaml .Values.webhook.resources | indent 12 }}
+          securityContext:
+            capabilities:
+              add:
+              - NET_BIND_SERVICE
+              drop:
+              - ALL
           volumeMounts:
           - name: certs
             mountPath: /certs

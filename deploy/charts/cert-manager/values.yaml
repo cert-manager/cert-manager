@@ -142,6 +142,11 @@ webhook:
   # see https://github.com/kubernetes/kubernetes/pull/62649
   injectAPIServerCA: true
 
+  # in GKE private clusters, by default masters are allowed to talk to the
+  # cluster nodes only on 443 and 10250. so configuring secure_port: 443,
+  # will work out of the box without needing to add fw rules
+  secure_port: 6443
+
 cainjector:
   enabled: true
 
