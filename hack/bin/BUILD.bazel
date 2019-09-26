@@ -1,6 +1,6 @@
 package(default_visibility = ["//visibility:public"])
 
-load("@io_kubernetes_build//defs:run_in_workspace.bzl", "workspace_binary")
+load("@io_k8s_repo_infra//defs:run_in_workspace.bzl", "workspace_binary")
 
 genrule(
     name = "fetch_jq",
@@ -143,7 +143,7 @@ genrule(
 
 genrule(
     name = "fetch_kazel",
-    srcs = ["@io_kubernetes_build//kazel"],
+    srcs = ["@io_k8s_repo_infra//kazel"],
     outs = ["kazel"],
     cmd = "cp $(SRCS) $@",
     visibility = ["//visibility:public"],
