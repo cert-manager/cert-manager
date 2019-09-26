@@ -7,6 +7,7 @@ py_test(
     srcs = ["verify_boilerplate.py"],
     data = ["//:all-srcs"],
     main = "verify_boilerplate.py",
+    python_version = "PY3",
     tags = ["lint"],
 )
 
