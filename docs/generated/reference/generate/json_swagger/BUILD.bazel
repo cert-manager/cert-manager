@@ -22,8 +22,8 @@ go_library(
     visibility = ["//visibility:private"],
     deps = [
         "//docs/generated/reference/generate/go_openapi:go_default_library",
-        "//vendor/github.com/go-openapi/spec:go_default_library",
-        "//vendor/k8s.io/kube-openapi/pkg/common:go_default_library",
+        "@com_github_go_openapi_spec//:go_default_library",
+        "@io_k8s_kube_openapi//pkg/common:go_default_library",
     ],
 )
 

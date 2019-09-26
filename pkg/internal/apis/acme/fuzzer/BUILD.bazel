@@ -8,9 +8,9 @@ go_library(
     deps = [
         "//pkg/apis/certmanager/v1alpha2:go_default_library",
         "//pkg/internal/apis/acme:go_default_library",
-        "//vendor/github.com/google/gofuzz:go_default_library",
-        "//vendor/k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1:go_default_library",
-        "//vendor/k8s.io/apimachinery/pkg/runtime/serializer:go_default_library",
+        "@com_github_google_gofuzz//:go_default_library",
+        "@io_k8s_apiextensions_apiserver//pkg/apis/apiextensions/v1beta1:go_default_library",
+        "@io_k8s_apimachinery//pkg/runtime/serializer:go_default_library",
     ],
 )
 

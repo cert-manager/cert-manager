@@ -5,7 +5,7 @@ go_library(
     srcs = ["feature_gate.go"],
     importpath = "github.com/jetstack/cert-manager/pkg/util/feature",
     visibility = ["//visibility:public"],
-    deps = ["//vendor/k8s.io/component-base/featuregate:go_default_library"],
+    deps = ["@io_k8s_component_base//featuregate:go_default_library"],
 )
 
 filegroup(

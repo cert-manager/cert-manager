@@ -65,7 +65,6 @@ filegroup(
         "//test/unit/gen:all-srcs",
         "//test/unit/listers:all-srcs",
         "//third_party:all-srcs",
-        "//vendor:all-srcs",
     ],
     tags = ["automanaged"],
     visibility = ["//visibility:public"],

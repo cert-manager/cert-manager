@@ -7,7 +7,7 @@ go_library(
     visibility = ["//visibility:public"],
     deps = [
         "//hack/release/pkg/log:go_default_library",
-        "//vendor/github.com/go-logr/logr:go_default_library",
+        "@com_github_go_logr_logr//:go_default_library",
     ],
 )
 

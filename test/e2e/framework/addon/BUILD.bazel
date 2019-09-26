@@ -13,7 +13,7 @@ go_library(
         "//test/e2e/framework/addon/tiller:go_default_library",
         "//test/e2e/framework/config:go_default_library",
         "//test/e2e/framework/log:go_default_library",
-        "//vendor/k8s.io/apimachinery/pkg/util/errors:go_default_library",
+        "@io_k8s_apimachinery//pkg/util/errors:go_default_library",
     ],
 )
 

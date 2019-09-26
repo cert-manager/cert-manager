@@ -14,7 +14,7 @@ go_library(
         "//pkg/apis/meta/v1:go_default_library",
         "//pkg/controller:go_default_library",
         "//pkg/issuer:go_default_library",
-        "//vendor/k8s.io/client-go/listers/core/v1:go_default_library",
+        "@io_k8s_client_go//listers/core/v1:go_default_library",
     ],
 )
 

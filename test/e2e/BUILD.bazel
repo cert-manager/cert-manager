@@ -40,7 +40,7 @@ go_library(
         "//test/e2e/framework:go_default_library",
         "//test/e2e/framework/addon:go_default_library",
         "//test/e2e/framework/log:go_default_library",
-        "//vendor/github.com/onsi/ginkgo:go_default_library",
+        "@com_github_onsi_ginkgo//:go_default_library",
     ],
 )
 
@@ -53,11 +53,11 @@ go_test(
         "//pkg/logs:go_default_library",
         "//test/e2e/framework:go_default_library",
         "//test/e2e/suite:go_default_library",
-        "//vendor/github.com/onsi/ginkgo:go_default_library",
-        "//vendor/github.com/onsi/ginkgo/config:go_default_library",
-        "//vendor/github.com/onsi/ginkgo/reporters:go_default_library",
-        "//vendor/github.com/onsi/gomega:go_default_library",
-        "//vendor/k8s.io/apimachinery/pkg/util/wait:go_default_library",
+        "@com_github_onsi_ginkgo//:go_default_library",
+        "@com_github_onsi_ginkgo//config:go_default_library",
+        "@com_github_onsi_ginkgo//reporters:go_default_library",
+        "@com_github_onsi_gomega//:go_default_library",
+        "@io_k8s_apimachinery//pkg/util/wait:go_default_library",
     ],
 )
 
