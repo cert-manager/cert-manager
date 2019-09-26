@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-
 # Copyright 2019 The Jetstack cert-manager contributors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,42 +13,54 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set -o errexit
 set -o nounset
+set -o errexit
 set -o pipefail
 
-RULE_NAME="codegen"
-
-SCRIPT_ROOT=$(dirname "${BASH_SOURCE}")/..
-
-_tmp="$(mktemp -d)"
-DIFFROOT="${SCRIPT_ROOT}/"
-
-cleanup() {
-  rm -rf "${_tmp}"
-}
-trap "cleanup" EXIT SIGINT
-
-# Create a fake GOPATH
-export GOPATH="${_tmp}"
-TMP_DIFFROOT="${GOPATH}/src/github.com/jetstack/cert-manager"
-
-mkdir -p "${TMP_DIFFROOT}"
-rsync -avvL "${DIFFROOT}"/ "${TMP_DIFFROOT}" >/dev/null
-# remove __main__ directory copied to tmp
-rm -Rf "${TMP_DIFFROOT}/__main__"
-
-cd "${TMP_DIFFROOT}"
-export BUILD_WORKSPACE_DIRECTORY="$(pwd)"
-"hack/update-${RULE_NAME}.sh"
-
-echo "diffing ${DIFFROOT} against freshly generated codegen"
-ret=0
-diff --exclude=__main__ -Naupr "${DIFFROOT}" "${TMP_DIFFROOT}" || ret=$?
-if [[ $ret -eq 0 ]]
-then
-  echo "${DIFFROOT} up to date."
+if [[ -n "${TEST_WORKSPACE:-}" ]]; then # Running inside bazel
+  echo "Checking generated clients for changes..." >&2
+elif ! command -v bazel &>/dev/null; then
+  echo "Install bazel at https://bazel.build" >&2
+  exit 1
 else
-  echo "${DIFFROOT} is out of date. Please run 'bazel run //hack:update-${RULE_NAME}'"
+  (
+    set -o xtrace
+    bazel test --test_output=streamed //hack:verify-codegen
+  )
+  exit 0
+fi
+
+tmpfiles=$TEST_TMPDIR/files
+
+(
+  mkdir -p "$tmpfiles"
+  rm -f bazel-*
+  cp -aL "." "$tmpfiles"
+  export BUILD_WORKSPACE_DIRECTORY=$tmpfiles
+  export HOME=$(realpath "$TEST_TMPDIR/home")
+  unset GOPATH
+  go=$(realpath "$2")
+  export PATH=$(dirname "$go"):$PATH
+  "$@"
+)
+
+(
+  # Remove the platform/binary for gazelle and kazel
+  gazelle=$(dirname "$3")
+  kazel=$(dirname "$4")
+  rm -rf {.,"$tmpfiles"}/{"$gazelle","$kazel"}
+)
+# Avoid diff -N so we handle empty files correctly
+diff=$(diff -upr \
+  -x ".git" \
+  -x "bazel-*" \
+  -x "_output" \
+  "." "$tmpfiles" 2>/dev/null || true)
+
+if [[ -n "${diff}" ]]; then
+  echo "${diff}" >&2
+  echo >&2
+  echo "ERROR: generated clients changed. Update with ./hack/update-codegen.sh" >&2
   exit 1
 fi
+echo "SUCCESS: generated clients up-to-date"

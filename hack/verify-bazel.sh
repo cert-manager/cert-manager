@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-
 # Copyright 2019 The Jetstack cert-manager contributors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,43 +17,43 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-# TODO: this particular script should probably not run under 'bazel test'.
-# Because it *does*, and because bazel test relies upon BUILD.bazel files to
-# determine which runfiles to include, there can be cases where verify-bazel
-# passes, however upon a run of update-bazel, files could change because they
-# are not visible to verify-bazel during the 'bazel test' phase.
-
-RULE_NAME="bazel"
-
-SCRIPT_ROOT=$(dirname "${BASH_SOURCE}")/..
-
-_tmp="$(mktemp -d)"
-DIFFROOT="${SCRIPT_ROOT}/"
-TMP_DIFFROOT="${_tmp}/"
-
-cleanup() {
-  rm -rf "${_tmp}"
-}
-trap "cleanup" EXIT SIGINT
-
-cleanup
-
-mkdir -p "${TMP_DIFFROOT}"
-rsync -avvL "${DIFFROOT}"/ "${TMP_DIFFROOT}" >/dev/null
-# remove __main__ directory copied to tmp
-rm -Rf "${TMP_DIFFROOT}/__main__"
-
-cd "${TMP_DIFFROOT}"
-export BUILD_WORKSPACE_DIRECTORY="$(pwd)"
-"hack/update-${RULE_NAME}.sh"
-
-echo "diffing ${DIFFROOT} against freshly generated codegen"
-ret=0
-diff --exclude=__main__ -Naupr "${DIFFROOT}" "${TMP_DIFFROOT}" || ret=$?
-if [[ $ret -eq 0 ]]
-then
-  echo "${DIFFROOT} up to date."
+if [[ -n "${TEST_WORKSPACE:-}" ]]; then # Running inside bazel
+  echo "Validating bazel rules..." >&2
+elif ! command -v bazel &> /dev/null; then
+  echo "Install bazel at https://bazel.build" >&2
+  exit 1
 else
-  echo "${DIFFROOT} is out of date. Please run 'bazel run //hack:update-${RULE_NAME}'"
+  (
+    set -o xtrace
+    bazel test --test_output=streamed @com_github_jetstack_cert_manager//hack:verify-bazel
+  )
+  exit 0
+fi
+
+gazelle=$(realpath "$1")
+kazel=$(realpath "$2")
+
+export GO111MODULE=on
+
+# Because this script is called using Bazel with the @//:all-srcs target
+# included, if a package that is depended upon is not present in :all-srcs then
+# gazelle will attempt to use the go tool to resolve the dependency on that
+# package.
+# This can take a long time, and produces confusing results.
+# By not setting up the go tool in the bazel test environment at all, we still
+# get a confusing error message, but we fail fast and it is clear that
+# something is wrong:
+#    gazelle: finding module path for import github.com/jetstack/cert-manager/test/unit/gen: exit status 1: build cache is required, but could not be located: GOCACHE is not defined and $HOME is not defined
+echo "Running gazelle..."
+gazelle_diff=$("$gazelle" fix --mode=diff --external=external || true)
+echo "Running kazel..."
+kazel_diff=$("$kazel" --dry-run --print-diff --cfg-path=./.kazelcfg.json)
+
+if [[ -n "${gazelle_diff}${kazel_diff}" ]]; then
+  echo "Current rules (-) do not match expected (+):" >&2
+  echo "${gazelle_diff}"
+  echo "${kazel_diff}"
+  echo
+  echo "ERROR: bazel rules out of date. Fix with ./hack/update-bazel.sh" >&2
   exit 1
 fi

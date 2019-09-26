@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-
 # Copyright 2019 The Jetstack cert-manager contributors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,41 +13,46 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set -o errexit
 set -o nounset
+set -o errexit
 set -o pipefail
 
-RULE_NAME="reference-docs"
-
-SCRIPT_ROOT=$(dirname "${BASH_SOURCE}")/..
-
-_tmp="$(mktemp -d)"
-DIFFROOT="${SCRIPT_ROOT}/"
-
-cleanup() {
-  rm -rf "${_tmp}"
-}
-trap "cleanup" EXIT SIGINT
-
-# Create a fake GOPATH
-export GOPATH="${_tmp}"
-TMP_DIFFROOT="${GOPATH}/src/github.com/jetstack/cert-manager"
-
-mkdir -p "${TMP_DIFFROOT}"
-rsync -avvL "${DIFFROOT}"/ "${TMP_DIFFROOT}" >/dev/null
-
-export runfiles="$(pwd)"
-cd "${TMP_DIFFROOT}"
-export BUILD_WORKSPACE_DIRECTORY="$(pwd)"
-"hack/update-${RULE_NAME}.sh"
-
-echo "diffing ${DIFFROOT} against freshly generated ${RULE_NAME}"
-ret=0
-diff --exclude=__main__ -Naupr "${DIFFROOT}/docs/generated/reference/output" "${TMP_DIFFROOT}/docs/generated/reference/output" || ret=$?
-if [[ $ret -eq 0 ]]
-then
-  echo "${DIFFROOT} up to date."
+if [[ -n "${TEST_WORKSPACE:-}" ]]; then # Running inside bazel
+  echo "Checking generated API reference documentation for changes..." >&2
+elif ! command -v bazel &>/dev/null; then
+  echo "Install bazel at https://bazel.build" >&2
+  exit 1
 else
-  echo "${DIFFROOT} is out of date. Please run 'bazel run //hack:update-${RULE_NAME}'"
+  (
+    set -o xtrace
+    bazel test --test_output=streamed //hack:verify-reference-docs
+  )
+  exit 0
+fi
+
+compare_to=$(realpath "docs/generated/reference/output")
+
+tmpfiles=$TEST_TMPDIR/files
+
+(
+  mkdir -p "$tmpfiles"
+  rm -f bazel-*
+  cp -aL "." "$tmpfiles"
+  export BUILD_WORKSPACE_DIRECTORY=$tmpfiles
+  "$@"
+)
+
+# Avoid diff -N so we handle empty files correctly
+diff=$(diff -upr \
+  -x ".git" \
+  -x "bazel-*" \
+  -x "_output" \
+  "." "$tmpfiles" 2>/dev/null || true)
+
+if [[ -n "${diff}" ]]; then
+  echo "${diff}" >&2
+  echo >&2
+  echo "ERROR: generated API reference documentation changed. Update with ./hack/update-reference-docs.sh" >&2
   exit 1
 fi
+echo "SUCCESS: generated API reference documentation up-to-date"

@@ -9,8 +9,8 @@ go_library(
         "//hack/release/pkg/flags:go_default_library",
         "//hack/release/pkg/log:go_default_library",
         "//hack/release/pkg/util:go_default_library",
-        "//vendor/github.com/go-logr/logr:go_default_library",
-        "//vendor/github.com/spf13/pflag:go_default_library",
+        "@com_github_go_logr_logr//:go_default_library",
+        "@com_github_spf13_pflag//:go_default_library",
     ],
 )
 

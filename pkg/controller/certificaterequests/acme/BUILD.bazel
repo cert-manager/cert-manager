@@ -18,9 +18,9 @@ go_library(
         "//pkg/issuer:go_default_library",
         "//pkg/logs:go_default_library",
         "//pkg/util/pki:go_default_library",
-        "//vendor/k8s.io/apimachinery/pkg/api/errors:go_default_library",
-        "//vendor/k8s.io/apimachinery/pkg/apis/meta/v1:go_default_library",
-        "//vendor/k8s.io/client-go/tools/record:go_default_library",
+        "@io_k8s_apimachinery//pkg/api/errors:go_default_library",
+        "@io_k8s_apimachinery//pkg/apis/meta/v1:go_default_library",
+        "@io_k8s_client_go//tools/record:go_default_library",
     ],
 )
 
@@ -40,10 +40,10 @@ go_test(
         "//pkg/util/pki:go_default_library",
         "//test/unit/gen:go_default_library",
         "//test/unit/listers:go_default_library",
-        "//vendor/k8s.io/apimachinery/pkg/apis/meta/v1:go_default_library",
-        "//vendor/k8s.io/apimachinery/pkg/runtime:go_default_library",
-        "//vendor/k8s.io/client-go/testing:go_default_library",
-        "//vendor/k8s.io/utils/clock/testing:go_default_library",
+        "@io_k8s_apimachinery//pkg/apis/meta/v1:go_default_library",
+        "@io_k8s_apimachinery//pkg/runtime:go_default_library",
+        "@io_k8s_client_go//testing:go_default_library",
+        "@io_k8s_utils//clock/testing:go_default_library",
     ],
 )
 

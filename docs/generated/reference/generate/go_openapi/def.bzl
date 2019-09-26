@@ -15,15 +15,15 @@
 load("@io_bazel_rules_go//go:def.bzl", "go_library")
 load("@io_k8s_repo_infra//defs:go.bzl", "go_genrule")
 
-def openapi_library(name, tags, srcs, go_prefix, openapi_targets = [], vendor_targets = []):
+def openapi_library(name, tags, srcs, go_prefix, openapi_targets = [], openapi_extra_targets = [], dependency_targets = []):
     deps = [
-        "//vendor/github.com/go-openapi/spec:go_default_library",
-        "//vendor/k8s.io/kube-openapi/pkg/common:go_default_library",
-    ] + ["//%s:go_default_library" % target for target in openapi_targets] + ["//vendor/%s:go_default_library" % target for target in vendor_targets]
+        "@com_github_go_openapi_spec//:go_default_library",
+        "@io_k8s_kube_openapi//pkg/common:go_default_library",
+    ] + ["//%s:go_default_library" % target for target in openapi_targets] + dependency_targets
     go_library(
         name = name,
         srcs = srcs + [":zz_generated.openapi"],
-        importpath = go_prefix + "docs/generated/reference/generate/go_openapi",
+        importpath = go_prefix + "/docs/generated/reference/generate/go_openapi",
         tags = tags,
         deps = deps,
     )
@@ -36,17 +36,15 @@ def openapi_library(name, tags, srcs, go_prefix, openapi_targets = [], vendor_ta
         # All of bazel's $(location)s are relative to the original working directory, however,
         # so we must save it first.
         cmd = " ".join([
-            "cd $$GOPATH/src/" + go_prefix + ";",
-            "$$GO_GENRULE_EXECROOT/$(location //vendor/k8s.io/kube-openapi/cmd/openapi-gen)",
+            "$(location @io_k8s_kube_openapi//cmd/openapi-gen)",
             "--v 1",
             "--logtostderr",
-            "--go-header-file $$GO_GENRULE_EXECROOT/$(location //hack/boilerplate:boilerplate.go.txt)",
+            "--go-header-file $(location //hack/boilerplate:boilerplate.go.txt)",
             "--output-file-base zz_generated.openapi",
-            "--output-package " + go_prefix + "docs/generated/reference/generate/go_openapi",
-            # "--report-filename tmp_api_violations.report",
-            "--input-dirs " + ",".join([go_prefix + target for target in openapi_targets] + [go_prefix + "vendor/" + target for target in vendor_targets]),
-            "&& cp $$GOPATH/src/" + go_prefix + "docs/generated/reference/generate/go_openapi/zz_generated.openapi.go $$GO_GENRULE_EXECROOT/$(location :zz_generated.openapi.go)",
+            "--output-package " + go_prefix + "/docs/generated/reference/generate/go_openapi",
+            "--input-dirs " + ",".join([go_prefix + "/" + target for target in openapi_targets] + openapi_extra_targets),
+            "&& cp $$GOPATH/src/" + go_prefix + "/docs/generated/reference/generate/go_openapi/zz_generated.openapi.go $(location :zz_generated.openapi.go)",
         ]),
         go_deps = deps,
-        tools = ["//vendor/k8s.io/kube-openapi/cmd/openapi-gen"],
+        tools = ["@io_k8s_kube_openapi//cmd/openapi-gen"],
     )

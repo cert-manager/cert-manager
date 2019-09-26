@@ -7,13 +7,13 @@ go_library(
     visibility = ["//visibility:public"],
     deps = [
         "//pkg/api:go_default_library",
-        "//vendor/github.com/go-logr/logr:go_default_library",
-        "//vendor/k8s.io/apimachinery/pkg/apis/meta/v1:go_default_library",
-        "//vendor/k8s.io/apimachinery/pkg/runtime:go_default_library",
-        "//vendor/k8s.io/apimachinery/pkg/runtime/schema:go_default_library",
-        "//vendor/k8s.io/apimachinery/pkg/util/wait:go_default_library",
-        "//vendor/k8s.io/klog:go_default_library",
-        "//vendor/k8s.io/klog/klogr:go_default_library",
+        "@com_github_go_logr_logr//:go_default_library",
+        "@io_k8s_apimachinery//pkg/apis/meta/v1:go_default_library",
+        "@io_k8s_apimachinery//pkg/runtime:go_default_library",
+        "@io_k8s_apimachinery//pkg/runtime/schema:go_default_library",
+        "@io_k8s_apimachinery//pkg/util/wait:go_default_library",
+        "@io_k8s_klog//:go_default_library",
+        "@io_k8s_klog//klogr:go_default_library",
     ],
 )
 

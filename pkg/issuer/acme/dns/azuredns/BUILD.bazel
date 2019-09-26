@@ -7,12 +7,12 @@ go_library(
     visibility = ["//visibility:public"],
     deps = [
         "//pkg/issuer/acme/dns/util:go_default_library",
-        "//vendor/github.com/Azure/azure-sdk-for-go/services/dns/mgmt/2017-10-01/dns:go_default_library",
-        "//vendor/github.com/Azure/go-autorest/autorest:go_default_library",
-        "//vendor/github.com/Azure/go-autorest/autorest/adal:go_default_library",
-        "//vendor/github.com/Azure/go-autorest/autorest/azure:go_default_library",
-        "//vendor/github.com/Azure/go-autorest/autorest/to:go_default_library",
-        "//vendor/k8s.io/klog:go_default_library",
+        "@com_github_azure_azure_sdk_for_go//services/dns/mgmt/2017-10-01/dns:go_default_library",
+        "@com_github_azure_go_autorest_autorest//:go_default_library",
+        "@com_github_azure_go_autorest_autorest//azure:go_default_library",
+        "@com_github_azure_go_autorest_autorest_adal//:go_default_library",
+        "@com_github_azure_go_autorest_autorest_to//:go_default_library",
+        "@io_k8s_klog//:go_default_library",
     ],
 )
 
@@ -22,7 +22,7 @@ go_test(
     embed = [":go_default_library"],
     deps = [
         "//pkg/issuer/acme/dns/util:go_default_library",
-        "//vendor/github.com/stretchr/testify/assert:go_default_library",
+        "@com_github_stretchr_testify//assert:go_default_library",
     ],
 )
 

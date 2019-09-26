@@ -18,28 +18,26 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
+if [[ -n "${BUILD_WORKSPACE_DIRECTORY:-}" ]]; then # Running inside bazel
+  echo "Updating generated CRDs..." >&2
+elif ! command -v bazel &>/dev/null; then
+  echo "Install bazel at https://bazel.build" >&2
+  exit 1
+else
+  (
+    set -o xtrace
+    bazel run @com_github_jetstack_cert_manager//hack:update-crds
+  )
+  exit 0
+fi
+
+generated="$(pwd)/$1"
+
 # This script should be run via `bazel run //hack:update-crds`
-REPO_ROOT=${BUILD_WORKSPACE_DIRECTORY:-"$(cd "$(dirname "$0")" && pwd -P)"/..}
-runfiles="$(pwd)"
-go_sdk="${runfiles}/external/go_sdk"
-#find "${go_sdk}"
-export GOROOT="${go_sdk}"
-export GOCACHE="$(mktemp -d)"
-export PATH="${go_sdk}/bin:${runfiles}/hack/bin:${PATH}"
+REPO_ROOT=${BUILD_WORKSPACE_DIRECTORY}
 cd "${REPO_ROOT}"
 
-output="$(mktemp -d)"
-controller-gen \
-    paths=./pkg/apis/... \
-    crd:trivialVersions=true \
-    output:crd:dir="${output}"
+cp "${generated}" ./deploy/manifests/00-crds.yaml
+chmod 644 ./deploy/manifests/00-crds.yaml
 
-echo "Copying files to output file"
-out="deploy/manifests/00-crds.yaml"
-rm "$out" > /dev/null 2>&1 || true
-mkdir -p "$(dirname $out)"
-touch "$out"
-for file in $(find "${output}" -type f | sort -V); do
-    cat "$file" >> "$out"
-    echo "---" >> "$out"
-done
+echo "Generated 00-crds.yaml"

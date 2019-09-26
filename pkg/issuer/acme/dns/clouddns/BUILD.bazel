@@ -7,11 +7,11 @@ go_library(
     visibility = ["//visibility:public"],
     deps = [
         "//pkg/issuer/acme/dns/util:go_default_library",
-        "//vendor/golang.org/x/net/context:go_default_library",
-        "//vendor/golang.org/x/oauth2:go_default_library",
-        "//vendor/golang.org/x/oauth2/google:go_default_library",
-        "//vendor/google.golang.org/api/dns/v1:go_default_library",
-        "//vendor/k8s.io/klog:go_default_library",
+        "@io_k8s_klog//:go_default_library",
+        "@org_golang_google_api//dns/v1:go_default_library",
+        "@org_golang_x_net//context:go_default_library",
+        "@org_golang_x_oauth2//:go_default_library",
+        "@org_golang_x_oauth2//google:go_default_library",
     ],
 )
 
@@ -21,10 +21,10 @@ go_test(
     embed = [":go_default_library"],
     deps = [
         "//pkg/issuer/acme/dns/util:go_default_library",
-        "//vendor/github.com/stretchr/testify/assert:go_default_library",
-        "//vendor/golang.org/x/net/context:go_default_library",
-        "//vendor/golang.org/x/oauth2/google:go_default_library",
-        "//vendor/google.golang.org/api/dns/v1:go_default_library",
+        "@com_github_stretchr_testify//assert:go_default_library",
+        "@org_golang_google_api//dns/v1:go_default_library",
+        "@org_golang_x_net//context:go_default_library",
+        "@org_golang_x_oauth2//google:go_default_library",
     ],
 )
 

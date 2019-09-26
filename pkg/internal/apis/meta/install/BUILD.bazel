@@ -8,8 +8,8 @@ go_library(
     deps = [
         "//pkg/internal/apis/meta:go_default_library",
         "//pkg/internal/apis/meta/v1:go_default_library",
-        "//vendor/k8s.io/apimachinery/pkg/runtime:go_default_library",
-        "//vendor/k8s.io/apimachinery/pkg/util/runtime:go_default_library",
+        "@io_k8s_apimachinery//pkg/runtime:go_default_library",
+        "@io_k8s_apimachinery//pkg/util/runtime:go_default_library",
     ],
 )
 
@@ -33,6 +33,6 @@ go_test(
     embed = [":go_default_library"],
     deps = [
         "//pkg/internal/apis/meta/fuzzer:go_default_library",
-        "//vendor/k8s.io/apimachinery/pkg/api/apitesting/roundtrip:go_default_library",
+        "@io_k8s_apimachinery//pkg/api/apitesting/roundtrip:go_default_library",
     ],
 )

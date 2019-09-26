@@ -1,10 +1,19 @@
+# gazelle:prefix github.com/jetstack/cert-manager
+# gazelle:proto disable_global
+# gazelle:exclude hack
+# gazelle:exclude docs/generated/reference/generate/json_swagger
+
 load("@io_bazel_rules_docker//container:container.bzl", "container_bundle")
 load("@io_bazel_rules_docker//contrib:push-all.bzl", "docker_push")
 
 # export WORKSPACE so workspace_binary rules can be used outside the root
-exports_files(["WORKSPACE"])
-
-# gazelle:proto disable_global
+exports_files([
+    "WORKSPACE",
+    "LICENSE",
+    "LICENSES",
+    "go.mod",
+    "go.sum",
+])
 
 container_bundle(
     name = "images",
@@ -65,7 +74,6 @@ filegroup(
         "//test/unit/gen:all-srcs",
         "//test/unit/listers:all-srcs",
         "//third_party:all-srcs",
-        "//vendor:all-srcs",
     ],
     tags = ["automanaged"],
     visibility = ["//visibility:public"],

@@ -6,7 +6,7 @@ go_library(
     importpath = "github.com/jetstack/cert-manager/test/e2e/framework/log",
     tags = ["manual"],
     visibility = ["//visibility:public"],
-    deps = ["//vendor/github.com/onsi/ginkgo:go_default_library"],
+    deps = ["@com_github_onsi_ginkgo//:go_default_library"],
 )
 
 filegroup(

@@ -13,7 +13,7 @@ go_library(
         "//pkg/internal/apis/certmanager/install:go_default_library",
         "//pkg/internal/apis/certmanager/validation:go_default_library",
         "//pkg/internal/apis/meta/install:go_default_library",
-        "//vendor/k8s.io/apimachinery/pkg/runtime:go_default_library",
+        "@io_k8s_apimachinery//pkg/runtime:go_default_library",
     ],
 )
 

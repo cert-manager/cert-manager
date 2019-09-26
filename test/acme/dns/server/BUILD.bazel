@@ -11,8 +11,8 @@ go_library(
     visibility = ["//visibility:public"],
     deps = [
         "//pkg/logs:go_default_library",
-        "//vendor/github.com/go-logr/logr:go_default_library",
-        "//vendor/github.com/miekg/dns:go_default_library",
+        "@com_github_go_logr_logr//:go_default_library",
+        "@com_github_miekg_dns//:go_default_library",
     ],
 )
 

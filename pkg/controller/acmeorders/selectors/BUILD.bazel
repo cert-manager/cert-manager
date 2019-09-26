@@ -12,8 +12,8 @@ go_library(
     visibility = ["//visibility:public"],
     deps = [
         "//pkg/apis/acme/v1alpha2:go_default_library",
-        "//vendor/github.com/miekg/dns:go_default_library",
-        "//vendor/k8s.io/apimachinery/pkg/apis/meta/v1:go_default_library",
+        "@com_github_miekg_dns//:go_default_library",
+        "@io_k8s_apimachinery//pkg/apis/meta/v1:go_default_library",
     ],
 )
 
@@ -37,6 +37,6 @@ go_test(
     embed = [":go_default_library"],
     deps = [
         "//pkg/apis/acme/v1alpha2:go_default_library",
-        "//vendor/k8s.io/apimachinery/pkg/apis/meta/v1:go_default_library",
+        "@io_k8s_apimachinery//pkg/apis/meta/v1:go_default_library",
     ],
 )

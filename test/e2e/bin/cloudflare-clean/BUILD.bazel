@@ -5,7 +5,7 @@ go_library(
     srcs = ["main.go"],
     importpath = "github.com/jetstack/cert-manager/test/e2e/bin/cloudflare-clean",
     visibility = ["//visibility:private"],
-    deps = ["//vendor/github.com/cloudflare/cloudflare-go:go_default_library"],
+    deps = ["@com_github_cloudflare_cloudflare_go//:go_default_library"],
 )
 
 go_binary(

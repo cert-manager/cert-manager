@@ -28,13 +28,20 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-REPO_ROOT=$(dirname "${BASH_SOURCE}")/..
-
-if [ "$*" != "" ]; then
-  args="$*"
+if [[ -n "${TEST_WORKSPACE:-}" ]]; then # Running inside bazel
+  echo "Validating documentation links..." >&2
+elif ! command -v bazel &> /dev/null; then
+  echo "Install bazel at https://bazel.build" >&2
+  exit 1
 else
-  args="${REPO_ROOT}"
+  (
+    set -o xtrace
+    bazel test --test_output=streamed @com_github_jetstack_cert_manager//hack:verify-links
+  )
+  exit 0
 fi
+
+args="$(pwd)"
 
 mdFiles=$(find "${args}" -name "*.md" | grep -v vendor | grep -v glide)
 

@@ -7,7 +7,7 @@ go_library(
     visibility = ["//visibility:public"],
     deps = [
         "//pkg/acme/webhook/apis/acme/v1alpha1:go_default_library",
-        "//vendor/k8s.io/client-go/rest:go_default_library",
+        "@io_k8s_client_go//rest:go_default_library",
     ],
 )
 

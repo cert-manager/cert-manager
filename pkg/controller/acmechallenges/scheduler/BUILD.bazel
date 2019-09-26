@@ -10,8 +10,8 @@ go_library(
         "//pkg/apis/acme/v1alpha2:go_default_library",
         "//pkg/client/listers/acme/v1alpha2:go_default_library",
         "//pkg/logs:go_default_library",
-        "//vendor/github.com/go-logr/logr:go_default_library",
-        "//vendor/k8s.io/apimachinery/pkg/labels:go_default_library",
+        "@com_github_go_logr_logr//:go_default_library",
+        "@io_k8s_apimachinery//pkg/labels:go_default_library",
     ],
 )
 
@@ -25,8 +25,8 @@ go_test(
         "//pkg/client/informers/externalversions:go_default_library",
         "//pkg/util:go_default_library",
         "//test/unit/gen:go_default_library",
-        "//vendor/k8s.io/apimachinery/pkg/apis/meta/v1:go_default_library",
-        "//vendor/k8s.io/apimachinery/pkg/util/diff:go_default_library",
+        "@io_k8s_apimachinery//pkg/apis/meta/v1:go_default_library",
+        "@io_k8s_apimachinery//pkg/util/diff:go_default_library",
     ],
 )
 

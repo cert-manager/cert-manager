@@ -1,5 +1,4 @@
-#!/bin/bash
-
+#!/usr/bin/env bash
 # Copyright 2019 The Jetstack cert-manager contributors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,18 +17,34 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-# This script should be run via `bazel run //hack:update-reference-docs`
-REPO_ROOT=${BUILD_WORKSPACE_DIRECTORY:-"$(cd "$(dirname "$0")" && pwd -P)"/..}
-SCRIPT_RUNFILES="${runfiles:-$(pwd)}"
-cd "${REPO_ROOT}"
+if [[ -n "${BUILD_WORKSPACE_DIRECTORY:-}" ]]; then # Running inside bazel
+  echo "Regenerate API reference documentation..." >&2
+elif ! command -v bazel &>/dev/null; then
+  echo "Install bazel at https://bazel.build" >&2
+  exit 1
+else
+  (
+    set -o xtrace
+    bazel run @com_github_jetstack_cert_manager//hack:update-reference-docs
+  )
+  exit 0
+fi
 
+generated_tarball=$(realpath "$1")
+
+cd "$BUILD_WORKSPACE_DIRECTORY"
+output_path="docs/generated/reference/output/reference/api-docs"
 # The final directory path to store the generated output data
-OUTPUT_DIR="$(cd "${REPO_ROOT}/docs/generated/reference/output/reference/api-docs" 2> /dev/null && pwd -P)"
+output_dir="$BUILD_WORKSPACE_DIRECTORY/$output_path"
 
-TMP_OUTPUT="$(mktemp -d)"
+# create a temporary directory to extract the generated reference docs tarball to
+tmp_output="$(mktemp -d)"
+# extract the generated docs tarball
+tar -C "${tmp_output}" -xf "$generated_tarball"
 
-tar -C "${TMP_OUTPUT}" -xf "${SCRIPT_RUNFILES}/docs/generated/reference/generate/generated.tar.gz"
+# clean up the output directory
+rm -Rf "${output_dir}"
 
-rm -Rf "${OUTPUT_DIR}"
-mkdir -p "${OUTPUT_DIR}"
-mv "${TMP_OUTPUT}"/* "${OUTPUT_DIR}"
+# recreate the output directory and move extracted content to it
+mkdir -p "${output_dir}"
+mv "${tmp_output}"/* "${output_dir}"

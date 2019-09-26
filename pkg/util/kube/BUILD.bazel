@@ -13,10 +13,10 @@ go_library(
         "//pkg/util:go_default_library",
         "//pkg/util/errors:go_default_library",
         "//pkg/util/pki:go_default_library",
-        "//vendor/k8s.io/api/core/v1:go_default_library",
-        "//vendor/k8s.io/client-go/listers/core/v1:go_default_library",
-        "//vendor/k8s.io/client-go/rest:go_default_library",
-        "//vendor/k8s.io/client-go/tools/clientcmd:go_default_library",
+        "@io_k8s_api//core/v1:go_default_library",
+        "@io_k8s_client_go//listers/core/v1:go_default_library",
+        "@io_k8s_client_go//rest:go_default_library",
+        "@io_k8s_client_go//tools/clientcmd:go_default_library",
     ],
 )
 
