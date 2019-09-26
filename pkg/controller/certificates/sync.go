@@ -21,10 +21,8 @@ import (
 	"crypto/ecdsa"
 	"crypto/rsa"
 	"crypto/x509"
-	"encoding/json"
 	"encoding/pem"
 	"fmt"
-	"hash/fnv"
 	"reflect"
 	"strings"
 	"time"
@@ -188,7 +186,7 @@ func (c *certificateRequestManager) processCertificate(ctx context.Context, crt 
 	// The certificate request name is a product of the certificate's spec,
 	// which makes it unique and predictable.
 	// First we compute what we expect it to be.
-	expectedReqName, err := expectedCertificateRequestName(crt)
+	expectedReqName, err := apiutil.ComputeCertificateRequestName(crt)
 	if err != nil {
 		return fmt.Errorf("internal error hashing certificate spec: %v", err)
 	}
@@ -582,24 +580,6 @@ func (c *certificateRequestManager) certificateRequiresIssuance(ctx context.Cont
 	}
 	needsRenew := c.certificateNeedsRenew(ctx, cert, crt)
 	return needsRenew, []string{"Certificate is expiring soon"}, nil
-}
-
-func expectedCertificateRequestName(crt *cmapi.Certificate) (string, error) {
-	crt = crt.DeepCopy()
-	specBytes, err := json.Marshal(crt.Spec)
-	if err != nil {
-		return "", err
-	}
-
-	hashF := fnv.New32()
-	_, err = hashF.Write(specBytes)
-	if err != nil {
-		return "", err
-	}
-
-	// shorten the cert name to 52 chars to ensure the total length of the name
-	// is less than or equal to 64 characters
-	return fmt.Sprintf("%.52s-%d", crt.Name, hashF.Sum32()), nil
 }
 
 type generateCSRFn func(*cmapi.Certificate, []byte) ([]byte, error)

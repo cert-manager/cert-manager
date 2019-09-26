@@ -31,6 +31,7 @@ import (
 	coretesting "k8s.io/client-go/testing"
 	fakeclock "k8s.io/utils/clock/testing"
 
+	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	testpkg "github.com/jetstack/cert-manager/pkg/controller/test"
@@ -81,7 +82,7 @@ func mustCreateCryptoBundle(t *testing.T, crt *cmapi.Certificate) cryptoBundle {
 }
 
 func createCryptoBundle(crt *cmapi.Certificate) (*cryptoBundle, error) {
-	reqName, err := expectedCertificateRequestName(crt)
+	reqName, err := apiutil.ComputeCertificateRequestName(crt)
 	if err != nil {
 		return nil, err
 	}

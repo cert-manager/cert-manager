@@ -8,6 +8,7 @@ go_library(
         "helper.go",
         "kubectl.go",
         "pod_start.go",
+        "secret.go",
     ],
     importpath = "github.com/jetstack/cert-manager/test/e2e/framework/helper",
     tags = ["manual"],

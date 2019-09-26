@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package selfsigned
+package ca
 
 import (
 	. "github.com/onsi/ginkgo"
@@ -36,7 +36,7 @@ var _ = framework.ConformanceDescribe("Certificates", func() {
 })
 
 func createCAIssuer(f *framework.Framework) cmmeta.ObjectReference {
-	By("Creating a SelfSigned issuer")
+	By("Creating a CA issuer")
 	rootCertSecret, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Create(newSigningKeypairSecret("root-cert"))
 	Expect(err).NotTo(HaveOccurred(), "failed to create root signing keypair secret")
 

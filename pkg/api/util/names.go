@@ -14,13 +14,30 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package conformance
+package util
 
 import (
-	_ "github.com/jetstack/cert-manager/test/e2e/suite/conformance/certificates/acme"
-	_ "github.com/jetstack/cert-manager/test/e2e/suite/conformance/certificates/ca"
-	_ "github.com/jetstack/cert-manager/test/e2e/suite/conformance/certificates/selfsigned"
-	_ "github.com/jetstack/cert-manager/test/e2e/suite/conformance/certificates/vault"
-	_ "github.com/jetstack/cert-manager/test/e2e/suite/conformance/certificates/venafi"
-	_ "github.com/jetstack/cert-manager/test/e2e/suite/conformance/rbac"
+	"encoding/json"
+	"fmt"
+	"hash/fnv"
+
+	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 )
+
+func ComputeCertificateRequestName(crt *cmapi.Certificate) (string, error) {
+	crt = crt.DeepCopy()
+	specBytes, err := json.Marshal(crt.Spec)
+	if err != nil {
+		return "", err
+	}
+
+	hashF := fnv.New32()
+	_, err = hashF.Write(specBytes)
+	if err != nil {
+		return "", err
+	}
+
+	// shorten the cert name to 52 chars to ensure the total length of the name
+	// is less than or equal to 64 characters
+	return fmt.Sprintf("%.52s-%d", crt.Name, hashF.Sum32()), nil
+}

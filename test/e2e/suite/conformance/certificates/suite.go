@@ -23,11 +23,14 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	"github.com/jetstack/cert-manager/pkg/util"
+	"github.com/jetstack/cert-manager/pkg/util/pki"
 	"github.com/jetstack/cert-manager/test/e2e/framework"
 )
 
@@ -143,6 +146,8 @@ func (s *Suite) Define() {
 		})
 
 		It("should issue an ECDSA, defaulted certificate for a single commonName and distinct dnsName", func() {
+			s.checkFeatures(ECDSAFeature)
+
 			testCertificate := &cmapi.Certificate{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "testcert",
@@ -187,6 +192,125 @@ func (s *Suite) Define() {
 			By("Waiting for the Certificate to be issued...")
 			err = f.Helper().WaitCertificateIssuedValid(f.Namespace.Name, "testcert", time.Minute*5)
 			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("should issue a certificate that defines a commonName and sets a duration", func() {
+			s.checkFeatures(DurationFeature)
+
+			testCertificate := &cmapi.Certificate{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "testcert",
+					Namespace: f.Namespace.Name,
+				},
+				Spec: cmapi.CertificateSpec{
+					SecretName: "testcert-tls",
+					CommonName: s.newDomain(),
+					IssuerRef:  issuerRef,
+					Duration: &metav1.Duration{
+						Duration: time.Hour * 896,
+					},
+				},
+			}
+			By("Creating a Certificate")
+			err := f.CRClient.Create(ctx, testCertificate)
+			Expect(err).NotTo(HaveOccurred())
+
+			By("Waiting for the Certificate to be issued...")
+			err = f.Helper().WaitCertificateIssuedValid(f.Namespace.Name, "testcert", time.Minute*5)
+			Expect(err).NotTo(HaveOccurred())
+
+			// We set a weird time here as the duration with should never be used as
+			// a default by an issuer. This lets us test issuers are using our given
+			// duration.
+			// We set a 30 second buffer time here since Vault issues certificates
+			// with an extra 30 seconds on its duration.
+			f.CertificateDurationValid(testCertificate, time.Hour*896, 30*time.Second)
+		})
+
+		It("should issue a certificate which has a wildcard DNS name defined", func() {
+			s.checkFeatures(WildcardsFeature)
+
+			testCertificate := &cmapi.Certificate{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "testcert",
+					Namespace: f.Namespace.Name,
+				},
+				Spec: cmapi.CertificateSpec{
+					SecretName: "testcert-tls",
+					CommonName: s.newDomain(),
+					IssuerRef:  issuerRef,
+					DNSNames:   []string{"foo." + s.newDomain()},
+				},
+			}
+			By("Creating a Certificate")
+			err := f.CRClient.Create(ctx, testCertificate)
+			Expect(err).NotTo(HaveOccurred())
+
+			By("Waiting for the Certificate to be issued...")
+			err = f.Helper().WaitCertificateIssuedValid(f.Namespace.Name, "testcert", time.Minute*5)
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("should issue another certificate with the same private key if the existing certificate and CertificateRequest are deleted", func() {
+			s.checkFeatures(ReusePrivateKeyFeature)
+
+			testCertificate := &cmapi.Certificate{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "testcert",
+					Namespace: f.Namespace.Name,
+				},
+				Spec: cmapi.CertificateSpec{
+					SecretName: "testcert-tls",
+					CommonName: s.newDomain(),
+					DNSNames:   []string{s.newDomain()},
+					IssuerRef:  issuerRef,
+				},
+			}
+			By("Creating a Certificate")
+			err := f.CRClient.Create(ctx, testCertificate)
+			Expect(err).NotTo(HaveOccurred())
+
+			By("Waiting for the Certificate to be issued...")
+			err = f.Helper().WaitCertificateIssuedValid(f.Namespace.Name, "testcert", time.Minute*5)
+			Expect(err).NotTo(HaveOccurred())
+
+			By("Deleting existing certificate data in Secret and owned CertificateRequest")
+			expectedReqName, err := apiutil.ComputeCertificateRequestName(testCertificate)
+			Expect(err).NotTo(HaveOccurred(), "failed to generate expected name for created Certificate")
+
+			Expect(f.CertManagerClientSet.CertmanagerV1alpha2().
+				CertificateRequests(f.Namespace.Name).Delete(expectedReqName, &metav1.DeleteOptions{})).
+				NotTo(HaveOccurred(), "failed to delete owned CertificateRequest")
+
+			sec, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).
+				Get(testCertificate.Spec.SecretName, metav1.GetOptions{})
+			Expect(err).NotTo(HaveOccurred(), "failed to get secret containing signed certificate key pair data")
+
+			sec = sec.DeepCopy()
+			crtPEM1 := sec.Data[corev1.TLSCertKey]
+			crt1, err := pki.DecodeX509CertificateBytes(crtPEM1)
+			Expect(err).NotTo(HaveOccurred(), "failed to get decode first signed certificate data")
+
+			sec.Data[corev1.TLSCertKey] = []byte{}
+
+			_, err = f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Update(sec)
+			Expect(err).NotTo(HaveOccurred(), "failed to update secret by deleting the signed certificate data")
+
+			By("Waiting for the Certificate to re-issue a certificate")
+			sec, err = f.Helper().WaitForSecretCertificateData(f.Namespace.Name, sec.Name, time.Minute*5)
+			Expect(err).NotTo(HaveOccurred(), "failed to wait for secret to have a valid 2nd certificate")
+
+			crtPEM2 := sec.Data[corev1.TLSCertKey]
+			crt2, err := pki.DecodeX509CertificateBytes(crtPEM2)
+			Expect(err).NotTo(HaveOccurred(), "failed to get decode second signed certificate data")
+
+			By("Ensuing both certificates are signed by same private key")
+			match, err := pki.PublicKeysEqual(crt1.PublicKey, crt2.PublicKey)
+			Expect(err).NotTo(HaveOccurred(), "failed to check public keys of both signed certificates")
+
+			if !match {
+				Fail("Both signed certificates not signed by same private key")
+			}
 		})
 	})
 }

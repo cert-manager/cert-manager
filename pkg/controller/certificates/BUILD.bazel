@@ -39,6 +39,25 @@ go_library(
     ],
 )
 
+go_test(
+    name = "go_default_test",
+    srcs = ["sync_test.go"],
+    embed = [":go_default_library"],
+    deps = [
+        "//pkg/api/util:go_default_library",
+        "//pkg/apis/certmanager/v1alpha2:go_default_library",
+        "//pkg/apis/meta/v1:go_default_library",
+        "//pkg/controller/test:go_default_library",
+        "//pkg/util/pki:go_default_library",
+        "//test/unit/gen:go_default_library",
+        "@io_k8s_api//core/v1:go_default_library",
+        "@io_k8s_apimachinery//pkg/apis/meta/v1:go_default_library",
+        "@io_k8s_apimachinery//pkg/runtime:go_default_library",
+        "@io_k8s_client_go//testing:go_default_library",
+        "@io_k8s_utils//clock/testing:go_default_library",
+    ],
+)
+
 filegroup(
     name = "package-srcs",
     srcs = glob(["**"]),
@@ -51,22 +70,4 @@ filegroup(
     srcs = [":package-srcs"],
     tags = ["automanaged"],
     visibility = ["//visibility:public"],
-)
-
-go_test(
-    name = "go_default_test",
-    srcs = ["sync_test.go"],
-    embed = [":go_default_library"],
-    deps = [
-        "//pkg/apis/certmanager/v1alpha2:go_default_library",
-        "//pkg/apis/meta/v1:go_default_library",
-        "//pkg/controller/test:go_default_library",
-        "//pkg/util/pki:go_default_library",
-        "//test/unit/gen:go_default_library",
-        "@io_k8s_api//core/v1:go_default_library",
-        "@io_k8s_apimachinery//pkg/apis/meta/v1:go_default_library",
-        "@io_k8s_apimachinery//pkg/runtime:go_default_library",
-        "@io_k8s_client_go//testing:go_default_library",
-        "@io_k8s_utils//clock/testing:go_default_library",
-    ],
 )
