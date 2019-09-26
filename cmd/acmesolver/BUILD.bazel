@@ -1,5 +1,5 @@
 load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
-load("//hack:def.bzl", "image")
+load("//hack/build:docker.bzl", "image")
 
 image(
     name = "image",
