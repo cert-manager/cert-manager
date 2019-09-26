@@ -26,12 +26,23 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-REPO_ROOT=$(dirname "${BASH_SOURCE}")/..
+if [[ -n "${TEST_WORKSPACE:-}" ]]; then # Running inside bazel
+  echo "Validating all scripts set '-o errexit'" >&2
+elif ! command -v bazel &> /dev/null; then
+  echo "Install bazel at https://bazel.build" >&2
+  exit 1
+else
+  (
+    set -o xtrace
+    bazel test --test_output=streamed @com_github_jetstack_cert_manager//hack:verify-errexit
+  )
+  exit 0
+fi
 
 if [ "$*" != "" ]; then
   args="$*"
 else
-  args=$(ls "$REPO_ROOT" | grep -v vendor | grep -v glide | grep -v 'bazel-' )
+  args=$(ls "$(pwd)" | grep -v 'bazel-' | grep -v 'external/' )
 fi
 
 # Gather the list of files that appear to be shell scripts.

@@ -15,7 +15,7 @@ sh_test(
     name = "verify-errexit",
     srcs = ["verify-errexit.sh"],
     data = [
-        "//:all-srcs",
+        "@//:all-srcs",
     ],
     tags = ["lint"],
 )
