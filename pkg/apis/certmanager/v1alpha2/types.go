@@ -20,6 +20,7 @@ package v1alpha2
 const (
 	AltNamesAnnotationKey    = "cert-manager.io/alt-names"
 	IPSANAnnotationKey       = "cert-manager.io/ip-sans"
+	URISANAnnotationKey      = "cert-manager.io/uri-sans"
 	CommonNameAnnotationKey  = "cert-manager.io/common-name"
 	IssuerNameAnnotationKey  = "cert-manager.io/issuer-name"
 	IssuerKindAnnotationKey  = "cert-manager.io/issuer-kind"

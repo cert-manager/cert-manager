@@ -790,6 +790,7 @@ func setSecretValues(ctx context.Context, crt *cmapi.Certificate, s *corev1.Secr
 		delete(s.Annotations, cmapi.CommonNameAnnotationKey)
 		delete(s.Annotations, cmapi.AltNamesAnnotationKey)
 		delete(s.Annotations, cmapi.IPSANAnnotationKey)
+		delete(s.Annotations, cmapi.URISANAnnotationKey)
 	} else {
 		x509Cert, err := pki.DecodeX509CertificateBytes(data.cert)
 		// TODO: handle InvalidData here?
@@ -797,11 +798,10 @@ func setSecretValues(ctx context.Context, crt *cmapi.Certificate, s *corev1.Secr
 			return err
 		}
 
-		if len(x509Cert.Subject.CommonName) > 0 {
-			s.Annotations[cmapi.CommonNameAnnotationKey] = x509Cert.Subject.CommonName
-		}
+		s.Annotations[cmapi.CommonNameAnnotationKey] = x509Cert.Subject.CommonName
 		s.Annotations[cmapi.AltNamesAnnotationKey] = strings.Join(x509Cert.DNSNames, ",")
 		s.Annotations[cmapi.IPSANAnnotationKey] = strings.Join(pki.IPAddressesToString(x509Cert.IPAddresses), ",")
+		s.Annotations[cmapi.URISANAnnotationKey] = strings.Join(pki.URLsToString(x509Cert.URIs), ",")
 	}
 
 	return nil

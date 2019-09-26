@@ -141,7 +141,7 @@ func (h *Helper) ValidateIssuedCertificate(certificate *v1alpha2.Certificate, ro
 
 	// check the provided certificate is valid
 	expectedOrganization := pki.OrganizationForCertificate(certificate)
-	expectedDNSNames := pki.DNSNamesForCertificate(certificate)
+	expectedDNSNames := certificate.Spec.DNSNames
 	uris, err := pki.URIsForCertificate(certificate)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse URIs: %s", err)

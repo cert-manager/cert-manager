@@ -35,21 +35,6 @@ import (
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 )
 
-// DNSNamesForCertificate returns the DNS names that should be used for the
-// given Certificate resource, by inspecting the CommonName and DNSNames fields.
-func DNSNamesForCertificate(crt *v1alpha2.Certificate) []string {
-	if len(crt.Spec.DNSNames) == 0 {
-		if crt.Spec.CommonName == "" {
-			return []string{}
-		}
-		return []string{crt.Spec.CommonName}
-	}
-	if crt.Spec.CommonName != "" {
-		return removeDuplicates(append([]string{crt.Spec.CommonName}, crt.Spec.DNSNames...))
-	}
-	return crt.Spec.DNSNames
-}
-
 func IPAddressesForCertificate(crt *v1alpha2.Certificate) []net.IP {
 	var ipAddresses []net.IP
 	var ip net.IP
@@ -95,9 +80,11 @@ func IPAddressesToString(ipAddresses []net.IP) []string {
 func URLsToString(uris []*url.URL) []string {
 	var uriStrs []string
 	for _, uri := range uris {
-		if uri != nil {
-			uriStrs = append(uriStrs, uri.String())
+		if uri == nil {
+			panic("provided uri to string is nil")
 		}
+
+		uriStrs = append(uriStrs, uri.String())
 	}
 
 	return uriStrs
@@ -161,7 +148,7 @@ func buildUsages(usages []v1alpha2.KeyUsage, isCA bool) (ku x509.KeyUsage, eku [
 // to the x509.CreateCertificateRequest function.
 func GenerateCSR(crt *v1alpha2.Certificate) (*x509.CertificateRequest, error) {
 	commonName := crt.Spec.CommonName
-	dnsNames := DNSNamesForCertificate(crt)
+	dnsNames := crt.Spec.DNSNames
 	iPAddresses := IPAddressesForCertificate(crt)
 	organization := OrganizationForCertificate(crt)
 	uriNames, err := URIsForCertificate(crt)
@@ -200,7 +187,7 @@ func GenerateCSR(crt *v1alpha2.Certificate) (*x509.CertificateRequest, error) {
 // The PublicKey field must be populated by the caller.
 func GenerateTemplate(crt *v1alpha2.Certificate) (*x509.Certificate, error) {
 	commonName := crt.Spec.CommonName
-	dnsNames := DNSNamesForCertificate(crt)
+	dnsNames := crt.Spec.DNSNames
 	ipAddresses := IPAddressesForCertificate(crt)
 	organization := OrganizationForCertificate(crt)
 	keyUsages, extKeyUsages, err := buildUsages(crt.Spec.Usages, crt.Spec.IsCA)

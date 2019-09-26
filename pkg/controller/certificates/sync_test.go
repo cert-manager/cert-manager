@@ -692,6 +692,8 @@ func TestProcessCertificate(t *testing.T) {
 								cmapi.IssuerNameAnnotationKey: exampleBundle1.certificate.Spec.IssuerRef.Name,
 								cmapi.IPSANAnnotationKey:      "",
 								cmapi.AltNamesAnnotationKey:   "example.com",
+								cmapi.CommonNameAnnotationKey: "",
+								cmapi.URISANAnnotationKey:     "",
 							},
 						},
 						Data: map[string][]byte{
@@ -730,6 +732,8 @@ func TestProcessCertificate(t *testing.T) {
 								cmapi.IssuerNameAnnotationKey: exampleBundle1.certificate.Spec.IssuerRef.Name,
 								cmapi.IPSANAnnotationKey:      "",
 								cmapi.AltNamesAnnotationKey:   "example.com",
+								cmapi.CommonNameAnnotationKey: "",
+								cmapi.URISANAnnotationKey:     "",
 							},
 						},
 						Data: map[string][]byte{
@@ -785,6 +789,8 @@ func TestProcessCertificate(t *testing.T) {
 									cmapi.IssuerNameAnnotationKey: exampleBundle1.certificate.Spec.IssuerRef.Name,
 									cmapi.IPSANAnnotationKey:      "",
 									cmapi.AltNamesAnnotationKey:   "example.com",
+									cmapi.CommonNameAnnotationKey: "",
+									cmapi.URISANAnnotationKey:     "",
 								},
 							},
 							Data: map[string][]byte{
@@ -841,6 +847,8 @@ func TestProcessCertificate(t *testing.T) {
 									cmapi.IssuerNameAnnotationKey: exampleBundle1.certificate.Spec.IssuerRef.Name,
 									cmapi.IPSANAnnotationKey:      "",
 									cmapi.AltNamesAnnotationKey:   "example.com",
+									cmapi.CommonNameAnnotationKey: "",
+									cmapi.URISANAnnotationKey:     "",
 								},
 							},
 							Data: map[string][]byte{
@@ -870,6 +878,8 @@ func TestProcessCertificate(t *testing.T) {
 								cmapi.IssuerNameAnnotationKey: exampleBundle1.certificate.Spec.IssuerRef.Name,
 								cmapi.IPSANAnnotationKey:      "",
 								cmapi.AltNamesAnnotationKey:   "example.com",
+								cmapi.CommonNameAnnotationKey: "",
+								cmapi.URISANAnnotationKey:     "",
 							},
 						},
 						Data: map[string][]byte{
@@ -901,6 +911,8 @@ func TestProcessCertificate(t *testing.T) {
 								cmapi.IssuerNameAnnotationKey: exampleBundle1.certificate.Spec.IssuerRef.Name,
 								cmapi.IPSANAnnotationKey:      "",
 								cmapi.AltNamesAnnotationKey:   "example.com",
+								cmapi.CommonNameAnnotationKey: "",
+								cmapi.URISANAnnotationKey:     "",
 							},
 						},
 						Data: map[string][]byte{
@@ -930,6 +942,8 @@ func TestProcessCertificate(t *testing.T) {
 									cmapi.IssuerNameAnnotationKey: exampleBundle1.certificate.Spec.IssuerRef.Name,
 									cmapi.IPSANAnnotationKey:      "",
 									cmapi.AltNamesAnnotationKey:   "example.com",
+									cmapi.CommonNameAnnotationKey: "",
+									cmapi.URISANAnnotationKey:     "",
 								},
 							},
 							Data: map[string][]byte{
@@ -959,6 +973,8 @@ func TestProcessCertificate(t *testing.T) {
 								cmapi.IssuerNameAnnotationKey: exampleBundle1.certificate.Spec.IssuerRef.Name,
 								cmapi.IPSANAnnotationKey:      "",
 								cmapi.AltNamesAnnotationKey:   "example.com",
+								cmapi.CommonNameAnnotationKey: "",
+								cmapi.URISANAnnotationKey:     "",
 							},
 						},
 						Data: map[string][]byte{
@@ -1001,6 +1017,8 @@ func TestProcessCertificate(t *testing.T) {
 								cmapi.IssuerNameAnnotationKey: exampleBundle1.certificate.Spec.IssuerRef.Name,
 								cmapi.IPSANAnnotationKey:      "",
 								cmapi.AltNamesAnnotationKey:   "example.com",
+								cmapi.CommonNameAnnotationKey: "",
+								cmapi.URISANAnnotationKey:     "",
 							},
 						},
 						Data: map[string][]byte{
@@ -1195,6 +1213,8 @@ func TestTemporaryCertificateEnabled(t *testing.T) {
 									cmapi.IssuerNameAnnotationKey: exampleBundle1.certificate.Spec.IssuerRef.Name,
 									cmapi.IPSANAnnotationKey:      "",
 									cmapi.AltNamesAnnotationKey:   "example.com",
+									cmapi.CommonNameAnnotationKey: "",
+									cmapi.URISANAnnotationKey:     "",
 								},
 							},
 							Data: map[string][]byte{
@@ -1251,6 +1271,8 @@ func TestTemporaryCertificateEnabled(t *testing.T) {
 									cmapi.IssuerNameAnnotationKey: exampleBundle1.certificate.Spec.IssuerRef.Name,
 									cmapi.IPSANAnnotationKey:      "",
 									cmapi.AltNamesAnnotationKey:   "example.com",
+									cmapi.CommonNameAnnotationKey: "",
+									cmapi.URISANAnnotationKey:     "",
 								},
 							},
 							Data: map[string][]byte{
@@ -1307,6 +1329,8 @@ func TestTemporaryCertificateEnabled(t *testing.T) {
 									cmapi.IssuerNameAnnotationKey: exampleBundle1.certificate.Spec.IssuerRef.Name,
 									cmapi.IPSANAnnotationKey:      "",
 									cmapi.AltNamesAnnotationKey:   "example.com",
+									cmapi.CommonNameAnnotationKey: "",
+									cmapi.URISANAnnotationKey:     "",
 								},
 							},
 							Data: map[string][]byte{
@@ -1336,6 +1360,8 @@ func TestTemporaryCertificateEnabled(t *testing.T) {
 								cmapi.IssuerNameAnnotationKey: exampleBundle1.certificate.Spec.IssuerRef.Name,
 								cmapi.IPSANAnnotationKey:      "",
 								cmapi.AltNamesAnnotationKey:   "example.com",
+								cmapi.CommonNameAnnotationKey: "",
+								cmapi.URISANAnnotationKey:     "",
 							},
 						},
 						Data: map[string][]byte{
@@ -1365,6 +1391,8 @@ func TestTemporaryCertificateEnabled(t *testing.T) {
 									cmapi.IssuerNameAnnotationKey: exampleBundle1.certificate.Spec.IssuerRef.Name,
 									cmapi.IPSANAnnotationKey:      "",
 									cmapi.AltNamesAnnotationKey:   "example.com",
+									cmapi.CommonNameAnnotationKey: "",
+									cmapi.URISANAnnotationKey:     "",
 								},
 							},
 							Data: map[string][]byte{
@@ -1394,6 +1422,8 @@ func TestTemporaryCertificateEnabled(t *testing.T) {
 								cmapi.IssuerNameAnnotationKey: exampleBundle1.certificate.Spec.IssuerRef.Name,
 								cmapi.IPSANAnnotationKey:      "",
 								cmapi.AltNamesAnnotationKey:   "example.com",
+								cmapi.CommonNameAnnotationKey: "",
+								cmapi.URISANAnnotationKey:     "",
 							},
 						},
 						Data: map[string][]byte{
@@ -1423,6 +1453,8 @@ func TestTemporaryCertificateEnabled(t *testing.T) {
 									cmapi.IssuerNameAnnotationKey: exampleBundle1.certificate.Spec.IssuerRef.Name,
 									cmapi.IPSANAnnotationKey:      "",
 									cmapi.AltNamesAnnotationKey:   "example.com",
+									cmapi.CommonNameAnnotationKey: "",
+									cmapi.URISANAnnotationKey:     "",
 								},
 							},
 							Data: map[string][]byte{
@@ -1452,6 +1484,8 @@ func TestTemporaryCertificateEnabled(t *testing.T) {
 								cmapi.IssuerNameAnnotationKey: exampleBundle1.certificate.Spec.IssuerRef.Name,
 								cmapi.IPSANAnnotationKey:      "",
 								cmapi.AltNamesAnnotationKey:   "example.com",
+								cmapi.CommonNameAnnotationKey: "",
+								cmapi.URISANAnnotationKey:     "",
 							},
 						},
 						Data: map[string][]byte{
@@ -1484,6 +1518,8 @@ func TestTemporaryCertificateEnabled(t *testing.T) {
 									cmapi.IssuerNameAnnotationKey: exampleBundle1.certificate.Spec.IssuerRef.Name,
 									cmapi.IPSANAnnotationKey:      "",
 									cmapi.AltNamesAnnotationKey:   "example.com",
+									cmapi.CommonNameAnnotationKey: "",
+									cmapi.URISANAnnotationKey:     "",
 								},
 							},
 							Data: map[string][]byte{
@@ -1538,6 +1574,8 @@ func TestTemporaryCertificateEnabled(t *testing.T) {
 									cmapi.IssuerNameAnnotationKey: exampleBundle1.certificate.Spec.IssuerRef.Name,
 									cmapi.IPSANAnnotationKey:      "",
 									cmapi.AltNamesAnnotationKey:   "example.com",
+									cmapi.CommonNameAnnotationKey: "",
+									cmapi.URISANAnnotationKey:     "",
 								},
 							},
 							Data: map[string][]byte{

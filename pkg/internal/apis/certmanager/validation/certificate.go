@@ -39,7 +39,8 @@ func ValidateCertificateSpec(crt *v1alpha2.CertificateSpec, fldPath *field.Path)
 	el = append(el, validateIssuerRef(crt.IssuerRef, fldPath)...)
 
 	if len(crt.CommonName) == 0 && len(crt.DNSNames) == 0 && len(crt.URISANs) == 0 {
-		el = append(el, field.Required(fldPath.Child("commonName,dnsNames,uriSANs"), "at least one of commonName, dnsNames, or uriSANs must be set"))
+		el = append(el, field.Required(fldPath.Child("commonName", "dnsNames", "uriSANs"),
+			"at least one of commonName, dnsNames, or uriSANs must be set"))
 	}
 
 	// if a common name has been specified, ensure it is no longer than 64 chars

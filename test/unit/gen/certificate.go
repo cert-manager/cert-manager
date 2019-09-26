@@ -64,6 +64,18 @@ func SetCertificateCommonName(commonName string) CertificateModifier {
 	}
 }
 
+func SetCertificateIPs(ips ...string) CertificateModifier {
+	return func(crt *v1alpha2.Certificate) {
+		crt.Spec.IPAddresses = ips
+	}
+}
+
+func SetCertificateURIs(uris ...string) CertificateModifier {
+	return func(crt *v1alpha2.Certificate) {
+		crt.Spec.URISANs = uris
+	}
+}
+
 func SetCertificateIsCA(isCA bool) CertificateModifier {
 	return func(crt *v1alpha2.Certificate) {
 		crt.Spec.IsCA = isCA

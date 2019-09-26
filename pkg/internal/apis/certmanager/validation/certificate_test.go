@@ -114,7 +114,7 @@ func TestValidateCertificate(t *testing.T) {
 				field.Required(fldPath.Child("secretName"), "must be specified"),
 			},
 		},
-		"certificate with no domains or URIs": {
+		"certificate with no domains, URIs or common name": {
 			cfg: &v1alpha2.Certificate{
 				Spec: v1alpha2.CertificateSpec{
 					SecretName: "abc",
@@ -122,7 +122,7 @@ func TestValidateCertificate(t *testing.T) {
 				},
 			},
 			errs: []*field.Error{
-				field.Required(fldPath.Child("commonName,dnsNames,uriSANs"), "at least one of commonName, dnsNames, or uriSANs must be set"),
+				field.Required(fldPath.Child("commonName", "dnsNames", "uriSANs"), "at least one of commonName, dnsNames, or uriSANs must be set"),
 			},
 		},
 		"certificate with no issuerRef": {
@@ -410,6 +410,17 @@ func TestValidateCertificate(t *testing.T) {
 			},
 			errs: []*field.Error{
 				field.Invalid(fldPath.Child("usages").Index(0), v1alpha2.KeyUsage("nonexistant"), "unknown keyusage"),
+			},
+		},
+		"valid certificate with only URI SAN name": {
+			cfg: &v1alpha2.Certificate{
+				Spec: v1alpha2.CertificateSpec{
+					SecretName: "abc",
+					IssuerRef:  validIssuerRef,
+					URISANs: []string{
+						"foo.bar",
+					},
+				},
 			},
 		},
 	}

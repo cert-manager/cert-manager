@@ -83,6 +83,7 @@ func certificateMatchesSpec(crt *v1alpha2.Certificate, key crypto.Signer, cert *
 	// TODO: add checks for IsCA field
 
 	// check if the private key is the corresponding pair to the certificate
+
 	matches, err := pki.PublicKeyMatchesCertificate(key.Public(), cert)
 	if err != nil {
 		errs = append(errs, err.Error())
@@ -90,21 +91,18 @@ func certificateMatchesSpec(crt *v1alpha2.Certificate, key crypto.Signer, cert *
 		errs = append(errs, fmt.Sprintf("Certificate private key does not match certificate"))
 	}
 
-	// If CN is set, and the user didn’t specify it, ensure that the CN is one of the dnsNames
-	// validate the common name is correct
+	// If CN is set on the resource then it should exist on the certificate as
+	// the Common Name or a DNS Name
 	expectedCN := crt.Spec.CommonName
-	if len(expectedCN) == 0 && len(cert.Subject.CommonName) > 0 {
-		if !util.Contains(cert.DNSNames, cert.Subject.CommonName) {
-			errs = append(errs,
-				fmt.Sprintf("Common name not set on Certificate, but the common name on the TLS certificate matches no DNS names: %q", cert.Subject.CommonName))
-		}
-	} else if expectedCN != cert.Subject.CommonName {
-		errs = append(errs, fmt.Sprintf("Common name on TLS certificate not up to date: %q", cert.Subject.CommonName))
+	gotCN := append(cert.DNSNames, cert.Subject.CommonName)
+	if !util.Contains(gotCN, expectedCN) {
+		errs = append(errs, fmt.Sprintf("Common Name on TLS certificate not up to date (%q): %s",
+			expectedCN, gotCN))
 	}
 
 	// validate the dns names are correct
-	expectedDNSNames := pki.DNSNamesForCertificate(crt)
-	if !util.EqualUnsorted(cert.DNSNames, expectedDNSNames) {
+	expectedDNSNames := crt.Spec.DNSNames
+	if !util.Subset(cert.DNSNames, expectedDNSNames) {
 		errs = append(errs, fmt.Sprintf("DNS names on TLS certificate not up to date: %q", cert.DNSNames))
 	}
 
