@@ -56,13 +56,13 @@ go_test(
 filegroup(
     name = "package-srcs",
     srcs = glob(["**"]),
-    visibility = ["//visibility:private"],
     tags = ["automanaged"],
+    visibility = ["//visibility:private"],
 )
 
 filegroup(
     name = "all-srcs",
     srcs = [":package-srcs"],
-    visibility = ["//visibility:public"],
     tags = ["automanaged"],
+    visibility = ["//visibility:public"],
 )
