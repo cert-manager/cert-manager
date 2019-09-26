@@ -5,7 +5,7 @@ package(default_visibility = ["//visibility:public"])
 py_test(
     name = "verify-boilerplate",
     srcs = ["verify_boilerplate.py"],
-    data = ["//:all-srcs"],
+    data = ["@//:all-srcs"],
     main = "verify_boilerplate.py",
     python_version = "PY3",
     tags = ["lint"],
@@ -276,8 +276,8 @@ sh_test(
     name = "verify-crds",
     srcs = ["verify-crds.sh"],
     data = [
-        "//deploy/manifests:00-crds.yaml",
-        "//deploy/manifests:crds.yaml.generated",
+        "@//deploy/manifests:00-crds.yaml",
+        "@//deploy/manifests:crds.yaml.generated",
     ],
 )
 
