@@ -32,27 +32,27 @@ import (
 )
 
 var _ = framework.ConformanceDescribe("Certificates", func() {
-	provisioner := new(vaultProvisioner)
+	provisioner := new(vaultAppRoleProvisioner)
 
 	(&certificates.Suite{
-		Name:             "Vault",
+		Name:             "VaultAppRole",
 		CreateIssuerFunc: provisioner.create,
 		DeleteIssuerFunc: provisioner.delete,
 	}).Define()
 })
 
-type vaultProvisioner struct {
+type vaultAppRoleProvisioner struct {
 	tiller *tiller.Tiller
 	vault  *vault.Vault
 }
 
-func (v *vaultProvisioner) delete(f *framework.Framework, ref cmmeta.ObjectReference) {
+func (v *vaultAppRoleProvisioner) delete(f *framework.Framework, ref cmmeta.ObjectReference) {
 	Expect(v.vault.Deprovision()).NotTo(HaveOccurred(), "failed to deprovision vault")
 	Expect(v.tiller.Deprovision()).NotTo(HaveOccurred(), "failed to deprovision tiller")
 }
 
-func (v *vaultProvisioner) create(f *framework.Framework) cmmeta.ObjectReference {
-	By("Creating a Vault issuer")
+func (v *vaultAppRoleProvisioner) create(f *framework.Framework) cmmeta.ObjectReference {
+	By("Creating a VaultAppRole issuer")
 
 	v.tiller = &tiller.Tiller{
 		Name:               "tiller-deploy",
@@ -76,13 +76,13 @@ func (v *vaultProvisioner) create(f *framework.Framework) cmmeta.ObjectReference
 	vaultPath := path.Join(intermediateMount, "sign", role)
 	authPath := "approle"
 
-	By("Configuring the Vault server")
+	By("Configuring the VaultAppRole server")
 	vaultInit := &vault.VaultInitializer{
 		Details:           *v.vault.Details(),
 		RootMount:         "root-ca",
 		IntermediateMount: intermediateMount,
 		Role:              role,
-		AuthPath:          authPath,
+		AppRoleAuthPath:   authPath,
 	}
 	Expect(vaultInit.Init()).NotTo(HaveOccurred(), "failed to init vault")
 	Expect(vaultInit.Setup()).NotTo(HaveOccurred(), "fauled to setup vault")
@@ -104,7 +104,7 @@ func (v *vaultProvisioner) create(f *framework.Framework) cmmeta.ObjectReference
 					Path:     vaultPath,
 					CABundle: v.vault.Details().VaultCA,
 					Auth: cmapi.VaultAuth{
-						AppRole: cmapi.VaultAppRole{
+						AppRole: &cmapi.VaultAppRole{
 							Path:   authPath,
 							RoleId: roleID,
 							SecretRef: cmmeta.SecretKeySelector{

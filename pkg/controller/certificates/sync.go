@@ -186,7 +186,7 @@ func (c *certificateRequestManager) processCertificate(ctx context.Context, crt 
 	// The certificate request name is a product of the certificate's spec,
 	// which makes it unique and predictable.
 	// First we compute what we expect it to be.
-	expectedReqName, err := apiutil.ExpectedCertificateRequestName(crt)
+	expectedReqName, err := apiutil.ComputeCertificateRequestName(crt)
 	if err != nil {
 		return fmt.Errorf("internal error hashing certificate spec: %v", err)
 	}

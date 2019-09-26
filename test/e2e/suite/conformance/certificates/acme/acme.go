@@ -32,11 +32,18 @@ import (
 )
 
 var _ = framework.ConformanceDescribe("Certificates", func() {
-	// unsupportedFeatures is a list of features that are not supported by the ACME
+	// unsupportedHTTP01Features is a list of features that are not supported by the ACME
 	// issuer type using HTTP01
-	var unsupportedFeatures = certificates.NewFeatureSet(
+	var unsupportedHTTP01Features = certificates.NewFeatureSet(
 		certificates.IPAddressFeature,
+		certificates.DurationFeature,
 		certificates.WildcardsFeature,
+	)
+
+	// unsupportedDNS01Features is a list of features that are not supported by the ACME
+	// issuer type using DNS01
+	var unsupportedDNS01Features = certificates.NewFeatureSet(
+		certificates.IPAddressFeature,
 		certificates.DurationFeature,
 	)
 
@@ -45,7 +52,7 @@ var _ = framework.ConformanceDescribe("Certificates", func() {
 		Name:                "ACME HTTP01",
 		CreateIssuerFunc:    provisionerHTTP01.createHTTP01,
 		DeleteIssuerFunc:    provisionerHTTP01.delete,
-		UnsupportedFeatures: unsupportedFeatures,
+		UnsupportedFeatures: unsupportedHTTP01Features,
 	}).Define()
 
 	provisionerDNS01 := new(acmeIssuerProvisioner)
@@ -53,22 +60,22 @@ var _ = framework.ConformanceDescribe("Certificates", func() {
 		Name:                "ACME DNS01",
 		CreateIssuerFunc:    provisionerDNS01.createDNS01,
 		DeleteIssuerFunc:    provisionerDNS01.delete,
-		UnsupportedFeatures: unsupportedFeatures,
+		UnsupportedFeatures: unsupportedDNS01Features,
 	}).Define()
 })
 
 type acmeIssuerProvisioner struct {
 	tiller     *tiller.Tiller
 	pebble     *pebble.Pebble
-	cloudflair *dnsproviders.Cloudflare
+	cloudflare *dnsproviders.Cloudflare
 }
 
 func (a *acmeIssuerProvisioner) delete(f *framework.Framework, ref cmmeta.ObjectReference) {
 	if a.pebble != nil {
 		Expect(a.pebble.Deprovision()).NotTo(HaveOccurred(), "failed to deprovision pebble")
 	}
-	if a.cloudflair != nil {
-		Expect(a.cloudflair.Deprovision()).NotTo(HaveOccurred(), "failed to deprovision cloudflair")
+	if a.cloudflare != nil {
+		Expect(a.cloudflare.Deprovision()).NotTo(HaveOccurred(), "failed to deprovision cloudflare")
 	}
 	Expect(a.tiller.Deprovision()).NotTo(HaveOccurred(), "failed to deprovision tiller")
 }
@@ -133,11 +140,11 @@ func (a *acmeIssuerProvisioner) createHTTP01(f *framework.Framework) cmmeta.Obje
 func (a *acmeIssuerProvisioner) createDNS01(f *framework.Framework) cmmeta.ObjectReference {
 	a.deployTiller(f, "dns01")
 
-	a.cloudflair = &dnsproviders.Cloudflare{
+	a.cloudflare = &dnsproviders.Cloudflare{
 		Namespace: f.Namespace.Name,
 	}
-	Expect(a.cloudflair.Setup(f.Config)).NotTo(HaveOccurred(), "failed to setup cloudflair")
-	Expect(a.cloudflair.Provision()).NotTo(HaveOccurred(), "failed to provision cloudflair")
+	Expect(a.cloudflare.Setup(f.Config)).NotTo(HaveOccurred(), "failed to setup cloudflare")
+	Expect(a.cloudflare.Provision()).NotTo(HaveOccurred(), "failed to provision cloudflare")
 
 	By("Creating an ACME DNS01 issuer")
 	issuer := &cmapi.Issuer{
@@ -157,7 +164,7 @@ func (a *acmeIssuerProvisioner) createDNS01(f *framework.Framework) cmmeta.Objec
 					},
 					Solvers: []cmacme.ACMEChallengeSolver{
 						{
-							DNS01: &a.cloudflair.Details().ProviderConfig,
+							DNS01: &a.cloudflare.Details().ProviderConfig,
 						},
 					},
 				},
@@ -165,7 +172,7 @@ func (a *acmeIssuerProvisioner) createDNS01(f *framework.Framework) cmmeta.Objec
 		},
 	}
 	issuer, err := f.CertManagerClientSet.CertmanagerV1alpha2().Issuers(f.Namespace.Name).Create(issuer)
-	Expect(err).NotTo(HaveOccurred(), "failed to create acme HTTP01 issuer")
+	Expect(err).NotTo(HaveOccurred(), "failed to create acme DNS01 issuer")
 
 	return cmmeta.ObjectReference{
 		Group: cmapi.SchemeGroupVersion.Group,

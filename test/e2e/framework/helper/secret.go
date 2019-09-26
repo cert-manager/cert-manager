@@ -27,9 +27,9 @@ import (
 	"github.com/jetstack/cert-manager/test/e2e/framework/log"
 )
 
-// WaitForCertificateReady waits for the certificate resource to enter a Ready
-// state.
-func (h *Helper) WaitForSecretCertificate(ns, name string, timeout time.Duration) (*corev1.Secret, error) {
+// WaitForSecretCertificateData waits for the certificate data to be ready
+// inside a Secret created by cert-manager.
+func (h *Helper) WaitForSecretCertificateData(ns, name string, timeout time.Duration) (*corev1.Secret, error) {
 	var secret *corev1.Secret
 	err := wait.PollImmediate(time.Second, timeout,
 		func() (bool, error) {
@@ -44,7 +44,8 @@ func (h *Helper) WaitForSecretCertificate(ns, name string, timeout time.Duration
 				return true, nil
 			}
 
-			log.Logf("Expected Secret to contain Certificate but got no data %s:%s: %v", secret.Data)
+			log.Logf("Secret still does not contain certificate data %s/%s: %v",
+				secret.Namespace, secret.Name, secret.Data)
 			return false, nil
 		},
 	)

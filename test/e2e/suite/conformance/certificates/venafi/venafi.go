@@ -36,7 +36,7 @@ var _ = framework.ConformanceDescribe("Certificates", func() {
 		// Due to the current configuration of the test environment, it does not
 		// support signing certificates that pair with an elliptic curve private
 		// key or using the same private key multiple times.
-		certificates.ECDSAFeautre,
+		certificates.ECDSAFeature,
 		certificates.ReusePrivateKeyFeature,
 	)
 

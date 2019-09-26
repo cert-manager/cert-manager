@@ -146,7 +146,7 @@ func (s *Suite) Define() {
 		})
 
 		It("should issue an ECDSA, defaulted certificate for a single commonName and distinct dnsName", func() {
-			s.checkFeatures(ECDSAFeautre)
+			s.checkFeatures(ECDSAFeature)
 
 			testCertificate := &cmapi.Certificate{
 				ObjectMeta: metav1.ObjectMeta{
@@ -219,6 +219,11 @@ func (s *Suite) Define() {
 			err = f.Helper().WaitCertificateIssuedValid(f.Namespace.Name, "testcert", time.Minute*5)
 			Expect(err).NotTo(HaveOccurred())
 
+			// We set a weird time here as the duration with should never be used as
+			// a default by an issuer. This lets us test issuers are using our given
+			// duration.
+			// We set a 30 second buffer time here since Vault issues certificates
+			// with an extra 30 seconds on its duration.
 			f.CertificateDurationValid(testCertificate, time.Hour*896, 30*time.Second)
 		})
 
@@ -269,8 +274,8 @@ func (s *Suite) Define() {
 			err = f.Helper().WaitCertificateIssuedValid(f.Namespace.Name, "testcert", time.Minute*5)
 			Expect(err).NotTo(HaveOccurred())
 
-			By("Deleting existing certificate in Secret and owned CertificateRequest")
-			expectedReqName, err := apiutil.ExpectedCertificateRequestName(testCertificate)
+			By("Deleting existing certificate data in Secret and owned CertificateRequest")
+			expectedReqName, err := apiutil.ComputeCertificateRequestName(testCertificate)
 			Expect(err).NotTo(HaveOccurred(), "failed to generate expected name for created Certificate")
 
 			Expect(f.CertManagerClientSet.CertmanagerV1alpha2().
@@ -279,27 +284,27 @@ func (s *Suite) Define() {
 
 			sec, err := f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).
 				Get(testCertificate.Spec.SecretName, metav1.GetOptions{})
-			Expect(err).NotTo(HaveOccurred(), "failed to get secret containing signed certificate key pair")
+			Expect(err).NotTo(HaveOccurred(), "failed to get secret containing signed certificate key pair data")
 
 			sec = sec.DeepCopy()
 			crtPEM1 := sec.Data[corev1.TLSCertKey]
 			crt1, err := pki.DecodeX509CertificateBytes(crtPEM1)
-			Expect(err).NotTo(HaveOccurred(), "failed to get decode first signed certificate")
+			Expect(err).NotTo(HaveOccurred(), "failed to get decode first signed certificate data")
 
 			sec.Data[corev1.TLSCertKey] = []byte{}
 
 			_, err = f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Update(sec)
-			Expect(err).NotTo(HaveOccurred(), "failed to update secret by deleting the signed certificate")
+			Expect(err).NotTo(HaveOccurred(), "failed to update secret by deleting the signed certificate data")
 
 			By("Waiting for the Certificate to re-issue a certificate")
-			sec, err = f.Helper().WaitForSecretCertificate(f.Namespace.Name, sec.Name, time.Minute*5)
+			sec, err = f.Helper().WaitForSecretCertificateData(f.Namespace.Name, sec.Name, time.Minute*5)
 			Expect(err).NotTo(HaveOccurred(), "failed to wait for secret to have a valid 2nd certificate")
 
 			crtPEM2 := sec.Data[corev1.TLSCertKey]
 			crt2, err := pki.DecodeX509CertificateBytes(crtPEM2)
-			Expect(err).NotTo(HaveOccurred(), "failed to get decode second signed certificate")
+			Expect(err).NotTo(HaveOccurred(), "failed to get decode second signed certificate data")
 
-			By("Ensuing both certificates signed by same private key")
+			By("Ensuing both certificates are signed by same private key")
 			match, err := pki.PublicKeysEqual(crt1.PublicKey, crt2.PublicKey)
 			Expect(err).NotTo(HaveOccurred(), "failed to check public keys of both signed certificates")
 

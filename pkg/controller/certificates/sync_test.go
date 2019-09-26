@@ -82,7 +82,7 @@ func mustCreateCryptoBundle(t *testing.T, crt *cmapi.Certificate) cryptoBundle {
 }
 
 func createCryptoBundle(crt *cmapi.Certificate) (*cryptoBundle, error) {
-	reqName, err := apiutil.ExpectedCertificateRequestName(crt)
+	reqName, err := apiutil.ComputeCertificateRequestName(crt)
 	if err != nil {
 		return nil, err
 	}

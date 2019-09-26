@@ -24,7 +24,7 @@ import (
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 )
 
-func ExpectedCertificateRequestName(crt *cmapi.Certificate) (string, error) {
+func ComputeCertificateRequestName(crt *cmapi.Certificate) (string, error) {
 	crt = crt.DeepCopy()
 	specBytes, err := json.Marshal(crt.Spec)
 	if err != nil {
