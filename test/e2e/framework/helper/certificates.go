@@ -212,6 +212,11 @@ func (h *Helper) ValidateIssuedCertificate(certificate *v1alpha2.Certificate, ro
 		}
 	}
 
+	var dnsName string
+	if len(expectedDNSNames) > 0 {
+		dnsName = expectedDNSNames[0]
+	}
+
 	// TODO: move this verification step out of this function
 	if rootCAPEM != nil {
 		rootCertPool := x509.NewCertPool()
@@ -219,7 +224,7 @@ func (h *Helper) ValidateIssuedCertificate(certificate *v1alpha2.Certificate, ro
 		intermediateCertPool := x509.NewCertPool()
 		intermediateCertPool.AppendCertsFromPEM(certBytes)
 		opts := x509.VerifyOptions{
-			DNSName:       expectedDNSNames[0],
+			DNSName:       dnsName,
 			Intermediates: intermediateCertPool,
 			Roots:         rootCertPool,
 		}
