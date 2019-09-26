@@ -66,7 +66,6 @@ var _ = framework.CertManagerDescribe("ACME CertificateRequest (HTTP01)", func()
 	f.RequireAddon(pebble)
 
 	var acmeIngressDomain string
-	var acmeIngressClass string
 	issuerName := "test-acme-issuer"
 	certificateRequestName := "test-acme-certificate-request"
 	// fixedIngressName is the name of an ingress resource that is configured
@@ -129,7 +128,6 @@ var _ = framework.CertManagerDescribe("ACME CertificateRequest (HTTP01)", func()
 
 	JustBeforeEach(func() {
 		acmeIngressDomain = addon.NginxIngress.Details().NewTestDomain()
-		acmeIngressClass = addon.NginxIngress.Details().IngressClass
 	})
 
 	AfterEach(func() {

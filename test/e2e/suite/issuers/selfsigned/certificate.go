@@ -67,7 +67,7 @@ var _ = framework.CertManagerDescribe("Self Signed Certificate", func() {
 		label            string
 	}{
 		{
-			inputDuration:    &metav1.Duration{time.Hour * 24 * 35},
+			inputDuration:    &metav1.Duration{Duration: time.Hour * 24 * 35},
 			inputRenewBefore: nil,
 			expectedDuration: time.Hour * 24 * 35,
 			label:            "35 days",

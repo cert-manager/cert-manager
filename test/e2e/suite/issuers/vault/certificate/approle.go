@@ -129,7 +129,7 @@ var _ = framework.CertManagerDescribe("Vault Certificate (AppRole)", func() {
 		event            string
 	}{
 		{
-			inputDuration:    &metav1.Duration{time.Hour * 24 * 35},
+			inputDuration:    &metav1.Duration{Duration: time.Hour * 24 * 35},
 			inputRenewBefore: nil,
 			expectedDuration: time.Hour * 24 * 35,
 			label:            "valid for 35 days",
@@ -141,14 +141,14 @@ var _ = framework.CertManagerDescribe("Vault Certificate (AppRole)", func() {
 			label:            "valid for the default value (90 days)",
 		},
 		{
-			inputDuration:    &metav1.Duration{time.Hour * 24 * 365},
+			inputDuration:    &metav1.Duration{Duration: time.Hour * 24 * 365},
 			inputRenewBefore: nil,
 			expectedDuration: time.Hour * 24 * 90,
 			label:            "with Vault configured maximum TTL duration (90 days) when requested duration is greater than TTL",
 		},
 		{
-			inputDuration:    &metav1.Duration{time.Hour * 24 * 240},
-			inputRenewBefore: &metav1.Duration{time.Hour * 24 * 120},
+			inputDuration:    &metav1.Duration{Duration: time.Hour * 24 * 240},
+			inputRenewBefore: &metav1.Duration{Duration: time.Hour * 24 * 120},
 			expectedDuration: time.Hour * 24 * 90,
 			label:            "with a warning event when renewBefore is bigger than the duration",
 		},

@@ -273,8 +273,7 @@ func (v *Vault) requestTokenWithAppRoleRef(client Client, appRole *v1alpha2.Vaul
 	defer resp.Body.Close()
 
 	vaultResult := vault.Secret{}
-	resp.DecodeJSON(&vaultResult)
-	if err != nil {
+	if err := resp.DecodeJSON(&vaultResult); err != nil {
 		return "", fmt.Errorf("unable to decode JSON payload: %s", err.Error())
 	}
 

@@ -85,7 +85,7 @@ func runfilewatch(filename string) {
 				// let the k8s scheduler restart us
 				// TODO(dmo): figure out if there's a way to do this with clean
 				// shutdown
-				klog.Info("Detected change in TLS certificate %s. Restarting to pick up new certificate", filename)
+				klog.Infof("Detected change in TLS certificate %s. Restarting to pick up new certificate", filename)
 				os.Exit(0)
 			}
 		}
