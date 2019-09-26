@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
-# Copyright 2019 The Jetstack cert-manager contributors.
+
+# +skip_license_check
+
+# Copyright 2015 The Kubernetes Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,19 +16,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set -o nounset
 set -o errexit
+set -o nounset
 set -o pipefail
 
 if [[ -n "${TEST_WORKSPACE:-}" ]]; then # Running inside bazel
-  echo "Checking generated clients for changes..." >&2
+  echo "Checking module licenses for changes..." >&2
 elif ! command -v bazel &>/dev/null; then
   echo "Install bazel at https://bazel.build" >&2
   exit 1
 else
   (
     set -o xtrace
-    bazel test --test_output=streamed //hack:verify-codegen
+    bazel test --test_output=streamed //hack:verify-deps-licenses
   )
   exit 0
 fi
@@ -46,10 +49,10 @@ tmpfiles=$TEST_TMPDIR/files
 
 (
   # Remove the platform/binary for gazelle and kazel
-  gazelle=$(dirname "$3")
-  kazel=$(dirname "$4")
-  rm -rf {.,"$tmpfiles"}/{"$gazelle","$kazel"}
+  jq=$(dirname "$3")
+  rm -rf {.,"$tmpfiles"}/{"$jq"}
 )
+
 # Avoid diff -N so we handle empty files correctly
 diff=$(diff -upr \
   -x ".git" \
@@ -60,7 +63,7 @@ diff=$(diff -upr \
 if [[ -n "${diff}" ]]; then
   echo "${diff}" >&2
   echo >&2
-  echo "ERROR: generated clients changed. Update with ./hack/update-codegen.sh" >&2
+  echo "ERROR: modules licenses changed. Update with ./hack/update-deps-licenses.sh" >&2
   exit 1
 fi
-echo "SUCCESS: generated clients up-to-date"
+echo "SUCCESS: modules licenses up-to-date"

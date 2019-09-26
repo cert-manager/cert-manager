@@ -29,39 +29,119 @@ sh_test(
     tags = ["lint"],
 )
 
+GAZELLE = "@bazel_gazelle//cmd/gazelle"
+
+KAZEL = "@io_k8s_repo_infra//cmd/kazel"
+
+GO = "@go_sdk//:bin/go"
+
+JQ = "@com_github_jetstack_cert_manager//hack/bin:jq"
+
 # Bazel file generation rules
 
 sh_binary(
     name = "update-bazel",
     srcs = ["update-bazel.sh"],
+    args = [
+        "$(location %s)" % GAZELLE,
+        "$(location %s)" % KAZEL,
+    ],
     data = [
-        "//hack/bin:buildozer",
-        "//hack/bin:gazelle",
-        "//hack/bin:kazel",
+        GAZELLE,
+        KAZEL,
     ],
 )
 
 sh_test(
     name = "verify-bazel",
     srcs = ["verify-bazel.sh"],
-    data = [
-        ":update-bazel",
-        "//:all-srcs",
+    args = [
+        "$(location %s)" % GAZELLE,
+        "$(location %s)" % KAZEL,
     ],
+    data = [
+        "@//:all-srcs",
+        GAZELLE,
+        KAZEL,
+    ],
+    tags = ["lint"],
 )
 
-# Dep/vendor rules
-# These have been deprecated in favour of directly calling the shell scripts.
 sh_binary(
     name = "update-deps",
-    srcs = ["deprecated.sh"],
-    args = ["hack/update-vendor.sh"],
+    srcs = ["update-deps.sh"],
+    args = [
+        "$(location %s)" % GO,
+        "$(location %s)" % GAZELLE,
+        "$(location %s)" % KAZEL,
+        "$(location %s)" % JQ,
+        "$(location :update-bazel)",
+        "$(location :update-deps-licenses)",
+    ],
+    data = [
+        GAZELLE,
+        GO,
+        KAZEL,
+        JQ,
+        ":update-bazel",
+        ":update-deps-licenses",
+    ],
 )
 
 sh_test(
     name = "verify-deps",
-    srcs = ["deprecated.sh"],
-    args = ["hack/verify-vendor.sh"],
+    srcs = ["verify-deps.sh"],
+    args = [
+        "$(location :update-deps)",
+        "$(location %s)" % GO,
+        "$(location %s)" % GAZELLE,
+        "$(location %s)" % KAZEL,
+        "$(location %s)" % JQ,
+        "$(location :update-bazel)",
+        "$(location :update-deps-licenses)",
+    ],
+    data = [
+        ":update-deps",
+        GAZELLE,
+        GO,
+        KAZEL,
+        JQ,
+        ":update-bazel",
+        ":update-deps-licenses",
+        "@//:all-srcs",
+    ],
+    tags = ["manual"],
+)
+
+sh_binary(
+    name = "update-deps-licenses",
+    srcs = ["update-deps-licenses.sh"],
+    args = [
+        "$(location %s)" % GO,
+        "$(location %s)" % JQ,
+    ],
+    data = [
+        GO,
+        JQ,
+    ],
+)
+
+sh_test(
+    name = "verify-deps-licenses",
+    srcs = ["verify-deps-licenses.sh"],
+    args = [
+        "$(location :update-deps-licenses)",
+        "$(location %s)" % GO,
+        "$(location %s)" % JQ,
+    ],
+    data = [
+        GAZELLE,
+        GO,
+        KAZEL,
+        JQ,
+        ":update-deps-licenses",
+        "@//:all-srcs",
+    ],
     tags = ["manual"],
 )
 
@@ -70,20 +150,61 @@ sh_test(
 sh_binary(
     name = "update-codegen",
     srcs = ["update-codegen.sh"],
+    args = [
+        "$(location %s)" % GO,
+        "$(location @io_k8s_code_generator//cmd/client-gen)",
+        "$(location @io_k8s_code_generator//cmd/deepcopy-gen)",
+        "$(location @io_k8s_code_generator//cmd/informer-gen)",
+        "$(location @io_k8s_code_generator//cmd/lister-gen)",
+        "$(location @io_k8s_code_generator//cmd/defaulter-gen)",
+        "$(location @io_k8s_code_generator//cmd/conversion-gen)",
+        "$(location :update-bazel)",
+        "$(location %s)" % GAZELLE,
+        "$(location %s)" % KAZEL,
+    ],
     data = [
-        "//hack:update-bazel",
-        "//hack/boilerplate:all-srcs",
-        "//third_party/k8s.io/code-generator:generate-groups",
-        "//third_party/k8s.io/code-generator:generate-groups-internal",
+        ":update-bazel",
+        GO,
+        GAZELLE,
+        KAZEL,
+        "@io_k8s_code_generator//cmd/client-gen",
+        "@io_k8s_code_generator//cmd/conversion-gen",
+        "@io_k8s_code_generator//cmd/deepcopy-gen",
+        "@io_k8s_code_generator//cmd/defaulter-gen",
+        "@io_k8s_code_generator//cmd/informer-gen",
+        "@io_k8s_code_generator//cmd/lister-gen",
     ],
 )
 
 sh_test(
     name = "verify-codegen",
     srcs = ["verify-codegen.sh"],
+    args = [
+        "$(location :update-codegen)",
+        "$(location %s)" % GO,
+        "$(location @io_k8s_code_generator//cmd/client-gen)",
+        "$(location @io_k8s_code_generator//cmd/deepcopy-gen)",
+        "$(location @io_k8s_code_generator//cmd/informer-gen)",
+        "$(location @io_k8s_code_generator//cmd/lister-gen)",
+        "$(location @io_k8s_code_generator//cmd/defaulter-gen)",
+        "$(location @io_k8s_code_generator//cmd/conversion-gen)",
+        "$(location :update-bazel)",
+        "$(location %s)" % GAZELLE,
+        "$(location %s)" % KAZEL,
+    ],
     data = [
+        ":update-bazel",
         ":update-codegen",
-        "//:all-srcs",
+        GO,
+        GAZELLE,
+        KAZEL,
+        "@//:all-srcs",
+        "@io_k8s_code_generator//cmd/client-gen",
+        "@io_k8s_code_generator//cmd/conversion-gen",
+        "@io_k8s_code_generator//cmd/deepcopy-gen",
+        "@io_k8s_code_generator//cmd/defaulter-gen",
+        "@io_k8s_code_generator//cmd/informer-gen",
+        "@io_k8s_code_generator//cmd/lister-gen",
     ],
 )
 
@@ -128,18 +249,11 @@ sh_test(
 sh_binary(
     name = "update-crds",
     srcs = ["update-crds.sh"],
+    args = [
+        "$(location @//deploy/manifests:crds.yaml.generated)",
+    ],
     data = [
-        "//hack/bin:controller-gen",
-        "//pkg/apis:all-srcs",
-        # Include all of pkg/util in case the pkg/apis package depends on it.
-        # Technically this shouldn't happen and should be avoided. Whilst we
-        # still have some cases of it however, this helps us overcome problems.
-        # These two are generally required due to the validation package being
-        # built by the controller-gen tool.
-        "//pkg/util:all-srcs",
-        "//pkg/api/util:all-srcs",
-        "//vendor:all-srcs",
-        "@go_sdk//:files",
+        "@//deploy/manifests:crds.yaml.generated",
     ],
 )
 
@@ -147,8 +261,8 @@ sh_test(
     name = "verify-crds",
     srcs = ["verify-crds.sh"],
     data = [
-        ":update-crds",
-        "//deploy:all-srcs",
+        "//deploy/manifests:00-crds.yaml",
+        "//deploy/manifests:crds.yaml.generated",
     ],
 )
 

@@ -18,38 +18,27 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-RULE_NAME="crds"
+if [[ -n "${TEST_WORKSPACE:-}" ]]; then # Running inside bazel
+  echo "Checking modules for changes..." >&2
+elif ! command -v bazel &>/dev/null; then
+  echo "Install bazel at https://bazel.build" >&2
+  exit 1
+else
+  (
+    set -o xtrace
+    bazel test --test_output=streamed //hack:verify-crds
+  )
+  exit 0
+fi
 
-SCRIPT_ROOT=$(dirname "${BASH_SOURCE}")/..
+MANIFESTS_DIR="deploy/manifests"
 
-_tmp="$(mktemp -d)"
-DIFFROOT="${SCRIPT_ROOT}/"
-
-cleanup() {
-  rm -rf "${_tmp}"
-}
-trap "cleanup" EXIT SIGINT
-
-# Create a fake GOPATH
-export GOPATH="${_tmp}"
-TMP_DIFFROOT="${GOPATH}/src/github.com/jetstack/cert-manager"
-
-mkdir -p "${TMP_DIFFROOT}"
-rsync -avvL "${DIFFROOT}"/ "${TMP_DIFFROOT}" >/dev/null
-# remove __main__ directory copied to tmp
-rm -Rf "${TMP_DIFFROOT}/__main__"
-
-cd "${TMP_DIFFROOT}"
-export BUILD_WORKSPACE_DIRECTORY="$(pwd)"
-"hack/update-${RULE_NAME}.sh"
-
-echo "diffing ${DIFFROOT} against freshly generated codegen"
 ret=0
-diff -Naupr "${DIFFROOT}/deploy/manifests/00-crds.yaml" "${TMP_DIFFROOT}/deploy/manifests/00-crds.yaml" || ret=$?
+diff -Naupr "${MANIFESTS_DIR}/00-crds.yaml" "${MANIFESTS_DIR}/crds.yaml.generated" || ret=$?
 if [[ $ret -eq 0 ]]
 then
-  echo "${DIFFROOT} up to date."
+  echo "${MANIFESTS_DIR}/00-crds.yaml up to date."
 else
-  echo "${DIFFROOT} is out of date. Please run 'bazel run //hack:update-${RULE_NAME}'"
+  echo "${MANIFESTS_DIR}/00-crds.yaml is out of date. Please run 'bazel run //hack:update-crds"
   exit 1
 fi

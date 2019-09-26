@@ -36,12 +36,26 @@ set -o pipefail
 export LANG=C
 export LC_ALL=C
 
-go () {
-  bazel run //hack/bin:go -- "$@"
-}
-jq () {
-  bazel run //hack/bin:jq -- "$@"
-}
+if [[ -n "${BUILD_WORKSPACE_DIRECTORY:-}" ]]; then # Running inside bazel
+  echo "Updating dependency licenses file..." >&2
+elif ! command -v bazel &>/dev/null; then
+  echo "Install bazel at https://bazel.build" >&2
+  exit 1
+else
+  (
+    set -o xtrace
+    bazel run @com_github_jetstack_cert_manager//hack:update-deps-licenses -- "$@"
+  )
+  exit 0
+fi
+
+go=$(realpath "$1")
+jq=$(realpath "$2")
+export PATH=$(dirname "$go"):$PATH
+
+shift 2
+REPO_ROOT="$BUILD_WORKSPACE_DIRECTORY"
+LICENSE_ROOT="$REPO_ROOT"
 
 ###############################################################################
 # Process package content
@@ -136,9 +150,8 @@ process_content () {
 #############################################################################
 # MAIN
 #############################################################################
-KUBE_ROOT=$(dirname "${BASH_SOURCE[0]}")/..
-
 export GO111MODULE=on
+export GOPROXY=https://proxy.golang.org
 
 # Check bash version
 if (( BASH_VERSINFO[0] < 4 )); then
@@ -154,14 +167,19 @@ if (( BASH_VERSINFO[0] < 4 )); then
   exit 9
 fi
 
-# This variable can be injected, as in the verify script.
-LICENSE_ROOT="${LICENSE_ROOT:-${KUBE_ROOT}}"
 cd "${LICENSE_ROOT}"
-
 VENDOR_LICENSE_FILE="LICENSES"
 TMP_LICENSE_FILE="/tmp/CM.LICENSES.$$"
 DEPS_DIR="vendor"
 declare -Ag CONTENT
+
+cleanup_vendor () {
+  echo "Deleting temporarily generated vendor/ directory..."
+  rm -rf "${REPO_ROOT}/${DEPS_DIR}"
+}
+trap cleanup_vendor EXIT
+echo "Populating vendor/ directory..."
+"$go" mod vendor
 
 # Put the K8S LICENSE on top
 (
@@ -175,7 +193,7 @@ echo "==========================================================================
 ) > ${TMP_LICENSE_FILE}
 
 # Loop through every vendored package
-for PACKAGE in $(go list -m -json all | jq -r .Path | sort -f); do
+for PACKAGE in $("$go" list -m -json all | "$jq" -r .Path | sort -f); do
   if [[ -e "staging/src/${PACKAGE}" ]]; then
     echo "$PACKAGE is a staging package, skipping" > /dev/stderr
     continue

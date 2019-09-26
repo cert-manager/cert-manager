@@ -143,7 +143,7 @@ genrule(
 
 genrule(
     name = "fetch_kazel",
-    srcs = ["@io_k8s_repo_infra//kazel"],
+    srcs = ["@io_k8s_repo_infra//cmd/kazel"],
     outs = ["kazel"],
     cmd = "cp $(SRCS) $@",
     visibility = ["//visibility:public"],
@@ -183,7 +183,7 @@ genrule(
 
 genrule(
     name = "fetch_controller-gen",
-    srcs = ["//vendor/sigs.k8s.io/controller-tools/cmd/controller-gen"],
+    srcs = ["@io_k8s_sigs_controller_tools//cmd/controller-gen"],
     outs = ["controller-gen"],
     cmd = "cp $(SRCS) $@",
     visibility = ["//visibility:public"],

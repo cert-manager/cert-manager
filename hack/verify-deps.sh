@@ -18,14 +18,14 @@ set -o errexit
 set -o pipefail
 
 if [[ -n "${TEST_WORKSPACE:-}" ]]; then # Running inside bazel
-  echo "Checking generated clients for changes..." >&2
+  echo "Checking modules for changes..." >&2
 elif ! command -v bazel &>/dev/null; then
   echo "Install bazel at https://bazel.build" >&2
   exit 1
 else
   (
     set -o xtrace
-    bazel test --test_output=streamed //hack:verify-codegen
+    bazel test --test_output=streamed //hack:verify-deps
   )
   exit 0
 fi
@@ -60,7 +60,7 @@ diff=$(diff -upr \
 if [[ -n "${diff}" ]]; then
   echo "${diff}" >&2
   echo >&2
-  echo "ERROR: generated clients changed. Update with ./hack/update-codegen.sh" >&2
+  echo "ERROR: modules changed. Update with ./hack/update-deps.sh" >&2
   exit 1
 fi
-echo "SUCCESS: generated clients up-to-date"
+echo "SUCCESS: modules up-to-date"

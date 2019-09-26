@@ -1,0 +1,31 @@
+exports_files(["00-crds.yaml"])
+
+load(":def.bzl", "generated_crds")
+
+generated_crds(
+    name = "00-crds",
+    go_prefix = "github.com/jetstack/cert-manager",
+    paths = [
+        "./pkg/apis/...",
+    ],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//pkg/apis/acme/v1alpha2:go_default_library",
+        "//pkg/apis/certmanager/v1alpha2:go_default_library",
+        "//pkg/apis/meta/v1:go_default_library",
+    ],
+)
+
+filegroup(
+    name = "package-srcs",
+    srcs = glob(["**"]),
+    tags = ["automanaged"],
+    visibility = ["//visibility:private"],
+)
+
+filegroup(
+    name = "all-srcs",
+    srcs = [":package-srcs"],
+    tags = ["automanaged"],
+    visibility = ["//visibility:public"],
+)

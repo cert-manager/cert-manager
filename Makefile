@@ -85,8 +85,8 @@ verify_unit:
 		)
 
 verify_deps:
-	./hack/verify-vendor.sh
-	./hack/verify-vendor-licenses.sh
+	./hack/verify-deps.sh
+	# verify-deps-licenses.sh is implicitly checked by the verify-deps script
 
 verify_codegen:
 	bazel test \
@@ -111,7 +111,7 @@ e2e_test:
 	bazel build //hack/bin:helm //test/e2e:e2e.test
 	# Run e2e tests
 	KUBECONFIG=$(KUBECONFIG) \
-		bazel run //vendor/github.com/onsi/ginkgo/ginkgo -- \
+		bazel run @com_github_onsi_ginkgo//ginkgo -- \
 			-nodes 10 \
 			$$(bazel info bazel-genfiles)/test/e2e/e2e.test \
 			-- \
