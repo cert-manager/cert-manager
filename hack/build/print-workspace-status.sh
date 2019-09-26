@@ -20,8 +20,6 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-SCRIPT_ROOT=$(dirname ${BASH_SOURCE})/../..
-
 # AppVersion is set as the AppVersion to be compiled into the controller binary.
 # It's used as the default version of the 'acmesolver' image to use for ACME
 # challenge requests, and any other future provider that requires additional
