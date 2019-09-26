@@ -1,0 +1,107 @@
+{
+  "structtag": {
+    "exclude_files": {
+      "external/": "external tools don't pass vet"
+    }
+  },
+  "asmdecl": {
+    "exclude_files": {
+      "external/": "external tools don't pass vet"
+    }
+  },
+  "assign": {
+    "exclude_files": {
+      "external/": "external tools don't pass vet"
+    }
+  },
+  "atomic": {
+    "exclude_files": {
+      "external/": "external tools don't pass vet"
+    }
+  },
+  "bools": {
+    "exclude_files": {
+      "external/": "external tools don't pass vet"
+    }
+  },
+  "buildtag": {
+    "exclude_files": {
+      "external/": "external tools don't pass vet"
+    }
+  },
+  "cgocall": {
+    "exclude_files": {
+      "external/": "external tools don't pass vet"
+    }
+  },
+  "composites": {
+    "exclude_files": {
+      "external/": "external tools don't pass vet"
+    }
+  },
+  "copylocks": {
+    "exclude_files": {
+      "external/": "external tools don't pass vet"
+    }
+  },
+  "httpresponse": {
+    "exclude_files": {
+      "external/": "external tools don't pass vet"
+    }
+  },
+  "loopclosure": {
+    "exclude_files": {
+      "external/": "external tools don't pass vet"
+    }
+  },
+  "lostcancel": {
+    "exclude_files": {
+      "external/": "external tools don't pass vet"
+    }
+  },
+  "nilness": {
+    "exclude_files": {
+      "external/": "external tools don't pass vet"
+    }
+  },
+  "nilfunc": {
+    "exclude_files": {
+      "external/": "external tools don't pass vet"
+    }
+  },
+  "printf": {
+    "exclude_files": {
+      "external/": "external tools don't pass vet"
+    }
+  },
+  "shift": {
+    "exclude_files": {
+      "external/": "external tools don't pass vet"
+    }
+  },
+  "stdmethods": {
+    "exclude_files": {
+      "external/": "external tools don't pass vet"
+    }
+  },
+  "tests": {
+    "exclude_files": {
+      "external/": "external tools don't pass vet"
+    }
+  },
+  "unreachable": {
+    "exclude_files": {
+      "external/": "external tools don't pass vet"
+    }
+  },
+  "unsafeptr": {
+    "exclude_files": {
+      "external/": "external tools don't pass vet"
+    }
+  },
+  "unusedresult": {
+    "exclude_files": {
+      "external/": "external tools don't pass vet"
+    }
+  }
+}

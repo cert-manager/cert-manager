@@ -31,6 +31,7 @@ go_rules_dependencies()
 
 go_register_toolchains(
     go_version = "1.13.1",
+    nogo = "@//hack/build:nogo_vet",
 )
 
 ## Load gazelle and dependencies
