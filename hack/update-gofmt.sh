@@ -18,11 +18,24 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-# This script should be run via `bazel run //hack:update-deps`
-REPO_ROOT=${BUILD_WORKSPACE_DIRECTORY:-"$(cd "$(dirname "$0")" && pwd -P)"/..}
-runfiles="$(pwd)"
-export PATH="${runfiles}/hack/bin:${PATH}"
-cd "${REPO_ROOT}"
+if [[ -n "${BUILD_WORKSPACE_DIRECTORY:-}" ]]; then # Running inside bazel
+  echo "Formatting go source files..." >&2
+elif ! command -v bazel &>/dev/null; then
+  echo "Install bazel at https://bazel.build" >&2
+  exit 1
+else
+  (
+    set -o xtrace
+    bazel run @com_github_jetstack_cert_manager//hack:update-gofmt
+  )
+  exit 0
+fi
+
+gofmt=$(realpath "$1")
+
+cd "$BUILD_WORKSPACE_DIRECTORY"
+
+export GO111MODULE=on
 
 echo "+++ Running gofmt"
-find . -type f -name '*.go' | grep -v 'vendor/' | xargs gofmt -s -w
+find . -type f -name '*.go' | grep -v 'vendor/' | xargs "$gofmt" -s -w

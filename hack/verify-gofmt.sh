@@ -18,26 +18,25 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-SCRIPT_ROOT=$(dirname "${BASH_SOURCE}")/..
-# This script should be run via `bazel run //hack:update-deps`
-runfiles="$(pwd)"
-export PATH="${runfiles}/hack/bin:${PATH}"
+if [[ -n "${TEST_WORKSPACE:-}" ]]; then # Running inside bazel
+  echo "Validating go source file formatting..." >&2
+elif ! command -v bazel &> /dev/null; then
+  echo "Install bazel at https://bazel.build" >&2
+  exit 1
+else
+  (
+    set -o xtrace
+    bazel test --test_output=streamed @com_github_jetstack_cert_manager//hack:verify-gofmt
+  )
+  exit 0
+fi
 
-_tmp="$(mktemp -d)"
-cleanup() {
-  rm -rf "${_tmp}"
-}
-trap "cleanup" EXIT SIGINT
+gofmt=$(realpath "$1")
 
-# Create a fake GOPATH
-export GOPATH="${_tmp}"
-TMP_DIFFROOT="${GOPATH}/src/github.com/jetstack/cert-manager"
-mkdir -p "$(dirname ${TMP_DIFFROOT})"
-ln -s "$(pwd)" "${TMP_DIFFROOT}"
-cd "${TMP_DIFFROOT}"
+export GO111MODULE=on
 
 echo "+++ Running gofmt"
-output=$(find . -name '*.go' | grep -v 'vendor/' | xargs gofmt -s -d)
+output=$(find . -name '*.go' | grep -v 'vendor/' | xargs "$gofmt" -s -d)
 if [ ! -z "${output}" ]; then
     echo "${output}"
     echo "Please run 'bazel run //hack:update-gofmt'"

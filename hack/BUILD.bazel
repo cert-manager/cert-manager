@@ -236,20 +236,28 @@ sh_test(
 
 # Gofmt rules
 
+GOFMT = "@go_sdk//:bin/gofmt"
+
 sh_binary(
     name = "update-gofmt",
     srcs = ["update-gofmt.sh"],
+    args = [
+        "$(location %s)" % GOFMT,
+    ],
     data = [
-        "//hack/bin:gofmt",
+        GOFMT,
     ],
 )
 
 sh_test(
     name = "verify-gofmt",
     srcs = ["verify-gofmt.sh"],
+    args = [
+        "$(location %s)" % GOFMT,
+    ],
     data = [
-        "//:all-srcs",
-        "//hack/bin:gofmt",
+        GOFMT,
+        "@//:all-srcs",
     ],
 )
 
