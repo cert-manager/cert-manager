@@ -98,6 +98,7 @@ require (
 	k8s.io/kube-aggregator v0.0.0-20190222095010-0b78038fe9e5
 	k8s.io/kube-openapi v0.0.0-20190816220812-743ec37842bf
 	k8s.io/utils v0.0.0-20190801114015-581e00157fb1
+	launchpad.net/gocheck v0.0.0-20140225173054-000000000087 // indirect
 	sigs.k8s.io/controller-runtime v0.2.0-beta.4
 	sigs.k8s.io/controller-tools v0.2.0-beta.4
 	sigs.k8s.io/testing_frameworks v0.1.1
