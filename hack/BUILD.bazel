@@ -35,6 +35,8 @@ KAZEL = "@io_k8s_repo_infra//cmd/kazel"
 
 GO = "@go_sdk//:bin/go"
 
+GOROOT = "@go_sdk//:files"
+
 JQ = "@com_github_jetstack_cert_manager//hack/bin:jq"
 
 # Bazel file generation rules
@@ -165,6 +167,7 @@ sh_binary(
     data = [
         ":update-bazel",
         GO,
+        GOROOT,
         GAZELLE,
         KAZEL,
         "@io_k8s_code_generator//cmd/client-gen",
@@ -196,6 +199,7 @@ sh_test(
         ":update-bazel",
         ":update-codegen",
         GO,
+        GOROOT,
         GAZELLE,
         KAZEL,
         "@//:all-srcs",

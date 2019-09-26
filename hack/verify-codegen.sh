@@ -36,6 +36,8 @@ tmpfiles=$TEST_TMPDIR/files
   mkdir -p "$tmpfiles"
   rm -f bazel-*
   cp -aL "." "$tmpfiles"
+  # clean up 'external' directory copied from test runfiles
+  rm -rf "$tmpfiles"/external
   export BUILD_WORKSPACE_DIRECTORY=$tmpfiles
   export HOME=$(realpath "$TEST_TMPDIR/home")
   unset GOPATH
@@ -52,10 +54,7 @@ tmpfiles=$TEST_TMPDIR/files
 )
 # Avoid diff -N so we handle empty files correctly
 diff=$(diff -upr \
-  -x ".git" \
-  -x "bazel-*" \
-  -x "_output" \
-  "." "$tmpfiles" 2>/dev/null || true)
+  "./pkg" "$tmpfiles/pkg" 2>/dev/null || true)
 
 if [[ -n "${diff}" ]]; then
   echo "${diff}" >&2

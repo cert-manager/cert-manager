@@ -211,7 +211,7 @@ func (in *CertificateRequestSpec) DeepCopyInto(out *CertificateRequestSpec) {
 	if in.Duration != nil {
 		in, out := &in.Duration, &out.Duration
 		*out = new(v1.Duration)
-		(*in).DeepCopyInto(*out)
+		**out = **in
 	}
 	out.IssuerRef = in.IssuerRef
 	if in.CSRPEM != nil {
@@ -285,12 +285,12 @@ func (in *CertificateSpec) DeepCopyInto(out *CertificateSpec) {
 	if in.Duration != nil {
 		in, out := &in.Duration, &out.Duration
 		*out = new(v1.Duration)
-		(*in).DeepCopyInto(*out)
+		**out = **in
 	}
 	if in.RenewBefore != nil {
 		in, out := &in.RenewBefore, &out.RenewBefore
 		*out = new(v1.Duration)
-		(*in).DeepCopyInto(*out)
+		**out = **in
 	}
 	if in.DNSNames != nil {
 		in, out := &in.DNSNames, &out.DNSNames
