@@ -29,7 +29,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -168,7 +167,9 @@ func TestSign(t *testing.T) {
 		}
 
 		cert, _, err := v.Sign(test.csrPEM, time.Minute)
-		if !reflect.DeepEqual(test.expectedErr, err) {
+		if ((test.expectedErr == nil) != (err == nil)) &&
+			test.expectedErr != nil &&
+			test.expectedErr.Error() != err.Error() {
 			t.Errorf("%s: unexpected error, exp=%v got=%v",
 				name, test.expectedErr, err)
 		}
@@ -471,7 +472,9 @@ func TestSetToken(t *testing.T) {
 			}
 
 			err := v.setToken(test.fakeClient)
-			if !reflect.DeepEqual(test.expectedErr, err) {
+			if ((test.expectedErr == nil) != (err == nil)) &&
+				test.expectedErr != nil &&
+				test.expectedErr.Error() != err.Error() {
 				t.Errorf("unexpected error, exp=%v got=%v",
 					test.expectedErr, err)
 			}
@@ -569,7 +572,9 @@ func TestAppRoleRef(t *testing.T) {
 			}
 
 			roleID, secretID, err := v.appRoleRef(test.appRole)
-			if !reflect.DeepEqual(test.expectedErr, err) {
+			if ((test.expectedErr == nil) != (err == nil)) &&
+				test.expectedErr != nil &&
+				test.expectedErr.Error() != err.Error() {
 				t.Errorf("unexpected error, exp=%v got=%v",
 					test.expectedErr, err)
 			}
@@ -665,7 +670,9 @@ func TestTokenRef(t *testing.T) {
 			}
 
 			token, err := v.tokenRef("test-name", "test-namespace", test.key)
-			if !reflect.DeepEqual(test.expectedErr, err) {
+			if ((test.expectedErr == nil) != (err == nil)) &&
+				test.expectedErr != nil &&
+				test.expectedErr.Error() != err.Error() {
 				t.Errorf("unexpected error, exp=%v got=%v",
 					test.expectedErr, err)
 			}
@@ -741,7 +748,9 @@ func TestNewConfig(t *testing.T) {
 			}
 
 			cfg, err := v.newConfig()
-			if !reflect.DeepEqual(test.expectedErr, err) {
+			if ((test.expectedErr == nil) != (err == nil)) &&
+				test.expectedErr != nil &&
+				test.expectedErr.Error() != err.Error() {
 				t.Errorf("unexpected error, exp=%v got=%v",
 					test.expectedErr, err)
 			}
@@ -866,7 +875,9 @@ func TestRequestTokenWithAppRoleRef(t *testing.T) {
 			}
 
 			token, err := v.requestTokenWithAppRoleRef(test.client, test.appRole)
-			if !reflect.DeepEqual(test.expectedErr, err) {
+			if ((test.expectedErr == nil) != (err == nil)) &&
+				test.expectedErr != nil &&
+				test.expectedErr.Error() != err.Error() {
 				t.Errorf("unexpected error, exp=%v got=%v",
 					test.expectedErr, err)
 			}

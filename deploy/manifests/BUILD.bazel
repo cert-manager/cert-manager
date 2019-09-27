@@ -1,9 +1,10 @@
 exports_files(["00-crds.yaml"])
 
-load(":def.bzl", "generated_crds")
+load("//hack/build:crds.bzl", "generated_crds")
 
 generated_crds(
     name = "00-crds",
+    out = "crds.yaml.generated",
     go_prefix = "github.com/jetstack/cert-manager",
     paths = [
         "./pkg/apis/...",

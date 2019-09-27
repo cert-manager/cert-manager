@@ -1,4 +1,4 @@
-# gazelle:repository_macro repos.bzl%go_repositories
+# gazelle:repository_macro hack/build/repos.bzl%go_repositories
 workspace(name = "com_github_jetstack_cert_manager")
 
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
@@ -31,6 +31,7 @@ go_rules_dependencies()
 
 go_register_toolchains(
     go_version = "1.13.1",
+    nogo = "@//hack/build:nogo_vet",
 )
 
 ## Load gazelle and dependencies
@@ -126,6 +127,6 @@ load("@brodocs_modules//:install_bazel_dependencies.bzl", "install_bazel_depende
 
 install_bazel_dependencies()
 
-load("//:repos.bzl", "go_repositories")
+load("//hack/build:repos.bzl", "go_repositories")
 
 go_repositories()

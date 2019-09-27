@@ -388,7 +388,7 @@ func TestRoute53AmbientCreds(t *testing.T) {
 		defer f.Finish(t)
 		s := f.Solver
 		_, _, err := s.solverForChallenge(context.Background(), f.Issuer, f.Challenge)
-		if !reflect.DeepEqual(tt.out.expectedErr, err) {
+		if tt.out.expectedErr != err {
 			t.Fatalf("expected error %v, got error %v", tt.out.expectedErr, err)
 		}
 
@@ -480,7 +480,7 @@ func TestRoute53AssumeRole(t *testing.T) {
 		defer f.Finish(t)
 		s := f.Solver
 		_, _, err := s.solverForChallenge(context.Background(), f.Issuer, f.Challenge)
-		if !reflect.DeepEqual(tt.out.expectedErr, err) {
+		if tt.out.expectedErr != err {
 			t.Fatalf("expected error %v, got error %v", tt.out.expectedErr, err)
 		}
 

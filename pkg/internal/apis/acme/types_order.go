@@ -156,7 +156,7 @@ type ACMEChallenge struct {
 
 	// Token is the token that must be presented for this challenge.
 	// This is used to compute the 'key' that must also be presented.
-	Token string `json:"token""`
+	Token string `json:"token"`
 
 	// Type is the type of challenge being offered, e.g. http-01, dns-01
 	Type ACMEChallengeType `json:"type"`

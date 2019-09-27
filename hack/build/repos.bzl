@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# This file is automatically updated by hack/update-deps.sh
+
 load("@bazel_gazelle//:deps.bzl", "go_repository")
 
 def go_repositories():

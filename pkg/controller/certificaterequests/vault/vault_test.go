@@ -182,7 +182,7 @@ func TestSign(t *testing.T) {
 							TokenSecretRef: &cmmeta.SecretKeySelector{
 								Key: "secret-key",
 								LocalObjectReference: cmmeta.LocalObjectReference{
-									"non-existing-secret",
+									Name: "non-existing-secret",
 								},
 							},
 						},
@@ -220,7 +220,7 @@ func TestSign(t *testing.T) {
 								SecretRef: cmmeta.SecretKeySelector{
 									Key: "secret-key",
 									LocalObjectReference: cmmeta.LocalObjectReference{
-										"non-existing-secret",
+										Name: "non-existing-secret",
 									},
 								},
 							},
@@ -257,7 +257,7 @@ func TestSign(t *testing.T) {
 							TokenSecretRef: &cmmeta.SecretKeySelector{
 								Key: "my-token-key",
 								LocalObjectReference: cmmeta.LocalObjectReference{
-									"token-secret",
+									Name: "token-secret",
 								},
 							},
 						},
@@ -296,7 +296,7 @@ func TestSign(t *testing.T) {
 								RoleId: "my-role-id",
 								SecretRef: cmmeta.SecretKeySelector{
 									LocalObjectReference: cmmeta.LocalObjectReference{
-										"role-secret",
+										Name: "role-secret",
 									},
 									Key: "my-role-key",
 								},
@@ -336,7 +336,7 @@ func TestSign(t *testing.T) {
 							TokenSecretRef: &cmmeta.SecretKeySelector{
 								Key: "my-token-key",
 								LocalObjectReference: cmmeta.LocalObjectReference{
-									"token-secret",
+									Name: "token-secret",
 								},
 							},
 						},
@@ -376,7 +376,7 @@ func TestSign(t *testing.T) {
 								RoleId: "my-role-id",
 								SecretRef: cmmeta.SecretKeySelector{
 									LocalObjectReference: cmmeta.LocalObjectReference{
-										"role-secret",
+										Name: "role-secret",
 									},
 									Key: "my-role-key",
 								},

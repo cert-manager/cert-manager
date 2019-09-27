@@ -14,7 +14,7 @@
 
 load("@io_k8s_repo_infra//defs:go.bzl", "go_genrule")
 
-def generated_crds(name, go_prefix, paths, visibility = [], deps = []):
+def generated_crds(name, go_prefix, paths, out, visibility = [], deps = []):
     go_genrule(
         name = name,
         tools = [
@@ -33,7 +33,7 @@ def generated_crds(name, go_prefix, paths, visibility = [], deps = []):
             "export GOCACHE=$$(mktemp -d);",
             # create an output directory to store each CRD file
             "output_dir=$$(mktemp -d);",
-            "out=$$(pwd)/$(location :crds.yaml.generated);",
+            "out=$$(pwd)/$(location :%s);" % out,
             # obtain absolute path to controller-gen
             "cg=\"$$(pwd)/$(location @io_k8s_sigs_controller_tools//cmd/controller-gen)\";",
             "cd \"$$GOPATH/src/" + go_prefix + "\";",
@@ -47,11 +47,7 @@ def generated_crds(name, go_prefix, paths, visibility = [], deps = []):
             "  echo \"---\" >> \"$$out\";",
             "done;",
         ]),
-        outs = ["crds.yaml.generated"],
-        go_deps = [
-            "//pkg/apis/certmanager/v1alpha2:go_default_library",
-            "//pkg/apis/acme/v1alpha2:go_default_library",
-            "//pkg/apis/meta/v1:go_default_library",
-        ],
+        outs = [out],
+        go_deps = deps,
         visibility = visibility,
     )

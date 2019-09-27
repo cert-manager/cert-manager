@@ -1,6 +1,5 @@
 # gazelle:prefix github.com/jetstack/cert-manager
 # gazelle:proto disable_global
-# gazelle:exclude hack
 # gazelle:exclude docs/generated/reference/generate/json_swagger
 
 load("@io_bazel_rules_docker//container:container.bzl", "container_bundle")

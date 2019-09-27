@@ -89,7 +89,7 @@ esac
 rm -rf vendor
 "$go" mod tidy
 "$gazelle" update-repos \
-  --from_file=go.mod --to_macro=repos.bzl%go_repositories \
+  --from_file=go.mod --to_macro=hack/build/repos.bzl%go_repositories \
   --build_file_generation=on --build_file_proto_mode=disable
 "${update_bazel[@]}" # TODO(fejta): do we still need to do this?
 "${update_deps_licenses[@]}"
