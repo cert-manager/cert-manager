@@ -252,6 +252,34 @@ func (s *Suite) Define() {
 			Expect(err).NotTo(HaveOccurred())
 		})
 
+		It("should issue a certificate that includes only a URISANs name", func() {
+			s.checkFeatures(URISANsFeature)
+
+			testCertificate := &cmapi.Certificate{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "testcert",
+					Namespace: f.Namespace.Name,
+				},
+				Spec: cmapi.CertificateSpec{
+					SecretName: "testcert-tls",
+					URISANs: []string{
+						"spiffe://cluster.local/ns/sandbox/sa/foo",
+					},
+					IssuerRef: issuerRef,
+				},
+			}
+			By("Creating a Certificate")
+			err := f.CRClient.Create(ctx, testCertificate)
+			Expect(err).NotTo(HaveOccurred())
+
+			By("Waiting for the Certificate to be issued...")
+			err = f.Helper().WaitCertificateIssuedValid(f.Namespace.Name, "testcert", time.Minute*5)
+			Expect(err).NotTo(HaveOccurred())
+
+			err = f.Helper().WaitCertificateIssuedValid(f.Namespace.Name, "testcert", time.Minute*5)
+			Expect(err).NotTo(HaveOccurred())
+		})
+
 		It("should issue another certificate with the same private key if the existing certificate and CertificateRequest are deleted", func() {
 			s.checkFeatures(ReusePrivateKeyFeature)
 

@@ -98,4 +98,8 @@ const (
 	// certificates for the same private key. This is useful for some issuers
 	// that have trouble being configured to support this feature.
 	ReusePrivateKeyFeature Feature = "ReusePrivateKey"
+
+	// URISANs denotes whether to the target issuer is able to sign a certificate
+	// that includes a URISANs. ACME providers do not support this.
+	URISANsFeature Feature = "URISANs"
 )
