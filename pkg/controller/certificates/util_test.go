@@ -71,6 +71,20 @@ func TestCertificateMatchesSpec(t *testing.T) {
 			expErrors: nil,
 		},
 
+		"if no common name but DNS and all match then return matched": {
+			cb: mustCreateCryptoBundle(t, gen.CertificateFrom(exampleBundle.certificate,
+				gen.SetCertificateCommonName(""),
+			)),
+			certificate: gen.CertificateFrom(exampleBundle.certificate,
+				gen.SetCertificateCommonName(""),
+			),
+			fakeLister: listers.FakeSecretListerFrom(listers.NewFakeSecretLister(),
+				listers.SetFakeSecretNamespaceListerGet(secret, nil),
+			),
+			expMatch:  true,
+			expErrors: nil,
+		},
+
 		"if common name empty but requested common name in DNS names then match": {
 			cb: mustCreateCryptoBundle(t, gen.CertificateFrom(exampleBundle.certificate,
 				gen.SetCertificateDNSNames("a.example.com", "common.name.example.com"),

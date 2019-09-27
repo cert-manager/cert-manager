@@ -95,7 +95,7 @@ func certificateMatchesSpec(crt *v1alpha2.Certificate, key crypto.Signer, cert *
 	// the Common Name or a DNS Name
 	expectedCN := crt.Spec.CommonName
 	gotCN := append(cert.DNSNames, cert.Subject.CommonName)
-	if !util.Contains(gotCN, expectedCN) {
+	if len(expectedCN) > 0 && !util.Contains(gotCN, expectedCN) {
 		errs = append(errs, fmt.Sprintf("Common Name on TLS certificate not up to date (%q): %s",
 			expectedCN, gotCN))
 	}
