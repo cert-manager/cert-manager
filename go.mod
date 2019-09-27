@@ -2,6 +2,18 @@ module github.com/jetstack/cert-manager
 
 go 1.12
 
+// Pin k8s.io/* dependencies to kubernetes-1.16.0
+replace (
+	k8s.io/api => k8s.io/api v0.0.0-20190918155943-95b840bb6a1f
+	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.0.0-20190918161926-8f644eb6e783
+	k8s.io/apimachinery => k8s.io/apimachinery v0.0.0-20190913080033-27d36303b655
+	k8s.io/apiserver => k8s.io/apiserver v0.0.0-20190918160949-bfa5e2e684ad
+	k8s.io/client-go => k8s.io/client-go v0.0.0-20190918160344-1fbdaa4c8d90
+	k8s.io/code-generator => k8s.io/code-generator v0.0.0-20190912054826-cd179ad6a269
+	k8s.io/component-base => k8s.io/component-base v0.0.0-20190918160511-547f6c5d7090
+	k8s.io/kube-aggregator => k8s.io/kube-aggregator v0.0.0-20190918161219-8c8f079fddc3
+)
+
 require (
 	cloud.google.com/go v0.38.0
 	github.com/Azure/azure-sdk-for-go v32.5.0+incompatible
@@ -85,13 +97,13 @@ require (
 	gopkg.in/ini.v1 v1.42.0 // indirect
 	gopkg.in/mgo.v2 v2.0.0-20180705113604-9856a29383ce // indirect
 	gopkg.in/ory-am/dockertest.v3 v3.3.4 // indirect
-	k8s.io/api v0.0.0-20190904195148-bacad065d7c3
+	k8s.io/api v0.0.0-20190918155943-95b840bb6a1f
 	k8s.io/apiextensions-apiserver v0.0.0-20190904201032-27869d30407f
-	k8s.io/apimachinery v0.0.0-20190831152136-93cd198ca677
-	k8s.io/apiserver v0.0.0-20190904200128-43b0be24f0d4
+	k8s.io/apimachinery v0.0.0-20190913080033-27d36303b655
+	k8s.io/apiserver v0.0.0-20190918160949-bfa5e2e684ad
 	k8s.io/client-go v11.0.1-0.20190409021438-1a26190bd76a+incompatible
-	k8s.io/code-generator v0.0.0-20190831154557-969864c73cc1
-	k8s.io/component-base v0.0.0-20190904195659-0da46b42124e
+	k8s.io/code-generator v0.0.0-20190912054826-cd179ad6a269
+	k8s.io/component-base v0.0.0-20190918160511-547f6c5d7090
 	k8s.io/klog v0.4.0
 	k8s.io/kube-aggregator v0.0.0-20190222095010-0b78038fe9e5
 	k8s.io/kube-openapi v0.0.0-20190816220812-743ec37842bf
@@ -109,21 +121,5 @@ replace sigs.k8s.io/controller-runtime => github.com/munnerz/controller-runtime 
 replace github.com/evanphx/json-patch => github.com/evanphx/json-patch v0.0.0-20190203023257-5858425f7550
 
 replace github.com/munnerz/goautoneg => github.com/munnerz/goautoneg v0.0.0-20190414153302-2ae31c8b6b30
-
-replace k8s.io/api => k8s.io/api v0.0.0-20190904195148-bacad065d7c3
-
-replace k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.0.0-20190904201032-27869d30407f
-
-replace k8s.io/apimachinery => k8s.io/apimachinery v0.0.0-20190831152136-93cd198ca677
-
-replace k8s.io/apiserver => k8s.io/apiserver v0.0.0-20190904200128-43b0be24f0d4
-
-replace k8s.io/client-go => k8s.io/client-go v0.0.0-20190904195533-1592ba1f99b8
-
-replace k8s.io/code-generator => k8s.io/code-generator v0.0.0-20190831154557-969864c73cc1
-
-replace k8s.io/component-base => k8s.io/component-base v0.0.0-20190904195659-0da46b42124e
-
-replace k8s.io/kube-aggregator => k8s.io/kube-aggregator v0.0.0-20190904200350-34abed88ab5e
 
 replace sigs.k8s.io/controller-tools => github.com/munnerz/controller-tools v0.1.10-0.20190726150537-a7ada4fef919
