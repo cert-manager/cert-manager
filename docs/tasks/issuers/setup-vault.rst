@@ -225,7 +225,7 @@ authentication method.
 
 .. code-block:: yaml
 
-    apiVersion: certmanager.k8s.io/v1alpha1
+    apiVersion: cert-manager.io/v1alpha2
     kind: Issuer
     metadata:
       name: vault-issuer
@@ -249,7 +249,7 @@ the normal way.
 
 .. code-block:: yaml
 
-    apiVersion: certmanager.k8s.io/v1alpha1
+    apiVersion: cert-manager.io/v1alpha2
     kind: Certificate
     metadata:
       name: example-com
