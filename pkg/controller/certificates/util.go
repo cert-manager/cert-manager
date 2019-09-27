@@ -121,6 +121,10 @@ func certificateMatchesSpec(crt *v1alpha2.Certificate, key crypto.Signer, cert *
 	// TODO: Refactor so that the secret is passed as argument?
 	secret, err := secretLister.Secrets(crt.Namespace).Get(crt.Spec.SecretName)
 
+	if secret.Annotations == nil {
+		secret.Annotations = make(map[string]string)
+	}
+
 	// validate that the issuer is correct
 	if crt.Spec.IssuerRef.Name != secret.Annotations[v1alpha2.IssuerNameAnnotationKey] {
 		errs = append(errs, fmt.Sprintf("Issuer of the certificate is not up to date: %q", secret.Annotations[v1alpha2.IssuerNameAnnotationKey]))
