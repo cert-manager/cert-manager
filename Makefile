@@ -29,19 +29,16 @@ KUBECONFIG ?= $$HOME/.kube/config
 CMDS := $(shell find ./cmd/ -maxdepth 1 -type d -exec basename {} \; | grep -v cmd)
 
 .PHONY: help build verify push $(CMDS) e2e_test images images_push \
-	verify_lint verify_unit verify_deps verify_codegen verify_docs verify_chart \
+	verify_deps verify_chart
 
 help:
 	# This Makefile provides common wrappers around Bazel invocations.
 	#
 	### Verify targets
 	#
-	# verify_lint        - run 'lint' targets
-	# verify_unit        - run unit tests
-	# verify_deps        - verifiy vendor/ and Gopkg.lock is up to date
-	# verify_codegen     - verify generated code, including 'static deploy manifests', is up to date
-	# verify_docs        - verify the generated reference docs for API types is up to date
-	# verify_chart       - runs Helm chart linter (e.g. ensuring version has been bumped etc)
+	# verify             - runs all test targets (bazel test //...)
+	# verify_deps        - ensure go module files are up to date (hack/update-deps.sh)
+	# verify_chart       - runs Helm chart linter
 	#
 	### Generate targets
 	#
@@ -50,7 +47,7 @@ help:
 	### Build targets
 	#
 	# controller         - build a binary of the 'controller'
-	# injectorcontroller - build a binary of the 'injectorcontroller'
+	# cainjector         - build a binary of the 'cainjector'
 	# webhook            - build a binary of the 'webhook'
 	# acmesolver         - build a binary of the 'acmesolver'
 	# e2e_test           - builds and runs end-to-end tests.
@@ -60,41 +57,22 @@ help:
 	#
 	# Image targets can be run with optional args DOCKER_REPO and DOCKER_TAG:
 	#
-	#     make images DOCKER_REPO=quay.io/yourusername DOCKER_TAG=experimental-tag
+	#     make images DOCKER_REPO=quay.io/yourusername APP_VERSION=v0.11.0-dev.my-feature
 	#
 
 # Alias targets
 ###############
 
 build: images
-verify: verify_lint verify_codegen verify_deps verify_unit verify_docs
 push: docker_push
 
-verify_lint:
-	bazel test \
-		//hack:verify-boilerplate \
-		//hack:verify-links \
-		//hack:verify-errexit \
-		//hack:verify-gofmt
+verify:
+	bazel test //...
 
-verify_unit:
-	bazel test \
-		$$(bazel query 'kind("go._*test", "...")' \
-			| grep -v //vendor/ \
-			| grep -v //test/e2e \
-		)
-
+# TODO: remove this rule in favour of calling hack/verify-deps directly
 verify_deps:
 	./hack/verify-deps.sh
 	# verify-deps-licenses.sh is implicitly checked by the verify-deps script
-
-verify_codegen:
-	bazel test \
-		//hack:verify-codegen
-
-verify_docs:
-	bazel test \
-		//hack:verify-reference-docs
 
 # requires docker
 verify_chart:
@@ -125,19 +103,11 @@ e2e_test:
 
 # Generate targets
 ##################
-
 generate:
-	bazel run //hack:update-bazel
-	bazel run //hack:update-gofmt
-	bazel run //hack:update-codegen
-	bazel run //hack:update-reference-docs
-	./hack/update-vendor.sh
-	./hack/update-vendor-licenses.sh
+	./hack/update-all.sh
 
 # Docker targets
 ################
-
-BAZEL_IMAGE_ENV := APP_VERSION=$(APP_VERSION) DOCKER_REPO=$(DOCKER_REPO) DOCKER_TAG=$(APP_VERSION)
 images:
 	bazel run //hack/release -- \
 		--repo-root "$$(pwd)" \
