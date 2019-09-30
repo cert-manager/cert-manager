@@ -38,6 +38,10 @@ var _ = framework.ConformanceDescribe("Certificates", func() {
 		// key or using the same private key multiple times.
 		certificates.ECDSAFeature,
 		certificates.ReusePrivateKeyFeature,
+
+		// Venafi does not support signing a certificate with only URISANs and an
+		// empty common name.
+		certificates.URISANsFeature,
 	)
 
 	provisioner := new(venafiProvisioner)
