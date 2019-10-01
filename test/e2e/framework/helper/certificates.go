@@ -60,11 +60,8 @@ func (h *Helper) WaitForCertificateReady(ns, name string, timeout time.Duration)
 		},
 	)
 
-	if err != nil {
-		return nil, err
-	}
-
-	return certificate, nil
+	// return certificate even when error to use for debugging
+	return certificate, err
 }
 
 // WaitForCertificateNotReady waits for the certificate resource to enter a
@@ -91,11 +88,8 @@ func (h *Helper) WaitForCertificateNotReady(ns, name string, timeout time.Durati
 		},
 	)
 
-	if err != nil {
-		return nil, err
-	}
-
-	return certificate, nil
+	// return certificate even when error to use for debugging
+	return certificate, err
 }
 
 // ValidateIssuedCertificate will ensure that the given Certificate has a
@@ -247,6 +241,7 @@ func (h *Helper) WaitCertificateIssuedValidTLS(ns, name string, timeout time.Dur
 		log.Logf("Error waiting for Certificate to become Ready: %v", err)
 		h.Kubectl(ns).DescribeResource("certificate", name)
 		h.Kubectl(ns).Describe("order", "challenge")
+		h.describeCertificateRequestFromCertificate(ns, certificate)
 		return err
 	}
 
@@ -255,8 +250,22 @@ func (h *Helper) WaitCertificateIssuedValidTLS(ns, name string, timeout time.Dur
 		log.Logf("Error validating issued certificate: %v", err)
 		h.Kubectl(ns).DescribeResource("certificate", name)
 		h.Kubectl(ns).Describe("order", "challenge")
+		h.describeCertificateRequestFromCertificate(ns, certificate)
 		return err
 	}
 
 	return nil
+}
+
+func (h *Helper) describeCertificateRequestFromCertificate(ns string, certificate *v1alpha2.Certificate) {
+	if certificate == nil {
+		return
+	}
+
+	crName, err := apiutil.ComputeCertificateRequestName(certificate)
+	if err != nil {
+		log.Logf("Failed to compute CertificateRequest name from certificate: %s", err)
+		return
+	}
+	h.Kubectl(ns).DescribeResource("certificaterequest", crName)
 }

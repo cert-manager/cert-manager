@@ -275,9 +275,6 @@ func (s *Suite) Define() {
 			By("Waiting for the Certificate to be issued...")
 			err = f.Helper().WaitCertificateIssuedValid(f.Namespace.Name, "testcert", time.Minute*5)
 			Expect(err).NotTo(HaveOccurred())
-
-			err = f.Helper().WaitCertificateIssuedValid(f.Namespace.Name, "testcert", time.Minute*5)
-			Expect(err).NotTo(HaveOccurred())
 		})
 
 		It("should issue another certificate with the same private key if the existing certificate and CertificateRequest are deleted", func() {

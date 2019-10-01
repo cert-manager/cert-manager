@@ -407,6 +407,7 @@ func (v *VaultInitializer) setupRole() error {
 		"allow_any_name": "true",
 		"max_ttl":        "2160h",
 		"key_type":       "any",
+		"require_cn":     "false",
 	}
 	url := path.Join("/v1", v.IntermediateMount, "roles", v.Role)
 
