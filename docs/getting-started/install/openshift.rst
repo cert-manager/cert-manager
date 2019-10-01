@@ -46,28 +46,6 @@ although you will need to make modifications to the deployment manifests.
    # Create a namespace to run cert-manager in
    oc create namespace cert-manager
 
-As part of the installation, cert-manager also deploys a
-`ValidatingWebhookConfiguration`_ resource in order to validate that the
-Issuer, ClusterIssuer and Certificate resources we will create after
-installation are valid.
-
-In order to deploy the ValidatingWebhookConfiguration, cert-manager creates
-a number of 'internal' Issuer and Certificate resources in its own namespace.
-
-This creates a chicken-and-egg problem, where cert-manager requires the
-webhook in order to create the resources, and the webhook requires cert-manager
-in order to run.
-
-We avoid this problem by disabling resource validation on the namespace that
-cert-manager runs in:
-
-.. code-block:: shell
-
-   # Disable resource validation on the cert-manager namespace
-   oc label namespace cert-manager cert-manager.io/disable-validation=true
-
-You can read more about the webhook on the :doc:`webhook document <../webhook>`.
-
 We can now go ahead and install cert-manager. All resources
 (the CustomResourceDefinitions, cert-manager, and the webhook component)
 are included in a single YAML manifest file:

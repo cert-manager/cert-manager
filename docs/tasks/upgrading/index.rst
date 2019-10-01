@@ -41,11 +41,6 @@ version number you want to install:
    # Ensure the local Helm chart repository cache is up to date
    helm repo update
 
-   # If you are upgrading from v0.5 or below, you should manually add this
-   # label to your cert-manager namespace to ensure the `webhook component`_
-   # can provision correctly.
-   kubectl label namespace cert-manager cert-manager.io/disable-validation=true
-
    helm upgrade --version <version> <release_name> jetstack/cert-manager
 
 This will upgrade you to the latest version of cert-manager, as listed in the
@@ -70,11 +65,6 @@ can begin the upgrade process like so - replacing ``<version>`` with the
 version number you want to install:
 
 .. code:: shell
-
-   # If you are upgrading from v0.5 or below, you should manually add this
-   # label to your cert-manager namespace to ensure the `webhook component`_
-   # can provision correctly.
-   kubectl label namespace cert-manager cert-manager.io/disable-validation=true
 
    kubectl apply \
         -f https://github.com/jetstack/cert-manager/releases/download/<version>/cert-manager.yaml

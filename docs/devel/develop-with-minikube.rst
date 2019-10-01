@@ -73,11 +73,6 @@ Deploy that version with helm
    # Install custom resources before running helm
    $ kubectl apply -f deploy/manifests/00-crds.yaml
 
-   # IMPORTANT: if you are deploying into a namespace that **already exists**,
-   # you MUST ensure the namespace has an additional label on it in order for
-   # the deployment to succeed
-   $ kubectl label namespace <deployment-namespace> cert-manager.io/disable-validation="true"
-
    # Install our freshly built cert-manager image
    $ helm install \
         --set image.tag=canary \
