@@ -404,10 +404,11 @@ func (v *VaultInitializer) setupRole() error {
 	}
 
 	params := map[string]string{
-		"allow_any_name": "true",
-		"max_ttl":        "2160h",
-		"key_type":       "any",
-		"require_cn":     "false",
+		"allow_any_name":   "true",
+		"max_ttl":          "2160h",
+		"key_type":         "any",
+		"require_cn":       "false",
+		"allowed_uri_sans": "spiffe://cluster.local/*",
 	}
 	url := path.Join("/v1", v.IntermediateMount, "roles", v.Role)
 
