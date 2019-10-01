@@ -31,7 +31,12 @@ nogo(
         "@org_golang_x_tools//go/analysis/passes/buildtag:go_tool_library",
         "@org_golang_x_tools//go/analysis/passes/buildssa:go_tool_library",
         "@org_golang_x_tools//go/analysis/passes/bools:go_tool_library",
-        "@org_golang_x_tools//go/analysis/passes/atomicalign:go_tool_library",
+        ## Disable atomicalign check as it fails when building with linux/arm
+        ## --platforms flag.
+        ## To reproduce, run:
+        ## bazel build --platforms=@io_bazel_rules_go//go/toolchain:linux_arm @io_k8s_apiserver//pkg/server:go_default_library
+        ## using ref eb61adf0fc3a38b0767df8d3cde16d4ed9e61d3d (HEAD of master).
+        # "@org_golang_x_tools//go/analysis/passes/atomicalign:go_tool_library",
         "@org_golang_x_tools//go/analysis/passes/atomic:go_tool_library",
         "@org_golang_x_tools//go/analysis/passes/assign:go_tool_library",
         "@org_golang_x_tools//go/analysis/passes/inspect:go_tool_library",
