@@ -62,6 +62,13 @@ Example usage::
 
     --dns01-recursive-nameservers "8.8.8.8:53,1.1.1.1:53"
 
+If you're using the `cert-manager` helm chart, you can set recursive nameservers 
+through `.Values.extraArgs` or at the command at helm install/upgrade time 
+with `--set`:
+
+    --set 'extraArgs={--dns01-recursive-nameservers=8.8.8.8:53\,1.1.1.1:53}'
+
+
 .. _supported-dns01-providers:
 
 Delegated Domains for DNS01
