@@ -78,7 +78,7 @@ func (v *Venafi) Sign(csrPEM []byte, duration time.Duration) (cert []byte, err e
 		break
 	default:
 		return nil, errors.New(
-			"certificate request contains no Common Name, DNS Name, nor URI SAN, therefore no ObjectName can be supplied")
+			"certificate request contains no Common Name, DNS Name, nor URI SAN, at least one must be supplied to be used as the Venafi certificate objects name")
 	}
 
 	// Set the request CSR with the passed value
