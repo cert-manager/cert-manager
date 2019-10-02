@@ -5,9 +5,9 @@ Webhook component
 In order to provide advanced resource validation, cert-manager includes a
 ValidatingWebhookConfiguration_ resource which is deployed into the cluster.
 
-This allows cert-manager to validate that Issuer, ClusterIssuer and Certificate
-resources that are submitted to the apiserver are syntactically valid, and
-catch issues with your resources early on.
+This allows cert-manager to validate that cert-manager API resources that are
+submitted to the apiserver are syntactically valid, and catch issues with your
+resources early on.
 
 If you disable the webhook component, cert-manager will still perform the
 same resource validation however it will not reject 'create' events when the
@@ -32,46 +32,25 @@ The ValidatingWebhookConfiguration instructs the Kubernetes apiserver to
 POST the contents of any Create or Update operations performed on cert-manager
 resource types in order to validate that they are setting valid configurations.
 
-This allows us to ensure mis-configurations are caught early on and communicated
-to you.
+This allows us to ensure mis-configurations are caught early on and
+communicated to you.
 
 In order for this to work, the webhook requires a TLS certificate that the
-apiserver is configured to trust.
+apiserver is configured to trust. This is created by the webhook itself and is
+implemented by the following two Secrets:
 
-The cert-manager deployment manifests define two Issuer resources, and two
-Certificate resources:
-
-* issuer/cert-manager-webhook-selfsign - A self signing Issuer that is used
-  to issue a self signed root CA certificate.
-* certificate/cert-manager-webhook-ca - A self-signed root CA certificate
+* secret/cert-manager-webhook-ca - A self-signed root CA certificate
   which is used to sign certificates for the webhook pod.
-* issuer/cert-manager-webhook-ca - A CA Issuer that is used to issue
-  certificates used by the webhook pod to serve with.
-* certificate/cert-manager-webhook-webhook-tls - A TLS certificate issued by the
+* secret/cert-manager-webhook-tls - A TLS certificate issued by the
   root CA above, served by the webhook.
 
-You can check the status of these resources to ensure they're functioning
-correctly by running:
+The webhook's 'webhookbootstrap' controller is responsible for creating these
+secrets with no manual intervention needed.
 
-.. code-block:: shell
-
-   kubectl get issuer --namespace cert-manager
-   NAME                            AGE
-   cert-manager-webhook-ca         10m
-   cert-manager-webhook-selfsign   10m
-
-   kubectl get certificate -o wide --namespace cert-manager
-   NAME                               READY   SECRET                             ISSUER                          STATUS                                          AGE
-   cert-manager-webhook-ca            True    cert-manager-webhook-ca            cert-manager-webhook-selfsign   Certificate is up to date and has not expired   10m
-   cert-manager-webhook-webhook-tls   True    cert-manager-webhook-webhook-tls   cert-manager-webhook-ca         Certificate is up to date and has not expired   10m
-
-If the certificates or issuer are not Ready or you cannot see them, you should
-check the :doc:`troubleshooting <./troubleshooting>` guide for help.
-
-.. note::
-   If you are running Kubernetes v1.10 or earlier, you may need to run
-   ``kubectl describe`` instead of ``kubectl get`` as the
-   'additionalPrinterColumns' functionality only moved to beta in v1.11.
+If errors occur around the webhook but the webhook is running then the webhook
+is most likely not reachable from the API server. In this case, ensure that the
+API server can communicate with the webhook by following the GKE private cluster
+explanation below.
 
 cainjector
 ----------
@@ -100,28 +79,6 @@ This section contains known issues with the webhook component.
 If you're having problems, or receiving errors when creating cert-manager
 resources, please read through this section for help.
 
-Disabling validation on the cert-manager namespace
---------------------------------------------------
-
-If you've installed cert-manager with custom manifests, or have performed an
-upgrade from an earlier version, it's important to make sure that the namespace
-that the webhook is running in has an additional label applied to it in order
-to disable resource validation on the namespace that the webhook runs in.
-
-If this step is not completed, cert-manager will not be able to provision
-certificates for the webhook correctly, causing a chicken-egg situation.
-
-To apply the label, run:
-
-.. code-block:: shell
-
-   kubectl label namespace cert-manager cert-manager.io/disable-validation=true
-
-You may need to wait a little while before cert-manager retries issuing the
-certificates if they have been failing for a while due to cert-manager's built
-in back-offs.
-
-
 Running on private GKE clusters
 -------------------------------
 
@@ -130,9 +87,12 @@ automatically configure VPC peering between your Kubernetes cluster's network
 and a separate Google managed project.
 
 In order to restrict what Google are able to access within your cluster, the
-firewall rules configured restrict access to your Kubernetes pods.
+firewall rules configured restrict access to your Kubernetes pods. This will
+mean that you will experience the webhook to not work and expierence errors such
+as `Internal error occurred: failed calling admission webhook ... the server is
+currently unable to handle the request`.
 
-This means that in order to use the webhook component with a GKE private
+In order to use the webhook component with a GKE private
 cluster, you must configure an additional firewall rule to allow the GKE
 control plane access to your webhook pod.
 
@@ -151,8 +111,8 @@ If you are having issues with the webhook and cannot use it at this time,
 you can optionally disable the webhook altogether.
 
 Doing this may expose your cluster to mis-configuration problems that in some
-cases could cause cert-manager to stop working altogether (i.e. if invalid
-types are set for fields on cert-manager resources).
+cases could cause cert-manager to stop working altogether (i.e. if invalid types
+are set for fields on cert-manager resources).
 
 How you disable the webhook depends on your deployment method.
 
