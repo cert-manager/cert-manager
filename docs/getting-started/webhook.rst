@@ -5,9 +5,9 @@ Webhook component
 In order to provide advanced resource validation, cert-manager includes a
 ValidatingWebhookConfiguration_ resource which is deployed into the cluster.
 
-This allows cert-manager to validate that Issuer, ClusterIssuer, Certificate,
-and CertificateRequest resources that are submitted to the apiserver are
-syntactically valid, and catch issues with your resources early on.
+This allows cert-manager to validate that cert-manager API resources that are
+submitted to the apiserver are syntactically valid, and catch issues with your
+resources early on.
 
 If you disable the webhook component, cert-manager will still perform the
 same resource validation however it will not reject 'create' events when the
@@ -43,6 +43,14 @@ implemented by the following two Secrets:
   which is used to sign certificates for the webhook pod.
 * secret/cert-manager-webhook-tls - A TLS certificate issued by the
   root CA above, served by the webhook.
+
+The webhook's 'webhookbootstrap' controller is responsible for creating these
+secrets with no manual intervention needed.
+
+If errors occur around the webhook but the webhook is running then the webhook
+is most likely not reachable from the API server. In this case, ensure that the
+API server can communicate with the webhook by following the GKE private cluster
+explanation below.
 
 cainjector
 ----------

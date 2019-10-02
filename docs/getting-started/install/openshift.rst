@@ -46,6 +46,20 @@ although you will need to make modifications to the deployment manifests.
    # Create a namespace to run cert-manager in
    oc create namespace cert-manager
 
+As part of the installation, cert-manager also deploys a webhook deployment as
+an `APIService`_. This can cause issues when uninstalling cert-manager if the
+API service still exists but the webhook is no longer running as the API server
+is unable to reach the validating webhook. Ensure to follow the documentation
+when uninstalling cert-manager. TODO (@joshvanl): add uninstalling documentation
+link when this has been created.
+
+The webhook enables cert-manager to implement validation and mutating webhooks
+on cert-manager resources. A `ValidatingWebhookConfiguration`_ resource is
+deployed to validate cert-manager resources we will create after installation.
+No mutating webhooks are currently implemented.
+
+You can read more about the webhook on the :doc:`webhook document <../webhook>`.
+
 We can now go ahead and install cert-manager. All resources
 (the CustomResourceDefinitions, cert-manager, and the webhook component)
 are included in a single YAML manifest file:
@@ -78,5 +92,6 @@ If you have any issues with your installation, please refer to the
 :doc:`troubleshooting guide <../troubleshooting>`.
 
 .. _`CustomResourceDefinitions`: https://kubernetes.io/docs/concepts/extend-kubernetes/api-extension/custom-resources/
+.. _`APIService`: https://kubernetes.io/docs/tasks/access-kubernetes-api/setup-extension-api-server
 .. _`kubernetes/kubernetes#69590`: https://github.com/kubernetes/kubernetes/issues/69590
 .. _`ValidatingWebhookConfiguration`: https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers/
