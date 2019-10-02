@@ -71,7 +71,7 @@ func (c *controller) Sync(ctx context.Context, ch *cmacme.Challenge) (err error)
 			return
 		}
 		_, updateErr := c.cmClient.AcmeV1alpha2().Challenges(ch.Namespace).UpdateStatus(ch)
-		if err != nil {
+		if updateErr != nil {
 			err = utilerrors.NewAggregate([]error{err, updateErr})
 		}
 	}()
