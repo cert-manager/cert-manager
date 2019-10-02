@@ -100,7 +100,7 @@ func (n *Nginx) Setup(cfg *config.Config) error {
 			},
 			{
 				Key:   "controller.image.tag",
-				Value: "0.23.0",
+				Value: "0.26.1",
 			},
 			{
 				Key:   "defaultBackend.image.pullPolicy",
