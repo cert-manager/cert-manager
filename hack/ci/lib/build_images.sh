@@ -43,8 +43,8 @@ build_images() {
         "${DOCKER_REPO}"/cert-manager-acmesolver:"${DOCKER_TAG}" \
         "${DOCKER_REPO}"/cert-manager-webhook:"${DOCKER_TAG}" \
         "pebble:bazel" \
-        "quay.io/kubernetes-ingress-controller/nginx-ingress-controller:0.23.0" \
-        "k8s.gcr.io/defaultbackend:bazel" \
+        "quay.io/kubernetes-ingress-controller/nginx-ingress-controller:0.26.1" \
+        "k8s.gcr.io/defaultbackend-amd64:bazel" \
         "sample-webhook:bazel" \
         "vault:bazel" \
         "gcr.io/kubernetes-helm/tiller:bazel" \
