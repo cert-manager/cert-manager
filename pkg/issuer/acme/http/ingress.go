@@ -130,7 +130,7 @@ func buildIngressResource(ch *cmacme.Challenge, svcName string) (*extv1beta1.Ing
 	ingAnnotations["nginx.ingress.kubernetes.io/whitelist-source-range"] = "0.0.0.0/0,::/0"
 
 	if ingClass != nil {
-		ingAnnotations[cmapi.IngressKey] = *ingClass
+		ingAnnotations[cmapi.IngressClassAnnotationKey] = *ingClass
 	}
 
 	ingPathToAdd := ingressPath(ch.Spec.Token, svcName)

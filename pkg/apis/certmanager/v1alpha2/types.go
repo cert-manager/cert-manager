@@ -42,14 +42,10 @@ const (
 	// if the challenge type is set to http01
 	IngressACMEIssuerHTTP01IngressClassAnnotationKey = "acme.cert-manager.io/http01-ingress-class"
 
-	IngressClassAnnotationKey = IngressKey
-)
-
-const (
-	// IngressKey picks a specific "class" for the Ingress.
-	// The controller only processes Ingresses with this annotation either
-	// unset, or set to either the configured value or the empty string.
-	IngressKey = "kubernetes.io/ingress.class"
+	// IngessClassAnnotationKey picks a specific "class" for the Ingress. The
+	// controller only processes Ingresses with this annotation either unset, or
+	// set to either the configured value or the empty string.
+	IngressClassAnnotationKey = "kubernetes.io/ingress.class"
 )
 
 // Annotation names for CertificateRequests
