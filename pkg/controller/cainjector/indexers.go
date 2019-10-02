@@ -42,7 +42,7 @@ func buildCertToInjectableFunc(listTyp runtime.Object, resourceName string) cert
 	return func(log logr.Logger, cl client.Client, certName types.NamespacedName) []ctrl.Request {
 		log = log.WithValues("type", resourceName)
 		objs := listTyp.DeepCopyObject()
-		if err := cl.List(context.Background(), objs, client.MatchingField(injectFromPath, certName.String())); err != nil {
+		if err := cl.List(context.Background(), objs, client.MatchingFields{injectFromPath: certName.String()}); err != nil {
 			log.Error(err, "unable to fetch injectables associated with certificate")
 			return nil
 		}
@@ -145,7 +145,7 @@ func buildSecretToInjectableFunc(listTyp runtime.Object, resourceName string) se
 	return func(log logr.Logger, cl client.Client, secretName types.NamespacedName) []ctrl.Request {
 		log = log.WithValues("type", resourceName)
 		objs := listTyp.DeepCopyObject()
-		if err := cl.List(context.Background(), objs, client.MatchingField(injectFromSecretPath, secretName.String())); err != nil {
+		if err := cl.List(context.Background(), objs, client.MatchingFields{injectFromSecretPath: secretName.String()}); err != nil {
 			log.Error(err, "unable to fetch injectables associated with secret")
 			return nil
 		}
