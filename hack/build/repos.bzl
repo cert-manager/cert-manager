@@ -1867,8 +1867,8 @@ def go_repositories():
         build_file_proto_mode = "disable",
         importpath = "sigs.k8s.io/controller-tools",
         replace = "github.com/munnerz/controller-tools",
-        sum = "h1:qfTh437n4hYxtrSsQw3cQ9awW95XWijyvPvuT2Vlib0=",
-        version = "v0.1.10-0.20190726150537-a7ada4fef919",
+        sum = "h1:ir1MWd4vmDJIXtv+goGxPBduauxbEeaJLLdo7VArw2M=",
+        version = "v0.1.10-0.20191002183933-2bcde27e8caa",
     )
     go_repository(
         name = "io_k8s_sigs_structured_merge_diff",
@@ -2213,4 +2213,12 @@ def go_repositories():
         importpath = "github.com/Shopify/toxiproxy",
         sum = "h1:TKdv8HiTLgE5wdJuEML90aBgNWsokNbMijUGhmcoBJc=",
         version = "v2.1.4+incompatible",
+    )
+    go_repository(
+        name = "in_gopkg_yaml_v3",
+        build_file_generation = "on",
+        build_file_proto_mode = "disable",
+        importpath = "gopkg.in/yaml.v3",
+        sum = "h1:B0J02caTR6tpSJozBJyiAzT6CtBzjclw4pgm9gg8Ys0=",
+        version = "v3.0.0-20190905181640-827449938966",
     )

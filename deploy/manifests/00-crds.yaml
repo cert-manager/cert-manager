@@ -27,7 +27,9 @@ spec:
   group: acme.cert-manager.io
   names:
     kind: Challenge
+    listKind: ChallengeList
     plural: challenges
+    singular: challenge
   scope: Namespaced
   subresources:
     status: {}
@@ -368,7 +370,7 @@ spec:
                             use a SecretKeySelector to reference a Secret resource.
                             For details on the schema of this field, consult the webhook
                             provider implementation's documentation.
-                          type: object
+                          x-kubernetes-preserve-unknown-fields: true
                         groupName:
                           description: The API group name that should be used when
                             POSTing ChallengePayload resources to the webhook apiserver.
@@ -1362,6 +1364,7 @@ spec:
       required:
       - metadata
       type: object
+  version: v1alpha2
   versions:
   - name: v1alpha2
     served: true
@@ -1403,7 +1406,9 @@ spec:
   group: acme.cert-manager.io
   names:
     kind: Order
+    listKind: OrderList
     plural: orders
+    singular: order
   scope: Namespaced
   subresources:
     status: {}
@@ -1569,6 +1574,7 @@ spec:
       required:
       - metadata
       type: object
+  version: v1alpha2
   versions:
   - name: v1alpha2
     served: true
@@ -1610,10 +1616,12 @@ spec:
   group: cert-manager.io
   names:
     kind: CertificateRequest
+    listKind: CertificateRequestList
     plural: certificaterequests
     shortNames:
     - cr
     - crs
+    singular: certificaterequest
   scope: Namespaced
   subresources:
     status: {}
@@ -1757,6 +1765,7 @@ spec:
               type: string
           type: object
       type: object
+  version: v1alpha2
   versions:
   - name: v1alpha2
     served: true
@@ -1801,10 +1810,12 @@ spec:
   group: cert-manager.io
   names:
     kind: Certificate
+    listKind: CertificateList
     plural: certificates
     shortNames:
     - cert
     - certs
+    singular: certificate
   scope: Namespaced
   subresources:
     status: {}
@@ -1996,6 +2007,7 @@ spec:
               type: string
           type: object
       type: object
+  version: v1alpha2
   versions:
   - name: v1alpha2
     served: true
@@ -2018,7 +2030,9 @@ spec:
   group: cert-manager.io
   names:
     kind: ClusterIssuer
+    listKind: ClusterIssuerList
     plural: clusterissuers
+    singular: clusterissuer
   scope: Cluster
   subresources:
     status: {}
@@ -2384,7 +2398,7 @@ spec:
                                   to reference a Secret resource. For details on the
                                   schema of this field, consult the webhook provider
                                   implementation's documentation.
-                                type: object
+                                x-kubernetes-preserve-unknown-fields: true
                               groupName:
                                 description: The API group name that should be used
                                   when POSTing ChallengePayload resources to the webhook
@@ -3658,6 +3672,7 @@ spec:
               type: array
           type: object
       type: object
+  version: v1alpha2
   versions:
   - name: v1alpha2
     served: true
@@ -3680,7 +3695,9 @@ spec:
   group: cert-manager.io
   names:
     kind: Issuer
+    listKind: IssuerList
     plural: issuers
+    singular: issuer
   scope: Namespaced
   subresources:
     status: {}
@@ -4046,7 +4063,7 @@ spec:
                                   to reference a Secret resource. For details on the
                                   schema of this field, consult the webhook provider
                                   implementation's documentation.
-                                type: object
+                                x-kubernetes-preserve-unknown-fields: true
                               groupName:
                                 description: The API group name that should be used
                                   when POSTing ChallengePayload resources to the webhook
@@ -5320,6 +5337,7 @@ spec:
               type: array
           type: object
       type: object
+  version: v1alpha2
   versions:
   - name: v1alpha2
     served: true
