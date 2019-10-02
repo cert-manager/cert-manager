@@ -180,8 +180,9 @@ func TestSign(t *testing.T) {
 					`Warning MissingAnnotation Annotation "cert-manager.io/private-key-secret-name" missing or reference empty: secret name missing`,
 				},
 				ExpectedActions: []testpkg.Action{
-					testpkg.NewAction(coretesting.NewUpdateAction(
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
 						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
+						"status",
 						gen.DefaultTestNamespace,
 						gen.CertificateRequestFrom(baseCR,
 							gen.SetCertificateRequestAnnotations(map[string]string{}),
@@ -213,8 +214,9 @@ func TestSign(t *testing.T) {
 					`Warning MissingAnnotation Annotation "cert-manager.io/private-key-secret-name" missing or reference empty: secret name missing`,
 				},
 				ExpectedActions: []testpkg.Action{
-					testpkg.NewAction(coretesting.NewUpdateAction(
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
 						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
+						"status",
 						gen.DefaultTestNamespace,
 						gen.CertificateRequestFrom(baseCR,
 							gen.SetCertificateRequestAnnotations(map[string]string{cmapi.CRPrivateKeyAnnotationKey: ""}),
@@ -240,8 +242,9 @@ func TestSign(t *testing.T) {
 					`Normal MissingSecret Referenced secret default-unit-test-ns/test-rsa-key not found: secret "test-rsa-key" not found`,
 				},
 				ExpectedActions: []testpkg.Action{
-					testpkg.NewAction(coretesting.NewUpdateAction(
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
 						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
+						"status",
 						gen.DefaultTestNamespace,
 						gen.CertificateRequestFrom(baseCR,
 							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
@@ -265,8 +268,9 @@ func TestSign(t *testing.T) {
 					`Normal ErrorParsingKey Failed to get key "test-rsa-key" referenced in annotation "cert-manager.io/private-key-secret-name": error decoding private key PEM block`,
 				},
 				ExpectedActions: []testpkg.Action{
-					testpkg.NewAction(coretesting.NewUpdateAction(
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
 						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
+						"status",
 						gen.DefaultTestNamespace,
 						gen.CertificateRequestFrom(baseCR,
 							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
@@ -290,8 +294,9 @@ func TestSign(t *testing.T) {
 					`Normal ErrorGettingSecret Failed to get certificate key pair from secret default-unit-test-ns/test-rsa-key: this is a network error`,
 				},
 				ExpectedActions: []testpkg.Action{
-					testpkg.NewAction(coretesting.NewUpdateAction(
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
 						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
+						"status",
 						gen.DefaultTestNamespace,
 						gen.CertificateRequestFrom(baseCR,
 							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
@@ -329,8 +334,9 @@ func TestSign(t *testing.T) {
 					"Warning BadConfig Resource validation failed: spec.csr: Invalid value: []byte{0x74, 0x68, 0x69, 0x73, 0x20, 0x69, 0x73, 0x20, 0x61, 0x20, 0x62, 0x61, 0x64, 0x20, 0x43, 0x53, 0x52}: failed to decode csr: error decoding certificate request PEM block",
 				},
 				ExpectedActions: []testpkg.Action{
-					testpkg.NewAction(coretesting.NewUpdateAction(
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
 						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
+						"status",
 						gen.DefaultTestNamespace,
 						gen.CertificateRequestFrom(baseCR,
 							gen.SetCertificateRequestCSR([]byte("this is a bad CSR")),
@@ -356,8 +362,9 @@ func TestSign(t *testing.T) {
 					"Warning ErrorKeyMatch Error generating certificate template: CSR not signed by referenced private key",
 				},
 				ExpectedActions: []testpkg.Action{
-					testpkg.NewAction(coretesting.NewUpdateAction(
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
 						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
+						"status",
 						gen.DefaultTestNamespace,
 						gen.CertificateRequestFrom(ecCR,
 							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
@@ -385,8 +392,9 @@ func TestSign(t *testing.T) {
 					"Warning ErrorSigning Error signing certificate: this is a signing error",
 				},
 				ExpectedActions: []testpkg.Action{
-					testpkg.NewAction(coretesting.NewUpdateAction(
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
 						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
+						"status",
 						gen.DefaultTestNamespace,
 						gen.CertificateRequestFrom(baseCR,
 							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
@@ -421,8 +429,9 @@ func TestSign(t *testing.T) {
 					"Normal CertificateIssued Certificate fetched from issuer successfully",
 				},
 				ExpectedActions: []testpkg.Action{
-					testpkg.NewAction(coretesting.NewUpdateAction(
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
 						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
+						"status",
 						gen.DefaultTestNamespace,
 						gen.CertificateRequestFrom(baseCR,
 							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
@@ -458,8 +467,9 @@ func TestSign(t *testing.T) {
 					"Normal CertificateIssued Certificate fetched from issuer successfully",
 				},
 				ExpectedActions: []testpkg.Action{
-					testpkg.NewAction(coretesting.NewUpdateAction(
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
 						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
+						"status",
 						gen.DefaultTestNamespace,
 						gen.CertificateRequestFrom(ecCR,
 							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{

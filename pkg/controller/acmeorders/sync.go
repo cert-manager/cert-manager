@@ -54,8 +54,8 @@ func (c *controller) Sync(ctx context.Context, o *cmacme.Order) (err error) {
 			return
 		}
 		log.Info("updating Order resource status")
-		_, updateErr := c.cmClient.AcmeV1alpha2().Orders(o.Namespace).Update(o)
-		if err != nil {
+		_, updateErr := c.cmClient.AcmeV1alpha2().Orders(o.Namespace).UpdateStatus(o)
+		if updateErr != nil {
 			log.Error(err, "failed to update status")
 			err = utilerrors.NewAggregate([]error{err, updateErr})
 			return

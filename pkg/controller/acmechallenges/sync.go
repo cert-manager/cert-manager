@@ -65,20 +65,20 @@ func (c *controller) Sync(ctx context.Context, ch *cmacme.Challenge) (err error)
 	oldChal := ch
 	ch = ch.DeepCopy()
 
+	if ch.DeletionTimestamp != nil {
+		return c.handleFinalizer(ctx, ch)
+	}
+
 	defer func() {
 		// TODO: replace with more efficient comparison
 		if reflect.DeepEqual(oldChal.Status, ch.Status) && len(oldChal.Finalizers) == len(ch.Finalizers) {
 			return
 		}
-		_, updateErr := c.cmClient.AcmeV1alpha2().Challenges(ch.Namespace).Update(ch)
-		if err != nil {
+		_, updateErr := c.cmClient.AcmeV1alpha2().Challenges(ch.Namespace).UpdateStatus(ch)
+		if updateErr != nil {
 			err = utilerrors.NewAggregate([]error{err, updateErr})
 		}
 	}()
-
-	if ch.DeletionTimestamp != nil {
-		return c.handleFinalizer(ctx, ch)
-	}
 
 	// bail out early on if processing=false, as this challenge has not been
 	// scheduled yet.
@@ -233,7 +233,9 @@ func handleError(ch *cmacme.Challenge, err error) error {
 	return err
 }
 
-func (c *controller) handleFinalizer(ctx context.Context, ch *cmacme.Challenge) error {
+// handleFinalizer will attempt to 'finalize' the Challenge resource by calling
+// CleanUp if the resource is in a 'processing' state.
+func (c *controller) handleFinalizer(ctx context.Context, ch *cmacme.Challenge) (err error) {
 	log := logf.FromContext(ctx, "finalizer")
 	if len(ch.Finalizers) == 0 {
 		return nil
@@ -242,7 +244,22 @@ func (c *controller) handleFinalizer(ctx context.Context, ch *cmacme.Challenge) 
 		log.V(logf.DebugLevel).Info("waiting to run challenge finalization...")
 		return nil
 	}
-	ch.Finalizers = ch.Finalizers[1:]
+
+	defer func() {
+		// call UpdateStatus first as we may have updated the challenge.status.reason field
+		ch, updateErr := c.cmClient.AcmeV1alpha2().Challenges(ch.Namespace).UpdateStatus(ch)
+		if updateErr != nil {
+			err = utilerrors.NewAggregate([]error{err, updateErr})
+			return
+		}
+		// call Update to remove the metadata.finalizers entry
+		ch.Finalizers = ch.Finalizers[1:]
+		_, updateErr = c.cmClient.AcmeV1alpha2().Challenges(ch.Namespace).Update(ch)
+		if updateErr != nil {
+			err = utilerrors.NewAggregate([]error{err, updateErr})
+			return
+		}
+	}()
 
 	if !ch.Status.Processing {
 		return nil

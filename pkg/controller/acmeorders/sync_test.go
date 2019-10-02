@@ -153,7 +153,9 @@ dGVzdA==
 			builder: &testpkg.Builder{
 				CertManagerObjects: []runtime.Object{testIssuerHTTP01TestCom, testOrder},
 				ExpectedActions: []testpkg.Action{
-					testpkg.NewAction(coretesting.NewUpdateAction(cmacme.SchemeGroupVersion.WithResource("orders"), testOrderPending.Namespace,
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(cmacme.SchemeGroupVersion.WithResource("orders"),
+						"status",
+						testOrderPending.Namespace,
 						gen.OrderFrom(testOrder, gen.SetOrderStatus(cmacme.OrderStatus{
 							State:       cmacme.Pending,
 							URL:         "http://testurl.com/abcde",
@@ -216,7 +218,9 @@ dGVzdA==
 			builder: &testpkg.Builder{
 				CertManagerObjects: []runtime.Object{testIssuerHTTP01TestCom, testOrderPending, testAuthorizationChallengeValid},
 				ExpectedActions: []testpkg.Action{
-					testpkg.NewAction(coretesting.NewUpdateAction(cmacme.SchemeGroupVersion.WithResource("orders"), testOrderReady.Namespace, testOrderReady)),
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(cmacme.SchemeGroupVersion.WithResource("orders"),
+						"status",
+						testOrderReady.Namespace, testOrderReady)),
 				},
 			},
 			acmeClient: &acmecl.FakeACME{
@@ -234,7 +238,9 @@ dGVzdA==
 			builder: &testpkg.Builder{
 				CertManagerObjects: []runtime.Object{testIssuerHTTP01TestCom, testOrderReady, testAuthorizationChallengeValid},
 				ExpectedActions: []testpkg.Action{
-					testpkg.NewAction(coretesting.NewUpdateAction(cmacme.SchemeGroupVersion.WithResource("orders"), testOrderValid.Namespace, testOrderValid)),
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(cmacme.SchemeGroupVersion.WithResource("orders"),
+						"status",
+						testOrderValid.Namespace, testOrderValid)),
 				},
 				ExpectedEvents: []string{
 					"Normal Complete Order completed successfully",
@@ -259,7 +265,9 @@ dGVzdA==
 			builder: &testpkg.Builder{
 				CertManagerObjects: []runtime.Object{testIssuerHTTP01TestCom, testOrderPending, testAuthorizationChallengeInvalid},
 				ExpectedActions: []testpkg.Action{
-					testpkg.NewAction(coretesting.NewUpdateAction(cmacme.SchemeGroupVersion.WithResource("orders"), testOrderInvalid.Namespace, testOrderInvalid)),
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(cmacme.SchemeGroupVersion.WithResource("orders"),
+						"status",
+						testOrderInvalid.Namespace, testOrderInvalid)),
 				},
 			},
 			acmeClient: &acmecl.FakeACME{

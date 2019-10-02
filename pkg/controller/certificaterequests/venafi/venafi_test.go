@@ -208,8 +208,9 @@ func TestSign(t *testing.T) {
 					`Normal SecretMissing Required secret resource not found: secret "test-tpp-secret" not found`,
 				},
 				ExpectedActions: []testpkg.Action{
-					testpkg.NewAction(coretesting.NewUpdateAction(
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
 						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
+						"status",
 						gen.DefaultTestNamespace,
 						gen.CertificateRequestFrom(tppCR,
 							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
@@ -233,8 +234,9 @@ func TestSign(t *testing.T) {
 					`Normal VenafiInitError Failed to initialise venafi client for signing: this is a network error`,
 				},
 				ExpectedActions: []testpkg.Action{
-					testpkg.NewAction(coretesting.NewUpdateAction(
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
 						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
+						"status",
 						gen.DefaultTestNamespace,
 						gen.CertificateRequestFrom(tppCR,
 							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
@@ -260,8 +262,9 @@ func TestSign(t *testing.T) {
 					`Normal SecretMissing Required secret resource not found: secret "test-cloud-secret" not found`,
 				},
 				ExpectedActions: []testpkg.Action{
-					testpkg.NewAction(coretesting.NewUpdateAction(
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
 						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
+						"status",
 						gen.DefaultTestNamespace,
 						gen.CertificateRequestFrom(cloudCR,
 							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
@@ -284,8 +287,9 @@ func TestSign(t *testing.T) {
 					`Normal VenafiInitError Failed to initialise venafi client for signing: this is a network error`,
 				},
 				ExpectedActions: []testpkg.Action{
-					testpkg.NewAction(coretesting.NewUpdateAction(
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
 						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
+						"status",
 						gen.DefaultTestNamespace,
 						gen.CertificateRequestFrom(cloudCR,
 							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
@@ -311,8 +315,9 @@ func TestSign(t *testing.T) {
 					"Normal IssuancePending Venafi certificate still in a pending state, the request will be retried: Issuance is pending. You may try retrieving the certificate later using Pickup ID: test-cert-id\n\tStatus: test-status-pending",
 				},
 				ExpectedActions: []testpkg.Action{
-					testpkg.NewAction(coretesting.NewUpdateAction(
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
 						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
+						"status",
 						gen.DefaultTestNamespace,
 						gen.CertificateRequestFrom(tppCR,
 							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
@@ -339,8 +344,9 @@ func TestSign(t *testing.T) {
 					"Normal IssuancePending Venafi certificate still in a pending state, the request will be retried: Issuance is pending. You may try retrieving the certificate later using Pickup ID: test-cert-id\n\tStatus: test-status-pending",
 				},
 				ExpectedActions: []testpkg.Action{
-					testpkg.NewAction(coretesting.NewUpdateAction(
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
 						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
+						"status",
 						gen.DefaultTestNamespace,
 						gen.CertificateRequestFrom(cloudCR,
 							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
@@ -367,8 +373,9 @@ func TestSign(t *testing.T) {
 					"Warning Timeout Timed out waiting for venafi certificate, the request will be retried: Operation timed out. You may try retrieving the certificate later using Pickup ID: test-cert-id",
 				},
 				ExpectedActions: []testpkg.Action{
-					testpkg.NewAction(coretesting.NewUpdateAction(
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
 						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
+						"status",
 						gen.DefaultTestNamespace,
 						gen.CertificateRequestFrom(tppCR,
 							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
@@ -395,8 +402,9 @@ func TestSign(t *testing.T) {
 					"Warning Timeout Timed out waiting for venafi certificate, the request will be retried: Operation timed out. You may try retrieving the certificate later using Pickup ID: test-cert-id",
 				},
 				ExpectedActions: []testpkg.Action{
-					testpkg.NewAction(coretesting.NewUpdateAction(
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
 						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
+						"status",
 						gen.DefaultTestNamespace,
 						gen.CertificateRequestFrom(cloudCR,
 							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
@@ -423,8 +431,9 @@ func TestSign(t *testing.T) {
 					"Warning RetrieveError Failed to obtain venafi certificate: this is an error",
 				},
 				ExpectedActions: []testpkg.Action{
-					testpkg.NewAction(coretesting.NewUpdateAction(
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
 						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
+						"status",
 						gen.DefaultTestNamespace,
 						gen.CertificateRequestFrom(tppCR,
 							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
@@ -452,8 +461,9 @@ func TestSign(t *testing.T) {
 					"Warning RetrieveError Failed to obtain venafi certificate: this is an error",
 				},
 				ExpectedActions: []testpkg.Action{
-					testpkg.NewAction(coretesting.NewUpdateAction(
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
 						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
+						"status",
 						gen.DefaultTestNamespace,
 						gen.CertificateRequestFrom(cloudCR,
 							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
@@ -481,8 +491,9 @@ func TestSign(t *testing.T) {
 					"Normal CertificateIssued Certificate fetched from issuer successfully",
 				},
 				ExpectedActions: []testpkg.Action{
-					testpkg.NewAction(coretesting.NewUpdateAction(
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
 						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
+						"status",
 						gen.DefaultTestNamespace,
 						gen.CertificateRequestFrom(tppCR,
 							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
@@ -509,8 +520,9 @@ func TestSign(t *testing.T) {
 					"Normal CertificateIssued Certificate fetched from issuer successfully",
 				},
 				ExpectedActions: []testpkg.Action{
-					testpkg.NewAction(coretesting.NewUpdateAction(
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
 						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
+						"status",
 						gen.DefaultTestNamespace,
 						gen.CertificateRequestFrom(cloudCR,
 							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{

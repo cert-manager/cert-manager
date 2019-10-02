@@ -28,6 +28,12 @@ import (
 	"time"
 
 	"github.com/go-logr/logr"
+	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
+	utilerrors "k8s.io/apimachinery/pkg/util/errors"
+
 	apiutil "github.com/jetstack/cert-manager/pkg/api/util"
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
@@ -37,10 +43,6 @@ import (
 	"github.com/jetstack/cert-manager/pkg/util/errors"
 	"github.com/jetstack/cert-manager/pkg/util/kube"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
-	corev1 "k8s.io/api/core/v1"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/labels"
 )
 
 func (c *certificateRequestManager) ProcessItem(ctx context.Context, key string) error {
@@ -66,15 +68,7 @@ func (c *certificateRequestManager) ProcessItem(ctx context.Context, key string)
 	err = c.processCertificate(ctx, updatedCert)
 	log.V(logf.DebugLevel).Info("check if certificate status update is required")
 	updateStatusErr := c.updateCertificateStatus(ctx, crt, updatedCert)
-	// TODO: combine errors
-	if err != nil {
-		return err
-	}
-	if updateStatusErr != nil {
-		return err
-	}
-
-	return nil
+	return utilerrors.NewAggregate([]error{err, updateStatusErr})
 }
 
 func (c *certificateRequestManager) updateCertificateStatus(ctx context.Context, old, crt *cmapi.Certificate) error {

@@ -14,6 +14,11 @@ resources which represent certificate authorities.
 More information on configuring different Issuer types can be found in the
 :doc:`respective setup guides </tasks/issuers/index>`.
 
+.. note::
+   From cert-manager v0.11.0 onwards, the minimum supported version of
+   Kubernetes is v1.11.0. Users still running Kubernetes v1.10 or below should
+   upgrade to a supported version before installing cert-manager.
+
 .. warning::
 
     You should not install multiple instances of cert-manager on a single

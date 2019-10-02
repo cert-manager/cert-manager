@@ -132,8 +132,9 @@ func TestSign(t *testing.T) {
 					"Warning BadConfig Resource validation failed: spec.csr: Invalid value: []byte{0x61, 0x20, 0x62, 0x61, 0x64, 0x20, 0x63, 0x73, 0x72}: failed to decode csr: error decoding certificate request PEM block",
 				},
 				ExpectedActions: []testpkg.Action{
-					testpkg.NewAction(coretesting.NewUpdateAction(
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
 						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
+						"status",
 						gen.DefaultTestNamespace,
 						gen.CertificateRequestFrom(baseCR,
 							gen.SetCertificateRequestCSR([]byte("a bad csr")),
@@ -166,8 +167,9 @@ func TestSign(t *testing.T) {
 						gen.DefaultTestNamespace,
 						baseOrder,
 					)),
-					testpkg.NewAction(coretesting.NewUpdateAction(
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
 						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
+						"status",
 						gen.DefaultTestNamespace,
 						gen.CertificateRequestFrom(baseCR,
 							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
@@ -191,8 +193,9 @@ func TestSign(t *testing.T) {
 				},
 				CertManagerObjects: []runtime.Object{baseCR.DeepCopy(), baseIssuer.DeepCopy()},
 				ExpectedActions: []testpkg.Action{
-					testpkg.NewAction(coretesting.NewUpdateAction(
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
 						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
+						"status",
 						gen.DefaultTestNamespace,
 						gen.CertificateRequestFrom(baseCR,
 							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
@@ -230,8 +233,9 @@ func TestSign(t *testing.T) {
 					),
 				},
 				ExpectedActions: []testpkg.Action{
-					testpkg.NewAction(coretesting.NewUpdateAction(
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
 						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
+						"status",
 						gen.DefaultTestNamespace,
 						gen.CertificateRequestFrom(baseCR,
 							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
@@ -260,8 +264,9 @@ func TestSign(t *testing.T) {
 					),
 				},
 				ExpectedActions: []testpkg.Action{
-					testpkg.NewAction(coretesting.NewUpdateAction(
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
 						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
+						"status",
 						gen.DefaultTestNamespace,
 						gen.CertificateRequestFrom(baseCR,
 							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
@@ -288,8 +293,9 @@ func TestSign(t *testing.T) {
 					gen.SetOrderCertificate(certPEM),
 				), baseCR.DeepCopy(), baseIssuer.DeepCopy()},
 				ExpectedActions: []testpkg.Action{
-					testpkg.NewAction(coretesting.NewUpdateAction(
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
 						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
+						"status",
 						gen.DefaultTestNamespace,
 						gen.CertificateRequestFrom(baseCR,
 							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{

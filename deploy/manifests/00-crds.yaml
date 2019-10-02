@@ -29,7 +29,8 @@ spec:
     kind: Challenge
     plural: challenges
   scope: Namespaced
-  subresources: {}
+  subresources:
+    status: {}
   validation:
     openAPIV3Schema:
       description: Challenge is a type to represent a Challenge request with an ACME
@@ -1404,7 +1405,8 @@ spec:
     kind: Order
     plural: orders
   scope: Namespaced
-  subresources: {}
+  subresources:
+    status: {}
   validation:
     openAPIV3Schema:
       description: Order is a type to represent an Order with an ACME server
@@ -1613,7 +1615,8 @@ spec:
     - cr
     - crs
   scope: Namespaced
-  subresources: {}
+  subresources:
+    status: {}
   validation:
     openAPIV3Schema:
       description: CertificateRequest is a type to represent a Certificate Signing
@@ -1803,7 +1806,8 @@ spec:
     - cert
     - certs
   scope: Namespaced
-  subresources: {}
+  subresources:
+    status: {}
   validation:
     openAPIV3Schema:
       description: Certificate is a type to represent a Certificate from ACME
@@ -2016,6 +2020,8 @@ spec:
     kind: ClusterIssuer
     plural: clusterissuers
   scope: Cluster
+  subresources:
+    status: {}
   validation:
     openAPIV3Schema:
       properties:
@@ -3676,6 +3682,8 @@ spec:
     kind: Issuer
     plural: issuers
   scope: Namespaced
+  subresources:
+    status: {}
   validation:
     openAPIV3Schema:
       properties:

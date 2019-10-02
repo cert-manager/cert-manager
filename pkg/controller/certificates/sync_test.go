@@ -1603,8 +1603,9 @@ func TestUpdateStatus(t *testing.T) {
 					exampleBundle1.certificate,
 				},
 				ExpectedActions: []testpkg.Action{
-					testpkg.NewAction(coretesting.NewUpdateAction(
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
 						cmapi.SchemeGroupVersion.WithResource("certificates"),
+						"status",
 						gen.DefaultTestNamespace,
 						gen.CertificateFrom(exampleBundle1.certificate,
 							gen.SetCertificateStatusCondition(cmapi.CertificateCondition{
@@ -1635,8 +1636,9 @@ func TestUpdateStatus(t *testing.T) {
 					exampleBundle1.certificate,
 				},
 				ExpectedActions: []testpkg.Action{
-					testpkg.NewAction(coretesting.NewUpdateAction(
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
 						cmapi.SchemeGroupVersion.WithResource("certificates"),
+						"status",
 						gen.DefaultTestNamespace,
 						gen.CertificateFrom(exampleBundle1.certificate,
 							gen.SetCertificateStatusCondition(cmapi.CertificateCondition{
@@ -1669,8 +1671,9 @@ func TestUpdateStatus(t *testing.T) {
 					exampleBundle1.certificate,
 				},
 				ExpectedActions: []testpkg.Action{
-					testpkg.NewAction(coretesting.NewUpdateAction(
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
 						cmapi.SchemeGroupVersion.WithResource("certificates"),
+						"status",
 						gen.DefaultTestNamespace,
 						gen.CertificateFrom(exampleBundle1.certificate,
 							gen.SetCertificateStatusCondition(cmapi.CertificateCondition{
@@ -1704,8 +1707,9 @@ func TestUpdateStatus(t *testing.T) {
 					exampleBundle1.certificateRequest,
 				},
 				ExpectedActions: []testpkg.Action{
-					testpkg.NewAction(coretesting.NewUpdateAction(
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
 						cmapi.SchemeGroupVersion.WithResource("certificates"),
+						"status",
 						gen.DefaultTestNamespace,
 						gen.CertificateFrom(exampleBundle1.certificate,
 							gen.SetCertificateStatusCondition(cmapi.CertificateCondition{
@@ -1743,8 +1747,9 @@ func TestUpdateStatus(t *testing.T) {
 					exampleBundle1.certificate,
 				},
 				ExpectedActions: []testpkg.Action{
-					testpkg.NewAction(coretesting.NewUpdateAction(
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
 						cmapi.SchemeGroupVersion.WithResource("certificates"),
+						"status",
 						gen.DefaultTestNamespace,
 						gen.CertificateFrom(exampleBundle1.certificate,
 							gen.SetCertificateStatusCondition(cmapi.CertificateCondition{
@@ -1784,8 +1789,9 @@ func TestUpdateStatus(t *testing.T) {
 					exampleBundle1.certificateRequest,
 				},
 				ExpectedActions: []testpkg.Action{
-					testpkg.NewAction(coretesting.NewUpdateAction(
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
 						cmapi.SchemeGroupVersion.WithResource("certificates"),
+						"status",
 						gen.DefaultTestNamespace,
 						gen.CertificateFrom(exampleBundle1.certificate,
 							gen.SetCertificateStatusCondition(cmapi.CertificateCondition{
@@ -1824,8 +1830,9 @@ func TestUpdateStatus(t *testing.T) {
 					exampleBundle1.certificate,
 				},
 				ExpectedActions: []testpkg.Action{
-					testpkg.NewAction(coretesting.NewUpdateAction(
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
 						cmapi.SchemeGroupVersion.WithResource("certificates"),
+						"status",
 						gen.DefaultTestNamespace,
 						gen.CertificateFrom(exampleBundle1.certificate,
 							gen.SetCertificateStatusCondition(cmapi.CertificateCondition{
@@ -1865,8 +1872,9 @@ func TestUpdateStatus(t *testing.T) {
 					exampleBundle1.certificateRequest,
 				},
 				ExpectedActions: []testpkg.Action{
-					testpkg.NewAction(coretesting.NewUpdateAction(
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
 						cmapi.SchemeGroupVersion.WithResource("certificates"),
+						"status",
 						gen.DefaultTestNamespace,
 						gen.CertificateFrom(exampleBundle1.certificate,
 							gen.SetCertificateStatusCondition(cmapi.CertificateCondition{
@@ -1906,8 +1914,9 @@ func TestUpdateStatus(t *testing.T) {
 					exampleBundle1.certificateRequestReady,
 				},
 				ExpectedActions: []testpkg.Action{
-					testpkg.NewAction(coretesting.NewUpdateAction(
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
 						cmapi.SchemeGroupVersion.WithResource("certificates"),
+						"status",
 						gen.DefaultTestNamespace,
 						gen.CertificateFrom(exampleBundle1.certificate,
 							gen.SetCertificateStatusCondition(cmapi.CertificateCondition{
@@ -1950,8 +1959,9 @@ func TestUpdateStatus(t *testing.T) {
 					exampleBundle1.certificate,
 				},
 				ExpectedActions: []testpkg.Action{
-					testpkg.NewAction(coretesting.NewUpdateAction(
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
 						cmapi.SchemeGroupVersion.WithResource("certificates"),
+						"status",
 						gen.DefaultTestNamespace,
 						gen.CertificateFrom(exampleBundle1.certificate,
 							gen.SetCertificateStatusCondition(cmapi.CertificateCondition{
@@ -1994,8 +2004,9 @@ func TestUpdateStatus(t *testing.T) {
 					exampleBundle1.certificateRequest,
 				},
 				ExpectedActions: []testpkg.Action{
-					testpkg.NewAction(coretesting.NewUpdateAction(
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
 						cmapi.SchemeGroupVersion.WithResource("certificates"),
+						"status",
 						gen.DefaultTestNamespace,
 						gen.CertificateFrom(exampleBundle1.certificate,
 							gen.SetCertificateStatusCondition(cmapi.CertificateCondition{
@@ -2033,8 +2044,9 @@ func TestUpdateStatus(t *testing.T) {
 					exampleBundle1.certificate,
 				},
 				ExpectedActions: []testpkg.Action{
-					testpkg.NewAction(coretesting.NewUpdateAction(
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
 						cmapi.SchemeGroupVersion.WithResource("certificates"),
+						"status",
 						gen.DefaultTestNamespace,
 						gen.CertificateFrom(exampleBundle1.certificate,
 							gen.SetCertificateStatusCondition(cmapi.CertificateCondition{
@@ -2073,8 +2085,9 @@ func TestUpdateStatus(t *testing.T) {
 					exampleBundle1.certificateRequest,
 				},
 				ExpectedActions: []testpkg.Action{
-					testpkg.NewAction(coretesting.NewUpdateAction(
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
 						cmapi.SchemeGroupVersion.WithResource("certificates"),
+						"status",
 						gen.DefaultTestNamespace,
 						gen.CertificateFrom(exampleBundle1.certificate,
 							gen.SetCertificateStatusCondition(cmapi.CertificateCondition{
