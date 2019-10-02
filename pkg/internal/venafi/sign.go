@@ -18,6 +18,7 @@ package venafi
 
 import (
 	"crypto/x509"
+	"errors"
 	"strings"
 	"time"
 
@@ -62,6 +63,23 @@ func (v *Venafi) Sign(csrPEM []byte, duration time.Duration) (cert []byte, err e
 	vreq.CsrOrigin = certificate.UserProvidedCSR
 	//// TODO: better set the timeout here. Right now, we'll block for this amount of time.
 	vreq.Timeout = time.Minute * 5
+
+	// Set the 'ObjectName' through the request friendly name. This is set in
+	// order of precedence CN->DNS->URI.
+	switch {
+	case len(tmpl.Subject.CommonName) > 0:
+		vreq.FriendlyName = tmpl.Subject.CommonName
+		break
+	case len(tmpl.DNSNames) > 0:
+		vreq.FriendlyName = tmpl.DNSNames[0]
+		break
+	case len(tmpl.URIs) > 0:
+		vreq.FriendlyName = tmpl.URIs[0].String()
+		break
+	default:
+		return nil, errors.New(
+			"certificate request contains no Common Name, DNS Name, nor URI SAN, therefore no ObjectName can be supplied")
+	}
 
 	// Set the request CSR with the passed value
 	if err := vreq.SetCSR(csrPEM); err != nil {

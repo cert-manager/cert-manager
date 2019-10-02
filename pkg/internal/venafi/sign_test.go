@@ -111,6 +111,8 @@ func TestSign(t *testing.T) {
 	csrPEM := generateCSR(t, sk, "common-name", []string{
 		"foo.example.com", "bar.example.com"})
 
+	csrNonePEM := generateCSR(t, sk, "", []string{})
+
 	tests := map[string]testSignT{
 		"if reading the zone configuration fails then error": {
 			csrPEM:      csrPEM,
@@ -158,6 +160,11 @@ func TestSign(t *testing.T) {
 					return nil, errors.New("request error")
 				},
 			}.Default(),
+			checkFn:     checkNoCetificateIssued,
+			expectedErr: true,
+		},
+		"if no Common Name, DNS Name, or URI SANs in CSR then error": {
+			csrPEM:      csrNonePEM,
 			checkFn:     checkNoCetificateIssued,
 			expectedErr: true,
 		},
