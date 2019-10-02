@@ -18,6 +18,7 @@ package controller
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"testing"
 
@@ -28,7 +29,7 @@ import (
 	coretesting "k8s.io/client-go/testing"
 
 	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1alpha2"
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
+	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	testpkg "github.com/jetstack/cert-manager/pkg/controller/test"
 	"github.com/jetstack/cert-manager/test/unit/gen"
@@ -43,11 +44,11 @@ func TestShouldSync(t *testing.T) {
 	}
 	tests := []testT{
 		{
-			Annotations: map[string]string{issuerNameAnnotation: ""},
+			Annotations: map[string]string{cmapi.IngressIssuerNameAnnotationKey: ""},
 			ShouldSync:  true,
 		},
 		{
-			Annotations: map[string]string{clusterIssuerNameAnnotation: ""},
+			Annotations: map[string]string{cmapi.IngressClusterIssuerNameAnnotationKey: ""},
 			ShouldSync:  true,
 		},
 		{
@@ -85,16 +86,17 @@ func TestSync(t *testing.T) {
 	type testT struct {
 		Name                string
 		Ingress             *extv1beta1.Ingress
-		Issuer              v1alpha2.GenericIssuer
+		Issuer              cmapi.GenericIssuer
 		IssuerLister        []runtime.Object
 		ClusterIssuerLister []runtime.Object
 		CertificateLister   []runtime.Object
 		DefaultIssuerName   string
 		DefaultIssuerKind   string
+		DefaultIssuerGroup  string
 		Err                 bool
-		ExpectedCreate      []*v1alpha2.Certificate
-		ExpectedUpdate      []*v1alpha2.Certificate
-		ExpectedDelete      []*v1alpha2.Certificate
+		ExpectedCreate      []*cmapi.Certificate
+		ExpectedUpdate      []*cmapi.Certificate
+		ExpectedDelete      []*cmapi.Certificate
 	}
 	tests := []testT{
 		{
@@ -108,8 +110,8 @@ func TestSync(t *testing.T) {
 						"my-test-label": "should be copied",
 					},
 					Annotations: map[string]string{
-						clusterIssuerNameAnnotation: "issuer-name",
-						editInPlaceAnnotation:       "true",
+						cmapi.IngressClusterIssuerNameAnnotationKey: "issuer-name",
+						cmapi.IngressEditInPlaceAnnotationKey:       "true",
 					},
 					UID: types.UID("ingress-name"),
 				},
@@ -123,7 +125,7 @@ func TestSync(t *testing.T) {
 				},
 			},
 			ClusterIssuerLister: []runtime.Object{acmeClusterIssuer},
-			ExpectedCreate: []*v1alpha2.Certificate{
+			ExpectedCreate: []*cmapi.Certificate{
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "example-com-tls",
@@ -133,11 +135,11 @@ func TestSync(t *testing.T) {
 						},
 						Annotations: map[string]string{
 							cmacme.ACMECertificateHTTP01IngressNameOverride: "ingress-name",
-							v1alpha2.IssueTemporaryCertificateAnnotation:    "true",
+							cmapi.IssueTemporaryCertificateAnnotation:       "true",
 						},
 						OwnerReferences: buildOwnerReferences("ingress-name", gen.DefaultTestNamespace),
 					},
-					Spec: v1alpha2.CertificateSpec{
+					Spec: cmapi.CertificateSpec{
 						DNSNames:   []string{"example.com", "www.example.com"},
 						SecretName: "example-com-tls",
 						IssuerRef: cmmeta.ObjectReference{
@@ -159,8 +161,8 @@ func TestSync(t *testing.T) {
 						"my-test-label": "should be copied",
 					},
 					Annotations: map[string]string{
-						clusterIssuerNameAnnotation: "issuer-name",
-						editInPlaceAnnotation:       "true",
+						cmapi.IngressClusterIssuerNameAnnotationKey: "issuer-name",
+						cmapi.IngressEditInPlaceAnnotationKey:       "true",
 					},
 					UID: types.UID("ingress-name"),
 				},
@@ -174,7 +176,7 @@ func TestSync(t *testing.T) {
 				},
 			},
 			ClusterIssuerLister: []runtime.Object{acmeClusterIssuer},
-			ExpectedCreate: []*v1alpha2.Certificate{
+			ExpectedCreate: []*cmapi.Certificate{
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "example-com-tls",
@@ -184,11 +186,11 @@ func TestSync(t *testing.T) {
 						},
 						Annotations: map[string]string{
 							cmacme.ACMECertificateHTTP01IngressNameOverride: "ingress-name",
-							v1alpha2.IssueTemporaryCertificateAnnotation:    "true",
+							cmapi.IssueTemporaryCertificateAnnotation:       "true",
 						},
 						OwnerReferences: buildOwnerReferences("ingress-name", gen.DefaultTestNamespace),
 					},
-					Spec: v1alpha2.CertificateSpec{
+					Spec: cmapi.CertificateSpec{
 						DNSNames:   []string{"example.com", "www.example.com"},
 						SecretName: "example-com-tls",
 						IssuerRef: cmmeta.ObjectReference{
@@ -207,7 +209,7 @@ func TestSync(t *testing.T) {
 					Name:      "ingress-name",
 					Namespace: gen.DefaultTestNamespace,
 					Annotations: map[string]string{
-						clusterIssuerNameAnnotation: "issuer-name",
+						cmapi.IngressClusterIssuerNameAnnotationKey: "issuer-name",
 					},
 					UID: types.UID("ingress-name"),
 				},
@@ -221,14 +223,14 @@ func TestSync(t *testing.T) {
 				},
 			},
 			ClusterIssuerLister: []runtime.Object{acmeClusterIssuer},
-			ExpectedCreate: []*v1alpha2.Certificate{
+			ExpectedCreate: []*cmapi.Certificate{
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:            "example-com-tls",
 						Namespace:       gen.DefaultTestNamespace,
 						OwnerReferences: buildOwnerReferences("ingress-name", gen.DefaultTestNamespace),
 					},
-					Spec: v1alpha2.CertificateSpec{
+					Spec: cmapi.CertificateSpec{
 						DNSNames:   []string{"example.com", "www.example.com"},
 						SecretName: "example-com-tls",
 						IssuerRef: cmmeta.ObjectReference{
@@ -247,8 +249,8 @@ func TestSync(t *testing.T) {
 					Name:      "ingress-name",
 					Namespace: gen.DefaultTestNamespace,
 					Annotations: map[string]string{
-						clusterIssuerNameAnnotation: "issuer-name",
-						ingressClassAnnotation:      "nginx-ing",
+						cmapi.IngressClusterIssuerNameAnnotationKey: "issuer-name",
+						cmapi.IngressClassAnnotationKey:             "nginx-ing",
 					},
 					UID: types.UID("ingress-name"),
 				},
@@ -262,14 +264,14 @@ func TestSync(t *testing.T) {
 				},
 			},
 			ClusterIssuerLister: []runtime.Object{acmeClusterIssuer},
-			ExpectedCreate: []*v1alpha2.Certificate{
+			ExpectedCreate: []*cmapi.Certificate{
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:            "example-com-tls",
 						Namespace:       gen.DefaultTestNamespace,
 						OwnerReferences: buildOwnerReferences("ingress-name", gen.DefaultTestNamespace),
 					},
-					Spec: v1alpha2.CertificateSpec{
+					Spec: cmapi.CertificateSpec{
 						DNSNames:   []string{"example.com", "www.example.com"},
 						SecretName: "example-com-tls",
 						IssuerRef: cmmeta.ObjectReference{
@@ -288,9 +290,9 @@ func TestSync(t *testing.T) {
 					Name:      "ingress-name",
 					Namespace: gen.DefaultTestNamespace,
 					Annotations: map[string]string{
-						clusterIssuerNameAnnotation:            "issuer-name",
-						acmeIssuerHTTP01IngressClassAnnotation: "cert-ing",
-						ingressClassAnnotation:                 "nginx-ing",
+						cmapi.IngressClusterIssuerNameAnnotationKey:            "issuer-name",
+						cmapi.IngressACMEIssuerHTTP01IngressClassAnnotationKey: "cert-ing",
+						cmapi.IngressClassAnnotationKey:                        "nginx-ing",
 					},
 					UID: types.UID("ingress-name"),
 				},
@@ -304,7 +306,7 @@ func TestSync(t *testing.T) {
 				},
 			},
 			ClusterIssuerLister: []runtime.Object{acmeClusterIssuer},
-			ExpectedCreate: []*v1alpha2.Certificate{
+			ExpectedCreate: []*cmapi.Certificate{
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:            "example-com-tls",
@@ -314,7 +316,7 @@ func TestSync(t *testing.T) {
 							cmacme.ACMECertificateHTTP01IngressClassOverride: "cert-ing",
 						},
 					},
-					Spec: v1alpha2.CertificateSpec{
+					Spec: cmapi.CertificateSpec{
 						DNSNames:   []string{"example.com", "www.example.com"},
 						SecretName: "example-com-tls",
 						IssuerRef: cmmeta.ObjectReference{
@@ -333,9 +335,9 @@ func TestSync(t *testing.T) {
 					Name:      "ingress-name",
 					Namespace: gen.DefaultTestNamespace,
 					Annotations: map[string]string{
-						clusterIssuerNameAnnotation: "issuer-name",
-						ingressClassAnnotation:      "nginx-ing",
-						editInPlaceAnnotation:       "false",
+						cmapi.IngressClusterIssuerNameAnnotationKey: "issuer-name",
+						cmapi.IngressClassAnnotationKey:             "nginx-ing",
+						cmapi.IngressEditInPlaceAnnotationKey:       "false",
 					},
 					UID: types.UID("ingress-name"),
 				},
@@ -349,14 +351,14 @@ func TestSync(t *testing.T) {
 				},
 			},
 			ClusterIssuerLister: []runtime.Object{acmeClusterIssuer},
-			ExpectedCreate: []*v1alpha2.Certificate{
+			ExpectedCreate: []*cmapi.Certificate{
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:            "example-com-tls",
 						Namespace:       gen.DefaultTestNamespace,
 						OwnerReferences: buildOwnerReferences("ingress-name", gen.DefaultTestNamespace),
 					},
-					Spec: v1alpha2.CertificateSpec{
+					Spec: cmapi.CertificateSpec{
 						DNSNames:   []string{"example.com", "www.example.com"},
 						SecretName: "example-com-tls",
 						IssuerRef: cmmeta.ObjectReference{
@@ -376,7 +378,7 @@ func TestSync(t *testing.T) {
 					Name:      "ingress-name",
 					Namespace: gen.DefaultTestNamespace,
 					Annotations: map[string]string{
-						clusterIssuerNameAnnotation: "issuer-name",
+						cmapi.IngressClusterIssuerNameAnnotationKey: "issuer-name",
 					},
 					UID: types.UID("ingress-name"),
 				},
@@ -390,14 +392,14 @@ func TestSync(t *testing.T) {
 				},
 			},
 			ClusterIssuerLister: []runtime.Object{acmeClusterIssuer},
-			ExpectedCreate: []*v1alpha2.Certificate{
+			ExpectedCreate: []*cmapi.Certificate{
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:            "example-com-tls",
 						Namespace:       gen.DefaultTestNamespace,
 						OwnerReferences: buildOwnerReferences("ingress-name", gen.DefaultTestNamespace),
 					},
-					Spec: v1alpha2.CertificateSpec{
+					Spec: cmapi.CertificateSpec{
 						DNSNames:   []string{"example.com", "www.example.com"},
 						SecretName: "example-com-tls",
 						IssuerRef: cmmeta.ObjectReference{
@@ -413,6 +415,7 @@ func TestSync(t *testing.T) {
 			Issuer:              clusterIssuer,
 			DefaultIssuerName:   "issuer-name",
 			DefaultIssuerKind:   "ClusterIssuer",
+			DefaultIssuerGroup:  "cert-manager.io",
 			ClusterIssuerLister: []runtime.Object{clusterIssuer},
 			Ingress: &extv1beta1.Ingress{
 				ObjectMeta: metav1.ObjectMeta{
@@ -432,19 +435,20 @@ func TestSync(t *testing.T) {
 					},
 				},
 			},
-			ExpectedCreate: []*v1alpha2.Certificate{
+			ExpectedCreate: []*cmapi.Certificate{
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:            "example-com-tls",
 						Namespace:       gen.DefaultTestNamespace,
 						OwnerReferences: buildOwnerReferences("ingress-name", gen.DefaultTestNamespace),
 					},
-					Spec: v1alpha2.CertificateSpec{
+					Spec: cmapi.CertificateSpec{
 						DNSNames:   []string{"example.com", "www.example.com"},
 						SecretName: "example-com-tls",
 						IssuerRef: cmmeta.ObjectReference{
-							Name: "issuer-name",
-							Kind: "ClusterIssuer",
+							Name:  "issuer-name",
+							Kind:  "ClusterIssuer",
+							Group: "cert-manager.io",
 						},
 					},
 				},
@@ -460,7 +464,7 @@ func TestSync(t *testing.T) {
 					Name:      "ingress-name",
 					Namespace: gen.DefaultTestNamespace,
 					Annotations: map[string]string{
-						issuerNameAnnotation: "issuer-name",
+						cmapi.IngressIssuerNameAnnotationKey: "issuer-name",
 					},
 					UID: types.UID("ingress-name"),
 				},
@@ -482,7 +486,7 @@ func TestSync(t *testing.T) {
 					Name:      "ingress-name",
 					Namespace: gen.DefaultTestNamespace,
 					Annotations: map[string]string{
-						issuerNameAnnotation: "issuer-name",
+						cmapi.IngressIssuerNameAnnotationKey: "issuer-name",
 					},
 					UID: types.UID("ingress-name"),
 				},
@@ -504,7 +508,7 @@ func TestSync(t *testing.T) {
 					Name:      "ingress-name",
 					Namespace: gen.DefaultTestNamespace,
 					Annotations: map[string]string{
-						issuerNameAnnotation: "invalid-issuer-name",
+						cmapi.IngressIssuerNameAnnotationKey: "invalid-issuer-name",
 					},
 					UID: types.UID("ingress-name"),
 				},
@@ -519,7 +523,7 @@ func TestSync(t *testing.T) {
 					Name:      "ingress-name",
 					Namespace: gen.DefaultTestNamespace,
 					Annotations: map[string]string{
-						issuerNameAnnotation: "issuer-name",
+						cmapi.IngressIssuerNameAnnotationKey: "issuer-name",
 					},
 					UID: types.UID("ingress-name"),
 				},
@@ -532,19 +536,22 @@ func TestSync(t *testing.T) {
 					},
 				},
 			},
+			DefaultIssuerKind:  "Issuer",
+			DefaultIssuerGroup: "cert-manager.io",
 			CertificateLister: []runtime.Object{
-				&v1alpha2.Certificate{
+				&cmapi.Certificate{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:            "existing-crt",
 						Namespace:       gen.DefaultTestNamespace,
 						OwnerReferences: buildOwnerReferences("ingress-name", gen.DefaultTestNamespace),
 					},
-					Spec: v1alpha2.CertificateSpec{
+					Spec: cmapi.CertificateSpec{
 						DNSNames:   []string{"example.com"},
 						SecretName: "existing-crt",
 						IssuerRef: cmmeta.ObjectReference{
-							Name: "issuer-name",
-							Kind: "Issuer",
+							Name:  "issuer-name",
+							Kind:  "Issuer",
+							Group: "cert-manager.io",
 						},
 					},
 				},
@@ -559,7 +566,7 @@ func TestSync(t *testing.T) {
 					Name:      "ingress-name",
 					Namespace: gen.DefaultTestNamespace,
 					Annotations: map[string]string{
-						issuerNameAnnotation: "issuer-name",
+						cmapi.IngressIssuerNameAnnotationKey: "issuer-name",
 					},
 					UID: types.UID("ingress-name"),
 				},
@@ -578,15 +585,15 @@ func TestSync(t *testing.T) {
 					buildOwnerReferences("ingress-name", gen.DefaultTestNamespace),
 				),
 			},
-
-			ExpectedUpdate: []*v1alpha2.Certificate{
+			DefaultIssuerKind: "Issuer",
+			ExpectedUpdate: []*cmapi.Certificate{
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:            "existing-crt",
 						Namespace:       gen.DefaultTestNamespace,
 						OwnerReferences: buildOwnerReferences("ingress-name", gen.DefaultTestNamespace),
 					},
-					Spec: v1alpha2.CertificateSpec{
+					Spec: cmapi.CertificateSpec{
 						DNSNames:   []string{"example.com"},
 						SecretName: "existing-crt",
 						IssuerRef: cmmeta.ObjectReference{
@@ -609,7 +616,7 @@ func TestSync(t *testing.T) {
 						"my-test-label": "should be copied",
 					},
 					Annotations: map[string]string{
-						issuerNameAnnotation: "issuer-name",
+						cmapi.IngressIssuerNameAnnotationKey: "issuer-name",
 					},
 					UID: types.UID("ingress-name"),
 				},
@@ -622,8 +629,9 @@ func TestSync(t *testing.T) {
 					},
 				},
 			},
+			DefaultIssuerKind: "Issuer",
 			CertificateLister: []runtime.Object{
-				&v1alpha2.Certificate{
+				&cmapi.Certificate{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "cert-secret-name",
 						Namespace: gen.DefaultTestNamespace,
@@ -632,7 +640,7 @@ func TestSync(t *testing.T) {
 						},
 						OwnerReferences: buildOwnerReferences("ingress-name", gen.DefaultTestNamespace),
 					},
-					Spec: v1alpha2.CertificateSpec{
+					Spec: cmapi.CertificateSpec{
 						DNSNames:   []string{"example.com"},
 						SecretName: "cert-secret-name",
 						IssuerRef: cmmeta.ObjectReference{
@@ -642,7 +650,7 @@ func TestSync(t *testing.T) {
 					},
 				},
 			},
-			ExpectedUpdate: []*v1alpha2.Certificate{
+			ExpectedUpdate: []*cmapi.Certificate{
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "cert-secret-name",
@@ -652,7 +660,7 @@ func TestSync(t *testing.T) {
 						},
 						OwnerReferences: buildOwnerReferences("ingress-name", gen.DefaultTestNamespace),
 					},
-					Spec: v1alpha2.CertificateSpec{
+					Spec: cmapi.CertificateSpec{
 						DNSNames:   []string{"example.com"},
 						SecretName: "cert-secret-name",
 						IssuerRef: cmmeta.ObjectReference{
@@ -672,8 +680,8 @@ func TestSync(t *testing.T) {
 					Name:      "ingress-name",
 					Namespace: gen.DefaultTestNamespace,
 					Annotations: map[string]string{
-						issuerNameAnnotation:   "issuer-name",
-						ingressClassAnnotation: "toot-ing",
+						cmapi.IngressIssuerNameAnnotationKey: "issuer-name",
+						cmapi.IngressClassAnnotationKey:      "toot-ing",
 					},
 					UID: types.UID("ingress-name"),
 				},
@@ -687,13 +695,13 @@ func TestSync(t *testing.T) {
 				},
 			},
 			CertificateLister: []runtime.Object{
-				&v1alpha2.Certificate{
+				&cmapi.Certificate{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:            "existing-crt",
 						Namespace:       gen.DefaultTestNamespace,
 						OwnerReferences: []metav1.OwnerReference{},
 					},
-					Spec: v1alpha2.CertificateSpec{
+					Spec: cmapi.CertificateSpec{
 						DNSNames:   []string{"example.com"},
 						SecretName: "existing-crt",
 						IssuerRef: cmmeta.ObjectReference{
@@ -713,8 +721,8 @@ func TestSync(t *testing.T) {
 					Name:      "ingress-name",
 					Namespace: gen.DefaultTestNamespace,
 					Annotations: map[string]string{
-						issuerNameAnnotation:   "issuer-name",
-						ingressClassAnnotation: "toot-ing",
+						cmapi.IngressIssuerNameAnnotationKey: "issuer-name",
+						cmapi.IngressClassAnnotationKey:      "toot-ing",
 					},
 					UID: types.UID("ingress-name"),
 				},
@@ -728,13 +736,13 @@ func TestSync(t *testing.T) {
 				},
 			},
 			CertificateLister: []runtime.Object{
-				&v1alpha2.Certificate{
+				&cmapi.Certificate{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:            "existing-crt",
 						Namespace:       gen.DefaultTestNamespace,
 						OwnerReferences: buildOwnerReferences("not-ingress-name", gen.DefaultTestNamespace),
 					},
-					Spec: v1alpha2.CertificateSpec{
+					Spec: cmapi.CertificateSpec{
 						DNSNames:   []string{"example.com"},
 						SecretName: "existing-crt",
 						IssuerRef: cmmeta.ObjectReference{
@@ -754,19 +762,19 @@ func TestSync(t *testing.T) {
 					Name:      "ingress-name",
 					Namespace: gen.DefaultTestNamespace,
 					Annotations: map[string]string{
-						issuerNameAnnotation: "issuer-name",
+						cmapi.IngressIssuerNameAnnotationKey: "issuer-name",
 					},
 					UID: types.UID("ingress-name"),
 				},
 			},
 			CertificateLister: []runtime.Object{
-				&v1alpha2.Certificate{
+				&cmapi.Certificate{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:            "existing-crt",
 						Namespace:       gen.DefaultTestNamespace,
 						OwnerReferences: buildOwnerReferences("ingress-name", gen.DefaultTestNamespace),
 					},
-					Spec: v1alpha2.CertificateSpec{
+					Spec: cmapi.CertificateSpec{
 						DNSNames:   []string{"example.com"},
 						SecretName: "existing-crt",
 						IssuerRef: cmmeta.ObjectReference{
@@ -776,14 +784,14 @@ func TestSync(t *testing.T) {
 					},
 				},
 			},
-			ExpectedDelete: []*v1alpha2.Certificate{
+			ExpectedDelete: []*cmapi.Certificate{
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:            "existing-crt",
 						Namespace:       gen.DefaultTestNamespace,
 						OwnerReferences: buildOwnerReferences("ingress-name", gen.DefaultTestNamespace),
 					},
-					Spec: v1alpha2.CertificateSpec{
+					Spec: cmapi.CertificateSpec{
 						DNSNames:   []string{"example.com"},
 						SecretName: "existing-crt",
 						IssuerRef: cmmeta.ObjectReference{
@@ -805,7 +813,7 @@ func TestSync(t *testing.T) {
 			for _, cr := range test.ExpectedCreate {
 				expectedActions = append(expectedActions,
 					testpkg.NewAction(coretesting.NewCreateAction(
-						v1alpha2.SchemeGroupVersion.WithResource("certificates"),
+						cmapi.SchemeGroupVersion.WithResource("certificates"),
 						cr.Namespace,
 						cr,
 					)),
@@ -814,7 +822,7 @@ func TestSync(t *testing.T) {
 			for _, cr := range test.ExpectedUpdate {
 				expectedActions = append(expectedActions,
 					testpkg.NewAction(coretesting.NewUpdateAction(
-						v1alpha2.SchemeGroupVersion.WithResource("certificates"),
+						cmapi.SchemeGroupVersion.WithResource("certificates"),
 						cr.Namespace,
 						cr,
 					)),
@@ -823,7 +831,7 @@ func TestSync(t *testing.T) {
 			for _, cr := range test.ExpectedDelete {
 				expectedActions = append(expectedActions,
 					testpkg.NewAction(coretesting.NewDeleteAction(
-						v1alpha2.SchemeGroupVersion.WithResource("certificates"),
+						cmapi.SchemeGroupVersion.WithResource("certificates"),
 						cr.Namespace,
 						cr.Name,
 					)))
@@ -845,6 +853,7 @@ func TestSync(t *testing.T) {
 				defaults: defaults{
 					issuerName:                 test.DefaultIssuerName,
 					issuerKind:                 test.DefaultIssuerKind,
+					issuerGroup:                test.DefaultIssuerGroup,
 					autoCertificateAnnotations: []string{testAcmeTLSAnnotation},
 				},
 				helper: &fakeHelper{issuer: test.Issuer},
@@ -870,10 +879,10 @@ func TestSync(t *testing.T) {
 }
 
 type fakeHelper struct {
-	issuer v1alpha2.GenericIssuer
+	issuer cmapi.GenericIssuer
 }
 
-func (f *fakeHelper) GetGenericIssuer(ref cmmeta.ObjectReference, ns string) (v1alpha2.GenericIssuer, error) {
+func (f *fakeHelper) GetGenericIssuer(ref cmmeta.ObjectReference, ns string) (cmapi.GenericIssuer, error) {
 	if f.issuer == nil {
 		return nil, fmt.Errorf("no issuer specified on fake helper")
 	}
@@ -882,23 +891,29 @@ func (f *fakeHelper) GetGenericIssuer(ref cmmeta.ObjectReference, ns string) (v1
 
 func TestIssuerForIngress(t *testing.T) {
 	type testT struct {
-		Ingress      *extv1beta1.Ingress
-		DefaultName  string
-		DefaultKind  string
-		ExpectedName string
-		ExpectedKind string
+		Ingress       *extv1beta1.Ingress
+		DefaultName   string
+		DefaultKind   string
+		DefaultGroup  string
+		ExpectedName  string
+		ExpectedKind  string
+		ExpectedGroup string
+		ExpectedError error
 	}
 	tests := []testT{
 		{
 			Ingress: buildIngress("name", "namespace", map[string]string{
-				issuerNameAnnotation: "issuer",
+				cmapi.IngressIssuerNameAnnotationKey: "issuer",
+				cmapi.IssuerGroupAnnotationKey:       "foo.bar",
 			}),
-			ExpectedName: "issuer",
-			ExpectedKind: "Issuer",
+			DefaultKind:   "Issuer",
+			ExpectedName:  "issuer",
+			ExpectedKind:  "Issuer",
+			ExpectedGroup: "foo.bar",
 		},
 		{
 			Ingress: buildIngress("name", "namespace", map[string]string{
-				clusterIssuerNameAnnotation: "clusterissuer",
+				cmapi.IngressClusterIssuerNameAnnotationKey: "clusterissuer",
 			}),
 			ExpectedName: "clusterissuer",
 			ExpectedKind: "ClusterIssuer",
@@ -907,53 +922,84 @@ func TestIssuerForIngress(t *testing.T) {
 			Ingress: buildIngress("name", "namespace", map[string]string{
 				testAcmeTLSAnnotation: "true",
 			}),
-			DefaultName:  "default-name",
-			DefaultKind:  "ClusterIssuer",
-			ExpectedName: "default-name",
-			ExpectedKind: "ClusterIssuer",
+			DefaultName:   "default-name",
+			DefaultKind:   "ClusterIssuer",
+			DefaultGroup:  "cert-manager.io",
+			ExpectedName:  "default-name",
+			ExpectedKind:  "ClusterIssuer",
+			ExpectedGroup: "cert-manager.io",
 		},
 		{
-			Ingress: buildIngress("name", "namespace", nil),
+			Ingress:       buildIngress("name", "namespace", nil),
+			ExpectedError: errors.New("failed to determine issuer name to be used for ingress resource"),
+		},
+		{
+			Ingress: buildIngress("name", "namespace", map[string]string{
+				testAcmeTLSAnnotation: "true",
+			}),
+			ExpectedError: errors.New("failed to determine issuer name to be used for ingress resource"),
+		},
+		{
+			Ingress: buildIngress("name", "namespace", map[string]string{
+				cmapi.IngressClusterIssuerNameAnnotationKey: "clusterissuer",
+				cmapi.IngressIssuerNameAnnotationKey:        "issuer",
+				cmapi.IssuerGroupAnnotationKey:              "group.io",
+			}),
+			ExpectedError: errors.New(`both "cert-manager.io/issuer" and "cert-manager.io/cluster-issuer" may not be set, both "cert-manager.io/cluster-issuer" and "cert-manager.io/issuer-group" may not be set`),
 		},
 	}
 	for _, test := range tests {
 		c := &controller{
 			defaults: defaults{
-				issuerKind: test.DefaultKind,
-				issuerName: test.DefaultName,
+				issuerKind:  test.DefaultKind,
+				issuerName:  test.DefaultName,
+				issuerGroup: test.DefaultGroup,
 			},
 		}
-		name, kind := c.issuerForIngress(test.Ingress)
+		name, kind, group, err := c.issuerForIngress(test.Ingress)
+		if err != nil {
+			if test.ExpectedError == nil || err.Error() != test.ExpectedError.Error() {
+				t.Errorf("unexpected error, exp=%v got=%s", test.ExpectedError, err)
+			}
+		} else if test.ExpectedError != nil {
+			t.Errorf("expected error but got nil: %s", test.ExpectedError)
+		}
+
 		if name != test.ExpectedName {
 			t.Errorf("expected name to be %q but got %q", test.ExpectedName, name)
 		}
+
 		if kind != test.ExpectedKind {
 			t.Errorf("expected kind to be %q but got %q", test.ExpectedKind, kind)
+		}
+
+		if group != test.ExpectedGroup {
+			t.Errorf("expected group to be %q but got %q", test.ExpectedGroup, group)
 		}
 	}
 }
 
-func buildCertificate(name, namespace string, ownerReferences []metav1.OwnerReference) *v1alpha2.Certificate {
-	return &v1alpha2.Certificate{
+func buildCertificate(name, namespace string, ownerReferences []metav1.OwnerReference) *cmapi.Certificate {
+	return &cmapi.Certificate{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:            name,
 			Namespace:       namespace,
 			OwnerReferences: ownerReferences,
 		},
-		Spec: v1alpha2.CertificateSpec{
+		Spec: cmapi.CertificateSpec{
 			SecretName: name,
 		},
 	}
 }
 
-func buildACMEIssuer(name, namespace string) *v1alpha2.Issuer {
-	return &v1alpha2.Issuer{
+func buildACMEIssuer(name, namespace string) *cmapi.Issuer {
+	return &cmapi.Issuer{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: namespace,
 		},
-		Spec: v1alpha2.IssuerSpec{
-			IssuerConfig: v1alpha2.IssuerConfig{
+		Spec: cmapi.IssuerSpec{
+			IssuerConfig: cmapi.IssuerConfig{
 				ACME: &cmacme.ACMEIssuer{},
 			},
 		},

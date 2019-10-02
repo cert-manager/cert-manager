@@ -79,6 +79,9 @@ spec:
           {{- if .defaultIssuerKind }}
           - --default-issuer-kind={{ .defaultIssuerKind }}
           {{- end }}
+          {{- if .defaultIssuerGroup }}
+          - --default-issuer-group={{ .defaultIssuerGroup }}
+          {{- end }}
           {{- if .defaultACMEChallengeType }}
           - --default-acme-issuer-challenge-type={{ .defaultACMEChallengeType }}
           {{- end }}

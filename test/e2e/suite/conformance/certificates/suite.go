@@ -32,6 +32,7 @@ import (
 	"github.com/jetstack/cert-manager/pkg/util"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 	"github.com/jetstack/cert-manager/test/e2e/framework"
+	e2eutil "github.com/jetstack/cert-manager/test/e2e/util"
 )
 
 // Suite defines a reusable conformance test suite that can be used against any
@@ -311,6 +312,32 @@ func (s *Suite) Define() {
 			if !match {
 				Fail("Both signed certificates not signed by same private key")
 			}
+		})
+
+		It("should issue a basic, defaulted certificate for a single commonName and distinct dnsName defined by an ingress with annotations", func() {
+			ingClient := f.KubeClientSet.ExtensionsV1beta1().Ingresses(f.Namespace.Name)
+
+			name := "testcert-ingress"
+			secretName := "testcert-ingress-tls"
+
+			By("Creating an Ingress with the issuer name annotation set")
+			ingress, err := ingClient.Create(e2eutil.NewIngress(name, secretName, map[string]string{
+				"cert-manager.io/issuer":       issuerRef.Name,
+				"cert-manager.io/issuer-kind":  issuerRef.Kind,
+				"cert-manager.io/issuer-group": issuerRef.Group,
+			}, s.newDomain()))
+			Expect(err).NotTo(HaveOccurred())
+
+			certName := ingress.Spec.TLS[0].SecretName
+
+			By("Waiting for the Certificate to exist...")
+			Expect(e2eutil.WaitForCertificateToExist(
+				f.CertManagerClientSet.CertmanagerV1alpha2().Certificates(f.Namespace.Name), certName, time.Minute,
+			)).NotTo(HaveOccurred())
+
+			By("Waiting for the Certificate to be issued...")
+			err = f.Helper().WaitCertificateIssuedValid(f.Namespace.Name, certName, time.Minute*5)
+			Expect(err).NotTo(HaveOccurred())
 		})
 	})
 }

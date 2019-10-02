@@ -29,9 +29,9 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 
 	cmacme "github.com/jetstack/cert-manager/pkg/apis/acme/v1alpha2"
+	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	"github.com/jetstack/cert-manager/pkg/issuer/acme/http/solver"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
-	"github.com/jetstack/cert-manager/pkg/util"
 )
 
 // getIngressesForChallenge returns a list of Ingresses that were created to solve
@@ -130,7 +130,7 @@ func buildIngressResource(ch *cmacme.Challenge, svcName string) (*extv1beta1.Ing
 	ingAnnotations["nginx.ingress.kubernetes.io/whitelist-source-range"] = "0.0.0.0/0,::/0"
 
 	if ingClass != nil {
-		ingAnnotations[util.IngressKey] = *ingClass
+		ingAnnotations[cmapi.IngressClassAnnotationKey] = *ingClass
 	}
 
 	ingPathToAdd := ingressPath(ch.Spec.Token, svcName)

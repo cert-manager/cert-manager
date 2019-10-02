@@ -92,6 +92,7 @@ nodeSelector: {}
 ingressShim: {}
   # defaultIssuerName: ""
   # defaultIssuerKind: ""
+  # defaultIssuerGroup: ""
   # defaultACMEChallengeType: ""
   # defaultACMEDNS01ChallengeProvider: ""
 
