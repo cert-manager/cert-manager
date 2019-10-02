@@ -50,15 +50,15 @@ var (
 	fixedClock      = fakeclock.NewFakeClock(fixedClockStart)
 )
 
-func generateCSR(t *testing.T, secretKey crypto.Signer, extraDNSNames ...string) []byte {
+func generateCSR(t *testing.T, secretKey crypto.Signer, commonName string, dnsNames ...string) []byte {
 	// The CommonName of the certificate request must also be present in the DNS
 	// Names.
 	template := x509.CertificateRequest{
 		Subject: pkix.Name{
-			CommonName: "example.com",
+			CommonName: commonName,
 		},
 		SignatureAlgorithm: x509.SHA256WithRSA,
-		DNSNames:           append(extraDNSNames, "foo.com"),
+		DNSNames:           dnsNames,
 	}
 
 	csrBytes, err := x509.CreateCertificateRequest(rand.Reader, &template, secretKey)
@@ -83,8 +83,8 @@ func TestSign(t *testing.T) {
 		t.FailNow()
 	}
 
-	csrPEM := generateCSR(t, sk, "example.com")
-	csrPEMExampleNotPresent := generateCSR(t, sk)
+	csrPEM := generateCSR(t, sk, "example.com", "example.com", "foo.com")
+	csrPEMExampleNotPresent := generateCSR(t, sk, "example.com", "foo.com")
 
 	baseCR := gen.CertificateRequest("test-cr",
 		gen.SetCertificateRequestCSR(csrPEM),
@@ -160,7 +160,7 @@ func TestSign(t *testing.T) {
 			builder: &testpkg.Builder{
 				CertManagerObjects: []runtime.Object{baseCR.DeepCopy(), baseIssuer.DeepCopy()},
 				ExpectedEvents: []string{
-					`Warning OrderBuildingError Requested certificate contains CommonName not present in the requested DNS Subject Alternative Names: "example.com" does not exist in [foo.com]: "example.com" does not exist in [foo.com]`,
+					`Warning InvalidOrder The CSR PEM requests a commonName that is not present in the list of dnsNames. If a commonName is set, ACME requires that the value is also present in the list of dnsNames: "example.com" does not exist in [foo.com]`,
 				},
 				ExpectedActions: []testpkg.Action{
 					testpkg.NewAction(coretesting.NewUpdateAction(
@@ -172,7 +172,7 @@ func TestSign(t *testing.T) {
 								Type:               cmapi.CertificateRequestConditionReady,
 								Status:             cmmeta.ConditionFalse,
 								Reason:             cmapi.CertificateRequestReasonFailed,
-								Message:            `Requested certificate contains CommonName not present in the requested DNS Subject Alternative Names: "example.com" does not exist in [foo.com]: "example.com" does not exist in [foo.com]`,
+								Message:            `The CSR PEM requests a commonName that is not present in the list of dnsNames. If a commonName is set, ACME requires that the value is also present in the list of dnsNames: "example.com" does not exist in [foo.com]`,
 								LastTransitionTime: &metaFixedClockStart,
 							}),
 							gen.SetCertificateRequestFailureTime(metaFixedClockStart),

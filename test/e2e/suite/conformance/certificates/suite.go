@@ -294,6 +294,31 @@ func (s *Suite) Define() {
 			Expect(err).NotTo(HaveOccurred())
 		})
 
+		It("should issue a certificate that defines a distinct DNS Name and another distinct Common Name", func() {
+			s.checkFeatures(CommonNameFeature)
+
+			testCertificate := &cmapi.Certificate{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "testcert",
+					Namespace: f.Namespace.Name,
+				},
+				Spec: cmapi.CertificateSpec{
+					SecretName: "testcert-tls",
+					CommonName: s.newDomain(),
+					IssuerRef:  issuerRef,
+					DNSNames:   []string{s.newDomain()},
+				},
+			}
+
+			By("Creating a Certificate")
+			err := f.CRClient.Create(ctx, testCertificate)
+			Expect(err).NotTo(HaveOccurred())
+
+			By("Waiting for the Certificate to be issued...")
+			err = f.Helper().WaitCertificateIssuedValid(f.Namespace.Name, "testcert", time.Minute*5)
+			Expect(err).NotTo(HaveOccurred())
+		})
+
 		It("should issue a certificate that defines a DNS Name and sets a duration", func() {
 			s.checkFeatures(DurationFeature)
 

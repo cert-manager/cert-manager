@@ -96,12 +96,11 @@ func (a *ACME) Sign(ctx context.Context, cr *v1alpha2.CertificateRequest, issuer
 	// If the CommonName is also not present in the DNS names of the CSR then hard fail.
 	if len(csr.Subject.CommonName) > 0 && !util.Contains(csr.DNSNames, csr.Subject.CommonName) {
 		err = fmt.Errorf("%q does not exist in %s", csr.Subject.CommonName, csr.DNSNames)
-		message := fmt.Sprintf("Requested certificate contains CommonName not present in the requested DNS Subject Alternative Names: %s",
-			err)
+		message := "The CSR PEM requests a commonName that is not present in the list of dnsNames. If a commonName is set, ACME requires that the value is also present in the list of dnsNames"
 
-		a.reporter.Failed(cr, err, "OrderBuildingError", message)
+		a.reporter.Failed(cr, err, "InvalidOrder", message)
 
-		log.Error(err, message)
+		log.V(4).Info(fmt.Sprintf("%s: %s", message, err))
 
 		return nil, nil
 	}

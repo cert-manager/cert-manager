@@ -1825,7 +1825,9 @@ spec:
         metadata:
           type: object
         spec:
-          description: CertificateSpec defines the desired state of Certificate
+          description: CertificateSpec defines the desired state of Certificate. A
+            valid Certificate requires at least one of a CommonName, DNSName, or URISAN
+            to be valid.
           properties:
             commonName:
               description: CommonName is a common name to be used on the Certificate.

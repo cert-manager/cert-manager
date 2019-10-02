@@ -48,25 +48,42 @@ func IPAddressesForCertificate(crt *v1alpha2.Certificate) []net.IP {
 }
 
 func URIsForCertificate(crt *v1alpha2.Certificate) ([]*url.URL, error) {
-	var uris []*url.URL
+	uris, err := URLsFromStrings(crt.Spec.URISANs)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse URIs: %s", err)
+	}
+
+	return uris, nil
+}
+
+func DNSNamesForCertificate(crt *v1alpha2.Certificate) ([]string, error) {
+	_, err := URLsFromStrings(crt.Spec.DNSNames)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse DNSNames: %s", err)
+	}
+
+	return crt.Spec.DNSNames, nil
+}
+
+func URLsFromStrings(urlStrs []string) ([]*url.URL, error) {
+	var urls []*url.URL
 	var errs []string
 
-	for _, uriStr := range crt.Spec.URISANs {
-		uri, err := url.Parse(uriStr)
+	for _, urlStr := range urlStrs {
+		url, err := url.Parse(urlStr)
 		if err != nil {
 			errs = append(errs, err.Error())
 			continue
 		}
 
-		uris = append(uris, uri)
+		urls = append(urls, url)
 	}
 
 	if len(errs) > 0 {
-		return nil, fmt.Errorf("failed to parse URIs: %s",
-			strings.Join(errs, ", "))
+		return nil, errors.New(strings.Join(errs, ", "))
 	}
 
-	return uris, nil
+	return urls, nil
 }
 
 func IPAddressesToString(ipAddresses []net.IP) []string {
@@ -148,9 +165,14 @@ func buildUsages(usages []v1alpha2.KeyUsage, isCA bool) (ku x509.KeyUsage, eku [
 // to the x509.CreateCertificateRequest function.
 func GenerateCSR(crt *v1alpha2.Certificate) (*x509.CertificateRequest, error) {
 	commonName := crt.Spec.CommonName
-	dnsNames := crt.Spec.DNSNames
 	iPAddresses := IPAddressesForCertificate(crt)
 	organization := OrganizationForCertificate(crt)
+
+	dnsNames, err := DNSNamesForCertificate(crt)
+	if err != nil {
+		return nil, err
+	}
+
 	uriNames, err := URIsForCertificate(crt)
 	if err != nil {
 		return nil, err

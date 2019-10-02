@@ -68,11 +68,10 @@ const (
 	PKCS8 KeyEncoding = "pkcs8"
 )
 
-// CertificateSpec defines the desired state of Certificate
+// CertificateSpec defines the desired state of Certificate.
+// A valid Certificate requires at least one of a CommonName, DNSName, or
+// URISAN to be valid.
 type CertificateSpec struct {
-	// A valid Certificate requires at least one of a CommonName, DNSName, or
-	// URISAN to be valid.
-
 	// CommonName is a common name to be used on the Certificate.
 	// The CommonName should have a length of 64 characters or fewer to avoid
 	// generating invalid CSRs.
