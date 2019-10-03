@@ -2,7 +2,8 @@
 Get started
 ===========
 
-The guides in this section will explain how to install and set up cert-manager.
+The guides in this section will explain how to install, set up, and
+uninstall cert-manager.
 
 .. toctree::
    :maxdepth: 2

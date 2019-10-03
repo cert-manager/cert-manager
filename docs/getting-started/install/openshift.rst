@@ -50,8 +50,7 @@ As part of the installation, cert-manager also deploys a webhook deployment as
 an `APIService`_. This can cause issues when uninstalling cert-manager if the
 API service still exists but the webhook is no longer running as the API server
 is unable to reach the validating webhook. Ensure to follow the documentation
-when uninstalling cert-manager. TODO (@joshvanl): add uninstalling documentation
-link when this has been created.
+when :doc:`uninstalling cert-manager <../../../tasks/uninstall/index>`.
 
 The webhook enables cert-manager to implement validation and mutating webhooks
 on cert-manager resources. A `ValidatingWebhookConfiguration`_ resource is
