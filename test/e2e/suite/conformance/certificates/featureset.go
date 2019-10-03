@@ -98,4 +98,14 @@ const (
 	// certificates for the same private key. This is useful for some issuers
 	// that have trouble being configured to support this feature.
 	ReusePrivateKeyFeature Feature = "ReusePrivateKey"
+
+	// URISANs denotes whether to the target issuer is able to sign a certificate
+	// that includes a URISANs. ACME providers do not support this.
+	URISANsFeature Feature = "URISANs"
+
+	// CommonName denotes whether the target issuer is able to sign certificates
+	// with a distinct CommonName. This is useful for issuers such as ACME
+	// providers that ignore, or otherwise have special requirements for the
+	// CommonName such as needing to be present in the DNS Name list.
+	CommonNameFeature = "CommonName"
 )

@@ -142,3 +142,14 @@ func Contains(ss []string, s string) bool {
 	}
 	return false
 }
+
+// Subset returns true if one slice is an unsorted subset of the first.
+func Subset(set, subset []string) bool {
+	for _, s := range subset {
+		if !Contains(set, s) {
+			return false
+		}
+	}
+
+	return true
+}

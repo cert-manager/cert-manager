@@ -38,6 +38,7 @@ import (
 	crutil "github.com/jetstack/cert-manager/pkg/controller/certificaterequests/util"
 	issuerpkg "github.com/jetstack/cert-manager/pkg/issuer"
 	logf "github.com/jetstack/cert-manager/pkg/logs"
+	"github.com/jetstack/cert-manager/pkg/util"
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 )
 
@@ -88,6 +89,18 @@ func (a *ACME) Sign(ctx context.Context, cr *v1alpha2.CertificateRequest, issuer
 
 		a.reporter.Failed(cr, err, "CSRParsingError", message)
 		log.Error(err, message)
+
+		return nil, nil
+	}
+
+	// If the CommonName is also not present in the DNS names of the CSR then hard fail.
+	if len(csr.Subject.CommonName) > 0 && !util.Contains(csr.DNSNames, csr.Subject.CommonName) {
+		err = fmt.Errorf("%q does not exist in %s", csr.Subject.CommonName, csr.DNSNames)
+		message := "The CSR PEM requests a commonName that is not present in the list of dnsNames. If a commonName is set, ACME requires that the value is also present in the list of dnsNames"
+
+		a.reporter.Failed(cr, err, "InvalidOrder", message)
+
+		log.V(4).Info(fmt.Sprintf("%s: %s", message, err))
 
 		return nil, nil
 	}

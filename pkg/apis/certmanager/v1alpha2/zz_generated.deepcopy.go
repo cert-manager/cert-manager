@@ -302,6 +302,11 @@ func (in *CertificateSpec) DeepCopyInto(out *CertificateSpec) {
 		*out = make([]string, len(*in))
 		copy(*out, *in)
 	}
+	if in.URISANs != nil {
+		in, out := &in.URISANs, &out.URISANs
+		*out = make([]string, len(*in))
+		copy(*out, *in)
+	}
 	out.IssuerRef = in.IssuerRef
 	if in.Usages != nil {
 		in, out := &in.Usages, &out.Usages

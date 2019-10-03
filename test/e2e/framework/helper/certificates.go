@@ -60,11 +60,8 @@ func (h *Helper) WaitForCertificateReady(ns, name string, timeout time.Duration)
 		},
 	)
 
-	if err != nil {
-		return nil, err
-	}
-
-	return certificate, nil
+	// return certificate even when error to use for debugging
+	return certificate, err
 }
 
 // WaitForCertificateNotReady waits for the certificate resource to enter a
@@ -91,11 +88,8 @@ func (h *Helper) WaitForCertificateNotReady(ns, name string, timeout time.Durati
 		},
 	)
 
-	if err != nil {
-		return nil, err
-	}
-
-	return certificate, nil
+	// return certificate even when error to use for debugging
+	return certificate, err
 }
 
 // ValidateIssuedCertificate will ensure that the given Certificate has a
@@ -140,9 +134,14 @@ func (h *Helper) ValidateIssuedCertificate(certificate *v1alpha2.Certificate, ro
 	// TODO: validate private key KeySize
 
 	// check the provided certificate is valid
-	expectedCN := pki.CommonNameForCertificate(certificate)
 	expectedOrganization := pki.OrganizationForCertificate(certificate)
-	expectedDNSNames := pki.DNSNamesForCertificate(certificate)
+	expectedDNSNames := certificate.Spec.DNSNames
+	uris, err := pki.URIsForCertificate(certificate)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse URIs: %s", err)
+	}
+
+	expectedURIs := pki.URLsToString(uris)
 
 	certBytes, ok := secret.Data[corev1.TLSCertKey]
 	if !ok {
@@ -153,8 +152,21 @@ func (h *Helper) ValidateIssuedCertificate(certificate *v1alpha2.Certificate, ro
 	if err != nil {
 		return nil, err
 	}
-	if expectedCN != cert.Subject.CommonName || !util.EqualUnsorted(cert.DNSNames, expectedDNSNames) || !(len(cert.Subject.Organization) == 0 || util.EqualUnsorted(cert.Subject.Organization, expectedOrganization)) {
-		return nil, fmt.Errorf("Expected certificate valid for CN %q, O %v, dnsNames %v but got a certificate valid for CN %q, O %v, dnsNames %v", expectedCN, expectedOrganization, expectedDNSNames, cert.Subject.CommonName, cert.Subject.Organization, cert.DNSNames)
+
+	commonNameCorrect := true
+	expectedCN := certificate.Spec.CommonName
+	if len(expectedCN) == 0 && len(cert.Subject.CommonName) > 0 {
+		if !util.Contains(cert.DNSNames, cert.Subject.CommonName) {
+			commonNameCorrect = false
+		}
+	} else if expectedCN != cert.Subject.CommonName {
+		commonNameCorrect = false
+	}
+
+	if !commonNameCorrect || !util.Subset(cert.DNSNames, expectedDNSNames) || !util.EqualUnsorted(pki.URLsToString(cert.URIs), expectedURIs) ||
+		!(len(cert.Subject.Organization) == 0 || util.EqualUnsorted(cert.Subject.Organization, expectedOrganization)) {
+		return nil, fmt.Errorf("Expected certificate valid for CN %q, O %v, dnsNames %v, uriSANs %v,but got a certificate valid for CN %q, O %v, dnsNames %v, uriSANs %v",
+			expectedCN, expectedOrganization, expectedDNSNames, expectedURIs, cert.Subject.CommonName, cert.Subject.Organization, cert.DNSNames, cert.URIs)
 	}
 
 	if certificate.Status.NotAfter == nil {
@@ -194,6 +206,11 @@ func (h *Helper) ValidateIssuedCertificate(certificate *v1alpha2.Certificate, ro
 		}
 	}
 
+	var dnsName string
+	if len(expectedDNSNames) > 0 {
+		dnsName = expectedDNSNames[0]
+	}
+
 	// TODO: move this verification step out of this function
 	if rootCAPEM != nil {
 		rootCertPool := x509.NewCertPool()
@@ -201,7 +218,7 @@ func (h *Helper) ValidateIssuedCertificate(certificate *v1alpha2.Certificate, ro
 		intermediateCertPool := x509.NewCertPool()
 		intermediateCertPool.AppendCertsFromPEM(certBytes)
 		opts := x509.VerifyOptions{
-			DNSName:       expectedDNSNames[0],
+			DNSName:       dnsName,
 			Intermediates: intermediateCertPool,
 			Roots:         rootCertPool,
 		}
@@ -224,6 +241,7 @@ func (h *Helper) WaitCertificateIssuedValidTLS(ns, name string, timeout time.Dur
 		log.Logf("Error waiting for Certificate to become Ready: %v", err)
 		h.Kubectl(ns).DescribeResource("certificate", name)
 		h.Kubectl(ns).Describe("order", "challenge")
+		h.describeCertificateRequestFromCertificate(ns, certificate)
 		return err
 	}
 
@@ -232,8 +250,22 @@ func (h *Helper) WaitCertificateIssuedValidTLS(ns, name string, timeout time.Dur
 		log.Logf("Error validating issued certificate: %v", err)
 		h.Kubectl(ns).DescribeResource("certificate", name)
 		h.Kubectl(ns).Describe("order", "challenge")
+		h.describeCertificateRequestFromCertificate(ns, certificate)
 		return err
 	}
 
 	return nil
+}
+
+func (h *Helper) describeCertificateRequestFromCertificate(ns string, certificate *v1alpha2.Certificate) {
+	if certificate == nil {
+		return
+	}
+
+	crName, err := apiutil.ComputeCertificateRequestName(certificate)
+	if err != nil {
+		log.Logf("Failed to compute CertificateRequest name from certificate: %s", err)
+		return
+	}
+	h.Kubectl(ns).DescribeResource("certificaterequest", crName)
 }

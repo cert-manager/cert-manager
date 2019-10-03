@@ -96,7 +96,6 @@ func (h *Helper) ValidateIssuedCertificateRequest(cr *v1alpha2.CertificateReques
 	// TODO: validate private key KeySize
 
 	// check the provided certificate is valid
-	expectedCN := csr.Subject.CommonName
 	expectedOrganization := csr.Subject.Organization
 	expectedDNSNames := csr.DNSNames
 	expectedIPAddresses := csr.IPAddresses
@@ -107,7 +106,17 @@ func (h *Helper) ValidateIssuedCertificateRequest(cr *v1alpha2.CertificateReques
 		return nil, err
 	}
 
-	if expectedCN != cert.Subject.CommonName ||
+	commonNameCorrect := true
+	expectedCN := csr.Subject.CommonName
+	if len(expectedCN) == 0 && len(cert.Subject.CommonName) > 0 {
+		if !util.Contains(cert.DNSNames, cert.Subject.CommonName) {
+			commonNameCorrect = false
+		}
+	} else if expectedCN != cert.Subject.CommonName {
+		commonNameCorrect = false
+	}
+
+	if !commonNameCorrect ||
 		!util.EqualUnsorted(cert.DNSNames, expectedDNSNames) ||
 		!util.EqualUnsorted(cert.Subject.Organization, expectedOrganization) ||
 		!util.EqualIPsUnsorted(cert.IPAddresses, expectedIPAddresses) ||

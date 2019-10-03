@@ -125,7 +125,7 @@ func TestCommonNameForCertificate(t *testing.T) {
 		{
 			name:        "certificate with one DNS name set",
 			crtDNSNames: []string{"dnsname"},
-			expectedCN:  "dnsname",
+			expectedCN:  "",
 		},
 		{
 			name:        "certificate with both common name and dnsName set",
@@ -136,12 +136,12 @@ func TestCommonNameForCertificate(t *testing.T) {
 		{
 			name:        "certificate with multiple dns names set",
 			crtDNSNames: []string{"dnsname1", "dnsname2"},
-			expectedCN:  "dnsname1",
+			expectedCN:  "",
 		},
 	}
 	testFn := func(test testT) func(*testing.T) {
 		return func(t *testing.T) {
-			actualCN := CommonNameForCertificate(buildCertificate(test.crtCN, test.crtDNSNames...))
+			actualCN := buildCertificate(test.crtCN, test.crtDNSNames...).Spec.CommonName
 			if actualCN != test.expectedCN {
 				t.Errorf("expected %q but got %q", test.expectedCN, actualCN)
 				return
@@ -164,7 +164,7 @@ func TestDNSNamesForCertificate(t *testing.T) {
 		{
 			name:           "certificate with CommonName set",
 			crtCN:          "test",
-			expectDNSNames: []string{"test"},
+			expectDNSNames: []string{},
 		},
 		{
 			name:           "certificate with one DNS name set",
@@ -175,7 +175,7 @@ func TestDNSNamesForCertificate(t *testing.T) {
 			name:           "certificate with both common name and dnsName set",
 			crtCN:          "cn",
 			crtDNSNames:    []string{"dnsname"},
-			expectDNSNames: []string{"cn", "dnsname"},
+			expectDNSNames: []string{"dnsname"},
 		},
 		{
 			name:           "certificate with multiple dns names set",
@@ -192,12 +192,12 @@ func TestDNSNamesForCertificate(t *testing.T) {
 			name:           "certificate with a dnsName equal to cn",
 			crtCN:          "cn",
 			crtDNSNames:    []string{"dnsname", "cn"},
-			expectDNSNames: []string{"cn", "dnsname"},
+			expectDNSNames: []string{"dnsname", "cn"},
 		},
 	}
 	testFn := func(test testT) func(*testing.T) {
 		return func(t *testing.T) {
-			actualDNSNames := DNSNamesForCertificate(buildCertificate(test.crtCN, test.crtDNSNames...))
+			actualDNSNames := buildCertificate(test.crtCN, test.crtDNSNames...).Spec.DNSNames
 			if len(actualDNSNames) != len(test.expectDNSNames) {
 				t.Errorf("expected %q but got %q", test.expectDNSNames, actualDNSNames)
 				return

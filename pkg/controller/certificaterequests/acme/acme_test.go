@@ -22,7 +22,6 @@ import (
 	"crypto/rand"
 	"crypto/x509"
 	"crypto/x509/pkix"
-	"encoding/asn1"
 	"encoding/pem"
 	"errors"
 	"testing"
@@ -51,13 +50,15 @@ var (
 	fixedClock      = fakeclock.NewFakeClock(fixedClockStart)
 )
 
-func generateCSR(t *testing.T, secretKey crypto.Signer) []byte {
-	asn1Subj, _ := asn1.Marshal(pkix.Name{
-		CommonName: "test",
-	}.ToRDNSequence())
+func generateCSR(t *testing.T, secretKey crypto.Signer, commonName string, dnsNames ...string) []byte {
+	// The CommonName of the certificate request must also be present in the DNS
+	// Names.
 	template := x509.CertificateRequest{
-		RawSubject:         asn1Subj,
+		Subject: pkix.Name{
+			CommonName: commonName,
+		},
 		SignatureAlgorithm: x509.SHA256WithRSA,
+		DNSNames:           dnsNames,
 	}
 
 	csrBytes, err := x509.CreateCertificateRequest(rand.Reader, &template, secretKey)
@@ -82,8 +83,8 @@ func TestSign(t *testing.T) {
 		t.FailNow()
 	}
 
-	//skPEM := pki.EncodePKCS1PrivateKey(sk)
-	csrPEM := generateCSR(t, sk)
+	csrPEM := generateCSR(t, sk, "example.com", "example.com", "foo.com")
+	csrPEMExampleNotPresent := generateCSR(t, sk, "example.com", "foo.com")
 
 	baseCR := gen.CertificateRequest("test-cr",
 		gen.SetCertificateRequestCSR(csrPEM),
@@ -152,6 +153,36 @@ func TestSign(t *testing.T) {
 			},
 		},
 
+		"if the common name is not present in the DNS names then should hard fail": {
+			certificateRequest: gen.CertificateRequestFrom(baseCR,
+				gen.SetCertificateRequestCSR(csrPEMExampleNotPresent),
+			),
+			builder: &testpkg.Builder{
+				CertManagerObjects: []runtime.Object{baseCR.DeepCopy(), baseIssuer.DeepCopy()},
+				ExpectedEvents: []string{
+					`Warning InvalidOrder The CSR PEM requests a commonName that is not present in the list of dnsNames. If a commonName is set, ACME requires that the value is also present in the list of dnsNames: "example.com" does not exist in [foo.com]`,
+				},
+				ExpectedActions: []testpkg.Action{
+					testpkg.NewAction(coretesting.NewUpdateSubresourceAction(
+						cmapi.SchemeGroupVersion.WithResource("certificaterequests"),
+						"status",
+						gen.DefaultTestNamespace,
+						gen.CertificateRequestFrom(baseCR,
+							gen.SetCertificateRequestCSR(csrPEMExampleNotPresent),
+							gen.SetCertificateRequestStatusCondition(cmapi.CertificateRequestCondition{
+								Type:               cmapi.CertificateRequestConditionReady,
+								Status:             cmmeta.ConditionFalse,
+								Reason:             cmapi.CertificateRequestReasonFailed,
+								Message:            `The CSR PEM requests a commonName that is not present in the list of dnsNames. If a commonName is set, ACME requires that the value is also present in the list of dnsNames: "example.com" does not exist in [foo.com]`,
+								LastTransitionTime: &metaFixedClockStart,
+							}),
+							gen.SetCertificateRequestFailureTime(metaFixedClockStart),
+						),
+					)),
+				},
+			},
+		},
+
 		//TODO: Think of a creative way to get `buildOrder` to fail :thinking_face:
 
 		"if order doesn't exist then attempt to create one": {
@@ -159,7 +190,7 @@ func TestSign(t *testing.T) {
 			builder: &testpkg.Builder{
 				CertManagerObjects: []runtime.Object{baseCR.DeepCopy(), baseIssuer.DeepCopy()},
 				ExpectedEvents: []string{
-					"Normal OrderCreated Created Order resource default-unit-test-ns/test-cr-1049712215",
+					"Normal OrderCreated Created Order resource default-unit-test-ns/test-cr-3921610499",
 				},
 				ExpectedActions: []testpkg.Action{
 					testpkg.NewAction(coretesting.NewCreateAction(
@@ -176,7 +207,7 @@ func TestSign(t *testing.T) {
 								Type:               cmapi.CertificateRequestConditionReady,
 								Status:             cmmeta.ConditionFalse,
 								Reason:             cmapi.CertificateRequestReasonPending,
-								Message:            "Created Order resource default-unit-test-ns/test-cr-1049712215",
+								Message:            "Created Order resource default-unit-test-ns/test-cr-3921610499",
 								LastTransitionTime: &metaFixedClockStart,
 							}),
 						),
@@ -189,7 +220,7 @@ func TestSign(t *testing.T) {
 			certificateRequest: baseCR.DeepCopy(),
 			builder: &testpkg.Builder{
 				ExpectedEvents: []string{
-					"Normal OrderGetError Failed to get order resource default-unit-test-ns/test-cr-1049712215: this is a network error",
+					"Normal OrderGetError Failed to get order resource default-unit-test-ns/test-cr-3921610499: this is a network error",
 				},
 				CertManagerObjects: []runtime.Object{baseCR.DeepCopy(), baseIssuer.DeepCopy()},
 				ExpectedActions: []testpkg.Action{
@@ -202,7 +233,7 @@ func TestSign(t *testing.T) {
 								Type:               cmapi.CertificateRequestConditionReady,
 								Status:             cmmeta.ConditionFalse,
 								Reason:             cmapi.CertificateRequestReasonPending,
-								Message:            "Failed to get order resource default-unit-test-ns/test-cr-1049712215: this is a network error",
+								Message:            "Failed to get order resource default-unit-test-ns/test-cr-3921610499: this is a network error",
 								LastTransitionTime: &metaFixedClockStart,
 							}),
 						),
@@ -225,7 +256,7 @@ func TestSign(t *testing.T) {
 			certificateRequest: baseCR.DeepCopy(),
 			builder: &testpkg.Builder{
 				ExpectedEvents: []string{
-					`Warning OrderFailed Failed to wait for order resource default-unit-test-ns/test-cr-1049712215 to become ready: order is in "invalid" state`,
+					`Warning OrderFailed Failed to wait for order resource default-unit-test-ns/test-cr-3921610499 to become ready: order is in "invalid" state`,
 				},
 				CertManagerObjects: []runtime.Object{baseCR.DeepCopy(), baseIssuer.DeepCopy(),
 					gen.OrderFrom(baseOrder,
@@ -242,7 +273,7 @@ func TestSign(t *testing.T) {
 								Type:               cmapi.CertificateRequestConditionReady,
 								Status:             cmmeta.ConditionFalse,
 								Reason:             cmapi.CertificateRequestReasonFailed,
-								Message:            `Failed to wait for order resource default-unit-test-ns/test-cr-1049712215 to become ready: order is in "invalid" state`,
+								Message:            `Failed to wait for order resource default-unit-test-ns/test-cr-3921610499 to become ready: order is in "invalid" state`,
 								LastTransitionTime: &metaFixedClockStart,
 							}),
 							gen.SetCertificateRequestFailureTime(metaFixedClockStart),
@@ -256,7 +287,7 @@ func TestSign(t *testing.T) {
 			certificateRequest: baseCR.DeepCopy(),
 			builder: &testpkg.Builder{
 				ExpectedEvents: []string{
-					`Normal OrderPending Waiting on certificate issuance from order default-unit-test-ns/test-cr-1049712215: "pending"`,
+					`Normal OrderPending Waiting on certificate issuance from order default-unit-test-ns/test-cr-3921610499: "pending"`,
 				},
 				CertManagerObjects: []runtime.Object{baseCR.DeepCopy(), baseIssuer.DeepCopy(),
 					gen.OrderFrom(baseOrder,
@@ -273,7 +304,7 @@ func TestSign(t *testing.T) {
 								Type:               cmapi.CertificateRequestConditionReady,
 								Status:             cmmeta.ConditionFalse,
 								Reason:             cmapi.CertificateRequestReasonPending,
-								Message:            `Waiting on certificate issuance from order default-unit-test-ns/test-cr-1049712215: "pending"`,
+								Message:            `Waiting on certificate issuance from order default-unit-test-ns/test-cr-3921610499: "pending"`,
 								LastTransitionTime: &metaFixedClockStart,
 							}),
 						),

@@ -27,6 +27,7 @@ import (
 	"time"
 
 	"github.com/kr/pretty"
+	corev1 "k8s.io/api/core/v1"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	corelisters "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/tools/cache"
@@ -75,7 +76,7 @@ func certificateGetter(lister cmlisters.CertificateLister) func(namespace, name 
 
 var keyFunc = controllerpkg.KeyFunc
 
-func certificateMatchesSpec(crt *v1alpha2.Certificate, key crypto.Signer, cert *x509.Certificate, secretLister corelisters.SecretLister) (bool, []string) {
+func certificateMatchesSpec(crt *v1alpha2.Certificate, key crypto.Signer, cert *x509.Certificate, secret *corev1.Secret) (bool, []string) {
 	var errs []string
 
 	// TODO: add checks for KeySize, KeyAlgorithm fields
@@ -83,6 +84,7 @@ func certificateMatchesSpec(crt *v1alpha2.Certificate, key crypto.Signer, cert *
 	// TODO: add checks for IsCA field
 
 	// check if the private key is the corresponding pair to the certificate
+
 	matches, err := pki.PublicKeyMatchesCertificate(key.Public(), cert)
 	if err != nil {
 		errs = append(errs, err.Error())
@@ -90,16 +92,24 @@ func certificateMatchesSpec(crt *v1alpha2.Certificate, key crypto.Signer, cert *
 		errs = append(errs, fmt.Sprintf("Certificate private key does not match certificate"))
 	}
 
-	// validate the common name is correct
-	expectedCN := pki.CommonNameForCertificate(crt)
-	if expectedCN != cert.Subject.CommonName {
-		errs = append(errs, fmt.Sprintf("Common name on TLS certificate not up to date: %q", cert.Subject.CommonName))
+	// If CN is set on the resource then it should exist on the certificate as
+	// the Common Name or a DNS Name
+	expectedCN := crt.Spec.CommonName
+	gotCN := append(cert.DNSNames, cert.Subject.CommonName)
+	if len(expectedCN) > 0 && !util.Contains(gotCN, expectedCN) {
+		errs = append(errs, fmt.Sprintf("Common Name on TLS certificate not up to date (%q): %s",
+			expectedCN, gotCN))
 	}
 
 	// validate the dns names are correct
-	expectedDNSNames := pki.DNSNamesForCertificate(crt)
-	if !util.EqualUnsorted(cert.DNSNames, expectedDNSNames) {
+	expectedDNSNames := crt.Spec.DNSNames
+	if !util.Subset(cert.DNSNames, expectedDNSNames) {
 		errs = append(errs, fmt.Sprintf("DNS names on TLS certificate not up to date: %q", cert.DNSNames))
+	}
+
+	expectedURIs := crt.Spec.URISANs
+	if !util.EqualUnsorted(pki.URLsToString(cert.URIs), expectedURIs) {
+		errs = append(errs, fmt.Sprintf("URI SANs on TLS certificate not up to date: %q", cert.URIs))
 	}
 
 	// validate the ip addresses are correct
@@ -107,10 +117,9 @@ func certificateMatchesSpec(crt *v1alpha2.Certificate, key crypto.Signer, cert *
 		errs = append(errs, fmt.Sprintf("IP addresses on TLS certificate not up to date: %q", pki.IPAddressesToString(cert.IPAddresses)))
 	}
 
-	// get a copy of the current secret resource
-	// Note that we already know that it exists, no need to check for errors
-	// TODO: Refactor so that the secret is passed as argument?
-	secret, err := secretLister.Secrets(crt.Namespace).Get(crt.Spec.SecretName)
+	if secret.Annotations == nil {
+		secret.Annotations = make(map[string]string)
+	}
 
 	// validate that the issuer is correct
 	if crt.Spec.IssuerRef.Name != secret.Annotations[v1alpha2.IssuerNameAnnotationKey] {

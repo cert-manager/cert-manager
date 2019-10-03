@@ -38,6 +38,8 @@ var _ = framework.ConformanceDescribe("Certificates", func() {
 		certificates.IPAddressFeature,
 		certificates.DurationFeature,
 		certificates.WildcardsFeature,
+		certificates.URISANsFeature,
+		certificates.CommonNameFeature,
 	)
 
 	// unsupportedDNS01Features is a list of features that are not supported by the ACME
@@ -45,6 +47,8 @@ var _ = framework.ConformanceDescribe("Certificates", func() {
 	var unsupportedDNS01Features = certificates.NewFeatureSet(
 		certificates.IPAddressFeature,
 		certificates.DurationFeature,
+		certificates.URISANsFeature,
+		certificates.CommonNameFeature,
 	)
 
 	provisionerHTTP01 := new(acmeIssuerProvisioner)

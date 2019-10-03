@@ -22,7 +22,8 @@ Certificates specify which issuer they want to obtain the certificate from by
 specifying the ``certificate.spec.issuerRef`` field.
 
 A basic Certificate resource, for the ``example.com`` and ``www.example.com``
-DNS names that is valid for 90d and renews 15d before expiry is below:
+DNS names, ``spiffe://cluster.local/ns/sandbox/sa/example`` URI Subject
+Alternative Name, that is valid for 90d and renews 15d before expiry is below:
 
 .. code-block:: yaml
    :linenos:
@@ -41,6 +42,8 @@ DNS names that is valid for 90d and renews 15d before expiry is below:
      dnsNames:
      - example.com
      - www.example.com
+     uriSANs:
+     - spiffe://cluster.local/ns/sandbox/sa/example
      issuerRef:
        name: ca-issuer
        # We can reference ClusterIssuers by changing the kind here.

@@ -102,7 +102,12 @@ func (c *certificateRequestManager) updateCertificateStatus(ctx context.Context,
 	var matches bool
 	var matchErrs []string
 	if key != nil && cert != nil {
-		matches, matchErrs = certificateMatchesSpec(crt, key, cert, c.secretLister)
+		secret, err := c.secretLister.Secrets(crt.Namespace).Get(crt.Spec.SecretName)
+		if err != nil {
+			return err
+		}
+
+		matches, matchErrs = certificateMatchesSpec(crt, key, cert, secret)
 	}
 
 	isTempCert := isTemporaryCertificate(cert)
@@ -255,7 +260,7 @@ func (c *certificateRequestManager) processCertificate(ctx context.Context, crt 
 		// a valid partner to the stored certificate.
 		var matchErrs []string
 		dbg.Info("checking if existing certificate stored in Secret resource is not expiring soon and matches certificate spec")
-		needsIssue, matchErrs, err = c.certificateRequiresIssuance(ctx, crt, existingKey, existingCert)
+		needsIssue, matchErrs, err = c.certificateRequiresIssuance(ctx, crt, existingKey, existingCert, existingSecret)
 		if err != nil && !errors.IsInvalidData(err) {
 			return err
 		}
@@ -330,7 +335,7 @@ func (c *certificateRequestManager) processCertificate(ctx context.Context, crt 
 		}
 		// We don't issue a temporary certificate if the existing stored
 		// certificate already 'matches', even if it isn't a temporary certificate.
-		matches, _ := certificateMatchesSpec(crt, privateKey, existingX509Cert, c.secretLister)
+		matches, _ := certificateMatchesSpec(crt, privateKey, existingX509Cert, existingSecret)
 		if !matches {
 			log.Info("existing certificate fields do not match certificate spec, issuing temporary certificate")
 			return c.issueTemporaryCertificate(ctx, existingSecret, crt, existingKey)
@@ -556,7 +561,7 @@ func (c *certificateRequestManager) issueTemporaryCertificate(ctx context.Contex
 	return nil
 }
 
-func (c *certificateRequestManager) certificateRequiresIssuance(ctx context.Context, crt *cmapi.Certificate, keyBytes, certBytes []byte) (bool, []string, error) {
+func (c *certificateRequestManager) certificateRequiresIssuance(ctx context.Context, crt *cmapi.Certificate, keyBytes, certBytes []byte, secret *corev1.Secret) (bool, []string, error) {
 	key, err := pki.DecodePrivateKeyBytes(keyBytes)
 	if err != nil {
 		return false, nil, err
@@ -568,7 +573,7 @@ func (c *certificateRequestManager) certificateRequiresIssuance(ctx context.Cont
 	if isTemporaryCertificate(cert) {
 		return true, nil, nil
 	}
-	matches, matchErrs := certificateMatchesSpec(crt, key, cert, c.secretLister)
+	matches, matchErrs := certificateMatchesSpec(crt, key, cert, secret)
 	if !matches {
 		return true, matchErrs, nil
 	}
@@ -790,6 +795,7 @@ func setSecretValues(ctx context.Context, crt *cmapi.Certificate, s *corev1.Secr
 		delete(s.Annotations, cmapi.CommonNameAnnotationKey)
 		delete(s.Annotations, cmapi.AltNamesAnnotationKey)
 		delete(s.Annotations, cmapi.IPSANAnnotationKey)
+		delete(s.Annotations, cmapi.URISANAnnotationKey)
 	} else {
 		x509Cert, err := pki.DecodeX509CertificateBytes(data.cert)
 		// TODO: handle InvalidData here?
@@ -800,6 +806,7 @@ func setSecretValues(ctx context.Context, crt *cmapi.Certificate, s *corev1.Secr
 		s.Annotations[cmapi.CommonNameAnnotationKey] = x509Cert.Subject.CommonName
 		s.Annotations[cmapi.AltNamesAnnotationKey] = strings.Join(x509Cert.DNSNames, ",")
 		s.Annotations[cmapi.IPSANAnnotationKey] = strings.Join(pki.IPAddressesToString(x509Cert.IPAddresses), ",")
+		s.Annotations[cmapi.URISANAnnotationKey] = strings.Join(pki.URLsToString(x509Cert.URIs), ",")
 	}
 
 	return nil

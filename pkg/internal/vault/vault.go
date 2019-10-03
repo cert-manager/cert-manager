@@ -97,6 +97,7 @@ func (v *Vault) Sign(csrPEM []byte, duration time.Duration) (cert []byte, ca []b
 		"common_name": csr.Subject.CommonName,
 		"alt_names":   strings.Join(csr.DNSNames, ","),
 		"ip_sans":     strings.Join(pki.IPAddressesToString(csr.IPAddresses), ","),
+		"uri_sans":    strings.Join(pki.URLsToString(csr.URIs), ","),
 		"ttl":         duration.String(),
 		"csr":         string(csrPEM),
 
