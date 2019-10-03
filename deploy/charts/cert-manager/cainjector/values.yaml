@@ -37,6 +37,10 @@ resources: {}
 
 nodeSelector: {}
 
+affinity: {}
+
+tolerations: []
+
 image:
   repository: quay.io/jetstack/cert-manager-cainjector
   # Override the image tag to deploy by setting this variable.
