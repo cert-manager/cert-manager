@@ -27,6 +27,7 @@ import (
 	"time"
 
 	"github.com/kr/pretty"
+	corev1 "k8s.io/api/core/v1"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	corelisters "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/tools/cache"
@@ -75,7 +76,7 @@ func certificateGetter(lister cmlisters.CertificateLister) func(namespace, name 
 
 var keyFunc = controllerpkg.KeyFunc
 
-func certificateMatchesSpec(crt *v1alpha2.Certificate, key crypto.Signer, cert *x509.Certificate, secretLister corelisters.SecretLister) (bool, []string) {
+func certificateMatchesSpec(crt *v1alpha2.Certificate, key crypto.Signer, cert *x509.Certificate, secret *corev1.Secret) (bool, []string) {
 	var errs []string
 
 	// TODO: add checks for KeySize, KeyAlgorithm fields
@@ -115,11 +116,6 @@ func certificateMatchesSpec(crt *v1alpha2.Certificate, key crypto.Signer, cert *
 	if !util.EqualUnsorted(pki.IPAddressesToString(cert.IPAddresses), crt.Spec.IPAddresses) {
 		errs = append(errs, fmt.Sprintf("IP addresses on TLS certificate not up to date: %q", pki.IPAddressesToString(cert.IPAddresses)))
 	}
-
-	// get a copy of the current secret resource
-	// Note that we already know that it exists, no need to check for errors
-	// TODO: Refactor so that the secret is passed as argument?
-	secret, err := secretLister.Secrets(crt.Namespace).Get(crt.Spec.SecretName)
 
 	if secret.Annotations == nil {
 		secret.Annotations = make(map[string]string)

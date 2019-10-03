@@ -27,7 +27,6 @@ import (
 	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	"github.com/jetstack/cert-manager/pkg/util"
 	"github.com/jetstack/cert-manager/test/unit/gen"
-	"github.com/jetstack/cert-manager/test/unit/listers"
 )
 
 func TestCertificateMatchesSpec(t *testing.T) {
@@ -55,7 +54,7 @@ func TestCertificateMatchesSpec(t *testing.T) {
 	type testT struct {
 		cb          cryptoBundle
 		certificate *cmapi.Certificate
-		fakeLister  *listers.FakeSecretLister
+		secret      *corev1.Secret
 		expMatch    bool
 		expErrors   []string
 	}
@@ -64,11 +63,8 @@ func TestCertificateMatchesSpec(t *testing.T) {
 		"if all match then return matched": {
 			cb:          exampleBundle,
 			certificate: exampleBundle.certificate,
-			fakeLister: listers.FakeSecretListerFrom(listers.NewFakeSecretLister(),
-				listers.SetFakeSecretNamespaceListerGet(secret, nil),
-			),
-			expMatch:  true,
-			expErrors: nil,
+			expMatch:    true,
+			expErrors:   nil,
 		},
 
 		"if no common name but DNS and all match then return matched": {
@@ -77,9 +73,6 @@ func TestCertificateMatchesSpec(t *testing.T) {
 			)),
 			certificate: gen.CertificateFrom(exampleBundle.certificate,
 				gen.SetCertificateCommonName(""),
-			),
-			fakeLister: listers.FakeSecretListerFrom(listers.NewFakeSecretLister(),
-				listers.SetFakeSecretNamespaceListerGet(secret, nil),
 			),
 			expMatch:  true,
 			expErrors: nil,
@@ -91,11 +84,8 @@ func TestCertificateMatchesSpec(t *testing.T) {
 				gen.SetCertificateCommonName(""),
 			)),
 			certificate: gen.CertificateFrom(exampleBundle.certificate),
-			fakeLister: listers.FakeSecretListerFrom(listers.NewFakeSecretLister(),
-				listers.SetFakeSecretNamespaceListerGet(secret, nil),
-			),
-			expMatch:  true,
-			expErrors: nil,
+			expMatch:    true,
+			expErrors:   nil,
 		},
 
 		"if common name random string but requested common name in DNS names then match": {
@@ -104,11 +94,8 @@ func TestCertificateMatchesSpec(t *testing.T) {
 				gen.SetCertificateCommonName("foobar"),
 			)),
 			certificate: gen.CertificateFrom(exampleBundle.certificate),
-			fakeLister: listers.FakeSecretListerFrom(listers.NewFakeSecretLister(),
-				listers.SetFakeSecretNamespaceListerGet(secret, nil),
-			),
-			expMatch:  true,
-			expErrors: nil,
+			expMatch:    true,
+			expErrors:   nil,
 		},
 
 		"if common name random string and no request DNS names but request common name then error missing common name": {
@@ -117,10 +104,7 @@ func TestCertificateMatchesSpec(t *testing.T) {
 				gen.SetCertificateCommonName("foobar"),
 			)),
 			certificate: gen.CertificateFrom(exampleBundle.certificate),
-			fakeLister: listers.FakeSecretListerFrom(listers.NewFakeSecretLister(),
-				listers.SetFakeSecretNamespaceListerGet(secret, nil),
-			),
-			expMatch: false,
+			expMatch:    false,
 			expErrors: []string{
 				`Common Name on TLS certificate not up to date ("common.name.example.com"): [foobar]`,
 				"DNS names on TLS certificate not up to date: []",
@@ -129,7 +113,7 @@ func TestCertificateMatchesSpec(t *testing.T) {
 	} {
 		t.Run(name, func(t *testing.T) {
 			match, errs := certificateMatchesSpec(
-				test.certificate, test.cb.privateKey, test.cb.cert, test.fakeLister)
+				test.certificate, test.cb.privateKey, test.cb.cert, secret)
 
 			if match != test.expMatch {
 				t.Errorf("got unexpected match bool, exp=%t got=%t",
