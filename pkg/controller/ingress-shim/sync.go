@@ -184,6 +184,7 @@ func (c *controller) buildCertificates(ctx context.Context, ing *extv1beta1.Ingr
 			updateCrt.Spec.IssuerRef.Name = issuerName
 			updateCrt.Spec.IssuerRef.Kind = issuerKind
 			updateCrt.Spec.IssuerRef.Group = issuerGroup
+			updateCrt.Spec.CommonName = ""
 			updateCrt.Labels = ing.Labels
 			err = c.setIssuerSpecificConfig(updateCrt, ing, tls)
 			if err != nil {
@@ -238,6 +239,10 @@ func certNeedsUpdate(a, b *cmapi.Certificate) bool {
 	// Right now, we'll reset/remove the label values back automatically.
 	// Let's hope no other controllers do this automatically, else we'll start fighting...
 	if !reflect.DeepEqual(a.Labels, b.Labels) {
+		return true
+	}
+
+	if a.Spec.CommonName != b.Spec.CommonName {
 		return true
 	}
 
