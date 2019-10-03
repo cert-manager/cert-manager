@@ -98,7 +98,7 @@ require (
 	gopkg.in/mgo.v2 v2.0.0-20180705113604-9856a29383ce // indirect
 	gopkg.in/ory-am/dockertest.v3 v3.3.4 // indirect
 	k8s.io/api v0.0.0-20190918155943-95b840bb6a1f
-	k8s.io/apiextensions-apiserver v0.0.0-20190904201032-27869d30407f
+	k8s.io/apiextensions-apiserver v0.0.0-20190918161926-8f644eb6e783
 	k8s.io/apimachinery v0.0.0-20190913080033-27d36303b655
 	k8s.io/apiserver v0.0.0-20190918160949-bfa5e2e684ad
 	k8s.io/client-go v11.0.1-0.20190409021438-1a26190bd76a+incompatible
@@ -122,4 +122,4 @@ replace github.com/evanphx/json-patch => github.com/evanphx/json-patch v0.0.0-20
 
 replace github.com/munnerz/goautoneg => github.com/munnerz/goautoneg v0.0.0-20190414153302-2ae31c8b6b30
 
-replace sigs.k8s.io/controller-tools => github.com/munnerz/controller-tools v0.1.10-0.20190726150537-a7ada4fef919
+replace sigs.k8s.io/controller-tools => github.com/munnerz/controller-tools v0.1.10-0.20191002183933-2bcde27e8caa
