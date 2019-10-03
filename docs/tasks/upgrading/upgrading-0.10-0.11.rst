@@ -48,3 +48,19 @@ you will need to update them to reflect the new API group.
 A full table of annotations, including the old and new equivalents:
 
 .. TODO: create a table mapping old annotations to new
+
+You can use the following bash magic to print a list of Ingress resources that
+still contain an old annotation:
+
+.. code-block:: shell
+
+   kubectl get ingress \
+        --all-namespaces \
+        -o json | \
+        jq '.items[] | select(.metadata.annotations| to_entries | map(.key)[] | test("certmanager")) | "Ingress resource \(.metadata.namespace)/\(.metadata.name) contains old annotations: (\( .metadata.annotations | to_entries | map(.key)[] | select( . | test("certmanager") )  ))"'
+
+   Ingress resource "demo/testcrt contains old annotations: (certmanager.k8s.io/cluster-issuer)"
+   Ingress resource "example/ingress-resource contains old annotations: (certmanager.k8s.io/cluster-issuer)"
+
+You should make sure to update _all_ Ingress resources to ensure that your
+certificates continue to be kept up to date.
