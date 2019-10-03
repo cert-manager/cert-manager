@@ -2,7 +2,7 @@
 Get started
 ===========
 
-The guides in this section will explain how to install, set up cert-manager, and
+The guides in this section will explain how to install, set up, and
 uninstall cert-manager.
 
 .. toctree::

@@ -31,7 +31,7 @@ following command:
 
 .. code-block:: shell
 
-   oc get Issuers,ClusterIssuers,Certificates,CertificateRequests --all-namespaces
+   oc get Issuers,ClusterIssuers,Certificates,CertificateRequests,Orders,Challenges --all-namespaces
 
 Once all these resources have been deleted you are ready to uninstall
 cert-manager.
@@ -39,27 +39,22 @@ cert-manager.
 Uninstalling from an installation with regular manifests is a case of running
 the installation process, *in reverse*, using the delete command of ``oc``.
 
-First delete the installation manifests using a link to your currently running
+Delete the installation manifests using a link to your currently running
 version vX.Y.Z like so:
 
 .. code-block:: shell
 
    oc delete -f https://github.com/jetstack/cert-manager/releases/download/vX.Y.Z/cert-manager-openshift.yaml
 
-Finally, delete the cert-manager namespace:
-
-.. code-block:: shell
-
-   oc delete namespace cert-manager
-
-Namespace Stuck in Termination State
+Namespace Stuck in Terminating State
 ====================================
 
 If the namespace has been marked for deletion without deleting the cert-manager
 installation first, the namespace may become stuck in a terminating state. This
 is typically due to the fact that the `APIService`_ resource still exists
 however the webhook is no longer running so is no longer reachable. To resolve
-this, follow the steps from the above procedure in order.
+this, ensure you have run the above commands correctly, and if you're still
+experiencing issues then run ``oc delete apiservice v1beta1.webhook.cert-manager.io``.
 
 .. _`CustomResourceDefinitions`: https://kubernetes.io/docs/concepts/extend-kubernetes/api-extension/custom-resources/
 .. _`APIService`: https://kubernetes.io/docs/tasks/access-kubernetes-api/setup-extension-api-server
