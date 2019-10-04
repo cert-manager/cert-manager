@@ -86,14 +86,14 @@ users secure services running on Kubernetes.
 
 ### New CertificateRequest resource type
 
-With this release comes the graduation of the `CertificateRequest` resource from
-alpha to beta. This means that when requesting certificates using the
-`Certificate` resource the `CertificateRequest` resource will be used as the
-default and only way to honour the request. The addition of this resource
-introduces the ability for much greater extension points to cert-manager,
-notably out-of-tree issuers, istio integrations, and experimental tooling such
-as a CSI driver. You can read more about the motivation and design of this
-resource in the [enhancement
+The activation of `CertificateRequest` controllers are no longer behind a
+feature and are now instead enabled by default. This means that when requesting
+certificates using the `Certificate` resource the `CertificateRequest` resource
+will be used as the default and only way to honour the request. The addition of
+this resource introduces the ability for much greater extension points to
+cert-manager, notably out-of-tree issuers, istio integrations, and experimental
+tooling such as a CSI driver. You can read more about the motivation and design
+of this resource in the [enhancement
 document](https://github.com/jetstack/cert-manager/blob/master/design/20190708.certificate-request-crd.md).
 
 This change should cause no disruption to how end users interact with
@@ -111,7 +111,7 @@ If you're interested in implementing your own out-of-tree issuer, or if there
 is a provider you would like see implemented, feel free to reach out either
 through a [GitHub
 issue](https://github.com/jetstack/cert-manager/issues/new?template=feature-request.md)
-or send us a message in the #cert-mangager channel on [Kubernetes
+or send us a message in the #cert-manager channel on [Kubernetes
 Slack](http://slack.kubernetes.io/)!
 
 ### New fields on Certificate resources
@@ -120,7 +120,8 @@ This release includes a new field `URISANs` on the `Certificate` resource. With
 this, you can specify unique resource identifier URLs as subject alternative
 names on your certificates. This addition unblocks development for an istio
 integration where mTLS can be configured using cert-manager as the backend and
-in turn opens up its providers to be all that cert-manger supports.
+in turn opens up all cert-manager issuer types as valid certificate providers in
+your istio PKI.
 
 ### Improved ACME Order controller design
 
@@ -129,14 +130,19 @@ in turn opens up its providers to be all that cert-manger supports.
 Previously, we have issued a temporary certificate when a `Certificate` resource
 targeting an ACME issuer has been created. This would later be overridden once
 the real signed certificate has been issued. The reason for this behaviour was
-to facilitate compatibility with ingress-gce however many users have had trouble
-with in the past and has led to lots of confusion.
+to facilitate compatibility with ingress-gce however, many users have had trouble
+with this in the past and has led to lots of confusion - namely where
+applications would need restarting to take on the signed certificate rather than
+the temporary.
 
-In this release, no temporary certificate will be created unless explicitly
+In this release, no temporary certificates will be created unless explicitly
 requested. This can be done using the annotation
 `"cert-manager.io/issue-temporary-certificate": "true` on `Certifcate`
-resources, or using the `"acme.cert-manager.io/http01-edit-in-place"` annotation
-on ingress resources that will in turn write the temporary certificate
-annotation onto the generated `Certificate` resource.
+resources.
+
+We've additionally changed the behaviour of ingress-shim to now add this new
+annotation to `Certificate` resources if
+`"acme.cert-manager.io/http01-edit-in-place"` is present on the Ingress
+resource.
 
 ## Changelog
