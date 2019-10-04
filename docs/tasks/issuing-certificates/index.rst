@@ -62,7 +62,7 @@ The Certificate will be issued using the issuer named ``ca-issuer`` in the
 
 .. note::
    The ``renewBefore`` and ``duration`` fields must be specified using Golang's
-   ``time.Time`` string format, which does not allow the ``d`` (days) suffix.
+   ``time.Duration`` string format, which does not allow the ``d`` (days) suffix.
    You must specify these values using ``s``, ``m`` and ``h`` suffixes instead.
    Failing to do so without installing the
    :doc:`webhook </getting-started/webhook>` component can prevent cert-manager
