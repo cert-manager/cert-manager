@@ -77,7 +77,7 @@ The following table lists the configurable parameters of the cert-manager chart 
 | `global.rbac.create` | If `true`, create and use RBAC resources (includes sub-charts) | `true` |
 | `global.priorityClassName`| Priority class name for cert-manager and webhook pods | `""` |
 | `global.podSecurityPolicy.enabled` | If `true`, create and use PodSecurityPolicy (includes sub-charts) | `false` |
-| `global.leaderElection.namespace` | Override the namespace used to store the ConfigMap for leader election | Same namespace as cert-manager pod |
+| `global.leaderElection.namespace` | Override the namespace used to store the ConfigMap for leader election | `kube-system` |
 | `image.repository` | Image repository | `quay.io/jetstack/cert-manager-controller` |
 | `image.tag` | Image tag | `v0.11.0-beta.0` |
 | `image.pullPolicy` | Image pull policy | `IfNotPresent` |

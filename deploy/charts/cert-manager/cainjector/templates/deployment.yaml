@@ -46,11 +46,7 @@ spec:
           {{- if .Values.global.logLevel }}
           - --v={{ .Values.global.logLevel }}
           {{- end }}
-          {{- if .Values.global.leaderElection.namespace }}
           - --leader-election-namespace={{ .Values.global.leaderElection.namespace }}
-          {{- else }}
-          - --leader-election-namespace=$(POD_NAMESPACE)
-          {{- end }}
           {{- if .Values.extraArgs }}
 {{ toYaml .Values.extraArgs | indent 10 }}
           {{- end }}
