@@ -1,9 +1,10 @@
 {{- if .Values.global.rbac.create -}}
 
 apiVersion: rbac.authorization.k8s.io/v1beta1
-kind: ClusterRole
+kind: Role
 metadata:
-  name: {{ template "cert-manager.fullname" . }}-leaderelection
+  name: {{ template "cert-manager.fullname" . }}:leaderelection
+  namespace: {{ .Values.global.leaderElection.namespace }}
   labels:
     app: {{ template "cert-manager.name" . }}
     app.kubernetes.io/name: {{ template "cert-manager.name" . }}
@@ -12,9 +13,35 @@ metadata:
     helm.sh/chart: {{ template "cert-manager.chart" . }}
 rules:
   # Used for leader election by the controller
+  # TODO: refine the permission to *just* the leader election configmap
   - apiGroups: [""]
     resources: ["configmaps"]
     verbs: ["get", "create", "update", "patch"]
+
+---
+
+# grant cert-manager permission to manage the leaderelection configmap in the
+# leader election namespace
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: RoleBinding
+metadata:
+  name: {{ include "cert-manager.fullname" . }}:leaderelection
+  namespace: {{ .Values.global.leaderElection.namespace }}
+  labels:
+    app: {{ include "cert-manager.name" . }}
+    app.kubernetes.io/name: {{ include "cert-manager.name" . }}
+    app.kubernetes.io/instance:  {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+    helm.sh/chart: {{ include "cert-manager.chart" . }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: {{ template "cert-manager.fullname" . }}:leaderelection
+subjects:
+  - apiGroup: ""
+    kind: ServiceAccount
+    name: {{ include "cert-manager.fullname" . }}
+    namespace: {{ .Release.Namespace }}
 
 ---
 
