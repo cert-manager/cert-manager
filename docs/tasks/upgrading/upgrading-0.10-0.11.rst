@@ -47,7 +47,19 @@ you will need to update them to reflect the new API group.
 
 A full table of annotations, including the old and new equivalents:
 
-.. TODO: create a table mapping old annotations to new
+| Old Annotation                               | New Annotation                            |
+|----------------------------------------------|-------------------------------------------|
+| certmanager.k8s.io/acme-http01-edit-in-place | acme.cert-manager.io/http01-edit-in-place |
+| certmanager.k8s.io/acme-http01-ingress-class | acme.cert-manager.io/http01-ingress-class |
+| certmanager.k8s.io/issuer                    | cert-manager.io/issuer                    |
+| certmanager.k8s.io/cluster-issuer            | cert-manager.io/cluster-issuer            |
+| certmanager.k8s.io/acme-challenge-type       | DEPRECIATED                               |
+| certmanager.k8s.io/acme-dns01-provider       | DEPRECIATED                               |
+| certmanager.k8s.io/alt-names                 | cert-manager.io/alt-names                 |
+| certmanager.k8s.io/ip-sans                   | cert-manager.io/ip-sans                   |
+| certmanager.k8s.io/common-name               | cert-manager.io/common-name               |
+| certmanager.k8s.io/issuer-name               | cert-manager.io/issuer-name               |
+| certmanager.k8s.io/issuer-kind               | cert-manager.io/issuer-kind               |
 
 You can use the following bash magic to print a list of Ingress resources that
 still contain an old annotation:
@@ -61,6 +73,24 @@ still contain an old annotation:
 
    Ingress resource "demo/testcrt contains old annotations: (certmanager.k8s.io/cluster-issuer)"
    Ingress resource "example/ingress-resource contains old annotations: (certmanager.k8s.io/cluster-issuer)"
+
+In order to help with this migration, the following CLI tool will automatically
+migrate these annotations for you. Note that it will not make any changes to
+your cluster for you.
+
+.. code-block:: shell
+
+   # Firstly, download the binary for your given platform
+   $ TODO: Add link
+
+   # Mark the binary as executable and run the binary against your cluster
+   $ chmod +x api-migration && ./api-migration --kubeconfig /path/to/my/kubeconfig
+
+   # Follow the CLI ouput and check for the difference that has been made in files
+   $ vim -d ingress.yaml ingress-migrated.yaml
+
+   # Finally, once the new ingress resources have been reviewed, apply the manifests
+   $ kubectl apply -f ingress-migrated --kubeconfig /path/to/my/kubeconfig
 
 You should make sure to update _all_ Ingress resources to ensure that your
 certificates continue to be kept up to date.
