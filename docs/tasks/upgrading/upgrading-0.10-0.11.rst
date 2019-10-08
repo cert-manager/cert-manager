@@ -2,8 +2,6 @@
 Upgrading from v0.10 to v0.11
 =============================
 
-** NOTE: THIS UPGRADE GUIDE IS PROVISIONAL AND MAY NOT BE COMPLETE WHILST THE v0.11 RELEASE SERIES IS IN ALPHA**
-
 The v0.11 release marks the removal of the v1alpha1 API that was used in
 previous versions of cert-manager, as well as our API group changing to be
 ``cert-manager.io`` instead of ``certmanager.k8s.io``.
@@ -23,7 +21,7 @@ This upgrade should be performed in a few steps:
 1) Back up existing cert-manager resources, as per the
    :doc:`backup and restore guide <../backup-restore-crds>`.
 
-2) Uninstall cert-manager (by running ``kubectl delete -f`` or ``helm delete --purge``)
+2) :doc: `Uninstall cert-manager`<../uninstalling/index>`.
 
 3) Ensure the old cert-manager CRD resources have also been deleted: ``kubectl get crd | grep certmanager.k8s.io``
 
@@ -75,13 +73,15 @@ still contain an old annotation:
    Ingress resource "example/ingress-resource contains old annotations: (certmanager.k8s.io/cluster-issuer)"
 
 In order to help with this migration, the following CLI tool will automatically
-migrate these annotations for you. Note that it will not make any changes to
+migrate these annotations for you. Note that it *will not* make any changes to
 your cluster for you.
 
 .. code-block:: shell
 
    # Firstly, download the binary for your given platform
-   $ TODO: Add link
+   $ wget -O api-migration https://github.com/jetstack/cert-manager/releases/download/v0.11.0/api-migration-linux
+   # or for Darwin
+   $ wget -O api-migration https://github.com/jetstack/cert-manager/releases/download/v0.11.0/api-migration-darwin
 
    # Mark the binary as executable and run the binary against your cluster
    $ chmod +x api-migration && ./api-migration --kubeconfig /path/to/my/kubeconfig.yaml
@@ -90,7 +90,7 @@ your cluster for you.
    $ diff ingress.yaml ingress-migrated.yaml
 
    # Finally, once the new ingress resources have been reviewed, apply the manifests
-   $ kubectl apply -f ingress-migrated --kubeconfig /path/to/my/kubeconfig.yaml
+   $ kubectl apply -f ingress-migrated.yaml --kubeconfig /path/to/my/kubeconfig.yaml
 
 You should make sure to update _all_ Ingress resources to ensure that your
 certificates continue to be kept up to date.
