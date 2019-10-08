@@ -736,10 +736,8 @@ func Convert_acme_ACMEIssuerDNS01ProviderCloudDNS_To_v1alpha2_ACMEIssuerDNS01Pro
 
 func autoConvert_v1alpha2_ACMEIssuerDNS01ProviderCloudflare_To_acme_ACMEIssuerDNS01ProviderCloudflare(in *v1alpha2.ACMEIssuerDNS01ProviderCloudflare, out *acme.ACMEIssuerDNS01ProviderCloudflare, s conversion.Scope) error {
 	out.Email = in.Email
-	// TODO: Inefficient conversion - can we improve it?
-	if err := s.Convert(&in.APIKey, &out.APIKey, 0); err != nil {
-		return err
-	}
+	out.APIKey = (*meta.SecretKeySelector)(unsafe.Pointer(in.APIKey))
+	out.APIToken = (*meta.SecretKeySelector)(unsafe.Pointer(in.APIToken))
 	return nil
 }
 
@@ -750,10 +748,8 @@ func Convert_v1alpha2_ACMEIssuerDNS01ProviderCloudflare_To_acme_ACMEIssuerDNS01P
 
 func autoConvert_acme_ACMEIssuerDNS01ProviderCloudflare_To_v1alpha2_ACMEIssuerDNS01ProviderCloudflare(in *acme.ACMEIssuerDNS01ProviderCloudflare, out *v1alpha2.ACMEIssuerDNS01ProviderCloudflare, s conversion.Scope) error {
 	out.Email = in.Email
-	// TODO: Inefficient conversion - can we improve it?
-	if err := s.Convert(&in.APIKey, &out.APIKey, 0); err != nil {
-		return err
-	}
+	out.APIKey = (*metav1.SecretKeySelector)(unsafe.Pointer(in.APIKey))
+	out.APIToken = (*metav1.SecretKeySelector)(unsafe.Pointer(in.APIToken))
 	return nil
 }
 

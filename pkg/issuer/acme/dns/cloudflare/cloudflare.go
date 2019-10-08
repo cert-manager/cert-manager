@@ -33,22 +33,27 @@ type DNSProvider struct {
 	dns01Nameservers []string
 	authEmail        string
 	authKey          string
+	authToken        string
 }
 
 // NewDNSProvider returns a DNSProvider instance configured for cloudflare.
 // Credentials must be passed in the environment variables: CLOUDFLARE_EMAIL
-// and CLOUDFLARE_API_KEY.
+// and CLOUDFLARE_API_KEY or CLOUDFLARE_API_TOKEN.
 func NewDNSProvider(dns01Nameservers []string) (*DNSProvider, error) {
 	email := os.Getenv("CLOUDFLARE_EMAIL")
 	key := os.Getenv("CLOUDFLARE_API_KEY")
-	return NewDNSProviderCredentials(email, key, dns01Nameservers)
+	token := os.Getenv("CLOUDFLARE_API_TOKEN")
+	return NewDNSProviderCredentials(email, key, token, dns01Nameservers)
 }
 
 // NewDNSProviderCredentials uses the supplied credentials to return a
 // DNSProvider instance configured for cloudflare.
-func NewDNSProviderCredentials(email, key string, dns01Nameservers []string) (*DNSProvider, error) {
-	if email == "" || key == "" {
+func NewDNSProviderCredentials(email, key, token string, dns01Nameservers []string) (*DNSProvider, error) {
+	if email == "" || (key == "" && token == "") {
 		return nil, fmt.Errorf("CloudFlare credentials missing")
+	}
+	if key != "" && token != "" {
+		return nil, fmt.Errorf("CloudFlare key and token are both present")
 	}
 	// cloudflare uses X-Auth-Key as a header for its
 	// authentication. However, if it's an invalid value, the go
@@ -60,9 +65,14 @@ func NewDNSProviderCredentials(email, key string, dns01Nameservers []string) (*D
 		return nil, fmt.Errorf("Cloudflare key invalid (does the key contain a newline?)")
 	}
 
+	if !validHeaderFieldValue(token) {
+		return nil, fmt.Errorf("Cloudflare token invalid (does the token contain a newline?)")
+	}
+
 	return &DNSProvider{
 		authEmail:        email,
 		authKey:          key,
+		authToken:        token,
 		dns01Nameservers: dns01Nameservers,
 	}, nil
 }
@@ -213,7 +223,11 @@ func (c *DNSProvider) makeRequest(method, uri string, body io.Reader) (json.RawM
 	}
 
 	req.Header.Set("X-Auth-Email", c.authEmail)
-	req.Header.Set("X-Auth-Key", c.authKey)
+	if c.authToken != "" {
+		req.Header.Set("Authorization", "Bearer "+c.authToken)
+	} else {
+		req.Header.Set("X-Auth-Key", c.authKey)
+	}
 	req.Header.Set("User-Agent", pkgutil.CertManagerUserAgent)
 
 	client := http.Client{

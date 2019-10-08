@@ -86,7 +86,7 @@ func (b *Cloudflare) Provision() error {
 	b.details.ProviderConfig = cmacme.ACMEChallengeSolverDNS01{
 		Cloudflare: &cmacme.ACMEIssuerDNS01ProviderCloudflare{
 			Email: b.cf.Email,
-			APIKey: cmmeta.SecretKeySelector{
+			APIKey: &cmmeta.SecretKeySelector{
 				LocalObjectReference: cmmeta.LocalObjectReference{
 					Name: b.createdSecret.Name,
 				},

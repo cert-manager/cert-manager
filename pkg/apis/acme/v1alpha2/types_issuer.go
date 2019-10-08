@@ -242,8 +242,9 @@ type ACMEIssuerDNS01ProviderCloudDNS struct {
 // ACMEIssuerDNS01ProviderCloudflare is a structure containing the DNS
 // configuration for Cloudflare
 type ACMEIssuerDNS01ProviderCloudflare struct {
-	Email  string                   `json:"email"`
-	APIKey cmmeta.SecretKeySelector `json:"apiKeySecretRef"`
+	Email    string                    `json:"email"`
+	APIKey   *cmmeta.SecretKeySelector `json:"apiKeySecretRef,omitempty"`
+	APIToken *cmmeta.SecretKeySelector `json:"apiTokenSecretRef,omitempty"`
 }
 
 // ACMEIssuerDNS01ProviderDigitalOcean is a structure containing the DNS

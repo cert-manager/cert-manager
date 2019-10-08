@@ -240,10 +240,22 @@ spec:
                         containing the DNS configuration for Cloudflare
                       type: object
                       required:
-                      - apiKeySecretRef
                       - email
                       properties:
                         apiKeySecretRef:
+                          type: object
+                          required:
+                          - name
+                          properties:
+                            key:
+                              description: The key of the secret to select from. Must
+                                be a valid secret key.
+                              type: string
+                            name:
+                              description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                                TODO: Add other useful fields. apiVersion, kind, uid?'
+                              type: string
+                        apiTokenSecretRef:
                           type: object
                           required:
                           - name
